@@ -123,7 +123,7 @@ Perfetto 中出现以下现象时，BufferQueue 是必须检查的一层：
 
 ## 一组 slot 如何代替整帧复制
 
-BufferQueue 连接一个 Producer 和一个 Consumer。Producer 写入内容，Consumer 读取内容；`BufferQueueCore` 维护 slot、各槽位绑定的 `GraphicBuffer`、队列元数据和同步对象。
+BufferQueue 连接一个 Producer 和一个 Consumer。Producer 写入内容，Consumer 读取内容；`BufferQueueCore` 维护 slot、各 slot 绑定的 `GraphicBuffer`、队列元数据和同步对象。
 
 `GraphicBuffer` 底层通常关联可跨进程、跨设备共享的 dma-buf。双方传递 slot、buffer 引用、时间戳、crop、transform、dataspace 和 fence，无需在每次交接时复制整帧像素。这里的“零拷贝”只描述 BufferQueue 的交接方式。TextureView 回流、截图、格式转换或 SurfaceFlinger 的 client composition 仍可能增加采样和输出 buffer。
 
@@ -169,7 +169,7 @@ virtual status_t queueBuffer(
 - FREE 表示 slot 已回到 BufferQueue 的可选集合；
 - 返回 fence signal 后，Producer 才能安全覆盖 buffer 的旧内容。
 
-`BufferQueueProducer` 可以先返回 slot 和 fence。EGL、Vulkan、HWUI 或其他 Producer 负责等待 fence，或把 fence 导入后续 GPU 工作。一次高层 `dequeue` 时长可能同时包含“等 free slot”和图形后端处理栅栏的时间，分析调用栈时要把两者分开。
+`BufferQueueProducer` 可以先返回 slot 和 fence。EGL、Vulkan、HWUI 或其他 Producer 负责等待 fence，或把 fence 导入后续 GPU 工作。一次高层 `dequeue` 时长可能同时包含“等 free slot”和图形后端处理 fence 的时间，分析调用栈时要把两者分开。
 
 ### 2. `requestBuffer()`：按需取得新映射
 
@@ -179,7 +179,7 @@ virtual status_t queueBuffer(
 
 ### 3. `queueBuffer()`：提交 slot、元数据和生产完成 fence
 
-Producer 生成内容后调用 `queueBuffer()`。`QueueBufferInput` 携带生产完成 fence、时间戳、crop、transform、dataspace、surface damage 等信息。该 fence 到达下游后充当获取栅栏：消费者读取像素前必须遵守它。
+Producer 生成内容后调用 `queueBuffer()`。`QueueBufferInput` 携带生产完成 fence、时间戳、crop、transform、dataspace、surface damage 等信息。该 fence 到达下游后充当 acquire fence：消费者读取像素前必须遵守它。
 
 `queueBuffer()` 返回只说明 CPU 侧提交完成。此后还可能发生：
 
@@ -189,7 +189,7 @@ Producer 生成内容后调用 `queueBuffer()`。`QueueBufferInput` 携带生产
 - 本轮 SF latch 没有采用该 buffer；
 - HWC 尚未显示。
 
-## slot 状态与栅栏要分开读
+## slot 状态与 fence 要分开读
 
 Android 17 的 `BufferState` 使用计数器和 shared 标志表达状态。以下片段解释源码为何用 `isFree()` 等方法判断。
 
@@ -320,7 +320,7 @@ BBQBufferQueueProducer::waitForBufferRelease()
   reacquire mCore->mMutex and retry
 ```
 
-BLAST 初始化时创建 `BufferReleaseChannel` 两端，并通过独立的 `SurfaceControl.Transaction::setBufferReleaseChannel()` 把 Producer endpoint 交给 SF。`Layer::callReleaseBufferCallback()` 将 `ReleaseCallbackId`、release fence 和当前刷新率的 acquired 数写回 channel；transaction 的 release callback 入口仍然存在，BLAST 会对重复的 release 信息去重。channel 传回“哪块 buffer 被释放以及对应 fence”，后续仍可能需要等待栅栏。
+BLAST 初始化时创建 `BufferReleaseChannel` 两端，并通过独立的 `SurfaceControl.Transaction::setBufferReleaseChannel()` 把 Producer endpoint 交给 SF。`Layer::callReleaseBufferCallback()` 将 `ReleaseCallbackId`、release fence 和当前刷新率的 acquired 数写回 channel；transaction 的 release callback 入口仍然存在，BLAST 会对重复的 release 信息去重。channel 传回“哪块 buffer 被释放以及对应 fence”，后续仍可能需要等待 fence。
 
 `BBQBufferQueueCore::notifyBufferReleased()` 的当前实现会中断阻塞读取，让等待线程重新检查本地 free slot。标准 App Window 的长 dequeue 不能只按 `mDequeueCondition` 分析。
 
@@ -422,7 +422,7 @@ Android 17 中常见的观测对象包括：
 |---|---|---|
 | `dequeueBuffer - <surface>`/`queueBuffer` | App Producer | Producer 取出或提交 slot |
 | `QueuedBuffer - <name>BLAST#<id>` | App 内 BLAST counter | BLAST 可用、acquired、pending release 的组合计数 |
-| `BufferTX - <layerName>` | SurfaceFlinger | SF 服务端的待处理缓冲事务数 |
+| `BufferTX - <layerName>` | SurfaceFlinger | SF 服务端的待处理 buffer transaction 数 |
 | FrameTimeline `SurfaceFrame` | App/目标 Surface | expected/actual 与 jank 分类 |
 | FrameTimeline `DisplayFrame` | SurfaceFlinger/display | 整屏 expected/actual present |
 | release/present fence | SF/HWC/display | buffer 回收和显示完成边界 |

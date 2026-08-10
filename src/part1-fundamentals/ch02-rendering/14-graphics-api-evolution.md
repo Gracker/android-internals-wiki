@@ -191,7 +191,7 @@ ANGLE 对应用暴露 EGL/OpenGL ES，在内部维护 GLES 状态并生成 Vulka
 1. 让平台用一套持续维护的 GLES 实现适配不同 GPU 驱动；
 2. 让已有 GLES 应用在不改应用 API 的前提下测试 Vulkan 后端。
 
-ANGLE 不会消除 GLES 状态机的语义。它仍需跟踪状态、翻译着色器，并为 Vulkan backend 组织 pipeline。某个应用在 ANGLE 上更快或更慢，取决于 workload、ANGLE 版本、pipeline cache、厂商 Vulkan 驱动和设备热状态，不能只按 API 名称判断。
+ANGLE 不会消除 GLES 状态机的语义。它仍需跟踪状态、翻译 shader，并为 Vulkan backend 组织 pipeline。某个应用在 ANGLE 上更快或更慢，取决于 workload、ANGLE 版本、pipeline cache、厂商 Vulkan 驱动和设备热状态，不能只按 API 名称判断。
 
 ### 2.4 WebGPU
 
@@ -266,11 +266,11 @@ Android 17 的设备要求 profile 提高了 pipeline library / binary 的基线
 
 Vulkan 可以提供多个 queue，也可以只提供一个满足要求的 graphics queue family。transfer、compute 和 graphics 使用独立 queue 时，仍可能共享同一硬件执行单元、内存带宽或内核调度器；queue family ownership transfer 和 semaphore 还会增加同步工作。
 
-Android 17 的 HWUI `VulkanManager` 会请求同一 graphics family 的两条 queue，一条用于主要图形工作，一条服务 `HardwareBitmapUploader`/`GrallocUploadThread`。这是平台针对自身上传 workload 的实现选择，不表示所有 Vulkan 应用都应申请两条图形队列。应用要根据 queue family、驱动行为和 trace 数据决定是否拆分。
+Android 17 的 HWUI `VulkanManager` 会请求同一 graphics family 的两条 queue，一条用于主要图形工作，一条服务 `HardwareBitmapUploader`/`GrallocUploadThread`。这是平台针对自身上传 workload 的实现选择，不表示所有 Vulkan 应用都应申请两条 graphics queue。应用要根据 queue family、驱动行为和 trace 数据决定是否拆分。
 
 ## 5. Android WSI：不同 API 的共同出口
 
-Native Graphics 的边界是画面生产权。应用或引擎通过自身渲染循环获取 buffer、记录 GPU 工作并提交到可见 `Surface`。宿主可以是 `SurfaceView`、`GameActivity`、`NativeActivity` 或其他能提供 `Surface` 的组件。
+Native Graphics 的边界是画面生产权。应用或引擎通过自身 render loop 获取 buffer、记录 GPU 工作并提交到可见 `Surface`。宿主可以是 `SurfaceView`、`GameActivity`、`NativeActivity` 或其他能提供 `Surface` 的组件。
 
 Java `Surface` 可由 `ANativeWindow_fromSurface()` 转成 `ANativeWindow`。EGL window surface 与 Vulkan Android surface 都通过它连接 Android 图形缓冲区。
 
@@ -299,7 +299,7 @@ vkQueuePresentKHR
 
 `frameworks/native/vulkan/libvulkan/swapchain.cpp` 中包含对应的 `dequeueBuffer()`、`AcquireImageANDROID()`、`QueueSignalReleaseImageANDROID()` 和 `queueBuffer()` 调用。`VK_ANDROID_native_buffer` 是 loader 与 ICD 之间的 Android 私有桥接，普通应用应使用公开的 `VK_KHR_android_surface`/swapchain API。
 
-获取栅栏防止生产者过早覆盖仍被 consumer 使用的 buffer；queue 给 SurfaceFlinger 的 fence 表示 GPU 何时完成本次生产。显示完成后的 release fence 再控制该 buffer 何时可重用。到了 kernel 锚点 `android17-6.18-2026-06_r6`，跨模块的 buffer 共享仍建立在 dma-buf 上，同步文件由 `sync_file` 承载 fence。改用 Vulkan 不会取消这些所有权与同步约束。
+acquire fence 防止 producer 过早覆盖仍被 consumer 使用的 buffer；queue 给 SurfaceFlinger 的 fence 表示 GPU 何时完成本次生产。显示完成后的 release fence 再控制该 buffer 何时可重用。到了 kernel 锚点 `android17-6.18-2026-06_r6`，跨模块的 buffer 共享仍建立在 dma-buf 上，同步文件由 `sync_file` 承载 fence。改用 Vulkan 不会取消这些所有权与同步约束。
 
 ### 5.3 Present mode 需要查询
 
@@ -400,13 +400,13 @@ adb shell settings delete global angle_gl_driver_selection_values
 | submit 很快但 GPU 晚 | shader、overdraw、带宽、同步 bubble、频率或热限制 | GPU renderstage、counter、频率、fence signal |
 | buffer 已 queue 但未及时显示 | acquire fence 晚、错过 latch、目标时间未到、合成或 HWC 延迟 | layer trace、FrameTimeline、SF/HWC slice、present fence |
 
-`eglSwapBuffers()` 或 `vkQueuePresentKHR()` 返回都不表示“用户已经看到这一帧”。显示时间需要继续跟到 BufferQueue、SurfaceFlinger、HWC 和 display present。生产者完成 fence 与 display present fence分开，避免把 GPU 完成误写成屏幕显示。
+`eglSwapBuffers()` 或 `vkQueuePresentKHR()` 返回都不表示“用户已经看到这一帧”。显示时间需要继续跟到 BufferQueue、SurfaceFlinger、HWC 和 display present。producer completion fence 与 display present fence 分开，避免把 GPU 完成误写成屏幕显示。
 
 ### 8.2 ANGLE 侧
 
 ANGLE 路径要拆成应用 GLES、ANGLE 状态跟踪/ shader 翻译，以及 Vulkan driver/GPU 三段。大量细碎状态切换可能增加翻译成本；pipeline cache 命中、厂商 Vulkan 驱动质量也可能让它优于原生 GLES。
 
-AGI 适合检查 Vulkan queue、shader 和 GPU counter；Perfetto 适合把应用线程、调度、GPU、BufferQueue、SurfaceFlinger 与 FrameTimeline 放到同一时间轴。跟踪数据中出现 Vulkan slice，只能证明该层存在 Vulkan 工作，不能据此断言应用直接使用 Vulkan：ANGLE、HWUI 或系统 RenderEngine 都可能提交 Vulkan。
+AGI 适合检查 Vulkan queue、shader 和 GPU counter；Perfetto 适合把应用线程、调度、GPU、BufferQueue、SurfaceFlinger 与 FrameTimeline 放到同一时间轴。trace 中出现 Vulkan slice，只能证明该层存在 Vulkan 工作，不能据此断言应用直接使用 Vulkan：ANGLE、HWUI 或系统 RenderEngine 都可能提交 Vulkan。
 
 ### 8.3 Queue stuffing 与延迟
 

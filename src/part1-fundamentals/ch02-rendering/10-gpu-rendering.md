@@ -119,7 +119,7 @@ last_deepseek_cn_review_at: 2026-06-24
 
 # GPU 渲染深入
 
-“主线程不忙，所以 GPU 慢”会混淆不同的完成边界。UI 线程结束、RenderThread 提交、GPU completion、buffer queue 和显示提交彼此独立；任何一个边界迟到，都可能让画面错过目标周期。
+“主线程不忙，所以 GPU 慢”会混淆不同的完成边界。UI 线程结束、RenderThread 提交、GPU completion、buffer queue 和 present 彼此独立；任何一个边界迟到，都可能让画面错过目标周期。
 
 以下分析以 Android 17 / API 37 的 `android-17.0.0_r1` 为源码锚点，覆盖三类内容：
 
@@ -398,7 +398,7 @@ ASTC block 越大通常压缩率越高、质量风险也越高。透明纹理、
 
 典型 tile-based GPU 会先把几何分配到屏幕 tile，再在片上存储中完成一个 tile 的 raster、fragment 和 blend，最终把需要保留的结果写回设备内存。
 
-这能减少某些中间颜色的外部内存流量，但不会消除过度绘制、纹理采样和复杂着色器的成本。以下行为仍可能增加开销：
+这能减少某些中间颜色的外部内存流量，但不会消除过度绘制、纹理采样和复杂 shader 的成本。以下行为仍可能增加开销：
 
 - render pass 开始时加载已有 attachment；
 - pass 结束时保存 attachment；
@@ -451,7 +451,7 @@ release fence 表示 Consumer 何时不再使用旧 buffer，Producer 必须在�
 
 Android 12 GKI 2.0 开始用 DMA-BUF heaps 替代 ION。DMA-BUF heaps 提供稳定 UAPI，并按 `/dev/dma_heap/<name>` 分开访问控制；vendor 仍可提供特定 heap，protected heap 也常由厂商实现。
 
-内核源码锚点 `android17-6.18-2026-06_r6` 包含以下相关文件：
+kernel 源码锚点 `android17-6.18-2026-06_r6` 包含以下相关文件：
 
 - `drivers/dma-buf/dma-buf.c`；
 - `drivers/dma-buf/dma-heap.c`；
