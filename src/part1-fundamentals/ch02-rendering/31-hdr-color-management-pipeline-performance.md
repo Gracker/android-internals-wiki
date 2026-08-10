@@ -120,7 +120,7 @@ Android 17 的 `DisplayColorProfile` 从 HWC 能力构造以下信息：
 
 - wide color gamut 支持；
 - HLG、HDR10、HDR10+、Dolby Vision 支持；
-- 逐帧元数据能力；
+- per-frame metadata 能力；
 - HWC 报告的 `ColorMode -> RenderIntent[]` 组合；
 - desired minimum、maximum 和 maximum-average luminance。
 
@@ -504,7 +504,7 @@ val srgb = p3.convert(ColorSpaces.Srgb)
 观察：
 
 - HWC 验证后的 `DEVICE` 或 `CLIENT`；
-- 客户端目标的格式和数据空间；
+- client target 的格式和 dataspace；
 - `hasClientComposition`；
 - 图层源数据空间与显示输出数据空间；
 - `AGTM`、LUT、RenderEngine draw；
