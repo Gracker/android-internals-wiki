@@ -108,24 +108,6 @@ idle_audit_notes: "2026-08-06 idle-audit：抽检 Android 17/android-17.0.0_r1 �
 
 # 性能测试最佳实践
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 性能测试环境标准化:设备选择、温控、电量、网络
-- 🔹 消除测试干扰:关闭不必要 App、清理后台、恒温控制
-- 🔹 数据采样策略:多次采样取中位数/P90、Warm-up 轮次
-- 🔹 性能基线管理与回归检测
-- 🔹 测试报告的撰写规范
-
-### 扩展(可选深入)
-
-- 🔸 Macrobenchmark 在 CI 中的集成实践
-- 🔸 使用 Firebase Performance Monitoring 的限制与替代方案
-
-<!-- outline-end -->
-
 ## 性能测试测量的是分布
 
 功能测试常用确定的断言判定一次执行。性能测试面对调频、缓存、GC、调度、I/O、温度和网络引入的随机波动，单次结果只能说明那次执行。可比较的性能结论需要同时固定三部分：
@@ -172,8 +154,6 @@ CI 回归闸门需要专用物理设备。Android 官方不建议用模拟器做
 
 系统镜像使用 user 或经过验证的 userdebug 构建。eng 构建、debuggable 目标包、代码覆盖率和 method tracing 都会改变执行路径。Macrobenchmark 目标应用应接近 release：`debuggable=false`、`profileable`、与发布一致的 R8/资源压缩配置，并包含满足当前 Benchmark 要求的 ProfileInstaller。
 
-[来源：Android 官方 Benchmark in Continuous Integration、Write a Macrobenchmark 与 AndroidX Benchmark releases 文档 — https://developer.android.com/topic/performance/benchmarking/benchmarking-in-ci 、 https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview 、 https://developer.android.com/jetpack/androidx/releases/benchmark]
-
 ### 存储与数据状态
 
 存储剩余空间会影响文件系统回收、数据库、安装和 dexopt。Android 没有适用于所有设备的固定“至少空闲百分比”。测试池应通过试运行确定拒测边界，报告同时保存可用字节、总容量和是否出现明显后台 I/O。
@@ -202,8 +182,6 @@ CI 回归闸门需要专用物理设备。Android 官方不建议用模拟器做
 5. 保存每次运行的起止热状态与冷却时间。
 
 Android 17 的 `cmd thermalservice override-status` 只覆盖 `ThermalManagerService` 向 framework 暴露的 thermal status。它不会关闭 Thermal HAL、kernel cpufreq/GPU 降频或厂商 thermal engine。该命令适合测试应用的 thermal callback，不能用来制造“未降频”基准。
-
-[来源：AOSP android-17.0.0_r1 `frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java`]
 
 ### 峰值路径与热稳定态分开
 
@@ -236,8 +214,6 @@ Benchmark 会把低电量设备标为 `LOW-BATTERY` 错误。CI 闸门不应抑�
 设备准备需要保存并恢复原 setting，随后用 `dumpsys display` 和 Perfetto 的 expected FrameTimeline 验证生效。报告记录 requested mode 和 observed mode，失败时拒绝比较。
 
 亮度、自动亮度、主题和显示内容也要保持一致。OLED 上切换深浅主题会改变显示功耗，同时也改变被测 UI；不能为了散热把生产场景改成另一套主题。测动画或转场时保留发布配置的 animation scale，关闭系统动画会改变 workload。
-
-[来源：AOSP android-17.0.0_r1 `frameworks/base/services/core/java/com/android/server/display/mode/DisplayModeDirector.java`]
 
 ### 网络：本地路径与网络路径使用不同方案
 
@@ -292,8 +268,6 @@ CI 可通过 instrumentation argument 启用：
 
 Android 17 中，`PackageManagerShellCommand` 只保留 ART Service 命令的兼容分发列表；处理代码在 `art/libartservice/.../ArtShellCommand.java`，调度与执行由 `BackgroundDexoptJob*` 和 `ArtManagerLocal` 完成。不要依赖旧版 `BackgroundDexOptService` 路径，也不要用无法确认权限和恢复行为的 `setprop` 代替这些命令。
 
-[来源：AOSP android-17.0.0_r1 `PackageManagerShellCommand.java`、`ArtShellCommand.java`、`BackgroundDexoptJob.java`]
-
 ### 锁频只适用于特定 Microbenchmark
 
 Android 官方 CI 文档提供 Microbenchmark Gradle plugin 的 `lockClocks`/`unlockClocks`，要求 rooted 设备。官方也明确说明锁频仅在 Microbenchmark 场景需要。
@@ -304,7 +278,7 @@ Macrobenchmark 测量完整应用路径，DVFS、调度和 thermal 响应本来�
 
 Microbenchmark 使用 `AndroidBenchmarkRunner`；其 runner 与 `IsolationActivity`、亮度控制和设备能力相关的稳定化逻辑属于 Microbenchmark 语境。Macrobenchmark 是独立进程驱动目标应用，官方 CI 文档要求使用常规 `AndroidJUnitRunner`。
 
-因此，Macrobenchmark 不会仅因创建了 `MacrobenchmarkRule` 就完成温度、网络、目标数据和所有后台任务的标准化。SideEffectRunListener、专用设备、状态准备和数据质量门控仍需显式配置。
+因此，Macrobenchmark 不会仅因创建了 `MacrobenchmarkRule` 就完成温度、网络、目标数据和所有后台任务的标准化。SideEffectRunListener、专用设备、状态准备和数据质量检查仍需显式配置。
 
 ## 数据采样策略
 
@@ -334,8 +308,6 @@ Microbenchmark 使用 `AndroidBenchmarkRunner`；其 runner 与 `IsolationActivi
 `StartupTimingMetric` 的 JSON 不会自动提供 P90 字段。需要启动尾部分位时，应从 `runs` 按版本化算法计算，并使用足够的独立启动样本。`FrameTimingMetric` 的 P90/P95/P99 是帧样本分布，不能写成“10 次滑动的 P90”而不说明合并方式。
 
 API 31+ 优先看 `frameOverrunMs`：正值表示错过 deadline，负值表示剩余预算。`frameDurationCpuMs` 只描述 UI 线程与 RenderThread 的 CPU 生产时长，不能覆盖 GPU 与 SurfaceFlinger 的完整路径。
-
-[来源：Android 官方 Capture Macrobenchmark metrics 文档 — https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics]
 
 ### 中位数、尾部与指标方向
 
@@ -402,8 +374,6 @@ fun coldStartupWithRequiredBaselineProfile() {
 
 `Partial(Require, warmupIterations > 0)` 会先安装 Baseline Profile，再运行 warmup 并再次做 profile-guided 编译。若要单独量化 Baseline Profile 与运行时 profile 的作用，使用不同测试分别配置，避免把两种 profile 混在一个结果里。
 
-[来源：AndroidX `androidx-main/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/CompilationMode.kt` 与 AndroidX Benchmark 1.4.1 `CompilationMode` API — https://developer.android.com/reference/kotlin/androidx/benchmark/macro/CompilationMode]
-
 ### 启动模式只控制进程与 Activity 状态
 
 Macrobenchmark 的 `StartupMode` 控制启动前的进程/Activity 状态：
@@ -451,7 +421,7 @@ Macrobenchmark 的 `StartupMode` 控制启动前的进程/Activity 状态：
 
 固定“P50 回归 10%、P90 回归 20%”无法跨 workload 使用。回归判定通常需要同时满足：
 
-1. 数据质量门控通过；
+1. 数据质量检查通过；
 2. 候选版本超过产品或平台 SLO；
 3. 相对基线的效应量超过该测试的历史噪声；
 4. 置信区间或重复 job 支持同一方向；
@@ -572,8 +542,6 @@ FPM 的服务端采样和聚合不由客户端按 benchmark 实验协议精确�
 ### 延迟与报警
 
 当前 FPM 文档把兼容 SDK 的处理描述为 near real-time，数据通常在采集后数分钟显示。SDK 首次检测、批量上传、离线设备和平台故障仍会造成额外延迟。发布报警要监控数据新鲜度与覆盖率，不能假设每条事件同步到达。
-
-[来源：Firebase Performance Monitoring custom code trace 与 troubleshooting 官方文档 — https://firebase.google.com/docs/perf-mon/custom-code-traces 、 https://firebase.google.com/docs/perf-mon/troubleshooting]
 
 ### 与其他数据源的分工
 

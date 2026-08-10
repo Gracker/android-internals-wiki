@@ -79,24 +79,6 @@ last_deepseek_cn_review_at: 2026-06-03
 ---
 # 线上性能监控
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 线上性能监控的必要性：发现线下测试无法覆盖的问题
-- 🔹 帧率监控：Choreographer FrameCallback、FrameMetrics API
-- 🔹 启动耗时监控：手动埋点 vs Jetpack App Startup 集成
-- 🔹 ANR 监控：FileObserver 监听 traces.txt / ANR signal handler
-- 🔹 监控数据的采样、聚合与报警策略
-
-### 扩展（可选深入）
-
-- 🔸 使用 Perfetto SDK 做线上 tracing
-- 🔸 监控数据的可视化与归因分析平台
-
-<!-- outline-end -->
-
 ## 为什么线下测试无法替代线上监控
 
 Perfetto、Macrobenchmark 和稳定的实验环境适合回答“某条路径为什么慢”。线上监控回答另一组问题：问题出现在哪些版本、机型和业务场景，波及多少用户，修复后是否回到基线。两类工作使用的证据不同，也处在排障流程的不同位置。
@@ -181,8 +163,6 @@ Choreographer.getInstance().postFrameCallback(callback);
 
 因此，FrameCallback 适合做主线程节奏探针或低版本兼容信号，不应单独作为“用户实际 FPS”的权威来源。
 
-[已验证：Android 17 / API 37 `Choreographer.FrameCallback` 文档与 AOSP `frameworks/base/core/java/android/view/Choreographer.java`]
-
 ### FrameMetrics：窗口内的帧耗时分项
 
 Android 7（API 24）加入 `Window.OnFrameMetricsAvailableListener`。硬件加速窗口完成一帧后，监听器可以读取公开的 `FrameMetrics` 指标：
@@ -216,8 +196,6 @@ miss_deadline = TOTAL_DURATION >= DEADLINE
 API 24—30 没有公开 `DEADLINE`。用 `1 / display.refreshRate` 只能得到当前显示模式的名义周期，无法还原系统给某帧使用的精确预算，也无法覆盖刷新率切换与不同流水线深度。低版本可以保留“超过名义周期”的独立指标，字段名要体现它是估算值。
 
 监听器使用注册时传入的 `Handler`。回调中应复制必需字段并做常数级聚合；序列化、压缩、落盘和网络发送放到工作线程。还要记录 `dropCountSinceLastInvocation`，否则回调积压会让样本看起来比现场更平稳。
-
-[已验证：Android 17 / API 37 `FrameMetrics` 文档与 AOSP `frameworks/base/core/java/android/view/FrameMetrics.java`]
 
 ### JankStats：启发式分类加 UI 状态
 
@@ -254,15 +232,11 @@ JankStats 的回调线程也有版本差异：API 23 及以下在主线程，API
 
 JankStats 的 `isJank` 属于库的启发式分类，FrameMetrics 的 duration 属于平台观测值。服务端应保留原始时长、算法版本和阈值配置，避免库升级后把历史趋势误读为性能变化。
 
-[已验证：当前 JankStats 官方指南与 AndroidX `metrics-performance` 实现]
-
 ### View 渲染与游戏渲染要分开
 
 FrameMetrics、JankStats 以及 Android Vitals 的慢帧/冻结帧统计面向使用 View/Canvas UI Toolkit 的窗口。直接使用 OpenGL、Vulkan、Unity 或 Unreal 的主画面不在该套 Vitals 渲染统计范围内。
 
 Google Play 为游戏提供 Slow Sessions。它从 SurfaceFlinger 所见的应用 surface 估算帧率，覆盖 OpenGL、Vulkan 与 Android UI Toolkit，并且当前只面向游戏。应用若同时包含普通 View 页面和游戏 surface，应分别定义两套指标与分母，不能把 View 帧时长和游戏 session FPS 合在同一张趋势图里。
-
-[已验证：Android Vitals “Slow rendering” 与 “Slow Sessions” 官方文档]
 
 ## 启动监控：TTID、TTFD 与业务可用时间
 
@@ -303,8 +277,6 @@ TTFD = START_TIMESTAMP_FULLY_DRAWN - START_TIMESTAMP_LAUNCH
 
 缺少终点字段时记录为“未观测到”，不要补零，也不要用客户端 wall clock 拼接。Android 16（Baklava）及以下的 service start 存在 `START_TIMESTAMP_LAUNCH` 已知边界；面向 Activity 的启动面板应按 `startComponent` 或启动 reason 过滤。
 
-[自动发现][已验证：Android 17 / API 37 `ApplicationStartInfo` 与 `ActivityManager` 官方 API]
-
 ### API 24—34：手动埋点要承认观测边界
 
 `Process.getStartUptimeMillis()` 从 API 24 可用，可作为进程启动的单调时钟锚点。它早于应用代码，但表示进程启动时间，不能替代系统收到 Activity launch 的时间。`Application.attachBaseContext()` 更晚，只能标记应用代码已经开始执行。
@@ -326,8 +298,6 @@ TTFD = START_TIMESTAMP_FULLY_DRAWN - START_TIMESTAMP_LAUNCH
 App Startup 用单个 `InitializationProvider` 发现并运行 `Initializer`，还能声明初始化依赖与手动延迟初始化。它提供的是初始化组织方式，没有自动产生 TTID、TTFD 或 initializer 耗时指标。
 
 接入 App Startup 后，可以围绕每个 initializer 增加 `android.os.Trace` 切片和轻量计时，再用 Macrobenchmark 与线上启动记录核对收益。初始化顺序、主线程约束和依赖关系仍要按库文档处理；将多个 provider 迁移到 App Startup 也不能预设固定的毫秒收益。
-
-[已验证：Jetpack App Startup 官方文档]
 
 ## ANR 监控：区分预警、系统判定与退出证据
 
@@ -367,8 +337,6 @@ API 31+ 的 native crash artifact 可能是 protobuf tombstone，不能总按文
 
 `ApplicationExitInfo` 只描述退出历史。用户关闭 ANR 对话框、系统终止进程或应用自行恢复会产生不同结果；它也不能实时通知当前进程“刚刚发生了所有类型的 ANR”。Android Vitals 的用户感知 ANR 率按 opted-in Play 数据和日活用户分母计算，与本地退出记录的事件率不同。
 
-[已验证：Android 17 / API 37 `ApplicationExitInfo` 文档与 AOSP ActivityManagerService ANR 路径]
-
 ### API 37：ANR 预警与结构化 AnrInfo
 
 Android 17（API 37）新增 `ActivityManager.registerAnrWarningListener()`。系统在应用接近某条 ANR timeout 时，以尽力而为的方式调用监听器。回调可能未执行，也可能没有足够时间完成工作；官方要求 executor 不使用主线程。
@@ -402,8 +370,6 @@ fun registerAnrWarning(
 
 如果进程随后以 `REASON_ANR` 退出，API 37 的 `ApplicationExitInfo.getAnrInfo()` 会返回结构化 `AnrInfo`，其中包括 ANR type、ANR ID、timeout 和 `isUserPerceptible()`。warning 与 exit 记录可用 type + ID 关联。预警出现而退出记录缺席，可能代表应用恢复、回调误差或记录尚未读取，不能直接改写为“已发生致死 ANR”。
 
-[自动发现][已验证：Android 17 / API 37 `AnrWarningResult`、`ApplicationExitInfo.AnrInfo` 官方 API]
-
 ### FileObserver 监听 traces.txt：普通应用应停用
 
 早期方案常监听 `/data/anr/traces.txt`。Android 17 的 AOSP 已不使用单一固定文件：`StackTracesDumpHelper` 把目录定义为 `/data/anr`，文件使用 `anr_` 与 `temp_anr_` 前缀。普通第三方应用受文件权限与 SELinux 限制，无法把该目录当作稳定、可读的公开接口。
@@ -415,17 +381,13 @@ fun registerAnrWarning(
 - API 30+ 使用 `ApplicationExitInfo` 读取系统公开的退出 artifact；
 - API 37 可增加 ANR warning，低版本以 watchdog 记录停顿候选。
 
-大纲保留这项历史方案，是为了说明迁移边界，不代表它在 Android 17 上仍是可行的应用 API。
-
-[已验证：AOSP android-17.0.0_r1 `frameworks/base/services/core/java/com/android/server/am/StackTracesDumpHelper.java`]
+这项历史方案只用于说明迁移边界，不代表它在 Android 17 上仍是可行的应用 API。
 
 ### SIGQUIT 与 ART SignalCatcher：不要在量产 SDK 中争抢信号
 
 Android 17 的 ANR 路径会向目标进程发送 `SIGQUIT`。ART 的 `SignalCatcher` 线程通过 `sigwait` 接收信号并生成 Java 线程 dump。普通 `sigaction(SIGQUIT, ...)` 不能保证先于 ART 收到；修改线程信号掩码、hook SignalCatcher 或吞掉 SIGQUIT 还可能破坏系统取栈。
 
 量产应用应把这条路径视为平台实现证据，不把 signal hook 当作公开 ANR API。强控制环境中的系统组件若要扩展信号采集，需要在目标 Android 版本、ART 实现、ABI 与厂商改动上单独验证，并保证原有 dump 流程继续执行。
-
-[已验证：AOSP android-17.0.0_r1 `ProcessErrorStateRecord.java` 与 `art/runtime/signal_catcher.cc`]
 
 ## 采样：基线样本与异常样本分开
 
@@ -489,7 +451,7 @@ P50、P90、P95、P99 用于观察分布，均值可用于某些可加总成本�
 3. 最小数据量：eligible 用户、会话或帧达到统计要求；
 4. 数据健康：覆盖率、延迟、schema 分布和丢弃率正常。
 
-多窗口 burn-rate 适合同时发现短时间急剧恶化与持续缓慢恶化。新版本报警还应关联 rollout 比例，避免样本量增长造成告警抖动。固定阈值应来自 §15.3 的指标合同、Google Play 当前 bad behavior threshold 或团队 SLO，本章不另造通用 P0/P1 数字。
+多窗口 burn-rate 适合同时发现短时间急剧恶化与持续缓慢恶化。新版本报警还应关联 rollout 比例，避免样本量增长造成告警抖动。固定阈值应来自 §15.3 的指标合同、Google Play 当前 bad behavior threshold 或团队 SLO，不另设通用 P0/P1 数字。
 
 报警事件应附带：
 
@@ -502,7 +464,7 @@ P50、P90、P95、P99 用于观察分布，均值可用于某些可加总成本�
 
 没有证据链接的趋势告警只会产生人工查询。没有数据健康检查的告警则容易把 SDK 关闭、字段缺失或上传故障误判为性能改善。
 
-## [自动发现] ProfilingManager：由系统提供重型证据
+## ProfilingManager：由系统提供重型证据
 
 Android 15（API 35）加入 `ProfilingManager`，应用可以请求 Java heap dump、heap profile、stack sampling 和 system trace。结果通过监听器异步返回，并受系统资源、速率和并发限制；请求成功不代表一定会得到 artifact。
 
@@ -531,8 +493,6 @@ Android 17 源码位于 `packages/modules/Profiling`。该能力由 Mainline Pro
 - 无结果、被限流、功能关闭和解析失败的可观测状态；
 - 与轻量事件关联的 session、process、ANR ID 或 startup ID。
 
-[已验证：Android 17 / API 37 `ProfilingManager`、`ProfilingTrigger` 官方文档与 AOSP `packages/modules/Profiling`]
-
 ## 扩展：Perfetto SDK 的线上边界
 
 Perfetto Tracing SDK 是 C++17 库，可用 Track Event 或自定义 data source 记录应用事件。它有两种 backend：
@@ -547,8 +507,6 @@ in-process backend 不需要特殊 OS 权限，适合保存应用自己的短窗
 Android 专用且只需要 slice、async slice 或 counter 时，Perfetto 官方建议继续使用 `android.os.Trace` 或 NDK `ATrace_*`。这些事件可以进入 Perfetto，接入成本也低于引入完整 C++ SDK。已有 native 子系统、需要自定义 protobuf data source 或独立 in-process session 时，再评估 Perfetto SDK。
 
 无论使用哪种方式，都要限制时长、buffer、类别与触发频率。trace tag 不记录账号、URL 参数、文本内容和其他敏感数据。
-
-[已验证：Perfetto Tracing SDK 官方文档]
 
 ## 可视化与归因平台
 
