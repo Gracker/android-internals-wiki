@@ -101,22 +101,6 @@ last_deepseek_cn_review_at: 2026-07-04
 
 # 18.5 Android 17 多窗口渲染路径
 
-<!-- outline-start -->
-
-**锚点(必须覆盖):**
-- [18.5.1 多窗口场景分析](#多窗口场景分析) - 什么时候会出现双窗口
-- [18.5.2 同进程 vs 跨进程](#同进程-vs-跨进程拓扑判断决定了分析入口) - 拓扑决定瓶颈位置
-- [18.5.3 核心瓶颈:串行化](#核心瓶颈串行化) - UI Thread 与 RenderThread 的争抢
-- [18.5.4 完整执行流程](#完整执行流程) - 双窗口的完整时序
-- [18.5.5 Trace 视角](#trace-视角) - 识别多窗口瓶颈
-- [18.5.6 优化策略](#优化策略) - 减少串行开销
-
-**扩展(可选深入):**
-- EGLContext 切换开销
-- 分屏模式下的资源竞争
-
-<!-- outline-end -->
-
 多窗口分析要同时区分 Window、进程和 Display。两个窗口可能共享 UI Looper 与 HWUI RenderThread，也可能来自不同进程；它们还可能位于不同 Display，拥有不同 mode、deadline 和 present fence。
 
 平台实现固定到 Android 17 / API 37 的 `android-17.0.0_r1`，kernel 固定到 `android17-6.18-2026-06_r6`。用户看到的 Dialog、分屏、PiP 或桌面形态不能直接推出执行拓扑，结论必须落到 `pid/tid/Looper/ViewRootImpl/WindowState/SurfaceControl/displayId`。
@@ -460,7 +444,7 @@ Dialog、caption、IME、dim、transition leash、HDR/SDR、protected layer、sc
 
 ### Android 12—17 版本边界
 
-| 平台 | 多窗口相关节点 | Review 影响 |
+| 平台 | 多窗口相关节点 | 分析影响 |
 |---|---|---|
 | Android 12 / API 31 | BLAST/FrameTimeline 现代基线 | Window buffer、SF layer 与 DisplayFrame 可按当前模型分析 |
 | Android 12L / API 32 | 大屏多任务增强，Activity Embedding 广泛可用 | split container 不等于跨进程，运行时仍要查询支持 |

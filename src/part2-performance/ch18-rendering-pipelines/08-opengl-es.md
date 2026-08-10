@@ -103,27 +103,9 @@ last_idle_audit_run_id: 20260729-103556-idle-audit-caf6b94a
 
 # 18.8 Android 17 EGL / OpenGL ES 渲染链路
 
-<!-- outline-start -->
-
-**锚点（必须覆盖）：**
-- [18.8.1 核心架构](#核心架构) — EGL 与 GLThread 的职责划分
-- [18.8.2 渲染循环时序](#渲染循环时序) — Continuous vs Dirty 模式
-- [18.8.3 eglSwapBuffers 详解](#eglswapbuffers-详解) — 最关键的提交点
-- [18.8.4 Buffer 流转与 Triple Buffering](#buffer-流转与-triple-buffering) — 为什么 GLES 通常用 3 个 Slot
-- [18.8.5 Fence 机制](#fence-机制) — Release Fence 与 Acquire Fence
-- [18.8.6 ANGLE 路径](#angle-路径) — GLES-over-Vulkan 的 Trace 差异
-- [18.8.7 Trace 视角](#trace-视角) — Perfetto 中的 GLES 链路识别
-
-**扩展（可选深入）：**
-- EGLContext 共享与多线程渲染
-- Android 15+ 上 GLES 的前景与迁移策略
-- GLSurfaceView vs 原生 EGL 集成
-
-<!-- outline-end -->
-
 OpenGL ES 规定怎样向 GPU 描述绘制，EGL 负责把 GLES context 与 Android `Surface` 对应的 native window 接起来。应用发出 draw call 后，GPU 何时执行、window buffer 何时进入 BufferQueue、SurfaceFlinger 何时采用新内容、HWC 何时 present，是四个不同边界。
 
-本文以 `android-17.0.0_r1` 为 Platform 锚点，以 `android17-6.18-2026-06_r6` 为 kernel 锚点。厂商 EGL/GLES driver、GPU job scheduler 和 Composer 实现不在 AOSP 中统一，涉及调用阻塞和硬件完成时间时，必须用目标设备 trace 补足。
+平台锚点为 `android-17.0.0_r1`，kernel 锚点为 `android17-6.18-2026-06_r6`。厂商 EGL/GLES driver、GPU job scheduler 和 Composer 实现不在 AOSP 中统一，涉及调用阻塞和硬件完成时间时，必须用目标设备 trace 补足。
 
 ## 核心架构
 
@@ -299,7 +281,7 @@ eglSwapBuffers(display, windowSurface)
 
 ## Buffer 流转与 Triple Buffering
 
-本节保留“Triple Buffering”标题用于目录兼容，但 GLES window surface 没有适用于所有设备和模式的固定三 buffer 规则。
+“Triple Buffering”标题沿用目录名称，但 GLES window surface 没有适用于所有设备和模式的固定三 buffer 规则。
 
 `BufferQueueCore` 根据 `mMaxDequeuedBufferCount`、`mMaxAcquiredBufferCount`、async/non-blocking 状态和配置上限计算可用数量。slot 表容量不等于同时分配的 GraphicBuffer 数；EGL 实现、shared buffer mode、消费者和应用设置都可能改变活跃 buffer。
 
@@ -448,7 +430,7 @@ Android 17 的 HWC 主线仍要区分 SF 侧 `presentOrValidate()`、`validate()
 
 ### Android 12—17 边界
 
-| 平台 | 与本章有关的变化 | Review 重点 |
+| 平台 | 相关变化 | 分析重点 |
 |---|---|---|
 | Android 12 / API 31 | BLAST/FrameTimeline 成为现代显示诊断基线；刷新率选择继续演进 | 区分 Producer 晚、SF 晚与 display 晚 |
 | Android 13 / API 33 | Composer AIDL 成为新主线；Game Mode/FPS intervention 可能限制游戏帧率 | 目标帧率要结合系统 intervention |

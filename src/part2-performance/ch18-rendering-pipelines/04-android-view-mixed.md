@@ -82,30 +82,13 @@ last_deepseek_cn_review_at: 2026-07-15
 
 # 18.4 Android 17 混合渲染链路
 
-<!-- outline-start -->
-
-**锚点（必须覆盖）：**
-- [18.4.1 什么是混合渲染](#什么是混合渲染) — 两条并行管线的基本模型
-- [18.4.2 并行生产机制](#并行生产机制) — View Pipeline 与 Media Pipeline 的独立运行
-- [18.4.3 打洞与合成](#打洞与合成) — 两个 Layer 的视觉融合
-- [18.4.4 渲染时序图](#渲染时序图) — 双管线的完整交互
-- [18.4.5 跨 Surface 同步机制](#跨-surface-同步机制) — 受控 Surface / Transaction 之间的同步原语
-- [18.4.6 SurfaceFlinger 在多 Layer 时的 latch 行为](#surfaceflinger-在多-layer-时的-latch-行为) — per-layer 推进与"视觉错位"的根因
-- [18.4.7 性能特征与陷阱](#性能特征与陷阱) — 同步挑战与优化方向
-
-**扩展（可选深入）：**
-- 混合渲染中的 BLAST 同步语义
-- 视频"飘移"问题的根因与解法
-
-<!-- outline-end -->
-
 混合出图页面同时存在两条以上可区分的内容生产路径，并且这些路径共同影响同一个最终画面。普通 View、Compose、`TextureView`、`SurfaceView`、嵌入式 `SurfaceControlViewHost`、视频、Camera、地图或游戏引擎都可能参与。
 
 平台实现固定到 Android 17 / API 37 的 `android-17.0.0_r1`；kernel 固定到 `android17-6.18-2026-06_r6`。AOSP 能证明公共接口与系统合成行为，目标应用采用哪种 Producer、buffer format 和 layer 拓扑，仍要从当前 trace、layer tree 与业务配置确认。
 
 ## 什么是混合渲染
 
-“混合渲染”是诊断分类，不是 Android framework 中的某个类。页面满足下面两个条件时，应使用本章的方法：
+“混合渲染”是诊断分类，不是 Android framework 中的某个类。页面满足下面两个条件时，应使用这里的方法：
 
 - 存在两条以上能区分 Producer 或 Consumer 的内容路径；
 - 这些路径共同影响同一屏的可见结果。
@@ -509,7 +492,7 @@ FrameTimeline 的 host SurfaceFrame 适合判断 App Window，SF DisplayFrame �
 | Android 14 / API 34 | `SurfaceSyncGroup`、SurfaceView lifecycle strategy 与任意 alpha 公开 | 受控跨进程 Surface 可同步；保留/销毁与半透明规则改变 |
 | Android 15 / API 35 | desired present、transaction FrameTimeline、completed listener、desired HDR headroom | 调度和完成反馈更明确，buffer/fence 与设备能力仍决定结果 |
 | Android 16 / API 36 | `SurfaceView.setCompositionOrder(int)` 公开 | 负值在宿主下，非负值在宿主上；同值 peer 顺序未定义 |
-| Android 17 / API 37 | SurfaceView blur region API；本文固定到当前 FrontEnd、BLAST、CompositionEngine/HWC | blur、crop、transform、位置和 flag 状态要一起检查 |
+| Android 17 / API 37 | SurfaceView blur region API；固定到当前 FrontEnd、BLAST、CompositionEngine/HWC | blur、crop、transform、位置和 flag 状态要一起检查 |
 
 历史边界可从这些一手入口复核：[Android 13 release notes](https://source.android.com/docs/whatsnew/android-13-release)、[unsignaled buffer latch](https://source.android.com/docs/core/graphics/unsignaled-buffer-latch)、[API 33 Transaction diff](https://developer.android.com/sdk/api_diff/33/changes/android.view.SurfaceControl.Transaction)、[API 34 SurfaceSyncGroup diff](https://developer.android.com/sdk/api_diff/34/changes/android.window.SurfaceSyncGroup)、[API 35 Transaction diff](https://developer.android.com/sdk/api_diff/35/changes/android.view.SurfaceControl.Transaction)、[API 36 SurfaceView diff](https://developer.android.com/sdk/api_diff/36/changes/android.view.SurfaceView) 与 [API 37 SurfaceView diff](https://developer.android.com/sdk/api_diff/37/changes/android.view.SurfaceView)。
 
