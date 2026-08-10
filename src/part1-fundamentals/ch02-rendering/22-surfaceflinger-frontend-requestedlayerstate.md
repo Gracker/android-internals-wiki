@@ -165,7 +165,7 @@ Android 17 的 `Changes` 包含：
 | 内容 | `Content`、`Buffer`、`SidebandStream`、`BufferSize`、`BufferUsageFlags`、`PostProcess` | 更新当前内容及合成属性 |
 | 策略 | `Metadata`、`FrameRate`、`GameMode`、`Animation` | 更新 metadata、刷新率投票和调度提示 |
 
-`kMustComposite` 是一组变化后需要推动合成的标志，不包含全部 flags。例如，`FrameRate` 还会触发 attached choreographer 的刷新率更新；是否需要合成由各调用点分别判断。
+`kMustComposite` 是一组变化后需要推动 composition 的 flags，不包含全部 flags。例如，`FrameRate` 还会触发 attached choreographer 的刷新率更新；是否需要 composition 由各调用点分别判断。
 
 ### 3.2 为什么 layer 关系保存为 id
 

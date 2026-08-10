@@ -408,7 +408,7 @@ FrameTimeline 中，App 侧和 SurfaceFlinger 侧至少要分成三类：
 - `SurfaceFlingerCpuDeadlineMissed`：SurfaceFlinger 主线程没有在 deadline 前完成 CPU 侧工作。
 - `SurfaceFlingerGpuDeadlineMissed`：CPU 侧工作已经推进，GPU composition 没有按时完成。
 
-多窗口场景下，后两类尤其值得关注。窗口、display 多时，应先区分 SurfaceFlinger 侧与应用侧的截止时间异常，再决定检查应用主线程、RenderThread、图片上传、视频解码，或继续沿 SurfaceFlinger、HWC 与 GPU composition 向下排查。
+多窗口场景下，后两类尤其值得关注。窗口、display 多时，应先区分 SurfaceFlinger 侧和 App 侧的 deadline miss，再决定检查 App 主线程、RenderThread、图片上传、视频解码，或继续沿 SurfaceFlinger、HWC 与 GPU composition 向下排查。
 
 一套可复用的顺序是：在 `actual_frame_timeline_slice` 中找到异常 SurfaceFrame/DisplayFrame token，对齐目标进程的 `doFrame`、RenderThread 与 buffer transaction；选择最接近异常时刻的 layer snapshot，确认 output、可见 layer 和 composition type；再检查 SurfaceFlinger main thread、GPU fence、Composer/HAL 与 present。这样可以区分单个窗口晚交帧与整屏合成延迟。
 

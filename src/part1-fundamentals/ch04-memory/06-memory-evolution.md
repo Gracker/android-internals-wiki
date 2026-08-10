@@ -316,7 +316,7 @@ Manifest 请求只作用于支持 MTE 的设备。自定义 allocator 还要自�
 
 Android 14 QPR3 起，可用 NDK 的 `-fsanitize=memtag`、`-march=armv8-a+memtag` 等选项构建调试用 stack tagging。该产物只在兼容设备运行，官方明确把插桩构建定位在调试用途。
 
-Arm 架构和内核内部还有更多 fault mode 组合。Android 应用的稳定公开配置仍以 `off/default/sync/async` 为准，应用不要依赖 vendor sysfs 把某个模式“透明升级”为另一种语义。
+Arm 架构和内核内部还有更多 fault mode 组合。Android App 的稳定公开配置仍以 `off/default/sync/async` 为准，App 不要依赖 vendor sysfs 把某个模式“透明升级”为另一种语义。
 
 ## Graphics 计量：位置变化不等于免费
 
