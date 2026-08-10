@@ -38,42 +38,11 @@ gap_source: "官方文档/每日信息/AOSP结构"
 
 # 20.16 Android 17 Keystore 配额与登录故障治理
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 Android 17 per-app Keystore 配额边界
-说明非系统 App、targetSdk 37、系统 App 和旧 targetSdk 的配额差异，把 50,000 / 200,000 key 上限与 `ERROR_TOO_MANY_KEYS` 版本行为说清楚。
-
-### 🔹 登录与支付场景为什么会撞上 key 数量上限
-梳理设备绑定、账号切换、生物认证、Passkey、加密缓存、证书轮换和测试环境残留 key 的增长来源。
-
-### 🔹 KeyStoreException 的分类与降级策略
-区分配额、权限、认证状态、KeyMint 不支持和临时系统错误，避免把所有异常都重试或都提示用户重新登录。
-
-### 🔹 key 生命周期治理
-覆盖 alias 命名、账号退出清理、版本迁移、废弃 key 回收、批量删除风险和多进程同步。
-
-### 🔹 线上证据包字段
-设计异常码、targetSdk、key alias 前缀、账号态、设备加密状态、系统版本和调用场景字段，便于定位是配额耗尽还是业务状态异常。
-
-### 🔹 灰度与压测方法
-给出自动化构造大量 key、升级 targetSdk、回归登录/支付/生物认证流程的测试组合。
-
-## 扩展
-
-### 🔸 与 8.12 Keystore/KeyMint 延迟章节的边界
-8.12 覆盖调用耗时和硬件路径；20.16 覆盖 key 数量、异常分类和故障恢复。
-
-### 🔸 与 26.9 进程退出归因的关系
-如果 key 配额导致启动流程崩溃，归因要同时保留 ApplicationExitInfo 和业务异常上报。
-
-<!-- outline-end -->
-
-Android 17 开始按应用 UID 限制 Android Keystore 中的 key 数量。非系统应用以 API 37 为目标版本时，上限为 50,000；其他应用为 200,000，系统应用也使用 200,000。达到上限后，系统不会删除旧 key，也不会阻止应用继续使用仍然有效的旧 key；被拒绝的是新的生成或导入请求。[已验证: Android 17 官方行为变更；AOSP `android-17.0.0_r1`]
+Android 17 开始按应用 UID 限制 Android Keystore 中的 key 数量。非系统应用以 API 37 为目标版本时，上限为 50,000；其他应用为 200,000，系统应用也使用 200,000。达到上限后，系统不会删除旧 key，也不会阻止应用继续使用仍然有效的旧 key；被拒绝的是新的生成或导入请求。
 
 这类故障常在登录、设备绑定、支付签名或加密数据库初始化时暴露，但根因通常早已积累：alias 每次带新时间戳、账号退出不回收、轮换只加不删、测试任务长期留存。治理重点应前移到 alias 所有权和生命周期，不能等到 50,000 才临时枚举删除。
 
-本文的平台源码锚点为 `android-17.0.0_r1`。本节讨论 framework、keystore2 与 KeyMint 边界，不涉及 kernel 侧行为。
+平台源码锚点为 `android-17.0.0_r1`。这里讨论 framework、keystore2 与 KeyMint 边界，不涉及 kernel 侧行为。
 
 ## 1. Android 17 配额的准确边界
 
@@ -84,9 +53,9 @@ Android 17 开始按应用 UID 限制 Android Keystore 中的 key 数量。非�
 | Android 17，非系统应用，`targetSdkVersion >= 37` | 50,000 | `ERROR_TOO_MANY_KEYS` |
 | Android 17，非系统应用，`targetSdkVersion < 37` | 200,000 | `ERROR_INCORRECT_USAGE` |
 | Android 17，系统应用 | 200,000 | 由 target SDK 决定返回哪个公开错误码 |
-| Android 16 及更早版本 | 没有本节所述 Android 17 配额 | 不适用 |
+| Android 16 及更早版本 | 没有这项 Android 17 配额 | 不适用 |
 
-这项变化属于 Android 17 的“所有应用行为变更”：旧 target 应用仍有 200,000 上限，只是兼容错误码保持为 `ERROR_INCORRECT_USAGE`。系统应用的数量上限固定为 200,000；若系统应用以 API 37 为目标，源码仍会用 SDK 37 对应的超限错误码。官方页面没有把“系统应用”描述成无限资源。[已验证: Android 17 behavior changes - Per-app keystore limits]
+这项变化属于 Android 17 的“所有应用行为变更”：旧 target 应用仍有 200,000 上限，只是兼容错误码保持为 `ERROR_INCORRECT_USAGE`。系统应用的数量上限固定为 200,000；若系统应用以 API 37 为目标，源码仍会用 SDK 37 对应的超限错误码。官方页面没有把“系统应用”描述成无限资源。
 
 ### 1.1 “每个应用”在源码中是“每个 UID”
 
@@ -110,7 +79,7 @@ AOSP `KeystoreSecurityLevel.check_key_counts()` 在下面三条路径进入 KeyM
 
 计数达到上限时，检查直接返回错误。现有 key 的 `Cipher.init()`、`Signature.initSign()` 等使用路径没有经过这条“创建数量”检查，所以升级 target SDK 不会因配额本身让全部旧 key 同时失效。
 
-还有一个容易遗漏的细节：配额检查发生在 rebind/覆盖旧 alias 之前。应用已经有 50,000 个 key 时，尝试以相同 alias 重新生成 key 也可能先被拒绝。恢复流程必须先确认并删除可回收 alias，释放额度后才能重建；“继续用同名 alias 重试”不是满额后的恢复办法。[已验证: AOSP `security_level.rs`]
+还有一个容易遗漏的细节：配额检查发生在 rebind/覆盖旧 alias 之前。应用已经有 50,000 个 key 时，尝试以相同 alias 重新生成 key 也可能先被拒绝。恢复流程必须先确认并删除可回收 alias，释放额度后才能重建；“继续用同名 alias 重试”不是满额后的恢复办法。
 
 ## 2. 哪些业务设计会让 alias 持续增长
 
@@ -129,7 +98,7 @@ Passkey 需要单独澄清。普通 relying-party 应用通过 Credential Manage
 
 ## 3. 异常分类：公开错误码只是证据的一部分
 
-`android.security.KeyStoreException` 从 API 33 提供 `getNumericErrorCode()`、`isTransientFailure()`、`getRetryPolicy()`、`isSystemError()` 和 `requiresUserAuthentication()`。API 37 新增 `ERROR_TOO_MANY_KEYS`，其数值在 Android 17 AOSP 中为 18。业务代码应引用 SDK 常量，不要把 18 写进协议或埋点逻辑。[已验证: API 37 diff；AOSP `KeyStoreException.java`]
+`android.security.KeyStoreException` 从 API 33 提供 `getNumericErrorCode()`、`isTransientFailure()`、`getRetryPolicy()`、`isSystemError()` 和 `requiresUserAuthentication()`。API 37 新增 `ERROR_TOO_MANY_KEYS`，其数值在 Android 17 AOSP 中为 18。业务代码应引用 SDK 常量，不要把 18 写进协议或埋点逻辑。
 
 配额失败在两类 target SDK 下应这样处理：
 
@@ -360,9 +329,9 @@ target 37 放量前至少确认：
 
 ## 10. 与相邻章节的边界
 
-8.12 关注应用进程、keystore2、KeyMint HAL、TEE/StrongBox 之间的延迟、operation slot 和线程调度；本节关注持久 key entry 数量与 alias 生命周期。operation 并发上限和每 UID key 数量是两套资源约束，报告中应分别统计。
+8.12 关注应用进程、keystore2、KeyMint HAL、TEE/StrongBox 之间的延迟、operation slot 和线程调度；这里关注持久 key entry 数量与 alias 生命周期。operation 并发上限和每 UID key 数量是两套资源约束，报告中应分别统计。
 
-20.7 讨论异常恢复架构，20.12 讨论 crash loop 与 SafeMode，26.9 讨论 `ApplicationExitInfo`。本节提供的是 Keystore 故障分类和恢复状态；进程退出记录只能作为时间与结果证据。
+20.7 讨论异常恢复架构，20.12 讨论 crash loop 与 SafeMode，26.9 讨论 `ApplicationExitInfo`。这里提供 Keystore 故障分类和恢复状态；进程退出记录只能作为时间与结果证据。
 
 ## 小结
 
@@ -372,12 +341,12 @@ Android 17 的 50,000/200,000 配额把 alias 泄漏从长期隐患变成明确�
 
 ## 参考资料
 
-- [已验证: 官方文档, Android 17 behavior changes - Per-app keystore limits](https://developer.android.com/about/versions/17/behavior-changes-all#per-app-keystore-limits)
-- [已验证: 官方文档, `KeyStoreException`](https://developer.android.com/reference/android/security/KeyStoreException)
-- [已验证: 官方文档, API 36 -> 37 `KeyStoreException` diff](https://developer.android.com/sdk/api_diff/37/changes/android.security.KeyStoreException)
-- [已验证: 官方文档, Android Keystore system](https://developer.android.com/privacy-and-security/keystore)
-- [已验证: AOSP `android-17.0.0_r1`, keystore2 quota check](https://android.googlesource.com/platform/system/security/+/android-17.0.0_r1/keystore2/src/security_level.rs)
-- [已验证: AOSP `android-17.0.0_r1`, keystore2 alias count](https://android.googlesource.com/platform/system/security/+/android-17.0.0_r1/keystore2/src/utils.rs)
-- [已验证: AOSP `android-17.0.0_r1`, public error mapping](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/keystore/java/android/security/KeyStoreException.java)
-- [已验证: AOSP 文档, Keystore architecture](https://source.android.com/docs/security/features/keystore)
-- [已验证: AOSP 文档, Keystore/KeyMint implementer reference](https://source.android.com/docs/security/features/keystore/implementer-ref)
+- [Android 17 behavior changes - Per-app keystore limits](https://developer.android.com/about/versions/17/behavior-changes-all#per-app-keystore-limits)
+- [`KeyStoreException`](https://developer.android.com/reference/android/security/KeyStoreException)
+- [API 36 -> 37 `KeyStoreException` diff](https://developer.android.com/sdk/api_diff/37/changes/android.security.KeyStoreException)
+- [Android Keystore system](https://developer.android.com/privacy-and-security/keystore)
+- [AOSP `android-17.0.0_r1`：keystore2 quota check](https://android.googlesource.com/platform/system/security/+/android-17.0.0_r1/keystore2/src/security_level.rs)
+- [AOSP `android-17.0.0_r1`：keystore2 alias count](https://android.googlesource.com/platform/system/security/+/android-17.0.0_r1/keystore2/src/utils.rs)
+- [AOSP `android-17.0.0_r1`：public error mapping](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/keystore/java/android/security/KeyStoreException.java)
+- [AOSP：Keystore architecture](https://source.android.com/docs/security/features/keystore)
+- [AOSP：Keystore/KeyMint implementer reference](https://source.android.com/docs/security/features/keystore/implementer-ref)

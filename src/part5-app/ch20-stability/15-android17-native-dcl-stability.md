@@ -65,11 +65,11 @@ last_deepseek_cn_review_at: 2026-06-19
 
 # 20.15 Android 17 Native DCL 只读约束与动态库加载稳定性
 
-Android 17 把 native 动态代码加载的只读要求加到了 `System.load(path)` 路径。应用以 Android 17（API 37）为目标版本时，`System.load()` 看到目标文件仍可写，会在进入 native linker 前抛出 `UnsatisfiedLinkError`。受影响的常见场景包括：运行时下载 `.so`、从插件包解压 `.so`、把 assets 中的库释放到私有目录，以及某些兼容旧系统的“二次解压再加载”方案。[已验证: Android 17 官方行为变更]
+Android 17 把 native 动态代码加载的只读要求加到了 `System.load(path)` 路径。应用以 Android 17（API 37）为目标版本时，`System.load()` 看到目标文件仍可写，会在进入 native linker 前抛出 `UnsatisfiedLinkError`。受影响的常见场景包括：运行时下载 `.so`、从插件包解压 `.so`、把 assets 中的库释放到私有目录，以及某些兼容旧系统的“二次解压再加载”方案。
 
 这项检查只解决“加载时文件仍可修改”这一类竞态。只读权限不能证明文件来自可信发布方，也不能替代签名、哈希、ABI、ELF、依赖库与回滚检查。排障时应把平台门禁、制品可信度和 linker 失败拆成三组证据。
 
-本文的平台源码锚点为 `android-17.0.0_r1`。16KB page size 相关结论沿用 20.13 的 Android 17 平台基线；本节没有 kernel 专属逻辑。
+平台源码锚点为 `android-17.0.0_r1`。16KB page size 相关结论沿用 20.13 的 Android 17 平台基线，不涉及 kernel 专属逻辑。
 
 ## 1. 先分清四条加载路径
 
@@ -82,7 +82,7 @@ Android 17 把 native 动态代码加载的只读要求加到了 `System.load(pa
 | 自定义 `ClassLoader.findLibrary()` 配合 `loadLibrary()` | `loadLibrary0() -> nativeLoad()` | 不经过同一段检查 | 不应拿来规避平台约束；仍需可信发布和 linker 验证 |
 | native 代码直接调用 `dlopen()` | bionic linker | 不经过 Java `Runtime.load0()` | 这只是调用边界，不能当兼容方案 |
 
-表里的“不过检查”来自 `android-17.0.0_r1` 源码调用关系：`Runtime.load0()` 先检查文件，再调用 `nativeLoad()`；`loadLibrary0()` 根据 ClassLoader 找到文件名后直接调用 `nativeLoad()`。native `dlopen()` 从 C/C++ 进入 bionic linker，也不会回到 Java 的 `Runtime.load0()`。[已验证: AOSP `android-17.0.0_r1` `java.lang.Runtime`]
+表里的“不过检查”来自 `android-17.0.0_r1` 源码调用关系：`Runtime.load0()` 先检查文件，再调用 `nativeLoad()`；`loadLibrary0()` 根据 ClassLoader 找到文件名后直接调用 `nativeLoad()`。native `dlopen()` 从 C/C++ 进入 bionic linker，也不会回到 Java 的 `Runtime.load0()`。
 
 这个边界不等于“换成 `dlopen()` 就安全了”。动态下载 native 代码仍会受到 linker namespace、ELF 格式、`DT_NEEDED`、符号解析、进程位数和 16KB page size 等约束；远程 DCL 还可能违反 Google Play 政策。工程迁移应优先减少 DCL，随应用发布的库继续使用 `System.loadLibrary()`。确需保留 DCL 时，即使当前入口不触发 Java 检查，也应按同一套只读与可信发布规则处理。
 
@@ -109,7 +109,7 @@ Android 官方建议尽量避免动态代码加载，并把代码放在可信位
 - **位置**：文件只进入应用私有目录。不要从共享外部存储加载，也不要信任其他进程可写的路径。
 - **生命周期**：每个版本使用独立路径，发布后不覆盖；选择指针只指向已验证版本，失败版本持久化为 `BAD`。
 
-远程下载 DCL 还要单独经过 Play 政策审查。技术上能够加载，并不表示分发方式符合商店政策。[已验证: Android Dynamic Code Loading security risks]
+远程下载 DCL 还要单独经过 Play 政策审查。技术上能够加载，并不表示分发方式符合商店政策。
 
 ## 4. 发布状态机：让读取者只看到完整版本
 
@@ -202,7 +202,7 @@ private fun publishLibrary(
 }
 ```
 
-这段代码没有把整个库读进内存，摘要对应的也是写入 fd 的同一串字节。生产实现还要做到：目标版本文件预先存在时拒绝覆盖；`rename` 后按耐久性需求同步父目录；发布结果进入状态存储后才允许加载。若 `verifyElf()` 需要打开文件，owner-read-only 权限不影响当前应用读取。
+这段代码没有把整个库读进内存，摘要对应的也是写入 fd 的同一串字节。生产实现还要做到：目标版本的文件预先存在时拒绝覆盖；`rename` 后按耐久性需求同步父目录；发布结果进入状态存储后才允许加载。若 `verifyElf()` 需要打开文件，owner-read-only 权限不影响当前应用读取。
 
 ### 4.2 不要把 `File.renameTo()` 当成完整事务
 
@@ -239,7 +239,7 @@ private fun publishLibrary(
 
 多进程应用常见的错误是：主进程正在发布版本 B，远程服务仍按旧清单加载版本 A，随后清理线程删掉 A。稳定策略可以收敛为四条：
 
-- 只有一个发布者持有跨进程锁；锁内完成版本文件发布和选择清单更新。
+- 只有一个发布者持有跨进程锁；锁内完成版本产物发布和选择清单更新。
 - 读取者只加载状态为 `PUBLISHED` 的不可变路径，不打开临时文件。
 - 已加载版本在对应进程退出前都视为被引用。缺少可靠存活引用统计时，至少保留 active 与 last-known-good 两个版本，并延迟清理更老版本。
 - 版本 B 失败后写入 `BAD` 记录，选择指针回到 A；同一进程不要无限重试 B。
@@ -300,17 +300,17 @@ private fun publishLibrary(
 
 ## 10. 与相邻章节的边界
 
-- 8.11 负责 native linker namespace、依赖解析与加载性能。本节只引用其加载约束。
+- 8.11 负责 native linker namespace、依赖解析与加载性能，这里只引用其加载约束。
 - 20.3 负责 signal crash、tombstone、backtrace 和符号化。只读拒绝通常是 Java `UnsatisfiedLinkError`，尚未进入 native 执行。
-- 20.13 负责 16KB page size 的 ELF 与 APK 兼容。本节只把对应结果纳入制品门禁。
+- 20.13 负责 16KB page size 的 ELF 与 APK 兼容，这里只把对应结果纳入制品门禁。
 - 1.15 负责 JNI 注册与调用边界。库加载失败后继续调用 native 方法，才会产生后续 JNI 故障。
 
 ## 参考资料
 
-- [已验证: 官方文档, Android 17 behavior changes - Safer Native DCL-C](https://developer.android.com/about/versions/17/behavior-changes-17#safer-native-dcl-c)
-- [已验证: AOSP `android-17.0.0_r1`, `java.lang.Runtime`](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Runtime.java)
-- [已验证: AOSP `android-17.0.0_r1`, bionic linker](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker.cpp)
-- [已验证: 官方文档, Android 14 behavior changes - Safer dynamic code loading](https://developer.android.com/about/versions/14/behavior-changes-14#safer-dynamic-code-loading)
-- [已验证: 官方文档, Dynamic Code Loading security risks](https://developer.android.com/privacy-and-security/risks/dynamic-code-loading)
-- [已验证: 官方文档, Android NDK JNI tips - Native libraries](https://developer.android.com/ndk/guides/jni-tips#native-libraries)
-- [已验证: AOSP 文档, Namespaces for native libraries](https://source.android.com/docs/core/permissions/namespaces_libraries)
+- [Android 17 behavior changes - Safer Native DCL-C](https://developer.android.com/about/versions/17/behavior-changes-17#safer-native-dcl-c)
+- [AOSP `android-17.0.0_r1`：`java.lang.Runtime`](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Runtime.java)
+- [AOSP `android-17.0.0_r1`：bionic linker](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker.cpp)
+- [Android 14 behavior changes - Safer dynamic code loading](https://developer.android.com/about/versions/14/behavior-changes-14#safer-dynamic-code-loading)
+- [Dynamic Code Loading security risks](https://developer.android.com/privacy-and-security/risks/dynamic-code-loading)
+- [Android NDK JNI tips - Native libraries](https://developer.android.com/ndk/guides/jni-tips#native-libraries)
+- [AOSP：Namespaces for native libraries](https://source.android.com/docs/core/permissions/namespaces_libraries)

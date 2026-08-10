@@ -28,7 +28,7 @@ sources:
 
 # 20.19 Android 17 信号处理架构与 debuggerd / linker 协作
 
-这一章的题名容易让人产生误解：`debuggerd` 的核心实现没有在 Android 17 搬进 Bionic linker。Android 17 仍由 `system/core/debuggerd/` 维护 handler、`crash_dump`、tombstone 编码和 `tombstoned`；linker 只负责在进程早期安装 handler、提供 libc 共享状态，并把可恢复信号入口暴露给 ART 的 signal chain。
+题名容易让人产生误解：`debuggerd` 的核心实现没有在 Android 17 搬进 Bionic linker。Android 17 仍由 `system/core/debuggerd/` 维护 handler、`crash_dump`、tombstone 编码和 `tombstoned`；linker 只负责在进程早期安装 handler、提供 libc 共享状态，并把可恢复信号入口暴露给 ART 的 signal chain。
 
 平台实现锚定 `android-17.0.0_r1`。涉及 signal UAPI 与 arm64 MTE fault address 的内核结论锚定 `android17-6.18-2026-06_r6`；Android 14 至 Android 16 只用于说明已有机制的演进。
 
@@ -45,7 +45,7 @@ sources:
 | pseudothread 可用栈 | 固定 8 个编译期 `PAGE_SIZE` 页 | 改用 8 个运行时 `getpagesize()` 页 | 保持 | 保持 |
 | permissive MTE 经过 ART signal chain 恢复 | GWP-ASan 恢复钩子已存在 | 恢复钩子扩展到 MTE | 保持 | 保持并修正按进程属性读取 |
 
-所以，本章的重点是 Android 17 当前架构及其版本边界，而非构造一条不存在的“大迁移”叙事。
+重点应放在 Android 17 当前架构及其版本边界，而非构造一条不存在的“大迁移”叙事。
 
 ## 要点
 
@@ -85,7 +85,7 @@ Android 17 的 `linker_main()` 依次执行环境清洗、系统属性初始化�
 - `get_gwp_asan_callbacks`：提供 GWP-ASan 恢复前后的回调。
 - `post_dump`：通知 GDB 动态库列表发生变化。
 
-这套 wiring 在 Android 14 标签中已经存在。Android 17 不能被描述为“把 debuggerd 提前到 linker 初始化”；在本章适用范围内，早期注册一直是基线行为。
+这套 wiring 在 Android 14 标签中已经存在。Android 17 不能被描述为“把 debuggerd 提前到 linker 初始化”；Android 14 至 Android 17 的早期注册一直是基线行为。
 
 #### Android 17 的 Runtime APEX 条件分支
 
