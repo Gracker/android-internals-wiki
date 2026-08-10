@@ -84,25 +84,9 @@ last_deepseek_cn_review_at: 2026-06-28
 
 # 后台功耗治理
 
-<!-- outline-start -->
-## 本节要点大纲
+## 治理范围
 
-### 锚点（必须覆盖）
-
-- 🔹 Android 后台执行限制演进（Doze / App Standby / Bucket）
-- 🔹 后台任务最佳实践
-- 🔹 前台服务的正确使用与 Android 14+ 限制
-- 🔹 后台定位与传感器管控
-
-### 扩展（可选深入）
-
-- 🔸 后台任务回归守门
-
-<!-- outline-end -->
-
-## 为什么要了解后台功耗治理
-
-本节讨论应用如何控制后台耗电。Doze、App Standby 和 Job 配额的系统实现见 §5.8；WakeLock、Alarm、定位与 FCM 的横向策略见 §11.2；诊断流程见 §25.1；FGS 超时和 Android 16 Job 配额的专题分析见 §25.13。
+这里讨论应用如何控制后台耗电。Doze、App Standby 和 Job 配额的系统实现见 §5.8；WakeLock、Alarm、定位与 FCM 的横向策略见 §11.2；诊断流程见 §25.1；FGS 超时和 Android 16 Job 配额的专题分析见 §25.13。
 
 后台工作应具备四项性质：允许延后的工作交给系统调度，同一目的的工作可以合并，业务条件失效后可以取消，运行与停止原因可以观测。系统负责限制 CPU、网络、Job、Alarm 和位置访问，却不了解某次同步是否仍有业务价值，也不知道某段轨迹何时可以降低采样频率。应用必须自己定义任务有效期、停止条件和资源预算。
 
@@ -118,7 +102,7 @@ last_deepseek_cn_review_at: 2026-06-28
 
 [Doze 与 App Standby 官方说明](https://developer.android.com/training/monitoring-device-state/doze-standby)将前两组条件分开定义。Doze 关注整台设备是否空闲；App Standby 关注某个应用近期是否被使用。两者可以同时影响同一个 WorkManager 任务，因为应用不可见时，WorkManager 的持久化工作会由 JobScheduler 调度。
 
-| 版本节点 | 后台规则变化 | App 侧治理动作 |
+| 版本阶段 | 后台规则变化 | App 侧治理动作 |
 |----------|--------------|----------------|
 | Android 6.0 | 引入 Doze 与 App Standby | 可延后工作迁到 JobScheduler 或 WorkManager；消息到达使用 FCM，避免轮询 |
 | Android 8.0 | 限制后台服务和后台定位频率 | 长时间后台服务改为调度任务；区域触发使用地理围栏，机会式位置使用被动请求 |
@@ -378,4 +362,4 @@ adb shell dumpsys battery reset
 
 后台功耗治理要回答三个问题：任务为何此时执行，系统为何允许它执行，它何时必须停止。Doze 描述设备空闲，App Standby Buckets 描述应用使用状态，任务接口与权限决定具体执行资格；三者不能互相替代。
 
-应用侧需要明确任务时效、约束、幂等、取消条件、停止原因和资源预算。评审时将 Android 17 / API 37 的框架源码与 `android17-6.18-2026-06_r6` 内核证据分层使用：框架说明调度与配额决定，内核说明休眠和唤醒事实。继续阅读 §25.3 的 WakeLock / Alarm 与 §25.4 的 WorkManager，可进一步检查一次唤醒是否有用户价值、能否延后或合并，以及能否稳定复现。
+应用侧需要明确任务时效、约束、幂等、取消条件、停止原因和资源预算。评审时将 Android 17 / API 37 的框架源码与 `android17-6.18-2026-06_r6` 内核证据分层使用：框架说明调度与配额决定，内核说明休眠和唤醒事实。§25.3 的 WakeLock / Alarm 与 §25.4 的 WorkManager 分别说明一次唤醒是否有用户价值、能否延后或合并，以及如何稳定复现。

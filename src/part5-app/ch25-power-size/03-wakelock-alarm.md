@@ -63,23 +63,7 @@ task9_review_notes: "2026-06-30 Task9 idle audit auto-fix: 将 WakeLock 类型�
 
 # WakeLock 与 Alarm 管理
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 WakeLock 类型与使用规范
-- 🔹 WakeLock 泄漏检测与治理
-- 🔹 AlarmManager 最佳实践
-- 🔹 Exact Alarm 权限变化（Android 12+）
-
-### 扩展（可选深入）
-
-- 🔸 功耗回归守门
-
-<!-- outline-end -->
-
-## 为什么要了解 WakeLock 与 Alarm 管理
+## 两类机制的职责
 
 WakeLock 和 Alarm 解决两个不同问题：
 
@@ -88,7 +72,7 @@ WakeLock 和 Alarm 解决两个不同问题：
 
 它们都不是进程保活接口。WakeLock 不保证进程存活，也不提供后台启动资格；Alarm 的回调窗口只够完成短小的分发工作，不能代替后台任务调度。持锁范围过大，会阻止系统进入低功耗状态；唤醒型 Alarm 过密，会增加设备被唤醒的次数；精确 Alarm 若未满足权限条件，调用时会抛出 `SecurityException`。
 
-系统电源状态机见 §5.6 和 §11.5，后台任务分类见 §25.2，WorkManager 实践见 §25.4。本节只讨论应用侧的选择、生命周期、权限和诊断。
+系统电源状态机见 §5.6 和 §11.5，后台任务分类见 §25.2，WorkManager 实践见 §25.4。这里讨论应用侧的选择、生命周期、权限和诊断。
 
 ### Android 17 源码中的调用边界
 
@@ -107,7 +91,7 @@ flowchart LR
 
 `PowerManagerService` 汇总框架层 WakeLock 并更新电源状态，`AlarmManagerService` 负责 Alarm 的分组、权限、空闲策略和分发。内核的 wakeup source 与 alarmtimer 提供休眠阻止和定时唤醒能力，却不了解 `PendingIntent`、精确 Alarm 权限或应用业务。一次 Alarm 触发与一次内核唤醒也不是固定的一一对应关系：系统会合并 Alarm，设备也可能因其他来源已经处于唤醒状态。
 
-本文统一使用以下源码锚点：
+源码锚点如下：
 
 - [`PowerManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java) 与 [`PowerManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java)
 - [`AlarmManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/AlarmManager.java) 与 [`AlarmManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java)

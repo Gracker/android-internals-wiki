@@ -28,35 +28,7 @@ sources:
 
 # 25.4 WorkManager 实战与后台任务调度
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 WorkManager 基础架构
-WorkManager 是 Android 后台任务调度的核心组件，它提供了统一、可靠的延迟任务执行方案，解决了 JobScheduler、AlarmManager 等组件的局限性。在 Android 14–17 上，WorkManager 负责持久化任务、在约束满足时调度执行、在系统重启后恢复。
-
-### 🔹 任务约束与系统适配
-WorkManager 支持有限的、定义明确的任务约束条件（网络状态、充电状态、存储空间、电池电量、设备空闲），这些约束是 WorkManager 委托给系统调度框架（`JobScheduler`）的开关，而不是应用层自行定义的阈值。
-
-### 🔹 加急任务与配额
-WorkManager 不提供应用层手动数值优先级。应用对"紧急性"的唯一控制是 `setExpedited(OutOfQuotaPolicy)`（WorkManager 2.7+），以及通过 `WorkManagerInitializer` / `Configuration` 的线程池大小控制并发执行上限。任务执行的相对顺序由入队顺序、约束满足时机和系统 `JobScheduler` 配额共同决定。
-
-### 🔹 任务链与依赖管理
-复杂任务通过任务链（Chaining）实现依赖管理。WorkManager 通过 `WorkContinuation` 支持 `beginWith().then()` 串行链和 `beginWith(List)` 并行汇聚，以及失败重试（`Result.retry()` + `BackoffPolicy`）。
-
-## 扩展
-
-### 🔸 任务生命周期监控
-实现 WorkManager 任务的完整生命周期监控，包括任务创建、排队、执行、完成、失败等各状态的处理策略。
-
-### 🔸 性能优化实践
-针对不同场景的 WorkManager 性能优化技巧，包括 `enqueueUniqueWork`、初始化线程池调优、结果传递等方法。
-
-### 🔸 多进程任务调度
-WorkManager 的多进程支持（2.6+）通过 `RemoteListenableWorker` / `RemoteCoroutineWorker` 实现，而非任意的"跨进程 Worker"。
-
-<!-- outline-end -->
-
-本文以 Android 17（API 37，`android-17.0.0_r1`）和 WorkManager 2.11.2 稳定版为基线。WorkManager 2.11.x 的 `minSdk` 是 23，因此本文不再讨论旧版本库在 API 14–22 上使用 `AlarmManager` 的兼容路径。
+基线为 Android 17（API 37，`android-17.0.0_r1`）和 WorkManager 2.11.2 稳定版。WorkManager 2.11.x 的 `minSdk` 是 23，因此不再讨论旧版本库在 API 14–22 上使用 `AlarmManager` 的兼容路径。
 
 WorkManager 适合“应用进程退出后仍应继续、允许系统选择执行时机”的持久化工作，例如日志上传、云端同步和可恢复的数据处理。下面几类需求应交给别的 API：
 
