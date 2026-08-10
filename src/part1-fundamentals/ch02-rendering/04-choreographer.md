@@ -758,11 +758,11 @@ COMMIT 是 App callback 阶段。buffer 生产、SF 合成、HWC present 和 pan
 
 ## 十五、Framework 与 kernel 的排查边界
 
-Choreographer 位于用户态框架，不直接决定线程何时获得 CPU。`FrameDisplayEventReceiver` 已投递异步消息后，目标线程仍可能处于：
+Choreographer 位于用户态 framework，不直接决定线程何时获得 CPU。`FrameDisplayEventReceiver` 已投递异步消息后，目标线程仍可能处于：
 
-Perfetto 中（Running）：正在执行其他代码；
-- 可运行（Runnable）：已经可运行，但在 runqueue 等待；
-- 休眠/阻塞（Sleeping/Blocked）：等待锁、futex、Binder、buffer 或其他资源。
+- Running：正在执行其他代码；
+- Runnable：已经可运行，但在 runqueue 等待；
+- Sleeping/Blocked：等待锁、futex、Binder、buffer 或其他资源。
 
 Framework 源码回答“回调何时被安排、按什么顺序执行”；kernel 调度轨迹回答“线程何时被唤醒、何时被调度上 CPU”。内核行为以 `android17-6.18-2026-06_r6` 为准，通用入口是 `kernel/sched/core.c` 和 `kernel/sched/fair.c`。
 
