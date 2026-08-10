@@ -184,7 +184,7 @@ IPC 延迟至少包含：
 
 ```text
 客户端编组
-+ 驱动 / 内核传输
++ driver / kernel transport
 + server 排队与调度
 + server 业务
 + reply 编组与返回
@@ -743,7 +743,7 @@ List<State> states = remote.getStates(ids);
 magic / version
 容量 / 负载长度
 sequence
-状态：空 → 写入中 → 就绪 → 读取中
+state: EMPTY → WRITING → READY → READING
 校验与错误恢复
 ```
 
@@ -808,7 +808,7 @@ sequence
 5. 记录 fd 所有权、protection、mapping 与 close 时序。
 6. 检查 backpressure、queue capacity、overflow 与丢弃策略。
 7. Binder 慢调用拆成 client、queue、server、nested call 和回复。
-8. 套接字/管道记录分帧、缓冲区、阻塞模式和对端凭据。
+8. Socket/Pipe 记录 framing、buffer、blocking mode 和 peer credentials。
 9. SharedMemory/FMQ/DMA-BUF 检查同步、fence、内存序与版本。
 10. HAL 先分 HIDL/hwbinder 与稳定 AIDL/binder。
 11. pVM 路径单独按 Binder RPC + vsock 分析。

@@ -520,7 +520,7 @@ adb shell dumpsys activity processes
 - `freezer_cutoff_adj`
 - process state / oom_adj
 - CPU_TIME 与隐式 implicit CPU_TIME capability
-- 待处理冻结 / 已冻结
+- pending freeze / frozen
 
 ### 10.2 shell 控制实验
 

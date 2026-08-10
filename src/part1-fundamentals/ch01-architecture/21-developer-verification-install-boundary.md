@@ -408,7 +408,7 @@ per-user 默认策略由 verifier 或系统指定的 policy delegate 设置。ve
   + session 写入
   + seal / stream validation
   + 普通用户授权等待
-  + 开发者验证
+  + Developer Verification
   + 原有软件包验证
   + native library / 安装事务 / dexopt
   + 最终回调
@@ -558,7 +558,7 @@ fun readLitePerformedCompat(intent: Intent): Boolean? {
 | 设备 | certified Google Android、无对应 verifier 的 AOSP/企业设备 |
 | 安装器目标 SDK | ≤ 36、37 |
 | 权限 | `REQUEST_INSTALL_PACKAGES`、特权 `INSTALL_PACKAGES` |
-| 结果 | 已验证、开发者被阻止、网络不可用、超时 |
+| 结果 | verified、developer blocked、network unavailable、timeout |
 | 用户路径 | pending 后继续、重试、取消 |
 | 分发 | 参与商店、非参与商店、直接旁加载、ADB、managed store |
 | session | 单包、multi-package |
