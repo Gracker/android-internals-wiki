@@ -44,20 +44,18 @@ sources:
 
 # 21.20 Android 17 应用启动边界与 AndroidX App Startup 依赖图
 
-## 1. 先划清版本和组件边界
+## 1. 版本和组件边界
 
-本章的平台源码基线是 Android 17 / API 37 / `android-17.0.0_r1`，应用启动依赖管理以 AndroidX App Startup 1.2.0 为基线。
+平台源码基线是 Android 17 / API 37 / `android-17.0.0_r1`，应用启动依赖管理以 AndroidX App Startup 1.2.0 为基线。
 
 这两个版本号描述的是不同层次：
 
 - Android 17 决定应用进程如何进入 `ActivityThread.handleBindApplication()`，以及 `Application`、`ContentProvider` 的创建顺序。
 - AndroidX App Startup 是随应用打包的独立 Jetpack 库。1.2.0 的 `minSdk` 是 21，它不是 Android 17 新增的平台服务，也不是 AOSP 中名为 “Modular Startup Framework” 的系统模块。
 
-因此，本章所说的“依赖图”只负责组织当前应用进程中的 `Initializer`。它不会调度 SystemServer 服务，不会改变 `init` 的启动顺序，也不会自动管理所有第三方 SDK。
+这里的“依赖图”只负责组织当前应用进程中的 `Initializer`。它不会调度 SystemServer 服务，不会改变 `init` 的启动顺序，也不会自动管理所有第三方 SDK。
 
 ## 2. Android 17 平台先建立了什么顺序
-
-> 源码参照：`frameworks/base/core/java/android/app/ActivityThread.java` (`android-17.0.0_r1`)，`handleBindApplication()` 与 `installContentProviders()` 主路径。
 
 Android 17 的 `ActivityThread.handleBindApplication()` 主路径可以压缩成下面四步：
 
@@ -87,8 +85,6 @@ Application.onCreate()
 `ActivityThread.installContentProviders()` 会逐个安装 Provider，把得到的 `ContentProviderHolder` 放进列表，汇总后用一次 `IActivityManager.publishContentProviders()` 将该列表发布给 system_server。因而，“N 个 Provider 必然对应 N 次 `publishContentProviders` Binder 调用”不符合 Android 17 源码。合并 Provider 仍能减少组件实例、类加载和各 Provider `onCreate()` 的固定开销，只是不能把收益错误归因于 N 次发布调用变成一次。
 
 ## 3. App Startup 如何发现初始化器
-
-> 源码参照：`androidx/startup/InitializationProvider.java` 与 `androidx/startup/AppInitializer.java`（App Startup 1.2.0，commit `2bbbb9f`）。
 
 App Startup 1.2.0 的 AAR 会通过 manifest 合并加入一个未导出的 Provider：
 
@@ -182,7 +178,7 @@ App Startup 解决的是初始化入口分散和依赖顺序不透明的问题�
 
 如果某个组件不需要在 `Application.onCreate()` 之前就绪，可以从默认 Provider 的 metadata 中移除它，并在首个可靠使用点手动初始化。
 
-下面的 manifest 片段用于关闭某个库初始化器的自动发现。`tools:node="remove"` 的匹配目标必须与最终合并 manifest 中的 key 完全一致。
+下面的 manifest 片段用于关闭某个库 initializer 的 Manifest discovery。`tools:node="remove"` 的匹配目标必须与最终合并 manifest 中的 key 完全一致。
 
 ```xml
 <provider
@@ -198,7 +194,7 @@ App Startup 解决的是初始化入口分散和依赖顺序不透明的问题�
 
 移除 metadata 后，默认 Provider 不会主动发现这个初始化器。应在 Android Studio 的 Merged Manifest 视图或构建产物中确认规则已经生效，避免只检查当前模块的源 manifest。
 
-关闭一个组件的自动初始化，也会关闭只经该组件依赖边到达的初始化器；若同一个依赖还出现在其他自动发现入口的 `dependencies()` 中，或它自己的 metadata 仍被保留，它仍会从那条路径执行。判断结果时要检查完整依赖图，不能只检查被移除的 metadata。
+关闭一个组件的自动初始化，也会关闭只经该组件依赖边到达的 initializer；若同一个依赖还出现在其他由 Manifest 发现的入口的 `dependencies()` 中，或它自己的 metadata 仍被保留，它仍会从那条路径执行。判断结果时要检查完整依赖图，不能只检查被移除的 metadata。
 
 下面的调用用于在首个业务消费者之前同步完成该组件初始化：
 
@@ -228,7 +224,7 @@ App Startup 从 1.1.0 开始支持为多个进程配置多个 `InitializationPro
 class WorkerInitializationProvider : InitializationProvider()
 ```
 
-这个子类提供了可单独寻址的 Provider 组件名，自身不需要重写 `onCreate()`。接下来用 manifest 把它放进目标进程，并只挂载该进程需要的初始化器：
+这个子类提供了可单独寻址的 Provider 组件名，自身不需要重写 `onCreate()`。再用 manifest 把它放进目标进程，并只挂载该进程需要的 initializer：
 
 ```xml
 <provider
@@ -257,8 +253,6 @@ manifest 主动发现会直接对 metadata key 执行 `Class.forName()`。Provid
 
 ## 9. 如何观察依赖图是否拖慢启动
 
-> 源码参照：`androidx/startup/AppInitializer.java` 1.2.0 `beginStartupSection()` / `endStartupSection()` 调用，trace section 名为 `Startup` 与各初始化器简单类名。
-
 App Startup 1.2.0 通过 AndroidX Tracing 创建 `Startup` trace section，并用每个初始化器的简单类名创建子 section。抓取冷启动 Perfetto trace 后，可以直接检查这些 section 在主线程上的位置和持续时间。
 
 一次有价值的排查应同时完成以下检查：
@@ -276,7 +270,7 @@ App Startup 1.2.0 通过 AndroidX Tracing 创建 `Startup` trace section，并�
 
 | 误区 | Android 17 / App Startup 1.2.0 下的结论 |
 |---|---|
-| Android 17 新增了系统级 Modular Startup Framework | 没有这个平台 API；本章讨论的是独立发布的 AndroidX App Startup |
+| Android 17 新增了系统级 Modular Startup Framework | 没有这个平台 API；这里讨论的是独立发布的 AndroidX App Startup |
 | 声明顺序就是 Provider 或初始化器顺序 | Provider 顺序不适合表达业务依赖；初始化器顺序应由 `dependencies()` 明确描述 |
 | App Startup 会并行执行无依赖节点 | 1.2.0 的发现、深度优先遍历和 `create()` 都是同步执行 |
 | 每个 Provider 都会单独调用一次 `publishContentProviders` | Android 17 会先收集当前批次的 holder，再用一次调用发布列表 |

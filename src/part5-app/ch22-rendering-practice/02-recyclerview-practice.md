@@ -84,25 +84,9 @@ last_deepseek_cn_review_at: 2026-07-16
 
 # RecyclerView 最佳实践
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 ViewHolder 复用与 ItemType 设计
-- 🔹 DiffUtil 与增量更新
-- 🔹 预取（Prefetch）机制与配置
-- 🔹 嵌套滚动与多 RecyclerView 场景优化
-
-### 扩展（可选深入）
-
-- 🔸 RecyclerView vs LazyColumn 性能对比
-
-<!-- outline-end -->
-
 RecyclerView 优化不该从“调几个参数”开始，要从滑动路径里的成本来源开始：创建 ViewHolder、绑定数据、计算差异、预取下一屏、处理嵌套滑动。7.8 节已经展开 RecyclerView 内部布局、缓存和 GapWorker 机制；这里把机制转成应用侧写法、验收方法和取舍边界。
 
-平台部分以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点，内核侧统一到 `android17-6.18-2026-06_r6`。RecyclerView 是独立发布的 AndroidX 库，本文代码固定到 `androidx.recyclerview:recyclerview:1.4.0` source jar，不能用 platform tag 替代它的版本。普通列表主体仍沿标准 HWUI App Window 出图：主线程完成输入、滚动、绑定与 Traversal，RenderThread 生成窗口 buffer，BLAST、SurfaceFlinger 和 HWC 再完成采纳、合成与 present。
+平台部分以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点，内核侧统一到 `android17-6.18-2026-06_r6`。RecyclerView 是独立发布的 AndroidX 库，代码基线固定为 `androidx.recyclerview:recyclerview:1.4.0` source jar，不能用 platform tag 替代它的版本。普通列表主体仍沿标准 HWUI App Window 出图：主线程完成输入、滚动、绑定与 Traversal，RenderThread 生成窗口 buffer，BLAST、SurfaceFlinger 和 HWC 再完成采纳、合成与 present。
 
 ## ViewHolder 复用与 ItemType 设计
 

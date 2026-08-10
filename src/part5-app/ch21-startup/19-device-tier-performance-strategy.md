@@ -35,60 +35,9 @@ sources:
 
 # 21.19 设备分级性能策略实战
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 设备能力评估维度与数据源
-- CPU：`Runtime.availableProcessors()`、SoC 标识和实验室 workload 数据
-- 内存：`isLowRamDevice()`、`memoryClass`、`totalMem` / `advertisedMem` / `availMem` / `freeMem`
-- GPU：Vulkan 支持、编解码/图形特性查询和实测帧时间
-- 屏幕：DPI / 刷新率 / 色域
-- 存储：仅在实验室或非启动关键路径测量 I/O 表现
-- Android 17：普通应用只依赖公开 SDK API，不读取隐藏 `SystemProperties` 或私有 `DeviceConfig`
-
-### 🔹 设备分级模型
-- 方案 1：Android Media Performance Class（公开平台值 + Jetpack Core Performance 补充）
-- 方案 2：Device Year Class（Facebook archived library，思路仍有参考价值）
-- 方案 3：按业务维度生成 `memory_constrained`、`media_enhanced`、`render_reduced` 等策略
-- 方案 4：Android 10+ thermal / power save 与 Android 16+ `SystemHealthManager` headroom 仅作为会话期压力信号
-
-### 🔹 分档降级策略矩阵
-- 渲染降级：依据帧预算、窗口像素和实测帧时间调整特效复杂度
-- 启动降级：保留 Baseline / Startup Profile，只在 trace 证明争用时收缩并发初始化
-- 内存降级：按堆预算、资源收益和 `onTrimMemory()` 收缩缓存 / 预加载
-- 网络降级：依据容器像素、计量网络、Data Saver 和吞吐调整图片与预取
-- 功耗降级：减少任务数量、延长周期并设置公开 JobScheduler 约束，不假设 App 可修改系统配额
-
-### 🔹 Feature Flag 体系与灰度下发
-- Firebase Remote Config / 自建配置中心的结构
-- 分档配置的 A/B 实验设计
-- 配置热更新对性能的即时影响
-
-### 🔹 分档效果度量
-- 分档前后 FPS / 启动时间 / ANR 率 / 内存峰值 / 崩溃率对比
-- Macrobenchmark 在不同档位设备上的自动化回归
-- Android Vitals 按设备型号分组的性能数据解读
-
-### 🔹 常见陷阱与反模式
-- 仅按内存分档导致高端小内存设备误判
-- 分档过细导致维护成本爆炸；按业务保留少量可验证策略
-- 把热节流、内存压力或存储抖动误写成永久设备等级
-
-## 扩展
-
-### 🔸 设备老化检测与动态降级
-- 没有通用公开 API 可可靠转换“电池老化 + 存储健康度”为性能等级
-- 运行时动态降级策略（基于实际 ANR 率/帧率回退）
-
-### 🔸 厂商ROM差异化适配
-- 厂商 Performance Mode / 游戏模式缺少跨设备公开契约，不写入通用策略
-- 持续渲染负载优先使用公开 sustained performance API
-
-<!-- outline-end -->
-
 设备分级的目的，是给一次具体工作选择可承受的资源预算。图片解码关心内存和屏幕尺寸，视频播放关心编解码能力，复杂动画关心 GPU、刷新率和当前温控状态。把这些差异压成一个“高、中、低”总分，往往会让某项能力很强、另一项能力较弱的设备收到错误策略。
 
-本文以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点。普通应用不应读取隐藏的 `SystemProperties`、私有 `DeviceConfig` 命名空间或内核节点来猜测整机性能。涉及内存语义时，以 Android 17 framework 对 Linux 可访问内存的解释为准；内核版本锚定 `android17-6.18-2026-06_r6`，应用策略仍只依赖公开 Android API。
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。普通应用不应读取隐藏的 `SystemProperties`、私有 `DeviceConfig` 命名空间或内核节点来猜测整机性能。涉及内存语义时，以 Android 17 framework 对 Linux 可访问内存的解释为准；内核版本锚定 `android17-6.18-2026-06_r6`，应用策略仍只依赖公开 Android API。
 
 ## 先拆成三类信息
 
@@ -188,7 +137,7 @@ fun collectStableDeviceSignals(context: Context): StableDeviceSignals {
 
 这份数据仍是“信号集合”，没有自动成为性能等级。采集结果可连同 `Build.FINGERPRINT`、应用版本和策略版本存入本地；系统升级、应用升级或远端规则版本变化时再求策略。不要在每个页面、每一帧重复采集。
 
-若应用最低版本低于示例中的 API 门槛，应保留版本判断。本文范围从 Android 10 开始，`isLowRamDevice`、`memoryClass` 与 `totalMem` 均已可用。
+若应用最低版本低于示例中的 API 门槛，应保留版本判断。适用范围从 Android 10 开始，`isLowRamDevice`、`memoryClass` 与 `totalMem` 均已可用。
 
 ## 从能力向量生成工作负载策略
 
@@ -377,7 +326,7 @@ class RenderQualityController(
 
 实验设备应覆盖低 RAM、不同 MPC、主流 SoC 家族、不同屏幕负载和主要系统版本。机型型号可用于定位异常，不应让每个型号长期持有一份手写策略；那会迅速积累无法验证的分支。
 
-## Review 清单
+## 检查清单
 
 - [ ] 能力画像、业务策略、会话期压力分别建模。
 - [ ] 只使用公开 API；没有读取隐藏 `SystemProperties` 或私有 `DeviceConfig`。
