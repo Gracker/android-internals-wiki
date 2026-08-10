@@ -27,13 +27,13 @@ drafted_by: "task2a-content-processing"
 
 # 4.15 Android 17 PSI/LowMemDetector 与 lmkd 内存压力检测架构演进
 
-§4.4 介绍了 lmkd 的进程登记、`oom_score_adj` 和基本杀进程流程。本节聚焦 Android 17 的压力检测：PSI 负责报告持续停顿，BPF memevents 记录 direct reclaim、kswapd 等内核事件，zone watermark、swap 和 workingset refault 则为杀进程判断提供当前状态。
+§4.4 介绍了 lmkd 的进程登记、`oom_score_adj` 和基本杀进程流程。Android 17 的压力检测由多类信号共同完成：PSI 负责报告持续停顿，BPF memevents 记录 direct reclaim、kswapd 等内核事件，zone watermark、swap 和 workingset refault 为杀进程判断提供当前状态。
 
-本节以 `platform/system/memory/lmkd` 的 `android-17.0.0_r1` 为用户空间基准，以 common kernel `android17-6.18-2026-06_r6` 为内核基准。
+用户空间以 `platform/system/memory/lmkd` 的 `android-17.0.0_r1` 为基准，内核以 common kernel `android17-6.18-2026-06_r6` 为基准。
 
 ## 先厘清 LowMemDetector 这个名字
 
-Android 17 的 lmkd 和 common kernel 源码中没有名为 `LowMemDetector` 的类或模块。本节标题中的 LowMemDetector 只表示“低内存检测层”这个概念，不能把它当作可搜索的源码符号。
+Android 17 的 lmkd 和 common kernel 源码中没有名为 `LowMemDetector` 的类或模块。标题中的 LowMemDetector 只表示“低内存检测层”这个概念，不能把它当作可搜索的源码符号。
 
 Android 17 需要区分两套互斥入口：
 
