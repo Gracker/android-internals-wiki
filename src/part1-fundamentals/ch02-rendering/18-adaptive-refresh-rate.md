@@ -117,7 +117,7 @@ last_task9_autofix_at: "2026-06-14"
 
 理解 ARR 要先分清三个量：
 
-- **内容帧率（content/render rate）**：应用或某个图层产生新帧的节奏，例如视频 24fps、界面 60fps、游戏 120fps。
+- **内容帧率（content/render rate）**：应用或某个图层产生新帧的节奏，例如视频 24fps、UI 60fps、游戏 120fps。
 - **显示刷新率（display refresh rate）**：面板更新屏幕图像的节奏。
 - **VSync/TE 信号频率**：系统和面板用来对齐时序的硬件节拍。ARR 配置里，它可以高于显示刷新率。
 
@@ -127,13 +127,13 @@ last_task9_autofix_at: "2026-06-14"
 
 ### 1.1 Android 11—14：在多个固定模式之间选择
 
-Android 11（API 30）公开 `Surface.setFrameRate()` 后，应用可以声明 Surface 的内容帧率。传统多刷新率（Multiple Refresh Rate，MRR）设备通常提供若干固定显示模式，例如 60Hz 和 120Hz。系统需要改变活动模式才能改变物理刷新节奏；部分切换可以无缝完成，另一些切换可能出现短暂黑屏或时序抖动。
+Android 11（API 30）公开 `Surface.setFrameRate()` 后，应用可以声明 Surface 的内容帧率。传统多刷新率（Multiple Refresh Rate，MRR）设备通常提供若干固定显示模式，例如 60Hz 和 120Hz。系统需要改变 active mode 才能改变物理刷新节奏；部分切换可以无缝完成，另一些切换可能出现短暂黑屏或时序抖动。
 
-Android 12（API 31）的三参数 `Surface.setFrameRate()` 允许应用说明是否接受非无缝切换。这仍属于模式切换：候选对象是若干固定模式。
+Android 12（API 31）的三参数 `Surface.setFrameRate()` 允许应用说明是否接受非无缝切换。这仍属于 mode switching：候选对象是若干固定模式。
 
 ### 1.2 Android 15 起：同一显示配置内改变刷新间隔
 
-Android 15 引入 ARR 平台能力。面向应用的官方指南把可用边界写为 Android 15-QPR1 及以上，并要求设备实现对应的 Composer HAL 接口。系统版本满足条件仍不够，应用应在 API 36 及以上调用 `Display.hasArrSupport()` 检查当前显示设备。
+Android 15 引入 ARR 平台能力。面向应用的官方指南把可用边界写为 Android 15-QPR1 及以上，并要求设备实现对应的 Composer HAL 接口。系统版本满足条件仍不够，应用应在 API 36 及以上调用 `Display.hasArrSupport()` 检查当前 Display。
 
 ARR 配置中，显示 VSync/TE 信号频率与实际刷新率可以解耦。面板按照 TE 周期接收机会，但不必在每个 TE 都刷新；实际刷新率只能取 TE 频率的整数分频。
 
@@ -145,7 +145,7 @@ ARR 配置中，显示 VSync/TE 信号频率与实际刷新率可以解耦。面
 
 `DisplayConfiguration.vrrConfig != null` 表示该显示配置支持 ARR；`vrrConfig == null` 表示普通非 ARR 配置。Composer3 的定义要求一个配置按 ARR 或 MRR 解释，不能把同一个配置同时描述成两者。
 
-LTPO 常用于实现宽范围刷新率，但 Android 公共 API 没有要求应用先判断面板材料。应用需要关注 `hasArrSupport()`、系统支持的渲染帧率和自身内容节奏。
+LTPO 常用于实现宽范围刷新率，但 Android 公共 API 没有要求应用先判断面板材料。应用需要关注 `hasArrSupport()`、系统支持的 render rate 和自身内容节奏。
 
 ## 2. Android 17 的控制链
 
@@ -153,21 +153,21 @@ LTPO 常用于实现宽范围刷新率，但 Android 公共 API 没有要求应�
 
 ### 2.1 DisplayModeDirector 先计算允许范围
 
-Android 17 的 `DisplayModeDirector#getDesiredDisplayModeSpecs(int)` 从 `VotesStorage` 读取全局投票和指定显示设备的投票，再由 `VoteSummary` 合并约束。输入包括：
+Android 17 的 `DisplayModeDirector#getDesiredDisplayModeSpecs(int)` 从 `VotesStorage` 读取全局投票和指定 Display 的投票，再由 `VoteSummary` 合并约束。输入包括：
 
 - 用户设置的最低、峰值和默认刷新率；
 - 低电量、亮度、温度与系统策略；
-- 应用请求的尺寸、物理刷新率范围和渲染帧率范围；
-- 是否允许同组或跨组模式切换；
+- 应用请求的尺寸、物理刷新率范围和 render frame-rate 范围；
+- 是否允许同组或跨组 mode switching；
 - 设备支持的模式、ARR 能力和工作时长配置。
 
-结果是 `DesiredDisplayModeSpecs`：其中包含基础模式、主范围与应用请求范围两组物理/渲染帧率区间，以及 `allowGroupSwitching` 等信息。`DisplayManagerService.DesiredDisplayModeSpecsObserver` 把结果写入 `LogicalDisplay`，`LocalDisplayAdapter` 再转换为 `SurfaceControl.DesiredDisplayModeSpecs` 交给 SurfaceFlinger。
+结果是 `DesiredDisplayModeSpecs`：其中包含 base mode、primary/app-request 两组物理/渲染帧率区间，以及 `allowGroupSwitching` 等信息。`DisplayManagerService.DesiredDisplayModeSpecsObserver` 把结果写入 `LogicalDisplay`，`LocalDisplayAdapter` 再转换为 `SurfaceControl.DesiredDisplayModeSpecs` 交给 SurfaceFlinger。
 
 这一段决定“哪些模式和帧率仍可被选择”，不负责逐帧估算当前内容需要多少 Hz。
 
 ### 2.2 SurfaceFlinger Scheduler 再按可见内容选择
 
-SurfaceFlinger 完成事务刷新和缓冲区锁存后，Android 17 在 `SurfaceFlinger.cpp` 的 `Refresh Rate Selection` 跟踪区间调用：
+SurfaceFlinger 完成 transaction flush 和 buffer latch 后，Android 17 在 `SurfaceFlinger.cpp` 的 `Refresh Rate Selection` trace 区间调用：
 
 ```cpp
 mScheduler->chooseRefreshRateForContent(
@@ -175,15 +175,15 @@ mScheduler->chooseRefreshRateForContent(
         updateAttachedChoreographer);
 ```
 
-这段代码说明选择发生在图层状态更新之后。`Scheduler::chooseRefreshRateForContent()` 先让 `LayerHistory` 汇总可见内容，再把内容要求应用到刷新率策略。产生模式请求后，SurfaceFlinger 仍会调用 `RefreshRateSelector::isModeAllowed()` 检查候选是否符合 DisplayManager 下发的范围。
+这段代码说明选择发生在图层状态更新之后。`Scheduler::chooseRefreshRateForContent()` 先让 `LayerHistory` 汇总可见内容，再把 content requirements 应用到刷新率策略。产生 mode request 后，SurfaceFlinger 仍会调用 `RefreshRateSelector::isModeAllowed()` 检查候选是否符合 DisplayManager 下发的范围。
 
 因此，分析“为什么没有升到 120Hz”时，至少要同时检查：
 
-1. 图层有没有给出帧率偏好，更新节奏又是多少；
+1. Layer 有没有给出帧率偏好，更新节奏又是多少；
 2. 用户峰值刷新率、低电量和温度策略是否收窄范围；
 3. 当前显示配置是 MRR 还是 ARR；
 4. 其他可见图层是否给出更高或不兼容的请求；
-5. Scheduler 最终选择的渲染帧率和模式。
+5. Scheduler 最终选择的 render rate 和模式。
 
 ### 2.3 Composer HAL 把 ARR 节拍交给显示硬件
 
@@ -192,23 +192,23 @@ ARR 设备需要 Composer3 v3 或更高版本的接口。Android 17 的关键字
 - `DisplayConfiguration.vsyncPeriod`：ARR 配置中表示 TE 信号周期；
 - `VrrConfig.minFrameIntervalNs`：两次展示之间的最小间隔，也就是该配置的最高刷新率边界；
 - `DisplayCommand.frameIntervalNs`：提示后续帧的节拍；
-- `IComposerClient.notifyExpectedPresent()`：在下一帧偏离既有节拍，或空闲时间超过 HAL 声明的超时时间时，提前通知期望展示时间与后续间隔。
+- `IComposerClient.notifyExpectedPresent()`：在下一帧偏离既有节拍，或空闲时间超过 HAL 声明的 timeout 时，提前通知期望展示时间与后续间隔。
 
 SurfaceFlinger 的 `onExpectedPresentTimePosted()` 会读取当前模式的 `VrrConfig.notifyExpectedPresentConfig`。`notifyExpectedPresentIfRequired()` 判断下一帧是否仍在原节拍内、是否超时；需要通知时，再经 `HWComposer::notifyExpectedPresent()` 进入 Composer HAL。
 
-`notifyExpectedPresentConfig == null` 时，框架不会调用这项 HAL 提示；`timeoutNs == 0` 表示每帧都要提示。非零 `headsUpNs` 则给出提示必须领先下一次期望展示时间的最短时间。它们描述的是显示硬件需要多少准备时间，不是应用可支配的额外帧预算。
+`notifyExpectedPresentConfig == null` 时，框架不会调用这项 HAL 提示；`timeoutNs == 0` 表示每帧都要提示。非零 `headsUpNs` 则给出提示必须领先下一次 expected-present 的最短时间。它们描述的是显示硬件需要多少准备时间，不是应用可支配的额外帧预算。
 
-这套接口允许面板在不切换模式的情况下准备下一次刷新。它无法替应用修复晚提交、错误时间戳、BufferQueue 堆积或获取围栏过晚的问题。
+这套接口允许面板在不切换模式的情况下准备下一次刷新。它无法替应用修复晚提交、错误时间戳、BufferQueue 堆积或 acquire fence 过晚的问题。
 
 ### 2.4 VsyncModulator 负责工作预算，不负责选择刷新率
 
-`VsyncModulator` 经常和刷新率切换同时出现在跟踪数据中，但职责不同。Android 17 的 `VsyncModulator` 在以下配置间切换：
+`VsyncModulator` 经常和刷新率切换同时出现在 Trace 中，但职责不同。Android 17 的 `VsyncModulator` 在以下配置间切换：
 
-- `Early`：刷新率正在变化、有提前唤醒请求或近期发生过事务；
-- `EarlyGpu`：近期使用 GPU 合成；
+- `Early`：刷新率正在变化、有提前唤醒请求或近期 transaction；
+- `EarlyGpu`：近期使用 GPU composition；
 - `Late`：常规状态。
 
-这些配置调整应用与 SurfaceFlinger 的工作时长和偏移量，让事务、GPU 合成或模式切换获得合适的执行时间。刷新率由显示策略、`LayerHistory` 和 `RefreshRateSelector` 决定，`VsyncModulator` 只改变调度预算。看到 `Vsync-Early` 或 `Vsync-EarlyGpu` 计数器时，不能把它当成刷新率选择结果。
+这些配置调整应用与 SurfaceFlinger 的 work duration/offset，让事务、GPU 合成或 mode transition 获得合适的执行时间。刷新率由 Display policy、`LayerHistory` 和 `RefreshRateSelector` 决定，`VsyncModulator` 只改变调度预算。看到 `Vsync-Early` 或 `Vsync-EarlyGpu` counter 时，不能把它当成刷新率选择结果。
 
 ## 3. 普通 UI：优先使用 View 和 Compose
 
@@ -246,16 +246,16 @@ private void clearFrameRateVote(View animatedView) {
 - View 只有在需要重绘时才参与当前帧投票；
 - 在 `ViewGroup` 上设置请求不会自动传给所有子 View。
 
-Android 17 `View.java` 仍含受功能开关管理的 `REQUESTED_FRAME_RATE_CATEGORY_LOW`。当前 ARR 开发指南的标准类别列表没有把 `LOW` 作为普通应用的主要入口。若项目准备使用它，应以所用 `compileSdk`、设备功能开关和 API 文档为准；通用代码优先使用 `DEFAULT`、`NO_PREFERENCE`、`NORMAL`、`HIGH` 或明确的正数。
+Android 17 `View.java` 仍含受 flag 管理的 `REQUESTED_FRAME_RATE_CATEGORY_LOW`。当前 ARR 开发指南的标准类别列表没有把 `LOW` 作为普通应用的主要入口。若项目准备使用它，应以所用 `compileSdk`、设备 flag 和 API 文档为准；通用代码优先使用 `DEFAULT`、`NO_PREFERENCE`、`NORMAL`、`HIGH` 或明确的正数。
 
 ### 3.2 滚动组件要提供速度
 
-触摸按下期间，系统通常通过触摸升频提高渲染帧率；手指抬起进入惯性滚动后，刷新率可以随速度下降。`ScrollView`、`ListView`、`GridView` 已接入这类策略。AndroidX 侧至少需要：
+触摸按下期间，系统通常通过 touch boost 提高 render rate；手指抬起进入 fling 后，刷新率可以随速度下降。`ScrollView`、`ListView`、`GridView` 已接入这类策略。AndroidX 侧至少需要：
 
 - `androidx.recyclerview:recyclerview:1.4.0`；
 - `androidx.core:core:1.15.0`，用于 `NestedScrollView` 等组件。
 
-自定义滚动组件需要在惯性滚动的每一帧调用 `View.setFrameContentVelocity(float)`，单位是像素每秒。该值会在 View 每次重绘后重置，只在启动惯性滚动时设置一次不会持续生效。
+自定义滚动组件需要在 fling 的每一帧调用 `View.setFrameContentVelocity(float)`，单位是像素每秒。该值会在 View 每次重绘后重置，只在启动 fling 时设置一次不会持续生效。
 
 下面的片段展示自定义 View 在每帧把当前速度交给框架：
 
@@ -265,11 +265,11 @@ private void reportFlingVelocity(View scrollingView, float velocityPxPerSecond) 
 }
 ```
 
-框架利用速度判断惯性滚动处于快速还是减速阶段。非滚动 View 的位移和尺寸动画已有独立策略，调用这个 API 不会额外产生预期效果。
+框架利用速度判断 fling 处于快速还是减速阶段。非滚动 View 的位移和尺寸动画已有独立策略，调用这个 API 不会额外产生预期效果。
 
 ### 3.3 Compose 入口
 
-Compose 1.9 提供 `Modifier.preferredFrameRate(...)`，可以传具体帧率或 `FrameRateCategory`。它表达的是可组合项的偏好，最终仍由窗口、其他内容与显示策略共同决定。无需为“启用 ARR”而把整个界面固定在 `High` 类别；默认策略不足时，再对有明确体验问题的局部动画增加请求。
+Compose 1.9 提供 `Modifier.preferredFrameRate(...)`，可以传具体帧率或 `FrameRateCategory`。它表达的是 Composable 的偏好，最终仍由窗口、其他内容与显示策略共同决定。无需为“启用 ARR”而把整个界面固定在 High；默认策略不足时，再对有明确体验问题的局部动画增加请求。
 
 ### 3.4 Window 级开关
 
@@ -278,17 +278,17 @@ Android 15（API 35）提供两个 Window 级控制：
 - `setFrameRateBoostOnTouchEnabled(boolean)`：控制触摸时是否升频，默认启用；
 - `setFrameRatePowerSavingsBalanced(boolean)`：控制该 Window 是否允许 ARR 的功耗平衡策略，默认启用。
 
-关闭触摸升频会影响触摸响应；关闭功耗平衡可能增加高刷新率驻留时间和功耗。官方指南只建议在出现严重兼容问题时关闭，并要求用目标设备上的跟踪记录和功耗数据证明必要性。
+关闭 touch boost 会影响触摸响应；关闭 power-savings balance 可能增加高刷新率驻留时间和功耗。官方指南只建议在出现严重兼容问题时关闭，并要求用目标设备上的 Trace 和功耗数据证明必要性。
 
 ## 4. Surface：给独立图层声明内容节奏
 
 视频、游戏引擎、自建 EGL/Vulkan Surface 或独立 `SurfaceView` 更常直接使用 `Surface.setFrameRate()`。Android 17 中，兼容性参数应按内容类型选择：
 
-| 内容 | 兼容类型 | 含义 |
+| 内容 | compatibility | 含义 |
 |---|---|---|
 | 视频 | `FRAME_RATE_COMPATIBILITY_FIXED_SOURCE` | 内容帧率固定，系统应优先选择便于形成整数节拍的显示刷新率 |
-| 游戏 | `FRAME_RATE_COMPATIBILITY_DEFAULT` | 游戏可以适应系统最终选择的渲染帧率 |
-| 界面、动画、滚动、惯性滚动 | `FRAME_RATE_COMPATIBILITY_AT_LEAST` | API 36 起，请求显示帧率不低于给定值 |
+| 游戏 | `FRAME_RATE_COMPATIBILITY_DEFAULT` | 游戏可以适应系统最终选择的 render rate |
+| UI、动画、滚动、fling | `FRAME_RATE_COMPATIBILITY_AT_LEAST` | API 36 起，请求显示帧率不低于给定值 |
 
 下面的代码分别声明 24fps 视频和最低 60fps 的 UI Surface，并在内容结束时清理旧请求：
 
@@ -308,15 +308,15 @@ videoSurface.clearFrameRate(); // API 34+
 
 `frameRate` 可以不是设备公开的物理档位。系统可能让 24fps 内容运行在 48、72、120Hz 等兼容节奏上，也可能因其他图层或策略维持当前模式。
 
-`setFrameRate()` 只影响 SurfaceFlinger 对显示帧率的选择，不会限制生产者的产帧速度。它可能间接改变 Choreographer 回调时间和缓冲区释放间隔，但不能代替帧节拍控制。引擎仍需控制 `eglSwapBuffers()`、`vkQueuePresentKHR()` 或播放器提交时间戳，否则高频生产会填满队列，增加输入延迟。
+`setFrameRate()` 只影响 SurfaceFlinger 对显示帧率的选择，不会限制 Producer 产帧速度。它可能间接改变 Choreographer 回调时间和 buffer 释放间隔，但不能代替 frame pacing。引擎仍需控制 `eglSwapBuffers()`、`vkQueuePresentKHR()` 或播放器提交时间戳，否则高频生产会填满队列，增加输入延迟。
 
-Android 17（API 37）的 `Surface.setProducerThrottlingEnabled()` 调整 EGL/Vulkan 生产者在入队阶段承受的 CPU 背压，属于队列节拍控制，不是刷新率投票。该 API 的细节见 2.17；排查 ARR 时应分别检查 `setFrameRate()` 的投票和生产者限速。
+Android 17（API 37）的 `Surface.setProducerThrottlingEnabled()` 调整 EGL/Vulkan 生产者在入队阶段承受的 CPU backpressure，属于队列节拍控制，不是刷新率投票。该 API 的细节见 2.17；排查 ARR 时应分别检查 `setFrameRate()` 的投票和生产者限速。
 
 ## 5. Display 与 Choreographer 能查到什么
 
 ### 5.1 Display 能力查询
 
-API 36 及以上可以先判断 ARR 能力，再读取系统对 `Normal` 和 `High` 类别的建议值：
+API 36 及以上可以先判断 ARR 能力，再读取系统对 Normal/High 类别的建议值：
 
 ```java
 Display display = context.getDisplay();
@@ -332,10 +332,10 @@ if (display != null && display.hasArrSupport()) {
 这段代码有三条语义边界：
 
 - `getSuggestedFrameRate(int)` 只接受 `FRAME_RATE_CATEGORY_NORMAL` 和 `FRAME_RATE_CATEGORY_HIGH`，不能用于把任意帧率映射到最接近的显示档位；
-- `getSupportedRefreshRates()` 从 API 21 就存在，但 API 36 起返回显示设备支持的渲染帧率；API 35 及以下只返回默认模式的刷新率，需要更多物理模式时读取 `getSupportedModes()`；
-- 多屏、折叠屏内外屏或外接显示器的能力可以不同，窗口迁移到另一显示设备后要重新查询。
+- `getSupportedRefreshRates()` 从 API 21 就存在，但 API 36 起返回 Display 支持的 render rate；API 35 及以下只返回默认模式的刷新率，需要更多物理模式时读取 `getSupportedModes()`；
+- 多屏、折叠屏内外屏或外接显示器的能力可以不同，窗口迁移 Display 后要重新查询。
 
-Android 17 的 `DisplayInfo#getRefreshRate()` 会优先返回应用可感知的覆盖帧率或渲染帧率；没有这两项时才回退到活动模式的刷新率。`Display.getRefreshRate()` 因而适合观察当前框架报告给应用的节奏，但一次读取不能证明整个测试区间的 ARR 行为。诊断仍应记录持续变化和实际展示时间。
+Android 17 的 `DisplayInfo#getRefreshRate()` 会优先返回应用可感知的 override/render frame rate；没有这两项时才回退到 active mode refresh rate。`Display.getRefreshRate()` 因而适合观察当前框架报告给应用的节奏，但一次读取不能证明整个测试区间的 ARR 行为。诊断仍应记录持续变化和实际 present。
 
 ### 5.2 Choreographer.FrameData 没有 refreshRate 字段
 
@@ -360,30 +360,30 @@ Choreographer.getInstance().postVsyncCallback(frameData -> {
 });
 ```
 
-`FrameData` 只在回调期间有效，也没有公开 `refreshRate` 字段。不能把内部 `DisplayEventReceiver.VsyncEventData` 的字段写进应用示例。判断节奏变化时，应结合连续回调间隔、显示设备信息和系统跟踪数据。
+`FrameData` 只在回调期间有效，也没有公开 `refreshRate` 字段。不能把内部 `DisplayEventReceiver.VsyncEventData` 的字段写进应用示例。判断节奏变化时，应结合连续回调间隔、Display 信息和系统 Trace。
 
 ## 6. Perfetto：先确认刷新节奏，再判断卡顿
 
-分析 ARR 跟踪数据时，不应先套用“是否超过 16.67ms”的固定阈值。可以按以下顺序观察。
+ARR Trace ARR 跟踪数据时，不应先套用“是否超过 16.67ms”的固定阈值。可以按以下顺序观察。
 
 ### 6.1 先记录测试条件
 
-至少记录设备与固件、显示设备、分辨率、亮度、用户刷新率设置、低电量模式、温度、应用版本、内容类型和目标帧率。游戏还要记录游戏模式、FPS 干预和引擎节拍配置。缺少这些条件，跨设备或跨版本的 Hz 对比没有可重复性。
+至少记录设备与固件、Display、分辨率、亮度、用户刷新率设置、低电量模式、温度、应用版本、内容类型和目标帧率。游戏还要记录 Game Mode、FPS intervention 和引擎节拍配置。缺少这些条件，跨设备或跨版本的 Hz 对比没有可重复性。
 
 ### 6.2 在同一时间窗内看四组证据
 
-1. **应用节拍**：`vsync-app`、`Choreographer#doFrame` 或引擎帧标记；
-2. **内容生产**：RenderThread、EGL/Vulkan 展示、BufferQueue 和获取/释放围栏；
-3. **系统选择**：SurfaceFlinger 的 `Refresh Rate Selection`、活动模式、渲染帧率与相关计数器；
+1. **App 节拍**：`vsync-app`、`Choreographer#doFrame` 或引擎 frame marker；
+2. **内容生产**：RenderThread、EGL/Vulkan present、BufferQueue 和 acquire/release fence；
+3. **系统选择**：SurfaceFlinger 的 `Refresh Rate Selection`、active mode、render rate 与相关 counter；
 4. **最终显示**：FrameTimeline、SurfaceFlinger DisplayFrame、HWC 展示围栏和设备显示驱动事件。
 
-滑动期间应用节拍变短，惯性滚动减速后逐步变长，同时 FrameTimeline 没有连续卡顿，通常符合 ARR 策略。若模式切换附近出现黑屏或长间隔，更接近传统 MRR 的非无缝切换。若生产者已经晚交缓冲区，刷新率变化只是背景条件，不能把根因写成 SurfaceFlinger 选错档位。
+滑动期间应用节拍变短，fling 减速后逐步变长，同时 FrameTimeline 没有连续卡顿，通常符合 ARR 策略。若 mode change 附近出现黑屏或长间隔，更接近传统 MRR 的非无缝切换。若 Producer 已经晚交 buffer，刷新率变化只是背景条件，不能把根因写成 SurfaceFlinger 选错档位。
 
-Perfetto 官方文档目前对 SurfaceView 的 FrameTimeline 支持有限。标准 HWUI 应用窗口可以优先查看应用的实际/期望时间线；SurfaceView、视频和游戏还需要核对独立图层、缓冲区时间戳、围栏、HWC 与展示记录。
+Perfetto 官方文档目前对 SurfaceView 的 FrameTimeline 支持有限。标准 HWUI 应用窗口可以优先查看 App actual/expected timeline；SurfaceView、视频和游戏还需要核对独立图层、buffer timestamp、fence、HWC 与 present。
 
 ### 6.3 用正确的键关联期望与实际 FrameTimeline
 
-以下查询用于检查指定进程的应用 FrameTimeline。它沿用 Android 17 Perfetto 指标的关联方式，以 `upid + name` 连接期望切片与实际切片；`name` 是帧令牌的字符串形式。
+以下查询用于检查指定进程的应用 FrameTimeline。它沿用 Android 17 Perfetto 指标的关联方式，以 `upid + name` 连接 expected 与 actual；`name` 是 frame token 的字符串形式。
 
 ```sql
 SELECT
@@ -406,27 +406,27 @@ WHERE process.name = 'your.package.name'
 ORDER BY actual.ts;
 ```
 
-查询结果适合回答两个问题：系统给应用的预算是否随节奏变化，以及实际帧是否伴随 `jank_type`、`present_type` 恶化。`actual.ts` 是实际时间线切片的起点，不是面板物理展示时间；判断最终上屏仍要结合 SurfaceFlinger 时间线、流向关系、展示围栏或显示驱动证据。
+查询结果适合回答两个问题：系统给应用的预算是否随节奏变化，以及实际帧是否伴随 `jank_type`、`present_type` 恶化。`actual.ts` 是 actual timeline slice 的起点，不是面板物理展示时间；判断最终上屏仍要结合 SurfaceFlinger timeline、flow、present fence 或显示驱动证据。
 
-不能用 `display_frame_token` 是否逐一连续来判断 ARR 正常与否。应用可以按低于 TE 的节奏产帧，Surface 也不必每个 VSync 都提交新缓冲区；跟踪数据裁剪还会造成令牌缺口。令牌用于关联同一帧，不能单独充当“漏 VSync”计数器。
+不能用 `display_frame_token` 是否逐一连续来判断 ARR 正常与否。应用可以按低于 TE 的节奏产帧，Surface 也不必每个 VSync 都提交新 buffer；trace 裁剪还会造 token gap。token 用于关联同一帧，不能单独充当“漏 VSync”计数器。
 
 ### 6.4 判断问题属于哪一层
 
 | 现象 | 优先检查 |
 |---|---|
-| View 已投 `High`，仍长期保持较低渲染帧率 | 窗口开关、用户峰值、低电量/温度、其他图层、设备 ARR 能力 |
-| 渲染帧率已提高，应用仍短帧/长帧交替 | 应用节拍、提交时间戳、BufferQueue 深度 |
-| 应用按时完成，SurfaceFlinger/DisplayFrame 延迟 | SurfaceFlinger 工作时长、GPU/HWC 合成、展示围栏、显示驱动 |
-| 惯性滚动结束后一直不降频 | 每帧速度是否更新、View 是否持续重绘、触摸升频与窗口策略 |
-| 静态页面仍驻留高刷 | 活跃动画、不可见但持续触发重绘的 View、视频/Surface 请求、系统界面图层 |
-| 切换时只有单次长间隔 | 区分 ARR 节拍调整与 MRR 模式切换，再检查是否持续复现 |
+| View 已投 `High`，仍长期保持较低 render rate | Window 开关、用户峰值、低电量/温度、其他图层、设备 ARR 能力 |
+| render rate 已提高，应用仍短帧/长帧交替 | 应用节拍、提交时间戳、BufferQueue 深度 |
+| App on time，SurfaceFlinger/DisplayFrame late | SF work duration、GPU/HWC composition、present fence、显示驱动 |
+| 惯性滚动结束后一直不降频 | 每帧速度是否更新、View 是否持续重绘、touch boost 与窗口策略 |
+| 静态页面仍驻留高刷 | 活跃动画、不可见但持续 invalidate 的 View、视频/Surface 请求、系统 UI Layer |
+| 切换时只有单次长间隔 | 区分 ARR 节拍调整与 MRR mode switch，再检查是否持续复现 |
 
 ## 7. 功耗、体验与设备实现边界
 
 高刷新率会增加面板、显示控制器、合成和应用产帧负担，但没有一个适用于所有设备的固定功耗百分比。面板、亮度、分辨率、SoC、内容、OEM 策略和环境温度都会改变结果。评估应同时记录：
 
-- 高刷新率驻留时间与实际渲染/展示节拍；
-- 应用、GPU、SurfaceFlinger 和显示子系统功耗；
+- 高刷新率驻留时间与实际 render/present cadence；
+- App、GPU、SurfaceFlinger 和显示子系统功耗；
 - 触摸到显示延迟、帧时间分布与连续卡顿；
 - 测试过程中的亮度、温度和系统模式。
 
@@ -440,7 +440,7 @@ ORDER BY actual.ts;
 - `drivers/dma-buf/sync_file.c`：把 dma-fence 暴露为 sync_file 文件描述符；
 - `drivers/gpu/drm/drm_vblank.c`：采用 DRM/KMS 的设备上，vblank 计数与时间事件的公共实现。
 
-ARR 的面板控制、TE 分频、自刷新、带宽和时钟策略通常位于厂商显示驱动、固件和 Composer HAL。Android 设备也不保证使用主线 DRM/KMS 路径。排查具体机型时，应在 AOSP 跟踪数据之外补充厂商 HWC 日志、显示跟踪点、展示围栏、时钟/带宽投票与面板事件，不能用通用内核标签推断某款面板的私有策略。
+ARR 的面板控制、TE 分频、self-refresh、带宽和时钟策略通常位于厂商显示驱动、固件和 Composer HAL。Android 设备也不保证使用主线 DRM/KMS 路径。排查具体机型时，应在 AOSP 跟踪数据之外补充厂商 HWC 日志、display tracepoint、present fence、时钟/带宽投票与面板事件，不能用通用 kernel tag 推断某款面板的私有策略。
 
 ## 9. Android 11—17 版本边界
 
@@ -451,14 +451,14 @@ ARR 的面板控制、TE 分频、自刷新、带宽和时钟策略通常位于�
 | Android 13 / API 33 | `Choreographer.FrameData` / `FrameTimeline` 公开；HWC HAL 转向 AIDL |
 | Android 14 / API 34 | `Surface.clearFrameRate()` 公开，便于撤销旧请求 |
 | Android 15 / API 35 | ARR 平台能力进入支持设备；View/Window 帧率管理 API 与触摸、滚动策略成为应用入口 |
-| Android 16 / API 36 | `Display.hasArrSupport()`、`getSuggestedFrameRate()` 与渲染帧率查询语义公开；增加 `FRAME_RATE_COMPATIBILITY_AT_LEAST` |
-| Android 17 / API 37 | 源码锚点更新到 Android 17；DisplayManager、SurfaceFlinger Scheduler 与 Composer3 ARR 主路径延续。新增 `Surface.setProducerThrottlingEnabled()`，用于控制生产者背压，不参与 ARR 投票 |
+| Android 16 / API 36 | `Display.hasArrSupport()`、`getSuggestedFrameRate()` 与 render-rate 查询语义公开；增加 `FRAME_RATE_COMPATIBILITY_AT_LEAST` |
+| Android 17 / API 37 | 源码锚点更新到 Android 17；DisplayManager、SurfaceFlinger Scheduler 与 Composer3 ARR 主路径延续。新增 `Surface.setProducerThrottlingEnabled()`，用于控制 Producer backpressure，不参与 ARR 投票 |
 
-版本表只说明 API 和平台能力的边界。某台设备是否支持 ARR、支持哪些渲染帧率、是否允许某类模式切换，仍要在运行时查询，并以跟踪数据为准。
+版本表只说明 API 和平台能力的边界。某台设备是否支持 ARR、支持哪些 render rate、是否允许某类 mode switch，仍要在运行时查询，并以 Trace 为准。
 
 ## 10. 常见误判
 
-**把 ARR 写成 60/120Hz 模式切换。**
+**把 ARR 写成 60/120Hz mode switching。**
 
 ARR 可以在同一显示配置内按 TE 的离散分频改变刷新间隔；MRR 则在多个固定模式之间切换。
 
@@ -466,9 +466,9 @@ ARR 可以在同一显示配置内按 TE 的离散分频改变刷新间隔；MRR
 
 它是图层的内容帧率提示。系统还会合并其他图层和全局约束。
 
-**认为刷新率选择等于帧节拍控制。**
+**认为刷新率选择等于 frame pacing。**
 
-刷新率选择决定系统倾向于什么显示节奏；节拍控制决定生产者在何时提交哪一帧。缺少任一环节，都可能填满队列或形成不均匀的节拍。
+刷新率选择决定系统倾向于什么显示节奏；pacing 决定 Producer 在何时提交哪一帧。缺少任一环节，都可能填满队列或形成不均匀 cadence。
 
 **把 `getSuggestedFrameRate()` 当成任意 fps 映射器。**
 
@@ -476,11 +476,11 @@ ARR 可以在同一显示配置内按 TE 的离散分频改变刷新间隔；MRR
 
 **从 `FrameData` 读取不存在的 `refreshRate`。**
 
-公开 API 提供帧起点与候选时间线。刷新节奏要通过连续样本、显示设备信息和跟踪数据判断。
+公开 API 提供帧起点与候选时间线。刷新节奏要通过连续样本、Display 和 Trace 判断。
 
 **看到 VSync 间隔改变就判为掉帧。**
 
-先确认当前目标预算是否也改变，再看实际时间线、卡顿类型和最终展示记录。
+先确认当前目标预算是否也改变，再看 actual timeline、jank 类型和最终 present。
 
 **把 `VsyncModulator` 当成刷新率选择器。**
 
@@ -488,9 +488,9 @@ ARR 可以在同一显示配置内按 TE 的离散分频改变刷新间隔；MRR
 
 ## 总结
 
-Android 17 的 ARR 分为四层：应用通过 View、Compose 或 Surface 表达内容需求；DisplayModeDirector 汇总系统约束并给出允许范围；SurfaceFlinger Scheduler 根据可见图层的更新节奏选择渲染帧率和模式；Composer3 把 `frameIntervalNs` 和必要的 `notifyExpectedPresent` 提示交给支持 ARR 的显示硬件。
+Android 17 的 ARR 分为四层：应用通过 View、Compose 或 Surface 表达内容需求；DisplayModeDirector 汇总系统约束并给出允许范围；SurfaceFlinger Scheduler 根据可见图层的更新节奏选择 render rate/mode；Composer3 把 `frameIntervalNs` 和必要的 `notifyExpectedPresent` 提示交给支持 ARR 的显示硬件。
 
-诊断时先区分 MRR 与 ARR，再分别观察应用产帧、刷新率选择和最终展示。`setFrameRate()` 用于投票，ARR 调整显示节拍，Swappy 或引擎节拍器控制提交时机。区分这三层后，才能判断问题来自应用、SurfaceFlinger、HWC 还是设备显示驱动。
+诊断时先区分 MRR 与 ARR，再分别观察应用产帧、刷新率选择和最终展示。`setFrameRate()` 用于投票，ARR 调整显示节拍，Swappy 或引擎 pacing 控制提交时机。区分这三层后，才能判断问题来自应用、SurfaceFlinger、HWC 还是设备显示驱动。
 
 ## 参考资料
 
