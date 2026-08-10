@@ -141,9 +141,9 @@ flowchart TD
 
 预测性返回也可能 pilfer pointer。差别在于，Android 17 把接管时机交给 `BackAnimationController.tryPilferPointers()`：系统 animator、无法由 App 生成 progress、焦点变化或空导航信息等条件，都可能触发 pilfer。排查 trace 时，不要用“出现 `ACTION_CANCEL`”来区分 legacy 和 predictive；还要结合 Shell back animation 与 callback 轨道。
 
-## 手势冲突处理：系统手势优先区域与应用 WindowInsets
+## 手势冲突处理：系统手势优先区域 vs App 的 WindowInsets
 
-系统手势和应用手势的冲突主要集中在左右返回边缘，以及底部主屏/快速切换区域。`View.setSystemGestureExclusionRects()` 用于有限地声明应用需要优先处理的区域，不能覆盖强制系统手势。
+系统手势和 App 手势的冲突主要集中在左右 back edge，以及底部 Home / quick-switch 区域。`View.setSystemGestureExclusionRects()` 用于有限地声明 App 需要优先处理的区域，不能覆盖 mandatory system gesture。
 
 ### 系统手势排除区域
 
@@ -337,7 +337,7 @@ Trace Processor 的 `android.input` 模块提供 `android_motion_events` 和 `an
 
 ### 设置 exclusion rect 后，整块区域都会生效吗
 
-不保证。WMS 还会与窗口可触摸区域相交，并按左右侧各自的纵向高度预算裁剪。应检查获批区域，不能只看 App 的请求列表。
+不保证。WMS 还会与窗口可触摸区域相交，并按左右侧各自的纵向高度预算裁剪。应检查最终 granted region，不能只看 App 的请求列表。
 
 ### `systemGestures()` 能代表所有可排除区域吗
 

@@ -378,7 +378,7 @@ Activity open / close 动画可以按版本分层理解：
 | 版本范围 | 主线口径 | 排查重点 |
 |----------|----------|----------|
 | Android 12—14 | legacy `AppTransition` 仍覆盖一部分路径，`TransitionController` 和 Shell transition 逐步接管 Task/Activity 级过渡 | 同时看 `wm`、`transition`、`android.anim*`、Shell 进程和 SurfaceFlinger transaction |
-| Android 15—17 | `TransitionController`/Shell / Shell transition 是 Activity、Recents、predictive back、桌面模式等场景的主要分析入口 | 先定位 transition id，再看 Shell handler、remote transition、leash transaction 与 SF `commit`/`composite` |
+| Android 15—17 | `TransitionController` / Shell transition 是 Activity、Recents、predictive back、桌面模式等场景的主要分析入口 | 先定位 transition id，再看 Shell handler、remote transition、leash transaction 与 SF `commit`/`composite` |
 
 一次 Activity 切换里，旧 Activity 和新 Activity 的 Window 往往会被包到 leash surface 下。动画过程更新 transform、alpha、crop 和 layer，App 不需要每帧重绘 Activity 内容。App 侧首帧准备慢、Shell 动画线程慢、system_server transition 状态收集慢或 SurfaceFlinger 合成慢，都会表现成切换掉帧，但根因落点不同。
 
@@ -537,7 +537,7 @@ StartingWindow 独立于 App 主 Window 第一帧。ATMS/WMS 判断是否需要 
 
 ### 误区 5："Predictive Back 动画延迟是 Input 系统的问题"
 
-Predictive Back 动画涉及 Input、App callback、ATMS/WMS、WM Shell 与 SurfaceFlinger。对系统返回桌面、跨 back-to-home/cross-task/cross-activity 动画，不能只查 WMS `WindowAnimator`：`TransitionController`/`Transition` 收集窗口状态，Shell 的 `BackAnimationController` 或 transition handler 生成 leash transaction。排查应分四段：Input progress、App/back callback、ATMS/WMS transition、Shell transaction 与 SurfaceFlinger present。
+Predictive Back 动画涉及 Input、App callback、ATMS/WMS、WM Shell 与 SurfaceFlinger。对系统 back-to-home/cross-task/cross-activity 动画，不能只查 WMS `WindowAnimator`：`TransitionController`/`Transition` 收集窗口状态，Shell 的 `BackAnimationController` 或 transition handler 生成 leash transaction。排查应分四段：Input progress、App/back callback、ATMS/WMS transition、Shell transaction 与 SurfaceFlinger present。
 
 ## 扩展
 
