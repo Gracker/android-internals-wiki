@@ -697,7 +697,7 @@ LIMIT 50;
 
 ### 15.3 如何验证共享内存路径
 
-共享内存“少了一次 IPC copy”不能只根据跟踪中没有 memcpy 推断。组合证据包括：
+共享内存“少了一次 IPC copy”不能只根据 trace 中没有 memcpy 推断。组合证据包括：
 
 - Parcel 里传的是 fd/handle，不是大 payload。
 - `/proc/<pid>/fd` 与 `/proc/<pid>/maps` 显示两端映射同一对象。

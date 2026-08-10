@@ -285,7 +285,7 @@ adb shell pm art dump com.example.app
 
 输出可帮助确认 DEX、compiler filter、编译原因和 profile 情况。不同构建类型与设备策略可能影响可见字段，记录原始输出比只抄一个 filter 名称更可靠。
 
-### 2. 使用 API 37 的准确跟踪名称
+### 2. 使用 API 37 的实际 trace 名称
 
 `ClassLinker::DefineClass()` 在 API 37 使用原始 descriptor 作为 `ScopedTrace` 名称，例如 `Lcom/example/Foo;`。verifier 使用 `VerifyClass com.example.Foo` 一类名称。源码没有为每次初始化提供名为 `ClassLinker::InitializeClass` 或 `InitializeClass` 的固定 slice。
 
@@ -364,7 +364,7 @@ Baseline Profile 可以减少解释执行、JIT 和部分运行时验证，也�
 
 ## Android 17 边界与检查表
 
-源码锚点为 `android-17.0.0_r1`。API 37 的结论包括：标准加载器 native 快速路径、`TypeLookupTable` 优先查找、`mirror::Class` 与 `LinearAlloc` 的内存边界、完整类状态、准确跟踪名称和 ART Service 三种正式 compiler filter。没有源码证据的“Android 17 进一步优化了某算法”不作为版本结论。
+源码锚点为 `android-17.0.0_r1`。API 37 的结论包括：标准加载器 native 快速路径、`TypeLookupTable` 优先查找、`mirror::Class` 与 `LinearAlloc` 的内存边界、完整类状态、实际 trace 名称和 ART Service 三种正式 compiler filter。没有源码证据的“Android 17 进一步优化了某算法”不作为版本结论。
 
 排查启动类加载时，可按以下顺序复核：
 

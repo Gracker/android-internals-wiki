@@ -330,7 +330,7 @@ LIMIT 50;
 5. 检查同一时段的 `waiter_count` 和其他等待者。一次长等待与许多中等等待造成的总影响不同。
 6. 回到对应 Android 版本的源码，确认锁注解、获取顺序和版本差异，再决定修改位置。
 
-`adb shell dumpsys activity processes` 可以查看当时的进程、adj 与 proc state，但它是状态快照，不能证明某个 adj 变化导致了锁竞争。复现性能问题时，应把 dumpsys 用作背景信息，并通过跟踪判断时间关系与因果链。
+`adb shell dumpsys activity processes` 可以查看当时的进程、adj 与 proc state，但它是状态快照，不能证明某个 adj 变化导致了锁竞争。复现性能问题时，应把 dumpsys 用作背景信息，并通过 trace 判断时间关系与因果链。
 
 ## 10. 应用侧能做什么
 

@@ -435,7 +435,7 @@ callbacks.broadcast(callback -> {
 
 `ENQUEUE_ALL` 也有队列上限。Android 17 默认最大 1000 条；达到上限后丢掉最旧 callback，Builder 可用 `setMaxQueueSize()` 显式设置。选择这个策略时，仍要写出容量、溢出和恢复方案。
 
-没有设置策略的旧构造方式保留兼容行为：照常调用 frozen 远端。SDK 36+ 不推荐这种用法。
+未设置 policy 的旧构造方式保留兼容行为：照常调用 frozen 远端。SDK 36+ 不推荐这种用法。
 
 ## 8. Freezer 对应用代码的几个隐蔽影响
 
