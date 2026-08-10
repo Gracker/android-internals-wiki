@@ -64,22 +64,7 @@ last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度
 
 区间关联最容易出现“SQL 能运行，数字却多算或少算”的问题。帧、线程调度状态和锁等待已经带有 `ts + dur`；CPU 频率、内存等计数器只有采样时刻，要先补出有效区间。输入区间一旦重叠、分区键选错或末端边界没有定义，`SPAN_JOIN` 不会替查询者修正语义。
 
-本章的平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，调度事件对应的内核锚点为 `android17-6.18-2026-06_r6`。示例使用 Android 17 Perfetto SQL 标准库和该版本的 `span_join_operator` 约束；历史版本可以保留各自字段差异，但分析结果不得套用高于 Android 17 的平台假设。
-
-<!-- outline-start -->
-
-- **SPAN_JOIN 处理的是区间交集**：span 的定义，与普通 JOIN 的区别，`SPAN_JOIN` 的语法与语义
-- **用窗口函数把 counter 变成 span**：`LEAD` 补 duration，`counter → span` 的通用模板
-- **PARTITIONED 的约束比语法更要紧**：分区键、同分区不重叠、违反约束的后果
-- **案例：把每帧运行时间拆到 CPU 频率上**：frame × CPU 频率的完整查询，帧边界裁剪
-- **帧 × Binder / 锁 / GC 的交叉分析**：Binder 重叠、GC pause window 合并与帧关联
-- **与 Trace Processor 标准库配合**：标准库模块化视图，减少手写 JOIN
-- **SPAN_LEFT_JOIN 与 SPAN_OUTER_JOIN**：左连接与外连接的适用场景
-- **查询成本与索引策略**：大 trace 性能优化
-- **在 CI 中复用复杂 Perfetto SQL**：CI 集成模式
-- **排查清单**：常见错误与自查项
-
-<!-- outline-end -->
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，调度事件对应的内核锚点为 `android17-6.18-2026-06_r6`。示例使用 Android 17 Perfetto SQL 标准库和该版本的 `span_join_operator` 约束；历史版本可以保留各自字段差异，但分析结果不得套用高于 Android 17 的平台假设。
 
 ## `SPAN_JOIN` 处理区间交集
 
@@ -170,7 +155,7 @@ Android 17 的实现会按分区和 `ts` 推进两侧游标。为了保持这一
 
 输入还要满足以下条件：
 
-- 两侧都必须有 `ts`，且至少一侧必须有 `dur`。点事件本身不定义覆盖范围，本章的区间分析会为两侧都显式提供 `dur`。
+- 两侧都必须有 `ts`，且至少一侧必须有 `dur`。点事件本身不定义覆盖范围，区间分析会为两侧都显式提供 `dur`。
 - `dur` 应大于零；`dur = -1` 的开放区间要先裁到查询窗口或 `trace_end()`。
 - 分区列必须是整数。两侧都分区时，列名必须相同。
 - 分区键必须表达同一种实体，例如 `ucpu` 对 `ucpu`、`utid` 对 `utid`。
@@ -315,7 +300,7 @@ ORDER BY upid, utid, ts;
 
 `Choreographer#doFrame` 的墙上时间同时包含运行、等待 CPU 和睡眠。分析频率时只应关联 `sched` 中的 `Running` 区间。Android 17 的 `android.frames.timeline` 已经给出帧与 `doFrame` 的对应关系，避免手工按名称和行号生成不稳定的帧 id。
 
-异构 SoC 上，不同 CPU 簇的频率范围与每 MHz 性能不同。把所有 CPU 的 kHz 混成一个平均值没有可比性。本节输出每帧、每个 `ucpu`、每个频点的运行驻留时间；解释性能时再结合 CPU capacity、簇信息和同设备基线。
+异构 SoC 上，不同 CPU 簇的频率范围与每 MHz 性能不同。把所有 CPU 的 kHz 混成一个平均值没有可比性。查询输出每帧、每个 `ucpu`、每个频点的运行驻留时间；解释性能时再结合 CPU capacity、簇信息和同设备基线。
 
 下面的完整脚本先关联调度与频率，再按 `utid` 将结果裁进 `doFrame`。两个 `SPAN_JOIN` 的输入在各自分区内均为互斥区间。
 
@@ -531,7 +516,7 @@ ORDER BY upid, frame_id, covered_ms DESC;
 
 ## 与 Trace Processor 标准库配合
 
-标准库封装了解析差异和常见区间关系。Android 17 中与本章直接相关的模块包括：
+标准库封装了解析差异和常见区间关系。Android 17 中直接相关的模块包括：
 
 - `linux.cpu.frequency`：把 `cpufreq` 计数器转成 `cpu_frequency_counters`。
 - `counters.intervals`：提供计数器前向区间宏。

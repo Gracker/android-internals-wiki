@@ -88,27 +88,9 @@ last_deepseek_cn_review_at: "2026-06-07"
 
 Perfetto 界面里的调度切片、应用自定义区间和计数器来自多条采集路径。某条轨道没有数据时，只查 SQL 往往定位不到原因：事件可能没有在 tracefs 中启用，也可能已经写入内核缓冲区却来不及读取，还可能在 Perfetto 的共享内存或中央缓冲区中丢失。
 
-本节以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，内核部分以 `android17-6.18-2026-06_r6` 为锚点。阅读目标是分清每一层的职责，并能沿着数据实际经过的路径排查问题。
+平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点是 `android17-6.18-2026-06_r6`。阅读目标是分清每一层的职责，并能沿着数据实际经过的路径排查问题。
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 ftrace 的三种模式,以及 tracefs 如何暴露控制接口
-- 🔹 atrace category、`trace_marker` 与用户空间 trace tag 的写入路径
-- 🔹 `traced` / `traced_probes` 的职责分工,以及 ftrace 数据进入 Perfetto 的路径
-- 🔹 App、Framework、Kernel 三层自定义 tracing 的入口与适用场景
-- 🔹 tracing 开销、buffer 溢出和生产环境抓取约束
-
-### 扩展(可选深入)
-
-- 🔸 eBPF 与静态 tracepoint 的互补关系
-- 🔸 boot trace 的启用方式与适用场景
-
-<!-- outline-end -->
-
-## 先分清三层缓冲区
+## 三层缓冲区
 
 系统追踪讨论中的“缓冲区”至少有三种，混用名称会把丢数原因引向错误位置。
 
@@ -132,7 +114,7 @@ ftrace 同时包含事件追踪、函数追踪、环形缓冲区和 tracefs 控�
 - `function_graph` 也是 tracer。它在函数入口信息之外记录返回关系，因而能还原调用层级和耗时。过滤范围过宽时，事件量和扰动都会快速上升。
 - tracepoint 属于事件源。启用 `sched/sched_switch` 等事件时，`current_tracer` 通常仍是 `nop`，事件通过 `events/<group>/<name>/enable` 独立控制。
 
-因此，本节所说的“三种模式”是三种常见观测形态，不代表 tracepoint 是第三个 `current_tracer` 值。Android 日常系统性能采集应优先选静态 tracepoint；函数 tracer 适合缩小到明确函数集合后的内核调试。内核锚点的 [`ftrace.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/trace/ftrace.rst)记录了 tracer、动态 ftrace 和过滤接口的定义。
+因此，这里的“三种模式”指三种常见观测形态，不代表 tracepoint 是第三个 `current_tracer` 值。Android 日常系统性能采集应优先选静态 tracepoint；函数 tracer 适合缩小到明确函数集合后的内核调试。内核锚点的 [`ftrace.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/trace/ftrace.rst)记录了 tracer、动态 ftrace 和过滤接口的定义。
 
 tracepoint 通过 `TRACE_EVENT` 等宏在源码中声明字段。未启用时会经过静态分支快速路径，开销很小但不能写成绝对零；启用后还要分配事件、复制字段并写入当前 CPU 的环形缓冲区。事件频率、字段长度和消费者读取速度共同决定实际成本。
 
