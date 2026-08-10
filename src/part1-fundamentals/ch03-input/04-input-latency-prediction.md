@@ -332,7 +332,7 @@ LIMIT 100;
 
 1. 在 Perfetto 中定位第一批 `MotionEvent` 或 `deliverInputEvent`。
 2. 看同一时间窗的 CPU frequency track，触摸后频率和活跃核心是否发生变化。
-3. 检查应用主线程是否及时从 Runnable 变为 Running。
+3. 检查 App 主线程是否及时从 Runnable 变为 Running。
 4. 检查 RenderThread 和 SurfaceFlinger 是否也获得足够的 CPU 时间。
 
 如果输入到来后主线程长时间处于 Runnable 状态，而 CPU 仍在低频，问题更可能出在调度/提频策略，而非 View 分发本身。

@@ -371,7 +371,7 @@ inbound → pending → outbound → publish → wait → FINISHED → remove
 
 ### 6.1 NativeInputEventReceiver 挂在窗口线程的 Looper 上
 
-`ViewRootImpl` 用窗口的 InputChannel 和 `Looper.myLooper()` 创建 `WindowInputEventReceiver`。原生接收器把通道文件描述符注册到该线程 `MessageQueue` 的 Looper。
+`ViewRootImpl` 用窗口的 InputChannel 和 `Looper.myLooper()` 创建 `WindowInputEventReceiver`。原生接收器把 channel fd 注册到该线程 `MessageQueue` 的 Looper。
 
 fd 可读时：
 
@@ -586,7 +586,7 @@ counter 名包含 channel/window 名，trace 里可能被截断；多窗口应�
 - DOWN 建立的 touch state；
 - overlay/spy/monitor/pilfer；
 - pointer capture；
-- 窗口是否在过渡期间使用了旧拓扑。
+- 窗口是否在 transition 期间使用了旧拓扑。
 
 不要只看 WMS `mCurrentFocus`。触摸目标不一定等于键盘焦点。
 

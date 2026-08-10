@@ -165,7 +165,7 @@ gesture monitor 对应的窗口带有 **spy** input config。Android 17 还强�
 
 SystemUI 的边缘返回手势使用这套模式：先用 gesture monitor 观察边缘触摸，确认系统返回手势后再 pilfer。“收到副本”与“主动接管”对目标 App 的影响完全不同。
 
-在 Perfetto 中，目标窗口的触摸切片会以 `ACTION_CANCEL` 中断，同时系统 UI 进程开始处理手势。如果应用的触摸流意外中断，可以检查是否有系统监视窗口截取了指针。
+在 Perfetto 中，目标窗口的触摸 slice 会以 `ACTION_CANCEL` 中断，同时系统 UI 进程开始处理手势。如果 App 的触摸流意外中断，可以检查是否有系统监视窗口截取了指针。
 
 ### InputMonitor 与 InputFilter 的区别
 
@@ -323,7 +323,7 @@ Input 事件从硬件到 App 之间，可编程拦截点包括：
 2. **`InputChannel` 的 socket 传输。** 事件进入 socket 之后，App 只能从自己那一端读，不能改 system_server 已经写出的包。
 3. **InputDispatcher 内部 policy flag。** 例如 `POLICY_FLAG_INJECTED` 只在分发器里流转，不是 public API。
 
-这些边界区分了全局过滤器与应用 View 层各自能做的操作。
+这些边界区分了全局过滤器与 App View 层各自能做的操作。
 
 ### 安全策略的版本演进
 
@@ -366,7 +366,7 @@ Input 事件从硬件到 App 之间，可编程拦截点包括：
 
 **服务进程自身的耗时。** `AccessibilityService.onKeyEvent()` 的 Binder callback 经服务执行器运行；如果执行线程被占用，结果返回就会变慢，待决按键在 `KeyEventDispatcher` 中停留更久。`onAccessibilityEvent()` 的重任务也可能争用同一服务执行资源。
 
-分析时，不要只看 Binder 切片，还要检查：
+分析时，不要只看 Binder slice，还要检查：
 - `KeyboardInterceptor` / `KeyEventDispatcher` 是否积压待判定按键
 - 服务进程回结果是否接近 500ms 超时
 - `dispatchGesture()` 是否把一次用户动作扩成了更多 injected `MotionEvent`
@@ -414,7 +414,7 @@ AOSP 标准 GameMode 没有独立的 InputDispatcher 游戏优先队列。Androi
 
 ### Step 1：确认事件有没有进入 InputDispatcher
 
-在 `system_server` 中对齐 Native `filterInputEvent`、InputDispatcher 分发切片与目标进程的 `deliverInputEvent`：
+在 `system_server` 中对齐 Native `filterInputEvent`、InputDispatcher 分发 slice 与目标进程的 `deliverInputEvent`：
 
 - App 完全收不到事件，先确认是不是在 filter 或无障碍层被消费了
 - App 能收到事件，但时间明显晚，再看 system_server 前置处理和无障碍服务回结果时间
