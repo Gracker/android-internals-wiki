@@ -36,7 +36,7 @@ sources:
 
 # 26.24 heapprofd 生产级部署与权限模型
 
-本章讨论 Android 17 user build 上的 native heap 采集：哪些进程允许采、谁能发起会话、应用怎样使用公开入口、配置怎样限制开销，以及怎样解释采样结果。平台源码锚定 `android-17.0.0_r1`。本章不涉及内核接口，因此没有引用 kernel tag。
+Android 17 user build 上的 native heap 采集涉及目标进程、会话发起者、公开入口、开销限制和结果解释。平台源码锚定 `android-17.0.0_r1`；相关机制不涉及内核接口，因此没有引用 kernel tag。
 
 heapprofd 随 Android 10 引入。Android 12 增加了 named heap、`all_heaps` 和 installer 过滤等配置能力；Android 15 又通过 `ProfilingManager` 向普通应用提供受系统约束的 heap profile 请求。Android 17 延续这几条入口。`<profileable>` 元素从 API 29 可用，`android:enabled` 属性从 API 30 可用。版本时间线应按这些可核验事实描述，不能把 Android 12 写成 heapprofd 的起点。
 
@@ -77,7 +77,7 @@ Android 17 中，`heapprofd` 是 Perfetto producer。一次对已运行进程的
 
 Android 17 的 `CanProfileAndroid()` 会先看 build type。`userdebug` 和 `eng` 直接通过这一层；`user` build 继续检查 UID、会话发起者和 `/data/system/packages.list`。
 
-本节的判定表描述直接提交给 Perfetto 的 `android.heapprofd` data source。`ProfilingManager` 不是让应用自行填写 `session_initiator`：系统服务先核对 Binder 调用 UID 与包名，再代为生成限定到调用方包名的配置。两条入口不能混用权限结论。
+下面的判定表描述直接提交给 Perfetto 的 `android.heapprofd` data source。`ProfilingManager` 不是让应用自行填写 `session_initiator`：系统服务先核对 Binder 调用 UID 与包名，再代为生成限定到调用方包名的配置。两条入口不能混用权限结论。
 
 ### 普通应用与两类发起者
 

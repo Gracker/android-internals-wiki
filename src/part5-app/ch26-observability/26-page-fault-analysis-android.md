@@ -21,8 +21,6 @@ gap_source: "参考书驱动（Clippings/线上疑难问题 46.md）"
 
 # 26.26 Page Fault 类型分析与 Android 实践
 
-<!-- outline-start -->
-
 ## 读数前先分清三类指标
 
 Page Fault（缺页异常）是 CPU 在地址转换或权限检查时发现当前页表状态无法完成访问后，交给内核处理的同步异常。内核可能补齐映射并返回用户态，也可能把访问转成信号。排查时应区分下面三类指标：
@@ -39,7 +37,7 @@ Page Fault（缺页异常）是 CPU 在地址转换或权限检查时发现当�
 
 ## Android 17 arm64 的处理路径
 
-本章的平台源码锚点是 `android-17.0.0_r1`，内核锚点是 `android17-6.18-2026-06_r6`。arm64 的入口在 [`arch/arm64/mm/fault.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/mm/fault.c)，通用内存管理在 [`mm/memory.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/memory.c)。
+平台源码锚点是 `android-17.0.0_r1`，内核锚点是 `android17-6.18-2026-06_r6`。arm64 的入口在 [`arch/arm64/mm/fault.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/mm/fault.c)，通用内存管理在 [`mm/memory.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/memory.c)。
 
 下面的调用关系用于定位源码职责，不表示每次 fault 都会经过所有分支。
 
@@ -277,8 +275,6 @@ ART 会检查内核特性与所需 UFFD feature。创建失败或条件不满足
 
 普通应用只需要 Page Fault 指标时，应使用 `/proc/self/stat` 或受支持的 perf 工具。系统组件确需 `userfaultfd` 时，应像 ART 一样做 feature negotiation、失败降级和版本级验证。
 
-<!-- outline-end -->
-
 ## 小结
 
 Page Fault 计数描述的是地址映射修复过程，不能直接换算分配字节，也不能只凭 major 增长断定存储瓶颈。Android 17 上的可靠做法是：
@@ -289,4 +285,4 @@ Page Fault 计数描述的是地址映射修复过程，不能直接换算分配
 4. 在运行时读取 4 KB 或 16 KB page size，但不再用页数推算对象分配量。
 5. 针对文件冷页、匿名页/COW、swap-in 分别验证改动，避免用统一的预取或 mmap 建议代替测量。
 
-本章结论已对照 AOSP `android-17.0.0_r1`、Android common kernel `android17-6.18-2026-06_r6`、Android 17 MMD 文档及 16 KB page-size 文档。
+以上结论已对照 AOSP `android-17.0.0_r1`、Android common kernel `android17-6.18-2026-06_r6`、Android 17 MMD 文档及 16 KB page-size 文档。

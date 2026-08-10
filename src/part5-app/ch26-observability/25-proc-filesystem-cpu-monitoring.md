@@ -25,7 +25,7 @@ gap_source: "参考书驱动（Clippings/线上疑难问题 45.md）"
 
 # 26.25 ProcessCpuTracker 与 /proc 伪文件系统 CPU 数据采集
 
-## 这一章解决什么问题
+## CPU 使用率的三种口径
 
 Android 上的“CPU 使用率”至少有三种口径：
 
@@ -35,7 +35,7 @@ Android 上的“CPU 使用率”至少有三种口径：
 
 这三类问题分别适合用 `/proc/stat`、进程 CPU 时间和调度事件回答。把它们混成一个百分比，常见后果是把单核占满误报成整机占满，或者把 load average 当作 CPU 利用率。
 
-Android 17 还需要先处理权限边界：普通应用无法照搬 `system_server` 的 `ProcessCpuTracker` 方案。下文以 AOSP `android-17.0.0_r1` 和 Android Common Kernel `android17-6.18-2026-06_r6` 为源码锚点，分别说明应用侧与平台侧能采集什么。
+Android 17 还需要先处理权限边界：普通应用无法照搬 `system_server` 的 `ProcessCpuTracker` 方案。源码锚点采用 AOSP `android-17.0.0_r1` 和 Android Common Kernel `android17-6.18-2026-06_r6`，应用侧与平台侧的可采数据分别说明。
 
 ## procfs 是接口，不是磁盘快照
 
