@@ -561,7 +561,7 @@ Android 14 起不再投递其他 legacy `onTrimMemory` 级别，相关常量在 
 | 目标高阶分配反复 compaction fail，CMA/驱动证据一致 | 连续页供应或不可迁移页问题 | 驱动、DMA heap、CMA 与系统配置 |
 | 只有 framework `Compaction` slice | CachedAppOptimizer 在回收缓存进程 | 分析冻结/回收策略与前台资源竞争 |
 
-## 14. Review 清单
+## 14. 复核清单
 
 - [ ] 已区分 Linux 物理页规整和 Android cached app compaction。
 - [ ] 已确认分配 order、GFP、zone 和执行线程。

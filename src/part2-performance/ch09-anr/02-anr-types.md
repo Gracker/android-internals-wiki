@@ -461,4 +461,3 @@ Perfetto 用来回答“超时窗口内线程和 CPU 在做什么”，不能单
 - [Foreground service timeout behavior](https://developer.android.com/develop/background-work/services/fgs/timeout)
 - [Troubleshoot foreground services](https://developer.android.com/develop/background-work/services/fgs/troubleshooting)
 - [`JobService` API reference](https://developer.android.com/reference/android/app/job/JobService)
-- 研究素材：`intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md`
