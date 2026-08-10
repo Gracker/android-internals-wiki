@@ -502,7 +502,7 @@ Present fence 是 Android 显示栈的呈现完成时序锚点，但它不等同
 
 ### 7.2 等待 fence 不一定是 GPU 算力不足
 
-一次 fence 等待只能说明依赖尚未满足。上游原因可能是：
+一次 fence wait 只能说明依赖尚未满足。上游原因可能是：
 
 - GPU 工作排队或执行时间长；
 - producer 提交过晚；

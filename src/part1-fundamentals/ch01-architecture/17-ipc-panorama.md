@@ -480,7 +480,7 @@ Android 17 `MemoryFile.java` 已明确写成 `SharedMemory` wrapper。新代码�
 
 `ashmem_create_region()` 是兼容 API 名，不保证底层一定是 legacy `/dev/ashmem`。Android 17 `ashmem-dev.cpp` 的默认判定是：
 
-1. kernel/SELinux 策略支持 `memfd_class` capability。
+1. kernel/SELinux policy 支持 `memfd_class` capability。
 2. `ro.vendor.api_level >= 202604`。
 3. 当前 application target SDK >= 37。
 
