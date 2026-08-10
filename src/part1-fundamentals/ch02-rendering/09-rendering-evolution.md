@@ -243,7 +243,7 @@ Android 5.0 的 `libs/hwui/renderthread/RenderThread.cpp` 已包含独立 Render
 1. UI 线程执行输入、动画、measure、layout，并更新失效 View 的显示列表；
 2. `ThreadedRenderer` / `HardwareRenderer` 通过 native RenderProxy 把帧任务交给 RenderThread；
 3. `DrawFrameTask::syncFrameState()` 同步 RenderNode 树、Surface 与资源状态；
-4. RenderThread 准备 Skia/GPU 工作，为 App Window 缓冲执行出队与入队；
+4. RenderThread 准备 Skia/GPU 工作，并 dequeue/queue App Window buffer；
 5. GPU completion fence 随 buffer 交给下游，SurfaceFlinger 再处理 transaction、latch 和合成。
 
 主线程与 RenderThread 不是严格首尾相接的两段。同步阶段必须处理本帧状态；在条件满足时，UI 线程可以在 RenderThread 完成本帧 GPU 工作前继续运行。不同 Android 版本与场景的阻塞点也不相同。

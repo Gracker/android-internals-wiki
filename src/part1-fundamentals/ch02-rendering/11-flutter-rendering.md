@@ -262,7 +262,7 @@ Flutter 中间 image ready 后，宿主窗口还要及时发起 traversal、取�
 
 它不应被当作普通 Flutter 页面默认的高性能模式。
 
-### 从 layer 树识别三种模式
+### 从 layer tree 识别三种模式
 
 | RenderMode | 中间对象 | SurfaceFlinger 主要可见对象 | 常见等待 |
 | --- | --- | --- | --- |
