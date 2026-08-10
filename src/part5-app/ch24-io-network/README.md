@@ -12,7 +12,7 @@ I/O 与网络优化覆盖文件读写、数据库、序列化、连接建立、�
 - [24.4 网络架构与连接管理](04-network-architecture.md)
 - [24.5 网络协议优化（HTTP/2、HTTP/3、gRPC）](05-protocol-optimization.md)
 - [24.6 数据压缩与缓存策略](06-data-caching.md)
-- [24.7 Offline-first 架构](07-offline-first.md)
+- [24.7 离线优先架构](07-offline-first.md)
 - [24.8 I/O 与网络优化案例集](08-io-network-case-studies.md)
 - [24.9 Wi-Fi 评分、网络选择与连接切换性能](09-wifi-connectivity-selection.md)
 - [24.10 HTTPDNS 与 OkHttp Dns 执行边界](10-httpdns-okhttp-dns-boundary.md)
