@@ -244,7 +244,7 @@ flowchart LR
 |---|---|---|
 | `WindowContainerTransaction` | Task、TaskFragment、WindowContainer | bounds、windowing mode、层级与 reparent 请求 |
 | `SurfaceControl.Transaction` | container、transition leash、window layer | position、crop、变换参数、alpha、Z 轴顺序、visibility |
-| 应用 BLAST 事务 | 应用窗口缓冲区图层 | 新缓冲区、获取围栏、帧号 |
+| App BLAST transaction | App Window buffer layer | 新 buffer、acquire fence、frame number |
 
 Shell 过渡常把任务或 Activity Surface 临时重设到 leash 上执行动画。此时 position/crop 可能落在 leash，应用的新尺寸 buffer 则由 BLAST 单独到达。新 geometry 配旧 buffer 可能是过渡策略的一部分；只有对齐 WCT、leash transaction、应用 relayout/traversal 和 buffer 选择，才能判断黑边、拉伸或跳变来自哪条路径。
 
@@ -268,7 +268,7 @@ SurfaceFlinger FrontEnd 接收所有窗口、Shell/WMS 几何属性和 buffer tr
 
 | 信号 | 粒度 | 能证明什么 |
 |---|---|---|
-| 获取围栏 | 一块生产方缓冲区 | 生产方何时写完，消费方何时可读 |
+| acquire fence | 一块 producer buffer | producer 何时写完，consumer 何时可读 |
 | release fence | 被消费的 layer/buffer | 旧 buffer 何时可以复用 |
 | present fence | 一次 Display present | 该输出的显示工作何时到达 Android 显示栈完成边界 |
 
@@ -383,7 +383,7 @@ ORDER BY 1;
 
 ### 2. layer 快照表要使用真实 schema
 
-Perfetto stdlib 文档中，SurfaceFlinger 图层快照对应的表是 `surfaceflinger_layers_snapshot` 和 `surfaceflinger_layer`。`surfaceflinger_layers` 并不存在。可直接执行的查询如下：
+Perfetto stdlib 文档中，SurfaceFlinger layer snapshot 对应的表是 `surfaceflinger_layers_snapshot` 和 `surfaceflinger_layer`。`surfaceflinger_layers` 并不存在。可直接执行的查询如下：
 
 ```sql
 SELECT
