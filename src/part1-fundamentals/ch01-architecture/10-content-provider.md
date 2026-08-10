@@ -147,7 +147,7 @@ ContentProvider 为结构化数据提供统一的 URI、权限和调用协议。
         → ContentProvider.query()
 ```
 
-ContentProvider 调用不一定经过 Binder。可用进程名、PID 和 Binder 事务确认边界。
+ContentProvider 调用不一定经过 Binder。可用进程名、PID 和 Binder transaction 确认边界。
 
 ### 权限检查发生在哪里
 
@@ -241,7 +241,7 @@ ORDER BY _id
 LIMIT ?
 ```
 
-这类键集分页要有匹配索引和稳定排序键。它解决的是查询计划问题，不是单纯把 `CursorWindow` 调大。
+这类 keyset 分页要有匹配索引和稳定排序键。它解决的是查询计划问题，不是单纯把 `CursorWindow` 调大。
 
 ### Binder 缓冲区仍然重要
 
@@ -344,7 +344,7 @@ suspend fun queryWithTimeout(
 
 这里不存在“system_server 心跳拿不到 Binder 线程，所以自动判 ANR”的通用机制。应按证据区分三种位置：
 
-- 调用方主线程停在 `IContentProvider` Proxy：正在等待远端回复；
+- 调用方主线程停在 `IContentProvider` Proxy：正在等待远端 reply；
 - 提供方多条 Binder 线程停在同一锁或 I/O：提供方并发被串行瓶颈卡住；
 - 提供方主线程停在 `handleBindApplication()` 或 Provider `onCreate()`：Provider 还在冷启动或发布。
 
@@ -373,7 +373,7 @@ Manifest 中的 `android:process=":provider"` 会把 Provider 放入应用私有
 代价同样明确：
 
 - 首次访问需要完整冷启动；
-- 独立应用实例会重复初始化未区分进程的 SDK；
+- 独立 Application 实例会重复初始化未区分进程的 SDK；
 - 进程基础内存、类加载和页表成本增加；
 - 调用全部变成 Binder IPC；
 - Provider 进程被回收后，下次访问要重新启动。
@@ -404,13 +404,13 @@ Provider 侧 GC 虽不会暂停主进程线程，却会延迟远程 reply，因�
 - 与第一次 CRUD 无关的 SDK 初始化；
 - 等待其他线程完成的阻塞任务。
 
-延迟初始化不等于把工作无条件丢到线程池。Provider 的第一次查询可能马上到来，必要状态要用明确的并发协议保护，并允许取消或失败返回。
+延迟初始化不等于把工作无条件丢到线程池。Provider 的第一次 query 可能马上到来，必要状态要用明确的并发协议保护，并允许取消或失败返回。
 
 ### 正确理解 Jetpack App Startup
 
 App Startup 用一个 `InitializationProvider` 发现多个 `Initializer`，并按 `dependencies()` 构建依赖顺序。它可以减少各库各自声明初始化 Provider 的重复成本，但初始化代码本身仍运行在启动路径上。
 
-如果某个组件不应自动初始化，需要从合并后的清单中移除对应 metadata，再在需要时调用 `AppInitializer.initializeComponent()`。这才是 App Startup 的延迟初始化；不存在自动把重任务移出启动路径的“lazy 标记”。
+如果某个组件不应自动初始化，需要从合并后的 Manifest 中移除对应 metadata，再在需要时调用 `AppInitializer.initializeComponent()`。这才是 App Startup 的延迟初始化；不存在自动把重任务移出启动路径的“lazy 标记”。
 
 收益必须用目标应用实测。不能使用“每减少一个 Provider 固定节省 2 ms”或“必然提升 35%”这类没有设备、构建和样本条件的数字。
 
@@ -526,7 +526,7 @@ SDK 或应用自定义内容提供者适合在 `onCreate()` 内对可疑步骤�
 | Android 9（API 28） | 公开 `CursorWindow(String, long)`，旧的 local/remote 构造语义废弃 | 可指定窗口容量，但不能替代分页和索引 |
 | Android 11（API 30） | 固定 tag 中可见 `ContentProviderClient.setDetectNotResponding()` 的系统/测试能力 | 需要系统权限，不属于普通应用 CRUD 超时 API |
 | Android 12（API 31） | `ContentResolver.getType()` 内部使用 `getTypeAsync()` 回调 | 公开 API 仍是同步 `getType()`；应用仍应自行选择线程 |
-| Android 17（API 37） | 当前实现基线，保留 10 秒发布、20 秒就绪、3 秒已连接异步回调的分层语义 | 数值受 `Build.HW_TIMEOUT_MULTIPLIER` 影响，CRUD 仍无统一 Provider 超时 |
+| Android 17（API 37） | 当前实现基线，保留 10 秒发布、20 秒 ready、3 秒已连接异步回调的分层语义 | 数值受 `Build.HW_TIMEOUT_MULTIPLIER` 影响，CRUD 仍无统一 Provider 超时 |
 
 版本迭代只说明能够由对应 tag 或官方 API 确认的变化。Photo Picker、Scoped Storage 等功能会改变数据访问方式，但不应被写成 ContentProvider Binder 或超时机制本身的版本断点。
 
