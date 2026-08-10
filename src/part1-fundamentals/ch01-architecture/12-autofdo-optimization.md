@@ -354,7 +354,7 @@ Profile 覆盖更多函数，不一定更好。后台压力测试、开机和交
 - P50/P90/P95/P99 启动延迟；
 - boot 分段；
 - Binder transaction latency；
-- 周期数、指令数、分支预测失败、指令缓存未命中；
+- cycles、instructions、branch misses、I-cache misses；
 - 功耗和温升；
 - 二进制 text size；
 - crash、hung task 和 watchdog。

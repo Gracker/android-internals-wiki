@@ -214,7 +214,8 @@ JNI 实现非常克制：
 void android_internal_os_ZygoteInit_nativePreloadAppProcessHALs(
         JNIEnv* env, jclass) {
     android::GraphicBufferMapper::preloadHal();
-    // 可在此加入其他始终以直通方式运行、且多数应用进程都会加载的 HAL。
+    // Add preloading here for other HALs that are (a) always passthrough, and
+    // (b) loaded by most app processes.
 }
 ```
 

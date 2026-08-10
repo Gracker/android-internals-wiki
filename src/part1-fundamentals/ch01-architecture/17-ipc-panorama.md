@@ -658,7 +658,7 @@ Binder 片段的 wall time 要拆开：
 
 1. client 编组前后的 App slice。
 2. `binder transaction` 到 server thread 开始之间的排队。
-3. 服务端线程处于运行、可运行、休眠或阻塞状态。
+3. server thread running、runnable、sleeping 或 blocked。
 4. server 内部的嵌套 Binder、锁与 I/O。
 5. reply 与 client 重新被调度。
 
@@ -741,7 +741,7 @@ List<State> states = remote.getStates(ids);
 
 ```text
 magic / version
-容量 / 负载长度
+capacity / payload_length
 sequence
 state: EMPTY → WRITING → READY → READING
 校验与错误恢复
