@@ -37,7 +37,7 @@ gap_source: "研究素材/知识盲区"
 
 同一款应用在三台旗舰机上出现不同的耗电、温升和稳态性能，原因通常不止 CPU 核心数量。系统软件会把帧预算、交互、相机、音频等工作负载信息送给厂商实现，内核再结合调度负载、频率约束、温控上限和固件决策控制硬件。SoC 型号、整机散热、屏幕、基带、厂商参数及应用行为都会改变结果。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，以 `android17-6.18-2026-06_r6` 为内核锚点。讨论厂商差异时只采用公开源码能够证明的范围。闭源 Power HAL、固件和量产机参数无法从通用内核驱动反推出调用关系，因此相应内容会标明验证边界。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点为 `android17-6.18-2026-06_r6`。讨论厂商差异时只采用公开源码能够证明的范围。闭源 Power HAL、固件和量产机参数无法从通用内核驱动反推出调用关系，因此相应内容会标明验证边界。
 
 ## 先分清四层控制面
 
@@ -220,7 +220,7 @@ data_sources {
 
 `android.power` 的电池计数器受充电状态影响。USB 数据连接还可能保持额外唤醒条件，因此精密实验要记录供电和调试连接方式。`collect_power_rails` 依赖设备实现；没有 ODPM rail 的设备不会凭配置生成这些数据。
 
-Linux/ChromeOS 文档中的 sysfs 数据源名是 `linux.sysfs_power`。旧文使用的 `linux.power.sysfs` 不存在于当前官方配置说明。Android 功耗采集也不应凭空添加 `android.power.stats` 数据源名。
+Linux/ChromeOS 文档中的 sysfs 数据源名是 `linux.sysfs_power`。当前官方配置说明中不存在 `linux.power.sysfs`。Android 功耗采集也不应凭空添加 `android.power.stats` 数据源名。
 
 ### PowerStats HAL 与公开 power monitor
 

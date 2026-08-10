@@ -40,7 +40,7 @@ related_chapters: ["5.1", "5.2", "5.3", "14.10", "17.4", "17.5"]
 
 MUSCHED 是荣耀面向移动交互负载设计的语义感知调度框架。它把 Android 框架知道的场景、关键线程及依赖关系传给内核，在 RT 与普通公平调度之间提供有时间上限的 VIP 服务。项目从 2021 年开始研究，2024 年 1 月进入量产，2026 年 7 月以 OSDI ’26 论文发表。
 
-本节使用三层证据：
+证据分为三层：
 
 - MUSCHED 架构、参数和实验结果以 OSDI ’26 论文为准。
 - 通用 sched_ext 与 Binder 行为以 Android 17 内核锚点 `android17-6.18-2026-06_r6` 为准。
@@ -169,7 +169,7 @@ Android 17 Binder 驱动已经处理同步事务的 Linux 调度优先级：
 
 这套机制传播的是内核认识的 policy/prio。MUSCHED 的 VIP 标签保存在它自己的调度状态中，Binder 默认路径不会自动复制这个标签，也不会自动解除跨 cgroup 的 CPU 带宽限制。
 
-论文说明 MUSCHED 会监控同步 Binder transaction：VIP 调用方发起事务后，调度器定位远端 service thread，临时给它加 VIP 标签，处理结束后撤销。论文没有公开它使用 Binder vendor hook、tracepoint、kfunc 还是私有驱动改动。旧稿基于通用设施推测具体 sideband 路径，证据不足，应以“功能已由论文说明，挂点未公开”为准。
+论文说明 MUSCHED 会监控同步 Binder transaction：VIP 调用方发起事务后，调度器定位远端 service thread，临时给它加 VIP 标签，处理结束后撤销。论文没有公开它使用 Binder vendor hook、tracepoint、kfunc 还是私有驱动改动，因此不能基于通用设施推测具体 sideband 路径。可确认的范围是功能已由论文说明，但挂点尚未公开。
 
 异步 oneway 事务不等待远端回复，不能照搬同步传播策略。嵌套调用 `A → B → C`、服务线程池复用、事务失败和调用方死亡都需要成对管理 boost；否则会出现标签提前撤销或长时间残留。
 
