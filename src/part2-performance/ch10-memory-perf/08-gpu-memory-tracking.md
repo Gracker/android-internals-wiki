@@ -60,15 +60,6 @@ Android 没有一个能够回答全部图形内存问题的数字。`dumpsys mem
 
 排查图形内存增长时，应先给数字写清四项限定：采集接口、设备与 build、被归因的进程、资源是否共享。离开这些限定，`Graphics = 120 MB` 既不能说明物理内存有多少，也不能证明应用泄漏。
 
-<!-- outline-start -->
-- 🔹 Gralloc、DMA-BUF 与驱动私有分配的边界
-- 🔹 Android 17 `dumpsys meminfo` 与 memtrack 口径
-- 🔹 GpuService、`gpu_mem_total` 与 Perfetto 时间线
-- 🔹 Kernel 6.18 DMA-BUF 观测入口
-- 🔹 Bitmap、Surface、GL/Vulkan 资源增长的归因流程
-- 🔹 16 KB page size、BufferQueue 与多媒体场景的预算方法
-<!-- outline-end -->
-
 ## 1. 先区分资源，再选择计数器
 
 ### 1.1 两类常见图形分配
@@ -204,7 +195,7 @@ JOIN process AS p USING (upid)
 ORDER BY g.ts, p.pid;
 ```
 
-`gpu_memory` 是驱动上报的总量，不是 PSS。查询结果为空时，应先检查 trace 配置和设备 tracepoint 支持，再检查 SQL；旧稿中直接把 `counter` 与通用 `track` 当作进程轨道连接，会得到错误关系。
+`gpu_memory` 是驱动上报的总量，不是 PSS。查询结果为空时，应先检查 trace 配置和设备 tracepoint 支持，再检查 SQL；直接把 `counter` 与通用 `track` 当作进程轨道连接，会得到错误关系。
 
 ### 3.3 其他 GPU 数据源各有用途
 

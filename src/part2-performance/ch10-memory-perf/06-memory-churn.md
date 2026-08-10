@@ -84,24 +84,6 @@ finalized_by: "openclaw-task9-auto-promote"
 
 # 内存抖动与频繁 GC
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 内存抖动（Memory Churn）的定义：短时间内大量对象分配与回收
-- 🔹 内存抖动对性能的影响：GC 暂停、Allocation Stall、帧耗时波动
-- 🔹 常见抖动场景：onDraw 中创建对象、循环体内分配、String 拼接
-- 🔹 检测方法：Android Studio Allocation Tracker、Perfetto heapprofd
-- 🔹 优化手段：对象池（Object Pool）、预分配、避免 autoboxing
-
-### 扩展（可选深入）
-
-- 🔸 Kotlin 内联类（value class）对减少装箱的作用
-- 🔸 ART GC 对短生命周期对象的特殊优化（TLAB / Region）
-
-<!-- outline-end -->
-
 内存抖动描述的是高频分配与回收，不等同于内存泄漏。泄漏对象长期可达，堆基线不断抬升；抖动对象通常很快失去引用，堆曲线反复上升和回落。两种现象也可能同时存在，例如一个页面既在每帧创建临时对象，又把少量对象留在错误的生命周期里。
 
 一次 GC 事件也不能直接判定卡顿。诊断要证明三件事：目标场景的分配速率异常、GC 或分配等待与慢帧时间重叠、减少热点分配后同场景指标改善。

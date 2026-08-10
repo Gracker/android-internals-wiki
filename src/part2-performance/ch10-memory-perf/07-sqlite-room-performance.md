@@ -96,15 +96,6 @@ task9_p2_issues: 0
 
 排查时应同时回答四个问题：哪条线程发起访问，等待的是哪类资源，SQL 访问了多少数据，以及数据库打开与版本迁移发生在哪条路径。固定的“慢查询毫秒线”无法替代帧、输入事件和 ANR 时间线；同一条查询放在后台导入线程与主线程，风险等级完全不同。
 
-<!-- outline-start -->
-- 🔹 WAL 模式、锁层级与 `SQLiteDatabase` 同步机制
-- 🔹 CursorWindow、跨进程 Cursor 与翻页重查
-- 🔹 Room 的线程模型、事务与 Paging 3
-- 🔹 索引、`WITHOUT ROWID` 与 PRAGMA 调优
-- 🔹 数据库与 ANR / Perfetto 的关联分析
-- 🔹 异步线程池、加密数据库与多进程访问
-<!-- outline-end -->
-
 ## 1. SQLite 并发模型：先辨认等待的资源
 
 ### 1.1 回滚日志与 WAL 的差别
