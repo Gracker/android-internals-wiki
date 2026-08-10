@@ -107,7 +107,7 @@ last_deepseek_cn_review_at: 2026-06-17
 
 ## 先按线程和产物拆开
 
-Android 17 上，普通 View 页面仍走标准的 HWUI 应用窗口路径。文字工作可分为五层：
+Android 17 上，普通 View 页面仍走标准的 HWUI App Window 路径。文字工作可分为五层：
 
 | 层次 | 常见线程 | 主要产物 | 典型触发条件 |
 |---|---|---|---|
@@ -293,7 +293,7 @@ AndroidX 的 `AppCompatTextView.setTextFuture()` 会在 `onMeasure()` 中调用 
 
 `includeFontPadding` 决定首尾行使用 font top/bottom 还是 ascent/descent。关闭后布局可能更紧凑，但不能据此宣称测量更快；对阿拉伯文、Kannada 或带高低延伸的字体，还要验证是否裁切。
 
-API 35 增加了以字形边界计算宽度和处理起始悬垂的相关 API。Android 17 的 `TextView` 对 target SDK 35 及以上默认启用 `useBoundsForWidth`；`shiftDrawingOffsetForStartOverhang` 默认仍为 false，并且只有前者启用时才生效。自建 `StaticLayout.Builder` 的默认值要按 Builder 文档单独确认。
+API 35 增加了以字形 bounds 计算宽度和处理起始悬垂的相关 API。Android 17 的 `TextView` 对 target SDK 35 及以上默认启用 `useBoundsForWidth`；`shiftDrawingOffsetForStartOverhang` 默认仍为 false，并且只有前者启用时才生效。自建 `StaticLayout.Builder` 的默认值要按 Builder 文档单独确认。
 
 这些选项用于修正 advance width 与 glyph bounds 不一致造成的裁切和对齐。它们会影响宽度、断行或 drawing offset，开启前应做视觉回归和基准测试，不应给出“只有微秒级成本”这类脱离字体与文本的结论。
 
