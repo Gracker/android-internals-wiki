@@ -222,9 +222,9 @@ Android 16 扩展了 AIDL Audio HAL 对 Configurable Audio Policy（CAP）的支
 | AAudio MMAP | PCM | 降低输入、输出或往返延迟 | HAL/driver/profile 必须支持；shared/exclusive 语义不同 |
 | Direct / Offload | 压缩音频或设备支持的 direct 格式 | 降低软件处理与长播放功耗，或保持特殊格式 | 设备能力、format、attributes 和独占资源决定是否可用 |
 
-低延迟和低功耗是两套目标。MMAP / Fast 为交互式音频缩短排队；offload 允许硬件队列承接更多数据，让 CPU 与框架层数据管道休眠更久。不能因为两者都“绕过了部分普通混音工作”就把它们视为同一路径。
+低延迟和低功耗是两套目标。MMAP / Fast 为交互式音频缩短排队；offload 允许硬件队列承接更多数据，让 CPU 与框架层数据管道休眠更久。不能因为两者都“绕过了部分普通 mixer 工作”就把它们视为同一路径。
 
-## 4. FastMixer：请求只是提示，以接纳结果为准
+## 4. FastMixer：请求只是 hint，以接纳结果为准
 
 Android 4.1 引入 FastMixer。官方设计文档给出的推荐周期是 2–3ms；如果调度稳定性需要，也可用约 5ms。这个数值是设计建议，不是所有 Android 17 设备的固定周期。
 
@@ -234,7 +234,7 @@ FastMixer 保留：
 - client fast tracks 的混音。
 - 每条 track 的衰减。
 
-它主要省去每条 fast track 的重采样、per-track effects 和混音后音效，但仍会执行混音。Normal Mixer 先把普通轨道混成 submix，再通过索引 0 送给 FastMixer；FastMixer 将其与 client fast tracks 合并后写向 HAL。
+它主要省去每条 fast track 的重采样、per-track effects 和 per-mix effects，但仍会执行混音。Normal Mixer 先把普通 tracks 混成 submix，再通过 index 0 送给 FastMixer；FastMixer 将其与 client fast tracks 合并后写向 HAL。
 
 ### 4.1 Android 17 源码里的接纳条件
 
@@ -265,7 +265,7 @@ if (*flags & AUDIO_OUTPUT_FLAG_FAST) {
 6. fast track slot 仍有空位。
 7. session、output stage 或 device 上的 effect chain 不会移除 FAST flag。
 
-“frame count 不匹配就一定拒绝 FAST”也是一种误写。Android 17 对流式 fast track 会把帧数至少抬到 `mFrameCount * fast_track_multiplier`；它会改变实际缓冲配置，但不是上述第一层硬拒绝条件。打开轨道后应读取实际配置，不能假定 builder 请求原样生效。
+“frame count 不匹配就一定拒绝 FAST”也是一种误写。Android 17 对流式 fast track 会把 frame count 至少抬到 `mFrameCount * fast_track_multiplier`；它会改变实际缓冲配置，但不是上述第一层硬拒绝条件。打开 track 后应读取实际配置，不能假定 builder 请求原样生效。
 
 ### 4.2 默认为什么最多看到 7 条 client fast tracks
 
@@ -363,7 +363,7 @@ Oboe 是 Google 的 C++ 封装：
 - AAudio 不可用时回退 OpenSL ES。
 - 统一 stream builder、callback、error recovery 和一部分设备兼容处理。
 
-不能把 Oboe 简化成固定的“MMAP EXCLUSIVE → MMAP SHARED → FAST → Normal”决策表。最终路径仍受 API level、builder 参数、设备配置、endpoint 占用和厂商实现影响。
+不能把 Oboe 简化成固定的“MMAP EXCLUSIVE → MMAP SHARED → FAST → Normal”决策表。最终路径仍受 API level、builder 参数、设备 profile、endpoint 占用和厂商实现影响。
 
 Oboe 的工程价值在于减少跨版本分支，并提供 `getAudioApi()`、`getSharingMode()`、`getPerformanceMode()` 等结果查询。它不会让不支持 MMAP 的 HAL 凭空获得 MMAP，也不会替 App 修复 callback 中的锁等待。
 
@@ -394,7 +394,7 @@ AAudio/Oboe 的 data callback 运行在高优先级线程上。callback 内应�
 - 文件、网络或 Binder I/O。
 - mutex、condition variable、sleep。
 - 停止、关闭当前 stream。
-- 在触发回调的同一条流上再次调用 `read()` / `write()`。
+- 在触发 callback 的同一 stream 上再次调用 `read()` / `write()`。
 - 日志洪泛和复杂 trace 字符串拼接。
 
 更稳的结构是：
@@ -458,7 +458,7 @@ adb logcat -s AudioHardening
 adb shell dumpsys audio
 ```
 
-`throw` 模式下，volume/focus 交互可抛出 `IllegalStateException`；显式播放写入会持续返回错误，某些没有显式写入的播放模式可能直接让应用崩溃。测试模式比默认发布行为更严格，报告里必须写明使用了哪个开关。
+`throw` 模式下，volume/focus 交互可抛出 `IllegalStateException`；显式播放 write 会持续返回错误，某些没有显式 write 的播放模式可能直接让 App 崩溃。测试模式比默认发布行为更严格，报告里必须写明使用了哪个开关。
 
 ### 7.2 AAudio Power Saving Offloaded：Android 16 引入，Android 17 继续扩展
 
@@ -469,7 +469,7 @@ adb shell dumpsys audio
 - 可在短时间内向硬件缓冲区写入数秒数据。
 - framework data pipe 随后可暂停，CPU 获得更长 sleep 时间。
 
-它服务于长音频省电，不服务于交互式低延迟，也不能与 `LOW_LATENCY` 同时成立。成功打开后仍应读取实际 performance mode，并通过 dumpsys 确认输出类型；“offloaded”不能自动证明具体 DSP 型号或硬件解码实现。
+它服务于长音频省电，不服务于交互式低延迟，也不能与 `LOW_LATENCY` 同时成立。成功打开后仍应读取实际 performance mode，并通过 dumpsys 确认 output 类型；“offloaded”不能自动证明具体 DSP 型号或硬件解码实现。
 
 Android 17 / API 37 又为 AAudio offload 增加 `AAudio_getFlushFromFrameSupport()` 和 `AAudioStream_flushFromFrame()` 一类按 frame 位置刷新能力。使用前要用完整 builder 查询 capability。
 
@@ -484,7 +484,7 @@ new AudioTrack.Builder()
         .build();
 ```
 
-创建轨道前先查询：
+创建 track 前先查询：
 
 ```java
 int support =
@@ -595,7 +595,7 @@ Perfetto 不保证每次 xrun 都出现名为 `underrun` 的标准 slice。更�
 - trace 中 App 供数间隙与 server thread 消费时点。
 - 可控 build 上的 AudioFlinger 日志或 tee sink。
 
-如果 counter 增长，同时回调在 deadline 前长期 runnable 未执行，应优先检查调度；callback 已按时完成但 counter 仍增长，再检查 buffer、HAL write、route 和设备侧。
+如果 counter 增长，同时 callback 在 deadline 前长期 runnable 未执行，应优先检查调度；callback 已按时完成但 counter 仍增长，再检查 buffer、HAL write、route 和设备侧。
 
 ### 8.5 声学延迟需要 loopback
 
@@ -634,7 +634,7 @@ aptX 固定 50–80ms
 
 1. 固定手机、耳机、codec、profile 与场景模式。
 2. 记录实际 Bluetooth route 和协商结果。
-3. 用高速摄像、外部采集或声学回环测试测量端到端延迟。
+3. 用高速摄像、外部采集或声学 loopback 测试测量端到端延迟。
 4. 分开报告 median、尾延迟与断续率。
 
 对节奏游戏或虚拟乐器，内置扬声器、有线/USB 路径通常更容易获得稳定的交互延迟。必须支持蓝牙时，产品应做校准或按实测提供 latency compensation；FastMixer 或 MMAP 在手机侧成功，并不能消除无线和耳机端缓冲。
@@ -672,7 +672,7 @@ aptX 固定 50–80ms
 
 ### “请求 LOW_LATENCY 就一定是 fast track”
 
-不成立。它只是提示；sample rate、channel、FastMixer、slot 和音效都会影响接纳。
+不成立。它只是 hint；sample rate、channel、FastMixer、slot 和 effects 都会影响接纳。
 
 ### “FastMixer 不做 mixing”
 

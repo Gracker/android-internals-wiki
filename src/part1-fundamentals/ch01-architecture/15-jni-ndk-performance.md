@@ -111,7 +111,7 @@ Managed caller
 
 这些数字只说明当时设备上的相对量级。芯片、ART 版本、调用方是解释执行、JIT 还是 AOT、编译选项和方法签名都会改变结果，不能把 115ns 当作 Android 17 设备的固定常数。
 
-调用次数会放大 transition。按这组旧参考值计算，1000 次普通 JNI 边界切换约为 115μs；真实路径还要加上参数处理和原生工作。比起争论 35ns 与 25ns，先把一帧内 1000 次调用合并成 1 次，通常更有价值。
+调用次数会放大 transition。按这组旧参考值计算，1000 次普通 JNI transition 约为 115μs；真实路径还要加上参数处理和 native 工作。比起争论 35ns 与 25ns，先把一帧内 1000 次调用合并成 1 次，通常更有价值。
 
 ### 1.2 数据编组与复制
 
@@ -302,7 +302,7 @@ static jint NativeWriteInt(jlong ptr, jint value) {
 
 ### 4.4 Baseline Profile 的角色
 
-JNI 边界切换很快不代表托管调用方已经优化。如果启动热路径仍处于解释执行或 JIT 预热阶段，整体耗时会被调用方覆盖。把稳定的热调用方纳入 Baseline Profile，可以让比较聚焦于 JNI 与原生工作，避免首次编译噪声干扰。
+JNI transition 很快不代表 managed 调用方已经优化。如果启动热路径仍处于解释执行或 JIT 预热阶段，整体耗时会被调用方覆盖。把稳定的热调用方纳入 Baseline Profile，可以让比较聚焦于 JNI 与 native 工作，避免首次编译噪声干扰。
 
 Baseline Profile 不会自动合并 JNI 调用，也不会把不合格的方法变成 CriticalNative；它解决的是 managed 调用方的编译状态。
 
@@ -315,10 +315,10 @@ Baseline Profile 不会自动合并 JNI 调用，也不会把不合格的方法�
 native 代码需要获得当前线程的环境时：
 
 1. 用 `JavaVM::GetEnv()` 查询当前线程是否已经 attach。
-2. 尚未附加且要调用 JNI 时，使用 `AttachCurrentThread()` 或 `AttachCurrentThreadAsDaemon()`。
+2. 尚未 attach 且要调用 JNI 时，使用 `AttachCurrentThread()` 或 `AttachCurrentThreadAsDaemon()`。
 3. 线程退出前调用 `DetachCurrentThread()`。
 
-对已经附加的线程再次附加是 no-op，但不应在每个任务前后反复执行。attach/detach 应与线程生命周期绑定。
+对已经 attach 的线程再次 attach 是 no-op，但不应在每个任务前后反复执行。attach/detach 应与线程生命周期绑定。
 
 如果线程本来就要频繁回调 Java，优先考虑从 Java `Thread.start()` 创建。这样能自然获得合适的栈大小、ThreadGroup、ClassLoader 和调试可见性。
 
@@ -342,7 +342,7 @@ JNI 规范只要求 VM 确保至少 16 个 local reference slot。Android 实现
 - **global reference**：跨调用、跨线程保持对象可达，直到 `DeleteGlobalRef()`。
 - **weak global reference**：不阻止 GC 回收对象。使用时应先调用 `NewLocalRef(weak)` 提升为强 local reference；返回 `nullptr` 说明对象已被回收。后续操作都使用这个 local reference，完成后再调用 `DeleteLocalRef()`。
 
-两个 JNI 引用即使指向同一个 Java 对象，数值也可能不同。不要用 `==` 比较 `jobject`，应使用 `IsSameObject()`。也不要把原始 `jobject` 数值当作长期 map key。
+两个 JNI reference 即使指向同一个 Java 对象，数值也可能不同。不要用 `==` 比较 `jobject`，应使用 `IsSameObject()`。也不要把原始 `jobject` 数值当作长期 map key。
 
 不要先用 `IsSameObject(weak, nullptr)` 检查 weak global reference，再继续使用原 weak reference：检查完成后 GC 仍可能回收对象。`NewLocalRef()` 的“提升并判空”可为本次操作建立稳定的强引用。
 
@@ -400,7 +400,7 @@ Java `String` 的语义是 UTF-16。JNI 中带 `UTF` 的 API 使用修改版 UTF
 
 不要把文件或网络收到的任意 UTF-8 直接交给 `NewStringUTF()`。无效 MUTF-8 会产生错误结果，CheckJNI 还会直接终止 VM。
 
-Android 8 后，ART 使用紧凑字符串表示，并采用移动式 GC。即使调用 `GetStringCritical()`，运行时也可能复制数据；API 名中的 Critical 不等于零拷贝承诺。每个 `Get*Chars()` 都必须配对 `Release*Chars()`，native 方法返回不会替你释放原始字符指针。
+Android 8 后，ART 使用紧凑字符串表示，并采用 moving GC。即使调用 `GetStringCritical()`，运行时也可能复制数据；API 名中的 Critical 不等于零拷贝承诺。每个 `Get*Chars()` 都必须配对 `Release*Chars()`，native 方法返回不会替你释放原始字符指针。
 
 如果只需要读取字符串的一段，可用 `GetStringRegion()` 复制到调用方提供的缓冲区，避免先获取整串再做第二次复制。
 
@@ -410,7 +410,7 @@ Android 8 后，ART 使用紧凑字符串表示，并采用移动式 GC。即使
 
 `Get<PrimitiveType>ArrayElements()` 允许 VM：
 
-- 返回指向托管数组的直接指针，并在此期间固定数组。
+- 返回指向 managed 数组的直接指针，并在此期间固定数组。
 - 或分配 native buffer，把数组复制进去。
 
 调用方不能假设哪一种发生。必须用对应 `Release<PrimitiveType>ArrayElements()` 结束生命周期。
@@ -452,11 +452,11 @@ release mode 的语义：
 - `NewDirectByteBuffer()` 只是包装地址，不会自动接管 `malloc` 内存的释放。
 - 容量、偏移、对齐和线程同步仍由业务保证。
 
-“Direct”只说明可以取得原生地址，不等于整条处理链自动实现零拷贝；下游 API 仍可能复制。
+“Direct”只说明可以取得 native 地址，不等于整条处理链自动实现零拷贝；下游 API 仍可能复制。
 
 ## 9. 如何观察 JNI
 
-默认的 Perfetto 系统跟踪不会自动为每次 JNI 边界切换生成统一片段。常用证据有三类。
+默认的 Perfetto system trace 不会自动为每次 JNI transition 生成统一片段。常用证据有三类。
 
 ### 9.1 主动插桩
 
@@ -511,7 +511,7 @@ simpleperf report-sample \
   -o simpleperf.proto
 ```
 
-Perfetto 界面/Trace Processor 解析的是采样点与调用栈，并不记录每次 JNI trace event。热点在原生算法时看采样；怀疑边界调用过碎时看调用次数、主动 slice 与微基准。
+Perfetto UI/Trace Processor 解析的是采样点与调用栈，并不记录每次 JNI trace event。热点在 native 算法时看采样；怀疑边界调用过碎时看调用次数、主动 slice 与微基准。
 
 ### 9.3 微基准
 
@@ -614,7 +614,7 @@ JNI 解决同进程 managed/native 桥接。Binder/AIDL 解决跨进程边界，
 | Android 8（API 26） | `@FastNative` / `@CriticalNative` 开始用于系统内部；String 紧凑表示与 moving GC 改变字符指针复制假设 |
 | Android 12（API 31） | 两种注解的 built-in dynamic JNI 查找进入可靠支持范围；更早系统需显式注册 |
 | Android 14（API 34） | `@FastNative` / `@CriticalNative` 成为经过 CTS-tested public API |
-| Android 15（API 35） | AOSP 支持 16KB 页大小的设备；Play 要求面向 Android 15+ 的新提交与更新兼容该页大小 |
+| Android 15（API 35） | AOSP 支持 16KB page size 设备；Play 要求面向 Android 15+ 的新提交与更新兼容该页大小 |
 | Android 17（API 37） | 当前 JNI 语义继续沿用；16KB 测试增加 `fatal` backcompat 模式，可让不兼容 binary 立即失败；AOSP 源码统一锚定 `android-17.0.0_r1` |
 
 ## 13. 常见误区

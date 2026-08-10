@@ -113,7 +113,7 @@ finalized_date: "2026-07-14"
 
 ## 1. 先把几类“等”分开
 
-Android 跟踪记录中容易混淆的是下面五类路径。
+Android trace 中容易混淆的是下面五类路径。
 
 | 类型 | 常见入口 | 主要实现 | 首要证据 |
 | --- | --- | --- | --- |
@@ -151,7 +151,7 @@ enum LockState {
 
 ### 2.1 无竞争路径：thin lock
 
-对象未加锁时，ART 可以把当前线程的监视器线程 ID 和递归计数编码进 LockWord。线程通过原子更新获得轻量锁（thin lock）；同一线程重入时增加计数。
+对象未加锁时，ART 可以把当前线程的 monitor thread ID 和递归计数编码进 LockWord。线程通过原子更新获得轻量锁（thin lock）；同一线程重入时增加计数。
 
 thin lock 的优势是不用为每个曾被 `synchronized` 的对象都分配完整 Monitor。无竞争时，路径短、没有线程休眠，也没有内核调度切换。
 
@@ -413,7 +413,7 @@ ORDER BY dur DESC
 LIMIT 30;
 ```
 
-这张表能给出 Java 监视器的 waiter、owner、双方方法、源码位置、是否主线程、锁名和时长。`android_monitor_contention_chain` 还能表达竞争的父子关系；配套 thread-state 表可以继续检查持锁者在持锁期间处于运行（Running）、可运行（Runnable），还是又阻塞在其他内核函数。
+这张表能给出 Java monitor 的 waiter、owner、双方方法、源码位置、是否主线程、锁名和时长。`android_monitor_contention_chain` 还能表达 contention 的父子关系；配套 thread-state 表可以继续检查持锁者在持锁期间处于运行（Running）、可运行（Runnable），还是又阻塞在其他内核函数。
 
 注意两个边界：
 
@@ -440,7 +440,7 @@ ORDER BY ts.dur DESC
 LIMIT 50;
 ```
 
-这一步只负责找候选。随后要结合原生栈或源码确认它对应 mutex、condvar 还是其他等待，并找 owner。不能根据 `futex_wait` 一个字符串直接断定发生了 Java 锁竞争。
+这一步只负责找候选。随后要结合 native 栈或源码确认它对应 mutex、condvar 还是其他等待，并找 owner。不能根据 `futex_wait` 一个字符串直接断定发生了 Java 锁竞争。
 
 ### 8.3 Binder client 与 server
 
@@ -484,7 +484,7 @@ LIMIT 30;
 1. 用 `android_binder_txns` 找 server 进程、线程和方法。
 2. 比较 client 与 server 区间，确认时间花在哪一端。
 3. server worker 若等 monitor，用 contention 表找 owner。
-4. server worker 若在原生 native futex，结合原生栈找具体锁。
+4. server worker 若在 native futex，结合 native 栈找具体锁。
 5. 多个事务都排队时，检查 worker 饱和和某个长事务是否占住线程。
 
 ### 现场三：线程停在 `futex_wait`
@@ -579,7 +579,7 @@ Binder 默认线程配置在历史上容易被误传。当前 Android 17 锚点�
 
 ## 结论
 
-锁竞争分析要还原完整的等待链。Java 监视器用 `android_monitor_contention` 找 waiter 与 owner；native mutex 从 futex 候选回到原生栈和初始化代码；Binder 用 transaction/reply 连起 client 与 server；MessageQueue 还要区分正常 native poll 与旧 monitor 竞争。
+锁竞争分析要还原完整的等待链。Java monitor 用 `android_monitor_contention` 找 waiter 与 owner；native mutex 从 futex 候选回到 native 栈和初始化代码；Binder 用 transaction/reply 连起 client 与 server；MessageQueue 还要区分正常 native poll 与旧 monitor 竞争。
 
 找到 owner 后继续问：它在 CPU 上运行吗，还是 Runnable 却没被调度？它是否阻塞在另一把锁、I/O 或 Binder 上？追到无法推进的节点后，缩短临界区、拆锁、调整线程模型、启用 PI 或采用无锁结构才有明确目标。
 
