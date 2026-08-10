@@ -61,7 +61,7 @@ Android 17 源码树中没有 `android.os.BatteryUsageStatsManager`。正确的�
 
 两者出现差值很正常。例如基带待机、屏幕无前台活动的时间段、平台共享资源和未能分摊的硬件能量，都可能留在设备侧。
 
-UID 列表的正确类型是 `List<UidBatteryConsumer>`。系统代码调用 `getUidBatteryConsumers()`，再从 `UidBatteryConsumer.getUid()` 取 UID。基类 `BatteryConsumer` 没有通用 `getUid()`；旧稿中的 `getBatteryConsumers()` 也不存在。
+UID 列表的正确类型是 `List<UidBatteryConsumer>`。系统代码调用 `getUidBatteryConsumers()`，再从 `UidBatteryConsumer.getUid()` 取 UID。基类 `BatteryConsumer` 没有通用 `getUid()`，系统也未提供 `getBatteryConsumers()` 接口。
 
 下面的片段只用于阅读 AOSP 系统代码，不能作为普通应用示例：
 
@@ -219,7 +219,7 @@ interface IPowerStats {
 <item name="wifi.active">0.1</item>
 ```
 
-片段摘自 [`core/res/res/xml/power_profile.xml`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/res/xml/power_profile.xml)。其中的 `0.1` 和单核配置仅是 AOSP 模板值，不能复制到量产设备。旧稿写成空格分隔的 `<item name="cpu.core_speeds.cluster0">`、`gpu.power` 等形式，与 Android 17 标准模板不符。
+片段摘自 [`core/res/res/xml/power_profile.xml`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/res/xml/power_profile.xml)。其中的 `0.1` 和单核配置仅是 AOSP 模板值，不能复制到量产设备。空格分隔的 `<item name="cpu.core_speeds.cluster0">`、`gpu.power` 等形式与 Android 17 标准模板不符。
 
 硬件能量和 PowerProfile 也不是一次性的“二选一”。以 CPU 为例，处理器会用 measured energy 约束总量，再利用 power bracket 的模型比例和 UID time-in-bracket 分配共享消耗。这个过程只修正当前统计窗口的归因比例，不会把新参数写回 `power_profile.xml`，也没有固定 30% 偏差告警。
 
@@ -273,7 +273,7 @@ Android 17 的三个标准定义都没有 GPU 专属项：
 
 设备仍可能提供名为 GPU、G3D 或其他名称的 ODPM rail / modeled consumer。公开 [`PowerMonitor`](https://developer.android.com/reference/android/os/PowerMonitor) 文档明确提醒：rail 名称、能量范围和 OEM 模型都依赖设备。同名 monitor 在两台设备上也不保证代表同一组电源域。
 
-旧稿所述“按 SurfaceFlinger 帧数与 gralloc 内存估算 UID GPU 功耗”在 `android-17.0.0_r1` 的 BatteryUsageStats 主归因路径中没有源码依据。帧数、GPU counters 和显存能帮助定位图形负载，不能伪装成标准 GPU mAh 归因算法。
+“按 SurfaceFlinger 帧数与 gralloc 内存估算 UID GPU 功耗”的说法在 `android-17.0.0_r1` 的 BatteryUsageStats 主归因路径中没有源码依据。帧数、GPU counters 和显存能帮助定位图形负载，不能伪装成标准 GPU mAh 归因算法。
 
 ## 普通应用如何使用 PowerMonitor
 
@@ -439,7 +439,7 @@ PowerMonitor 接受厂商自定义名称，BatteryConsumer 是平台固定的归
 
 ## 版本演进
 
-| 平台版本 | 与本章有关的变化 |
+| 平台版本 | 相关变化 |
 |---|---|
 | Android 10 | 引入 PowerStats HIDL 1.0，用 rail 与 power entity 数据补充功耗观测 |
 | Android 12（API 31） | Framework 引入 `BatteryUsageStats` / `BatteryUsageStatsQuery` 结构化归因模型；它们仍属于隐藏系统接口 |

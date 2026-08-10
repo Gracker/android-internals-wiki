@@ -74,7 +74,7 @@ last_deepseek_cn_review_at: 2026-06-26
 
 # 25.22 定位服务功耗与性能实战：FusedLocationProvider、地理围栏与批处理
 
-§25.5 从精度、频率、延迟三个维度介绍了定位功耗的基本权衡。本节把这些原则映射到 API 与排障工具：怎样选择平台 provider 或 Fused Location Provider，怎样理解 `LocationRequest` 的尽力而为语义，地理围栏与前台服务各自适合什么场景，以及怎样在 Android 17 上定位没有释放的请求。
+§25.5 从精度、频率、延迟三个维度介绍了定位功耗的基本权衡。这里把这些原则映射到 API 与排障工具：怎样选择平台 provider 或 Fused Location Provider，怎样理解 `LocationRequest` 的尽力而为语义，地理围栏与前台服务各自适合什么场景，以及怎样在 Android 17 上定位没有释放的请求。
 
 ## 定位 Provider 的功耗特征与 FusedLocationProvider 选型策略
 
@@ -378,7 +378,7 @@ adb shell dumpsys location --gnssmetrics
 
 在 `android-17.0.0_r1` 中，完整输出以 `Location Manager State:` 开始，`Location Providers:` 下逐个打印 provider。每个 provider 的 `service:` 是合并后的 provider 请求；存在客户端时会出现 `listeners:`，其后能看到调用方身份与请求参数；`last location=` 和 `enabled=` 分别表示最近缓存位置和启用状态。字段由系统版本与 OEM 分支决定，排障脚本不要依赖旧版本的 `Active mappings` 或 `Last known locations` 文本。
 
-判断泄漏时同时看四项：请求所属 UID/包名、请求是否 active、间隔与质量、功能会话是否已经结束。缓存中还有 `last location` 不能证明 provider 此刻仍在工作；注册项数量多也不必然是泄漏，关键是它们是否有独立且仍有效的拥有者。
+判断泄漏时同时看四项：请求所属 UID/包名、请求是否 active、间隔与质量、功能会话是否已经结束。缓存中还有 `last location` 不能证明 provider 此刻仍在工作；注册项数量多也不必然是泄漏，只有功能会话结束后仍无有效拥有者的注册项才属于异常。
 
 ### 用 bugreport、batterystats 与系统跟踪建立时间线
 

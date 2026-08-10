@@ -35,7 +35,7 @@ Android 17 沿用了 Android 12 至 Android 16 逐步增加的 FGS 限制，并�
 - 后台音频交互需要合法的非 `shortService` FGS；以 API 37 为目标时，FGS 还要具有 while-in-use（WIU）能力，闹钟音频有受限例外。
 - `IntentSender.sendIntent()` 纳入后台 Activity 启动（Background Activity Launch，BAL）的发送方显式授权规则。
 
-本章以 `android-17.0.0_r1` 为源码基准。历史版本用于解释规则从何时生效，不把预览版或 `main` 分支行为写成 Android 17 结论。
+源码基准为 `android-17.0.0_r1`。历史版本用于解释规则从何时生效，不把预览版或 `main` 分支行为写成 Android 17 结论。
 
 ## 1. 一次 FGS 启动要通过三道独立检查
 
