@@ -28,68 +28,11 @@ sources:
 
 # 23.12 Jetpack Compose 内存分配与 GC 影响
 
-<!-- outline-start -->
-## 要点
+## 范围与版本
 
-### 🔹 Compose 运行时的内存模型
-- Composition 对象的内存组成：SlotTable + 重组范围追踪 + 状态记录
-- SlotTable 数据结构：基于数组的持久化树，存储 Composable 执行产生的状态
-- Composer 对象的分配模式：每次重组创建的临时对象清单
-- RecomposeScope 的生命周期与 GC 关系
+讨论范围是 Android 上的 Compose Runtime、应用 Java Heap 与 ART GC。平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为准，内核基线为 `android17-6.18-2026-06_r6`。Compose 是独立发布的 Jetpack 库，这里使用 2026 年 7 月的稳定版 Compose Runtime 1.11.4，并把对应 AndroidX 提交 `854220f44ea8ea80fee824a6c5a045f39bede289` 作为源码锚点。
 
-### 🔹 重组中的对象分配热点
-- @Composable 函数每次执行产生的隐式对象分配：remember 表项、State 记录
-- Lambda 捕获的内存开销：闭包变量引用链对堆的压力
-- derivedStateOf 和 remember 的对象持有策略
-- Strong Skipping（Compose 1.8+）对不稳定参数对象分配的影响
-
-### 🔹 State 对象与内存开销
-- MutableState 的内部实现：SnapshotMutableStateImpl 的 state record 链
-- mutableStateOf vs mutableStateListOf/mutableStateMapOf 的内存差异
-- snapshotFlow 的内存开销：快照持有期间的对象引用
-- listStateMapOf 等结构在频繁更新时的内存碎片
-
-### 🔹 SlotTable 内存增长模式
-- SlotTable 的数组扩容策略与内存增长曲线
-- 深层 Composable 嵌套下的 SlotTable 体积
-- SlotTable 在重组时的 gap buffer 机制：预分配空间 vs 按需扩容
-- 退出 Composition 后 SlotTable 的内存释放（disposeComposition）
-
-### 🔹 Compose 混合栈（View + Compose）的内存叠加
-- AndroidComposeView 作为 View 树节点的额外内存开销
-- View 系统和 Compose 并存时的双重状态追踪
-- AndroidView wrapper 的 native bitmap 持有
-- ComposeView 在多 Fragment 场景下的 Composition 隔离与重复创建
-
-### 🔹 GC 压力与帧抖动
-- Compose 短生命周期对象对分代 GC 的影响：minor GC 频率与帧暂停
-- 大型 Composable 树重组时的分配峰值（allocation spike）
-- Compose 在低端设备上的 GC 表现：dalvik vs ART 的差异
-- 通过 Allocation Tracker 定位 Compose 中的异常分配
-
-### 🔹 内存优化策略
-- 避免不必要重组的内存收益：比 CPU 收益更显著
-- key 参数在 LazyList 中的内存复用价值
-- derivedStateOf 作为内存优化工具：减少中间状态对象
-- Compose Compiler metrics 诊断分配热点
-
-## 扩展
-
-### 🔸 Compose Multiplatform 的内存差异
-- KMP 场景下 Compose 运行时的内存行为差异
-- 平台特定内存管理（Android ART vs Desktop JVM）
-
-### 🔸 Compose 测试的内存开销
-- Compose UI Test 的内存放大效应
-- 多个 Composition 在测试中的内存叠加
-
-<!-- outline-end -->
-
-## 本节定位
-
-本章讨论 Android 上的 Compose Runtime、应用 Java Heap 与 ART GC。平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为准，内核基线为 `android17-6.18-2026-06_r6`。Compose 是独立发布的 Jetpack 库，本章使用 2026 年 7 月的稳定版 Compose Runtime 1.11.4，并把对应 AndroidX 提交 `854220f44ea8ea80fee824a6c5a045f39bede289` 作为源码锚点。
-
-Compose 1.12.0-beta02 已发布，但仍是 beta。本章只在版本演进处说明其中与内存有关的修复，不用 beta 行为替代稳定版结论。
+Compose 1.12.0-beta02 已发布，但仍是 beta。这里只在版本演进处说明其中与内存有关的修复，不用 beta 行为替代稳定版结论。
 
 处理 Compose 内存问题时，先区分两种症状：
 
@@ -377,14 +320,14 @@ composeCompiler {
 
 ## 版本边界
 
-| 版本 | 与本章相关的变化 |
+| 版本 | 相关变化 |
 | --- | --- |
 | Kotlin 2.0.20+ | Strong Skipping 默认启用；不稳定参数按引用相等判断，composable 内 Lambda 自动 memoize |
-| Compose Runtime 1.11.4 | 本章 Jetpack 稳定锚点；link-buffer 实现存在但默认关闭 |
+| Compose Runtime 1.11.4 | Jetpack 稳定锚点；link-buffer 实现存在但默认关闭 |
 | Compose Runtime 1.12.0-beta01/02 | beta 发布说明记录 `derivedStateOf` forward writes 潜在保留问题修复；不能当作 1.11.4 已有修复 |
 | Android 17 / API 37 | ART 源码锚点为 `android-17.0.0_r1`；GC collector 与 generational 模式仍受运行时和设备配置影响 |
 
-Compose Multiplatform 在不同目标上使用不同运行时与内存管理器。本章所有 GC、heap dump 和 Android View 互操作结论只适用于 Android；不能把 Desktop/JVM、iOS 或 Wasm 的对象大小与 GC 行为直接移植过来。
+Compose Multiplatform 在不同目标上使用不同运行时与内存管理器。这里的 GC、heap dump 和 Android View 互操作结论只适用于 Android；不能把 Desktop/JVM、iOS 或 Wasm 的对象大小与 GC 行为直接移植过来。
 
 ## 小结
 

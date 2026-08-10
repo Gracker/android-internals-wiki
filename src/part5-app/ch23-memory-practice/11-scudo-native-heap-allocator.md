@@ -43,7 +43,7 @@ gap_source: "素材驱动/官方文档/Clippings结构参考"
 
 Native 内存曲线变大时，先确认正在看哪一种“大小”。`Debug.getNativeHeapAllocatedSize()`、`dumpsys meminfo` 的 Native Heap、`smaps` 的匿名映射、heapprofd 的未释放样本和 Graphics PSS 来自不同统计路径。它们可以同时变化，也可能朝相反方向变化。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点。涉及页大小、`/proc` 和 MTE 的内核边界时，以 `android17-6.18-2026-06_r6` 为基线。Scudo 属于用户态分配器，内核版本不会把某次 `malloc()` 自动归为业务泄漏。Native 内存分层见 4.5 节，常规排查见 23.3 节，MTE 崩溃分析见 20.11 节。
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。涉及页大小、`/proc` 和 MTE 的内核边界时，以 `android17-6.18-2026-06_r6` 为基线。Scudo 属于用户态分配器，内核版本不会把某次 `malloc()` 自动归为业务泄漏。Native 内存分层见 4.5 节，常规排查见 23.3 节，MTE 崩溃分析见 20.11 节。
 
 ## 先把五种口径分开
 
