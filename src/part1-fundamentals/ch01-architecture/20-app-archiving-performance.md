@@ -193,7 +193,7 @@ InstallSource.updateOwnerPackageName
 InstallSource.installerPackageName
 ```
 
-正常应用路径在归档前会确认该安装器仍安装在目标用户中，并能接收显式的 `Intent.ACTION_UNARCHIVE_PACKAGE`。找不到能够恢复应用的安装器时，目标包不应被归档。
+正常应用路径在归档前会确认该安装器仍安装在目标 user 中，并能接收显式的 `Intent.ACTION_UNARCHIVE_PACKAGE`。找不到能够恢复应用的安装器时，目标包不应被归档。
 
 ## 3. 为什么必须先保存 `ArchiveState`
 
@@ -237,7 +237,7 @@ DELETE_ARCHIVE | DELETE_KEEP_DATA
 - `DELETE_ARCHIVE`：告诉删除与广播链路这是归档，不是普通卸载。
 - `DELETE_KEEP_DATA`：保留包设置和用户数据，使后续安装可以恢复原有身份与数据。
 
-归档仍会进入 `PackageInstallerService.uninstall()` 和 `DeletePackageHelper`。因此设备管理员、禁止卸载策略、受保护包、App Lock 等限制仍然生效。删除路径会冻结并通常终止目标包；这与 LMKD 根据 PSI 和 adj 终止进程是两套机制。
+归档仍会进入 `PackageInstallerService.uninstall()` 和 `DeletePackageHelper`。因此设备管理员、禁止卸载策略、受保护包、App Lock 等限制仍然生效。删除路径会 freeze 并通常 kill 目标包；这与 LMKD 根据 PSI 和 adj 终止进程是两套机制。
 
 删除成功时，包移除广播会携带 `EXTRA_ARCHIVAL=true`，同时把 `EXTRA_REPLACING` 设为 true、`EXTRA_DATA_REMOVED` 设为 false。接收方由此可以把归档与删除应用数据的普通卸载区分开。
 
@@ -249,7 +249,7 @@ APK 和 native library 位于包级代码目录，可被多个 Android user 共�
 
 系统只把当前 user 标记为未安装并清理相关状态。代码目录继续保留，因为其他 user 仍要运行同一份 APK。
 
-此时能够稳定回收的是归档路径清理的缓存/ code cache；不能把整个 APK 大小都计入收益。
+此时能够稳定回收的是归档路径清理的 cache/ code cache；不能把整个 APK 大小都计入收益。
 
 #### 归档唯一仍安装 user
 
@@ -279,7 +279,7 @@ APK 和 native library 位于包级代码目录，可被多个 Android user 共�
 | 任意共享存储文件 | 没有“全部删除”保证 | 不应把归档当成外部文件清理器 |
 | `ArchiveState` 与归档图标 | 保留 | 用于 Launcher 展示与恢复 |
 
-“用户数据保留”不代表所有运行时加速材料都会保留。ART 配置文件被清理后，即使账号和数据库仍在，恢复后的编译状态与首次启动性能也可能发生变化。
+“用户数据保留”不代表所有运行时加速材料都会保留。ART profile 被清理后，即使账号和数据库仍在，恢复后的编译状态与首次启动性能也可能发生变化。
 
 ## 5. Launcher 如何把失败启动变成恢复请求
 
@@ -326,7 +326,7 @@ appPackageName = 目标包
 installFlags = INSTALL_UNARCHIVE_DRAFT | INSTALL_UNARCHIVE
 ```
 
-重复点击时，系统会复用同一目标包的有效 draft session；若恢复已在进行，符合配置的 Launcher 会打开会话详情，不会并行发起第二次下载。
+重复点击时，系统会复用同一目标包的有效 draft session；若恢复已在进行，符合配置的 Launcher 会打开 session 详情，不会并行发起第二次下载。
 
 ### 6.2 系统向安装器发送显式广播
 
@@ -349,7 +349,7 @@ Intent.ACTION_UNARCHIVE_PACKAGE
 2. 判断账号、网络、可用包和空间。
 3. 通过 `reportUnarchivalState()` 返回“可开始”或具体错误。
 4. 创建 full-install session，在 `SessionParams` 中设置目标包与 `unarchiveId`。
-5. 写入基础 base APK 并提交。
+5. 写入基础 base APK 并 commit。
 6. 让标准 PackageInstaller / PMS 安装链路完成签名、版本、策略和包扫描。
 
 `unarchiveId` 把广播与安装 session 绑定起来。即使安装器没有设置它，Android 17 也会尝试按包名、installer UID 和 user 复用 draft session，但显式设置可以消除并发歧义。
@@ -396,7 +396,7 @@ T_user_ready
 
 ### 8.1 `T_framework_request`
 
-包括 `ActivityStarter` 发现类不存在、匹配 `ArchiveState`、校验 Launcher 与确认策略、创建 draft session 和发送恢复广播。这些工作主要在 `system_server` 内完成，通常远短于网络和安装。如果这里很慢，应优先检查 `system_server` 锁竞争、Package Manager 处理线程排队和会话 I/O。
+包括 `ActivityStarter` 发现类不存在、匹配 `ArchiveState`、校验 Launcher 与确认策略、创建 draft session 和发送恢复广播。这些工作主要在 `system_server` 内完成，通常远短于网络和安装。如果这里很慢，应优先检查 `system_server` 锁竞争、Package Manager handler 排队和 session I/O。
 
 ### 8.2 `T_installer_prepare`
 
@@ -404,13 +404,13 @@ T_user_ready
 
 ### 8.3 `T_download_and_install`
 
-包括网络下载与分包选择、session 写入和提交、签名与版本校验、包扫描、权限状态恢复、dexopt/ART 工作和 `ACTION_PACKAGE_ADDED`。这通常是恢复的主要耗时，不能用 `PackageArchiver` 的短耗时掩盖安装器与 PackageInstaller 的长尾。
+包括网络下载与 split 选择、session 写入和 commit、签名与版本校验、包扫描、权限状态恢复、dexopt/ART 工作和 `ACTION_PACKAGE_ADDED`。这通常是恢复的主要耗时，不能用 `PackageArchiver` 的短耗时掩盖安装器与 PackageInstaller 的长尾。
 
 ### 8.4 `T_next_launch`
 
 恢复后的启动仍是普通应用冷启动：Zygote fork、`bindApplication`、Provider、`Application`、Activity 与首帧都不会被归档机制跳过。
 
-归档路径还清理了缓存、code cache 和 app profile，所以首次启动可能比应用持续安装时的冷启动更慢。内置 Baseline Profile、合理的启动依赖和较小的安装包仍有作用，但不能据此承诺恢复后一定完成 AOT 编译。
+归档路径还清理了 cache、code cache 和 app profile，所以首次启动可能比应用持续安装时的冷启动更慢。内置 Baseline Profile、合理的启动依赖和较小的安装包仍有作用，但不能据此承诺恢复后一定完成 AOT 编译。
 
 ## 9. 指标与观测
 
@@ -453,7 +453,7 @@ Perfetto 中至少同时观察：
 - installd、dex2oat / ART 相关工作。
 - 恢复完成后的目标应用进程与首帧。
 
-测量磁盘收益时要记录其他用户是否仍安装该包，并分别统计基础 APK、split、native library、cache、code cache 与用户数据。忽略多用户条件，既可能把“只清了缓存”误报成归档失效，也可能把其他清理任务释放的空间算给归档。
+测量磁盘收益时要记录其他 user 是否仍安装该包，并分别统计 base APK、split、native library、cache、code cache 与用户数据。忽略多用户条件，既可能把“只清了 cache”误报成归档失效，也可能把其他清理任务释放的空间算给归档。
 
 ## 10. 安全与策略边界
 
@@ -481,13 +481,13 @@ Perfetto 中至少同时观察：
 | Android 16 / API 36 | 延续平台能力并迭代 Launcher / session 处理 |
 | Android 17 / API 37 | 当前源码锚点；以 `android-17.0.0_r1` 的多用户删除、draft session、确认与 Launcher 行为为准 |
 
-Android 15 的“移除 APK 与缓存、保留用户数据”是 API 契约层的概括；Android 17 源码补充了一个实现边界：其他用户仍安装时，共享 APK 必须保留。
+Android 15 的“移除 APK 与缓存、保留用户数据”是 API 契约层的概括；Android 17 源码补充了一个实现边界：其他 user 仍安装时，共享 APK 必须保留。
 
 ## 12. 常见误区
 
 ### 误区一：归档一定释放“安装大小”
 
-不一定。多用户设备上，其他用户仍安装就不能删除共享代码目录。应分别测量代码、缓存和用户数据。
+不一定。多用户设备上，其他 user 仍安装就不能删除共享代码目录。应分别测量代码、缓存和用户数据。
 
 ### 误区二：归档就是 LMKD 杀进程
 
@@ -503,7 +503,7 @@ AOSP Android 17 没有这个保证。首次启动已返回 `START_ABORTED`。
 
 ### 误区五：`INSTALL_UNARCHIVE` 绕过安装安全
 
-它只避免已确认恢复后再次弹出安装确认。系统会重新计算该标志，APK 仍走正常校验。
+它只避免已确认恢复后再次弹出安装确认。系统会重新计算该 flag，APK 仍走正常校验。
 
 ### 误区六：数据保留意味着性能状态完全保留
 

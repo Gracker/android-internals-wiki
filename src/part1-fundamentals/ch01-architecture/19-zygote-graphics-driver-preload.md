@@ -93,7 +93,7 @@ last_deepseek_cn_review_at: 2026-07-03
 
 # 1.19 Zygote 图形栈预加载与首帧冷路径
 
-Android 会在 Zygote 派生应用进程前预先触达一部分图形栈。这项工作不会替应用绘制首帧；它把多数应用都会遇到的 HAL 发现、动态库映射和图形入口冷路径挪到系统启动阶段。
+Android 会在 Zygote fork 应用进程前预先触达一部分图形栈。这项工作不会替应用绘制首帧；它把多数应用都会遇到的 HAL 发现、动态库映射和图形入口冷路径挪到系统启动阶段。
 
 这里有两个常见误解：
 
@@ -132,7 +132,7 @@ Activity 即将创建
 图形预加载主要覆盖：
 
 - graphics mapper HAL 的发现与加载。
-- EGL 或 Vulkan 加载器/驱动的一段低成本入口路径。
+- EGL 或 Vulkan loader/driver 的一段低成本入口路径。
 - fork 后可共享的库映射和页面缓存收益。
 
 它明确不覆盖：
@@ -204,7 +204,7 @@ Trace.traceEnd(Trace.TRACE_TAG_DALVIK);
 - WebView 的 Zygote 初始化在后面，是另一条共享内存与启动优化路径。
 - 这些切片属于系统启动期间的 Zygote，不属于某个 App 的 `bindApplication` 或 `launchingActivity`。
 
-应用启动跟踪里通常没有这两个切片，需要采集包含 Zygote 的 boot trace 才能看到。
+应用启动 trace 里通常没有这两个切片，需要采集包含 Zygote 的 boot trace 才能看到。
 
 ## 3. `PreloadAppProcessHALs` 当前只预热 GraphicBufferMapper
 
@@ -315,7 +315,7 @@ if (Properties::peekRenderPipelineType()
 
 ### 4.1 GL 分支没有创建 EGLContext
 
-`eglGetDisplay(EGL_DEFAULT_DISPLAY)` 让 EGL 加载器/驱动走到 display 获取路径，但源码没有调用：
+`eglGetDisplay(EGL_DEFAULT_DISPLAY)` 让 EGL loader/driver 走到 display 获取路径，但源码没有调用：
 
 - `eglInitialize()`
 - `eglChooseConfig()`
@@ -323,7 +323,7 @@ if (Properties::peekRenderPipelineType()
 - `eglCreateWindowSurface()`
 - `eglMakeCurrent()`
 
-因此，“Zygote 已初始化应用的 GL context”这一说法不成立。实际的 context 仍在子进程的 RenderThread 创建。
+因此，“Zygote 已初始化 App 的 GL context”这一说法不成立。实际的 context 仍在子进程的 RenderThread 创建。
 
 ### 4.2 Vulkan 分支没有创建 VkInstance 或 VkDevice
 
@@ -334,13 +334,13 @@ if (Properties::peekRenderPipelineType()
 - `vkCreateDevice()`
 - 创建 queue、swapchain 或 pipeline。
 
-它预热的是 Vulkan 加载器/驱动入口，不包含完整的 Vulkan 运行时状态。
+它预热的是 Vulkan loader/driver 入口，不包含完整的 Vulkan runtime 状态。
 
 ### 4.3 Vulkan HWUI 也可能顺便预热 GL
 
 `Properties::initializeGlAlways()` 读取 `debug.hwui.initialize_gl_always`，默认值来自 HWUI flag。当 HWUI 使用 SkiaVulkan，但设备上仍有大量 App 直接使用 GLES 时，这个分支会额外调用一次 `eglGetDisplay()`。
 
-源码说明，这次 GL 调用发生在 fork 前，相关内存应可共享；不使用 GL 的应用不需要在自己的启动路径再次承担同样的公共成本。
+源码说明，这次 GL 调用发生在 fork 前，相关内存应可共享；不使用 GL 的 App 不需要在自己的启动路径再次承担同样的公共成本。
 
 ## 5. `ro.zygote.disable_gl_preload` 不是 App 调优开关
 
@@ -350,9 +350,9 @@ if (Properties::peekRenderPipelineType()
 2. 它不会跳过 `nativePreloadAppProcessHALs()`，mapper HAL 仍会预热。
 3. `ro.*` 是只读属性，普通 App 不能在运行时切换。
 
-要对比开关效果，平台/OEM 团队需要准备不同系统镜像或启动属性配置，并重启 Zygote/设备。在已经启动的设备上执行 `setprop` 后立即重跑应用，不能构成有效的 A/B 对比。
+要对比开关效果，平台/OEM 团队需要准备不同系统镜像或启动属性配置，并重启 Zygote/设备。在已经启动的设备上执行 `setprop` 后立即重跑 App，不能构成有效的 A/B 对比。
 
-关闭它适合用作设备级兼容性止损，例如某个厂商 EGL/Vulkan 实现在 fork 前的入口调用中崩溃、死锁或触发不可继承状态。后续仍应修复驱动或系统集成问题；永久关闭会把冷路径成本还给应用进程。
+关闭它适合用作设备级兼容性止损，例如某个 vendor EGL/Vulkan 实现在 fork 前的入口调用中崩溃、死锁或触发不可继承状态。后续仍应修复驱动或系统集成问题；永久关闭会把冷路径成本还给应用进程。
 
 ## 6. 应用进程仍要执行 `GraphicsEnvironment.setup()`
 
@@ -382,7 +382,7 @@ notifyGraphicsEnvironmentSetup
 
 ### 6.2 `setupAngle`：选择 GLES 实现
 
-ANGLE 不是“另一块 GPU driver”。它把 OpenGL ES 调用翻译到其他后端，在 Android 上通常与 Vulkan 驱动配合。Android 17 会综合以下条件进行选择：
+ANGLE 不是“另一块 GPU driver”。它把 OpenGL ES 调用翻译到其他后端，在 Android 上通常与 Vulkan driver 配合。Android 17 会综合以下条件进行选择：
 
 - 全局/per-app ANGLE 设置。
 - `persist.graphics.egl` 与 `ro.hardware.egl`。
@@ -427,7 +427,7 @@ ro.gfx.driver.1   # prerelease driver package
 4. 读取 APK 的 `assets` 目录中的 `sphal_libraries.txt`。
 5. 调用 `setDriverPathAndSphalLibraries()` 配置 native loader。
 
-这一步发生在每个应用进程。Zygote 触达过系统 EGL/Vulkan 入口，但不会替应用选择可更新驱动包路径、ANGLE 包或调试层。
+这一步发生在每个 App 进程。Zygote 触达过 system EGL/Vulkan 入口，但不会替应用选择可更新驱动包路径、ANGLE package 或调试层。
 
 ## 7. 启动 RenderThread 的是 `HardwareRenderer.preload()`
 
@@ -487,11 +487,11 @@ HardwareBitmapUploader::initialize();
 
 ### 8.1 Surface 与 BufferQueue
 
-`ViewRootImpl`、`ThreadedRenderer` 和 `CanvasContext` 需要绑定有效 Surface，设置 BLASTBufferQueue，建立生产者/消费者关系。这里涉及 Binder、SurfaceControl 事务和 buffer slot，仅加载驱动无法完成这些工作。
+`ViewRootImpl`、`ThreadedRenderer` 和 `CanvasContext` 需要绑定有效 Surface，设置 BLASTBufferQueue，建立生产者/消费者关系。这里涉及 Binder、SurfaceControl transaction 和 buffer slot，仅加载驱动无法完成这些工作。
 
 ### 8.2 buffer allocation / import
 
-Gralloc 映射器已预热，不代表分配器也已预热。首次分配还可能经过：
+Gralloc mapper 已预热，不代表分配器也已预热。首次分配还可能经过：
 
 - `GraphicBufferAllocator` 初始化。
 - allocator HAL Binder 调用。
@@ -523,8 +523,8 @@ queueBuffer
 
 | 域 | 关键切片 / 事件 | 回答的问题 |
 | --- | --- | --- |
-| Zygote / boot | `PreloadAppProcessHALs`、`PreloadGraphicsDriver` | 系统是否在启动期间负责预热，哪一段慢 |
-| App main / bind | `setupGraphicsSupport`、`setupGpuLayers`、`setupAngle`、`chooseDriver` | 当前应用选择了什么环境，选择是否异常耗时 |
+| Zygote / boot | `PreloadAppProcessHALs`、`PreloadGraphicsDriver` | 系统是否在 boot 期间负责预热，哪一段慢 |
+| App main / bind | `setupGraphicsSupport`、`setupGpuLayers`、`setupAngle`、`chooseDriver` | 当前 App 选择了什么环境，选择是否异常耗时 |
 | RenderThread | `earlyPreloadGlContext`、EGL/Vulkan/Skia 初始化 | context 是否在首帧前完成，是否仍有 driver 冷路径 |
 | App + SurfaceFlinger | FrameTimeline、BufferQueue、fence、latch、present | 首帧是否卡在提交或合成 |
 
@@ -539,7 +539,7 @@ driver 初始化可能包含：
 - 启动 driver 内部线程。
 - shader compiler 或 pipeline cache 初始化。
 
-只看到 `libGLES*.so` 或 Vulkan 动态库映射，不能推断耗时全在 loader。需要对齐 CPU slice、I/O、Binder、sched 和调用栈。
+只看到 `libGLES*.so` 或 Vulkan so 映射，不能推断耗时全在 loader。需要对齐 CPU slice、I/O、Binder、sched 和调用栈。
 
 ### 9.2 App main 与 RenderThread 可能并行
 
@@ -583,7 +583,7 @@ adb shell cat /proc/<PID>/maps \
   | grep -E 'libEGL|libGLES|libvulkan|angle|graphics'
 ```
 
-这能证明“哪些库已映射”，但不能单独证明“所有 GL/Vulkan 调用最终由哪套驱动处理”。还要结合 `GraphicsEnvironment` 日志、属性、driver package 和 API trace。
+这能证明“哪些库已映射”，但不能单独证明“所有 GL/Vulkan 调用最终由哪套 driver 处理”。还要结合 `GraphicsEnvironment` 日志、属性、driver package 和 API trace。
 
 ### 10.3 日志入口
 
@@ -618,7 +618,7 @@ adb logcat -v threadtime \
 
 如果关闭预加载后系统启动变快、App 首帧却变慢，这属于成本转移；如果 App 启动没有变化，可能有以下原因：
 
-- 对应驱动已由其他 boot 组件加载。
+- 对应 driver 已由其他 boot 组件加载。
 - App 选择了 ANGLE/updatable driver，没有复用目标路径。
 - 文件页仍在 page cache。
 - 瓶颈位于着色器、allocator 或 SurfaceFlinger。
@@ -660,7 +660,7 @@ adb logcat -v threadtime \
 
 ### “应用可通过关闭 `ro.zygote.disable_gl_preload` 动态调优”
 
-不成立。该属性是只读平台配置，而且关闭它只影响 graphics driver 入口，不影响映射器 HAL 预热。
+不成立。该属性是只读平台配置，而且关闭它只影响 graphics driver 入口，不影响 mapper HAL 预热。
 
 ### “首帧慢就是 driver preload 失效”
 
@@ -679,7 +679,7 @@ adb logcat -v threadtime \
 9. 检查 `HardwareRenderer.preload()` 是否在首帧前给 RenderThread 留出足够时间。
 10. 分开分析映射器与分配器。
 11. shader/pipeline、buffer、fence 与合成单独取证。
-12. A/B 对比必须重启 Zygote/设备，并保持驱动选择一致。
+12. A/B 对比必须重启 Zygote/设备，并保持 driver 选择一致。
 13. OEM 结论附上 SoC、系统/厂商构建版本、driver package 与属性快照。
 14. 当前平台源码统一引用 `android-17.0.0_r1`。
 

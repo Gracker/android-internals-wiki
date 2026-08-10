@@ -103,7 +103,7 @@ last_deepseek_cn_review_at: 2026-06-22
 
 # 1.17 IPC 全景：Android 进程间通信机制对比与性能选型
 
-Android IPC 无法简化为“Binder、Intent、共享内存三选一”。Intent 和 AIDL 描述上层语义；Binder、Unix 域套接字和 vsock 负责传输；共享内存、DMA-BUF 与 FMQ 又常被用作数据面。一条真实链路经常同时使用两到三层机制。
+Android IPC 无法简化为“Binder、Intent、共享内存三选一”。Intent 和 AIDL 描述上层语义；Binder、Unix domain socket 和 vsock 负责传输；共享内存、DMA-BUF 与 FMQ 又常被用作数据面。一条真实链路经常同时使用两到三层机制。
 
 当前锚点为 Android 17 / API 37、AOSP `android-17.0.0_r1`。分析从源码、fd、线程和 trace 还原真实链路，不为各种机制设定脱离条件的固定延迟。
 
@@ -141,7 +141,7 @@ Android IPC 无法简化为“Binder、Intent、共享内存三选一”。Inten
 - HAL 用 AIDL/HIDL 建立 FMQ，持续数据走共享内存队列。
 - Microdroid 复用 Binder/AIDL 对象模型，但传输改为 socket/vsock。
 
-同一套 API 也可能不跨进程。AIDL 的 client 与服务在同一进程、使用同一后端时可以直接调用，不产生 Parcel 编组和 Binder 驱动事务。分析前先确认 PID。
+同一套 API 也可能不跨进程。AIDL 的 client 与 service 在同一进程、使用同一 backend 时可以直接调用，不产生 Parcel 编组和 Binder driver 事务。分析前先确认 PID。
 
 ## 2. 选型先回答六个问题
 
@@ -158,9 +158,9 @@ Android IPC 无法简化为“Binder、Intent、共享内存三选一”。Inten
 
 ### 2.3 谁拥有内存，谁负责回收
 
-IPC bug IPC 缺陷源于所有权不清，传输本身并没有失败：
+IPC bug 通常源于所有权不清，传输本身并没有失败：
 
-- Binder 对象何时调用 `linkToDeath()`、何时释放引用。
+- Binder object 何时调用 `linkToDeath()`、何时释放引用。
 - fd 是借用、dup 后拥有，还是随 `ParcelFileDescriptor` 关闭。
 - mmap 何时 unmap，SharedMemory 何时 close。
 - DMA-BUF fence 未完成前谁不能复用 buffer。
@@ -254,7 +254,7 @@ Android 17 `ProcessState.cpp`：
 #define DEFAULT_MAX_BINDER_THREADS 15
 ```
 
-这个值配置的是驱动可以按需启动的 threadpool 线程默认上限。`startThreadPool()` 启动的线程、主动调用 `joinThreadPool()` 的线程，以及进程自行调整的配置会影响总数。把它口语化成“每个进程固定 16 个 Binder 线程”会误导容量分析。
+这个值配置的是 driver 可以按需启动的 threadpool 线程默认上限。`startThreadPool()` 启动的线程、主动调用 `joinThreadPool()` 的线程，以及进程自行调整的配置会影响总数。把它口语化成“每个进程固定 16 个 Binder 线程”会误导容量分析。
 
 判断线程池是否饥饿，应看：
 
@@ -274,7 +274,7 @@ Parcel 除普通数据外，还维护对象表。它可以传：
 driver 会为接收方安装/复制相应引用或 fd。传 fd 后，后续大数据不必继续进入 Parcel，但双方仍要定义：
 
 - fd 的访问权限。
-- 由谁关闭。
+- 由谁 close。
 - 是否允许写。
 - 对端死亡后的清理。
 - 数据完成条件。
@@ -317,7 +317,7 @@ Messenger 用 Binder 传 `Message`，接收端最终把消息投递到指定 Han
 - 后台启动、广播队列与缓存进程策略。
 - ordered broadcast 的结果传播。
 
-因此 Intent 性能不能只用“一次 Binder 耗时”解释。冷启动目标进程、组件调度和生命周期回调的成本通常远大于传输本身。
+因此 Intent 性能不能只用“一次 Binder 耗时”解释。冷启动目标进程、组件调度和生命周期回调的成本通常远大于 transport 本身。
 
 ### 4.4 ContentProvider 不等于“Binder + 共享内存”一条固定路径
 
@@ -396,7 +396,7 @@ Unix socket 更适合：
 - 由有限 kernel buffer 提供背压。
 - 常通过 fork 继承或显式传递文件描述符建立连接。
 
-Android/Java 常见场景是 `ProcessBuilder` / `Runtime.exec()` 的 stdin、stdout、stderr。需要双向通信时要两条管道，或直接使用 socketpair。
+Android/Java 常见场景是 `ProcessBuilder` / `Runtime.exec()` 的 stdin、stdout、stderr。需要双向通信时要两条 pipe，或直接使用 socketpair。
 
 ### 6.2 Looper 当前使用 eventfd
 
@@ -409,9 +409,9 @@ epoll_ctl(mEpollFd.get(), EPOLL_CTL_ADD,
           mWakeEventFd.get(), &wakeEvent);
 ```
 
-`wake()` 向 eventfd 写入一个 64 -bit 计数，`epoll_wait()` 被唤醒后再读取。Pipe 是更早实现的历史背景，不应拿来解释当前 MessageQueue 唤醒路径。
+`wake()` 向 eventfd 写入一个 64-bit 计数，`epoll_wait()` 被唤醒后再读取。Pipe 是更早实现的历史背景，不应拿来解释当前 MessageQueue 唤醒路径。
 
-eventfd 主要传递计数/通知，不承载业务负载。跨进程使用时，双方仍需继承或传递 fd。
+eventfd 主要传递计数/通知，不承载业务 payload。跨进程使用时，双方仍需继承或传递 fd。
 
 ### 6.3 Signal：异步通知，不是数据通道
 
@@ -470,7 +470,7 @@ try {
 
 `setProtect()` 只能移除权限，不能重新增加。它只约束之后创建的 mapping；已有可写 mapping 保持原权限。因此“写入 → unmap → 降为只读 → 传给对端”是更清晰的 least-privilege 顺序。
 
-接收方映射后也要 unmap，并关闭自己收到的 fd wrapper。发送方 close 不会立即让接收方复制的 dup fd 失效。
+接收方 map 后也要 unmap，并关闭自己收到的 fd wrapper。发送方 close 不会立即让接收方复制的 dup fd 失效。
 
 ### 7.3 `MemoryFile` 是兼容包装
 
@@ -508,9 +508,9 @@ if (!mAllowFds || len <= BLOB_INPLACE_LIMIT) {
 - `len > 16KiB` 且 Parcel 允许 fd：创建 ashmem-compatible region，映射后通过 Parcel 传 fd。
 - `len > 16KiB` 但不允许 fd：仍走 inline。
 
-`writeBlob()` 返回可写区域给调用者，数据仍要被写进 inline buffer 或共享映射。fd 分支避免把整块数据再次塞进 Binder transaction buffer，但生产者仍有写入成本。
+`writeBlob()` 返回可写区域给调用者，数据仍要被写进 inline buffer 或共享 mapping。fd 分支避免把整块 blob 再次塞进 Binder transaction buffer，但生产者仍有写入成本。
 
-这个行为也不能外推成“所有大 AIDL `byte[]` 自动走共享内存”。只有实际使用数据块/文件描述符支撑的 Parcelable 路径才有这项分流。普通 byte array 仍会被内联编组。
+这个行为也不能外推成“所有大 AIDL `byte[]` 自动走共享内存”。只有实际使用 blob/fd-backed Parcelable 的路径才有这项分流。普通 byte array 仍会被内联编组。
 
 ## 9. DMA-BUF、GraphicBuffer 与共享内存不是同一条线
 
@@ -533,7 +533,7 @@ Android 12 的 GKI 2.0 路线用 DMA-BUF heaps 替代 ION allocator；每个 hea
 
 ## 10. FMQ：共享内存上的有界单向队列
 
-FMQ 先通过 HIDL 或 AIDL RPC 传递 `MQDescriptor`，双方映射 ring buffer、读写位置和可选 event flag。建立完成后，非阻塞读写不需要每条消息进入 Binder driver。
+FMQ 先通过 HIDL 或 AIDL RPC 传递 `MQDescriptor`，双方映射 ring buffer、读写位置和可选 event flag。建立完成后，非阻塞 read/write 不需要每条消息进入 Binder driver。
 
 单个 FMQ 的基本约束：
 
@@ -604,7 +604,7 @@ AVF 还限制 pVM 之间直接通信；host 的 VirtualizationService 控制连�
 | Signal | 异步进程/线程通知 | signal semantics | 不承载业务数据 | handler 安全、调度、保留信号 |
 | Binder RPC / vsock | 跨 VM RPC | socket/vsock 与 RPC session | 专门共享/文件通道 | VM 调度、framing、连接安全 |
 
-这张表没有“谁最快”。同样传 16 bytes，RPC 语义、线程唤醒与权限检查可能是主要成本；同样传 10MB，是否复用映射、是否复制到共享区、cache 与同步策略更加重要。
+这张表没有“谁最快”。同样传 16 bytes，RPC 语义、线程唤醒与权限检查可能是主要成本；同样传 10MB，是否复用 mapping、是否复制到共享区、cache 与同步策略更加重要。
 
 ## 14. 选型决策树
 
@@ -737,7 +737,7 @@ List<State> states = remote.getStates(ids);
 
 ### 16.3 共享内存没有协议
 
-只有一块 mmap，没有头部、版本、长度、状态和内存序，接收方就可能读到只写了一半的数据。最小协议至少需要：
+只有一块 mmap，没有 header、版本、长度、状态和内存序，接收方就可能读到只写了一半的数据。最小协议至少需要：
 
 ```text
 magic / version
@@ -751,7 +751,7 @@ state: EMPTY → WRITING → READY → READING
 
 ### 16.4 传 fd 后忘记缩权
 
-可写 fd 是 capability。能够只读时，应先完成写入、unmap writer、降低 future mapping protection，再传给不可信对端。接收方也要校验大小和格式，不能因为 fd 来自 Binder 就假设内容安全。
+可写 fd 是 capability。能够只读时，应先完成写入、unmap writer、降低 future mapping protection，再传给不可信对端。接收方也要校验 size 和格式，不能因为 fd 来自 Binder 就假设内容安全。
 
 ## 17. 版本边界
 
@@ -762,7 +762,7 @@ state: EMPTY → WRITING → READY → READING
 | Android 10 | Stable AIDL 稳定性机制 | 面向 system/vendor 边界的 AIDL 接口需要显式考虑稳定性 |
 | Android 11 | AIDL HAL；`vndbinder` 路线 deprecated | 新 HAL 可使用 Stable AIDL `/dev/binder` |
 | Android 12 | AIDL NDK backend 支持 FMQ；GKI 2.0 推进 ION → DMA-BUF heaps | SharedMemory 与 DMA-BUF allocator 仍是两条线 |
-| Android 13 | HIDL deprecated；AVF/Microdroid 扩展通过 Binder RPC over vsock 场景 | 存量 HIDL 仍可能存在；跨 VM 不走内核 Binder |
+| Android 13 | HIDL deprecated；AVF/Microdroid 扩展通过 Binder RPC over vsock 场景 | 存量 HIDL 仍可能存在；跨 VM 不走 kernel Binder |
 | Android 17（API 37） | 默认 ashmem-compatible memfd 路径增加 vendor API 202604 与 targetSdk 37 等门禁 | 当前 AOSP 源码统一锚定 `android-17.0.0_r1` |
 
 ## 18. 常见误区
@@ -773,11 +773,11 @@ state: EMPTY → WRITING → READY → READING
 
 ### “oneway 不会阻塞，也不会失败”
 
-不成立。它不等待业务回复，但驱动提交、queue 容量、冻结进程和服务端消费仍构成约束。
+不成立。它不等待业务 reply，但 driver 提交、queue 容量、冻结进程和服务端消费仍构成约束。
 
 ### “Binder 单次可以安全传接近 1MB”
 
-不成立。约 1MB 是进程所有 in-flight transaction 共享预算，还要减去页和元数据开销。
+不成立。约 1MB 是进程所有 in-flight transaction 共享预算，还要减 page 和元数据开销。
 
 ### “共享内存就是 0 copy”
 
@@ -785,7 +785,7 @@ state: EMPTY → WRITING → READY → READING
 
 ### “FMQ 是双向队列”
 
-不成立。单个 FMQ 只有一个 writer；双向协议通常建立两条队列。
+不成立。单个 FMQ 只有一个 writer；双向协议通常建立两条 queue。
 
 ### “Signal 延迟为零”
 
