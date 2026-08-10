@@ -340,7 +340,7 @@ recovery 只说明 App 已感知回压。根因仍要由 producer workload、acq
 
 ### “Android 17 一定启用 multi-recovery 和 100ms 上限”
 
-两个行为由独立 flag 控制。只有产品配置和跟踪数据能够证明实际采用的分支。
+两个行为由独立 flag 控制。只有产品配置和 trace 能够证明实际采用的分支。
 
 ### 七个 FrameTimeline 候选项代表七套恢复策略
 
@@ -357,7 +357,7 @@ offset 改变 App callback 使用的 frame data/timeline。真实唤醒、GPU �
 ## 十二、源码阅读顺序
 
 1. [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)：确认标准窗口如何注册 callback；
-2. [`HardwareRenderer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareRenderer.java) 与 HWUI RenderProxy/CanvasContext/SkiaPipeline：确认回调如何到达 BLAST；
+2. [`HardwareRenderer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareRenderer.java) 与 HWUI RenderProxy/CanvasContext/SkiaPipeline：确认 callback 如何到达 BLAST；
 3. [`BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)：确认 release channel wait、duration 与通知时机；
 4. [`BufferQueueProducer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp)：确认 free slot 与 too-many-buffers 条件；
 5. [`Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)：确认状态机、flags、delay/offset 与 jitter resync；

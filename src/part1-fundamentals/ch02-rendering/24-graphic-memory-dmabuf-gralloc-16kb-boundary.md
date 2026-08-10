@@ -67,7 +67,7 @@ source_candidates:
 - IOMMU domain 支持的映射页大小；
 - GPU MMU、DPU、codec、camera 等硬件自身的布局约束。
 
-其中前两项决定 native 代码能否可靠装载，第三和第四项影响通用内存管理，后几项决定设备如何访问图形缓冲区。它们的数值可能恰好都是 16KB，但控制来源并不相同。
+其中前两项决定 native 代码能否可靠装载，第三和第四项影响通用内存管理，后几项决定设备如何访问图形 buffer。它们的数值可能恰好都是 16KB，但控制来源并不相同。
 
 以下分析以 Android 17 / API 37 / `android-17.0.0_r1` 为 user-space anchor，kernel 以 `android17-6.18-2026-06_r6` 为锚点。vendor Gralloc、GPU、Composer HAL、Camera HAL 与 display driver 不在 AOSP 通用实现内，涉及具体 layout 和收益时必须补充 device evidence。
 
@@ -104,7 +104,7 @@ Android 17 `BufferQueueProducer::dequeueBuffer()` 会检查 slot 中的 `Graphic
 
 ### 1.2 Android 17 的 Gralloc 接口边界
 
-Android 17 框架仍保留 Gralloc 2/3/4/5 wrapper，以适配多代 vendor HAL。当前 Stable AIDL `IAllocator` 包含：
+Android 17 framework 仍保留 Gralloc 2/3/4/5 wrapper，以适配多代 vendor HAL。当前 Stable AIDL `IAllocator` 包含：
 
 - `allocate2(BufferDescriptorInfo, count)`；
 - `isSupported()`；
@@ -177,7 +177,7 @@ Android 17 的 `BufferAllocator::Alloc()` 负责打开并缓存 heap fd，再执
 len = __PAGE_ALIGN(len)
 ```
 
-这段代码确保所有 heap allocation 从页边界开始并在页边界结束。在 16KB kernel 上，内核页大小是 16KB，请求长度会向上取整到 16KB 的整数倍。长度为 0 会返回 `-EINVAL`。
+这段代码确保所有 heap allocation 从页边界开始并在页边界结束。在 16KB kernel 上，kernel page size 是 16KB，请求长度会向上取整到 16KB 的整数倍。长度为 0 会返回 `-EINVAL`。
 
 该结论只覆盖传给 DMA-BUF Heap 的 `len`。在到达这里之前，Gralloc 往往已经把逻辑像素需求转换成包含 stride、plane、压缩 metadata 和实现对齐的 allocation length。
 

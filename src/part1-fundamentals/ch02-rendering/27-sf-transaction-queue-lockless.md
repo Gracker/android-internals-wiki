@@ -46,7 +46,7 @@ Android 17 中，`SurfaceFlinger::setTransactionState()` 会在 Binder 调用线
 
 ## 2. Android 17 的主路径
 
-下图按职责标出各组件。“提交”与“本轮显示”之间还要经过就绪判断、snapshot、合成和送显。
+下图按职责标出各组件。“提交”与“本轮显示”之间还要经过 readiness、snapshot、合成和 present。
 
 ```mermaid
 flowchart TD
@@ -184,7 +184,7 @@ timeline 过滤器综合检查：
 - origin UID 对应的 VSync cadence；
 - `FrameTimelineInfo.vsyncId` 是否说明这帧仍然过早。
 
-如果期望送显时间晚于本轮的预计送显时间，且差值不超过一秒，事务会返回 `NotReady`。超过一秒的未来时间会被忽略，避免异常 timestamp 长期卡住队列。
+如果 desired present time 晚于本轮 expected present time，且差值不超过一秒，事务会返回 `NotReady`。超过一秒的未来时间会被忽略，避免异常 timestamp 长期卡住队列。
 
 带有效 VSync ID 的事务已按该 ID 的节奏被 Choreographer 节流，SF 不会再按 origin UID 的 cadence 重复节流。使用自动 timestamp 的事务还会通过 `frameIsEarly()` 判断是否过早。
 
@@ -371,7 +371,7 @@ Android 17 可关注这些 SF trace 名称：
 4. 用 `BufferTX - <layerName>`、latch 事件确认新 buffer 是否被采纳；
 5. 最终结合 FrameTimeline、HWC 与 present fence 判断显示后段。
 
-`TransactionQueue` 下降、transaction committed callback、buffer latch 和显示器送显分别对应四个阶段。只看其中一个，无法确定内容何时出现在屏幕上。
+`TransactionQueue` 下降、transaction committed callback、buffer latch 和 display present 分别对应四个阶段。只看其中一个，无法确定内容何时出现在屏幕上。
 
 ### 11.5 Perfetto 看不到什么
 
@@ -395,9 +395,9 @@ Android 17 可关注这些 SF trace 名称：
 | one-way transaction 可以绕过 readiness | one-way 只改变 Binder 调用方式 |
 | BLAST 是 SF 拉取 buffer 的接口 | BLAST adapter 在客户端取得 buffer，再通过 transaction 发送给 SF |
 | barrier 都是五秒 TTL | buffer frame barrier 超时为四秒；显式 transaction barrier 默认 TTL 为五秒 |
-| `NotReadyUnsignaled` 表示可以忽略栅栏 | 只允许特定的简单单层事务提前进入后段，读取方仍遵守 fence |
+| `NotReadyUnsignaled` 表示可以忽略 fence | 只允许特定的简单单层事务提前进入后段，读取方仍遵守 fence |
 | `scheduleCommit()` 总是立即处理 | 常规路径调用 `scheduleFrame()`；frame-rate change 有条件触发 immediate frame |
-| TransactionQueue 就是无锁链表深度 | 它统计尚未 flush 的事务总数，包含入口和按令牌分桶的待处理队列 |
+| TransactionQueue 就是无锁链表深度 | 它统计尚未 flush 的事务总数，包含入口和 per-token pending |
 
 ## 13. 源码阅读顺序
 

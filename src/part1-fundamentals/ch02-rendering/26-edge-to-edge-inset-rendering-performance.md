@@ -119,7 +119,7 @@ SurfaceFlinger → HWC / RenderEngine → Display present
 - `calculateNavigationBarColor()` 在 Edge-to-Edge 强制场景中可把三键导航栏颜色转成对比度 scrim；
 - 这些 color view 最终画进当前 App Window buffer，不应重复算成独立的应用 Surface。
 
-因此，系统栏透明后不一定增加透明图层，系统栏覆盖区域的像素也不一定是新增绘制。实际 layer 数量要从 SurfaceFlinger layer tree 确认，App Window 内部的普通 View 或 DecorView color view 不会因为视觉上像一层遮罩就变成 HWC layer。
+因此，系统栏透明后不一定增加透明 layer，系统栏覆盖区域的像素也不一定是新增绘制。实际 layer 数量要从 SurfaceFlinger layer tree 确认，App Window 内部的普通 View 或 DecorView color view 不会因为视觉上像一层遮罩就变成 HWC layer。
 
 ### 2.2 HWC 是否回退 CLIENT 只能从当前帧证明
 
@@ -369,7 +369,7 @@ ViewCompat.setOnApplyWindowInsetsListener(list) { view, windowInsets ->
 
 Predictive Back 让用户预览返回目的地。Android 15 起，back-to-home、cross-task、cross-activity 系统动画不再依赖开发者选项；Android 16 上，target 36+ 应用默认启用这些系统动画，并提供迁移或临时退出边界。
 
-它不要求每个应用在同一窗口内固定绘制前后两份 rear face：
+它不要求每个应用在同一 Window 内固定绘制前后两份 rear face：
 
 - back-to-home、cross-task、cross-activity 可以由系统基于窗口、Task 和 transition leash 组织动画；
 - Fragment、Navigation 或 Compose 的自定义进度动画可以在应用内部更新 UI；
@@ -396,7 +396,7 @@ Android 17 `ViewRootImpl.dispatchApplyInsets()` 自带名为 `dispatchApplyInset
 
 ### 8.2 `performTraversals` 只能证明 traversal，不等于重复 layout
 
-同一 pending frame 的多个 `requestLayout()` 或 `invalidate()` 可能被 `Choreographer` 合并。一次 `performTraversals` 也不一定同时执行测量、布局和绘制。
+同一 pending frame 的多个 `requestLayout()` 或 `invalidate()` 可能被 `Choreographer` 合并。一次 `performTraversals` 也不一定同时执行 measure/layout/draw。
 
 下面的查询用于统计指定时间段内系统应用 Insets 与 traversal 的次数，用于寻找相关性，不能直接判定根因：
 
@@ -412,7 +412,7 @@ WHERE s.ts BETWEEN :start_ts AND :end_ts
 GROUP BY s.name;
 ```
 
-如果 `dispatchApplyInsets` 随 IME 动画逐帧出现，再核对窗口是否满足同步 Insets 动画条件；如果只有 `onProgress` 自定义 section 增长，则检查动画 callback 的业务代码。随后进入每次 traversal，确认实际执行的测量、布局和绘制子段。
+如果 `dispatchApplyInsets` 随 IME 动画逐帧出现，再核对窗口是否满足同步 Insets 动画条件；如果只有 `onProgress` 自定义 section 增长，则检查动画 callback 的业务代码。随后进入每次 traversal，确认实际执行的 measure/layout/draw 子段。
 
 ### 8.3 用 FrameTimeline 判断帧有没有错过显示时机
 
