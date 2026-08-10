@@ -221,7 +221,7 @@
   - [6.1 Android 17 上的 DataStore 1.2.1 多进程一致性机制](part1-fundamentals/ch06-storage/6.1-androidx-datastore--ipc-源码级验证-draft.md)
   - [6.19 Android 17 / Linux 6.18 内存规整机制](part1-fundamentals/ch06-storage/6.19-linux-6.10-内存碎片整理机制.md)
   - [6.20 Android 17 / Linux 6.18 内存规整调优与排障](part1-fundamentals/ch06-storage/6.20-linux-6-10-memory-compaction-optimization.md)
-  - [第 6 章：存储与 I/O（历史纲要）](part1-fundamentals/ch06-storage/ch06-storage.md)
+  - [第 6 章：存储与 I/O 主题分流](part1-fundamentals/ch06-storage/ch06-storage.md)
 
 ---
 
@@ -372,7 +372,7 @@
   - [13.14 Perfetto DataGrid 与 Jank CUJ 标准库](part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md)
   - [13.15 BufferQueue 阻塞的 Perfetto 识别](part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md)
   - [13.16 Agent 辅助 Perfetto 分析协议](part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md)
-  - [task2b_state restored 2026-06-16 by Task9 — Android 17 重基完成 2026-06-22](part3-tools/ch13-perfetto/17-android17-data-sources.md)
+  - [13.17 Android 17 Perfetto 数据源边界与验证](part3-tools/ch13-perfetto/17-android17-data-sources.md)
   - [13.17 Perfetto SDK 与应用内 Trace 数据源](part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md)
   - [13.18 SmartPerfetto 与可复用 Trace 分析平台](part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md)
   - [13.19 FrameTracer 与 Graphics Frame Event 数据通路](part3-tools/ch13-perfetto/19-frametracer-graphics-frame-event.md)
@@ -383,7 +383,7 @@
 - [第 14 章：其他性能工具](part3-tools/ch14-other-tools/README.md)
   - [Android Studio Profiler](part3-tools/ch14-other-tools/01-as-profiler.md)
   - [14.2 Simpleperf](part3-tools/ch14-other-tools/02-simpleperf.md)
-  - [注意：本章内容基于 Android 16-17 版本验证，Android 17 (API 37) 相关特性已进入主线，实际使用时需注意版本差异。](part3-tools/ch14-other-tools/03-memory-tools.md)
+  - [14.3 内存分析工具](part3-tools/ch14-other-tools/03-memory-tools.md)
   - [dumpsys 系列命令](part3-tools/ch14-other-tools/04-dumpsys.md)
   - [三方性能库](part3-tools/ch14-other-tools/05-third-party-libs.md)
   - [自动化测试工具](part3-tools/ch14-other-tools/06-automation-tools.md)
