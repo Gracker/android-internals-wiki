@@ -80,23 +80,6 @@ last_deepseek_cn_review_at: 2026-06-05
 
 # 优化策略
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 布局优化：减少层级、ConstraintLayout、ViewStub 延迟加载
-- 🔹 RecyclerView 优化：预创建 ViewHolder、DiffUtil、SnapHelper 性能考量
-- 🔹 渲染优化：减少 overdraw、合理使用 Hardware Layer、Canvas 操作简化
-- 🔹 线程优化：耗时操作异步化、Binder 调用优化、合理的线程池配置
-- 🔹 Compose 性能优化：减少重组（Recomposition）、stable 标记、remember/derivedStateOf
-
-### 扩展（可选深入）
-
-- 🔸 RenderEffect / Blur 等特效的性能考量
-- 🔸 预渲染（Prefetch）与预计算策略
-<!-- outline-end -->
-
 ## 优化从一条可证伪的假设开始
 
 卡顿优化的单位应是“某类帧上的某段工作”，而不是布局、线程或框架名称。一次修改至少要写清四件事：
@@ -419,7 +402,7 @@ Layout Inspector 的重组计数适合定位候选点；Compose compiler metrics
 
 ## Android 17 与内核边界
 
-本章的平台上界是 Android 17 / API 37，源码锚定 `android-17.0.0_r1`。RecyclerView、Compose、ConstraintLayout 与 WebView 是独立更新组件，优化报告要另记依赖版本，不能用平台 API 级别替代库版本。
+平台上界是 Android 17 / API 37，源码锚定 `android-17.0.0_r1`。RecyclerView、Compose、ConstraintLayout 与 WebView 是独立更新组件，优化报告要另记依赖版本，不能用平台 API 级别替代库版本。
 
 内核侧以 `android17-6.18-2026-06_r6` 为锚点。线程优化可使用 sched wakeup/switch、CPU frequency/idle、thermal、PSI 和 dma-fence 等证据；设备上的 EAS/uclamp 策略、大小核拓扑、GPU/DPU 驱动与 HWC 行为仍由 SoC 和厂商实现决定。应用代码无法从一次 CPU 编号或频率采样推出通用的亲和性方案。
 

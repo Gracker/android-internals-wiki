@@ -72,29 +72,11 @@ last_review_finalize_run_id: "20260730-100503-40fd0f28"
 
 # 典型场景分析
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 列表滑动场景的 Jank 分析：RecyclerView 的 onBind、ViewHolder 创建、图片加载
-- 🔹 页面切换动画的 Jank 分析：Activity Transition、Fragment 切换、SharedElement
-- 🔹 窗口动画的 Jank：App 启动窗口、Dialog/PopupWindow 弹出
-- 🔹 Notification 展开/折叠的 Jank
-- 🔹 桌面滑动 / 多任务切换的 Jank
-
-### 扩展（可选深入）
-
-- 🔸 视频播放场景的帧率稳定性
-- 🔸 地图/WebView 等重渲染场景的特殊处理
-
-<!-- outline-end -->
-
 ## 场景名只负责缩小范围
 
 “列表卡”“转场卡”“通知栏卡”描述的是用户当时看到了什么，还没有说明哪条渲染链路迟到。同一个列表里可以同时出现普通 View、SurfaceView 视频和 TextureView 地图；同一个页面切换又可能包含应用窗口 buffer、Shell transition 的 leash 变换、壁纸、IME 与 SurfaceFlinger 合成。若从场景名直接跳到某个线程，证据很容易落错对象。
 
-本章沿用渲染管线章节的定位顺序：
+定位顺序如下：
 
 1. 记录发生卡顿的交互阶段、显示屏、刷新率和时间区间。
 2. 列出屏幕上的内容生产者，以及各自产出的 Surface、BufferQueue 和 SurfaceFlinger layer。
@@ -323,7 +305,7 @@ Winscope 中应检查 Shell transition 的参与者、WindowManager 状态、Sur
 
 ---
 
-## [自动发现] 视频：UI 帧与视频帧要分开
+## 视频：UI 帧与视频帧要分开
 
 视频常由 MediaCodec 或播放器渲染器向 Surface 输出 buffer。使用 SurfaceView 时，视频通常拥有独立 child layer；使用 TextureView 时，视频 buffer 先进入 SurfaceTexture，再由宿主 HWUI 在 App Window 中采样。两条路径的责任线程、buffer 数量和 FrameTimeline 覆盖范围不同。
 
@@ -339,7 +321,7 @@ HWC overlay 能减少 GPU 合成压力，但它取决于格式、缩放、旋转
 
 ---
 
-## [自动发现] 地图与 WebView：先确认承载方式
+## 地图与 WebView：先确认承载方式
 
 ### 地图 SDK
 
@@ -393,7 +375,7 @@ Renderer 退出应结合进程生命周期、LMK/OOM 证据与 `WebViewClient.on
 
 ## Android 17 与内核锚点
 
-本章的平台结论以 Android 17 / API 37、AOSP `android-17.0.0_r1` 为上界。RecyclerView、Fragment、WebView provider 和地图 SDK 属于可独立更新组件，复现报告还要记录它们的版本。厂商 Launcher、SystemUI、HWC、GPU 驱动与调度策略也可能偏离 AOSP 参考实现。
+平台结论以 Android 17 / API 37、AOSP `android-17.0.0_r1` 为上界。RecyclerView、Fragment、WebView provider 和地图 SDK 属于可独立更新组件，复现报告还要记录它们的版本。厂商 Launcher、SystemUI、HWC、GPU 驱动与调度策略也可能偏离 AOSP 参考实现。
 
 内核侧以 `android17-6.18-2026-06_r6` 为锚点。通用证据包括 sched wakeup/switch、CPU frequency/idle、thermal、dma-buf 与 dma-fence；设备可见的 GPU、display、HWC 和厂商调度事件由 SoC 与构建配置决定。缺少某个厂商 tracepoint 时，应保留“不足以继续归因”的边界，不能用线程名或 CPU 编号补齐结论。
 
