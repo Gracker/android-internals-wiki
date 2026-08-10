@@ -86,35 +86,7 @@ last_deepseek_cn_review_at: 2026-07-17
 
 # 13.12 Perfetto Profile 导入与 Flamegraph 分析
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 Profile 与 system trace 的数据边界
-区分 system trace、pprof、Simpleperf protobuf、Firefox Profiler 和 Collapsed Stack 的证据口径，避免用聚合 profile 替代帧级诊断。
-
-### 🔹 pprof / Simpleperf 导入流程
-说明 Perfetto v53/v54 对 pprof、Simpleperf protobuf 和 `traceconv profile` 的支持，以及调用链、符号和 mapping 的输入条件。
-
-### 🔹 选区 Flamegraph 与 TrackEvent callstack
-解释动态 flamegraph、TrackEvent callstack 和 CPU sample profile 的差异，强调必须按时间窗、线程和场景收窄。
-
-### 🔹 符号化、inline function 与 R8 retracing
-梳理 native 符号、Build ID、inline frame、R8 mapping 的还原边界，避免在符号缺失时下结论。
-
-### 🔹 DataGrid / SQL / 大 Trace 工作流
-把 DataGrid、SQL 标准库、FrameTimeline、Binder、GC 与 profile 样本联动起来，形成可复现的诊断流程。
-
-## 扩展
-
-### 🔸 Firefox Profiler / Collapsed Stack 互通
-标注历史 profile 资产迁移能保留的信息与会丢失的 Android trace 语义。
-
-### 🔸 Profile 与 FrameTimeline / Binder / GC 交叉分析
-给出按照异常帧、跨进程等待和 GC 窗口回看 sample 的使用模板。
-
-<!-- outline-end -->
-
-本节以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点。Perfetto v53、v54 带来的格式支持属于分析端能力，不能直接换算成设备 API 等级；设备侧 `linux.perf` 采集则有 Android 版本、系统构建类型和应用可分析性要求。读这类资料时，要把“文件能否被新版 Perfetto 打开”和“设备能否录到调用栈”分成两项检查。
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。Perfetto v53、v54 带来的格式支持属于分析端能力，不能直接换算成设备 API 等级；设备侧 `linux.perf` 采集则有 Android 版本、系统构建类型和应用可分析性要求。读这类资料时，要把“文件能否被新版 Perfetto 打开”和“设备能否录到调用栈”分成两项检查。
 
 ## Profile 与 system trace 的数据边界
 
