@@ -237,7 +237,7 @@ HDR/SDR ratio = target HDR peak brightness / target SDR white point
 API 35 的 `Window.setDesiredHdrHeadroom()` 只在窗口使用 `COLOR_MODE_HDR` 时生效。`0` 表示交给系统自动选择，其他有效值表达期望范围。它有三条重要限制：
 
 - 期望值不等于系统会提供的值；
-- 窗口设置不作用于独立的 `SurfaceView` 或 `SurfaceControl`；
+- Window 的设置不作用于独立的 `SurfaceView` 或 `SurfaceControl`；
 - SurfaceView、SurfaceControl 有各自的 headroom 设置，不能只改 Window 后假设视频 Layer 已同步。
 
 应用若要随实际 headroom 调整绘制，应查询 `Display.getHdrSdrRatio()` 并监听显示变化，不能把某个尼特值写死。

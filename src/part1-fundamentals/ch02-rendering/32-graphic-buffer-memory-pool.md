@@ -49,7 +49,7 @@ sources:
 
 第一层可以从 AOSP 完整验证。第三层没有统一的 Android contract，不能仅凭 framework trace 推断厂商内部存在某种 free-list。
 
-以下分析以 `android-17.0.0_r1` 为准。内核侧以 `android17-6.18-2026-06_r6` 为准：DMA-BUF 管理共享内存对象与 fd 生命周期，DMA fd sync_file 管理访问时序；内核不知道 BufferQueue 的槽位编号，也不负责选择槽位。
+以下分析以 `android-17.0.0_r1` 为准。内核侧以 `android17-6.18-2026-06_r6` 为准：dma-buf 管共享内存对象与 fd 生命周期，dma-fence/sync_file 管访问时序；内核不知道 BufferQueue 的 slot 编号，也不负责 slot 选择。
 
 ---
 
@@ -82,7 +82,7 @@ flowchart LR
     G --> D["dma-buf backing store"]
 ```
 
-图中的 Gralloc 分支只在首次分配或不兼容重分配时发生。稳态循环通常在生产者、BufferQueue 和消费者之间运行。
+图中的 Gralloc 分支只在首次分配或不兼容重分配时发生。稳态循环通常沿 Producer、BufferQueue、Consumer 三者之间运行。
 
 ---
 
@@ -115,7 +115,7 @@ switch (mMapper.getMapperVersion()) {
 - 生成 `GraphicBufferAllocator buffers:` dump；
 - 汇总当前登记条目的估算大小，并维护跟踪事件。
 
-列表中没有“已释放、等待匹配”的条目，也没有按规格查找旧句柄的接口，因此它不承担框架通用内存池的职责。
+列表中没有“已释放、等待匹配”的条目，也没有按规格查找旧 handle 的接口，因此它不承担 framework 通用内存池的职责。
 
 ### 2.3 `getTotalSize()` 是估算值
 
@@ -144,7 +144,7 @@ Android 17 中：
 
 ---
 
-## 三、BufferQueue 保存哪些槽位
+## 三、BufferQueue 保存哪些 slot
 
 ### 3.1 四个容器互斥
 
@@ -182,7 +182,7 @@ maxBufferCount =
 
 ### 3.3 64 是默认容量，存在显式扩展路径
 
-`BufferQueueDefs::NUM_BUFFER_SLOTS` 在 Android 17 中为 64。普通模式的槽位数组和多处消费者或 Surface 缓存以此为默认容量，但 64 不是所有路径都无法越过的全局上限。
+`BufferQueueDefs::NUM_BUFFER_SLOTS` 在 Android 17 中为 64。普通模式的 slot 数组和多处 Consumer/Surface 缓存以此为默认容量，但 64 不是所有路径都无法越过的全局上限。
 
 扩展必须经过明确协商：
 
@@ -196,7 +196,7 @@ AOSP 测试覆盖了扩展到 128、256 等数量。这个能力与“Gralloc �
 
 ## 四、一次 `dequeueBuffer()` 如何决定复用或分配
 
-### 4.1 先找可用槽位
+### 4.1 先找可用 slot
 
 `waitForFreeSlotThenRelock()` 会统计 active slot 中 DEQUEUED、ACQUIRED 的数量，并检查：
 
@@ -217,7 +217,7 @@ AOSP 测试覆盖了扩展到 128、256 等数量。这个能力与“Gralloc �
 
 ### 4.2 兼容性检查不要求用途完全相等
 
-找到槽位后，`GraphicBuffer::needsReallocation()` 检查：
+找到 slot 后，`GraphicBuffer::needsReallocation()` 检查：
 
 ```cpp
 if (inWidth != width) return true;
@@ -237,18 +237,18 @@ if ((usage & USAGE_PROTECTED) !=
 
 需要新 buffer 时，`BufferQueueProducer::dequeueBuffer()` 会：
 
-1. 把槽位标为 DEQUEUED，清除旧 `GraphicBuffer` 映射；
+1. 把 slot 标为 DEQUEUED，清除旧 `GraphicBuffer` 映射；
 2. 设置 `mIsAllocating`，并在返回标志中加入 `BUFFER_NEEDS_REALLOCATION`；
 3. 释放 `BufferQueueCore::mMutex`；
 4. 创建 `GraphicBuffer`，进入 `GraphicBufferAllocator` 和 Gralloc；
-5. 重新取得锁，把新对象安装到该槽位；
+5. 重新取得锁，把新对象安装到该 slot；
 6. 清除 `mIsAllocating` 并唤醒等待者。
 
 分配时暂时放开核心锁，避免一次慢 allocator 调用把所有队列状态操作都压在同一把锁后面。代码仍使用 `mIsAllocating` 协调同一队列的相关分配。
 
-### 4.4 `requestBuffer()` 完成槽位映射握手
+### 4.4 `requestBuffer()` 完成 slot 映射握手
 
-`dequeueBuffer()` 返回槽位与标志后，`Surface` 检查：
+`dequeueBuffer()` 返回 slot 与标志后，`Surface` 检查：
 
 ```cpp
 if ((result & BUFFER_NEEDS_REALLOCATION) || gbuf == nullptr) {
@@ -262,7 +262,7 @@ if ((result & BUFFER_NEEDS_REALLOCATION) || gbuf == nullptr) {
 
 ---
 
-## 五、复用循环还受栅栏约束
+## 五、复用循环还受 fence 约束
 
 一块 buffer 从 Producer 到 Consumer 再回来的主状态如下：
 
@@ -282,7 +282,7 @@ Producer 下次 dequeue 到这个 slot 时会同时取得 fence。它必须在�
 - fence 已 signal 时等待可能很短；
 - fence 未 signal 时，即使没有任何新分配，dequeue/acquire 相关路径仍可能延迟。
 
-`mFreeBuffers` 中有槽位，不代表下一帧一定能立即开始写入；缓冲区可复用和访问安全是两个条件。
+`mFreeBuffers` 中有 slot，不代表下一帧一定能立即开始写入；buffer 可复用和访问安全是两个条件。
 
 队列可能丢弃旧帧。被丢弃的 `BufferItem` 对应 slot 也可从 active 转回 free buffer，但 frame number、stale slot 与 fence 仍要按源码规则处理，不能绕过同步。
 
@@ -301,7 +301,7 @@ Android 17 的该函数会清除：
 - fence 与旧 EGL fence 信息；
 - last queued slot 关联。
 
-函数中没有直接调用 `GraphicBufferAllocator::free()`，但这不代表本次操作一定不会释放内存。`mGraphicBuffer.clear()` 会减少强引用；若它恰好是仅存的、拥有底层句柄的 `GraphicBuffer`，对象析构会进入相应释放路径。
+函数中没有直接调用 `GraphicBufferAllocator::free()`，但这不代表本次操作一定不会释放内存。`mGraphicBuffer.clear()` 会减少强引用；若它恰好是仅存的、拥有底层 handle 的 `GraphicBuffer`，对象析构会进入相应释放路径。
 
 是否成为最终一份引用，需要检查：
 
@@ -309,21 +309,21 @@ Android 17 的该函数会清除：
 - Consumer/BLAST/SurfaceFlinger 的 buffer 缓存；
 - 排队中的 `BufferItem`；
 - EGLImage、纹理或其他导入对象；
-- 其他进程导入的句柄与驱动引用。
+- 其他进程导入的 handle 与驱动引用。
 
 ### 6.2 `freeAllBuffersLocked()` 清映射并处理缓存失效
 
 Producer disconnect、队列配置变化等路径可调用 `freeAllBuffersLocked()`。它清理 free/active slot 的 `GraphicBuffer`，把 slot 转为 `mFreeSlots`，并把尚在 FIFO 中的 item 标为 stale。源码还把这些 item 的 `mAcquireCalled` 设为 false，使 Consumer 后续重新取得 handle，而不继续使用已失效的 slot 缓存。
 
-槽位编号本身没有跨 disconnect 的永久身份。重连后，即使数字相同，双方也要重新建立映射。
+slot 编号本身没有跨 disconnect 的永久身份。重连后，即使数字相同，双方也要重新建立映射。
 
 ### 6.3 `GraphicBuffer` 的 owner 决定释放方式
 
 `GraphicBuffer` 可能：
 
 - 自己通过 allocator 创建数据，析构时走 `GraphicBufferAllocator::free()`；
-- 只拥有导入后的句柄，析构时走 Mapper 的 `freeBuffer()`；
-- 只包装外部句柄，不取得所有权。
+- 只拥有导入后的 handle，析构时走 Mapper 的 `freeBuffer()`；
+- 只包装外部 handle，不取得所有权。
 
 不能把每个 `GraphicBuffer` 析构都描述成“从 `sAllocList` 删除一项”。只有由该 allocator 登记并按相应 owner 语义持有的 handle 才符合这条路径。
 
@@ -333,7 +333,7 @@ Producer disconnect、队列配置变化等路径可调用 `freeAllBuffersLocked
 
 SurfaceView、TextureView、普通应用窗口使用的 Consumer 和合成路径不同。反复创建 Surface 后图形指标增长，可能来自：
 
-- 旧 BufferQueue 或 BLAST 事务尚未完成清理；
+- 旧 BufferQueue 或 BLAST transaction 尚未完成清理；
 - 应用仍持有 `Surface`、`SurfaceTexture`、codec、EGLSurface 或 native window；
 - GPU 导入缓存尚未释放；
 - 新旧队列在异步销毁阶段短暂重叠；
@@ -354,7 +354,7 @@ Gralloc 5 的 `IAllocator.allocate2()` 接口支持 `count` 参数。Android 17 
 mAllocator->allocate2(*descriptorInfo, 1, &result);
 ```
 
-这里的 `count` 固定为 1。不能因为 AIDL 支持批量语义，就宣称 BufferQueue 的普通 reallocation 会一次批量申请多块。`BufferQueueProducer::allocateBuffers()` 可以预分配多个可用槽位，但实现仍按槽位逐块创建 `GraphicBuffer`，还会处理分配期间配置变化的竞态。
+这里的 `count` 固定为 1。不能因为 AIDL 支持批量语义，就宣称 BufferQueue 的普通 reallocation 会一次批量申请多块。`BufferQueueProducer::allocateBuffers()` 可以预分配多个可用 slot，但实现仍按 slot 逐块创建 `GraphicBuffer`，还会处理分配期间配置变化的竞态。
 
 ### 7.2 AIDL 描述不规定堆、压缩或缓存算法
 
@@ -371,7 +371,7 @@ mAllocator->allocate2(*descriptorInfo, 1, &result);
 
 若要证明厂商存在额外池化，至少需要其 HAL/驱动源码、厂商 tracepoint，或能够对应 allocate/free 与底层对象身份的设备证据。SoC 名称本身不能替代验证。
 
-### 7.3 `reservedSize` 与 16 KB 页大小不存在固定换算
+### 7.3 `reservedSize` 与 16 KB page size 不存在固定换算
 
 `reservedSize` 是与 buffer 关联的 reserved region 字节数。Android 17 的 `Gralloc5Allocator::makeDescriptor()` 在普通 GraphicBuffer 路径中没有主动设置它，默认值为 0；additional options 另有独立数组。
 
@@ -381,9 +381,9 @@ Android 支持 16 KB page size，不代表每块 GraphicBuffer 都额外增加�
 
 ### 7.4 Android 17 的 additional options
 
-`BQ_EXTENDEDALLOCATE` 保护 BufferQueue 的扩展分配选项路径。Producer ID；旧槽位的世代不匹配时，下次出队会重新分配。Gralloc 5 将这些选项转为 `ExtendableType[]` 传给 `allocate2()`。
+`BQ_EXTENDEDALLOCATE` 保护 BufferQueue 的扩展分配选项路径。Producer 设置新 options 后，core 更新内容并递增 generation id；旧 slot 的 generation 不匹配时，下次 dequeue 会重新分配。Gralloc 5 将这些选项转为 `ExtendableType[]` 传给 `allocate2()`。
 
-选项用于“不改变总体用途、但会影响分配方式”的扩展信息，AIDL 文档给出的例子是 surface compression level。实现必须拒绝无法识别的选项。源码中存在该开关，不代表任意量产设备都启用；受保护内容等已有明确用途语义的能力也不能随意归入该数组。
+选项用于“不改变总体 usage、但会影响分配方式”的扩展信息，AIDL 文档给出的例子是 surface compression level。实现必须拒绝无法识别的选项。flag 在源码存在不代表任意量产设备都启用，也不能把 protected content 等已有明确 usage 语义的能力随意归入该数组。
 
 ---
 

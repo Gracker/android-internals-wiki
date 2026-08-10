@@ -139,7 +139,7 @@ WMS visibility、ATMS lifecycle transaction、Shell transition 和应用主线�
 
 ### 3.1 真实画面的调用链
 
-Android 17 捕获真实快照的主线是：
+Android 17 捕获真实 snapshot 的主线是：
 
 ```mermaid
 flowchart TD
@@ -162,7 +162,7 @@ flowchart TD
 - 正在退出且不属于基础应用的部分窗口；
 - Task 明确登记在 `mExcludeLayersFromTaskSnapshot` 中的 layer。
 
-捕获会生成新的截图缓冲区，而非直接读取某个 App Window 的 `GraphicBuffer`。任务中可能包含多个窗口、SurfaceView、壁纸或装饰 layer，SurfaceFlinger 要根据当前 layer 状态生成捕获结果。
+捕获会生成新的截图 buffer，而非直接读取某个 App Window 的 `GraphicBuffer`。Task 中可能包含多个窗口、SurfaceView、壁纸或装饰 layer，SurfaceFlinger 要根据当前 layer 状态生成捕获结果。
 
 ### 3.2 同步捕获会进入 transition 关键路径
 
@@ -335,7 +335,7 @@ live tile 与静态缩略图的选择不能简化为：
 - 因 snapshot 不兼容而改用 splash；
 - 在 Task/Activity 已满足显示条件时不创建 starting window。
 
-因此，Android 17 不能统一描述为“Launcher 把静态 snapshot layer 渐变切换为应用实时 Surface”。Launcher 静态缩略图、Shell remote leash 和 WMS starting window 是三套不同对象。
+因此，Android 17 不能统一描述为“Launcher 把静态 snapshot layer 渐变切换为 App 实时 Surface”。Launcher 静态缩略图、Shell remote leash 和 WMS starting window 是三套不同对象。
 
 ## 6. Snapshot starting window
 
@@ -408,7 +408,7 @@ Launcher3 的 `PreviewPositionHelper` 使用：
 
 折叠前后的 Task bounds 可能在 rotation 不变时改变宽高比。`ActivityRecord.isSnapshotOrientationCompatible()` 会比较 snapshot `taskSize` 与当前 Task bounds；差异超过阈值时不使用 snapshot starting window。
 
-Android 17 不会在每次显示变化时重新捕获所有任务；当前 `TaskSnapshotController` 没有通用的 `handleDisplayChange()` 或 `snapshotBeforeDisplayChange()` 路径。
+Android 17 不会在每次显示变化时重新捕获所有 Task；当前 `TaskSnapshotController` 没有通用的 `handleDisplayChange()` 或 `snapshotBeforeDisplayChange()` 路径。
 
 ### 7.3 一个 Task 归属一个 DisplayContent
 
@@ -449,7 +449,7 @@ TaskSnapshot 使用 gralloc buffer，可被 GPU 采样，也可在满足设备�
 - protected/secure 内容；
 - HWC validate 结果。
 
-Overview 静态卡片通常已经画入 Launcher App Window；启动快照更可能表现为独立 layer。两者不能共用“HWC 直接合成 snapshot”这一结论。
+Overview 静态卡片通常已经画入 Launcher App Window；启动 snapshot 更可能表现为独立 layer。两者不能共用“HWC 直接合成 snapshot”这一结论。
 
 ## 9. 性能观测
 
@@ -578,7 +578,7 @@ adb shell dumpsys meminfo <launcher-package>
 分别统计：
 
 - system_server running snapshot cache；
-- 功能开关控制的 5 秒 high-res defer cache；
+- 功能 flag 控制的 5 秒 high-res defer cache；
 - persist queue 尚未写完的 HardwareBuffer；
 - Launcher thumbnail cache；
 - 屏幕上的 starting window 与 Launcher/App Window buffer；
