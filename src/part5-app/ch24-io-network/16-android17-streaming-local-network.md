@@ -64,41 +64,7 @@ last_deepseek_cn_review_at: 2026-07-04
 
 # 24.16 Android 17 流媒体网络预算与本地网络权限适配
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 场景边界：流媒体限速、本地设备发现与普通 API 请求
-区分视频/音频流媒体码率决策、Cast/IoT/局域网设备发现、普通 HTTP API 请求三类网络路径，避免把 Android 17 的连接性变更写成所有网络请求的统一优化入口。
-
-### 🔹 Data Plan Streaming API 的使用边界
-梳理 `SubscriptionInfo.getStreamingAppMaxDownlinkKbps()` / `getStreamingAppMaxUplinkKbps()`、`SubscriptionPlan.BITRATE_UNKNOWN`、运营商数据计划和 ABR 码率选择之间的关系。
-
-### 🔹 ACCESS_LOCAL_NETWORK 对局域网链路的影响
-覆盖 Android 16 opt-in 到 Android 17 targetSdk 37 强制执行的迁移路径，说明 mDNS、SSDP、本地 HTTP server、投屏和 IoT 控制的权限与降级策略。
-
-### 🔹 与卫星/低带宽网络适配的关系
-复用 24.11 的低带宽预算思想，把运营商流媒体速率上限、本地网络权限拒绝和弱网/卫星网络能力合并到请求调度策略中。
-
-### 🔹 TLS 与本地网络权限的取证差异
-说明 TLS/ECH/证书失败属于 12.4 的安全连接问题，本地网络权限失败属于权限与目标 SDK 问题；两者按异常类型、日志和用户授权路径分别记录。
-
-### 🔹 灰度实验与线上指标
-设计 targetSdk 36/37 对照、权限授权率、局域网发现成功率、流媒体首缓冲、码率切换、卡顿率和运营商网络分组指标，用于上线验证。
-
-## 扩展
-
-### 🔸 Media3 ABR 与平台流媒体速率上限的映射
-记录 Media3/ExoPlayer 的码率估计如何接入运营商上限，避免把瞬时测速和 data plan cap 混成同一个信号。
-
-### 🔸 Cast / IoT 场景的权限替代路径
-整理 output switcher、系统选择器和显式 runtime permission 三种路径的产品取舍。
-
-### 🔸 Android 17 网络行为变更回归清单
-建立 targetSdk 37 前后的局域网、TLS、卫星/低带宽、DeliQueue 回调投递回归项。
-
-<!-- outline-end -->
-
-## 本节边界
+## 范围
 
 Android 17 同时增加了流媒体数据计划速率接口和本地网络访问权限。它们都属于网络功能，却没有共同的控制对象：
 
@@ -106,7 +72,7 @@ Android 17 同时增加了流媒体数据计划速率接口和本地网络访问
 - `ACCESS_LOCAL_NETWORK` 控制应用能否发现或连接局域网设备，也控制局域网设备能否连接应用进程中的服务器。
 - 登录、Feed、配置和图片列表等互联网请求仍按 DNS、连接、重试与弱网规则处理。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台基准。24.11 说明低带宽与卫星网络，24.14 说明请求预算，24.18 说明 ECH 与证书透明度；这里集中处理流媒体速率信号和局域网授权。
+平台基准为 Android 17 / API 37 / `android-17.0.0_r1`。24.11 说明低带宽与卫星网络，24.14 说明请求预算，24.18 说明 ECH 与证书透明度；这里集中处理流媒体速率信号和局域网授权。
 
 ## 先给网络路径分类
 
@@ -209,7 +175,7 @@ fun readDefaultDataStreamingPlanLimit(
 | `BandwidthMeter` 估计 | 最近媒体传输样本推导的可用吞吐 | 分片传输持续更新 | 播放中的升降档 |
 | 缓冲与播放状态 | 已缓冲时长、卡顿、直播延迟和解码能力 | 播放会话内更新 | 是否允许升档、是否快速降档 |
 
-截至本文复核时，Media3 `AdaptiveTrackSelection.DEFAULT_BANDWIDTH_FRACTION` 为 `0.7f`，`DefaultBandwidthMeter.DEFAULT_INITIAL_BITRATE_ESTIMATE` 为 `1_000_000` bps。它们属于具体 Media3 版本的默认参数，基线必须记录播放器和 Media3 的精确版本，不能把默认值当作所有版本的固定规则。
+复核所用的 Media3 版本中，`AdaptiveTrackSelection.DEFAULT_BANDWIDTH_FRACTION` 为 `0.7f`，`DefaultBandwidthMeter.DEFAULT_INITIAL_BITRATE_ESTIMATE` 为 `1_000_000` bps。它们属于具体版本的默认参数，基线必须记录播放器和 Media3 的精确版本，不能把默认值当作所有版本的固定规则。
 
 运营商上限也不能直接写成视频轨道的最大码率。一次媒体会话还包含音频、容器、清单、加密、请求头、重传和质量探测等成本。合理的顺序是：
 
@@ -263,7 +229,7 @@ adb reboot
 - mDNS/DNS-SD 场景可使用 `DiscoveryRequest.FLAG_SHOW_PICKER`。
 - 用户选中的服务会获得按服务授权，不需要应用取得整个局域网的访问权限。
 
-Android 17 的 NSD 设备选择器 API 同时发布在 T SDK Extension 22。运行在可接收 SDK Extension 更新的旧平台时，应检查 T 扩展版本；本章示例只展示 Android 17 直接路径。
+Android 17 的 NSD 设备选择器 API 同时发布在 T SDK Extension 22。运行在可接收 SDK Extension 更新的旧平台时，应检查 T 扩展版本；以下示例只展示 Android 17 直接路径。
 
 下面的代码显示一次系统 NSD 设备选择。回调对象需要由页面或控制器保存，以便在生命周期结束时取消注册。
 

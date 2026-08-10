@@ -74,44 +74,7 @@ last_deepseek_cn_review_at: 2026-06-21
 
 Room 3.0 改变了包名、数据库驱动、代码生成器和异步接口。迁移工作因此不能只改依赖版本，还要检查运行期数据库 I/O、KSP 与 schema 输出、旧 `SupportSQLite` 扩展点，以及数据库升级后的应用降级能力。
 
-本文的平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，依赖基线是 Room 3.0.1 与 SQLite 2.7.0。`AndroidSQLiteDriver` 会使用 Android 17 平台 SQLite；`BundledSQLiteDriver` 使用随库发布的原生 SQLite，两者不能共用一套未经实测的性能结论。本章不涉及内核接口，因此没有内核源码锚点。SQLite 锁、WAL、CursorWindow、Room 2.x 线程模型和 ANR 观察详见 10.7 节；查询、索引和事务优化详见 24.2 节；Profiler 与 Perfetto 的使用详见 14.1 节。
-
-<!-- outline-start -->
-## 要点
-
-### 🔹 Room 3.0 的变化边界
-对比 `androidx.room3` 新坐标与 Room 2.x 的 SupportSQLite / KAPT / Java AP 路径，明确 KMP 定位、SQLiteDriver 后端、KSP-only 编译链路和 Kotlin-only 生成代码的迁移边界。
-
-### 🔹 SQLiteDriver 对数据库 I/O 路径的影响
-`androidx.sqlite` driver API 如何改变连接打开、事务执行、statement 复用和跨平台封装边界——不要只写成依赖升级。
-
-### 🔹 KSP 与 schema 输出对构建性能的影响
-Room Gradle Plugin、schemaDirectory、可缓存构建、flavor schema 输出和 CI 校验——编译耗时、增量构建、自动迁移验证放在同一份清单。
-
-### 🔹 SupportSQLite 兼容层的使用策略
-`room3-sqlite-wrapper` 只适合迁移期兜底：哪些旧代码短期内靠 wrapper，哪些应该直接迁到 driver API。
-
-### 🔹 迁移前后的性能验证方法
-查询耗时、事务耗时、主线程 I/O、数据库锁等待、冷启动 open 和 schema migration——通过 Macrobenchmark、Perfetto、StrictMode 和 Profiler 验证。
-
-### 🔹 KMP 场景的边界
-优先验证 Android 端数据路径；iOS、Desktop、Web/WASM 属于架构边界，不应反向污染 Android 端性能结论。
-
-### 🔹 常见风险与回滚策略
-alpha 版本引入、KSP 配置缺失、旧 SupportSQLite 扩展点失效、schema 漏提交、DAO Java 源码处理和多模块迁移拆分等风险。
-
-## 扩展
-
-### 🔸 Room 2.x 到 Room 3.0 迁移 checklist
-可整理依赖坐标、KSP、Gradle Plugin、schema、driver、wrapper 和测试用例的分步清单。
-
-### 🔸 Room 3.0 与 DataStore / 原生 SQLite 选型
-可补充不同数据量、查询复杂度、跨平台需求和启动路径敏感度下的选型边界。
-
-### 🔸 Web/WASM SQLiteDriver 的跨端同步问题
-可作为 KMP 扩展材料，讨论 WebWorkerSQLiteDriver 与离线同步策略，不作为 Android 端主线。
-
-<!-- outline-end -->
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，依赖基线为 Room 3.0.1 与 SQLite 2.7.0。`AndroidSQLiteDriver` 使用 Android 17 平台 SQLite；`BundledSQLiteDriver` 使用随库发布的原生 SQLite，两者不能共用一套未经实测的性能结论。分析不涉及内核接口，因此没有内核源码锚点。SQLite 锁、WAL、CursorWindow、Room 2.x 线程模型和 ANR 观察详见 10.7 节；查询、索引和事务优化详见 24.2 节；Profiler 与 Perfetto 的使用详见 14.1 节。
 
 ## Room 3.0 的变化边界
 
@@ -299,7 +262,7 @@ Room 2.x 与 Room 3 的包可以共存，但迁移同一个数据库文件时仍
 
 Profiler 适合交互式定位，Perfetto 适合把线程调度、文件 I/O、锁等待和应用 trace 放到同一时间轴。二者都不能代替 `EXPLAIN QUERY PLAN`、索引检查和真实数据分布分析。看到数据库线程处于 sleeping 状态时，还要结合连接等待、锁与 I/O 判断，不能只看 CPU 火焰图。
 
-测试数据应覆盖空库、常见规模和大规模数据库，并记录表行数、索引、数据库与 WAL 文件大小、设备、Android 版本、驱动、journal 模式、Room 版本、构建类型以及 R8 和 Baseline Profile 状态。每个项目应从线上分布与性能预算确定迭代次数、分位数和门槛，文章不提供脱离业务数据的固定数字。
+测试数据应覆盖空库、常见规模和大规模数据库，并记录表行数、索引、数据库与 WAL 文件大小、设备、Android 版本、驱动、journal 模式、Room 版本、构建类型以及 R8 和 Baseline Profile 状态。迭代次数、分位数和门槛应由线上分布与性能预算决定，不设脱离业务数据的固定数字。
 
 相关工具的官方入口包括 [Macrobenchmark 概览](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)、[StrictMode API](https://developer.android.com/reference/android/os/StrictMode) 和 [Android 性能检查工具](https://developer.android.com/topic/performance/inspecting-overview)。
 
@@ -315,7 +278,7 @@ Android 性能报告只记录 Android 使用的驱动、设备、系统和数据
 
 ## 版本演进
 
-Room 3 的预发布版本可用于理解 API 来源，项目依赖应固定到已验证的稳定版本：
+Room 3 的预发布版本可用于理解 API 来源，正式依赖应固定到已验证的稳定版本：
 
 | 版本 | 主要变化 | 迁移检查 |
 | --- | --- | --- |

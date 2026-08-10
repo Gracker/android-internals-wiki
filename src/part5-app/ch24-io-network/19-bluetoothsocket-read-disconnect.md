@@ -33,52 +33,18 @@ sources:
 
 # 24.19 BluetoothSocket read 断开语义与长连接治理
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 Android 17 RFCOMM `read()` 返回值变化
-梳理 Android 17 面向 `targetSdkVersion >= 37` 的 Bluetooth RFCOMM socket 行为：远端断开或 socket 关闭时，`InputStream.read()` 可返回 `-1`，应用不能只依赖 `IOException` 退出读循环。
-
-### 🔹 读写线程模型与阻塞边界
-结合官方 Bluetooth 数据传输文档，说明 `read(byte[])` 和 `write(byte[])` 都可能阻塞，读循环需要专用线程、明确退出条件和可观测状态，不把阻塞等待放进主线程或 UI 回调。
-
-### 🔹 断线归因与状态机
-区分主动关闭、远端断开、链路丢失、权限撤销、蓝牙关闭和协议层心跳超时，把 `-1`、`IOException`、业务超时和用户操作分别映射到状态机事件。
-
-### 🔹 长连接重连与退避策略
-设计重连预算、指数退避、用户可见状态、前后台切换策略和设备重发现边界，避免断线后立即高频扫描或无限重连。
-
-### 🔹 性能与功耗监控字段
-给出连接时长、读循环退出原因、重连次数、扫描时长、线程存活、写入阻塞耗时和蓝牙功耗归因字段，和 11.6 的蓝牙扫描功耗章节建立引用关系。
-
-### 🔹 Android 17 适配测试表
-覆盖 targetSdk 36/37、经典蓝牙 RFCOMM、LE CoC、远端主动断开、本地关闭 socket、飞行模式、蓝牙开关、后台限制和弱信号场景。
-
-## 扩展
-
-### 🔸 与 11.6 Bluetooth 功耗章节的边界
-11.6 负责扫描、连接和后台功耗；本节聚焦 socket 读写语义、断线状态机和长连接治理。
-
-### 🔸 与 24.14 弱网治理的关系
-Bluetooth 不是蜂窝或 Wi-Fi 弱网，但重连退避、请求分段和状态上报可以复用 24.14 的治理框架。
-
-### 🔸 与 26.17 线上网络质量监控的关系
-线上监控需要把 Bluetooth socket 断开归入独立通道，不混入 HTTP 错误率或公网弱网指标。
-
-<!-- outline-end -->
-
-## 这节解决什么问题
+## 适配问题
 
 Bluetooth 长连接的故障往往从一个返回值开始，却会扩散到多处：读线程没有退出，界面仍显示已连接，旧连接的退出事件覆盖新连接状态，重连又触发连续扫描。Android 17 改变了 RFCOMM 输入流在结束时的表现，旧代码只捕获 `IOException` 已经不够。
 
-本章回答四个工程问题：
+需要回答四个工程问题：
 
 - Android 17 的变化由哪些设备版本、目标 SDK 和 socket 类型共同触发。
 - `-1` 能证明什么，为什么它不能直接命名为“远端正常断开”。
 - 阻塞的 `connect()`、`read()` 与 `write()` 应怎样取消和分线程。
 - 状态机怎样区分关闭意图、流结束、传输错误和过期连接事件。
 
-本章的平台与模块源码锚点是 `android-17.0.0_r1`。证据位于 `packages/modules/Bluetooth` 的 Java 框架层；这里不根据 Linux socket 实现推导应用 API 契约，因此没有需要引用的 kernel 标签。
+平台与模块源码锚点为 `android-17.0.0_r1`。证据位于 `packages/modules/Bluetooth` 的 Java 框架层；这里不根据 Linux socket 实现推导应用 API 契约，因此没有需要引用的 kernel 标签。
 
 ## Android 17 的 RFCOMM EOF 语义
 
@@ -105,7 +71,7 @@ while (running) {
 }
 ```
 
-如果 `read()` 返回 `-1`，这段代码会把负数交给协议解析器，并继续下一次循环。另一个问题是把每次 `read()` 当成一个业务帧：RFCOMM 是字节流，一次读取可能只得到半帧，也可能同时得到多帧。
+如果 `read()` 返回 `-1`，这段代码会把负数交给协议解析器，并继续下一次循环。它还把每次 `read()` 当成一个业务帧：RFCOMM 是字节流，一次读取可能只得到半帧，也可能同时得到多帧。
 
 ### `-1` 只表示流结束
 
@@ -188,8 +154,6 @@ class BtReadLoop(
 
 ### `android-17.0.0_r1` 的实现
 
-<!-- AIW-源码调研-2026-06-21 -->
-
 下面的源码节选用于核对 RFCOMM 负返回值经过的门控，不是供应用复制的代码：
 
 ```java
@@ -235,7 +199,7 @@ adb shell am compat reset 383671392 com.example.app
 - `connect()` 会阻塞到连接成功或失败，没有公开的超时参数。
 - `BluetoothSocket` 是线程安全的，另一个线程调用 `close()` 会立即中止进行中的操作并关闭 socket。
 
-因此，协程取消或中断 Java 线程本身不足以保证 `connect()`、`read()` 退出。取消处理必须调用同一个 `BluetoothSocket.close()`。连接超时也应由监督者执行：到达项目设定的截止时间后关闭本次 socket；下一次重试创建新的 `BluetoothSocket`，不要复用已关闭对象。
+因此，协程取消或中断 Java 线程本身不足以保证 `connect()`、`read()` 退出。取消处理必须调用同一个 `BluetoothSocket.close()`。连接超时也应由监督者执行：到达设定的截止时间后关闭本次 socket；下一次重试创建新的 `BluetoothSocket`，不要复用已关闭对象。
 
 建议把一次连接会话分成四个执行单元：
 
@@ -373,9 +337,9 @@ Perfetto、应用跟踪与 BatteryStats 可以用于核对断线后的线程、�
 
 ## 与相邻章节的边界
 
-11.6 节负责 Bluetooth 扫描、连接和功耗分析。本节只在断线扫描、重连预算和 socket 线程处引用 11.6，不重复 BLE 扫描限制。
+11.6 节负责 Bluetooth 扫描、连接和功耗分析。这里仅在断线扫描、重连预算和 socket 线程处引用 11.6，不重复 BLE 扫描限制。
 
-24.14 节负责公网请求的弱网处理和重试预算。本节可以复用失败分类、幂等性和总时间预算，但 Bluetooth socket 的错误仍需独立建模，不能归入 HTTP 的 DNS、连接或读取超时。
+24.14 节负责公网请求的弱网处理和重试预算。Bluetooth socket 可以复用失败分类、幂等性和总时间预算，但错误仍需独立建模，不能归入 HTTP 的 DNS、连接或读取超时。
 
 26.17 节负责线上网络质量监控。Bluetooth socket 应作为独立通道上报，原始事件保留 `socket_type`、`read_exit_reason`、`connection_id` 和 `retry_stop_reason`。
 
