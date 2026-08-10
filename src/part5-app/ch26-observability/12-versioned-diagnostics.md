@@ -80,46 +80,9 @@ last_task9_review_log: "logs/deep-review/2026-06-28-22-deep-review.md"
 
 # 26.12 Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 诊断能力分层
-区分三类官方入口：进程退出追溯、运行时采集、系统事件触发采集。章节要说明它们分别回答什么问题，避免把 Crash/ANR 事后证据、Perfetto system trace 和 heap dump 放进同一套处理口径。
-
-### 🔹 Android 10-14 的降级路径
-说明 Android 10 主要依赖 Perfetto、bug report、日志和人工协助；Android 11-14 可用 `ApplicationExitInfo` 做退出原因补偿，但采集范围和 trace 类型有版本边界。
-
-### 🔹 ApplicationExitInfo 的退出证据边界
-覆盖 `ActivityManager#getHistoricalProcessExitReasons()`、`ApplicationExitInfo#getReason()`、`getTraceInputStream()`、`REASON_ANR`、`REASON_CRASH_NATIVE` 的 API 版本差异和空返回条件；对未进入 Android 17 公开 reason 列表的旧素材单独标注。
-
-### 🔹 ProfilingManager 的应用驱动采集
-覆盖 Android 15+ `ProfilingManager` / AndroidX Profiling 的 system trace、heap dump、heap profile、stack sampling 四类采集，说明结果回调、文件归档、限流和采集成本。
-
-### 🔹 ProfilingTrigger 与 Extension 版本
-覆盖 Android 16/API 36、Extension 36.1、Android 17/API 37 的 trigger 差异，区分 `TRIGGER_TYPE_APP_FULLY_DRAWN`、`TRIGGER_TYPE_ANR`、`TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_ANOMALY` 等触发器的返回物和使用场景。
-
-### 🔹 证据归档与去重字段
-设计一套线上证据归档字段：pid、timestamp、processName、reason、triggerType、profilingType、resultFilePath、caseId、sessionId、appVersion、device、API level。说明 Java crash、native crash、ANR、OOM 和用户手动杀进程如何去重。
-
-### 🔹 隐私、限流与采集成本
-说明 trace、heap dump、stack sampling 可能包含业务方法名、对象内容、线程名和用户上下文；采集要有用户授权、字段脱敏、文件加密、保留期限、远程开关和采样上限。
-
-## 扩展
-
-### 🔸 Native crash tombstone 与 Crashpad/Breakpad 补偿
-补充 Android 12+ native tombstone protobuf 与 SDK minidump 的关系，区分系统补偿证据和 SDK 自有 crash store。
-
-### 🔸 版本能力表与排障决策表
-把 Android 10-14、15、16、17 分成四档，给出“遇到慢启动/ANR/native crash/OOM/进程被杀时先拿什么证据”的决策表。
-
-### 🔸 与 26.5 证据包模板的关系
-本节聚焦版本化诊断入口和采集边界；26.5 继续保留排障流程、反馈复现、远程日志和灰度处置。
-
-<!-- outline-end -->
-
 同一个故障发生在 Android 10 和 Android 17 上，可取得的系统证据并不相同。诊断系统需要先判断设备版本和能力，再决定采集入口。版本号只能说明 API 的上限，不能保证系统一定生成了某份附件。
 
-本文以 `android-17.0.0_r1` 为平台源码锚点。涉及旧版本时保留其公开 API 边界；涉及 Android 17 新行为时，以正式开发者文档和该标签下的源码为准。
+平台源码锚点采用 `android-17.0.0_r1`。涉及旧版本时保留其公开 API 边界；涉及 Android 17 新行为时，以正式开发者文档和该标签下的源码为准。
 
 ## 三条诊断路径分别回答什么
 
@@ -168,7 +131,7 @@ Android 12 / API 31 扩展了 native crash 附件：`REASON_CRASH_NATIVE` 的 `g
 - `getProcessStateSummary()` 是 App 先前通过 `ActivityManager#setProcessStateSummary()` 写入的有限状态数据，可能为 `null`。
 - `getDescription()` 面向人工阅读，通常不应作为稳定协议解析。Android 17 MemoryLimiter 的官方标记是一个有文档保证的例外，后文单独说明。
 
-公开 SDK 没有 `getSubReason()`。AOSP 内部确有更细的 sub-reason，statsd 也可使用内部字段，但普通应用不能把它写进依赖公开 API 的数据模型。旧资料中出现的 `REASON_APPLICATION_SPECIFIC_ERROR` 也不在 `android-17.0.0_r1` 的公开 reason 列表中，本章不使用它。
+公开 SDK 没有 `getSubReason()`。AOSP 内部确有更细的 sub-reason，statsd 也可使用内部字段，但普通应用不能把它写进依赖公开 API 的数据模型。旧资料中出现的 `REASON_APPLICATION_SPECIFIC_ERROR` 也不在 `android-17.0.0_r1` 的公开 reason 列表中，因此不在这里使用。
 
 ### 安全读取退出记录
 
@@ -317,7 +280,7 @@ trigger 注册表达的是“应用对某类系统事件感兴趣”。它不保
 
 `TRIGGER_TYPE_COLD_START` 会尽早启动一份新的 system trace 和 stack sampling profile，持续到应用调用 `reportFullyDrawn()`；未调用时，公开 API 文档给出的默认停止时间为 5 秒。它使用 discard buffer，缓冲区满后丢弃新事件，以保留启动初期的内容。采集启动仍可能有延迟，因此产物不保证覆盖进程创建后的每个事件。
 
-`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 存在官方文档差异：`android-17.0.0_r1` 源码注释和 API reference 写的是后台 system trace 快照，Android 17 features 页面写的是 call-stack sample。接入端应保存系统返回的原始产物及文件类型，不要按 trigger 名写死解析器；本章以版本化源码和 API reference 作为接口语义锚点，同时保留该差异记录，等待官方文档一致。
+`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 存在官方文档差异：`android-17.0.0_r1` 源码注释和 API reference 写的是后台 system trace 快照，Android 17 features 页面写的是 call-stack sample。接入端应保存系统返回的原始产物及文件类型，不要按 trigger 名写死解析器；这里以版本化源码和 API reference 作为接口语义锚点，同时保留该差异记录，等待官方文档一致。
 
 ## 证据归档：系统事实与应用推断分开
 
@@ -395,7 +358,7 @@ profiling 文件可能包含比普通日志更敏感的内容：
 
 ## 与 26.5 证据包模板的关系
 
-26.5 负责问题受理、复现步骤、远程日志、灰度处置和问题单流程。本章只为证据包增加版本化的“系统诊断附件”：
+26.5 负责问题受理、复现步骤、远程日志、灰度处置和问题单流程。版本化的“系统诊断附件”包括：
 
 - `ApplicationExitInfo` 退出记录及可选 ANR/native 附件；
 - 应用请求产生的 system trace、heap dump、heap profile 或 stack sampling；

@@ -54,45 +54,9 @@ sources:
 
 # 26.15 Android Vitals 与 Play Console 质量指标归因
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 Android Vitals 的指标层级
-梳理 Android Vitals 在 Play Console 中覆盖的稳定性、性能、功耗和权限类指标，区分 core vitals、普通 vitals、游戏专属 Slow Sessions、Wear OS 电池指标和 App 自建 APM 指标。
-
-### 🔹 28 天窗口、整体阈值与机型阈值
-解释 Play 以最近 28 天数据评估质量的口径，重点覆盖 Crash、ANR、Battery core vitals 的整体阈值和 per-device / per-watch-model 阈值，以及越线后对曝光、商店页提示和发版决策的影响。
-
-### 🔹 User-perceived Crash / ANR 与自建 Crash 上报的差异
-把 Android Vitals 的 user-perceived 口径与 SDK 本地 crash store、native tombstone、ApplicationExitInfo、ANR trace、前后台状态和去重规则对齐，说明哪些问题只能靠自建 APM 补证据。
-
-### 🔹 启动、渲染、LMK 与 Slow Sessions 的归因路径
-建立 Play Console 入口到内部证据的回查流程：启动耗时回连 21.8，慢渲染回连 22.8，User-perceived LMK 回连 23.7，游戏 Slow Sessions 回连 ADPF、Swappy、Frame Pacing 和设备性能分层。
-
-### 🔹 功耗类 vitals 与后台任务治理
-覆盖 excessive partial wake locks、excessive wakeups、background Wi-Fi scans、background network usage、Wear OS excessive battery usage，对接 WakeLock / Alarm / WorkManager / JobScheduler 和后台网络重试治理。
-
-### 🔹 Play 指标到发版门禁的映射
-把 Android Vitals 越线、趋势预警、设备分群、版本分群、灰度放量和 A/B 实验护栏放到同一张决策表中，避免只看自建指标或只看 Play Console 滞后结果。
-
-### 🔹 数据延迟、采样盲区与误判边界
-说明 Android Vitals 适合做外部质量裁决和趋势校验，不适合替代实时报警；列出低量级 App、非 Play 分发、国内渠道、灰度短窗口和 OEM ROM 差异造成的盲区。
-
-## 扩展
-
-### 🔸 Play Developer Reporting API 与内部数据仓库对接
-整理可自动拉取 Android Vitals 指标的 API 边界、权限、分组维度和与内部 crash / performance warehouse 的 join key 设计。
-
-### 🔸 技术质量政策与商店可见性风险
-跟踪 Google Play 对 core vitals 的技术质量执行策略，补充过线后的商店曝光、警告和版本治理动作。
-
-<!-- outline-end -->
-
 Android Vitals 是 Google Play 对线上技术质量的外部观测。它回答的是：从 Play 安装应用、允许共享使用情况与诊断数据的用户，是否正在经历稳定性、性能或功耗问题。内部 APM 回答的是另一个问题：问题出现在哪个版本、场景和调用路径，能否在灰度阶段定位并止损。两套数据的采集范围、分母和时效不同，应当相互校验，不能直接比较两个百分比的大小。
 
-本章以 2026 年 7 月公开文档为准，平台版本上界为 Android 17 / API 37。Vitals 的指标定义、阈值和 Play 可见性策略都由 Google Play 服务端定义，不属于 `android-17.0.0_r1` 的 AOSP API 契约。Android 17 源码可用于解释 ANR、LMKD、帧时间或唤醒机制，却不能证明 Play 的服务端阈值。团队升级平台源码锚点时，不应顺手改写这些阈值；Play 文档变更时，也不表示 Android framework 同时发生了对应改动。
-
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md] 将质量平台放入开发、测试、灰度和发布流程；同系列第 7、10、22 篇分别提供了卡顿、启动和功耗监控的组织思路。本章只沿用这种问题组织方式，指标定义以 Google 官方文档为准。
+指标口径以 2026 年 7 月公开文档为准，平台版本上界为 Android 17 / API 37。Vitals 的指标定义、阈值和 Play 可见性策略都由 Google Play 服务端定义，不属于 `android-17.0.0_r1` 的 AOSP API 契约。Android 17 源码可用于解释 ANR、LMKD、帧时间或唤醒机制，却不能证明 Play 的服务端阈值。团队升级平台源码锚点时，不应顺手改写这些阈值；Play 文档变更时，也不表示 Android framework 同时发生了对应改动。
 
 ## Android Vitals 的指标层级
 

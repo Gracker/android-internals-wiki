@@ -41,40 +41,9 @@ sources:
 
 # 26.14 性能实验统计与分位值回归判定
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 性能实验和灰度发布的边界
-说明灰度发布回答“是否可以继续放量”，性能实验回答“某个方案是否造成可复核差异”。覆盖同质人群、同一时间窗、activation event 和 A/A 空转测试。
-
-### 🔹 样本量不能只靠 baseline 与 MDE
-整理 baseline、minimum detectable effect、alpha、power、历史方差、完整分布、allocation ratio 对样本量的影响，区分均值、比例和分位值三类检验对象。
-
-### 🔹 P90/P99 的置信区间与尾部违约率
-建立分位值实验的判定口径：bootstrap confidence interval、quantile confidence interval、tail violation rate、阈值超标率，避免把单个 P90 delta 当作稳定结论。
-
-### 🔹 分群归因不能线性相加 P90
-按设备档位、Android 版本、刷新率、启动类型、网络状态拆分分布；归因时看尾部样本来源、超阈值样本占比和分群权重，不用“样本量 × P90 delta”做结论。
-
-### 🔹 SRM、采样和上报完整性
-覆盖 Sample Ratio Mismatch、采样率切换、数据到达率、延迟上报、variant 崩溃导致的样本缺失，以及上报组件自监控字段。
-
-### 🔹 CI 门禁与线上实验的证据对齐
-把 Macrobenchmark 的 `FrameTimingMetric`、启动指标、固定设备基线和线上 P90/P99 / 慢帧率 / Crash / ANR 护栏指标放到同一张判定表里。
-
-## 扩展
-
-### 🔸 Sequential testing 与频繁看数风险
-记录中途多次看数、提前停止、alpha spending、FDR 对发布决策的影响。
-
-### 🔸 长尾分布的异常值处理
-整理 winsorization、trimmed mean、分桶重算和异常样本回查的适用边界。
-
-<!-- outline-end -->
-
 性能实验面对的是长尾、重复测量和设备异质性。报告里出现一个 P90 delta 或一个 p-value，并不足以说明方案可发布。可信结论至少要同时满足：随机分配有效、指标定义固定、实验单元正确、数据到达完整、区间估计达到预设精度、护栏没有越界。
 
-26.6 负责实验流程和回归防护，26.7 负责发布门禁。本章集中解释性能指标的统计对象与证据标准。Android 能力以上限 Android 17 / API 37 为准；Macrobenchmark 指标按当前 AndroidX 官方文档核对。
+26.6 负责实验流程和回归防护，26.7 负责发布门禁。性能指标的统计对象与证据标准在这里单独讨论。Android 能力以上限 Android 17 / API 37 为准；Macrobenchmark 指标按当前 AndroidX 官方文档核对。
 
 ## 灰度、随机实验与 CI 各自回答什么
 
