@@ -242,7 +242,7 @@ SurfaceFlinger 完成消费后，release callback 返回 BLAST，再由 BLAST �
 
 ## Android 17 主循环：`onFrameSignal → commit → composite`
 
-### Scheduler 先按显示设备建立 FrameTarget
+### Scheduler 先按 Display 建立 FrameTarget
 
 Android 17 的主入口在 `Scheduler::onFrameSignal()`。下面的结构摘录保留关键分支：
 
