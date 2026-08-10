@@ -64,25 +64,9 @@ last_deepseek_polish_at: 2026-06-16
 
 # 启动完整路径分析（App 视角）
 
-<!-- outline-start -->
-## 本节要点大纲
+从应用进程一侧分析启动，需要确认系统什么时候把执行权交给应用、关键路径包含哪些阶段，以及 Trace 中的一段时间究竟代表什么。系统侧的进程创建、任务与窗口管理另见 8.2 节；初始化依赖治理、Baseline Profile 和首帧渲染分别在后续章节展开。
 
-### 锚点（必须覆盖）
-
-- 🔹 冷 / 温 / 热启动在 App 侧的耗时划分
-- 🔹 Application.onCreate、Activity.onCreate、首帧渲染各阶段耗时分布
-- 🔹 启动耗时的度量方法：TTID / TTFD / 自定义埋点
-- 🔹 Perfetto 启动分析实战
-
-### 扩展（可选深入）
-
-- 🔸 启动过程中的 ClassLoader 与 dex 加载开销
-
-<!-- outline-end -->
-
-本节站在应用进程一侧分析启动：系统什么时候把执行权交给应用，应用的关键路径包含哪些阶段，以及 Trace 中的一段时间究竟代表什么。系统侧的进程创建、任务与窗口管理另见 8.2 节；初始化依赖治理、Baseline Profile 和首帧渲染分别在后续章节展开。
-
-本文的平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。AndroidX 与 Perfetto 属于独立发布的工具链，文中会明确它们与平台版本的边界。
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。AndroidX 与 Perfetto 属于独立发布的工具链，相关内容会明确它们与平台版本的边界。
 
 ## 1. 冷、温、热描述的是启动前状态
 
@@ -196,7 +180,7 @@ Android vitals 当前把冷启动 5 秒、温启动 2 秒、热启动 1.5 秒及
 
 ### 3.2 TTFD：由应用声明“主要内容可用”
 
-TTFD（Time To Fully Drawn）从同一启动请求开始，到应用调用 `reportFullyDrawn()`，并完成包含该报告的帧。`StartupTimingMetric` 的 `timeToFullDisplayMs` 在 API 29 以前可能不可用；本章适用范围从 API 29 开始。
+TTFD（Time To Fully Drawn）从同一启动请求开始，到应用调用 `reportFullyDrawn()`，并完成包含该报告的帧。`StartupTimingMetric` 的 `timeToFullDisplayMs` 在 API 29 以前可能不可用；适用范围从 API 29 开始。
 
 平台不知道每个产品何时“可用”，因此团队必须先定义完成条件。例如：
 
