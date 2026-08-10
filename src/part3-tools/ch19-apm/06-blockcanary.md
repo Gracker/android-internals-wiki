@@ -48,33 +48,6 @@ last_deepseek_cn_review_at: 2026-07-05
 
 # BlockCanary
 
-<!-- outline-start -->
-
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 [定位] 说明 BlockCanary 更适合作为 Looper 卡顿监控原理样本；新项目应优先考虑 JankStats、FrameMetrics 或自研轻量实现。
-- 🔹 [Looper 原理] 展开 `Printer`、message dispatch、阈值计时、卡顿回调；补一段最小伪代码。
-- 🔹 [抓栈线程] 说明采样线程与主线程的关系、采样间隔、栈深度、线程安全和漏采风险。
-- 🔹 [配置口径] 写清 block threshold、qualifier、log path、display activity、network type 等配置如何影响误报。
-- 🔹 [报告聚合] 设计 report 字段，包括 message、duration、thread stack、process、scene、foreground、device、version。
-- 🔹 [慢帧错位] 区分一次 Looper message 卡住和多帧小耗时累计；说明为什么它不能替代帧级指标。
-- 🔹 [对比工具] 和 JankStats、FrameMetrics、Perfetto、ANR traces 做分工表。
-- 🔹 [使用建议] 写清它适合 Debug / QA / 原理学习，不建议直接作为现代线上 APM 主方案。
-- 🔹 [自研改进] 覆盖远程开关、采样、report 裁剪、页面上下文、版本聚合、低端机开销和上传策略。
-- 🔹 [误判处理] 说明调试器暂停、GC、系统负载、Binder 等待、I/O 等因素怎样影响报告。
-
-### 扩展（可选深入）
-
-- 🔸 增加 Looper message 生命周期图，标出开始计时、抓栈、结束计时和上报时机。
-- 🔸 补一个“报告显示主线程慢但根因在后台线程争抢 CPU”的案例。
-- 🔸 对 BlockCanary / AndroidPerformanceMonitor upstream 状态做核对，明确维护风险。
-- 🔸 增加从 BlockCanary 迁移到 JankStats / FrameMetrics 的建议表。
-- 🔸 补充 ANR 与 block report 的关系，说明 5s 输入超时和自定义阈值的区别。
-
-<!-- outline-end -->
-
 ## 结论：保留原理，不直接接入 1.5.0
 
 BlockCanary 是早期 Android 主线程长消息监控库，仓库名为 `AndroidPerformanceMonitor`。它用公开的 `Looper.setMessageLogging()` 取得每次 `Message` dispatch 的起止边界，再由后台线程采样主线程 Java 栈。这个模型至今仍适合解释“Looper 长消息监控怎样工作”。
@@ -88,7 +61,7 @@ BlockCanary 是早期 Android 主线程长消息监控库，仓库名为 `Androi
 - 通知实现没有 NotificationChannel，`PendingIntent` 也没有 `FLAG_IMMUTABLE` / `FLAG_MUTABLE`。API 31+ 首次显示 block 通知时可能抛出 mutability 异常，API 26+ 的通知渠道同样缺失。
 - analyzer manifest 会合并 `READ_PHONE_STATE` 和 `WRITE_EXTERNAL_STORAGE`，代码还调用 `TelephonyManager.getDeviceId()` 采集 IMEI；这与现代权限、设备标识符和隐私要求不相容。
 
-新项目应以 JankStats / FrameMetrics 建立帧指标，以 Perfetto 还原现场；若还需要“主线程单次 Message 超时 + 栈采样”，按本章后半部分重写轻量实现。已有项目若必须保留 BlockCanary，至少 fork 源码，不能用 1.5.0 AAR 修几个 Gradle 写法就宣布 API 37 兼容。
+新项目应以 JankStats / FrameMetrics 建立帧指标，以 Perfetto 还原现场；若还需要“主线程单次 Message 超时 + 栈采样”，可按后文重写轻量实现。已有项目若必须保留 BlockCanary，至少 fork 源码，不能用 1.5.0 AAR 修几个 Gradle 写法就宣布 API 37 兼容。
 
 ## 它测量的是 dispatch，不是整帧
 
@@ -348,7 +321,7 @@ Perfetto 中，主线程大部分时间处于 Runnable，四条图片解码线�
 
 Android 17 InputDispatcher 的未乘系数默认输入分发超时仍为 5000 ms，运行时还要乘 `ro.hw_timeout_multiplier`，并允许窗口提供 dispatch timeout。Service、Broadcast、ContentProvider 等 ANR 有各自的超时与状态机。一个 800 ms BlockCanary 事件可能严重影响交互，却不是系统 ANR；一个输入 ANR 也可能由队列堆积、无焦点窗口或跨进程等待造成，不能简写成“某个 Message 执行超过 5 秒”。
 
-## [自动发现] Android 17 的 Looper 可观测性
+## Android 17 的 Looper 可观测性
 
 在 `android-17.0.0_r1` 中，一次 dispatch 周围同时存在几条平台观测路径：
 
