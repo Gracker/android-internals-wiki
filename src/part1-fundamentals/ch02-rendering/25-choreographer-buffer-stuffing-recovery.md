@@ -287,7 +287,7 @@ Android 17 的基础恢复机制不再受 Android 16 的旧总开关控制：首
 - `dequeueBuffer()` 或 BLAST `waitForBufferRelease()`；
 - 释放通道等待；
 - EGL/Vulkan acquire/present；
-- 释放围栏；
+- release fence；
 - BufferQueue 深度与槽位状态。
 
 `eglSwapBuffers()` 耗时可能包含驱动刷新、frame pacing、空闲槽位和围栏等待。单凭它耗时较长，不足以认定发生队列堆积。

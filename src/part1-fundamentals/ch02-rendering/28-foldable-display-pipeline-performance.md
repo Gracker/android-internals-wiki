@@ -79,11 +79,11 @@ Android 17 的 `DeviceStateToLayoutMap` 从以下位置读取显示布局：
 每个设备状态布局可以为显示器配置：
 
 - 物理 `DisplayAddress`；
-- 逻辑显示器 ID；
+- logical display id；
 - 是否 enabled；
-- 显示组；
+- display group；
 - 前后位置；
-- 主导显示器；
+- lead display；
 - 亮度、刷新率、温控和功耗节流策略 ID。
 
 刷新率和亮度策略可以随布局改变，但 AOSP 没有“展开态固定 120 Hz、折叠态固定低刷新率”的通用规则。具体显示模式还要经过 `DisplayModeDirector`、设备配置、内容投票、热限制和用户设置。
@@ -157,7 +157,7 @@ DisplayManager 收到回调后，先向 WMS 投递设备状态消息，再调用
 1. 按布局中的物理地址查找 `DisplayDevice`；
 2. 查找或创建对应 `LogicalDisplay`；
 3. 必要时交换 `LogicalDisplay` 背后的 `DisplayDevice`；
-4. 更新位置、主导显示器、刷新率区域、温控节流与启用状态。
+4. 更新 position、lead display、refresh-rate zone、thermal throttling 与 enabled 状态。
 
 后续 DisplayManager 遍历使用 `SurfaceControl.Transaction` 更新显示图层栈、标志、投影、尺寸和 Surface。SurfaceFlinger 接收显示事务，并为新的显示器和输出状态构建合成输入。
 

@@ -361,7 +361,7 @@ ViewCompat.setOnApplyWindowInsetsListener(list) { view, windowInsets ->
 - 标题栏即使在沉浸模式下也可能保持可见；
 - 使用 `systemBars()` 时已包含标题栏，也可以单独读取 `captionBar()`；
 - 自定义标题区要结合 `WindowInsets.getBoundingRects()` 避开关闭、最大化等系统控件；
-- 窗口缩放期间要同时核对窗口边界、Insets 数据源和控制对象、应用遍历、Shell 过渡牵引层，以及应用窗口缓冲区的几何信息。
+- resize 期间同时核对 Window bounds、Insets source/control、App traversal、Shell transition leash 和 App Window buffer geometry。
 
 浮动 IME 不保证 `ime()` 永远返回 0。Insets 是相对于当前窗口计算的：IME 未遮挡窗口时可以为 0；与窗口相交，或系统选择缩放或平移窗口时，可以是非 0。应记录当前窗口模式、IME 窗口或牵引层几何和实际 Insets，不能仅凭“桌面模式”决定。
 
@@ -392,7 +392,7 @@ Android 17 的 `ViewRootImpl.dispatchApplyInsets()` 自带名为 `dispatchApplyI
 - RenderThread `DrawFrame`、dequeue/queue buffer；
 - App 和 SurfaceFlinger FrameTimeline；
 - WMS/WM Shell Insets、IME、transition 与 SurfaceControl transaction；
-- HWC 合成类型、客户端合成和送显。
+- HWC composition type、client composition 和 present。
 
 ### 8.2 `performTraversals` 只能证明发生过遍历，不等于重复布局
 

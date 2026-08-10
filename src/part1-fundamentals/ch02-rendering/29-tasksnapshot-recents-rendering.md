@@ -68,7 +68,7 @@ Android 17 的 `TaskSnapshot` 包含：
 - windowing mode、system-bar appearance、translucency；
 - 是否包含 IME surface；
 - density DPI；
-- 快照 ID 与捕获时间。
+- snapshot id 与 capture time。
 
 这些元数据决定消费端如何旋转、裁剪、缩放和判断兼容性。只保存一张 PNG 或 JPEG，无法复现 Android 17 的启动窗口与 Overview 行为。
 
@@ -105,7 +105,7 @@ Android 17 会排除或特殊处理：
 
 - 桌面与画中画变化；
 - 由组织器创建的任务；
-- 临时隐藏；
+- transient hide；
 - Task 仍为 `isVisibleRequested()`；
 - 某些显示变化同时改变边界的场景。
 
@@ -337,7 +337,7 @@ Quickstep 的 `TaskUiStateMapper` 会为当前运行中的任务且允许实时�
 
 因此，Android 17 不能统一描述为“Launcher 把静态快照图层渐变切换为应用实时 Surface”。Launcher 静态缩略图、Shell 远程牵引层和 WMS 启动窗口是三套不同对象。
 
-## 6. 快照启动窗口
+## 6. Snapshot starting window
 
 ### 6.1 WMS 先判断能否使用旧快照
 
@@ -394,7 +394,7 @@ Android 17 的 Shell 代码包含 100 ms、600 ms 和 3000 ms 三种延迟上限
 
 Launcher3 的 `PreviewPositionHelper` 使用：
 
-- 快照旋转；
+- snapshot rotation；
 - `ThumbnailData.scale`；
 - letterbox insets；
 - 快照与卡片的宽高比；
@@ -417,7 +417,7 @@ AOSP WindowManager 中，一个任务在某一时刻归属于一个 DisplayConte
 捕获入口使用该任务自己的 `SurfaceControl` 与所在显示器的状态。排查多显示器问题时要记录：
 
 - task id 与 display id；
-- 捕获时的任务边界、旋转、密度和窗口模式；
+- 捕获时的 task bounds、rotation、density、windowing mode；
 - 用于显示 Overview 的显示器；
 - 启动窗口与应用窗口最终出现在哪个显示器。
 
