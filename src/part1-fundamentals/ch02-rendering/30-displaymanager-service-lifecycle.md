@@ -56,7 +56,7 @@ sources:
 | physical display id / display token | SurfaceFlinger | 标识物理 Display，连接 HWC Display 与 SF Display |
 | `DisplayDevice` | DMS / `DisplayAdapter` | 封装一个本地、无线、虚拟或 overlay Display 设备及其能力 |
 | `LogicalDisplay` | DMS / `LogicalDisplayMapper` | 提供 framework 使用的 logical display id、配置、enabled 状态与 primary device |
-| `DisplayGroup` | DMS | 按显示组 ID 组织一组 LogicalDisplay；它不是屏幕相对位置图 |
+| `DisplayGroup` | DMS | 按 group id 组织一组 LogicalDisplay；它不是屏幕相对位置图 |
 | `DisplayTopology` | DMS / InputManager | 描述可扩展 Display 的相对位置，服务鼠标跨屏与拓扑持久化 |
 | `DisplayContent` | WindowManager | 按 Display 管理窗口、Task、DisplayArea、焦点、Insets 与 policy |
 | SF Display / CompositionEngine Output | SurfaceFlinger | 为目标 Display 构造可见 layer 集合，执行合成并取得 present fence |
@@ -91,7 +91,7 @@ flowchart TD
     B --> E["发布 Binder 与 LocalService"]
     D --> F["DisplayThread 注册 LocalDisplayAdapter"]
     D --> G["DisplayThread 注册 VirtualDisplayAdapter"]
-    F --> H["向 SurfaceFlinger 查询物理显示器 ID 与令牌"]
+    F --> H["向 SurfaceFlinger 查询 physical display ids 与 tokens"]
     H --> I["DisplayDeviceRepository"]
     I --> J["LogicalDisplayMapper 创建默认 LogicalDisplay"]
     J --> K["唤醒默认 Display 等待者"]
@@ -132,7 +132,7 @@ Android 17 在 `PHASE_WAIT_FOR_DEFAULT_DISPLAY` 等待，默认超时为 10 秒�
 - `DynamicDisplayInfo`；
 - `DesiredDisplayModeSpecs`。
 
-如果此前没有相同的物理显示器 ID，adapter 创建 `LocalDisplayDevice` 并发送 `DISPLAY_DEVICE_EVENT_ADDED`；已有设备的能力或状态变化时发送 `CHANGED`；热插拔断开时发送 `REMOVED`。
+如果此前没有相同 physical display id，adapter 创建 `LocalDisplayDevice` 并发送 `DISPLAY_DEVICE_EVENT_ADDED`；已有设备的能力或状态变化时发送 `CHANGED`；热插拔断开时发送 `REMOVED`。
 
 完整事件流如下：
 
@@ -146,7 +146,7 @@ flowchart TD
     F --> G["DisplayDeviceRepository 在 mSyncRoot 下更新设备集合"]
     G --> H["LogicalDisplayMapper 更新 LogicalDisplay / DisplayGroup"]
     H --> I["DMS LogicalDisplayListener"]
-    I --> J["Handler 分发显示器添加 / 变更 / 移除回调"]
+    I --> J["Handler 分发 Display added/changed/removed 回调"]
     I --> K["scheduleTraversalLocked"]
     K --> L["WindowManager 请求一次 Display traversal"]
 ```
@@ -157,7 +157,7 @@ flowchart TD
 
 `DisplayDeviceRepository` 对三类事件的处理边界是：
 
-- `ADDED`：验证设备未重复，加入仓库，再通知 `LogicalDisplayMapper`；
+- `ADDED`：验证设备未重复，加入 repository，再通知 `LogicalDisplayMapper`；
 - `CHANGED`：比较新旧 `DisplayDeviceInfo`，计算 mode、state、rotation、color、timing 等 diff，应用 pending info 后通知 mapper；
 - `REMOVED`：从 repository 删除设备，再通知 mapper。
 
@@ -185,7 +185,7 @@ LogicalDisplay 层还有 `CONNECTED`、`DISCONNECTED`、`ADDED`、`REMOVED`、`B
 - LogicalDisplay、DisplayGroup、DeviceState Layout；
 - Display state、brightness 与 power controller 索引；
 - callback registry；
-- 视口与待处理遍历；
+- viewport 与 pending traversal；
 - DisplayTopology 的当前副本与 id 映射。
 
 一次 hotplug 需要原子地完成“设备集合 → LogicalDisplay → group/layout → power/controller → event”的关系更新。随意拆成多把锁，会引入设备已删除但 LogicalDisplay 仍可见、group 与 topology 不一致、以及与 WMS global lock 反向获取等问题。
@@ -224,20 +224,20 @@ topology 写入是一个需要单独注意的例外：Android 17 的 `DisplayTop
 - 亮度与 power state 变化；
 - VirtualDisplay 创建、resize、换 Surface 与销毁。
 
-如果稳定动画每帧都卡，而显示配置没有变化，应先检查 App/SF/HWC/present，不应先归因于 DMS 单锁。
+如果稳定动画每帧都卡，而 Display 配置没有变化，应先检查 App/SF/HWC/present，不应先归因于 DMS 单锁。
 
 ## 4. DisplayDevice 到 LogicalDisplay
 
 ### 4.1 `LogicalDisplayMapper` 负责映射
 
-`DisplayDevice` 表示发现到的设备，`LogicalDisplay` 表示框架暴露和管理的逻辑屏。`LogicalDisplayMapper` 持有：
+`DisplayDevice` 表示发现到的设备，`LogicalDisplay` 表示 framework 暴露和管理的逻辑屏。`LogicalDisplayMapper` 持有：
 
 - `SparseArray<LogicalDisplay>`；
 - `SparseArray<DisplayGroup>`；
 - `DeviceStateToLayoutMap`；
 - 当前与 pending `DeviceState`；
 - 当前 `Layout`；
-- 虚拟设备与虚拟显示器关联；
+- virtual-device 与 virtual-display 关联；
 - display id / group id 分配状态。
 
 新设备到达时，mapper 先为允许成为默认屏的设备初始化 default layout，再创建 LogicalDisplay、应用当前 Layout，并计算需要发送的 logical display event mask。
@@ -273,7 +273,7 @@ Android 官方 API 文档把 `DisplayTopology` 标为 version 36.1。Android 17 
 - 向注册的 DisplayManager callback 分发 topology update；
 - 在需要时触发 backup data changed。
 
-这条路径服务输入跨屏和持久化，不参与 SurfaceFlinger 的逐帧图层合成。
+这条路径服务输入跨屏和持久化，不参与 SurfaceFlinger 的逐帧 layer 合成。
 
 ## 5. 折叠与 DeviceState 布局切换
 
@@ -292,11 +292,11 @@ flowchart TD
     A["收到新的 DeviceState"] --> B["resetLayoutLocked 标记受影响 Display isInTransition"]
     B --> C["updateLogicalDisplaysLocked 发出过渡状态"]
     C --> D["DisplayPowerController 关闭需要切换的 Display"]
-    D --> E{"受影响显示器已关闭且唤醒 / 休眠条件满足？"}
+    D --> E{"受影响 Display 已 OFF 且 wake/sleep 条件满足？"}
     E -->|是| F["transitionToPendingStateLocked"]
-    E -->|否| G["等待状态 / interactivity 更新"]
+    E -->|否| G["等待 state / interactivity 更新"]
     G --> F
-    G --> H["500 ms 超时后强制完成"]
+    G --> H["500 ms timeout 强制完成"]
     H --> F
     F --> I["清除 transition 标记"]
     I --> J["applyLayoutLocked 应用目标 Layout"]
@@ -320,7 +320,7 @@ DMS 完成 Layout 只表示 LogicalDisplay 配置确定。用户看到新画面�
 
 - WMS `DisplayContent`、Task bounds、configuration 与 Insets 更新；
 - Shell transition、snapshot/splash 与 surface geometry transaction；
-- 应用重启、重新布局与新尺寸缓冲区；
+- App relaunch/relayout 与新尺寸 buffer；
 - SF Output 选择、HWC validate/present；
 - panel 切换或 vendor display driver 延迟。
 
@@ -332,7 +332,7 @@ DMS 完成 Layout 只表示 LogicalDisplay 配置确定。用户看到新画面�
 
 应用通过 `DisplayManager.DisplayListener` 接收 Display added/removed/changed 等事件。Android 17 的 DMS：
 
-1. 在 `mSyncRoot` 内选出回调；
+1. 在 `mSyncRoot` 内选出 callback；
 2. 复制到临时列表；
 3. 释放锁；
 4. 异步 Binder 通知客户端。
@@ -360,17 +360,17 @@ Android 的 `DisplayEventReceiver.onVsync()` 参数包含 physical display id，
 AOSP multi-display 官方文档仍明确说明 per-display VSYNC 不受支持，Display 由 primary internal display 的 VSync 驱动。分析双屏或外接屏时，应区分：
 
 - framework/SF 的调度基准；
-- 每块屏的当前显示模式、渲染帧率与送显截止时间；
+- 每块屏的 active mode、render frame rate 与 presentation deadline；
 - 每个 SF Output/HWC Display 的 validate/present；
 - 每块屏对应的 present fence 与 driver 行为。
 
-不同 Display 可以有不同模式和独立送显结果，但不能据此推导两个应用各自获得完全独立的硬件 VSync 时钟。
+不同 Display 可以有不同 mode 和独立 present 结果，但不能据此推导两个 App 各自获得完全独立的硬件 VSync 时钟。
 
 ## 7. Display mode 与刷新率切换
 
 ### 7.1 DMS 负责策略输入，SF/HWC 执行
 
-`DisplayModeDirector` 汇总应用 frame-rate vote、系统策略、功耗与设备约束，生成 `DesiredDisplayModeSpecs`。DMS 遍历把每个 LogicalDisplay 的规格交给 DisplayDevice；`LocalDisplayAdapter` 再异步调用：
+`DisplayModeDirector` 汇总应用 frame-rate vote、系统策略、功耗与设备约束，生成 `DesiredDisplayModeSpecs`。DMS traversal 把每个 LogicalDisplay 的 specs 交给 DisplayDevice；`LocalDisplayAdapter` 再异步调用：
 
 ```text
 SurfaceControl.setDesiredDisplayModeSpecs(applyToken, specs[])
@@ -380,7 +380,7 @@ SurfaceControl.setDesiredDisplayModeSpecs(applyToken, specs[])
 
 ### 7.2 mode change 不会固定重建 BufferQueue
 
-只切换 refresh rate 时，已有应用窗口的 BufferQueue、SurfaceControl 与图层可以继续使用。变化主要落在：
+只切换 refresh rate 时，已有 App Window BufferQueue、SurfaceControl 与 layer 可以继续使用。变化主要落在：
 
 - VSync 预测与 app/SF work duration；
 - `Display.Mode`、render frame rate、deadline；
@@ -391,12 +391,12 @@ SurfaceControl.setDesiredDisplayModeSpecs(applyToken, specs[])
 
 ### 7.3 mode 回调不是 present 证据
 
-`DISPLAY_DEVICE_EVENT_CHANGED` 表示框架观察到 dynamic display info 变化。判断切换何时对用户生效，还要对齐：
+`DISPLAY_DEVICE_EVENT_CHANGED` 表示 framework 观察到 dynamic display info 变化。判断切换何时对用户生效，还要对齐：
 
 - SF active mode / mode change timeline；
 - HWC/driver config applied；
 - 新 VSync period；
-- 目标显示器的送显栅栏；
+- 目标 Display 的 present fence；
 - App 是否按新节奏生产 buffer。
 
 只记录 `DisplayListener.onDisplayChanged()` 会把管理通知时间误当成显示时间。
@@ -410,7 +410,7 @@ DMS 用 `SparseArray<DisplayPowerController>` 按 logical display id 保存 cont
 controller 负责汇总：
 
 - ON/OFF/DOZE 等目标 state；
-- 距离传感器与策略解除阻塞；
+- proximity 与 policy unblock；
 - auto/manual brightness；
 - HBM、thermal/power throttling；
 - brightness ramp；
@@ -439,7 +439,7 @@ DisplayPowerController#updatePowerState
 - `setDisplayState(id=..., state=...)` 才覆盖物理 power mode 调用；
 - `DisplayPowerController#updatePowerState` 覆盖 DPC 状态机。
 
-这三段不能合并为一个切片解读。
+这三段不能合并为一个 slice 解读。
 
 ### 8.3 多屏亮度可使用 lead/follower
 
@@ -467,7 +467,7 @@ DisplayManager.createVirtualDisplay()
       → LogicalDisplayMapper
 ```
 
-本地物理屏的令牌由 SF/HWC 热插拔路径预先建立；VirtualDisplayAdapter 则主动调用 `DisplayControl.createVirtualDisplay()` 创建 virtual display token。这两类生命周期不能混写。
+本地物理屏的 token 由 SF/HWC hotplug 路径预先建立；VirtualDisplayAdapter 则主动调用 `DisplayControl.createVirtualDisplay()` 创建 virtual display token。这两类生命周期不能混写。
 
 ### 9.2 caller 提供的 Surface 是输出目标
 
@@ -476,9 +476,9 @@ VirtualDisplayDevice 在 DMS traversal 中，通过 Display transaction 把 call
 性能取决于：
 
 - 输出尺寸、format 与 refresh rate；
-- 镜像还是独立内容；
-- 安全、可信和受保护内容约束；
-- SF RenderEngine 或 HWC 虚拟显示能力；
+- mirror 还是 own content；
+- secure/trusted/protected 约束；
+- SF RenderEngine 或 HWC virtual display 能力；
 - 输出 consumer 的 dequeue/acquire 速度；
 - 编码器、ImageReader 或远端传输的背压。
 
@@ -486,7 +486,7 @@ VirtualDisplayDevice 在 DMS traversal 中，通过 Display transaction 把 call
 
 ### 9.3 resize、换 Surface 与 release
 
-- `resizeVirtualDisplayLocked()` 更新宽高与密度，发送 CHANGED 并请求遍历；
+- `resizeVirtualDisplayLocked()` 更新宽高与 density，发送 CHANGED 并请求 traversal；
 - `setVirtualDisplaySurfaceLocked()` 标记 pending surface change，在 traversal transaction 中生效；
 - callback Binder death 或主动 release 会停止设备、释放 Surface 引用、销毁 SF virtual display token，并发送 REMOVED。
 
@@ -516,13 +516,13 @@ App buffer 仍由 App/codec/camera 等 Producer 提交；窗口 geometry 由 WMS
 | Window/Task 在哪个 Display、bounds、focus、Insets | WMS/Shell | `dumpsys window displays`、WindowManager trace、Shell transition |
 | layer 是否可见、composition type、present | SF/HWC | layer trace、DisplayFrame、HWC validate/present、present fence |
 
-外接屏黑屏时，`dumpsys display` 中存在 LogicalDisplay 只能证明管理对象存在；WMS 可能没有可见窗口，SF 输出可能没有目标 layer，HWC/panel 也可能尚未送显。
+外接屏黑屏时，`dumpsys display` 中存在 LogicalDisplay 只能证明管理对象存在；WMS 可能没有可见窗口，SF Output 可能没有目标 layer，HWC/panel 也可能尚未 present。
 
 ### 10.3 多 Display 共享资源
 
-SurfaceFlinger 按 Display 构造输出和送显结果，但多块屏仍可能共享：
+SurfaceFlinger 按 Display 构造 Output 和 present 结果，但多块屏仍可能共享：
 
-- SF 主线程和合成线程预算；
+- SF main/composition 线程预算；
 - RenderEngine 与 GPU queue；
 - HWC plane、scaler 与带宽；
 - 内存带宽与 thermal/power budget；
@@ -548,7 +548,7 @@ DMS 内部事件完成与用户可见结果之间通常还隔着 WMS、App、SF�
 
 ### 11.2 Perfetto 采集
 
-下面的命令用于同时保留调度、Binder、图形、窗口与功耗事件：
+下面的命令用于同时保留调度、Binder、图形、窗口与 power 事件：
 
 ```bash
 adb shell perfetto \
@@ -557,7 +557,7 @@ adb shell perfetto \
   sched freq idle binder_driver gfx view wm power
 ```
 
-在 Android 17 跟踪记录中优先搜索：
+在 Android 17 trace 中优先搜索：
 
 - `DisplayDeviceRepository#onDisplayDeviceEvent (event=...)`，仅 debug logging 开启时存在；
 - `handleDisplayDeviceChanged`，同样受 debug 条件影响；
@@ -576,7 +576,7 @@ adb shell perfetto \
 
 ### 11.3 dumpsys 与日志基线
 
-下面这组命令先建立 Display、Window、SF 与电源的静态映射：
+下面这组命令先建立 Display、Window、SF 与 power 的静态映射：
 
 ```bash
 adb shell dumpsys display
@@ -595,10 +595,10 @@ adb shell logcat -b system -s \
 
 - logical display id、unique id、address、group id；
 - enabled/state/committedState；
-- 当前、默认和支持的显示模式与渲染时序；
+- active/default/supported mode 与 render timing；
 - primary DisplayDevice、physical display id/token；
 - WMS `DisplayContent`、Task/Window 分布；
-- SF 显示对象、输出与可见图层；
+- SF Display/Output 与可见 layer；
 - DisplayPowerController request、brightness、lead/follower；
 - topology 与 InputManager graph。
 
@@ -624,13 +624,13 @@ adb shell logcat -b system -s \
 
 依次确认：
 
-- LogicalDisplay 是否启用；
+- LogicalDisplay 是否 enabled；
 - external display policy 是否允许扩展或镜像；
 - WMS 是否创建对应 `DisplayContent`；
 - 目标屏是否有可见 Task/Window；
-- DMS 投影和图层栈是否配置；
+- DMS projection/layer stack 是否配置；
 - SF 是否有对应 Display/Output；
-- HWC 验证、送显与驱动是否成功；
+- HWC validate/present 与 driver 是否成功；
 - secure/protected 内容是否允许出现在该 Display。
 
 “DisplayListener 收到 added”只能完成其中前半段。
@@ -658,10 +658,10 @@ adb shell logcat -b system -s \
 - App 是否仍按旧 frame-rate vote；
 - SF active mode 与 FrameTimeline deadline；
 - buffer 是否 late；
-- 目标显示器的送显节奏；
+- 目标 Display present cadence；
 - 外接屏是否受 primary VSync 驱动和 cadence 转换。
 
-DMS 显示模式变化与应用逐帧生产是两个阶段。
+DMS mode 变化与应用逐帧生产是两个阶段。
 
 ### 12.5 `setDisplayPowerMode` 很慢
 
@@ -685,7 +685,7 @@ DMS 显示模式变化与应用逐帧生产是两个阶段。
 - resize/surface transaction 未应用；
 - SF 没有可见内容；
 - consumer 不 dequeue，BufferQueue 形成背压；
-- MediaProjection 或安全策略阻止内容；
+- MediaProjection/secure policy 阻止内容；
 - encoder/ImageReader 消费慢；
 - virtual Output composition 或 GPU/HWC 资源不足。
 
