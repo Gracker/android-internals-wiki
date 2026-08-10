@@ -34,7 +34,7 @@ sources:
 
 # 7.20 ContentCaptureService 与 Autofill 性能影响
 
-ContentCapture 与 Autofill 都会读取 View 的结构化信息，却使用不同的触发条件、数据模型和进程路径。本文以 Android 17 / API 37、`android-17.0.0_r1` 为平台源码锚点，分别分析两条链路，再讨论它们与密码管理器、IME、WebView 共同出现时怎样归因。
+ContentCapture 与 Autofill 都会读取 View 的结构化信息，却使用不同的触发条件、数据模型和进程路径。平台源码锚点为 Android 17 / API 37、`android-17.0.0_r1`。两条链路与密码管理器、IME、WebView 同时出现时，需要分别归因。
 
 ## 三个容易混在一起的数据模型
 
@@ -131,7 +131,7 @@ ContentCapture 也没有跨设备通用的结构大小或耗时阈值。节点�
 
 `IAutoFillManager` 在 Android 17 中是 `oneway` 接口，但 `AutofillManager` 的 `addClient()` 和 `startSession()` 会携带 `SyncResultReceiver`，客户端等待会话结果，超时常量为 5000 ms。焦点事件通常来自 UI 线程，所以 trace 中若出现 `SyncResultReceiver` 等待，需要沿 Binder flow 检查 `system_server` 的 Autofill 会话创建。
 
-这个 5000 ms 是失败保护上限，不能当作正常延迟。旧稿给出的“每次 Binder 约 5–10 ms”也无法从接口契约推出。
+这个 5000 ms 是失败保护上限，不能当作正常延迟。接口契约也无法推出“每次 Binder 约 5–10 ms”之类的固定耗时。
 
 ### AssistStructure 在应用主线程采集
 
@@ -241,7 +241,7 @@ Android 14 / API 34 之后，Autofill 的 importance 还会与 View 属性、请
 
 ## 隐私边界也会改变性能路径
 
-ContentCaptureService 需要声明 `android.permission.BIND_CONTENT_CAPTURE_SERVICE`，该绑定权限由系统控制；Android 14 没有面向普通应用的 `CAPTURE_CONTENT` 运行时授权流程。Android 17 平台也不存在旧稿展示的 `RedactionRule` / `ContentCaptureContext.addRedactionRule()` API。
+ContentCaptureService 需要声明 `android.permission.BIND_CONTENT_CAPTURE_SERVICE`，该绑定权限由系统控制；Android 14 没有面向普通应用的 `CAPTURE_CONTENT` 运行时授权流程。Android 17 平台也不存在 `RedactionRule` / `ContentCaptureContext.addRedactionRule()` API。
 
 Android 17 / API 37 把 `ContentCaptureManager.setContentCaptureEnabled()` 标记为 deprecated。目标 SDK 37 及以上时，该调用可以成为 no-op；平台文档要求敏感窗口使用 `WindowManager.LayoutParams.FLAG_SECURE` 退出 content capture。`FLAG_SECURE` 还会限制截图和非安全显示，适合安全需求明确的窗口，不应用作临时性能开关。
 
@@ -272,7 +272,7 @@ WebView 可以通过 `onProvideAutofillVirtualStructure()` 向 Autofill 暴露 H
 - `notifyContentCaptureEvents`：应用 BackgroundThread 处理动态事件；
 - `handleRequestAssistContextExtras`：应用主线程构建 Autofill AssistStructure 的入口。
 
-旧稿列出的 `android.content_capture.request`、`android.content_capture.process`、`android.autofill.request` 和 `android.autofill.process` 不是 Android 17 AOSP 在这些类里定义的标准 slice。设备若出现同名标记，应确认是厂商、provider 或应用自行添加。
+`android.content_capture.request`、`android.content_capture.process`、`android.autofill.request` 和 `android.autofill.process` 不是 Android 17 AOSP 在这些类里定义的标准 slice。设备若出现同名标记，应确认是厂商、provider 或应用自行添加。
 
 ### dumpsys 确认服务与会话
 
@@ -317,9 +317,9 @@ adb shell dumpsys autofill
 - **Android 10 / API 29**：ContentCaptureManager、ContentCaptureSession 与 ContentCaptureService 进入公开 API。
 - **Android 11 / API 30**：`importantForContentCapture` 与 IME inline suggestions 相关公开 API 可用。
 - **Android 14 / API 34**：Autofill 对 importance、其他 View 属性和优化选项的组合判断发生变化，不能沿用早期版本的固定包含规则。
-- **Android 17 / API 37**：本文按 `android-17.0.0_r1` 核对。ContentCapture 使用 UI 结构准备、应用 BackgroundThread 缓冲和 direct oneway Binder；Autofill 仍通过 ActivityThread 构建 AssistStructure。`setContentCaptureEnabled()` 在 API 37 deprecated，目标 SDK 37+ 应按 `FLAG_SECURE` 契约处理敏感窗口。
+- **Android 17 / API 37**：按 `android-17.0.0_r1` 核对。ContentCapture 使用 UI 结构准备、应用 BackgroundThread 缓冲和 direct oneway Binder；Autofill 仍通过 ActivityThread 构建 AssistStructure。`setContentCaptureEnabled()` 在 API 37 deprecated，目标 SDK 37+ 应按 `FLAG_SECURE` 契约处理敏感窗口。
 
-这些路径属于 framework 与应用/服务进程，不需要 `android17-6.18-2026-06_r6` kernel tag 才能解释。Binder driver、调度和内存压力可以影响时延，但本章没有引入 Android 17 kernel 专属机制。
+这些路径属于 framework 与应用/服务进程，不需要 `android17-6.18-2026-06_r6` kernel tag 才能解释。Binder driver、调度和内存压力可以影响时延，但这里没有引入 Android 17 kernel 专属机制。
 
 ## 源码与资料
 
