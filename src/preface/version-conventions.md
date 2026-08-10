@@ -16,7 +16,7 @@ tags: [introduction, versioning, aosp, kernel]
 
 # 版本约定
 
-Android 的系统行为、源码路径和观测能力都会随版本变化。同一条排障经验在 Android 10、Android 15 与 Android 17 上可能对应不同方法、trace 事件或限制条件，因此正文会把版本范围和源码 tag 一起写出。
+Android 版本会改变系统行为、源码路径和观测能力。同一条排障经验在 Android 10、Android 15 与 Android 17 上可能对应不同方法、trace 事件或限制条件，因此正文会同时标明版本范围和源码 tag。
 
 ## 平台版本标注
 
@@ -30,7 +30,7 @@ Android 的系统行为、源码路径和观测能力都会随版本变化。同
 
 ## 默认平台源码
 
-平台结论默认锚定 AOSP `android-17.0.0_r1`。这个 tag 用于核对 Framework、Native system components、ART、Bionic、HAL 接口定义与平台工具等源码。
+平台结论默认锚定 AOSP `android-17.0.0_r1`。该 tag 用于核对 Framework、Native system components、ART、Bionic、HAL 接口定义与平台工具等源码。
 
 旧版本 tag 可以保留在版本演进段落中。例如一项行为在 Android 12 引入、Android 15 重构、Android 17 再次调整时，正文应分别指出发生变化的 tag、路径或符号，并以 `android-17.0.0_r1` 收束当前行为。
 
