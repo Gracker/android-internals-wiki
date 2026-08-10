@@ -282,7 +282,7 @@ RenderNode::prepareTreeImpl()
   → prepareLayer()
   → prepare DisplayList and children
   → pushLayerUpdate()
-      如果不再是图层、不可渲染、尺寸无效或过大
+      if no longer a layer / not renderable / invalid size / too large
           destroy existing layer surface
       else
           CanvasContext::createOrUpdateLayer(...)
@@ -293,7 +293,7 @@ CanvasContext::draw()
       → renderLayerImpl(node, damage)
           clear/update the layer surface
           replay RenderNode content into dirty region
-  → 使用图层结果渲染应用窗口帧
+  → render App Window frame using the layer result
 ```
 
 内容 `invalidate()` 后，现有 layer surface 可以按 damage 重绘。尺寸、格式、context、可渲染状态或最大纹理限制变化时，才可能释放并重分配资源。把每次内容变化都称为“纹理重建”会高估分配次数，却仍可能低估重绘和 GPU 带宽成本。

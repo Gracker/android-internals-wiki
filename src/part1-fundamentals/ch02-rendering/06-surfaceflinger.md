@@ -507,7 +507,7 @@ Android 17 userdebug/eng 跟踪数据中可关注：
 - App 的 `dequeueBuffer`、`queueBuffer`；
 - BLAST acquire/release callback；
 - `BufferTX - <layerName>` pending 数量；
-- 图层缓冲 ID、帧号、期望呈现时间；
+- Layer buffer id、frame number、desired present time；
 - acquire/release/present fence；
 - SurfaceFlinger Layer lifecycle、transaction 与锁存事件。
 
