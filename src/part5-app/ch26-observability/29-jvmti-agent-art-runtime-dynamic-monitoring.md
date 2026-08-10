@@ -43,7 +43,7 @@ rework_resolution: "第四轮 rework：从本卷已验证章节 [1.35][14.1][26.
 
 # 26.29 JVMTI Agent — ART 运行时动态监控的实验入口与证据边界
 
-## 先给结论
+## JVMTI 的使用边界
 
 JVMTI 是 ART 提供给调试器和 profiler 的进程内原生接口。它能观察线程、方法、类、对象分配和 GC，也能设置断点、挂起线程、重定义类。接口能力很强，因此 Android 对普通应用设置了清晰的安全边界：
 
@@ -53,7 +53,7 @@ JVMTI 是 ART 提供给调试器和 profiler 的进程内原生接口。它能�
 - `profileable` 不等于 `debuggable`，不能让 release 应用获得 JVMTI attach 权限；
 - JVMTI 更适合实验室工具、IDE profiler 和专用调试构建，不是线上 release 监控 SDK 的通用入口。
 
-本章以 `android-17.0.0_r1` 为源码锚点。Android 官方 [ART TI 说明](https://source.android.com/docs/core/runtime/art-ti) 还指出，Android 8 及以上版本由 CTS 检查 debuggable / non-debuggable attach 边界、已实现的 JVMTI API 和 agent 二进制接口。厂商无需另行实现这套接口，但不同 Android 版本可提供的 capability 仍可能不同。
+源码锚点为 `android-17.0.0_r1`。Android 官方 [ART TI 说明](https://source.android.com/docs/core/runtime/art-ti) 还指出，Android 8 及以上版本由 CTS 检查 debuggable / non-debuggable attach 边界、已实现的 JVMTI API 和 agent 二进制接口。厂商无需另行实现这套接口，但不同 Android 版本可提供的 capability 仍可能不同。
 
 ## ART TI、JVMTI plugin 与 agent 的关系
 
