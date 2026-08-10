@@ -198,7 +198,7 @@ SurfaceFlinger 的 `onExpectedPresentTimePosted()` 会读取当前 mode 的 `Vrr
 
 `notifyExpectedPresentConfig == null` 时，框架不会调用这项 HAL 提示；`timeoutNs == 0` 表示每帧都要提示。非零 `headsUpNs` 则给出提示必须领先下一次 expected-present 的最短时间。它们描述的是显示硬件需要多少准备时间，不是应用可支配的额外帧预算。
 
-这套接口允许面板在不切换模式的情况下准备下一次刷新。它无法替应用修复晚提交、错误时间戳、BufferQueue 堆积或 acquire fence 过晚的问题。
+这套接口允许面板在不切换 mode 的情况下准备下一次刷新。它无法替应用修复晚提交、错误时间戳、BufferQueue 堆积或 acquire fence 过晚的问题。
 
 ### 2.4 VsyncModulator 负责工作预算，不负责选择刷新率
 
@@ -308,9 +308,9 @@ videoSurface.clearFrameRate(); // API 34+
 
 `frameRate` 可以不是设备公开的物理档位。系统可能让 24fps 内容运行在 48、72、120Hz 等兼容节奏上，也可能因其他图层或策略维持当前模式。
 
-`setFrameRate()` 只影响 SurfaceFlinger 对显示帧率的选择，不会限制 Producer 产帧速度。它可能间接改变 Choreographer 回调时间和 buffer 释放间隔，但不能代替 frame pacing。引擎仍需控制 `eglSwapBuffers()`、`vkQueuePresentKHR()` 或播放器提交时间戳，否则高频生产会填满队列，增加输入延迟。
+`setFrameRate()` 只影响 SurfaceFlinger 对显示帧率的选择，不会限制 Producer 产帧速度。它可能间接改变 Choreographer 回调时间和 buffer 释放间隔，但不能代替 frame pacing。引擎仍需控制 `eglSwapBuffers()`、`vkQueuePresentKHR()` 或播放器提交时间戳，否则高频生产会让 queue 填满，增加输入延迟。
 
-Android 17（API 37）的 `Surface.setProducerThrottlingEnabled()` 调整 EGL/Vulkan Producer 在 queue 阶段承受的 CPU backpressure，属于队列节拍控制，不是刷新率投票。该 API 的细节见 2.17；排查 ARR 时应分别检查 `setFrameRate()` 的投票和生产者限速。
+Android 17（API 37）的 `Surface.setProducerThrottlingEnabled()` 调整 EGL/Vulkan Producer 在 queue 阶段承受的 CPU backpressure，属于队列节拍控制，不是刷新率投票。该 API 的细节见 2.17；排查 ARR 时应分别检查 `setFrameRate()` 的投票和 producer 限速。
 
 ## 5. Display 与 Choreographer 能查到什么
 
@@ -434,7 +434,7 @@ ORDER BY actual.ts;
 
 ## 8. Kernel 与驱动证据
 
-内核源码以 `android17-6.18-2026-06_r6` 为锚点。公共同步语义可从以下源码理解：
+kernel 源码以 `android17-6.18-2026-06_r6` 为锚点。公共同步语义可从以下源码理解：
 
 - `drivers/dma-buf/dma-fence.c`：跨设备异步工作完成关系；
 - `drivers/dma-buf/sync_file.c`：把 dma-fence 暴露为 sync_file 文件描述符；
@@ -468,7 +468,7 @@ ARR 可以在同一显示配置内按 TE 的离散分频改变刷新间隔；MRR
 
 **认为刷新率选择等于 frame pacing。**
 
-刷新率选择决定系统倾向于什么显示节奏；pacing 决定 Producer 在何时提交哪一帧。缺少任一环节，都可能填满队列或形成不均匀 cadence。
+刷新率选择决定系统倾向于什么显示节奏；pacing 决定 Producer 在何时提交哪一帧。缺少任一环节，都可能让 queue 填满或形成不均匀 cadence。
 
 **把 `getSuggestedFrameRate()` 当成任意 fps 映射器。**
 

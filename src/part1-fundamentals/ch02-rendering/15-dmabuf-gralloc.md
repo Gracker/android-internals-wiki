@@ -313,13 +313,13 @@ Android 15 起平台支持 16 KB page size 设备。它会影响 ELF、mmap、�
 5. 关闭并删除临时 raw handle，保存 imported handle；
 6. 对象析构时按 owner 类型调用 Mapper `freeBuffer()` 或 Allocator `free()`。
 
-因此，fd 被成功传递仍不等于 Mapper 一定能成功导入。vendor metadata 不兼容、资源不足或错误句柄都可能让 import 返回错误。
+因此，fd 被成功传递仍不等于 Mapper 一定能成功导入。vendor metadata 不兼容、资源不足或错误 handle 都可能让 import 返回错误。
 
 ### 5.1 BufferQueue 为何不在每帧重传 handle
 
 BufferQueue 两端按 slot 缓存 buffer。`BufferQueueConsumer::acquireBuffer()` 在某个 slot 第一次 acquire 新对象时返回 `mGraphicBuffer`；该 slot 之前已被 consumer acquire 过时，源码把输出的 `mGraphicBuffer` 设为 null，避免 consumer 再次 remap。后续帧仍会携带 slot、frame number、fence、crop、transform、dataspace、damage 和时间信息。
 
-以下序列用于说明 classic BufferQueue 的 handle 缓存点。以跨进程 consumer 为例，首次返回的 `GraphicBuffer` 在 IPC 反序列化时由 `GraphicBuffer::unflatten()` 调用 Mapper import；消费者业务代码不会额外发起这次调用。
+以下序列用于说明 classic BufferQueue 的 handle 缓存点。以跨进程 consumer 为例，首次返回的 `GraphicBuffer` 在 IPC 反序列化时由 `GraphicBuffer::unflatten()` 调用 Mapper import；consumer 侧业务代码不会额外发起这次调用。
 
 ```mermaid
 sequenceDiagram
@@ -437,9 +437,9 @@ Surface resize、format /用途、protected 状态变化、slot 被清理、外�
 
 Camera preview 常把 HAL 产出的 buffer 交给 SurfaceTexture、ImageReader、GPU filter、codec 或 HWC。一个 camera buffer 可以在模块间共享，但 ISP 写入、GPU 采样、颜色转换、编码器读取和显示扫描都消耗内存带宽。
 
-因此，零拷贝不等于零带宽。分析相机打开后 UI 掉帧时，应分别测量相机栅栏、GPU 渲染轮次、最终 Surface 显示、内存控制器与热状态；堆名称本身不能证明物理带宽隔离。两条 BufferQueue 与中间消费者/生产者需要分别检查，以确认积压位置。
+因此，零拷贝不等于零带宽。分析相机打开后 UI 掉帧时，应分别测量相机 fence、GPU 渲染轮次、最终 Surface 显示、内存控制器与热状态；堆名称本身不能证明物理带宽隔离。两条 BufferQueue 与中间 consumer/producer 需要分别检查，以确认积压位置。
 
-视频也遵循同一原则。SurfaceView 视频可能保留独立图层，TextureView 会把解码缓冲再采样进宿主窗口；是否获得 HWC DEVICE 合成取决于格式、变换、受保护属性、平面和带宽等整屏条件。“共享同一缓冲”“省去一次 RenderEngine 合成”和“没有内存带宽成本”是三种不同结论。
+视频也遵循同一原则。SurfaceView 视频可能保留独立 layer，TextureView 会把解码缓冲再采样进宿主窗口；是否获得 HWC DEVICE 合成取决于格式、变换、受保护属性、平面和带宽等整屏条件。“共享同一缓冲”“省去一次 RenderEngine 合成”和“没有内存带宽成本”是三种不同结论。
 
 ### 9.3 引用泄漏
 
