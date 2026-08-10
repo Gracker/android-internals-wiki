@@ -70,48 +70,11 @@ last_task6_audit: "2026-06-22"
 
 # 21.12 Startup Profile 与 DEX Layout 启动优化
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 Startup Profile 与 Baseline Profile 的边界
-说明 Startup Profile 只面向启动路径的 DEX 布局优化，Baseline Profile 面向启动与高频交互的 ART 预编译；两者可能由同一套 Macrobenchmark 脚本产出，但编译阶段和收益来源不同。
-
-### 🔹 DEX Layout 优化如何影响冷启动
-梳理 R8 根据 `startup-prof.txt` 调整 classes.dex 方法和类布局的路径，解释它主要降低启动阶段的类加载、页面故障、磁盘读取局部性成本，而不是替代业务初始化治理。
-
-### 🔹 `includeInStartupProfile` 的场景选择
-给出哪些 CUJ 应进入 Startup Profile：入口 Activity、首屏骨架、首屏 Compose/View 树、首屏路由和必要 SDK 初始化；同时说明搜索、滚动、详情页等非首屏路径应留在 Baseline Profile。
-
-### 🔹 构建条件与产物检查
-覆盖 AGP、R8、Macrobenchmark、`dexLayoutOptimization` 等配置要求，说明如何检查 `startup-prof.txt`、`baseline-prof.txt`、APK/AAB 内二进制 profile 和 DEX 布局结果。
-
-### 🔹 度量方式与回归判断
-用 Macrobenchmark 对比 `CompilationMode.Partial`、无 profile、仅 Baseline Profile、Baseline + Startup Profile 的结果，区分 TTID、TTFD、首帧前 CPU 时间、主线程 I/O、类加载耗时和方差。
-
-### 🔹 维护风险与发布策略
-说明规则过宽会增加启动路径外代码的磁盘读取成本，规则过窄会漏掉首屏路径；补充 CI 生成、profile diff review、登录态/弹窗/远程配置固定、灰度验证和异常回滚策略。
-
-### 🔹 Android 版本与安装渠道边界
-建立 Android 7+、Android 9+ Cloud Profile、Play 分发、本地安装、第三方商店与 Android 16 云端编译材料之间的边界，避免把某一渠道能力写成通用系统行为。
-
-## 扩展
-
-### 🔸 与 21.4 Baseline Profile 实战的分工
-本节从 21.4 的扩展点拆出，21.4 保留 Profile 生成和治理主线，本节聚焦启动路径 DEX layout、构建产物和验证组合。
-
-### 🔸 AOSP `profman` / `dex2oat` 验证入口
-验证 profile 消费路径时应结合 `art/profman/`、`art/dex2oat/` 和 AGP/R8 文档，不照搬官方示例代码。
-
-### 🔸 失败案例
-记录 Startup Profile 误覆盖非首屏路径、启动弹窗导致 profile 不稳定、CI 设备状态污染、首屏网络请求掩盖 DEX layout 收益等案例。
-
-<!-- outline-end -->
-
 Startup Profile 是构建期的 DEX 布局输入。它告诉 D8/R8 哪些类和方法属于启动路径，构建工具据此把相关代码尽量集中到主 `classes.dex`。Android 17 安装和运行的是已经排布好的 DEX；设备端 ART 不会在安装时重新执行这次布局。
 
 这与 Baseline Profile 的设备端编译是两条链路。Baseline Profile 交给 ART，帮助 `speed-profile` 选择 AOT 编译范围；Startup Profile 交给构建工具，帮助生成 DEX。前者主要减少解释器/JIT 成本，后者改善启动代码的局部性。两者通常由同一套 `BaselineProfileRule` 测试生成，也应一起使用，但验证证据不能混用。
 
-21.4 负责 Baseline Profile 的生成与治理，21.11 负责设备端 profile 和 compiler filter。本节只回答三个问题：
+Baseline Profile 的生成与治理见 21.4，设备端 profile 和 compiler filter 见 21.11。这里重点回答三个问题：
 
 1. 哪些启动入口应标为 `includeInStartupProfile = true`；
 2. 怎样证明 release 构建消费了 `startup-prof.txt`；
@@ -119,7 +82,7 @@ Startup Profile 是构建期的 DEX 布局输入。它告诉 D8/R8 哪些类和�
 
 ## Startup Profile 与 Baseline Profile 的边界
 
-`BaselineProfileRule.collect()` 会把采集到的规则写入 Baseline Profile。将某段 CUJ 标为 `includeInStartupProfile = true` 后，这段路径的规则还会进入 Startup Profile。由此可见，Startup Profile 通常是 Baseline Profile 的子集。
+`BaselineProfileRule.collect()` 会把采集到的规则写入 Baseline Profile。将某段 CUJ 标为 `includeInStartupProfile = true` 后，这段路径的规则还会进入 Startup Profile。因此，Startup Profile 通常是 Baseline Profile 的子集。
 
 | 项目 | Baseline Profile | Startup Profile |
 |---|---|---|
@@ -255,7 +218,7 @@ unzip -p app-release.aab BUNDLE-METADATA/com.android.tools/r8.json \
 - 两组使用相同的 `CompilationMode`，让设备端 AOT 状态一致；
 - 每次安装、数据准备、启动入口和迭代次数一致。
 
-若 A 组同时移除了 Baseline Profile，而 B 组同时增加 Baseline 与 Startup Profile，结果会混合 AOT 编译和 DEX layout 两种收益，无法回答本节的问题。
+若 A 组同时移除了 Baseline Profile，而 B 组同时增加 Baseline 与 Startup Profile，结果会混合 AOT 编译和 DEX layout 两种收益，无法单独度量 DEX layout。
 
 指标至少包含 TTID、TTFD、P50/P90/P95 和离散程度。TTFD 依赖应用在内容可用时调用 `reportFullyDrawn()`；上报点错误时，不能用该指标判断布局效果。
 
@@ -271,13 +234,13 @@ Perfetto 用于解释差异：
 
 ## 维护风险与发布策略
 
-Startup Profile 会随首页、导航、Compose/View 架构、依赖注入、启动弹窗和实验分支变化。生成测试不更新时，文本文件仍可能存在并通过构建，但规则会逐步偏离当前入口。
+Startup Profile 会随首页、导航、Compose/View 架构、依赖注入、启动弹窗和实验分支变化。生成测试不更新时，规则文件仍可能存在并通过构建，但内容会逐步偏离当前入口。
 
 发布门禁至少包含：
 
 - 只用 non-debuggable、minified release 等价构建验证；
 - 固定账号、地区、语言、权限、弹窗、通知和实验桶；
-- review `startup-prof.txt` diff，拦截测试框架、debug 代码和大量非首屏包；
+- 检查 `startup-prof.txt` diff，拦截测试框架、debug 代码和大量非首屏包；
 - 检查 `classes.dex` 容量与 startup DEX 标记；
 - 保持 Baseline Profile 二进制小于 1.5 MB；
 - 对 Launcher、通知和高频 deep link 分别跑回归；
@@ -298,9 +261,9 @@ Startup Profile 的核心效果在构建期完成，安装渠道不会重新安�
 
 第三方商店和企业分发需要单独检查 `ProfileVerifier`。`RESULT_CODE_PROFILE_ENQUEUED_FOR_COMPILATION` 只表示 profile 已等待后台编译；`RESULT_CODE_COMPILED_WITH_PROFILE` 才表示存在按 profile 编译的产物。这个差异影响 Baseline Profile A/B，却不改变 Startup Profile 已生成的 DEX 排布。
 
-## 与 21.4 Baseline Profile 实战的分工
+## 三类 Profile 的职责
 
-21.4 负责 Profile 生成脚本、Gradle 接入、二进制产物和 Macrobenchmark 基础配置；21.11 负责 `.dm`、ART Service 与 compiler filter；本节只负责 Startup Profile 的构建期证据和 DEX layout A/B。
+Baseline Profile 的生成脚本、Gradle 接入、二进制产物和 Macrobenchmark 基础配置见 21.4；`.dm`、ART Service 与 compiler filter 见 21.11；Startup Profile 关注构建期证据和 DEX layout A/B。
 
 建议的实施顺序是：
 
@@ -340,14 +303,11 @@ Startup Profile 的证据应停在 AGP/D8/R8 和构建产物：`startup-prof.txt
 
 ## 参考资料
 
-- [已验证: 官方文档] [Overview of Startup Profiles](https://developer.android.com/topic/performance/startupprofiles/overview)
-- [已验证: 官方文档] [Create Startup Profiles](https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations)
-- [已验证: 官方文档] [Difference between Baseline Profiles and Startup Profiles](https://developer.android.com/topic/performance/baselineprofiles/difference-baseline-startup)
-- [已验证: 官方文档] [Confirm Startup Profiles optimization](https://developer.android.com/topic/performance/baselineprofiles/confirm-startup-profiles)
-- [已验证: 官方文档] [Configure Baseline Profile generation](https://developer.android.com/topic/performance/baselineprofiles/configure-baselineprofiles)
-- [已验证: Android 17 AOSP] [`profman.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/profman/profman.cc)
-- [已验证: Android 17 AOSP] [`dex2oat.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/dex2oat/dex2oat.cc)
-- [已验证: Android 17 AOSP] [`Dexopter.java`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java)
-- [结构参考] `Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md`
-- [结构参考] `Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md`
-- [结构参考] `Clippings/Android 性能优化 - 原理：重新认识 APK 安装包.md`
+- [Overview of Startup Profiles](https://developer.android.com/topic/performance/startupprofiles/overview)
+- [Create Startup Profiles](https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations)
+- [Difference between Baseline Profiles and Startup Profiles](https://developer.android.com/topic/performance/baselineprofiles/difference-baseline-startup)
+- [Confirm Startup Profiles optimization](https://developer.android.com/topic/performance/baselineprofiles/confirm-startup-profiles)
+- [Configure Baseline Profile generation](https://developer.android.com/topic/performance/baselineprofiles/configure-baselineprofiles)
+- [`profman.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/profman/profman.cc)
+- [`dex2oat.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/dex2oat/dex2oat.cc)
+- [`Dexopter.java`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java)

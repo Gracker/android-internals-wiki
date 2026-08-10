@@ -53,25 +53,9 @@ last_deepseek_cn_review_at: 2026-07-17
 
 # 启动监控与度量
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 启动耗时埋点方案设计
-- 🔹 线上启动性能采集与分位值分析
-- 🔹 启动劣化检测与归因
-- 🔹 Vitals 启动指标对标
-
-### 扩展（可选深入）
-
-- 🔸 （待扩展）
-
-<!-- outline-end -->
-
 ## 为什么启动监控需要独立设计
 
-前面的章节解决启动链路、任务编排、Provider、Profile、SplashScreen、懒加载和多进程问题。本节回答另一个问题：改动发布后，怎样判断用户启动体验是否退化，并把退化定位到版本、入口、设备和初始化任务。
+启动监控要回答两个问题：改动发布后，用户启动体验是否退化；一旦退化，怎样定位到版本、入口、设备和初始化任务。
 
 只在 `Application.onCreate()` 入口与出口打点不够。这个区间看不到启动请求、进程创建、`bindApplication`、Provider 安装和首帧，也无法表达首屏核心内容何时可用。完整方案需要三类数据互相校准：
 
@@ -398,7 +382,7 @@ Macrobenchmark 必须记录 `StartupMode`、`CompilationMode`、设备、温度�
 
 Perfetto 中先找 Android App Startups 派生轨道，再与应用自定义 trace 对齐。一个 task 在墙钟上持续 80 ms，不代表它消耗了 80 ms CPU；线程可能在等待 Binder、锁、I/O 或调度。优化结论要由对应轨道证明。
 
-## Review 清单
+## 检查清单
 
 - [ ] TTID、TTFD、content ready 和 Application 局部耗时各有独立名称与边界。
 - [ ] 耗时使用单调时钟，墙钟只用于事件对齐。
