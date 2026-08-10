@@ -59,25 +59,9 @@ last_task9_autofix_at: "2026-06-30"
 
 # 内存抖动与 GC 治理
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 内存抖动的成因与表现
-- 🔹 频繁 GC 对帧率的影响
-- 🔹 典型内存抖动场景：onDraw 分配、字符串拼接、自动装箱
-- 🔹 内存抖动检测与治理
-
-### 扩展（可选深入）
-
-- 🔸 （待扩展）
-
-<!-- outline-end -->
-
 > **版本基线**
 >
-> 本章的平台实现统一以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点。历史版本只用于说明 collector 和工具能力的演进，最高版本为 Android 17。
+> 平台实现统一以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点。历史版本只用于说明 collector 和工具能力的演进，最高版本为 Android 17。
 
 ## 为什么要了解内存抖动与 GC 治理
 
@@ -87,14 +71,7 @@ ART 的并发 collector 缩短了许多暂停，但分配、标记、复制或�
 
 Hook `libart.so` 或阻塞 `HeapTaskDaemon` 会破坏 ART 的回收时序，并依赖非公开 ABI。应用治理应从 trace 和 allocation call stack 找到分配热点，缩短无用中间态的生命周期，控制单次处理范围，再验证 GC 与慢帧是否同步改善。
 
-[已验证: 官方文档, https://developer.android.com/topic/performance/vitals/render]
-[已验证: 官方文档, https://developer.android.com/studio/profile/record-java-kotlin-allocations]
-
 ## 内存抖动的成因与表现
-
-[已验证: AOSP android-17.0.0_r1, art/runtime/gc/heap-inl.h]
-[已验证: AOSP android-17.0.0_r1, art/runtime/gc/heap.cc]
-[已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
 
 内存抖动同时受分配大小、分配频率和对象存活时间影响。大量小对象可以快速推进已分配字节数，大对象则可能直接形成峰值；只按对象大小排序会漏掉高频调用栈。
 
@@ -111,15 +88,7 @@ Android 17 的 `Heap::AllocObjectWithAllocator()` 在分配记账后调用 `Shou
 
 Android 8 起，ART 的默认计划是 Concurrent Copying；官方 GC 文档说明 Android 10 及以上的 CC 默认使用分代模式。Android 17 又为 Concurrent Mark-Compact 增加分代 GC 能力。collector 与 generational 开关仍取决于运行时配置，不能从系统版本推断每个进程都采用同一组合；Android 17 的 `PostForkChildAction()` 会在日志中输出当前进程使用的 generational/non-generational collector，可与 trace 一起确认。
 
-[已验证: 官方文档, https://source.android.com/docs/core/runtime/gc-debug]
-[已验证: Android 17 release notes, https://developer.android.com/about/versions/17/release-notes]
-
 ## 频繁 GC 对帧率的影响
-
-[已验证: AOSP android-17.0.0_r1, libcore/libart/src/main/java/java/lang/Daemons.java]
-[已验证: AOSP android-17.0.0_r1, art/runtime/gc/task_processor.cc]
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
-[已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
 
 GC 对帧率的影响来自两块：短暂停应用线程，以及后台 GC 线程和渲染线程抢 CPU。AOSP `Daemons.java` 中 `HeapTaskDaemon` 会调用 `VMRuntime.getRuntime().runHeapTasks()`；`TaskProcessor::RunAllTasks()` 从队列取 `HeapTask` 并执行。Android Developers 的慢渲染文档也提到，新版本 Android 上 GC 通常运行在名为 `HeapTaskDaemon` 的后台线程上，大量分配会让更多 CPU 资源花在 GC 上。
 
@@ -142,9 +111,6 @@ Android 17 的 `Heap::PostForkChildAction()` 在 `initial_heap_size_ < growth_li
 [源码锚点: AOSP `android-17.0.0_r1`, `art/runtime/gc/heap.cc::Heap::PostForkChildAction()`, `TriggerPostForkCCGcTask`]
 
 ## 典型内存抖动场景
-
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
-[已验证: 官方文档, developer.android.com/studio/profile/memory-profiler]
 
 调用频率比代码表面的复杂度更值得优先检查。一次分配在点击按钮时没有问题，放到 `onDraw()`、`onBindViewHolder()`、`onTouchEvent()`、Compose recomposition 或动画回调里，就会被帧率放大。
 
@@ -243,11 +209,6 @@ class FrameBucketCounter(
 
 ## 内存抖动检测与治理
 
-[已验证: 官方文档, developer.android.com/studio/profile/memory-profiler]
-[已验证: 官方文档, perfetto.dev/docs/data-sources/native-heap-profiler]
-[已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
-[已验证: AOSP android-17.0.0_r1, art/runtime/gc/heap.cc]
-
 检测内存抖动按“现象确认 → 分配归因 → 代码修复 → 回归防护”推进。只看 heap dump 容易偏向泄漏分析，抖动更需要 allocation over time：谁在什么时间段分配、每秒分配多少、是否和慢帧或启动阶段重叠。
 
 ### 现象确认：先把 GC 和帧放到同一张图里
@@ -259,9 +220,6 @@ class FrameBucketCounter(
 - **分配信号**：Java/Kotlin allocation recording 或 heap profile 是否显示对象数量快速上升。
 
 Android Studio 的 Java/Kotlin allocation recording 需要 debuggable 构建；Full 模式可能让高分配应用出现可见的 profiler 开销，必要时改用 Sampled，并把这个采样条件写进对比记录。Perfetto 从 Android 12 起支持 ART allocation profiling，在 `HeapprofdConfig` 中配置 `heaps: "com.android.art"` 后采集分配调用栈样本。它记录创建时的调用栈与累计分配，不记录对象何时被回收，不能替代 retention heap dump。
-
-[已验证: 官方文档, https://developer.android.com/studio/profile/record-java-kotlin-allocations]
-[已验证: Perfetto ART Allocation Profiling, https://perfetto.dev/docs/data-sources/native-heap-profiler]
 
 ### 分配归因：按调用频率排序，不按代码体量排序
 
@@ -311,8 +269,6 @@ suspend fun <T> processInChunks(
 
 把非关键工作延后只能改变时间分布，不能减少总分配。首屏后预取或 fling 后刷新统计仍可能与下一次输入、图片解码或后台任务竞争 CPU；要根据任务优先级设置取消条件，并在 trace 中确认延后后的窗口没有产生新的慢帧。
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
-
 ## 常见误区
 
 ### “看到 GC 就要抑制 GC”
@@ -329,15 +285,12 @@ Heap dump 适合看某一刻还活着的对象，抖动里的临时对象可能�
 
 ## 参考资料
 
-- [已验证: Android Developers, Slow rendering, https://developer.android.com/topic/performance/vitals/render]
-- [已验证: Android Developers, Record Java/Kotlin allocations, https://developer.android.com/studio/profile/record-java-kotlin-allocations]
-- [已验证: Android Developers, Android 17 release notes, https://developer.android.com/about/versions/17/release-notes]
-- [已验证: AOSP, Debug ART garbage collection, https://source.android.com/docs/core/runtime/gc-debug]
-- [已验证: Perfetto, ART Allocation Profiling, https://perfetto.dev/docs/data-sources/native-heap-profiler]
-- [已验证: AOSP `android-17.0.0_r1`, `Daemons.java`, https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/libart/src/main/java/java/lang/Daemons.java]
-- [已验证: AOSP `android-17.0.0_r1`, `heap-inl.h`, https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap-inl.h]
-- [已验证: AOSP `android-17.0.0_r1`, `heap.cc`, https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.cc]
-- [已验证: AOSP `android-17.0.0_r1`, `task_processor.cc`, https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/task_processor.cc]
-- [结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
-- [结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
-- [结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
+- [Android Developers：Slow rendering](https://developer.android.com/topic/performance/vitals/render)
+- [Android Developers：Record Java/Kotlin allocations](https://developer.android.com/studio/profile/record-java-kotlin-allocations)
+- [Android Developers：Android 17 release notes](https://developer.android.com/about/versions/17/release-notes)
+- [AOSP：Debug ART garbage collection](https://source.android.com/docs/core/runtime/gc-debug)
+- [Perfetto：ART Allocation Profiling](https://perfetto.dev/docs/data-sources/native-heap-profiler)
+- [AOSP `android-17.0.0_r1`, `Daemons.java`](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/libart/src/main/java/java/lang/Daemons.java)
+- [AOSP `android-17.0.0_r1`, `heap-inl.h`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap-inl.h)
+- [AOSP `android-17.0.0_r1`, `heap.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.cc)
+- [AOSP `android-17.0.0_r1`, `task_processor.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/task_processor.cc)

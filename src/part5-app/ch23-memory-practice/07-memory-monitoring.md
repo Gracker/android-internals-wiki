@@ -72,25 +72,9 @@ last_deepseek_cn_review_at: 2026-06-12
 
 # 内存监控与线上治理
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 内存指标采集：PSS / RSS / Java Heap / Native Heap
-- 🔹 内存水位线与告警策略
-- 🔹 OOM 预警与主动回收
-- 🔹 内存快照（Heap Dump）线上采集方案
-
-### 扩展（可选深入）
-
-- 🔸 （待扩展）
-
-<!-- outline-end -->
-
 > **版本基线**
 >
-> 本章的平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点；读取 `/proc` 指标时，内核侧以 `android17-6.18-2026-06_r6` 为基线。历史版本只用于说明 API 与行为边界，最高版本为 Android 17。
+> 平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点；读取 `/proc` 指标时，内核侧以 `android17-6.18-2026-06_r6` 为基线。历史版本只用于说明 API 与行为边界，最高版本为 Android 17。
 
 ## 线上监控要回答什么
 
@@ -103,7 +87,7 @@ last_deepseek_cn_review_at: 2026-06-12
 
 只上报一个“内存占用”无法区分这些问题。PSS、RSS、Java Heap 和 Native Heap 的统计对象不同，任何一项都不能单独代表应用的全部内存。多进程应用还要带进程名；把所有进程混成一个分布，会掩盖主进程回归或独立任务进程的峰值。
 
-Java 泄漏引用链见 23.1 节，Native 分配诊断见 23.3 节，Java Heap 预算见 23.4 节，OOM 分类见 20.5 节。本节聚焦生产环境中的指标、判断、降级和证据采集。
+Java 泄漏引用链见 23.1 节，Native 分配诊断见 23.3 节，Java Heap 预算见 23.4 节，OOM 分类见 20.5 节。这里聚焦生产环境中的指标、判断、降级和证据采集。
 
 ## 内存指标采集：先统一口径
 
@@ -313,8 +297,6 @@ fun classifyHeapPressure(
 
 Android 17 上，`onTrimMemory()` 仍应聚焦 `TRIM_MEMORY_UI_HIDDEN` 和 `TRIM_MEMORY_BACKGROUND`，用于表示 UI 隐藏或进程进入后台 LRU。从 Android 14（API 34）起，其余旧内存压力等级不再投递，并在 Android 15（API 35）废弃。设备压力使用 `ActivityManager.MemoryInfo` 观察；Android 17 App Memory Limits 的预先取证使用 `TRIGGER_TYPE_ANOMALY`，退出后再读 `ApplicationExitInfo`。
 
-[已验证: Android Developers “Manage your app's memory”; `ComponentCallbacks2` API]
-
 ### 重启后核对退出原因
 
 Android 11（API 30）起，`getHistoricalProcessExitReasons()` 可以读取调用方 UID 最近的退出记录。下面的代码只挑出 LMK 和 `android-17.0.0_r1` 所定义的 Memory Limiter 记录。
@@ -445,7 +427,6 @@ fun registerMemoryProfilingTriggers(
 
 系统 trigger 受设备采样与系统限流影响，不保证每次事件都有产物。trigger 结果只能通过全局 listener 接收；如果采集时进程已经退出，系统会在应用再次启动并注册 listener 后尝试交付。文件位置必须使用 `ProfilingResult.getResultFilePath()`，不能依赖内部目录结构。应用还可以用 `ProfilingTrigger.Builder.setRateLimitingPeriodHours()` 添加自己的冷却时间，但策略值应由团队的采样配额和隐私规则决定。
 
-[已验证: Android 17 `ProfilingTrigger` API; Android Developers “Trigger-based profiling”]
 [源码锚点: AOSP `android-17.0.0_r1`, `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`, `ProfilingTrigger.java`]
 
 ### 产物治理比触发代码更重要
@@ -507,6 +488,3 @@ Java heap dump 可能包含对象字符串、用户输入、请求响应、缓�
 - [AOSP Profiling `ProfilingTrigger.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/packages/modules/Profiling/+/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java)
 - [Kernel `/proc/<pid>/status` @ `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/array.c)
 - [Kernel `smaps_rollup` @ `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/task_mmu.c)
-- 结构参考：`Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md`
-- 结构参考：`Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md`
-- 结构参考：`Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md`

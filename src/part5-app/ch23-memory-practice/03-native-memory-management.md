@@ -57,31 +57,15 @@ last_deepseek_cn_review_at: 2026-06-11
 
 # Native 内存管理与优化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Native 内存构成：SO 库、malloc、mmap
-- 🔹 Native 内存泄漏检测：malloc_debug、ASan、HWASan
-- 🔹 Native 内存监控方案
-- 🔹 SO 库内存优化
-
-### 扩展（可选深入）
-
-- 🔸 jemalloc / scudo allocator 差异
-
-<!-- outline-end -->
-
 > **版本基线**
 >
-> 本章的平台源码统一以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点。涉及 `/proc`、VMA 与内核统计接口时，以 `android17-6.18-2026-06_r6` 为内核侧基线。旧版本只用于说明能力的引入时间，不作为当前实现依据。
+> 平台源码统一以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点。涉及 `/proc`、VMA 与内核统计接口时，以 `android17-6.18-2026-06_r6` 为内核侧基线。旧版本只用于说明能力的引入时间，不作为当前实现依据。
 
 ## 为什么要处理 Native 内存
 
 Java Heap 没有持续增长，不代表进程的内存占用稳定。使用 JNI、音视频 SDK、地图 SDK、游戏引擎、图片库或加密库的应用，Native Heap、匿名 `mmap`、共享库映射和图形缓冲都可能让 PSS 上升。后果可能是后台进程更早被回收、前台发生内存压力或 native crash。
 
-本节面向应用侧排查：先确认增长属于哪一种系统统计，再按问题类型选择 heapprofd、`libmemunreachable`、malloc_debug、ASan、HWASan、GWP-ASan 或 MTE。容量问题与非法访问需要不同证据：前者关注分配栈和存活量，后者关注越界、释放后访问等错误现场。底层内存模型详见 4.1、4.2 节，工具细节详见 14.3 节。
+应用侧排查先确认增长属于哪一种系统统计，再按问题类型选择 heapprofd、`libmemunreachable`、malloc_debug、ASan、HWASan、GWP-ASan 或 MTE。容量问题与非法访问需要不同证据：前者关注分配栈和存活量，后者关注越界、释放后访问等错误现场。底层内存模型详见 4.1、4.2 节，工具细节详见 14.3 节。
 
 ## Native 内存由哪些部分组成
 
@@ -118,8 +102,6 @@ adb shell dumpsys meminfo <pid> | grep -A 20 "Native Heap"
 ```
 
 这些快照只能说明“哪一类发生变化”，不能直接证明泄漏。应在相同设备、相同构建和相同操作序列下，对比进入场景前、场景稳定后、退出并等待回收后的数据。如果 Native Heap 持续增长，再采 heapprofd；如果 Graphics、GL 或 memtrack 相关值增长，转到图片和渲染资源路径；如果 `.so` 的私有脏页异常，再检查动态库装载、初始化写入和重定位。
-
-[已验证: 官方文档, https://source.android.com/docs/core/tests/debug/native-memory]
 
 ## heapprofd：默认首选的 Native Heap 分配画像
 
@@ -163,8 +145,6 @@ Perfetto 官方文档把 `4096` 字节作为默认采样间隔。`Sampler::Sampl
 
 [源码锚点: Perfetto `android-17.0.0_r1`, `src/profiling/memory/sampler.h`, `src/profiling/memory/sampler.cc`]
 
-[已验证: 官方文档, https://perfetto.dev/docs/data-sources/native-heap-profiler]
-
 ### Native Heap 与 Java HPROF 是两条独立路径
 
 Android 17 的 Perfetto 源码为 native heapprofd 使用 `__SIGRTMIN + 4`，为 Java HPROF 使用 `__SIGRTMIN + 6`。Java HPROF producer 在发送信号前还会通过 `CanProfile()` 检查目标进程是否允许分析。两者是不同的数据源、信号与权限路径；某一种 dump 命令能运行，不能推出另一种 Perfetto 数据源也一定可用。
@@ -199,8 +179,6 @@ adb shell setprop wrap.<process> "''"
 
 这些清理命令只撤销本次 malloc_debug 配置，不会修改应用数据。量产 user 设备通常不具备执行该流程所需的 root、属性和 SELinux 权限，因此它应位于可控环境的复现阶段。
 
-[已验证: AOSP `android-17.0.0_r1`, `platform/system/memory/libmemunreachable/README.md`]
-
 ## ASan、HWASan、GWP-ASan、MTE 怎么选
 
 Native 内存问题不只有泄漏。越界写、use-after-free、double free 会先表现为偶现 crash、数据损坏或 UI 异常，再在内存统计里留下噪声。检测工具按使用场景选择：
@@ -213,10 +191,6 @@ Native 内存问题不只有泄漏。越界写、use-after-free、double free �
 | MTE | Arm Memory Tagging Extension，硬件标签检测越界和释放后访问 | 依赖硬件、系统版本和 manifest / 系统配置，模式不同会影响性能与报错时机 |
 
 ASan / HWASan 偏测试构建，GWP-ASan 和 MTE 更适合在较低开销下扩大检测面。它们解决的是内存安全错误，不替代 heapprofd 的容量分析；heapprofd 能说明谁分配得多，sanitizer 能说明哪次访问越界或访问了已释放内存。
-
-[已验证: 官方文档, https://developer.android.com/ndk/guides/memory-debug]
-[已验证: 官方文档, https://developer.android.com/ndk/guides/gwp-asan]
-[已验证: 官方文档, https://developer.android.com/ndk/guides/arm-mte]
 
 ## SO 库内存优化从三个维度入手
 
@@ -265,7 +239,6 @@ Android 官方 Scudo 文档说明：从 Android 11 开始，除低内存设备�
 
 设备厂商仍可带来配置差异。判断某个 Android 17 进程使用何种 allocator 时，应检查该设备的构建、`smaps` 名称和 tombstone，而不是只依据系统版本。`[anon:scudo:*]` 可以作为 Scudo 映射的线索；它本身不能说明泄漏或内存破坏已经发生。
 
-[已验证: 官方文档, https://source.android.com/docs/security/test/scudo]
 [源码锚点: AOSP `android-17.0.0_r1`, `platform/bionic/README.md`, `platform/external/scudo`]
 
 ## 排查清单
@@ -280,23 +253,21 @@ Android 官方 Scudo 文档说明：从 Android 11 开始，除低内存设备�
 
 ## 参考资料
 
-- [结构参考: Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md]
-- [已验证: 官方文档, Debug native memory use, https://source.android.com/docs/core/tests/debug/native-memory]
-- [已验证: 官方文档, Perfetto Native Heap Profiler, https://perfetto.dev/docs/data-sources/native-heap-profiler]
-- [已验证: 官方文档, Memory error debugging and mitigation, https://developer.android.com/ndk/guides/memory-debug]
-- [已验证: 官方文档, GWP-ASan, https://developer.android.com/ndk/guides/gwp-asan]
-- [已验证: 官方文档, Arm MTE, https://developer.android.com/ndk/guides/arm-mte]
-- [已验证: 官方文档, Scudo, https://source.android.com/docs/security/test/scudo]
-- [已验证: AOSP `android-17.0.0_r1`, libmemunreachable README, https://android.googlesource.com/platform/system/memory/libmemunreachable/+/refs/tags/android-17.0.0_r1/README.md]
-- [已验证: AOSP `android-17.0.0_r1`, android_os_Debug.cpp, https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_os_Debug.cpp]
-- [已验证: AOSP `android-17.0.0_r1`, androidprocheaps.cpp, https://android.googlesource.com/platform/system/memory/libmeminfo/+/android-17.0.0_r1/androidprocheaps.cpp]
-- [已验证: AOSP `android-17.0.0_r1`, procmeminfo.cpp, https://android.googlesource.com/platform/system/memory/libmeminfo/+/android-17.0.0_r1/procmeminfo.cpp]
-- [已验证: AOSP `android-17.0.0_r1`, Bionic README, https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/README.md]
-- [已验证: Perfetto `android-17.0.0_r1`, heapprofd.rc, https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/heapprofd.rc]
-- [已验证: Perfetto `android-17.0.0_r1`, heapprofd.cc, https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/heapprofd.cc]
-- [已验证: Perfetto `android-17.0.0_r1`, malloc_interceptor_bionic_hooks.cc, https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/malloc_interceptor_bionic_hooks.cc]
-- [已验证: Perfetto `android-17.0.0_r1`, heapprofd_producer.cc, https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/heapprofd_producer.cc]
-- [已验证: Perfetto `android-17.0.0_r1`, java_hprof_producer.cc, https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/java_hprof_producer.cc]
-- [已验证: Perfetto `android-17.0.0_r1`, sampler.h, https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/sampler.h]
-- [已验证: Perfetto `android-17.0.0_r1`, sampler.cc, https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/sampler.cc]
-- [调研来源: DeepResearch/2026-06-15-memory-analysis-tools-source-code-stack.md §1-§5；已按 Android 17 固定标签复核后改写]
+- [Debug native memory use](https://source.android.com/docs/core/tests/debug/native-memory)
+- [Perfetto Native Heap Profiler](https://perfetto.dev/docs/data-sources/native-heap-profiler)
+- [Memory error debugging and mitigation](https://developer.android.com/ndk/guides/memory-debug)
+- [GWP-ASan](https://developer.android.com/ndk/guides/gwp-asan)
+- [Arm MTE](https://developer.android.com/ndk/guides/arm-mte)
+- [Scudo](https://source.android.com/docs/security/test/scudo)
+- [AOSP `android-17.0.0_r1`, libmemunreachable README](https://android.googlesource.com/platform/system/memory/libmemunreachable/+/refs/tags/android-17.0.0_r1/README.md)
+- [AOSP `android-17.0.0_r1`, android_os_Debug.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_os_Debug.cpp)
+- [AOSP `android-17.0.0_r1`, androidprocheaps.cpp](https://android.googlesource.com/platform/system/memory/libmeminfo/+/android-17.0.0_r1/androidprocheaps.cpp)
+- [AOSP `android-17.0.0_r1`, procmeminfo.cpp](https://android.googlesource.com/platform/system/memory/libmeminfo/+/android-17.0.0_r1/procmeminfo.cpp)
+- [AOSP `android-17.0.0_r1`, Bionic README](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/README.md)
+- [Perfetto `android-17.0.0_r1`, heapprofd.rc](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/heapprofd.rc)
+- [Perfetto `android-17.0.0_r1`, heapprofd.cc](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/heapprofd.cc)
+- [Perfetto `android-17.0.0_r1`, malloc_interceptor_bionic_hooks.cc](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/malloc_interceptor_bionic_hooks.cc)
+- [Perfetto `android-17.0.0_r1`, heapprofd_producer.cc](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/heapprofd_producer.cc)
+- [Perfetto `android-17.0.0_r1`, java_hprof_producer.cc](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/java_hprof_producer.cc)
+- [Perfetto `android-17.0.0_r1`, sampler.h](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/sampler.h)
+- [Perfetto `android-17.0.0_r1`, sampler.cc](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/sampler.cc)
