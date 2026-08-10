@@ -52,11 +52,9 @@ sources:
 
 “内存还有空闲，分配却变慢”“GC 频率突然升高”“进程 RSS 很大”经常被统称为内存碎片。这样的描述不足以支持优化决策。ART moving space、LargeObjectSpace、Native heap、虚拟地址空间和 Linux 物理页都有各自的碎片模型，处理手段也不同。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为当前平台锚点，讨论 GC 碎片怎样转化为应用性能问题，以及如何用可复现证据定位。CC、CMC、RegionSpace 和 `UnevacFromSpace` 的完整源码结构见 [§4.14 ART GC Region 碎片化与 Compaction 策略](../../part1-fundamentals/ch04-memory/14-art-gc-region-fragmentation-compaction.md)；本章把重点放在端侧诊断和应用优化。
+当前平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，讨论范围是 GC 碎片怎样转化为应用性能问题，以及如何用可复现证据定位。CC、CMC、RegionSpace 和 `UnevacFromSpace` 的完整源码结构见 [§4.14 ART GC Region 碎片化与 Compaction 策略](../../part1-fundamentals/ch04-memory/14-art-gc-region-fragmentation-compaction.md)；这里侧重端侧诊断和应用优化。
 
-本文关于 `RegionSpace`、`ShouldBeEvacuated()`、`YoungMarkCompact`、CMC pause、LOS 判定和 GC trace slice 的结论，以 frontmatter `sources` 列出的 `android-17.0.0_r1` ART 源码、Android 17 官方说明、ART GC debug 文档与 Perfetto memory profiling 文档为边界。没有实机 trace 或 benchmark 支撑的内容只用于说明排查流程，不作为量化收益或跨设备保证。
-
-<!-- more -->
+`RegionSpace`、`ShouldBeEvacuated()`、`YoungMarkCompact`、CMC pause、LOS 判定和 GC trace slice 的结论，以 `android-17.0.0_r1` ART 源码、Android 17 官方说明、ART GC debug 文档与 Perfetto memory profiling 文档为边界。没有实机 trace 或 benchmark 支撑的内容只用于说明排查流程，不作为量化收益或跨设备保证。
 
 ## 一、先确定“碎片”发生在哪一层
 
@@ -486,7 +484,7 @@ Generational CMC 可通过 ART 模块更新覆盖旧平台。缺少模块版本�
 
 Android 17 官方说明还指出，Generational CMC 改进可通过 ART Mainline 更新到部分 Android 12 及以上设备。版本演进文章可以保留旧版本事实，但当前结论的最高平台锚点应为 `android-17.0.0_r1`。厂商分支和后续 Mainline 模块必须单独记录版本。
 
-本章不依赖 Android 18/API 38+ 行为。涉及 Linux 物理页碎片、direct reclaim 或内核 compaction 时，应切换到 `android17-6.18-2026-06_r6` 的内核证据，参见 [§4.10 内存规整与 Direct Reclaim](../../part1-fundamentals/ch04-memory/10-memory-compaction-direct-reclaim.md)。
+这些结论不依赖 Android 18/API 38+ 行为。涉及 Linux 物理页碎片、direct reclaim 或内核 compaction 时，应切换到 `android17-6.18-2026-06_r6` 的内核证据，参见 [§4.10 内存规整与 Direct Reclaim](../../part1-fundamentals/ch04-memory/10-memory-compaction-direct-reclaim.md)。
 
 ## 十一、复核清单
 
