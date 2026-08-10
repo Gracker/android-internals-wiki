@@ -122,7 +122,7 @@ ART 字节码验证器检查 DEX 是否满足运行时安全约束，包括类�
 
 因此，`verify` 仍会执行工作。在 Android 17 的 ART Service 定义中，它会完成验证与提取，但不编译方法，也不对配置文件中的 resolution / initialization 优化。
 
-## VDEX、ODEX 和 ART 镜像各自负责什么
+## VDEX、ODEX 和 ART image 各自负责什么
 
 三类产物经常同时出现，但职责不同。
 
@@ -134,7 +134,7 @@ ART 字节码验证器检查 DEX 是否满足运行时安全约束，包括类�
 
 Android 17 对输入 VDEX 的处理很具体：
 
-1. `dex2oat` 可以从独立 VDEX 或 DexMetadata 归档文件打开输入。
+1. `dex2oat` 可以从独立 VDEX 或 DexMetadata archive 打开输入。
 2. 如果 VDEX 不含 DEX section，源码会核对 DEX 数量和 location checksum。
 3. verifier dependencies 解析成功后，进入 fast verification。
 4. 输入 VDEX 无法打开时，`dex2oat` 会告警并按无 VDEX 的路径继续；但文件已打开后若 DEX 数量或 checksum 不匹配，本次 `dex2oat` 会失败，不会把错误元数据当成可复用结果。
@@ -143,22 +143,22 @@ Android 17 对输入 VDEX 的处理很具体：
 
 | 对象 | 常见位置 |
 | --- | --- |
-| 安装到 data 分区的主 DEX | `/{data,mnt/expand/*}/app/*/*/oat/<isa>/{base,split_*}.{art,odex,vdex}` |
+| 安装到 data 分区的 primary dex | `/{data,mnt/expand/*}/app/*/*/oat/<isa>/{base,split_*}.{art,odex,vdex}` |
 | 只读文件系统中的包 | `/data/dalvik-cache/<isa>/<encoded-dex-path>.{art,dex,vdex}` |
 | secondary dex | 应用数据目录下对应 `oat/<isa>/*.{art,odex,vdex}` |
-| primary dex 的当前/ reference profile | `/data/misc/profiles/{cur/<user-id>,ref}/<package-name>/*.prof` |
+| primary dex 的 current/ reference profile | `/data/misc/profiles/{cur/<user-id>,ref}/<package-name>/*.prof` |
 | on-device boot image | `/data/misc/apexdata/com.android.art/dalvik-cache/boot*.{art,oat,vdex}` |
 
-其中只读包的 OAT 文件因历史原因可能使用 `.dex` 扩展名。排障时应先确认对象是 boot classpath、安装包、只读系统包还是次级 DEX，再去对应目录找证据。
+其中只读包的 OAT 文件因历史原因可能使用 `.dex` 扩展名。排障时应先确认对象是 boot classpath、安装包、只读系统包还是 secondary dex，再去对应目录找证据。
 
 ## Android 17 当前支持的应用侧 filter
 
-AOSP `android-17.0.0_r1` 的 ART Service 说明和 shell help 对应用 dexopt 公开三种 filter：
+AOSP `android-17.0.0_r1` 的 ART Service README 和 shell help 对应用 dexopt 公开三种 filter：
 
 | Filter | Android 17 的语义 | 典型取舍 |
 | --- | --- | --- |
 | `verify` | verification + extraction；不编译方法，不对配置文件中的 resolution / initialization | dexopt 快、产物小；运行期更多依赖解释器和 JIT |
-| `speed-profile` | 验证并提取；编译 profile 中的方法；处理 profile 中类的解析/ initialization | 在安装/后台成本、存储和运行性能之间取平衡 |
+| `speed-profile` | 验证并提取；编译 profile 中的方法；处理 profile 中 class 的 resolution/ initialization | 在安装/后台成本、存储和运行性能之间取平衡 |
 | `speed` | 验证并提取；AOT 编译所有可编译方法；不按 profile 做 class resolution / initialization | 编译时间和空间成本最高，运行期机器码覆盖最广 |
 
 `speed` 不是任何场景下都更好。它可能增加安装或维护耗时、占用更多存储，而且不能修复主线程 I/O、Binder 等待、数据库迁移或错误的启动架构。
@@ -178,13 +178,13 @@ AOSP `android-17.0.0_r1` 的 ART Service 说明和 shell help 对应用 dexopt �
 | Android 8–11 | 受官方文档支持的 filter；输出服务于解释器快速路径 |
 | Android 12–13 | 不再属于当前官方 filter 口径，排障应以 `verify`、`speed-profile`、`speed` 为主 |
 | Android 14–17 | ART Service 的应用侧接口只公开三种当前 filter |
-| Android 17 源码兼容行为 | `kQuicken` 枚举已不存在，但解析到字符串 `quicken` 时会打印废弃警告，并映射成 `kVerify` |
+| Android 17 源码兼容行为 | `kQuicken` 枚举已不存在，但解析到字符串 `quicken` 时会打印 obsolete 警告，并映射成 `kVerify` |
 
 Android 17 为兼容旧配置保留了 `quicken` 名称入口，对应的执行语义已经变为 `verify`。厂商 ROM 还可能自行修改实现，所以看到日志中的旧字符串时，应同时记录 Android 版本、ART Mainline 版本和最终转储状态。
 
 ## Android 17 的 dexopt 场景
 
-Android 14 起，应用的设备端 dexopt 产物由 ART Service 管理。PackageManager 仍负责安装流程，并在安装时调用 `dexoptPackage`；安装 dexopt 不是 ART Service 自行发起的 batch operation，因此不会触发 `BatchDexoptStartCallback`。
+Android 14 起，应用的 on-device dexopt 产物由 ART Service 管理。PackageManager 仍负责安装流程，并在安装时调用 `dexoptPackage`；安装 dexopt 不是 ART Service 自行发起的 batch operation，因此不会触发 `BatchDexoptStartCallback`。
 
 Android 17 默认场景如下。
 
@@ -195,7 +195,7 @@ Android 17 默认场景如下。
 | Mainline 更新后首次开机 | `boot-after-mainline-update` | 重点处理 SystemUI 和 Launcher；Launcher 使用 `speed-profile`，SystemUI 由 `dalvik.vm.systemuicompilerfilter` 决定 | 不会对所有应用重新执行 AOT |
 | 应用安装 | `install`、`install-fast`、`install-bulk*` | DM 含 cloud profile 时用 `speed-profile`，否则用 `verify` | fast scenario 或 incremental install 可以跳过安装期 dexopt |
 | 日常后台优化 | `bg-dexopt` / `inactive` | 每日空闲且充电时运行；对主 DEX 和次级 DEX 做配置文件引导的 dexopt | 条件消失时任务会被取消；稍后重试不代表失败 |
-| 更新应用前优化 | `ab-ota` | OTA/Mainline / Mainline 时，在空闲充电窗口对新依赖环境做重启前 Dexopt，目标为 `speed-profile` | 用户提前重启时可能未完成，剩余包先以 `verify` 运行 |
+| 更新应用前优化 | `ab-ota` | OTA/Mainline / Mainline 时，在空闲充电窗口对新依赖环境做 Pre-reboot Dexopt，目标为 `speed-profile` | 用户提前重启时可能未完成，剩余包先以 `verify` 运行 |
 | 命令行 | `cmdline` | 默认 `verify`，可显式指定支持的 filter | 指定 `speed-profile` 不保证 profile 可用 |
 
 标准属性默认值是：
@@ -243,7 +243,7 @@ CLC 不匹配后，依赖敏感的 AOT 与类解析结果不再可信，但验�
 
 ### `<uses-library>` 为什么经常触发 CLC 问题
 
-dexpreopt 在构建机上计算 CLC，运行时再根据清单、共享库 XML、shared library XML、split 和实际 class loader 关系计算一次。两边不一致时，预编译产物不能按原级别复用。
+dexpreopt 在构建机上计算 CLC，运行时再根据 Manifest、shared library XML、split 和实际 class loader 关系计算一次。两边不一致时，预编译产物不能按原级别复用。
 
 排查顺序应是：
 
@@ -276,7 +276,7 @@ adb logcat -b all -d |
 
 ## 大体积 DEX 的特殊降级
 
-Android 17 的 `dex2oat.cc` 会累加输入 DEX 头中的 `file_size_`，与传入的 very-large threshold 比较。命中阈值的非 boot image：
+Android 17 的 `dex2oat.cc` 会累加输入 DEX header 中的 `file_size_`，与传入的 very-large threshold 比较。命中阈值的非 boot image：
 
 - 禁用 app image；
 - 如果当前 filter 高于 `verify`，把本轮编译降为 `verify`；
@@ -284,7 +284,7 @@ Android 17 的 `dex2oat.cc` 会累加输入 DEX 头中的 `file_size_`，与传�
 
 阈值不是这段代码里固定的“某个 APK 大小”。`dex2oat` 的字段默认是最大值，实际阈值由调用方参数和产品配置决定；比较对象还是 DEX 累计大小，不是 APK 下载体积。文档或排障脚本不应硬编码一个通用 MB 数。
 
-因此，上层即使请求了 `speed-profile` 或 `speed`，最终也可能只有 `verify`。遇到超大、多 DEX 应用时，要同时检查请求参数、`dex2oat` 日志和最终转储。
+因此，上层即使请求了 `speed-profile` 或 `speed`，最终也可能只有 `verify`。遇到超大、多 DEX 应用时，要同时检查请求参数、`dex2oat` 日志和最终 dump。
 
 ## Android 17 的推荐取证命令
 
@@ -307,7 +307,7 @@ adb shell getprop |
 adb shell pm art dump com.example.app
 ```
 
-Android 14–17 优先使用 `pm art dump`。重点查看主/次级 DEX、compiler filter、compilation reason、产物是否 up-to-date，以及是否出现 `vdex` 状态。`dumpsys package dexopt` 仍可用于兼容旧版本或对照，但不应作为现代 ART Service 的首选入口。
+Android 14–17 优先使用 `pm art dump`。重点查看 primary/secondary dex、compiler filter、compilation reason、产物是否 up-to-date，以及是否出现 `vdex` 状态。`dumpsys package dexopt` 仍可用于兼容旧版本或对照，但不应作为现代 ART Service 的首选入口。
 
 ### 3. 建立未编译基线
 
@@ -358,7 +358,7 @@ adb shell pm bg-dexopt-job --cancel
 adb shell pm compile -r bg-dexopt -f -v com.example.app
 ```
 
-把包名直接传给 `pm bg-dexopt-job` 的旧用法在 Android 17 已被标记为弃用。
+把包名直接传给 `pm bg-dexopt-job` 的旧用法在 Android 17 已被标记为 deprecated。
 
 ## 三类慢问题怎么落证据
 
@@ -378,18 +378,18 @@ adb shell pm compile -r bg-dexopt -f -v com.example.app
 
 ### 首次启动慢
 
-把 `pm art dump` 与启动跟踪放在一起看：
+把 `pm art dump` 与启动 trace 放在一起看：
 
 - `verify` + 大量解释器/JIT 活动：可能是 profile 未到达或尚未后台编译。
 - `speed-profile` + 启动关键方法未命中：检查 profile 覆盖，不能只看 filter 名称。
 - `speed-profile` / `speed` + 主线程仍被 I/O、锁、Binder 或数据库占满：瓶颈不在 compiler filter。
 - 状态为 `vdex`：检查依赖变化和 CLC，AOT 代码可能没有被采用。
 
-应至少对比重置后、profile-guided 编译后和稳定运行后的冷启动数据；不要把第二次启动的文件缓存收益误算成 AOT 收益。
+应至少对比 reset 后、profile-guided 编译后和稳定运行后的冷启动数据；不要把第二次启动的文件缓存收益误算成 AOT 收益。
 
 ### OTA 或 Mainline 更新后变慢
 
-Android 17 先尝试重启前 Dexopt。若用户很快重启、设备没有足够空闲充电时间或任务失败，部分应用会先退到 `verify`，之后依靠 JIT 和后台 dexopt 恢复。
+Android 17 先尝试 Pre-reboot Dexopt。若用户很快重启、设备没有足够空闲充电时间或任务失败，部分应用会先退到 `verify`，之后依靠 JIT 和 background dexopt 恢复。
 
 排查时关注：
 
@@ -408,7 +408,7 @@ Android 17 先尝试重启前 Dexopt。若用户很快重启、设备没有足�
 | Android 8–11 | `verify`、`quicken`、`speed-profile`、`speed` 都是官方文档中的 filter；`quicken` 服务解释器 |
 | Android 12–13 | `quicken` 退出当前官方口径；应用侧排障以 `verify`、`speed-profile`、`speed` 为主 |
 | Android 14–16 | ART Service 接管应用 dexopt 产物管理；命令和场景逐步迁移到 `pm art` / `pm compile` |
-| Android 17 / API 37 | 当前锚点；ART Service 命令行公开三种 filter；旧 `quicken` 字符串仅兼容映射到 `verify`；Pre-reboot Dexopt 已进入 OTA/Mainline 主流程 |
+| Android 17 / API 37 | 当前锚点；ART Service shell 公开三种 filter；旧 `quicken` 字符串仅兼容映射到 `verify`；Pre-reboot Dexopt 已进入 OTA/Mainline 主流程 |
 
 相关机制可继续阅读：
 
