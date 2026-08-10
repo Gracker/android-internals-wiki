@@ -353,7 +353,7 @@ Consumer / BLAST / SurfaceFlinger
   acquireBuffer → 把 input fence 作为 acquire fence
       │ 使用内容前遵守 acquire fence
       ▼
-  锁存 / 合成 / 呈现
+  latch / compose / present
       │ 使用结束后产生释放信息
       └────────────────────────────→ slot 后续可供 Producer 复用
 ```
@@ -372,7 +372,7 @@ Android 17 的 `CanvasContext.cpp` 定义了文件内静态函数 `setBufferCoun
 Producer 能否继续出队还取决于：
 
 - 最大出队数与最大获取数配置；
-- 异步/非阻塞模式；
+- async / non-blocking 模式；
 - slot 当前处于 `FREE`、`DEQUEUED`、`QUEUED` 还是 `ACQUIRED`；
 - 释放栅栏是否已发出信号；
 - BLAST 是否还有 pending release；
@@ -462,7 +462,7 @@ App actual timeline 的结束还会考虑 GPU 完成与 buffer post 等时间。
 Android 17 常见的 UI 侧关注点包括：
 
 - `Choreographer#doFrame <vsyncId>`；
-- 输入、动画、Insets 动画、遍历、提交；
+- input、animation、insets animation、traversal、commit；
 - `performTraversals`、measure、layout；
 - `Record View#draw()` 或相关 DisplayList 记录切片；
 - `syncAndDrawFrame()` / `postAndWait()` 等待区间。

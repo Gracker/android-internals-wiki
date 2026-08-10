@@ -380,7 +380,7 @@ flowchart TD
 - intended VSync time；
 - 当前用于动画/绘制的 frame time；
 - preferred timeline 的 `vsyncId`；
-- 截止时间；
+- deadline；
 - `doFrame()` 实际开始时间；
 - 当前 `frameInterval`。
 
