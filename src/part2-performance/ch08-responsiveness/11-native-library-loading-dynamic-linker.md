@@ -66,36 +66,9 @@ last_deepseek_cn_review_at: 2026-06-13
 
 # 8.11 Native 库加载与动态链接性能
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 Native 库加载在启动链路里的位置
-
-### 🔹 Bionic linker 的加载流程与可观测边界
-
-### 🔹 Linker Namespace 的隔离规则
-
-### 🔹 16KB Page Size 对 native 库加载的影响
-
-### 🔹 三方 SDK、React Native 与游戏引擎的排查清单
-
-### 🔹 Hook/监控 SDK 的风险边界
-
-### 🔹 优化策略与回归验证
-
-## 扩展
-
-### 🔸 MTE 与 native 内存保护策略
-
-### 🔸 厂商 linker 配置与预装库差异
-
-### 🔸 Play 16KB 合规与 CI 自动化
-
-<!-- outline-end -->
-
 `System.loadLibrary()` 看起来只有一行，调用期间却会跨过 ART、`libnativeloader`、Bionic linker 和内核内存管理。ELF 映射、依赖搜索、符号重定位、ELF 构造器与 `JNI_OnLoad` 都可能占用调用线程。若它发生在 `ContentProvider`、`Application.onCreate()` 或首个 Activity 的主线程上，这段耗时会直接进入冷启动关键路径。
 
-本章以 Android 17 / API 37 的 `android-17.0.0_r1` 为平台源码锚点，kernel 侧固定到 `android17-6.18-2026-06_r6`。历史版本用于说明 Linker Namespace 和 16KB page size 的演进；Android 17 的主结论均以固定 tag 复核。
+平台源码锚点为 Android 17 / API 37 的 `android-17.0.0_r1`，kernel 侧固定到 `android17-6.18-2026-06_r6`。历史版本用于说明 Linker Namespace 和 16KB page size 的演进；Android 17 的主要结论均以固定 tag 复核。
 
 ## 从 `System.loadLibrary()` 到 `JNI_OnLoad`
 
@@ -114,7 +87,7 @@ flowchart LR
     App --> ART --> NL --> DL --> Linker --> Ctor --> JNI
 ```
 
-`libnativeloader` 按调用方 ClassLoader 找到对应的 linker namespace，再以 `RTLD_NOW` 打开库。Bionic 负责 ELF 和依赖库的装载、重定位及构造器。`dlopen` 成功返回后，ART 才查找 `JNI_OnLoad` 并调用它。旧文中常把 `JNI_OnLoad` 写成 linker 的工作，这会把两个优化对象混在一起。
+`libnativeloader` 按调用方 ClassLoader 找到对应的 linker namespace，再以 `RTLD_NOW` 打开库。Bionic 负责 ELF 和依赖库的装载、重定位及构造器。`dlopen` 成功返回后，ART 才查找 `JNI_OnLoad` 并调用它。`JNI_OnLoad` 不属于 linker 的工作，二者需要分别归因和优化。
 
 ### 四段成本要分别归因
 
@@ -361,11 +334,11 @@ bundletool dump config --bundle=app-release.aab | grep PAGE_ALIGNMENT_16K
 
 ## Android 7—17 的版本边界
 
-| 版本 | 与本章相关的变化 |
+| 版本 | 相关变化 |
 |---|---|
 | Android 7 / API 24 | 应用 native library 可见性受 Linker Namespace 和 public native library 约束 |
 | Android 15 / API 35 | 平台开始支持 16KB page size 设备；应用需同时修正构建、打包和运行时假设 |
-| Android 17 / API 37 | 本章源码锚点；16KB backcompat 增加 `fatal` fail-fast 测试方式 |
+| Android 17 / API 37 | 源码锚点；16KB backcompat 增加 `fatal` fail-fast 测试方式 |
 
 Linker Namespace 的约束在后续版本持续演进，16KB backcompat 也属于迁移辅助。应用侧稳定边界仍是公开 NDK API、合规 ELF/zip alignment 和不依赖固定 page size 的代码。
 

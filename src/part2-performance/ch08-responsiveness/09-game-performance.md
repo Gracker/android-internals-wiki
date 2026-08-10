@@ -73,34 +73,9 @@ last_deepseek_cn_review_at: 2026-06-05
 
 # 8.9 Android 游戏性能与 Game Mode/State API
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 游戏性能与普通 App 的预算差异：持续满帧、热约束、帧时间波动
-- 🔹 Game Mode API：Manifest / `game_mode_config.xml` 声明、`GameManager#getGameMode()` 读取用户模式
-- 🔹 Game State API：`GameManager#setGameState(GameState)`、`isLoading`、`MODE_*`
-- 🔹 Game Mode、Game State、OEM interventions 与 ADPF 的边界
-- 🔹 Perfetto 观测口径：FrameTimeline、Surface layer、CPU/GPU 频率、`power.hint_session`
-- 🔹 原生游戏工具链：GameActivity、Swappy、AGI / Perfetto 的分工
-- 🔹 OEM 游戏模式与测试方法：关闭厂商模式，分开验证 user mode 与 `game_overlay`
-
-### 结构
-
-1. 游戏性能的特殊性：持续满帧 vs 按需渲染
-2. Game Mode API：用户意图到系统行为的桥梁
-3. Game State API：细粒度的状态通信
-4. AGDK 工具链：从渲染到调试的完整支持
-5. Perfetto：游戏帧时间、频率与热状态联合分析
-6. Android 16 与 Android 12/13+ 的平台变化
-7. 游戏卡顿分析方法论
-8. OEM 游戏模式与 Game Mode API 的关系
-<!-- outline-end -->
-
 游戏优化面对的是一条持续运转的生产线。输入、逻辑、动画、物理、渲染准备、GPU 执行、BufferQueue、SurfaceFlinger 和显示控制器共同决定用户何时看到一帧。某一段提前结束，不等于整帧已经显示；平均 FPS 达标，也可能同时存在周期性长帧和较高的输入延迟。
 
-本章以 Android 17 / API 37、`android-17.0.0_r1` 为平台源码锚点，kernel 侧固定到 `android17-6.18-2026-06_r6`。Game Mode、Game State、ADPF 和 System Health API 的版本边界按公开 SDK 说明，系统动作则回到 Android 17 AOSP 源码核查。Unity、Unreal、Cocos、Swappy 等组件有独立发布周期，排查时还要记录引擎版本、渲染后端和 frame pacing 配置。
+平台源码锚点为 Android 17 / API 37、`android-17.0.0_r1`，kernel 侧固定到 `android17-6.18-2026-06_r6`。Game Mode、Game State、ADPF 和 System Health API 的版本边界按公开 SDK 说明，系统动作则回到 Android 17 AOSP 源码核查。Unity、Unreal、Cocos、Swappy 等组件有独立发布周期，排查时还要记录引擎版本、渲染后端和 frame pacing 配置。
 
 ## 游戏性能的特殊性：持续满帧与按需渲染
 
@@ -361,7 +336,7 @@ Hint Session 绑定 Linux TID。Java/Kotlin 中应使用 `Process.myTid()` 获�
 
 `setThreads()` 适合线程池成员发生结构变化时调用，不适合每次协程恢复都更新。NDK 头文件也说明 Hint Session 方法不是线程安全的，调用侧应串行化 session 更新。
 
-Android 15 / API 35 增加更细的 work duration 报告和 power-efficiency 偏好。Android 16 / API 36 又增加 session 配置、surface/graphics pipeline 关联及 workload increase 等能力。使用这些能力前应查询支持状态，并保留基本 Hint Session 路径。Android 17 / API 37 的本章基线以 `android-17.0.0_r1` 中的 `performance_hint.h` 为准。
+Android 15 / API 35 增加更细的 work duration 报告和 power-efficiency 偏好。Android 16 / API 36 又增加 session 配置、surface/graphics pipeline 关联及 workload increase 等能力。使用这些能力前应查询支持状态，并保留基本 Hint Session 路径。Android 17 / API 37 的基线以 `android-17.0.0_r1` 中的 `performance_hint.h` 为准。
 
 ## AGDK 工具链：每个工具回答不同问题
 
@@ -592,14 +567,14 @@ adb shell device_config put game_overlay com.example.game \
 
 ## Android 12—17 的版本边界
 
-| Android 版本 | API | 与本章相关的公开能力 |
+| Android 版本 | API | 相关公开能力 |
 |---|---:|---|
 | Android 12 | 31 | Game Mode；Java Performance Hint Session；FrameTimeline |
 | Android 13 | 33 | Game State；NDK Performance Hint 基本接口；FPS throttling intervention |
 | Android 14 | 34 | `GAME_MODE_CUSTOM`；NDK `setThreads()` |
 | Android 15 | 35 | 更细的 ADPF work duration 与 power-efficiency 能力 |
 | Android 16 | 36 | CPU/GPU headroom；ADPF session 与 graphics/surface 关联能力扩展 |
-| Android 17 | 37 | 本章平台锚点；按 `android-17.0.0_r1` 核查 framework、native 与服务实现 |
+| Android 17 | 37 | 平台锚点；按 `android-17.0.0_r1` 核查 framework、native 与服务实现 |
 
 这些版本号描述平台 API。GameActivity、Swappy、Performance Tuner、Unity 和 Unreal 按各自的库或引擎版本发布，不能用 Android API level 推断具体功能。
 
