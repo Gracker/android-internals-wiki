@@ -40,5 +40,5 @@ Perfetto 提供统一时间轴，其他工具用于回答 CPU sampling、heap、
 
 ## 阅读建议
 
-- 已能使用 Perfetto 时，可按证据缺口选择 CPU、memory、GPU 或 layout 工具。
+- 如果你已经会看 Perfetto，这一章会告诉你什么时候该换工具，而不是继续硬看 trace。
 - 线上治理场景可优先阅读 APM、Hook、ProfilingManager 与自动化条目。

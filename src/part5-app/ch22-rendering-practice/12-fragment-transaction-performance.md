@@ -344,7 +344,7 @@ private void removeRedundantOperationsAndExecute(
 
 ## AndroidX 源码锚点怎么读
 
-AndroidX 源码锚点固定到 `androidx-fragment-release` 分支的提交 `f39ca3510efb2347ebfef231e25a3e804922450d`。这个提交可通过 `android.googlesource.com/platform/frameworks/support` 读取 `FragmentManager.java`、`BackStackRecord.java` 和 `FragmentTransaction.java`，避免 `androidx-main` 分支漂移影响结论。
+源码锚点采用 AndroidX `androidx-fragment-release` 分支的提交 `f39ca3510efb2347ebfef231e25a3e804922450d`。这个提交可通过 `android.googlesource.com/platform/frameworks/support` 读取 `FragmentManager.java`、`BackStackRecord.java` 和 `FragmentTransaction.java`，避免 `androidx-main` 分支漂移影响结论。
 
 固定 commit 不代表 Fragment 1.4 到 1.8 的每条路径完全相同。`commitInternal()`、`enqueueAction()`、`scheduleCommit()`、`execPendingActions()` 这些主链路可以作为稳定骨架；predictive back 相关的 `mTransitioningOp` 取消和重提交路径属于较新的 Fragment release 行为，不能反推到 Fragment 1.4 / 1.6。排查线上问题时，要同时记录应用依赖的 `androidx.fragment:fragment` 版本和设备 Android 版本。
 

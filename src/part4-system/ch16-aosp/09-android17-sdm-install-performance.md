@@ -221,7 +221,7 @@ if (status == DexoptResult.DEXOPT_PERFORMED && !mInjector.isPreReboot()) {
 
 ### 3.1 直接从 ZIP 打开 `primary.odex`
 
-r1 不会在安装阶段把 SDM 解包并复制到 `/data/app/<pkg>/oat/<isa>/`。运行时代码通过 `OatFileBase::OpenOatFileFromSdm()` 把 ZIP 内部条目名拼成 `<sdm>!/primary.odex`，随后直接加载。
+r1 不会在安装阶段把 SDM 解包并复制到 `/data/app/<pkg>/oat/<isa>/`。r1 `OatFileBase::OpenOatFileFromSdm()` 把 ZIP 内部条目名拼成 `<sdm>!/primary.odex`，随后直接加载。
 
 下面两行给出 ODEX 与 VDEX 的真实来源：
 
