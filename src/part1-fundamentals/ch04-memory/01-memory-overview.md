@@ -103,7 +103,7 @@ Android 应用遇到的“内存问题”至少有四类：
 
 这几类问题的触发条件、证据和处理方向各不相同。只看一个 PSS 数字，很难判断是哪一类。排查时应沿着“系统是否有压力、进程用了什么、哪一类对象或映射在增长、进程怎样退出”逐层缩小范围。
 
-AOSP 源码以 `android-17.0.0_r1`（Android 17 / API 37）为锚点，内核语义以 `android17-6.18-2026-06_r6` 为锚点。厂商可调整 ZRAM、cgroup、图形驱动和进程限制，因此节点与数值仍以目标设备为准。
+AOSP `android-17.0.0_r1`（Android 17 / API 37）为 platform anchor，kernel semantics 以 `android17-6.18-2026-06_r6` 为锚点。vendor 可调整 ZRAM、cgroup、graphics driver 和 process limit，因此节点与数值仍以 target device 为准。
 
 排查过程涉及以下层次：
 
