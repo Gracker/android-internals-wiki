@@ -36,53 +36,19 @@ sources:
 
 # 22.16 Android 17 DeliQueue 与 RecyclerView 预取时序优化
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 问题边界：列表卡顿里的 MessageQueue 锁竞争
-区分 RecyclerView 自身布局/绑定耗时、GapWorker 预取命中率、后台线程 `Handler.post()` 造成的主线程队列竞争，避免把所有滑动卡顿都归因到 RecyclerView。
-
-### 🔹 Android 17 DeliQueue 的生效条件
-梳理 `targetSdkVersion >= 37`、旧 target 兼容行为、`MessageQueue.mMessages` 反射兼容风险，以及上线前需要覆盖的回归场景。
-
-### 🔹 GapWorker、postFromTraversal 与预取 deadline
-说明 GapWorker 的预取机制本身没有变，DeliQueue 改善的是消息入队和主线程取消息的等待成本，重点观察 prefetch deadline 是否被主线程队列延迟拖垮。
-
-### 🔹 Perfetto 取证：从 monitor contention 到帧时间线
-建立取证路径：`android.monitor_contention`、FrameTimeline、RecyclerView trace section、自定义 `Trace.beginSection()` 和 JankStats，判断锁等待、绑定耗时、布局耗时和 GPU/HWC 降级分别占多少。
-
-### 🔹 业务线程投递治理
-把参考书中的线程优先级、CPU 空闲利用和等待时间思路转成列表场景实践：减少后台线程集中投递、控制主线程回调批量、分离高频 UI 更新和低优先级数据刷新。
-
-### 🔹 Android 17 适配与灰度验证
-设计 targetSdk 36/37 对照实验，覆盖大列表快速滑动、DiffUtil 批量更新、图片加载回调、数据库分页、弱网回包和混合 Compose/View 列表。
-
-## 扩展
-
-### 🔸 与 1.13 MessageQueue 机制章节的关系
-机制细节放在 1.13，本节只保留应用侧排查、验证和灰度动作。
-
-### 🔸 与 13.14 Perfetto DataGrid / Jank CUJ 的关系
-第三方 App 不能直接依赖系统 CUJ 标准库，需要结合 JankStats、自定义 trace section 和 FrameTimeline 还原列表场景。
-
-### 🔸 与 22.2 RecyclerView 最佳实践的关系
-22.2 负责通用优化动作，本节聚焦 Android 17 队列实现变化带来的新排障入口。
-
-<!-- outline-end -->
-
 RecyclerView 的滑动卡顿可能来自 item 创建与绑定、measure/layout、图片回调、主线程消息积压、线程调度或显示链路。Android 17 又改变了其中一小段：对 `targetSdkVersion >= 37` 的应用，平台默认启用无锁 `MessageQueue` 实现 DeliQueue，旧队列核心消息路径上的单一 Java monitor 不再参与生产者入队与 Looper 取消息。[Android 17 MessageQueue 行为变更](https://developer.android.com/about/versions/17/changes/messagequeue)｜[DeliQueue 技术说明](https://developer.android.com/blog/posts/under-the-hood-android-17-lock-free-message-queue)
 
-本文固定三条源码与版本边界：
+源码与版本边界分为三层：
 
-| 层级 | 锚点 | 本文用途 |
+| 层级 | 锚点 | 用途 |
 |---|---|---|
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | `CombinedDeliMessageQueue`、兼容开关、Looper 与 FrameTimeline |
 | RecyclerView | `androidx.recyclerview:recyclerview:1.4.0` sources jar | `GapWorker`、预取 deadline、create/bind 预算和 trace section |
 | Android common kernel | `android17-6.18-2026-06_r6` | 线程 Runnable、抢占和 CPU 调度现象；内核不实现 DeliQueue 或 RecyclerView |
 
-RecyclerView 是独立发布的 AndroidX artifact，不能用 `android-17.0.0_r1` 代替它的版本。官方发布页在本次复核时仍把 1.4.0 列为稳定版，并已将 RecyclerView 标记为 maintenance mode。[RecyclerView release notes](https://developer.android.com/jetpack/androidx/releases/recyclerview)
+RecyclerView 是独立发布的 AndroidX artifact，不能用 `android-17.0.0_r1` 代替它的版本。截至 2026-07-29，官方发布页仍把 1.4.0 列为稳定版，并已将 RecyclerView 标记为 maintenance mode。[RecyclerView release notes](https://developer.android.com/jetpack/androidx/releases/recyclerview)
 
-DeliQueue 机制见 [1.13 MessageQueue 与 DeliQueue](../../part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md)，RecyclerView 通用优化见 [7.8 RecyclerView 性能](../../part2-performance/ch07-smoothness/08-recyclerview-performance.md) 和 [22.2 RecyclerView 实战](02-recyclerview-practice.md)。本节只回答一个应用侧问题：DeliQueue 改变了列表预取时序中的哪一段，怎样用对照实验避免错误归因。
+DeliQueue 机制见 [1.13 MessageQueue 与 DeliQueue](../../part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md)，RecyclerView 通用优化见 [7.8 RecyclerView 性能](../../part2-performance/ch07-smoothness/08-recyclerview-performance.md) 和 [22.2 RecyclerView 实战](02-recyclerview-practice.md)。这里聚焦一个应用侧问题：DeliQueue 改变了列表预取时序中的哪一段，怎样用对照实验避免错误归因。
 
 ## 问题边界：列表卡顿里的 MessageQueue 锁竞争
 
@@ -138,7 +104,7 @@ adb shell am force-stop com.example.app
 
 ## GapWorker、postFromTraversal 与预取 deadline
 
-本节用 `androidx.recyclerview:recyclerview:1.4.0` sources jar 核对 `GapWorker.java` 和 `RecyclerView.java`。该 source jar 的 SHA-256 为 `cad83357a7003b5903197be0494f6e8f6825fa1338ee6b09b06a8dea32a97cb8`，可从 [Google Maven](https://dl.google.com/dl/android/maven2/androidx/recyclerview/recyclerview/1.4.0/recyclerview-1.4.0-sources.jar) 复核。
+以下 `GapWorker.java` 和 `RecyclerView.java` 行为基于 `androidx.recyclerview:recyclerview:1.4.0` sources jar。该 source jar 的 SHA-256 为 `cad83357a7003b5903197be0494f6e8f6825fa1338ee6b09b06a8dea32a97cb8`，可从 [Google Maven](https://dl.google.com/dl/android/maven2/androidx/recyclerview/recyclerview/1.4.0/recyclerview-1.4.0-sources.jar) 复核。
 
 `GapWorker.postFromTraversal()` 的行为包含两个细节：
 
@@ -288,7 +254,7 @@ target 37 的完整回归还应覆盖：
 
 ## 与相关章节的关系
 
-本节与相邻章节的分工如下：
+相关内容的分工如下：
 
 - [1.13 MessageQueue 与 DeliQueue](../../part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md)：Treiber stack、双堆、同步屏障、tombstone、Message 回收与 compat 选择。
 - [7.8 RecyclerView 性能](../../part2-performance/ch07-smoothness/08-recyclerview-performance.md)：RecyclerView 1.4.0 的 GapWorker、缓存、DiffUtil、payload 与 trace。
@@ -296,7 +262,7 @@ target 37 的完整回归还应覆盖：
 - [13.14 Perfetto DataGrid 与 Jank CUJ](../../part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md)：FrameTimeline、jank 类型和 CUJ 查询。
 - [19.11 JankStats](../../part3-tools/ch19-apm/11-jankstats.md)：应用侧帧状态与线上分桶。
 
-## 收束
+## 小结
 
 Android 17 DeliQueue 移除了 legacy MessageQueue 核心消息路径的单一 monitor，降低多生产者入队与 Looper 取消息之间的竞争。RecyclerView 1.4.0 的 `GapWorker` 调度、task 排序、create/bind 预算和 measure/layout 边界没有随之改变。
 

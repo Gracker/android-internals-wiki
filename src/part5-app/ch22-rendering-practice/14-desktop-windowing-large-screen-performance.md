@@ -54,45 +54,11 @@ sources:
 
 # 22.14 桌面窗口化与大屏渲染性能实践
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 桌面窗口化的应用侧性能问题
-梳理外接显示器、自由窗口、最大化窗口、多实例和键鼠输入带来的渲染成本变化，区分系统窗口管理机制与应用侧布局、绘制、资源加载责任。
-
-### 🔹 可调整尺寸与配置变更边界
-覆盖窗口 resize、方向变化、宽高比限制被系统忽略、`smallestScreenWidth >= 600dp` 设备基线变化，以及 Activity 重建和状态保存对帧稳定性的影响。
-
-### 🔹 Adaptive UI 的布局成本控制
-围绕 Compose adaptive layouts、WindowSizeClass、list-detail、supporting pane 和 View 体系约束布局，分析断点切换、重组范围、measure/layout 次数和过度绘制风险。
-
-### 🔹 多实例、拖拽与跨窗口数据流
-整理多实例 Activity、drag-and-drop、复制粘贴、跨窗口状态同步的性能风险，明确主线程回调、序列化、图片解码和数据库事务的避让位置。
-
-### 🔹 外接显示器与输入设备观察点
-建立 Perfetto 观察清单：InputDispatcher、Choreographer、FrameTimeline、RenderThread、SurfaceFlinger、WindowManager 相关 trace，用于判断键鼠输入延迟、resize 抖动和窗口切换慢帧来源。
-
-### 🔹 工程治理清单
-给出大屏与桌面窗口化上线前检查项：manifest resizable 口径、布局断点测试、状态恢复、资源分桶、窗口尺寸压力测试、辅助输入设备测试和低端平板降级策略。
-
-## 扩展
-
-### 🔸 ChromeOS 与 Android 桌面窗口差异
-对比 ChromeOS window management、Android tablet desktop windowing 和 Android 16 connected displays 的行为边界。
-
-### 🔸 Predictive Back 与桌面窗口
-补充桌面窗口下返回手势、键盘快捷键和窗口关闭事件的优先级关系，关联 22.13 节。
-
-### 🔸 大屏性能自动化测试
-整理 Macrobenchmark、UIAutomator、Screenshot testing 与 Perfetto TraceConfig 在不同窗口尺寸下的组合方案。
-
-<!-- outline-end -->
-
 桌面窗口化让一个 Activity 的可用区域在运行中连续变化。窗口拖拽会触发布局计算，跨显示器移动可能带来 density、Insets 与资源选择变化，多实例还会让同一份业务数据被多个 task 同时观察。分析这些现象时，需要同时保留应用线程、WindowManager、SurfaceFlinger 和目标 Display 四个视角。
 
-本文的平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`，kernel 调度与 fence 观察固定为 `android17-6.18-2026-06_r6`。版本沿革只用于解释兼容行为。系统侧窗口树与 Display 拓扑见 [2.20 多窗口与桌面模式渲染性能](../../part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md)，PiP/freeform 的 geometry 与 BLAST 同步见 [18.18 PiP 与自由窗口渲染](../../part2-performance/ch18-rendering-pipelines/18-pip-freeform.md)；本节集中讨论应用实现、测试与归因。
+平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`，kernel 调度与 fence 观察固定为 `android17-6.18-2026-06_r6`。版本沿革只用于解释兼容行为。系统侧窗口树与 Display 拓扑见 [2.20 多窗口与桌面模式渲染性能](../../part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md)，PiP/freeform 的 geometry 与 BLAST 同步见 [18.18 PiP 与自由窗口渲染](../../part2-performance/ch18-rendering-pipelines/18-pip-freeform.md)；以下集中讨论应用实现、测试与归因。
 
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md] 大屏不会凭空产生一种新渲染管线。它会增加同一帧中的 `measure`、`layout`、`draw`、图片请求、输入回调和窗口状态变化，也会放大缓存失效与线程排队。优化时仍按执行成本、等待时间、缓存命中和提交时序逐项取证。
+大屏不会凭空产生一种新渲染管线。它会增加同一帧中的 `measure`、`layout`、`draw`、图片请求、输入回调和窗口状态变化，也会放大缓存失效与线程排队。优化时仍按执行成本、等待时间、缓存命中和提交时序逐项取证。
 
 ## 桌面窗口化改变了哪些工作负载
 
@@ -139,11 +105,11 @@ Android 17 仍有例外：按 `android:appCategory` 识别的游戏、用户在�
 - 把断点变化直接绑定到分页、搜索、排序或网络请求；
 - 在 `onConfigurationChanged()` 中重建整个依赖图。
 
-[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md] resize 热路径只需要当前 bounds、Insets、断点和可见 pane。图片、富文本、图表等数据可按稳定业务 key 复用；目标尺寸变化时取消过期请求，并在后台生成新结果。若业务要求拖拽期间实时预览，可使用降采样或较低更新频率，同时用 trace 验证是否仍在帧预算内。
+resize 热路径只需要当前 bounds、Insets、断点和可见 pane。图片、富文本、图表等数据可按稳定业务 key 复用；目标尺寸变化时取消过期请求，并在后台生成新结果。若业务要求拖拽期间实时预览，可使用降采样或较低更新频率，同时用 trace 验证是否仍在帧预算内。
 
 ## Adaptive UI：断点只决定布局，不重建业务
 
-截至本文复核时，Jetpack WindowManager 稳定版为 `1.5.1`；Large 与 Extra-large 断点在 `1.5.0` 加入。五档宽度定义如下：
+截至 2026-07-29，Jetpack WindowManager 稳定版为 `1.5.1`；Large 与 Extra-large 断点在 `1.5.0` 加入。五档宽度定义如下：
 
 | 宽度类别 | 当前 window 宽度 |
 |---|---|
@@ -220,7 +186,7 @@ Android 15 起，应用可在 `<application>` 中声明 `android.window.PROPERTY
 
 Android 15 的 `DRAG_FLAG_GLOBAL_SAME_APPLICATION` 允许同一应用的可见窗口参与跨窗口拖拽；`DRAG_FLAG_START_INTENT_SENDER_ON_UNHANDLED_DRAG` 可在空白区域未处理 drop 时通过 `IntentSender` 启动新实例。两者的适用条件和权限处理见 [desktop windowing 多实例指南](https://developer.android.com/develop/adaptive-apps/guides/support-desktop-windowing#multitasking-and-multi-instance-support)。
 
-[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md] 多 pane 会同时增加图片数量，外屏也可能提高单张图的目标尺寸。图片加载应按控件显示尺寸请求，并设置可解释的内存/磁盘缓存策略；高分辨率显示器不等于每张图都要解码为原图。
+多 pane 会同时增加图片数量，外屏也可能提高单张图的目标尺寸。图片加载应按控件显示尺寸请求，并设置可解释的内存/磁盘缓存策略；高分辨率显示器不等于每张图都要解码为原图。
 
 ## Multi-resume：可见、RESUMED、焦点与独占资源
 
@@ -352,7 +318,7 @@ kernel 锚点只回答调度、频率和 fence 层问题：
 - **性能证据**：关键页面保存全屏、分屏、freeform 和外接显示器 trace，并记录 displayId、分辨率、刷新率、窗口 bounds 与设备版本。
 - **弱设备策略**：根据测量结果减少同时可见 pane、图片质量或装饰动画；不要仅凭设备名称决定。
 
-[结构参考: Clippings/Android 性能优化 - 资源文件的体积优化实战.md] 资源分桶仍按实际需求设计。外屏分辨率高不代表密度一定更高；选择 drawable、图片请求尺寸和缓存 key 时，应使用当前 window/display 的 density 与控件像素尺寸。
+资源分桶仍按实际需求设计。外屏分辨率高不代表密度一定更高；选择 drawable、图片请求尺寸和缓存 key 时，应使用当前 window/display 的 density 与控件像素尺寸。
 
 ## ChromeOS、平板桌面窗口与 connected display
 
