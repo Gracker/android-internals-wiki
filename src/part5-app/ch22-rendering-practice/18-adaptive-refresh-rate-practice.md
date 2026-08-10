@@ -34,40 +34,6 @@ gap_score: "18/20"
 
 # 22.18 Adaptive Refresh Rate 与帧率策略实战
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 ARR 的应用侧收益边界
-说明 ARR 解决的是高刷新率驻留和模式切换卡顿问题，应用侧仍要管理内容帧率、触摸 boost 和动画节奏。
-
-### 🔹 Android 15/16 API 版本表
-覆盖 Android 15 ARR 基础能力、Android 16 `hasArrSupport()`、`getSuggestedFrameRate(int)` 与 `getSupportedRefreshRates()` 的使用边界。
-
-### 🔹 列表、短动画与低频动态内容策略
-结合 RecyclerView 1.4 settling 支持、进度条、音频可视化、轮播图和静态阅读场景设计帧率策略。
-
-### 🔹 `WindowManager.LayoutParams.setFrameRateBoostOnTouchEnabled()` 的取舍
-说明禁用触摸 boost 的适用场景、误用风险和交互延迟验证方式。
-
-### 🔹 Perfetto 观测与线上指标
-用 FrameTimeline、display refresh rate、SurfaceFlinger 和功耗数据验证降刷新率是否引入 jank。
-
-### 🔹 跨设备降级与灰度
-处理 HAL 支持差异、OEM 策略差异、Jetpack 支持进度和线上开关。
-
-## 扩展
-
-### 🔸 ARR 与游戏/视频帧率策略的差异
-[待补充]
-
-### 🔸 ARR 与 Compose 动画、LazyList 滚动的协同
-[待补充]
-
-### 🔸 高刷新率设备的功耗 A/B 设计
-[待补充]
-
-<!-- outline-end -->
-
 ## 从三个帧率开始判断
 
 ARR 处理显示节奏，却不会缩短应用一帧的 CPU、GPU 或解码耗时。排查前要分清三个量：
@@ -78,7 +44,7 @@ ARR 处理显示节奏，却不会缩短应用一帧的 CPU、GPU 或解码耗�
 
 60 fps 的应用可以运行在 120 Hz Display 上，每个应用帧保持两个刷新周期，画面仍然均匀。应用平均达到 60 fps，也可能因为提交间隔忽快忽慢而出现卡顿。帧率平均值、呈现间隔和输入延迟回答的是不同问题。
 
-本文的平台实现固定到 Android 17 / API 37 / `android-17.0.0_r1`，kernel 边界固定到 `android17-6.18-2026-06_r6`。ARR 从 Android 15 进入平台；面向应用的支持条件是 Android 15 QPR1 及以上，并且设备实现对应 Composer3 HAL 能力。版本满足条件仍不能证明某块 Display 支持 ARR。
+平台实现固定到 Android 17 / API 37 / `android-17.0.0_r1`，kernel 边界固定到 `android17-6.18-2026-06_r6`。ARR 从 Android 15 进入平台；面向应用的支持条件是 Android 15 QPR1 及以上，并且设备实现对应 Composer3 HAL 能力。版本满足条件仍不能证明某块 Display 支持 ARR。
 
 在 ARR 配置中，Display VSync/TE 节拍可以与内容刷新节拍分开。面板在同一个 display mode 内，按 TE 周期的离散倍数选择呈现时机。这样可以减少仅为改变刷新率而切换 display mode 的次数，也能让静态内容和低频动画降低高刷驻留。相关系统机制见 [2.2 帧率](../../part1-fundamentals/ch02-rendering/02-framerate.md) 和 [18.19 可变刷新率渲染管线](../../part2-performance/ch18-rendering-pipelines/19-variable-refresh-rate.md)。
 
@@ -361,7 +327,7 @@ read -r -p "Record the Perfetto trace, then press Enter to restore settings."
 
 Compose 1.9 提供 `Modifier.preferredFrameRate(Float)` 和 `Modifier.preferredFrameRate(FrameRateCategory)`。投票应靠近持续变化的 composable。整屏统一包 `High` 会扩大高刷范围；`LazyList` 优先使用当前 Compose/AndroidX 自带的滚动支持，再用 trace 判断是否还需局部调整。ARR 也不会减少 recomposition、layout 或 draw 本身的工作量。
 
-## 本节小结
+## 小结
 
 ARR 策略从内容对象出发：普通 View 和 Compose 在宿主窗口内投票，TextureView 的外部内容回到宿主 HWUI，SurfaceView、视频和游戏 Surface 可以形成独立 layer 节奏。应用提交偏好，SurfaceFlinger 结合所有可见 layer 与系统 policy 做选择，Composer3 和面板能力决定可用的离散呈现节拍。
 
@@ -382,4 +348,3 @@ ARR 策略从内容对象出发：普通 View 和 Compose 在宿主窗口内投�
 - [`Scheduler.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp) 与 [`RefreshRateSelector.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp)
 - [`DisplayConfiguration.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayConfiguration.aidl)、[`VrrConfig.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/VrrConfig.aidl) 与 [`IComposerClient.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/IComposerClient.aidl)
 - kernel [`drm_vblank.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/gpu/drm/drm_vblank.c) 与 [`drm_vblank.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/drm/drm_vblank.h)
-- 写作与出图边界参考：`Writer/rendering_pipelines` 的 S01、S03、S04、S05、S12、S13

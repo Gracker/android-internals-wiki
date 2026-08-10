@@ -39,7 +39,7 @@ sources:
 
 # 22.22 Compose LazyList/LazyGrid 滑动性能深度优化
 
-Lazy layout 把数据集总量与同时 Composition 的 item 数量分开，但它不会自动消除慢 item、错误身份、重复测量、同步 I/O 或 GPU 过载。本章以 Compose Foundation 1.10.0 源码为库基线，以 Android 17 / API 37 的 `android-17.0.0_r1` 为平台基线。Compose Foundation 独立发布，`targetSdk=37` 不会改变 LazyList 的 key、复用或预取语义。
+Lazy layout 把数据集总量与同时 Composition 的 item 数量分开，但它不会自动消除慢 item、错误身份、重复测量、同步 I/O 或 GPU 过载。库基线为 Compose Foundation 1.10.0，平台基线为 Android 17 / API 37 的 `android-17.0.0_r1`。Compose Foundation 独立发布，`targetSdk=37` 不会改变 LazyList 的 key、复用或预取语义。
 
 普通 LazyColumn、LazyGrid 仍通过宿主 App Window 的标准 HWUI 路径出图。主线程上的 Composition、measure、placement 和 DisplayList 更新只是前半程，后面还有 RenderThread、GPU、buffer 提交、SurfaceFlinger、HWC 与 present。显示边界见 [18.25 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md)，重组基础见 [22.3 Compose 性能](03-compose-performance.md)，列表动画的阶段判断见 [22.21 Compose 动画性能](21-compose-animation-performance.md)。
 
@@ -364,7 +364,7 @@ kernel 锚点是 `android17-6.18-2026-06_r6`。scheduler、cpufreq、thermal、m
 - RecyclerView item 内大量 `ComposeView` 会增加 composition 生命周期管理；LazyColumn 中大量 `AndroidView` 也会增加 View 创建、复用和桥接成本。
 - 同一页面的两种实现要在相同数据、图片缓存、编译模式、设备温度和交互脚本下比较。
 
-## 15. Review 清单
+## 15. 检查清单
 
 - key 是否稳定、唯一、Bundle-saveable，并代表业务实体？
 - contentType 是否代表结构兼容性，是否过粗或过细？

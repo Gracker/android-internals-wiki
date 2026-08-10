@@ -27,7 +27,7 @@ sources:
 
 `rememberCoroutineScope`、`produceState` 和 Strong Skipping 分属三个层次：Composition 生命周期、Runtime effect、Compose Compiler。把它们放进同一条“减少重组”规则，容易得到错误的取消、key 和性能结论。
 
-本文使用三组固定锚点：
+分析使用三组固定锚点：
 
 - Android 平台：Android 17 / API 37 / `android-17.0.0_r1`；
 - kernel：`android17-6.18-2026-06_r6`；
@@ -215,9 +215,9 @@ val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
 ## Strong Skipping 只改变调用与 lambda
 
-Kotlin 2.0.20 起默认启用 Strong Skipping，本章的 Kotlin 2.2 基线已经包含该行为。[Strong Skipping 官方说明](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)
+Kotlin 2.0.20 起默认启用 Strong Skipping，这里的 Kotlin 2.2 基线已经包含该行为。[Strong Skipping 官方说明](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)
 
-它对本章相关代码有两项影响：
+它对上述代码有两项影响：
 
 - restartable Composable 即使带 unstable 参数，也能在参数满足比较规则时跳过；
 - Composable 内创建的 lambda 会自动 memoize，捕获值成为 key。Stable 捕获值按 `equals()` 比较，unstable 捕获值按实例比较。
@@ -271,7 +271,7 @@ Perfetto 默认没有名为 `CoroutineTracker` 的标准 Compose 轨道，也没
 | 是否造成用户可见卡顿 | Macrobenchmark、FrameTimeline、UI/RenderThread/GPU 对齐 |
 | 对象为何未释放 | heap dump、引用链、callback/executor owner |
 
-Composition tracing 需要显式加入 `androidx.compose.runtime:runtime-tracing`；官方前提包含 API 30+、Compose UI/Compiler 1.3.0+ 和受支持的 Android Studio。本章覆盖的 Android 14—17 满足设备 API 前提，但仍要确认依赖已加入。抓 trace 后应先查看文件中存在的 slice 名称，再编写 SQL，避免用不存在的通用名称查询。[Composition tracing](https://developer.android.com/develop/ui/compose/tooling/tracing)
+Composition tracing 需要显式加入 `androidx.compose.runtime:runtime-tracing`；官方前提包含 API 30+、Compose UI/Compiler 1.3.0+ 和受支持的 Android Studio。Android 14—17 满足设备 API 前提，但仍要确认依赖已加入。抓 trace 后应先查看文件中存在的 slice 名称，再编写 SQL，避免用不存在的通用名称查询。[Composition tracing](https://developer.android.com/develop/ui/compose/tooling/tracing)
 
 FrameTimeline 负责标记 App frame 和 display frame 的 deadline/jank。它无法直接告诉你某个 `produceState` 写入造成了哪次重组；要用 timestamp、线程、应用事件和 Compose slice 对齐。标准 App Window 的 App SurfaceFrame、DisplayFrame 与 present 边界见 [Android 17 FrameTimeline 数据结构](../../part1-fundamentals/ch02-rendering/2.32-android-17-frametimeline-数据结构.md)。
 
