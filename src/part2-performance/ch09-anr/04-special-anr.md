@@ -72,7 +72,7 @@ last_task9_autofix_at: "2026-06-15"
 ---
 # 特殊场景的 ANR
 
-> 阅读前可先看 [§9.2 ANR 类型与触发条件](02-anr-types.md) 和 [§9.3 ANR 分析方法](03-anr-analysis.md)。本章沿用其中的 Android 17 detector、时间点和证据等级。
+[§9.2 ANR 类型与触发条件](02-anr-types.md) 和 [§9.3 ANR 分析方法](03-anr-analysis.md) 说明了 Android 17 detector、时间点和证据等级，下面沿用这些定义。
 
 ## “特殊”指的是证据跨了边界
 
@@ -89,7 +89,7 @@ ANR 仍由 Input、Broadcast、Service、ContentProvider、Job 等 detector 按�
 
 分析时不要用“系统问题”或“应用问题”提前结束调查。每个结论都应写清 detector、等待者、资源拥有者、时间区间和能够实施的修复点。
 
-本章源码锚点为 AOSP `android-17.0.0_r1`，内核语义锚点为 `android17-6.18-2026-06_r6`。
+源码锚点为 AOSP `android-17.0.0_r1`，内核语义锚点为 `android17-6.18-2026-06_r6`。
 
 ## CPU 饥饿、I/O 等待与 freezer
 
@@ -209,7 +209,7 @@ Android 17 的 10 秒 Provider publish guard 属于进程初始化保护。超�
 
 ### App Startup 能解决哪部分
 
-Jetpack App Startup 让多个组件共享一个 `InitializationProvider`，并用 `Initializer.dependencies()` 声明顺序。自动发现的 initializer 仍在 Provider 初始化阶段执行；只把多个 Provider 合成一个，不会自动缩短所有初始化工作。
+Jetpack App Startup 让多个组件共享一个 `InitializationProvider`，并用 `Initializer.dependencies()` 声明顺序。通过 manifest 注册的 initializer 仍在 Provider 初始化阶段执行；只把多个 Provider 合成一个，不会自动缩短所有初始化工作。
 
 收益来自两点：
 
@@ -445,7 +445,7 @@ sqlite3 app.db 'PRAGMA synchronous;'
 - **Android 12 / API 31**：后台启动 FGS 的入口限制趋严，使用 `ForegroundServiceStartNotAllowedException` 表达拒绝。
 - **Android 14 / API 34**：Broadcast timeout 可按 CPU starvation 延长；加入 `shortService` 与超时回调。
 - **Android 15 / API 35**：AOSP 支持 16 KB page-size 设备；targetSdk 35+ 的 `dataSync`、`mediaProcessing` 进入限时 FGS 规则。
-- **Android 17 / API 37**：本文以 `BroadcastQueueImpl`、`BroadcastAnrTimer`、Android 17 ActivityThread/QueuedWork、ART heap 和 6.18 内核状态为结论锚点。
+- **Android 17 / API 37**：结论锚点为 `BroadcastQueueImpl`、`BroadcastAnrTimer`、Android 17 ActivityThread/QueuedWork、ART heap 和 6.18 内核状态。
 
 历史变化可以帮助解释旧设备日志，现场结论仍要按 build fingerprint、targetSdk、DeviceConfig 和原始 reason 校准。
 

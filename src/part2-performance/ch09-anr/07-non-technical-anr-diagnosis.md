@@ -100,19 +100,9 @@ last_deepseek_cn_review_at: 2026-06-16
 
 # ANR 非技术故障诊断
 
-<!-- outline-start -->
-## 要点
+## “非技术故障”的含义
 
-### 🔹 锚点 1:按 ANR 类型确定超时预算与责任边界
-### 🔹 锚点 2:用 EventLog、traces 和 Perfetto 还原等待链
-### 🔹 锚点 3:识别 system_server、Binder、CPU/内存、存储 四类系统侧根因
-### 🔹 锚点 4:按 Android 8-17 的工具边界选择抓取手段
-### 🔹 锚点 5:用公开案例说明 App 如何被框架层 bug 连坐
-<!-- outline-end -->
-
-## “非技术故障”在本节指什么
-
-这个标题沿用知识库的原始命名，含义是“根因不在被记账应用的业务代码”。system_server 锁竞争、远端 Binder 阻塞、调度饥饿、存储停顿和平台缺陷都属于技术故障，只是责任边界跨出了当前 App。
+这里指“根因不在被记账应用的业务代码”。system_server 锁竞争、远端 Binder 阻塞、调度饥饿、存储停顿和平台缺陷都属于技术故障，只是责任边界跨出了当前 App。
 
 ANR subject 记录被系统判定为无响应的进程或组件。它不是根因判决书。跨进程场景要按下面的顺序取证：
 
@@ -393,5 +383,3 @@ AOSP 主证据提供了完整的代码演进：
 - [Perfetto：CPU scheduling](https://perfetto.dev/docs/data-sources/cpu-scheduling)
 - [AOSP Gerrit 172237：2015 unsigned loop 重构](https://android-review.googlesource.com/c/platform/frameworks/native/+/172237)
 - [AOSP Gerrit 396876：2017 sendFinishedSignal 修复](https://android-review.googlesource.com/c/platform/frameworks/native/+/396876)
-
-本地案例素材：`../Cubox/有时候你APP发生的ANR不是你的错-分享 1个 Google 工程师没 bug 改出 bug 的一个案例-2025-04-21.md`。
