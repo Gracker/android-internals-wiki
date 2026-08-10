@@ -147,7 +147,6 @@ last_task9_at: "2026-06-29T05:24:42.380077+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-29-05-deep-review.md"
 last_task9_autofix_at: "2026-06-29"
 ---
----
 
 # 18.25 Android 17 Jetpack Compose 渲染管线架构
 
@@ -157,15 +156,15 @@ Compose 改写了 UI 的描述、状态追踪和节点更新方式，却没有�
 
 ## 复核基线与阅读边界
 
-本文在 2026-07-31 复核时采用以下基线。平台、Jetpack 与内核必须分别记录，不能用 Android 版本替代 Compose 版本。
+复核日期为 2026-07-31，采用以下基线。平台、Jetpack 与内核必须分别记录，不能用 Android 版本替代 Compose 版本。
 
-| 层级 | 本文基线 | 说明 |
+| 层级 | 基线 | 说明 |
 | --- | --- | --- |
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | `Choreographer`、`ViewRootImpl`、`ThreadedRenderer`、`HardwareRenderer`、HWUI、SurfaceFlinger |
 | Jetpack Compose | Compose BOM `2026.06.01`，Runtime/UI/Foundation `1.11.4` | Compose 独立发布，不属于 `android-17.0.0_r1` 源码标签 |
 | Android 内核 | `android17-6.18-2026-06_r6` | 调度、cpuset、cpufreq、dma-buf 与 fence 等机制；内核没有 Composition 或 LayoutNode |
 
-正文默认讨论 Android 12 至 Android 17 上的硬件加速 App Window。软件 Canvas、截图/离屏捕获、Preview，以及 `SurfaceView`、`TextureView`、视频或相机等独立 Producer 会改变局部路径，不能套用“单一窗口 buffer”的结论。
+讨论范围限定为 Android 12 至 Android 17 上的硬件加速 App Window。软件 Canvas、截图/离屏捕获、Preview，以及 `SurfaceView`、`TextureView`、视频或相机等独立 Producer 会改变局部路径，不能套用“单一窗口 buffer”的结论。
 
 ## Compose 改了什么，复用了什么
 
@@ -316,7 +315,7 @@ Compose 的常规布局协议要求一个 child 在一次 measure pass 中只测
 
 ### Android 17 上的 graphicsLayer 主路径
 
-在本文 Android 12 至 Android 17 的范围内，Compose 1.11.4 的 `AndroidComposeView.createLayer()` 主路径创建 `GraphicsLayerOwnerLayer`。Android 17 对应的图形实现是 `GraphicsLayerV29`，内部使用公开的 `android.graphics.RenderNode`：
+在 Android 12 至 Android 17 的范围内，Compose 1.11.4 的 `AndroidComposeView.createLayer()` 主路径创建 `GraphicsLayerOwnerLayer`。Android 17 对应的图形实现是 `GraphicsLayerV29`，内部使用公开的 `android.graphics.RenderNode`：
 
 - `GraphicsLayerOwnerLayer.updateDisplayList()` 只在 dirty 时调用 `graphicsLayer.record(...)`；
 - `GraphicsLayerV29` 通过 `RenderNode.beginRecording()` / `endRecording()` 保存绘制操作；
@@ -426,7 +425,7 @@ Compose 1.11.4 的关键 API 是：
 PausableComposition 最初在 Runtime `1.8.0-alpha02` 加入，不是 Compose 1.7 的稳定特性。Foundation 的 Lazy 预取开关经历过调整：
 
 - Foundation 1.10.6 因稳定性考虑把 `isPausableCompositionInPrefetchEnabled` 设为 `false`；
-- 本文核对的 Foundation 1.11.4 源码中，该 flag 为 `true`；
+- Foundation 1.11.4 源码中的该 flag 为 `true`；
 - `LazyLayoutPrefetchState` 在 flag 开启时调用 paused precomposition，分别记录 resume、pause、apply 和 measure 的历史耗时。
 
 默认 Android 预取调度器以 `View.display.refreshRate` 估算 `frameIntervalNs`，用“预计下一帧时间减去当前时间”计算 `availableTimeNanos()`。如果距离上次 draw 已超过两个帧间隔，它会把当前阶段视为 idle，允许更积极地执行预取。
@@ -493,15 +492,15 @@ FrameTimeline 的宿主 `SurfaceFrame` 适合判断 App Window 是否按时交�
 
 ## 版本演进：平台与 Compose 分开记
 
-| 时间/版本 | 与本章有关的变化 |
+| 时间/版本 | 相关变化 |
 | --- | --- |
 | Compose 1.0（2021） | AndroidComposeView、LayoutNode、Snapshot 与基础硬件加速接入进入稳定版 |
 | Runtime 1.8.0-alpha02（2024-09） | 加入实验性 PausableComposition，供可暂停的子 composition 使用 |
 | Kotlin 2.0.20 | Strong Skipping 默认启用；这是编译器边界 |
 | Foundation 1.10.6 | Lazy 预取的 PausableComposition flag 因稳定性问题暂时默认关闭 |
 | Runtime 1.11.0 | 新 SlotTable/link-buffer 实现仍是实验能力且默认关闭；旧实验性 concurrent recomposition API 已移除 |
-| Compose 1.11.4 / BOM 2026.06.01 | 本文 Jetpack 基线；Foundation 源码中 Lazy PausableComposition 预取 flag 为 `true` |
-| Android 17 / API 37 | 本文平台上限；标准 App Window 仍走 ViewRoot/HWUI/RenderThread/SurfaceFlinger |
+| Compose 1.11.4 / BOM 2026.06.01 | Jetpack 基线；Foundation 源码中 Lazy PausableComposition 预取 flag 为 `true` |
+| Android 17 / API 37 | 平台上限；标准 App Window 仍走 ViewRoot/HWUI/RenderThread/SurfaceFlinger |
 
 不要把“Android 17 同期可用的 Compose 版本”写成系统内置版本。应用依赖决定 Compose Runtime/UI/Foundation 版本，同一台 Android 17 设备可以运行不同 Compose 版本构建的应用。
 
@@ -537,7 +536,7 @@ composition root 分开不妨碍显式共享 state，也不保证拥有不同 Re
 
 ## 源码核对索引
 
-本章关键结论来自以下固定基线：
+关键结论来自以下固定基线：
 
 | 结论 | 基线源码 |
 | --- | --- |
