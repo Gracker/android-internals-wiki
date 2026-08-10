@@ -38,9 +38,9 @@ gap_score: 17
 
 ## 版本锚点与分析对象
 
-本章的平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，用于解释主线程 Looper、Choreographer、ViewRootImpl 和 FrameTimeline。Fragment 属于独立发布的 AndroidX 库，不能用 Android 平台版本代替库版本。
+平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，用于解释主线程 Looper、Choreographer、ViewRootImpl 和 FrameTimeline。Fragment 属于独立发布的 AndroidX 库，不能用 Android 平台版本代替库版本。
 
-截至 2026 年 7 月，AndroidX Fragment 稳定版为 1.8.9。本章的库源码锚点是该发行区间末端 commit `f39ca3510efb2347ebfef231e25a3e804922450d`。官方已将 Fragment 标为维护模式，但存量 View/Fragment 项目的切换性能仍需按库源码分析。平台 `android.app.Fragment` 自 API 28 起废弃，只用于理解历史项目。
+截至 2026 年 7 月，AndroidX Fragment 稳定版为 1.8.9。库源码锚点是该发行区间末端 commit `f39ca3510efb2347ebfef231e25a3e804922450d`。官方已将 Fragment 标为维护模式，但存量 View/Fragment 项目的切换性能仍需按库源码分析。平台 `android.app.Fragment` 自 API 28 起废弃，只用于理解历史项目。
 
 一次 Fragment 页面切换至少有四个不同时间点：
 

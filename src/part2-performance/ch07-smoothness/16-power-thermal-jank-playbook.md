@@ -53,43 +53,9 @@ sources:
 
 # 7.16 耗电/发热伴随卡顿排障入口
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 投诉入口拆分：掉帧、发热、掉电分别代表什么
-把线上反馈拆成三类信号：用户看到的帧时间异常、设备进入热限制后的频率收缩、后台任务或网络重试带来的持续耗电。加工时需要给出一张分流表，说明每类信号优先看哪些轨道和指标。
-
-### 🔹 Perfetto 联合采集模板
-覆盖 FrameTimeline、sched、CPU frequency、GPU/Display 相关 counter、thermal status、android.power、network packets、wakelock 事件。模板要说明哪些字段依赖设备暴露 power rails / ODPM，缺失时如何降级。
-
-### 🔹 CPU/GPU 持续负载与热限制判读
-区分短时峰值、持续满载、频率被动下降和调度迁移。加工时要把 thermal status、CPU/GPU 频率、top-app 线程运行时间和 FrameTimeline jank 对齐，避免只看单帧耗时。
-
-### 🔹 Wakelock、JobScheduler/WorkManager 与网络重试
-整理后台保活、周期任务、失败重试、前台服务和网络连接在 Battery Historian / batterystats / Perfetto 中的观察入口。与 5.10、25.2 交叉引用，不重复展开后台调度机制。
-
-### 🔹 渲染负载、刷新率与显示功耗
-说明高刷新率、复杂动画、视频/地图/WebView 页面如何同时影响帧时间和显示/SoC 能耗。加工时只写排障路径，渲染原理引用 2.x、18.x 章节。
-
-### 🔹 设备能力差异与证据等级
-列出 Pixel / AOSP 设备、厂商设备、低端机在 power rail、thermal HAL、GPU counter、网络 counter 可见性上的差异。没有设备级证据时标注证据缺口，不写泛化结论。
-
-## 扩展
-
-### 🔸 Power rail 命名与 EnergyConsumer 对照
-整理 rail / channel、EnergyConsumer、BatteryUsageStats 三套口径之间的区别，作为 11.1 与 25.1 的补充索引。
-
-### 🔸 热状态驱动的线上降级策略
-补充根据 thermal status / thermal headroom 调整动画、刷新率、网络重试和后台任务节奏的策略，但需要标注 API 版本和设备限制。
-
-### 🔸 游戏、地图、视频、WebView 四类场景案例
-每类场景给出采集配置、第一判断点和常见误判，案例材料不足时保留为待补充。
-
-<!-- outline-end -->
-
 ## 适用范围与排障目标
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点，内核事件以 `android17-6.18-2026-06_r6` 为准。厂商的温度阈值、传感器名称、功率预算、GPU 计数器和 power rail 属于设备实现，不能从 AOSP tag 推导某款量产机的具体数值。
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，内核事件以 `android17-6.18-2026-06_r6` 为准。厂商的温度阈值、传感器名称、功率预算、GPU 计数器和 power rail 属于设备实现，不能从 AOSP tag 推导某款量产机的具体数值。
 
 “滑动卡、手机烫、掉电快”包含三种时间尺度：
 
@@ -136,7 +102,7 @@ thermal 现场常同时出现两条路径。
   → 系统组件与应用按状态减载
 ```
 
-Android 17 的 `ThermalManagerService` 位于 `frameworks/base/services/core/java/com/android/server/power/thermal/`。AOSP 源码会从缓存的 SKIN 类型温度中取最高 throttling severity，更新整体 status，并通过 `TRACE_TAG_POWER` 写入名为 `ThermalManagerService.status` 的 counter。启用 `power` atrace 类别后，这条 counter 是 Framework 热状态与 Perfetto 对齐的重要入口。[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java]
+Android 17 的 `ThermalManagerService` 位于 `frameworks/base/services/core/java/com/android/server/power/thermal/`。AOSP 源码会从缓存的 SKIN 类型温度中取最高 throttling severity，更新整体 status，并通过 `TRACE_TAG_POWER` 写入名为 `ThermalManagerService.status` 的 counter。启用 `power` atrace 类别后，这条 counter 是 Framework 热状态与 Perfetto 对齐的重要入口。
 
 整体 status 表达面向用户体验的 thermal severity。它不等于 CPU 温度，也不承诺映射到固定 GHz、固定 GPU 档位或某个 cooling device state。详细传感器数据由 Thermal HAL 面向可信系统组件提供；普通应用使用公开的 `PowerManager` 状态和 headroom API。
 
@@ -150,7 +116,7 @@ Android 17 的 `ThermalManagerService` 位于 `frameworks/base/services/core/jav
 | `getThermalHeadroomThresholds()` | API 35 | status 到 headroom threshold 的设备映射；可能不含全部 status |
 | `addThermalHeadroomListener()` | API 36 | headroom 或 thresholds 变化回调 |
 
-`getThermalHeadroom()` 返回非负值，`1.0` 对应 `SEVERE` threshold；大于 `1.0` 没有统一的更高 severity 映射。不支持、服务未准备好或调用过密时可能得到 `NaN`。官方 API 文档说明这类慢变化传感器没有必要以高于约每秒一次的频率轮询。[来源: developer.android.com/reference/android/os/PowerManager#getThermalHeadroom(int)]
+`getThermalHeadroom()` 返回非负值，`1.0` 对应 `SEVERE` threshold；大于 `1.0` 没有统一的更高 severity 映射。不支持、服务未准备好或调用过密时可能得到 `NaN`。官方 API 文档说明这类慢变化传感器没有必要以高于约每秒一次的频率轮询。
 
 API 35 的 thresholds 来自设备配置。API 36 起 thresholds 可发生变化，可通过 headroom listener 获知。应用应保存 status、headroom、thresholds、时间戳和设备身份，不要把自定的 `0.8` 之类阈值写成平台常量。
 
@@ -258,13 +224,13 @@ data_sources {
 }
 ```
 
-`power/cpu_frequency` 记录变化事件，`cpufreq_period_ms` 补 trace 开始处的当前值；两者一起使用可减少误读。`gpufreq_period_ms`、`devfreq_period_ms`、thermal tracepoint 和 wakeup-source 轨道仍依赖设备。`collect_power_rails` 需要 ODPM/PowerStats HAL 的 energy-meter channel；另外两个开关分别请求 EnergyConsumer breakdown 与 PowerEntity state residency。[已验证: AOSP android-17.0.0_r1, hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl; perfetto.dev/docs/data-sources/battery-counters]
+`power/cpu_frequency` 记录变化事件，`cpufreq_period_ms` 补 trace 开始处的当前值；两者一起使用可减少误读。`gpufreq_period_ms`、`devfreq_period_ms`、thermal tracepoint 和 wakeup-source 轨道仍依赖设备。`collect_power_rails` 需要 ODPM/PowerStats HAL 的 energy-meter channel；另外两个开关分别请求 EnergyConsumer breakdown 与 PowerEntity state residency。
 
 模板使用 128 MiB ring buffer，是为了容纳高频 sched 事件。若目标设备的 Perfetto guardrail 拒绝该大小，或采集本身改变了温控曲线，应缩短窗口、分开采集高频与低频数据，或改用 periodic snapshot；分析前还要在 trace `stats` 表检查 packet loss 和 buffer overwrite。
 
 配置本身不包含通用的网络包归因。不同内核的网络 tracepoint 开销和权限差异很大，应用应给请求、重试、DNS 和响应增加 marker，并保留 OkHttp/Chromium/播放器等组件的事件日志；长窗口再用 Batterystats 的 UID 网络统计验证。
 
-FrameTimeline 当前不覆盖 `SurfaceView` 内容帧。视频、相机和游戏若通过独立 Surface 输出，要补 Producer、BufferQueue、fence、SurfaceFlinger 与 HWC 证据，不能用宿主 App Window 的绿色帧代表内容层按时呈现。[已验证: perfetto.dev/docs/data-sources/frametimeline]
+FrameTimeline 当前不覆盖 `SurfaceView` 内容帧。视频、相机和游戏若通过独立 Surface 输出，要补 Producer、BufferQueue、fence、SurfaceFlinger 与 HWC 证据，不能用宿主 App Window 的绿色帧代表内容层按时呈现。
 
 ## 怎样证明 thermal throttling 影响了卡顿
 
@@ -304,7 +270,7 @@ power rail 是设备级累计能量。其他应用、SurfaceFlinger、媒体和�
 
 高刷新率同时缩短帧预算并增加显示更新机会。60 Hz 常见周期约 16.67 ms，120 Hz 约 8.33 ms；可变刷新率和 Android 15 引入的 Adaptive Refresh Rate 会改变运行时节奏，分析时应读取 trace 中的 Expected Timeline、VSync 与显示模式。
 
-ARR 只在实现相应 HWC HAL 能力的 Android 15 QPR1+ 设备上可用。API 36 提供 `hasArrSupport()` 等公开能力查询。ARR 面板可在同一显示模式内按离散 VSync 步进调整刷新节奏，因此“当前模式是 120 Hz”不代表内容持续以 120 fps 产生或显示。[来源: developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
+ARR 只在实现相应 HWC HAL 能力的 Android 15 QPR1+ 设备上可用。API 36 提供 `hasArrSupport()` 等公开能力查询。ARR 面板可在同一显示模式内按离散 VSync 步进调整刷新节奏，因此“当前模式是 120 Hz”不代表内容持续以 120 fps 产生或显示。
 
 对普通 View/Compose Window，可沿 `Choreographer → RenderThread → BLAST BufferQueue → SurfaceFlinger → HWC → present` 对齐帧与功耗。`SurfaceView`、`TextureView`、WebView 和视频要按输出路径分流：
 

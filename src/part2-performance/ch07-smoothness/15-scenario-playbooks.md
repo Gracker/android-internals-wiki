@@ -59,26 +59,9 @@ last_deepseek_cn_review_at: 2026-06-23
 
 # 场景化性能作战手册
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 把常见性能投诉对应到统一排障入口：卡顿 / 响应慢 / ANR / 内存 / 功耗
-- 🔹 每类问题先看什么指标、抓什么 trace、优先排哪条路径
-- 🔹 不同场景的第一嫌疑人:MainThread / RenderThread / SurfaceFlinger / Binder / IO / 调度
-- 🔹 常见误判:把系统负载当成 App 问题、把输入延迟当成掉帧、把 BufferStuffing 当成普通慢帧
-- 🔹 用章节跳转形成"现场排障导航"
-
-### 扩展(可选深入)
-
-- 🔸 针对低端机 / 高刷 / 弱网 / 多窗口做差异化排障
-- 🔸 把作战手册转成团队内部 checklist / runbook
-<!-- outline-end -->
-
 ## 适用范围与证据锚点
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点。涉及调度、CPU 频率、thermal 与 fence 时，以 `android17-6.18-2026-06_r6` 为内核锚点。Android 8—16 的入口用于说明版本差异，现场结论仍应匹配设备版本、厂商实现、应用构建和复现条件。
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。涉及调度、CPU 频率、thermal 与 fence 时，以 `android17-6.18-2026-06_r6` 为内核锚点。Android 8—16 的入口用于说明版本差异，现场结论仍应匹配设备版本、厂商实现、应用构建和复现条件。
 
 排障手册解决的是入口选择问题。它不会用一张固定流程图替代证据：同一句“卡”，可能对应掉帧、输入反馈晚、数据未就绪、进程重建、ANR，或热限频后的系统性退化。工程师要先把用户语言改写为可测量的时间区间，再选择 trace、日志或堆栈。
 
@@ -144,7 +127,7 @@ trace 之前缺少场景定义，trace 之后通常只会得到一幅很宽的�
 - WebView 常同时包含 Chromium renderer 与宿主 HWUI 路径；视频、受保护内容还可能增加独立层。
 - Flutter 要记录根渲染模式、平台视图和外部纹理。线程合并策略会随 Flutter 版本与配置变化，不能只靠固定线程名判断。
 
-这组路径来自 Android 17 源码和本地 `rendering_pipelines` 系列的交叉整理。它约束了一个常见判断：UI 线程退出 `doFrame` 只说明主线程阶段结束，RenderThread、BufferQueue、SurfaceFlinger、HWC 和显示设备仍可能延后该帧。
+这些路径共同说明：UI 线程退出 `doFrame` 只表示主线程阶段结束，RenderThread、BufferQueue、SurfaceFlinger、HWC 和显示设备仍可能延后该帧。
 
 ### 第四步：把帧连接到责任线程
 
