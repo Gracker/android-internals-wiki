@@ -222,7 +222,7 @@ Android 17 的 libbinder 仍使用以下大小：
 
 `DEFAULT_MAX_BINDER_THREADS = 15` 是 Android 17 native libbinder 的默认 `mMaxThreads`，不是“每个 Android 进程恰好只有 15 个 Binder 线程”。
 
-`ProcessState::startThreadPool()` 会先创建线程池的首个线程；驱动在没有足够 worker 时返回 `BR_SPAWN_LOOPER`，libbinder 再按需创建线程，直到配置上限。手工调用 `joinThreadPool()`、Java runtime 的接入方式和服务自身配置还会影响最终可见线程数。诊断时应读取目标进程的实际线程与配置，不能只数到 15 就宣布池耗尽。
+`ProcessState::startThreadPool()` 会先创建一个主 pool thread；驱动在没有足够 worker 时返回 `BR_SPAWN_LOOPER`，libbinder 再按需创建线程，直到配置上限。手工调用 `joinThreadPool()`、Java runtime 的接入方式和服务自身配置还会影响最终可见线程数。诊断时应读取目标进程的实际线程与配置，不能只数到 15 就宣布池耗尽。
 
 线程池有几条稳定的行为：
 

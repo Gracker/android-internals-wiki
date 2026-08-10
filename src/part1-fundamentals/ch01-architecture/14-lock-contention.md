@@ -100,13 +100,13 @@ finalized_date: "2026-07-14"
 
 # 1.14 锁竞争与同步性能分析
 
-线程显示为等待（Waiting）或休眠（Sleeping），只能证明它没有在 CPU 上执行，不能直接证明发生了锁竞争。它可能在等 Java monitor、native mutex、条件变量、Binder 回复、I/O、定时器，也可能只是 Looper 正常睡在 `epoll_wait()`。
+线程显示为 Waiting 或 Sleeping，只能证明它没有在 CPU 上执行，不能直接证明发生了锁竞争。它可能在等 Java monitor、native mutex、条件变量、Binder 回复、I/O、定时器，也可能只是 Looper 正常睡在 `epoll_wait()`。
 
 诊断锁问题时，先回答四个问题，不要从猜测“哪种锁更快”开始：
 
 1. **谁在等**：主线程、RenderThread、Binder worker，还是普通后台线程？
 2. **等什么**：Java monitor、native 同步原语、Binder 回复，还是正常事件等待？
-3. **谁能让它继续**：实际持锁者或服务端线程是谁？
+3. **谁能让它继续**：实际的 owner 或 server thread 是谁？
 4. **owner 为什么没有及时推进**：正在运行、排队等 CPU、阻塞在另一把锁，还是做了 I/O？
 
 这四个答案拼起来，才是一条可修复的等待链。
@@ -151,7 +151,7 @@ enum LockState {
 
 ### 2.1 无竞争路径：thin lock
 
-对象未加锁时，ART 可以把当前线程的 monitor thread ID 和递归计数编码进 LockWord。线程通过原子更新获得轻量锁（thin lock）；同一线程重入时增加计数。
+对象未加锁时，ART 可以把当前线程的 monitor thread ID 和递归计数编码进 LockWord。线程通过原子更新获得 thin lock；同一线程重入时增加计数。
 
 thin lock 的优势是不用为每个曾被 `synchronized` 的对象都分配完整 Monitor。无竞争时，路径短、没有线程休眠，也没有内核调度切换。
 
@@ -165,7 +165,7 @@ thin lock 的优势是不用为每个曾被 `synchronized` 的对象都分配完
 - 在对象上调用 `wait()`。
 - 一个需要加锁的对象同时带有 identity hash code。
 
-竞争线程面对被其他线程持有的 thin lock 时，ART 会协调 owner 并尝试把锁膨胀为重量级监视器（fat monitor）。重量级监视器记录完整的 owner、waiter、条件等待和诊断信息。
+竞争线程面对被其他线程持有的 thin lock 时，ART 会协调 owner 并尝试把锁膨胀为 fat monitor。fat monitor 记录完整的 owner、waiter、条件等待和诊断信息。
 
 `Object.wait()` 的语义也不能简化成“睡一会”：
 
@@ -277,7 +277,7 @@ PI 也不是修复糟糕锁设计的替代品。临界区过大、锁顺序混�
 Client thread
   └─ binder transaction
       └─ Binder driver 选择/唤醒 server thread
-          └─ Server Binder thread Binder 线程执行服务代码
+          └─ Server Binder thread 执行服务代码
               └─ binder reply
                   └─ Client 继续执行
 ```
@@ -336,7 +336,7 @@ App 主线程调用 AMS、WMS 或 PMS 后长时间等待 reply，常见根因位
 - 多把系统锁形成长等待链。
 - Binder worker 接近饱和，新事务迟迟没有线程处理。
 
-分析顺序应是：从 client transaction 跟到 server reply，再看服务端线程的状态；如果它在等锁，继续找 owner，不能停在“Binder 调用耗时”这个表面结论。
+分析顺序应是：从 client transaction 跟到 server reply，再看 server thread 的线程状态；如果它在等锁，继续找 owner，不能停在“Binder 调用耗时”这个表面结论。
 
 ### 6.1 Android 17 AMS 的 `mGlobalLock` 与 `mProcLock`
 
@@ -413,7 +413,7 @@ ORDER BY dur DESC
 LIMIT 30;
 ```
 
-这张表能给出 Java monitor 的 waiter、owner、双方方法、源码位置、是否主线程、锁名和时长。`android_monitor_contention_chain` 还能表达 contention 的父子关系；配套 thread-state 表可以继续检查持锁者在持锁期间处于运行（Running）、可运行（Runnable），还是又阻塞在其他内核函数。
+这张表能给出 Java monitor 的 waiter、owner、双方方法、源码位置、是否主线程、锁名和时长。`android_monitor_contention_chain` 还能表达 contention 的父子关系；配套 thread-state 表可以继续看 owner 在持锁期间是 Running、Runnable，还是又阻塞在其他内核函数。
 
 注意两个边界：
 
