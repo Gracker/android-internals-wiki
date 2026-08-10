@@ -465,7 +465,7 @@ SurfaceFlinger 中对应 Layer 的待处理事务
 这里容易出现两个误解：
 
 - BLAST 不意味着 SurfaceFlinger 通过 Binder 接收整帧像素副本；事务传递的是缓冲区句柄、同步对象和元数据。
-- BLAST 获取缓冲区后，还要经过事务应用、Layer 状态更新、锁存（latch）、合成与显示提交（present），不能把 BLAST 事件当成显示完成点。
+- BLAST acquire 到缓冲区后，还要经过事务应用、Layer 状态更新、latch、合成与 present，不能把 BLAST 事件当成显示完成点。
 
 ### 6.2 `BufferTX - <layerName>` 的含义
 
@@ -488,9 +488,9 @@ SurfaceFlinger 的 Layer 追踪中可看到形如 `BufferTX - <layerName>` 的�
 
 | Fence | 谁等待 | 表达的条件 |
 | --- | --- | --- |
-| 获取栅栏（acquire fence） | 消费者 | 生产者对该缓冲区的写入何时完成，消费者何时可以安全读取 |
-| 释放栅栏（release fence） | 后续复用该缓冲区的一方 | 当前消费者何时不再使用该缓冲区，何时可以安全重写 |
-| 显示栅栏（present fence） | SurfaceFlinger / 显示时序追踪 | 当前显示提交何时在显示管线的 present 边界完成 |
+| acquire fence | 消费者 | 生产者对该缓冲区的写入何时完成，消费者何时可以安全读取 |
+| release fence | 后续复用该缓冲区的一方 | 当前消费者何时不再使用该缓冲区，何时可以安全重写 |
+| present fence | SurfaceFlinger / 显示时序追踪 | 当前显示提交何时在显示管线的 present 边界完成 |
 
 在应用到 SurfaceFlinger 的队列中，应用是 producer，BLAST/系统侧消费逻辑接收带有 acquire fence 的缓冲区。到了 HWC 和显示设备边界，SurfaceFlinger 又要处理客户端目标（client target）、各 Layer 和 display present 相关的 fence。
 
@@ -539,7 +539,7 @@ SurfaceFlinger 选择缓冲区时要考虑：
 - 当前调度和 latch 策略；
 - 当前版本与场景是否允许有限处理未 signal fence 的栅栏。
 
-Android 13 以后存在受约束的未发信号缓冲区锁存（unsignaled latch）优化，但它有严格条件，不能扩写成 SurfaceFlinger 会忽略所有 acquire fence。
+Android 13 以后存在受约束的 unsignaled buffer latch 优化，但它有严格条件，不能扩写成 SurfaceFlinger 会忽略所有 acquire fence。
 
 ### 8.2 SurfaceFlinger VSync 与应用 VSync
 

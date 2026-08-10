@@ -94,7 +94,7 @@ flowchart TD
     K --> L{"IME 是否接受显示"}
     L -->|否| M["请求失败或取消"]
     L -->|是| N["InputMethodService.showWindow()"]
-    N --> O["WMS 等待 IME Surface 与动画控制层（leash）"]
+    N --> O["WMS 等待 IME Surface 与 leash"]
     O --> P["App: InsetsController 启动动画"]
     P --> Q["WindowInsetsAnimation 回调与帧提交"]
 ```
