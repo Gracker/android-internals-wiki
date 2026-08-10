@@ -64,7 +64,7 @@ task9_review_notes: "2026-07-10 Task9 deep-review: auto-fixed。P0 2 / P1 1 已�
 
 # 2.33 Android 17 FrameTimeline：应用、SurfaceFlinger 与合成边界
 
-FrameTimeline 用于判断一帧是否按调度器预测的时间显示，以及延误更接近应用、SurfaceFlinger、GPU 合成还是显示 HAL。它无法覆盖所有生产者，也不能单独证明某段 CPU 或 GPU 工作就是根因。
+FrameTimeline 用于判断一帧是否按调度器预测的时间显示，以及延误更接近应用、SurfaceFlinger、GPU composition 还是 Display HAL。它无法覆盖所有生产者，也不能单独证明某段 CPU 或 GPU 工作就是根因。
 
 以下分析以 Android 17 / API 37 的 `android-17.0.0_r1` 为平台版本，以 `android17-6.18-2026-06_r6` 为内核同步版本。公共显示主线如下：
 
@@ -103,8 +103,8 @@ FrameTimeline 对标准 App Window 最有解释力。页面包含独立 Surface�
 
 `frame_timeline_event.proto` 定义了两类对象：
 
-- `SurfaceFrame` 表示某个应用或图层的一次帧更新；
-- `DisplayFrame` 表示 SurfaceFlinger 把多个图层组织成一次显示更新。
+- `SurfaceFrame` 表示某个应用或 layer 的一次帧更新；
+- `DisplayFrame` 表示 SurfaceFlinger 把多个 layer 组织成一次显示更新。
 
 二者是多对一关系。关联条件写在 proto 注释中：
 
@@ -112,13 +112,13 @@ FrameTimeline 对标准 App Window 最有解释力。页面包含独立 Surface�
 DisplayFrame.token = SurfaceFrame.display_frame_token
 ```
 
-同一个应用令牌还可能对应多个图层，例如一个进程同时更新多个 Surface。查询时必须保留 `upid` 与 `layer_name`，不能只按令牌去重。
+同一个应用 token 还可能对应多个 layer，例如一个进程同时更新多个 Surface。查询时必须保留 `upid` 与 `layer_name`，不能只按 token 去重。
 
 ### token 怎样从应用到达 SurfaceFlinger
 
 Android 17 的关键对象是 `FrameTimelineInfo`：
 
-1. `Choreographer` / `AChoreographer` 从当前 VSync 时间线取得 `vsyncId`；
+1. `Choreographer` / `AChoreographer` 从当前 VSync timeline 取得 `vsyncId`；
 2. HWUI 或原生 Producer 把 `vsyncId`、帧开始时间、dequeue 等信息写入 `FrameTimelineInfo`；
 3. 标准窗口路径由 BLAST 按 frame number 保存这份信息，并在 `Transaction::setFrameTimelineInfo()` 中随 buffer transaction 发给 SurfaceFlinger；
 4. `FrameTimeline::createSurfaceFrameForToken()` 用 `vsyncId` 查询预测值并创建 `SurfaceFrame`；
@@ -199,7 +199,7 @@ FrameTimeline 的 jank 定义围绕 predicted present 与 actual present 是否�
 
 ### HWC 决策会逐帧变化
 
-SurfaceFlinger 每轮根据当前可见图层集合准备 CompositionEngine 输出，并与 HWC 交互。Android 17 既可能走 `presentOrValidate()` 快路径，也可能进入 validate：
+SurfaceFlinger 每轮根据当前可见 layer 集合准备 CompositionEngine 输出，并与 HWC 交互。Android 17 既可能走 `presentOrValidate()` 快路径，也可能进入 validate：
 
 1. HWC 检查当前 display/layer 状态；
 2. validate 返回 composition type changes 与 requests；
@@ -209,7 +209,7 @@ SurfaceFlinger 每轮根据当前可见图层集合准备 CompositionEngine 输�
 
 overlay plane 数量、format、transform、dataspace、blend、protected content、display mode 与厂商 Composer 能力都会影响结果。不能把流程写成“SurfaceFlinger 发现 CLIENT layer 太多，再把一部分改成 GPU”；composition type changes 来自 HWC validate 协议与 CompositionEngine 的当前策略。
 
-### SurfaceFrame 标志是图层粒度
+### SurfaceFrame 标志是 layer 粒度
 
 `Layer::onCompositionPresented()` 的条件是：
 
@@ -237,7 +237,7 @@ actualDisplayFrameStartEvent->set_gpu_composition(
 - DisplayFrame `gpu_composition = false`：FrameTimeline 没有记录这条 SF client composition fence；
 - `false` 不能证明应用没用 GPU，HWUI、游戏或视频 Producer 仍可能在生产自己的 buffer；
 - `true` 不能单独证明 GPU 是瓶颈，还要检查 GPU fence、RenderEngine/GPU track 与 deadline；
-- DEVICE 合成表示 SF 这一层的图层叠加交给 HWC，不等于系统中“没有 CPU”或“没有 GPU 工作”。
+- DEVICE composition 表示 SF 这一层的图层叠加交给 HWC，不等于系统中“没有 CPU”或“没有 GPU 工作”。
 
 这组标志描述的是 CLIENT/DEVICE 合成边界。CPU 调度与控制工作贯穿两条路径，差别在于 SurfaceFlinger 是否用 RenderEngine 生成 client target。
 
@@ -251,7 +251,7 @@ actualDisplayFrameStartEvent->set_gpu_composition(
 |---|---|---|
 | `App Deadline Missed` | SurfaceFrame ready 晚于应用 deadline，并影响 present | `doFrame`、RenderThread、acquire fence、dequeue wait |
 | `Buffer Stuffing` | Producer 持续提交，旧帧尚未 present，队列形成高延迟状态 | pending buffer、queue/latch/present 序列、dequeue 阻塞 |
-| `SurfaceFlinger CPU Deadline Missed` | SF 的就绪时间错过截止时间，且没有客户端合成 GPU 栅栏作为 GPU 分支依据 | SF 主线程运行与调度、HWC 阻塞调用 |
+| `SurfaceFlinger CPU Deadline Missed` | SF 的就绪时间错过截止时间，且没有 client composition GPU fence 作为 GPU 分支依据 | SF 主线程运行与调度、HWC 阻塞调用 |
 | `SurfaceFlinger GPU Deadline Missed` | SF 使用 client composition，CPU end 尚可，但 client target GPU fence 迟到 | RenderEngine、GPU queue/fence、频率与带宽 |
 | `Display HAL` | SF ready 尚可，显示侧没有在预测 VSync 完成 present | HWC/DRM/厂商 display trace、模式与电源状态 |
 | `SurfaceFlinger Scheduling` | present 偏差符合 VSync cadence 等调度特征 | SF wakeup、VSync、线程调度 |
@@ -273,7 +273,7 @@ proto 同时携带 legacy 与 experimental 的 jank/present 值，并明确标�
 | 黄色 | 只用于 App track：应用帧 janky，但责任被归到 SurfaceFlinger |
 | 蓝色 | dropped frame；App 与 SF 侧的具体丢帧语义不同 |
 
-颜色适合定位候选帧，根因仍需结合字段、token flow、线程切片、buffer 与栅栏证明。
+颜色适合定位候选帧，根因仍需结合字段、token flow、线程 slice、buffer 与栅栏证明。
 
 ## fence 与 BufferQueue：不要把三个方向混在一起
 
@@ -289,7 +289,7 @@ Android 用户态通过 `Fence`/`FenceTime` 与 sync file 传递这些同步对�
 
 Android 的 BufferQueue 与 fence 设计用于避免 Consumer 读取未完成内容。看到游戏或视频画面撕裂感时，先区分 frame pacing、重复/丢帧、transform 更新不同步和厂商显示路径；只有拿到绕过正常同步或显示扫描异常的证据，才适合使用 classic tearing 结论。
 
-## 采集一份可解释的轨迹
+## 采集一份可解释的 trace
 
 Perfetto 界面的 Android 预设通常会启用 FrameTimeline。需要可复现的命令行配置时，下面的配置会同时收集两类 SurfaceFlinger 数据，以及应用/SF 常用的 atrace 数据：
 
@@ -340,7 +340,7 @@ adb shell perfetto --txt \
 adb pull /data/misc/perfetto-traces/frame.perfetto-trace
 ```
 
-第一条命令按配置采集 10 秒，第二条把轨迹拉回主机。复现窗口应覆盖问题前后的稳定帧，避免只截到一次模式切换或应用刚启动的瞬态。
+第一条命令按配置采集 10 秒，第二条把 trace 拉回主机。复现窗口应覆盖问题前后的稳定帧，避免只截到一次模式切换或应用刚启动的瞬态。
 
 ## 用 SQL 保留 token、layer 与进程上下文
 
@@ -401,7 +401,7 @@ LEFT JOIN sf USING (display_frame_token)
 ORDER BY app.ts;
 ```
 
-一个 SF 令牌关联多条应用记录是正常现象：一次显示更新可以合成多个图层。SF 记录缺失时，应检查令牌是否无效、预测是否过期、trace 是否从帧中途开始，以及目标是否属于 FrameTimeline 覆盖有限的独立 Surface。
+一个 SF token 关联多条应用记录是正常现象：一次显示更新可以合成多个 layer。SF 记录缺失时，应检查 token 是否无效、预测是否过期、trace 是否从帧中途开始，以及目标是否属于 FrameTimeline 覆盖有限的独立 Surface。
 
 ### 计算 per-frame deadline overrun
 
@@ -430,7 +430,7 @@ ORDER BY overrun DESC;
 
 1. Actual start 是否已经晚于 Expected start；
 2. `Choreographer#doFrame` 内 INPUT、ANIMATION、TRAVERSAL、COMMIT 哪段变长；
-3. `DrawFrame` / RenderThread 是 CPU 提交慢，还是 GPU 获取栅栏晚；
+3. `DrawFrame` / RenderThread 是 CPU 提交慢，还是 GPU acquire fence 晚；
 4. `dequeueBuffer` 是否因旧 buffer 尚未 release 而等待；
 5. 对应 DisplayFrame 是否又叠加 SF 或 Display HAL jank。
 
@@ -456,10 +456,10 @@ AChoreographer / engine tick
 
 - `SurfaceFlinger GPU Deadline Missed` 或相符的 deadline；
 - client target GPU fence signal 偏晚；
-- RenderEngine/GPU 轨迹与该 DisplayFrame 时间重叠；
+- RenderEngine/GPU track 与该 DisplayFrame 时间重叠；
 - 排除 App 自己的 GPU、HWC validate、Display HAL 或频率切换。
 
-优化方向应根据触发 CLIENT 的具体图层状态确定。盲目移除 `ColorMatrix`、改成 `SurfaceView` 或强制 overlay，可能改变透明度、保护内容、颜色管理与生命周期语义，而且 HWC 仍可在下一帧返回不同结果。
+优化方向应根据触发 CLIENT 的具体 layer 状态确定。盲目移除 `ColorMatrix`、改成 `SurfaceView` 或强制 overlay，可能改变透明度、保护内容、颜色管理与生命周期语义，而且 HWC 仍可在下一帧返回不同结果。
 
 ### App 与 SF 都 ready，但 present 仍晚
 
@@ -468,41 +468,41 @@ AChoreographer / engine tick
 ## 一套不跳阶段的诊断顺序
 
 1. **确认问题窗口与刷新率**
-   记录显示模式、render rate、输入事件和用户看到的现象，排除启动、旋转、亮灭屏与模式切换瞬态。
+   记录显示 mode、render rate、输入事件和用户看到的现象，排除启动、旋转、亮灭屏与模式切换瞬态。
 
 2. **确认 Producer 与承载对象**
    标出 App Window、TextureView、SurfaceView、Camera/video/game 的 Producer、BufferQueue、layer name 与进程。
 
-3. **选择一个异常令牌**
+3. **选择一个异常 token**
    同时查看 Expected/Actual、prediction、present、jank、severity、layer 与 flow，不按颜色直接归因。
 
-4. **检查应用就绪边界**
+4. **检查应用 ready 边界**
    对照 `doFrame`、RenderThread、queue time 与 acquire fence，区分 CPU、Producer GPU 和 dequeue wait。
 
 5. **检查 SF 是否采纳新内容**
-   对照 QUEUE、`BufferTX`、LATCH 与 pending buffer。已经入队但本轮没有锁存，说明问题仍在显示前段。
+   对照 QUEUE、`BufferTX`、LATCH 与 pending buffer。已经入队但本轮没有 latch，说明问题仍在显示前段。
 
 6. **检查 CLIENT/DEVICE composition**
-   用 SurfaceFrame/DisplayFrame 的 `gpu_composition` 找到候选，再以 validate、RenderEngine 和 GPU 栅栏证明成本。
+   用 SurfaceFrame/DisplayFrame 的 `gpu_composition` 找到候选，再以 validate、RenderEngine 和 GPU fence 证明成本。
 
 7. **检查 present 与 buffer 归还**
    present fence 解释显示更新，release fence/回调解释 buffer 复用。二者不能交换。
 
 8. **用相邻稳定帧复核**
-   比较同一图层的正常帧与异常帧，确认结论可重复，并排除一次性的预测或 display mode 变化。
+   比较同一 layer 的正常帧与异常帧，确认结论可重复，并排除一次性的 prediction 或 display mode 变化。
 
 ## Android 12 到 Android 17 的版本边界
 
 | 平台 | 可验证边界 |
 |---|---|
 | Android 12 / API 31 | FrameTimeline 开始提供 App/SF Expected 与 Actual timeline，作为这里分析的最低版本 |
-| Android 13 / API 33 | 公开 `Choreographer.FrameData` / FrameTimeline 查询能力；原生与自定义渲染仍要把令牌随目标帧传下去 |
+| Android 13 / API 33 | 公开 `Choreographer.FrameData` / FrameTimeline 查询能力；原生与自定义渲染仍要把 token 随目标帧传下去 |
 | Android 14 / API 34 | 公共 App Window→BLAST→SF→HWC 主线继续成立；独立 Surface 与混合页面仍需额外 buffer/fence 证据 |
 | Android 15 / API 35 | `SurfaceControl.Transaction.setFrameTimeline(vsyncId)` 等公开能力让自管 transaction 可表达帧 timeline；它不生成 buffer，也不消除 fence wait |
 | Android 16 / API 36 | 这里的 token、Expected/Actual 与 CLIENT/DEVICE 判读方法继续适用 |
 | Android 17 / API 37 | 源码锚点为 `Scheduler/FrameTimeline.{h,cpp}`、当前 BLAST、CompositionEngine 与 HWC `presentOrValidate`/validate 路径 |
 
-表中“源码位于某目录”只描述 Android 17 当前结构，不表示该文件到 Android 17 才出现。涉及更早版本时，应切换到对应标签核查函数位置和字段，不能用当前目录结构推断版本演进。
+表中“源码位于某目录”只描述 Android 17 当前结构，不表示该文件到 Android 17 才出现。涉及更早版本时，应切换到对应 tag 核查函数位置和字段，不能用当前目录结构推断版本演进。
 
 ## 源码核对清单
 
@@ -524,8 +524,8 @@ AChoreographer / engine tick
 FrameTimeline 的强项是把预测、应用 ready、SurfaceFlinger display work 与 actual present 放进同一套 token 关系中。可靠结论需要同时守住四个边界：
 
 - SurfaceFrame Actual end 是 queue 与 acquire fence 的较晚者，不是上屏时间；
-- DisplayFrame 的实际切片延伸到送显，不能当作 SF 主线程 CPU 时长；
-- `gpu_composition` 描述 SF 的 CLIENT 合成边界，不描述应用是否使用 GPU；
+- DisplayFrame Actual slice 延伸到 present，不能当作 SF 主线程 CPU 时长；
+- `gpu_composition` 描述 SF 的 CLIENT composition 边界，不描述应用是否使用 GPU；
 - 独立 Surface、Camera、视频、游戏与混合页面必须补充 layer、BufferQueue 和 fence。
 
 按 Producer → buffer → latch → composition → present → release 的顺序检查，才能把“帧晚了”缩小为可由源码与 trace 共同复现的问题。

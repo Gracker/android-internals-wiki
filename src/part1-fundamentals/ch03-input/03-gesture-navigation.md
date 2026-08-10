@@ -125,11 +125,11 @@ flowchart TD
     C -->|候选失败| D["App 继续处理原触摸流"]
     C -->|达到识别阈值| E{"BackAnimation 是否可用"}
     E -->|否| F["SystemUI 直接 pilferPointers"]
-    F --> G["原应用窗口收到 ACTION_CANCEL"]
+    F --> G["原 App 窗口收到 ACTION_CANCEL"]
     G --> H["提交时注入 KEYCODE_BACK"]
     E -->|是| I["WM Shell startBackNavigation"]
     I --> J["解析 BackNavigationInfo 与动画目标"]
-    J --> K["按需 pilfer、分发进度、绘制预览"]
+    J --> K["按需 pilfer、分发 progress、绘制预览"]
     K --> L{"松手时是否提交"}
     L -->|提交| M["onBackInvoked 或系统返回转场"]
     L -->|取消| N["onBackCancelled 与预览回撤"]
@@ -182,13 +182,13 @@ Android 把常规系统手势区域和强制系统手势区域分成两层：
 
 ### 传统返回手势的问题
 
-早期返回手势在松手前主要显示边缘箭头，用户看不到返回目标。系统通常到提交点才触发返回，App 也容易把返回处理集中在 `onBackPressed()` 或 `KEYCODE_BACK`。
+早期返回手势在松手前主要显示边缘箭头，用户看不到返回目标。系统通常到提交点才触发 back，App 也容易把返回处理集中在 `onBackPressed()` 或 `KEYCODE_BACK`。
 
 Predictive Back 增加预提交阶段。WM Shell 在手势中调用 `startBackNavigation()` 获得目标类型与 callback，根据进度驱动当前窗口、目标窗口或 App 自定义动画。App 必须把“跟随手势的视觉更新”和“提交后改变导航状态”分开。
 
 ### Predictive Back 的回调模型
 
-回调接口分为平台 API 和 AndroidX 兼容层：
+回调接口分为 platform API 和 AndroidX 兼容层：
 
 | 层级 | 接口 | 引入版本 | 可直接确认的方法 | 作用 |
 | --- | --- | --- | --- | --- |
@@ -261,7 +261,7 @@ adb pull /data/misc/perfetto-traces/back-gesture.perfetto-trace
 
 这套简写适合确认线程是否繁忙和动画是否掉帧，但不会自动给出完整的 pointer dispatch 明细。
 
-在 userdebug / eng 设备上，需要逐事件确认应用与 `edge-swipe` 的分发关系时，可使用 Android 17 的结构化输入数据源，并同时开启 FrameTimeline：
+在 userdebug / eng 设备上，需要逐事件确认 App 与 `edge-swipe` 的分发关系时，可使用 Android 17 的结构化输入数据源，并同时开启 FrameTimeline：
 
 ```protobuf
 buffers {
@@ -337,7 +337,7 @@ Trace Processor 的 `android.input` 模块提供 `android_motion_events` 和 `an
 
 ### 设置 exclusion rect 后，整块区域都会生效吗
 
-不保证。WMS 还会与窗口可触摸区域相交，并按左右侧各自的纵向高度预算裁剪。应检查获批区域，不能只看应用的请求列表。
+不保证。WMS 还会与窗口可触摸区域相交，并按左右侧各自的纵向高度预算裁剪。应检查获批区域，不能只看 App 的请求列表。
 
 ### `systemGestures()` 能代表所有可排除区域吗
 
