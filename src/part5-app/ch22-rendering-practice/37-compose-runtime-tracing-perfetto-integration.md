@@ -38,20 +38,11 @@ sources:
 
 # 22.37 Compose Runtime Tracing — runtime-tracing 与 Perfetto 组合阶段追踪
 
-## 要点
-
-- Android 17 / API 37 只规定设备侧平台实现，Compose Runtime 与 Compiler 仍按 Jetpack、Kotlin 版本独立发布。本章固定 Compose Runtime Tracing 1.11.4，不能从 `android-17.0.0_r1` 推断 Compose 行为。
-- Compose Compiler 生成 trace marker 和可读字符串；`runtime-tracing` 通过 AndroidX Startup 安装 `CompositionTracer`；`tracing-perfetto` 把 section 写入 Perfetto SDK data source；录制配置还要启用 `track_event`。四项缺一时，trace 都可能看不到 Composable。
-- 1.11.4 源码把 `CompositionTracer` 的 `info` 传给 `PerfettoSdkTrace.beginSection()`，没有把 `key`、`dirty1`、`dirty2` 写入 trace。Composition Tracing 能显示函数执行时序，不能直接报告 State 来源或参数失效原因。
-- `ENABLE_TRACING` receiver 受 `android.permission.DUMP` 保护，面向 shell 和工具；`PerfettoSdkTrace.isEnabled` 在当前实现中只会从 `false` 变为 `true`。它不是应用可随意开关的线上短时录制 API。
-- 性能回归优先使用 non-debuggable、profileable 的目标应用配合 Android Studio、Macrobenchmark 或受控的 terminal Perfetto。`tracing-perfetto-binary` 只进入 benchmark/internal 产物。
-- 慢帧监控与 Composition Tracing 回答不同问题：前者确认哪一帧没有按时呈现，后者显示该时间段执行过哪些 Composable。定位仍要结合 FrameTimeline、UI Thread、RenderThread、GPU 和调度证据。
-
 ## 1. 先分开平台版本与 Compose 版本
 
-本书的平台源码基线是 Android 17 / API 37 / `android-17.0.0_r1`，内核基线是 `android17-6.18-2026-06_r6`。这两个 tag 决定 Choreographer、FrameTimeline、进程调度和系统录制能力的解释口径，不决定 Compose Runtime 的实现。
+平台源码基线是 Android 17 / API 37 / `android-17.0.0_r1`，内核基线是 `android17-6.18-2026-06_r6`。这两个 tag 决定 Choreographer、FrameTimeline、进程调度和系统录制能力的解释口径，不决定 Compose Runtime 的实现。
 
-Jetpack Compose 随 AndroidX 发布。本文使用 Compose Runtime 1.11.4 的发布版本与源码快照 `854220f44ea8ea80fee824a6c5a045f39bede289`。分析工程时还要记录 Kotlin、Compose compiler plugin、Compose UI、Runtime、BOM 和 R8 配置。相同的 API 37 设备可以运行完全不同的 Compose 版本。
+Jetpack Compose 随 AndroidX 发布。这里使用 Compose Runtime 1.11.4 的发布版本与源码快照 `854220f44ea8ea80fee824a6c5a045f39bede289`。分析工程时还要记录 Kotlin、Compose compiler plugin、Compose UI、Runtime、BOM 和 R8 配置。相同的 API 37 设备可以运行完全不同的 Compose 版本。
 
 官方 Composition Tracing 文档保留以下最低条件：
 
@@ -61,7 +52,7 @@ Jetpack Compose 随 AndroidX 发布。本文使用 Compose Runtime 1.11.4 的发
 - API 30 或更新版本的设备或模拟器；
 - 应用包含 `androidx.compose.runtime:runtime-tracing`。
 
-本章面向 Android 13（API 33）至 Android 17（API 37），设备版本都满足 API 30 前提。这个前提来自 `tracing-perfetto` 当前 `enable()` 的 `@RequiresApi(Build.VERSION_CODES.R)`，不能改写成“Composition Tracing 从 Android 13 才可用”。
+讨论范围为 Android 13（API 33）至 Android 17（API 37），设备版本都满足 API 30 前提。这个前提来自 `tracing-perfetto` 当前 `enable()` 的 `@RequiresApi(Build.VERSION_CODES.R)`，不能改写成“Composition Tracing 从 Android 13 才可用”。
 
 ## 2. 一条 Composable slice 是怎样生成的
 
@@ -109,7 +100,7 @@ Compose Compiler 从 1.3.0 起会在生成代码中注入 tracing 调用和未�
 
 ### 3.1 目标应用依赖
 
-下面的配置用于把本文的 Compose Runtime Tracing 版本固定到 1.11.4。
+下面的配置把 Compose Runtime Tracing 版本固定到 1.11.4。
 
 ```kotlin
 dependencies {
@@ -245,7 +236,7 @@ adb shell am broadcast \
 - 大部分时间是 Runnable：检查 CPU 竞争、优先级和调度；
 - 大部分时间处于 Sleeping 或 blocked：检查锁、Binder、I/O 或等待条件。
 
-这也是内核基线与本文的联系：`android17-6.18-2026-06_r6` 决定标准调度机制的阅读基线，但具体设备还有 vendor kernel、cpuset、uclamp、频率和热策略。单个 Compose slice 不能证明内核调度异常。
+内核基线与这里的联系是：`android17-6.18-2026-06_r6` 决定标准调度机制的阅读基线，但具体设备还有 vendor kernel、cpuset、uclamp、频率和热策略。单个 Compose slice 不能证明内核调度异常。
 
 ### 7.2 inclusive duration 不能直接相加
 
@@ -438,4 +429,4 @@ Android 17 提供更完善的平台 profiling 能力，但平台版本不会改�
 - [Macrobenchmark instrumentation arguments](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-instrumentation-args)：`androidx.benchmark.fullTracing.enable` 的含义与默认值。
 - [ProfilingManager](https://developer.android.com/reference/android/os/ProfilingManager) 与 [profiling method comparison](https://developer.android.com/topic/performance/tracing/choose-right-method)：API 35—37 的生产 profile、限流、隐私删减和 manual trace 边界。
 - [`Choreographer.java`（`android-17.0.0_r1`）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java)：Android 17 应用帧与 FrameTimeline 平台入口。
-- [Android common kernel（`android17-6.18-2026-06_r6`）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)：全书内核基线；本章不依赖 Compose 专属内核 API。
+- [Android common kernel（`android17-6.18-2026-06_r6`）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)：内核基线；Compose Runtime Tracing 不依赖专属内核 API。

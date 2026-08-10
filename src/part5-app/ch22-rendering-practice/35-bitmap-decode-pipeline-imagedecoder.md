@@ -39,26 +39,6 @@ gap_source: "章节深挖"
 
 # 22.35 Bitmap 解码管线性能与 ImageDecoder 实战
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 ImageDecoder API 架构与 BitmapFactory 对比
-### 🔹 硬件位图 (Hardware Bitmap) 解码路径与 GPU 上传
-### 🔹 图片格式解码性能：PNG / WebP / HEIF / AVIF 对比
-### 🔹 解码线程调度：专用线程 vs 线程池 vs 协程
-### 🔹 内存映射解码与 mmap 在图片加载中的应用
-### 🔹 inBitmap 复用对解码性能与内存的双重收益
-### 🔹 Bitmap 内存模型：Android 17 下的 ashmem 与 dma_buf
-### 🔹 解码性能指标采集：FrameMetrics + Perfetto 双轨方案
-
-## 扩展
-
-### 🔸 九宫格/瀑布流场景的解码调度策略
-### 🔸 Glide / Coil / Picasso 解码管线对比
-### 🔸 Android 17 ImageDecoder 新增 API 与行为变更
-
-<!-- outline-end -->
-
 > **源码锚点**
 >
 > - 平台：Android 17 / API 37 / `android-17.0.0_r1`
@@ -66,9 +46,9 @@ gap_source: "章节深挖"
 > - Java API：`ImageDecoder.java`、`BitmapFactory.java`、`Bitmap.java`
 > - Native 实现：`frameworks/base/libs/hwui/jni/ImageDecoder.cpp`、`BitmapFactory.cpp`
 >
-> 本章所说的“Android 17 行为”以这些源码为准。编解码器实现、图形内存分配和内存统计还会受 SoC、厂商 gralloc 与驱动影响，因此设备实测仍是性能结论的一部分。
+> 这里的“Android 17 行为”以这些源码为准。编解码器实现、图形内存分配和内存统计还会受 SoC、厂商 gralloc 与驱动影响，因此设备实测仍是性能结论的一部分。
 
-本章讨论压缩图片数据如何变成可绘制像素，以及这些像素如何进入 Android 17 的 HWUI 渲染路径。图片请求、缓存与框架选型见 [22.6 图片加载](./06-image-loading.md)，Hardware Bitmap 的绘制侧行为见 [22.17 Hardware Bitmap 与 RenderNode](./17-hardware-bitmap-rendernode.md)，Bitmap 内存治理见 [23.2 Bitmap 优化](../ch23-memory-practice/02-bitmap-optimization.md)。
+讨论范围是压缩图片数据如何变成可绘制像素，以及这些像素如何进入 Android 17 的 HWUI 渲染路径。图片请求、缓存与框架选型见 [22.6 图片加载](./06-image-loading.md)，Hardware Bitmap 的绘制侧行为见 [22.17 Hardware Bitmap 与 RenderNode](./17-hardware-bitmap-rendernode.md)，Bitmap 内存治理见 [23.2 Bitmap 优化](../ch23-memory-practice/02-bitmap-optimization.md)。
 
 ## 1. 先建立正确的解码模型
 
@@ -243,7 +223,7 @@ Hardware Bitmap 是 App 绘制命令使用的资源，不会因为自身存在�
 
 `UI Thread 记录 DisplayList` → `RenderThread/HWUI` → `Skia GPU` → `App Window buffer` → `BLAST` → `SurfaceFlinger` → `HWC`
 
-这个边界与长期维护的 `rendering_pipelines/S02_aosp_standard_type.md`、`S07_software_offscreen_type.md` 一致。普通软件 Bitmap 可能在 RenderThread 侧产生上传；Hardware Bitmap 已具备 GPU 可采样的图形存储。二者最终都由宿主窗口提交，除非应用另行把 `HardwareBuffer` 交给独立 `SurfaceControl`。
+普通软件 Bitmap 可能在 RenderThread 侧产生上传；Hardware Bitmap 已具备 GPU 可采样的图形存储。二者最终都由宿主窗口提交，除非应用另行把 `HardwareBuffer` 交给独立 `SurfaceControl`。
 
 ## 5. PNG、JPEG、WebP、HEIF 与 AVIF：格式没有固定性能排名
 
@@ -442,7 +422,7 @@ inline fun <T> tracedImageStage(
 
 图片库的默认 decoder、Hardware Bitmap 条件、线程配置和缓存策略会随版本改变。不能用“Glide 永远走 ImageDecoder”“Coil 固定使用某个 dispatcher”或“Picasso 已停止维护”这类未经当前版本源码确认的结论选型。
 
-| 框架 | 官方资料可确认的能力 | 与本章最相关的核查点 |
+| 框架 | 官方资料可确认的能力 | 主要核查点 |
 | --- | --- | --- |
 | Glide 4 | 请求生命周期、内存/磁盘缓存、`BitmapPool`、可配置 Hardware Bitmap | 当前版本是否启用 ImageDecoder；该路径不能使用 `inBitmap` 作为解码目标 |
 | Coil 3 | Interceptor、Mapper、Keyer、Fetcher、Decoder 组件链，memory/disk cache | 注册了哪个 Decoder、`allowHardware` 与变换是否要求软件像素 |
@@ -526,4 +506,4 @@ Hardware Bitmap 解决的是最终图形存储与绘制准备问题，不等同�
 - [Managing Bitmap Memory](https://developer.android.com/topic/performance/graphics/manage-memory)：像素存储位置的版本历史。
 - [BitmapRegionDecoder API](https://developer.android.com/reference/android/graphics/BitmapRegionDecoder)：当前区域解码格式与入口。
 - [Glide BitmapPool 配置](https://bumptech.github.io/glide/doc/configuration.html)、[Coil image pipeline](https://coil-kt.github.io/coil/image_pipeline/)、[Picasso 官方站点](https://square.github.io/picasso/)：图片库能力边界。
-- [Android common kernel（`android17-6.18-2026-06_r6`）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)：全书内核基线及 dma-buf/dma-fence 语义来源。
+- [Android common kernel（`android17-6.18-2026-06_r6`）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)：内核基线及 dma-buf/dma-fence 语义来源。

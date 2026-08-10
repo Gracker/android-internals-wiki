@@ -45,71 +45,6 @@ sources:
 
 # 22.36 SharedTransitionLayout — Compose 共享元素过渡动画性能优化
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 锚点 1：SharedTransitionLayout API 架构与核心机制
-- SharedTransitionLayout 容器的作用：为子 Composable 提供共享过渡作用域
-- SharedTransitionScope 与 AnimatedContent 的协作关系
-- Modifier.sharedElement / Modifier.sharedBounds 的区别与适用场景
-- 与传统 View 系统_shared Element Transition 的架构对比
-
-### 🔹 锚点 2：共享元素的渲染管线开销分析
-- LookaheadScope 在共享过渡中的角色：预测性布局测量
-- 双 Pass 渲染机制：预测 Pass + 实际渲染 Pass 的 GPU 开销
-- 共享元素位图缓存策略与 Layer 合成路径
-- 过渡帧的 SurfaceFlinger 合成开销
-
-### 🔹 锚点 3：sharedElement vs sharedBounds 性能边界
-- sharedElement：适用于尺寸一致的元素切换，位图直接复用
-- sharedBounds：适用于尺寸不同的容器过渡，需实时变换 + 裁剪
-- 两种模式下的 Compose 重组范围差异
-- 选型对帧率和内存的影响
-
-### 🔹 锚点 4：过渡动画期间的性能风险
-- 重组风暴：过渡期间不必要的状态读取导致的级联重组
-- 图层过度合成：过度使用 graphicsLayer 修饰符的合成层爆炸
-- 共享元素过多时的 GPU 过绘制风险
-- 过渡与列表滑动并发的优先级竞争
-
-### 🔹 锚点 5：Perfetto / Layout Inspector 诊断过渡性能
-- 使用 Perfetto Track 观察 SharedTransition 帧级开销
-- Layout Inspector 的 Compose 重组高亮在过渡调试中的应用
-- Choreographer callback 时序分析：预测 Pass 耗时定位
-- GPU 渲染时间分析：过渡帧的 GPU 时间占比
-
-### 🔹 锚点 6：性能优化最佳实践
-- 过渡元素数量控制：建议 ≤5 个活跃共享元素
-- 使用 key() 精确控制重组边界
-- 过渡动画参数调优：spring vs tween 的性能权衡
-- 预加载策略：在过渡启动前预热目标 Composable
-- 内存优化：过渡结束后的 Layer 缓存清理
-
-### 🔹 锚点 7：与 Predictive Back 的协作性能
-- SharedTransitionLayout 在 Predictive Back 动画中的角色
-- 手势驱动过渡 vs 编程驱动过渡的性能差异
-- BackHandler 与 SharedTransitionLayout 的时序协调
-- Android 17 Predictive Back 与共享过渡的帧同步机制
-
-## 扩展
-
-### 🔸 扩展点 1：SharedTransitionLayout 在 LazyList 中的性能挑战
-- LazyList item 回收与共享元素过渡的冲突
-- key() 稳定性对过渡动画的影响
-- 大量 item 场景下的过渡优化策略
-
-### 🔸 扩展点 2：自定义 SharedTransitionScope 的进阶用法
-- 自定义过渡路径：非线性变换与变形效果
-- 与 AnimatedVisibility 的组合过渡
-- 多步骤链式过渡的性能编排
-
-### 🔸 扩展点 3：View 系统迁移到 Compose 共享过渡
-- Fragment → Compose Navigation 的过渡迁移
-- Activity 共享元素过渡 → SharedTransitionLayout 的适配
-- 混合 View/Compose 场景下的过渡边界
-
-<!-- outline-end -->
-
 > **源码锚点**
 >
 > - 平台：Android 17 / API 37 / `android-17.0.0_r1`
@@ -119,15 +54,15 @@ sources:
 >
 > `SharedTransitionLayout` 位于 Compose Animation 的 `commonMain`，匹配、Lookahead、图形层和 overlay 都由 AndroidX 实现。Android Framework 与内核没有名为 SharedTransitionLayout 的专用渲染路径；Android 17 负责它进入 HWUI 后的标准窗口绘制、BufferQueue、SurfaceFlinger 与显示流程。
 
-本章关注共享元素过渡对组合、布局、绘制和 GPU 的影响。一般 Compose 性能方法见 [22.3 Compose 性能](./03-compose-performance.md)，普通动画成本见 [22.5 动画性能](./05-animation-performance.md) 与 [22.21 Compose 动画性能](./21-compose-animation-performance.md)。
+这里关注共享元素过渡对组合、布局、绘制和 GPU 的影响。一般 Compose 性能方法见 [22.3 Compose 性能](./03-compose-performance.md)，普通动画成本见 [22.5 动画性能](./05-animation-performance.md) 与 [22.21 Compose 动画性能](./21-compose-animation-performance.md)。
 
-## 1. 先修正提纲中的旧结论
+## 1. 先校正常见误差
 
 ### 1.1 API 版本由 Compose 依赖决定
 
 Shared Transition API 在 Compose Animation 1.7 以实验 API 形式发布，到 1.10 才稳定。当前锚点 1.11.4 已经是稳定 API，并增加了共享元素可视化调试等能力。
 
-这套 API 没有 Android 15 / API 35 的平台门槛。只要应用使用的 Compose 版本及其 Android 最低版本满足要求，就能使用共享元素。Android 15 在本章中的特殊意义主要来自 Predictive Back 默认启用，不是 SharedTransitionLayout 的引入版本。
+这套 API 没有 Android 15 / API 35 的平台门槛。只要应用使用的 Compose 版本及其 Android 最低版本满足要求，就能使用共享元素。Android 15 在这里的特殊意义主要来自 Predictive Back 默认启用，不是 SharedTransitionLayout 的引入版本。
 
 ### 1.2 Lookahead pass 不会自动生成第二次 GPU 渲染
 
@@ -147,7 +82,7 @@ SharedTransition overlay 是 `SharedTransitionScope` 根节点 draw pass 内的�
 
 共享元素可以增加应用侧的图形层记录、裁剪、缩放、透明混合和过绘制，进而推迟窗口 buffer 完成时间；它不会因为进入 Compose overlay 就直接增加 HWC 要合成的窗口 layer 数量。
 
-这个判断与全书建立的生产者/结果位置模型一致：App 内部的 GPU 图形层或离屏中间结果仍由宿主窗口消费，只有独立提交给 `SurfaceControl` 的 buffer 才会自然对应独立 SurfaceFlinger layer。BufferQueue 与 SurfaceFlinger 的生产者/消费者模型见 [2.32 GraphicBuffer 内存池化与 BufferQueue Slot 复用机制](../../part1-fundamentals/ch02-rendering/32-graphic-buffer-memory-pool.md)。
+按生产者/结果位置模型，App 内部的 GPU 图形层或离屏中间结果仍由宿主窗口消费，只有独立提交给 `SurfaceControl` 的 buffer 才会自然对应独立 SurfaceFlinger layer。BufferQueue 与 SurfaceFlinger 的生产者/消费者模型见 [2.32 GraphicBuffer 内存池化与 BufferQueue Slot 复用机制](../../part1-fundamentals/ch02-rendering/32-graphic-buffer-memory-pool.md)。
 
 ### 1.5 没有“最多五个元素”的平台阈值
 
@@ -527,4 +462,4 @@ Android 17 没有 SharedTransitionLayout 专属管线。严谨的分析方法是
 - [Predictive Back for Compose](https://developer.android.com/develop/ui/compose/system/predictive-back)：系统行为、Navigation 与自定义 progress。
 - [`Choreographer.java`（`android-17.0.0_r1`）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java)：Android 17 应用帧起点与 FrameTimeline。
 - [`ViewRootImpl.java`（`android-17.0.0_r1`）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)：Compose 宿主窗口进入 HWUI 的平台入口。
-- [Android common kernel（`android17-6.18-2026-06_r6`）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)：全书内核基线；本节不直接依赖内核 API。
+- [Android common kernel（`android17-6.18-2026-06_r6`）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)：内核基线；SharedTransitionLayout 不直接依赖内核 API。

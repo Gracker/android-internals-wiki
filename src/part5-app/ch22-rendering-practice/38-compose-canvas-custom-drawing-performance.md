@@ -63,65 +63,9 @@ sources:
 
 # 22.38 Compose Canvas 自定义绘制性能实战
 
-<!-- outline-start -->
-## 要点
+## 1. 范围与版本锚点
 
-### 🔹 Compose Canvas 绘制模型
-- `Canvas(drawScope)` 的底层实现：Skia direct binding vs DisplayList
-- `drawBehind` / `drawWithContent` / `drawIntoCanvas` 的语义差异
-- DrawScope 与 Paint 的对象复用策略
-- Compose 绘制 vs View `onDraw(Canvas)` 的性能等价性分析
-
-### 🔹 GraphicsLayer 与硬件加速
-- `Modifier.graphicsLayer` 的 RenderNode 映射
-- `GraphicsLayer` 的 clip / transform / alpha 合成路径
-- 硬件层缓存（Hardware Layer Caching）的启用条件
-- 多层 graphicsLayer 嵌套的性能开销
-
-### 🔹 绘制性能关键模式
-- 常见性能陷阱：每帧创建 Paint 对象、频繁 Path 分配
-- `rememberObject` / `remember { Paint() }` 缓存绘制资源
-- 复杂图形的离屏缓冲（saveLayer）与 Compose 等价方案
-- 大面积渐变 / 模糊效果的帧时间影响
-
-### 🔹 自定义绘制与重组的关系
-- `drawBehind` 不触发重组 — 绘制阶段与组合阶段的解耦
-- 状态读取导致绘制层 invalidate 的机制
-- `drawWithContent` 中读取 state 的正确模式
-- 避免在绘制阶段进行昂贵计算
-
-### 🔹 实战场景与优化策略
-- 粒子效果 / 动画背景：Canvas draw vs SurfaceView 取舍
-- 自定义图表（折线图、柱状图）：缓存策略与增量绘制
-- 动态壁纸 / 全屏着色器：RuntimeShader 与 Canvas 的协作
-- 墨迹书写 / 手势绘制：Path 增量追加与 Surface 性能
-
-### 🔹 与性能工具链配合
-- `androidx.tracing` 标记 Compose 绘制阶段
-- Perfetto 中 `FrameTimeslice` 识别绘制阶段耗时
-- Layout Inspector 的 Compose Recomposition Counts
-- Profile Installer 确保绘制代码被 AOT 编译
-
-### 🔹 Android 17 相关变化
-- Skia GPU 线程模型变更对 Compose Canvas 的影响
-- Vulkan 后端下 Canvas API 的行为差异
-- Hardware Bitmap 与 Canvas 绘制的互操作
-
-## 扩展
-
-### 🔸 Vulkan 后端对 Canvas 绘制路径的影响
-- 详见 2.15 节（Android 17 GPU 图形调试与性能优化工具链）
-- Vulkan vs GLES 下 DrawOp 提交延迟差异
-
-### 🔸 Compose Canvas 在游戏化 UI 中的边界
-- Compose Canvas 与 SurfaceView/TextureView 的混合方案
-- 独立渲染线程的可行性评估
-
-<!-- outline-end -->
-
-## 1. 本章范围与版本锚点
-
-本章讨论 Android 上的 Compose Canvas。平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`，内核固定为 `android17-6.18-2026-06_r6`；Compose 采用独立发布的 UI 1.11.4，源码快照为 `854220f44ea8ea80fee824a6c5a045f39bede289`。
+讨论对象是 Android 上的 Compose Canvas。平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`，内核固定为 `android17-6.18-2026-06_r6`；Compose 采用独立发布的 UI 1.11.4，源码快照为 `854220f44ea8ea80fee824a6c5a045f39bede289`。
 
 这三个版本必须分开记录：
 
@@ -131,11 +75,11 @@ sources:
 
 同一台 API 37 设备可以运行多个 Compose 版本。Compose 1.11.4 的行为不能从 `android-17.0.0_r1` 推导。
 
-### 1.1 先修正提纲中的旧结论
+### 1.1 先校正常见误差
 
-提纲保留了早期调查方向，正文采用以下源码结论。
+相关说法按源码收窄如下。
 
-| 提纲说法 | Android 17 / Compose 1.11.4 的准确边界 |
+| 常见说法 | Android 17 / Compose 1.11.4 的准确边界 |
 | --- | --- |
 | Skia direct binding 与 DisplayList 二选一 | 标准 `AndroidComposeView` 接收 framework Canvas；硬件窗口通常把绘制命令录入 RenderNode/display list，RenderThread 随后执行。绘制到 `ImageBitmap` 等软件目标时才是另一条即时栅格路径 |
 | 每帧创建 Paint 是 Compose 常见问题 | `CanvasDrawScope` 已延迟创建并复用内部 fill/stroke `Paint`；手写 `drawIntoCanvas`、Path、Brush、Shader、文本测量等对象仍需管理 |
@@ -643,7 +587,7 @@ Compose 1.11.4 的 `AndroidComposeView.dispatchDraw()` 当前带有 `AndroidOwne
 5. GPU 轨道、频率和 render stage 判断 shader、fill、texture 与离屏 pass；
 6. App 按时完成后继续检查 SurfaceFlinger actual timeline 与 present。
 
-提纲中的 `FrameTimeslice` 不应出现在查询或监控协议中。内部 slice 名会随 Compose/HWUI 版本变化，录制后先确认当前 trace。
+不存在的 `FrameTimeslice` 不应出现在查询或监控协议中。内部 slice 名会随 Compose/HWUI 版本变化，录制后先确认当前 trace。
 
 ### 11.3 自定义 trace 只测 draw recording
 
@@ -692,7 +636,7 @@ Canvas/RenderNode/HWUI 主路径延续。设备刷新率、frame-rate hint、GPU
 
 ### Android 17 / API 37
 
-本文固定 tag 中：
+当前固定 tag 中：
 
 - `AndroidComposeView` 仍在 `dispatchDraw()` 接收 framework Canvas；
 - framework 硬件绘制仍使用 RecordingCanvas/RenderNode/display list；
@@ -712,7 +656,7 @@ Canvas/RenderNode/HWUI 主路径延续。设备刷新率、frame-rate hint、GPU
 - 简单绘制是否避免无意义的 `drawWithCache`；
 - Path、Brush、Shader、Stroke 和文本测量是否按 size/state 正确缓存；
 - 高频 state 是否在 draw block 读取，避免每帧重建 cache；
-- 是否误以为只触发 drawing 就会增量保存上一帧像素；
+- 是否错误地把 drawing restart 理解为增量保存上一帧像素；
 - 是否知道 DrawScope 已复用内部 fill/stroke Paint；
 - native Paint、Drawable 和 Path 是否在 draw 外创建；
 - `graphicsLayer` 是否用于真实的隔离、transform 或 effect；
@@ -765,4 +709,4 @@ Android 17 没有 Compose Canvas 专属显示管线。可靠做法是固定 Comp
 - [Baseline Profiles overview](https://developer.android.com/topic/performance/baselineprofiles/overview)：ART AOT 覆盖范围与 Profile Installer 边界。
 - [`Bitmap.Config.HARDWARE`](https://developer.android.com/reference/android/graphics/Bitmap.Config#HARDWARE)：Hardware Bitmap 的不可变与只读显示语义。
 - [`CanvasFrontBufferedRenderer`](https://developer.android.com/reference/androidx/graphics/lowlatency/CanvasFrontBufferedRenderer)：SurfaceView front/multi-buffer 低延迟绘制路径。
-- [Android common kernel（`android17-6.18-2026-06_r6`）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)：全书内核基线；Compose Canvas 没有专属 kernel API。
+- [Android common kernel（`android17-6.18-2026-06_r6`）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)：内核基线；Compose Canvas 没有专属 kernel API。

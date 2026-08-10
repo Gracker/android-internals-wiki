@@ -31,50 +31,6 @@ sources:
 
 # 22.41 Compose ↔ View 互操作性能实战
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 AndroidView 的性能开销模型
-- AndroidView 包装 View 的 inflate / measure / layout / draw 开销
-- Compose 重组合触发 View 重新布局的条件（invalidation 传播链）
-- View 的状态变化如何反向通知 Compose（避免循环重组）
-
-### 🔹 ComposeView 嵌入传统 View 树的开销
-- ComposeView 在 RecyclerView 中的复用语义与 ViewTreeLifecycleOwner
-- 多个 ComposeView 实例的 Lifecycle/SaveableStateRegistry 内存开销
-- Compose UI 1.11 的 ComposeViewContext 共享边界
-
-### 🔹 RecyclerView + Compose 混合滚动性能
-- RecyclerView Item 中嵌入 AndroidView 的帧预算分析
-- LazyColumn 与 RecyclerView 嵌套滚动的手势冲突与性能退化
-- 迁移策略：分批替换 vs 全量替换的性能对比
-
-### 🔹 互操作场景下的 Inspector / Layout Inspector 工具链
-- Layout Inspector 对 Compose ↔ View 混合树的显示差异
-- Perfetto 中 Compose 互操作 trace 的识别方法
-- Compose Compiler Metrics 对 AndroidView 调用点的标记
-
-### 🔹 Compose UI 1.11 互操作性能改进边界
-- PausableComposition 对 Lazy/Subcompose 预取调度的影响
-- Modifier.Node 架构对 Compose modifier 一侧成本的优化
-- Compose Runtime Tracing 对互操作调用栈的端到端追踪
-
-### 🔹 典型迁移阶段与性能基线
-- 阶段 1: 单页面 Compose（ComposeView 承载）的性能基线
-- 阶段 2: Fragment 内 Compose + 传统 View 混合的性能特征
-- 阶段 3: 全 Compose 导航栈的性能回归监控
-
-## 扩展
-
-### 🔸 互操作场景下的帧率适配
-- AndroidView 内 SurfaceView/TextureView 与 Compose 帧率不同步的问题
-- Adaptive Refresh Rate 在混合渲染树中的行为边界
-
-### 🔸 Compose 测试中 View 依赖的 Mock 策略
-- AndroidView 在测试中的替换与Espresso/ComposeTestRule 混用
-
-<!-- outline-end -->
-
 Compose 与 View 互操作有两个方向：
 
 - `AndroidView` 把一个传统 `View` 接入 Compose 的布局、绘制、输入与生命周期；
@@ -82,11 +38,11 @@ Compose 与 View 互操作有两个方向：
 
 两种方向都要付桥接成本，但成本来源不同。`AndroidView` 关注 View 创建、`measure/layout/draw`、事件转发和复用；`ComposeView` 关注 Composition 根、View owner、状态保存与池化容器中的处置时机。只用“混合页面更慢”概括，会漏掉可复用实例、无效 setter、嵌套滚动和独立 Surface 等差异。
 
-## 本章基线与提纲校正
+## 版本基线与术语校正
 
-本文固定以下版本：
+版本基线如下：
 
-| 层级 | 基线 | 本章使用范围 |
+| 层级 | 基线 | 适用范围 |
 | --- | --- | --- |
 | Android platform | Android 17 / API 37 / `android-17.0.0_r1` | ViewRoot、HWUI、Surface、帧率投票与显示路径 |
 | Jetpack Compose | Compose BOM 2026.06.01；UI、Runtime、Foundation 1.11.4 | `AndroidView`、`ComposeView`、复用、追踪与测试 |
@@ -97,15 +53,15 @@ Compose 独立于 Android platform 发布。`android-17.0.0_r1` 能固定 `ViewR
 
 Google Maven 中的 Compose BOM 2026.06.01 把 UI、Runtime 和 Foundation 都约束为 1.11.4。BOM 只负责 AndroidX library 版本，Kotlin 2.4.10 与 Compose compiler plugin 2.4.10 仍按 Kotlin 工具链配置。
 
-提纲中的三项说法需要收窄：
+三项常见说法需要收窄：
 
-| 提纲说法 | Compose UI 1.11.4 中的边界 |
+| 常见说法 | Compose UI 1.11.4 中的边界 |
 | --- | --- |
 | `ViewTreeHostingRegistry` 优化 | 公开类型名是实验性的 `ComposeViewContext`；内部另有 `ViewTreeHostDefaultProvider`。当前源码没有名为 `ViewTreeHostingRegistry` 的通用优化 API |
 | `PausableComposition` 让 `AndroidView` 区域变快 | 可暂停的预组合能帮助 Lazy/Subcompose 预取分批执行 Composition；View 的 `factory` 一旦调用，创建、测量和绘制成本仍由 View 负责 |
 | `Modifier.Node` 优化 View 事件链 | Node 架构能减少 Compose modifier 一侧的分配与更新成本；`MotionEvent` 仍要跨过 `pointerInteropFilter` 并进入 View 的 dispatch 链 |
 
-因此，本章会分别判断 Compose 侧成本、View 侧成本和显示系统成本，不从某个 Compose 版本特性直接推导整个混合页面提速。
+性能分析需要分别判断 Compose 侧成本、View 侧成本和显示系统成本，不能从某个 Compose 版本特性直接推导整个混合页面提速。
 
 ## 一、两种互操作方向经过哪些对象
 
@@ -120,7 +76,7 @@ Compose UI 1.11.4 的 `AndroidView` 会创建 `ViewFactoryHolder`，其父类 `A
 5. Compose draw modifier 经 `AndroidViewsHandler` 调用 holder 的 `draw()`；
 6. 指针、nested scroll、semantics、insets 与 bring-into-view 经过各自的互操作桥。
 
-这不是把 View 转成 composable。View 的测量、布局、绘制和事件模型仍然存在，只是外层调度由 Compose `LayoutNode` 接管。
+View 并没有转成 composable。它的测量、布局、绘制和事件模型仍然存在，外层调度则由 Compose `LayoutNode` 接管。
 
 ### `ComposeView`：一个 ViewGroup 承载一个 Compose 根
 
