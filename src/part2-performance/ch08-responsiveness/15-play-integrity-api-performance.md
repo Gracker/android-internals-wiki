@@ -33,7 +33,7 @@ Play Integrity API 给业务服务端提供应用、账号授权、设备环境�
 
 它也会给交互增加等待：客户端要向 Google Play 申请加密 token，业务服务端还要把 token 交给 Google 解密和验证。优化目标应当是把可提前完成的 provider 准备移出交互路径，并对剩余阶段分别计时。用一个未经测量的“Play Integrity 总耗时”解释慢请求，很难找到该改客户端、网络还是服务端。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台上限。Play Integrity 的判定实现位于闭源的 Google Play 组件和 Google 服务端，AOSP 没有 verdict 生成源码；文末列出的 AOSP 与 kernel 锚点只用于解释 IPC、调度和网络承载边界。
+平台上限为 Android 17 / API 37 / `android-17.0.0_r1`。Play Integrity 的判定实现位于闭源的 Google Play 组件和 Google 服务端，AOSP 没有 verdict 生成源码；文末列出的 AOSP 与 kernel 锚点只用于解释 IPC、调度和网络承载边界。
 
 ## 1. 先把接口定位说清
 
@@ -64,7 +64,7 @@ Play Integrity 与 Key Attestation 解决的问题也不同：
 | `UNRECOGNIZED_VERSION` | 证书或包名与 Google Play 记录不匹配 |
 | `UNEVALUATED` | 应用完整性没有得到评估 |
 
-旧稿中的 `PLAY_RETAIL` 不是 `appLicensingVerdict` 的有效值。应用识别与账号授权是两个字段；同一个请求可能在其中一个字段得到明确结果，另一个字段仍为 `UNEVALUATED`。
+`PLAY_RETAIL` 不是 `appLicensingVerdict` 的有效值。应用识别与账号授权是两个字段；同一个请求可能在其中一个字段得到明确结果，另一个字段仍为 `UNEVALUATED`。
 
 ### 1.2 设备标签不能简化成“root / 未 root”
 
@@ -417,7 +417,7 @@ async slice 能跨线程覆盖 `Task` 的等待区间。它显示的是从应用
 
 这些锚点能帮助解释“应用线程为何在同步 IPC 上等待”或“系统负载为何放大 IPC 尾延迟”。它们不能证明某次 Integrity 请求一定发生两次 Binder 事务，也不能说明 Google Play 是否访问网络。遇到 Android 17 设备上的异常，应把应用 trace、Play Integrity 错误码、网络记录和服务端 decode trace 放在同一个 request ID 下分析。
 
-## 10. Review 清单
+## 10. 检查清单
 
 - 使用 Standard API 时，代码是否调用 `createStandard()`，并分离 prepare 与按动作申请 token？
 - provider 是否在进程内集中管理，失效后能重新 prepare，且没有每次操作都 prepare？
