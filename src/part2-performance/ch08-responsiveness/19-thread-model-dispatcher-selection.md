@@ -27,7 +27,7 @@ gap_source: "素材驱动"
 
 协程不会消除线程。协程在 suspend 时保存 continuation，恢复时由 `CoroutineDispatcher` 决定在哪个线程执行；进入内核调度后，Linux 只认识线程、调度策略、nice、cgroup、uclamp 和 CPU affinity。
 
-选型时不要从“协程、Executor、HandlerThread 谁更快”开始。先确认任务会不会阻塞线程、能否并行、是否需要 Looper、生命周期由谁持有，以及下游资源能承受多少并发。本章的平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，协程库按 `kotlinx.coroutines` 1.11.0 校验，kernel 按 `android17-6.18-2026-06_r6` 校验。
+选型时不要从“协程、Executor、HandlerThread 谁更快”开始。先确认任务会不会阻塞线程、能否并行、是否需要 Looper、生命周期由谁持有，以及下游资源能承受多少并发。平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，协程库按 `kotlinx.coroutines` 1.11.0 校验，kernel 按 `android17-6.18-2026-06_r6` 校验。
 
 ## 1. 一张选型表
 
@@ -438,7 +438,7 @@ class PeriodicHintWorker(
 
 线程 stack 的 virtual reservation、resident pages 和 runtime 默认值会随设备与线程创建方式变化，不能用“每线程固定 1 MiB”估算 RSS。应在目标 ABI 和设备上读取 maps/meminfo，并同时考虑 ThreadLocal、队列和任务对象。
 
-## 11. Review 清单
+## 11. 检查清单
 
 - 任务会阻塞线程，还是在 suspend 后释放线程？
 - CPU、blocking I/O、主线程限定和 Looper 任务是否分开？

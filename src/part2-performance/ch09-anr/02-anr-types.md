@@ -82,21 +82,6 @@ updated_date: "2026-07-09"
 ---
 # ANR 类型与触发条件
 
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Input Dispatching Timeout：默认 5 秒，窗口连接或焦点窗口未按时就绪
-- 🔹 BroadcastReceiver Timeout：Android 13 及以下 10 秒 / 60 秒；Android 14+ 诊断区间为 10–20 秒 / 60–120 秒
-- 🔹 Execute Service Timeout：高优先级执行 20 秒，后台执行 200 秒
-- 🔹 ContentProvider：10 秒 publish 保护会移除启动进程；Provider ANR 由客户端显式探测触发
-- 🔹 从 `Reason`、超时结束信号和源码入口识别 ANR 类型
-
-### 扩展（可选深入）
-
-- 🔸 前台服务晋升、`shortService`、限时 FGS 的不同后果
-- 🔸 Android 14+ `JobService` 回调 ANR 与 job 运行超时的边界
-
 ## 先认超时契约，再看线程栈
 
 ANR 报告中的 `Reason` 描述了系统等待哪一个完成信号。Input 等输入连接确认，Broadcast 等 receiver 完成，execute-service 等服务生命周期调用结束。它们可能留下相似的主线程栈，触发它们的计时器和责任边界却不同。
@@ -437,7 +422,7 @@ Perfetto 用来回答“超时窗口内线程和 CPU 在做什么”，不能单
 - **Android 12 / API 31**：后台启动前台服务受到更严格限制，晋升超时的 `ForegroundServiceDidNotStartInTimeException` 成为常见诊断信号。
 - **Android 14 / API 34**：广播诊断文档加入 CPU starvation 延长窗口；引入 `shortService` 及其超时回调；targetSdk 34+ 的慢 `JobService` 回调进入显式 ANR。
 - **Android 15 / API 35**：targetSdk 35+ 的 `dataSync`、`mediaProcessing` 采用后台累计 6 小时限制，并通过 `Service.onTimeout(int, int)` 给出停止机会；未停止的结果是远程服务异常崩溃。
-- **Android 17 / API 37**：本文源码基线为 `android-17.0.0_r1`。Broadcast 使用 `BroadcastQueueImpl`、`BroadcastAnrTimer` 和通用 `AnrTimer`；平台给出 `AnrTypes` 分类，并可为部分 ANR timer 接入预警回调。各 detector 的完成信号仍需逐类判断。
+- **Android 17 / API 37**：源码基线为 `android-17.0.0_r1`。Broadcast 使用 `BroadcastQueueImpl`、`BroadcastAnrTimer` 和通用 `AnrTimer`；平台给出 `AnrTypes` 分类，并可为部分 ANR timer 接入预警回调。各 detector 的完成信号仍需逐类判断。
 
 版本号只说明平台能力。DeviceConfig、compat change、targetSdk、广播 flags 和厂商修改都会影响某台设备的行为，分析报告应同时记录 build fingerprint、API level、targetSdk 和原始超时值。
 

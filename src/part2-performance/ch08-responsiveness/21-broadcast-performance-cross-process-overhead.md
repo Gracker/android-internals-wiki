@@ -35,14 +35,14 @@ Broadcast 适合把一条事件通知给数量未知、可能分属不同进程�
 
 因此，Broadcast 没有稳定的低延迟承诺。一次发送很快返回，只能说明 AMS 已接受请求；接收者何时运行还取决于目标进程、cached 策略、冷启动、队列槽、ordered 依赖和应用线程负载。需要同步结果、背压或稳定尾延迟的协议，应使用 bound service/AIDL 等明确的点对点接口。
 
-本章聚焦应用工程中的四个问题：
+应用工程需要关注四个问题：
 
 - 怎样区分发送入队、系统排队、进程启动和 `onReceive()` 执行；
 - normal、ordered、manifest 与 context-registered receiver 的完成语义；
 - `goAsync()`、cached app、delivery group 和 sticky broadcast 的边界；
 - 怎样选择替代 IPC，并用 Android 17 的观测数据验证结论。
 
-平台源码锚点为 AOSP `android-17.0.0_r1`。BroadcastQueue 的数据结构与调度算法详见 [§1.33 Android 17 BroadcastQueue](../../part1-fundamentals/ch01-architecture/33-broadcastqueue-scheduling-performance.md)，本章不重复完整源码导读。
+平台源码锚点为 AOSP `android-17.0.0_r1`。BroadcastQueue 的数据结构与调度算法详见 [§1.33 Android 17 BroadcastQueue](../../part1-fundamentals/ch01-architecture/33-broadcastqueue-scheduling-performance.md)，这里不重复完整源码导读。
 
 ## 1. 从发送到接收的四段时间
 
@@ -364,7 +364,7 @@ IntentFilter 只是候选匹配条件，显式 Intent 可以绕开常规 filter 
 4. 同 action 但 data/type/categories 不同的记录可以并存；
 5. 新注册 receiver 只遍历其 filter action 对应的 sticky 列表，再执行完整匹配。
 
-旧文常写成“同 action 永远只有一个值”或“每次注册扫描所有 sticky × 所有 filter”，两种描述都过度简化。准确的成本取决于 filter action 数，以及每个 action 下可匹配 sticky 的数量。
+“同 action 永远只有一个值”和“每次注册扫描所有 sticky × 所有 filter”都过度简化。准确的成本取决于 filter action 数，以及每个 action 下可匹配 sticky 的数量。
 
 应用自定义状态不应再依赖 sticky broadcast：
 
@@ -522,12 +522,12 @@ Android 17 的 `BroadcastQueueImpl` 在 Perfetto SDK tracing v3 开启时，可�
 
 ## 13. 版本边界
 
-| Android 版本 | 对本章的主要影响 |
+| Android 版本 | 主要影响 |
 | --- | --- |
 | Android 14 / API 34 | cached app 广播可延后；动态 receiver exported flag 要求；公开 deferral 与 delivery group |
 | Android 15 / API 35 | 进程级队列继续使用 `BroadcastQueueModernImpl` 类名 |
 | Android 16 / API 36 | 实现类更名为 `BroadcastQueueImpl`；跨进程 receiver priority 不再保证 |
-| Android 17 / API 37 | 本章源码以单个 `BroadcastQueueImpl`、per-process queue 和结构化 broadcast trace 为准 |
+| Android 17 / API 37 | 源码以单个 `BroadcastQueueImpl`、per-process queue 和结构化 broadcast trace 为准 |
 
 Android 17 上可保留六条工程规则：
 
