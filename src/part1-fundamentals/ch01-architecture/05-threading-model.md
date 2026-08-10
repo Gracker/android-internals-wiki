@@ -221,7 +221,7 @@ Android 17 对以 API 37 为目标版本的应用启用新的无锁 MessageQueue
 
 ### Looper 空闲时为什么不消耗 CPU
 
-没有到期消息时，Java MessageQueue 会进入原生层轮询。Android 17 的 `system/core/libutils/Looper.cpp` 创建 epoll 实例和用于唤醒的 eventfd，等待时调用 `epoll_wait()`。
+没有到期消息时，Java MessageQueue 会进入 native poll。Android 17 的 `system/core/libutils/Looper.cpp` 创建 epoll 实例和用于唤醒的 eventfd，等待时调用 `epoll_wait()`。
 
 新消息改变下一次到期时间时，生产者写入 eventfd 唤醒 Looper。通过原生 Looper 或 MessageQueue 文件描述符监听接口注册的 fd，也可以由同一轮 epoll 等待发现。线程此时处于阻塞睡眠，不是在 Java 层不断检查队列。
 
@@ -338,7 +338,7 @@ class SerialWorker : Closeable {
 
 ### 协程管理任务结构，不会让代码自动变快
 
-协程可以用较少线程表达大量挂起任务，但实际的阻塞调用仍会占住承载它的线程。调度器选择需要与工作类型相符：
+协程可以用较少线程表达大量挂起任务，但实际的阻塞调用仍会占住承载它的线程。Dispatcher 选择需要与工作类型相符：
 
 ```kotlin
 class UserRepository(
@@ -346,7 +346,7 @@ class UserRepository(
     private val db: UserDatabase,
 ) {
     suspend fun refresh(id: String): User = withContext(Dispatchers.IO) {
-        val user = api.load(id)   // 阻塞式接口会占用 I/O 工作线程
+        val user = api.load(id)   // 阻塞式接口会占用 IO worker
         db.users().upsert(user)
         user
     }
@@ -356,11 +356,11 @@ class UserRepository(
 - `Dispatchers.Main` 用于短小的 UI 工作；
 - `Dispatchers.Default` 用于 CPU 密集工作；
 - `Dispatchers.IO` 用于阻塞式 I/O；
-- 专用调度器用于线程亲和、资源隔离或严格并发上限。
+- 专用 dispatcher 用于线程亲和、资源隔离或严格并发上限。
 
 不要依赖 Default 或 IO 当前的具体线程数。它们会随 Kotlin 版本、系统属性和运行环境调整。协程在挂起后也可能由另一个工作线程继续执行，因此普通 `ThreadLocal` 不能自然表达跨挂起点的上下文；需要时使用协程上下文或 `ThreadLocal.asContextElement()`。
 
-结构化并发要求每项任务都有明确的作用域，由页面、ViewModel、服务或应用级组件持有；生命周期结束时，取消关系才能沿父子任务传播。只看任务在哪条线程运行，无法判断其所有权和取消边界。
+结构化并发要求每项任务都有明确的 scope，由页面、ViewModel、服务或应用级组件持有；生命周期结束时，取消关系才能沿父子任务传播。只看任务在哪条线程运行，无法判断其所有权和取消边界。
 
 ### WorkManager 用于持久任务调度
 
@@ -407,7 +407,7 @@ Android 还通过 task profile、cgroup 和 cpuset 管理进程或线程。AOSP 
 
 增加线程只有在任务能并行、资源没有成为瓶颈且调度成本可接受时才可能提高吞吐量。过度线程化会带来：
 
-- 每个线程的原生元数据与栈地址空间开销；
+- 每个线程的 native 元数据与栈地址空间开销；
 - 更多上下文切换和缓存工作集扰动；
 - 更多 Runnable 线程争抢有限 CPU；
 - 锁竞争、队列竞争和优先级反转；
@@ -419,7 +419,7 @@ CPU 密集型任务应使用有界并行度，并以目标设备上的吞吐、�
 
 ## 用 Perfetto 判断线程为什么慢
 
-看到一个很长的切片，只能说明某段逻辑从开始到结束经历了很长时间。下一步要把时间拆成线程状态：
+看到一个很长的 slice，只能说明某段逻辑从开始到结束经历了很长时间。下一步要把时间拆成线程状态：
 
 - **Running**：线程在 CPU 上执行；
 - **Runnable**：可以运行，但在等 CPU；
@@ -430,10 +430,10 @@ CPU 密集型任务应使用有界并行度，并以目标设备上的吞吐、�
 
 1. 从 FrameTimeline 或对应帧事件确认错过的是应用期限还是显示合成期限；
 2. 同时查看主线程和 RenderThread，而不是只盯 `doFrame`；
-3. 对长区间展开线程状态，区分在 CPU 上运行、Runnable 与阻塞；
+3. 对长区间展开 thread state，区分在 on-CPU、Runnable 与阻塞；
 4. Runnable 很长时查看 CPU 是否被更高优先级或大量线程占用；
 5. 阻塞时沿 wakeup、futex、Binder、I/O 或锁持有者寻找实际的唤醒方；
-6. 回到源码确认切片对应的执行边界，再决定优化业务、并行度还是跨线程协议。
+6. 回到源码确认 slice 对应的执行边界，再决定优化业务、并行度还是跨线程协议。
 
 主线程睡在 Looper poll 通常表示“当前没有到期消息”，本身不是卡顿证据。相反，如果关键消息已到期而主线程仍被前一条消息占用，才需要缩短那条消息的执行路径。
 
@@ -446,7 +446,7 @@ Android 17 的 `libcore` 源码和 API 文本已经出现第一版虚拟线程�
 - “Android 的虚拟线程永远没有实现”已经不符合 Android 17 源码；
 - “所有 Android 17 设备都可以无条件使用虚拟线程”同样没有依据。
 
-应用需要以实际 SDK 暴露、构建开关和目标设备行为为准，并准备兼容路径。虚拟线程适合表达大量阻塞式并发任务，但不会让 CPU 密集计算突破处理器上限，也不会替代主线程、Looper、生命周期作用域或 WorkManager 的持久调度语义。面向多个 Android 版本的应用，协程和有界 Executor 仍是更稳定的基础工具。
+应用需要以实际 SDK 暴露、构建开关和目标设备行为为准，并准备兼容路径。虚拟线程适合表达大量阻塞式并发任务，但不会让 CPU 密集计算突破处理器上限，也不会替代主线程、Looper、生命周期 scope 或 WorkManager 的持久调度语义。面向多个 Android 版本的应用，协程和有界 Executor 仍是更稳定的基础工具。
 
 ## 容易混淆的结论
 
@@ -468,7 +468,7 @@ Android 17 的 `libcore` 源码和 API 文本已经出现第一版虚拟线程�
 
 ### “协程等于后台线程”
 
-协程是可挂起任务的结构。它在哪个线程运行由调度器和上下文决定；`Dispatchers.Main` 上的协程仍会占用主线程。
+协程是可挂起任务的结构。它在哪个线程运行由 Dispatcher 和上下文决定；`Dispatchers.Main` 上的协程仍会占用主线程。
 
 ## 版本演进
 
@@ -481,4 +481,4 @@ Android 17 的 `libcore` 源码和 API 文本已经出现第一版虚拟线程�
 | Android 17 / API 37 | 以 API 37 为目标的应用启用新的无锁 MessageQueue；私有字段反射存在兼容风险 |
 | Android 17 / API 37 | `libcore` 出现受发布开关控制的虚拟线程 v1 API 与实现，不能假定所有构建均启用 |
 
-分析线程问题时，先确认平台版本、应用 targetSdk、设备构建与实际调度配置，再解释跟踪。只凭线程名称、某个 nice 值或旧版 MessageQueue 字段，无法得出可靠结论。
+分析线程问题时，先确认平台版本、应用 targetSdk、设备构建与实际调度配置，再解释 trace。只凭线程名称、某个 nice 值或旧版 MessageQueue 字段，无法得出可靠结论。
