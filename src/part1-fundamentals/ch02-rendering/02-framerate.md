@@ -178,7 +178,7 @@ refresh period = 1 second / refresh rate
 144 Hz ≈  6.94 ms
 ```
 
-这些数值描述相邻刷新机会的距离，不等于主线程、RenderThread 和 GPU 必须串行塞进同一个时间片。Android 图形管线允许不同阶段并行处理不同帧。目标帧仍需满足自身的 FrameTimeline deadline，但不能把各线程切片简单相加后与 8.33 ms 比较。
+这些数值描述相邻刷新机会的距离，不等于主线程、RenderThread 和 GPU 必须串行塞进同一个时间片。Android 图形管线允许不同阶段并行处理不同帧。目标帧仍需满足自身的 FrameTimeline deadline，但不能把各线程 slice 简单相加后与 8.33 ms 比较。
 
 ### 1.3 “帧时间（Frame Time）”至少有四种口径
 
@@ -191,7 +191,7 @@ refresh period = 1 second / refresh rate
 | App SurfaceFrame actual duration | 应用帧起点到 `max(GPU completion, buffer post)` | 应用侧是否按 expected timeline 完成 |
 | DisplayFrame actual duration | SurfaceFlinger/display 帧的 actual timeline | 系统合成与显示端是否按计划完成 |
 
-`doFrame` 不包含完整 GPU 和显示阶段；RenderThread CPU 持续时间也不能代替 GPU duration。若文章、指标平台或测试报告只写“Frame Time”，需要先追问它使用了哪一组时间戳。
+`doFrame` 不包含完整 GPU 和显示阶段；RenderThread CPU duration 也不能代替 GPU duration。若文章、指标平台或测试报告只写“Frame Time”，需要先追问它使用了哪一组时间戳。
 
 ### 1.4 呈现间隔比平均 FPS更接近视觉节奏
 
@@ -220,13 +220,13 @@ refresh period = 1 second / refresh rate
 | 24 FPS | 120 Hz | 每帧保持 5 个刷新周期 |
 | 45 FPS | 90 Hz | 每帧保持 2 个刷新周期 |
 
-整数倍只说明节拍容易均匀，不保证应用按时交帧，也不保证系统一定选择该显示配置。
+整数倍只说明 cadence 容易均匀，不保证应用按时交帧，也不保证系统一定选择该显示配置。
 
 ### 2.2 非整数倍关系
 
 24 FPS 内容放在 60 Hz 显示上，常见做法是 3:2 下拉（pulldown）：有的内容帧保持 3 个刷新周期，有的保持 2 个。内容播放速度可以正确，但帧保持时长交替，平移镜头中容易看到节拍抖动（judder）。
 
-45 FPS 内容若直接映射到 120 Hz，也需要在 2 个和 3 个刷新周期之间安排节拍。设备若同时支持 90 Hz，90 Hz 往往更适合 45 FPS；最终选择仍受其他 Layer、显示策略、seamless 限制和设备能力影响。
+45 FPS 内容若直接映射到 120 Hz，也需要在 2 个和 3 个刷新周期之间安排 cadence。设备若同时支持 90 Hz，90 Hz 往往更适合 45 FPS；最终选择仍受其他 Layer、显示 policy、seamless 限制和设备能力影响。
 
 ### 2.3 没有新帧时显示端会继续使用旧内容
 
@@ -283,11 +283,11 @@ LTPO 面板通常有利于较低刷新率和较宽的动态范围，但“LTPO�
 - Android ARR 已启用；
 - 切换一定无感且没有功耗代价。
 
-Android 框架看到的是 HWC 报告的 display configuration、mode group、VSync period 与 ARR 配置。具体面板驱动、TE 和厂商功耗策略需要在目标设备上验证。
+Android framework 看到的是 HWC 报告的 display configuration、mode group、VSync period 与 ARR 配置。具体面板驱动、TE 和厂商功耗策略需要在目标设备上验证。
 
 ## 4. SurfaceFlinger 如何选择 render rate
 
-Android 17 的选择过程不是“找到所有 Layer 帧率的最小公倍数”。系统先收集需求，再在策略允许的候选中评分。
+Android 17 的选择过程不是“找到所有 Layer 帧率的最小公倍数”。系统先收集需求，再在 policy 允许的候选中评分。
 
 ```text
 应用/API/内容检测/系统信号
@@ -311,7 +311,7 @@ RefreshRateSelector：过滤候选、评分、排序
 
 Android 17 的 `LayerHistory::summarize()` 会为活跃 Layer 生成 `LayerRequirement`。重要字段包括：
 
-- Layer 名称与所有者 UID；
+- Layer 名称与 owner UID；
 - vote 类型和期望帧率；
 - 帧率类别（frame rate category）；
 - 是否要求 seamless；
@@ -319,7 +319,7 @@ Android 17 的 `LayerHistory::summarize()` 会为活跃 Layer 生成 `LayerRequi
 - Layer 是否 focused；
 - 该 Layer 适用于哪个输出显示。
 
-显式 `setFrameRate()` 请求、内容提交节拍的启发式判断、View category、Game Mode 覆盖等信息都会影响投票。不可见或不活跃 Layer 不应与前台主内容等权处理。
+显式 `setFrameRate()` 请求、内容提交节拍的启发式判断、View category、Game Mode override 等信息都会影响投票。不可见或不活跃 Layer 不应与前台主内容等权处理。
 
 ### 4.2 Android 17 的九种投票类型
 
@@ -335,7 +335,7 @@ Android 17 的 `LayerHistory::summarize()` 会为活跃 Layer 生成 `LayerRequi
 | `ExplicitExactOrMultiple` | 应用希望精确值或整数倍 |
 | `ExplicitExact` | 应用希望精确 render rate |
 | `ExplicitGte` | 应用希望至少达到给定帧率 |
-| `ExplicitCategory` | 应用提交 LOW、NORMAL、HIGH 等类别 |
+| `ExplicitCategory` | 应用提交 LOW、NORMAL、HIGH 等 category |
 
 这些类型的评分方式不同。比如：
 
@@ -360,7 +360,7 @@ Android 17 的 `LayerHistory::summarize()` 会为活跃 Layer 生成 `LayerRequi
 - power-on、多个显示器的 pacesetter/follower 关系；
 - 省电、温度和 vendor policy 最终形成的允许范围。
 
-Android 17 代码中，touch 与 idle 都有提前返回的分支，但触发条件受显式投票、category 和策略影响。不能写成“任何触摸都会无条件拉满，停止后固定若干秒降频”。
+Android 17 代码中，touch 与 idle 都有提前返回的分支，但触发条件受显式投票、category 和 policy 影响。不能写成“任何触摸都会无条件拉满，停止后固定若干秒降频”。
 
 ### 4.4 24 FPS 视频与 60 FPS UI 的例子
 
@@ -370,9 +370,9 @@ Android 17 代码中，touch 与 idle 都有提前返回的分支，但触发条
 - 一个持续更新的 60 FPS UI Layer；
 - 候选 render rates 为 60、90、120 Hz。
 
-120 Hz 同时是 24 和 60 的整数倍，通常具有较好的节拍。但以下条件都可能改变结果：
+120 Hz 同时是 24 和 60 的整数倍，通常具有较好的 cadence。但以下条件都可能改变结果：
 
-- 120 Hz 不在当前策略范围；
+- 120 Hz 不在当前 policy 范围；
 - fixed-source multiple threshold 限制低帧率 Layer 对高档位的贡献；
 - 某 Layer 只允许 seamless；
 - UI 没有持续更新或面积权重很低；
@@ -407,11 +407,11 @@ surface.setFrameRate(
         Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS);
 ```
 
-该调用只提供投票。游戏仍要控制逻辑节拍、GPU 在途帧数量和 presentation time。
+该调用只提供投票。游戏仍要控制逻辑节拍、GPU in-flight 数量和 presentation time。
 
 ### 5.2 `View.setRequestedFrameRate()`
 
-Android 15 / API 35 为 View 增加帧率偏好。可以传正数，也可以传类别：
+Android 15 / API 35 为 View 增加帧率偏好。可以传正数，也可以传 category：
 
 ```java
 recyclerView.setRequestedFrameRate(
@@ -461,9 +461,9 @@ Choreographer.getInstance().postVsyncCallback(frameData -> {
 
 ### 5.6 `preferredDisplayModeId` 的使用边界
 
-`WindowManager.LayoutParams.preferredDisplayModeId` 指定包含分辨率、刷新率等属性的 display mode。它比帧率提示更容易触发模式变化，适合明确知道目标模式且能处理切换影响的场景，例如部分电视播放。
+`WindowManager.LayoutParams.preferredDisplayModeId` 指定包含分辨率、刷新率等属性的 display mode。它比帧率 hint 更容易触发 mode 变化，适合明确知道目标 mode 且能处理切换影响的场景，例如部分电视播放。
 
-只需要表达内容帧率时，优先使用 Surface/View 的帧率 API，让系统结合其他 Layer 和策略选择。
+只需要表达内容帧率时，优先使用 Surface/View 的帧率 API，让系统结合其他 Layer 和 policy 选择。
 
 ## 6. Choreographer 与 Frame Pacing
 
@@ -498,7 +498,7 @@ API 33 及以上的 `Choreographer.VsyncCallback` 接收 `FrameData`。每个 `F
 - expected presentation time；
 - deadline。
 
-`getPreferredFrameTimeline()` 是平台建议值。自建 SurfaceControl 事务可以选另一个可满足的 timeline，再通过 API 35 的 `setFrameTimeline()` 提交。选择更晚 timeline 会改变目标呈现时机，但不能减少渲染工作本身。
+`getPreferredFrameTimeline()` 是平台建议值。自建 SurfaceControl transaction 可以选另一个可满足的 timeline，再通过 API 35 的 `setFrameTimeline()` 提交。选择更晚 timeline 会改变目标呈现时机，但不能减少渲染工作本身。
 
 ### 6.3 Frame pacing 控制的是 cadence 和队列深度
 
@@ -521,7 +521,7 @@ AGDK Frame Pacing Library（Frame Pacing Library，Swappy）支持 OpenGL ES 和
 - swap interval 与 pipeline mode；
 - 多刷新率设备的 frame-rate hint。
 
-Swappy 可以主动等待以限制队列深度。Trace 中看到交换或 fence wait 时，要先判断它是合理 pacing、GPU 依赖还是被动背压，不能一律当成性能浪费。
+Swappy 可以主动等待以限制队列深度。Trace 中看到 swap 或 fence wait 时，要先判断它是合理 pacing、GPU 依赖还是被动背压，不能一律当成性能浪费。
 
 ### 6.5 Buffer stuffing 会维持吞吐量却增加延迟
 
@@ -533,13 +533,13 @@ producer 连续提交速度高于显示消费速度时，多个缓冲区可能�
 - producer 最终卡在 dequeue、swap 或 present；
 - FrameTimeline 标记 `Buffer Stuffing`。
 
-Android 17 的 Choreographer/HWUI 还包含 buffer stuffing recovery。看到 recovery trace 时，应同时检查队列深度、主动延迟和后续积压是否回落。
+Android 17 的 Choreographer/HWUI 还包含 buffer stuffing recovery。看到 recovery trace 时，应同时检查队列深度、主动延迟和后续 backlog 是否回落。
 
 ### 6.6 Android 17 的 producer throttling
 
-API 37 增加 `Surface.setProducerThrottlingEnabled(boolean)`，用于控制 Vulkan/EGL 生产者的 CPU throttling。默认机制会在 consumer 仍处理前一缓冲区时给 producer 施加背压。
+API 37 增加 `Surface.setProducerThrottlingEnabled(boolean)`，用于控制 Vulkan/EGL producer 的 CPU throttling。默认机制会在 consumer 仍处理前一缓冲区时给 producer 施加背压。
 
-这个 API 不负责选择刷新率，也不能代替 frame pacing。官方建议 Vulkan 生产者在具备正确显式同步时关闭默认节流，避免把 `vkPresentKHR()` 的 CPU 停顿当成 producer/consumer 同步；队列耗尽时的自然出队背压仍会发生。异步模式下节流始终启用，此开关没有效果。
+这个 API 不负责选择刷新率，也不能代替 frame pacing。官方建议 Vulkan producer 在具备正确显式同步时关闭默认 throttling，避免把 `vkPresentKHR()` 的 CPU stall 当成 producer/consumer 同步；队列耗尽时的自然 dequeue 背压仍会发生。异步模式下 throttling 始终启用，此开关没有效果。
 
 ## 7. Janky、late、dropped 与 missed
 
@@ -557,7 +557,7 @@ FrameTimeline 同时描述：
 - `surface_frame_token` 关联应用 producer；
 - `display_frame_token` 关联系统显示帧。
 
-一个 DisplayFrame 可以包含多个进程、多个 Layer 的 SurfaceFrame。不能把两种标识合成一个“端到端帧号”。
+一个 DisplayFrame 可以包含多个进程、多个 Layer 的 SurfaceFrame。不能把两种 token 合成一个“端到端帧号”。
 
 ### 7.2 Expected 与 Actual
 
@@ -589,9 +589,9 @@ FrameTimeline 同时描述：
 - 一帧被更新的帧替代；
 - UI 状态没有及时同步到 RenderThread。
 
-固定拿 16.67 ms 或 8.33 ms 与任意切片比较，会在高刷、ARR、pipeline overlap 和调度相位场景中误判。
+固定拿 16.67 ms 或 8.33 ms 与任意 slice 比较，会在高刷、ARR、pipeline overlap 和调度相位场景中误判。
 
-### 7.5 Missed 与丢帧要描述具体对象
+### 7.5 Missed 与 dropped 要描述具体对象
 
 “错过目标帧（missed frame）”可以表示错过目标 deadline，也可以泛指显示端没有更新新内容。“丢帧（dropped frame）”在 FrameTimeline 有具体分类：SurfaceFlinger 可能选择更新的帧，应用侧也可能没有及时把 UI 状态推给 RenderThread。
 
@@ -621,7 +621,7 @@ FrameTimeline 同时描述：
 | `SWAP_BUFFERS_DURATION` | 向显示子系统提交 framebuffer 的时间 |
 | `INTENDED_VSYNC_TIMESTAMP` / `VSYNC_TIMESTAMP` | 预期与实际应用 VSync 时间 |
 
-API 31 及以上可用 `TOTAL_DURATION < DEADLINE` 判断应用是否满足其生产 deadline。`TOTAL_DURATION` 不是屏幕呈现时间，各阶段还可能并行，因此它不一定等于所有 duration 字段之和。
+API 31 及以上可用 `TOTAL_DURATION < DEADLINE` 判断应用是否满足其生产 deadline。`TOTAL_DURATION` 不是屏幕 present 时间，各阶段还可能并行，因此它不一定等于所有 duration 字段之和。
 
 监听回调可能因处理线程繁忙而丢失中间通知，`dropCountSinceLastInvocation` 表达的是 listener 通知丢失数量，不是屏幕掉帧数量。
 
@@ -665,7 +665,7 @@ WHERE p.name = 'com.example.app'
 ORDER BY a.ts;
 ```
 
-查询结果先按 `layer_name` 区分 App Window、SurfaceView、视频或其他 Surface。再用 token 和流程找到对应 expected frame 与 SurfaceFlinger DisplayFrame。表结构可能随 Perfetto 版本演进，执行前应查看当前 trace processor schema。
+查询结果先按 `layer_name` 区分 App Window、SurfaceView、视频或其他 Surface。再用 token 和 flow 找到对应 expected frame 与 SurfaceFlinger DisplayFrame。表结构可能随 Perfetto 版本演进，执行前应查看当前 trace processor schema。
 
 ## 9. 一套可重复的诊断顺序
 
@@ -673,14 +673,14 @@ ORDER BY a.ts;
 
 至少记录：
 
-- 设备、系统构建、分辨率和 display mode；
+- 设备、系统 build、分辨率和 display mode；
 - 当前 physical refresh、render rate 与 ARR 支持；
 - App 目标 FPS 与调用的帧率 API；
 - Surface 类型和 Layer 名称；
 - 电量模式、游戏模式（Game Mode）、温度、亮度和充电状态；
 - 测试动作、持续时间和 trace config。
 
-刷新率和热状态不同的两次跟踪不适合直接比较帧预算。
+刷新率和热状态不同的两次 trace 不适合直接比较帧预算。
 
 ### 第二步：锁定目标 SurfaceFrame
 
@@ -705,7 +705,7 @@ ORDER BY a.ts;
 - dequeue/queue 和 producer fence；
 - App SurfaceFrame actual end。
 
-主线程短不代表应用帧按时，RenderThread 切片长也不等于 GPU 一直忙。
+主线程短不代表应用帧按时，RenderThread slice 长也不等于 GPU 一直忙。
 
 ### 第四步：判断队列是否积压
 
@@ -741,7 +741,7 @@ ORDER BY a.ts;
 - active display mode/group；
 - Layer vote 与 desired frame rate；
 - touch/idle/power 信号；
-- MRR 模式切换或 ARR 渲染帧率变化；
+- MRR mode switch 或 ARR render-rate 变化；
 - 选定的模式/帧率；
 - 切换前后的 expected timeline。
 
@@ -757,9 +757,9 @@ ORDER BY a.ts;
 | 高刷新率一定更流畅 | 检查应用是否按时、cadence、输入延迟和队列深度 |
 | LTPO 等于 Android ARR | 查询 `hasArrSupport()`、HWC 配置和 trace |
 | 1–120 Hz LTPO 可以取任意连续值 | 查看设备报告的离散能力和限制条件 |
-| `setFrameRate(120)` 会把屏幕锁到 120 Hz | 它是 Layer vote，最终受策略、其他 Layer 和设备能力影响 |
-| `Display.getRefreshRate()` 不等于请求值，所以发生覆盖 | 可能是正常选模、policy、其他 Layer 或 ARR；需要系统侧证据 |
-| Game Mode PERFORMANCE 会锁高频 | Game Mode 表达用户选择，游戏和 OEM 干预共同决定策略 |
+| `setFrameRate(120)` 会把屏幕锁到 120 Hz | 它是 Layer vote，最终受 policy、其他 Layer 和设备能力影响 |
+| `Display.getRefreshRate()` 不等于请求值，所以发生 override | 可能是正常选模、policy、其他 Layer 或 ARR；需要系统侧证据 |
+| Game Mode PERFORMANCE 会锁高频 | Game Mode 表达用户选择，游戏和 OEM intervention 共同决定策略 |
 | FrameMetrics `TOTAL_DURATION` 是触摸到屏幕延迟 | 它到 issued-to-display-subsystem 为止，不包含完整输入与面板边界 |
 | `DrawFrame` 很长就说明 GPU 慢 | 区分 CPU 工作、dequeue/fence wait、GPU completion |
 | 平均 FPS 达标就没有卡顿 | 同时看分位数、长帧簇、present interval 和 high-latency state |
@@ -774,10 +774,10 @@ Game Mode API 在部分 Android 12 设备提供，Android 13 及以上设备支�
 
 - 固定 CPU/GPU 频率；
 - 固定 120 Hz；
-- OEM 一定采用相同干预；
+- OEM 一定采用相同 intervention；
 - 切到 PERFORMANCE 后 FPS 一定提高。
 
-游戏应在 `onResume()` 查询当前模式，并根据自身能力选择分辨率、画质、目标 FPS 和 pacing。测试时还要记录 OEM 干预是否生效。
+游戏应在 `onResume()` 查询当前模式，并根据自身能力选择分辨率、画质、目标 FPS 和 pacing。测试时还要记录 OEM intervention 是否生效。
 
 ### 11.2 高刷新率功耗不能套固定百分比
 
@@ -795,7 +795,7 @@ Game Mode API 在部分 Android 12 设备提供，Android 13 及以上设备支�
 
 一个游戏若只能在 120 FPS 与 80 FPS 之间持续波动，稳定 90 FPS 或 60 FPS 可能提供更均匀的 cadence、更低的队列压力和更好的持续性能。判断目标值时同时看：
 
-- CPU/GPU 帧时间分布；
+- CPU/GPU frame-time 分布；
 - 1% low 与长帧簇；
 - 温升后的稳态性能；
 - input-to-present；
@@ -804,14 +804,14 @@ Game Mode API 在部分 Android 12 设备提供，Android 13 及以上设备支�
 
 Swappy 或引擎 pacing 应根据这些数据选择 swap interval，而不是在每帧临时追随瞬时耗时。
 
-## 12. Kernel 与厂商显示边界
+## 12. Kernel 与 vendor 显示边界
 
-Framework 的 RefreshRateSelector 负责投票与策略，Composer HAL 把所选配置或显示时机交给设备实现。再往下可能涉及 vendor display driver、面板 TE、DRM/KMS VBlank、时钟和电源管理。
+Framework 的 RefreshRateSelector 负责投票与 policy，Composer HAL 把所选配置或 present 时机交给设备实现。再往下可能涉及 vendor display driver、面板 TE、DRM/KMS VBlank、时钟和电源管理。
 
 在 `android17-6.18-2026-06_r6` 中，`drivers/gpu/drm/drm_vblank.c` 与 `include/drm/drm_vblank.h` 提供通用 DRM VBlank 计数、事件和时间戳机制。但要注意：
 
 - Android 设备不保证都用相同 DRM 驱动路径；
-- Android 通用内核不包含所有厂商面板与显示控制器实现；
+- common kernel 不包含所有 vendor 面板与显示控制器实现；
 - framework 的 render-rate 选择不能从通用 vblank 源码反推；
 - 面板的最低刷新率、TE 与无缝切换能力必须查设备配置和 vendor trace。
 
@@ -834,9 +834,9 @@ Framework 的 RefreshRateSelector 负责投票与策略，Composer HAL 把所选
 | Android 13 / API 33 | `Choreographer.FrameData` / `FrameTimeline` 公开多个候选 timeline |
 | Android 15 / API 35 | ARR 平台能力；View/Window 帧率提示；公开 `SurfaceControl.Transaction.setFrameTimeline()` |
 | Android 16 / API 36 | `Display.hasArrSupport()`、`getSuggestedFrameRate()`；ViewGroup 帧率请求传播 API |
-| Android 17 / API 37 | `Display.getFrameRateVelocityMapping()`；`Surface` producer throttling 控制；RefreshRateSelector 现行九类投票与 ARR/MRR 分支按 `android-17.0.0_r1` 解读 |
+| Android 17 / API 37 | `Display.getFrameRateVelocityMapping()`；`Surface` producer throttling 控制；RefreshRateSelector 现行九类 vote 与 ARR/MRR 分支按 `android-17.0.0_r1` 解读 |
 
-当前源码能证明 Android 17 的实现状态，不能自动证明某段逻辑是 Android 17 首次加入。涉及“从某版本开始”的结论，应同时检查 API level、旧标签或官方版本说明。
+当前源码能证明 Android 17 的实现状态，不能自动证明某段逻辑是 Android 17 首次加入。涉及“从某版本开始”的结论，应同时检查 API level、旧 tag 或官方版本说明。
 
 ## 14. Android 17 源码索引
 
@@ -861,7 +861,7 @@ Framework 的 RefreshRateSelector 负责投票与策略，Composer HAL 把所选
 - `frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp`
 - `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp`
 
-### ARR 与内核边界
+### ARR 与 kernel 边界
 
 - `hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayConfiguration.aidl`
 - `hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/VrrConfig.aidl`
@@ -875,9 +875,9 @@ Framework 的 RefreshRateSelector 负责投票与策略，Composer HAL 把所选
 1. FPS 是吞吐量，present interval 描述视觉节拍，input-to-present 描述交互延迟；
 2. `doFrame`、RenderThread、SurfaceFrame 和 DisplayFrame 各有不同的 frame-time 口径；
 3. MRR 在 display mode 之间切换，ARR 在支持的配置内按离散 VSync 步进改变刷新节拍，LTPO 只是可能提供这些能力的面板技术；
-4. Android 17 通过 LayerHistory 汇总 Layer vote，再由 RefreshRateSelector 在策略允许的候选中评分；
+4. Android 17 通过 LayerHistory 汇总 Layer vote，再由 RefreshRateSelector 在 policy 允许的候选中评分；
 5. Surface、View、Window 和 SurfaceControl API 都是提示或目标表达，不能代替应用自身 pacing；
-6. Jank 结论应来自目标 SurfaceFrame、DisplayFrame、token、deadline、fence 和显示证据；
+6. Jank 结论应来自目标 SurfaceFrame、DisplayFrame、token、deadline、fence 和 present 证据；
 7. 平均 FPS、单条 `doFrame`、单次刷新率切换都不足以独立解释卡顿。
 
 排查时先锁定目标 Surface 和 FrameTimeline，再判断应用、队列、SurfaceFlinger 与显示端谁先错过时序。刷新率变化需要放回 Layer vote、display policy 与选模结果中解释。
