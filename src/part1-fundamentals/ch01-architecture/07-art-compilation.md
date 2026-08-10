@@ -366,7 +366,7 @@ adb shell pm art dump com.example.app
 
 `android-17.0.0_r1` 的 `ArtShellCommand` 会把这个子命令转到 `ArtManagerLocal.dumpPackage()`。输出中关注：
 
-- DEX 容器与拆分包；
+- dex container 与 split；
 - compiler filter；
 - compilation reason；
 - primary/secondary dex 的产物状态；
