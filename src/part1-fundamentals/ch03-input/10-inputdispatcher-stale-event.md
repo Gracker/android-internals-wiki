@@ -68,8 +68,8 @@ flowchart LR
 stale 判定发生在 `mPendingEvent` 的 Key、Motion 或 Sensor 分支。已经发送并进入 `waitQueue` 的事件由 `AnrTracker` 管理，不会再被 stale 分支重新判定。这一区分直接决定排查方向：
 
 - `InboundQueue` 或 `PendingEvent` 的年龄不断增长，才与 stale 直接相关；
-- `WaitQueue` 增长说明事件已经发出但尚未完成，优先检查目标线程与连接 ANR；
-- 单个窗口不回确认可能间接改变后续分发，但这不属于陈旧事件的定义，也不是唯一原因。
+- `WaitQueue` 增长说明事件已经发出但尚未完成，优先检查目标线程与 connection ANR；
+- 单个窗口不回 ACK 可能间接改变后续分发，但这不属于陈旧事件的定义，也不是唯一原因。
 
 ## Android 17 的判定由策略层给出
 
@@ -125,7 +125,7 @@ SensorEntry 是时钟基准上的例外。Android 17 注释明确指出 sensor t
 | Non-pointer Motion | 同样经过 Motion 分支 | 沿用 TouchState 的同设备检查；无进行中 touch / hover 时可标为 stale |
 | SensorEntry | 用 BOOTTIME 比较事件年龄 | 会标记 stale 并打印 drop 日志，但 `dispatchSensorLocked()` 仍投递 policy sensor 回调 |
 | Focus / TouchModeChanged / DeviceReset | 没有陈旧分支 | 主循环明确令这三类不按该丢弃原因处理 |
-| PointerCaptureChanged / Drag | 没有陈旧检查 | 按各自分发逻辑处理 |
+| PointerCaptureChanged / Drag | 没有 stale 检查 | 按各自分发逻辑处理 |
 
 Key 还有一层细节：`dispatchKeyLocked()` 的 pre-dispatch policy interception 发生在 drop cleanup 之前，所以 stale key 仍可能触发系统 policy 的按键拦截流程；目标应用窗口不会收到原始 stale key。
 
@@ -140,7 +140,7 @@ DOWN → MOVE... → UP
               ↘ CANCEL
 ```
 
-如果只因某个 MOVE 已超过阈值就中断序列，应用与 InputDispatcher 可能对“哪些指针仍然按下”产生不同认识。Android 17 因此检查：
+如果只因某个 MOVE 已超过阈值就中断序列，应用与 InputDispatcher 可能对“哪些 pointer 仍然按下”产生不同认识。Android 17 因此检查：
 
 ```text
 mTouchStates.hasTouchingOrHoveringPointers(displayId, deviceId)
@@ -163,7 +163,7 @@ mTouchStates.hasTouchingOrHoveringPointers(displayId, deviceId)
 Dropped event because it is stale.
 ```
 
-随后它按事件类型清理各连接已记录的输入状态：
+随后它按事件类型清理各 connection 已记录的输入状态：
 
 - Key 使用 `CANCEL_NON_POINTER_EVENTS`；
 - pointer-class Motion 使用 `CANCEL_POINTER_EVENTS`；
@@ -212,7 +212,7 @@ connection ANR 的 deadline 记录在 `AnrTracker` 中；tracker 保存 `(timeou
 - 先 ANR，后出现 stale：连接问题或窗口状态又让后续 pending events 继续老化；
 - 解除 frozen 后连续出现 stale：一批 inbound events 在冻结期间共同变老。
 
-ANR 超时与陈旧阈值都可能乘 `HwTimeoutMultiplier()`，但它们的起点、对象和系统动作不同，不能只比较秒数判断先后。
+ANR 超时与 stale 阈值都可能乘 `HwTimeoutMultiplier()`，但它们的起点、对象和系统动作不同，不能只比较秒数判断先后。
 
 ## 用 `dumpsys input` 判断事件卡在哪里
 
@@ -221,7 +221,7 @@ Android 17 的 dispatcher dump 会直接输出：
 - `DispatchEnabled`、`DispatchFrozen`、`FocusedDisplayId`；
 - `FocusedApplications` 及 `dispatchingTimeout`；
 - focus、pointer capture、touch state、window 与 connection 信息；
-- 每条连接的 `OutboundQueue`、`WaitQueue` 和 `responsive`；
+- 每条 connection 的 `OutboundQueue`、`WaitQueue` 和 `responsive`；
 - `PendingEvent`、`InboundQueue` 及每个事件相对当前时间的 `age`；
 - 最近 10 个非 SensorEntry 的 `RecentQueue`；
 - 最近一次 ANR 时保存的 dispatcher state。
@@ -237,15 +237,15 @@ adb shell dumpsys input > input-dispatcher.txt
 1. `DispatchFrozen=true`：查明谁冻结了分发，以及持续多久。
 2. `PendingEvent age` 很大：检查 focused window、paused 状态、policy interception 和目标选择为何持续 pending。
 3. `InboundQueue` 很长且队首 age 持续增加：检查输入洪峰、dispatcher 线程调度和 pending event 的阻塞点。
-4. 某连接的 `OutboundQueue` 增长：检查 InputChannel 写入是否受阻。
+4. 某 connection 的 `OutboundQueue` 增长：检查 InputChannel 写入是否受阻。
 5. 某 connection 的 `WaitQueue` 增长：事件已写出，检查应用输入线程、主线程和 FINISHED ACK。
 6. `responsive=false` 或存在 last ANR state：把 stale 时间点与 ANR reason、window token 和进程堆栈对齐。
 
-`RecentQueue` 同时保存已经分发和已经丢弃的事件，只显示描述与年龄，不保存 drop reason。SensorEntry 为避免刷满队列，不进入 RecentQueue。因此，事后只有一份 `dumpsys input` 时，不能仅靠 RecentQueue 证明某个事件已被判为陈旧。
+`RecentQueue` 同时保存已经分发和已经丢弃的事件，只显示描述与 age，不保存 drop reason。SensorEntry 为避免刷满队列，不进入 RecentQueue。因此，事后只有一份 `dumpsys input` 时，不能仅靠 RecentQueue 证明某个事件已被判为陈旧。
 
 ## logcat 与 Perfetto 怎样配合
 
-stale 的 INFO 日志只有固定文案，没有事件 ID、窗口名或事件描述，而且每个 `STALE` 都会打印。它只提供时间锚点，不能构成完整证据：
+stale 的 INFO 日志只有固定文案，没有 event id、窗口名或事件描述，而且每个 `STALE` 都会打印。它只提供时间锚点，不能构成完整证据：
 
 ```shell
 adb logcat -v threadtime -s InputDispatcher ActivityTaskManager WindowManager
@@ -260,13 +260,13 @@ adb shell setprop log.tag.InputDispatcherDroppedEventsVerbose DEBUG
 
 第二个开关主要补充部分被抑制的 dropped-event 细节；它不会把固定 stale 日志自动扩展成完整因果链。部分日志开关在非 debuggable 构建上要等系统服务重启才生效，不适合在线上设备临时启用。
 
-启用输入 ATrace 后，Android 17 还会记录三类 queue counter：
+启用 input atrace 后，Android 17 还会记录三类 queue counter：
 
 | Counter | 含义 |
 | --- | --- |
 | `iq` | 全局 `mInboundQueue` 长度 |
-| `oq:<channelName>` | 某连接的 `outboundQueue` 长度 |
-| `wq:<channelName>` | 某连接的 `waitQueue` 长度 |
+| `oq:<channelName>` | 某 connection 的 `outboundQueue` 长度 |
+| `wq:<channelName>` | 某 connection 的 `waitQueue` 长度 |
 
 Perfetto 中把这些 counter 与 `InputDispatcher` 线程调度、目标进程主线程、Binder、WindowManager、FrameTimeline 放在同一时间轴。`iq` 上升而 `wq` 平稳，问题更靠近 dispatcher pending / target selection；`wq` 上升则说明事件已经发给 connection。3.9 节的 `android.input` SQL 可以补充 dispatch-to-ACK 与 read-to-present，但 stale event 未送达目标窗口时，不能期待它拥有完整的应用接收和帧关联记录。
 
@@ -286,13 +286,13 @@ Perfetto 中把这些 counter 与 `InputDispatcher` 线程调度、目标进程�
 
 - 平台实现按 Android 17 / API 37 的 `android-17.0.0_r1` 复核。
 - stale threshold 属于 frameworks/native 与 libbase；这里涉及的 Linux event timestamp 路径按 `android17-6.18-2026-06_r6` 理解。
-- Android 17 默认策略使用 `10s × HwTimeoutMultiplier()`；厂商修改策略、常量或 `ro.hw_timeout_multiplier` 后，应以设备源码和属性为准。
+- Android 17 默认 policy 使用 `10s × HwTimeoutMultiplier()`；厂商修改 policy、常量或 `ro.hw_timeout_multiplier` 后，应以设备源码和属性为准。
 - Android 17 的 `DropReason` 不含旧实现的 `APP_SWITCH`。
 - Android 17 的 SensorEntry stale 分支仍投递 policy callback，这是当前 tag 的源码行为，不应外推到后续版本。
 
 ## 参考源码与文档
 
-- [AOSP 输入架构](https://source.android.com/docs/core/interaction/input)
+- [AOSP Input 架构](https://source.android.com/docs/core/interaction/input)
 - [Android 17 InputDispatcher.cpp：stale 判定、queue、drop 与 ANR](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
 - [Android 17 InputDispatcher.h：DropReason 与 dispatcher 状态](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.h)
 - [Android 17 InputDispatcherPolicyInterface.h：默认 stale policy](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/include/InputDispatcherPolicyInterface.h)

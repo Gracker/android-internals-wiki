@@ -81,7 +81,7 @@ last_deepseek_cn_review_at: 2026-06-22
 
 ## VelocityTracker：从采样点得到速度
 
-`VelocityTracker` 收集 `MotionEvent` 的时间、坐标和指针 ID，按需计算各指针在指定轴上的速度。`GestureDetector`、`RecyclerView` 以及许多自定义拖拽控件都依赖它判断 Fling。
+`VelocityTracker` 收集 `MotionEvent` 的时间、坐标和 pointer id，按需计算各指针在指定轴上的速度。`GestureDetector`、`RecyclerView` 以及许多自定义拖拽控件都依赖它判断 Fling。
 
 ### 生命周期与多指语义
 
@@ -128,12 +128,12 @@ public boolean onTouchEvent(MotionEvent event) {
 这段代码有三个约束：
 
 1. `addMovement()` 负责加入样本，`computeCurrentVelocity()` 才生成供 getter 读取的速度；加入一个 `ACTION_MOVE` 不等于每次都要重新计算速度。
-2. `getXVelocity(id)`、`getYVelocity(id)` 的参数是指针 ID，不是 `MotionEvent` 中随指针增减而变化的索引。
+2. `getXVelocity(id)`、`getYVelocity(id)` 的参数是 pointer id，不是 `MotionEvent` 中随指针增减而变化的 index。
 3. 一个 `VelocityTracker` 可以同时记录多个 pointer id。源码中的对象池容量为 2，只表示最多缓存两个默认策略实例，不能据此推导“多指需要多个 tracker”。
 
-Android 17 的 Java 包装层将默认策略实例放进 `Pools.SynchronizedPool<VelocityTracker>(2)`。只有使用默认策略创建的实例会在 `recycle()` 时清空并回到池中；显式策略实例不会进入这个池。业务代码应成对调用 `obtain()` 和 `recycle()`，但不必围绕“池是否命中”设计手势算法。
+Android 17 的 Java wrapper 将默认策略实例放进 `Pools.SynchronizedPool<VelocityTracker>(2)`。只有使用默认策略创建的实例会在 `recycle()` 时清空并回到池中；显式策略实例不会进入这个池。业务代码应成对调用 `obtain()` 和 `recycle()`，但不必围绕“池是否命中”设计手势算法。
 
-### Java、JNI 与原生策略
+### Java、JNI 与 native 策略
 
 拟合计算位于 `frameworks/native/libs/input/VelocityTracker.cpp`。Android 17 的默认轴级策略如下：
 
@@ -151,7 +151,7 @@ static const std::map<int32_t, VelocityTracker::Strategy>
 native 收样逻辑还包含几项影响诊断的细节：
 
 - `ACTION_DOWN` 会先清空旧状态，再加入 X/Y 样本；
-- `ACTION_MOVE` 会遍历历史批次和当前批次，并为每个指针 ID 加入 X/Y；
+- `ACTION_MOVE` 会遍历历史批次和当前批次，并为每个 pointer id 加入 X/Y；
 - 标记为 resampled 的样本会跳过，避免预测出来的坐标反过来污染速度拟合；
 - `ACTION_UP` 和普通 `ACTION_POINTER_UP` 不重复加入抬手位置，以保留末次有效移动的速度；
 - 同一指针超过 40 ms 没有新移动样本时，下一次采样会按“指针已经停下”处理并重建策略状态；
@@ -238,7 +238,7 @@ mHandler.sendMessageAtTime(
 
 来调度长按。`ViewConfiguration.getLongPressTimeout()` 会读取 `Settings.Secure.LONG_PRESS_TIMEOUT`，启用新的按 context API 时则由实例取得设置值。因此“所有 Android 设备固定 400 ms”同样不准确，400 ms 只是当前平台默认值。
 
-移动越过 TouchSlop、进入滚动、收到额外 pointer down 或 `ACTION_CANCEL` 都可能取消长按。Android 17 还会处理 `MotionEvent.CLASSIFICATION_AMBIGUOUS_GESTURE`：在仍有长按候选时按配置倍率放大容差，并延后长按；`CLASSIFICATION_DEEP_PRESS` 则可立即触发长按。这些分类来自输入路径，应用不应根据压力值再造一套互相冲突的规则。
+移动越过 TouchSlop、进入 scroll、收到额外 pointer down 或 `ACTION_CANCEL` 都可能取消长按。Android 17 还会处理 `MotionEvent.CLASSIFICATION_AMBIGUOUS_GESTURE`：在仍有长按候选时按配置倍率放大 slop，并延后长按；`CLASSIFICATION_DEEP_PRESS` 则可立即触发长按。这些分类来自输入路径，应用不应根据压力值再造一套互相冲突的规则。
 
 长按等待本身不会占用主线程。性能问题通常出现在 `onLongPress()` 回调，例如同步解码资源、访问磁盘或构建复杂弹窗。给回调添加应用轨迹，可以直接观察其执行时间。
 
@@ -356,7 +356,7 @@ TouchSlop 过大，会让拖动启动显得迟钝；过小，会把手指抖动�
 
 ### 最小速度决定是否 Fling，最大速度用于限幅
 
-Android 17 仍保留 50 dp/s 和 8000 dp/s 两个回退常量。带 context 的运行时阈值来自 `config_viewMinFlingVelocity` 与 `config_viewMaxFlingVelocity`，`getScaledMinimumFlingVelocity()` / `getScaledMaximumFlingVelocity()` 返回像素每秒。
+Android 17 仍保留 50 dp/s 和 8000 dp/s 两个 fallback 常量。带 context 的运行时阈值来自 `config_viewMinFlingVelocity` 与 `config_viewMaxFlingVelocity`，`getScaledMinimumFlingVelocity()` / `getScaledMaximumFlingVelocity()` 返回像素每秒。
 
 调用时要让单位一致：
 
@@ -402,7 +402,7 @@ case MotionEvent.ACTION_MOVE:
     break;
 ```
 
-不要只凭代码形态断言它一定触发 GC。应根据分配分析或运行时轨迹确认对象数量和停顿，再决定是否修改。
+不要只凭代码形态断言它一定触发 GC。应根据分配分析或运行时 trace 确认对象数量和停顿，再决定是否修改。
 
 ### 2. 把所有识别工作塞进每个 MOVE
 
@@ -424,7 +424,7 @@ case MotionEvent.ACTION_MOVE:
 
 - `onInterceptTouchEvent()` 或 `onTouchEvent()` 中的业务代码；
 - 手势回调触发的 `requestLayout()`、同步 inflate 或数据绑定；
-- 嵌套滑动父级的预消费和余量处理；
+- 嵌套滑动 parent 的预消费和余量处理；
 - `ACTION_CANCEL` 后双方重复启动、停止动画。
 
 减少无意义的容器仍有价值，但这属于 UI 结构优化，不能作为手势卡顿的通用处方。
@@ -457,7 +457,7 @@ Modifier.pointerInput(Unit) {
 
 优先使用 `clickable`、`scrollable`、`draggable`、`transformable` 等高层组件或 modifier。它们同时处理语义、焦点、可访问性、视觉反馈和事件消费。只有交互无法由现有 detector 表达时，再下沉到 `awaitEachGesture`、`awaitFirstDown`、`awaitTouchSlopOrCancellation` 等原始 API。
 
-Compose 对新指针的第一个事件做命中测试，形成可接收 pointer input 的节点链；同一指针的后续事件沿这条链传播。每个事件经过三个阶段：
+Compose 对新 pointer 的第一个事件做命中测试，形成可接收 pointer input 的节点链；同一 pointer 的后续事件沿这条链传播。每个事件经过三个 pass：
 
 | Pass | 方向 | 常见用途 |
 |---|---|---|
@@ -477,7 +477,7 @@ Compose 对新指针的第一个事件做命中测试，形成可接收 pointer 
 2. 确认序列最终是 `UP` 还是 `CANCEL`，以及哪个父容器改变了拦截决定；
 3. 打印运行时 `scaledTouchSlop`、最小/最大 Fling 速度，不用源码 fallback 替代设备值；
 4. 核对 `VelocityTracker` 是否从 `DOWN` 开始收样、是否在 getter 前 compute、是否按 pointer id 取值；
-5. 用轨迹标出自定义回调，确认耗时来自识别、业务处理还是识别后的布局与绘制；
+5. 用 trace 标出自定义回调，确认耗时来自识别、业务处理还是识别后的布局与绘制；
 6. 跨设备差异要同时保存设备 overlay、输入设备信息和复现轨迹，再讨论厂商调校。
 
 ## 源码与文档

@@ -131,7 +131,7 @@ flowchart LR
     end
 ```
 
-图里的两条路径会在用户感知上相遇：一次按键可能被 Slow Keys 延后，一次触摸可能促使显示系统选择更高的候选刷新率。代码层面没有“Rust 过滤器把触摸事件送入 ARR”的调用关系。
+图里的两条路径会在用户感知上相遇：一次按键可能被 Slow Keys 延后，一次触摸可能促使显示系统选择更高的候选刷新率。代码层面没有“Rust filter 把触摸事件送入 ARR”的调用关系。
 
 ## Rust 进入 InputFlinger 的位置
 
@@ -164,7 +164,7 @@ Rust `InputFilterState` 初始为 `BaseFilter + enabled=false`。只要 Sticky�
 
 Android 17 当前源码在重建“全部关闭”的配置时没有显式执行 `state.enabled = false`。因此需要区分两个场景：
 
-1. 进程启动后从未启用过这些过滤器：`isEnabled()` 为 `false`，按键从 C++ 包装器直接传给下一层。
+1. 进程启动后从未启用过这些过滤器：`isEnabled()` 为 `false`，按键从 C++ wrapper 直接传给下一层。
 2. 至少启用过一次，随后全部关闭：filter chain 会重建为只含 `BaseFilter`，过滤语义等价于透传；`enabled` 仍可能保持 `true`，按键会多走一次 local AIDL / Rust `BaseFilter` / callback。
 
 第二种行为来自 `android-17.0.0_r1` 的当前实现，不应当被应用或测试依赖。对功能诊断而言，“全部关闭后没有 Bounce、Slow、Sticky 语义”才是稳定结论。
@@ -274,13 +274,13 @@ UI Toolkit 可用 `HighHint` category vote 表达应用侧 touch boost。选择�
 
 `RefreshRatePolicy.java` 属于 WindowManager。它读取 `WindowManager.LayoutParams` 中的 preferred display mode、preferred refresh rate、min/max refresh rate，并结合高刷 denylist、包级范围、焦点状态和刷新率切换类型，为 `WindowState` 生成 frame-rate vote 与优先级。
 
-它与 InputFlinger Rust 过滤器没有上下游关系，也不负责接收 `Boost.INTERACTION`。WindowManager 提交的窗口偏好最终会成为 SurfaceFlinger 看到的图层信息之一。
+它与 InputFlinger Rust filter 没有上下游关系，也不负责接收 `Boost.INTERACTION`。WindowManager 提交的窗口偏好最终会成为 SurfaceFlinger 看到的 Layer 信息之一。
 
 `DisplayPolicy.onUserActivityEventTouch()` 也不直接选择刷新率。Android 17 的实现只在设备未唤醒时处理默认显示的触摸用户活动：存在 AOD、屏下指纹浮层等休眠界面时，暂时把相关进程标记为 animating，以提高响应性。代码中没有调用 `RefreshRatePolicy`。
 
 排查时可按职责拆成三层：
 
-1. **View / Window / Surface 与 WindowManager**：产生帧率类别、具体帧率、窗口模式和范围等偏好。
+1. **View / Window / Surface 与 WindowManager**：产生帧率类别、具体帧率、窗口 mode 和范围等偏好。
 2. **InputDispatcher / Power / Scheduler**：把符合条件的交互转换为 interaction boost 和全局 touch signal。
 3. **SurfaceFlinger / Composer / 面板**：合并 Layer votes 与全局信号，选择候选刷新率，并由硬件完成显示节奏调整。
 
@@ -298,9 +298,9 @@ Android 官方文档给出的应用可用边界是 Android 15 QPR1 及以上，�
 - `Display.getSuggestedFrameRate(int)`：API 36，按 `Normal` / `High` 类别取得显示设备建议的帧率。
 - `Display.getSupportedRefreshRates()`：Android 16 起返回显示设备支持的 render rates；Android 15 及更早版本的语义只覆盖默认 modes 的刷新率。
 
-官方文档列出的滚动组件支持包括 `ScrollView`、`ListView`、`GridView`，以及 AndroidX RecyclerView 1.4.0、AndroidX Core 1.15.0 对应的滚动优化。自定义组件只有在 smooth scroll / fling 的每个绘制帧持续提交速度，系统才能根据速度逐步降低建议帧率。
+官方文档列出的滚动组件支持包括 `ScrollView`、`ListView`、`GridView`，以及 AndroidX RecyclerView 1.4.0、AndroidX Core 1.15.0 对应的滚动优化。自定义组件只有在 smooth scroll / fling 的每个绘制帧持续提交 velocity，系统才能根据速度逐步降低建议帧率。
 
-应用提交的是偏好或提示，系统仍会综合其他可见图层、窗口过渡、策略范围和硬件能力。`getSuggestedFrameRate()` 的返回值也不保证当前帧一定采用该帧率。
+应用提交的是偏好或提示，系统仍会综合其他可见 Layer、窗口过渡、策略范围和硬件能力。`getSuggestedFrameRate()` 的返回值也不保证当前帧一定采用该帧率。
 
 ## ARR 的硬件与内核边界
 
@@ -313,7 +313,7 @@ AOSP ARR 文档把 ARR 定义为：显示 VSync 频率与刷新率解耦，面�
 
 `vrrConfig=null` 表示该配置按非 ARR 的 MRR 等模式处理。ARR 配置中，`vsyncPeriod` 表示 TE 信号周期，`minFrameIntervalNs` 限制最大刷新率；可用刷新节奏由这些参数的离散组合决定。
 
-以下边界采用 `android-17.0.0_r1` 平台源码和 `android17-6.18-2026-06_r6` 通用内核。AOSP 文档要求 OEM 提供内核支持，但没有规定所有设备共用一条驱动控制路径。分析具体设备时还要结合该设备的 Composer HAL、显示驱动、面板参数和厂商分支，不能仅凭通用内核标签推断 ARR 一定可用。
+以下边界采用 `android-17.0.0_r1` 平台源码和 `android17-6.18-2026-06_r6` 通用内核。AOSP 文档要求 OEM 提供内核支持，但没有规定所有设备共用一条驱动控制路径。分析具体设备时还要结合该设备的 Composer HAL、显示驱动、面板参数和厂商分支，不能仅凭通用内核 tag 推断 ARR 一定可用。
 
 ## 用 Perfetto 和 dump 区分问题
 
@@ -337,7 +337,7 @@ Android 17 的 `SurfaceFlinger::notifyPowerBoost()` 没有单独记录“已收�
 
 ### 刷新率下降看起来像掉帧
 
-ARR 允许显示刷新节奏随内容帧率降低。判断卡顿要看 FrameTimeline deadline、应用是否按期提交和 SurfaceFlinger 是否按期呈现；单看相邻 VSYNC 间隔变长不足以证明发生掉帧。2.18 与 2.19 节继续讨论帧率选择和显示时序。
+ARR 允许显示刷新节奏随内容帧率降低。判断 jank 要看 FrameTimeline deadline、应用是否按期提交和 SurfaceFlinger 是否按期 present；单看相邻 VSYNC 间隔变长不足以证明发生掉帧。2.18 与 2.19 节继续讨论帧率选择和显示时序。
 
 ## 外接设备与多显示边界
 
@@ -357,7 +357,7 @@ ARR 允许显示刷新节奏随内容帧率降低。判断卡顿要看 FrameTime
 
 Android 17 的 InputFlinger Rust 组件只负责键盘辅助功能过滤。Bounce 抑制快速重复按键，Slow 延后并筛除短按，Sticky 捕获瞬时修饰键并改写状态；MotionEvent 不进入这组 Rust filters。
 
-交互对刷新率的影响从 InputDispatcher 用户活动开始，经 PowerManager 的 `Boost.INTERACTION` 同时通知 Power HAL 和 SurfaceFlinger。Scheduler 的全局 touch signal、UI Toolkit 的 `HighHint`、Window / Surface 显式帧率请求以及硬件能力，最终都由 RefreshRateSelector 与显示栈共同处理。
+交互对刷新率的影响从 InputDispatcher user activity 开始，经 PowerManager 的 `Boost.INTERACTION` 同时通知 Power HAL 和 SurfaceFlinger。Scheduler 的全局 touch signal、UI Toolkit 的 `HighHint`、Window / Surface 显式帧率请求以及硬件能力，最终都由 RefreshRateSelector 与显示栈共同处理。
 
 排障时先确认事件类型，再确认过滤器、user activity、touch signal、Layer vote 和面板能力分别走到了哪一步。这样才能区分辅助功能规定行为、输入分发阻塞、应用渲染超时和 ARR 的正常节奏调整。
 
