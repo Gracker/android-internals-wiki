@@ -118,7 +118,7 @@ sequenceDiagram
 | --- | --- | --- | --- |
 | 采样延迟 | 触控 IC、驱动、evdev | `getevent`、InputReader 时间戳 | 采样率低、驱动上报抖动、坐标滤波过重 |
 | 系统分发延迟 | EventHub、InputReader、InputDispatcher、InputChannel | `iq`、`oq:<channel>`、`wq:<channel>`、`dispatch_latency_dur`、`ack_latency_dur` | system_server 调度不及时、目标窗口连接拥塞、ACK 回写慢 |
-| 应用处理延迟 | `ViewRootImpl`、View 树、业务代码、Choreographer | `deliverInputEvent`、`CALLBACK_INPUT`、主线程状态 | 主线程 I/O、Binder 同步调用、复杂手势分发、过深 View 层级 |
+| App 处理延迟 | `ViewRootImpl`、View 树、业务代码、Choreographer | `deliverInputEvent`、`CALLBACK_INPUT`、主线程状态 | 主线程 I/O、Binder 同步调用、复杂手势分发、过深 View 层级 |
 | 显示延迟 | RenderThread、GPU、SurfaceFlinger、HWC、Panel | Frame Timeline、`queueBuffer`、present fence | GPU 忙、BufferQueue 积压、SF 合成超时、刷新率切换 |
 
 这张表用于把问题分段。`wq` 堆积时，不能直接归因于渲染；FrameTimeline 标红也不能反推 InputDispatcher 一定慢。每个指标只覆盖相应区间。
@@ -137,13 +137,13 @@ sequenceDiagram
 
 这个顺序让批量输入先于动画和遍历消费。输入处理占用过多时间时，后面的动画和遍历预算会被压缩；主线程若已被长任务占住，输入即使到达应用进程，也要等 Looper 获得执行机会。
 
-Android 17 创建 `InputChannel` 时使用 `socketpair(AF_UNIX, SOCK_SEQPACKET, ...)`。它保留消息边界，不能笼统理解为字节流套接字。上图省略了窗口选择、事件拆分、ACK 等分支，只表达延迟阶段。
+Android 17 创建 `InputChannel` 时使用 `socketpair(AF_UNIX, SOCK_SEQPACKET, ...)`。它保留消息边界，不能笼统理解为字节流 socket。上图省略了窗口选择、事件拆分、ACK 等分支，只表达延迟阶段。
 
-## VSync、批处理与重采样
+## VSync、batching 与重采样
 
-输入和显示的频率通常不同。触控采样可以是 120Hz、240Hz、480Hz，显示刷新可能是 60Hz、90Hz、120Hz；应用的渲染帧率又可能低于屏幕刷新率。Android 用批处理和重采样衔接这些节奏。
+输入和显示的频率通常不一样。触控采样可以是 120Hz、240Hz、480Hz，显示刷新可能是 60Hz、90Hz、120Hz；App 的渲染帧率又可能低于屏幕刷新率。Android 用 batching 和重采样把这些节奏接到一起。
 
-### 批处理解决吞吐问题
+### Batching 解决吞吐问题
 
 高采样率触摸屏在一个 VSync 周期内可能产生多个 MOVE 样本。系统把这些样本合并到同一个 `MotionEvent`，当前坐标通过 `getX()` / `getY()` 读取，历史采样通过 `getHistoricalX()` / `getHistoricalY()` 读取。
 
@@ -158,11 +158,11 @@ fun appendSamples(event: MotionEvent, out: MutableList<PointF>) {
 }
 ```
 
-代码只处理第一个指针，多指场景要按 `pointerCount` 展开。批处理没有丢掉中间点，应用是否使用这些点取决于自身的输入处理逻辑。
+代码只处理第一个指针，多指场景要按 `pointerCount` 展开。批处理没有丢掉中间点，App 是否使用这些点取决于自身的输入处理逻辑。
 
 ### 重采样解决时序贴合问题
 
-批处理解决“点太多”，重采样解决“点和帧时间不齐”。应用进程里的 `InputConsumer` 会根据目标帧时间，在最近的真实采样点之间插值，或在没有未来点时做短窗口外推，使当前帧拿到的坐标更接近显示时刻。
+Batching 处理“点太多”的问题，重采样处理“点和帧时间不齐”的问题。App 进程里的 `InputConsumer` 会根据目标 frame time，在最近的真实采样点之间插值，或者在没有未来点时做短窗口外推。这样当前帧拿到的坐标更接近这帧要显示的时刻。
 
 在 `android-17.0.0_r1` 的 ViewRoot 路径中，`android_view_InputEventReceiver.cpp` 直接持有 `frameworks/native/libs/input/InputConsumer.cpp` 实现的 `InputConsumer`。消费 batch 时，它把目标采样时刻设为 `frameTime - 5ms`：
 
@@ -172,11 +172,11 @@ fun appendSamples(event: MotionEvent, out: MutableList<PointF>) {
 - 用于外推的历史间隔上限是 20ms；
 - 向前外推最多 8ms，并且不能超过最近采样间隔的 50%。
 
-这里的 5ms 是让坐标贴近目标帧的采样偏移，不是额外附加到端到端链路上的固定 5ms 延迟。原生层还并存 `InputConsumerNoResampling`、`Resampler.cpp` 和 `LegacyResampler` 等组件，但它们不属于这个标签下 ViewRoot JNI 直接构造的消费路径。
+这里的 5ms 是让坐标贴近目标帧的采样偏移，不是额外附加到端到端链路上的固定 5ms 延迟。Native 层还并存 `InputConsumerNoResampling`、`Resampler.cpp` 和 `LegacyResampler` 等组件，但它们不属于这个标签下 ViewRoot JNI 直接构造的消费路径。
 
 API 35 起，可以先通过 `MotionEvent#getPointerCoords()` 或 `getHistoricalPointerCoords()` 取出 `PointerCoords`，再调用 `PointerCoords.isResampled()` 判断该坐标是否由系统重采样得到。更早版本没有对应的公开判断 API。
 
-`requestUnbufferedDispatch()` 会让匹配输入源的待处理批次立即以 `frameTimeNanos = -1` 消费，不再等待下一次输入 VSync callback。代价是批次可积累的样本更少，而且没有目标帧时间可供上述重采样使用。手写、签名、白板可以在笔迹进行期间评估这种取舍；普通列表滚动通常保留默认策略。
+`requestUnbufferedDispatch()` 会让匹配输入源的 pending batch 立即以 `frameTimeNanos = -1` 消费，不再等下一次输入 VSync callback。代价是 batch 可积累的样本更少，而且没有目标 frame time 可供上述重采样使用。手写、签名、白板可以在笔迹进行期间评估这种取舍；普通列表滚动通常先保留默认策略。
 
 ## MotionPredictor：用预测缩短感知距离
 
@@ -194,16 +194,16 @@ API 35 起，可以先通过 `MotionEvent#getPointerCoords()` 或 `getHistorical
 
 `MotionPredictor(Context)` 会读取设备资源 `config_enableMotionPrediction` 和 `config_motionPredictionOffsetNanos`。AOSP 基础配置分别是 `false` 和 `0`，因此 API 存在不等于所有设备都默认启用；调用前必须用 `isPredictionAvailable(deviceId, source)` 判断。
 
-在 `android-17.0.0_r1` 中，框架对象经 `android_view_MotionPredictor.cpp` 调到原生预测器。当前实现有以下限制：
+在 `android-17.0.0_r1` 中，framework 对象经 `android_view_MotionPredictor.cpp` 调到 Native predictor。当前实现还有以下限制：
 
-- 一个预测器实例在一段活动手势中只接受一个输入设备；
-- `isPredictionAvailable()` 只接受触控笔输入源，记录时还会检查单指针和 `ToolType::STYLUS`；
+- 一个 predictor 实例在一段活动手势中只接受一个 input device；
+- `isPredictionAvailable()` 只接受 stylus source，记录时还会检查单 pointer 和 `ToolType::STYLUS`；
 - `record()` 使用 `DOWN`、`MOVE` 样本，收到 `UP` 或 `CANCEL` 后清空手势状态，其他 action 不参与建模；
 - 已被系统重采样的坐标不会再次输入预测模型；
 - TFLite 模型优先从 `/vendor/etc/motion_predictor_model.tflite` 加载，缺失时回退到 `/system/etc/motion_predictor_model.tflite`；相邻的配置 XML 决定模型窗口和预测参数；
 - 模型输入包含位移极坐标、pressure、tilt、orientation，输出包含预测位移和 pressure。
 
-这些边界表明预测能力由平台版本、设备资源覆盖、输入设备和当前笔划共同决定。TCN 架构、NPU 加速、固定 30ms 窗口或非触控笔的全面支持，都不能从该源码锚点推出。
+这些边界意味着预测能力由平台版本、设备 overlay、输入设备和当前笔划共同决定。TCN 架构、NPU 加速、固定 30ms 窗口或非 stylus 全量支持，都不能从该源码锚点推出。
 
 ### 框架 API 的使用方式
 
@@ -238,7 +238,7 @@ try {
 }
 ```
 
-`predict()` 可能因为设备不支持、样本不足或置信度不够而返回 `null`，也可能早于请求时间停止预测。生产实现还要按输入设备管理实例，并在真实样本到达后修正预测笔迹。预测点应在渲染层标记来源，避免被写入不可回滚的真实笔迹。
+`predict()` 可能因为设备不支持、样本不足或置信度不够而返回 `null`，也可能早于请求时间停止预测。生产实现还要按 input device 管理实例，并在真实样本到达后修正预测笔迹。预测点应在渲染层标记来源，避免被写入不可回滚的真实笔迹。
 
 ### 预测的代价
 
@@ -252,13 +252,13 @@ try {
 
 ## 前缓冲与低延迟图形
 
-传统多缓冲路径要等待应用渲染、buffer swap、SurfaceFlinger 合成和显示刷新。对整屏 UI 来说，这套路径安全、稳定；对手写笔迹来说，它会让墨迹落后于笔尖。
+传统多缓冲路径要等 App 渲染、buffer swap、SurfaceFlinger 合成和显示刷新。对整屏 UI 来说，这套路径安全、稳定；对手写笔迹来说，它会让墨迹落后于笔尖。
 
 前缓冲渲染会把短生命周期的增量内容放进专用的低延迟前缓冲层，减少等待下一次完整多缓冲提交的时间。它不是修改 View 当前正在显示的普通 color buffer。Jetpack graphics 库提供了几层入口：
 
 - `GLFrontBufferedRenderer`：适合 OpenGL 自定义渲染，通常用于笔迹增量层和多缓冲持久层组合。
-- `CanvasFrontBufferedRenderer`：同时管理低延迟前缓冲层和用于完整场景的多缓冲层；`commit()` 会重新绘制并提交完整场景。
-- `LowLatencyCanvasView`：在 View 层级上方管理临时的单缓冲叠加层；`renderFrontBufferedLayer()` 后可见，`commit()` 后隐藏叠加层，并把同一内容交回普通 View 绘制路径。
+- `CanvasFrontBufferedRenderer`：同时管理低延迟 front-buffered layer 和用于完整场景的 multi-buffered layer；`commit()` 会重新绘制并提交完整场景。
+- `LowLatencyCanvasView`：在 View 层级上方管理临时的单缓冲 overlay；`renderFrontBufferedLayer()` 后可见，`commit()` 后隐藏 overlay，并把同一内容交回普通 View 绘制路径。
 
 ### 适合与不适合
 
@@ -279,7 +279,7 @@ try {
 | --- | --- | --- |
 | `dispatch_latency_dur` | InputDispatcher 开始分发到应用收到事件 | system_server 调度、InputChannel、目标进程唤醒 |
 | `handling_latency_dur` | 接收端收到事件到发出 finish/ACK | 接收线程处理、View 分发以及这段区间内的排队或同步调用；不能一概等同于业务代码耗时 |
-| `ack_latency_dur` | 应用发出 ACK 到系统收到 ACK | ACK 回写、线程调度、system_server 负载 |
+| `ack_latency_dur` | App 发出 ACK 到系统收到 ACK | ACK 回写、线程调度、system_server 负载 |
 | `total_latency_dur` | dispatch 到 ACK 的总时长 | 输入分发往返总耗时 |
 | `end_to_end_latency_dur` | InputReader 读到事件到关联帧送显 | 输入到显示的端到端耗时，依赖轨迹中的帧关联信息 |
 
@@ -311,20 +311,20 @@ LIMIT 100;
 
 结果按下面的顺序判断：
 
-- `dispatch_ms` 高：检查 InputDispatcher 线程、目标进程主线程是否处于 Runnable 等待 CPU，以及套接字通道是否拥塞。
+- `dispatch_ms` 高：先看 InputDispatcher 线程、目标进程主线程是否 Runnable 等 CPU、socket 通道是否拥塞。
 - `handling_ms` 高：根据 `tid`、`thread_name` 确认接收线程，再展开 `deliverInputEvent` 和同一时间窗的业务切片。
-- `ack_ms` 高：应用处理结束后到系统收到 ACK 之间还有调度或回写延迟，不要把它计入 View 分发耗时。
+- `ack_ms` 高：App 处理结束后到系统收到 ACK 中间还有调度或回写延迟，不要把它算成 View 分发耗时。
 - `end_to_end_ms` 高：把 FrameTimeline、RenderThread 和 SurfaceFlinger 一起纳入判断。
 
-`android_input_events` 主要关联输入 input atrace slice（如 `sendMessage`、`receiveMessage`、`deliverInputEvent`）与 FrameTimeline。`android.input.inputevent` 是只在可调试构建上可用的结构化数据源，用于填充 `android_motion_events`、`android_key_events`、`android_input_event_dispatch` 等表，但并非查询 `android_input_events` 的前置条件。
+`android_input_events` 主要关联输入 input atrace slice（如 `sendMessage`、`receiveMessage`、`deliverInputEvent`）与 FrameTimeline。`android.input.inputevent` 是只在 debuggable build 上可用的结构化数据源，用于填充 `android_motion_events`、`android_key_events`、`android_input_event_dispatch` 等表，但并非查询 `android_input_events` 的前置条件。
 
-`end_to_end_latency_dur` 需要成功关联输入与送显帧；关联不到时会是 `NULL`。对于未批处理的事件，标准库可能用下一帧作推测关联，此时 `is_speculative_frame = 1`。空值表示证据不足，推测值也要与界面行为和 FrameTimeline 一起核对。
+`end_to_end_latency_dur` 需要成功关联输入与送显帧；关联不到时会是 `NULL`。对于未 batch 的事件，标准库可能用下一帧作推测关联，此时 `is_speculative_frame = 1`。空值表示证据不足，推测值也要与界面行为和 FrameTimeline 一起核对。
 
 ## 调度、提频与硬件采样策略
 
 输入处理跨帧时，瓶颈可能来自 App 代码，也可能来自线程迟迟没有获得 CPU。Perfetto 里要把 CPU frequency、thread state、调度迁移与同一时间窗的业务 slice 放在一起看。
 
-### 输入升频的观察方法
+### Input Boost 的观察方法
 
 常见设备会在触摸到来后短时间提高 CPU 或 GPU 频率，或把 UI 相关线程迁移到更合适的核心。策略名称因平台而异。某个 SoC 的具体持续时间或目标频率不能写成 Android 通用行为。
 
@@ -341,7 +341,7 @@ LIMIT 100;
 
 高采样率缩短的是“下一次采到手指位置”的等待。120Hz 采样的周期约 8.3ms，240Hz 约 4.16ms，480Hz 约 2.08ms。它不会自动缩短 App 主线程、GPU 和 SurfaceFlinger 的耗时。
 
-对普通滚动来说，采样率高于显示帧率后，收益会被批处理和渲染节奏限制。对手写笔来说，高采样率仍有价值，因为更多真实点能让轨迹重建和预测更稳。判断设备营销规格是否转化成体验收益，要查看轨迹中的采样点是否稳定到达、应用是否消费历史点、显示帧是否及时送显。
+对普通滚动来说，采样率高于显示帧率后，收益会被 batching 和渲染节奏限制。对手写笔来说，高采样率仍有价值，因为更多真实点能让轨迹重建和预测更稳。要判断设备营销规格是否转成体验收益，还是看 trace：采样点是否稳定到达、App 是否消费历史点、显示帧是否及时 present。
 
 ### Android 17 DeliQueue 与输入延迟口径
 
@@ -369,8 +369,8 @@ flowchart TD
 
 可以按以下方式组合：
 
-- **默认保留批处理和重采样**：使用系统默认的时序贴合能力。
-- **需要极低延迟时再用非缓冲分发**：只在笔迹进行中开启，结束后恢复普通路径。
+- **默认保留 batching 和重采样**：先利用系统默认的时序贴合能力。
+- **需要极低延迟时再用 unbuffered dispatch**：只在笔迹进行中开启，结束后恢复普通路径。
 - **预测点单独成层**：真实点到达后可修正，不污染持久笔迹。
 - **前缓冲只画局部增量**：整屏变化仍走普通渲染路径。
 - **用 Perfetto 验证结果**：优化前后对比 `handling_latency_dur`、FrameTimeline、笔迹图层的送显时间。
@@ -385,7 +385,7 @@ flowchart TD
 
 ### 误区二：高采样率一定降低总延迟
 
-高采样率只降低采样等待，并增加可用于轨迹重建的点。应用主线程、GPU、SurfaceFlinger 任何一段跨帧，总延迟都会被放大。普通列表滑动应先检查主线程和渲染路径；手写笔还要检查采样、历史点、预测和前缓冲。
+高采样率只降低采样等待，并增加可用于轨迹重建的点。App 主线程、GPU、SurfaceFlinger 任何一段跨帧，总延迟都会被放大。普通列表滑动应先检查主线程和渲染路径；手写笔还要检查采样、历史点、预测和前缓冲。
 
 ### 误区三：预测输入适合所有交互
 
