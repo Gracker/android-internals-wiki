@@ -354,8 +354,8 @@ BLASTBufferQueue::onFrameAvailable()
     Transaction::apply()
 
 SurfaceFlinger
-  接收待处理的缓冲事务
-  评估就绪状态并为显示帧选择缓冲
+  receive pending buffer transaction
+  evaluate readiness and select buffer for a display frame
   compose / present
   send per-buffer release information back to BLAST
 ```
@@ -368,13 +368,13 @@ SurfaceFlinger
 
 这些机制只覆盖已经加入 transaction 或 sync group 的状态与 buffer。外部 codec、Camera、另一个进程的独立帧循环、未加入同步组的 Surface，不会因为同屏显示就自动采用同一业务帧。acquire fence 未满足时，目标更新也可能被推迟。
 
-BLAST 提供明确的事务边界，不能保证所有窗口始终使用同一帧。
+BLAST 提供明确的 transaction 边界，不能保证所有窗口始终使用同一帧。
 
 ### latch 与读取是两个同步边界
 
-Android 13 起，`AutoSingleLayer` 允许 SurfaceFlinger 在严格条件下先 latch 尚未 signal 的 acquire fence。Android 17 的 `transactionReadyBufferCheck()` 会检查 `shouldLatchUnsignaled()`；`AutoSingleLayer` 路径要求本次只更新一个 layer、位于 transaction 队首、不使用提前 VSync 配置，并且通过 `RequestedLayerState::isSimpleBufferUpdate()`。包含 geometry change 或 sync transaction 的更新不符合该模型。
+Android 13 起，`AutoSingleLayer` 允许 SurfaceFlinger 在严格条件下先 latch 尚未 signal 的 acquire fence。Android 17 的 `transactionReadyBufferCheck()` 会检查 `shouldLatchUnsignaled()`；`AutoSingleLayer` 路径要求本次只更新一个 layer、位于 transaction 队首、不使用 early VSync 配置，并且通过 `RequestedLayerState::isSimpleBufferUpdate()`。包含 geometry change 或 sync transaction 的更新不符合该模型。
 
-满足这些条件，只表示 transaction readiness 阶段可以先采纳 buffer 状态。RenderEngine 或 HWC 开始读取像素前仍需遵守 acquire fence。因此，trace 中“buffer 已 latch”和“Producer 写入已完成”是两个时间点；入队时 fence 尚未 signal，也不能直接断言本轮一定无法 latch。
+满足这些条件，只表示 transaction readiness 阶段可以先采纳 buffer 状态。RenderEngine 或 HWC 开始读取像素前仍需遵守 acquire fence。因此，trace 中“buffer 已 latch”和“Producer 写入已完成”是两个时间点；queue 时 fence 尚未 signal，也不能直接断言本轮一定无法 latch。
 
 ## 三类 fence 的方向
 
@@ -422,14 +422,14 @@ Android 17 中常见的观测对象包括：
 |---|---|---|
 | `dequeueBuffer - <surface>`/`queueBuffer` | App Producer | Producer 取出或提交 slot |
 | `QueuedBuffer - <name>BLAST#<id>` | App 内 BLAST counter | BLAST 可用、acquired、pending release 的组合计数 |
-| `BufferTX - <layerName>` | SurfaceFlinger | SF 服务端的待处理 buffer transaction 数 |
+| `BufferTX - <layerName>` | SurfaceFlinger | SF server 侧 pending buffer transaction 数 |
 | FrameTimeline `SurfaceFrame` | App/目标 Surface | expected/actual 与 jank 分类 |
 | FrameTimeline `DisplayFrame` | SurfaceFlinger/display | 整屏 expected/actual present |
 | release/present fence | SF/HWC/display | buffer 回收和显示完成边界 |
 
 `BufferTX` 增加只说明 SF 记录了一笔 pending buffer update。它没有直接给出 acquire fence 是否就绪、sync barrier 是否满足或 display 是否已使用新 buffer。计数在 latch 或 drop 后下降，也不能单独区分两种结果。
 
-BLAST 在 `acquireNextBufferLocked()` 中按 frame number 查找待处理的 pending FrameTimeline info，并调用 `Transaction::setFrameTimelineInfo()`；相关 trace 会带 frame number 和 VSync ID。`queueBuffer` slice 本身没有 VSync ID 后缀。对齐时应结合 BLAST transaction、FrameTimeline token、layer/buffer id 和相邻 SF 显示帧判断。
+BLAST 在 `acquireNextBufferLocked()` 中按 frame number 查找 pending FrameTimeline info，并调用 `Transaction::setFrameTimelineInfo()`；相关 trace 会带 frame number 和 VSync ID。`queueBuffer` slice 本身没有 VSync ID 后缀。对齐时应结合 BLAST transaction、FrameTimeline token、layer/buffer id 和相邻 SF display frame 判断。
 
 ### `dequeueBuffer()` 变长
 

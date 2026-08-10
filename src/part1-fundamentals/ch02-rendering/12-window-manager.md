@@ -85,7 +85,7 @@ last_task6_audit: "2026-07-14"
 
 ## 为什么要了解 WMS
 
-App 冷启动、Activity/Task 过渡、IME、旋转、分屏和桌面窗口 resize 都会改变窗口状态。跟踪数据只看 App 主线程或 SurfaceFlinger，会漏掉 system_server 与 WM Shell 之间的状态收集、同步和几何 transaction。
+App 冷启动、Activity/Task 过渡、IME、旋转、分屏和桌面窗口 resize 都会改变窗口状态。如果只看 trace 中的 App 主线程或 SurfaceFlinger，会漏掉 system_server 与 WM Shell 之间的状态收集、同步和几何 transaction。
 
 WMS 负责维护 WindowContainer/WindowState 树，并把 Activity/Task 状态转换成窗口 bounds、可见性、层级、Insets、focus、input window info 与 `SurfaceControl` 属性。它不绘制 App 像素，也不执行最终合成。
 

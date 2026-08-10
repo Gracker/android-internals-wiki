@@ -246,7 +246,7 @@ Android 17 的硬件 VSync 状态包括 `Enabled`、`Disabled` 和 `Disallowed`�
 
 ### 3.4 present fence 是反馈，不代表光学完成
 
-HWC 的 present 操作会按显示、按帧返回 present fence。栅栏发出信号后，会为 Android 显示栈提供本轮 present 的时间锚点，SurfaceFlinger 可用它校准模型和更新 FrameTimeline。
+HWC 的 present 操作返回 per-display、per-frame 的 present fence。它后续 signal 时，为 Android 显示栈提供本轮 present 的时间锚点，SurfaceFlinger 可用它校准模型和更新 FrameTimeline。
 
 present fence 不表示 panel 所有像素已经完成响应，也不表示人眼此刻已经看到稳定图像。Panel 扫描、传输、像素响应和显示后处理仍可能发生在这个边界之后。
 
