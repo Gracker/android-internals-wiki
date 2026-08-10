@@ -63,13 +63,13 @@ sources:
 
 # 14.28 Perfetto GPU Counter 与 GPU Memory 事件分析
 
-> **版本边界**：本章只讨论 Android 17 / `android-17.0.0_r1` 可在 AOSP `external/perfetto` 中核验的 GPU counter descriptor、GPU counter event、GPU memory event 与 Trace Processor 导入链路。早期 outline 中的跨厂商性能阈值、Ray Tracing、NPU/ML 协同、远程 GPU 调试与完整 AGI 工作流没有进入本章结论。
+> **版本边界**：范围限于 Android 17 / `android-17.0.0_r1` 中可在 AOSP `external/perfetto` 核验的 GPU counter descriptor、GPU counter event、GPU memory event 与 Trace Processor 导入链路。跨厂商性能阈值、Ray Tracing、NPU/ML 协同、远程 GPU 调试与完整 AGI 工作流不在讨论范围内。
 
 ## 要点
 
 1. `GpuCounterDescriptor` 提供 counter 的协议级元数据：语义分组、度量单位、counter spec 与硬件 counter block 容量约束。
 2. `GpuCounterEvent` 有 descriptor 直挂与 interned descriptor 两种事件发射模式；Android OEM 合规路径依赖直挂 descriptor，多 producer / 多 GPU 场景可用 sequence-scoped interned descriptor 避免全局 counter id 协调。
-3. Trace Processor 在 `gpu_event_parser.h/.cc` 中维护 GPU counter track 与上一条 counter row 状态，并把回看式采样值写回上一行；`android-17.0.0_r1` 没有早稿曾引用的 `gpu_counter_sequence_state.h`。
+3. Trace Processor 在 `gpu_event_parser.h/.cc` 中维护 GPU counter track 与上一条 counter row 状态，并把回看式采样值写回上一行；`android-17.0.0_r1` 不包含 `gpu_counter_sequence_state.h`。
 4. `gpu_counter_span_view.sql` 用 `LEAD() OVER (PARTITION BY track_id ORDER BY ts)` 将 counter 采样点转为 span，适合按 GPU track 计算区间持续时间。
 5. `GpuMemTotalEvent` 位于 `protos/perfetto/trace/android/gpu_mem_event.proto`，由 Android `GpuService` 生成；`pid=0` 表示全局总量，其他 pid 表示进程归属。
 6. `GpuCounterEvent` 不携带 pid、tid、layer、FrameTimeline token 或 GPU submission id。单条 counter track 只能直接说明某个 `gpu_id` 上的设备级变化，归因到 App、SurfaceFlinger 或某一显示帧还需要其它时间线证据。
@@ -186,7 +186,7 @@ base::FlatHashMap<TrackId, std::optional<tables::CounterTable::Id>>
 1. legacy inline `counter_descriptor` 路径按全局 `counter_id` 维护 `GpuCounterState`。
 2. interned `counter_descriptor_iid` 路径通过 packet sequence 中的 interned message 查到 `InternedGpuCounterDescriptor`，再按 track 维护 `last_id`。
 
-`android-17.0.0_r1` 未包含早稿曾引用的 `gpu_counter_sequence_state.h`；相关描述必须回到 `gpu_event_parser.h/.cc`。
+`android-17.0.0_r1` 不包含 `gpu_counter_sequence_state.h`；相关行为应以 `gpu_event_parser.h/.cc` 为准。
 
 `PushGpuCounterValue()` 的顺序还会影响 trace 边界解释。第一条事件只建立占位行，要等下一条事件到达后，前一个时间点的值才被写入；trace 结束前的末行可能仍是值为 0 的占位行。分析短 trace 或低频采样时，应检查首尾样本，不要把这个 0 自动解释为 GPU 空闲。
 
@@ -260,7 +260,7 @@ message GpuMemTotalEvent {
 
 ### 出图拓扑决定 counter 应该和谁对齐
 
-以下判读表来自 `rendering_pipelines` 的 Android 17 显示模型。表中的“GPU counter”均指设备级轨道；厂商若提供更细的 context、queue 或 stage 事件，可以继续细分。
+以下判读表基于 Android 17 的显示模型。表中的“GPU counter”均指设备级轨道；厂商若提供更细的 context、queue 或 stage 事件，可以继续细分。
 
 | 出图路径 | 可能进入同一 GPU counter 的工作 | 需要同时核对的证据 | 常见误判 |
 | --- | --- | --- | --- |
@@ -294,7 +294,7 @@ Camera 和视频还存在相反情况：主体内容通过 ISP、codec 与 HWC �
 5. **避免跨厂商强归一**：仅凭同属 `MEMORY`、`FRAGMENTS` 或 `COMPUTE` 分组不足以证明 counter 可比。若要建立跨设备基准，必须记录厂商 producer、counter 名称、单位、采样频率与替代映射依据。
 6. **控制 trace 体积**：样本数量近似为 `counter 数 × 采样频率 × 时长`，但 protobuf 的 `int_value` 是变长编码，`double_value`、嵌套 message、packet framing、descriptor 与 interning 也有额外成本。不要用固定的“每项 12 bytes”推算容量；先做短时采集，测量生成 trace 的 bytes/s，再为目标时长设置 buffer 和采样周期。
 
-## 不在本章结论范围内的主题
+## 范围外主题
 
 下列主题需要另行补充 Android 17 基线下的一手材料或可复现实验后再写入正文结论：
 
@@ -318,7 +318,3 @@ Camera 和视频还存在相反情况：主体内容通过 ISP、codec 与 HWC �
 - [`src/trace_processor/importers/proto/gpu_event_parser.cc`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/importers/proto/gpu_event_parser.cc)
 - [`src/trace_processor/metrics/sql/android/gpu_counter_span_view.sql`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/metrics/sql/android/gpu_counter_span_view.sql)
 - [`test/trace_processor/diff_tests/parser/graphics/gpu_counter_specs.textproto`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/test/trace_processor/diff_tests/parser/graphics/gpu_counter_specs.textproto)
-
-渲染路径与显示边界还对照了 `Writer/rendering_pipelines` 中的 S01、S02、S03、S04、S05、S11、S12 与 S13。该系列用于确认 Producer、BufferQueue、layer、fence、SurfaceFlinger/HWC 与 present 的关系；GPU counter 协议和 Trace Processor 行为仍以上述 Android 17 AOSP 源码为准。
-
-<!-- AIW-rework-verified-2026-07-30 -->

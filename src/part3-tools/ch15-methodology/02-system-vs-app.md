@@ -100,25 +100,6 @@ android17_review_notes: "2026-07-30：保留全部 task6/task9/OpenClaw 字段�
 
 # 如何区分系统问题和 App 问题
 
-<!-- outline-start -->
-
-## 本节要点大纲
-
-## 锚点
-
-- 🔹 区分系统问题 vs App 问题的重要性
-- 🔹 从 Trace 判断：CPU 调度延迟 → 系统、主线程耗时 → App
-- 🔹 系统负载高的特征：CPU 全核满载、kswapd 活跃、SurfaceFlinger 延迟
-- 🔹 App 自身问题的特征：主线程 Slice 耗时明显、特定操作触发
-- 🔹 灰色地带：系统资源不足导致 App 表现差（谁该负责？）
-
-## 扩展
-
-- 🔸 多 App 共存时的性能归因
-- 🔸 系统级性能回归的排查方法
-
-<!-- outline-end -->
-
 ## 归因不能停在“系统”或“App”
 
 “系统问题”和“App 问题”适合用于分派工作，却不足以描述一条性能因果链。一次输入延迟可能经过 App 主线程、Binder 服务、调度器、驱动和硬件；SurfaceFlinger 错过 deadline，输入 Layer 也可能由 App 制造。过早贴标签，会把直接原因和改动责任混在一起。
@@ -136,7 +117,7 @@ android17_review_notes: "2026-07-30：保留全部 task6/task9/OpenClaw 字段�
 
 ## 平台与内核锚点
 
-本章的平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。调度与内存回收部分以 Android common kernel `android17-6.18-2026-06_r6` 为参考：
+平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。调度与内存回收部分以 Android common kernel `android17-6.18-2026-06_r6` 为参考：
 
 - `include/trace/events/sched.h` 定义 `sched_waking`、`sched_wakeup`、`sched_switch` 等 tracepoint，Perfetto 由这些事件重建 Running、Runnable 与切换关系。
 - `mm/vmscan.c` 包含 direct reclaim、`balance_pgdat()`、`kswapd()` 和 `wakeup_kswapd()` 等路径。
@@ -393,5 +374,3 @@ App Layer、系统 UI、HWC 选择、GPU 竞争、driver 与 display pipeline �
 - [Android common kernel android17-6.18-2026-06_r6：vmscan.c](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c)
 - [Gracker：Android Perfetto 系列——CPU](https://androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/)
 - [Gracker：如何分析 Perfetto Trace](https://androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/)
-
-<!-- AIW-review-verified-2026-07-30 -->
