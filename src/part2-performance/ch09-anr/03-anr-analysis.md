@@ -65,29 +65,11 @@ pipeline_stage: ready-to-publish
 
 # ANR 分析方法
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 ANR traces.txt 的解读方法：主线程堆栈、锁信息、等待对象
-- 🔹 从 Perfetto/Systrace 分析 ANR：主线程在 ANR 时间窗口内的活动
-- 🔹 常见 ANR 根因分类：死锁、主线程 I/O、Binder 调用超时、CPU 饥饿、系统负载高
-- 🔹 CPU 使用率信息（ANR info 中的 CPU usage）的解读
-- 🔹 线上 ANR 的分析流程与工具链
-
-### 扩展（可选深入）
-
-- 🔸 ANR Rate 的量化与监控体系搭建
-- 🔸 使用 Perfetto SQL 批量分析 ANR Trace
-
-<!-- outline-end -->
-
 ## 先建立证据模型
 
 ANR 表示系统认定某个响应期限已经超时。它没有直接说明是哪一行代码造成了超时，也没有保证保存的线程栈仍停在触发超时的代码上。分析工作的目标，是用多个时间点、多个层级的证据还原这段期限内发生的事。
 
-本节以 AOSP `android-17.0.0_r1` 和 Android Common Kernel `android17-6.18-2026-06_r6` 为源码锚点。历史设备仍可能生成名为 `traces.txt` 的文件；Android 17 的 `StackTracesDumpHelper` 则在 `/data/anr/` 下创建以 `anr_` 开头的文件。下文用“ANR trace”统称这些线程转储文件。
+源码锚点为 AOSP `android-17.0.0_r1` 和 Android Common Kernel `android17-6.18-2026-06_r6`。历史设备仍可能生成名为 `traces.txt` 的文件；Android 17 的 `StackTracesDumpHelper` 则在 `/data/anr/` 下创建以 `anr_` 开头的文件。下文用“ANR trace”统称这些线程转储文件。
 
 一份可靠结论通常要回答五个问题：
 
@@ -607,7 +589,7 @@ Android 17 还会收集 parent、system_server、persistent、可能的输入法
 - **Android 16（API 36）**：加入 `ProfilingTrigger`、`TRIGGER_TYPE_ANR` 与触发式 profiling 注册。
 - **Android 17（API 37）**：加入通用 `TRIGGER_TYPE_ANOMALY`；它没有替代专用的 ANR trigger。
 
-文件名、dump 进程范围和日志格式属于实现细节，应以目标构建源码为准。本文的平台实现锚点固定为 `android-17.0.0_r1`。
+文件名、dump 进程范围和日志格式属于实现细节，应以目标构建源码为准。平台实现锚点固定为 `android-17.0.0_r1`。
 
 ## 与其他章节的关系
 

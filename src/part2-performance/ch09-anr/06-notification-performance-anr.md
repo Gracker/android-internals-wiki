@@ -83,19 +83,6 @@ last_deepseek_cn_review_at: 2026-07-15
 
 # 9.6 Notification 性能与 ANR
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 锚点 1:为什么 Notification 会引发 ANR
-### 🔹 锚点 2:NotificationManagerService 内部机制
-### 🔹 锚点 3:RemoteViews 的性能开销
-### 🔹 锚点 4:NotificationListenerService 与性能
-### 🔹 锚点 5:通知与 ANR 的典型模式
-### 🔹 锚点 6:Android 17 通知性能变更
-### 🔹 锚点 7:在 Perfetto 中诊断通知 ANR
-
-<!-- outline-end -->
-
 ## 为什么 Notification 会引发 ANR
 
 “通知导致 ANR”至少包含四条不同的执行链。它们共享 Notification 数据，却不共享线程和超时检测器。
@@ -357,12 +344,12 @@ trace 位于 `NotificationManager.notify*()`、`BinderProxy.transactNative()` �
 
 | 版本 | 已确认变化 | 性能诊断含义 |
 |---|---|---|
-| Android 12（API 31） | 本章支持范围的基线；NMS 已有通知数量与更新速率保护 | 不把这些保护误写成 Android 17 新增 |
+| Android 12（API 31） | 支持范围的基线；NMS 已有通知数量与更新速率保护 | 不把这些保护误写成 Android 17 新增 |
 | Android 13（API 33） | `POST_NOTIFICATIONS` 成为 runtime permission | 发布前处理授权状态；它不改变已获授权通知的 NMS 同步边界 |
 | Android 16（API 36） | `Notification.ProgressStyle` 与 promoted ongoing / Live Update API | 进度场景可使用系统样式，Live Update 资格另行判断 |
 | Android 17（API 37） | `Notification.MetricStyle`、Metric value 类型、Semantic Coloring | 指标场景新增系统样式，语义颜色交给系统 surface 解释 |
 
-没有 Android 17 一手证据支持“后台 NLS 统一按包限频”，本节不采用该说法。
+没有 Android 17 一手证据支持“后台 NLS 统一按包限频”，因此不能采用该说法。
 
 ### ProgressStyle 与 Live Update 是两个概念
 
@@ -585,5 +572,3 @@ resource、URI 和 bitmap 分别把成本放在资源解析、延迟读取解码
 - [Live Update 资格与 surface](https://developer.android.com/develop/ui/views/notifications/live-update)
 - [Android 17 Semantic Coloring](https://developer.android.com/about/versions/17/features#live-update-semantic-color)
 - [ANR 诊断指南](https://developer.android.com/topic/performance/vitals/anr)
-
-本地研究素材：`intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.md`。
