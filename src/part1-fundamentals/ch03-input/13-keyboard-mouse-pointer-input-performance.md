@@ -476,8 +476,8 @@ adb shell dumpsys input
 重点看：
 
 - 设备 classes、sources、mapper 与 motion ranges；
-- 焦点显示器、各显示器的焦点窗口；
-- 指针捕获模式；
+- focused display、各 display 的 focused window；
+- pointer capture mode；
 - touch/hover/drag state；
 - 连接的出站队列、等待队列与响应状态；
 - 按键重复超时时间和间隔。

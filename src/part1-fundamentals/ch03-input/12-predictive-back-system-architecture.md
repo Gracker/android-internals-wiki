@@ -203,7 +203,7 @@ Android 17 还提供一条减少逐帧跨进程调用的优化路径。满足以
 系统服务端准备完成后，把打开/关闭的 `RemoteAnimationTarget` 及其动画控制层交给 Shell。手势阶段的典型逐帧工作包括：
 
 - 把触摸位移映射为进度；
-- 计算打开/关闭目标的边界、缩放、平移、裁剪、圆角半径和透明度；
+- 计算 opening/closing bounds、scale、translation、crop、corner radius、alpha；
 - 在同一个 `SurfaceControl.Transaction` 中写入目标动画控制层；
 - 用当前 `Choreographer` VSync ID 标记事务；
 - 提交给 SurfaceFlinger 合成。
