@@ -42,7 +42,7 @@ sources:
 
 JNI 性能问题很少由某一条指令单独决定。一次跨边界调用会叠加入口桩、线程状态、引用管理、参数转换、数据复制、native 算法和线程生命周期等成本。调用频率达到每帧数百次后，原本很小的边界成本也会进入帧预算；单次 native 工作持续数毫秒时，算法和锁竞争通常占据主要时间。
 
-§1.15 已介绍 JNI 的通用用法。本章沿 Android 17 的 ART 实现向下追踪调用路径，回答以下问题：
+§1.15 已介绍 JNI 的通用用法。下面沿 Android 17 的 ART 实现向下追踪调用路径，回答以下问题：
 
 - 普通 JNI、`@FastNative` 与 `@CriticalNative` 分别省掉了哪些步骤；
 - `RegisterNatives` 改变的是哪一段成本；
@@ -50,7 +50,7 @@ JNI 性能问题很少由某一条指令单独决定。一次跨边界调用会�
 - Local/Global Reference、线程挂载和 native 线程创建如何进入性能账单；
 - 怎样用 trace、采样和 Microbenchmark 分开测量边界与业务代码。
 
-本章的平台锚点是 AOSP `android-17.0.0_r1`，内核锚点是 `android17-6.18-2026-06_r6`。不同厂商构建、编译模式、CPU 微架构和温控状态都会改变绝对耗时，因此本文不把某组设备上的纳秒数当作平台常量。
+平台锚点为 AOSP `android-17.0.0_r1`，内核锚点为 `android17-6.18-2026-06_r6`。不同厂商构建、编译模式、CPU 微架构和温控状态都会改变绝对耗时，某组设备上的纳秒数不能当作平台常量。
 
 ## 1. 先建立可计算的成本模型
 
@@ -180,7 +180,7 @@ Critical 方法没有 `JNIEnv*` 和 `jclass`；Fast 方法的 C++ 签名与普�
 | Android 12～13 | 运行时支持 Critical Native 的动态符号发现；低版本兼容仍需单独设计 |
 | Android 14～17 | 两个注解进入公开 API 并受 CTS 约束；运行时限制保持 |
 
-官方文档建议，若 APK 还要兼容 Android 13 及更低版本，应谨慎使用公开注解，或准备按版本隔离的实现。本文知识库的最低范围是 Android 8，因此不能只在 Android 17 设备上验证一次就宣称兼容全范围。
+官方文档建议，若 APK 还要兼容 Android 13 及更低版本，应谨慎使用公开注解，或准备按版本隔离的实现。最低适用范围是 Android 8，因此不能只在 Android 17 设备上验证一次就宣称兼容全范围。
 
 ARM64 编译器中，Critical stub 可在没有栈参数、没有返回值扩展等条件满足时使用 tail call；条件不满足时仍会生成参数搬运和返回处理。固定的“4 条指令”无法覆盖不同签名、ISA、编译状态和插桩配置。可复核 [Android 17 ARM64 JNI calling convention](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/compiler/jni/quick/arm64/calling_convention_arm64.cc)。
 
@@ -627,7 +627,7 @@ Android 17 源码包含 `benchmark/jni-perf`。它比较空 JNI 调用以及 ART
 
 Android 17 设备可能采用 4KB 或 16KB page size。page size 会影响 ELF segment 对齐、`mmap` 粒度、guard page、缺页和 native 库可加载性，但不会自动缩短 ART 的 JNI 状态转换。
 
-对本章主题，16KB 需要检查的是：
+针对 JNI，16KB 需要检查的是：
 
 - APK 中所有 native 库能否在 16KB 设备加载；
 - 自定义 allocator、共享内存、文件映射是否写死 4096；
@@ -655,7 +655,7 @@ Android 17 设备可能采用 4KB 或 16KB page size。page size 会影响 ELF s
 
 ## 13. 版本演进与 Android 17 结论
 
-| 版本阶段 | 对本章的影响 |
+| 版本阶段 | 相关影响 |
 | --- | --- |
 | Android 8 | Local Reference 移除旧固定小容量限制；Critical Native 在应用侧需要显式注册 |
 | Android 12 | Critical Native 支持运行时动态符号发现，常规应用接入更简单 |

@@ -81,24 +81,6 @@ task2b_verifier_notes: "Task9 idle-audit auto-fix on 2026-07-11 set task6_state:
 ---
 # ANR 设计思想
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 ANR 的设计初衷：保护用户体验，防止 App 无响应
-- 🔹 ANR 机制的核心流程：注册超时 → 主线程处理 → 超时触发 → 弹窗/杀进程
-- 🔹 AMS 中 ANR 的核心代码路径：AnrHelper / ProcessErrorStateRecord
-- 🔹 ANR 与 Watchdog 的区别
-- 🔹 ANR 信息的产出：traces.txt、event log、dropbox
-
-### 扩展（可选深入）
-
-- 🔸 各版本 ANR 机制的微调与改进
-- 🔸 ANR 在 Google Play Console 中的统计与影响
-
-<!-- outline-end -->
-
 ## 从“用户等了多久”理解 ANR
 
 用户不知道应用内部正在做数据库迁移、Binder 调用还是图片解码。他只知道触摸后没有反馈、页面停住了，或刚打开的界面迟迟不能接收按键。Android 必须在有限时间内结束这种失控状态，同时留下足够证据供开发者追查。
@@ -170,7 +152,7 @@ public static TimeoutRecord forContentProvider(String reason) {
 
 ## 四阶段流程：注册、执行、超时、处置
 
-大纲中的“注册超时 → 主线程处理 → 超时触发 → 弹窗/杀进程”适合作为记忆框架。源码层面需要给每个箭头补上条件。
+“注册超时 → 应用处理 → 超时触发 → 弹窗或杀进程”可以概括主流程，但源码层面需要给每个箭头补上条件。
 
 ### 阶段一：注册超时
 
@@ -283,7 +265,7 @@ Android 17 的报告路径会组合：
 - CriticalEventLog、EventLog、statsd 和 Perfetto 标记；
 - DropBox 报告与 `ApplicationExitInfo` 可回捞的 trace 片段。
 
-下面的源码节选用于确认三类大纲要求的产物都来自同一处理函数：
+下面的源码节选用于确认三类产物都来自同一处理函数：
 
 ```java
 EventLog.writeEvent(EventLogTags.AM_ANR, mApp.userId, pid,
@@ -346,7 +328,7 @@ grep 'am_anr' bugreport.txt
 
 ### ANR trace：回答“采样时线程在做什么”
 
-Android 17 的 `StackTracesDumpHelper` 在 `/data/anr/` 创建 `anr_yyyy-MM-dd-HH-mm-ss-SSS` 文件，权限为 `0600`。旧资料常把所有版本的产物统称为 `traces.txt`；阅读历史 bugreport 时仍会遇到这个名字，本章用“ANR trace”统称两种形式。
+Android 17 的 `StackTracesDumpHelper` 在 `/data/anr/` 创建 `anr_yyyy-MM-dd-HH-mm-ss-SSS` 文件，权限为 `0600`。历史 bugreport 中仍会出现 `traces.txt` 这个名字，以下用“ANR trace”统称两种形式。
 
 普通第三方应用不能直接遍历 `/data/anr`。开发阶段可从 bugreport 获取系统收集的 ANR 段；Android 11（API 30）起，应用还能通过 `ActivityManager.getHistoricalProcessExitReasons()` 查询自己的历史退出记录，并用 `ApplicationExitInfo.getTraceInputStream()` 读取系统保留的 trace。该流可能为 `null`，因为 trace 使用容量有限的全局循环缓冲区，也可能被后续记录覆盖。
 
@@ -444,7 +426,7 @@ PID 会复用，进程也可能在 ANR 后重启。只按包名合并多份报�
 | 全部设备型号的每日活跃用户 | 0.47% |
 | 单一手机型号的每日活跃用户 | 8% |
 
-超过全局阈值可能影响应用在所有设备上的可发现性；只在部分机型超过单机型阈值，也可能影响对应设备上的曝光并触发商店警告。阈值属于平台运营规则，可能调整，做发布门禁时应读取 Play Console 和最新官方文档，不能把本章数值永久写死在监控代码里。
+超过全局阈值可能影响应用在所有设备上的可发现性；只在部分机型超过单机型阈值，也可能影响对应设备上的曝光并触发商店警告。阈值属于平台运营规则，可能调整，做发布门禁时应读取 Play Console 和最新官方文档，不能把表中数值永久写死在监控代码里。
 
 还有一个统计陷阱：本地 APM 常按会话、事件数或进程启动次数计算，Android vitals 按每日活跃用户计算，并受到来源设备、用户共享设置和隐私门槛影响。两边数值不同不等于任何一边采集错误；团队应先统一分母、时间窗口和“用户可感知”的定义。
 
