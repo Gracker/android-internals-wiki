@@ -151,7 +151,7 @@ API 37 的主要步骤可概括为：
   → ClassPrepare 回调
 ```
 
-这段顺序解释了两个常见跟踪现象。定义一个类可能递归解析父类和接口，因此一个外层类的 wall time 会包含依赖类工作。CHA 更新发生在类变为 `kResolved` 之前；新类若推翻了 JIT 的单实现假设，还可能触发已编译代码失效和去优化，相关机制见 §1.35。
+这段顺序解释了两个常见 trace 现象。定义一个类可能递归解析父类和接口，因此一个外层类的 wall time 会包含依赖类工作。CHA 更新发生在类变为 `kResolved` 之前；新类若推翻了 JIT 的单实现假设，还可能触发已编译代码失效和去优化，相关机制见 §1.35。
 
 ### 托管堆与 `LinearAlloc` 的边界
 
@@ -161,7 +161,7 @@ API 37 的主要步骤可概括为：
 - `ArtField` 数组；
 - 部分 IMT、冲突表和链接期表结构。
 
-应用 class loader 注册时，ART 为它创建 `ClassTable` 和专属 `LinearAlloc`。当 class loader 不再可达并被清理时，ART 会移除相关 JIT/CHA 依赖，随后删除对应分配器和类表。“LinearAlloc 中的类元数据永不释放”只适用于加载器长期存活的观察窗口，不能当成 ART 的一般回收规则。
+应用 class loader 注册时，ART 为它创建 `ClassTable` 和专属 `LinearAlloc`。当 class loader 不再可达并被清理时，ART 会移除相关 JIT/CHA 依赖，随后删除对应分配器和 class table。“LinearAlloc 中的类元数据永不释放”只适用于加载器长期存活的观察窗口，不能当成 ART 的一般回收规则。
 
 ### 并发定义使用多层同步
 
@@ -207,7 +207,7 @@ kNotReady → kIdx → kLoaded → kResolving/kResolved
 
 失败路径可能进入 `kErrorUnresolved` 或 `kErrorResolved`；编译期软验证失败还可能记录 `kRetryVerificationAtRuntime` 或 `kVerifiedNeedsAccessChecks`。OAT class status 可用 `kSuperclassValidated` 表示父类描述符已校验，运行时对象不会把它作为每次初始化都经历的固定节点。临时类在确定最终大小并复制后会进入 `kRetired`。因此，诊断代码不应假设每个类都会逐项经历同一组状态。
 
-`kInitialized` 表示初始化完成，但读取静态字段的线程仍需通过获取（acquire）语义获得可见性。`kVisiblyInitialized` 表示初始化结果已经对所有线程可见，编译代码可以使用开销更小的检查。API 37 在 x86/x86_64 或单线程事务中可直接进入 `kVisiblyInitialized`；其他路径先记录 `kInitialized`，再由批处理回调使用 `membarrier()` 或线程 checkpoint 建立可见性。
+`kInitialized` 表示初始化完成，但读取静态字段的线程仍需通过获取（acquire）语义获得可见性。`kVisiblyInitialized` 表示初始化结果已经对所有线程可见，编译代码可以使用开销更小的检查。API 37 在 x86/x86_64 或单线程事务中可直接进入 `kVisiblyInitialized`；其他路径先记录 `kInitialized`，再由批处理 callback 使用 `membarrier()` 或线程 checkpoint 建立可见性。
 
 ### 谁执行，谁等待
 
@@ -253,7 +253,7 @@ LoadedApk.makeApplicationInner()
 - 序列化、数据库、路由与日志框架的注册表；
 - SDK 在静态字段或 initializer 中建立的对象图。
 
-不要预设类加载占启动时间的固定比例。应从同一构建、同一设备、同一编译状态的多轮 Macrobenchmark 跟踪中识别稳定热点。
+不要预设类加载占启动时间的固定比例。应从同一构建、同一设备、同一编译状态的多轮 Macrobenchmark trace 中识别稳定热点。
 
 ## Zygote 与应用 class path
 
@@ -328,7 +328,7 @@ adb shell debuggerd -j "$pid" > java-dump.txt
 rg 'Zygote loaded classes|post zygote classes|Classes initialized|Dumping registered class loaders' java-dump.txt
 ```
 
-`debuggerd` 的 API 37 实现要求 root；`user` 构建不应依赖这条流程。这些统计是进程累计值，适合比较同一测试节点的构建差异，不会指出单个类为何慢。Java 转储还包含完整线程信息，采集时要考虑它对进程的扰动。
+`debuggerd` 的 API 37 实现要求 root；`user` 构建不应依赖这条流程。这些统计是进程累计值，适合比较同一测试节点的构建差异，不会指出单个类为何慢。Java dump 还包含完整线程信息，采集时要考虑它对进程的扰动。
 
 ### 4. 用采样确认 CPU 去向
 
@@ -364,7 +364,7 @@ Baseline Profile 可以减少解释执行、JIT 和部分运行时验证，也�
 
 ## Android 17 边界与检查表
 
-源码锚点为 `android-17.0.0_r1`。API 37 的结论包括：标准加载器原生快速路径、`TypeLookupTable` 优先查找、`mirror::Class` 与 `LinearAlloc` 的内存边界、完整类状态、准确跟踪名称和 ART Service 三种正式 compiler filter。没有源码证据的“Android 17 进一步优化了某算法”不作为版本结论。
+源码锚点为 `android-17.0.0_r1`。API 37 的结论包括：标准加载器 native 快速路径、`TypeLookupTable` 优先查找、`mirror::Class` 与 `LinearAlloc` 的内存边界、完整类状态、准确跟踪名称和 ART Service 三种正式 compiler filter。没有源码证据的“Android 17 进一步优化了某算法”不作为版本结论。
 
 排查启动类加载时，可按以下顺序复核：
 

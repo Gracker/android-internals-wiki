@@ -40,9 +40,9 @@ sources:
 
 # 1.32 Android 17 AVF 架构与 pKVM 隔离性能边界
 
-Android Virtualization Framework（AVF）从 Android 13 开始提供受保护虚拟机能力。它面向需要抵御宿主 Android 被攻破的敏感工作负载：host 仍负责创建、调度和终止虚拟机，但不能读取 protected VM（pVM）的私有内存，也不能悄悄替换经过验证的 Microdroid 和载荷。
+Android Virtualization Framework（AVF）从 Android 13 开始提供受保护虚拟机能力。它面向需要抵御 host Android 被攻破的敏感工作负载：host 仍负责创建、调度和终止虚拟机，但不能读取 protected VM（pVM）的私有内存，也不能悄悄替换经过验证的 Microdroid 和 payload。
 
-“运行在虚拟机里会慢多少”没有跨设备固定答案。AVF 的成本取决于 vCPU 调度、VM exit、共享内存窗口、virtio I/O、验证启动以及载荷行为。可复现的测量必须建立在 Android 17 的组件关系和安全边界之上。
+“运行在虚拟机里会慢多少”没有跨设备固定答案。AVF 的成本取决于 vCPU 调度、VM exit、共享内存窗口、virtio I/O、验证启动以及 payload 行为。可复现的测量必须建立在 Android 17 的组件关系和安全边界之上。
 
 ## 一、Android 17 中的 AVF 组件
 
@@ -70,7 +70,7 @@ VirtualizationServiceInternal     crosvm
                            pvmfw → bootloader → guest OS
 ```
 
-`libs/framework-virtualization/.../VirtualizationService.java` 明确说明，该类代表一个正在运行并承载 AIDL 服务的 virtmgr 实例。`nativeSpawn()` 创建子进程，Unix 域套接字上的 RpcBinder 负责宿主客户端与 `virtmgr` 通信。
+`libs/framework-virtualization/.../VirtualizationService.java` 明确说明，该类代表一个正在运行并承载 AIDL 服务的 virtmgr 实例。`nativeSpawn()` 创建子进程，Unix-domain socket 上的 RpcBinder 负责 host 客户端与 `virtmgr` 通信。
 
 `android/virtualizationservice/src/main.rs` 则注册全局的 `android.system.virtualizationservice` lazy Binder 服务。它负责 CID、全局资源、统计和维护。它与每个客户端拉起的 `virtmgr` 不在同一进程，也不位于 `system_server`。
 
@@ -86,7 +86,7 @@ VirtualizationServiceInternal     crosvm
 | pvmfw | pVM 首段固件 | 验证初始镜像、维护实例身份、派生每台 VM 的机密 | 提供 Android framework API |
 | Microdroid | guest OS | 验证启动、SELinux、Bionic、native payload、Binder RPC | 完整 Android UI 和应用框架 |
 
-Microdroid 是 AVF 提供的一种轻量 guest OS，但不是 AVF 唯一 guest。API 37 还允许自定义 VM 配置；Android 的 Linux 开发环境也是基于 AVF 的非受保护 VM 用例。
+Microdroid 是 AVF 提供的一种轻量 guest OS，但不是 AVF 唯一 guest。API 37 还允许 custom VM 配置；Android 的 Linux 开发环境也是基于 AVF 的 non-protected VM 用例。
 
 ## 二、Microdroid 不是“小号完整 Android”
 
@@ -119,7 +119,7 @@ Microdroid 为 native payload 提供 Android 基础设施：Bionic、Verified Bo
 
 Android 启动之初，除 hypervisor 保留区外的内存归 host 所有。创建 pVM 时，host 把页面 donate 给 guest；EL2 随后从 host Stage-2 中撤销这些页的访问权限。crosvm 进程仍保留用于建立 KVM memslot 的虚拟地址区间和内存记账关系，但对应物理页已不在 host Stage-2 的可访问映射中。host CPU 或受 host 控制的设备不能凭借这段用户空间地址绕过 EL2 读取 pVM 私有页。
 
-当前内核把宿主 Stage-2 标记为 `KVM_PGTABLE_S2_IDMAP`，并在 `host_stage2_set_owner_locked()` 中根据所有者 ID 建立宿主映射或记录其他所有者。保护来自 EL2 管理的权限，与某个用户空间 `shared_buf` 名称无关。
+当前内核把 host Stage-2 标记为 `KVM_PGTABLE_S2_IDMAP`，并在 `host_stage2_set_owner_locked()` 中根据 owner id 建立 host 映射或记录其他所有者。保护来自 EL2 管理的权限，与某个用户空间 `shared_buf` 名称无关。
 
 ### 3.2 `donate`、`share`、`unshare`、`relinquish` 四类动作
 
@@ -127,10 +127,10 @@ Android 启动之初，除 hypervisor 保留区外的内存归 host 所有。创
 |---|---|---|---|
 | `donate` | host → pVM | 否 | guest 私有 RAM |
 | `share` | 所有者不变 | 是，按授权范围 | virtio 共享窗口、host/guest 通信 |
-| `unshare` | 所有者不变 | 取消宿主映射 | 结束临时共享 |
-| `relinquish` | pVM → host | 是，重新归宿主 | balloon/长期 VM 归还不用的页 |
+| `unshare` | 所有者不变 | 取消 host 映射 | 结束临时共享 |
+| `relinquish` | pVM → host | 是，重新归 host | balloon/长期 VM 归还不用的页 |
 
-guest 归还页面时，内核会撤销客户机 Stage-2 映射，清理页面内容，再把 owner 改回宿主。下面的片段展示归还私有页的核心顺序：
+guest 归还页面时，内核会撤销 guest Stage-2 映射，清理页面内容，再把 owner 改回 host。下面的片段展示归还私有页的核心顺序：
 
 ```c
 /* Zap the guest stage2 pte and return ownership to the host */
@@ -146,7 +146,7 @@ ret = __host_stage2_set_owner_locked(
         HOST_SET_PSCI_MEM_PROTECT);
 ```
 
-页面回收伴随权限变更和内容处理；配置给 VM 的内存也可以在 VM 销毁前归还。pKVM 提供 relinquish hypercall，virtio 内存气球可以借此回收长期运行 VM 中不用的页。
+页面回收伴随权限变更和内容处理；配置给 VM 的内存也可以在 VM 销毁前归还。pKVM 提供 relinquish hypercall，virtio balloon 可以借此回收长期运行 VM 中不用的页。
 
 ### 3.3 共享窗口为什么影响 I/O
 
@@ -169,9 +169,9 @@ crosvm 通过 `mmap` 分配 VM 物理内存，再用 `KVM_SET_USER_MEMORY_REGION
 
 对于已经捐赠给 pVM 的私有页：
 
-- host 不能将其换出或执行 KSM 合并；
+- host 不能 swap 或执行 KSM merge；
 - host 不能把它当作普通匿名页读取；
-- guest relinquish/balloon `relinquish`/内存气球归还后，页面可以回到宿主；
+- guest 通过 relinquish/balloon 归还后，页面可以回到 host；
 - VM 停止时，hypervisor 清理并归还剩余页面。
 
 “128 MiB 配置永久硬占 128 MiB，直到销毁”过于绝对；“host 的 lmkd 能直接回收 guest 内某几页”也不准确。内存压力的控制单元通常是 crosvm/VM，细粒度回收依赖 guest 主动配合。
@@ -205,15 +205,15 @@ API 37 的 benchmark 同时采集三组数据：
 
 每个 vCPU 对应 crosvm 中的 POSIX 线程。线程调用 `KVM_RUN` 后进入 guest；出现需要 VMM 处理的 I/O、vCPU halt 或其他退出原因时，`KVM_RUN` 返回 host 用户空间。
 
-host Linux scheduler Linux 调度器仍可抢占 vCPU 线程，并把 guest 执行时间计入该线程。vCPU 线程可以使用常规 QoS 工具设置 affinity、cpuset、uclamp 和调度策略。客户机不能绕过 host scheduler 获得物理 CPU。
+host Linux scheduler 仍可抢占 vCPU 线程，并把 guest 执行时间计入该线程。vCPU 线程可以使用常规 QoS 工具设置 affinity、cpuset、uclamp 和调度策略。客户机不能绕过 host scheduler 获得物理 CPU。
 
 因此，VM 内看到的慢任务至少可能来自三层：
 
 1. guest 内线程没有被 guest scheduler 选中；
-2. 对应 vCPU 线程在宿主上 runnable 但没有获得 CPU；
+2. 对应 vCPU 线程在 host 上 runnable 但没有获得 CPU；
 3. vCPU 因 MMIO/virtio/中断等事件退出，在 crosvm 或 host 内核等待。
 
-只看 guest 内的 Perfetto 无法区分后两层。性能分析需要把 guest 时间线与宿主的 crosvm/vCPU 线程调度对齐。
+只看 guest 内的 Perfetto 无法区分后两层。性能分析需要把 guest 时间线与 host 的 crosvm/vCPU 线程调度对齐。
 
 ### 5.2 每次 I/O 不等同于一次完整 VM exit
 
@@ -234,7 +234,7 @@ virtio 用 MMIO 完成设备控制与通知，数据面主要通过共享 virtqu
 
 `VirtualizationServiceInternal` 为运行中的 VM 分配 CID。CID 在 VM 存活期间唯一；VM 结束且相关 `IVirtualMachine` 引用释放后，数值可以复用。端口由 guest 服务自行选择。
 
-Java `VirtualMachine.connectVsock(port)` 返回一个新的 `ParcelFileDescriptor`。它是字节流通信入口，调用方负责分帧、超时、背压和关闭。一次 `write()` 不一定对应对端的一次 `read()`。
+Java `VirtualMachine.connectVsock(port)` 返回一个新的 `ParcelFileDescriptor`。它是字节流通信入口，调用方负责 framing、超时、背压和关闭。一次 `write()` 不一定对应对端的一次 `read()`。
 
 ### 6.2 Binder RPC 运行在预连接的 vsock 上
 
@@ -246,7 +246,7 @@ connectToVsockServer(port)
     + binderFromPreconnectedClient(connectionProvider)
 ```
 
-这条链路使用 Binder RPC 协议和 Binder 对象模型，但传输不依赖宿主与 guest 共享同一个 `/dev/binder` 驱动实例。guest 私有内存也不会因为传递了 Binder 对象而自动对宿主可见。
+这条链路使用 Binder RPC 协议和 Binder 对象模型，但传输不依赖宿主与 guest 共享同一个 `/dev/binder` 驱动实例。guest 私有内存也不会因为传递了 Binder 对象而自动对 host 可见。
 
 对 payload API，Binder RPC 适合控制面和结构化小消息；大数据应评估流式 vsock、文件交换或专用共享机制。选择依据包括复制次数、批量大小、失败恢复和数据敏感性，不能套用未经测量的固定延迟表。
 
@@ -337,7 +337,7 @@ AVF 也没有完全替代 TrustZone。TEE 仍承载 KeyMint、Gatekeeper 等依�
 
 1. 以 `run()` 调用时刻为起点；
 2. 以 `onPayloadStarted()` 或业务自定义 ready 为终点，两者分开报告；
-3. FULL 调试模式下再采集 vCPU、bootloader、kernel、userspace 分段；
+3. FULL debug 下再采集 vCPU、bootloader、kernel、userspace 分段；
 4. 至少区分首次实例创建、已有实例重启和 page cache 冷热；
 5. 报告分布，不只报平均值。
 
