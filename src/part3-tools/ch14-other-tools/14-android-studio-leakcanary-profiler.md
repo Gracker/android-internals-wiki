@@ -40,46 +40,13 @@ gap_source: 官方文档/每日信息/素材驱动
 
 # 14.14 Android Studio LeakCanary Profiler 与堆转储分析
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 LeakCanary Profiler task 的定位
-说明 Android Studio Panda 将 LeakCanary 分析接入 Profiler 后，工具链从「App 内通知 + 设备端分析」变成「IDE 内任务 + 源码上下文」的使用方式。
-
-### 🔹 HPROF 采集、导出与对象保留路径
-梳理 Memory Profiler 捕获 heap dump 的入口、Activity / Fragment leak 过滤、GC root 距离、retained object 链路等分析字段。
-
-### 🔹 设备端与开发机端分析边界
-区分 LeakCanary 运行时检测、Android Studio 离线分析、生产环境 APM 上报三类场景，说明各自适合解决的问题。
-
-### 🔹 Java / Kotlin 堆泄漏与 Native 内存问题的分工
-明确 HPROF 主要覆盖托管堆对象，Native allocation、malloc debug、heapprofd、Perfetto 需要走另一套证据链。
-
-### 🔹 与现有 LeakCanary 接入方案的取舍
-对比库内置 UI、CI 复现、IDE Profiler task、线上监控 SDK，给出开发期和回归期的选择建议。
-
-### 🔹 实战排查流程
-按「复现 → 抓取 heap dump → 定位 retained path → 回到源码 → 修复 → 再抓取验证」组织最小验证流程。
-
-## 扩展
-
-### 🔸 Android Studio Panda 版本边界
-跟踪 Panda 稳定版、预览版功能差异，以及 LeakCanary task 对 AGP、JDK、设备 API 的最低要求。
-
-### 🔸 标准泄漏样例库
-整理 Activity、Fragment、匿名内部类、协程、监听器、WebView、Bitmap cache 等常见泄漏复现场景。
-
-### 🔸 Native 内存诊断联动
-补充 heapprofd、malloc debug、native allocation tab 与 Perfetto 的联动路径。
-
-<!-- outline-end -->
-Android Studio 的 LeakCanary Profiler task、LeakCanary 库和 Memory Profiler 都能分析 HPROF，但三者的触发时机与职责不同。本节按 Android Studio Quail 2、LeakCanary 2.14 和 `android-17.0.0_r1` 校核：LeakCanary 在应用进程内观察生命周期对象；IDE task 把堆分析移到开发机；Memory Profiler 提供通用堆浏览；Android 17 的系统触发机制负责捕获 OOM 或系统判定的异常现场。
+Android Studio 的 LeakCanary Profiler task、LeakCanary 库和 Memory Profiler 都能分析 HPROF，但三者的触发时机与职责不同。版本口径为 Android Studio Quail 2、LeakCanary 2.14 和 `android-17.0.0_r1`：LeakCanary 在应用进程内观察生命周期对象；IDE task 把堆分析移到开发机；Memory Profiler 提供通用堆浏览；Android 17 的系统触发机制负责捕获 OOM 或系统判定的异常现场。
 
 这里讨论 Java / Kotlin 托管堆。C/C++ 分配、图形缓冲区和 `mmap` 区域需要 heapprofd、malloc debug、Perfetto、`showmap` 等工具补证。若只依据 HPROF 判断进程总内存，容易把不同内存域混在一起。
 
 ## Panda 3 引入的 LeakCanary Profiler task
 
-Android Studio Panda 3 引入专用 LeakCanary Profiler task。设备仍负责运行应用和生成堆现场，Shark 转到开发机分析；报告可从可疑引用跳到工程源码。到 2026-07-30，Android Studio 稳定版已经进入 Quail 2，这项能力仍属于 IDE 功能，与 Android 平台 API 无绑定关系。[已验证: Android Developers Blog, https://developer.android.com/blog/posts/prioritizing-memory-efficiency-essential-steps-for-android-17] [已验证: Android Studio release updates, https://developer.android.com/studio/preview/features]
+Android Studio Panda 3 引入专用 LeakCanary Profiler task。设备仍负责运行应用和生成堆现场，Shark 转到开发机分析；报告可从可疑引用跳到工程源码。到 2026-07-30，Android Studio 稳定版已经进入 Quail 2，这项能力仍属于 IDE 功能，与 Android 平台 API 无绑定关系。
 
 四类入口的分工如下。
 
@@ -94,14 +61,14 @@ Panda 3 的 task 没有改变 LeakCanary 的对象观察语义，也没有扩展
 
 ## LeakCanary 如何从生命周期走到 HPROF
 
-LeakCanary 2.14 的 `leakcanary-android` 依赖通过 `MainProcessAppWatcherInstaller` 这个 `ContentProvider` 在主进程安装 `AppWatcher`。默认观察 Activity、Fragment、Fragment View、ViewModel 和 Service；普通单进程应用无需自行编写初始化代码。需要多进程覆盖、定制观察时机或修改配置时，再评估 `AppWatcher.manualInstall()`。[已验证: LeakCanary upstream source, https://github.com/square/leakcanary] [已验证: LeakCanary docs, https://square.github.io/leakcanary/getting_started/]
+LeakCanary 2.14 的 `leakcanary-android` 依赖通过 `MainProcessAppWatcherInstaller` 这个 `ContentProvider` 在主进程安装 `AppWatcher`。默认观察 Activity、Fragment、Fragment View、ViewModel 和 Service；普通单进程应用无需自行编写初始化代码。需要多进程覆盖、定制观察时机或修改配置时，再评估 `AppWatcher.manualInstall()`。
 
 检测过程分为四段。
 
 1. 生命周期回调指出某个对象已经离开预期使用期。例如 Activity 执行 `onDestroy()`，Fragment View 执行 `onDestroyView()`，ViewModel 执行 `onCleared()`。
 2. `ObjectWatcher` 为该对象创建带队列的弱引用。默认 `retainedDelayMillis` 为 5 秒；延迟到期后，弱引用仍未入队，对象就被计为 retained。
 3. 应用可见时，默认累计 5 个 retained object 才触发堆转储；应用不可见时阈值降为 1，并在保留延迟后转储。开发者也可点击通知主动触发。
-4. Shark 读取 HPROF，寻找从 GC root 到 retained object 的强引用路径，生成 leak trace 和 leak signature，并区分 Application Leak 与 Library Leak。[已验证: LeakCanary docs, https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/]
+4. Shark 读取 HPROF，寻找从 GC root 到 retained object 的强引用路径，生成 leak trace 和 leak signature，并区分 Application Leak 与 Library Leak。
 
 “retained”说明对象在观察窗口结束时仍可达；它还不足以单独证明业务泄漏。配置变更、正在执行的异步任务、框架缓存和调试器都可能延长对象寿命。判断要结合生命周期、重复复现和引用路径。
 
@@ -125,13 +92,13 @@ Leak trace 从 GC root 开始，经持有者和字段到达被观察对象。报
 ╰→ com.example.DetailActivity instance
 ```
 
-这条路径指向 `AppRegistry.callbacks`：长生命周期 registry 保存 presenter，presenter 又保存已销毁的 Activity。排查应确认 callback 的注册点、注销点和异常退出路径，而非只改 `DetailActivity`。用弱引用绕过注销往往会掩盖生命周期错误，也可能让依赖对象提前消失。[已验证: LeakCanary docs, https://square.github.io/leakcanary/fundamentals-fixing-a-memory-leak/]
+这条路径指向 `AppRegistry.callbacks`：长生命周期 registry 保存 presenter，presenter 又保存已销毁的 Activity。排查应确认 callback 的注册点、注销点和异常退出路径，而非只改 `DetailActivity`。用弱引用绕过注销往往会掩盖生命周期错误，也可能让依赖对象提前消失。
 
 Leak signature 根据可疑引用路径归并同类泄漏，适合跨设备或多轮回归去重。Application Leak 指向应用可以修复的持有关系；Library Leak 对应 LeakCanary 已知的第三方库或 Android 框架问题。Library Leak 也应核对系统版本、库版本和复现条件，不能看到分类后就忽略。
 
 ## Memory Profiler 中的字段与堆类型
 
-Android Studio 的 heap dump 是某一时刻的托管堆快照。类列表和实例列表的字段含义不同，阅读时要先确认当前视图。[已验证: Android Studio heap dump docs, https://developer.android.com/studio/profile/capture-heap-dump]
+Android Studio 的 heap dump 是某一时刻的托管堆快照。类列表和实例列表的字段含义不同，阅读时要先确认当前视图。
 
 | 字段 | 含义 | 使用方式 |
 |---|---|---|
@@ -151,7 +118,7 @@ Profiler 还会区分 `App`、`Image` 和 `Zygote` heap。业务对象通常位�
 
 ### Android Studio 采集
 
-Profiler 要连接可分析的目标进程。为了获得完整的对象和字段数据，本地排查通常使用 debuggable 构建；profileable release 构建能够开放受限的分析能力，但结果完整度和可用操作受系统版本与配置影响。Android Studio 当前的通用 Profiler 指南建议 API 29 及以上的 Google Play 设备和 AGP 7.3 及以上，旧设备或旧插件工程应单独验证。[已验证: Android Studio Profiler docs, https://developer.android.com/studio/profile]
+Profiler 要连接可分析的目标进程。为了获得完整的对象和字段数据，本地排查通常使用 debuggable 构建；profileable release 构建能够开放受限的分析能力，但结果完整度和可用操作受系统版本与配置影响。Android Studio 当前的通用 Profiler 指南建议 API 29 及以上的 Google Play 设备和 AGP 7.3 及以上，旧设备或旧插件工程应单独验证。
 
 堆转储会暂停应用并消耗额外内存。采集前先固定操作步骤、等待条件和构建版本；不要在内存已经逼近进程上限时连续抓取多个 HPROF。
 
@@ -163,7 +130,7 @@ Android 17 的 `ActivityManagerShellCommand` 支持以下语法：
 dumpheap [--user <USER_ID> current] [-n] [-g] [-b <format>] <PROCESS> <FILE>
 ```
 
-`<PROCESS>` 可写包进程名或 PID，`-g` 请求转储前执行 GC，`-n` 切换为 Native heap。这里的 Native dump 与 Java HPROF 格式及分析路径不同。[已验证: AOSP `android-17.0.0_r1`, https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java]
+`<PROCESS>` 可写包进程名或 PID，`-g` 请求转储前执行 GC，`-n` 切换为 Native heap。这里的 Native dump 与 Java HPROF 格式及分析路径不同。
 
 下面的命令在受控测试设备上抓取主进程 Java HPROF。
 
@@ -193,18 +160,18 @@ HPROF 可能包含用户输入、令牌、URL、文件路径、业务字段和�
 | Graphics 或 dma-buf 上涨 | Perfetto、SurfaceFlinger、BufferQueue、`dumpsys meminfo` | Surface、GraphicBuffer、视频与相机缓冲区何时创建和释放 | `Native Size` 不能代表完整图形占用 |
 | 系统因内存限制结束进程 | `ApplicationExitInfo`、系统触发 profiling | 退出原因、限制描述、系统捕获的故障现场 | 单个泄漏链不能解释全部进程内存 |
 
-heapprofd 对 Native `malloc` 分配进行采样，记录调用栈和存活分配；它与 HPROF 的 GC root 引用链回答不同问题。[已验证: Perfetto heapprofd docs, https://perfetto.dev/docs/data-sources/native-heap-profiler] §14.3 继续介绍 heapprofd、malloc debug、`showmap` 与 libmeminfo。
+heapprofd 对 Native `malloc` 分配进行采样，记录调用栈和存活分配；它与 HPROF 的 GC root 引用链回答不同问题。§14.3 继续介绍 heapprofd、malloc debug、`showmap` 与 libmeminfo。
 
 ## Android 17 的系统内存现场
 
 Android 17 为应用内存限制和触发式 profiling 增加了可观测信号，但这些信号不等同于 LeakCanary 的生命周期检测。
 
-当系统内存限制机制结束进程时，`ApplicationExitInfo.getReason()` 可能仍返回 `REASON_OTHER`，描述中包含 `MemoryLimiter:AnonSwap`。分析代码应同时记录 reason、description、importance、PSS/RSS 和时间戳，且不能把任意 `REASON_OTHER` 都归为内存限制。[已验证: Android 17 behavior changes, https://developer.android.com/about/versions/17/behavior-changes-all] [已验证: AOSP `ApplicationExitInfo`, https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java]
+当系统内存限制机制结束进程时，`ApplicationExitInfo.getReason()` 可能仍返回 `REASON_OTHER`，描述中包含 `MemoryLimiter:AnonSwap`。分析代码应同时记录 reason、description、importance、PSS/RSS 和时间戳，且不能把任意 `REASON_OTHER` 都归为内存限制。
 
 `ProfilingTrigger` 在 API 37 定义了两类相关触发器：
 
 - `TRIGGER_TYPE_OOM`（值 7）面向应用抛出的 `OutOfMemoryError`。应用若安装自定义未捕获异常处理器，必须继续调用默认处理器，系统才能完成这条触发路径。结果会在应用下次启动并注册 listener 后交付。
-- `TRIGGER_TYPE_ANOMALY`（值 8）由系统异常检测触发，产物类型取决于异常。内存过量或即将执行内存限制时，系统可能交付 heap dump；共享 UID 等条件可能让本轮没有产物。[已验证: AOSP `ProfilingTrigger`, https://android.googlesource.com/platform/packages/modules/Profiling/+/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java] [已验证: Android 17 memory guidance, https://developer.android.com/blog/posts/prioritizing-memory-efficiency-essential-steps-for-android-17]
+- `TRIGGER_TYPE_ANOMALY`（值 8）由系统异常检测触发，产物类型取决于异常。内存过量或即将执行内存限制时，系统可能交付 heap dump；共享 UID 等条件可能让本轮没有产物。
 
 这两类触发器受系统限流和设备条件约束，适合补充线上故障现场。它们不会自动告诉开发者哪个 Activity 越过生命周期，也不保证每次异常都得到 HPROF。
 
@@ -241,11 +208,11 @@ dependencies {
 val detectLeaksAfterTestSuccess = DetectLeaksAfterTestSuccess()
 ```
 
-该规则适合生命周期明确、可重复运行的端到端场景。也可在指定检查点调用 `LeakAssertions.assertNoLeaks()`。测试应固定页面操作、空闲等待和后台任务清理，否则异步任务尚未结束时容易出现不稳定结果。[已验证: LeakCanary UI tests, https://square.github.io/leakcanary/ui-tests/]
+该规则适合生命周期明确、可重复运行的端到端场景。也可在指定检查点调用 `LeakAssertions.assertNoLeaks()`。测试应固定页面操作、空闲等待和后台任务清理，否则异步任务尚未结束时容易出现不稳定结果。
 
 ### 线上构建
 
-LeakCanary 提供实验性的 `leakcanary-android-release:2.14`，可在 release 构建中观察并分析泄漏。官方将这条路径标为 experimental，因此不能沿用 debug 环境的全量策略。[已验证: LeakCanary for releases, https://square.github.io/leakcanary/leakcanary-for-releases/]
+LeakCanary 提供实验性的 `leakcanary-android-release:2.14`，可在 release 构建中观察并分析泄漏。官方将这条路径标为 experimental，因此不能沿用 debug 环境的全量策略。
 
 线上方案至少要具备远程开关、低采样率、磁盘配额、充电/空闲/网络条件、失败恢复、访问控制和数据过期策略。默认上传原始 HPROF 风险很高；更稳妥的产物是经过本地分析的 leak signature、裁剪引用路径和不含业务值的统计字段。Android 17 的 OOM/anomaly trigger 可作为系统侧补充来源，仍要遵守系统限流。
 
@@ -275,13 +242,13 @@ LeakCanary 提供实验性的 `leakcanary-android-release:2.14`，可在 release
 
 修复后重复相同次数，比较目标类实例数、retained size、GC root path、LeakCanary signature 和总体内存分区。LeakCanary 未再次报警只能算一项证据；页面恢复、配置变更和 back stack 行为也应通过回归测试。
 
-## [自动发现] Android Studio Panda 的版本边界
+## Android Studio Panda 的版本边界
 
 专用 LeakCanary Profiler task 从 Panda 3 开始提供，后续 Quail 稳定版继续可用。Panda/Quail 是 IDE 发布线，API 37 是 Android 平台版本，两条版本线应分别记录。App 的 `minSdk` 不决定 IDE task 是否存在；目标进程能否连接、构建是否提供足够调试信息、设备 API、AGP 和 IDE 兼容性会影响分析结果。
 
 遇到 task 无结果时，按以下顺序检查：IDE 是否包含该功能；LeakCanary 2.14 是否已在当前变体安装；当前进程是否为目标进程；是否产生 HPROF；该文件能否被 Memory Profiler 单独打开；工程源码与被测 APK 是否来自同一提交。
 
-## [自动发现] 标准泄漏样例库
+## 标准泄漏样例库
 
 团队可维护少量、确定性的泄漏样例，用于验证接入和训练阅读引用路径。
 
@@ -296,7 +263,7 @@ LeakCanary 提供实验性的 `leakcanary-android-release:2.14`，可在 release
 
 样例的验收条件应包括触发次数、等待条件、预期 signature 和修复后的实例上限。若样例依赖 GC 时机或网络回调，应改造成可控制的测试替身。
 
-## [自动发现] Native 内存诊断联动
+## Native 内存诊断联动
 
 HPROF 没有异常持有路径而 Native Heap 持续增加时，用 heapprofd 对存活分配做采样；要验证每次分配与释放时，使用调试构建上的 malloc debug；要寻找不可达 Native 分配，可结合 libmemunreachable。Graphics 增长则检查 Surface、BufferQueue、GraphicBuffer、WebView、视频和相机管线，关联 Perfetto 时间线与 SurfaceFlinger 信息。
 
@@ -325,5 +292,3 @@ JNI 是两条证据链的交叉处。HPROF 能显示 JNI global reference 对 Ja
 - [AOSP `ActivityManagerShellCommand.java`, `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java)
 - [AOSP `ApplicationExitInfo.java`, `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java)
 - [AOSP `ProfilingTrigger.java`, `android-17.0.0_r1`](https://android.googlesource.com/platform/packages/modules/Profiling/+/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java)
-- [来源: intake/daily-info/2026-05-17.md]
-- [来源: DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-深度调研.md]

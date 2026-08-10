@@ -62,7 +62,7 @@ last_task6_audit: '2026-07-09'
 
 功耗分析面对的是几种不同证据：系统事件有没有发生、某个 UID 被归因了多少电量、某条硬件电源轨累计了多少能量，以及整机从电源端取走了多少能量。它们的单位、时间范围和归因模型不同，不能放进同一列直接比较。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台基线。Battery Historian 仍能读取 bugreport，但 Google 已说明该工具不再积极维护；新问题应优先考虑 System Trace、Perfetto `android.power`、Android Studio Power Profiler 或 Macrobenchmark `PowerMetric`。Historian 的价值主要在于回看较长时间内的 Wakelock、JobScheduler、同步、定位、网络和电池历史。
+平台基线是 Android 17 / API 37 / `android-17.0.0_r1`。Battery Historian 仍能读取 bugreport，但 Google 已说明该工具不再积极维护；新问题应优先考虑 System Trace、Perfetto `android.power`、Android Studio Power Profiler 或 Macrobenchmark `PowerMetric`。Historian 的价值主要在于回看较长时间内的 Wakelock、JobScheduler、同步、定位、网络和电池历史。
 
 ## 按问题选择证据
 
@@ -457,7 +457,7 @@ HAL 的能量单位是 `uWs`，时间戳基于启动时钟。Channel 名称和 s
 
 ## 版本演进
 
-| 版本或时间点 | 变化 | 本章使用方式 |
+| 版本或时间点 | 变化 | 使用方式 |
 |---|---|---|
 | Android 5.0 / API 21 | Battery Historian 支持 Lollipop 及后续 bugreport | 用于历史事件与统计回看 |
 | Android 10 / API 29 | Perfetto `android.power` 与 Power Stats HAL/ODPM 能力进入平台 | rail 是否有数据由设备硬件和 HAL 决定 |
