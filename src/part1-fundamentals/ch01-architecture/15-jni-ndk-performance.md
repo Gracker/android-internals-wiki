@@ -93,7 +93,7 @@ JNI 优化应优先减少跨边界次数和数据编组，并正确管理线程�
           └─ Managed caller 继续执行
 ```
 
-分析时应区分边界本身的成本与原生函数内部的成本，避免选错优化位置。
+分析时应区分边界本身的成本与“native 函数内部的成本，避免选错优化位置。
 
 ## 1. JNI 成本来自哪里
 
@@ -215,7 +215,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void*) {
 2. 线程通过 `AttachCurrentThread()` 附着到 VM。
 3. 当前栈上没有应用的 App Java frame。
 4. `FindClass()` 回退到 system class loader。
-5. 系统类加载器不认识应用自己的类。
+5. system class loader 不认识 App 自己的类。
 
 常用解法：
 
@@ -378,7 +378,7 @@ CheckJNI 会检查：
 - pending exception 时是否调用了不允许的 JNI API。
 - critical get/release 之间是否调用 JNI。
 - Modified UTF-8 是否合法。
-- 直接缓冲区参数、数组大小、释放模式等。
+- direct buffer 参数、数组大小、release mode 等。
 
 模拟器默认启用。普通设备可以在启动目标进程前设置：
 
@@ -415,7 +415,7 @@ Android 8 后，ART 使用紧凑字符串表示，并采用移动式 GC。即使
 
 调用方不能假设哪一种发生。必须用对应 `Release<PrimitiveType>ArrayElements()` 结束生命周期。
 
-释放模式的语义：
+release mode 的语义：
 
 - `0`：如果拿到的是副本，就把修改复制回 Java；随后释放副本或解除固定。
 - `JNI_ABORT`：如果拿到的是副本，就丢弃其中的修改；随后释放副本或解除固定。若 VM 直接返回了数组地址，已经发生的写入无法被“撤销”。
@@ -515,7 +515,7 @@ Perfetto 界面/Trace Processor 解析的是采样点与调用栈，并不记录
 
 ### 9.3 微基准
 
-测量边界切换时要避免混入其他变量：
+测 transition 时要避免混入其他变量：
 
 - 调用方预热到稳定的 JIT/AOT 状态。
 - native 函数只做能够防止编译器消除的最小工作。
@@ -653,7 +653,7 @@ JNI 优化按这个顺序做：
 
 1. 先减少跨边界次数和编组量，把接口改成批量、粗粒度。
 2. 缓存类与方法/字段 ID，明确 local/global reference 生命周期。
-3. 让附加/分离跟线程生命周期绑定，处理类加载器与待处理异常。
+3. 让 attach/detach 跟线程生命周期绑定，处理 ClassLoader 与 pending exception。
 4. 用 CheckJNI 消除违规，再在 release-like 构建中用 ATrace、Simpleperf 和微基准测性能。
 5. 只有短、可预测、不阻塞的极热方法才考虑 `@FastNative` / `@CriticalNative`。
 6. native 产物必须在 16KB 设备验证 ELF、APK 打包和运行时行为。
