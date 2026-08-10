@@ -64,22 +64,7 @@ last_deepseek_cn_review_at: 2026-06-17
 
 # 启动优化复盘框架与案例模板
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 大型 App 启动优化实战
-- 🔹 启动框架演进案例
-- 🔹 Baseline Profile 实施效果
-
-### 扩展（可选深入）
-
-- 🔸 （待扩展）
-
-<!-- outline-end -->
-
-## 本节定位：案例要能被复查
+## 案例为什么要能被复查
 
 启动优化复盘的价值不在“列出做过哪些动作”，而在于留下可验证的因果链：
 
@@ -93,9 +78,9 @@ last_deepseek_cn_review_at: 2026-06-17
   -> 门禁、负责人和回滚条件
 ```
 
-这条链路把现象、证据、改动和结果分开记录。缺少任一段，后续读者都很难判断收益来自代码、编译状态、缓存、设备差异还是样本结构变化。
+这条链路把现象、证据、改动和结果分开记录。缺少任一段，就很难判断收益来自代码、编译状态、缓存、设备差异还是样本结构变化。
 
-本文提供三组复盘演练：大型 App 初始化、启动框架演进、Baseline Profile。它们是可套用的分析框架，不冒充某个产品的脱敏数据，也不提供脱离设备、构建和样本的固定收益百分比。启动链路见[启动完整路径分析](./01-startup-analysis.md)，任务调度见[启动任务编排框架](./02-startup-framework.md)，编译状态见[Baseline Profile 实战](./04-baseline-profile-practice.md)，线上验收见[启动监控与度量](./08-startup-monitoring.md)。
+以下提供三组复盘演练：大型 App 初始化、启动框架演进、Baseline Profile。案例用于展示可复用的分析框架，不对应某个产品的真实数据，也不给出脱离设备、构建和样本条件的固定收益百分比。启动链路见[启动完整路径分析](./01-startup-analysis.md)，任务调度见[启动任务编排框架](./02-startup-framework.md)，编译状态见[Baseline Profile 实战](./04-baseline-profile-practice.md)，线上验收见[启动监控与度量](./08-startup-monitoring.md)。
 
 ## 案例一：大型 App 的 `Application` 阶段持续变长
 
@@ -191,7 +176,7 @@ Hook ART 内部符号、暂停 GC daemon 或改写运行时策略依赖私有实
 它有清晰边界：
 
 - `InitializationProvider` 仍是 Provider，仍早于 `Application.onCreate()`；
-- 自动发现的 initializer 会在 Provider 初始化调用链中执行；
+- 由 Manifest 声明的 initializer 会在 Provider 初始化调用链中执行；
 - `dependencies()` 表达初始化先后，不提供任务优先级、超时、取消或线程切换；
 - `Initializer.create()` 的重工作仍会阻塞调用它的线程；
 - 移除单个 initializer 的自动初始化时，它的自动依赖也会受影响，需要重新检查手动入口。
@@ -374,7 +359,7 @@ Android 17 的 `Activity.reportFullyDrawn()` 会把 fully drawn 事件交给 sys
 | “本地快了，线上会同比例变快” | 线上编译、设备、入口和缓存分布不同 | 用本地建立因果，线上验证范围 |
 | “TTID 下降，优化完成” | 工作可能移动到首帧后 | 同时检查 TTFD、frame、首个操作和稳定性 |
 
-## Review 清单
+## 检查清单
 
 - [ ] 问题陈述包含版本、启动类型、入口、设备和安装状态。
 - [ ] before/after 使用同一构建条件、场景和统计口径。

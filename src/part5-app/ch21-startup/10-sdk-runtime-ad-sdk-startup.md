@@ -49,7 +49,7 @@ source_refs:
 
 SDK Runtime 在 Android 14 出现，又在 Android 17 退场。理解这段版本演进很重要，因为旧文章和 Privacy Sandbox 设计页仍会展示 `SdkSandboxManager.loadSdk()`、独立 sandbox 进程与 Binder 接口；面向 Android 17 的新代码却不能继续把它当作可采用的平台方案。
 
-本节分成两部分：
+讨论分为两部分：
 
 - Android 14–16 遗留 SDK Runtime 的行为与迁移边界；
 - Android 17 上普通嵌入式广告 SDK 的启动治理。
@@ -69,7 +69,7 @@ Android 17 的 `packages/modules/AdServices` 源码与公开文档一致：
 - `sandbox_app_flags.aconfig` 定义 `sdk_sandbox_no_op_impl` 和 `sdk_sandbox_api_deprecation`；
 - `loadSdk()` 的 no-op 分支会在传入的 Executor 上回调 `LoadSdkException(LOAD_SDK_SDK_SANDBOX_DISABLED, ...)`。
 
-这意味着 API 符号仍存在，不能据此推断能力可用。`SDK_INT >= 34` 也不能作为接入判断。Android 17 新项目不应围绕 `SdkSandboxManager`、runtime-enabled SDK bundle 或旧 sandbox 生命周期构建广告架构。
+API 符号仍然存在，但不能据此推断能力可用。`SDK_INT >= 34` 也不能作为接入判断。Android 17 新项目不应围绕 `SdkSandboxManager`、runtime-enabled SDK bundle 或旧 sandbox 生命周期构建广告架构。
 
 ### 1.2 版本表
 
@@ -354,13 +354,13 @@ class AdSdkGateway(
 - [ ] 灰度观察 TTID、TTFD、frame、ANR/Crash、PSS 和广告 guardrail。
 - [ ] 为旧 Android 14–16 用户保留受控迁移窗口和可回滚版本。
 
-### Android 17 广告 SDK 启动 Review
+### Android 17 广告 SDK 启动检查清单
 
-- [ ] merged manifest 与传递依赖已经纳入 review。
+- [ ] merged manifest 与传递依赖已经纳入检查。
 - [ ] 自动初始化可以关闭时，使用供应方支持的手动路径。
 - [ ] `Application` 只注册轻量网关，不等待 SDK ready。
 - [ ] 页面并发 init 被合并成一个会话任务。
-- [ ] SDK 要求的调用线程已按当前版本文档验证。
+- [ ] SDK 要求的调用线程已按对应版本的官方文档验证。
 - [ ] 首帧后初始化经过低端设备 CPU/帧竞争验证。
 - [ ] timeout、取消、重试和会话级失败语义清楚。
 - [ ] 失败不会触发主线程同步旧 SDK fallback。

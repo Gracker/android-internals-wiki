@@ -70,40 +70,9 @@ last_task9_autofix_at: 2026-06-22
 
 # 21.11 云端 Profile、DM 文件与安装后编译优化
 
-<!-- outline-start -->
-## 要点
+## Profile 在发布后如何生效
 
-### 🔹 云端 Profile 在启动优化里的位置
-说明 Play 分发的 cloud profile、应用随包提供的 baseline profile、设备本地 JIT profile 分别影响哪一段启动成本，避免把编译收益和业务初始化收益混在一起评估。
-
-### 🔹 DM 文件与 ART 编译模式
-梳理 `.dm` 文件进入安装过程后的使用方式，覆盖 verify、speed-profile、speed 等常见编译模式，并标出不同模式对安装耗时和首次启动耗时的影响。
-
-### 🔹 dex2oat、bg-dexopt-job 与空闲编译
-解释安装时编译、后台空闲编译、系统维护窗口之间的关系，给出排查启动慢时需要同时观察的系统事件和命令入口。
-
-### 🔹 Profile 命中率与冷启动收益评估
-建立验证口径：同一版本、同一设备、清除本地 profile、区分首次启动与稳定启动，用 P50/P90/P99 分位值判断编译优化是否改变启动曲线。
-
-### 🔹 灰度发布中的 Profile 风险
-覆盖错误 profile、过窄场景、动态特性模块、热修复和 R8 混淆变更带来的失效场景，说明线上回归需要看启动耗时、安装耗时和崩溃率三类指标。
-
-### 🔹 与 Baseline Profile 实战的分工
-本节聚焦系统如何利用 profile 以及如何验证效果；生成规则、Macrobenchmark 录制和 Gradle 集成详见 21.4 节。
-
-## 扩展
-
-### 🔸 厂商 ROM 编译策略差异
-对比不同设备的 `pm compile` 默认策略、维护窗口频率和省电模式影响，形成启动回归排查清单。
-
-### 🔸 动态特性模块与 Play 分发
-补充 App Bundle、按需模块和 cloud profile 覆盖范围之间的关系，说明多模块应用的 profile 验证边界。
-
-<!-- outline-end -->
-
-## 为什么单独拆出这一节
-
-21.4 节讲 Baseline Profile 的生成、Gradle 接入和 Macrobenchmark 验证。本节沿着发布后的路径继续追踪：安装来源交付了哪些 profile，Android 17 的 ART Service 怎样选择 profile 和 compiler filter，以及 App 团队怎样判断一次启动变化是否来自编译状态。
+Baseline Profile 的生成、Gradle 接入和 Macrobenchmark 验证见 21.4。发布后还要继续追踪：安装来源交付了哪些 profile，Android 17 的 ART Service 怎样选择 profile 和 compiler filter，以及 App 团队怎样判断一次启动变化是否来自编译状态。
 
 先划清收益边界。Profile 可以减少解释执行、JIT 预热和部分 DEX 读取开销，却不会缩短数据库迁移、网络等待、锁竞争或 SDK 同步初始化。一次冷启动同时包含这些成本，只看总耗时很容易误判。
 
@@ -319,12 +288,12 @@ profile 不匹配通常表现为编译优化缺失，而不是直接导致 App �
 - 各版本、渠道、Android 版本的 compiler filter 分布；
 - 安装失败与 profile mismatch 相关日志。
 
-## 与 Baseline Profile 实战的分工
+## 与 Baseline Profile 生成流程衔接
 
-21.4 节解决“怎样生成和维护 Baseline Profile”；本节解决“发布后 ART 是否拿到、接受并使用了 profile”。两节之间建议按下面的证据链衔接：
+21.4 负责生成和维护 Baseline Profile，发布后则要确认 ART 是否拿到、接受并使用了 profile。两条流程按下面的证据链衔接：
 
 1. 21.4 用当前 release 构建生成规则，并通过 Macrobenchmark 验证代表性场景。
-2. 本节检查 APK/AAB 条目、安装来源和 per-APK `.dm`。
+2. 检查 APK/AAB 条目、安装来源和 per-APK `.dm`。
 3. 用 `pm art dump` 与 `pm compile -v` 读取 actual filter 和 reason。
 4. 用 Perfetto 区分 JIT/类加载成本与业务初始化成本。
 5. 21.8 按版本、渠道和设备分层监控 TTID/TTFD。
@@ -375,18 +344,15 @@ App Bundle 的每个安装单元都要单独看。Base APK 已按 `speed-profile
 
 ## 参考资料
 
-- [已验证: 官方文档] [Baseline Profiles overview](https://developer.android.com/topic/performance/baselineprofiles/overview)
-- [已验证: 官方文档] [Debug Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles)
-- [已验证: 官方文档] [Manually create and measure Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/manually-create-measure)
-- [已验证: 官方文档] [Configure ART](https://source.android.com/docs/core/runtime/configure)
-- [已验证: 官方文档] [ART Service configuration](https://source.android.com/docs/core/runtime/configure/art-service)
-- [已验证: Android 17 AOSP] [`DexMetadataHelper.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/pm/dex/DexMetadataHelper.java)
-- [已验证: Android 17 AOSP] [`PackageManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/pm/PackageManager.java)
-- [已验证: Android 17 AOSP] [`Dexopter.java`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java)
-- [已验证: Android 17 AOSP] [`PrimaryDexopter.java`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/PrimaryDexopter.java)
-- [已验证: Android 17 AOSP] [`PrimaryDexUtils.java`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/PrimaryDexUtils.java)
-- [已验证: Android 17 AOSP] [`ArtShellCommand.java`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtShellCommand.java)
+- [Baseline Profiles overview](https://developer.android.com/topic/performance/baselineprofiles/overview)
+- [Debug Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles)
+- [Manually create and measure Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/manually-create-measure)
+- [Configure ART](https://source.android.com/docs/core/runtime/configure)
+- [ART Service configuration](https://source.android.com/docs/core/runtime/configure/art-service)
+- [`DexMetadataHelper.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/pm/dex/DexMetadataHelper.java)
+- [`PackageManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/pm/PackageManager.java)
+- [`Dexopter.java`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java)
+- [`PrimaryDexopter.java`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/PrimaryDexopter.java)
+- [`PrimaryDexUtils.java`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/PrimaryDexUtils.java)
+- [`ArtShellCommand.java`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtShellCommand.java)
 - [历史参考: Android 13 及更早链路] `frameworks/native/cmds/installd/dexopt.cpp`
-- [结构参考] `Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md`
-- [结构参考] `Clippings/Android 性能优化 - 原理：重新认识 APK 安装包.md`
-- [结构参考] `Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md`
