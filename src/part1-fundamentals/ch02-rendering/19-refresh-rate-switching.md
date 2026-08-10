@@ -86,7 +86,7 @@ last_deepseek_cn_review_at: 2026-07-17
 
 1. SurfaceFlinger 选出了新的显示模式；
 2. Composer HAL 开始执行模式切换；
-3. SurfaceFlinger 将目标模式更新为活动状态。
+3. SurfaceFlinger 将目标模式更新为 active。
 
 第三步有两种完成方式：DisplayCommand 模式设置成功且不要求刷新帧时，平台立即更新活动状态；HAL 要求先提交刷新帧时，SurfaceFlinger 会等待相关 `FrameTarget` 退出待定状态。后一条路径用到展示围栏状态，但围栏只能证明对应显示提交已经完成，不能单独证明面板内部的 PLL、命令序列或扫描周期。
 
@@ -100,11 +100,11 @@ last_deepseek_cn_review_at: 2026-07-17
 
 | 变化 | Android 17 中的含义 | 是否一定调用 HWC modeset |
 |---|---|---|
-| 渲染帧率变化 | SurfaceFlinger 改变调度和合成节奏，物理显示模式不变 | 否 |
-| MRR 模式切换 | 在多个离散显示模式之间切换，例如 60 Hz → 120 Hz | 是 |
+| Render rate 变化 | SurfaceFlinger 改变调度和合成节奏，物理 display mode 不变 | 否 |
+| MRR 模式切换 | 在多个离散 display mode 之间切换，例如 60 Hz → 120 Hz | 是 |
 | ARR 刷新节奏调整 | 在一个 ARR 配置内按 TE/VSync 的离散倍数改变刷新或自刷新间隔；配置的 `vsyncPeriod` 仍表示 TE/VSync 基准 | 否，走 ARR 节拍提示与面板自刷新控制路径 |
 
-### 1.1 渲染帧率变化不等于显示模式切换
+### 1.1 Render rate 变化不等于显示模式切换
 
 Android 17 的 `DisplayModeController::setDesiredMode()` 会比较请求中的物理模式和当前模式：
 
@@ -132,7 +132,7 @@ MRR 不意味着应用能指定最终模式。`Surface.setFrameRate()` 提供内
 
 Android 15 QPR1 起的平台 ARR 支持允许兼容硬件在一个显示配置内调整实际刷新节奏。ARR 配置中的 `DisplayConfiguration.vsyncPeriod` 表示 TE 信号周期；面板可以在满足 `minFrameIntervalNs` 的前提下，选择 TE/VSync 周期的离散倍数来展示下一帧。Android 17 中，`FRAME_RATE_CATEGORY_*`、`requestedFrameRate` 以及平台的启发式分类可参与 ARR 决策。
 
-ARR 减少了频繁切换离散模式的需求，却不会消除应用自身的帧生产抖动、错误的展示时间戳、GPU 超预算或 HWC 合成延迟。排查时仍要把“应用生产”“SurfaceFlinger 合成”“显示消费”分开观察。
+ARR 减少了频繁切换离散模式的需求，却不会消除应用自身的帧生产抖动、错误的 presentation timestamp、GPU 超预算或 HWC 合成延迟。排查时仍要把“应用生产”“SurfaceFlinger 合成”“显示消费”分开观察。
 
 ## 2. 无缝切换的契约
 
@@ -171,12 +171,12 @@ Android 12 / API 31 增加了 `Display.Mode.getAlternativeRefreshRates()`。返�
 
 ## 3. Android 17 的模式切换状态机
 
-从诊断角度，可以把 Android 17 的显示模式请求分成目标、待定和活动三个阶段。这套模型能解释“选择已经发生，但 SurfaceFlinger 还没有把目标模式记为活动状态”的跟踪现象。
+从诊断角度，可以把 Android 17 的显示模式请求分成目标、`pending` 和活动三个阶段。这套模型能解释“选择已经发生，但 SurfaceFlinger 还没有把目标模式记为 active”的 Trace。
 
-源码中的内部状态还受 `modeset_state_machine` 平台功能开关控制。启用新状态机时，`pendingModeOpt` 明确保存待完成请求；旧路径还会使用 `isModeSetPending`。功能开关会改变请求合并、待定状态保存和完成清理的实现。下面的三阶段模型及四组跟踪计数器仍适合跨设备定位问题，但不能据此假定所有 Android 17 系统镜像都走相同的内部代码分支。
+源码中的内部状态还受 `modeset_state_machine` 平台 flag 控制。启用新状态机时，`pendingModeOpt` 明确保存待完成请求；legacy 路径还会使用 `isModeSetPending`。flag 会改变请求合并、pending 保存和完成清理的实现。下面的三阶段模型及四组跟踪计数器仍适合跨设备定位问题，但不能据此假定所有 Android 17 系统镜像都走相同的内部代码分支。
 
 ```text
-图层请求 / 内容检测 / 系统策略
+Layer 请求 / 内容检测 / 系统策略
                 │
                 ▼
       RefreshRateSelector 选出候选
@@ -203,13 +203,13 @@ Android 12 / API 31 增加了 `Display.Mode.getAlternativeRefreshRates()`。返�
 |---|---|---|
 | `FRAME_RATE_COMPATIBILITY_DEFAULT` | `ExplicitDefault` | 游戏及一般渲染 |
 | `FRAME_RATE_COMPATIBILITY_FIXED_SOURCE` | `ExactOrMultiple` | 固定帧率视频 |
-| `FRAME_RATE_COMPATIBILITY_AT_LEAST` | `Gte` / MRR 上按高刷新倾向处理 | 界面动画、滚动、惯性滚动 |
+| `FRAME_RATE_COMPATIBILITY_AT_LEAST` | `Gte` / MRR 上按高刷新倾向处理 | UI 动画、滚动、fling |
 
 `AT_LEAST` 从 API 36 提供，适合界面动画一类“显示刷新率至少达到请求值”的需求。它不适合作为普通游戏的默认选择；游戏应先使用 `DEFAULT`，再根据稳定帧率和功耗目标调整请求。
 
 ### 3.2 `desired`：记录最新请求
 
-SurfaceFlinger 调用 `DisplayModeController::setDesiredMode()`。同一帧内出现多个请求时，控制器保留最新的目标请求，后续在合成边界处理。
+SurfaceFlinger 调用 `DisplayModeController::setDesiredMode()`。同一帧内出现多个请求时，控制器保留最新的 desired request，后续在合成边界处理。
 
 若需要物理模式切换，`SurfaceFlinger::setDesiredMode()` 会：
 
@@ -229,8 +229,8 @@ SurfaceFlinger 调用 `DisplayModeController::setDesiredMode()`。同一帧内�
 
 Android 17 的 `DisplayModeController::initiateModeChange()` 会根据 Composer 能力选择两条路径：
 
-- Composer 不支持 DisplayCommand 模式设置：调用 `setActiveModeWithConstraints()`，向 HAL 请求受约束的活动配置切换，并接收 `VsyncPeriodChangeTimeline`；
-- Composer 支持 DisplayCommand 模式设置：调用 `setDisplayMode()`，由 `DisplayCommand.activeConfig` 携带目标配置和 `seamlessRequired`。源码把成功结果视为立即生效，设置 `refreshRequired = false`，并以当前 `systemTime()` 填入 `newVsyncAppliedTimeNanos`。
+- Composer 不支持 DisplayCommand modeset：调用 `setActiveModeWithConstraints()`，向 HAL 请求受约束的 active config 切换，并接收 `VsyncPeriodChangeTimeline`；
+- Composer 支持 DisplayCommand modeset：调用 `setDisplayMode()`，由 `DisplayCommand.activeConfig` 携带目标配置和 `seamlessRequired`。源码把成功结果视为立即生效，设置 `refreshRequired = false`，并以当前 `systemTime()` 填入 `newVsyncAppliedTimeNanos`。
 
 受约束切换路径返回的 `VsyncPeriodChangeTimeline` 包含：
 
@@ -238,23 +238,23 @@ Android 17 的 `DisplayModeController::initiateModeChange()` 会根据 Composer 
 - `refreshRequired`：切换前是否需要客户端再提交一帧；
 - `refreshTimeNanos`：需要提交该帧的预计时间。
 
-Scheduler 使用时间线调整 VSync 预测。如果 `refreshRequired` 为真，SurfaceFlinger 会安排相应的合成；Composer 后续也可以通过时序变化回调更新这条时间线。DisplayCommand 分支以及其他返回 `refreshRequired = false` 的成功路径会直接调用 `finalizeDisplayModeChange()`，不进入刷新帧等待。
+Scheduler 使用时间线调整 VSync 预测。如果 `refreshRequired` 为真，SurfaceFlinger 会安排相应的合成；Composer 后续也可以通过 timing-changed 回调更新这条时间线。DisplayCommand 分支以及其他返回 `refreshRequired = false` 的成功路径会直接调用 `finalizeDisplayModeChange()`，不进入刷新帧等待。
 
 ### 3.4 `active`：完成平台侧状态更新
 
-需要刷新帧的模式切换不会在命令提交后立即被记为活动状态。Android 17 的提交路径通过 `FrameTarget::isFramePending()` 检查相关前序显示提交；该状态包含展示围栏的完成情况：
+需要刷新帧的模式切换不会在命令提交后立即被记为 active。Android 17 的提交路径通过 `FrameTarget::isFramePending()` 检查相关前序显示提交；该状态包含 present fence 的完成情况：
 
-- `FrameTarget` 仍处于待定状态：安排下一帧，继续等待；
+- `FrameTarget` 仍 pending：安排下一帧，继续等待；
 - `FrameTarget` 退出待定状态：调用 `finalizeDisplayModeChange()`；
-- 完成后更新活动模式、活动渲染帧率和 `RefreshRateSelector` 的当前模式。
+- 完成后更新 active mode、active render rate 和 `RefreshRateSelector` 的当前模式。
 
-DisplayCommand 模式设置成功且 `refreshRequired = false` 时不经过这段等待，SurfaceFlinger 会立即完成状态更新。对于需要等待的路径，展示围栏给出了“对应显示提交已经完成”的时序证据，通常比请求发起时间更接近用户看到新模式的时刻；它仍不能独立测量面板内部时序。
+DisplayCommand 模式设置成功且 `refreshRequired = false` 时不经过这段等待，SurfaceFlinger 会立即 finalize。对于需要等待的路径，present fence 给出了“对应显示提交已经完成”的时序证据，通常比请求发起时间更接近用户看到新模式的时刻；它仍不能独立测量面板内部时序。
 
 ### 3.5 分辨率切换要单独分析
 
-跨配置组切换可能同时改变分辨率。Android 17 在完成模式切换时会区分纯刷新率变化和分辨率变化；后者还可能触发 `DisplayDevice` 或帧缓冲区相关重建。
+跨配置组切换可能同时改变分辨率。Android 17 在完成模式切换时会区分纯刷新率变化和分辨率变化；后者还可能触发 `DisplayDevice` 或 framebuffer 相关重建。
 
-跨分辨率模式切换的代价不能套用纯 60 Hz → 120 Hz 刷新率切换的结论。跟踪数据、`dumpsys` 和 HWC 日志都应同时记录模式 ID、分辨率、配置组与刷新率。
+跨分辨率模式切换的代价不能套用纯 60 Hz → 120 Hz 刷新率切换的结论。Trace、`dumpsys` 和 HWC 日志都应同时记录模式 ID、分辨率、config group 与刷新率。
 
 ## 4. 切换附近为什么会出现卡顿
 
@@ -268,13 +268,13 @@ DisplayCommand 模式设置成功且 `refreshRequired = false` 时不经过这�
 - 游戏请求了 120 fps；
 - 游戏引擎能否持续按 8.33 ms 预算生产帧。
 
-第三项需要用 FrameTimeline、CPU/GPU 时间切片和展示时序证明，不能由显示模式推断。
+第三项需要用 FrameTimeline、CPU/GPU 时间切片和 present timing 证明，不能由 display mode 推断。
 
 ### 4.2 受约束切换的 HAL 时间线可能要求额外刷新帧
 
 `setActiveModeWithConstraints()` 路径中的某些显示实现需要 SurfaceFlinger 在切换前发送一帧，Composer HAL 会通过 `refreshRequired` 和 `refreshTimeNanos` 明确表达。若该帧准备、合成或显示较晚，切换窗口附近会出现较长帧。Android 17 的 DisplayCommand 模式设置成功路径明确填写 `refreshRequired = false`，不能把“额外刷新帧”当成所有模式切换的固定步骤。
 
-这里没有固定的“一到三帧”规则。持续时间取决于面板、显示控制器、Composer 实现、当前队列和切换类型，必须从目标设备的跟踪数据与 HAL 证据得出。
+这里没有固定的“一到三帧”规则。持续时间取决于面板、显示控制器、Composer 实现、当前队列和切换类型，必须从目标设备的 Trace 与 HAL 证据得出。
 
 ### 4.3 非无缝切换可以产生可见中断
 
@@ -284,13 +284,13 @@ DisplayCommand 模式设置成功且 `refreshRequired = false` 时不经过这�
 
 ### 4.4 模式切换和队列抖动可能同时发生
 
-应用开始播放视频或进入战斗场景时，通常会同时发生资源加载、解码器启动、Surface 更新和帧率请求。一次跟踪记录中，“切换计数器变化”和“卡顿帧”相邻只能说明相关，不能直接证明因果。
+应用开始播放视频或进入战斗场景时，通常会同时发生资源加载、解码器启动、Surface 更新和帧率请求。一次 Trace 中，“切换计数器变化”和“Jank 帧”相邻只能说明相关，不能直接证明因果。
 
 确认因果至少要回答：
 
 1. 新模式请求何时进入目标状态；
-2. 何时进入待定状态，何时成为活动模式；
-3. 卡顿帧阻塞在应用、GPU、SurfaceFlinger 还是显示阶段；
+2. 何时进入 pending，何时成为 active；
+3. Jank 帧阻塞在应用、GPU、SurfaceFlinger 还是显示阶段；
 4. 对照实验中禁用模式切换后，其他工作负载是否保持不变。
 
 ## 5. 应用如何提交正确的帧率请求
@@ -321,9 +321,9 @@ fun updateVideoFrameRate(
 
 `FIXED_SOURCE` 告诉系统源帧率不可自由调整，系统可以选择该帧率的整数倍，例如 24 fps 内容可匹配 48、72 或 120 Hz。最终结果仍由设备模式和系统策略决定。
 
-视频 Surface 仍然可见但已经暂停，或播放完毕并停止提交缓冲区时，应传入 0，或在 API 34 以上调用 `clearFrameRate()` 清除偏好。Surface 已销毁或因切换应用而隐藏时，无需额外清除。
+视频 Surface 仍然可见但已经暂停，或播放完毕并停止提交 buffer 时，应传入 0，或在 API 34 以上调用 `clearFrameRate()` 清除偏好。Surface 已销毁或因切换应用而隐藏时，无需额外清除。
 
-播放端还要设置正确的展示时间戳。即使系统没有采用请求的刷新率，显示系统也能据此避免过早展示帧，并按可用周期转换节拍。
+播放端还要设置正确的 presentation timestamp。即使系统没有采用请求的刷新率，显示系统也能据此避免过早展示帧，并按可用周期转换节拍。
 
 ### 5.2 游戏：请求可持续的目标
 
@@ -339,11 +339,11 @@ gameSurface.setFrameRate(
 
 这段调用适合游戏在画质档、场景或热状态变化后更新目标帧率。不要在每一帧重复调用，也不要为了得到高刷新率把游戏伪装成固定帧率视频。
 
-从 Android 15 开始，系统对游戏的默认刷新率可能限制为 60 Hz；需要高刷新率的游戏应主动请求。请求值应来自可持续的渲染能力，并配合 Android Frame Pacing Library（Swappy）或等价的展示时序控制。屏幕进入 120 Hz 后仍以不规则节奏提交 70～100 fps，不会得到稳定的 120 fps 观感。
+从 Android 15 开始，系统对游戏的默认刷新率可能限制为 60 Hz；需要高刷新率的游戏应主动请求。请求值应来自可持续的渲染能力，并配合 Android Frame Pacing Library（Swappy）或等价的 present timing 控制。屏幕进入 120 Hz 后仍以不规则节奏提交 70～100 fps，不会得到稳定的 120 fps 观感。
 
 ### 5.3 普通界面：让 View 系统表达分类
 
-Android 17 上，普通 View/Compose 界面优先使用框架提供的 ARR 与 View 帧率分类能力。若有明确的自定义动画需求，可对合适的 View 使用 `requestedFrameRate` 或帧率类别。
+Android 17 上，普通 View/Compose 界面优先使用框架提供的 ARR 与 View 帧率分类能力。若有明确的自定义动画需求，可对合适的 View 使用 `requestedFrameRate` 或 frame-rate category。
 
 直接对 Window 或 Surface 设置长期高帧率偏好，会影响整个 Surface。只有一个局部动画时，这种粒度往往过大。调用频率也要受控：在场景状态变化时更新，不要跟随每一帧的瞬时耗时来回请求。
 
@@ -386,38 +386,38 @@ ORDER BY c.ts;
 - `HasDesiredMode` 变化：存在尚未提交或合并处理的目标请求；
 - `PendingModeFps` 变化：物理模式切换已经提交到显示路径，仍在等待完成；
 - `ActiveModeFps` 变化：SurfaceFlinger 已完成模式状态更新；
-- 只有 `RenderRateFps` 变化：可能只是调度节奏变化，没有发生物理模式设置。
+- 只有 `RenderRateFps` 变化：可能只是调度节奏变化，没有发生物理 modeset。
 
 计数器名字包含物理显示 ID。折叠屏、外接屏或虚拟显示场景中，先确认分析的是哪块物理显示。
 
 ### 6.2 再看选择过程
 
-SurfaceFlinger 的跟踪数据中可见 `Refresh Rate Selection` 一类选择区间。它适合回答“为什么候选模式改变”，但选择区间结束不等于面板完成切换。
+SurfaceFlinger 的 Trace 中可见 `Refresh Rate Selection` 一类选择区间。它适合回答“为什么候选模式改变”，但选择区间结束不等于面板完成切换。
 
 分析顺序建议固定为：
 
 1. 找到用户可见的卡顿帧；
 2. 查看相邻时间内的 `HasDesiredMode` 和选择事件；
 3. 查看 `PendingModeFps` 到 `ActiveModeFps` 的间隔；
-4. 对齐 SurfaceFlinger 提交、展示围栏和 FrameTimeline；
+4. 对齐 SurfaceFlinger commit、present fence 和 FrameTimeline；
 5. 回到应用、RenderThread、GPU/HWC 路径确定最长阶段。
 
 ### 6.3 FrameTimeline 回答帧卡在哪里
 
-FrameTimeline 可以区分应用生产帧和 SurfaceFlinger 展示帧的截止时间。常见组合包括：
+FrameTimeline 可以区分应用生产帧和 SurfaceFlinger 展示帧的 deadline。常见组合包括：
 
 | 证据 | 更可能的方向 |
 |---|---|
-| 应用帧已错过截止时间，模式计数器无变化 | 应用 CPU/GPU 或帧节奏问题 |
-| 应用按时完成，SurfaceFlinger 帧错过截止时间，恰有待定窗口 | 继续检查 HWC、展示围栏和切换时间线 |
-| `ActiveModeFps` 已改变，后续应用帧连续错过截止时间 | 新帧预算下应用负载过高 |
-| 只有 `RenderRateFps` 改变 | 先按调度/帧节奏问题分析，不要归因于物理模式设置 |
+| App 帧已 missed，模式计数器无变化 | App CPU/GPU 或帧节奏问题 |
+| App 按时完成，SurfaceFlinger 帧 missed，恰有待定窗口 | 继续检查 HWC、present fence 和切换时间线 |
+| `ActiveModeFps` 已改变，后续 App 连续 missed | 新帧预算下应用负载过高 |
+| 只有 `RenderRateFps` 改变 | 先按调度/帧节奏问题分析，不要归因于 modeset |
 
 Perfetto 展示的是时序证据。某个 OEM 是否在显示驱动内执行 PLL 重配置、面板命令序列如何安排，要用该设备的 Composer、内核或固件资料确认，不能由通用 AOSP 跟踪名称推断。
 
 ### 6.4 `dumpsys` 适合看快照
 
-`dumpsys SurfaceFlinger` 和 `dumpsys display` 可用于确认当前活动模式、策略范围和支持模式。它们是采样时刻的快照，不适合测量一次短暂切换的起止时间。
+`dumpsys SurfaceFlinger` 和 `dumpsys display` 可用于确认当前 active mode、策略范围和支持模式。它们是采样时刻的快照，不适合测量一次短暂切换的起止时间。
 
 开发者选项中的“显示刷新率”覆盖层也只适合快速确认当前值。做因果分析时，仍以 Perfetto 计数器、FrameTimeline 和显示路径围栏为准。
 
@@ -431,13 +431,13 @@ Perfetto 展示的是时序证据。某个 OEM 是否在显示驱动内执行 PL
 
 - Surface 继续可见且不再提交帧：清除帧率偏好；
 - Surface 隐藏或销毁：无需额外清除；
-- 暂停画面上仍有界面动画：对应 Surface 应继续提交自己的需求。
+- 暂停画面上仍有界面动画：UI Surface 应继续提交自己的需求。
 
 诊断时同时记录解码器启动和首帧提交。首帧慢与显示模式切换可以落在同一个时间窗口。
 
 ### 7.2 游戏菜单进入战斗
 
-菜单可能稳定在较低帧率，战斗场景请求更高帧率。切换前先确认目标帧率能否持续达到；否则显示进入高刷新模式后，GPU 仍会不断错过更短的截止时间。
+菜单可能稳定在较低帧率，战斗场景请求更高帧率。切换前先确认目标帧率能否持续达到；否则显示进入高刷新模式后，GPU 仍会不断错过更短的 deadline。
 
 比较实验应至少保留：
 
@@ -449,9 +449,9 @@ Perfetto 展示的是时序证据。某个 OEM 是否在显示驱动内执行 PL
 
 ### 7.3 相机与系统转场
 
-不能把“相机一定运行在 60 Hz、桌面一定运行在 120 Hz”当作平台规则。相机预览帧率、相机应用的 Surface 请求、系统动画、厂商显示策略和面板能力都会改变结果。
+不能把“相机一定运行在 60 Hz、桌面一定运行在 120 Hz”当作平台规则。相机预览帧率、Camera App 的 Surface 请求、系统动画、厂商显示策略和面板能力都会改变结果。
 
-从相机进入多任务时，应先用跟踪数据确认是否有 `PendingModeFps` 和 `ActiveModeFps` 变化。如果没有物理模式变化，就应继续检查预览 Surface 消失、窗口动画、GPU 合成和 RenderThread，而不能按刷新率切换问题修复。
+从相机进入多任务时，应先用 Trace 确认是否有 `PendingModeFps` 和 `ActiveModeFps` 变化。如果没有物理模式变化，就应继续检查预览 Surface 消失、窗口动画、GPU 合成和 RenderThread，而不能按刷新率切换问题修复。
 
 ## 8. 平台、HAL 与内核的责任边界
 
@@ -460,9 +460,9 @@ Android 17 平台锚点 `android-17.0.0_r1` 能确认：
 - SurfaceFlinger 如何选择和记录模式请求；
 - Composer3 约束与时间线怎样传递；
 - Scheduler 如何调整 VSync 预测；
-- 展示围栏如何参与模式完成确认。
+- present fence 如何参与模式完成确认。
 
-内核锚点 `android17-6.18-2026-06_r6` 中，主线 DRM 的 `drm_vblank.c`、原子模式设置辅助程序和 DMA 围栏提供了 VBlank、原子提交与围栏的通用实现参考。但量产 Android 设备常使用厂商显示驱动、专用 Composer 实现和面板固件。
+内核锚点 `android17-6.18-2026-06_r6` 中，主线 DRM 的 `drm_vblank.c`、atomic modeset helper 和 DMA 围栏提供了 VBlank、原子提交与围栏的通用实现参考。但量产 Android 设备常使用厂商显示驱动、专用 Composer 实现和面板固件。
 
 因此，下面这些结论必须来自目标设备：
 
@@ -486,7 +486,7 @@ AOSP 给出契约与上层状态机，内核和厂商实现决定具体硬件时
 | Android 16 / API 36 | `FRAME_RATE_COMPATIBILITY_AT_LEAST` 与 View 帧率分类能力扩展 |
 | Android 17 / API 37 | 源码锚点更新到 Android 17；保留 MRR 状态机，并与 ARR、View 帧率分类共同工作 |
 
-旧版本的 MRR 设计仍有参考价值，但源码类名、跟踪字段和厂商实现可能不同。分析 Android 17 设备时，应以 `android-17.0.0_r1` 和设备上的 Composer/内核实现为准。
+旧版本的 MRR 设计仍有参考价值，但源码类名、Trace 字段和厂商实现可能不同。分析 Android 17 设备时，应以 `android-17.0.0_r1` 和设备上的 Composer/内核实现为准。
 
 ## 10. 常见误区
 
@@ -498,9 +498,9 @@ AOSP 给出契约与上层状态机，内核和厂商实现决定具体硬件时
 
 同组只满足配置关系约束。当前硬件条件不允许时，HAL 仍可返回 `EX_SEAMLESS_NOT_POSSIBLE`。
 
-### 误区三：看到 VSync 周期变化就说明发生了物理模式设置
+### 误区三：看到 VSync 周期变化就说明发生了 modeset
 
-ARR 或渲染帧率调整也会改变调度观测。需要 `PendingModeFps`、`ActiveModeFps` 和显示路径证据确认 MRR 物理模式设置。
+ARR 或 render rate 调整也会改变调度观测。需要 `PendingModeFps`、`ActiveModeFps` 和显示路径证据确认 MRR modeset。
 
 ### 误区四：高刷新率一定更流畅
 
@@ -512,16 +512,16 @@ Android 平台没有这种通用映射。结果由内容请求、系统策略、
 
 ### 误区六：一次相邻事件足以证明因果
 
-模式计数器变化与卡顿帧相邻只能作为线索。还要检查待定窗口、FrameTimeline 阶段、展示围栏，并做控制变量实验。
+模式计数器变化与卡顿帧相邻只能作为线索。还要检查待定窗口、FrameTimeline 阶段、present fence，并做控制变量实验。
 
 ## 11. 排查清单
 
-1. 记录设备支持模式、当前模式、配置组和系统刷新率设置。
-2. 明确应用设置帧率的 Surface、准确值、兼容类型和切换策略。
+1. 记录设备支持模式、当前模式、config group 和系统刷新率设置。
+2. 明确应用设置帧率的 Surface、准确值、compatibility 和 change strategy。
 3. 在 Perfetto 中定位 `HasDesiredMode`、`PendingModeFps`、`ActiveModeFps`、`RenderRateFps`。
 4. 用 FrameTimeline 判断应用还是 SurfaceFlinger 错过截止时间。
-5. 对齐 HWC 和展示围栏，确认模式何时完成。
-6. 区分纯刷新率切换、跨分辨率切换、渲染帧率调整和 ARR 刷新节奏变化。
+5. 对齐 HWC/present fence，确认模式何时完成。
+6. 区分纯刷新率切换、跨分辨率切换、render rate 调整和 ARR 刷新节奏变化。
 7. 在目标设备上核对 Composer 与内核日志，不用芯片平台经验替代证据。
 8. 固定显示模式做对照实验，避免把同时发生的解码、加载或 GPU 压力误归因给 modeset。
 
