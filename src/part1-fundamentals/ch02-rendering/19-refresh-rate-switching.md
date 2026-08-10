@@ -88,7 +88,7 @@ last_deepseek_cn_review_at: 2026-07-17
 2. Composer HAL 开始执行模式切换；
 3. SurfaceFlinger 将目标模式更新为 active。
 
-第三步有两种完成方式：DisplayCommand 模式设置成功且不要求刷新帧时，平台立即更新活动状态；HAL 要求先提交刷新帧时，SurfaceFlinger 会等待相关 `FrameTarget` 退出待定状态。后一条路径用到展示围栏状态，但围栏只能证明对应显示提交已经完成，不能单独证明面板内部的 PLL、命令序列或扫描周期。
+第三步有两种完成方式：DisplayCommand modeset 成功且不要求刷新帧时，平台立即更新活动状态；HAL 要求先提交刷新帧时，SurfaceFlinger 会等待相关 `FrameTarget` 退出待定状态。后一条路径用到展示围栏状态，但 fence 只能证明对应显示提交已经完成，不能单独证明面板内部的 PLL、命令序列或扫描周期。
 
 这些时刻可能相隔若干次合成。只看 App 主线程、`Choreographer#doFrame` 或某一帧的 CPU 耗时，无法证明显示模式是否已经切换，也无法证明掉帧由模式切换引起。
 
@@ -102,7 +102,7 @@ last_deepseek_cn_review_at: 2026-07-17
 |---|---|---|
 | Render rate 变化 | SurfaceFlinger 改变调度和合成节奏，物理 display mode 不变 | 否 |
 | MRR 模式切换 | 在多个离散 display mode 之间切换，例如 60 Hz → 120 Hz | 是 |
-| ARR 刷新节奏调整 | 在一个 ARR 配置内按 TE/VSync 的离散倍数改变刷新或自刷新间隔；配置的 `vsyncPeriod` 仍表示 TE/VSync 基准 | 否，走 ARR 节拍提示与面板自刷新控制路径 |
+| ARR 刷新节奏调整 | 在一个 ARR 配置内按 TE/VSync 的离散倍数改变刷新或自刷新间隔；配置的 `vsyncPeriod` 仍表示 TE/VSync 基准 | 否，走 ARR cadence 提示与面板自刷新控制路径 |
 
 ### 1.1 Render rate 变化不等于显示模式切换
 
@@ -171,9 +171,9 @@ Android 12 / API 31 增加了 `Display.Mode.getAlternativeRefreshRates()`。返�
 
 ## 3. Android 17 的模式切换状态机
 
-从诊断角度，可以把 Android 17 的显示模式请求分成目标、`pending` 和活动三个阶段。这套模型能解释“选择已经发生，但 SurfaceFlinger 还没有把目标模式记为 active”的 Trace。
+从诊断角度，可以把 Android 17 的显示模式请求分成 `desired`、`pending` 和 `active` 三个阶段。这套模型能解释“选择已经发生，但 SurfaceFlinger 还没有把目标模式记为 active”的 Trace。
 
-源码中的内部状态还受 `modeset_state_machine` 平台 flag 控制。启用新状态机时，`pendingModeOpt` 明确保存待完成请求；legacy 路径还会使用 `isModeSetPending`。flag 会改变请求合并、pending 保存和完成清理的实现。下面的三阶段模型及四组跟踪计数器仍适合跨设备定位问题，但不能据此假定所有 Android 17 系统镜像都走相同的内部代码分支。
+源码中的内部状态还受 `modeset_state_machine` 平台 flag 控制。启用新状态机时，`pendingModeOpt` 明确保存待完成请求；legacy 路径还会使用 `isModeSetPending`。flag 会改变请求合并、pending 保存和完成清理的实现。下面的三阶段模型及四组 Trace 计数器仍适合跨设备定位问题，但不能据此假定所有 Android 17 系统镜像都走相同的内部代码分支。
 
 ```text
 Layer 请求 / 内容检测 / 系统策略
@@ -205,7 +205,7 @@ Layer 请求 / 内容检测 / 系统策略
 | `FRAME_RATE_COMPATIBILITY_FIXED_SOURCE` | `ExactOrMultiple` | 固定帧率视频 |
 | `FRAME_RATE_COMPATIBILITY_AT_LEAST` | `Gte` / MRR 上按高刷新倾向处理 | UI 动画、滚动、fling |
 
-`AT_LEAST` 从 API 36 提供，适合界面动画一类“显示刷新率至少达到请求值”的需求。它不适合作为普通游戏的默认选择；游戏应先使用 `DEFAULT`，再根据稳定帧率和功耗目标调整请求。
+`AT_LEAST` 从 API 36 提供，适合 UI 动画一类“显示刷新率至少达到请求值”的需求。它不适合作为普通游戏的默认选择；游戏应先使用 `DEFAULT`，再根据稳定帧率和功耗目标调整请求。
 
 ### 3.2 `desired`：记录最新请求
 
@@ -248,7 +248,7 @@ Scheduler 使用时间线调整 VSync 预测。如果 `refreshRequired` 为真�
 - `FrameTarget` 退出待定状态：调用 `finalizeDisplayModeChange()`；
 - 完成后更新 active mode、active render rate 和 `RefreshRateSelector` 的当前模式。
 
-DisplayCommand 模式设置成功且 `refreshRequired = false` 时不经过这段等待，SurfaceFlinger 会立即 finalize。对于需要等待的路径，present fence 给出了“对应显示提交已经完成”的时序证据，通常比请求发起时间更接近用户看到新模式的时刻；它仍不能独立测量面板内部时序。
+DisplayCommand modeset 成功且 `refreshRequired = false` 时不经过这段等待，SurfaceFlinger 会立即 finalize。对于需要等待的路径，present fence 给出了“对应显示提交已经完成”的时序证据，通常比请求发起时间更接近用户看到新模式的时刻；它仍不能独立测量面板内部时序。
 
 ### 3.5 分辨率切换要单独分析
 
@@ -409,7 +409,7 @@ FrameTimeline 可以区分 App 生产帧和 SurfaceFlinger 展示帧的 deadline
 | 证据 | 更可能的方向 |
 |---|---|
 | App 帧已 missed，模式计数器无变化 | App CPU/GPU 或帧节奏问题 |
-| App 按时完成，SurfaceFlinger 帧 missed，恰有待定窗口 | 继续检查 HWC、present fence 和切换时间线 |
+| App 按时完成，SurfaceFlinger 帧 missed，恰有 pending 窗口 | 继续检查 HWC、present fence 和切换时间线 |
 | `ActiveModeFps` 已改变，后续 App 连续 missed | 新帧预算下应用负载过高 |
 | 只有 `RenderRateFps` 改变 | 先按调度/帧节奏问题分析，不要归因于 modeset |
 
