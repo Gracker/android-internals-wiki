@@ -151,12 +151,12 @@ last_deepseek_cn_review_at: 2026-06-24
 
 ```text
 CPU record / submit
-  → 顶点处理
+  → vertex processing
   → primitive assembly + clipping
   → rasterization
-  → 片元着色
+  → fragment shading
   → depth/stencil tests + blending
-  → 颜色附件 / 可呈现图像
+  → color attachment / presentable image
 ```
 
 这个模型适合建立概念，但不能据此断言每个 Canvas 操作固定生成多少顶点或使用哪一种 shader。Skia 可以根据图形、抗锯齿、clip、transform、backend 和 GPU 能力选择 analytic shader、实例化几何、tessellation、纹理 quad、离屏绘制或其他策略。
@@ -173,7 +173,7 @@ Android UI 中的矩形、圆角、文字和 Path 最终可能变成几何、cov
 
 - 过多顶点和小 draw call；
 - 过细网格、粒子或阴影几何；
-- 骨骼蒙皮、形变、复杂顶点着色器；
+- skinning、morph、复杂 vertex shader；
 - 可见性裁剪和 LOD 不充分；
 - 顶点缓冲访问与缓存未命中。
 
@@ -335,7 +335,7 @@ GPU 慢帧常被分为 vertex/geometry bound、fragment/fill bound 和 bandwidth
 
 没有跨 GPU 通用的“Fragment Shader 超过 60% 就是 fill bound”阈值。counter 名称、单位与统计范围由 GPU 生产者/驱动在 descriptor 中声明。
 
-### 填充率瓶颈
+### Fillrate bound
 
 fillrate 问题与 samples、shader、blend、overdraw 和 render-target 格式有关。降低原生游戏 Surface 的 render scale，如果 GPU 时间随像素数明显下降，说明片元或带宽压力值得继续查；标准 View 页面没有通用的独立 render-scale 开关。
 
@@ -362,13 +362,13 @@ Debug GPU Overdraw GPU 过度绘制”只能定位 HWUI 应用窗口的逻辑重
 - 改善顶点缓冲布局和复用；
 - 把与顶点无关的 CPU/RHI 成本分开。
 
-### 带宽瓶颈
+### Bandwidth bound
 
 带宽压力可能来自：
 
 - 大尺寸/高精度纹理与 render target；
 - 多次全屏读写和离屏绘制；
-- 纹理上传、回读或频繁解析；
+- texture upload、readback 或频繁 resolve；
 - 低缓存命中、各向异性过滤或多采样；
 - GPU、CPU、ISP、codec 与 display 共享内存带宽；
 - SurfaceFlinger client composition。

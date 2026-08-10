@@ -229,7 +229,7 @@ App RenderThread / Producer
       acquireNextBufferLocked()
       Transaction::setBuffer(surfaceControl, buffer, acquireFence, frameNumber, ...)
       Transaction::setFrameTimelineInfo(...)
-      按需合并几何状态 / 同步事务
+      merge geometry / sync transaction when required
       apply()
         → SurfaceFlinger FrontEnd
           TransactionHandler
@@ -360,7 +360,7 @@ Android 17 AIDL `Composition.aidl` 中没有通用 `CLIENT_BYPASS` 枚举。厂�
 
 下面这些条件可能影响 HWC 决策，但 AOSP 不规定统一 plane 数量或固定降级公式：
 
-- 缓冲格式、修饰符/用途、数据空间与 HDR 元数据；
+- buffer format、modifier/usage、dataspace 与 HDR metadata；
 - crop、scale、rotation、blend、alpha、rounded corner 和 color transform；
 - 受保护内容与安全显示要求；
 - overlay plane、scaler、色彩单元和内存带宽是否被其他图层占用；
@@ -380,7 +380,7 @@ CompositionEngine 的 `Display::chooseCompositionStrategy()` 调用 `HWComposer:
 ```text
 getDeviceCompositionChanges(display)
   canSkipValidate =
-      当前没有客户端合成
+      no current client composition
       AND (Composer 支持 expected-present，或当前已到 earliest-present)
 
   if canSkipValidate:
@@ -393,7 +393,7 @@ getDeviceCompositionChanges(display)
   else:
     validate()
 
-  读取变化后的合成类型 / 显示请求 / 图层请求
+  读取 changed composition types / display requests / layer requests
   读取客户端目标属性 / requested layer LUTs
   acceptChanges()
 
@@ -428,14 +428,14 @@ Android 13 起 Composer3 AIDL 进入平台主线。Android 17 的 SurfaceFlinger
 以下时间线把图层缓冲、客户端目标和显示提交分开：
 
 ```text
-应用 / 生产者
+App / Producer
   queueBuffer(buffer, producer completion fence)
         │
 BLAST / SurfaceControl transaction
   setBuffer(buffer, acquire fence)
         │
 SurfaceFlinger FrontEnd
-  事务就绪 → 快照 / 锁存
+  transaction ready → snapshot / latch
         │ acquire fence 仍保护缓冲内容
 CompositionEngine
   ├─ DEVICE layer ────────────────────────────────┐
@@ -508,7 +508,7 @@ Android 17 userdebug/eng 跟踪数据中可关注：
 - BLAST acquire/release callback；
 - `BufferTX - <layerName>` pending 数量；
 - 图层缓冲 ID、帧号、期望呈现时间；
-- 获取/释放/显示栅栏；
+- acquire/release/present fence；
 - SurfaceFlinger Layer lifecycle、transaction 与锁存事件。
 
 `BufferTX` 增加只表示 pending buffer transaction 增加。要确认系统采纳本帧，还需看到目标图层的 transaction/latch 与关联 DisplayFrame。
@@ -577,7 +577,7 @@ Android 17 `Scheduler::onFrameSignal()` 先为 pacesetter display 建立目标�
 
 - 刷新率与预计呈现时间；
 - Output 可见图层；
-- 合成策略；
+- composition strategy；
 - HWC validate/present；
 - present fence 与 DisplayFrame。
 
