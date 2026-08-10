@@ -73,7 +73,7 @@ task9_p2_issues: 0
 
 1. DEX 是否已经通过验证，验证结果能否复用。
 2. 哪些方法已有 AOT 机器码，哪些方法仍要解释执行或等待 JIT。
-3. 当前看到的是请求的 filter”，还是 ART 最终采用的 filter。
+3. 当前看到的是“请求的 filter”，还是 ART 最终采用的 filter。
 
 当前锚点为 Android 17 / API 37 / AOSP `android-17.0.0_r1`，同时保留 Android 8–16 的演进边界。
 

@@ -441,7 +441,7 @@ Signal handler 还受 async-signal-safe 规则约束。不要在 handler 里分�
 - CPU 与设备之间的 cache maintenance。
 - consumer 再复制到自己的数据结构。
 
-更准确的表述是“数据面可避免重复 IPC copy”，不能把整条业务链 0 copy”。
+更准确的表述是“数据面可避免重复 IPC copy”，不能把整条业务链写成“0 copy”。
 
 ### 7.2 Java `SharedMemory`
 
