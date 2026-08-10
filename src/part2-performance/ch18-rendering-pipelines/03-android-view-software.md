@@ -77,24 +77,9 @@ last_deepseek_cn_review_at: 2026-07-13
 
 # 18.3 Android 17 软件与离屏渲染路径
 
-<!-- outline-start -->
-
-**锚点（必须覆盖）：**
-- [18.3.1 软件与离屏路径的分类](#软件与离屏路径的分类) — 像素生产方式与结果去向
-- [18.3.2 完整执行流程](#完整执行流程) — 从 lockCanvas 到 unlockCanvasAndPost
-- [18.3.3 与硬件加速路径的核心差异](#与硬件加速路径的核心差异) — CPU vs GPU 的主要区别
-- [18.3.4 Trace 视角](#trace-视角) — Perfetto 中的识别特征
-- [18.3.5 性能特征与适用场景](#性能特征与适用场景) — 什么时候该用，什么时候不该用
-
-**扩展（可选深入）：**
-- Dirty Rect 局部刷新机制
-- 软件渲染下 BLAST 的行为差异
-
-<!-- outline-end -->
-
 软件渲染回答“谁生成像素”，离屏渲染回答“像素先写到哪里”。两个概念不能互换：CPU 可以直接写可见 `Surface`，GPU 也可以先画进离屏纹理或 `HardwareBuffer`。诊断时要依次确认生产者、输出位置、消费者和最终可见 layer。
 
-本文的平台实现固定到 Android 17 / API 37 的 `android-17.0.0_r1`；涉及 dma-buf、dma-fence、sync_file、调度与内存回收时，kernel 固定到 `android17-6.18-2026-06_r6`。
+平台实现固定到 Android 17 / API 37 的 `android-17.0.0_r1`；涉及 dma-buf、dma-fence、sync_file、调度与内存回收时，kernel 固定到 `android17-6.18-2026-06_r6`。
 
 ## 软件与离屏路径的分类
 
@@ -419,7 +404,7 @@ CPU 高占用不能直接推出 thermal throttling。若要写温控结论，应
 | Android 14 / API 34 | `HardwareBufferRenderer` 公开 | `RenderNode → HardwareBuffer` 可通过 common HWUI render thread 完成 |
 | Android 15 / API 35 | `setFrameTimeline()`、`setDesiredPresentTimeNanos()`、transaction listener 进入公开 API，并受 flag/API 条件约束 | 直接提交可以表达目标显示周期；事务反馈仍不等于 buffer release |
 | Android 16 / API 36 | NDK `ASurfaceTransaction_setBufferWithRelease()` | Native producer 获得专门的 buffer release callback |
-| Android 17 / API 37 | 本文源码锚点；四条主路径延续，SF 使用当前 FrontEnd snapshot、CompositionEngine 与 AIDL Composer 流程 | 方法名与 flag 按 `android-17.0.0_r1` 解读，不用旧 HWC2 教程替代当前完整路径 |
+| Android 17 / API 37 | 源码锚点；四条主路径延续，SF 使用当前 FrontEnd snapshot、CompositionEngine 与 AIDL Composer 流程 | 方法名与 flag 按 `android-17.0.0_r1` 解读，不用旧 HWC2 教程替代当前完整路径 |
 
 ### Android 17 源码入口
 

@@ -36,28 +36,6 @@ gap_source: "官方文档/AOSP结构"
 
 # 12.7 Privacy Sandbox on Android 退场：Android 17 API 状态与性能迁移
 
-## 要点
-
-### 🔹 Android 17 的结论已经改变
-
-Google 于 2025 年 10 月宣布退役 Android 侧 Topics、Protected Audience、Attribution Reporting、SDK Runtime 等技术。官方状态页把它们统一列为计划逐步停用并移除。
-
-### 🔹 源码存在不等于功能可用
-
-`android-17.0.0_r1` 仍保留 AdServices 与 SDK Sandbox 的大量类和服务。相关公开类型已经标记废弃；Topics、Ad Selection 与 Custom Audience 的 Framework 回调还会主动返回废弃错误。
-
-### 🔹 不再优化已退场 API 的热路径
-
-Android 17 上继续预热进程、缓存 Topics 或压缩竞价信号，无法改变 API 已退场这一产品事实。现有接入应优先隔离调用、撤出关键路径并制定删除计划。
-
-### 🔹 历史执行模型仍值得保留
-
-Binder、跨进程存储、平台代发网络请求、延迟报告与 JavaScript 执行解释了旧版本的性能形态，也有助于清理遗留链路和识别服务端流量来源。
-
-### 🔹 没有平台一比一替代 API
-
-Android 17 源码明确写出 Relevance 与 Measurement API 没有直接替代。上下文广告、第一方分析、广告平台 SDK 或其他测量方案都需要重新做隐私、政策与性能评审。
-
 ## 一、先更新产品判断
 
 旧版 Privacy Sandbox on Android 面向移动广告，主要包含：
@@ -69,7 +47,7 @@ Android 17 源码明确写出 Relevance 与 Measurement API 没有直接替代�
 
 2025 年 10 月 17 日，Google 公告决定退役这些技术，理由包括采用率较低与生态反馈。官方状态页随后把 Android 侧 Attribution Reporting、On-Device Personalization、Protected App Signals、Protected Audience、SDK Runtime 和 Topics 都标为 “Scheduled for phaseout”。
 
-该状态没有给出统一的 Android 移除版本。本文不会推测停用日期。工程上应采用两个已确认事实：
+该状态没有给出统一的 Android 移除版本，因此不推测停用日期。工程上应采用两个已确认事实：
 
 1. 不为新业务建立这些 API 的强依赖；
 2. 已接入业务要允许 API 缺失、被禁用、返回废弃错误或永久无结果。
@@ -140,7 +118,7 @@ flowchart LR
 
 ### 3.1 Binder 延迟不能用固定常数描述
 
-原文给 Binder、进程启动和 sandbox 序列化写了固定毫秒范围，却没有设备、构建类型、温度、负载、模块版本或样本数。这样的数字无法迁移到另一台设备。
+固定的 Binder、进程启动和 sandbox 序列化毫秒范围，若没有设备、构建类型、温度、负载、模块版本或样本数，就无法迁移到另一台设备。
 
 影响跨进程耗时的变量包括：
 
