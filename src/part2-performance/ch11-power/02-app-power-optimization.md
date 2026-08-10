@@ -111,24 +111,6 @@ review_notes: "2026-05-08 10:28 task9 deep-review: pass-tech-review；无 P0/P1�
 
 # App 耗电优化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 WakeLock 最佳实践：类型选择、超时设置、及时释放
-- 🔹 后台任务省电策略：JobScheduler / WorkManager 的正确使用
-- 🔹 位置服务功耗优化：精度选择、更新频率、Geofencing
-- 🔹 网络请求功耗优化：批量请求、减少轮询、Push 替代 Pull
-- 🔹 Alarm 使用规范：避免精确重复闹钟、使用 setAndAllowWhileIdle 的限制
-
-### 扩展（可选深入）
-
-- 🔸 前台服务的功耗考量与 Android 14+ 对 FGS 的限制
-- 🔸 Camera/Audio 等硬件资源的功耗优化
-
-<!-- outline-end -->
-
 ## 从系统行为理解 App 耗电
 
 App 不能直接决定电池消耗多少。它提交工作、请求硬件资源、保持设备唤醒，系统再通过调度器、HAL 和驱动完成这些请求。优化时需要检查四件事：
@@ -449,7 +431,7 @@ Perfetto 轨道依赖 trace config、系统 build 和厂商实现。标准 user 
 
 ## 版本边界
 
-| Android 版本 | 与本章相关的变化 |
+| Android 版本 | 相关变化 |
 | --- | --- |
 | Android 5.0 / API 21 | JobScheduler 引入 |
 | Android 6.0 / API 23 | Doze 与 App Standby 引入 |
@@ -461,7 +443,7 @@ Perfetto 轨道依赖 trace config、系统 build 和厂商实现。标准 user 
 | Android 16 / API 36 | top-started 与 FGS 并发 job 恢复受 runtime quota 约束；新增 pending job reasons history |
 | Android 17 / API 37 | 后台音频 hardening；target 37 后台音频增加 WIU 能力要求 |
 
-## Review 清单
+## 复核清单
 
 - WakeLock 是否有稳定 tag、业务上限和覆盖成功/失败/取消的释放路径？
 - 可延迟任务是否使用 WorkManager 或 JobScheduler，并只添加必要约束？
@@ -480,7 +462,7 @@ Perfetto 轨道依赖 trace config、系统 build 和厂商实现。标准 user 
 
 ## 与其他章节的关系
 
-§11.1 解释系统如何把 CPU、屏幕、网络、GNSS 与其他组件能量归因到 UID；本章讨论 App 怎样减少这些组件的活跃时间。§5.6 说明 Doze 与 App Standby，§5.10 深入 JobScheduler/WorkManager，§11.5 追踪 WakeLock 在 PowerManagerService 与 suspend 路径中的实现。遇到“任务被推迟”或“设备不休眠”时，应沿这些章节的系统路径继续定位。
+§11.1 解释系统如何把 CPU、屏幕、网络、GNSS 与其他组件能量归因到 UID；这里讨论 App 怎样减少这些组件的活跃时间。§5.6 说明 Doze 与 App Standby，§5.10 深入 JobScheduler/WorkManager，§11.5 追踪 WakeLock 在 PowerManagerService 与 suspend 路径中的实现。遇到“任务被推迟”或“设备不休眠”时，应沿这些章节的系统路径继续定位。
 
 ## 参考资料
 
@@ -511,8 +493,3 @@ Perfetto 轨道依赖 trace config、系统 build 和厂商实现。标准 user 
 - [AOSP：HardeningEnforcer.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/audio/HardeningEnforcer.java)
 - [Android 17 Kernel：pm_wakeup.h](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/include/linux/pm_wakeup.h)
 - [Android 17 Kernel：wakeup.c](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/base/power/wakeup.c)
-- [来源：Obsidian Cubox - 借助 Android Studio 中的功耗性能分析器进行 A-B 测试]
-- [来源：Obsidian Cubox - 谈功耗是什么]
-- [来源：Obsidian Cubox - SoC 低功耗问题定位及优化的 10 个思路]
-- [来源：Obsidian Cubox - BatteryHistorian Android 手机耗电分析神器]
-- [来源：Obsidian Cubox - 抖音功耗优化实践]

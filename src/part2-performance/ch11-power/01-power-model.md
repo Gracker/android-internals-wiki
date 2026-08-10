@@ -75,24 +75,6 @@ last_deepseek_cn_review_at: 2026-06-20
 
 # Android 功耗模型
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Android 功耗模型：power_profile.xml 定义各硬件模块的功耗参数
-- 🔹 功耗组成：CPU、Display、GPU、Cellular、WiFi、GPS、Audio、Camera
-- 🔹 BatteryStats 的工作原理与数据采集
-- 🔹 Coulomb Counter / Fuel Gauge 与功耗估算的区别
-- 🔹 App 耗电量的归属算法
-
-### 扩展（可选深入）
-
-- 🔸 ODPM（On-Device Power Monitor）与 Pixel 设备的硬件功耗监测
-- 🔸 功耗模型的准确性问题与校准方法
-
-<!-- outline-end -->
-
 “某应用耗了多少电”看似只有一个数字，平台内部却要完成三件不同的工作：
 
 1. 记录 CPU、屏幕、网络、传感器、WakeLock 等资源活动；
@@ -101,7 +83,7 @@ last_deepseek_cn_review_at: 2026-06-20
 
 这三层使用的数据源、单位和误差不同。BatteryStats 里的活动时长、PowerStats HAL 的能量读数、ODPM rail 和设置页里的应用百分比不能直接横向比较。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为 Framework 锚点。内核接口以 `android17-6.18-2026-06_r6` 为锚点；具体 Fuel Gauge、PMIC 和 rail 名称由设备厂商实现。
+Framework 锚点为 Android 17 / API 37 / `android-17.0.0_r1`。内核接口以 `android17-6.18-2026-06_r6` 为锚点；具体 Fuel Gauge、PMIC 和 rail 名称由设备厂商实现。
 
 ## 1. Android 17 功耗统计全景
 
@@ -154,8 +136,6 @@ Android 17 AOSP 默认文件明确声明数值是故意设置的错误值，OEM 
 
 这段 XML 只能说明 display、Wi-Fi 和 CPU cluster 的键如何组织。任何性能报告若使用这些默认电流计算真实设备耗电，结果都没有设备测量意义。
 
-[已验证: AOSP `android-17.0.0_r1`, `frameworks/base/core/res/res/xml/power_profile.xml`; AOSP Power Profiles / Power Values 官方文档]
-
 ### 2.2 CPU 参数按 scaling policy 与频点组织
 
 异构 CPU 需要描述 cluster 核数、频点和对应活动电流。Android 17 的 `CpuPowerStatsProcessor` 从 `CpuScalingPolicies` 取得 policy 与频点，并从 `PowerProfile` 读取三类参数：
@@ -167,8 +147,6 @@ Android 17 AOSP 默认文件明确声明数值是故意设置的错误值，OEM 
 没有 CPU energy consumer 时，处理器按 uptime、policy 运行时间和频点时间形成 profile 估算。有 hardware energy 时，处理器仍会利用 profile 的 power bracket 和 UID 时间，把 energy consumer 的总量按可解释的活动比例分配。
 
 因此，相同 CPU time 不保证相同耗电。任务运行在哪个 policy、哪些频点，以及设备是否提供 measured energy，都会改变结果。
-
-[已验证: AOSP `android-17.0.0_r1`, `processor/CpuPowerStatsProcessor.java`]
 
 ### 2.3 modem、Wi-Fi 与 Bluetooth 还有 controller 数据
 
@@ -198,8 +176,6 @@ Android 17 不再使用顶层 `CpuPowerCalculator`。入口变为：
 UID 分配阶段按 top activity duration 占比分配亮屏耗电。Android 17 处理器在总 top activity duration 为 0 时跳过 UID 分配，不再保留 Android 16 `ScreenPowerCalculator` 中 10 分钟的 smear 门槛。
 
 硬件 screen energy consumer 仍然是设备级输入。它提高屏幕总量的测量质量，不能自动得到每个应用的屏幕电量；UID 结果依旧来自前台活动时长比例。
-
-[已验证: AOSP `android-17.0.0_r1`, `processor/ScreenPowerStatsProcessor.java`]
 
 ### 3.3 GPU
 
@@ -263,8 +239,6 @@ BatteryStats 会持久化统计，跨重启保留需要的历史信息。`/data/
 拔掉充电器不会无条件重置所有统计。Android 17 的 `shouldResetOnUnplugLocked()` 根据满电、高电量、一次明显充电和 session 时长等条件决定是否 reset；高电量阈值由 `BatteryStatsConfig.getHighBatteryLevelAfterCharge()` 提供，默认值为 90，OEM 可以配置。
 
 实验前执行 `dumpsys batterystats --reset` 是人为建立采集窗口，和系统自动 reset 的策略不同。重置会影响整机统计，不应在用户设备或多人共享测试环境随意执行。
-
-[已验证: AOSP `android-17.0.0_r1`, `BatteryStatsImpl.java`, `BatteryStatsConfig.java`]
 
 ### 4.3 `dumpsys batterystats` 能回答什么
 
@@ -333,8 +307,6 @@ Android 16 是迁移阶段：`BatteryUsageStatsProvider` 对已支持的组件�
 
 阅读 Android 17 源码时，应从 `PowerAttributor`、`MultiStatePowerAttributor` 和 `processor/` 目录进入。使用 Android 16 或更早 tag 讨论历史行为时，仍需查看 `CpuPowerCalculator`、`ScreenPowerCalculator` 等旧实现。
 
-[已验证: AOSP `android-16.0.0_r1` 与 `android-17.0.0_r1`, `BatteryUsageStatsProvider.java`, `PowerAttributor.java`, `MultiStatePowerAttributor.java`]
-
 ### 6.3 设置页百分比的边界
 
 Settings 消费的是 Framework 归因结果，不是 HAL 原始 rail 表。应用百分比受以下因素影响：
@@ -365,8 +337,6 @@ Android 12 起的 AIDL `android.hardware.power.stats.IPowerStats` 分为两组�
 - `getEnergyMeterInfo()` / `readEnergyMeter()` 返回 Channel 与 `EnergyMeasurement.energyUWs`。
 
 AIDL consumer 可以附带 UID attribution，但供应商是否提供、如何划分均由硬件与 HAL 决定。Channel 更接近物理或逻辑 meter，名称不具备跨设备稳定性。
-
-[已验证: AOSP `android-10.0.0_r1` HIDL PowerStats；AOSP `android-17.0.0_r1` AIDL `IPowerStats.aidl`, `EnergyConsumerResult.aidl`, `EnergyMeasurement.aidl`]
 
 ### 7.2 ODPM 与 Pixel
 
@@ -472,8 +442,6 @@ duration_ms: 60000
 
 `collect_power_rails` 只会输出设备提供的 rail。`battery_poll_ms` 是 trace 采样配置，不代表 Fuel Gauge 硬件更新频率。长窗口需要评估 buffer、文件大小与设备扰动，生产设备采集还要遵守权限和隐私约束。
 
-[已验证: Perfetto traced_probes `android.power`; AOSP `android-17.0.0_r1`, `external/perfetto/src/traced/probes/power/android_power_data_source.cc`]
-
 ### 8.2 工具回答的问题不同
 
 | 工具 | 强项 | 边界 |
@@ -578,7 +546,7 @@ PowerMonitor 可能返回 rail measurement 或 modeled consumer，累计值还�
 | PowerStats AIDL | `hardware/interfaces/power/stats/aidl/android/hardware/power/stats/` |
 | kernel power_supply | `include/linux/power_supply.h`、`drivers/power/supply/power_supply_core.c`，tag `android17-6.18-2026-06_r6` |
 
-## 14. Review 检查表
+## 14. 复核检查表
 
 - [ ] 区分活动时间、charge、energy、power 和百分比。
 - [ ] 确认 `power_profile.xml` 来自目标设备，未使用 AOSP 默认值。

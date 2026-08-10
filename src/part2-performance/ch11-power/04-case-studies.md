@@ -35,9 +35,9 @@ last_idle_audit_run_id: "20260725-183547-idle-audit-692dae4f"
 
 # 11.4 案例集
 
-功耗问题很少由一行代码单独造成。常见链条是：应用发起工作，系统为它安排 CPU、网络、定位或存储资源，硬件进入高功耗状态，工作结束后资源又未及时释放。本章用六个案例说明怎样从业务现象追到系统证据，再把修复落到合适的 Android API。
+功耗问题很少由一行代码单独造成。常见链条是：应用发起工作，系统为它安排 CPU、网络、定位或存储资源，硬件进入高功耗状态，工作结束后资源又未及时释放。以下六个案例说明怎样从业务现象追到系统证据，再把修复落到合适的 Android API。
 
-本文不给出通用的“节电百分比”。芯片、基带、信号、屏幕、温度、账号数据和 OEM 策略都会改变结果。没有 bugreport、trace、测试脚本与环境记录的数字，无法支撑工程决策。
+这里不给出通用的“节电百分比”。芯片、基带、信号、屏幕、温度、账号数据和 OEM 策略都会改变结果。没有 bugreport、trace、测试脚本与环境记录的数字，无法支撑工程决策。
 
 ## 11.4.0 案例分析的共同步骤
 
@@ -555,14 +555,14 @@ Android 17 可使用 `getPendingJobReasonStats()` 区分等待主要来自网络
 
 ## 11.4.8 版本边界
 
-| 版本 | 与本章案例有关的变化 |
+| 版本 | 与案例有关的变化 |
 |---|---|
 | Android 14 / API 34 | Job pending reason API；persisted Job 可携带可持久化 JobWorkItem；`shortService` 类型 |
 | Android 15 / API 35 | target 35+ 的 `dataSync`、`mediaProcessing` FGS 进入 6 小时/24 小时限制；`Service.onTimeout(int, int)` |
 | Android 16 / API 36 | `getPendingJobReasons()` 返回多个等待原因；后台调度 quota 对 WorkManager 使用更需关注 |
-| Android 17 / API 37 | `getPendingJobReasonStats()`；listener 版本 `setExactAndAllowWhileIdle()`；本章平台源码锚点 `android-17.0.0_r1` |
+| Android 17 / API 37 | `getPendingJobReasonStats()`；listener 版本 `setExactAndAllowWhileIdle()`；平台源码锚点 `android-17.0.0_r1` |
 
-## 11.4.9 Review 清单
+## 11.4.9 复核清单
 
 - [ ] 后台工作是否有明确的延迟和可靠性契约？
 - [ ] 用户不可见的工作是否误用了前台服务、WakeLock 或 exact alarm？
@@ -607,11 +607,3 @@ Android 17 可使用 `getPendingJobReasonStats()` 区分等待主要来自网络
 - `kernel/power/suspend.c`
 - `drivers/base/power/wakeup.c`
 - `mm/vmscan.c`
-
-### 项目内调研材料
-
-- `DeepResearch/2026-06-17-battery-saver-location-power-policy-aosp-deep-dive.md`
-- `DeepResearch/2026-06-20-job-scheduler-throttling-mechanism.md`
-- `DeepResearch/2026-06-18-jobscheduler-source-verification.md`
-- `DeepResearch/2026-06-18-radio-power-state-machine-source-analysis.md`
-- `DeepResearch/2026-06-18-adaptive-battery-app-standby-coordination.md`
