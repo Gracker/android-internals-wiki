@@ -216,7 +216,7 @@ Android 13 引入厂商可配置的 `libtonemap`，让 SurfaceFlinger 的 GPU �
 - 当前显示亮度；
 - 内容最大亮度；
 - 可选 `AHardwareBuffer` metadata；
-- 渲染意图。
+- render intent。
 
 着色器先把输入转换为线性亮度和 XYZ，再计算增益，最终归一化并编码到输出空间。这里没有适用于所有 SoC 的固定耗时。4K、120 Hz、保护内容、图层数量、缩放、模糊、GPU 型号和客户端目标格式都能改变结果。
 
@@ -520,7 +520,7 @@ val srgb = p3.convert(ColorSpaces.Srgb)
 - HDR 元数据和 LUT 是否被接受；
 - DPU 带宽与时钟；
 - 面板 brightness、HDR/SDR ratio、APL；
-- 温控节流；
+- thermal throttling；
 - 外接接收端的 HDR 模式与链路格式。
 
 GPU 时间较低并不说明整机成本低。高亮 HDR 内容的主要功耗可能来自 OLED 发光和显示电源；大面积高 APL 内容与少量高光的功耗也不同。
@@ -612,7 +612,7 @@ Android 17 源码中可直接对应的跟踪名称包括：
 
 依次检查：
 
-1. 解码器输出的色彩标准、传递函数和范围；
+1. decoder 输出的 color standard、transfer、range；
 2. 图层数据空间是否为预期的 PQ/HLG；
 3. HDR 元数据是否随缓冲区到达；
 4. 显示模式是否支持该 HDR 类型；

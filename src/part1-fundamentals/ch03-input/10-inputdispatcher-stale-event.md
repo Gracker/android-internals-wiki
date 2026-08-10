@@ -220,7 +220,7 @@ Android 17 的分发器状态转储会直接输出：
 
 - `DispatchEnabled`、`DispatchFrozen`、`FocusedDisplayId`；
 - `FocusedApplications` 及 `dispatchingTimeout`；
-- 焦点、指针捕获、触摸状态、窗口与连接信息；
+- focus、pointer capture、touch state、window 与 connection 信息；
 - 每条连接的 `OutboundQueue`、`WaitQueue` 和 `responsive`；
 - `PendingEvent`、`InboundQueue` 及每个事件相对当前时间的 `age`；
 - 最近 10 个非 SensorEntry 的 `RecentQueue`；

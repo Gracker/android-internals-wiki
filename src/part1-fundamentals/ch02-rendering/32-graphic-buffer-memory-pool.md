@@ -295,7 +295,7 @@ flowchart LR
 Android 17 的该函数会清除：
 
 - `mGraphicBuffer`；
-- 缓冲区状态；
+- buffer state；
 - 请求与获取标志；
 - frame number；
 - fence 与旧 EGL fence 信息；
@@ -362,7 +362,7 @@ mAllocator->allocate2(*descriptorInfo, 1, &result);
 
 - name；
 - width、height、layerCount；
-- 像素格式；
+- pixel format；
 - usage；
 - `reservedSize`；
 - `additionalOptions` 附加选项。
@@ -408,11 +408,11 @@ Skia Vulkan RenderEngine、应用 Vulkan、ANGLE 或 GPU 驱动可以维护各�
 
 `BufferQueueCore::dumpState()` 会输出：
 
-- 消费者名称、生产者和消费者进程 ID；
+- Consumer 名称、Producer/Consumer pid；
 - `mMaxAcquiredBufferCount`、`mMaxDequeuedBufferCount`；
 - async、cannot-block、默认尺寸/格式；
 - 先进先出队列中的帧；
-- 活动、空闲缓冲区和空闲槽位的逐槽位信息。
+- active、free-buffer、free-slot 的逐 slot 信息。
 
 源码输出没有为四个容器都打印稳定的数量字段。不同服务嵌入这段转储的方式也会变化。排查时应先通过消费者名称、图层、进程 ID 与尺寸找到目标队列，再读取其槽位行，不能把其他 Surface 的缓冲区混入结论。
 
@@ -462,7 +462,7 @@ Skia Vulkan RenderEngine、应用 Vulkan、ANGLE 或 GPU 驱动可以维护各�
 依次确认：
 
 1. 是否出现重分配瞬时事件；
-2. 哪个属性发生变化：宽、高、格式、层数、用途或附加选项世代；
+2. 哪个属性变化：width、height、format、layerCount、usage 或 additional-options generation；
 3. 分配器调用是否覆盖主要耗时；
 4. 新尺寸是否由旋转、窗口缩放、分辨率策略或编解码器格式变化引起；
 5. 后续稳定帧是否回到同一批槽位。

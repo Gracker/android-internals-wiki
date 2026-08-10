@@ -195,7 +195,7 @@ InputReader 调用 `getEvents(timeoutMillis)`；没有数据时 EventHub 阻塞�
 - 键盘：`KeyboardInputMapper`；
 - 触摸屏：`MultiTouchInputMapper` / `TouchInputMapper`；
 - 鼠标：相应的光标映射器；
-- 操纵杆、旋转编码器、传感器等各有相应的映射器。
+- joystick、rotary encoder、sensor 等有各自 mapper。
 
 映射器维护设备状态，把 EV_KEY、EV_ABS、EV_SYN 等原始序列转换为 `NotifyKeyArgs`、`NotifyMotionArgs` 等结构。InputReader 将待通知参数移出内部列表后，在 Reader 锁外调用下一个监听器，避免下游回调形成锁依赖。
 
@@ -243,10 +243,10 @@ Android 17 的窗口输入拓扑由 `gui::WindowInfosUpdate` 提供。`InputDisp
 每个 `WindowInfo` 中与命中相关的状态包括：
 
 - 令牌与显示器；
-- 边界、变换、可触摸区域；
+- frame、transform、touchable region；
 - Z 序；
 - owner pid/uid；
-- 焦点、可见性与输入配置；
+- focus、visibility 与 input config；
 - 分发超时时间；
 - trusted overlay、spy、drop-input 等安全/行为属性。
 
@@ -573,7 +573,7 @@ InputDispatcher 的延迟聚合器会使用读取到发布、发布到消费和�
 2. `dumpsys input`：确认设备是否启用、输入源/视口是否正确；
 3. input trace：确认 RawEvent、NotifyMotion/Key 是否出现；
 4. InputDispatcher warning：确认是否 stale、policy drop、安全拒绝或无目标；
-5. 窗口信息/焦点：确认显示器、令牌、可触摸区域和连接。
+5. window info/focus：确认 display、token、touchable region 和连接。
 
 `adb shell input tap`、`keyevent` 等注入从框架路径进入，可用于绕过真实硬件与 evdev。注入成功只说明注入点之后的链路可以工作。
 
@@ -585,7 +585,7 @@ InputDispatcher 的延迟聚合器会使用读取到发布、发布到消费和�
 - `WindowInfosUpdate` 中的 z-order、touchable region、transform；
 - DOWN 建立的触摸状态；
 - 叠加层、监视窗口、监视器与指针截取；
-- 指针捕获；
+- pointer capture；
 - 窗口是否在过渡期间使用了旧拓扑。
 
 不要只看 WMS `mCurrentFocus`。触摸目标不一定等于键盘焦点。
@@ -608,7 +608,7 @@ InputDispatcher 的延迟聚合器会使用读取到发布、发布到消费和�
 
 - `dumpsys input`，重点看 focused state、pending event、connections、outbound/wait queue；
 - ANR 轨迹与主线程栈；
-- 事件 ID 的发布、消费与完成时间；
+- event id 的 publish/consume/finish；
 - 窗口 dispatching timeout 与 `HwTimeoutMultiplier()`；
 - policy、IME、Binder 和 socket 状态；
 - `Input Dispatcher State at time of last ANR`。

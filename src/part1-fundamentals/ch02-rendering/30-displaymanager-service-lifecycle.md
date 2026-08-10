@@ -183,8 +183,8 @@ LogicalDisplay 层还有 `CONNECTED`、`DISCONNECTED`、`ADDED`、`REMOVED`、`B
 
 - DisplayAdapter 与 DisplayDevice repository；
 - LogicalDisplay、DisplayGroup、DeviceState Layout；
-- 显示状态、亮度与电源控制器索引；
-- 回调注册表；
+- Display state、brightness 与 power controller 索引；
+- callback registry；
 - 视口与待处理遍历；
 - DisplayTopology 的当前副本与 id 映射。
 
@@ -220,7 +220,7 @@ DMS 源码明确提醒锁顺序：WMS 可能先持有 `WindowManagerService.mGlo
 - 开机默认屏发现；
 - 外接屏插拔；
 - 折叠/展开或 dock DeviceState 切换；
-- 显示模式、分辨率和色彩模式变化；
+- Display mode、resolution、color mode 变化；
 - 亮度与电源状态变化；
 - VirtualDisplay 创建、resize、换 Surface 与销毁。
 
@@ -246,11 +246,11 @@ DMS 源码明确提醒锁顺序：WMS 可能先持有 `WindowManagerService.mGlo
 
 DeviceState Layout 按显示器的物理地址和唯一标识查找设备，并规定：
 
-- 逻辑显示器 ID；
+- logical display id；
 - 是否 enabled；
-- 显示组名称；
+- display group name；
 - position；
-- 主导显示器；
+- lead display；
 - 亮度、刷新率和功耗节流配置 ID。
 
 logical display id 是运行时 framework 身份；稳定 physical id、EDID/port 与 unique id 用于识别设备。外接屏拔出再插入后，不应只按上一次 logical id 关联历史数据。
@@ -413,7 +413,7 @@ controller 负责汇总：
 - 距离传感器与策略解除阻塞；
 - 自动或手动亮度；
 - HBM、thermal/power throttling；
-- 亮度渐变；
+- brightness ramp；
 - 主导与跟随显示器的亮度关系。
 
 `requestPowerState()` 先更新待处理请求，再用 Handler 合并 `MSG_UPDATE_POWER_STATE`。返回 `false` 表示仍有异步状态要收敛，调用方需要等待状态回调后重试。
@@ -526,7 +526,7 @@ SurfaceFlinger 按显示器构造输出和送显结果，但多块屏仍可能�
 - RenderEngine 与 GPU queue；
 - HWC plane、scaler 与带宽；
 - 内存带宽与温控或功耗预算；
-- 厂商显示 HAL 与驱动的串行化。
+- vendor display HAL/driver serialization。
 
 一块屏正常送显不能证明另一块屏也正常。性能数据必须带显示器 present ID 或令牌、显示模式、输出与送显栅栏。
 
@@ -570,7 +570,7 @@ adb shell perfetto \
 - `setDisplayBrightness(id=...)`；
 - `DisplayPowerMode`、`ScreenState`、`ScreenBrightness` counter；
 - WMS display traversal / surface placement；
-- SF 热插拔、显示模式变化、合成与目标显示器送显。
+- SF hotplug、mode change、composition 与目标 Display present。
 
 `mSyncRoot` 没有固定的同名 trace slice。判断锁竞争需要结合 system_server 线程 running/runnable/blocked 状态、Java monitor contention、调用栈和相邻 DMS slice，不能用 `android.display` 线程 CPU 占用替代持锁时间。
 
@@ -670,7 +670,7 @@ DMS 显示模式变化与应用逐帧生产是两个阶段。
 - SF Binder 排队；
 - HWC power mode call；
 - 面板或驱动的挂起与恢复；
-- 厂商背光；
+- vendor backlight；
 - 显示卸载或辅助处理；
 - 上下电所需的栅栏或空闲等待。
 
