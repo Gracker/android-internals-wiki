@@ -52,35 +52,9 @@ last_deepseek_cn_review_at: 2026-07-14
 
 # JankStats
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 [定位] 说明 JankStats 是 AndroidX 提供的帧级卡顿入口，适合线上采集慢帧分布和页面上下文。
-- 🔹 [输出数据] 展开 `FrameData`、`isJank`、frame duration、expected duration、states 的含义，给字段样例。
-- 🔹 [API 版本] 核对 AndroidX metrics-performance 版本、最低系统要求、View / Window 接入方式和 Compose 支持方式。
-- 🔹 [阈值口径] 说明 jank 判断和刷新率、expected duration、deadline 的关系，避免固定用 16ms。
-- 🔹 [UI context] 设计页面、列表、tab、弹窗、加载状态、Compose state 的命名规则和生命周期清理方式。
-- 🔹 [Compose] 写 `PerformanceMetricsState` 在 Compose 场景中的状态更新方式，避免 stale state 影响聚合。
-- 🔹 [批量聚合] 说明端侧不要逐帧上传，应该按页面、时间窗口、版本、机型聚合 slow / frozen / jank rate。
-- 🔹 [工具分工] 和 FrameMetrics、Perfetto、Macrobenchmark、Firebase Performance 的数据边界做表格。
-- 🔹 [误判] 覆盖页面状态缺失、后台帧、动画预期耗时、列表预加载、低端机 CPU 争抢等误判来源。
-- 🔹 [使用建议] 给 Release 接入、采样、远程开关、字段脱敏和服务端聚合建议。
-
-### 扩展（可选深入）
-
-- 🔸 补一个 View 页面接入示例和一个 Compose 页面状态标记示例。
-- 🔸 增加一份端侧批量聚合数据结构，便于后续平台章节接入。
-- 🔸 对 AndroidX JankStats API reference 做 L1 核对，标注过期 API 或实验状态。
-- 🔸 增加一个“慢帧率升高但单帧 trace 不明显”的案例，说明聚合指标的价值。
-- 🔸 补充与 Google Play Vitals / Firebase 的关系，避免重复采集同一指标。
-
-<!-- outline-end -->
-
 ## JankStats 是官方帧级卡顿入口
 
-JankStats 属于 `androidx.metrics:metrics-performance`，用于按帧收集 UI jank 信息。Google Maven metadata 当前稳定版本为 `1.0.0`。本章复核的 AAR SHA-256 是 `efe2e0d92c7cb2f40c77d337052623fdb631d684ba145881e5a52a664d5614a0`，sources JAR SHA-256 是 `55c5478b4fde6e1cded38d647e9d995a6d9d08e3b8abd28268b5d5a5c3e700a2`。
+JankStats 属于 `androidx.metrics:metrics-performance`，用于按帧收集 UI jank 信息。Google Maven metadata 当前稳定版本为 `1.0.0`。这里复核的 AAR SHA-256 是 `efe2e0d92c7cb2f40c77d337052623fdb631d684ba145881e5a52a664d5614a0`，sources JAR SHA-256 是 `55c5478b4fde6e1cded38d647e9d995a6d9d08e3b8abd28268b5d5a5c3e700a2`。
 
 它会把每帧耗时、是否被库判为 jank、当时的 UI 状态回调给应用，但不会自动上传数据。它适合作为线上流畅性监控的第一层信号源，不负责生成 trace、抓取堆栈或提供看板。它擅长回答“哪些页面、交互和版本的异常帧更多”，不能独立回答“哪段代码让这一帧超时”。
 
@@ -208,7 +182,7 @@ JankStats 通过 `jankHeuristicMultiplier` 控制 `isJank`，默认值是 `2.0f`
 
 60 Hz 下，一帧周期约 16.67 ms，默认 `isJank` 阈值接近 33.3 ms；120 Hz 下则接近 16.67 ms。把 `isJank` 理解为“超过 16 ms”是错误的。
 
-> [自动发现] 1.0.0 的 API 23-30 实现会把首次算出的帧周期保存在进程级 `JankStatsBaseImpl.frameDuration` 中，显示模式切换不会自动触发重算。给 `jankHeuristicMultiplier` 赋值会清除此缓存；这不适合作为刷新率变化通知机制。动态刷新率设备应单独记录显示模式，并避免把低版本 JankStats 阈值描述成逐帧 deadline。
+1.0.0 的 API 23-30 实现会把首次算出的帧周期保存在进程级 `JankStatsBaseImpl.frameDuration` 中，显示模式切换不会自动触发重算。给 `jankHeuristicMultiplier` 赋值会清除此缓存；这不适合作为刷新率变化通知机制。动态刷新率设备应单独记录显示模式，并避免把低版本 JankStats 阈值描述成逐帧 deadline。
 
 API 31+ 还会计算 `frameOverrunNanos = frameDurationTotalNanos - DEADLINE`。由于 overrun 比较 total duration 与一次 deadline，而 `isJank` 比较 UI duration 与默认两倍 deadline，一帧可能出现 `frameOverrunNanos > 0` 但 `isJank == false`。服务端应把这两个字段分开统计。
 

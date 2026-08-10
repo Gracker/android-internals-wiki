@@ -97,38 +97,11 @@ last_deepseek_cn_review_at: 2026-06-23
 ---
 # Measure
 
-<!-- outline-start -->
-
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 [定位] 说明 Measure 是开源移动监控平台，包含 SDK、后端和看板；和只提供端侧采集的 Matrix / KOOM 分开讲。
-- 🔹 [会话时间线] 展开 session、screen、event、trace、error、resource 的关系；补一个用户操作到 ANR 的时间线例子。
-- 🔹 [能力范围] 按 Crash、ANR、HTTP、启动、App size、CPU、内存、点击、页面导航列数据来源、字段和适用判断。
-- 🔹 [接入成本] 写 SDK 接入之外的工作：部署、存储、查询、符号化、权限、告警、采样、数据删除。
-- 🔹 [自定义 trace] 规定 trace 命名、属性、单位、动态值禁用规则；补登录、首屏、支付、图片解码示例。
-- 🔹 [自托管] 拆存储成本、索引设计、附件保留、mapping / native symbol 关联、备份和升级风险。
-- 🔹 [OpenTelemetry] 说明移动 session 与服务端 trace 的模型差异；设计 trace id / request id 关联方式。
-- 🔹 [平台对比] 和 Firebase、Sentry 做表格对比，维度包括开源/托管、错误监控、性能 trace、会话上下文、部署成本。
-- 🔹 [隐私策略] 覆盖 URL pattern、用户标识、日志、请求体、截图/附件、地区合规和删除请求。
-- 🔹 [试点评估] 给 2-4 周试点清单，验证崩溃定位、ANR 上下文、会话检索、告警噪声和团队使用成本。
-
-### 扩展（可选深入）
-
-- 🔸 增加 Measure 平台数据流图，标出端侧事件、批量上传、后端入库、查询和告警。
-- 🔸 补一份 session JSON 示例，要求字段能支持页面、网络、错误和性能 trace 关联。
-- 🔸 加一张自托管成本表，区分小团队试点、中型团队、私有化环境。
-- 🔸 对 measure-sh/measure README、部署文档、license、维护状态做核对。
-- 🔸 增加“什么时候选 Firebase / Sentry / Measure”的决策表。
-
-<!-- outline-end -->
-
-## 结论先行
+## 产品定位与版本边界
 
 Measure 是一个面向移动端的监控平台，项目包含 Android、iOS、Flutter、React Native SDK，数据接收与处理服务，以及 Web 看板。它把 Crash、ANR、启动、HTTP、CPU、内存、点击、页面导航、业务 span 和 bug report 放进同一套会话模型。Matrix、KOOM 的重点是端侧专项采集与诊断；Measure 还负责事件入库、检索、聚合、告警、附件保存和团队协作。两类工具可以并存，不是同一层级的替代品。
 
-本文以 2026-07-25 的 `measure-sh/measure` 主分支提交 `8a189ea1e9728105773c1c81fb6cc8797e6b2d15` 为产品源码依据，以 Android 17 / API 37 / `android-17.0.0_r1` 为平台边界。此时最新稳定 Android SDK 为 `0.19.0`，Gradle 插件为 `0.13.0`；主分支分别已进入 `0.20.0-SNAPSHOT` 和 `0.14.0-SNAPSHOT`。
+产品源码依据为 2026-07-25 的 `measure-sh/measure` 主分支提交 `8a189ea1e9728105773c1c81fb6cc8797e6b2d15`，平台边界为 Android 17 / API 37 / `android-17.0.0_r1`。此时最新稳定 Android SDK 为 `0.19.0`，Gradle 插件为 `0.13.0`；主分支分别已进入 `0.20.0-SNAPSHOT` 和 `0.14.0-SNAPSHOT`。
 
 评估前要记住三条边界：
 
@@ -284,7 +257,7 @@ Measure 主分支快照仍是 `compileSdk 36`，`ProfileCollector.triggerTypes()
 
 `ProfileCollector` 能识别 `.hprof` 和 `.heapprofd` 文件，只说明上传模型为这些格式留了入口。当前注册列表没有 OOM trigger，不能据此宣传 Android 17 自动 heap dump。这个边界也说明了源码锚点的价值：只看“支持 Android”或“支持 profiling”无法判断 API 37 能力是否已经进入 SDK。
 
-## 接入不是三行 Gradle 配置
+## 接入还包括平台侧工作
 
 稳定版最小要求为 minSdk 21、AGP 8.1.0。官方接入页列出的稳定坐标如下；版本号应在升级时跟随 release notes 调整。
 
@@ -298,7 +271,7 @@ dependencies {
 }
 ```
 
-Gradle 插件负责 OkHttp、HttpURLConnection、AndroidX Navigation 等字节码插桩，还负责构建大小与 R8/ProGuard mapping 上传。禁用某个 variant 的插件不只是“少一个构建步骤”，相应 variant 的自动网络采集、包大小趋势或混淆栈还原也可能缺失。
+Gradle 插件负责 OkHttp、HttpURLConnection、AndroidX Navigation 等字节码插桩，还负责构建大小与 R8/ProGuard mapping 上传。禁用某个 variant 的插件会减少构建步骤，也可能让该 variant 缺少自动网络采集、包大小趋势或混淆栈还原。
 
 初始化要尽量靠近 `Application.onCreate()` 开头，并把 API key 与 ingest URL 放在不同 build type/flavor 的 manifest placeholder 或受控配置中。若延迟初始化，早期 Crash 和启动时间会形成不可恢复的盲区。
 

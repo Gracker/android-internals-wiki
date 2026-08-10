@@ -89,27 +89,8 @@ task9_review_notes: "2026-06-28 闲时抽检 AUTO-FIX: 修正 Android 14/API 34 
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-13
 ---
----
 
 # 其他开源 APM 库(AndroidGodEye、Collie、Rabbit)
-
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 AndroidGodEye、Collie、Rabbit 更适合拿来学习设计取舍或补齐存量项目，不适合直接当现代生产 APM 默认基线
-- 🔹 要把它们和 Matrix、官方 SDK、商业平台放在同一张决策表里看，不能只比功能名词
-- 🔹 Matrix 的官方定位要按 upstream README 表述：plugin style、non-invasive APM system developed by WeChat
-- 🔹 轻量方案、官方 SDK、商业平台的切换点要写清楚，包括接入成本、归因能力、治理成本和退出成本
-- 🔹 从旧开源库迁移到官方 SDK / 平台时，要先拆数据合同，再拆采集模块，再替换上报流程
-
-### 扩展(可选深入)
-
-- 🔸 补一张最小 APM SDK 架构图
-- 🔸 给 Rabbit / AndroidGodEye / Collie 补 report schema 示例
-- 🔸 补一张"旧开源能力 -> 官方 SDK / 平台"的映射表
-<!-- outline-end -->
 
 ## 这些项目适合看设计取舍
 
@@ -122,9 +103,9 @@ AndroidGodEye、Collie、Rabbit 都曾试图用较低的接入成本覆盖多种
 - **构建兼容性**：Gradle 插件是否使用已经删除的 Transform API 或 AGP 内部类。
 - **维护证据**：最近发布、固定 commit、`compileSdk`、`targetSdk` 与依赖仓库能否支撑当前工程。
 
-本章把源码固定在以下 commit。日期和构建版本不是用来给项目排资历，而是界定结论适用的代码：
+以下分析将源码固定在对应 commit。固定日期和构建版本用于界定结论适用的代码，不用于给项目排资历：
 
-| 项目 | 本章固定的源码 | 发布与构建基线 | 可以得出的结论 |
+| 项目 | 源码基线 | 发布与构建基线 | 可以得出的结论 |
 |---|---|---|---|
 | AndroidGodEye | [`459f5cb5`](https://github.com/Kyson/AndroidGodEye/tree/459f5cb5a2a4d176ff63f27322644a8191df2af9) | 3.4.3；AGP 3.2.1；`compileSdk` / `targetSdk` 29；`minSdk` 16 | upstream 没有给出 Android 17 与现代 AGP 的验证证据 |
 | Collie | [`bfdc6782`](https://github.com/happylishang/Collie/tree/bfdc6782d568bfcefef01e846e81ccfd5a7e3470) | 1.1.8；AGP 7.2.1；`compileSdk` / `targetSdk` 30；`minSdk` 21 | 可阅读运行时实现，但指标口径和依赖要逐项替换或复测 |
@@ -164,7 +145,7 @@ Collie 在 dispatch 开始时安排一个 5 秒延迟任务，dispatch 结束时
 
 `FpsTracker` 把一次 dispatch 的耗时按 16 ms 分桶，并用 `cost / 16 - 1` 推算掉帧数，平均 FPS 还被限制在 60。这个模型在 60 Hz 设备上已经是近似值，在 90/120 Hz 和动态刷新率设备上会出现系统性误差。
 
-源码还反射 `Choreographer.mLock`、`mCallbackQueues` 与 `addCallbackLocked()`，用于判断 dispatch 是否处于 input、animation 或 traversal 阶段；代码明确在 Android P 之后停用这条路径。因此，在本章覆盖的 Android 8 到 Android 17 范围内，同一个字段在不同系统版本上的含义并不一致。
+源码还反射 `Choreographer.mLock`、`mCallbackQueues` 与 `addCallbackLocked()`，用于判断 dispatch 是否处于 input、animation 或 traversal 阶段；代码明确在 Android P 之后停用这条路径。因此，在 Android 8 到 Android 17 的覆盖范围内，同一个字段在不同系统版本上的含义并不一致。
 
 现代实现应优先使用 `JankStats`。API 24+ 时它以 `FrameMetrics` 为基础，低版本使用 `OnPreDrawListener`；业务侧补充页面和交互状态即可。必须自行接 `FrameMetrics` 时，要在回调内复制对象，并把后续聚合移到后台线程，因为系统会复用该对象，消费过慢还会丢回调。
 
@@ -241,7 +222,7 @@ Matrix 的 Trace Gradle 插件在固定 commit 中仍由 `MatrixTraceInjection` 
 
 ## Android 版本与 APM 能力演进
 
-本节的平台实现固定到 AOSP `android-17.0.0_r1`，公开契约以 API 37 reference 为准。版本表只记录与 APM 直接相关、能从公开 API 验证的变化。`ProcessLifecycleOwner`、`JankStats` 等 Jetpack 库按依赖版本发布，不应写成某个 Android 系统版本“新增”的平台 API。
+平台实现固定到 AOSP `android-17.0.0_r1`，公开契约以 API 37 reference 为准。版本表只记录与 APM 直接相关、能从公开 API 验证的变化。`ProcessLifecycleOwner`、`JankStats` 等 Jetpack 库按依赖版本发布，不应写成某个 Android 系统版本“新增”的平台 API。
 
 | Android 版本 | API Level | 公开能力 | 使用边界 |
 |---|---:|---|---|
