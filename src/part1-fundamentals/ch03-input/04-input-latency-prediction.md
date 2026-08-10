@@ -93,13 +93,13 @@ last_task9_autofix_at: "2026-07-12"
 ```mermaid
 sequenceDiagram
     participant Touch as 触控硬件
-    participant Kernel as 内核 evdev
+    participant Kernel as Kernel evdev
     participant Reader as InputReader
     participant Dispatcher as InputDispatcher
     participant App as 应用主线程
     participant RT as RenderThread
     participant SF as SurfaceFlinger/HWC
-    participant Display as 显示器
+    participant Display as Display
 
     Touch->>Kernel: 采样并上报坐标
     Kernel->>Reader: /dev/input/eventX
@@ -119,13 +119,13 @@ sequenceDiagram
 | 采样延迟 | 触控 IC、驱动、evdev | `getevent`、InputReader 时间戳 | 采样率低、驱动上报抖动、坐标滤波过重 |
 | 系统分发延迟 | EventHub、InputReader、InputDispatcher、InputChannel | `iq`、`oq:<channel>`、`wq:<channel>`、`dispatch_latency_dur`、`ack_latency_dur` | system_server 调度不及时、目标窗口连接拥塞、ACK 回写慢 |
 | 应用处理延迟 | `ViewRootImpl`、View 树、业务代码、Choreographer | `deliverInputEvent`、`CALLBACK_INPUT`、主线程状态 | 主线程 I/O、Binder 同步调用、复杂手势分发、过深 View 层级 |
-| 显示延迟 | RenderThread、GPU、SurfaceFlinger、HWC、面板 | FrameTimeline、`queueBuffer`、送显栅栏 | GPU 忙、BufferQueue 积压、SF 合成超时、刷新率切换 |
+| 显示延迟 | RenderThread、GPU、SurfaceFlinger、HWC、Panel | Frame Timeline、`queueBuffer`、present fence | GPU 忙、BufferQueue 积压、SF 合成超时、刷新率切换 |
 
 这张表用于把问题分段。`wq` 堆积时，不能直接归因于渲染；FrameTimeline 标红也不能反推 InputDispatcher 一定慢。每个指标只覆盖相应区间。
 
 ### 一帧预算里的输入位置
 
-在应用侧，事件到达和批量 MOVE 的消费要分开观察。普通未批处理事件由 `WindowInputEventReceiver#onInputEvent()` 接收，随后进入 `ViewRootImpl` 的输入阶段链；积累中的 MOVE 批次通常由 `ViewRootImpl` 注册 Choreographer 的输入 VSync 回调，在目标帧时间到来时调用 `consumeBatchedInputEvents(frameTimeNanos)`。因此，不能把每个输入事件都描述成“等待 `CALLBACK_INPUT` 后才分发”。
+在应用侧，事件到达和批量 MOVE 的消费要分开观察。普通未批处理事件由 `WindowInputEventReceiver#onInputEvent()` 接收，随后进入 `ViewRootImpl` 的输入阶段链；积累中的 MOVE 批次通常由 `ViewRootImpl` 注册 Choreographer 的输入 VSync callback，在目标帧时间到来时调用 `consumeBatchedInputEvents(frameTimeNanos)`。因此，不能把每个输入事件都描述成“等待 `CALLBACK_INPUT` 后才分发”。
 
 `android-17.0.0_r1` 中的帧回调顺序仍是：
 
@@ -176,7 +176,7 @@ fun appendSamples(event: MotionEvent, out: MutableList<PointF>) {
 
 API 35 起，可以先通过 `MotionEvent#getPointerCoords()` 或 `getHistoricalPointerCoords()` 取出 `PointerCoords`，再调用 `PointerCoords.isResampled()` 判断该坐标是否由系统重采样得到。更早版本没有对应的公开判断 API。
 
-`requestUnbufferedDispatch()` 会让匹配输入源的待处理批次立即以 `frameTimeNanos = -1` 消费，不再等待下一次输入 VSync 回调。代价是批次可积累的样本更少，而且没有目标帧时间可供上述重采样使用。手写、签名、白板可以在笔迹进行期间评估这种取舍；普通列表滚动通常保留默认策略。
+`requestUnbufferedDispatch()` 会让匹配输入源的待处理批次立即以 `frameTimeNanos = -1` 消费，不再等待下一次输入 VSync callback。代价是批次可积累的样本更少，而且没有目标帧时间可供上述重采样使用。手写、签名、白板可以在笔迹进行期间评估这种取舍；普通列表滚动通常保留默认策略。
 
 ## MotionPredictor：用预测缩短感知距离
 
@@ -186,9 +186,9 @@ API 35 起，可以先通过 `MotionEvent#getPointerCoords()` 或 `getHistorical
 
 | 能力 | 入口 | 版本边界 | 适用场景 |
 | --- | --- | --- | --- |
-| 框架 API | `android.view.MotionPredictor` | API 34+；仍需设备配置启用并支持对应设备和输入源 | 系统提供预测能力时，应用直接调用框架 API |
+| Framework API | `android.view.MotionPredictor` | API 34+；仍需设备配置启用并支持对应设备和 source | 系统提供预测能力时，App 直接调用 framework API |
 | AndroidX 封装 | `androidx.input:input-motionprediction` 的 `MotionEventPredictor` | Android U/API 34 起优先使用受支持的系统 API；低版本或不受支持的笔划使用兼容预测器 | 需要覆盖多个 Android 版本的手写/绘图应用 |
-| 原生预测器 | AOSP `libinput` 的 `MotionPredictor` / `TfLiteMotionPredictor` | `android-17.0.0_r1` 中由框架 API 经 JNI 调用 | 系统内部能力，普通应用不直接链接 |
+| Native predictor | AOSP `libinput` 的 `MotionPredictor` / `TfLiteMotionPredictor` | `android-17.0.0_r1` 中由 framework API 经 JNI 调用 | 系统内部能力，普通 App 不直接链接 |
 
 ### Android 17 源码边界
 
@@ -201,13 +201,13 @@ API 35 起，可以先通过 `MotionEvent#getPointerCoords()` 或 `getHistorical
 - `record()` 使用 `DOWN`、`MOVE` 样本，收到 `UP` 或 `CANCEL` 后清空手势状态，其他 action 不参与建模；
 - 已被系统重采样的坐标不会再次输入预测模型；
 - TFLite 模型优先从 `/vendor/etc/motion_predictor_model.tflite` 加载，缺失时回退到 `/system/etc/motion_predictor_model.tflite`；相邻的配置 XML 决定模型窗口和预测参数；
-- 模型输入包含位移极坐标、压力、倾斜角、方向，输出包含预测位移和压力。
+- 模型输入包含位移极坐标、pressure、tilt、orientation，输出包含预测位移和 pressure。
 
 这些边界表明预测能力由平台版本、设备资源覆盖、输入设备和当前笔划共同决定。TCN 架构、NPU 加速、固定 30ms 窗口或非触控笔的全面支持，都不能从该源码锚点推出。
 
 ### 框架 API 的使用方式
 
-框架 API 需要在整段触控笔事件流中复用同一个实例。下面的封装负责记录真实事件并返回可空的预测事件：
+Framework API 需要在整段 stylus event stream 中复用同一个实例。下面的封装负责记录 real event 并返回 nullable predicted event：
 
 ```kotlin
 @RequiresApi(34)
@@ -252,7 +252,7 @@ try {
 
 ## 前缓冲与低延迟图形
 
-传统多缓冲路径要等待应用渲染、缓冲区交换、SurfaceFlinger 合成和显示刷新。对整屏 UI 来说，这套路径安全、稳定；对手写笔迹来说，它会让墨迹落后于笔尖。
+传统多缓冲路径要等待应用渲染、buffer swap、SurfaceFlinger 合成和显示刷新。对整屏 UI 来说，这套路径安全、稳定；对手写笔迹来说，它会让墨迹落后于笔尖。
 
 前缓冲渲染会把短生命周期的增量内容放进专用的低延迟前缓冲层，减少等待下一次完整多缓冲提交的时间。它不是修改 View 当前正在显示的普通 color buffer。Jetpack graphics 库提供了几层入口：
 
@@ -316,13 +316,13 @@ LIMIT 100;
 - `ack_ms` 高：应用处理结束后到系统收到 ACK 之间还有调度或回写延迟，不要把它计入 View 分发耗时。
 - `end_to_end_ms` 高：把 FrameTimeline、RenderThread 和 SurfaceFlinger 一起纳入判断。
 
-`android_input_events` 主要关联输入 atrace 切片（如 `sendMessage`、`receiveMessage`、`deliverInputEvent`）与 FrameTimeline。`android.input.inputevent` 是只在可调试构建上可用的结构化数据源，用于填充 `android_motion_events`、`android_key_events`、`android_input_event_dispatch` 等表，但并非查询 `android_input_events` 的前置条件。
+`android_input_events` 主要关联输入 input atrace slice（如 `sendMessage`、`receiveMessage`、`deliverInputEvent`）与 FrameTimeline。`android.input.inputevent` 是只在可调试构建上可用的结构化数据源，用于填充 `android_motion_events`、`android_key_events`、`android_input_event_dispatch` 等表，但并非查询 `android_input_events` 的前置条件。
 
 `end_to_end_latency_dur` 需要成功关联输入与送显帧；关联不到时会是 `NULL`。对于未批处理的事件，标准库可能用下一帧作推测关联，此时 `is_speculative_frame = 1`。空值表示证据不足，推测值也要与界面行为和 FrameTimeline 一起核对。
 
 ## 调度、提频与硬件采样策略
 
-输入处理跨帧时，瓶颈可能来自应用代码，也可能来自线程迟迟没有获得 CPU。Perfetto 中要结合 CPU 频率、线程状态、调度迁移与同一时间窗的业务切片分析。
+输入处理跨帧时，瓶颈可能来自 App 代码，也可能来自线程迟迟没有获得 CPU。Perfetto 里要把 CPU frequency、thread state、调度迁移与同一时间窗的业务 slice 放在一起看。
 
 ### 输入升频的观察方法
 
@@ -331,7 +331,7 @@ LIMIT 100;
 排查顺序：
 
 1. 在 Perfetto 中定位第一批 `MotionEvent` 或 `deliverInputEvent`。
-2. 查看同一时间窗的 CPU 频率轨迹，确认触摸后频率和活动核心是否变化。
+2. 看同一时间窗的 CPU frequency track，触摸后频率和活跃核心是否发生变化。
 3. 检查应用主线程是否及时从 Runnable 变为 Running。
 4. 检查 RenderThread 和 SurfaceFlinger 是否也获得足够的 CPU 时间。
 
@@ -409,7 +409,7 @@ flowchart TD
 - Android API：`developer.android.com/reference/android/view/MotionPredictor`
 - AndroidX MotionEventPredictor：`developer.android.com/reference/androidx/input/motionprediction/MotionEventPredictor`
 - MotionEvent 重采样标记：`developer.android.com/reference/android/view/MotionEvent.PointerCoords#isResampled()`
-- Android 高级触控笔功能：`developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features`
+- Android stylus advanced features：`developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features`
 - AndroidX CanvasFrontBufferedRenderer：`developer.android.com/reference/androidx/graphics/lowlatency/CanvasFrontBufferedRenderer`
 - AndroidX LowLatencyCanvasView：`developer.android.com/reference/androidx/graphics/lowlatency/LowLatencyCanvasView`
 - Perfetto `android.input` 标准库：`perfetto.dev/docs/analysis/stdlib-docs#androidinput`

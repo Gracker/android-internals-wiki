@@ -76,7 +76,7 @@ updated_date: "2026-07-10"
 
 如果 InputDispatcher 队列和应用主线程都没有明显阻塞，事件仍可能停留在 system_server 的过滤器 Handler、无障碍按键待决队列或监视窗口的手势接管阶段。忽略这些分支，容易把事件未到达应用误判成 View 分发问题。
 
-平台源码以 AOSP `android-17.0.0_r1` 为锚点；Android 10—16 只在确有版本差异时作为沿革参照。涉及 Linux 输入/evdev 的边界以 `android17-6.18-2026-06_r6` 为内核锚点，不从通用内核代码推断厂商触控驱动策略。
+平台源码以 AOSP `android-17.0.0_r1` 为锚点；Android 10—16 只在确有版本差异时作为沿革参照。涉及 Linux input/evdev 的边界以 `android17-6.18-2026-06_r6` 为内核锚点，不从通用内核代码推断厂商触控驱动策略。
 
 ## InputFilter：系统级事件拦截
 
@@ -111,7 +111,7 @@ public void setInputFilter(IInputFilter filter) {
 }
 ```
 
-原生 `InputDispatcher` 不持有 Java `IInputFilter`。`mInputFilterEnabled` 为 `true` 时，它调用策略的 `filterInputEvent(...)`：
+Native `InputDispatcher` 不持有 Java `IInputFilter`。`mInputFilterEnabled` 为 `true` 时，它调用策略的 `filterInputEvent(...)`：
 
 ```cpp
 // frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
@@ -143,7 +143,7 @@ Android 默认的 `AccessibilityInputFilter` 运行在 system_server。接口本
 
 两类耗时需要分开：
 
-- 过滤器通用开销来自事件复制、Handler 排队、变换逻辑和已过滤事件的重新注入。原生策略回调带有 `filterInputEvent` atrace 切片，但异步 Handler 与再次注入之间不能只靠这一条切片量完。
+- filter 通用开销来自事件复制、Handler 排队、变换逻辑和 filtered event 重新注入。Native policy 回调带有 `filterInputEvent` atrace slice，但异步 Handler 与再次注入之间不能只靠这一条 slice 量完。
 - 无障碍按键过滤还会进入 `KeyboardInterceptor` 和 `KeyEventDispatcher`，等待一个或多个服务异步返回 `setOnKeyEventResult()`。这个等待不会让 InputDispatcher 线程同步卡在远端 Binder 上。
 
 Android 17 在过滤器启用时，不为原始 InputReader 事件记录 `InputDispatcher` 的逐设备延迟跟踪指标，因此不能把延迟指标缺失解释成“过滤器没有开销”。
@@ -179,7 +179,7 @@ SystemUI 的边缘返回手势使用这套模式：先用手势监视器观察�
 
 三类输入旁路能力的边界：
 
-1. **旁路监控副本**（InputMonitor / 监视窗口）：只读，不改变事件流。用于系统手势检测、导航手势识别。
+1. **旁路监控副本**（InputMonitor / spy window）：只读，不改变事件流。用于系统手势检测、导航手势识别。
 2. **拿走指针事件流**（`pilferPointers()`）：把当前指针事件流从目标窗口转移到监视窗口。用于系统导航手势接管。
 3. **消费/重发事件**（InputFilter）：拦截原始事件，决定放行、消费或发出替代事件。用于全局输入策略和无障碍变换。
 
@@ -239,7 +239,7 @@ Android 10 到 Android 17 都使用能力声明 + 运行时标志这套门禁。
 
 #### 1. Instrumentation.sendPointerSync()
 
-`Instrumentation.sendPointerSync()` 在 `DOWN` 前和 `UP` 后同步窗口事务，然后调用 `InputManagerGlobal.injectInputEvent(..., Process.myUid())`。目标 UID 限制注入只能命中 Instrumentation 目标自身拥有的窗口；命中其他 UID 的窗口会失败。
+`Instrumentation.sendPointerSync()` 在 `DOWN` 前和 `UP` 后同步窗口事务，然后调用 `InputManagerGlobal.injectInputEvent(..., Process.myUid())`。target UID 限制注入只能命中 Instrumentation 目标自身拥有的窗口；命中其他 UID 的窗口会失败。
 
 ```java
 // frameworks/base/core/java/android/app/Instrumentation.java
@@ -290,7 +290,7 @@ public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int di
 
 | 方式 | 进入方式 | InputFilter 关系 | 目标范围 | 普通 App 的受支持标记 |
 |------|----------|------------------|----------|------------------------|
-| `Instrumentation.sendPointerSync()` | 标准注入，目标 UID = `Process.myUid()` | 绕过 | Instrumentation 目标的窗口 | 无 |
+| `Instrumentation.sendPointerSync()` | 标准注入，target UID = `Process.myUid()` | 绕过 | instrumentation target 的窗口 | 无 |
 | `UiAutomation.injectInputEvent()` | 受信任 UiAutomation 连接下的标准注入 | 绕过 | 可跨应用 | 无 |
 | `UiAutomation.injectInputEventToInputFilter()` | 无障碍过滤器专用测试入口 | 直接进入 | 过滤器测试 | 无稳定公共 API |
 | `adb shell input` | shell → `InputShellCommand` → 标准注入 | 绕过 | shell 权限允许的目标 | 无 |
@@ -312,7 +312,7 @@ public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int di
 
 | 位置 | 能做什么 | 典型实现 |
 |------|----------|----------|
-| `InputReader` / 策略 | 设备级重映射、丢弃、策略判断 | 系统策略、厂商输入定制 |
+| `InputReader` / policy | 设备级重映射、丢弃、策略判断 | 系统 policy、厂商输入定制 |
 | `InputFilter` | 放行、消费、发出替代事件 | 自定义系统过滤器、`AccessibilityInputFilter` |
 | `AccessibilityInputFilter` 内部变换器 | 按键判定、触摸探索、手势注入 | `KeyboardInterceptor`、`TouchExplorer`、`MotionEventInjector` |
 | 应用自身的 `InputStage` / `ViewGroup` | 只影响本进程窗口 | `ViewRootImpl`、`onInterceptTouchEvent()` |
@@ -333,7 +333,7 @@ public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int di
 |-----------|--------------------|------|
 | android-10.0.0_r1 | `canRequestFilterKeyEvents` metadata 会转成 `CAPABILITY_CAN_REQUEST_FILTER_KEY_EVENTS`；运行时用 `FLAG_REQUEST_FILTER_KEY_EVENTS` 打开按键过滤 | `AccessibilityServiceInfo.java` |
 | API 34 | 新增 `AccessibilityService.onMotionEvent()` 与 `setMotionEventSources()`；被选择的 motion source 不再继续发给系统其他部分 | Android API reference、`AccessibilityService.java` |
-| android-17.0.0_r1 | 按键过滤仍使用能力声明 + 运行时标志；标准注入事件绕过 InputFilter | `AccessibilityServiceInfo.java`、`InputFilter.java` |
+| android-17.0.0_r1 | 按键过滤仍使用 capability + runtime flag；标准 injected event 绕过 InputFilter | `AccessibilityServiceInfo.java`、`InputFilter.java` |
 | android-17.0.0_r1 | 无障碍策略标志会转换成事件内部的无障碍标志，但对应 Java 常量是 `@TestApi @hide` | `InputDispatcher.cpp`、`KeyEvent.java`、`MotionEvent.java` |
 | API 34—37 | `View.setAccessibilityDataSensitive(...)` 同时约束非无障碍工具服务的节点交互、事件数据和注入触摸 | `View.java`、`AccessibilityInteractionController.java` |
 
@@ -375,7 +375,7 @@ public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int di
 
 | 机制 | 额外工作发生位置 | 影响范围 | 当前能直接核对的结论 |
 |------|------------------|----------|----------------------|
-| 轻量 `InputFilter` | system_server 过滤器回调 | 经过过滤器的按键/动作 | 会增加分发前处理时间，幅度取决于过滤器代码 |
+| 轻量 `InputFilter` | system_server filter 回调 | 经过 filter 的 key / motion | 会增加分发前处理时间，幅度取决于 filter 代码 |
 | 无障碍按键过滤 | `KeyboardInterceptor` + `KeyEventDispatcher` + 服务进程 | 开启按键过滤的按键 | 单个待决事件的等待上限 500ms；无人处理时继续分发 |
 | 无障碍手势注入 | `MotionEventInjector` | 目标窗口 | 会额外生成无障碍注入的 `MotionEvent` |
 | 应用自身的 `onInterceptTouchEvent()` | 应用进程 | 仅本应用 | 不会反向影响全局 `InputDispatcher` |
@@ -386,7 +386,7 @@ public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int di
 
 AOSP 标准 GameMode 没有独立的 InputDispatcher 游戏优先队列。Android 17 的 `GameManagerService` 在游戏 UID 进入前台时切换 `PowerManagerInternal.Mode.GAME`；性能模式上报加载状态时还可以短时切换 `Mode.GAME_LOADING`。游戏模式干预还包括帧率覆盖、降分辨率等图形策略。这些能力可能间接改善输入到显示的延迟，但没有改变焦点窗口选择或 InputChannel 的分发优先级。
 
-如果厂商宣称游戏模式提升“输入优先级”，应分别检查触控报点率、CPU/线程调度、显示刷新率和 InputDispatcher 队列；不能仅凭 GameMode 开关推导分发器存在加权机制。
+如果厂商宣称游戏模式提升“输入优先级”，应分别检查触控报点率、CPU/线程调度、显示刷新率和 InputDispatcher queue；不能仅凭 GameMode 开关推导分发器存在加权机制。
 
 ### 防误触机制
 
@@ -404,7 +404,7 @@ AOSP 标准 GameMode 没有独立的 InputDispatcher 游戏优先队列。Androi
 `android-17.0.0_r1` 中需要同时记住四类门禁：
 
 1. **全局过滤器**：隐藏系统接口，只能由 WMS/IMS 安装；
-2. **手势监视器**：调用者必须持有 `MONITOR_INPUT`，其保护级别是 `signature|recents`；
+2. **gesture monitor**：调用者必须持有 `MONITOR_INPUT`，其 protection level 是 `signature|recents`；
 3. **标准注入**：调用者或 Instrumentation 来源必须满足 `INJECT_EVENTS`；
 4. **无障碍能力**：按键过滤和手势注入分别受能力声明/运行时标志与 `canPerformGestures()` 控制，敏感 View 还会按 `isAccessibilityTool` 再过滤。
 
@@ -412,18 +412,18 @@ AOSP 标准 GameMode 没有独立的 InputDispatcher 游戏优先队列。Androi
 
 排查这类问题时，需要把事件停留的层次分出来。
 
-### 第一步：确认事件有没有进入 InputDispatcher
+### Step 1：确认事件有没有进入 InputDispatcher
 
 在 `system_server` 中对齐原生 `filterInputEvent`、InputDispatcher 分发切片与目标进程的 `deliverInputEvent`：
 
 - 应用完全收不到事件时，确认事件是否在过滤器或无障碍层被消费
 - 应用能收到事件但时间明显偏晚时，检查 system_server 前置处理和无障碍服务返回结果的时间
 
-### 第二步：分开检查 InputFilter 本地处理与无障碍异步判定
+### Step 2：把 InputFilter 本地处理和无障碍异步判定分开看
 
-自定义 `InputFilter` 的成本分散在原生层→Java 复制、过滤器 Handler 和已过滤事件重新注入三段。无障碍按键过滤还要确认 `KeyboardInterceptor` → `AccessibilityManagerService` → 服务进程是否接近 500ms 超时。不要用一条 Binder 切片代替整段时序。
+自定义 `InputFilter` 的成本分散在 native → Java copy、filter Handler 和 filtered event reinjection 三段。无障碍按键过滤还要确认 `KeyboardInterceptor` → `AccessibilityManagerService` → service process 是否接近 500 ms timeout。不要用一条 Binder slice 代替整段时序。
 
-### 第三步：检查无障碍服务进程的处理时间
+### Step 3：检查无障碍服务进程自己的处理时间
 
 看服务进程主线程或工作线程上：
 - `onKeyEvent()` 是否快速回结果
@@ -432,14 +432,14 @@ AOSP 标准 GameMode 没有独立的 InputDispatcher 游戏优先队列。Androi
 
 如果服务回调本身慢，system_server 那边看到的通常是待决事件变多，不是 InputDispatcher 一条长时间静止的同步调用。
 
-### 第四步：用 dumpsys 补足运行态信息
+### Step 4：用 dumpsys 补足运行态信息
 
 ```bash
 adb shell dumpsys input | grep -E "InputFilterEnabled|Input Dispatcher State"
 adb shell dumpsys accessibility
 ```
 
-`dumpsys input` 中的 `InputFilterEnabled` 直接说明原生分发器是否打开过滤器。`dumpsys accessibility` 可确认已启用服务、能力和 `A11yInputFilter Info` 变换链。两者只能说明配置与运行状态，是否消费了某个事件仍需与轨迹对应。
+`dumpsys input` 中的 `InputFilterEnabled` 直接说明原生分发器是否打开过滤器。`dumpsys accessibility` 可确认已启用服务、能力和 `A11yInputFilter Info` transformation chain。两者只能说明配置与运行状态，是否消费了某个事件仍需与轨迹对应。
 
 ## 常见问题与误区
 
