@@ -43,40 +43,6 @@ gap_source: "官方文档/每日信息/素材驱动/AOSP结构"
 
 # 24.13 Photo Picker、媒体转码与缓存治理
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 Photo Picker 的性能边界
-说明 Photo Picker 与传统 SAF / `ACTION_PICK` / 应用自建相册页的差异，重点放在启动延迟、权限面、媒体 URI 生命周期和跨版本兼容策略。
-
-### 🔹 嵌入式 Photo Picker 的接入成本
-梳理嵌入式 Photo Picker 在页面切换、窗口嵌入、回退行为和冷启动路径上的成本，区分系统能力与应用 UI 编排成本。
-
-### 🔹 视频转码的时间与存储成本
-覆盖官方文档提到的 transcoding 处理时间、新文件占用、1 分钟视频长度限制、缓存文件回收策略，并给出线上指标设计。
-
-### 🔹 MediaProvider 与缓存清理链路
-从 MediaProvider、idle maintenance 和应用本地缓存三个层次分析媒体选择后的文件治理边界，避免把系统缓存和业务缓存混为一谈。
-
-### 🔹 大图/多选场景的 I/O 与内存压力
-补齐多选图片、HEIC/AVIF、缩略图预取、大图解码和上传前压缩对主线程、I/O 线程、Bitmap 内存的影响。
-
-### 🔹 可观测性与回归防护
-设计 Photo Picker 打开耗时、首张缩略图时间、选择完成到业务可用时间、转码耗时、失败率和缓存占用的指标。
-
-## 扩展
-
-### 🔸 Photo Picker 与 Android 版本适配表
-补充 Android 13 原生、Android 11/12 模块化 backport、Google Play services / OEM 差异的接入边界。
-
-### 🔸 与隐私权限、应用锁和 OEM 相册能力的关系
-只记录影响媒体选择性能和失败率的边界，不展开隐私功能本身。
-
-### 🔸 与 24.12 MediaStore / MediaProvider 的交叉引用
-加工时只引用 24.12 的 MediaProvider 原理，不重复写媒体库扫描机制。
-
-<!-- outline-end -->
-
 ## Photo Picker 负责选择授权，后续处理仍在应用侧
 
 Photo Picker 把“用户允许应用读取哪些图片或视频”交给系统界面。临时选择媒体的应用无需申请整个媒体库的读取权限，也不用维护一套相册索引和权限页面。
@@ -89,7 +55,7 @@ Photo Picker 把“用户允许应用读取哪些图片或视频”交给系统�
 - 大图采样、视频读取、上传与取消。
 - 应用私有临时文件和失败任务的清理。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，聚焦选择完成后的应用路径。`MediaStore` 索引、FUSE、缩略图和兼容媒体转码原理见 24.12 节；图片解码与 Bitmap 缓存见 7.10、22.6 节；文件 I/O 与网络上传见 24.1、24.6 节。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，重点是选择完成后的应用路径。`MediaStore` 索引、FUSE、缩略图和兼容媒体转码原理见 24.12 节；图片解码与 Bitmap 缓存见 7.10、22.6 节；文件 I/O 与网络上传见 24.1、24.6 节。
 
 ## Photo Picker 的性能边界
 
@@ -591,7 +557,7 @@ Perfetto 采集应用、MediaProvider 和媒体服务的调度、Binder、CPU �
 重启、进程终止、持久授权、授权释放、选择后立即撤销、准备中取消、存储空间不足
 和 Provider 读取失败。
 
-验收使用本产品基线设备的 P50/P95/P99、峰值内存、临时文件峰值和取消后残留任务
+验收使用目标设备的 P50/P95/P99、峰值内存、临时文件峰值和取消后残留任务
 数，不复制其他设备的耗时阈值。
 
 ## Photo Picker 与 Android 版本适配表
@@ -634,7 +600,7 @@ OEM 差异通过 `isPhotoPickerAvailable(context)`、SDK Extension、实际 Inte
 ## 与 24.12 MediaStore / MediaProvider 的交叉引用
 
 24.12 已说明 `MediaStore` 查询、`MediaProvider` 索引、FUSE、缩略图、
-version/generation 和兼容媒体转码。本章补充选择器启动、Picker URI 生命周期、
+version/generation 和兼容媒体转码。这里补充选择器启动、Picker URI 生命周期、
 云媒体读取、HDR 请求、私有临时文件和多选队列。
 
 媒体选择慢可按阶段定位：
