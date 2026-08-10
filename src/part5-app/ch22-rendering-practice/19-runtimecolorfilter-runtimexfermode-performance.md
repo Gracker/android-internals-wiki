@@ -40,41 +40,7 @@ gap_score: "16/20"
 
 # 22.19 RuntimeColorFilter 与 RuntimeXfermode 性能实践
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 Android 16 AGSL 绘制 API 的新增边界
-区分 RuntimeShader、RuntimeColorFilter、RuntimeXfermode 三类能力，说明 ColorFilter 与 Xfermode 各自进入绘制管线的位置。
-
-### 🔹 适合实时处理的效果类型
-覆盖 threshold、sepia、hue saturation、局部蒙版和自定义混合，区分简单颜色处理与复杂采样效果。
-
-### 🔹 Shader 编译、uniform 更新与缓存
-设计 shader 对象复用、参数更新频率、线程归属和动画帧内开销的检查清单。
-
-### 🔹 与 RenderEffect / Hardware Bitmap 的选型关系
-说明何时直接挂到 draw call，何时使用 RenderEffect，何时预生成 Bitmap 或 RenderNode 缓存。
-
-### 🔹 GPU、内存带宽与离屏渲染风险
-围绕作用区域、过度绘制、纹理读写和低端 GPU 差异建立验证方法。
-
-### 🔹 兼容性与降级路径
-处理 API 36 以下设备、厂商 GPU 差异、效果关闭和远程配置策略。
-
-## 扩展
-
-### 🔸 AGSL 单元测试与截图回归
-[待补充]
-
-### 🔸 RuntimeXfermode 与传统 PorterDuff 语义对照
-[待补充]
-
-### 🔸 Compose graphicsLayer / drawWithCache 接入方式
-[待补充]
-
-<!-- outline-end -->
-
-Android 16（API 36）新增 `RuntimeColorFilter` 和 `RuntimeXfermode`，让 AGSL 可以作为 `Paint` 的颜色过滤器或自定义 blender 参与一次绘制。Android 17 沿用这组公开 API。本文以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点，GPU buffer 与 fence 的内核边界以 `android17-6.18-2026-06_r6` 为锚点。[Android 16 图形能力](https://developer.android.com/about/versions/16/features)
+Android 16（API 36）新增 `RuntimeColorFilter` 和 `RuntimeXfermode`，让 AGSL 可以作为 `Paint` 的颜色过滤器或自定义 blender 参与一次绘制。Android 17 沿用这组公开 API。平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，GPU buffer 与 fence 的内核锚点为 `android17-6.18-2026-06_r6`。[Android 16 图形能力](https://developer.android.com/about/versions/16/features)
 
 这两个类不应被概括为“给 View 加一个 GPU 特效”。它们进入的是 Skia 的颜色过滤和混合位置：硬件加速窗口通常由 HWUI/Skia 交给 GPU 执行；软件 Canvas 则可能走 CPU 栅格路径。AGSL 编译、每像素算术、绘制面积、重绘频率、目标读写和中间层共同决定成本。标准 HWUI 显示路径见 [18.2 Android View 标准管线](../../part2-performance/ch18-rendering-pipelines/02-android-view-standard.md)，GPU 工作分类见 [2.10 GPU 渲染](../../part1-fundamentals/ch02-rendering/10-gpu-rendering.md)。
 
@@ -146,7 +112,7 @@ class ThresholdFilterOwner {
 
 `updateAndBind()` 中的清空与重绑有明确的 Android 17 源码原因。`RuntimeColorFilter` 更新 uniform 后会丢弃 native 侧缓存的 `SkColorFilter`，但 Java `ColorFilter` 包装对象地址保持不变；同一个 `Paint` 只按该地址判断是否重新安装过滤器。清空再设置会把 `Paint` 的缓存标记为失效，使下一次绘制取得带新参数的过滤器。静态参数可以在第一次绑定前设置，无需这一步。
 
-若产品希望“越透明的像素越难通过阈值”，亮度可直接使用预乘后的 `color.rgb`。两种行为都能成立，评审时要写出预期并为 alpha 边缘建立截图基线。原稿那种输出 `half4(value, value, value, color.a)` 的写法会在 `alpha < 1` 时产生 RGB 大于 A 的结果，圆角和抗锯齿边缘容易出现亮边。
+若产品希望“越透明的像素越难通过阈值”，亮度可直接使用预乘后的 `color.rgb`。两种行为都能成立，评审时要写出预期并为 alpha 边缘建立截图基线。输出 `half4(value, value, value, color.a)` 会在 `alpha < 1` 时产生 RGB 大于 A 的结果，圆角和抗锯齿边缘容易出现亮边。
 
 示例中的三个系数直接作用于 sRGB 编码值，得到的是适合 UI 阈值的亮度近似。需要线性光计算时，应先调用 `toLinearSrgb(straightRgb)`，做完亮度或光照运算后再按输出需求调用 `fromLinearSrgb()`。两种算法的阈值分布不同，不能只替换函数而沿用原参数。
 
@@ -258,7 +224,7 @@ Android 17 源码把“解析/编译 AGSL”和“用当前参数生成 Skia 对
 | 静态全屏背景 | 预生成图片 | 避免每帧覆盖整屏的像素计算 |
 | 列表焦点项的短时效果 | 只处理焦点项的局部 draw | 检查滑动期间的可见实例数和失效次数 |
 
-`RuntimeColorFilter` 本身不要求先把整个 View 画进中间纹理。`RuntimeXfermode` 暴露 `dst` 也不保证创建 layer。显式 `Canvas.saveLayer()`、View hardware layer、`RenderEffect` 和 Compose 离屏合成才提供清晰的中间目标语义。这个区分来自作者的 rendering_pipelines 中 [Software / 离屏类型](../../part2-performance/ch18-rendering-pipelines/03-android-view-software.md) 所采用的两轴判断：谁生成像素，以及像素先写到哪里。
+`RuntimeColorFilter` 本身不要求先把整个 View 画进中间纹理。`RuntimeXfermode` 暴露 `dst` 也不保证创建 layer。显式 `Canvas.saveLayer()`、View hardware layer、`RenderEffect` 和 Compose 离屏合成才提供清晰的中间目标语义。判断时分开回答两个问题：谁生成像素，以及像素先写到哪里；详见 [Software / 离屏类型](../../part2-performance/ch18-rendering-pipelines/03-android-view-software.md)。
 
 Hardware Bitmap 只改变图片像素 backing 与 HWUI 的纹理准备路径。ColorFilter 或 Xfermode 的每像素工作仍要执行；复杂效果不会因源图是 `Bitmap.Config.HARDWARE` 而消失。Android 17 还允许 GL 驱动把部分 Hardware Bitmap 传输延后到首次绘制，不能把首次使用写成无成本。细节见 [22.17 Hardware Bitmap 与 RenderNode 缓存](17-hardware-bitmap-rendernode.md)。
 

@@ -24,9 +24,9 @@ drafted_date: "2026-06-05"
 
 # 22.21 Jetpack Compose 动画性能深度优化
 
-Compose 动画每帧会做多少工作，取决于动画值在哪里被读取、哪些阶段因此失效、过渡期间保留了多少内容，以及 App 交帧后的显示链路。本章以 Compose 1.10.0 源码为库版本基线，以 Android 17 / API 37 的 `android-17.0.0_r1` 为平台基线。Compose 独立于 Android 平台发布，不能用 API 37 推导 Compose 行为。
+Compose 动画每帧会做多少工作，取决于动画值在哪里被读取、哪些阶段因此失效、过渡期间保留了多少内容，以及 App 交帧后的显示链路。库版本基线为 Compose 1.10.0，平台基线为 Android 17 / API 37 的 `android-17.0.0_r1`。Compose 独立于 Android 平台发布，不能用 API 37 推导 Compose 行为。
 
-普通 Compose 页面仍由宿主 App Window 的 HWUI 管线出图。状态计算和部分 Composition、Layout、Draw 工作发生在主线程，RenderThread、GPU、BLAST、SurfaceFlinger 与 HWC 继续负责后半程。完整边界见 [18.25 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md)。本章只讨论动画给这条路径增加的工作。
+普通 Compose 页面仍由宿主 App Window 的 HWUI 管线出图。状态计算和部分 Composition、Layout、Draw 工作发生在主线程，RenderThread、GPU、BLAST、SurfaceFlinger 与 HWC 继续负责后半程。完整边界见 [18.25 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md)。这里聚焦动画给这条路径增加的工作。
 
 ## 1. 用“读取阶段”判断动画成本
 
@@ -258,7 +258,7 @@ class ExpandAnimationBenchmark {
 
 Baseline Profile 可以让 ART 提前编译被关键用户旅程覆盖的 App 与库代码，减少首次运行时的解释和 JIT 成本。它不能预编译 GPU shader、消除离屏合成，也不会改变 Snapshot 失效范围。用同一 Macrobenchmark 对比 profile 前后数据，才知道当前动画是否受编译状态影响。
 
-## 13. Review 清单
+## 13. 检查清单
 
 - 动画值在哪个阶段读取？是否在更早阶段也被解引用？
 - 值变化后需要 Composition、measure、placement、Draw 还是 layer property update？
@@ -273,7 +273,7 @@ Baseline Profile 可以让 ART 提前编译被关键用户旅程覆盖的 App �
 
 ## 14. 源码与资料索引
 
-本章的 Compose 行为按以下 1.10.0 source JAR 复核：
+Compose 行为按以下 1.10.0 source JAR 复核：
 
 - [`androidx.compose.animation:animation:1.10.0` 源码](https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation/1.10.0/animation-1.10.0-sources.jar)：`AnimatedVisibility.kt`、`AnimatedContent.kt`。
 - [`androidx.compose.animation:animation-core:1.10.0` 源码](https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation-core/1.10.0/animation-core-1.10.0-sources.jar)：`Animatable.kt`、`AnimationState.kt`、`Transition.kt`、`InfiniteTransition.kt`。
