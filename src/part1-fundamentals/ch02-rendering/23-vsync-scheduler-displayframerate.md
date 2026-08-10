@@ -409,7 +409,7 @@ Android 17 的 Scheduler 为每个 display 保存独立的 selector 与 `VsyncSc
 - actual start / end / present；
 - App buffer 是否按时进入 BufferQueue；
 - SF 是否及时 latch、compose、提交 HWC；
-- 显示围栏是否晚于预期显示时间。
+- present fence 是否晚于 expected present。
 
 Android 17 `TokenManager` 使用容量为 500 的环形存储保存预测。源码中没有按时间戳执行的固定 120ms TTL；不能用令牌超过 120ms 必然过期来解释关联失败。
 

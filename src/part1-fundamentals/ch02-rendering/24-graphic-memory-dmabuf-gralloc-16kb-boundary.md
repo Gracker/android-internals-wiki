@@ -314,8 +314,8 @@ adb shell ls /sys/kernel/dmabuf/buffers
 
 - resize、format/usage change 是否触发 reallocation；
 - buffer 是否长期占满 slot；
-- 数据生产方是否等待空闲槽位或释放围栏；
-- 消费方是否持有图像或编解码缓冲区过久；
+- producer 是否等待 free slot 或 release fence；
+- consumer 是否持有 Image/codec buffer 太久；
 - SF 是否因 acquire fence 未 ready 沿用旧 buffer；
 - GPU/Camera/HWC 是否出现 IOMMU fault、reclaim、PSI memory 或带宽压力。
 
