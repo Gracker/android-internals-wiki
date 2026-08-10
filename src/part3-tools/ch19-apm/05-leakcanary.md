@@ -51,32 +51,6 @@ last_deepseek_cn_review_at: 2026-07-14
 
 # LeakCanary
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 [定位] 说明 LeakCanary 是 Debug / QA 阶段的本地泄漏诊断工具，不是线上内存平台；写清它和 KOOM、Profiler 的分工。
-- 🔹 [保留判定] 展开 ObjectWatcher、弱引用、GC、retained object、heap dump、Shark 分析的流程。
-- 🔹 [默认观察对象] 列出 Activity、Fragment、ViewModel、View、Service 等默认对象，说明 AndroidX / Lifecycle 依赖关系。
-- 🔹 [自定义观察] 给出业务对象 `ObjectWatcher` 示例，说明何时观察、何时取消、如何避免测试噪声。
-- 🔹 [leak trace 读法] 教读者区分 GC root、引用路径、suspect reference、retained size；必须写一个逐行阅读案例。
-- 🔹 [泄漏模式] 覆盖 static、Handler / Runnable、Coroutine、Flow、Listener、Adapter、匿名内部类、Context、Dialog、WebView。
-- 🔹 [Application / Library] 说明 Application Leak 和 Library Leak 的处理策略，哪些可以暂缓，哪些必须修。
-- 🔹 [Release 边界] 写清为什么 Release 中要克制使用 heap dump，涉及性能、隐私、文件大小和用户体验。
-- 🔹 [线上联动] 说明 KOOM / APM 发现页面内存异常后，如何回到 Debug 包复现并用 LeakCanary 验证修复。
-- 🔹 [测试集成] 说明 instrumentation test、CI 泄漏门禁、已知泄漏白名单和误报维护方式。
-
-### 扩展（可选深入）
-
-- 🔸 增加 Fragment / RecyclerView / coroutine 三个典型泄漏案例，每个案例包含代码片段和 leak trace 解释。
-- 🔸 补充 Shark 分析产物的字段说明，区分对象数量、retained size 和泄漏路径。
-- 🔸 对 LeakCanary 版本、默认观察对象、AndroidX 集成方式做官方文档核对。
-- 🔸 增加“泄漏修复后如何验证”的清单，覆盖本地复现、自动化测试、线上指标回看。
-- 🔸 补充不适合 LeakCanary 直接判断的问题，比如 native 内存上涨、Bitmap 复用策略、系统 WebView 问题。
-
-<!-- outline-end -->
-
 ## 先确定工具定位和版本基线
 
 LeakCanary 用于回答一个具体问题：某个 Java/Kotlin 对象的生命周期已经结束，为什么它仍能从 GC Root 经强引用到达？它会在开发或测试设备上观察对象、抓取 Java heap、用 Shark 计算引用路径，再把可疑引用缩小到便于回查代码的范围。
@@ -92,7 +66,7 @@ LeakCanary 用于回答一个具体问题：某个 Java/Kotlin 对象的生命�
 
 截至 2026-07-25，版本选择要分稳定线和预览线：
 
-| 版本 | 发布状态 | 上游构建边界 | 本章建议 |
+| 版本 | 发布状态 | 上游构建边界 | 使用建议 |
 |---|---|---|---|
 | `2.14` | 最新稳定版，tag commit `8d29638ccf25e15d84b0119b6617f0069bc0b2d8` | minSdk 14、compileSdk 34 | 作为常规 Debug / QA 接入基线 |
 | `3.0-alpha-9` | 2026-06-25 发布的预览版，tag commit `bac94a74fa87ed807c31a42b4d495bbfdcede33a` | minSdk 26、compileSdk 35 | 只在隔离分支评估 heap growth 等新能力 |
@@ -353,7 +327,7 @@ Library Leak 按影响处理：
 
 `referenceMatchers` 会改变分类和路径搜索，不等同于“不 dump”。默认 instrumentation reporter 只对 Application Leak 抛错，因此错误的 matcher 会让 CI 绿灯；这也是白名单必须评审和定期过期的原因。
 
-## [自动发现] Android 17 / API 37 验证边界
+## Android 17 / API 37 验证边界
 
 Android 17 `android-17.0.0_r1` 的 `android.os.Debug.dumpHprofData(String)` 仍是公开方法，内部继续调用 `VMDebug.dumpHprofData()`。LeakCanary 2.14 与 3.0-alpha-9 的默认 `AndroidDebugHeapDumper` 都直接使用这条 API，因此基础 Java heap dump 路径没有依赖 ART 私有 C++ 符号。
 
@@ -366,7 +340,7 @@ Android 17 的 platform 源码也保留了 2.14 `ServiceWatcher` 所依赖的字
 
 这只验证 AOSP tag 的结构，没有给反射调用提供兼容承诺。API 37 验收至少覆盖 Activity、AndroidX Fragment view、ViewModel、root view、Service、前后台阈值、通知权限、heap dump、Shark 分析和结果页；Service 要单列 watcher 安装日志。
 
-官方仓库和发布 AAR 没有 `.so`，LeakCanary 自身没有 16 KB ELF 对齐问题，也不需要本章的 `android17-6.18-2026-06_r6` 内核锚点。这个结论不能外推到被测 App：App 自带的 native 库仍要独立检查 16 KB；malloc、GPU、驱动或 native cache 上涨也不会因为 Java Hprof 可分析而自动出现完整根因。
+官方仓库和发布 AAR 没有 `.so`，LeakCanary 自身没有 16 KB ELF 对齐问题，也不依赖 `android17-6.18-2026-06_r6` 内核锚点。这个结论不能外推到被测 App：App 自带的 native 库仍要独立检查 16 KB；malloc、GPU、驱动或 native cache 上涨也不会因为 Java Hprof 可分析而自动出现完整根因。
 
 2.14 用 compileSdk 34 构建，3.0-alpha-9 用 compileSdk 35 构建。它们可以被 API 37 App 依赖，不表示上游已经覆盖 targetSdk 37、OEM ROM 和 API 37 全套回归。团队应在自己的 compileSdk/targetSdk 37 internal 变体上保留上述测试集。
 

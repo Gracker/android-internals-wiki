@@ -44,33 +44,7 @@ last_deepseek_cn_review_at: 2026-07-16
 
 # Tencent Matrix
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 [定位] 说明 Matrix 是客户端采集框架，不是完整 SaaS；写清它需要接入方补齐上传、聚合、告警和查询能力。
-- 🔹 [模块地图] 按 Trace Canary、IO Canary、Resource Canary、SQLite Lint、Battery Canary、MemGuard / Memory Hook 拆功能、数据来源和适用问题。
-- 🔹 [构建接入] 展开 Gradle 插件、初始化配置、进程过滤、远程开关、采样率；必须写 AGP 8.x 后 Transform 路径的兼容风险。
-- 🔹 [Trace Canary] 说明字节码插桩、方法 id、调用栈、Looper 消息、FPS / startup report 的关系；补一份最小配置或伪代码。
-- 🔹 [报告入库] 设计 Matrix report schema，包含 issue type、process、scene、thread、cost、stack、method map、sample id、version。
-- 🔹 [IO Canary] 解释 native I/O hook 能补哪些文件信息；至少覆盖主线程 I/O、小 buffer、重复读、Closeable 泄漏和 SQLite 访问。
-- 🔹 [Resource Canary] 区分 Activity 泄漏、Bitmap 重复和 LeakCanary 本地诊断；说明线上 dump 成本和误报过滤。
-- 🔹 [Battery / native] 给 Battery Canary、MemGuard、pthread hook 的使用前提和风险边界，避免写成默认打开的功能清单。
-- 🔹 [联合诊断] 给出 Matrix report 跳到 Perfetto / heap dump / 日志的操作路径，说明二者证据如何互相校验。
-- 🔹 [上线检查] 覆盖多进程、mapping、method map、磁盘配额、上传失败、隐私脱敏、开关回滚和低端机开销。
-
-### 扩展（可选深入）
-
-- 🔸 增加 Matrix 客户端到服务端的事件流图，标出 plugin、issue、report callback、uploader、backend。
-- 🔸 补一个 Trace Canary 启动慢或慢函数案例，要求有报告字段、判断过程和下一步 Perfetto 验证。
-- 🔸 补一个 IO Canary 案例，要求从文件路径、线程名、调用栈推导修复方向。
-- 🔸 对 Matrix upstream README、wiki、AGP 兼容资料做核对；不确定处标注版本范围。
-- 🔸 增加与 KOOM、JankStats、FrameMetrics、btrace 的分工表，避免章节之间重复。
-
-<!-- outline-end -->
-
-## 先判断：2026 年还能不能接 Matrix
+## 2026 年接入结论
 
 Matrix 是微信团队开源的客户端性能监控框架。它提供插件、采集器和部分离线分析工具，不提供托管式上传、查询、聚合、告警或工单系统。选择它，等于选择一组可改造的客户端组件；服务端数据平台仍由接入方建设。
 
@@ -80,7 +54,7 @@ Matrix 是微信团队开源的客户端性能监控框架。它提供插件、�
 - 新项目若采用现代 AGP，不应直接把官方 2.1.0 插件加入构建并期待它兼容。
 - 只引入某个运行时模块，也要核对它是否依赖旧系统实现、native hook 或旧版预编译 `.so`。
 
-本节的平台检查锚点是 Android 17 / API 37 / `android-17.0.0_r1`。Matrix 位于应用进程，没有对应的 AOSP 或 `android17-6.18-2026-06_r6` 内核实现；内核锚点只在 Perfetto 的调度、锁等待和 I/O 证据中作为系统侧参照。
+平台检查锚点是 Android 17 / API 37 / `android-17.0.0_r1`。Matrix 位于应用进程，没有对应的 AOSP 或 `android17-6.18-2026-06_r6` 内核实现；内核锚点只在 Perfetto 的调度、锁等待和 I/O 证据中作为系统侧参照。
 
 ## 按“数据来源”理解模块
 
@@ -217,7 +191,7 @@ Trace Canary 会生成不同 tag。2.1.0 源码中包括 `Trace_FPS`、`Trace_Ev
 
 Closeable 泄漏是另一条路径：`CloseGuardHooker` 反射替换 `dalvik.system.CloseGuard$Reporter`，将其 `Throwable` 栈转换成 type 4 的 `Issue`。这是对隐藏实现的反射与代理，Android 17 上必须单独验证 hook 成功率和停止后的 reporter 恢复情况。源码中虽预留 network I/O、cursor leak 的常量，也不能据此宣称 2.1.0 已完整实现这些 detector。
 
-Perfetto 与 IO Canary 提供的证据不同。Perfetto 在数据源和权限允许时可以看到调度、I/O、文件描述符或系统调用线索；Matrix 报告保留的是应用层路径、Java 栈以及一次文件生命周期内的聚合字段。一次主线程 I/O 报告可按以下顺序读：
+Perfetto 与 IO Canary 提供的证据不同。数据源和权限允许时，Perfetto 能显示调度、I/O、文件描述符或系统调用线索；Matrix 报告保留的是应用层路径、Java 栈以及一次文件生命周期内的聚合字段。一次主线程 I/O 报告可按以下顺序读：
 
 1. 用 `thread`、`scene` 和时间窗口判断它是否处在启动或交互路径。
 2. 看 `path`、`opType`、`op`、`opSize`、`buffer`、`cost` 与 `repeat`，区分单次慢、连续小块操作和重复读取。

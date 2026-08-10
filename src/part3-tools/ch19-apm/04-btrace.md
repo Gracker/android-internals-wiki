@@ -54,32 +54,6 @@ last_deepseek_cn_review_at: 2026-07-17
 
 # btrace / RheaTrace
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 [定位] 说明 btrace / RheaTrace 用来补方法级现场，解决 Perfetto 只有系统轨道时缺少业务函数名的问题。
-- 🔹 [采集流程] 展开构建插桩、设备端采集、buffer、导出、Perfetto UI 打开的完整路径；写清各阶段失败点。
-- 🔹 [模式对比] 比较 perfetto 模式和 simple 模式的输出、阅读方式、适用场景、数据丢失风险。
-- 🔹 [版本边界] 说明 3.0 版本、AGP、ART、Android 版本和 RheaTrace / btrace 名称关系；不确定处标注待核对来源。
-- 🔹 [采集参数] 解释采样间隔、buffer size、method include / exclude、trace 时长、目标进程、符号映射的影响。
-- 🔹 [Perfetto 读法] 写清线程轨道、slice、sched、CPU frequency、Binder、I/O、RenderThread 如何和业务方法一起看。
-- 🔹 [启动案例] 给启动慢分析模板，要求拆 Zygote、bindApplication、ContentProvider、Application、Activity、first draw。
-- 🔹 [滑动案例] 给列表滑动卡顿模板，要求结合 `doFrame`、RenderThread、onBind、diff、图片解码和后台线程。
-- 🔹 [误判边界] 说明采样 trace 看不到短函数、buffer 覆盖、插桩开销、CPU 争抢和 Binder 等待导致的误判。
-- 🔹 [工具关系] 区分 btrace、Perfetto SDK、androidx.tracing、simpleperf 和 Android Studio Profiler 的使用顺序。
-
-### 扩展（可选深入）
-
-- 🔸 增加一份采集命令或配置模板，标明哪些参数需要按设备性能调整。
-- 🔸 补一个 Perfetto UI 阅读清单，列出先看哪些轨道、再看哪些 slice。
-- 🔸 补一个“报告无法解释问题”的反例，引导读者回到系统调度、I/O 或 Binder 证据。
-- 🔸 对 bytedance/btrace upstream README、RheaTrace 文档和 AGP 适配状态做核对。
-- 🔸 增加与 Matrix Trace Canary 的差异表，避免两个章节内容重复。
-
-<!-- outline-end -->
-
 ## Android 17 上先不要接入
 
 btrace 是字节跳动开源的跨平台 tracing 项目，Android 代码仍沿用 `RheaTrace3`、`rhea-inhouse` 等历史命名。它的用途是把应用线程的 Java 方法栈样本转换成 Perfetto protobuf，并在 perfetto 模式下与系统 trace 合并，让方法现场和调度、Binder、I/O、渲染时间线处在同一个时钟轴上。

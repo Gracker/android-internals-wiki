@@ -56,32 +56,6 @@ last_deepseek_cn_review_at: 2026-07-17
 
 # KOOM
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 [定位] 说明 KOOM 处理 Java heap、native heap、thread 三类内存风险；写清它和普通内存指标、Profiler、LeakCanary 的差异。
-- 🔹 [模块拆分] 用表格列出 `koom-java-leak`、`koom-native-leak`、`koom-thread-leak` 的观察对象、触发条件、产物和开销。
-- 🔹 [Java heap] 展开 fork dump、Hprof 裁剪、引用摘要、对象保留路径；说明何时触发 dump、何时放弃 dump。
-- 🔹 [触发策略] 写清 heap 增长、PSS/RSS、前后台、页面、低内存信号、采样率如何组合，避免频繁 dump。
-- 🔹 [Native leak] 说明 malloc/free 追踪、可达性分析、符号化、so 归属和采样成本；补一个 native SDK 泄漏候选案例。
-- 🔹 [线程泄漏] 定义匿名线程、无界线程池、长时间 WAITING、常驻系统线程的判定口径；给白名单和误判处理方式。
-- 🔹 [线上 OOM] 写一条从 OOM / PSS 抬升到 KOOM report，再到 heap / native / thread 分类的分析路径。
-- 🔹 [系统信号] 补充 `onTrimMemory`、LMKD、ApplicationExitInfo、PSS / RSS / Java heap 的配合方式和版本边界。
-- 🔹 [端侧策略] 覆盖上传前裁剪、文件大小、磁盘配额、隐私、失败重试、低端机禁用和远程开关。
-- 🔹 [验证方式] 修复后要用 LeakCanary、Profiler、灰度内存指标或专项压测验证，不能只看单次 report。
-
-### 扩展（可选深入）
-
-- 🔸 增加一份 KOOM report schema，覆盖 object type、retained size、native stack、thread name、page、version、sample id。
-- 🔸 增加 Java、native、thread 三类问题的排查流程图。
-- 🔸 补充与 Android 14+ / 15+ / 16+ 内存诊断 API 的关系，新增内容必须标注来源。
-- 🔸 对 KOOM upstream 活跃度、模块可用性、AGP / NDK 适配风险做核对。
-- 🔸 增加“何时不该接入 KOOM”的反例，比如启动慢、网络慢、普通列表卡顿。
-
-<!-- outline-end -->
-
 ## 先看 Android 17 结论
 
 KOOM 是快手开源的内存专项工具，分为 Java heap、native heap 和 thread 三条诊断路径。它适合已经由 OOM、PSS/RSS 或线程数趋势确认的内存问题。启动慢、网络慢、普通列表卡顿没有明确的内存证据时，不应先接 KOOM。
@@ -211,7 +185,7 @@ Android 11 / API 30 起，可以在下次启动后通过 `ActivityManager.getHis
 - `getPss()`、`getRss()` 是系统最近一次采样值，可能为 0，也不保证贴近退出瞬间。
 - `getTraceInputStream()` 主要服务于有 trace 的退出类型，例如 ANR 或部分 native crash；不要假设 OOM/LMK 一定带可读 trace。
 
-Android 8～10 没有 `ApplicationExitInfo`。这部分设备要结合 Android Vitals、本地复现、版本级 PSS/RSS 趋势和受控日志判断。现代 Android 的内存回收决策由用户空间 `lmkd` 根据内存压力与进程优先级执行；Android 17 平台锚点是 [`system/memory/lmkd@android-17.0.0_r1`](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1)。本章没有直接依赖 `android17-6.18-2026-06_r6` 的内核代码，不应继续使用旧式“内核 lowmemorykiller 日志”概括 API 37 的机制。
+Android 8～10 没有 `ApplicationExitInfo`。这部分设备要结合 Android Vitals、本地复现、版本级 PSS/RSS 趋势和受控日志判断。现代 Android 的内存回收决策由用户空间 `lmkd` 根据内存压力与进程优先级执行；Android 17 平台锚点是 [`system/memory/lmkd@android-17.0.0_r1`](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1)。相关判断不直接依赖 `android17-6.18-2026-06_r6` 的内核代码，也不应继续使用旧式“内核 lowmemorykiller 日志”概括 API 37 的机制。
 
 ### `onTrimMemory` 不能再负责统一压力触发
 
