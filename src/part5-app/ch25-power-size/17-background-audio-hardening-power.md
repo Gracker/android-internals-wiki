@@ -79,44 +79,7 @@ last_task2b_lite_at: 2026-07-05
 
 # 25.17 Android 17 后台音频硬化与播放功耗治理
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 后台音频硬化的触发条件
-梳理 Android 17 对后台播放、音频焦点请求和音量控制的限制范围，区分所有应用生效与 `targetSdkVersion >= 37` 生效的行为差异。
-
-### 🔹 FGS、while-in-use 与闹钟用途豁免
-说明 `mediaPlayback` 前台服务、while-in-use 能力、exact alarm 权限和 `USAGE_ALARM` 之间的组合关系，避免把 FGS 类型声明误当成通行证。
-
-### 🔹 播放路径上的失败信号
-整理 `AudioManager.requestAudioFocus()`、MediaSession 状态、播放器回调、`AudioTrack` 写入停止和系统日志之间的对应关系，用于定位“后台无声”“焦点申请失败”“音量控制无效”。
-
-### 🔹 长时播放的功耗预算
-从音频 offload、buffer 配置、网络保活、WakeLock、蓝牙输出和解码线程几个角度建立功耗检查清单，避免用保活手段掩盖播放状态管理问题。
-
-### 🔹 Perfetto、dumpsys 与 logcat 取证
-给出 `audio` trace、`dumpsys audio`、`dumpsys media_session`、FGS 状态、网络和电量统计的组合观察点，把播放中断和功耗异常放到同一条时间线中分析。
-
-### 🔹 Android 17 适配与灰度验证
-设计 `targetSdkVersion 37` 前后的回归场景：锁屏、退后台、定时提醒、蓝牙播放、弱网恢复、耳机拔插和通知控制，输出可复查的测试表。
-
-## 扩展
-
-### 🔸 与 Foreground Service 超时和 JobScheduler 配额的关系
-后台音频不能只看音频 API，还要对照 §25.13 中的 FGS 超时、启动限制和后台任务配额。
-
-### 🔸 蓝牙、LE Audio 与车机场景
-长时播放经常落在蓝牙、车机和可穿戴设备场景，需要单独观察连接状态、音频路由和设备侧功耗。
-
-### 🔸 OEM 后台策略差异
-厂商系统可能对后台播放、通知常驻和电池优化有额外策略，后续可补充不同设备的实测清单。
-
-### 🔸 线上指标设计
-候选指标包括后台播放中断率、音频焦点失败率、播放 session 异常结束、后台耗电 P90/P99 和用户手动重启播放比例。
-
-<!-- outline-end -->
-
-## 为什么要单独审视后台音频
+## 后台音频的治理范围
 
 Android 17 同时限制后台音频播放、音频焦点请求、音量与铃声模式修改。应用不满足生命周期条件时，播放器仍可能报告“正在播放”，但用户听不到声音；与此同时，下载、解码、WakeLock 和前台服务还可能继续运行。播放器状态因此不能单独证明播放有效。
 
@@ -125,7 +88,7 @@ Android 17 同时限制后台音频播放、音频焦点请求、音量与铃声
 - 系统是否允许这次音频交互：页面是否可见、前台服务是否存在、服务有没有 while-in-use（WIU）能力、音频用途是否符合豁免条件。
 - 播放失效后是否仍消耗资源：网络请求、解码线程、WakeLock、MediaSession 和前台服务是否按停止原因释放。
 
-本节以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码基线。AudioFlinger、AAudio 和音频线程调度参见 1.16；后台执行规则参见 5.8 与 25.13；Media3、Codec2 和多媒体管线参见 8.8。
+平台源码基线为 Android 17 / API 37 / `android-17.0.0_r1`。AudioFlinger、AAudio 和音频线程调度参见 1.16；后台执行规则参见 5.8 与 25.13；Media3、Codec2 和多媒体管线参见 8.8。
 
 ## 两级限制：先看 FGS，再看 WIU
 
@@ -246,8 +209,6 @@ Android 17 的最低条件是“非 `shortService` 前台服务”，但媒体�
 
 ## Android 17 r1 的源码执行路径
 
-<!-- AIW-源码调研-2026-07-06:start -->
-
 `android-17.0.0_r1` 把三类交互放在不同位置检查。它们共享同一个 hardening override，但不是每个 API 都由 Java 和 C++ 重复判断。
 
 | 交互 | 主要实现位置 | 判断内容 |
@@ -281,10 +242,6 @@ AudioFlinger 为播放 Track 观察 `OP_CONTROL_AUDIO_PARTIAL` 和 `OP_CONTROL_A
 ### Java 与 native 权限判断不能拼成“矛盾结果”
 
 Java 的焦点和音量入口使用 AppOps，AudioFlinger 的播放路径既根据权限与 target 选择限制级别，也通过异步 AppOps 判断当前是否允许输出。不能根据 `PermissionEnum` 的静态权限检查推导出“音量被禁，但 Track 一定有声”；是否静音还取决于 Track 的 AppOps 状态、限制级别和豁免结果。
-
-<!-- AIW-源码调研-2026-07-06:end -->
-
-<!-- AIW-源码调研-2026-07-10 -->
 
 ## 调试命令存在版本差异
 
@@ -333,7 +290,7 @@ adb shell dumpsys batterystats > batterystats.txt
 
 这批文件要用统一的会话标识和时间戳对齐。`dumpsys audio` 说明平台为何限制交互，`media_session` 和服务记录说明应用宣告了什么状态，`batterystats` 说明播放停止后是否仍有 WakeLock、网络和后台活动。
 
-Perfetto 采集应覆盖音频、调度、CPU 频率、电源、Binder 和 ActivityManager 相关轨迹。阅读顺序可以固定为：用户操作、FGS 启动、MediaSession 激活、焦点结果、Track 创建、页面退后台或锁屏、网络或路由变化、播放停止、资源释放。若声音消失后 CPU、网络或 WakeLock 仍活跃，问题是停止态清理不足。
+Perfetto 采集应覆盖音频、调度、CPU 频率、电源、Binder 和 ActivityManager 相关轨迹。阅读顺序可以固定为：用户操作、FGS 启动、MediaSession 激活、焦点结果、Track 创建、页面退后台或锁屏、网络或路由变化、播放停止、资源释放。若声音消失后 CPU、网络或 WakeLock 仍活跃，说明停止态清理不足。
 
 ## 长时播放的功耗检查
 
