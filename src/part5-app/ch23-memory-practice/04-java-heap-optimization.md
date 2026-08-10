@@ -68,25 +68,9 @@ last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
 
 # Java Heap 优化策略
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Java Heap 空间组成与分配策略
-- 🔹 大对象与集合优化
-- 🔹 对象池与缓存策略
-- 🔹 GC 友好的编码实践
-
-### 扩展（可选深入）
-
-- 🔸 ART GC 调优参数
-
-<!-- outline-end -->
-
 > **版本基线**
 >
-> 本章的平台行为与源码统一以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点。涉及旧版本的内容只说明 API 或行为变化，不高于 Android 17。
+> 平台行为与源码统一以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点。涉及旧版本的内容只说明 API 或行为变化，不高于 Android 17。
 
 ## 为什么要了解 Java Heap 优化策略
 
@@ -94,7 +78,7 @@ Java Heap 优化处理的是应用侧对象分配、对象生命周期和缓存�
 
 Android 会为每个应用进程设置 Java Heap 上限，无法在上限内完成分配时会抛出 `OutOfMemoryError`。Android Studio Profiler 可以观察堆曲线、对象数量和 GC 事件。工程判断不能只看一次 `Runtime.maxMemory()`：还要比较同一场景的分配速度、峰值、退出后的存活对象和 GC 行为。堆曲线回落说明对象有机会被回收，不代表对应页面已经满足性能目标；曲线不立即回落也可能来自 ART 的目标堆大小，而非泄漏。
 
-ART 堆空间、分配器和 GC 细节详见 4.3 节；分代 GC 与暂停分析详见 4.8 节；内存泄漏治理详见 23.1 节；内存抖动与 GC 治理详见 23.5 节。本节把这些机制转成应用侧可执行动作：少分配、晚分配、按预算缓存、在生命周期边界清理。
+ART 堆空间、分配器和 GC 细节详见 4.3 节；分代 GC 与暂停分析详见 4.8 节；内存泄漏治理详见 23.1 节；内存抖动与 GC 治理详见 23.5 节。应用侧动作包括少分配、晚分配、按预算缓存，并在生命周期边界清理。
 
 ## Java Heap 空间组成与分配策略
 
@@ -290,7 +274,7 @@ Java Heap 优化可以按四步推进：
 1. 用 Memory Profiler 录制目标场景，记录对象数量、堆曲线和 GC 事件。
 2. 如果曲线持续上升且页面退出后不回落，转 23.1 节的泄漏排查。
 3. 如果曲线有尖峰但能回落，检查大对象、集合复制、缓存预算和批处理峰值。
-4. 如果 GC 频率高且伴随卡顿，转 23.5 节看内存抖动；再回到本节减少分配热点。
+4. 如果 GC 频率高且伴随卡顿，转 23.5 节看内存抖动，再据此减少分配热点。
 
 Android 17 / API 37 为 `ProfilingTrigger` 增加 `TRIGGER_TYPE_OOM` 和 `TRIGGER_TYPE_ANOMALY`。OOM 触发器为未捕获的 `OutOfMemoryError` 采集 Java heap dump；自定义 `Thread.UncaughtExceptionHandler` 必须继续调用默认 handler，系统才能观察到该事件。anomaly 触发器可报告包括过量内存在内的系统异常，返回的 artifact 类型由异常决定。这些能力用于取得难以在线下复现的证据，不替代堆预算和代码修正。具体的生产监控与 Android 17 内存限制分别见 23.7、23.9 节。
 
@@ -298,18 +282,14 @@ Android 17 / API 37 为 `ProfilingTrigger` 增加 `TRIGGER_TYPE_OOM` 和 `TRIGGE
 
 ## 参考资料
 
-- [已验证: Android Developers, Manage your app's memory, https://developer.android.com/topic/performance/memory]
-- [已验证: Android Developers, Overview of memory management, https://developer.android.com/topic/performance/memory-overview]
-- [已验证: Android Developers, `ComponentCallbacks2`, https://developer.android.com/reference/android/content/ComponentCallbacks2]
-- [已验证: Android Developers, `ProfilingTrigger`, https://developer.android.com/reference/android/os/ProfilingTrigger]
-- [已验证: Android Developers, Capture a heap dump, https://developer.android.com/studio/profile/capture-heap-dump]
-- [已验证: Android Developers, Record Java/Kotlin allocations, https://developer.android.com/studio/profile/record-java-kotlin-allocations]
-- [已验证: AOSP `android-17.0.0_r1`, ART `heap.h`, https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.h]
-- [已验证: AOSP `android-17.0.0_r1`, ART `heap-inl.h`, https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap-inl.h]
-- [已验证: AOSP `android-17.0.0_r1`, ART `heap.cc`, https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.cc]
-- [已验证: AOSP `android-17.0.0_r1`, `ComponentCallbacks2.java`, https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/ComponentCallbacks2.java]
-- [已验证: AOSP `android-17.0.0_r1`, `LruCache.java`, https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/util/LruCache.java]
-- [结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
-- [结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
-- [结构参考: Clippings/Android 性能优化 - 原理：重新认识内存.md]
-- [结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
+- [Android Developers：Manage your app's memory](https://developer.android.com/topic/performance/memory)
+- [Android Developers：Overview of memory management](https://developer.android.com/topic/performance/memory-overview)
+- [Android Developers：`ComponentCallbacks2`](https://developer.android.com/reference/android/content/ComponentCallbacks2)
+- [Android Developers：`ProfilingTrigger`](https://developer.android.com/reference/android/os/ProfilingTrigger)
+- [Android Developers：Capture a heap dump](https://developer.android.com/studio/profile/capture-heap-dump)
+- [Android Developers：Record Java/Kotlin allocations](https://developer.android.com/studio/profile/record-java-kotlin-allocations)
+- [AOSP `android-17.0.0_r1`, ART `heap.h`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.h)
+- [AOSP `android-17.0.0_r1`, ART `heap-inl.h`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap-inl.h)
+- [AOSP `android-17.0.0_r1`, ART `heap.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.cc)
+- [AOSP `android-17.0.0_r1`, `ComponentCallbacks2.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/ComponentCallbacks2.java)
+- [AOSP `android-17.0.0_r1`, `LruCache.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/util/LruCache.java)

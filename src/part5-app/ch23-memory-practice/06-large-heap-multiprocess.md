@@ -68,25 +68,9 @@ last_deepseek_cn_review_at: 2026-06-15
 
 # 大内存与多进程策略
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 largeHeap 的使用场景与代价
-- 🔹 多进程内存隔离与共享
-- 🔹 进程内存预算管理
-- 🔹 64 位迁移与内存空间扩展
-
-### 扩展（可选深入）
-
-- 🔸 （待扩展）
-
-<!-- outline-end -->
-
 > **版本基线**
 >
-> 本章的平台源码统一以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点；涉及 `/proc` 与虚拟地址空间时，内核侧以 `android17-6.18-2026-06_r6` 为基线。历史版本只用于说明兼容边界，最高版本为 Android 17。
+> 平台源码统一以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点；涉及 `/proc` 与虚拟地址空间时，内核侧以 `android17-6.18-2026-06_r6` 为基线。历史版本只用于说明兼容边界，最高版本为 Android 17。
 
 ## 为什么要了解大内存与多进程策略
 
@@ -97,8 +81,6 @@ last_deepseek_cn_review_at: 2026-06-15
 先确认失败类型，再选择手段：Java Heap OOM 回到 23.4 节检查对象与缓存；低内存杀进程看 4.4 节的 LMKD 与进程优先级；`pthread_create`、`mmap` 或 linker 失败需要同时检查线程数、映射布局、ABI 和资源限制。WebView、Graphics 或 Native 指标上涨，也要先确认具体分配方。
 
 Android 17 还在部分设备上引入基于设备总 RAM 的 app memory limits，目标是限制极端泄漏和异常值。该机制适用于运行在 Android 17 上的应用，不受 `targetSdkVersion` 控制；是否启用以及限制状态需要从设备查询。`largeHeap` 或拆分进程都不能作为绕过系统内存约束的方案，退出识别与取证详见 23.9 节。
-
-[已验证: Android 17 behavior changes, https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits]
 
 ## largeHeap 的使用场景与代价
 
@@ -151,16 +133,13 @@ largeHeap 的代价主要有四类：
 
 判断 largeHeap 是否有效，要在同一设备、场景和输入下比较 Java Heap 存活量、分配与 GC、进程 PSS/RSS，以及 Android 17 的退出原因。只看 OOM 是否消失，可能把风险转移到系统内存压力上。
 
-[已验证: 官方文档, https://developer.android.com/guide/topics/manifest/application-element#largeHeap]
-[已验证: 官方文档, https://developer.android.com/reference/android/app/ActivityManager]
-
 ## 多进程内存隔离与共享
 
-Android 默认让同一应用的组件运行在同一进程和主线程。组件可以通过 manifest 的 `android:process` 放到其他进程；远程 Binder 调用进入服务进程后，由系统维护的 Binder 线程池执行，服务端方法必须按并发调用设计。[已验证: 官方文档, developer.android.com/guide/components/processes-and-threads]
+Android 默认让同一应用的组件运行在同一进程和主线程。组件可以通过 manifest 的 `android:process` 放到其他进程；远程 Binder 调用进入服务进程后，由系统维护的 Binder 线程池执行，服务端方法必须按并发调用设计。
 
 多进程的主要价值是隔离地址空间、组件生命周期与故障域。图片编辑、插件运行时或边界清楚的批处理服务放到独立进程后，系统回收该进程时会一并释放 Java Heap、Native Heap、线程栈、JIT cache 和映射。应用不能把“主动杀子进程”当作正常资源释放 API：Android 进程生命周期由系统根据活动组件和重要性管理，任务结束时应停止 Service、解除绑定并持久化结果，让组件状态准确反映进程是否仍有工作。
 
-多进程不会自动降低总内存。每个进程都会有独立的 ART 运行时、ClassLoader、线程、Binder 线程池、Native allocator 状态和业务缓存。`.so`、`.dex`、framework 代码页可以共享，脏页、Java 对象、线程栈和多数 Native 分配不能共享。官方文档对 PSS 的定义也说明了这一点：共享页按进程数量分摊，非共享页完整计入当前进程；RSS 统计更快，但会把共享页完整算进每个进程。[已验证: 官方文档, developer.android.com/topic/performance/memory-management]
+多进程不会自动降低总内存。每个进程都会有独立的 ART 运行时、ClassLoader、线程、Binder 线程池、Native allocator 状态和业务缓存。`.so`、`.dex`、framework 代码页可以共享，脏页、Java 对象、线程栈和多数 Native 分配不能共享。官方文档对 PSS 的定义也说明了这一点：共享页按进程数量分摊，非共享页完整计入当前进程；RSS 统计更快，但会把共享页完整算进每个进程。
 
 适合拆进程的模块通常有这些特征：
 
@@ -176,11 +155,6 @@ Android 默认让同一应用的组件运行在同一进程和主线程。组件
 大数据可以通过 `ContentProvider`、`ParcelFileDescriptor`、文件或 `SharedMemory` 传递句柄，并明确关闭时机、访问权限与并发读写协议。句柄方案减少 Parcel payload，不代表数据没有内存和 I/O 成本。
 
 WebView 还要单独说明：从 Android 8.0（API 26）起，WebView 可以在多进程模式下使用沙箱化 renderer。把承载 WebView 的 Activity 再放入应用自定义进程，会增加一个应用进程，但不等于合并或替代 renderer。是否存在关联 renderer 可通过 `WebView.getWebViewRenderProcess()` 检查；测量时要区分宿主进程、renderer、GPU 与主进程。
-
-[已验证: 官方文档, https://developer.android.com/guide/components/processes-and-threads]
-[已验证: 官方文档, https://developer.android.com/guide/components/activities/process-lifecycle]
-[已验证: 官方文档, https://developer.android.com/reference/android/os/TransactionTooLargeException]
-[已验证: 官方文档, https://developer.android.com/reference/android/webkit/WebView]
 
 ## 进程内存预算管理
 
@@ -227,8 +201,6 @@ override fun onTrimMemory(level: Int) {
 
 使用 `>=` 可以容纳未来插入的中间等级。`BACKGROUND` 的数值更高，此时两个分支都会执行，因此两个释放函数需要职责分离并保持幂等。Android 13 及以下的兼容实现可以保留旧等级逻辑，但不要期待这些等级在 Android 17 上出现。
 
-[已验证: Android Developers “Manage your app's memory”; `ComponentCallbacks2`; AOSP `android-17.0.0_r1`, `frameworks/base/core/java/android/content/ComponentCallbacks2.java`]
-
 ### 把线程数纳入虚拟地址预算
 
 线程栈既占虚拟地址，也可能按实际触页量进入 RSS/PSS。Android 17 ART 的 `Thread::CreateNativeThread()` 会先调用 `FixStackSize()`：默认请求会换成运行时默认值，随后加入兼容空间、栈溢出保护区，满足 `PTHREAD_STACK_MIN`，并向上对齐到页大小；修正后的值再交给 `pthread_attr_setstacksize()` 和 `pthread_create()`。因此，代码传入的 stack size 不等于最终映射大小。
@@ -253,8 +225,6 @@ adb shell am memory-limiter manual "$target_pid" none
 
 `status` 只查询当前状态；`manual` 会修改指定 PID 的测试限制，`none` 移除手动值并恢复系统默认限制（如果设备有默认值）。这些命令在未启用 Memory Limiter 的设备上没有效果。不要用 `max` 或 `ignore all` 掩盖测试失败；完整的退出取证流程见 23.9 节。
 
-[已验证: Android 17 behavior changes for all apps, “App memory limits”]
-
 ## 64 位迁移与内存空间扩展
 
 多进程改变分配所属的进程，64 位迁移扩大单进程可用的虚拟地址范围，两者需要分别判断。
@@ -272,8 +242,6 @@ Google Play 的 64 位要求针对包含 native code 的应用。若继续分发
 - 代码检查：排查指针截断、结构体布局、序列化格式、汇编、编译参数和按 ABI 选择资源的逻辑。
 - 性能检查：同设备对比启动耗时、PSS、Native heap、Graphics、线程数、page fault 和崩溃率。
 - 设备检查：至少覆盖 64 位进程、仍需支持的 32 位设备和 64 位-only 环境；后者最容易暴露遗漏的 32 位-only 依赖。
-
-[已验证: Android Developers “Support 64-bit architectures”; Android `Process.is64Bit()` API]
 
 ## 实战决策表
 
@@ -309,7 +277,3 @@ Google Play 的 64 位要求针对包含 native code 的应用。若继续分发
 - [AOSP `ActivityManager.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityManager.java)
 - [AOSP `ComponentCallbacks2.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/ComponentCallbacks2.java)
 - [AOSP ART `thread.cc` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/thread.cc)
-- 结构参考：`Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md`
-- 结构参考：`Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md`
-- 结构参考：`Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md`
-- 结构参考：`Clippings/Android 性能优化 - 原理：重新认识内存.md`
