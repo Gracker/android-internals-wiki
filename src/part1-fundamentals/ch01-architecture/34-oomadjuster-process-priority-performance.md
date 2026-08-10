@@ -90,7 +90,7 @@ Controller 在每次计算前调用 `commitStagedEvents()`，把异步暂存的 
 
 `psc/OomAdjuster.java` 是公共计算/应用框架，负责：
 
-- 全量、局部、待处理和后续更新编排；
+- full、partial、pending、follow-up 更新编排；
 - 防止更新过程递归进入；
 - 应用 `adj`、`procState`、`schedGroup` 和 capability；
 - 与 lmkd、进程组、freezer、UID 观察器和 Perfetto 交互。
@@ -304,9 +304,9 @@ API 37 每个 `LMK_PROCS_PRIO` 包最多携带 3 个进程，每个进程有 5 �
 - 服务绑定/解绑/启动/停止/执行；
 - get/remove provider；
 - 进程开始/结束；
-- 允许列表、UID 空闲、限制变化；
-- 短时 FGS 超时、备份、移除任务；
-- 服务 Binder 调用、批量更新请求。
+- allowlist、UID idle、restriction change；
+- short FGS timeout、backup、remove task；
+- service Binder call、batch update request。
 
 API 37 没有“每 1 秒无条件全量重算”的 `OOM_ADJ_UPDATE_INTERVAL`。有时效的状态会记录 `followupUpdateUptimeMs`，例如近期顶部 FGS、previous app Provider；handler 到时只把相应进程加入 pending set，再做 partial update。
 
@@ -383,7 +383,7 @@ Kernel `oom/oom_score_adj_update` ftrace 事件用于核对分数写入时间；
 ### 9.3 一次有效的优先级实验
 
 1. 记录 build fingerprint、AOSP/vendor 版本和 lmkd/freezer DeviceConfig；
-2. 分别触发顶部、可见、FGS、短时 FGS、接收者、已启动服务和缓存状态；
+2. 分别触发 top、visible、FGS、short FGS、receiver、started service 和 cached 状态；
 3. 对每次变化记录 `adjType/source/target`，不要只记最终数字；
 4. 对绑定场景逐个改变 bind flag，确认宿主的 adj、`procState` 与能力；
 5. 同时采集 `updateOomAdj_*`、`process_state_changed`、sched、Binder 和 `oom_score_adj_update`；

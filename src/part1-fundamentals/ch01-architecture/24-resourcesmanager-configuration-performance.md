@@ -101,7 +101,7 @@ last_task6_audit_notes: "Idle audit: Fixed L1 issues (对齐→页面对齐, red
 
 ```text
 全局设置变化                              窗口 / display 层级变化
-语言区域 / 字体缩放 / 界面模式             旋转 / 多窗口 / 折叠屏边界
+locale / fontScale / uiMode               rotation / multi-window / foldable bounds
   ↓                                         ↓
 ActivityManagerService.updateConfiguration()  DisplayContent / Task / ActivityRecord
   └─ ActivityTaskManagerService                的 ConfigurationContainer 更新
@@ -294,7 +294,7 @@ DisplayContent.handleTopActivityLaunchingInDifferentOrientation()
 
 FixedRotation 不是禁止 Activity recreate”的开关。`ActivityRecord.applyFixedRotationTransform()` 仍会调用 `ensureActivityConfiguration()`，后续是否重建继续由配置差异和 `shouldRelaunchLocked()` 决定。它主要处理旋转期间的窗口配置与 Surface 变换，减少画面跳变。
 
-默认 Perfetto 不一定有 `applyFixedRotationTransform` 这类 Java 方法切片。trace 里没有 `activityRestart` 只能证明 Activity 没有重建，不能反推 FixedRotation 一定参与。判断 FixedRotation 需要结合 WindowManager 日志、窗口状态和对应源码分支。
+默认 Perfetto 不一定有 `applyFixedRotationTransform` 这类 Java 方法切片。trace 里没有 `activityRestart` 只能证明 Activity relaunch，不能反推 FixedRotation 一定参与。判断 FixedRotation 需要结合 WindowManager 日志、窗口状态和对应源码分支。
 
 ## Perfetto：区分热更新和重建
 
