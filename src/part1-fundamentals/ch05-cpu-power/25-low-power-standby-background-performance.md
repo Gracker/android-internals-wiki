@@ -36,7 +36,7 @@ sources:
 
 Low Power Standby（LPS）从 Android 13 / API 33 提供公开查询 API。设备在一段非交互时间后，可以忽略后台应用持有的 partial wakelock，并通过独立防火墙链阻断其网络。它适合需要压低长时间待机功耗的产品，但 AOSP 把该能力设为可选：通用 framework 默认既不声明支持，也不默认开启，设备产品通过 resource overlay 决定是否采用。
 
-本章以 Android 17 / `android-17.0.0_r1` 为源码锚点。LPS 的直接限制只有两类：wakelock 和网络。JobScheduler、AlarmManager、Sync、FCM、SensorService、ADPF、CPU hotplug 与 DVFS 没有由 `LowPowerStandbyController` 直接设置的规则。它们可能因 Doze 同时生效、网络不可用、CPU 无法被应用 wakelock 保持唤醒而呈现间接变化，排障时必须分开归因。
+源码锚点为 Android 17 / `android-17.0.0_r1`。LPS 的直接限制只有两类：wakelock 和网络。JobScheduler、AlarmManager、Sync、FCM、SensorService、ADPF、CPU hotplug 与 DVFS 没有由 `LowPowerStandbyController` 直接设置的规则。它们可能因 Doze 同时生效、网络不可用、CPU 无法被应用 wakelock 保持唤醒而呈现间接变化，排障时必须分开归因。
 
 ## 与 Doze、App Standby 和 Hibernation 的边界
 
@@ -49,7 +49,7 @@ Low Power Standby（LPS）从 Android 13 / API 33 提供公开查询 API。设�
 
 LPS 会观察 deep device idle 的进入和退出，以识别 maintenance window；它没有复用 Doze 的全部限制。LPS 甚至可以在设备第一次进入 Deep Doze 之前就激活，只要设备已经非交互并超过 LPS timeout。
 
-原稿把 Doze 写成“不禁用 wakelock”也不准确。Android 17 的 `PowerManagerService` 对 Doze 和 LPS 都会计算 partial wakelock 的 disabled state，只是两者使用的 proc-state 门槛与 allowlist 不同。
+Android 17 的 `PowerManagerService` 对 Doze 和 LPS 都会计算 partial wakelock 的 disabled state，只是两者使用的 proc-state 门槛与 allowlist 不同。因此，不能把 Doze 概括成“不禁用 wakelock”。
 
 ## Android 17 状态机
 
@@ -383,7 +383,7 @@ LPS 的价值主要体现在待机功耗，应用风险主要体现在恢复延�
 |---|---|
 | Android 13 / API 33 | `isLowPowerStandbyEnabled()`、enabled-changed broadcast、wakelock state listener |
 | Android 14 / API 34 | `isExemptFromLowPowerStandby()`、reason/feature policy 查询与三类 allowed reason |
-| Android 15–17 / API 35–37 | Android 17 仍保留 support/enabled/active 状态机、custom policy、allowlist 和 standby ports；本章不假设未验证的设备形态扩展 |
+| Android 15–17 / API 35–37 | Android 17 仍保留 support/enabled/active 状态机、custom policy、allowlist 和 standby ports；不扩展到未经验证的设备形态 |
 
 Android 17 源码中没有“折叠屏合盖”“暗光传感器提前触发”“Battery Usage Stats 新增 LPS 维度”这些通用平台规则。OEM 可以在 overlay、policy 和更下层电源栈中做产品差异，但结论必须以目标设备的配置、dumpsys 和厂商文档为证据。
 

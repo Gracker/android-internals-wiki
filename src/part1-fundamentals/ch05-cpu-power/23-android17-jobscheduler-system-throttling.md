@@ -28,9 +28,9 @@ sources:
 
 JobScheduler 决定一项后台工作能否被系统接收、何时变为 ready、何时获得执行槽、能运行多久，以及为何被停止。WorkManager 在现代 Android 上经常借助 JobScheduler 执行持久工作，但它还有自己的数据库、约束合并和重试策略；排障时要区分 Jetpack 状态与平台 Job 状态。
 
-“五维节流”是本章为了阅读源码而采用的分析框架，并非 AOSP 中一个正式命名的架构。Android 17 / `android-17.0.0_r1` 的实现分布在 `JobSchedulerService`、多种 `StateController`、`QuotaController`、`PendingJobQueue`、`JobConcurrencyManager`、`JobServiceContext` 和 `JobRestriction` 中。把它们简化成一张“优先级越高，CPU 配额越多”的表，会遗漏绝大多数等待原因。
+“五维节流”用于组织源码中的不同检查阶段，并非 AOSP 正式命名的架构。Android 17 / `android-17.0.0_r1` 的实现分布在 `JobSchedulerService`、多种 `StateController`、`QuotaController`、`PendingJobQueue`、`JobConcurrencyManager`、`JobServiceContext` 和 `JobRestriction` 中。把它们简化成一张“优先级越高，CPU 配额越多”的表，会遗漏绝大多数等待原因。
 
-本章把一次 Job 的生命周期分成五个关口：
+一次 Job 的生命周期可分成五个关口：
 
 1. 调度请求是否被接收；
 2. 显式与隐式约束是否满足；
@@ -165,7 +165,7 @@ Android 17 的公开 Standby Bucket 值为：
 | `RESTRICTED` | 45 | 5 |
 | `NEVER` | 50 | 4 |
 
-内部映射使用区间比较，以便接受介于标准值之间的设备状态。旧稿中 `ACTIVE=20`、`NEVER=45` 等数值与 `UsageStatsManager` 不符。
+内部映射使用区间比较，以便接受介于标准值之间的设备状态。`ACTIVE=20`、`NEVER=45` 等数值与 `UsageStatsManager` 不符。
 
 ### 普通 Job 的 Android 17 默认值
 
@@ -256,7 +256,7 @@ Android 17 的默认 `maxTotal` 比例如下，乘数作用于当前 concurrency
 | low | 0.40 | 0.60 |
 | critical | 0.40 | 0.40 |
 
-源码按 `ProcessStats.ADJ_MEM_FACTOR_*` 选择配置。它没有把 `RARE` 暂停、`FREQUENT` 配额减半，也没有通过 `LowMemDetector` 修改 Standby Bucket 时长；旧稿把这些行为写进 Android 17，但对应源码不存在。
+源码按 `ProcessStats.ADJ_MEM_FACTOR_*` 选择配置。它没有把 `RARE` 暂停、`FREQUENT` 配额减半，也没有通过 `LowMemDetector` 修改 Standby Bucket 时长；Android 17 源码中不存在这些行为。
 
 每包默认并发限制为：
 
@@ -358,7 +358,7 @@ WorkManager 的具体行为取决于 Jetpack 版本和 scheduler backend。在�
 
 ## Android 12 到 Android 17 的关键边界
 
-| 版本 | 与本章相关的公开变化 |
+| 版本 | 相关公开变化 |
 |---|---|
 | Android 12 / API 31 | EJ API；每应用 Job 上限从 100 增至 150；普通 Job 到 10 分钟后可在系统允许时继续 |
 | Android 13 / API 33 | `setPriority()` 成为公开 API |
@@ -366,7 +366,7 @@ WorkManager 的具体行为取决于 Jetpack 版本和 scheduler backend。在�
 | Android 16 / API 36 | `getPendingJobReasons()` 和 `getPendingJobReasonsHistory()` |
 | Android 17 / API 37 | `getPendingJobReasonStats()` 汇总各 pending reason 的累计持续时间 |
 
-Android 17 的调试 API是本章明确的新能力。源码中没有新增一套“低电量 runtime 折半”的正式规则。
+Android 17 明确新增了调试 API。源码中没有新增一套“低电量 runtime 折半”的正式规则。
 
 ## 诊断：按五个关口收集证据
 

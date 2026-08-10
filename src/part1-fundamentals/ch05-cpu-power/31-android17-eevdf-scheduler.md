@@ -29,13 +29,11 @@ sources:
 
 # 5.31 Android 17 内核 EEVDF 调度器：从 CFS 到 Earliest Eligible Virtual Deadline First
 
-> **一句话总结**：以 Android 17 / API 37 / `android-17.0.0_r1` 和 Android Common Kernel `android17-6.18-2026-06_r6` 为基准，普通公平调度任务由 EEVDF 在“有资格的实体”中选择虚拟截止时间最早者；EAS、PELT、uclamp 与 schedutil 分别负责或参与选核、负载跟踪和调频，不能把这些机制混成同一次调度决策。
-
----
+以 Android 17 / API 37 / `android-17.0.0_r1` 和 Android Common Kernel `android17-6.18-2026-06_r6` 为基准，普通公平调度任务由 EEVDF 在“有资格的实体”中选择虚拟截止时间最早者；EAS、PELT、uclamp 与 schedutil 分别负责或参与选核、负载跟踪和调频，不能把这些机制混成同一次调度决策。
 
 ## 先划清版本与职责边界
 
-Android 平台版本和 Linux 内核版本是两个锚点。本文讨论的 framework 行为以 `android-17.0.0_r1` 为准，调度器实现以 `android17-6.18-2026-06_r6` 为准。量产设备还会叠加 SoC 厂商配置、vendor hook 和设备内核补丁，因此分析具体设备时仍要核对 `uname -r`、内核配置与调度器运行状态。
+Android 平台版本和 Linux 内核版本是两个锚点。framework 行为以 `android-17.0.0_r1` 为准，调度器实现以 `android17-6.18-2026-06_r6` 为准。量产设备还会叠加 SoC 厂商配置、vendor hook 和设备内核补丁，因此分析具体设备时仍要核对 `uname -r`、内核配置与调度器运行状态。
 
 | 问题 | Android 17 / 6.18 中的主要机制 |
 |---|---|
@@ -45,7 +43,7 @@ Android 平台版本和 Linux 内核版本是两个锚点。本文讨论的 fram
 | CPU 应请求多少性能 | schedutil 结合有效利用率、uclamp 和架构信号计算 |
 | 实时任务能否抢占普通任务 | 由调度类优先级处理，不归 EEVDF 决定 |
 
-Linux 文档把 6.6 描述为“开始从早期 CFS 选择方式迁移到 EEVDF”。在 6.18 源码中，`fair_sched_class` 仍然存在，`SCHED_NORMAL`、`SCHED_BATCH` 和 `SCHED_IDLE` 也仍由公平调度代码管理。更准确的说法是：**公平调度类保留了 CFS 的大量基础设施，选人算法已经采用 EEVDF**。它不会取代 `SCHED_FIFO`、`SCHED_RR`、`SCHED_DEADLINE` 等更高调度类。
+Linux 文档把 6.6 描述为“开始从早期 CFS 选择方式迁移到 EEVDF”。在 6.18 源码中，`fair_sched_class` 仍然存在，`SCHED_NORMAL`、`SCHED_BATCH` 和 `SCHED_IDLE` 也仍由公平调度代码管理。公平调度类保留了 CFS 的大量基础设施，选人算法已经采用 EEVDF。它不会取代 `SCHED_FIFO`、`SCHED_RR`、`SCHED_DEADLINE` 等更高调度类。
 
 ## EEVDF 如何判断“轮到谁”
 
@@ -125,7 +123,7 @@ $$
 | 唤醒抢占 | 依赖 vruntime 差值及 wakeup granularity | 结合 EEVDF 选人结果、slice protection 与短 slice 规则 |
 | 睡眠补偿 | 调整新入队实体的 `vruntime` | 保存 lag，并对负 lag 睡眠实体使用延迟出队 |
 
-不要把 Linux 6.6 到 6.18 之间每个小版本的变化编成一张“版本功能表”。官方 EEVDF 文档只确认 Linux 从 6.6 开始迁移，并描述 6.18 所采用的 lag、deadline、延迟出队和自定义 slice 等方向；具体补丁应按 commit 或目标标签验证。本文只对 `android17-6.18-2026-06_r6` 的最终代码作结论。
+不要把 Linux 6.6 到 6.18 之间每个小版本的变化编成一张“版本功能表”。官方 EEVDF 文档只确认 Linux 从 6.6 开始迁移，并描述 6.18 所采用的 lag、deadline、延迟出队和自定义 slice 等方向；具体补丁应按 commit 或目标标签验证。这里仅对 `android17-6.18-2026-06_r6` 的代码作结论。
 
 旧版调优经验也应重新核查。这个标签的公平选人直接使用 `base_slice_ns`，但源码中仍可能保留供其他调度功能使用或导出的历史变量。看到变量名仍在源码里，不等于它仍以旧 CFS 语义控制 EEVDF。可靠做法是从读写点追到 `update_deadline()`、`place_entity()`、`check_preempt_wakeup_fair()` 和 `pick_eevdf()`。
 
@@ -160,9 +158,9 @@ overutilized 后，唤醒选核不会进入 EAS 的能耗比较，会继续走�
 
 uclamp 值不是直接的最低或最高 CPU 频率。最终频点还取决于 CPU 容量、DVFS 映射、策略域、thermal 限制和驱动。
 
-更重要的是，CPU 高频不会让同一段墙上执行时间记成更小的 `delta_exec`。`update_se()` 计算的是 `rq_clock_task()` 的时间差，`update_curr()` 再据此推进 `vruntime`。频率提高后，线程可能更早完成一批指令并主动阻塞，从而缩短本次 runnable 区间；只要它持续占用 CPU，相同的运行时长会得到相同量级的调度时间记账。由此不能推出“高 uclamp.min 让 vlag 下降更慢”或“低 uclamp.max 让任务更快失去资格”。
+CPU 高频不会让同一段墙上执行时间记成更小的 `delta_exec`。`update_se()` 计算的是 `rq_clock_task()` 的时间差，`update_curr()` 再据此推进 `vruntime`。频率提高后，线程可能更早完成一批指令并主动阻塞，从而缩短本次 runnable 区间；只要它持续占用 CPU，相同的运行时长会得到相同量级的调度时间记账。由此不能推出“高 uclamp.min 让 vlag 下降更慢”或“低 uclamp.max 让任务更快失去资格”。
 
-Android 17 的 `system/core/libprocessgroup/profiles/task_profiles.json` 基线定义了 `UClampMin`、`UClampMax` 和 `UClampLatencySensitive` 对应的 cgroup 属性，也定义了 foreground、top-app、background 等调度组。基线文件没有原文所写的 `SetClamps` / `BoostPct` / `ClampPct` 动作。具体 clamp 数值来自 cgroup 配置与设备覆盖，分析时应读取设备上的有效值。
+Android 17 的 `system/core/libprocessgroup/profiles/task_profiles.json` 基线定义了 `UClampMin`、`UClampMax` 和 `UClampLatencySensitive` 对应的 cgroup 属性，也定义了 foreground、top-app、background 等调度组。基线文件没有 `SetClamps` / `BoostPct` / `ClampPct` 动作。具体 clamp 数值来自 cgroup 配置与设备覆盖，分析时应读取设备上的有效值。
 
 ### ADPF 没有通用的“帧 deadline → EEVDF deadline”映射
 
@@ -276,7 +274,7 @@ ORDER BY avg_runnable_ms DESC;
 5. 对照 CPU frequency、idle 和 thermal 轨道。频率不足会延长完成工作所需的墙上时间，但不能据此断言 EEVDF 记账错误。
 6. 检查 vendor hook、设备调度补丁和 sched_ext 状态。GKI 源码结论不能覆盖设备私有改动。
 
-最终记住五条边界：
+关键边界有五项：
 
 - EEVDF 是公平调度类中的选人算法，CFS 基础设施和层级公平机制仍在。
 - eligibility 来自运行队列虚拟时间关系，`se->vlag` 主要保存离队状态。

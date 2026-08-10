@@ -31,7 +31,7 @@ Android 13（API 33）加入了系统级 LE Audio 支持。到 Android 17（API 
 
 LE Audio 的性能变化来自整条音频路径：LC3 编解码、AudioFlinger 缓冲、Bluetooth Audio HAL 数据路径、ISO 调度、射频环境和耳机端渲染都会贡献延迟与功耗。只看到“BLE”“7.5 ms 帧”或“硬件 offload”，不足以推出某个设备一定低延迟、一定省电。
 
-本章以 AOSP `android-17.0.0_r1` 为平台源码锚点。LE Audio 的 Controller 与 vendor 实现高度依赖芯片和固件；`android17-6.18-2026-06_r6` 内核标签也没有规定一套跨设备通用的 LC3、ISO 或功耗实现。因此，本章把可由 AOSP 证明的系统边界与必须实测的设备行为分开说明。
+平台源码锚点为 AOSP `android-17.0.0_r1`。LE Audio 的 Controller 与 vendor 实现高度依赖芯片和固件；`android17-6.18-2026-06_r6` 内核标签也没有规定一套跨设备通用的 LC3、ISO 或功耗实现。因此，分析需区分 AOSP 能证明的系统边界和必须实测的设备行为。
 
 ## 先建立协议模型
 
@@ -67,7 +67,7 @@ LE Audio 使用等时传输（Isochronous Transport）承载有时限的音频�
 
 ### LC3 的能力需要协商
 
-LC3 是 LE Audio 基础音频配置所要求的标准 Codec。设备还可以支持其他 Codec，但双方至少要围绕标准能力完成互操作。Android 17 的 LE Audio 类型定义可以看到这些独立字段：
+LC3 是 LE Audio 基础音频配置所要求的标准 Codec。设备还可以支持其他 Codec，但双方至少要围绕标准能力完成互操作。Android 17 的 LE Audio 类型定义包含这些独立字段：
 
 - sampling frequency；
 - frame duration；
@@ -252,7 +252,7 @@ Controller 重传主要消耗 Controller 和射频资源。它也可能通过数
 - 先确认 Host 或 offload 路径，再比较 A2DP 与 LE Audio；
 - 同时记录丢包、重传和 glitch，防止用牺牲可靠性换来的低功耗误导结论。
 
-手机侧优先使用外部电源监测或设备电源轨；耳机侧需要夹具、电池电量计或厂商遥测。`batterystats` 适合观察系统归因和长期趋势，难以独立分离几十毫秒周期的 Codec 与射频成本。旧稿中的 Pixel 电流范围没有设备、固件、仪器和置信区间，已不再保留。
+手机侧优先使用外部电源监测或设备电源轨；耳机侧需要夹具、电池电量计或厂商遥测。`batterystats` 适合观察系统归因和长期趋势，难以独立分离几十毫秒周期的 Codec 与射频成本。缺少设备、固件、仪器和置信区间的 Pixel 电流范围不能作为参考数据。
 
 ## 广播音频与 Auracast
 
@@ -281,12 +281,12 @@ Android 13 提供 LE Audio 基础支持不代表所有 Android 13 设备都具�
 
 ## Android 13 到 Android 17 的边界
 
-| 版本 | 本章可以确认的变化 |
+| 版本 | 可确认的变化 |
 |---|---|
 | Android 13 / API 33 | Android 加入内建 LE Audio 支持；硬件与产品仍需声明相应能力 |
 | Android 14 / API 34 | Telecom/VoIP 路由 API 继续演进；不能由此推出固定的 LE Audio 7.5 ms 模式 |
 | Android 15–16 | 中间版本不能单凭系统版本推断广播角色、低延迟配置或 HAP 能力，仍须查询设备能力和对应版本 API |
-| Android 17 / API 37 | 本章源码锚点；AOSP 同时存在单播/广播的软件、硬件 offload 与 peripheral 数据路径 |
+| Android 17 / API 37 | AOSP 同时存在单播/广播的软件、硬件 offload 与 peripheral 数据路径 |
 
 Android 17 还重构了 Audio Managed SCO，让 SCO 的启停更多由 Audio Framework 统一管理。该变化面向 HFP/SCO，不能作为“LE Audio 延迟链路在 Android 17 被重写”的证据。
 
