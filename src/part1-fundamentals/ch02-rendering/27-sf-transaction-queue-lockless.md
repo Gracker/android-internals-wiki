@@ -27,7 +27,7 @@ sources:
     path: "DeepResearch/2026-06-08-android-17-sf-transaction-queue-lockless-architecture.md"
 ---
 
-# 2.27 SurfaceFlinger 事务队列：无锁入口、分桶与就绪过滤
+# 2.27 SurfaceFlinger Transaction Queue：无锁入口、分桶与就绪过滤
 
 ## 1. 先限定“无锁架构”的范围
 
@@ -39,14 +39,14 @@ Android 17 中，`SurfaceFlinger::setTransactionState()` 会在 Binder 调用线
 
 - 新建图层队列由 `mCreatedLayersLock` 保护，源码旁仍有改成无锁队列的待办注释；
 - 停滞事务信息由 `mStalledMutex` 保护；
-- 显示状态、快照构建过程中的共享状态、部分回调与统计逻辑仍在 `mStateLock` 下处理；
+- display state、snapshot 构建过程中的共享状态、部分回调与统计逻辑仍在 `mStateLock` 下处理；
 - Scheduler、CompositionEngine、HWC 和缓冲区生命周期各有自己的同步规则。
 
 这里讨论 SurfaceFlinger 事务入口的无锁 MPSC 交接，以及交接后的分桶与就绪过滤。该设计没有消除 SurfaceFlinger 的所有锁。
 
 ## 2. Android 17 的主路径
 
-下图按职责标出各组件。“提交”与“本轮显示”之间还要经过就绪判断、快照构建、合成和送显。
+下图按职责标出各组件。“提交”与“本轮显示”之间还要经过就绪判断、snapshot、合成和送显。
 
 ```mermaid
 flowchart TD
@@ -56,11 +56,11 @@ flowchart TD
     D --> E["按 applyToken 分桶的先进先出队列"]
     E --> F["flushTransactions()"]
     F --> G["timeline 过滤"]
-    G --> H["缓冲区 / 栅栏 / 帧屏障过滤"]
+    G --> H["buffer / fence / frame barrier 过滤"]
     H --> I["事务屏障过滤"]
     I --> J["LayerLifecycleManager::applyTransactions()"]
     J --> K["图层层级与 LayerSnapshot"]
-    K --> L["CompositionEngine / HWC / 送显"]
+    K --> L["CompositionEngine / HWC / present"]
 ```
 
 Android 17 的正常处理入口位于 `SurfaceFlinger::updateLayerSnapshots()`：
@@ -139,7 +139,7 @@ pop():
 | 层次 | Android 17 类型 | 写入者 / 读取者 | 用途 |
 |---|---|---|---|
 | 入口 | `LocklessQueue<QueuedTransactionState>` | 多个 Binder 线程 / SF 主线程 | 低共享的 MPSC 交接 |
-| 待处理 | `unordered_map<sp<IBinder>, queue<...>>` | SF 主线程 | 按应用令牌保持先进先出次序、执行就绪判断 |
+| pending | `unordered_map<sp<IBinder>, queue<...>>` | SF 主线程 | 按 apply token 保持 FIFO、执行就绪判断 |
 
 `collectTransactions()` 从第一层取出事务，以 `applyToken` 为键放入第二层。
 
@@ -175,13 +175,13 @@ pop():
 
 `mTransactionReadyFilters` 的类型是 `ftl::SmallVector<TransactionFilter, 3>`。`SmallVector` 的模板参数表示三个元素可以放在对象内的内联存储中，不限制 `emplace_back()` 的总数量。AOSP 当前正好注册三个过滤器，但不能据此推导“最多三个”或“第三个留给厂商”。
 
-### 5.1 时间线：判断这笔事务是否适合本轮
+### 5.1 timeline：判断这笔事务是否适合本轮
 
 时间线过滤器综合检查：
 
 - 非自动时间戳的 `desiredPresentTime`；
 - Scheduler 给本轮计算的 `expectedPresentTime`；
-- 来源 UID 对应的 VSync 节奏；
+- origin UID 对应的 VSync cadence；
 - `FrameTimelineInfo.vsyncId` 是否说明这帧仍然过早。
 
 如果期望送显时间晚于本轮的预计送显时间，且差值不超过一秒，事务会返回 `NotReady`。超过一秒的未来时间会被忽略，避免异常时间戳长期卡住队列。
@@ -192,7 +192,7 @@ pop():
 
 缓冲区过滤器会遍历事务中带缓冲区的图层状态，主要处理三类条件。
 
-第一类是 BLAST 缓冲区帧屏障。事务可以声明“同一图层的指定帧号进入本轮后，再应用当前缓冲区”。若目标屏障帧尚未到达，返回 `NotReadyBarrier`。这类屏障从事务 `postTime` 起等待超过 **4 秒** 后会被忽略。
+第一类是 BLAST buffer frame barrier。事务可以声明“同一图层的指定帧号进入本轮后，再应用当前缓冲区”。若目标屏障帧尚未到达，返回 `NotReadyBarrier`。这类屏障从事务 `postTime` 起等待超过 **4 秒** 后会被忽略。
 
 第二类是缓冲区背压。同一轮已经选中该图层的一个缓冲区，图层开启背压，且当前事务使用自动时间戳时，后续缓冲区事务返回 `NotReady`，避免一轮提交多个缓冲区。
 
@@ -207,16 +207,16 @@ Android 17 的 `AutoSingleLayer` 至少要求：
 
 `NotReadyUnsignaled` 也不会立即应用。`TransactionHandler` 先记住该令牌；只有本轮尚未选出正常的就绪事务，才会单独弹出这笔事务。后续 RenderEngine 或 HWC 读取缓冲区时仍须遵守栅栏。
 
-### 5.3 事务屏障：Android 17 的显式令牌依赖
+### 5.3 transaction barrier：Android 17 的显式 token 依赖
 
-Android 17 的第三个过滤器处理事务中的 `KIND_WAIT` 和 `KIND_SIGNAL` 屏障令牌：
+Android 17 的第三个过滤器处理事务中的 `KIND_WAIT` 和 `KIND_SIGNAL` barrier token：
 
 - 含 `KIND_SIGNAL` 的事务被弹出时，将令牌与本轮处理时间写入 `mSignalledTransactionBarriers`；
 - 含 `KIND_WAIT` 的事务在令牌未出现时返回 `NotReadyBarrier`；
 - 等待事务从 `postTime` 起超过默认 **5 秒** 后放行；
 - 已发出信号的令牌记录超过默认 **5 秒** 后会被清理。
 
-这套五秒生存期与缓冲区帧屏障的四秒超时属于两种机制，不能共用一个“屏障生存期”概念。
+这套五秒生存期与缓冲区帧屏障的四秒超时属于两种机制，不能共用一个“barrier TTL”概念。
 
 ## 6. 为什么 flush 要重复扫描
 
@@ -231,11 +231,11 @@ Android 17 的第三个过滤器处理事务中的 `KIND_WAIT` 和 `KIND_SIGNAL`
 - `KIND_SIGNAL` 令牌记入已发出信号的集合；
 - 停滞事务记录被移除。
 
-这些状态会影响后续事务的缓冲区屏障、背压、未发出信号状态和显式屏障判断。
+这些状态会影响后续事务的缓冲区屏障、backpressure、未发出信号状态和显式屏障判断。
 
 ## 7. 从客户端到 FrontEnd 的准确调用关系
 
-### 7.1 普通 SurfaceControl 事务
+### 7.1 普通 SurfaceControl transaction
 
 客户端 `Transaction::apply()` 把事务状态发送给 `ISurfaceComposer::setTransactionState()`。SF Binder 入口完成清洗和解析后，构造 `QueuedTransactionState`，再执行：
 
@@ -263,7 +263,7 @@ Android 17 有一个单独的例外：事务包含帧率变化，且已安排的
 
 ## 8. BLASTBufferQueue 与 TransactionHandler
 
-`BLASTBufferQueue::initialize()` 的源码注释说明适配器位于客户端进程。它在客户端侧创建 BufferQueue 生产者和消费者，并由 `BLASTBufferItemConsumer` 接收新帧可用通知。
+`BLASTBufferQueue::initialize()` 的源码注释说明适配器位于客户端进程。它在客户端侧创建 BufferQueue producer/consumer，并由 `BLASTBufferItemConsumer` 接收新帧可用通知。
 
 处理一块新缓冲区时，关键步骤是：
 
@@ -272,17 +272,17 @@ BLASTBufferQueue::onFrameAvailable()
   acquireNextBufferLocked()
     从 BLAST 消费者取得 BufferItem
     Transaction::setBuffer(surfaceControl, buffer, acquireFence, frameNumber, producerId, ...)
-    合并等待中的 SurfaceControl 事务
+    合并等待中的 SurfaceControl transaction
     setApplyToken(mApplyToken).apply(false, true)
 ```
 
 这段路径带来三个诊断结论：
 
-1. BLAST 在客户端侧把 `GraphicBuffer`、获取栅栏、帧号和释放回调写入事务；
+1. BLAST 在客户端侧把 `GraphicBuffer`、acquire fence、frame number 和 release callback 写入 transaction；
 2. SF 的缓冲区就绪检查发生在事务进入 `TransactionHandler` 之后；
 3. 释放回调把缓冲区复用时机等信息返回给客户端，它不是 SF 主动拉取下一块缓冲区的接口。
 
-在完整显示链上，事务就绪、缓冲区锁存、HWC/RenderEngine 读取和显示器送显是不同边界。`TransactionQueue` 下降只说明事务已被刷新，不能证明目标缓冲区已经显示。
+在完整显示链上，transaction ready、buffer latch、HWC/RenderEngine 读取和 display present 是不同边界。看到 `TransactionQueue` 下降，只能说明事务被 flush；它没有证明目标 buffer 已经显示。
 
 ## 9. 锁边界与性能判断
 
@@ -296,14 +296,14 @@ Android 13 的入口使用 `mQueueLock` 保护 `mTransactionQueue`，主线程�
 
 以下现象不能归因于 `LocklessQueue` 已经失效：
 
-- 期望送显时间或 VSync ID 使事务尚未到期；
+- desired present time 或 VSync id 让 transaction 尚未到期；
 - 同一令牌的队头正在等待获取栅栏；
 - 缓冲区帧屏障或事务屏障未满足；
 - 新建图层队列、`mStateLock` 或其他组件发生锁等待；
 - CompositionEngine、RenderEngine、HWC 或显示驱动后段变慢；
 - 生产者没有及时提交缓冲区。
 
-无锁入口优化的是一个局部交接点。端到端帧延迟还取决于生产者、就绪判断、FrontEnd、合成和送显。
+无锁入口优化的是一个局部交接点。端到端帧延迟还取决于生产者、readiness、FrontEnd、合成和送显。
 
 ### 9.3 为什么不能给固定收益
 
@@ -315,11 +315,11 @@ Android 13 的入口使用 `mQueueLock` 保护 `mTransactionQueue`，主线程�
 
 | 版本 | 入口与待处理结构 | 就绪处理 | 相关变化 |
 |---|---|---|---|
-| Android 13 / API 33 | `mQueueLock` 保护 `mTransactionQueue` 与按令牌分桶的待处理队列 | 时间线、缓冲区屏障、栅栏等判断仍在 SF 内 | 旧互斥入口；已有按令牌排队与就绪判断，不能描述为“无过滤” |
-| Android 14 / API 34 | `TransactionHandler` + `LocklessQueue<TransactionState>` | 时间线、缓冲区两个过滤器 | 无锁 MPSC 入口已出现，文件位于 `services/surfaceflinger/LocklessQueue.h` |
+| Android 13 / API 33 | `mQueueLock` 保护 `mTransactionQueue` 与 per-token pending queues | timeline、buffer barrier、fence 等判断仍在 SF 内 | 旧互斥入口；已有 per-token 排队与 readiness，不能写成“无过滤” |
+| Android 14 / API 34 | `TransactionHandler` + `LocklessQueue<TransactionState>` | timeline、buffer 两个过滤器 | 无锁 MPSC 入口已出现，文件位于 `services/surfaceflinger/LocklessQueue.h` |
 | Android 15 / API 35 | 同上；`collectTransactions()` 从刷新流程中拆出 | FrontEnd 开关下选择新旧缓冲区检查 | 新图层创建与事务收集次序更清楚 |
-| Android 16 / API 36 | `LocklessQueue<QueuedTransactionState>` | 时间线、缓冲区两个过滤器 | 队列元素切换为 FrontEnd 使用的待处理状态 |
-| Android 17 / API 37 | `LocklessQueue` 头文件移到 `libs/gui/include/gui/` | 时间线、缓冲区、事务屏障三个过滤器 | 新增显式等待/信号屏障与五秒生存期 |
+| Android 16 / API 36 | `LocklessQueue<QueuedTransactionState>` | timeline、buffer 两个过滤器 | 队列元素切换为 FrontEnd 使用的 queued state |
+| Android 17 / API 37 | `LocklessQueue` 头文件移到 `libs/gui/include/gui/` | timeline、buffer、transaction barrier 三个过滤器 | 新增显式 WAIT/SIGNAL barrier 与五秒 TTL |
 
 `LocklessQueue` 在 Android 14 已进入这条路径。到 Android 17，AOSP 注册了第三个显式事务屏障过滤器，没有预留“自定义第三槽位”。
 
@@ -340,13 +340,13 @@ adb shell perfetto \
 
 ### 11.2 先看入口是否积压
 
-`TransactionHandler::queueTransaction()` 每次入队后增加 `mPendingTransactionCount`，`flushTransactions()` 按本轮返回事务数减少它，两处都记录 `TransactionQueue` 计数器。
+`TransactionHandler::queueTransaction()` 每次入队后增加 `mPendingTransactionCount`，`flushTransactions()` 按本轮返回事务数减少它，两处都记录 `TransactionQueue` counter。
 
 该计数器表示已进入 TransactionHandler、尚未被刷新流程返回的事务总数，覆盖无锁入口和按令牌分桶的待处理队列两层。它不是 `LocklessQueue` 链表节点数，也不是当前帧的缓冲区数量。
 
 - 短暂尖峰后迅速归零：通常是正常批处理；
 - 长时间上升：提交速率持续高于刷新速率，或队头条件长期不满足；
-- 周期性高位：需要与 SF 已安排的帧、时间线和栅栏条件对齐。
+- 周期性高位：需要与 SF scheduled frame、timeline 和 fence 条件对齐。
 
 ### 11.3 再看刷新流程为什么没有弹出事务
 
@@ -365,13 +365,13 @@ Android 17 可关注这些 SF 跟踪名称：
 
 可按以下顺序检查完整链路：
 
-1. 确认生产者是否按时调用 `queueBuffer` 或提交 SurfaceControl 事务；
+1. 先确认 Producer 是否按时 `queueBuffer` 或提交 SurfaceControl transaction；
 2. 检查 BLAST 是否取得 `BufferItem` 并调用 `Transaction::setBuffer()`；
 3. 用 `TransactionQueue` 与就绪状态跟踪判断 SF 正在等待时间、屏障还是栅栏；
 4. 用 `BufferTX - <layerName>` 和锁存事件确认新缓冲区是否被采纳；
 5. 结合 FrameTimeline、HWC 与送显栅栏判断显示后段。
 
-`TransactionQueue` 下降、事务提交回调、缓冲区锁存和显示器送显分别对应四个阶段。只看其中一个，无法确定内容何时出现在屏幕上。
+`TransactionQueue` 下降、transaction committed callback、缓冲区锁存和显示器送显分别对应四个阶段。只看其中一个，无法确定内容何时出现在屏幕上。
 
 ### 11.5 Perfetto 看不到什么
 
@@ -387,7 +387,7 @@ Android 17 可关注这些 SF 跟踪名称：
 
 | 误读 | Android 17 的准确边界 |
 |---|---|
-| SurfaceFlinger 事务处理器已完全无锁 | 仅 MPSC 入口队列没有互斥锁；新建图层、停滞信息和全局状态仍有锁 |
+| SurfaceFlinger transaction handler 已完全无锁 | 仅 MPSC 入口 queue 无 mutex；created layers、stalled 信息和全局状态仍有锁 |
 | push 永远只做一次 CAS | `compare_exchange_weak` 在竞争或弱失败时会循环 |
 | 入队和出队保证不发生任何系统调用 | 节点使用 `new/delete`；数据结构只保证自身不调用队列互斥锁或 futex |
 | `SmallVector<..., 3>` 表示最多三个过滤器 | `3` 是内联容量；Android 17 AOSP 当前注册三个 |
@@ -404,10 +404,10 @@ Android 17 可关注这些 SF 跟踪名称：
 建议按以下顺序跟读 Android 17 源码：
 
 1. [`LocklessQueue.h`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/include/gui/LocklessQueue.h)：先确认 MPSC、CAS、exchange、反转和 `new/delete`；
-2. [`TransactionHandler.h`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/TransactionHandler.h) 与 [`TransactionHandler.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/TransactionHandler.cpp)：检查两层队列、就绪判断、重复扫描和屏障生存期；
+2. [`TransactionHandler.h`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/TransactionHandler.h) 与 [`TransactionHandler.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/TransactionHandler.cpp)：看两层队列、readiness、重复扫描和 barrier TTL；
 3. [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)：依次找 `setTransactionState()`、`addTransactionReadyFilters()`、`transactionReadyTimelineCheck()`、`transactionReadyBufferCheck()`、`updateLayerSnapshots()`；
 4. [`SurfaceComposerClient.h`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/include/gui/SurfaceComposerClient.h) 与 [`SurfaceComposerClient.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/SurfaceComposerClient.cpp)：核对应用令牌和单向调用的客户端契约；
-5. [`BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)：检查客户端进程中的适配器、`setBuffer()`、事务合并、应用令牌与释放回调。
+5. [`BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)：看 client-process adapter、`setBuffer()`、transaction merge、apply token 与 release callback。
 
 版本演进可分别对照以下固定 tag：
 
@@ -425,6 +425,6 @@ Android 17 的事务队列设计可以拆成三段：
 - SF 主线程按应用令牌放入先进先出队列，保持同一令牌内的次序并隔离队头阻塞；
 - 三个过滤器按时间线、缓冲区和显式事务屏障决定本轮可应用集合。
 
-这套设计降低了入口队列互斥锁的共享压力，同时保留了事务顺序、缓冲区栅栏、屏障和显示时序约束。分析性能时，应先确定事务卡在入口、按令牌分桶的队头还是合成后段，再判断无锁队列是否相关。
+这套设计降低了入口队列互斥锁的共享压力，同时保留了事务顺序、buffer fence、屏障和显示时序约束。分析性能时，应先确定事务卡在入口、按令牌分桶的队头还是合成后段，再判断无锁队列是否相关。
 
 > 版本范围：主线按 AOSP `android-17.0.0_r1` 核对；历史表保留 Android 13～16 的架构演进，结论最高到 Android 17 / API 37。
