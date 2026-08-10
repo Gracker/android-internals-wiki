@@ -70,9 +70,9 @@ FrameTimeline 用于判断一帧是否按调度器预测的时间显示，以及
 
 ```text
 生产者生成内容
-  → queueBuffer / SurfaceControl.Transaction + 获取栅栏
+  → queueBuffer / SurfaceControl.Transaction + acquire fence
   → SurfaceFlinger 接收、选择并锁存缓冲区
-  → HWC 验证 / 送显，必要时 RenderEngine 生成客户端目标
+  → HWC validate / present，必要时 RenderEngine 生成 client target
   → 送显栅栏给出显示提交的完成反馈
   → 释放栅栏约束旧缓冲区何时可以复用
 ```
@@ -85,12 +85,12 @@ FrameTimeline 对标准应用窗口最有解释力。页面包含独立 Surface�
 
 | 出图类型 | FrameTimeline 能直接观察的部分 | 必须补充的证据 |
 |---|---|---|
-| 标准 View / Compose 应用窗口 | 宿主应用的预期和实际 SurfaceFrame，及其关联的 SF DisplayFrame | `Choreographer#doFrame`、`DrawFrame`、RenderThread、BufferQueue 与栅栏 |
-| `TextureView` | 纹理内容被采样后形成的宿主应用窗口帧 | 上游 `SurfaceTexture` BufferQueue、`updateTexImage()` 或获取操作、外部生产者 |
-| `SurfaceView`、自管 `SurfaceControl` | 可能看到部分事务或显示结果；Perfetto 官方 FrameTimeline 文档仍说明 `SurfaceView` 主体未获完整支持 | 独立图层、`BufferTX`、入队与锁存、获取/送显/释放栅栏 |
-| Camera、MediaCodec、视频硬件叠加层、旁路流 | 宿主控制层或最终 DisplayFrame | Camera、编解码器、提供器或 HAL 的生产者、独立队列、HWC 或厂商显示轨迹 |
-| 原生游戏 | 使用 Choreographer 令牌并随缓冲区事务传递时可获得部分关联 | `AChoreographer`、引擎线程、EGL/Vulkan 提交、独立 BufferQueue、GPU 与栅栏 |
-| 混合页面、多窗口 | 一个 DisplayFrame 可关联多个进程、多个 SurfaceFrame | 每个图层的生产者、Z 序、变换、刷新率与独立队列 |
+| 标准 View / Compose App Window | 宿主应用的 Expected/Actual SurfaceFrame，及其关联的 SF DisplayFrame | `Choreographer#doFrame`、`DrawFrame`、RenderThread、BufferQueue 与 fence |
+| `TextureView` | Texture 内容被采样后形成的宿主 App Window 帧 | 上游 `SurfaceTexture` BufferQueue、`updateTexImage()`/acquire、外部 Producer |
+| `SurfaceView`、自管 `SurfaceControl` | 可能看到部分 transaction 或 display 结果；Perfetto 官方 FrameTimeline 文档仍声明 `SurfaceView` 主体不受完整支持 | 独立 layer、`BufferTX`、queue/latch、acquire/present/release fence |
+| Camera、MediaCodec、视频 overlay、sideband | 宿主控制层或最终 DisplayFrame | Camera/codec/provider/HAL 的 Producer、独立队列、HWC/厂商显示轨迹 |
+| Native game | 使用 Choreographer token 并随 buffer transaction 传递时可获得部分关联 | `AChoreographer`、引擎线程、EGL/Vulkan 提交、独立 BufferQueue、GPU 与 fence |
+| 混合页面、多窗口 | 一个 DisplayFrame 可关联多个进程、多个 SurfaceFrame | 每个 layer 的 Producer、Z-order、transform、刷新率与独立队列 |
 
 这张表有两个工程含义：
 
@@ -122,7 +122,7 @@ Android 17 的关键对象是 `FrameTimelineInfo`：
 2. HWUI 或原生生产者把 `vsyncId`、帧开始时间、出队等信息写入 `FrameTimelineInfo`；
 3. 标准窗口路径由 BLAST 按帧编号保存这份信息，并在 `Transaction::setFrameTimelineInfo()` 中随缓冲区事务发给 SurfaceFlinger；
 4. `FrameTimeline::createSurfaceFrameForToken()` 用 `vsyncId` 查询预测值并创建 `SurfaceFrame`；
-5. SurfaceFlinger 完成本轮显示分类时，把对应的 `DisplayFrame` 令牌写入 SurfaceFrame 轨迹数据包。
+5. SurfaceFlinger 完成本轮 display 分类时，把对应 `DisplayFrame` token 写入 SurfaceFrame trace packet。
 
 `FrameTimelineInfo.aidl` 中还包含 `startTimeNanos`、`vsyncResyncedJitterNanos` 与 `dequeueBufferDurationNanos`。令牌除了标识 UI 帧，还携带分类所需的应用侧时序信息。
 
@@ -136,10 +136,10 @@ Android 17 的关键对象是 `FrameTimelineInfo`：
 
 | 字段/区间 | Android 17 口径 |
 |---|---|
-| 预期开始时间 | 调度器预测应用开始处理该帧的时间 |
-| 预期结束时间 | 应用应当完成缓冲区提交与相关 GPU 工作的截止时间 |
-| 实际开始时间 | 优先使用应用传入的 `startTimeNanos`；没有时回退到预测开始时间 |
-| 实际结束时间 | `max(actual queue time, acquire fence signal time)`；获取栅栏尚未发出信号时暂用入队时间 |
+| Expected start | 调度器预测应用开始处理该帧的时间 |
+| Expected end | 应用应当完成 buffer 提交与相关 GPU 工作的 deadline |
+| Actual start | 优先使用应用传入的 `startTimeNanos`；没有时回退到预测 start |
+| Actual end | `max(actual queue time, acquire fence signal time)`；acquire fence 仍 pending 时暂用 queue time |
 
 `SurfaceFrame::setAcquireFenceTime()` 给出了实际结束时间的直接依据：
 
@@ -164,14 +164,14 @@ DisplayFrame 的实际切片从 SurfaceFlinger 为该帧醒来或开始工作延
 - 实际送显时间来自节奏基准显示器的送显栅栏信号；
 - 存在客户端合成时，分类还会把 GPU 完成栅栏纳入就绪截止时间。
 
-DisplayFrame 的切片时长包含 Composer、显示 HAL 与送显反馈，不等于 SurfaceFlinger 主线程的纯 CPU 时间。分析 SF CPU 时仍要查看线程切片与调度；分析 SF GPU 时要查看客户端目标 GPU 栅栏和 GPU 轨迹；分析显示 HAL 时要寻找“SF 已按时完成，但送显仍晚”的组合证据。
+DisplayFrame 的 slice 时长包含 Composer、Display HAL 与 present 反馈，不等于 SurfaceFlinger 主线程纯 CPU 时间。分析 SF CPU 时仍要看线程 slice 与调度；分析 SF GPU 时要看 client target GPU fence 和 GPU track；分析 Display HAL 时要看“SF 已按时完成，但 present 仍晚”的组合证据。
 
 ### 三个字段不能互相替代
 
 | 字段 | 回答的问题 | 常见误读 |
 |---|---|---|
 | `on_time_finish` | 该对象是否在预测结束时间前就绪 | `true` 不保证按时送显 |
-| `present_type` | 实际送显相对预测送显是准时、晚、早、丢弃还是未知 | 提前不自动等于帧节奏错误 |
+| `present_type` | actual present 相对 predicted present 是 on-time、late、early、dropped 还是 unknown | early 不自动等于 pacing bug |
 | `prediction_type` | 用于比较的预测是否仍有效 | 预测过期后仍直接比较两个切片 |
 
 FrameTimeline 的卡顿定义围绕预测送显与实际送显是否匹配。若单独用 `Actual Display Time - Expected Display Time > 0` 判断所有场景的“用户可见卡顿”，高延迟但平滑的状态、预测误差、模式切换和无效预测都会被混在一起。
@@ -189,7 +189,7 @@ FrameTimeline 的卡顿定义围绕预测送显与实际送显是否匹配。若
 | `ACQUIRE_FENCE` | `latchBufferStatsAndHandles()` 追踪缓冲区获取栅栏 | 栅栏区间终点是发出信号的时间，表示消费者可安全读取 |
 | `LATCH` | SF 采纳该缓冲区 | 入队与锁存之间可包含事务就绪、栅栏与调度等待 |
 | `FALLBACK_COMPOSITION` | `outputLayer->requiresClientComposition()` | 该输出图层本轮进入 RenderEngine 客户端合成 |
-| `PRESENT_FENCE` | 按图层记录显示送显栅栏；没有有效栅栏时可回退到 HWC 送显时间戳 | 表示显示侧反馈，不表示面板光学响应 |
+| `PRESENT_FENCE` | per-layer 记录 display present fence；无有效 fence 时可回退到 HWC present timestamp | 是显示侧反馈，不是 panel 光学响应 |
 
 `POST`、`HWC_COMPOSITION_QUEUED`、`RELEASE_FENCE` 等枚举在这组 Android 17 SurfaceFlinger 生产调用点中没有活跃发射点。分析脚本不应要求每帧出现完整枚举序列，也不应仅因缺少 `RELEASE_FENCE` 事件便断言缓冲区已经或尚未可复用。
 
@@ -205,9 +205,9 @@ SurfaceFlinger 每轮根据当前可见图层集合准备 CompositionEngine 输�
 2. 验证过程返回合成类型变化与请求；
 3. SurfaceFlinger/CompositionEngine 接受变化；
 4. 需要 CLIENT 的图层由 RenderEngine 合成到客户端目标；
-5. 客户端目标与可由 DEVICE 合成的图层一起交给 HWC 送显。
+5. client target 与可 DEVICE composition 的 layer 一起交给 HWC present。
 
-叠加平面数量、像素格式、变换、数据空间、混合、受保护内容、显示模式与厂商 Composer 能力都会影响结果。流程并非“SurfaceFlinger 发现 CLIENT 图层太多，再把一部分改成 GPU”；合成类型变化来自 HWC 验证协议与 CompositionEngine 的当前策略。
+overlay plane 数量、format、transform、dataspace、blend、protected content、display mode 与厂商 Composer 能力都会影响结果。不能把流程写成“SurfaceFlinger 发现 CLIENT layer 太多，再把一部分改成 GPU”；composition type changes 来自 HWC validate 协议与 CompositionEngine 的当前策略。
 
 ### SurfaceFrame 标志是图层粒度
 
@@ -233,10 +233,10 @@ actualDisplayFrameStartEvent->set_gpu_composition(
 
 由此可以得到几个严格边界：
 
-- DisplayFrame `gpu_composition = true`：本轮节奏基准显示器存在 SF 客户端合成 GPU 栅栏；
-- DisplayFrame `gpu_composition = false`：FrameTimeline 没有记录这条 SF 客户端合成栅栏；
+- DisplayFrame `gpu_composition = true`：本轮 pacesetter display 存在 SF client composition GPU fence；
+- DisplayFrame `gpu_composition = false`：FrameTimeline 没有记录这条 SF client composition fence；
 - `false` 不能证明应用没有使用 GPU，HWUI、游戏或视频生产者仍可能在生成自己的缓冲区；
-- `true` 不能单独证明 GPU 是瓶颈，还要检查 GPU 栅栏、RenderEngine/GPU 轨迹与截止时间；
+- `true` 不能单独证明 GPU 是瓶颈，还要检查 GPU fence、RenderEngine/GPU track 与 deadline；
 - DEVICE 合成表示 SF 这一层的图层叠加交给 HWC，不等于系统中“没有 CPU”或“没有 GPU 工作”。
 
 这组标志描述的是 CLIENT/DEVICE 合成边界。CPU 调度与控制工作贯穿两条路径，差别在于 SurfaceFlinger 是否用 RenderEngine 生成客户端目标。
@@ -249,12 +249,12 @@ actualDisplayFrameStartEvent->set_gpu_composition(
 
 | 类型 | 解释 | 下一步证据 |
 |---|---|---|
-| `App Deadline Missed` | SurfaceFrame 的就绪时间晚于应用截止时间，并影响送显 | `doFrame`、RenderThread、获取栅栏、出队等待 |
-| `Buffer Stuffing` | 生产者持续提交，旧帧尚未送显，队列形成高延迟状态 | 待处理缓冲区、入队/锁存/送显序列、出队阻塞 |
+| `App Deadline Missed` | SurfaceFrame ready 晚于应用 deadline，并影响 present | `doFrame`、RenderThread、acquire fence、dequeue wait |
+| `Buffer Stuffing` | Producer 持续提交，旧帧尚未 present，队列形成高延迟状态 | pending buffer、queue/latch/present 序列、dequeue 阻塞 |
 | `SurfaceFlinger CPU Deadline Missed` | SF 的就绪时间错过截止时间，且没有客户端合成 GPU 栅栏作为 GPU 分支依据 | SF 主线程运行与调度、HWC 阻塞调用 |
-| `SurfaceFlinger GPU Deadline Missed` | SF 使用客户端合成，CPU 结束时间尚可，但客户端目标 GPU 栅栏迟到 | RenderEngine、GPU 队列/栅栏、频率与带宽 |
+| `SurfaceFlinger GPU Deadline Missed` | SF 使用 client composition，CPU end 尚可，但 client target GPU fence 迟到 | RenderEngine、GPU queue/fence、频率与带宽 |
 | `Display HAL` | SF 已按时就绪，显示侧却未在预测 VSync 完成送显 | HWC/DRM/厂商显示轨迹、模式与电源状态 |
-| `SurfaceFlinger Scheduling` | 送显偏差符合 VSync 周期等调度特征 | SF 唤醒、VSync、线程调度 |
+| `SurfaceFlinger Scheduling` | present 偏差符合 VSync cadence 等调度特征 | SF wakeup、VSync、线程调度 |
 | `Prediction Error` | 预测送显与显示反馈的偏差不符合当前预测 | VSync 预测、刷新率/模式切换；孤立样本不宜放大 |
 | `Dropped Frame` | 应用或 SF 侧帧被丢弃 | 前后令牌、图层更新、是否被更新帧取代 |
 | `Unknown` / `Non Animating` | 当前证据不足，或不适合按动画连续性分类 | 检查预测、显示电源/模式与出图类型 |
@@ -271,21 +271,21 @@ Android 17 还包含 `App Resynced Jitter`、`SurfaceFlinger Stuffing`、`Displa
 | 浅绿色 | 帧率可以保持平滑，但帧持续晚显示，输入延迟升高 |
 | 红色 | 切片所属进程被判为本次卡顿的责任侧；不固定等同于应用 |
 | 黄色 | 只用于应用轨迹：应用帧发生卡顿，但责任归到 SurfaceFlinger |
-| 蓝色 | 丢帧；应用与 SF 侧的具体丢帧语义不同 |
+| 蓝色 | dropped frame；App 与 SF 侧的具体丢帧语义不同 |
 
-颜色适合定位候选帧，根因仍需结合字段、令牌流、线程切片、缓冲区与栅栏证明。
+颜色适合定位候选帧，根因仍需结合字段、token flow、线程切片、缓冲区与栅栏证明。
 
 ## 栅栏与 BufferQueue：区分三个方向
 
 | 同步对象 | 生产者/消费者关系 | 能回答的问题 |
 |---|---|---|
-| 获取栅栏 | 生产者随新缓冲区交给消费者 | 新缓冲区何时写完、何时可安全读取 |
-| 送显栅栏 | HWC/显示器对本次显示送显的反馈 | 本轮显示更新到达哪个系统完成边界 |
-| 释放栅栏 | 消费者/HWC 交还旧缓冲区的使用完成约束 | 生产者何时可以安全复用该缓冲区 |
+| acquire fence | Producer 随新 buffer 交给 Consumer | 新 buffer 何时写完、何时可安全读取 |
+| present fence | HWC/display 对本次 display present 的反馈 | 本轮显示更新到达哪个系统完成边界 |
+| release fence | Consumer/HWC 交还旧 buffer 的使用完成约束 | Producer 何时可以安全复用该 buffer |
 
 Android 用户态通过 `Fence`/`FenceTime` 与同步文件传递这些同步对象；指定内核锚点中的 `dma_fence` 提供发出信号、等待与回调的基础。FrameTimeline 读取用户态和 HAL 传回的时间，不能把某个内核函数耗时直接当作卡顿根因。
 
-排查缓冲区饥饿时，应观察 `dequeueBuffer` 等待、可用槽位、待处理缓冲区、释放回调/栅栏与前序帧的送显。若把“当前实际结束时间到下一帧预期开始时间”的差当作释放栅栏时间，就会混淆两个不同对象。
+排查缓冲区饥饿时，应观察 `dequeueBuffer` 等待、可用槽位、pending buffer、释放回调/栅栏与前序帧的送显。若把“当前实际结束时间到下一帧预期开始时间”的差当作释放栅栏时间，就会混淆两个不同对象。
 
 Android 的 BufferQueue 与栅栏用于防止消费者读取未完成内容。遇到游戏或视频画面有撕裂感时，应区分帧节奏、重复/丢帧、变换更新不同步和厂商显示路径；只有取得绕过正常同步或显示扫描异常的证据，才能判为经典画面撕裂。
 
@@ -420,7 +420,7 @@ FROM android_frame_stats
 ORDER BY overrun DESC;
 ```
 
-`overrun` 是实际结束时间减去预期结束时间，负数表示没有错过截止时间。该表依赖可由标准库关联的 `Choreographer#doFrame`、`DrawFrame` 与 FrameTimeline 切片；缺行时不能把 NULL 当作 0，也不能用它替代 `jank_type` 对 SF/显示 HAL 的分类。
+`overrun` 是 Actual end 减 Expected end，负数表示没有错过该 deadline。该表依赖能被 stdlib 关联的 `Choreographer#doFrame`、`DrawFrame` 与 FrameTimeline slice；缺行时不能把 NULL 当作 0，也不能用它替代 `jank_type` 对 SF/Display HAL 的分类。
 
 ## 四类常见问题怎样复核
 
@@ -432,7 +432,7 @@ ORDER BY overrun DESC;
 2. `Choreographer#doFrame` 内 INPUT、ANIMATION、TRAVERSAL、COMMIT 哪段变长；
 3. `DrawFrame` / RenderThread 是 CPU 提交慢，还是 GPU 获取栅栏晚；
 4. `dequeueBuffer` 是否因旧缓冲区尚未释放而等待；
-5. 对应 DisplayFrame 是否又叠加 SF 或显示 HAL 卡顿。
+5. 对应 DisplayFrame 是否又叠加 SF 或 Display HAL jank。
 
 SurfaceFrame `gpu_composition = false` 只表示该图层没有被 SF 放入客户端合成，不能排除 HWUI 生成缓冲区时的 GPU 延迟。
 
@@ -441,11 +441,11 @@ SurfaceFrame `gpu_composition = false` 只表示该图层没有被 SF 放入客�
 不要假定原生引擎一定把 `Choreographer.FrameData` 正确传到了目标 Surface。验证令牌存在后，再沿独立图层检查：
 
 ```text
-AChoreographer / 引擎时钟
+AChoreographer / engine tick
   → EGL/Vulkan submit
-  → queueBuffer + 获取栅栏
-  → BufferTX / 锁存
-  → HWC 送显 + 送显栅栏
+  → queueBuffer + acquire fence
+  → BufferTX / latch
+  → HWC present + present fence
 ```
 
 这条序列用来定位“逻辑时钟晚、GPU 完成晚、缓冲区到达晚、SF 没有采纳、显示后段晚”中的具体一段。缓冲区早于目标时间就绪通常只是留出排队余量，不能仅凭“早”判为帧节奏错误。
@@ -455,9 +455,9 @@ AChoreographer / 引擎时钟
 这只说明 SF 频繁使用 CLIENT 合成路径。要证明它造成截止时间超期，还需要同时看到：
 
 - `SurfaceFlinger GPU Deadline Missed` 或相符的截止时间记录；
-- 客户端目标 GPU 栅栏发出信号偏晚；
+- client target GPU fence signal 偏晚；
 - RenderEngine/GPU 轨迹与该 DisplayFrame 时间重叠；
-- 排除应用自身的 GPU、HWC 验证、显示 HAL 或频率切换。
+- 排除 App 自己的 GPU、HWC validate、Display HAL 或频率切换。
 
 优化方向应根据触发 CLIENT 的具体图层状态确定。盲目移除 `ColorMatrix`、改成 `SurfaceView` 或强制使用硬件叠加层，可能改变透明度、保护内容、颜色管理与生命周期语义，而且 HWC 仍可在下一帧返回不同结果。
 
@@ -468,22 +468,22 @@ AChoreographer / 引擎时钟
 ## 一套不跳阶段的诊断顺序
 
 1. **确认问题窗口与刷新率**
-   记录显示模式、渲染帧率、输入事件和用户看到的现象，排除启动、旋转、亮灭屏与模式切换瞬态。
+   记录显示模式、render rate、输入事件和用户看到的现象，排除启动、旋转、亮灭屏与模式切换瞬态。
 
 2. **确认生产者与承载对象**
    标出应用窗口、TextureView、SurfaceView、相机/视频/游戏的生产者、BufferQueue、图层名称与进程。
 
 3. **选择一个异常令牌**
-   同时查看预期值/实际值、预测、送显、卡顿、严重程度、图层与流向，不按颜色直接归因。
+   同时查看 Expected/Actual、prediction、present、jank、severity、layer 与 flow，不按颜色直接归因。
 
 4. **检查应用就绪边界**
-   对照 `doFrame`、RenderThread、入队时间与获取栅栏，区分 CPU、生产者 GPU 和出队等待。
+   对照 `doFrame`、RenderThread、queue time 与 acquire fence，区分 CPU、Producer GPU 和 dequeue wait。
 
 5. **检查 SF 是否采纳新内容**
    对照 QUEUE、`BufferTX`、LATCH 与待处理缓冲区。已经入队但本轮没有锁存，说明问题仍在显示前段。
 
-6. **检查 CLIENT/DEVICE 合成**
-   用 SurfaceFrame/DisplayFrame 的 `gpu_composition` 找到候选，再以 HWC 验证、RenderEngine 和 GPU 栅栏证明成本。
+6. **检查 CLIENT/DEVICE composition**
+   用 SurfaceFrame/DisplayFrame 的 `gpu_composition` 找到候选，再以 validate、RenderEngine 和 GPU 栅栏证明成本。
 
 7. **检查送显与缓冲区归还**
    送显栅栏解释显示更新，释放栅栏/回调解释缓冲区复用。二者不能交换。
@@ -507,7 +507,7 @@ AChoreographer / 引擎时钟
 ## 源码核对清单
 
 - [`FrameTimeline.h`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.h) 与 [`FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp)
-  - 核对 SurfaceFrame/DisplayFrame 的预测、实际结束时间、送显、卡顿分类与 `gpu_composition` 写入。
+  - 核对 SurfaceFrame/DisplayFrame 的预测、Actual end、present、jank 分类与 `gpu_composition` 写入。
 - [`Layer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Layer.cpp) 与 [`FrameTracer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/FrameTracer/FrameTracer.cpp)
   - 核对 DEQUEUE/QUEUE、ACQUIRE_FENCE、LATCH、FALLBACK_COMPOSITION、PRESENT_FENCE 的生产调用点。
 - [`BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp) 与 [`FrameTimelineInfo.aidl`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/aidl/android/gui/FrameTimelineInfo.aidl)
@@ -526,6 +526,6 @@ FrameTimeline 把预测、应用就绪、SurfaceFlinger 显示工作与实际送
 - SurfaceFrame 的实际结束时间取入队与获取栅栏信号时间中的较晚者，不表示上屏时间；
 - DisplayFrame 的实际切片延伸到送显，不能当作 SF 主线程 CPU 时长；
 - `gpu_composition` 描述 SF 的 CLIENT 合成边界，不描述应用是否使用 GPU；
-- 独立 Surface、相机、视频、游戏与混合页面必须补充图层、BufferQueue 和栅栏证据。
+- 独立 Surface、Camera、视频、游戏与混合页面必须补充 layer、BufferQueue 和 fence。
 
-按生产者 → 缓冲区 → 锁存 → 合成 → 送显 → 释放的顺序检查，才能把“帧晚了”缩小为可由源码与轨迹共同复现的问题。
+按 Producer → buffer → latch → composition → present → release 的顺序检查，才能把“帧晚了”缩小为可由源码与 trace 共同复现的问题。
