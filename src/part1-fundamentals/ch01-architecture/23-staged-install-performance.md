@@ -295,9 +295,9 @@ APEX 本身不会作为普通应用交给这条 dexopt 路径。mixed session �
 - session 数据写入和封存；
 - APK / split 解析；
 - Developer Verification；
-- 原生库提取；
+- native library 提取；
 - 通用 APK 验证；
-- 分阶段会话冲突与回滚检查；
+- staged 冲突与 rollback 检查；
 - APEX 提交和验证；
 - 建立检查点并持久化就绪状态。
 
@@ -377,7 +377,7 @@ CPU 时间不能替代墙钟时间。若 `dex2oat` 的 CPU 时间不高但切片
 
 ## 实战排障
 
-### 会话一直不能进入就绪状态
+### Session 一直不能变为 ready
 
 先确认卡在重启前，而非已经重启但尚未应用：
 
@@ -393,7 +393,7 @@ adb logcat -b all -d | grep -E \
 1. `isFailed` 是否已经为 true；若是，直接读取保存的错误信息。
 2. Developer Verification 是否仍在等待或已拒绝。
 3. 是否与现有 staged / rollback session 重叠。
-4. 多包父会话的子会话是否全部封存、提交且属性一致。
+4. multi-package parent 的 child 是否全部 seal、commit 且属性一致。
 5. 含 APEX 时，apexd 提交、容器签名和包名检查是否通过。
 6. `/data` 剩余空间是否足以写 stage 和后续安装产物。
 
@@ -415,7 +415,7 @@ adb logcat -b all -d | grep -E \
 - 本次启动的 build fingerprint 是否与提交时一致。
 - 是否出现 `restoreSessions` 与 `installApksInSession` 切片。
 - StorageManager 是否报告正在回到 safe state。
-- apexd 会话是已激活/成功，还是激活失败/已回退。
+- apexd session 是 activated/success，还是 activation failed/reverted。
 - session 是否已变为失败，而调用方仍缓存旧的 `SessionInfo`。
 - non-ready session 是否被安排在 `BOOT_COMPLETED` 后重新验证，因而本次启动没有应用。
 

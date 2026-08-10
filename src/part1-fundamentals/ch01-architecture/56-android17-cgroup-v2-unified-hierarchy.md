@@ -416,14 +416,14 @@ Perfetto 中看到大核迁移或频率上升，只能作为结果证据。要�
 - 修改 `/dev/cpuctl/<group>/cpu.uclamp.*`；
 - 增加游戏、相机、NNAPI 或系统服务配置；
 - 把更多 controller 迁入 cgroup v2；
-- 调整每应用内存控制器的启用与阈值；
+- 调整 per-app memory controller 的启用与阈值；
 - 由 power/thermal 服务在运行时重写组参数。
 
 审计时按以下顺序收集证据：
 
 1. 查看 mountinfo，确认 controller 版本和挂载点；
 2. 读取 system、API-level、`system_ext` 的实际 JSON；
-3. 展开聚合配置，列出每个动作；
+3. 展开 aggregate profile，列出每个 action；
 4. 对照目标 PID/TID 的 `/proc/.../cgroup`；
 5. 读取目标组的当前文件值；
 6. 用 Perfetto 观察调度、频率、freezer、PSI 和用户可见延迟。
@@ -434,7 +434,7 @@ Perfetto 中看到大核迁移或频率上升，只能作为结果证据。要�
 
 Android 17 的资源分组可以分成三层：
 
-- 框架计算进程重要性和调度组；
+- framework 计算进程重要性和 scheduling group；
 - `libprocessgroup` 将稳定的配置名转换为 cgroup、scheduler、timer slack 或 memory action；
 - 内核按 v1/v2 控制器的实际配置执行调度、限制、回收和冻结。
 

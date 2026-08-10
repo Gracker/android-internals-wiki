@@ -129,7 +129,7 @@ guard 条件失败
 
 - `ArtMethod` 与 dex PC；
 - DEX 寄存器及其引用类型；
-- 是否跳过方法退出、低开销跟踪等事件的标志；
+- 是否跳过 method-exit、low-overhead trace 等事件的标记；
 - 指向上层 ShadowFrame 的链接。
 
 API 37 的 `EnterInterpreterFromDeoptimize()` 明确说明，它不会为 lock counting 恢复一套 monitor 状态；编译器只应编译通过 structured-locking 检查的方法。“逐个恢复 monitor 持有列表”不符合该标签实现。
@@ -140,7 +140,7 @@ API 37 的 `EnterInterpreterFromDeoptimize()` 明确说明，它不会为 lock c
 
 - `kKeepDexPc` 要求重试当前 DEX 指令；
 - `monitor-enter`、`monitor-exit` 和 invoke 需要专门推进规则；
-- 待处理异常会先恢复，再查找解释器捕获处理器；
+- pending exception 会先恢复，再查找解释器 catch handler；
 - 后续 ShadowFrame 通常位于调用点，返回值要传给 caller。
 
 这些分支解释了 `DeoptimizationContextRecord` 为什么保存 return value、pending exception、`from_code` 和 `DeoptimizationMethodType`。该记录按栈链接，允许 verifier 或类加载引发嵌套 deopt。
@@ -232,7 +232,7 @@ Android 17 可以把正在运行的非 Java 可调试运行时切换到 Java 可
 - 在普通方法设置断点，通常只 deopt 该方法；
 - 对单个线程 single-step，使用线程级路径；
 - 全局 single-step、exception-catch 等事件才请求全局解释器；
-- 方法跟踪可以选择进入/退出钩子，也可以要求使用解释器。
+- method tracing 可以选择 entry/exit hooks，也可以要求 interpreter。
 
 因此，性能报告应记录是否 debuggable、是否 attach、启用了哪些事件，不能只写“开了调试器”。
 
@@ -243,7 +243,7 @@ Android 17 可以把正在运行的非 Java 可调试运行时切换到 Java 可
 结构性 redefinition 可能改变字段或方法布局，风险更大。API 37 会：
 
 - 强制为每个线程的每个可去优化帧设置 redefinition flag；
-- 替换类/实例引用并清理解释器缓存；
+- 替换 class/instance 引用并清理 interpreter cache；
 - 调用 `InvalidateAllCompiledCode()` 清空 JIT compiled code；
 - 让后续边界检查把活动 compiled frame 转入解释器。
 
