@@ -83,7 +83,7 @@ last_deepseek_cn_review_at: 2026-06-24
 
 ## 先确定优化对象
 
-平台以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点，并兼顾 Android 8～16 的行为差异。应用内存并非一个数字：Java/Kotlin 对象主要在 ART 管理的堆中，`malloc`、Bitmap 像素和部分运行时数据位于原生侧，GraphicBuffer、硬件 Bitmap、Surface 等还可能出现在 Graphics、memtrack 或 dmabuf 口径中。文件描述符不属于堆，却同样可能耗尽进程资源。
+平台以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点，并兼顾 Android 8～16 的行为差异。应用内存并非一个数字：Java/Kotlin 对象主要在 ART 管理的堆中，`malloc`、Bitmap 像素和部分运行时数据位于 Native 侧，GraphicBuffer、硬件 Bitmap、Surface 等还可能出现在 Graphics、memtrack 或 dmabuf 口径中。文件描述符不属于堆，却同样可能耗尽进程资源。
 
 因此，“Java 堆没有到上限”无法证明进程没有内存问题。一次完整排查至少要回答四个问题：
 
@@ -382,7 +382,7 @@ C++ 代码优先用 RAII：`std::unique_ptr`、容器、带自定义 deleter 的
 
 ### malloc debug
 
-bionic 的 malloc debug 可以记录原生分配回溯，适合 root/userdebug 设备或平台开发环境。以下命令为目标进程设置包装属性，然后重启进程：
+bionic 的 malloc debug 可以记录 Native 分配回溯，适合 root/userdebug 设备或平台开发环境。以下命令为目标进程设置包装属性，然后重启进程：
 
 ```bash
 adb shell setprop wrap.com.example.app \
@@ -397,7 +397,7 @@ adb shell monkey -p com.example.app 1
 adb shell dumpsys meminfo --unreachable "$(adb shell pidof com.example.app)"
 ```
 
-启用回溯后，报告能提供更多分配来源。malloc debug 有显著开销，不适合作为长期线上开关；普通第三方应用在非 root 设备上应使用 debuggable `wrap.sh`、Sanitizer 或 heapprofd。完成测试后应清除 `wrap.<APP>` 属性并重启进程。
+启用 backtrace 后，报告能提供更多分配来源。malloc debug 有显著开销，不适合作为长期线上开关；普通第三方应用在非 root 设备上应使用 debuggable `wrap.sh`、Sanitizer 或 heapprofd。完成测试后应清除 `wrap.<APP>` 属性并重启进程。
 
 ### HWASan、ASan 与 GWP-ASan
 
@@ -481,7 +481,7 @@ Android 17 还有两条需要知道的系统边界：
 
 ### 推荐响应策略
 
-以下实现只依赖 Android 14+ 仍投递的级别：
+以下实现只依赖 Android 14+ 仍投递的 level：
 
 ```kotlin
 override fun onTrimMemory(level: Int) {
@@ -634,7 +634,7 @@ API 26+ 像素位于 Native 侧，平台仍登记这部分分配，进程也仍�
 
 ### `onTrimMemory` 会提前通知进程死亡
 
-Android 14+ 只保留 `UI_HIDDEN` 和 `BACKGROUND` 两个公开投递级别，系统可以直接终止缓存进程。内存缩减回调只负责快速释放可重建资源，状态保存仍要遵守正常生命周期。
+Android 14+ 只保留 `UI_HIDDEN` 和 `BACKGROUND` 两个公开投递 level，系统可以直接终止缓存进程。内存缩减回调只负责快速释放可重建资源，状态保存仍要遵守正常生命周期。
 
 ### `largeHeap` 可以解决所有 OOM
 

@@ -69,7 +69,7 @@ last_task9_autofix_at: "2026-06-29"
 
 # ART 虚拟机内存管理
 
-平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点，旧版本只用于解释演进。设备厂商可以调整 GC 类型、堆参数和运行时开关，因此具体设备仍以该设备的轨迹、日志与属性为准。
+平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点，旧版本只用于解释演进。设备厂商可以调整 GC 类型、堆参数和运行时开关，因此具体设备仍以该设备的 trace、日志与属性为准。
 
 ART 内存问题很少只表现为一个数字。一次掉帧可能来自 GC 暂停，也可能是应用线程等待正在运行的 GC；Java 堆仍有空闲时，分配仍可能因连续空间不足而失败；Native 分配持续增长，也会通过 ART 的登记机制触发 Java GC。
 
@@ -108,7 +108,7 @@ flowchart LR
 
 构建系统会为 boot class path 生成 ART image。进程启动时，`ImageSpace` 将镜像映射进地址空间，进程可以直接使用其中已经布局好的类、对象和元数据。映射页可以在进程之间共享，这也是 Zygote 启动模型能降低重复内存与启动工作的基础之一。
 
-Image Space 属于 GC 的免疫空间（immune space）：其中的对象不由应用进程回收，也不会在应用 GC 中移动。不过，GC 仍要处理这里指向应用堆对象的引用。ART 使用卡表、mod-union table 等结构记录这类跨空间引用，避免每次都扫描整个镜像。
+Image Space 属于 GC 的免疫空间（immune space）：其中的对象不由应用进程回收，也不会在应用 GC 中移动。不过，GC 仍要处理这里指向应用堆对象的引用。ART 使用 card table、mod-union table 等结构记录这类跨 space 引用，避免每次都扫描整个镜像。
 
 源码入口：
 
@@ -273,7 +273,7 @@ Android 17 仍保留多种 collector 类型，包括 CC、CMC、CMS、Mark Sweep
 
 `GcType` 定义了 `Sticky`、`Partial`、`Full`。在启用分代的 CC/CMC 中，`Sticky` 会选择 young collector；非 Sticky 路径选择覆盖更大范围的 collector。
 
-“Young GC”描述分代 collector 的工作范围；“Full”是 `GcType`。日志与轨迹中还会出现收集器名称，不能只按字符串中的 `GC` 猜测范围。
+“Young GC”描述分代 collector 的工作范围；“Full”是 `GcType`。日志与 trace 中还会出现收集器名称，不能只按字符串中的 `GC` 猜测范围。
 
 ### GC cause：为什么触发
 
