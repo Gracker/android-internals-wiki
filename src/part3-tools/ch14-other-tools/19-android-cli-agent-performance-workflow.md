@@ -69,46 +69,7 @@ android17_review_notes: "2026-07-30：按 Android CLI、Journeys、Android skill
 
 # 14.19 Android CLI 与 Agent 化性能调试工作流
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 Android CLI 在性能工具链里的位置
-说明 Android CLI 的定位：它把项目描述、设备管理、运行、UI 结构读取、Journey 测试和 Android Studio 语义能力接到 agent 工作流里；帧级证据仍由 Android Studio Profiler、Perfetto 或 APA 产出。
-
-### 🔹 项目描述、SDK 与设备基线
-覆盖 `android update/init`、`android describe`、`android info`、`android sdk list/install/update`、`android emulator create/start/list` 的适用场景，建立性能复现实验前的 CLI、SDK、设备 profile、构建产物和运行环境基线。
-
-### 🔹 run / layout / screen 在复现流程中的边界
-梳理 `android run` 部署 APK、`android layout` 导出布局树、`android screen capture/resolve` 采集屏幕和坐标的证据价值，强调这些命令适合复现、UI 状态确认和自动化点击，不替代帧级 trace。
-
-### 🔹 Journeys 与关键用户路径回归
-Journey 用自然语言描述核心用户路径，适合驱动 agent 按真实交互路径运行应用。性能基线应覆盖冷启动、页面切换、滚动、弱网和登录态等典型场景。
-
-### 🔹 Android Studio 语义命令与性能排查协作
-覆盖 `android studio check/analyze-file/find-declaration/find-usages/open-file/render-compose-preview/version-lookup` 的能力边界，说明它们如何服务于源码定位、Compose Preview、依赖版本核对和人工复核。
-
-### 🔹 Android skills 与性能专项能力
-梳理 `android skills list/find/add/remove` 和 Android skills 的更新/覆盖边界，重点记录 Perfetto SQL、Testing setup、R8 auditing 等与性能工程相关的技能如何作为 agent 的可复用知识包。
-
-### 🔹 与 APA / Perfetto / Macrobenchmark 的分工
-建立 Android CLI、Android Performance Analyzer、Perfetto UI、Macrobenchmark、Android Studio Profiler 的分工对照：CLI 负责组织环境与动作，Trace/Profiler 负责证据采集，SQL/APA 负责分析，Macrobenchmark 负责可重复指标。
-
-## 扩展
-
-### 🔸 CI 与本地 agent 工作流模板
-可补充从构建产物定位、安装运行、Journey 执行、trace 采集到报告生成的一条最小可复现链路。
-
-### 🔸 隐私与遥测边界
-可补充 Android CLI 官方收集/不收集的数据范围，以及企业内网使用时的配置、日志和凭证处理边界。
-
-### 🔸 Android 17 源码与内核边界
-区分 Android CLI 桌面版本、Android 17 framework build 与 `android17-6.18-2026-06_r6` 内核。CLI 负责组织实验；Perfetto packet、framework 事件和 scheduler tracepoint 才是系统性能结论的底层证据。
-
-<!-- outline-end -->
-
 Android CLI 1.0 把 Android 项目的环境准备、设备管理、应用运行、UI 状态读取和 IDE 语义能力放进同一个 `android` 命令入口。它适合放在 agent 工作流的控制层：agent 用 CLI 准备实验并重放路径，Profiler、Perfetto、APA 或 Macrobenchmark 负责采集和计算性能证据。
-
-[已验证: 官方文档, developer.android.com/tools/agents/android-cli][已验证: Android Developers Blog, 2026-05-19]
 
 ## Android CLI 在性能工具链里的位置
 
@@ -123,8 +84,6 @@ Android CLI 的定位是命令入口和工作流胶水。它不生成帧级证�
 | Macrobenchmark / Jetpack Benchmark | 同一场景在多次运行里的指标是否稳定 | 启动耗时、帧时间、Baseline Profile 验证结果 | 需要设计可重复场景和设备基线，详见 19.14 节 |
 
 这张表决定了 Android CLI 的用法：它是 agent 的控制台，性能结论交给 Trace、Profiler、SQL、APA 或 Benchmark。一轮排障可以从 CLI 建立复现状态开始，再用 Trace / Profiler 采集证据，后续用 SQL、APA 或 Benchmark 把结论整理成可复查记录。
-
-[已验证: 官方文档, developer.android.com/tools/agents/android-cli][已验证: 官方文档, developer.android.com/android-performance-analyzer]
 
 ## Android 17 平台锚点与证据边界
 
@@ -153,17 +112,17 @@ Android CLI 是独立发布的主机工具，不属于 `android-17.0.0_r1` frame
 | `android emulator create/list/start/stop` | 虚拟设备 profile、设备名、serial | 先创建 AVD，再启动列表中的设备；Windows 侧 `android emulator` 命令当前被官方禁用 |
 | `android docs search/fetch` | Android Knowledge Base 查询及返回内容 | 为 agent 提供官方文档上下文；不能替代项目源码与设备 trace |
 
-`android describe` 会输出描述项目结构、build target 和 artifact 位置的 JSON 文件路径。它不执行 Gradle 构建；调用前仍要明确构建 variant，并确认 APK 的时间戳、校验值和代码提交。agent 无需从 `app/build/outputs/` 猜文件，也无需把构建系统的临时路径写死到提示词里。[已验证: 官方文档, developer.android.com/tools/agents/android-cli]
+`android describe` 会输出描述项目结构、build target 和 artifact 位置的 JSON 文件路径。它不执行 Gradle 构建；调用前仍要明确构建 variant，并确认 APK 的时间戳、校验值和代码提交。agent 无需从 `app/build/outputs/` 猜文件，也无需把构建系统的临时路径写死到提示词里。
 
 SDK 和设备基线至少记录 Android SDK 路径、`platforms/android-37` package revision、build-tools / platform-tools 版本、设备 serial 或 emulator profile。涉及帧率、启动耗时、功耗和 GPU counter 的测试，还要保存设备型号、build fingerprint、刷新率、电池/温度状态和 GPU driver；这些内容需要测试脚本或人工补齐。
 
 `android emulator create --profile=medium_phone` 是创建动作，`android emulator start medium_phone` 只能启动已经存在且名称匹配的虚拟设备。旧 CI 模板直接调用 `start`，在全新 runner 上会失败。AVD provisioning 应在任务前完成，或在脚本中先用 `emulator list` 检查并创建；缺少 API 37 platform 或目标 system image 时，先通过 `sdk list/install` 补齐。
 
-`.androidrc` 可以把常用全局参数固化到用户目录，例如默认 `--sdk=<path-to-sdk>`。这适合个人机器，不适合把团队 CI 的关键配置只放在用户目录；CI 脚本应显式传入 `--sdk`，让构建日志自己带上环境口径。[已验证: 官方文档, developer.android.com/tools/agents/android-cli]
+`.androidrc` 可以把常用全局参数固化到用户目录，例如默认 `--sdk=<path-to-sdk>`。这适合个人机器，不适合把团队 CI 的关键配置只放在用户目录；CI 脚本应显式传入 `--sdk`，让构建日志自己带上环境口径。
 
 ## `run`、`layout`、`screen` 在复现流程中的边界
 
-`android run` 只负责把给定 APK 安装到设备并启动组件。官方文档明确写到，它不执行构建步骤，调用方必须传入 APK 路径；多 APK 安装可以通过逗号分隔的 `--apks` 完成——构建和运行分开，测试报告里能清楚区分“这次测的是哪个构建产物”。[已验证: 官方文档, developer.android.com/tools/agents/android-cli]
+`android run` 只负责把给定 APK 安装到设备并启动组件。官方文档明确写到，它不执行构建步骤，调用方必须传入 APK 路径；多 APK 安装可以通过逗号分隔的 `--apks` 完成——构建和运行分开，测试报告里能清楚区分“这次测的是哪个构建产物”。
 
 下面的命令演示安装单 APK、指定设备和显式启动 Activity；它们都假设 APK 已经构建完成。
 
@@ -182,7 +141,7 @@ android run --apks=app-debug.apk --type=ACTIVITY --activity=.MainActivity
 
 `android layout` 返回当前活动 App 的 UI 布局树 JSON，`--diff` 只输出自上次内部快照以来变化的节点。它适合确认 agent 是否进入了正确页面、某个按钮是否出现、一次操作前后布局状态是否变化。布局树不能解释帧耗时，也不能替代 Layout Inspector 的完整交互能力；要分析 measure / layout / draw 成本，仍要回到 Perfetto、Profiler 或相关章节里的 View 管线分析方法。
 
-`android screen capture` 负责截屏，`--annotate` 会给识别到的 UI 元素绘制编号框。`android screen resolve --screenshot=ui.png --string="input tap #5"` 把截图上的编号替换为实际坐标；命令只返回替换后的字符串，调用方还要显式执行对应输入命令。这组能力适合让 agent 留存截图并解析点击位置，证据口径是“当时屏幕上是什么”和“坐标如何解析”。它不能证明某一帧为什么卡，也不能替代 FrameTimeline、SurfaceFlinger 或 GPU counter。[已验证: 官方文档, developer.android.com/tools/agents/android-cli]
+`android screen capture` 负责截屏，`--annotate` 会给识别到的 UI 元素绘制编号框。`android screen resolve --screenshot=ui.png --string="input tap #5"` 把截图上的编号替换为实际坐标；命令只返回替换后的字符串，调用方还要显式执行对应输入命令。这组能力适合让 agent 留存截图并解析点击位置，证据口径是“当时屏幕上是什么”和“坐标如何解析”。它不能证明某一帧为什么卡，也不能替代 FrameTimeline、SurfaceFlinger 或 GPU counter。
 
 当前 `layout` 与 `screen capture` 文档没有列出 `--device` 参数。多设备 CI runner 应隔离 adb server 或保证任务期间只暴露目标设备，并在截图、布局树和 trace 文件名中记录 serial；仅在 `android run` 中指定 `--device`，不能证明后续 UI 命令仍指向同一设备。
 
@@ -190,7 +149,7 @@ android run --apks=app-debug.apk --type=ACTIVITY --activity=.MainActivity
 
 ## Journeys 与关键用户路径回归
 
-Journeys 是 Android CLI 面向 agent 的用户路径描述能力。Journey 由自然语言指令组成，agent 把指令转换为 App 交互，并依据设备画面判断断言。官方页面在 2026 年 7 月 17 日更新后仍把创建和运行交给 agent 与随 CLI 提供的 skills，也明确提到可以接入 CI/CD。[已验证: 官方文档, developer.android.com/tools/agents/android-cli/journeys][已验证: Android Developers Blog, 2026-05-19]
+Journeys 是 Android CLI 面向 agent 的用户路径描述能力。Journey 由自然语言指令组成，agent 把指令转换为 App 交互，并依据设备画面判断断言。官方页面在 2026 年 7 月 17 日更新后仍把创建和运行交给 agent 与随 CLI 提供的 skills，也明确提到可以接入 CI/CD。
 
 性能场景里的 Journey 不应只写“打开首页并滑动列表”。一条可复现的用户路径至少要补齐这些条件：
 
@@ -203,11 +162,11 @@ Journeys 是 Android CLI 面向 agent 的用户路径描述能力。Journey 由�
 
 Journey 适合准备登录态、导航到目标页面、确认异常是否出现，并记录失败画面。自然语言理解、视觉识别、坐标选择和 agent 模型都会引入变化，不适合控制 benchmark 的计时区间。测量窗口内的启动、滚动和动画应交给 Macrobenchmark 与 UI Automator；指标由 Macrobenchmark、Perfetto Trace、APA 或线上 APM 给出。冷启动耗时、帧时间分布、CPU 调度、GPU counter、GC 暂停、Binder 等待时间都不能从 Journey 的成功/失败判断中推导。
 
-官方 Journey 页面没有发布固定的 `android journey ...` 子命令格式，本节不构造这类命令。文件格式、运行步骤和 CI 接入方式以 Android CLI 当前版本、Journeys skill 和项目内实际生成文件为准。报告还要记录 CLI、agent、模型、skill 版本或内容快照，避免把不同执行器的结果直接并列。[已验证: 官方 Journeys 页面更新至 2026-07-17]
+官方 Journey 页面没有发布固定的 `android journey ...` 子命令格式，这里不构造这类命令。文件格式、运行步骤和 CI 接入方式以 Android CLI 当前版本、Journeys skill 和项目内实际生成文件为准。报告还要记录 CLI、agent、模型、skill 版本或内容快照，避免把不同执行器的结果直接并列。
 
 ## Android Studio 语义命令与性能排查协作
 
-`android studio` 命令处于预览状态。官方文档给出的前提是：项目要在 Android Studio Quail 2 Canary 1 或更高版本中打开，并且 Gemini in Android Studio 已启用且已登录。满足这些条件后，agent 可以通过 CLI 连接正在运行的 Android Studio 实例，调用 IDE 的语义能力。[已验证: 官方文档, developer.android.com/tools/agents/android-cli]
+`android studio` 命令处于预览状态。官方文档给出的前提是：项目要在 Android Studio Quail 2 Canary 1 或更高版本中打开，并且 Gemini in Android Studio 已启用且已登录。满足这些条件后，agent 可以通过 CLI 连接正在运行的 Android Studio 实例，调用 IDE 的语义能力。
 
 | 命令 | 输出 | 性能排查里的用法 |
 |---|---|---|
@@ -225,7 +184,7 @@ Journey 适合准备登录态、导航到目标页面、确认异常是否出现
 
 ## Android skills 与性能专项能力
 
-Android skills 是面向 AI 工具和 agent 的指令包，用来把 Android 领域里的推荐流程、脚本、模板和参考资料打包给 agent 使用。官方文档列出的能力包括 XML 到 Compose 迁移、AGP 9 升级、Navigation 3、edge-to-edge UI、R8 配置审计等；这些能力都属于“让 agent 更懂 Android 工作流”的层面。[已验证: 官方文档, developer.android.com/tools/agents/android-skills]
+Android skills 是面向 AI 工具和 agent 的指令包，用来把 Android 领域里的推荐流程、脚本、模板和参考资料打包给 agent 使用。官方文档列出的能力包括 XML 到 Compose 迁移、AGP 9 升级、Navigation 3、edge-to-edge UI、R8 配置审计等；这些能力都属于“让 agent 更懂 Android 工作流”的层面。
 
 `android init` 是最短的初始化入口，用来安装基础 `android-cli` skill。Android CLI 还提供 `skills list/find/add/remove` 管理能力：
 
@@ -237,7 +196,7 @@ Android skills 是面向 AI 工具和 agent 的指令包，用来把 Android 领
 
 更新边界要写进团队规范：官方文档提醒，如果自定义了某个 skill，应改名保存，否则后续 `skills add` 更新时可能被覆盖。项目自定义 skill 放在仓库根目录的 `.skills/` 或 `.agent/skills/` 下，每个目录包含大小写固定的 `SKILL.md`。团队把 Perfetto SQL 模板、R8 审计流程、启动回归脚本放进自定义 skill 时，应使用内部名称，并记录来源和版本。
 
-性能工程里较相关的官方 skill 包括三类：Perfetto SQL 把自然语言问题转换成查询并对本地 trace 执行；Testing setup 生成测试策略和基础结构；R8 auditing 检查压缩配置及相关性能问题。安装或升级后应检查 `SKILL.md`、附带脚本和资源，再允许 agent 执行。当前 CLI 文档只描述“更新到最新版”，没有提供 skill 版本固定参数；需要可重复运行时，把已审核内容的提交或归档留在实验记录中。skill 输出仍要经过 trace 表结构、字段单位、编译模式和设备条件复核。[已验证: Android Developers Blog, 2026-05-19][已验证: 官方文档, developer.android.com/tools/agents/android-skills]
+性能工程里较相关的官方 skill 包括三类：Perfetto SQL 把自然语言问题转换成查询并对本地 trace 执行；Testing setup 生成测试策略和基础结构；R8 auditing 检查压缩配置及相关性能问题。安装或升级后应检查 `SKILL.md`、附带脚本和资源，再允许 agent 执行。当前 CLI 文档只描述“更新到最新版”，没有提供 skill 版本固定参数；需要可重复运行时，把已审核内容的提交或归档留在实验记录中。skill 输出仍要经过 trace 表结构、字段单位、编译模式和设备条件复核。
 
 ## 与 APA / Perfetto / Macrobenchmark 的分工
 
@@ -312,7 +271,7 @@ android layout --pretty --output="$PERF_OUT_DIR/layout-after.json"
 
 ## 隐私与遥测边界
 
-Android CLI 官方文档写明会收集基础使用数据，包括 `android` 命令和子命令调用、非位置参数或选项名、固定枚举类系统选项值，以及经过匿名化处理的堆栈和异常消息。文档同时写明不会收集命令响应，也不会收集用户创建的输入或外部标识符，例如 Maven 坐标、文件路径、自定义项目名等参数值。[已验证: 官方文档, developer.android.com/tools/agents/android-cli]
+Android CLI 官方文档写明会收集基础使用数据，包括 `android` 命令和子命令调用、非位置参数或选项名、固定枚举类系统选项值，以及经过匿名化处理的堆栈和异常消息。文档同时写明不会收集命令响应，也不会收集用户创建的输入或外部标识符，例如 Maven 坐标、文件路径、自定义项目名等参数值。
 
 企业内网使用时，报告里应单独记录三类内容：
 

@@ -49,50 +49,11 @@ android17_review_notes: "2026-07-30：补齐 AGP 9.3 standalone analyzer task、
 
 # 14.20 R8 Configuration Analyzer 与 keep 规则体积归因
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 R8 Configuration Analyzer 解决的问题
-说明它面向的是 keep 规则过宽、默认 AGP 规则、consumer rules 与 App 自定义规则叠加后造成的优化空间损失；区别于 APK Analyzer 的“结果体积查看”。
-
-### 🔹 输入材料与报告产物
-梳理 standalone Gradle task、完整 R8 构建、旧 AGP 手动报告三条路径，以及 impactful、subsumed、unused、identical rules 和历史对比文件。
-
-### 🔹 keep 规则影响分级
-按“阻止 shrinking / obfuscation / optimization / attribute pruning”的影响拆分规则代价，说明 `allowshrinking`、`allowobfuscation`、`allowoptimization` 的使用边界。
-
-### 🔹 典型高风险规则模式
-覆盖包级 `-keep class ** { *; }`、反射框架兜底规则、序列化字段保留、JNI 入口、ServiceLoader、注解与泛型签名等场景，给出排查顺序。
-
-### 🔹 与 R8 full mode 迁移的配合
-说明 AGP 8.0+ full mode 下 analyzer 如何帮助定位兼容问题，同时避免把 full mode 关闭当作长期方案。
-
-### 🔹 CI 与回归治理
-给出基线包、候选包、规则差异、dex size、mapping / seeds / usage 文件的归档方式，定义“规则变宽”的评审门槛。
-
-### 🔹 与 APK Analyzer / apkanalyzer 的边界
-APK Analyzer 看最终 APK 组成，R8 Configuration Analyzer 看规则为什么阻止优化；两者在体积排查中应按先结果、后原因的顺序配合。
-
-## 扩展
-
-### 🔸 反射与代码生成框架的 keep 规则模板
-后续可整理 Gson、Moshi、Jackson、Room、Hilt、Retrofit、JNI 注册和插件化框架的最小规则模板。
-
-### 🔸 R8 Analyzer 与 AI agent 辅助评审
-官方 android/skills 中已有 r8-analyzer skill，可作为规则审查和报告摘要的工具链参考，但需要保留人工复核环节。
-
-### 🔸 Android 17 平台边界
-R8 与 Configuration Analyzer 运行在构建主机。Android 17 / API 37 决定编译和实机回归使用的平台库与运行时行为；`android17-6.18-2026-06_r6` 不参与 keep rule 合并和评分。
-
-<!-- outline-end -->
-
 ## 为什么需要单独看 R8 Configuration Analyzer
 
 APK 体积排查通常从 12.1 节的 APK Analyzer 开始：先看 `classes.dex`、`resources.arsc`、`res/`、`lib/` 哪一块在增长，再判断该动 R8、资源、图片还是 native 库。这个入口能回答“结果变大在哪里”，但回答不了“哪条 keep 规则让 R8 放弃了哪些优化”。
 
 R8 Configuration Analyzer 补的是后一半。它把最终合并后的 R8 配置映射到类、字段和方法，给出 shrinking、optimization、obfuscation 三类分数，并列出影响最大的 keep 规则和被覆盖的规则。体积治理到 keep 规则这一层时，它比肉眼读 `proguard-rules.pro` 更可靠，因为最终生效的规则还包括默认 AGP 规则、App 自定义规则、各个 AAR 传进来的 consumer rules，以及部分工具生成的规则。
-
-[已验证: 官方文档, developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer]
 
 Analyzer 的 score 与 rule impact 统计的是哪些类、字段、方法仍允许被处理，不会计算每条规则对应多少 DEX 字节，也不会预测启动耗时变化。独立分析任务甚至不生成 APK 或 AAB。体积归因要把 analyzer 报告与同一次完整构建的 APK Analyzer、mapping 和 benchmark 结果配对。
 
@@ -100,7 +61,7 @@ Analyzer 的 score 与 rule impact 统计的是哪些类、字段、方法仍允
 
 R8 和 Configuration Analyzer 运行在构建主机，发布周期独立于 Android 平台。`android-17.0.0_r1` 不包含这个 AGP 分析页面，`android17-6.18-2026-06_r6` 也不参与 keep rule 合并、whole-program analysis 或 score 计算。
 
-Android 17 / API 37 在本章有两个作用：
+Android 17 / API 37 在这里有两个作用：
 
 - R8 以 API 37 的 `android.jar` 作为 platform library 之一，结合项目的 `compileSdk`、`minSdk`、程序类和依赖建立分析图；
 - 优化后的 release artifact 要在 Android 17 实机或等价构建上覆盖反射、JNI、序列化、组件启动和动态加载路径。
@@ -109,7 +70,7 @@ Android 17 / API 37 在本章有两个作用：
 
 ## 三条报告生成路径
 
-Configuration Analyzer 的最低要求是 R8 9.3.7-dev。AGP 9.3.0-alpha05 开始预置满足要求的 R8；当前官方工作流按 AGP 9.3.0 及以上描述。AGP 版本较旧时，系统属性本身不会升级 R8，仍要按 R8 官方说明替换 AGP 内置版本。[已验证: 官方文档, developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer；R8 README]
+Configuration Analyzer 的最低要求是 R8 9.3.7-dev。AGP 9.3.0-alpha05 开始预置满足要求的 R8；当前官方工作流按 AGP 9.3.0 及以上描述。AGP 版本较旧时，系统属性本身不会升级 R8，仍要按 R8 官方说明替换 AGP 内置版本。
 
 AGP 9.3.0 及以上提供独立任务，适合本地迭代 keep rule：
 
@@ -158,8 +119,6 @@ android {
 
 ## 报告里哪些字段该看
 
-[已验证: 官方文档, developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer]
-
 报告首页的三类分数衡量“仍允许 R8 处理的代码占比”，不能当作已经获得的优化收益，也不能跨 R8 版本直接设绝对排名。
 
 | 指标 | 它衡量什么 | 分数下降时先看哪里 |
@@ -195,8 +154,6 @@ unused、identical 和 subsumed 都描述当前 variant 的配置关系。它们
 
 ## keep 规则的代价分级
 
-[已验证: 官方文档, developer.android.com/blog/posts/configure-and-troubleshoot-r8-keep-rules；developer.android.com/topic/performance/app-optimization/keep-rule-examples]
-
 keep 规则的风险不只体现在“删不删”。同一条规则可能同时影响四件事：是否允许删除、是否允许重命名、是否允许优化、是否保留 class file attribute。规则越宽，R8 能处理的空间越小。
 
 | 规则影响 | 常见触发方式 | 典型后果 | 修正方向 |
@@ -231,8 +188,6 @@ keep 规则的风险不只体现在“删不删”。同一条规则可能同时
 
 ## 高风险规则的排查顺序
 
-[已验证: 官方文档, developer.android.com/topic/performance/app-optimization/keep-rule-examples]
-
 规则排查不要从“删规则”开始。更稳的顺序是：先根据 APK Analyzer 或 dex size diff 找增长包，再用 Configuration Analyzer 找规则影响范围，随后回到代码确认运行时入口。
 
 1. **包级兜底规则**：优先处理 `-keep class ** { *; }`、`-keep class com.company.** { *; }`、`-keep class * { *; }`。这类规则会同时压低三类分数，常见来源是迁移 R8 full mode 时的临时兜底。
@@ -246,8 +201,6 @@ keep 规则的风险不只体现在“删不删”。同一条规则可能同时
 
 ## 与 R8 full mode 迁移的配合
 
-[已验证: 官方文档, developer.android.com/topic/performance/app-optimization/full-mode；developer.android.com/agents/skills/performance/r8-analyzer/references/CONFIGURATION]
-
 R8 full mode 从 AGP 8.0 起默认启用。它会做更积极的类合并、方法内联、属性裁剪和访问级别调整。迁移失败时，常见补救动作是往 `proguard-rules.pro` 里加宽规则，甚至在 `gradle.properties` 里保留 `android.enableR8.fullMode=false`。这能让崩溃暂时消失，但会把优化空间长期锁死。
 
 Configuration Analyzer 适合放在 full mode 迁移后的第二轮：第一轮先让 release 包稳定跑完 smoke test，第二轮再看哪些兜底规则影响最大。报告里影响最大的规则，往往就是迁移期间为了“先过”加进去的规则。处理方式是把运行时契约拆成可验证的单元：
@@ -260,8 +213,6 @@ Configuration Analyzer 适合放在 full mode 迁移后的第二轮：第一轮�
 如果必须临时关闭 full mode，要把它当作定位开关，并给回滚设截止时间。长期方案是用 analyzer 找出压低分数的兜底规则，再用 release 回归覆盖序列化、登录、支付、推送、深链、插件加载和 JNI 路径。
 
 ## CI 与回归治理
-
-[已验证: 官方文档, developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer；developer.android.com/agents/skills/performance/r8-analyzer/references/CONFIGURATION-ANALYZER]
 
 R8 Configuration Analyzer 更适合做“趋势门禁”，不适合把某个绝对分数当全项目通用红线。不同 App 的反射、动态化和 SDK 结构差异很大，同样 80% 的 optimization score，在一个纯 Compose App 和一个插件化 App 里含义不同。
 
@@ -290,11 +241,9 @@ standalone analyzer task 不生成 APK、AAB、mapping、seeds 或 usage；表�
 - dex size 增长和 analyzer 分数下降同时出现，且增长集中在同一个业务包或 SDK 包。
 - 新版 SDK 带入 consumer rules 后，subsumed rules 数量明显增加。
 
-官方 r8-analyzer skill 还提供了一条 agent 化路径：检查 Gradle 配置和 R8 版本，R8 9.3.7-dev 及以上走定量分析，旧版本走启发式规则审查。它适合做报告摘要和初筛，但不能替代人工判断。keep 规则背后是运行时契约，agent 能指出“这条规则影响大”，最终仍要由工程师确认反射、JNI、序列化和插件化路径是否被覆盖。[已验证: GitHub android/skills r8-analyzer, 2026-05-19]
+官方 r8-analyzer skill 还提供了一条 agent 化路径：检查 Gradle 配置和 R8 版本，R8 9.3.7-dev 及以上走定量分析，旧版本走启发式规则审查。它适合做报告摘要和初筛，但不能替代人工判断。keep 规则背后是运行时契约，agent 能指出“这条规则影响大”，最终仍要由工程师确认反射、JNI、序列化和插件化路径是否被覆盖。
 
 ## 与 APK Analyzer / apkanalyzer 的边界
-
-[已验证: 官方文档, developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer；详见 12.1 节]
 
 体积排查的顺序建议固定下来：APK Analyzer 或 `apkanalyzer` 看结果，R8 Configuration Analyzer 看原因。
 
