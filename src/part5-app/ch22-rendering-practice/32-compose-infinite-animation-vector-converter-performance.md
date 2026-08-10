@@ -30,69 +30,18 @@ sources:
 
 # 22.32 Compose 无限动画与 VectorConverter 性能优化
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 rememberInfiniteTransition 的性能特征
-- InfiniteTransition 与 Transition 的架构差异
-- rememberInfiniteTransition 的帧驱动机制：基于 Choreographer 的 vsync 回调
-- 无限动画对主线程帧预算的持续占用
-- 多个 infiniteAnimable 并行运行时的 CPU 开销累积
-
-### 🔹 InfiniteAnimation 的底层调度
-- MonotonicFrameClock 与 Choreographer ANIMATION 阶段的协作
-- InfiniteTransition.run()、LaunchedEffect 与 withInfiniteAnimationFrameNanos() 的帧循环
-- 子动画注册/移除的 DisposableEffect 链路，以及窗口 ON_STOP 时的帧时钟暂停边界
-- Compose 1.11.4 中 MotionDurationScale 与 preferredFrameRate 的行为边界
-
-### 🔹 TwoWayConverter 与 Animated Vector 性能
-- AnimatedImageVector 在 Compose 中的资源加载路径
-- TwoWayConverter：业务值与 AnimationVector 的双向映射
-- 自定义 convertFromVector() 与对象分配的每帧热点
-- 批量 Animated Vector Painter/动画状态对列表场景的影响
-
-### 🔹 无限动画的性能优化策略
-- 使用 graphicsLayer 替代 Modifier.offset 进行变换
-- alpha 动画的合成层策略与 GPU 开销
-- 帧率偏好与手动降频的适用边界
-- 用显式可见性状态移出组合，而不是依赖透明或遮挡自动暂停
-
-### 🔹 场景案例
-- 加载指示器（Loading Spinner）的性能优化
-- 呼吸灯/脉冲动画的 GPU 合成层复用
-- 声纹/波形动画的 Canvas 绘制优化
-- 进度条动画的帧节流策略
-
-### 🔹 动画性能诊断工具
-- Compose Compiler Metrics 中的稳定性与可跳过性检查
-- Layout Inspector 的动画录制与回放分析
-- Perfetto 中 Compose 动画帧的 trace 标记
-- FrameTimeline、JankStats 与 Macrobenchmark 帧指标
-
-## 扩展
-
-### 🔸 Compose 动画与 ViewPropertyAnimator 的对比
-- 声明式 vs 命令式动画的性能差异
-- 混合使用场景下的最佳实践
-
-### 🔸 Android 17 Compose 动画新特性
-- Android 17 系统基线与应用侧 Compose 版本解耦
-- Compose 1.11.4 Animation Core / UI 行为的版本锚点
-
-<!-- outline-end -->
-
 `rememberInfiniteTransition()` 适合表达“进入组合后持续运行，离开组合后停止”的动画。它没有脱离 Compose 帧时钟，也不会为每个子动画申请一条独立 VSync 回调。性能问题通常来自三个位置：仍在组合中的动画数量、动画值被读取的阶段，以及每帧插值、对象创建和绘制的工作量。
 
-本节的验证基线为：
+验证基线如下：
 
 - Android 平台：Android 17、API 37、`android-17.0.0_r1`
 - 内核：`android17-6.18-2026-06_r6`
 - Compose：Compose BOM `2026.06.01`，Animation Core、Animation Graphics 与 UI `1.11.4`
 - AndroidX 源码：提交 `854220f44ea8ea80fee824a6c5a045f39bede289`
 
-Compose 随应用依赖发布，版本节奏与 Android 平台、内核相互独立。Android 17 与内核标签限定本知识库的系统环境；`InfiniteTransition`、`TwoWayConverter` 和 `AnimatedImageVector` 的行为仍应以应用解析到的 Compose 版本为准。
+Compose 随应用依赖发布，其发布节奏与 Android 平台、内核相互独立。Android 17 与内核标签限定系统环境；`InfiniteTransition`、`TwoWayConverter` 和 `AnimatedImageVector` 的行为仍应以应用解析到的 Compose 版本为准。
 
-本节已把任务创建时的旧术语收敛到当前源码名称：当前源码中没有 `AnimationClockakov`、`InfiniteTransition.runInfiniteLoop()`、`DeratingStrategy` 或 `basedOnState` 这些 API。对应实现是 `MonotonicFrameClock`、`InfiniteTransition.run()`、组合生命周期与应用显式可见性状态。本节也会分开说明 `TwoWayConverter` 和 Animated Vector XML，两者属于不同链路。
+当前源码中没有 `AnimationClockakov`、`InfiniteTransition.runInfiniteLoop()`、`DeratingStrategy` 或 `basedOnState` 这些 API。对应实现是 `MonotonicFrameClock`、`InfiniteTransition.run()`、组合生命周期与应用显式可见性状态。`TwoWayConverter` 和 Animated Vector XML 属于不同链路，需要分开分析。
 
 ## 1. 选择与生命周期相符的动画 API
 
@@ -518,7 +467,7 @@ Compose UI 1.11.4 提供 `Modifier.preferredFrameRate()`。它表达内容偏好
 
 ## 10. 从 Compose 动画到屏幕显示
 
-纯 Compose 页面没有创建独立 Surface 时，仍属于标准 App Window 渲染类型。结合本知识库的 rendering_pipelines 基线，可以把一次动画帧分为四段：
+纯 Compose 页面没有创建独立 Surface 时，仍属于标准 App Window 渲染类型。按标准渲染管线，可以把一次动画帧分为四段：
 
 | 区段 | 主要工作 | 可观察证据 |
 | --- | --- | --- |
@@ -531,7 +480,7 @@ Compose UI 1.11.4 提供 `Modifier.preferredFrameRate()`。它表达内容偏好
 
 Android 17 的 `Choreographer` 源码说明动画回调位于 ANIMATION 阶段，随后才是 TRAVERSAL 与 COMMIT。Compose 动画计算过长会压缩同一帧后续布局、绘制记录与提交时间；RenderThread、GPU 或 SurfaceFlinger 也可能在主线程及时完成时造成展示延迟。
 
-内核标签 `android17-6.18-2026-06_r6` 用于统一调度、频率、内存和驱动分析基线。本节没有把 Compose 1.11.4 的库变化归因于该内核版本。
+内核标签 `android17-6.18-2026-06_r6` 用于统一调度、频率、内存和驱动分析基线。Compose 1.11.4 的库变化不能归因于该内核版本。
 
 ## 11. 诊断工具各自回答什么
 
@@ -561,7 +510,7 @@ Android 12 及以上可使用 FrameTimeline。不要依赖不存在的公开 `Ch
 
 JankStats 适合现场收集帧卡顿和界面状态标签；它帮助回答哪些用户场景发生卡顿，不提供完整的系统线程因果链。Macrobenchmark 的 `FrameTimingMetric` 适合在固定用户流程、构建类型、设备状态和迭代次数下比较 `frameDurationCpuMs` 与 `frameOverrunMs` 分布。定位原因时仍应打开对应 Perfetto trace。
 
-## 12. 一套可复现的 Review 顺序
+## 12. 一套可复现的检查顺序
 
 对无限动画页面进行性能审阅时，可以按以下顺序执行：
 

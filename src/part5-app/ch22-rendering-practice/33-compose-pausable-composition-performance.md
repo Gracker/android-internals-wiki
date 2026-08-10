@@ -33,52 +33,6 @@ last_review_finalize_run_id: "20260808-100504-aa8b541a"
 
 # 22.33 Compose PausableComposition 性能机制与 Choreographer 预算边界
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 PausableComposition 的起源与版本演进
-- 公开 API 从 Compose Runtime `1.8.0-alpha02` 开始出现，稳定 API 标记为 `1.8.0`
-- “默认启用”只限定在 Foundation Lazy 预取路径；`1.10.6` 曾因稳定性改为默认关闭，`1.11.4` 基线源码恢复为 true
-- 从“单次组合必须完成”到“子组合可在合法边界暂停/恢复”的范式转变
-
-### 🔹 核心控制流：setPausableContent → resume() → shouldPause → apply()
-- `setPausableContent()` 不立即组合 UI，返回 `PausedComposition` 控制器对象
-- `resume()` 执行分块组合工作，内部通过 `shouldPause` lambda 在合法边界请求暂停
-- `shouldPause=true` 不是线程抢占，也不保证当前函数立即停止
-- `isComplete=true` 后仍需紧邻检查，再调用公开 `apply()` 提交 UI 变更
-
-### 🔹 shouldPause 回调与 Android 17 FrameData 边界
-- Foundation `1.11.4` 预取调度未直接读取 `Choreographer.FrameData`
-- Android 17 deadline 访问链是 `FrameData.getPreferredFrameTimeline().getDeadlineNanos()`，且仅在 `VsyncCallback#onVsync()` 期间有效
-- 当前 Compose 预算使用 `View.drawingTime`、最近 `FrameCallback#doFrame()` 帧起点和刷新周期估算下一帧空档；标题中的“预算边界”不等同于读取平台 FrameTimeline deadline
-
-### 🔹 LazyList 预取系统集成
-- PausableComposition 与 LazyColumn/LazyRow 预取路径深度集成
-- 帧间消息中增量组合即将滚动到可见区域的列表项
-- Compose 1.9 CacheWindow API 决定预取/保留范围，PausableComposition 决定组合阶段调度
-
-### 🔹 apply 提交机制
-- 内部 `applyChanges()` 回放缓冲命令、分发生命周期回调；公开入口是 `PausedComposition.apply()`
-- 未完成的 UI 树不会被渲染
-- SideEffect 排队与 flush 时机需要纳入 apply 成本
-
-### 🔹 Composer checkpoint 与可暂停位置
-- 暂停点属于 Composer、SlotTable、restart scope 与编译器生成代码，不是 LayoutNode 树 checkpoint
-- 不是协程的 CancellationException 机制，而是 Compose Runtime 内部状态机
-- 大型不可恢复边界、measure、draw、I/O、图片解码和 Binder 调用不会被 PausableComposition 自动切片
-
-## 扩展
-
-### 🔸 与 Compose 版本对比的性能数据
-- 使用 Macrobenchmark 与 Perfetto 对比 Foundation 1.10.5、1.10.6、1.11.4 的预取行为
-- 不虚构固定帧率提升比例，按 compose/apply/measure/FrameTimeline 分阶段归因
-
-### 🔸 CacheWindow API 与 PausableComposition 的协同
-- Compose 1.9 CacheWindow 对预取与保留窗口的精确控制
-- 与 LazyList prefetch 机制的交互需同时评估 CPU、内存和命中率
-
-<!-- outline-end -->
-
 > **源码锚点**
 >
 > - 平台：Android 17 / API 37 / `android-17.0.0_r1`
@@ -86,7 +40,7 @@ last_review_finalize_run_id: "20260808-100504-aa8b541a"
 > - Compose：Runtime、Foundation 与 UI `1.11.4`
 > - AndroidX 源码快照：`854220f44ea8ea80fee824a6c5a045f39bede289`
 >
-> `PausableComposition` 的关键逻辑位于 Compose Runtime 与 Foundation，内核不参与暂停点选择。这里保留内核锚点是为了与全书基线一致；本节的直接证据来自 Android 17 `Choreographer` 和 Compose `1.11.4` 源码。本文没有声称 Compose `1.11.4` 读取平台 FrameTimeline deadline，也没有给出未经实测的帧率提升比例。
+> `PausableComposition` 的关键逻辑位于 Compose Runtime 与 Foundation，内核不参与暂停点选择。保留内核锚点是为了统一系统基线；直接证据来自 Android 17 `Choreographer` 和 Compose `1.11.4` 源码。Compose `1.11.4` 没有读取平台 FrameTimeline deadline，这里也不给出未经实测的帧率提升比例。
 
 ## 1. 先校正三个容易混淆的结论
 
@@ -112,7 +66,7 @@ Compose Runtime 提供暂停组合能力，Foundation 决定 Lazy 布局预取�
 | `1.10.0-alpha05` | 发布说明记录为默认启用 |
 | `1.10.0` 至 `1.10.5` | 对应源码中的默认值为 `true` |
 | `1.10.6` | 因稳定性问题改为默认关闭 |
-| `1.11.0` 至本节基线 `1.11.4` | 对应源码中的默认值恢复为 `true` |
+| `1.11.0` 至当前基线 `1.11.4` | 对应源码中的默认值恢复为 `true` |
 
 所以，“Compose 1.10 把所有 Composition 改成可暂停”这个说法不成立。准确表述是：Foundation 的 Lazy 预取路径从 1.10 系列开始分阶段启用 PausableComposition；普通根 Composition、非预取子组合，以及应用自己的 `@Composable` 调用不会因此自动获得跨帧调度。
 
@@ -127,7 +81,7 @@ Android 17 提供 `Choreographer.FrameData` 和 `FrameTimeline.getDeadlineNanos(
 3. 取两者的较大值，再加缓存的显示刷新周期；
 4. 用估算的下一帧起点减去 `System.nanoTime()`，得到当前可用时间。
 
-因此，本节标题里的 “Deadline 协作” 应理解为 Compose 主动减少预取工作对下一帧的干扰，不代表当前实现读取了 Frame Timeline 的平台 deadline。
+这里的“Deadline 协作”是指 Compose 主动减少预取工作对下一帧的干扰，不代表当前实现读取了 Frame Timeline 的平台 deadline。
 
 ## 2. PausableComposition 解决了哪一段工作
 
@@ -490,7 +444,7 @@ Macrobenchmark 的 `FrameTimingMetric` 可以给出帧数据，但还要保存 P
 | --- | --- |
 | Foundation 1.10.5 | 观察 1.10 系列默认启用时的行为 |
 | Foundation 1.10.6 | 观察同系列默认关闭后的差异 |
-| Foundation 1.11.4 | 本节稳定基线，源码开关为 true |
+| Foundation 1.11.4 | 当前稳定基线，源码开关为 true |
 
 如果项目直接修改 `ComposeFoundationFlags`，要在报告里记录该操作。这个字段属于 Foundation 开关，不能当作长期业务 API；测试结论也不能脱离具体版本外推。
 
@@ -539,7 +493,7 @@ Macrobenchmark 的 `FrameTimingMetric` 可以给出帧数据，但还要保存 P
 
 - [`LazyLayoutPrefetchState.kt`](https://cs.android.com/androidx/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289:compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutPrefetchState.kt)：compose、apply、nested prefetch 与 measure 的阶段控制。
 - [`PrefetchScheduler.android.kt`](https://cs.android.com/androidx/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289:compose/foundation/foundation/src/androidMain/kotlin/androidx/compose/foundation/lazy/layout/PrefetchScheduler.android.kt)：Android 主线程调度与可用时间估算。
-- [`ComposeFoundationFlags.kt`](https://cs.android.com/androidx/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289:compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/ComposeFoundationFlags.kt)：本节基线的预取开关默认值。
+- [`ComposeFoundationFlags.kt`](https://cs.android.com/androidx/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289:compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/ComposeFoundationFlags.kt)：当前基线的预取开关默认值。
 - [`SubcomposeLayout.kt`](https://cs.android.com/androidx/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289:compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/SubcomposeLayout.kt)：paused precomposition 与 SubcomposeLayout 的接口适配。
 - [LazyLayoutCacheWindow API Reference](https://developer.android.com/reference/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutCacheWindow)。
 - [Compose Foundation 发布说明](https://developer.android.com/jetpack/androidx/releases/compose-foundation)。
@@ -547,7 +501,7 @@ Macrobenchmark 的 `FrameTimingMetric` 可以给出帧数据，但还要保存 P
 ### Android 17
 
 - [`Choreographer.java`（`android-17.0.0_r1`）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java)：`FrameData`、preferred `FrameTimeline`、deadline 与回调有效期。
-- [Android common kernel（`android17-6.18-2026-06_r6`）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)：全书内核基线；本节没有依赖其调度接口。
+- [Android common kernel（`android17-6.18-2026-06_r6`）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)：统一的内核基线；相关机制没有依赖其调度接口。
 
 ## 小结
 

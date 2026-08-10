@@ -33,51 +33,6 @@ confidence: high
 
 # 22.34 Compose SubcomposeLayout 性能深度：层级测量、Intrinsic 与重组陷阱
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 SubcomposeLayout 的设计目标与核心机制
-- 动态组合子元素：根据可用空间决定显示哪些子组件
-- 典型使用场景：LazyColumn/LazyRow 底层实现、条件布局
-- SubcomposeLayout 与常规 Layout 的测量流程差异
-
-### 🔹 测量阶段性能开销
-- SubcomposeLayout 不会默认执行 “Intrinsic + 实际测量” 双趟；成本来自实际请求的 slot、子树组合和测量
-- 父级重组、measure 阶段状态读取与 content lambda 身份变化可能扩大 remeasure/recompose 范围
-- 多层嵌套应按 pass、slot 数和子树成本实测，不能直接推导为指数复杂度
-
-### 🔹 Intrinsic 查询的性能陷阱
-- SubcomposeLayout 使用 NoIntrinsics 策略，IntrinsicSize 查询传播到它时可能直接抛出异常
-- Intrinsic 查询只沿参与查询的布局关系传播，不等价于无条件全树重新测量
-- Compose UI 1.11.4 没有公开的 `@IntrinsicMeasurer` 注解；普通 Layout 通过 MeasurePolicy intrinsic 方法处理
-
-### 🔹 Subcomposition 与 Recomposition 的交互
-- subcompose() 调用的时机与频率
-- 子 composition scope 与父 composition scope 的依赖追踪
-- 重组传播在 SubcomposeLayout 边界的行为
-
-### 🔹 性能诊断方法
-- Compose Compiler Metrics 可解释可跳过性与稳定性，但不提供 SubcomposeLayout 测量次数
-- Layout Inspector 的 composition/recomposition/skip 计数不能替代 measure 次数或耗时
-- Perfetto 需结合 Composition Tracing、Macrobenchmark 与自定义计数确认实际 subcompose/measure 工作
-
-### 🔹 替代方案与迁移策略
-- BoxWithConstraints 本身基于 SubcomposeLayout；只有在约束决定内容结构时才应保留
-- 基于固定尺寸或 Modifier 链的静态布局优化
-- LookaheadScope 自 Compose UI 1.5.0 起提供，适用于目标布局/过渡，不是通用替代方案
-
-## 扩展
-
-### 🔸 LazyList 内部对 SubcomposeLayout 的使用
-- LazyList 实现中 SubcomposeLayout 的特殊优化
-- item key 对 subcomposition 缓存的影响
-
-### 🔸 Android 17 上 Compose 的布局性能改进
-- SubcomposeLayout 行为由 AndroidX Compose 依赖版本决定，Android 17 framework 不提供专门加速路径
-- Android 17 FrameTimeline 可定位帧 deadline，但 slot 调度仍需 Compose trace 与 measure 证据
-
-<!-- outline-end -->
-
 > **源码锚点**
 >
 > - 平台：Android 17 / API 37 / `android-17.0.0_r1`
@@ -85,9 +40,9 @@ confidence: high
 > - Compose：UI、Foundation 与 Runtime `1.11.4`
 > - AndroidX 源码快照：`854220f44ea8ea80fee824a6c5a045f39bede289`
 >
-> `SubcomposeLayout` 位于 Compose UI 的 `commonMain`，测量期间的子组合、slot 复用和 intrinsic 限制都由 AndroidX 实现。Android Framework 与内核不提供专门的 SubcomposeLayout 加速路径。本节保留平台和内核锚点，用于说明它进入 Android 17 标准渲染路径之后的性能边界。
+> `SubcomposeLayout` 位于 Compose UI 的 `commonMain`，测量期间的子组合、slot 复用和 intrinsic 限制都由 AndroidX 实现。Android Framework 与内核不提供专门的 SubcomposeLayout 加速路径。平台和内核锚点用于说明它进入 Android 17 标准渲染路径之后的性能边界。
 
-## 1. 先修正提纲中的关键误差
+## 1. 先校正常见误差
 
 ### 1.1 SubcomposeLayout 不会自动执行 “Intrinsic + 实际测量”
 
@@ -311,13 +266,13 @@ Intrinsic 查询只沿参与该查询的布局关系传播，也不等价于全�
 
 `SubcomposeLayout` 自身未被跳过时，会通过 `SideEffect` 调用 `state.forceRecomposeChildren()`。当前实现为非 reusable-only 的子节点设置 `forceRecompose`，并请求 remeasure；位于 LookaheadScope 时请求 lookahead remeasure。
 
-这意味着把频繁变化且与布局无关的参数捕获进父 SubcomposeLayout，会扩大工作范围。参数稳定性仍有价值，但不能只看 Compiler Metrics 的 stable/unstable 标签判断耗时。
+把频繁变化且与布局无关的参数捕获进父 SubcomposeLayout，会扩大工作范围。参数稳定性仍有价值，但不能只看 Compiler Metrics 的 stable/unstable 标签判断耗时。
 
 ### 7.4 content lambda 身份
 
 源码用引用比较判断 slot content 是否变化。LazyLayout 通过 `LazyLayoutItemContentFactory` 按 key 缓存 content lambda，减少同一 item 因 lambda 实例变化产生的组合。
 
-自定义布局要避免在 measure policy 内构造会频繁改变业务身份的包装对象。更重要的是保持 slotId、输入状态和内容结构稳定；不应为了引用稳定强行缓存已经过期的数据。
+自定义布局要避免在 measure policy 内构造会频繁改变业务身份的包装对象，并保持 slotId、输入状态和内容结构稳定；不应为了引用稳定强行缓存已经过期的数据。
 
 ## 8. LazyColumn 怎样建立在 SubcomposeLayout 上
 
@@ -398,7 +353,7 @@ Inspector 本身会增加调试开销。性能结论应在 non-debuggable、可�
 
 启用 Compose composition tracing 后，Perfetto 可以显示可组合函数名称与重组 slice。SubcomposeLayout 的子内容可能显示为与父容器分开的 composition 工作；Lazy 还会出现预取相关 slice。
 
-本节基线的 Foundation 源码包含这些 Lazy 预取名称：
+当前基线的 Foundation 源码包含这些 Lazy 预取名称：
 
 - `compose:lazy:prefetch:compose`
 - `compose:lazy:prefetch:apply`
@@ -461,13 +416,13 @@ Android 17 的 FrameTimeline 能帮助确认 App SurfaceFrame 是否错过 deadl
 
 ## 14. 版本边界
 
-| Compose UI 版本 | 与本节相关的公开变化 |
+| Compose UI 版本 | 相关公开变化 |
 | --- | --- |
 | `1.0.0` | `SubcomposeLayout`、`SubcomposeLayoutState` 与 `precompose()` 已提供 |
 | `1.2.0` | 接受 `SubcomposeSlotReusePolicy` 的 State 构造函数加入 |
 | `1.5.0` | `LookaheadScope` 公开提供 |
 | `1.9.0` | `createPausedPrecomposition()` 加入 |
-| `1.11.4` | 本节稳定基线，包含 PausableComposition、Lookahead/approach 与当前 Lazy reuse 实现 |
+| `1.11.4` | 当前稳定基线，包含 PausableComposition、Lookahead/approach 与当前 Lazy reuse 实现 |
 
 这些能力由 Compose 依赖版本决定，不由设备 Android 版本单独决定。项目升级 Compose 后，应重新核对 release notes、目标 tag 源码和 trace 名称。
 
@@ -533,7 +488,7 @@ Android 17 的 FrameTimeline 能帮助确认 App SurfaceFrame 是否错过 deadl
 
 - [`Choreographer.java`（`android-17.0.0_r1`）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java)：应用帧起点、VSync 与 FrameTimeline。
 - [`ViewRootImpl.java`（`android-17.0.0_r1`）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)：窗口 traversal 与 HWUI 提交入口。
-- [Android common kernel（`android17-6.18-2026-06_r6`）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)：全书内核基线；本节没有直接依赖其 API。
+- [Android common kernel（`android17-6.18-2026-06_r6`）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)：统一的内核基线；相关机制没有直接依赖其 API。
 
 ## 小结
 
