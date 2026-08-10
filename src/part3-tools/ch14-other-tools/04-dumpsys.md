@@ -69,25 +69,6 @@ task2b_verifier_notes: "2026-07-09 Task2B Verifier: status finalized→ready-for
 
 # dumpsys 系列命令
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 dumpsys activity：查看 Activity 栈、进程信息、ANR 信息
-- 🔹 dumpsys meminfo：查看系统和进程内存使用
-- 🔹 dumpsys gfxinfo：查看帧渲染统计
-- 🔹 dumpsys window：查看窗口层级和焦点
-- 🔹 dumpsys batterystats：查看电池使用统计
-- 🔹 dumpsys SurfaceFlinger：查看 Layer 信息和合成状态
-
-### 扩展（可选深入）
-
-- 🔸 dumpsys package / dumpsys alarm / dumpsys jobscheduler
-- 🔸 自定义 Service 实现 dump 接口
-
-<!-- outline-end -->
-
 ## 为什么需要 dumpsys
 
 `dumpsys` 读取某个 Binder 服务在采集时刻愿意公开的内部状态。它适合回答“当前焦点在哪个窗口”“进程现在处于哪个 OOM 调整级别”“最近保留了哪些 HWUI 帧”等问题。Perfetto、Winscope 和 bugreport 负责补足时间顺序；一份文本快照无法证明事件先后。
@@ -114,7 +95,7 @@ adb shell dumpsys --priority CRITICAL
 
 从 `adb shell` 发起的命令通常具备平台 `DUMP` 权限。普通应用 UID、受限 user build、厂商服务的额外权限检查和 SELinux 策略仍可能裁剪或拒绝输出。脚本应保存 build fingerprint、命令行和采集时间，字段名称也不能视作 SDK 兼容承诺。
 
-本文的平台实现固定到 `android-17.0.0_r1`。涉及 `/proc` 记账的说明固定到 `android17-6.18-2026-06_r6`；厂商内核、HWC 与服务扩展要以设备对应分支复核。
+平台实现固定到 `android-17.0.0_r1`。涉及 `/proc` 记账的说明固定到 `android17-6.18-2026-06_r6`；厂商内核、HWC 与服务扩展要以设备对应分支复核。
 
 ## dumpsys activity：Activity 栈、进程与 ANR 信息
 
@@ -270,7 +251,7 @@ Android 17 的 [`FrameInfo.h`](https://android.googlesource.com/platform/framewo
 - `IssueDrawCommandsStart → FrameCompleted` 覆盖 RenderThread 发出绘制命令后的剩余工作。
 - `GpuCompleted` 是 GPU 完成边界可用时的时间点，和 `FrameCompleted` 口径不同。
 
-这些列能标出异常区间，方法级归因仍应回到 Perfetto 的 UI Thread、RenderThread、GPU、FrameTimeline、BufferQueue 和 fence 证据。你提供的 `rendering_pipelines` 系列也采用这条边界：App/HWUI、BLAST、SurfaceFlinger FrontEnd、CompositionEngine 与 HWC 要分层观察，单个 HWUI 行无法覆盖显示后半段。
+这些列能标出异常区间，方法级归因仍应回到 Perfetto 的 UI Thread、RenderThread、GPU、FrameTimeline、BufferQueue 和 fence 证据。App/HWUI、BLAST、SurfaceFlinger FrontEnd、CompositionEngine 与 HWC 要分层观察，单个 HWUI 行无法覆盖显示后半段。
 
 ## dumpsys cpuinfo：CPU 占用快速排查
 
@@ -419,7 +400,7 @@ HWC minidump 中的 CLIENT/DEVICE 等合成选择只代表该次采集附近的�
 
 `android-17.0.0_r1` 的 dumper map 包含 `--frontend`、`--list`、`--hwclayers`、`--latency`、`--frametimeline`、`--scheduler` 等入口，没有 `--all-layer`。厂商系统出现额外参数时，以设备输出和厂商源码为准。
 
-你指定的 `rendering_pipelines` 系列把 Android 17 显示后半段固定为 FrontEnd snapshot、CompositionEngine 与 AIDL Composer/HWC 三层。这里沿用同一模型：文本 dump 负责当前状态，Winscope 负责 transaction、Layer hierarchy、可见性和输入区域的跨帧变化，Perfetto 负责 FrameTimeline、scheduler、BufferQueue、fence 与合成耗时。
+Android 17 显示后半段可按 FrontEnd snapshot、CompositionEngine 与 AIDL Composer/HWC 三层观察：文本 dump 负责当前状态，Winscope 负责 transaction、Layer hierarchy、可见性和输入区域的跨帧变化，Perfetto 负责 FrameTimeline、scheduler、BufferQueue、fence 与合成耗时。
 
 ### FrontEnd 架构补充（源码级）
 
@@ -522,7 +503,7 @@ return true;
 4. 检查 App/HWUI、BLAST/BufferQueue、acquire fence、SF scheduler、CompositionEngine/HWC 和 present fence；
 5. 动态 hierarchy 或输入问题转 Winscope。
 
-这套顺序与 `rendering_pipelines` 的分层一致，避免把显示端异常全部压到 App RenderThread。
+这套顺序按显示通路分层，避免把显示端异常全部压到 App RenderThread。
 
 ## 进阶用法
 

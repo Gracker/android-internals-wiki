@@ -98,27 +98,9 @@ last_deepseek_cn_review_at: 2026-06-11
 
 # Android Studio Profiler
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Android Studio Profiler 概述：CPU、Memory、Network、Energy Profiler
-- 🔹 CPU Profiler：System Trace vs Method Trace vs Callstack Sample
-- 🔹 Memory Profiler：实时内存分配图、Heap Dump、Allocation Tracking
-- 🔹 各 Profiler 模式的性能开销与适用场景
-- 🔹 Profiler 与 Perfetto 的互补关系
-
-### 扩展（可选深入）
-
-- 🔸 Power Profiler（Android Studio Hedgehog+）
-- 🔸 使用 Profiler API 在代码中触发 profiling
-
-<!-- outline-end -->
-
 ## Profiler 解决什么问题
 
-本文把设备端语义固定到 Android 17 / API 37 / `android-17.0.0_r1`，Android Studio 的任务名称和操作入口则按 2026 年 7 月 29 日可用的官方文档核对。IDE 与平台分别演进：升级 Android Studio 不会改变旧 trace 已采集的数据，升级设备系统也不保证 IDE 自动支持新增数据源。
+设备端语义固定到 Android 17 / API 37 / `android-17.0.0_r1`，Android Studio 的任务名称和操作入口则按 2026 年 7 月 29 日可用的官方文档核对。IDE 与平台分别演进：升级 Android Studio 不会改变旧 trace 已采集的数据，升级设备系统也不保证 IDE 自动支持新增数据源。
 
 滑动卡顿、启动慢、内存增长和耗电异常只是现象。诊断时要回答更具体的问题：线程在运行还是等待，CPU 时间花在哪条调用路径，对象为何仍被引用，功耗峰值与哪段设备活动同时发生。Android Studio Profiler 把这些采集任务放进 IDE，并把时间轴、调用栈和源码跳转放在同一套交互里。
 
@@ -255,7 +237,7 @@ Android Studio 的优势是任务入口、App 筛选、源码跳转和较低的�
 3. 需要跨进程解释 Binder、SurfaceFlinger、调度或 GPU 完成事件，或需要 SQL 计算分位数和关键路径时，把 trace 导入 Perfetto UI。
 4. 若现有 trace 缺少所需数据源，修改 Perfetto 配置并重新录制。界面切换无法恢复未采集的事件。
 
-版本演进可作为理解旧 trace 的背景：Android 9 开始带入 Perfetto 服务基础设施，Android 10 把 Perfetto 作为平台级 tracing 工具并提供 heapprofd，Android 12 加入 FrameTimeline。本文当前平台结论固定到 Android 17 / API 37 / `android-17.0.0_r1`。
+版本演进可作为理解旧 trace 的背景：Android 9 开始带入 Perfetto 服务基础设施，Android 10 把 Perfetto 作为平台级 tracing 工具并提供 heapprofd，Android 12 加入 FrameTimeline。当前平台结论固定到 Android 17 / API 37 / `android-17.0.0_r1`。
 
 ## Power Profiler（Android Studio Hedgehog+）
 

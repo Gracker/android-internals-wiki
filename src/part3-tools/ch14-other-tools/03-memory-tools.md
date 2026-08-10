@@ -58,29 +58,11 @@ last_deepseek_cn_review_at: 2026-06-20
 
 # 内存分析工具
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 LeakCanary 原理与配置
-- 🔹 MAT（Memory Analyzer Tool）的使用方法
-- 🔹 heapprofd（Perfetto）Native 内存分析
-- 🔹 adb shell dumpsys meminfo 的详细解读
-- 🔹 showmap / procrank / libmeminfo 等内存查看工具
-
-### 扩展（可选深入）
-
-- 🔸 malloc debug / malloc hooks 的使用方法
-- 🔸 HWASAN / MTE 用于内存错误检测
-
-<!-- outline-end -->
-
 ## 先确定要测哪一种内存
 
 “应用内存上涨”只描述了现象。Java 对象、C/C++ 分配器、匿名 `mmap`、文件映射、线程栈、Graphic Buffer 和 zRAM 中的换出页，采集接口与归因方式都不同。选错工具时，报告可能很完整，结论却指向另一个内存域。
 
-本文按四类证据组织工具：
+工具按四类证据组织：
 
 | 证据 | 能回答的问题 | 主要工具 |
 | --- | --- | --- |
@@ -105,7 +87,7 @@ flowchart TD
 
 同一问题常要经过两层证据：记账工具确认“涨在哪里”，归因工具解释“由谁产生”。单次快照通常只能提出假设。
 
-本文的平台实现锚定 `android-17.0.0_r1`，涉及内核 `/proc`、dma-buf 与 MTE 的说明锚定 `android17-6.18-2026-06_r6`。较早版本只保留兼容边界。
+平台实现锚定 `android-17.0.0_r1`，涉及内核 `/proc`、dma-buf 与 MTE 的说明锚定 `android17-6.18-2026-06_r6`。较早版本只保留兼容边界。
 
 ## LeakCanary：发现应被回收的 Java 对象
 
