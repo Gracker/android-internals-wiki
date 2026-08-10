@@ -191,7 +191,7 @@ timestamp(n) ≈ intercept + slope × sequence(n)
 
 这里 `slope` 表示模型估计的周期，`intercept` 表示相位。实现先对时间值做缩放以降低大整数参与运算时的精度风险，最终再恢复纳秒尺度。拟合完成后还会检查各样本与模型之间的误差，超出 20% 容差的模型不会直接采用。
 
-单样本模式不会执行这组回归；它以最新有效 pulse 为锚点，并使用理想 period 预测。分析跟踪数据时，要区分样本较少和预测器失效。
+单样本模式不会执行这组回归；它以最新有效 pulse 为锚点，并使用理想 period 预测。分析 trace 时，要区分样本较少和预测器失效。
 
 ### 3.3 ARR 下的最小帧间隔
 
@@ -216,7 +216,7 @@ timestamp(n) ≈ intercept + slope × sequence(n)
 
 模式切换期间，`periodConfirmed()` 用 10% allowance 判断观测周期是否接近目标周期。若 HWC 直接给出 period，就比较该值与目标；否则比较相邻硬件 VSync 时间戳的距离。这里没有固定的 17～33ms 模式切换窗口。
 
-显示围栏可靠且功能启用时，它可以补充预测样本。若样本被拒、模式尚未确认或 fence 信息不足，Reactor 会请求更多硬件 VSync；进入周期过渡时还会临时忽略 present fence，避免把新旧模式交界处的时间戳写入错误模型。样本稳定后，可以关闭硬件 VSync 以减少持续中断。
+present fence 可靠且功能启用时，它可以补充预测样本。若样本被拒、模式尚未确认或 fence 信息不足，Reactor 会请求更多硬件 VSync；进入周期过渡时还会临时忽略 present fence，避免把新旧模式交界处的时间戳写入错误模型。样本稳定后，可以关闭硬件 VSync 以减少持续中断。
 
 这条控制逻辑可以解释两类 trace：
 
@@ -263,7 +263,7 @@ flowchart LR
     ET2 --> CH2["Choreographer#doFrame"]
 ```
 
-连续 VSync 与 one-shot request 在 EventThread 内有不同状态；`requestNextVsync()` 不会无限叠加已经待处理的请求。应用侧发生阻塞时，可沿 `Choreographer`、`DisplayEventReceiver`、EventThread connection 和 Dispatch registration 逐级确认。
+连续 VSync 与 one-shot request 在 EventThread 内有不同状态；`requestNextVsync()` 不会无限叠加已经待处理的请求。App 侧发生阻塞时，可沿 `Choreographer`、`DisplayEventReceiver`、EventThread connection 和 Dispatch registration 逐级确认。
 
 ### 6.2 SurfaceFlinger 请求合成帧
 

@@ -169,7 +169,7 @@ Android 17 的 `Changes` 包含：
 
 ### 3.2 为什么 layer 关系保存为 id
 
-`RequestedLayerState` 使用 `parentId`、`relativeParentId`、`layerIdToMirror`、`touchCropId` 等 id 表示跨 layer 关系，不再持有客户端 handle。这样可以避免状态对象因保存句柄而意外延长其生命周期。
+`RequestedLayerState` 使用 `parentId`、`relativeParentId`、`layerIdToMirror`、`touchCropId` 等 id 表示跨 layer 关系，不再持有客户端 handle。这样可以避免状态对象因保存 handle 而意外延长其生命周期。
 
 对应的引用关系由 `LayerLifecycleManager` 维护。这个区别很重要：
 
@@ -192,7 +192,7 @@ Android 17 的 `Changes` 包含：
 
 ## 4. `LayerLifecycleManager` 管理创建、更新和销毁
 
-`LayerLifecycleManager` 拥有 `RequestedLayerState` 集合，并维护 id 到状态及反向引用的映射。它不是线程安全类；Android 17 通过 SurfaceFlinger 主线程上下文保护其成员。只有事务入口的收集过程使用 `LocklessQueue`，整个 FrontEnd 并非无锁实现。
+`LayerLifecycleManager` 拥有 `RequestedLayerState` 集合，并维护 id 到状态及反向引用的映射。它不是线程安全类；Android 17 通过 SurfaceFlinger 主线程上下文保护其成员。只有 transaction 入口的收集过程使用 `LocklessQueue`，整个 FrontEnd 并非无锁实现。
 
 ### 4.1 新建 layer
 
@@ -207,14 +207,14 @@ Android 17 的 `Changes` 包含：
 
 ### 4.2 合并 transaction
 
-`applyTransactions()` 按 transaction 中的 `ResolvedComposerState` 找到目标 layer，然后调用 `RequestedLayerState::merge()`。本轮首次发生变化的 layer 会进入 `mChangedLayers`；各图层的 flags 再汇总到 `mGlobalChanges`。
+`applyTransactions()` 按 transaction 中的 `ResolvedComposerState` 找到目标 layer，然后调用 `RequestedLayerState::merge()`。本轮首次发生变化的 layer 会进入 `mChangedLayers`；各 layer 的 flags 再汇总到 `mGlobalChanges`。
 
 这两个集合服务于不同问题：
 
 - `getChangedLayers()`：需要更新哪些具体 layer。
 - `getGlobalChanges()`：本轮是否出现了要求重走 hierarchy、geometry、input 或 composition 的变化。
 
-### 4.3 释放句柄不会立即删除对象
+### 4.3 释放 handle 不会立即删除对象
 
 公开 FrontEnd 文档给出的生命周期规则是：
 
@@ -260,13 +260,13 @@ FrontEnd `readme.md` 将绘制顺序描述为一次中序式遍历：
 2. 再访问 parent；
 3. 最终遍历 z 大于等于 0 的 children。
 
-relative children 值相同时，再按 layer id 保持稳定顺序，较新的图层位于上方。源码不建议依赖创建顺序，调用方应尽量使用明确且唯一的 Z 值。
+relative children 值相同时，再按 layer id 保持稳定顺序，较新的 layer 位于上方。源码不建议依赖创建顺序，调用方应尽量使用明确且唯一的 Z 值。
 
 ### 5.3 `TraversalPath` 解决镜像身份问题
 
 同一个 layer id 经过不同 mirror root 时，继承到的 transform、crop 和可见性可能不同。`TraversalPath` 用 `id` 与 `mirrorRootIds` 区分这些 snapshot；`relativeRootIds` 主要用于发现 relative-Z 循环，`detached` 则记录路径是否仍附着到 onscreen hierarchy。
 
-同一图层编号可能对应多份最终状态。`LayerSnapshotBuilder` 因而同时维护：
+同一 layer 编号可能对应多份最终状态。`LayerSnapshotBuilder` 因而同时维护：
 
 - `mPathToSnapshot`：按 traversal path 找 snapshot；
 - `mIdToSnapshots`：找到同一 layer id 对应的全部 snapshot。
@@ -371,11 +371,11 @@ Android 17 还区分：
 
 FrontEnd 文档说明，snapshot 理论上可以 clone；当前实现为了减少热路径复制，会把 snapshot 移交给 CompositionEngine，present 后再移回 builder。`SurfaceFlinger::composite()` 通过 `addLayerSnapshotsToCompositionArgs()` 准备 layer，再调用 `mCompositionEngine->present(refreshArgs)`。
 
-这次交接仍未决定各显示图层最终采用 DEVICE 还是 CLIENT composition。CompositionEngine 与 HWC 还要根据目标 Output 的能力、几何、效果和资源约束继续协商。
+这次交接仍未决定各 display layer 最终采用 DEVICE 还是 CLIENT composition。CompositionEngine 与 HWC 还要根据目标 Output 的能力、几何、效果和资源约束继续协商。
 
 ## 8. 如何从 trace 判断问题在哪一段
 
-应分别观察请求排队、状态计算、缓冲区锁存和显示提交。
+应分别观察请求排队、状态计算、buffer latch 和 present。
 
 | 证据 | 能说明什么 | 不能单独说明什么 |
 | --- | --- | --- |

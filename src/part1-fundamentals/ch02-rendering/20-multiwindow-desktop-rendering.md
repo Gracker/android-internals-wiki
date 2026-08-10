@@ -173,7 +173,7 @@ flowchart LR
 | `DisplayContent` | WindowManager | 按 `displayId` 组织 Task、Window、Insets、focus 与 transition |
 | CompositionEngine Output | SurfaceFlinger | 为目标输出构造可见 layer 集合并与 HWC 协商 |
 
-`LogicalDisplay.java` 的类注释说明：logical display 与 display device 是正交概念，映射可以是 many-to-many，也可能没有直接关系。镜像、虚拟显示和 display projection 都会打破“一块 logical display 对应一块物理屏”的简化模型。因此，必须分别记录 DMS 的 `displayId`、SurfaceFlinger 的 physical display id、layer stack 和 HWC 显示句柄。
+`LogicalDisplay.java` 的类注释说明：logical display 与 display device 是正交概念，映射可以是 many-to-many，也可能没有直接关系。镜像、虚拟显示和 display projection 都会打破“一块 logical display 对应一块物理屏”的简化模型。因此，必须分别记录 DMS 的 `displayId`、SurfaceFlinger 的 physical display id、layer stack 和 HWC display handle。
 
 ### physical display 的发现与 logical display 的建立
 
@@ -197,7 +197,7 @@ flowchart LR
 
 `LogicalDisplayMapper.setDeviceState()` 处理折叠、展开、lid、dock 等可能改变物理显示布局的设备状态。它会在 `mSyncRoot` 下设置 pending state，按需临时关闭参与切换的 display，并依据 `DeviceState` property 决定 wake/sleep；如果完成条件迟迟没有满足，延迟消息会强制结束 pending transition。
 
-普通自由窗口或桌面窗口属于任务和窗口的 windowing mode，不必触发 `LogicalDisplayMapper.setDeviceState()`。只有扩展坞、lid 或厂商硬件状态同时改变 display layout 时，两条路径才会在同一场景中相遇。冷启动阶段的状态还可能暂存至开机完成后再应用，不能据此断言冷启动 trace 一定没有 fold/unfold 事件。
+普通 freeform/desktop windowing 是 Task/Window 的 windowing mode，不必触发 `LogicalDisplayMapper.setDeviceState()`。只有 dock、lid 或厂商硬件状态同时改变 display layout 时，两条路径才会在同一场景中相遇。冷启动阶段的状态还可能暂存至 boot completed 后再应用，不能据此断言冷启动 trace 一定没有 fold/unfold 事件。
 
 ### 外接显示策略不等于自动进入扩展桌面
 
@@ -219,7 +219,7 @@ flowchart LR
 - `android_surfaceflinger_display`：提供同一 snapshot 中的 display 信息，但没有通用的 layer 外键。
 - `android_surfaceflinger_transaction`：包含 `layer_id` 与 `display_id`，适合确认某次 transaction 的目标，不能代替最终 output-layer 可见性。
 
-多屏归属应结合 Winscope 的 output tree、display transaction、layer parent chain 和目标时间片确认。不能仅按 `snapshot_id` 连接两个表，就把 snapshot 中的所有图层归给每一个 display。
+多屏归属应结合 Winscope 的 output tree、display transaction、layer parent chain 和目标时间片确认。不能仅按 `snapshot_id` 连接两个表，就把 snapshot 中的所有 layer 归给每一个 display。
 
 ## 先建立 Window、线程和 Surface 拓扑
 
@@ -254,7 +254,7 @@ WMS 内部的 `BLASTSyncEngine` 可以等待一组 WindowContainer 的 draw/tran
 
 ## SurfaceFlinger 与 HWC 按 Output 组织合成
 
-SurfaceFlinger FrontEnd 接收所有窗口、Shell/WMS 几何属性和 buffer transaction，更新 layer hierarchy 与 snapshot；CompositionEngine 再为每个 Output/Display 构造可见 layer 集合。同一图层还可能因 mirror 或 display projection 出现在多个 output，不能只检查全局 layer 是否存在。
+SurfaceFlinger FrontEnd 接收所有窗口、Shell/WMS 几何属性和 buffer transaction，更新 layer hierarchy 与 snapshot；CompositionEngine 再为每个 Output/Display 构造可见 layer 集合。同一 layer 还可能因 mirror 或 display projection 出现在多个 output，不能只检查全局 layer 是否存在。
 
 多窗口的成本主要来自三类变化：
 
@@ -302,7 +302,7 @@ Android 17 为 target SDK 37 及以上的应用启用 lock-free `MessageQueue`�
 
 这个属性并非所有配置变化的通用重启开关。Android O 之后，`mcc|mnc` 默认不再触发 Activity 重建，应用可以用 `recreateOnConfigChanges` 显式要求这两类变化触发重建。API 37 又把 touchscreen、keyboard、keyboardHidden、navigation、colorMode 变化纳入默认不重建范围；依赖完整重建来加载资源的应用，需要在 manifest 中显式声明。
 
-窗口尺寸、方向和屏幕布局这类多窗口场景中的高频变化，仍要通过 `android:configChanges`、`onConfigurationChanged()`、状态保存和系统实际生命周期回调处理。`recreateOnConfigChanges` 不能充当折叠屏或桌面模式的尺寸变化开关。
+窗口尺寸、方向和屏幕 layout 这类多窗口场景中的高频变化，仍要通过 `android:configChanges`、`onConfigurationChanged()`、状态保存和系统实际生命周期回调处理。`recreateOnConfigChanges` 不能充当折叠屏或桌面模式的尺寸变化开关。
 
 ### Android 16 / 17 的真实边界
 
@@ -379,7 +379,7 @@ WHERE process.name GLOB '*surfaceflinger*'
 ORDER BY 1;
 ```
 
-这一步可以直接发现版本升级、厂商裁剪或跟踪配置变化造成的切片名称差异。
+这一步可以直接发现版本升级、厂商裁剪或跟踪配置变化造成的 slice 名称差异。
 
 ### 2. layer 快照表要使用真实 schema
 
@@ -398,17 +398,17 @@ ORDER BY s.ts DESC, l.layer_name
 LIMIT 100;
 ```
 
-这个查询用于查看某个快照中的可见 layer、名称与 HWC 合成类型。Perfetto stdlib 的 `surfaceflinger_layer` 表没有 `display_id` 列，因此外接显示器跟踪中不能直接写 `WHERE l.display_id = 0`。区分 display 时，应先在 Winscope SurfaceFlinger output tree 中确认目标输出，再用 `android_surfaceflinger_transaction` 的 `layer_id/display_id` 和相邻 transaction 辅助定位。`android_surfaceflinger_display` 只有 display 记录，不能把同一 snapshot 的全部 layer 自动归到该 display。
+这个查询用于查看某个 snapshot 中的可见 layer、名称与 HWC composition 类型。Perfetto stdlib 的 `surfaceflinger_layer` 表没有 `display_id` 列，因此外接 display 跟踪中不能直接写 `WHERE l.display_id = 0`。区分 display 时，应先在 Winscope SurfaceFlinger output tree 中确认目标输出，再用 `android_surfaceflinger_transaction` 的 `layer_id/display_id` 和相邻 transaction 辅助定位。`android_surfaceflinger_display` 只有 display 记录，不能把同一 snapshot 的全部 layer 自动归到该 display。
 
 ### 3. 完整记录 FrameTimeline 卡顿名称
 
 FrameTimeline 中，App 侧和 SurfaceFlinger 侧至少要分成三类：
 
-- `AppDeadlineMissed`：应用没有按时交帧。
+- `AppDeadlineMissed`：App 没有按时交帧。
 - `SurfaceFlingerCpuDeadlineMissed`：SurfaceFlinger 主线程没有在 deadline 前完成 CPU 侧工作。
 - `SurfaceFlingerGpuDeadlineMissed`：CPU 侧工作已经推进，GPU composition 没有按时完成。
 
-多窗口场景下，后两类尤其值得关注。窗口、display 多时，应先区分 SurfaceFlinger 侧与应用侧的截止时间异常，再决定检查应用主线程、RenderThread、图片上传、视频解码，或继续沿 SurfaceFlinger、HWC 与 GPU 合成向下排查。
+多窗口场景下，后两类尤其值得关注。窗口、display 多时，应先区分 SurfaceFlinger 侧与应用侧的截止时间异常，再决定检查应用主线程、RenderThread、图片上传、视频解码，或继续沿 SurfaceFlinger、HWC 与 GPU composition 向下排查。
 
 一套可复用的顺序是：在 `actual_frame_timeline_slice` 中找到异常 SurfaceFrame/DisplayFrame token，对齐目标进程的 `doFrame`、RenderThread 与 buffer transaction；选择最接近异常时刻的 layer snapshot，确认 output、可见 layer 和 composition type；再检查 SurfaceFlinger main thread、GPU fence、Composer/HAL 与 present。这样可以区分单个窗口晚交帧与整屏合成延迟。
 
