@@ -229,7 +229,7 @@ history 属于同一枚事件，因此 Perfetto 中通常只看到一次 Java `d
 
 Batching 决定样本如何合并交付；重采样负责把轨迹时间与显示帧对齐。Android 17 的常规 ViewRoot 路径在应用进程 JNI 中持有 `InputConsumer`。当它以有效的 `frameTimeNanos` 消费 batch 且 `ro.input.resampling` 未被厂商关闭时，会以 `frameTimeNanos - 5ms` 为目标时间，在真实样本之间插值，或根据最近两个样本做受限外推。
 
-`5ms` 是重采样目标相对 frame time 的相位偏移，用于为插值预留未来样本并限制错误外推；它不能单独计入触摸到显示的耗时，写成“系统额外等待 5ms”。帧时间、样本间隔、工具类型或厂商开关不满足条件时，重采样会跳过。
+`5ms` 是重采样目标相对 frame time 的相位偏移，用于为插值预留未来样本并限制错误外推；它不能单独计入 touch-to-display 耗时，写成“系统额外等待 5ms”。effective frame time、样本间隔、工具类型或 vendor flag 不满足条件时，重采样会跳过。
 
 API 35+ 可用 `MotionEvent.PointerCoords.isResampled()` 判断指定坐标是否由重采样生成。这个方法属于 `PointerCoords`，调用方式如下：
 
