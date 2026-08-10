@@ -42,7 +42,7 @@ Android 12 引入 `mProcLock`，并保留原有的 `mGlobalLock`。Android 17 �
 
 ## 1. 从单锁到双锁
 
-Android 11 的 AMS 尚未定义 `ENABLE_PROC_LOCK`、`mProcLock` 和 `ActivityManagerProcLock`。当时进程管理代码广泛依赖 AMS 对象自身的 Java 监视器，也就是后来的 `mGlobalLock`。
+Android 11 的 AMS 尚未定义 `ENABLE_PROC_LOCK`、`mProcLock` 和 `ActivityManagerProcLock`。当时进程管理代码广泛依赖 AMS 对象自身的 monitor，也就是后来的 `mGlobalLock`。
 
 Android 12 的 `ActivityManagerService` 首次给出完整的双锁骨架：
 
@@ -240,7 +240,7 @@ final class ActivityManagerProcLock implements ActivityManagerGlobalLock {
 }
 ```
 
-源码注释说明，这个独立类型可让 CPU 优先级提升器识别临界区。Android 17 中可以直接验证的实现是 `ThreadPriorityBooster`：AMS 分别为全局锁和进程锁创建一个提升器，目标优先级都是 `THREAD_PRIORITY_FOREGROUND`。
+源码注释说明，这个独立类型可让 CPU 优先级提升器识别临界区。Android 17 中可以直接验证的实现是 `ThreadPriorityBooster`：AMS 分别为全局锁和进程锁创建一个 booster，目标优先级都是 `THREAD_PRIORITY_FOREGROUND`。
 
 `ThreadPriorityBooster.boost()` 会读取当前线程的 Linux nice 值；若当前优先级低于目标值，便通过 `setThreadPriority()` 提升当前线程。嵌套临界区由线程局部计数器记录，最外层退出时恢复原优先级。
 
@@ -250,9 +250,9 @@ final class ActivityManagerProcLock implements ActivityManagerGlobalLock {
 - 调整的是 Linux nice 优先级，目标为前台线程优先级。
 - 退出最外层临界区后恢复先前优先级。
 
-它不能证明系统会为该锁直接提高 CPU 频率，也不能证明持锁线程会切换到 `SCHED_FIFO`。AMS 中的 `mUseFifoUiScheduling` 面向 UI 线程和 RenderThread，是另一套调度策略，不应与 `mProcLock` 的线程优先级提升机制混为一谈。
+它不能证明系统会为该锁直接提高 CPU 频率，也不能证明持锁线程会切换到 `SCHED_FIFO`。AMS 中的 `mUseFifoUiScheduling` 面向 UI 线程和 RenderThread，是另一套调度策略，不应与 `mProcLock` 的 booster 混为一谈。
 
-优先级提升只能降低持锁线程因普通优先级竞争而延迟的概率。临界区内若有慢 Binder、缺页、I/O 或过量计算，提升器不会消除这些等待。
+优先级提升只能降低持锁线程因普通优先级竞争而延迟的概率。临界区内若有慢 Binder、缺页、I/O 或过量计算，booster 不会消除这些等待。
 
 ## 8. 用 Perfetto 区分等待时间与持锁时间
 
@@ -265,7 +265,7 @@ Android 17 的 `ActivityManagerService` 定义了 `big_locks` 类别下的四组
 | `mGlobalLock` | `ams_lock_acquire` | `ams_lock_held` |
 | `mProcLock` | `proc_lock_acquire` | `proc_lock_held` |
 
-这些事件受 `android.os.Flags.perfettoSdkTracingV3()` 控制。分析某台设备前，应确认构建是否启用相应特性、跟踪配置是否采集 `big_locks` 类别，以及结果中是否出现这些切片。源码定义了事件，不代表每份跟踪都包含它们。
+这些事件受 `android.os.Flags.perfettoSdkTracingV3()` 控制。分析某台设备前，应确认构建是否启用相应特性、trace 配置是否采集 `big_locks` 类别，以及结果中是否出现这些切片。源码定义了事件，不代表每份跟踪都包含它们。
 
 如果事件存在，可以先用下面的查询列出 `system_server` 中的持锁区间。它的用途是找到长持锁段，并定位到具体线程：
 
@@ -317,20 +317,20 @@ ORDER BY dur DESC
 LIMIT 50;
 ```
 
-`dur` 是等待线程被监视器阻塞的墙钟时间。`blocking_thread_name` 与 `short_blocking_method` 指向持锁方，`blocked_thread_name` 与 `short_blocked_method` 指向等待方。`lock_name` 可用时，优先用它区分 `ActivityManagerService` 对象和 `ActivityManagerProcLock` 对象；类名缺失时，再结合源码位置与 `big_locks` 事件判断。仅凭方法属于 `OomAdjuster` 或 `ProcessList` 猜测锁类型并不可靠，因为这些类中存在同时持有两把锁的路径。
+`dur` 是等待线程被 monitor 阻塞的墙钟时间。`blocking_thread_name` 与 `short_blocking_method` 指向持锁方，`blocked_thread_name` 与 `short_blocked_method` 指向等待方。`lock_name` 可用时，优先用它区分 `ActivityManagerService` 对象和 `ActivityManagerProcLock` 对象；类名缺失时，再结合源码位置与 `big_locks` 事件判断。仅凭方法属于 `OomAdjuster` 或 `ProcessList` 猜测锁类型并不可靠，因为这些类中存在同时持有两把锁的路径。
 
 ## 9. 一次可复用的诊断顺序
 
 遇到 Activity 启动、Service 调用或进程状态更新偶发变慢时，可以按以下顺序分析：
 
-1. 在问题时间窗内找到等待线程，确认延迟来自监视器竞争，而非 Binder 回复、CPU 可运行延迟、I/O 或其他原因。
+1. 在问题时间窗内找到等待线程，确认延迟来自 monitor contention，而非 Binder reply、CPU runnable、I/O 或其他原因。
 2. 查看 `big_locks` 事件或 `android_monitor_contention.lock_name`，区分全局锁与进程锁。
 3. 找到持锁线程及其持锁方法。等待方的调用栈只能说明谁受影响，持锁方才说明临界区为何变长。
-4. 把持锁区间与线程状态、Binder 事务、调度和 I/O 切片对齐。持锁线程可能在运行，也可能持锁等待另一个资源。
+4. 把持锁区间与线程状态、Binder transaction、调度和 I/O 切片对齐。持锁线程可能在运行，也可能持锁等待另一个资源。
 5. 检查同一时段的 `waiter_count` 和其他等待者。一次长等待与许多中等等待造成的总影响不同。
 6. 回到对应 Android 版本的源码，确认锁注解、获取顺序和版本差异，再决定修改位置。
 
-`adb shell dumpsys activity processes` 可以查看当时的进程、adj 与进程状态，但它是状态快照，不能证明某个 adj 变化导致了锁竞争。复现性能问题时，应把 dumpsys 用作背景信息，并通过跟踪判断时间关系与因果链。
+`adb shell dumpsys activity processes` 可以查看当时的进程、adj 与 proc state，但它是状态快照，不能证明某个 adj 变化导致了锁竞争。复现性能问题时，应把 dumpsys 用作背景信息，并通过跟踪判断时间关系与因果链。
 
 ## 10. 应用侧能做什么
 
