@@ -35,9 +35,9 @@ gap_source: "AOSP结构+章节深挖"
 
 # 1.38 Binder 线程池管理与 IPC 线程饥饿性能边界
 
-Binder 线程池饥饿是指一个进程暂时没有可用的 Binder 服务线程。调用方仍能把事务交给驱动，但事务可能在目标进程的待办队列中等待；同步调用方要一直等到服务端处理并回复。这个问题常与锁竞争、磁盘 I/O、嵌套 IPC 和单向事务积压一起出现，单看线程数量容易误判。
+Binder 线程池饥饿是指一个进程暂时没有可用的 Binder 服务线程。调用方仍能把事务交给驱动，但事务可能在目标进程的待办队列中等待；同步调用方要一直等到服务端处理并回复。这个问题常与锁竞争、磁盘 I/O、嵌套 IPC 和 oneway 积压一起出现，单看线程数量容易误判。
 
-以下用户态行为以 `android-17.0.0_r1` 的 libbinder、框架和 Perfetto 为准，内核行为以 `android17-6.18-2026-06_r6` 的 Binder 驱动为准。
+以下用户态行为以 `android-17.0.0_r1` 的 libbinder、framework 和 Perfetto 为准，内核行为以 `android17-6.18-2026-06_r6` 的 Binder 驱动为准。
 
 ## 1. “默认 15 个线程”的准确含义
 
@@ -62,7 +62,7 @@ Binder 线程池饥饿是指一个进程暂时没有可用的 Binder 服务线�
 
 ### 1.2 Java App 主线程不默认加入 Binder 池
 
-`frameworks/base/cmds/app_process/app_main.cpp` 在应用进程或 Zygote 子进程初始化时调用 `ProcessState::startThreadPool()`。这个调用会创建专门的 Binder 线程。
+`frameworks/base/cmds/app_process/app_main.cpp` 在 app process 或 Zygote 子进程初始化时调用 `ProcessState::startThreadPool()`。这个调用会创建专门的 Binder 线程。
 
 应用主线程继续运行 `Looper`，不会因为 Activity 启动而调用 `IPCThreadState::joinThreadPool()`。主线程发起同步 Binder 调用时会等待回复，也可能在嵌套回调链中执行 Binder 工作，但这与“主线程长期注册为线程池工作线程”属于不同机制。
 
@@ -70,7 +70,7 @@ Binder 线程池饥饿是指一个进程暂时没有可用的 Binder 服务线�
 
 | 命令 | 来源 | 内核记账 |
 |---|---|---|
-| `BC_ENTER_LOOPER` | `joinThreadPool(true)` 或轮询设置 | 标记为主动进入的 looper |
+| `BC_ENTER_LOOPER` | `joinThreadPool(true)` 或 polling setup | 标记为主动进入的 looper |
 | `BC_REGISTER_LOOPER` | 收到 `BR_SPAWN_LOOPER` 后创建的线程 | 消耗一次内核请求，并增加 `requested_threads_started` |
 
 `startThreadPool()` 创建的首个 `PoolThread` 以 `main-pool-thread` 身份进入 `joinThreadPool(true)`。这里的 “main” 指 Binder 线程池内部角色，并非 Java 界面主线程。
@@ -100,7 +100,7 @@ libbinder 的 `IPCThreadState::getAndExecuteCommand()` 收到命令后调用 `Pr
 
 驱动收到事务后会优先从目标进程的 `waiting_threads` 选择可用线程。没有可用线程时，普通的进程级工作进入 `proc->todo`。同步调用方阻塞在 libbinder 的 `waitForResponse()`，直到收到回复或错误。
 
-调用方被阻塞的线程可能是界面主线程、业务线程，也可能是正在处理另一笔事务的 Binder 工作线程。只有第三种情况会占用调用方进程的 Binder 服务能力。把每个同步客户端线程都计为“占用一个 Binder 池线程”会高估线程池消耗。
+调用方被阻塞的线程可能是界面主线程、业务线程，也可能是正在处理另一笔事务的 Binder worker。只有第三种情况会占用调用方进程的 Binder 服务能力。把每个同步客户端线程都计为“占用一个 Binder 池线程”会高估线程池消耗。
 
 ### 2.2 100 ms 饥饿日志是用户态启发式信号
 
@@ -116,7 +116,7 @@ binder thread pool (15 threads) starved for 234 ms
 - 驱动队列里一定存在待处理事务；
 - 延迟一定由 CPU 忙导致。
 
-引用计数命令、嵌套调用、锁等待和调度延迟都需要结合跟踪数据判断。可按进程过滤日志：
+引用计数命令、嵌套调用、锁等待和调度延迟都需要结合 trace 判断。可按进程过滤日志：
 
 ```bash
 adb logcat -v threadtime -s libbinder.IPCThreadState:E
@@ -131,18 +131,18 @@ adb logcat -v threadtime -s libbinder.IPCThreadState:E
 | 线程状态 | 可能含义 |
 |---|---|
 | `S`，阻塞点在 `binder_thread_read` | 空闲等待新事务，通常正常 |
-| `S`，阻塞在 futex/Java 监视器 | 等锁、条件变量或同步结果 |
+| `S`，阻塞在 futex/Java monitor | 等锁、条件变量或同步结果 |
 | `D` | 不可中断 I/O 等待，需继续找块设备或文件系统原因 |
 | `R` 且正在 CPU 上运行 | 正在执行；还要检查运行的代码 |
-| `R` 但长时间未上 CPU | 可运行线程的调度延迟，常见于系统负载高 |
+| `R` 但长时间未上 CPU | runnable 调度延迟，常见于系统负载高 |
 
-“所有 Binder 线程显示 Running”只是一张瞬时快照。判定线程池饥饿需要同时看到：可用工作线程缺失、服务端工作持续未完成，以及调用方延迟或待办队列同步上升。
+“所有 Binder 线程显示 Running”只是一张瞬时快照。判定线程池饥饿需要同时看到：可用 worker 缺失、服务端工作持续未完成，以及调用方延迟或待办队列同步上升。
 
 ## 3. 三种高发模式
 
-### 3.1 慢处理函数：锁、I/O 和数据库
+### 3.1 慢 handler：锁、I/O 和数据库
 
-AIDL Stub 在当前 Binder 工作线程上分发接口方法，不会自动切到业务线程池。服务实现中的锁等待、文件访问、数据库查询、网络代理调用和同步硬件操作都会延长工作线程的占用时间。
+AIDL Stub 在当前 Binder 工作线程上分发接口方法，不会自动切到业务线程池。服务实现中的锁等待、文件访问、数据库查询、网络代理调用和同步硬件操作都会延长 worker 占用时间。
 
 常见问题包括：
 
@@ -152,7 +152,7 @@ AIDL Stub 在当前 Binder 工作线程上分发接口方法，不会自动切�
 - ContentProvider 查询缺少索引，或等待长事务释放数据库锁；
 - 错误路径记录大对象、同步写文件或等待遥测上报。
 
-增加 Binder 线程只能提高同时进入慢路径的请求数。共享锁、连接池或设备队列容量不变时，更多工作线程可能带来更长的排队和更大的内存压力。
+增加 Binder 线程只能提高同时进入慢路径的请求数。共享锁、连接池或设备队列容量不变时，更多 worker 可能带来更长的排队和更大的内存压力。
 
 ### 3.2 嵌套同步调用与重入
 
@@ -160,31 +160,31 @@ AIDL Stub 在当前 Binder 工作线程上分发接口方法，不会自动切�
 
 ```text
 A 的调用线程等待 B
-  B Binder 工作线程等待 C
-    C Binder 工作线程处理请求
+  B binder worker waits for C
+    C binder worker handles request
 ```
 
-A 的调用线程不一定属于 Binder 池；B 的工作线程则在等待期间持续占用 B 的服务线程。并发请求重复这条链路时，B 更容易耗尽可用工作线程。
+A 的 caller 不一定属于 Binder 池；B 的 worker 则在等待期间持续占用 B 的服务线程。并发请求重复这条链路时，B 更容易耗尽可用 worker。
 
 Binder 还支持嵌套回调复用原调用链线程。若 C 回调 A，驱动可能把回调送回 A 正在等待的原线程。这种重入减少了某些单线程死锁，却会让“同步调用像普通本地调用一样不会重入”的假设失效。
 
-设计服务锁时应遵守一条硬规则：持锁期间避免跨进程 Binder 调用。即使线程池只有一个工作线程，嵌套调用也可能在同一线程重入并修改当前数据结构。
+设计服务锁时应遵守一条硬规则：持锁期间避免跨进程 Binder 调用。即使线程池只有一个 worker，嵌套调用也可能在同一线程重入并修改当前数据结构。
 
 官方模型见 [AOSP Binder threading](https://source.android.com/docs/core/architecture/ipc/binder-threading)。
 
-### 3.3 单向事务积压
+### 3.3 oneway 积压
 
 `oneway` 只保证调用方不等待服务端回复。服务端仍要占用 Binder 工作线程执行方法。
 
-驱动会串行处理同一个 Binder 节点上的异步事务：一个事务活动时，后续事务进入该节点的 `async_todo`。不同节点的异步事务可以并行。因此，一条高频 `oneway` 接口可能形成很长的单节点队列，也可能与其他接口一起消耗整个进程的工作线程。
+驱动会串行处理同一个 Binder 节点上的异步事务：一个事务活动时，后续事务进入该节点的 `async_todo`。不同节点的异步事务可以并行。因此，一条高频 `oneway` 接口可能形成很长的单节点队列，也可能与其他接口一起消耗整个进程的 worker。
 
-Android 17 的 libbinder 默认请求开启 `BINDER_ENABLE_ONEWAY_SPAM_DETECTION`。异步缓冲区使用量达到驱动阈值时，相关缓冲区被标记为可疑；发送进程收到 `BR_ONEWAY_SPAM_SUSPECT`，libbinder 输出调用栈。`android17-6.18-2026-06_r6` 还通过 Binder Generic Netlink（通用 Netlink）报告这类事件。
+Android 17 的 libbinder 默认请求开启 `BINDER_ENABLE_ONEWAY_SPAM_DETECTION`。异步 buffer 使用量达到驱动阈值时，相关 buffer 被标记为可疑；发送进程收到 `BR_ONEWAY_SPAM_SUSPECT`，libbinder 输出调用栈。`android17-6.18-2026-06_r6` 还通过 Binder Generic Netlink（通用 Netlink）报告这类事件。
 
 需要区分三层结果：
 
-1. 可疑标记：事务可以成功，只产生诊断信号；
+1. suspect：事务可以成功，只产生诊断信号；
 2. 同节点排队：事务已进入目标队列，尚未执行；
-3. 异步空间不足：分配失败，发送方得到失败结果。
+3. async 空间不足：分配失败，发送方得到失败结果。
 
 `oneway` API 仍需限频、合并状态和设置队列上界。把同步接口改成 `oneway` 只会移动等待位置。
 
@@ -198,7 +198,7 @@ Android 17 的 libbinder 默认请求开启 `BINDER_ENABLE_ONEWAY_SPAM_DETECTION
 private static final int sMaxBinderThreads = 31;
 ```
 
-启动时通过 `BinderInternal.setMaxThreads(31)` 调到 `ProcessState::setThreadPoolMaxThreadCount()`。这 31 仍是内核按需启动的上限；应用进程启动阶段的 `startThreadPool()` 另有 1 个主动线程。没有其他线程显式加入时，总体上界通常可到 32。
+启动时通过 `BinderInternal.setMaxThreads(31)` 调到 `ProcessState::setThreadPoolMaxThreadCount()`。这 31 仍是内核按需启动的上限；app process 启动阶段的 `startThreadPool()` 另有 1 个主动线程。没有其他线程显式加入时，总体上界通常可到 32。
 
 system_server 主线程随后准备 Java `Looper`，不会因为 `setMaxThreads(31)` 自动加入 Binder 池。厂商分支也可能调整常量或加入额外线程，设备上的实际数量应以源码和运行时为准。
 
@@ -206,23 +206,23 @@ system_server 主线程随后准备 Java `Looper`，不会因为 `setMaxThreads(
 
 system_server 同时承载 AMS、WMS、PMS 等服务。某一组慢调用占满 Binder 工作线程后，其他互不相关的客户端也可能等待空闲线程。常见后果包括：
 
-- 应用主线程等待 system_server 的同步回复，输入和绘制无法继续；
-- system_server 自身的工作线程形成嵌套调用链，扩大多个服务之间的锁依赖；
+- App 主线程等待 system_server 的同步回复，输入和绘制无法继续；
+- system_server 自身 worker 形成嵌套调用链，扩大多个服务之间的锁依赖；
 - 服务启动、广播、Provider 获取等框架状态机无法按时推进；
-- Watchdog 观察的关键线程或监视器也可能因同一把锁受阻。
+- Watchdog 观察的关键线程或 monitor 也可能因同一把锁受阻。
 
-不存在一条通用的 “Binder WATCHDOG” 规则专门按 Binder 调用延迟报警。Watchdog、ANR 控制器、Binder 饥饿日志和 Perfetto 是不同信号，应分别核对。
+不存在一条通用的 “Binder WATCHDOG” 规则专门按 Binder 调用延迟报警。Watchdog、ANR controller、Binder 饥饿日志和 Perfetto 是不同信号，应分别核对。
 
 ## 5. Binder 冻结对线程池的影响
 
-缓存进程被冻结后不能调度 Binder 工作线程。`android17-6.18-2026-06_r6` 的 `binder_proc_transaction()` 对两类事务分别处理：
+cached 进程被冻结后不能调度 Binder worker。`android17-6.18-2026-06_r6` 的 `binder_proc_transaction()` 对两类事务分别处理：
 
 - 同步事务：拒绝投递，返回 `BR_FROZEN_REPLY`；
-- 单向事务：成功排入待处理队列，发送方收到 `BR_TRANSACTION_PENDING_FROZEN`。
+- oneway：成功排入待处理队列，发送方收到 `BR_TRANSACTION_PENDING_FROZEN`。
 
-libbinder 对前者返回 `FROZEN_OBJECT` 或兼容的 `FAILED_TRANSACTION`，对后者记录 “Sending oneway calls to frozen process”。内核还可用 Binder 通用 Netlink 上报冻结期间待处理的事务。
+libbinder 对前者返回 `FROZEN_OBJECT` 或兼容的 `FAILED_TRANSACTION`，对后者记录 “Sending oneway calls to frozen process”。内核还可用 Binder Generic Netlink 上报 frozen pending。
 
-`oneway` 事务在冻结期持续到达时会占用异步缓冲区。解冻后这些事务恢复处理，也可能形成短时积压。Android 框架会结合缓存应用冻结器（cached-app freezer）策略控制进程状态；发送调用已经返回，并不代表冻结进程中的目标方法已经执行。
+`oneway` 事务在冻结期持续到达时会占用 async buffer。解冻后这些事务恢复处理，也可能形成短时积压。Android 框架会结合缓存应用冻结器（cached-app freezer）策略控制进程状态；发送调用已经返回，并不代表冻结进程中的目标方法已经执行。
 
 `BINDER_GET_FROZEN_INFO` 返回的是目标进程冻结期间是否收到过同步/异步事务的标志，不是“冻结前已处理完成的事务计数”。
 
@@ -235,13 +235,13 @@ libbinder 对前者返回 `FROZEN_OBJECT` 或兼容的 `FAILED_TRANSACTION`，�
 
 ## 6. 线程选择与优先级继承
 
-`binder_select_thread_ilocked()` 从 `waiting_threads` 链表头取出一个等待线程，因此空闲工作线程的选择顺序是先进先出。这个事实不代表事务执行时“所有工作线程的优先级完全相同”。
+`binder_select_thread_ilocked()` 从 `waiting_threads` 链表头取出一个等待线程，因此空闲 worker 的选择顺序是 FIFO。这个事实不代表事务执行时“所有 worker 优先级完全相同”。
 
 选中线程后，驱动调用 `binder_transaction_priority()`。它会综合事务携带的优先级、Binder 节点的最低优先级与 `inherit_rt` 配置，临时调整服务线程调度属性；事务结束后再恢复保存的优先级。实时策略还受节点配置和驱动限制。
 
 需要分开理解：
 
-- 选择哪一个空闲工作线程：当前实现从等待链表头选择；
+- 选择哪一个空闲 worker：当前实现从等待链表头选择；
 - 工作线程以什么优先级执行：由 Binder 优先级继承和节点策略决定；
 - 线程何时拿到 CPU：由内核调度器、cpuset、uclamp 等共同决定。
 
@@ -253,10 +253,10 @@ Android 17 的行为描述仅适用于当前实现。Binder 优先级继承早�
 
 | 场景 | AOSP/Pixel 默认边界 | Binder 可能扮演的角色 |
 |---|---|---|
-| 输入分发 | 通常 5 秒 | 界面主线程等待同步回复，不能处理输入 |
+| 输入分发 | 通常 5 秒 | UI 主线程等待同步回复，不能处理输入 |
 | 前台服务执行 | 通常 20 秒 | 主线程在服务回调前后被慢 IPC 阻塞 |
 | 后台服务执行 | 通常 200 秒 | 同上，但默认窗口更长 |
-| 广播 | Android 14+ 会按 CPU 饥饿（CPU-starved）状态扩展窗口 | 广播线程或主线程等待 IPC，system_server 也可能无法及时调度 |
+| Broadcast | Android 14+ 会按 CPU 饥饿（CPU-starved）状态扩展窗口 | 广播线程或主线程等待 IPC，system_server 也可能无法及时调度 |
 
 这些是 AOSP/Pixel 默认值，OEM 可修改。`startForegroundService()` 后 5 秒内调用 `startForeground()` 属于另一类超时，不能与前台服务的 20 秒执行窗口混写。
 
@@ -264,10 +264,10 @@ Android 17 的行为描述仅适用于当前实现。Binder 优先级继承早�
 
 ANR 现场应先回答两个问题：
 
-1. 应用主线程是否卡在同步 Binder 调用？
-2. 回复对应的服务端线程在做什么？
+1. App 主线程是否卡在同步 Binder 调用？
+2. reply 对应的服务端线程在做什么？
 
-只看到主线程栈顶是 `BinderProxy.transactNative` 还不足以定位原因。服务端可能正在运行、等待锁或 I/O、处于可运行状态但未获调度，也可能尚未从进程队列取出事务。
+只看到主线程栈顶是 `BinderProxy.transactNative` 还不足以定位原因。服务端可能正在运行、等待锁或 I/O、runnable 未获调度，也可能尚未从进程队列取出事务。
 
 ## 8. Android 17 上的诊断路径
 
@@ -286,7 +286,7 @@ for task in /proc/$pid/task/*; do \
 done'
 ```
 
-线程数量接近理论上界不能证明饥饿，因为 libbinder 启动过的线程池线程通常会留到进程退出。还要检查这些线程在目标时间窗内是否都有未完成工作。
+线程数量接近理论上界不能证明饥饿，因为 libbinder 启动过的 pool thread 通常会留到进程退出。还要检查这些线程在目标时间窗内是否都有未完成工作。
 
 ANR 文件位置随版本和构建而变，不应固定写成 `/data/anr/traces.txt`。优先使用 bugreport、`adb shell dumpsys activity lastanr`、Play/Crashlytics 报告以及同时间段 Perfetto。
 
@@ -300,15 +300,15 @@ Android 17 的输出按 UID、接口和方法提供 `cpu_time_micros`、`max_cpu
 
 这些数据适合寻找高频方法或服务端执行耗时较高的方法。它并非 Binder 驱动队列监视器，单靠它无法精确分离：
 
-- 驱动中等待空闲工作线程的时间；
-- 服务端获得 CPU 前的可运行状态调度延迟；
-- 处理函数内部等待锁或下游 Binder 的时间。
+- 驱动中等待空闲 worker 的时间；
+- 服务端获得 CPU 前的 runnable 延迟；
+- handler 内部等待锁或下游 Binder 的时间。
 
 `BBinder::startRecordingTransactions()` 与 `RecordedTransaction` 是独立的事务录制能力，并非 `binder_calls_stats` 的“增强统计粒度”。它可以记录请求和回复 Parcel，可能包含敏感信息，也会引入存储开销，只适合受控调试。
 
-### 8.3 用 Perfetto 关联客户端、服务端和调度
+### 8.3 用 Perfetto 关联 client、server 和调度
 
-采集 Binder 驱动、调度、AIDL 与锁竞争相关数据后，可以通过 Android 17 Perfetto 标准库查询同步事务：
+采集 Binder driver、sched、AIDL 与锁竞争相关数据后，Android 17 Perfetto stdlib Android 17 Perfetto 标准库查询同步事务：
 
 ```sql
 INCLUDE PERFETTO MODULE android.binder;
@@ -329,17 +329,17 @@ ORDER BY client_dur DESC
 LIMIT 50;
 ```
 
-`client_dur` 是同步调用方看到的墙上时间，`server_dur` 是服务端 Binder 回复切片的墙上时间。两者之差可能包含驱动排队、调度、传输及其他边界开销，不能直接命名为“排队时间”。
+`client_dur` 是同步调用方看到的 wall duration，`server_dur` 是服务端 Binder 回复切片的 wall duration。两者之差可能包含驱动排队、调度、传输及其他边界开销，不能直接命名为“排队时间”。
 
-若 `aidl_name` 为空，可能是 AIDL 跟踪未启用、接口没有生成相应跟踪名称，或这笔事务缺少可关联的切片。`BBinder::execTransact()` 的 `ATRACE_TAG_AIDL` 能产生接口/方法切片，但没有版本历史证据时，不能把这项能力标为 Android 17 首次引入。
+若 `aidl_name` 为空，可能是 AIDL 跟踪未启用、接口没有生成相应 trace name，或这笔事务缺少可关联的切片。`BBinder::execTransact()` 的 `ATRACE_TAG_AIDL` 能产生接口/方法切片，但没有版本历史证据时，不能把这项能力标为 Android 17 首次引入。
 
 随后检查：
 
-- 服务端线程的 `thread_state` 区间；
-- `android_binder_server_breakdown` 对服务端墙上时间的分类；
-- 监视器竞争与 Binder 回复的关联；
+- server thread 的 `thread_state` 区间；
+- `android_binder_server_breakdown` 对服务端 wall time 的分类；
+- monitor contention 与 Binder 回复的关联；
 - 同一时间窗内所有 Binder 工作线程是否持续无空闲；
-- 客户端与服务端的 CPU、cpuset 和可运行状态调度延迟。
+- client 与 server 的 CPU、cpuset 和 runnable latency。
 
 源码锚点：`external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql`。
 
@@ -354,9 +354,9 @@ LIMIT 50;
 3. 把无需同步返回的工作改成有上界的异步协议；
 4. 对状态更新做合并，对事件流做限频；
 5. 把高延迟方法与高频方法分离，避免共用同一业务队列或全局锁；
-6. 验证异常路径、日志和遥测不会同步阻塞 Binder 工作线程。
+6. 验证异常路径、日志和遥测不会同步阻塞 Binder worker。
 
-同步 AIDL 若必须立即返回结果，不能简单“扔进执行器后马上返回”。可以保留同步语义并优化执行时间，也可以重新设计回调/`oneway` 协议；后一种方案还要定义超时、取消、顺序和背压。
+同步 AIDL 若必须立即返回结果，不能简单“扔进 Executor 后马上返回”。可以保留同步语义并优化执行时间，也可以重新设计 callback/oneway 协议；后一种方案还要定义超时、取消、顺序和背压。
 
 ### 9.2 何时调整线程上限
 
@@ -372,12 +372,12 @@ libbinder 不允许在线程池启动后降低上限。Java App 也没有面向�
 
 - 多个互相独立的请求可以安全并行；
 - 共享锁、数据库连接、设备队列仍有余量；
-- 跟踪数据证明等待空闲 Binder 工作线程占主要延迟；
+- trace 证明等待空闲 Binder 工作线程占主要延迟；
 - 增加线程后的内存、调度和尾延迟经过目标设备验证。
 
-如果所有工作线程都在等同一把锁，增加线程只会增加等待者。若服务内部已有专用线程池，Binder 上限还要与该线程池和下游容量一起设计。
+如果所有 worker 都在等同一把锁，增加线程只会增加等待者。若服务内部已有专用线程池，Binder 上限还要与该线程池和下游容量一起设计。
 
-### 9.3 界面框架与线程池策略无关
+### 9.3 UI 框架与线程池策略无关
 
 Flutter 平台通道或 Compose 协程可能在界面线程发起系统服务调用，慢同步 IPC 会造成界面卡顿；这属于调用方线程选择问题，不能由此推出“所有 Binder 调用都应切到 `Dispatchers.IO`”。
 
@@ -385,18 +385,18 @@ Flutter 平台通道或 Compose 协程可能在界面线程发起系统服务调
 
 ## 10. 版本边界与核查清单
 
-以下版本边界涵盖 Android 12—17 的冻结、单向事务泛滥检测和诊断演进，当前结论以 Android 17 为上限：
+以下版本边界涵盖 Android 12—17 的冻结、oneway spam 和诊断演进，当前结论以 Android 17 为上限：
 
-- 用户态：`android-17.0.0_r1`
-- 内核：`android17-6.18-2026-06_r6`
-- Perfetto 标准库：`android-17.0.0_r1`
+- userspace：`android-17.0.0_r1`
+- kernel：`android17-6.18-2026-06_r6`
+- Perfetto stdlib：`android-17.0.0_r1`
 
 复核产品分支时至少检查：
 
-- `ProcessState.cpp` 的默认线程数、虚拟内存大小与滥用检测默认值；
+- `ProcessState.cpp` 的默认线程数、VM size 与 spam detection 默认值；
 - `app_main.cpp` 和服务主函数如何启动线程池；
 - `SystemServer.java` 的 `sMaxBinderThreads`；
-- `binder.c` 的线程创建、异步串行化、冻结、优先级与 Netlink 路径；
+- `binder.c` 的 spawn、async serialization、freeze、priority 与 Netlink 路径；
 - `IPCThreadState.cpp` 的饥饿记账和返回码；
 - Perfetto `android.binder` 模块当前字段；
 - 设备实际 ANR 超时与厂商修改。
