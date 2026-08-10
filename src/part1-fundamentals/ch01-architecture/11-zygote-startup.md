@@ -146,7 +146,7 @@ system_server: ATMS / AMS / ProcessList
   → Process.start()
   → ZygoteProcess.startViaZygote()
   → LocalSocket
-主 Zygote 或次 Zygote
+primary 或 secondary Zygote
   → forkAndSpecialize() 或 USAP specialize
   → 返回 PID
 ```

@@ -336,7 +336,7 @@ JNI 规范只要求 VM 确保至少 16 个 local reference slot。Android 实现
 
 ## 6. 引用、异常与所有权
 
-### 6.1 局部、全局与弱全局引用
+### 6.1 local、global、weak global
 
 - **local reference**：只在当前线程、当前 JNI 局部帧内有效。
 - **global reference**：跨调用、跨线程保持对象可达，直到 `DeleteGlobalRef()`。
@@ -484,7 +484,7 @@ ATrace_endSection();
 ```text
 托管侧封装
   ├─ 参数准备
-  ├─ 原生批处理
+  ├─ native batch
   └─ 结果转换
 ```
 

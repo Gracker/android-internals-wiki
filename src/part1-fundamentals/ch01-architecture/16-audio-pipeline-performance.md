@@ -263,7 +263,7 @@ if (*flags & AUDIO_OUTPUT_FLAG_FAST) {
 4. channel mask 不需要昂贵的下混。
 5. 这个 mixer output 有关联的 FastMixer。
 6. fast track slot 仍有空位。
-7. 会话、输出级或设备上的音效链不会移除 FAST 标志。
+7. session、output stage 或 device 上的 effect chain 不会移除 FAST flag。
 
 “frame count 不匹配就一定拒绝 FAST”也是一种误写。Android 17 对流式 fast track 会把帧数至少抬到 `mFrameCount * fast_track_multiplier`；它会改变实际缓冲配置，但不是上述第一层硬拒绝条件。打开轨道后应读取实际配置，不能假定 builder 请求原样生效。
 
@@ -361,7 +361,7 @@ Oboe 是 Google 的 C++ 封装：
 
 - 平台可用时调用 AAudio。
 - AAudio 不可用时回退 OpenSL ES。
-- 统一流构建器、回调、错误恢复和一部分设备兼容处理。
+- 统一 stream builder、callback、error recovery 和一部分设备兼容处理。
 
 不能把 Oboe 简化成固定的“MMAP EXCLUSIVE → MMAP SHARED → FAST → Normal”决策表。最终路径仍受 API level、builder 参数、设备配置、endpoint 占用和厂商实现影响。
 
@@ -402,7 +402,7 @@ AAudio/Oboe 的 data callback 运行在高优先级线程上。callback 内应�
 ```text
 普通工作线程
   └─ 解码 / 网络 / 文件 / 模型计算
-       └─ 无锁环形缓冲区
+       └─ lock-free ring buffer
             └─ audio callback：只取固定数量帧 + 轻量 DSP
 ```
 
@@ -519,10 +519,10 @@ Android 17 为 `USAGE_ASSISTANT` 增加独立的 Assistant volume stream，使�
 
 - build fingerprint、Android 版本、是否为 userdebug 构建。
 - 输入/输出设备与连接方式。
-- 应用 API、用途、格式、采样率、声道数。
+- App API、usage、format、sample rate、channel count。
 - 请求的和实际的共享/性能模式。
 - 缓冲区容量、大小、每次突发帧数。
-- 是否启用音效、空间音频、限制强化测试开关。
+- 是否启用 effects、spatial audio、hardening 测试开关。
 - 复现时设备是否切路由、熄屏、发热或有并发音频。
 
 音频路径对路由非常敏感。没记录这些信息，两份跟踪很可能来自不同管线。
