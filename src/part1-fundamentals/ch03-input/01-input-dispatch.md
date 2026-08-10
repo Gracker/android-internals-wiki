@@ -123,7 +123,7 @@ AOSP Android 17 的 `InputManager` 由 `InputManagerService` 的 native 实现�
 
 源码目录名 `services/inputflinger` 不等于系统存在独立的 `inputflinger` 进程。Android 17 的 `Android.bp` 仍以 `libinputflinger` 共享库构建，并保留“移动到独立进程”的 TODO。
 
-### 1.2 输入线程的优先级由任务配置文件决定
+### 1.2 输入线程的优先级由 task profile 决定
 
 Android 17 的 `InputThread` 没有使用固定的 `nice=-8` 或 `nice=-20` 代码。关键路径线程启动时调用：
 
@@ -131,7 +131,7 @@ Android 17 的 `InputThread` 没有使用固定的 `nice=-8` 或 `nice=-20` 代�
 SetTaskProfiles(/*tid=*/0, {"InputPolicy"});
 ```
 
-具体调度组、uclamp、cpuset 或 nice 行为由设备上的任务配置文件决定。排查设备差异时应读取目标构建的 task profile 和线程调度状态，不能根据 `ANDROID_PRIORITY_URGENT_DISPLAY` 的历史实现推导 Android 17 行为。
+具体调度组、uclamp、cpuset 或 nice 行为由设备上的 task profile 决定。排查设备差异时应读取目标 build 的 task profile 和线程调度状态，不能根据 `ANDROID_PRIORITY_URGENT_DISPLAY` 的历史实现推导 Android 17 行为。
 
 ---
 
@@ -228,9 +228,9 @@ InputReader
 
 ### 3.3 InputProcessor 的 HAL 调用在专用线程
 
-启用 MotionClassifier 后，`notifyMotion()` 把触摸事件放进容量有限的队列，并立即读取当前设备的最近分类结果。HAL 的 `classify()` 在名为 `InputProcessor` 的专用线程执行；更新后的结果影响后续事件。队列满时会记录 HAL 过慢并重置。
+启用 MotionClassifier 后，`notifyMotion()` 把触摸事件放进容量有限的队列，并立即读取当前设备的最近分类结果。HAL 的 `classify()` 在名为 `InputProcessor` 的专用线程执行；更新后的结果影响后续事件。队列满时会记录 HAL 过慢并 reset。
 
-这套设计避免 InputReader 的通知线程同步等待每次 HAL Binder 调用。某一帧看到的分类可能来自同一手势中较早的事件；迟到且跨越新 DOWN 的结果会被丢弃。
+这套设计避免 InputReader 的通知线程同步等待每次 HAL Binder 调用。某一帧看到的 classification 可能来自同一手势中较早的事件；迟到且跨越新 DOWN 的结果会被丢弃。
 
 ---
 
@@ -274,7 +274,7 @@ Android 17 当前调用的是 `TouchState` 与 `findTouchedWindowTargets()`，�
 - 安全策略要求 drop；
 - 系统合成 CANCEL，结束原接收者的手势。
 
-因此，“点到谁就永远给谁”只能作为粗略描述。分析时要跟踪触摸状态、指针 ID 与 CANCEL。
+因此，“点到谁就永远给谁”只能作为粗略描述。分析时要跟踪 touch state、pointer id 与 CANCEL。
 
 ### 4.4 坐标转换属于分发语义
 
@@ -453,7 +453,7 @@ DOWN 时，ViewGroup 按绘制顺序、坐标和可接收状态寻找 child，�
 - motion-event splitting 可把不同 pointer id 分给不同 child；
 - child 移除、窗口失焦或系统取消会清理目标。
 
-因此，手势问题应同时查看 DOWN 的命中、后续拦截、CANCEL 和指针 ID，不能只看最终的 `onTouchEvent()` 返回值。
+因此，手势问题应同时查看 DOWN 的命中、后续 intercept、CANCEL 和 pointer id，不能只看最终的 `onTouchEvent()` 返回值。
 
 ---
 
@@ -537,7 +537,7 @@ android.input.inputevent
 
 该 Perfetto data source 支持 raw event、加工后的事件与 window dispatch 信息，并可按 rule 选择 complete、redacted 或 none。普通 atrace 配置不一定自动包含它；采集配置未启用时，不应因为 trace 里没有结构化 input event 就断言系统没有分发。
 
-坐标、设备标识等输入数据涉及隐私。生产采集应使用受控规则和脱敏，不要默认抓取所有完整事件。
+坐标、设备标识等输入数据涉及隐私。生产采集应使用受控规则和 redaction，不要默认抓取所有完整事件。
 
 ### 8.2 五段延迟
 
@@ -575,7 +575,7 @@ counter 名包含 channel/window 名，trace 里可能被截断；多窗口应�
 4. InputDispatcher warning：确认是否 stale、policy drop、安全拒绝或无目标；
 5. window info/focus：确认 display、token、touchable region 和连接。
 
-`adb shell input tap`、`keyevent` 等注入从框架路径进入，可用于绕过真实硬件与 evdev。注入成功只说明注入点之后的链路可以工作。
+`adb shell input tap`、`keyevent` 等注入从 framework 路径进入，可用于绕过真实硬件与 evdev。注入成功只说明注入点之后的链路可以工作。
 
 ### 9.2 事件到了错误窗口
 
@@ -634,7 +634,7 @@ counter 名包含 channel/window 名，trace 里可能被截断；多窗口应�
 
 ### 10.1 `MotionEvent` 与 Compose `PointerEvent`
 
-InputDispatcher 发布原生按键/动作消息，应用框架构造 `android.view.MotionEvent`。Compose 在 Android 平台上从宿主 View 收到 MotionEvent，再转换为 Compose 指针数据，并进行多轮分发。
+InputDispatcher 发布原生按键/动作消息，应用 framework 构造 `android.view.MotionEvent`。Compose 在 Android 平台上从宿主 View 收到 MotionEvent，再转换为 Compose pointer 数据，并进行多 pass 分发。
 
 两者共享前半段系统链路，应用内部阶段不同。Compose 的消费标记、协程手势识别和 hit path 可能产生额外耗时，因此二者在 Perfetto 上不会“完全一致”。
 
@@ -657,7 +657,7 @@ finish 表示应用对该输入消息的处理阶段结束，并把 handled 状�
 
 ### 10.4 Show taps 不能替代输入 trace
 
-系统触点可视化与应用窗口渲染使用不同的 Surface/路径。它能帮助判断系统是否感知手势，但圆点移动不代表目标应用已经收到、消费或显示业务结果。
+系统触点可视化与应用窗口渲染使用不同的 Surface/路径。它能帮助判断系统是否感知手势，但圆点移动不代表目标 App 已经收到、消费或显示业务结果。
 
 ---
 

@@ -138,7 +138,7 @@ Android 17 的 `DisplayColorProfile` 从 HWC 能力构造以下信息：
 
 这一行为有 `OutputTest` 覆盖，不能照搬 `getBestDataspace()` 内一处仍写着“混合时使用 HLG”的旧注释。随后 `pickColorProfile()` 根据 HDR 支持、是否强制 client composition、用户/系统色彩设置和 HWC 能力，得到显示的 `ColorMode`、输出 dataspace 与 `RenderIntent`。
 
-因此，“某个图层是 HDR”和“显示器当前运行在 HDR 输出模式”是两个不同事实。屏幕能力、可见图层集合、强制 SDR 设置、镜像目标和 HWC 模式都会影响结果。
+因此，“某个 Layer 是 HDR”和“显示器当前运行在 HDR 输出模式”是两个不同事实。屏幕能力、可见 Layer 集合、强制 SDR 设置、镜像目标和 HWC 模式都会影响结果。
 
 ### 2.3 色彩差异会让 GPU 工作变贵，但不必然触发回退
 
@@ -151,7 +151,7 @@ Android 17 的 `Output::composeSurfaces()` 在准备 client composition 时，�
 - `SurfaceView` 也不保证 overlay；
 - `CLIENT` 不代表整屏所有 Layer 都由 GPU 合成。HWC 仍可把 client target 与其他 `DEVICE` Layer 一起合成。
 
-判断某台设备的结果，要查看该帧经过 HWC 验证后的 composition type。
+判断某台设备的结果，要查看该帧经过 HWC validate 后的 composition type。
 
 ---
 
@@ -177,7 +177,7 @@ Composer3 AIDL 的 `LayerCommand` 包含：
 
 ### 3.2 RenderEngine 的 Android 17 线性色彩处理
 
-Android 17 源码中没有名为 `LinearTube` 的组件，实际类型是 `shaders::LinearEffect`。它把需要色彩处理的图层组织为以下五步：
+Android 17 源码中没有名为 `LinearTube` 的组件，实际类型是 `shaders::LinearEffect`。它把需要色彩处理的 Layer 组织为以下五步：
 
 1. EOTF：把输入编码转换为线性亮度；
 2. 源 RGB 到 CIE XYZ；
@@ -204,7 +204,7 @@ Android 17 源码中没有名为 `LinearTube` 的组件，实际类型是 `shade
 | AGTM | buffer 有可解析的 SMPTE ST 2094-50 metadata，且没有更高优先级 LUT | 动态全局 tone mapping | Android 17 源码可见 `AGTM` trace；不应与 Pixel 的显示色彩模式混为一谈 |
 | Local tone map | `TonemapStrategy::Local` 且满足 HDR 图像条件 | 主要用于截图等非高频渲染 | `DisplaySettings` 明确提示会使用较大的中间分配，不适合作为常规逐帧默认策略 |
 
-RenderEngine 对这些分支有互斥处理：已经应用 LUT、AGTM 或 local tone map 后，会跳过标准 `libtonemap` 的重复映射。描述 Android 17 时，应使用这些源码名称，不使用无法对应到类型、接口或开关的称呼。
+RenderEngine 对这些分支有互斥处理：已经应用 LUT、AGTM 或 local tone map 后，会跳过标准 `libtonemap` 的重复映射。描述 Android 17 时，应使用这些源码名称，不使用无法对应到类型、接口或 flag 的称呼。
 
 ### 3.4 `libtonemap` 做了什么
 
@@ -619,7 +619,7 @@ Android 17 源码中可直接对应的 trace 名称包括：
 5. 系统是否 force SDR 或启用了输出转换；
 6. HWC 与 client composition 的结果是否不同。
 
-发灰常见于 PQ/HLG 被按 SDR 传递函数解释，或 tone mapping 使用了错误的内容峰值。应先确认元数据链路，再调整曲线。
+发灰常见于 PQ/HLG 被按 SDR transfer 解释，或 tone mapping 使用了错误的内容峰值。应先确认元数据链路，再调整曲线。
 
 ### 12.2 SDR UI 在 HDR 视频旁边忽明忽暗
 
@@ -628,7 +628,7 @@ Android 17 源码中可直接对应的 trace 名称包括：
 - display HDR/SDR ratio 是否变化；
 - SDR white point 和 LayerBrightness；
 - dimming stage；
-- HDR 图层进入或退出的时间点；
+- HDR Layer 进入或退出的时间点；
 - Window 与 SurfaceView 是否设置了互相冲突的 desired headroom。
 
 这个问题涉及亮度协调，不能只看 UI 的 sRGB 颜色值。
@@ -705,4 +705,4 @@ HDR 与广色域的性能问题可以归结为四个可验证的问题：
 3. HWC validate 后，哪些 Layer 是 `DEVICE`，哪些进入 `CLIENT`？
 4. 最终成本落在 Producer GPU、RenderEngine、DPU、内存还是面板？
 
-沿这四个问题取证，才能区分格式带宽、GPU tone mapping、硬件平面竞争与面板亮度功耗。脱离设备能力和逐帧 composition result 的固定毫秒或固定百分比，都不适合作为 Android 17 的平台结论。
+沿这四个问题取证，才能区分格式带宽、GPU tone mapping、硬件 plane 竞争与面板亮度功耗。脱离设备能力和逐帧 composition result 的固定毫秒或固定百分比，都不适合作为 Android 17 的平台结论。
