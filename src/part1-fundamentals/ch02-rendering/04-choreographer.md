@@ -136,7 +136,7 @@ task2b_verify_result: 'promoted-to-finalized: task6 pass-light-edit + task9 pass
 
 ## Choreographer 管理“何时开始一帧”
 
-Choreographer 是绑定到某个 `Looper` 的帧回调调度器。它把需要和显示节奏配合的工作分组，在一次应用 VSync 到来后按固定阶段执行。
+Choreographer 是绑定到某个 `Looper` 的帧回调调度器。它把需要和显示节奏配合的工作分组，在一次 App VSync 到来后按固定阶段执行。
 
 它负责：
 
@@ -350,7 +350,7 @@ flowchart TD
     N --> O["TRAVERSAL → COMMIT"]
 ```
 
-收到 VSync 事件后，`doFrame()` 仍可能因为没有待处理工作、正在恢复 buffer backlog、frame time 异常或 FPS 除数限制而不执行五阶段回调。
+收到 VSync event 后，`doFrame()` 仍可能因为没有待处理工作、正在恢复 buffer backlog、frame time 异常或 FPS divisor 而不执行五阶段回调。
 
 ### 5.2 FrameData 先选择 preferred timeline
 
@@ -405,9 +405,9 @@ Traversal 可能把本帧状态交给 RenderThread，但以下工作可以继续
 
 ### 6.1 `frameTimeNanos` 是稳定时间基准
 
-`FrameCallback.doFrame(long frameTimeNanos)` 接收的是系统为本帧选定的帧时间，时间基准与 `System.nanoTime()` 一致。它可以早于回调开始执行的当前时间。同一次帧分发中的所有回调共享这个稳定时间，有利于动画保持一致。
+`FrameCallback.doFrame(long frameTimeNanos)` 接收的是系统为本帧选定的帧时间，时间基准与 `System.nanoTime()` 一致。它可以早于回调开始执行的当前时间。同一 frame dispatch 中的所有回调共享这个稳定时间，有利于动画保持一致。
 
-动画应根据帧时间计算进度，不要用“每次回调固定增加 16.6 ms”。刷新率可变、App render rate 可低于显示 display VSync rate，主线程也可能迟到或跳过候选 timeline。
+动画应根据帧时间计算进度，不要用“每次回调固定增加 16.6 ms”。刷新率可变、App render rate 可低于 display VSync rate，主线程也可能迟到或跳过候选 timeline。
 
 ### 6.2 deadline 回答“何时必须准备好”
 
@@ -470,7 +470,7 @@ class CallbackCadenceSampler(
 
 常见实现把间隔除以 `16_666_667`，再把商减一当作掉帧数。这个算法在 90/120 Hz、动态刷新率、ARR、App 帧率 override 和主动降帧场景都会误判。
 
-如果只统计回调节奏，应同时记录当前 frame interval 或 display/render rate；如果目标是判断用户可见卡顿，应使用 FrameTimeline、FrameMetrics 或 JankStats 等呈现相关数据。
+如果只统计回调节奏，应同时记录当前 frame interval 或 display/render rate；如果目标是判断用户可见 jank，应使用 FrameTimeline、FrameMetrics 或 JankStats 等呈现相关数据。
 
 ---
 
@@ -527,7 +527,7 @@ Choreographer.getInstance().postVsyncCallback { data ->
 - API 31 的 `GPU_DURATION` 和 `DEADLINE`；
 - API 36 的 `FRAME_TIMELINE_VSYNC_ID`。
 
-`TOTAL_DURATION` 不一定等于各阶段相加，因为部分阶段可以并行。官方 API 契约指出，`TOTAL_DURATION < DEADLINE` 表示应用在分配的窗口帧预算内完成；这仍不能替代 SF/DisplayHAL 的 actual present 判断。
+`TOTAL_DURATION` 不一定等于各阶段相加，因为部分阶段可以并行。官方 API 契约指出，`TOTAL_DURATION < DEADLINE` 表示 App 在分配的 Window 帧预算内完成；这仍不能替代 SF/DisplayHAL 的 actual present 判断。
 
 ### 9.3 Listener 中先复制再异步处理
 
@@ -573,8 +573,8 @@ trace 配置、平台版本和设备实现会影响轨迹是否出现。没有�
 
 Perfetto FrameTimeline 从 Android 12 开始可用：
 
-- App Expected slice Expected 切片表示系统给应用生产目标帧的预算窗口，起点是 Choreographer 回调计划运行的时刻；
-- App Actual slice Actual 切片从 `Choreographer#doFrame` 或 NDK VSync 回调实际开始，结束时间取 GPU 完成与 buffer post 中更晚者；
+- App Expected slice 表示系统给 App 生产目标帧的预算窗口，起点是 Choreographer callback 计划运行的时刻；
+- App Actual slice 从 `Choreographer#doFrame` 或 NDK VSync callback 实际开始，结束时间取 GPU 完成与 buffer post 中更晚者；
 - SF Actual slice 覆盖 SF 工作以及其下方 Composer/DisplayHAL 到 on-screen update 的显示栈区间；
 - App SurfaceFrame 与 SF DisplayFrame 可通过 token 和 flow 关联。
 
@@ -661,7 +661,7 @@ Perfetto 可搜索：
 - `dequeueBuffer` 等待；
 - FrameTimeline 的 `Buffer Stuffing` jank type。
 
-看到主动延迟时，不能把这帧简单归因于主线程计算慢。还要检查积压是否下降、后续输入延迟是否恢复。
+看到主动 delay 时，不能把这帧简单归因于主线程计算慢。还要检查 backlog 是否下降、后续输入延迟是否恢复。
 
 ---
 
@@ -688,7 +688,7 @@ Choreographer 的五类 callback 是 Android Looper 上的调度分类；Compose
 - 只触发 redraw；
 - 因状态读取位置不同而跳过前面的阶段。
 
-不能写成“Compose 的三阶段始终全部位于一个固定 Traversal 子切片”。trace 中要同时看 `Choreographer#doFrame`、Compose tracing、宿主遍历和 RenderThread。
+不能写成“Compose 的三阶段始终全部位于一个固定 Traversal 子切片”。trace 中要同时看 `Choreographer#doFrame`、Compose tracing、宿主 traversal 和 RenderThread。
 
 ### 12.3 Platform 与 Jetpack 版本要分别记录
 
@@ -750,13 +750,13 @@ COMMIT 是 App callback 阶段。buffer 生产、SF 合成、HWC present 和 pan
 | Android 12 / API 31 | SurfaceFlinger/Perfetto FrameTimeline 可用；FrameMetrics 增加 GPU duration/deadline | App 与 SF 可以按 token 分析 expected/actual；此时还没有 API 33 的公开 `Choreographer.FrameData` |
 | Android 13 / API 33 | 公开 `VsyncCallback`、`FrameData`、`FrameTimeline` | App 可读取候选 timeline、deadline 和 VSync ID |
 | Android 16 / API 36 | FrameMetrics 公开 `FRAME_TIMELINE_VSYNC_ID` | 线上 Window 指标更容易与 trace token 关联 |
-| Android 17 / API 37 | 源码基线；五类回调、多 timeline、buffer stuffing recovery 均按 `android-17.0.0_r1` 核验 | 不把当前实现倒推成 Android 17 首次新增 |
+| Android 17 / API 37 | 源码基线；五类 callback、多 timeline、buffer stuffing recovery 均按 `android-17.0.0_r1` 核验 | 不把当前实现倒推成 Android 17 首次新增 |
 
 版本表只声明有公开 API 或旧 tag 证据的起点。Android 17 当前存在的内部方法，不自动等于该版本新增。
 
 ---
 
-## 十五、Framework 与内核的排查边界
+## 十五、Framework 与 kernel 的排查边界
 
 Choreographer 位于用户态框架，不直接决定线程何时获得 CPU。`FrameDisplayEventReceiver` 已投递异步消息后，目标线程仍可能处于：
 
@@ -796,7 +796,7 @@ Perfetto 中看到 wakeup 到运行的长间隔时，再检查优先级、CFS �
 3. 标准 View traversal 的同步屏障由 `ViewRootImpl` 管理，异步 VSync 消息可以穿过屏障。
 4. 五阶段顺序固定为 INPUT、ANIMATION、INSETS_ANIMATION、TRAVERSAL、COMMIT；各阶段是否有工作取决于到期 callback。
 5. `doFrame()` 还会处理 timeline 选择、jitter、frame time 单调性、FPS divisor 和 buffer stuffing recovery。
-6. `frameTimeNanos` 是稳定动画时间，deadline 与 expected present 分别描述就绪约束和呈现目标。
+6. `frameTimeNanos` 是稳定动画时间，deadline 与 expected present 分别描述 ready 约束和呈现目标。
 7. `FrameCallback` 适合观察 callback cadence；FrameMetrics 和 Perfetto FrameTimeline 提供更完整的 Window 与呈现证据。
 8. Compose 的 UI 阶段与 Choreographer callback 分类粒度不同，Platform 和 Jetpack 版本需要分别记录。
 

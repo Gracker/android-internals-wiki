@@ -121,7 +121,7 @@ flowchart LR
     P -. "满足提前解锁条件" .-> U
 ```
 
-图中的虚线表示条件分支：RenderThread 完成同步后，UI 线程有时可以先返回；纹理缓存空间不足等情况下，UI 线程会继续等到本帧绘制或跳过处理结束。`queueBuffer()` 只是 Producer 提交点，距离 SurfaceFlinger 采纳和显示设备呈现仍有后续阶段。
+图中的虚线表示条件分支：RenderThread 完成同步后，UI 线程有时可以先返回；纹理缓存空间不足等情况下，UI 线程会继续等到本帧 draw 或 skip 处理结束。`queueBuffer()` 只是 Producer 提交点，距离 SurfaceFlinger 采纳和显示设备呈现仍有后续阶段。
 
 ## 四类执行者各自负责什么
 
@@ -322,13 +322,13 @@ void CanvasContext::draw(bool solelyTextureViewUpdates) {
 
 `getFrame()` 由当前渲染后端取得目标 frame；`draw()` 处理脏区、RenderNode 和 layer 更新；`swapBuffers()` 将结果交给 NativeWindow/BufferQueue 路径。CPU 方法返回时，GPU 仍可能继续执行已经提交的图形工作。
 
-这里还有一个容易混淆的同名概念：`CanvasContext::waitOnFences()` 等待的是 `mFrameFences` 中的 `std::future<void>`，这些 future 对象由 `CommonPool::async()` 创建，用来保证异步帧任务在本帧结束前完成。方法名虽然含有 `Fences`，等待对象却不是 `sync_file` 图形栅栏，也不能解释成“等待 SurfaceFlinger release fence”。GraphicBuffer 的 Producer/Consumer fence 由 NativeWindow、BufferQueue、BLAST 和 SurfaceFlinger 路径携带，排查时要按来源区分。
+这里还有一个容易混淆的同名概念：`CanvasContext::waitOnFences()` 等待的是 `mFrameFences` 中的 `std::future<void>`，这些 future 对象由 `CommonPool::async()` 创建，用来保证异步帧任务在本帧结束前完成。方法名虽然含有 `Fences`，等待对象却不是 `sync_file` 图形 fence，也不能解释成“等待 SurfaceFlinger release fence”。GraphicBuffer 的 Producer/Consumer fence 由 NativeWindow、BufferQueue、BLAST 和 SurfaceFlinger 路径携带，排查时要按来源区分。
 
 ### `queueBuffer()` 表示 Producer 已提交
 
 在标准 App Window 中，`swapBuffers()` 最终会使 Producer 提交一个 buffer，并附带描述 Producer 写入完成状态的 fence。此时可以确认：
 
-- Producer 已把槽位从 `DEQUEUED` 推向 `QUEUED`；
+- Producer 已把 slot 从 `DEQUEUED` 推向 `QUEUED`；
 - Consumer 能取得 buffer 元数据；
 - Consumer 使用内容前仍需遵守输入 fence；
 - SurfaceFlinger 是否在目标周期 latch、怎样合成、何时 present，需要继续看下游事件。
@@ -406,7 +406,7 @@ Android 8.0 引入 `Bitmap.Config.HARDWARE`。官方文档将其描述为像素�
 
 这条分支可以解释某些长 `syncAndDrawFrame()`：资源压力既可能增加 RenderThread 工作，也可能把 UI 解锁推迟到 draw/skip 之后。确认时仍需查看同帧的 cache、upload、skip reason 和 GPU 证据。
 
-## Deferred GPU Commands GPU 命令与刷新的边界
+## Deferred GPU Commands 与 flush 的边界
 
 DisplayList 记录的是有顺序与状态语义的绘制操作。HWUI/Skia 可以在不改变画面语义的前提下合并批次、缓存资源、延迟提交或调整后端工作，但不能把所有同类型命令跨越裁剪、混合、保存/恢复和依赖关系随意重排。
 
@@ -453,7 +453,7 @@ ADPF 是系统调度与电源策略的提示输入。收到提示后，系统仍
 
 ### 第一步：从 FrameTimeline 选择问题帧
 
-Android 12+ 的 FrameTimeline 提供应用 `SurfaceFrame` 与系统 `DisplayFrame` 的 expected/actual 时间线。选中一帧后，记录 VSync ID、deadline、jank type 和关联图层。高刷新率、可变刷新率和调度偏移都会改变可用预算，不应固定使用 16.67 ms 作为所有设备的阈值。
+Android 12+ 的 FrameTimeline 提供 App `SurfaceFrame` 与系统 `DisplayFrame` 的 expected/actual 时间线。选中一帧后，记录 VSync ID、deadline、jank type 和关联 layer。高刷新率、可变刷新率和调度 offset 都会改变可用预算，不应固定使用 16.67 ms 作为所有设备的阈值。
 
 App actual timeline 的结束还会考虑 GPU completion 与 buffer post 等时间。它比单看 UI `doFrame` 更接近窗口帧结果，但光学显示边界仍需结合 display/present 证据。
 
@@ -563,11 +563,11 @@ ORDER BY s.ts;
 
 Producer 提交过快、Consumer/SF 处理变慢、acquire fence 迟到、release 回调积压或队列上限变化，都可能让可 dequeue slot 减少。观察 `dequeueBuffer` 变短只能说明等待减少，不能单独证明队列深度扩大。
 
-Android 17 还存在 buffer stuffing 检测与恢复逻辑。遇到 `Buffer stuffing recovery`、`swap chain stuffed`、`buffer stuffed` 或 `Negative offset` 等切片时，要结合后续 queued count、dequeue wait 和 FrameTimeline，判断系统是在主动控制排队延迟，还是 CPU/GPU 吞吐不足。
+Android 17 还存在 buffer stuffing 检测与恢复逻辑。遇到 `Buffer stuffing recovery`、`swap chain stuffed`、`buffer stuffed` 或 `Negative offset` 等 slice 时，要结合后续 queued count、dequeue wait 和 FrameTimeline，判断系统是在主动控制排队延迟，还是 CPU/GPU 吞吐不足。
 
 ## 多窗口：共享关系要按进程划分
 
-同一进程的多个 HWUI 窗口共享 `RenderThread::getInstance()`。它们常常也使用同一主线程，但 UI 线程归属取决于各自 `ViewRootImpl` 的 Looper。RenderThread WorkQueue 是共享的，一个窗口的长同步、资源上传或绘制可能延迟队列后方的另一个窗口。
+同一进程的多个 HWUI 窗口共享 `RenderThread::getInstance()`。它们常常也使用同一主线程，但 UI 线程归属取决于各自 `ViewRootImpl` 的 Looper。RenderThread WorkQueue 是共享的，一个窗口的长同步、资源上传或 draw 可能延迟队列后方的另一个窗口。
 
 来自不同进程的分屏应用拥有各自的 UI 线程和 RenderThread。它们仍共享系统 GPU、SurfaceFlinger、HWC、内存带宽和显示 deadline。两边 App 都按时 `queueBuffer()`，仍可能在合成或显示阶段相互影响。
 
@@ -595,7 +595,7 @@ GPU 与 display fence 的等待点还涉及 `dma_fence`/`sync_file` 框架和厂
 | Android 12 / API 31 | FrameTimeline 可用于系统级帧追踪；Performance Hint 公开 API | 可用 expected/actual timeline 对齐 App 与 DisplayFrame；hint 不能当成频率保证 |
 | Android 14 / API 34 | 该版本 AOSP HWUI 已有 `HintSessionWrapper` 帧工作时长上报 | 分析 RT 时可检查 ADPF session，同时仍需频率与帧结果证据 |
 | Android 16 / API 36 | CPU/GPU headroom API 扩展性能余量观察能力 | headroom 查询与 HWUI 每帧 hint session 要分别解释 |
-| Android 17 / API 37 | 源码基线：`android-17.0.0_r1`；kernel 基线：`android17-6.18-2026-06_r6` | 方法名、条件分支、BLAST 缓冲状态和调度边界均按该版本复核 |
+| Android 17 / API 37 | 源码基线：`android-17.0.0_r1`；kernel 基线：`android17-6.18-2026-06_r6` | 方法名、条件分支、BLAST buffer 状态和调度边界均按该版本复核 |
 
 版本表只记录能由对应源码或官方 API 文档支持的变化。当前源码中存在某段逻辑，只能证明 Android 17 有该实现；若要声称它在 Android 17 首次加入，还需要逐个历史 tag 追溯。
 
