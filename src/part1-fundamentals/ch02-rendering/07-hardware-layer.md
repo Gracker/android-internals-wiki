@@ -179,7 +179,7 @@ public void setLayerType(@LayerType int layerType, @Nullable Paint paint) {
 
 Software Layer 的 Bitmap 在硬件加速窗口中仍需成为 GPU 可采样资源。内容频繁变化会同时增加主线程软件绘制、Bitmap 更新和图形资源准备成本，因此不适合当作通用性能优化。
 
-`buildDrawingCache()` 所属的公开绘制缓存 API 已废弃，但 Android 17 的 `View.buildLayer()` 内部仍保留这条 SOFTWARE 分支。内部实现仍然存在，不代表应用应重新依赖这套公开 API。
+`buildDrawingCache()` 所属的公开 drawing-cache API 已废弃，但 Android 17 的 `View.buildLayer()` 内部仍保留这条 SOFTWARE 分支。内部实现仍然存在，不代表应用应重新依赖这套公开 API。
 
 ## `buildLayer()`：显式预建的调用链
 
@@ -213,7 +213,7 @@ public void buildLayer() {
 }
 ```
 
-native HWUI 的 `CanvasContext::buildLayer()` 会暂停当前绘制、用 `TreeInfo::MODE_FULL` 准备目标节点、把 dirty layer 交给渲染管线，并把节点记入 `mPrefetchedLayers`。下一次正常 `prepareTree()` 若见到该节点，会通过 `markLayerInUse()` 接管预建结果；若预建节点没有进入树，`freePrefetchedLayers()` 会记录警告并销毁该图层。
+native HWUI 的 `CanvasContext::buildLayer()` 会暂停当前绘制、用 `TreeInfo::MODE_FULL` 准备目标节点、把 dirty layer 交给渲染管线，并把节点记入 `mPrefetchedLayers`。下一次正常 `prepareTree()` 若见到该节点，会通过 `markLayerInUse()` 接管预建结果；若预建节点没有进入树，`freePrefetchedLayers()` 会记录警告并销毁该 layer。
 
 `buildLayer()` 适合已确认首帧建层会影响动画、且 View 即将参与下一次绘制的场景。无条件提前为大量 View 预建，会占用 RenderThread、GPU 和缓存，并可能因节点未被使用而白做。
 
@@ -251,7 +251,7 @@ LayerType effectiveLayerType() const {
 }
 ```
 
-摘录中的字段名做了类成员前缀压缩，条件与 Android 17 原码一致。自动升层覆盖函子（functor）隔离、ImageFilter、StretchEffect，以及非零半透明度与 overlapping rendering 的组合。尺寸超过最大纹理限制时无法走这条 RenderLayer 路径。
+摘录中的字段名做了类成员前缀压缩，条件与 Android 17 原码一致。自动升层覆盖函子（functor）隔离、ImageFilter、StretchEffect，以及非零半透明 alpha 与 overlapping rendering 的组合。尺寸超过最大纹理限制时无法走这条 RenderLayer 路径。
 
 ### `hasOverlappingRendering()` 为什么重要
 
@@ -352,7 +352,7 @@ Hardware Layer 是已经栅格化的图像。大幅放大可能暴露采样模�
 
 ### 5. GPU 与内存带宽
 
-离屏绘制会写 layer surface，最终窗口绘制又要读取它。复杂子树复用可以节省重复光栅化，但大面积图层会增加 render target 写入、纹理采样和内存带宽。Tile-based GPU 是否把部分工作留在片上、何时落到外部内存，取决于后端与驱动，AOSP View API 无法给出统一结论。
+离屏 pass 会写 layer surface，最终窗口 pass 又要读取它。复杂子树复用可以节省重复光栅化，但大面积 layer 会增加 render target 写入、纹理采样和内存带宽。Tile-based GPU 是否把部分工作留在片上、何时落到外部内存，取决于 backend 与驱动，AOSP View API 无法给出统一结论。
 
 ### Kernel 与 driver 边界
 
@@ -438,7 +438,7 @@ slice 名会受 build、atrace category 和 Skia backend 影响。看到 `buildL
 
 `View.setRenderEffect()` 把 effect 写入 RenderNode。Android 17 的自动升层条件包含非空 ImageFilter，因此这类效果通常需要中间合成结果。
 
-RenderEffect 用于产生模糊、color filter 或其他图像效果；显式 Hardware Layer 用于控制中间结果复用与图层 Paint。二者可能在同一 RenderNode 汇合，却不保证“叠加两个 API 就一定缓存一次”。effect 输入或参数变化时仍需执行相应绘制与滤镜工作。
+RenderEffect 用于产生 blur、color filter 或其他图像效果；显式 Hardware Layer 用于控制中间结果复用与 layer Paint。二者可能在同一 RenderNode 汇合，却不保证“叠加两个 API 就一定缓存一次”。effect 输入或参数变化时仍需执行相应绘制与滤镜工作。
 
 分析 RenderEffect 时，除 layer update 外还要检查 effect 范围、blur 半径、HDR/颜色空间、GPU pass 和 damage。全屏模糊即使内容稳定，也可能带来很高的中间 surface 与采样成本。
 
@@ -461,7 +461,7 @@ Compose UI 1.11.4 的核心语义是：
 | `Offscreen` | 总是先渲染到离屏 buffer，再合成到目标 | 增加内存、pass 和 bounds clipping |
 | `ModulateAlpha` | 把 alpha 调制到每条绘制指令；无 RenderEffect 时可避免 alpha 离屏 | 重叠内容可能得到不同视觉结果 |
 
-除 `CompositingStrategy.Offscreen` 外，1.11.4 的 `GraphicsLayerScope` 还规定：非 `SrcOver` 的 `blendMode` 和非空 `colorFilter` 都会强制离屏，语义等价于 Offscreen。`Auto` 仍可能离屏，会根据 alpha、RenderEffect 和这些合成属性选择中间缓冲。
+除 `CompositingStrategy.Offscreen` 外，1.11.4 的 `GraphicsLayerScope` 还规定：非 `SrcOver` 的 `blendMode` 和非空 `colorFilter` 都会强制离屏，语义等价于 Offscreen。`Auto` 仍可能离屏，会根据 alpha、RenderEffect 和这些合成属性选择中间 buffer。
 
 下面的代码显式要求 Offscreen，适合需要把 `BlendMode` 限制在当前 composable 内容范围内的场景：
 
@@ -496,7 +496,7 @@ Offscreen 会把绘制限制在 layer bounds 内。只有 rotation/translation �
 | Android 5.0 / API 21 | HWUI 引入 RenderThread 架构 | Hardware Layer 的准备与离屏绘制进入现代 UI/RT 分工 |
 | Android 10 / API 29 | `RenderNode` 成为公开 API，提供 `setUseCompositingLayer()` | 可在 RenderNode 级显式要求中间缓冲 |
 | Android 12 / API 31 | `View.setRenderEffect()` / RenderEffect 进入公开 API | ImageFilter/effect 需要结合自动升层与离屏成本分析 |
-| Android 17 / API 37 | 源码锚点：`promotedToLayer()`、`effectiveLayerType()`、damage queue、Skia 图层渲染与 `CanvasContext::buildLayer()` | 当前条件、方法名和资源生命周期按 `android-17.0.0_r1` 解读 |
+| Android 17 / API 37 | 源码锚点：`promotedToLayer()`、`effectiveLayerType()`、damage queue、Skia layer render 与 `CanvasContext::buildLayer()` | 当前条件、方法名和资源生命周期按 `android-17.0.0_r1` 解读 |
 
 Compose 的 `graphicsLayer`、`CompositingStrategy` 与 `rememberGraphicsLayer()` 由 AndroidX artifact 版本管理，不放进平台 API 版本表。检查时记录应用的 Compose UI 依赖版本。
 

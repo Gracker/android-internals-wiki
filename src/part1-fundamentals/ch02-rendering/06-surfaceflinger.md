@@ -92,7 +92,7 @@ last_deepseek_cn_review_at: 2026-06-12
 
 ## SurfaceFlinger 位于哪一段
 
-应用完成一帧渲染并提交缓冲后，显示流程仍没有结束。SurfaceFlinger 要接收缓冲与 `SurfaceControl.Transaction`，更新图层层级，为每个 Display 构造可见内容，再与硬件合成器（Hardware Composer，HWC）协商合成方案并执行 present。
+应用完成一帧渲染并提交 buffer 后，显示流程仍没有结束。SurfaceFlinger 要接收 buffer 与 `SurfaceControl.Transaction`，更新 Layer 层级，为每个 Display 构造可见内容，再与硬件合成器（Hardware Composer，HWC）协商合成方案并执行 present。
 
 Android 17 标准窗口的主路径可以概括为：
 
@@ -111,7 +111,7 @@ flowchart LR
     C -. "present fence / layer release fences" .-> T
 ```
 
-这张图有两个边界。SurfaceFlinger 处理图层与 Display，不了解应用内部的 View 或 Compose 节点。设备合成与客户端合成可以在同一帧同时出现：RenderEngine 先生成 client target，HWC 再把它与可由设备处理的图层一起提交显示。
+这张图有两个边界。SurfaceFlinger 处理图层与 Display，不了解 App 内部的 View 或 Compose 节点。设备合成与客户端合成可以在同一帧同时出现：RenderEngine 先生成 client target，HWC 再把它与可由设备处理的 Layer 一起提交显示。
 
 源码分析以 `android-17.0.0_r1` 为当前锚点。Android 12 的 `INVALIDATE/REFRESH` 只用于解释旧 Trace，Android 13 之后按 `commit/composite` 主线阅读。
 
@@ -129,11 +129,11 @@ Android 17 的 FrontEnd 将客户端请求整理成服务器侧状态：
 - `LayerSnapshotBuilder` 生成按 z-order 排列的 `LayerSnapshot`；
 - CompositionEngine 和输入、无障碍等消费者读取 snapshot。
 
-这套结构划清了“客户端请求”与“本帧合成状态”的边界。当前源码仍保留部分旧版 `Layer` 互操作，但合成分析应优先跟踪 FrontEnd state、snapshot 和 Output。
+这套结构划清了“客户端请求”与“本帧合成状态”的边界。当前源码仍保留部分 legacy `Layer` 互操作，但合成分析应优先跟踪 FrontEnd state、snapshot 和 Output。
 
 ### 2. 参与 VSync 调度与帧目标计算
 
-HWC 的硬件 VSync 回调为预测器提供样本，Scheduler 的 VSync schedule、dispatch 与 EventThread 生成应用和系统侧的调度事件。`VsyncModulator` 调整 app/SF work duration 与相位，但它不代表完整的 VSync 分发实现。
+HWC 的硬件 VSync callback 为预测器提供样本，Scheduler 的 VSync schedule、dispatch 与 EventThread 生成应用和系统侧的调度事件。`VsyncModulator` 调整 app/SF work duration 与 phase，但它不代表完整的 VSync 分发实现。
 
 SurfaceFlinger 还创建 DisplayEventConnection，让应用侧 Choreographer 等消费者接收软件 VSync。SF 自身的帧信号进入 `Scheduler::onFrameSignal()`。Android 17 会先为 pacesetter display 和可参与本轮的 follower display 计算 `FrameTarget`，再决定 commit 与 composite。
 
@@ -164,7 +164,7 @@ SurfaceFlinger 需要知道：
 
 普通 Activity 的整棵 View 树通常绘制进一个 App Window buffer，SurfaceFlinger 看到宿主窗口 Layer。`SurfaceView`、视频、相机、壁纸、系统栏、输入法、截图动画、transition leash 和 display decoration 可能引入更多 Layer。
 
-Android 17 的 `SurfaceView` 还可能维护容器 Layer、BLAST buffer Layer 和背景 color Layer。图层数量增加只说明 SurfaceControl 层级发生变化；还要结合所有者 PID/UID、parent、layer stack、buffer 和事务确认来源。
+Android 17 的 `SurfaceView` 还可能维护容器 Layer、BLAST buffer Layer 和背景 color Layer。图层数量增加只说明 SurfaceControl 层级发生变化；还要结合 owner pid/uid、parent、layer stack、buffer 和 transaction 确认来源。
 
 ### z-order 是层级遍历结果
 
@@ -199,13 +199,13 @@ traverseBottomToTop(node):
 
 Transaction 把一组 Layer 修改作为一个提交单元。合并操作具有顺序语义：后写入的属性可以覆盖前值。Android 17 FrontEnd README 说明，transaction 按 ApplyToken 建立队列；相同 ApplyToken 内保证顺序，不同 token 之间需要显式 barrier 才能建立跨队列依赖。
 
-`TransactionHandler` 使用 `LocklessQueue<QueuedTransactionState>` 接收事务，commit 时先调用 `collectTransactions()`，再按 ready filter 和每个 ApplyToken 的待处理 FIFO 执行 `flushTransactions()`。readiness 会考虑栅栏、present time、barrier 与 unsignaled buffer 条件。transaction barrier 的默认 TTL 是 5 秒，用于避免依赖永久悬挂。
+`TransactionHandler` 使用 `LocklessQueue<QueuedTransactionState>` 接收 transaction，commit 时先调用 `collectTransactions()`，再按 ready filter 和每个 ApplyToken 的 pending FIFO 执行 `flushTransactions()`。readiness 会考虑 fence、present time、barrier 与 unsignaled buffer 条件。transaction barrier 的默认 TTL 是 5 秒，用于避免依赖永久悬挂。
 
 这里的 lockless queue 只说明 transaction 入队结构。SurfaceFlinger 主流程仍会在 snapshot、display state 和 legacy 互操作处使用相应锁；不能据此推断 commit 全程无锁。
 
 ### 原子提交不保证像素已经可读
 
-一笔事务可以原子地表达“新缓冲、位置和裁剪一起生效”。生产者仍可能异步写入缓冲，acquire fence 负责保护内容。Android 13 起支持受限的 unsignaled buffer latch 模式，SurfaceFlinger 可以在满足策略条件的简单更新中先推进 transaction readiness，但 RenderEngine/HWC 读取内容前仍要遵守栅栏。
+一笔 transaction 可以原子地表达“新 buffer、位置和裁剪一起生效”。生产者仍可能异步写入缓冲，acquire fence 负责保护内容。Android 13 起支持受限的 unsignaled buffer latch 模式，SurfaceFlinger 可以在满足策略条件的简单更新中先推进 transaction readiness，但 RenderEngine/HWC 读取内容前仍要遵守 fence。
 
 SyncTransaction、WMS transition sync 与应用的 `SurfaceSyncGroup` 解决的参与者和等待条件并不完全相同。排查跨窗口动画时，先确认哪些 Surface 被加入同一个同步组，再检查 transaction barrier、buffer readiness 和 callback；屏幕上同时移动不代表它们自动属于同一同步事务。
 
@@ -236,7 +236,7 @@ App RenderThread / Producer
           RequestedLayerState / LayerSnapshot
 ```
 
-普通 BLAST 窗口中的 BufferQueue 获取操作通常发生在应用进程的 BLAST Consumer，SurfaceFlinger 接收带缓冲和栅栏的事务。把所有现代窗口都写成“SurfaceFlinger 直接调用 BufferQueue `acquireBuffer()`”会混淆进程与所有权。
+普通 BLAST 窗口中的 BufferQueue acquire 常发生在应用进程的 BLAST Consumer，SurfaceFlinger 接收带 buffer 和 fence 的 transaction。把所有现代窗口都写成“SurfaceFlinger 直接调用 BufferQueue `acquireBuffer()`”会混淆进程与所有权。
 
 SurfaceFlinger 完成消费后，release callback 返回 BLAST，再由 BLAST 释放对应 BufferItem。`queueBuffer()`、BLAST acquire、`BufferTX - <layerName>` 增加、SF latch、HWC present 与 release callback 都是不同时间点。
 
@@ -284,7 +284,7 @@ void Scheduler::onFrameSignal(ICompositor& compositor,
 }
 ```
 
-源码会分别处理 pacesetter 与 follower display 的 deadline、present fence backpressure 和锁步条件。摘录省略了 follower 的循环判断；系统先生成 `FrameTargets`，`commit` 返回 `false` 时本轮不会进入 `composite`。
+源码会分别处理 pacesetter 与 follower display 的 deadline、present fence backpressure 和 lockstep 条件。摘录省略了 follower 的循环判断；系统先生成 `FrameTargets`，`commit` 返回 `false` 时本轮不会进入 `composite`。
 
 ### `commit()`：准备本帧合成状态
 
@@ -301,9 +301,9 @@ Android 17 的 `SurfaceFlinger::commit(PhysicalDisplayId, FrameTargets)` 主要�
 
 `updateLayerSnapshots()` 会执行 `TransactionHandler:flushTransactions`、`LayerLifecycleManager.applyTransactions()`、`LayerHierarchyBuilder.update()` 与 `LayerSnapshotBuilder:update`。看到 commit 变长时，要继续区分 transaction 数量、Layer 创建销毁、hierarchy/geometry 变化、buffer latch 和锁等待。
 
-`commit` 返回 `false` 可能只是本轮没有需要提交到显示的变化，也可能受 mode set 或背压分支影响。没有 composite slice 不能自动归为丢帧。
+`commit` 返回 `false` 可能只是本轮没有需要提交到显示的变化，也可能受 mode set 或 backpressure 分支影响。没有 composite slice 不能自动归为丢帧。
 
-### `composite()`：把快照交给各个 Output
+### `composite()`：把 snapshot 交给各个 Output
 
 `SurfaceFlinger::composite()` 构造 `CompositionRefreshArgs`，把物理/虚拟 Display 对应的 Output 和 frame target 交给 CompositionEngine。Output 的主流程包括：
 
@@ -315,7 +315,7 @@ Android 17 的 `SurfaceFlinger::commit(PhysicalDisplayId, FrameTargets)` 主要�
 6. 需要 CLIENT 时由 RenderEngine 生成 client target；
 7. `presentFrameAndReleaseLayers()` 执行 present 并分发 fence。
 
-Android 17 在特定条件下可把 GPU 支持的虚拟显示合成放到后台执行器，但这条路径受 flag、RenderEngine threaded 能力和物理显示是否使用 client composition 等条件约束。不能把多显示场景概括成“全部并行合成”。
+Android 17 在特定条件下可把 GPU-backed virtual display composition 放到后台执行器，但这条路径受 flag、RenderEngine threaded 能力和物理 Display 是否使用 client composition 等条件约束。不能把多显示场景概括成“全部并行合成”。
 
 ## Android 12 与 Android 13+ 的主循环边界
 
@@ -329,7 +329,7 @@ INVALIDATE 侧处理 transaction、Layer/buffer 状态和脏区；REFRESH 侧推
 
 Android 13 的 MessageQueue handler 已直接进入 `commit()` 与 `composite()`。Android 14 进一步由 `Scheduler::onFrameSignal()` 统一帧入口。Android 17 延续这条主线，并把 per-display `FrameTargeter`、FrontEnd snapshot 和 CompositionEngine Output 纳入当前实现。
 
-`INVALIDATE/REFRESH` 适合解释 Android 12 历史，不能用作 Android 17 的源码调用名。版本对比时先确认系统构建和标签，再搜索对应切片。
+`INVALIDATE/REFRESH` 适合解释 Android 12 历史，不能用作 Android 17 的源码调用名。版本对比时先确认系统 build 和 tag，再搜索对应 slice。
 
 ## Client Composition 与 Device Composition
 
@@ -604,9 +604,9 @@ AOSP SurfaceFlinger 能说明 framework 怎样传递 buffer/fence、调用 Compo
 | Android 12 / API 31 | SurfaceFlinger 仍使用 `onMessageReceived()` 的 INVALIDATE/REFRESH；FrameTimeline 成为现代诊断入口 | 旧 Trace 用 INVALIDATE/REFRESH，App SurfaceFrame 与 DisplayFrame 分开分析 |
 | Android 13 / API 33 | 主循环进入 `commit/composite`；Composer3 AIDL 进入平台；默认 unsignaled latch 策略有严格适用条件 | 不能沿用 Android 12 方法名；简单单 Layer buffer update 与跨 Layer sync 要分开 |
 | Android 14 / API 34 | `Scheduler::onFrameSignal()` 统一 commit/composite 帧入口 | VSync 调度与 SF 工作由 Scheduler/FrameTarget 证据关联 |
-| Android 15 / API 35 | 源码已有 per-display `FrameTargeter`，以及带 `PhysicalDisplayId`、`FrameTargets/FrameTargeters` 的 commit/composite 参数；支持 ARR 的设备可以在一个显示模式内改变 VSync 周期 | 多显示按 displayId、target、present fence 分开；SF 截止时间与 present 不能再按固定 60/120 Hz 周期推断 |
+| Android 15 / API 35 | 源码已有 per-display `FrameTargeter`，以及带 `PhysicalDisplayId`、`FrameTargets/FrameTargeters` 的 commit/composite 参数；支持 ARR 的设备可以在一个显示模式内改变 VSync 周期 | 多显示按 displayId、target、present fence 分开；SF deadline 与 present 不能再按固定 60/120 Hz 周期推断 |
 | Android 16 / API 36 | 延续 per-display frame target 与 pacesetter/follower 调度结构 | 不能把 Android 15 已存在的参数和类误记成 Android 16 首次引入 |
-| Android 17 / API 37 | 当前锚点：FrontEnd transaction/snapshot、`commit(PhysicalDisplayId, FrameTargets)`、`composite(...FrameTargeters)`、AIDL Composer3/HWComposer 协商 | 所有当前方法名、composition type 和栅栏分支按 `android-17.0.0_r1` 解释 |
+| Android 17 / API 37 | 当前锚点：FrontEnd transaction/snapshot、`commit(PhysicalDisplayId, FrameTargets)`、`composite(...FrameTargeters)`、AIDL Composer3/HWComposer 协商 | 所有当前方法名、composition type 和 fence 分支按 `android-17.0.0_r1` 解释 |
 
 这张表只把已核对的版本差异写成“该版本存在”。判断某个内部类或优化是否首次出现，需要继续比较父 tag 与提交历史。
 
@@ -618,7 +618,7 @@ AOSP SurfaceFlinger 能说明 framework 怎样传递 buffer/fence、调用 Compo
 
 ### commit 长不等于所有时间都在合成像素
 
-`commit` 主要处理事务、Layer state、snapshot、buffer latch、refresh rate 和回调。RenderEngine 绘制与 HWC 显示提交位于后续 `composite`/Output 流程。
+`commit` 主要处理 transaction、Layer state、snapshot、buffer latch、refresh rate 和 callback。RenderEngine 绘制与 HWC present 位于后续 `composite`/Output 流程。
 
 ### DEVICE composition 不代表“零 GPU”
 

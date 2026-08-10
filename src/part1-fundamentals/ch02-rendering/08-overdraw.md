@@ -92,7 +92,7 @@ task9_p2_issues: 0
 
 ## 过度绘制的边界
 
-过度绘制（overdraw）指同一目标像素在一帧的绘制过程中被多次覆盖。常见例子是窗口背景、根布局背景和列表项背景依次画在同一片不透明区域，最终只有最上层颜色可见。
+过度绘制（overdraw）指同一目标像素在一帧的绘制过程中被多次覆盖。常见例子是 Window 背景、根布局背景和列表项背景依次画在同一片不透明区域，最终只有最上层颜色可见。
 
 这里有三个容易混淆的层次：
 
@@ -100,7 +100,7 @@ task9_p2_issues: 0
 2. **GPU 执行的片元、采样与混合**：驱动可以裁剪、合批或剔除部分工作，移动 GPU 还可能在片上 tile memory 中完成中间结果。逻辑上多画一次，不等于外部内存一定多写一整次。
 3. **SurfaceFlinger 的多 Layer 合成**：App Window、`SurfaceView`、系统栏、弹窗等可以是不同的 SurfaceFlinger Layer。它们可能由 HWC 的硬件平面合成，也可能由 RenderEngine 合成到 client target，属于显示合成阶段。
 
-彩色区域只能定位需要检查的位置，不能单独证明 GPU 已超出帧预算，也不能代表整屏所有图层的最终合成成本。
+彩色区域只能定位需要检查的位置，不能单独证明 GPU 已超出帧预算，也不能代表整屏所有 Layer 的最终合成成本。
 
 ## Android 17 怎样生成过度绘制颜色
 
@@ -117,7 +117,7 @@ Android 17 / API 37 的源码锚点是 `android-17.0.0_r1`。HWUI 通过 `debug.
 - 颜色来自 **HWUI 绘制命令的诊断性重放**，不是 GPU 驱动返回的硬件计数器；
 - 调试模式本身多了一张全尺寸 A8 表面、一次重放和一次着色合成，不能在开启它时测量页面的正常 GPU 时长。
 
-诊断重放还有一个 Hardware Layer 边界。Android 17 的 `RenderNodeDrawable` 遇到已有 layer surface 的 RenderNode 时，会通过 `drawImageRect()` 合成 layer snapshot，不会在最终窗口的 overdraw pass 中逐条展开该图层内部的 DisplayList。源码还保留了刚重绘图层的透明矩形调试分支，但不能据此把最终叠加色解释成图层内部所有 draw op 的逐像素计数。看到 layer build/update 或离屏绘制时，还要结合 [2.7 Hardware Layer](07-hardware-layer.md) 的 RenderThread、GPU 和内存证据。
+诊断重放还有一个 Hardware Layer 边界。Android 17 的 `RenderNodeDrawable` 遇到已有 layer surface 的 RenderNode 时，会通过 `drawImageRect()` 合成 layer snapshot，不会在最终窗口的 overdraw pass 中逐条展开该 layer 内部的 DisplayList。源码还保留了刚重绘 layer 的透明矩形调试分支，但不能据此把最终叠加色解释成 layer 内部所有 draw op 的逐像素计数。看到 layer build/update 或离屏 pass 时，还要结合 [2.7 Hardware Layer](07-hardware-layer.md) 的 RenderThread、GPU 和内存证据。
 
 ### 颜色应该怎样读
 
@@ -147,7 +147,7 @@ Android 17 默认颜色数组的前两个位置是透明色，之后依次是蓝
 - 离屏表面的分配、清理、渲染和回合成；
 - GPU 活跃时间、频率和功耗。
 
-多数移动 GPU 使用 tile-based 架构。驱动和 GPU 可以在片上存储中处理一个图块，并对裁剪、不透明覆盖和不可见区域做优化，因此三次逻辑覆盖不保证产生三倍外部内存写入。半透明混合、纹理采样、复杂 shader 和额外 render pass 仍可能消耗计算与带宽。具体代价由 GPU 架构、驱动、绘制顺序、格式、分辨率和内容共同决定。
+多数移动 GPU 使用 tile-based 架构。驱动和 GPU 可以在片上存储中处理一个 tile，并对裁剪、不透明覆盖和不可见区域做优化，因此三次逻辑覆盖不保证产生三倍外部内存写入。半透明混合、纹理采样、复杂 shader 和额外 render pass 仍可能消耗计算与带宽。具体代价由 GPU 架构、驱动、绘制顺序、格式、分辨率和内容共同决定。
 
 工程判断应落到可测量的关联上：
 
@@ -240,7 +240,7 @@ counter / (屏幕宽度 × 屏幕高度)
 
 `SurfaceView` 的内容通常进入独立的 child Surface。宿主 App Window 负责普通 View、控件和遮罩，SurfaceFlinger 再把两者放进同一个 Layer 树。视频、相机或游戏画面是否走 HWC 的 DEVICE composition，要由每帧的格式、缩放、旋转、alpha、protected 属性、可用 plane 和带宽共同决定。
 
-宿主窗口的颜色叠加不能代表 `SurfaceView` 内容内部的重复绘制，也不能显示 SurfaceFlinger/HWC 的最终合成策略。应检查对应图层、buffer、fence 和 composition type。
+宿主窗口的颜色叠加不能代表 `SurfaceView` 内容内部的重复绘制，也不能显示 SurfaceFlinger/HWC 的最终合成策略。应检查对应 Layer、buffer、fence 和 composition type。
 
 ### TextureView
 
@@ -396,7 +396,7 @@ Modifier.graphicsLayer {
 }
 ```
 
-这段代码会增加一个 pass，只适用于像素语义要求隔离的场景。若想换成 `ModulateAlpha`，必须先确认同一图层内绘制内容不会重叠，或重叠后的视觉差异可以接受。
+这段代码会增加一个 pass，只适用于像素语义要求隔离的场景。若想换成 `ModulateAlpha`，必须先确认同一 layer 内绘制内容不会重叠，或重叠后的视觉差异可以接受。
 
 ### Compose 排查顺序
 
