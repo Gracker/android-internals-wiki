@@ -101,7 +101,7 @@ ART 自己解析类型引用时，不一定重新递归调用上述 Java 方法�
 
 `DelegateLastClassLoader` 从 API 27 开始提供。API 37 中，已加载类仍然先由 `findLoadedClass()` 命中；新查找的顺序为：
 
-1. 引导类路径；
+1. boot class path；
 2. `sharedLibraryLoaders`；
 3. 本加载器的 DEX；
 4. `sharedLibraryLoadersAfter`；

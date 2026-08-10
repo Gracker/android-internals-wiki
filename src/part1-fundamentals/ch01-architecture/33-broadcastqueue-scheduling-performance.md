@@ -167,7 +167,7 @@ ContextImpl.sendBroadcast()
 
 以下投递会等待 `finishReceiver()`，并受广播超时跟踪：
 
-- 清单接收者；
+- manifest receiver；
 - 有序广播接收者；
 - 带完成回调、不能按推定已投递方式处理的投递。
 

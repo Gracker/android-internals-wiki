@@ -181,7 +181,7 @@ crosvm 通过 `mmap` 分配 VM 物理内存，再用 `KVM_SET_USER_MEMORY_REGION
 Microdroid 的最低可启动内存受下列因素影响：
 
 - 受保护或非受保护模式；
-- 调试级别；
+- debug level；
 - 启用的 APEX、ART 和载荷；
 - vCPU 数、内核和厂商模块；
 - huge page 可用性；
@@ -326,7 +326,7 @@ AVF 也没有完全替代 TrustZone。TEE 仍承载 KeyMint、Gatekeeper 等依�
 至少记录以下配置：
 
 - build fingerprint、AOSP/GKI/vendor 内核版本；
-- 受保护/非受保护模式；
+- protected/non-protected；
 - Microdroid 或 custom guest；
 - debug `NONE`/`FULL`；
 - vCPU topology、guest memory、huge page；

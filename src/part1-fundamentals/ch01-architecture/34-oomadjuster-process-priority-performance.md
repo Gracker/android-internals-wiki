@@ -300,10 +300,10 @@ API 37 每个 `LMK_PROCS_PRIO` 包最多携带 3 个进程，每个进程有 5 �
 更新主要由状态变化驱动，`OomAdjReason` 包括：
 
 - Activity/UI / UI visibility；
-- 接收者开始/结束；
-- 服务绑定/解绑/启动/停止/执行；
+- start/finish receiver；
+- bind/unbind/start/stop/executing service；
 - get/remove provider；
-- 进程开始/结束；
+- process begin/end；
 - allowlist、UID idle、restriction change；
 - short FGS timeout、backup、remove task；
 - service Binder call、batch update request。
@@ -362,9 +362,9 @@ ORDER BY dur DESC;
 
 启用 Perfetto SDK `proc_state` category 后，adj、`procState` 或能力改变会产生 `process_state_changed` instant event，字段包括：
 
-- UID、PID、序列 ID 和更新原因；
+- uid、pid、sequence id 和 update reason；
 - previous/current procState；
-- 上一个/当前 OOM 分数；
+- previous/current oom score；
 - 上一个/当前能力；
 - CPU_TIME 与 IMPLICIT_CPU_TIME reasons。
 
