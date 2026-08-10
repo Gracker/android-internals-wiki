@@ -27,11 +27,11 @@ sources:
 
 # 26.27 Facebook Profilo 框架线上 ATrace 收集方案
 
-## 先给结论：它是历史实现，不是 Android 17 现成方案
+## Android 17 的使用边界
 
 [Profilo](https://github.com/facebookarchive/profilo) 的定位是从生产版本收集应用性能 trace。它的 provider、触发控制、内存映射环形缓冲区和异步写文件设计仍有参考价值，但上游在 2023 年进入归档状态，README 也明确说明 API 不稳定。上游没有 Android 17 / API 37 的维护承诺和验证记录。
 
-因此，本章讨论两件事：
+需要分别处理两件事：
 
 - 解释 Profilo 的 ATrace provider 到底拦截了什么、保存了什么；
 - 给出 `android-17.0.0_r1` 下继续维护 fork 时必须验证的边界，以及新项目的替代路线。
@@ -187,7 +187,7 @@ Profilo 主分支最近一次提交和发布产物都早于 Android 17。源码�
 | Java stack sampling | 上游 ART unwinder 版本表截止 Android 9 | Android 17 不可按上游能力宣称支持 |
 | 维护状态 | 官方仓库已归档 | 移植、安全修复和回归由采用方负责 |
 
-旧文把 hidden API、SELinux、W^X 都写成 Android 17 已确认的阻断点，再给出扫描 `.bss` 的规避办法，证据不足且风险很高。这里的核心问题是依赖私有符号和具体 relocation，任何平台或 OEM 构建变化都可能使 hook 失效。失败时应关闭 provider 并保留诊断信息，不应继续扫描或修改未知内存。
+旧文把 hidden API、SELinux、W^X 都写成 Android 17 已确认的阻断点，再给出扫描 `.bss` 的规避办法，证据不足且风险很高。风险来自对私有符号和具体 relocation 的依赖，任何平台或 OEM 构建变化都可能使 hook 失效。失败时应关闭 provider 并保留诊断信息，不应继续扫描或修改未知内存。
 
 ## 继续维护 Profilo fork 时的验证清单
 

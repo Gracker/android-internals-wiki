@@ -43,25 +43,13 @@ sources:
 
 # 26.28 非 Play 渠道性能监控与国内厂商 ROM 适配可观测性
 
-<!-- outline-start -->
-## 要点
-
-- 非 Play 分发不能依赖 Android Vitals 覆盖，应用需要建立自己的采集、缓存、上传、符号化和分析能力。
-- “某厂商一定会杀进程”不是可观测结论。平台信号、时间相关性、群组统计和用户描述具有不同的证据强度。
-- 后台限制、进程退出、任务调度、帧、CPU、ADPF 和 ProfilingManager 都要按公共 API 的能力边界解释。
-- 渠道、厂商、机型、系统版本、应用构建、ABI、安装来源和运行状态互相影响，不能只按渠道比较平均值。
-- 数据缺失本身需要建模。进程退出、任务未获调度、断网、强行停止、卸载和用户拒绝采集不能归为同一种原因。
-- 厂商白名单或安全中心引导只能作为有证据的排障入口，不能替代应用对 Android 后台执行规则的适配。
-
-<!-- outline-end -->
-
-## 这一章解决什么问题
+## 非 Play 分发的观测缺口
 
 [Android Vitals](https://support.google.com/googleplay/android-developer/answer/9844486?hl=en) 只统计符合其数据条件的 Google Play 安装。官方说明明确排除了未通过 Google Play 安装的应用版本，以及未通过认证的设备型号。一个 APK 即使同时发布到 Play 和其他市场，非 Play 安装产生的问题也不会自动进入同一份 Vitals 数据。
 
 这不意味着国内 ROM 一定缺少诊断能力，也不意味着某个应用市场能够提供与 Vitals 等价的数据。可靠的做法是把平台公共 API、应用自身事件和服务端统计连成一条可审计的数据路径，再把厂商或渠道作为分析维度。厂商控制台、应用市场报表和第三方 APM 可以补充这条路径，但不能代替应用侧的事实记录。
 
-本章的平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`。这里不维护一张“厂商行为排行榜”，也不把一次个案推广到整个品牌。ROM 会随机型、地区、版本、配置与用户设置变化，品牌名只能用于分组，不能单独证明原因。
+平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`。这里不维护一张“厂商行为排行榜”，也不把一次个案推广到整个品牌。ROM 会随机型、地区、版本、配置与用户设置变化，品牌名只能用于分组，不能单独证明原因。
 
 ## 端云数据路径
 
@@ -291,7 +279,7 @@ APM 事件中断只说明服务端没有继续收到数据。以下情况都可�
 
 ## ADPF：先协商能力，再看效果
 
-[`PerformanceHintManager`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java) 是 ADPF 的公共入口。Android 17 源码中，`createHintSession()` 在设备不支持 hint session 或线程不属于调用应用等情况下可以返回 `null`，错误参数也可能抛出异常。由此可见，应用应该按服务和 session 的实际结果协商能力，而不是维护“某品牌或某 SoC 必然支持”的静态表。
+[`PerformanceHintManager`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java) 是 ADPF 的公共入口。Android 17 源码中，`createHintSession()` 在设备不支持 hint session 或线程不属于调用应用等情况下可以返回 `null`，错误参数也可能抛出异常。应用应按服务和 session 的实际结果协商能力，不能维护“某品牌或某 SoC 必然支持”的静态表。
 
 一次可分析的 hint session 应记录：
 
@@ -356,7 +344,7 @@ CPU 监控也要保持应用边界。`ProcessCpuTracker` 是 framework 内部实
 
 ## 自建与第三方 APM 的选型
 
-产品名单、套餐和厂商支持会变化，本章不维护静态营销对照表。选型时用同一组样例事件和目标设备验证以下项目：
+产品名单、套餐和厂商支持会变化，不适合维护静态营销对照表。选型时用同一组样例事件和目标设备验证以下项目：
 
 | 维度 | 需要验证的问题 |
 |---|---|
@@ -383,4 +371,4 @@ Tinker 是热修复框架，不应因为与某些稳定性产品一起出现就�
 6. 用同一设备、同一产物和受控状态复现，并保存系统 trace 或 profiler 证据。
 7. 只有在直接证据支持时，才形成厂商或系统版本级结论，并设置复验日期。
 
-这套顺序的目的不是证明“ROM 有问题”，而是让每个判断都能回到记录、API 契约或可重复实验。非 Play 可观测性的难点不在于再找一个报表入口，而在于知道数据覆盖了谁、没有覆盖谁，以及每个归因能被哪一级证据支持。
+这套顺序要求每个判断都能回到记录、API 契约或可重复实验。非 Play 可观测性的难点在于明确数据覆盖范围，以及每个归因所依据的证据等级。
