@@ -230,7 +230,7 @@ ART 不按固定次数轮换 young 与 full。`heap.cc` 在一次非 sticky 回�
 
 wall duration 很长，不一定代表应用线程全程暂停。running 高说明 GC 消耗了较多 CPU；runnable 高说明 GC 线程本身也受调度竞争影响。若同一时段主线程或 RenderThread 也频繁 runnable，应进一步看 CPU 核、优先级、频率和其他进程负载。
 
-暂停也不能只看平均值。少量长尾、time to suspend GC，常常比稳定的小暂停更容易伤害交互。对滚动、动画和输入响应，应同时看 P95/P99 或最大值，并回到发生长尾的轨迹片段。
+暂停也不能只看平均值。少量长尾、time to suspend GC，常常比稳定的小暂停更容易伤害交互。对滚动、动画和输入响应，应同时看 P95/P99 或最大值，并回到发生长尾的 trace 片段。
 
 ## 7. Large Object Space 的精确边界
 
@@ -348,7 +348,7 @@ ART 会把线程栈、锁和累计 GC timing 写入 ANR trace，搜索 `Dumping 
 
 ### 9.2 ART allocation profiling 看谁在分配
 
-Perfetto 的 `heap_profile` 工具在 Android 12 及以后可选择已注册的堆。当前命令行示例使用的 ART 堆名称为 `com.android.art`：
+Perfetto 的 `heap_profile` 工具在 Android 12 及以后可选择已注册的 heap。当前命令行示例使用的 ART heap 名称为 `com.android.art`：
 
 ```bash
 tools/heap_profile -p <PID> --heaps com.android.art
@@ -480,7 +480,7 @@ Compose 重组不等于每次都会创建 lambda 或状态对象。编译器可�
 | Android 12+ | ART Mainline 更新可把部分运行时改进下发到旧系统设备 |
 | Android 17 / API 37 | CMC 支持分代 GC；AOSP tag 中可见 young/mid/old、`YoungMarkCompact` 与相关运行时条件 |
 
-Android 17 的分代 CMC 降低了处理短命对象的平均成本，但它不会消除高分配、过度保留、CPU 争抢或显式资源管理问题；这些问题仍需用目标设备上的轨迹和堆数据逐项确认。
+Android 17 的分代 CMC 降低了处理短命对象的平均成本，但它不会消除高分配、过度保留、CPU 争抢或显式资源管理问题；这些问题仍需用目标设备上的 trace 和 heap 数据逐项确认。
 
 ## 参考资料
 
