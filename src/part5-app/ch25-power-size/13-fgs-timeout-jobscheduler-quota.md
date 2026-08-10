@@ -33,37 +33,6 @@ gap_source: "官方文档/AOSP结构/热点变更"
 
 # 25.13 Foreground Service 超时与 JobScheduler 配额治理
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 Android 15 后台服务超时规则
-整理 `dataSync`、`mediaProcessing` 等 Foreground Service 类型的超时窗口、回调行为和系统处置方式，区分正常停止、超时降级和异常终止。
-
-### 🔹 Android 16 JobScheduler 配额变化
-说明 Android 16 中 Job 与 Foreground Service 并发执行时仍受运行时配额约束的行为变化，避免把前台服务当作绕过后台任务限制的通道。
-
-### 🔹 任务类型选择表
-按用户可见、是否可中断、是否需要网络、是否需要充电/空闲条件，给出 Foreground Service、WorkManager、JobScheduler、AlarmManager 的选择边界。
-
-### 🔹 线上指标与告警设计
-定义需要采集的指标：服务启动次数、运行时长、超时回调、Job 停止原因、后台耗电、用户前台恢复次数，用于定位后台任务是否进入配额瓶颈。
-
-### 🔹 迁移与降级策略
-给出长任务拆分、断点续传、约束条件重排、用户主动入口恢复、通知交互恢复等治理动作，减少系统超时对任务完成率的影响。
-
-### 🔹 与功耗治理章节的分工
-本节处理后台执行规则和任务调度选择；电量归因、WakeLock、Alarm 和 WorkManager 实战分别详见 25.1、25.3、25.4 节。
-
-## 扩展
-
-### 🔸 厂商后台限制叠加
-记录不同 ROM 对前台服务通知、后台启动、耗电排行的额外限制，作为线上问题排查的版本维度。
-
-### 🔸 调试命令与复现场景
-补充 `adb shell cmd jobscheduler`、`dumpsys activity services`、`dumpsys deviceidle` 等排查入口，并整理可复现的测试用例。
-
-<!-- outline-end -->
-
 ## 两套预算，两个系统组件
 
 前台服务（Foreground Service，FGS）和 Job 都能承载后台工作，但系统管理它们的依据不同：
@@ -73,16 +42,14 @@ gap_source: "官方文档/AOSP结构/热点变更"
 
 因此，“启动一个 FGS，再让 Job 或 WorkManager 执行耗时工作”不能合并两边的预算。Android 16 起，与 FGS 同时运行的 Job 仍计入 Job 运行时长配额。FGS 只表达用户可感知的持续工作及其生命周期，不会给同进程的 Job 增加无限执行时间。
 
-本节以 Android 17 / API 37 / `android-17.0.0_r1` 为当前源码锚点。版本边界如下：
+源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。版本边界如下：
 
 | 系统版本 | 规则 |
 | --- | --- |
 | Android 14 / API 34 | 引入 `shortService` 类型及 `Service.onTimeout(int)`；面向 Android 14 的应用还要为每个 FGS 声明适当类型和相应权限 |
 | Android 15 / API 35 | 对目标版本为 Android 15 及以上的应用，为 `dataSync`、`mediaProcessing` 增加后台累计时长限制；增加 `Service.onTimeout(int, int)` |
 | Android 16 / API 36 | 所有运行在 Android 16 及以上设备上的应用都受新的 Job 配额规则影响，不取决于 `targetSdkVersion`；增加待执行原因历史查询 |
-| Android 17 / API 37 | 延续以上公开行为；本节用 `android-17.0.0_r1` 的 ActivityManager 与 JobScheduler 实现核对执行路径，不添加无公开依据的新配额规则 |
-
-[已验证: Android Developers, Foreground service timeouts / Foreground service types / Android 16 behavior changes]
+| Android 17 / API 37 | 延续以上公开行为；用 `android-17.0.0_r1` 的 ActivityManager 与 JobScheduler 实现核对执行路径，不添加无公开依据的新配额规则 |
 
 ## FGS 超时要区分两条路径
 
@@ -99,8 +66,6 @@ gap_source: "官方文档/AOSP结构/热点变更"
 Android 17 的 `ActiveServices.onShortFgsTimeout()` 负责派发回调并安排进程状态下调和 ANR 计时器；`onShortFgsAnrTimeout()` 最终调用 ActivityManager 的 ANR 路径。默认 3 分钟来自 `ActivityManagerConstants.DEFAULT_SHORT_FGS_TIMEOUT_DURATION`，该值可由系统配置覆盖，应用不应把本地计时器当作系统剩余时间查询接口。
 
 用户正在与应用交互，或应用满足后台启动 FGS 的豁免条件时，再次以 `shortService` 调用 `startForeground()` 可以延长一次时限。应用不满足启动资格时，这个调用会抛出 `ForegroundServiceStartNotAllowedException`。关闭电池优化也不会取消 `shortService` 超时。
-
-[源码锚点: `ActiveServices.java`、`ActivityManagerConstants.java`, `android-17.0.0_r1`]
 
 ### `dataSync` 与 `mediaProcessing`：按类型累计，超时后是崩溃
 
@@ -151,9 +116,6 @@ Android 15 及以上系统可能为 `shortService` 调用两个重载，因此�
 
 应用没有公开 API 可以查询 `dataSync` 或 `mediaProcessing` 的系统剩余预算。应用侧可以记录自身 FGS 的运行区间，用于提前结束新分片和分析异常；这份记录无法感知系统配置、其他进程中的同类型服务以及系统计时重置，只能作为保守估计。
 
-[已验证: Android Developers, Foreground service timeouts]
-[源码锚点: `Service.java`、`ActiveServices.java`、`ActivityManagerConstants.java`, `android-17.0.0_r1`]
-
 ## Android 16 起，FGS 不再豁免 Job 运行时长配额
 
 Android 16 的 JobScheduler 配额变化适用于所有应用。普通 Job 和加急 Job（expedited job）的运行时长会受到三类因素影响：
@@ -176,8 +138,6 @@ Android 16 的 JobScheduler 配额变化适用于所有应用。普通 Job 和�
 
 用户在系统设置中允许应用“不受电池限制”会给 Job 更宽松的执行额度；Android 16 及以上仍不能据此假定执行时间无限。充电、热状态、内存压力、网络约束和系统健康策略仍会改变任务何时启动、何时停止。
 
-[已验证: Android Developers, Power management resource limits]
-
 ### Android 17 源码怎样表达这项规则
 
 Android 17 把 JobScheduler 服务端代码放在 `frameworks/base/apex/jobscheduler` 下。配额和并发由不同组件负责：
@@ -190,9 +150,7 @@ Android 17 把 JobScheduler 服务端代码放在 `frameworks/base/apex/jobsched
 
 源码中的 `isWithinQuotaLocked()` 还明确放行 `shouldTreatAsUserInitiatedJob()`。这说明用户发起的数据传输 Job 不走普通 Job 的待机分组运行时长配额；它仍受自身最长执行时间、声明约束和系统健康限制。`QuotaController` 的窗口与额度可以由 `DeviceConfig.NAMESPACE_JOB_SCHEDULER` 更新，因此业务代码不应复制源码默认常量来预测停止时刻。
 
-原有调研材料中的 `JobConcurrencyLimiter`、`checkUidQuota()`、`recordForegroundServiceTimeout()`、`FLAG_EXPEDED`、所谓“AI 智能配额调度”和“紧急任务绕过配额”等类、方法、常量与行为，在 `android-17.0.0_r1` 中不存在。本节不保留这些伪代码。
-
-[源码锚点: `QuotaController.java`、`JobConcurrencyManager.java`、`JobPackageTracker.java`, `android-17.0.0_r1`]
+`android-17.0.0_r1` 中不存在 `JobConcurrencyLimiter`、`checkUidQuota()`、`recordForegroundServiceTimeout()`、`FLAG_EXPEDED`，也没有“AI 智能配额调度”或“紧急任务绕过配额”这类行为。相关伪代码不能作为实现依据。
 
 ## 任务类型选择
 
@@ -211,8 +169,6 @@ Android 17 把 JobScheduler 服务端代码放在 `frameworks/base/apex/jobsched
 UIDT 在 Android 14 / API 34 引入，目前没有统一封装它的 Jetpack API。低版本可以使用 WorkManager 的前台工作方案。UIDT 要求 `RUN_USER_INITIATED_JOBS` 权限、`JobInfo.Builder.setUserInitiated(true)`，并在执行期间通过 `JobService.setNotification()` 展示通知；传输结束后必须调用 `jobFinished()`。
 
 WorkManager 适合作为普通持久后台工作的默认选择，但它不会取消平台限制。任务进入 SystemJobService 后，网络、电量、待机分组和运行时长配额仍由系统判断。需要平台特有诊断或 UIDT 时，直接使用 JobScheduler 更清楚。
-
-[已验证: Android Developers, Data transfer background task options / User-initiated data transfer]
 
 ## 停止不是失败：先记录原因，再决定是否重试
 
@@ -311,7 +267,7 @@ adb shell dumpsys activity services APP_PACKAGE_NAME
 adb shell dumpsys jobscheduler
 adb shell dumpsys deviceidle
 
-# 测试结束后恢复本节改过的配置。
+# 测试结束后恢复上述配置。
 adb shell device_config delete activity_manager data_sync_fgs_timeout_duration
 adb shell device_config delete activity_manager media_processing_fgs_timeout_duration
 adb shell am compat reset FGS_INTRODUCE_TIME_LIMITS APP_PACKAGE_NAME
@@ -329,8 +285,6 @@ adb shell am set-standby-bucket APP_PACKAGE_NAME active
 - 网络中断、锁屏、切换待机分组后，确认取消能到达执行代码且游标可恢复。
 - 缩短 `dataSync` / `mediaProcessing` 时限，确认 `onTimeout(int, int)` 立即停止服务。
 - `shortService` 超时，确认先收到回调；测试构建可以继续观察 ANR，线上逻辑不得故意等待 ANR。
-
-[源码锚点: `JobSchedulerShellCommand.java`, `android-17.0.0_r1`]
 
 ## 小结
 
