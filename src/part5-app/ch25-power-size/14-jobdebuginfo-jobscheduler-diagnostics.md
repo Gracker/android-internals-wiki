@@ -61,40 +61,9 @@ last_deepseek_cn_review_at: 2026-06-05
 
 # 25.14 JobScheduler 调试：Pending Reasons 与 JobDebugInfo
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 JobScheduler 排障从“任务没跑”改成“为什么被挂起”
-覆盖 `getPendingJobReasons()`、`getPendingJobReasonsHistory()` 与 Android 17 `getPendingJobReasonStats()` 的定位差异，说明它们分别回答当前原因、历史变化和累计耗时。
-
-### 🔹 Pending reason 与约束、配额、系统状态的映射
-整理电量保护、Doze、网络约束、充电约束、存储/空闲状态、用户发起任务和系统配额之间的关系，避免把所有延迟都归因给 WorkManager 或业务线程池。
-
-### 🔹 WorkManager、JobScheduler 与 dumpsys 的排障分工
-说明 WorkManager 诊断、`adb shell dumpsys jobscheduler`、Background Task Inspector、JobScheduler API 之间的边界：线上埋点看趋势，本地工具看现场，API 适合在 debug / dogfood 构建中输出结构化原因。
-
-### 🔹 Android 16/17 版本边界与兼容降级
-明确 Android 16 提供 pending reason / history 能力，Android 17 扩展聚合统计能力；旧版本仍依赖 WorkManager diagnostic、dumpsys、应用侧阶段日志和服务端任务状态。
-
-### 🔹 后台功耗治理中的使用方式
-把 JobDebugInfo 接入后台任务治理流程：定位任务长时间 pending 的原因，区分真实节流、错误约束、滥用 user-initiated job 与业务重试风暴。
-
-### 🔹 线上可观测性接入边界
-讨论哪些信息适合脱敏上报，哪些只适合本地调试；避免把 job id、任务 payload、用户网络状态和设备策略原样写入日志。
-
-## 扩展
-
-### 🔸 与 Android 17 Excessive CPU Kill 的衔接
-后台任务若长期 CPU 过量或频繁重试，需要结合 25.12、25.13 和 26.12 的 Excessive CPU / ProfilingTrigger / 配额治理一起分析。
-
-### 🔸 JobDebugInfo 指标如何进入发布门禁
-可把 pending reason 分布、累计 pending 时长和任务完成率接入 dogfood / 灰度报表，但不能用单机 debug 数据直接作为线上 SLA。
-
-<!-- outline-end -->
-
 后台任务排障过去常从“Worker 为什么没有执行”开始，证据主要来自 WorkManager 日志、`dumpsys jobscheduler` 和业务状态机。Android 14—17 逐步把“为什么仍在等待”开放为结构化 API。同样是任务延迟，原因可能是显式约束不满足、运行额度用完、设备处于 Doze、应用被限制后台运行，也可能是 JobScheduler 正在等待更合适的执行窗口。
 
-本节只处理 JobScheduler 待执行原因的使用方式，不重复展开 JobScheduler 调度模型。Controller、JobStore、JobServiceContext 和配额机制详见 5.10；WorkManager 建模详见 25.4；Foreground Service 与 Android 16 Job 配额变化详见 25.13；线上证据归档详见 26.12。
+这里处理 JobScheduler 待执行原因的使用方式，不重复展开 JobScheduler 调度模型。Controller、JobStore、JobServiceContext 和配额机制详见 5.10；WorkManager 建模详见 25.4；Foreground Service 与 Android 16 Job 配额变化详见 25.13；线上证据归档详见 26.12。
 
 Android 17 功能页把这一组能力统称为 “JobDebugInfo APIs”，SDK 中并没有名为 `JobDebugInfo` 的公开类。应用调用的入口仍在 `JobScheduler`，历史记录元素类型是 `PendingJobReasonsInfo`。
 
@@ -111,14 +80,9 @@ Android Developers 的 `JobScheduler` reference 给出四个入口：
 | `getPendingJobReasonsHistory(jobId)` | API 36 | 若干条带时间戳的 `PendingJobReasonsInfo` | 等待原因如何随网络、电量、Doze、配额等状态变化 |
 | `getPendingJobReasonStats(jobId)` | API 37 | `Map<Integer, Duration>`，原因到累计等待时长 | 哪类原因占用了最多等待时间，适合汇总和趋势观察 |
 
-[已验证: 官方文档, developer.android.com/reference/android/app/job/JobScheduler]
-
 `getPendingJobReason()` 只能返回一个原因。Job 同时等待充电、未计费网络和运行额度时，这个 API 会丢失其他并发原因；官方 API 参考也建议用 `getPendingJobReasons()` 获取所有可能原因。API 36 的 `getPendingJobReasonsHistory()` 提供有限长度的历史记录，时间戳只在约束变化时产生，没有固定采样间隔，设备重启后不会保留。API 37 的 `getPendingJobReasonStats()` 聚合每种原因的累计等待时长。多个原因可以同时计时，所以各项时长之和经常大于 Job 的实际等待时间；设备重启、Job 成功完成或取消都会清除统计。
 
 这组查询不需要额外权限，但调用范围受调用方 UID 和当前 `JobScheduler` 命名空间限制。用 `forNamespace()` 调度的 Job，查询时也要使用同一命名空间实例。历史与统计查询要求 Job 仍存在；Job 在多次查询之间完成或被取消时会抛出 `IllegalArgumentException`，几次调用也不构成同一时刻的原子快照。
-
-[已验证: Android Developers, `JobScheduler` API reference / Android 17 features]
-[源码锚点: `JobScheduler.java`、`JobSchedulerService.java`, `android-17.0.0_r1`]
 
 下面的代码用于按需采集一次待执行状态，并处理 Job 在查询期间结束所产生的竞态。示例假定项目以 API 37 编译；低版本调用由系统版本分支保护。
 
@@ -190,14 +154,9 @@ fun JobScheduler.capturePendingState(
 | `USER` | 用户强行停止（force stop）或 adb 命令等动作导致延后 | 不要自动恢复；等待用户重新打开或明确触发 |
 | `EXECUTING` / `INVALID_JOB_ID` / `UNDEFINED` | 正在运行、Job 不存在、系统未给出明确原因 | 分别查看运行中记录、调度表，以及历史 API 与 `dumpsys` |
 
-[已验证: Android Developers, `JobScheduler` API reference]
-[源码锚点: `JobStatus.java`, `android-17.0.0_r1`]
-
 Android 17 的 `JobSchedulerService.getPendingJobReasonsLocked()` 还规定了查询顺序：Job 不存在时返回 `INVALID_JOB_ID`，正在运行时返回 `EXECUTING`；Job 未就绪或受到系统 restriction 限制时，读取 `JobStatus` 转换出的原因；Job 已就绪但用户未启动、应用正在备份、待执行队列拥塞或组件不可用时，再返回 `USER`、`APP`、`DEVICE_STATE` 等原因。
 
 同一个原因不能直接对应一项修复。`DEVICE_STATE` 可能来自 Doze、省电模式、热限制、内存压力，也可能表示 Job 已经就绪但并发槽位不足；`APP_STANDBY` 只说明当前待机分组阻止执行。待执行原因给出排查方向，还要结合 `dumpsys jobscheduler`、WorkManager 状态、业务阶段日志和设备状态判断。
-
-[源码锚点: `JobSchedulerService.java`, `android-17.0.0_r1`]
 
 ## WorkManager、dumpsys 与 API 的分工
 
@@ -211,9 +170,7 @@ WorkManager、`dumpsys jobscheduler` 和待执行原因 API 各自回答的问�
 | JobScheduler 待执行原因 API | 调用 App 自己的 Job，输出结构化当前原因、历史和统计 | 适合内部测试和灰度归因 | 只覆盖该 App 在当前命名空间可查询的 Job；API 36/37 才有完整能力 |
 | Background Task Inspector | IDE 调试视图 | 适合开发阶段理解 WorkManager 任务 | 不适合线上和自动化门禁 |
 
-[已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/testing/persistent/debug]
-
-本地排障建议从 `dumpsys jobscheduler` 开始。官方 WorkManager 调试文档给出的输出里，Job 会列出 `Required constraints`、`Satisfied constraints`、`Unsatisfied constraints`、`Tracking`、`Standby bucket`、`Run time` 和 `Ready`。这些字段能还原 system_server 当时如何判断一个 Job。WorkManager 任务在 API 23+ 通常会表现为 `androidx.work.impl.background.systemjob.SystemJobService`，可用包名和 service 名过滤。[已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/testing/persistent/debug]
+本地排障建议从 `dumpsys jobscheduler` 开始。官方 WorkManager 调试文档给出的输出里，Job 会列出 `Required constraints`、`Satisfied constraints`、`Unsatisfied constraints`、`Tracking`、`Standby bucket`、`Run time` 和 `Ready`。这些字段能还原 system_server 当时如何判断一个 Job。WorkManager 任务在 API 23+ 通常会表现为 `androidx.work.impl.background.systemjob.SystemJobService`，可用包名和 service 名过滤。
 
 JobScheduler 的查询方法接收平台 Job ID，不接收 WorkRequest UUID。WorkManager 对 SystemJobService 的 Job ID 分配属于其内部实现，应用不应依赖这层映射；WorkManager 任务优先使用 WorkManager 状态、停止原因和诊断广播，`dumpsys jobscheduler` 用于交叉查看系统现场。
 
@@ -255,13 +212,9 @@ adb shell am set-standby-bucket com.example.app active
 | API 36 | `getPendingJobReasons()`、`getPendingJobReasonsHistory()` | 按需采集当前原因和有限历史，避免高频查询 |
 | API 37 | `getPendingJobReasonStats()` | 聚合原因到累计时长，适合灰度报表；保留 API 36 历史作为抽样明细 |
 
-[已验证: 官方文档, developer.android.com/reference/android/app/job/JobScheduler][已验证: 官方文档, developer.android.com/about/versions/17/features#job-debugging]
-
 在 Android 17 / API 37 最终 SDK 中，这四个方法已经按表中的 API 级别公开。以 API 37 编译时，可以直接用 `Build.VERSION.SDK_INT` 保护调用；不需要权限探测、SDK Extension 判断或反射。若项目的 `compileSdk` 较低，先升级编译 SDK，再接入对应方法，避免维护反射分支。
 
 旧版本应保留四类应用阶段日志：入队、约束配置、开始执行、停止或完成。WorkManager 可读取 `WorkInfo` 状态和停止原因；直接使用 JobScheduler 的任务记录 `onStartJob()`、`onStopJob()`、`jobFinished()` 和受控的 Job ID 映射。服务端看到任务长时间未完成时，依次区分没有入队、已入队但未启动、启动后停止和业务阶段失败。
-
-[源码锚点: `JobScheduler.java`, `android-17.0.0_r1`]
 
 ## 接入后台功耗治理
 
@@ -274,8 +227,6 @@ adb shell am set-standby-bucket com.example.app active
 | FGS 与 WorkManager 并发后任务仍被延迟 | `QUOTA` 占比上升 | Android 16 起 FGS 并发 Job 仍受运行时长配额约束 | 参照 25.13 拆分长任务，不再用 FGS 规避 Job 配额 |
 | 后台预取持续等待 | `CONSTRAINT_PREFETCH`、`JOB_SCHEDULER_OPTIMIZATION` | 预取任务被系统延后到更合适窗口 | 降低告警级别；只观察完成率和过期率 |
 | 任务反复入队但不完成 | 历史中的原因切换频繁，停止原因也异常 | 网络抖动、重试策略过密、任务粒度过大 | 指数退避、分片、唯一任务去重，限制并发 |
-
-[已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/data-transfer-options][已验证: 官方文档, developer.android.com/about/versions/16/behavior-changes-all]
 
 发布门禁可以加入三条规则：同一任务类型在内部测试中以 `QUOTA` 或 `BACKGROUND_RESTRICTION` 为主要等待原因时，审查频率和重试策略；用户触发任务出现 `APP_STANDBY` 或 `QUOTA` 长时间等待时，评估 UIDT、Foreground Service 或前台恢复入口；低优先级任务因显式约束等待时，不按故障处理，只跟踪是否过期和是否影响用户路径。
 
@@ -297,8 +248,6 @@ adb shell am set-standby-bucket com.example.app active
 不建议上传这些字段：原始 Job ID、WorkRequest UUID、任务数据、URL、文件名、用户标识、网络 SSID、精确地理位置、完整 `dumpsys` 输出和完整历史明细。`dumpsys jobscheduler` 可能包含包名、UID、extras、网络请求和系统状态，只适合本地诊断或脱敏后的内部证据包。
 
 采样频率也要受控。Android 17 的 `JobSchedulerService` 为当前原因查询设置了独立缓存，源码注释明确考虑了应用频繁查询对调度器的影响。App 不应在主线程轮询；可以在任务超过产品定义的等待阈值、内部手动诊断、灰度异常窗口或用户反馈时采集。
-
-[源码锚点: `JobSchedulerService.java`, `android-17.0.0_r1`]
 
 ## 与 Android 17 Excessive CPU Kill 的衔接
 

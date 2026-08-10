@@ -115,27 +115,6 @@ last_review_finalize_notes: "Hermes AIW review-finalize: 复核 2026-08-02 rewor
 ---
 # 25.16 ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 适用场景：Power Efficiency Mode 适合长期周期任务，不适合低延迟路径
-- 🔹 ADPF Session：线程集合、生命周期、target duration 与实际耗时上报
-- 🔹 系统语义：节能偏好不是收益承诺，需要同时看尾部耗时与能耗
-- 🔹 PowerMonitor / SystemHealthManager：累计能耗读数、monitor 类型与读数差值
-- 🔹 Perfetto power rails：用 trace 交叉验证能耗窗口、CPU 频率与线程状态
-- 🔹 实验设计与线上灰度：A/B 对照、单位任务能耗、热状态和设备分桶
-- 🔹 OEM 差异、Thermal API 联合治理与降级策略
-
-### 扩展（可选深入）
-
-- 🔸 游戏帧循环与后台计算的策略差异
-- 🔸 PowerMonitor 与 Android Studio Power Profiler 数据口径
-- 🔸 PowerMonitorReadings 与 Perfetto power rails 的同窗验证方法
-
-<!-- outline-end -->
-
 ## 适用场景：什么时候该把线程标成节能优先
 
 Power Efficiency Mode 的前提是工作有稳定周期，并且业务结果不要求最短延迟。线程在 target duration 之前完成即可，系统有空间把它安排到更省电的执行形态。
@@ -243,7 +222,7 @@ AOSP `android-17.0.0_r1` 中 `SystemHealthManager.getSupportedPowerMonitors()` �
 
 Android 17 r1 还规定了读数新鲜度和精度边界。普通调用方使用 `MAX_POWER_MONITOR_AGE_MILLIS = 20_000` 的缓存；持有隐藏的系统权限 `ACCESS_FINE_POWER_MONITORS` 时使用另一组状态缓存，最大年龄为 `250 ms`。该权限的保护级别是 `signature|privileged|development`，普通三方应用不能把它当作可申请的公开能力。
 
-普通与高精度路径返回累计值前都会经过 `IntervalRandomNoiseGenerator`。在 r1 中，返回值位于“上一次原始读数”和“当前原始读数向下最多 `10_000_000 μWs`”共同确定的下界与当前读数之间；`10_000_000 μWs` 等于 `10 J`。同一 UID 在下一次底层刷新前得到稳定的扰动样本。这个实现意味着公开读数适合较长实验窗口和重复对照，不适合把一次短任务的前后差值当作精密能量计结果。[已验证: AOSP android-17.0.0_r1, `PowerStatsService.java` 与 `IntervalRandomNoiseGenerator.java`]
+普通与高精度路径返回累计值前都会经过 `IntervalRandomNoiseGenerator`。在 r1 中，返回值位于“上一次原始读数”和“当前原始读数向下最多 `10_000_000 μWs`”共同确定的下界与当前读数之间；`10_000_000 μWs` 等于 `10 J`。同一 UID 在下一次底层刷新前得到稳定的扰动样本。这个实现意味着公开读数适合较长实验窗口和重复对照，不适合把一次短任务的前后差值当作精密能量计结果。
 
 下面的纯函数用于检查两次异步快照是否来自不同采样时刻，再计算累计值差。它不会把同一缓存快照或回退读数伪装成有效结果。
 
@@ -419,7 +398,7 @@ Perfetto 文档说明，电池 counter 在 USB 插电时会反映充电电流，
 
 ### Thermal 阈值需要设备实验
 
-热状态进入高档位前主动降低 batch 并发，通常比等系统 throttling 后再恢复更可控。具体阈值要由设备实验给出，本节不写固定温度或固定收益。
+热状态进入高档位前主动降低 batch 并发，通常比等系统 throttling 后再恢复更可控。具体阈值要由设备实验给出，这里不写固定温度或固定收益。
 
 ### PowerMonitorReadings 与 Perfetto power rails 的同窗验证方法
 
@@ -428,9 +407,9 @@ Perfetto 文档说明，电池 counter 在 USB 插电时会反映充电电流，
 
 ## 扩展：系统与电源 HAL 的协同
 
-ADPF 的端到端效果同时取决于应用上报、系统服务和电源 HAL。本节以 AOSP `android-17.0.0_r1` 为准，说明公开 API 进入系统后的关键边界。
+ADPF 的端到端效果同时取决于应用上报、系统服务和电源 HAL。以下以 AOSP `android-17.0.0_r1` 为准，说明公开 API 进入系统后的关键边界。
 
-> **版本限定**：本节源码锚点统一使用 `android-17.0.0_r1`。标注为"仅 main/master 可见"或 Android 18/API38+ 的内容不作为 AIW 结论；公开 API 口径只覆盖到 Android 17/API 37。
+> **版本限定**：源码锚点统一使用 `android-17.0.0_r1`。main/master 或 Android 18/API 38 及以上的内容不在讨论范围内；公开 API 口径只覆盖到 Android 17/API 37。
 
 ### Power HAL `ML_ACC` Boost
 
@@ -460,7 +439,7 @@ ML_ACC,
 - **CPU/GPU headroom 查询**：Android 17 的 `SystemHealthManager` 通过 `IHintManager` 转发到 Power HAL `getCpuHeadroom()` / `getGpuHeadroom()`。Java API 返回 0-100 的 headroom 数值或 `Float.NaN`，HAL 的 `CpuHeadroomResult` / `GpuHeadroomResult` 也只暴露 `globalHeadroom`，不提供负载、温度或频率明细。
 - **版本感知调度**：根据 Power HAL 版本调整可用的 hint 数量和调度策略。
 
-HintManagerService 的内部实现细节（如具体状态映射结构、清理间隔）随版本演进，应以对应 tag 的源码为准。本章不粘贴 main branch 特有的内部代码。
+HintManagerService 的内部实现细节（如具体状态映射结构、清理间隔）随版本演进，应以对应 tag 的源码为准。以下不引用 main branch 特有的内部代码。
 
 **版本感知的调度策略**：
 - Power HAL V4：基础 hint session 支持。
@@ -553,7 +532,7 @@ DeviceConfig 的 `battery_stats/power_monitor_api_enabled` 由监听器动态刷
 - μWs 与 μJ 数值相等，但 μWh 是另一种单位；换算报告时要保留原始单位。
 - `@VintfStability` 约束接口兼容性，不统一厂商 rail 的覆盖范围、名称和测量质量。跨设备实验仍需先核对 monitor 语义。
 
-> 本节源码锚点覆盖 `PowerStatsService.java`、`IntervalRandomNoiseGenerator.java`、`StatsPullAtomCallbackImpl.java`、`PowerStatsLogger.java`、`PowerStatsDataStorage.java`、`IPowerStatsService.aidl`、`PowerMonitor.java`、`PowerMonitorReadings.java`、`IPowerStats.aidl`、`Channel.aidl` 与 `EnergyMeasurement.aidl`，均以 `android-17.0.0_r1` 为准。
+> 源码锚点覆盖 `PowerStatsService.java`、`IntervalRandomNoiseGenerator.java`、`StatsPullAtomCallbackImpl.java`、`PowerStatsLogger.java`、`PowerStatsDataStorage.java`、`IPowerStatsService.aidl`、`PowerMonitor.java`、`PowerMonitorReadings.java`、`IPowerStats.aidl`、`Channel.aidl` 与 `EnergyMeasurement.aidl`，均以 `android-17.0.0_r1` 为准。
 
 
 ### 版本演进总结
@@ -575,16 +554,6 @@ DeviceConfig 的 `battery_stats/power_monitor_api_enabled` 由监听器动态刷
 ## 小结
 
 ADPF Power Efficiency Mode 的价值在于把长期周期任务的 deadline 余量告诉系统。`setPreferPowerEfficiency(true)` 负责表达偏好，`PowerMonitorReadings` 和 Perfetto power rails 负责验证，线上灰度负责守住尾部耗时和失败率。没有稳定线程、稳定周期和能耗数据，这个能力就不该写成优化结论。
-
-## 延伸阅读
-
-### Android 17 Power Stats HAL OEM 厂商功耗统计实现差异
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-07-android17-power-stats-hal-impl-variations.md
-- 类型：DeepResearch 调研结果
-- 摘要：Android 17 通过 PowerStats HAL（AIDL）定义 PowerEntity、EnergyConsumer 与 Channel 三类数据。AOSP 示例实现和 Pixel 实现展示了不同的 provider 注册方式，但厂商只需遵守 HAL 契约，不要求采用相同辅助类。Framework 侧由 BatteryTrigger 与 TimerTrigger 驱动日志采集；PowerMonitor 在 `android-17.0.0_r1` 中对普通调用方使用 `20_000 ms` 缓存，对持有隐藏高精度权限的调用方使用 `250 ms` 缓存。
-- 注：报告中的 `20_000 ms` / `250 ms` 与本次复核的 `android-17.0.0_r1` 一手源码一致；旧正文曾写成 30 秒，已更正。
-- 注入时间：2026-07-08
-- 价值：补全 ch25 关于功耗数据源头的 PowerStats HAL 接口定义与 OEM 厂商定制扩展点的源码级分析
 
 ## 参考资料
 

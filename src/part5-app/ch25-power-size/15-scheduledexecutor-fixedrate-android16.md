@@ -27,53 +27,15 @@ gap_source: "官方文档/每日信息/源码结构"
 
 # 25.15 Android 16 固定频率任务补偿执行与后台 CPU 峰值治理
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 行为变化边界
-Android 16 面向 `targetSdk >= 36` 调整 `scheduleAtFixedRate()` 的补偿执行语义：应用回到有效生命周期后，最多立即补一次错过的周期任务。
-
-### 🔹 旧补偿语义的性能风险
-后台暂停、长任务阻塞或生命周期切换后，固定频率任务如果连续补跑，容易形成线程池排队、CPU 峰值、功耗抬升和 UI 恢复阶段争抢。
-
-### 🔹 周期任务分类
-区分监控采样、心跳上报、缓存刷新、实时处理四类周期任务，分别判断是否需要固定频率、是否允许跳过、是否应该迁移到 WorkManager 或 JobScheduler。
-
-### 🔹 适配与降级策略
-针对 API 36 前后建立统一封装：记录上次执行时间、限制补偿次数、按生命周期暂停、把恢复阶段的低优先级任务错峰执行。
-
-### 🔹 观测方法
-用 Perfetto 观察线程池 runnable 队列、CPU frequency、main thread 恢复阶段耗时；用 Batterystats / 电量采样对照后台恢复后的功耗峰值。
-
-### 🔹 测试matrix
-覆盖 `targetSdk 35/36`、前后台切换、长任务阻塞、Doze / Battery Saver、不同线程池大小和周期参数，确认行为变化不会隐藏业务状态同步问题。
-
-## 扩展
-
-### 🔸 ScheduledThreadPoolExecutor 源码差异
-补充 libcore / OpenJDK 中 `ScheduledThreadPoolExecutor` 的周期任务调度路径，对照 Android 16 行为变化的具体实现位置。
-
-### 🔸 周期任务与后台调度 API 的边界
-对比 `scheduleAtFixedRate()`、`Handler.postDelayed()`、WorkManager periodic work、JobScheduler periodic job、AlarmManager 的时效性和功耗代价。
-
-### 🔸 SDK 与三方库迁移清单
-整理广告、埋点、IM、APM SDK 中常见固定频率任务的风险模式，以及接入方能做的外层保护。
-
-<!-- outline-end -->
-
-## 为什么要单独治理固定频率任务
+## 固定频率任务的治理范围
 
 `scheduleAtFixedRate()` 是进程内调度工具，却经常被拿来做埋点上报、心跳、监控采样和配置刷新。这些任务平时不显眼，应用从冻结或 CPU 挂起状态恢复时才会暴露问题：旧实现可能连续执行已经错过的周期，后台线程因此与 Activity 恢复、首帧绘制、Binder 回调和网络重连同时争用 CPU。
 
-Android 16 对这个行为设置了明确的兼容边界。在 Android 16 设备上，面向 `targetSdkVersion >= 36` 的应用回到有效生命周期后，最多立即执行一次错过的固定频率任务；面向较低版本的应用默认保留旧行为。兼容变更名为 `STPE_SKIP_MULTIPLE_MISSED_PERIODIC_TASKS`，Change ID 是 `288912692`。[已验证: Android 16 行为变更与兼容框架清单]
+Android 16 对这个行为设置了明确的兼容边界。在 Android 16 设备上，面向 `targetSdkVersion >= 36` 的应用回到有效生命周期后，最多立即执行一次错过的固定频率任务；面向较低版本的应用默认保留旧行为。兼容变更名为 `STPE_SKIP_MULTIPLE_MISSED_PERIODIC_TASKS`，Change ID 是 `288912692`。
 
-Android 17 需要单独说明。`android-17.0.0_r1` 的 `ScheduledThreadPoolExecutor` 已经删除上述 Change ID、`targetSdkVersion` 注解和兼容判断，`setNextRunTime()` 直接执行新的校正逻辑。因此，本章把 Android 17 r1 的源码行为作为当前平台锚点；Android 16 的 `targetSdkVersion` 分流只用于解释版本迁移和设计 Android 16 测试方案。[已验证: AOSP android-17.0.0_r1, `ScheduledThreadPoolExecutor.java`]
+Android 17 需要单独说明。`android-17.0.0_r1` 的 `ScheduledThreadPoolExecutor` 已经删除上述 Change ID、`targetSdkVersion` 注解和兼容判断，`setNextRunTime()` 直接执行新的校正逻辑。Android 17 r1 的源码行为作为当前平台锚点；Android 16 的 `targetSdkVersion` 分流只用于解释版本迁移和设计 Android 16 测试方案。
 
 这次平台修改只限制线程池追赶错过周期的次数。它没有提供跨进程可靠性，也不会替应用选择更合适的后台调度 API。任务分类、生命周期管理、取消和错误处理仍由应用负责。后台任务的系统调度边界可结合 5.10、25.2、25.4 和 26.3 节阅读。
-
-[结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]
-[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
-[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
 
 ## 先把固定频率的语义说清楚
 
@@ -86,11 +48,11 @@ Java API 还规定了几条容易漏掉的约束：
 - 某次执行抛出异常后，后续执行会被抑制。调用方如果没有检查 `ScheduledFuture`，很容易把“任务已经停止”误判为“线程池偶尔没有调度”。
 - 这类计划只存在于当前进程和当前执行器中。进程被终止后，`ScheduledFuture` 不会被系统恢复。
 
-`scheduleWithFixedDelay()` 的计算方式不同：它从本轮执行结束时开始等待下一段延迟。任务执行慢时，后续计划会整体向后移动，不存在为了维持原节拍而追赶的需求。两种 API 都保证同一周期任务不会自我重叠，也都具有“未处理异常会停止后续执行”的语义。[已验证: `ScheduledExecutorService` API 文档]
+`scheduleWithFixedDelay()` 的计算方式不同：它从本轮执行结束时开始等待下一段延迟。任务执行慢时，后续计划会整体向后移动，不存在为了维持原节拍而追赶的需求。两种 API 都保证同一周期任务不会自我重叠，也都具有“未处理异常会停止后续执行”的语义。
 
 ## Android 16 与 Android 17 的源码差异
 
-周期任务执行成功后，`ScheduledFutureTask.run()` 会调用 `setNextRunTime()`，再把任务放回延迟队列。Android 16 r1 对固定频率任务先执行 `time += period`，随后仅在兼容变更开启时检查新的计划时间是否已经落后超过一个周期。若是，代码会把它移到离当前时间最近的一个错过周期。这样恢复后仍可能立即执行一次，但不会逐个追赶更早的周期。[已验证: AOSP android-16.0.0_r1, `ScheduledThreadPoolExecutor.java`]
+周期任务执行成功后，`ScheduledFutureTask.run()` 会调用 `setNextRunTime()`，再把任务放回延迟队列。Android 16 r1 对固定频率任务先执行 `time += period`，随后仅在兼容变更开启时检查新的计划时间是否已经落后超过一个周期。若是，代码会把它移到离当前时间最近的一个错过周期。这样恢复后仍可能立即执行一次，但不会逐个追赶更早的周期。
 
 Android 16 r1 的开关定义带有 `@EnabledAfter(targetSdkVersion = VersionCodes.VANILLA_ICE_CREAM)`，也就是默认从 `targetSdkVersion` 36 开始启用。源码同时允许 libcore 功能标志启用新行为，所以测试结论应以兼容框架状态为准，不应只从 Manifest 推断。
 
@@ -109,7 +71,7 @@ Android 17 这一行是对 `android-17.0.0_r1` 源码的结论，不应扩写成
 
 单次任务未必很慢；大量原本分散执行的工作被压到同一个恢复阶段，仍会增加以下成本：
 
-- 调度等待：`ScheduledThreadPoolExecutor` 使用固定数量的核心线程和无界延迟队列，`maximumPoolSize` 对它没有实用作用。多个任务具备执行条件后，要观察线程的 Runnable 状态和获得 CPU 前的等待，而不是只调大最大线程数。[已验证: `ScheduledThreadPoolExecutor` API 文档]
+- 调度等待：`ScheduledThreadPoolExecutor` 使用固定数量的核心线程和无界延迟队列，`maximumPoolSize` 对它没有实用作用。多个任务具备执行条件后，要观察线程的 Runnable 状态和获得 CPU 前的等待，而不是只调大最大线程数。
 - 计算集中：序列化、加解密、压缩、图片处理或数据库整理连续执行，会增加恢复阶段的 CPU 时间并可能触发升频。
 - 前台争用：Activity 恢复、主线程布局、RenderThread、Binder 回调和网络初始化也发生在这段时间。后台周期任务越多，前台路径受到调度干扰的机会越大。
 - 电量波动：短时峰值可能在长窗口平均值里不明显。线程级原因适合用 Perfetto 判断，整段场景的电量趋势再用 Batterystats 或功耗设备复核。
@@ -223,8 +185,8 @@ class LifecyclePeriodicTask(
 
 Perfetto 里建议看四组轨道：
 
-- Thread state / CPU scheduling：确认工作线程何时进入 Runnable、何时获得 CPU，以及每次执行之间是否几乎没有空隙。CPU scheduling 数据来自 Linux ftrace。[已验证: Perfetto CPU Scheduling 文档]
-- CPU frequency / idle state：对照周期任务执行区间观察 CPU 簇的频率和空闲状态变化。[已验证: Perfetto CPU frequency 文档]
+- Thread state / CPU scheduling：确认工作线程何时进入 Runnable、何时获得 CPU，以及每次执行之间是否几乎没有空隙。CPU scheduling 数据来自 Linux ftrace。
+- CPU frequency / idle state：对照周期任务执行区间观察 CPU 簇的频率和空闲状态变化。
 - Main thread / RenderThread / FrameTimeline：判断后台任务是否与 Activity 恢复、首帧和卡顿帧相交。
 - 自定义跟踪与指标：使用固定的 trace section 名称标注周期任务执行，在结构化日志中记录任务名、计划类型、开始时间、耗时、结果和取消原因，避免动态名称造成轨道碎片。
 
@@ -253,7 +215,7 @@ adb shell am compat disable STPE_SKIP_MULTIPLE_MISSED_PERIODIC_TASKS com.example
 adb shell am compat reset STPE_SKIP_MULTIPLE_MISSED_PERIODIC_TASKS com.example.app
 ```
 
-兼容框架接受 Change ID 或 Change Name；切换会终止应用进程，使覆盖项立即生效。测试结束后执行 `reset`，恢复由 `targetSdkVersion` 决定的默认状态。公开用户版本对可切换项和可调试应用有限制，自动化脚本应检查命令返回值与 `dumpsys platform_compat`，不要只看测试用例是否通过。[已验证: Compatibility framework tools]
+兼容框架接受 Change ID 或 Change Name；切换会终止应用进程，使覆盖项立即生效。测试结束后执行 `reset`，恢复由 `targetSdkVersion` 决定的默认状态。公开用户版本对可切换项和可调试应用有限制，自动化脚本应检查命令返回值与 `dumpsys platform_compat`，不要只看测试用例是否通过。
 
 ## SDK 与三方库迁移清单
 
@@ -284,6 +246,3 @@ Android 16 在 `targetSdkVersion >= 36` 时默认限制 `scheduleAtFixedRate()` 
 - [Perfetto docs: CPU Scheduling events](https://perfetto.dev/docs/data-sources/cpu-scheduling)
 - [Perfetto docs: CPU frequency and idle states](https://perfetto.dev/docs/data-sources/cpu-freq)
 - [官方文档: Profile battery usage with Batterystats and Battery Historian](https://developer.android.com/topic/performance/power/setup-battery-historian)
-- [结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]
-- [结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
-- [结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
