@@ -1,6 +1,6 @@
 # 附录 E：术语表（中英对照）
 
-> 本术语表在写作过程中持续更新，同时为未来英文版翻译提供术语一致性参考。
+> 表格只对照通用概念。Choreographer、SurfaceFlinger、Binder、VSync、Perfetto、Systrace 等 Android 专有名词在中英文内容中均保留原文。
 
 | 中文 | English | 说明 |
 |------|---------|------|
@@ -21,5 +21,3 @@
 | 进程优先级 | Process Priority / oom_adj | 决定进程被回收顺序的优先级值 |
 | 杀进程 | Process Kill / LMK | 低内存时系统回收进程 |
 | 链式唤醒 | Chained Wakeup | 一个进程唤醒触发多个后续唤醒 |
-
-> 注：专有名词如 Choreographer、SurfaceFlinger、Binder、VSync、Perfetto、Systrace 等在中英文版本中均保持英文原文，不做翻译。

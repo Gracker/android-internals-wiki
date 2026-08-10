@@ -1,28 +1,28 @@
 # 附录 D：性能分析 Checklist
 
-在面对具体的性能问题时，按照标准的 Checklist 进行排查，可以避免“无头苍蝇式”的盲目测试，并确保不会遗漏关键的证据链。
+这份 Checklist 用于在采集和归因前核对现象、范围、设备状态与证据，减少无效测试和证据缺口。
 
-以下是 Android 最常见的五大性能场景（卡顿、启动、ANR、内存、功耗）的标准化排查清单，建议在每次开始排障前，先逐条对齐信息。
+清单覆盖卡顿、启动、ANR、内存和功耗五类常见场景。每次排障前先确认对应条目，再决定需要采集的 trace、日志或系统状态。
 
 ---
 
-## 1. 卡顿（Jank / Smoothness）排查清单
+## 1. 卡顿（Jank）排查清单
 
-### 1.1 问题定界（确定现象与范围）
+### 1.1 现象与范围
 - [ ] **是否可稳定复现**？（必现 / 偶发 / 仅特定机型 / 仅低端机）
 - [ ] **现象是什么**？（列表滑动掉帧 / 动画卡顿 / 点击无响应 / 页面切换慢）
 - [ ] **宏观指标**：当前场景的 Jank 率、Jank 持续时间（Jank duration）、GPU 渲染耗时等是否有大盘统计数据？
 
-### 1.2 链路确认（明确涉事管线）
+### 1.2 Rendering pipeline
 - [ ] **当前渲染链路**：是标准 View（BLAST）、SurfaceView、TextureView，还是 GL/Vulkan 直接上屏、Flutter/WebView 混合渲染？
 - [ ] **多窗口/覆盖层**：是否有悬浮窗、Dialog 或半透明 Activity 存在？
 
-### 1.3 Perfetto / Trace 观测
+### 1.3 Perfetto / trace 观测
 - [ ] **主线程（UI Thread）**：`Choreographer#doFrame` 是否超过了 VSync 预算？
   - [ ] `measure` / `layout` 耗时是否异常？（布局太深 / 频繁 requestLayout）
   - [ ] `draw` / `Record View#draw` 是否过长？（View 过多 / 复杂的 Canvas 绘制）
   - [ ] 主线程是否在等锁（`monitor contention`）或等 I/O（`D 状态` / `binder_sample`）？
-- [ ] **渲染线程（RenderThread）**：`DrawFrame` 是否超时？
+- [ ] **RenderThread**：`DrawFrame` 是否超时？
   - [ ] `syncFrameState` 是否阻塞了主线程？
   - [ ] `flush commands` / `eglSwapBuffers` 是否耗时过长？
   - [ ] 是否在 `dequeueBuffer` 处阻塞等待？（通常意味着 BufferQueue 已满，SurfaceFlinger 消费慢或 GPU 阻塞）
@@ -41,7 +41,7 @@
 - [ ] **启动类型**：是完全的冷启动（Cold Start）、温启动（Warm Start）还是热启动（Hot Start）？
 - [ ] **数据口径**：是以 `am start -W` 的 `TotalTime` 为准，还是以 logcat `Displayed` 为准，还是以业务自定义的 TTFD（Fully Drawn）为准？
 
-### 2.2 启动时间线分析（Perfetto / Method Trace）
+### 2.2 启动时间线分析（Perfetto / method tracing）
 - [ ] **进程创建与 Zygote fork**：系统侧耗时是否异常长？（可能是系统内存压力导致）
 - [ ] **Application#onCreate**：
   - [ ] 是否有第三方 SDK 在主线程同步初始化？
@@ -76,7 +76,7 @@
 - [ ] **主线程状态**：
   - [ ] `Blocked` (等锁)：看当前被谁持有锁，寻找死锁链。
   - [ ] `Runnable`：说明在抢 CPU，或陷入死循环。
-  - [ ] `Native`：是正常的 `epoll_wait`（如果是，说明是“替罪羊 ANR”，主线程在 dump 前已空闲），还是卡在某个 Native 库的执行中（如 WebRTC / DB 读写）？
+  - [ ] `Native`：是正常的 `epoll_wait`，还是卡在某个 Native 库的执行中（如 WebRTC / DB 读写）？若 dump 时主线程已经恢复空闲，不能直接用该栈解释触发点。
   - [ ] `Sleeping`：是否有显式的 `Thread.sleep()`。
 - [ ] **Logcat 信号搜索**：
   - 搜索 `am_anr`、`dvm_lock_sample`、`binder_sample`、`Slow operation`。
@@ -94,7 +94,7 @@
 
 ### 4.1 现象分类
 - [ ] **是崩溃（OOM）还是变慢（GC 抖动 / kswapd 抢占）？**
-- [ ] OOM 类型：Java OOM（`OutOfMemoryError`），还是 Native LMK 杀进程，还是 FD 耗尽？
+- [ ] OOM 类型：Java OOM（`OutOfMemoryError`）、lmkd 终止进程，还是 FD 耗尽？
 
 ### 4.2 宏观数据（dumpsys meminfo）
 - [ ] Java Heap 占用是否接近虚拟机上限（`getMemoryClass()` / `getLargeMemoryClass()`）？
