@@ -43,9 +43,9 @@ HDR 问题经常被压缩成一句“换成 10 bit，再做色调映射”。这
 
 - **色域**：sRGB、Display P3、BT.2020 描述可表示颜色的范围；
 - **传递函数**：sRGB、PQ（ST 2084）、HLG 描述编码值与光之间的关系；
-- **量化与像素格式**：8 位、10 位、FP16 决定精度与存储方式；
+- **量化与像素格式**：8 bit、10 bit、FP16 决定精度与存储方式；
 - **亮度语义**：SDR 白点、内容峰值、显示峰值和 HDR/SDR 比值决定画面能使用多少高光余量；
-- **合成位置**：生产者、RenderEngine、HWC/DPU 和面板各自只处理其中一部分。
+- **合成位置**：Producer、RenderEngine、HWC/DPU 和面板各自只处理其中一部分。
 
 性能分析必须先确认这五个维度，再讨论 GPU 时间、内存带宽和功耗。只看“屏幕支持 HDR”或“图层是 `BT2020_PQ`”，无法推出这一帧使用了硬件平面，也无法推出色调映射没有成本。
 
@@ -59,12 +59,12 @@ HDR 问题经常被压缩成一句“换成 10 bit，再做色调映射”。这
 
 | 对象 | 所在层次 | 解决的问题 | 不负责什么 |
 |---|---|---|---|
-| `android.graphics.ColorSpace` | 应用、Bitmap、Canvas | 描述原色、白点、传递函数和转换关系 | 不分配 Surface，也不选择 HWC 硬件平面 |
-| `ui::Dataspace` / HAL `Dataspace` | 缓冲区、图层、SurfaceFlinger、Composer HAL | 告诉消费者如何解释像素：标准、传递函数和范围 | 不改变缓冲区中的像素位宽 |
-| `PixelFormat` / gralloc 格式 | 缓冲区分配 | 描述通道布局、位宽和数值类型 | 不足以表达完整色彩语义 |
-| HDR 元数据 | 缓冲区或图层到 Composer | 提供母版亮度、CLL/FALL 或动态元数据 | 不保证 HWC 一定采用该元数据 |
+| `android.graphics.ColorSpace` | 应用、Bitmap、Canvas | 描述原色、白点、传递函数和转换关系 | 不分配 Surface，也不选择 HWC plane |
+| `ui::Dataspace` / HAL `Dataspace` | Buffer、Layer、SurfaceFlinger、Composer HAL | 告诉消费者如何解释像素：standard、transfer、range | 不改变 buffer 中的像素位宽 |
+| `PixelFormat` / gralloc format | Buffer 分配 | 描述通道布局、位宽和数值类型 | 不足以表达完整色彩语义 |
+| HDR metadata | Buffer/Layer 到 Composer | 提供 mastering luminance、CLL/FALL 或动态元数据 | 不保证 HWC 一定采用该元数据 |
 | `ColorMode` + `RenderIntent` | 显示输出 | 描述 HWC 可提供的输出模式与呈现意图 | 不是应用逐图层选择的着色器 |
-| HDR 高光余量 | 窗口、SurfaceView、SurfaceControl、显示器 | 以 HDR 峰值与 SDR 白点之比表达期望或当前范围 | 不是绝对亮度承诺 |
+| HDR headroom | Window、SurfaceView、SurfaceControl、Display | 以 HDR 峰值与 SDR 白点之比表达期望/当前范围 | 不是绝对亮度承诺 |
 
 一个 `RGBA_1010102` 缓冲区可以被错误标成 sRGB；一个标为 Display P3 的缓冲区也未必是 FP16。格式与数据空间必须同时正确，消费者才有机会还原作者想表达的颜色。
 
@@ -78,21 +78,21 @@ Dataspace = Standard | Transfer | Range
 
 ### 1.2 元数据与像素沿两条通路移动
 
-BufferQueue 传递缓冲区，同时携带数据空间等描述信息；`SurfaceControl.Transaction` 也能更新图层的数据空间和 HDR 相关状态。SurfaceFlinger 锁存新状态后，把每个图层的缓冲区、数据空间、变换、裁剪、亮度和 HDR 元数据交给 CompositionEngine。
+BufferQueue 传递缓冲区，同时携带数据空间等描述信息；`SurfaceControl.Transaction` 也能更新图层的数据空间和 HDR 相关状态。SurfaceFlinger 锁存新状态后，把每个图层的缓冲区、dataspace、变换、裁剪、亮度和 HDR 元数据交给 CompositionEngine。
 
 下面的图只画出与色彩有关的主路径：
 
 ```mermaid
 flowchart LR
-    P["生产者<br/>HWUI / MediaCodec / GL / Vulkan"] --> B["GraphicBuffer<br/>格式与像素"]
-    P --> M["图层元数据<br/>数据空间 / HDR 元数据 / 高光余量"]
+    P["Producer<br/>HWUI / MediaCodec / GL / Vulkan"] --> B["GraphicBuffer<br/>格式与像素"]
+    P --> M["Layer metadata<br/>dataspace / HDR metadata / headroom"]
     B --> Q["BufferQueue / BLAST"]
     M --> Q
     Q --> SF["SurfaceFlinger<br/>LayerSnapshot"]
     SF --> CE["CompositionEngine<br/>输出色彩配置与逐帧验证"]
-    CE -->|"Composition.DEVICE"| HWC["HWC / DPU<br/>硬件平面、LUT、混合、输出转换"]
+    CE -->|"Composition.DEVICE"| HWC["HWC / DPU<br/>plane、LUT、混合、输出转换"]
     CE -->|"Composition.CLIENT"| RE["RenderEngine<br/>Skia / SkSL 色彩转换与色调映射"]
-    RE --> CT["客户端目标"]
+    RE --> CT["Client target"]
     CT --> HWC
     HWC --> PANEL["Panel / external sink"]
 ```
@@ -171,9 +171,9 @@ Composer3 AIDL 的 `LayerCommand` 包含：
 - 可选 LUT；
 - 裁剪、变换、混合和透明度等几何状态。
 
-静态元数据键包括母版原色、白点、最大或最小亮度、MaxCLL 和 MaxFALL；二进制元数据可以承载 HDR10+ 的 ST 2094-40 信息。HWC 在 `validateDisplay` 时检查整组图层，不能处理的组合可以要求改为 `Composition.CLIENT`。
+静态 metadata 的 key 包括 mastering primaries、white point、maximum/minimum luminance、MaxCLL 和 MaxFALL；blob metadata 可以承载 HDR10+ 的 ST 2094-40 信息。HWC 在 `validateDisplay` 时检查整组 Layer，不能处理的组合可以要求改为 `Composition.CLIENT`。
 
-硬件完成色调映射时，GPU 不执行对应的全屏着色器，但这条路径仍会占用 DPU 硬件平面、色彩处理单元、读带宽和面板功率。分析时必须把 GPU、DPU 和面板成本分开记录。
+硬件完成色调映射时，GPU 不执行对应的全屏着色器，但这条路径仍会占用 DPU plane、色彩处理单元、读带宽和面板功率。分析时必须把 GPU、DPU 和面板成本分开记录。
 
 ### 3.2 RenderEngine 的 Android 17 线性色彩处理
 
@@ -187,7 +187,7 @@ Android 17 源码中没有名为 `LinearTube` 的组件，实际类型是 `shade
 
 这段 SkSL 由 `libs/shaders/shaders.cpp` 生成，`RuntimeEffectManager::createLinearEffectShader()` 注入显示峰值、当前亮度、内容峰值和渲染意图等统一变量。Skia 用线性工作色彩空间包装着色器，以便正确连接输入和输出色彩空间。
 
-`SkiaRenderEngine::needsToneMapping()` 主要比较源与目标的传递函数。PQ、HLG、sRGB 与线性空间之间需要不同处理；代码对不支持的传递函数按 sRGB 处理。需要色调映射、图层色彩变换、线性域调暗或特定伽马修正时，`requiresLinearEffect` 才成立。
+`SkiaRenderEngine::needsToneMapping()` 主要比较源与目标的传递函数。PQ、HLG、sRGB 与线性空间之间需要不同处理；代码对不支持的传递函数按 sRGB 处理。需要色调映射、Layer color transform、线性域调暗或特定伽马修正时，`requiresLinearEffect` 才成立。
 
 这解释了两个容易混淆的现象：
 
@@ -200,9 +200,9 @@ Android 17 源码中没有名为 `LinearTube` 的组件，实际类型是 `shade
 |---|---|---|---|
 | HWC/DPU | HWC 接受 `DEVICE`，获得数据空间、亮度、元数据和 LUT | 屏幕显示，由设备实现处理 | 不占 RenderEngine 着色器时间，但消耗 DPU 和显示带宽 |
 | `libtonemap` | RenderEngine 的 `LinearEffect` 默认策略 | GPU 客户端合成的全局色调映射 | OEM 可从 Android 13 定制；成本取决于 GPU、分辨率和图层集合 |
-| 显示 LUT | 图层状态携带 LUT，或 HWC 请求 LUT，RenderEngine/HWC 按能力应用 | 减少不同合成路径的 HDR 输出差异 | Android 16 引入，能力与开关需在设备上确认 |
-| AGTM | 缓冲区有可解析的 SMPTE ST 2094-50 元数据，且没有更高优先级 LUT | 动态全局色调映射 | Android 17 源码可见 `AGTM` 跟踪；不应与 Pixel 的显示色彩模式混为一谈 |
-| 局部色调映射 | `TonemapStrategy::Local` 且满足 HDR 图像条件 | 主要用于截图等非高频渲染 | `DisplaySettings` 提示会使用较大的中间分配，不适合作为常规逐帧默认策略 |
+| Display LUT | Layer 状态携带 LUT，或 HWC 请求 LUT，RenderEngine/HWC 按能力应用 | 减少不同合成路径的 HDR 输出差异 | Android 16 引入，能力与 flag 需在设备上确认 |
+| AGTM | buffer 有可解析的 SMPTE ST 2094-50 metadata，且没有更高优先级 LUT | 动态全局 tone mapping | Android 17 源码可见 `AGTM` trace；不应与 Pixel 的显示色彩模式混为一谈 |
+| Local tone map | `TonemapStrategy::Local` 且满足 HDR 图像条件 | 主要用于截图等非高频渲染 | `DisplaySettings` 明确提示会使用较大的中间分配，不适合作为常规逐帧默认策略 |
 
 RenderEngine 对这些分支有互斥处理：已经应用 LUT、AGTM 或局部色调映射后，会跳过标准 `libtonemap` 的重复映射。描述 Android 17 时，应使用这些源码名称，不使用无法对应到类型、接口或开关的称呼。
 
@@ -215,7 +215,7 @@ Android 13 引入厂商可配置的 `libtonemap`，让 SurfaceFlinger 的 GPU �
 - 显示器最大亮度；
 - 当前显示亮度；
 - 内容最大亮度；
-- 可选的 `AHardwareBuffer` 元数据；
+- 可选 `AHardwareBuffer` metadata；
 - 渲染意图。
 
 着色器先把输入转换为线性亮度和 XYZ，再计算增益，最终归一化并编码到输出空间。这里没有适用于所有 SoC 的固定耗时。4K、120 Hz、保护内容、图层数量、缩放、模糊、GPU 型号和客户端目标格式都能改变结果。
@@ -224,12 +224,12 @@ Android 13 引入厂商可配置的 `libtonemap`，让 SurfaceFlinger 的 GPU �
 
 ## 四、SDR 与 HDR 混合时，系统在协调什么
 
-### 4.1 SDR 白点与 HDR 高光余量
+### 4.1 SDR white point 与 HDR headroom
 
 混合显示需要先约定 SDR 白色在当前面板上对应的亮度，再决定 HDR 高光还能向上延伸多少。Android 的公开 API 用下面的比值描述 headroom：
 
 ```text
-HDR/SDR 比值 = 目标 HDR 峰值亮度 / 目标 SDR 白点
+HDR/SDR ratio = target HDR peak brightness / target SDR white point
 ```
 
 `Display.getHdrSdrRatio()` 从 API 34 开始报告当前比值；环境光、热状态、面板限制和系统策略都可能使它变化。API 36 增加 `getHighestHdrSdrRatio()`，用于查询设备当前能报告的最高可能比值。
@@ -261,10 +261,10 @@ HWC 接口允许面板亮度或模式切换不是原子完成，但 AOSP 没有�
 - 内屏还是 HDMI/DisplayPort；
 - 面板是否需要切换高亮模式；
 - HWC 是否能保持同一显示配置；
-- HDR 转换模式；
+- HDR conversion mode；
 - 厂商驱动与显示硬件。
 
-遇到闪烁时，应同时采集 SurfaceFlinger 跟踪、HWC 或厂商跟踪、显示模式和亮度状态。只在 Perfetto 中看到 `setColorMode`，还不能证明黑帧来自该调用。
+遇到闪烁时，应同时采集 SurfaceFlinger trace、HWC/vendor trace、显示模式和亮度状态。只在 Perfetto 中看到 `setColorMode`，还不能证明黑帧来自该调用。
 
 ---
 
@@ -286,13 +286,13 @@ Android 8.0（API 26）为兼容设备提供广色域色彩管理。应用可以
 
 | 格式 | 存储 | 单像素名义大小 | 说明 |
 |---|---:|---:|---|
-| `RGBA_8888` | 8/8/8/8 UNORM | 32 位 / 4 字节 | 常见 SDR 界面格式，也可承载带正确数据空间的有限广色域内容 |
-| `RGBA_1010102` | 10/10/10/2 UNORM | 32 位 / 4 字节 | 不是 40 位，也没有“按 64 位对齐”的 API 保证 |
-| `RGBA_F16` | 16 位浮点数 × 4 | 64 位 / 8 字节 | 精度和扩展范围较高，缓冲区体积通常更大 |
+| `RGBA_8888` | 8/8/8/8 UNORM | 32 bit / 4 byte | 常见 SDR UI 格式，也可承载带正确 dataspace 的有限 WCG 内容 |
+| `RGBA_1010102` | 10/10/10/2 UNORM | 32 bit / 4 byte | 不是 40 bit，也没有“按 64 bit 对齐”的 API 保证 |
+| `RGBA_F16` | 16-bit float × 4 | 64 bit / 8 byte | 精度和扩展范围较高，buffer 体积通常更大 |
 
-`PixelFormat.getPixelFormatInfo()` 在 Android 17 中把 `RGBA_1010102` 归为 32 位、4 字节，把 `RGBA_F16` 归为 64 位、8 字节。
+`PixelFormat.getPixelFormatInfo()` 在 Android 17 中明确把 `RGBA_1010102` 归为 32 bit、4 byte，把 `RGBA_F16` 归为 64 bit、8 byte。
 
-内存与带宽仍不能只按 `宽 × 高 × 单像素字节数 × 帧率` 得出。gralloc 行跨度、分块、压缩修饰符、读写次数、缓存命中、局部更新和 DPU/GPU 路径都会改变物理流量。这个公式只能给出未压缩单次扫描的下限量级，不能作为功耗实测。
+内存与带宽仍不能只按 `width × height × bytesPerPixel × fps` 得出。gralloc stride、tile、压缩 modifier、读写次数、缓存命中、局部更新和 DPU/GPU 路径都会改变物理流量。这个公式只能给未压缩单次扫描的下限量级，不能当成功耗实测。
 
 ### 5.3 WCG 不保证窗口一定使用 FP16
 
@@ -305,7 +305,7 @@ Android 8.0（API 26）为兼容设备提供广色域色彩管理。应用可以
 
 ### 5.4 Bitmap 转换的成本在哪里
 
-带色彩配置文件的 Bitmap 被绘制到不同目标色彩空间时，Skia/HWUI 会执行色彩转换。转换可能包括 EOTF/OETF、3×3 变换、色域映射和精度转换，不能一律简化为一组 P3↔sRGB 变换。
+带色彩配置文件的 Bitmap 被绘制到不同目标色彩空间时，Skia/HWUI 会执行色彩转换。转换可能包括 EOTF/OETF、3×3 变换、色域映射和精度转换，不能一律简化为一组 P3↔sRGB matrix。
 
 影响成本的因素包括：
 
@@ -315,7 +315,7 @@ Android 8.0（API 26）为兼容设备提供广色域色彩管理。应用可以
 - 目标缓冲区格式；
 - GPU 是否因整个窗口进入更重的合成配置。
 
-脱离具体设备、分辨率、资源和渲染后端给出的开销比例，无法迁移到其他场景。更可靠的做法是在同一设备上准备 sRGB/P3 对照资源，固定分辨率、亮度和刷新率，再比较 GPU 计数器、RenderThread 与 SurfaceFlinger 客户端合成。
+脱离具体设备、分辨率、资源和渲染后端给出的开销比例，无法迁移到其他场景。更可靠的做法是在同一设备上准备 sRGB/P3 对照资源，固定分辨率、亮度和刷新率，再比较 GPU counters、RenderThread 与 SurfaceFlinger client composition。
 
 ### 5.5 未标记和误标记是不同故障
 
@@ -391,7 +391,7 @@ HDR 只描述色彩和亮度。DRM 视频还可能要求受保护缓冲区和安
 
 Android 7.0（API 24）提供 `Display.getHdrCapabilities()` 和 HDR10、HLG、Dolby Vision 类型；HDR10+ 常量从 API 29 加入。`getDesiredMaxLuminance()`、`getDesiredMaxAverageLuminance()` 和 `getDesiredMinLuminance()` 也从 API 24 提供，并非 Android 13 新增。
 
-API 34 起，`HdrCapabilities.getSupportedHdrTypes()` 已弃用，应用应查看当前 `Display.Mode.getSupportedHdrTypes()`。显示器支持某种 HDR 类型，仍不代表任意编解码器、配置、级别、分辨率和帧率都可播放，还要检查 MediaCodec 能力。
+API 34 起，`HdrCapabilities.getSupportedHdrTypes()` 已弃用，应用应查看当前 `Display.Mode.getSupportedHdrTypes()`。显示支持某种 HDR 类型仍不代表任意 codec、profile、level、分辨率和帧率都可播放，还要检查 MediaCodec 能力。
 
 Android 13 起，对于声明支持 HDR 播放的设备，HLG10 是最低要求之一；HDR10 用于专业内容播放。厂商可以增加 HDR10+ 或 Dolby Vision。Android 17 新增公开的 `HDR_TYPE_HLG_PLUS`，使用前仍要查询当前显示模式，不能仅根据 API 37 假设设备支持。
 
@@ -414,7 +414,7 @@ val displayCapable = display?.isWideColorGamut == true
 
 ### 8.2 Ultra HDR / HDR UI
 
-下面的逻辑按当前可见内容切换 HDR 窗口，并把高光余量当作期望值：
+下面的逻辑按当前可见内容切换 HDR Window，并把高光余量当作期望值：
 
 ```kotlin
 val showUltraHdr = bitmap.hasGainmap()
@@ -444,7 +444,7 @@ if (Build.VERSION.SDK_INT >= 35) {
 
 调用后仍要让视频解码器输出正确的色彩属性和 HDR 元数据。高光余量只补充亮度期望，不替代数据空间或编解码器元数据。
 
-### 8.4 HDR 转换模式
+### 8.4 HDR conversion mode
 
 API 34 的 `HdrConversionMode` 定义四种状态：
 
@@ -459,7 +459,7 @@ API 34 的 `HdrConversionMode` 定义四种状态：
 
 ## 九、Compose 中的色彩空间
 
-Compose `Color` 从 1.0 起就能携带 `ColorSpace`，构造函数的 `colorSpace` 参数默认是 sRGB。`androidx.compose.ui.graphics.colorspace.ColorSpaces` 提供 Display P3、BT.2020、BT.2100 HLG 等空间，并能通过连接器转换。Compose 1.0 已支持该能力，并非从 1.6 才开始支持。
+Compose `Color` 从 1.0 起就能携带 `ColorSpace`，构造函数的 `colorSpace` 参数默认是 sRGB。`androidx.compose.ui.graphics.colorspace.ColorSpaces` 提供 Display P3、BT.2020、BT.2100 HLG 等空间，并能通过连接器转换。Compose 1.0 connector 1.6 才开始支持。
 
 示例中先构造 P3 颜色，再显式转换到 sRGB：
 
@@ -474,7 +474,7 @@ val p3 = Color(
 val srgb = p3.convert(ColorSpaces.Srgb)
 ```
 
-颜色对象有色彩空间，不代表承载它的窗口已获得广色域或 HDR 输出。最终效果还取决于 Android 窗口色彩模式、Canvas/Skia 目标空间、设备显示能力和 SurfaceFlinger 输出配置。
+颜色对象有色彩空间，不代表承载它的窗口已获得广色域或 HDR 输出。最终效果还取决于 Android Window color mode、Canvas/Skia 目标空间、设备显示能力和 SurfaceFlinger 输出配置。
 
 颜色动画没有跨版本、跨 API 通用的额外开销比例。应确认插值在哪个空间执行、是否每帧分配连接器、参与动画的像素覆盖范围，再用基准测试判断是否值得缓存转换结果。
 
@@ -519,7 +519,7 @@ val srgb = p3.convert(ColorSpaces.Srgb)
 - 硬件平面分配与失败原因；
 - HDR 元数据和 LUT 是否被接受；
 - DPU 带宽与时钟；
-- 面板亮度、HDR/SDR 比值和 APL；
+- 面板 brightness、HDR/SDR ratio、APL；
 - 温控节流；
 - 外接接收端的 HDR 模式与链路格式。
 
@@ -533,11 +533,11 @@ GPU 时间较低并不说明整机成本低。高亮 HDR 内容的主要功耗�
 
 | 变量 | 固定或记录内容 |
 |---|---|
-| 设备状态 | 型号、构建版本、温度、电量和充电状态 |
+| 设备状态 | 型号、build、温度、电量、充电状态 |
 | 显示 | 分辨率、刷新率、亮度、自动亮度和 HDR/SDR 比值 |
 | 内容 | 文件哈希、HDR 格式、MaxCLL/MaxFALL、APL 和帧率 |
-| 图层 | SurfaceView/TextureView、遮挡、缩放和合成类型 |
-| 测量 | 外部电源或轨道、GPU 计数器、DPU 计数器和 Perfetto |
+| Layer | SurfaceView/TextureView、遮挡、缩放、composition type |
+| 测量 | 外部电源/轨道、GPU counter、DPU counter、Perfetto |
 
 缺少这些条件时，只能记录“本机现象”，不能给出 Android 平台结论。
 
@@ -579,7 +579,7 @@ luts
 - GPU 渲染阶段与计数器；
 - FrameTimeline；
 - sched、freq、power；
-- 设备可用的 HWC 或厂商显示数据源。
+- 设备可用的 HWC/vendor display data source。
 
 Android 17 源码中可直接对应的跟踪名称包括：
 
@@ -625,7 +625,7 @@ Android 17 源码中可直接对应的跟踪名称包括：
 
 检查：
 
-- 显示器 HDR/SDR 比值是否变化；
+- display HDR/SDR ratio 是否变化；
 - SDR white point 和 LayerBrightness；
 - dimming stage；
 - HDR 图层进入或退出的时间点；
@@ -648,7 +648,7 @@ Android 17 源码中可直接对应的跟踪名称包括：
 
 ### 12.4 截图与屏幕观感不同
 
-截图是独立的 RenderEngine 输出，不等于面板最终光学结果。Ultra HDR 截图还可能生成 SDR 版本与增益图；普通 SDR 截图需要对 HDR 图层执行色调映射。Android 17 的局部色调映射器主要用于这类非高频输出，结果也不要求逐像素复刻厂商 DPU 的屏幕曲线。
+截图是独立的 RenderEngine 输出，不等于面板最终光学结果。Ultra HDR 截图还可能生成 SDR 版本与增益图；普通 SDR 截图需要对 tone map HDR Layer。Android 17 的局部色调映射器主要用于这类非高频输出，结果也不要求逐像素复刻厂商 DPU 的屏幕曲线。
 
 ---
 
@@ -657,12 +657,12 @@ Android 17 源码中可直接对应的跟踪名称包括：
 | Android 版本 | 相关变化 |
 |---|---|
 | Android 7 / API 24 | 建立平台 HDR 播放基础；公开 `Display.getHdrCapabilities()`，HDR10、HLG、Dolby Vision 与期望亮度接口 |
-| Android 8 / API 26 | 应用广色域色彩管理、窗口 WCG/HDR 色彩模式、`ColorSpace` 与高精度 `Color` |
+| Android 8 / API 26 | 应用广色域色彩管理、Window WCG/HDR color mode、`ColorSpace` 与高精度 `Color` |
 | Android 10 / API 29 | 公开 HDR10+ 显示能力常量 |
 | Android 13 / API 33 | 引入厂商可配置的 `libtonemap`；HDR 播放设备的 HLG10 要求更明确 |
-| Android 14 / API 34 | Ultra HDR 和增益图；`Display.getHdrSdrRatio()`；`HdrConversionMode` |
-| Android 15 / API 35 | 窗口、SurfaceView、SurfaceControl 的期望 HDR 高光余量接口 |
-| Android 16 / API 36 | 显示 LUT 色调映射接口；`Display.getHighestHdrSdrRatio()` |
+| Android 14 / API 34 | Ultra HDR/gain map；`Display.getHdrSdrRatio()`；`HdrConversionMode` |
+| Android 15 / API 35 | Window、SurfaceView、SurfaceControl desired HDR headroom API |
+| Android 16 / API 36 | Display LUT tone mapping 接口；`Display.getHighestHdrSdrRatio()` |
 | Android 17 / API 37 | `HDR_TYPE_HLG_PLUS`；LUT、AGTM、`LinearEffect`、`libtonemap` 与局部色调映射路径 |
 
 表中的“引入”表示平台或 API 边界，不代表所有设备默认开启或具备相应硬件能力。Android 17 仍允许厂商实现 HWC 色彩管线和色调映射；AOSP 能定义接口、回退和参考实现，无法替设备保证硬件平面数量、曲线、峰值亮度或功耗。
@@ -674,14 +674,14 @@ Android 17 源码中可直接对应的跟踪名称包括：
 建议按数据流阅读：
 
 1. `frameworks/base/graphics/java/android/graphics/ColorSpace.java`：应用侧色彩空间模型；
-2. `frameworks/base/core/java/android/view/Window.java`、`SurfaceView.java`、`Display.java`：色彩模式、高光余量与显示能力；
+2. `frameworks/base/core/java/android/view/Window.java`、`SurfaceView.java`、`Display.java`：color mode、headroom 与显示能力；
 3. `frameworks/native/services/surfaceflinger/Layer.cpp`：图层数据空间与缓冲区元数据；
-4. `CompositionEngine/src/Output.cpp`：输出数据空间、色彩配置与客户端合成；
+4. `CompositionEngine/src/Output.cpp`：输出 dataspace、color profile、client composition；
 5. `CompositionEngine/src/DisplayColorProfile.cpp`：HWC 色彩模式与渲染意图匹配；
 6. `libs/renderengine/skia/SkiaRenderEngine.cpp`：LUT、AGTM、局部色调映射与 `LinearEffect`；
 7. `libs/shaders/shaders.cpp`：EOTF、XYZ、OOTF、OETF 的 SkSL 生成；
 8. `libs/tonemap/`：Android 13 色调映射器与统一变量；
-9. `hardware/interfaces/graphics/composer/aidl/`：图层数据空间、亮度、元数据、LUT 与显示命令。
+9. `hardware/interfaces/graphics/composer/aidl/`：Layer dataspace、brightness、metadata、LUT 与 display command。
 
 对应的官方资料：
 
@@ -705,4 +705,4 @@ HDR 与广色域的性能问题可以归结为四个可验证的问题：
 3. HWC 验证后，哪些图层是 `DEVICE`，哪些进入 `CLIENT`？
 4. 最终成本落在生产者 GPU、RenderEngine、DPU、内存还是面板？
 
-沿这四个问题取证，才能区分格式带宽、GPU 色调映射、硬件平面竞争与面板亮度功耗。脱离设备能力和逐帧合成结果的固定毫秒或固定百分比，都不适合作为 Android 17 的平台结论。
+沿这四个问题取证，才能区分格式带宽、GPU tone mapping、硬件平面竞争与面板亮度功耗。脱离设备能力和逐帧合成结果的固定毫秒或固定百分比，都不适合作为 Android 17 的平台结论。

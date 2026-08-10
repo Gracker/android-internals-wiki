@@ -103,14 +103,14 @@ flowchart LR
     EH --> IR["InputReader<br/>InputMapper 生成 NotifyArgs"]
     IR --> LS["InputListener stages<br/>blocker / choreographer / processor / filter"]
     LS --> ID["InputDispatcher<br/>目标选择与连接队列"]
-    ID -->|"AF_UNIX SOCK_SEQPACKET"| IC["应用 InputChannel"]
+    ID -->|"AF_UNIX SOCK_SEQPACKET"| IC["App InputChannel"]
     IC --> NIR["NativeInputEventReceiver<br/>主线程 Looper"]
-    NIR --> VRI["ViewRootImpl<br/>待处理队列 + InputStage"]
-    VRI --> VIEW["窗口 / DecorView / View 树"]
+    NIR --> VRI["ViewRootImpl<br/>pending queue + InputStage"]
+    VRI --> VIEW["Window / DecorView / View 树"]
     VRI -->|"FINISHED"| ID
 ```
 
-图中省略了焦点监视器、输入监视器、指针捕获、拖动、IME 异步回调和注入事件。它只表示主路径，并不要求每个事件经过相同的业务处理。例如，触摸和按键在 InputDispatcher 中采用不同的目标选择规则；批量 MotionEvent 到达应用后，还可能等待下一次 `CALLBACK_INPUT`。
+这张图省略了 focus monitor、input monitor、pointer capture、drag、IME 异步回调和注入事件。它适合建立主路径，不代表每个事件都经过相同的业务处理。例如，触摸和按键在 InputDispatcher 的目标选择规则不同，批量 MotionEvent 到应用后还可能等下一次 `CALLBACK_INPUT`。
 
 ### 1.1 进程与线程边界
 
@@ -139,7 +139,7 @@ SetTaskProfiles(/*tid=*/0, {"InputPolicy"});
 
 ### 2.1 硬件路径不能固定写成 I2C
 
-触摸屏可能经 I2C 或 SPI 连接，键鼠可能经 USB、蓝牙或其他总线连接。驱动把设备事件提交给 Linux 输入核心，evdev 再通过 `/dev/input/eventX` 暴露给用户空间。
+触摸屏可能经 I2C 或 SPI 连接，键鼠可能经 USB、蓝牙或其他总线连接。驱动把设备事件提交给 Linux input core，evdev 再通过 `/dev/input/eventX` 暴露给用户空间。
 
 在 `android17-6.18-2026-06_r6` 的 `drivers/input/evdev.c` 中：
 
@@ -199,7 +199,7 @@ InputReader 调用 `getEvents(timeoutMillis)`；没有数据时 EventHub 阻塞�
 
 映射器维护设备状态，把 EV_KEY、EV_ABS、EV_SYN 等原始序列转换为 `NotifyKeyArgs`、`NotifyMotionArgs` 等结构。InputReader 将待通知参数移出内部列表后，在 Reader 锁外调用下一个监听器，避免下游回调形成锁依赖。
 
-一条 `struct input_event` 不能直接等同于一个 Java `MotionEvent`。一次多点触控报告由多条 evdev 记录组成，映射器要在同步边界组装指针、坐标、压力、工具类型、按下时间和动作。
+一条 `struct input_event` 不能直接等同于一个 Java `MotionEvent`。一次多点触控报告由多条 evdev 记录组成，映射器要在同步边界组装指针、坐标、压力、tool type、按下时间和动作。
 
 ### 3.2 Android 17 的监听阶段不止 InputProcessor
 
@@ -224,7 +224,7 @@ InputReader
 - `InputFilter` 可以把事件交给系统输入过滤能力；
 - 指标收集器与交互报告器服务于统计和交互感知。
 
-排查时不能把所有触摸延迟都归给 InputProcessor。应通过输入轨迹、线程状态、状态转储和功能开关确认目标设备启用了哪些阶段。
+排查时不能把所有触摸延迟都归给 InputProcessor。应通过输入轨迹、thread state、状态转储和功能开关确认目标设备启用了哪些阶段。
 
 ### 3.3 InputProcessor 的 HAL 调用在专用线程
 
@@ -245,12 +245,12 @@ Android 17 的窗口输入拓扑由 `gui::WindowInfosUpdate` 提供。`InputDisp
 - 令牌与显示器；
 - 边界、变换、可触摸区域；
 - Z 序；
-- 所有者 PID/UID；
+- owner pid/uid；
 - 焦点、可见性与输入配置；
 - 分发超时时间；
-- 可信叠加层、监视窗口、丢弃输入等安全/行为属性。
+- trusted overlay、spy、drop-input 等安全/行为属性。
 
-焦点应用由 WindowManager 设置，主要用于无焦点窗口 ANR 与调试。焦点窗口、焦点应用和顶部可见窗口是三个不同概念。
+焦点应用由 WindowManager 设置，主要用于无焦点窗口 ANR 与调试。focused window、焦点应用和顶部可见窗口是三个不同概念。
 
 ### 4.2 按键走焦点，指针动作走触摸状态
 
@@ -260,7 +260,7 @@ Android 17 的 `dispatchKeyLocked()` 在策略处理后调用 `findFocusedWindow
 
 - 指针事件使用 `mTouchStates.findTouchedWindowTargets()`，根据窗口拓扑、触摸状态、变换与手势连续性生成一个或多个目标；
 - 非指针动作（例如部分轨迹球事件）走焦点窗口路径；
-- 监视器、监视窗口、拖动、指针截取、拆分触摸等机制可以增加或改变目标。
+- monitor、spy window、drag、pilfer、split touch 等可以增加或改变 target。
 
 Android 17 当前调用的是 `TouchState` 与 `findTouchedWindowTargets()`，而非旧版的 `findTouchedWindowTargetsLocked()`。
 
@@ -322,7 +322,7 @@ WindowState.openInputChannel()
 socketpair(AF_UNIX, SOCK_SEQPACKET, 0, sockets);
 ```
 
-两端都设为非阻塞，并共享一个 Binder 令牌。服务端端点被包装进 InputDispatcher `Connection`，客户端端点作为可序列化的 `InputChannel` 返回给窗口进程。
+两端都设为非阻塞，并共享一个 Binder token。服务端端点被包装进 InputDispatcher `Connection`，客户端端点作为可序列化的 `InputChannel` 返回给窗口进程。
 
 ### 5.2 “输入不走 Binder”的适用边界
 
@@ -351,7 +351,7 @@ socketpair(AF_UNIX, SOCK_SEQPACKET, 0, sockets);
 
 ### 5.4 每个 Connection 的三段队列
 
-| 位置 | 轨迹计数器 | 含义 |
+| 位置 | trace counter | 含义 |
 |---|---|---|
 | 全局入站队列 | `iq` | 监听器已送入、尚未成为当前待处理事件 |
 | 每连接出站队列 | `oq:<channel>` | 已选定目标、尚未成功发布 |
@@ -360,7 +360,7 @@ socketpair(AF_UNIX, SOCK_SEQPACKET, 0, sockets);
 典型状态迁移是：
 
 ```text
-入站 → 待处理 → 出站 → 发布 → 等待 → FINISHED → 移除
+inbound → pending → outbound → publish → wait → FINISHED → remove
 ```
 
 `wq` 短暂大于 0 是正常状态。事件年龄接近超时阈值、队列持续增长且连接变为无响应时，才构成 ANR 方向的证据。
@@ -401,9 +401,9 @@ fd 可读时：
 Android 17 同时创建同步和异步轨迹：
 
 - 同步切片 `deliverInputEvent src=...` 覆盖这次 Java 方法调用；
-- 异步 `deliverInputEvent` 从开始传递持续到 `finishInputEvent()`，可跨越异步 IME 阶段。
+- async `deliverInputEvent` 从开始 deliver 持续到 `finishInputEvent()`，可跨越异步 IME stage。
 
-因此，较短的同步 `deliverInputEvent` 切片不能直接证明事件已经完成。还要确认同一事件 ID 的异步区间结束，并收到原生 `FINISHED` 消息。
+因此，较短的同步 `deliverInputEvent` slice ID 的异步区间结束，并收到原生 `FINISHED` 消息。
 
 ### 6.4 InputStage 责任链
 
@@ -425,7 +425,7 @@ NativePreImeInputStage
 
 - 完成，已处理或未处理；
 - 转发到下一阶段；
-- 延后，等待异步恢复。
+- defer，异步恢复。
 
 事件只有在 `ViewRootImpl.finishInputEvent()` 里调用 receiver 的 `finishInputEvent(event, handled)` 后，client 才尝试发回 `FINISHED`。
 
@@ -450,8 +450,8 @@ DOWN 时，ViewGroup 按绘制顺序、坐标和可接收状态寻找子 View，
 
 - 父 ViewGroup 后续拦截时，原子 View 收到 `ACTION_CANCEL`；
 - `requestDisallowInterceptTouchEvent(true)` 影响父级拦截，但系统仍可在特定条件下取消；
-- 动作事件拆分可把不同指针 ID 分给不同子 View；
-- 子 View 被移除、窗口失焦或系统取消都会清理目标。
+- motion-event splitting 可把不同 pointer id 分给不同 child；
+- child 移除、窗口失焦或系统取消会清理目标。
 
 因此，手势问题应同时查看 DOWN 的命中、后续拦截、CANCEL 和指针 ID，不能只看最终的 `onTouchEvent()` 返回值。
 
@@ -517,7 +517,7 @@ Android 17 的分发循环在功能开关 `enable_anr_warning_callback_input_dis
 - 最早记录的 `deliveryTime` 与 `timeoutTime`；
 - 连接是否仍有响应；
 - 应用是否已经消费；
-- 异步 `deliverInputEvent` 是否结束；
+- async `deliverInputEvent` 是否结束；
 - 主线程是否 Runnable/Running/Sleeping；
 - IME、原生队列或套接字写入是否在等待。
 
@@ -544,9 +544,9 @@ android.input.inputevent
 | 区间 | 计算 | 主要检查对象 |
 |---|---|---|
 | 设备到读取 | `readTime - eventTime` | 驱动/evdev 排队、唤醒、Reader 调度 |
-| 读取到发布 | `deliveryTime - readTime` | 映射器、监听阶段、Dispatcher 目标选择与排队 |
-| 发布到消费 | `consumeTime - deliveryTime` | 套接字、应用 Looper、线程调度 |
-| 消费到完成 | `finishTime - consumeTime` | 批处理、InputStage、IME、Window/View 处理 |
+| 读取到发布 | `deliveryTime - readTime` | mapper、listener stages、Dispatcher 目标选择与排队 |
+| 发布到消费 | `consumeTime - deliveryTime` | socket、App Looper、线程调度 |
+| 消费到完成 | `finishTime - consumeTime` | batching、InputStage、IME、Window/View 处理 |
 | 输入到显示 | 输入事件到目标帧送显 | Choreographer、渲染、SF/HWC、刷新周期 |
 
 InputDispatcher 的延迟聚合器会使用读取到发布、发布到消费和消费到完成等时间。输入到显示这一段需要 FrameTimeline、应用帧、SurfaceFlinger 与送显证据，不能从 `finishInputEvent()` 推断像素已经上屏。
@@ -555,11 +555,11 @@ InputDispatcher 的延迟聚合器会使用读取到发布、发布到消费和�
 
 | 现象 | 初步方向 | 还要验证 |
 |---|---|---|
-| `iq` 持续升高 | Dispatcher 未跟上监听器输入 | Dispatcher 线程调度、策略、锁、目标计算 |
-| `oq:<window>` 堆积 | 目标已定但通道未能持续发布 | 套接字已满、连接状态、等待队列 |
+| `iq` 持续升高 | Dispatcher 未跟上 listener 输入 | Dispatcher 线程调度、policy、锁、目标计算 |
+| `oq:<window>` 堆积 | 目标已定但 channel 未成功持续发布 | socket full、connection 状态、wait queue |
 | `wq:<window>` 年龄变大 | 已发布、客户端未完成 | `consumeTime`、应用主线程、IME/View、FINISHED |
 | `aq:pending:<window>` 升高 | Java ViewRoot 待处理队列堆积 | 主线程消息与批次消费 |
-| `deliverInputEvent` 异步区间很长 | 应用处理链尚未完成 | 具体 InputStage、IME、View 回调 |
+| `deliverInputEvent` async 很长 | App pipeline 尚未 finish | 具体 InputStage、IME、View callback |
 
 计数器名称包含通道/窗口名，在轨迹中可能被截断；多窗口应用必须核对令牌、PID、标题和显示器，避免看错连接。
 
@@ -571,8 +571,8 @@ InputDispatcher 的延迟聚合器会使用读取到发布、发布到消费和�
 
 1. `getevent -lt`：确认目标 evdev 节点是否有事件及时间戳；
 2. `dumpsys input`：确认设备是否启用、输入源/视口是否正确；
-3. 输入轨迹：确认 RawEvent、NotifyMotion/Key 是否出现；
-4. InputDispatcher 警告：确认是否因事件过期、策略丢弃、安全拒绝或无目标而停止分发；
+3. input trace：确认 RawEvent、NotifyMotion/Key 是否出现；
+4. InputDispatcher warning：确认是否 stale、policy drop、安全拒绝或无目标；
 5. 窗口信息/焦点：确认显示器、令牌、可触摸区域和连接。
 
 `adb shell input tap`、`keyevent` 等注入从框架路径进入，可用于绕过真实硬件与 evdev。注入成功只说明注入点之后的链路可以工作。
@@ -582,7 +582,7 @@ InputDispatcher 的延迟聚合器会使用读取到发布、发布到消费和�
 检查同一时刻的：
 
 - 焦点显示器、焦点应用与焦点窗口；
-- `WindowInfosUpdate` 中的 Z 序、可触摸区域与变换；
+- `WindowInfosUpdate` 中的 z-order、touchable region、transform；
 - DOWN 建立的触摸状态；
 - 叠加层、监视窗口、监视器与指针截取；
 - 指针捕获；
@@ -595,9 +595,9 @@ InputDispatcher 的延迟聚合器会使用读取到发布、发布到消费和�
 先按五段延迟表找到最长区间，再进入对应线程：
 
 - `readTime - eventTime` 长：内核、唤醒、InputReader 调度；
-- `deliveryTime - readTime` 长：监听阶段、Dispatcher、窗口拓扑；
+- `deliveryTime - readTime` 长：listener stages、Dispatcher、window topology；
 - `consumeTime - deliveryTime` 长：应用主线程没有运行或通道读取晚；
-- `finishTime - consumeTime` 长：批处理、IME、View 回调或应用同步工作；
+- `finishTime - consumeTime` 长：batch、IME、View 回调或应用同步工作；
 - 完成很快但画面晚：转到 Choreographer、RenderThread、BufferQueue 与送显阶段。
 
 按时间分段后，便不会因看到 `deliverInputEvent` 就把所有延迟归给 View。
@@ -606,11 +606,11 @@ InputDispatcher 的延迟聚合器会使用读取到发布、发布到消费和�
 
 保存 ANR 前后的：
 
-- `dumpsys input`，重点查看焦点状态、待处理事件、连接、出站/等待队列；
+- `dumpsys input`，重点看 focused state、pending event、connections、outbound/wait queue；
 - ANR 轨迹与主线程栈；
 - 事件 ID 的发布、消费与完成时间；
 - 窗口 dispatching timeout 与 `HwTimeoutMultiplier()`；
-- 策略、IME、Binder 和套接字状态；
+- policy、IME、Binder 和 socket 状态；
 - `Input Dispatcher State at time of last ANR`。
 
 若属于无焦点窗口，继续检查窗口添加与焦点事务；若属于连接超时，则检查最早超时的等待记录与目标线程。
@@ -670,7 +670,7 @@ finish 表示应用对该输入消息的处理阶段结束，并把 handled 状�
 | Android 14 / API 34 | 分类组件改为 `InputProcessor.cpp`；dispatch timeout 使用 chrono 形态 |
 | Android 15 / API 35 | 过期判定进入策略的 `isStaleEvent(currentTime, eventTime)` |
 | Android 16 / API 36 | 延续 InputProcessor、策略过期判定与 libinputflinger 默认进程边界 |
-| Android 17 / API 37 | 当前监听器链、`android.input.inputevent`、无焦点窗口 ANR 预警开关、Rust InputFilter 桥接与 `SOCK_SEQPACKET` InputTransport 作为分析锚点 |
+| Android 17 / API 37 | 当前 listener chain、`android.input.inputevent`、pre-no-focus-ANR flag、Rust InputFilter bridge 与 `SOCK_SEQPACKET` InputTransport 作为版本锚点 |
 
 版本表只描述已核对的源码形态，不把目录出现时间当作功能首次发布证明。对旧设备做归因时，应使用对应的发布标签；厂商也可能调整任务配置文件、输入 HAL、过滤阶段与轨迹配置。
 
@@ -678,24 +678,24 @@ finish 表示应用对该输入消息的处理阶段结束，并把 handled 状�
 
 ## 十二、源码阅读入口
 
-- `common/drivers/input/evdev.c`：evdev 客户端缓冲区、读取/轮询和用户空间 ABI
+- `common/drivers/input/evdev.c`：evdev client buffer、read/poll 和用户空间 ABI
 - `frameworks/native/services/inputflinger/reader/EventHub.cpp`：epoll、inotify、RawEvent 时间戳
-- `frameworks/native/services/inputflinger/reader/InputReader.cpp`：Reader 循环、映射器输出与锁边界
+- `frameworks/native/services/inputflinger/reader/InputReader.cpp`：Reader loop、mapper 输出与锁边界
 - `frameworks/native/services/inputflinger/InputManager.cpp`：Android 17 监听阶段的构造顺序
 - `frameworks/native/services/inputflinger/InputProcessor.cpp`：异步 MotionClassifier
-- `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`：目标选择、队列、发布、ANR、窗口信息更新
+- `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`：目标选择、队列、publish、ANR、window-info 更新
 - `frameworks/native/services/inputflinger/dispatcher/AnrTracker.cpp`：按超时时间/令牌排序的索引
 - `frameworks/native/services/inputflinger/trace/`：`android.input.inputevent` 数据源
 - `frameworks/native/libs/input/InputTransport.cpp`：InputChannel 与消息协议
-- `frameworks/base/core/jni/android_view_InputEventReceiver.cpp`：应用文件描述符/Looper 接收与完成反馈
-- `frameworks/base/core/java/android/view/ViewRootImpl.java`：待处理队列、批处理、InputStage 与轨迹
-- `frameworks/base/core/java/android/view/ViewGroup.java`：子 View 命中、拦截、拆分与 CANCEL
+- `frameworks/base/core/jni/android_view_InputEventReceiver.cpp`：App fd/Looper 接收与完成反馈
+- `frameworks/base/core/java/android/view/ViewRootImpl.java`：pending queue、batch、InputStage 与 trace
+- `frameworks/base/core/java/android/view/ViewGroup.java`：child 命中、intercept、split 与 CANCEL
 
 ## 交叉引用
 
-- **3.2 触摸响应的性能分析**：批处理、重采样与应用触摸处理
+- **3.2 触摸响应的性能分析**：batch、resampling 与应用触摸处理
 - **3.4 输入延迟与预测输入**：预测、采样与输入到显示时间
 - **3.7 InputDispatcher 反压**：`iq/oq/wq` 堆积
-- **3.10 过期事件**：过期事件的处理策略
+- **3.10 stale event**：过期事件的 policy
 - **3.12 Predictive Back**：返回手势、窗口回调与动画
 - **9.1 ANR**：AMS/WMS 侧 TimeoutRecord、轨迹与判责

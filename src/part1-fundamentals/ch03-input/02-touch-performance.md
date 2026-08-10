@@ -69,7 +69,7 @@ pipeline_stage: ready-to-publish
 
 ## 为什么需要关注触摸响应
 
-在滑动列表的 Perfetto 轨迹中，可以沿时间轴看到 InputReader、InputDispatcher、应用主线程、RenderThread、SurfaceFlinger 和显示帧。触摸样本进入系统后，应用还要消费事件、更新界面状态、提交缓冲区，再由 SurfaceFlinger 合成并送显；其中任何一段延后，都会增加可见响应时间。
+在滑动列表的 Perfetto Trace，可以沿时间轴看到 InputReader、InputDispatcher、应用主线程、RenderThread、SurfaceFlinger 和显示帧。触摸样本进入系统后，应用还要消费事件、更新界面状态、提交缓冲区，再由 SurfaceFlinger 合成并送显；其中任何一段延后，都会增加可见响应时间。
 
 这段从物理动作到光子变化的时间通常称为触摸到显示延迟。刷新周期只是其中一个时间尺度：60Hz 每周期约 16.67ms，120Hz 每周期约 8.33ms。事件落在 VSync 周期的哪个相位、应用是否赶上当前帧、缓冲区是否按期合成，都会改变结果。因此，一个刷新周期不能直接代表端到端延迟，也不应脱离设备、操作和统计分位数给出通用的“典型毫秒数”。
 
@@ -107,7 +107,7 @@ Android 17 的 `EventHub::getEvents()` 为每个 `RawEvent` 保留两个重要�
 
 ### 3. InputReader 读取和加工
 
-InputReader 是运行在 `system_server` 进程中的原生线程。它从 EventHub 读取原始 `input_event`，完成设备映射、坐标转换、多点触控组装、工具类型识别等处理，生成 `NotifyArgs`。这些参数随后进入 Android 17 的输入监听器链，经过误触处理、指针协调、可选分类/过滤等阶段，再送到 InputDispatcher。
+InputReader 是运行在 `system_server` 进程中的原生线程。它从 EventHub 读取原始 `input_event`，完成设备映射、坐标转换、多点触控组装、工具类型识别等处理，生成 `NotifyArgs`。这些参数随后进入 Android 17 的输入监听器链，经过误触处理、pointer choreography、可选分类/过滤等阶段，再送到 InputDispatcher。
 
 核心循环在 `InputReader.loopOnce()` 中：
 
@@ -134,7 +134,7 @@ void InputReader::loopOnce() {
 
 ### 4. InputDispatcher 派发
 
-InputDispatcher 也是 `system_server` 中的原生线程。监听器链把 `NotifyArgs` 交给分发器后，事件入队并唤醒它的 Looper。它根据焦点、窗口信息、触摸状态、手势监视和安全策略选择一个或多个目标窗口；Activity 只是窗口背后的上层组件，不能代替窗口路由规则。
+InputDispatcher 也是 `system_server` 中的原生线程。监听器链把 `NotifyArgs` 交给分发器后，事件入队并唤醒它的 Looper。它根据焦点、窗口信息、touch state、手势监视和安全策略选择一个或多个目标窗口；Activity 只是窗口背后的上层组件，不能代替窗口路由规则。
 
 事件在 InputDispatcher 中经过三个关键队列：
 
@@ -174,9 +174,9 @@ View 的触摸分发沿命中的目标分支和已建立的 `TouchTarget` 关系
 |------|-----------------|--------------|
 | 设备事件 → EventHub 读取 | `RawEvent.when`、`RawEvent.readTime` | 驱动/evdev 到读取是否滞留 |
 | InputDispatcher 入队/发布 | `android.input.inputevent`、`iq`/`oq:*` | 系统侧是否积压、目标窗口是谁 |
-| 发布 → 应用消费/完成 | 发布、消费与完成时序，`wq:*` | 调度与应用输入处理是否拖延 |
-| 应用输入 → 目标帧 | `deliverInputEvent`、`aq:pending:*`、Choreographer、输入事件 ID | 哪枚事件驱动了哪一帧 |
-| 目标帧 → 送显 | FrameTimeline、RenderThread、GPU、SurfaceFlinger | 画面为何晚一个或多个刷新周期 |
+| 发布 → 应用消费/完成 | delivery、consume、finish 时序，`wq:*` | 调度与应用输入处理是否拖延 |
+| 应用输入 → 目标帧 | `deliverInputEvent`、`aq:pending:*`、Choreographer、input event ID | 哪枚事件驱动了哪一帧 |
+| 目标帧 → present | FrameTimeline、RenderThread、GPU、SurfaceFlinger | 画面为何晚一个或多个刷新周期 |
 
 Android 17 的 `InputEventAssigner` 有一项限制：连续手势中，一帧只归因到一枚输入事件 ID。首帧优先关联未处理的 DOWN，后续帧通常关联该帧之前的最新事件；中间的 MOVE 可能没有独立的帧归因。因此，做端到端关联时要保留事件 ID 与历史样本，不能假设每个采样点都有一帧与之对应。
 
@@ -198,7 +198,7 @@ Android 17 的 `InputEventAssigner` 有一项限制：连续手势中，一帧�
 - **60fps + 120Hz 触控**：按理想固定频率估算，一个显示周期约有两个样本。它们可以合并到一枚 `MotionEvent` 中，较早的点通过历史记录暴露。
 - **60fps + 240Hz 触控**：一个显示周期约有四个样本。列表仍只能每帧呈现一次位置，但笔迹拟合、速度估计和轨迹预测可以使用更密的数据。
 - **120fps + 240Hz 触控**：一个显示周期约有两个样本；更短的显示周期也缩短了错过一帧后的等待。
-- **非缓冲分发/前缓冲区渲染**：前者缩短 MOVE 进入应用的等待，后者缩短局部笔迹的渲染路径。两者作用于不同阶段，且都需要设备与应用实现配合。
+- **unbuffered dispatch / front-buffer**：前者缩短 MOVE 进入应用的等待，后者缩短局部笔迹的渲染路径。两者解决的是不同阶段，且都需要设备与应用实现配合。
 
 上面的样本数只是频率比值，不代表每个周期都严格收到相同数量。触控控制器可能动态调整报告率，显示也可能运行在 VRR 模式。验证设备规格时，应根据驱动事件时间或结构化输入轨迹统计相邻样本间隔。
 
@@ -223,7 +223,7 @@ float latestX = event.getX();
 float latestY = event.getY();
 ```
 
-历史样本属于同一枚事件，因此 Perfetto 中通常只看到一次 Java `deliverInputEvent`，原生 `dispatchInputEvent MotionEvent ... historySize=N` 会直接给出历史样本数量。不要把一枚事件里的 N 个历史点误判为 N 次 View 分发。
+历史样本属于同一枚事件，因此 Perfetto 中通常只看到一次 Java `deliverInputEvent`，Native `dispatchInputEvent MotionEvent ... historySize=N` 会直接给出历史样本数量。不要把一枚事件里的 N 个历史点误判为 N 次 View 分发。
 
 ### 批处理之外还有重采样
 
@@ -294,11 +294,11 @@ for (int h = 0; h < event.getHistorySize(); h++) {
 3. **检查应用主线程**：从套接字可读/原生分发到 `deliverInputEvent`，区分 Running、Runnable、Sleep 和锁等待。
 4. **检查批处理**：读取 `historySize`，确认是否在 `CALLBACK_INPUT` 消费，以及业务是否遗漏历史样本。
 5. **检查目标帧**：用输入事件 ID、应用 FrameTimeline 和 SurfaceFlinger FrameTimeline 关联到送显。
-6. **归因资源瓶颈**：根据调度器、CPU 频率、GPU 和内存轨迹解释等待，避免根据函数名猜测根因。
+6. **最终归因资源瓶颈**：根据 scheduler、CPU frequency、GPU 和内存轨道解释等待，避免从一个函数名直接猜根因。
 
 ### 采集结构化输入轨迹
 
-Android 17 的 InputFlinger 注册了 `android.input.inputevent` Perfetto 数据源。它只允许在可调试（userdebug/eng）构建上采集，可记录分发器输入事件和窗口分发；配置支持完整或脱敏级别，并可按安全窗口、IME 状态和目标包规则过滤。完整记录可能包含敏感坐标，只应在本地测试设备使用，现场采集必须使用严格规则。
+Android 17 的 InputFlinger 注册了 `android.input.inputevent` Perfetto data source。它只允许在可调试（userdebug/eng）构建上采集，可记录分发器输入事件和窗口分发；配置支持完整或脱敏级别，并可按安全窗口、IME 状态和目标包规则过滤。完整记录可能包含敏感坐标，只应在本地测试设备使用，现场采集必须使用严格规则。
 
 下面的最小配置用于本地测试机短时抓取完整输入事件；同时启用 `linux.ftrace` 才能看到调度、频率和 ATRACE 轨迹。
 
@@ -327,7 +327,7 @@ data_sources: {
 - 第二次触摸没有复现该设备第一次触摸时的频率变化，主线程以较低频率执行。
 - 同时唤醒的硬件服务计时器线程占用了 CPU，应用主线程延后获得运行机会。
 
-这里的结论只适用于当时的设备实现：OEM 输入/触摸升频未按预期触发，加上线程竞争，放大了墙钟耗时。AOSP 不保证所有设备都有同名 CPU 升频机制，也不规定输入后必须在几毫秒内升到某个频点。排查时应把切片拆成 Running 时间与非 Running 时间，再用频率、调度和厂商策略解释差值。
+这里的结论只适用于当时的设备实现：OEM 输入/触摸升频未按预期触发，加上线程竞争，放大了墙钟耗时。AOSP 不保证所有设备都有同名 CPU boost，也不规定输入后必须在几毫秒内升到某个频点。排查时应把切片拆成 Running 时间与非 Running 时间，再用频率、调度和厂商策略解释差值。
 
 ### Perfetto 中的关键轨迹和切片
 
@@ -342,11 +342,11 @@ data_sources: {
 
 **应用进程：**
 - **主线程轨迹**：
-  - 原生 `dispatchInputEvent MotionEvent ... historySize=N`
+  - Native `dispatchInputEvent MotionEvent ... historySize=N`
   - `aq:pending:<window>` 与 `deliverInputEvent`
   - Choreographer 的 `input`、`animation`、`insets_animation`、`traversal`、`commit`
 - **FrameTimeline**：确认应用帧是否错过截止时间，以及 SurfaceFlinger 帧何时送显。
-- **CPU/Scheduler 轨迹**：确认主线程和 RenderThread 的 Running/Runnable/Blocked 区间，再看 CPU 频率。
+- **CPU/Scheduler Track**：确认主线程和 RenderThread 的 Running/Runnable/Blocked 区间，再看 CPU frequency。
 
 ### 用 dumpsys input 辅助排查
 
@@ -356,7 +356,7 @@ data_sources: {
 - 焦点应用/窗口、当前触摸状态与指针捕获。
 - `RecentQueue`：最多 10 枚最近分发或丢弃的事件及其 `age`。
 - `PendingEvent`、`InboundQueue`。
-- 每个连接的状态、响应状态、OutboundQueue 和 WaitQueue；非空条目会附带年龄等描述。
+- 每个连接的 status、responsive、OutboundQueue 和 WaitQueue；非空条目会附带 age 等描述。
 
 `age` 是执行 dumpsys 时的瞬时年龄，不存在通用的“正常必须小于 16ms”阈值。WaitQueue 的 ANR 截止时间在事件发布时按连接设置：默认基值为 5000ms，再乘 `HwTimeoutMultiplier()`；窗口或应用可以覆盖分发超时时间。判断风险时，应查看该连接的超时时间、响应状态和连续多次采样趋势。
 
@@ -394,7 +394,7 @@ data_sources: {
 
 嵌套滚动、ViewPager 与横向列表、自定义手势识别器可能对方向和触摸容差作出不同判断。View 分发并非跨进程的多轮协商：父 View 在当前 `dispatchTouchEvent()` 中调用 `onInterceptTouchEvent()`；若中途接管手势，原子 View 目标会收到 `ACTION_CANCEL`。
 
-这类问题常表现为首段位移未被业务采用、父子控件反复切换状态，或 CANCEL 后仍继续绘制，看起来像“慢半拍”。排查时应记录动作、指针 ID、事件时间、拦截决策和 CANCEL，不要仅凭耗时归类为系统触摸延迟。对 RecyclerView/NestedScrolling 体系，优先使用已有的嵌套滚动协议，减少重复的手势归属逻辑。
+这类问题常表现为首段位移未被业务采用、父子控件反复切换状态，或 CANCEL 后仍继续绘制，看起来像“慢半拍”。排查时应记录动作、指针 ID、pointer ID、拦截决策和 CANCEL，不要仅凭耗时归类为系统触摸延迟。对 RecyclerView/NestedScrolling 体系，优先使用已有的嵌套滚动协议，减少重复的手势归属逻辑。
 
 ### 4. CPU 频率和调度问题
 
@@ -418,18 +418,18 @@ data_sources: {
 
 ### 6. 系统低内存
 
-内存压力会间接放大输入和渲染延迟，例如 Java GC 暂停、主缺页、回收/压缩线程占用 CPU，以及文件页重新读取。是否由内存压力导致，要以同一时间窗口内的 GC、缺页、回收、I/O 和调度证据为准。
+内存压力会间接放大输入和渲染延迟，例如 Java GC pause、major fault、回收/压缩线程占用 CPU，以及文件页重新读取。是否由内存压力导致，要以同一时间窗口内的 GC、fault、reclaim、I/O 和调度证据为准。
 
 在 Perfetto 中表现为：
 - 主线程或 RenderThread 的 Runnable 延迟增加
 - GC 暂停与输入处理或遍历重叠
-- `kswapd`/内存回收活跃、主缺页或 I/O 等待与异常帧重叠
+- `kswapd`/reclaim 活跃、major fault 或 I/O wait 与异常帧重叠
 
-## 动作预测：降低笔迹与绘图的感知延迟
+## Motion Prediction：面向笔迹/绘图的感知降延迟
 
 Motion Prediction 涉及三层概念，各自独立：
 
-- **框架 API**：`android.view.MotionPredictor`，API 34 加入。
+- **framework API**：`android.view.MotionPredictor`，API 34 加入。
 - **AndroidX 库**：`androidx.input:input-motionprediction`，为不同系统版本提供封装。
 - **低延迟输入**：`requestUnbufferedDispatch()` 让真实样本更早到达应用。
 - **低延迟绘制**：前缓冲区渲染等方案缩短笔迹提交到显示的路径。
@@ -440,7 +440,7 @@ Motion Prediction 涉及三层概念，各自独立：
 
 `android-17.0.0_r1` 的 `MotionPredictor` 是 Java 到原生层的薄封装。设备资源 `config_enableMotionPrediction` 决定 Java API 是否启用，AOSP 基础值为 `false`，OEM 需要在确认模型适配设备后覆盖；原生层还有可在运行时关闭的 `enable_motion_prediction` 系统属性检查。`isPredictionAvailable(deviceId, source)` 同时受这些开关约束，当前原生实现只接受触控笔输入源。API 存在不代表所有 Android 17 设备默认可用。
 
-原生 `TfLiteMotionPredictorModel` 优先加载 `/vendor/etc/motion_predictor_model.tflite`，否则使用 `/system/etc/motion_predictor_model.tflite`；同目录 XML 提供预测间隔、噪声下限和加加速度阈值等配置。输入张量包括相对轨迹的 `r`、`phi`、压力、倾斜角、方向，输出为 `r`、`phi`、压力。Android 17 包含受功能开关控制的突变修剪；无论该开关是否启用，模型的噪声下限、输出长度和请求时间都可能让 `predict()` 返回 `null`，或让结果停在早于请求时间的位置。
+Native `TfLiteMotionPredictorModel` 优先加载 `/vendor/etc/motion_predictor_model.tflite`，否则使用 `/system/etc/motion_predictor_model.tflite`；同目录 XML 提供 prediction interval、noise floor 和 jerk threshold 等配置。输入张量包括相对轨迹的 `r`、`phi`、pressure、tilt、orientation，输出为 `r`、`phi`、pressure。Android 17 包含受 feature flag 控制的 jerk pruning；无论该 flag 是否启用，模型的 noise floor、输出长度和请求时间都可能让 `predict()` 返回 `null`，或让结果停在早于请求时间的位置。
 
 源码没有为预测事件定义 `FLAG_PREDICTED`。应用要把真实笔迹和临时预测笔迹分层管理：下一批真实事件到达后，删除或修正未确认的预测段，再继续绘制。
 
@@ -484,15 +484,15 @@ void onStylusEvent(MotionEvent event, long targetTimeNanos) {
 
 ### 调度与提频策略
 
-厂商 ROM 常会在输入到来后短时间提高 CPU/GPU 频率，或提高 UI 相关线程的调度优先级。不同平台会给这类机制使用不同名称，但策略是否存在、持续多长、是否把线程放到大核，都必须以目标设备的轨迹和内核/ROM 实现为准，不能写成固定数值。排查时应直接查看 Perfetto 中的 CPU 频率、线程调度和 SurfaceFlinger/RenderThread 行为。
+厂商 ROM 常会在输入到来后短时间提高 CPU/GPU 频率，或提高 UI 相关线程的调度优先级。不同平台会给这类机制使用不同名称，但策略是否存在、持续多长、是否把线程放到大核，都必须以目标设备的轨迹和内核/ROM 实现为准，不能写成固定数值。排查时应直接查看 Perfetto 中的 CPU frequency、线程调度和 SurfaceFlinger/RenderThread 行为。
 
 ## 与其他章节的关系
 
 触摸响应与输入分发、帧调度和渲染链路交叉关联：
 
 - **3.1 输入事件分发全流程**：输入事件从硬件到应用的完整分发机制。
-- **2.3 VSync 机制**：缓冲的 MOVE 会贴近 Choreographer 输入回调消费，非缓冲路径不等待该回调。VSync 周期、截止时间和实际刷新率决定事件能否赶上当前帧。
-- **2.4 Choreographer 与渲染流水线**：`CALLBACK_INPUT` 优先级、`doFrame()` 执行顺序和批处理实现。
+- **2.3 VSync 机制**：buffered MOVE 会贴近 Choreographer 的 input callback 消费，目标帧也由 VSync 驱动；unbuffered path 则不等待这一回调。理解 VSync 周期、deadline 和实际刷新率，才能解释事件赶上了当前帧还是顺延到下一帧。
+- **2.4 Choreographer 与渲染流水线**：CALLBACK_INPUT 优先级、`doFrame()` 执行顺序与 Batching 实现见 2.4 节。
 - **2.5 MainThread 与 RenderThread 协作**：View 输入分发和遍历位于 MainThread，部分硬件加速渲染工作交给 RenderThread/GPU。
 - **8.1 响应速度原理**：输入延迟 → 处理延迟 → 输出延迟的通用模型与量化方法。
 
@@ -506,7 +506,7 @@ void onStylusEvent(MotionEvent event, long targetTimeNanos) {
 
 事件可以在触控固件、驱动、InputFlinger、应用、GPU、SurfaceFlinger 或显示阶段延后。只有事件到应用后的处理器/遍历明显超时，才能把责任收敛到应用侧。CPU 频率低或某个升频机制没有出现，也必须结合调度、温控和对照样本解释。
 
-### 误区：输入 ANR 等于应用卡死
+### 误区：Input ANR 等于 App 卡死
 
 连接型输入 ANR 检查 WaitQueue 条目的 `timeoutTime`。Android 17 默认分发超时时间的未乘倍率基值为 5000ms，运行时还应用 `HwTimeoutMultiplier()`，窗口或应用可覆盖此值。超时表示系统没有按期收到对应的完成反馈/ACK；原因可能是主线程长任务、Runnable 饥饿、锁等待、Binder/I/O、异步 InputStage 或进程异常。ACK 也不代表画面已送显，因此 ANR 指标不能替代跟手性测量。
 
@@ -525,7 +525,7 @@ void onStylusEvent(MotionEvent event, long targetTimeNanos) {
 - 若批次中还有目标时间之后的未来样本，则在当前/未来样本之间线性插值；两点间隔至少 2ms。
 - 没有未来样本时，用最近两个点外推；两点间隔必须在 2ms 到 20ms 之间。
 - 外推最远到 `currentTime + min(delta / 2, 8ms)`。
-- 支持 `FINGER`、`MOUSE`、`STYLUS`、`UNKNOWN` 工具类型，并要求指针 ID、工具类型和显示器等条件一致。
+- 支持 `FINGER`、`MOUSE`、`STYLUS`、`UNKNOWN` tool type，并要求 pointer ID、tool type 和 display 等条件一致。
 - 只对指针输入源的 `ACTION_MOVE` 执行；厂商可通过只读属性 `ro.input.resampling=0` 关闭。
 
 Android 17 的实际系统与应用调用边界可概括为：
@@ -533,7 +533,7 @@ Android 17 的实际系统与应用调用边界可概括为：
 ```text
 evdev → EventHub → InputReader → TouchInputMapper → InputDispatcher
     → InputChannel/Unix SOCK_SEQPACKET
-    → 应用 NativeInputEventReceiver
+    → app NativeInputEventReceiver
     → InputConsumer.consume(..., frameTimeNanos)
     → InputConsumer::consumeBatch()
     → InputConsumer::resampleTouchState()
@@ -563,6 +563,6 @@ evdev → EventHub → InputReader → TouchInputMapper → InputDispatcher
   - `frameworks/base/core/java/android/view/MotionEvent.java`
   - `frameworks/base/core/java/android/view/MotionPredictor.java`
   - `external/perfetto/protos/perfetto/config/android/android_input_event_config.proto`
-- Android 官方文档：[输入系统概述](https://source.android.com/docs/core/interaction/input)、[通过 adb 抓取输入轨迹](https://source.android.com/docs/core/graphics/winscope/capture/adb)、[MotionEvent](https://developer.android.com/reference/android/view/MotionEvent)、[MotionPredictor](https://developer.android.com/reference/android/view/MotionPredictor)、[高级触控笔功能](https://developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features)、[AndroidX Input](https://developer.android.com/jetpack/androidx/releases/input)
+- Android 官方文档：[Input 系统概述](https://source.android.com/docs/core/interaction/input)、[通过 adb 抓取 Input Trace](https://source.android.com/docs/core/graphics/winscope/capture/adb)、[MotionEvent](https://developer.android.com/reference/android/view/MotionEvent)、[MotionPredictor](https://developer.android.com/reference/android/view/MotionPredictor)、[Advanced Stylus](https://developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features)、[AndroidX Input](https://developer.android.com/jetpack/androidx/releases/input)
 - [高爷 - Systrace 基础知识：输入解读](https://www.androidperformance.com/2019/10/27/Android-Systrace-Input/)
 - [高爷 - Systrace 响应速度实战 1](https://www.androidperformance.com/2022/03/20/android-systrace-Responsiveness-in-action-1/)

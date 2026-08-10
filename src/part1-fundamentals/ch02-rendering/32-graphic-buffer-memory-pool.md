@@ -43,13 +43,13 @@ sources:
 
 分析这条路径时，要分开三个层次：
 
-1. **BufferQueue 复用**：保存 `槽位 -> GraphicBuffer` 的映射，协调生产者、消费者和栅栏；
+1. **BufferQueue 复用**：保存 `slot -> GraphicBuffer` 的映射，协调 Producer、Consumer 和 fence；
 2. **Gralloc 分配**：根据尺寸、格式、用途等描述创建可跨进程传递的原生缓冲区；
 3. **驱动或厂商缓存**：是否缓存已释放分配、如何选择 heap、压缩或布局，属于 HAL 与驱动实现。
 
-第一层可以从 AOSP 完整验证。第三层没有统一的 Android 契约，不能仅凭框架跟踪推断厂商内部存在某种空闲链表。
+第一层可以从 AOSP 完整验证。第三层没有统一的 Android contract，不能仅凭框架跟踪推断厂商内部存在某种空闲链表。
 
-以下分析以 `android-17.0.0_r1` 为准。内核侧以 `android17-6.18-2026-06_r6` 为准：DMA-BUF 管理共享内存对象与文件描述符生命周期，DMA 栅栏和 sync_file 管理访问时序；内核不知道 BufferQueue 的槽位编号，也不负责选择槽位。
+以下分析以 `android-17.0.0_r1` 为准。内核侧以 `android17-6.18-2026-06_r6` 为准：DMA-BUF 管理共享内存对象与文件描述符生命周期，DMA fd sync_file 管理访问时序；内核不知道 BufferQueue 的槽位编号，也不负责选择槽位。
 
 ---
 
@@ -59,10 +59,10 @@ sources:
 
 | 对象 | 所在位置 | 主要内容 | 生命周期由谁约束 |
 |---|---|---|---|
-| 槽位 | 单个 BufferQueue 内部 | 整数索引及状态、帧号、栅栏、`sp<GraphicBuffer>` | BufferQueueCore |
-| `GraphicBuffer` | 原生用户空间对象 | 宽高、格式、用途、行跨度、原生句柄等 | `sp<>` 引用及所有者语义 |
-| 缓冲区句柄 | 跨进程描述 | 文件描述符与整数元数据 | Mapper 导入或释放、进程文件描述符 |
-| 底层分配 | Gralloc/内核/驱动 | DMA-BUF 后备存储、布局、填充、压缩等 | 分配器、驱动和所有导入者 |
+| slot | 单个 BufferQueue 内部 | 整数索引及状态、frame number、fence、`sp<GraphicBuffer>` | BufferQueueCore |
+| `GraphicBuffer` | native 用户空间对象 | 宽高、格式、usage、stride、native handle 等 | `sp<>` 引用及 owner 语义 |
+| buffer handle | 跨进程描述 | fd 与整数元数据 | Mapper import/free、进程 fd |
+| 底层分配 | Gralloc/内核/驱动 | dma-buf backing store、布局、padding、压缩等 | allocator、驱动和所有导入者 |
 
 槽位只是队列内的索引。相同槽位可以在旧缓冲区清除后绑定新缓冲区；同一底层分配也可能以导入后的句柄出现在多个进程。因此，下面三句话不能互换：
 
@@ -74,12 +74,12 @@ BufferQueue 传递缓冲区句柄与元数据，不复制整块像素。配套�
 
 ```mermaid
 flowchart LR
-    P["生产者<br/>HWUI / GL / Vulkan / 编解码器"] -->|"槽位出队 + 释放栅栏"| Q["BufferQueue<br/>槽位与 GraphicBuffer 映射"]
-    P -->|"缓冲区入队 + 获取栅栏"| Q
-    Q -->|"获取 BufferItem"| C["消费者<br/>BLAST / SurfaceFlinger / GLConsumer"]
-    C -->|"释放槽位 + 释放栅栏"| Q
+    P["Producer<br/>HWUI / GL / Vulkan / Codec"] -->|"dequeue slot + release fence"| Q["BufferQueue<br/>slot 与 GraphicBuffer 映射"]
+    P -->|"queue buffer + acquire fence"| Q
+    Q -->|"acquire BufferItem"| C["Consumer<br/>BLAST / SurfaceFlinger / GLConsumer"]
+    C -->|"release slot + release fence"| Q
     Q --> G["GraphicBufferAllocator / Gralloc"]
-    G --> D["DMA-BUF 后备存储"]
+    G --> D["dma-buf backing store"]
 ```
 
 图中的 Gralloc 分支只在首次分配或不兼容重分配时发生。稳态循环通常在生产者、BufferQueue 和消费者之间运行。
@@ -108,11 +108,11 @@ switch (mMapper.getMapperVersion()) {
 
 ### 2.2 `sAllocList` 不保存可再次分配的空闲块
 
-`sAllocList` 的键是 `buffer_handle_t`，值记录宽高、行跨度、格式、用途、请求者与估算大小。分配成功且句柄已导入后加入表，`GraphicBufferAllocator::free()` 调用 Mapper 释放句柄后移除条目。
+`sAllocList` 的键是 `buffer_handle_t`，值记录宽高、stride、格式、usage、请求者与估算大小。分配成功且 handle 已 import 后加入表，`GraphicBufferAllocator::free()` 调用 Mapper 释放 handle 后移除条目。
 
 它提供两类能力：
 
-- 生成 `GraphicBufferAllocator buffers:` 转储；
+- 生成 `GraphicBufferAllocator buffers:` dump；
 - 汇总当前登记条目的估算大小，并维护跟踪事件。
 
 列表中没有“已释放、等待匹配”的条目，也没有按规格查找旧句柄的接口，因此它不承担框架通用内存池的职责。
@@ -157,7 +157,7 @@ Android 17 的 `BufferQueueCore` 初始创建 64 个 `BufferSlot`，再用四个
 | `mUnusedSlots` | `std::list<int>` | FREE、当前不计入可用数量 | 否 |
 | `mActiveBuffers` | `std::set<int>` | DEQUEUED、QUEUED、ACQUIRED 等非 FREE 状态 | 通常是；分配窗口内可暂时为空 |
 
-`validateConsistencyLocked()` 会检查一个槽位不能同时出现在多个容器，并检查容器、状态和缓冲区是否一致。`mFreeBuffers` 使用有顺序的链表，生产者出队时取其表头；把四者都称为“集合”会掩盖这个细节。
+`validateConsistencyLocked()` 会检查一个槽位不能同时出现在多个容器，并检查容器、状态和缓冲区是否一致。`mFreeBuffers` 使用有顺序的链表，生产者出队时取其表头；把四者都称为“set”会掩盖这个细节。
 
 构造阶段先计算当前允许的缓冲区数量，把对应槽位放入 `mFreeSlots`，其余槽位放入 `mUnusedSlots`。“64 个槽位”不代表已有 64 块内存：刚创建的队列可以没有任何 `GraphicBuffer`。
 
@@ -231,7 +231,7 @@ if ((usage & USAGE_PROTECTED) !=
 
 宽、高、格式和层数必须相等。普通用途采用“已有用途覆盖请求用途”的关系：旧缓冲区多出的兼容用途位不会自动触发重分配。`USAGE_PROTECTED` 单独要求精确匹配，避免保护属性被当作普通超集处理。
 
-在 `BQ_EXTENDEDALLOCATE` 开关生效的构建中，槽位保存的附加选项世代 ID 与队列当前世代不一致时，也会要求重分配。
+在 `BQ_EXTENDEDALLOCATE` flag ID 与队列当前世代不一致时，也会要求重分配。
 
 ### 4.3 分配就在 `dequeueBuffer()` 内完成
 
@@ -269,16 +269,16 @@ if ((result & BUFFER_NEEDS_REALLOCATION) || gbuf == nullptr) {
 ```mermaid
 flowchart LR
     F["FREE<br/>mFreeBuffers"] -->|"dequeueBuffer"| D["DEQUEUED<br/>生产者持有"]
-    D -->|"queueBuffer + 获取栅栏"| Q["QUEUED<br/>等待消费者"]
+    D -->|"queueBuffer + acquire fence"| Q["QUEUED<br/>等待消费者"]
     Q -->|"acquireBuffer"| A["ACQUIRED<br/>消费者持有"]
-    A -->|"releaseBuffer + 释放栅栏"| F
+    A -->|"releaseBuffer + release fence"| F
 ```
 
 消费者的 `releaseBuffer()` 会保存释放栅栏，将缓冲区状态释放，并把非共享槽位从 `mActiveBuffers` 移到 `mFreeBuffers` 尾部。这里的 FREE 表示槽位可以再次被选中，不表示 GPU、DPU 或其他消费者已在调用返回前同步完成。
 
 生产者下次取到这个槽位时会同时取得栅栏。它必须在覆盖缓冲区内容前遵守该栅栏：
 
-- CPU 锁、EGL 或 Vulkan 交换链会在各自路径导入或等待；
+- CPU lock、EGL 或 Vulkan 交换链会在各自路径导入或等待；
 - 栅栏已发出信号时，等待可能很短；
 - 栅栏尚未发出信号时，即使没有新分配，出队和获取路径仍可能延迟。
 
@@ -297,16 +297,16 @@ Android 17 的该函数会清除：
 - `mGraphicBuffer`；
 - 缓冲区状态；
 - 请求与获取标志；
-- 帧号；
-- 栅栏与旧 EGL 栅栏信息；
+- frame number；
+- fence 与旧 EGL fence 信息；
 - 最近入队槽位关联。
 
 函数中没有直接调用 `GraphicBufferAllocator::free()`，但这不代表本次操作一定不会释放内存。`mGraphicBuffer.clear()` 会减少强引用；若它恰好是仅存的、拥有底层句柄的 `GraphicBuffer`，对象析构会进入相应释放路径。
 
 是否成为最终一份引用，需要检查：
 
-- 生产者 `Surface` 的槽位缓存；
-- 消费者、BLAST 或 SurfaceFlinger 的缓冲区缓存；
+- Producer `Surface` 的 slot 缓存；
+- Consumer/BLAST/SurfaceFlinger 的 buffer 缓存；
 - 排队中的 `BufferItem`；
 - EGLImage、纹理或其他导入对象；
 - 其他进程导入的句柄与驱动引用。
@@ -327,14 +327,14 @@ Android 17 的该函数会清除：
 
 不能把每个 `GraphicBuffer` 析构都描述为“从 `sAllocList` 删除一项”。只有由该分配器登记并按相应所有者语义持有的句柄才符合这条路径。
 
-`GraphicBufferAllocator` 自身的析构函数在 Android 17 中为空，不会遍历 `sAllocList` 做统一清理。进程退出时，文件描述符、Binder 对象和驱动上下文会按各自生命周期释放；跨进程消费者与驱动何时撤销最终引用，不能承诺固定为“下一个帧周期”。
+`GraphicBufferAllocator` 自身的析构函数在 Android 17 中为空，不会遍历 `sAllocList` 做统一清理。进程退出时，fd、Binder 对象和驱动上下文会按各自生命周期释放；跨进程消费者与驱动何时撤销最终引用，不能承诺固定为“下一个帧周期”。
 
 ### 6.4 SurfaceView 反复创建不等于已有通用泄漏结论
 
 SurfaceView、TextureView、普通应用窗口使用的消费者和合成路径不同。反复创建 Surface 后图形指标增长，可能来自：
 
 - 旧 BufferQueue 或 BLAST 事务尚未完成清理；
-- 应用仍持有 `Surface`、`SurfaceTexture`、编解码器、EGLSurface 或原生窗口；
+- 应用仍持有 `Surface`、`SurfaceTexture`、codec、EGLSurface 或 native window；
 - GPU 导入缓存尚未释放；
 - 新旧队列在异步销毁阶段短暂重叠；
 - 厂商分配器或驱动缓存及统计口径；
@@ -363,7 +363,7 @@ mAllocator->allocate2(*descriptorInfo, 1, &result);
 - name；
 - width、height、layerCount；
 - 像素格式；
-- 用途；
+- usage；
 - `reservedSize`；
 - `additionalOptions` 附加选项。
 
@@ -375,15 +375,15 @@ mAllocator->allocate2(*descriptorInfo, 1, &result);
 
 `reservedSize` 是与缓冲区关联的保留区域字节数。Android 17 的 `Gralloc5Allocator::makeDescriptor()` 在普通 GraphicBuffer 路径中没有主动设置它，默认值为 0；附加选项另有独立数组。
 
-Android 支持 16 KB 页大小，不代表每块 GraphicBuffer 都额外增加固定 16 KB，也不能根据 `reservedSize` 推出元数据区域按某个页面大小取整。实际分配还受行跨度、平面布局、压缩、保护区域、IOMMU 映射和厂商规则影响。
+Android 支持 16 KB page size，不代表每块 GraphicBuffer 都额外增加固定 16 KB，也不能从 `reservedSize` 推出 metadata region 按某个页面大小取整。实际分配还受 stride、plane layout、压缩、guard region、IOMMU 映射和厂商规则影响。
 
-需要精确大小时，优先查询 Mapper 的 `StandardMetadataType::ALLOCATION_SIZE`，其目标是报告包含元数据与填充的总分配字节数；再与厂商或内核统计交叉检查。`GraphicBufferAllocator` 的 `行跨度 × 高度 × 单像素位数` 仍应标为估算值。
+需要精确大小时，优先查询 Mapper 的 `StandardMetadataType::ALLOCATION_SIZE`，其目标是报告包含元数据与填充的总分配字节数；再与厂商或内核统计交叉检查。`GraphicBufferAllocator` 的 `stride × height × bpp` 仍应标为估算值。
 
 ### 7.4 Android 17 的附加选项
 
-`BQ_EXTENDEDALLOCATE` 保护 BufferQueue 的扩展分配选项路径。生产者设置新选项后，核心更新内容并递增世代 ID；旧槽位的世代不匹配时，下次出队会重新分配。Gralloc 5 将这些选项转为 `ExtendableType[]` 传给 `allocate2()`。
+`BQ_EXTENDEDALLOCATE` 保护 BufferQueue 的扩展分配选项路径。Producer ID；旧槽位的世代不匹配时，下次出队会重新分配。Gralloc 5 将这些选项转为 `ExtendableType[]` 传给 `allocate2()`。
 
-选项用于“不改变总体用途、但会影响分配方式”的扩展信息，AIDL 文档给出的例子是 Surface 压缩级别。实现必须拒绝无法识别的选项。源码中存在该开关，不代表任意量产设备都启用；受保护内容等已有明确用途语义的能力也不能随意归入该数组。
+选项用于“不改变总体用途、但会影响分配方式”的扩展信息，AIDL 文档给出的例子是 surface compression level。实现必须拒绝无法识别的选项。源码中存在该开关，不代表任意量产设备都启用；受保护内容等已有明确用途语义的能力也不能随意归入该数组。
 
 ---
 
@@ -396,21 +396,21 @@ BLAST 改变了缓冲区与窗口事务的组织方式，也改变了一些对�
 - TextureView 通常由 `SurfaceTexture` 或 GL 消费者取得内容，再进入宿主窗口缓冲区；
 - MediaCodec、Camera 和 Vulkan 交换链仍根据各自消费者与生产者配置使用队列。
 
-因此，“BLAST 后消费者全部移到应用进程”过于宽泛。分析某个缓冲区时，应先确定具体 BufferQueue 的生产者、消费者、所在进程和最终图层。
+因此，“BLAST 后消费者全部移到应用进程”过于宽泛。分析某个缓冲区时，应先确定具体 BufferQueue 的生产者、Consumer、所在进程和最终图层。
 
-Skia Vulkan RenderEngine、应用 Vulkan、ANGLE 或 GPU 驱动可以维护各自的纹理、图像、描述符或设备内存缓存。这些缓存与 BufferQueue 槽位属于不同资源域。即使某后端复用了导入的 GPU 对象，也不能据此断言槽位未发生重分配；反过来，槽位复用也不保证所有 GPU 侧导入都没有成本。
+Skia Vulkan RenderEngine、应用 Vulkan、ANGLE 或 GPU 驱动可以维护各自的纹理、image、descriptor 或 device-memory 缓存。这些缓存与 BufferQueue slot 属于不同资源域。即使某后端复用了导入的 GPU 对象，也不能据此断言 slot 未发生重分配；反过来，slot 复用也不保证所有 GPU-side import 都没有成本。
 
 ---
 
 ## 九、怎样观察复用、重分配和内存
 
-### 9.1 BufferQueue 转储：先定位目标队列
+### 9.1 BufferQueue dump：先定位目标队列
 
 `BufferQueueCore::dumpState()` 会输出：
 
 - 消费者名称、生产者和消费者进程 ID；
 - `mMaxAcquiredBufferCount`、`mMaxDequeuedBufferCount`；
-- 异步、不可阻塞、默认尺寸和格式；
+- async、cannot-block、默认尺寸/格式；
 - 先进先出队列中的帧；
 - 活动、空闲缓冲区和空闲槽位的逐槽位信息。
 
@@ -421,7 +421,7 @@ Skia Vulkan RenderEngine、应用 Vulkan、ANGLE 或 GPU 驱动可以维护各�
 建议同时打开 graphics、view、sched、freq、memory 等与场景相关的数据源，并围绕目标线程查看：
 
 1. `dequeueBuffer` 前线程是否可运行；
-2. 是否出现 `<consumer name> buffer reallocation: ...` 瞬时事件；
+2. 是否出现 `<consumer name> buffer reallocation: ...` instant event；
 3. 是否进入 `GraphicBufferAllocator::allocate` 或 Gralloc Binder 调用；
 4. 返回的释放栅栏何时发出信号；
 5. 消费者何时获取或释放；
@@ -449,9 +449,9 @@ Skia Vulkan RenderEngine、应用 Vulkan、ANGLE 或 GPU 驱动可以维护各�
 - dma-buf inode/对象身份是否仍存在；
 - 哪些进程仍持有文件描述符或导入对象；
 - 栅栏是否已发出信号；
-- 导出方、大小与设备挂接是否可见。
+- exporter、size 与设备 attachment 是否可见。
 
-内核数据不会指出某个对象对应 BufferQueue 槽位 3。要用句柄、进程 ID、时间戳、图层或队列名称和尺寸，把用户空间事件与内核对象关联。更完整的 DMA-BUF 与栅栏说明见 2.15、2.16。
+内核数据不会指出某个对象对应 BufferQueue slot 3”。要用句柄、进程 ID、时间戳、图层或队列名称和尺寸，把用户空间事件与内核对象关联。更完整的 DMA-BUF 与栅栏说明见 2.15、2.16。
 
 ---
 
@@ -492,7 +492,7 @@ Skia Vulkan RenderEngine、应用 Vulkan、ANGLE 或 GPU 驱动可以维护各�
 4. 等待异步事务、GPU 与栅栏完成后；
 5. 重复多轮。
 
-每个阶段同时记录目标 BufferQueue 转储、进程 meminfo、gralloc 跟踪和对象生命周期。若槽位或缓冲区数量已回落而 mtrack 不降，继续检查 GPU 导入或厂商层；若目标队列仍存在，先查找仍持有 Surface 或消费者的用户空间对象。
+每个阶段同时记录目标 BufferQueue dump、进程 meminfo、gralloc 跟踪和对象生命周期。若槽位或缓冲区数量已回落而 mtrack 不降，继续检查 GPU 导入或厂商层；若目标队列仍存在，先查找仍持有 Surface 或消费者的用户空间对象。
 
 ### 10.4 复用率低
 
@@ -511,11 +511,11 @@ Skia Vulkan RenderEngine、应用 Vulkan、ANGLE 或 GPU 驱动可以维护各�
 
 ## 十一、版本与源码边界
 
-相关行为以 Android 17 / API 37 / `android-17.0.0_r1` 为准。Android 8 到 Android 16 可沿用生产者与消费者、槽位缓存及栅栏的基本模型，但具体接口、开关、BLAST 组织方式、分配器和映射器版本及跟踪名称可能不同。
+相关行为以 Android 17 / API 37 / `android-17.0.0_r1` 为准。Android 8 到 Android 16 可沿用生产者与消费者、槽位缓存及栅栏的基本模型，但具体接口、flag、BLAST 组织方式、分配器和映射器版本及跟踪名称可能不同。
 
 审阅旧版本问题时，应读取对应发布标签，避免把 Android 17 的以下细节倒推到更早版本：
 
-- Gralloc 5 稳定版 AIDL 适配；
+- Gralloc 5 stable AIDL 适配；
 - `allocate2(BufferDescriptorInfo, ...)`；
 - `BQ_EXTENDEDALLOCATE` 与附加选项世代；
 - 当前 BLAST 与 Surface 的缓存实现；
@@ -527,35 +527,35 @@ Skia Vulkan RenderEngine、应用 Vulkan、ANGLE 或 GPU 驱动可以维护各�
 
 ## 十二、结论
 
-GraphicBuffer 的低分配率主要来自 BufferQueue 保留 `槽位 -> GraphicBuffer` 映射。消费者释放后，槽位进入 `mFreeBuffers`，生产者下次优先选择它；规格兼容时沿用原缓冲区，不兼容时才在 `dequeueBuffer()` 中重新分配。
+GraphicBuffer 的低分配率主要来自 BufferQueue 保留 `slot -> GraphicBuffer` 映射。消费者释放后，槽位进入 `mFreeBuffers`，生产者下次优先选择它；规格兼容时沿用原缓冲区，不兼容时才在 `dequeueBuffer()` 中重新分配。
 
 分析时记住四条边界：
 
-1. 槽位变为 FREE、对象析构、句柄释放和底层后备存储回收是不同事件；
+1. slot FREE、对象析构、handle 释放和底层 backing store 回收是不同事件；
 2. `requestBuffer()` 更新生产者的槽位缓存，新分配已在 `dequeueBuffer()` 内完成；
 3. 缓冲区可复用仍要遵守释放栅栏；
 4. 框架能证明槽位保留和句柄登记，厂商内部池化需要额外证据。
 
-把 BufferQueue 转储、重分配跟踪、栅栏、Gralloc 登记与进程或内核内存证据放在同一条时间线上，才能判断问题源于槽位不足、消费者延迟、同步等待、规格抖动、引用未释放，还是分配器或驱动行为。
+把 BufferQueue dump、reallocation trace、fence、Gralloc 登记与进程/内核内存证据放在同一条时间线上，才能判断一次问题源于 slot 不足、Consumer 延迟、同步等待、规格抖动、引用未释放，还是 allocator/driver 行为。
 
 ---
 
 ## 交叉引用
 
 - **2.10 GPU 渲染深入**：应用与 RenderEngine 的 GPU 资源边界
-- **2.13 SurfaceFlinger 与合成流水线**：图层、CompositionEngine 与 HWC
-- **2.15 DMA-BUF、Gralloc 与跨进程图形内存共享**：句柄、Mapper、DMA-BUF 和内存统计
+- **2.13 SurfaceFlinger 与合成流水线**：Layer、CompositionEngine 与 HWC
+- **2.15 DMA-BUF、Gralloc 与跨进程图形内存共享**：handle、Mapper、dma-buf 和内存统计
 - **2.16 Sync Fence**：获取与释放栅栏及 sync_file
 - **2.24 BufferQueue 与 BLASTBufferQueue**：完整槽位状态机与 BLAST 事务
 
 ## 源码阅读入口
 
 - `frameworks/native/libs/gui/BufferQueueCore.cpp`：槽位容器、数量计算、清理、全部释放和转储
-- `frameworks/native/libs/gui/BufferQueueProducer.cpp`：出队、重分配、分配与 `requestBuffer`
-- `frameworks/native/libs/gui/BufferQueueConsumer.cpp`：获取、释放与空闲缓冲区回流
+- `frameworks/native/libs/gui/BufferQueueProducer.cpp`：dequeue、reallocation、allocation、requestBuffer
+- `frameworks/native/libs/gui/BufferQueueConsumer.cpp`：acquire、release 与 free-buffer 回流
 - `frameworks/native/libs/gui/Surface.cpp`：生产者侧槽位缓存和 `BUFFER_NEEDS_REALLOCATION` 处理
-- `frameworks/native/libs/ui/GraphicBuffer.cpp`：所有者、析构与 `needsReallocation`
+- `frameworks/native/libs/ui/GraphicBuffer.cpp`：owner、析构与 `needsReallocation`
 - `frameworks/native/libs/ui/GraphicBufferAllocator.cpp`：分配器适配、登记表、转储与跟踪
 - `frameworks/native/libs/ui/Gralloc5.cpp`：`allocate2(..., 1, ...)`、Mapper 导入和分配大小元数据
 - `hardware/interfaces/graphics/allocator/aidl/`：分配器契约与 `BufferDescriptorInfo`
-- `common/drivers/dma-buf/`：DMA-BUF、DMA 栅栏与 sync_file 的内核语义
+- `common/drivers/dma-buf/`：dma-buf、dma-fence、sync_file 内核语义
