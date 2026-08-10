@@ -38,7 +38,7 @@ last_deep_review_run_id: "20260801-123546-deep-review-9d1e8e3a"
 
 Flow 的性能问题很少能用“操作符太多”概括。更常见的原因是语义选错：不能丢的数据用了 conflation，允许覆盖的 UI 状态排成了长队；冷流被多个界面重复收集，热流又在无人订阅时持续访问上游；CPU 转换留在主线程，或用无上限并发放大网络和内存压力。
 
-本章以 Android 17 / API 37 为平台上限，库侧按 `kotlinx.coroutines` 1.11.0 的公开 API 和源码校验。Flow 属于可独立升级的 Kotlin 库，同一 Android 17 设备可以运行不同版本；分析线上问题时要同时记录应用使用的协程库版本。
+平台上限为 Android 17 / API 37，库侧按 `kotlinx.coroutines` 1.11.0 的公开 API 和源码校验。Flow 属于可独立升级的 Kotlin 库，同一 Android 17 设备可以运行不同版本；分析线上问题时要同时记录应用使用的协程库版本。
 
 ## 1. Flow 默认怎样传递压力
 
@@ -367,7 +367,7 @@ Android 17 AOSP 不实现 `Flow`、`StateFlow` 或 `SharedFlow`。它提供主�
 
 kernel scheduler 不理解 Flow 元素、Channel 容量或 conflation。Perfetto 中看到线程切换，只能证明 continuation 所在线程被调度；背压策略仍要回到库源码和业务观测解释。
 
-## 10. Review 清单
+## 10. 检查清单
 
 - 数据是否允许丢弃、覆盖、取消或乱序？
 - 默认顺序挂起是否已满足需求，是否有证据需要 `buffer`？

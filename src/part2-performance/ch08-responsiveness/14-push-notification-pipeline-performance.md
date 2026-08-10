@@ -30,7 +30,7 @@ gap_source: "官方文档/章节深挖"
 
 “推送慢”至少可能指五件事：服务端请求晚、FCM 传输晚、设备回调晚、应用发布通知晚、SystemUI 显示晚。它们跨越云端、Google Play services、应用进程、`system_server` 与 SystemUI，没有一个公开 API 能给出全部阶段的同一时钟。
 
-本文以 Android 17（API 37）的 `android-17.0.0_r1` 为平台源码基线，以 `android17-6.18-2026-06_r6` 为内核基线。FCM 的设备端实现含有闭源组件，相关结论只采用 Firebase 公开契约；Android 平台部分使用固定标签下的 NMS、`RemoteViews` 和 SystemUI 源码验证。
+平台源码基线为 Android 17（API 37）的 `android-17.0.0_r1`，内核基线为 `android17-6.18-2026-06_r6`。FCM 的设备端实现含有闭源组件，相关结论只采用 Firebase 公开契约；Android 平台部分使用固定标签下的 NMS、`RemoteViews` 和 SystemUI 源码验证。
 
 ## 先定义“到达”和“显示”
 
@@ -303,7 +303,7 @@ common kernel 的 Binder 代码只能解释 App、NMS 与 SystemUI 之间的 IPC
 
 ## 版本边界
 
-| Android 版本 | 本章相关变化 |
+| Android 版本 | 相关变化 |
 |---|---|
 | Android 12 / API 31 | 后台启动 FGS 受限；交付后仍为 high 的 FCM 消息是短暂豁免之一 |
 | Android 13 / API 33 | `POST_NOTIFICATIONS` 运行时权限影响普通通知可见性 |

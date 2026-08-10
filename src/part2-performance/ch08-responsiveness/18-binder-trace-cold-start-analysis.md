@@ -84,29 +84,9 @@ last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度
 
 # 8.18 Binder Trace 驱动的 Activity 冷启动性能分析
 
-> **范围与边界**：本节处理的是**把 Binder Trace 当作诊断工具**来定位冷启动路径上的 IPC 瓶颈——侧重「如何用 Perfetto 的 `android.binder` 标准库切事务、定位线程池饱和、识别 frozen 回执干扰、关联主线程阻塞因果链」。Binder 机制原理见 §1.4/§1.18/§1.38，冷启动阶段划分见 §8.2。
-> **版本基准**：[已验证: AOSP android-17.0.0_r1, frameworks/native + kernel android17-6.18-2026-06_r6]，AOSP android-17.0.0_r1 external/perfetto。
+Binder Trace 可以定位冷启动路径上的 IPC 瓶颈，包括用 Perfetto 的 `android.binder` 标准库拆分事务、识别线程池饱和与 frozen 回执干扰，以及关联主线程阻塞因果链。Binder 机制原理见 §1.4、§1.18 和 §1.38，冷启动阶段划分见 §8.2。
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 冷启动中的 Binder IPC 全景
-### 🔹 Binder Trace 采集方法
-### 🔹 Binder 事务耗时归因分析
-### 🔹 冷启动关键 Binder 瓶颈模式
-### 🔹 Binder 等待与主线程阻塞的因果分析
-### 🔹 Perfetto SQL 分析实战
-### 🔹 优化策略与验证
-
-## 扩展
-
-### 🔸 Android 17 Binder Layer 追踪增强
-### 🔸 多进程应用冷启动 Binder 放大效应
-### 🔸 真实案例分析
-
-<!-- outline-end -->
-
----
+平台与源码基线为 AOSP `android-17.0.0_r1`、`frameworks/native`、`external/perfetto`，以及 kernel `android17-6.18-2026-06_r6`。
 
 ## 一、先把冷启动窗口和 Binder 范围分开
 
@@ -492,7 +472,7 @@ ORDER BY event_count DESC;
 
 本进程 Provider 的对象创建和 `onCreate()` 属于应用主线程工作。获取远端 Provider 会调用 AMS；Provider 初始化内部还可能访问 PKMS、Settings、账号、网络或另一 Provider。
 
-AndroidX Startup 使用一个 `InitializationProvider` 管理多个 `Initializer`。自动发现的 Initializer 仍在启动阶段执行。需要延后时，应从 manifest 的自动发现中移除对应 Initializer，再在业务允许的时点手动调用 `AppInitializer.initializeComponent()`；第三方 Provider 是否能移除要遵循其文档。
+AndroidX Startup 使用一个 `InitializationProvider` 管理多个 `Initializer`。通过 manifest 注册的 Initializer 仍在启动阶段执行。需要延后时，应从 manifest 中移除对应 Initializer 的注册，再在业务允许的时点手动调用 `AppInitializer.initializeComponent()`；第三方 Provider 是否能移除要遵循其文档。
 
 ### 5.4 Binder 线程池拥塞
 
@@ -594,7 +574,7 @@ r6 UAPI 中 `BR_FROZEN_REPLY = _IO('r', 18)`，`BR_TRANSACTION_PENDING_FROZEN = 
 |---|---|---|
 | 重复 PackageManager 查询 | 进程内缓存、SDK 懒初始化 | endpoint 计数下降，缓存失效测试通过 |
 | 非展示必需的 SDK 初始化 | 移到首帧后或按功能首次使用时执行 | startup 窗口内事务消失 |
-| 自动发现的非关键 Initializer | 关闭自动发现并手动初始化 | Provider/Initializer slice 离开关键路径 |
+| manifest 注册的非关键 Initializer | 移除注册并手动初始化 | Provider/Initializer slice 离开关键路径 |
 | 自有远端服务逐项查询 | 设计批量读取或本地快照 | 调用次数下降，parcel 大小仍受控 |
 | 服务端长处理 | 优化锁、I/O、缓存或算法 | `server_dur` 与 breakdown 原因下降 |
 
@@ -628,7 +608,7 @@ oneway 缩短的是客户端等待契约，不保证服务端更快，也不保�
 
 ### 🔸 Android 17 Binder Layer 追踪增强
 
-本章在 Android 17 锚点上依赖两类能力：
+Android 17 锚点包含两类相关能力：
 
 - r6 kernel 的 `binder_command` / `binder_return` 让 `BinderTracker` 在失败、frozen 和 nested transaction 场景中更可靠地维护事务栈；
 - Android 17 的 Perfetto `android.binder` 表提供 sync/async、client/server、AIDL 名称、OOM score、package metadata 与 awake-duration 相关字段。
@@ -663,7 +643,7 @@ oneway 缩短的是客户端等待契约，不保证服务端更快，也不保�
 
 若案例无法提供原始证据，文中的毫秒数只能当作示例，不能作为其他应用的预算或阈值。
 
-## 本节与相关章节的边界
+## 与相关章节的边界
 
 - [**1.4 Binder IPC**](../../part1-fundamentals/ch01-architecture/04-binder.md)：驱动、libbinder、同步与 oneway 语义。
 - [**1.18 Binder Freezer**](../../part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md)：cached process 冻结与事务边界。
@@ -671,7 +651,7 @@ oneway 缩短的是客户端等待契约，不保证服务端更快，也不保�
 - [**8.2 应用启动**](02-app-launch.md)：冷、温、热启动阶段和启动指标。
 - [**13.10 Perfetto SQL 手册**](../../part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md)：通用 SQL、时间窗口和表关联。
 
-## Review 清单
+## 检查清单
 
 - 是否使用 startup 时间窗裁剪 Binder 事务？
 - 是否区分 wall time、CPU time、请求派发间隔和服务端区间？
