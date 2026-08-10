@@ -1,8 +1,8 @@
 # 附录 C：Perfetto TraceConfig 模板集
 
-Perfetto 的强大之处在于它可以按需采集极低开销的系统级数据。不同的性能排查场景需要开启不同的数据源（Data Sources）。
+Perfetto 可以按场景选择 data source。采集开销取决于启用的数据源、事件频率、buffer 和采集时长，需要在目标设备上测量。
 
-如果你习惯使用命令行（`adb shell perfetto`）或者通过 Python 自动化脚本抓取 Trace，以下提供了几个最常用的 `config.pbtx` (Protocol Buffer Text) 配置模板。
+以下是供 `adb shell perfetto` 或 Python 自动化脚本使用的 `config.pbtxt`（Protocol Buffer Text）模板。
 
 ---
 
@@ -167,69 +167,17 @@ duration_ms: 60000
 
 ## 4. 如何在设备上使用这些模板
 
-1. 将上述任一代码块保存为文件，例如 `config.pbtx`。
+1. 将上述任一代码块保存为文件，例如 `config.pbtxt`。
 2. 将文件推送到手机的临时目录：
    ```bash
-   adb push config.pbtx /data/local/tmp/
+   adb push config.pbtxt /data/local/tmp/
    ```
 3. 在手机上启动 Perfetto 抓取：
    ```bash
-   adb shell "cat /data/local/tmp/config.pbtx | perfetto --txt -c - -o /data/misc/perfetto-traces/trace.perfetto-trace"
+   adb shell "cat /data/local/tmp/config.pbtxt | perfetto --txt -c - -o /data/misc/perfetto-traces/trace.perfetto-trace"
    ```
 4. 抓取完成后，将文件拉取到电脑：
    ```bash
    adb pull /data/misc/perfetto-traces/trace.perfetto-trace ./
    ```
 5. 打开 [ui.perfetto.dev](https://ui.perfetto.dev/)，将 `trace.perfetto-trace` 拖入浏览器即可开始分析。
-
-<!-- AIW-源码调研-2026-06-27 -->
-## 版本演进与可用性验证（源码级验证）
-
-### 源码基准发现（基于 android-17.0.0_r1）
-
-通过源码级验证，Perfetto在Android 9-17各版本的可用性如下：
-
-**Android 9.0.0_r1 (API 28) - 首次集成**
-- 源码文件：
-- 状态：进入system image但默认未启用
-- 使用方式： (需手动开启)
-
-**Android 11.0.0_r1 (API 30) - 架构标准化**
-- 源码文件：  
-- 状态：默认启用，简化配置
-- 使用方式： (建议8MB缓冲区)
-
-**Android 14.0.0_r1 (API 34) - 数据源爆炸式增长**
-- 源码文件：
-- 新增数据源：heapprofd、gpu_track、memory_analyzer
-- 使用方式： (16MB缓冲区)
-
-**Android 17.0.0_r1 (API 37) - 企业级集成**
-- 源码文件： (合并版本)
-- 77个Android专属.proto文件整合
-- 新特性：异步采集、电池感知策略、FrameTimeline支持
-
-### 性能优化建议（源码验证）
-
-基于源码分析的性能配置优化：
-
-**Android 9-11：**
-- 缓冲区：4-8MB足够
-- 开启事件：sched_switch, cpu_frequency, gfx/am/wm/view
-
-**Android 12-14：**
-- 缓冲区：16MB推荐
-- 新增：process_stats, gpu_mem_events
-
-**Android 15-17：**
-- 缓冲区：32MB+ (压缩算法提升50%)
-- 新增：thermal_monitor, camera_latency, power_metrics
-
-### 迁移路径（Systrace → Perfetto）
-
-源码迁移证据（Android 17）：
-- Systrace符号链接指向Perfetto实现
--  → 
-- 性能损失：从5-8%降低至<1%
-
-*注：以上结论基于android-17.0.0_r1基准版本源码验证，严格遵守Android版本边界限制。*
