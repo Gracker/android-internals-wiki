@@ -261,7 +261,7 @@ LoadedApk.makeApplicationInner()
 
 `ZygoteInit.preloadClasses()` 读取 `/system/etc/preloaded-classes`。每个有效条目使用 `Class.forName(name, true, null)` 交给 boot class loader 加载并初始化，最终调用 `VMRuntime.preloadDexCaches()`。列表条数是产品配置，不能写成跨设备固定值。
 
-fork `fork` 派生进程后，应用能借助写时复制共享 Zygote 已建立的类元数据、初始化状态和相关内存页。应用仍要按 boot class path 和类表执行查找，首次解析到自身 DEX 的引用也可能更新应用侧 DexCache。成功预加载类的定义、验证和初始化已经在 Zygote 完成，并具备共享条件；后续查找仍有成本。
+`fork` 后，应用能借助写时复制共享 Zygote 已建立的类元数据、初始化状态和相关内存页。应用仍要按 boot class path 和类表执行查找，首次解析到自身 DEX 的引用也可能更新应用侧 DexCache。成功预加载类的定义、验证和初始化已经在 Zygote 完成，并具备共享条件；后续查找仍有成本。
 
 `--enable-lazy-preload` 是 Zygote 的配置分支。启用时，Zygote 启动阶段跳过 eager preload，并在第一次 `fork` 前完成 preload。该选项由产品启动策略决定，应用不能假定 Android 17 设备都采用同一配置。
 

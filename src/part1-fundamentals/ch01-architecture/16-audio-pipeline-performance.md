@@ -643,8 +643,8 @@ aptX 固定 50–80ms
 
 | 场景 | 优先考虑 | 关键验证 |
 | --- | --- | --- |
-| 游戏、合成器、实时音效 | Oboe/AAudio / AAudio callback + LOW_LATENCY | 实际 rate/mode/sharing/MMAP、xrun、触摸到声音实测 |
-| DAW、吉他效果、KTV | Oboe/AAudio / AAudio input + output | round-trip loopback、clock drift、FastCapture/MMAP input |
+| 游戏、合成器、实时音效 | Oboe/AAudio callback + LOW_LATENCY | 实际 rate/mode/sharing/MMAP、xrun、触摸到声音实测 |
+| DAW、吉他效果、KTV | Oboe/AAudio input + output | round-trip loopback、clock drift、FastCapture/MMAP input |
 | 视频会议/VoIP | Telecom/通信栈配合 AAudio/Oboe | route、AEC/NS 算法延迟、输入输出同步、FGS |
 | 长音乐/播客 | Media3/ExoPlayer，设备支持时 offload | gapless/seek、route、功耗、offload capability |
 | 短音效 | 预加载的 SoundPool 或低延迟音频引擎 | 首次预热与稳态分开测 |
