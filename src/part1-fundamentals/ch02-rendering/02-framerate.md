@@ -300,7 +300,7 @@ Scheduler::chooseRefreshRateForContent()
         ↓
 RefreshRateSelector：过滤候选、评分、排序
         ↓
-选定帧率模式 / 需要时切换显示模式
+选定 FrameRateMode / 需要时切换 display mode
         ↓
 更新应用 VSync/render rate 与 HWC 显示配置
 ```
@@ -353,7 +353,7 @@ Android 17 的 `LayerHistory::summarize()` 会为活跃 Layer 生成 `LayerRequi
 候选模式还会受到以下条件约束：
 
 - DisplayManager 设置的 primary/physical/render ranges；
-- 当前和默认显示模式组；
+- 当前和默认 display mode group；
 - Layer 是否允许 non-seamless 切换；
 - touch、idle、display power 等全局信号；
 - 当前是否有显式 Layer vote；
@@ -377,7 +377,7 @@ Android 17 代码中，touch 与 idle 都有提前返回的分支，但触发条
 - 某 Layer 只允许 seamless；
 - UI 没有持续更新或面积权重很低；
 - 设备处于省电、热限制或其他策略状态；
-- 当前显示配置只支持另一组渲染帧率。
+- 当前 display configuration 只支持另一组 render rates。
 
 源码能说明算法如何评分；具体设备在某一帧选了什么，需要 trace 或 dumpsys 证据。
 
@@ -529,8 +529,8 @@ producer 连续提交速度高于显示消费速度时，多个缓冲区可能�
 
 - FPS 看起来稳定；
 - 帧总是比 expected timeline 晚一个或多个周期；
-- 输入到显示的延迟增加；
-- 生产者最终卡在出队、交换或显示提交；
+- input-to-present 延迟增加；
+- producer 最终卡在 dequeue、swap 或 present；
 - FrameTimeline 标记 `Buffer Stuffing`。
 
 Android 17 的 Choreographer/HWUI 还包含 buffer stuffing recovery。看到 recovery trace 时，应同时检查队列深度、主动延迟和后续积压是否回落。
@@ -559,7 +559,7 @@ FrameTimeline 同时描述：
 
 一个 DisplayFrame 可以包含多个进程、多个 Layer 的 SurfaceFrame。不能把两种标识合成一个“端到端帧号”。
 
-### 7.2 预期时间线与实际时间线
+### 7.2 Expected 与 Actual
 
 预期时间线（Expected timeline）表示调度器给该帧的预期时间窗口，实际时间线（Actual timeline）表示该帧的实际执行/呈现结果。
 
@@ -598,7 +598,7 @@ FrameTimeline 同时描述：
 不要写“所有 missed 都属于卡顿”这类集合关系。可操作的表述是：
 
 - 哪一个 SurfaceFrame；
-- 它的预期与实际时间线是什么；
+- 它的 expected 与 actual 是什么；
 - 是否关联到 DisplayFrame；
 - `present_type` 与 `jank_type` 是什么；
 - 旧帧被重复、目标帧晚呈现，还是该帧没有进入最终显示。
@@ -701,7 +701,7 @@ ORDER BY a.ts;
 - `Choreographer#doFrame` 是否晚启动；
 - INPUT、ANIMATION、INSETS_ANIMATION、TRAVERSAL、COMMIT；
 - RenderThread `DrawFrame`；
-- GPU 提交与完成时间；
+- GPU submission 与 completion；
 - 出队/入队和生产者栅栏；
 - App SurfaceFrame actual end。
 
@@ -739,11 +739,11 @@ ORDER BY a.ts;
 
 - 当前显示策略范围；
 - active display mode/group；
-- Layer 投票与期望帧率；
+- Layer vote 与 desired frame rate；
 - touch/idle/power 信号；
 - MRR 模式切换或 ARR 渲染帧率变化；
 - 选定的模式/帧率；
-- 切换前后的预期时间线。
+- 切换前后的 expected timeline。
 
 只看到刷新率轨道变化，不能说明是哪一个 Layer 请求，也不能说明它导致了当前 jank。
 

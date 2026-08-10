@@ -103,7 +103,7 @@ linker64 从新任务中生成待映射列表。普通路径会打乱映射顺�
 
 随后注册该 DSO 的静态 TLS 模块。若任一新库通过 `DT_AARCH64_MEMTAG_STACK` 请求栈 MTE，linker 会通知 libc 的对应回调。
 
-### 阶段五：构造全局组与局部组
+### 阶段五：构造 global group 与 local group
 
 符号查找不会在进程内所有 DSO 中随意扫描。linker64 为每个待链接根节点组织：
 
@@ -362,7 +362,7 @@ APEX 只改变库的来源、配置和激活边界，不会热替换进程里已
 
 ## 可测量的延迟模型
 
-一次 Java 侧原生库加载可分解为：
+一次 Java 侧 native library load 可分解为：
 
 ```text
 T(loadLibrary)

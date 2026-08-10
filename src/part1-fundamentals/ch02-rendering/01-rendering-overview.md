@@ -388,7 +388,7 @@ Vulkan 与 OpenGL ES 的 CPU 开销、驱动行为、着色器编译、内存压
 Producer                         Consumer
 dequeueBuffer()
     ↓
-等待获取/释放条件
+等待 acquire/release 条件
     ↓
 写入或渲染 GraphicBuffer
     ↓
@@ -674,7 +674,7 @@ RenderThread CPU 切片长度不等于 GPU duration。二者可能重叠，也�
 沿目标 Surface 查看：
 
 - dequeue、queue、acquire、release 的时间；
-- 槽位和帧号是否对应；
+- slot 和 frame number 是否对应；
 - 获取栅栏何时发出信号；
 - `BufferTX - layerName` 是否积压；
 - BLAST 事务何时进入 SurfaceFlinger；
@@ -689,7 +689,7 @@ RenderThread CPU 切片长度不等于 GPU duration。二者可能重叠，也�
 - 事务应用与 Layer 快照；
 - 目标缓冲区是否按期锁存；
 - SurfaceFlinger 是否错过自己的 deadline；
-- HWC 验证返回的合成类型；
+- HWC validate 返回的 composition type；
 - 是否发生 RenderEngine client composition；
 - 显示栅栏和释放栅栏的时间；
 - 多显示器、刷新率切换或显示模式变化。

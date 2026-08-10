@@ -233,7 +233,7 @@ flowchart LR
 Android 17 在满足以下条件时可以采用一条不同分支：
 
 - 当前 mode 带有 VRR/ARR 配置；
-- 显示栅栏可用；
+- present fence 可用；
 - `use_last_vsync_predict` 特性开启。
 
 此时历史窗口和最少样本都可缩为 1。单个样本不能进行线性回归，源码会把模型锚定到最近脉冲，并按理想周期预测下一次时刻。这个分支依赖较强的显示反馈，不能外推成所有设备的默认行为。
@@ -319,7 +319,7 @@ struct VsyncConfig {
 - runnable 等待是否把可用预算吃掉；
 - GPU 合成是否触发 `earlyGpu`；
 - 刷新率切换或 ARR 节奏是否改变了目标；
-- 实际呈现是否稳定对齐预计呈现。
+- actual present 是否稳定对齐 expected present。
 
 仅凭平均帧耗时调整 offset，很容易让高分位慢帧变多。
 
@@ -425,7 +425,7 @@ Android 15 引入自适应刷新率（Adaptive Refresh Rate，ARR）。ARR 所�
 
 - VSync/TE rate；
 - 显示模式的峰值刷新率；
-- 当前渲染帧率；
+- 当前 render rate；
 - 帧的预计/实际呈现节奏。
 
 ### 7.3 `minFramePeriod()` 的含义
@@ -443,8 +443,8 @@ Android 图形文章常把卡顿解释为“双缓冲切三缓冲”。这个模
 实际可用槽位数受多项状态共同影响：
 
 - producer 最多可同时出队的数量；
-- 消费者最多可同时获取的数量；
-- 异步/非阻塞模式；
+- consumer 最多可 acquire 的数量；
+- async/non-blocking 模式；
 - 当前 `DEQUEUED`、`QUEUED`、`ACQUIRED`、`FREE` 槽位分布；
 - 释放栅栏是否已发出信号；
 - BLAST 待释放缓冲和当前刷新率策略。

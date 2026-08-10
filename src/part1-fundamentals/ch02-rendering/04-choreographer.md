@@ -638,7 +638,7 @@ BBQBufferQueueProducer::waitForBufferRelease() 统计等待时长
   → BLASTBufferQueue → CanvasContext/HardwareRenderer callback
   → ViewRootImpl 绑定 Choreographer.onWaitForBufferRelease()
   → 等待时长超过上一帧间隔的一半
-  → 标记缓冲积压
+  → 标记 buffer stuffed
 ```
 
 `BBQBufferQueueProducer` 是 Android 17 标准 App Window 的 BLAST 生产者实现。它在没有 free buffer、`dequeueBuffer()` 必须等待释放时进入这条路径。`onWaitForBufferRelease()` 只负责设置状态，具体动作在后续 `doFrame()` 开始时由 `updateBufferStuffingState()` 决定。
@@ -700,7 +700,7 @@ Android 17 / API 37 的 platform tag 不能确定应用使用的 Compose runtime
 - Compose Runtime/UI 与 BOM 版本；
 - Kotlin 与 Compose compiler plugin；
 - debug、profileable 或 release 构建；
-- 是否开启组合阶段跟踪；
+- 是否开启 composition tracing；
 - 刷新率、热状态和测试输入。
 
 没有这些条件，Compose 切片的跨版本差异很难归因。
