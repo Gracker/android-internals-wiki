@@ -488,7 +488,7 @@ HardwareBitmapUploader::initialize();
 
 `ViewRootImpl`、`ThreadedRenderer` 和 `CanvasContext` 需要绑定有效 Surface，设置 BLASTBufferQueue，建立生产者/消费者关系。这里涉及 Binder、SurfaceControl 事务和 buffer slot，仅加载驱动无法完成这些工作。
 
-### 8.2 缓冲区分配与导入
+### 8.2 buffer allocation / import
 
 Gralloc 映射器已预热，不代表分配器也已预热。首次分配还可能经过：
 
@@ -677,7 +677,7 @@ adb logcat -v threadtime \
 8. 不把 `vkEnumerateInstanceVersion()` 写成 Vulkan device 初始化。
 9. 检查 `HardwareRenderer.preload()` 是否在首帧前给 RenderThread 留出足够时间。
 10. 分开分析映射器与分配器。
-11. 分别为着色器/管线、缓冲区、围栏与合成取证。
+11. shader/pipeline、buffer、fence 与合成单独取证。
 12. A/B 对比必须重启 Zygote/设备，并保持驱动选择一致。
 13. OEM 结论附上 SoC、系统/厂商构建版本、driver package 与属性快照。
 14. 当前平台源码统一引用 `android-17.0.0_r1`。

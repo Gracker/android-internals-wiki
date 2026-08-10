@@ -417,7 +417,7 @@ Android 17 先尝试重启前 Dexopt。若用户很快重启、设备没有足�
 - 16.6：Cloud Profile 的生成、传递与覆盖边界。
 - 21.11：DexMetadata、DM / SDM 和安装后编译验证。
 
-## 参考资料
+## References
 
 - [Android 官方文档：Configure ART](https://source.android.com/docs/core/runtime/configure)
 - [Android 官方文档：ART Service configuration](https://source.android.com/docs/core/runtime/configure/art-service)

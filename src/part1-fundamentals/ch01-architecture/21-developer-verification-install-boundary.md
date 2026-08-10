@@ -330,7 +330,7 @@ handleInstall()
 
 `startDeveloperVerificationSession()` 交给 `DeveloperVerifierController` 的信息包括：
 
-- 包名；
+- package name；
 - staged package URI；
 - `SigningInfo`；
 - 清单声明的共享库；
@@ -363,7 +363,7 @@ reportVerificationBypassed(reason)
   │              ├─ PackageSessionVerifier
   │              └─ install
   │
-  └─ 拒绝 / 未完成 / 超时 / 连接失败
+  └─ rejected / incomplete / timeout / connection failure
        ├─ policy 是否要求阻断
        ├─ 是否允许用户重试或 install anyway
        └─ failure
@@ -406,7 +406,7 @@ per-user 默认策略由 verifier 或系统指定的 policy delegate 设置。ve
 ```text
 包体获取
   + session 写入
-  + 封存 / 流式校验
+  + seal / stream validation
   + 普通用户授权等待
   + 开发者验证
   + 原有软件包验证
@@ -433,7 +433,7 @@ Android 17 r1 控制器的默认参数是：
 | 最终成功/ failure | 可见 | 安装会话结束 |
 | verifier bind、request、response 精确时间 | 普通应用不可直接取得 | 需要 system metrics、trace 或受控设备日志 |
 
-普通安装器可上报“提交 → 首次回调”和“提交 → 终态回调”，但不能把前者直接命名为“开发者验证耗时”。
+普通安装器可上报“提交 → 首次回调”和“提交 `commit → terminal callback`，但不能把前者直接命名为“开发者验证耗时”。
 
 ## 10. 推荐的错误归因顺序
 
@@ -494,7 +494,7 @@ fun readLitePerformedCompat(intent: Intent): Boolean? {
 
 建议记录：
 
-- 包名、versionCode、安装器包名与软件包来源；
+- package name、versionCode、installer package 与 package source；
 - installer target SDK、是否持有特权安装权限；
 - `SDK_INT`、`SDK_INT_FULL`、session 是否 multi-package / staged；
 - `EXTRA_STATUS`、reason extra 是否存在及枚举值；
@@ -545,7 +545,7 @@ fun readLitePerformedCompat(intent: Intent): Boolean? {
 
 - 用 `SDK_INT_FULL` 处理 36.1 API 边界。
 - 把 `STATUS_PENDING_USER_ACTION` 当成中间状态。
-- 目标 SDK 37 覆盖待用户操作、重试、仍然安装与直接中止。
+- target SDK 37 覆盖 pending、retry、install anyway 与 direct abort。
 - 只有原因字段存在时才归因到开发者验证。
 - 只在确认验证器服务提供者与数据结构后使用扩展参数。
 - 后台收到 pending 时通过通知恢复，不盲目拉起 Activity。

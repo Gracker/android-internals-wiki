@@ -183,7 +183,7 @@ SDK 注解只是第一层。服务端还会校验 caller package 与 Binder UID�
 
 Launcher 可通过 `LauncherApps.setArchiveCompatibility()` 关闭其中一项，但前提是自己提供等价的状态提示和恢复进度体验。否则用户会把一次网络恢复误认为普通启动卡死。
 
-### 2.4 负责恢复的安装器
+### 2.4 Responsible installer
 
 恢复责任方按以下优先级选择：
 
@@ -259,7 +259,7 @@ APK 和 native library 位于包级代码目录，可被多个 Android 用户共
 
 ```text
 单用户归档收益
-  = 缓存 + 代码缓存
+  = cache + code cache
   + 条件成立时的共享代码目录
 
 共享代码目录可回收
@@ -466,7 +466,7 @@ Perfetto 中至少同时观察：
 - draft session 绑定安装器 UID、目标包和用户。
 - `INSTALL_UNARCHIVE` 由系统重新判定，不能由普通安装器强行保留。
 - 恢复 APK 继续经过标准安装、签名和版本校验。
-- 设备所有者、工作资料策略、应用锁和用户限制仍可阻止操作。
+- device owner、profile policy、App Lock 和用户限制仍可阻止操作。
 
 当前 `PackageArchiver` 没有“归档专用 SDM 签名校验”分支。`.sdm` 或云编译材料如果参与安装，属于 `PackageInstallerSession` 的通用安装能力；没有端到端证据时，不应把它写成归档恢复的强制步骤。
 
