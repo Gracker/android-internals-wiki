@@ -135,32 +135,6 @@ last_task9_audit: 2026-07-11
 
 # Trace 抓取
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 命令行抓取：`perfetto --txt -c config.pbtx -o trace.perfetto-trace`
-- 🔹 常用 `TraceConfig` 配置项：`buffers`、`duration_ms`、`data_sources`
-- 🔹 系统 atrace categories 配置：`sched`、`gfx`、`view`、`wm`、`am`、`binder_driver` 等
-- 🔹 用 `record_android_trace` 脚本快速抓取
-- 🔹 通过 Perfetto UI 配置与抓取
-- 🔹 在 App 中用 `Trace.beginSection()` / `Trace.endSection()` 添加自定义标记
-
-### 扩展（可选深入）
-
-- 🔸 Long trace 的周期写文件、文件上限与分段策略
-- 🔸 Heap profiling、ART heap graph 与 callstack sampling
-
-### 🔸 `linux.perf` 与 FrameTimeline 数据源实现细节
-
-- `traced_perf` 通过 Producer IPC 连接 `traced`；init 传入的 `ANDROID_SOCKET_traced_perf` 监听 socket 用来接收目标进程 `/proc/<pid>/{maps,mem}` 文件描述符。
-- `perf_producer.cc` 在 Android 17 中用 `kDataSourceName = "linux.perf"` 注册数据源；`PerfEventConfig` 使用 `timebase`、`callstack_sampling` 和 `scope`。
-- SurfaceFlinger 在 `FrameTimeline::onBootFinished()` 中初始化 system backend，并把 `android.surfaceflinger.frametimeline` 注册为 data source。
-- FrameTimeline 产出 expected/actual timeline，并通过 surface frame token 和 display frame token 关联 App 与 SurfaceFlinger 的帧。
-- `linux.perf` 在 user build 上采样 App 调用栈时，目标应用需要 `profileable` 或 `debuggable`；FrameTimeline 不使用 App manifest 的 profiling gate。
-<!-- outline-end -->
-
 ## 抓取配置决定分析上限
 
 一份 trace 能回答哪些问题，由时间窗口、data source、目标进程和 buffer 完整性共同决定。卡顿发生在采集结束之后，或配置里缺少 FrameTimeline、Binder、调度事件时，UI 再熟练也补不回缺失的证据。
@@ -169,16 +143,16 @@ last_task9_audit: 2026-07-11
 
 抓取完成后还要检查丢包。文件成功生成，只能证明会话结束并拿到了输出，不能证明每个 Producer 和 buffer 都没有丢数据。
 
-## 本文复核基线
+## 复核基线
 
-| 层级 | 固定锚点 | 本章引用范围 |
+| 层级 | 固定锚点 | 引用范围 |
 | --- | --- | --- |
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | 设备端 `perfetto`、平台 data source、App Trace API |
 | 平台内 Perfetto | `external/perfetto` 提交 `ece66975738007dd0978b911d8a2077e49b8f31e` | `TraceConfig`、`record_android_trace`、heapprofd、`linux.perf` |
 | Framework Native | `frameworks/native` 提交 `ae266dcb706d083868578cfedce381ef44488a07` | atrace category、SurfaceFlinger FrameTimeline |
 | Android 内核 | `android17-6.18-2026-06_r6` | `sched_switch`、`sched_wakeup`、`cpu_frequency`、`cpu_idle` 等通用 tracepoint |
 
-设备平台和主机脚本要分别记录版本。本文的源码字段固定到 Android 17 平台；浏览器 UI、主机 `trace_processor` 和上游脚本仍会继续变化。
+设备平台和主机脚本要分别记录版本。源码字段固定到 Android 17 平台；浏览器 UI、主机 `trace_processor` 和上游脚本仍会继续变化。
 
 Android 9 到 17 的设备端入口有三处分界：
 
@@ -350,7 +324,7 @@ adb shell atrace --list_categories
 
 ## 用 `record_android_trace` 抓取
 
-本文把脚本固定到 Android 17 平台 tag，避免脚本参数随上游更新而悄悄改变。下面的命令从 Gitiles 下载并解码该版本。
+脚本固定到 Android 17 平台 tag，避免参数随上游更新而悄悄改变。下面的命令从 Gitiles 下载并解码该版本。
 
 ```bash
 curl -L \
@@ -510,7 +484,7 @@ profiling 数据量和运行开销通常高于普通调度 trace。应先固定�
 | Native 分配与释放调用栈 | `android.heapprofd` | Android 10+ | `profileable` 或 `debuggable` |
 | ART 对象分配调用栈 | `android.heapprofd` + `heaps: "com.android.art"` | Android 12+ | `profileable` 或 `debuggable` |
 | Java 对象保留图 | `android.java_hprof` | Android 11+ | `profileable` 或 `debuggable` |
-| CPU / PMU 调用栈采样 | `linux.perf` | Android 12+ 平台已有；Android 17 源码按本节配置 | `profileable` 或 `debuggable` |
+| CPU / PMU 调用栈采样 | `linux.perf` | Android 12+ 平台已有；Android 17 源码按上述配置 | `profileable` 或 `debuggable` |
 
 debug Android build 可以扩大到多数 App 和系统服务，具体范围仍受 SELinux、kernel perf 权限、目标进程和厂商配置影响。FrameTimeline 属于 SurfaceFlinger 系统数据，不使用这张表里的 App profiling gate。
 
@@ -591,7 +565,7 @@ Android 13+ 的 `target_cmdline` 支持一个 `*` 通配符，Android 12 按归�
 
 `linux.perf` 和 simpleperf 都调用 `perf_event_open`。前者把样本写进 Perfetto trace，便于与调度、Binder 和帧事件放在同一时间轴；后者输出 `perf.data`，更适合独立 CPU profile 和成熟的命令行分析流程。
 
-## Android 17 源码核对点 [自动发现]
+## Android 17 源码核对点
 
 | 结论 | Android 17 源码位置 | 代码能证明什么 |
 | --- | --- | --- |
@@ -644,7 +618,7 @@ ORDER BY severity, name;
 
 ## 后续阅读
 
-§13.3 讲 Perfetto UI，§13.4 讲大型 trace，§13.6 讲线程 CPU 状态。拿到 trace 后，先完成本章的五项质量检查，再进入具体主题分析。
+§13.3 讲 Perfetto UI，§13.4 讲大型 trace，§13.6 讲线程 CPU 状态。拿到 trace 后，先完成上述五项质量检查，再进入具体主题分析。
 
 ## 参考资料
 

@@ -80,27 +80,9 @@ last_task6_audit: "2026-06-15"
 
 # 线程 CPU 状态分析
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 线程 CPU 状态定义:Running、Runnable (R)、Runnable (R+)、Sleeping (S)、Uninterruptible Sleep (D)、Stopped (T)
-- 🔹 在 Perfetto 中读取线程状态:sched_switch events、thread state track
-- 🔹 Runnable 过长的常见含义:CPU 争抢、核数不足、优先级过低
-- 🔹 Uninterruptible Sleep 的常见含义:I/O 等待、内核锁、Page Fault
-- 🔹 从线程状态分析性能瓶颈的方法论
-
-### 扩展(可选深入)
-
-- 🔸 wakeup 事件分析:谁唤醒了这个线程
-- 🔸 irq/softirq 对线程调度的影响
-
-<!-- outline-end -->
-
 线程状态回答的是“这段墙钟时间里，线程具不具备运行条件，是否占着 CPU”。它不会自动回答线程在执行哪个函数、等待哪把锁或哪次 I/O。可靠的分析要把状态区间与 Slice、调用栈、唤醒者、Binder、文件系统和设备事件放在同一时间范围内核对。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 的 Perfetto 导入逻辑和 `android17-6.18-2026-06_r6` 内核为源码锚点。旧平台也有调度事件，但字段、内核符号和标准库模块可能不同。
+源码锚点是 Android 17 / API 37 / `android-17.0.0_r1` 的 Perfetto 导入逻辑和 `android17-6.18-2026-06_r6` 内核。旧平台也有调度事件，但字段、内核符号和标准库模块可能不同。
 
 ## 13.6.1 状态从哪里来
 

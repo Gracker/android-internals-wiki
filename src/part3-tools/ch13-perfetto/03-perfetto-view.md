@@ -128,24 +128,6 @@ last_deepseek_cn_review_at: 2026-06-19
 
 # Perfetto View 解读
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Perfetto UI 的基本操作：缩放、搜索、Pin Track、时间选区
-- 🔹 关键 Track 的含义：CPU 频率/调度、进程/线程 Slice、FrameTimeline、SurfaceFlinger
-- 🔹 Slice 详情面板的解读：Wall Duration、CPU Duration、Self Time
-- 🔹 Flow Events 的跟踪：Binder 调用的配对
-- 🔹 颜色编码：线程状态色（Running/Runnable/Sleep/Uninterruptible/锁竞争红色标记）
-
-### 扩展（可选深入）
-
-- 🔸 Perfetto UI 的快捷键与效率技巧
-- 🔸 与 Android Studio Profiler 中的 Trace 视图的对比
-
-<!-- outline-end -->
-
 ## 读图顺序比轨道数量更重要
 
 Perfetto UI 把多个数据源放在同一时间轴上。它不会为缺失的调度事件、FrameTimeline、Binder 或应用标记补数据，也不会替分析者决定因果关系。读图时要把“轨道上发生了什么”和“为什么发生”分开。
@@ -159,7 +141,7 @@ Perfetto UI 把多个数据源放在同一时间轴上。它不会为缺失的�
 5. 沿 Binder、Flow、waker 或帧 token 检查跨线程、跨进程和显示下游。
 6. 需要批量比较时，把 UI 观察写成 PerfettoSQL。
 
-本文的平台结论固定到 Android 17 / API 37 / `android-17.0.0_r1`，内核状态固定到 `android17-6.18-2026-06_r6`。`ui.perfetto.dev` 和主机 Trace Processor 独立更新，界面文字、命令和轨道布局以 2026-07-31 的官方文档为准。
+平台结论固定到 Android 17 / API 37 / `android-17.0.0_r1`，内核状态固定到 `android17-6.18-2026-06_r6`。`ui.perfetto.dev` 和主机 Trace Processor 独立更新，界面文字、命令和轨道布局以 2026-07-31 的官方文档为准。
 
 ## 打开并整理 Trace
 
@@ -420,7 +402,7 @@ Android Studio 的 System Trace 与 Java Method Trace 是不同录制类型，�
 
 **Android Studio System Trace 只看 App。** 当前 System Trace 能展示系统级活动。Perfetto UI 的优势集中在开放时间轴、SQL、扩展和跨进程分析，不是“有没有系统数据”的二分。
 
-## Android 17 源码核对点 [自动发现]
+## Android 17 源码核对点
 
 | 结论 | Android 17 / kernel 锚点 | 代码能证明什么 |
 | --- | --- | --- |

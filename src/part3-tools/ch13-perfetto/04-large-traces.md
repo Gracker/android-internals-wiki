@@ -87,24 +87,6 @@ last_deepseek_cn_review_at: 2026-07-04
 
 # 命令行打开超大 Trace
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 大 Trace 的挑战：几百 MB 到 GB 级别，浏览器内存不足
-- 🔹 trace_processor：命令行交互式查询工具
-- 🔹 Perfetto SQL 查询基础：tables、views、常用查询模式
-- 🔹 用 trace_processor 批量跑 SQL 脚本
-- 🔹 用 Python 的 perfetto.trace_processor 库做自动化分析
-
-### 扩展（可选深入）
-
-- 🔸 traceconv 转换工具
-- 🔸 自建 Perfetto 分析 Pipeline 的实践
-
-<!-- outline-end -->
-
 ## 大 Trace 的压力来自运行时表示
 
 Perfetto UI 在浏览器中运行 WebAssembly 版 Trace Processor。浏览器常会限制单个站点可用的内存，官方文档给出的典型运行时上限约为 2 GB。这个数字指站点的运行时内存，并非 Trace 文件大小，也不是所有浏览器都遵循的固定阈值。
@@ -127,7 +109,7 @@ chmod +x ./trace_processor
 ./trace_processor --version
 ```
 
-下载到的 `trace_processor` 是需要 Python 3 的轻量启动脚本。它在首次运行时获取对应平台的原生程序，并将其缓存在 `~/.local/share/perfetto/prebuilts`。因此，归档分析环境时应记录启动脚本的校验和与 `--version` 输出；只保存脚本文件名无法证明底层程序版本。
+下载到的 `trace_processor` 是需要 Python 3 的轻量启动脚本。它在首次运行时获取对应平台的原生程序，并将其缓存在 `~/.local/share/perfetto/prebuilts`。因此，归档分析环境时应记录启动脚本的校验和与 `--version` 输出；只保存启动脚本的文件名无法证明底层程序版本。
 
 若流水线要求长期复现，可以把审核过的原生程序放入受版本控制的工具目录，并让 Python API 的 `bin_path` 指向它。临时探索可以使用官方启动脚本，正式基线不应随“latest”无记录地漂移。
 
@@ -499,9 +481,9 @@ chmod +x ./traceconv
 
 拆批只解决多文件并发驻留。单份 Trace 仍然过大时，需要重新采集或换更大内存的分析主机；Python `TraceProcessor` 和 `BatchTraceProcessor` 都不会按 Track 局部加载输入。
 
-## Android 17 源码落点 [自动发现]
+## Android 17 源码落点
 
-`android-17.0.0_r1` 的 `external/perfetto` 已包含本章采用的接口：
+`android-17.0.0_r1` 的 `external/perfetto` 已包含下列接口：
 
 - `src/trace_processor/trace_processor_shell.cc` 定义子命令入口、公共参数和旧接口转换层；
 - `src/trace_processor/shell/query_subcommand.cc` 处理内联 SQL、文件、标准输入和多语句入口；
