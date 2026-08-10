@@ -333,7 +333,7 @@ WorkManager 适合需要持久调度且允许系统选择执行时机的任务�
 
 面对“旧版本正常，新版本变慢”，可以按下面的顺序收集信息：
 
-1. 记录构建指纹、API build fingerprint、API level、应用版本、compileSdk 和 targetSdk；
+1. 记录 build fingerprint、API level、应用版本、compileSdk 和 targetSdk；
 2. 查询相关 compat change，确认行为是否由 targetSdk 门槛触发；
 3. 对 ART、Media、Conscrypt 等问题记录活动 Mainline 模块版本；
 4. 用 `uname -r` 确认真实内核，不从 Android 大版本反推内核分支；

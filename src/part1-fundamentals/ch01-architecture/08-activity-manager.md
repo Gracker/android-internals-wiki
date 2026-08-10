@@ -190,7 +190,7 @@ AMS 相关证据主要来自三类数据：
 - Binder transaction、线程状态和 Java monitor contention；
 - EventLog，例如 `am_proc_start`、`am_proc_bound`、`am_anr`、`am_crash`、`am_kill`。
 
-EventLog 不是普通切片。只有跟踪启用了 Android logs 数据源并包含 events 缓冲区，`android_logs` 表中才会有这些记录。下面的查询同时保留消息内容，便于读取 PID、进程名和原因：
+EventLog 不是普通切片。只有跟踪启用了 Android logs 数据源并包含 events buffer，`android_logs` 表中才会有这些记录。下面的查询同时保留消息内容，便于读取 PID、进程名和原因：
 
 ```sql
 SELECT
@@ -247,7 +247,7 @@ Android 不以“前台/后台”二分进程。AMS 会综合 Activity 可见性
 | `SERVICE_B_ADJ` | 800 | 较低优先级的旧 Service |
 | `CACHED_APP_MIN_ADJ`～`CACHED_APP_MAX_ADJ` | 900～999 | 缓存进程 |
 
-表中数值是源码常量，不是承诺每种组件永远落在某一行。Android 17 还可以通过功能开关对可见进程和 `previous app`（前一个应用）做阶梯化分配。`TOP_SLEEPING` 也是计算分支中的 `adjType`，不能把它当成独立常量档位。
+表中数值是源码常量，不是承诺每种组件永远落在某一行。Android 17 还可以通过 feature flag 对可见进程和 previous app 做阶梯化分配。`TOP_SLEEPING` 也是计算分支中的 `adjType`，不能把它当成独立常量档位。
 
 前台 Service 同样不是“永远 100”。在当前基线中，常规非 short FGS 通常受 `PERCEPTIBLE_APP_ADJ = 200` 保护；刚从 TOP 进入 FGS 的进程可在宽限期内使用 50。它仍可能在极端内存压力、异常或用户停止服务时退出。
 
@@ -464,7 +464,7 @@ Provider 通常在应用主线程初始化。即使最终报告的是 Input、Br
 
 ### ANR 数据是怎样保存的
 
-各入口最终可调用 `AnrHelper.appNotResponding()`。Android 17 会尽早为主要目标进程生成临时堆栈，正式处理时再由 `StackTracesDumpHelper` 收集相关 Java/原生栈与 CPU 信息。正式文件位于 `/data/anr/`，文件名以 `anr_` 开头，而不是早期版本常见的固定 `traces.txt`。
+各入口最终可调用 `AnrHelper.appNotResponding()`。Android 17 会尽早为主要目标进程生成临时堆栈，正式处理时再由 `StackTracesDumpHelper` 收集相关 Java/native 栈与 CPU 信息。正式文件位于 `/data/anr/`，文件名以 `anr_` 开头，而不是早期版本常见的固定 `traces.txt`。
 
 如果 ANR 排队超过 10 秒，`AnrHelper` 会把报告视为过期，只 dump 目标进程，避免在系统已经很慢时继续扩大负载。因此，ANR 文件里缺少其他进程的栈不一定是采集故障。
 
@@ -539,7 +539,7 @@ RootWindowContainer
 | Android 13（API 33） | 用户可在 Active apps/FGS 管理界面查看并停止服务；通知权限与 FGS 通知展示分开处理 |
 | Android 14（API 34） | 目标版本要求声明 FGS type 和对应权限；后台创建 FGS 时会同步检查 while-in-use 权限是否处于可用状态 |
 | Android 15（API 35） | `dataSync` 与 `mediaProcessing` 各自共享每 24 小时 6 小时后台额度，并提供 `Service.onTimeout()` |
-| Android 16（API 36） | 与 FGS 并发执行的 Job 也计入 JobScheduler 运行时配额 |
+| Android 16（API 36） | 与 FGS 并发执行的 Job 也计入 JobScheduler runtime quota |
 | Android 17（API 37） | 后台音频交互增加生命周期与 FGS/WIU 约束 |
 
 Android 17 的后台音频规则分两层：
@@ -590,7 +590,7 @@ ORDER BY dur DESC
 LIMIT 20;
 ```
 
-`blocked_*` 是等待锁的一侧，`blocking_*` 是持锁一侧。`binder_reply_id` 非空时，标准库已经把锁竞争与相关 Binder reply 建立了关联；不要只凭两个切片时间相邻就宣布因果关系。
+`blocked_*` 是等待锁的一侧，`blocking_*` 是持锁一侧。`binder_reply_id` 非空时，标准库已经把 contention 与相关 Binder reply 建立了关联；不要只凭两个切片时间相邻就宣布因果关系。
 
 ---
 
@@ -603,7 +603,7 @@ Android 17 的主要实现是 `BroadcastQueueImpl` 与 `BroadcastProcessQueue`�
 ```text
 Context.sendBroadcast()
   → ActivityManagerService.broadcastIntent()
-    → 解析 Manifest 中声明 / 运行时注册的 Receiver
+    → 解析 manifest / context-registered Receiver
       → BroadcastQueueImpl 入队
         → BroadcastProcessQueue 选择可运行目标进程
           → IApplicationThread.scheduleReceiver()
@@ -617,13 +617,13 @@ Context.sendBroadcast()
 ### Manifest Receiver 与动态 Receiver
 
 - Manifest Receiver 可以在规则允许时拉起尚未运行的应用进程，因此可能把冷启动时间计入广播预算；
-- 运行时注册的 Receiver 只在注册对象有效时接收，不会为了一个已经消失的动态注册关系单独创建进程；
+- context-registered Receiver 只在注册对象有效时接收，不会为了一个已经消失的动态注册关系单独创建进程；
 - 从 Android 8 开始，Manifest 中的隐式广播受到广泛限制，并非任意静态 Receiver 都能被系统事件唤醒；
 - 目标 Android 14+ 的应用注册非纯系统广播 Receiver 时，要显式使用 `RECEIVER_EXPORTED` 或 `RECEIVER_NOT_EXPORTED`。
 
 ### Android 14+ 缓存状态下的广播
 
-Android 14 起，应用处于缓存状态时，系统可以暂存发给运行时注册 Receiver 的广播，等应用离开缓存状态后再投递；某些重复广播还可能被合并。发给 Manifest Receiver 的广播不使用这套排队方式，系统可先让应用离开缓存状态再投递。
+Android 14 起，应用处于 cached state 时，系统可以暂存发给运行时注册 Receiver 的广播，等应用离开 cached state 后再投递；某些重复广播还可能被合并。Manifest-declared broadcast Manifest Receiver 的广播不使用这套排队方式，系统可先让应用离开缓存状态再投递。
 
 这会改变跟踪的解释：
 
