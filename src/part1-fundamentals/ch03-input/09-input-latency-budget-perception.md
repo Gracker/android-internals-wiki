@@ -183,7 +183,7 @@ Android 17 对应的 Perfetto `android.input` 标准库包含两组不同来源�
 - `is_speculative_frame=true` 表示该帧是推测关联，适合分析分布，不宜作为单个事件的确定因果证据；
 - 事件合并、批处理、没有引发重绘的手势都可能让关联结果与业务语义不同。
 
-以下查询把分发到确认与读取到呈现分开，并保留关联可信度：
+以下查询把 dispatch-to-ACK 与 read-to-present 分开，并保留关联可信度：
 
 ```sql
 INCLUDE PERFETTO MODULE android.input;
