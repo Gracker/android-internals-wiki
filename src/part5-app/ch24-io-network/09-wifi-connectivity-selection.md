@@ -75,7 +75,7 @@ pipeline_stage: ready-to-publish
 
 # 24.9 Wi-Fi 评分、网络选择与连接切换性能
 
-本节的平台源码锚点是 Android 17（API 37）/ `android-17.0.0_r1`。应用看到默认网络可用之前，系统至少完成了两类决策：Wi-Fi 模块在可连接的 AP 中选择网络，Connectivity 模块在 Wi-Fi、蜂窝、以太网、VPN 等并存网络中为每个请求选择满足者。两类决策使用不同的输入，不能合并成一个“网络分数”。
+平台源码锚点是 Android 17（API 37）/ `android-17.0.0_r1`。应用看到默认网络可用之前，系统至少完成了两类决策：Wi-Fi 模块在可连接的 AP 中选择网络，Connectivity 模块在 Wi-Fi、蜂窝、以太网、VPN 等并存网络中为每个请求选择满足者。两类决策使用不同的输入，不能合并成一个“网络分数”。
 
 Wi-Fi 图标、RSSI、`NET_CAPABILITY_VALIDATED` 和业务接口成功分别描述无线关联、链路信号、系统公网探测和目标服务可达性。它们可以同时出现不同结果。排查连接切换时，要把系统选择事件、HTTP 交换和业务恢复分开记录。连接池、TLS 与 HTTP 协议细节见 12.2、12.3、24.4 和 24.5。
 
@@ -458,7 +458,7 @@ class DefaultNetworkTracker(
 | 文件传输 | 断点、校验、持久任务状态 | 仅凭 `TRANSPORT_WIFI` 启动大流量任务 |
 | 支付与提交 | 服务端幂等键、结果查询、明确未知状态 | 连接异常后无条件重发 |
 
-超时、并发、重试次数和恢复窗口来自项目基线与服务端契约。本节不提供跨业务通用数值。
+超时、并发、重试次数和恢复窗口来自项目基线与服务端契约，不存在跨业务通用数值。
 
 ### 🔹 系统侧证据采集
 
@@ -547,7 +547,7 @@ AOSP 的 Connectivity 选择逻辑位于 Mainline 模块。设备厂商通过 `N
 
 ### 🔸 HTTP/3、QUIC 与网络切换
 
-本节前面的 `EventListener` 以 OkHttp 5.3.0 为样本。OkHttp 自身支持 HTTP/1.1 与 HTTP/2，不提供 HTTP/3。需要 HTTP/3 over QUIC 时，应评估 Android `HttpEngine` 或 Cronet，也可以评估以 Cronet 作为 OkHttp 传输层的官方集成。
+前面的 `EventListener` 以 OkHttp 5.3.0 为样本。OkHttp 自身支持 HTTP/1.1 与 HTTP/2，不提供 HTTP/3。需要 HTTP/3 over QUIC 时，应评估 Android `HttpEngine` 或 Cronet，也可以评估以 Cronet 作为 OkHttp 传输层的官方集成。
 
 QUIC 的连接 ID 为迁移提供了协议基础，但迁移不会凭 HTTP/3 自动发生。`HttpEngine` 和 Cronet 都提供连接迁移选项；只有启用默认网络迁移、请求使用 QUIC 且服务端支持迁移时，活动连接才有机会迁到新默认网络。允许迁往非默认网络还可能消耗计费流量。
 

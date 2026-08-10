@@ -39,22 +39,6 @@ last_deepseek_cn_review_at: 2026-07-06
 ---
 # 网络协议优化（HTTP/2、HTTP/3、gRPC）
 
-<!-- markdownlint-disable MD022 MD032 -->
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-- 🔹 HTTP/2 多路复用与服务端推送
-- 🔹 HTTP/3 (QUIC) 的优势与适用场景
-- 🔹 gRPC 在移动端的实践
-- 🔹 协议选型与兼容策略
-
-### 扩展（可选深入）
-- 🔸 （待扩展）
-
-<!-- outline-end -->
-<!-- markdownlint-enable MD022 MD032 -->
-
 ## 为什么要了解网络协议优化（HTTP/2、HTTP/3、gRPC）
 
 协议名称不会直接转化为性能收益。HTTP/2、HTTP/3 和 gRPC 解决的问题不同：
@@ -63,7 +47,7 @@ last_deepseek_cn_review_at: 2026-07-06
 - HTTP/3 在 QUIC 上提供 HTTP 语义，避免 TCP 字节流导致的跨 stream 传输层队头阻塞，并支持连接迁移机制。
 - gRPC 是 RPC 框架和调用契约，Android 上的常用传输仍是 HTTP/2；它不等于 HTTP/3。
 
-本节以 Android 17 / API 37 / AOSP `android-17.0.0_r1` 为平台锚点，以 OkHttp 5.3.0、RFC 9113、RFC 9000、RFC 9114 和当前 gRPC 官方文档为客户端与协议依据。连接池、DNS、超时和重试边界见 [24.4 网络架构与连接管理](04-network-architecture.md)，分段性能与 TLS 见 [12.3 网络性能深入](../../part2-performance/ch12-apk-network/03-network-performance-deep.md) 和 [12.4 网络安全与 TLS 性能](../../part2-performance/ch12-apk-network/04-network-security-tls-performance.md)。
+平台锚点为 Android 17 / API 37 / AOSP `android-17.0.0_r1`，客户端与协议依据为 OkHttp 5.3.0、RFC 9113、RFC 9000、RFC 9114 和当前 gRPC 官方文档。连接池、DNS、超时和重试边界见 [24.4 网络架构与连接管理](04-network-architecture.md)，分段性能与 TLS 见 [12.3 网络性能深入](../../part2-performance/ch12-apk-network/03-network-performance-deep.md) 和 [12.4 网络安全与 TLS 性能](../../part2-performance/ch12-apk-network/04-network-security-tls-performance.md)。
 
 ## 先区分协议、客户端和传输实现
 
@@ -123,7 +107,7 @@ HTTP/3 把 HTTP 消息映射到 QUIC stream。QUIC 在 UDP 之上实现可靠传
 
 这些机制仍有共享资源。QUIC 的拥塞控制通常作用于连接路径，丢包导致拥塞窗口变化时，多个 stream 的吞吐都会受到影响。HTTP/3 也不会缩短 DNS、服务端处理或应用读取时间。
 
-QUIC 位于 Cronet/Chromium 用户空间。Android common kernel 负责 UDP socket、IP、路由、队列和设备驱动，不实现 HTTP/3 状态机。涉及内核路径时，本项目使用 `android17-6.18-2026-06_r6`；可从该标签的 [`net/ipv4/udp.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/net/ipv4/udp.c)继续追踪 UDP 收发。
+QUIC 位于 Cronet/Chromium 用户空间。Android common kernel 负责 UDP socket、IP、路由、队列和设备驱动，不实现 HTTP/3 状态机。内核锚点为 `android17-6.18-2026-06_r6`；可从该标签的 [`net/ipv4/udp.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/net/ipv4/udp.c) 继续追踪 UDP 收发。
 
 ### 连接迁移不是切网成功保证
 
@@ -198,7 +182,7 @@ fun UrlResponseInfo.toTerminalResult(): HttpEngineResult {
 
 应在终止回调中读取最终字节数；`onFailed()` 和 `onCanceled()` 还要先确认 `UrlResponseInfo` 非空。`wasCached()` 返回 `true` 时也可能包含经过网络重新验证的响应，不能把它一律解释成零网络流量。`getReceivedByteCount()` 是处理请求所需网络字节的最小计数，包含重定向且位于解压前，但可以忽略 IP、TCP/UDP、TLS 和代理开销。空协议字符串表示未协商、未知或普通 HTTP/HTTPS，不能自行改写成 HTTP/1.1。
 
-`FinishedRequestTimings` 和 `UrlRequest.getFinishedRequestTimings()` 是 37.1 / S Extensions 23 新增能力，不属于本章的 API 37 / `android-17.0.0_r1` 锚点。基础 API 37 的文章不能据此声称可直接获得 DNS、连接和 TLS/QUIC 的完整公开时序。
+`FinishedRequestTimings` 和 `UrlRequest.getFinishedRequestTimings()` 是 37.1 / S Extensions 23 新增能力，不属于 API 37 / `android-17.0.0_r1` 锚点。基础 API 37 不能据此声称可直接获得 DNS、连接和 TLS/QUIC 的完整公开时序。
 
 ## gRPC 在移动端的实践
 
