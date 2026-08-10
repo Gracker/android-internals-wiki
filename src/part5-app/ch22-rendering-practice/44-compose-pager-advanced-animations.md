@@ -28,38 +28,11 @@ last_review_finalize_run_id: "20260723-190536-4cc75b06"
 
 # 22.44 Compose Pager 从基础到高级动画
 
-<!-- outline-start -->
-## 要点
+## 范围与版本边界
 
-### 🔹 Pager 基础概念
-Jetpack Compose `HorizontalPager` / `VerticalPager` 的基础架构和状态管理模式
+范围只包含 Compose Pager 的高级视觉变换、页面副作用和性能验证。基础 API、Paging 3、page size 与完整调参流程见 [§2.52 Compose Pager 从基础到高级动画](part2-performance/ch2-rendering/2.52-Compose-Pager-从基础到高级动画.md)。
 
-### 🔹 页面切换动画
-基于 `PagerState`、`currentPageOffsetFraction` 与 `graphicsLayer` 的页面变换
-
-### 🔹 性能优化策略
-页面切换中的重组控制、预加载边界与状态派生原则
-
-### 🔸 高级边界与反模式
-页面可见性降级、帧时间读取与自定义动画控制器的适用边界
-
-## 扩展
-
-### 🔸 页面可见性降级
-用显式可见性控制重型内容，不把未公开机制写成 Pager 能力
-
-### 🔸 Choreographer 与帧时间
-优先使用 Compose 动画和 `withFrameNanos`；直接接入 `Choreographer` 需谨慎
-
-### 🔸 自定义动画控制器
-业务层动画开关的封装方法和性能考量
-
-<!-- outline-end -->
-## 章节定位与版本边界
-
-本章只处理 Compose Pager 的高级视觉变换、页面副作用和性能验证。基础 API、Paging 3、page size 与完整调参流程见 [§2.52 Compose Pager 从基础到高级动画](part2-performance/ch2-rendering/2.52-Compose-Pager-从基础到高级动画.md)。
-
-API 与源码以 **Compose Foundation 1.11.4 stable** 为参考。Android 14—17 是本章的验证范围，不是 Pager 的最低系统要求。Compose Foundation 独立发布；Android 17 / API 37 的 `android-17.0.0_r1` 只约束 Choreographer、HWUI、SurfaceFlinger 等平台实现。
+API 与源码以 **Compose Foundation 1.11.4 stable** 为参考。Android 14—17 是这里的验证范围，不是 Pager 的最低系统要求。Compose Foundation 独立发布；Android 17 / API 37 的 `android-17.0.0_r1` 只约束 Choreographer、HWUI、SurfaceFlinger 等平台实现。
 
 普通 Pager 仍画进宿主 App Window：
 
@@ -267,9 +240,9 @@ Layout Inspector 的 recomposition count 只能圈定候选代码。用户可见
 | 直接接 Choreographer 能获得 Pager deadline | Pager 没有公开这类 deadline API |
 | 平均 FPS 能证明动画稳定 | 同时检查长帧、jank、1% low 与输入到显示延迟 |
 
-## 8. Review 清单
+## 8. 核查清单
 
-- [ ] Compose Foundation 版本已记录，本文基线为 1.11.4 stable
+- [ ] Compose Foundation 版本已记录，当前基线为 1.11.4 stable
 - [ ] Android 平台版本与 Compose artifact 版本分开
 - [ ] 曝光和资源主页面使用 `settledPage`
 - [ ] 页面变换使用 `getOffsetDistanceInPages(page)`

@@ -33,13 +33,13 @@ review_finalize_note: "2026-07-25 review: 修正 KEY_ALLOW_FRAME_DROP 字段语�
 
 视频已经被 decoder 解出，不代表用户已经看见这一帧。普通 Media3 播放还要经过帧时序判断、`releaseOutputBuffer()`、输出 `Surface`、BufferQueue、SurfaceFlinger、HWC 和面板扫描。任一阶段延迟，都可能表现为首帧慢、画面卡住、声音继续或掉帧。
 
-本章把这些阶段放回各自的责任层。播放器事件用于解释 Media3 做了什么；Android 平台 trace 用于解释帧怎样到达合成器；present fence 或设备显示证据才接近“画面何时显示”。三类证据不能相互替代。
+这些阶段需要放回各自的责任层。播放器事件用于解释 Media3 做了什么；Android 平台 trace 用于解释帧怎样到达合成器；present fence 或设备显示证据才接近“画面何时显示”。三类证据不能相互替代。
 
 ## 一、版本基线与证据范围
 
-本文固定以下核查基线：
+核查基线如下：
 
-| 层级 | 基线 | 本章关注点 |
+| 层级 | 基线 | 关注点 |
 | --- | --- | --- |
 | Media3 | 1.10.1 stable | renderer、codec adapter、frame release、surface、effects、事件 |
 | Android platform | Android 17 / API 37 / `android-17.0.0_r1` | MediaCodec、CCodec/ACodec、BufferQueue、SurfaceFlinger |
@@ -47,9 +47,9 @@ review_finalize_note: "2026-07-25 review: 修正 KEY_ALLOW_FRAME_DROP 字段语�
 
 Media3 与 Android 平台独立发布。Android 17 设备可以运行较早的 Media3；升级 Media3 也不会更换设备上的 vendor codec、Composer HAL、显示驱动或固件。涉及常量和默认策略时，必须同时记录库版本与系统 build。
 
-截至 2026-07-29，Media3 1.10.1 是稳定版基线；1.11.0 仍处于候选发布阶段，因此不用于本文的默认值。历史版本可以用于定位回归，产品结论仍应回到应用打包的准确版本。
+截至 2026-07-29，Media3 1.10.1 是稳定版基线；1.11.0 仍处于候选发布阶段，因此不作为这里的默认值。历史版本可以用于定位回归，产品结论仍应回到应用打包的准确版本。
 
-本文的系统路径还结合了渲染系列中经过长期复核的 SurfaceView、TextureView 与 video overlay 结论。Android 17 的强证据来自公开源码；vendor codec、HWC plane、secure video path 和驱动等待要靠目标设备补证。
+系统路径同时沿用 SurfaceView、TextureView 与 video overlay 的通用结论。Android 17 的强证据来自公开源码；vendor codec、HWC plane、secure video path 和驱动等待要靠目标设备补证。
 
 ## 二、普通播放的分层模型
 
@@ -894,7 +894,7 @@ tunnel 不依赖普通逐帧 `queueBuffer()` 作为主证据。采样重点转�
 - 为避免掉帧而无条件把 `KEY_ALLOW_FRAME_DROP` 设为 `0`；
 - 在不同 DRM、profile 或 resolution 之间无条件池化 decoder。
 
-## 十八、Review 清单
+## 十八、核查清单
 
 ### 版本与输入
 

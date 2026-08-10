@@ -32,54 +32,6 @@ sources:
 
 # 22.42 SurfaceView 与 TextureView 渲染性能选型实战
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 SurfaceView 与 TextureView 的架构本质差异
-- SurfaceView：仍是宿主 View 树中的 View，但内容进入独立 BLAST child layer
-- TextureView：外部 buffer 先由应用内 HWUI/RenderThread 消费，再画入宿主 App Window
-- Android 17 SurfaceControl 能管理 layer 状态与 transaction，不替代 Producer 产帧或 fence 同步
-
-### 🔹 性能对比：延迟、功耗、内存
-- 渲染延迟：SurfaceView 有机会省去宿主纹理采样，TextureView 可能受宿主帧截止点影响
-- 功耗：SurfaceView 只有在 HWC 选择 DEVICE composition 时才可能减少 GPU 合成
-- 内存：两者都涉及内容队列与宿主窗口队列，slot/stride/format/usage 决定占用
-- 不提供跨 SoC 的 Android 17 “典型范围”，只给可复现实测维度
-
-### 🔹 SurfaceControl 在 Android 17 的角色
-- SurfaceControl.Transaction 管几何、可见性、alpha、crop、present hint 等 layer 状态
-- API 37 没有公开 `SurfaceControl.BufferChangedListener`；需区分 committed/completed listener 与 fence
-- SurfaceView 通过 container、BLAST child 和 BufferQueue 组合承载内容
-- 与 SurfaceFlinger Hardware Composer（HWC）Overlay 的关系
-
-### 🔹 场景选型决策树
-- 相机预览：SurfaceView 默认优先，TextureView 在需要 View 变换（缩放/旋转/滤镜）时选
-- 视频播放：SurfaceView 优先（ExoPlayer/Media3 默认），TextureView 在需要贴纸/特效时选
-- 地图/游戏渲染：按 SDK/引擎实际 Surface 拓扑确认，Vulkan WSI 通过 `ANativeWindow` 建立 swapchain
-- 直播弹幕叠加：TextureView 变换灵活性 vs SurfaceView 性能的取舍
-
-### 🔹 Perfetto 中的 SurfaceView/TextureView 渲染链路追踪
-- BufferQueue 的 acquire/release buffer 在 trace 中的 Track
-- HWC Overlay 的识别方法以 composition type、client target 和 layer trace 为主
-- GPU 合成 vs Overlay 合成的 Perfetto 判定方法
-
-### 🔹 常见性能陷阱
-- TextureView 的 animate() 可能改变采样、过滤、blend 与宿主 GPU 带宽
-- SurfaceView 的 surfaceCreated/surfaceDestroyed 生命周期与 Activity 的竞态
-- 多 SurfaceView 场景的 Overlay Plane 耗尽退化
-- Android 17 黑屏需按 layer、Producer、fence、visibility、secure/HDR 逐项排查
-
-## 扩展
-
-### 🔸 Vulkan Surface 与 SurfaceControl 的直接绑定
-- ANativeWindow 与 Vulkan VkSurfaceAndroid 的互操作
-- 游戏引擎（Unity/Unreal）应从实际 layer tree、swapchain 和队列确认收益
-
-### 🔸 Compose 中的 SurfaceView/AndroidView 互操作
-- AndroidView 包裹 SurfaceView 的重组合开销与缓解策略
-
-<!-- outline-end -->
-
 `SurfaceView` 和 `TextureView` 都能接收 Camera、MediaCodec、EGL 或 Vulkan 生成的 buffer，差别落在“这块 buffer 在哪里被消费”：
 
 - `SurfaceView` 保留独立内容流，SurfaceFlinger 能看到对应的 buffer layer；
@@ -87,9 +39,9 @@ sources:
 
 这个分界决定了延迟组成、GPU 带宽、HWC 机会、变换能力、生命周期和 trace 读法。控件名称本身不能保证低延迟、低功耗或 overlay；所有性能结论都要回到当前设备的 Producer、BufferQueue、layer、fence 和 display present。
 
-## 本章基线与提纲校正
+## 版本基线与术语校正
 
-本文固定以下源码锚点：
+源码锚点如下：
 
 | 层级 | 基线 | 用途 |
 | --- | --- | --- |
@@ -100,9 +52,9 @@ sources:
 
 版本演进保留 Android 12—17 的现代路径。Android 10/11 只用于兼容性判断，不把早期实现套到 Android 17。
 
-提纲中几项描述需要按当前实现改写：
+几项常见描述需要按当前实现收窄：
 
-| 提纲描述 | Android 17 中的准确边界 |
+| 常见描述 | Android 17 中的准确边界 |
 | --- | --- |
 | SurfaceView 是“独立窗口” | 它仍是宿主 View 树中的 View；内容由宿主 bounds layer 下的 container、BLAST child 与背景 color layer 承载，不是另一个应用 Window |
 | TextureView 是“View 树内硬件层” | Java `TextureLayer` 是应用内 HWUI 对象，不是 SurfaceFlinger layer；RenderThread 通过 `DeferredLayerUpdater` 消费 `SurfaceTexture` |
