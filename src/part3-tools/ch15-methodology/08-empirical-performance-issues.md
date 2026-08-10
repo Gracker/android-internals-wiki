@@ -71,22 +71,9 @@ last_deepseek_cn_review_at: 2026-07-05
 
 这类研究适合校准问题覆盖面，不能直接代替本产品的线上数据。样本来源、过滤方法、最终样本量和 Android 版本都会限制结论的外推范围。
 
-<!-- outline-start -->
-
-- 用户、开发者、研究者：三个完全不同的关注点（Google Play / SO / GitHub / 论文四视角对比）
-- 七类性能后果与 63/82 因素 taxonomy（性能后果分类、观测入口与版本边界）
-- 六类论文代码模式与一类现代工程补充（API 误用、未释放引用、冗余对象、大规模数据、UI 操作、其他模式）
-- 现代补充：主线程同步 Binder 调用（Binder 等待链、Perfetto 确认方法、服务端归因）
-- 现代版本补充：cached-app freezer 与解冻毛刺（进程冻结/解冻、CPU 抢占、误判分析）
-- 从数据看排查优先级（用户面响应性、工程面内存、研究面能耗）
-- 构建 Code Review 性能检查清单（API 误用、引用释放、冗余对象、布局、数据 I/O）
-- 对本书读者的实践指导
-
-<!-- outline-end -->
-
 ## 固定论文版本与统计口径
 
-本章引用 [arXiv:2407.05090v3](https://arxiv.org/pdf/2407.05090v3)，revision 日期为 2025-10-11。论文的复现资料位于 [Android-Performance-Analysis](https://github.com/Dianshu-Liao/Android-Performance-Analysis)。
+引用版本为 [arXiv:2407.05090v3](https://arxiv.org/pdf/2407.05090v3)，revision 日期为 2025-10-11。论文的复现资料位于 [Android-Performance-Analysis](https://github.com/Dianshu-Liao/Android-Performance-Analysis)。
 
 版本号必须写进引用。当前 arXiv 摘要页、v3 PDF 和复现仓库 README 存在摘要数字不同步：
 
@@ -95,7 +82,7 @@ last_deepseek_cn_review_at: 2026-07-05
 - arXiv 摘要页截至 2026-07-30 显示“工具未覆盖 76.39%、数据集未覆盖 66.67%”，与 v3 PDF 的 63.41% 和 70.73% 冲突；
 - 复现仓库 README 对汇总表仍写“66 篇论文”，与 v3 PDF 纳入 85 篇冲突。
 
-本章的分子、分母和比例全部以 v3 PDF 正文、表格及结论为准。引用“论文发现”时也要带 revision，避免将不同修订版的数字放在一张表里。
+下文的分子、分母和比例全部以 v3 PDF 正文、表格及结论为准。引用“论文发现”时也要带 revision，避免将不同修订版的数字放在一张表里。
 
 ## 数据从哪里来
 
@@ -156,7 +143,7 @@ Google Play 的 60,684 条负面评论来自 909,430 条评论的情感模型筛
 | 公开工具对 82 个综合因素的覆盖 | 30/82 | 52/82 | 63.41% |
 | 公开数据集对 82 个综合因素的覆盖 | 24/82 | 58/82 | 70.73% |
 
-旧文案把“未研究 57.14%”写成“63 项中的 27 项未研究”，方向倒置。27/63 是已研究的 42.86%，未研究数是 36。14 个公开工具覆盖 30 个因素，12 个公开数据集覆盖 24 个因素；覆盖是 taxonomy 层面的标注，不等于工具对这些因素拥有稳定的工业检测率。
+27/63 是已研究的 42.86%，未研究数是 36，不能把 27 项写成未研究数量。14 个公开工具覆盖 30 个因素，12 个公开数据集覆盖 24 个因素；覆盖是 taxonomy 层面的标注，不等于工具对这些因素拥有稳定的工业检测率。
 
 ## 七类性能后果与 63/82 因素
 
@@ -438,9 +425,9 @@ Stack Overflow、GitHub issue 与 commit 的主导类别都是 Memory Consumptio
 
 审查时还要看读取是否触发磁盘、写入频率、durability、一致性、多进程需求和迁移方案。将 `commit()` 机械替换成 `apply()` 只能消除调用点的同步写盘，不能解决所有生命周期 I/O。
 
-## 对本书读者的实践指导
+## 实践步骤
 
-读完本章应能做三件事：
+这套方法可以落实为三项动作：
 
 - 引用研究数字时同时写分子、分母、revision 和样本来源；
 - 把性能后果、促成因素、代码模式与观测证据分层；
@@ -448,7 +435,7 @@ Stack Overflow、GitHub issue 与 commit 的主导类别都是 Memory Consumptio
 
 遇到一条用户“卡”的反馈，可以从 Responsiveness 进入，再判断它对应帧延迟、输入等待、启动、Binder、I/O、锁、调度还是 freezer 恢复。遇到内存修复提交，可以区分 retained reference、allocation churn、峰值数据、native/graphics 占用和系统回收。遇到研究工具没有规则覆盖的因素，则补充场景化测试与运行时观测。
 
-本章的研究样本跨多个 Android 版本。Android 17 相关机制以 `android-17.0.0_r1` 为平台锚点；涉及 binder driver、cgroup freezer 和调度器时，以 `android17-6.18-2026-06_r6` 为内核锚点。旧版本演进可以保留，当前结论的最高版本不超过 Android 17。
+研究样本跨多个 Android 版本。Android 17 相关机制以 `android-17.0.0_r1` 为平台锚点；涉及 binder driver、cgroup freezer 和调度器时，以 `android17-6.18-2026-06_r6` 为内核锚点。旧版本演进可以保留，当前结论的最高版本不超过 Android 17。
 
 ## 参考资料
 
@@ -465,4 +452,4 @@ Stack Overflow、GitHub issue 与 commit 的主导类别都是 Memory Consumptio
 - [Android 17 `IPCThreadState.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/IPCThreadState.cpp)
 - [Android 17 `CachedAppOptimizer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java)
 - [Android common kernel `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6)
-- 本书 §7.12（View 体系性能优化）、§9.1（ANR 设计思想）、§10.1（App 内存分析）、§14.4（`dumpsys gfxinfo`）、§15.3（性能指标体系）
+- 相关章节：§7.12（View 体系性能优化）、§9.1（ANR 设计思想）、§10.1（App 内存分析）、§14.4（`dumpsys gfxinfo`）、§15.3（性能指标体系）

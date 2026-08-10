@@ -63,29 +63,11 @@ last_review_finalize_run_id: "20260731-081158-de425757"
 
 # AOSP 代码阅读
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 AOSP 源码在线阅读工具：cs.android.com（Android Code Search）
-- 🔹 关键目录结构：frameworks/base、frameworks/native、system/core、art
-- 🔹 阅读技巧：从 Logcat 日志反查代码、从 Systrace tag 定位代码
-- 🔹 性能相关的核心源码入口：ActivityThread、ViewRootImpl、Choreographer、SurfaceFlinger
-- 🔹 如何高效追踪一个调用链（IDE 搜索 vs grep vs codesearch）
-
-### 扩展（可选深入）
-
-- 🔸 本地 AOSP 全量代码的下载与 IDE 配置
-- 🔸 利用 git log/blame 追踪功能变更历史
-
-<!-- outline-end -->
-
 ## 阅读源码前，固定三个坐标
 
 源码阅读服务于一个可验证的问题：某段运行时行为由哪一版代码产生，控制条件是什么，证据能否解释设备上的现象。开始搜索前，记录三个坐标：
 
-1. **平台版本**：本章默认 `android-17.0.0_r1`，对应 Android 17 / API 37。
+1. **平台版本**：默认使用 `android-17.0.0_r1`，对应 Android 17 / API 37。
 2. **Git 项目**：例如 `platform/frameworks/base` 或 `platform/frameworks/native`。
 3. **项目内路径**：例如 `core/java/android/view/Choreographer.java`。
 
@@ -195,7 +177,7 @@ Android 17 的 shell 命令还可能来自 `external/toybox` 或独立项目。�
 
 应用启动或 GC 问题同时涉及 Framework 与 ART。Framework 决定何时请求 dexopt、创建组件或触发 GC 相关策略；ART 决定编译、分配和回收如何执行。
 
-### [自动发现] `packages/modules` 与模块化源码
+### `packages/modules` 与模块化源码
 
 现代 Android 把多项系统能力放进 Mainline 模块，代码经常位于 `packages/modules/`，ART 本身也按独立项目和 APEX 交付。网络、蓝牙、权限、设备锁、虚拟化等问题不一定能在 `frameworks/base` 找到完整实现。
 
@@ -207,7 +189,7 @@ Android 17 的 shell 命令还可能来自 `external/toybox` 或独立项目。�
 4. 检查 APEX 或 APK 的进程归属；
 5. 用设备上的进程与 trace 线程验证服务端位置。
 
-### [自动发现] 先读 `Android.bp`
+### 先读 `Android.bp`
 
 源码文件存在，不等于它进入当前产品。Soong 会根据模块、依赖、架构、产品变量、feature flag 和生成规则选择源文件。`Android.bp` 至少回答四个问题：
 
@@ -488,7 +470,7 @@ Code Search 展示源输入和部分生成结果，本地当前产品的 `out/` 
 
 ## 获取 Android 17 源码
 
-官方流程见 [Download the Android source](https://source.android.com/docs/setup/download)。下面的命令用于固定到本章源码锚点：
+官方流程见 [Download the Android source](https://source.android.com/docs/setup/download)。下面的命令用于固定到当前源码锚点：
 
 ```bash
 mkdir aosp-android17
