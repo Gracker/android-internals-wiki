@@ -107,7 +107,7 @@ Android 17 同时能看到两类接入：
 
 ## Sample PGO 与 AutoFDO
 
-PGO（基于配置文件的优化，Profile-Guided Optimization）按 profile 的产生方式大致分两类：
+PGO（Profile-Guided Optimization）按 profile 的产生方式大致分两类：
 
 | 类型 | 数据来源 | 优点 | 主要代价 |
 |---|---|---|---|
@@ -128,7 +128,7 @@ LLVM sample profile 可以影响：
 - 热/冷代码拆分；
 - 优化预算在不同函数上的分配。
 
-最终变化的是机器码，不是 C/C++ 源码语义。配置偏差可能造成代码膨胀或性能回退，编译器和链接器也可能有缺陷。Android 的发布流程仍要比较 profile、二进制 text section、基准性能和稳定性。
+最终变化的是机器码，不是 C/C++ 源码语义。profile 偏差可能造成代码膨胀或性能回退，编译器和链接器也可能有缺陷。Android 的发布流程仍要比较 profile、二进制 text section、基准性能和稳定性。
 
 ---
 
@@ -148,7 +148,7 @@ afdo: true,
 
 开启了 `afdo: true`。
 
-这只能证明目标具备 AFDO 构建接入，不能证明任意本地构建都一定拿到了有效 profile。是否使用，还取决于配置、目标 arch、构建变体和产物日志。验证时应在 verbose build log 中查找 `-fprofile-sample-use=`，再核对该路径对应的 profile。
+这只能证明目标具备 AFDO 构建接入，不能证明任意本地构建都一定拿到了有效 profile。是否使用，还取决于 profile 配置、目标 arch、构建变体和产物日志。验证时应在 verbose build log 中查找 `-fprofile-sample-use=`，再核对该路径对应的 profile。
 
 ### 与 ART Baseline Profile 的区别
 
