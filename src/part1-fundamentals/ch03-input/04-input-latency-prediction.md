@@ -82,7 +82,7 @@ last_task9_autofix_at: "2026-07-12"
 
 §3.1 拆解了输入事件从硬件到 View 树的分发路径，§3.2 介绍了触摸响应的常见瓶颈。这里把一次输入从“手指位置变化”到“像素显示变化”的时间拆成可度量阶段，再讨论系统提供的降延迟手段。
 
-输入延迟的测量口径容易混淆。InputDispatcher 的 `total_latency_dur` 只表示事件分发到 ACK 的耗时；FrameTimeline 表示一帧是否按时送显；手写笔应用关心的是笔尖和墨迹之间的距离。三者都称为输入延迟，却对应不同的时间区间。
+输入延迟的测量口径容易混淆。InputDispatcher 的 `total_latency_dur` 只表示事件分发到 ACK 的耗时；FrameTimeline 表示一帧是否按时 present；手写笔应用关心的是笔尖和墨迹之间的距离。三者都称为输入延迟，却对应不同的时间区间。
 
 分析跟手性时应先统一口径，再选择优化方法。除专门说明的版本沿革外，平台实现以 AOSP `android-17.0.0_r1` 为源码锚点。
 
@@ -135,7 +135,7 @@ sequenceDiagram
 4. `CALLBACK_TRAVERSAL`
 5. `CALLBACK_COMMIT`
 
-这个顺序让批量输入先于动画和遍历消费。输入处理占用过多时间时，后面的动画和遍历预算会被压缩；主线程若已被长任务占住，输入即使到达应用进程，也要等 Looper 获得执行机会。
+这个顺序让 batched 输入先于动画和 traversal 消费。输入处理占用过多时间时，后面的动画和 traversal 预算会被压缩；主线程若已被长任务占住，输入即使到达 App 进程，也要等 Looper 获得执行机会。
 
 Android 17 创建 `InputChannel` 时使用 `socketpair(AF_UNIX, SOCK_SEQPACKET, ...)`。它保留消息边界，不能笼统理解为字节流 socket。上图省略了窗口选择、事件拆分、ACK 等分支，只表达延迟阶段。
 
@@ -158,7 +158,7 @@ fun appendSamples(event: MotionEvent, out: MutableList<PointF>) {
 }
 ```
 
-代码只处理第一个指针，多指场景要按 `pointerCount` 展开。批处理没有丢掉中间点，App 是否使用这些点取决于自身的输入处理逻辑。
+代码只处理第一个 pointer，多指场景要按 `pointerCount` 展开。批处理没有丢掉中间点，App 是否使用这些点取决于自身的输入处理逻辑。
 
 ### 重采样解决时序贴合问题
 
@@ -205,7 +205,7 @@ API 35 起，可以先通过 `MotionEvent#getPointerCoords()` 或 `getHistorical
 
 这些边界意味着预测能力由平台版本、设备 overlay、输入设备和当前笔划共同决定。TCN 架构、NPU 加速、固定 30ms 窗口或非 stylus 全量支持，都不能从该源码锚点推出。
 
-### 框架 API 的使用方式
+### Framework API 的使用方式
 
 Framework API 需要在整段 stylus event stream 中复用同一个实例。下面的封装负责记录 real event 并返回 nullable predicted event：
 
@@ -281,7 +281,7 @@ try {
 | `handling_latency_dur` | 接收端收到事件到发出 finish/ACK | 接收线程处理、View 分发以及这段区间内的排队或同步调用；不能一概等同于业务代码耗时 |
 | `ack_latency_dur` | App 发出 ACK 到系统收到 ACK | ACK 回写、线程调度、system_server 负载 |
 | `total_latency_dur` | dispatch 到 ACK 的总时长 | 输入分发往返总耗时 |
-| `end_to_end_latency_dur` | InputReader 读到事件到关联帧送显 | 输入到显示的端到端耗时，依赖轨迹中的帧关联信息 |
+| `end_to_end_latency_dur` | InputReader 读到事件到关联帧 present | 输入到显示的端到端耗时，依赖 trace 中的帧关联信息 |
 
 这段查询用于找出最慢的输入事件，并拆出各段耗时：
 
@@ -318,7 +318,7 @@ LIMIT 100;
 
 `android_input_events` 主要关联输入 input atrace slice（如 `sendMessage`、`receiveMessage`、`deliverInputEvent`）与 FrameTimeline。`android.input.inputevent` 是只在 debuggable build 上可用的结构化数据源，用于填充 `android_motion_events`、`android_key_events`、`android_input_event_dispatch` 等表，但并非查询 `android_input_events` 的前置条件。
 
-`end_to_end_latency_dur` 需要成功关联输入与送显帧；关联不到时会是 `NULL`。对于未 batch 的事件，标准库可能用下一帧作推测关联，此时 `is_speculative_frame = 1`。空值表示证据不足，推测值也要与界面行为和 FrameTimeline 一起核对。
+`end_to_end_latency_dur` 需要成功关联输入与 present 帧；关联不到时会是 `NULL`。对于未 batch 的事件，标准库可能用下一帧作推测关联，此时 `is_speculative_frame = 1`。空值表示证据不足，推测值也要与界面行为和 FrameTimeline 一起核对。
 
 ## 调度、提频与硬件采样策略
 
@@ -345,7 +345,7 @@ LIMIT 100;
 
 ### Android 17 DeliQueue 与输入延迟口径
 
-Android 17 的 DeliQueue 属于 MessageQueue / Looper 队列结构变化，详见 §1.26。它可以降低高并发入队时的 MessageQueue 锁竞争，但不改变 InputDispatcher 的分发/ACK 语义，也不属于 MotionPredictor 或重采样路径。分析输入延迟时，应把它归到应用主线程消息队列竞争这一段。
+Android 17 的 DeliQueue 属于 MessageQueue / Looper 队列结构变化，详见 §1.26。它可以降低高并发入队时的 MessageQueue 锁竞争，但不改变 InputDispatcher 的 dispatch/ACK 语义，也不属于 MotionPredictor 或重采样路径。分析输入延迟时，应把它归到 App 主线程消息队列竞争这一段。
 
 ### 动态报点率如何验证
 
@@ -381,7 +381,7 @@ flowchart TD
 
 ### 误区一：`total_latency_dur` 等于触摸到显示
 
-不等于。`total_latency_dur` 是分发到 ACK 的往返耗时，主要覆盖 InputDispatcher 与应用处理。触摸到显示还要加上采样、InputReader、渲染、合成和显示送显。检查端到端延迟时，应优先查看 `end_to_end_latency_dur`，并确认轨迹已采到帧关联。
+不等于。`total_latency_dur` 是 dispatch 到 ACK 的往返耗时，主要覆盖 InputDispatcher 与 App 处理。触摸到显示还要加上采样、InputReader、渲染、合成和显示 present。检查端到端延迟时，应优先查看 `end_to_end_latency_dur`，并确认 trace 已采到帧关联。
 
 ### 误区二：高采样率一定降低总延迟
 
