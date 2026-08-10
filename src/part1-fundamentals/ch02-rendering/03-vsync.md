@@ -478,7 +478,7 @@ InputReader/InputDispatcher
   → queueBuffer + acquire fence
   → SurfaceFlinger latch/composition
   → HWC present
-  → 面板扫描输出/响应
+  → panel scanout/response
 ```
 
 VSync 相位影响其中应用与 SF 的起跑点，但总延迟还取决于：

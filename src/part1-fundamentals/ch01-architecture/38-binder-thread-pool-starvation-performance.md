@@ -159,7 +159,7 @@ AIDL Stub 在当前 Binder 工作线程上分发接口方法，不会自动切�
 假设 A 的线程调用 B，B 的 Binder 工作线程又同步调用 C：
 
 ```text
-A 的调用线程等待 B
+A caller waits for B
   B binder worker waits for C
     C binder worker handles request
 ```
