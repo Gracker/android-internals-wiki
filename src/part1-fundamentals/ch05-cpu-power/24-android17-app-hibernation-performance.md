@@ -30,7 +30,7 @@ sources:
 
 App Hibernation 面向“安装后长期没有被使用”的应用。它会把包置于类似手动 Force stop 的状态，回收缓存和可选的 dexopt 产物，并配合 unused-app policy 重置一部分运行时权限。对应用团队而言，最重要的后果有三个：原有后台入口不能继续工作、权限不会在退出休眠时自动恢复、首次再启动可能同时产生冷进程、缓存重建和代码重新优化的成本。
 
-本章以 Android 17 / `android-17.0.0_r1` 为源码锚点。阅读源码时要先分清职责：`AppHibernationService` 保存休眠状态并执行系统动作，判定“多久未使用、哪些包应豁免”的策略位于 PermissionController 模块。把所有逻辑都归到 system_server，会得到错误的检查周期、使用事件和权限撤销链路。
+源码锚点为 Android 17 / `android-17.0.0_r1`。`AppHibernationService` 保存休眠状态并执行系统动作，判定“多久未使用、哪些包应豁免”的策略位于 PermissionController 模块。把所有逻辑都归到 system_server，会得到错误的检查周期、使用事件和权限撤销链路。
 
 ## 三种相邻机制的边界
 
@@ -83,7 +83,7 @@ Android 17 的策略实现位于：
 | 检查周期 | 15 天 | `permissions/auto_revoke_check_frequency_millis` |
 | Hibernation 总开关 | 开启 | `app_hibernation/app_hibernation_enabled` |
 
-周期任务属于 PermissionController，AOSP 包名为 `com.android.permissioncontroller`，Job ID 为 `2`；Google 系统镜像和官方测试文档使用的包名可能是 `com.google.android.permissioncontroller`。它是 persisted periodic Job；刚创建新调度时会跳过第一次过早执行。原稿所写的“`AppHibernationService` 每 24 小时扫描一次”与 Android 17 源码不符。
+周期任务属于 PermissionController，AOSP 包名为 `com.android.permissioncontroller`，Job ID 为 `2`；Google 系统镜像和官方测试文档使用的包名可能是 `com.google.android.permissioncontroller`。它是 persisted periodic Job；刚创建新调度时会跳过第一次过早执行。`AppHibernationService` 并不会每 24 小时扫描一次。
 
 这些值可以被 DeviceConfig 或产品配置修改。90 天适合作为 AOSP 默认线，不能当作所有 OEM、所有时刻都固定不变的协议。
 
@@ -293,7 +293,7 @@ adb shell perfetto -o /data/misc/perfetto-traces/hibernation.pftrace \
   -t 15s sched freq idle am wm ss
 ```
 
-`dumpsys app_hibernation` 展示用户级与全局级 state，字段来自 `UserLevelState.toString()` / `GlobalLevelState.toString()`，主要包括 package、hibernated、saved bytes 和 last-unhibernated。它没有 `unusedSinceMs`、`lastChecked` 或 `reason` 这些原稿虚构的固定字段。
+`dumpsys app_hibernation` 展示用户级与全局级 state，字段来自 `UserLevelState.toString()` / `GlobalLevelState.toString()`，主要包括 package、hibernated、saved bytes 和 last-unhibernated。它没有 `unusedSinceMs`、`lastChecked` 或 `reason` 这些固定字段。
 
 `AppHibernationService` 的 Android 17 trace slice 名称为 `hibernatePackage`、`unhibernatePackage` 和 `hibernatePackageGlobally`，没有把 package name 拼进 slice。Perfetto 适合确认动作与启动时序；具体包名、策略筛选原因和权限变化仍需结合 PermissionController 日志、dumpsys 与测试记录。
 
@@ -360,18 +360,18 @@ future.addListener(
 | 冷启动变慢 | cache、dexopt、I/O、网络、温度和版本更新都可能影响 |
 | 收到 `BOOT_COMPLETED` | 设备启动与退出 Hibernation 都可能投递 |
 
-监控系统可以组合这些字段建立“疑似 hibernation recovery”标签，同时保留原始证据。没有平台明确事件时，不应把推断当成确定事实上报。
+监控系统可以组合这些字段建立“疑似 hibernation recovery”标签，同时保留原始证据。没有平台明确事件时，不应把推断当成确定结论上报。
 
 ## 版本边界
 
-| 版本 | 与本章相关的变化 |
+| 版本 | 相关变化 |
 |---|---|
 | Android 12 / API 31 | 引入平台 App Hibernation；用户级 Force stop/cache 回收与全局存储优化 |
 | Android 13 / API 33 | 设置入口文案通常调整为“Pause app activity if unused”；Safety Center 可呈现 unused apps |
 | Android 15 / API 35 | stopped package 只因用户动作解除；Force stop 取消 PendingIntent、暂时禁用 widget；新增 `ApplicationStartInfo.wasForceStopped()`；加入操作系统级 App Archiving API |
-| Android 17 / API 37 | 本章源码锚点；策略仍由 PermissionController 驱动，system_server 维护用户级/全局级状态 |
+| Android 17 / API 37 | 策略仍由 PermissionController 驱动，system_server 维护用户级/全局级状态 |
 
-原稿所写的“Android 15 不再把通知交互算使用”“Android 17 只接受 `MOVE_TO_FOREGROUND`”没有对应源码，且与 Android 17 的 `USER_INTERACTION`、`ACTIVITY_RESUMED`、`APP_COMPONENT_USED` 监听和官方文档冲突，不能保留。
+“Android 15 不再把通知交互算使用”“Android 17 只接受 `MOVE_TO_FOREGROUND`”均没有对应源码，并与 Android 17 的 `USER_INTERACTION`、`ACTIVITY_RESUMED`、`APP_COMPONENT_USED` 监听和官方文档冲突。
 
 ## 排障清单
 
