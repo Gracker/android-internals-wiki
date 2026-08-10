@@ -246,7 +246,7 @@ connectToVsockServer(port)
     + binderFromPreconnectedClient(connectionProvider)
 ```
 
-这条链路使用 Binder RPC 协议和 Binder 对象模型，但传输不依赖宿主与 guest 共享同一个 `/dev/binder` 驱动实例。guest 私有内存也不会因为传递了 Binder 对象而自动对 host 可见。
+这条链路使用 Binder RPC 协议和 Binder object model，但传输不依赖 host 与 guest 共享同一个 `/dev/binder` 驱动实例。guest 私有内存也不会因为传递了 Binder object 而自动对 host 可见。
 
 对 payload API，Binder RPC 适合控制面和结构化小消息；大数据应评估流式 vsock、文件交换或专用共享机制。选择依据包括复制次数、批量大小、失败恢复和数据敏感性，不能套用未经测量的固定延迟表。
 
@@ -288,7 +288,7 @@ API 文档把 `VirtualMachine.stop()` 比作拔电源：guest 软件不会收到
 
 ### 7.3 引用生命周期会影响 VM 存活
 
-`IVirtualMachine` Binder 对象跟踪 VM 所有权。没有强引用后，`VirtualizationService` 会关闭 VM；启动它的客户端若被 LMK 终止，VM 也会随引用消失而停止，避免孤儿资源长期占用。
+`IVirtualMachine` Binder object 跟踪 VM 所有权。没有强引用后，`VirtualizationService` 会关闭 VM；启动它的客户端若被 LMK 终止，VM 也会随引用消失而停止，避免孤儿资源长期占用。
 
 ### 7.4 并发 VM 没有“Arm 最多 16 台”的通用限制
 
