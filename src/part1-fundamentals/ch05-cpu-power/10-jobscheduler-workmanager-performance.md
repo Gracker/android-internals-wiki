@@ -87,39 +87,19 @@ last_deepseek_cn_review_at: 2026-06-07
 
 # JobScheduler/WorkManager 调度与后台任务性能
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 JobScheduler 的调度模型:JobSchedulerService、Controller、JobStore、JobServiceContext
-- 🔹 JobInfo 的约束、优先级、配额与 Expedited Job
-- 🔹 WorkManager 的调度架构:SystemJobScheduler、SystemAlarmScheduler、GreedyScheduler
-- 🔹 后台任务在 Perfetto、`dumpsys jobscheduler`、WorkManager Inspector 中的观测面
-- 🔹 Play Store 后台行为政策、UIDT、Foreground Service 与 WorkManager 的选择边界
-- 🔹 Android 8.0 到 Android 17 的后台调度演进与调试能力变化
-
-### 扩展(可选深入)
-
-- 🔸 AlarmManager 到 JobScheduler 的批处理差异
-- 🔸 Chain Work 与 `PeriodicWorkRequest` 的调度开销
-- 🔸 App Standby Bucket 与 Job 配额的联动
-
-<!-- outline-end -->
-
 ## 为什么后台任务需要系统调度
 
 后台同步、日志上传、缓存整理和资源预取都有一个共同特点：它们通常可以晚一点执行。若每个应用都用精确闹钟唤醒设备，再自行持有 WakeLock，系统很难把多个应用的工作安排到同一个活跃窗口。单次任务也许只运行几十毫秒，大量碎片化唤醒却会缩短 CPU 在深度空闲状态中的停留时间。
 
 JobScheduler 的做法是让应用声明“做什么、需要哪些条件、允许多晚”，由系统结合设备状态和所有应用的请求选择执行时机。WorkManager 在此基础上增加任务持久化、依赖关系、重试和兼容处理。两者都适合可延期的后台工作，但它们没有提供精确定时或无限运行的资格。
 
-本章聚焦三个问题：
+需要回答三个问题：
 
 1. 一个 job 从 `schedule()` 到 `JobService` 的路径是什么；
 2. 任务迟迟不运行时，怎样区分约束、配额、设备状态和应用自身问题；
 3. WorkManager、Expedited Job、UIDT、Foreground Service 和精确闹钟分别适合什么场景。
 
-Doze、App Standby 与后台执行限制的策略背景见 5.6 和 5.8 节。本章以 `android-17.0.0_r1` 为平台源码锚点。
+Doze、App Standby 与后台执行限制的策略背景见 5.6 和 5.8 节。平台源码以 `android-17.0.0_r1` 为基准。
 
 ## JobScheduler 的调度模型
 
@@ -327,7 +307,7 @@ WorkManager 适合可延期、异步、需要在应用进程重启或设备重�
 
 ### 当前稳定版中的调度器
 
-截至 Android 17 本章核查时，WorkManager 官方稳定版为 2.11.2，2.11 系列的 `minSdk` 是 23。其核心角色可以这样理解：
+Android 17 对应的内容以 WorkManager 2.11.2 为库版本基准，2.11 系列的 `minSdk` 是 23。其主要角色如下：
 
 | 角色 | 职责 |
 |---|---|
@@ -339,7 +319,7 @@ WorkManager 适合可延期、异步、需要在应用进程重启或设备重�
 
 `SystemJobScheduler` 和 `GreedyScheduler` 可以同时存在：前者给系统登记任务，后者在进程已存活且条件满足时减少等待。不能把它们理解成启动时三选一的互斥分支。
 
-在本书覆盖的 Android 8.0—17 范围内，当前 WorkManager 会使用 `SystemJobScheduler`；`SystemAlarmScheduler` 只用于解释旧版库和 API 22 及以下设备的历史 trace。WorkManager 2.11 已不支持这些低版本设备。底层 JobScheduler 记录由 WorkManager 管理，WorkManager 自己持久化依赖和重试状态；不要依赖其内部 job ID 或自行修改对应系统 job。
+在 Android 8.0—17 范围内，WorkManager 2.11 使用 `SystemJobScheduler`；`SystemAlarmScheduler` 只用于解释旧版库和 API 22 及以下设备的历史 trace。WorkManager 2.11 已不支持这些低版本设备。底层 JobScheduler 记录由 WorkManager 管理，WorkManager 自己持久化依赖和重试状态；不要依赖其内部 job ID 或自行修改对应系统 job。
 
 WorkManager 2.10 起为底层 job 增加了更易读的 trace tag，因此较新版本的 `dumpsys jobscheduler` 更容易关联到具体 Worker。
 
@@ -536,7 +516,7 @@ Android Vitals 当前以 24 小时内累计至少 2 小时的非豁免 partial W
 
 ## Android 8.0 到 Android 17 的演进
 
-| 平台 | 与本章直接相关的变化 |
+| 平台 | 相关变化 |
 |---|---|
 | Android 8.0 / API 26 | 后台 Service 限制生效；持久后台工作更依赖 JobScheduler 等受控入口 |
 | Android 9 / API 28 | 引入四档 App Standby Buckets，job quota 与应用活跃程度结合 |

@@ -96,35 +96,17 @@ verifier_result: "state-consistency-fixed: task6_state/task9_state/pipeline_stag
 
 # CPU 相关的版本演进
 
-<!-- outline-start -->
-## 本节要点大纲
+## 三条演进时间线
 
-### 锚点(必须覆盖)
-
-- 🔹 Android 5.0+ 引入 JobScheduler 优化后台功耗
-- 🔹 Android 6.0 Doze 模式引入
-- 🔹 Android 9.0 Adaptive Battery + App Standby Buckets
-- 🔹 Android 10 时期 EAS 成为主流调度路线
-- 🔹 Android 12+ 对精确闹钟、前台服务、后台启动的持续限制
-
-### 扩展(可选深入)
-
-- 🔸 GKI 对内核调度模块定制化的影响
-- 🔸 Android 16 功耗与调度相关的新变化
-
-<!-- outline-end -->
-
-## 先把三条时间线分开
-
-CPU 与功耗问题经常被写成一条简单的版本链：Android 版本升级，内核调度器随之更换，应用后台限制继续增加。这个说法会把不同层次的变化混在一起。阅读本章时，应分别追踪三条时间线：
+CPU 与功耗问题经常被写成一条简单的版本链：Android 版本升级，内核调度器随之更换，应用后台限制继续增加。这个说法会把不同层次的变化混在一起，需要分别追踪三条时间线：
 
 1. **应用 API 与兼容性规则**：`JobScheduler`、精确闹钟、前台服务和后台 Activity 启动限制。它们通常还受 `targetSdkVersion`、权限、豁免条件影响。
 2. **系统资源策略**：Doze、App Standby Buckets、Battery Saver、任务配额。它们由 framework 服务执行，也可能带有 DeviceConfig 和厂商配置。
 3. **内核与设备实现**：EAS、UClamp、CPUFreq、GKI、vendor module、`sched_ext`。同一个 Android 版本可以运行多条受支持的内核分支，不同设备也可以采用不同的调度和功耗参数。
 
-本文的平台源码基线是 Android 17 / API 37 / `android-17.0.0_r1`，内核基线是 `android17-6.18-2026-06_r6`。历史段落使用机制首次公开时的版本，不把后续版本新增的行为倒推到旧系统。
+平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为基准，内核以 `android17-6.18-2026-06_r6` 为基准。历史段落使用机制首次公开时的版本，不把后续版本新增的行为倒推到旧系统。
 
-> **关联章节**：EAS 的调度路径见 §5.2，Android 功耗控制面见 §5.6，后台任务选型见 §5.8。本章回答“变化发生在哪一层、从哪个版本开始”；具体实现由对应专题展开。
+> **关联章节**：EAS 的调度路径见 §5.2，Android 功耗控制面见 §5.6，后台任务选型见 §5.8。这里说明变化发生的层次和版本起点，具体实现由对应专题展开。
 
 ## Android 5.0：JobScheduler 把可延迟工作交给系统编排
 
@@ -153,7 +135,7 @@ int result = scheduler.schedule(job);
 - 用户要求在准确时刻发生的提醒，才考虑精确闹钟。
 - 与界面生命周期绑定的短任务，不应为了“后台化”而提交成系统任务。
 
-> **锚点核查**：Android 5.0 引入 `JobScheduler` 的结论成立；“后来只剩 JobScheduler/WorkManager 一条正规路径”的说法不成立。
+> **版本边界**：Android 5.0 引入 `JobScheduler`；后续版本仍保留多种后台执行入口，并未只剩 JobScheduler/WorkManager。
 
 ## Android 6.0—7.0：Doze 与 App Standby 控制设备空闲期
 
@@ -181,7 +163,7 @@ Android 7.0（API 24）增加较轻的空闲阶段。设备未充电且屏幕关
 
 同一版本还限制了若干高频隐式广播。例如，面向 Android 7.0 的应用不能再依赖 manifest 中的 `CONNECTIVITY_ACTION` 接收器获取所有连接变化；`ACTION_NEW_PICTURE` 与 `ACTION_NEW_VIDEO` 也不再按旧方式广播。这不是“系统删除了所有隐式广播”。运行时注册、显式广播以及后续文档列出的豁免广播仍有各自语义。
 
-> **锚点核查**：Android 6.0 引入 Doze 的结论成立；Android 7.0 扩大了设备移动时的空闲管理范围。维护窗口没有固定公开时刻表。
+> **版本边界**：Android 6.0 引入 Doze；Android 7.0 扩大了设备移动时的空闲管理范围。维护窗口没有固定公开时刻表。
 
 ## Android 8.0：后台服务与 manifest 广播受到 target SDK 约束
 
@@ -216,7 +198,7 @@ adb shell dumpsys usagestats
 
 待机桶是任务延后的一个输入。即使处于 Active，任务自身的网络、充电等约束仍需满足；即使进入 Rare，也不代表进程立刻被杀或所有前台功能失效。
 
-> **锚点核查**：Android 9 引入 App Standby Buckets 的结论成立。Adaptive Battery 会参与资源优先级判断，但分类算法与阈值不是应用可依赖的稳定接口。
+> **版本边界**：Android 9 引入 App Standby Buckets。Adaptive Battery 会参与资源优先级判断，但分类算法与阈值不是应用可依赖的稳定接口。
 
 ## Android 10—11：EAS 普及、task profile 与 GKI
 
@@ -273,7 +255,7 @@ Android 14 设备上，多数新安装、面向 API 33 及以上且声明 `SCHED
 
 面向 API 34 及以上的应用还必须为前台服务声明合适的类型及对应权限。系统在 `startForeground()` 时检查类型和前置条件；涉及 camera、microphone、location 等 while-in-use 权限时，后台启动限制更严格。
 
-> **锚点核查**：Android 12 以后持续限制精确闹钟、后台启动前台服务和后台 Activity 启动；这些规则按设备版本、target SDK、权限和豁免条件分段生效，不能压缩成“后台一律禁止”。
+> **版本边界**：Android 12 以后持续限制精确闹钟、后台启动前台服务和后台 Activity 启动；这些规则按设备版本、target SDK、权限和豁免条件分段生效，不能压缩成“后台一律禁止”。
 
 ## Android 15—16：从“能否启动”继续走向时长与配额管理
 
@@ -289,7 +271,7 @@ Android 16（API 36）调整了 JobScheduler 执行配额：
 
 Android 16 还提供 CPU/GPU headroom 查询能力，让应用评估近期可用的性能余量。headroom 是观测和自适应输入，不是锁频接口；渲染、游戏或计算负载应结合热状态和实际帧耗时调整工作量。
 
-> **扩展核查**：Android 16 的重要变化是 Job 配额覆盖范围扩大，以及性能余量观测能力增强，不是引入一套新的内核调度器。
+> **版本边界**：Android 16 扩大了 Job 配额覆盖范围，并增强性能余量观测能力，没有引入一套新的内核调度器。
 
 ## Android 17：诊断能力增强，内核锚点进入 6.18
 
@@ -433,7 +415,7 @@ Android 5 到 Android 17 的主线可以概括为：
 - Android 17 增加了 Job 等待原因、系统触发 profiling 和 listener 型 idle alarm 等诊断或细分接口；
 - 排查版本差异时，先确认设备版本、target SDK 和执行 API，再检查系统状态，最终进入调度、频率和热管理。
 
-掌握这套分层方法后，版本号不再是结论，而是选择规则和源码分支的第一条索引。
+在这套分层方法中，版本号用于选择规则和源码分支，不能直接作为结论。
 
 ## 参考与源码锚点
 

@@ -82,25 +82,6 @@ last_deepseek_cn_review_at: 2026-07-05
 ---
 # 5.9 ADPF 自适应性能框架
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 ADPF 的问题背景：负载波动、调频滞后与帧预算压力
-- 🔹 Performance Hint API：HintSession、target duration、actual duration 与系统侧响应
-- 🔹 Thermal API / Headroom API：热状态、热余量与低频异步采样边界
-- 🔹 Game Mode / GameState：用户模式、游戏状态与 ADPF 的协同边界
-- 🔹 Perfetto 观测路径：FrameTimeline、CPU frequency、thermal status 与 App 自定义 trace 标记
-- 🔹 版本演进与公开 API 边界
-
-### 扩展(可选深入)
-
-- 🔸 Unity / Unreal Engine 的 ADPF 集成
-- 🔸 OEM 对 ADPF 的定制差异
-- 🔸 Kotlin 协程线程迁移与 HintSession TID 绑定边界
-<!-- outline-end -->
-
 ## 为什么需要 ADPF
 
 移动设备的峰值性能由 SoC、供电和散热条件共同限制，应用负载却会不断变化。游戏可能在团战、粒子爆发或资源流式加载时突然变重；地图、相机和视频编辑也会出现相似的周期性负载。只依靠内核调度器和调频策略观察历史利用率，系统只能在负载出现后再响应。
@@ -161,7 +142,7 @@ PerformanceHintManager.Session
   → 设备 Power HAL 实现
 ```
 
-JNI 文件通过 `dlopen("libandroid.so")` 和 `dlsym()` 绑定 `APerformanceHint_*` 符号。NDK 实现再连接名为 `performance_hint` 的 Binder 服务。创建 session 后，周期性更新可使用 FMQ；FMQ 不可用时退回 `IHintSession` 的 `oneway` 调用。由此可以得到三个排查边界：
+JNI 文件通过 `dlopen("libandroid.so")` 和 `dlsym()` 绑定 `APerformanceHint_*` 符号。NDK 实现再连接名为 `performance_hint` 的 Binder 服务。创建 session 后，周期性更新可使用 FMQ；FMQ 不可用时退回 `IHintSession` 的 `oneway` 调用。排查时分为三层：
 
 1. 应用是否创建了有效 session，TID、target 和 actual 是否正确。
 2. framework 是否接收、校验并保持 session，应用 UID 是否仍在允许状态。
@@ -434,7 +415,7 @@ Android 17 的稳定契约止于 framework `IHintManager` 与 `android.hardware.
 
 ## 与其他章节的关系
 
-- **§5.5 Thermal 管控**：本章关注应用侧 Thermal API，§5.5 解释 Thermal HAL、系统服务和内核温控。
+- **§5.5 Thermal 管控**：这里关注应用侧 Thermal API，§5.5 解释 Thermal HAL、系统服务和内核温控。
 - **§5.6 Android 功耗管理**：EAS、DVFS 与功耗约束决定设备怎样响应性能请求。
 - **§7.5 优化策略**：动态画质、帧率和负载分级是消费 ADPF 信号的应用策略。
 - **§13.14 Perfetto DataGrid 与 Jank CUJ 标准库**：可用于查询帧、调度与 counter 数据。
