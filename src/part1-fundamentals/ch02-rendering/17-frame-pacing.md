@@ -394,7 +394,7 @@ I/FrameStatistics: offset from previous frame: <bucket histogram>
 I/FrameStatistics: frame latency: <bucket histogram>
 ```
 
-`idleFrames` 上升通常表示缓冲在 compositor queue 中多等了刷新周期；`lateFrames` 上升说明目标 presentation time 与完成时刻错位；`latencyFrames` 增大说明从 CPU 工作开始到 present 的在途周期变多。把这些直方图与 queue depth、GPU fence 和输入延迟放在同一测试窗口内比较，才能判断主动等待是在稳定节拍，还是目标 interval 配置不当。
+`idleFrames` 上升通常表示 buffer 在 compositor queue 中多等了刷新周期；`lateFrames` 上升说明目标 presentation time 与完成时刻错位；`latencyFrames` 增大说明从 CPU 工作开始到 present 的在途周期变多。把这些直方图与 queue depth、GPU fence 和输入延迟放在同一测试窗口内比较，才能判断主动等待是在稳定节拍，还是目标 interval 配置不当。
 
 ## 帧率投票、ARR 与版本边界
 
