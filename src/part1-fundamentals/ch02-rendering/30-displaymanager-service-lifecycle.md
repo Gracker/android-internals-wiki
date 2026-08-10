@@ -127,7 +127,7 @@ Android 17 在 `PHASE_WAIT_FOR_DEFAULT_DISPLAY` 等待，默认超时为 10 秒�
 
 `LocalDisplayAdapter.registerLocked()` 创建 `DisplayEventReceiver`，并先枚举 `DisplayControl.getPhysicalDisplayIds()`。对每个 id，它从 SurfaceFlinger 查询：
 
-- 物理显示令牌；
+- physical display token；
 - `StaticDisplayInfo`；
 - `DynamicDisplayInfo`；
 - `DesiredDisplayModeSpecs`。
@@ -251,7 +251,7 @@ DeviceState Layout 按显示器的物理地址和唯一标识查找设备，并�
 - display group name；
 - position；
 - lead display；
-- 亮度、刷新率和功耗节流配置 ID。
+- brightness / refresh-rate / power throttling 配置 id。
 
 logical display id 是运行时 framework 身份；稳定 physical id、EDID/port 与 unique id 用于识别设备。外接屏拔出再插入后，不应只按上一次 logical id 关联历史数据。
 
@@ -411,7 +411,7 @@ controller 负责汇总：
 
 - ON/OFF/DOZE 等目标 state；
 - 距离传感器与策略解除阻塞；
-- 自动或手动亮度；
+- auto/manual brightness；
 - HBM、thermal/power throttling；
 - brightness ramp；
 - 主导与跟随显示器的亮度关系。
@@ -593,8 +593,8 @@ adb shell logcat -b system -s \
 
 记录时至少保存：
 
-- 逻辑显示器 ID、唯一 ID、地址和显示组 ID；
-- 启用状态、当前状态与已提交状态；
+- logical display id、unique id、address、group id；
+- enabled/state/committedState；
 - 当前、默认和支持的显示模式与渲染时序；
 - primary DisplayDevice、physical display id/token；
 - WMS 的 `DisplayContent`、任务与窗口分布；
@@ -669,9 +669,9 @@ DMS 显示模式变化与应用逐帧生产是两个阶段。
 
 - SF Binder 排队；
 - HWC power mode call；
-- 面板或驱动的挂起与恢复；
+- panel/driver suspend/resume；
 - vendor backlight；
-- 显示卸载或辅助处理；
+- display offload/sidekick；
 - 上下电所需的栅栏或空闲等待。
 
 这段慢工作已经在 `mSyncRoot` 外。优化 DMS 锁不能缩短 HAL 或驱动自身的耗时。

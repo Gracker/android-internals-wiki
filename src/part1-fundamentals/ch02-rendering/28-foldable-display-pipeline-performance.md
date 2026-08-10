@@ -84,7 +84,7 @@ Android 17 的 `DeviceStateToLayoutMap` 从以下位置读取显示布局：
 - display group；
 - 前后位置；
 - lead display；
-- 亮度、刷新率、温控和功耗节流策略 ID。
+- brightness / refresh-rate / thermal / power throttling 策略 id。
 
 刷新率和亮度策略可以随布局改变，但 AOSP 没有“展开态固定 120 Hz、折叠态固定低刷新率”的通用规则。具体显示模式还要经过 `DisplayModeDirector`、设备配置、内容投票、热限制和用户设置。
 
@@ -277,7 +277,7 @@ lifecycleScope.launch(Dispatchers.Main) {
 
 `Sensor.TYPE_HINGE_ANGLE` 的类型值是 36，string type 为 `android.sensor.hinge_angle`。AOSP 传感器规范将它定义为：
 
-- 变化时上报；
+- on-change reporting mode；
 - 角度单位为度；
 - 默认传感器是唤醒传感器。
 
@@ -377,9 +377,9 @@ SurfaceFlinger FrontEnd 接收应用、WMS 和 Shell 的图层事务。Compositi
 分析并发内外屏时，需要分别记录：
 
 - display id 与物理地址；
-- 当前显示模式、分辨率、密度与刷新率；
+- active mode、resolution、density 与 refresh rate；
 - 目标输出的可见图层；
-- 设备合成或客户端合成；
+- DEVICE / CLIENT composition；
 - 每个显示器的送显栅栏。
 
 同一图层经镜像或投影出现在两个输出时，不能把两次送显合并成一条时间线。
@@ -531,7 +531,7 @@ adb shell dumpsys SurfaceFlinger --display
 
 - 渲染目标与应用缓冲区尺寸；
 - 刷新率和显示模式；
-- 客户端或设备合成；
+- CLIENT/DEVICE composition；
 - 可见图层集合与过渡牵引层；
 - GPU frequency/busy、内存带宽和 thermal 状态。
 

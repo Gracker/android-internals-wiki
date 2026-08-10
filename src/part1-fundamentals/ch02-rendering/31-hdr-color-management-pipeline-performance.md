@@ -212,9 +212,9 @@ Android 13 引入厂商可配置的 `libtonemap`，让 SurfaceFlinger 的 GPU �
 
 `android-17.0.0_r1` 中 `getToneMapper()` 默认选择 `ToneMapper13`。RenderEngine 传入：
 
-- 显示器最大亮度；
-- 当前显示亮度；
-- 内容最大亮度；
+- display maximum luminance；
+- current display luminance；
+- content maximum luminance；
 - 可选 `AHardwareBuffer` metadata；
 - render intent。
 
@@ -508,7 +508,7 @@ val srgb = p3.convert(ColorSpaces.Srgb)
 - `hasClientComposition`；
 - 图层源数据空间与显示输出数据空间；
 - `AGTM`、LUT、RenderEngine draw；
-- 客户端合成缓存命中或未命中。
+- client composition cache hit/miss。
 
 色彩场景变化后若 GPU 时间增加，先判断是否从 `DEVICE` 改为 `CLIENT`，再分析色调映射着色器。否则容易把图层数量、模糊或几何限制引起的回退错算成 HDR 算法成本。
 
