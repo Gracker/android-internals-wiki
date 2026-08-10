@@ -95,7 +95,7 @@ ART 已经模块化，并不表示 `boot.art` 一定位于 `/apex/com.android.ar
 
 Android 17 的 AOT 编译统一使用位置无关代码，`Dex2Oat::ProcessOptions()` 直接设置 `compile_pic_ = true`。“Boot Image 依赖位置相关机器码，地址稍变就无法运行”不符合当前实现。
 
-### 配置文件对类和方法的选择不同
+### profile 对类和方法的选择不同
 
 Boot Image Profile 同时携带类和方法信息：
 
@@ -221,7 +221,7 @@ Boot Image 的内存收益有两层来源：
 
 Boot Image 提供构建期生成的对象与元数据；Zygote preload 提供本次开机中的类初始化和额外对象。两者都能减少子进程重复工作，但对象来源、生成时机和调优入口不同。
 
-## 五类配置文件与清单的作用阶段
+## 五类 profile 与清单的作用阶段
 
 | 名称 | 作用对象 | 使用阶段 | 是否直接改变 Boot Image |
 | --- | --- | --- | --- |
@@ -247,7 +247,7 @@ Android 12 起，ART 是可更新的 Mainline 模块。早期启动阶段的 `od
 
 检查失败时，`odrefresh` 可以重新生成主 Boot Image、Mainline Extension 和需要更新的 System Server 产物，默认输出目录是 `/data/misc/apexdata/com.android.art/dalvik-cache`。完整主镜像编译失败时，源码还会尝试生成只覆盖 ART 模块 JAR 的最小镜像，并在后续启动重试完整编译。
 
-配置文件输入和运行时产物的边界如下：
+profile 输入和运行时产物的边界如下：
 
 - 官方文档所说“Boot Image Profile 只能随 OTA 更新”，对应系统镜像内的 framework profile。Mainline APEX 还可以携带模块自己的 `etc/boot-image.prof`，Android 17 会把已安装模块提供的 profile 加入扩展镜像编译。
 - `odrefresh` 可以在 ART/APEX 或 Boot Class Path 变化后，用当前系统和 APEX 提供的 profile 输入重新生成 `/data` 下的 `.art/.oat/.vdex`。

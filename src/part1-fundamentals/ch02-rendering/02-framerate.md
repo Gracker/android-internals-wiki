@@ -742,7 +742,7 @@ ORDER BY a.ts;
 - Layer vote 与 desired frame rate；
 - touch/idle/power 信号；
 - MRR mode switch 或 ARR render-rate 变化；
-- 选定的模式/帧率；
+- 选定的 mode/帧率；
 - 切换前后的 expected timeline。
 
 只看到刷新率轨道变化，不能说明是哪一个 Layer 请求，也不能说明它导致了当前 jank。
@@ -870,7 +870,7 @@ Framework 的 RefreshRateSelector 负责投票与 policy，Composer HAL 把所�
 
 ## Android 17 的帧率协作边界
 
-帧率评估需要检查生产者、SurfaceFlinger 和显示设备能否以一致的目标节拍协作：
+帧率评估需要检查 producer、SurfaceFlinger 和显示设备能否以一致的目标节拍协作：
 
 1. FPS 是吞吐量，present interval 描述视觉节拍，input-to-present 描述交互延迟；
 2. `doFrame`、RenderThread、SurfaceFrame 和 DisplayFrame 各有不同的 frame-time 口径；
