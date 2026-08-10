@@ -156,7 +156,7 @@ VSync 在 Android 中负责两类工作：
 - 每个可独立提交内容的 Surface 通常有自己的 BufferQueue 或等价队列；
 - App、视频解码器、Camera、游戏引擎等生产各自的 buffer；
 - SurfaceFlinger 从多个 layer 选择可用内容并组织合成；
-- HWC 决定哪些图层由设备合成，哪些交给 GPU 生成 client target；
+- HWC 决定哪些 layer 由设备 composition，哪些交给 GPU 生成 client target；
 - 显示控制器最终 scanout 的对象可能是硬件 plane，也可能包含 GPU 合成结果。
 
 VSync 不负责交换一对全局缓冲，而是为 buffer 生产、latch、合成和 present 提供时间约束。某个 App 的 buffer 未就绪时，SurfaceFlinger 可能继续使用旧内容，其他 layer 仍可正常更新。
@@ -246,7 +246,7 @@ Android 17 的硬件 VSync 状态包括 `Enabled`、`Disabled` 和 `Disallowed`�
 
 ### 3.4 present fence 是反馈，不代表光学完成
 
-HWC 的 present 操作会按显示、按帧返回显示栅栏。栅栏发出信号后，会为 Android 显示栈提供本轮 present 的时间锚点，SurfaceFlinger 可用它校准模型和更新 FrameTimeline。
+HWC 的 present 操作会按显示、按帧返回 present fence。栅栏发出信号后，会为 Android 显示栈提供本轮 present 的时间锚点，SurfaceFlinger 可用它校准模型和更新 FrameTimeline。
 
 present fence 不表示 panel 所有像素已经完成响应，也不表示人眼此刻已经看到稳定图像。Panel 扫描、传输、像素响应和显示后处理仍可能发生在这个边界之后。
 
@@ -389,7 +389,7 @@ if (!mFrameScheduled) {
 
 ## 六、SurfaceFlinger 的 VSync 路径
 
-SurfaceFlinger 不通过应用侧 EventThread 驱动主循环。`Scheduler::initVsync()` 把 SF 的 `MessageQueue` 注册到同一个节奏基准显示（pacesetter display）的 `VSyncDispatch`，注册名为 `"sf"`。
+SurfaceFlinger 不通过 App 侧 EventThread 驱动主循环。`Scheduler::initVsync()` 把 SF 的 `MessageQueue` 注册到同一个节奏基准显示（pacesetter display）的 `VSyncDispatch`，注册名为 `"sf"`。
 
 当 SF 有一帧需要处理时，`MessageQueue::scheduleFrame()` 使用当前 SF `workDuration` 调度回调。到时后，SF 处理 transaction、更新 layer snapshot、选择 buffer、制定 composition strategy，随后和 HWC 完成 validate/present。
 
@@ -453,7 +453,7 @@ Android 图形文章常把卡顿解释为“双缓冲切三缓冲”。这个模
 
 ### 8.2 队列加深会改变什么
 
-更多可周转缓冲可能减少生产者阻塞，但也可能让旧内容排在队列中，增加从输入到呈现的等待。是否丢弃旧 buffer、SF 本轮是否 latch 新内容、producer 是否受到背压限制，还取决于队列模式和 transaction 状态。
+更多可周转缓冲可能减少 producer 阻塞，但也可能让旧内容排在队列中，增加从输入到呈现的等待。是否丢弃旧 buffer、SF 本轮是否 latch 新内容、producer 是否受到背压限制，还取决于队列模式和 transaction 状态。
 
 下列推导都不成立：
 
@@ -557,7 +557,7 @@ VSync 问题容易在层级之间互相甩锅。可以按责任划分：
 | App framework | 请求帧、分发 callback、组织 `doFrame()` | `Choreographer.java`、`DisplayEventReceiver.java` |
 | SurfaceFlinger Scheduler | 预测、反馈控制、分发 App/SF wakeup | `VsyncSchedule`、`VSyncPredictor`、`VSyncReactor`、`VSyncDispatchTimerQueue` |
 | Composer HAL/HWC | 上报 VSync、接收 expected present 提示、返回 present fence | Composer3 AIDL、vendor composer 实现 |
-| 内核/显示驱动 | 显示控制器中断、vblank/TE、commit 与 fence 的底层实现 | vendor display driver；DRM/KMS 设备可看 `drm_vblank.c` |
+| kernel/显示驱动 | 显示控制器中断、vblank/TE、commit 与 fence 的底层实现 | vendor display driver；DRM/KMS 设备可看 `drm_vblank.c` |
 | panel | 扫描、TE、自刷新、像素响应 | panel/controller 规格与 vendor 实现 |
 
 内核行为以 `android17-6.18-2026-06_r6` 为准。通用内核的 `drivers/gpu/drm/drm_vblank.c` 和 `include/drm/drm_vblank.h` 说明 DRM vblank 计数、事件与时间戳框架；Android 设备是否走该路径，要看 SoC 显示驱动和 HWC 实现。通用 AOSP framework 无法证明某款设备使用哪根 panel 信号或哪种中断接线。
@@ -590,7 +590,7 @@ VSync 问题容易在层级之间互相甩锅。可以按责任划分：
 - App 的 buffer 是否在目标 deadline 前提交并可读？
 - SF 是否在目标显示帧 latch 了这块 buffer？
 - 当前使用 `late`、`early` 还是 `earlyGpu` 配置？
-- VSync 预测是否正在重新采样或切换显示模式？
+- VSync 预测是否正在重新采样或切换显示 mode？
 - 当前是固定刷新 mode、MRR 还是 ARR mode？
 - trace 中的 VSync rate、render rate、actual present rate 是否被混为一谈？
 - present fence 晚，是 SF/HWC 提交晚，还是显示后段反馈晚？

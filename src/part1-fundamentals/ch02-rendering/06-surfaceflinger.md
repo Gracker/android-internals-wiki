@@ -149,7 +149,7 @@ FrontEnd snapshot 是全局 Layer 状态，CompositionEngine 的 Output 面向�
 
 SurfaceFlinger 需要知道：
 
-- 哪个 buffer 已随事务到达；
+- 哪个 buffer 已随 transaction 到达；
 - Producer completion/acquire fence 是否满足读取条件；
 - 哪个 buffer 被本帧 snapshot 选中；
 - RenderEngine client target 何时可供 HWC 读取；
@@ -375,7 +375,7 @@ Android 17 AIDL `Composition.aidl` 中没有通用 `CLIENT_BYPASS` 枚举。厂�
 
 CompositionEngine 的 `Display::chooseCompositionStrategy()` 调用 `HWComposer::getDeviceCompositionChanges()`。后者根据当前是否已有 client composition 与 earliest-present 条件，决定能否尝试 `presentOrValidate()`。
 
-下面的控制流用于避免重复计算显示提交调用：
+下面的控制流用于避免重复计算 present 调用：
 
 ```text
 getDeviceCompositionChanges(display)
@@ -565,7 +565,7 @@ SurfaceFlinger 是系统级服务，同一主线程上的 transaction、snapshot
 
 ### 多窗口共享整屏 HWC 约束
 
-分屏、PiP、freeform、Dialog、IME、SystemUI 与 transition leash 会形成同一 Display 的可见 Layer 集合。HWC 按整套 Layer 状态选择策略，因此应用 A 的 alpha/scale、视频格式或 protected Layer 可能改变 App B 所在 Display 的 composition 方案。
+分屏、PiP、freeform、Dialog、IME、SystemUI 与 transition leash 会形成同一 Display 的可见 Layer 集合。HWC 按整套 Layer 状态选择策略，因此 App A 的 alpha/scale、视频格式或 protected Layer 可能改变 App B 所在 Display 的 composition 方案。
 
 窗口数量多不必然触发 CLIENT；单个具有复杂色彩或特效的 Layer 也可能要求 RenderEngine。比较前后策略时，应记录整个可见集合、Display mode Composer 输出。
 
