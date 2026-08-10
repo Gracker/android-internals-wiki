@@ -74,26 +74,6 @@ p2: 0
 
 # 卡顿原因体系
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 主线程耗时过长：Layout/Measure 过重、RecyclerView Bind 耗时、主线程 I/O
-- 🔹 RenderThread 瓶颈：GPU 过载、复杂 Canvas 操作、大量 Path 计算
-- 🔹 SurfaceFlinger 瓶颈：合成超时、Layer 过多、HWC 限制
-- 🔹 系统级原因：CPU 调度延迟（Runnable 状态过长）、低内存触发 GC、温控限频
-- 🔹 Binder 调用导致的主线程阻塞
-- 🔹 分析树：从现象到根因的分析决策路径
-
-### 扩展（可选深入）
-
-- 🔸 WebView 渲染导致的 Jank
-- 🔸 多窗口/分屏场景的特殊 Jank 问题
-- 🔸 动画与手势场景的 Jank 特征
-
-<!-- outline-end -->
-
 ## 原因分析从责任边界开始
 
 一次异常帧常同时出现长方法、Runnable 等待、Binder transaction、GC、GPU busy 和 late present。它们处在同一个时间窗口，不代表每个事件都是根因。可复核的结论至少回答三个问题：

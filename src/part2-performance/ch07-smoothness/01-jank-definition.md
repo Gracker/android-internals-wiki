@@ -101,25 +101,6 @@ last_task9_review_notes: "2026-07-11 Task9 deep-review: pass-tech-review。P0/P1
 ---
 # 卡顿的定义与分类
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 广义流畅性：卡顿、响应慢、ANR 是同一条体验链上的不同失效形式
-- 🔹 Jank 的标准定义：帧未在预期 VSync 周期内完成（60Hz=16.67ms / 90Hz=11.11ms / 120Hz=8.33ms）
-- 🔹 Google 的 Jank 分类：App Jank vs SF Jank vs Display Jank
-- 🔹 FrameTimeline 与 JankType 的对应关系（Android 12+）
-- 🔹 掉帧率（Janky Frame Rate）、连续掉帧（Frozen Frame）的区别
-- 🔹 用户感知与技术指标的映射：多少 ms 延迟人能感知到
-
-### 扩展（可选深入）
-
-- 🔸 各厂商对 Jank 定义的差异（如华为的标准 vs Google 的标准）
-- 🔸 Perfetto FrameTimeline 中 Jank 类型的详细解读
-
-<!-- outline-end -->
-
 ## 从用户描述到可验证问题
 
 “页面有点卡”可能对应三类问题：画面节奏异常、输入到可见反馈过慢、应用没有在系统规定的时间内响应。它们都会破坏流畅体验，分析入口却不同。
@@ -255,7 +236,7 @@ ANR 由系统针对输入分发、广播、前台服务、ContentProvider 等响
 6. 在已经锁定的帧窗口内检查 Binder、调度、锁、I/O、GC、GPU queue 和 fence，避免从全局慢事件反推帧责任。
 7. 观察相邻帧。Stuffing、Dropped、模式切换和预测偏差都依赖前后关系。
 
-Binder transaction、GC 或某个长 slice 只能说明它与帧窗口重叠。要把它写成根因，还需证明它位于责任线程或依赖路径，并足以解释 finish/present 的偏差。详细 SQL 与因果分析放在 [7.3 卡顿分析流程与方法](03-jank-methodology.md)，本章只固定归因规则。
+Binder transaction、GC 或某个长 slice 只能说明它与帧窗口重叠。要把它写成根因，还需证明它位于责任线程或依赖路径，并足以解释 finish/present 的偏差。详细 SQL 与因果分析放在 [7.3 卡顿分析流程与方法](03-jank-methodology.md)，这里只固定归因规则。
 
 ## JankStats 的角色
 
@@ -280,8 +261,8 @@ AndroidX `JankStats` 面向应用内逐帧监测，可把页面、交互状态�
 ## 版本边界
 
 - Android 12 / API 31：FrameTimeline 进入现代逐帧归因工具链；旧设备仍需依赖 Choreographer、RenderThread、SurfaceFlinger 与 VSync 时序。
-- Android 17 / API 37：本章以 `android-17.0.0_r1` 的 Scheduler/FrameTimeline 与 `JankInfo.h` 为源码锚点；`NonAnimating`、`AppResyncedJitter` 和显示状态相关位均按该 tag 解释。
-- Kernel：本章结论位于 framework、SurfaceFlinger、Composer HAL 与 trace 数据层。追踪 dma-buf、dma-fence、sync_file 或显示驱动时，kernel 锚点使用 `android17-6.18-2026-06_r6`。
+- Android 17 / API 37：源码锚点为 `android-17.0.0_r1` 的 Scheduler/FrameTimeline 与 `JankInfo.h`；`NonAnimating`、`AppResyncedJitter` 和显示状态相关位均按该 tag 解释。
+- Kernel：相关结论位于 framework、SurfaceFlinger、Composer HAL 与 trace 数据层。追踪 dma-buf、dma-fence、sync_file 或显示驱动时，kernel 锚点使用 `android17-6.18-2026-06_r6`。
 
 ## 与其他章节的关系
 
