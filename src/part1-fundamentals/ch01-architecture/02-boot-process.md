@@ -204,7 +204,7 @@ Zygote fork 使用 Copy-on-Write 共享未修改页面。它降低公共运行�
 
 ## SystemServer：四组服务与 APEX 服务阶段
 
-Android 17 的 `SystemServer.main()` 进入 `run()`，写入 `BOOT_PROGRESS_SYSTEM_RUN`，准备 Looper、系统上下文和 Mainline module 初始化，再执行四组服务：
+Android 17 的 `SystemServer.main()` 进入 `run()`，写入 `BOOT_PROGRESS_SYSTEM_RUN`，准备 Looper、system context 和 Mainline module 初始化，再执行四组服务：
 
 ```java
 // AOSP android-17.0.0_r1
