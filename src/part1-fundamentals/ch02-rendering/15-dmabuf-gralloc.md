@@ -277,7 +277,7 @@ Android 12 的 GKI 2.0 用 DMA-BUF Heaps 替换 ION 作为 GKI 分配框架。`l
 
 - 宽度或高度；
 - 像素格式；
-- 图层数；
+- layer count；
 - 现有用途不能覆盖新用途；
 - 受保护用途状态变化。
 

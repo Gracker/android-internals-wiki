@@ -139,7 +139,7 @@ signal 是单向状态变化。已经 signal 的栅栏不会回到 pending。多
 - `sync_file_get_fence()`：从 fd 取得栅栏引用；
 - `SYNC_IOC_MERGE`：建立新的合并 sync_file；
 - `SYNC_IOC_FILE_INFO`：返回 sync_file 名称、整体状态，以及内部栅栏的驱动、timeline、状态与 signal timestamp；
-- 轮询回调：栅栏发出信号后唤醒等待者。
+- poll callback：fence signal 后唤醒等待者。
 
 关闭 sync_file 文件描述符会释放该文件持有的栅栏引用。它不会自动释放 GraphicBuffer，也不会改变 BufferQueue 槽位状态；buffer 和栅栏是两类对象。
 
@@ -230,7 +230,7 @@ sequenceDiagram
         SF->>HWC: setClientTarget(buffer, fence)
     end
     HWC->>D: present
-    HWC-->>SF: 显示栅栏 + 各图层释放栅栏
+    HWC-->>SF: display present fence + per-layer release fences
     SF-->>BBQ: buffer release callback(release fence)
     BBQ-->>RT: release fence later returned by dequeueBuffer() 返回
 ```
@@ -316,7 +316,7 @@ Fence wait 是因果链的观察点，并不自动等同于缺陷。先确定 wa
 | present fence 晚 | display present 链路晚 | HWC 验证/ present、display mode、FrameTimeline |
 | CPU 上 `sync_wait` 很长 | 调用线程被同步阻塞 | 调用栈、是否可改为 GPU-side wait、driver forward progress |
 | fence 已 signal 但帧仍晚 | 同步完成后还有调度、latch、composition 或显示延迟 | sched、SF snapshot、HWC 与 display |
-| 栅栏长期待处理且驱动无进展 | GPU/显示挂起或依赖环 | 驱动错误、重置、IOMMU 故障、内核日志 |
+| fence 长期 pending 且 driver 无进展 | GPU / display hang 或依赖环 | driver error、reset、IOMMU fault、kernel log |
 
 标准 App Window 还要区分本地 `queueBuffer()` 与 SF 收到 BLAST 事务的时间。`queueBuffer()` 返回只说明帧进入应用侧 BLAST consumer，不代表 SurfaceFlinger 已看到 BufferTX。
 
@@ -349,7 +349,7 @@ data_sources {
 3. 找出长等待对应的驱动、时间线、上下文、序列号和信号时刻。
 4. 回到信号方之前的 CPU 调度、GPU queue、HWC、display 或错误事件。
 
-只看等待时长无法区分生产者晚、消费者持有过久、队列堆积、线程抢占或硬件挂起。
+只看等待时长无法区分生产者晚、消费者持有过久、queue-stuffing、线程抢占或硬件挂起。
 
 ## 11. `sw_sync` 的边界
 
@@ -361,7 +361,7 @@ kernel `drivers/dma-buf/sw_sync.c` 提供软件 timeline，主要用于测试、
 
 ### Android 7 / API 24
 
-HWC2 已明确图层/客户端目标获取栅栏、各图层释放栅栏与显示栅栏的接口职责，因此 Android 7 可作为现代基线。
+HWC2 已明确图层/ client target acquire fence、各图层释放栅栏与显示栅栏的接口职责，因此 Android 7 可作为现代基线。
 
 ### Android 8–11
 
