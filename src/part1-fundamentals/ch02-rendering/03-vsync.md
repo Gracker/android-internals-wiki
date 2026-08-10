@@ -159,7 +159,7 @@ VSync 在 Android 中负责两类工作：
 - HWC 决定哪些图层由设备合成，哪些交给 GPU 生成 client target；
 - 显示控制器最终 scanout 的对象可能是硬件 plane，也可能包含 GPU 合成结果。
 
-VSync 不负责交换一对全局缓冲，而是为缓冲生产、latch、合成和 present 提供时间约束。某个应用的缓冲未就绪时，SurfaceFlinger 可能继续使用旧内容，其他图层仍可正常更新。
+VSync 不负责交换一对全局缓冲，而是为 buffer 生产、latch、合成和 present 提供时间约束。某个 App 的 buffer 未就绪时，SurfaceFlinger 可能继续使用旧内容，其他 layer 仍可正常更新。
 
 ---
 
@@ -226,7 +226,7 @@ flowchart LR
 
 > 从给定时刻往后，哪个时刻最适合作为下一次目标 VSync？
 
-它不生成更多图像，也不会替应用补帧。
+它不生成更多图像，也不会替 App 补帧。
 
 ### 3.2 ARR 的单样本预测分支
 
@@ -246,7 +246,7 @@ Android 17 的硬件 VSync 状态包括 `Enabled`、`Disabled` 和 `Disallowed`�
 
 ### 3.4 present fence 是反馈，不代表光学完成
 
-HWC 的 present 操作会按显示、按帧返回显示栅栏。栅栏发出信号后，会为 Android 显示栈提供本轮提交的时间锚点，SurfaceFlinger 可用它校准模型和更新 FrameTimeline。
+HWC 的 present 操作会按显示、按帧返回显示栅栏。栅栏发出信号后，会为 Android 显示栈提供本轮 present 的时间锚点，SurfaceFlinger 可用它校准模型和更新 FrameTimeline。
 
 present fence 不表示 panel 所有像素已经完成响应，也不表示人眼此刻已经看到稳定图像。Panel 扫描、传输、像素响应和显示后处理仍可能发生在这个边界之后。
 
@@ -383,7 +383,7 @@ if (!mFrameScheduled) {
 - `deadlineTimestamp`；
 - `expectedPresentationTime`。
 
-`Choreographer.FrameData` 把这些信息交给回调。应用和系统可以围绕首选 timeline 工作，也能在错过首选目标时识别后续合法目标。在高刷新率、不同渲染节奏和提前启动配置下，这比只传一个裸时间戳更有表达力。
+`Choreographer.FrameData` 把这些信息交给回调。应用和系统可以围绕首选 timeline 工作，也能在错过首选目标时识别后续合法目标。在高刷新率、不同渲染 cadence 和提前启动配置下，这比只传一个裸时间戳更有表达力。
 
 ---
 
@@ -408,14 +408,14 @@ App 与 SF 共享同一物理显示的预测基础，但它们有不同的注册
 
 ### 7.1 Android 15 引入 ARR
 
-Android 15 引入自适应刷新率（Adaptive Refresh Rate，ARR）。ARR 所需的 `vrrConfig`、`getDisplayConfigurations()` 与 `notifyExpectedPresent()` 基础契约从 Composer3 AIDL 第 3 版开始出现。Android 17 标签同时保留第 3、4、5 版的冻结快照；此处以第 3 版标出这组契约的起点，不表示 Android 17 设备只能实现第 version 3。支持 ARR 的 mode 在 `DisplayConfiguration` 中提供 `vrrConfig`：
+Android 15 引入自适应刷新率（Adaptive Refresh Rate，ARR）。ARR 所需的 `vrrConfig`、`getDisplayConfigurations()` 与 `notifyExpectedPresent()` 基础契约从 Composer3 AIDL version 3 开始出现。Android 17 tag 同时保留 version 3、4、5 的冻结快照；此处以 version 3 标出这组契约的起点，不表示 Android 17 设备只能实现 version 3。支持 ARR 的 mode 在 `DisplayConfiguration` 中提供 `vrrConfig`：
 
 - `vsyncPeriod` 表示显示 VSync/TE 节奏；
 - `VrrConfig.minFrameIntervalNs` 约束最快呈现间隔；
 - `DisplayCommand.frameIntervalNs` 提示后续内容 cadence；
 - `notifyExpectedPresent` 可提前告知下一次预计呈现及后续间隔。
 
-在非 ARR 显示模式中，`vsyncPeriod` 通常对应当前显示刷新周期。ARR mode ARR 显示模式中，两者可以解耦。
+在非 ARR mode 中，`vsyncPeriod` 通常对应当前显示刷新周期。ARR mode 中，两者可以解耦。
 
 ### 7.2 一个具体例子
 
@@ -445,7 +445,7 @@ Android 图形文章常把卡顿解释为“双缓冲切三缓冲”。这个模
 - producer 最多可同时 dequeue 的数量；
 - consumer 最多可 acquire 的数量；
 - async/non-blocking 模式；
-- 当前 `DEQUEUED`、`QUEUED`、`ACQUIRED`、`FREE` 槽位分布；
+- 当前 `DEQUEUED`、`QUEUED`、`ACQUIRED`、`FREE` slot 分布；
 - release fence 是否 signal；
 - BLAST 待释放缓冲和当前刷新率策略。
 
@@ -453,7 +453,7 @@ Android 图形文章常把卡顿解释为“双缓冲切三缓冲”。这个模
 
 ### 8.2 队列加深会改变什么
 
-更多可周转缓冲可能减少生产者阻塞，但也可能让旧内容排在队列中，增加从输入到呈现的等待。是否丢弃旧缓冲、SF 本轮是否锁存新内容、producer 是否受到背压限制，还取决于队列模式和事务状态。
+更多可周转缓冲可能减少生产者阻塞，但也可能让旧内容排在队列中，增加从输入到呈现的等待。是否丢弃旧 buffer、SF 本轮是否 latch 新内容、producer 是否受到背压限制，还取决于队列模式和 transaction 状态。
 
 下列推导都不成立：
 
@@ -558,7 +558,7 @@ VSync 问题容易在层级之间互相甩锅。可以按责任划分：
 | SurfaceFlinger Scheduler | 预测、反馈控制、分发 App/SF wakeup | `VsyncSchedule`、`VSyncPredictor`、`VSyncReactor`、`VSyncDispatchTimerQueue` |
 | Composer HAL/HWC | 上报 VSync、接收 expected present 提示、返回 present fence | Composer3 AIDL、vendor composer 实现 |
 | 内核/显示驱动 | 显示控制器中断、vblank/TE、commit 与 fence 的底层实现 | vendor display driver；DRM/KMS 设备可看 `drm_vblank.c` |
-| panel | 扫描、TE、自刷新、像素响应 | panel/controller 规格与厂商实现 |
+| panel | 扫描、TE、自刷新、像素响应 | panel/controller 规格与 vendor 实现 |
 
 内核行为以 `android17-6.18-2026-06_r6` 为准。通用内核的 `drivers/gpu/drm/drm_vblank.c` 和 `include/drm/drm_vblank.h` 说明 DRM vblank 计数、事件与时间戳框架；Android 设备是否走该路径，要看 SoC 显示驱动和 HWC 实现。通用 AOSP 框架无法证明某款设备使用哪根面板信号或哪种中断接线。
 

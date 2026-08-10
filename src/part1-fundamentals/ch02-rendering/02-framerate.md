@@ -138,7 +138,7 @@ auto_promoted_by: openclaw-task6
 
 # 帧率与刷新率
 
-打开 Perfetto 后，应用轨道里可能有一帧标红，Display 轨道的刷新率又恰好从 120 Hz 切到 60 Hz。仅凭这两个现象，不能断定刷新率切换导致了卡顿。红色帧可能来自应用迟交、GPU 迟完成或 BufferQueue 积压；刷新率变化也可能只是内容投票或系统策略的正常结果。
+打开 Perfetto 后，应用轨道里可能有一帧标红，Display 轨道的刷新率又恰好从 120 Hz 切到 60 Hz。仅凭这两个现象，不能断定刷新率切换导致了卡顿。红色帧可能来自应用迟交、GPU 迟完成或 BufferQueue 积压；刷新率变化也可能只是内容投票或系统 policy 的正常结果。
 
 分析帧率问题时，先把三个量分开：
 
@@ -195,7 +195,7 @@ refresh period = 1 second / refresh rate
 
 ### 1.4 呈现间隔比平均 FPS更接近视觉节奏
 
-连续新画面的显示间隔（present-to-present）能反映节拍是否均匀。例如，60 FPS 可以是稳定的 16.67 ms，也可能夹杂 8 ms、25 ms、8 ms、25 ms 的交替。
+连续新画面的 present-to-present 间隔能反映节拍是否均匀。例如，60 FPS 可以是稳定的 16.67 ms，也可能夹杂 8 ms、25 ms、8 ms、25 ms 的交替。
 
 不均匀节拍常见于：
 
@@ -237,7 +237,7 @@ refresh period = 1 second / refresh rate
 - 视频可能按源帧率工作；
 - 应用也可能因为晚交而错过目标帧。
 
-是否属于卡顿，要结合该帧的 expected timeline、actual timeline、显示类型（present type）和业务目标判断。
+是否属于 jank，要结合该帧的 expected timeline、actual timeline、显示类型（present type）和业务目标判断。
 
 ## 3. MRR、ARR、VRR 与 LTPO
 
@@ -247,9 +247,9 @@ refresh period = 1 second / refresh rate
 
 Android 11 为多刷新率（Multiple Refresh Rate，MRR）增加了专门的平台和 Composer HAL 2.4 支持。设备可以暴露多个 display config，例如 1080p@60 Hz 和 1080p@120 Hz。
 
-`CONFIG_GROUP` 用于标识哪些配置适合相互切换。同组通常表示除刷新率外的关键显示属性兼容，平台可以要求无缝切换（seamless switch）。是否能在某个时刻无缝切换仍由 HWC 返回结果决定，不能只凭“分辨率相同”下结论。
+`CONFIG_GROUP` 用于标识哪些配置适合相互切换。同组通常表示除刷新率外的关键显示属性兼容，平台可以要求 seamless 切换（seamless switch）。是否能在某个时刻无缝切换仍由 HWC 返回结果决定，不能只凭“分辨率相同”下结论。
 
-MRR 的特征是：选择结果可能要求从一个 display mode 切换到另一个模式。
+MRR 的特征是：选择结果可能要求从一个 display mode 切换到另一个 mode。
 
 ### 3.2 ARR：单个显示配置内按离散 VSync 步进更新
 
@@ -264,7 +264,7 @@ Composer3 的 `DisplayConfiguration.aidl` 与 `VrrConfig.aidl` 描述 `vsyncPeri
 
 ### 3.3 VRR：硬件能力的泛称
 
-可变刷新率（Variable Refresh Rate，VRR）描述显示硬件可以改变刷新节拍的能力。AOSP ARR 代码中也会使用 `vrr` 命名，但硬件市场中的 VRR、Composer3 `VrrConfig` 和 Android 的 ARR 策略不应视为完全相同的概念。
+可变刷新率（Variable Refresh Rate，VRR）描述显示硬件可以改变刷新节拍的能力。AOSP ARR 代码中也会使用 `vrr` 命名，但硬件市场中的 VRR、Composer3 `VrrConfig` 和 Android 的 ARR policy 不应视为完全相同的概念。
 
 验证 Android ARR 应至少确认：
 
@@ -575,7 +575,7 @@ FrameTimeline 同时描述：
 | 蓝色 | 丢帧（dropped frame） |
 | 浅绿色 | 高延迟状态（high-latency state），节拍可能稳定但整体呈现偏晚 |
 
-颜色是 UI 辅助。结论应读取 `jank_type`、`present_type`、`on_time_finish`、Layer 名称和对应流程。
+颜色是 UI 辅助。结论应读取 `jank_type`、`present_type`、`on_time_finish`、Layer 名称和对应 flow。
 
 ### 7.4 Janky 不等于“duration 大于一个刷新周期”
 
@@ -595,7 +595,7 @@ FrameTimeline 同时描述：
 
 “错过目标帧（missed frame）”可以表示错过目标 deadline，也可以泛指显示端没有更新新内容。“丢帧（dropped frame）”在 FrameTimeline 有具体分类：SurfaceFlinger 可能选择更新的帧，应用侧也可能没有及时把 UI 状态推给 RenderThread。
 
-不要写“所有 missed 都属于卡顿”这类集合关系。可操作的表述是：
+不要写“所有 missed 都属于 janky”这类集合关系。可操作的表述是：
 
 - 哪一个 SurfaceFrame；
 - 它的 expected 与 actual 是什么；
@@ -627,7 +627,7 @@ API 31 及以上可用 `TOTAL_DURATION < DEADLINE` 判断应用是否满足其�
 
 ### 8.2 JankStats
 
-JankStats 为不同 API 级别封装 frame timing 并附加 UI 状态。默认启发式倍数（heuristic multiplier）为 2，但这是库的报告阈值，不是系统 FrameTimeline 的卡顿定义。
+JankStats 为不同 API 级别封装 frame timing 并附加 UI 状态。默认启发式倍数（heuristic multiplier）为 2，但这是库的报告阈值，不是系统 FrameTimeline 的 jank 定义。
 
 用于线上监控时，应记录：
 
@@ -647,7 +647,7 @@ JankStats 为不同 API 级别封装 frame timing 并附加 UI 状态。默认�
 
 ### 8.4 Perfetto FrameTimeline
 
-先用下面的查询列出目标进程的实际 SurfaceFrame，不要用 `doFrame` 数量代替帧数：
+先用下面的查询列出目标进程的 actual SurfaceFrame，不要用 `doFrame` 数量代替帧数：
 
 ```sql
 SELECT

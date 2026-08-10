@@ -314,7 +314,7 @@ Layout 通过 `layout(l, t, r, b)` 和 `onLayout()` 确定子 View 的边界。�
 
 这并不意味着未失效节点完全没有成本。属性同步、树遍历、裁剪、合批、资源生命周期和最终 GPU 工作仍可能涉及该节点。DisplayList 主要减少重复执行 Java 绘制代码和重复生成绘制命令的成本。
 
-Android 17 的原生 `RenderNode` 同时维护当前状态与暂存（staging）状态。与 DisplayList 同步有关的字段和方法包括：
+Android 17 的 native `RenderNode` 同时维护当前状态与暂存（staging）状态。与 DisplayList 同步有关的字段和方法包括：
 
 ```cpp
 bool mNeedsDisplayListSync;
@@ -352,7 +352,7 @@ Java 层 `RecordingCanvas` 的绘制 API 最终进入 `BaseRecordingCanvas` 等�
 
 `frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp` 中的 `DrawFrameTask::run()` 会执行帧状态同步，并按条件决定何时解除 UI 线程等待；随后由 `CanvasContext` 执行绘制和缓冲区交换。
 
-`syncAndDrawFrame()` 的返回值或切片结束，不能当作 GPU 完成、BufferQueue 消费完成或屏幕呈现完成的证据。
+`syncAndDrawFrame()` 的返回值或 slice 结束，不能当作 GPU 完成、BufferQueue 消费完成或屏幕呈现完成的证据。
 
 ### 4.4 RenderThread 和 GPU 允许并行
 
@@ -365,7 +365,7 @@ GPU 执行 Frame N-1
 SurfaceFlinger 合成更早的一帧
 ```
 
-这种重叠是图形管线维持吞吐量的基础。“某条 GPU 轨道超过一个刷新周期，当前帧就一定掉帧”不是充分判断。需要结合依赖栅栏、队列深度和 FrameTimeline，确认该 GPU 工作是否阻塞目标帧的截止时间（deadline）。
+这种重叠是图形管线维持吞吐量的基础。“某条 GPU Track 超过一个刷新周期，当前帧就一定掉帧”不是充分判断。需要结合依赖 fence、队列深度和 FrameTimeline，确认该 GPU 工作是否阻塞目标帧的截止时间（deadline）。
 
 ### 4.5 SkiaGL、SkiaVulkan 与渲染后端
 
@@ -402,7 +402,7 @@ queueBuffer(fence)
 
 `queueBuffer()` 主要提交缓冲区槽位、元数据和同步信息。GraphicBuffer 背后的内存通过句柄共享，正常路径不需要在 `queueBuffer()` 时复制整张图片。
 
-`queueBuffer()` 成功只说明生产者把缓冲区置为可消费状态。它没有证明 SurfaceFlinger 已经锁存，更没有证明显示设备已经呈现。
+`queueBuffer()` 成功只说明生产者把缓冲区置为可消费状态。它没有证明 SurfaceFlinger 已经 latch，更没有证明显示设备已经呈现。
 
 ### 5.2 槽位状态
 
@@ -490,9 +490,9 @@ SurfaceFlinger 的 Layer 追踪中可看到形如 `BufferTX - <layerName>` 的�
 | --- | --- | --- |
 | 获取栅栏（acquire fence） | 消费者 | 生产者对该缓冲区的写入何时完成，消费者何时可以安全读取 |
 | 释放栅栏（release fence） | 后续复用该缓冲区的一方 | 当前消费者何时不再使用该缓冲区，何时可以安全重写 |
-| 显示栅栏（present fence） | SurfaceFlinger / 显示时序追踪 | 当前显示提交何时在显示管线的呈现边界完成 |
+| 显示栅栏（present fence） | SurfaceFlinger / 显示时序追踪 | 当前显示提交何时在显示管线的 present 边界完成 |
 
-在应用到 SurfaceFlinger 的队列中，应用是 producer，BLAST/系统侧消费逻辑接收带有 acquire fence 的缓冲区。到了 HWC 和显示设备边界，SurfaceFlinger 又要处理客户端目标（client target）、各 Layer 和 display present 相关的栅栏。
+在应用到 SurfaceFlinger 的队列中，应用是 producer，BLAST/系统侧消费逻辑接收带有 acquire fence 的缓冲区。到了 HWC 和显示设备边界，SurfaceFlinger 又要处理客户端目标（client target）、各 Layer 和 display present 相关的 fence。
 
 ### 7.1 Present fence 的边界
 
@@ -570,7 +570,7 @@ Hardware Composer HAL 连接 SurfaceFlinger 与设备显示合成能力。Surfac
 
 | 类型 | 主要执行者 | 说明 |
 | --- | --- | --- |
-| 设备合成（Device composition） | 显示控制器 / HWC 能力 | Layer 可由硬件平面等资源直接组合 |
+| 设备合成（Device composition） | 显示控制器 / HWC 能力 | Layer 可由硬件 plane 等资源直接组合 |
 | 客户端合成（Client composition） | SurfaceFlinger 的 RenderEngine | 先把相应 Layer 合成为 client target，再交给 HWC |
 
 同一帧可以混合使用两者。某个 Layer 的合成类型（composition type）也可能随帧变化，因此必须查看该帧的 HWC/SurfaceFlinger 数据，不能按应用或控件类型永久归类。
@@ -604,7 +604,7 @@ Display present
 显示控制器扫描与面板响应
 ```
 
-把它们统一称作“前台、后台、显示中三个缓冲区”会混淆应用 BufferQueue、HWC 客户端目标与扫描输出（scanout）。排查时应明确当前 buffer 的 owner、queue、slot、frame number 和栅栏。
+把它们统一称作“前台、后台、显示中三个缓冲区”会混淆应用 BufferQueue、HWC client target 与扫描输出（scanout）。排查时应明确当前 buffer 的 owner、queue、slot、frame number 和 fence。
 
 ## 11. 硬件加速与软件绘制
 
@@ -700,7 +700,7 @@ RenderThread CPU slice 长度不等于 GPU duration。二者可能重叠，也�
 
 | 观察 | 不能直接推出 | 还需要的证据 |
 | --- | --- | --- |
-| `performTraversals` 出现 | 完整 measure/layout/draw 都已执行 | 内部切片、布局标志、脏区域 |
+| `performTraversals` 出现 | 完整 measure/layout/draw 都已执行 | 内部 slice、布局标志、脏区域 |
 | `syncAndDrawFrame` 返回 | GPU 或显示已完成 | GPU fence、`queueBuffer`、FrameTimeline |
 | `queueBuffer` 成功 | 画面已经显示 | BLAST/SF latch、HWC present |
 | GPU Track 超过一个周期 | 该工作必然导致当前帧掉帧 | GPU 依赖、frame id、deadline |
@@ -712,7 +712,7 @@ RenderThread CPU slice 长度不等于 GPU duration。二者可能重叠，也�
 
 假设列表滑动时出现一次明显停顿，可以按下面的顺序检查：
 
-1. 在 FrameTimeline 中锁定实际晚到的帧，不要只找最长切片。
+1. 在 FrameTimeline 中锁定实际晚到的帧，不要只找最长 slice。
 2. 查看应用 `doFrame` 是否晚启动；若晚启动，继续看 Runnable、Binder、锁、GC 和调度。
 3. 若 `doFrame` 按时启动，检查 INPUT、ANIMATION、TRAVERSAL 的耗时与条件分支。
 4. 若 UI 侧按时提交，检查 RenderThread 是否在同步、dequeue、绘制或 swap 阶段等待。
@@ -751,7 +751,7 @@ SurfaceControl 事务和渲染相关公开 API 继续扩展，系统合成与应
 
 ### Android 12 / API 31
 
-FrameTimeline 提供 expected/actual present 时间与卡顿分类，为跨应用和 SurfaceFlinger 的单帧分析提供稳定入口。
+FrameTimeline 提供 expected/actual present 时间与 jank 分类，为跨应用和 SurfaceFlinger 的单帧分析提供稳定入口。
 
 ### Android 13 到 Android 16
 
