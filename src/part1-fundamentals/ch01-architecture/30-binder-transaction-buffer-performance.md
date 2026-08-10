@@ -48,7 +48,7 @@ sources:
 
 # 1.30 Android 17 Binder Transaction Buffer：内核分配、异步预算与 RPC 上限
 
-Binder 不存在适用于所有调用的“单笔 1 MiB 上限”。kernel Binder 为每个进程建立接收事务的映射区，多笔在途请求、oneway、回复和 Binder 对象会共同占用这块空间。RPC Binder 使用另一套传输和协议上限。“Binder 上限是 1 MiB”这种说法缺少并发、方向、异步预算和协议头等必要条件。
+Binder 不存在适用于所有调用的“单笔 1 MiB 上限”。kernel Binder 为每个进程建立接收事务的映射区，多笔在途请求、oneway、回复和 Binder object 会共同占用这块空间。RPC Binder 使用另一套传输和协议上限。“Binder 上限是 1 MiB”这种说法缺少并发、方向、异步预算和协议头等必要条件。
 
 以下分析以 `android-17.0.0_r1` 和 `android17-6.18-2026-06_r6` 为准，覆盖映射区大小、驱动分配与回收、单向事务压力，以及 Android 17 中 600 KiB RPC 上限对应的路径。事务时序观测见 [1.32](01.32-android17-binder-ipc-performance-monitoring.md)，oneway 排队见 [1.25](01.25-android17-binder-ipc-async-batch-pipeline.md)。
 
@@ -158,7 +158,7 @@ allocated = align(data_size, pointer_size)
 
 对于同步请求，Android 17 的 `IPCThreadState` 在发送回复前执行 `buffer.setDataSize(0)`，释放请求 buffer，避免客户端收到回复后立即发起下一笔调用时，旧请求仍占用服务端空间。
 
-oneway 没有回复。它可能在目标进程或目标节点的异步队列中等待，缓冲区要到服务端完成处理并释放 Parcel 后才归还。高频 oneway 的 buffer 生命周期并不天然比同步调用短。
+oneway 没有回复。它可能在目标进程或目标 node 的异步队列中等待，缓冲区要到服务端完成处理并释放 Parcel 后才归还。高频 oneway 的 buffer 生命周期并不天然比同步调用短。
 
 ## 四、同步与异步共享地址池，但异步有预算
 
@@ -232,7 +232,7 @@ Android 17 的 `BBinder::transact()` 从进入方法开始计时；超过 1000 m
 
 ### 4. Perfetto 的大小证据
 
-kernel r6 的 `binder_transaction_alloc_buf` tracepoint直接给出 `data_size`、`offsets_size`、`extra_buffers_size`，并通过事务 ID 与 `binder_transaction` 关联。Perfetto 标准 `android_binder_txns` 表没有通用的 `dataSize`/`replySize` 列；分析大小时，应在录制中加入该 ftrace event，再查看原始事件参数。
+kernel r6 的 `binder_transaction_alloc_buf` tracepoint 直接给出 `data_size`、`offsets_size`、`extra_buffers_size`，并通过 transaction id 与 `binder_transaction` 关联。Perfetto 标准 `android_binder_txns` 表没有通用的 `dataSize`/`replySize` 列；分析大小时，应在录制中加入该 ftrace event，再查看原始事件参数。
 
 debugfs `stats` 还能看到逐进程 buffer 数量和 `free async space`，但它是快照，不能代替 transaction 级时间轴。
 
@@ -264,7 +264,7 @@ Android 17 是当前验证基线，但不是这次上限调整的首发版本。
 bodySize < kRpcTransactionLimitBytes - sizeof(RpcWireHeader)
 ```
 
-因此，应用可用的 Parcel 数据必须小于 600 KiB，还要为协议结构和对象表留出空间。回复使用同样的包级约束；超出时，服务端清空回复数据，并以 `FAILED_TRANSACTION` 返回。
+因此，应用可用的 Parcel data 必须小于 600 KiB，还要为协议结构和对象表留出空间。回复使用同样的包级约束；超出时，服务端清空回复数据，并以 `FAILED_TRANSACTION` 返回。
 
 `CommandData` 的动态分配也拒绝超过 600 KiB 的请求。`RpcTransportUtils` 把 600 KiB 用作初始最大传输 chunk，并可在底层返回 `ENOMEM` 时缩小 chunk 重试。传输分块不会放宽整个 RPC 命令的协议上限。
 
@@ -272,7 +272,7 @@ bodySize < kRpcTransactionLimitBytes - sizeof(RpcWireHeader)
 
 `BpBinder::transact()` 先判断 `isRpcBinder()`：RPC endpoint 交给 `RpcSession`，其余交给 `IPCThreadState` 和 kernel Binder。普通 App 调用 Activity Manager、Package Manager 或 ContentProvider 通常属于后一条路径，不会因为 RPC 上限从 100 KB 变为 600 KiB 就获得更大的 kernel Binder 空间。
 
-`Constants.h` 的注释将设限原因归于 Baklava 时期 RPC Binder 尚不支持共享内存。Android 17 标签仍保留同一常量和注释；设计 RPC 接口时应遵守 600 KiB 包级上限，不能假设存在自动共享内存后备路径。
+`Constants.h` 的注释将设限原因归于 Baklava 时期 RPC Binder 尚不支持共享内存。Android 17 tag 仍保留同一常量和注释；设计 RPC 接口时应遵守 600 KiB 包级上限，不能假设存在自动共享内存后备路径。
 
 ## 八、`TF_ONE_WAY` 与 `TF_CLEAR_BUF` 的 buffer 语义
 
@@ -286,7 +286,7 @@ bodySize < kRpcTransactionLimitBytes - sizeof(RpcWireHeader)
 
 kernel r6 在创建目标 `binder_buffer` 时把 `TF_CLEAR_BUF` 写入 `clear_on_free`。释放 buffer 前，`binder_alloc_clear_buf()` 遍历后备物理页，把整个 buffer 清零后再归还 allocator。
 
-同步调用中，Android 17 的 `IPCThreadState` 会把 `TF_CLEAR_BUF` 转发给回复；`BBinder::transact()` 还会对用户态回复 Parcel 调用 `markSensitive()`，使 libbinder 在释放自己拥有的数据区前清零。因此，该标志同时覆盖接收方 kernel buffer 和相关用户态回复数据，不能写成“只清用户态、不清内核”。
+同步调用中，Android 17 的 `IPCThreadState` 会把 `TF_CLEAR_BUF` 转发给回复；`BBinder::transact()` 还会对用户态回复 Parcel 调用 `markSensitive()`，使 libbinder 在释放自己拥有的数据区前清零。因此，该 flag 同时覆盖接收方 kernel buffer 和相关用户态回复数据，不能写成“只清用户态、不清内核”。
 
 清零成本随 buffer 覆盖范围增加，源码没有承诺固定微秒数。它是敏感数据的安全语义，不能为了减少耗时随意移除；应避免把大块敏感数据放进 Parcel。
 
