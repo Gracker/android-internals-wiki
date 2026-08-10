@@ -63,33 +63,7 @@ last_deepseek_cn_review_at: 2026-07-16
 ---
 # androidx.tracing（Tracing SDK）
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 [定位] 说明 androidx.tracing 用来给代码区间命名，让 Perfetto / systrace 中出现业务 slice。
-- 🔹 [使用时机] 写清哪些阶段值得手动 trace：启动、首屏、列表 diff、图片解码、数据库查询、业务提交、跨线程任务。
-- 🔹 [基本用法] 覆盖 Kotlin `trace {}`、Java begin/end、异常安全、嵌套 trace、主线程与后台线程。
-- 🔹 [命名规范] 规定稳定名称、分层前缀、禁止动态 id / URL / 用户数据；给推荐和反例。
-- 🔹 [同步 / 异步] 区分同步 slice、async trace、跨线程任务和协程任务；给一个 async 伪代码或真实示例。
-- 🔹 [Native 标注] 说明 native 侧 ATrace / Perfetto 标注如何和 Java trace 一起阅读。
-- 🔹 [工具关系] 区分 androidx.tracing、Perfetto SDK、btrace、Macrobenchmark trace section 的使用边界。
-- 🔹 [线上关系] 说明 trace 名称如何和线上指标、JankStats context、APM custom trace 建立同名索引。
-- 🔹 [阅读方式] 写清在 Perfetto UI 中如何找到 slice、看线程、看嵌套、看 gap 和 scheduler。
-- 🔹 [常见错误] 覆盖名称过细、忘记 end、跨线程错配、热路径过度打标、把 trace 当统计系统。
-
-### 扩展（可选深入）
-
-- 🔸 增加一套 trace 命名表，覆盖启动、首页、详情页、支付、图片、数据库。
-- 🔸 补一个协程 / executor 跨线程 trace 示例。
-- 🔸 对 Android tracing docs、androidx.tracing reference 做版本核对。
-- 🔸 增加与自定义 APM trace 的字段映射表。
-- 🔸 补一个“trace 太多导致阅读困难”的反例和删减规则。
-
-<!-- outline-end -->
-
-## 先确定边界：它给系统 trace 增加业务语义
+## 它给系统 trace 增加业务语义
 
 系统 trace 能显示线程调度、Binder、I/O、渲染与锁等待，却无法自行判断某段应用代码正在解析首页数据，还是在提交支付结果。`androidx.tracing` 1.x 提供的价值，就是给这些代码区间加上稳定名称，使 Perfetto、Android Studio System Trace 和 Macrobenchmark 采集的 trace 出现应用自定义 slice。
 
@@ -101,11 +75,11 @@ last_deepseek_cn_review_at: 2026-07-16
 
 因此，`androidx.tracing` 适合回答“慢发生在哪个业务阶段”，但不会上传数据，也不会自动解释慢因。slice 的持续时间是墙上时间（wall time），其中可以包含 CPU 执行、锁等待、I/O 等待和被调度器换出的时间，不能直接当作 CPU time。
 
-### 本章核验基线
+### 核验基线
 
-截至 2026-07-25，本章采用以下版本边界：
+截至 2026-07-25，采用以下版本边界：
 
-| 对象 | 本章锚点 | 已核实的边界 |
+| 对象 | 核验锚点 | 已核实的边界 |
 |---|---|---|
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | `android.os.Trace` 的同步 section、异步 section、counter 与 JNI 路径 |
 | AndroidX 稳定线 | `androidx.tracing:tracing:1.3.0` | 发布于 2025-04-23；Android 变体最低 API 21 |
@@ -424,7 +398,7 @@ ORDER BY s.ts;
 
 这条查询只列出 thread track 上的同步 slice。异步 slice 可能位于其他 track，不能因查询无结果就断言事件没有采到。`dur = -1` 通常意味着区间未闭合或采集结束时仍在进行，需要回查 begin/end 生命周期。
 
-CPU 调度与唤醒证据来自系统和 kernel trace 数据源。本章涉及这类实现时，以 `android17-6.18-2026-06_r6` 为 kernel 侧锚点；应用自定义 slice 的 Android 17 Java/JNI 行为则以 `android-17.0.0_r1` 为准，两类源码边界不要混用。
+CPU 调度与唤醒证据来自系统和 kernel trace 数据源。涉及这类实现时，以 `android17-6.18-2026-06_r6` 为 kernel 侧锚点；应用自定义 slice 的 Android 17 Java/JNI 行为则以 `android-17.0.0_r1` 为准，两类源码边界不要混用。
 
 ## 常见错误与修正
 
@@ -443,7 +417,7 @@ CPU 调度与唤醒证据来自系统和 kernel trace 数据源。本章涉及�
 
 ## 源码核验记录
 
-本章结论来自官方文档、Android 17 源码和已发布 artifact 的交叉核对：
+相关结论来自官方文档、Android 17 源码和已发布 artifact 的交叉核对：
 
 - AndroidX Tracing 发布说明：1.3.0 stable、2.0.0-beta01 与 Tracing Perfetto 1.0.1 的版本边界。
 - `android-17.0.0_r1` 的 `android.os.Trace`：127 code unit 限制、同步同线程约束、异步 name/cookie 配对和公开 API。

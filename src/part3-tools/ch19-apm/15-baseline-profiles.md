@@ -55,32 +55,6 @@ last_deepseek_cn_review_at: 2026-07-15
 
 # Baseline Profiles 与编译优化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 [定位] 说明 Baseline Profiles 是发布前编译优化手段,解决首次运行和冷启动性能,不是运行时监控。
-- 🔹 [机制] 解释 ART profile、ahead-of-time 编译、startup / hot path 方法和类的关系;写清安装后何时生效。
-- 🔹 [生成方式] 展开 Macrobenchmark / Baseline Profile Generator、Gradle 插件、managed device、本地与 CI 生成。
-- 🔹 [规则格式] 展示 profile rules 中类、方法、flags 的基本形态,并说明读者不需要手写大部分规则。
-- 🔹 [场景覆盖] 规定生成场景应覆盖冷启动、首页、关键 tab、搜索、详情、支付等用户路径。
-- 🔹 [Startup Profiles] 区分 Baseline Profiles 和 Startup Profiles 的目标、位置和验证方式。
-- 🔹 [验证] 写如何用 Macrobenchmark、ProfileVerifier、日志、APK / AAB 产物确认 profile 生效。
-- 🔹 [与 APM] 说明线上启动变差如何触发重新检查 profile 覆盖,发布后如何观察启动指标回归。
-- 🔹 [库作者] 说明 Android library 如何发布 baseline profile,App 如何合并依赖库 profile。
-- 🔹 [回归判断] 给 profile 失效、场景漏覆盖、AGP 配置错误、版本升级后重新生成的排查清单。
-
-### 扩展(可选深入)
-
-- 🔸 增加 Baseline Profile 生成 Gradle 配置和测试代码示例。
-- 🔸 补一份 profile 生效验证清单,覆盖本地、CI、发版产物和线上指标。
-- 🔸 对 Android Developers Baseline Profiles 文档、AGP 版本要求、ProfileVerifier 文档做核对。
-- 🔸 增加与 R8、startup library、App Startup、lazy init 的关系说明。
-- 🔸 补一个"启动优化改动后 profile 漏更新"的回归案例。
-
-<!-- outline-end -->
-
 ## Baseline Profiles 的位置：发布前优化，不是监控
 
 Baseline Profile 是随应用或 AAR 发布的一组类和方法规则。安装渠道完成 profile 编译，或设备随后完成后台 dexopt 后，ART 可以据此对常用代码路径做 profile-guided AOT 编译，减少解释执行与 JIT 预热。它能覆盖启动、页面导航、列表滚动等路径，不只服务于冷启动。
@@ -222,7 +196,7 @@ plugins {
 
 该插件来自 AndroidX Benchmark 的发布版本。若项目使用 version catalog，应只保留一处版本定义，避免 producer、consumer 和 benchmark module 各自漂移。
 
-应用 module 是 profile consumer。下面是与本章相关的最小配置：
+应用 module 是 profile consumer。下面是相关的最小配置：
 
 ```kotlin
 plugins {
@@ -585,7 +559,7 @@ class BaselineProfileStartupBenchmark {
 
 ## 与 App Startup、lazy init 和 APM 的关系
 
-`androidx.startup` 在本章有两种容易混淆的角色：
+`androidx.startup` 在这里有两种容易混淆的角色：
 
 - App Startup 的 `InitializationProvider` 可以启动 `ProfileInstallerInitializer`，把 profile 写入安排到首帧之后。
 - 业务自己的 App Startup initializer 仍可能在主线程执行昂贵初始化。profile 能降低相关方法的执行开销，却不会让不必要的 eager initialization 变得合理。
@@ -651,7 +625,7 @@ ProfileVerifier 状态适合每个 version code 低频上报一次，不宜在�
 
 ## 源码核验记录
 
-本章对 ProfileInstaller 1.4.1 发布件与 Android 17 tag 做了交叉核对：
+以下内容对 ProfileInstaller 1.4.1 发布件与 Android 17 tag 做了交叉核对：
 
 - `ProfileInstaller.java`：包内输入路径为 `dexopt/baseline.prof` / `baseline.profm`，成功写入 current profile 不等于编译完成。
 - `ProfileInstallerInitializer.java`：首帧后延迟约 5 秒并加入 jitter，再在后台线程写 profile。

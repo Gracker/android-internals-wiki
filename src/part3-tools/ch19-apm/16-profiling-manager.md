@@ -85,27 +85,9 @@ auto_promoted_by: openclaw-task9
 
 # ProfilingManager
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- - `ProfilingManager` 的公开平台 API 从 Android 15（API 35）开始可用，不能写成 Android 8-17 全覆盖
-- - app-driven profiling 和 system-triggered profiling 是两套能力，回调链也分 request listener 与 global listener 两层
-- - trigger 版本边界要拆开写：API 36、version 36.1、API 37 不是同一层能力
-- - `ProfilingResult` 的错误码、限流、并发冲突、磁盘不足要分别处理，不能只写成“失败原因”
-- - `ProfilingManager` 在排查流程里的位置是“指标发现异常后的重样本取证”，不是常驻指标 SDK
-
-### 扩展（可选深入）
-
-- - 用 AndroidX `Profiling` / `ProfilingRequest` 包装请求构造
-- - 补一张 request listener / global listener 的结果分发表
-- - 给 trigger 场景补版本对照表和 产物对照表
-<!-- outline-end -->
-
 ## 适用范围按版本区分
 
-`android.os.ProfilingManager` 从 Android 15（API 35）开始提供 [来源: developer.android.com/reference/android/os/ProfilingManager]。它允许普通应用在量产设备上请求受控的性能剖析，或者登记自己关心的系统事件，由系统在条件满足时生成诊断文件。平台负责执行、脱敏、限流和把文件写入应用私有目录；应用负责接收结果、关联业务现场、上传与清理。
+`android.os.ProfilingManager` 从 Android 15（API 35）开始提供。它允许普通应用在量产设备上请求受控的性能剖析，或者登记自己关心的系统事件，由系统在条件满足时生成诊断文件。平台负责执行、脱敏、限流和把文件写入应用私有目录；应用负责接收结果、关联业务现场、上传与清理。
 
 接入前要把两套能力分开：
 
@@ -120,12 +102,12 @@ API 35 不能使用 trigger API；API 36 也不等于拥有 36.1 和 API 37 的�
 
 | AndroidX builder | Android 17 文件后缀 | 适合回答的问题 | 主要限制 |
 |---|---|---|---|
-| `SystemTraceRequestBuilder` | `.perfetto-trace` | 启动慢、卡顿、ANR 前后线程时序、Binder / I/O / 调度问题 | 直接看对象引用链 |
-| `JavaHeapDumpRequestBuilder` | `.perfetto-java-heap-dump` | 哪些 Java 对象仍然存活、引用链为何无法释放 | 观察一段时间里的分配速率 |
-| `HeapProfileRequestBuilder` | `.perfetto-heap-profile` | 哪类 native / Java 分配持续增长、分配调用栈在哪里 | 直接确认 Java GC Root |
-| `StackSamplingRequestBuilder` | `.perfetto-stack-sample` | 应用 CPU 时间主要花在哪些调用栈 | 查看完整的系统时间线 |
+| `SystemTraceRequestBuilder` | `.perfetto-trace` | 启动慢、卡顿、ANR 前后线程时序、Binder / I/O / 调度问题 | 不能直接看对象引用链 |
+| `JavaHeapDumpRequestBuilder` | `.perfetto-java-heap-dump` | 哪些 Java 对象仍然存活、引用链为何无法释放 | 不能观察一段时间里的分配速率 |
+| `HeapProfileRequestBuilder` | `.perfetto-heap-profile` | 哪类 native / Java 分配持续增长、分配调用栈在哪里 | 不能直接确认 Java GC Root |
+| `StackSamplingRequestBuilder` | `.perfetto-stack-sample` | 应用 CPU 时间主要花在哪些调用栈 | 不能查看完整的系统时间线 |
 
-这些后缀来自 `android-17.0.0_r1` 的 `ProfilingService` [来源: packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java (android-17.0.0_r1)]，不能把 Java heap dump 写成传统的 `.hprof` 文件名。四类结果都可以从 Perfetto UI 开始检查；Java heap dump 若要进入只接受 HPROF 的工具，必须使用经过验证的转换链，不能只改扩展名。
+这些后缀来自 `android-17.0.0_r1` 的 `ProfilingService`，不能把 Java heap dump 写成传统的 `.hprof` 文件名。四类结果都可以从 Perfetto UI 开始检查；Java heap dump 若要进入只接受 HPROF 的工具，必须使用经过验证的转换链，不能只改扩展名。
 
 `ProfilingManager` 返回的是请求进程的资料。经过平台脱敏的 system trace 会保留本进程线程和 trace slice，并把其他进程的 CPU 活动合并到 `OtherProcesses`。因此它适合判断“本进程慢”还是“整机繁忙”，无法替代本地拥有更高权限的全系统 Perfetto trace。
 
@@ -234,7 +216,7 @@ class ProfilingResultRegistry(
 
 ## system-triggered profiling 的版本边界
 
-trigger 由应用主动登记，事件和采集时机由系统控制 [来源: developer.android.com/reference/android/os/ProfilingTrigger]。登记成功不代表一定产出结果：后台 trace、进程与系统预算、磁盘空间、并发采集和系统策略都会影响成功率。
+trigger 由应用主动登记，事件和采集时机由系统控制。登记成功不代表一定产出结果：后台 trace、进程与系统预算、磁盘空间、并发采集和系统策略都会影响成功率。
 
 | 首次可用版本 | trigger | 结果与触发语义 | 必须注意的条件 |
 |---|---|---|---|
