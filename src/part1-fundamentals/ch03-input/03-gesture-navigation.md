@@ -178,7 +178,7 @@ Android 把常规系统手势区域和强制系统手势区域分成两层：
 
 底部 Home / quick-switch 手势不能像侧边返回一样 opt out。游戏确有全屏交互需求时，可以在交互期间进入 immersive mode；用户仍能通过系统规定的边缘操作重新显示系统栏。普通页面更适合把滑动控件避开 `systemGestures()`，排除区域只留给无法移动的关键交互。
 
-## 从返回手势到预测性返回动画
+## Back 手势到 Predictive Back Animation 的演进
 
 ### 传统返回手势的问题
 

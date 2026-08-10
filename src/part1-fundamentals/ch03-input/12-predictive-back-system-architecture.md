@@ -154,7 +154,7 @@ Android 17 的关键优先级是：
 
 Android 17 还提供一条减少逐帧跨进程调用的优化路径。满足以下条件时，`BackNavigationInfo.isAppProgressGenerationAllowed()` 可为 `true`：
 
-- 当前回调是动画回调；
+- 当前 callback 是 animation callback；
 - 窗口允许 app progress generation；
 - 手势 touchable region 与窗口区域匹配；
 - 没有需要转交手势的 embedded window。

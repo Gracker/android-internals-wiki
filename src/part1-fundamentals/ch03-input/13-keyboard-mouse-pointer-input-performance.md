@@ -479,7 +479,7 @@ adb shell dumpsys input
 - focused display、各 display 的 focused window；
 - pointer capture mode；
 - touch/hover/drag state；
-- 连接的出站队列、等待队列与响应状态；
+- connection 的 outbound queue、wait queue 与 responsive 状态；
 - 按键重复超时时间和间隔。
 
 再配合：

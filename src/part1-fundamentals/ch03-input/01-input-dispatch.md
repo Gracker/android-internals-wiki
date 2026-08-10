@@ -242,7 +242,7 @@ Android 17 的窗口输入拓扑由 `gui::WindowInfosUpdate` 提供。`InputDisp
 
 每个 `WindowInfo` 中与命中相关的状态包括：
 
-- 令牌与显示器；
+- token 与 display；
 - frame、transform、touchable region；
 - Z 序；
 - owner pid/uid；
@@ -493,7 +493,7 @@ InputDispatcher 还会乘 `HwTimeoutMultiplier()`。普通窗口可通过 `Windo
 
 第二类情况是：
 
-1. 某显示器有焦点应用；
+1. 某 display 有 focused application；
 2. 没有 focused window；
 3. 来了需要焦点目标的事件。
 
@@ -515,7 +515,7 @@ Android 17 的 dispatcher loop 在 flag `enable_anr_warning_callback_input_dispa
 每个正在处理的输入事件在完成前都可能位于 wait queue。应同时查看：
 
 - oldest entry 的 `deliveryTime` 与 `timeoutTime`；
-- 连接是否仍有响应；
+- connection 是否 responsive；
 - App 是否已经 consume；
 - async `deliverInputEvent` 是否结束；
 - 主线程是否 Runnable/Running/Sleeping；
