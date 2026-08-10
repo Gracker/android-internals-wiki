@@ -799,7 +799,7 @@ state: EMPTY → WRITING → READY → READING
 
 不成立。它复用 Binder object/RPC 模型，但 transport 是 socket/vsock，不使用 kernel Binder receive mapping。
 
-## 19. Review 清单
+## 19. 检查清单
 
 1. 先确认 client/server PID，排除同进程直调。
 2. 区分上层抽象、控制 transport、数据面和通知机制。

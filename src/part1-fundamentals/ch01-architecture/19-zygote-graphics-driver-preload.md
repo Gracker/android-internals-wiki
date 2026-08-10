@@ -666,7 +666,7 @@ adb logcat -v threadtime \
 
 不成立。context、allocator、shader、BufferQueue、fence 和合成都可能是主因。
 
-## 14. Review 清单
+## 14. 检查清单
 
 1. 分清 Zygote、App main、RenderThread 与 SurfaceFlinger 四个时间域。
 2. 确认应用由哪个 ABI 的 Zygote fork。
