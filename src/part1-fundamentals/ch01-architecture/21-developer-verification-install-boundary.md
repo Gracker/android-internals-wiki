@@ -333,8 +333,8 @@ handleInstall()
 - package name；
 - staged package URI；
 - `SigningInfo`；
-- 清单声明的共享库；
-- 当前验证策略；
+- manifest 声明的 shared libraries；
+- 当前 verification policy；
 - installer extension params；
 - ADB/强制验证的内部标志。
 
@@ -547,7 +547,7 @@ fun readLitePerformedCompat(intent: Intent): Boolean? {
 - 把 `STATUS_PENDING_USER_ACTION` 当成中间状态。
 - target SDK 37 覆盖 pending、retry、install anyway 与 direct abort。
 - 只有 reason extra 存在时才归因到 Developer Verification。
-- 只在确认验证器服务提供者与数据结构后使用扩展参数。
+- extension params 只在确认 verifier provider 与 schema 后使用。
 - 后台收到 pending 时通过通知恢复，不盲目拉起 Activity。
 
 ### 测试维度

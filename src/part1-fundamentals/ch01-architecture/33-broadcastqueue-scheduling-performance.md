@@ -256,7 +256,7 @@ API 37 另有受 feature flag 控制的 outgoing broadcast 延迟：freezable �
 
 广播 ANR 的 `TimeoutRecord` 描述包含 Intent、接收包名和类名。分析时至少核对：
 
-1. 当前接收者属于清单接收者、有序广播接收者，还是带完成回调的动态接收者；
+1. 当前 receiver 是 manifest、ordered 还是带 completion callback 的动态 receiver；
 2. 主线程在执行 Java/Kotlin 代码、等待锁、Binder 调用还是文件 I/O；
 3. 是否调用 `goAsync()` 后遗漏 `finish()`；
 4. 广播是否带 `FLAG_RECEIVER_FOREGROUND`，从而使用 10 秒基准；
@@ -326,7 +326,7 @@ API 37 定义了 `broadcasts` Perfetto SDK category。启用相关 tracing v3 �
 ### 8.3 一次可靠的广播性能实验
 
 1. 记录 `action`、发送 UID、接收者类型、ordered/foreground/deferral/delivery-group 配置；
-2. 分别测量热进程、缓存进程和冷进程；
+2. 分别测 warm process、cached process 和 cold process；
 3. 同时记录发送时刻、`onReceive()` 开始、异步 `finish()` 和业务完成时刻；
 4. 用 host trace 对齐进程启动、`system_server` 队列、Binder 和应用主线程；
 5. 报告 P50/P90/P99，并记录设备温度、CPU 负载和构建类型；

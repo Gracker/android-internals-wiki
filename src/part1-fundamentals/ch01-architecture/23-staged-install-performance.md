@@ -457,7 +457,7 @@ adb logcat -b all -d | grep -E \
 以下命令适合工程机和测试环境；权限、可用参数会受构建类型影响：
 
 ```bash
-# 创建分阶段会话
+# 创建 staged session
 adb shell pm install-create --staged
 
 # 创建分阶段多包父会话
@@ -466,7 +466,7 @@ adb shell pm install-create --staged --multi-package
 # 提交，并等待 ready/failed；0 表示不等待
 adb shell pm install-commit --staged-ready-timeout 60000 <session-id>
 
-# 查看分阶段会话
+# 查看 staged session
 adb shell pm list staged-sessions
 adb shell pm list staged-sessions --only-ready
 adb shell pm list staged-sessions --only-parent
