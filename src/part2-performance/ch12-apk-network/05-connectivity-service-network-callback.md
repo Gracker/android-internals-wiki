@@ -62,17 +62,7 @@ last_deepseek_cn_review_at: 2026-06-24
 
 应用观察网络状态时，面对的是一组随时变化的系统快照。`NetworkCallback.onAvailable()` 只说明某条 `Network` 已满足系统请求条件，不证明业务域名能解析、TLS 能握手、服务器能返回成功响应。把回调当成业务探活，会在网络切换时制造重试风暴。
 
-本章以 Android 17（API 37）和 AOSP `android-17.0.0_r1` 为锚点，说明应用该选择哪种监听接口、回调顺序能保证什么、注册为何有配额，以及 Android 17 本地网络权限和通信优先能力如何改变旧代码。
-
-<!-- outline-start -->
-## 本节导读
-
-- 🔹 状态模型：区分 `Network`、`NetworkCapabilities`、`LinkProperties` 与业务可达性。
-- 🔹 API 选择：区分一次性查询、默认网络监听、被动匹配、主动请求和后台约束。
-- 🔹 回调时序：说明 `onAvailable()`、能力变化、链路变化、阻塞、丢失和不可用。
-- 🔹 系统路径：从 `ConnectivityManager` 的 Binder 请求追到 `ConnectivityService` 的重匹配。
-- 🔹 Android 17 边界：补充 `ACCESS_LOCAL_NETWORK` 与统一通信优先能力。
-<!-- outline-end -->
+平台锚点为 Android 17（API 37）和 AOSP `android-17.0.0_r1`。以下内容说明应用该选择哪种监听接口、回调顺序能保证什么、注册为何有配额，以及 Android 17 本地网络权限和通信优先能力如何改变旧代码。
 
 ## 平台网络状态不是一个布尔值
 
@@ -267,7 +257,7 @@ sequenceDiagram
     CM-->>App: onAvailable and ordered state updates
 ```
 
-图中的 `onAvailable` 代表系统选择结果，不代表 HTTP 请求已完成。NetworkAgent 注册、销毁和评分细节放在 12.8 处理，避免本章用易漂移的源码行号重复维护。
+图中的 `onAvailable` 代表系统选择结果，不代表 HTTP 请求已完成。NetworkAgent 注册、销毁和评分细节放在 12.8 处理，避免在此使用易漂移的源码行号重复维护。
 
 ## 回调、后台执行与重试必须分层
 

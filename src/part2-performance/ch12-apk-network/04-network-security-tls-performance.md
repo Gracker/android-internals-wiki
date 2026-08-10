@@ -94,20 +94,11 @@ last_task2b_verifier_at: "2026-07-07T23:28:23+08:00"
 
 一个 HTTPS 请求在传输业务数据前，可能依次经过 DNS、传输层建连、TLS 握手和证书验证。短请求的业务数据很少，建连阶段反而可能占据大部分等待时间。分析这类问题时，不能把所有耗时都记到“TLS”名下，也不能用降低验证强度来换取表面上的延迟下降。
 
-本章以 Android 17（API 37）和 AOSP `android-17.0.0_r1` 为平台锚点，说明 TLS 1.3、连接复用、Encrypted Client Hello（ECH）、Certificate Transparency（CT）、明文流量策略与 HPKE 的职责边界。版本迭代只保留影响迁移判断的节点。
-
-<!-- outline-start -->
-## 本节导读
-- 🔹 请求分段：区分 DNS、传输层连接、TLS、证书验证与等待响应。
-- 🔹 TLS 连接成本：说明 TLS 1.2、TLS 1.3、会话恢复、连接复用和 0-RTT。
-- 🔹 Android 17 安全策略：说明 ECH 与 CT 的启用条件、失败语义和性能边界。
-- 🔹 平台加密能力：区分 API 35 的 HPKE SPI、API 37 的应用层 HPKE API 与 ECH 内部使用的 HPKE。
-- 🔹 诊断方法：使用网络库回调、服务端指标和系统 trace 建立可核对的证据链。
-<!-- outline-end -->
+平台锚点为 Android 17（API 37）和 AOSP `android-17.0.0_r1`。以下内容说明 TLS 1.3、连接复用、Encrypted Client Hello（ECH）、Certificate Transparency（CT）、明文流量策略与 HPKE 的职责边界；版本迭代只保留影响迁移判断的节点。
 
 ## 先把一次安全连接分段
 
-RTT（Round-Trip Time）表示报文往返一次的时间。不同网络制式、无线信号、运营商路由和服务端地域会让 RTT 相差很大，因此本章不使用固定毫秒数估算握手成本。一次新 HTTPS 连接可按下列阶段记录：
+RTT（Round-Trip Time）表示报文往返一次的时间。不同网络制式、无线信号、运营商路由和服务端地域会让 RTT 相差很大，因此不使用固定毫秒数估算握手成本。一次新 HTTPS 连接可按下列阶段记录：
 
 | 阶段 | 常见工作 | 观测重点 |
 |:---|:---|:---|
