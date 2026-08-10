@@ -136,7 +136,7 @@ Android 17 对输入 VDEX 的处理很具体：
 
 1. `dex2oat` 可以从独立 VDEX 或 DexMetadata 归档文件打开输入。
 2. 如果 VDEX 不含 DEX section，源码会核对 DEX 数量和 location checksum。
-3. 验证器依赖解析成功后，进入快速验证。
+3. verifier dependencies 解析成功后，进入 fast verification。
 4. 输入 VDEX 无法打开时，`dex2oat` 会告警并按无 VDEX 的路径继续；但文件已打开后若 DEX 数量或 checksum 不匹配，本次 `dex2oat` 会失败，不会把错误元数据当成可复用结果。
 
 不要把所有应用产物都归到 `/data/misc/apexdata/com.android.art/dalvik-cache`。Android 17 的默认位置按对象类型拆开：
@@ -278,7 +278,7 @@ adb logcat -b all -d |
 
 Android 17 的 `dex2oat.cc` 会累加输入 DEX 头中的 `file_size_`，与传入的 very-large threshold 比较。命中阈值的非 boot image：
 
-- 禁用应用镜像；
+- 禁用 app image；
 - 如果当前 filter 高于 `verify`，把本轮编译降为 `verify`；
 - 输出 `Very large app, downgrading to verify.` 日志。
 

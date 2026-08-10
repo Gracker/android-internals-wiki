@@ -167,7 +167,7 @@ SDK 注解只是第一层。服务端还会校验 caller package 与 Binder UID�
 - 在删除 APK 前生成并持久化 `ArchiveState`。
 - 把归档请求转换成带特殊标志的卸载。
 - 识别 Launcher 点击是否指向归档入口。
-- 建立恢复草稿会话，并通知负责恢复的安装器。
+- 建立恢复 draft session，并通知 responsible installer。
 - 把安装器返回的接受状态或错误转给 Launcher / API 调用者。
 
 它不负责下载 APK，也不负责应用首帧。
@@ -202,7 +202,7 @@ APK 删除后，系统不能再从清单和资源表中读取 Launcher Activity�
 1. 取得目标用户下的包状态。
 2. 拒绝系统应用和已更新的系统应用。
 3. 确认该用户当前安装了目标包。
-4. 找到并验证负责恢复的安装器。
+4. 找到并验证 responsible installer。
 5. 检查归档 opt-out 状态。
 6. 通过 `LauncherApps.getActivityList()` 取得至少一个 Launcher Activity。
 7. 保存每个入口的标题、原始组件名和图标。
@@ -309,7 +309,7 @@ Android 17 的实现允许：
 
 ## 6. 恢复链路有两条异步状态线
 
-### 6.1 框架层先创建草稿会话
+### 6.1 Framework 先创建 draft session
 
 `PackageArchiver.requestUnarchive()` 会先验证：
 
@@ -449,7 +449,7 @@ adb shell pm get-archived-package-metadata --user current <package>
 Perfetto 中至少同时观察：
 
 - system_server 的 ActivityTaskManager / Package Manager 工作。
-- 负责恢复的安装器进程启动、网络和会话写入。
+- responsible installer 的进程启动、网络和 session 写入。
 - installd、dex2oat / ART 相关工作。
 - 恢复完成后的目标应用进程与首帧。
 

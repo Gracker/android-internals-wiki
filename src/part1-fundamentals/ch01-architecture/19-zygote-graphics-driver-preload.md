@@ -137,10 +137,10 @@ Activity 即将创建
 
 它明确不覆盖：
 
-- 某个应用的驱动允许名单/拒绝名单选择。
+- 某个应用的 driver allowlist / denylist 选择。
 - 应用的 EGLContext、VkInstance、VkDevice 或 VkPipeline。
 - Surface、BLASTBufferQueue 和具体 `GraphicBuffer`。
-- 着色器编译、管线缓存未命中和应用资源上传。
+- shader 编译、pipeline cache miss 和应用资源上传。
 - SurfaceFlinger 合成、HWC 验证/呈现和围栏等待。
 
 所以，Zygote 预加载只能削减公共冷路径，不能消灭首帧图形初始化。
@@ -332,7 +332,7 @@ if (Properties::peekRenderPipelineType()
 - `vkCreateInstance()`
 - 枚举并选择物理设备。
 - `vkCreateDevice()`
-- 创建队列、交换链或管线。
+- 创建 queue、swapchain 或 pipeline。
 
 它预热的是 Vulkan 加载器/驱动入口，不包含完整的 Vulkan 运行时状态。
 
@@ -545,7 +545,7 @@ driver 初始化可能包含：
 
 `HardwareRenderer.preload()` 主要投递 RenderThread 工作，不表示主线程同步完成全部 GPU 初始化。跟踪中要看：
 
-- 应用主线程何时调用预加载。
+- App main 何时调用 preload。
 - RenderThread 何时开始 `earlyPreloadGlContext` 或 Vulkan init。
 - 首帧 sync/draw 是否追上尚未完成的预热。
 
@@ -598,7 +598,7 @@ adb logcat -v threadtime \
 
 - updatable / ANGLE package 不存在或 ABI 不匹配。
 - `sphal_libraries.txt` 读取失败。
-- 驱动元数据缺失。
+- driver metadata 缺失。
 - linker namespace 或 SELinux 拒绝。
 - EGL/Vulkan loader fallback。
 

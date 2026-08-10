@@ -286,9 +286,9 @@ Android 17 把新机制直接接入 `PackageInstallerSession`，没有把 Google
 
 满足以下条件时，构造 `PackageInstallerSession` 会提前绑定 verifier：
 
-- 验证功能已启用；
-- 设备配置了验证器服务提供者；
-- 当前不是多包父会话；
+- verification feature 已启用；
+- 设备配置了 verifier provider；
+- 当前不是 multi-package parent；
 - session 不是从重启状态恢复。
 
 若 `SessionParams.appPackageName` 已提供包名，controller 还会调用 `onPackageNameAvailable()` 让 verifier 预取数据。此时尚未开始验证，只是 pre-warm。
@@ -409,7 +409,7 @@ per-user 默认策略由 verifier 或系统指定的 policy delegate 设置。ve
   + seal / stream validation
   + 普通用户授权等待
   + Developer Verification
-  + 原有软件包验证
+  + 原有 package verification
   + native library / 安装事务 / dexopt
   + 最终回调
 ```
@@ -433,7 +433,7 @@ Android 17 r1 控制器的默认参数是：
 | 最终成功/ failure | 可见 | 安装会话结束 |
 | verifier bind、request、response 精确时间 | 普通应用不可直接取得 | 需要 system metrics、trace 或受控设备日志 |
 
-普通安装器可上报“提交 → 首次回调”和“提交 `commit → terminal callback`，但不能把前者直接命名为“开发者验证耗时”。
+普通安装器可上报“提交 → 首次回调”和“提交 `commit → terminal callback`，但不能把前者直接命名为“Developer Verification 耗时”。
 
 ## 10. 推荐的错误归因顺序
 
@@ -444,7 +444,7 @@ Android 17 r1 控制器的默认参数是：
   ├─ STATUS_PENDING_USER_ACTION
   │    └─ 中间状态：保存会话上下文并处理 Intent.EXTRA_INTENT
   ├─ STATUS_FAILURE_ABORTED
-  │    ├─ 有开发者验证原因 → 归入开发者验证
+  │    ├─ 有 Developer Verification reason → 归入 developer verification
   │    └─ 无原因 → 检查用户取消、session abandon 等原因
   ├─ STATUS_FAILURE_BLOCKED
   │    └─ 检查 DPM、用户限制、旧 package verifier、关键包保护
@@ -546,7 +546,7 @@ fun readLitePerformedCompat(intent: Intent): Boolean? {
 - 用 `SDK_INT_FULL` 处理 36.1 API 边界。
 - 把 `STATUS_PENDING_USER_ACTION` 当成中间状态。
 - target SDK 37 覆盖 pending、retry、install anyway 与 direct abort。
-- 只有原因字段存在时才归因到开发者验证。
+- 只有 reason extra 存在时才归因到 Developer Verification。
 - 只在确认验证器服务提供者与数据结构后使用扩展参数。
 - 后台收到 pending 时通过通知恢复，不盲目拉起 Activity。
 
