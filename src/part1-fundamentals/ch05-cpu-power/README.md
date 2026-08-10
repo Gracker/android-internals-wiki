@@ -2,7 +2,7 @@
 
 线程运行得慢，可能来自 runnable 等待、CPU placement、频率限制、idle 唤醒、内存 stall、thermal cap 或后台执行政策。只看 CPU usage，无法区分这些原因。
 
-本章使用以下复核锚点：
+复核锚点如下：
 
 - platform：Android 17 / API 37 / `android-17.0.0_r1`；
 - kernel：`android17-6.18-2026-06_r6`；
@@ -60,7 +60,7 @@ thermal framework 与设备 cooling policy 可以压低 CPU/GPU 上限。此时 
 
 短 trace 能证明一次调度延迟，不能代表长期电量。BatteryStats 或整段耗电也不能定位某一帧的 runnable wait。实验窗口应与问题时间尺度匹配。
 
-## 4. 本章地图
+## 4. 内容索引
 
 ### 4.1 调度、拓扑、频率、idle 与 thermal
 
@@ -79,8 +79,8 @@ thermal framework 与设备 cooling policy 可以压低 CPU/GPU 上限。此时 
 - [5.21 SoC 厂商电池优化架构](5.21-android17-battery-optimization-soc-architecture.md)：区分 AOSP 接口与 Qualcomm/MediaTek/其他厂商实现。
 - [5.22 IPower HAL 与 schedutil 协作边界](5.22-android17-soc-vendor-power-hal-schedutil-loop.md)：mode/boost、hint session、uclamp/vendor hook 和 governor。
 - [5.28 PELT、AMU/PMU 与调频事实核查](5.28-android17-pelt-boost-revert-amu-pmu-microarch-frequency-limiting.md)：区分 mainline、Android common 与 vendor extension。
-- [5.29 GPU DVFS Headroom 与 PowerAdvisor 草稿](5.29-android17-gpu-dvfs-headroom-power-advisor.md)：GPU/vendor counter、SurfaceFlinger PowerAdvisor 与证据缺口。
-- [5.32 Linux 6.10 BPF/DVFS 材料边界](5.32-linux-610-bpf-dvfs-schedutil-loop.md)：历史 kernel 材料不能覆盖当前 `android17-6.18-2026-06_r6`，BPF 控频还需目标设备实现。
+- [5.29 GPU DVFS Headroom 与 PowerAdvisor](5.29-android17-gpu-dvfs-headroom-power-advisor.md)：GPU/vendor counter、SurfaceFlinger PowerAdvisor 与证据缺口。
+- [5.32 Linux 6.10 BPF/DVFS 版本边界](5.32-linux-610-bpf-dvfs-schedutil-loop.md)：历史 kernel 资料不能覆盖当前 `android17-6.18-2026-06_r6`，BPF 控频还需目标设备实现。
 
 ### 4.3 后台执行、JobScheduler 与省电状态
 
@@ -125,22 +125,7 @@ Foreground service 不保证更高 CPU 优先级，wake lock 也不保证最高�
 
 PMU counter、CPU cache miss、PSS 和耗电属于不同测量域。关联分析要共享相同时间窗口与 workload，不能把 PSS 变化直接解释为 cache miss 原因。
 
-## 5. Deprecated、隔离与错章材料
-
-以下文件保留以维护历史链接与 Hermes 状态。它们不应作为 Android 17 平台事实：
-
-- [Android 17 battery optimization 采集稿](05.1-07-05-android17-battery-optimization-soc-architect.md)：泛化厂商差异，已由 5.21/5.22 边界稿替代。
-- [PMS/cpuidle/schedutil 采集稿](05.6-07-04-android17-pms-cpuidle-schedutil-closed-loop.md)：把相邻控制面写成固定反馈链，且假设特定 idle governor。
-- [CPU cache locality/PSS 隔离稿](06-gap-analysis.md)：属于内存记账主题，主入口在第 4 章与 5.18。
-- [SoC Power HAL 重复稿](5.22-android17-soc-battery-optimization.md)：由当前 5.21/5.22 文章替代。
-- [CPU cache locality/PSS 5.23 旧稿](5.23-android17-cpu-cache-locality-pss-accounting.md)
-- [Binder SZ4M 草稿](5.24-android17-binder-sz4m-kernel-buffer-pool-priority-set-called-dedup.md)：Binder buffer/priority 属于 Binder IPC，不是 CPU power 章节。
-- [CPU cache locality 5.25 旧稿](5.25-android17-cpu-cache-locality.md)
-- [LLM energy 标题错配旧稿](5.27-ondevice-llm-inference-energy-efficiency.md)：文件内容已标明与标题/来源不匹配。
-
-旧 README 中“Android 17 新调度器使启动快 30%，并用机器学习预测应用”的链接没有对应官方页面或 `android-17.0.0_r1` 实现，已从推荐资料移除。Android 17 的调度分析应回到 EEVDF、EAS、uclamp、Power HAL/ADPF 和设备配置。
-
-## 6. 按现象选择阅读顺序
+## 5. 按现象选择阅读顺序
 
 | 现象 | 阅读顺序 | 优先证据 |
 |---|---|---|
@@ -154,7 +139,7 @@ PMU counter、CPU cache miss、PSS 和耗电属于不同测量域。关联分析
 
 实验时固定 workload、屏幕/网络、温度起点、充电状态和刷新率。对比设备还要记录 SoC、kernel、governor、Power HAL 与 vendor build；“同频率”也可能对应不同 IPC、cache、memory bandwidth 和 thermal 条件。
 
-## 7. 固定源码入口
+## 6. 固定源码入口
 
 - [kernel `sched/fair.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/fair.c)：fair scheduler、EEVDF、PELT、EAS 与 load balance；
 - [kernel `cpufreq_schedutil.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c)、[`drivers/cpufreq/`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/cpufreq/)：schedutil 与 CPUFreq driver；
