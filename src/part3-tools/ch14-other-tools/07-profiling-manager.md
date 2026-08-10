@@ -71,27 +71,9 @@ last_review_finalize_run_id: "20260731-120710-6c773bef"
 
 # 14.7 ProfilingManager
 
-> **📌 版本边界声明**：本章正文结论均以 Android 17 (API 37, `android-17.0.0_r1`) 为技术基线。非 `android-17.0.0_r1` 资料的引用（如 developer.android.com 通用文档、Perfetto 官网文档等）仅作为背景参考或接口速查，不得脱离 AOSP 版本验证独立作为正文中的技术结论。ProfilingManager 作为 Mainline 模块可通过 Google Play system update 独立更新，设备端实际行为可能与 AOSP tag 存在差异。
+> 技术基线是 Android 17 / API 37 / `android-17.0.0_r1`。ProfilingManager 属于 Mainline 模块，可通过 Google Play system update 独立更新，因此设备行为可能与 AOSP tag 存在差异。
 
-ProfilingManager 解决量产设备上"问题发生时没有开工具"的取证空档。Android 15 起,应用可主动请求 system trace、heap dump、heap profile、stack sampling;Android 16 补齐系统事件触发。本章讲透显式请求、trigger 版本边界、结果接收三个环节,帮你在量产设备上完成线上取证。
-
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 **显式请求入口**:显式请求走 `androidx.core.os.Profiling.requestProfiling(...)`,不是 `Tracing.requestProfiling()`
-- 🔹 **四种采集类型**:`SystemTraceRequestBuilder`、`JavaHeapDumpRequestBuilder`、`HeapProfileRequestBuilder`、`StackSamplingRequestBuilder` 分别回答不同问题
-- 🔹 **BufferFillPolicy 公开枚举**：只有 `DISCARD` 和 `RING_BUFFER`
-- 🔹 **结果分发表**:`registerForAllProfilingResults()` 会收到当前 UID 的全部 profiling 结果;显式请求与 global listener 可以同时命中
-- 🔹 **trigger 版本对照表**:API 36、version 36.1、API 37 的 trigger 分层要分开写
-- 🔹 **失败结果归类**:`ProfilingResult` 的 rate limit、磁盘不足、post-processing 失败要单独分类
-
-### 扩展(可选深入)
-
-- 🔸 **归档流程**:request callback 负责就地关联 case,global listener 负责统一落盘、上传、清理
-- 🔸 **交叉引用**:逐项 trigger 行为、停止条件、AOSP 路径放到 §8.10 展开,本节只保留选型和接入所需信息
-<!-- outline-end -->
+ProfilingManager 补足量产设备上“问题发生时没有开启分析工具”的取证空档。Android 15 起，应用可主动请求 system trace、heap dump、heap profile 和 stack sampling；Android 16 增加系统事件触发。接入时需要分清显式请求、trigger 版本边界和结果接收三部分。
 
 ## 从待回答的问题选择采集类型
 

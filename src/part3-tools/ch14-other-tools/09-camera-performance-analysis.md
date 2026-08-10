@@ -75,61 +75,11 @@ last_task2b_lite_at: "2026-07-13"
 
 Camera 性能问题通常横跨 App、Framework、HAL、内核驱动和显示系统。预览卡顿、拍照慢、录像丢帧、内存上涨分别对应不同观测点：有的看 `cameraserver` 和 HAL slice，有的看 BufferQueue，有的看 `CameraMetadataNative` 引用保留和 native allocation。
 
-本节聚焦三件事：把 Camera 性能问题分成可排查的类别，梳理 Camera 管线里的 Buffer 流转，再用 Perfetto Trace Processor 把指标量化。读完本章，面对 Camera 性能问题，可以先判断问题落在哪一段，再选择 SQL、Track 和补充工具。
-
-<!-- outline-start -->
-# 14.9 Android Camera 性能与 Perfetto 分析
-
-## 🎯 为什么需要了解 Camera 性能分析  <!-- anchor: why-camera-perf -->
-- Camera 子系统复杂度和性能问题频次
-- 读完能做什么：分类问题、定位瓶颈、量化指标
-
-## 📐 Camera 性能问题的四大分类  <!-- anchor: problem-categories -->
-- 预览卡顿
-- 拍照延迟
-- 录像丢帧
-- 内存压力
-
-## 🔄 Camera 管线的 Buffer 流转  <!-- anchor: buffer-pipeline -->
-- HAL3 管线架构（Sensor → ISP → HAL → BufferQueue → SurfaceFlinger）
-- Camera 管线 vs App 渲染管线的时序差异
-- cameraserver 进程结构
-- Buffer 管理与 Camera3OutputStream
-
-## 🔍 在 Perfetto 中分析 Camera 性能  <!-- anchor: perfetto-analysis -->
-### 抓取配置  <!-- anchor: trace-config -->
-### 关键 Track 和 Slice 识别  <!-- anchor: key-tracks -->
-### SQL 查询：量化帧率和帧间隔  <!-- anchor: sql-framerate -->
-### SQL 查询：定位 Event 所属的进程和线程  <!-- anchor: sql-process -->
-### Python SDK 自动化分析  <!-- anchor: python-sdk -->
-
-## 🎬 Camera 预览卡顿分析  <!-- anchor: preview-stutter -->
-### 预览帧率不达标  <!-- anchor: preview-fps -->
-### Buffer 耗尽导致卡顿  <!-- anchor: buffer-exhaustion -->
-### Camera 启动性能的分段量化  <!-- anchor: camera-launch -->
-
-## ⚡ Camera 功耗优化  <!-- anchor: power-optimization -->
-- 帧率与分辨率权衡
-- Sensor 模式选择
-- HAL Buffer 管理策略
-- 功耗度量方法
-
-## 🔗 与其他机制的关系  <!-- anchor: related-mechanisms -->
-
-## 🆚 Camera2 API vs CameraX API 的性能差异  <!-- anchor: camera2-vs-camerax -->
-
-## 📊 HAL3 管线延迟的深度分析  <!-- anchor: hal3-latency -->
-
-## 🧪 GFXReconstruct 辅助检查花屏和 YUV 帧问题  <!-- anchor: gfxreconstruct-yuv -->
-
-## ⚠️ 常见问题与误区  <!-- anchor: common-mistakes -->
-
-## 📚 参考资料  <!-- anchor: references -->
-<!-- outline-end -->
+分析时先把 Camera 性能问题分成可排查的类别，再梳理管线里的 Buffer 流转，并用 Perfetto Trace Processor 量化对应指标。预览、拍照、录像和内存问题需要选择不同的 SQL、Track 与补充工具。
 
 ## 基线、设备边界与四类问题
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点，kernel 侧固定为 `android17-6.18-2026-06_r6`。Camera provider、HAL、sensor driver、ISP firmware、算法库和 vendor tracepoint 由设备厂商提供。AOSP 可以证明 framework 与 HAL 的接口边界，不能代替目标设备的实现证据。
+平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`，kernel 侧固定为 `android17-6.18-2026-06_r6`。Camera provider、HAL、sensor driver、ISP firmware、算法库和 vendor tracepoint 由设备厂商提供。AOSP 可以证明 framework 与 HAL 的接口边界，不能代替目标设备的实现证据。
 
 一次 Camera session 可能同时包含 preview、record、analysis 和 still capture。它们可由同一组 capture request 驱动，但拥有不同 stream、buffer pool、consumer 和归还节奏。预览稳定不能证明录像或分析流稳定；慢 consumer 也可能经共享 ISP stage、有限 buffer 或内存带宽影响其他输出。
 
@@ -602,7 +552,7 @@ Android 17 / API 37 与 Camera 性能相关的公开变化包括：
 - vendor-defined camera extensions：OEM 可以提供自定义 extension type，使用前查询支持与可用 request/result key；
 - `CameraCharacteristics.INFO_DEVICE_TYPE`：区分 built-in、external、virtual 与 unknown，类型还可能在 session 中变化。
 
-这些能力影响 capability、stream 配置和工作量。HAL3 request-result、buffer ownership 与 consumer 回收主线保持不变。旧文中的 `CAMERA_PROCESS_PRIORITY_TYPE`、vendor `PerformanceHintManager` camera 通道和 `CameraPerformanceAttestation` 没有对应的 API 37 公开接口或 `android-17.0.0_r1` 源码依据，本章不采用这些名称。
+这些能力影响 capability、stream 配置和工作量。HAL3 request-result、buffer ownership 与 consumer 回收主线保持不变。旧文中的 `CAMERA_PROCESS_PRIORITY_TYPE`、vendor `PerformanceHintManager` camera 通道和 `CameraPerformanceAttestation` 没有对应的 API 37 公开接口或 `android-17.0.0_r1` 源码依据，因此不采用这些名称。
 
 ## GFXReconstruct 辅助检查花屏和 YUV 帧问题
 

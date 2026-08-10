@@ -61,31 +61,11 @@ last_deepseek_cn_review_at: 2026-06-10
 
 # 自动化测试工具
 
-<!-- outline-start -->
-## 本章节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Macrobenchmark / Microbenchmark 的使用方法与区别
-- 🔹 使用 Macrobenchmark 测量启动时间、滑动帧率
-- 🔹 adb shell am instrument 与性能测试集成
-- 🔹 UI Automator / Espresso 在性能测试中的角色
-- 🔹 性能自动化测试的 CI/CD 集成方案
-
-### 扩展（可选深入）
-
-- 🔸 使用 Firebase Test Lab 开展大规模性能测试
-- 🔸 自建性能 Benchmark 平台的实践
-
-<!-- outline-end -->
-
 ## 为什么要用自动化工具做性能测试
 
 Perfetto、Android Studio Profiler 适合回答“时间花在哪里”，自动化基准测试负责回答“从哪次改动开始变慢”。一次手工 Trace 可以定位问题，却很难在每次提交后按相同条件重放启动、滚动或热点函数。
 
 Jetpack Benchmark 把场景、编译状态、重复次数和产物格式写进测试代码。持续集成系统因此可以保存每次运行的 JSON 与 Perfetto Trace，并把本次数据与同一设备上的历史数据比较。自动执行只解决了重复性；构建类型、设备温度、系统版本、编译模式和操作边界仍要固定，否则得到的是设备噪声。
-
-[已验证: 官方文档, developer.android.com/topic/performance/benchmarking]
 
 ## Macrobenchmark 与 Microbenchmark：两种层次，两种用途
 
@@ -148,9 +128,7 @@ class JsonBenchmark {
 3. Microbenchmark 比较候选实现，确认局部变化。
 4. Macrobenchmark 回到原场景，确认端到端指标与 Trace 都得到改善。
 
-[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-overview 和 microbenchmark-overview]
-
-[适用版本: 本章平台源码锚点为 Android 17 / API 37 / android-17.0.0_r1；Macrobenchmark 最低 API 23；`frameOverrunMs` 属 API 31+ 指标；`PowerMetric` 最低 API 29]
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`；Macrobenchmark 最低支持 API 23，`frameOverrunMs` 属于 API 31+ 指标，`PowerMetric` 最低支持 API 29。
 
 ## 使用 Macrobenchmark 测量启动时间和滑动帧率
 
@@ -254,8 +232,6 @@ Android 14（API 34）起，Macrobenchmark 可以在重置编译状态时保留�
 
 Baseline Profile 收益应由同一 APK、同一设备、同一启动模式下的 `None()` 与 `Partial()` 实测得出。跨项目引用“提升约 30%”无法替代本应用数据。
 
-[已验证: Macrobenchmark 官方文档与指标文档；Android Runtime profile-guided compilation 机制]
-
 ## adb shell am instrument：性能测试的命令行入口
 
 Gradle、Android Studio 和云设备平台最终都要启动 instrumentation。ADB 下最直接的入口是 `am instrument`，基本语法如下：
@@ -298,8 +274,6 @@ Benchmark 1.1.0 之前需要用 `androidx.benchmark.output.enable=true` 手动�
 
 Android 17 源码中，[`Instrument`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/cmds/am/src/com/android/commands/am/Instrument.java) 解析 `-w`、`-e`、用户、ABI 等参数，随后调用 `IActivityManager.startInstrumentation()`；[`ActivityManagerShellCommand`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java) 的帮助文本也明确区分了 `am instrument` 入口。这一层只负责启动和传递参数，指标含义由 AndroidX Benchmark 决定。
 
-[已验证: Android 17 / android-17.0.0_r1 源码；Benchmark CI 官方文档]
-
 ## UI Automator 与 Espresso：在性能测试中的角色
 
 UI Automator 负责从应用进程外驱动完整场景；Espresso 负责在应用 instrumentation 环境中做稳定的功能断言。两者的同步方式和测量边界不同。
@@ -325,8 +299,6 @@ Espresso 与目标应用的 instrumentation 紧密配合。每次 `onView()` 操
 ### 不能混用的地方
 
 Macrobenchmark 模块的 instrumentation 目标是测试 APK，无法把 Espresso 的 `onView()` 当作目标应用内 matcher 使用。跨应用操作、权限弹窗和系统界面统一交给 UI Automator。目标应用内部必须暴露“主要内容已就绪”这类语义时，可调用 `reportFullyDrawn()` 或写自定义 Trace section，再由 Macrobenchmark 从 Trace 读取；不要把 Espresso 驱动塞进 `measureBlock`。
-
-[已验证: 官方文档, developer.android.com/training/testing/other-components/ui-automator 和 developer.android.com/training/testing/espresso]
 
 ## Monkey、SoloPi 与 Appium：自动化工具的另一类用途
 
@@ -356,8 +328,6 @@ SoloPi 提供录制回放、CPU / 内存 / FPS 等性能面板和启动耗时辅
 ### Appium：跨端自动化，不负责指标可信度
 
 Appium 3 是基于 W3C WebDriver 的模块化自动化框架，Android 能力由独立 driver 提供。它适合统一 Android、iOS、WebView 和桌面端的业务脚本。WebDriver 服务、driver、设备自动化后端和显式/隐式等待都会影响输入时序，所以 Appium 负责场景编排时，性能指标仍应由设备侧 Macrobenchmark、Perfetto 或明确的系统 counter 采集。
-
-[已验证: Android Monkey 文档、alipay/SoloPi GitHub、Appium 3 官方文档]
 
 ## 性能自动化测试的 CI/CD 集成方案
 
@@ -475,8 +445,6 @@ JSON 的 `context` 包含设备型号、build fingerprint 和 CPU 等信息。�
 
 Android 17 的平台分析锚点是 `android-17.0.0_r1`，内核侧是 [`android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)。量产设备通常还包含厂商内核提交、调频策略和 thermal 配置，所以同为 API 37 也不能直接合并结果。趋势库必须以设备 build fingerprint 分组。
 
-[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/benchmarking-in-ci]
-
 ## 在 Perfetto 中的表现
 
 Gradle 执行成功后，JSON 与 Trace 会被拉到模块构建目录。下面是当前官方文档给出的主机路径：
@@ -512,18 +480,18 @@ project_root/module/build/outputs/connected_android_test_additional_output/debug
 
 ## 参考资料
 
-- [Android Benchmark 总览](https://developer.android.com/topic/performance/benchmarking/benchmarking-overview) [已验证: 官方文档]
-- [Macrobenchmark 官方文档](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview) [已验证: 官方文档]
-- [Microbenchmark 官方文档](https://developer.android.com/topic/performance/benchmarking/microbenchmark-overview) [已验证: 官方文档]
-- [编写 Microbenchmark](https://developer.android.com/topic/performance/benchmarking/microbenchmark-write) [已验证: 官方文档]
-- [CI/CD 中的基准测试](https://developer.android.com/topic/performance/benchmarking/benchmarking-in-ci) [已验证: 官方文档]
-- [Macrobenchmark 指标](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics) [已验证: 官方文档]
-- [Baseline Profiles 指南](https://developer.android.com/topic/performance/baselineprofiles/overview) [已验证: 官方文档]
-- [UI Automator 文档](https://developer.android.com/training/testing/other-components/ui-automator) [已验证: 官方文档]
-- [Espresso 文档](https://developer.android.com/training/testing/espresso) [已验证: 官方文档]
-- [Monkey 文档](https://developer.android.com/studio/test/other-testing-tools/monkey) [已验证: 官方文档]
-- [Firebase Test Lab 文档](https://firebase.google.com/docs/test-lab) [已验证: 官方文档]
-- [GitHub 官方示例: performance-samples](https://github.com/android/performance-samples) [已验证: 官方文档]
-- [Android 17 `am instrument` 实现](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/cmds/am/src/com/android/commands/am/Instrument.java) [已验证: AOSP 源码]
-- [Android 17 `UiAutomation` 实现](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/UiAutomation.java) [已验证: AOSP 源码]
-- [Android 17 common kernel 锚点](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/) [已验证: Android common kernel]
+- [Android Benchmark 总览](https://developer.android.com/topic/performance/benchmarking/benchmarking-overview)
+- [Macrobenchmark 官方文档](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)
+- [Microbenchmark 官方文档](https://developer.android.com/topic/performance/benchmarking/microbenchmark-overview)
+- [编写 Microbenchmark](https://developer.android.com/topic/performance/benchmarking/microbenchmark-write)
+- [CI/CD 中的基准测试](https://developer.android.com/topic/performance/benchmarking/benchmarking-in-ci)
+- [Macrobenchmark 指标](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics)
+- [Baseline Profiles 指南](https://developer.android.com/topic/performance/baselineprofiles/overview)
+- [UI Automator 文档](https://developer.android.com/training/testing/other-components/ui-automator)
+- [Espresso 文档](https://developer.android.com/training/testing/espresso)
+- [Monkey 文档](https://developer.android.com/studio/test/other-testing-tools/monkey)
+- [Firebase Test Lab 文档](https://firebase.google.com/docs/test-lab)
+- [GitHub 官方示例: performance-samples](https://github.com/android/performance-samples)
+- [Android 17 `am instrument` 实现](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/cmds/am/src/com/android/commands/am/Instrument.java)
+- [Android 17 `UiAutomation` 实现](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/UiAutomation.java)
+- [Android 17 common kernel 锚点](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)
