@@ -81,11 +81,11 @@ Android 17 中，应用侧显隐请求以 Insets 为主线。`showSoftInput()` �
 
 ```mermaid
 flowchart TD
-    A["应用：WindowInsetsController.show(ime)"] --> B["InsetsController 更新 requestedVisibleTypes"]
+    A["App: WindowInsetsController.show(ime)"] --> B["InsetsController 更新 requestedVisibleTypes"]
     B --> C["IWindowSession.updateRequestedVisibleTypes()"]
     C --> D["WMS: WindowState / InsetsPolicy"]
     D --> E["ImeInsetsSourceProvider 更新客户端可见性"]
-    E --> F["WMS 处理器通知 IME 请求状态变化"]
+    E --> F["WMS 处理器通知 IME requested changed"]
     F --> G["IMMS.showCurrentInputInternal()"]
     G --> H{"IME、当前客户端、会话是否就绪"}
     H -->|否| I["记录 PHASE_SERVER_WAIT_IME 并等待绑定或会话"]
@@ -95,7 +95,7 @@ flowchart TD
     L -->|否| M["请求失败或取消"]
     L -->|是| N["InputMethodService.showWindow()"]
     N --> O["WMS 等待 IME Surface 与动画控制层（leash）"]
-    O --> P["应用：InsetsController 启动动画"]
+    O --> P["App: InsetsController 启动动画"]
     P --> Q["WindowInsetsAnimation 回调与帧提交"]
 ```
 
@@ -126,7 +126,7 @@ Android 17 已没有独立的 `ImeInsetsSourceConsumer.java`。IME 特殊分支�
 | 显示热路径 | `mCurIme`、当前客户端、`mCurSession` 均存在 | IMMS 可直接向 IME 发送显示请求 |
 | 服务已连接、会话未就绪 | `mCurIme` 存在，`mCurSession` 为空 | 等待会话创建和客户端绑定 |
 | 正在绑定 | `mMainConnection` 存在，`mCurIme` 为空 | 等待 `onServiceConnected()`、IME 初始化和会话创建 |
-| 未绑定 | `mCurToken`、`mMainConnection` 为空 | 绑定服务，必要时启动 IME 进程 |
+| 未绑定 | `mCurToken`、`mMainConnection` 为空 | bind service，必要时启动 IME 进程 |
 | 绑定疑似卡住 | 绑定已发出但长时间没有 `mCurIme` | Android 17 在 3 秒阈值后重连主连接 |
 
 `TIME_TO_RECONNECT_MS = 3000` 是框架判断“绑定长期没有连上”的恢复阈值，不能当作正常冷启动预算。性能报表中应把触发重连的样本单独列为异常。
@@ -155,7 +155,7 @@ AOSP `android-17.0.0_r1` 中：
 
 ## 4. 应用侧如何可靠显示和确认 IME
 
-Activity 刚创建时，View 焦点和窗口焦点可能尚未同时成立。以下 AndroidX 写法会把显示请求交给窗口的 Insets 控制器：
+Activity 刚创建时，View 焦点和窗口焦点可能尚未同时成立。以下 AndroidX 写法会把显示请求交给窗口的 Insets controller：
 
 ```kotlin
 editText.requestFocus()
@@ -275,7 +275,7 @@ Compose 的 `WindowInsets.ime`、`imePadding()` 和 Insets 消费属于 AndroidX
 
 Android 17 的 ImeTracker 为同一次显示/隐藏请求分配令牌，并跨客户端、`system_server` 和 IME 记录阶段。常用显示阶段包括：
 
-| 阶段 | 说明 |
+| Phase | 说明 |
 |---|---|
 | `PHASE_CLIENT_VIEW_SERVED` | 请求 View 已通过 served-view 检查 |
 | `PHASE_CLIENT_INSETS_CONTROLLER_DISPATCH` | 请求已交给客户端 InsetsController |
@@ -288,14 +288,14 @@ Android 17 的 ImeTracker 为同一次显示/隐藏请求分配令牌，并跨�
 | `PHASE_IME_ON_SHOW_SOFT_INPUT_TRUE` | `onShowInputRequested()` 接受显示 |
 | `PHASE_IME_SHOW_WINDOW` | IME 进入 `showWindow()` |
 | `PHASE_SERVER_GET_CONTROL_WITH_LEASH` | WMS 可下发带动画控制层的控制权 |
-| `PHASE_CLIENT_ON_CONTROLS_CHANGED` | 应用客户端收到 Insets 控制权 |
+| `PHASE_CLIENT_ON_CONTROLS_CHANGED` | 应用客户端收到 Insets control |
 | `PHASE_CLIENT_ANIMATION_RUNNING` | 客户端动画运行中 |
 | `PHASE_CLIENT_ANIMATION_FINISHED_SHOW` | 显示动画完成 |
 
 ImeTracker 历史记录会给出请求类型、状态、持续时间、最终阶段和请求窗口。可按以下位置判断：
 
-- 停在 `CLIENT_VIEW_SERVED` 之前：检查 View 焦点、窗口焦点、服务目标 View 和调用时机；
-- 长时间停在 `SERVER_WAIT_IME`：检查进程启动、服务绑定、会话创建和 IME 崩溃；
+- 停在 `CLIENT_VIEW_SERVED` 之前：检查 View focus、window focus、served view 和调用时机；
+- 长时间停在 `SERVER_WAIT_IME`：检查进程启动、Service binding、session 创建和 IME 崩溃；
 - 已到 `IME_SHOW_WINDOW`，迟迟拿不到控制权：检查 IME Surface、窗口布局和 WMS 的动画控制层条件；
 - 已到 `CLIENT_ANIMATION_RUNNING`：把注意力移到应用、IME 和 SurfaceFlinger 的帧调度；
 - 状态为 FAIL、CANCEL 或 TIMEOUT：先读最终阶段和原因，不要只看“键盘没出来”的表象。
@@ -313,9 +313,9 @@ Android 17 的输出包括：
 - `mStartInputHistory`：最近的输入启动记录；
 - `mSoftInputShowHideHistory`：显隐原因、请求窗口、IME 目标等历史；
 - `mImeTrackerService#History`：显示/隐藏请求及最终阶段；
-- `mBindingController`：`mSelectedImeId`、`mCurImeId`、主连接/可见连接、`mCurIme`、显示器和窗口可见性；
+- `mBindingController`：`mSelectedImeId`、`mCurImeId`、main/visible connection、`mCurIme`、display、window visibility；
 - `mCurClient`、`mImeBindingState`、`mEnabledSession`；
-- `mVisibilityStateComputer` 中的 `mInputShown` 和最终 IME 目标；
+- `mVisibilityStateComputer` 中的 `mInputShown` 和最终 IME target；
 - 当前输入客户端与当前 IME 的异步状态转储。
 
 `mMainConnection` 非空只代表绑定已创建或正在绑定，`mCurIme` 非空才说明 `onServiceConnected()` 已提供可调用接口。`mEnabledSession` 或客户端的当前会话用于判断输入会话是否就绪。
@@ -338,7 +338,7 @@ adb shell cmd input_method tracing stop
 
 ### 9.2 Perfetto 的进程与切片
 
-录制时至少覆盖应用、`system_server`、IME、RenderThread 和 SurfaceFlinger，并启用与调度、Binder、View、WindowManager、图形和 FrameTimeline 相关的数据源。Android 17 源码中可直接搜索的切片包括：
+录制时至少覆盖应用、`system_server`、IME、RenderThread 和 SurfaceFlinger，并启用与调度、Binder、View、WindowManager、graphics、FrameTimeline 相关的数据源。Android 17 源码中可直接搜索的切片包括：
 
 - `IMMS.showCurrentInputInternal`
 - `IMMS.hideCurrentInputInternal`
@@ -347,7 +347,7 @@ adb shell cmd input_method tracing stop
 - `IC.showRequestFromApi`
 - `IC.showRequestFromApiToImeReady`
 
-FrameTimeline 的卡顿类型用于描述错过截止时间、高延迟、缓冲区堆积等帧结果，不包含 `LAYOUT` 或 `MEASURE`。要判断布局是否拖慢一帧，应展开应用主线程的遍历、测量/布局相关切片，再与该帧的截止时间对齐。
+FrameTimeline 的卡顿类型用于描述错过截止时间、high latency、缓冲区堆积等帧结果，不包含 `LAYOUT` 或 `MEASURE`。要判断布局是否拖慢一帧，应展开应用主线程的遍历、测量/布局相关切片，再与该帧的截止时间对齐。
 
 IME 和应用通常是两个独立 Surface。一次过渡中可能出现四种不同结论：
 
@@ -374,7 +374,7 @@ IME 和应用通常是两个独立 Surface。一次过渡中可能出现四种�
 
 | 区间 | 起点 | 终点 |
 |---|---|---|
-| 请求接纳 | API 调用 | 服务目标 View 检查/Insets 分发 |
+| 请求接纳 | API 调用 | served-view / Insets dispatch |
 | 服务端路由 | 上报请求的可见类型 | `SERVER_HAS_IME` 或 `SERVER_WAIT_IME` |
 | IME 准备 | `SERVER_HAS_IME` | `IME_SHOW_WINDOW` |
 | 窗口就绪 | `IME_SHOW_WINDOW` | `SERVER_GET_CONTROL_WITH_LEASH` |
@@ -405,5 +405,5 @@ IME 和应用通常是两个独立 Surface。一次过渡中可能出现四种�
 - [`ImeInsetsSourceProvider.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ImeInsetsSourceProvider.java)
 - [`ImeTracker.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/inputmethod/ImeTracker.java)
 - [`ImeTrackerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/inputmethod/ImeTrackerService.java)
-- [处理输入法可见性](https://developer.android.com/develop/ui/views/touch-and-input/keyboard-input/visibility)
-- [控制软键盘并为其添加动画](https://developer.android.com/develop/ui/views/layout/sw-keyboard)
+- [Handle input method visibility](https://developer.android.com/develop/ui/views/touch-and-input/keyboard-input/visibility)
+- [Control and animate the software keyboard](https://developer.android.com/develop/ui/views/layout/sw-keyboard)

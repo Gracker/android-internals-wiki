@@ -52,12 +52,12 @@ Android 17 的输入分发包含三类性质不同的等待：
 flowchart LR
     SRC["InputReader / 注入事件"] --> IQ["mInboundQueue"]
     IQ --> PE["mPendingEvent"]
-    PE -->|"目标选择与派发"| OQ["连接 outboundQueue"]
-    OQ -->|"写入 InputChannel"| WQ["连接 waitQueue"]
-    WQ -->|"FINISHED 确认"| DONE["完成"]
+    PE -->|"目标选择与派发"| OQ["Connection outboundQueue"]
+    OQ -->|"写入 InputChannel"| WQ["Connection waitQueue"]
+    WQ -->|"FINISHED ACK"| DONE["完成"]
 
-    PE -. "按键/运动/传感器事件的陈旧判定" .-> STALE["DropReason::STALE"]
-    WQ -. "按 DispatchEntry timeoutTime 检查" .-> ANR["连接 ANR"]
+    PE -. "Key / Motion / Sensor 的 stale 判定" .-> STALE["DropReason::STALE"]
+    WQ -. "按 DispatchEntry timeoutTime 检查" .-> ANR["Connection ANR"]
 ```
 
 - `mInboundQueue` 保存尚未成为当前处理对象的入站事件。
@@ -91,7 +91,7 @@ virtual bool isStaleEvent(nsecs_t currentTime, nsecs_t eventTime) {
 }
 ```
 
-Android 17 的生产源码中没有另一份 `isStaleEvent()` 覆盖实现；测试用 `FakeInputDispatcherPolicy` 可以替换阈值。厂商分支仍可修改策略或常量，因此实机分析要同时记录构建版本。
+Android 17 的生产源码中没有另一份 `isStaleEvent()` override；测试用 `FakeInputDispatcherPolicy` 可以替换阈值。厂商分支仍可修改策略或常量，因此实机分析要同时记录构建版本。
 
 `HwTimeoutMultiplier()` 读取只读属性 `ro.hw_timeout_multiplier`，缺省值为 1。它最初用于让速度远慢于真机的模拟环境按比例放宽平台超时。它同时被多处系统超时使用，不能把“10 秒”写成所有构建的固定实测值。设备上的有效基础值可这样确认：
 
@@ -116,13 +116,13 @@ adb shell getprop ro.hw_timeout_multiplier
 
 SensorEntry 是时钟基准上的例外。Android 17 注释明确指出传感器时间戳使用 `SYSTEM_TIME_BOOTTIME`，因此陈旧比较改用当前 BOOTTIME。这里的 SensorEntry 是 InputFlinger 传给输入策略层的输入设备传感器事件，不应与应用通过 SensorManager 接收的全部传感器数据混为一谈。
 
-## 按键、运动和传感器事件的结果不同
+## Key、Motion 和 Sensor 的结果不同
 
 | 事件类型 | 陈旧检查 | Android 17 的结果 |
 | --- | --- | --- |
-| 按键 | 只要尚未被 `POLICY` / `DISABLED` 处理，就比较事件年龄 | 标为 `DropReason::STALE`；不会写入目标窗口的 InputChannel；注入结果为失败，并上报按键被丢弃 |
-| 指针运动事件 | 比较事件年龄后，再检查同一显示器、同一设备是否仍有按下或悬停的指针 | 没有进行中状态才标为陈旧；存在进行中手势时继续处理该事件流 |
-| 非指针运动事件 | 同样经过运动事件分支 | 沿用 TouchState 的同设备检查；没有进行中的触摸或悬停时可标为陈旧 |
+| Key | 只要尚未被 `POLICY` / `DISABLED` 处理，就比较事件年龄 | 标为 `DropReason::STALE`；不会写入目标窗口的 InputChannel；注入结果为失败，并上报 dropped key |
+| Pointer Motion | 比较事件年龄后，再检查同一 display、同一 device 是否仍有 touching 或 hovering pointer | 没有进行中状态才标为 stale；存在进行中手势时继续处理该 stroke |
+| Non-pointer Motion | 同样经过 Motion 分支 | 沿用 TouchState 的同设备检查；无进行中 touch / hover 时可标为 stale |
 | SensorEntry | 用 BOOTTIME 比较事件年龄 | 会标记陈旧并打印丢弃日志，但 `dispatchSensorLocked()` 仍向策略层投递传感器回调 |
 | Focus / TouchModeChanged / DeviceReset | 没有陈旧分支 | 主循环明确令这三类不按该丢弃原因处理 |
 | PointerCaptureChanged / Drag | 没有陈旧检查 | 按各自分发逻辑处理 |
@@ -149,7 +149,7 @@ mTouchStates.hasTouchingOrHoveringPointers(displayId, deviceId)
 同一显示器、同一设备仍有触摸或悬停状态时，分发器不把该运动事件标为 `STALE`，源码注释说明这是为了完成当前事件流。这个豁免带来以下结果：
 
 - 已开始的拖动即使事件很老，也可能继续收到 MOVE / UP；
-- 陈旧的 `HOVER_EXIT` 在仍有对应悬停状态时也可能继续分发；
+- stale `HOVER_EXIT` 在仍有对应 hover 状态时也可能继续派发；
 - 不能用陈旧事件日志条数推算一段手势丢了多少 `MotionEvent`；
 - 多设备输入要按 `deviceId` 分开分析，不能用另一支触控笔或鼠标的状态代替当前设备。
 
@@ -190,20 +190,20 @@ NO_POINTER_CAPTURE
 
 主循环先判断 `POLICY` 与 `DISABLED`，只有仍为 `NOT_DROPPED` 时才检查陈旧状态。按键和非指针运动事件随后还可能因 `mNextUnblockedEvent` 标成 `BLOCKED`，但已经命中 `STALE` 时不会被 `BLOCKED` 覆盖。
 
-`BLOCKED` 来自另一套恢复策略：等待焦点窗口的应用迟迟没有窗口，而用户用新的指针按下事件触摸另一应用，或有可响应的监视窗口接手时，InputDispatcher 记录 `mNextUnblockedEvent`，清理它前面的部分事件。指针运动事件不会在这个分支按 `BLOCKED` 丢弃；按键和按焦点分发的非指针运动事件才会命中。
+`BLOCKED` 来自另一套恢复策略：等待焦点窗口的应用迟迟没有窗口，而用户用新的指针按下事件触摸另一应用，或有可响应的监视窗口接手时，InputDispatcher 记录 `mNextUnblockedEvent`，清理它前面的部分事件。Pointer Motion `BLOCKED` 丢弃；按键和按焦点分发的非指针运动事件才会命中。
 
 旧版分析中常见的 `APP_SWITCH` 丢弃原因不在 Android 17 的枚举里。分析历史日志时应使用对应版本源码，不能把旧分支名称移植到 Android 17。
 
-## 陈旧事件、确认超时和两类 ANR
+## stale、ACK 超时和两类 ANR
 
 | 机制 | 计时或状态对象 | 判断依据 | 典型动作 |
 | --- | --- | --- | --- |
-| 陈旧事件 | 当前 `mPendingEvent` | `currentTime - eventTime` 达到策略阈值 | 按键或符合条件的运动事件标记 `STALE`，清理输入状态 |
-| 连接 ANR | 连接 `waitQueue` 中的 `DispatchEntry` | `timeoutTime` 到期且 FINISHED 确认未完成 | 连接标为无响应，通知策略层，并对该连接取消输入 |
-| 无焦点窗口 ANR | `mNoFocusedWindowAnrState` | 存在焦点应用和待分发的焦点事件，但没有焦点窗口，等待应用的分发超时时间 | 通知无焦点窗口 ANR；超时后的事件失败 |
-| 阻塞裁剪 | 入站队列与 `mNextUnblockedEvent` | 等待旧应用窗口时出现指向另一应用的新指针按下事件，或可响应的监视窗口 | 清理新交互之前的部分按键和非指针运动事件 |
+| stale event | 当前 `mPendingEvent` | `currentTime - eventTime` 达到 policy 阈值 | Key / eligible Motion 标记 `STALE`，清理输入状态 |
+| connection ANR | connection `waitQueue` 中的 `DispatchEntry` | `timeoutTime` 到期且 FINISHED ACK 未完成 | connection 标为 unresponsive，通知 policy，并对该连接取消输入 |
+| no-focused-window ANR | `mNoFocusedWindowAnrState` | 有 focused application 和待派发的 focused event，但没有 focused window，等待应用 dispatch timeout | 通知 no-focused-window ANR；超时后的事件失败 |
+| blocked pruning | inbound queue 与 `mNextUnblockedEvent` | 等待旧应用窗口时出现指向另一应用的新 pointer down，或 responsive spy window | 清理新交互之前的部分 Key / 非 pointer Motion |
 
-连接 ANR 的截止时间记录在 `AnrTracker` 中；跟踪器保存 `(timeoutTime, connectionToken)`，每轮取最早截止时间。应用及时回复后，对应条目从 `waitQueue` 删除，跟踪器也删除该截止时间。
+connection ANR 的 deadline 记录在 `AnrTracker` 中；tracker 保存 `(timeoutTime, connectionToken)`，每轮取最早 deadline。App 及时 reply 后，对应 entry 从 `waitQueue` 删除，tracker 也删除该 deadline。
 
 所以四种现场组合都合理：
 
@@ -238,8 +238,8 @@ adb shell dumpsys input > input-dispatcher.txt
 2. `PendingEvent age` 很大：检查焦点窗口、暂停状态、策略拦截和目标选择为何持续待处理。
 3. `InboundQueue` 很长且队首年龄持续增加：检查输入洪峰、分发器线程调度和待处理事件的阻塞点。
 4. 某连接的 `OutboundQueue` 增长：检查 InputChannel 写入是否受阻。
-5. 某连接的 `WaitQueue` 增长：事件已写出，检查应用输入线程、主线程和 FINISHED 确认。
-6. `responsive=false` 或存在上次 ANR 状态：把陈旧事件时间点与 ANR 原因、窗口令牌和进程堆栈对齐。
+5. 某 connection 的 `WaitQueue` 增长：事件已写出，检查应用输入线程、主线程和 FINISHED ACK。
+6. `responsive=false` 或存在 last ANR state：把 stale 时间点与 ANR reason、window token 和进程堆栈对齐。
 
 `RecentQueue` 同时保存已经分发和已经丢弃的事件，只显示描述与年龄，不保存丢弃原因。SensorEntry 为避免刷满队列，不进入 RecentQueue。因此，事后只有一份 `dumpsys input` 时，不能仅靠 RecentQueue 证明某个事件已被判为陈旧。
 
@@ -262,7 +262,7 @@ adb shell setprop log.tag.InputDispatcherDroppedEventsVerbose DEBUG
 
 启用输入 ATrace 后，Android 17 还会记录三类队列计数器：
 
-| 计数器 | 含义 |
+| Counter | 含义 |
 | --- | --- |
 | `iq` | 全局 `mInboundQueue` 长度 |
 | `oq:<channelName>` | 某连接的 `outboundQueue` 长度 |
@@ -274,7 +274,7 @@ adb shell setprop log.tag.InputDispatcherDroppedEventsVerbose DEBUG
 
 1. 记录 `ro.build.fingerprint`、平台版本和 `ro.hw_timeout_multiplier`。
 2. 保留陈旧事件日志前后至少数十秒，检查是否同时出现分发冻结、焦点切换、窗口无响应或 ANR。
-3. 立即抓取 `dumpsys input`；重点保存 PendingEvent、InboundQueue、Connections 和上次 ANR 状态。
+3. 立即抓 `dumpsys input`；重点保存 PendingEvent、InboundQueue、Connections 和 last ANR state。
 4. 可复现时抓 Perfetto，观察 `iq`、`oq:*`、`wq:*` 的先后变化。
 5. 如果 `wq` 堆积，检查目标线程何时收到和完成输入；如果只有 `iq` / PendingEvent 老化，转查策略、焦点、窗口状态和分发器调度。
 6. 对注入或自动化场景打印注入前的 `eventTime` 与 `SystemClock.uptimeMillis()`，先排除旧时间戳和时钟基准错误。
@@ -293,7 +293,7 @@ adb shell setprop log.tag.InputDispatcherDroppedEventsVerbose DEBUG
 ## 参考源码与文档
 
 - [AOSP 输入架构](https://source.android.com/docs/core/interaction/input)
-- [Android 17 InputDispatcher.cpp：陈旧判定、队列、丢弃与 ANR](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
+- [Android 17 InputDispatcher.cpp：stale 判定、queue、drop 与 ANR](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
 - [Android 17 InputDispatcher.h：DropReason 与分发器状态](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.h)
 - [Android 17 InputDispatcherPolicyInterface.h：默认陈旧判定策略](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/include/InputDispatcherPolicyInterface.h)
 - [Android 17 AnrTracker.h](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/AnrTracker.h)
