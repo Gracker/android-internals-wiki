@@ -83,11 +83,11 @@ GC 与慢帧重叠，只能说明两件事同时发生。要判断 GC 是否参�
 
 1. **暂停应用线程**：暂停若落在主线程的帧工作内，会直接占用这帧的时间。
 2. **争用 CPU**：并发标记、扫描、压缩会运行 GC 线程。GC 线程处于 runnable 却迟迟得不到 CPU，也说明系统当时存在调度压力。
-3. **拖慢分配路径**：堆空间紧张时，分配线程可能等待 GC 完成；这类阻塞式 GC 比后台并发回收更值得优先检查。
+3. **拖慢分配路径**：堆空间紧张时，分配线程可能等待 GC 完成；这类 blocking GC 比后台并发回收更值得优先检查。
 
 60 Hz 的名义帧间隔约为 16.67 ms，120 Hz 约为 8.33 ms。这个数字只是显示节奏，不能直接当作应用可独占的执行预算。输入、主线程、RenderThread、GPU、SurfaceFlinger 与调度延迟都会占用其中一部分。因而同样一次暂停，在设备负载、刷新率和它落入帧内的位置不同的情况下，结果也会不同。
 
-官方 GC 调试文档给过一次 young concurrent copying 平均暂停 1.83 ms 的示例。它来自一份特定设备和进程的统计输出，只能帮助理解字段，不能当作 Android 设备的统一指标。应用应以自己的发布构建、目标设备和真实交互轨迹为准。
+官方 GC 调试文档给过一次 young concurrent copying 平均暂停 1.83 ms 的示例。它来自一份特定设备和进程的统计输出，只能帮助理解字段，不能当作 Android 设备的统一指标。应用应以自己的发布构建、目标设备和真实交互 trace 为准。
 
 ## 2. 从 CC 到 Android 17 的分代 CMC
 
@@ -127,7 +127,7 @@ use_generational_gc =
 
 在 Android 17 的 `ShouldUseGenerationalGC()` 中，UFFD 路径还会检查 `use_generational_cmc` flag；随后读取 `persist.device_config.runtime_native_boot.use_generational_gc`，默认值为 true。默认值不等于每台设备都会启用，前置条件和产品配置仍需成立。
 
-`android17-6.18-2026-06_r6` 的 arm64 GKI defconfig 含 `CONFIG_USERFAULTFD=y`。这只说明通用内核具备编译期支持。ART 启动时仍会探测 `userfaultfd`、`UFFD_FEATURE_SIGBUS`、`MREMAP_DONTUNMAP` 等能力，并接受产品属性和运行时开关的约束。
+`android17-6.18-2026-06_r6` 的 arm64 GKI defconfig 含 `CONFIG_USERFAULTFD=y`。这只说明通用内核具备编译期支持。ART 启动时仍会探测 `userfaultfd`、`UFFD_FEATURE_SIGBUS`、`MREMAP_DONTUNMAP` 等能力，并接受产品属性和运行时 flag 的约束。
 
 进程在 post-fork 初始化后会记录类似 `Using generational <collector> GC.` 的日志。它适合在可调试环境中确认选择结果；量产设备是否输出、日志级别和读取权限由构建配置决定。
 
@@ -210,7 +210,7 @@ ART 不按固定次数轮换 young 与 full。`heap.cc` 在一次非 sticky 回�
 在这里：
 
 - sticky 对分代收集器对应 young collection；
-- non-sticky 对应覆盖更大范围的收集；
+- non-sticky 对应覆盖更大范围的 collection；
 - 回收吞吐关注单位时间释放的字节等运行数据。
 
 若 young collection 仍能快速释放足够空间，继续 young 往往更划算。随着新生代存活率上升或可回收量下降，full collection 可能获得更好的回收效率。这个决策会随堆状态变化，所以“每 N 次 young 执行一次 full”以及固定 GC 周期都不适合作为诊断依据。
@@ -243,7 +243,7 @@ byte_count >= large_object_threshold_ &&
 
 达到阈值的 primitive array 或 `String` 会先尝试 Large Object Space（LOS）分配；若 LOS 分配失败，分配器仍可回退到普通 space。普通业务对象即使整体很大，也不能仅凭“超过 12 KiB”断言它进入 LOS。
 
-LOS 对排查的意义主要在于识别大块 `byte[]`、`char[]`、`int[]`、解码缓冲区和大字符串。频繁创建这些对象会增加大对象分配、扫描和回收成本。是否产生阻塞式 GC 取决于当时的堆空间与分配结果，不能把每次 LOS 分配都描述为同步 GC。
+LOS 对排查的意义主要在于识别大块 `byte[]`、`char[]`、`int[]`、解码缓冲区和大字符串。频繁创建这些对象会增加大对象分配、扫描和回收成本。是否产生 blocking GC 取决于当时的堆空间与分配结果，不能把每次 LOS 分配都描述为同步 GC。
 
 Android 8.0 起，`Bitmap` 像素数据放在 native heap。Android 14～17 中，大图带来的内存压力仍很重要，但像素内存不能按 Java LOS 对象计算。应结合 Java wrapper、native allocation、图形缓冲和 GPU 资源分别观察。
 
@@ -251,13 +251,13 @@ Android 8.0 起，`Bitmap` 像素数据放在 native heap。Android 14～17 中�
 
 ### 8.1 先保证轨迹包含所需数据
 
-抓取交互轨迹时，至少需要应用调度、ART/GC 事件和 Frame Timeline。不同 Android 构建与轨迹配置能看到的轨道不同。若 SQL 表为空，应先检查 data source 和目标进程是否被采集，再判断应用没有 GC。
+抓取交互 trace 时，至少需要应用调度、ART/GC 事件和 Frame Timeline。不同 Android 构建与 trace 配置能看到的轨道不同。若 SQL 表为空，应先检查 data source 和目标进程是否被采集，再判断应用没有 GC。
 
 推荐按这个顺序阅读：
 
-1. 找到 `actual_frame_timeline_slice` 中的卡顿帧。
+1. 找到 `actual_frame_timeline_slice` 中的 jank 帧。
 2. 查看主线程和 RenderThread 在这一帧内处于 Running、Runnable、Sleeping 还是被阻塞。
-3. 查看同进程 GC 事件是否与帧重叠，以及 GC 是短而密还是单次长尾。
+3. 查看同进程 GC event 是否与帧重叠，以及 GC 是短而密还是单次长尾。
 4. 对重叠事件比较 wall、running、runnable 和 interruptible/uninterruptible 时间。
 5. 再决定是否抓分配 profile 或 heap dump。
 
@@ -283,7 +283,7 @@ ORDER BY gc_count DESC;
 
 `gc_dur` 是事件 wall duration。`reclaimed_mb` 由 Perfetto 的 heap counter 区间变化推导，适合在同一 trace 中比较趋势，不应当作所有堆空间释放量的精确账本。
 
-### 8.3 查 GC 与卡顿帧的时间交集
+### 8.3 查 GC 与 jank 帧的时间交集
 
 下面的查询按进程和时间区间找交集：
 
@@ -346,7 +346,7 @@ ART 会把线程栈、锁和累计 GC timing 写入 ANR trace，搜索 `Dumping 
 
 发送 `SIGQUIT` 会触发一次诊断转储。压测脚本应控制次数，并避免在用户生产会话中随意执行。
 
-### 9.2 ART 分配采样看谁在分配
+### 9.2 ART allocation profiling 看谁在分配
 
 Perfetto 的 `heap_profile` 工具在 Android 12 及以后可选择已注册的堆。当前命令行示例使用的 ART 堆名称为 `com.android.art`：
 
@@ -356,9 +356,9 @@ tools/heap_profile -p <PID> --heaps com.android.art
 
 它以采样方式记录 ART 分配及调用栈，适合定位滚动、解析或动画期间的分配热点。采样间隔会影响精度与开销，profile 也会扰动被测进程，因此要使用相同场景做前后对照。
 
-### 9.3 Java 堆转储看谁在保留
+### 9.3 Java heap dump 看谁在保留
 
-Perfetto ART 堆转储需要 Android 11 及以后。它记录完整的 Java 对象引用图和保留关系，不记录分配调用栈，也不包含普通 HPROF 中的对象内容。
+Perfetto ART heap dump 需要 Android 11 及以后。它记录完整的 Java 对象引用图和保留关系，不记录分配调用栈，也不包含普通 HPROF 中的对象内容。
 
 Android 13 及以后，某些通过 `NativeAllocationRegistry` 关联的 native size 会以额外节点显示。这个数字只覆盖被注册并能关联的 native 分配，不能代表进程全部 native heap。
 
@@ -371,13 +371,13 @@ Android 13 及以后，某些通过 `NativeAllocationRegistry` 关联的 native 
 
 ### 10.1 从已证实的热点开始
 
-先录制可重复场景，确认分配调用栈、GC 类型和慢帧关系，再改代码。只看到堆曲线呈锯齿状还不够，因为正常运行的 managed heap 本来就会分配和回收。
+先录制可重复场景，确认分配调用栈、GC 类型和慢帧关系，再改代码。只看到 heap 曲线呈锯齿状还不够，因为正常运行的 managed heap 本来就会分配和回收。
 
 优先级通常是：
 
 1. 每帧、每次列表绑定、每个音视频数据包等高频路径。
 2. 大块 primitive array、字符串与序列化缓冲。
-3. 造成全堆或阻塞式 GC 的存活对象和短时峰值。
+3. 造成 full 或 blocking GC 的存活对象和短时峰值。
 4. 普通低频业务对象。
 
 ### 10.2 移出每帧分配
@@ -465,7 +465,7 @@ Compose 重组不等于每次都会创建 lambda 或状态对象。编译器可�
 
 ### Android 17 应用需要主动开启分代 CMC 吗？
 
-普通应用没有稳定的公开 API 去选择 ART 收集器。选择结果由 ART、设备配置和内核能力决定。应用能做的是控制自身分配与保留行为，并用轨迹验证目标设备。
+普通应用没有稳定的公开 API 去选择 ART 收集器。选择结果由 ART、设备配置和内核能力决定。应用能做的是控制自身分配与保留行为，并用 trace 验证目标设备。
 
 ### 为什么优化后 GC 次数可能增加？
 

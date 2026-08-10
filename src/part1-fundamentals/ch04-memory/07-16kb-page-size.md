@@ -72,12 +72,12 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-28
 ---
 
-# 4.7 16 KiB 页大小与 Android 性能
+# 4.7 16 KB Page Size 与 Android 性能
 
 Android 的 16 KiB 页适配包含两个问题：
 
 1. App 能否在 16KB 内核上正确安装、加载和运行。
-2. 更大的基础页能否改善目标应用的性能。
+2. 更大的基础页能否改善目标 App 的性能。
 
 第一个问题有明确的工程检查项；第二个问题必须测量。ELF 和 APK 都通过对齐检查，只能说明产物具备兼容性，不能据此承诺启动会快多少。
 
@@ -89,37 +89,37 @@ Android 的 16 KiB 页适配包含两个问题：
 
 进程看到的是连续的虚拟地址。CPU 的 MMU 根据页表把虚拟页翻译为物理页，TLB 缓存近期使用的翻译结果。TLB 命中后无需重新遍历页表；未命中时，硬件 page-table walker 会读取页表层级并填充 TLB。
 
-如果 TLB 条目数量不变，16 KiB 叶子页映射的理论覆盖范围是 4 KiB 页的四倍。例如，同样覆盖 64 MiB：
+如果 TLB entry 数量不变，16 KiB 叶子页映射的理论覆盖范围是 4 KiB 页的四倍。例如，同样覆盖 64 MiB：
 
 | 基础页大小 | 需要的叶子页数量 |
 |---|---:|
 | 4 KiB | 16,384 |
 | 16 KiB | 4,096 |
 
-这个计算说明了 TLB 覆盖范围的变化，却不能直接换算成性能增幅。CPU 的 TLB 层级、页表缓存、访存局部性、工作集大小以及大页映射都会影响最终结果。
+这个计算说明了 TLB reach 的变化，却不能直接换算成性能增幅。CPU 的 TLB 层级、页表缓存、访存局部性、工作集大小以及 huge-page 映射都会影响最终结果。
 
-TLB 未命中和缺页也要分开：
+TLB miss 和 page fault 也要分开：
 
 - **TLB miss**：当前虚拟页的翻译不在 TLB 中，通常由硬件遍历页表处理。
 - **Minor page fault**：页表尚未建立，但数据无需从块设备读入，例如匿名页首次触碰，或者文件页已经在 page cache 中。
 - **Major page fault**：内核需要等待文件数据从存储设备读入。
 
-TLB 未命中不会自然表现为 Perfetto 调度轨道中的一个内核切片；page fault 会进入内核异常路径。分析工具和指标不能混用。
+TLB miss 不会自然表现为 Perfetto 调度轨道中的一个内核 slice；page fault 会进入内核异常路径。分析工具和指标不能混用。
 
 ### 1.2 16KB 页为什么可能减少 fault
 
-对连续访问的代码或数据，内核每次建立 16 KiB 映射，可以覆盖比 4 KiB 页更多的相邻字节。因此，顺序访问且局部性良好的工作负载可能产生更少的缺页和更少的页表项。
+对连续访问的代码或数据，内核每次建立 16 KiB 映射，可以覆盖比 4 KiB 页更多的相邻字节。因此，顺序访问且局部性良好的工作负载可能产生更少的 fault 和更少的页表项。
 
 代价是每次按页进行的映射、保护和回收也使用更大粒度。下面几类区域更容易增加内存：
 
 - 很多彼此独立的小型 `mmap()`；
-- ELF 段尾部无法被其他内容利用的空隙；
+- ELF segment 尾部无法被其他内容利用的空隙；
 - 带 guard page 的线程栈或专用 native arena；
 - 保护属性不同，无法放入同一页的相邻区域。
 
 “一个 1 KiB 对象在 16 KiB 设备上浪费 15 KiB”不是普遍规律。ART 堆和常见 native allocator 会在一页内放置多个小对象。只有单独向内核申请映射，或者保护边界迫使内容分开时，页尾空间才会按基础页粒度损失。
 
-页表内存则可能减少，因为覆盖相同虚拟地址范围所需的叶子页表项更少。最终 PSS/RSS 如何变化，要看应用的映射结构、线程数、分配器行为、文件共享以及系统服务共同产生的内存压力。Android 官方文档只给出“内存使用略有增加”的定性结论，不应扩展成固定百分比或按设备 RAM 推导的固定增量。
+页表内存则可能减少，因为覆盖相同虚拟地址范围所需的叶子页表项更少。最终 PSS/RSS 如何变化，要看 App 的映射结构、线程数、分配器行为、文件共享以及系统服务共同产生的内存压力。Android 官方文档只给出“内存使用略有增加”的定性结论，不应扩展成固定百分比或按设备 RAM 推导的固定增量。
 
 ## 2. 官方性能数据应该怎样解读
 
@@ -127,20 +127,20 @@ Google 公布的初期 Pixel 测试结果如下：
 
 | 场景 | 16 KiB 相对 4 KiB 的结果 |
 |---|---:|
-| 内存压力下的应用启动时间，平均 | 缩短 3.16% |
-| 内存压力下的应用启动时间，个别样本 | 最多缩短约 30% |
+| 内存压力下的 App 启动时间，平均 | 缩短 3.16% |
+| 内存压力下的 App 启动时间，个别样本 | 最多缩短约 30% |
 | App 启动功耗 | 降低 4.56% |
 | 相机热启动 | 加快 4.48% |
 | 相机冷启动 | 加快 6.60% |
 | 系统启动 | 加快约 8%，约 950ms |
 
-“3.16%”对应内存压力下的应用启动测试，不是所有冷启动的统一平均值。“最多 30%”是样本上界，也不能当作业务目标。官方资料没有公开完整样本、每个 build fingerprint 和统计分布，因此这些数据适合解释优化方向，不能替代应用自身的 A/B 测试。
+“3.16%”对应内存压力下的 App 启动测试，不是所有冷启动的统一平均值。“最多 30%”是样本上界，也不能当作业务目标。官方资料没有公开完整样本、每个 build fingerprint 和统计分布，因此这些数据适合解释优化方向，不能替代 App 自身的 A/B 测试。
 
 ## 3. App 兼容性的两道对齐门槛
 
-只要 APK 或 AAB 中含有原生代码，就要分别检查 ELF 和 ZIP。二者解决不同问题：
+只要 APK 或 AAB 中含有 native 代码，就要分别检查 ELF 和 ZIP。二者解决不同问题：
 
-1. **ELF LOAD 段对齐**：每个 `.so` 的 `PT_LOAD` 要能按 16 KiB 页边界映射。
+1. **ELF LOAD segment 对齐**：每个 `.so` 的 `PT_LOAD` 要能按 16 KiB 页边界映射。
 2. **APK 内未压缩 `.so` 的 ZIP 对齐**：文件在 APK 中的起始偏移要满足 16 KiB 对齐，Package Manager 才能直接从 APK 映射。
 
 修好其中一个，另一个仍可能使安装或加载失败。
@@ -155,7 +155,7 @@ Google 公布的初期 Pixel 测试结果如下：
 unzip -l app-release.apk | grep '\.so$'
 ```
 
-输出为空才说明这个 APK 没有携带 `.so`；它不能证明动态下载的模块或运行时加载路径也没有原生代码。
+输出为空才说明这个 APK 没有携带 `.so`；它不能证明动态下载的模块或运行时加载路径也没有 native 代码。
 
 ### 3.2 推荐的工具链基线
 
@@ -230,7 +230,7 @@ int page_size_from_bionic = getpagesize();
 
 - 用位掩码 `& ~4095` 向下对齐；
 - 用 `(size + 4095) / 4096` 计算页数；
-- 认为 `mmap()` 的文件偏移只需 4 KiB 对齐；
+- 认为 `mmap()` 的文件 offset 只需 4 KiB 对齐；
 - 把 `mprotect()` 的起始地址对齐到 4 KiB；
 - 自建 allocator 每次固定提交 4KB；
 - `/proc`、ELF 或 tombstone 解析器把页数直接乘以 4096。
@@ -251,11 +251,11 @@ static uintptr_t align_up(uintptr_t value, size_t alignment) {
 
 ### 4.3 小型映射要合并
 
-如果原生组件连续建立多个 1 KiB～4 KiB、权限相同的匿名映射，16 KiB 内核会为每个独立映射保留至少一个基础页。把同类数据放进一个 arena，再在其中做细粒度分配，通常比逐对象 `mmap()` 更节省内存。
+如果 native 组件连续建立多个 1 KiB～4 KiB、权限相同的匿名映射，16 KiB 内核会为每个独立映射保留至少一个基础页。把同类数据放进一个 arena，再在其中做细粒度分配，通常比逐对象 `mmap()` 更节省内存。
 
 合并前要检查生命周期和权限。代码、只读数据、可写数据以及 guard page 不能为了省空间被随意放进同一保护域。
 
-## 5. Android 17 bionic 链接器如何处理旧 ELF
+## 5. Android 17 bionic Linker 如何处理旧 ELF
 
 ### 5.1 页大小从哪里来
 
@@ -291,21 +291,21 @@ if (kPageSize == 16 * 1024 && min_align_ < kPageSize) {
 program alignment (4096) cannot be smaller than system page size (16384)
 ```
 
-这类错误说明 ELF 链接布局不合格。它和应用源码中的 `mprotect()` 地址错误是两条故障路径。
+这类错误说明 ELF 链接布局不合格。它和 App 源码中的 `mprotect()` 地址错误是两条故障路径。
 
 ### 5.3 `CompatMapSegment()` 做了什么
 
-正常路径中的 `MapSegment()` 可以把 ELF 文件段直接映射到进程地址空间。兼容路径要处理 4 KiB 段边界与 16 KiB 物理页边界不重合的问题，因此会：
+正常路径中的 `MapSegment()` 可以把 ELF 文件段直接映射到进程地址空间。兼容路径要处理 4 KB segment 边界与 16 KiB 物理页边界不重合的问题，因此会：
 
 1. 为 load range 预留额外地址空间；
-2. 按旧的 4 KiB 段边界读取内容；
+2. 按旧的 4 KB segment 边界读取内容；
 3. 把内容放进匿名映射；
 4. 调整 `load_bias_` 和 16 KiB 页上的权限边界；
 5. 在加载完成后恢复代码段、数据段和 RELRO 的保护。
 
 `linker_phdr_16kib_compat.cpp` 中的 `protect_segment_middle_pages()` 遇到 `PT_GNU_RELRO` 时会强制使用 `PROT_READ`。Android 17 的兼容模式没有关闭 RELRO；它把权限恢复放到了专用的 16 KiB 兼容处理流程。
 
-兼容模式让旧库有机会运行，但可能带来匿名拷贝、更多私有内存、额外读入和启动开销。具体增量取决于 ELF 布局和共享方式。系统依旧使用 16 KiB 基础页，不能据此断言应用失去所有 TLB 收益；也不能保证 `Shared_Clean` 必然归零或 PSS 必然增加某个数值。
+兼容模式让旧库有机会运行，但可能带来匿名拷贝、更多私有内存、额外读入和启动开销。具体增量取决于 ELF 布局和共享方式。系统依旧使用 16 KiB 基础页，不能据此断言 App 失去所有 TLB 收益；也不能保证 `Shared_Clean` 必然归零或 PSS 必然增加某个数值。
 
 ### 5.4 Android 17 的验证开关
 
@@ -374,7 +374,7 @@ adb shell getprop ro.build.fingerprint
 
 ### 第六步：观察内存与性能回归
 
-至少记录启动耗时、PSS/RSS、minor/major fault、线程数和 native mapping。若应用自建小型映射较多，还要比较 `/proc/<pid>/maps` 与 `smaps` 中的 VMA 数量和页尾损失。
+至少记录启动耗时、PSS/RSS、minor/major fault、线程数和 native mapping。若 App 自建小型映射较多，还要比较 `/proc/<pid>/maps` 与 `smaps` 中的 VMA 数量和页尾损失。
 
 ## 7. 常见故障如何定位
 
@@ -384,7 +384,7 @@ adb shell getprop ro.build.fingerprint
 
 ### 7.2 Linker 拒绝加载
 
-看到 `program alignment ... smaller than system page size` 时，用 `llvm-objdump -p` 找出具体 `.so` 的 LOAD 对齐。重新链接或升级预编译依赖，不要修改一个头字段后继续发布。
+看到 `program alignment ... smaller than system page size` 时，用 `llvm-objdump -p` 找出具体 `.so` 的 LOAD 对齐。重新链接或升级预编译依赖，不要修改一个 header 字段后继续发布。
 
 ### 7.3 `mprotect()` 返回 `EINVAL`
 
@@ -402,7 +402,7 @@ adb shell getprop ro.build.fingerprint
 - 兼容模式匿名映射改变了文件共享；
 - App 行为或 allocator 配置随构建版本改变。
 
-使用 `smaps` 比较同名映射的 `Size`、`Rss`、`Pss`、`Shared_Clean`、`Private_Clean` 和 `Private_Dirty`。这些字段需要前后配对分析，不能用单个字段证明兼容模式的全部成本。
+使用 `smaps` 比较同名 mapping 的 `Size`、`Rss`、`Pss`、`Shared_Clean`、`Private_Clean` 和 `Private_Dirty`。这些字段需要前后配对分析，不能用单个字段证明兼容模式的全部成本。
 
 ## 8. 性能测量：Perfetto 与 PMU 各管一段
 
@@ -427,7 +427,7 @@ Perfetto 可以对齐 App start、主线程调度、Binder、文件 I/O、`mmap(
 
 某些设备会暴露进程 fault counter，另一些设备不会。即使 counter 存在，其值也常是累计值；对累计 counter 求和会得到错误结果，应在测量窗口计算增量。将 `counter.value` 直接 `SUM()` 的 SQL 因此不可用。
 
-### 8.3 simpleperf 适合观察缺页与 TLB 事件
+### 8.3 simpleperf 适合观察 fault 与 TLB 事件
 
 先用 `simpleperf list` 查看 SoC 和内核导出的事件。`minor-faults`、`major-faults` 等软件事件通常可用；ITLB/DTLB refill、walk 类 PMU 事件的名称和权限依 SoC 而异，正文不能写死一个跨设备名称。
 
@@ -435,7 +435,7 @@ TLB 指标降低而启动时间不变，说明 TLB 可能不在关键路径。�
 
 ## 9. 与 THP、mTHP、contpte 的关系
 
-基础页、THP 和 contpte 都能改变 TLB 覆盖与缺页行为，但粒度和条件不同。
+基础页、THP 和 contpte 都能改变 TLB 覆盖与 fault 行为，但粒度和条件不同。
 
 ### 9.1 PMD 级 THP
 
@@ -458,7 +458,7 @@ adb shell zcat /proc/config.gz | grep CONFIG_TRANSPARENT_HUGEPAGE
 
 ### 9.2 mTHP
 
-Linux 6.18 支持多尺寸 THP。mTHP 使用大于基础页、又小于传统 PMD THP 的 2 的幂次 folio，例如多个 16 KiB 页组成 64 KiB、128 KiB 或更大的 folio。它们继续由 PTE 映射，可以用一次缺页分配和映射多页，降低缺页次数，同时避免每次都申请 32 MiB。
+Linux 6.18 支持 multi-size THP。mTHP 使用大于基础页、又小于传统 PMD THP 的 2 的幂次 folio，例如多个 16 KiB 页组成 64 KiB、128 KiB 或更大的 folio。它们继续由 PTE 映射，可以用一次 fault 分配和映射多页，降低 fault 次数，同时避免每次都申请 32 MiB。
 
 可用粒度由设备内核决定，应枚举目录：
 
@@ -493,18 +493,18 @@ CONT_PTE_SIZE = 128 × 16 KiB = 2 MiB
 
 | 机制 | 16 KiB 内核上的典型粒度 | 主要作用 | 关键条件 |
 |---|---:|---|---|
-| 基础页 | 16 KiB | 所有普通映射的基本粒度 | 内核以 16 KiB 粒度构建 |
+| 基础页 | 16 KiB | 所有普通映射的基本粒度 | 内核以 16 KB granule 构建 |
 | mTHP | 32KB～小于 32MB 的可用粒度 | 一次 fault 处理多个基础页 | per-size policy、连续 folio |
 | contpte | 2MB PTE 组 | 利用 contiguous hint 降低 TLB 压力 | 对齐、连续 PFN、同一 folio、相容权限 |
 | PMD THP | 32MB | PMD block 映射 | THP policy、连续大 folio |
 
-四者可以共存，但不会对每个应用、每段内存同时生效。性能报告要同时记录基础页、THP sysfs、`smaps` 和相关 vmstat，避免把 THP 或 contpte 的变化算进基础页收益。
+四者可以共存，但不会对每个 App、每段内存同时生效。性能报告要同时记录基础页、THP sysfs、`smaps` 和相关 vmstat，避免把 THP 或 contpte 的变化算进基础页收益。
 
 ## 10. Android 15 到 Android 17 的里程碑
 
 - **Android 15 / API 35**：AOSP 开始支持 16 KiB 页设备；16 KiB ELF 对齐的用户空间产物可同时运行在 4 KiB 和 16 KiB 内核上。
 - **Android 16 / API 36**：平台构建可用 `PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE := true` 检查预编译 ELF；`ignore_max_page_size: true` 和 `LOCAL_IGNORE_MAX_PAGE_SIZE := true` 只应用于临时豁免；`atest elf_alignment_test` 可检查设备上的 ELF。
-- **2025 年 11 月 1 日**：Google Play 要求面向 Android 15 / API 35 及以上的 64 位新应用和更新支持 16 KiB 页。
+- **2025 年 11 月 1 日**：Google Play 要求面向 Android 15 / API 35 及以上的 64 位新 App 和更新支持 16 KiB 页。
 - **Android 17 / API 37**：官方增加 `fatal` backcompat 验证方式，可让仍不兼容的二进制立即终止，便于在测试阶段找齐遗留库。
 
 上述时间线描述 AOSP、开发工具和 Play 提交要求，不代表每台 Android 15～17 设备都默认使用 16 KiB 页。OEM 是否启用要以目标设备的运行时结果为准。
@@ -515,17 +515,17 @@ CONT_PTE_SIZE = 128 × 16 KiB = 2 MiB
 
 不够。NDK r28+ 解决新编译 ELF 的默认对齐，App 仍可能包含旧 prebuilt、错误的 APK ZIP 对齐和写死 4096 的源码。
 
-### 纯 Java/Kotlin 应用需要改代码吗
+### 纯 Java/Kotlin App 需要改代码吗
 
-通常不用。前提是主工程和所有 SDK 都没有携带原生库。测试仍有必要，因为依赖树和打包产物可能与源码目录不同。
+通常不用。前提是主工程和所有 SDK 都没有携带 native 库。测试仍有必要，因为依赖树和打包产物可能与源码目录不同。
 
 ### 可以依赖 Android 17 兼容模式发布吗
 
 不建议。兼容模式用于给旧 ELF 争取迁移时间，也可能改变映射和内存成本。发布产物应在 fatal 模式下完整运行。
 
-### 16 KiB 页一定能让应用更快吗
+### 16 KiB 页一定能让 App 更快吗
 
-不能保证。工作集较大、局部性较好、fault 或 TLB 压力明显的场景更有机会受益；小型映射、内存敏感或瓶颈在 Binder、锁、I/O、GC、GPU 的应用可能收益有限，甚至出现内存回归。
+不能保证。工作集较大、局部性较好、fault 或 TLB 压力明显的场景更有机会受益；小型映射、内存敏感或瓶颈在 Binder、锁、I/O、GC、GPU 的 App 可能收益有限，甚至出现内存回归。
 
 ### 能否在代码里统一写死 16384
 
