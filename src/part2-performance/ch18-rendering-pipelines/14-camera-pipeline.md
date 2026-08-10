@@ -148,31 +148,13 @@ last_idle_audit_result: "frontmatter-fix-pass"
 
 # 18.14 Android 17 Camera 渲染管线
 
-<!-- outline-start -->
-
-**锚点（必须覆盖）：**
-
-- Camera 的多消费者（Multi-Stream）架构
-- HAL3 的 Request-Buffer 生命周期
-- 三种消费路径：Preview / Recording / Analysis
-- ZSL（Zero Shutter Lag）机制
-- 常见掉帧场景与诊断
-
-**扩展（可选深入）：**
-
-- CameraCaptureSession 回调的时间戳分析
-- DRM / Secure Camera Path
-- SurfaceView vs TextureView 预览的性能差异
-
-<!-- outline-end -->
-
 ## Camera 管线和普通 UI 有什么不同
 
 Camera 页面上的像素不是宿主 View 画出来的。sensor 曝光后，ISP 与 vendor pipeline 处理图像，Camera HAL 把结果写入多个输出 buffer；宿主 App 负责配置 Surface、下发控制、消费分析结果，并把预览承载进窗口系统。
 
 同一组 capture request 可以持续产生 preview、record、analysis 和 still capture 输出。每一路都有自己的格式、尺寸、buffer pool、consumer 与归还节奏。预览正常不代表分析或录像正常；某个 consumer 长时间占用 buffer，也可能通过共享 ISP stage、HAL pipeline 或有限内存反压其他输出。
 
-本文固定三组锚点：
+分析使用三组锚点：
 
 - 平台源码：Android 17 / API 37 / `android-17.0.0_r1`；
 - kernel：`android17-6.18-2026-06_r6`；

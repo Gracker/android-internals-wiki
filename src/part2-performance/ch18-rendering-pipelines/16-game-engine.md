@@ -187,31 +187,13 @@ sources:
 
 # 18.16 Android 17 游戏引擎渲染链路
 
-<!-- outline-start -->
-
-**锚点（必须覆盖）：**
-
-- 游戏引擎的 Game Loop 模型（与 App 事件驱动的区别）
-- 多线程架构：Logic Thread / Render Thread / Worker Threads
-- Unity 和 Unreal 的典型线程模型与 Trace 特征
-- Swappy Frame Pacing 的原理与作用
-- 游戏引擎普遍使用 SurfaceView + BLAST
-- ADPF / Frame Rate / Game Mode 三组系统调优 API
-
-**扩展（可选深入）：**
-
-- DrawCall 合批（Batching）与 GPU 性能
-- 常见游戏性能问题的诊断思路
-
-<!-- outline-end -->
-
 ## 游戏渲染要从输入追到显示
 
 普通 Android View 页面通常由事件触发：输入、动画或数据变化引起 `invalidate()`，`Choreographer` 在 VSync 节点驱动 ViewRootImpl 和 HWUI。游戏也要处理 Activity 生命周期、窗口和输入事件，但画面生产通常由引擎自己的 game loop 持续推进。
 
 这一区别改变了性能分析的起点。普通页面常从 UI Thread 的 `doFrame()` 往后看；游戏要从“哪一次输入被哪一轮 simulation 读取”开始，继续跟踪 Render / RHI、GPU、swapchain、BufferQueue、SurfaceFlinger 和显示 present。
 
-本文以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点，内核侧以 `android17-6.18-2026-06_r6` 为锚点。Unity、Unreal、Cocos、自研引擎、Swappy 和 GPU driver 各有独立版本，采集数据时要把引擎版本、graphics API、渲染后端、frame pacing 配置、Game Mode 和设备 build fingerprint 一起记录。
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点为 `android17-6.18-2026-06_r6`。Unity、Unreal、Cocos、自研引擎、Swappy 和 GPU driver 各有独立版本，采集数据时要把引擎版本、graphics API、渲染后端、frame pacing 配置、Game Mode 和设备 build fingerprint 一起记录。
 
 ## Game Loop 与事件驱动 UI 有什么不同
 
@@ -288,7 +270,7 @@ CPU 提交返回时，GPU 往往还在执行。生产者 fence signal 后，Surf
 4. **GPU 与 swapchain**：GPU 写入可呈现 image，`eglSwapBuffers()` 或 `vkQueuePresentKHR()` 把该 image 交给 Android native window。
 5. **Android display**：BufferQueue、SurfaceFlinger、HWC/RenderEngine、Composer HAL 和显示驱动完成 latch、合成与 present。
 
-这些阶段可以跨帧流水执行。Game thread 在准备 N+1 帧时，Render thread 可能处理 N 帧，GPU 仍在执行 N-1 帧。吞吐量会提高，输入也可能多等一到两轮。评审时要同时写“每秒完成多少帧”和“同一输入经历了多少个 in-flight frame”。
+这些阶段可以跨帧流水执行。Game thread 在准备 N+1 帧时，Render thread 可能处理 N 帧，GPU 仍在执行 N-1 帧。吞吐量会提高，输入也可能多等一到两轮。分析时要同时记录“每秒完成多少帧”和“同一输入经历了多少个 in-flight frame”。
 
 ## 多线程架构：职责比线程名更可靠
 
@@ -406,7 +388,7 @@ Swappy 是 AGDK Frame Pacing library：
 - GLES 侧可使用 `EGL_ANDROID_presentation_time`，Vulkan 侧可使用 `VK_GOOGLE_display_timing` 等能力；
 - 目标是避免帧过早 present 和 queue-stuffing，同时兼顾不同刷新率。
 
-Swappy 中的 wait 可能是有意的 pacing。评审这段等待时，要问三个问题：目标 interval 是否正确、队列里有几帧、输入到 present 是否缩短。只把 wait slice 优化掉，常会把问题变回 queue-stuffing。
+Swappy 中的 wait 可能是有意的 pacing。分析这段等待时，要检查目标 interval 是否正确、队列里有几帧、输入到 present 是否缩短。只把 wait slice 优化掉，常会把问题变回 queue-stuffing。
 
 ### Pipeline 与 non-pipeline
 
@@ -470,7 +452,7 @@ Swappy、Frame Rate、ADPF 和 Game Mode 经常一起出现，职责并不相同
 
 Android 11 / API 30 起，Java 可调用 `Surface.setFrameRate()`，Native 可调用 `ANativeWindow_setFrameRate()`；API 31 增加 change strategy。对游戏内容应使用 `FRAME_RATE_COMPATIBILITY_DEFAULT`，不要使用面向固定帧率视频的 `FIXED_SOURCE`，也不要使用明确不适合游戏的 `AT_LEAST`。
 
-截至本次核对，游戏专用的“Optimize refresh rates”页面示例仍传入 `FIXED_SOURCE`，但 `Surface` API 契约和通用 Frame rate 指南都明确限定：`FIXED_SOURCE` 只用于视频，游戏应传 `DEFAULT`。这里按公开 API 契约与通用指南处理，不能照抄该示例。
+游戏专用的“Optimize refresh rates”页面示例传入 `FIXED_SOURCE`，但 `Surface` API 契约和通用 Frame rate 指南都明确限定：`FIXED_SOURCE` 只用于视频，游戏应传 `DEFAULT`。应以公开 API 契约和通用指南为准，不能照抄该示例。
 
 Frame Rate API 只是投票。系统可能因 thermal、battery、其他可见 Surface 或 display mode 能力选择不同刷新率。Android 15 起，游戏默认刷新率策略更偏向 60 Hz；想要 90/120 Hz 的游戏应显式申请，并继续用 Swappy 或自研 pacer 控制提交节奏。
 

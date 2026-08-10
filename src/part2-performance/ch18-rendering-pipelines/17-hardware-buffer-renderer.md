@@ -162,27 +162,9 @@ sources:
 ---
 # 18.17 Android 17 HardwareBufferRenderer
 
-<!-- outline-start -->
-
-**锚点（必须覆盖）：**
-
-- 🔹 HardwareBufferRenderer 解决的核心问题：lockCanvas() 的性能瓶颈
-- 🔹 GPU 硬件加速离屏渲染 vs CPU 软件渲染
-- 🔹 API 使用流程：RenderRequest → GPU Rasterize → Fence → SurfaceControl
-- 🔹 性能对比：lockCanvas() vs HardwareBufferRenderer
-- 🔹 适用场景：HDR、跨进程 Buffer 共享、高帧率渲染
-
-**扩展（可选深入）：**
-
-- 🔸 Java API vs NDK API 的差异
-- 🔸 与 RenderNode 的关系
-- 🔸 在旧版本上的降级策略
-
-<!-- outline-end -->
-
 ## HBR 的问题边界
 
-`Surface.lockCanvas()` 面向的是“CPU 直接画进一个 `Surface`”。调用方从 `BufferQueue` 取得可写 buffer，Skia 的 software backend 在 CPU 上完成光栅化，`unlockCanvasAndPost()` 再把 buffer 排回队列。复杂 Path、大尺寸缩放、滤镜或高分辨率离屏内容会消耗可观的 CPU 时间，这正是 `HardwareBufferRenderer`（下文简称 HBR）要覆盖的一类问题。
+`Surface.lockCanvas()` 面向的是“CPU 直接画进一个 `Surface`”。调用方从 `BufferQueue` 取得可写 buffer，Skia 的 software backend 在 CPU 上完成光栅化，`unlockCanvasAndPost()` 再把 buffer 排回队列。复杂 Path、大尺寸缩放、滤镜或高分辨率离屏内容会消耗可观的 CPU 时间，这是 `HardwareBufferRenderer`（HBR）要覆盖的一类问题。
 
 不过，不能据此得出“HBR 是 `lockCanvas()` 的硬件加速开关”。Android 还有 `Surface.lockHardwareCanvas()`，它已经使用 HWUI/GPU，只是输出目标仍是 `Surface`。三者的边界如下：
 
@@ -198,7 +180,7 @@ Android 17 的 `Surface.java` 还明确规定，`lockHardwareCanvas()` 不保留
 
 ## Android 17 中的实现边界
 
-HBR 是 Android 14 / API 34 加入的 Java API。它复用了 HWUI 的现有基础设施，并没有创建一套独立于应用 UI 的渲染系统。Android 17 源码给出了几条很重要的生命周期约束：
+HBR 是 Android 14 / API 34 加入的 Java API。它复用了 HWUI 的现有基础设施，并没有创建一套独立于应用 UI 的渲染系统。Android 17 源码明确了以下生命周期约束：
 
 - 所有 `HardwareBufferRenderer` 与 `HardwareRenderer` 共享应用进程里的公共 RenderThread、GPU context 和 GPU 资源。HBR 的工作量可能与普通 View 硬件渲染争用 RenderThread 和 GPU。
 - 进程里创建第一个 HBR 时可能要初始化 GPU context，冷启动成本不能算进稳态单帧数据；后续实例相对便宜。
@@ -525,7 +507,7 @@ HBR 构造时固定输出 buffer，没有更换 target 的 API。buffer 池应�
 | Android 14 / API 34 | `HardwareBufferRenderer`、`RenderRequest` 与 `RenderResult` 公开，支持 RenderNode 到调用方 HardwareBuffer |
 | Android 15 / API 35 | `Transaction.setFrameTimeline()`、`setDesiredPresentTimeNanos()` 与 `setDesiredHdrHeadroom()` 公开 |
 | Android 16 / API 36 | NDK `ASurfaceTransaction_setBufferWithRelease()` 和逐 buffer release callback 公开 |
-| Android 17 / API 37 | HBR 没有新增公开方法；本章按 `android-17.0.0_r1` 核对 request reset、四种直角旋转、JNI fence 和 SurfaceControl 提交语义 |
+| Android 17 / API 37 | HBR 没有新增公开方法；按 `android-17.0.0_r1` 核对 request reset、四种直角旋转、JNI fence 和 SurfaceControl 提交语义 |
 
 这一演进表不能反向推出旧版本存在 HBR。API 33 已有 HardwareBuffer direct Layer 和 fence 基础能力，Java HBR 类仍要到 API 34 才能使用。
 
@@ -545,7 +527,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
 
 若目标只是画到 `Surface`，优先保留 Surface 模型；若协议必须输出独立共享 buffer，再评估 EGL/Vulkan 或 AndroidX Graphics 的兼容封装。降级路径也要保持 color space、同步和资源所有权语义，不能只替换类名。
 
-## Review 清单
+## 复核清单
 
 - [ ] 已确认需要的是“RenderNode → 独立 HardwareBuffer”，而不只是 GPU Canvas
 - [ ] 用 `HardwareBuffer.isSupported()` 验证 format、尺寸和 usage
