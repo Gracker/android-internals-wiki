@@ -72,64 +72,7 @@ last_review_finalize_run_id: "20260731-200809-b4d1007d"
 
 # 20.25 线程泄漏与匿名线程监控实战
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 线程泄漏的危害与类型
-- 线程泄漏 → FD 耗尽 → ANR/crash 链路
-- "匿名线程"是归因缺失，不是线程状态；需通过 owner 和创建来源证明是否泄漏
-- 线程泄漏与内存泄漏的关联：活线程作为 GC root 保留对象；已终止 Thread 被强引用也会滞留
-
-### 🔹 Java 层线程监控方案
-- ThreadGroup.activeCount() 遍历与线程列表获取
-- Thread.getAllStackTraces() 获取全量线程堆栈
-- 线程命名规范与「匿名线程」识别策略
-- [结构参考: Clippings/Android 应用稳定性剖析与优化 - 线程监控：如何解决"匿名"线程？]
-
-### 🔹 Native 层线程监控
-- /proc/self/task/ 目录遍历获取 Native 线程列表
-- 自有 C/C++ 代码优先用 RAII 包装层覆盖 pthread 成对事件；三方库可用限定范围的 PLT/inline hook 但不能默认开启
-- 线程名受 kernel comm 16 字节边界限制（含 NUL），`prctl(PR_SET_NAME)` 覆盖率检查应配合注册表
-
-### 🔹 线程池泄漏检测
-- ThreadPoolExecutor 的 activeCount vs poolSize 判断
-- ScheduledThreadPoolExecutor 未关闭任务检测
-- OkHttp Dispatcher 线程池监控
-- Kotlin Coroutine Dispatcher 线程泄漏排查
-
-### 🔹 线程创建阈值与告警
-- 基于 ulimit 与 /proc/self/limits 的线程数上限检测
-- 告警阈值需按进程角色、版本、设备分组校准，不能写成 Android 平台通用阈值
-- 线程数突增检测（短时间大量创建）
-
-### 🔹 线程与 FD 关联监控
-- 线程不天然持有一个 FD；线程和 FD 一起增长通常表示同一模块同时创建 worker 与 socket/pipe/file
-- 资源成本需区分虚拟地址映射、resident pages 与 task/TLS 结构，不能简单按"线程数 × 1MB"估算
-- /proc/self/fd 目录监控与 FD 类型分析
-
-### 🔹 线上线程治理体系
-- 线程命名注册表（ThreadFactory 统一命名）
-- 线程快照定期上报（启动后/前台/后台/ANR 时）
-- 线程数基准线与版本间回归检测
-
-### 🔹 典型案例分析
-- 第三方广告 SDK 创建大量匿名线程：需用 owner、source 分布和创建事件证明因果，不能仅凭 Thread-N 判定
-- GlobalScope 泄漏：协程任务增长而 Linux task 稳定时是 scope/任务生命周期问题，不自动产生新线程
-- WorkManager 多进程场景：需按 PID 分组，区分多进程固定基线开销与单进程内持续增长
-
-## 扩展
-
-### 🔸 Android 17 线程创建限制
-- Android 17 对 bionic 的线程创建安全检查增强
-- RLIMIT_NPROC 在 Android 容器化场景下的影响
-
-### 🔸 Perfetto 线程状态追踪
-- 使用 Perfetto 的 Linux process_stats 插件进行线程级分析
-- sched_switch 事件与线程生命周期的关联
-
-<!-- outline-end -->
-
-本文的平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`，涉及 task 创建、`/proc` 和资源限制时的内核锚点是 `android17-6.18-2026-06_r6`。
+平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`，涉及 task 创建、`/proc` 和资源限制时的内核锚点是 `android17-6.18-2026-06_r6`。
 
 ## 先定义“泄漏”的对象
 
@@ -511,7 +454,7 @@ API 36 已公开稳定的 `Thread.isVirtual()`，但公开该查询方法不等�
 
 测试结束后必须退出测试进程或由明确 owner 释放资源。不要在承载用户数据的线上进程中通过制造几百条线程、降低 limit 或留下 joinable pthread 来验证告警。
 
-## Review 清单
+## 检查清单
 
 - [ ] 是否区分 Linux task、Java platform thread、pool worker、协程 Job 与 raw pthread？
 - [ ] 是否用生命周期和 owner 证明泄漏，而非看到 `WAITING` 或匿名名称就下结论？

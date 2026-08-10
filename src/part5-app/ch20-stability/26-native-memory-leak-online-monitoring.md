@@ -43,7 +43,7 @@ sources:
 
 Native 内存问题很少能靠一条曲线定性。`malloc` 仍然存活的字节、分配器向内核映射的页、进程驻留页、按比例分摊后的 PSS，以及 GPU 或 dma-buf 占用，回答的是不同问题。若把它们都叫作“Native Heap”，告警会互相矛盾，定位也容易走偏。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，讨论普通三方应用可以部署的监控方法。内核行为以 `android17-6.18-2026-06_r6` 为锚点。涉及 Android 10—16 的内容仅用于说明接口演进和兼容边界。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，讨论普通三方应用可以部署的监控方法。内核行为以 `android17-6.18-2026-06_r6` 为锚点。涉及 Android 10—16 的内容仅用于说明接口演进和兼容边界。
 
 ## 1. Android 17 让异常增长更早变成进程退出
 
@@ -336,7 +336,7 @@ HWASan 官方给出的典型成本约为 CPU +100%、代码 +50%、内存 +10%�
 
 Scudo 支持通过 `__scudo_default_options()` 或 `SCUDO_OPTIONS` 配置部分行为。这适用于可控的 Native 进程、测试构建或系统组件；由 Zygote 启动的普通三方应用不应把环境变量当作可远程切换的线上开关。
 
-outline 中的 `options=scudo_options` 不是 Android 17 公布的 Scudo 配置语法，正文不采用该写法。选项名称和默认值也可能随平台构建变化，使用前要以目标版本的 Scudo 文档和源码为准。
+Android 17 没有公布名为 `options=scudo_options` 的 Scudo 配置语法。选项名称和默认值也可能随平台构建变化，使用前要以目标版本的 Scudo 文档和源码为准。
 
 bionic 对外提供的 `mallopt` 命令更适合应用代码调用：
 
@@ -377,7 +377,7 @@ purge 只能尝试把 allocator 中已经空闲且可归还的页交回内核。
 
 不要在进程中无差别 hook 所有 `mmap` 后就把结果称为业务泄漏。运行时、linker、线程栈、JIT、文件映射和系统库都会使用 mmap；必须结合 flags、fd、VMA 名称与 owner events 分类。
 
-outline 提到的 “Kohanakai / Android 14+ mmap tracking” 无法在 Android 公开 NDK、Perfetto 文档或 AOSP Android 17 源码中核实为可供应用使用的正式工具或 API。没有明确源码路径、接口契约和发布说明前，不应把这个名称写入生产设计。现有可验证路径是 owner 侧 mmap 记账、`smaps`/VMA 分类、Perfetto RSS 数据和组件自身统计。
+Android 公开 NDK、Perfetto 文档和 AOSP Android 17 源码中，没有可供应用使用、名为 “Kohanakai / Android 14+ mmap tracking” 的正式工具或 API。没有明确源码路径、接口契约和发布说明前，不应把这个名称写入生产设计。现有可验证路径是 owner 侧 mmap 记账、`smaps`/VMA 分类、Perfetto RSS 数据和组件自身统计。
 
 ## 10. 三类常见案例怎样建立证据
 

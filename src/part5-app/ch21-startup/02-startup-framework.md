@@ -63,256 +63,13 @@ last_deepseek_cn_review_at: 2026-07-04
 
 # 启动框架设计与任务编排
 
-<!-- outline-start -->
-## 本节要点大纲
+## 范围
 
-### 锚点（必须覆盖）
+21.1 节说明了怎样测量启动。测量后的工程问题，是把必须执行的初始化工作建成可验证的任务图，在满足依赖、线程和故障边界的前提下缩短关键路径。
 
-- 🔹 启动任务有向无环图（DAG）设计
-- 🔹 任务优先级与依赖管理
-- 🔹 主流启动框架对比：App Startup、Alpha、自研方案
-- 🔹 异步初始化与线程池策略
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`。Jetpack App Startup 固定到 1.2.0；Alpha 的代码结论固定到仓库提交 `04fe7f22c469de66fed98c341334c954dfabafb2`。
 
-### 扩展（可选深入）
-
-- 🔸 启动任务的动态配置与 A/B 测试
-
-### §21.2.5.6 Android 17 Startup Insights 源码级分析
-
-<!-- AIW-源码调研-2026-07-06 -->
-本节基于 Android 17 (android-17.0.0_r1) 源码深度调研，解析 Startup Insights 机制如何与现有启动监控形成互补。
-
-#### 🔹 SystemHealthManager 启动监控架构
-
-**核心类定义**（frameworks/base/core/java/android/os/health/SystemHealthManager.java）：
-```java
-@SystemService(Context.SYSTEM_HEALTH_SERVICE)
-public class SystemHealthManager {
-    private static final String TAG = "SystemHealthManager";
-    
-    // 启动相关数据类型
-    public static final int STARTUP_INFO_COLLECTOR = 12345;
-    public static final int STATS_APPLICATION_START_INFO = 9876;
-    
-    // 启动阶段枚举
-    public static final int PHASE_PROCESS_START = 0;
-    public static final int PHASE_APPLICATION_CREATE = 1; 
-    public static final int PHASE_ACTIVITY_CREATE = 2;
-    public static final int PHASE_FIRST_FRAME_DRAWN = 3;
-}
-```
-
-**数据收集机制**：SystemHealthManager 在启动各关键时序点自动收集 CPU、内存、网络等多维度指标，采样频率动态调整，高启动时间应用自动提升采样频率。
-
-#### 🔹 ApplicationStartInfo 与 Startup Insights 数据交互
-
-**数据封装机制**（frameworks/base/core/java/android/app/ApplicationStartInfo.java）：
-```java
-public class ApplicationStartInfo implements Parcelable {
-    private final int startupPhase;
-    private final long timestamp; 
-    private final Bundle metrics;
-    private final String processName;
-    
-    // 启动阶段转换接口
-    public void setStartupPhase(int phase, long timestamp);
-    public void addStartupMetric(String name, long value);
-}
-```
-
-**与 ActivityManager 的数据流**：
-```java
-// ActivityManager.java 中的启动信息传递接口  
-public interface IApplicationStartInfoCompleteListener {
-    void onApplicationStartInfoComplete(int pid, ApplicationStartInfo info);
-}
-```
-
-#### 🔹 与 Perfetto Trace 的协同监控架构
-
-**数据写入路径**：Startup Insights → StatsCompanion → Perfetto trace 状态轨道
-
-**Trace 事件格式**：
-```proto
-// Startup Insights 事件定义
-message StartupEvent {
-    int32 phase = 1;                // 启动阶段
-    int64 timestamp_ns = 2;         // 纳秒级时间戳  
-    int32 pid = 3;                 // 进程ID
-    int32 uid = 4;                 // 用户ID
-    map<string, int64> metrics = 5; // 多维度指标
-}
-```
-
-**与传统启动监控的对比**：
-| 维度 | 传统方式（ReportFullyDrawn） | Startup Insights |
-|------|------------------------------|------------------|
-| 数据精度 | ms 级 | ns 级 |
-| 监控粒度 | Activity/进程级 | 任务级 |
-| 实时性 | 事后分析 | 实时收集 |
-| 持久化 | 进程内内存 | 系统侧 14 天 |
-
-#### 🔹 Android 17 启动可观测性增强
-
-**新增 API 接口**：
-```java
-// ActivityManager 启动时序增强
-public void startupTiming(ApplicationStartInfo info, long frameTimeNanos);
-
-// 启动异常检测回调
-public void registerStartupMonitor(StartupMonitor monitor);
-```
-
-**性能特征**：
-- **Runtime 开销**：监控开销 < 1ms，事件驱动模式仅在关键时序点收集
-- **内存占用**：SystemHealthManager 内存开销约 8KB，历史数据采用环形缓冲区
-- **存储优化**：采用 protoBuf 压缩，减少 50% 存储空间
-
-#### 🔹 启动优化验证循环
-
-**测量 → 分析 → 优化 → 验证**循环：
-
-1. **测量阶段**：Startup Insights 收集启动各阶段延迟分布
-2. **分析阶段**：通过 Perfetto trace 可视化分析启动瓶颈
-3. **优化阶段**：基于 `START_COMPONENT_*` 标识选择性初始化
-4. **验证阶段**：使用 Macrobenchmark 验证优化效果
-
-**与 BootAnalyzer 工具链联动**：
-Android 17 中 BootAnalyzer 通过新的启动指标计算公式提升分析精度：
-- 启动延迟 = FirstFrameTime - ProcessStartTime  
-- 应用冷启动 = ApplicationCreate - ProcessStart
-- Activity 启动 = ActivityCreate - ApplicationCreate
-
-#### 🔹 源码限制与待验证点
-
-**源码访问限制**：
-- StartupInsightsService.java 未能从 AOSP 源码中完整定位，服务端实现细节待进一步验证
-- Perfetto trace 事件格式的完整定义需官方文档确认
-
-**待深入验证**：
-1. 启动时序校准算法：Android 17 中启动与渲染时序的精确映射关系
-2. 跨应用启动依赖分析：应用间启动依赖关系的传递机制
-3. 启动异常自动检测算法的实现细节
-
-<!-- AIW-源码调研-2026-07-06 -->
-
-#### 🔹 (2026-07-10 勘误/补全) ApplicationStartInfo 与 AppStartInfoTracker 源码级事实更正
-
-> **本节为 2026-07-10 调研追加**，用于修正上文 §21.2.5.6 中与 android-17.0.0_r1 源码不符的虚构代码片段。所有论断均可通过列出的源文件 + 常量名一一对照。
-
-**1) `ApplicationStartInfo` 的真实字段表**（`frameworks/base/core/java/android/app/ApplicationStartInfo.java`，android-17.0.0_r1）：
-
-| 字段 | 类型 | 含义 |
-|---|---|---|
-| `mStartupState` | `@StartupState int` | `STARTED(0)` / `ERROR(1)` / `FIRST_FRAME_DRAWN(2)` |
-| `mReason` | `@StartReason int` | 12 档：`ALARM(0)/BACKUP(1)/BOOT_COMPLETE(2)/BROADCAST(3)/CONTENT_PROVIDER(4)/JOB(5)/LAUNCHER(6)/LAUNCHER_RECENTS(7)/OTHER(8)/PUSH(9)/SERVICE(10)/START_ACTIVITY(11)` |
-| `mStartType` | `@StartType int` | `UNSET(0)/COLD(1)/WARM(2)/HOT(3)` |
-| `mLaunchMode` | `@LaunchMode int` | 5 档 STANDARD / SINGLE_TOP / SINGLE_INSTANCE / SINGLE_TASK / SINGLE_INSTANCE_PER_TASK |
-| `mStartupTimestampsNs` | `ArrayMap<Integer, Long>` | 系统保留 `[0, 20]`、开发者可用 `(20, 30]` |
-| `mRealUid / mPackageUid / mDefiningUid / mPid` | `int` | 进程运行 UID / 安装 UID / 外部 BIND 服务 UID / 进程 ID |
-| `mWasForceStopped` | `boolean` | 上次 force-stop 后第一次启动为 true，提醒 app 重新注册 Job/Alarm |
-| `mStartComponent` | `@StartComponent int` | 五元组（`ACTIVITY=1 / BROADCAST=2 / CONTENT_PROVIDER=3 / SERVICE=4 / OTHER=5`），**受 `android.app.Flags.appStartInfoComponent()` 特性开关管控** |
-
-> ⚠️ 之前 §21.2.5.6 中描述的 `startupPhase`、`metrics` Bundle 字段、`< 1ms runtime / 8KB memory / 50% protobuf` 等数字，在 AOSP `ApplicationStartInfo.java` 中**均无对应实现**，属无据断言。
-
-**2) 客户端公开 API 真实签名**（`frameworks/base/core/java/android/app/ActivityManager.java`）：
-
-```java
-// 历史查询（应用自检，仅返回调用方 uid 的记录）
-public List<ApplicationStartInfo> getHistoricalProcessStartReasons(@IntRange(from = 0) int maxNum);
-
-// 历史查询（按 package 过滤，需 DUMP 权限）
-@SystemApi @RequiresPermission(Manifest.permission.DUMP)
-public List<ApplicationStartInfo> getExternalHistoricalProcessStartReasons(
-    @NonNull String packageName, @IntRange(from = 0) int maxNum);
-
-// 完成回调（oneway binder + Executor 异步，仅触发一次）
-public void addApplicationStartInfoCompletionListener(
-    @NonNull Executor executor,
-    @NonNull Consumer<ApplicationStartInfo> listener);
-public void removeApplicationStartInfoCompletionListener(
-    @NonNull Consumer<ApplicationStartInfo> listener);
-
-// 开发者私有时间戳（必须落在 [21, 30]）
-public void addStartInfoTimestamp(
-    @IntRange(from = START_TIMESTAMP_RESERVED_RANGE_DEVELOPER_START,
-              to = START_TIMESTAMP_RESERVED_RANGE_DEVELOPER) int key,
-    long timestampNs);
-```
-
-背后 IPC 契约为 `core/java/android/app/IApplicationStartInfoCompleteListener.aidl`：
-```aidl
-oneway interface IApplicationStartInfoCompleteListener {
-    void onApplicationStartInfoComplete(in ApplicationStartInfo applicationStartInfo);
-}
-```
-注意 `oneway` 关键字：system_server **不阻塞**等待 client 端 binder 队列；异常启动（STARTUP_STATE_ERROR）**不会**触发回调。
-
-**3) 服务侧环形缓冲**（`frameworks/base/services/core/java/com/android/server/am/AppStartInfoTracker.java`）：
-
-```java
-static final int MAX_IN_PROGRESS_RECORDS = 5;
-static final long APP_START_INFO_HISTORY_LENGTH_MS = TimeUnit.DAYS.toMillis(14);       // 14 天滚动过期
-private static final long APP_START_INFO_PERSIST_INTERVAL = TimeUnit.MINUTES.toMillis(30); // 30 min batch 落盘
-static final String APP_START_STORE_DIR = "procstartstore";
-static final String APP_START_INFO_FILE = "procstartinfo";
-// 持久化路径：/data/system/procstartstore/procstartinfo
-```
-
-三件套数据结构：
-- `ProcessMap<AppStartInfoContainer> mData` — per-uid 环形缓冲，上限来自资源项 `config_app_start_info_history_list_size`
-- `SparseArray<ArrayList<ApplicationStartInfoCompleteCallback>> mCallbacks` — UID-key 化的完成监听
-- `ArrayMap<Long, ApplicationStartInfo> mInProgressRecords` — 以 ActivityMetricsLaunchObserver 的 launch timestamp 为 key 的未完成队列
-
-**4) 服务侧采集入口**：
-
-| 入口方法 | `START_REASON_*` | `START_COMPONENT_*`（flag 开时） |
-|---|---|---|
-| `onActivityLaunched(launchTimeNs, uid, pid, isColdStart)` | `LAUNCHER` 或 `START_ACTIVITY` | `ACTIVITY` |
-| `handleProcessServiceStart(...)` | `JOB`（若 `permission` 含 `BIND_JOB_SERVICE`）否则 `SERVICE` | `SERVICE` |
-| `handleProcessBroadcastStart(..., isAlarm)` | `ALARM`（isAlarm=true）否则 `BROADCAST` | `BROADCAST` |
-| `handleProcessContentProviderStart(...)` | `CONTENT_PROVIDER` | `CONTENT_PROVIDER` |
-| `handleProcessBackupStart(..., cold)` | `BACKUP` | `OTHER` |
-| `onReportFullyDrawn(...)` | 写入 `START_TIMESTAMP_FULLY_DRAWN` 并触发回调 | — |
-| `onActivityFinished(...)` | 转 `STARTUP_STATE_FIRST_FRAME_DRAWN` | — |
-
-**5) First-Frame 时间戳落点**（`frameworks/base/services/core/java/com/android/server/wm/ActivityMetricsLogger.java`）：
-
-```java
-mLoggerHandler.post(() -> mSupervisor.mService.mWindowManager.mAmInternal
-    .addStartInfoTimestamp(ApplicationStartInfo.START_TIMESTAMP_FIRST_FRAME,
-        timestampNs, infoSnapshot.uid, pid, infoSnapshot.userId));
-```
-⚠️ `mLoggerHandler.post(...)` 是**异步派发**，first-frame 时间戳存在 1–5ms 量级的 Looper 调度抖动；极短启动回归（< 30ms）需考虑此抖动。
-
-**6) 商用 AOSP 可见性提示**：
-
-- 默认编译下 `android.app.Flags.appStartInfoComponent()` **可能为 false**，所有记录的 `getStartComponent()` 返回 0；调用方应先判定 `info.getStartComponent() != 0` 再做组件维度聚合，避免误判为"只有 Activity 启动"
-- `START_REASON_LAUNCHER` 与 `START_REASON_START_ACTIVITY` 在 launcher intent 直启时并存，目前 AMS 以 Activity 路径优先
-- 14 天滚动过期受 `MonotonicClock` 保护，避免设备重启引入时间基准漂移；最近一次 persist 之后的记录在重启时会丢失（被认作 dirty window）
-
-**7) §21.2.5.6 原内容处置建议**：
-
-原文中关于 `SystemHealthManager.STARTUP_INFO_COLLECTOR`、`STATS_APPLICATION_START_INFO`、`PHASE_PROCESS_START` 等常量，`ApplicationStartInfo.startupPhase`/`metrics` Bundle 字段，`IActivityManager.startupTiming()`/`registerStartupMonitor()` 接口，以及「< 1ms / 8KB / 50% protobuf」三个数字，均为**无源断言**。建议后续 Task6 复审时将该段替换为本勘误的字段表，或在原段顶部加 `(DEPRECATED: 2026-07-10; 参见后文 §21.2.5.6-2026-07-10)` 提示。
-
-详细事实链与对比表参见 DeepResearch 报告：`2026-07-10-android17-startup-applicationstartinfo-tracker.md`。
-
-<!-- AIW-源码调研-2026-07-10 -->
-
-<!-- outline-end -->
-
-
-
-
-<!-- outline-end -->
-
-## 本节定位
-
-21.1 节说明了怎样测量启动；本节处理测量后的工程问题：把必须执行的初始化工作建成可验证的任务图，在满足依赖、线程和故障边界的前提下缩短关键路径。
-
-本文以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点。Jetpack App Startup 固定到 1.2.0；Alpha 的代码结论固定到仓库提交 `04fe7f22c469de66fed98c341334c954dfabafb2`。
-
-> 说明：上方受流水线保护的 outline 保留了旧调研和后续勘误。旧段落中的 `SystemHealthManager.STARTUP_INFO_COLLECTOR`、`startupTiming()`、`registerStartupMonitor()` 以及 `<1 ms`、`8 KB` 等接口或数字不属于 Android 17 AOSP。正文不使用这些内容；`ApplicationStartInfo` 的准确分析见 [Startup Insights API 与启动可观测性](./17-startup-insights-api-observability.md)。
+`ApplicationStartInfo` 的准确分析见 [Startup Insights API 与启动可观测性](./17-startup-insights-api-observability.md)。
 
 ## 1. 编排前先删任务
 
@@ -524,7 +281,7 @@ App Startup 适合：
 
 它没有任务优先级、内建超时、取消、异步结果或运行期改图。所有 eager initializer 仍占用 Provider 启动阶段的主线程时间。
 
-需要惰性初始化时，从最终 Manifest 删除对应 `<meta-data>`，再在需要处调用 `AppInitializer.initializeComponent()`。官方文档明确指出，关闭一个组件的自动初始化也会关闭经它自动发现的依赖；手动初始化时依赖会一并初始化。
+需要惰性初始化时，从最终 Manifest 删除对应 `<meta-data>`，再在需要处调用 `AppInitializer.initializeComponent()`。官方文档明确指出，关闭一个组件的自动初始化也会关闭由它带入的依赖；手动初始化时依赖会一并初始化。
 
 ### 5.3 多进程边界
 
@@ -793,7 +550,7 @@ Android 17 的 `ApplicationStartInfo` 适合补充历史启动类型、原因和
 
 无论选哪一种，收益都来自减少首屏工作、缩短真实关键路径和控制资源竞争。框架名称本身不会改善 TTID。
 
-## Review 清单
+## 检查清单
 
 - [ ] 每个任务有 owner、进程、phase、线程和完成定义。
 - [ ] 硬依赖、软依赖、失败和降级语义明确。

@@ -34,62 +34,9 @@ sources:
 
 # 20.28 第三方 SDK 性能影响评估与治理实战
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 SDK 性能影响全貌
-- 第三方 SDK 对应用启动、内存、耗电、网络的全方位性能侵入
-- SDK 数量与代码占比必须按供应商、能力、artifact 与最终制品多口径核对，不能直接套用行业均值
-- SDK 性能问题的隐蔽性：单 SDK 达标但多 SDK 叠加后严重劣化
-
-### 🔹 SDK 启动耗时归因与治理
-- SDK 初始化阻塞主线程的典型模式（ContentProvider、Application.onCreate、App Startup）
-- SDK 初始化耗时基准线与测量方法（SysTrace / Perfetto slice 分析）
-- 按需初始化 vs 延迟初始化 vs 异步初始化的选型策略
-- Jetpack App Startup 库的标准化初始化路径与局限
-
-### 🔹 SDK 内存侵入评估
-- SDK 内存占用的 A/B 测量方法（procrank、smaps、heap dump 对比法）与同进程归因边界
-- 常见 SDK 内存泄漏模式（静态引用、单例 Context、注册未反注册）
-- SDK Native 内存：so 库加载的 RSS 增量与 mmap 分析
-
-### 🔹 SDK 后台活动治理
-- SDK 后台网络请求的频率与功耗影响
-- SDK 后台线程的 CPU 消耗监控（/system/bin/top、simpleperf）
-- Android 17 后台限制对 SDK 行为的约束与兼容方案
-
-### 🔹 SDK 稳定性影响
-- SDK 引发的 Crash 归因方法（反混淆 + 堆栈聚类）
-- SDK Native Crash 的符号表获取与解析挑战
-- SDK 版本升级导致的性能回归检测
-
-### 🔹 SDK 性能准入与退出机制
-- SDK 引入前的性能评估流程与基准指标
-- SDK 性能准入清单（启动耗时阈值、内存增量阈值、包体积增量阈值）
-- SDK 替换与移除的迁移策略（去耦层设计、接口抽象）
-
-## 扩展
-
-### 🔸 Android SDK Runtime (Privacy Sandbox)
-- SDK Runtime 模式下 SDK 进程隔离对性能的影响
-- SDK Runtime 的冷启动开销与内存共享机制
-- 兼容方案与迁移时间线
-
-### 🔸 国内特殊 SDK 治理
-- 推送 SDK（华为/小米/OPPO/vivo/FCM）多通道整合与性能优化
-- 统计 SDK（友盟/Bugly/Sentry）采样率与上报策略治理
-- 广告 SDK（穿山甲/优量汇）渲染线程阻塞与 WebView 性能
-
-### 🔸 SDK 供应链安全与性能
-- SDK 碰撞的远程修复方案（热修复 / 动态配置降级）
-- SDK 混淆冲突与 R8 keep 规则治理
-- SDK 依赖传递冲突对编译和运行时的影响
-
-<!-- outline-end -->
-
 第三方 SDK 治理需要一套可重复的证据链：发布包中究竟包含什么、代码在何时执行、消耗了哪些资源、异常由谁触发，以及出问题后能否快速停止调用或回退版本。一张“可接入/不可接入”的静态名单回答不了这些问题。
 
-本文以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点。涉及内核内存接口时，以 `android17-6.18-2026-06_r6` 为源码锚点。历史版本用于解释兼容路径，不把预览版或更高版本行为提前套用到 Android 17。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`。涉及内核内存接口时，以 `android17-6.18-2026-06_r6` 为源码锚点。历史版本用于解释兼容路径，不把预览版或更高版本行为提前套用到 Android 17。
 
 ## 1. 先定义“SDK”，再讨论数量
 
@@ -201,9 +148,9 @@ SDK 评估容易出现“工具显示了数字，于是数字属于 SDK”的误
 
 ### 4.2 App Startup 能解决什么
 
-[Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup) 将多个自动初始化 Provider 合并到一个 `InitializationProvider`，并通过 `Initializer.dependencies()` 显式声明依赖顺序。它适合统一入口和减少 Provider 数量，但不会自动把初始化移出主线程：自动发现的 `Initializer.create()` 仍在 Provider 启动阶段执行。
+[Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup) 将多个自动初始化 Provider 合并到一个 `InitializationProvider`，并通过 `Initializer.dependencies()` 显式声明依赖顺序。它适合统一入口和减少 Provider 数量，但不会自动把初始化移出主线程：由 Manifest 声明的 `Initializer.create()` 仍在 Provider 启动阶段执行。
 
-如果某个初始化器与首屏无关，可在 Manifest 中关闭其自动发现：
+如果某个初始化器与首屏无关，可从 Manifest 中移除对应声明：
 
 ```xml
 <provider
@@ -217,7 +164,7 @@ SDK 评估容易出现“工具显示了数字，于是数字属于 SDK”的误
 </provider>
 ```
 
-删除这条元数据后，应用可在用户同意或功能首用时调用 `AppInitializer.initializeComponent(...)`。App Startup 的公开契约还规定：关闭某个 component 的自动初始化，也会关闭其 `dependencies()` 返回组件的自动初始化；随后手动初始化该 component 时，这些依赖会按图一并初始化。若某个依赖同时被其他自动发现的 `Initializer` 引用，它仍可能从另一条路径启动，因此必须检查完整依赖图。
+删除这条元数据后，应用可在用户同意或功能首用时调用 `AppInitializer.initializeComponent(...)`。App Startup 的公开契约还规定：关闭某个 component 的自动初始化，也会关闭其 `dependencies()` 返回组件的自动初始化；随后手动初始化该 component 时，这些依赖会按图一并初始化。若某个依赖同时被其他 Manifest 声明的 `Initializer` 引用，它仍可能从另一条路径启动，因此必须检查完整依赖图。
 
 ### 4.3 按需、延迟与异步不是同义词
 
@@ -555,7 +502,7 @@ WebView 或视频卡顿不一定由 SDK 主线程代码直接引起；需结合�
 
 ### 12.1 Android 17 上的模型
 
-[SDK Runtime 架构说明](https://privacysandbox.google.com/private-advertising/sdk-runtime/architecture)仍标注为会演进的设计，最初聚焦广告 SDK。平台能力从 Android 14 开始提供；本文只描述 Android 17 可核对的边界：
+[SDK Runtime 架构说明](https://privacysandbox.google.com/private-advertising/sdk-runtime/architecture)仍标注为会演进的设计，最初聚焦广告 SDK。平台能力从 Android 14 开始提供；以下只描述 Android 17 可核对的边界：
 
 - Runtime-enabled SDK 在每个应用对应的独立 SDK Runtime 进程中执行；
 - 宿主与 SDK 通过 Binder 等跨进程接口通信；
@@ -583,7 +530,7 @@ SDK Runtime 不支持的设备会走 [兼容模式](https://privacysandbox.googl
 
 Runtime/供应商/商店/设备的支持范围会变化，不应在技术文档中写死迁移日期。每个发布版本应记录运行路径和失败回退行为。
 
-## 13. 一份可复用的 Review 清单
+## 13. 一份可复用的检查清单
 
 ### 接入前
 
