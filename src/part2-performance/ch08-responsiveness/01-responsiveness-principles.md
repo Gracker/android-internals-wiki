@@ -90,24 +90,6 @@ last_task9_review_log: "logs/deep-review/2026-07-09-04-deep-review.md"
 
 # 响应速度原理
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 响应速度的定义：用户操作到视觉反馈的完整延迟
-- 🔹 RAIL 模型在 Android 场景的应用：Response < 100ms, Animation 命中 VSync Deadline, Idle 分块利用, Load < 5s
-- 🔹 系统级响应路径：Input → App 处理 → 渲染 → 上屏
-- 🔹 Android Vitals 中的响应速度指标
-- 🔹 感知速度 vs 实际速度：骨架屏、占位图、过渡动画的视觉优化
-
-### 扩展（可选深入）
-
-- 🔸 Interaction-to-Next-Paint（INP）概念在 Android 的对应物
-- 🔸 Google Play Console 中的 App 性能数据解读
-
-<!-- outline-end -->
-
 ## 响应速度要量哪一段
 
 响应速度描述用户操作与可见反馈之间的延迟。这个定义听起来很直观，测量时却必须把起点、终点和交互语义写清楚。
@@ -192,7 +174,7 @@ flowchart LR
 
 触摸驱动通过 Linux input 子系统产生事件。Android 的 `EventHub` 从输入设备节点读取原始事件，`InputReader` 完成设备映射、坐标变换、手势状态整理等工作，再把规范化事件交给 `InputDispatcher`。
 
-在 Android 17 源码中，`InputManager` 分别启动 `InputReader` 和 `InputDispatcher` 的 native 线程。二者由 `InputManagerService` 在 `system_server` 中托管，旧文档里常见的“InputFlinger 进程”或“InputFlinger 线程”不适合作为当前进程归属描述。
+在 Android 17 源码中，`InputManager` 分别启动 `InputReader` 和 `InputDispatcher` 的 native 线程。二者由 `InputManagerService` 在 `system_server` 中托管，因此不能将当前进程归属写成“InputFlinger 进程”或“InputFlinger 线程”。
 
 `InputDispatcher` 依据当前窗口、触摸目标、焦点和策略选择接收端。`publishMotionEvent()` 通过 `InputPublisher` 写入目标 `InputChannel`。`InputTransport.cpp` 的 `InputChannel::sendMessage()` 与 `receiveMessage()` 展示了这条逐事件通道；底层使用 Unix domain socket。Binder 负责窗口与通道的建立、配置和控制调用，不负责承载每一条 `MotionEvent`。
 
@@ -409,7 +391,7 @@ ACK 表示事件处理返回。帧请求、VSync 等待、渲染、合成和呈�
 - Android 14（API 34）加入公共 `MotionPredictor`；同版本起，广播 ANR 对 CPU-starved 进程采用可伸缩超时区间。
 - Android 15 QPR1 在满足 HAL 条件的设备上支持 ARR。
 - Android 16 增加 `Display.hasArrSupport()`、`getSuggestedFrameRate(int)` 等 ARR 查询接口。
-- Android 17（API 37）是本文的平台上限。本文不假定 API 37 新增了统一的 Android INP/UIL Vitals 指标，也不把厂商私有输入预测或显示 trace 当作 AOSP 通用接口。
+- Android 17（API 37）是平台上限。API 37 没有统一的 Android INP/UIL Vitals 指标，厂商私有输入预测或显示 trace 也不能当作 AOSP 通用接口。
 
 ## 源码与官方资料
 

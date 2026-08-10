@@ -82,26 +82,6 @@ last_task6_audit: "2026-06-23"
 
 # App 启动全流程
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 冷启动 / 温启动 / 热启动的定义与区别
-- 🔹 冷启动完整流程:Process.start → ActivityThread → Application.onCreate → Activity.onCreate → 首帧绘制
-- 🔹 TTID(Time To Initial Display)与 TTFD(Time To Full Display / reportFullyDrawn)的定义
-- 🔹 启动耗时的度量方法:adb am start -W、Logcat ActivityTaskManager、Perfetto
-- 🔹 Application.onCreate 中常见的耗时操作:SDK 初始化、数据库初始化、多 Dex 加载
-- 🔹 首帧绘制的关键路径:inflate → measure → layout → draw
-
-### 扩展(可选深入)
-
-- 🔸 Baseline Profile 与 Cloud Profile 对启动速度的提升
-- 🔸 App Startup Library(AndroidX)的使用与原理
-- 🔸 Zygote preload 对启动速度的贡献量化
-
-<!-- outline-end -->
-
 ## 启动性能要回答的三个问题
 
 一次应用启动横跨 Launcher、`system_server`、Zygote、应用进程、SurfaceFlinger 和显示设备。把总耗时压成一个数字，只能说明结果慢；修复工作还需要回答三个问题：
@@ -110,7 +90,7 @@ last_task6_audit: "2026-06-23"
 2. 目标是首帧可见的 TTID，还是主内容可交互的 TTFD？
 3. 时间消耗发生在系统调度、进程创建、应用初始化、Activity/UI 创建，还是首帧渲染与合成？
 
-本文以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点。涉及调度、缺页和存储 I/O 时，内核基线为 `android17-6.18-2026-06_r6`。文章不会为 SDK 初始化、Zygote preload 或某个优化手段给出脱离设备与样本的固定收益。
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。涉及调度、缺页和存储 I/O 时，内核基线为 `android17-6.18-2026-06_r6`。SDK 初始化、Zygote preload 或其他优化手段的收益都需要结合设备与样本测量。
 
 ## 冷启动、温启动与热启动
 
@@ -434,7 +414,7 @@ Application 回调适合建立所有入口都必须拥有、耗时可控的进�
 
 ### 多 DEX 与 ART
 
-本文覆盖 Android 8.0 到 Android 17，这些版本的 ART 原生支持多 DEX。Android 5.0 以下的 `MultiDex.install()` 解压与安装问题属于历史兼容路径，不应套用到当前基线。
+Android 8.0 到 Android 17 的 ART 原生支持多 DEX。Android 5.0 以下的 `MultiDex.install()` 解压与安装问题属于历史兼容路径，不应套用到当前基线。
 
 多 DEX 仍会影响现代启动：类所在 DEX 的文件布局、页缓存、校验、类加载和解释/JIT/AOT 状态都会改变启动成本。应通过 class loading slice、文件 I/O、编译过滤器和 Macrobenchmark 的 compilation mode 验证，不要把所有 DEX 成本归因于“方法数超过 65536”。
 
@@ -491,7 +471,7 @@ class TelemetryInitializer : Initializer<Telemetry> {
 }
 ```
 
-App Startup 会先初始化 `ConfigInitializer`，再调用 `TelemetryInitializer.create()`。自动发现的 Initializer 仍在 `InitializationProvider.onCreate()` 中执行，仍然早于 `Application.onCreate()`；共享 Provider 不会自动把工作移到后台，也不会自动延迟初始化。
+App Startup 会先初始化 `ConfigInitializer`，再调用 `TelemetryInitializer.create()`。通过 manifest metadata 注册的 Initializer 仍在 `InitializationProvider.onCreate()` 中执行，仍然早于 `Application.onCreate()`；共享 Provider 不会自动把工作移到后台，也不会自动延迟初始化。
 
 不需要首帧前运行的组件，应从 manifest 中移除对应 metadata，再按需调用 `AppInitializer.initializeComponent()`。未适配 App Startup 的第三方 Provider 不能被框架自动接管，必须使用 SDK 提供的关闭开关或与供应方确认替代入口。
 
@@ -547,7 +527,7 @@ Profile 优化字节码执行与 DEX 布局。同步网络、慢 Binder、数据
 - Android 9（API 28）及更高版本可从 Google Play 获得 Cloud Profile，前提是渠道和样本满足条件。
 - Android 12（API 31）统一 SplashScreen，并提供 FrameTimeline 诊断首帧。
 - Android 15（API 35）加入 `ApplicationStartInfo`，AOSP 同期支持 16 KB page-size 设备。
-- Android 17（API 37）是本文平台上限。源码路径和时序以 `android-17.0.0_r1` 为准，不把厂商私有启动加速器当作 AOSP 保证。
+- Android 17（API 37）是平台上限。源码路径和时序以 `android-17.0.0_r1` 为准，不把厂商私有启动加速器当作 AOSP 保证。
 
 ## Android 17 源码锚点
 

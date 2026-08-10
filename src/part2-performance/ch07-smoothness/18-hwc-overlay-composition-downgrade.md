@@ -57,43 +57,9 @@ last_task6_audit: "2026-07-01T02:15:04+08:00"
 
 # 7.18 HWC Overlay Plane 与合成降级排查
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 问题边界：App 帧正常但显示仍掉帧
-说明 HWC Overlay Plane 和 SurfaceFlinger 合成降级适合解释哪类卡顿：App 主线程、RenderThread 看起来没有超时，但 FrameTimeline 或屏幕呈现仍出现 SF missed / DisplayHAL 侧异常。
-
-### 🔹 HWC 合成协商流程
-梳理 `validateDisplay()`、`getChangedCompositionTypes()`、`acceptDisplayChanges()`、`presentDisplay()` 的协作顺序，明确 `DEVICE` 与 `CLIENT` composition 的含义和排查价值。
-
-### 🔹 Overlay Plane 能力上限
-整理 Plane 数量、像素格式、alpha / blending、旋转缩放、受保护内容、带宽和 vendor policy 对合成类型的影响，避免只按 Layer 数量下结论。
-
-### 🔹 Perfetto 与 dumpsys 证据采集
-给出 `android.surfaceflinger.frametimeline`、SurfaceFlinger 进程 slice、Layer trace、Winscope 和 `dumpsys SurfaceFlinger` 的证据组合，说明每类证据能回答的问题。
-
-### 🔹 典型触发场景
-围绕视频通话、相机预览 + UI 浮层、播放器字幕/弹幕、多窗口、系统栏叠加等场景，拆出 Layer 数量、Layer 属性和刷新率/分辨率变量。
-
-### 🔹 优化动作与回归验证
-整理减少独立 Layer、合并 overlay、调整 SurfaceView Z-order、降低缩放/旋转组合、分设备灰度和同机 trace 对比的验证方法。
-
-## 扩展
-
-### 🔸 Qualcomm / MediaTek / Pixel HWC 策略差异
-记录公开资料能确认的边界；厂商私有策略必须标注为待验证或实机证据。
-
-### 🔸 与 18.15 视频叠加和 HWC 的交叉引用
-排查和治理动作放在 7.18；HWC / 视频叠加原理详见 18.15 节，SurfaceFlinger 合成机制详见 2.6 节。
-
-### 🔸 线上指标设计
-探索是否能把 CLIENT composition 比例、SF missed frame、设备型号和场景标签纳入线上问题分群。
-
-<!-- outline-end -->
-
 ## 诊断边界：App 按时交帧，屏幕仍可能迟到
 
-本文以 Android 17 / API 37、`android-17.0.0_r1` 为平台源码锚点，kernel 侧以 `android17-6.18-2026-06_r6` 为锚点。Composer HAL、显示驱动和 plane 分配策略常由厂商实现，AOSP 能确认接口语义与 SurfaceFlinger 调用关系，设备行为仍需实机证据。
+平台源码锚点为 Android 17 / API 37、`android-17.0.0_r1`，kernel 侧以 `android17-6.18-2026-06_r6` 为锚点。Composer HAL、显示驱动和 plane 分配策略常由厂商实现，AOSP 能确认接口语义与 SurfaceFlinger 调用关系，设备行为仍需实机证据。
 
 一次可见更新至少涉及两个时间域：
 
@@ -410,7 +376,7 @@ SurfaceView 与 TextureView 的选择需要同时评估动画/裁剪需求、延
 - **Android 12 / API 31**：FrameTimeline 成为显示卡顿归因的主要数据源，SurfaceView 应用侧轨道仍有覆盖限制。
 - **Android 13 / API 33**：Composer HAL 开始以 AIDL Composer3 为平台主接口，旧 HIDL/HWC2 文档仍有历史参考价值。
 - **Android 15 / API 35**：Winscope trace 接入 Perfetto；旧 Winscope 的 HWC UI 标记进入废弃边界。
-- **Android 17 / API 37**：本文固定到 `android-17.0.0_r1`。composition type、skip-validate、client target 与 fence 结论均按该 tag 核对。
+- **Android 17 / API 37**：composition type、skip-validate、client target 与 fence 结论均按 `android-17.0.0_r1` 核对。
 
 ## 源码与资料
 
@@ -422,4 +388,3 @@ SurfaceView 与 TextureView 的选择需要同时评估动画/裁剪需求、延
 - [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)：SurfaceFrame / DisplayFrame、jank 分类与 SQL 表。
 - [Winscope adb capture](https://source.android.com/docs/core/graphics/winscope/capture/adb) 与 [SurfaceFlinger viewer](https://source.android.com/docs/core/graphics/winscope/analyze/sf)：Android 17 Layer trace 配置及字段边界。
 - [`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c) 与 [`dma-fence.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/dma-fence.h)：固定 kernel tag 下的 fence 基础语义。
-- 内部权威基线：`Writer/rendering_pipelines/S03_surfaceview_type.md`、`S04_textureview_type.md`、`S05_mixed_rendering_type.md`、`S06_multi_window_type.md`、`S12_video_overlay_hwc_type.md`。

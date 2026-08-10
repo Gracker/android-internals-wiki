@@ -31,7 +31,7 @@ sources:
 
 Android 无障碍框架同时服务于屏幕阅读、开关控制、放大、语音控制、测试自动化和其他辅助功能。性能分析不能把这些形态压成一个“无障碍已开启”开关：服务订阅的事件、是否读取窗口内容、节点查询频率、输入模式和自身实现都不同。
 
-本文以 Android 17 / API 37、`android-17.0.0_r1` 为平台源码锚点。这里主要讨论 framework、Binder、应用 UI 线程与服务进程；不涉及需要 kernel tag 才能解释的专有机制。
+平台源码锚点为 Android 17 / API 37、`android-17.0.0_r1`。这里主要讨论 framework、Binder、应用 UI 线程与服务进程；不涉及需要 kernel tag 才能解释的专有机制。
 
 ## 两条方向相反的性能链
 
@@ -288,7 +288,7 @@ Compose 属于 AndroidX 依赖，性能行为要按项目锁定的 Compose 版�
 
 ### Android 17 accessibility trace
 
-`userdebug` 或 `eng` 构建可以使用专用 accessibility trace。下面的命令只启用本章需要的接口类型，减少全量 trace 干扰。
+`userdebug` 或 `eng` 构建可以使用专用 accessibility trace。下面的命令只启用相关接口类型，减少全量 trace 干扰。
 
 ```bash
 adb root
@@ -344,7 +344,7 @@ Android 17 AOSP dump 没有通用的 “Event Dispatch Statistics” 或 “Inte
 - **Android 12 / API 31**：`AccessibilityServiceInfo.isAccessibilityTool()` 成为公开 API，系统可以区分辅助残障用户的工具与其他服务。
 - **Android 13 / API 33**：新增节点 prefetch strategy 与 `MAX_NUMBER_OF_PREFETCHED_NODES = 50`；多项 `obtain()` / `recycle()` 对象池 API 被废弃。
 - **Android 14 / API 34**：新增 `setMinDurationBetweenContentChanges()` 与 accessibility data sensitive 能力，为高频内容节流和敏感事件过滤提供公开边界。
-- **Android 17 / API 37**：本文按 `android-17.0.0_r1` 核对。事件仍通过 oneway `sendAccessibilityEvent()` 上报；服务连接仍按配置过滤/延迟；节点请求仍进入目标 ViewRoot looper，并受缓存、prefetch 策略和 50 节点上限约束。
+- **Android 17 / API 37**：按 `android-17.0.0_r1` 核对。事件仍通过 oneway `sendAccessibilityEvent()` 上报；服务连接仍按配置过滤/延迟；节点请求仍进入目标 ViewRoot looper，并受缓存、prefetch 策略和 50 节点上限约束。
 
 平台版本不能替代 AccessibilityService、TalkBack、Compose、WebView 和厂商 framework 的具体版本。任何百分比性能结论都要附带设备、服务版本、页面、交互和 trace，不能跨设备套用。
 
