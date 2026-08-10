@@ -74,30 +74,11 @@ last_deepseek_cn_review_at: 2026-06-14
 
 # 启动优化策略
 
-<!-- outline-start -->
-## 本节要点大纲
+## 工程决策边界
 
-### 锚点（必须覆盖）
+[8.2 App 启动全流程](02-app-launch.md)解释了 Android 如何创建进程、绑定 `Application`、安装 Provider、创建 Activity 并提交首帧。启动优化需要沿着这条时序判断：哪些工作应删除，哪些应推迟，哪些能够并发，哪些只能留在主线程，以及怎样证明改动有效。
 
-- 🔹 延迟初始化策略：按需加载、懒加载、异步初始化
-- 🔹 Splash Screen（Android 12+ SplashScreen API）的正确使用
-- 🔹 多线程并行初始化框架设计：拓扑排序、依赖管理
-- 🔹 ContentProvider 优化：减少 auto-init 的库数量
-- 🔹 布局优化对首帧速度的影响：减少 inflate 耗时、ViewStub、异步 inflate
-- 🔹 Baseline Profile 的制作与效果量化
-
-### 扩展（可选深入）
-
-- 🔸 大型 App 的启动框架设计（如 Task 编排系统）
-- 🔸 启动速度的线上监控与回归检测
-
-<!-- outline-end -->
-
-## 本章解决什么问题
-
-[8.2 App 启动全流程](02-app-launch.md)解释了 Android 如何创建进程、绑定 `Application`、安装 Provider、创建 Activity 并提交首帧。本章沿着那条时序做工程决策：哪些工作应删除，哪些应推迟，哪些能够并发，哪些只能留在主线程，以及怎样证明改动有效。
-
-平台源码锚点统一为 Android 17 / API 37 / `android-17.0.0_r1`。涉及线程调度、缺页与存储 I/O 时，内核锚点为 `android17-6.18-2026-06_r6`。历史版本只用于解释 API 和行为演进。启动收益受设备、构建产物、入口、数据状态和编译状态影响，本文不为某个 SDK、布局或优化手段给出通用毫秒数。
+平台源码锚点统一为 Android 17 / API 37 / `android-17.0.0_r1`。涉及线程调度、缺页与存储 I/O 时，内核锚点为 `android17-6.18-2026-06_r6`。历史版本只用于解释 API 和行为演进。启动收益受设备、构建产物、入口、数据状态和编译状态影响，不能为某个 SDK、布局或优化手段套用通用毫秒数。
 
 启动优化可以按下面的顺序推进：
 
@@ -268,7 +249,7 @@ CPU 任务和阻塞 I/O 也要分开管理。协程的 `Dispatchers.Default` 与
 
 ## Jetpack App Startup 的准确边界
 
-Jetpack App Startup 用一个 `InitializationProvider` 发现 `Initializer`，并通过 `dependencies()` 规定初始化顺序。AndroidX `AppInitializer#doInitialize()` 会递归完成依赖，再调用 `Initializer.create()`。自动发现发生在 Provider 安装阶段，通常位于应用主线程和 `Application.onCreate()` 之前。
+Jetpack App Startup 用一个 `InitializationProvider` 读取 manifest metadata 中注册的 `Initializer`，并通过 `dependencies()` 规定初始化顺序。AndroidX `AppInitializer#doInitialize()` 会递归完成依赖，再调用 `Initializer.create()`。这项注册处理发生在 Provider 安装阶段，通常位于应用主线程和 `Application.onCreate()` 之前。
 
 它解决了 Provider 数量与依赖顺序问题，但有三个边界：
 
@@ -307,7 +288,7 @@ AGP 版本和模块结构会改变中间目录。Android Studio 的 Merged Manif
 
 ### 关闭 App Startup 的单个自动项
 
-下面的 Manifest 片段用于移除一个 App Startup 自动发现项，同时保留公共 `InitializationProvider`：
+下面的 Manifest 片段用于移除一个 App Startup metadata 注册项，同时保留公共 `InitializationProvider`：
 
 ```xml
 <provider

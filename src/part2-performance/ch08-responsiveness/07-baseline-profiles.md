@@ -72,34 +72,8 @@ finalized_by: "openclaw-task9-auto-promote"
 
 这项能力跨越构建、分发和 ART 三个阶段：AGP/R8 把可读规则改写并打包，安装来源决定 Profile 何时进入设备，ART Service 再管理编译产物。三者任一环节缺失，包里存在 `baseline.prof` 也不代表当前进程已经使用对应 AOT 代码。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点，历史边界追溯到 Android 7。重点放在可验证的生成、打包、安装、编译和测量路径。
-<!-- outline-start -->
-## 本节要点大纲
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，历史边界追溯到 Android 7。重点放在可验证的生成、打包、安装、编译和测量路径。
 
-### 锚点（必须覆盖）
-
-- 🔹 **Android 7 与 Android 9 的编译时间线要分开写**：
-  Android 7 引入 JIT、本地 Profile 和后台 `dex2oat`；Android 9 起 Google Play 才能分发 Cloud Profiles。
-
-- 🔹 **HRF 文本、二进制产物、安装后 OAT 目录是三件事**：
-  `baseline-prof.txt` 位于 `src/<variant>/generated/baselineProfiles/`，构建后得到 `baseline.prof`；APK 看 `/assets/dexopt/baseline.prof`，AAB 看 `/BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`，安装后的 `base.odex` 在 `/data/app/.../oat/arm64/`。
-
-- 🔹 **安装来源会改变 Profile 的消费时机**：
-  Google Play、Android Studio/Gradle、其他 installer + `ProfileInstaller` 的行为不同，`verify` 只表示当前还没看到已编译产物，不等于 APK 或 AAB 里没有 Baseline Profile。
-
-- 🔹 **验证路径先看编译状态，再看启动收益**：
-  编译状态用 `ProfileVerifier`（Android 9+）或 `dumpsys package dexopt`，收益用 Macrobenchmark 的 TTID / TTFD 对比 `CompilationMode.None()` 与 `CompilationMode.Partial()`。
-
-- 🔹 **`<profileable>` 与 OEM dexpreopt 要分开写**：
-  `<profileable>` 元素和 `android:shell` 都从 API 29 开始可用；API 30 新增的是 `android:enabled`。`WITH_DEXPREOPT_*` 属于系统镜像 preopt 开关，和应用侧 Baseline Profiles 不是一套机制。
-
-### 扩展（可选深入）
-
-- 🔸 Startup Profiles 与 DEX layout
-- 🔸 Google Play Cloud Profiles 的公开边界
-- 🔸 1.12 节 AutoFDO 与应用侧 Profile 的分工
-
-<!-- outline-end -->
 ## 为什么需要 Baseline Profiles
 
 ART 要同时照顾安装耗时、磁盘占用和运行速度。Android 5.0～6.0 倾向在安装期做大范围 AOT；Android 7.0 改为解释执行、JIT、本地 Profile 与后台 AOT 协作。这个变化缩短了安装时间，却给新安装、新升级后的代码留下了一段“尚未按热点编译”的窗口。
@@ -136,7 +110,7 @@ Android 9（API 28）增加 Google Play Cloud Profiles 的分发能力。Play �
 | `ProfileVerifier` | Android 9 / API 28+ | 用于区分已编译、已入队和异常状态 |
 | `<profileable>`、`android:shell` | Android 10 / API 29 | 允许 release-like 包被 shell 性能工具分析 |
 | `<profileable android:enabled>` | Android 11 / API 30 | 控制应用能否被系统服务或 shell 分析 |
-| ART Service | Android 14 起成为平台 dexopt 管理主路径 | 本章源码固定到 `android-17.0.0_r1` |
+| ART Service | Android 14 起成为平台 dexopt 管理主路径 | 源码固定到 `android-17.0.0_r1` |
 
 这张表描述平台能力，不等同于构建工具的推荐版本。当前官方工具链建议至少使用 AGP 8.0、Macrobenchmark 1.4.1 和 ProfileInstaller 1.4.1；新项目使用 AGP 8.2+ 的 Baseline Profile Generator 模板更省维护成本。
 
@@ -193,7 +167,7 @@ Android 9～11 可以在实验室把 APK 和包含 `primary.prof`、`primary.pro
 
 ## Android 17 的 ART Service 锚点
 
-Android 17 平台源码固定在 `android-17.0.0_r1`。与本章直接相关的目录包括：
+Android 17 平台源码固定在 `android-17.0.0_r1`。相关目录包括：
 
 - [`artd/`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/artd/)：执行 dexopt、产物校验和文件操作的守护进程侧实现。
 - [`libartservice/`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/)：system_server 中 ART Service 的 API、调度和状态管理。
@@ -202,7 +176,7 @@ Android 17 平台源码固定在 `android-17.0.0_r1`。与本章直接相关的�
 
 Android 17 中，安装、后台 dexopt、OTA 后处理和命令行请求都会进入 ART Service 管理的 dexopt 场景。安装时若有可用的 Dex Metadata Profile，默认 filter 可为 `speed-profile`；没有时通常从 `verify` 起步。设备空闲充电时，后台任务再按 Profile 编译。源码文档同时允许厂商通过属性和 API 调整默认策略，因此某台设备上的 reason 与执行时机可能不同于 AOSP 默认值。
 
-Cloud Profile 的服务端聚合和 Play 交付不在 AOSP `platform/art` 仓库中。公开资料足以确认它面向 Android 9+ 的 Play 分发，却不足以推导私有服务端文件格式或调度实现。本章不采用“Android 16 云端预编译包”“SDM 固定格式”等无法从公开一手资料复核的说法。
+Cloud Profile 的服务端聚合和 Play 交付不在 AOSP `platform/art` 仓库中。公开资料足以确认它面向 Android 9+ 的 Play 分发，却不足以推导私有服务端文件格式或调度实现。因此不能采用“Android 16 云端预编译包”“SDM 固定格式”等无法从公开一手资料复核的说法。
 
 ## 生成与维护 Baseline Profile
 
@@ -426,7 +400,7 @@ Baseline Profile 面向 ART 管理的 DEX 代码，回答“哪些类和方法�
 | 消费者 | ART / dex2oat | LLVM / Clang 链接与优化阶段 |
 | 主要验证 | ProfileVerifier、dexopt、Macrobenchmark | 构建日志、符号化采样、native 基准 |
 
-内核侧版本若涉及 AutoFDO、CoreSight 或调度实现，统一以 `android17-6.18-2026-06_r6` 为当前锚点；本章没有依赖某个内核实现的 Baseline Profile 结论。
+内核侧版本若涉及 AutoFDO、CoreSight 或调度实现，统一以 `android17-6.18-2026-06_r6` 为当前锚点；Baseline Profile 结论不依赖某个内核实现。
 
 ## 工程验收清单
 
