@@ -341,7 +341,7 @@ FrameTimeline 要求 Android 12/API 31 及以上。`Expected Timeline` 表示 sc
 
 - 应用进程的 Choreographer/AChoreographer / AChoreographer callback 与 render-thread marker；
 - `Expected Timeline` 和 `Actual Timeline`；
-- GPU 渲染阶段与生产者栅栏；
+- GPU render stages 与 producer fence；
 - 对应图层的 BufferQueue/SurfaceFlinger / SurfaceFlinger slice。
 
 对于受 FrameTimeline 支持的窗口，下面的查询把预算、实际工作时长和 jank 归因放到同一行。它沿用 Android 17 Perfetto metric 中按 `upid + name` 关联 expected / actual slice 的方式。
