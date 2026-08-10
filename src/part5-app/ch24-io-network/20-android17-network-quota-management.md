@@ -55,7 +55,7 @@ sources:
 
 # Android 17 NetworkStatsService 与 NetworkPolicyManagerService 移动数据 quota 限速源码路径
 
-Android 17 的网络用量控制包含统计、周期策略、告警、阻断和后台访问限制。源码里常见的 `quota` 表示剩余字节预算，耗尽后拒绝报文；它不表示把移动网络限制到某个 Kbit/s 速率。本文沿 `android-17.0.0_r1` 追踪完整调用路径，并说明普通应用能够观察和控制的边界。
+Android 17 的网络用量控制包含统计、周期策略、告警、阻断和后台访问限制。源码里常见的 `quota` 表示剩余字节预算，耗尽后拒绝报文；它不表示把移动网络限制到某个 Kbit/s 速率。下面沿 `android-17.0.0_r1` 追踪完整调用路径，并说明普通应用能够观察和控制的边界。
 
 ## 1. 版本与结论
 
@@ -93,7 +93,7 @@ Android 17 的网络用量控制包含统计、周期策略、告警、阻断和
 | 原生执行 | [`NetdNativeService.cpp`](https://android.googlesource.com/platform/system/netd/+/refs/tags/android-17.0.0_r1/server/NetdNativeService.cpp)、[`BandwidthController.cpp`](https://android.googlesource.com/platform/system/netd/+/refs/tags/android-17.0.0_r1/server/BandwidthController.cpp) | 安装、更新和移除接口 `quota2` 规则 |
 | 内核匹配器 | [`xt_quota2.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/net/netfilter/xt_quota2.c) | 按报文字节递减命名计数器，跨越阈值时发出事件 |
 
-模块位置会影响源码检索。沿旧文章常见的
+模块位置会影响源码检索。沿旧版路径
 `frameworks/base/services/core/java/com/android/server/net/NetworkStatsService.java`
 查找 Android 17，会得到错误结论；这一服务的实现已经进入
 `packages/modules/Connectivity/service-t`。

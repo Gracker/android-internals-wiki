@@ -72,23 +72,7 @@ last_task9_autofix_at: "2026-06-22"
 
 # 功耗诊断与分析方法
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Battery Historian 与 Power Profiler 实战
-- 🔹 dumpsys batterystats 解读
-- 🔹 功耗归因：CPU / 网络 / GPS / WakeLock
-- 🔹 功耗异常检测与定位
-
-### 扩展（可选深入）
-
-- 🔸 （待扩展）
-
-<!-- outline-end -->
-
-## 为什么要了解功耗诊断与分析方法
+## 从问题描述到可归因证据
 
 “App 掉电快”不是可以直接修复的问题描述。它缺少设备、系统版本、前后台状态、网络、温度、测试区间和业务动作。缺少这些条件时，电量百分比下降、某条电源轨峰值、某个 UID 的 CPU 时间都不能单独证明责任归属。
 
@@ -98,7 +82,7 @@ last_task9_autofix_at: "2026-06-22"
 2. 把设备级能量变化转换成同一时间窗内的 CPU、网络、GNSS、WakeLock 等证据。
 3. 把系统证据定位到线程、请求、定位订阅或唤醒锁标签，再验证修改前后的差异。
 
-功耗模型、硬件电流计与 BatteryStats 的计算原则见 §11.1；后台任务、Alarm、网络与定位策略见 §11.2；Battery Historian 的部署见 §14.11。本节专注于采集、解读和归因。
+功耗模型、硬件电流计与 BatteryStats 的计算原则见 §11.1；后台任务、Alarm、网络与定位策略见 §11.2；Battery Historian 的部署见 §14.11。这里专注于采集、解读和归因。
 
 ## 先分清三类证据
 
@@ -179,7 +163,7 @@ Battery Historian 的系统视图先用于检查实验条件：屏幕、充电�
 
 ODPM 衡量的是设备或硬件子系统，不是 App。若 WLAN 电源轨在某个请求期间升高，只能说明两者在时间上重合。要进一步归因，还要排除其他进程的网络活动，并查看目标 UID 的流量、socket tag、线程和业务标记。
 
-下面的 Perfetto 数据源片段用于在支持的设备上采集电池计数器和 ODPM 电源轨。`250 ms` 来自 Perfetto 官方示例，只表示一个示例采样周期；项目应按设备分辨率、场景时长和追踪文件体积评估自己的完整配置。
+下面的 Perfetto 数据源片段用于在支持的设备上采集电池计数器和 ODPM 电源轨。`250 ms` 来自 Perfetto 官方示例，只表示一个示例采样周期；完整配置应按设备分辨率、场景时长和追踪文件体积评估。
 
 ```textproto
 data_sources: {
@@ -459,7 +443,7 @@ Android 17 的 [`IPowerStats.aidl`](https://android.googlesource.com/platform/ha
 
 同一内核锚点下，[`drivers/base/power/wakeup.c`](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/base/power/wakeup.c) 维护 `wakeup_source` 的 `active_count`、`event_count`、`total_time` 等统计；[`kernel/power/wakeup_reason.c`](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/kernel/power/wakeup_reason.c) 记录 suspend 恢复的 IRQ 或中止原因。这些是设备与驱动层证据，不能直接替代 UID 级 BatteryStats。
 
-### 跨设备比较的正确姿势
+### 跨设备比较方法
 
 - 在每台设备上保存 Power Profiler 或 Perfetto 实际列出的电源轨和计数器。
 - 同一设备内比较基线与候选包；跨设备更适合比较趋势，不宜直接比较绝对电流。
@@ -467,7 +451,7 @@ Android 17 的 [`IPowerStats.aidl`](https://android.googlesource.com/platform/ha
 - 用设备级能量验证“整机是否改善”，用 UID 与 trace 解释“哪段行为改变”。
 - 需要发布绝对精度或节电比例时，说明测量仪器、接线方式、样本量、置信区间和误差来源。
 
-## 本节小结
+## 小结
 
 功耗诊断从可重复场景开始，而不是从一张电量截图开始。BatteryStats 负责提供 UID 统计，Battery Historian 适合离线回看系统事件，Power Profiler 和 Perfetto 用于对齐电源轨、计数器与执行行为，Macrobenchmark `PowerMetric` 可用于受支持设备上的自动化回归。
 
