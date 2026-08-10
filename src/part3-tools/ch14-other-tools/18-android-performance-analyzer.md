@@ -62,13 +62,13 @@ android17_review_notes: "2026-07-30：Android Developers 已发布 APA 首页、
 
 Android Performance Analyzer（APA）是 Google 面向 Android App 与游戏提供的独立桌面性能工具。官方在 2026 年 5 月发布 open beta，当前公开能力以 System Profiler 为主：录制 system trace、在项目中管理多份 trace、查看 CPU/GPU/内存/功耗与 SurfaceFlinger 数据、运行 PerfettoSQL，并为 Vulkan 工作负载补充可选的调试信息。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为设备侧平台锚点，内核侧固定到 `android17-6.18-2026-06_r6`。APA 的发布周期独立于 Android 平台；它支持 Android 12 及以上的受支持设备，不能写成“Android 17 新增的 framework API”。
+设备侧平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核侧固定到 `android17-6.18-2026-06_r6`。APA 的发布周期独立于 Android 平台；它支持 Android 12 及以上的受支持设备，不能写成“Android 17 新增的 framework API”。
 
 ## 1. APA 在工具链中的位置
 
 APA 的 System Profiler 依赖 Perfetto 进行 system tracing。设备侧仍由 Perfetto service、producer、data source 与 trace buffer 组织采集，桌面端 APA 负责配置录制、取回 trace、展示轨道和执行查询。官方还把 APA 称为新的 system profiling 推荐工具；AGI 的 Frame Profiler 继续负责 Vulkan 单帧命令、pipeline、shader、纹理与几何资源分析。
 
-| 层次 | 组件 | 本章中的职责 |
+| 层次 | 组件 | 职责 |
 |---|---|---|
 | Android App / 游戏 | Java、Kotlin、C/C++、Vulkan、应用 trace marker | 产生业务工作和可读标记 |
 | Android framework | ART、Binder、HWUI、FrameTimeline、SurfaceFlinger | 产生线程、帧、buffer 与系统服务事件 |
@@ -143,7 +143,7 @@ Use custom trace configuration 会把界面当前设置自动展开成 Perfetto 
 - 采样频率是否改变被测负载；
 - trace 是否因 buffer 覆盖、flush 或 stop 时机而丢掉目标窗口。
 
-旧稿中的 `/system/etc/perfetto-configs/apa-config.textproto`、`--custom-cpu-freq`、`--custom-gpu` 和 `adb shell apa` 没有官方依据。APA 当前公开入口是桌面 GUI；需要脚本化采集时使用 Perfetto CLI、Macrobenchmark 或相应测试框架。
+`/system/etc/perfetto-configs/apa-config.textproto`、`--custom-cpu-freq`、`--custom-gpu` 和 `adb shell apa` 没有官方依据。APA 当前公开入口是桌面 GUI；需要脚本化采集时使用 Perfetto CLI、Macrobenchmark 或相应测试框架。
 
 ## 5. Vulkan Layers：能力与扰动
 
@@ -225,7 +225,7 @@ ORDER BY ts.dur DESC;
 - 一帧可能包含多次 Vulkan submission，应使用 Vulkan Events 与 `submission_id` 关联同一帧的 GPU 工作；
 - Actual Timeline 的 jank slice、SurfaceFlinger On Display 和 expected/actual present 用来确认用户是否晚看到这一帧。
 
-CPU submit 返回、GPU producer completion fence、SurfaceFlinger latch、display present fence 和 layer release fence 是不同的时序边界。APA 中 `vkQueuePresentKHR` 或 GPU queue slice 结束都不能单独证明一帧已经显示；应沿 submission ID、buffer/layer、fence 与 FrameTimeline 对齐。队列中存在多帧时，FPS 稳定也可能伴随较高的输入到显示延迟。[已核对: Writer/rendering_pipelines/S13_game_type.md]
+CPU submit 返回、GPU producer completion fence、SurfaceFlinger latch、display present fence 和 layer release fence 是不同的时序边界。APA 中 `vkQueuePresentKHR` 或 GPU queue slice 结束都不能单独证明一帧已经显示；应沿 submission ID、buffer/layer、fence 与 FrameTimeline 对齐。队列中存在多帧时，FPS 稳定也可能伴随较高的输入到显示延迟。
 
 ### 8.2 GPU 内存效率与带宽
 

@@ -59,7 +59,7 @@ android17_review_notes:
 
 # 14.21 eBPF 系统架构：bpfloader Rust 化与 BPF 程序组织
 
-§14.10 讲的是如何用 eBPF 工具定位性能问题。本节处理更靠近系统启动的一层：Android 17 在什么时机装载系统、Mainline 和厂商 BPF 对象，谁负责把已加载的 program 附着到 tracepoint，用户空间又怎样读取 map。
+§14.10 介绍如何用 eBPF 工具定位性能问题。这里转向系统启动：Android 17 在什么时机装载系统、Mainline 和厂商 BPF 对象，谁负责把已加载的 program 附着到 tracepoint，用户空间又怎样读取 map。
 
 这三个动作必须分开理解：
 
@@ -67,7 +67,7 @@ android17_review_notes:
 - **pin**：把内核对象挂到 bpffs 路径，让加载进程退出后，其他进程仍能按路径取得 fd。
 - **attach**：把 program 连接到 tracepoint、raw tracepoint、iterator 等触发点。program 已经出现在 `/sys/fs/bpf`，不代表它正在运行。
 
-Android 17 的系统源码锚点是 `android-17.0.0_r1`，本文涉及的 common kernel tracepoint 以 `android17-6.18-2026-06_r6` 为准。
+Android 17 的系统源码锚点是 `android-17.0.0_r1`，common kernel tracepoint 以 `android17-6.18-2026-06_r6` 为准。
 
 ## Android 17 的完整启动链
 
@@ -297,7 +297,7 @@ adb shell bpftool map show pinned \
   /sys/fs/bpf/cputimeinstate/map_timeInState_uid_time_in_state_map
 ```
 
-`bpftool map dump pinned <path>` 能按内核中的原始 key/value 布局导出内容，但 `timeInState` 的 key、PERCPU value 和频率桶需要结合 `bpf_timeinstate.h` 解码。对 pin 文件执行 `cat` 得不到有意义的 map 内容；bpffs pin 是内核对象句柄，不是文本文件。
+`bpftool map dump pinned <path>` 能按内核中的原始 key/value 布局导出内容，但 `timeInState` 的 key、PERCPU value 和频率桶需要结合 `bpf_timeinstate.h` 解码。对 pin 文件执行 `cat` 得不到有意义的 map 内容；bpffs pin 是内核对象句柄，不能作为普通文件直接读取。
 
 ### 3. 确认消费者已经附着
 
