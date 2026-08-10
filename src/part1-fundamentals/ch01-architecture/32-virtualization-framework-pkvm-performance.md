@@ -51,7 +51,7 @@ Android Virtualization Framework（AVF）从 Android 13 开始提供受保护虚
 AVF 文档里的 `VirtualizationService` 容易与 `system_server` 中的 Java 服务混淆。API 37 的实现由多个独立进程组成：
 
 ```text
-宿主应用 / 系统组件
+Host app / system component
         │  VirtualMachineManager / VirtualMachine (@SystemApi)
         ▼
 framework-virtualization Java library

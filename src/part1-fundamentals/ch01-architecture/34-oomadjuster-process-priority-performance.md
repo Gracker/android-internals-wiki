@@ -365,7 +365,7 @@ ORDER BY dur DESC;
 - uid、pid、sequence id 和 update reason；
 - previous/current procState；
 - previous/current oom score；
-- 上一个/当前能力；
+- previous/current capability；
 - CPU_TIME 与 IMPLICIT_CPU_TIME reasons。
 
 `proc_state_counter` category 还会按 procstats 状态输出全局进程数 counter，包括 frozen 数量。查看单个 instant event 的结构化参数可使用：
