@@ -257,7 +257,7 @@ ZygoteHooks.postForkCommon();
 - 切换 GID、UID；
 - 安装 seccomp filter；
 - 设置调度策略；
-- 收缩进程能力；
+- 收缩 capabilities；
 - 执行 SELinux domain transition；
 - 设置进程名、调试与内存安全选项；
 - 运行 ART 的 post-fork child hooks。
@@ -347,7 +347,7 @@ ZygoteConnection.handleChildProc()
 
 应用调用 `attachApplication()` 回到 `system_server` 后，AMS 才发送 `bindApplication`。接着才有：
 
-- 创建并附加应用；
+- 创建并 attach Application；
 - 安装当前进程的 ContentProvider；
 - 调用 `Application.onCreate()`；
 - 启动目标活动；

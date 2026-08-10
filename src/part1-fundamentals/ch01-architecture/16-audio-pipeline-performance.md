@@ -211,7 +211,7 @@ Android 16 扩展了 AIDL Audio HAL 对 Configurable Audio Policy（CAP）的支
 
 - vendor 使用 AIDL 还是 HIDL Audio HAL。
 - 策略来自 AIDL `IConfig`、XML，还是兼容转换路径。
-- 产品音频策略中实际声明了哪些混音端口、路由和标志。
+- product audio policy 中实际声明了哪些 mix ports、routes 和 flags。
 
 ## 3. 四类输出路径不要混在一起
 
@@ -231,7 +231,7 @@ Android 4.1 引入 FastMixer。官方设计文档给出的推荐周期是 2–3m
 FastMixer 保留：
 
 - 普通混音器的子混音。
-- 客户端快速轨道的混音。
+- client fast tracks 的混音。
 - 每条轨道的衰减。
 
 它主要省去每条 fast track 的重采样、per-track effects 和混音后音效，但仍会执行混音。Normal Mixer 先把普通轨道混成 submix，再通过索引 0 送给 FastMixer；FastMixer 将其与 client fast tracks 合并后写向 HAL。
@@ -414,7 +414,7 @@ AAudio/Oboe 的 data callback 运行在高优先级线程上。callback 内应�
 
 实时通话、KTV 和乐器处理需要：
 
-- 用时间戳估计输入/输出帧位置。
+- 用 timestamp 估计输入/输出 frame position。
 - 监控 ring buffer 水位。
 - 用异步采样率转换或细粒度补偿吸收 clock drift。
 - 把算法固有延迟与系统排队延迟分开记录。
@@ -518,9 +518,9 @@ Android 17 为 `USAGE_ASSISTANT` 增加独立的 Assistant volume stream，使�
 抓 trace 前先写下：
 
 - build fingerprint、Android 版本、是否为 userdebug 构建。
-- 输入/输出设备与连接方式。
+- output/input device 与连接方式。
 - App API、usage、format、sample rate、channel count。
-- 请求的和实际的共享/性能模式。
+- 请求与实际 sharing/performance mode。
 - buffer capacity、size、frames per burst。
 - 是否启用 effects、spatial audio、hardening 测试开关。
 - 复现时设备是否切路由、熄屏、发热或有并发音频。
@@ -542,7 +542,7 @@ adb shell getprop ro.audio.max_fast_tracks
 - track flags 中是否接受 FAST；官方调试文档也建议用轨道列中的 `F` 确认 fast track。
 - 快速轨道可用掩码和欠载计数器。
 - output 是混音、direct、offload 还是 MMAP。
-- 当前路由、设备与活动/非活动状态。
+- 当前 route、device 与 active/inactive 状态。
 
 AAudio 侧同时打印：
 
@@ -676,7 +676,7 @@ aptX 固定 50–80ms
 
 ### “FastMixer 不做混音”
 
-不成立。它混合普通混音器的子混音与客户端快速轨道，只是功能比普通混音器精简。
+不成立。它混合 Normal Mixer submix 与 client fast tracks，只是功能比 Normal Mixer 精简。
 
 ### “buffer 是 5ms，所以输出延迟就是 5ms”
 

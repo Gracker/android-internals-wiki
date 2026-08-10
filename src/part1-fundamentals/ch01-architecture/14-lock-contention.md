@@ -218,7 +218,7 @@ futex 是用户态原子状态与内核等待队列协作的机制；它本身�
 这也是为什么 `blocked_function` 里看到 `futex_*` 仍然不能直接下结论：
 
 - 它可能来自 `pthread_mutex`。
-- 可能来自条件变量。
+- 可能来自 condition variable。
 - 可能来自 ART 或其他运行时内部同步。
 - 可能是 Java 并发包最终触发的 park。
 - 只能证明线程在某个 futex 等待点睡眠，不能单凭函数名恢复锁对象和 owner。

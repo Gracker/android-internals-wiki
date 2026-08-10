@@ -193,7 +193,7 @@ makeApplicationInner()
 当调用方请求的 Provider 进程尚未运行时，`system_server` 会启动它。调用方需要等待：
 
 ```text
-派生进程
+fork 进程
   → 运行时和 APK 加载
   → Application.attachBaseContext()
   → 安装当前进程 Provider
