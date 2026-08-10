@@ -82,22 +82,6 @@ finalized_by: openclaw-task6-auto-promote
 
 # WebView 性能优化实战
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 WebView 初始化耗时优化
-- 🔹 预创建与 WebView 池
-- 🔹 离线包与资源拦截
-- 🔹 JS Bridge 性能优化
-
-### 扩展（可选深入）
-
-- 🔸 WebView 内存泄漏治理
-
-<!-- outline-end -->
-
 ## WebView 优化要同时看四段
 
 WebView 页面打开后出现白屏、无法点击、滚动掉帧或页面重载，责任点可能分布在四段：
@@ -109,7 +93,7 @@ WebView 页面打开后出现白屏、无法点击、滚动掉帧或页面重载
 
 把所有耗时压成一个“WebView 加载时间”，很难判断改动省下了哪一段。预热也许缩短了首次 provider 装载，却提高了 App 启动期内存；离线包也许省掉网络等待，却因版本混用制造白屏；WebView 池也许省掉实例构造，却把旧页面状态带入新页面。每项优化都应有命中、代价、失败和回退指标。
 
-本章采用两条版本线：
+版本基线分为三组：
 
 - Android 平台固定为 Android 17 / API 37 / `android-17.0.0_r1`，用于解释 framework、HWUI 和显示系统；
 - kernel 固定为 `android17-6.18-2026-06_r6`，用于解释内存回收、dma-buf 与 fence 等基础语义；
@@ -169,7 +153,7 @@ class H5OpenTiming(
 }
 ```
 
-`elapsedRealtimeNanos()` 不受用户改时间或网络校时影响，适合计算进程内耗时。`navigationId` 用来隔离重定向、刷新和并发打开；缺少它时，旧页面的迟到回调可能写进新导航。`WebView.getCurrentWebViewPackage()` 在 API 26 起可用，查询本身不会装载 provider；本章的最低版本为 API 29。
+`elapsedRealtimeNanos()` 不受用户改时间或网络校时影响，适合计算进程内耗时。`navigationId` 用来隔离重定向、刷新和并发打开；缺少它时，旧页面的迟到回调可能写进新导航。`WebView.getCurrentWebViewPackage()` 在 API 26 起可用，查询本身不会装载 provider；适用范围最低为 API 29。
 
 报告还应带上页面 bundle 版本、离线包版本、预热状态、实例来源、网络类型、设备内存档位、前后台状态和错误码。平均值只适合观察趋势，发布判定至少要看分位数、低内存设备、弱网和各 provider 版本。
 
@@ -314,8 +298,6 @@ Android P / API 28 起，`WebView.setDataDirectorySuffix()` 用于给同一 App 
 
 每个使用 WebView 的进程使用不同 suffix，suffix 不能包含路径分隔符。不同目录不会直接共享 Cookie、LocalStorage 与缓存；确有跨进程登录需求时，要通过受控协议显式同步。大多数 App 更适合把 WebView 集中在一个进程，并在其他进程尽早调用 `WebView.disableWebView()`，防止 SDK 意外初始化。
 
-[已验证：Android 17 `WebView.setDataDirectorySuffix()`；AndroidX WebKit 1.16.0 startup 文档]
-
 ## 离线包与资源拦截
 
 ### 缓存层各自解决什么
@@ -413,8 +395,6 @@ HTML、JS 与 CSS 必须来自同一兼容集合。只更新主文档或只更�
 这些 API 要以项目采用的 AndroidX WebKit 版本和 `WebViewFeature` 检查为准。Prefetch 的后台请求会跳过 `shouldInterceptRequest()`；用户导航时，主 HTML 才进入拦截回调。如果此时返回自定义 `WebResourceResponse`，provider 会采用拦截结果并绕过 prefetch cache。离线包与 provider prefetch 同时启用时，必须设计清楚谁拥有主文档。
 
 触发阈值不应写成固定点击率或固定字节数。策略需要由页面转化率、网络类型、未命中流量、服务端 QPS、取消率、过期率、内存压力和用户隐私共同决定，并通过远程配置与 A/B 实验调整。预渲染只适合用户高度可能进入且副作用受控的页面；带登录写操作、支付、音视频或敏感权限的页面要单独评估。
-
-[已验证：Android Developers `shouldInterceptRequest()`、本地内容与 speculative loading 文档]
 
 ## JS Bridge 性能优化
 
@@ -529,9 +509,7 @@ fun WebView.resolveBridgeCall(
 }
 ```
 
-`onEvaluated` 收到的是 JavaScript 表达式结果的编码形式，并非页面业务响应本身。业务通常依靠 `requestId` 完成响应配对；页面已销毁或导航身份变化时直接丢弃。脚本函数名也应固定在受控协议中，不能接受页面传入任意脚本文本。
-
-[已验证：Android 17 `WebView.addJavascriptInterface()` 与 `evaluateJavascript()`；AndroidX WebKit Web Message API]
+`onEvaluated` 收到的是 JavaScript 表达式结果的编码形式，并非页面业务响应本身。业务通常依靠 `requestId` 完成响应配对；页面已销毁或导航身份变化时直接丢弃。脚本函数名也应固定在受控协议中，不能接受页面传入任意 JavaScript 代码。
 
 ## 页面侧需要一起治理
 

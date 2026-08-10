@@ -52,24 +52,6 @@ last_deepseek_cn_review_at: 2026-07-16
 ---
 # 自定义 View 性能优化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 onMeasure / onLayout / onDraw 的调用频率与优化优先级
-- 🔹 onDraw() 中对象分配的 GC 压力与零分配写法
-- 🔹 硬件加速、Layer 与 setWillNotDraw 的使用边界
-- 🔹 invalidate()、postInvalidateOnAnimation() 与 requestLayout() 的重绘范围差异
-- 🔹 RenderNode 拆分静态层和动态层的适用场景
-- 🔹 Perfetto 中观察自定义 View 绘制耗时的方法
-
-### 扩展(可选深入)
-
-- 🔸 ViewCompat.postInvalidateOnAnimation 的旧版本兼容性
-- 🔸 RenderThread DrawFrame 与 UI Thread draw 的耗时对照
-<!-- outline-end -->
-
 自定义 View 的优化对象不只是一段 `onDraw()`。一次状态变化可能停在 draw，也可能通过 `requestLayout()` 把工作扩到 measure 和 layout；UI 线程完成 DisplayList 记录后，RenderThread、App Window BufferQueue、SurfaceFlinger、HWC 和 present 仍会决定这一帧何时可见。
 
 平台源码固定到 Android 17 / API 37 / `android-17.0.0_r1`，kernel 固定到 `android17-6.18-2026-06_r6`。普通自定义 View 没有独立 Surface，属于标准 HWUI App Window：`Choreographer#doFrame` 驱动 traversal，UI 线程更新 View 对应的 RenderNode / DisplayList，`HardwareRenderer.syncAndDrawFrame()` 把树状态交给 RenderThread，后续经过 BLAST、SurfaceFlinger、HWC 和 present。显示后段可结合 [Android View 标准渲染链路](../../part2-performance/ch18-rendering-pipelines/02-android-view-standard.md) 阅读。
@@ -295,7 +277,7 @@ protected void onDetachedFromWindow() {
 
 ### `ViewCompat.postInvalidateOnAnimation()` 的版本位置
 
-平台 `postInvalidateOnAnimation()` 从 API 16 提供。本文覆盖 Android 10—17，直接调用平台 API 即可。共享给更低 minSdk 的旧模块可以使用 `ViewCompat.postInvalidateOnAnimation()`；这属于兼容层选择，不改变 Android 17 的调度语义。
+平台 `postInvalidateOnAnimation()` 从 API 16 提供。适用范围为 Android 10—17，可以直接调用平台 API。共享给更低 minSdk 的旧模块可以使用 `ViewCompat.postInvalidateOnAnimation()`；这属于兼容层选择，不改变 Android 17 的调度语义。
 
 ## 手动 `RenderNode`：只拆独立更新的内容
 

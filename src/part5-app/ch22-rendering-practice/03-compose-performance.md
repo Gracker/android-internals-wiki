@@ -54,7 +54,7 @@ last_deepseek_cn_review_at: 2026-06-26
 
 Compose 性能优化要回答两个问题：哪一段工作错过了本帧 deadline，以及哪些状态或输入让这段工作重复发生。只统计重组次数，容易漏掉 Layout、Drawing、RenderThread 和显示系统；只看整帧耗时，又无法定位到具体 Composable。
 
-本文固定三组版本：
+版本基线固定为三组：
 
 - Android 平台以 Android 17 / API 37 / `android-17.0.0_r1` 为源码锚点，kernel 以 `android17-6.18-2026-06_r6` 为锚点。
 - Compose 依赖以 BOM `2025.12.00` 为基线。该 BOM 把 Runtime、Foundation 和 UI 固定到 `1.10.0`。
@@ -107,7 +107,7 @@ fun ParallaxHeader(
 
 ### 跳过条件要分函数和参数
 
-Kotlin 2.0.20 起默认启用 Strong Skipping。本文使用 Kotlin 2.2，无需再设置 `enableStrongSkippingMode`。它改变两项编译结果：
+Kotlin 2.0.20 起默认启用 Strong Skipping。这里使用 Kotlin 2.2，无需再设置 `enableStrongSkippingMode`。它改变两项编译结果：
 
 - 所有 restartable Composable 默认可标记为 skippable；non-restartable 函数仍不可跳过，`@NonSkippableComposable` 可以显式退出。
 - Composable 内部创建的 lambda 会自动 memoize。捕获值用作缓存 key；stable 捕获值按 `equals()` 比较，unstable 捕获值按 `===` 比较。`@DontMemoize` 可以让某个 lambda 退出自动缓存。

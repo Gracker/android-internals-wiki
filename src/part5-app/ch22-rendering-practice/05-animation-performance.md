@@ -72,25 +72,9 @@ last_task9_autofix_at: "2026-07-10"
 
 # 动画性能优化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 属性动画 vs 帧动画的性能差异
-- 🔹 Lottie / RenderEffect 性能注意事项
-- 🔹 动画与主线程的关系
-- 🔹 转场动画优化
-
-### 扩展（可选深入）
-
-- 🔸 MotionLayout 性能实践
-
-<!-- outline-end -->
-
 动画掉帧可能出现在 UI 线程推进属性值时，也可能出现在 RenderThread 绘制、窗口 buffer 排队、SurfaceFlinger 合成或显示提交阶段。只观察 Animator 回调时长，会漏掉后半段问题。
 
-本文的平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`，kernel 观察基线固定为 `android17-6.18-2026-06_r6`。普通 View 动画走标准 HWUI App Window 路径：
+平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`，kernel 观察基线固定为 `android17-6.18-2026-06_r6`。普通 View 动画走标准 HWUI App Window 路径：
 
 `vsync-app → Choreographer#doFrame → input / animation / insets animation / traversal / commit → HardwareRenderer.syncAndDrawFrame() → RenderThread → BLAST → SurfaceFlinger → HWC → present`
 
@@ -102,7 +86,7 @@ last_task9_autofix_at: "2026-07-10"
 
 | 模型 | Android 17 中的每帧工作 | 合适场景 | 主要风险 |
 | --- | --- | --- | --- |
-| `ViewPropertyAnimator` | UI 线程上的一个 `ValueAnimator` 推进一组 View 属性，并合并相应 invalidation | `alpha`、`translation`、`scale`、`rotation` 等 View 属性组合 | update listener 做业务计算；目标内容频繁失效；误以为变换会改变布局语义 |
+| `ViewPropertyAnimator` | UI 线程上的一个 `ValueAnimator` 推进一组 View 属性，并合并相应 invalidation | `alpha`、`translation`、`scale`、`rotation` 等 View 属性组合 | update listener 做业务计算；目标内容频繁失效；把视觉变换当成布局语义变化 |
 | `ObjectAnimator` | `PropertyValuesHolder` 计算值，再经 `Property`、优化调用路径或已解析 setter 写入目标 | View 之外的对象属性、自定义属性 | setter 内分配对象、执行 I/O、调用 `requestLayout()` 或触发大范围重绘 |
 | 逐帧 Drawable | 到时切换 child Drawable，随后进入绘制 | 小面积、较短、逐帧美术效果 | 解码后像素内存、纹理上传、包体和资源切换 |
 | 自绘动画 | 更新进度并使 View 失效，UI 线程按需重录 DisplayList | 图表、波形、进度和业务图形 | 每帧重建几何、分配对象或提交过多绘制命令 |
@@ -154,7 +138,7 @@ view.animate()
 
 ## Lottie：以 6.7.1 源码解释渲染模式
 
-本节对第三方库的事实固定到 Lottie `6.7.1`。库版本独立于 Android API level，项目升级 Lottie 后要重新核对 `RenderMode`、缓存和异步更新行为。
+第三方库相关行为以 Lottie `6.7.1` 为准。库版本独立于 Android API level，项目升级 Lottie 后要重新核对 `RenderMode`、缓存和异步更新行为。
 
 `RenderMode.AUTOMATIC` 在 Lottie 6.7.1 中按这些条件选择软件绘制：
 
@@ -162,7 +146,7 @@ view.animate()
 - mask 与 matte 总数超过 4；
 - 系统不高于 Android 7.1。
 
-本文覆盖 Android 10—17，前后两个兼容分支不会命中，主要自动切换条件是 mask/matte 数量超过 4。源码注释说明这个阈值来自有限样本，要求开发者手动比较两种模式。它不能证明第 5 个 mask 一定更慢，也不能替代目标设备测量。软件模式会把内容绘制到 Lottie 管理的 Bitmap，复杂动画仍可能产生较高的 CPU 与内存成本。
+在 Android 10—17 上，前后两个兼容分支不会命中，主要自动切换条件是 mask/matte 数量超过 4。源码注释说明这个阈值来自有限样本，要求开发者手动比较两种模式。它不能证明第 5 个 mask 一定更慢，也不能替代目标设备测量。软件模式会把内容绘制到 Lottie 管理的 Bitmap，复杂动画仍可能产生较高的 CPU 与内存成本。
 
 `LottieAnimationView` 的 `cacheComposition` 默认开启。常规 asset、raw resource 和 URL 加载通过 `LottieCompositionFactory` 返回的异步任务处理，编辑器预览分支存在同步解析。异步解析只能移走 composition 构建，播放期间的进度传播、动态属性回调和 Canvas 绘制仍要计入帧成本。
 
