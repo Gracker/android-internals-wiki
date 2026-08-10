@@ -78,14 +78,14 @@ flowchart LR
 | --- | --- | --- | --- |
 | 物理键盘 | `EV_KEY` | `KeyboardInputMapper` | `KeyEvent` |
 | 鼠标 | `EV_REL`、按键、滚轮 | `CursorInputMapper` | `MotionEvent`，通常为 `SOURCE_MOUSE` |
-| 触控板 | `EV_ABS` 多点槽位、按键 | `TouchpadInputMapper` + 手势库 | 普通模式通常表现为鼠标或已分类手势 |
+| 触控板 | `EV_ABS` 多点槽位、按键 | `TouchpadInputMapper` + gestures library | 普通模式通常表现为鼠标或已分类手势 |
 | 触摸屏 | `EV_ABS` 多点槽位 | `MultiTouchInputMapper` | `SOURCE_TOUCHSCREEN` 的 `MotionEvent` |
 
 一个物理设备可以支持多个输入源。例如，Android 17 的 `TouchpadInputMapper::getSources()` 返回 `SOURCE_MOUSE | SOURCE_TOUCHPAD`。这表示设备具备这些能力，不代表每个事件的 `MotionEvent.getSource()` 都包含两个值。普通未捕获的触控板移动由 `UncapturedGestureConverter` 生成，事件输入源是 `SOURCE_MOUSE`。
 
 ### 输入源描述分发语义，不能代替硬件能力判断
 
-应用应同时看 `InputDevice` 能力、事件输入源、动作、轴和工具类型，不能只用设备名称猜测输入类型。
+应用应同时看 `InputDevice` 能力、事件输入源、action、轴和工具类型，不能只用设备名称猜测输入类型。
 
 - `SOURCE_MOUSE` 属于 `SOURCE_CLASS_POINTER`，坐标对应显示空间中的指针位置；
 - `SOURCE_MOUSE_RELATIVE` 属于 `SOURCE_CLASS_TRACKBALL`，用于指针捕获下的相对移动；
@@ -108,14 +108,14 @@ flowchart LR
 
 因此，同样来自 `EV_ABS` 的多点数据，触控板与触摸屏也可能在映射器创建阶段分开。
 
-### 2.2 键盘：扫描码、键码与字符是三层概念
+### 2.2 键盘：scan code、key code 与字符是三层概念
 
 `KeyboardInputMapper` 收到 `EV_KEY` 后，以扫描码和可选 HID 用法查表。Android 17 的 `EventHub::mapKey()` 会先检查按键字符映射，再检查按键布局，之后应用用户按键重映射和 KCM 中的按键行为。输出包含：
 
 - `scanCode`：接近 Linux 输入设备报告的物理按键编号；
 - `keyCode`：Android 的 `KEYCODE_*` 语义键码；
 - `metaState`：Shift、Ctrl、Alt、Meta 等组合状态；
-- 策略标志：是否唤醒、是否为虚拟键等策略信息。
+- policy flags：是否唤醒、是否为虚拟键等策略信息。
 
 字符生成还要结合布局、修饰键、死键和输入法。业务代码不应把 `scanCode` 当成稳定快捷键，也不应假设同一个 `keyCode` 在所有键盘布局上产生同一个字符。
 
@@ -144,7 +144,7 @@ Android 17 的触控板路径比“相对坐标转光标”多一层：
   → NotifyMotionArgs
 ```
 
-普通模式下，单指移动会更新光标并报告 `SOURCE_MOUSE` 的悬停/移动事件；双指滚动可转成滚动事件；捏合和多指滑动带有相应分类，部分系统手势还会被系统消费。掌压过滤、轻触点击、自然滚动、右键区域和加速曲线都在进入应用前参与解释。
+普通模式下，单指移动会更新光标并报告 `SOURCE_MOUSE` 的悬停/移动事件；双指滚动可转成滚动事件；捏合和多指滑动带有相应分类，部分系统手势还会被系统消费。掌压过滤、tap-to-click、自然滚动、右键区域和加速曲线都在进入应用前参与解释。
 
 所以，应用收到一条触控板事件时，不能反推“硬件只报告了一个相对坐标”。底层可能有多个绝对触点，平台已经把它们解释成鼠标或手势语义。
 
@@ -202,7 +202,7 @@ override fun onCapturedPointerEvent(event: MotionEvent): Boolean {
 未被系统消费的按键按以下规则选择目标：
 
 1. 事件带有效显示器 ID 时使用该显示器；
-2. 显示器 ID 无效时使用 `mFocusedDisplayId`；
+2. display id 无效时使用 `mFocusedDisplayId`；
 3. 在目标显示器上查找焦点窗口；
 4. 若焦点应用已存在但窗口尚未获得焦点，进入无焦点窗口等待与超时逻辑；
 5. 对按键事件，分发器还会等待先前未完成的输入，因为前一条点击可能打开新窗口并改变焦点。
@@ -218,7 +218,7 @@ Android 17 的重复链路有清晰分工：
 - `InputDispatcher` 保存最近的可重复按下事件，并在入站队列为空时合成重复；
 - 第一条重复事件的 `repeatCount` 为 1，并带 `FLAG_LONG_PRESS`；
 - 后续重复按 `keyRepeatDelay` 继续产生；
-- 抬键、设备重置、分发禁用等状态会清理重复状态。
+- key-up、设备 reset、dispatch disabled 等状态会清理重复状态。
 
 `InputDispatcherConfiguration` 的默认值是首次等待 500 ms、后续间隔 50 ms。系统可以重新配置这两个值，应用应读取 `repeatCount` 和事件时间，不要把默认值写成业务定时器的协议。
 
@@ -257,14 +257,14 @@ flowchart LR
 关键点有三项：
 
 - `dispatchKeyEventPreIme()` 发生在 IME 之前；
-- `ImeInputStage` 可以异步处理，IME 返回未处理后才进入 IME 后阶段；
+- `ImeInputStage` 可以异步处理，IME 返回未处理后才进入 post-IME；
 - `ViewPostImeInputStage` 先调用 `dispatchKeyEvent()`，再检查修饰键快捷方式、回退策略和自动焦点导航。
 
 把 IME 描述成 View 未消费后的 Binder 兜底会颠倒执行顺序。硬件键盘事件可以先交给 IME；软键盘输入又常通过 `InputConnection.commitText()`、`setComposingText()` 等编辑协议送入文本控件，不保证对应一串 `KeyEvent`。
 
 应用快捷键应按语义消费并返回 `true`，只在 `ACTION_DOWN && repeatCount == 0` 执行一次性命令。系统快捷键、IME 组合和辅助功能仍有更高优先级。
 
-## 5. 鼠标、悬停、滚轮与窗口命中
+## 5. 鼠标、hover、滚轮与窗口命中
 
 ### 5.1 指针目标来自位置
 
@@ -285,8 +285,8 @@ flowchart LR
 窗口命中和 View 命中是两层工作：
 
 ```text
-InputDispatcher：显示坐标 → 输入窗口
-ViewGroup：窗口局部坐标 → 子 View
+InputDispatcher：显示坐标 → input window
+ViewGroup：窗口局部坐标 → child View
 ```
 
 深层 View 树、频繁变化的变换属性、每次悬停都触发布局，都会提高后半段成本。框架不会因为悬停事件到达就无条件让所有 View 重绘；重绘通常来自组件状态变化或应用自己的 `invalidate()`、`requestLayout()`。
@@ -301,11 +301,11 @@ ViewGroup：窗口局部坐标 → 子 View
 
 不同设备可能报告离散刻度或高分辨率连续量。业务逻辑宜累计浮点增量，在帧边界统一更新画面，避免先取整导致小量滚动丢失。
 
-## 6. 批处理、主线程背压与 ANR
+## 6. batching、主线程背压与 ANR
 
 ### 6.1 批处理保留采样历史
 
-应用侧 `BatchedInputEventReceiver` 会尽量在 VSync 输入回调中消费可批处理的运动事件。原生 `InputConsumer` 只把兼容的样本放进同一批次：设备、输入源、动作、显示器、指针数量和指针属性必须匹配。
+应用侧 `BatchedInputEventReceiver` 会尽量在 vsync input callback 消费可批处理的 motion。native `InputConsumer` 只把兼容的样本放进同一批次：device、source、action、display、pointer 数量和 pointer properties 必须匹配。
 
 合批后，一个 `MotionEvent` 除当前样本外还包含历史记录。它减少 Java 回调数量，但没有按固定比例删除硬件采样。需要轨迹细节的组件应遍历历史样本：
 
@@ -395,7 +395,7 @@ flowchart LR
     B --> D["拖放输入通道"]
     D --> E["InputDispatcher 命中目标窗口"]
     E --> F["DRAG_LOCATION / DRAG_EXITED"]
-    E --> G["抬起时通知 WMS 放置目标窗口"]
+    E --> G["抬起时通知 WMS drop window"]
     G --> H["ACTION_DROP + ClipData"]
     H --> I["目标 ViewRootImpl / ViewGroup"]
     I --> J["reportDropResult"]
@@ -415,7 +415,7 @@ WMS 创建 `DragState`，将拖影 Surface 放到显示器覆盖层，并把正�
 
 ### 8.2 放置阶段
 
-指针抬起后，`InputDispatcher` 把目标窗口及局部、原始坐标通知 WMS。`DragState` 再向合法目标发送 `ACTION_DROP`；普通应用目标到这个阶段才取得用于放置的 `ClipData` 和必要的 URI 权限令牌。能够拦截全局拖放的特权窗口有单独的数据传递规则。目标窗口报告是否消费，WMS 再结束拖放并广播 `ACTION_DRAG_ENDED`。
+指针抬起后，`InputDispatcher` 把目标窗口及局部、原始坐标通知 WMS。`DragState` 再向合法目标发送 `ACTION_DROP`；普通应用目标到这个阶段才取得用于放置的 `ClipData` 和必要的 URI permission token。能够拦截全局拖放的特权窗口有单独的数据传递规则。目标窗口报告是否消费，WMS 再结束拖放并广播 `ACTION_DRAG_ENDED`。
 
 WMS 对放置结果另有 5 秒等待。这个计时属于拖放状态机，与输入通道的连接超时是两个观察点。
 
@@ -423,7 +423,7 @@ WMS 对放置结果另有 5 秒等待。这个计时属于拖放状态机，与�
 
 跨进程拖放适合传 URI、MIME 描述和少量文本。图片、视频或大文档应由 `content://` URI 指向内容提供者，目标通过 `requestDragAndDropPermissions()` 获得临时访问权，再按需读取。
 
-把性能问题概括为“Binder 只有 1 MB”会漏掉权限、序列化、内容提供者 I/O 和目标解码等成本。设计时可遵循以下规则：
+把性能问题概括为“Binder 只有 1 MB”会漏掉权限、序列化、provider I/O 和目标解码等成本。设计时可遵循以下规则：
 
 - `ClipDescription` 尽早、准确地表达 MIME；
 - `ACTION_DRAG_STARTED` 只做轻量可接收判断；
@@ -490,12 +490,12 @@ adb shell dumpsys window
 
 核对 WindowManager 看到的焦点应用、焦点窗口、显示器和拖放状态。两个状态转储中的焦点不一致时，先检查窗口生命周期和 Surface/输入窗口更新，不要急于修改 View 的按键监听器。
 
-### 10.3 Perfetto / 系统轨迹
+### 10.3 Perfetto / System Trace
 
 采集时至少包含输入、WindowManager、View、调度和 FrameTimeline。按同一事件 ID 或相邻时间线观察：
 
 1. EventHub/InputReader 收到时间；
-2. InputDispatcher 入站、目标选择与分发；
+2. InputDispatcher inbound、target 与 dispatch；
 3. 应用 `deliverInputEvent`；
 4. 对应主线程回调；
 5. 帧开始、提交与显示。
@@ -505,12 +505,12 @@ adb shell dumpsys window
 | 现象 | 优先检查 |
 | --- | --- |
 | `getevent` 已晚 | 设备、传输、驱动 |
-| InputReader 到分发器间隔大 | 映射器、手势识别、输入线程调度 |
+| InputReader 到 dispatcher 间隔大 | mapper、手势识别、input 线程调度 |
 | 分发器等待目标 | 焦点、窗口创建、前序事件未完成 |
 | 等待队列增长 | 应用未及时 `finishInputEvent`，通常是主线程阻塞 |
 | 回调快，下一帧仍晚 | Choreographer、布局/绘制、RenderThread 或 SurfaceFlinger |
-| 只有触控板异常 | 手势配置、捕获模式、输入源分支 |
-| 只有跨应用放置异常 | URI 权限、内容提供者 I/O、放置结果超时 |
+| 只有触控板异常 | gestures 配置、capture mode、source 分支 |
+| 只有跨应用 drop 异常 | URI 权限、provider I/O、drop 结果超时 |
 
 ### 10.4 应用内轻量测量
 
@@ -538,7 +538,7 @@ private fun inputAgeMs(event: InputEvent): Long {
 ### 主线程成本
 
 - 悬停/移动回调是否包含 I/O、全树布局或大对象分配？
-- 是否按需要读取 `MotionEvent` 历史记录？
+- 是否按需要读取 `MotionEvent` history？
 - 滚动和视角更新是否可以在一帧内合并？
 - 按键重复是否反复启动一次性任务？
 - `ACTION_DRAG_LOCATION` 是否只更新目标状态？
@@ -559,7 +559,7 @@ private fun inputAgeMs(event: InputEvent): Long {
 
 平台结论核对到以下边界：
 
-- Android 平台：`android-17.0.0_r1`
+- Android platform：`android-17.0.0_r1`
 - API：37
 - 核心原生路径：`frameworks/native/services/inputflinger`
 - 核心 Java 路径：`frameworks/base/core/java/android/view`
@@ -583,4 +583,4 @@ Android 17 的触控板指针捕获模式需要单独区分：默认相对模式
 - [Android Developers：处理键盘操作](https://developer.android.com/develop/ui/views/touch-and-input/keyboard-input/commands)
 - [Android Developers：键盘焦点导航](https://developer.android.com/develop/ui/views/touch-and-input/keyboard-input/navigation)
 - [Android Developers：拖放](https://developer.android.com/develop/ui/views/touch-and-input/drag-drop)
-- [Android Developers：Compose 指针输入](https://developer.android.com/develop/ui/compose/touch-input/pointer-input)
+- [Android Developers：Compose pointer input](https://developer.android.com/develop/ui/compose/touch-input/pointer-input)

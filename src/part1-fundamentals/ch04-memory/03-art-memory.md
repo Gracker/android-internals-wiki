@@ -96,7 +96,7 @@ flowchart LR
 
 这五类空间的差别集中在三个维度：对象从哪里来、GC 能否回收、GC 能否移动。
 
-| 空间 | 主要内容 | 可回收 | 可移动 | Android 17 关键实现 |
+| Space | 主要内容 | 可回收 | 可移动 | Android 17 关键实现 |
 |---|---|---:|---:|---|
 | Boot Image Space | 启动镜像中的预加载类、对象和运行时元数据 | 否 | 否 | `ImageSpace` |
 | Zygote Space | Zygote 在 fork 应用前保留下来的对象 | 应用进程中否 | 否 | `ZygoteSpace` |
@@ -166,7 +166,7 @@ LOS 有两种实现：
 - `FreeListSpace` 预留一段地址范围并按空闲页复用；
 - `LargeObjectMapSpace` 为对象建立独立映射，释放时解除映射。
 
-默认选择由 `USE_ART_LOW_4G_ALLOCATOR` 构建宏决定。LOS 是不连续、不可移动的空间，回收时标记和清除对象，不参与主可移动空间的搬迁。频繁创建大 `byte[]` 或由 `char` 数据转换的大 `String`，会增加 LOS 分配、清扫和页映射压力。
+默认选择由 `USE_ART_LOW_4G_ALLOCATOR` 构建宏决定。LOS 是不连续、non-moving space，回收时标记和清除对象，不参与主可移动空间的搬迁。频繁创建大 `byte[]` 或由 `char` 数据转换的大 `String`，会增加 LOS 分配、清扫和页映射压力。
 
 源码入口：
 
@@ -318,7 +318,7 @@ Android 10 起，默认 CC 支持分代收集。Young CC 优先处理新分配�
 
 ### CMC：用页故障协调并发压缩
 
-Android 17 的 `ShouldUseUserfaultfd()` 有两类入口。命令行显式指定 CMC 时会直接选择 CMC，这主要供测试和定制配置使用，后续仍可能进入 STW 回退路径。未显式指定收集器的目标 Android 设备，需要同时满足系统属性允许 UFFD GC、`KernelSupportsUffd()` 返回成功。
+Android 17 的 `ShouldUseUserfaultfd()` 有两类入口。命令行显式指定 CMC 时会直接选择 CMC，这主要供测试和定制配置使用，后续仍可能进入 STW fallback。未显式指定收集器的目标 Android 设备，需要同时满足系统属性允许 UFFD GC、`KernelSupportsUffd()` 返回成功。
 
 默认设备路径中的内核探测还包括：
 
@@ -338,7 +338,7 @@ Android 16 QPR2 的官方发布说明确认 ART 引入 Generational CMC，目标
 
 `Runtime::Init()` 只有在下列条件都满足时才把 `use_generational_gc` 传入 `Heap`：
 
-- 收集器支持当前分代路径：Baker 读屏障或 UFFD；
+- collector 支持当前分代路径：Baker read barrier 或 UFFD；
 - `-Xgc` 选项允许 generational GC；
 - `ShouldUseGenerationalGC()` 返回 `true`。
 

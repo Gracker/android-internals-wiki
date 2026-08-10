@@ -82,7 +82,7 @@ last_deepseek_cn_review_at: 2026-06-09
 
 慢路径可能包含缺页处理、页面回收、Swap I/O、页迁移和内存规整。它们有的在后台内核线程执行，有的直接占用发起分配的应用线程。后者进入关键帧或启动关键路径时，就会形成用户可感知的延迟。
 
-AOSP 以 `android-17.0.0_r1` 为锚点，Android Common Kernel 以 `android17-6.18-2026-06_r6` 为锚点。厂商内核可以修改配置和回收策略，排查时仍需读取运行设备的配置、节点与轨迹。
+以下分析以 AOSP `android-17.0.0_r1` 和 Android Common Kernel `android17-6.18-2026-06_r6` 为锚点。vendor kernel 可以修改配置和 reclaim policy，排查时仍需读取运行设备的配置、节点与 trace。
 
 物理页从分配到回收的主路径如下：
 

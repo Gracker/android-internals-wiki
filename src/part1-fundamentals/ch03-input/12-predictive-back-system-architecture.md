@@ -34,7 +34,7 @@ drafted_by: "openclaw-task2a"
 
 # 预测性返回系统架构与动画管线性能
 
-预测性返回（Predictive Back）把返回操作分成“手势预览”和“提交导航”两个阶段。手指移动时，系统或应用只更新可撤销的视觉状态；手势提交后，返回回调才执行 `finish()`、弹出返回栈、隐藏 IME 等动作。
+预测性返回（Predictive Back）把返回操作分成“手势预览”和“提交导航”两个阶段。手指移动时，系统或应用只更新可撤销的视觉状态；手势提交后，返回回调才执行 `finish()`、pop back stack、隐藏 IME 等动作。
 
 这个模型让系统可以提前知道返回目的地，但也引入了三套容易混淆的路径：
 
@@ -57,7 +57,7 @@ drafted_by: "openclaw-task2a"
 | `onBackCancelled()` | 取消 | 把视觉状态恢复到起点 |
 | `onBackInvoked()` | 已提交 | 执行导航、关闭容器或提交业务状态 |
 
-在 `onBackProgressed()` 中结束 Activity、弹出 Fragment 或写数据库，会破坏取消语义。系统动画同样遵守这一边界：手势阶段只变换动画控制层（leash）；提交后才调用真实回调，并把预览接入正式转场。
+在 `onBackProgressed()` 中结束 Activity、pop Fragment 或写数据库，会破坏取消语义。系统动画同样遵守这一边界：手势阶段只变换动画控制层（leash）；提交后才调用真实回调，并把预览接入正式转场。
 
 ### 1.2 返回目的地与动画执行者
 
@@ -84,9 +84,9 @@ flowchart TD
     C --> D["system_server: BackNavigationController"]
     D --> E["读取焦点 WindowState 的最高优先级回调"]
     E --> F{"能否预测并准备系统目标"}
-    F -->|应用或 IME 回调| G["返回 TYPE_CALLBACK"]
-    F -->|对话框/Activity/任务/主屏| H["准备 RemoteAnimationTarget 与动画控制层"]
-    G --> I["应用 ViewRoot 分发开始/进度/取消/提交"]
+    F -->|应用或 IME callback| G["返回 TYPE_CALLBACK"]
+    F -->|dialog / activity / task / home| H["准备 RemoteAnimationTarget 与 leash"]
+    G --> I["应用 ViewRoot 分发 start / progress / cancel / invoke"]
     H --> J["WM Shell 对动画控制层应用 SurfaceControl.Transaction"]
     J --> K{"手势提交"}
     K -->|取消| L["播放取消动画并恢复层级"]
@@ -96,8 +96,8 @@ flowchart TD
 
 其中两个类负责核心协调职责：
 
-- `BackNavigationController` 位于 `system_server`，负责确定焦点窗口、最高优先级回调、返回目标和可动画性，并准备 WindowContainer/转场侧资源；
-- `BackAnimationController` 位于 WM Shell，负责手势状态、指针截取、远程动画就绪状态、进度分发以及提交后的收尾。
+- `BackNavigationController` 位于 system_server，负责确定 focused window、top callback、返回目标和可动画性，并准备 WindowContainer/Transition 侧资源；
+- `BackAnimationController` 位于 WM Shell，负责手势状态、pointer pilfer、remote animation readiness、progress 分发以及提交后的收尾。
 
 Android 17 的 WMS 中没有 `TaskAnimationCoordinator`。这个类不能用于解释跨 Activity、跨任务或快照路径。
 
@@ -129,7 +129,7 @@ Android 17 的预先决策路径也保留异常回退。例如 `startBackNavigat
 `WindowOnBackInvokedDispatcher` 在应用进程维护回调集合。最高优先级回调改变时，它把 `OnBackInvokedCallbackInfo` 经 `IWindowSession.setOnBackInvokedCallbackInfo()` 写入对应 `WindowState`。这个对象包含：
 
 - 回调的 Binder；
-- 优先级；
+- priority；
 - 是否实现 `OnBackAnimationCallback`；
 - 是否请求系统覆盖行为。
 
@@ -198,7 +198,7 @@ Android 17 还提供一条减少逐帧跨进程调用的优化路径。满足以
 
 ### 6.1 动画注册表与 RemoteAnimationTarget
 
-`ShellBackAnimationRegistry` 按 `BackNavigationInfo` 类型保存动画执行器。AOSP Android 17 的默认 Dagger 模块装配跨 Activity、跨任务和定制跨 Activity 执行器；返回主屏动画可由 Launcher 在运行时注册，对话框关闭槽位默认为 `null`。`BackNavigationInfo` 包含某个类型，只说明系统服务端能表达该目的地；`BackAnimationAdapter.isAnimatable(type)` 还要确认当前产品已经提供动画执行器。
+`ShellBackAnimationRegistry` 按 `BackNavigationInfo` 类型保存 runner。AOSP Android 17 的默认 Dagger module 装配 cross-activity、cross-task 和定制 cross-activity runner；return-to-home 可由 Launcher 运行时注册，dialog-close 槽位默认是 `null`。`BackNavigationInfo` 有某个 type，只说明 core 能表达该目的地；`BackAnimationAdapter.isAnimatable(type)` 还要确认当前产品已经提供 runner。
 
 系统服务端准备完成后，把打开/关闭的 `RemoteAnimationTarget` 及其动画控制层交给 Shell。手势阶段的典型逐帧工作包括：
 
@@ -242,7 +242,7 @@ Android 17 可以在以下组合条件下为打开目标创建无窗口启动画
 应用侧每帧应限制在可预测的属性更新：
 
 - 预先保存起止位置；
-- 更新平移、缩放、透明度或已创建动画的进度；
+- 更新 translation、scale、alpha 或已创建动画的 fraction；
 - 避免同步 I/O、Bitmap 解码、导航提交和大对象分配；
 - 不在每帧反复修改复杂 `LayoutParams`；
 - 取消后完整恢复界面状态。
@@ -271,10 +271,10 @@ Android 17 的 IME 返回路径跨越 IME 和应用两个进程：
 ```mermaid
 flowchart LR
     A["IME: ImeBackCallbackSender"] --> B["ResultReceiver"]
-    B --> C["应用：ImeBackCallbackProxy"]
-    C --> D["应用 WindowOnBackInvokedDispatcher"]
+    B --> C["App: ImeBackCallbackProxy"]
+    C --> D["App WindowOnBackInvokedDispatcher"]
     D --> E["ImeBackAnimationController"]
-    E --> F["应用 InsetsController 控制 IME Insets"]
+    E --> F["App InsetsController 控制 IME Insets"]
 ```
 
 IME 进程通过 `ImeBackCallbackSender` 把回调注册转发给当前应用。应用侧 `ImeBackCallbackProxy` 收到默认系统回调后，会把它映射到 `PRIORITY_DEFAULT`；若 ViewRoot 已提供 `ImeBackAnimationController`，分发器便由该控制器处理预测动画。
@@ -283,13 +283,13 @@ IME 进程通过 `ImeBackCallbackSender` 把回调注册转发给当前应用。
 
 - IME 可通过返回处置策略选择跳过默认回调；
 - 应用更高优先级的覆盖层回调可以先处理；
-- 多窗口与 IME 全屏模式禁用预测 IME 动画；
+- multi-window 与 IME fullscreen mode 禁用预测 IME 动画；
 - 使用 `adjustResize`、没有应用 Insets 动画回调且页面也未启用边到边显示时，Android 17 会回退到普通隐藏动画；
 - `onKeyPreIme()` 的兼容分支仍可能消费事件并取消 IME 动画。
 
 `ImeBackAnimationController` 在预提交阶段只移动 IME 高度的一小部分作为预览，提交后再完成隐藏；取消则回到显示状态。它直接控制 `WindowInsetsAnimationController`，没有让 IMMS 与页面的跨 Activity 动画并行运行。
 
-IME 隐藏提交后，控制器会暂时清除 IME 回调，使下一次返回可以交给后续回调，即使隐藏动画还在收尾。这是常见“两次返回”的状态基础，但应用不能把“两次”写成所有 IME、窗口模式和回调组合下的硬性规则。
+IME 隐藏提交后，controller 会暂时清除 IME callbacks，使下一次返回可以交给后续 callback，即使隐藏动画还在收尾。这是常见“两次返回”的状态基础，但应用不能把“两次”写成所有 IME、window mode 和 callback 组合下的硬性规则。
 
 ## 10. 如何建立性能结论
 
@@ -297,12 +297,12 @@ IME 隐藏提交后，控制器会暂时清除 IME 回调，使下一次返回�
 
 | 现象 | 优先证据 | 可能范围 |
 |---|---|---|
-| 手势开始后预览迟迟不出现 | `ACTION_BACK_SYSTEM_ANIMATION`、Shell 就绪日志 | WMS 目标计算、远程目标、目标窗口 |
-| 手指移动时持续掉帧 | FrameTimeline、Shell/应用主线程、RenderThread、SF | 进度回调或 Surface 事务 |
-| 松手后停顿 | 提交后动画执行器、转场、真实回调 | 应用导航、动画执行器、转场合并 |
-| 取消后界面没恢复 | 应用取消轨迹或 Shell 动画执行器 | 回调状态机错误 |
+| 手势开始后预览迟迟不出现 | `ACTION_BACK_SYSTEM_ANIMATION`、Shell readiness 日志 | WMS 目标计算、remote target、目标窗口 |
+| 手指移动时持续掉帧 | FrameTimeline、Shell/App 主线程、RenderThread、SF | progress 回调或 Surface transaction |
+| 松手后停顿 | post-commit runner、Transition、真实 callback | 应用导航、动画 runner、Transition 合并 |
+| 取消后 UI 没恢复 | app cancel trace 或 Shell runner | callback 状态机错误 |
 | 偶发退回旧动画 | `BackNavigationInfo` type、目标进程/窗口 | 预测条件不足 |
-| 键盘先闪再隐藏 | `ImeBackAnimationController`、Insets 控制权 | IME 控制权就绪状态、回退模式 |
+| 键盘先闪再隐藏 | `ImeBackAnimationController`、Insets control | IME control readiness、回退模式 |
 
 ### 10.2 不使用固定的分段毫秒预算
 
@@ -319,7 +319,7 @@ Android 17 在 WM Shell 中提供两类内建观测：
 - `LatencyTracker.ACTION_BACK_SYSTEM_ANIMATION`：从 Shell 发起 `startBackNavigation()` 到收到有效远程动画目标；
 - InteractionJankMonitor CUJ：包括预测返回主屏、跨任务、跨 Activity，对相应动画控制层的帧做卡顿统计。
 
-WMS 的 Proto 状态转储/窗口轨迹还包含 `BackNavigationController` 的 `ANIMATION_IN_PROGRESS` 与 `LAST_BACK_TYPE`。WM Shell 状态转储会输出 `BackAnimationController` 的手势、提交后、指针截取以及当前/排队跟踪器状态。
+WMS 的 Proto 状态转储/窗口轨迹还包含 `BackNavigationController` 的 `ANIMATION_IN_PROGRESS` 与 `LAST_BACK_TYPE`。WM Shell 状态转储会输出 `BackAnimationController` 的手势、post-commit、指针截取以及当前/排队跟踪器状态。
 
 ### 11.2 Perfetto 需要覆盖的线程
 
@@ -329,7 +329,7 @@ WMS 的 Proto 状态转储/窗口轨迹还包含 `BackNavigationController` 的 
 - `system_server` 中 WindowManager/ActivityTaskManager 相关线程和 Binder；
 - 应用主线程与 RenderThread；
 - SurfaceFlinger、GPU/HWC 及 FrameTimeline；
-- 输入、调度、频率、View、窗口管理、图形等相关数据源。
+- input、sched、freq、view、wm、gfx 等相关数据源。
 
 分析顺序建议如下：
 
@@ -340,19 +340,19 @@ WMS 的 Proto 状态转储/窗口轨迹还包含 `BackNavigationController` 的 
 5. 对齐每帧事务、应用缓冲区与 SurfaceFlinger 呈现时间；
 6. 松手后继续观察，直至真实回调和转场完成。
 
-FrameTimeline 的卡顿类型只描述帧结果。判断开销来自布局、回调、Binder、GPU 还是合成，需要展开同一时间范围的线程切片。
+FrameTimeline 的卡顿类型只描述帧结果。判断开销来自布局、callback、Binder、GPU 还是合成，需要展开同一时间范围的线程切片。
 
 ### 11.3 建议的覆盖组合
 
 至少覆盖以下状态，并分别记录 P50/P90/P95：
 
-- 应用回调/系统跨 Activity/跨任务/返回主屏；
+- app callback / 系统 cross-activity / cross-task / return-to-home；
 - 目标 Activity 已有窗口 / 条件不足回退；
 - 手势提交 / 中途取消 / 快速连续两次返回；
-- IME 显示/隐藏，`adjustResize`/边到边显示；
+- IME shown / hidden，`adjustResize` / edge-to-edge；
 - 60 Hz / 高刷新率；
-- 分屏、自由窗口、折叠状态变化；
-- AndroidX 回调启用/禁用；
+- 分屏、freeform、折叠状态变化；
+- AndroidX callback enabled / disabled；
 - 目标 SDK 35 与 36+ 的兼容边界。
 
 ## 12. 版本边界
@@ -363,7 +363,7 @@ FrameTimeline 的卡顿类型只描述帧结果。判断开销来自布局、回
 - Android 16 / API 36 对目标 SDK 36+ 应用默认启用新模型，仍可通过 `android:enableOnBackInvokedCallback="false"` 临时退出；启用时不再走 `onBackPressed()` 和返回 `KEYCODE_BACK` 的常规分发；
 - Android 17 / API 37 延续该默认行为，并允许同一分发器注册多个 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER`。
 
-不能用 Android 17 后续小版本或 AndroidX 新版本的行为解释 `android-17.0.0_r1`。OEM 对 SystemUI 手势、Launcher 动画执行器、动画资源和窗口策略的修改需要在对应构建上复核。
+不能用 Android 17 后续小版本或 AndroidX 新版本的行为解释 `android-17.0.0_r1`。OEM 对 SystemUI 手势、Launcher runner、动画资源和窗口策略的修改需要在对应构建上复核。
 
 ## 13. 源码索引
 
@@ -378,5 +378,5 @@ FrameTimeline 的卡顿类型只描述帧结果。判断开销来自布局、回
 - [`ImeBackAnimationController.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ImeBackAnimationController.java)
 - [`ImeBackCallbackSender.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/ImeBackCallbackSender.java)
 - [`ImeBackCallbackProxy.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/ImeBackCallbackProxy.java)
-- [支持预测性返回手势](https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture)
-- [面向目标 SDK 36+ 的 Android 16 行为变更](https://developer.android.com/about/versions/16/behavior-changes-16)
+- [Add support for the predictive back gesture](https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture)
+- [Android 16 behavior changes for target SDK 36+](https://developer.android.com/about/versions/16/behavior-changes-16)
