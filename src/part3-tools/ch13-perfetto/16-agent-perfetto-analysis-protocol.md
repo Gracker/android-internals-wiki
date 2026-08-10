@@ -90,54 +90,11 @@ last_deepseek_cn_review_at: 2026-07-11
 
 # 13.16 Agent 辅助 Perfetto 分析协议
 
-<!-- outline-start -->
-## 要点
+Agent 辅助 Perfetto 分析的目标是让 trace 调查可复查。人工查看 Perfetto UI 很快，但结论容易散落在截图、口头判断和临时 SQL 里；换一份 trace 或换一名分析者后，很难重放同一条推理路径。分析协议吸收了 `android/skills/profilers` 固定提交中的约束和 Perfetto 官方 Agent Skill 的主机侧工具边界：输入完整、SQL 经执行验证、证据与假设分开、报告注明版本和采集缺口。
 
-### 🔹 协议定位：从 Perfetto 教程到可复查的 Agent 调查流程
-说明 `android/skills/profilers` 与普通 Perfetto 教程的区别，明确本节关注 trace 分析流程、证据约束和停止条件，而不是重复 UI 操作教程。
+在 13.2 节 Trace 抓取、13.10 节 Perfetto SQL 常用模板、13.15 节 BufferQueue 阻塞案例的基础上，这里聚焦 Agent 调查流程：怎样提问、怎样取证、怎样避免过早下结论。
 
-### 🔹 输入约束：trace 文件、问题类型、包名与版本信息
-定义 Agent 分析前必须收集的最小输入，包括 trace 路径、Android 版本、设备/ROM、目标包名、复现场景、采集配置和期望回答的问题。
-
-### 🔹 Scratchpad 证据链：只记录已验证事实
-说明 scratchpad 的记录格式：时间窗、线程/进程、slice/counter、SQL、查询结果、排除项；强调假设与事实分离。
-
-### 🔹 Perfetto SQL 生成守卫：schema、stdlib 与执行校验
-覆盖 `trace_processor`、schema 检索、Perfetto stdlib 优先、`utid/upid`、`dur=-1`、`SPAN_JOIN`、`GLOB` 等查询稳定性规则。
-
-### 🔹 六类调查域：CPU、Graphics、I/O、IPC、Memory、Power
-把开放式 trace 分析拆成可执行的 domain hints，说明每类问题的起手查询、下一跳和常见误判。
-
-### 🔹 Wall time 与 CPU time 分离
-建立长耗时 slice 的基本判断流程：先查 `thread_state`，再区分 Running、Runnable、Sleeping、Uninterruptible Sleep，避免把等待时间误判为计算开销。
-
-### 🔹 从局部异常到全局复核
-说明找到疑似瓶颈后，仍要检查全局最长 slice、D-state、Binder、FrameTimeline 和关键 counter，避免第一个异常被误认为根因。
-
-### 🔹 输出模板：证据表、阻塞方、边界与补采建议
-定义最终报告结构：问题窗口、核心证据、根因链、排除项、可信度、补采字段、下一步优化动作。
-
-## 扩展
-
-### 🔸 Trace 采集规划器
-按启动、滑动、ANR、I/O、内存、功耗、GPU 等问题类型生成 TraceConfig/atrace category 建议。
-
-### 🔸 Android 版本与厂商轨道差异
-整理 FrameTimeline、Binder、dmabuf、power rail、sched、MTK/vendor 轨道在不同 Android 版本和厂商 ROM 上的字段差异。
-
-### 🔸 SQL 模板测试集
-为常用 Perfetto SQL 建立 smoke test，降低字段漂移、stdlib 版本差异和空结果误判。
-
-### 🔸 源码与 trace 关联
-从 trace 中的 slice、Binder 方法、native 符号继续映射到 AOSP 或业务代码路径。
-
-<!-- outline-end -->
-
-Agent 辅助 Perfetto 分析的目标是让 trace 调查可复查。人工查看 Perfetto UI 很快，但结论容易散落在截图、口头判断和临时 SQL 里；换一份 trace 或换一名分析者后，很难重放同一条推理路径。本节把 `android/skills/profilers` 固定提交中的约束整理为 AIW 协议，并纳入 Perfetto 官方 Agent Skill 的主机侧工具边界：输入完整、SQL 经执行验证、证据与假设分开、报告注明版本和采集缺口。[来源: android/skills profilers commit 4328beaf；Perfetto Using AI]
-
-在 13.2 节 Trace 抓取、13.10 节 Perfetto SQL 常用模板、13.15 节 BufferQueue 阻塞案例的基础上，本节聚焦 Agent 调查流程：怎样提问、怎样取证、怎样避免过早下结论。
-
-本章以 Android 17 / API 37、`android-17.0.0_r1` 为平台源码锚点；该标签在 `platform/external/perfetto` 对应提交 `ece66975738007dd0978b911d8a2077e49b8f31e`。涉及调度和内核等待时，以 `android17-6.18-2026-06_r6` 为内核锚点。主机侧 SQL 在 Perfetto v57.2、提交 `da1d152cff27890903d158fe96751de3aab883cc` 的 Trace Processor 上验证，并覆盖为 Android 17 标签中的标准库。Perfetto v57.1 引入官方 Agent Skill，v57.2 修复 Trace Processor 解析带内嵌 proto descriptor 的部分 trace 时出现的兼容问题。[来源: Android 17 external/perfetto 标签；Perfetto v57.1/v57.2 release notes]
+平台源码锚点是 Android 17 / API 37、`android-17.0.0_r1`；该标签在 `platform/external/perfetto` 对应提交 `ece66975738007dd0978b911d8a2077e49b8f31e`。涉及调度和内核等待时，内核锚点是 `android17-6.18-2026-06_r6`。主机侧 SQL 在 Perfetto v57.2、提交 `da1d152cff27890903d158fe96751de3aab883cc` 的 Trace Processor 上验证，并覆盖 Android 17 标签中的标准库。Perfetto v57.1 引入官方 Agent Skill，v57.2 修复 Trace Processor 解析带内嵌 proto descriptor 的部分 trace 时出现的兼容问题。
 
 Android 17 标签是 2026 年 4 月的固定源码快照，包含 Perfetto v54.0 之后的提交，不能写成“Android 17 等于 Perfetto v54”。主机上的新 Trace Processor 读取旧设备 trace 时，只能解析 trace 已经采到的数据；它可以改变表结构、标准库和分析能力，不能补出设备当时未记录的 FrameTimeline、ftrace、调用栈或厂商事件。
 
@@ -156,7 +113,7 @@ Android 17 标签是 2026 年 4 月的固定源码快照，包含 Perfetto v54.0
 
 `android/skills/profilers` 在 commit `4328beaf36f00265db107eb316f9add6b8764144` 下包含两个能力包：`perfetto-sql` 把取数意图转换成可执行的 PerfettoSQL；`perfetto-trace-analysis` 面向开放式 trace 调查，要求 Agent 建立 scratchpad、读取 CPU / Graphics / I/O / IPC / Memory / Power 六类提示，并在结论前完成依赖追踪和全局复核。
 
-Perfetto v57.1 发布了符合 Agent Skills 规范的官方 skill。它教 Agent 调用 `trace_processor`、编写 PerfettoSQL、录制 Android trace，并提供 Android 内存与 GPU 调查流程；安装包内含可工作的 Trace Processor 包装脚本。两套 skill 的目录结构和指令不同，本章只提炼可复查原则，不把某个 skill 的内部文件名当成长期 API。
+Perfetto v57.1 发布了符合 Agent Skills 规范的官方 skill。它教 Agent 调用 `trace_processor`、编写 PerfettoSQL、录制 Android trace，并提供 Android 内存与 GPU 调查流程；安装包内含可工作的 Trace Processor 包装脚本。两套 skill 的目录结构和指令不同，这里只提炼可复查原则，不把某个 skill 的内部文件名当成长期 API。
 
 这套协议和普通 Perfetto 教程的差异在这里：教程关注概念、UI 操作和案例解释；协议关注 Agent 行为约束。一次合格的 Agent 调查至少要留下四类材料：输入条件、查询语句、查询结果、排除过的方向。没有这些材料，报告里的“主线程卡在 Binder”“GPU 阻塞”“I/O 竞争”都只是口头判断。
 
@@ -169,7 +126,7 @@ Agent 开始分析 trace 之前要收齐最低限度的输入。输入越含糊�
 | 输入项 | 必填性 | 作用 | 缺失时的处理 |
 |---|---:|---|---|
 | trace 文件路径或受控句柄 | 必填 | `trace_processor` 查询对象 | 无法分析 |
-| 问题类型 | 必填 | 选择启动、滑动、ANR、I/O、内存、功耗或 GPU 调查域 | 只能做快速巡检 |
+| 问题类型 | 必填 | 选择启动、滑动、ANR、I/O、内存、功耗或 GPU 调查域 | 只能做快速概览 |
 | 目标包名 / 进程名 | 建议必填 | 限定 `process.upid` 与主线程 | 用 `android.startup.startups` 或进程列表查询候选 |
 | Android 版本、设备、ROM | 必填 | 判断 FrameTimeline、Binder、dmabuf、电源轨等轨道可用性 | 报告降低可信度 |
 | 复现场景与时间窗 | 建议必填 | 缩小 slice / counter 查询范围 | 先查全局最长 slice 和异常帧定位窗口 |
@@ -202,7 +159,7 @@ scratchpad 分成三张表：
 
 Perfetto SQL 即使语法正确，也可能因为表、字段、模块版本或时间区间口径错误而给出误导性结果。`perfetto-sql` 对 Agent 的约束是：固定 Trace Processor 和 SQL 包，检查当前表结构，再编写查询并对真实输出做语义校验。
 
-Android 17 的固定源码快照提供三类入口。`slice`、`thread_state`、`thread`、`process` 等基础表由 Trace Processor 预置；`android.startup.startups`、`slices.time_in_state` 等标准库模块要通过 `INCLUDE PERFETTO MODULE` 加载；旧版基于 trace 的 metric 由 metric 运行入口生成，不能因为加载同名标准库模块就假定 metric 表已经存在。[来源: Perfetto Trace Processor；PerfettoSQL standard library；SQL tables]
+Android 17 的固定源码快照提供三类入口。`slice`、`thread_state`、`thread`、`process` 等基础表由 Trace Processor 预置；`android.startup.startups`、`slices.time_in_state` 等标准库模块要通过 `INCLUDE PERFETTO MODULE` 加载；旧版基于 trace 的 metric 由 metric 运行入口生成，不能因为加载同名标准库模块就假定 metric 表已经存在。
 
 | 规则 | 操作要求 | 防止的问题 |
 |---|---|---|
@@ -470,7 +427,7 @@ Perfetto SQL 模板不能假设所有 trace 都来自 Pixel 或完整的 userdeb
 - **Android 标准库层**：`android.startup.startups`、`android.frames.timeline`、`slices.time_in_state` 等模块还受采集字段限制。FrameTimeline 从 Android 12 开始可用；Android 10/11 需要回退到 UI、RenderThread、SurfaceFlinger slice 和业务 marker。
 - **厂商扩展层**：显示、thermal、功耗、调度器等自定义轨道要按设备、ROM、构建和采集配置建立词典，不能直接写成平台通用机制。
 
-本章涉及调度和内核等待时，以 `android17-6.18-2026-06_r6` 为 Android 17 kernel common 锚点。设备仍可能使用厂商分支与不同配置，报告要同时记录运行设备的内核版本。`io_wait` 需要采到 `sched/sched_blocked_reason`，`blocked_function` 还依赖 userdebug 与符号；电源轨、GPU 计数器和厂商显示轨道也都属于可选证据。可信度应按结论逐项绑定这些条件。
+涉及调度和内核等待时，Android 17 kernel common 锚点是 `android17-6.18-2026-06_r6`。设备仍可能使用厂商分支与不同配置，报告要同时记录运行设备的内核版本。`io_wait` 需要采到 `sched/sched_blocked_reason`，`blocked_function` 还依赖 userdebug 与符号；电源轨、GPU 计数器和厂商显示轨道也都属于可选证据。可信度应按结论逐项绑定这些条件。
 
 ## SQL 模板测试集
 

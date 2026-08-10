@@ -94,7 +94,7 @@ last_deepseek_cn_review_at: 2026-07-16
 
 # 13.15 BufferQueue 阻塞的 Perfetto 识别
 
-本章以 Android 17 / API 37、`android-17.0.0_r1` 为平台源码锚点；涉及调度状态与 fence 内核语义时，以 `android17-6.18-2026-06_r6` 为锚点。Android 12—16 只用于解释版本演进。
+平台源码锚点是 Android 17 / API 37、`android-17.0.0_r1`；涉及调度状态与 fence 内核语义时，锚点是 `android17-6.18-2026-06_r6`。Android 12—16 只用于解释版本演进。
 
 Perfetto 文档把 `Buffer Stuffing` 定义为一种队列状态：App 在前一帧尚未 present 时继续提交新帧，未显示的 buffer 增加，后续帧即使按时完成也会带着额外延迟。队列耗尽后，Producer 还可能进入 `dequeueBuffer()` 等待。这个分类不能单独证明 App 绘制超时，也不能直接指出哪一条 BufferQueue 阻塞。
 
@@ -105,7 +105,7 @@ Perfetto 文档把 `Buffer Stuffing` 定义为一种队列状态：App 在前一
 - TextureView 先由外部 Producer 写 SurfaceTexture，再由宿主 HWUI 采样进 App Window，至少要区分输入队列与宿主窗口队列；
 - Camera、视频和游戏的 Producer 可能跨进程，并且可以有不同的排队策略。
 
-这些边界来自 `rendering_pipelines` 系列对标准窗口、SurfaceView、TextureView、混合渲染和 Camera 的对象划分。BufferQueue 的 slot 与 fence 基础可回到 2.13、2.16 节；跨渲染路径的选择见 18.20 节。
+BufferQueue 的 slot 与 fence 基础见 2.13、2.16 节；标准窗口、SurfaceView、TextureView、混合渲染和 Camera 的路径选择见 18.20 节。
 
 ## 从 FrameTimeline 找到目标 Surface
 
