@@ -76,48 +76,11 @@ last_deepseek_cn_review_at: 2026-07-13
 
 # 13.13 Perfetto CPU 频率与 DVFS 关联分析
 
-<!-- outline-start -->
-## 要点
+平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点是 `android17-6.18-2026-06_r6`。Perfetto 的 CPU Frequency 轨道记录软件可见的频率状态，线程轨道记录调度状态。两者落在同一时间窗，才能回答“线程 Running 时，所在 CPU 报告了什么频率”。
 
-### 🔹 采集入口：`power/cpu_frequency`、`power/cpu_idle` 与 `linux.sys_stats`
-说明事件驱动与轮询两种 CPU 频率来源的差异，明确 `cpufreq_period_ms` 适合补齐 trace 开头缺少初始频率的问题。
+证据边界是：频率轨并非硬件时钟探针。Android 17 内核在 cpufreq 普通切换完成后，把 `freqs->new` 写入 `cpu_frequency`；快速切换路径写入驱动返回的 `freq`。同一 policy 内的在线 CPU 会分别产生事件。`linux.sys_stats` 的轮询结果也只能代表 sysfs 暴露的值。仅凭这些数据，不能断言某段代码获得了对应数量的有效执行周期。
 
-### 🔹 CPU 频率、空闲状态与线程 Running 的关系
-把 `sched`、`thread_state`、`cpufreq`、`cpuidle` 放到同一条判断路径里，避免把 Running 时间直接等同于高频运行时间。
-
-### 🔹 大小核与 CPU cluster 的频率轨道识别
-利用 `linux.system_info`、`cpu_freq` 表和可用频点识别 cluster，说明同一 cluster 内多个 CPU 同步变频的常见表现。
-
-### 🔹 DVFS 调节滞后对启动、滑动与后台任务的影响
-覆盖短突发任务、连续渲染负载、后台批处理三类场景，说明频率爬升、降频滞后和空闲状态恢复成本如何影响性能判断。
-
-### 🔹 Perfetto SQL：从 counter 表重建频率时间线
-给出 `counter` + `cpu_counter_track` 的查询方向，正文提供可直接复用的 SQL 模板和结果解释方式。
-
-### 🔹 端侧 AI 推理中的 CPU/GPU governor 协同问题
-基于移动端 LLM DVFS 论文素材，说明 CPU、GPU、内存 governor 分开调节时可能出现的能效错配，并标注设备与模型边界。
-
-### 🔹 误判清单：USB、空闲态、缺失事件与厂商 governor
-列出 trace 采集和解释时最容易出错的条件，包括 USB 保持唤醒、空闲态下频率值含义变弱、部分平台不暴露频率事件、厂商调度策略不可外推。
-
-## 扩展
-
-### 🔸 与 EAS / uclamp / thermal 的交叉验证
-结合 5.2、5.4、11.1 节，补充 CPU capacity、任务迁移、降频与温控事件的组合判断。
-
-### 🔸 线上采集能力边界
-对比本地 Perfetto、Android Studio System Profiler、ProfilingManager 返回 trace 的字段可见性和隐私裁剪边界。
-
-### 🔸 典型 SQL 模板集
-可拆出 CPU 频率分布、Running 时间加权频率、cluster 迁移前后频率变化、渲染帧窗口内频率统计四类模板。
-
-<!-- outline-end -->
-
-本章的平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点是 `android17-6.18-2026-06_r6`。Perfetto 的 CPU Frequency 轨道记录软件可见的频率状态，线程轨道记录调度状态。两者落在同一时间窗，才能回答“线程 Running 时，所在 CPU 报告了什么频率”。
-
-这里有一条必须守住的证据边界：频率轨并非硬件时钟探针。Android 17 内核在 cpufreq 普通切换完成后，把 `freqs->new` 写入 `cpu_frequency`；快速切换路径写入驱动返回的 `freq`。同一 policy 内的在线 CPU 会分别产生事件。`linux.sys_stats` 的轮询结果也只能代表 sysfs 暴露的值。仅凭这些数据，不能断言某段代码获得了对应数量的有效执行周期。
-
-本章的可复核来源分成三层：Android 17 tag 下的 Perfetto 采集、Trace Processor 表和 ProfilingManager 源码；`android17-6.18-2026-06_r6` 下的 CPUFreq、CPUIdle 与 schedutil 内核源码/文档；以及端侧 LLM DVFS 论文中限定在 Pixel 7 / Pixel 7 Pro、Android 13、Tensor G2 和特定推理栈内的实验结果。正文只把第三层当作“协同 governor 诊断视角”，不把论文数字外推成 Android 17 或其他 SoC 的通用结论。
+可复核来源分成三层：Android 17 tag 下的 Perfetto 采集、Trace Processor 表和 ProfilingManager 源码；`android17-6.18-2026-06_r6` 下的 CPUFreq、CPUIdle 与 schedutil 内核源码/文档；以及端侧 LLM DVFS 论文中限定在 Pixel 7 / Pixel 7 Pro、Android 13、Tensor G2 和特定推理栈内的实验结果。第三层只用于提供“协同 governor”的诊断视角，论文数字不能外推成 Android 17 或其他 SoC 的通用结论。
 
 ## 频率轨记录的是什么
 
@@ -451,9 +414,9 @@ Android 17 通用内核能说明 CPUFreq、schedutil、uclamp、EAS 与 CPUIdle 
 
 ## 线上与工具预设的采集边界
 
-本地 `adb perfetto` 接受完整 TraceConfig，在设备允许的范围内可以显式启用本章所需数据源。Android Studio Profiler 使用工具自己的采集配置，版本与入口不同会得到不同字段；分析前应检查 `cpu_counter_track` 和 trace metadata，不应按界面名称推断采集内容。
+本地 `adb perfetto` 接受完整 TraceConfig，在设备允许的范围内可以显式启用分析所需的数据源。Android Studio Profiler 使用工具自己的采集配置，版本与入口不同会得到不同字段；分析前应检查 `cpu_counter_track` 和 trace metadata，不应按界面名称推断采集内容。
 
-Android 17 的 `ProfilingManager` system trace 由平台 `Configs` 生成固定配置。该配置包含 compact sched、进程信息、应用 atrace 分类和 SurfaceFlinger FrameTimeline，未启用 `power/cpu_frequency`、`power/cpu_idle`、`linux.sys_stats` 或 `linux.system_info`。system trace 结果还会进入 redaction 流程，并受系统 rate limiter、参数范围和设备配置约束。它可以支持应用侧线上性能采样，却不能替代本章的本地 CPU DVFS TraceConfig。[Android 17 Profiling 配置](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/Configs.java) [Android 17 ProfilingService](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/ProfilingService.java)
+Android 17 的 `ProfilingManager` system trace 由平台 `Configs` 生成固定配置。该配置包含 compact sched、进程信息、应用 atrace 分类和 SurfaceFlinger FrameTimeline，未启用 `power/cpu_frequency`、`power/cpu_idle`、`linux.sys_stats` 或 `linux.system_info`。system trace 结果还会进入 redaction 流程，并受系统 rate limiter、参数范围和设备配置约束。它可以支持应用侧线上性能采样，却不能替代本地 CPU DVFS TraceConfig。[Android 17 Profiling 配置](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/Configs.java) [Android 17 ProfilingService](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/ProfilingService.java)
 
 拿到线上 trace 后，先列出实际存在的数据源和轨道。缺少 idle、policy limit、GPU 或 thermal 时，报告应写成“已观测 CPU 频率与调度状态的相关性”，不能升级为整机能耗或 governor 根因。
 
