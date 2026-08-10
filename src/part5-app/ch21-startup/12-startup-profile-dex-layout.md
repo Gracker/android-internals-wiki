@@ -240,7 +240,7 @@ Startup Profile 会随首页、导航、Compose/View 架构、依赖注入、启
 
 - 只用 non-debuggable、minified release 等价构建验证；
 - 固定账号、地区、语言、权限、弹窗、通知和实验桶；
-- 检查 `startup-prof.txt` diff，拦截测试框架、debug 代码和大量非首屏包；
+- review `startup-prof.txt` diff，拦截测试框架、debug 代码和大量非首屏包；
 - 检查 `classes.dex` 容量与 startup DEX 标记；
 - 保持 Baseline Profile 二进制小于 1.5 MB；
 - 对 Launcher、通知和高频 deep link 分别跑回归；

@@ -87,7 +87,7 @@ Perfetto 是 Android 性能分析的统一时间轴。渲染、输入、启动�
 - [13.26 android.os.Trace API 与应用级自定义追踪](13.26-android-trace-api-custom-tracing.md)
 - [13.27 Android 17 trace、Perfetto v57 AI skill 与状态轨道](13.27-android17-perfetto-v57-ai-skill-state-tracks.md)
 
-目录中有两篇文章共用 `13.17`，版本演进专题与 pprof 专题共用 `13.21`；阅读时应按标题和路径区分。heapprofd 生产部署以 [§26.24 heapprofd 生产级部署与权限模型](../../part5-app/ch26-observability/24-heapprofd-production-deployment-permissions.md) 为准。
+`13.1-07-04-android17-heapprofd-production-deployment-pe.md` `13.17`，版本演进专题与 pprof 专题共用 `13.21`；阅读时应按标题和路径区分。heapprofd 生产部署以 [§26.24 heapprofd 生产级部署与权限模型](../../part5-app/ch26-observability/24-heapprofd-production-deployment-permissions.md) 为准。
 
 ## 按任务选择阅读路径
 
