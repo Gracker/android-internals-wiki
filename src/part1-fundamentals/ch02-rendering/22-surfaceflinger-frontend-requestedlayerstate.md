@@ -61,7 +61,7 @@ SurfaceFlinger 收到 `SurfaceControl.Transaction` 后，不能立即把每个�
 3. layer 的父子、relative Z 和 mirror 关系变化后，本轮应按什么顺序遍历？
 4. CompositionEngine 最终应读取哪份几何、可见性、内容和效果状态？
 
-Android 17 的 SurfaceFlinger FrontEnd 位于这段边界上。它消费事务，维护图层的服务端请求状态和生命周期，构建可遍历的图层图，再生成 CompositionEngine 使用的 `LayerSnapshot`。
+Android 17 的 SurfaceFlinger FrontEnd 位于这段边界上。它消费 transaction，维护 layer 的服务端请求状态和生命周期，构建可遍历的 layer 图，再生成 CompositionEngine 使用的 `LayerSnapshot`。
 
 下文的平台实现按 Android 17 / API 37 的 `android-17.0.0_r1` 核对。获取围栏、释放围栏和 dma-fence 的内核语义见 §2.16；这里集中说明 SurfaceFlinger 如何把围栏作为事务就绪与缓冲区使用条件。
 
@@ -126,11 +126,11 @@ Android 17 没有用 `RequestedLayerState` 完全替换 `Layer`。
 - layer 请求、层级、可见性与合成输入，优先从 FrontEnd 对象理解；
 - buffer latch、release callback 和一部分历史兼容行为，仍要回到 `Layer`；
 - 不要把 Android 12/13 的“逐个 `Layer` 更新全部状态”模型照搬到 Android 17；
-- 也不能因为看到 FrontEnd，就假设所有旧版路径都已删除。
+- 也不能因为看到 FrontEnd，就假设所有 legacy 路径都已删除。
 
 ## 3. `RequestedLayerState` 保存什么
 
-`RequestedLayerState` 的源码注释说明：它保存某个图层的客户端请求状态，不保存其他图层的状态。Android 17 中，它继承 `layer_state_t`：
+`RequestedLayerState` 的源码注释说明：它保存某个 layer 的客户端请求状态，不保存其他 layer 的状态。Android 17 中，它继承 `layer_state_t`：
 
 ```cpp
 struct RequestedLayerState : layer_state_t {
@@ -165,11 +165,11 @@ Android 17 的 `Changes` 包含：
 | 内容 | `Content`、`Buffer`、`SidebandStream`、`BufferSize`、`BufferUsageFlags`、`PostProcess` | 更新当前内容及合成属性 |
 | 策略 | `Metadata`、`FrameRate`、`GameMode`、`Animation` | 更新 metadata、刷新率投票和调度提示 |
 
-`kMustComposite` 是一组变化后需要推动合成的标志，不包含全部 flags。例如，`FrameRate` 还会触发所附 Choreographer 的刷新率更新；是否需要合成由各调用点分别判断。
+`kMustComposite` 是一组变化后需要推动合成的标志，不包含全部 flags。例如，`FrameRate` 还会触发 attached choreographer 的刷新率更新；是否需要合成由各调用点分别判断。
 
 ### 3.2 为什么 layer 关系保存为 id
 
-`RequestedLayerState` 使用 `parentId`、`relativeParentId`、`layerIdToMirror`、`touchCropId` 等编号表示跨图层关系，不再持有客户端句柄。这样可以避免状态对象因保存句柄而意外延长其生命周期。
+`RequestedLayerState` 使用 `parentId`、`relativeParentId`、`layerIdToMirror`、`touchCropId` 等 id 表示跨 layer 关系，不再持有客户端 handle。这样可以避免状态对象因保存句柄而意外延长其生命周期。
 
 对应的引用关系由 `LayerLifecycleManager` 维护。这个区别很重要：
 
@@ -188,11 +188,11 @@ Android 17 的 `Changes` 包含：
 - display rotation 和 output filter；
 - 输入区域、圆角、阴影、模糊和 metadata 继承。
 
-因此，Winscope 中的最终边界与事务参数不同，并不能直接说明事务丢失。应先确认父层级和 traversal path。
+因此，Winscope 中的最终 bounds 与 transaction 参数不同，并不能直接说明 transaction 丢失。应先确认父层级和 traversal path。
 
 ## 4. `LayerLifecycleManager` 管理创建、更新和销毁
 
-`LayerLifecycleManager` 拥有 `RequestedLayerState` 集合，并维护编号到状态及反向引用的映射。它不是线程安全类；Android 17 通过 SurfaceFlinger 主线程上下文保护其成员。只有事务入口的收集过程使用 `LocklessQueue`，整个 FrontEnd 并非无锁实现。
+`LayerLifecycleManager` 拥有 `RequestedLayerState` 集合，并维护 id 到状态及反向引用的映射。它不是线程安全类；Android 17 通过 SurfaceFlinger 主线程上下文保护其成员。只有事务入口的收集过程使用 `LocklessQueue`，整个 FrontEnd 并非无锁实现。
 
 ### 4.1 新建 layer
 
@@ -238,7 +238,7 @@ Android 17 的 `Changes` 包含：
 
 ## 5. `LayerHierarchy` 为什么是图
 
-普通父子关系可以画成树，但相对 Z 轴与镜像会让同一状态节点通过多条路径被访问。Android 17 用图表示这组关系，不为每条镜像路径复制一份 `RequestedLayerState`。
+普通 parent-child 关系可以画成树，但 relative Z 轴与 mirror 会让同一状态节点通过多条路径被访问。Android 17 用图表示这组关系，不为每条镜像路径复制一份 `RequestedLayerState`。
 
 ### 5.1 五种边类型
 
@@ -327,7 +327,7 @@ Android 17 的 `addTransactionReadyFilters()` 按顺序注册：
 
 一笔 transaction 可以携带 `KIND_WAIT` token，另一笔携带相同 token 的 `KIND_SIGNAL`。handler 会保存已经 signal 的 token，默认 TTL 为 5 秒；WAIT 超时后也会继续应用，避免永久阻塞。
 
-跨 `applyToken` 的屏障可能在一次扫描的后半段才被触发。`flushTransactions()` 因此反复扫描 pending queues，直到等待屏障的事务数量不再变化，以便在同一帧继续解开已满足条件的依赖链。
+跨 `applyToken` 的 barrier 可能在一次扫描的后半段才被 signal。`flushTransactions()` 因此反复扫描 pending queues，直到等待 barrier 的 transaction 数量不再变化，以便在同一帧继续解开已满足条件的依赖链。
 
 这些秒数是 `android-17.0.0_r1` 的内部实现值，不是 App 可以依赖的稳定 API 契约。
 
@@ -371,7 +371,7 @@ Android 17 还区分：
 
 FrontEnd 文档说明，snapshot 理论上可以 clone；当前实现为了减少热路径复制，会把 snapshot 移交给 CompositionEngine，present 后再移回 builder。`SurfaceFlinger::composite()` 通过 `addLayerSnapshotsToCompositionArgs()` 准备 layer，再调用 `mCompositionEngine->present(refreshArgs)`。
 
-这次交接仍未决定各显示图层最终采用 DEVICE 还是 CLIENT composition。CompositionEngine 与 HWC 还要根据目标输出的能力、几何、效果和资源约束继续协商。
+这次交接仍未决定各显示图层最终采用 DEVICE 还是 CLIENT composition。CompositionEngine 与 HWC 还要根据目标 Output 的能力、几何、效果和资源约束继续协商。
 
 ## 8. 如何从 trace 判断问题在哪一段
 
@@ -387,7 +387,7 @@ FrontEnd 文档说明，snapshot 理论上可以 clone；当前实现为了减�
 | Winscope transaction/layer trace | transaction、层级、可见性和几何随时间的变化 | GPU/HWC 已完成读取 |
 | present/release fence | display present 或 buffer 可复用边界 | 客户端最初提交了什么请求 |
 
-`TransactionQueue` 在 `queueTransaction()` 时增加，在 ready transaction 被刷新后按数量减少。它持续升高只说明消费速度跟不上入队速度，还要继续检查：
+`TransactionQueue` 在 `queueTransaction()` 时增加，在 ready transaction 被 flush 后按数量减少。它持续升高只说明消费速度跟不上入队速度，还要继续检查：
 
 - 队首是否反复出现 `NotReadyBarrier`；
 - acquire fence 是否长时间 unsignaled；
@@ -413,7 +413,7 @@ FrontEnd 文档说明，snapshot 理论上可以 clone；当前实现为了减�
 - SurfaceFlinger 主线程的 runnable、running 和调度延迟；
 - 对应 display 的 present fence 与 FrameTimeline 结果。
 
-如果第二组的快照更新耗时显著增长，而 HWC 和显示提交时长接近，证据更支持 hierarchy/snapshot 压力；如果两组 FrontEnd 切片接近，但围栏或 HWC 耗时变长，瓶颈位于下游。没有同机、同配置对照数据时，无法量化 FrontEnd 节省的毫秒数。
+如果第二组的 snapshot 更新耗时显著增长，而 HWC/present 时长接近，证据更支持 hierarchy/snapshot 压力；如果两组 FrontEnd slice 接近，但 fence 或 HWC 耗时变长，瓶颈位于下游。没有同机、同配置对照数据时，无法量化 FrontEnd 节省的毫秒数。
 
 ## 10. App 和系统组件怎样提交 transaction
 
