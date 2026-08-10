@@ -60,23 +60,9 @@ last_deepseek_cn_review_at: 2026-07-06
 
 # 多进程启动优化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 多进程 App 的启动开销:拆清进程创建、运行时/类加载、组件初始化和 IPC 等成本。
-- 🔹 进程拉起时序控制:按首屏必需、首帧后可用、路径预测和后台任务区分启动时机。
-- 🔹 跨进程初始化依赖管理:把同步对象依赖改成带超时、取消和降级路径的能力协作。
-- 🔹 进程保活与启动的平衡:只为高频、高成本、用户可感知任务保留预启动或常驻策略。
-- 🔹 多进程启动的观测清单:按进程名、启动原因、Binder ready、TTID/TTFD、PSS/RSS 和失败率拆分观测。
-- 🔹 小结:确认是否需要离开主进程,再决定何时拉起、初始化多少、如何验证收益。
-
-<!-- outline-end -->
-
 多进程可以隔离崩溃、内存峰值和重型 native 模块，也会新增一份进程运行时、初始化链路和 IPC 边界。它是一项架构取舍，不能代替主进程自身的启动治理。
 
-本节聚焦 App 可控制的部分：是否拆进程、何时拉起、每个进程初始化什么、调用方怎样等待远程能力，以及如何在 Android 17 上验证收益。进程优先级与回收规则见[进程模型](../../part1-fundamentals/ch01-architecture/03-process-model.md)，冷启动分段与 TTID/TTFD 见[启动分析](./01-startup-analysis.md)，后台任务约束见[后台执行限制](../../part1-fundamentals/ch05-cpu-power/08-background-execution.md)。
+应用可以控制的部分包括：是否拆进程、何时拉起、每个进程初始化什么、调用方怎样等待远程能力，以及如何在 Android 17 上验证收益。进程优先级与回收规则见[进程模型](../../part1-fundamentals/ch01-architecture/03-process-model.md)，冷启动分段与 TTID/TTFD 见[启动分析](./01-startup-analysis.md)，后台任务约束见[后台执行限制](../../part1-fundamentals/ch05-cpu-power/08-background-execution.md)。
 
 ## 1. 先确认拆进程的目的
 
@@ -110,7 +96,7 @@ WebView 本身已有独立的 renderer 进程。把承载 WebView 的 Activity �
 
 当系统需要运行一个尚无进程承载的组件时，会请求 Zygote 创建应用进程。Android 17 的 `ZygoteProcess.startViaZygote()` 负责整理启动参数，并通过 Zygote socket 请求创建进程；新进程随后进入 `ActivityThread` 的应用绑定流程。
 
-可以把与本节有关的链路压缩成下面几步：
+相关链路可以压缩成下面几步：
 
 ```text
 组件请求
@@ -355,7 +341,7 @@ adb shell dumpsys procstats --hours 3
 
 Perfetto 分析时，要把主进程和远程进程放在同一时间轴上，关注进程创建、`bindApplication`、Provider 初始化、自定义 trace、Binder 阻塞、I/O 和 CPU 竞争。一次优化至少回答三个问题：主进程首帧有没有改善，远程能力可用时间有没有恶化，合计资源与失败率是否可以接受。
 
-## Review 清单
+## 检查清单
 
 - [ ] 每个远程组件的 `android:process` 都有明确理由。
 - [ ] 普通远程进程与 isolated process 的权限假设已分别验证。

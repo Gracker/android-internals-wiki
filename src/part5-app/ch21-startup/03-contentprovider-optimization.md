@@ -60,27 +60,11 @@ last_deepseek_cn_review_at: 2026-07-10
 
 # ContentProvider 启动治理
 
-<!-- outline-start -->
-## 本节要点大纲
+## 范围
 
-### 锚点（必须覆盖）
+ContentProvider 有两种角色：对外提供结构化数据，或借组件自动创建完成“免接入”初始化。这里聚焦第二种角色及其对启动的影响，不展开 CRUD、`CursorWindow` 和 Provider ANR。
 
-- 🔹 ContentProvider 在启动路径中的开销
-- 🔹 三方 SDK ContentProvider 审计与治理
-- 🔹 延迟初始化与按需注册
-- 🔹 App Startup 替代方案
-
-### 扩展（可选深入）
-
-- 🔸 （待扩展）
-
-<!-- outline-end -->
-
-## 本节定位
-
-ContentProvider 有两种角色：对外提供结构化数据，或借组件自动创建完成“免接入”初始化。本节只治理第二种角色及其对启动的影响，不展开 CRUD、`CursorWindow` 和 Provider ANR。
-
-本文的平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，App Startup 固定到 1.2.0。
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，App Startup 固定到 1.2.0。
 
 ## 1. Provider 为什么早于 `Application.onCreate()`
 
@@ -327,7 +311,7 @@ NotStarted → Initializing → Ready
 
 `OnPreDrawListener` 在 draw 之前执行，`View.post()` 也只表示 Runnable 进入 Main 消息队列。两者都不能证明帧已提交。
 
-本章适用范围从 API 29 开始。硬件渲染页面可以用 `registerFrameCommitCallback()` 在下一帧提交到 swap chain 后触发延后任务：
+适用范围从 API 29 开始。硬件渲染页面可以用 `registerFrameCommitCallback()` 在下一帧提交到 swap chain 后触发延后任务：
 
 ```kotlin
 val root = window.decorView
@@ -357,7 +341,7 @@ root.doOnPreDraw {
 
 [Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup) 让多个组件共享一个 `InitializationProvider`，并用 `Initializer.dependencies()` 声明顺序。相比每个 SDK 各带一个 Provider，它减少了 Provider 类、实例和 `onCreate()` 入口，也让依赖关系集中。
 
-App Startup 仍基于 ContentProvider。自动发现和所有 `Initializer.create()` 在 Provider 安装阶段同步运行，不会自动进入 worker，也不会删除 SDK 内部的磁盘、锁或网络成本。
+App Startup 仍基于 ContentProvider。Manifest 发现过程和所有 `Initializer.create()` 在 Provider 安装阶段同步运行，不会自动进入 worker，也不会删除 SDK 内部的磁盘、锁或网络成本。
 
 1.2.0 `AppInitializer` 的核心行为是：
 
@@ -386,7 +370,7 @@ class CrashInitializer : Initializer<CrashClient> {
 
 `LoggerInitializer.create()` 完成后，App Startup 才调用 `CrashInitializer.create()`。两个方法都要同步返回可用结果；内部若只提交异步任务，依赖图无法知道何时就绪。
 
-Manifest 只需要自动发现图的入口节点：
+Manifest 只需要声明初始化图的入口节点：
 
 ```xml
 <provider
@@ -427,7 +411,7 @@ val shareClient = AppInitializer.getInstance(context)
 
 `initializeComponent()` 会在调用线程同步初始化该组件及未完成的依赖。调用方必须满足所有 initializer 的线程契约，不能因为“手动”就默认安全地从任意 worker 调用。
 
-官方文档还指出，关闭某个组件的自动初始化会同时关闭经它自动发现的依赖。迁移时应画出完整依赖图，避免另一个入口仍然 eager 初始化同一依赖。
+官方文档还指出，关闭某个组件的自动初始化会同时关闭由它带入的依赖。迁移时应画出完整依赖图，避免另一个入口仍然 eager 初始化同一依赖。
 
 ## 10. 多进程与 Direct Boot
 

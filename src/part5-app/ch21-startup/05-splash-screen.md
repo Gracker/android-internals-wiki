@@ -61,30 +61,15 @@ task9_review_notes: "2026-06-16 Task9：needs-rework。P0 2 / P1 1。core-splash
 ---
 # Splash Screen 与感知启动速度
 
-用户点击图标之后、App 首帧画出来之前，系统可以做很多事来缩短体感等待时间。Starting Window 在 App 进程就绪前先给视觉反馈；SplashScreen API（Android 12+）把这段反馈统一成可配置样式；骨架屏、预渲染和退出动画再让过渡更平滑。本节讲这三层工具各自怎么用、版本边界在哪、Perfetto 上怎么看。
+用户点击图标之后、App 首帧画出来之前，系统可以做很多事来缩短体感等待时间。Starting Window 在 App 进程就绪前先给视觉反馈；SplashScreen API（Android 12+）把这段反馈统一成可配置样式；骨架屏、预渲染和退出动画再让过渡更平滑。以下说明这三层工具的用法、版本边界和 Perfetto 分析方法。
 
-关于 Starting Window 的系统侧工作机制（ATMS 决策、Shell starting-surface 组件创建流程、TaskSnapshot 路径），详见 2.12 节。本节聚焦 App 侧的配置、适配和感知优化策略。
+Starting Window 的系统侧工作机制（ATMS 决策、Shell starting-surface 组件创建流程、TaskSnapshot 路径）详见 2.12 节。这里聚焦 App 侧的配置、适配和感知优化策略。
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 SplashScreen API (Android 12+) 适配
-- 🔹 感知启动速度优化：骨架屏、预渲染、动画过渡
-- 🔹 启动窗口（Starting Window）机制与自定义
-
-### 扩展（可选深入）
-
-- 🔸 （待扩展）
-
-<!-- outline-end -->
-
-## 本节定位
+## 范围
 
 Splash Screen 的价值是尽快给出稳定、连续的视觉反馈。它不能缩短进程创建、主线程初始化、I/O 或首屏布局本身；把启动画面多留几秒，也不会让应用更快。
 
-本文的平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，App 侧兼容实现以 AndroidX `core-splashscreen:1.2.0` 为参考。系统侧 Starting Window 的完整机制见 [WindowManager](../../part1-fundamentals/ch02-rendering/12-window-manager.md)，本节重点说明应用如何配置、迁移、交接内容和验证效果。
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，App 侧兼容实现以 AndroidX `core-splashscreen:1.2.0` 为参考。系统侧 Starting Window 的完整机制见 [WindowManager](../../part1-fundamentals/ch02-rendering/12-window-manager.md)，以下重点说明应用如何配置、迁移、交接内容和验证效果。
 
 ## 1. 先区分三种画面
 
@@ -159,7 +144,7 @@ StartingSurfaceDrawer
 
 ### 3.1 版本边界
 
-截至本文校验时间，`androidx.core:core-splashscreen:1.2.0` 是稳定版本。它的边界是：
+校验基线采用稳定版 `androidx.core:core-splashscreen:1.2.0`，其边界是：
 
 | 系统版本 | 实现方式 | 重要差异 |
 | --- | --- | --- |
@@ -463,7 +448,7 @@ Trace 解释顺序是：
 
 更完整的启动度量见 [启动优化策略](../../part2-performance/ch08-responsiveness/03-launch-optimization.md)。
 
-## 10. Review 清单
+## 10. 检查清单
 
 - [ ] 平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`。
 - [ ] 已区分 Splash、TaskSnapshot、windowless 和 none。
