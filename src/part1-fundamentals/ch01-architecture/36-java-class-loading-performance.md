@@ -95,7 +95,7 @@ ART 自己解析类型引用时，不一定重新递归调用上述 Java 方法�
 - `InMemoryDexClassLoader`
 - `DelegateLastClassLoader`
 
-对可识别的链，`FindClassInBaseDexClassLoader()` 在原生层按相同策略查找，避免多次 Java/native 往返。遇到自定义且无法识别的 `ClassLoader` 时，ART 才需要回到该加载器的 Java 行为。native 快速路径仍遵循 Java 侧对应的委托顺序。
+对可识别的链，`FindClassInBaseDexClassLoader()` 在 native 层按相同策略查找，避免多次 Java/native 往返。遇到自定义且无法识别的 `ClassLoader` 时，ART 才需要回到该加载器的 Java 行为。native 快速路径仍遵循 Java 侧对应的委托顺序。
 
 ### `DelegateLastClassLoader` 的准确顺序
 
@@ -115,7 +115,7 @@ ART 自己解析类型引用时，不一定重新递归调用上述 Java 方法�
 
 `DexPathList` 或 ART 的标准加载器快速路径会依次访问加载器持有的 DEX。进入某一个 DEX 后，`OatDexFile::FindClassDef()` 的优先路径如下：
 
-1. 如果该 DEX 关联的 `TypeLookupTable` 有效，按 descriptor 的 modified UTF-8 哈希查找 `class_def_idx`；
+1. 如果该 DEX 关联的 `TypeLookupTable` 有效，按 descriptor 的 modified UTF-8 hash 查找 `class_def_idx`；
 2. 如果没有有效查找表，先由 descriptor 找到 `type_id`；
 3. 再调用 `DexFile::FindClassDef(type_idx)`，后者在 API 37 中顺序扫描 `class_defs`。
 
@@ -127,7 +127,7 @@ ART 自己解析类型引用时，不一定重新递归调用上述 Java 方法�
 
 - 启动所需类是否集中在靠前的 DEX；
 - 未命中查找是否反复穿过多个元素；
-- 动态特性、插件或补丁是否增加了额外加载器层级；
+- 动态 feature、插件或补丁是否增加了额外加载器层级；
 - 产物中是否带有可用的 profile、验证信息和 type lookup table；
 - 类是否在首帧前确有必要。
 
@@ -173,13 +173,13 @@ API 37 的主要步骤可概括为：
 - 两个类共享父类或接口；
 - verifier 递归验证父类型；
 - 初始化代码等待其他线程、I/O 或应用锁；
-- CHA 失效处理和 JIT 代码缓存工作。
+- CHA 失效处理和 JIT code cache 工作。
 
 仅凭主线程进入阻塞状态，不能直接归因于一把“ClassLinker 全局锁”。需要结合等待栈和被等待线程确认。
 
 ## 验证：编译过滤器能省掉哪部分工作
 
-`ClassLinker::VerifyClass()` 先检查类是否已验证，然后尝试使用 OAT/VDEX 记录的状态。只有无法取得可用的预验证结果时，才调用 `ClassVerifier::VerifyClass()`。运行时 verifier 会遍历方法，对指令和类型流做检查；API 37 的跟踪名称为 `VerifyClass <PrettyDescriptor>`。
+`ClassLinker::VerifyClass()` 先检查类是否已验证，然后尝试使用 OAT/VDEX 记录的状态。只有无法取得可用的预验证结果时，才调用 `ClassVerifier::VerifyClass()`。运行时 verifier 会遍历方法，对指令和类型流做检查；API 37 的 trace 名称为 `VerifyClass <PrettyDescriptor>`。
 
 ART Service 对三个正式支持的 compiler filter 定义如下：
 
@@ -205,7 +205,7 @@ kNotReady → kIdx → kLoaded → kResolving/kResolved
   → kInitialized（部分架构的过渡态）→ kVisiblyInitialized
 ```
 
-失败路径可能进入 `kErrorUnresolved` 或 `kErrorResolved`；编译期软验证失败还可能记录 `kRetryVerificationAtRuntime` 或 `kVerifiedNeedsAccessChecks`。OAT 类状态可用 `kSuperclassValidated` 表示父类描述符已校验，运行时对象不会把它作为每次初始化都经历的固定节点。临时类在确定最终大小并复制后会进入 `kRetired`。因此，诊断代码不应假设每个类都会逐项经历同一组状态。
+失败路径可能进入 `kErrorUnresolved` 或 `kErrorResolved`；编译期软验证失败还可能记录 `kRetryVerificationAtRuntime` 或 `kVerifiedNeedsAccessChecks`。OAT class status 可用 `kSuperclassValidated` 表示父类描述符已校验，运行时对象不会把它作为每次初始化都经历的固定节点。临时类在确定最终大小并复制后会进入 `kRetired`。因此，诊断代码不应假设每个类都会逐项经历同一组状态。
 
 `kInitialized` 表示初始化完成，但读取静态字段的线程仍需通过获取（acquire）语义获得可见性。`kVisiblyInitialized` 表示初始化结果已经对所有线程可见，编译代码可以使用开销更小的检查。API 37 在 x86/x86_64 或单线程事务中可直接进入 `kVisiblyInitialized`；其他路径先记录 `kInitialized`，再由批处理回调使用 `membarrier()` 或线程 checkpoint 建立可见性。
 
@@ -248,7 +248,7 @@ LoadedApk.makeApplicationInner()
 启动阶段常见的类加载来源包括：
 
 - 自定义 `Application`、Provider 和首个 Activity；
-- 布局填充触发的 View、Drawable 与反射构造；
+- 布局 inflate 触发的 View、Drawable 与反射构造；
 - 依赖注入生成代码或运行时扫描；
 - 序列化、数据库、路由与日志框架的注册表；
 - SDK 在静态字段或 initializer 中建立的对象图。
@@ -287,9 +287,9 @@ adb shell pm art dump com.example.app
 
 ### 2. 使用 API 37 的准确跟踪名称
 
-`ClassLinker::DefineClass()` 在 API 37 使用原始 descriptor 作为 `ScopedTrace` 名称，例如 `Lcom/example/Foo;`。verifier 使用 `VerifyClass com.example.Foo` 一类名称。源码没有为每次初始化提供名为 `ClassLinker::InitializeClass` 或 `InitializeClass` 的固定切片。
+`ClassLinker::DefineClass()` 在 API 37 使用原始 descriptor 作为 `ScopedTrace` 名称，例如 `Lcom/example/Foo;`。verifier 使用 `VerifyClass com.example.Foo` 一类名称。源码没有为每次初始化提供名为 `ClassLinker::InitializeClass` 或 `InitializeClass` 的固定 slice。
 
-这个 Perfetto SQL 汇总目标进程中形如类 descriptor 的切片：
+这个 Perfetto SQL 汇总目标进程中形如类 descriptor 的 slice：
 
 ```sql
 SELECT
@@ -307,7 +307,7 @@ GROUP BY s.name
 ORDER BY SUM(s.dur) DESC;
 ```
 
-这里的切片覆盖 `DefineClass()` 的 wall time，可能包含依赖类解析和等待。汇总后还要回到时间线查看嵌套关系，不能把父切片与子切片简单相加成独立成本。
+这里的 slice 覆盖 `DefineClass()` 的 wall time，可能包含依赖类解析和等待。汇总后还要回到时间线查看嵌套关系，不能把父 slice 与子 slice 简单相加成独立成本。
 
 验证事件可在同一查询框架中改用以下条件筛选：
 
@@ -315,7 +315,7 @@ ORDER BY SUM(s.dur) DESC;
 s.name GLOB 'VerifyClass *'
 ```
 
-若热点落在 `<clinit>`，需要方法采样、可控的方法跟踪，或在自有初始化入口增加 `Trace.beginSection()`。系统跟踪没有独立初始化切片时，不要用 descriptor slice 的总时长冒充 `<clinit>` 时长。
+若热点落在 `<clinit>`，需要方法采样、可控的方法 tracing，或在自有初始化入口增加 `Trace.beginSection()`。系统 trace 没有独立初始化 slice 时，不要用 descriptor slice 的总时长冒充 `<clinit>` 时长。
 
 ### 3. 用 SIGQUIT 看累计统计
 
@@ -338,7 +338,7 @@ rg 'Zygote loaded classes|post zygote classes|Classes initialized|Dumping regist
 
 ### 先减少首帧前必须出现的类
 
-优先检查 Provider、`Application.onCreate()`、首屏 inflate 和首帧前同步回调。可推迟到首帧后的 SDK，不要通过静态字段或清单 Provider 提前引用。可按需创建的大对象图，不要在 `<clinit>` 一次性建立。
+优先检查 Provider、`Application.onCreate()`、首屏 inflate 和首帧前同步回调。可推迟到首帧后的 SDK，不要通过静态字段或 manifest provider 提前引用。可按需创建的大对象图，不要在 `<clinit>` 一次性建立。
 
 这一步通常同时减少类定义、验证、对象分配和业务初始化，收益范围比只调 DEX 次序更广。推迟后仍要给新位置做交互延迟和线程安全测试。
 

@@ -74,15 +74,15 @@ ART 的优化代码依赖运行时假设：某个调用点只见过一种接收�
 | `kAotInlineCache` | `inliner.cc` | AOT 单态 inline cache 的接收者类型不再匹配 |
 | `kJitInlineCache` | `inliner.cc` | JIT 单态 inline cache miss |
 | `kJitSameTarget` | `inliner.cc` | 多种接收者原本落到同一目标，运行时目标发生变化 |
-| `kLoopBoundsBCE` | `bounds_check_elimination.cc` | 循环边界检查消除的范围守卫失败 |
+| `kLoopBoundsBCE` | `bounds_check_elimination.cc` | 循环边界检查消除的范围 guard 失败 |
 | `kLoopNullBCE` | `bounds_check_elimination.cc` | 循环 BCE 使用的非空假设失败 |
-| `kBlockBCE` | `bounds_check_elimination.cc` | 基本块级边界守卫失败 |
+| `kBlockBCE` | `bounds_check_elimination.cc` | 基本块级边界 guard 失败 |
 | `kCHA` | `inliner.cc` / `cha.cc` | 单实现 CHA 假设失效 |
 | `kDebugging` | quick trampoline / Instrumentation | 调试支持要求当前帧转入解释器 |
 | `kFullFrame` | Instrumentation / exception delivery | 需要转换一段 compiled stack |
 | `kMethodHandleTypeMismatch` | `instruction_builder.cc` | `MethodHandle.invokeExact` 的类型与 call site 不匹配 |
 
-`HCheckCast` 或 `HLoadClass` 出现在守卫的构造过程中，不代表它们自身必然触发 deopt。判断某条优化是否可能去优化，应查找它是否生成 `HDeoptimize`，以及使用了哪个 `DeoptimizationKind`。
+`HCheckCast` 或 `HLoadClass` 出现在 guard 的构造过程中，不代表它们自身必然触发 deopt。判断某条优化是否可能去优化，应查找它是否生成 `HDeoptimize`，以及使用了哪个 `DeoptimizationKind`。
 
 ### 1.2 从 `HDeoptimize` 到解释器
 
@@ -128,20 +128,20 @@ guard 条件失败
 新建的 `ShadowFrame` 保存：
 
 - `ArtMethod` 与 dex PC；
-- DEX 寄存器及其引用类型；
+- dex registers 及其引用类型；
 - 是否跳过 method-exit、low-overhead trace 等事件的标记；
-- 指向上层 ShadowFrame 的链接。
+- 指向上层 ShadowFrame 的 link。
 
 API 37 的 `EnterInterpreterFromDeoptimize()` 明确说明，它不会为 lock counting 恢复一套 monitor 状态；编译器只应编译通过 structured-locking 检查的方法。“逐个恢复 monitor 持有列表”不符合该标签实现。
 
 ### 2.2 DEX PC 是否重试取决于入口
 
-从 `HDeoptimize` 进入时，`from_code=true`，解释器从守卫对应的 DEX PC 继续。由 runtime method return、suspend check 或异常投递触发时，ART 还要避免重复执行非幂等指令：
+从 `HDeoptimize` 进入时，`from_code=true`，解释器从 guard 对应 dex PC 继续。由 runtime method return、suspend check 或异常投递触发时，ART 还要避免重复执行非幂等指令：
 
 - `kKeepDexPc` 要求重试当前 DEX 指令；
 - `monitor-enter`、`monitor-exit` 和 invoke 需要专门推进规则；
 - pending exception 会先恢复，再查找解释器 catch handler；
-- 后续 ShadowFrame 通常位于调用点，返回值要传给 caller。
+- 后续 ShadowFrame 通常位于 invoke 点，返回值要传给 caller。
 
 这些分支解释了 `DeoptimizationContextRecord` 为什么保存 return value、pending exception、`from_code` 和 `DeoptimizationMethodType`。该记录按栈链接，允许 verifier 或类加载引发嵌套 deopt。
 
@@ -155,7 +155,7 @@ API 37 的 `EnterInterpreterFromDeoptimize()` 明确说明，它不会为 lock c
 
 ### 3.1 新类必须打破已有单实现假设才会触发
 
-`ClassHierarchyAnalysis::UpdateAfterLoadingOf()` 在类进入已解析状态前检查 vtable 和 iftable。只有新类让某个 virtual/interface method 的 single-implementation 信息失效，并且 JIT 代码缓存中存在依赖该假设的编译体时，才需要处理编译代码。
+`ClassHierarchyAnalysis::UpdateAfterLoadingOf()` 在类进入已解析状态前检查 vtable 和 iftable。只有新类让某个 virtual/interface method 的 single-implementation 信息失效，并且 JIT code cache 中存在依赖该假设的编译体时，才需要处理编译代码。
 
 因此，下列说法都过宽：
 
@@ -170,15 +170,15 @@ API 37 的 `EnterInterpreterFromDeoptimize()` 明确说明，它不会为 lock c
 CHA 失效按以下顺序处理：
 
 1. 清除受影响方法的 single-implementation 信息；
-2. 从 CHA 依赖映射收集 `ArtMethod` 与 `OatQuickMethodHeader`；
+2. 从 CHA dependency map 收集 `ArtMethod` 与 `OatQuickMethodHeader`；
 3. 调用 `JitCodeCache::InvalidateCompiledCodeFor()` 撤销对应 JIT 代码；
 4. 创建 `CHACheckpoint`，让各线程扫描自己的 compiled stack；
-5. 命中失效 method header 的帧，在预留栈槽写入 `DeoptimizeFlagValue::kCHA`；
+5. 命中失效 method header 的帧，在预留 stack slot 写入 `DeoptimizeFlagValue::kCHA`；
 6. 编译代码执行 `HShouldDeoptimizeFlag` guard 时进入 `HDeoptimize(kCHA)`。
 
 checkpoint 负责在目标线程上标记栈帧，不在 checkpoint 回调内构造 `ShadowFrame`。类链接线程会等待相关线程通过 checkpoint，因此大量线程或很深的栈可能把这部分成本反映到类加载延迟上。
 
-Android 17 ART 源码中没有 `runtime/deopt_checkpoint.cc`。CHA 检查点定义在 `runtime/cha.cc`；JVMTI 的线程级 synchronous checkpoint 位于 `openjdkjvmti/deopt_manager.cc`。定位 API 37 源码时不要沿用不存在的文件名。
+Android 17 ART 源码中没有 `runtime/deopt_checkpoint.cc`。CHA checkpoint 定义在 `runtime/cha.cc`；JVMTI 的线程级 synchronous checkpoint 位于 `openjdkjvmti/deopt_manager.cc`。定位 API 37 源码时不要沿用不存在的文件名。
 
 ## 四、Instrumentation 与 JVMTI 的三个作用域
 
@@ -188,7 +188,7 @@ Android 17 ART 源码中没有 `runtime/deopt_checkpoint.cc`。CHA 检查点定�
 
 1. 把方法加入 `deoptimized_methods_`；
 2. 把该方法 entrypoint 改为 quick-to-interpreter bridge；
-3. 遍历线程栈，在支持标志的 JIT 帧上设置 `kCheckCallerForDeopt`。
+3. 遍历线程栈，在支持 flag 的 JIT frame 上设置 `kCheckCallerForDeopt`。
 
 它是可撤销的弱 deopt。活动 caller 在 runtime return/exit 检查中重新判断该方法是否仍在 deoptimized set；若请求已移除，可以继续使用原代码。撤销该方法的去优化状态前，后续新调用走解释器桥。
 
@@ -198,7 +198,7 @@ Android 17 ART 源码中没有 `runtime/deopt_checkpoint.cc`。CHA 检查点定�
 
 部分 JVMTI 事件允许指定线程，例如 single-step、field access/modification、frame-pop 和 force-early-return。此时 `DeoptManager` 增加目标线程的 force-interpreter count，并通过 `RequestSynchronousCheckpoint()` 准备该线程的栈。
 
-checkpoint 内部随后执行一次 suspend-all，再调用 `InstrumentThreadStack(target, false)`。源码注释强调：这一步只准备按需 deopt，并不立即把所有帧转成 `ShadowFrame`。
+checkpoint 内部随后执行一次 suspend-all，再调用 `InstrumentThreadStack(target, false)`。源码注释强调：这一步只准备按需 deopt，并不立即把所有 frame 转成 `ShadowFrame`。
 
 ### 4.3 全局 interpreter stubs
 
@@ -206,17 +206,17 @@ checkpoint 内部随后执行一次 suspend-all，再调用 `InstrumentThreadSta
 
 | Level | 行为 |
 |---|---|
-| `kInstrumentNothing` | 无 Instrumentation 方法进入/退出要求 |
-| `kInstrumentWithEntryExitHooks` | 运行 method entry/exit hooks，仍可执行支持钩子的 compiled code |
+| `kInstrumentNothing` | 无 Instrumentation entry/exit 要求 |
+| `kInstrumentWithEntryExitHooks` | 运行 method entry/exit hooks，仍可执行支持 hook 的 compiled code |
 | `kInstrumentWithInterpreter` | 安装 interpreter stubs，使方法进入解释器 |
 
 Instrumentation 按 client key 保存请求，`DeoptManager` 另外用引用计数管理重复的全局需求。只有对应 client 解除请求，且没有其他 client 需要同等级别，Instrumentation 才能降低级别。全局 deopt 生效期间，JIT 的编译入口会因 `AreAllMethodsDeoptimized()` 返回 `true` 而跳过方法编译。
 
-API 37 的 JVMTI 事件映射也有明确边界：
+API 37 的 JVMTI event 映射也有明确边界：
 
 - breakpoint、exception、method entry/exit 属于 limited requirement；
-- exception catch 的全局监听需要完整 deopt；
-- field access/modification、single-step、frame-pop、force-early-return 在无目标线程时需要完整 deopt，有目标线程时限制到该线程；
+- exception catch 的全局监听需要 full deopt；
+- field access/modification、single-step、frame-pop、force-early-return 在无目标线程时需要 full deopt，有目标线程时限制到该线程；
 - class load、compiled method load、GC 等事件不要求 deopt。
 
 “启用任意 JVMTI 代理都会让全进程永久解释执行”不成立。应根据代理启用的事件和线程过滤器判断。
@@ -225,11 +225,11 @@ API 37 的 JVMTI 事件映射也有明确边界：
 
 ### 5.1 debugger attach 不等于 `DeoptimizeEverything`
 
-Android 17 可以把正在运行的非 Java 可调试运行时切换到 Java 可调试状态。转换过程会暂停 JIT，等待后台验证，使已有 JIT code，调用 `TransitionToDebuggable()`，让 JIT 使用 debuggable compiler option，并更新入口点，避免继续使用不带调试支持的 AOT code。
+Android 17 可以把正在运行的 non-Java-debuggable runtime 切换到 Java-debuggable 状态。转换过程会暂停 JIT，等待后台 verification，使已有 JIT code，调用 `TransitionToDebuggable()`，让 JIT 使用 debuggable compiler option，并更新入口点，避免继续使用不带调试支持的 AOT code。
 
 这次转换本身不等价于全局 `kInstrumentWithInterpreter`。是否继续到方法级、线程级或全局 deopt，取决于 debugger/JVMTI 随后请求的能力：
 
-- 在普通方法设置断点，通常只 deopt 该方法；
+- 在普通方法设置 breakpoint，通常只 deopt 该方法；
 - 对单个线程 single-step，使用线程级路径；
 - 全局 single-step、exception-catch 等事件才请求全局解释器；
 - method tracing 可以选择 entry/exit hooks，也可以要求 interpreter。
@@ -238,7 +238,7 @@ Android 17 可以把正在运行的非 Java 可调试运行时切换到 Java 可
 
 ### 5.2 普通与结构性类重定义的代价不同
 
-非结构性 redefinition 会为旧方法建立 obsolete method，修正活动栈中的方法指针，并通过 `MoveObsoleteMethod()`、`NotifyMethodRedefined()` 更新 JIT 数据。
+非结构性 redefinition 会为旧方法建立 obsolete method，修正活动栈中的 method 指针，并通过 `MoveObsoleteMethod()`、`NotifyMethodRedefined()` 更新 JIT 数据。
 
 结构性 redefinition 可能改变字段或方法布局，风险更大。API 37 会：
 
@@ -249,7 +249,7 @@ Android 17 可以把正在运行的非 Java 可调试运行时切换到 Java 可
 
 Android Studio Apply Changes 最终走哪种路径取决于修改内容和部署机制。不能把每次 Apply Changes 都描述为结构性全量 deopt。
 
-### 5.3 第三方钩子要按实现判断
+### 5.3 第三方 hook 要按实现判断
 
 Hook 工具可能使用 JVMTI breakpoint/redefinition、修改 method entrypoint，或调用非 SDK 的 ART 内部接口。不同方案影响的 caller、callee 和全局 instrumentation level 并不相同。
 
@@ -259,8 +259,8 @@ Hook 工具可能使用 JVMTI breakpoint/redefinition、修改 method entrypoint
 
 单帧 deopt 只保证当前 activation 在解释器里继续。之后的调用由代码来源和失效范围决定：
 
-- 非调试的显式单帧 deopt 会调用 `InvalidateCompiledCodeFor()`；
-- JIT 内联缓存/同目标 deopt 会把造成 miss 的 receiver type 补入 profiling info，降低同一类型反复 miss 的概率；
+- 非 debugging 的显式单帧 deopt 会调用 `InvalidateCompiledCodeFor()`；
+- JIT inline-cache/same-target deopt 会把造成 miss 的 receiver type 补入 profiling info，降低同一类型反复 miss 的概率；
 - debugging deopt 保留可复用的 optimized code，调试要求解除后可以恢复；
 - 方法级 deopt 在请求解除前禁止该方法重新 JIT；
 - 全局 interpreter level 生效时，JIT 会跳过所有方法编译；
@@ -268,7 +268,7 @@ Hook 工具可能使用 JVMTI breakpoint/redefinition、修改 method entrypoint
 
 “每次 deopt 后一定立即重编译”并不准确。JIT 是否再次编译取决于热度、code cache、当前 instrumentation level、方法是否 compilable 以及进程随后是否继续执行该路径。
 
-Baseline Profile 也不能阻止守卫、CHA 或调试器 deopt。它可以改变安装期编译范围和正常启动成本，但全局 interpreter stubs 生效时，已有 AOT/JIT 代码仍不能按原方式执行。评估 Baseline Profile 时要把 deopt 前的编译收益和 deopt 后的运行状态分开。
+Baseline Profile 也不能阻止 guard、CHA 或 debugger deopt。它可以改变安装期编译范围和正常启动成本，但全局 interpreter stubs 生效时，已有 AOT/JIT 代码仍不能按原方式执行。评估 Baseline Profile 时要把 deopt 前的编译收益和 deopt 后的运行状态分开。
 
 ## 七、性能影响怎样分层
 
@@ -276,9 +276,9 @@ Baseline Profile 也不能阻止守卫、CHA 或调试器 deopt。它可以改�
 
 显式单帧 deopt 的同步成本主要来自 stack map 解码、ShadowFrame 分配、代码失效和 long jump。内联越深、vreg 越多，恢复工作越多。
 
-CHA 失效还包含 JIT 代码缓存更新和跨线程 checkpoint。类加载线程会等待 checkpoint 完成，这部分可能落在启动、插件加载或首次使用功能的关键路径上。
+CHA 失效还包含 JIT code cache 更新和跨线程 checkpoint。类加载线程会等待 checkpoint 完成，这部分可能落在启动、插件加载或首次使用功能的关键路径上。
 
-JVMTI 方法级/全局操作通常在 suspend-all 区间内更新 entrypoints 和线程栈。已加载类数量、线程数和栈深都会影响暂停时间。
+JVMTI 方法级/全局操作通常在 suspend-all 区间内更新 entrypoints 和线程栈。已加载 class 数量、线程数和栈深都会影响暂停时间。
 
 ### 7.2 持续吞吐损失
 
@@ -288,13 +288,13 @@ Release 基准测试应使用 `debuggable=false`，并按需启用 `profileable`
 
 ### 7.3 code cache 与重新升温
 
-失效的 JIT 代码不能在仍有线程执行时直接释放。`JitCodeCache::DoCollection()` 会通过 checkpoint 标记线程栈上的 live compiled code，再由 `RemoveUnmarkedCode()` 清理不可达 zombie code。
+失效的 JIT code 不能在仍有线程执行时直接释放。`JitCodeCache::DoCollection()` 会通过 checkpoint 标记线程栈上的 live compiled code，再由 `RemoveUnmarkedCode()` 清理不可达 zombie code。
 
 deopt 后看到 `DoCollection` 或密集的 `JIT compiling`，说明 runtime 正在处理 code cache/重新编译；它们是相关证据，不代表每次回收都由 deopt 触发。持续出现同一方法、同一原因的 deopt 与重编译交替，更接近 deopt thrashing。
 
 ## 八、Android 17 的可观测性
 
-### 8.1 Perfetto 能直接看到哪些切片
+### 8.1 Perfetto 能直接看到哪些 slice
 
 API 37 的单帧路径在 `QuickExceptionHandler::DeoptimizeSingleFrame()` 中输出：
 
@@ -345,9 +345,9 @@ WHERE name GLOB 'Deoptimizing *'
 ORDER BY ts;
 ```
 
-若 trace 只有 `Deoptimizing` 而没有后续 JIT，可能是方法没有再次变热、当前插桩禁止编译，或恢复到了其他可用代码。反过来，JIT 编译本身也不是 deopt 证据。
+若 trace 只有 `Deoptimizing` 而没有后续 JIT，可能是方法没有再次变热、当前 instrumentation 禁止编译，或恢复到了其他可用代码。反过来，JIT 编译本身也不是 deopt 证据。
 
-### 8.2 SIGQUIT 提供累计原因计数
+### 8.2 SIGQUIT 提供累计 reason 计数
 
 `Runtime::DumpForSigQuit()` 会调用 `DumpDeoptimizations()`，按 `DeoptimizationKind` 输出本进程累计次数。下面的命令先向目标进程发送 SIGQUIT，再从日志中筛选计数：
 
@@ -375,12 +375,12 @@ adb shell pidof com.example.app
 ## 九、一次可复现的实验
 
 1. 使用 `debuggable=false` 的基准 APK，记录 `pm art dump` 和 package flags；
-2. 预热固定次数，保存 SIGQUIT deopt 原因基线；
-3. 在不 attach debugger 的条件下采集一次业务跟踪；
-4. 分别增加动态类加载、单方法断点、线程级 single-step 和全局 JVMTI event；
-5. 每次只改变一个变量，比较 deopt 原因增量、目标方法、suspend-all 邻近调度和 JIT 活动；
+2. 预热固定次数，保存 SIGQUIT deopt reason 基线；
+3. 在不 attach debugger 的条件下采集一次业务 trace；
+4. 分别增加动态类加载、单方法 breakpoint、线程级 single-step 和全局 JVMTI event；
+5. 每次只改变一个变量，比较 deopt reason 增量、目标方法、suspend-all 邻近调度和 JIT 活动；
 6. 对重复 deopt 的方法检查 guard reason、receiver types、CHA 依赖或仍在生效的 Instrumentation client；
-7. 去掉调试/agent 后重新运行同一负载，确认 interpreter stubs 和方法 deopt 是否已经撤销。
+7. 去掉调试/agent 后重新运行同一 workload，确认 interpreter stubs 和方法 deopt 是否已经撤销。
 
 “健康应用必须零 deopt”不是有效标准。JIT 推测优化允许少量 guard miss，动态类加载也可能产生一次合法的 CHA 修正。需要处理的是落在关键路径、反复命中同一原因、触发长期解释执行，或与大范围 JIT 失效共同出现的事件。
 
@@ -403,4 +403,4 @@ API 37 的主要入口如下：
 - class redefinition：`openjdkjvmti/ti_redefine.cc`
 - JIT invalidation/collection：`runtime/jit/jit_code_cache.cc`
 
-排查时可以沿一条固定链路收集证据：哪个假设或 Instrumentation 请求触发了 deopt，作用域覆盖哪些方法/线程，活动帧在哪个边界恢复成 ShadowFrame，后续调用使用解释器还是重新获得编译代码。四个问题都有证据后，才能把一次卡顿归因到 ART deoptimization。
+排查时可以沿一条固定链路收集证据：哪个假设或 Instrumentation 请求触发了 deopt，作用域覆盖哪些方法/线程，活动 frame 在哪个边界恢复成 ShadowFrame，后续调用使用解释器还是重新获得编译代码。四个问题都有证据后，才能把一次卡顿归因到 ART deoptimization。

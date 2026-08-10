@@ -48,7 +48,7 @@ gap_source: "AOSP结构/章节深挖"
 
 # 1.33 Android 17 BroadcastQueue 进程级调度与广播性能边界
 
-Android 广播是一种受系统策略调度的事件分发机制。调用 `sendBroadcast()` 只表示系统接受了发送请求，不表示接收方会立刻执行。目标进程是否存活、是否处于缓存状态、接收者类型、广播是否有序以及调度槽是否空闲，都会改变投递时间。
+Android 广播是一种受系统策略调度的事件分发机制。调用 `sendBroadcast()` 只表示系统接受了发送请求，不表示接收方会立刻执行。目标进程是否存活、是否处于 cached 状态、接收者类型、广播是否有序以及调度槽是否空闲，都会改变投递时间。
 
 Android 17 的实现与早期 Android 常见的“前台一条队列、后台一条队列”示意图已有明显差异。广播性能由 `BroadcastRecord`、`BroadcastProcessQueue` 和进程调度槽三个层次共同决定。
 
@@ -159,7 +159,7 @@ ContextImpl.sendBroadcast()
 
 但源码仍对每个 receiver 分别调用 `scheduleRegisteredReceiver()` 或 `scheduleReceiver()`，不会把多条广播序列化进一次 Binder 调用。“同进程多个广播自动合并为一次 IPC”没有源码依据。
 
-冷启动耗时也没有 300～800 ms 的平台保证。Zygote 分支、存储冷热、`bindApplication`、应用初始化和设备负载都会改变结果，应使用进程启动跟踪与广播跟踪在目标设备上测量。
+冷启动耗时也没有 300～800 ms 的平台保证。Zygote 分支、存储冷热、`bindApplication`、应用初始化和设备负载都会改变结果，应使用进程启动 trace 与广播 trace 在目标设备上测量。
 
 ### 3.2 运行时 receiver 与 manifest receiver 的完成语义不同
 
@@ -193,7 +193,7 @@ Android 没有 `PRIORITY_URGENT_APP`、`PRIORITY_NORMAL_APP` 这组广播字符�
 
 ### 4.3 ordered 仍会建立接收者依赖
 
-有序广播的第 N 个接收者，要等第 N-1 个接收者到达终态或延后状态后才能继续。无序广播的接收者没有这条依赖，可以分散到多个进程队列并行推进。
+有序广播的第 N 个接收者，要等第 N-1 个接收者到达终态或 deferred 状态后才能继续。无序广播的接收者没有这条依赖，可以分散到多个进程队列并行推进。
 
 “无序广播并行”也不等于所有 receiver 同时执行。并行度仍受 `running` 槽、单冷启动槽、目标进程主线程和 cached 策略限制。
 
@@ -203,7 +203,7 @@ Android 没有 `PRIORITY_URGENT_APP`、`PRIORITY_NORMAL_APP` 这组广播字符�
 
 ### 5.1 Android 14 起的公开行为
 
-从 Android 14 开始，应用处于缓存状态时，系统可以延后 context-registered receiver 的广播。应用回到活动状态后，系统再投递积压项；某些广播的多个实例可能被合并。
+从 Android 14 开始，应用处于 cached 状态时，系统可以延后 context-registered receiver 的广播。应用回到 active 状态后，系统再投递积压项；某些广播的多个实例可能被合并。
 
 Manifest receiver 不走同样的无限延迟路径。重要的 manifest broadcast 可以让应用离开缓存状态并启动接收进程。“cached app 的所有广播都要等待其他原因拉起进程”并不是统一规则。
 
@@ -216,7 +216,7 @@ Manifest receiver 不走同样的无限延迟路径。重要的 manifest broadca
 | urgent / foreground / instrumented | `-120 s` | 排序时强烈前移，不代表提前执行 |
 | ordered / alarm / prioritized / manifest | `0` | 不加普通防抖延迟 |
 | 普通广播 | `+500 ms` | 给快速变化事件留出调度余量 |
-| cached 且不能无限延后 | `+120 s` | 延后处理 |
+| cached 且不能无限 defer | `+120 s` | 延后处理 |
 | cached 且全部记录 `deferUntilActive` | `Long.MAX_VALUE` | 等进程变为 active 或条件变化 |
 
 这些是 DeviceConfig 默认值，不是 API 时延承诺。队列积压达到 `MAX_PENDING_BROADCASTS`（普通设备默认 256、low-RAM 默认 128）时，代码会绕过已施加的延迟以帮助排空。
@@ -225,7 +225,7 @@ Manifest receiver 不走同样的无限延迟路径。重要的 manifest broadca
 
 API 34 加入的 `BroadcastOptions` 提供两组不同能力：
 
-- `setDeferralPolicy(DEFERRAL_POLICY_UNTIL_ACTIVE)`：允许把符合条件的运行时 receiver 延后到进程 active；它不适用于有序、alarm、interactive 和 manifest broadcast；
+- `setDeferralPolicy(DEFERRAL_POLICY_UNTIL_ACTIVE)`：允许把符合条件的运行时 receiver 延后到进程 active；它不适用于 ordered、alarm、interactive 和 manifest broadcast；
 - `setDeliveryGroupPolicy(DELIVERY_GROUP_POLICY_MOST_RECENT)`：同一 delivery group 只保留最近一条，旧的待投递项被跳过。
 
 Deferral 解决何时投递，delivery group 解决积压项是否都要投递。没有显式 delivery group 策略时，系统不会因为接收者在同一进程就自动合并任意广播。
@@ -260,7 +260,7 @@ API 37 另有受 feature flag 控制的 outgoing broadcast 延迟：freezable �
 2. 主线程在执行 Java/Kotlin 代码、等待锁、Binder 调用还是文件 I/O；
 3. 是否调用 `goAsync()` 后遗漏 `finish()`；
 4. 广播是否带 `FLAG_RECEIVER_FOREGROUND`，从而使用 10 秒基准；
-5. trace 中的长时间出现在调度前排队，还是提交后执行。
+5. trace 中的长时间出现在调度前排队，还是 schedule 后执行。
 
 ## 七、应用侧常见误区
 
@@ -304,11 +304,11 @@ adb shell cmd activity get-broadcast-constant bcast_delay_cached_millis
 adb shell cmd activity get-broadcast-constant bcast_timeout
 ```
 
-`dumpsys activity broadcasts` 会打印每个 `BroadcastProcessQueue` 的 pending/active 状态、`runnableAt` 原因、history，以及 foreground/background 常量。`get-broadcast-constant` 返回 BroadcastQueue 当前读取到的配置；`bcast_timeout` 的结果取自前台常量实例，后台超时仍应在完整转储中核对。
+`dumpsys activity broadcasts` 会打印每个 `BroadcastProcessQueue` 的 pending/active 状态、`runnableAt` 原因、history，以及 foreground/background 常量。`get-broadcast-constant` 返回 BroadcastQueue 当前读取到的配置；`bcast_timeout` 的结果取自前台常量实例，后台超时仍应在完整 dump 中核对。
 
 ### 8.2 Perfetto 的 Android 17 锚点
 
-API 37 定义了 `broadcasts` Perfetto SDK category。启用相关 tracing v3 特性后，每个接收者完成时可产生名为 `broadcast_delivered` 的 instant event，并附带结构化字段：
+API 37 定义了 `broadcasts` Perfetto SDK category。启用相关 tracing v3 feature 后，每个接收者完成时可产生名为 `broadcast_delivered` 的 instant event，并附带结构化字段：
 
 - sender/receiver uid、PID 和进程状态；
 - `action`、receiver type；
