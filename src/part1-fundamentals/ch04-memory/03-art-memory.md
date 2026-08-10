@@ -222,7 +222,7 @@ CMC 的 `BumpPointerSpace` 也支持 TLAB。TLAB 因而不是 CC 专属概念，
 
 ### LOS 分配失败后还有一次普通 space 尝试
 
-`Heap::AllocObjectWithAllocator()` 先调用 `ShouldAllocLargeObject()`。如果 LOS 分配失败，ART 会清除本轮 LOS OOM 异常，再尝试普通 allocator。由此可见，一条最终的 OOM 日志不能只凭对象大小断定失败发生在 LOS；还要看 allocator type、剩余空间和碎片日志。
+`Heap::AllocObjectWithAllocator()` 先调用 `ShouldAllocLargeObject()`。如果 LOS 分配失败，ART 会清除本轮 LOS OOM 异常，再尝试普通 allocator。因此，一条最终的 OOM 日志不能只凭对象大小断定失败发生在 LOS；还要看 allocator type、剩余空间和碎片日志。
 
 ### 分配慢路径
 

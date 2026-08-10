@@ -425,7 +425,7 @@ adb shell getprop ro.build.fingerprint
 
 Perfetto 可以对齐 App start、主线程调度、Binder、文件 I/O、`mmap()`/`munmap()` 系统调用以及设备支持的内存计数器。它适合回答“时间花在哪个阶段”，但没有一个通用的“16 KiB 收益”轨道。
 
-某些设备会暴露进程 fault counter，另一些设备不会。即使 counter 存在，其值也常是累计值；对累计 counter 求和会得到错误结果，应在测量窗口计算增量。旧稿中把 `counter.value` 直接 `SUM()` 的 SQL 因此不可用。
+某些设备会暴露进程 fault counter，另一些设备不会。即使 counter 存在，其值也常是累计值；对累计 counter 求和会得到错误结果，应在测量窗口计算增量。将 `counter.value` 直接 `SUM()` 的 SQL 因此不可用。
 
 ### 8.3 simpleperf 适合观察缺页与 TLB 事件
 

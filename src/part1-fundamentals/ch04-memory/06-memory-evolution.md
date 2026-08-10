@@ -332,7 +332,7 @@ Hardware Bitmap、Surface、视频 buffer 或 GPU 资源可能同时涉及：
 
 分析时使用同一设备、同一版本、同一场景做前后对照。`dumpsys meminfo`、Perfetto 的进程内存/图形数据源、dmabuf 信息和图形子系统工具要互相印证。
 
-## [自动发现] Android 15+：16 KB Page Size
+## Android 15+：16 KB Page Size
 
 Android 15 起 AOSP 支持 16 KB page size。自 2025 年 11 月 1 日起，Google Play 要求面向 Android 15 / API 35+ 设备的新应用和更新在 64 位设备上支持 16 KiB。
 
@@ -372,7 +372,7 @@ Linux 为 `/proc/<pid>/smaps` 生成 `Pss`，按每个驻留页的共享情况�
 
 兼容模式是迁移辅助，不应代替重新构建和验证原生依赖。具体细节见 4.7。
 
-## [自动发现] Android 17：App MemoryLimiter
+## Android 17：App MemoryLimiter
 
 Android 17 在 `system_server` 中加入 MemoryLimiter。它不是公开应用 API，也不是所有 Android 17 设备都会启用。`android-17.0.0_r1` 的启用条件包括：
 
@@ -412,7 +412,7 @@ adb shell am memory-limiter status
 
 `ignore` 和 `manual` 子命令面向测试，通常需要平台调试权限，不属于普通应用的诊断接口。
 
-## [自动发现] Android 17 kernel 6.18：MGLRU 延续
+## Android 17 kernel 6.18：MGLRU 延续
 
 MGLRU（Multi-Gen LRU）早于 Android 17 已进入 Android GKI。内核锚点 `android17-6.18-2026-06_r6` 的 `arch/arm64/configs/gki_defconfig` 包含：
 
