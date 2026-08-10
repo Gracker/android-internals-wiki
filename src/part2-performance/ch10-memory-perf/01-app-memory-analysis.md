@@ -68,7 +68,7 @@ task9_state: "reviewed"
 
 一条内存曲线只能说明某个统计口径发生了变化。Java heap、native allocator、RSS、PSS、SwapPss、DMA-BUF 和 GPU private memory 分别观察不同对象；数值来自不同采样时刻时，连加都可能失真。
 
-本章以 Android 17 / API 37 的 `android-17.0.0_r1` 为平台锚点。涉及 PSI 的内核实现以 `android17-6.18-2026-06_r6` 为准。目标是建立一套可复现的分析顺序：先确定指标，再定位内存域，随后用对应工具寻找 owner 和生命周期。
+平台锚点为 Android 17 / API 37 的 `android-17.0.0_r1`，涉及 PSI 的内核实现以 `android17-6.18-2026-06_r6` 为准。分析顺序是先确定指标，再定位内存域，随后用对应工具寻找 owner 和生命周期。
 
 ---
 
@@ -282,7 +282,7 @@ HAL 必须避免不同 memtrack type 重复记账，但设备是否支持某个�
 
 源码锚点：[`IMemtrack.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/memtrack/aidl/android/hardware/memtrack/IMemtrack.aidl)
 
-GPU 专项工具与 layer/buffer 追踪见 10.8 节；本章只负责把 Graphics 从 Java/Native heap 口径中分离。
+GPU 专项工具与 layer/buffer 追踪见 10.8 节；这里仅将 Graphics 从 Java/Native heap 口径中分离。
 
 ## 6. 建立可比较的基线
 

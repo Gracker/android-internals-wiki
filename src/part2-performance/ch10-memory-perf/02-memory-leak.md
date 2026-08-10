@@ -363,6 +363,3 @@ GC 收集器的代际策略或并发实现可能改变回收暂停和检测时�
 - [Perfetto：Native heap profiler](https://perfetto.dev/docs/data-sources/native-heap-profiler)
 - [AOSP：Diagnose native memory usage](https://source.android.com/docs/core/tests/debug/native-memory)
 - [Android NDK：Memory error debugging and mitigation](https://developer.android.com/ndk/guides/memory-debug)
-- [素材：Personal-Knowlodge/source/2026-03-07_wechat_为什么各大厂自研的内存泄漏检测框架都要参考_LeakCanary_因为它是真强啊.md]
-- [素材：性能优化日报/2026-03-15-LeakCanary-内存泄漏检测.md]
-- [素材：Manus/android_native_memory_leak_report.md]

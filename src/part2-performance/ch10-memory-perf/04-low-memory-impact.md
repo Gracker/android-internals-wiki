@@ -435,7 +435,3 @@ Android Go Edition 是一组产品配置与系统应用策略，不能只按物�
 - [Perfetto memory counters](https://perfetto.dev/docs/data-sources/memory-counters)
 - [Android 17 App memory limits](https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits)
 - [Android `ComponentCallbacks2`](https://developer.android.com/reference/android/content/ComponentCallbacks2)
-- [素材：Personal-Knowlodge/source/2026-03-08_wechat_kswapd介绍.md]
-- [素材：Personal-Knowlodge/source/2026-03-06_wechat_Linux内存变低会发生什么问题.md]
-- [素材：Personal-Knowlodge/source/2026-03-06_wechat_Android帝国之进程杀手--lmkd.md]
-- [素材：intake/research-feeds/2026-04-02-11-ch04-zram-multialgo-mglru-2025.md]

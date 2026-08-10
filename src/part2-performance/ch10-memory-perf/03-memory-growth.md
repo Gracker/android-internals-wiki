@@ -431,8 +431,3 @@ WebView 基线要同时记录 App 进程、renderer 进程和 GPU/Graphics 分�
 - [Android Developers：WebView](https://developer.android.com/reference/android/webkit/WebView)
 - [Android Developers：Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)
 - [Perfetto：Native heap profiler](https://perfetto.dev/docs/data-sources/native-heap-profiler)
-- [素材：OPPO内存反碎片优化原理]
-- [素材：RTC 性能自动化工具在内存优化场景下的实践]
-- [素材：Hummer引擎优化系列 - 内存稳定性研究与优化]
-
-<!-- AIW-源码调研-2026-06-21 -->
