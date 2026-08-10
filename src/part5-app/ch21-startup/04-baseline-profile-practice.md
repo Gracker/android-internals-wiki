@@ -54,27 +54,11 @@ last_deepseek_cn_review_at: 2026-06-25
 
 # Baseline Profile 实战
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Baseline Profile 原理与 AOT 编译加速
-- 🔹 Profile 生成方法：Macrobenchmark + BaselineProfileRule
-- 🔹 Cloud Profile 与 Play 分发
-- 🔹 效果度量与 A/B 验证
-
-### 扩展（可选深入）
-
-- 🔸 Startup Profile 与 Dex Layout 优化
-
-<!-- outline-end -->
-
-## 本节定位
+## 范围
 
 Baseline Profile 解决的是代码在用户设备上“何时以什么编译状态运行”。它可以减少关键方法的解释执行和 JIT 预热，却不能消除磁盘、网络、Binder、锁等待、业务初始化或首屏布局工作。
 
-本文的平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。AGP、Macrobenchmark、ProfileInstaller 和 Google Play 是独立演进的工具链；使用时应固定项目版本并记录在实验结果中。
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。AGP、Macrobenchmark、ProfileInstaller 和 Google Play 是独立演进的工具链；使用时应固定项目版本并记录在实验结果中。
 
 ## 1. Baseline Profile 是编译提示
 
@@ -441,7 +425,7 @@ CI 至少执行：
 
 当回归来自 I/O、锁、网络或任务编排时，回到 [启动任务编排](./02-startup-framework.md)和 [ContentProvider 启动治理](./03-contentprovider-optimization.md)。Profile 是编译侧工具，不能替业务关键路径做取舍。
 
-## Review 清单
+## 检查清单
 
 - [ ] 生成工具链、设备/API、variant 和 commit 可追溯。
 - [ ] launcher、deep link、登录态等主要入口有确定脚本。

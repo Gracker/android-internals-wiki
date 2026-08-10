@@ -50,27 +50,11 @@ last_deepseek_cn_review_at: 2026-06-30
 
 # 延迟初始化与按需加载
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 延迟初始化策略：首帧后、首次使用、后台空闲
-- 🔹 IdleHandler 与空闲加载
-- 🔹 按需加载与模块懒加载
-- 🔹 延迟初始化的风险与兜底
-
-### 扩展（可选深入）
-
-- 🔸 （待扩展）
-
-<!-- outline-end -->
-
-## 本节定位
+## 范围
 
 延迟初始化的目标是减少关键启动区间内的工作，同时保证任务在需要前完成、失败时可恢复。它不是把 `Application.onCreate()` 中的代码统一丢进线程池，也不是让一批任务在首帧后同时抢 CPU。
 
-本文的平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。重点讨论五件事：
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。重点讨论五件事：
 
 - 如何判断任务能否延后；
 - 如何识别“首帧已经提交”；
@@ -126,7 +110,7 @@ last_deepseek_cn_review_at: 2026-06-30
 
 `setContentView()` 后调用 `view.post { ... }`，只能说明 Runnable 进入了主线程队列，不能证明第一帧已经提交。主线程队列顺序、同步屏障、Traversal 调度和当时消息都会影响它的执行位置。
 
-本章适用版本从 API 29 开始。硬件渲染窗口可以用 `ViewTreeObserver.registerFrameCommitCallback()`观察当前渲染内容已提交到 swap chain。下面的回调只打开调度门，不在回调里执行初始化：
+适用版本从 API 29 开始。硬件渲染窗口可以用 `ViewTreeObserver.registerFrameCommitCallback()` 观察当前渲染内容已提交到 swap chain。下面的回调只打开调度门，不在回调里执行初始化：
 
 ```kotlin
 val root = findViewById<View>(android.R.id.content)
@@ -299,7 +283,7 @@ Looper.getMainLooper().queue.addIdleHandler {
 
 ## 6. Jetpack App Startup 的手动初始化
 
-App Startup 默认由 `InitializationProvider` 发现 initializer。若组件不需要在进程启动时运行，必须先从合并后的 Manifest 移除它的自动发现项。
+App Startup 默认由 `InitializationProvider` 从 Manifest 读取 initializer。若组件不需要在进程启动时运行，必须先从合并后的 Manifest 移除对应声明。
 
 下面从 Provider 中移除一个 initializer 的 metadata：
 
@@ -325,7 +309,7 @@ val analytics = AppInitializer.getInstance(context)
     .initializeComponent(AnalyticsInitializer::class.java)
 ```
 
-调用前要确认该组件没有通过另一个可发现 initializer 的依赖图提前运行。关闭某个 initializer 的自动发现也会影响它声明的依赖，需要重新检查整张初始化图和首次使用路径。
+调用前要确认该组件没有通过另一个 Manifest initializer 的依赖图提前运行。关闭某个 initializer 的自动初始化也会影响它声明的依赖，需要重新检查整张初始化图和首次使用路径。
 
 `AppInitializer` 解决发现、依赖顺序和结果缓存，不替你选择线程、deadline 或失败界面。第三方 SDK 如果有自己的 Provider 或 `ContentProvider` 自动初始化开关，也要单独关闭。
 
@@ -439,7 +423,7 @@ idempotency_key: account_and_app_version
 
 Perfetto 用于确认主线程、CPU、I/O、Binder 与帧的关系；Android Vitals 用于观察启动分布；业务指标用于观察首次入口成功率。任何一组改善都不能掩盖另一组退化。
 
-## Review 清单
+## 检查清单
 
 - [ ] 平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`。
 - [ ] 每项任务已区分异步、首帧后、首次使用、按需交付和持久后台。
