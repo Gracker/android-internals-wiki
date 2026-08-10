@@ -75,7 +75,7 @@ Android 上的“Java 堆转储”至少包含两类产物：
 
 这两条管线都从 ART 的托管堆取快照，产物和暂停边界却不相同。`android.java_hprof` 这个名字容易造成误会：Perfetto 在目标进程中 fork 后直接写 `HeapGraph` protobuf packet，不会先落一份 HPROF 再解析。
 
-§10.2 讨论泄漏模型，§14.14 讨论 Android Studio Memory Profiler 与 LeakCanary。本章聚焦采集管线、数据边界和 Android 17 上可核对的源码行为。
+§10.2 讨论泄漏模型，§14.14 讨论 Android Studio Memory Profiler 与 LeakCanary。这里聚焦采集管线、数据边界和 Android 17 上可核对的源码行为。
 
 ## 完整 HPROF：从 Shell 到 ART
 
@@ -211,7 +211,7 @@ zygote 或 boot image 对象通常不是应用泄漏的分配主体，但它们�
 6. 子进程继续 daemonize，遍历 fork 时刻的堆副本，直接向 Perfetto trace writer 写 `HeapGraph` packet；
 7. Trace Processor 导入 protobuf packet，生成 `heap_graph_*` SQL 表。
 
-Java producer只负责找进程、做授权和发信号。它不会接收 HPROF 文件描述符，也没有 `ArtHprofParser` 把临时 HPROF 转成 protobuf 的步骤。
+Java producer 只负责找进程、做授权和发信号。它不会接收 HPROF 文件描述符，也没有 `ArtHprofParser` 把临时 HPROF 转成 protobuf 的步骤。
 
 fork 把父进程的暂停范围缩到准备快照和创建子进程的阶段，图遍历由子进程继续完成。它仍有 fork、页表、Copy-on-Write、子进程内存与序列化开销，不应描述成零成本采集。
 
@@ -420,13 +420,13 @@ Android 17 的 Perfetto ART Heap Graph 自身也使用 fork。只需要引用图
 
 ## 版本边界
 
-| Android 版本 | 与本章相关的变化 |
+| Android 版本 | 相关变化 |
 | --- | --- |
 | Android 11 | `android.java_hprof` 可用于 ART heap graph 采集 |
 | Android 12 | `target_installed_by` 可用；`scan_pids_only_on_start` 默认 `true` |
 | Android 13 | `process_cmdline` 支持一个通配符；连续采集默认每轮重扫进程 |
 | Android 14—17 | 保持 fork 后写 HeapGraph 的主线；配置与权限仍应按目标 tag 核对 |
-| Android 17 / API 37 | 本章的平台源码锚点为 `android-17.0.0_r1` |
+| Android 17 / API 37 | 平台源码锚点为 `android-17.0.0_r1` |
 
 版本表用于说明行为演进。命令参数、私有 ART 入口、Perfetto proto 字段和 SQL 模块名都可能随 tag 变化，跨版本脚本应带版本检查。
 

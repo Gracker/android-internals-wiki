@@ -55,7 +55,7 @@ StrictMode 是一组运行时规则：代码经过 Android 或 libcore 预埋的
 
 StrictMode 提供的是违规信号，不是完整性能采样。它不会拦住每一个系统调用，也不会自动判断某段业务代码是否超过 16 ms。需要精确耗时、CPU 调度、Binder 等待或块 I/O 证据时，应继续使用 Perfetto。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点。
+平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`。
 
 ## 先分清 ThreadPolicy 和 VmPolicy
 

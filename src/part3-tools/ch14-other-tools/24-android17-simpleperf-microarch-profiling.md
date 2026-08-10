@@ -39,7 +39,7 @@ android17_review_notes: "按 android-17.0.0_r1 与 android17-6.18-2026-06_r6 重
 
 # 14.24 Android 17 simpleperf 微架构级性能采样与工作流增强
 
-§14.2 讲解了 Simpleperf 的常规 PMU 采样。Android 17 在这套基础上增加了 SPE 采集与解码，并补齐了一批长时采集、应用进程跟踪和 ETM profile 转换能力。本章只讨论已经进入 `android-17.0.0_r1` 的行为；设备能否使用 SPE、ETE、TRBE 或特定 PMU 事件，仍由 SoC、内核配置和权限共同决定。
+§14.2 讲解了 Simpleperf 的常规 PMU 采样。Android 17 在这套基础上增加了 SPE 采集与解码，并补齐了一批长时采集、应用进程跟踪和 ETM profile 转换能力。讨论范围限于已经进入 `android-17.0.0_r1` 的行为；设备能否使用 SPE、ETE、TRBE 或特定 PMU 事件，仍由 SoC、内核配置和权限共同决定。
 
 Android 16 与 Android 17 的差异需要分开看：
 
@@ -155,7 +155,7 @@ Android 16 的 `ETMRecorder::FindSinkConfig()` 已能识别 ETR 和 TRBE。Andro
 adb shell su root simpleperf list | grep cs-etm
 ```
 
-只有列表中出现显式 ETR 事件时，才能指定它与默认 `cs-etm` 做对照。默认事件是否使用 TRBE还取决于采集 CPU 的支持集合，不能只根据产品宣传材料判断。
+只有列表中出现显式 ETR 事件时，才能指定它与默认 `cs-etm` 做对照。默认事件是否使用 TRBE 还取决于采集 CPU 的支持集合，不能只根据产品宣传材料判断。
 
 下面的命令用于做一次短时的系统级内核指令 trace，以便先检查权限、sink 和数据丢失情况：
 
@@ -202,7 +202,7 @@ adb shell ls -l /data/local/tmp/app-perf.data
 
 ## 14.24.5 `--app` 与新进程跟踪
 
-`--app <package>` 在 Android 16 已经存在。它让 Simpleperf等待包对应的初始进程；非 root 场景依赖 `run-as`，目标 APK 必须允许调试。Android 17 的增量能力出现在 `stat` 的 `NewThreadMonitor`：
+`--app <package>` 在 Android 16 已经存在。它让 Simpleperf 等待包对应的初始进程；非 root 场景依赖 `run-as`，目标 APK 必须允许调试。Android 17 的增量能力出现在 `stat` 的 `NewThreadMonitor`：
 
 - 只有启用 `--monitor-new-thread` 时才持续扫描新进程与线程。
 - 扫描器读取进程对应的应用包名，把新出现且包名匹配的进程加入监控。

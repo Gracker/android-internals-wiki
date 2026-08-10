@@ -29,7 +29,7 @@ android17_review_notes: "按 AndroidX Benchmark 1.4.1 稳定版与 Android 17 �
 # 14.27 Macrobenchmark 框架与自动化性能门禁
 
 > [!NOTE]
-> 本文按 2026-07-30 的 AndroidX Benchmark 稳定版 `1.4.1` 复核。AndroidX 独立于 Android 平台发布；测试 Android 17 时，平台锚点仍是 API 37 / `android-17.0.0_r1`。`1.5.0-beta01` 已发布，但预览版不作为本章门禁基线。
+> 复核基线是 2026-07-30 的 AndroidX Benchmark 稳定版 `1.4.1`。AndroidX 独立于 Android 平台发布；测试 Android 17 时，平台锚点仍是 API 37 / `android-17.0.0_r1`。`1.5.0-beta01` 已发布，但预览版不作为门禁基线。
 
 Macrobenchmark 适合测量跨进程的用户旅程，例如冷启动、页面滚动和动画。它能控制应用的启动与编译状态，并为每次测量保留结果和系统 trace。性能门禁还需要稳定设备、可重复数据、版本化结果解析和明确的统计政策，库本身不会把有噪声的 benchmark 自动变成可靠的 pass/fail。
 
@@ -120,7 +120,7 @@ class StartupBenchmark {
 - `timeToInitialDisplayMs`：系统收到 launch intent 到目标 Activity 首帧；
 - `timeToFullDisplayMs`：到 `reportFullyDrawn()` 所覆盖或紧随其后的首帧。
 
-应用没有在业务内容就绪点调用 `reportFullyDrawn()` 时，`timeToFullDisplayMs` 不具备业务含义。官方文档建议启动改进优先观察 median；初稿把启动 metric 固定写成 P90，不符合该 metric 的标准控制台摘要。
+应用没有在业务内容就绪点调用 `reportFullyDrawn()` 时，`timeToFullDisplayMs` 不具备业务含义。官方文档建议启动改进优先观察 median；不应把启动 metric 固定为 P90。
 
 ### 4.1 COLD、WARM、HOT
 
@@ -193,7 +193,7 @@ val bindMetric = TraceSectionMetric(
 - 输出是分类的 power `uW` 与 energy `uWs`；
 - 可用分类包括 CPU、DISPLAY、GPU、GPS、MEMORY、MACHINE_LEARNING、NETWORK 和 UNCATEGORIZED。
 
-它不承诺所有 Android 12—17 设备都有 CPU/GPU/display energy counter，也不以 mAh 作为统一 metric。初稿中“Android 17 新增 5G modem domain、秒级回调、指定 Qualcomm/MediaTek 型号”的说法没有官方 AndroidX 1.4.1 证据，已删除。
+它不承诺所有 Android 12—17 设备都有 CPU/GPU/display energy counter，也不以 mAh 作为统一 metric。AndroidX 1.4.1 没有定义“Android 17 新增 5G modem domain、秒级回调、指定 Qualcomm/MediaTek 型号”这些能力。
 
 功耗用例需要足够长的稳定测量区间，并固定屏幕亮度、网络数据、温度、充电状态和后台账户。结果仍应注明是整机差值。
 
@@ -389,7 +389,7 @@ raise SystemExit({"pass": 0, "fail": 1, "inconclusive": 2}[status])
 
 ### 12.3 Cache 边界
 
-在本章覆盖的 API 31—37 上，`StartupMode.COLD` 会在每次迭代中停止目标进程。默认的 `androidx.benchmark.dropShaders.enable=true` 还会清理目标 shader cache，随后通过 `perf.drop_caches=3` 请求系统清理 kernel page cache。Macrobenchmark 会等待属性恢复为 0；默认配置下，清理失败会中止测试。
+在 API 31—37 上，`StartupMode.COLD` 会在每次迭代中停止目标进程。默认的 `androidx.benchmark.dropShaders.enable=true` 还会清理目标 shader cache，随后通过 `perf.drop_caches=3` 请求系统清理 kernel page cache。Macrobenchmark 会等待属性恢复为 0；默认配置下，清理失败会中止测试。
 
 这仍不是“设备重启后的所有缓存都为空”。DNS、GPU 驱动、系统服务、网络端和应用数据缓存各有生命周期。page cache 清理影响全系统，性能设备上不能并行运行其他任务；也不应再由外层脚本额外执行一次 `drop_caches`。
 
