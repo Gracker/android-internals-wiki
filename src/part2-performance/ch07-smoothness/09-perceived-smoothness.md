@@ -90,7 +90,7 @@ review_finalize_notes: "2026-08-03 Hermes review/finalize: 复核 Android 17 源
 
 帧按 deadline 完成，只能证明调度与渲染没有触发对应的 jank 判定。画面中的对象是否沿预期轨迹移动，还取决于输入采样、运动模型、数值精度、像素取整、buffer 提交、刷新率选择和 present 节拍。
 
-本文的平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点是 `android17-6.18-2026-06_r6`。平台源码用于核对 `OverScroller`、`Choreographer`、`AnimationUtils`、InputConsumer 与 FrameTimeline；内核只解释调度和 fence 等现象，不定义动画轨迹。
+平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点是 `android17-6.18-2026-06_r6`。平台源码用于核对 `OverScroller`、`Choreographer`、`AnimationUtils`、InputConsumer 与 FrameTimeline；内核只解释调度和 fence 等现象，不定义动画轨迹。
 
 ## “帧准时”与“运动均匀”是两组数据
 
@@ -293,15 +293,15 @@ RecyclerView 1.4.0 会在 `OverScroller` 滚动时调用 API 35 的 `View.setFra
 
 ## 版本边界
 
-| 版本 | 能力或行为 | 本章用途 |
+| 版本 | 能力或行为 | 用途 |
 |---|---|---|
 | Android 12 / API 31 | FrameTimeline | 对齐 App SurfaceFrame、SurfaceFlinger DisplayFrame 与 present |
 | Android 13 / API 33 | 公开 `Choreographer.VsyncCallback` 与 `FrameData` | 自有渲染可读取候选 frame timeline |
 | Android 15 / API 35 | `View.setFrameContentVelocity()` | 滚动组件向平台提供内容速度 |
 | Android 16 / API 36 | AppJankStats 与 RelativeFrameTimeHistogram | widget 级 jank 聚合，不含位移 |
-| Android 17 / API 37 | 本文统一平台源码锚点 | 复核 OverScroller、Choreographer、InputConsumer、buffer recovery 与显示策略 |
+| Android 17 / API 37 | 平台源码锚点 | 复核 OverScroller、Choreographer、InputConsumer、buffer recovery 与显示策略 |
 
-平台和 OEM 可能修改 `OverScroller`、刷新率策略或输入参数。没有对应 build 源码时，以设备 trace、轨迹 counter 和光学结果为准。本文不把 Chrome 或 OEM 私有实现当作 AOSP 结论。
+平台和 OEM 可能修改 `OverScroller`、刷新率策略或输入参数。没有对应 build 源码时，以设备 trace、轨迹 counter 和光学结果为准。Chrome 或 OEM 私有实现不作为 AOSP 结论。
 
 ## 常见误判
 
@@ -314,7 +314,7 @@ RecyclerView 1.4.0 会在 `OverScroller` 滚动时调用 API 35 的 `View.setFra
 - **“Buffer Stuffing Recovery 是应用可调用的优化。”** 它是平台内部机制，应用应处理 Producer/Consumer 失衡。
 - **“AppJankStats 可以测步幅。”** 它统计帧数和相对 deadline 的时间桶，不含位置。
 
-## Review 检查表
+## 复核清单
 
 - 是否同时记录 Android build、设备、刷新模式、动画/列表实现和初始条件；
 - 是否把 FrameTimeline、模型坐标、View 消费坐标与 present 分开；

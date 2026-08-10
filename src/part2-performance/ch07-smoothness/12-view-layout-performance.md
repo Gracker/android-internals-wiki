@@ -54,26 +54,7 @@ last_deepseek_cn_review_at: 2026-06-06
 
 # 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 布局层级深度为什么会推高 `measure` / `layout` 开销
-- 🔹 `LayoutInflater.inflate()` 的三阶段流程与主要耗时来源
-- 🔹 `requestLayout()` 与 `invalidate()` 的触发路径和代价差异
-- 🔹 `ConstraintLayout`、`ViewStub`、`<merge>`、`<include>` 的使用边界
-- 🔹 `AsyncLayoutInflater` 的适用场景与限制
-- 🔹 在 Perfetto / Layout Inspector 中定位布局性能瓶颈的方法
-
-### 扩展（可选深入）
-
-- 🔸 `Factory2` / AppCompat 对 inflate 路径的影响
-- 🔸 高刷新率设备下的布局帧预算压力
-
-<!-- outline-end -->
-
-本章讨论 View UI 在创建、测量和摆放阶段的主线程成本。分析基线固定为 Android 17 / API 37 / `android-17.0.0_r1`；只有在继续追踪调度、CPU 频率、内存回收或 fence 等内核现象时，才采用 `android17-6.18-2026-06_r6`。View 的布局算法位于 framework，单凭内核 trace 无法解释某个容器为何反复测量。
+View UI 在创建、测量和摆放阶段都会占用主线程。分析基线固定为 Android 17 / API 37 / `android-17.0.0_r1`；只有在继续追踪调度、CPU 频率、内存回收或 fence 等内核现象时，才采用 `android17-6.18-2026-06_r6`。View 的布局算法位于 framework，单凭内核 trace 无法解释某个容器为何反复测量。
 
 页面层级值得审查，却不应成为唯一指标。同样数量的节点，简单 `FrameLayout` 与包含权重、文本换行、Drawable 解析、自定义测量逻辑的容器，成本可以相差很大。一次可靠的优化要回答三件事：
 
@@ -393,8 +374,6 @@ framework traversal 发起的 listener 在 ViewRoot 所在线程串行执行；�
 
 Choreographer callback、窗口 relayout、HWUI sync/draw 与 FrameTimeline 还会出现在相邻 track。不同 Android 版本、厂商实现和 tracing 配置可能增加或缺少 slice，采集后应以当前 trace 的名称与调用栈确认。默认 system trace 通常不会逐个列出每个业务 View 的 `onMeasure()`。
 
-[图：Perfetto 中 UI thread 的 traversal 区间，标注 `measure`、`layout`、`draw-<mTag>`，并与 FrameTimeline 的 missed deadline 对齐]
-
 下面的 SQL 用于从 thread track 中找出较长的根 measure/layout；阈值只是筛选条件，不是平台判定标准：
 
 ```sql
@@ -461,7 +440,7 @@ Layout Inspector 适合检查运行时层级、父链、属性、隐藏 wrapper 
 
 一个长 `measure` slice 只说明根测量区间长。若线程处于 Sleeping/Blocked，还要查锁、Binder、I/O 或等待；若处于 Runnable 却未运行，再看调度与 CPU 竞争。把 wall time 全部归因于布局算法会误导修复方向。
 
-## 9. 可执行的 Review 清单
+## 9. 复核清单
 
 ### inflate
 

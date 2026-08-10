@@ -56,28 +56,9 @@ last_task9_autofix_at: "2026-06-20"
 ---
 # 7.11 WebView 渲染性能与优化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 WebView 的双层渲染架构，以及它与 Android 原生渲染管线的关系
-- 🔹 首次创建 WebView 的冷启动开销、预热思路与 Perfetto 观察点
-- 🔹 JS Bridge / `evaluateJavascript()` 的线程模型与常见 ANR 路径
-- 🔹 WebView 的内存模型、典型泄漏方式与排查方法
-- 🔹 Chromium 合成器驱动滚动、混合渲染场景与常见掉帧根因
-- 🔹 版本演进、Perfetto 线程识别、常见误区与相关章节连接点
-
-### 扩展（可选深入）
-
-- 🔸 Chrome Custom Tabs 与 WebView 的选型边界
-- 🔸 WebView 多进程、Renderer 崩溃隔离与调试策略
-
-<!-- outline-end -->
-
 WebView 卡顿常跨越三个边界：网页 renderer、宿主 App 进程中的 WebView/provider/GPU service、Android 窗口显示链路。只看宿主主线程会漏掉 Blink 与 raster；只看 Chromium compositor 又无法证明宿主窗口按时提交和显示。
 
-本章采用两组锚点：
+采用两组锚点：
 
 - Android 平台为 Android 17 / API 37 / `android-17.0.0_r1`；
 - buffer、fence 与内存压力的 kernel 基线为 `android17-6.18-2026-06_r6`。
