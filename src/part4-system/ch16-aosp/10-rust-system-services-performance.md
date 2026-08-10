@@ -42,7 +42,7 @@ sources:
 
 # 16.10 Android 17 平台 Rust 性能边界：Binder、CXX 与 Soong
 
-## 本章结论
+## 结论
 
 Rust 进入 Android 平台的主要目标是减少新 native 代码中的内存安全缺陷。语言迁移本身没有固定的性能方向：同进程 C ABI 调用可能只是一条普通函数调用，Binder 服务则由 Parcel、内核事务、线程调度和业务 I/O 主导；字符串复制、所有权转换、锁竞争、分配器与代码体积又会把结果推向不同方向。
 
@@ -78,7 +78,7 @@ Rust 的安全保证也包含运行时工作。所有权、生命周期与大部
 
 这张表描述源码形态，不代表整项功能已经由 Rust 独占。比如 DnsResolver 根目录仍有 `DnsResolverService.cpp`、`ResolverController.cpp`、`res_send.cpp` 等大量 C++；Bluetooth 的 Rust 库也作为现有 stack 的静态 FFI 组件构建。
 
-现稿曾列出 `system/uwb`、`system/bt/gd/rust`、Rust 主体的 DnsResolver、Rust HTTP engine 与 Rust bpfloader。r1 的 UWB 仓库位于 `packages/modules/Uwb`，Bluetooth Rust 代码位于 `packages/modules/Bluetooth/system/rust`；其余描述无法由所列路径支撑，本文不再把它们计入“已完成重写”。
+r1 的 UWB 仓库位于 `packages/modules/Uwb`，Bluetooth Rust 代码位于 `packages/modules/Bluetooth/system/rust`。`system/uwb`、`system/bt/gd/rust`、Rust 主体的 DnsResolver、Rust HTTP engine 与 Rust bpfloader 无法由相应源码路径支撑，不能计入“已完成重写”。
 
 ### 1.3 Keystore2 没有额外的 C++ AIDL 跳板
 
@@ -206,7 +206,7 @@ Rust 无法证明裸指针、C ABI、设备寄存器与外部库满足安全条�
 
 使用标准库默认 `System` allocator 的 Android Rust 代码通过 libc `malloc/free` 分配。Android 官方 Scudo 文档说明，Android 11 起常规设备的 native 分配由 Scudo 提供，低内存设备仍可能使用 jemalloc；Android 17 的具体产品配置应以进程映射和设备构建为准。
 
-Scudo 提供 chunk metadata 校验、隔离、quarantine 等抗利用措施，发现可疑 heap 状态时可以终止进程。它是 hardened allocator，不是完整的 ASan，也不会为每个小对象配置独立 guard page。现稿关于“每块分配前后都有 guard page”和“释放后统一填随机 pattern”的描述不适合作为通用成本模型。
+Scudo 提供 chunk metadata 校验、隔离、quarantine 等抗利用措施，发现可疑 heap 状态时可以终止进程。它是 hardened allocator，不是完整的 ASan，也不会为每个小对象配置独立 guard page。因此，“每块分配前后都有 guard page”和“释放后统一填随机 pattern”不适合作为通用成本模型。
 
 Rust 和 C++ 共用 native allocator 时，malloc 热点可以用 heapprofd 统一观察。以下情况需要单独处理：
 
@@ -277,11 +277,11 @@ r1 的几个全局编译选项可从 `build/soong/rust/config/global.go` 直接�
 | `rust_proc_macro` | 过程宏 |
 | `aidl_interface` 的 Rust backend | 生成 Rust AIDL crate，供 `rustlibs` 引用 |
 
-现稿列出的 `rust_dylib` 不是 r1 注册的 Soong 模块类型。需要固定 Rust dylib variant 时可使用 `rust_library_dylib`；一般 Rust 依赖优先写入 `rustlibs`，由构建系统选择相容 linkage。
+`rust_dylib` 不是 r1 注册的 Soong 模块类型。需要固定 Rust dylib variant 时可使用 `rust_library_dylib`；一般 Rust 依赖优先写入 `rustlibs`，由构建系统选择相容 linkage。
 
 ### 5.2 ThinLTO 语法与默认值
 
-`lto` 是一个属性组，合法形式是 `lto: { thin: true }` 或 `false`。r1 默认值已经是 `true`，常规生产模块无须重复声明。现稿中的 `lto: "thin"` 与该 tag 的属性类型不符。
+`lto` 是一个属性组，合法形式是 `lto: { thin: true }` 或 `false`。r1 默认值已经是 `true`，常规生产模块无须重复声明。`lto: "thin"` 与该 tag 的属性类型不符。
 
 Soong 注释指出 ThinLTO 对 Rust code size 收益很大，生产构建若要关闭需要清楚理由。sanitizer、fuzz、构建时间或工具兼容性可能要求例外；应通过最终 rustc command 和产物指标确认，而非只读一段 Blueprint。
 
@@ -289,7 +289,7 @@ Soong 注释指出 ThinLTO 对 Rust code size 收益很大，生产构建若要�
 
 Android 17 的 crates.io 导入集中在 `external/rust/android-crates-io` 仓库，各 crate 位于该仓库的 `crates/<name>/` 子目录。每个目录可包含 `cargo_embargo.json`、Android 补丁、许可证元数据以及生成的 `Android.bp`。仓库根目录的 `crate_tool` 负责下载、打补丁并调用 `cargo_embargo` 重新生成这些文件。
 
-这套流程不同于现稿的 `external/upstream` 与 `development/tools/regex_gen_cargo2android.py`。平台开发不能把 `cargo build` 的依赖解析结果直接带入系统镜像；crate 版本、license、patch、Soong rule、APEX 可用性和测试都要进入 AOSP 管理。
+这套流程不使用 `external/upstream` 与 `development/tools/regex_gen_cargo2android.py`。平台开发不能把 `cargo build` 的依赖解析结果直接带入系统镜像；crate 版本、license、patch、Soong rule、APEX 可用性和测试都要进入 AOSP 管理。
 
 ## 6. 怎样测 Rust 边界
 
@@ -422,7 +422,7 @@ heapprofd 能观察经过 malloc/free 的 Rust 分配。配置采样时要记录
 | Android 14～16 / API 34～36 | Rust 在 Mainline、虚拟化、连接与底层组件中继续扩展，混合语言边界长期存在 |
 | Android 17 / API 37 | `android-17.0.0_r1` 中可核对 Rust Binder 服务、CXX 混合模块、默认 ThinLTO、panic/overflow/unwind 配置与新 Bluetooth Rust 组件 |
 
-本文没有涉及内核 Rust 配置或驱动，因此不从平台用户态模块推导 `android17-6.18-2026-06_r6` 的内核能力。若分析 Rust for Linux，需要单独核对该 kernel tag 的 Kconfig、toolchain、bindings 与具体驱动。
+这里不讨论内核 Rust 配置或驱动，也不能从平台用户态模块推导 `android17-6.18-2026-06_r6` 的内核能力。分析 Rust for Linux 时，需要单独核对该 kernel tag 的 Kconfig、toolchain、bindings 与具体驱动。
 
 ## 源码与官方资料
 

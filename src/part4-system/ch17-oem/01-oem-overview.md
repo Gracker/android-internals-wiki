@@ -87,24 +87,6 @@ task9_review_notes: "2026-07-09 Task9 idle-audit: auto-fixed。修正 cgroup fre
 
 # OEM 性能优化的通用思路
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 OEM 性能优化的通用方向：启动优化、流畅性、内存管理、功耗、温控
-- 🔹 OEM 优化的技术手段分层：Kernel（调度/内存）→ Native（Binder/SF）→ Framework（AMS/WMS）→ App（预加载/冻结）
-- 🔹 应用冻结技术：Frozen Process、SIGSTOP、cgroup freezer
-- 🔹 预加载与预测启动：智能预测用户下一步操作
-- 🔹 后台管理策略差异：保活 vs 杀后台的平衡
-
-### 扩展（可选深入）
-
-- 🔸 OEM 优化带来的兼容性问题（如后台杀进程过于激进）
-- 🔸 各厂商性能优化品牌（HyperBoost / RAMDISK / LPDDR Training 等）
-
-<!-- outline-end -->
-
 ## OEM 优化分析要回答什么
 
 同一个 APK 在两台设备上出现不同的启动、掉帧或后台行为，原因可能来自应用代码、硬件能力、AOSP 配置、厂商实现、用户设置，也可能来自测试条件。把差异直接归因给“ROM 优化”没有诊断价值。
@@ -115,7 +97,7 @@ OEM 性能分析要回答三个可验证的问题：
 2. 改动通过哪一层影响了目标进程；
 3. 这项改动改善了哪个指标，又把成本转移到了哪里。
 
-本章的平台参照为 `android-17.0.0_r1`，内核参照为 `android17-6.18-2026-06_r6`。它们用于定义源码基线，不代表任意 Android 17 商品设备都运行相同提交。设备的 `ro.build.fingerprint`、APEX 版本、vendor 分区、内核配置、设备树、固件和产品 overlay 都可能改变运行结果。
+平台参照为 `android-17.0.0_r1`，内核参照为 `android17-6.18-2026-06_r6`。它们用于定义源码基线，不代表任意 Android 17 商品设备都运行相同提交。设备的 `ro.build.fingerprint`、APEX 版本、vendor 分区、内核配置、设备树、固件和产品 overlay 都可能改变运行结果。
 
 因此，Pixel Trace 适合作为一组对照数据，无法充当所有设备的“标准答案”。可靠的归因应同时具备源码位置、设备配置和运行证据；缺少其中一项时，结论要保留边界。
 
