@@ -202,7 +202,7 @@ IPC 延迟至少包含：
 客户端方法
   └─ Proxy 将方法号与参数写入 Parcel
        └─ ioctl 到 Binder driver
-            └─ 驱动把事务复制到服务端接收映射
+            └─ driver 把 transaction 复制到 server receive mapping
                  └─ server Binder thread
                       └─ Stub 解包并调用实现
                            └─ reply Parcel 原路返回
@@ -259,7 +259,7 @@ Android 17 `ProcessState.cpp`：
 判断线程池是否饥饿，应看：
 
 - server Binder threads Binder 线程是否全在执行或阻塞。
-- 客户端事务是否长时间等不到服务端片段。
+- client transaction 是否长时间等不到 server slice。
 - 服务端是否在 Binder 线程上做阻塞 I/O、跨服务调用或持有大锁。
 - `binder thread pool ... starved` 类日志是否出现。
 
@@ -358,7 +358,7 @@ socketpair(AF_UNIX, SOCK_SEQPACKET, 0, sockets);
 InputDispatcher 持有服务端；client 端作为 Parcelable 经 Binder 交给窗口所在进程。之后：
 
 - input event 走这对匿名 Unix socket。
-- 应用处理完成的结束信号也走同一通道。
+- App 处理完成的 finish signal 也走同一 channel。
 - Binder 主要负责通道生命周期和控制，不搬运每个 MotionEvent 的数据。
 
 这条链是“Binder 控制面 + socket 数据面”的典型例子。
@@ -519,7 +519,7 @@ DMA-BUF 解决的是 CPU、GPU、display、camera、codec 等设备之间共享 
 - allocator 返回 DMA-BUF 文件描述符/ native handle。
 - gralloc 描述格式、stride、usage 和 plane layout。
 - Binder 传 handle 与生命周期控制。
-- 围栏表达生产者/消费者完成时序。
+- fence 表达 producer/consumer 完成时序。
 
 Android 12 的 GKI 2.0 路线用 DMA-BUF 堆替代 ION allocator；每个堆通常表现为 `/dev/dma_heap/<name>`。这项迁移不等于 SharedMemory 从 ashmem 迁到 DMA-BUF。
 
