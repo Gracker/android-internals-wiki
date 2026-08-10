@@ -97,7 +97,7 @@ flowchart TD
     J --> K["唤醒默认 Display 等待者"]
 ```
 
-图中的 physical display token 由 SurfaceFlinger 持有并返回给框架。DMS 不会为本地物理屏重新创建令牌。
+图中的 physical display token 由 SurfaceFlinger 持有并返回给 framework。DMS 不会为本地物理屏重新创建令牌。
 
 ### 1.2 等待 phase 与超时值
 
@@ -161,7 +161,7 @@ flowchart TD
 - `CHANGED`：比较新旧 `DisplayDeviceInfo`，计算 mode、state、rotation、color、timing 等 diff，应用 pending info 后通知 mapper；
 - `REMOVED`：从 repository 删除设备，再通知 mapper。
 
-LogicalDisplay 层还有 `CONNECTED`、`DISCONNECTED`、`ADDED`、`REMOVED`、`BASIC_CHANGED`、`STATE_CHANGED` 等更细的事件掩码。设备断开、LogicalDisplay 停用和框架对外移除不会同时发生。DMS 按预处理和后处理顺序更新资源、DisplayPowerController、拓扑、缓存、外接屏策略与回调，不能只凭一条 `onDisplayRemoved()` 推断所有资源已经释放。
+LogicalDisplay 层还有 `CONNECTED`、`DISCONNECTED`、`ADDED`、`REMOVED`、`BASIC_CHANGED`、`STATE_CHANGED` 等更细的事件 mask。设备断开、LogicalDisplay disabled、framework 对外移除不会同时发生。DMS 按预处理和后处理顺序更新资源、DisplayPowerController、拓扑、缓存、外接屏 policy 与回调，不能只凭一条 `onDisplayRemoved()` 推断所有资源已经释放。
 
 ### 2.3 物理 hotplug 不等于“重建全局 layer 树”
 
@@ -210,12 +210,12 @@ topology 写入是一个需要单独注意的例外：Android 17 的 `DisplayTop
 
 1. 哪个 tid 等待 `mSyncRoot`；
 2. 持锁线程当时执行哪个 `*Locked()` 方法；
-3. 等待是否位于用户可见的显示切换路径；
+3. 等待是否位于用户可见的 Display 切换路径；
 4. 慢点是 Java 状态计算、Binder、文件 I/O，还是锁外 SF/HWC 操作。
 
 ### 3.3 DMS 不在普通逐帧热路径
 
-稳定显示期间，App buffer 锁存和 HWC 验证或送显不经过 DMS 的 `mSyncRoot`。DMS 的主要观察窗口通常是：
+稳定显示期间，App buffer 锁存和 HWC validate/present 不经过 DMS 的 `mSyncRoot`。DMS 的主要观察窗口通常是：
 
 - 开机默认屏发现；
 - 外接屏插拔；
@@ -447,7 +447,7 @@ Layout 可以为 LogicalDisplay 指定 lead display。DMS 在 Display 连接或�
 
 - 从旧 leader 移除 follower；
 - 向新 leader 添加 follower；
-- 控制器按新的 DisplayDeviceInfo 更新亮度配置。
+- 控制器按新的 DisplayDeviceInfo 更新 brightness 配置。
 
 follower 表示亮度策略关系，不表示两个 Display 共用同一个 buffer、VSync 或 present fence。
 
@@ -496,7 +496,7 @@ VirtualDisplayDevice 在 DMS traversal 中，通过 Display transaction 把 call
 
 ### 10.1 DMS traversal 配置 Display，不绘制 App 内容
 
-`scheduleTraversalLocked()` 使用单个 `mPendingTraversal` 合并请求。DMS Handler 调用 `WindowManagerInternal.requestTraversalFromDisplayManager()`，WMS 在自己的 Surface 放置与遍历中回调 DMS 的 `performTraversalInternal()`。
+`scheduleTraversalLocked()` 使用单个 `mPendingTraversal` 合并请求。DMS Handler 调用 `WindowManagerInternal.requestTraversalFromDisplayManager()`，WMS 在自己的 surface placement/traversal 中回调 DMS 的 `performTraversalInternal()`。
 
 DMS 随后对每个 LogicalDisplay：
 
@@ -674,7 +674,7 @@ DMS mode 变化与应用逐帧生产是两个阶段。
 - display offload/sidekick；
 - 上下电所需 fence 或 idle 等待。
 
-这段慢工作已经在 `mSyncRoot` 外。优化 DMS 锁不能缩短 HAL 或驱动自身的耗时。
+这段慢工作已经在 `mSyncRoot` 外。优化 DMS 锁不能缩短 HAL/driver 自身的耗时。
 
 ### 12.6 VirtualDisplay 卡住
 
