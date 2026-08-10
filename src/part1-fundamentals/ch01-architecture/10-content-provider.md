@@ -114,7 +114,7 @@ last_task9_idle_audit_log: "logs/deep-review/2026-07-16-00-audit.md"
 
 ContentProvider 同时出现在两条关键路径上：
 
-- 进程首次绑定应用时，当前进程声明的 Provider 会早于 `Application.onCreate()` 初始化；
+- 进程首次绑定 Application 时，当前进程声明的 Provider 会早于 `Application.onCreate()` 初始化；
 - 跨进程访问数据时，调用方通过 Binder 同步进入提供方，查询结果再借助 `CursorWindow` 分批传递。
 
 前一条路径影响冷启动，后一条路径容易造成主线程阻塞、Binder 线程池排队和数据库 I/O。分析 ContentProvider 问题时，需要先确认调用发生在同一进程还是跨进程，以及提供方当时已经运行还是正在冷启动；URI 是后续检查项。
@@ -125,7 +125,7 @@ ContentProvider 同时出现在两条关键路径上：
 
 ## ContentProvider 在系统中的位置
 
-ContentProvider 为结构化数据提供统一的 URI、权限和调用协议。`content://authority/path` 中，authority 用于找到 Provider；path 和查询参数由 Provider 自己解释。
+ContentProvider 为结构化数据提供统一的 URI、权限和调用协议。`content://authority/path` 中，authority 用于找到 Provider；path 和 query 参数由 Provider 自己解释。
 
 一次访问涉及三方：
 
@@ -151,20 +151,20 @@ ContentProvider 调用不一定经过 Binder。可用进程名、PID 和 Binder 
 
 ### 权限检查发生在哪里
 
-Provider 可以通过 `readPermission`、`writePermission`、path permission 和临时 URI 授权控制访问。`Transport` 会校验 authority、调用方归因信息和读写权限，再把请求交给 Provider 实现。
+Provider 可以通过 `readPermission`、`writePermission`、path permission 和临时 URI grant 控制访问。`Transport` 会校验 authority、调用方归因信息和读写权限，再把请求交给 Provider 实现。
 
 性能优化不能绕过这层安全语义：
 
 - 只导出需要跨应用访问的 Provider；
-- 对可共享的最小 URI 发放临时授权；
+- 对可共享的最小 URI 发放临时 grant；
 - `selection` 使用占位符和 `selectionArgs`，不要拼接来自调用方的字符串；
 - `call()`、`openFile()` 等自定义入口同样要设计权限边界。
 
 ---
 
-## 进程启动时，Provider 为什么早于应用
+## 进程启动时，Provider 为什么早于 Application
 
-Android 17 的 `ActivityThread.handleBindApplication()` 先创建应用对象。`Application.attach()` 已经执行，因此 `attachBaseContext()` 也已经完成。随后，主线程按以下顺序继续：
+Android 17 的 `ActivityThread.handleBindApplication()` 先创建 Application 对象。`Application.attach()` 已经执行，因此 `attachBaseContext()` 也已经完成。随后，主线程按以下顺序继续：
 
 ```text
 makeApplicationInner()
@@ -202,21 +202,21 @@ fork 进程
   → 执行本次请求
 ```
 
-`Application.onCreate()` 位于发布之后，通常不在“等待 Provider 发布”的前置路径内。不过 Provider 一经发布，远程 Binder 请求就可能与提供方主线程的 `Application.onCreate()` 并发执行。若二者争用同一数据库锁、CPU 或 I/O，首次查询仍会被间接拖慢。
+`Application.onCreate()` 位于 publish 之后，通常不在“等待 Provider 发布”的前置路径内。不过 Provider 一经发布，远程 Binder 请求就可能与提供方主线程的 `Application.onCreate()` 并发执行。若二者争用同一数据库锁、CPU 或 I/O，首次 query 仍会被间接拖慢。
 
 ---
 
-## 跨进程查询怎样返回游标
+## 跨进程查询怎样返回 Cursor
 
-`query()` 是同步 API。调用方线程会等到 Provider 返回一个可用的游标接口；把它放在主线程上，远程进程冷启动、数据库锁和磁盘 I/O 都会直接变成界面卡顿。
+`query()` 是同步 API。调用方线程会等到 Provider 返回一个可用的 Cursor 接口；把它放在主线程上，远程进程冷启动、数据库锁和磁盘 I/O 都会直接变成界面卡顿。
 
 ### `CursorWindow` 传的是窗口，不是整个结果集
 
-跨进程游标不会把全部行序列化进一笔 Binder 事务。提供方用 `CursorWindow` 保存一批行，Binder 传递描述符和控制元数据，调用方通过 `BulkCursorToCursorAdaptor` 访问窗口。
+跨进程 Cursor 不会把全部行序列化进一笔 Binder 事务。提供方用 `CursorWindow` 保存一批行，Binder 传递描述符和控制元数据，调用方通过 `BulkCursorToCursorAdaptor` 访问窗口。
 
 AOSP Android 17 的 `config_cursorWindowSize` 默认是 2048 KiB，但这是产品可覆盖的默认值，不是所有窗口不可改变的硬上限。公开构造函数 `CursorWindow(String, long)` 允许调用方指定容量；实际内存按写入数据动态分配，不超过该窗口的配置容量。
 
-窗口能减少大结果集的复制，但不能让无限数据一次返回。一个窗口装不下全部结果时，调用方移动到窗口外的行，`BulkCursorToCursorAdaptor` 会调用远端 `getWindow(newPosition)` 取得新窗口。若 Provider 要求接收所有移动事件，即使目标仍在当前窗口，也可能调用远端 `onMove()`。
+窗口能减少大结果集的复制，但不能让无限数据一次返回。一个窗口装不下全部结果时，调用方移动到窗口外的行，`BulkCursorToCursorAdaptor` 会调用远端 `getWindow(newPosition)` 取得新窗口。若 Provider 要求接收所有 move 事件，即使目标仍在当前窗口，也可能调用远端 `onMove()`。
 
 “`moveToNext()` 永远不走 Binder”并不准确。通常在当前窗口内读取列值不需要远程取数；窗口失效、越界或 Provider 请求所有移动回调时，仍会发生 Binder 往返。
 
@@ -231,7 +231,7 @@ SQLiteCursor.onMove()
   → SQLiteSession.executeForCursorWindow(...)
 ```
 
-Framework 没有把原 SQL 自动改写成高效的键集分页。访问很深的位置时，底层查询仍可能遍历大量前序结果才能填到目标窗口。数据量大且需要翻页的接口，应让 Provider 直接暴露分页条件，例如：
+Framework 没有把原 SQL 自动改写成高效的 keyset 分页。访问很深的位置时，底层查询仍可能遍历大量前序结果才能填到目标窗口。数据量大且需要翻页的接口，应让 Provider 直接暴露分页条件，例如：
 
 ```sql
 SELECT _id, title
@@ -269,7 +269,7 @@ LIMIT ?
 - `DeadObjectException`；
 - 当前 client 已失效；
 - 关闭旧 client；
-- 需要时重新获取，让系统重启 Provider。
+- 需要时重新 acquire，让系统重启 Provider。
 
 unstable 不会让慢查询自动变快，也不为 CRUD 增加超时。它解决的是 Provider 进程死亡时的故障边界。
 
@@ -281,22 +281,22 @@ Android 17 的 ContentProvider 没有覆盖所有操作的“统一 10 秒超时
 
 | 场景 | 名义时间 | Android 17 实现 | 超时后的含义 |
 |---|---:|---|---|
-| 已附加的进程发布 Provider | 10 秒 | `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` | `system_server` 清理 launching providers，并以初始化失败原因移除提供方进程 |
+| 已 attach 的进程发布 Provider | 10 秒 | `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` | `system_server` 清理 launching providers，并以初始化失败原因移除提供方进程 |
 | 调用方等待新进程发布 Provider | 20 秒 | `CONTENT_PROVIDER_READY_TIMEOUT_MILLIS` | acquire 等待结束，返回失败或进入相应清理 |
 | 已取得 Provider 后的 `getTypeAsync()` 等回调 | 3 秒 | 私有 `CONTENT_PROVIDER_TIMEOUT_MILLIS` | `ContentResolver` 停止等待并返回失败结果 |
-| 普通 query/insert/update/delete | 无统一 Provider 超时 | 同步 Binder 调用 | 后果由调用线程所处场景、应用 ANR 条件或系统 API 监测决定 |
+| 普通 query/insert/update/delete | 无统一 Provider 超时 | 同步 Binder 调用 | 后果由调用线程所处场景、应用 ANR 条件或 system API 监测决定 |
 
-如果 `ContentResolver.getType()` 不能直接取得 Provider，Android 17 还会走 `system_server` 的异步 fallback；对应等待上限由 ready timeout 与 3 秒回调超时组合而来。它仍然不是 CRUD 超时。
+如果 `ContentResolver.getType()` 不能直接取得 Provider，Android 17 还会走 `system_server` 的异步 fallback；对应等待上限由 ready timeout 与 3 秒回调 timeout 组合而来。它仍然不是 CRUD 超时。
 
 ### `setDetectNotResponding()` 不属于普通应用超时 API
 
 `ContentProviderClient.setDetectNotResponding()` 是 `@SystemApi` / `@hide` 能力，并要求 `REMOVE_TASKS` 权限。调用者给它设置时长后，`NotRespondingRunnable` 才会调用 `appNotRespondingViaProvider()`，把已连接 Provider 标记为无响应。
 
-普通应用不能借此获得通用的内容提供者 ANR 计时器。应用侧应该：
+普通应用不能借此获得通用 Provider ANR 计时器。应用侧应该：
 
 - 在后台线程执行同步的 ContentResolver API；
 - 为自己的业务请求设置超时；
-- 向支持取消的查询传入 `CancellationSignal`；
+- 向支持取消的 query 传入 `CancellationSignal`；
 - 超时后取消请求并丢弃迟到结果。
 
 下面的 Kotlin 代码让调度器在 5 秒后主动取消远程查询。5 秒是业务选择，不是 Android 平台常量：
@@ -326,7 +326,7 @@ suspend fun queryWithTimeout(
 }
 ```
 
-调用方还要用 `use` 或其他结构及时关闭游标，避免窗口和 Provider 引用长期占用。
+调用方还要用 `use` 或其他结构及时关闭 Cursor，避免窗口和 Provider 引用长期占用。
 
 ---
 
@@ -378,9 +378,9 @@ Manifest 中的 `android:process=":provider"` 会把 Provider 放入应用私有
 - 调用全部变成 Binder IPC；
 - Provider 进程被回收后，下次访问要重新启动。
 
-Provider 侧 GC 虽不会暂停主进程线程，却会延迟远程回复，因此调用方仍能感知到停顿。
+Provider 侧 GC 虽不会暂停主进程线程，却会延迟远程 reply，因此调用方仍能感知到停顿。
 
-如果多个进程访问同一个 SQLite 文件，WAL 通常能提高读写并发，但不是“多进程访问的必选开关”，也不能消除所有写串行和 `SQLITE_BUSY`。数据库结构、事务长度、连接配置和跨进程 invalidation 都要在目标设备上验证。
+如果多个进程访问同一个 SQLite 文件，WAL 通常能提高读写并发，但不是“多进程访问的必选开关”，也不能消除所有写串行和 `SQLITE_BUSY`。数据库 schema、事务长度、连接配置和跨进程 invalidation 都要在目标设备上验证。
 
 独立进程适合明确需要故障或内存隔离、且能接受冷启动成本的服务端数据组件，不属于常规数据库优化选项。
 
@@ -424,7 +424,7 @@ App Startup 用一个 `InitializationProvider` 发现多个 `Initializer`，并�
 
 - 明确 projection，只返回需要的列；
 - 用 `selection` 与 `selectionArgs` 在数据库层过滤；
-- 为筛选和排序字段建立合适索引；
+- 为 selection 和排序字段建立合适索引；
 - 避免在单列中返回大 BLOB 或大段 JSON；
 - 对列表接口设计稳定的分页契约。
 
@@ -485,8 +485,8 @@ Android 17 的 `ContentProvider.Transport` 会用 `TRACE_TAG_ACTIVITY_MANAGER` �
 采集时启用 Activity Manager atrace 分类，并同时记录 Binder、sched、进程和文件系统 I/O。诊断顺序是：
 
 1. 在调用方找到同步 Binder 等待；
-2. 沿 Binder 事务定位提供方线程；
-3. 查看 `query: authority` 等片段内部是运行、锁等待还是 I/O；
+2. 沿 Binder transaction 定位提供方线程；
+3. 查看 `query: authority` 等 slice 内部是运行、锁等待还是 I/O；
 4. 再看数据库线程、GC 和下游 Binder。
 
 ### Provider 初始化
@@ -515,7 +515,7 @@ SDK 或应用自定义内容提供者适合在 `onCreate()` 内对可疑步骤�
 - 同时段的 EventLog / system log；
 - Perfetto 中的 Binder、调度、monitor contention 和 I/O。
 
-发布超时的源码原因字符串是 `timeout publishing content providers`；外部等待路径可见 `Timeout waiting for provider ...`。通过系统 API 设置无响应检测的路径会记录 `ContentProvider not responding`。这些日志属于不同机制，不能用一个关键字替代全部判断。
+发布超时的源码原因字符串是 `timeout publishing content providers`；外部等待路径可见 `Timeout waiting for provider ...`。通过 system API 设置无响应检测的路径会记录 `ContentProvider not responding`。这些日志属于不同机制，不能用一个关键字替代全部判断。
 
 ---
 
@@ -524,11 +524,11 @@ SDK 或应用自定义内容提供者适合在 `onCreate()` 内对可疑步骤�
 | 版本 | 已确认变化 | 使用边界 |
 |---|---|---|
 | Android 9（API 28） | 公开 `CursorWindow(String, long)`，旧的 local/remote 构造语义废弃 | 可指定窗口容量，但不能替代分页和索引 |
-| Android 11（API 30） | 固定标签中可见 `ContentProviderClient.setDetectNotResponding()` 的系统/测试能力 | 需要系统权限，不属于普通应用 CRUD 超时 API |
+| Android 11（API 30） | 固定 tag 中可见 `ContentProviderClient.setDetectNotResponding()` 的系统/测试能力 | 需要系统权限，不属于普通应用 CRUD 超时 API |
 | Android 12（API 31） | `ContentResolver.getType()` 内部使用 `getTypeAsync()` 回调 | 公开 API 仍是同步 `getType()`；应用仍应自行选择线程 |
 | Android 17（API 37） | 当前实现基线，保留 10 秒发布、20 秒就绪、3 秒已连接异步回调的分层语义 | 数值受 `Build.HW_TIMEOUT_MULTIPLIER` 影响，CRUD 仍无统一 Provider 超时 |
 
-版本迭代只说明能够由对应标签或官方 API 确认的变化。Photo Picker、Scoped Storage 等功能会改变数据访问方式，但不应被写成 ContentProvider Binder 或超时机制本身的版本断点。
+版本迭代只说明能够由对应 tag 或官方 API 确认的变化。Photo Picker、Scoped Storage 等功能会改变数据访问方式，但不应被写成 ContentProvider Binder 或超时机制本身的版本断点。
 
 ---
 
@@ -540,7 +540,7 @@ SDK 或应用自定义内容提供者适合在 `onCreate()` 内对可疑步骤�
 
 ### “所有 Provider 都有 10 秒 CRUD 超时”
 
-10 秒是进程附加后的发布窗口。普通 CRUD 没有这个统一计时器。
+10 秒是进程 attach 后的发布窗口。普通 CRUD 没有这个统一计时器。
 
 ### “CursorWindow 绕过了 Binder”
 
@@ -565,11 +565,11 @@ Framework 默认 `applyBatch()` 只按顺序应用操作。事务语义由具体
 一次远程冷启动查询涉及以下源码路径：
 
 1. `ContentResolver.acquireProvider()`：调用方怎样向 AMS 取得 Provider；
-2. `ContentProviderHelper.getContentProviderImpl()`：authority 查找、进程启动与就绪等待；
+2. `ContentProviderHelper.getContentProviderImpl()`：authority 查找、进程启动与 ready 等待；
 3. `ActivityThread.handleBindApplication()` / `installContentProviders()`：提供方怎样创建和发布 Provider；
 4. `ContentProvider.Transport.query()`：权限校验和远程调用入口；
 5. `BulkCursorToCursorAdaptor`：远程窗口怎样交给调用方；
 6. `SQLiteCursor.fillWindow()` / `SQLiteSession.executeForCursorWindow()`：查询结果怎样填入窗口；
-7. `ContentProviderClient`：stable/unstable 引用和系统 API 无响应监测。
+7. `ContentProviderClient`：stable/unstable 引用和 system API 无响应监测。
 
 一次慢 query 分成“等进程”“等发布”“等 Binder 线程”“等数据库”和“等新 CursorWindow”五类问题。分清阶段后，才能避免优化破坏安全、正确性或进程稳定性。
