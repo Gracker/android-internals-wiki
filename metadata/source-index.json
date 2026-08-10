@@ -2647,6 +2647,26 @@
       "action": "indexed-only-chapter-freeze",
       "score": 15,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-09-evening-Agent失败归因表-研究材料/01-dump-Agent失败归因表.md",
+      "title": "[DeepResearch] Research Dump · Agent 失败归因表",
+      "summary": "--- phase: 1 topic: Agent 失败归因表 sub_question: 从 Model or Harness 到 Hermes 可用模板 --- ## 执行摘要 - 本次产出文件：`/Users/chris/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-09-evening-Agent失败归因表-",
+      "chapter": "ch16",
+      "processed_at": "2026-08-10T06:20:29.071207+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-09-evening-Agent失败归因表-研究材料/references/01-arxiv-2607-28802.md",
+      "title": "[DeepResearch] 01-arxiv-2607-28802",
+      "summary": "--- source: https://arxiv.org/abs/2607.28802 title: Model or Harness? An Interaction-Centric Taxonomy for Localizing Agent Failures fetched: 2026-08-09T21:10:00 research_topic: Agent 失败归因表 sub_question: 论文原文核验 --- ## 执行摘",
+      "chapter": "ch16",
+      "processed_at": "2026-08-10T06:20:29.071207+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "schema_version": "2.1",

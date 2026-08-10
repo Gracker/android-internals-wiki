@@ -2014,6 +2014,18 @@
       "status": "appended",
       "title": "Juejin Android Intake · 2026-08-09"
     },
+    "source/juejin-android/2026-08-10-juejin-android.md": {
+      "chapter": "待分类",
+      "entry_id": "0ae81e476bfb122d",
+      "last_appended": "2026-08-10T05:25:21.634309+08:00",
+      "last_seen": "2026-08-10T05:25:21.634309+08:00",
+      "mtime": 1786306447.3958845,
+      "score": 12,
+      "sha256": "c7c2da97c0a47c18d8babe8aa3e1e66ff8544c4a8448caf84eed52ef80e9ac2b",
+      "size": 9000,
+      "status": "appended",
+      "title": "Juejin Android Intake · 2026-08-10"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -3821,24 +3833,24 @@
     }
   },
   "last_report": {
-    "appended": 5,
-    "considered": 5,
-    "cutoff": "2026-08-08T05:20:24.746574+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-09.md",
+    "appended": 1,
+    "considered": 1,
+    "cutoff": "2026-08-09T05:20:54.393198+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-10.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1766,
+    "scanned": 1767,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 28,
-      "unchanged": 330
+      "unchanged": 335
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-08-09T05:25:54.393198+08:00",
+  "last_run_at": "2026-08-10T05:25:21.634309+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
