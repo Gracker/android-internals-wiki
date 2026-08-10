@@ -74,7 +74,7 @@ updated_date: "2026-07-10"
 
 第 3.1 节追踪了输入事件从硬件到 View 树的完整路径。正常分发之外，系统还允许特权组件在不同位置监控、过滤或注入事件。
 
-如果 InputDispatcher 队列和应用主线程都没有明显阻塞，事件仍可能停留在 system_server 的过滤器 Handler、无障碍按键待决队列或 spy window 手势接管阶段。忽略这些分支，容易把事件未到达应用误判成 View 分发问题。
+如果 InputDispatcher 队列和 App 主线程都没有明显阻塞，事件仍可能停留在 system_server 的 filter Handler、无障碍按键待决队列或 spy window 手势接管阶段。忽略这些分支，容易把事件未到达 App 误判成 View 分发问题。
 
 平台源码以 AOSP `android-17.0.0_r1` 为锚点；Android 10—16 只在确有版本差异时作为沿革参照。涉及 Linux input/evdev 的边界以 `android17-6.18-2026-06_r6` 为内核锚点，不从通用内核代码推断厂商触控驱动策略。
 
@@ -111,7 +111,7 @@ public void setInputFilter(IInputFilter filter) {
 }
 ```
 
-Native `InputDispatcher` 不持有 Java `IInputFilter`。`mInputFilterEnabled` 为 `true` 时，它调用策略的 `filterInputEvent(...)`：
+Native `InputDispatcher` 不持有 Java `IInputFilter`。`mInputFilterEnabled` 为 `true` 时，它调用 policy 的 `filterInputEvent(...)`：
 
 ```cpp
 // frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
@@ -156,11 +156,11 @@ Android 17 在 filter 启用时不为原始 InputReader event 记录 `InputDispa
 
 调用方必须持有隐藏权限 `android.permission.MONITOR_INPUT`。`android-17.0.0_r1` 的清单将它声明为 `signature|recents`，不属于通用 `privileged` 权限。普通应用和普通第三方无障碍服务拿不到这个入口。
 
-### 监视窗口与 pilferPointers
+### spy window 与 pilferPointers
 
-手势监视器对应的窗口带有 **spy** 输入配置。Android 17 还强制所有监视窗口同时为可信叠加层。它有两种工作状态：
+gesture monitor 对应的窗口带有 **spy** input config。Android 17 还强制所有 spy window 同时为可信叠加层。它有两种工作状态：
 
-1. **监控阶段**：监视窗口与普通目标各自通过自身连接接收事件。它不替代命中的前台窗口，也不会因为“看见了事件”就消费目标流；监视器自身仍须及时消费通道中的事件。
+1. **监控阶段**：spy window 与普通目标各自通过自身连接接收事件。它不替代命中的前台窗口，也不会因为“看见了事件”就消费目标流；monitor 自身仍须及时消费通道中的 channel。
 2. **接管阶段**：调用 `pilferPointers()` 后，InputDispatcher 从其他可被截取的窗口移走当前指针，并向被取消的目标合成取消事件。典型结果是原目标窗口收到 `ACTION_CANCEL`，后续事件流由请求截取的监视窗口持有；标记了 `DO_NOT_PILFER` 的窗口例外。
 
 SystemUI 的边缘返回手势使用这套模式：先用手势监视器观察边缘触摸，确认系统返回手势后再截取指针。“收到副本”与“主动接管”对目标应用的影响完全不同。
@@ -185,7 +185,7 @@ SystemUI 的边缘返回手势使用这套模式：先用手势监视器观察�
 
 ## 无障碍服务的事件拦截
 
-### AccessibilityService 与输入事件的关系
+### AccessibilityService 与 Input 事件的关系
 
 无障碍和 Input 的系统侧交叉点主要在 `AccessibilityInputFilter`。系统按已启用功能组装 transformation chain：按键可进入 `KeyboardInterceptor`，触摸可进入 `TouchExplorer`、放大手势处理器或 `MotionEventInjector`。未被 transformation 消费的事件最终通过 filter host 重新注入 InputDispatcher。
 
@@ -239,7 +239,7 @@ Android 10 到 Android 17 都使用 capability + runtime flag 这套门禁。`on
 
 #### 1. Instrumentation.sendPointerSync()
 
-`Instrumentation.sendPointerSync()` 在 `DOWN` 前和 `UP` 后同步 window transaction，然后调用 `InputManagerGlobal.injectInputEvent(..., Process.myUid())`。target UID 限制注入只能命中 Instrumentation 目标自身拥有的窗口；命中其他 UID 的窗口会失败。
+`Instrumentation.sendPointerSync()` 在 `DOWN` 前和 `UP` 后同步 window transaction，然后调用 `InputManagerGlobal.injectInputEvent(..., Process.myUid())`。target UID 限制注入只能命中 instrumentation target 自身拥有的窗口；命中其他 UID 的窗口会失败。
 
 ```java
 // frameworks/base/core/java/android/app/Instrumentation.java
@@ -255,7 +255,7 @@ private void syncInputTransactionsAndInjectEventIntoSelf(MotionEvent event) {
 }
 ```
 
-它没有直接写 `ViewRootImpl` 的 InputChannel，底层仍进入 `InputManagerService.injectInputEventToTarget()`。方法使用 `WAIT_FOR_FINISH`，只等待接收方 finish input event，不保证对应 UI 已完成绘制或送显。
+它没有直接写 `ViewRootImpl` 的 InputChannel，底层仍进入 `InputManagerService.injectInputEventToTarget()`。方法使用 `WAIT_FOR_FINISH`，只等待接收方 finish input event，不保证对应 UI 已完成绘制或 present。
 
 #### 2. UiAutomation.injectInputEvent()
 
@@ -308,7 +308,7 @@ public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int di
 
 ### 哪些环节可以被拦截/修改
 
-Input 事件从硬件到应用之间，可编程拦截点包括：
+Input 事件从硬件到 App 之间，可编程拦截点包括：
 
 | 位置 | 能做什么 | 典型实现 |
 |------|----------|----------|
@@ -317,7 +317,7 @@ Input 事件从硬件到应用之间，可编程拦截点包括：
 | `AccessibilityInputFilter` 内部变换器 | 按键判定、触摸探索、手势注入 | `KeyboardInterceptor`、`TouchExplorer`、`MotionEventInjector` |
 | App 自己的 `InputStage` / `ViewGroup` | 只影响本进程窗口 | `ViewRootImpl`、`onInterceptTouchEvent()` |
 
-普通应用或普通服务无法访问以下位置：
+普通 App 或普通服务无法访问以下位置：
 
 1. **`EventHub → InputReader` 的原始设备事件。** 这是内核输入设备到系统服务的边界。
 2. **`InputChannel` 的 socket 传输。** 事件进入 socket 之后，App 只能从自己那一端读，不能改 system_server 已经写出的包。
@@ -339,7 +339,7 @@ Input 事件从硬件到应用之间，可编程拦截点包括：
 
 ### Android 17 基线：从权限控制到查询通道隔离
 
-`accessibilityDataSensitive` 在 API 34 引入。Android 17 中，`ACCESSIBILITY_DATA_SENSITIVE_YES` 或自动推断为敏感的 View 会受到多层保护：
+`accessibilityDataSensitive` 在 API 34 引入。Android 17 中，`ACCESSIBILITY_DATA_SENSITIVE_YES` 或自动推断为 sensitive 的 View 会受到多层保护：
 
 - `AccessibilityInteractionController` 不向非 accessibility-tool 请求返回该 View 的节点；
 - AccessibilityEvent 会携带数据敏感属性，由系统按接收服务身份过滤；
@@ -405,7 +405,7 @@ AOSP 标准 GameMode 没有独立的 InputDispatcher 游戏优先队列。Androi
 
 1. **全局 filter**：隐藏系统接口，只能由 WMS/IMS 安装；
 2. **gesture monitor**：调用者必须持有 `MONITOR_INPUT`，其 protection level 是 `signature|recents`；
-3. **标准注入**：调用者或 Instrumentation 来源必须满足 `INJECT_EVENTS`；
+3. **标准注入**：调用者或 instrumentation source 必须满足 `INJECT_EVENTS`；
 4. **无障碍能力**：key filter 和 gesture injection 分别受 capability/runtime flag 与 `canPerformGestures()` 控制，敏感 View 还会按 `isAccessibilityTool` 再过滤。
 
 ## 在 Perfetto 中分析事件拦截问题
@@ -445,7 +445,7 @@ adb shell dumpsys accessibility
 
 ### 误区一：App 可以注册自己的 InputFilter
 
-不能。`InputFilter` 由 `WindowManagerService` / `InputManagerService` 管理，普通应用没有这条入口，也拿不到全局注入所需的权限。
+不能。`InputFilter` 由 `WindowManagerService` / `InputManagerService` 管理，普通 App 没有这条入口，也拿不到全局注入所需的权限。
 
 ### 误区二：无障碍按键过滤是 InputDispatcher 同步调 `onKeyEvent()`
 

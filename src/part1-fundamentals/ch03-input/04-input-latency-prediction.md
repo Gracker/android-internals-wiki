@@ -96,7 +96,7 @@ sequenceDiagram
     participant Kernel as Kernel evdev
     participant Reader as InputReader
     participant Dispatcher as InputDispatcher
-    participant App as 应用主线程
+    participant App as App 主线程
     participant RT as RenderThread
     participant SF as SurfaceFlinger/HWC
     participant Display as Display
@@ -106,10 +106,10 @@ sequenceDiagram
     Reader->>Dispatcher: NotifyMotionArgs
     Dispatcher->>App: InputChannel（AF_UNIX / SOCK_SEQPACKET）
     App->>App: Looper 收取并分发 InputEvent
-    App->>App: CALLBACK_INPUT 消费批量 MOVE
-    App->>RT: 遍历后提交渲染数据
+    App->>App: CALLBACK_INPUT 消费 batched MOVE
+    App->>RT: Traversal 后提交渲染数据
     RT->>SF: queueBuffer
-    SF->>Display: 合成与送显
+    SF->>Display: 合成与 present
 ```
 
 这条路径可以按责任主体拆成四类延迟：
@@ -125,7 +125,7 @@ sequenceDiagram
 
 ### 一帧预算里的输入位置
 
-在应用侧，事件到达和批量 MOVE 的消费要分开观察。普通未批处理事件由 `WindowInputEventReceiver#onInputEvent()` 接收，随后进入 `ViewRootImpl` 的输入阶段链；积累中的 MOVE 批次通常由 `ViewRootImpl` 注册 Choreographer 的输入 VSync callback，在目标帧时间到来时调用 `consumeBatchedInputEvents(frameTimeNanos)`。因此，不能把每个输入事件都描述成“等待 `CALLBACK_INPUT` 后才分发”。
+在 App 侧，事件到达和 batched MOVE 的消费要分开观察。普通未批处理事件由 `WindowInputEventReceiver#onInputEvent()` 接收，随后进入 `ViewRootImpl` 的输入阶段链；积累中的 MOVE 批次通常由 `ViewRootImpl` 注册 Choreographer 的输入 VSync callback，在目标帧时间到来时调用 `consumeBatchedInputEvents(frameTimeNanos)`。因此，不能把每个输入事件都描述成“等待 `CALLBACK_INPUT` 后才分发”。
 
 `android-17.0.0_r1` 中的帧回调顺序仍是：
 
@@ -172,7 +172,7 @@ Batching 处理“点太多”的问题，重采样处理“点和帧时间不�
 - 用于外推的历史间隔上限是 20ms；
 - 向前外推最多 8ms，并且不能超过最近采样间隔的 50%。
 
-这里的 5ms 是让坐标贴近目标帧的采样偏移，不是额外附加到端到端链路上的固定 5ms 延迟。Native 层还并存 `InputConsumerNoResampling`、`Resampler.cpp` 和 `LegacyResampler` 等组件，但它们不属于这个标签下 ViewRoot JNI 直接构造的消费路径。
+这里的 5ms 是让坐标贴近目标帧的采样偏移，不是额外附加到端到端链路上的固定 5ms 延迟。Native 层还并存 `InputConsumerNoResampling`、`Resampler.cpp` 和 `LegacyResampler` 等组件，但它们不属于这个 tag 下 ViewRoot JNI 直接构造的消费路径。
 
 API 35 起，可以先通过 `MotionEvent#getPointerCoords()` 或 `getHistoricalPointerCoords()` 取出 `PointerCoords`，再调用 `PointerCoords.isResampled()` 判断该坐标是否由系统重采样得到。更早版本没有对应的公开判断 API。
 
@@ -277,7 +277,7 @@ try {
 
 | 字段 | 含义 | 诊断方向 |
 | --- | --- | --- |
-| `dispatch_latency_dur` | InputDispatcher 开始分发到应用收到事件 | system_server 调度、InputChannel、目标进程唤醒 |
+| `dispatch_latency_dur` | InputDispatcher 开始分发到 App 收到事件 | system_server 调度、InputChannel、目标进程唤醒 |
 | `handling_latency_dur` | 接收端收到事件到发出 finish/ACK | 接收线程处理、View 分发以及这段区间内的排队或同步调用；不能一概等同于业务代码耗时 |
 | `ack_latency_dur` | App 发出 ACK 到系统收到 ACK | ACK 回写、线程调度、system_server 负载 |
 | `total_latency_dur` | dispatch 到 ACK 的总时长 | 输入分发往返总耗时 |
@@ -312,7 +312,7 @@ LIMIT 100;
 结果按下面的顺序判断：
 
 - `dispatch_ms` 高：先看 InputDispatcher 线程、目标进程主线程是否 Runnable 等 CPU、socket 通道是否拥塞。
-- `handling_ms` 高：根据 `tid`、`thread_name` 确认接收线程，再展开 `deliverInputEvent` 和同一时间窗的业务切片。
+- `handling_ms` 高：根据 `tid`、`thread_name` 确认接收线程，再展开 `deliverInputEvent` 和同一时间窗的业务 slice。
 - `ack_ms` 高：App 处理结束后到系统收到 ACK 中间还有调度或回写延迟，不要把它算成 View 分发耗时。
 - `end_to_end_ms` 高：把 FrameTimeline、RenderThread 和 SurfaceFlinger 一起纳入判断。
 
@@ -373,7 +373,7 @@ flowchart TD
 - **需要极低延迟时再用 unbuffered dispatch**：只在笔迹进行中开启，结束后恢复普通路径。
 - **预测点单独成层**：真实点到达后可修正，不污染持久笔迹。
 - **前缓冲只画局部增量**：整屏变化仍走普通渲染路径。
-- **用 Perfetto 验证结果**：优化前后对比 `handling_latency_dur`、FrameTimeline、笔迹图层的送显时间。
+- **用 Perfetto 验证结果**：优化前后对比 `handling_latency_dur`、FrameTimeline、笔迹 layer 的 present 时间。
 
 如果只接入 MotionPredictor，不处理预测点修正，快速转弯时会出现笔迹回弹。如果只接入前缓冲，不控制绘制区域，撕裂会比延迟更容易被用户感知。
 
@@ -397,7 +397,7 @@ flowchart TD
 
 ## 与其他章节的关系
 
-- §3.1 解释输入事件如何到达应用，这里引用分发路径，不重复展开 InputDispatcher 策略。
+- §3.1 解释输入事件如何到达 App，这里引用分发路径，不重复展开 InputDispatcher 策略。
 - §3.2 解释触摸响应分析，这里补充预测、前缓冲和端到端量化。
 - §2.3 和 §2.4 解释 VSync 与 Choreographer，这里关注输入事件如何被帧节奏消费。
 - §2.5 解释 MainThread / RenderThread 协作，这里把渲染延迟作为输入到显示的一段。
@@ -405,7 +405,7 @@ flowchart TD
 
 ## 参考资料
 
-- Android 官方输入文档：`source.android.com/docs/core/interaction/input`
+- Android 官方 Input 文档：`source.android.com/docs/core/interaction/input`
 - Android API：`developer.android.com/reference/android/view/MotionPredictor`
 - AndroidX MotionEventPredictor：`developer.android.com/reference/androidx/input/motionprediction/MotionEventPredictor`
 - MotionEvent 重采样标记：`developer.android.com/reference/android/view/MotionEvent.PointerCoords#isResampled()`

@@ -114,7 +114,7 @@ flowchart LR
 
 ### 1.1 进程与线程边界
 
-AOSP Android 17 的 `InputManager` 由 `InputManagerService` 的原生实现持有，默认位于 `system_server` 进程。主要线程包括：
+AOSP Android 17 的 `InputManager` 由 `InputManagerService` 的 native 实现持有，默认位于 `system_server` 进程。主要线程包括：
 
 - `InputReader`：读取、解析设备数据；
 - `InputDispatcher`：目标选择、事件发布、完成反馈与 ANR 检查；
@@ -216,7 +216,7 @@ InputReader
   → InputDispatcher
 ```
 
-其中部分阶段可能是透传、可选或受 flag/服务能力控制：
+其中部分 stage 可能是透传、可选或受 flag/服务能力控制：
 
 - `UnwantedInteractionBlocker` 处理手掌误触、stylus/touch 冲突等策略；
 - `PointerChoreographer` 管理 pointer icon/controller 等指针表现；
@@ -254,7 +254,7 @@ focused application 则由 WindowManager 设置，主要用于无焦点窗口 AN
 
 ### 4.2 按键走焦点，pointer motion 走触摸状态
 
-Android 17 的 `dispatchKeyLocked()` 在策略处理后调用 `findFocusedWindowTargetLocked()`。按键没有屏幕坐标，目标通常由当前 display 的焦点窗口决定。
+Android 17 的 `dispatchKeyLocked()` 在 policy 处理后调用 `findFocusedWindowTargetLocked()`。按键没有屏幕坐标，目标通常由当前 display 的焦点窗口决定。
 
 `dispatchMotionLocked()` 先检查 source 是否属于 `AINPUT_SOURCE_CLASS_POINTER`：
 
@@ -282,12 +282,12 @@ InputDispatcher 不只选择窗口，还会根据 display/window transform 为�
 
 遇到“事件送对窗口但坐标不对”时，应同时检查：
 
-- EventHub/Reader 的原始坐标与视口；
+- EventHub/Reader 的原始坐标与 viewport；
 - `WindowInfosUpdate` 中 display/window transform；
-- InputTarget 的变换；
+- InputTarget 的 transform；
 - App 侧 MotionEvent 坐标空间。
 
-### 4.5 策略介入入队与分发两个阶段
+### 4.5 策略介入入队与 dispatching 两个阶段
 
 可信按键进入 InputDispatcher 时可调用 `interceptKeyBeforeQueueing()`；准备发往焦点窗口前还可异步执行 `interceptKeyBeforeDispatching()`。后者的结果可以继续、跳过或延迟重试。
 
@@ -297,7 +297,7 @@ PhoneWindowManager 是 policy 的主要 Java 实现，但不同系统键并不�
 
 Android 17 支持 targeted injection 校验，并根据窗口 `InputConfig` 处理 `DROP_INPUT`、`DROP_INPUT_IF_OBSCURED` 等条件。窗口遮挡、UID/token 不匹配、连接不存在或目标不允许注入，都可能让事件在进入 App 前被拒绝。
 
-这类问题通常伴随 InputDispatcher 警告或 injection result。它与应用 View 返回 `false` 分属两个阶段。
+这类问题通常伴随 InputDispatcher warning 或 injection result。它与应用 View 返回 `false` 分属两个阶段。
 
 ---
 
@@ -326,7 +326,7 @@ socketpair(AF_UNIX, SOCK_SEQPACKET, 0, sockets);
 
 ### 5.2 “Input 不走 Binder”需要加限定
 
-窗口事件载荷和完成消息通过 AF_UNIX `SOCK_SEQPACKET` 传输。Binder 仍参与：
+窗口事件 payload 和完成消息通过 AF_UNIX `SOCK_SEQPACKET` 传输。Binder 仍参与：
 
 - 创建/移除通道的控制调用；
 - 把 client fd 与 token 交给目标进程；
@@ -385,7 +385,7 @@ fd 可读时：
 
 ### 6.2 MotionEvent 可能在帧边界批量消费
 
-`WindowInputEventReceiver.onBatchedInputEventPending()` 默认调用 `scheduleConsumeBatchedInput()`，通过 Choreographer 的 `CALLBACK_INPUT` 在 VSYNC 附近消费批次。应用请求 unbuffered input 时可走立即消费路径。
+`WindowInputEventReceiver.onBatchedInputEventPending()` 默认调用 `scheduleConsumeBatchedInput()`，通过 Choreographer 的 `CALLBACK_INPUT` 在 VSYNC 附近消费 batch。应用请求 unbuffered input 时可走立即消费路径。
 
 这有两个重要含义：
 
@@ -398,9 +398,9 @@ fd 可读时：
 
 `enqueueInputEvent()` 按收到顺序维护 `mPendingInputEventHead/Tail`，并用 `aq:pending:<window>` trace counter 记录数量。`doProcessInputEvents()` 逐项取出，再调用 `deliverInputEvent()`。
 
-Android 17 同时创建同步和异步轨迹：
+Android 17 同时创建同步和异步 trace：
 
-- 同步切片 `deliverInputEvent src=...` 覆盖这次 Java 方法调用；
+- 同步 slice `deliverInputEvent src=...` 覆盖这次 Java 方法调用；
 - async `deliverInputEvent` 从开始 deliver 持续到 `finishInputEvent()`，可跨越异步 IME stage。
 
 因此，较短的同步 `deliverInputEvent` slice ID 的 async 结束，并收到原生 `FINISHED` 消息。
@@ -421,7 +421,7 @@ NativePreImeInputStage
 
 pointer event 在满足条件时可以从 `mFirstPostImeInputStage` 开始，跳过前置 IME 阶段；按键则常需经过 IME 与 pre-IME。`AsyncInputStage` 可能把事件暂存，等待 native queue 或 IME 回调，再继续传递。
 
-每个阶段的结果大致分为：
+每个 stage 的结果大致分为：
 
 - finish handled / unhandled；
 - forward 到下一 stage；
@@ -429,7 +429,7 @@ pointer event 在满足条件时可以从 `mFirstPostImeInputStage` 开始，跳
 
 事件只有在 `ViewRootImpl.finishInputEvent()` 里调用 receiver 的 `finishInputEvent(event, handled)` 后，client 才尝试发回 `FINISHED`。
 
-### 6.5 进入窗口与 View 树
+### 6.5 进入 Window 与 View 树
 
 触摸在 `ViewPostImeInputStage.processPointerEvent()` 中调用根 View 的 `dispatchPointerEvent()`。对普通 Activity 窗口，主要路径可以概括为：
 
@@ -446,9 +446,9 @@ Activity 获得窗口级处理机会；未消费时继续进入 DecorView/ViewGr
 
 ### 6.6 ViewGroup 的目标并非永远不变
 
-DOWN 时，ViewGroup 按绘制顺序、坐标和可接收状态寻找子 View，并用 `TouchTarget` 记录目标。后续事件通常沿这条链发送，但也有例外：
+DOWN 时，ViewGroup 按绘制顺序、坐标和可接收状态寻找 child，并用 `TouchTarget` 记录目标。后续事件通常沿这条链发送，但也有例外：
 
-- 父 ViewGroup 后续拦截时，原子 View 收到 `ACTION_CANCEL`；
+- 父 ViewGroup 后续拦截时，原 child 收到 `ACTION_CANCEL`；
 - `requestDisallowInterceptTouchEvent(true)` 影响父级拦截，但系统仍可在特定条件下取消；
 - motion-event splitting 可把不同 pointer id 分给不同 child；
 - child 移除、窗口失焦或系统取消会清理目标。
@@ -504,9 +504,9 @@ InputDispatcher 此时保留 pending event，并用 focused application 的 time
 Android 17 的 dispatcher loop 在 flag `enable_anr_warning_callback_input_dispatcher` 生效时调用 `processPreAnrsLocked()`。当前实现只委托 `processNoFocusedWindowPreAnrLocked()`：
 
 - 预警点是 full timeout 结束前 `max(timeout / 2, 默认 pre-ANR window)`；
-- 默认 pre-ANR 窗口的未乘数基值为 2000 ms；
-- 只通知策略，不自行弹框，也不把应用标记为无响应；
-- 正式 ANR 仍在超时到期且最终状态复查失败后发生。
+- 默认 pre-ANR window 的未乘数基值为 2000 ms；
+- 只通知 policy，不自行弹框，也不把应用标记为无响应；
+- 正式 ANR 仍在 timeout 到期且最终状态复查失败后发生。
 
 它不能概括为所有 wait-queue ANR 都有“双阶段预警”。`includeAnrInfo` flag 影响 Java `TimeoutRecord` 是否补充 event id/time/timeout 信息，是另一个边界。
 
@@ -558,7 +558,7 @@ InputDispatcher 的 latency aggregator 本身就使用 read-to-deliver、deliver
 | `iq` 持续升高 | Dispatcher 未跟上 listener 输入 | Dispatcher 线程调度、policy、锁、目标计算 |
 | `oq:<window>` 堆积 | 目标已定但 channel 未成功持续发布 | socket full、connection 状态、wait queue |
 | `wq:<window>` 年龄变大 | 已发布、client 未完成 | consumeTime、App 主线程、IME/View、FINISHED |
-| `aq:pending:<window>` 升高 | Java ViewRoot 待处理队列堆积 | 主线程消息与批次消费 |
+| `aq:pending:<window>` 升高 | Java ViewRoot pending queue 堆积 | 主线程消息与 batch 消费 |
 | `deliverInputEvent` async 很长 | App pipeline 尚未 finish | 具体 InputStage、IME、View callback |
 
 counter 名包含 channel/window 名，trace 里可能被截断；多窗口应用必须先对 token、pid、title 和 display，避免看错连接。
@@ -607,7 +607,7 @@ counter 名包含 channel/window 名，trace 里可能被截断；多窗口应�
 保存 ANR 前后的：
 
 - `dumpsys input`，重点看 focused state、pending event、connections、outbound/wait queue；
-- ANR 轨迹与主线程栈；
+- ANR trace 与主线程 stack；
 - event id 的 publish/consume/finish；
 - 窗口 dispatching timeout 与 `HwTimeoutMultiplier()`；
 - policy、IME、Binder 和 socket 状态；
@@ -620,13 +620,13 @@ counter 名包含 channel/window 名，trace 里可能被截断；多窗口应�
 窗口创建失败且没有正常的 `oq/wq` 时，检查：
 
 - `socketpair()` 的 `EMFILE`、`ENFILE`、`ENOMEM`；
-- WindowState 是否拿到令牌；
+- WindowState 是否拿到 token；
 - client fd 是否成功 parcel 到 App；
 - App 退出、窗口销毁后 `removeInputChannel()` 是否执行；
 - connection 是否 BROKEN/ZOMBIE；
 - WMS 窗口移除与最新 `WindowInfosUpdate` 是否到达。
 
-通道尚未建立时，不会出现该窗口正常的等待队列 ANR 证据。
+通道尚未建立时，不会出现该窗口正常的 wait-queue ANR 证据。
 
 ---
 
@@ -649,8 +649,8 @@ finish 表示应用对该输入消息的处理阶段结束，并把 handled 状�
 - `doFrame()` 已执行；
 - RenderThread 已提交；
 - GPU 已完成；
-- SurfaceFlinger 已锁存；
-- HWC 已送显；
+- SurfaceFlinger 已 latch；
+- HWC 已 present；
 - 面板已经扫描到对应像素。
 
 输入到显示延迟必须继续跟踪关联帧。
@@ -672,7 +672,7 @@ finish 表示应用对该输入消息的处理阶段结束，并把 handled 状�
 | Android 16 / API 36 | 延续 InputProcessor、policy stale 与 libinputflinger 默认进程边界 |
 | Android 17 / API 37 | 当前 listener chain、`android.input.inputevent`、pre-no-focus-ANR flag、Rust InputFilter bridge 与 `SOCK_SEQPACKET` InputTransport 作为版本锚点 |
 
-版本表只描述已核对的源码形态，不把目录出现时间当作功能首次发布证明。对旧设备做归因时，应使用对应 release tag；厂商也可能调整任务配置文件、输入 HAL、过滤阶段与轨迹配置。
+版本表只描述已核对的源码形态，不把目录出现时间当作功能首次发布证明。对旧设备做归因时，应使用对应 release tag；厂商也可能调整 task profile、input HAL、过滤 stage 与 tracing 配置。
 
 ---
 
@@ -681,7 +681,7 @@ finish 表示应用对该输入消息的处理阶段结束，并把 handled 状�
 - `common/drivers/input/evdev.c`：evdev client buffer、read/poll 和用户空间 ABI
 - `frameworks/native/services/inputflinger/reader/EventHub.cpp`：epoll、inotify、RawEvent 时间戳
 - `frameworks/native/services/inputflinger/reader/InputReader.cpp`：Reader loop、mapper 输出与锁边界
-- `frameworks/native/services/inputflinger/InputManager.cpp`：Android 17 监听阶段的构造顺序
+- `frameworks/native/services/inputflinger/InputManager.cpp`：Android 17 listener stage 的构造顺序
 - `frameworks/native/services/inputflinger/InputProcessor.cpp`：异步 MotionClassifier
 - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`：目标选择、队列、publish、ANR、window-info 更新
 - `frameworks/native/services/inputflinger/dispatcher/AnrTracker.cpp`：按 timeout/token 排序的超时索引
