@@ -59,28 +59,11 @@ task9_review_notes_r2: "2026-06-06 Task9 idle-audit: auto-fixed。P0 0 / P1 1 / 
 ---
 # 其他响应速度场景
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 页面跳转速度：Activity/Fragment 切换的耗时分析
-- 🔹 Tab 切换速度：ViewPager2 的懒加载策略
-- 🔹 点击响应速度：从 onClick 到视觉反馈的完整路径
-- 🔹 搜索响应速度：实时搜索的防抖与预加载
-
-### 扩展（可选深入）
-
-- 🔸 深链（DeepLink）跳转的响应速度优化
-- 🔸 Widget 点击响应速度的特殊考量
-
-<!-- outline-end -->
-
 ## 把“响应快”定义成可测量的终点
 
 启动完成后，用户仍会不断触发页面跳转、Tab 切换、点击和搜索。每个场景都要同时记录起点与终点；只测回调耗时，无法回答像素何时出现，也无法解释数据何时可用。
 
-本文采用下面的测量边界：
+各场景采用下面的测量边界：
 
 | 场景 | 起点 | 第一个终点 | 业务终点 |
 | --- | --- | --- | --- |
@@ -92,7 +75,7 @@ task9_review_notes_r2: "2026-06-06 Task9 idle-audit: auto-fixed。P0 0 / P1 1 / 
 
 起点也要写清楚。`ACTION_DOWN`、`ACTION_UP`、`onClick()` 和导航调用是不同时间点；搜索输入、debounce 到期和请求发出也属于不同阶段。Perfetto 适合关联 Input、主线程、Binder、FrameTimeline 与自定义 trace，Macrobenchmark 适合重复执行固定交互。
 
-平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。输入驱动、调度、CPU frequency 和 I/O 的分析以内核 `android17-6.18-2026-06_r6` 为准。本文不使用脱离设备、刷新率和业务入口的固定毫秒收益。
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。输入驱动、调度、CPU frequency 和 I/O 的分析以内核 `android17-6.18-2026-06_r6` 为准。固定毫秒收益不能脱离设备、刷新率和业务入口使用。
 
 ## 页面跳转：Activity 与 Fragment 要分开看
 

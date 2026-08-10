@@ -62,27 +62,9 @@ last_task6_audit: "2026-07-09T10:20:48.680322"
 
 # Kotlin Coroutine 性能实践
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Dispatcher 选择对性能的影响：Main / IO / Default / Unconfined 的底层实现与适用场景
-- 🔹 Coroutine 上下文切换开销 vs 线程切换开销的量化对比
-- 🔹 结构化并发（Structured Concurrency）对资源泄漏的防护
-- 🔹 Flow 的背压与性能：conflate、buffer、collectLatest 的取舍
-- 🔹 Coroutine 在 Perfetto 中的追踪：app tracing、调试器与 CPU Profiler 的组合
-
-### 扩展（可选深入）
-
-- 🔸 Coroutine 与 RxJava 的性能对比
-- 🔸 自定义 Dispatcher 的场景与实践
-
-<!-- outline-end -->
-
 协程能把等待从线程中移开，也能把过多的小任务塞进同一条调度路径。判断性能时要区分四件事：协程是否挂起、continuation 是否需要 dispatch、目标线程何时得到 CPU、业务代码运行多久。把这四段都叫作“协程切换”会掩盖瓶颈。
 
-本节按 kotlinx.coroutines 1.11.0 的公开 API 与 Android 17 / API 37 核对。平台源码锚点为 android-17.0.0_r1；涉及线程调度时，内核锚点为 android17-6.18-2026-06_r6。协程库版本可以独立升级，不能用 Android API 级别推断 Dispatcher 的内部实现。
+以下说明按 kotlinx.coroutines 1.11.0 的公开 API 与 Android 17 / API 37 核对。平台源码锚点为 android-17.0.0_r1；涉及线程调度时，内核锚点为 android17-6.18-2026-06_r6。协程库版本可以独立升级，不能用 Android API 级别推断 Dispatcher 的内部实现。
 
 ## 一张图式化的性能模型
 
@@ -173,7 +155,7 @@ class ThumbnailRepository(
 - **dispatch**：Dispatcher 决定内联执行或排队。
 - **内核上下文切换**：CPU 从一个线程切到另一个线程，可由 `sched_switch` 观察。
 
-一个协程恢复可能内联完成，也可能先排队再触发多次调度。一个 Linux 线程切换也可能与协程无关，例如 GC、Binder、RenderThread 或其他进程抢占。旧文使用“协程几十到几百纳秒、线程 1–10 微秒”的固定范围，缺少硬件、ART、协程版本、CPU 频率和队列状态，不能作为 Android 项目结论。
+一个协程恢复可能内联完成，也可能先排队再触发多次调度。一个 Linux 线程切换也可能与协程无关，例如 GC、Binder、RenderThread 或其他进程抢占。“协程几十到几百纳秒、线程 1–10 微秒”的固定范围缺少硬件、ART、协程版本、CPU 频率和队列状态，不能作为 Android 项目结论。
 
 ### dispatch 结构可以精确计数
 
@@ -478,7 +460,7 @@ class NativeSessionExecutor : Closeable {
 
 - Kotlin 1.3 稳定了语言层协程支持，kotlinx.coroutines 继续独立演进。
 - AndroidX Lifecycle 后续提供 `viewModelScope`、`lifecycleScope` 与 `repeatOnLifecycle`，把常见 Android owner 接入 Job 生命周期。
-- kotlinx.coroutines 的 Default/IO 调度器、Flow 融合和调试支持持续变化；本文以 1.11.0 公开 API 为准，不承诺内部线程数量和队列实现长期不变。
+- kotlinx.coroutines 的 Default/IO 调度器、Flow 融合和调试支持持续变化；这里以 1.11.0 公开 API 为准，不承诺内部线程数量和队列实现长期不变。
 - Android 12 / API 31 引入 `PerformanceHintManager`；Android 14 / API 34 公开 `Session.setThreads()`。它们是线程级性能提示接口，不是协程调度器。
 - Android 17 / API 37 的 MessageQueue 改为无全局队列锁实现；Main Dispatcher 仍执行在 Android 主线程。
 
