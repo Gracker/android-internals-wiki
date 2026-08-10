@@ -61,29 +61,13 @@ last_deepseek_cn_review_at: 2026-06-15
 last_task6_audit: 2026-07-05
 ---
 
-
 # 内存优化案例集
-
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 Bitmap 内存治理实战
-- 🔹 Native 内存泄漏排查案例
-- 🔹 大型 App 内存预算管理
-
-### 扩展(可选深入)
-
-- 🔸 (待扩展)
-
-<!-- outline-end -->
 
 ## 案例应该回答什么
 
 内存曲线上升只是现象。可复用的案例还要回答：哪个业务事件触发增长，增长属于哪类内存，哪些对象或调用栈仍然存活，谁拥有这些资源，修改后怎样证明问题已经消失。
 
-本节以 Android 17（API 37）和 AOSP `android-17.0.0_r1` 为平台锚点。案例涉及 Android 10 引入的 heapprofd、Android 8.0 以后 Bitmap 像素数据的位置等历史边界时，会保留相应版本信息。ART 堆、Native Heap、GC 和线上采集机制分别见 23.1、23.2、23.3、23.4、23.7；OOM 分类见 20.5。
+平台锚点为 Android 17（API 37）和 AOSP `android-17.0.0_r1`。案例涉及 Android 10 引入的 heapprofd、Android 8.0 以后 Bitmap 像素数据的位置等历史边界时，会保留相应版本信息。ART 堆、Native Heap、GC 和线上采集机制分别见 23.1、23.2、23.3、23.4、23.7；OOM 分类见 20.5。
 
 一份可信的内存复盘应形成下面这条证据链：
 
@@ -139,16 +123,16 @@ last_task6_audit: 2026-07-05
 
 ### Android 17 上 Bitmap 的内存含义
 
-Android Developers 的版本说明指出：Android 8.0（API 26）及以后，Bitmap 的像素数据位于 native heap [来源: Android Developers — Managing Bitmap Memory]。Android 17 的 AOSP `Bitmap.java` 还能看到更具体的关联方式 [来源: AOSP `android-17.0.0_r1` `Bitmap.java`]：
+Android Developers 的版本说明指出：Android 8.0（API 26）及以后，Bitmap 的像素数据位于 native heap。Android 17 的 AOSP `Bitmap.java` 还能看到更具体的关联方式：
 
 - Java `Bitmap` 保存 `mNativePtr`；
-- `registerNativeAllocation()` 使用 `NativeAllocationRegistry`登记 native 对象与像素分配；
+- `registerNativeAllocation()` 使用 `NativeAllocationRegistry` 登记 native 对象与像素分配；
 - 登记的像素大小来自 `getAllocationByteCount()`；
 - `recycle()` 会进入 native 回收逻辑并更新相关登记。
 
 这解释了为什么 Java 对象仍然可达时，相关 native 内存也可能继续留在进程中。但“API 26 以后像素在 native heap”不等于所有图片内存都会稳定显示在 `dumpsys meminfo` 的某一个栏目。Hardware Bitmap、图形缓冲、共享映射和厂商实现可能影响分类结果，应同时看对象证据、Graphics、Native Heap 与总体 PSS。
 
-`getAllocationByteCount()`比“宽 × 高 × 每像素字节数”更适合作为单个 Bitmap 的已分配容量。Android 17 源码注释明确说明：Bitmap 被 `inBitmap` 复用或手动重配置后，这个值可以大于 `getByteCount()`，并在该 Bitmap 生命周期内保持不变 [来源: AOSP `android-17.0.0_r1` `Bitmap.java` — `getAllocationByteCount()` 注释]。因此，容量异常既可能来自当前解码尺寸，也可能来自复用了更大的存储。
+`getAllocationByteCount()` 比“宽 × 高 × 每像素字节数”更适合作为单个 Bitmap 的已分配容量。Android 17 源码注释明确说明：Bitmap 被 `inBitmap` 复用或手动重配置后，这个值可以大于 `getByteCount()`，并在该 Bitmap 生命周期内保持不变。因此，容量异常既可能来自当前解码尺寸，也可能来自复用了更大的存储。
 
 下面的代码用于生成一条不含文件路径、URL 或业务标识的 Bitmap 观测记录。它只采集事实，不在基础函数里写统一告警阈值。
 
@@ -252,16 +236,16 @@ fi
 
 ### heapprofd 的适用边界
 
-heapprofd 从 Android 10 开始提供按调用栈归因的堆分配分析，默认跟踪 `malloc/free`、`new/delete` 等 native 分配 [来源: Perfetto — Callstack-based Allocation Profiling]。它记录的是采样时间窗内的分配与释放，因此更适合回答“哪些调用栈保留了多少 native 分配”，不能解释所有 Graphics、文件映射或自定义分配器占用。
+heapprofd 从 Android 10 开始提供按调用栈归因的堆分配分析，默认跟踪 `malloc/free`、`new/delete` 等 native 分配。它记录的是采样时间窗内的分配与释放，因此更适合回答“哪些调用栈保留了多少 native 分配”，不能解释所有 Graphics、文件映射或自定义分配器占用。
 
 设备与应用还要满足权限条件：
 
 - debug Android build 可分析更广的进程集合，但关键系统服务仍可能受 SELinux 策略限制；
 - 量产 user build 只允许分析 manifest 标记为 debuggable 或 profileable 的应用；
-- `<profileable android:shell="true"/>`允许 shell 侧的 Perfetto、simpleperf 等工具分析发布构建，且比 debuggable 构建更适合性能测量 [来源: Android Developers — `<profileable>` manifest element]；
+- `<profileable android:shell="true"/>` 允许 shell 侧的 Perfetto、simpleperf 等工具分析发布构建，且比 debuggable 构建更适合性能测量；
 - 调用栈需要与被测构建严格匹配的符号文件。发布构建还要保留对应的 native 符号和 Java/Kotlin 映射文件。
 
-Perfetto 官方推荐使用仓库中的 `tools/heap_profile`脚本。下面的命令让进程名由调用参数传入，持续采集到用户中断；输出目录由官方脚本创建并在结束时打印。
+Perfetto 官方推荐使用仓库中的 `tools/heap_profile` 脚本。下面的命令让进程名由调用参数传入，持续采集到用户中断；输出目录由官方脚本创建并在结束时打印。
 
 ```bash
 #!/usr/bin/env bash
@@ -385,7 +369,6 @@ P50、P90、P99 是对样本分布的描述，不是天然的门禁线。样本�
 
 ## 参考资料
 
-- [货拉拉司机 Android 端内存治理实践（本地归档）](../../../../Cubox/货拉拉司机Android端内存治理实践-2024-10-08.md)
 - [Android Developers：Manage your app's memory](https://developer.android.com/topic/performance/memory)
 - [Android Developers：Managing Bitmap Memory](https://developer.android.com/topic/performance/graphics/manage-memory)
 - [Android Developers：Loading Large Bitmaps Efficiently](https://developer.android.com/topic/performance/graphics/load-bitmap)

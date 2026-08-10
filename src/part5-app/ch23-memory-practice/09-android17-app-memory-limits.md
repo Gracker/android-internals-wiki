@@ -43,43 +43,9 @@ gap_source: "官方文档/每日信息/章节深挖/Clippings结构参考"
 
 # 23.9 Android 17 App Memory Limits 与内存泄漏治理
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 Android 17 App Memory Limits 的边界
-说明该限制按设备总 RAM 建立应用内存上限，面向所有运行在 Android 17 上的应用；区分系统级极端内存泄漏限制、LMKD 压力杀进程、Java Heap OOM 与 Native/匿名页膨胀。
-
-### 🔹 MemoryLimiter:AnonSwap 的退出归因
-围绕 `ApplicationExitInfo.getDescription()`、`REASON_OTHER` 与 `MemoryLimiter:AnonSwap` 字符串建立线上归因路径，说明它能回答的问题和不能单独证明的原因。
-
-### 🔹 TRIGGER_TYPE_ANOMALY 与触发式堆转储
-梳理 `ProfilingManager` 触发式采集在内存上限命中时的使用方式，说明 heap dump、trace、隐私与采样成本的工程边界。
-
-### 🔹 Android Studio Panda LeakCanary Profiler 工作流
-整理 IDE 内置 LeakCanary task 的适用场景：本地泄漏复现、源码定位、和线上退出归因互补；避免把开发期泄漏检测当成线上监控替代。
-
-### 🔹 内存基线与灰度门禁
-定义版本发布前后的 PSS/RSS/Java Heap/Native Heap/Anon Swap 基线，给出按设备 RAM 档位、页面场景和长驻时长拆分的观测维度。
-
-### 🔹 与 OOM 治理、稳定性治理的交叉
-把本节定位为 Android 17 行为变更下的实战补充：详见 20.5 OOM 治理、23.1 内存泄漏检测与治理、26.9 ApplicationExitInfo 与进程退出归因。
-
-## 扩展
-
-### 🔸 AOSP MemoryLimiter 源码路径
-追踪 Android 17 中 MemoryLimiter 与进程退出记录的具体实现路径，补齐 ActivityManager / ProcessRecord / ApplicationExitInfo 的调用路径。
-
-### 🔸 设备 RAM 档位与阈值策略
-整理低内存设备、主流旗舰、平板/桌面窗口化场景下限制命中的差异，避免给出无设备条件的固定阈值。
-
-### 🔸 线上告警与隐私合规
-补充 heap dump 采集的用户授权、数据脱敏、上传策略和采样率控制。
-
-<!-- outline-end -->
-
 Android 17（API 37）新增 App Memory Limits，用于处理极端内存泄漏和异常内存膨胀。它提供了新的系统退出信号与触发式诊断材料，也改变了 Android 17 设备上的内存回归测试方式。
 
-本节以 AOSP `android-17.0.0_r1` 为平台源码锚点，以 `android17-6.18-2026-06_r6` 为内核文档锚点。Java Heap OOM、LMKD、一般内存泄漏与线上监控分别见 20.5、4.4、23.1、23.7；本节只讨论 MemoryLimiter 的特有边界。
+平台源码锚点为 AOSP `android-17.0.0_r1`，内核文档锚点为 `android17-6.18-2026-06_r6`。Java Heap OOM、LMKD、一般内存泄漏与线上监控分别见 20.5、4.4、23.1、23.7；这里只讨论 MemoryLimiter 的特有边界。
 
 ## 适用范围：不按 targetSdk 限制，只在部分设备启用
 
@@ -151,7 +117,7 @@ Android 11（API 30）引入 `ActivityManager.getHistoricalProcessExitReasons()`
 - `ApplicationExitInfo.getReason()` 等于 `REASON_OTHER`；
 - `getDescription()` 包含 `MemoryLimiter:AnonSwap`，并可能附带其他信息。
 
-`android-17.0.0_r1` 的 `ApplicationExitInfo.java`没有专用的 memory-limiter reason 常量，因此本节不使用其他 reason 值代替这组条件。
+`android-17.0.0_r1` 的 `ApplicationExitInfo.java` 没有专用的 memory-limiter reason 常量，因此不使用其他 reason 值代替这组条件。
 
 下面的代码用于读取当前 UID 可见的历史退出记录，并把 MemoryLimiter 事件转换为单位明确的数据对象。
 
