@@ -240,7 +240,7 @@ mHandler.sendMessageAtTime(
 
 移动越过 TouchSlop、进入 scroll、收到额外 pointer down 或 `ACTION_CANCEL` 都可能取消长按。Android 17 还会处理 `MotionEvent.CLASSIFICATION_AMBIGUOUS_GESTURE`：在仍有长按候选时按配置倍率放大 slop，并延后长按；`CLASSIFICATION_DEEP_PRESS` 则可立即触发长按。这些分类来自输入路径，应用不应根据压力值再造一套互相冲突的规则。
 
-长按等待本身不会占用主线程。性能问题通常出现在 `onLongPress()` 回调，例如同步解码资源、访问磁盘或构建复杂弹窗。给回调添加应用轨迹，可以直接观察其执行时间。
+长按等待本身不会占用主线程。性能问题通常出现在 `onLongPress()` 回调，例如同步解码资源、访问磁盘或构建复杂弹窗。给回调添加应用 trace，可以直接观察其执行时间。
 
 ## View 手势冲突：先确认事件流属于谁
 
@@ -420,7 +420,7 @@ case MotionEvent.ACTION_MOVE:
 
 层级和节点数量会影响 `ACTION_DOWN` 的命中测试，也会增加父子分发、拦截和回调的机会；后续事件通常复用 `TouchTarget`。因此，不能用固定层数判断输入一定慢，也不能假设每个 `MOVE` 都重新遍历整棵树。
 
-优化前应在轨迹中找到具体的慢函数：
+优化前应在 Trace 中找到具体的慢函数：
 
 - `onInterceptTouchEvent()` 或 `onTouchEvent()` 中的业务代码；
 - 手势回调触发的 `requestLayout()`、同步 inflate 或数据绑定；

@@ -80,9 +80,9 @@ last_deepseek_cn_review_at: 2026-07-02
 
 在 Perfetto 里看到 App 的触摸事件流以 `ACTION_CANCEL` 结束，或者从某个时刻开始不再有后续 `MOVE`，原因未必在 App。左右边缘返回手势开始时，SystemUI 的 gesture monitor 与 App 可以同时收到同一条 pointer stream；系统确认这是返回手势后，再通过 `pilferPointers()` 把后续事件交给手势处理方，并取消原窗口的触摸目标。
 
-Android 10（API 29）引入全手势导航：从左右边缘向内滑动表示返回，底部上滑和横向滑动分别负责主屏、最近任务或快速切换。系统不会在 `ACTION_DOWN` 到达前无条件挡住应用；边缘返回采用“并行观察、达到条件后接管”的方式。这个时序是分析手势冲突和输入延迟的基础。
+Android 10（API 29）引入全手势导航：从左右边缘向内滑动表示返回，底部上滑和横向滑动分别负责 Home、最近任务或快速切换。系统不会在 `ACTION_DOWN` 到达前无条件挡住 App；边缘返回采用“并行观察、达到条件后接管”的方式。这个时序是分析手势冲突和输入延迟的基础。
 
-Android 13（API 33）开始提供预测性返回 API。Android 15 将返回主屏、跨任务和跨 Activity 的系统动画移出开发者选项；Android 16 又把它设为 `targetSdkVersion >= 36` App 的默认行为。返回处理由此增加预提交阶段：系统在手指移动时解析返回目标、生成进度并准备预览，松手后才提交或取消。
+Android 13（API 33）开始提供 Predictive Back API。Android 15 将 back-to-home、cross-task、cross-activity 系统动画移出开发者选项；Android 16 又把它设为 `targetSdkVersion >= 36` App 的默认行为。返回处理由此增加预提交阶段：系统在手指移动时解析返回目标、生成进度并准备预览，松手后才提交或取消。
 
 以下分析以 `android-17.0.0_r1` 为 source anchor，依次说明 SystemUI 如何观察并接管 edge touch、App 如何声明有限的 gesture exclusion region、Predictive Back 如何分发 progress 与 commit event，以及 Perfetto 能确认哪些 evidence、不能替代哪些现场信息。
 
@@ -135,7 +135,7 @@ flowchart TD
     L -->|取消| N["onBackCancelled 与预览回撤"]
 ```
 
-左侧旧式分支在 Android 17 源码中仍是明确的回退路径，不能简单视为“只存在于 Android 10–12”。当 `mBackAnimation == null` 时，越过阈值后由 SystemUI pilfer，`BackPanelController` 判断提交后，`triggerBack()` 注入 `KEYCODE_BACK` 的 down/up。
+左侧 legacy 分支在 Android 17 源码中仍是明确的回退路径，不能简单视为“只存在于 Android 10–12”。当 `mBackAnimation == null` 时，越过阈值后由 SystemUI pilfer，`BackPanelController` 判断提交后，`triggerBack()` 注入 `KEYCODE_BACK` 的 down/up。
 
 右侧 ahead-of-time 分支中，`ACTION_DOWN` / `MOVE` 经 `dispatchToBackAnimation()` 切到 Shell executor。`BackAnimationController` 调用 `IActivityTaskManager.startBackNavigation()` 获取 `BackNavigationInfo`，再决定使用系统 animator 还是 App callback。`setTriggerBack(true)` 只是记录“松手后提交”的状态；收到 `ACTION_UP` 后，Shell 才执行 `onBackInvoked()` 或启动 post-commit animation。取消路径则执行 `onBackCancelled()`。如果没有取得 `BackNavigationInfo`，源码仍保留注入 back key 的兜底。
 
@@ -147,7 +147,7 @@ flowchart TD
 
 ### 系统手势排除区域
 
-当应用在边缘放置抽屉、滑块或画布手势时，可以通过 `View.setSystemGestureExclusionRects()` 上报局部矩形。坐标以该 View 布局后的局部坐标为准，View 移动或尺寸变化后需要重新计算。
+当 App 在边缘放置抽屉、滑块或画布手势时，可以通过 `View.setSystemGestureExclusionRects()` 上报局部矩形。坐标以该 View 布局后的局部坐标为准，View 移动或尺寸变化后需要重新计算。
 
 下面的示例只排除抽屉把手实际占用的左侧区域：
 
@@ -159,15 +159,15 @@ override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
 }
 ```
 
-`ViewRootImpl` 的 `ViewRootRectTracker` 收集各 View 的矩形，转换到窗口坐标后通过 `WindowSession.reportSystemGestureExclusionChanged()` 上报。WMS 的 `DisplayContent.calculateSystemGestureExclusion()` 按窗口 Z 序、可触摸区域和显示坐标汇总，再通过 `ISystemGestureExclusionListener` 把限制后的 `Region` 通知 SystemUI。上报成功只说明 WMS 收到了请求，生效范围还要经过可触摸区域相交和配额计算。
+`ViewRootImpl` 的 `ViewRootRectTracker` 收集各 View 的 rect，转换到窗口坐标后通过 `WindowSession.reportSystemGestureExclusionChanged()` 上报。WMS 的 `DisplayContent.calculateSystemGestureExclusion()` 按窗口 Z 序、可触摸区域和显示坐标汇总，再通过 `ISystemGestureExclusionListener` 把限制后的 `Region` 通知 SystemUI。上报成功只说明 WMS 收到了请求，生效范围还要经过可触摸区域相交和配额计算。
 
 ### 系统手势区域限制
 
 `mSystemGestureExclusionLimit` 限制左右边缘各自可排除的**纵向总高度**，不限制矩形的横向宽度。Android 17 的 `WindowManagerConstants` 保证该值至少为 200 dp；设备可以通过 `system_gesture_exclusion_limit_dp` 配置更大的值。`addToGlobalAndConsumeLimit()` 对边缘相交区域逐个消耗高度预算，超出部分会被裁掉。
 
-WMS 同时保留受限与未受限两个 `Region`。SystemUI 用受限区域决定系统是否让开；触点只命中未受限区域时，表示应用申请过排除，但该片段没有获得配额，系统仍可识别返回，并把它记为被拒绝的排除区域。遇到“同一条边有些位置有效、有些位置仍触发返回”时，应检查纵向预算、窗口遮挡与最终获批区域。
+WMS 同时保留 restricted 与 unrestricted 两个 `Region`。SystemUI 用 restricted region 决定系统是否让开；触点只命中 unrestricted region 时，表示 App 申请过 exclusion，但该片段没有获得配额，系统仍可识别返回，并把它记为 rejected exclusion。遇到“同一条边有些位置有效、有些位置仍触发返回”时，应检查纵向预算、窗口遮挡与最终 granted region。
 
-部分系统窗口和特定 sticky immersive 场景可以绕过普通限制，这是平台权限和窗口策略，不代表第三方应用可以无限排除屏幕边缘。
+部分系统窗口和特定 sticky immersive 场景可以绕过普通限制，这是平台权限和窗口策略，不代表第三方 App 可以无限排除屏幕边缘。
 
 ### WindowInsets 与手势区域
 
@@ -198,7 +198,7 @@ Predictive Back 增加预提交阶段。WM Shell 在手势中调用 `startBackNa
 
 Platform callback 通过 `OnBackInvokedDispatcher` 注册，AndroidX callback 通过 `OnBackPressedDispatcher` 管理。`OnBackInvokedCallback` 只有提交通知；需要 started、progressed 和 cancelled 时，应使用 `OnBackAnimationCallback`，或交给 AndroidX / Navigation / Compose 的对应 API。
 
-`android:enableOnBackInvokedCallback` 的语义还受目标 SDK 影响。Android 15 及更早版本用它选择是否加入 ahead-of-time 模型；Android 16 起，运行在 Android 16+ 且目标版本为 36+ 的应用默认启用，仍可暂时设为 `false` 退出。该属性不等同于 AndroidX `OnBackPressedCallback.enabled`，也不能替代回调生命周期管理。
+`android:enableOnBackInvokedCallback` 的语义还受 target SDK 影响。Android 15 及更早版本用它选择是否加入 ahead-of-time 模型；Android 16 起，运行在 Android 16+ 且 target 36+ 的 App 默认启用，仍可暂时设为 `false` 退出。该属性不等同于 AndroidX `OnBackPressedCallback.enabled`，也不能替代 callback 生命周期管理。
 
 ### 版本演进的时间线
 
@@ -216,7 +216,7 @@ API 37 的 observer priority 值为 `-2`。虽然普通注册参数声明了非�
 
 1. progress callback 每帧都可能执行。优先更新 `translationX`、`alpha`、scale 或已准备好的动画状态，避免在 `onBackProgressed()` 中做 I/O、Binder 同步调用、复杂布局或创建大量对象。
 2. cross-activity / cross-task / back-to-home 会同时涉及当前层、目标层和 Shell 动画。掉帧时要检查当前 App、目标 Activity 或 Launcher、WM Shell、SurfaceFlinger，不能只看当前 Activity 的 RenderThread。
-3. 只在提交时改变导航状态。若进度阶段就执行 `popBackStack()` 或 `finish()`，取消手势时很难恢复一致状态。
+3. 只在提交时改变导航状态。若 progress 阶段就执行 `popBackStack()` 或 `finish()`，取消手势时很难恢复一致状态。
 4. observer callback 适合轻量日志。它不消费 back，但仍运行在应用回调环境中，耗时工作应异步化。
 
 ## 边缘滑动检测的性能敏感点
@@ -251,7 +251,7 @@ Perfetto 能回答事件何时被读入、发给哪些窗口、哪条线程处�
 
 ### 最小抓取配置
 
-在量产 user 构建上，可用官方 quickstart 支持的 atrace 类别抓取线程调度、输入、窗口和图形基线：
+在量产 user build 上，可用官方 quickstart 支持的 atrace category 抓取线程调度、输入、窗口和图形基线：
 
 ```bash
 adb shell perfetto -o /data/misc/perfetto-traces/back-gesture.perfetto-trace -t 15s \
@@ -302,7 +302,7 @@ data_sources {
 
 把配置保存为 `back-gesture.pbtxt` 后，通过 `adb shell perfetto --txt -c - -o ... < back-gesture.pbtxt` 录制。`TRACE_MODE_TRACE_ALL` 会绕过调试构建上的隐私裁剪，记录完整坐标和按键内容，只能用于本地受控复现，不能用于现场或用户数据采集。需要外场规则时，应改用 `TRACE_MODE_USE_RULES` 和 redacted level。
 
-Trace Processor 的 `android.input` 模块提供 `android_motion_events` 和 `android_input_event_dispatch` 视图，可以用同一个 `event_id` 关联 MotionEvent 与窗口分发目标。`InputMonitorCompat` 自身还会写入 `InputMonitorCompat-edge-swipe-dispN created/receiver created/disposed` instant event；这些是监视器生命周期证据，不代表每次手势都一定出现同名长切片。
+Trace Processor 的 `android.input` 模块提供 `android_motion_events` 和 `android_input_event_dispatch` 视图，可以用同一个 `event_id` 关联 MotionEvent 与窗口分发目标。`InputMonitorCompat` 自身还会写入 `InputMonitorCompat-edge-swipe-dispN created/receiver created/disposed` instant event；这些是监视器生命周期证据，不代表每次手势都一定出现同名长 slice。
 
 ### 1. legacy back gesture：看 cancel 和注入链
 
@@ -327,7 +327,7 @@ Trace Processor 的 `android.input` 模块提供 `android_motion_events` 和 `an
 - App 日志中的请求 rect、`dumpsys window` 的 `mSystemGestureExclusion` 最终 display region，以及 SystemUI dump 中的 restricted / unrestricted region；
 - Perfetto 中该 pointer stream 是否被 pilfer，以及 SystemUI 判定线程是否及时运行。
 
-只看应用传给 `setSystemGestureExclusionRects()` 的列表，无法证明 WMS 批准了同样大小的区域；只看 Perfetto，也无法还原所有矩形的布局坐标。两组证据需要互相校验。
+只看 App 传给 `setSystemGestureExclusionRects()` 的列表，无法证明 WMS 批准了同样大小的区域；只看 Perfetto，也无法还原所有 rect 的布局坐标。两组证据需要互相校验。
 
 ## 常见问题与误区
 

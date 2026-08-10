@@ -63,17 +63,17 @@ verifier_checked: 2026-07-09
 
 # 3.7 InputDispatcher 反压与无响应窗口降级
 
-> **版本边界说明**：主线以 AOSP `android-17.0.0_r1` 为准。相关机制分批进入主线：`mAnrTracker` 和 `shouldPruneInboundQueueLocked()` 始于 Android 11，`processConnectionResponsiveLocked()` 始于 Android 12，`canReceiveForegroundTouches()` 始于 Android 13。Android 17 的无焦点窗口 ANR 活跃状态为 `mNoFocusedWindowAnrState`，保存应用、事件 ID、`timeoutDuration`、`timeoutEndTime` 和 ANR 预警标记。Android 16 及更早版本使用 `mAwaitedFocusedApplication` / `mNoFocusedWindowTimeoutTime` 等字段；Android 10 的实现还位于 `services/inputflinger/InputDispatcher.cpp`，ANR 等待走 `mInputTargetWaitCause` / `mInputTargetWaitTimeoutTime` / `onANRLocked()`。排查旧版本时要使用对应标签，不能把 Android 17 的字段名套回旧源码。涉及 CPU 调度或 channel fd 等内核侧证据时，内核锚点为 `android17-6.18-2026-06_r6`。
+> **版本边界说明**：主线以 AOSP `android-17.0.0_r1` 为准。相关机制分批进入主线：`mAnrTracker` 和 `shouldPruneInboundQueueLocked()` 始于 Android 11，`processConnectionResponsiveLocked()` 始于 Android 12，`canReceiveForegroundTouches()` 始于 Android 13。Android 17 的 no-focused-window ANR 活跃状态为 `mNoFocusedWindowAnrState`，保存 application、event id、`timeoutDuration`、`timeoutEndTime` 和 pre-ANR 标记。Android 16 及更早版本使用 `mAwaitedFocusedApplication` / `mNoFocusedWindowTimeoutTime` 等字段；Android 10 的实现还位于 `services/inputflinger/InputDispatcher.cpp`，ANR 等待走 `mInputTargetWaitCause` / `mInputTargetWaitTimeoutTime` / `onANRLocked()`。排查旧版本时要使用对应 tag，不能把 Android 17 的字段名套回旧源码。涉及 CPU 调度或 channel fd 等内核侧证据时，内核锚点为 `android17-6.18-2026-06_r6`。
 
 ## 为什么单独看 InputDispatcher 反压
 
-第 3.1 节给出 Input 事件从硬件到应用的完整路径，第 3.2 节讨论触摸响应延迟。这里聚焦 InputDispatcher 内部：事件已经进入 InputDispatcher，目标窗口却没有及时消费时，系统怎样限制积压、判定输入 ANR，并避免无响应窗口拖住新的输入目标。
+第 3.1 节给出 Input 事件从硬件到 App 的完整路径，第 3.2 节讨论触摸响应延迟。这里聚焦 InputDispatcher 内部：事件已经进入 InputDispatcher，目标窗口却没有及时消费时，系统怎样限制积压、判定 Input ANR，并避免无响应窗口拖住新的输入目标。
 
-这类问题在轨迹中容易误判。`waitQueue` 变长只说明事件已经发布到目标连接、尚未收到客户端的 `Finished` 回执；它不能证明应用业务代码已经读到事件，也不能直接等同于主线程 `MessageQueue` 变长。分析时要把 InputDispatcher 队列、App 主线程栈、Binder 事务、CPU 调度和窗口焦点变化放到同一个时间窗口。详见 9.3 节。
+这类问题在轨迹中容易误判。`waitQueue` 变长只说明事件已经发布到目标连接、尚未收到客户端的 `Finished` 回执；它不能证明 App 业务代码已经读到事件，也不能直接等同于主线程 `MessageQueue` 变长。分析时要把 InputDispatcher 队列、App 主线程栈、Binder 事务、CPU 调度和窗口焦点变化放到同一个时间窗口。详见 9.3 节。
 
 ## 输入通道的天然反压点
 
-InputDispatcher 到应用的事件数据面使用 `InputChannel`。窗口连接建立时，服务端和客户端各持有一端通道；事件分发阶段，`InputDispatcher::publishMotionEvent()` / `publishKeyEvent()` 经 `InputPublisher` 写入目标连接。事件载荷经通道文件描述符传输，不走 Binder；Binder 主要参与窗口和通道的建立、传递与策略回调。详见 1.17 节与 3.1 节。
+InputDispatcher 到 App 的事件数据面使用 `InputChannel`。窗口连接建立时，服务端和客户端各持有一端 channel；事件分发阶段，`InputDispatcher::publishMotionEvent()` / `publishKeyEvent()` 经 `InputPublisher` 写入目标连接。事件载荷经通道文件描述符传输，不走 Binder；Binder 主要参与窗口和 channel 的建立、传递与策略回调。详见 1.17 节与 3.1 节。
 
 AOSP android-17.0.0_r1 的 `InputDispatcher::startDispatchCycleLocked()` 在写入失败时会检查返回码。返回 `WOULD_BLOCK` 时，代码分两种情况处理：
 
@@ -149,7 +149,7 @@ Android 17 在功能开关 `mAnrWarningCallbackInputDispatcherEnabled` 开启时
 
 Perfetto 侧看 ATRACE counter。AOSP android-17.0.0_r1 里 `traceInboundQueueLengthLocked()` 写 `iq`，`traceOutboundQueueLength()` 写 `oq:<channel>`，`traceWaitQueueLength()` 写 `wq:<channel>`。这些是 counter，不是 slice。`wq` 持续上升说明 ACK 回路被压住；`oq` 上升更接近 channel 写入受限或 waitQueue 未释放；`iq` 上升可能是 dispatcher 前端积压、焦点等待或策略等待。
 
-判读时不要把 `wq` 当成 `MotionEvent` 批处理的直接证据。batching 和重采样要结合客户端 `InputConsumer` / `ViewRootImpl` 时序观察；InputDispatcher 的 `wq` 只说明已发布的分发项没有完成回执。详见 3.2 节。
+判读时不要把 `wq` 当成 `MotionEvent` batching 的直接证据。batching 和重采样要结合客户端 `InputConsumer` / `ViewRootImpl` 时序观察；InputDispatcher 的 `wq` 只说明已发布的分发项没有完成回执。详见 3.2 节。
 
 
 ## 与应用主线程卡顿、Binder 阻塞的归因边界
@@ -162,7 +162,7 @@ InputDispatcher 的 `waitQueue` 是症状入口。一个分发项停在其中，
 
 建议按以下顺序定位：先用 `dumpsys input` 或 Perfetto counter 确认 `wq/oq/iq` 的卡点；再看同一时间窗口目标 App 主线程的 call stack 和 sched 状态；如果主线程在 Binder 等待，沿 Binder transaction 查对端线程；如果主线程看起来空闲但 `wq` 不退，检查 App 进程是否得到调度、channel 是否 `BROKEN`、窗口是否已移除，以及该条目使用了哪个 window/application dispatching timeout。
 
-主线程长任务是常见原因，却不能覆盖所有输入 ANR；主线程卡顿也未必已经触发 InputDispatcher 超时。InputDispatcher 负责检测与隔离，根因仍要在应用、`system_server`、Binder 对端或内核调度中用同一时间窗的证据确认。
+主线程长任务是常见原因，却不能覆盖所有 Input ANR；主线程卡顿也未必已经触发 InputDispatcher 超时。InputDispatcher 负责检测与隔离，根因仍要在 App、`system_server`、Binder 对端或内核调度中用同一时间窗的证据确认。
 
 ## 扩展场景
 
@@ -172,7 +172,7 @@ InputDispatcher 的 `waitQueue` 是症状入口。一个分发项停在其中，
 
 硬件宣称的报点率不能直接换算成 InputDispatcher 的队列增长。只有额外样本实际穿过驱动和 InputReader，到达 dispatcher，并且发布速度持续超过客户端完成速度时，`waitQueue` / `outboundQueue` 压力才会增大。客户端 batching 又可能把多个样本放进一个 `MotionEvent` 的 history，因此需要同时核对 `iq/oq/wq`、App 收到的 event/history 数量和 frame timeline，不能只看规格表上的 Hz。
 
-游戏场景还有一个分析边界：公开 Android API 没有提供“提高某个应用的 InputDispatcher 优先级”这样的能力。`View.requestUnbufferedDispatch()` 影响应用侧 MotionEvent batching，不会提升触控 IC 报点率，也不会绕过 InputDispatcher 的 `waitQueue` / ANR 机制。Android 17 的 `View` 源码还明确警告，这个 API 不适合大多数应用，滥用可能增加延迟、造成滚动抖动，并失去系统重采样能力。应在目标设备上测量后再启用。厂商系统可能有游戏模式或触控调度定制；没有公开源码或实机轨迹时，只能标为 OEM 差异。
+游戏场景还有一个分析边界：公开 Android API 没有提供“提高某个 App 的 InputDispatcher 优先级”这样的能力。`View.requestUnbufferedDispatch()` 影响 App 侧 MotionEvent batching，不会提升触控 IC 报点率，也不会绕过 InputDispatcher 的 `waitQueue` / ANR 机制。Android 17 的 `View` 源码还明确警告，这个 API 不适合大多数应用，滥用可能增加延迟、造成滚动抖动，并失去系统重采样能力。应在目标设备上测量后再启用。厂商 ROM 可能有游戏模式或触控调度定制；没有公开源码或实机 trace 时，只能标为 OEM 差异。
 
 
 ### 厂商输入调度策略与可验证边界

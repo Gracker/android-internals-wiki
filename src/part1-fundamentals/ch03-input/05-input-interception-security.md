@@ -76,7 +76,7 @@ updated_date: "2026-07-10"
 
 如果 InputDispatcher 队列和 App 主线程都没有明显阻塞，事件仍可能停留在 system_server 的 filter Handler、无障碍按键待决队列或 spy window 手势接管阶段。忽略这些分支，容易把事件未到达 App 误判成 View 分发问题。
 
-平台源码以 AOSP `android-17.0.0_r1` 为锚点；Android 10—16 只在确有版本差异时作为沿革参照。涉及 Linux input/evdev 的边界以 `android17-6.18-2026-06_r6` 为内核锚点，不从通用内核代码推断厂商触控驱动策略。
+平台源码以 AOSP `android-17.0.0_r1` 为锚点；Android 10—16 只在确有版本差异时作为沿革参照。涉及 Linux input/evdev 的边界以 `android17-6.18-2026-06_r6` 为 kernel 锚点，不从通用内核代码推断厂商触控驱动策略。
 
 ## InputFilter：系统级事件拦截
 
@@ -154,16 +154,16 @@ Android 17 在 filter 启用时不为原始 InputReader event 记录 `InputDispa
 
 `InputMonitor` 允许特权组件在不是普通触摸目标窗口时接收 pointer stream。`InputManagerService.monitorGestureInput()` 会创建 input channel、gesture monitor surface 和 spy window；spy window 不参与普通前台目标窗口的命中选择，但可以作为额外目标收到事件。
 
-调用方必须持有隐藏权限 `android.permission.MONITOR_INPUT`。`android-17.0.0_r1` 的清单将它声明为 `signature|recents`，不属于通用 `privileged` 权限。普通应用和普通第三方无障碍服务拿不到这个入口。
+调用方必须持有隐藏权限 `android.permission.MONITOR_INPUT`。`android-17.0.0_r1` 的 manifest 将它声明为 `signature|recents`，不属于通用 `privileged` 权限。普通 App 和普通第三方无障碍服务拿不到这个入口。
 
 ### spy window 与 pilferPointers
 
 gesture monitor 对应的窗口带有 **spy** input config。Android 17 还强制所有 spy window 同时为可信叠加层。它有两种工作状态：
 
 1. **监控阶段**：spy window 与普通目标各自通过自身连接接收事件。它不替代命中的前台窗口，也不会因为“看见了事件”就消费目标流；monitor 自身仍须及时消费通道中的 channel。
-2. **接管阶段**：调用 `pilferPointers()` 后，InputDispatcher 从其他可被截取的窗口移走当前指针，并向被取消的目标合成取消事件。典型结果是原目标窗口收到 `ACTION_CANCEL`，后续事件流由请求截取的监视窗口持有；标记了 `DO_NOT_PILFER` 的窗口例外。
+2. **接管阶段**：调用 `pilferPointers()` 后，InputDispatcher 从其他可被 pilfer 的窗口移走当前 pointer，并向被取消的目标合成 cancellation event。典型结果是原目标窗口收到 `ACTION_CANCEL`，后续事件流由请求 pilfer 的 spy window 持有；标记了 `DO_NOT_PILFER` 的窗口例外。
 
-SystemUI 的边缘返回手势使用这套模式：先用手势监视器观察边缘触摸，确认系统返回手势后再截取指针。“收到副本”与“主动接管”对目标应用的影响完全不同。
+SystemUI 的边缘返回手势使用这套模式：先用 gesture monitor 观察边缘触摸，确认系统返回手势后再 pilfer。“收到副本”与“主动接管”对目标 App 的影响完全不同。
 
 在 Perfetto 中，目标窗口的触摸切片会以 `ACTION_CANCEL` 中断，同时系统 UI 进程开始处理手势。如果应用的触摸流意外中断，可以检查是否有系统监视窗口截取了指针。
 
@@ -302,7 +302,7 @@ public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int di
 
 标准注入入口最终都会过 `InputManagerService.injectInputEventToTarget()` 的权限检查。`android-17.0.0_r1` 调用 `checkCallingPermission(INJECT_EVENTS, ..., checkInstrumentationSource = true)`：先检查直接调用者，再按需检查 instrumentation source UID。两者都不满足时抛出 `SecurityException`。
 
-`Instrumentation` 和 `UiAutomation` 的可用性来自测试框架建立的受控身份，并不表示普通应用获得全局注入权。`dispatchGesture()` 使用另一套门禁：服务 metadata 需要声明 `canPerformGestures`，连接还要通过无障碍安全策略校验。
+`Instrumentation` 和 `UiAutomation` 的可用性来自测试框架建立的受控身份，并不表示普通 App 获得全局注入权。`dispatchGesture()` 使用另一套门禁：服务 metadata 需要声明 `canPerformGestures`，连接还要通过无障碍安全策略校验。
 
 ## Input 事件的安全边界
 
@@ -364,7 +364,7 @@ Input 事件从硬件到 App 之间，可编程拦截点包括：
 
 **触摸事件。** `TouchExplorer`、放大镜手势处理器、`MotionEventInjector` 可能把一段原始触摸重写成另一串 `MotionEvent`。这会增加事件数量，也会让时序更复杂。TalkBack 的“朗读后双击激活”就是这类变换的典型例子。
 
-**服务进程自身的耗时。** `AccessibilityService.onKeyEvent()` 的 Binder 回调经服务执行器运行；如果执行线程被占用，结果返回就会变慢，待决按键在 `KeyEventDispatcher` 中停留更久。`onAccessibilityEvent()` 的重任务也可能争用同一服务执行资源。
+**服务进程自身的耗时。** `AccessibilityService.onKeyEvent()` 的 Binder callback 经服务执行器运行；如果执行线程被占用，结果返回就会变慢，待决按键在 `KeyEventDispatcher` 中停留更久。`onAccessibilityEvent()` 的重任务也可能争用同一服务执行资源。
 
 分析时，不要只看 Binder 切片，还要检查：
 - `KeyboardInterceptor` / `KeyEventDispatcher` 是否积压待判定按键
@@ -414,7 +414,7 @@ AOSP 标准 GameMode 没有独立的 InputDispatcher 游戏优先队列。Androi
 
 ### Step 1：确认事件有没有进入 InputDispatcher
 
-在 `system_server` 中对齐原生 `filterInputEvent`、InputDispatcher 分发切片与目标进程的 `deliverInputEvent`：
+在 `system_server` 中对齐 Native `filterInputEvent`、InputDispatcher 分发切片与目标进程的 `deliverInputEvent`：
 
 - App 完全收不到事件，先确认是不是在 filter 或无障碍层被消费了
 - App 能收到事件，但时间明显晚，再看 system_server 前置处理和无障碍服务回结果时间
@@ -457,7 +457,7 @@ adb shell dumpsys accessibility
 
 ### 误区四：App 可以用 `InputEvent.getFlags()` 或 `MotionEvent.isFromSource()` 判断 injected event
 
-不对。`InputEvent` 基类没有 `getFlags()`，`source` 只表示设备来源。`KeyEvent.getFlags()` 和 `MotionEvent.getFlags()` 虽然公开，但 `FLAG_IS_ACCESSIBILITY_EVENT` 在 Android 17 是 `@TestApi @hide`；读取硬编码位也不构成稳定的公共 API。普通应用不能可靠地区分所有 injected event 与硬件事件。
+不对。`InputEvent` 基类没有 `getFlags()`，`source` 只表示设备来源。`KeyEvent.getFlags()` 和 `MotionEvent.getFlags()` 虽然公开，但 `FLAG_IS_ACCESSIBILITY_EVENT` 在 Android 17 是 `@TestApi @hide`；读取硬编码 bit 也不构成稳定 public API。普通 App 不能可靠地区分所有 injected event 与硬件事件。
 
 ### 误区五：InputFilter 只影响按键事件
 
