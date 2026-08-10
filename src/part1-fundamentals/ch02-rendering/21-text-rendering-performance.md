@@ -217,7 +217,7 @@ Span 的影响取决于类型：
 | Span 类型 | 主要影响 |
 |---|---|
 | `MetricAffectingSpan` | 改变字号、Typeface、scale 等测量参数，会切分测量 run |
-| `ReplacementSpan` / `ImageSpan` | 通过 `getSize()` 提供替代宽度，并在绘制阶段执行自定义绘制 |
+| `ReplacementSpan` / `ImageSpan` | 通过 `getSize()` 提供替代宽度，并在 draw 阶段执行自定义绘制 |
 | `ParagraphStyle` | 影响 margin、tab、行高或段落布局；也会让 `BoringLayout.isBoring()` 失败 |
 | `CharacterStyle` | 通常改变颜色、背景或绘制效果；不一定改变测量 |
 | `ClickableSpan` | 主要增加点击命中和 movement method 处理，本身不是文字测量参数 |
@@ -233,7 +233,7 @@ EmojiCompat 的成本也要分开：
 - 初始化和 downloadable font 准备属于字体加载阶段；
 - `EmojiCompat.process()` 扫描并生成 Span，官方允许在后台处理并缓存结果；
 - `EmojiSpan.getSize()` 和 `draw()` 属于布局/绘制阶段；
-- 新字形的 Skia 资源准备属于后续绘制执行阶段。
+- 新 glyph 的 Skia 资源准备属于后续绘制执行阶段。
 
 AndroidX 默认 initializer 会把字体加载推迟到首个 Activity 恢复之后，避免直接与首屏争用资源；手动配置时也要分别测量下载、初始化和首屏绘制。
 
@@ -282,7 +282,7 @@ AndroidX 的 `AppCompatTextView.setTextFuture()` 会在 `onMeasure()` 中调用 
 
 1. 用 payload 或内容 diff 避免对未变化字段重复 `setText()`；
 2. 固定 item 的文字宽度约束，避免动画期间反复改变可用宽度；
-3. 在数据层预先生成稳定的富文本或 EmojiCompat 结果，避免绑定时重复扫描；
+3. 在数据层预先生成稳定的富文本或 EmojiCompat 结果，避免 bind 时重复扫描；
 4. 缩小 `MetricAffectingSpan` 与 `ReplacementSpan` 的数量和覆盖范围；
 5. 对长文本使用预计算，并让任务在 item measure 前完成；
 6. 把字体下载、Typeface 创建和大段文本解析移出首个需要显示它们的帧。
@@ -293,7 +293,7 @@ AndroidX 的 `AppCompatTextView.setTextFuture()` 会在 `onMeasure()` 中调用 
 
 `includeFontPadding` 决定首尾行使用 font top/bottom 还是 ascent/descent。关闭后布局可能更紧凑，但不能据此宣称测量更快；对阿拉伯文、Kannada 或带高低延伸的字体，还要验证是否裁切。
 
-API 35 增加了以字形边界计算宽度和处理起始悬垂的相关 API。Android 17 的 `TextView` 对目标 SDK 35 及以上默认启用 `useBoundsForWidth`；`shiftDrawingOffsetForStartOverhang` 默认仍为 false，并且只有前者启用时才生效。自建 `StaticLayout.Builder` 的默认值要按 Builder 文档单独确认。
+API 35 增加了以字形边界计算宽度和处理起始悬垂的相关 API。Android 17 的 `TextView` 对 target SDK 35 及以上默认启用 `useBoundsForWidth`；`shiftDrawingOffsetForStartOverhang` 默认仍为 false，并且只有前者启用时才生效。自建 `StaticLayout.Builder` 的默认值要按 Builder 文档单独确认。
 
 这些选项用于修正 advance width 与 glyph bounds 不一致造成的裁切和对齐。它们会影响宽度、断行或 drawing offset，开启前应做视觉回归和基准测试，不应给出“只有微秒级成本”这类脱离字体与文本的结论。
 
@@ -371,7 +371,7 @@ try {
 | Android 13 / API 33 | `LineBreakConfig` 公开 | line-break style / word style 进入测量参数与预计算兼容性判断 |
 | Android 15 / API 35 | bounds-for-width、start overhang 和 minimum font metrics API 公开；target 35+ 的 `TextView` 默认使用 glyph bounds 计算宽度 | 升级 target 后需要回归文字宽度、换行、对齐与裁切 |
 | Android 17 / API 37 | 当前源码锚点；Minikin 当前 layout/variation cache、HarfBuzz 11.4.1、HWUI/Skia text blob 路径 | 当前方法名和缓存 key 按 `android-17.0.0_r1` 解读；是否为 Android 17 新增需另查历史 tag |
-| AndroidX emoji2 / appcompat | 独立于平台发布 | 记录具体依赖版本、字体来源、初始化策略与 `setTextFuture()` 是否等待 |
+| AndroidX emoji2 / appcompat | 独立于 platform 发布 | 记录具体依赖版本、字体来源、初始化策略与 `setTextFuture()` 是否等待 |
 
 ## 常见误区
 
@@ -381,7 +381,7 @@ Traversal 会依据脏标记、MeasureSpec 和缓存决定工作。复用 Displa
 
 ### 单行文本一定使用 BoringLayout
 
-单行只是必要条件之一。RTL、surrogate、换行/制表符、ParagraphStyle、宽度和省略条件都会改变选择结果。
+单行只是必要条件之一。RTL、surrogate、换行/制表符、ParagraphStyle、宽度和 ellipsize 条件都会改变选择结果。
 
 ### 所有 Span 都会让 shaping 成本成倍增加
 
@@ -397,7 +397,7 @@ Traversal 会依据脏标记、MeasureSpec 和缓存决定工作。复用 Displa
 
 ## 与其他机制的关系
 
-- **§2.1 / §2.4 Choreographer**：文字更新只有在触发遍历或绘制时才进入帧生产。
+- **§2.1 / §2.4 Choreographer**：文字更新只有在触发 traversal 或 draw 时才进入帧生产。
 - **§2.5 MainThread/RenderThread**：主线程负责内容处理、排版和 DisplayList 录制，RenderThread/GPU 负责后续执行与窗口 buffer。
 - **§7.8 RecyclerView**：prefetch、payload、holder 复用和宽度稳定性决定预计算是否来得及完成。
 - **§7.12 View 体系**：先找 `requestLayout()` 与脏区域来源，再判断 TextView 是否为主要贡献者。

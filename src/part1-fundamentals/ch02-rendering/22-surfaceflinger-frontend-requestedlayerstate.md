@@ -72,7 +72,7 @@ FrontEnd 负责把客户端请求转换为当前帧可消费的状态，不覆�
 ```mermaid
 flowchart LR
     Client["App / WMS / Shell<br/>SurfaceControl.Transaction"]
-    Queue["TransactionHandler<br/>入队与逐 applyToken 队列"]
+    Queue["TransactionHandler<br/>入队与 per-applyToken 队列"]
     Ready["readiness filters<br/>时间、buffer、barrier"]
     State["LayerLifecycleManager<br/>RequestedLayerState"]
     Graph["LayerHierarchyBuilder<br/>layer graph"]
@@ -92,13 +92,13 @@ flowchart LR
 这张图表示职责关系，不对应逐行调用栈。Android 17 的 `SurfaceFlinger::updateLayerSnapshots()` 主要按以下顺序执行：
 
 1. `collectTransactions()` 把无锁入口队列中的 transaction 收到 pending queues。
-2. 新建图层先交给 `LayerLifecycleManager::addLayers()`。
+2. 新建 layer 先交给 `LayerLifecycleManager::addLayers()`。
 3. `flushTransactions()` 只取出 readiness filters 判定可应用的 transaction。
 4. `applyTransactions()` 把属性合入 `RequestedLayerState`。
-5. `LayerHierarchyBuilder::update()` 更新图层图。
-6. `LayerSnapshotBuilder::update()` 更新快照。
+5. `LayerHierarchyBuilder::update()` 更新 layer 图。
+6. `LayerSnapshotBuilder::update()` 更新 snapshot。
 7. 当前兼容路径继续让对应 `Layer` 执行 `latchBufferImpl()`。
-8. 后续合成把快照加入 `RefreshArgs`，再调用 `CompositionEngine::present()`。
+8. 后续 composition 把 snapshot 加入 `RefreshArgs`，再调用 `CompositionEngine::present()`。
 
 因此，下面三句话不能互相替换：
 
@@ -150,7 +150,7 @@ struct RequestedLayerState : layer_state_t {
 
 这两组 bitmask 处在不同层次：
 
-- `layer_state_t::what` 表示客户端事务带来了哪些字段。
+- `layer_state_t::what` 表示客户端 transaction 带来了哪些字段。
 - `RequestedLayerState::Changes` 表示这些字段合并后，服务端哪些语义区域受到了影响。
 
 例如，buffer 尺寸改变不只产生 `Changes::Buffer`，还会影响 `BufferSize` 和 `Geometry`；alpha 从 0 变为非 0 时，还会影响 `Visibility`。后续代码不必再次比较所有字段，可以根据变化类型决定更新范围。
@@ -161,13 +161,13 @@ Android 17 的 `Changes` 包含：
 | --- | --- | --- |
 | 生命周期 | `Created`、`Destroyed` | 新建、销毁和 listener 回调 |
 | 层级 | `Hierarchy`、`Z`、`Mirror`、`Parent`、`RelativeParent`、`AffectsChildren` | 更新图、排序和子节点继承 |
-| 几何与可见性 | `Geometry`、`Visibility`、`VisibleRegion`、`Input` | 更新边界、遮挡、输入窗口 |
+| 几何与可见性 | `Geometry`、`Visibility`、`VisibleRegion`、`Input` | 更新 bounds、遮挡、输入窗口 |
 | 内容 | `Content`、`Buffer`、`SidebandStream`、`BufferSize`、`BufferUsageFlags`、`PostProcess` | 更新当前内容及合成属性 |
 | 策略 | `Metadata`、`FrameRate`、`GameMode`、`Animation` | 更新 metadata、刷新率投票和调度提示 |
 
 `kMustComposite` 是一组变化后需要推动合成的标志，不包含全部 flags。例如，`FrameRate` 还会触发所附 Choreographer 的刷新率更新；是否需要合成由各调用点分别判断。
 
-### 3.2 为什么图层关系保存为编号
+### 3.2 为什么 layer 关系保存为 id
 
 `RequestedLayerState` 使用 `parentId`、`relativeParentId`、`layerIdToMirror`、`touchCropId` 等编号表示跨图层关系，不再持有客户端句柄。这样可以避免状态对象因保存句柄而意外延长其生命周期。
 
@@ -194,31 +194,31 @@ Android 17 的 `Changes` 包含：
 
 `LayerLifecycleManager` 拥有 `RequestedLayerState` 集合，并维护编号到状态及反向引用的映射。它不是线程安全类；Android 17 通过 SurfaceFlinger 主线程上下文保护其成员。只有事务入口的收集过程使用 `LocklessQueue`，整个 FrontEnd 并非无锁实现。
 
-### 4.1 新建图层
+### 4.1 新建 layer
 
 `addLayers()` 会：
 
-- 把图层加入编号映射、`mAddedLayers` 和 `mChangedLayers`；
+- 把 layer 加入 id 映射、`mAddedLayers` 和 `mChangedLayers`；
 - 建立 parent、relative parent、mirror、touch crop 等引用；
 - 处理 layer stack mirror 和 display mirror；
 - 把 `Changes::Hierarchy` 加到全局变化集合。
 
 新建 layer 在 flush transaction 之前加入 manager。这样，同一轮里引用新 layer 的 transaction 才能解析到对应状态。
 
-### 4.2 合并事务
+### 4.2 合并 transaction
 
-`applyTransactions()` 按事务中的 `ResolvedComposerState` 找到目标图层，然后调用 `RequestedLayerState::merge()`。本轮首次发生变化的图层会进入 `mChangedLayers`；各图层的 flags 再汇总到 `mGlobalChanges`。
+`applyTransactions()` 按 transaction 中的 `ResolvedComposerState` 找到目标 layer，然后调用 `RequestedLayerState::merge()`。本轮首次发生变化的 layer 会进入 `mChangedLayers`；各图层的 flags 再汇总到 `mGlobalChanges`。
 
 这两个集合服务于不同问题：
 
-- `getChangedLayers()`：需要更新哪些具体图层。
+- `getChangedLayers()`：需要更新哪些具体 layer。
 - `getGlobalChanges()`：本轮是否出现了要求重走 hierarchy、geometry、input 或 composition 的变化。
 
 ### 4.3 释放句柄不会立即删除对象
 
 公开 FrontEnd 文档给出的生命周期规则是：
 
-- 客户端持有的强 Binder 句柄可以维持图层生命周期；
+- 客户端持有的强 Binder handle 可以维持 layer 生命周期；
 - parent 对 child 的关系也可以维持 child；
 - handle 仍存活但从屏幕 root 不可达的 layer 会进入 offscreen hierarchy，资源不会因此立即释放；
 - 客户端用完后应显式释放 `SurfaceControl`，不要依赖 Java GC 的时机。
@@ -230,7 +230,7 @@ Android 17 的 `Changes` 包含：
 `commitChanges()` 会：
 
 1. 通知 listener 哪些 layer 新增；
-2. 清空仍存活图层的 `what` 和 `changes`；
+2. 清空仍存活 layer 的 `what` 和 `changes`；
 3. 通知 listener 哪些 layer 已销毁；
 4. 清空 added、destroyed、changed 和 global change 集合。
 
@@ -273,7 +273,7 @@ relative children 值相同时，再按 layer id 保持稳定顺序，较新的�
 
 ## 6. `TransactionHandler` 如何决定本轮应用哪些事务
 
-`queueTransaction()` 把事务推进 `mLocklessTransactionQueue`，同时增加 `TransactionQueue` trace counter。`collectTransactions()` 再按 `applyToken` 分组放入 pending queues。
+`queueTransaction()` 把 transaction 推进 `mLocklessTransactionQueue`，同时增加 `TransactionQueue` trace counter。`collectTransactions()` 再按 `applyToken` 分组放入 pending queues。
 
 ### 6.1 顺序只在同一 `applyToken` 内保证
 
@@ -295,7 +295,7 @@ Android 17 的 `addTransactionReadyFilters()` 按顺序注册：
 
 任一 filter 返回 `NotReady` 或 `NotReadyBarrier`，当前 `applyToken` 队列就会停在队首。
 
-### 6.3 四种就绪结果
+### 6.3 四种 readiness 结果
 
 | `TransactionReadiness` | 精确含义 |
 | --- | --- |
@@ -309,13 +309,13 @@ Android 17 的 `addTransactionReadyFilters()` 按顺序注册：
 在 `AutoSingleLayer` 配置下，候选还必须满足：
 
 - transaction 只更新一个 layer；
-- 它是本轮取出的第一笔事务；
+- 它是本轮取出的第一笔 transaction；
 - Scheduler 当前不使用 early VSync config；
 - `RequestedLayerState::isSimpleBufferUpdate()` 判定为简单 buffer 更新。
 
 后一个检查会拒绝 reparent、relative layer、layer stack、透明区域、blur region 等变化，也会拒绝 position、alpha、color transform、crop、matrix 等会改变显示语义的字段。
 
-### 6.4 Android 17 的两类屏障
+### 6.4 Android 17 的两类 barrier
 
 这两类机制名字相近，但数据和超时逻辑不同。
 
@@ -329,7 +329,7 @@ Android 17 的 `addTransactionReadyFilters()` 按顺序注册：
 
 跨 `applyToken` 的屏障可能在一次扫描的后半段才被触发。`flushTransactions()` 因此反复扫描 pending queues，直到等待屏障的事务数量不再变化，以便在同一帧继续解开已满足条件的依赖链。
 
-这些秒数是 `android-17.0.0_r1` 的内部实现值，不是应用可以依赖的稳定 API 契约。
+这些秒数是 `android-17.0.0_r1` 的内部实现值，不是 App 可以依赖的稳定 API 契约。
 
 ## 7. 从请求状态生成 `LayerSnapshot`
 
@@ -349,7 +349,7 @@ snapshot 还有 input、无障碍、layer trace 等消费者，不只服务 HWC�
 `LayerSnapshotBuilder::tryFastUpdate()` 的 Android 17 条件很具体：
 
 - 没有 global changes、没有 force update、display 未变化时，可以直接返回；
-- 只有 `Content` 或 `Buffer` 变化时，只合并 `getChangedLayers()` 对应的快照；
+- 只有 `Content` 或 `Buffer` 变化时，只 merge `getChangedLayers()` 对应的 snapshot；
 - 出现 hierarchy、geometry、visibility、input 等变化时，需要继续遍历 hierarchy；
 - force update 或 display change 会更新全部 snapshot，并进入完整更新。
 
@@ -406,7 +406,7 @@ FrontEnd 文档说明，snapshot 理论上可以 clone；当前实现为了减�
 
 采集时固定设备、刷新率、构建类型和测试时长，并记录：
 
-- 每帧提交的事务数和每笔事务的状态数；
+- 每帧提交的 transaction 数和每笔 transaction 的 state 数；
 - `TransactionQueue` 峰值及回落时间；
 - `TransactionHandler:flushTransactions`、`LayerSnapshotBuilder:update` 的分位数；
 - `FastPath` 命中情况；
@@ -453,7 +453,7 @@ Android 17 SurfaceFlinger FrontEnd 可以按五个对象理解：
 
 - `TransactionHandler`：按 apply token 排队，并用时间、buffer、fence 和 barrier filters 决定本轮可应用事务。
 - `RequestedLayerState`：保存客户端请求在服务端合并后的状态，并把字段变化归类成 FrontEnd change flags。
-- `LayerLifecycleManager`：维护图层身份、引用、创建、销毁和本轮变化集合。
+- `LayerLifecycleManager`：维护 layer 身份、引用、创建、销毁和本轮变化集合。
 - `LayerHierarchyBuilder`：用图表达 parent、relative Z、mirror 与 offscreen 关系。
 - `LayerSnapshotBuilder`：把请求状态和 traversal path 计算成按 z-order 排列的 snapshot。
 

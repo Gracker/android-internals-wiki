@@ -87,7 +87,7 @@ last_idle_audit_notes: "抽检 Android 18/API38 越界、TODO/待验证残留、
 
 Android 显示调度包含两类彼此独立的问题：
 
-1. 下一帧应当在什么时间唤醒应用和 SurfaceFlinger？
+1. 下一帧应当在什么时间唤醒 App 和 SurfaceFlinger？
 2. 当前内容适合使用哪个渲染帧率和显示模式？
 
 第一类由 `VsyncSchedule`、`VSyncPredictor`、`VSyncReactor`、`VSyncDispatch`、`EventThread` 等组件协作完成；第二类由 layer frame-rate vote、`LayerHistory`、`RefreshRateSelector` 和设备策略共同决定。`Surface.setFrameRate()` 会影响第二类决策，但不会直接触发 `Scheduler::requestNextVsync()`。排查卡顿或刷新率异常时，应先区分这两类路径。
@@ -175,7 +175,7 @@ Android 17 源码中有几个容易被混用的常量：
 
 默认模型收到新时间戳后，先调用 `validate()`：
 
-1. 以理想 VSync 周期为模，检查新时间戳的相位是否落在已有模型的容差内；
+1. 以理想 VSync period 为模，检查新时间戳的相位是否落在已有模型的容差内；
 2. 从历史里寻找与新样本最接近的时间戳，并优先考虑 200ms 内的近期样本；
 3. 如果两者距离小于一个周期的 20%，把新时间戳视作重复样本。
 
@@ -211,7 +211,7 @@ timestamp(n) ≈ intercept + slope × sequence(n)
 
 软件预测仍要由真实显示结果校正。`VSyncReactor` 可以接收两类证据：
 
-- HWC VSync 时间戳及可选周期；
+- HWC VSync 时间戳及可选 period；
 - present fence 表示的实际 present 时间。
 
 模式切换期间，`periodConfirmed()` 用 10% allowance 判断观测周期是否接近目标周期。若 HWC 直接给出周期，就比较该值与目标；否则比较相邻硬件 VSync 时间戳的距离。这里没有固定的 17～33ms 模式切换窗口。
@@ -242,7 +242,7 @@ nextReady = nextVsync - readyDuration
 - 对 App 这类 SF 外部消费者，`readyDuration` 通常使用 SF 的工作时长，为后续 latch、compose、present 留出预算；
 - 对 SF 内部消费者，`readyDuration` 通常为 0。
 
-如果重新调度会跳过已经设定的目标或唤醒点，队列会保留原目标。`adjustVsyncIfNeeded()` 还会避开已经分发过或距离过近的 VSync。500µs 的定时器余量用于把时间接近的回调放进同一次 timer 唤醒；3ms 的最小 VSync 间距用于区分目标事件。
+如果重新调度会跳过已经 armed 的目标或唤醒点，队列会保留原目标。`adjustVsyncIfNeeded()` 还会避开已经分发过或距离过近的 VSync。500µs timer slack 用于把时间接近的 callback 放进同一次 timer 唤醒；3ms minimum VSync distance 用于区分目标事件。
 
 源码依据见 [`VSyncDispatch.h`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/Scheduler/VSyncDispatch.h) 与 [`VSyncDispatchTimerQueue.cpp`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/Scheduler/VSyncDispatchTimerQueue.cpp)。
 
@@ -267,7 +267,7 @@ flowchart LR
 
 ### 6.2 SurfaceFlinger 请求合成帧
 
-SurfaceFlinger 在事务、buffer latch、mode change 等事件到来时调用 `scheduleCommit()` / `scheduleFrame()`。Android 17 的 SF `MessageQueue::scheduleFrame()` 使用：
+SurfaceFlinger 在 transaction、buffer latch、mode change 等事件到来时调用 `scheduleCommit()` / `scheduleFrame()`。Android 17 的 SF `MessageQueue::scheduleFrame()` 使用：
 
 ```text
 workDuration = sfWorkDuration - workDurationSlack
@@ -309,7 +309,7 @@ flowchart LR
 
 Android 17 的 `SurfaceFlinger::updateLayerHistory()` 遍历 FrontEnd 生成的 layer snapshot。当 `FrameRate`、`Buffer`、`Animation`、几何或可见性发生变化时，它把 layer 属性写入历史。刷新率选择发生在 layer 更新与 buffer latch 之后，以便纳入本次已经生效的内容状态。
 
-`LayerHistory::summarize()` 把历史与当前属性整理成 `LayerRequirement`。`RefreshRateSelector` 处理的投票类型包括：
+`LayerHistory::summarize()` 把历史与当前属性整理成 `LayerRequirement`。`RefreshRateSelector` 处理的 vote 类型包括：
 
 - `NoVote`
 - `Min`
@@ -326,9 +326,9 @@ Android 17 的 `SurfaceFlinger::updateLayerHistory()` 遍历 FrontEnd 生成的 
 应用提交的帧率是投票输入，不是切换命令。它可能被以下条件压低或覆盖：
 
 - 当前 display policy 不允许该候选；
-- 多个可见图层的请求冲突；
+- 多个可见 layer 的请求冲突；
 - focused layer 权重更高；
-- 切换要求无缝，而目标模式需要非无缝切换；
+- 切换要求 seamless，而目标模式需要非无缝切换；
 - 省电、idle、触摸或热管理策略介入；
 - 多显示的 pacesetter/follower 约束不允许各自任意选择。
 
@@ -351,12 +351,12 @@ ARR 不保证支持任意连续帧率。设备通常受离散 VSync step、最�
 | Android / API | 公开能力 |
 |---|---|
 | Android 11 / API 30 | `Surface.setFrameRate(float, int)`，应用可声明 surface 内容帧率与 compatibility |
-| Android 12 / API 31 | 增加带 `changeFrameRateStrategy` 的三参数重载，可表达仅无缝切换或始终允许切换 |
+| Android 12 / API 31 | 增加带 `changeFrameRateStrategy` 的三参数 overload，可表达仅无缝切换或始终允许切换 |
 | Android 15 / API 35 | `View.setRequestedFrameRate()`、`View.setFrameContentVelocity()`；Window 增加触摸 boost 与省电平衡控制 |
 | Android 16 / API 36 | `Display.hasArrSupport()`、`Display.getSuggestedFrameRate()`；新系统上 supported refresh rates 更偏向可用 render rate 语义 |
 | Android 17 / API 37 | `Display.getFrameRateVelocityMapping()`，为 View fling 的速度到帧率映射提供设备建议 |
 
-API 只能表达意图。`SurfaceControl.Transaction.setFrameRate()` 适合直接管理 SurfaceControl 图层的系统组件；普通 View 应优先使用 View/Window 层 API，让声明随可见性和 View 生命周期传播。
+API 只能表达意图。`SurfaceControl.Transaction.setFrameRate()` 适合直接管理 SurfaceControl layer 的系统组件；普通 View 应优先使用 View/Window 层 API，让声明随可见性和 View 生命周期传播。
 
 Android 17 源码中还有受开关控制的 `Surface.FrameRateParams` overload，但当前 Java 实现仍有 desired min/max 继续传给原生层的 TODO。只有同时核对目标 SDK、设备开关和实现后，才能判断区间控制是否完整生效。
 
@@ -374,7 +374,7 @@ Android 17 源码中还有受开关控制的 `Surface.FrameRateParams` overload�
 
 - 24fps 在 120Hz 上每帧可显示 5 个刷新周期，节奏均匀；
 - 30fps 在 60Hz、90Hz、120Hz 上分别对应 2、3、4 个周期；
-- 24fps 在 90Hz 上不是整数倍，若固定在 90Hz，系统可能采用不均匀节奏；
+- 24fps 在 90Hz 上不是整数倍，若固定在 90Hz，系统可能采用不均匀 cadence；
 - 从 120Hz 切到 60Hz 能降低功耗，但 mode switch 成本、其他 layer 请求和交互状态可能让系统暂时保留 120Hz。
 
 视频播放应把媒体帧率声明给承载视频的 Surface，并让 Media3/平台 frame-rate strategy 处理模式切换策略。游戏需要同时考虑目标 FPS、swap interval、Frame Pacing 库与热预算。普通 UI 动画若只是降低渲染频率，却没有调整动画时间基准，可能减少帧数但不会修复卡顿。
@@ -411,7 +411,7 @@ Android 17 的 Scheduler 为每个 display 保存独立的 selector 与 `VsyncSc
 - SF 是否及时 latch、compose、提交 HWC；
 - present fence 是否晚于 expected present。
 
-Android 17 `TokenManager` 使用容量为 500 的环形存储保存预测。源码中没有按时间戳执行的固定 120ms TTL；不能用令牌超过 120ms 必然过期来解释关联失败。
+Android 17 `TokenManager` 使用容量为 500 的环形存储保存 prediction。源码中没有按时间戳执行的固定 120ms TTL；不能用“token 超过 120ms 必然过期来解释关联失败。
 
 ### 11.2 Jank 类型要按责任域解释
 
@@ -443,7 +443,7 @@ Android 17 `JankType` 中，除 `None` 外有 15 个 bit：
 
 **第二步：判断应用是否按时提交 buffer。**
 
-查看 `Choreographer#doFrame`、主线程遍历、RenderThread/GPU、queueBuffer 与应用 FrameTimeline。若出现 `AppDeadlineMissed`，继续追踪 CPU 调度、锁、GC、Binder 或 GPU 工作负载。
+查看 `Choreographer#doFrame`、主线程 traversal、RenderThread/GPU、queueBuffer 与 App FrameTimeline。若出现 `AppDeadlineMissed`，继续追踪 CPU 调度、锁、GC、Binder 或 GPU 工作负载。
 
 **第三步：判断 SF/HWC 是否按时 present。**
 
@@ -451,7 +451,7 @@ App 按时而 `SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMiss
 
 **第四步：检查预测与模式过渡。**
 
-出现 `PredictionError`、`AppResyncedJitter` 或间隔突变时，核对 VSyncReactor 是否正在重新采样、Predictor 使用 20/6 还是 1/1，以及是否发生 render-rate timeline 切换。
+出现 `PredictionError`、`AppResyncedJitter` 或 interval 突变时，核对 VSyncReactor 是否正在重新采样、Predictor 使用 20/6 还是 1/1，以及是否发生 render-rate timeline 切换。
 
 **第五步：审查 frame-rate vote。**
 
