@@ -275,11 +275,11 @@ Android 12 的 GKI 2.0 用 DMA-BUF Heaps 替换 ION 作为 GKI 分配框架。`l
 
 `GraphicBuffer::needsReallocation()` 在以下条件变化时返回 true：
 
-- 宽度或高度；
+- width 或 height；
 - pixel format；
 - layer count；
 - 现有用途不能覆盖新用途；
-- 受保护用途状态变化。
+- protected usage 状态变化。
 
 Android 17 的扩展分配标志开启时，additional options generation 变化也会触发 reallocation。反过来，属性仍兼容且槽位中已有缓冲时，dequeue 可以复用对象，不经过新的物理分配。
 
@@ -367,7 +367,7 @@ Producer 把 GPU 或 CPU 写入完成的栅栏随缓冲提交给 consumer。cons
 一块图形缓冲可能同时被以下对象持有：
 
 - allocator / exporter 的 backing storage；
-- 各进程中的原始或已导入原生句柄；
+- 各进程中的 raw 或 imported native handle；
 - BufferQueue 生产者/ consumer slot；
 - BLAST 或 SurfaceFlinger 事务/ buffer cache；
 - RenderEngine、HWC、Camera、codec 或 GPU 驱动的设备附件；
@@ -383,7 +383,7 @@ Producer 把 GPU 或 CPU 写入完成的栅栏随缓冲提交给 consumer。cons
 - `AHardwareBuffer_acquire()` 与 `AHardwareBuffer_release()` 不配对；
 - `Image`、`HardwareBuffer`、EGLImage 或 Vulkan 导入对象关闭顺序错误；
 - Surface 断开后，业务缓存仍持有旧缓冲；
-- 异常路径提前返回，跳过解锁、释放或事务释放回调。
+- 异常路径提前返回，跳过 unlock、release 或 transaction release callback。
 
 ## 8. 怎样观测与归因
 

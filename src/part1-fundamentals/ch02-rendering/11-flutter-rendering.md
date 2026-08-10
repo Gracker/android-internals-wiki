@@ -317,7 +317,7 @@ TLHC 把 Android View 的绘制结果送入 Flutter 可采样纹理，再由 Flu
 
 成本：
 
-- 多一段缓冲/纹理获取；
+- 多一段 buffer/texture acquire；
 - 快速滚动的 WebView 可能出现卡顿；
 - 包含 `SurfaceView` 的控件会遇到 accessibility、text magnifier 或重定向限制；
 - invalidate、输入与 accessibility 需要桥接。
@@ -378,7 +378,7 @@ renderer 由应用携带的 Flutter 引擎决定。Android 15、16 或 17 系统
 Impeller 3.44.8 README 的目标包括：
 
 - 着色器编译与反射在引擎构建期完成；
-- 管线状态对象提前构建；
+- pipeline state object 提前构建；
 - cache 由引擎显式控制；
 - 资源有标签，便于工具分析；
 - 单帧负载可以在需要时分给多个线程。
@@ -388,8 +388,8 @@ Impeller 3.44.8 README 的目标包括：
 这能减少旧版 Skia/OpenGL 路径中常见的运行时 shader compilation jank，但不能消除首帧成本。以下工作仍可能迟到：
 
 - Vulkan 上下文和驱动初始化；
-- 管线/缓存未命中与驱动机器码准备；
-- 字形图集、图片解码/上传；
+- pipeline/cache miss 与 driver 机器码准备；
+- 字体 atlas、图片 decode/upload；
 - 大纹理、blur、saveLayer 和多 pass；
 - external texture fence；
 - GPU 队列、内存带宽与温控。
@@ -426,7 +426,7 @@ rebuild 数量只是线索。一个很小但高频的 Widget 重建可能便宜�
 
 列表问题常混合多种成本：
 
-- 列表项构建/布局过重；
+- item build/layout 过重；
 - intrinsic layout 或高度反复变化；
 - 图片解码、缩放、上传和 cache miss；
 - blur、clip、opacity、`saveLayer` 与大阴影；
@@ -443,7 +443,7 @@ Raster 线程的长切片不一定表示 GPU 正在执行；它可能在准备 d
 证据上要分开：
 
 - Raster CPU Running/Runnable；
-- 驱动/管线相关切片；
+- driver/pipeline 相关 slice；
 - GPU 提交与完成；
 - root producer fence；
 - SurfaceFlinger 锁存与 display present。

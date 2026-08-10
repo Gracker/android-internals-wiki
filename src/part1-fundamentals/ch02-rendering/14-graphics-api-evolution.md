@@ -236,7 +236,7 @@ GLES 允许应用逐步修改 context 状态，驱动在绘制前后决定怎样
 | 错误暴露 | 部分错误可由 `glGetError()` 观察 | 错误码、validation layer、GPU-assisted validation |
 | 多线程 | 多 context 可用，状态和共享同步较难 | command pool / command buffer 可按线程组织，queue 外部同步仍由应用负责 |
 
-Vulkan 适合把场景遍历、visibility、资源准备和命令录制拆到多个工作线程。它不会自动完成并行化。若所有工作线程争用同一个分配器、描述符池或管线缓存，线程数越多，锁和缓存抖动越明显。
+Vulkan 适合把 scene traversal、visibility、resource preparation 和 command recording 拆到多个 worker。它不会自动完成并行化。若所有 worker 争用同一个 allocator、descriptor pool 或 pipeline cache，线程数越多，锁和缓存抖动越明显。
 
 ### 4.2 Command buffer 复用
 
@@ -255,8 +255,8 @@ GLES 驱动可能在链接、首次绘制或状态组合变化时编译底层 sh
 
 `VK_EXT_shader_object`、graphics pipeline library 和 pipeline binary 解决不同环节，不能把某一个扩展描述成“消除 shader jank”的通用开关：
 
-- 着色器对象减少对完整图形管线对象的依赖；
-- 图形管线库允许把管线拆成可复用部分；
+- shader object 减少对完整 graphics pipeline 对象的依赖；
+- graphics pipeline library 允许把 pipeline 拆成可复用部分；
 - pipeline binary 让实现生成和复用二进制表示；
 - 应用仍要控制 shader 变体、缓存命中、后台预热和首次使用时机。
 
