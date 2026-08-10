@@ -107,7 +107,7 @@ p2: 0
 
 Fence 是异步工作的完成凭证。它不保存像素、不拥有 BufferQueue slot，也不让两个线程自动互斥；它只表达一条依赖：“在这项工作完成前，后续访问不能越过这个点。”
 
-Android 图形链路需要栅栏，因为 CPU、GPU、Camera ISP、codec、SurfaceFlinger、HWC 和 display controller 可以并行工作。Producer 可以先把缓冲与栅栏交给 consumer，再让 GPU 继续写；consumer 也可以先安排显示，再返回一条稍后才 signal 的 release fence。这样既避免 CPU 在每个阶段同步阻塞，也避免 consumer 读到尚未写完的像素。
+Android 图形链路需要 fence，因为 CPU、GPU、Camera ISP、codec、SurfaceFlinger、HWC 和 display controller 可以并行工作。Producer 可以先把 buffer 与 fence 交给 consumer，再让 GPU 继续写；consumer 也可以先安排显示，再返回一条稍后才 signal 的 release fence。这样既避免 CPU 在每个阶段同步阻塞，也避免 consumer 读到尚未写完的像素。
 
 分析以 Android 17/API 37、`android-17.0.0_r1` 为平台锚点，kernel 侧以 `android17-6.18-2026-06_r6` 为锚点。栅栏名称由观察边界决定，同一个同步对象从 producer 传到 consumer 后，角色名称可能变化。
 
@@ -127,7 +127,7 @@ signal 是单向状态变化。已经 signal 的 fence 不会回到 pending。�
 
 ### 2.1 Kernel：dma-fence
 
-`struct dma_fence` 是内核中的跨驱动完成原语。Android 17 内核的 `drivers/dma-buf/dma-fence.c` 定义了 context、seqno、signal、error、timestamp、callback 与等待语义。
+`struct dma_fence` 是内核中的跨驱动完成原语。Android 17 kernel 的 `drivers/dma-buf/dma-fence.c` 定义了 context、seqno、signal、error、timestamp、callback 与 wait 语义。
 
 同一 context 中的 fence 按 seqno 完全有序；不同 context 可能来自独立 GPU engine、display pipeline 或 codec queue，不能只比较 seqno 大小。驱动还必须保证 fence 在合理时间内结束，并提供 hang recovery 或强制完成策略，防止等待永久卡住内存管理和其他设备。
 
@@ -283,13 +283,13 @@ Android 17 HWUI 的 `EglManager::createReleaseFence()` 优先创建 `EGL_SYNC_NA
 Android native fence 使用 `VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT` 与 Vulkan binary semaphore 互操作。Android 17 HWUI 展示了两个方向：
 
 - dequeue 返回的 fence fd 被临时导入 binary `VkSemaphore`，GPU 在写 buffer 前等待；
-- Skia 刷新操作发出一个可导出的 binary `VkSemaphore` 信号，随后用 `vkGetSemaphoreFdKHR()` 取出 sync fd，随缓冲提交。
+- Skia flush signal 一个可导出的 binary `VkSemaphore` 信号，随后用 `vkGetSemaphoreFdKHR()` 取出 sync fd，随 buffer 提交。
 
 源码中的 `VkSemaphoreCreateInfo` 没有挂 `VkSemaphoreTypeCreateInfo`，因此这条边界使用 binary semaphore。变量 `VkDrawResult.presentFence` 最终传给 `presentCurrentBuffer()`，站在 BufferQueue consumer 侧看，它是新 buffer 的 acquire fence；它不是 HWC display present fence。
 
 `SYNC_FD` 的 import 只支持 temporary、copy-transference payload。成功调用 `vkImportSemaphoreFdKHR()` 后，fd 所有权交给 Vulkan；binary semaphore 的 wait 消费临时 payload，随后恢复原来的 permanent payload。对 `SYNC_FD` 调用 `vkGetSemaphoreFdKHR()` 也具有 copy-transference 的消费语义，不能把同一次 signal 当成可重复导出的状态。Android 17 HWUI 为每次桥接创建 semaphore，交给 Skia wait/ signal 后销毁，避免把一次性 payload 当成可复用计数器。
 
-Timeline semaphore 是 Vulkan 1.2 的计数器型同步，可用于应用或引擎内部的多轮队列依赖。Vulkan 1.4.335 规范要求 copy-transference handle 从 binary semaphore 导出。因此，时间线信号量不能直接替代 BufferQueue、SurfaceFlinger 与 HWC 的 native fence fd 协议。设备是否支持 timeline feature 仍需运行时查询。
+Timeline semaphore 是 Vulkan 1.2 的计数器型同步，可用于应用或引擎内部的多轮 queue 依赖。Vulkan 1.4.335 规范要求 copy-transference handle 从 binary semaphore 导出。因此，时间线信号量不能直接替代 BufferQueue、SurfaceFlinger 与 HWC 的 native fence fd 协议。设备是否支持 timeline feature 仍需运行时查询。
 
 ## 9. fd 所有权与错误处理
 
@@ -307,7 +307,7 @@ error fence 也不能按普通 signal 静默忽略。`sync_file_info.status` 小
 
 ## 10. Perfetto：先确定谁在等哪条 fence
 
-Fence wait 是因果链的观察点，并不自动等同于缺陷。先确定 waiter、目标栅栏和被保护的缓冲，再看 signal 之前发生了什么。
+Fence wait 是因果链的观察点，并不自动等同于 bug。先确定 waiter、目标 fence 和被保护的 buffer，再看 signal 之前发生了什么。
 
 | 现象 | 初步解释 | 需要补的证据 |
 |---|---|---|
@@ -355,7 +355,7 @@ data_sources {
 
 kernel `drivers/dma-buf/sw_sync.c` 提供软件 timeline，主要用于测试、selftest 与受控软件路径。普通应用不应创建可任意 signal 的 fence 去伪造 GPU/HWC 完成；设备节点权限和 SELinux 通常也会阻止这类访问。
 
-测试代码使用 `sw_sync` 时，仍需保证依赖图会向前推进。由用户空间任意决定 signal 的栅栏进入内核资源回收或设备依赖后，容易形成内核无法观察完整因果的死锁。
+测试代码使用 `sw_sync` 时，仍需保证依赖图会向前推进。由用户空间任意决定 signal 的 fence 进入内核资源回收或设备依赖后，容易形成内核无法观察完整因果的死锁。
 
 ## 12. 版本演进
 

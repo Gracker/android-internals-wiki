@@ -159,7 +159,7 @@ API 起点不代表设备必须实现该版本。应用仍应通过 manifest 的
 
 GLES 的核心模型是 context 内的可变状态。`glBindTexture()`、`glUseProgram()` 和 blend/depth 设置会改变后续 draw 的解释方式。驱动要根据当前状态生成或选择底层命令，并处理应用看不到的缓存、资源驻留和同步。这个模型容易入门，也给驱动留下了较大的实现空间。
 
-“GLES 必然单线程”并不准确。应用可以建立共享 context，在不同线程上传或编译资源；驱动内部也可以异步工作。限制主要来自 context 状态的顺序语义和共享对象同步：同一个 context 的 draw call 随意分发给多个线程，多 context 方案又需要仔细管理可见性与栅栏。
+“GLES 必然单线程”并不准确。应用可以建立共享 context，在不同线程上传或编译资源；驱动内部也可以异步工作。限制主要来自 context 状态的顺序语义和共享对象同步：同一个 context 的 draw call 随意分发给多个线程，多 context 方案又需要仔细管理可见性与 fence。
 
 ### 2.2 Vulkan
 
@@ -172,7 +172,7 @@ Vulkan 从 Android 7.0 / API 24 开始提供。Android 官方的版本表给出�
 | 1.3 | Android 13 / API 33 | Android 13 首发设备基线提升到 1.3 |
 | 1.4 | Android 16 / API 36 | Android 16 及以后首发设备要求 1.4 |
 
-表里的“平台支持”和“首发设备要求”含义不同。升级到 Android 17 的旧设备不会因为系统版本变化就获得新的 GPU 硬件特性。创建设备前必须查询 physical device 的 API version、extension、feature、format 和 queue family。
+表里的“平台支持”和“首发设备要求”含义不同。升级到 Android 17 的旧设备不会因为系统版本变化就获得新的 GPU 硬件特性。创建 device 前必须查询 physical device 的 API version、extension、feature、format 和 queue family。
 
 Vulkan 把大量隐式工作变成应用可见对象：
 
@@ -191,7 +191,7 @@ ANGLE 对应用暴露 EGL/OpenGL ES，在内部维护 GLES 状态并生成 Vulka
 1. 让平台用一套持续维护的 GLES 实现适配不同 GPU 驱动；
 2. 让已有 GLES 应用在不改应用 API 的前提下测试 Vulkan 后端。
 
-ANGLE 不会消除 GLES 状态机的语义。它仍需跟踪状态、翻译着色器，并为 Vulkan 后端组织管线。某个应用在 ANGLE 上更快或更慢，取决于负载、ANGLE 版本、pipeline cache、厂商 Vulkan 驱动和设备热状态，不能只按 API 名称判断。
+ANGLE 不会消除 GLES 状态机的语义。它仍需跟踪状态、翻译着色器，并为 Vulkan backend 组织 pipeline。某个应用在 ANGLE 上更快或更慢，取决于 workload、ANGLE 版本、pipeline cache、厂商 Vulkan 驱动和设备热状态，不能只按 API 名称判断。
 
 ### 2.4 WebGPU
 
@@ -217,7 +217,7 @@ Android 17 还增加了两类限制。第一，声明 Vulkan 1.1 及相应 featu
 
 `frameworks/native/vulkan/vkprofiles/profiles/VP_ANDROID_17_requirements.json` 列出的 Android 17 芯片组要求更宽。它除了 present 扩展，还包含 `VK_KHR_pipeline_binary`、`VK_KHR_pipeline_library`、`VK_EXT_graphics_pipeline_library`、`VK_EXT_present_timing`，并要求 Vulkan 1.4 的 `hostImageCopy` feature。该 JSON 的说明把适用范围限定为在 Android 17 首发或重新进行 Google Requirements Freeze 的芯片组，不能拿它约束所有从旧版本升级到 Android 17 的设备。
 
-应用仍应在运行时枚举。AOSP `libvulkan/driver.cpp` 提供了一个直接例子：只有在 SurfaceFlinger 显示时间戳属性和对应平台标志开启，并且 ICD 支持 `VK_KHR_calibrated_timestamps` 时，加载器才会暴露 `VK_EXT_present_timing`。系统镜像、设备首发条件、厂商 ICD 和升级路径会共同影响最终结果。
+应用仍应在运行时枚举。AOSP `libvulkan/driver.cpp` 提供了一个直接例子：只有在 SurfaceFlinger present timestamp 属性和对应平台 flag 开启，并且 ICD 支持 `VK_KHR_calibrated_timestamps` 时，加载器才会暴露 `VK_EXT_present_timing`。系统镜像、设备首发条件、厂商 ICD 和升级路径会共同影响最终结果。
 
 AVP 2025 也不能替代运行时查询。官方覆盖率统计回答“活跃 Vulkan 设备中有多少满足某组能力”，适合制定降级策略；它不会让缺失的 extension 出现在设备上。工程上可以先用 Profile 做设备分层，再对要启用的 feature、extension 和 format 做精确检查。
 
@@ -266,11 +266,11 @@ Android 17 的设备要求 profile 提高了 pipeline library / binary 的基线
 
 Vulkan 可以提供多个 queue，也可以只提供一个满足要求的 graphics queue family。transfer、compute 和 graphics 使用独立 queue 时，仍可能共享同一硬件执行单元、内存带宽或内核调度器；queue family ownership transfer 和 semaphore 还会增加同步工作。
 
-Android 17 的 HWUI `VulkanManager` 会请求同一 graphics family 的两条队列，一条用于主要图形工作，一条服务 `HardwareBitmapUploader`/`GrallocUploadThread`。这是平台针对自身上传负载的实现选择，不表示所有 Vulkan 应用都应申请两条图形队列。应用要根据 queue family、驱动行为和跟踪数据决定是否拆分。
+Android 17 的 HWUI `VulkanManager` 会请求同一 graphics family 的两条 queue，一条用于主要图形工作，一条服务 `HardwareBitmapUploader`/`GrallocUploadThread`。这是平台针对自身上传 workload 的实现选择，不表示所有 Vulkan 应用都应申请两条图形队列。应用要根据 queue family、驱动行为和 trace 数据决定是否拆分。
 
 ## 5. Android WSI：不同 API 的共同出口
 
-Native Graphics 的边界是画面生产权。应用或引擎通过自身渲染循环获取缓冲、记录 GPU 工作并提交到可见 `Surface`。宿主可以是 `SurfaceView`、`GameActivity`、`NativeActivity` 或其他能提供 `Surface` 的组件。
+Native Graphics 的边界是画面生产权。应用或引擎通过自身渲染循环获取 buffer、记录 GPU 工作并提交到可见 `Surface`。宿主可以是 `SurfaceView`、`GameActivity`、`NativeActivity` 或其他能提供 `Surface` 的组件。
 
 Java `Surface` 可由 `ANativeWindow_fromSurface()` 转成 `ANativeWindow`。EGL window surface 与 Vulkan Android surface 都通过它连接 Android 图形缓冲区。
 
@@ -282,7 +282,7 @@ GLES 应用发出 draw call 后，通过 `eglSwapBuffers()` 提交 window surfac
 
 ### 5.2 Vulkan / present
 
-以下序列用于解释 Android 17 AOSP WSI 的职责分界，不表示厂商 ICD 内部只能按此线程模型执行。
+以下序列用于解释 Android 17 AOSP WSI 的职责分界，不表示 vendor ICD 内部只能按此线程模型执行。
 
 ```text
 vkAcquireNextImageKHR
@@ -311,7 +311,7 @@ Android 17 增加的 `VK_EXT_present_mode_fifo_latest_ready` 允许 FIFO 在同�
 
 Android 17 CDD 没有规定所有设备都必须把 ANGLE 作为默认 GLES 驱动。官方路线是让更多新设备采用 ANGLE，同时保留 GLES 应用兼容性。对应用来说，需要区分“表达偏好”“平台选中”和“loader 已加载”三个阶段。
 
-Android 17 提供清单偏好。以下配置适合希望优先测试或使用 ANGLE 的游戏：
+Android 17 提供 manifest 偏好。以下配置适合希望优先测试或使用 ANGLE 的游戏：
 
 ```xml
 <application
@@ -441,7 +441,7 @@ Vulkan 减少了部分隐式状态推导，并允许应用更早组织工作，�
 
 ### Android 17 上 GLES 都会走 ANGLE
 
-CDD 没有这一规定。系统默认、allowlist / deny 规则、设备等级、vendor API level、开发设置和清单都可能影响选路。应以进程运行时信息为准。
+CDD 没有这一规定。系统默认、allowlist / deny 规则、设备等级、vendor API level、开发设置和 manifest 都可能影响选路。应以进程运行时信息为准。
 
 ### ANGLE 只是兼容层，所以一定更慢
 
@@ -468,7 +468,7 @@ present 只把 swapchain image 交给 presentation engine。Android 上还要经
 | Android 17 Vulkan 芯片组要求 | `frameworks/native/vulkan/vkprofiles/profiles/VP_ANDROID_17_requirements.json` |
 | kernel fence 文件桥接 | `drivers/dma-buf/sync_file.c` |
 
-阅读源码时应确认标签。平台文件均以 `android-17.0.0_r1` 为准，kernel 文件以 `android17-6.18-2026-06_r6` 为准。厂商 ICD 不在 AOSP 中，涉及 shader compiler、GPU scheduler、内存压缩和硬件 counter 的结论还要结合具体 SoC 文档与设备 trace。
+阅读源码时应确认 tag。平台文件均以 `android-17.0.0_r1` 为准，kernel 文件以 `android17-6.18-2026-06_r6` 为准。厂商 ICD 不在 AOSP 中，涉及 shader compiler、GPU scheduler、内存压缩和硬件 counter 的结论还要结合具体 SoC 文档与设备 trace。
 
 ## 参考资料
 

@@ -118,7 +118,7 @@ task2b_verifier_notes: "2026-07-08 Task2B Verifier: status finalized→ready-for
 
 # 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享
 
-BufferQueue 负责回答“哪个槽位归谁使用”，Gralloc 负责回答“按什么规格分配、怎样导入和访问”，DMA-BUF 负责回答“同一份缓冲怎样被多个设备驱动和进程引用”。三者解决不同问题。
+BufferQueue 负责回答“哪个 slot 归谁使用”，Gralloc 负责回答“按什么规格分配、怎样导入和访问”，DMA-BUF 负责回答“同一份 buffer 怎样被多个设备驱动和进程引用”。三者解决不同问题。
 
 理解这组边界后，许多常见现象会变得清楚：
 
@@ -140,7 +140,7 @@ BufferQueue 负责回答“哪个槽位归谁使用”，Gralloc 负责回答“
 
 这个数只用于说明数量级。Gralloc 分配还可能包含 stride padding、多个 plane、压缩元数据、对齐区和实现私有区域，不能用它推算设备上的准确占用。
 
-若每帧都把像素从应用复制到 SurfaceFlinger，60 fps 时单次 IPC 边界就会增加约 593 MiB/s 的读写数据量。Android 因而让参与者共享缓冲，并用句柄传递访问能力。这里仍会产生真实内存流量：GPU 渲染要写，SurfaceFlinger 或 HWC 要读，CLIENT composition 还会读源图层并写 client target。共享避免的是跨进程所有权转移所需的整帧复制。
+若每帧都把像素从应用复制到 SurfaceFlinger，60 fps 时单次 IPC 边界就会增加约 593 MiB/s 的读写数据量。Android 因而让参与者共享 buffer，并用 handle 传递访问能力。这里仍会产生真实内存流量：GPU 渲染要写，SurfaceFlinger 或 HWC 要读，CLIENT composition 还会读源 layer 并写 client target。共享避免的是跨进程所有权转移所需的整帧复制。
 
 ## 2. 从 API 到 kernel 的分层
 
@@ -172,7 +172,7 @@ flowchart TD
     Fence -. 异步完成关系 .-> Devices
 ```
 
-`buffer_handle_t` 是不透明类型。它是 `native_handle_t` 的图形缓冲区别名，可以带多个 fd 和整数；AOSP 不规定“第一个 fd 必定是像素 DMA-BUF”，也不规定厂商私有整数的意义。只能通过 Mapper metadata API、厂商文档和内核 fd 信息解释具体句柄。
+`buffer_handle_t` 是不透明类型。它是 `native_handle_t` 的图形缓冲区别名，可以带多个 fd 和整数；AOSP 不规定“第一个 fd 必定是像素 DMA-BUF”，也不规定厂商私有整数的意义。只能通过 Mapper metadata API、厂商文档和内核 fd 信息解释具体 handle。
 
 ### 2.1 GraphicBuffer 与 AHardwareBuffer
 
@@ -189,7 +189,7 @@ Android 17 的主线分配接口是 Stable AIDL `IAllocator`。当前接口包�
 - `getIMapperLibrarySuffix()`：定位 vendor Stable-C Mapper SP-HAL；
 - `isMultiViewSupported()`/`allocateMultiView()`：Android 17 源码中的 multi-view 分配接口。
 
-旧 `allocate(byte[] descriptor, count)` 仍在 AIDL 中，但注释明确：配合 `AIMAPPER_VERSION_5` 时已由 `allocate2()` 替代；设备仍使用 `mapper@4` 时，旧入口还需要实现。Android 17 框架同时保留新旧厂商接口适配，不能概括为“Gralloc 已完全改成 AIDL”。
+旧 `allocate(byte[] descriptor, count)` 仍在 AIDL 中，但注释明确：配合 `AIMAPPER_VERSION_5` 时已由 `allocate2()` 替代；设备仍使用 `mapper@4` 时，旧入口还需要实现。Android 17 框架同时保留新旧 vendor 接口适配，不能概括为“Gralloc 已完全改成 AIDL”。
 
 `BufferDescriptorInfo` 包含名称、宽高、layer count、format、usage、`reservedSize` 与 `additionalOptions`。`additionalOptions` 用于不改变总体 usage、却影响分配方式的扩展条件；AIDL 注释以 surface compression level 为例。它不是公开的 `AHardwareBuffer_allocateWithOptions()`，NDK 没有这个函数。
 
@@ -265,9 +265,9 @@ Android 12 的 GKI 2.0 用 DMA-BUF Heaps 替换 ION 作为 GKI 分配框架。`l
 2. 创建新的 `GraphicBuffer`；
 3. `GraphicBufferAllocator` 按 Mapper 版本选择 Gralloc 2/3/4/5 allocator wrapper；
 4. vendor Allocator 按 descriptor 分配，并返回 raw native handle；
-5. 常规 `GraphicBuffer` 分配会把 allocator 返回的 raw handle 导入为当前进程可用的句柄；只有显式请求 raw handle 的内部调用方会跳过这一步；
+5. 常规 `GraphicBuffer` 分配会把 allocator 返回的 raw handle 导入为当前进程可用的 handle；只有显式请求 raw handle 的内部调用方会跳过这一步；
 6. producer 看到 reallocation flag 后调用 `requestBuffer(slot)`，取得这一 slot 的 `GraphicBuffer`；
-7. `queueBuffer()` 要求该槽位已经执行过 `requestBuffer()`。
+7. `queueBuffer()` 要求该 slot 已经执行过 `requestBuffer()`。
 
 `GraphicBufferAllocator` 不直接承诺使用某个 DMA-BUF Heap。它只调用适配当前 Gralloc 版本的 allocator。AOSP 的 `sAllocList` 保存已分配 handle 的估算尺寸和请求者，用于 `dump()`、`getTotalSize()` 与 atrace 计数；释放后不会由这张表保留 buffer 供再次分配。
 
@@ -319,7 +319,7 @@ Android 15 起平台支持 16 KB page size 设备。它会影响 ELF、mmap、�
 
 BufferQueue 两端按 slot 缓存 buffer。`BufferQueueConsumer::acquireBuffer()` 在某个 slot 第一次 acquire 新对象时返回 `mGraphicBuffer`；该 slot 之前已被 consumer acquire 过时，源码把输出的 `mGraphicBuffer` 设为 null，避免 consumer 再次 remap。后续帧仍会携带 slot、frame number、fence、crop、transform、dataspace、damage 和时间信息。
 
-以下序列用于说明经典 BufferQueue 的句柄缓存点。以跨进程 consumer 为例，首次返回的 `GraphicBuffer` 在 IPC 反序列化时由 `GraphicBuffer::unflatten()` 调用 Mapper import；消费者业务代码不会额外发起这次调用。
+以下序列用于说明 classic BufferQueue 的 handle 缓存点。以跨进程 consumer 为例，首次返回的 `GraphicBuffer` 在 IPC 反序列化时由 `GraphicBuffer::unflatten()` 调用 Mapper import；消费者业务代码不会额外发起这次调用。
 
 ```mermaid
 sequenceDiagram
@@ -342,7 +342,7 @@ sequenceDiagram
     BQ-->>C: slot + null GraphicBuffer + fence
 ```
 
-图中 import 的进程和 IPC 次数取决于 BufferQueue 拓扑。同进程 producer / consumer 不需要跨 Binder 复制 fd。标准应用窗口常由应用进程内的 BLASTBufferQueue 先消费窗口缓冲，再用 `SurfaceControl.Transaction` 把缓冲与窗口状态提交给 SurfaceFlinger；此时 SF 侧还有自己的 buffer cache 与导入边界。不能把经典 BufferQueue 的单次 IPC 示意直接套到所有窗口。
+图中 import 的进程和 IPC 次数取决于 BufferQueue 拓扑。同进程 producer / consumer 不需要跨 Binder 复制 fd。标准应用窗口常由应用进程内的 BLASTBufferQueue 先消费窗口 buffer，再用 `SurfaceControl.Transaction` 把 buffer 与窗口状态提交给 SurfaceFlinger；此时 SF 侧还有自己的 buffer cache 与 import 边界。不能把 classic BufferQueue 的单次 IPC 示意直接套到所有窗口。
 
 ## 6. 同步：共享地址不代表可以同时读写
 
@@ -423,7 +423,7 @@ Android 17 `GraphicBufferAllocator.cpp` 定义了两个直接观察点：
 | fence、GPU 与 HWC trace | buffer 因异步工作未完成而不能复用，还是引用没有释放 |
 | PSI、direct reclaim、IOMMU/GPU / GPU driver 事件 | 分配慢是否来自内存压力或设备映射 |
 
-看到缓冲长时间处于 ACQUIRED 状态时，先判断 consumer 是否按协议持有，再看 release fence 和队列上限。Mapper 导入通常发生在新句柄首次出现时，不能把每次 ACQUIRED 停留都归因于 import。
+看到 buffer 长时间处于 ACQUIRED 状态时，先判断 consumer 是否按协议持有，再看 release fence 和队列上限。Mapper import 通常发生在新 handle 首次出现时，不能把每次 ACQUIRED 停留都归因于 import。
 
 ## 9. 三类常见性能问题
 
@@ -443,9 +443,9 @@ Camera preview 常把 HAL 产出的 buffer 交给 SurfaceTexture、ImageReader�
 
 ### 9.3 引用泄漏
 
-fd 数量上涨只是线索。若 imported handle 被释放但进程还保留 mmap，或 fd 已关闭但 GPU 对象仍持有附件，单看 `/proc/<pid>/fd` 都会漏判。反过来，同一个 dma-buf 在多个进程各有 fd 也不能按 fd 数量乘以大小。
+fd 数量上涨只是线索。若 imported handle 被释放但进程还保留 mmap，或 fd 已关闭但 GPU object 仍持有 attachment，单看 `/proc/<pid>/fd` 都会漏判。反过来，同一个 dma-buf 在多个进程各有 fd 也不能按 fd 数量乘以 size。
 
-应把分配事件、dma-buf inode、BufferQueue 槽位/ layer、API 对象和释放时点放在同一时间范围内。只有确定“哪个引用超过预期寿命”，才能修正实际持有方。
+应把分配事件、dma-buf inode、BufferQueue slot/ layer、API 对象和释放时点放在同一时间范围内。只有确定“哪个引用超过预期寿命”，才能修正实际持有方。
 
 ## 10. 版本演进
 
@@ -455,7 +455,7 @@ Android 12 的 GKI 2.0 以 DMA-BUF Heaps 替换 ION 分配框架。BufferQueue�
 
 ### Android 13–14
 
-这两版持续演进 BLAST、SurfaceFlinger buffer cache、Composer 与内存诊断，但没有改变 dma-buf/Gralloc 的基本职责。讨论某个 cache purge 或 Composer 优化时，要绑定对应实现、HAL 版本和可复现内存变化，不能把它写成所有缓冲生命周期的固定步骤。
+这两版持续演进 BLAST、SurfaceFlinger buffer cache、Composer 与内存诊断，但没有改变 dma-buf/Gralloc 的基本职责。讨论某个 cache purge 或 Composer 优化时，要绑定对应实现、HAL 版本和可复现内存变化，不能把它写成所有 buffer 生命周期的固定步骤。
 
 ### Android 15–16
 

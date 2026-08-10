@@ -85,7 +85,7 @@ last_deepseek_cn_review_at: 2026-06-20
 
 Frame pacing 要同时约束三件事：应用从哪个节拍开始生产、buffer 何时提交、这块 buffer 希望在哪个显示周期出现。Android Frame Pacing Library（Swappy）把这组控制封装在 `SwappyGL_swap()` 和 `SwappyVk_queuePresent()` 附近，并利用 Choreographer、presentation timestamp 与 fence 抑制 queue-stuffing。
 
-> **源码边界**：平台源码以 Android 17/API 37 的 `android-17.0.0_r1` 为准，涉及栅栏的内核语义以 `android17-6.18-2026-06_r6` 为准。Swappy 是随应用发布的 AGDK 库，不属于 Android 17 平台 API；库实现锚定 `frameworks/opt/gamesdk` 的 `android-games-sdk-games-frame-pacing-release` 分支提交 `f81f888fe11e`。排查线上应用时还要记录 APK 实际打包的 Swappy 版本。
+> **源码边界**：平台源码以 Android 17/API 37 的 `android-17.0.0_r1` 为准，涉及 fence 的 kernel 语义以 `android17-6.18-2026-06_r6` 为准。Swappy 是随应用发布的 AGDK 库，不属于 Android 17 平台 API；库实现锚定 `frameworks/opt/gamesdk` 的 `android-games-sdk-games-frame-pacing-release` 分支提交 `f81f888fe11e`。排查线上应用时还要记录 APK 实际打包的 Swappy 版本。
 
 ## 先分清四个控制量
 
@@ -145,7 +145,7 @@ bool SwappyGL::swapInternal(EGLDisplay display, EGLSurface surface) {
 
 `onPreSwap()` 根据 Choreographer 时序、上一帧完成情况、当前 pipeline mode 和目标 swap duration 决定是否等待。`onPostSwap()` 记录本次提交并推进下一次目标时刻。`setPresentationTime()` 还会检查目标时间是否已经离下一次 VSync 太近；进入这个边界后，它跳过 `eglPresentationTimeANDROID()`，避免设置一个已经失去意义的目标。
 
-Swappy 的作用范围超过“替换一次交换”：它用栅栏约束在途帧，用 presentation timestamp 选择显示周期，再依据观测到的 CPU/GPU 时间调整间隔与 pipeline mode。
+Swappy 的作用范围超过“替换一次 swap”：它用 fence 约束在途帧，用 presentation timestamp 选择显示周期，再依据观测到的 CPU/GPU 时间调整 interval 与 pipeline mode。
 
 ## Choreographer / DisplayManager 的回退路径
 
@@ -262,7 +262,7 @@ VkResult result = SwappyVk_queuePresent(queue, &presentInfo);
 
 Unity、Unreal 等引擎的集成与默认开关会随版本变化。分析时记录引擎版本、graphics API、render pipeline 和 frame-pacing 配置，不能根据“引擎支持 Swappy”推断某个 APK 已启用。
 
-非游戏原生渲染器若只需要 VSync 驱动，可以直接使用 `AChoreographer`；Java 渲染循环可以使用 `Choreographer.FrameCallback`。以下例子只演示自续订回调。
+非游戏 native 渲染器若只需要 VSync 驱动，可以直接使用 `AChoreographer`；Java 渲染循环可以使用 `Choreographer.FrameCallback`。以下例子只演示自续订 callback。
 
 ```java
 Choreographer choreographer = Choreographer.getInstance();
@@ -306,7 +306,7 @@ AOSP 的 `VP_ANDROID_17_requirements.json` 把 `VK_EXT_present_timing`、`VK_KHR
 
 Android 17/API 37 还新增了 `Surface.setProducerThrottlingEnabled()` 和对应的 `ANativeWindow_setProducerThrottlingEnabled()`。Java API 带 `FLAG_BQ_PRODUCER_BACKPRESSURE_CONTROL` 标记，`BufferQueueProducer` 的分支也受 `bq_producer_backpressure_control` 平台 flag 保护；若设备行为与 API 37 文档不符，要同时确认系统镜像的 flag 状态。功能启用时默认值为 true：producer 在 consumer 仍处理上一块 buffer 时执行 queue buffer，CPU 可能在 `eglSwapBuffers()` 或 `vkQueuePresentKHR()` 附近等待上一帧 GPU 工作完成。
 
-设置为 false 会关闭这处缓冲入队 queue-buffer CPU throttle。CPU 生产速度超过 GPU 时，队列容量仍会在后续出队或 `vkAcquireNextImageKHR()` 处形成自然反压；该 API 不会取消 BufferQueue 容量、fence 语义或应用自身的在途限制。异步模式下它没有效果，throttling 始终启用。
+设置为 false 会关闭这处缓冲入队 queue-buffer CPU throttle。CPU 生产速度超过 GPU 时，队列容量仍会在后续 dequeue 或 `vkAcquireNextImageKHR()` 处形成自然反压；该 API 不会取消 BufferQueue 容量、fence 语义或应用自身的 in-flight 限制。异步模式下它没有效果，throttling 始终启用。
 
 这项能力适合已经用 semaphore、fence 和有限 in-flight frame 做好显式同步的 Vulkan renderer。旧应用若把 present 中的 stall 当作隐式同步，直接关闭可能暴露资源复用错误或让 queue depth 增长。`f81f888fe11e` 的 Swappy release 实现早于该 API，也没有调用它；接入 Swappy 的应用应先用 trace 确认当前 stall 来源，再决定是否由业务侧修改。
 
