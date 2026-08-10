@@ -28,7 +28,7 @@ sources:
 
 Compose 性能排查容易混淆三类证据：编译器生成了什么代码、运行时执行了哪些组合函数、用户看到的帧是否按时显示。它们分别回答不同问题，不能互相代替。
 
-本章给出一条可复现的诊断链路：
+可复现的诊断链路如下：
 
 1. 用 Compose 编译器报告检查稳定性推断、重启组和可跳过性。
 2. 用 Layout Inspector 观察目标交互期间的重组与跳过计数。
@@ -37,7 +37,7 @@ Compose 性能排查容易混淆三类证据：编译器生成了什么代码、
 
 ## 核查口径与版本锚点
 
-本文按以下版本核查配置、输出格式和运行时行为：
+配置、输出格式和运行时行为按以下版本核查：
 
 | 层级 | 固定锚点 | 使用范围 |
 | --- | --- | --- |
@@ -48,7 +48,7 @@ Compose 性能排查容易混淆三类证据：编译器生成了什么代码、
 
 Compose 编译器从 Kotlin 2.0 起随 Kotlin 一同发布，`org.jetbrains.kotlin.plugin.compose` 的版本必须与 Kotlin 插件一致。Compose 库独立于 Android 平台发布；API 37 不会自动决定项目使用哪个 Compose 版本。
 
-版本演进章节可以比较旧版行为。本章的配置、报告字段和示例输出只对上表中的当前锚点作保证。
+版本演进资料可以比较旧版行为。这里的配置、报告字段和示例输出只对上表中的当前锚点作保证。
 
 ## 一、先分清四层证据
 
@@ -361,7 +361,7 @@ dependencies {
 }
 ```
 
-该能力要求采集设备至少为 API 30。本文以 Android 17 / API 37 设备为验证目标，因此满足平台条件。若使用 BOM，应确认 BOM 实际映射的 `runtime-tracing` 版本；本章显式写出 `1.11.4` 以固定实验输入。
+该能力要求采集设备至少为 API 30。验证目标为 Android 17 / API 37 设备，满足平台条件。若使用 BOM，应确认 BOM 实际映射的 `runtime-tracing` 版本；这里显式写出 `1.11.4` 以固定实验输入。
 
 Kotlin 2.3.20 的 Compose 插件默认包含 Trace marker 和源码信息。项目若显式关闭 `includeTraceMarkers`，即使加入运行时依赖，也不会得到完整的逐函数信息。
 
@@ -704,4 +704,4 @@ python3 tools/compose_metrics_snapshot.py \
 - [本知识库：Jetpack Compose 性能优化](03-compose-performance.md)
 - [本知识库：Android 17 FrameTimeline](../../part2-rendering/ch02-rendering/2.30-android17-frametimeline.md)
 
-本文的版本化结论核查于 2026-07-29。编译器报告样例来自 Kotlin 2.3.20 编译器对本章最小源码的实测输出；升级 Kotlin 或 Compose 后，应重新生成报告并复核字段、功能开关与 Trace 名称。
+以上版本化结论核查于 2026-07-29。编译器报告样例来自 Kotlin 2.3.20 编译器对最小源码的实测输出；升级 Kotlin 或 Compose 后，应重新生成报告并复核字段、功能开关与 Trace 名称。

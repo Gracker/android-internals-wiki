@@ -35,7 +35,7 @@ gap_source: "daily-info + research-gaps"
 
 “异步编译管线管理器”适合作为工程问题的名称，却不是 Android 17 对所有应用公开的一项系统能力。普通 View/Compose 应用、直接使用 Vulkan 的游戏，以及经 ANGLE 运行的 OpenGL ES 应用，管线由不同组件创建，应用可控制的范围也不同。若一开始没有分清路径，后续看到的缓存、线程、Trace 和优化建议很容易互相错配。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，以 `android17-6.18-2026-06_r6` 为 kernel 锚点，回答四个问题：
+平台锚点固定为 Android 17 / API 37 / `android-17.0.0_r1`，kernel 锚点固定为 `android17-6.18-2026-06_r6`。以下回答四个问题：
 
 1. 管线创建时间消耗在哪一侧，为什么它会造成帧停顿；
 2. Android 17 的 HWUI、Skia Graphite、原生 Vulkan 和 ANGLE 各自负责什么；
@@ -75,7 +75,7 @@ return GrDirectContexts::MakeVulkan(backendContext, options);
 
 HWUI 选择 Vulkan 后端时，应用仍然向 `Canvas`、`RenderNode` 或 Compose UI 提交绘制描述。`VkDevice`、`VkQueue`、管线缓存和提交同步均由平台管理。应用无法取得 HWUI 内部的 `VkPipelineCache`，也不应通过反射或私有符号干预它。
 
-原生 Vulkan 应用的责任完全不同。它创建 `VkDevice`、管线布局、图形管线、命令缓冲和同步对象，也要决定何时编译、怎样并发以及何时保存缓存。本章中涉及编译线程、`VK_PIPELINE_COMPILE_REQUIRED` 和缓存文件的代码，只适用于这条路径。
+原生 Vulkan 应用的责任完全不同。它创建 `VkDevice`、管线布局、图形管线、命令缓冲和同步对象，也要决定何时编译、怎样并发以及何时保存缓存。以下涉及编译线程、`VK_PIPELINE_COMPILE_REQUIRED` 和缓存文件的代码只适用于这条路径。
 
 ### 3. ANGLE 必须先证明后端已启用
 
@@ -576,7 +576,7 @@ AGI 能看到一帧内 API 和 GPU 工作，不代表一次长时间的 loading 
 
 ## 十二、版本边界
 
-| 项目 | 本章采用的边界 |
+| 项目 | 采用的边界 |
 | --- | --- |
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` |
 | HWUI | 标准路径按 Skia Ganesh 核查；不把 Graphite 源码等同于 HWUI 默认实现 |
@@ -584,7 +584,7 @@ AGI 能看到一帧内 API 和 GPU 工作，不代表一次长时间的 loading 
 | kernel | `android17-6.18-2026-06_r6`，用于调度、fence 和驱动线程证据 |
 | 厂商驱动 | 设备相关；AOSP 公共源码无法保证编译并行度、缓存命中成本和 GPU queue 物理并行 |
 
-Android 16 的历史数据可以用于对比，但本章涉及的源码名称、Trace 标记和 HWUI 缓存实现只对 Android 17 锚点作核查。后续平台若把 HWUI 切换到 Graphite，应重新核对 `RenderPipelineType`、context 创建点、pipeline task 执行方式和 Trace 类别，不能沿用本章结论。
+Android 16 的历史数据可以用于对比，但相关源码名称、Trace 标记和 HWUI 缓存实现只对 Android 17 锚点作核查。后续平台若把 HWUI 切换到 Graphite，应重新核对 `RenderPipelineType`、context 创建点、pipeline task 执行方式和 Trace 类别，不能沿用这里的结论。
 
 ## 十三、工程检查清单
 

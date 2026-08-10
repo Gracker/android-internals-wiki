@@ -58,9 +58,9 @@ sources:
 
 Compose 文本卡顿不能只看重组次数。一次文本更新可能停在组合、测量、字体解析、绘制或显示系统中的任意一段；同样的 `Text` 调用还可能进入两套不同的 Modifier 节点实现。排查时要同时回答：哪项输入变了、是否重新排版、目标帧最终晚在什么位置。
 
-本文的平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`，Compose UI 源码锚点是稳定版 1.11.4 的发布提交 `854220f44ea8ea80fee824a6c5a045f39bede289`。Compose 与 Android 平台独立发布，报告中应分别记录 Compose BOM、Compose UI、Kotlin、Compose Compiler 插件和 Android 版本。涉及调度、缺页或内存回收时，内核侧统一使用 `android17-6.18-2026-06_r6`；普通文本排版结论不能从内核标签直接推导。
+平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`，Compose UI 源码锚点是稳定版 1.11.4 的发布提交 `854220f44ea8ea80fee824a6c5a045f39bede289`。Compose 与 Android 平台独立发布，报告中应分别记录 Compose BOM、Compose UI、Kotlin、Compose Compiler 插件和 Android 版本。涉及调度、缺页或内存回收时，内核侧统一使用 `android17-6.18-2026-06_r6`；普通文本排版结论不能从内核标签直接推导。
 
-本章不提供固定耗时、提升比例或文本长度阈值。文字内容、字体、语言、字形、断行、约束、设备、刷新率和编译状态都会改变结果，性能判断必须附带可复现的场景和系统跟踪。
+这里不提供固定耗时、提升比例或文本长度阈值。文字内容、字体、语言、字形、断行、约束、设备、刷新率和编译状态都会改变结果，性能判断必须附带可复现的场景和系统跟踪。
 
 ## 一、Android 上的一段 Compose 文本怎样显示
 
@@ -310,7 +310,7 @@ fun HighlightedParagraph(
 }
 ```
 
-颜色属于绘制属性，但它被写进 `AnnotatedString` 的 span 样式，变更时会产生新的注解内容并更新文本节点。若颜色需要高频动画，可考虑把视觉效果放到更适合的绘制层；先确认高亮范围、无障碍和选择语义没有改变。
+颜色属于绘制属性，但它被写进 `AnnotatedString` 的 span 样式，变更时会产生新的注解内容并更新文字节点。若颜色需要高频动画，可考虑把视觉效果放到更适合的绘制层；先确认高亮范围、无障碍和选择语义没有改变。
 
 ### 2. `TextMeasurer` 服务于自定义绘制
 
@@ -379,7 +379,7 @@ fun LabeledBackground(
 - 列表宽度、窗口模式、字体缩放和显示密度；
 - 手势、迭代次数与启动模式。
 
-Macrobenchmark 的 `FrameTimingMetric` 给出 `frameOverrunMs` 与 `frameDurationCpuMs` 分布，并为每次迭代保存系统跟踪文件。Android 12 及以上才提供 `frameOverrunMs`；本文 Android 10 到 11 的兼容测试要使用对应平台可用的帧指标和跟踪证据。
+Macrobenchmark 的 `FrameTimingMetric` 给出 `frameOverrunMs` 与 `frameDurationCpuMs` 分布，并为每次迭代保存系统跟踪文件。Android 12 及以上才提供 `frameOverrunMs`；Android 10 到 11 的兼容测试要使用对应平台可用的帧指标和跟踪证据。
 
 ### 2. 源码中的文本 slice（切片）可以辅助定位
 
