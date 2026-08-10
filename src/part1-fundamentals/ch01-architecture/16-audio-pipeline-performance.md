@@ -120,7 +120,7 @@ last_deepseek_cn_review_at: 2026-06-21
 单个缓冲区承载的音频时长为：
 
 ```text
-缓冲区时长 = 帧数 / 采样率
+buffer_duration = frame_count / sample_rate
 ```
 
 例如 48kHz 下 240 frames 对应 5ms。它只说明这个 buffer 覆盖多少音频，不代表端到端输出延迟就是 5ms。真实路径还可能包含：
@@ -170,7 +170,7 @@ val proAudio = pm.hasSystemFeature(
 
 数据面（典型 PCM legacy path）
 应用缓冲区
-  └─ 客户端/服务端共享内存
+  └─ client/server shared memory
        └─ AudioFlinger 混音/ record thread
             └─ Audio HAL
                  └─ driver / DSP / Codec / transducer
@@ -183,7 +183,7 @@ Binder 主要负责建流、状态、路由、参数和控制操作；高频 PCM
 策略侧根据 `AudioAttributes`、设备连接状态、产品音频策略和可用配置，选择输出或输入。它会影响：
 
 - 扬声器、USB、蓝牙、HDMI 等目标设备。
-- 主输出、快速、深缓冲、直通、卸载、MMAP 等输入/输出配置。
+- primary、fast、deep-buffer、direct、offload、MMAP 等 output/input profile。
 - usage 对应的音量组和路由策略。
 - 设备切换时重新打开或迁移流。
 
@@ -392,7 +392,7 @@ AAudio/Oboe 的 data callback 运行在高优先级线程上。callback 内应�
 
 - `malloc` / `new` 和不可控的对象构造。
 - 文件、网络或 Binder I/O。
-- 互斥锁、条件变量、休眠。
+- mutex、condition variable、sleep。
 - 停止、关闭当前流。
 - 在触发回调的同一条流上再次调用 `read()` / `write()`。
 - 日志洪泛和复杂跟踪字符串拼接。
@@ -538,7 +538,7 @@ adb shell getprop ro.audio.max_fast_tracks
 重点核对：
 
 - App pid pid/uid 对应的轨道。
-- 输出线程类型、采样率、格式、帧数。
+- output thread 类型、sample rate、format、frame count。
 - track flags 中是否接受 FAST；官方调试文档也建议用轨道列中的 `F` 确认 fast track。
 - 快速轨道可用掩码和欠载计数器。
 - output 是混音、direct、offload 还是 MMAP。

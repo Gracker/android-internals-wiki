@@ -140,7 +140,7 @@ Launcher 发起活动启动时，前半段通过 Binder 进入 `system_server`�
 普通应用进程的控制流可以简化为：
 
 ```text
-启动器 / 应用
+Launcher / App
   → Binder
 system_server: ATMS / AMS / ProcessList
   → Process.start()
@@ -398,9 +398,9 @@ ZygoteConnection.handleChildProc()
 建议同时采集：
 
 - atrace 的 `am` 与 `dalvik`；
-- 调度切换/唤醒；
+- sched switch / waking；
 - Binder transaction；
-- 进程生命周期；
+- process lifecycle；
 - Android EventLog events buffer；
 - 需要分析内核 fork 时再加入 syscall 和内存事件。
 

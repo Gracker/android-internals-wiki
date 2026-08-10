@@ -339,7 +339,7 @@ Profile 覆盖更多函数，不一定更好。后台压力测试、开机和交
 可以按 CUJ 分桶收集，再决定权重：
 
 - boot；
-- 应用冷/温启动；
+- cold/warm app launch；
 - Binder/HWBinder；
 - 相机、音频、显示；
 - 文件系统与存储；
@@ -357,7 +357,7 @@ Profile 覆盖更多函数，不一定更好。后台压力测试、开机和交
 - 周期数、指令数、分支预测失败、指令缓存未命中；
 - 功耗和温升；
 - 二进制 text size；
-- 崩溃、任务卡死和看门狗事件。
+- crash、hung task 和 watchdog。
 
 ---
 
@@ -386,7 +386,7 @@ Perfetto 适合比较：
 - Binder 请求的调用方等待与服务端执行；
 - runnable、CPU frequency、idle 和调度迁移；
 - 文件系统 I/O 和缺页；
-- 系统启动时间线。
+- boot timeline。
 
 同一 CUJ 至少运行足够轮次，并采用相同的 cache/进程状态。只比较单次截图没有统计意义。
 
