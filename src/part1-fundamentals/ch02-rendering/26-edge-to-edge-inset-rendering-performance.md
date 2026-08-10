@@ -58,13 +58,13 @@ Android 15（API 35）开始对满足版本条件的 Activity 强制 Edge-to-Edg
 
 1. **窗口几何**：应用窗口是否覆盖系统栏和 cutout 区域；
 2. **Insets 数据**：哪些系统区域与当前窗口相交，何时分发给 View 树；
-3. **像素与图层**：当前帧哪些内容重绘，SurfaceFlinger/HWC 最终如何合成。
+3. **像素与 layer**：当前帧哪些内容重绘，SurfaceFlinger/HWC 最终如何合成。
 
 把这三层混在一起，容易把透明系统栏误判为新增 GPU 合成层，或把 Insets 动画误判为每帧完整重新布局。
 
 ## 1. Android 15 到 Android 17 的行为边界
 
-### 1.1 Edge-to-Edge 由运行平台和目标 SDK 共同决定
+### 1.1 Edge-to-Edge 由运行平台和 target SDK 共同决定
 
 在 Android 15 及更高版本设备上，target SDK 35 及以上的应用默认 Edge-to-Edge。Android 15 为 target 35 留过 `windowOptOutEdgeToEdgeEnforcement` 临时退出项；Android 16 上，target SDK 36 及以上时该退出项被禁用。Android 17 延续这条边界，没有新增另一套 Edge-to-Edge 模型。
 
@@ -113,10 +113,10 @@ SurfaceFlinger → HWC / RenderEngine → Display present
 
 ### 2.1 系统栏透明不等于新增透明 Surface
 
-系统栏图标、手势把手、caption 控件等 SystemUI 内容可以有自己的窗口或图层。应用侧的系统栏背景处理还可能发生在 `DecorView` 内部：
+系统栏图标、手势 handle、caption 控件等 SystemUI 内容可以有自己的窗口或 layer。应用侧的系统栏背景处理还可能发生在 `DecorView` 内部：
 
-- Android 17 `DecorView.updateColorViews()` 维护状态栏和导航栏的颜色 View；
-- `calculateNavigationBarColor()` 在 Edge-to-Edge 强制场景中可把三键导航栏颜色转成对比度遮罩；
+- Android 17 `DecorView.updateColorViews()` 维护状态栏和导航栏的 color view；
+- `calculateNavigationBarColor()` 在 Edge-to-Edge 强制场景中可把三键导航栏颜色转成对比度 scrim；
 - 这些 color view 最终画进当前 App Window buffer，不应重复算成独立的应用 Surface。
 
 因此，系统栏透明后不一定增加透明图层，系统栏覆盖区域的像素也不一定是新增绘制。实际图层数量要从 SurfaceFlinger 图层树确认，App Window 内部的普通 View 或 DecorView 颜色 View，不会因为视觉上像一层遮罩就变成 HWC layer。
@@ -167,7 +167,7 @@ View / ViewGroup hierarchy
 
 系统发来新的 Insets 状态时，`ViewRootImpl.notifyInsetsChanged()` 会设置 `mApplyInsetsRequested`、调用 `requestLayout()`，并在需要时安排遍历。应用主动调用 `View.requestApplyInsets()` 时，View 请求根节点重新分发；它不等于收到一次新的 WMS 状态，也不会为每种 Insets 类型分别发起一轮 Binder 请求。
 
-### 3.2 一次 `WindowInsets` 可以同时携带多种类型
+### 3.2 一次 `WindowInsets` 可以同时携带多种 type
 
 状态栏、导航栏、caption、IME、cutout、system gestures 等信息都可以出现在同一个 `WindowInsets` 中。调用：
 
@@ -210,14 +210,14 @@ val safe = insets.getInsets(
 INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT
 ```
 
-执行回调。`InsetsController` 把动画帧安排到 `CALLBACK_INSETS_ANIMATION`，因此同一帧中的 Insets 动画工作位于普通动画之后、traversal 之前。
+执行回调。`InsetsController` 把动画帧安排到 `CALLBACK_INSETS_ANIMATION`，因此同一帧中的 Insets 动画工作位于普通 animation 之后、traversal 之前。
 
 ### 4.1 有动画回调：分发 `onProgress()`
 
 设置 `WindowInsetsAnimation.Callback` 后，动画生命周期包含四个阶段：
 
 - `onPrepare()`：布局切换前记录起始状态；
-- `onStart()`：布局已切到结束状态后记录结束位置和边界；
+- `onStart()`：布局已切到结束状态后记录结束位置和 bounds；
 - `onProgress()`：动画进行时收到插值后的 Insets 与 running animations；
 - `onEnd()`：动画完成或收尾时清理临时属性。
 
@@ -225,7 +225,7 @@ INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT
 
 回调本身在主线程帧阶段执行。修改 `translationY`、alpha 等渲染属性通常不需要 measure；修改 padding、margin、约束或列表结构可能请求 layout。成本取决于回调做了什么，不能由可见 item 数推导出固定毫秒值。
 
-### 4.2 Android 17 的同步 Insets 动画：满足条件才逐帧应用
+### 4.2 Android 17 的同步 Insets 动画：满足条件才逐帧 apply
 
 `android-17.0.0_r1` 已包含同步 Insets 动画机制：
 
@@ -346,8 +346,8 @@ ViewCompat.setOnApplyWindowInsetsListener(list) { view, windowInsets ->
 
 性能判断仍要回到 Compose 的三阶段：
 
-- 状态读取是否引起不必要的重组；
-- Insets 修饰符是否让大范围布局重算；
+- 状态读取是否引起不必要的 recomposition；
+- Insets modifier 是否让大范围 layout 重算；
 - drawing 是否只更新需要变化的节点。
 
 不要声称某个 modifier 因内部 `remember` 就“不会每帧计算”。Compose 是独立发布组件，具体行为要注明 Compose/AndroidX 版本，并以 composition trace、layout trace 和目标版本源码或官方文档为准。
@@ -369,7 +369,7 @@ ViewCompat.setOnApplyWindowInsetsListener(list) { view, windowInsets ->
 
 Predictive Back 让用户预览返回目的地。Android 15 起，back-to-home、cross-task、cross-activity 系统动画不再依赖开发者选项；Android 16 上，target 36+ 应用默认启用这些系统动画，并提供迁移或临时退出边界。
 
-它不要求每个应用在同一窗口内固定绘制前后两份界面：
+它不要求每个应用在同一窗口内固定绘制前后两份 rear face：
 
 - back-to-home、cross-task、cross-activity 可以由系统基于窗口、Task 和 transition leash 组织动画；
 - Fragment、Navigation 或 Compose 的自定义进度动画可以在应用内部更新 UI；
@@ -457,7 +457,7 @@ LIMIT 40;
 | 现象 | 不能直接得出的结论 | 继续检查 |
 |---|---|---|
 | 内容画到状态栏后方 | 多了一个应用 Surface | App Window layer、SystemUI layer、DecorView color view |
-| Insets 数值变化 | 每种类型分别完成一次 Binder 分发 | `InsetsState` 序列、`dispatchApplyInsets` 次数 |
+| Insets 数值变化 | 每种 type 分别完成一次 Binder 分发 | `InsetsState` 序列、`dispatchApplyInsets` 次数 |
 | `onProgress()` 每帧出现 | 每帧都执行普通 `onApplyWindowInsets()` | callback 路径与同步 apply 条件 |
 | `performTraversals` 出现 | measure/layout/draw 全部发生 | traversal 内部子段和 View 请求来源 |
 | 三键导航有半透明背景 | SurfaceFlinger 必须 CLIENT composition | DecorView scrim、layer composition type |
@@ -471,7 +471,7 @@ LIMIT 40;
 
 - [`PhoneWindow.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/policy/PhoneWindow.java)：Edge-to-Edge compat change、opt-out 边界、`decorFitsSystemWindows` 和系统栏颜色；
 - [`DecorView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/policy/DecorView.java)：color view、三键导航 scrim、系统栏消费；
-- [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)：Insets 状态变化、`dispatchApplyInsets`、同步动画条件与遍历；
+- [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)：Insets 状态变化、`dispatchApplyInsets`、同步动画条件与 traversal；
 - [`InsetsController.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/InsetsController.java) 和 [`ViewRootInsetsControllerHost.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootInsetsControllerHost.java)：动画 runner、`CALLBACK_INSETS_ANIMATION`、progress 分发；
 - [`View.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java) 和 [`ViewGroup.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java)：listener/override、消费和新旧兄弟分发语义；
 - [`Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)：Input、Animation、Insets Animation、Traversal、Commit 的帧内顺序；
@@ -490,11 +490,11 @@ LIMIT 40;
 - [ ] 是否记录实际动画 duration、刷新率和回调次数，而非套用 300 ms/18 帧？
 - [ ] 多窗口是否按 Window、ViewRoot、layer、Display 分组？
 - [ ] Predictive Back 是否区分系统 transition 与应用自定义动画？
-- [ ] HWC 客户端或设备合成结论是否有同帧合成证据？
+- [ ] HWC CLIENT/DEVICE 结论是否有同帧 composition 证据？
 - [ ] 是否使用 FrameTimeline 的预期和实际截止时间判断卡顿？
 
 ## 总结
 
 Edge-to-Edge 把“避开系统栏”的责任从窗口默认留白转给应用布局，但标准 App Window 的生产与显示主线没有改变。性能风险主要来自 Insets 变化后的主线程工作、错误的布局更新范围、动画期间逐帧 apply/progress，以及实际 Display layer 集合对 HWC 策略的影响。
 
-Android 17 Review 的核心是先识别路径：普通状态变化、动画 callback、同步 Insets 动画、桌面窗口 resize 和 Predictive Back 各有不同的调度与 layer 证据。把路径分清，再用 `dispatchApplyInsets`、traversal 子段、FrameTimeline 和 composition type 对齐同一帧，才能判断该修 View 层、动画逻辑、窗口策略还是显示合成。
+Android 17 下排查的核心是先识别路径：普通状态变化、动画 callback、同步 Insets 动画、桌面窗口 resize 和 Predictive Back 各有不同的调度与 layer 证据。把路径分清，再用 `dispatchApplyInsets`、traversal 子段、FrameTimeline 和 composition type 对齐同一帧，才能判断该修 View 层、动画逻辑、窗口策略还是显示合成。

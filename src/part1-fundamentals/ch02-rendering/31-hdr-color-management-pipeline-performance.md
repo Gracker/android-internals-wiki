@@ -97,7 +97,7 @@ flowchart LR
     HWC --> PANEL["Panel / external sink"]
 ```
 
-图中的 `DEVICE` 与 `CLIENT` 是 HWC `validate` 后的逐帧结果。即使上一帧视频图层走 `DEVICE`，下一帧增加模糊、复杂裁剪或更多图层后也可能改为 `CLIENT`。
+图中的 `DEVICE` 与 `CLIENT` 是 HWC `validate` 后的逐帧结果。即使上一帧视频 Layer 走 `DEVICE`，下一帧增加模糊、复杂裁剪或更多 Layer 后也可能改为 `CLIENT`。
 
 ### 1.3 未知 dataspace 不是安全的万能值
 
@@ -128,7 +128,7 @@ Android 17 的 `DisplayColorProfile` 从 HWC 能力构造以下信息：
 
 ### 2.2 输出 dataspace 由当前可见 Layer 共同影响
 
-`CompositionEngine::Output::getBestDataspace()` 遍历可见图层：
+`CompositionEngine::Output::getBestDataspace()` 遍历可见 Layer：
 
 - 普通 SDR 默认以 sRGB 起步；
 - Display P3 内容可以把 SDR 输出提升到 Display P3；
@@ -244,7 +244,7 @@ API 35 的 `Window.setDesiredHdrHeadroom()` 只在窗口使用 `COLOR_MODE_HDR` 
 
 ### 4.2 Layer brightness 与 dimming stage
 
-Composer3 的 `LayerBrightness` 用于表达 HDR 内容旁边的 SDR 图层应如何调暗。`DisplayCommand.brightness` 的接口注释还要求：即使面板亮度切换需要多帧，SDR 图层调暗也要与显示变化协调，避免可见闪烁。
+Composer3 的 `LayerBrightness` 用于表达 HDR 内容旁边的 SDR Layer 应如何调暗。`DisplayCommand.brightness` 的接口注释还要求：即使面板亮度切换需要多帧，SDR Layer dimming 也要与显示变化协调，避免可见闪烁。
 
 HWC 通过 `DimmingStage` 告诉框架在哪个阶段调暗：
 
@@ -276,7 +276,7 @@ Android 8.0（API 26）为兼容设备提供广色域色彩管理。应用可以
 
 - 在 Activity 上请求 `android:colorMode="wideColorGamut"`；
 - 调用 `Window.setColorMode(COLOR_MODE_WIDE_COLOR_GAMUT)`；
-- 加载带 ICC 配置文件的 PNG、JPEG 和 WebP；
+- 加载带 ICC profile 的 PNG、JPEG 和 WebP；
 - 用 `Bitmap.getColorSpace()` 检查解码结果；
 - 通过 EGL 扩展或 `VK_EXT_swapchain_colorspace` 输出 P3/scRGB。
 
@@ -336,7 +336,7 @@ Android 14（API 34）开始支持 Ultra HDR 图片。图片包含：
 
 - 一张可在 SDR 设备显示的 base image；
 - 一张 gain map；
-- 描述增益应用方式的参数。
+- 描述 gain 应用方式的参数。
 
 在支持的 HDR 窗口和显示上，渲染端根据当前 HDR/SDR ratio 重建高光；在 SDR 路径上仍可显示 base image。应用可用 `Bitmap.hasGainmap()` 检查 gain map。
 
@@ -348,7 +348,7 @@ Android 17 的 RenderEngine 包含 `GainmapFactory`，也能在截图路径生�
 
 官方建议在展示 Ultra HDR 时动态把 Window 切到 `COLOR_MODE_HDR`，离开该内容后恢复默认模式。对图片列表，不要因少量缩略图让整个页面长期处于 HDR：
 
-- HDR 高光余量会改变 SDR 界面与高光的亮度关系；
+- HDR headroom 会改变 SDR UI 与高光的亮度关系；
 - HDR 窗口可能选择更高精度的 buffer；
 - 更多内容进入色彩处理路径；
 - 面板高亮区域和平均图像电平会影响功耗。
@@ -357,7 +357,7 @@ Android 17 的 RenderEngine 包含 `GainmapFactory`，也能在截图路径生�
 
 ---
 
-## 七、HDR 视频：优先保留独立图层
+## 七、HDR 视频：优先保留独立 Layer
 
 ### 7.1 `SurfaceView` 与 `TextureView` 的结构差异
 
@@ -369,7 +369,7 @@ Android 17 的 RenderEngine 包含 `GainmapFactory`，也能在截图路径生�
 
 - video plane 数量或格式能力不足；
 - 缩放、旋转、非整数 crop；
-- 同屏 HDR/SDR 图层组合；
+- 同屏 HDR/SDR Layer 组合；
 - 圆角、透明度、复杂遮挡；
 - 保护内容约束；
 - 外接显示的输出格式；
@@ -474,7 +474,7 @@ val p3 = Color(
 val srgb = p3.convert(ColorSpaces.Srgb)
 ```
 
-颜色对象有色彩空间，不代表承载它的窗口已获得广色域或 HDR 输出。最终效果还取决于 Android Window color mode、Canvas/Skia 目标空间、设备显示能力和 SurfaceFlinger 输出配置。
+颜色对象有色彩空间，不代表承载它的 Window 已获得 WCG/HDR 输出。最终效果还取决于 Android Window color mode、Canvas/Skia 目标空间、设备显示能力和 SurfaceFlinger 输出配置。
 
 颜色动画没有跨版本、跨 API 通用的额外开销比例。应确认插值在哪个空间执行、是否每帧分配 connector、参与动画的像素覆盖范围，再用基准测试判断是否值得缓存转换结果。
 
@@ -503,14 +503,14 @@ val srgb = p3.convert(ColorSpaces.Srgb)
 
 观察：
 
-- HWC 验证后的 `DEVICE` 或 `CLIENT`；
+- HWC validate 后的 `DEVICE` 或 `CLIENT`；
 - client target 的格式和 dataspace；
 - `hasClientComposition`；
 - Layer source dataspace 与 display output dataspace；
 - `AGTM`、LUT、RenderEngine draw；
 - client composition cache hit/miss。
 
-色彩场景变化后若 GPU 时间增加，先判断是否从 `DEVICE` 改为 `CLIENT`，再分析 tone mapping shader。否则容易把图层数量、模糊或几何限制引起的回退错算成 HDR 算法成本。
+色彩场景变化后若 GPU 时间增加，先判断是否从 `DEVICE` 改为 `CLIENT`，再分析 tone mapping shader。否则容易把 Layer 数量、模糊或几何限制引起的回退错算成 HDR 算法成本。
 
 ### 10.3 HWC / DPU 与面板侧
 
@@ -518,7 +518,7 @@ val srgb = p3.convert(ColorSpaces.Srgb)
 
 - plane 分配与 plane 失败原因；
 - HDR 元数据和 LUT 是否被接受；
-- DPU 带宽与时钟；
+- DPU bandwidth 与时钟；
 - 面板 brightness、HDR/SDR ratio、APL；
 - thermal throttling；
 - 外接 sink 的 HDR mode 与链路格式。
@@ -535,7 +535,7 @@ GPU 时间较低并不说明整机成本低。高亮 HDR 内容的主要功耗�
 |---|---|
 | 设备状态 | 型号、build、温度、电量、充电状态 |
 | 显示 | 分辨率、刷新率、亮度、自动亮度、HDR/SDR ratio |
-| 内容 | 文件哈希、HDR 格式、MaxCLL/MaxFALL、APL 和帧率 |
+| 内容 | 文件 hash、HDR 格式、MaxCLL/MaxFALL、APL 和帧率 |
 | Layer | SurfaceView/TextureView、遮挡、缩放、composition type |
 | 测量 | 外部电源/轨道、GPU counter、DPU counter、Perfetto |
 
@@ -568,7 +568,7 @@ desiredMinLuminance
 luts
 ```
 
-同一测试至少保存 HDR 内容出现前、稳定显示时和消失后三份转储，才能看到输出模式与合成策略是否变化。
+同一测试至少保存 HDR 内容出现前、稳定显示时和消失后三份 dump，才能看到输出模式与合成策略是否变化。
 
 ### 11.2 再录 Perfetto
 
@@ -581,7 +581,7 @@ luts
 - sched、freq、power；
 - 设备可用的 HWC/vendor display data source。
 
-Android 17 源码中可直接对应的跟踪名称包括：
+Android 17 源码中可直接对应的 trace 名称包括：
 
 - `hasClientComposition <display>`；
 - `ClientCompositionCacheHit` / `ClientCompositionCacheMiss`；
@@ -597,12 +597,12 @@ Android 17 源码中可直接对应的跟踪名称包括：
 
 1. 同一视频，SurfaceView 对 TextureView；
 2. 同一图片，SDR base 对 Ultra HDR；
-3. 同一窗口，默认色彩模式对比广色域或 HDR；
+3. 同一 Window，默认 color mode 对 WCG/HDR；
 4. 同一帧，去掉 UI overlay；
 5. 同一亮度，固定 60 Hz 与高刷新率；
 6. 同一设备，内屏与外接显示。
 
-如果 A/B 同时改变亮度、刷新率、内容和图层结构，结论无法定位到色彩管线。
+如果 A/B 同时改变亮度、刷新率、内容和 Layer 结构，结论无法定位到色彩管线。
 
 ---
 
@@ -658,7 +658,7 @@ Android 17 源码中可直接对应的跟踪名称包括：
 |---|---|
 | Android 7 / API 24 | 建立平台 HDR 播放基础；公开 `Display.getHdrCapabilities()`，HDR10、HLG、Dolby Vision 与 desired luminance API |
 | Android 8 / API 26 | 应用广色域色彩管理、Window WCG/HDR color mode、`ColorSpace` 与高精度 `Color` |
-| Android 10 / API 29 | 公开 HDR10+ 显示能力常量 |
+| Android 10 / API 29 | 公开 HDR10+ display capability 常量 |
 | Android 13 / API 33 | 引入 vendor-configurable `libtonemap`；HDR 播放设备的 HLG10 要求更明确 |
 | Android 14 / API 34 | Ultra HDR/gain map；`Display.getHdrSdrRatio()`；`HdrConversionMode` |
 | Android 15 / API 35 | Window、SurfaceView、SurfaceControl desired HDR headroom API |
@@ -677,7 +677,7 @@ Android 17 源码中可直接对应的跟踪名称包括：
 2. `frameworks/base/core/java/android/view/Window.java`、`SurfaceView.java`、`Display.java`：color mode、headroom 与显示能力；
 3. `frameworks/native/services/surfaceflinger/Layer.cpp`：Layer dataspace 与 buffer metadata；
 4. `CompositionEngine/src/Output.cpp`：输出 dataspace、color profile、client composition；
-5. `CompositionEngine/src/DisplayColorProfile.cpp`：HWC 色彩模式与渲染意图匹配；
+5. `CompositionEngine/src/DisplayColorProfile.cpp`：HWC color mode/render intent 匹配；
 6. `libs/renderengine/skia/SkiaRenderEngine.cpp`：LUT、AGTM、local tone map 与 `LinearEffect`；
 7. `libs/shaders/shaders.cpp`：EOTF、XYZ、OOTF、OETF 的 SkSL 生成；
 8. `libs/tonemap/`：Android 13 tone mapper 与 uniform；
@@ -702,7 +702,7 @@ HDR 与广色域的性能问题可以归结为四个可验证的问题：
 
 1. Producer 生成了什么格式的像素，附带了什么 dataspace 与 metadata？
 2. SurfaceFlinger 为当前可见 Layer 选择了什么输出 dataspace、color mode 和 render intent？
-3. HWC 验证后，哪些图层是 `DEVICE`，哪些进入 `CLIENT`？
-4. 最终成本落在生产者 GPU、RenderEngine、DPU、内存还是面板？
+3. HWC validate 后，哪些 Layer 是 `DEVICE`，哪些进入 `CLIENT`？
+4. 最终成本落在 Producer GPU、RenderEngine、DPU、内存还是面板？
 
 沿这四个问题取证，才能区分格式带宽、GPU tone mapping、硬件平面竞争与面板亮度功耗。脱离设备能力和逐帧 composition result 的固定毫秒或固定百分比，都不适合作为 Android 17 的平台结论。

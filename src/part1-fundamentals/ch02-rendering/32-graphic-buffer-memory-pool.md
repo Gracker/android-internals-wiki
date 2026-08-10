@@ -435,16 +435,16 @@ Skia Vulkan RenderEngine、应用 Vulkan、ANGLE 或 GPU 驱动可以维护各�
 
 | 观察 | 可以支持的结论 | 仍不能确认 |
 |---|---|---|
-| `mem.gralloc.buffers` 上升后稳定 | 当前进程登记句柄数达到新平台 | 底层独占物理字节数 |
+| `mem.gralloc.buffers` 上升后稳定 | 当前进程登记 handle 数达到新平台 | 底层独占物理字节数 |
 | allocation/free instant 频繁交替 | framework 层存在分配抖动 | 厂商是否复用了旧 backing store |
 | BufferQueue 长期保留 free buffers | 队列在保存可复用 buffer | 这些 buffer 是否全部 resident |
 | `dumpsys meminfo` Graphics/EGL/GL 上升 | 对应统计口径的进程趋势上升 | 单凭此项定位引用者或证明泄漏 |
 
 `dumpsys meminfo` 的 Graphics、EGL mtrack、GL mtrack 受设备 mtrack 实现和归属口径影响。它适合做同设备、同场景的前后对比，不适合和 `sAllocList` 估算逐字节对账。
 
-### 9.4 内核证据：确认对象和引用，不猜槽位
+### 9.4 内核证据：确认对象和引用，不猜 slot
 
-在 `android17-6.18-2026-06_r6` 中，DMA-BUF 与 DMA 栅栏位于内核共享内存和同步层。可用的 debugfs、proc fdinfo、tracepoint 与厂商节点会随内核配置变化。使用它们时关注：
+在 `android17-6.18-2026-06_r6` 中，DMA-BUF 与 dma-fence 位于内核共享内存和同步层。可用的 debugfs、proc fdinfo、tracepoint 与厂商节点会随内核配置变化。使用它们时关注：
 
 - dma-buf inode/对象身份是否仍存在；
 - 哪些进程仍持有 fd 或 import；
@@ -465,7 +465,7 @@ Skia Vulkan RenderEngine、应用 Vulkan、ANGLE 或 GPU 驱动可以维护各�
 2. 哪个属性变化：width、height、format、layerCount、usage 或 additional-options generation；
 3. allocator 调用是否覆盖主要耗时；
 4. 新尺寸是否由旋转、窗口 resize、分辨率策略或 codec format change 引起；
-5. 后续稳定帧是否回到同一批槽位。
+5. 后续稳定帧是否回到同一批 slot。
 
 不要套用固定的“冷分配 10～50 ms”。分配耗时取决于设备、尺寸、格式、内存压力和 HAL/驱动，应以目标设备 trace 为准。
 
@@ -480,7 +480,7 @@ Skia Vulkan RenderEngine、应用 Vulkan、ANGLE 或 GPU 驱动可以维护各�
 - async/cannot-block 配置与 timeout；
 - Producer 是否持续快于显示或 Consumer。
 
-盲目增加 buffer 数量可能暂时减少阻塞，同时增加内存和端到端延迟。游戏、视频和普通界面对吞吐、延迟、丢帧的取舍不同，应分别评估。
+盲目增加 buffer 数量可能暂时减少阻塞，同时增加内存和端到端延迟。游戏、视频和普通 UI 对吞吐、延迟、丢帧的取舍不同，应分别评估。
 
 ### 10.3 Graphics 内存反复上涨
 
@@ -489,7 +489,7 @@ Skia Vulkan RenderEngine、应用 Vulkan、ANGLE 或 GPU 驱动可以维护各�
 1. 创建前；
 2. 首次稳定显示后；
 3. 停止 Producer 并释放应用对象后；
-4. 等待异步事务、GPU 与栅栏完成后；
+4. 等待异步 transaction、GPU 与 fence 完成后；
 5. 重复多轮。
 
 每个阶段同时记录目标 BufferQueue dump、进程 meminfo、gralloc 跟踪和对象生命周期。若 slot/buffer 数量已回落而 mtrack 不降，继续检查 GPU 导入或厂商层；若目标队列仍存在，先查找仍持有 Surface 或消费者的用户空间对象。
@@ -505,7 +505,7 @@ Skia Vulkan RenderEngine、应用 Vulkan、ANGLE 或 GPU 驱动可以维护各�
 - 队列反复 disconnect/reconnect；
 - 应用在多个 Surface 之间重建交换链。
 
-优化目标应是减少不必要的规格变化和生命周期抖动。不能缓存已失去所有权的 raw handle，也不能绕过栅栏强行复用。
+优化目标应是减少不必要的规格变化和生命周期抖动。不能缓存已失去所有权的 raw handle，也不能绕过 fence 强行复用。
 
 ---
 
