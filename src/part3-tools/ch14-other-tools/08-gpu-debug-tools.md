@@ -97,35 +97,9 @@ last_task9_review_log: "logs/deep-review/2026-07-07-12-deep-review.md"
 ---
 # 14.8 GPU 图形调试与分析工具
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 **GPU 工具分层与选型**:
-  先区分系统级追踪、帧级分析和厂商专用工具,再按"先确认 GPU 是否是瓶颈,再定位具体环节"的路径选工具。
-
-- 🔹 **AGI 的两种模式与适用场景**:
-  System Profiler 用来观察 GPU 利用率、频率、计数器和进程级 GPU 时间;Frame Profiler 用来定位单帧中的慢 Draw Call、Shader 和资源热点。
-
-- 🔹 **Perfetto 中的 GPU 观察点**:
-  `gpu.counters` 用来观察频率、利用率、带宽,`gpu.renderstages` 用来记录 CPU 提交和 GPU 执行时间,适合作为 GPU 分析入口。
-
-- 🔹 **RenderDoc 与 Sokatoa 的角色差异**:
-  RenderDoc 适合单帧图形调试和状态检查,Sokatoa 适合多帧对比和间歇性 GPU 卡顿定位,两者与 AGI 互补。
-
-- 🔹 **GPU 瓶颈判断指标**:
-  重点看 GPU 时间、Draw Call 数量、Overdraw、显存带宽、Shader 复杂度与 ALU 利用率,并结合具体场景判断是 GPU bound、CPU bound 还是 buffer/backpressure 问题。
-
-### 扩展(可选深入)
-
-- 🔸 **厂商专用工具的适用边界**:Mali / Adreno / Xclipse 各自能看到哪些专有计数器
-- 🔸 **Release 包与调试包的工具权限差异**:`profileable`、`debuggable` 与帧捕获能力的关系
-<!-- outline-end -->
-
 ## 分析对象是一条显示时间线
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点，内核侧以 `android17-6.18-2026-06_r6` 为边界。GPU producer、用户态驱动和内核 GPU 驱动大多由厂商提供；同为 API 37 的两台设备，能采集的数据源、counter 和驱动事件仍可能不同。
+平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核侧边界是 `android17-6.18-2026-06_r6`。GPU producer、用户态驱动和内核 GPU 驱动大多由厂商提供；同为 API 37 的两台设备，能采集的数据源、counter 和驱动事件仍可能不同。
 
 一次 draw API 返回，只说明 CPU 已执行到某个提交点。GPU 可能仍在队列里运行，buffer 也可能继续等待 SurfaceFlinger latch、HWC 合成或 display present。判断 GPU 瓶颈时，要把以下节点放进同一帧：
 
@@ -136,7 +110,7 @@ last_task9_review_log: "logs/deep-review/2026-07-07-12-deep-review.md"
 5. SurfaceFlinger 何时 latch，是否进入 RenderEngine client composition；
 6. HWC 和显示端何时 present。
 
-这套顺序来自渲染管线系列的公共主线。标准 HWUI 窗口通常从主线程和 `RenderThread` 开始；SurfaceView、游戏、Camera、视频和自有 Vulkan render loop 应先找主体 Surface 与 producer 线程。只看宿主 Activity 的 FrameTimeline，可能漏掉独立 Surface 的主体画面。
+显示路径需要按这些节点分层观察。标准 HWUI 窗口通常从主线程和 `RenderThread` 开始；SurfaceView、游戏、Camera、视频和自有 Vulkan render loop 应先找主体 Surface 与 producer 线程。只看宿主 Activity 的 FrameTimeline，可能漏掉独立 Surface 的主体画面。
 
 ## 工具按证据深度分层
 

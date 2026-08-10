@@ -79,32 +79,13 @@ last_deepseek_cn_review_at: 2026-06-29
 
 # 三方性能库
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Matrix（微信）：Trace Canary、Resource Canary、IO Canary 等
-- 🔹 KOOM（快手）：Java/Native 内存泄漏检测
-- 🔹 Booster（滴滴）：编译期优化插件
-- 🔹 Anchors / AppInit 等启动优化框架
-- 🔹 LeakCanary、btrace、Firebase Performance、Measure、DoKit 的定位差异
-- 🔹 各工具的核心原理、优缺点对比
-
-### 扩展（可选深入）
-
-- 🔸 Rhea（字节跳动）Trace 工具
-- 🔸 各工具的 Hook 机制对比（PLT Hook / Inline Hook / Transform）
-
-<!-- outline-end -->
-
-## 为什么这一章值得单独写
+## 三方性能库补足的场景
 
 Perfetto、Simpleperf 和 Android Studio Profiler 适合在可控设备上还原现场。线上问题还有另外几项要求：按版本和设备采样、在异常发生前保留线索、控制采集开销、把同一次会话中的崩溃、卡顿、内存和网络事件关联起来。三方库主要补这些工程能力。
 
 这不代表接入 SDK 后就可以放下官方工具。客户端监控负责发现异常和保存证据；Perfetto、系统 dump、基准测试与源码负责复现和归因。选型时应同时核对采集位置、适用系统、构建工具兼容性、运行开销、隐私边界和维护状态。
 
-本章的平台判断以 Android 17 / API 37 / [`android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/) 为上限；涉及 ART 内部结构时对照同标签的 [platform/art](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/)。涉及 ftrace 或内核事件时，以 [`android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/) 为内核口径。三方项目的“支持 Android 17”仍需结合目标 ROM、ABI、页面大小和构建链回归，不能由 README 的一行兼容表代替。
+平台判断以 Android 17 / API 37 / [`android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/) 为上限；涉及 ART 内部结构时对照同标签的 [platform/art](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/)。涉及 ftrace 或内核事件时，以 [`android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/) 为内核口径。三方项目的“支持 Android 17”仍需结合目标 ROM、ABI、页面大小和构建链回归，不能由 README 的一行兼容表代替。
 
 ## 按采集位置理解工具
 
@@ -118,7 +99,7 @@ Perfetto、Simpleperf 和 Android Studio Profiler 适合在可控设备上还原
 | 研发侧工具箱 | DoKit、Rabbit、BlockCanary | 开发和测试设备上的快速反馈 | 生产采样、后端聚合和告警 |
 | 可观测性平台 | Firebase Performance、Measure | 上传、聚合、筛选、会话关联 | 本地源码级定位 |
 
-截至 2026 年 7 月，本文涉及的几个版本口径如下。发布版本只能说明上游交付了什么，不能证明它适配当前项目的 AGP、R8、ROM 和安全策略。
+截至 2026 年 7 月，几个项目的版本口径如下。发布版本只能说明上游交付了什么，不能证明它适配当前项目的 AGP、R8、ROM 和安全策略。
 
 | 项目 | 可核对的上游版本 | 接入前应关注的状态 |
 |---|---|---|
