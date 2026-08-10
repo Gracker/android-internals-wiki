@@ -117,13 +117,13 @@ guard 条件失败
 - 必要时更新 JIT inline cache；
 - long jump 到解释器入口。
 
-代价随内联深度、DEX 寄存器数量和栈映射复杂度变化，不能用固定毫秒数代表所有设备和方法。
+代价随内联深度、dex register 数量和栈映射复杂度变化，不能用固定毫秒数代表所有设备和方法。
 
 ## 二、ShadowFrame 怎样恢复 Java 执行状态
 
 ### 2.1 恢复的是 dex 状态，不是原机器栈的复制品
 
-`DeoptimizeStackVisitor` 以 `kIncludeInlinedFrames` 模式遍历栈。对 optimizing compiled frame，它从原生 PC 找到 stack map，再恢复每个 vreg 位于栈、通用寄存器、浮点寄存器还是常量。对于 nterp frame，visitor 从 nterp 的 vreg 数组和引用数组恢复值。
+`DeoptimizeStackVisitor` 以 `kIncludeInlinedFrames` 模式遍历栈。对 optimizing compiled frame，它从 native PC 找到 stack map，再恢复每个 vreg 位于栈、通用寄存器、浮点寄存器还是常量。对于 nterp frame，visitor 从 nterp 的 vreg 数组和引用数组恢复值。
 
 新建的 `ShadowFrame` 保存：
 
@@ -149,7 +149,7 @@ API 37 的 `EnterInterpreterFromDeoptimize()` 明确说明，它不会为 lock c
 
 `Thread::GetDeoptimizationException()` 返回一个保留的假对象指针。Instrumentation 可以把它写入线程的 exception slot，使 quick exception delivery 或 `ArtMethod::Invoke()` 在返回边界识别 deopt 请求；原有 Java 异常保存在 deoptimization context 中，稍后恢复。
 
-它不会进入 Java `catch`，GC 根访问器也会排除该值。显式 `HDeoptimize` 路径直接获得 long-jump context；只有需要跨既有 quick/invoke 边界传递请求时，sentinel 才用于传递信号。
+它不会进入 Java `catch`，GC root visitor 也会排除该值。显式 `HDeoptimize` 路径直接获得 long-jump context；只有需要跨既有 quick/invoke 边界传递请求时，sentinel 才用于传递信号。
 
 ## 三、CHA 失效：类加载怎样影响在栈代码
 
@@ -190,9 +190,9 @@ Android 17 ART 源码中没有 `runtime/deopt_checkpoint.cc`。CHA checkpoint �
 2. 把该方法 entrypoint 改为 quick-to-interpreter bridge；
 3. 遍历线程栈，在支持 flag 的 JIT frame 上设置 `kCheckCallerForDeopt`。
 
-它是可撤销的弱 deopt。活动 caller 在 runtime return/exit 检查中重新判断该方法是否仍在 deoptimized set；若请求已移除，可以继续使用原代码。撤销该方法的去优化状态前，后续新调用走解释器桥。
+它是可撤销的弱 deopt。活动 caller 在 runtime return/exit 检查中重新判断该方法是否仍在 deoptimized set；若请求已移除，可以继续使用原代码。撤销该方法的去优化状态前，后续新调用走解释器 bridge。
 
-普通非原生、非代理方法上的断点采用这条受限路径。default interface method 的断点例外：API 37 的 `DeoptManager` 会为它请求全局 deopt。
+普通非 native、非 proxy 方法上的 breakpoint 采用这条受限路径。default interface method 的 breakpoint 例外：API 37 的 `DeoptManager` 会为它请求全局 deopt。
 
 ### 4.2 线程级 deopt
 
@@ -210,7 +210,7 @@ checkpoint 内部随后执行一次 suspend-all，再调用 `InstrumentThreadSta
 | `kInstrumentWithEntryExitHooks` | 运行 method entry/exit hooks，仍可执行支持 hook 的 compiled code |
 | `kInstrumentWithInterpreter` | 安装 interpreter stubs，使方法进入解释器 |
 
-Instrumentation 按 client key 保存请求，`DeoptManager` 另外用引用计数管理重复的全局需求。只有对应 client 解除请求，且没有其他 client 需要同等级别，Instrumentation 才能降低级别。全局 deopt 生效期间，JIT 的编译入口会因 `AreAllMethodsDeoptimized()` 返回 `true` 而跳过方法编译。
+Instrumentation 按 client key 保存请求，`DeoptManager` 另外用引用计数管理重复的全局需求。只有对应 client 解除请求，且没有其他 client 需要同等级别，Instrumentation 才能降低 level。全局 deopt 生效期间，JIT 的编译入口会因 `AreAllMethodsDeoptimized()` 返回 `true` 而跳过方法编译。
 
 API 37 的 JVMTI event 映射也有明确边界：
 
@@ -242,7 +242,7 @@ Android 17 可以把正在运行的 non-Java-debuggable runtime 切换到 Java-d
 
 结构性 redefinition 可能改变字段或方法布局，风险更大。API 37 会：
 
-- 强制为每个线程的每个可去优化帧设置 redefinition flag；
+- 强制为每个线程的每个可去优化 frame 设置 redefinition flag；
 - 替换 class/instance 引用并清理 interpreter cache；
 - 调用 `InvalidateAllCompiledCode()` 清空 JIT compiled code；
 - 让后续边界检查把活动 compiled frame 转入解释器。
@@ -264,9 +264,9 @@ Hook 工具可能使用 JVMTI breakpoint/redefinition、修改 method entrypoint
 - debugging deopt 保留可复用的 optimized code，调试要求解除后可以恢复；
 - 方法级 deopt 在请求解除前禁止该方法重新 JIT；
 - 全局 interpreter level 生效时，JIT 会跳过所有方法编译；
-- 结构性 redefinition 会使全部 JIT compiled code，恢复速度取决于后续热度与 JIT 调度。
+- 结构性 redefinition 会使全部 JIT compiled code 失效，恢复速度取决于后续热度与 JIT 调度。
 
-“每次 deopt 后一定立即重编译”并不准确。JIT 是否再次编译取决于热度、code cache、当前 instrumentation level、方法是否 compilable 以及进程随后是否继续执行该路径。
+“每次 deopt 后一定立即重编译”并不准确。JIT 是否再次编译取决于 hotness、code cache、当前 instrumentation level、方法是否 compilable 以及进程随后是否继续执行该路径。
 
 Baseline Profile 也不能阻止 guard、CHA 或 debugger deopt。它可以改变安装期编译范围和正常启动成本，但全局 interpreter stubs 生效时，已有 AOT/JIT 代码仍不能按原方式执行。评估 Baseline Profile 时要把 deopt 前的编译收益和 deopt 后的运行状态分开。
 
@@ -290,7 +290,7 @@ Release 基准测试应使用 `debuggable=false`，并按需启用 `profileable`
 
 失效的 JIT code 不能在仍有线程执行时直接释放。`JitCodeCache::DoCollection()` 会通过 checkpoint 标记线程栈上的 live compiled code，再由 `RemoveUnmarkedCode()` 清理不可达 zombie code。
 
-deopt 后看到 `DoCollection` 或密集的 `JIT compiling`，说明 runtime 正在处理 code cache/重新编译；它们是相关证据，不代表每次回收都由 deopt 触发。持续出现同一方法、同一原因的 deopt 与重编译交替，更接近 deopt thrashing。
+deopt 后看到 `DoCollection` 或密集的 `JIT compiling`，说明 runtime 正在处理 code cache/重新编译；它们是相关证据，不代表每次 collection 都由 deopt 触发。持续出现同一方法、同一 reason 的 deopt 与重编译交替，更接近 deopt thrashing。
 
 ## 八、Android 17 的可观测性
 
@@ -302,7 +302,7 @@ API 37 的单帧路径在 `QuickExceptionHandler::DeoptimizeSingleFrame()` 中�
 Deoptimizing <PrettyMethod>: <DeoptimizationKind name>
 ```
 
-这条 `SCOPED_TRACE` 位于 `DeoptimizeStackVisitor::WalkStack()` 之后。因此 slice 能确认方法和原因，但其 `dur` 不包含此前完整的 ShadowFrame 重建时间，不能直接当作 deopt 总耗时。
+这条 `SCOPED_TRACE` 位于 `DeoptimizeStackVisitor::WalkStack()` 之后。因此 slice 能确认方法和 reason，但其 `dur` 不包含此前完整的 ShadowFrame 重建时间，不能直接当作 deopt 总耗时。
 
 JIT compiler 另有：
 
@@ -327,7 +327,7 @@ data_sources {
 }
 ```
 
-`dalvik` 提供 ART 的 scoped trace，`sched` 用于判断 deopt 前后线程是否被抢占或长时间 runnable。生产型 APK 还需要满足设备与 `profileable`/`debuggable` 的跟踪权限条件。
+`dalvik` 提供 ART 的 scoped trace，`sched` 用于判断 deopt 前后线程是否被抢占或长时间 runnable。生产型 APK 还需要满足设备与 `profileable`/`debuggable` 的 tracing 权限条件。
 
 下面的查询按时间排列 deopt、JIT 编译和 code cache collection：
 
@@ -368,9 +368,9 @@ adb shell dumpsys package com.example.app | grep -E 'DEBUGGABLE|PROFILEABLE|flag
 adb shell pidof com.example.app
 ```
 
-`pm art dump` 反映 dexopt 产物与 compiler filter，不会显示某个活动帧是否刚刚发生 deopt。三组信息要与 build fingerprint、应用版本、是否 attach debugger、JVMTI agent 配置一起记录。
+`pm art dump` 反映 dexopt artifacts 与 compiler filter，不会显示某个活动 frame 是否刚刚发生 deopt。三组信息要与 build fingerprint、应用版本、是否 attach debugger、JVMTI agent 配置一起记录。
 
-`-verbose:deopt,jit` 是 API 37 支持的 ART 运行时日志选项，但必须在目标 runtime 启动参数中生效。临时修改属性后不重启对应 runtime/进程，不能保证已有应用获得该选项；量产设备也可能限制这类日志。未确认启动参数时，不能把“logcat 没有 Deoptimizing”当作零 deopt。
+`-verbose:deopt,jit` 是 API 37 支持的 ART runtime 日志选项，但必须在目标 runtime 启动参数中生效。临时修改属性后不重启对应 runtime/进程，不能保证已有应用获得该选项；量产设备也可能限制这类日志。未确认启动参数时，不能把“logcat 没有 Deoptimizing”当作零 deopt。
 
 ## 九、一次可复现的实验
 
@@ -386,7 +386,7 @@ adb shell pidof com.example.app
 
 ## 十、版本边界与源码入口
 
-以下源码入口以 `android-17.0.0_r1` 为锚点。Android 12～17 都具备 optimizing compiler、ShadowFrame 与 Instrumentation deopt 的主体设计，但枚举、debug runtime 转换、JVMTI 事件映射和跟踪名称应按目标版本核对。
+以下源码入口以 `android-17.0.0_r1` 为锚点。Android 12～17 都具备 optimizing compiler、ShadowFrame 与 Instrumentation deopt 的主体设计，但枚举、debug runtime 转换、JVMTI event 映射和 trace 名称应按目标版本核对。
 
 API 37 的主要入口如下：
 

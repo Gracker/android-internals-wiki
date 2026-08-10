@@ -68,7 +68,7 @@ OomAdjuster 每轮计算会同时产生多组结果：
 | `schedGroup` | libprocessgroup / cgroup | 进程和子进程应进入 `background`、`default`、`top-app` 等 CPU 组 |
 | capability | 后台启动、网络、CPU/freezer 等策略 | 进程当前被允许做哪些事 |
 
-四者相关，但不是一一映射。同为 `adj=0` 的顶部 Activity、正在执行 receiver 和 service callback，可以拥有不同的 `procState` 与调度组；同为 FGS procState，普通 FGS 和短时 FGS 也使用不同的 adj。
+四者相关，但不是一一映射。同为 `adj=0` 的 top Activity、正在执行 receiver 和 service callback，可以拥有不同的 `procState` 与调度组；同为 FGS procState，普通 FGS 和 short FGS 也使用不同的 adj。
 
 `oom_score_adj` 越小，进程越受保护。Android 为受 AMS 管理的进程使用的大部分有效范围是 `-1000..999`；`UNKNOWN_ADJ=1001` 是计算中的未定值，不会作为正常结果写给 lmkd。
 
@@ -136,7 +136,7 @@ API 37 用注解给出锁要求：`computeOomAdjLSP()`、`applyResultsLSP()` 等
 
 Visible 和 previous 进程可以在 feature flag 开启时使用 100～199、700～799 的梯度。cached 进程则在 900～999 间按 LRU、activity/empty 分组和 connection group importance 分配。
 
-`CACHED_APP_LMK_FIRST_ADJ=950` 是 `ProcessList` 提交给 lmkd 的六档目标配置中的末档；源码注释称它为允许优先终止的 adj level。它不表示 lmkd 永远先终止所有 `adj>=950` 的进程。lmkd 还会结合当前压力级别、内存占用、swap/thrashing、进程类型和设备参数选择目标。
+`CACHED_APP_LMK_FIRST_ADJ=950` 是 `ProcessList` 提交给 lmkd 的六档 target 配置中的末档；源码注释称它为允许优先终止的 adj level。它不表示 lmkd 永远先终止所有 `adj>=950` 的进程。lmkd 还会结合当前压力级别、内存占用、swap/thrashing、进程类型和设备参数选择目标。
 
 ## 四、一轮 OOM adjustment 怎样计算
 
@@ -218,7 +218,7 @@ Provider connection 也能传播客户端重要性。持有 external process han
 - 发送 `process_state_changed` Perfetto 事件；
 - 必要时主动清理超额 cached 进程。
 
-## 五、`procState`、`schedGroup` 与能力
+## 五、`procState`、`schedGroup` 与 capability
 
 ### 5.1 `procState` 的数字顺序表示重要性顺序
 
@@ -251,7 +251,7 @@ API 37 的 AMS 调度组常量是：
 
 具体使用哪些 cgroup controller、uclamp 和 cpuset，由设备的 task profile/libprocessgroup 配置决定。不能把 `schedGroup` 直接解释为固定 CPU 百分比，也不能假定 API 37 仍通过某个 `/dev/cpuctl` 路径写值。
 
-进入 `top-app` 时，OomAdjuster 还会更新 UI/RenderThread 优先级；启用 FIFO UI 调度的产品走 FIFO 回调，否则使用 `THREAD_PRIORITY_TOP_APP_BOOST`。离开 `top-app` 时再恢复。
+进入 `top-app` 时，OomAdjuster 还会更新 UI/RenderThread 优先级；启用 FIFO UI scheduling 的产品走 FIFO 回调，否则使用 `THREAD_PRIORITY_TOP_APP_BOOST`。离开 `top-app` 时再恢复。
 
 ### 5.3 Android 17 的 freezer 资格由 CPU 能力决定
 
@@ -272,7 +272,7 @@ OomAdjuster 只计算资格并回调 `onProcessFreezabilityChanged()`。`CachedA
 
 OomAdjuster 把 `curAdj` 应用到 `ProcessList.setOomAdj()`。该方法通过 lmkd control socket 发送 `LMK_PROCPRIO`；lmkd 校验 PID/UID/范围，更新内部进程表，并在非 `for_lmkd_only` 情况下写 kernel 的 `/proc/<pid>/oom_score_adj`。
 
-lmkd 使用 PSI、swap/thrashing 和设备属性判断何时需要回收。PSI 事件由 lmkd 直接订阅，通常不会先回调 AMS 再要求 OomAdjuster 加速 cached aging”。API 37 的 OomAdjuster 中也没有通过 `PSI_SOME`/`PSI_FULL` 分支修改缓存 adj。
+lmkd 使用 PSI、swap/thrashing 和设备属性判断何时需要回收。PSI 事件由 lmkd 直接订阅，通常不会先回调 AMS 再要求 OomAdjuster“加速 cached aging”。API 37 的 OomAdjuster 中也没有通过 `PSI_SOME`/`PSI_FULL` 分支修改 cached adj。
 
 这两个环节要分开理解：
 
@@ -314,7 +314,7 @@ API 37 没有“每 1 秒无条件全量重算”的 `OOM_ADJ_UPDATE_INTERVAL`�
 
 ## 八、计算开销与锁边界
 
-Full update 的计算和应用需要同时持有 service/proc lock，进程数和连接图复杂度会直接影响 `system_server` 临界区时长。API 37 使用了以下几类控制：
+Full update 的计算和 apply 需要同时持有 service/proc lock，进程数和连接图复杂度会直接影响 `system_server` 临界区时长。API 37 使用了以下几类控制：
 
 - partial update 只收集目标及其可达进程；
 - procState/adj 两套按重要性排序的节点队列减少无效反复扫描；
@@ -330,7 +330,7 @@ Full update 的计算和应用需要同时持有 service/proc lock，进程数�
 
 ### 9.1 从 dumpsys 和 procfs 核对结果
 
-保存 AMS 视角后，再与内核接收的分数对照：
+保存 AMS 视角后，再与 kernel 接收的 score 对照：
 
 ```bash
 adb shell dumpsys activity oom
@@ -360,7 +360,7 @@ WHERE name GLOB 'updateOomAdj_*'
 ORDER BY dur DESC;
 ```
 
-启用 Perfetto SDK `proc_state` category 后，adj、`procState` 或能力改变会产生 `process_state_changed` instant event，字段包括：
+启用 Perfetto SDK `proc_state` category 后，adj、`procState` 或 capability 改变会产生 `process_state_changed` instant event，字段包括：
 
 - uid、pid、sequence id 和 update reason；
 - previous/current procState；
@@ -378,20 +378,20 @@ WHERE s.name = 'process_state_changed'
 ORDER BY s.ts, a.key;
 ```
 
-Kernel `oom/oom_score_adj_update` ftrace 事件用于核对分数写入时间；lmkd 终止事件和 PSI 轨道用于核对何时发生压力、为何选择该目标。不能仅凭“adj 升到 900 后出现 am_kill”断言进程一定由 lmkd 终止，还需检查终止原因、PID、压力事件和进程是否由 AMS 主动清理。
+Kernel `oom/oom_score_adj_update` ftrace event 用于核对 score 写入时间；lmkd kill 和 PSI 轨道用于核对何时发生压力、为何选择该目标。不能仅凭“adj 升到 900 后出现 am_kill”断言进程一定由 lmkd 终止，还需检查终止原因、PID、压力事件和进程是否由 AMS 主动清理。
 
 ### 9.3 一次有效的优先级实验
 
 1. 记录 build fingerprint、AOSP/vendor 版本和 lmkd/freezer DeviceConfig；
 2. 分别触发 top、visible、FGS、short FGS、receiver、started service 和 cached 状态；
 3. 对每次变化记录 `adjType/source/target`，不要只记最终数字；
-4. 对绑定场景逐个改变 bind flag，确认宿主的 adj、`procState` 与能力；
+4. 对绑定场景逐个改变 bind flag，确认 host 的 adj、`procState` 与 capability；
 5. 同时采集 `updateOomAdj_*`、`process_state_changed`、sched、Binder 和 `oom_score_adj_update`；
 6. 将计算耗时按 full/partial、进程数、连接数和触发 reason 分组。
 
 ## 十、版本边界与源码锚点
 
-Android 13 以后，cached 进程可能获得很少或零 CPU 时间；Android 14 以后，cached-app freezer 与延迟动态广播等策略进一步减少无效解冻。Android 17 的源码变化包括 PSC 包迁移、ProcessStateController 入口、能力型冻结决策和结构化进程状态跟踪。这里没有使用 Android 18/API 38 之后的主线实现反推 Android 17 行为。
+Android 13 以后，cached 进程可能获得很少或零 CPU 时间；Android 14 以后，cached-app freezer 与延迟动态广播等策略进一步减少无效解冻。Android 17 的源码变化包括 PSC 包迁移、ProcessStateController 入口、能力型 freezer 决策和结构化进程状态跟踪。这里没有使用 Android 18/API 38 之后的主线实现反推 Android 17 行为。
 
 源码定位：
 

@@ -77,7 +77,7 @@ API 37 的 `ActivityManagerService` 只持有一个 `mBroadcastQueue`。`Activit
 
 Android 17 标签中不存在 `BroadcastQueueModernImpl.java`。当前的 `BroadcastQueueImpl` 类注释直接说明：广播按目标进程分发，每个进程由一个 `BroadcastProcessQueue` 表示。
 
-内部类名在开发分支和历史版本中发生过变化，应用可依赖的是公开广播语义，不能根据某个旧类名判断设备一定运行旧版或现代模式。以下实现细节均以 `android-17.0.0_r1` 为准。
+内部类名在开发分支和历史版本中发生过变化，应用可依赖的是公开广播语义，不能根据某个旧类名判断设备一定运行 Legacy 或 Modern 模式。以下实现细节均以 `android-17.0.0_r1` 为准。
 
 ## 二、三层数据结构分别解决什么问题
 
@@ -155,7 +155,7 @@ ContextImpl.sendBroadcast()
 
 ### 3.1 冷启动不会把多条广播合并为一次 ApplicationThread IPC
 
-目标进程不存在时，`scheduleReceiverColdLocked()` 请求拉起进程；进程附加后再转入 `scheduleReceiverWarmLocked()`。同一进程的多条广播共用一个进程队列，可以在一个 `running` 时段连续排空若干项，减少调度槽反复切换。
+目标进程不存在时，`scheduleReceiverColdLocked()` 请求拉起进程；进程 attach 后再转入 `scheduleReceiverWarmLocked()`。同一进程的多条广播共用一个进程队列，可以在一个 `running` 时段连续排空若干项，减少调度槽反复切换。
 
 但源码仍对每个 receiver 分别调用 `scheduleRegisteredReceiver()` 或 `scheduleReceiver()`，不会把多条广播序列化进一次 Binder 调用。“同进程多个广播自动合并为一次 IPC”没有源码依据。
 
@@ -197,7 +197,7 @@ Android 没有 `PRIORITY_URGENT_APP`、`PRIORITY_NORMAL_APP` 这组广播字符�
 
 “无序广播并行”也不等于所有 receiver 同时执行。并行度仍受 `running` 槽、单冷启动槽、目标进程主线程和 cached 策略限制。
 
-进程队列内部按 `urgent` → `normal` → `offload` 选择下一项，同时用两个上限避免低优先级长期饥饿：默认连续 3 个 `urgent` 后会考虑更早入队的低优先级项，连续 10 个 `normal` 后也会考虑 `offload` 项；若低优先级项仍被有序依赖阻塞，则不能越过依赖强行执行。
+进程队列内部按 `urgent` → `normal` → `offload` 选择下一项，同时用两个上限避免低优先级长期饥饿：默认连续 3 个 `urgent` 后会考虑更早入队的低优先级项，连续 10 个 `normal` 后也会考虑 `offload` 项；若低优先级项仍被 ordered 依赖阻塞，则不能越过依赖强行执行。
 
 ## 五、cached app 的延迟没有统一规则
 
@@ -205,7 +205,7 @@ Android 没有 `PRIORITY_URGENT_APP`、`PRIORITY_NORMAL_APP` 这组广播字符�
 
 从 Android 14 开始，应用处于 cached 状态时，系统可以延后 context-registered receiver 的广播。应用回到 active 状态后，系统再投递积压项；某些广播的多个实例可能被合并。
 
-Manifest receiver 不走同样的无限延迟路径。重要的 manifest broadcast 可以让应用离开缓存状态并启动接收进程。“cached app 的所有广播都要等待其他原因拉起进程”并不是统一规则。
+Manifest receiver 不走同样的无限延迟路径。重要的 manifest broadcast 可以让应用离开 cached 状态并启动接收进程。“cached app 的所有广播都要等待其他原因拉起进程”并不是统一规则。
 
 ### 5.2 API 37 如何计算 `runnableAt`
 
@@ -236,7 +236,7 @@ Deferral 解决何时投递，delivery group 解决积压项是否都要投递�
 
 广播队列会观察进程是否可冻结，并在状态变化时重新计算 runnable/deferred 状态。若接收进程已进入 `running` 投递，系统还会更新 OOM adj 和冻结状态，保证回调能够执行。
 
-API 37 另有受 feature flag 控制的 outgoing broadcast 延迟：freezable 发送进程产生的广播可以暂存在它自己的进程队列，进程恢复后再进入正式队列。发送方延迟与接收方处于缓存状态时的延迟投递不是同一条路径。
+API 37 另有受 feature flag 控制的 outgoing broadcast 延迟：freezable 发送进程产生的广播可以暂存在它自己的进程队列，进程恢复后再进入正式队列。发送方延迟与接收方处于 cached 状态时的延迟投递不是同一条路径。
 
 ## 六、广播 ANR 的计时边界
 
@@ -321,7 +321,7 @@ API 37 定义了 `broadcasts` Perfetto SDK category。启用相关 tracing v3 fe
 - `dispatch_delay_ms = scheduledTime - enqueueTime`：包含队列等待及冷启动影响；
 - `finish_delay_ms = terminalTime - scheduledTime`：包含应用侧执行与完成回执。
 
-不要复制依赖不存在字段或别名的 SQL。应先在目标跟踪中确认是否有 `broadcast_delivered`，再通过 `slice`/`args` 表查看该版本导出的参数名。没有启用 SDK 类别时，仍可结合 `am_proc_start`、应用主线程切片、sched 和 Binder 轨道还原延迟。
+不要复制依赖不存在字段或别名的 SQL。应先在目标 trace 中确认是否有 `broadcast_delivered`，再通过 `slice`/`args` 表查看该版本导出的参数名。没有启用 SDK category 时，仍可结合 `am_proc_start`、应用主线程 slice、sched 和 Binder 轨道还原延迟。
 
 ### 8.3 一次可靠的广播性能实验
 
