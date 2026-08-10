@@ -100,7 +100,7 @@ sequenceDiagram
 
 ### AIDL 注册和 NetworkAgentInfo
 
-`NetworkAgent.register()` 把 `INetworkAgent`、初始 `NetworkInfo`、`LinkProperties`、`NetworkCapabilities`、`NetworkScore` 和配置交给 `ConnectivityService`。Android 17 的注册通道是 `INetworkAgent` / `INetworkAgentRegistry` AIDL；旧资料中的 Messenger 描述不适用于本章锚点。
+`NetworkAgent.register()` 把 `INetworkAgent`、初始 `NetworkInfo`、`LinkProperties`、`NetworkCapabilities`、`NetworkScore` 和配置交给 `ConnectivityService`。Android 17 的注册通道是 `INetworkAgent` / `INetworkAgentRegistry` AIDL；旧资料中的 Messenger 描述不适用于当前源码锚点。
 
 `registerNetworkAgentInternal()` 会复制调用方传入的可变对象，保留一个 netId，构造 `NetworkAgentInfo`，再请求 NetworkStack 创建 `NetworkMonitor`。`NetworkMonitor` 返回后，`handleRegisterNetworkAgent()` 才把 NAI 放入系统集合并开始接收 agent 消息。
 
@@ -357,9 +357,9 @@ adb logcat -v threadtime -s ConnectivityService NetworkMonitor
 
 Perfetto 可以记录 Binder、调度、应用自定义 trace 和网络相关系统事件，但 Android 17 源码没有保证名为 `rematchAllNetworksAndRequests` 的公开 atrace slice。若平台团队需要精确量化该方法，应在自有调试构建增加 trace 标记，或使用 ConnectivityService 已有的分阶段日志。
 
-## Review 结论
+## 结论
 
-本章在 Android 17 源码锚点下可以归纳为五条：
+Android 17 源码可以归纳出五条结论：
 
 1. `NetworkAgent` 注册一条候选网络，`NetworkAgentInfo` 保存它在 ConnectivityService 中的控制状态。
 2. connected、available 和 validated 是三个不同事件，不能互相替代。

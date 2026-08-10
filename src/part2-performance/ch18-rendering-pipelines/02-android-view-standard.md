@@ -99,21 +99,9 @@ last_task9_audit_log: "logs/deep-review/2026-06-21-21-audit.md"
 
 # 18.2 Android View 标准管线（BLAST 深入）
 
-<!-- outline-start -->
+讨论范围限于标准 HWUI App Window：页面主体由普通 View 或 Compose host 组织，RenderThread 生成宿主窗口 buffer，没有承载主体内容的独立 Surface、浏览器 compositor、游戏引擎 swapchain、Camera HAL 或视频解码器 Producer。
 
-**锚点（必须覆盖）：**
-- [18.2.1 标准 HWUI 页面的判定条件](#如何确认这是标准-hwui-页面) — 主体 Producer、Surface 与 layer
-- [18.2.2 一帧的完整旅程](#一帧的完整旅程) — 从 VSync 到 present feedback
-- [18.2.3 BLAST Buffer 生命周期](#blast-buffer-生命周期) — Slot、队列深度与 release
-- [18.2.4 Trace 视角](#trace-视角) — MainThread、RenderThread、GPU 与 SF/HWC
-- [18.2.5 FrameTimeline 与 Jank 检测](#frametimeline-与-jank-检测) — expected/actual 与 token
-- [18.2.6 Compose 的位置](#compose-在标准-app-window-中的位置) — App 侧阶段改变，系统显示主线复用
-
-<!-- outline-end -->
-
-这篇只讨论标准 HWUI App Window：页面主体由普通 View 或 Compose host 组织，RenderThread 生成宿主窗口 buffer，没有承载主体内容的独立 Surface、浏览器 compositor、游戏引擎 swapchain、Camera HAL 或视频解码器 Producer。
-
-平台实现固定到 Android 17 / API 37 的 `android-17.0.0_r1`；涉及调度、cpuset、uclamp、cpufreq、dma-buf 和 fence 时，内核固定到 `android17-6.18-2026-06_r6`。Compose 独立于 Android platform 发布，本篇只说明它在标准 App Window 中的位置，不把某个 Jetpack 版本的行为归到 Android 17。
+平台实现固定到 Android 17 / API 37 的 `android-17.0.0_r1`；涉及调度、cpuset、uclamp、cpufreq、dma-buf 和 fence 时，内核固定到 `android17-6.18-2026-06_r6`。Compose 独立于 Android platform 发布，这里只说明它在标准 App Window 中的位置，不把某个 Jetpack 版本的行为归到 Android 17。
 
 ## 如何确认这是标准 HWUI 页面
 
@@ -519,7 +507,7 @@ RecyclerView GapWorker、Compose Lazy prefetch、图片预热和 shader/pipeline
 | Android 14 / API 34 | 标准 Choreographer/HWUI/BLAST/SF/HWC 拓扑延续 | SurfaceView 的 alpha/lifecycle 变化不要套到 App Window |
 | Android 15 / API 35 | Window 可表达 desired HDR headroom；edge-to-edge 可能改变 Insets/Traversal 成本 | HDR/Insets 变化不自动改变标准页面分类 |
 | Android 16 / API 36 | 标准主拓扑延续 | 跨版本实验要固定 vendor、刷新率、应用构建与 Jetpack 版本 |
-| Android 17 / API 37 | 本文当前锚点：FrontEnd snapshot、现行 BLAST acquired-count、buffer stuffing recovery、预测 present time 与 HWC fast path | 方法名和 flag 以 `android-17.0.0_r1` 为准，不从当前 tag 反推首引版本 |
+| Android 17 / API 37 | 当前锚点：FrontEnd snapshot、现行 BLAST acquired-count、buffer stuffing recovery、预测 present time 与 HWC fast path | 方法名和 flag 以 `android-17.0.0_r1` 为准，不从当前 tag 反推首引版本 |
 
 ## Android 17 源码入口
 

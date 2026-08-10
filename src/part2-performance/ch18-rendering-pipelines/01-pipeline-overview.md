@@ -73,18 +73,6 @@ last_deepseek_cn_review_at: 2026-07-15
 
 # 18.1 渲染管线分类与选择对照表
 
-<!-- outline-start -->
-
-**锚点（必须覆盖）：**
-- [18.1.1 为什么需要理解渲染管线](#为什么需要理解渲染管线) — 性能调优的起点
-- [18.1.2 用四个坐标识别出图类型](#用四个坐标识别出图类型) — Producer、输出目标、layer 与合成位置
-- [18.1.3 版本与架构对照表](#版本与架构对照表) — Android 9 到 Android 17 的观测边界
-- [18.1.4 典型模式对比](#典型模式对比) — 主要渲染路径的差异
-- [18.1.5 公共显示主线](#公共显示主线从-vsync-到-present) — 12 个固定观察点
-- [18.1.6 一帧的排查顺序](#一帧的排查顺序) — 从节奏到 present 的证据链
-
-<!-- outline-end -->
-
 ## 为什么需要理解渲染管线
 
 Perfetto 里出现一帧超时，定位工作不应从“最长的 slice”开始，而应先回答三个问题：
@@ -95,9 +83,9 @@ Perfetto 里出现一帧超时，定位工作不应从“最长的 slice”开�
 
 标准 App Window 的 Producer 通常是应用进程里的 HWUI RenderThread；SurfaceView、Camera、Video、WebView、Flutter、游戏和 React Native 可能把生产工作交给引擎线程、解码器或硬件模块。它们都可能经过 BufferQueue、SurfaceFlinger 和 HWC，但线程、layer 数量、合成位置与 FrameTimeline 覆盖程度并不相同。
 
-`queueBuffer`、`latch` 和 `present fence` 分别属于提交、采纳和显示反馈阶段。看到其中一个事件，只能证明显示路径走到了对应位置，不能替代其他阶段的证据。总览篇先固定公共主线，后续章节再解释各出图类型从哪里分叉。
+`queueBuffer`、`latch` 和 `present fence` 分别属于提交、采纳和显示反馈阶段。看到其中一个事件，只能证明显示路径走到了对应位置，不能替代其他阶段的证据。这里先固定公共主线，后续章节再解释各出图类型从哪里分叉。
 
-本文的当前实现锚点是 Android 17 / API 37 的 `android-17.0.0_r1`。涉及 dma-buf、sync_file、DRM/KMS 或调度器实现时，内核锚点统一为 `android17-6.18-2026-06_r6`；本文没有依靠某个 kernel 函数推导 framework 结论。
+当前实现锚点是 Android 17 / API 37 的 `android-17.0.0_r1`。涉及 dma-buf、sync_file、DRM/KMS 或调度器实现时，内核锚点统一为 `android17-6.18-2026-06_r6`；framework 结论不依靠某个 kernel 函数推导。
 
 ## 用四个坐标识别出图类型
 
@@ -128,7 +116,7 @@ Android 9 到 Android 17 的图形栈不能只用“Legacy”与“BLAST”二�
 | Android 14 / API 34 | 公共 Choreographer→HWUI→BLAST→SF→HWC 骨架延续；SurfaceView 增加 alpha 与 lifecycle 能力 | 标准窗口仍按公共主线读，独立 Surface 的透明度与生命周期要单独核对 |
 | Android 15 / API 35 | Window/SurfaceView 源码与 API 面开始提供 desired HDR headroom，r1 中仍带 feature flag 边界 | headroom 是请求；目标设备 flag、bit depth、面板与显示策略仍要核对 |
 | Android 16 / API 36 | SurfaceView 源码增加整数 `compositionOrder`，r1 API 签名带 `@FlaggedApi`；公共主线延续 | 多 Surface 页面要记录 parent、relative layer、flag 状态与 Z-order |
-| Android 17 / API 37 | 本文锚定 FrontEnd `RequestedLayerState` / `LayerSnapshot`、预测 present time、现行 BLAST/HWC 路径；SurfaceView blur region 与 `compositionOrder` 仍带 flag 边界 | 源码按 `android-17.0.0_r1` 的对象名解释；旧 `DispSync`、固定 phase offset 和逐个旧 Layer latch 模型不能直接套用 |
+| Android 17 / API 37 | 锚定 FrontEnd `RequestedLayerState` / `LayerSnapshot`、预测 present time、现行 BLAST/HWC 路径；SurfaceView blur region 与 `compositionOrder` 仍带 flag 边界 | 源码按 `android-17.0.0_r1` 的对象名解释；旧 `DispSync`、固定 phase offset 和逐个旧 Layer latch 模型不能直接套用 |
 
 这张表描述的是观察边界，不表示每个版本都重做了一套渲染管线。BLAST 改变 buffer 与窗口状态进入 SurfaceFlinger 的组织方式，没有取消 Producer/Consumer 分工，也没有取消 acquire/release fence。
 
@@ -152,7 +140,7 @@ Android 9 到 Android 17 的图形栈不能只用“Legacy”与“BLAST”二�
 | Video / HWC | MediaCodec、解码器、播放器 | SurfaceView buffer queue 或 tunneled/sideband 路径 | HWC overlay、专用媒体路径或 CLIENT fallback | 解码完成、releaseOutputBuffer 与上屏时间不是同一边界 | [18.15](15-video-overlay-hwc.md)、[18.23](23-media-codec2-tunneled-media3-abr.md) |
 | 游戏引擎 | game/render thread、GL/Vulkan queue | ANativeWindow swapchain，可能叠加独立 UI/video layer | SF/HWC | 平均 FPS 会掩盖 pacing、queue depth 与 present 抖动 | [18.16](16-game-engine.md) |
 | Compose | Compose runtime 与 UI thread 生成状态，HWUI RenderThread/GPU 产出 | 默认仍是宿主 App Window | SF/HWC | recomposition、layout、draw 与 GPU 提交属于不同阶段 | [18.25](25-compose-rendering-pipeline.md) |
-| React Native | JS、Fabric/UI、HWUI；第三方原生组件可另建 Surface | 标准 View 树或 SurfaceView/TextureView 分支 | 取决于宿主与原生组件拓扑 | JS thread 只是 Producer 链的一段，不能代表 present | 本章只给分型基线 |
+| React Native | JS、Fabric/UI、HWUI；第三方原生组件可另建 Surface | 标准 View 树或 SurfaceView/TextureView 分支 | 取决于宿主与原生组件拓扑 | JS thread 只是 Producer 链的一段，不能代表 present | 这里只给分型基线 |
 
 [18.10 SurfaceControl API](10-surface-control-api.md) 与 [18.11 ANGLE](11-angle-gles-vulkan.md) 分别解释 layer 控制和 GLES→Vulkan 翻译。[18.18 PiP/Freeform](18-pip-freeform.md)、[18.19 VRR](19-variable-refresh-rate.md)、[18.22 XR](22-android-xr-spatial-ui-rendering.md) 继续分析 window/display 分支；[18.20 分析方法](20-pipeline-analysis-methodology.md) 提供跨类型的取证步骤。
 
@@ -167,7 +155,7 @@ Android 9 到 Android 17 的图形栈不能只用“Legacy”与“BLAST”二�
 
 线程名只能提供线索。比如出现 GL thread 并不能单独证明它写入独立 Surface；还要把它的 swapchain、BufferQueue 与目标 layer 对上。
 
-## 本章阅读指南
+## 阅读路径
 
 App 滑动卡顿从 [18.2 标准 Android View](02-android-view-standard.md) 开始；有视频、地图或相机预览时，再读 [18.4 混合渲染](04-android-view-mixed.md)、[18.6 SurfaceView](06-surfaceview.md) 和 [18.7 TextureView](07-textureview.md)。
 
@@ -175,7 +163,7 @@ App 滑动卡顿从 [18.2 标准 Android View](02-android-view-standard.md) 开�
 
 游戏与自研引擎可以按 [18.8 OpenGL ES](08-opengl-es.md) / [18.9 Vulkan](09-vulkan-native.md) → [18.16 Game](16-game-engine.md) → [18.20 分析方法](20-pipeline-analysis-methodology.md) 阅读。要同时观察 game/render thread、GPU queue、swapchain 深度、FrameTimeline、Game Mode 与温控。
 
-Framework 工程师建议先读本篇公共主线，再看 [18.10 SurfaceControl](10-surface-control-api.md)、[18.19 VRR](19-variable-refresh-rate.md) 和 [18.26 HWUI Vulkan 多队列](26-android17-hwui-vulkan-multi-queue.md)。遇到 vendor 显示问题时，还要补 Composer HAL、display driver 和面板证据。
+Framework 工程师可先读前面的公共主线，再看 [18.10 SurfaceControl](10-surface-control-api.md)、[18.19 VRR](19-variable-refresh-rate.md) 和 [18.26 HWUI Vulkan 多队列](26-android17-hwui-vulkan-multi-queue.md)。遇到 vendor 显示问题时，还要补 Composer HAL、display driver 和面板证据。
 
 ## 公共显示主线：从 VSync 到 present
 
@@ -330,7 +318,7 @@ Present fence 比 `queueBuffer` 和 latch 更靠后，但仍不是 panel 光学�
 
 ## 一帧的排查顺序
 
-总览篇推荐把一帧拆成四层：
+一帧可以拆成四层：
 
 1. 帧节奏：目标 App 是否按时收到并执行 `Choreographer#doFrame`？
 2. 生产：MainThread、RenderThread、engine/decoder 与 GPU 是否按时交付 buffer？
