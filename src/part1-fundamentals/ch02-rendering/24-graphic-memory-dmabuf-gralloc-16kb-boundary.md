@@ -67,7 +67,7 @@ source_candidates:
 - IOMMU domain 支持的映射页大小；
 - GPU MMU、DPU、codec、camera 等硬件自身的布局约束。
 
-其中前两项决定原生代码能否可靠装载，第三和第四项影响通用内存管理，后几项决定设备如何访问图形缓冲区。它们的数值可能恰好都是 16KB，但控制来源并不相同。
+其中前两项决定 native 代码能否可靠装载，第三和第四项影响通用内存管理，后几项决定设备如何访问图形缓冲区。它们的数值可能恰好都是 16KB，但控制来源并不相同。
 
 以下分析以 Android 17 / API 37 / `android-17.0.0_r1` 为 user-space anchor，kernel 以 `android17-6.18-2026-06_r6` 为锚点。vendor Gralloc、GPU、Composer HAL、Camera HAL 与 display driver 不在 AOSP 通用实现内，涉及具体 layout 和收益时必须补充 device evidence。
 
@@ -169,7 +169,7 @@ Android 17 的 `BufferAllocator::Alloc()` 负责打开并缓存 heap fd，再执
 
 定位复用问题时，要先确定 pool 的 owner，不能用 `libdmabufheap` 的名字代替对象生命周期证据。
 
-## 三、16KB 内核页怎样作用于 DMA-BUF Heap
+## 三、16KB page 怎样作用于 DMA-BUF Heap
 
 在 `android17-6.18-2026-06_r6` 中，通用入口 [`dma_heap_buffer_alloc()`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-heap.c) 先校验 flags，再执行：
 
@@ -177,7 +177,7 @@ Android 17 的 `BufferAllocator::Alloc()` 负责打开并缓存 heap fd，再执
 len = __PAGE_ALIGN(len)
 ```
 
-这段代码确保所有 heap allocation 从页边界开始并在页边界结束。在 16KB 内核上，内核页大小是 16KB，请求长度会向上取整到 16KB 的整数倍。长度为 0 会返回 `-EINVAL`。
+这段代码确保所有 heap allocation 从页边界开始并在页边界结束。在 16KB kernel 上，内核页大小是 16KB，请求长度会向上取整到 16KB 的整数倍。长度为 0 会返回 `-EINVAL`。
 
 该结论只覆盖传给 DMA-BUF Heap 的 `len`。在到达这里之前，Gralloc 往往已经把逻辑像素需求转换成包含 stride、plane、压缩 metadata 和实现对齐的 allocation length。
 
@@ -208,7 +208,7 @@ Binder 会在接收进程安装指向同一内核 file object 的 fd；整数编
 | GPU page table | vendor GPU MMU / driver | 设备相关 |
 | HWC plane 能否读取 | display controller、format、modifier、带宽 | 设备相关 |
 
-Android 17 内核的 IOMMU 核心从 `domain->pgsize_bitmap` 选择硬件支持且满足地址、长度对齐的映射页大小。16KB CPU 内核不会把所有 IOMMU 域强制成单一的 16KB 映射粒度。
+Android 17 kernel IOMMU core 从 `domain->pgsize_bitmap` 选择硬件支持且满足地址、长度对齐的映射页大小。16KB CPU kernel 不会把所有 IOMMU domain 强制成单一的 16KB 映射粒度。
 
 ### 4.1 一个数值示例
 
@@ -235,11 +235,11 @@ Android 15 起，AOSP 支持 16KB page-size 设备。应用只要直接使用 ND
 
 Google Play 自 2025 年 11 月 1 日起要求：提交到 Play、面向 Android 15（API 35）及以上设备的新应用和现有应用更新必须支持 16KB page size。该要求见 [Android Developers 官方说明](https://developer.android.com/guide/practices/page-sizes)。
 
-这项要求不能证明应用的 GraphicBuffer 行跨度已经变成 16KB，也不能证明帧率会提高。它约束的是安装、链接、装载与运行时页大小假设的兼容性。
+这项要求不能证明应用的 GraphicBuffer stride 已经变成 16KB，也不能证明帧率会提高。它约束的是安装、链接、装载与运行时页大小假设的兼容性。
 
 ### 5.1 Android 17 的 backcompat 边界
 
-16KB 内核可以为部分按 4KB 对齐的应用启用 page-size backcompat。Android 17 还允许把兼容模式设为 `fatal`，让不兼容二进制立即终止，便于测试：
+16KB kernel 可以为部分按 4KB 对齐的应用启用 page-size backcompat。Android 17 还允许把兼容模式设为 `fatal`，让不兼容二进制立即终止，便于测试：
 
 ```bash
 adb shell setprop bionic.linker.16kb.app_compat.enabled fatal
@@ -252,7 +252,7 @@ adb shell setprop pm.16kb.app_compat.disabled true
 
 | 版本 | 相关变化 | 阅读边界 |
 |---|---|---|
-| Android 12 | GKI 2.0 以 DMA-BUF Heaps 取代 ION 分配框架 | 迁移文档中的 ION 回退属于当时的兼容路径 |
+| Android 12 | GKI 2.0 以 DMA-BUF Heaps 取代 ION 分配框架 | 迁移文档中的 ION fallback 属于当时的兼容路径 |
 | Android 15 | AOSP 支持构建 16KB page-size 系统与 16KB ELF alignment | 不代表所有 Android 15 设备都运行 16KB kernel |
 | Android 16 | 平台构建可用 `PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE` 检查预编译 ELF | 这是构建检查，不改变 GraphicBuffer 语义 |
 | Android 17 | `libdmabufheap` 的 ION 实现已移除；16KB backcompat 可设为 fatal；allocator AIDL 含 multiview 接口 | vendor Gralloc 和设备硬件布局仍需实机核对 |
@@ -323,11 +323,11 @@ adb shell ls /sys/kernel/dmabuf/buffers
 
 ## 七、常见错误结论
 
-### 16KB 内核会让所有 GraphicBuffer 行跨度变成 16KB 倍数
+### 16KB kernel 会让所有 GraphicBuffer stride 变成 16KB 倍数
 
 stride 由 format 和 allocator/hardware layout 决定。kernel 负责对 DMA-BUF Heap 的最终 allocation length 做页边界处理。
 
-### dma-buf 文件描述符跨 Binder 会复制整张图
+### dma-buf fd 跨 Binder 会复制整张图
 
 Binder 传输 handle metadata 和 fd 引用。接收端要 import，像素 backing storage 仍是同一个共享对象。
 
@@ -337,7 +337,7 @@ Binder 传输 handle metadata 和 fd 引用。接收端要 import，像素 backi
 
 ### “Android 17 的 `libdmabufheap` 打不开 heap 会回退 ION”
 
-精确标签中的 ION 实现已移除，打开失败会直接返回错误。官方迁移文档描述的是历史兼容机制。
+精确 tag 中的 ION 实现已移除，打开失败会直接返回错误。官方迁移文档描述的是历史兼容机制。
 
 ### 16KB 兼容通过，图形性能一定更好
 
@@ -345,7 +345,7 @@ ELF/APK 对齐通过只证明一部分可运行性。图形性能还受 buffer c
 
 ### 进程里有三份 10MiB 映射，就占了 30MiB 物理图形内存
 
-同一个 dma-buf 可以被多个进程映射。应先按共享对象去重，再区分 backing storage、页表、IOMMU 映射和逐进程统计。
+同一个 dma-buf 可以被多个进程映射。应先按共享对象去重，再区分 backing storage、页表、IOMMU mapping 和逐进程统计。
 
 ## 八、源码阅读顺序
 

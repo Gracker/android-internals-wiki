@@ -163,13 +163,13 @@ Android 17 源码中有几个容易被混用的常量：
 | Dispatch timer slack | 500µs | 合并时间相近的 callback 唤醒 |
 | Dispatch minimum VSync distance | 3ms | 避免把同一或过近的目标当成两次独立 VSync |
 
-这些常量属于不同组件。200ms 不是 Predictor 允许的预测误差，3ms 也不是 GPU 流水线的固定安全余量。
+这些常量属于不同组件。200ms 不是 Predictor 允许的预测误差，3ms 也不是 GPU pipeline 的固定安全余量。
 
 ## 三、VSyncPredictor 如何建立时间模型
 
-`VsyncSchedule::createTracker()` 在默认路径创建一个历史容量为 20、至少积累 6 个样本才开始拟合的 `VSyncPredictor`，离群比例为 20%。Android 17 还有一条条件严格的单样本路径：只有启用 `use_last_vsync_predict` flag VRR 配置且显示围栏功能可用时，历史容量和最少样本数才会改为 1/1。
+`VsyncSchedule::createTracker()` 在默认路径创建一个历史容量为 20、至少积累 6 个样本才开始拟合的 `VSyncPredictor`，离群比例为 20%。Android 17 还有一条条件严格的单样本路径：只有启用 `use_last_vsync_predict` flag VRR config、present fence 功能可用时，历史容量和最少样本数才会改为 1/1。
 
-因此，Android 17 并非总是使用末次 VSync 预测。调试具体设备前，应在 `dumpsys SurfaceFlinger`、日志和对应产品开关中确认它使用默认模型还是单样本模型。
+因此，Android 17 并非总是使用末次 VSync 预测。调试具体设备前，应在 `dumpsys SurfaceFlinger`、日志和对应产品 flag 中确认它使用默认模型还是单样本模型。
 
 ### 3.1 `validate()` 检查的是什么
 
@@ -179,7 +179,7 @@ Android 17 源码中有几个容易被混用的常量：
 2. 从历史里寻找与新样本最接近的时间戳，并优先考虑 200ms 内的近期样本；
 3. 如果两者距离小于一个周期的 20%，把新时间戳视作重复样本。
 
-相位校验允许样本落在周期起点或终点附近的 20% 区间，而不是以拟合值为中心的简单 ±20% period” 判断。跨周期的合法样本因此不会仅因取模后靠近周期尾部而被误拒。
+相位校验允许样本落在周期起点或终点附近的 20% 区间，而不是以拟合值为中心的简单“±20% period”判断。跨周期的合法样本因此不会仅因取模后靠近周期尾部而被误拒。
 
 ### 3.2 多样本模式做线性拟合
 
@@ -191,7 +191,7 @@ timestamp(n) ≈ intercept + slope × sequence(n)
 
 这里 `slope` 表示模型估计的周期，`intercept` 表示相位。实现先对时间值做缩放以降低大整数参与运算时的精度风险，最终再恢复纳秒尺度。拟合完成后还会检查各样本与模型之间的误差，超出 20% 容差的模型不会直接采用。
 
-单样本模式不会执行这组回归；它以最新有效脉冲为锚点，并使用理想周期预测。分析跟踪数据时，要区分样本较少和预测器失效。
+单样本模式不会执行这组回归；它以最新有效 pulse 为锚点，并使用理想 period 预测。分析跟踪数据时，要区分样本较少和预测器失效。
 
 ### 3.3 ARR 下的最小帧间隔
 
@@ -214,18 +214,18 @@ timestamp(n) ≈ intercept + slope × sequence(n)
 - HWC VSync 时间戳及可选 period；
 - present fence 表示的实际 present 时间。
 
-模式切换期间，`periodConfirmed()` 用 10% allowance 判断观测周期是否接近目标周期。若 HWC 直接给出周期，就比较该值与目标；否则比较相邻硬件 VSync 时间戳的距离。这里没有固定的 17～33ms 模式切换窗口。
+模式切换期间，`periodConfirmed()` 用 10% allowance 判断观测周期是否接近目标周期。若 HWC 直接给出 period，就比较该值与目标；否则比较相邻硬件 VSync 时间戳的距离。这里没有固定的 17～33ms 模式切换窗口。
 
-显示围栏可靠且功能启用时，它可以补充预测样本。若样本被拒、模式尚未确认或围栏信息不足，Reactor 会请求更多硬件 VSync；进入周期过渡时还会临时忽略 present fence，避免把新旧模式交界处的时间戳写入错误模型。样本稳定后，可以关闭硬件 VSync 以减少持续中断。
+显示围栏可靠且功能启用时，它可以补充预测样本。若样本被拒、模式尚未确认或 fence 信息不足，Reactor 会请求更多硬件 VSync；进入周期过渡时还会临时忽略 present fence，避免把新旧模式交界处的时间戳写入错误模型。样本稳定后，可以关闭硬件 VSync 以减少持续中断。
 
 这条控制逻辑可以解释两类 trace：
 
-- 一段时间内硬件 VSync 重新密集出现，可能是模型正在重新采样，不必先归因于应用；
+- 一段时间内 HW VSync 重新密集出现，可能是模型正在重新采样，不必先归因于 App；
 - 模式切换时 present fence 没进入 Predictor，可能是 Reactor 主动忽略，不代表 fence 丢失。
 
 ## 五、VSyncDispatch 如何反推唤醒时间
 
-消费者注册回调后，`VSyncDispatchTimerQueueEntry::schedule()` 根据工作预算寻找下一次目标 VSync。下面的伪代码保留 Android 17 实现中的主要关系，用于核对跟踪中的三个时间点：
+消费者注册 callback 后，`VSyncDispatchTimerQueueEntry::schedule()` 根据工作预算寻找下一次目标 VSync。下面的伪代码保留 Android 17 实现中的主要关系，用于核对跟踪中的三个时间点：
 
 ```text
 earliest = max(lastVsync, now + workDuration + readyDuration)
@@ -263,7 +263,7 @@ flowchart LR
     ET2 --> CH2["Choreographer#doFrame"]
 ```
 
-连续 VSync 与 one-shot request 在 EventThread 内有不同状态；`requestNextVsync()` 不会无限叠加已经待处理的请求。应用侧发生阻塞时，可沿 `Choreographer`、`DisplayEventReceiver`、EventThread 连接和 Dispatch 注册项逐级确认。
+连续 VSync 与 one-shot request 在 EventThread 内有不同状态；`requestNextVsync()` 不会无限叠加已经待处理的请求。应用侧发生阻塞时，可沿 `Choreographer`、`DisplayEventReceiver`、EventThread connection 和 Dispatch registration 逐级确认。
 
 ### 6.2 SurfaceFlinger 请求合成帧
 
@@ -323,7 +323,7 @@ Android 17 的 `SurfaceFlinger::updateLayerHistory()` 遍历 FrontEnd 生成的 
 
 每个 requirement 还带 owner UID、desired refresh rate、seamlessness、category、weight、focused、smooth-switch-only 与 layer filter 等信息。选择器在 display policy、primary/app request 范围、mode group 和设备能力允许的候选中评分，并结合 touch、idle、power-on-imminent 等全局信号。
 
-应用提交的帧率是投票输入，不是切换命令。它可能被以下条件压低或覆盖：
+应用提交的 frame rate 是投票输入，不是切换命令。它可能被以下条件压低或覆盖：
 
 - 当前 display policy 不允许该候选；
 - 多个可见 layer 的请求冲突；
@@ -342,7 +342,7 @@ Multiple Refresh Rate 设备通常暴露 60Hz、90Hz、120Hz 等离散 mode。Su
 
 ### 8.2 ARR：同一模式内调整帧间隔
 
-Android 15 引入平台 ARR 支持。面板可以在一个 VRR 模式内依据显示时机调整实际刷新间隔，而不必每次切换完整 display mode。官方 ARR 文档将硬件能力、Composer HAL、内核/驱动和 SurfaceFlinger 列为协作条件；设备是否支持仍需实机确认。
+Android 15 引入平台 ARR 支持。面板可以在一个 VRR mode 内依据 present 时机调整实际刷新间隔，而不必每次切换完整 display mode。官方 ARR 文档将硬件能力、Composer HAL、内核/驱动和 SurfaceFlinger 列为协作条件；设备是否支持仍需实机确认。
 
 ARR 不保证支持任意连续帧率。设备通常受离散 VSync step、最小帧间隔、面板范围和 HWC 实现约束。应用把 57fps 传入 API，不代表显示器会稳定输出 57Hz。
 
@@ -358,7 +358,7 @@ ARR 不保证支持任意连续帧率。设备通常受离散 VSync step、最�
 
 API 只能表达意图。`SurfaceControl.Transaction.setFrameRate()` 适合直接管理 SurfaceControl layer 的系统组件；普通 View 应优先使用 View/Window 层 API，让声明随可见性和 View 生命周期传播。
 
-Android 17 源码中还有受开关控制的 `Surface.FrameRateParams` overload，但当前 Java 实现仍有 desired min/max 继续传给原生层的 TODO。只有同时核对目标 SDK、设备开关和实现后，才能判断区间控制是否完整生效。
+Android 17 源码中还有受 flag 控制的 `Surface.FrameRateParams` overload，但当前 Java 实现仍有 desired min/max 继续传给原生层的 TODO。只有同时核对目标 SDK、设备 flag 和实现后，才能判断区间控制是否完整生效。
 
 参考：
 
@@ -411,7 +411,7 @@ Android 17 的 Scheduler 为每个 display 保存独立的 selector 与 `VsyncSc
 - SF 是否及时 latch、compose、提交 HWC；
 - present fence 是否晚于 expected present。
 
-Android 17 `TokenManager` 使用容量为 500 的环形存储保存 prediction。源码中没有按时间戳执行的固定 120ms TTL；不能用“token 超过 120ms 必然过期来解释关联失败。
+Android 17 `TokenManager` 使用容量为 500 的环形存储保存 prediction。源码中没有按时间戳执行的固定 120ms TTL；不能用“token 超过 120ms 必然过期”解释关联失败。
 
 ### 11.2 Jank 类型要按责任域解释
 
@@ -441,7 +441,7 @@ Android 17 `JankType` 中，除 `None` 外有 15 个 bit：
 
 记录 display ID、pacesetter、active mode、peak refresh rate、VSync rate、ARR support、模式切换和 power state。缺少这些信息时，8.33ms 与 16.67ms 的预算都可能套错对象。
 
-**第二步：判断应用是否按时提交 buffer。**
+**第二步：判断 App 是否按时提交 buffer。**
 
 查看 `Choreographer#doFrame`、主线程 traversal、RenderThread/GPU、queueBuffer 与 App FrameTimeline。若出现 `AppDeadlineMissed`，继续追踪 CPU 调度、锁、GC、Binder 或 GPU 工作负载。
 
@@ -465,19 +465,19 @@ App 收到的是面向 predicted present 的调度事件。之后还有 App 工�
 
 ### `setFrameRate(60)` 会固定屏幕为 60Hz
 
-这只是 layer vote。SurfaceFlinger 仍要综合其他图层、策略、设备能力和切换成本。
+这只是 layer vote。SurfaceFlinger 仍要综合其他 layer、策略、设备能力和切换成本。
 
 ### “120Hz 的每一帧都只有 8.33ms App CPU 时间”
 
-8.33ms 是刷新周期。App wakeup VSync 配置和调度目标决定；流水线可以跨周期，ARR 还可能让实际 frame interval 与 TE 周期不同。
+8.33ms 是刷新周期。App wakeup VSync config 和调度目标决定；流水线可以跨周期，ARR 还可能让实际 frame interval 与 TE 周期不同。
 
 ### “present fence 可以完全替代 HW VSync”
 
 两者都能提供时间证据，但 Reactor 会根据可靠性和模式切换状态选择是否采纳。过渡期可能忽略 present fence，并重新启用硬件 VSync。
 
-### 看到 `PredictionError` 就说明 Predictor 算法有缺陷
+### 看到 `PredictionError` 就说明 Predictor 算法有 bug
 
-该 bit 表示预测与实际时间关系不满足分类条件。模式切换、周期错误、样本丢失、HWC 或显示提交异常都可能产生同样结果，需要回到原始时间线验证。
+该 bit 表示预测与实际时间关系不满足分类条件。模式切换、周期错误、样本丢失、HWC/present 异常都可能产生同样结果，需要回到原始时间线验证。
 
 ## 十三、源码阅读路线
 
