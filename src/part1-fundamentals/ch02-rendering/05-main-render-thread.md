@@ -245,7 +245,7 @@ RenderThread 执行 `DrawFrameTask::run()` 后创建 `TreeInfo`，再进入 `syn
 5. 根据 Surface、stop 状态、可绘制内容、buffer 预留结果等设置 skip reason。
 6. 汇总 `UIRedrawRequired`、`FrameDropped` 等同步结果。
 
-`CanvasContext::prepareTree()` 还会导入 UI 侧 `FrameInfo`、标记 SyncStart、执行动画上下文、遍历 RenderNode、释放未使用的预取 layer，并通过 `mNativeSurface->reserveNext()` 预留下一块窗口 buffer。预留失败时，本帧可被标成 `NoBuffer` 并跳过。缓冲反压可能在 draw 之前进入本帧证据链。
+`CanvasContext::prepareTree()` 还会导入 UI 侧 `FrameInfo`、标记 SyncStart、执行动画上下文、遍历 RenderNode、释放未使用的预取 layer，并通过 `mNativeSurface->reserveNext()` 预留下一块窗口 buffer。预留失败时，本帧可被标成 `NoBuffer` 并跳过。buffer backpressure 可能在 draw 之前进入本帧证据链。
 
 ### UI 解锁存在早、晚两条路径
 

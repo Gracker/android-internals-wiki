@@ -424,7 +424,7 @@ Modifier.graphicsLayer {
 
 ## Kernel 与厂商驱动边界
 
-内核源码锚点统一为 `android17-6.18-2026-06_r6`。通用内核能提供调度、dma-buf、dma-fence/sync_file 等基础机制，帮助观察 GPU job、buffer 与显示依赖何时完成。
+kernel 源码锚点统一为 `android17-6.18-2026-06_r6`。通用内核能提供调度、dma-buf、dma-fence/sync_file 等基础机制，帮助观察 GPU job、buffer 与显示依赖何时完成。
 
 片元剔除、tile 策略、颜色压缩、counter 定义和大量 GPU 调度细节位于硬件与厂商驱动。通用 kernel tag 不能说明某次逻辑 overdraw 执行了多少片元，也不能给出跨 GPU 通用的填充率模型。
 
