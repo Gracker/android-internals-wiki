@@ -67,45 +67,11 @@ last_deepseek_cn_review_at: 2026-06-23
 
 # 22.15 Compose First 与 View/Compose 混合迁移性能边界
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 Compose First 改变新增 UI 能力入口
-说明 Google 2026 年将 Android UI 指南、工具、API 和示例转向 Compose 的背景，并把它转成工程判断：新增功能优先 Compose，老页面按触碰频率和性能风险分批迁移。
-
-### 🔹 View 维护模式与存量页面边界
-区分 android.widget、Fragment、RecyclerView、ViewPager 等 View-based 组件的维护状态、继续可用范围和不再承接新特性的影响，避免把“维护模式”误读成“立即废弃”。
-
-### 🔹 View/Compose interop 的性能成本
-梳理 `ComposeView`、`AndroidView`、Fragment 容器、RecyclerView item 中嵌入 Compose 的常见成本：生命周期桥接、measure/layout 重复、状态同步、slot table 与 View tree 双重管理。
-
-### 🔹 迁移顺序与风险分层
-给出页面迁移排序：新页面、低频设置页、长列表 item、动画密集页、大屏/窗口化页面分别采用不同验证门槛，性能敏感路径先做 Macrobenchmark 和线上指标基线。
-
-### 🔹 Lazy 列表、Pausable Composition 与版本边界
-结合 Compose Foundation 1.9/1.10 的 LazyLayoutCacheWindow、Pausable Composition、runtime tracing，说明长列表迁移时要看具体 Compose 版本和默认开关，不把 alpha 能力写成稳定默认能力。
-
-### 🔹 观测工具与验收指标
-说明 Compose Profiler、Perfetto、Android Performance Analyzer、Macrobenchmark、Baseline Profile 的分工，建立启动耗时、帧耗时、重组次数、跳过次数、GC 暂停和内存峰值的验收表。
-
-## 扩展
-
-### 🔸 XML to Compose migration skill 的适用范围
-记录官方迁移 skill 适合做布局草案转换，最终仍需人工确认状态提升、语义、可访问性和性能数据。
-
-### 🔸 Compose Multiplatform 与 Android App 迁移的差异
-区分跨平台 UI 选型和 Android 原生页面迁移，避免把 Compose Multiplatform 的限制直接套到 Android App 页面上。
-
-### 🔸 Compose 1.10+ 发布说明跟踪
-Pausable Composition、Lazy prefetch、Modifier 优化和 runtime tracing 的适用范围必须按稳定版发布说明确认，不能依据预览版行为外推。
-
-<!-- outline-end -->
-
 Google 在 2026 年明确采用 Compose First：新的 Android UI 库、示例、文档、培训和工具以 Compose 为设计起点。这是一项增量策略，存量 View 代码仍受支持。团队可以据此制定两条规则：新 UI 默认评估 Compose；存量页面在功能改造、视觉重做或状态模型调整时评估迁移，不安排缺少业务收益的全量重写。[Android Developers：Compose First](https://developer.android.com/develop/ui/compose/first)｜[Android Developers Blog](https://developer.android.com/blog/posts/android-ui-development-is-compose-first)
 
-本文固定三条版本线，避免把平台、Jetpack 和内核混成一个版本：
+版本线分为平台、Jetpack 和内核三层：
 
-| 层级 | 本文锚点 | 能回答的问题 |
+| 层级 | 锚点 | 能回答的问题 |
 |---|---|---|
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | `Choreographer`、`ViewRootImpl`、HWUI、BLAST、SurfaceFlinger 如何调度和显示宿主窗口 |
 | Jetpack Compose | BOM `2026.06.01`，Runtime/UI/Foundation `1.11.4`；`1.12.0-beta02` 只作预览观察 | Composition、Layout、Draw、Lazy 预取、runtime tracing 和互操作 API 的当前行为 |
@@ -246,7 +212,7 @@ Baseline Profile 文档给出的“约 30%”是对被 profile 覆盖代码路�
 
 FrameTimeline 的 App `SurfaceFrame` 和 SurfaceFlinger `DisplayFrame` 回答不同问题。App actual 超过 expected deadline 说明应用侧交帧未按预算完成；它不能独立证明目标 layer 已错过 present。涉及独立 `SurfaceView` 或视频 layer 时，还要核对该 layer 的 latch、fence 与 display timeline。[Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
 
-[Android Performance Analyzer](https://developer.android.com/android-performance-analyzer) 在本文复核时仍为 open beta。它可以辅助关联 CPU、GPU、内存、功耗和 SurfaceFlinger 信息，GPU counters 也可能因设备能力而缺失。稳定验收仍应保存 Macrobenchmark 输出、Perfetto trace、构建版本和测试条件。[Android Studio jank detection](https://developer.android.com/studio/profile/jank-detection)
+截至 2026-07-29，[Android Performance Analyzer](https://developer.android.com/android-performance-analyzer) 仍为 open beta。它可以辅助关联 CPU、GPU、内存、功耗和 SurfaceFlinger 信息，GPU counters 也可能因设备能力而缺失。稳定验收仍应保存 Macrobenchmark 输出、Perfetto trace、构建版本和测试条件。[Android Studio jank detection](https://developer.android.com/studio/profile/jank-detection)
 
 ## XML to Compose migration skill 的适用范围
 
@@ -278,7 +244,7 @@ Compose 的版本更新快于 Android 平台。引用“默认启用”“性能
 - 测试路径、迭代次数、percentile 与回归阈值；
 - feature flag 的编译期和运行时值。
 
-本文在 2026-07-29 核对到 Foundation `1.11.4` 稳定版与 `1.12.0-beta02` 预览版。后续若发布说明明确更改 Pausable Composition 的默认状态，需要同时更新 [22.3 Compose 性能](03-compose-performance.md)、[22.33 PausableComposition](33-compose-pausable-composition-performance.md) 与本节，不能根据预览版或一次本地结果推断稳定版行为。
+2026-07-29 核对到 Foundation `1.11.4` 稳定版与 `1.12.0-beta02` 预览版。后续若发布说明明确更改 Pausable Composition 的默认状态，需要同时更新 [22.3 Compose 性能](03-compose-performance.md)、[22.33 PausableComposition](33-compose-pausable-composition-performance.md) 与这里的版本边界，不能根据预览版或一次本地结果推断稳定版行为。
 
 ## Android 17 源码核对入口
 

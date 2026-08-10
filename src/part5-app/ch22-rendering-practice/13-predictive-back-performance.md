@@ -46,51 +46,17 @@ sources:
 
 # 22.13 Predictive Back 动画与页面切换性能
 
-<!-- outline-start -->
-## 要点
+Predictive Back 把“返回”从一次离散事件改成一段可取消、可预览、可按进度驱动的交互。页面切换性能的判断点也随之移动：卡顿不再只发生在 `popBackStack()` 或 `finish()` 之后，手指从屏幕边缘滑动的每一帧都可能暴露主线程、布局、动画和合成成本。系统手势入口见 [§3.3 手势导航](../../part1-fundamentals/ch03-input/03-gesture-navigation.md)，View 一帧时序见 [§18.2 Android View 标准管线](../../part2-performance/ch18-rendering-pipelines/02-android-view-standard.md)，FragmentTransaction 的提交语义见 [§22.12 FragmentTransaction 提交链路](12-fragment-transaction-performance.md)；以下聚焦应用侧的接入、降级和 Perfetto 定位方法。
 
-### 🔹 平台 Back 分发与 AndroidX 兼容层
-从 `OnBackInvokedCallback`、`OnBackInvokedDispatcher`、`OnBackPressedDispatcher` 和 AndroidX Activity 的桥接关系建立版本边界，说明 Android 13+ predictive back 与旧回退处理的差异。
-
-### 🔹 手势进度如何进入动画系统
-整理 predictive back 事件中的 progress、edge、cancel、complete 四类信号，区分 View property animation、Fragment transition、Activity transition 和 Compose `NavigationEvent` 的接入方式。
-
-### 🔹 Fragment / Navigation 页面切换性能边界
-结合 Fragment 1.7+、Transition 1.5+ 和 Navigation 版本演进，说明返回手势期间哪些工作应限制在动画属性更新，哪些 View inflate、数据加载和事务提交要避开手势进行中阶段。
-
-### 🔹 Compose NavigationEvent 与重组成本
-分析 `NavigationEventHandler`、`rememberNavigationEventState`、`NavigationEventTransitionState.InProgress` 的使用边界，重点检查手势进度驱动状态更新时的重组范围、布局成本和取消回滚逻辑。
-
-### 🔹 Perfetto 观察点与问题定位
-列出输入事件、主线程消息、Choreographer、FrameTimeline、RenderThread 和 GPU completion 的观察点，用于区分输入分发延迟、动画每帧计算过重、布局重算和合成阶段阻塞。
-
-### 🔹 工程治理清单
-给出接入 predictive back 的最小改造路径：版本开关、回调注册顺序、动画对象复用、手势取消复位、页面释放时机、WebView / Fragment / Compose 混合栈的兜底策略。
-
-## 扩展
-
-### 🔸 WebView predictive back
-梳理 WebView 自身历史返回与 Activity 返回手势之间的优先级，避免页面内回退和系统返回动画互相抢占。
-
-### 🔸 跨 Activity 转场
-补充自定义 cross-activity predictive back 动画的版本要求、性能风险和低版本降级方案。
-
-### 🔸 大屏与多窗口场景
-分析 predictive back 在多窗口、桌面模式和 foldable 上的边缘手势、动画幅度和窗口尺寸变化问题。
-
-<!-- outline-end -->
-
-Predictive Back 把“返回”从一次离散事件改成一段可取消、可预览、可按进度驱动的交互。页面切换性能的判断点也随之移动：卡顿不再只发生在 `popBackStack()` 或 `finish()` 之后，手指从屏幕边缘滑动的每一帧都可能暴露主线程、布局、动画和合成成本。系统手势入口见 [§3.3 手势导航](../../part1-fundamentals/ch03-input/03-gesture-navigation.md)，View 一帧时序见 [§18.2 Android View 标准管线](../../part2-performance/ch18-rendering-pipelines/02-android-view-standard.md)，FragmentTransaction 的提交语义见 [§22.12 FragmentTransaction 提交链路](12-fragment-transaction-performance.md)；本节关注应用侧怎么接入、怎么降级、怎么用 Perfetto 定位慢帧。
-
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md] 参考书把速度问题拆成 CPU 指令、缓存命中和任务调度三类成本，本节沿用这种拆法：每帧计算量、状态读写范围、主线程排队和渲染提交分开看。[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md] 参考书强调任务调度会改变响应延迟，本节把这个点落在返回手势期间：不要把数据加载、页面销毁和事务提交挤进 progress 回调。
+分析时把每帧计算量、状态读写范围、主线程排队和渲染提交分开看。任务调度会改变响应延迟，因此不要把数据加载、页面销毁和事务提交挤进 progress 回调。
 
 平台 Back 分发和窗口动画固定到 Android 17 / API 37 的 `android-17.0.0_r1`；线程调度现象按 `android17-6.18-2026-06_r6` 观察。Activity、Fragment、Transition 与 NavigationEvent 都是独立发布的 AndroidX 库，版本结论以各自 release notes 为准，不能从 Android 17 platform tag 推导。
 
 ## Back 分发：Android 13 之后多了一段“可预览”的返回过程
 
-Android 13 引入 `OnBackInvokedDispatcher` / `OnBackInvokedCallback`，提供新的返回完成分发；Android 14 的 `OnBackAnimationCallback` 才把 start、progress、cancel 事件公开给应用。AndroidX Activity 1.8.0 为 `OnBackPressedCallback` 增加 `handleOnBackStarted()`、`handleOnBackProgressed()`、`handleOnBackCancelled()` 和 `handleOnBackPressed()`，但 Android 13 及更低版本没有平台 progress 事件，不能运行按手势 fraction seek 的同等动画。[已验证: Android 17 `OnBackInvokedDispatcher.java` / `OnBackAnimationCallback.java` + AndroidX Activity release notes]
+Android 13 引入 `OnBackInvokedDispatcher` / `OnBackInvokedCallback`，提供新的返回完成分发；Android 14 的 `OnBackAnimationCallback` 才把 start、progress、cancel 事件公开给应用。AndroidX Activity 1.8.0 为 `OnBackPressedCallback` 增加 `handleOnBackStarted()`、`handleOnBackProgressed()`、`handleOnBackCancelled()` 和 `handleOnBackPressed()`，但 Android 13 及更低版本没有平台 progress 事件，不能运行按手势 fraction seek 的同等动画。
 
-当前官方文档把 Predictive Back 视为默认启用能力，`android:enableOnBackInvokedCallback="false"` 用于应用级或 Activity 级 opt-out。设为 false 会关闭系统 predictive back 动画，并让系统忽略平台 `OnBackInvokedCallback`；AndroidX `OnBackPressedCallback` 仍会收到完成回调。Android 15 起，back-to-home、cross-task 与 cross-activity 系统动画不再依赖开发者选项，但仍要求对应 Activity 没有消费型 callback 抢走返回。[已验证: 官方 Predictive Back 迁移文档]
+当前官方文档把 Predictive Back 视为默认启用能力，`android:enableOnBackInvokedCallback="false"` 用于应用级或 Activity 级 opt-out。设为 false 会关闭系统 predictive back 动画，并让系统忽略平台 `OnBackInvokedCallback`；AndroidX `OnBackPressedCallback` 仍会收到完成回调。Android 15 起，back-to-home、cross-task 与 cross-activity 系统动画不再依赖开发者选项，但仍要求对应 Activity 没有消费型 callback 抢走返回。
 
 这几个入口的分工要拆开看：
 
@@ -98,9 +64,9 @@ Android 13 引入 `OnBackInvokedDispatcher` / `OnBackInvokedCallback`，提供�
 - `OnBackAnimationCallback`：Android 14+ 的平台 progress 接口，继承 `OnBackInvokedCallback`，增加 started、progressed 和 cancelled；完成仍走 `onBackInvoked()`。
 - `OnBackPressedDispatcher`：AndroidX 兼容层，低版本仍能处理返回完成；Activity 1.8.0+ 暴露四段式方法，只有 Android 14+ 能从平台得到连续 progress。
 - `PredictiveBackHandler`：Compose 入口，来自 `androidx.activity:activity-compose:1.8.0+`，以 `Flow<BackEventCompat>` 提供手势事件；取消会结束 Flow 并抛出 `CancellationException`。
-- `NavigationEventDispatcher`：面向 Compose、KMP 和自定义导航容器的更底层抽象。Activity 1.12.0 已把 `OnBackPressed` API 重写到 NavigationEvent 之上；截至 2026-07-29，Activity 稳定版为 1.13.0，NavigationEvent 稳定版为 1.1.2。[已验证: Activity / NavigationEvent release notes]
+- `NavigationEventDispatcher`：面向 Compose、KMP 和自定义导航容器的更底层抽象。Activity 1.12.0 已把 `OnBackPressed` API 重写到 NavigationEvent 之上；截至 2026-07-29，Activity 稳定版为 1.13.0，NavigationEvent 稳定版为 1.1.2。
 
-Android 16 增加 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER`：应用可以在不消费返回事件的前提下记录 root Activity 返回，系统 back-to-home 动画仍可播放。Android 17 的 `OnBackInvokedDispatcher` 明确写出版本差异：API 36 同时只能注册一个 observer callback，API 37 起不再限制数量。observer 只适合日志或不改变导航结果的收尾工作，不能拦截返回，也不要负责页面切换。[已验证: Android 17 `OnBackInvokedDispatcher.java`]
+Android 16 增加 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER`：应用可以在不消费返回事件的前提下记录 root Activity 返回，系统 back-to-home 动画仍可播放。Android 17 的 `OnBackInvokedDispatcher` 明确写出版本差异：API 36 同时只能注册一个 observer callback，API 37 起不再限制数量。observer 只适合日志或不改变导航结果的收尾工作，不能拦截返回，也不要负责页面切换。
 
 ## 手势进度进入动画系统后，回调只能做每帧能承受的事
 
@@ -162,7 +128,7 @@ fun createPredictiveBackCallback(
 
 ## Fragment / Navigation：手势期间不要制造新的页面切换成本
 
-Fragment 1.7.0+ 支持 predictive in-app back，但连续 seek 只在 Android 14 / API 34+ 生效。返回事务使用 `Animator` 或 AndroidX Transition 1.5.0+ 时，FragmentManager 可以按手势进度 seek，再根据完成或取消提交或回滚；旧 `Animation` 和 framework `Transition` 不支持这条路径。[已验证: Fragment animation guide + Fragment / Transition release notes]
+Fragment 1.7.0+ 支持 predictive in-app back，但连续 seek 只在 Android 14 / API 34+ 生效。返回事务使用 `Animator` 或 AndroidX Transition 1.5.0+ 时，FragmentManager 可以按手势进度 seek，再根据完成或取消提交或回滚；旧 `Animation` 和 framework `Transition` 不支持这条路径。
 
 版本边界要写进治理清单：
 
@@ -174,7 +140,7 @@ Fragment 1.7.0+ 支持 predictive in-app back，但连续 seek 只在 Android 14
 | Compose `PredictiveBackHandler` | Activity Compose 1.8.0+；连续 progress 需要 Android 14+ | 进度状态读写范围要限制在动画层 |
 | NavigationEvent | NavigationEvent 1.0+ | 手势状态与导航历史分开观察，避免每帧改导航栈 |
 
-Fragment 官方 release notes 中多次修复 predictive back 取消、快速连续返回、空白页、生命周期状态不一致等问题。这说明工程接入时不能只看 API 是否存在，还要固定最低 Fragment / Transition 版本，并把取消回滚作为测试用例。[已验证: 官方文档, developer.android.com/jetpack/androidx/releases/fragment]
+Fragment 官方 release notes 中多次修复 predictive back 取消、快速连续返回、空白页、生命周期状态不一致等问题。这说明工程接入时不能只看 API 是否存在，还要固定最低 Fragment / Transition 版本，并把取消回滚作为测试用例。
 
 截至 2026-07-29，Activity 稳定版是 1.13.0、Fragment 是 1.8.9、Transition 是 1.7.0。Activity 1.12.2 修复了 lifecycle-aware callback 的 `isEnabled` 状态问题；Fragment 与 Transition 已进入 maintenance mode。新工程应优先评估当前稳定版，表中的最低版本只表示功能入口出现，不代表包含后续取消、predictive back 与生命周期修复。
 
@@ -184,7 +150,7 @@ Fragment 页面切换的性能边界可以按三段预算拆：
 - 手势进行: 只改动画 fraction 或可合成属性。不要在这里执行 `commitNow()`、网络请求、数据库读取、图片解码、WebView 初始化。
 - 手势完成: 只提交返回动作与轻量状态。生命周期要求同步释放的引用照常清理；磁盘写入、缓存整理和其他阻塞工作交给后台线程，不能靠 `post` 到下一帧来维持正确性。
 
-`TransitionManager.controlDelayedTransition()` 的用法与普通 `beginDelayedTransition()` 不同：前者返回可控制进度的对象，适合把 `BackEvent.progress` 映射到 `currentFraction`；后者启动后由时间驱动，不适合手势直接 seek。[已验证: 官方文档, developer.android.com/guide/navigation/custom-back/support-animations-views]
+`TransitionManager.controlDelayedTransition()` 的用法与普通 `beginDelayedTransition()` 不同：前者返回可控制进度的对象，适合把 `BackEvent.progress` 映射到 `currentFraction`；后者启动后由时间驱动，不适合手势直接 seek。
 
 下面的代码只展示同一 View 容器内部状态的 transition seek，不要把它套在 FragmentManager 已经接管的 predictive back 事务外层。
 
@@ -233,7 +199,7 @@ val callback = object : OnBackPressedCallback(true) {
 
 ## Compose NavigationEvent：把进度状态限制在动画层
 
-Compose 需要先判断导航 owner。Navigation 3 已内建 predictive back 时，使用它提供的 back stack 和动画，不再叠加自定义 handler；`PredictiveBackHandler` 适合页面内自定义动画；NavigationEvent 适合自定义导航容器、跨平台组件或需要独立观察手势状态的场景。官方 NavigationEvent 文档把 `NavigationEventTransitionState.InProgress`、`rememberNavigationEventState()`、`NavigationBackHandler()` 组合使用：`transitionState` 表示手势状态，导航历史由另一组状态描述。[已验证: NavigationEvent handle-back guide]
+Compose 需要先判断导航 owner。Navigation 3 已内建 predictive back 时，使用它提供的 back stack 和动画，不再叠加自定义 handler；`PredictiveBackHandler` 适合页面内自定义动画；NavigationEvent 适合自定义导航容器、跨平台组件或需要独立观察手势状态的场景。官方 NavigationEvent 文档把 `NavigationEventTransitionState.InProgress`、`rememberNavigationEventState()`、`NavigationBackHandler()` 组合使用：`transitionState` 表示手势状态，导航历史由另一组状态描述。
 
 Compose 的性能风险来自状态读取位置。`progress` 如果被上层导航容器、整页 scaffold 或复杂列表读取，手指移动会扩大重组范围；如果在 `graphicsLayer` 更新块内读取稳定的 State 对象，变化可以直接失效 layer 属性，避开 Composition 和 Layout。Compose 的状态读取阶段与排查方法见 [§22.3 Compose 性能](03-compose-performance.md)。
 
@@ -283,7 +249,7 @@ Predictive Back 的慢帧通常分四类：输入分发慢、主线程进度回�
 | FrameTimeline（Android 12+） | App `SurfaceFrame` 与 SF `DisplayFrame` 的 Expected / Actual、jank reason | 区分应用生产未按 deadline 与显示侧合成 / present 超期 |
 | SurfaceFlinger | `BufferTX`、目标 layer latch、composition 与 present timing | 应用侧交帧及时但系统采纳或显示晚，继续查 buffer、fence、GPU / HWC |
 
-FrameTimeline 从 Android 12 起可用。App actual `SurfaceFrame` 的结束位置综合 buffer post 与 GPU completion，用来判断应用侧是否按 deadline 产出；SF actual `DisplayFrame` 才继续覆盖 layer latch、合成与 present。App actual 按时不能证明窗口已经显示，仍要对齐 SF DisplayFrame、目标 layer 和 present timing。[已验证: Perfetto FrameTimeline docs + Android 17 `FrameTimeline.cpp`]
+FrameTimeline 从 Android 12 起可用。App actual `SurfaceFrame` 的结束位置综合 buffer post 与 GPU completion，用来判断应用侧是否按 deadline 产出；SF actual `DisplayFrame` 才继续覆盖 layer latch、合成与 present。App actual 按时不能证明窗口已经显示，仍要对齐 SF DisplayFrame、目标 layer 和 present timing。
 
 下面的 trace 示例使用固定 section 名，并用 counter 保存 progress，便于把回调成本和手势位置对齐：
 
@@ -331,7 +297,7 @@ ahead-of-time 分发要求手势开始前就确定谁接管返回。官方 WebVi
 
 ## 扩展：跨 Activity 转场
 
-跨 Activity 和 back-to-home 动画属于系统可见转场。Android 15 起相关系统动画不再依赖开发者选项；应用要移除 root Activity 上无必要的消费型 callback，并确认没有通过 manifest opt-out。Android 16 增加观察型 callback，允许日志在不消费返回的情况下运行；Android 17 则取消 API 36 的单 observer 数量限制。[已验证: 官方 Predictive Back 文档 + Android 17 `OnBackInvokedDispatcher.java`]
+跨 Activity 和 back-to-home 动画属于系统可见转场。Android 15 起相关系统动画不再依赖开发者选项；应用要移除 root Activity 上无必要的消费型 callback，并确认没有通过 manifest opt-out。Android 16 增加观察型 callback，允许日志在不消费返回的情况下运行；Android 17 则取消 API 36 的单 observer 数量限制。
 
 跨 Activity 自定义动画的风险在于目标窗口准备时间。如果上一个 Activity 需要冷启动、恢复复杂 View 树或重新绑定列表，手势预览阶段会露出空白、快照或旧内容。治理动作是把返回目标 Activity 的首帧准备纳入页面切换预算，和 21.x 启动优化、22.12 Fragment 事务预算一起看。
 
