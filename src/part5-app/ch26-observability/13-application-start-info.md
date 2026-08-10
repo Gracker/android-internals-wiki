@@ -74,48 +74,11 @@ last_deepseek_cn_review_at: 2026-06-27
 
 # 26.13 ApplicationStartInfo 与启动归因上报
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 启动归因在可观测性链路中的位置
-把 `ApplicationStartInfo` 放到启动性能、Crash/ANR 补偿和线上诊断证据包之间，明确它解决的是「这次进程为什么被拉起、属于哪类启动、各阶段时间戳如何落盘」。
-
-### 🔹 Android 15 `ApplicationStartInfo` 的字段边界
-梳理 `ActivityManager.getHistoricalProcessStartReasons()`、`getStartType()`、`getReason()`、`getStartupTimestamps()`、`START_TIMESTAMP_*` 的可用范围，并标注 API 35 起可用。
-
-### 🔹 冷启动、温启动、热启动的线上分流口径
-建立线上指标侧的启动类型分流规则：只把 `START_TYPE_COLD` 纳入冷启动 SLA，把温启动/热启动、后台拉起、广播拉起、Provider 拉起从冷启动指标中拆开。
-
-### 🔹 启动时间戳与业务埋点的合并协议
-定义 SDK envelope：系统时间戳、业务首屏时间、`reportFullyDrawn()`、页面 ready、广告/引导扣除、trace id 和版本字段，避免只依赖单一耗时指标。
-
-### 🔹 Android 17 `ProfilingTrigger` 的冷启动触发关系
-对应 `TRIGGER_TYPE_COLD_START` 与 `ApplicationStartInfo.getStartType() == START_TYPE_COLD` 的前提，说明触发式 profiling 与常规启动上报的分工。
-
-### 🔹 数据保留、采样率与隐私边界
-覆盖历史记录条数、回调时机、采样率、端侧缓存、脱敏字段、用户同意和结果文件上传策略，避免启动诊断能力演变成无限制日志采集。
-
-### 🔹 与 ApplicationExitInfo 的联合归因
-把启动前一次退出原因和本次启动原因合并：崩溃循环、包更新后首启、组件状态变化、低内存杀进程后重启分别进入不同排障路径。
-
-## 扩展
-
-### 🔸 Android 15/16/17 版本能力表
-补一张 API 35 `ApplicationStartInfo`、API 35 `ProfilingManager`、API 37 `ProfilingTrigger` 的能力边界表。
-
-### 🔸 CI 与灰度监控接入
-给出 Macrobenchmark、线上 P90/P99、trace 抽样和灰度回滚门禁之间的字段映射。
-
-### 🔸 与 26.12 的拆分边界
-26.12 继续讲版本化诊断能力总表；本节只写启动归因上报的 SDK 设计、字段协议和实战排障入口。
-
-<!-- outline-end -->
-
 启动耗时只有放在启动类型、启动原因和前一次进程状态里，才具备稳定的解释力。一次桌面图标冷启动、一次最近任务恢复、一次广播拉起和一次低内存后的状态恢复，即便首帧耗时相同，优化方向也可能完全不同。
 
 Android 15 / API 35 的 `ApplicationStartInfo` 给应用提供了系统侧的启动记录。它补充进程身份、启动原因、冷/温/热类型、启动状态和单调时钟时间戳。业务仍需记录首页可用、路由、异步数据完成和产品场景；Perfetto 与 ProfilingManager 继续负责解释线程、调度、I/O 和 Binder 等运行现场。
 
-本文以 `android-17.0.0_r1` 的 `ApplicationStartInfo.java`、`ActivityManager.java` 和 `ProfilingTrigger.java` 为源码锚点。
+源码锚点采用 `android-17.0.0_r1` 的 `ApplicationStartInfo.java`、`ActivityManager.java` 和 `ProfilingTrigger.java`。
 
 ## ApplicationStartInfo 位于哪一层
 
@@ -377,7 +340,7 @@ Android 15 以下继续使用 Application/Activity 生命周期、首帧、`repo
 
 ## 与 26.12 的边界
 
-26.12 解释 Android 10–17 的退出追溯、App-driven profiling 和系统 trigger 总体能力。本章只处理启动记录的 SDK 协议、分桶、时间戳、前后进程关联和监控接入。
+26.12 解释 Android 10–17 的退出追溯、App-driven profiling 和系统 trigger 总体能力。启动记录侧聚焦 SDK 协议、分桶、时间戳、前后进程关联和监控接入。
 
 ProfilingManager 的四类主动采集、结果字段、限流和 trigger 全表放在 26.12；启动流程与 TTID/TTFD 机制放在 8.2；退出原因细节放在 26.9。这里引用这些能力，只为说明一次启动样本如何进入线上证据体系。
 
