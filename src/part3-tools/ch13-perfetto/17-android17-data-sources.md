@@ -94,9 +94,9 @@ review_finalize_notes: "Review-finalize 复核 android-17.0.0_r1 / android17-6.1
 
 # Android 17 Perfetto 数据源边界与验证
 
-## 章节概述
+## 范围
 
-本章以 AOSP `android-17.0.0_r1` 为平台基线，以 `android17-6.18-2026-06_r6` 为内核基线，核对 `android.surfaceflinger.frametimeline`、`android.surfaceflinger.frame` 和 `linux.perf` 的注册、启停、数据语义与验证方法。
+平台基线是 AOSP `android-17.0.0_r1`，内核基线是 `android17-6.18-2026-06_r6`。核对范围包括 `android.surfaceflinger.frametimeline`、`android.surfaceflinger.frame` 和 `linux.perf` 的注册、启停、数据语义与验证方法。
 
 ## 核心发现
 
@@ -107,36 +107,6 @@ Android 17 的源码边界可以压缩成四点：
 - `JankClassificationThresholds` 仍有 `presentThreshold`、`deadlineThreshold`、`startThreshold` 三个字段。Android 17 取消的是 Android 16 的 2ms/4ms 两档 present 阈值。
 - `linux.perf` 由 tracing service 按需拉起 `traced_perf`。数据源被列出、daemon 已连接、采样结果可用是三个不同检查层级；产品内核、LSM/SELinux、build 类型、session 发起方和目标进程的 profileable 状态都可能限制采样。
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 数据源注册机制
-`android.surfaceflinger.frametimeline` 在 SurfaceFlinger 启动后无条件注册，`linux.perf` 则按需触发。
-
-### 🔹 Jank 类型判别系统
-FrameTimeline 通过 `classifyJankLocked()` 建立完整的 jank 分类机制，16 种类型覆盖性能与非性能延迟场景。
-
-### 🔹 性能开销控制
-`linux.perf` 的开销由采样频率、目标进程范围和调用栈展开成本共同决定；`frametimeline` 仅在 trace session 开启时写入 packet。
-
-### 🔹 版本演进路径
-`linux.perf` 在 Android 11 已存在，`android.surfaceflinger.frametimeline` 从 Android 12 引入；Android 17 主要扩展 JankType，traced_perf 维持既有属性驱动生命周期。
-
-### 🔸 应用优化建议
-按复现场景组合 FrameTimeline、FrameTracer、`linux.perf` 与必要的 ftrace/process stats，并把 buffer、采样频率和内存上限留给目标设备实测决定。
-
-## 扩展
-
-### 🔸 实时进程发现延迟
-traced_perf 的 50ms 延迟机制避免 execve 期间信号处理异常，但可能遗漏短进程。
-
-### 🔸 多进程协调
-`mTraceCookie` 已在正文收敛为 SurfaceFlinger 进程内计数器；跨数据源关联应改用时间窗、layer、process、buffer 与 flow 交叉核对。
-
-### 🔸 StatsD 集成
-FrameTimeline、TimeStats/statsd 与 `IJankListener` 是三条不同输出路径；statsd 只聚合活动分类的子集，不能直接镜像 Perfetto 按帧 packet。
-
-<!-- outline-end -->
 
 ## 1. `android.surfaceflinger.frametimeline` 数据源
 
@@ -507,7 +477,7 @@ message PerfEventConfig {
 
 ### 2.7 Android 17 内核与权限边界
 
-`linux.perf` 最终调用内核 `perf_event_open()`。本文内核锚点 `android17-6.18-2026-06_r6` 的 `kernel/events/core.c` 在创建 event 前调用 `security_perf_event_open(PERF_SECURITY_OPEN)`；采集 kernel frames 时还会经过 `perf_allow_kernel()`，受 `perf_event_paranoid`、capability 与 LSM hook 约束。
+`linux.perf` 最终调用内核 `perf_event_open()`。内核锚点 `android17-6.18-2026-06_r6` 的 `kernel/events/core.c` 在创建 event 前调用 `security_perf_event_open(PERF_SECURITY_OPEN)`；采集 kernel frames 时还会经过 `perf_allow_kernel()`，受 `perf_event_paranoid`、capability 与 LSM hook 约束。
 
 AOSP 用户态源码能证明 `linux.perf` producer 和配置路径存在，不能证明每台 Android 17 量产设备都允许同样的采样。`PerfProducer::OnProcDescriptors()` 在接收目标进程的 maps/mem fd 后调用 `CanProfile()`，这道检查直接决定设备端用户栈能否展开：
 
@@ -631,7 +601,7 @@ adb shell perfetto --txt \
 
 ## 7. 源码锚点复核方法
 
-下面的命令可在 AOSP 多仓库 checkout 的 `frameworks/native`、`external/perfetto` 和 `kernel/common` 中固定 tag 读取源码，避免把 repo 根目录误当作单个 Git 仓库。它们是复核本文源码锚点的最小集合；不能替代目标设备上的实际 trace 验收：
+下面的命令可在 AOSP 多仓库 checkout 的 `frameworks/native`、`external/perfetto` 和 `kernel/common` 中固定 tag 读取源码，避免把 repo 根目录误当作单个 Git 仓库。它们是复核源码锚点的最小集合，不能替代目标设备上的实际 trace 验收：
 
 ```bash
 git -C frameworks/native show \
@@ -710,4 +680,4 @@ git -C kernel/common show \
 - 13.9 Android Tracing 基础设施 - 数据采集原理
 - 13.14 Perfetto DataGrid 与 Jank CUJ 标准库 - jank 分析实践
 
-本章的验收顺序可以概括为：固定 platform/kernel tag，查询 descriptor，执行短 session，检查 producer 与错误 stats，确认 SQL schema，再讨论 jank 或调用栈结论。任何一步缺失，都要在报告中降低可信度并写出补采条件。
+验收顺序是：固定 platform/kernel tag，查询 descriptor，执行短 session，检查 producer 与错误 stats，确认 SQL schema，再讨论 jank 或调用栈结论。任何一步缺失，都要在报告中降低可信度并写出补采条件。
