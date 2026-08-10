@@ -411,11 +411,11 @@ adb shell getprop ro.build.fingerprint
 对比测试应使用同一台可切换 4 KiB/16 KiB 的设备、同一 Android build、同一应用构建和相同温控条件。每组至少记录：
 
 - `getconf PAGE_SIZE`；
-- 构建指纹；
-- 应用版本号与原生库构建 ID；
+- build fingerprint；
+- App version code 与 native build ID；
 - 启动前的内存压力；
 - 每轮启动耗时；
-- 次要/主要缺页；
+- minor/major fault；
 - PSS/RSS；
 - 设备温度和 CPU 频率限制。
 

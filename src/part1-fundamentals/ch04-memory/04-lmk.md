@@ -250,7 +250,7 @@ low_ram_device || !use_minfree_levels
 
 Android 17 还在 boot completed 之后尝试注册 BPF memevents：
 
-- 直接回收开始/结束；
+- direct reclaim begin/end；
 - kswapd wake/sleep；
 - 可选的 vendor LMK kill；
 - 可选的 zoneinfo update。
