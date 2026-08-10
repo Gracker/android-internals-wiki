@@ -98,7 +98,7 @@ Android 17 的 `DeviceStateToLayoutMap` 从以下位置读取 display layout：
 
 ### 2.1 状态来源由设备配置决定
 
-`DeviceStateProviderImpl` 从厂商或数据分区的 `device_state_configuration.xml` 读取状态及条件。条件可以引用：
+`DeviceStateProviderImpl` 从 vendor 或 data 分区的 `device_state_configuration.xml` 读取状态及条件。条件可以引用：
 
 - lid switch；
 - 指定 string type 与 name 的 sensor；
@@ -140,8 +140,8 @@ DisplayManager 收到回调后，先向 WMS 投递 device state 消息，再调�
 `LogicalDisplayMapper` 比较新旧布局。以下情况会把 Display 标为过渡中：
 
 - enabled 状态变化；
-- 同一个物理 DisplayDevice 将映射到新的逻辑显示器 ID；
-- DisplayDevice 只出现在新旧布局的一侧；
+- 同一个物理 DisplayDevice 将映射到新的 logical display id；
+- DisplayDevice 只出现在新旧 layout 的一侧；
 - Display 已处于 transition。
 
 系统先发送过渡阶段更新，让相关 Display 关闭。所有过渡中的显示器确认关闭后，才会清除过渡标记、应用新布局并发出后续更新。源码给这段等待设置了 **500 ms** 的强制推进超时。
@@ -154,7 +154,7 @@ DisplayManager 收到回调后，先向 WMS 投递 device state 消息，再调�
 
 `applyLayoutLocked()` 会：
 
-1. 按布局中的物理地址查找 `DisplayDevice`；
+1. 按 layout 中的物理地址查找 `DisplayDevice`；
 2. 查找或创建对应 `LogicalDisplay`；
 3. 必要时交换 `LogicalDisplay` 背后的 `DisplayDevice`；
 4. 更新 position、lead display、refresh-rate zone、thermal throttling 与 enabled 状态。
@@ -197,11 +197,11 @@ RootWindowContainer
 
 这些是 layer 几何事务。App 仍按自己的 Choreographer、View/HWUI 或其他 Producer 路径生产内容。
 
-动画由资源和设备能力控制。未启用这组模块的设备、厂商自定义过渡、锁屏/AOD 和半开状态都可能走不同路径。
+动画由资源和设备能力控制。未启用这组模块的设备、厂商自定义 transition、锁屏/AOD 和半开状态都可能走不同路径。
 
 ### 3.3 Configuration 与 WindowLayoutInfo 没有固定先后顺序
 
-物理 Display 切换、窗口边界更新和 WindowManager Extensions 姿态更新来自不同组件。应用不应依赖以下固定顺序：
+物理 Display 切换、窗口 bounds 更新和 WindowManager Extensions posture 更新来自不同组件。应用不应依赖以下固定顺序：
 
 ```text
 WindowLayoutInfo → Configuration → onConfigurationChanged
@@ -211,7 +211,7 @@ WindowLayoutInfo → Configuration → onConfigurationChanged
 
 默认情况下，Activity 未声明自行处理的 configuration change 会触发重建。若使用 `android:configChanges`，应用必须重新读取受影响资源并更新界面，不能只记录回调后原样返回。
 
-## 4. Jetpack WindowManager：面向应用的窗口姿态
+## 4. Jetpack WindowManager：面向应用的窗口 posture
 
 ### 4.1 WindowInfoTracker 的职责
 
@@ -223,13 +223,13 @@ Jetpack WindowManager 的 `WindowInfoTracker.windowLayoutInfo(activity)` 返回 
 - `state`：`FLAT` 或 `HALF_OPENED`；
 - `orientation`：fold/hinge 轴线为 `HORIZONTAL` 或 `VERTICAL`；
 - `occlusionType`：`NONE` 或 `FULL`；
-- `isSeparating`：该特征是否把可用窗口视为两个逻辑区域。
+- `isSeparating`：该 feature 是否把可用窗口视为两个逻辑区域。
 
 `FoldingFeature` 没有 `CLOSED` 状态，也不提供精确 hinge angle。应用切到外屏后，当前窗口可能不再包含 folding feature。
 
 ### 4.2 orientation 的含义容易读反
 
-`FoldingFeature.Orientation.HORIZONTAL` 表示特征的宽大于高，铰链线沿水平方向；`VERTICAL` 表示铰链线沿垂直方向。
+`FoldingFeature.Orientation.HORIZONTAL` 表示 feature 的宽大于高，铰链线沿水平方向；`VERTICAL` 表示铰链线沿垂直方向。
 
 判断 tabletop posture 时通常检查：
 
@@ -278,7 +278,7 @@ lifecycleScope.launch(Dispatchers.Main) {
 `Sensor.TYPE_HINGE_ANGLE` 的类型值是 36，string type 为 `android.sensor.hinge_angle`。AOSP 传感器规范将它定义为：
 
 - on-change reporting mode；
-- 角度单位为度；
+- 角度单位为 degree；
 - 默认传感器是唤醒传感器。
 
 它不是每台设备都必须提供的公共能力。应用需要检查 `getDefaultSensor(TYPE_HINGE_ANGLE)` 是否为 null。
@@ -364,7 +364,7 @@ Android 17 对 target 37 应用移除该 opt-out。官方文档将适用范围�
 - `resizeableActivity="false"`；
 - `minAspectRatio` / `maxAspectRatio`。
 
-按 `android:appCategory` 分类的游戏、smallest width 小于 600 dp 的屏幕，以及用户在设备比例设置中选择应用默认行为的情况属于官方列出的例外。
+按 `android:appCategory` 分类的 game、smallest width 小于 600 dp 的屏幕，以及用户在设备比例设置中选择应用默认行为的情况属于官方列出的例外。
 
 这项变更增加了应用遇到旋转、resize、折叠和桌面窗口边界的机会，但没有改变 BLAST、SurfaceFlinger 或 HWC 的基本显示管线。
 
@@ -382,14 +382,14 @@ SurfaceFlinger FrontEnd 接收 App、WMS 和 Shell 的 layer transaction。Compo
 - DEVICE / CLIENT composition；
 - 每个 Display 的 present fence。
 
-同一图层经镜像或投影出现在两个输出时，不能把两次送显合并成一条时间线。
+同一 layer 经 mirror 或 projection 出现在两个 Output 时，不能把两次送显合并成一条时间线。
 
 ### 7.2 分辨率更高只说明潜在工作量上升
 
 展开后的 app window 可能有更大像素面积，影响：
 
 - HWUI/游戏/视频的渲染分辨率；
-- RenderEngine 客户端目标面积；
+- RenderEngine client target 面积；
 - GPU texture、render target 与带宽；
 - buffer 内存占用；
 - HWC scaler 和 overlay 约束。
@@ -430,7 +430,7 @@ SurfaceFlinger FrontEnd 接收 App、WMS 和 Shell 的 layer transaction。Compo
 
 ### 8.2 Perfetto 采集
 
-快速采集可以覆盖调度、图形、窗口、Binder 与功耗类别：
+快速采集可以覆盖调度、图形、窗口、Binder 与 power 类别：
 
 ```bash
 adb shell perfetto \
@@ -504,23 +504,23 @@ adb shell dumpsys SurfaceFlinger --display
 检查顺序：
 
 1. 新 Configuration / WindowLayoutInfo 的到达时间；
-2. Activity 是否重建，旧窗口是否仍可见；
+2. Activity 是否重建，旧 window 是否仍可见；
 3. 新 bounds 的首个 buffer 何时提交；
 4. Shell transition 是否在缩放旧 buffer 或 snapshot；
 5. SF 何时 latch 新 buffer。
 
 ### 9.2 折叠时状态丢失
 
-先确认 Activity 重建和进程生命周期，再检查 ViewModel、SavedStateHandle、`rememberSaveable` 与业务持久化。不能把 layout mode 本身当成导航状态。
+先确认 Activity recreation 和进程生命周期，再检查 ViewModel、SavedStateHandle、`rememberSaveable` 与业务持久化。不能把 layout mode 本身当成导航状态。
 
 ### 9.3 动画跟手性差
 
 区分：
 
-- 原始角度交付慢；
+- 原始 angle 交付慢；
 - SystemUI progress thread 或 spring 更新慢；
-- Shell 事务提交慢；
-- SF/HWC 送显晚；
+- Shell transaction 提交慢；
+- SF/HWC present 晚；
 - App 自己用 angle 驱动大范围 layout。
 
 只看 App `onSensorChanged()` 间隔无法定位显示后段。
@@ -564,7 +564,7 @@ adb shell dumpsys SurfaceFlinger --display
 - [`DeviceStateToLayoutMap.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/DeviceStateToLayoutMap.java) 与 [`Layout.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/layout/Layout.java)：每个 state 的 display layout；
 - [`DisplayManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/DisplayManagerService.java)：DeviceState callback、logical display event、Display traversal；
 - [`HingeSensorAngleProvider.kt`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/unfold/src/com/android/systemui/unfold/updates/hinge/HingeSensorAngleProvider.kt) 与 [`PhysicsBasedUnfoldTransitionProgressProvider.kt`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/unfold/src/com/android/systemui/unfold/progress/PhysicsBasedUnfoldTransitionProgressProvider.kt)：可选 angle-to-progress 路径；
-- [`UnfoldTransitionHandler.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/unfold/UnfoldTransitionHandler.java) 与 [`FullscreenUnfoldTaskAnimator.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/unfold/animation/FullscreenUnfoldTaskAnimator.java)：Shell 任务牵引层动画；
+- [`UnfoldTransitionHandler.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/unfold/UnfoldTransitionHandler.java) 与 [`FullscreenUnfoldTaskAnimator.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/unfold/animation/FullscreenUnfoldTaskAnimator.java)：Shell task leash 动画；
 - [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) 与 [`CompositionEngine`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/)：display transaction、snapshot 与 per-display output。
 
 ### 应用与测试文档
