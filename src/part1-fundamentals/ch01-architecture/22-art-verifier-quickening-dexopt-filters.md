@@ -113,7 +113,7 @@ VDEX / ODEX(OAT) / ART image
 
 ## 验证器检查什么
 
-ART 字节码验证器检查 DEX 是否满足运行时安全约束，包括类型一致性、寄存器使用、控制流、方法调用和字段访问是否合法。它判断字节码能否安全执行，不负责判断代码是否已经编译成机器码。
+ART bytecode verifier 检查 DEX 是否满足运行时安全约束，包括类型一致性、寄存器使用、控制流、方法调用和字段访问是否合法。它判断字节码能否安全执行，不负责判断代码是否已经编译成机器码。
 
 验证有两类性能价值：
 
@@ -180,7 +180,7 @@ AOSP `android-17.0.0_r1` 的 ART Service README 和 shell help 对应用 dexopt 
 | Android 14–17 | ART Service 的应用侧接口只公开三种当前 filter |
 | Android 17 源码兼容行为 | `kQuicken` 枚举已不存在，但解析到字符串 `quicken` 时会打印 obsolete 警告，并映射成 `kVerify` |
 
-Android 17 为兼容旧配置保留了 `quicken` 名称入口，对应的执行语义已经变为 `verify`。厂商 ROM 还可能自行修改实现，所以看到日志中的旧字符串时，应同时记录 Android 版本、ART Mainline 版本和最终转储状态。
+Android 17 为兼容旧配置保留了 `quicken` 名称入口，对应的执行语义已经变为 `verify`。厂商 ROM 还可能自行修改实现，所以看到日志中的旧字符串时，应同时记录 Android 版本、ART Mainline 版本和最终 dump 状态。
 
 ## Android 17 的 dexopt 场景
 
@@ -190,11 +190,11 @@ Android 17 默认场景如下。
 
 | 场景 | reason | 默认行为 | 容易误判的地方 |
 | --- | --- | --- | --- |
-| 首次开机 | `first-boot` | 对应用主 DEX 以 `verify` 为目标 | 系统镜像里的包可能已被 dexpreopt 成 `speed-profile` 或 `speed`，不能说所有包都是 `verify` |
+| 首次开机 | `first-boot` | 对应用 primary dex 以 `verify` 为目标 | 系统镜像里的包可能已被 dexpreopt 成 `speed-profile` 或 `speed`，不能说所有包都是 `verify` |
 | OTA 后首次开机 | `boot-after-ota` | primary dex 以 `verify` 为目标，尽量缩短开机阻塞 | Pre-reboot Dexopt 已完成的包可能保持 `speed-profile` |
 | Mainline 更新后首次开机 | `boot-after-mainline-update` | 重点处理 SystemUI 和 Launcher；Launcher 使用 `speed-profile`，SystemUI 由 `dalvik.vm.systemuicompilerfilter` 决定 | 不会对所有应用重新执行 AOT |
 | 应用安装 | `install`、`install-fast`、`install-bulk*` | DM 含 cloud profile 时用 `speed-profile`，否则用 `verify` | fast scenario 或 incremental install 可以跳过安装期 dexopt |
-| 日常后台优化 | `bg-dexopt` / `inactive` | 每日空闲且充电时运行；对主 DEX 和次级 DEX 做配置文件引导的 dexopt | 条件消失时任务会被取消；稍后重试不代表失败 |
+| 日常后台优化 | `bg-dexopt` / `inactive` | 每日空闲且充电时运行；对 primary 和 secondary dex 做 profile-guided dexopt | 条件消失时任务会被取消；稍后重试不代表失败 |
 | 更新应用前优化 | `ab-ota` | OTA/Mainline / Mainline 时，在空闲充电窗口对新依赖环境做 Pre-reboot Dexopt，目标为 `speed-profile` | 用户提前重启时可能未完成，剩余包先以 `verify` 运行 |
 | 命令行 | `cmdline` | 默认 `verify`，可显式指定支持的 filter | 指定 `speed-profile` 不保证 profile 可用 |
 
@@ -221,7 +221,7 @@ Android 17 的默认安装策略可以压缩成两条：
 - `.dm` 中有可用 cloud profile：目标通常是 `speed-profile`。
 - 没有可用 profile：目标通常是 `verify`。
 
-`.dm` 是容器，文件存在不能证明配置文件已经生效。它可以携带 profile，也可以携带 VDEX 验证元数据，还可能为空或因校验、版本等问题未被采用。OAT 头中的 `install-dm` 后缀仅表示安装 dexopt 时把 DM 传给了 `dex2oat`；Android 17 的 ART Service 说明明确指出，这个后缀不保证 DM 内任何内容实际生效。
+`.dm` 是容器，文件存在不能证明配置文件已经生效。它可以携带 profile，也可以携带 VDEX 验证元数据，还可能为空或因校验、版本等问题未被采用。OAT header 中的 `install-dm` 后缀仅表示安装 dexopt 时把 DM 传给了 `dex2oat`；Android 17 的 ART Service README 明确指出，这个后缀不保证 DM 内任何内容实际生效。
 
 还要注意两个跳过路径：
 
@@ -232,14 +232,14 @@ Android 17 的默认安装策略可以压缩成两条：
 
 ## 依赖不匹配时仍可复用部分产物
 
-dexopt 的依赖除原始 DEX 外，还包括 bootclasspath、boot image 和 ClassLoaderContext（CLC）。CLC 由 shared libraries、同一应用的其他分包等共同决定。
+dexopt 的依赖除原始 DEX 外，还包括 bootclasspath、boot image 和 ClassLoaderContext（CLC）。CLC 由 shared libraries、同一应用的其他 split 等共同决定。
 
 Android 17 的 ART Service 把复用边界分成两层：
 
 - 编译结果以及 class resolution / initialization 结果要求 dexopt 时依赖与运行时依赖完全匹配。
 - 验证与提取结果在依赖不匹配时仍可能复用，产物按 `verify` 状态使用。
 
-CLC 不匹配后，依赖敏感的 AOT 与类解析结果不再可信，但验证/提取收益仍可保留。`pm art dump` 里可能显示特殊原因 `vdex`；这是转储层表达该状态的标记，不会传给 `dex2oat`，也不会作为真实编译原因写进 OAT 头。
+CLC 不匹配后，依赖敏感的 AOT 与类解析结果不再可信，但验证/提取收益仍可保留。`pm art dump` 里可能显示特殊 reason `vdex`；这是 dump 层表达该状态的标记，不会传给 `dex2oat`，也不会作为真实编译原因写进 OAT 头。
 
 ### `<uses-library>` 为什么经常触发 CLC 问题
 
@@ -311,13 +311,13 @@ Android 14–17 优先使用 `pm art dump`。重点查看 primary/secondary dex�
 
 ### 3. 建立未编译基线
 
-下面的重置命令只适合受控实验，用来建立以 `verify` 为主的对照状态：
+下面的 reset 命令只适合受控实验，用来建立以 `verify` 为主的对照状态：
 
 ```bash
 adb shell pm compile --reset com.example.app
 ```
 
-Android 17 的 `--reset` 会清理本地当前/ reference profiles；对主 DEX，当前实现等同于以 `verify` 做 dexopt。外部 profile（如 cloud / embedded profile）会保留，但本次重置不使用；secondary dex 的产物会被删除且不在本轮重建。它适合实验室建立对照基线，不适合在线上随意执行。
+Android 17 的 `--reset` 会清理本地 current/ reference profiles；对 primary dex，当前实现等同于以 `verify` 做 dexopt。外部 profile（如 cloud / embedded profile）会保留，但本次 reset 不使用；secondary dex 的产物会被删除且不在本轮重建。它适合实验室建立对照基线，不适合在线上随意执行。
 
 ### 4. 验证 profile-guided 编译
 
