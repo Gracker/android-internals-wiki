@@ -31,7 +31,7 @@ gap_source: "章节深挖"
 
 Compose 首屏比传统 View 页面多一个 composition 阶段，但“用了 Compose 就固定多花几十毫秒”不是可复用的结论。View 页面也要负责 XML inflate、对象绑定、measure、layout 和 draw；Compose 则把 UI 描述执行、Slot Table 维护、节点创建，以及后续的 layout、draw 放进首帧路径。两者的成本结构不同，不能脱离设备、构建类型、编译状态和页面内容给出统一差值。
 
-本章把平台边界固定在 Android 17 / API 37 / `android-17.0.0_r1`。Compose 仍是随应用发布的 AndroidX 库，并没有并入 Android 17 framework。平台侧仍由 Activity 生命周期、`ViewRootImpl` traversal、HWUI 与 `RenderThread` 承接首帧；Compose 在应用进程内完成 composition，并通过一个 View host 接入这条渲染路径。
+平台边界固定在 Android 17 / API 37 / `android-17.0.0_r1`。Compose 仍是随应用发布的 AndroidX 库，并没有并入 Android 17 framework。平台侧仍由 Activity 生命周期、`ViewRootImpl` traversal、HWUI 与 `RenderThread` 承接首帧；Compose 在应用进程内完成 composition，并通过一个 View host 接入这条渲染路径。
 
 ## 1. 从 `setContent` 到首帧：源码中的边界
 
@@ -294,7 +294,7 @@ Macrobenchmark 会产出 system trace。初始分析可按这条顺序进行：
 | `Partial` 明显优于 `None`，发布包却无收益 | Profile 打包、安装和编译状态 | 检查 APK/AAB profile 产物与安装渠道 |
 | View/Compose 混合页首帧变慢 | XML inflate、多个 host、`AndroidView` 创建 | 分段 trace 后按最大成本处理 |
 
-## 10. Review 检查清单
+## 10. 检查清单
 
 - 是否把平台锚点限制在 Android 17 / API 37，并把 Compose 视为 AndroidX 库？
 - 是否准确区分 `ComposeView`、内部 `AndroidComposeView`、`Composition` 与 `Recomposer`？

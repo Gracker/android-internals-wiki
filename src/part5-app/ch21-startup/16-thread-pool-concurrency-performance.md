@@ -27,9 +27,9 @@ gap_source: "素材驱动/参考书"
 
 启动优化经常把“移到后台线程”和“缩短启动”写成同一件事。任务离开主线程后，仍会竞争 CPU、存储、Binder、内存带宽和锁；主线程若等待它的结果，排队时间也会进入启动关键路径。线程数增加只能扩大并发机会，无法消除依赖和资源上限。
 
-本章的平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点是 `android17-6.18-2026-06_r6`。每个调度结论都要回答任务契约、执行器、并行度和等待位置，并由队列指标与 Perfetto 支撑。
+平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点是 `android17-6.18-2026-06_r6`。每个调度结论都要回答任务契约、执行器、并行度和等待位置，并由队列指标与 Perfetto 支撑。
 
-线程、锁与协程的基础机制分别见 [§1.5 线程模型](../../part1-fundamentals/ch01-architecture/05-threading-model.md) 和 [§8.6 协程性能](../../part2-performance/ch08-responsiveness/06-coroutine-performance.md)。本章只讨论启动场景中的任务编排和资源竞争。
+线程、锁与协程的基础机制分别见 [§1.5 线程模型](../../part1-fundamentals/ch01-architecture/05-threading-model.md) 和 [§8.6 协程性能](../../part2-performance/ch08-responsiveness/06-coroutine-performance.md)。以下只讨论启动场景中的任务编排和资源竞争。
 
 ## 1. 并发优化先看启动关键路径
 
@@ -340,7 +340,7 @@ WorkManager 面向应用离开可见状态后仍需执行、需要约束或重�
 
 即使后续版本提供稳定虚拟线程，它们主要降低大量阻塞任务占用平台线程的成本，不会提高 CPU 密集任务的可用算力。资源并发、超时、取消和启动关键路径仍要单独设计。
 
-## 11. Review 检查清单
+## 11. 检查清单
 
 - 是否先画出 TTID/TTFD 的任务依赖图，再决定哪些节点可以并行？
 - 是否同时记录 queue wait、run time、依赖等待和端到端时间？
