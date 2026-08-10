@@ -42,9 +42,9 @@ gap_source: "每日技术文章 intake"
 android17_review_notes: "合并源码调研附录；按 Android 17 tag 核对构建架构、加载开关、attach 类型、map 字段、用户态读取方式和能力边界"
 ---
 
-# 14.25 Android 17 eBPF 性能可观测性程序matrix扩展
+# 14.25 Android 17 eBPF 性能可观测性程序 matrix 扩展
 
-§14.10 介绍 eBPF 性能工具，§14.21 讲解 Android 17 `bpfloader`。本章沿着“构建产物 → 启动加载 → attach → 输出 → 用户态消费”检查 Android 17 新增的四组程序：
+§14.10 介绍 eBPF 性能工具，§14.21 讲解 Android 17 `bpfloader`。这里沿着“构建产物 → 启动加载 → attach → 输出 → 用户态消费”检查 Android 17 新增的四组程序：
 
 - `cyclePerUid.bpf`：x86_64 平台的 per-UID CPU cycle 统计。
 - `dmabufIter.bpf`：DMA-BUF 全局快照迭代器。
@@ -53,7 +53,7 @@ android17_review_notes: "合并源码调研附录；按 Android 17 tag 核对构
 
 它们都由 `libbpf_prog` 构建为 `.bpf` 对象，依赖内核 BTF 与对应 hook。文件被编进 system image，不等于启动时已经加载；`bpfloader` 还会检查架构、内核版本和 aconfig flag。
 
-## 14.25.1 程序matrix
+## 14.25.1 程序 matrix
 
 | 程序 | 构建与加载条件 | attach 点 | 输出 | 明确不提供 |
 |---|---|---|---|---|
@@ -66,7 +66,7 @@ android17_review_notes: "合并源码调研附录；按 Android 17 tag 核对构
 
 ## 14.25.2 Android 17 的加载和固定路径
 
-Rust `bpfloader` 先执行 `load_libbpf_progs()`，再进入 legacy loader。对本章四组程序，libbpf 路径负责：
+Rust `bpfloader` 先执行 `load_libbpf_progs()`，再进入 legacy loader。对这四组程序，libbpf 路径负责：
 
 1. 根据 flag 和架构组装待加载文件列表。
 2. 打开 `.bpf` 对象并按内核版本关闭不适用的 map 或 program。
@@ -254,7 +254,7 @@ adb shell su root bpftool map dump pinned \
 
 ## 14.25.7 与既有 Android BPF 观测的关系
 
-| 问题 | 本章程序 | 仍需补充的观测 |
+| 问题 | 程序 | 仍需补充的观测 |
 |---|---|---|
 | 哪个 UID 消耗 x86 CPU cycles | `cyclePerUid` | Simpleperf 细化到进程、线程、函数；调度 trace 解释等待 |
 | 哪些 DMA-BUF 仍然存活 | `dmabufIter` | fdinfo/sysfs/服务状态用于进程和子系统归因 |
