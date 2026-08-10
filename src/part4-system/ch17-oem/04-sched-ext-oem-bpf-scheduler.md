@@ -75,53 +75,7 @@ last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度
 
 # 17.4 sched_ext 与 OEM BPF 调度器
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 sched_ext 在调度体系里的位置
-- Linux 6.12 引入的 BPF 调度框架
-- 与 CFS / EEVDF / EAS 的分工
-- Android GKI 与 OEM vendor kernel 的边界
-
-### 🔹 BPF 调度器入口与生命周期
-- `struct sched_ext_ops` 的回调集合
-- `select_cpu` / `enqueue` / `dispatch` 的职责
-- 任务在 SCX core 与 BPF 调度器之间的状态迁移
-
-### 🔹 OEM 使用形态
-- OPPO / OnePlus `hmbird_sched` 的公开线索
-- proc 开关、partial enable、CPU 控制参数
-- 高通与联发科平台公开信息不足的边界
-
-### 🔹 对前台交互性能的影响
-- 帧率 boost 与任务分组
-- RenderThread / binder / worker 线程的 CPU 选择
-- 误配后可能出现的延迟和能耗代价
-
-### 🔹 可观测与验证方法
-- 确认内核配置和 proc 节点
-- Perfetto sched / cpufreq / binder 联合观测
-- 对比开启前后的延迟分布
-
-### 🔹 工程使用边界
-- AOSP 默认路径与 OEM 实验路径区分
-- root / vendor kernel / SELinux 限制
-- 不能把单一厂商策略写成 Android 通用机制
-
-## 扩展
-
-### 🔸 sched_ext 与 uclamp / cpuset 的关系
-[已覆盖]
-
-### 🔸 Android 17 Kernel 6.12 之后的默认启用可能性
-[已覆盖]
-
-### 🔸 厂商游戏模式与 BPF 调度器的验证清单
-[已覆盖]
-
-<!-- outline-end -->
-
-## 阅读这一章前要分开的三件事
+## 阅读前要分开的三件事
 
 Android 17 的 arm64 GKI 配置含有 `CONFIG_SCHED_CLASS_EXT=y`。这项配置只说明内核编译了 sched_ext 调度类，无法证明设备当前加载了 BPF 调度器，也无法证明某个线程正由该调度器管理。
 
@@ -133,7 +87,7 @@ Android 17 的 arm64 GKI 配置含有 `CONFIG_SCHED_CLASS_EXT=y`。这项配置�
 
 这三个层次不能互相代替。设备可能编入 sched_ext 却从未加载 BPF 程序；也可能本次开机加载过又退出；还可能处于 partial 模式，只处理显式使用 `SCHED_EXT` 的少量线程。
 
-本章的平台源码统一锚定 Android 17 / API 37，内核锚定 `android17-6.18-2026-06_r6`。Linux 6.12 只作为 sched_ext 进入主线的历史背景。
+平台源码统一锚定 Android 17 / API 37，内核锚定 `android17-6.18-2026-06_r6`。Linux 6.12 只作为 sched_ext 进入主线的历史背景。
 
 ## sched_ext 在 Android CPU 调度栈中的位置
 
@@ -188,7 +142,7 @@ Android 17 6.18 中，`/sys/kernel/sched_ext/` 的全局属性与当前调度器
 | `hotplug_seq` | CPU hotplug 序列号 | 它不是 CPU 上下线数量 |
 | `enable_seq` | 本次开机成功启用调度器的累计序列 | 大于零只能证明曾经启用过 |
 | `root/ops` | 当前 BPF 调度器的 `ops.name` | 正确路径含 `root/` |
-| `root/events` | 当前调度器的 SCX 事件计数 | 这是一个文本文件，不是事件目录 |
+| `root/events` | 当前调度器的 SCX 事件计数 | 这是一个纯文本格式文件，不是事件目录 |
 
 `root` kobject 只在当前调度器对象存在时建立。因此 `root/ops` 读不到，可能源自 scheduler 未启用、权限受限或 sysfs 未挂载；单凭读取失败无法区分原因。
 
