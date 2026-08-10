@@ -64,22 +64,6 @@ updated_by: openclaw-task9
 
 # Bitmap 与图片内存优化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Bitmap 内存计算与 inSampleSize
-- 🔹 Android 8.0+ Bitmap Native 内存迁移
-- 🔹 图片内存监控与大图检测
-- 🔹 图片复用池与 inBitmap
-
-### 扩展（可选深入）
-
-- 🔸 Hardware Bitmap 的使用场景与限制
-
-<!-- outline-end -->
-
 ## 为什么要了解 Bitmap 与图片内存优化
 
 图片内存问题很少是单一原因。解码尺寸、缓存复用、页面生命周期、设备内存预算——这几个因素叠加才会把问题放大。举例：一张 4000×3000 的 `ARGB_8888` 图片需要 48,000,000 字节，约 45.8 MiB；200×150 的目标视图只有 30,000 个像素。若仍按原尺寸解码，分配的像素数是显示目标的 400 倍，随后交给 Canvas 缩小也无法省掉这次解码分配。Android 10 到 Android 17 的普通软件 Bitmap 会推高 Native Heap，硬件 Bitmap 则占用图形缓冲区。
@@ -87,11 +71,6 @@ updated_by: openclaw-task9
 这一节从四个应用侧入口来谈：解码前算清目标尺寸，用 `inSampleSize` 降低像素数；理解 Android 8.0 之后 Bitmap 像素内存进了 Native Heap，对监控口径的影响；在图片加载入口记录大图和泄漏线索；用 `inBitmap` 复用减少反复分配。ART 堆和 GC 的机制详见 4.3 节，图片加载和渲染侧问题详见 22.6 节，页面对象泄漏对 Bitmap 的放大效应详见 23.1 节。
 
 ## Bitmap 内存计算与 inSampleSize
-
-[已验证: 官方文档, developer.android.com/topic/performance/graphics/load-bitmap]
-[已验证: 官方文档, developer.android.com/reference/android/graphics/BitmapFactory.Options]
-[已验证: 官方文档, developer.android.com/reference/android/graphics/Bitmap.Config]
-[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/Bitmap.java]
 
 Bitmap 的内存预算从三个量开始：宽、高、每像素字节数。常见配置里，`ARGB_8888` 每像素 4 字节，`RGB_565` 每像素 2 字节，`ALPHA_8` 每像素 1 字节，`RGBA_F16` 每像素 8 字节。工程估算可以先用下面的式子：
 
@@ -152,10 +131,6 @@ fun calculateInSampleSize(
 
 ## Android 8.0+ Bitmap Native 内存迁移
 
-[已验证: 官方文档, developer.android.com/topic/performance/graphics/manage-memory]
-[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/Bitmap.java]
-[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/BitmapFactory.java]
-
 Bitmap 像素数据的存放位置经历过三次变化：Android 2.3.3 及更早版本放在 Native 内存；Android 3.0 到 7.1 随 Bitmap 对象放在 Dalvik Heap；Android 8.0 及以上重新进入 Native Heap。当前章节覆盖 Android 10 到 Android 17：普通软件 Bitmap 的像素分配按 Native Heap 排查，`Config.HARDWARE` 的像素分配则按图形缓冲区排查。
 
 AOSP `Bitmap.java` 中，Java 对象保存 `mNativePtr`。Android 17 的 `registerNativeAllocation()` 使用两个 `NativeAllocationRegistry`：一个以 no-op 释放函数登记像素数据大小，用于把 Native 分配反馈给 ART；另一个通过 `sRegistry` 登记 native Bitmap 对象及其释放函数。`recycle()` 使用前者返回的 `mRecycler` 更新像素分配记账。这个设计带来两个工程结论：
@@ -166,9 +141,6 @@ AOSP `Bitmap.java` 中，Java 对象保存 `mNativePtr`。Android 17 的 `regist
 `recycle()` 只能作为明确失效后的提前释放手段，不适合替代生命周期管理。官方文档对旧版本建议过引用计数式 `recycle()`，但也提醒：Bitmap 被回收后再绘制会触发 “Canvas: trying to use a recycled bitmap”。在 Android 10+ 项目里，更稳的策略是让图片请求跟随页面生命周期取消，让缓存有上限，让不可见页面及时释放强引用；只有超大图编辑、一次性解码、离屏处理这类边界清楚的场景，才考虑显式 `recycle()`。
 
 ## 图片内存监控与大图检测
-
-[已验证: 官方文档, developer.android.com/reference/android/graphics/Bitmap]
-[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/BitmapFactory.java]
 
 图片监控不要等到 OOM 再看堆。统一图片入口应记录“原图尺寸、目标 View 尺寸、解码后尺寸、配置、分配字节数、页面名、调用栈摘要”。这组信息能直接回答两个问题：是否解码了远大于显示尺寸的图片；是否有页面在退出后仍保留大图。
 
@@ -229,10 +201,6 @@ fun BitmapDecodeRecord.isSuspiciousLargeBitmap(
 线上采样要控制频率。建议只上报超过阈值的记录，保留图片来源的模板化标识，不上传真实 URL、文件名或用户图片内容。图片问题经常涉及用户隐私，监控只需要尺寸、配置、字节数和页面路径。
 
 ## 图片复用池与 inBitmap
-
-[已验证: 官方文档, developer.android.com/topic/performance/graphics/manage-memory]
-[已验证: 官方文档, developer.android.com/reference/android/graphics/BitmapFactory.Options]
-[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/BitmapFactory.java]
 
 `inBitmap` 解决的是反复分配和释放像素内存的成本。列表快速滑动、瀑布流、聊天图片流会持续创建相近尺寸的 Bitmap；如果每次都新分配，Native Heap 峰值和分配抖动都会变大。复用池把已淘汰但容量合适的 mutable Bitmap 留下来，下一次 decode 直接写入这块内存。
 
@@ -300,11 +268,6 @@ fun decodeWithReuse(
 
 ## Hardware Bitmap 的使用场景与限制
 
-[已验证: 官方文档, developer.android.com/reference/android/graphics/Bitmap.Config]
-[已验证: 官方文档, developer.android.com/reference/android/graphics/BitmapFactory.Options]
-[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/BaseCanvas.java]
-[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/ImageDecoder.java]
-
 `Bitmap.Config.HARDWARE` 表示像素只存放在图形内存中；Java `Bitmap` 包装对象和 native 元数据仍然存在，因此“像素不在 Java/Native Heap”不等于这张图没有内存成本。`ImageDecoder` 的 AOSP 注释说明，默认创建的 Bitmap 是 immutable，并且通常采用 `Config.HARDWARE`。这里的“通常”不能省略：`ALLOCATOR_DEFAULT` 可能为小图选择软件分配，也会在 mutable、alpha mask 等条件与硬件分配不兼容时切换到软件。只展示、不修改、由硬件加速管线绘制的图片适合硬件 Bitmap，例如详情页大图、列表中不需要像素读取的封面图。
 
 硬件 Bitmap 的限制集中在可变性和绘制路径：它不能作为 `inBitmap` 候选，也不能和 `inMutable = true` 同时要求。AOSP `BaseCanvas` 的标准软件绘制路径遇到 `Config.HARDWARE` 会抛出 `IllegalArgumentException("Software rendering doesn't support hardware bitmaps")`。因此下列场景应避免硬件 Bitmap：
@@ -318,7 +281,7 @@ fun decodeWithReuse(
 
 ## 一套可执行的排查顺序
 
-[自动发现] Bitmap 问题适合按“尺寸 → 生命周期 → 复用 → 配置”四步排查。这个顺序能避免一开始就陷入 Native Heap 或图片库内部实现。
+Bitmap 问题适合按“尺寸 → 生命周期 → 复用 → 配置”四步排查。这个顺序能避免一开始就陷入 Native Heap 或图片库内部实现。
 
 1. **尺寸是否匹配显示目标**：检查原图尺寸、解码尺寸、目标 View 尺寸和 `allocationByteCount`。大图先用 `inJustDecodeBounds` + `inSampleSize` 降低像素数。
 2. **生命周期是否按页面释放**：页面退出后查 Hprof，确认 Activity、Adapter、ImageView、图片请求和 Bitmap 是否仍被引用。引用链处理详见 23.1 节。

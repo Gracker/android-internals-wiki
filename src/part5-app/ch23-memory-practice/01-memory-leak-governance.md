@@ -39,7 +39,7 @@ sources:
 
 内存泄漏排查最容易出现两个误区：看到内存上涨就判断“泄漏”，看到 OOM 又只盯 Java 堆。Android 应用的内存同时包含 ART managed heap、native heap、线程栈、代码与文件映射、图形缓冲区等部分。某个对象仍可达，也不等于它一定违反业务生命周期。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台基线，回答三个问题：
+平台基线为 Android 17 / API 37 / `android-17.0.0_r1`，内容围绕三个问题展开：
 
 1. 怎样证明对象已经失去业务用途，却仍被强引用链保留？
 2. 怎样区分 managed heap 泄漏、native 分配增长和正常缓存？
@@ -248,7 +248,7 @@ class FeedFragment : Fragment(R.layout.feed) {
 
 ### 3.2 先看分区，再决定工具
 
-`dumpsys meminfo <package>` 适合做低成本分区观察。重点不是单次总 PSS，而是 Java Heap、Native Heap、Graphics、Code、Stack 等分区随相同操作序列怎样变化。
+`dumpsys meminfo <package>` 适合做低成本分区观察。分析时应比较 Java Heap、Native Heap、Graphics、Code、Stack 等分区在相同操作序列下的变化，单次总 PSS 只能作为一个采样点。
 
 下面的命令用于记录进程内存概况和线程数量：
 
