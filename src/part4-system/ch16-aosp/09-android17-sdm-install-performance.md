@@ -79,7 +79,7 @@ created_date: "2026-06-11"
 
 # Android 17 Secure Dex Metadata：安装、验证与运行时加载
 
-## 本章结论
+## 结论
 
 Android 17 的 SDM 全名是 **Secure Dex Metadata**。它是 Android 16 引入的、按指令集区分并由 APK 签名者签名的云端编译产物容器。AOSP `android-17.0.0_r1` 没有名为 “Staged Dalvik Compilation” 的架构，也没有把 SDM 解包到应用 `oat` 目录的安装步骤。
 
@@ -95,7 +95,7 @@ SDM 只覆盖 base APK 与 split APK 内的 **primary dex**。动态生成或由
 
 性能收益也有明确边界：当 SDM、DM、SDC 与当前 APK、ISA、boot classpath 和编译目标兼容时，安装期可以避开一次本机 `dex2oat`。安装会话写盘、APK 与 SDM 签名校验、包扫描、原生库处理、`fsync`、SELinux 操作以及首次启动的其余工作仍会发生。AOSP 没有承诺固定的安装或启动提升百分比。
 
-本文以 AOSP `android-17.0.0_r1` 为平台源码锚点。云端如何选择设备配置并生成 SDM 不属于 AOSP 开源设备端实现，本文只讨论系统能够验证的接收、决策和加载行为。
+AOSP `android-17.0.0_r1` 是以下结论的平台源码锚点。云端如何选择设备配置并生成 SDM 不属于 AOSP 开源设备端实现，讨论范围只包括系统能够验证的接收、决策和加载行为。
 
 ## 1. 先分清 DM、SDM 与 SDC
 
@@ -115,7 +115,7 @@ ART Service 的 `DexMetadataHelper.getType()` 检查 ZIP 中的 `primary.prof` �
 - `primary.prof` 列出适合 `speed-profile` 的方法和类，可作为本机 dexopt 输入。
 - `primary.vdex` 保存验证相关数据。SDM 路径打开 AOT 代码时，运行时会从配套 DM 读取它。
 
-平台层的 `android.content.pm.dex.DexMetadataHelper.validateDexMetadataFile()` 在 r1 中通过 `StrictJarFile` 打开归档，确认文件结构可读。现稿曾列出的 `pm.dexopt.dm.require_manifest` 与 `pm.dexopt.dm.require_fsverity` 属性没有出现在该 tag 的实现中，也不存在受支持的 `pm install --dm` 参数。不能用这三项判断 Android 17 的 DM 状态。
+平台层的 `android.content.pm.dex.DexMetadataHelper.validateDexMetadataFile()` 在 r1 中通过 `StrictJarFile` 打开归档，确认文件结构可读。该 tag 的实现中没有 `pm.dexopt.dm.require_manifest` 与 `pm.dexopt.dm.require_fsverity` 属性，也不存在受支持的 `pm install --dm` 参数。不能用这三项判断 Android 17 的 DM 状态。
 
 AOSP 的 [Configure ART](https://source.android.com/docs/core/runtime/configure) 文档描述了常见的 Pixel 策略：Play 分发的 DM 可携带 cloud profile，ART 对其中列出的方法做 AOT 编译；没有 DM 时，该策略可能在安装期不做 AOT。它描述的是一种产品配置，OEM 仍可通过 ART Service 配置选择不同的安装 compiler filter。
 
@@ -221,7 +221,7 @@ if (status == DexoptResult.DEXOPT_PERFORMED && !mInjector.isPreReboot()) {
 
 ### 3.1 直接从 ZIP 打开 `primary.odex`
 
-现稿把 SDM 描述成安装阶段解包并复制到 `/data/app/<pkg>/oat/<isa>/`。r1 的运行时代码走了另一条路径：`OatFileBase::OpenOatFileFromSdm()` 把 ZIP 内部条目名拼成 `<sdm>!/primary.odex`，随后直接加载。
+r1 不会在安装阶段把 SDM 解包并复制到 `/data/app/<pkg>/oat/<isa>/`。运行时代码通过 `OatFileBase::OpenOatFileFromSdm()` 把 ZIP 内部条目名拼成 `<sdm>!/primary.odex`，随后直接加载。
 
 下面两行给出 ODEX 与 VDEX 的真实来源：
 
@@ -407,14 +407,14 @@ Baseline Profile 与 cloud profile 的覆盖来源不同。前者随应用构建
 
 ## 8. 版本边界
 
-| 平台版本 | 与本章相关的状态 |
+| 平台版本 | SDM 相关状态 |
 |---|---|
 | Android 14 / API 34 | ART Service 接管应用 dexopt 调度；常见云端优化仍以 DM cloud profile 驱动本机 AOT 为主 |
-| Android 15 / API 35 | 延续 ART Service 与 DM 流程；本章核对的 SDM 格式尚未作为该版本基线 |
+| Android 15 / API 35 | 延续 ART Service 与 DM 流程；这里核对的 SDM 格式尚未作为该版本基线 |
 | Android 16 / API 36 | `ArtManagedInstallFileHelper` 源码注释标记 SDM 格式从此版本引入 |
 | Android 17 / API 37 | `android-17.0.0_r1` 延续 SDM/SDC，并明确 primary dex、v3 signer、运行时 ZIP 加载与本机 dexopt 后清理行为 |
 
-不要根据 `main` 分支上的实验 flag 推断 r1 行为。本文没有使用 `cloudCompilationPm()` 或 `FLAG_ART_SERVICE_V3` 作为依据，因为在核对的 r1 Package Manager 与 ART 源码中找不到这些名称。也没有把 secondary dex 支持、默认开启比例或商店覆盖率写成 Android 17 已有能力。
+不要根据 `main` 分支上的实验 flag 推断 r1 行为。`cloudCompilationPm()` 和 `FLAG_ART_SERVICE_V3` 没有作为依据，因为核对的 r1 Package Manager 与 ART 源码中找不到这些名称。secondary dex 支持、默认开启比例和商店覆盖率也不能算作 Android 17 已有能力。
 
 ## 源码索引
 

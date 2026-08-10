@@ -27,7 +27,7 @@ gap_source: "素材驱动"
 
 AOHP（Android Open Harness Project）是一套基于 AOSP fork 的研究原型。它把 agent 放进操作系统的受信任控制面，为 agent 增加服务组合、后台交互、结构化 UI、事件流、沙箱和敏感数据处理能力。论文与开源仓库都把它标为早期研究项目，不适合生产环境或高安全场景。
 
-本章采用四类证据，阅读时要保持边界：
+证据分为四类，阅读时要保持边界：
 
 - **论文设计**：来自 arXiv 2606.23449 v1，说明作者提出的架构和实验；
 - **AOHP 实现**：来自 AOHP 开源仓库的具体代码，说明当前原型已经写出的机制；
@@ -35,7 +35,7 @@ AOHP（Android Open Harness Project）是一套基于 AOSP fork 的研究原型�
 - **工程判断**：依据前述证据推导的接入建议，不能冒充平台行为。
 
 > [!NOTE]
-> AOHP 没有进入 Android 17。AOHP 仓库在本次核查时使用 Android 16 QPR2 作为构建基线；本章以 Android 17 / API 37 / `android-17.0.0_r1` 作为标准平台对照。AOHP 自己的 framework fork 不能当作 Android 17 源码。
+> AOHP 没有进入 Android 17。AOHP 仓库以 Android 16 QPR2 作为构建基线；标准平台对照为 Android 17 / API 37 / `android-17.0.0_r1`。AOHP 自己的 framework fork 不能当作 Android 17 源码。
 
 ## 1. AOHP 要解决什么问题
 
@@ -84,7 +84,7 @@ AOHP 论文从下到上划分四层：
 
 能力描述需要输入/输出 schema、前置条件、副作用和策略标签。搜索商品可以并行执行，付款和外发敏感文件则要经过确认。这个划分有助于把“会读取数据”和“会改变外部状态”分开。
 
-AOHP 允许 legacy 应用通过 GUI 或结构化 UI 参与，但“自动发现能力”仍处于研究阶段。论文把更强的自动推断列为后续工作。工程文档不应把 legacy 应用的任意页面描述成已经自动转换成可靠函数。
+AOHP 允许 legacy 应用通过 GUI 或结构化 UI 参与，但 legacy 应用的能力发现仍处于研究阶段。论文把更强的自动推断列为后续工作。工程文档不应把 legacy 应用的任意页面描述成已经自动转换成可靠函数。
 
 ### 2.3 跨服务记忆
 
@@ -421,7 +421,7 @@ AOHP 当前多个服务共用 `MANAGE_AOHP_VIRTUAL_DISPLAY` signature|privileged
 9. 服务重启、设备重启、备份恢复和用户切换时怎样处理；
 10. fail closed 会不会形成可利用的拒绝服务。
 
-## 9. 如何复现与扩展本章结论
+## 9. 如何复现与扩展这些结论
 
 复现 AOHP 论文结果时，建议把实验拆成四组：
 
