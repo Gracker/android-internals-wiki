@@ -1,8 +1,8 @@
 # 第 12 章：包体积与网络性能
 
-本章处理两类会直接影响用户等待时间的问题：安装包交付成本，以及请求从应用代码到 Android 网络栈的端到端开销。
+内容覆盖两类直接影响用户等待时间的问题：安装包交付成本，以及请求从应用代码到 Android 网络栈的端到端开销。
 
-前半部分关注 APK/AAB、HTTP、连接池和 TLS；后半部分进入 `ConnectivityService`、`netd`、DNS Resolver、`NetworkAgent` 与 Android 17 的网络选择策略。读完后应能区分应用侧慢请求、系统侧网络状态变化和连接迁移问题，并知道各自需要采集什么证据。
+前半部分关注 APK/AAB、HTTP、连接池和 TLS；后半部分进入 `ConnectivityService`、`netd`、DNS Resolver、`NetworkAgent` 与 Android 17 的网络选择策略。分析时要区分应用侧慢请求、系统侧网络状态变化和连接迁移，并为每一类问题采集对应证据。
 
 ## 章节地图
 
@@ -29,8 +29,8 @@
 
 ### 包体积治理
 
-12.1 是本章独立入口。分析对象应明确区分 APK、App Bundle、设备生成 APK 和安装后占用，避免把不同口径的数字放在一起比较。
+12.1 是包体积主题的独立入口。分析对象应明确区分 APK、App Bundle、设备生成 APK 和安装后占用，避免把不同口径的数字放在一起比较。
 
 ## 版本边界
 
-本章正文统一以 Android 17 / API 37 / AOSP `android-17.0.0_r1` 为当前平台锚点。涉及 HTTP 客户端、TLS provider 和 Play 服务组件时，以各文章 frontmatter 与来源中记录的版本为准。版本演进段落用于解释旧设备行为，不应用旧整数网络分数或已退场 API 推导 Android 17 的系统行为。
+正文统一以 Android 17 / API 37 / AOSP `android-17.0.0_r1` 为当前平台锚点。涉及 HTTP 客户端、TLS provider 和 Play 服务组件时，以各文章记录的依赖版本与来源为准。版本演进段落用于解释旧设备行为，不应用旧整数网络分数或已退场 API 推导 Android 17 的系统行为。

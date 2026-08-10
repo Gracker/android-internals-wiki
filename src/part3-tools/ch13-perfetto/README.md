@@ -32,11 +32,11 @@ task9_reviewed_date: "2026-04-28"
 
 # 第 13 章：Perfetto
 
-Perfetto 是 Android 性能分析的统一时间轴。渲染、输入、启动、ANR、调度、锁、Binder、I/O、内存和功耗来自不同数据源，Trace Processor 把它们转换成可关联的表，Perfetto UI 再把时间关系呈现出来。本章的目标是让读者完成三件事：采到能回答问题的数据、读懂不同轨道的语义、把观察写成可复核的 SQL 与源码结论。
+Perfetto 是 Android 性能分析的统一时间轴。渲染、输入、启动、ANR、调度、锁、Binder、I/O、内存和功耗来自不同 data source，Trace Processor 把它们转换成可关联的表，Perfetto UI 再呈现时间关系。学习目标包括采到能回答问题的数据、读懂不同 track 的语义，以及把观察写成可复核的 SQL 与源码结论。
 
 ## 版本口径
 
-| 层级 | 本章采用的版本 | 使用边界 |
+| 层级 | 采用的版本 | 使用边界 |
 |---|---|---|
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | 平台源码、数据源注册、权限和系统事件语义 |
 | Android 内核 | `android17-6.18-2026-06_r6` | `sched`、perf event、ftrace、DMA-BUF 等内核行为 |
@@ -87,9 +87,7 @@ Perfetto 是 Android 性能分析的统一时间轴。渲染、输入、启动�
 - [13.26 android.os.Trace API 与应用级自定义追踪](13.26-android-trace-api-custom-tracing.md)
 - [13.27 Android 17 trace、Perfetto v57 AI skill 与状态轨道](13.27-android17-perfetto-v57-ai-skill-state-tracks.md)
 
-目录中有两篇文章共用 `13.17`，版本演进专题与 pprof 专题共用 `13.21`。这是现有 metadata 的编号冲突。批量生成索引时应按路径和标题识别；若要重编号，需要同步修改 frontmatter、交叉引用、SUMMARY 和 Hermes 状态，不能只改正文标题。
-
-`13.1-07-04-android17-heapprofd-production-deployment-pe.md` 是 deprecated 迁移占位文件，不进入阅读路径。heapprofd 生产部署以 [§26.24 heapprofd 生产级部署与权限模型](../../part5-app/ch26-observability/24-heapprofd-production-deployment-permissions.md) 为准。
+目录中有两篇文章共用 `13.17`，版本演进专题与 pprof 专题共用 `13.21`；阅读时应按标题和路径区分。heapprofd 生产部署以 [§26.24 heapprofd 生产级部署与权限模型](../../part5-app/ch26-observability/24-heapprofd-production-deployment-permissions.md) 为准。
 
 ## 按任务选择阅读路径
 
@@ -133,20 +131,6 @@ Perfetto 是 Android 性能分析的统一时间轴。渲染、输入、启动�
 8. 保存原始 trace、配置、SQL、工具 hash 和结论边界。
 
 UI 截图适合说明位置，不足以支撑可重复回归。SQL 聚合适合量化，也不能代替单帧、单事务或单调用栈的时序证据。
-
-## 延伸资料
-
-### Perfetto 2026 架构级深度技术分析
-
-路径：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Perfetto 2026 架构级深度技术分析  .md`
-
-该材料覆盖 Perfetto v51—v54、Trace Summary、FrameTimeline/CUJ、monitor contention 和主要 data source，适合查阅 2025—2026 年初的演进背景。它的上限是 v54 与 Android 16，Android 17 固定源码和 v55—v57 行为应以本章当前文章及官方源码复核。
-
-### AndroidX Tracing 2.0 架构级深度技术分析
-
-路径：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/AndroidX Tracing 2.0 架构级深度技术分析 .md`
-
-该材料以 2.0.0-alpha05 为基线，适合理解 `Tracer`、`TraceDriver`、`TraceSink`、TracePacket 和协程传播的早期设计。当前依赖已经到 2.0.0-beta01，API、集成状态与生产采用建议应重新对照 [AndroidX Tracing 发布说明](https://developer.android.com/jetpack/androidx/releases/tracing)。
 
 ## 官方入口
 
