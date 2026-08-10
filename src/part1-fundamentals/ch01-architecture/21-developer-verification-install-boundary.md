@@ -335,7 +335,7 @@ handleInstall()
 - `SigningInfo`；
 - 清单声明的共享库；
 - 当前验证策略；
-- 安装器扩展参数；
+- installer extension params；
 - ADB/强制验证的内部标志。
 
 controller 使用 `PackageManager.ACTION_VERIFY_DEVELOPER` 绑定设备指定的 `DeveloperVerifierService`，然后调用 `onVerificationRequired(session)`；用户请求重试时调用 `onVerificationRetry(session)`；超时后调用 `onVerificationTimeout(id)`。

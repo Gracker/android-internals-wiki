@@ -312,7 +312,7 @@ API 37 定义了 `broadcasts` Perfetto SDK category。启用相关 tracing v3 �
 
 - sender/receiver uid、PID 和进程状态；
 - `action`、receiver type；
-- 冷/热进程启动类型；
+- cold/warm process start type；
 - `dispatch_delay_ms`、`receive_delay_ms`、`finish_delay_ms`；
 - Intent flags、receiver priority、delivery group policy。
 

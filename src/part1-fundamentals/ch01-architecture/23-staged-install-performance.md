@@ -294,7 +294,7 @@ APEX 本身不会作为普通应用交给这条 dexopt 路径。mixed session �
 
 - session 数据写入和封存；
 - APK / split 解析；
-- 开发者验证；
+- Developer Verification；
 - 原生库提取；
 - 通用 APK 验证；
 - 分阶段会话冲突与回滚检查；
