@@ -154,7 +154,7 @@ Flutter 3.44.8 的 `VsyncWaiterAndroid::AwaitVSync()` 先检查 `impeller::andro
 
 NDK 路径不可用时，engine 才把任务投到 platform task runner，通过 Java `VsyncWaiter.asyncWaitForVsync()` 获取 `Choreographer` callback，再经 `FlutterJNI.onVsync()`/ native callback 返回 C++。
 
-跟踪数据中出现 `PlatformVsync`、`VsyncProcessCallback` 或 Java `Choreographer#doFrame`，只能证明 Flutter 在订阅系统 VSync。纯 Flutter Widget 后面不会出现 Android ViewRoot 的 traversal 与 HWUI RenderThread 绘制。
+trace 中出现 `PlatformVsync`、`VsyncProcessCallback` 或 Java `Choreographer#doFrame`，只能证明 Flutter 在订阅系统 VSync。纯 Flutter Widget 后面不会出现 Android ViewRoot 的 traversal 与 HWUI RenderThread 绘制。
 
 ### Flutter 3.32 stable 起默认合并 UI 与 Platform 线程
 
@@ -262,7 +262,7 @@ Flutter 中间 image ready 后，宿主窗口还要及时发起 traversal、取�
 
 它不应被当作普通 Flutter 页面默认的高性能模式。
 
-### 从图层树识别三种模式
+### 从 layer 树识别三种模式
 
 | RenderMode | 中间对象 | SurfaceFlinger 主要可见对象 | 常见等待 |
 | --- | --- | --- | --- |
@@ -394,7 +394,7 @@ Impeller 3.44.8 README 的目标包括：
 - external texture fence；
 - GPU 队列、内存带宽与温控。
 
-Flutter 3.44.8 的 `ShellSetupGPUSubsystem` 还明确把某些 Android Vulkan context 创建移出启动关键路径，因为它可能超过 100 ms。着色器离线编译不会消除所有 GPU 初始化工作。
+Flutter 3.44.8 的 `ShellSetupGPUSubsystem` 还明确把某些 Android Vulkan context 创建移出启动关键路径，因为它可能超过 100 ms。shader 离线编译不会消除所有 GPU 初始化工作。
 
 ### 怎样做 renderer A/B
 

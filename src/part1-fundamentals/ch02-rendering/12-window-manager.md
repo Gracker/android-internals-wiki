@@ -85,7 +85,7 @@ last_task6_audit: "2026-07-14"
 
 ## 为什么要了解 WMS
 
-App 冷启动、Activity/Task 过渡、IME、旋转、分屏和桌面窗口 resize 都会改变窗口状态。跟踪数据只看应用主线程或 SurfaceFlinger，会漏掉 system_server 与 WM Shell 之间的状态收集、同步和几何 transaction。
+App 冷启动、Activity/Task 过渡、IME、旋转、分屏和桌面窗口 resize 都会改变窗口状态。跟踪数据只看 App 主线程或 SurfaceFlinger，会漏掉 system_server 与 WM Shell 之间的状态收集、同步和几何 transaction。
 
 WMS 负责维护 WindowContainer/WindowState 树，并把 Activity/Task 状态转换成窗口 bounds、可见性、层级、Insets、focus、input window info 与 `SurfaceControl` 属性。它不绘制 App 像素，也不执行最终合成。
 
@@ -100,7 +100,7 @@ WMS 负责维护 WindowContainer/WindowState 树，并把 Activity/Task 状态�
 
 ## WMS 的定位：窗口状态与 Surface 拓扑
 
-从图形架构看，WMS 位于应用、Input 系统和 SurfaceFlinger 之间。它维护 WindowContainer/WindowState 树，决定窗口的层级、可见性、bounds、focus、Insets 和动画状态。SurfaceFlinger 负责把 App 提交的内容合成上屏；WMS 的 `InputMonitor` 则把可触摸区域、层级、focusability 与 input channel token 写入 `InputWindowHandle`，通过 transaction 附着到对应 layer。SurfaceFlinger 提交 layer 状态后，再把窗口快照交给 InputDispatcher。
+从图形架构看，WMS 位于 App、Input 系统和 SurfaceFlinger 之间。它维护 WindowContainer/WindowState 树，决定窗口的层级、可见性、bounds、focus、Insets 和动画状态。SurfaceFlinger 负责把 App 提交的内容合成上屏；WMS 的 `InputMonitor` 则把可触摸区域、层级、focusability 与 input channel token 写入 `InputWindowHandle`，通过 transaction 附着到对应 layer。SurfaceFlinger 提交 layer 状态后，再把窗口快照交给 InputDispatcher。
 
 WMS 运行在 system_server 进程中，但性能问题不能简化成“AMS、IMS、WMS 共用一条主线程”。Android 17 的线程边界需要按调用方式判断：
 
@@ -154,7 +154,7 @@ Activity 首次显示时，可按以下稳定边界理解：
 3. WMS 更新 `WindowState`、frames、Insets、可见性、sync 与 surface 状态；
 4. service-surface 分支返回服务端 SurfaceControl，client-surface 分支使用客户端传入的 control；
 5. `ViewRootImpl` 更新 frame/Insets、render target 和 BLAST；
-6. App 绘制第一帧并 queue buffer，SurfaceFlinger 才能在后续周期锁存并显示。
+6. App 绘制第一帧并 queue buffer，SurfaceFlinger 才能在后续周期 latch 并显示。
 
 WMS 管窗口容器与 layer 控制关系；App 生成窗口内容；SurfaceFlinger 管 layer 状态消费和合成。Binder 传递控制对象、frame 和同步元数据，不传递已经绘制好的像素。
 
@@ -182,7 +182,7 @@ t.apply(); // 一次性提交给 SurfaceFlinger
 |------|-----------|-----------|
 | `WindowContainerTransaction`（WCT） | Task、Activity、DisplayArea 等 WindowContainer 的 bounds、窗口模式和层级操作 | WM Shell、ATMS/WMS organizer 路径 |
 | `SurfaceControl.Transaction` | layer 的位置、crop、alpha、变换、reparent、visibility 和 input info | WMS、WM Shell、App 或其他系统组件 |
-| BLAST 缓冲事务 | 新内容 buffer 及 acquire fence，与目标 layer 的内容更新配套 | App producer、BLASTBufferQueue、SurfaceFlinger |
+| BLAST buffer transaction | 新内容 buffer 及 acquire fence，与目标 layer 的内容更新配套 | App producer、BLASTBufferQueue、SurfaceFlinger |
 
 WCT 是“窗口容器要变成什么状态”的管理请求，处理后可能引发一个或多个 SurfaceControl transaction；它不属于 SurfaceFlinger 的几何 transaction。几何与内容分属两路输入：resize 时可以短暂出现新 geometry 配旧 buffer，或新 buffer 已到但同步组尚未放行 geometry。遇到拉伸、黑边或一帧错位，需要分别核对 container 状态、layer geometry、buffer 尺寸和 fence，笼统搜索“transaction”无法确定问题位置。
 
@@ -207,7 +207,7 @@ Android 12 之后，StartingWindow 的决策与实际创建分在两侧。ATMS/W
 4. App 进程启动并绘制主 Window 第一帧。
 5. App 通过 `finishDrawing`/`reportDrawFinished` 让服务端知道主窗口已完成首帧，随后走 `removeStartingWindow` 路径通知 Shell 移除 starting surface。
 
-Perfetto 里要把三段分开看：system_server 侧是 starting data、Activity/Task 状态和移除请求；Shell/SystemUI 侧负责启动表面的创建与绘制；App 侧的 `reportDrawFinished` 标记主 Window 首帧完成。把 starting surface 的绘制职责放在 system_server，会混淆服务端、Shell 和 App 进程边界。
+Perfetto 里要把三段分开看：system_server 侧是 starting data、Activity/Task 状态和移除请求；Shell/SystemUI 侧负责启动 surface 的创建与绘制；App 侧的 `reportDrawFinished` 标记主 Window 首帧完成。把 starting surface 的绘制职责放在 system_server，会混淆服务端、Shell 和 App 进程边界。
 
 ### Android 12 SplashScreen API
 
@@ -258,7 +258,7 @@ WMS 侧的执行过程不能简化成“`relayoutWindow()` 直接调 `performLay
 4. 同步路径返回 `ClientWindowFrames`、`MergedConfiguration`、`InsetsState`、`InsetsSourceControl` 与 sync 序列；SurfaceControl 由 service-surface 返回或 client-surface 传入
 5. App 侧收到同步结果后继续 post-relayout 的 measure/layout/draw；异步路径则等待后续 resize/Insets/configuration callback 更新本地状态
 
-同样是遍历，有的帧只在 App 主线程执行 measure/ layout / draw；有的帧会发起 system_server Binder 线程上的 relayout 和强制 placement，其中同步调用会嵌套在 App UI 线程等待区间内；另一些窗口状态更新则由 DisplayThread 的 WMS handler 或 AnimationThread 的常规 placement 继续处理。判断线程要看调用栈和 runnable 来源，不能从函数名推断。
+同样是 traversal，有的帧只在 App 主线程执行 measure/ layout / draw；有的帧会发起 system_server Binder 线程上的 relayout 和强制 placement，其中同步调用会嵌套在 App UI 线程等待区间内；另一些窗口状态更新则由 DisplayThread 的 WMS handler 或 AnimationThread 的常规 placement 继续处理。判断线程要看调用栈和 runnable 来源，不能从函数名推断。
 
 ### App 侧 traversal 与 WMS relayout 的对应关系
 
@@ -315,7 +315,7 @@ if (relayoutRequested) {
 
 查看 WMS 相关 trace，应确认 capture 配置是否打开 `wm`、`view`、`am`、`input`、`gfx`、`surfaceflinger` 这些类别。没有这些类别时，system_server 侧只会留下零散 Binder slice，很难还原 relayout 路径。
 
-切片名也不能写死。`wm.relayout_window`、`SurfaceControl.Transaction.apply`、`animator`、`reportDrawFinished` 都可能因 Android 版本、atrace category、Perfetto config 和 OEM 定制而变化。应先枚举实际跟踪数据中出现的 slice 名，再写针对性 SQL。
+切片名也不能写死。`wm.relayout_window`、`SurfaceControl.Transaction.apply`、`animator`、`reportDrawFinished` 都可能因 Android 版本、atrace category、Perfetto config 和 OEM 定制而变化。应先枚举实际 trace 中出现的 slice 名，再写针对性 SQL。
 
 ```sql
 SELECT DISTINCT s.name
@@ -380,7 +380,7 @@ Activity open / close 动画可以按版本分层理解：
 | Android 12—14 | legacy `AppTransition` 仍覆盖一部分路径，`TransitionController` 和 Shell transition 逐步接管 Task/Activity 级过渡 | 同时看 `wm`、`transition`、`android.anim*`、Shell 进程和 SurfaceFlinger transaction |
 | Android 15—17 | `TransitionController`/Shell / Shell transition 是 Activity、Recents、predictive back、桌面模式等场景的主要分析入口 | 先定位 transition id，再看 Shell handler、remote transition、leash transaction 与 SF `commit`/`composite` |
 
-一次 Activity 切换里，旧 Activity 和新 Activity 的 Window 往往会被包到 leash surface 下。动画过程更新 transform、alpha、crop 和 layer，应用不需要每帧重绘 Activity 内容。App 侧首帧准备慢、Shell 动画线程慢、system_server transition 状态收集慢或 SurfaceFlinger 合成慢，都会表现成切换掉帧，但根因落点不同。
+一次 Activity 切换里，旧 Activity 和新 Activity 的 Window 往往会被包到 leash surface 下。动画过程更新 transform、alpha、crop 和 layer，App 不需要每帧重绘 Activity 内容。App 侧首帧准备慢、Shell 动画线程慢、system_server transition 状态收集慢或 SurfaceFlinger 合成慢，都会表现成切换掉帧，但根因落点不同。
 
 Perfetto 里不能只看 `android.anim`。如果掉帧发生在 Activity open/ close 期间，应按这个顺序拆：
 
@@ -415,7 +415,7 @@ Split-screen、freeform、Picture-in-Picture、Activity Embedding 和多 Display
 - caption、IME、dim、wallpaper、PiP 与 overlay 引起的 composition strategy 变化；
 - 同进程多个 ViewRoot 对 UI Looper 与 RenderThread 的竞争。
 
-静止且没有状态变化的可见窗口不一定持续触发 relayout。拖拽分隔线、调整自由窗口 resize、跨 Display 移动、IME 动画和过渡更容易形成高频更新。应记录每轮参与的 WindowContainer、sync id、transaction 和 buffer，不用总窗口数替代证据。
+静止且没有状态变化的可见窗口不一定持续触发 relayout。拖拽分隔线、调整自由窗口 resize、跨 Display 移动、IME 动画和 transition 更容易形成高频更新。应记录每轮参与的 WindowContainer、sync id、transaction 和 buffer，不用总窗口数替代证据。
 
 排查时按下面的对象顺序取证：
 
@@ -451,7 +451,7 @@ Connected-display desktop windowing 在 Android 16 QPR3 对受支持设备正式
 
 ## 在 Perfetto 中的综合表现
 
-在 Perfetto 中分析 WMS 时，应先按线程和阶段分组，再识别切片名。
+在 Perfetto 中分析 WMS 时，应先按线程和阶段分组，再识别 slice 名。
 
 ### 先看哪些线程
 
@@ -491,15 +491,15 @@ Connected-display desktop windowing 在 Android 16 QPR3 对受支持设备正式
 
 1. 确认窗口边界变化是否触发同步 relayout
 2. 查看 `performSurfacePlacement(true)` 之后的额外成本落在 frames/Insets 返回还是 App 侧 re-measure
-3. 结合 SurfaceFlinger 的 transaction/ latch 情况，判断缓冲尺寸调整是否放大合成侧成本
+3. 结合 SurfaceFlinger 的 transaction/ latch 情况，判断 buffer resize 是否放大合成侧成本
 
 ## 与其他机制的关系
 
 WMS 的性能表现同时受多个上下游影响：
 
-- **§2.1 渲染架构全景**：WMS 连接应用绘制与 SurfaceFlinger 合成
+- **§2.1 渲染架构全景**：WMS 连接 App 绘制与 SurfaceFlinger 合成
 - **§2.6 SurfaceFlinger 与合成**：WMS 通过 SurfaceControl.Transaction 与 SurfaceFlinger 交互，事务执行时机影响合成效率
-- **§2.13 图形缓冲区管理**：Surface 的创建涉及 BufferQueue 分配，BufferQueue 的 producer/consumer 模型决定应用与 SurfaceFlinger 的协作方式
+- **§2.13 图形缓冲区管理**：Surface 的创建涉及 BufferQueue 分配，BufferQueue 的 producer/consumer 模型决定 App 与 SurfaceFlinger 的协作方式
 - **§3.1 Input 事件分发**：WMS 维护的 Window Z-order 和焦点信息是 InputDispatcher 进行 hit-test 的基础
 - **§8.2 启动速度分析**：StartingWindow 的创建和移除时机直接影响启动体感
 - **§8.4 其他响应速度场景**：旋转屏幕、多窗口切换等场景中 WMS 的 relayout 是性能关键路径
@@ -529,7 +529,7 @@ Window 数量会增加状态和内存，但不能单独预测帧耗时。需要�
 
 ### 误区 3："StartingWindow 是 App 画的"
 
-StartingWindow 独立于应用主窗口第一帧。ATMS/WMS 判断是否需要 starting surface 并发出生命周期请求；Android 12+ 的 SplashScreen/TaskSnapshot / TaskSnapshot starting window 多由 WM Shell starting-surface 组件创建和绘制。App 进程完成主窗口首帧之前，Shell 侧 starting surface 已经挂到 Task 上。
+StartingWindow 独立于 App 主窗口第一帧。ATMS/WMS 判断是否需要 starting surface 并发出生命周期请求；Android 12+ 的 SplashScreen/TaskSnapshot / TaskSnapshot starting window 多由 WM Shell starting-surface 组件创建和绘制。App 进程完成主窗口首帧之前，Shell 侧 starting surface 已经挂到 Task 上。
 
 ### 误区 4："relayoutWindow 慢一定是 WMS 的问题"
 
