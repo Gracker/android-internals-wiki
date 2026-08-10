@@ -28,7 +28,7 @@ sources:
 
 # 5.21 Adaptive Battery 与 App Standby Bucket 协同机制
 
-§5.8 介绍了应用看到的桶位和后台限制。本节从 Android 17 / `android-17.0.0_r1` 源码继续向下追：桶位由谁写入，预测何时失效，用户交互怎样改变优先级，以及 JobScheduler、AlarmManager、网络策略和 Battery Saver 怎样消费同一份状态。
+§5.8 介绍了应用看到的桶位和后台限制。Android 17 / `android-17.0.0_r1` 源码进一步说明了桶位的写入方、预测失效条件、用户交互对优先级的影响，以及 JobScheduler、AlarmManager、网络策略和 Battery Saver 对同一份状态的消费方式。
 
 先把两个概念分开：
 
@@ -53,7 +53,7 @@ sources:
 
 `AppIdleHistory.IDLE_BUCKET_CUTOFF` 在该标签中等于 `STANDBY_BUCKET_RARE`。因此，AOSP 内部问“这个 App 是否 idle”时，`RARE`、`RESTRICTED` 和 `NEVER` 会落在 idle 一侧；`FREQUENT` 仍在非 idle 一侧。这个分界会影响网络待机防火墙等消费者。
 
-预测入口不接受 `EXEMPTED`：`setAppStandbyBuckets()` 要求输入位于 `ACTIVE..NEVER`，随后又禁止预测把应用改到 `NEVER` 或从 `NEVER` 改出。`EXEMPTED` 来自系统豁免和 `getAppMinBucket()` 等规则，旧稿中“ML 把 App 推入 EXEMPTED”的说法不成立。
+预测入口不接受 `EXEMPTED`：`setAppStandbyBuckets()` 要求输入位于 `ACTIVE..NEVER`，随后又禁止预测把应用改到 `NEVER` 或从 `NEVER` 改出。`EXEMPTED` 来自系统豁免和 `getAppMinBucket()` 等规则，ML 预测不能把 App 推入 `EXEMPTED`。
 
 ## Adaptive Battery 开关控制什么
 
@@ -119,7 +119,7 @@ if ((UserHandle.isSameApp(callingUid, Process.SYSTEM_UID)
 
 `evaluateBucketsLocked()` 对 `FORCED_BY_USER` 直接返回，源码注释明确说明：只有新的 usage event 才会把应用带出该强制状态。预测写入也拒绝覆盖 `FORCED_BY_SYSTEM`；该状态只能由新的系统强制操作或用户行为改变。
 
-这意味着：
+具体行为如下：
 
 - `adb shell am set-standby-bucket` 产生的是强制用户状态；
 - 12 小时预测超时不会解除这个强制状态；
@@ -162,7 +162,7 @@ for (int i = screenTimeThresholds.length - 1; i >= 0; i--) {
 return 0;
 ```
 
-该标签虽然计算了 `screenOnDelta`，循环只比较 `elapsedDelta` 和 `elapsedTimeThresholds`。旧稿所说的“同时比较亮屏时长与 elapsed time”与 Android 17 源码不符。未来版本或 OEM 分支可能修改这段逻辑，排障报告应注明构建版本。
+该标签虽然计算了 `screenOnDelta`，循环只比较 `elapsedDelta` 和 `elapsedTimeThresholds`，并未同时比较亮屏时长与 elapsed time。未来版本或 OEM 分支可能修改这段逻辑，排障报告应注明构建版本。
 
 Android 17 默认 elapsed 阈值如下，设备可通过 DeviceConfig 调整：
 
@@ -215,7 +215,7 @@ Android 17 默认值如下。它们来自 `QuotaController.QcConstants`，可被
 | `RARE` | 10 min / 24 h | 48 | 3 | 10 min |
 | `RESTRICTED` | 10 min / 24 h | 10 | 1 | 5 min |
 
-旧稿把 `WORKING_SET` 的默认 Job 数写成 60；源码常量为 120。另有每分钟 20 个 Job 和 20 个 session 的默认 rate limit。
+`WORKING_SET` 的默认 Job 数为 120。另有每分钟 20 个 Job 和 20 个 session 的默认 rate limit。
 
 这些数字是上限检查项，不是执行承诺：
 
@@ -256,7 +256,7 @@ Android 17 默认内部值是：
 
 这与公开行为一致：`ACTIVE`、`WORKING_SET`、`FREQUENT` 默认不因桶位失去网络，`RARE` 与 `RESTRICTED` 在后台会受网络限制。前台可见进程、前台服务和其他设备状态还会改变最终规则。
 
-旧稿把这条路径写成 AppStateTracker 到 RIL 的“Radio 拉活判断”，在 Android 17 所列源码中没有依据。这里的可验证实现是 NetworkPolicy 的 standby firewall 规则。
+Android 17 的可验证实现是 NetworkPolicy 的 standby firewall 规则，没有 AppStateTracker 到 RIL 的“Radio 拉活判断”路径。
 
 ## 消费者四：AppStateTrackerImpl 与 Battery Saver
 
@@ -266,7 +266,7 @@ Android 17 默认内部值是：
 - 离开 `EXEMPTED` 时移除；
 - Battery Saver 或 small-battery forced standby 判断中，集合内包可绕过相应限制。
 
-它不会把 EXEMPTED 包写入 `mActiveUids`。`isUidActiveSynced()` 只查询 UID 活跃状态，和 `mExemptedBucketPackages` 无关。因此，旧稿所说的“EXEMPTED 让 QuotaController 前台旁路”也不成立；QuotaController 本身有独立的 `EXEMPTED_INDEX` 配额。
+它不会把 EXEMPTED 包写入 `mActiveUids`。`isUidActiveSynced()` 只查询 UID 活跃状态，和 `mExemptedBucketPackages` 无关。EXEMPTED 不会让 QuotaController 走前台旁路；QuotaController 本身有独立的 `EXEMPTED_INDEX` 配额。
 
 `mForceAllAppsStandby` 是另一条状态：
 
@@ -295,7 +295,7 @@ Doze 是设备级状态，App Standby Bucket 是应用级状态。Android 17 中
 | Android 12 / API 31 | `RESTRICTED` 默认启用 |
 | Android 13 / API 33 | 自动进入 restricted 的无交互期限由 45 天缩短到 8 天；高优先级 FCM 数量不再由桶位决定 |
 | Android 16 / API 36 | 调整 JobScheduler 运行时配额，ACTIVE、前台服务等状态也进入新的配额规则 |
-| Android 17 / API 37 | 本章源码锚点：桶位控制器与 Job/Alarm 位于 JobScheduler APEX，网络规则仍由 NetworkPolicy 消费；没有新增公开桶位 |
+| Android 17 / API 37 | 桶位控制器与 Job/Alarm 位于 JobScheduler APEX，网络规则仍由 NetworkPolicy 消费；没有新增公开桶位 |
 
 版本表只描述平台公开行为。OEM 可以改变分桶标准和 DeviceConfig 参数，所以 Android 大版本相同不代表具体配额与预测结果相同。
 
@@ -368,4 +368,3 @@ adb shell settings get global adaptive_battery_management_enabled
 - [AlarmManagerService.java（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java)：Alarm standby quota 与重新排序。
 - [AppStateTrackerImpl.java（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/apex/jobscheduler/service/java/com/android/server/AppStateTrackerImpl.java)：EXEMPTED 集合、Battery Saver 和 forced standby。
 - [NetworkPolicyManagerService.java（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/net/NetworkPolicyManagerService.java)：idle UID 与 standby firewall。
-- `DeepResearch/2026-06-18-adaptive-battery-app-standby-coordination.md`：作为历史调研导航使用；本章结论以上述 Android 17 源码和当前官方文档为准。
