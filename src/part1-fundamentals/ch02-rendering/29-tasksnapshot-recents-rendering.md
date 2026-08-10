@@ -168,7 +168,7 @@ flowchart TD
 
 `ScreenCaptureInternal.captureLayers()` 在这条路径中调用 native synchronous capture，并等待 `ScreenshotHardwareBuffer` 结果。SurfaceFlinger 的 `captureLayersSync()` 最终经过 `captureScreenCommon()` 与 screenshot render。
 
-这意味着高分辨率、复杂 layer 树、GPU 繁忙或 buffer 分配压力可能延长 WMS/transition 的准备时间。不能只看 App `doFrame()` 判断进入 Overview 的卡顿。
+高分辨率、复杂 layer 树、GPU 繁忙或 buffer 分配压力可能延长 WMS/transition 的准备时间。不能只看 App `doFrame()` 判断进入 Overview 的卡顿。
 
 AOSP 没有给出“1080p 必须 5–15 ms”一类保证。截图策略、SoC、RenderEngine、layer 数量、像素格式和系统负载都会改变结果，应从目标设备 trace 取值。
 
