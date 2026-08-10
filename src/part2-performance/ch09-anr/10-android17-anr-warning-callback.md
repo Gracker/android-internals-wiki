@@ -44,7 +44,7 @@ Android 17 / API 37 增加了公开的 ANR warning API。应用可以向 `Activi
 
 warning 不会暂停或延长原计时器。它适合记录轻量状态、串起 warning 与事后退出记录，不适合在回调里临时执行全线程 dump、同步落盘或网络上传。
 
-本章以 `android-17.0.0_r1` 为平台锚点。ANR 的 timeout 与报告管线见 [§9.1 ANR 设计思想](01-anr-design.md)，线程转储和 Perfetto 联合分析见 [§9.3](03-anr-analysis.md) 与 [§9.8](08-anr-kernel-trace-joint-diagnosis.md)。
+平台锚点为 `android-17.0.0_r1`。ANR 的 timeout 与报告管线见 [§9.1 ANR 设计思想](01-anr-design.md)，线程转储和 Perfetto 联合分析见 [§9.3](03-anr-analysis.md) 与 [§9.8](08-anr-kernel-trace-joint-diagnosis.md)。
 
 ## 1. 公开 API 在 `android.app`
 

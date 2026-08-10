@@ -22,9 +22,9 @@ gap_source: "参考书驱动（Clippings/线上疑难问题 45.md）"
 # 9.13 ANR 日志 CPU 数据系统化分析方法论
 
 
-## Android 17 源码校勘正文
+## 分析目标与版本锚点
 
-本节以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，以 `android17-6.18-2026-06_r6` 为内核语义锚点。分析目标是回答三个可验证的问题：
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，内核语义锚点为 `android17-6.18-2026-06_r6`。分析目标是回答三个可验证的问题：
 
 1. 这段统计覆盖哪个采样区间？
 2. 区间内有哪些资源压力和调度现象？
@@ -41,7 +41,7 @@ Android 17 的 ANR 主路径位于 `ProcessErrorStateRecord.appNotResponding()`�
 | 结果 | 采样器 | 内容 | 时间特征 |
 |---|---|---|---|
 | 全局进程榜 | `AppProfiler.mProcessCpuTracker` | 最多 10 个活跃进程，不含逐线程明细 | 长期采样器；两次更新至少相隔 5 秒，区间可能覆盖 ANR 之前或跨过 ANR |
-| 本轮临时榜 | `new ProcessCpuTracker(true)` | 活跃进程及其活跃线程 | 为挑选额外栈目标执行 `init()`，休眠 200 ms 后 `update()`；静默后台 ANR 不执行这次排名采样 |
+| 临时进程榜 | `new ProcessCpuTracker(true)` | 活跃进程及其活跃线程 | 为挑选额外栈目标执行 `init()`，休眠 200 ms 后 `update()`；静默后台 ANR 不执行这次排名采样 |
 
 临时采样器先把当前 CPU 消耗较高的两个候选 Java 进程加入额外栈目标。栈转储结束后，系统打印这套采样器的 load 和进程/线程统计。注释写着“1/2 second”，Android 17 实现中的显式休眠值是 200 ms；设备调度和 `/proc` 遍历会让两个采样点的墙钟间隔略长。
 
@@ -341,9 +341,3 @@ Android 17 的 ANR CPU 数据回答的是“两个采样点之间，谁执行了
 - [Linux PSI 文档（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/accounting/psi.rst)
 - [Android Developers：ANR 诊断](https://developer.android.com/topic/performance/vitals/anr)
 - [26.25 ProcessCpuTracker 与 `/proc` CPU 数据采集](../../part5-app/ch26-observability/25-proc-filesystem-cpu-monitoring.md)
-
-[已验证: AOSP android-17.0.0_r1, Linux android17-6.18-2026-06_r6]
-
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 46.md]
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/internal/os/ProcessCpuTracker.java]
-[已验证: 官方文档, developer.android.com/topic/performance/anr]
