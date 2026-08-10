@@ -629,6 +629,6 @@ TaskSnapshot 是一次 Task surface 子树捕获及其元数据容器。Android 
 2. Recents animation 把真实 Task surface 通过 remote leash 显示为 live tile；
 3. WM Shell 把旧 TaskSnapshot 设置到独立 starting-window surface，等待 App 内容 ready。
 
-Review 这条管线时，应分别对齐捕获、缓存/磁盘、Binder、Launcher/Shell 几何、App 新 buffer 和目标 Display present。把它们合成一条“snapshot layer 直接交给 HWC”的模型，会漏掉最常见的卡顿、错帧和内存来源。
+检查这条管线时，应分别对齐捕获、缓存/磁盘、Binder、Launcher/Shell 几何、App 新 buffer 和目标 Display present。把它们合成一条“snapshot layer 直接交给 HWC”的模型，会漏掉最常见的卡顿、错帧和内存来源。
 
 > 版本范围：平台与 Launcher 路径按 `android-17.0.0_r1` 核对；结论最高适用于 Android 17 / API 37。
