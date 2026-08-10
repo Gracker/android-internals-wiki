@@ -137,26 +137,6 @@ sources:
     role: "线程 runnable、调度与阻塞状态的内核边界"
 ---
 
-<!-- outline-start -->
-
-**锚点（必须覆盖）：**
-
-- Step 1：识别当前场景的渲染模式（哪条渲染路径）
-- Step 2：确定 Producer / Consumer / BufferQueue 路径
-- Step 3：在 Perfetto 中定位关键 Track 和 Slice
-- Step 4：常见瓶颈模式与诊断思路
-- 两个复盘案例：Overlay 回退、WebView GL Functor
-- 常用 dumpsys 命令速查
-- 渲染路径选型决策树
-
-**扩展（可选深入）：**
-
-- 帧率 / 延迟 / 功耗三维分析框架
-- 跨路径问题的诊断（如 WebView + 主 App 互相影响）
-- 章节交叉引用表
-
-<!-- outline-end -->
-
 ## 为什么需要渲染路径分析方法论
 
 用户只说“App 卡了”时，Perfetto 往往会同时出现主线程、RenderThread、SurfaceFlinger、GPU、HWC 和显示设备等轨道。每条轨道都可能很忙，但“忙”只是一条观察事实，不能单独证明它造成了用户看到的卡顿。开始读耗时之前，应先确认目标帧属于哪个进程、哪个窗口或 Layer、哪个 BufferQueue，以及哪一轮 display present。
@@ -176,7 +156,7 @@ sources:
 3. 用 Perfetto、Winscope 与 dumpsys 把同一帧的证据对齐；
 4. 只在证据足够时，把问题归到生产、队列回压、系统合成或显示输出。
 
-本文以 Android 17 / API 37 的 `android-17.0.0_r1` 为当前平台锚点。Android 9—16 只用于解释 trace 能力和对象模型的变化。涉及 dma-buf、`sync_file`、DRM/KMS 或内核调度时，kernel 锚点统一为 `android17-6.18-2026-06_r6`。
+当前平台锚点是 Android 17 / API 37 的 `android-17.0.0_r1`。Android 9—16 只用于解释 trace 能力和对象模型的变化。涉及 dma-buf、`sync_file`、DRM/KMS 或内核调度时，kernel 锚点统一为 `android17-6.18-2026-06_r6`。
 
 ### 用十二个锚点复原标准窗口的一帧
 
@@ -204,7 +184,7 @@ Android 17 标准窗口可以按以下对象和事件复原：`VSYNC-app` → Ch
 | 时间关联 | `dequeueBuffer` 与上一帧 release fence 晚 signal 同窗 | 仍需确认对象身份 |
 | 因果结论 | 目标 BufferQueue 无可复用 slot，原因是上一轮 HWC 延迟归还该 Layer 的 Buffer | 可以，但必须有队列、fence 和 Layer 证据 |
 
-这条纪律很重要。`queueBuffer` 已返回不代表 GPU 写入完成，latch 已发生不代表 acquire fence 已经 signal，HWC 的 `present()` 已返回也不代表面板像素已经完成光学响应。
+只有按这三层记录，才能避免把时间关联误写成因果结论。`queueBuffer` 已返回不代表 GPU 写入完成，latch 已发生不代表 acquire fence 已经 signal，HWC 的 `present()` 已返回也不代表面板像素已经完成光学响应。
 
 ## Step 1：识别渲染模式
 
@@ -268,7 +248,7 @@ adb shell dumpsys SurfaceFlinger --latency "<LayerName>"
 | Camera `ImageReader` 分析 | Camera HAL / ISP | `ImageReader` / 分析线程 | 通常不直接送屏，但长期持有 Image 会反压 Camera stream |
 | Camera 录制 | Camera HAL / ISP | MediaCodec 输入 Surface | 编码队列；预览 Layer 是另一条 stream |
 
-旧版标准窗口可能由 SurfaceFlinger 直接持有 BufferQueue Consumer。本文不拿 Android 17 的 BLAST 对象反推 Android 9/10；分析旧系统时，应使用对应 tag 的 `Surface`、BufferQueue 和 Layer 实现。
+旧版标准窗口可能由 SurfaceFlinger 直接持有 BufferQueue Consumer，不能用 Android 17 的 BLAST 对象反推 Android 9/10。分析旧系统时，应使用对应 tag 的 `Surface`、BufferQueue 和 Layer 实现。
 
 ### 三类 fence 决定读写边界
 
@@ -548,7 +528,7 @@ WebView / Flutter / 游戏等框架
 
 `SurfaceView` 的独立 Layer 有利于视频、Camera、游戏与受保护内容，但 `DEVICE` composition、低功耗和低延迟都要由实测证明。`TextureView` 提供宿主窗口内的纹理采样能力，代价通常包括一次额外采样和宿主 GPU 工作。`HardwareBufferRenderer` 是 `RenderNode → HardwareBuffer` 的异步渲染工具，不是 `TextureView` 或 `SurfaceView` 的直接替代品。
 
-## 单章 Review 检查表
+## 复核清单
 
 完成一次渲染问题复盘前，逐项确认：
 

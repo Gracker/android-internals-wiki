@@ -136,24 +136,6 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-05
 ---
 
-<!-- outline-start -->
-
-**锚点（必须覆盖）：**
-
-- VRR、多刷新率、ARR 的边界
-- App 端 API：`Surface.setFrameRate()`、Android 15 的 `View.setRequestedFrameRate()` / Compose、Android 16 的 `Display` 查询 API
-- `VSYNC-app` / `VSYNC-sf` 的动态周期
-- missed deadline 仍会表现为 app / sf jank，ARR 不会把慢帧直接修成准时帧
-- 在 Perfetto 中按统一口径分析：`VSYNC-app`、`VSYNC-sf`、`expected_frame_timeline_slice`、`actual_frame_timeline_slice`、refresh-rate selection slice
-
-**扩展（可选深入）：**
-
-- LTPO 面板与 device-specific HAL support
-- 视频播放场景的帧率投票
-- 静态页面的低刷新率驻留
-
-<!-- outline-end -->
-
 # 18.19 Android 17 可变刷新率（ARR/VRR）渲染管线
 
 ## 为什么这一节容易误判
@@ -172,7 +154,7 @@ last_deepseek_cn_review_at: 2026-07-05
 
 ## VRR、多刷新率和 ARR 的边界
 
-| 名称 | 关注点 | 章节里怎么用 |
+| 名称 | 关注点 | 分析含义 |
 | --- | --- | --- |
 | 多刷新率 | 设备在 60Hz、90Hz、120Hz 等固定 Display mode 之间选择 | Android 11–14 的公开帧率 API 主要在这个背景下使用 |
 | VRR | 面板/Composer 能在能力范围内动态改变 VSync 周期，不必把每个 render rate 都表示成独立固定 mode | 硬件与 HAL 能力，不能只由“面板是 LTPO”推出 |
@@ -289,7 +271,7 @@ API 35 还提供 Window 级的 `setFrameRateBoostOnTouchEnabled()` 和 `setFrame
 - `BufferQueueConsumer::acquireBuffer(expectedPresent)` 比较 buffer 的 desired-present timestamp 与 consumer 的目标呈现时刻；buffer 还太早时返回 `PRESENT_LATER`，本轮不 acquire；
 - HWC present 产生的 present fence 表示 Display 侧完成时点，可用于后续调度和 trace 归因。
 
-因此，24fps vote 正确也不能修正错误的 `renderTimestampNs`。时间戳过早、过晚或单位错误，会造成延后 acquire、丢帧或 cadence 抖动；反过来，buffer timestamp 正确也不能保证整屏采用 24/48/120Hz，因为其他可见 layer 与 policy 仍参与选择。`rendering_pipelines` 的 S12 资料把这条链路定义为 `player release timing → BufferQueue desired present → Scheduler/HWC timing → display feedback`，本章沿用这套证据边界。
+因此，24fps vote 正确也不能修正错误的 `renderTimestampNs`。时间戳过早、过晚或单位错误，会造成延后 acquire、丢帧或 cadence 抖动；反过来，buffer timestamp 正确也不能保证整屏采用 24/48/120Hz，因为其他可见 layer 与 policy 仍参与选择。分析时应沿 `player release timing → BufferQueue desired present → Scheduler/HWC timing → display feedback` 逐段对齐证据。
 
 ## Android 17 的 Scheduler 怎样处理 vote
 
@@ -319,7 +301,7 @@ SurfaceFlinger 收到 layer 属性后，Android 17 的 `Scheduler::chooseRefresh
 
 ### Kernel 锚点只能说明通用 vblank 记账
 
-本章的 kernel 基线是 `android17-6.18-2026-06_r6`。通用 DRM 的 `drm_vblank.c` 维护 CRTC vblank 计数与时间戳，驱动在 vblank 中断中调用 `drm_crtc_handle_vblank()`；`drm_vblank.h` 暴露 count/time、vblank on/off 与 wait 接口。这些代码可以支撑“内核/驱动需要提供显示时序事件”这一层判断。
+kernel 基线是 `android17-6.18-2026-06_r6`。通用 DRM 的 `drm_vblank.c` 维护 CRTC vblank 计数与时间戳，驱动在 vblank 中断中调用 `drm_crtc_handle_vblank()`；`drm_vblank.h` 暴露 count/time、vblank on/off 与 wait 接口。这些代码可以支撑“内核/驱动需要提供显示时序事件”这一层判断。
 
 它们不能证明某台 Android 设备的面板 VRR 范围、DPU 编程方法或 Composer HAL 决策。手机 SoC 的 Display driver 和面板控制常位于厂商代码中，AOSP common kernel 只提供通用参考。遇到“面板为何没有切到某一 Hz”时，证据还要补齐目标设备的 Composer capability、HWC trace、vendor Display driver 与面板 mode，不能从 `drm_vblank.c` 反推产品实现。
 

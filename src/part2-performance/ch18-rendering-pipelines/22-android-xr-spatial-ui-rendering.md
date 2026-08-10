@@ -113,57 +113,13 @@ sources:
 
 # 18.22 Android 17 / Android XR 空间 UI 与环境资产渲染性能
 
-<!-- outline-start -->
-
-## 要点
-
-### 🔹 Android XR 在渲染体系中的位置
-
-梳理 Android XR 与普通手机、大屏、桌面模式的关系：兼容应用可以直接进入 XR 设备，差异化应用会引入空间面板、3D 模型和空间环境。章节只讨论渲染、资源、帧预算和功耗，不展开产品形态。
-
-### 🔹 Jetpack XR SDK 的 UI 栈边界
-
-区分 Compose for XR、传统 View / Compose 内容、Unity 内容和系统空间化能力。整理哪些内容仍走 Android UI 渲染路径，哪些内容进入 3D / OpenXR / 引擎渲染路径。
-
-### 🔹 空间环境资产的成本构成
-
-依据官方环境资产文档拆出 skybox、IBL 数据、glb / ZIP 资源和文件大小约束，说明视觉质量、加载时间、内存占用和包体积之间的取舍。
-
-### 🔹 3D 模型与纹理资源的加载预算
-
-整理 glTF / glb 模型、纹理尺寸、材质数量、压缩格式和运行时上传成本。对照移动 GPU 的 tile-based rendering、显存带宽和纹理缓存约束。
-
-### 🔹 视点、姿态与显示配置对帧时间的影响
-
-围绕设备姿态、RenderViewpoint、显示配置和刷新率建立观察点，说明 XR 场景下帧时间波动为什么比普通 2D 页面更容易被感知。
-
-### 🔹 Android XR 质量分级的性能含义
-
-把 Android XR quality guidelines 中的 mobile、large screen、differentiated tiers 转换成性能检查项：布局自适应、输入延迟、资源加载、热管理和长时间运行稳定性。
-
-### 🔹 工具与验证入口
-
-列出 Android Studio、XR emulator、Perfetto、AGI、Unity profiler 的分工。每个工具只保留可复核的指标入口，不写无法验证的体验评价。
-
-## 扩展
-
-### 🔸 XR 与游戏 / Vulkan 渲染路径的交叉
-
-整理 SurfaceView、OpenGL ES、Vulkan、Unity 内容进入 XR 场景后的共同问题：buffer 提交、fence 等待、GPU 队列拥塞和帧 pacing。
-
-### 🔸 眼镜形态下 companion host device 的功耗边界
-
-跟踪 AI glasses / wired XR glasses 场景中主机设备的渲染、传感器、网络和编解码成本，后续可回连功耗章节。
-
-<!-- outline-end -->
-
-## 这章要解决的问题
+## Android XR 渲染需要区分哪些边界
 
 Android XR 覆盖多种运行形态。手机或大屏应用可以作为兼容面板运行；XR 差异化应用可以增加 Subspace、空间面板、3D 模型、环境和感知能力；Unity/OpenXR 应用由引擎向 XR runtime 提交 swapchain image；display glasses 上的 Projected Activity 则运行在 companion host device。
 
 这些形态共享 Android 进程、CPU、GPU、内存、I/O 和功耗约束，但显示终点不完全相同。普通 2D 内容的应用侧仍能看到 `Choreographer`、HWUI RenderThread 和 Surface Buffer，XR runtime 还要负责空间放置、视点/姿态、可能的 reprojection，以及向 XR 显示设备提交。Unity/OpenXR 的帧循环也不能直接套用普通 View 的 `doFrame → DrawFrame → queueBuffer`。
 
-本章解决三个问题：
+分析聚焦三个问题：
 
 1. 当前内容属于兼容 2D 面板、Jetpack XR 空间内容、Unity/OpenXR，还是 Projected/Glimmer；
 2. 帧时间、资源加载和显示延迟分别在哪里观测；
@@ -183,9 +139,9 @@ Android 平台锚点固定为 Android 17 / API 37 的 `android-17.0.0_r1`，kern
 | Jetpack Compose Glimmer | `1.0.0-alpha16` | 2026-07-29 更新；透明 display glasses UI 仍是 alpha |
 | Android XR SDK 总体 | Developer Preview 4 | 官方仍将整组 SDK 标为开发中 |
 
-Compose for XR 从 `1.0.0-alpha14` 起把 `compileSdk` 更新到 API 37，并要求至少 AGP 9.2.0。alpha16 把库的 `minSdk` 降到 24，但官方同时说明 Jetpack XR API 运行时仍要求 API 34；`compileSdk 37`、库的 manifest minSdk 与 XR runtime 可用条件是三套不同口径。使用 alpha16 时应按对应 release notes 配置构建环境。正文只使用当前文档仍存在的概念，不拿早期 alpha 的类名推断长期 API。
+Compose for XR 从 `1.0.0-alpha14` 起把 `compileSdk` 更新到 API 37，并要求至少 AGP 9.2.0。alpha16 把库的 `minSdk` 降到 24，但官方同时说明 Jetpack XR API 运行时仍要求 API 34；`compileSdk 37`、库的 manifest minSdk 与 XR runtime 可用条件是三套不同口径。使用 alpha16 时应按对应 release notes 配置构建环境。这里仅使用当前文档仍存在的概念，不拿早期 alpha 的类名推断长期 API。
 
-公开 AOSP tag 可以验证 Android 的 HWUI、Surface、BufferQueue、fence 和调度公共层，但不能据此补写未公开的 XR compositor 内部调用链。本文对 XR runtime 的描述只到公开 Jetpack、Unity/OpenXR 和质量文档给出的边界。
+公开 AOSP tag 可以验证 Android 的 HWUI、Surface、BufferQueue、fence 和调度公共层，但不能据此补写未公开的 XR compositor 内部调用链。XR runtime 的描述仅覆盖公开 Jetpack、Unity/OpenXR 和质量文档给出的边界。
 
 ## Android XR 在渲染体系中的位置
 
@@ -314,7 +270,7 @@ Unity Android XR Extensions 提供三类不同优化：
 
 ## Android XR 质量分级的性能检查项
 
-官方 90/72 Hz、per-eye resolution 和启动目标位于 Android XR-differentiated quality requirements。它们是评审目标，不是所有兼容 2D 面板的硬件规格承诺。
+官方 90/72 Hz、per-eye resolution 和启动目标位于 Android XR-differentiated quality requirements。它们是质量目标，不是所有兼容 2D 面板的硬件规格承诺。
 
 | 检查项 | compatible mobile / large screen | XR-differentiated |
 | --- | --- | --- |
@@ -380,7 +336,7 @@ Projected 场景要同时记录两端：
 
 host 上的帧生成按时，不代表传输和眼镜 present 按时；眼镜发热也不能直接归到 host GPU。两端时钟若不能统一，应使用可关联的事件 id 与往返测量，避免用不同设备的原始 timestamp 相减。
 
-## Review 检查表
+## 复核清单
 
 - [ ] 平台版本不高于 Android 17，平台源码锚点为 `android-17.0.0_r1`；
 - [ ] Jetpack XR / Unity / OpenXR package 使用完整版本号；
