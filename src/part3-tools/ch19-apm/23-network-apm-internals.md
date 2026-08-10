@@ -68,30 +68,9 @@ last_deepseek_cn_review_at: 2026-07-16
 ---
 # 网络 APM 底层捕获原理
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 [定位] 说明商业与开源 APM 如何“无侵入”地拿到网络数据，讲清背后的采集方式，而不是只停留在看板展示。
-- 🔹 [OkHttp 捕获] 详细分解 `EventListener` 与 `Interceptor` 在网络 APM 中的组合使用；说明为何只用 Interceptor 拿不到 DNS 和 TCP 耗时。
-- 🔹 [字节码插桩] 解释如何通过 ASM 或 Transform 无侵入地 Hook `HttpURLConnection` 和三方 SDK 内部封装的网络请求。
-- 🔹 [Native 网络捕获] 探讨对于基于 C/C++ 的底层网络库（如 Cronet、微信 Mars），APM 如何通过 PLT Hook 或 eBPF 获取流量与耗时。
-- 🔹 [指标分解模型] 将一次网络请求分解为 DNS、TCP 握手、TLS 握手、Request 发送、Server Wait (TTFB)、Response 接收。
-- 🔹 [弱网与重试识别] 说明 APM 如何在底层识别因弱网导致的多次建连重试，避免将重试耗时算入单次请求 Server 耗时。
-- 🔹 [隐私与安全] 规定端侧在捕获时如何进行 URL Pattern 聚类、Query 参数剥离、Body 截断以及 Header 过滤。
-
-### 扩展（可选深入）
-
-- 🔸 提供一段完整的 `OkHttp EventListener` 埋点核心代码。
-- 🔸 增加一段 ASM Hook `openConnection` 的伪代码或指令说明。
-- 🔸 解析 HTTP/3 (QUIC) 对现有网络 APM 捕获机制带来的挑战与应对思路。
-
-<!-- outline-end -->
-
 网络 APM 难在采样边界。一条请求会经过业务封装、HTTP 客户端、DNS、Socket、TLS 和内核网络栈；WebView、Cronet 或 C/C++ SDK 还会绕开应用熟悉的 Java 入口。看板上的一条“请求耗时”，只有在这些事件被正确配对后才有诊断价值。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台基线，内核侧以 `android17-6.18-2026-06_r6` 为基线。OkHttp、Cronet 和 Android Gradle Plugin 是独立发布的组件，不能用 Android API 级别推断它们的版本。OkHttp 示例按当前稳定版 5.3.0 的事件接口编写；维护旧客户端时，必须再按依赖版本核对回调语义。
+以下内容以 Android 17 / API 37 / `android-17.0.0_r1` 为平台基线，内核侧以 `android17-6.18-2026-06_r6` 为基线。OkHttp、Cronet 和 Android Gradle Plugin 是独立发布的组件，不能用 Android API 级别推断它们的版本。OkHttp 示例按当前稳定版 5.3.0 的事件接口编写；维护旧客户端时，必须再按依赖版本核对回调语义。
 
 ## 1. “无侵入”指业务入口免埋点
 
@@ -135,7 +114,7 @@ OkHttp 5.3.0 的 `EventListener` 源码对边界有明确约束：
 3. `Expect: 100-continue` 会让 request body 事件落在 response headers 事件之间；duplex body 允许请求和响应交错。
 4. 除取消外，当前事件通常顺序发生；`canceled` 可以与其他回调并发，甚至可能晚于 `callEnd`。后续版本还可能并发尝试多条 route。
 
-还有一个容易遗漏的版本边界：OkHttp 4.3 以前，`responseHeadersStart` 在“客户端准备读取 header”时过早触发。4.3 起，它才表示服务端响应 header 开始返回。旧版本不能沿用本章的 post-send wait 算法。`requestHeadersEnd(call, request)` 的稳定签名从 OkHttp 3.9 已经存在，但这不改变 `responseHeadersStart` 的 4.3 边界。
+还有一个容易遗漏的版本边界：OkHttp 4.3 以前，`responseHeadersStart` 在“客户端准备读取 header”时过早触发。4.3 起，它才表示服务端响应 header 开始返回。旧版本不能沿用上述 post-send wait 算法。`requestHeadersEnd(call, request)` 的稳定签名从 OkHttp 3.9 已经存在，但这不改变 `responseHeadersStart` 的 4.3 边界。
 
 ### 2.2 一份不会覆盖 retry/follow-up 的核心实现
 
@@ -840,7 +819,7 @@ QUIC 基于 UDP，传输握手与 TLS 1.3 紧密结合，并支持连接复用�
 
 ### 客户端与构建工具
 
-- [OkHttp 5.3.0 `EventListener` 源码](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt)：本章 OkHttp 事件边界、恢复与并发说明的直接依据。
+- [OkHttp 5.3.0 `EventListener` 源码](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt)：OkHttp 事件边界、恢复与并发说明的直接依据。
 - [OkHttp 5.3.0 Interceptors](https://github.com/square/okhttp/blob/parent-5.3.0/docs/features/interceptors.md)：应用拦截器与网络拦截器的官方差异。
 - [AGP Instrumentation API 迁移说明](https://developer.android.com/build/releases/gradle-plugin-api-updates)：核对 Transform 移除与 Instrumentation API 注册方式。
 - [AGP `InstrumentationScope`](https://developer.android.com/reference/tools/gradle-api/current/com/android/build/api/instrumentation/InstrumentationScope)：核对 `PROJECT` 与 `ALL` 的处理范围。

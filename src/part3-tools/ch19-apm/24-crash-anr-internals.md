@@ -67,30 +67,9 @@ last_deepseek_cn_review_at: 2026-07-15
 
 # 崩溃与 ANR 捕获机制
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 [定位] 说明 APM 稳定性基础设施的底层实现，解析 Java Crash、Native Crash 与 ANR 的捕获路径。
-- 🔹 [Java Crash 捕获] 展开 `Thread.setDefaultUncaughtExceptionHandler` 的原理，以及如何保证自身上报逻辑不被 Crash 截断。
-- 🔹 [Native Crash 捕获] 解析 Google Breakpad / Crashpad 在 Android 端的应用，说明 Linux 信号（Signal）拦截机制与 Tombstone 文件的生成与解析。
-- 🔹 [ANR 捕获演进史] 从早期读取 `/data/anr/traces.txt`，到监听 SIGQUIT 信号 (Signal Catcher Hook)，再到 Android 11+ 官方 `ApplicationExitInfo` 方案。
-- 🔹 [OOM 细分与防范] 展开非 Java Heap OOM 的监控：文件描述符 (FD) 溢出、线程池暴增 (Thread Exhaustion)、虚拟内存地址空间 (VMA) 耗尽的监控与预警。
-- 🔹 [现场快照留存] 说明崩溃瞬间如何收集寄存器状态、内存使用率、Logcat 尾部日志、以及用户 Session 操作轨迹。
-- 🔹 [多 SDK 冲突] 解释当项目中同时存在多个 APM (如 Bugly + Firebase + 自研) 时，Crash Handler 被覆盖或死锁的风险及链接链处理方案。
-
-### 扩展（可选深入）
-
-- 🔸 绘制一张 Native Signal 从发生到 Crashpad 捕获上报的完整时序图。
-- 🔸 提供针对 Android 11+ `ApplicationExitInfo` 捞取 ANR 与 LMK (Low Memory Killer) 历史记录的代码片段。
-- 🔸 介绍对于 C/C++ 内存破坏 (如 Use-After-Free) 的 GWP-ASan 线上灰度检测方案。
-
-<!-- outline-end -->
-
 稳定性 APM 面对的不是一种“崩溃”。Java 未捕获异常、Native 同步致命信号、系统判定的 ANR、lmkd 杀进程和资源耗尽，发生时的线程状态、权限与剩余执行时间都不同。采集器应先回答“当前还能安全做什么”，再决定采哪些数据。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码基线，涉及内核资源边界时以 `android17-6.18-2026-06_r6` 为基线。Android 8—10 的兼容路径会保留，但不会把厂商权限、root 能力或旧时代可读文件写成普通应用的通用能力。
+以下内容以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码基线，涉及内核资源边界时以 `android17-6.18-2026-06_r6` 为基线。Android 8—10 的兼容路径会保留，但不会把厂商权限、root 能力或旧时代可读文件写成普通应用的通用能力。
 
 ## 1. 四类现场，四种证据强度
 
@@ -444,7 +423,6 @@ Native 冲突更难靠安装顺序解决：
 
 不要编写一个“万能 signal hub”去同步回调所有 SDK。选定一个经过 Android 版本验证的 Native reporter，其他 SDK 改为导入它产出的 tombstone/minidump 或只做启动后处理。无法控制第三方库时，至少在 CI 中枚举已安装 signal action、制造各类 fault，并验证系统 tombstone 和 build-id 符号化没有丢失。
 
-<!-- AIW-源码调研-2026-07-16 -->
 ## 8. GWP-ASan：Android 17 默认走 Recoverable 抽样
 
 GWP-ASan 用少量 guard-page allocation 捕获 heap use-after-free 与 heap-buffer-overflow。它不要求重编译第三方 Native 库，CPU 开销设计得很低，但会为命中进程保留一小块固定内存。它是线上取证工具，不是内存安全缓解机制。
@@ -472,7 +450,6 @@ Android 17 源码中的默认内部参数是：
 
 源码中的 recoverable path 会在 fault 前后调用 GWP-ASan pre/post crash hook，并通过 `recoverable_crash` 避免按普通致命 signal 重发。Permissive MTE 也使用 recoverable 出口，但 fault 识别和恢复逻辑独立。APM 只需要保留系统 tombstone、GWP-ASan cause、allocation/deallocation/access trace 和模块 build id，不能复制系统 handler 内部实现到应用 signal handler。
 
-<!-- /AIW-源码调研-2026-07-16 -->
 ## 9. Android 17 ProfilingTrigger 是补充证据
 
 ProfilingManager 从 API 35 提供 app-driven profiling。ProfilingTrigger 从 API 36 加入系统事件触发，并在 36.1 与 API 37 扩充。与稳定性相关的主要能力是：
@@ -487,7 +464,7 @@ ProfilingManager 从 API 35 提供 app-driven profiling。ProfilingTrigger 从 A
 
 API 37 的 OOM trigger 有一条容易被多 SDK 破坏的前置条件：自定义 `UncaughtExceptionHandler` 必须调用 default handler。若稳定性 SDK 吞掉 `OutOfMemoryError`，系统 trigger 无法工作；应用只能在资源尚可时自行调用 `requestProfiling()`，而 crash 当下再请求通常太晚。
 
-Profiling API 的完整请求、回调、36.1 扩展版本判断与 rate-limit 处理见第 19.16 章。本章只把它作为稳定性证据源接入同一 incident id。
+Profiling API 的完整请求、回调、36.1 扩展版本判断与 rate-limit 处理见第 19.16 章。这里只把它作为稳定性证据源接入同一 incident id。
 
 ## 10. 版本化接入建议
 
