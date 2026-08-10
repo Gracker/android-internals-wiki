@@ -321,7 +321,7 @@ Baseline Profile -> ART on-device AOT 范围
 Startup Profile  -> R8/D8 构建期 DEX 布局
 ```
 
-Startup Profile 只能由应用的启动场景生成，库不能单独贡献最终 Startup Profile。启动代码超出主 DEX 容量时，布局收益会受限；需要用 APK Analyzer 或构建产物中的 R8 元数据验证，不能只检查 `startup-prof.txt` 是否存在。
+Startup Profile 只能由应用的启动场景生成，库不能单独贡献最终 Startup Profile。启动代码超出主 DEX 容量时，布局收益会受限；需要用 APK Analyzer 或构建产物中的 R8 metadata 验证，不能只检查 `startup-prof.txt` 是否存在。
 
 ## 应用侧怎样生成和验证 Profile
 
@@ -411,7 +411,7 @@ adb shell pm compile --reset com.example.app
 
 可靠的观察点包括：
 
-- 应用进程中 JIT 编译线程在 CPU 上运行的时间；
+- 应用进程中 JIT compiler 线程在 CPU 上运行的时间；
 - `art::jit`、`JitCodeCache::DoCollection`、`ProfileSaver` 等调用栈或 slice；
 - 独立 `dex2oat`/`artd` 活动及其 CPU、I/O、内存压力；
 - 主线程同一时段是在 Running、Runnable，还是等待锁/I/O；
