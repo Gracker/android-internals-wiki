@@ -37,12 +37,12 @@ sources:
 
 `HeapTask` 是 ART 进程内的一种延时任务抽象。它把“何时执行”和“执行什么”分开：`TaskProcessor` 按目标时间维护任务队列，Java 层的 `HeapTaskDaemon` 串行执行到期任务。GC 请求、堆裁剪、启动期清理、低开销方法追踪停止等工作都能借用这套机制。
 
-先给出两个边界，避免把它误解成通用任务框架：
+它有两个边界：
 
 - 它是 ART runtime 的内部设施，应用没有受支持的 API 可以启动、停止或改写队列。
 - `target_footprint_` 是 ART 用来决定堆增长和 GC 时机的目标值，不是进程硬内存上限，也不是 lmkd 的评分输入。
 
-本文以 `android-17.0.0_r1` 为唯一当前源码锚点。标题沿用既有命名；“新增子类”的历史起点若没有逐 tag 证据，不据此推断。Android 17 的生产源码中可以找到 **10 个** `HeapTask` 派生类，其中 6 个定义在 `heap.cc`。
+源码以 `android-17.0.0_r1` 为当前锚点。由于缺少逐 tag 证据，不能根据标题中的“新增子类”反推历史起点。Android 17 的生产源码中可以找到 **10 个** `HeapTask` 派生类，其中 6 个定义在 `heap.cc`。
 
 ## 4.21.1 从 Java 守护线程进入 native 调度器
 
@@ -144,7 +144,7 @@ Android 17 中的 `CollectorTransitionTask` 和 `TimeBasedGcThresholdCheckTask` 
 | `trace_profile.cc` | `TraceStopTask` | 到期停止低开销方法追踪 | 按追踪结束时间执行 |
 | `jit/jit.cc` | `MapBootImageMethodsTask` | 在 JIT 通知后重映射 boot image 方法 | 首次延时 10 秒，条件未满足则再延时 10 秒 |
 
-这个表也解释了“7 种”的问题：它既没有覆盖整个 runtime，也无法完整代表 `heap.cc`。后续分析代码时，应先说明统计目录和是否包含“继承了 `HeapTask`、但当前配置不经过队列”的类型。
+只统计 `heap.cc` 会得到 6 种，统计整个 ART runtime 的生产源码则会得到 10 种。分析代码时，应先说明统计目录和是否包含“继承了 `HeapTask`、但当前配置不经过队列”的类型。
 
 ### `ClearedReferenceTask` 是一个重要例外
 
@@ -285,7 +285,7 @@ JIT post-fork 阶段在满足配置条件时安排一个 10 秒后的任务。�
 3. 继续检查下一项；
 4. 多个逾期任务由同一个 `HeapTaskDaemon` 串行处理。
 
-是否会执行 GC仍取决于每个任务自身的守卫条件，例如 GC 序号、pending 指针和当前收集器状态。看到解冻后连续的 ART 工作时，应逐项核对任务条件，不宜直接归因于“冻结期间积累了多轮 GC”。
+是否会执行 GC 仍取决于每个任务自身的守卫条件，例如 GC 序号、pending 指针和当前收集器状态。看到解冻后连续的 ART 工作时，应逐项核对任务条件，不宜直接归因于“冻结期间积累了多轮 GC”。
 
 ## 4.21.8 如何在 Perfetto 中验证
 

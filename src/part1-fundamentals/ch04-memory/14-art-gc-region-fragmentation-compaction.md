@@ -47,9 +47,9 @@ last_task6_audit: "2026-07-17"
 
 # 4.14 ART GC Region 碎片化与 Compaction 策略
 
-§4.3 介绍了 ART 堆和收集器，§4.8 讨论了分代回收。本节进一步回答一个容易混淆的问题：Android 17 中的 Concurrent Copying（CC）和 Concurrent Mark Compact（CMC）分别怎样处理移动空间，`UnevacFromSpace` 又解决了什么问题。
+§4.3 介绍了 ART 堆和收集器，§4.8 讨论了分代回收。Android 17 中的 Concurrent Copying（CC）和 Concurrent Mark Compact（CMC）采用不同的移动空间处理方式，`UnevacFromSpace` 也有独立的适用边界。
 
-本节以 AOSP `android-17.0.0_r1` 为平台源码基准，以 `android17-6.18-2026-06_r6` 为内核基准。厂商可以通过构建选项、启动参数和系统属性改变收集器配置，因此“源码包含 CMC”不等于任意 Android 17 设备都在运行 CMC。
+平台源码以 AOSP `android-17.0.0_r1` 为基准，内核以 `android17-6.18-2026-06_r6` 为基准。厂商可以通过构建选项、启动参数和系统属性改变收集器配置，因此“源码包含 CMC”不等于任意 Android 17 设备都在运行 CMC。
 
 ## 先区分三类问题
 
@@ -361,7 +361,7 @@ Android 17 同时保留 CC、CMC、generational CC 和 generational CMC 代码�
 - UFFD feature、系统属性名和内核要求；
 - `YoungMarkCompact` 与三代边界是否已经存在。
 
-不能根据 Android 17 目录中存在某个类，反推它在旧版本的首次引入时间或默认启用状态。本节的行为结论以 `android-17.0.0_r1` 为准，历史版本只用于演进对比。
+不能根据 Android 17 目录中存在某个类，反推它在旧版本的首次引入时间或默认启用状态。行为结论以 `android-17.0.0_r1` 为准，历史版本只用于演进对比。
 
 ## 小结
 
