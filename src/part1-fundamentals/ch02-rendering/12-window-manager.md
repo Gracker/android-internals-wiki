@@ -411,7 +411,7 @@ Split-screen、freeform、Picture-in-Picture、Activity Embedding 和多显示�
 
 - 多个可见 Task/Window 的边界、Insets、focus 与 input window snapshot；
 - WindowContainerTransaction、transition participant 与 leash；
-- 尺寸/配置回调和应用的新尺寸缓冲；
+- resize/configuration callback 和 App 新尺寸 buffer；
 - caption、IME、dim、wallpaper、PiP 与 overlay 引起的 composition strategy 变化；
 - 同进程多个 ViewRoot 对 UI Looper 与 RenderThread 的竞争。
 
@@ -567,7 +567,7 @@ InputDispatcher 处理触摸时使用当前显示的 window snapshot 做 hit-tes
 1. WMS 何时标记并发布新的 input window info；
 2. SurfaceFlinger 在哪次事务提交后生成新的 layer/window snapshot；
 3. InputDispatcher 何时收到 `WindowInfosUpdate`、替换窗口缓存并处理 focus request；
-4. 窗口信息监听器何时报告完成；
+4. window-info listeners 何时 reported；
 5. App input channel 何时收到事件。
 
 “点击没有响应”可能来自旧快照、目标窗口不可触摸、focus request 未完成、App channel backlog 或应用主线程迟到。focus 切换本身不表示事件必然丢失。§3.1 会继续展开 InputDispatcher 的队列与超时证据。

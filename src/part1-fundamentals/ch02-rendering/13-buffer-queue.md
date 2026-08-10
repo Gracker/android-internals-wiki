@@ -414,7 +414,7 @@ present fence 不是某个 App buffer 独享的 fence；release fence 也不等�
 
 1. App `queueBuffer()` 返回；
 2. App 内 BLAST acquire 并 apply buffer transaction；
-3. SF 收到待处理缓冲事务，随后锁存、选择并显示。
+3. SF 收到 pending buffer transaction，随后 latch / select / present。
 
 Android 17 中常见的观测对象包括：
 

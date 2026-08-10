@@ -175,7 +175,7 @@ Android UI 中的矩形、圆角、文字和 Path 最终可能变成几何、cov
 - 过细网格、粒子或阴影几何；
 - skinning、morph、复杂 vertex shader；
 - 可见性裁剪和 LOD 不充分；
-- 顶点缓冲访问与缓存未命中。
+- vertex buffer 访问与 cache miss。
 
 标准 View 页面出现纯 vertex bound 的概率通常低于游戏，但需要用目标设备 counter 或帧分析确认，不能按 UI 元素数量猜测。
 
@@ -212,7 +212,7 @@ App Window buffer 可以作为 GPU color attachment，完成后随 producer fenc
 
 对于线性 RGBA_8888，`width × height × 4` 可以估算紧密排列像素的下界。实际分配还会受步长、对齐、layer count、像素格式、压缩 modifier、metadata、保护属性和 allocator 实现影响。三块 1080p 缓冲也不能直接代表“GPU 总内存”，因为还存在 depth/stencil、纹理、glyph atlas、离屏层、client target 与 driver allocation。
 
-## 着色器编译卡顿与管线创建
+## Shader Compilation Jank 与 pipeline 创建
 
 ### 一次“首次出现效果”的卡顿包含多层工作
 
@@ -220,7 +220,7 @@ App Window buffer 可以作为 GPU color attachment，完成后随 producer fenc
 
 1. 解析或编译 GLSL、SkSL、AGSL；
 2. 生成中间表示，例如 Vulkan SPIR-V；
-3. 链接程序或组合管线状态；
+3. link program 或组合 pipeline state；
 4. 驱动针对具体 GPU 生成机器码；
 5. 创建管线、descriptor layout 或其他关联对象；
 6. 把结果放入进程内或磁盘缓存。
@@ -435,7 +435,7 @@ Android 17 的 `frameworks/native/libs/ui/GraphicBufferAllocator.cpp` / `Graphic
 
 - stride 与对齐；
 - 线性、tiled 或厂商压缩布局；
-- 元数据与平面；
+- metadata 与 plane；
 - cache 属性；
 - protected 或设备专用堆。
 
@@ -577,7 +577,7 @@ AGI Frame Profiler 继续负责单帧检查：对受支持应用查看 Vulkan AP
 - submit 晚：查 UI/Game/RHI/driver CPU；
 - submit 早、producer fence 晚：查 GPU workload、queue、frequency；
 - buffer ready、display 晚：查 SF/HWC/composition；
-- 获取、出队或交换周期等待：查节拍、在途帧和释放操作。
+- acquire/dequeue/swap 周期等待：查 pacing、in-flight 和 release。
 
 ### 5. 用 A/B 区分瓶颈
 
@@ -589,7 +589,7 @@ AGI Frame Profiler 继续负责单帧检查：对受支持应用查看 Vulkan AP
 - texture/target 格式与分辨率；
 - draw-call/state 数量；
 - SurfaceFlinger DEVICE/CLIENT 条件；
-- 在途帧与节拍控制。
+- in-flight frame 与 pacing。
 
 比较 GPU completion、counter、帧 deadline、功耗和画质。平均 FPS 不能代替长帧分布与输入到 present 延迟。
 

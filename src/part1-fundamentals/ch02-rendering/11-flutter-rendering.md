@@ -377,7 +377,7 @@ renderer 由应用携带的 Flutter 引擎决定。Android 15、16 或 17 系统
 
 Impeller 3.44.8 README 的目标包括：
 
-- 着色器编译与反射在引擎构建期完成；
+- shader compilation 与 reflection 在 engine build 期完成；
 - pipeline state object 提前构建；
 - cache 由引擎显式控制；
 - 资源有标签，便于工具分析；
