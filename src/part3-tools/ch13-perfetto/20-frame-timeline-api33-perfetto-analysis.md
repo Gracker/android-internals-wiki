@@ -32,11 +32,11 @@ sources:
 
 FrameTimeline 把调度预测、应用出帧、SurfaceFlinger 合成和显示提交放到同一组帧身份上，适合回答三个问题：哪一帧偏离了预测、偏差发生在应用侧还是显示合成侧、下一步应查看哪条线程或 buffer 路径。
 
-本节的平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`。FrameTimeline trace 数据源从 Android 12 / API 31 起可用；标题中的 API 33 指 `Choreographer.VsyncCallback`、`FrameData` 与 `FrameTimeline` 公共 API 的引入版本。涉及 dma-buf、sync_file 或 dma-fence 时，内核锚点固定为 `android17-6.18-2026-06_r6`。SQL 按 Perfetto v57.2 的内置表验证。
+平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`。FrameTimeline trace 数据源从 Android 12 / API 31 起可用；标题中的 API 33 指 `Choreographer.VsyncCallback`、`FrameData` 与 `FrameTimeline` 公共 API 的引入版本。涉及 dma-buf、sync_file 或 dma-fence 时，内核锚点固定为 `android17-6.18-2026-06_r6`。SQL 按 Perfetto v57.2 的内置表验证。
 
-FrameTimeline 的内部对象与分类流程见 §2.32，buffer 阶段事件见 §13.19，CUJ 聚合见 §13.14。本文集中处理 Expected/Actual 语义、API 33 回调、采集配置和可执行 SQL。
+FrameTimeline 的内部对象与分类流程见 §2.32，buffer 阶段事件见 §13.19，CUJ 聚合见 §13.14。这里集中处理 Expected/Actual 语义、API 33 回调、采集配置和可执行 SQL。
 
-## 先分清两类帧
+## 两类帧
 
 FrameTimeline 同时记录应用的 SurfaceFrame 和 SurfaceFlinger 的 DisplayFrame：
 
@@ -345,7 +345,7 @@ Buffer Stuffing、SurfaceFlinger Stuffing、Non Animating 和三项 display 状�
 
 ## 出图类型改变证据强度
 
-从 `rendering_pipelines` 系列的 Producer、Surface、layer 与 fence 边界出发，FrameTimeline 的证据强度可以这样划分：
+按 Producer、Surface、layer 与 fence 边界，FrameTimeline 的证据强度可以这样划分：
 
 | 出图路径 | FrameTimeline 主索引 | 补充证据 |
 | --- | --- | --- |
@@ -368,9 +368,9 @@ Buffer Stuffing、SurfaceFlinger Stuffing、Non Animating 和三项 display 状�
 | Android 12 / API 31 | FrameTimeline 数据源进入平台 | Expected/Actual track 与两张内置表可用于帧归责 |
 | Android 13 / API 33 | 公共 `VsyncCallback`、`FrameData`、`FrameTimeline` | 应用可在回调内读取候选 deadline、expected present 与 VSYNC id |
 | Android 14～16 / API 34～36 | 公共模型延续，分类和调度实现继续演进 | 固定设备 build、刷新率和 Perfetto 版本后再比较 |
-| Android 17 / API 37 | 本节的平台、源码与 proto 锚点 | 使用动态 work/ready budget、当前 jank bitmask 与 v57.2 表结构 |
+| Android 17 / API 37 | 平台、源码与 proto 锚点 | 使用动态 work/ready budget、当前 jank bitmask 与 v57.2 表结构 |
 
-FrameTimeline trace 的最低平台是 Android 12，API 33 只限定应用代码示例。Android 17 之后的行为不在本文结论范围内。
+FrameTimeline trace 的最低平台是 Android 12，API 33 只限定应用代码示例。结论范围不包含 Android 17 之后的行为。
 
 ## 使用边界
 
@@ -396,6 +396,3 @@ FrameTimeline trace 的最低平台是 Android 12，API 33 只限定应用代码
 - [Perfetto v57.2 FrameTimeline importer](https://github.com/google/perfetto/blob/v57.2/src/trace_processor/importers/proto/frame_timeline_event_parser.cc)
 - [Perfetto v57.2 `android.frames.timeline` 标准库](https://github.com/google/perfetto/blob/v57.2/src/trace_processor/perfetto_sql/stdlib/android/frames/timeline.sql)
 - §13.19 FrameTracer：buffer event、fence 与 frame identity 的边界
-- `Writer/rendering_pipelines/S01_rendering_types_overview.md`、`S02_aosp_standard_type.md`：本文出图分型与 present/release 语义的校验基线
-
-<!-- outline-end -->

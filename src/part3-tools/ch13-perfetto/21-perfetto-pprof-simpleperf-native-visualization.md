@@ -30,49 +30,6 @@ sources:
 
 # 13.21 Perfetto pprof 与 Simpleperf 原生可视化分析
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 pprof 原生可视化（Perfetto v53+）
-- Perfetto UI 可直接导入和可视化 pprof profile 数据，无需先转成第三方火焰图格式
-- pprof 适合聚合 profile 页面；若要与调度、Binder、FrameTimeline 同轴分析，应优先使用同一 trace 内的 `linux.perf` 或确认时钟映射
-- 专用 pprof 分析页面
-
-### 🔹 Simpleperf protobuf 格式导入
-- Perfetto 支持 Simpleperf 的 protobuf 格式直接导入
-- 命名空间与符号解析流程
-- 与 simpleperf report 命令行工具的对比
-
-### 🔹 TrackEvent Callstack 与 Flamegraph 聚合
-- 转换 trace 时可为事件附加 callstack
-- 选择区域后自动聚合为 flamegraph
-- inline functions 可视化区分：识别编译器优化对性能的影响
-
-### 🔹 Custom Sorting（process_sort_index / thread_sort_index）
-- 通过 JSON 字段控制 track 排列顺序
-- 解决社区长期请求的 track 排序问题（issues #378, #555, #764）
-- 对大型 trace 可读性的显著提升
-
-### 🔹 Perfetto Rust SDK（初始版本）
-- contrib/ 目录下第一个社区维护项目
-- crates.io 发布（perfetto-sdk）
-- 由 Rivos 工程师贡献，适用于非 Android 平台
-
-### 🔹 Lock-free Task Runner
-- 非 Android 平台启用的无锁任务运行器
-- 减少锁竞争开销，对高吞吐量数据源有性能提升
-
-## 扩展
-
-### 🔸 pprof + system trace 混合分析工作流
-- 在同一时间轴上关联 CPU profile 与系统事件
-- 典型场景：启动耗时分析中的 CPU 热点 + Binder 调用关联
-
-### 🔸 Perfetto 版本演进路线（v53 → v57）
-- 版本特性matrix
-- Android 17 内置的 Perfetto 版本与 UI 版本的对应关系
-
-<!-- outline-end -->
 
 平台锚点采用 Android 17 / API 37 / `android-17.0.0_r1`。Perfetto 能力分别核对 v53.0 首发状态、Android 17 平台快照和 v57.2 分析端行为。涉及 perf event、采样权限和调用栈采集的内核行为时，内核锚点是 `android17-6.18-2026-06_r6`。这些能力属于 Perfetto 导入器、Trace Processor 和 Web UI 的演进，并不是从某个 Android API 级别开始提供的应用 API。分析端可以使用比设备内置版本更新的 Perfetto UI 或 `trace_processor_shell`，所以还要把“采集端版本”和“打开 trace 的工具版本”分开记录。
 
@@ -116,7 +73,7 @@ Simpleperf protobuf 保留单个样本的时间戳。Android 17 的格式注释�
 
 `linux.perf` 数据源把 perf event 样本写进原生 Perfetto trace。在 Android 15 及以上版本上，它适合“某段主线程为何变慢”“CPU 热点是否和 Binder 等待重叠”这类需要统一时钟的问题。`user` 构建通常只允许 profileable 或 debuggable 应用被采样；`userdebug` / `eng` 构建的限制较少。采样频率会影响设备负载，官方文档建议非 native 场景按每个 CPU 低于 200 Hz 控制，命令示例使用 100 Hz。
 
-## 3. pprof 页面能告诉你什么
+## 3. pprof 页面提供的信息
 
 将 pprof 文件拖入 Perfetto UI 后，UI 会识别 `profile.proto`，进入专用 profile 页面。解析器会读取：
 

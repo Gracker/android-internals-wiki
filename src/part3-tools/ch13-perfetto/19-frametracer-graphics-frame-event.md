@@ -25,9 +25,9 @@ gap_source: "研究素材"
 
 # 13.19 FrameTracer 与 Graphics Frame Event 数据通路
 
-FrameTimeline 已经告诉我们某个 SurfaceFrame 或 DisplayFrame 是否按预测时间完成，FrameTracer 则提供 buffer 从 Producer 持有、提交、可读、latch 到 present 的观测点。两套数据经常出现在同一条 trace 中，却使用不同的身份与时间语义。混用 `frame_number`、FrameTimeline token 和三类 fence，会让一段可执行查询变成错误归因。
+FrameTimeline 可以判断某个 SurfaceFrame 或 DisplayFrame 是否按预测时间完成，FrameTracer 则提供 buffer 从 Producer 持有、提交、可读、latch 到 present 的观测点。两套数据经常出现在同一条 trace 中，却使用不同的身份与时间语义。混用 `frame_number`、FrameTimeline token 和三类 fence，会让一段可执行查询变成错误归因。
 
-本节的平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`。FrameTracer 位于 framework 与 SurfaceFlinger，不依赖内核函数才能解释其事件；继续追查 dma-buf、sync_file 或 dma-fence 时，内核锚点固定为 `android17-6.18-2026-06_r6`。SQL 以 SmartPerfetto v1.3.0 固定的 Perfetto v57.2 `trace_processor_shell` 为查询环境，并与该版本的 importer diff test 对照。
+平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`。FrameTracer 位于 framework 与 SurfaceFlinger，不依赖内核函数才能解释其事件；继续追查 dma-buf、sync_file 或 dma-fence 时，内核锚点固定为 `android17-6.18-2026-06_r6`。SQL 以 SmartPerfetto v1.3.0 固定的 Perfetto v57.2 `trace_processor_shell` 为查询环境，并与该版本的 importer diff test 对照。
 
 ## 两条数据源分别保存什么
 
@@ -128,7 +128,7 @@ Perfetto 的 `GraphicsFrameEventParser` 将一份 proto 事件投影成 raw even
 
 还有一个容易漏掉的 parser 分支：acquire fence 可能在 `QUEUE` packet 被处理前已经 signal。此时 importer 不创建 `GPU_` phase，避免制造反向或错误时长。某一帧缺 `GPU_` slice，不应自动解释为数据损坏。
 
-## 先确认 trace 中是否有这组数据
+## 确认 trace 中是否有这组数据
 
 下面的片段只展示两条 SurfaceFlinger 数据源，需合并到已经定义采集时长与 buffer 的完整配置中。
 
@@ -283,15 +283,15 @@ FrameTracer importer 没有生成独立的 acquire-to-latch phase track。可以
 
 ## 版本边界
 
-| 平台 | 数据能力 | 本节判读影响 |
+| 平台 | 数据能力 | 判读影响 |
 | --- | --- | --- |
 | Android 11 / API 30 | FrameTracer 数据源已经存在 | 缺少 Android 12 的 FrameTimeline 配套；可单独分析 buffer phase |
 | Android 12 / API 31 | FrameTimeline 成为现代 trace 基线 | 可以用 SurfaceFrame/DisplayFrame 选 jank 候选，再按 layer 与时间匹配 FrameTracer |
 | Android 13 / API 33 | `AutoSingleLayer` unsignaled latch 成为默认策略 | latch 与 acquire fence signal 不再保持简单的“必须先 signal 再 latch”假设 |
 | Android 14～16 / API 34～36 | 两条数据源的公共模型延续 | 仍要固定设备、vendor build、刷新率和 Perfetto 版本 |
-| Android 17 / API 37 | 本节当前源码与 proto 锚点；扩展 FrameTimeline jank bitmask | 使用 Android 17 调用名、emit 集合和五个新增 jank 值 |
+| Android 17 / API 37 | 当前源码与 proto 锚点；扩展 FrameTimeline jank bitmask | 使用 Android 17 调用名、emit 集合和五个新增 jank 值 |
 
-文章适用范围从 Android 12 开始，因为联合诊断依赖 FrameTimeline。Android 11 的 FrameTracer 可以作为历史兼容路径保留。Android 10 及更早版本应使用当时可用的 BufferQueue、atrace、SF 与 fence 证据，不能假定存在这条 Perfetto data source。
+联合诊断范围从 Android 12 开始，因为这条路径依赖 FrameTimeline。Android 11 的 FrameTracer 可以作为历史兼容路径保留。Android 10 及更早版本应使用当时可用的 BufferQueue、atrace、SF 与 fence 证据，不能假定存在这条 Perfetto data source。
 
 ## 使用边界
 

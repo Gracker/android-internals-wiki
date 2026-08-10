@@ -75,40 +75,8 @@ last_deepseek_cn_review_at: 2026-06-28
 
 # 13.17 Perfetto SDK 与应用内 Trace 数据源
 
-<!-- outline-start -->
-## 要点
 
-### 🔹 Perfetto SDK 和 AndroidX Tracing 的边界
-说明 `androidx.tracing`、平台 `android.os.Trace` 与 Perfetto SDK 的适用范围，帮助读者判断 Java / Kotlin 标记、Native `track_event` 和 custom data source 的边界。
-
-### 🔹 in-process 后端的最小采集路径
-覆盖 in-process backend 的初始化、`TrackEvent` 注册、采集配置、停止导出和事件写入，强调它只采集本应用事件。
-
-### 🔹 system 后端与系统 Perfetto service 协作
-解释应用作为 producer 与系统 Perfetto daemon 协作的方式，说明 system backend 能合并时间轴，但不能绕过系统级 trace 权限。
-
-### 🔹 自定义 data source 的适用场景
-区分 `track_event` 适合的时间轴问题与 custom data source 适合的结构化状态问题，给出 schema、消费工具和数据量三项检查。
-
-### 🔹 启动早期 trace 与线上触发式采集
-说明 startup tracing、短窗口触发和环形缓冲适合的场景，并把应用内事件与系统级事件的权限边界拆开。
-
-### 🔹 构建、体积和版本兼容边界
-覆盖 Perfetto SDK 的接入形态、C++17、ABI、初始化时机、低版本降级，以及 C SDK / C++ SDK 的选择依据。
-
-### 🔹 隐私和数据治理
-说明 trace 数据的隐私风险，约束 category、event、调试注解、counter、导出流程和系统 trace 的数据边界。
-
-### 🔹 Perfetto SDK、ProfilingManager、APM 自定义 trace 的组合方案
-按开发期、性能专项、灰度线上、系统内测四种环境拆分采集方式、适用数据和产物。
-
-## 扩展
-
-### 🔸 待复核项
-记录 Android 17 上 Perfetto SDK 与 `ProfilingManager` 的 session 关系、C SDK 包体积增量、自定义 data source 的 PerfettoSQL 样例三类后续验证点。
-<!-- outline-end -->
-
-本章以 AOSP `android-17.0.0_r1` 为平台源码锚点。`android17-6.18-2026-06_r6` 只约束 system trace 中的 ftrace、调度和内核事件；Perfetto SDK 的 TrackEvent 编码、共享内存写入和 producer IPC 都在用户态完成。应用使用的 SDK release 与设备内置的 Perfetto 版本也要分开记录，不能用 Android API level 代替 SDK revision。
+平台源码锚点是 AOSP `android-17.0.0_r1`。`android17-6.18-2026-06_r6` 只约束 system trace 中的 ftrace、调度和内核事件；Perfetto SDK 的 TrackEvent 编码、共享内存写入和 producer IPC 都在用户态完成。应用使用的 SDK release 与设备内置的 Perfetto 版本也要分开记录，不能用 Android API level 代替 SDK revision。
 
 Perfetto SDK 负责把应用自定义事件写进 Perfetto trace。它适合 C/C++ 模块、游戏引擎、Native 渲染管线和端侧推理运行时。应用可以独立采集一份只含自身事件的 `.pftrace`，也可以作为 producer 把事件交给系统 Perfetto service，由外部 consumer 与调度、Binder、SurfaceFlinger 等数据统一采集。
 
@@ -223,7 +191,7 @@ adb 或受控实验环境的外部 TraceConfig 要显式请求 `track_event`，�
 
 应用进程必须在 session 期间运行并完成 data source 注册。若配置能抓到 ftrace 却没有 `rendering` slice，应依次检查 producer 是否连接、`track_event` descriptor 是否出现、category 是否匹配、进程是否在采集窗口内写事件。`profileable` / `debuggable` 会影响若干平台 profiler 和 shell profiling 能力，但它们不会把应用提升为 system trace consumer。
 
-`linux.ftrace` 的可用事件由设备内核决定。本文内核锚点是 `android17-6.18-2026-06_r6`；量产设备使用的 vendor/GKI 组合、SELinux 策略和 tracefs 配置仍要实机确认。
+`linux.ftrace` 的可用事件由设备内核决定。内核锚点是 `android17-6.18-2026-06_r6`；量产设备使用的 vendor/GKI 组合、SELinux 策略和 tracefs 配置仍要实机确认。
 
 ## 4. custom data source：schema 与 importer 要成对设计
 
@@ -310,7 +278,7 @@ APK 体积不能用一个固定数字描述。至少要分别测量：
 - 本知识库从 Android 10 开始讨论应用接入，旧设备仍需检查 daemon 是否运行和 socket 是否可达；
 - Android 15 / API 35 增加 `ProfilingManager.requestProfiling()`；
 - Android 16 / API 36 增加 `ProfilingTrigger` 与触发式 profiling；
-- Android 17 / API 37 的本章行为以 `android-17.0.0_r1` 为准。
+- Android 17 / API 37 的行为以 `android-17.0.0_r1` 为准。
 
 低版本或 system backend 不可用时，保留 `android.os.Trace` / `ATrace_*` 标记。它们对 Android 专用代码的覆盖面更广，也能被 Macrobenchmark、Android Studio 和系统 trace 工具采集。
 
