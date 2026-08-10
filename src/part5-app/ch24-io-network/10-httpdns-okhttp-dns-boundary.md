@@ -72,50 +72,18 @@ last_deepseek_cn_review_at: 2026-07-11
 verifier_promoted: "2026-06-25T19:28 Task2B Verifier: both Task6(pass-light-edit) + Task9(auto-fixed) complete, queue clear, promoted to finalized"
 ---
 
-
 # 24.10 HTTPDNS 与 OkHttp Dns 执行边界
-
-<!-- outline-start -->
-## 要点
-
-### 🔹 OkHttp Dns.lookup() 的调用位置
-说明 `Dns.lookup()` 在 `RealRoutePlanner` / `RouteSelector` 中同步参与 route 生成,返回前请求无法进入 connect。
-
-### 🔹 HTTPDNS 同步查询的阻塞风险
-说明在 `lookup()` 内发起 HTTPDNS 请求会把弱网、递归解析和 Dispatcher 挤占带进建连路径。
-
-### 🔹 异步预取与缓存读取模型
-说明 HTTPDNS 网络请求应前置到后台刷新,`lookup()` 只读取缓存并在失败时兜底系统 DNS。
-
-### 🔹 失败 IP 隔离与系统 DNS 兜底
-说明按 hostname + IP + network 做失败隔离,避免单点失败污染整个域名。
-
-### 🔹 网络切换后的 TTL 与缓存刷新
-说明 Wi-Fi、蜂窝和 VPN 切换后如何保留短时兜底并刷新高价值域名。
-
-### 🔹 弱网验证与线上指标设计
-说明用 EventListener、弱网演练和线上指标验证 DNS 优化没有拉高尾延迟。
-
-## 扩展
-
-### 🔸 DoH / HTTPDNS / 系统 DNS 的选型对照表
-对比三种 DNS 方案的优缺点、代价和适用场景，强调系统 DNS 不可替代。
-
-### 🔸 多 IP fast fallback 与连接池复用边界
-OkHttp 5 的 Happy Eyeballs 并发尝试机制，以及连接池复用与 DNS 的边界关系。
-
-<!-- outline-end -->
 
 HTTPDNS 的风险集中在调用位置。OkHttp 要在建连前把主机名转换成一组
 `InetAddress`，`Dns.lookup()` 返回之前，请求还没有进入 TCP 连接阶段。如果在这个
 同步回调中再发起 HTTP 请求，一次普通业务请求便多了一段不可忽略的网络等待。
 
-本文的平台基准是 Android 17 / API 37 / `android-17.0.0_r1`，OkHttp 源码基准是
+平台基准是 Android 17 / API 37 / `android-17.0.0_r1`，OkHttp 源码基准是
 5.4.0 的 `parent-5.4.0` 标签。版本演进部分会提到 OkHttp 4.x，但分析当前实现时
 使用 `RealRoutePlanner`、`RouteSelector` 和 `FastFallbackExchangeFinder`，不再用
 旧版 `StreamAllocation` 调用链解释 5.x。
 
-24.4 讨论网络架构，24.5 讨论 HTTP 与传输协议。本节只回答四个问题：
+24.4 讨论网络架构，24.5 讨论 HTTP 与传输协议。这里聚焦四个问题：
 
 - `Dns.lookup()` 何时执行，哪些请求不会执行它；
 - HTTPDNS 查询、缓存和系统解析各自应处于哪条路径；
