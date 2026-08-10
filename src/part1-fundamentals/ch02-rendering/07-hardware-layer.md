@@ -100,7 +100,7 @@ Hardware Layer 这个名称容易混淆概念。Android 图形栈里至少有三
 | `TextureLayer` / `TextureView` 输入层 | 应用进程，HWUI 消费外部 SurfaceTexture | 输入端有独立 BufferQueue，但最终采样进宿主窗口 | 通常只能看到最终宿主 App Window |
 | SurfaceFlinger Layer | 系统合成层，来自 SurfaceControl | 通常携带独立 buffer/transaction 状态 | 是 |
 
-这里讨论第一种：HWUI 为某个 View/RenderNode 子树创建中间渲染结果，后续将它作为一个整体参与 App Window 绘制。它不会为这个 View 创建新的窗口，也不会给 HWC 增加一个可独立分配 overlay plane 的图层。
+这里讨论第一种：HWUI 为某个 View/RenderNode 子树创建中间渲染结果，后续将它作为一个整体参与 App Window 绘制。它不会为这个 View 创建新的窗口，也不会给 HWC 增加一个可独立分配 overlay plane 的 Layer。
 
 整体关系如下：
 
@@ -114,22 +114,22 @@ flowchart LR
     S --> D["HWC / Display"]
 ```
 
-Hardware Layer 的收益与代价都发生在 `DL → L → W` 这一段。SurfaceFlinger 只处理最终窗口图层，无法从 SurfaceFlinger 图层数量直接判断某个 View 是否使用 Hardware Layer。
+Hardware Layer 的收益与代价都发生在 `DL → L → W` 这一段。SurfaceFlinger 只处理最终窗口 Layer，无法从 SF Layer 数量直接判断某个 View 是否使用 Hardware Layer。
 
 ## 硬件加速与 Hardware Layer
 
-硬件加速描述窗口的渲染管线：View 绘制调用记录进 RenderNode/DisplayList，HWUI 在 RenderThread 上使用图形后端生成窗口缓冲。
+硬件加速描述窗口的渲染管线：View 绘制调用记录进 RenderNode/DisplayList，HWUI 在 RenderThread 上使用图形后端生成窗口 buffer。
 
-Hardware Layer 描述单个 RenderNode 的中间合成策略：先把该节点及其子树绘制到离屏 render target，再把结果作为一个整体画回窗口。后续只改变平移、scale、rotation、alpha 等图层属性时，系统可以复用已经栅格化的内容。
+Hardware Layer 描述单个 RenderNode 的中间合成策略：先把该节点及其子树绘制到离屏 render target，再把结果作为一个整体画回窗口。后续只改变 translation、scale、rotation、alpha 等 layer 属性时，系统可以复用已经栅格化的内容。
 
 两者的边界是：
 
-- 窗口开启硬件加速，View 保持 `LAYER_TYPE_NONE`：现代应用的常规路径；
+- 窗口开启硬件加速，View 保持 `LAYER_TYPE_NONE`：现代 App 的常规路径；
 - 窗口开启硬件加速，View 使用 `LAYER_TYPE_HARDWARE`：显式要求中间 hardware layer；
 - View 使用 `LAYER_TYPE_SOFTWARE`：该 View 走软件 Bitmap cache，再进入宿主绘制；
 - 窗口没有硬件加速：`LAYER_TYPE_HARDWARE` 会表现得与 software layer 相近，无法获得 HWUI RenderThread hardware layer。
 
-`LAYER_TYPE_NONE` 只表示没有显式 View layer。它不会强制每帧测量、layout 或重录 DisplayList；这些工作是否发生仍由布局请求、invalidate、RenderNode 脏状态和当前帧属性决定。
+`LAYER_TYPE_NONE` 只表示没有显式 View layer。它不会强制每帧 measure、layout 或重录 DisplayList；这些工作是否发生仍由布局请求、invalidate、RenderNode dirty state 和当前帧属性决定。
 
 Android 17 设备端的 `CanvasContext::create()` 根据 `Properties::getRenderPipelineType()` 选择 SkiaGL 或 SkiaVulkan；默认值由 `skiagl`/`skiavk` 配置决定。两条路径都继承 `SkiaGpuPipeline`，其 `createOrUpdateLayer()` 使用 `SkSurfaces::RenderTarget()` 创建 budgeted `SkSurface`。
 
@@ -139,7 +139,7 @@ Android 17 设备端的 `CanvasContext::create()` 根据 `Properties::getRenderP
 
 ### 类型切换会触发一次失效
 
-`View.setLayerType()` 检查类型范围，把类型写入 RenderNode，清理不再需要的软件 drawing cache，更新图层 Paint，并使父缓存与当前 View 失效。下面是 Android 17 的结构摘录：
+`View.setLayerType()` 检查类型范围，把类型写入 RenderNode，清理不再需要的软件 drawing cache，更新 layer Paint，并使父缓存与当前 View 失效。下面是 Android 17 的结构摘录：
 
 ```java
 // frameworks/base/core/java/android/view/View.java
@@ -255,7 +255,7 @@ LayerType effectiveLayerType() const {
 
 ### `hasOverlappingRendering()` 为什么重要
 
-alpha 直接乘到每条绘制操作上，与“先把整棵子树画到离屏层，再对整体乘 alpha”在重叠区域会产生不同结果。View 声明没有重叠内容时，HWUI 有机会直接调制 alpha，避免离屏缓冲。
+alpha 直接乘到每条绘制操作上，与“先把整棵子树画到离屏层，再对整体乘 alpha”在重叠区域会产生不同结果。View 声明没有重叠内容时，HWUI 有机会直接调制 alpha，避免离屏 buffer。
 
 自定义 View 只有在语义可靠时才应让 `hasOverlappingRendering()` 返回 `false`。错误声明可能改变视觉结果；它不是纯粹的性能标记。
 
@@ -304,7 +304,7 @@ CanvasContext::draw()
 |:---|:---|:---|:---|
 | translation / rotation / scale | 通常不需要 | 通常不需要 | 可以 |
 | 整体 alpha、合成 Paint | 通常不需要 | 取决于是否只在合成阶段应用 | 常可复用 |
-| 子 View 文本、图片、Path、draw state | 需要或使节点变脏 | 需要 | 更新后才能复用 |
+| 子 View 文本、图片、Path、draw state | 需要或使节点 dirty | 需要 | 更新后才能复用 |
 | View 尺寸变化 | 可能需要 | 需要 | 可能还要重分配 |
 | RenderEffect/ImageFilter 参数或输入变化 | 取决于属性和内容 | 通常需要重新执行受影响效果 | 需测量 |
 
@@ -327,24 +327,24 @@ H = ceil(h / 64) × 64
 - row/tile 对齐和 allocator 粒度；
 - 像素格式、色彩空间与 HDR 精度；
 - backend/driver 的 render target 与纹理元数据；
-- blur、shadow、MSAA 或效果处理使用的临时表面；
+- blur、shadow、MSAA 或效果处理使用的临时 surface；
 - 缓存、staging 与延迟释放。
 
-64 像素是 Android 17 HWUI 图层表面的尺寸取整，不是 Linux 页面大小。CPU 进程使用 16KB 页面，也不能推出 GPU 纹理按 16KB 固定取整。GraphicBuffer/gralloc、GPU 驱动和 HWUI/Skia 分配器具有各自策略；需要使用目标设备的 memtrack、GPU memory counter、厂商工具或可复现实验测量。
+64 像素是 Android 17 HWUI layer surface 的尺寸取整，不是 Linux 页面大小。CPU 进程使用 16KB 页面，也不能推出 GPU texture 按 16KB 固定取整。GraphicBuffer/gralloc、GPU 驱动和 HWUI/Skia allocator 具有各自策略；需要使用目标设备的 memtrack、GPU memory counter、厂商工具或可复现实验测量。
 
 ### 2. 首次建立
 
-首次建立要创建或取得 layer surface，并把整个有效脏区域栅格化。对只使用一次的内容，这一步还增加了一轮离屏绘制和一次回写窗口的合成。
+首次建立要创建或取得 layer surface，并把整个有效 dirty 区域栅格化。对只使用一次的内容，这一步还增加了一轮离屏 pass 和一次回写窗口的合成。
 
 建层是否“回本”取决于：
 
-`多帧直接重放子树的成本 - 多帧复用图层的成本 > 首次建立 + 额外内存/合成成本`
+`多帧直接重放子树的成本 - 多帧复用 layer 的成本 > 首次建立 + 额外内存/合成成本`
 
 这个不等式没有跨设备固定阈值。刷新率、分辨率、GPU、Skia backend、内容复杂度和复用帧数都会改变结果。
 
 ### 3. 内容重绘
 
-内容变脏后，HWUI 可只重绘图层的受损区域，但复杂裁剪、effect、子树损伤扩散或整层清除会扩大工作范围。内容每帧变化时，Hardware Layer 仍可能每帧执行离屏绘制，再额外合成回窗口，成本可能高于常规路径。
+内容 dirty 后，HWUI 可只重绘 layer 的受损区域，但复杂裁剪、effect、子树 damage 扩散或整层清除会扩大工作范围。内容每帧变化时，Hardware Layer 仍可能每帧执行离屏绘制，再额外合成回窗口，成本可能高于常规路径。
 
 ### 4. 采样质量与裁剪
 
@@ -354,25 +354,25 @@ Hardware Layer 是已经栅格化的图像。大幅放大可能暴露采样模�
 
 离屏绘制会写 layer surface，最终窗口绘制又要读取它。复杂子树复用可以节省重复光栅化，但大面积图层会增加 render target 写入、纹理采样和内存带宽。Tile-based GPU 是否把部分工作留在片上、何时落到外部内存，取决于后端与驱动，AOSP View API 无法给出统一结论。
 
-### Kernel 与驱动边界
+### Kernel 与 driver 边界
 
-kernel 侧统一以 `android17-6.18-2026-06_r6` 为版本锚点。View Hardware Layer 是 HWUI/Skia 内部 render target，不保证每个图层都对应一个可在 `drivers/dma-buf/dma-buf.c` 中单独识别的导出 dma-buf。最终应用窗口 GraphicBuffer 通常跨进程共享，内部 layer texture 则可能只存在于 GPU 驱动和图形 API 的资源空间。
+kernel 侧统一以 `android17-6.18-2026-06_r6` 为版本锚点。View Hardware Layer 是 HWUI/Skia 内部 render target，不保证每个 layer 都对应一个可在 `drivers/dma-buf/dma-buf.c` 中单独识别的导出 dma-buf。最终 App Window GraphicBuffer 通常跨进程共享，内部 layer texture 则可能只存在于 GPU 驱动和图形 API 的资源空间。
 
-因此，进程 dma-buf 总量、`dumpsys SurfaceFlinger` Layer 数和 View Hardware Layer 数之间没有一一对应关系。分析内部纹理分配要依赖 GPU/driver 工具；分析最终窗口缓冲才进入 gralloc、dma-buf、BufferQueue 与 SurfaceFlinger 的共享路径。
+因此，进程 dma-buf 总量、`dumpsys SurfaceFlinger` Layer 数和 View Hardware Layer 数之间没有一一对应关系。分析内部纹理分配要依赖 GPU/driver 工具；分析最终窗口 buffer 才进入 gralloc、dma-buf、BufferQueue 与 SurfaceFlinger 的共享路径。
 
 ## 什么时候值得显式使用
 
 ### 候选场景
 
-- 大而复杂的子树内容保持稳定，却要连续多帧做平移、scale、rotation；
+- 大而复杂的子树内容保持稳定，却要连续多帧做 translation、scale、rotation；
 - 整棵子树做 alpha 动画，重叠内容要求整体离屏合成；
-- 需要用图层 Paint 对整棵子树施加 blend mode 或 ColorFilter；
+- 需要用 layer Paint 对整棵子树施加 blend mode 或 ColorFilter；
 - Trace 已显示常规路径反复栅格化同一稳定内容，预建后能把成本移出关键动画帧；
 - 某些 RenderEffect/隔离语义要求中间结果，并已确认内存与 GPU 预算可接受。
 
 ### 高风险场景
 
-- 文本、图片、列表项或自定义绘制内容每帧变化；
+- 文本、图片、列表 item 或自定义绘制内容每帧变化；
 - layer 接近全屏或数量很多，内存和带宽压力明显；
 - 子树绘制本来很便宜，复用帧数又少；
 - View 尺寸在动画中持续变化；
@@ -380,7 +380,7 @@ kernel 侧统一以 `android17-6.18-2026-06_r6` 为版本锚点。View Hardware 
 - 依赖越界绘制，clip-to-bounds 会改变结果；
 - 现代 HWUI 已自动升层，手动设置只增加生命周期管理。
 
-建议用 A/B 跟踪做决定：保持设备、刷新率、页面数据、动画阶段和热状态一致，分别比较 layer build/update、RenderThread、GPU、FrameTimeline 与内存。
+建议用 A/B Trace 做决定：保持设备、刷新率、页面数据、动画阶段和热状态一致，分别比较 layer build/update、RenderThread、GPU、FrameTimeline 与内存。
 
 ## 动画期间怎样管理生命周期
 
@@ -399,13 +399,13 @@ view.animate()
         .start();
 ```
 
-`withLayer()` 只对下一次动画有效。调用它之后又独立修改 View layer type，会与动画结束时的恢复动作产生冲突。内容在动画期间持续变脏时，它也无法创造缓存收益。
+`withLayer()` 只对下一次动画有效。调用它之后又独立修改 View layer type，会与动画结束时的恢复动作产生冲突。内容在动画期间持续 dirty 时，它也无法创造缓存收益。
 
 ### 其他 Animator 要覆盖取消路径
 
-使用 `ObjectAnimator` 或自定义动画时，如实测证明需要图层，应在开始前设置，在结束与 cancel 都恢复原类型。还要处理 View detach、动画被替换和多个动画重叠，避免一个 listener 提前释放另一个动画仍在使用的图层。
+使用 `ObjectAnimator` 或自定义动画时，如实测证明需要 layer，应在 start 前设置，在 end 与 cancel 都恢复原类型。还要处理 View detach、动画被替换和多个动画重叠，避免一个 listener 提前释放另一个动画仍在使用的 layer。
 
-长期把整个页面或 RecyclerView 列表项固定为 HARDWARE 通常缺少收益证据。动态场景更适合把稳定背景与频繁变化内容拆成不同节点，再单独评估稳定部分。
+长期把整个页面或 RecyclerView item 固定为 HARDWARE 通常缺少收益证据。动态场景更适合把稳定背景与频繁变化内容拆成不同节点，再单独评估稳定部分。
 
 ## Perfetto 中怎样找 Hardware Layer 成本
 
@@ -417,18 +417,18 @@ Android 17 可关注这些 HWUI 证据：
 - RenderThread：`buildLayer`、`draw layers`、`drawLayer [name]`、目标帧 `DrawFrame`；
 - GPU：离屏 pass、GPU duration、texture/render-target allocation（设备支持时）；
 - FrameTimeline：App SurfaceFrame expected/actual SurfaceFrame 的预期时间、实际时间与 jank type；
-- 内存：memtrack、GPU 内存计数器或厂商图形工具。
+- 内存：memtrack/GPU memory counter 或厂商图形工具。
 
-slice 名会受 build、atrace category 和 Skia 后端影响。看到 `buildLayer` 一次，只能说明发生过预建或图层更新；连续出现也可能来自预期的内容变化。必须对齐 View/RenderNode 名称、dirty 来源和动画阶段。
+slice 名会受 build、atrace category 和 Skia backend 影响。看到 `buildLayer` 一次，只能说明发生过预建或 layer 更新；连续出现也可能来自预期的内容变化。必须对齐 View/RenderNode 名称、dirty 来源和动画阶段。
 
 ### 四种典型组合
 
 | Trace 现象 | 解释方向 | 下一步 |
 |:---|:---|:---|
-| 动画开始前一次 `buildLayer`，后续内容稳定 | 预建可能命中 | 比较后续 GPU/RT 与无图层版本 |
-| 每帧都有 `drawLayer [name]`，同时内容失效 | layer 内容持续重绘 | 找出 dirty 来源，评估拆分稳定与动态节点 |
+| 动画开始前一次 `buildLayer`，后续内容稳定 | 预建可能命中 | 比较后续 GPU/RT 与无 layer 版本 |
+| 每帧都有 `drawLayer [name]`，同时内容 invalidate | layer 内容持续重绘 | 找出 dirty 来源，评估拆分稳定与动态节点 |
 | layer build/update 很短，但 GPU/带宽上升 | 离屏面积或额外采样成本 | 比较 GPU counter、分辨率和 layer bounds |
-| 去掉手动图层后视觉不变且帧时间更低 | HWUI 自动路径已足够 | 保持 `LAYER_TYPE_NONE` |
+| 去掉手动 layer 后视觉不变且帧时间更低 | HWUI 自动路径已足够 | 保持 `LAYER_TYPE_NONE` |
 
 ### “显示硬件层更新”只用于辅助定位
 
@@ -436,11 +436,11 @@ slice 名会受 build、atrace category 和 Skia 后端影响。看到 `buildLay
 
 ## RenderEffect 与 Hardware Layer
 
-`View.setRenderEffect()` 把效果写入 RenderNode。Android 17 的自动升层条件包含非空 ImageFilter，因此这类效果通常需要中间合成结果。
+`View.setRenderEffect()` 把 effect 写入 RenderNode。Android 17 的自动升层条件包含非空 ImageFilter，因此这类效果通常需要中间合成结果。
 
 RenderEffect 用于产生模糊、color filter 或其他图像效果；显式 Hardware Layer 用于控制中间结果复用与图层 Paint。二者可能在同一 RenderNode 汇合，却不保证“叠加两个 API 就一定缓存一次”。effect 输入或参数变化时仍需执行相应绘制与滤镜工作。
 
-分析 RenderEffect 时，除 layer update 外还要检查效果范围、blur 半径、HDR/颜色空间、GPU 绘制轮次和 damage。全屏模糊即使内容稳定，也可能带来很高的中间表面与采样成本。
+分析 RenderEffect 时，除 layer update 外还要检查 effect 范围、blur 半径、HDR/颜色空间、GPU pass 和 damage。全屏模糊即使内容稳定，也可能带来很高的中间 surface 与采样成本。
 
 ## Compose `graphicsLayer`：与平台版本分开看
 
@@ -448,8 +448,8 @@ Jetpack Compose 属于 AndroidX，`graphicsLayer` 行为由应用依赖版本决
 
 Compose UI 1.11.4 的核心语义是：
 
-- `Modifier.graphicsLayer` 先提供绘制指令隔离与整体变换；
-- draw layer 不保证分配离屏缓冲；
+- `Modifier.graphicsLayer` 先提供绘制指令隔离与整体 transform；
+- draw layer 不保证分配离屏 buffer；
 - layer 被 rasterize 时，内容才会进入 offscreen buffer；
 - 内容绘制指令不变时，渲染管线可以重新发出已有指令，而不必重跑应用绘制代码。
 
@@ -458,7 +458,7 @@ Compose UI 1.11.4 的核心语义是：
 | 策略 | 官方语义 | 风险 |
 |:---|:---|:---|
 | `Auto` | 默认；alpha < 1 或设置 RenderEffect 等条件会使用 offscreen | 由参数决定，不能只看 modifier 名称 |
-| `Offscreen` | 总是先渲染到离屏缓冲，再合成到目标 | 增加内存、pass 和 bounds clipping |
+| `Offscreen` | 总是先渲染到离屏 buffer，再合成到目标 | 增加内存、pass 和 bounds clipping |
 | `ModulateAlpha` | 把 alpha 调制到每条绘制指令；无 RenderEffect 时可避免 alpha 离屏 | 重叠内容可能得到不同视觉结果 |
 
 除 `CompositingStrategy.Offscreen` 外，1.11.4 的 `GraphicsLayerScope` 还规定：非 `SrcOver` 的 `blendMode` 和非空 `colorFilter` 都会强制离屏，语义等价于 Offscreen。`Auto` 仍可能离屏，会根据 alpha、RenderEffect 和这些合成属性选择中间缓冲。
@@ -475,16 +475,16 @@ Box(
 )
 ```
 
-Offscreen 会把绘制限制在 layer bounds 内。只有 rotation/translation 变化且内容不变时，复用概率较高；state 变化导致内容重新绘制时，离屏结果也要更新。Compose 优化应同时查看重组、measure/layout、draw layer、宿主 RenderThread 与 GPU，不能把所有成本归到 `graphicsLayer`。
+Offscreen 会把绘制限制在 layer bounds 内。只有 rotation/translation 变化且内容不变时，复用概率较高；state 变化导致内容重新绘制时，离屏结果也要更新。Compose 优化应同时查看 recomposition、measure/layout、draw layer、宿主 RenderThread 与 GPU，不能把所有成本归到 `graphicsLayer`。
 
 ## 与 TextureView、SurfaceFlinger Layer 的边界
 
-`TextureView` 的 `TextureLayer` 用来消费外部 SurfaceTexture buffer。Android 17 的 `DeferredLayerUpdater` 按槽位包装或复用 `SkImage`，把外部内容采样进宿主 App Window。这个对象与 View Hardware Layer 都在 HWUI 内部，但数据来源和生命周期不同：
+`TextureView` 的 `TextureLayer` 用来消费外部 SurfaceTexture buffer。Android 17 的 `DeferredLayerUpdater` 按 slot 包装或复用 `SkImage`，把外部内容采样进宿主 App Window。这个对象与 View Hardware Layer 都在 HWUI 内部，但数据来源和生命周期不同：
 
 - Hardware Layer 的内容来自 View/RenderNode 子树重放；
 - TextureLayer 的内容来自外部 Producer 的 BufferQueue；
-- 两者最终都进入宿主窗口缓冲；
-- HWC 通常只能把宿主 App Window 当成一个 SurfaceFlinger 图层处理。
+- 两者最终都进入宿主窗口 buffer；
+- HWC 通常只能把宿主 App Window 当成一个 SurfaceFlinger Layer 处理。
 
 `TextureView` 使用“layer”不代表它获得独立 HWC overlay，也不能用 View 的 `setLayerType()` 解决外部 Producer queue、SurfaceTexture acquire 或 fence 问题。
 
@@ -504,7 +504,7 @@ Compose 的 `graphicsLayer`、`CompositingStrategy` 与 `rememberGraphicsLayer()
 
 ### “窗口开启硬件加速，每个 View 就有 Hardware Layer”
 
-默认 View 使用 `LAYER_TYPE_NONE`。HWUI 只在显式要求或 `promotedToLayer()` 条件满足时创建中间图层。
+默认 View 使用 `LAYER_TYPE_NONE`。HWUI 只在显式要求或 `promotedToLayer()` 条件满足时创建中间 layer。
 
 ### “用了 Hardware Layer 就能跳过 measure/layout”
 
@@ -516,11 +516,11 @@ Layer 缓存的是绘制结果。measure/layout 是否执行由布局请求和�
 
 ### “Hardware Layer 一定能让属性动画更快”
 
-简单内容、复用帧少、内容持续变化或图层面积过大时，首次建立和额外 pass 可能超过节省的工作。现代 HWUI 还会自动升层。
+简单内容、复用帧少、内容持续变化或 layer 面积过大时，首次建立和额外 pass 可能超过节省的工作。现代 HWUI 还会自动升层。
 
 ### “16KB 页设备的 layer 内存可以直接按 16KB 取整”
 
-CPU 页面大小无法决定 GPU/gralloc 分配器的全部粒度。内存结论要来自目标设备的实际统计。
+CPU 页面大小无法决定 GPU/gralloc allocator 的全部粒度。内存结论要来自目标设备的实际统计。
 
 ### “View Hardware Layer 会在 SurfaceFlinger 中出现独立 Layer”
 
@@ -530,16 +530,16 @@ CPU 页面大小无法决定 GPU/gralloc 分配器的全部粒度。内存结论
 
 | 需要确认的问题 | 源码入口 |
 |:---|:---|
-| View 图层类型切换、Paint 与失效 | `core/java/android/view/View.java`：`setLayerType()` |
+| View layer type 切换、Paint 与失效 | `core/java/android/view/View.java`：`setLayerType()` |
 | SOFTWARE/HARDWARE 预建 | `View.java`：`buildLayer()` |
-| 动画临时图层与恢复 | `core/java/android/view/ViewPropertyAnimator.java`：`withLayer()` |
+| 动画临时 layer 与恢复 | `core/java/android/view/ViewPropertyAnimator.java`：`withLayer()` |
 | RenderNode 显式 compositing API | `graphics/java/android/graphics/RenderNode.java` |
 | 自动升层与尺寸限制 | `libs/hwui/RenderProperties.h`：`promotedToLayer()`、`fitsOnLayer()` |
 | layer surface 保留、销毁与 damage | `libs/hwui/RenderNode.cpp`：`prepareLayer()`、`pushLayerUpdate()` |
 | dirty rect 合并 | `libs/hwui/LayerUpdateQueue.cpp` |
 | 显式预建与 prefetched layer | `libs/hwui/renderthread/CanvasContext.cpp`：`buildLayer()`、`freePrefetchedLayers()` |
-| Skia 离屏图层重绘 | `libs/hwui/pipeline/skia/SkiaPipeline.cpp`：`renderLayers()`、`renderLayerImpl()` |
-| GPU 图层表面的 64 像素尺寸取整与分配 | `libs/hwui/pipeline/skia/SkiaGpuPipeline.cpp`：`createOrUpdateLayer()` |
+| Skia 离屏 layer 重绘 | `libs/hwui/pipeline/skia/SkiaPipeline.cpp`：`renderLayers()`、`renderLayerImpl()` |
+| GPU layer surface 的 64 像素尺寸取整与分配 | `libs/hwui/pipeline/skia/SkiaGpuPipeline.cpp`：`createOrUpdateLayer()` |
 | 设备端 SkiaGL/SkiaVulkan 选择 | `libs/hwui/Properties.cpp`、`renderthread/CanvasContext.cpp` |
 | TextureView 输入与 HWUI 采样 | `core/java/android/view/TextureView.java`、`graphics/java/android/graphics/TextureLayer.java`、`libs/hwui/DeferredLayerUpdater.cpp` |
 
@@ -550,13 +550,13 @@ Hardware Layer 是 HWUI 内部的 RenderNode 中间渲染结果。它用一次�
 决策时依次回答：
 
 1. View 内容在动画期间是否稳定；
-2. 变化的是图层属性，还是子树绘制内容或尺寸；
+2. 变化的是 layer 属性，还是子树绘制内容或尺寸；
 3. Android 17 的自动升层是否已经覆盖该场景；
-4. 首次构建、后续更新、GPU 与内存各花多少；
+4. 首次 build、后续 update、GPU 与内存各花多少；
 5. 复用帧数是否足以覆盖建层成本；
 6. clip、alpha overlap、采样质量是否保持正确。
 
-没有跟踪证据时保持 `LAYER_TYPE_NONE`；需要临时图层的 ViewPropertyAnimator 优先使用 `withLayer()`；显式预建与长期缓存都要以目标设备 A/B 数据为准。
+没有 Trace 证据时保持 `LAYER_TYPE_NONE`；需要临时 layer 的 ViewPropertyAnimator 优先使用 `withLayer()`；显式预建与长期缓存都要以目标设备 A/B 数据为准。
 
 ## 参考资料
 
