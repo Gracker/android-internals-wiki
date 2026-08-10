@@ -368,7 +368,7 @@ adb shell settings delete global angle_gl_driver_selection_values
 
 - 团队能维护 validation、GPU crash dump、设备兼容名单和降级路径；
 - 引擎能管理多帧并行的资源生命周期，不依赖频繁 `vkDeviceWaitIdle()`；
-- 命令录制、描述符、管线缓存和分配器有清晰所有权；
+- command recording、descriptor、pipeline cache 和 allocator 有清晰所有权；
 - 对表面旋转、生命周期、swapchain 重建、颜色空间和 protected content 有测试；
 - 有足够目标设备验证厂商 ICD，而不只在模拟器或单台旗舰机测试。
 

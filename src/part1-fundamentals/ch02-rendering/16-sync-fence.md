@@ -186,7 +186,7 @@ Android 8.1 的 `libsync` 已同时处理旧版与新版 ioctl。读历史代码
 
 这里有两个常见说法：
 
-- 从生产者看：GPU 完成栅栏、渲染完成栅栏；
+- 从 producer 看：GPU completion fence、render-done fence；
 - 从 consumer 看：acquire fence，读取缓冲前要遵守的依赖。
 
 两种说法可以指向同一个 fd。判断语义时要注明观察方。
@@ -218,7 +218,7 @@ sequenceDiagram
 
     RT->>BBQ: dequeueBuffer()
     BBQ-->>RT: old buffer + dequeue/release fence
-    RT->>GPU: 导入并等待旧缓冲释放依赖，随后渲染
+    RT->>GPU: import/wait old-buffer release dependency, then render
     RT->>BBQ: queueBuffer(new buffer, producer completion fence)
     BBQ->>BBQ: acquire BufferItem
     BBQ->>SF: Transaction.setBuffer(buffer, acquire fence)
@@ -246,7 +246,7 @@ Android 17 还为 BLAST 建立了 `BufferReleaseChannel`。SurfaceFlinger 可把
 SurfaceFlinger 交给 HWC 的 layer buffer 和 client target 都带 acquire fence。HWC 在显示后提供：
 
 - 每层 release fence：该层上一张缓冲何时不再被 HWC 使用；
-- 显示栅栏：本轮显示帧的完成条件。
+- display present fence：本轮 display frame 的 present 完成条件。
 
 Android 17 `HWComposer.cpp` 有两条 present 路径：
 
@@ -345,7 +345,7 @@ data_sources {
 ### 10.2 四步归因
 
 1. 锁定 Surface ID、buffer ID、slot 和帧号。
-2. 标出入队、事务、锁存、验证/显示、释放回调与下一次出队。
+2. 标出 queue、transaction、latch、validate / present、release callback 与下一次 dequeue。
 3. 找出长等待对应的驱动、时间线、上下文、序列号和信号时刻。
 4. 回到信号方之前的 CPU 调度、GPU queue、HWC、display 或错误事件。
 

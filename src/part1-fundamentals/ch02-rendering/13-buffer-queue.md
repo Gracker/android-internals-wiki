@@ -357,7 +357,7 @@ SurfaceFlinger
   接收待处理的缓冲事务
   评估就绪状态并为显示帧选择缓冲
   compose / present
-  向 BLAST 返回各缓冲的释放信息
+  send per-buffer release information back to BLAST
 ```
 
 `queueBuffer()` 的 frame-available callback 先到应用内 BLAST；BLAST acquire `BufferItem` 后，才调用 `Transaction::setBuffer()` 把 buffer update 发送给 SF。本地 Consumer 直接通知 SF acquire buffer”。
@@ -437,7 +437,7 @@ BLAST 在 `acquireNextBufferLocked()` 中按帧号查找待处理的 pending Fra
 
 1. 返回码是成功、`INVALID_OPERATION`、`WOULD_BLOCK` 还是 `TIMED_OUT`；
 2. 当前 Surface 是应用窗口 BLAST、SurfaceView、SurfaceTexture、codec 还是 Vulkan swapchain；
-3. 最大出队/获取数、异步模式和已分配缓冲数；
+3. max dequeued / acquired、async mode 和已分配 buffer 数；
 4. `QueuedBuffer` 与 `BufferTX` 是否持续堆高；
 5. SF 是否迟迟未选用或释放旧缓冲；
 6. release fence 是否晚到，返回槽位后又在哪里等待栅栏；
@@ -451,7 +451,7 @@ BLAST 在 `acquireNextBufferLocked()` 中按帧号查找待处理的 pending Fra
 
 1. BLAST 是否及时 acquire；
 2. SF 的 `BufferTX` 何时增加；
-3. 事务是否受同步组、屏障、期望显示时间或获取栅栏影响；
+3. transaction 是否受 sync group、barrier、desired present 或 acquire fence 影响；
 4. 本轮 display frame 采用新缓冲还是沿用旧内容；
 5. HWC 策略是否发生 DEVICE/CLIENT 切换；
 6. present fence 与 FrameTimeline 实际显示时间位于哪里。
