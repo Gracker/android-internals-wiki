@@ -124,7 +124,7 @@ review_finalize_notes: "2026-08-07 Hermes finalize-apply: 复核 deep-review 结
 3. AOT 产物为什么不存在、失效，或者没有覆盖这条路径？
 4. 为了得到更多机器码，安装时间、存储和后台编译成本增加了多少？
 
-诊断时，先看 `pm art dump` 和编译过滤器，再确认 Profile 是否参与 AOT，然后用 Perfetto 或 Macrobenchmark 量化解释执行、JIT 与 dex2oat 成本。仅凭 ODEX 文件存在、单条 JIT 切片或 Profile 文件打包成功，都不足以证明启动性能已经优化。
+诊断时，先看 `pm art dump` 和 compiler filter，再确认 Profile 是否参与 AOT，然后用 Perfetto 或 Macrobenchmark 量化解释执行、JIT 与 dex2oat 成本。仅凭 ODEX 文件存在、单条 JIT slice 或 Profile 文件打包成功，都不足以证明启动性能已经优化。
 
 ## 从 DEX 到执行代码
 
@@ -270,7 +270,7 @@ static size_t GetInitialCapacity() {
 
 这表示源码默认的初始容量和上限，不表示每个应用启动就占用 64 MB：
 
-- 初始容量在 16 KB 页大小下至少是两个页面；
+- 初始容量在 16 KB page size 下至少是两个页面；
 - `dalvik.vm.jitinitialsize` 和 `dalvik.vm.jitmaxsize` 可以覆盖默认值；
 - capacity、虚拟地址空间和实际 RSS/PSS 不是同一个指标；
 - 进程中的真实机器码、stack map 与 profiling data 随 workload 增长。
@@ -445,4 +445,4 @@ Cloud Profile 是聚合后的编译提示，设备用它指导本地 dex2oat。�
 
 是否失效取决于 boot class path、ART 版本、产物校验和依赖。应观察具体 dexopt reason 和 artifact 状态，不从“发生过更新”直接推导全量重编译。
 
-ART 性能优化需要可重复验证：确认当前编译过滤器与 Profile，测出解释/JIT/AOT 的实际成本，再改 Profile 或代码，并用相同发布构建的包和相同设备复测。只看版本号、文件扩展名或一条 JIT 切片，都不足以解释启动性能。
+ART 性能优化需要可重复验证：确认当前编译过滤器与 Profile，测出解释/JIT/AOT 的实际成本，再改 Profile 或代码，并用相同发布构建的包和相同设备复测。只看版本号、文件扩展名或一条 JIT slice，都不足以解释启动性能。
