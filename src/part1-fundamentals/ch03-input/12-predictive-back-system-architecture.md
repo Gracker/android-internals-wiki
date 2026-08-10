@@ -34,7 +34,7 @@ drafted_by: "openclaw-task2a"
 
 # Predictive Back 系统架构与动画管线性能
 
-预测性返回（Predictive Back）把返回操作分成“手势预览”和“提交导航”两个阶段。手指移动时，系统或应用只更新可撤销的视觉状态；手势提交后，返回回调才执行 `finish()`、pop back stack、隐藏 IME 等动作。
+预测性返回（Predictive Back）把返回操作分成“手势预览”和“提交导航”两个阶段。手指移动时，系统或应用只更新可撤销的视觉状态；手势提交后，返回 callback 才执行 `finish()`、pop back stack、隐藏 IME 等动作。
 
 这个模型让系统可以提前知道返回目的地，但也引入了三套容易混淆的路径：
 
@@ -57,7 +57,7 @@ drafted_by: "openclaw-task2a"
 | `onBackCancelled()` | 取消 | 把视觉状态恢复到起点 |
 | `onBackInvoked()` | 已提交 | 执行导航、关闭容器或提交业务状态 |
 
-在 `onBackProgressed()` 中结束 Activity、pop Fragment 或写数据库，会破坏取消语义。系统动画同样遵守这一边界：手势阶段只变换动画控制层（leash）；提交后才调用真实回调，并把预览接入正式转场。
+在 `onBackProgressed()` 中 finish Activity、pop Fragment 或写数据库，会破坏取消语义。系统动画同样遵守这一边界：手势阶段只变换动画控制层（leash）；提交后才调用真实 callback，并把预览接入正式 Transition。
 
 ### 1.2 返回目的地与动画执行者
 
@@ -99,7 +99,7 @@ flowchart TD
 - `BackNavigationController` 位于 system_server，负责确定 focused window、top callback、返回目标和可动画性，并准备 WindowContainer/Transition 侧资源；
 - `BackAnimationController` 位于 WM Shell，负责手势状态、pointer pilfer、remote animation readiness、progress 分发以及提交后的收尾。
 
-Android 17 的 WMS 中没有 `TaskAnimationCoordinator`。这个类不能用于解释跨 Activity、cross-task 或快照路径。
+Android 17 的 WMS 中没有 `TaskAnimationCoordinator`。这个类不能用于解释 cross-activity、cross-task 或 snapshot 路径。
 
 ## 3. 输入事件怎样到达返回动画
 
@@ -114,13 +114,13 @@ Android 17 的 WMS 中没有 `TaskAnimationCoordinator`。这个类不能用于�
 3. 手势越过阈值后，Shell 按配置调用 `pilferPointers()`，从原接收者接管后续 pointer；
 4. 松手时根据 `triggerBack` 进入提交或取消。
 
-`EdgeBackGestureHandler.mBackAnimation` 是否为空反映 SystemUI 与 WM Shell 的功能连接状态，不等同于当前应用是否在清单中 opt in。应用是否启用新返回模型，主要体现在窗口有没有注册可供 WMS 使用的回调。
+`EdgeBackGestureHandler.mBackAnimation` 是否为空反映 SystemUI 与 WM Shell 的功能连接状态，不等同于当前应用是否在 manifest 中 opt in。应用是否启用新返回模型，主要体现在窗口有没有注册可供 WMS 使用的 callback。
 
 ### 3.2 仍然存在 KEYCODE_BACK 回退
 
 Android 17 的 ahead-of-time 路径也保留异常回退。例如 `startBackNavigation()` 因找不到有效 focused window、当前状态无法建立 `BackNavigationInfo`，或系统正在处理不兼容状态而返回 `null`，Shell 可在手势提交后异步注入 `KEYCODE_BACK`。
 
-这是兜底分支。对目标 SDK 36 及以上且未显式退出新模型的应用，常规路径通过回调分发；官方行为边界明确指出 `Activity.onBackPressed()` 与返回 `KEYCODE_BACK` 不再作为正常分发入口。
+这是兜底分支。对目标 SDK 36 及以上且未显式退出新模型的应用，常规路径通过 callback 分发；官方行为边界明确指出 `Activity.onBackPressed()` 与返回 `KEYCODE_BACK` 不再作为正常分发入口。
 
 ## 4. Window callback 如何进入 WMS
 
@@ -133,7 +133,7 @@ Android 17 的 ahead-of-time 路径也保留异常回退。例如 `startBackNavi
 - 是否实现 `OnBackAnimationCallback`；
 - 是否请求系统 override 行为。
 
-WMS 无需遍历应用的全部回调，只读取当前窗口已经选出的 top callback。
+WMS 无需遍历应用的全部 callback，只读取当前窗口已经选出的 top callback。
 
 ### 4.2 优先级与同级顺序
 
@@ -161,7 +161,7 @@ Android 17 还提供一条减少逐帧跨进程调用的优化路径。满足以
 
 此时应用 `ViewRootImpl` 根据本地 `MotionEvent` 更新 `BackTouchTracker` 与 `BackProgressAnimator`，Shell 跳过对应的 Binder progress 分发。条件不满足时，Shell 仍通过 `IOnBackInvokedCallback.onBackProgressed()` 发送进度。
 
-因此，看到应用回调每帧运行，不能直接推断每帧都经过 SystemUI → `system_server` → app 的完整 IPC。
+因此，看到应用 callback 每帧运行，不能直接推断每帧都经过 SystemUI → `system_server` → app 的完整 IPC。
 
 ## 5. system_server 如何预测返回目标
 
@@ -247,7 +247,7 @@ Snapshot 的尺寸、格式、是否包含 IME Surface、是否采用降采样�
 - 不在每帧反复修改复杂 `LayoutParams`；
 - cancel 后完整恢复 UI 状态。
 
-以下代码只用于标记应用回调的 CPU 时间：
+以下代码只用于标记应用 callback 的 CPU 时间：
 
 ```kotlin
 override fun onBackProgressed(backEvent: BackEvent) {
@@ -308,7 +308,7 @@ IME 隐藏提交后，controller 会暂时清除 IME callbacks，使下一次返
 
 60 Hz 一帧约 16.7 ms，120 Hz 一帧约 8.3 ms，但 SystemUI、Shell、应用、RenderThread 和 SurfaceFlinger 的工作会流水执行，并不共享一张可以简单相加的“2 + 4 + 4 ms”表。评估时应把每一帧的 expected/actual FrameTimeline、CPU runnable 时间和 Surface transaction 对齐。
 
-这条源码路径没有实现“持续掉帧就自动缩短 AppTransition”或“live layer 跟不上就改用快照”的通用策略。省略帧、动态刷新率和 HWC/GPU 合成都可能出现，但要根据 SurfaceFlinger 与调度证据判断，不能由卡顿现象反推某个固定降级算法。
+这条源码路径没有实现“持续掉帧就自动缩短 AppTransition”或“live layer 跟不上就改用 snapshot”的通用策略。省略帧、动态刷新率和 HWC/GPU composition 都可能出现，但要根据 SurfaceFlinger 与调度证据判断，不能由卡顿现象反推某个固定降级算法。
 
 ## 11. Perfetto 与系统状态观测
 
@@ -317,7 +317,7 @@ IME 隐藏提交后，controller 会暂时清除 IME callbacks，使下一次返
 Android 17 在 WM Shell 中提供两类内建观测：
 
 - `LatencyTracker.ACTION_BACK_SYSTEM_ANIMATION`：从 Shell 发起 `startBackNavigation()` 到收到有效 remote animation targets；
-- InteractionJankMonitor CUJ：包括预测返回主屏、跨任务、跨 Activity，对相应动画控制层的帧做卡顿统计。
+- InteractionJankMonitor CUJ：包括 predictive-back home、cross-task、cross-activity，对相应动画控制层的帧做 jank 统计。
 
 WMS 的 proto dump / window trace 还包含 `BackNavigationController` 的 `ANIMATION_IN_PROGRESS` 与 `LAST_BACK_TYPE`。WM Shell dump 会输出 `BackAnimationController` 的 gesture、post-commit、pointer-pilfer 以及 current/queued tracker 状态。
 
@@ -340,7 +340,7 @@ WMS 的 proto dump / window trace 还包含 `BackNavigationController` 的 `ANIM
 5. 对齐每帧 transaction、app buffer 与 SurfaceFlinger present；
 6. 松手后继续观察，直至真实 callback 和 Transition 完成。
 
-FrameTimeline 的 jank type 只描述帧结果。判断开销来自布局、callback、Binder、GPU 还是合成，需要展开同一时间范围的线程切片。
+FrameTimeline 的 jank type 只描述帧结果。判断开销来自布局、callback、Binder、GPU 还是合成，需要展开同一时间范围的线程 slice。
 
 ### 11.3 建议的覆盖组合
 

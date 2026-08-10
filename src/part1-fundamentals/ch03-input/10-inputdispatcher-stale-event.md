@@ -34,7 +34,7 @@ source_candidates:
   - "https://source.android.com/docs/core/interaction/input"
 ---
 
-# 3.10 InputDispatcher 陈旧事件判定与丢弃
+# 3.10 InputDispatcher stale event 判定与丢弃
 
 InputDispatcher 用陈旧事件（stale event）机制阻止过老的按键或新手势起始事件继续进入目标窗口。它判断的是事件年龄，默认条件为：
 
@@ -42,7 +42,7 @@ InputDispatcher 用陈旧事件（stale event）机制阻止过老的按键或�
 currentTime - eventTime >= 10 秒 × HwTimeoutMultiplier()
 ```
 
-这个条件既不表示“应用已经 ANR”，也不表示“某个窗口一定没有回复确认”。事件可能在 InputDispatcher 内部等待，也可能带着过老的时间戳刚进入队列。排查 stale 日志时，应先确认事件在哪个阶段变老，不能直接归因于应用主线程。
+这个条件既不表示“应用已经 ANR”，也不表示“某个窗口一定没有回复 ACK”。事件可能在 InputDispatcher 内部等待，也可能带着过老的时间戳刚进入队列。排查 stale 日志时，应先确认事件在哪个阶段变老，不能直接归因于应用主线程。
 
 ## stale 位于哪一段队列
 
@@ -91,7 +91,7 @@ virtual bool isStaleEvent(nsecs_t currentTime, nsecs_t eventTime) {
 }
 ```
 
-Android 17 的生产源码中没有另一份 `isStaleEvent()` override；测试用 `FakeInputDispatcherPolicy` 可以替换阈值。厂商分支仍可修改策略或常量，因此实机分析要同时记录构建版本。
+Android 17 的生产源码中没有另一份 `isStaleEvent()` override；测试用 `FakeInputDispatcherPolicy` 可以替换阈值。厂商分支仍可修改 policy 或常量，因此实机分析要同时记录构建版本。
 
 `HwTimeoutMultiplier()` 读取只读属性 `ro.hw_timeout_multiplier`，缺省值为 1。它最初用于让速度远慢于真机的模拟环境按比例放宽平台超时。它同时被多处系统超时使用，不能把“10 秒”写成所有构建的固定实测值。设备上的有效基础值可这样确认：
 
@@ -124,7 +124,7 @@ SensorEntry 是时钟基准上的例外。Android 17 注释明确指出 sensor t
 | Pointer Motion | 比较事件年龄后，再检查同一 display、同一 device 是否仍有 touching 或 hovering pointer | 没有进行中状态才标为 stale；存在进行中手势时继续处理该 stroke |
 | Non-pointer Motion | 同样经过 Motion 分支 | 沿用 TouchState 的同设备检查；无进行中 touch / hover 时可标为 stale |
 | SensorEntry | 用 BOOTTIME 比较事件年龄 | 会标记 stale 并打印 drop 日志，但 `dispatchSensorLocked()` 仍投递 policy sensor 回调 |
-| Focus / TouchModeChanged / DeviceReset | 没有陈旧分支 | 主循环明确令这三类不按该丢弃原因处理 |
+| Focus / TouchModeChanged / DeviceReset | 没有 stale 分支 | 主循环明确令这三类不按该丢弃原因处理 |
 | PointerCaptureChanged / Drag | 没有 stale 检查 | 按各自分发逻辑处理 |
 
 Key 还有一层细节：`dispatchKeyLocked()` 的 pre-dispatch policy interception 发生在 drop cleanup 之前，所以 stale key 仍可能触发系统 policy 的按键拦截流程；目标应用窗口不会收到原始 stale key。
@@ -133,7 +133,7 @@ SensorEntry 更容易被错误概括。Android 17 的 `dispatchSensorLocked()` �
 
 ## 为什么进行中的触摸允许继续
 
-对按键，过期事件可以单独清理。Pointer Motion 是一段状态序列：
+对 Key，过期事件可以单独清理。Pointer Motion 是一段状态序列：
 
 ```text
 DOWN → MOVE... → UP

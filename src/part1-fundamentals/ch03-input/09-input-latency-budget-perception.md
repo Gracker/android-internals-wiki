@@ -57,7 +57,7 @@ last_task6_audit: "2026-07-01"
 
 | 口径 | 起点 | 终点 | 能回答的问题 | 主要限制 |
 | --- | --- | --- | --- | --- |
-| 触摸/触控笔到光子（touch-to-photon / stylus-to-photon） | 传感器检测到物理动作，或高速相机看到手指开始运动 | 面板目标像素发光 | 用户看到反馈前总共等了多久 | 需要外部仪器；Android 轨迹看不到触控 IC 内部延迟和面板像素响应 |
+| 触摸/触控笔到光子（touch-to-photon / stylus-to-photon） | 传感器检测到物理动作，或高速相机看到手指开始运动 | 面板目标像素发光 | 用户看到反馈前总共等了多久 | 需要外部仪器；Android trace 看不到触控 IC 内部延迟和面板像素响应 |
 | event-to-present | Linux input event 的 `eventTime` | 对应 frame 的 present | 从内核输入时间戳到系统呈现用了多久 | `eventTime` 不一定等于物理接触时刻；帧关联可能不确定 |
 | read-to-present | EventHub / InputReader 的 `read_time` | 关联 frame 的 present | Android 软件从读取事件到呈现的路径是否变慢 | 不包含触控硬件到 evdev 的完整时间；也不等于 photon 时刻 |
 | dispatch-to-ACK | InputDispatcher 发送事件 | InputDispatcher 收到应用的 FINISHED ACK | 窗口接收和完成输入处理是否及时 | 不包含 InputReader 前段，也不包含对应画面何时显示 |
