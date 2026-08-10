@@ -506,7 +506,7 @@ val srgb = p3.convert(ColorSpaces.Srgb)
 - HWC 验证后的 `DEVICE` 或 `CLIENT`；
 - client target 的格式和 dataspace；
 - `hasClientComposition`；
-- 图层源数据空间与显示输出数据空间；
+- Layer source dataspace 与 display output dataspace；
 - `AGTM`、LUT、RenderEngine draw；
 - client composition cache hit/miss。
 

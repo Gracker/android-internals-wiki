@@ -530,9 +530,9 @@ adb shell dumpsys SurfaceFlinger --display
 记录新旧 Display 的：
 
 - render target 与 app buffer 尺寸；
-- 刷新率和显示模式；
+- refresh rate 和 display mode；
 - CLIENT/DEVICE composition；
-- 可见图层集合与过渡牵引层；
+- visible layer set 与 transition leash；
 - GPU frequency/busy、内存带宽和 thermal 状态。
 
 面积、刷新率、合成策略和动画可能同时变化，应逐项对照。

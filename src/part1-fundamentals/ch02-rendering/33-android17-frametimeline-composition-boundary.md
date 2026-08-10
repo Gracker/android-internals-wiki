@@ -161,7 +161,7 @@ DisplayFrame 的 Actual slice 从 SurfaceFlinger 为该帧醒来或开始工作�
 
 - start 来自 `onSfWakeUp()` 或相应的实际开始记录；
 - SF CPU 结束时间由调用 `setSfPresent()` 时的时间保存；
-- 实际送显时间来自节奏基准显示器的送显栅栏信号；
+- actual present 来自 pacesetter display 的 present fence signal；
 - client composition 存在时，分类还会把 GPU done fence 纳入 ready deadline。
 
 DisplayFrame 的 slice 时长包含 Composer、Display HAL 与 present 反馈，不等于 SurfaceFlinger 主线程纯 CPU 时间。分析 SF CPU 时仍要看线程 slice 与调度；分析 SF GPU 时要看 client target GPU fence 和 GPU track；分析 Display HAL 时要看“SF 已按时完成，但 present 仍晚”的组合证据。
