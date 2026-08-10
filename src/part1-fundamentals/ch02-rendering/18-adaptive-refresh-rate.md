@@ -192,7 +192,7 @@ ARR 设备需要 Composer3 v3 或更高版本的接口。Android 17 的关键字
 - `DisplayConfiguration.vsyncPeriod`：ARR 配置中表示 TE 信号周期；
 - `VrrConfig.minFrameIntervalNs`：两次展示之间的最小间隔，也就是该配置的最高刷新率边界；
 - `DisplayCommand.frameIntervalNs`：提示后续帧的 cadence；
-- `IComposerClient.notifyExpectedPresent()`：在下一帧偏离既有节拍，或空闲时间超过 HAL 声明的 timeout 时，提前通知期望展示时间与后续间隔。
+- `IComposerClient.notifyExpectedPresent()`：在下一帧偏离既有 cadence，或空闲时间超过 HAL 声明的 timeout 时，提前通知期望展示时间与后续间隔。
 
 SurfaceFlinger 的 `onExpectedPresentTimePosted()` 会读取当前 mode 的 `VrrConfig.notifyExpectedPresentConfig`。`notifyExpectedPresentIfRequired()` 判断下一帧是否仍在原 cadence 内、是否超时；需要通知时，再经 `HWComposer::notifyExpectedPresent()` 进入 Composer HAL。
 
@@ -208,7 +208,7 @@ SurfaceFlinger 的 `onExpectedPresentTimePosted()` 会读取当前 mode 的 `Vrr
 - `EarlyGpu`：近期使用 GPU composition；
 - `Late`：常规状态。
 
-这些配置调整应用与 SurfaceFlinger 的 work duration/offset，让事务、GPU 合成或 mode transition 获得合适的执行时间。刷新率由 Display policy、`LayerHistory` 和 `RefreshRateSelector` 决定，`VsyncModulator` 只改变调度预算。看到 `Vsync-Early` 或 `Vsync-EarlyGpu` counter 时，不能把它当成刷新率选择结果。
+这些配置调整 App 与 SurfaceFlinger 的 work duration/offset，让事务、GPU 合成或 mode transition 获得合适的执行时间。刷新率由 Display policy、`LayerHistory` 和 `RefreshRateSelector` 决定，`VsyncModulator` 只改变调度预算。看到 `Vsync-Early` 或 `Vsync-EarlyGpu` counter 时，不能把它当成刷新率选择结果。
 
 ## 3. 普通 UI：优先使用 View 和 Compose
 
@@ -286,7 +286,7 @@ Android 15（API 35）提供两个 Window 级控制：
 
 | 内容 | compatibility | 含义 |
 |---|---|---|
-| 视频 | `FRAME_RATE_COMPATIBILITY_FIXED_SOURCE` | 内容帧率固定，系统应优先选择便于形成整数节拍的显示刷新率 |
+| 视频 | `FRAME_RATE_COMPATIBILITY_FIXED_SOURCE` | 内容帧率固定，系统应优先选择便于形成整数 cadence 的显示刷新率 |
 | 游戏 | `FRAME_RATE_COMPATIBILITY_DEFAULT` | 游戏可以适应系统最终选择的 render rate |
 | UI、动画、滚动、fling | `FRAME_RATE_COMPATIBILITY_AT_LEAST` | API 36 起，请求显示帧率不低于给定值 |
 
@@ -310,7 +310,7 @@ videoSurface.clearFrameRate(); // API 34+
 
 `setFrameRate()` 只影响 SurfaceFlinger 对显示帧率的选择，不会限制 Producer 产帧速度。它可能间接改变 Choreographer 回调时间和 buffer 释放间隔，但不能代替 frame pacing。引擎仍需控制 `eglSwapBuffers()`、`vkQueuePresentKHR()` 或播放器提交时间戳，否则高频生产会填满队列，增加输入延迟。
 
-Android 17（API 37）的 `Surface.setProducerThrottlingEnabled()` 调整 EGL/Vulkan 生产者在入队阶段承受的 CPU backpressure，属于队列节拍控制，不是刷新率投票。该 API 的细节见 2.17；排查 ARR 时应分别检查 `setFrameRate()` 的投票和生产者限速。
+Android 17（API 37）的 `Surface.setProducerThrottlingEnabled()` 调整 EGL/Vulkan Producer 在 queue 阶段承受的 CPU backpressure，属于队列节拍控制，不是刷新率投票。该 API 的细节见 2.17；排查 ARR 时应分别检查 `setFrameRate()` 的投票和生产者限速。
 
 ## 5. Display 与 Choreographer 能查到什么
 
@@ -364,7 +364,7 @@ Choreographer.getInstance().postVsyncCallback(frameData -> {
 
 ## 6. Perfetto：先确认刷新节奏，再判断 jank
 
-ARR Trace ARR 跟踪数据时，不应先套用“是否超过 16.67ms”的固定阈值。可以按以下顺序观察。
+分析 ARR trace 时，不应先套用“是否超过 16.67ms”的固定阈值。可以按以下顺序观察。
 
 ### 6.1 先记录测试条件
 
@@ -379,7 +379,7 @@ ARR Trace ARR 跟踪数据时，不应先套用“是否超过 16.67ms”的固�
 
 滑动期间 App 节拍变短，fling 减速后逐步变长，同时 FrameTimeline 没有连续 jank，通常符合 ARR 策略。若 mode change 附近出现黑屏或长间隔，更接近传统 MRR 的非无缝切换。若 Producer 已经晚交 buffer，刷新率变化只是背景条件，不能把根因写成 SurfaceFlinger 选错档位。
 
-Perfetto 官方文档目前对 SurfaceView 的 FrameTimeline 支持有限。标准 HWUI 应用窗口可以优先查看 App actual/expected timeline；SurfaceView、视频和游戏还需要核对独立图层、buffer timestamp、fence、HWC 与 present。
+Perfetto 官方文档目前对 SurfaceView 的 FrameTimeline 支持有限。标准 HWUI App Window 可以优先查看 App actual/expected timeline；SurfaceView、视频和游戏还需要核对独立 Layer、buffer timestamp、fence、HWC 与 present。
 
 ### 6.3 用正确的键关联 expected/actual FrameTimeline
 
