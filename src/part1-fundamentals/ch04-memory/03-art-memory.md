@@ -75,7 +75,7 @@ ART 内存问题很少只表现为一个数字。一次掉帧可能来自 GC 暂
 
 读懂这些现象，需要同时回答四个问题：
 
-1. 对象分配到了哪个空间？
+1. 对象分配到了哪个 space？
 2. 当前进程运行的是哪种 collector？
 3. 这次 GC 的类型和原因分别是什么？
 4. 应用线程在 GC 期间被暂停、抢占，还是在等待分配？
@@ -94,7 +94,7 @@ flowchart LR
     H --> G["GC 统一追踪对象可达性"]
 ```
 
-这五类空间的差别集中在三个维度：对象从哪里来、GC 能否回收、GC 能否移动。
+这五类 space 的差别集中在三个维度：对象从哪里来、GC 能否回收、GC 能否移动。
 
 | Space | 主要内容 | 可回收 | 可移动 | Android 17 关键实现 |
 |---|---|---:|---:|---|
@@ -208,7 +208,7 @@ result = tlab_pos
 tlab_pos += aligned_object_size
 ```
 
-这段伪代码只说明地址推进方式。对象清零、类指针写入、构造发布屏障、分配统计和插桩仍由 ART 的分配入口处理。
+这段伪代码只说明地址推进方式。对象清零、类指针写入、构造发布屏障、分配统计和 instrumentation 仍由 ART 的分配入口处理。
 
 Android 17 源码中的相关常量是：
 
@@ -216,7 +216,7 @@ Android 17 源码中的相关常量是：
 - `Heap::kPartialTlabSize = 16 KiB`；
 - `RegionSpace::kRegionSize = 256 KiB`。
 
-这三个值属于不同层次。一个 region 可以承载 TLAB；默认 TLAB 大小不等于 region 大小。TLAB 用完后，`RegionSpace::AllocNewTlab()` 会持有 `region_lock_`，先尝试复用足够大的 partial TLAB，再寻找或建立合适的 region。把这里统称为“获取堆全局锁并 mmap 新 region”会掩盖真实分支。
+这三个值属于不同层次。一个 region 可以承载 TLAB；默认 TLAB 大小不等于 region 大小。TLAB 用完后，`RegionSpace::AllocNewTlab()` 会持有 `region_lock_`，先尝试复用足够大的 partial TLAB，再寻找或建立合适的 region。把这里统称为“获取 heap 全局锁并 mmap 新 region”会掩盖真实分支。
 
 CMC 的 `BumpPointerSpace` 也支持 TLAB。TLAB 因而不是 CC 专属概念，具体 allocator 要结合 collector 与 `Heap::GetCurrentAllocator()` 判断。
 
@@ -247,7 +247,7 @@ flowchart TD
     K -->|否| L["抛出 OutOfMemoryError"]
 ```
 
-几个细节会直接影响轨迹解读：
+几个细节会直接影响 trace 解读：
 
 - 若其他线程已经在做 GC，分配线程会进入 `WaitForGcToComplete()`；等待本身可能形成明显卡顿。
 - ART 先尝试 `next_gc_type_`。这个类型由上一次 GC 后的存活量、吞吐估计和堆目标计算决定，不固定为 Young 或 Full。

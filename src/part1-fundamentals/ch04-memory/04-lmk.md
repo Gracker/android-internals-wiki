@@ -76,7 +76,7 @@ flowchart LR
 
 平台源码以 `android-17.0.0_r1` 为锚点，内核语义以 `android17-6.18-2026-06_r6` 为锚点。
 
-## 从内核 LMK 到用户空间 lmkd
+## 从内核 LMK 到 userspace lmkd
 
 ### 早期方案：in-kernel LowMemoryKiller
 
@@ -120,7 +120,7 @@ Android 17 把核心常量集中在 `services/core/java/com/android/server/am/ps
 
 | 常量或区间 | Android 17 数值 | 常见语义 |
 |---|---:|---|
-| `NATIVE_ADJ` | -1000 | AMS 未管理、未由 AMS 分配 adj 的原生进程所用的特殊分类 |
+| `NATIVE_ADJ` | -1000 | AMS 未管理、未由 AMS 分配 adj 的 native 进程所用的特殊分类 |
 | `SYSTEM_ADJ` | -900 | `system_server` |
 | `PERSISTENT_PROC_ADJ` | -800 | persistent 系统进程 |
 | `PERSISTENT_SERVICE_ADJ` | -700 | 被 system 或 persistent 进程以重要方式绑定的服务 |
@@ -162,9 +162,9 @@ Android 17 的命令号在 Framework `ProcessList.java` 与 `system/memory/lmkd/
 | `LMK_PROCPRIO` | 1 | 登记一个进程并设置 adj |
 | `LMK_PROCREMOVE` | 2 | 移除一个进程记录 |
 | `LMK_PROCPURGE` | 3 | 清理该客户端登记的进程 |
-| `LMK_GETKILLCNT` | 4 | 查询终止次数 |
-| `LMK_SUBSCRIBE` | 5 | 订阅异步终止或统计事件 |
-| `LMK_PROCKILL` | 6 | `lmkd` 发给订阅者的终止通知 |
+| `LMK_GETKILLCNT` | 4 | 查询 kill 次数 |
+| `LMK_SUBSCRIBE` | 5 | 订阅异步 kill 或 stats 事件 |
+| `LMK_PROCKILL` | 6 | `lmkd` 发给订阅者的 kill 通知 |
 | `LMK_UPDATE_PROPS` | 7 | 重新读取属性并重建监控 |
 | `LMK_KILL_OCCURRED` | 8 | Framework 中的 stats 事件名；native 头文件名为 `LMK_STAT_KILL_OCCURRED` |
 | `LMK_START_MONITORING` | 9 | 启动延迟初始化的 PSI 监控 |
@@ -179,7 +179,7 @@ Android 17 的命令号在 Framework `ProcessList.java` 与 `system/memory/lmkd/
 
 1. 发送 `LMK_PROCPURGE`，清掉旧连接留下的登记；
 2. 在 OOM 档位已计算时重发 `LMK_TARGET`；
-3. 订阅终止与统计两类异步事件。
+3. 订阅 kill 与 stats 两类异步事件。
 
 这条控制链也解释了一个常见误判：手工写 `/proc/<pid>/oom_score_adj` 只改变内核值，未必同步 `lmkd` 自己的候选链表；AMS 下一轮调整还可能覆盖手工值。
 
@@ -214,7 +214,7 @@ Android 17 的命令号在 Framework `ProcessList.java` 与 `system/memory/lmkd/
 - `some` 表示至少有一部分任务因该资源而停顿；
 - `full` 表示所有非 idle 任务同时停顿，此时 CPU 无法继续做有效工作。
 
-这里的对象是调度中的任务。把 `full` 解释为“设备上的所有进程都阻塞”过于宽泛，也忽略了 idle task。
+这里的对象是调度中的 task。把 `full` 解释为“设备上的所有进程都阻塞”过于宽泛，也忽略了 idle task。
 
 PSI trigger 使用“某个窗口内累计 stall 多久”的形式。例如 `some 70000 1000000` 表示 1 秒窗口内累计出现 70 ms partial stall 时唤醒监听者。trigger 是唤醒信号，本身不等于一次 kill。
 
@@ -265,7 +265,7 @@ Android 17 新策略的主要 kill reason 包括：
 - low swap 与 page-cache thrashing 同时出现；
 - 内存水位和 free swap 同时偏低；
 - 内存水位偏低且 swap utilization 过高；
-- 低水位伴随抖动；
+- 低水位伴随 thrashing；
 - direct reclaim 期间 thrashing，或 direct reclaim 持续过久；
 - thrashing 之后 file cache 仍低；
 - kill 后仍跌破 min watermark；
@@ -323,7 +323,7 @@ ATRACE_INSTANT_FOR_TRACK(LOG_TAG, desc);
 
 - 写 logcat，包含进程名、PID、UID、adj、RSS、anon RSS、swap、DMA-BUF 与原因；
 - 写 statsd 的 LMK kill atom；
-- 向订阅的 Framework 客户端发送终止和统计消息。
+- 向订阅的 Framework 客户端发送 kill 和 stats 消息。
 
 `ProcessList` 收到 `LMK_PROCKILL` 后，把记录交给 `AppExitInfoTracker`，应用退出历史会标记为 `ApplicationExitInfo.REASON_LOW_MEMORY`。
 
@@ -338,7 +338,7 @@ ATRACE_INSTANT_FOR_TRACK(LOG_TAG, desc);
 | Java/native 进程内 OOM | 单进程堆或地址空间分配失败 | `OutOfMemoryError`、abort/tombstone、crash exit reason |
 | Android 17 MemoryLimiter | 单应用进程超过设备配置的配额 | `REASON_OTHER`，description 含 `MemoryLimiter:AnonSwap` |
 
-看到 `REASON_LOW_MEMORY` 后，还要结合 subreason、`lmkd` 日志和轨迹区分系统 LMK 与内核 OOM。Java `OutOfMemoryError` 也不能直接归因于 `lmkd`。
+看到 `REASON_LOW_MEMORY` 后，还要结合 subreason、`lmkd` 日志和 trace 区分系统 LMK 与 kernel OOM。Java `OutOfMemoryError` 也不能直接归因于 `lmkd`。
 
 ## LMK 如何变成用户可感知卡顿
 
@@ -398,7 +398,7 @@ data_sources {
 duration_ms: 30000
 ```
 
-`atrace_apps: "lmkd"` 让用户空间 LMK 事件进入轨迹，`oom_score_adj_update` 用来还原 victim 当时的保护级别，`linux.sys_stats` 用来对齐水位和回收变化。量产设备允许的 ftrace 事件与采样频率可能受构建配置限制。
+`atrace_apps: "lmkd"` 让 userspace LMK 事件进入 trace，`oom_score_adj_update` 用来还原 victim 当时的保护级别，`linux.sys_stats` 用来对齐水位和回收变化。量产设备允许的 ftrace 事件与采样频率可能受构建配置限制。
 
 Android 17 对应的 Perfetto SQL 标准库会解析当前的 instant、旧 slice 和更早的 counter 三种 LMK 记录。下面的 SQL 使用统一后的 `android_lmk_events` 表列出 victim：
 
@@ -521,7 +521,7 @@ native 实现使用进程 cgroup v2 文件：
 - `memory.events`；
 - `memory.stat` 与 `memory.swap.current`。
 
-Java 层部分注释和展示字符串仍写作 `memory.swap.high`，但 Android 17 原生源码的 `CgroupFile::kSwapMax` 明确解析到 `memory.swap.max`。描述运行行为时应以写入路径为准。
+Java 层部分注释和展示字符串仍写作 `memory.swap.high`，但 Android 17 native 源码的 `CgroupFile::kSwapMax` 明确解析到 `memory.swap.max`。描述运行行为时应以写入路径为准。
 
 native 层写入 `memory.high` 和 swap 上限，并监听 `memory.events` 的 `high` 计数。`memory.high` 触发后，监控线程进入轮询区，比较 `anon + shmem + swap` 与两项配置之和。组合指标超过配置后，Java 回调会先取消该进程限制；若相关 profiling 特性开启且能解析包名，则发送 `TRIGGER_TYPE_ANOMALY`；随后延迟 30 秒请求 AMS 以 `"MemoryLimiter:AnonSwap"` 为原因杀进程。
 
@@ -560,7 +560,7 @@ AOSP 公开了多种设备调校入口，例如：
 
 ### Android 15：16KB page size
 
-16 KiB 页大小会改变页表、内部碎片和进程内存构成，也会改变 KB 与页数的换算。它不直接改写 `lmkd` 的优先级原则。`ProcessList` 发送 `LMK_TARGET` 时按运行时 `PAGE_SIZE` 把 KB 换算成页，分析脚本也应读取设备页大小。
+16 KB page size 会改变页表、内部碎片和进程内存构成，也会改变 KB 与 page count 的换算。它不直接改写 `lmkd` 的优先级原则。`ProcessList` 发送 `LMK_TARGET` 时按运行时 `PAGE_SIZE` 把 KB 换算成页，分析脚本也应读取设备页大小。
 
 ### Android 16：userspace lmkd 与 Reaper
 

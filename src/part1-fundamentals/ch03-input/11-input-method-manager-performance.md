@@ -41,7 +41,7 @@ sources:
 
 ### 1.1 输入连接、显示请求与屏幕可见是三个事件
 
-一个可编辑 View 获得 View 焦点和 window focus 后，`InputMethodManager` 才能把它作为服务目标 View，并为它建立或重启输入连接。IME 侧的生命周期回调与这个过程对应：
+一个可编辑 View 获得 View focus 和 window focus 后，`InputMethodManager` 才能把它作为 served view，并为它建立或重启输入连接。IME 侧的生命周期回调与这个过程对应：
 
 - `onStartInput(EditorInfo, restarting)`：新的编辑器开始输入，或现有输入连接被重启；
 - `onStartInputView(EditorInfo, restarting)`：当前输入视图将显示，并准备接收该编辑器的输入；
@@ -54,7 +54,7 @@ sources:
 
 Android 17 的 `InputMethodManager.showSoftInput(view, flags)` 要求：
 
-- `view` 是当前服务目标 View；
+- `view` 是当前 served view；
 - `view` 自身有焦点；
 - 它所在的窗口也有焦点；
 - 当前没有需要保留控制权的用户驱动 IME 动画，预测返回正在隐藏 IME 的特殊情况除外。
@@ -70,14 +70,14 @@ Android 16 起，`SHOW_IMPLICIT`、`SHOW_FORCED`、`HIDE_IMPLICIT_ONLY` 和 `HID
 | 目标 | 建议终点 | 能回答的问题 |
 |---|---|---|
 | API 行为正确 | `WindowInsets.isVisible(Type.ime())` | 最终 Insets 状态是否可见 |
-| 请求停在哪一层 | ImeTracker 的最终阶段 | 客户端、服务端、IME 或窗口控制阶段是否等待 |
-| 应用过渡是否流畅 | 应用 FrameTimeline 与主线程切片 | 应用是否错过帧截止时间 |
+| 请求停在哪一层 | ImeTracker 的最终 phase | 客户端、服务端、IME 或窗口控制阶段是否等待 |
+| 应用过渡是否流畅 | 应用 FrameTimeline 与主线程 slice | 应用是否错过帧截止时间 |
 | IME 自身是否流畅 | IME 进程 FrameTimeline 与 RenderThread | 输入法窗口是否掉帧 |
 | 用户端到端感知 | 屏幕录制或高速摄像 | 从操作到可见像素的总时间 |
 
 ## 2. Android 17 的显示主链路
 
-Android 17 中，应用侧显隐请求以 Insets 为主线。`showSoftInput()` 在完成服务目标 View 检查后，也会转交当前 `ViewRootImpl` 的 `InsetsController`。
+Android 17 中，应用侧显隐请求以 Insets 为主线。`showSoftInput()` 在完成 served-view 检查后，也会转交当前 `ViewRootImpl` 的 `InsetsController`。
 
 ```mermaid
 flowchart TD
@@ -85,7 +85,7 @@ flowchart TD
     B --> C["IWindowSession.updateRequestedVisibleTypes()"]
     C --> D["WMS: WindowState / InsetsPolicy"]
     D --> E["ImeInsetsSourceProvider 更新客户端可见性"]
-    E --> F["WMS 处理器通知 IME requested changed"]
+    E --> F["WMS Handler 通知 IME requested changed"]
     F --> G["IMMS.showCurrentInputInternal()"]
     G --> H{"IME、当前 client、session 是否就绪"}
     H -->|否| I["记录 PHASE_SERVER_WAIT_IME 并等待绑定或会话"]
@@ -109,7 +109,7 @@ flowchart TD
 - 当前 client 非空；
 - 当前 client 的 `mCurSession` 非空。
 
-条件不足时，ImeTracker 进入 `PHASE_SERVER_WAIT_IME`，请求令牌被保留，待绑定或会话就绪后继续。条件齐备时才进入 `PHASE_SERVER_HAS_IME`，再由 `performShowIme()` 调用 `IInputMethodInvoker.showSoftInput()`。
+条件不足时，ImeTracker 进入 `PHASE_SERVER_WAIT_IME`，请求 token 被保留，待绑定或 session 就绪后继续。条件齐备时才进入 `PHASE_SERVER_HAS_IME`，再由 `performShowIme()` 调用 `IInputMethodInvoker.showSoftInput()`。
 
 第三，IME 接受显示并执行 `showWindow()` 后，应用也不一定立刻开始动画。WMS 的 `ImeInsetsSourceProvider` 需要等 IME Surface 已绘制、Insets 几何信息可用，并且可把带 leash 的控制权交给目标窗口。没有 control 或 control 中没有 leash 时，客户端 `InsetsSourceConsumer` 会继续把 IME source 当作不可见处理。
 
@@ -149,7 +149,7 @@ AOSP `android-17.0.0_r1` 中：
 <bool name="config_preventImeStartupUnlessTextEditor">false</bool>
 ```
 
-这个资源允许 OEM 通过资源覆盖改为 `true`。启用后，IMMS 可在当前焦点没有落在文本编辑器时避免启动 IME，并为配置中的输入法或应用保留例外。它控制“何时启动 IME”，与 IME 是否运行在 isolated process 没有直接关系。
+这个资源允许 OEM overlay 改为 `true`。启用后，IMMS 可在当前焦点没有落在文本编辑器时避免启动 IME，并为配置中的输入法或应用保留例外。它控制“何时启动 IME”，与 IME 是否运行在 isolated process 没有直接关系。
 
 `AutofillSuggestionsController` 在 IME 尚未连接时可暂存 inline suggestions 请求，并在 main connection 的 `onServiceConnected()` 后继续处理。源码能证明请求被延后，不能单凭这一点声称它减少了多少次冷启动或节省了多少毫秒。
 
@@ -192,7 +192,7 @@ override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
 }
 ```
 
-`post` 的作用是把调用排到 View 所在线程，并让服务目标 View 的状态有机会完成更新。它仍需满足当前窗口和 View 的焦点条件。
+`post` 的作用是把调用排到 View 所在线程，并让 served-view 状态有机会完成更新。它仍需满足当前窗口和 View 的焦点条件。
 
 ## 5. Insets 动画与帧时间
 
@@ -234,7 +234,7 @@ override fun onProgress(
 }
 ```
 
-Perfetto 中这段切片的耗时只代表应用回调。若它很短但仍掉帧，还要继续检查同一帧的遍历、RenderThread、IME 进程和 SurfaceFlinger。
+Perfetto 中这段 slice 的耗时只代表应用回调。若它很短但仍掉帧，还要继续检查同一帧的 traversal、RenderThread、IME 进程和 SurfaceFlinger。
 
 ### 5.3 `adjustResize`、`adjustPan` 与 `adjustNothing`
 
@@ -248,7 +248,7 @@ Perfetto 中这段切片的耗时只代表应用回调。若它很短但仍掉�
 
 Android 15 起，目标 SDK 35 及以上的应用默认使用 edge-to-edge；在 Android 17 上也应按这一边界处理系统栏和 IME Insets。Edge-to-edge 不会取消 IME Insets，应用仍需避免内容被键盘遮挡。为兼容旧系统和 AndroidX 的 Insets 分发，Views 页面通常仍会配置 `adjustResize`。
 
-Compose 的 `WindowInsets.ime`、`imePadding()` 和 Insets 消费属于 AndroidX Compose UI。它们的重组与测量行为取决于应用使用的 AndroidX 版本，不能用 `frameworks/base` 的 Android 17 标签证明。排查时记录 Compose BOM/库版本，并缩小读取动态 Insets 的 composable 范围。
+Compose 的 `WindowInsets.ime`、`imePadding()` 和 Insets consumption 属于 AndroidX Compose UI。它们的重组与测量行为取决于应用使用的 AndroidX 版本，不能用 `frameworks/base` 的 Android 17 tag 证明。排查时记录 Compose BOM/库版本，并缩小读取动态 Insets 的 composable 范围。
 
 ## 6. 自定义 IME 的性能边界
 
@@ -263,11 +263,11 @@ Compose 的 `WindowInsets.ime`、`imePadding()` 和 Insets 消费属于 AndroidX
 
 ### 6.2 输入视图与候选栏
 
-- 首次创建输入视图时先提供可绘制的最小界面，再补齐非关键资源；
+- 首次创建输入视图时先提供可绘制的最小 UI，再补齐非关键资源；
 - 候选结果高频变化时合并过时任务，只提交最新序列；
 - Diff 计算可以离开主线程，View 变更仍回到主线程；
 - 控制候选项中的图片解码、字体加载和对象分配；
-- 分别跟踪 IME 主线程、RenderThread 和 Binder 线程，避免把应用侧空闲误判成系统等待。
+- 分别跟踪 IME 主线程、RenderThread 和 Binder 线程，避免把 app 侧空闲误判成系统等待。
 
 系统的 visible connection 会在显示期间提高 IME 的绑定重要性，但不会替 IME 缩短初始化路径。首帧优化仍取决于输入法自身的服务和渲染实现。
 
@@ -281,7 +281,7 @@ Android 17 的 ImeTracker 为同一次 show/hide 请求分配令牌，并跨客�
 | `PHASE_CLIENT_INSETS_CONTROLLER_DISPATCH` | 请求已交给客户端 InsetsController |
 | `PHASE_CLIENT_REPORT_REQUESTED_VISIBLE_TYPES` | 客户端准备上报 requested-visible types |
 | `PHASE_SERVER_UPDATE_REQUESTED_VISIBLE_TYPES` | WMS 已接收窗口请求 |
-| `PHASE_SERVER_UPDATE_CLIENT_VISIBILITY` | IME 源的客户端可见性更新 |
+| `PHASE_SERVER_UPDATE_CLIENT_VISIBILITY` | IME source 的客户端可见性更新 |
 | `PHASE_SERVER_WAIT_IME` | IME 接口、client 或 session 尚未齐备 |
 | `PHASE_SERVER_HAS_IME` | IMMS 可以向 IME 发请求 |
 | `PHASE_IME_SHOW_SOFT_INPUT` | IME wrapper 正在处理 show |
@@ -298,7 +298,7 @@ ImeTracker 历史记录会给出请求类型、状态、持续时间、最终阶
 - 长时间停在 `SERVER_WAIT_IME`：检查进程启动、Service binding、session 创建和 IME 崩溃；
 - 已到 `IME_SHOW_WINDOW`，迟迟拿不到 control：检查 IME Surface、窗口布局和 WMS 的 leash 条件；
 - 已到 `CLIENT_ANIMATION_RUNNING`：把注意力移到应用、IME 和 SurfaceFlinger 的帧调度；
-- 状态为 FAIL、CANCEL 或 TIMEOUT：先读最终阶段和原因，不要只看“键盘没出来”的表象。
+- 状态为 FAIL、CANCEL 或 TIMEOUT：先读最终 phase 和 reason，不要只看“键盘没出来”的表象。
 
 ## 8. `dumpsys input_method` 应该看哪些字段
 
@@ -311,18 +311,18 @@ adb shell dumpsys input_method > input_method.txt
 Android 17 的输出包括：
 
 - `mStartInputHistory`：最近的 start-input 记录；
-- `mSoftInputShowHideHistory`：显隐原因、请求窗口、IME 目标等历史；
+- `mSoftInputShowHideHistory`：显隐原因、请求窗口、IME target 等历史；
 - `mImeTrackerService#History`：show/hide 请求及最终 phase；
 - `mBindingController`：`mSelectedImeId`、`mCurImeId`、main/visible connection、`mCurIme`、display、window visibility；
 - `mCurClient`、`mImeBindingState`、`mEnabledSession`；
 - `mVisibilityStateComputer` 中的 `mInputShown` 和最终 IME target；
 - 当前输入 client 与当前 IME 的异步 dump。
 
-`mMainConnection` 非空只代表绑定已创建或正在绑定，`mCurIme` 非空才说明 `onServiceConnected()` 已提供可调用接口。`mEnabledSession` 或 client 的当前会话用于判断输入会话是否就绪。
+`mMainConnection` 非空只代表绑定已创建或正在绑定，`mCurIme` 非空才说明 `onServiceConnected()` 已提供可调用接口。`mEnabledSession` 或 client 的当前 session 用于判断输入会话是否就绪。
 
 `mCurRootView` 属于应用进程中的 `InputMethodManager`，可能出现在 IMMS 触发的 client 异步 dump 中；IMMS 在 `system_server` 内维护的核心状态不包含这个字段。阅读 dump 时要保留缩进和进程来源，否则容易把客户端焦点状态归到服务端。
 
-## 9. IME 追踪与 Perfetto
+## 9. IME tracing 与 Perfetto
 
 ### 9.1 捕获 IME 状态转移
 
@@ -334,11 +334,11 @@ adb shell cmd input_method tracing start
 adb shell cmd input_method tracing stop
 ```
 
-命令会通知 IMMS、当前 client 和 IME 更新追踪状态。它适合查看输入相关状态转移；CPU 调度、帧截止时间和 Surface 合成仍要由 Perfetto 补充。
+命令会通知 IMMS、当前 client 和 IME 更新 tracing 状态。它适合查看输入相关状态转移；CPU 调度、帧截止时间和 Surface 合成仍要由 Perfetto 补充。
 
-### 9.2 Perfetto 的进程与切片
+### 9.2 Perfetto 的进程与 slice
 
-录制时至少覆盖应用、`system_server`、IME、RenderThread 和 SurfaceFlinger，并启用与调度、Binder、View、WindowManager、graphics、FrameTimeline 相关的数据源。Android 17 源码中可直接搜索的切片包括：
+录制时至少覆盖 app、`system_server`、IME、RenderThread 和 SurfaceFlinger，并启用与调度、Binder、View、WindowManager、graphics、FrameTimeline 相关的数据源。Android 17 源码中可直接搜索的 slice 包括：
 
 - `IMMS.showCurrentInputInternal`
 - `IMMS.hideCurrentInputInternal`
@@ -381,12 +381,12 @@ IME 和应用通常是两个独立 Surface。一次过渡中可能出现四种�
 | 动画 | `CLIENT_ON_CONTROLS_CHANGED` | `CLIENT_ANIMATION_FINISHED_SHOW` |
 | 用户感知 | 用户操作 | 屏幕上目标像素出现或动画完成 |
 
-冷热样本要分组。若把首次进程启动与已建立会话的样本混在一起，平均值既不能代表常用路径，也无法指导优化。
+冷热样本要分组。若把首次进程启动与已建立 session 的样本混在一起，平均值既不能代表常用路径，也无法指导优化。
 
 ## 11. 版本边界
 
 - Android 11 / API 30 引入可公开使用的 `WindowInsetsAnimation` 协同能力，是后续 IME 动画分析的历史起点；
-- Android 12—14 延续 Insets 控制模型，具体修复应按对应标签查证；
+- Android 12—14 延续 Insets 控制模型，具体修复应按对应 tag 查证；
 - Android 15 / API 35 对目标 SDK 35 及以上应用强制 edge-to-edge，IME Insets 处理成为页面布局的必要部分；
 - Android 16 / API 36 起，传统 show/hide flags 不再生效，带 `ResultReceiver` 的 show 重载被弃用；
 - Android 17 / API 37 的 `android-17.0.0_r1` 使用通用 `InsetsSourceConsumer`，并通过 requested-visible types、`ImeInsetsSourceProvider`、IMMS 和 ImeTracker 串起显示路径。
