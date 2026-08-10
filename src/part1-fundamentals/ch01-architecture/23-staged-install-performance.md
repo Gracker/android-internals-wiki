@@ -107,7 +107,7 @@ Android 的普通安装本来就有事务边界。Android 17 的 `InstallPackage
 
 调用 `setStaged()` 后，这个 session 被安排到下一次重启时安装。若它是 multi-package parent，所有 child 都必须采用一致的 staged 属性；rollback 属性也有同样约束。任一 child 在激活时失败，整组都不能按部分成功处理。
 
-另一个边界是免重启 APEX 更新。APEX 可以声明支持 rebootless update，但 rebootless APEX 不属于 staged session。命令行使用 `--force-non-staged` 走另一条路径。明确设置为 staged 的会话都要等待重启。
+另一个边界是免重启 APEX 更新。APEX 可以声明支持 rebootless update，但 rebootless APEX 不属于 staged session。命令行使用 `--force-non-staged` 走另一条路径。明确设置为 staged 的 session 都要等待重启。
 
 ## Android 17 的完整状态机
 
@@ -159,7 +159,7 @@ Android 的普通安装本来就有事务边界。Android 17 的 `InstallPackage
 
 ### 为什么先持久化就绪状态，再通知 apexd
 
-`PackageSessionVerifier.endVerification()` 对包含 APEX 的分阶段会话规定了以下顺序：
+`PackageSessionVerifier.endVerification()` 对包含 APEX 的 staged session 规定了以下顺序：
 
 1. `session.setSessionReady()`，让 Package Installer 先持久化 ready。
 2. `mApexManager.markStagedSessionReady(sessionId)`，再告诉 apexd 可以激活。
@@ -184,7 +184,7 @@ Developer Verification 位于 session 的通用验证路径中，发生在 stage
 
 ## 重启后：APEX 先于 `system_server` 激活
 
-设备启动时，apexd 会在 `system_server` 恢复 Package Installer 会话前验证并挂载 APEX。随后 `PackageInstallerService.restoreAndApplyStagedSessionIfNeeded()` 从持久化数据中找出：
+设备启动时，apexd 会在 `system_server` 恢复 Package Installer session 前验证并挂载 APEX。随后 `PackageInstallerService.restoreAndApplyStagedSessionIfNeeded()` 从持久化数据中找出：
 
 - staged；
 - 已 commit；
@@ -213,7 +213,7 @@ Developer Verification 位于 session 的通用验证路径中，发生在 stage
 
 `restoreSessions()` 发现 build fingerprint 与提交时记录不一致后，会让待恢复 session 失败。系统镜像已经改变，重启前完成的验证不能继续作为当前系统上的有效结论。
 
-尚未就绪的会话不会被强行安装。Android 17 会把它移出本轮立即恢复集合，并在 `BOOT_COMPLETED` 之后重新触发 verification。因此，本次开机通常不会应用该会话，系统也不会绕过检查继续安装。
+尚未就绪的 session 不会被强行安装。Android 17 会把它移出本轮立即恢复集合，并在 `BOOT_COMPLETED` 之后重新触发 verification。因此，本次开机通常不会应用该会话，系统也不会绕过检查继续安装。
 
 ## checkpoint 不等同于 Virtual A/B
 
@@ -281,7 +281,7 @@ APEX 本身不会作为普通 app 交给这条 dexopt 路径。mixed session 中
 安装时的 dexopt 采用尽力而为策略。Android 17 的 `DexOptHelper` 明确避免仅因 dexopt 步骤失败就让应用安装失败。因此：
 
 - “session failed”不能自动归因于 dex2oat；应先检查 Package Installer 保存的错误码和错误信息。
-- dexopt 失败可能表现为安装后首次运行需要解释执行或等待后续编译，不一定触发分阶段会话回退。
+- dexopt 失败可能表现为安装后首次运行需要解释执行或等待后续编译，不一定触发 staged session 回退。
 - `INSTALL_FAILED_DEXOPT`、进程被杀或空间不足等日志必须和当前代码路径核对，不能拿旧版行为直接套用。
 
 ## 性能测量：按三个时间窗口拆开
@@ -299,7 +299,7 @@ APEX 本身不会作为普通 app 交给这条 dexopt 路径。mixed session 中
 - 通用 APK 验证；
 - staged 冲突与 rollback 检查；
 - APEX 提交和验证；
-- 建立检查点并持久化就绪状态。
+- 建立 checkpoint 并持久化就绪状态。
 
 这部分的结束条件是 `SessionInfo.isStagedSessionReady()`，不能以 `commit()` 返回为准。验证中包含异步步骤，调用方必须通过回调或查询 session 状态等待 ready/failed。
 
@@ -413,7 +413,7 @@ adb logcat -b all -d | grep -E \
 逐项确认：
 
 - 本次启动的 build fingerprint 是否与提交时一致。
-- 是否出现 `restoreSessions` 与 `installApksInSession` 切片。
+- 是否出现 `restoreSessions` 与 `installApksInSession` slice。
 - StorageManager 是否报告正在回到 safe state。
 - apexd session 是 activated/success，还是 activation failed/reverted。
 - session 是否已变为 failed，而调用方仍缓存旧的 `SessionInfo`。
@@ -435,7 +435,7 @@ adb shell pm art dump <package-name>
 典型判断：
 
 - `installPackages` 长、`dexopt` 短：优先看包扫描、签名、文件搬移和 Package Manager 锁等待。
-- `dexopt` 墙钟时间与 CPU 时间都长：检查编译过滤器、DEX 规模、profile 和核心占用。
+- `dexopt` 墙钟时间与 CPU 时间都长：检查 compiler filter、DEX 规模、profile 和核心占用。
 - `dexopt` 墙钟长但 CPU 少：检查调度、I/O、thermal 或内存压力。
 - 日志显示 dexopt 失败但 session applied：符合 best-effort 边界，继续检查应用首次启动和后续后台 dexopt。
 

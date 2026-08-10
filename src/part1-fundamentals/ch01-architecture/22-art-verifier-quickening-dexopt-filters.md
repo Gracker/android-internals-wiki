@@ -120,7 +120,7 @@ ART bytecode verifier 检查 DEX 是否满足运行时安全约束，包括类�
 - 第一次处理 DEX 时，提前发现非法字节码，避免把错误推迟到任意运行路径。
 - 后续处理相同 DEX 时，复用 verifier dependencies 等元数据，减少重复验证工作。
 
-因此，`verify` 仍会执行工作。在 Android 17 的 ART Service 定义中，它会完成验证与提取，但不编译方法，也不对配置文件中的 resolution / initialization 优化。
+因此，`verify` 仍会执行工作。在 Android 17 的 ART Service 定义中，它会完成验证与提取，但不编译方法，也不对 profile 中的 resolution / initialization 优化。
 
 ## VDEX、ODEX 和 ART image 各自负责什么
 
@@ -157,7 +157,7 @@ AOSP `android-17.0.0_r1` 的 ART Service README 和 shell help 对应用 dexopt 
 
 | Filter | Android 17 的语义 | 典型取舍 |
 | --- | --- | --- |
-| `verify` | verification + extraction；不编译方法，不对配置文件中的 resolution / initialization | dexopt 快、产物小；运行期更多依赖解释器和 JIT |
+| `verify` | verification + extraction；不编译方法，不对 profile 中的 resolution / initialization | dexopt 快、产物小；运行期更多依赖解释器和 JIT |
 | `speed-profile` | 验证并提取；编译 profile 中的方法；处理 profile 中 class 的 resolution/ initialization | 在安装/后台成本、存储和运行性能之间取平衡 |
 | `speed` | 验证并提取；AOT 编译所有可编译方法；不按 profile 做 class resolution / initialization | 编译时间和空间成本最高，运行期机器码覆盖最广 |
 
@@ -210,7 +210,7 @@ pm.dexopt.cmdline=verify
 pm.dexopt.shared=speed
 ```
 
-`pm.dexopt.shared=speed` 不会让所有共享应用无条件使用 `speed`。当一个包被其他应用加载且本轮请求 profile-guided 编译时，ART 出于隐私边界不能使用它的本地 profile；系统会先尝试 cloud profile，没有 cloud profile 才使用 `shared` filter 兜底。若本轮没有请求配置文件引导编译，这个属性不生效。
+`pm.dexopt.shared=speed` 不会让所有共享应用无条件使用 `speed`。当一个包被其他应用加载且本轮请求 profile-guided 编译时，ART 出于隐私边界不能使用它的本地 profile；系统会先尝试 cloud profile，没有 cloud profile 才使用 `shared` filter 兜底。若本轮没有请求 profile 引导编译，这个属性不生效。
 
 厂商还可以通过属性和 ART Service API 改写包列表、filter、优先级与并发数，所以这组值只能作为 AOSP 默认值，不能代替设备实测。
 
@@ -221,7 +221,7 @@ Android 17 的默认安装策略可以压缩成两条：
 - `.dm` 中有可用 cloud profile：目标通常是 `speed-profile`。
 - 没有可用 profile：目标通常是 `verify`。
 
-`.dm` 是容器，文件存在不能证明配置文件已经生效。它可以携带 profile，也可以携带 VDEX 验证元数据，还可能为空或因校验、版本等问题未被采用。OAT header 中的 `install-dm` 后缀仅表示安装 dexopt 时把 DM 传给了 `dex2oat`；Android 17 的 ART Service README 明确指出，这个后缀不保证 DM 内任何内容实际生效。
+`.dm` 是容器，文件存在不能证明 profile 已经生效。它可以携带 profile，也可以携带 VDEX 验证元数据，还可能为空或因校验、版本等问题未被采用。OAT header 中的 `install-dm` 后缀仅表示安装 dexopt 时把 DM 传给了 `dex2oat`；Android 17 的 ART Service README 明确指出，这个后缀不保证 DM 内任何内容实际生效。
 
 还要注意两个跳过路径：
 
@@ -268,7 +268,7 @@ adb logcat -b all -d |
 | --- | --- | --- |
 | 安装完成 | 有 cloud profile 时可能是 `speed-profile`；否则常见 `verify` | `verify` 已完成安全验证，但关键方法可能仍无 AOT 代码 |
 | 第一次运行 | AOT 命中方法直接执行；其余方法解释执行，热点进入 JIT | 首启可能产生类加载、page fault、解释器和 JIT 热身成本 |
-| 多次运行后 | current profile 逐步积累真实用户热点 | profile 只是输入，尚不代表参考配置文件已用于 dexopt |
+| 多次运行后 | current profile 逐步积累真实用户热点 | profile 只是输入，尚不代表参考 profile 已用于 dexopt |
 | 空闲充电 | background dexopt 合并可用 profile，以 `speed-profile` 重新处理 | 后续启动可能改善，但任务可以被取消或因策略跳过 |
 | OTA / Mainline 前 | Pre-reboot Dexopt 尝试针对新依赖生成产物 | 未完成的包重启后仍能以 `verify` + JIT 正常运行 |
 

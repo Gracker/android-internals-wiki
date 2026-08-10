@@ -144,7 +144,7 @@ allocated = align(data_size, pointer_size)
 
 `binder_alloc_new_buf_locked()` 在 free-buffer 红黑树中查找能容纳请求的最小 buffer。找到更大的空闲块后，驱动把它切成已分配部分和剩余 free buffer；释放时再与相邻空闲块合并。
 
-分配成功后，`binder_install_buffer_pages()` 只安装覆盖该 buffer 所需的页面。页面级回收还要考虑相邻 buffer 是否在使用，因此事务缓冲区释放与页面可回收发生在不同时间。
+分配成功后，`binder_install_buffer_pages()` 只安装覆盖该 buffer 所需的页面。页面级回收还要考虑相邻 buffer 是否在使用，因此 transaction buffer 释放与页面可回收发生在不同时间。
 
 ### 3. 空间不足直接失败
 
@@ -158,7 +158,7 @@ allocated = align(data_size, pointer_size)
 
 对于同步请求，Android 17 的 `IPCThreadState` 在发送回复前执行 `buffer.setDataSize(0)`，释放请求 buffer，避免客户端收到回复后立即发起下一笔调用时，旧请求仍占用服务端空间。
 
-oneway 没有回复。它可能在目标进程或目标 node 的异步队列中等待，缓冲区要到服务端完成处理并释放 Parcel 后才归还。高频 oneway 的 buffer 生命周期并不天然比同步调用短。
+oneway 没有回复。它可能在目标进程或目标 node 的异步队列中等待，buffer 要到服务端完成处理并释放 Parcel 后才归还。高频 oneway 的 buffer 生命周期并不天然比同步调用短。
 
 ## 四、同步与异步共享地址池，但异步有预算
 
@@ -356,4 +356,4 @@ oneway 接口可以用序列号合并过时状态，用有界窗口限制未确�
 | 大事务与慢事务日志 | `BpBinder.cpp`、`Binder.cpp` |
 | 请求释放与 clear flag 转发 | `IPCThreadState.cpp`：`BR_TRANSACTION` 处理分支 |
 
-分析 Transaction Buffer 时，应标明目标进程、事务方向、内核/RPC 通道、同步/oneway 和并发数。缺少这些条件，“1 MiB 上限”只是容易误导的近似说法。
+分析 Transaction Buffer 时，应标明目标进程、事务方向、kernel/RPC 通道、同步/oneway 和并发数。缺少这些条件，“1 MiB 上限”只是容易误导的近似说法。
