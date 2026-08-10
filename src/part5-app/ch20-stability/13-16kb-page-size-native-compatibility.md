@@ -45,9 +45,9 @@ source_refs:
 
 Android 15 / API 35 起，AOSP 支持使用 16 KB 基础页的设备。自 2025 年 11 月 1 日起，Google Play 要求面向 Android 15 及以上设备的新应用和更新在 64 位设备上支持 16 KB 页。到 Android 17 / API 37，这已经是发布兼容性要求，不只是性能实验。
 
-本章只讨论应用稳定性：产物为什么会安装失败、Linker 为什么拒绝加载、页大小假设为什么会让 `mmap()` 或 `mprotect()` 出错，以及发布前怎样发现漏网的 native 依赖。TLB、page fault、THP 与内存收益见 4.7 节。
+这里聚焦应用稳定性：产物为什么会安装失败、Linker 为什么拒绝加载、页大小假设为什么会让 `mmap()` 或 `mprotect()` 出错，以及发布前怎样发现漏网的 native 依赖。TLB、page fault、THP 与内存收益见 4.7 节。
 
-本文的平台源码锚点是 `android-17.0.0_r1`，内核锚点是 `android17-6.18-2026-06_r6`。
+平台源码锚点是 `android-17.0.0_r1`，内核锚点是 `android17-6.18-2026-06_r6`。
 
 ## 1. 先判断应用是否受影响
 
@@ -212,7 +212,7 @@ program alignment (4096) cannot be smaller than system page size (16384)
 
 兼容路径不能简单地把 4 KB segment 直接映射到 16 KB 权限边界。Android 17 的 `CompatMapSegment()` 使用匿名映射承载内容，再按 segment 需求恢复权限；`linker_phdr_16kib_compat.cpp` 也为 RELRO 处理只读保护。因此，不能把兼容模式描述成“关闭 RELRO”，也不能承诺它与原生 16 KB ELF 的启动耗时、共享页和 PSS 相同。
 
-更重要的是，兼容模式只帮助旧 ELF 被加载。它不会：
+兼容模式还有一项限制：它只帮助旧 ELF 被加载，不会：
 
 - 把内核基础页改成 4 KB；
 - 修复业务代码中的 `4096`、`>> 12` 或错误 `mprotect()`；
@@ -314,7 +314,7 @@ adb shell getprop ro.build.fingerprint
 
 出现差异时保存原始安装日志、logcat、tombstone、目标 `.so` 和 build ID。没有保留失败产物，只留下字符串截图，后续很难证明修复是否覆盖同一个二进制。
 
-## 11. Review 清单
+## 11. 复核清单
 
 - [ ] 是否盘点了间接依赖、dynamic feature、加固产物和动态下载库？
 - [ ] 是否把最终 `.so` 与输入 `.a`、Prefab、AAR 区分开？

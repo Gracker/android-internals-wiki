@@ -54,32 +54,9 @@ last_task9_autofix_at: "2026-06-30"
 
 # 20.11 MTE memtagMode 与 Native 崩溃治理
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 MTE 在稳定性治理中的适用场景
-
-### 🔹 android:memtagMode 的 off、sync、async 选择
-
-### 🔹 ASYMM 模式为何不暴露为应用 API
-
-### 🔹 Zygote、bionic、Scudo 的生效路径
-
-### 🔹 线上灰度开启 MTE 的崩溃归因策略
-
-### 🔹 性能、兼容性与误报边界
-
-## 扩展
-
-### 🔸 与 Native Crash 信号处理器的配合方式
-
-### 🔸 MTE 报告进入 APM 平台后的聚合字段
-
-<!-- outline-end -->
-
 MTE 把一部分 Native 内存越界和释放后访问转换成可识别的 `SIGSEGV`。它同时是安全缓解和稳定性诊断能力：错误会更早终止进程，静默内存破坏减少，短期 Crash 数却可能上升。治理目标应写成“发现、定位并修复内存安全缺陷”，不能只追求 MTE Crash 数下降。
 
-本节以 Android 17 / API 37 / `android-17.0.0_r1` 为平台与用户空间源码锚点，内核以 `android17-6.18-2026-06_r6` 为锚点。MTE 依赖 Arm64 硬件、内核、进程配置、映射属性和分配器协作；manifest 中的一行配置不能代表所有 Native 内存都受到检查。
+平台与用户空间源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核以 `android17-6.18-2026-06_r6` 为锚点。MTE 依赖 Arm64 硬件、内核、进程配置、映射属性和分配器协作；manifest 中的一行配置不能代表所有 Native 内存都受到检查。
 
 ## MTE 检查的对象与盲区
 

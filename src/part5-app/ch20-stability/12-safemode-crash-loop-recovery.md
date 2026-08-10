@@ -74,11 +74,11 @@ last_deepseek_cn_review_at: 2026-06-22
 
 # 20.12 SafeMode 崩溃循环判定与启动补偿链路
 
-20.7 节介绍了异常恢复架构中的保护模式。本节把范围收窄到一个问题：同一版本、同一进程、同一启动路径连续失败时，应用怎样在下一次启动中绕开可选的高风险模块，同时保留诊断证据和恢复入口。
+20.7 节介绍了异常恢复架构中的保护模式。这里聚焦一个场景：同一版本、同一进程、同一启动路径连续失败时，应用怎样在下一次启动中绕开可选的高风险模块，同时保留诊断证据和恢复入口。
 
 这里的 SafeMode 是应用自建的降级启动模式，不是 Android 系统安全模式。它不负责“修好”崩溃，也不允许绕过数据库一致性、账号安全或支付校验。它只负责在证据足够时选择一份更保守的启动计划，让用户能够进入基础页面、升级应用或提交反馈。
 
-本文的平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。涉及低内存回收边界时，内核锚点是 `android17-6.18-2026-06_r6`。
+平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。涉及低内存回收边界时，内核锚点是 `android17-6.18-2026-06_r6`。
 
 ## 先划清判定边界
 
@@ -409,7 +409,7 @@ WebView renderer 通常运行在独立进程。`onRenderProcessGone()` 表示对
 4. 使用受控状态恢复页面；
 5. 同一页面或模块反复失败时，再选择 WebView 级降级计划。
 
-不要在清理旧实例之前调用可能依赖 renderer 的方法，也不要无条件重放包含敏感参数的 URL。完整实现和 Android 17 边界见 20.10 节。本章只负责说明：renderer gone 可以影响 WebView 模块计划，但不能直接增加宿主主进程的崩溃循环次数。
+不要在清理旧实例之前调用可能依赖 renderer 的方法，也不要无条件重放包含敏感参数的 URL。完整实现和 Android 17 边界见 20.10 节。renderer gone 可以影响 WebView 模块计划，但不能直接增加宿主主进程的崩溃循环次数。
 
 ## 观测与隐私
 
@@ -465,7 +465,7 @@ WebView renderer 通常运行在独立进程。`onRenderProcessGone()` 表示对
 - [ANR 诊断文档](https://developer.android.com/topic/performance/vitals/anr)：ANR 类型、常见原因和诊断入口。
 - [Linux `vmscan.c`（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c)：内核内存回收背景；应用侧仍以 Android framework 暴露的退出原因作为契约。
 
-## Review 清单
+## 复核清单
 
 - [ ] 是否先读取旧租约，再写本轮租约？
 - [ ] 是否把残留 marker 当成候选证据，而不是崩溃结论？
