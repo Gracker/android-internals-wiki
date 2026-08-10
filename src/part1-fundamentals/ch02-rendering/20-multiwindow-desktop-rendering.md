@@ -175,7 +175,7 @@ flowchart LR
 
 `LogicalDisplay.java` 的类注释说明：logical display 与 display device 是正交概念，映射可以是 many-to-many，也可能没有直接关系。镜像、虚拟显示和 display projection 都会打破“一块 logical display 对应一块物理屏”的简化模型。因此，必须分别记录 DMS 的 `displayId`、SurfaceFlinger 的 physical display id、layer stack 和 HWC 显示句柄。
 
-### 物理显示设备的发现与逻辑显示的建立
+### physical display 的发现与 logical display 的建立
 
 `LocalDisplayAdapter.registerLocked()` 从 SurfaceFlinger 枚举 physical display id，并用 `tryConnectDisplayLocked()` 读取令牌、静态信息、动态模式信息和 desired mode specs。新设备先成为 `LocalDisplayDevice`，再由 `DisplayDeviceRepository` 通知 `LogicalDisplayMapper` 建立或更新 logical display。
 
@@ -260,11 +260,11 @@ SurfaceFlinger FrontEnd 接收所有窗口、Shell/WMS 几何属性和 buffer tr
 
 1. 可见图层、leash、caption、dim、IME 与 SystemUI 图层增多；
 2. scale、rotation、alpha、HDR/SDR、protected content 等组合让 HWC 策略更复杂；
-3. 多个输出各自具有显示模式、可见图层集合、客户端目标和显示提交。
+3. 多个 output 带来各自的 mode、可见 layer 集合、client target 和 present。
 
 窗口变多不一定切换到 CLIENT composition，单个复杂窗口也可能触发 GPU 合成。应比较相邻帧整个输出的图层属性和 DEVICE/CLIENT 结果，不能把图层数量直接换算成 GPU 开销。
 
-### 围栏要按缓冲区与显示设备分层
+### fence 要按 buffer 与 Display 分层
 
 | 信号 | 粒度 | 能证明什么 |
 |---|---|---|
