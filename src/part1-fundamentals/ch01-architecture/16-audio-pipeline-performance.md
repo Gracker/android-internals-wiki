@@ -525,7 +525,7 @@ Android 17 为 `USAGE_ASSISTANT` 增加独立的 Assistant volume stream，使 A
 - 是否启用 effects、spatial audio、hardening 测试开关。
 - 复现时设备是否切路由、熄屏、发热或有并发音频。
 
-音频路径对路由非常敏感。没记录这些信息，两份跟踪很可能来自不同管线。
+音频路径对路由非常敏感。没记录这些信息，两个 trace 很可能来自不同 pipeline。
 
 ### 8.2 先用 dumpsys 确认路径
 

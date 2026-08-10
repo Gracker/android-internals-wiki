@@ -78,7 +78,7 @@ last_deepseek_cn_review_at: 2026-07-16
 
 # 1.15 JNI/NDK 性能优化
 
-JNI 优化应优先减少跨边界次数和数据编组，并正确管理线程与引用生命周期；继续压缩一次边界切换的十几纳秒排在这些工作之后。
+JNI 优化应优先减少跨边界次数和数据编组，并正确管理线程与引用生命周期；继续压缩一次 transition 的十几纳秒排在这些工作之后。
 
 音视频、图像、游戏和端侧推理经常需要 C/C++，但“native 天生比 Java/Kotlin 快”不是可靠结论。一个本来能被 ART JIT/AOT 优化的短循环，如果被拆成大量细粒度 JNI 调用，再叠加字符串转换、数组复制、引用管理和异常检查，整体可能更慢。
 
@@ -456,7 +456,7 @@ release mode 的语义：
 
 ## 9. 如何观察 JNI
 
-默认的 Perfetto system trace 不会自动为每次 JNI transition 生成统一片段。常用证据有三类。
+默认的 Perfetto system trace 不会自动为每次 JNI transition 生成统一 slice。常用证据有三类。
 
 ### 9.1 主动插桩
 
