@@ -81,26 +81,9 @@ task2b_verifier_notes: "2026-07-11T23:25 Task2B Verifier: status finalized→rea
 
 # ANR 治理策略
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-- 🔹 ANR 触发场景与超时阈值
-- 🔹 主线程瘦身策略与异步化
-- 🔹 IPC（Binder）调用治理
-- 🔹 锁竞争与死锁预防
-- 🔹 ContentProvider / BroadcastReceiver 超时治理
-- 🔹 ANR Watchdog 搭建
-- 🔹 ANR 预警与主动发现
-- 🔹 前后台 ANR 与系统负载过滤
-
-### 导读
-本节从系统超时窗口出发，沿主线程、Binder、锁、组件回调和应用侧 Watchdog 几条路径说明 ANR 治理动作。
-<!-- outline-end -->
-
 ANR 是系统对应用在特定时限内未完成响应的判定。它可能来自输入分发、组件回调、进程启动、Binder 等待或锁竞争；主线程卡顿是常见成因之一。治理工作要把 ANR 类型、计时起止点和阻塞线程对应起来，再决定移出主线程、缩短临界区、调整进程间协议，还是修复组件生命周期。
 
-[9.1 ANR 设计原理](../../part2-performance/ch09-anr/01-anr-design.md)、[9.2 ANR 类型与判定条件](../../part2-performance/ch09-anr/02-anr-types.md)和[9.3 ANR 分析方法](../../part2-performance/ch09-anr/03-anr-analysis.md)已经说明系统判定与现场分析。本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，关注修复动作、预警能力和回归验证。
+[9.1 ANR 设计原理](../../part2-performance/ch09-anr/01-anr-design.md)、[9.2 ANR 类型与判定条件](../../part2-performance/ch09-anr/02-anr-types.md)和[9.3 ANR 分析方法](../../part2-performance/ch09-anr/03-anr-analysis.md)已经说明系统判定与现场分析。平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，这里关注修复动作、预警能力和回归验证。
 
 ## ANR 触发场景与超时阈值
 
@@ -576,7 +559,7 @@ User-perceived ANR rate 是 core vital。官方当前给出的全局不良行为
 
 ## 治理与验证流程
 
-ANR 修复要能回答“系统在等什么、哪条线程没有前进、改动如何证明有效”。一章代码改完但没有同场景回归，风险只是换了位置。
+ANR 修复要能回答“系统在等什么、哪条线程没有前进、改动如何证明有效”。代码修改如果没有同场景回归，风险只是换了位置。
 
 1. **建立事件主键**：保存应用版本、进程启动标识、ANR 类型、单调时钟、场景和可用的 `anrId`。
 2. **保全证据**：系统 traces、ANR 主题、事件日志、`ApplicationExitInfo`、profiling 结果、Watchdog 连续栈和设备状态分别存储。

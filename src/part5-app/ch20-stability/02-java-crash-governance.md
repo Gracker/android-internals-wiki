@@ -59,17 +59,9 @@ last_deepseek_cn_review_at: 2026-07-06
 
 # Java Crash 治理
 
-<!-- outline-start -->
-- 🔹 Java 异常分类体系：Exception / RuntimeException / Error 的治理差异
-- 🔹 UncaughtExceptionHandler 机制：系统默认处理链、自定义 handler 链式调用与退出路径
-- 🔹 堆栈获取代价：Throwable 栈回溯、saved_frames 阈值与高频采集风险
-- 🔹 Top Crash 模式：NPE、越界、类型转换、生命周期异常的排查要点
-- 🔹 治理优先级：影响面、严重度、修复成本与监控反馈流程
-<!-- outline-end -->
-
 Java Crash 的定义很窄：`Throwable` 没有在当前线程的传播路径中被处理，逃出线程入口，Android 默认 fatal handler 随后终止应用进程。异常类型能帮助选择排查方向，却不能单独判断是否可恢复；恢复能力取决于失败发生在哪个边界、状态是否仍一致，以及调用方能否给出明确的降级结果。
 
-本文的平台与 ART 源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。
+平台与 ART 源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。
 
 ## Java 异常分类：语法类别不等于恢复策略
 

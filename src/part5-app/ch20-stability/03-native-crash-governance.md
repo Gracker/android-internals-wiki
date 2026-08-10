@@ -74,25 +74,7 @@ task6_promotion_notes: "2026-07-12 20H Task6 revisiting review (post-task9-idle-
 
 Native Crash 的难点不在“看到一个信号”，而在于把信号现场、栈回溯、符号版本和对象生命周期放到同一条证据链里。Java 异常通常还能沿 `Throwable` 传播；`SIGSEGV`、`SIGABRT` 等同步致命信号往往意味着 Native 状态已经损坏，应用没有可靠的进程内恢复机会。
 
-本文以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点，依次说明系统收集、tombstone 解读、离线符号化、线上监控和实验性线程安全点。
-
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 **信号与收集路径**：说明 SIGSEGV、SIGABRT、SIGBUS 等信号如何进入 SignalChain、debuggerd 和 crash_dump
-- 🔹 **tombstone 解读**：覆盖头部信息、寄存器、backtrace、stack dump 和线上获取路径
-- 🔹 **符号化流程**：说明 addr2line、ndk-stack、Breakpad `.sym` 文件、目录查找协议和 minidump_stackwalk 流程
-- 🔹 **常见崩溃模式**：区分空指针、野指针、SIGABRT、SIGBUS 与 JNI 边界崩溃的排查方向
-- 🔹 **线上监控方案**：比较系统 tombstone、Breakpad、第三方 SDK、APM 信号捕获策略的边界
-- 🔹 **线程级安全点**：说明 sigsetjmp/siglongjmp、mooner、ByteHook、shadowhook 和 mutex use-after-destroy 检测
-
-### 扩展（可选深入）
-
-- 🔸 **符号文件治理**：CI 归档未 strip so、Build ID 查找、服务端离线符号化
-- 🔸 **交叉引用**：JNI 类型安全与异常边界问题回到 §1.15 展开
-<!-- outline-end -->
+平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。下文依次说明系统收集、tombstone 解读、离线符号化、线上监控和实验性线程安全点。
 
 ## 从致命信号到系统 tombstone
 
@@ -406,7 +388,7 @@ POSIX signal context 中只能调用 async-signal-safe 操作。工程上应进�
 
 ### `sigsetjmp` / `siglongjmp` 能做什么
 
-`sigsetjmp(env, 1)` 保存当前线程的寄存器上下文和 signal mask；同一线程后续调用 `siglongjmp` 可以回到仍然存活的保存点。这不是内存修复机制，只是改变控制流。
+`sigsetjmp(env, 1)` 保存当前线程的寄存器上下文和 signal mask；同一线程后续调用 `siglongjmp` 可以回到仍然存活的保存点。它不会修复内存，只会改变控制流。
 
 要满足的最低条件包括：
 
