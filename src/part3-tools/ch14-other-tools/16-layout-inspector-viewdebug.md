@@ -60,11 +60,11 @@ last_deepseek_cn_review_at: 2026-06-28
 
 Layout Inspector 查看应用进程内正在运行的 View、Compose 或混合 UI：节点是否存在、父子关系如何、bounds 与属性是什么、Compose 节点重组或跳过了多少次。它提供的是组件树与属性现场。帧耗时交给 Perfetto，窗口与 SurfaceFlinger layer 状态交给 Winscope，GPU 命令和 buffer 像素问题交给 AGI 或对应 Producer 工具。
 
-本节以 Android Studio Quail 2 和 Android 17 / API 37 的 `android-17.0.0_r1` 为验证锚点。旧版 IDE 的 3D、独立窗口入口和连接方式可能不同，不能按当前界面描述操作。
+验证锚点是 Android Studio Quail 2 和 Android 17 / API 37 的 `android-17.0.0_r1`。旧版 IDE 的 3D、独立窗口入口和连接方式可能不同，不能按当前界面描述操作。
 
 ## 1. 当前 Layout Inspector 的入口与边界
 
-Quail 2 默认使用嵌入 Running Devices 的 Layout Inspector。运行 debuggable 应用后，在 Running Devices 窗口点击 Toggle Layout Inspector；IDE 会自动连接当前设备前台的 debuggable 进程。物理设备要先启用 device mirroring。[已验证: Android Studio Layout Inspector, https://developer.android.com/studio/debug/layout-inspector]
+Quail 2 默认使用嵌入 Running Devices 的 Layout Inspector。运行 debuggable 应用后，在 Running Devices 窗口点击 Toggle Layout Inspector；IDE 会自动连接当前设备前台的 debuggable 进程。物理设备要先启用 device mirroring。
 
 当前界面有三个主要区域：
 
@@ -89,17 +89,17 @@ Layout Inspector 的结论边界如下。
 
 ## 2. Live 检查、snapshot 与参考图
 
-嵌入模式下，UI 变化要能实时反映到 Inspector，需要启用 Live Edit。独立 Layout Inspector 仍可在设置中开启；该模式使用工具栏的 Live Updates 开关。官方建议优先使用默认嵌入模式。[已验证: Android Studio Layout Inspector, https://developer.android.com/studio/debug/layout-inspector]
+嵌入模式下，UI 变化要能实时反映到 Inspector，需要启用 Live Edit。独立 Layout Inspector 仍可在设置中开启；该模式使用工具栏的 Live Updates 开关。官方建议优先使用默认嵌入模式。
 
 Snapshot 会保存详细渲染、View/Compose/hybrid 组件树和节点属性，可用于离线复盘与团队协作。导出和导入都从 Snapshot Export/Import 入口完成。排查偶发错位时，应在错误状态仍存在时立刻抓 snapshot；恢复后的 snapshot 无法还原此前的树。
 
 参考图 overlay 适合核对设计稿。Inspector 会把 bitmap 缩放到布局显示区域，Overlay Alpha 控制透明度。它适合发现间距、尺寸和基线差异，不能代替像素级截图对比：缩放、设备镜像、字体栅格化、动态颜色与系统栏都会影响视觉结果。
 
-Android Studio Panda 2 已将 Layout Inspector 3D Mode 标为 deprecated。当前文档以标准 2D Layout Display 与 Component Tree 为主；团队文档不应再把 3D 当成必需步骤。[已验证: Android Studio Panda 2 release notes, https://developer.android.com/studio/releases/past-releases/as-panda-2-release-notes]
+Android Studio Panda 2 已将 Layout Inspector 3D Mode 标为 deprecated。当前文档以标准 2D Layout Display 与 Component Tree 为主；团队文档不应再把 3D 当成必需步骤。
 
 ## 3. View 属性检查会重启前台 Activity
 
-Views 属性检查依赖全局设置 `debug_view_attributes`。Layout Inspector 启动时会自动开启它，系统会重启当前前台 Activity；只要 flag 没被手动关闭，后续连接不会重复触发同一行为。这个重启会改变冷启动、页面状态和一次性事件，抓现场前要把它写进复现步骤。[已验证: Layout Inspector for Views, https://developer.android.com/studio/views/layout-inspector-views]
+Views 属性检查依赖全局设置 `debug_view_attributes`。Layout Inspector 启动时会自动开启它，系统会重启当前前台 Activity；只要 flag 没被手动关闭，后续连接不会重复触发同一行为。这个重启会改变冷启动、页面状态和一次性事件，抓现场前要把它写进复现步骤。
 
 下面的命令用于手工核对或恢复该全局开关。
 
@@ -111,7 +111,7 @@ adb shell settings delete global debug_view_attributes
 
 `put` 会为设备上的所有进程生成额外 View 属性信息；`delete` 恢复默认状态。日常使用让 Android Studio 自动管理即可。性能测量前关闭 Inspector，并确认该设置和页面状态已经恢复。
 
-Android 17 的 `View` 在 `mAttributes` 中保存调试属性，`debug_view_attributes` 对应的开发者选项负责启用这类信息。属性缺失时要检查构建是否 debuggable、Activity 是否已按新设置重启、目标是否为前台进程，以及厂商系统是否限制调试通道。[已验证: Android developer options, https://developer.android.com/studio/debug/dev-options] [已验证: AOSP `View.java`, https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java]
+Android 17 的 `View` 在 `mAttributes` 中保存调试属性，`debug_view_attributes` 对应的开发者选项负责启用这类信息。属性缺失时要检查构建是否 debuggable、Activity 是否已按新设置重启、目标是否为前台进程，以及厂商系统是否限制调试通道。
 
 ## 4. 读懂坐标、变换与层级
 
@@ -131,7 +131,7 @@ View 的 `left/top/right/bottom` 是相对父 View 的布局边界。`translatio
 
 ## 5. Compose 层级、重组计数与 semantics
 
-Layout Inspector 可显示 composable 层级、参数、recomposition count、skipped count 和 semantics。查看重组计数要求设备 API 29+ 且 Compose 1.2.0+。若 Component Tree 没有 Compose 节点，先确认 APK 没有移除 `META-INF/androidx.compose.*.version` 文件。[已验证: Compose UI debugging, https://developer.android.com/develop/ui/compose/tooling/debug]
+Layout Inspector 可显示 composable 层级、参数、recomposition count、skipped count 和 semantics。查看重组计数要求设备 API 29+ 且 Compose 1.2.0+。若 Component Tree 没有 Compose 节点，先确认 APK 没有移除 `META-INF/androidx.compose.*.version` 文件。
 
 重组计数要围绕一个受控交互读取：
 
@@ -155,13 +155,13 @@ Android 17 同时保留了几类调试属性机制，不能把它们都写成 `V
 
 ### `android.view.inspector`
 
-API 29 起的 typed inspector 接口使用 `InspectionCompanion`、`PropertyMapper` 和 `PropertyReader`。companion 先把属性名和类型映射为 ID，再读取 boolean、int、color、resource ID、object 等 typed value。`StaticInspectionCompanionProvider` 会查找类名后缀为 `$InspectionCompanion` 的内部类或生成类。[已验证: AOSP view inspector, https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/inspector/]
+API 29 起的 typed inspector 接口使用 `InspectionCompanion`、`PropertyMapper` 和 `PropertyReader`。companion 先把属性名和类型映射为 ID，再读取 boolean、int、color、resource ID、object 等 typed value。`StaticInspectionCompanionProvider` 会查找类名后缀为 `$InspectionCompanion` 的内部类或生成类。
 
 这条路径减少重复字符串比较和 primitive boxing，也让属性类型、枚举、flags 与资源 ID 更清晰。应用代码不应依赖隐藏的 framework inspection 注解；自定义组件优先通过公开属性、稳定 getter、语义和当前 Android Studio 支持的生成工具暴露调试信息。
 
 ### `ViewDebug.ExportedProperty`
 
-`ViewDebug` 仍提供 `@ExportedProperty` 与 `@CapturedViewProperty`。Android 17 的 `View` 本身大量使用 `@ExportedProperty` 标记 measurement、layout、drawing、focus、accessibility 等字段或 getter。`ViewDebug` 会缓存反射得到的属性描述，并按 category、resource ID、enum/flag mapping 等规则格式化。[已验证: AOSP `ViewDebug.java`, https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewDebug.java]
+`ViewDebug` 仍提供 `@ExportedProperty` 与 `@CapturedViewProperty`。Android 17 的 `View` 本身大量使用 `@ExportedProperty` 标记 measurement、layout、drawing、focus、accessibility 等字段或 getter。`ViewDebug` 会缓存反射得到的属性描述，并按 category、resource ID、enum/flag mapping 等规则格式化。
 
 `dumpCapturedView()` 会把 `@CapturedViewProperty` 标记的值格式化后写入 log。这类 API 适合受控调试，不适合作为线上高频监控：反射、字符串构造与日志都会改变运行成本，输出也可能含业务数据。
 
@@ -181,7 +181,7 @@ View.invalidate()
   → ThreadedRenderer / RenderNode display list
 ```
 
-`invalidateInternal()` 设置 `PFLAG_DIRTY`，在需要时设置 `PFLAG_INVALIDATED`，再把 damage 交给 parent。`ViewRootImpl.scheduleTraversals()` 设置同步屏障并通过 `postVsyncCallback(CALLBACK_TRAVERSAL, ...)` 安排 traversal。它们都只说明工作已进入后续帧调度，尚未证明本帧按时绘制或显示。[已验证: AOSP `View.java`, https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java] [已验证: AOSP `ViewRootImpl.java`, https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java]
+`invalidateInternal()` 设置 `PFLAG_DIRTY`，在需要时设置 `PFLAG_INVALIDATED`，再把 damage 交给 parent。`ViewRootImpl.scheduleTraversals()` 设置同步屏障并通过 `postVsyncCallback(CALLBACK_TRAVERSAL, ...)` 安排 traversal。它们都只说明工作已进入后续帧调度，尚未证明本帧按时绘制或显示。
 
 硬件加速路径下，`ThreadedRenderer.updateViewTreeDisplayList()` 根据 `PFLAG_INVALIDATED` 设置 `mRecreateDisplayList`，清除 flag 后调用 `updateDisplayListIfDirty()`。节点属性正确但屏幕内容没更新时，按四个阶段检查：
 
@@ -190,7 +190,7 @@ View.invalidate()
 - traversal/display-list 录制是否发生；
 - RenderThread、App Window buffer、SurfaceFlinger 与 present 是否继续推进。
 
-前三项属于应用 UI/渲染提交，第四项已经离开 Layout Inspector 的证据范围。[已验证: AOSP `ThreadedRenderer.java`, https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ThreadedRenderer.java]
+前三项属于应用 UI/渲染提交，第四项已经离开 Layout Inspector 的证据范围。
 
 ## 8. SurfaceView、TextureView 与宿主窗口
 
@@ -200,7 +200,7 @@ Layout Inspector 展示 View/Compose 层级，SurfaceFlinger 展示可合成 lay
 - SurfaceView 在 View 树中有宿主节点，同时维护 container、BLAST buffer child 和条件性的 background layer。外部 Producer 的内容 buffer 不在宿主 View display list 中；Inspector 不能证明该 BLAST child 是否收到新 buffer。
 - TextureView 也有 View 节点，但外部 buffer 先由 SurfaceTexture/HWUI 采样进宿主 App Window。SurfaceFlinger 通常没有独立可见的 TextureView layer；Inspector 同样看不到外部 queue、acquire fence 或纹理像素是否正确。
 
-黑屏排查应先判断出图类型。SurfaceView 转到 Winscope 检查 container/BLAST child、buffer、crop 与 Z；TextureView 检查 SurfaceTexture、宿主 RenderThread 与 App Window buffer；标准 View/Compose 则检查宿主 display list 和窗口 buffer。[已验证: AOSP `SurfaceView.java`, https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceView.java] [已验证: AOSP `TextureView.java`, https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/TextureView.java]
+黑屏排查应先判断出图类型。SurfaceView 转到 Winscope 检查 container/BLAST child、buffer、crop 与 Z；TextureView 检查 SurfaceTexture、宿主 RenderThread 与 App Window buffer；标准 View/Compose 则检查宿主 display list 和窗口 buffer。
 
 ## 9. `uiautomator dump`、Accessibility 与 Inspector
 
