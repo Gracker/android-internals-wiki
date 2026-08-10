@@ -73,55 +73,9 @@ last_task9_autofix_at: "2026-07-12"
 
 # 26.9 ApplicationExitInfo 与进程退出归因
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 进程退出归因的观测目标
-- crash、native crash、ANR、LMK、用户终止的区分
-- 一次退出记录需要保留的字段
-- 与 Crash / ANR / OOM 上报的关系
-
-### 🔹 API 30+ 的 ApplicationExitInfo
-- getHistoricalProcessExitReasons() 的调用方式
-- reason、importance、timestamp、traceInputStream 的含义
-- 系统保留数量和历史记录边界
-
-### 🔹 ANR 与 native crash 的现场拼接
-- ANR trace 的读取和上报
-- native tombstone 与 REASON_CRASH_NATIVE
-- 与 Play Console / Crashlytics 数据的差异
-
-### 🔹 Android 11 以下的替代路径
-- Signal Handler 自建 native crash 现场
-- LMKd / dumpsys / /data/anr 的权限边界
-- KOOM fork dump 等低版本保现场策略
-
-### 🔹 端侧存储与上报设计
-- 进程重启后读取上一轮退出原因
-- 去重、采样和隐私过滤
-- 与发版、设备、内存状态维度关联
-
-### 🔹 误判与边界
-- 多进程应用的归因错位
-- 系统回收与用户杀进程的区分
-- 不同厂商系统的记录完整性差异
-
-## 扩展
-
-### 🔸 退出原因与稳定性指标体系的映射
-- 见正文扩展：按强故障、前台资源故障、背景退出、用户或版本动作拆分统计口径
-
-### 🔸 ApplicationExitInfo 与 GWP-ASan / MTE 报告拼接
-- 见正文扩展：用工具报告解释内存错误类型，用 tombstone 补系统现场
-
-### 🔸 低版本可观测性能力对照表
-- 见正文扩展：按 API 21-29、API 30、API 31+ 拆能力边界
-
-<!-- outline-end -->
-
 `ApplicationExitInfo` 补充的是系统视角的近期进程退出记录。进程可能来不及执行 Crash SDK 的回调，Android 仍可保存 reason、status、importance、时间、最近一次内存采样和部分 trace。Android 11 / API 30 起，应用可以在后续进程中查询这些记录，用于分类 Crash、ANR、低内存终止、用户操作和包状态变化。
 
-本文以 Android 17 / API 37 / `android-17.0.0_r1` 为源码上界。本章讨论 framework 与应用侧接口，不涉及 Linux 内核机制，因此不附加 kernel tag。`ApplicationExitInfo` 是有容量限制且字段可能缺失的历史记录，不能替代 Crash SDK、ANR 监控、Native symbolication，也不能独立证明某段业务代码导致进程退出。
+源码上界为 Android 17 / API 37 / `android-17.0.0_r1`。相关内容聚焦 framework 与应用侧接口，不涉及 Linux 内核专有机制，因此不附加 kernel tag。`ApplicationExitInfo` 是有容量限制且字段可能缺失的历史记录，不能替代 Crash SDK、ANR 监控、Native symbolication，也不能独立证明某段业务代码导致进程退出。
 
 ## 进程退出归因的观测目标
 

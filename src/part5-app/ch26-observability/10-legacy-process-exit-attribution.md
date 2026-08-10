@@ -94,7 +94,7 @@ last_deepseek_cn_review_at: 2026-07-16
 
 Android 11 以前，应用侧没有 `ApplicationExitInfo` 这类系统退出记录。进程结束后，SDK 只能在下次启动时读取崩溃文件、卡顿现场、内存快照、会话标记等应用自有证据，推测上一个进程发生了什么。
 
-本节的运行版本范围是 Android 5.0（API 21）到 Android 10（API 29）。平台侧以 `android-17.0.0_r1` 作为当前模型的校准上限，内核侧以 `android17-6.18-2026-06_r6` 作为当前参考。后两个锚点用于说明今天的系统怎样记录退出、LMKD 与内核怎样协作，并不表示 Android 5～10 设备运行 Linux 6.18。分析旧设备时，还要回到对应 ROM 的 framework、Android 10 AOSP `lmkd` 和厂商内核实现。
+运行版本范围是 Android 5.0（API 21）到 Android 10（API 29）。平台侧以 `android-17.0.0_r1` 作为当前模型的校准上限，内核侧以 `android17-6.18-2026-06_r6` 作为当前参考。后两个锚点用于说明今天的系统怎样记录退出、LMKD 与内核怎样协作，并不表示 Android 5～10 设备运行 Linux 6.18。分析旧设备时，还要回到对应 ROM 的 framework、Android 10 AOSP `lmkd` 和厂商内核实现。
 
 ## 要点
 
@@ -303,7 +303,7 @@ CREATE TABLE process_exit_event (
 - [Android 17 `ApplicationExitInfo`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java)：客户端值对象、公开 reason 与 trace 接口。
 - [Android 17 `AppExitInfoTracker`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java)：服务端记录、关联和持久化实现。
 - [Android Developers：`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo) 与 [`getHistoricalProcessExitReasons`](https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,%20int,%20int))：API 30+ 的公开契约。
-- [Android 17 `lmkd`](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/) 与 [Android 10 `lmkd`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-10.0.0_r47/lmkd/)：当前实现与本文历史范围的 AOSP 参照。
+- [Android 17 `lmkd`](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/) 与 [Android 10 `lmkd`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-10.0.0_r47/lmkd/)：当前实现与历史范围的 AOSP 参照。
 - [Android 17 common kernel 6.18 tag](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6)：当前内核语义校准点，不用于替代旧设备的实际内核。
 - [Android Developers：ANR](https://developer.android.com/topic/performance/vitals/anr)：ANR trace 文件形态与 adb 取证方式。
 - [AOSP：ART TI](https://source.android.com/docs/core/runtime/art-ti)：Android 8.0+ JVMTI 能力、debuggable 和 agent 加载边界。
