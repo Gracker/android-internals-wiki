@@ -465,7 +465,7 @@ UI 线程慢时看 input、animation、traversal、measure/layout 和 display-li
 3. SurfaceFlinger 何时认为 transaction ready 并 latch；
 4. 对应 DisplayFrame 何时 present。
 
-`BufferTX - <layerName>` 只表示 SurfaceFlinger 服务端的待处理缓冲 transaction 发生变化，不表示屏幕已经显示。
+`BufferTX - <layerName>` 只表示 SurfaceFlinger server 侧的 pending buffer transaction 发生变化，不表示屏幕已经显示。
 
 ### 4. Android 12+ 用 FrameTimeline 锁定帧
 

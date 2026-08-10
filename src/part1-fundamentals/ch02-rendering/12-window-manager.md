@@ -529,7 +529,7 @@ Window 数量会增加状态和内存，但不能单独预测帧耗时。需要�
 
 ### 误区 3："StartingWindow 是 App 画的"
 
-StartingWindow 独立于 App 主窗口第一帧。ATMS/WMS 判断是否需要 starting surface 并发出生命周期请求；Android 12+ 的 SplashScreen/TaskSnapshot / TaskSnapshot starting window 多由 WM Shell starting-surface 组件创建和绘制。App 进程完成主窗口首帧之前，Shell 侧 starting surface 已经挂到 Task 上。
+StartingWindow 独立于 App 主 Window 第一帧。ATMS/WMS 判断是否需要 starting surface 并发出生命周期请求；Android 12+ 的 SplashScreen/TaskSnapshot / TaskSnapshot starting window 多由 WM Shell starting-surface 组件创建和绘制。App 进程完成主 Window 首帧之前，Shell 侧 starting surface 已经挂到 Task 上。
 
 ### 误区 4："relayoutWindow 慢一定是 WMS 的问题"
 

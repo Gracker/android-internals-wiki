@@ -313,7 +313,7 @@ Android 15 起平台支持 16 KB page size 设备。它会影响 ELF、mmap、�
 5. 关闭并删除临时 raw handle，保存 imported handle；
 6. 对象析构时按 owner 类型调用 Mapper `freeBuffer()` 或 Allocator `free()`。
 
-因此，fd 被成功传递仍不等于 Mapper 一定能成功导入。vendor metadata 不兼容、资源不足或错误 handle 都可能让 import 返回错误。
+因此，fd 被成功传递仍不等于 Mapper import 一定成功。vendor metadata 不兼容、资源不足或错误 handle 都可能让 import 返回错误。
 
 ### 5.1 BufferQueue 为何不在每帧重传 handle
 
@@ -439,7 +439,7 @@ Camera preview 常把 HAL 产出的 buffer 交给 SurfaceTexture、ImageReader�
 
 因此，零拷贝不等于零带宽。分析相机打开后 UI 掉帧时，应分别测量 Camera fence、GPU render pass、最终 Surface present、内存控制器与热状态；heap 名称本身不能证明物理带宽隔离。两条 BufferQueue 与中间 consumer/producer 需要分别检查，以确认积压位置。
 
-视频也遵循同一原则。SurfaceView 视频可能保留独立 layer，TextureView 会把解码缓冲再采样进宿主窗口；是否获得 HWC DEVICE 合成取决于格式、变换、受保护属性、平面和带宽等整屏条件。“共享同一缓冲”“省去一次 RenderEngine 合成”和“没有内存带宽成本”是三种不同结论。
+视频也遵循同一原则。SurfaceView 视频可能保留独立 layer，TextureView 会把解码 buffer 再采样进宿主窗口；是否获得 HWC DEVICE composition 取决于格式、变换、protected 属性、plane 和带宽等整屏条件。“共享同一 buffer”“省去一次 RenderEngine 合成”和“没有内存带宽成本”是三种不同结论。
 
 ### 9.3 引用泄漏
 
