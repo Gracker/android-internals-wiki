@@ -101,11 +101,11 @@ last_deepseek_cn_review_at: 2026-07-17
 
 # Android 17 EyeDropper API 与跨设备协作性能
 
-## 这章要解决什么问题
+## EyeDropper 需要明确哪些边界
 
 Android 17 / API 37 增加了一个标准 Activity action：调用方发送 `Intent.ACTION_OPEN_EYE_DROPPER`，用户在系统取色界面选择像素，系统再通过 Activity result 的 `Intent.EXTRA_COLOR` 返回颜色。
 
-公开 API 很小，但实现边界容易被说错。本章要厘清五件事：
+公开 API 很小，但实现边界容易被说错。需要厘清五件事：
 
 - 它是隐式 Intent 协议，没有可实例化的 `EyeDropper` 对象；
 - API 37 常量存在，不代表每个 Android 17 产品都安装并启用了处理器；
@@ -113,7 +113,7 @@ Android 17 / API 37 增加了一个标准 Activity action：调用方发送 `Int
 - AOSP 支持同一 Android 系统内的多 display，这与设备到设备同步是两回事；
 - 返回值没有 ColorSpace 元数据，不能把它当作跨屏幕一致的色度测量结果。
 
-本文的平台源码固定到 `android-17.0.0_r1`。该功能的结论来自 `frameworks/base` 的 `Intent` 契约和 `packages/apps/EyeDropper` 的 AOSP 实现；本章不依赖 kernel 函数。需要进入显示驱动或 dma-buf 时，kernel 统一使用 `android17-6.18-2026-06_r6`。
+平台源码固定到 `android-17.0.0_r1`。该功能的结论来自 `frameworks/base` 的 `Intent` 契约和 `packages/apps/EyeDropper` 的 AOSP 实现；这里的分析不依赖 kernel 函数。需要进入显示驱动或 dma-buf 时，kernel 统一使用 `android17-6.18-2026-06_r6`。
 
 ## 公开 API 契约
 

@@ -102,54 +102,11 @@ sources:
 
 # 18.23 Android 17 多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 多媒体播放链路的分层边界
-
-梳理 Media3 / ExoPlayer、MediaCodec、Stagefright、Codec2 / OMX、Surface / SurfaceView、AudioTrack、SurfaceFlinger 与 HWC 的职责边界，说明视频播放卡顿、音画不同步、弱网降质和硬解失败分别落在哪一层观察。
-
-### 🔹 OMX 到 Codec2 的迁移对性能诊断的影响
-
-围绕 Android 10+ Codec2 架构、ComponentStore、C2Component、C2Work / C2Buffer 与旧 OMX 回调模型对比，解释为什么同样是 MediaCodec API，底层组件、buffer 生命周期和厂商 HAL 行为可能完全不同。
-
-### 🔹 Tunneled Playback 的直出路径
-
-覆盖 tunneled playback 的条件、AudioTrack 同步、sideband / tunnel handle、SurfaceView layer 与 HWC 直出关系，区分普通 BufferQueue 合成路径和硬件 tunnel 路径的延迟、功耗与可观测性差异。
-
-### 🔹 Media3 ABR 与网络/解码能力协同
-
-整理 Adaptive Bitrate 的决策输入：带宽估计、buffer 水位、track selection 参数、设备解码能力、DRM / 高帧率内容限制，避免把弱网卡顿、解码瓶颈和渲染合成瓶颈混在一起。
-
-### 🔹 Perfetto 与日志观察点
-
-建立排查清单：MediaCodec / Codec2 线程、binder 调用、BufferQueue、FrameTimeline、SurfaceFlinger、AudioTrack、network 与 app 自定义 event，用于定位掉帧、卡顿、seek 慢、首帧慢和码率切换抖动。
-
-### 🔹 应用侧优化策略
-
-给出播放器工程可执行策略：能力探测、SurfaceView / TextureView 选择、tunnel 开关灰度、Media3 参数治理、低端设备降档、弱网预加载、首帧指标与线上分桶归因。
-
-## 扩展
-
-### 🔸 低延迟直播与普通点播的诊断差异
-
-补充 live edge、buffer 策略、码率升降级和丢帧策略对低延迟直播体验的影响。
-
-### 🔸 DRM、HDR、高帧率内容的设备组合验证
-
-补充 secure decoder、HDR format、60fps/120fps、widevine security level 与 SoC 能力差异对播放性能的影响。
-
-### 🔸 Media3 Transformer 的责任边界
-
-界定离线转码、剪辑、滤镜与导出性能的独立管线，避免把 Transformer 的 decoder/effect/encoder/muxer 成本混入播放 ABR。
-
-<!-- outline-end -->
-
 视频播放卡顿可能来自下载、码率选择、解码、Surface 消费、合成、显示或音频时钟。把这些阶段统称为“播放器卡”，很容易在错误的层上调参数。本节固定两个核查基线：
 
 - Android 平台：Android 17 / API 37 / `android-17.0.0_r1`。
 - kernel：`android17-6.18-2026-06_r6`。
-- Media3：截至 2026-07-31 的最新稳定版为 1.10.1，源码 tag 对应 commit `5fb306449733dd71595700c1227ad6087578c559`。1.11.0-rc01 已在 2026-07-22 发布，本文仍以稳定版 1.10.1 的常量为准。
+- Media3：截至 2026-07-31 的最新稳定版为 1.10.1，源码 tag 对应 commit `5fb306449733dd71595700c1227ad6087578c559`。1.11.0-rc01 已在 2026-07-22 发布，这里的常量仍以稳定版 1.10.1 为准。
 
 Android 平台版本和 Media3 版本彼此独立。设备运行 Android 17，不表示应用使用最新 Media3；升级 Media3 也不会替换设备上的 codec、Composer HAL 或显示驱动。
 
@@ -226,8 +183,6 @@ Codec 名称仍是线上诊断的关键字段。API level 只能说明框架能�
 普通 SurfaceView 有独立 layer，不保证获得硬件 overlay。格式、缩放、旋转、alpha、HDR/SDR 混合、protected usage、plane 数量和带宽都可能改变 HWC 的选择。TextureView 的外部视频 buffer 先被应用 HWUI 消费，再画入宿主窗口；宿主主线程、RenderThread 或 GPU 迟到都会影响视频可见时间。
 
 Tunnel 也没有“绕过 SurfaceFlinger 直接显示”。Android 官方文档与 Android 17 源码给出的边界是：codec 返回 sideband handle，native window 把 handle 交给 SurfaceFlinger，SurfaceFlinger 将该 layer 配置为 sideband，HWC 再按音频时钟或 tuner 时钟取得并显示视频帧。普通 decoded graphic buffer 不再按常规逐帧 `queueBuffer()` 形式交给应用/framework 图形路径。
-
-这一区分来自 `rendering_pipelines/S03_surfaceview_type.md`、`S04_textureview_type.md` 与 `S12_video_overlay_hwc_type.md` 的既有结论，并已按 Android 17 的 CCodec、Surface 与 HWC 边界复核。
 
 ## Tunneled playback 的 Android 17 源码路径
 
@@ -357,7 +312,7 @@ Media3 1.10.1 的 `AdaptiveTrackSelection` 默认值为：
 
 ### 没有“亚 100 ms 主动预测缓存”这条默认主线
 
-Media3 1.10.1 的默认 ABR 源码中没有 `AdaptivePlaybackCache` 或 `StreamSharingCache`。此前素材里关于二者协同预测、把 ABR 决策压缩到亚 100 ms 的描述没有官方源码支撑，已从正文删除。
+Media3 1.10.1 的默认 ABR 源码中没有 `AdaptivePlaybackCache` 或 `StreamSharingCache`，也没有官方源码支持二者协同预测、把 ABR 决策压缩到亚 100 ms 的说法。
 
 源码确有 experimental bandwidth estimator，但它们不是上述虚构类，也不是 `DefaultBandwidthMeter` 的默认逻辑。引用实验组件时必须写清构造方式、启用条件和版本，不能把它们描述为所有 Media3 播放都会经过的主路径。
 
@@ -438,7 +393,7 @@ Media3 Transformer 的离线转码不属于本节播放主线。Transformer 涉�
 
 ## Kernel 证据边界
 
-普通 codec → Surface 路径常用 dma-buf 共享 graphic buffer，并用 dma-fence/sync_file 表达 codec、GPU、SurfaceFlinger 与 HWC 之间的异步完成关系。本文 kernel 语义固定到 `android17-6.18-2026-06_r6` 的 `drivers/dma-buf/dma-buf.c`、`drivers/dma-buf/sync_file.c` 与 `include/linux/dma-fence.h`。
+普通 codec → Surface 路径常用 dma-buf 共享 graphic buffer，并用 dma-fence/sync_file 表达 codec、GPU、SurfaceFlinger 与 HWC 之间的异步完成关系。kernel 语义固定到 `android17-6.18-2026-06_r6` 的 `drivers/dma-buf/dma-buf.c`、`drivers/dma-buf/sync_file.c` 与 `include/linux/dma-fence.h`。
 
 Tunnel 的 sideband handle 不会让 AOSP common kernel 自动暴露完整逐帧路径。codec job、secure buffer、A/V synchronizer、plane 提交和 scanout 常位于厂商驱动或固件。Perfetto 只能看到 framework 事件时，应明确标注“vendor display evidence unavailable”，不要用 common kernel 的 fence 定义补写设备没有提供的时序。
 
