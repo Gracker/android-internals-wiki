@@ -205,7 +205,7 @@ HWC present → present fence → release fence
 | 应用渲染 | `RenderThread` + GPU 队列 | 同步 RenderNode、执行 Skia 管线、产生窗口缓冲区 |
 | 系统显示 | SurfaceFlinger / HWC / 显示设备 | 选择缓冲区、确定合成策略并呈现 |
 
-“应用主线程已经画完”通常只说明 UI 侧工作到达某个提交边界。它不说明 GPU 已完成，也不说明 SurfaceFlinger 已经锁存，更不说明像素已经开始被面板扫描。
+“应用主线程已经画完”通常只说明 UI 侧工作到达某个提交边界。它不说明 GPU 已完成，也不说明 SurfaceFlinger 已经 latch，更不说明像素已经开始被面板扫描。
 
 ## 3. 主线程：从状态变化到 Traversal
 
@@ -245,7 +245,7 @@ CALLBACK_COMMIT
 
 - 输入回调可以先改变状态，动画随后更新属性，traversal 再读取这些结果。
 - 主线程在 INPUT 或 ANIMATION 阶段耗时过长，会挤压同一帧留给 TRAVERSAL 的时间。
-- COMMIT 位于遍历之后，但到达 COMMIT 仍不代表缓冲区已经显示。
+- COMMIT 位于 traversal 之后，但到达 COMMIT 仍不代表缓冲区已经显示。
 
 ### 3.3 `performTraversals()` 不等于每帧完整执行三大流程
 
@@ -271,7 +271,7 @@ CALLBACK_COMMIT
 
 #### Layout：确定位置，不自动裁剪内容
 
-Layout 通过 `layout(l, t, r, b)` 和 `onLayout()` 确定子 View 的边界。子 View 的位置和尺寸由父容器决定，但内容是否被裁剪属于绘制阶段行为，还会受 `clipChildren`、`clipToPadding`、outline、显式裁剪和变换影响。
+Layout 通过 `layout(l, t, r, b)` 和 `onLayout()` 确定子 View 的边界。子 View 的位置和尺寸由父容器决定，但内容是否被裁剪属于绘制阶段行为，还会受 `clipChildren`、`clipToPadding`、outline、显式 clip 和变换影响。
 
 因此，“子 View 位于父 View 边界内”和“超出父边界的像素不会显示”是两个不同判断。
 
@@ -294,9 +294,9 @@ Layout 通过 `layout(l, t, r, b)` 和 `onLayout()` 确定子 View 的边界。�
 | API | 主要表达 | 可能触发的工作 |
 | --- | --- | --- |
 | `invalidate()` | 某个区域的显示内容失效 | 标记脏区域，调度绘制；不主动表达尺寸变化 |
-| `requestLayout()` | 当前 View 的测量结果或位置可能失效 | 向父级传播布局请求，并调度遍历 |
+| `requestLayout()` | 当前 View 的测量结果或位置可能失效 | 向父级传播布局请求，并调度 traversal |
 
-两者最终都可能通过 `ViewRootImpl` 汇入下一轮遍历。`requestLayout()` 的传播和框架优化会影响实际遍历范围，所以“每次调用必然完整重测整棵树”也不准确。
+两者最终都可能通过 `ViewRootImpl` 汇入下一轮 traversal。`requestLayout()` 的传播和框架优化会影响实际遍历范围，所以“每次调用必然完整重测整棵树”也不准确。
 
 排查主线程问题时，建议同时看：
 
@@ -330,11 +330,11 @@ void pushStagingDisplayListChanges(TreeObserver& observer, TreeInfo& info);
 - `frameworks/base/libs/hwui/RenderNode.h`
 - `frameworks/base/libs/hwui/RenderNode.cpp`
 
-主线程更新暂存数据，RenderThread 在同步阶段把需要的变化推入渲染侧状态。这个双阶段模型能减少主线程直接操作渲染线程当前状态所需的竞争。
+主线程更新 staging 数据，RenderThread 在同步阶段把需要的变化推入渲染侧状态。这个双阶段模型能减少主线程直接操作渲染线程当前状态所需的竞争。
 
 ### 4.2 `RecordingCanvas` 负责录制
 
-Java 层 `RecordingCanvas` 的绘制 API 最终进入 `BaseRecordingCanvas` 等实现。以绘制 RenderNode 为例，Android 17 的原生入口由框架内部桥接完成。阅读源码时要区分：
+Java 层 `RecordingCanvas` 的绘制 API 最终进入 `BaseRecordingCanvas` 等实现。以绘制 RenderNode 为例，Android 17 的 native 入口由框架内部桥接完成。阅读源码时要区分：
 
 - Java Canvas API；
 - JNI/native 方法；
@@ -345,7 +345,7 @@ Java 层 `RecordingCanvas` 的绘制 API 最终进入 `BaseRecordingCanvas` 等�
 
 ### 4.3 `syncAndDrawFrame()` 是 UI 到 RenderThread 的提交边界
 
-`ThreadedRenderer` 通过 `HardwareRenderer` 把帧信息提交给原生渲染代理，核心入口名为 `syncAndDrawFrame()`。它连接两类工作：
+`ThreadedRenderer` 通过 `HardwareRenderer` 把帧信息提交给 native 渲染代理，核心入口名为 `syncAndDrawFrame()`。它连接两类工作：
 
 1. UI 线程准备帧信息和 RenderNode 变化；
 2. RenderThread 同步状态并安排绘制。
@@ -438,7 +438,7 @@ Android 17 的 `BufferQueueCore` 初始配置中可看到最大 acquired 和 deq
 - `dequeueBuffer()` 等待可用槽位；
 - 应用被 VSync 节奏约束，无法持续无界生产；
 - 队列中的缓冲区在特定模式下按规则被替换或跳过；
-- SurfaceFlinger 选择满足锁存条件的缓冲区；
+- SurfaceFlinger 选择满足 latch 条件的缓冲区；
 - Choreographer 检测缓冲区堆积（buffer stuffing）并调整恢复节奏。
 
 不同 Surface 类型、显示模式（present mode）和 BufferQueue 配置会改变行为。没有这些条件时，不应笼统写成“多画的帧都会被丢掉”。
@@ -447,7 +447,7 @@ Android 17 的 `BufferQueueCore` 初始配置中可看到最大 acquired 和 deq
 
 ### 6.1 标准 App Window 中的 BLASTBufferQueue
 
-在现代 Android 的普通应用窗口路径中，应用进程内的 `BLASTBufferQueue` 承担应用侧 BufferQueue 消费者角色，并把取得的缓冲区包装进 `SurfaceComposerClient::Transaction`。它通过 `setBuffer()` 把栅栏、帧号和 release callback 等信息提交给 SurfaceFlinger。
+在现代 Android 的普通应用窗口路径中，应用进程内的 `BLASTBufferQueue` 承担应用侧 BufferQueue consumer 角色，并把取得的缓冲区包装进 `SurfaceComposerClient::Transaction`。它通过 `setBuffer()` 把栅栏、帧号和 release callback 等信息提交给 SurfaceFlinger。
 
 这条路径可以简化为：
 
@@ -479,12 +479,12 @@ SurfaceFlinger 的 Layer 追踪中可看到形如 `BufferTX - <layerName>` 的�
 | --- | --- |
 | dequeue / queue / acquire / release | 某条 BufferQueue 的槽位生命周期 |
 | `BufferTX - layerName` | SurfaceFlinger Layer 的缓冲区事务积压 |
-| FrameTimeline 预期/ actual | 帧预计呈现与实际呈现结果 |
-| HWC 验证/ present | 显示合成与提交阶段 |
+| FrameTimeline expected/ actual | 帧预计呈现与实际呈现结果 |
+| HWC validate/ present | 显示合成与提交阶段 |
 
 ## 7. Fence：说明“什么时候可以安全使用”
 
-图形管线通过栅栏表达跨 CPU、GPU、合成器和显示设备的异步完成关系。名称相近的栅栏所处方向不同。
+图形管线通过 fence 表达跨 CPU、GPU、合成器和显示设备的异步完成关系。名称相近的 fence 所处方向不同。
 
 | Fence | 谁等待 | 表达的条件 |
 | --- | --- | --- |
@@ -500,7 +500,7 @@ Present fence 是 Android 显示栈的呈现完成时序锚点，但它不等同
 
 对于“输入到用户看到变化的总延迟”，应用 trace、FrameTimeline 和 present fence 只能覆盖其中一部分，还需结合触摸采样、显示扫描和面板特性。
 
-### 7.2 等待栅栏不一定是 GPU 算力不足
+### 7.2 等待 fence 不一定是 GPU 算力不足
 
 一次栅栏等待只能说明依赖尚未满足。上游原因可能是：
 
@@ -510,7 +510,7 @@ Present fence 是 Android 显示栈的呈现完成时序锚点，但它不等同
 - HWC 或显示设备尚未释放资源；
 - 跨进程事务与目标 VSync 错位。
 
-需要沿栅栏的生产者方向追踪，才能确定责任阶段。
+需要沿 fence 的生产者方向追踪，才能确定责任阶段。
 
 ## 8. SurfaceFlinger：接收事务、选择内容并组织合成
 
@@ -521,11 +521,11 @@ SurfaceFlinger 管理系统可见 Layer 的状态，接收来自 WindowManager�
 1. 接收并应用 SurfaceControl 事务；
 2. 更新 Layer 前端状态与可见性；
 3. 为当前组合生成可用于合成决策的快照；
-4. 判断缓冲区是否满足锁存条件；
+4. 判断缓冲区是否满足 latch 条件；
 5. 结合损伤区域（damage）、几何、色彩、保护内容等信息准备合成；
-6. 调用 HWC 验证/ present；
+6. 调用 HWC validate/ present；
 7. 对需要客户端合成的部分调用 RenderEngine；
-8. 传播显示与释放同步信息。
+8. 传播 present 与 release 同步信息。
 
 具体执行路径受 Scheduler、显示设备、Layer 状态、预测结果和 HWC 返回值影响。分析跟踪数据时，应围绕当前帧的事务、Layer、FrameTimeline 与 HWC 事件建立对应关系。
 
@@ -536,7 +536,7 @@ SurfaceFlinger 选择缓冲区时要考虑：
 - acquire fence 是否满足；
 - 缓冲区期望呈现时间；
 - Layer 与事务状态；
-- 当前调度和锁存策略；
+- 当前调度和 latch 策略；
 - 当前版本与场景是否允许有限处理未 signal fence 的栅栏。
 
 Android 13 以后存在受约束的未发信号缓冲区锁存（unsignaled latch）优化，但它有严格条件，不能扩写成 SurfaceFlinger 会忽略所有 acquire fence。
@@ -545,7 +545,7 @@ Android 13 以后存在受约束的未发信号缓冲区锁存（unsignaled latc
 
 应用和 SurfaceFlinger 都受显示节拍驱动，但调度器可以给它们设置不同的相位和 deadline。调度目标是让应用先生产，SurfaceFlinger 再在合适的时间消费并提交显示。
 
-高刷新率、可变刷新率和多显示设备让“固定 16.67 ms、应用与 SurfaceFlinger 同时唤醒”的模型失效。性能判断应读取当前显示模式以及 FrameTimeline 给出的预期/ actual 时序。
+高刷新率、可变刷新率和多显示设备让“固定 16.67 ms、应用与 SurfaceFlinger 同时唤醒”的模型失效。性能判断应读取当前显示模式以及 FrameTimeline 给出的 expected/ actual 时序。
 
 ## 9. HWC 与 RenderEngine：每帧决定如何合成
 
@@ -582,7 +582,7 @@ Hardware Composer HAL 连接 SurfaceFlinger 与设备显示合成能力。Surfac
 - 应用 HWUI 把 View/Compose 绘制记录生成应用窗口缓冲区；
 - SurfaceFlinger RenderEngine 在客户端合成、模糊、色彩处理等系统合成任务中生成输出。
 
-应用 GPU 切片很短，不代表 SurfaceFlinger 的 client composition 也很短；反过来也一样。Perfetto 中需要按进程和上下文区分 GPU 工作来源。
+应用 GPU slice 很短，不代表 SurfaceFlinger 的 client composition 也很短；反过来也一样。Perfetto 中需要按进程和上下文区分 GPU 工作来源。
 
 ### 9.4 色彩处理位于多个可能阶段
 
@@ -590,7 +590,7 @@ Hardware Composer HAL 连接 SurfaceFlinger 与设备显示合成能力。Surfac
 
 ## 10. 从应用缓冲区到显示输出，不是同一组“三个 Buffer”
 
-普通窗口的应用 BufferQueue 保存应用生成的窗口缓冲区。SurfaceFlinger 若执行 client composition，还会生成 client target。显示控制器和面板扫描又可能有各自的内部缓冲与流水结构。
+普通窗口的 App BufferQueue 保存应用生成的窗口缓冲区。SurfaceFlinger 若执行 client composition，还会生成 client target。显示控制器和面板扫描又可能有各自的内部缓冲与流水结构。
 
 这些对象属于不同阶段：
 
@@ -599,7 +599,7 @@ App Window GraphicBuffer
     ↓ 作为一个 Layer 的输入
 SurfaceFlinger / HWC composition
     ↓ 可能产生 client target
-显示提交
+Display present
     ↓
 显示控制器扫描与面板响应
 ```
@@ -613,7 +613,7 @@ SurfaceFlinger / HWC composition
 硬件加速窗口中，View 绘制命令通常录制进 DisplayList，由 HWUI、RenderThread 和 GPU 生成 GraphicBuffer。优势来自命令复用、GPU 并行和图形管线，但性能仍受内容特征影响：
 
 - 大量离屏层和过度绘制会增加像素工作；
-- 复杂路径、阴影、模糊和滤镜可能引入额外 pass；
+- 复杂 path、阴影、模糊和滤镜可能引入额外 pass；
 - 位图上传和纹理缓存失效会增加内存与传输成本；
 - shader 编译或管线缓存未命中可能造成抖动；
 - 大量 RenderNode 更新也会增加 CPU 同步成本。
@@ -664,10 +664,10 @@ SurfaceFlinger / HWC composition
 - `DrawFrame` / `syncAndDrawFrame` 的同步等待；
 - dequeue 是否等待可用缓冲区；
 - Skia 绘制与 `swapBuffers`；
-- GPU queue、GPU 完成时间与相关栅栏；
+- GPU queue、GPU completion 与相关 fence；
 - 资源上传、shader/pipeline 编译和缓存抖动。
 
-RenderThread CPU 切片长度不等于 GPU duration。二者可能重叠，也可能通过栅栏形成依赖。
+RenderThread CPU slice 长度不等于 GPU duration。二者可能重叠，也可能通过 fence 形成依赖。
 
 ### 12.4 第四步：检查 BufferQueue 与 BLAST
 
@@ -677,7 +677,7 @@ RenderThread CPU 切片长度不等于 GPU duration。二者可能重叠，也�
 - slot 和 frame number 是否对应；
 - acquire fence 何时 signal；
 - `BufferTX - layerName` 是否积压；
-- BLAST 事务何时进入 SurfaceFlinger；
+- BLAST transaction 何时进入 SurfaceFlinger；
 - 队列深度是否带来背压或延迟。
 
 如果一个进程包含多条 Surface，要先确认 Layer 名称与生产者，避免把 SurfaceView、视频或宿主窗口混在一起。
@@ -687,7 +687,7 @@ RenderThread CPU 切片长度不等于 GPU duration。二者可能重叠，也�
 关注：
 
 - 事务应用与 Layer 快照；
-- 目标缓冲区是否按期锁存；
+- 目标缓冲区是否按期 latch；
 - SurfaceFlinger 是否错过自己的 deadline；
 - HWC validate 返回的 composition type；
 - 是否发生 RenderEngine client composition；
@@ -703,8 +703,8 @@ RenderThread CPU 切片长度不等于 GPU duration。二者可能重叠，也�
 | `performTraversals` 出现 | 完整 measure/layout/draw 都已执行 | 内部切片、布局标志、脏区域 |
 | `syncAndDrawFrame` 返回 | GPU 或显示已完成 | GPU fence、`queueBuffer`、FrameTimeline |
 | `queueBuffer` 成功 | 画面已经显示 | BLAST/SF latch、HWC present |
-| GPU 轨道超过一个周期 | 该工作必然导致当前帧掉帧 | GPU 依赖、frame id、deadline |
-| `BufferTX` 增加 | App BufferQueue 一定塞满 | 对应 Layer 事务与 BufferQueue 槽位状态 |
+| GPU Track 超过一个周期 | 该工作必然导致当前帧掉帧 | GPU 依赖、frame id、deadline |
+| `BufferTX` 增加 | App BufferQueue 一定塞满 | 对应 Layer 事务与 BQ slot 状态 |
 | HWC 使用 CLIENT | 一定是 Layer 太多 | 每层 composition reason 与设备能力 |
 | present fence signal | 面板像素完成响应 | 面板扫描和硬件测量数据 |
 
@@ -715,9 +715,9 @@ RenderThread CPU 切片长度不等于 GPU duration。二者可能重叠，也�
 1. 在 FrameTimeline 中锁定实际晚到的帧，不要只找最长切片。
 2. 查看应用 `doFrame` 是否晚启动；若晚启动，继续看 Runnable、Binder、锁、GC 和调度。
 3. 若 `doFrame` 按时启动，检查 INPUT、ANIMATION、TRAVERSAL 的耗时与条件分支。
-4. 若 UI 侧按时提交，检查 RenderThread 是否在同步、dequeue、绘制或交换阶段等待。
-5. 若应用已按时 `queueBuffer`，按 Surface 和帧号追踪 BLAST transaction。
-6. 检查 SurfaceFlinger 是否及时锁存，以及 acquire fence 是否满足。
+4. 若 UI 侧按时提交，检查 RenderThread 是否在同步、dequeue、绘制或 swap 阶段等待。
+5. 若应用已按时 `queueBuffer`，按 Surface 和 frame number 追踪 BLAST transaction。
+6. 检查 SurfaceFlinger 是否及时 latch，以及 acquire fence 是否满足。
 7. 检查 HWC composition type、RenderEngine 工作和 present 时序。
 8. 最终把根因归到“生产晚、GPU 完成晚、队列背压、系统合成晚或显示呈现晚”中的具体一项。
 
@@ -739,7 +739,7 @@ Project Butter 强化了 VSync 驱动的 Choreographer 协调、三重缓冲相�
 
 ### Android 8.0 / API 26
 
-Treble 之后 HWC HAL 接口与系统/厂商边界更清晰。设备合成能力仍由具体硬件与厂商实现决定。
+Treble 之后 HWC HAL 接口与系统/厂商边界更清晰。设备合成能力仍由具体硬件与 vendor 实现决定。
 
 ### Android 10 / API 29
 
@@ -779,7 +779,7 @@ SurfaceFlinger Scheduler、Layer 前端、FrameTimeline、刷新率和合成策�
 - `frameworks/base/graphics/java/android/graphics/HardwareRenderer.java`
 - `frameworks/base/graphics/java/android/graphics/BaseRecordingCanvas.java`
 
-### HWUI 原生层
+### HWUI native 层
 
 - `frameworks/base/libs/hwui/RenderNode.h`
 - `frameworks/base/libs/hwui/RenderNode.cpp`
@@ -820,4 +820,4 @@ Android 渲染性能不能用“主线程画图，再由 GPU 显示”这一句�
 6. HWC、RenderEngine 和显示设备完成 present；
 7. acquire、release、present fence 维护各阶段的安全依赖。
 
-定位问题时，先确认输出拓扑，再按帧 ID、Surface、BufferQueue slot、fence 和 FrameTimeline 逐段核对。这样才能区分应用生产晚、GPU 执行晚、队列背压、SurfaceFlinger 合成晚和显示呈现晚，避免用单个切片为整帧下结论。
+定位问题时，先确认输出拓扑，再按 frame id、Surface、BufferQueue slot、fence 和 FrameTimeline 逐段核对。这样才能区分应用生产晚、GPU 执行晚、队列背压、SurfaceFlinger 合成晚和显示呈现晚，避免用单个 slice 为整帧下结论。
