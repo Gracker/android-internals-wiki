@@ -59,7 +59,7 @@ Simpleperf 是 Android 平台的原生 CPU 性能分析工具。它借助 Linux 
 
 它不负责堆内存泄漏、Java 对象分配、完整系统调用时序或整机功耗归因。对应问题应分别使用 Heap Dump/LeakCanary、Allocation Tracking、Perfetto ftrace 和 Power Profiler。Simpleperf 的 PMU 计数可以辅助解释 CPU 行为，却不能单独换算成可靠的能耗。
 
-本文的平台源码统一锚定 `android-17.0.0_r1`，内核源码统一锚定 `android17-6.18-2026-06_r6`。涉及 Android 5.0 至 Android 16 的内容仅用于说明兼容边界。
+平台源码统一锚定 `android-17.0.0_r1`，内核源码统一锚定 `android17-6.18-2026-06_r6`。涉及 Android 5.0 至 Android 16 的内容仅用于说明兼容边界。
 
 ## 14.2.1 采样模型
 
@@ -97,7 +97,7 @@ flowchart LR
 | Android 9（API 28）起 | 可为解释执行、JIT 和 AOT Java/Kotlin 代码生成调用栈 |
 | Android 10（API 29）起 | 发布应用可声明 `profileable`，由 shell 使用预装分析工具采样 |
 | Android 16（API 36）起 | 应用采样优先由 `simpleperf_app_runner` 启动设备内置 Simpleperf；侧载二进制不再拥有获取内核样本所需的权限 |
-| Android 17（API 37） | 沿用 `simpleperf_app_runner` 路径；本文以 `android-17.0.0_r1` 的实现为准 |
+| Android 17（API 37） | 沿用 `simpleperf_app_runner` 路径；以 `android-17.0.0_r1` 的实现为准 |
 
 Android 9 以前的 Java 支持不等于 ART method tracing。Simpleperf 仍按 CPU 事件采样，只是可解析的 ART 执行形态受版本约束。Android 9 起，解释器、JIT 与 AOT 代码都能进入采样调用栈。
 

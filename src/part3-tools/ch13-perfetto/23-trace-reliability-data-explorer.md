@@ -24,7 +24,7 @@ sources:
 ---
 # 13.23 Perfetto v54：从采集可靠性到可复现诊断
 
-> 本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台基线，以该平台 `external/perfetto` 中包含的 Perfetto v54.0 能力为工具基线。界面操作与 SQL 节点图见 [13.21 Perfetto v54 Data Explorer 与性能分析](./13.21-perfetto-v54-data-explorer-analysis.md)，CUJ 指标源码见 [13.20 Perfetto v54 Data Explorer 与 Jank CUJ](./13.20-Perfetto-v54-Data-Explorer-与-Jank-CUJ.md)。
+> 平台基线是 Android 17 / API 37 / `android-17.0.0_r1`，工具基线是该平台 `external/perfetto` 中包含的 Perfetto v54.0。界面操作与 SQL 节点图见 [13.21 Perfetto v54 Data Explorer 与性能分析](./13.21-perfetto-v54-data-explorer-analysis.md)，CUJ 指标源码见 [13.20 Perfetto v54 Data Explorer 与 Jank CUJ](./13.20-Perfetto-v54-Data-Explorer-与-Jank-CUJ.md)。
 
 ---
 
@@ -32,7 +32,7 @@ sources:
 
 性能分析常从一张漂亮的时间线开始，却可能败在采集阶段：调度事件被覆盖、producer 的共享内存发生丢包、结束 flush 失败，或环形 buffer 已经把问题发生前的数据冲掉。Trace Processor 能打开文件，只能说明文件可解析，不能证明事件完整。
 
-本章采用一条固定顺序：
+诊断采用一条固定顺序：
 
 1. 明确要回答的问题和所需数据源；
 2. 估算数据率，设置 ftrace、共享内存和 central buffer；
@@ -468,7 +468,7 @@ Tracing 会消耗 CPU、内存、I/O 和被观测进程时间。开销与配置�
 
 ## 13. 源码与文档锚点
 
-本文以这些 v54/Android 17 一手资料为准：
+版本与行为以这些 v54/Android 17 一手资料为准：
 
 - [Android 17 `external/perfetto` CHANGELOG](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/CHANGELOG)
 - [Perfetto v54.0 release notes](https://github.com/google/perfetto/blob/v54.0/CHANGELOG)
