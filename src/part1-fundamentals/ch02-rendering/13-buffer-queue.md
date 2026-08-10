@@ -117,7 +117,7 @@ Perfetto 中出现以下现象时，BufferQueue 是必须检查的一层：
 - App 已调用 `queueBuffer()`，SurfaceFlinger 迟迟没有采用新内容；
 - 窗口尺寸、crop 或位置已经改变，内容仍像上一帧；
 - 连续几帧越积越深，输入响应随之变迟；
-- 某个图层的释放栅栏很晚，后续生产者拿不到合适的缓冲。
+- 某个 layer 的 release fence 很晚，后续 Producer 拿不到合适的 buffer。
 
 这些现象横跨“取缓冲、写缓冲、交缓冲、合成、释放”五个阶段。只看应用 CPU、GPU 忙碌状态或 SurfaceFlinger 任意一条轨道，都不足以判断责任位置。分析以 Android 17/API 37、`android-17.0.0_r1` 为平台锚点；fence 的内核语义固定到 `android17-6.18-2026-06_r6`。
 
@@ -386,7 +386,7 @@ Android 13 起，`AutoSingleLayer` 允许 SurfaceFlinger 在严格条件下先 l
 | layer release fence | 每个被消费的 layer buffer | HWC/RenderEngine 经 SF 回到 BLAST/BufferQueue | 下游何时不再读、何时可复用 |
 | display present fence | 每个 display frame | HWC 显示后返回给 SF | 本轮显示到达 Android 显示栈可观察边界 |
 
-显示栅栏不由某个应用缓冲独享；释放栅栏也不等同于显示栅栏。客户端合成时，RenderEngine 会消费输入图层栅栏，并为客户端目标产生自己的获取栅栏。SF 还可能按图层使用方式合并或选择释放栅栏。
+present fence 不是某个 App buffer 独享的 fence；release fence 也不等同于 present fence。CLIENT composition 时，RenderEngine 会消费输入 layer fence，并为 client target 产生自己的 acquire fence。SF 还可能按 layer 使用方式合并或选择 release fence。
 
 进入内核后，native fence fd 由 `sync_file` 暴露，底层依赖 `dma_fence` 的信号、callback 与等待。公共内核只能说明通用同步机制，无法解释厂商 GPU、DPU 或 codec 为何在某台设备上晚 signal；这部分需要设备驱动、vendor trace 和调用现场。
 
@@ -441,7 +441,7 @@ BLAST 在 `acquireNextBufferLocked()` 中按帧号查找待处理的 pending Fra
 4. `QueuedBuffer` 与 `BufferTX` 是否持续堆高；
 5. SF 是否迟迟未选用或释放旧缓冲；
 6. release fence 是否晚到，返回槽位后又在哪里等待栅栏；
-7. 是否出现缓冲堆积恢复。
+7. 是否出现 buffer-stuffing recovery。
 
 单个 Producer 长 dequeue 通常只说明对应队列缺少可用缓冲。多窗口中的其他应用有独立队列和主线程，不能直接推断所有窗口都被同一个锁阻塞。
 
@@ -482,7 +482,7 @@ Producer 完成早而 `BufferTX` 晚，优先查应用内 BLAST 与事务；`Buf
 
 ### 把 `queueBuffer()` 当成已经上屏
 
-它只完成生产者提交。BLAST Producer 事务、锁存、合成和显示仍在后面。
+它只完成 Producer 提交。BLAST acquire、SF transaction、latch、composition 和 display present 仍在后面。
 
 ### 把三缓冲当成常量
 
