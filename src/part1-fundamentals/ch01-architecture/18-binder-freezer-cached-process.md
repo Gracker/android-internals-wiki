@@ -104,7 +104,7 @@ Cached apps freezer 在“继续运行”和“杀掉回收”之间增加了一
 
 它节省的是缓存进程的 CPU 与唤醒成本。内存压力到来时，`lmkd` 仍可杀掉这个进程；重新进入前台或接到生命周期工作时，系统也可以先解冻再继续执行。
 
-Binder Binder。被冻结的线程无法处理 IPC：同步调用不能无限等待，`oneway` 事务也不能无限堆积。以下从 Android 17 框架层与 ACK 6.18 源码拆解这条链路。
+Binder 路径需要单独处理。被冻结的线程无法处理 IPC：synchronous call 不能无限等待，`oneway` transaction 也不能无限堆积。以下从 Android 17 framework 与 ACK 6.18 源码拆解这条链路。
 
 ## 1. 先区分冻结器、Doze 和 LMK
 
