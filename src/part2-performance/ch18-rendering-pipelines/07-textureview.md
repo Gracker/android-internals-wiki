@@ -98,25 +98,6 @@ last_idle_audit_result: "pass-frontmatter-fix"
 
 # 18.7 Android 17 TextureView 宿主合成链路
 
-<!-- outline-start -->
-
-**锚点（必须覆盖）：**
-- [18.7.1 为什么要理解 TextureView 的链路](#为什么要理解-textureview-的链路) — View 表象与 App 侧合成路径
-- [18.7.2 三阶段链路详解](#三阶段链路详解) — Producer → SurfaceTexture → RenderThread → SF
-- [18.7.3 SurfaceTexture 机制深入](#surfacetexture-机制深入) — 双角色组件的核心
-- [18.7.4 额外纹理采样的性能代价](#额外纹理采样的性能代价) — updateTexImage 的开销分析
-- [18.7.5 链路级对比](#链路级对比surfaceview-vs-textureview) — 与 SurfaceView 的架构差异
-- [18.7.6 onFrameAvailable 回调模型](#onframeavailable-回调模型) — 线程绑定与延迟
-- [18.7.7 Trace 视角](#trace-视角) — Perfetto 中的识别方法
-- [18.7.8 常见性能问题与优化](#常见性能问题与优化) — 实战瓶颈分析
-
-**扩展（可选深入）：**
-- OES External Texture 的 GPU 管线
-- Flutter TextureView render mode 的关系
-- 从 TextureView 迁移到 SurfaceView 的路径
-
-<!-- outline-end -->
-
 ## 为什么要理解 TextureView 的链路
 
 TextureView 看起来是普通 View：它能跟随父布局做 alpha、scale、rotation、clip 和 transition，也能与兄弟 View 按宿主绘制顺序混合。它的像素来源却不是普通 `onDraw()`。Camera、MediaCodec、EGL/Vulkan 或其它 Producer 先向 `SurfaceTexture` 提交 buffer，宿主 HWUI 再把最新输入作为纹理采样进 App Window buffer。
@@ -524,7 +505,7 @@ TextureView 的新内容要经过宿主帧，因此主线程 I/O、锁竞争、G
 
 HDR 要同时检查 buffer format、dataspace、CTA-861.3/SMPTE 2086 metadata、宿主 Window color mode、Skia backend 和 display policy。折叠、多窗口或 cutout 本身不会给 TextureView 增加专用渲染路径；Window bounds 变化会触发普通 View layout 与 `onSizeChanged()`。画面方向、crop 和触摸坐标要把 View layout、TextureView content transform 与 Producer transform 一起核对。
 
-### Review 清单
+### 复核清单
 
 1. TextureView 是否处于硬件加速窗口？
 2. 谁创建 SurfaceTexture、谁创建并 release `Surface`？
@@ -539,7 +520,7 @@ HDR 要同时检查 buffer format、dataspace、CTA-861.3/SMPTE 2086 metadata、
 
 ### Android 17 源码锚点
 
-本文以 Platform `android-17.0.0_r1` 与 Kernel `android17-6.18-2026-06_r6` 为准：
+源码以 Platform `android-17.0.0_r1` 与 Kernel `android17-6.18-2026-06_r6` 为准：
 
 - [`TextureView.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/TextureView.java)：hardware acceleration、listener、lifecycle、draw/applyUpdate、visibility 与 frame-rate bridge；
 - [`SurfaceTexture.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/SurfaceTexture.java)：公共 Producer/Consumer、callback、release 与自管 GLConsumer 语义；

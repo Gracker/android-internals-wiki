@@ -117,25 +117,6 @@ last_deepseek_cn_review_at: 2026-07-05
 
 # 18.6 Android 17 SurfaceView 独立 Surface 路径
 
-<!-- outline-start -->
-
-**锚点（必须覆盖）：**
-- [18.6.1 为什么需要 SurfaceView](#为什么需要-surfaceview) — 去耦设计的核心动机
-- [18.6.2 独立 Surface 与挖洞机制](#独立-surface-与挖洞机制) — 双 Layer 架构
-- [18.6.3 完整渲染路径](#完整渲染路径) — Producer → BLAST → SurfaceFlinger → HWC
-- [18.6.4 BufferQueue 行为与 Triple Buffering](#bufferqueue-行为与-triple-buffering) — 独立队列的流转细节
-- [18.6.5 SurfaceView vs TextureView](#surfaceview-vs-textureview) — 数据流对比与选型
-- [18.6.6 HWC Overlay 与合成策略](#hwc-overlay-与合成策略) — 独立 layer 的 DEVICE/CLIENT 选择
-- [18.6.7 Trace 视角](#trace-视角) — Perfetto 中的识别方法
-- [18.6.8 常见性能问题与优化](#常见性能问题与优化) — 实战瓶颈分析
-
-**扩展（可选深入）：**
-- BLAST 对 SurfaceView 同步问题的改善
-- Camera 预览与 MediaCodec 解码的场景差异
-- SurfaceView 的 resize 与几何同步
-
-<!-- outline-end -->
-
 ## 为什么需要 SurfaceView
 
 SurfaceView 让一部分像素不必先画进宿主窗口的 buffer。视频解码器、Camera、EGL/Vulkan 渲染线程可以向一条独立的 buffer 流提交内容；普通 View、控制条和遮罩仍由宿主窗口的主线程与 RenderThread 生成。下面的简图用于分开两条生产线：
@@ -203,7 +184,7 @@ Z-above 时，SurfaceView 位于宿主窗口之上，不需要在宿主 buffer �
 
 Android 12 到 Android 17 的现代主线可按下表理解：
 
-| 平台 | SurfaceView 相关变化 | Review 时的含义 |
+| 平台 | SurfaceView 相关变化 | 分析含义 |
 |---|---|---|
 | Android 12 / API 31 | container、BLAST child、background 与 RenderNode 位置同步成为稳定分析基线 | 几何 transaction 与内容 buffer 要分层观察 |
 | Android 13 / API 33 | 主体结构延续 | 设备差异应继续核对厂商 Composer、gralloc 与 Producer，而非假定 AOSP 拓扑换代 |
@@ -316,7 +297,7 @@ kernel 锚点 `android17-6.18-2026-06_r6` 中，`drivers/dma-buf/sync_file.c` �
 
 ## BufferQueue 行为与 Triple Buffering
 
-本节保留“Triple Buffering”标题用于兼容目录，但 Android 17 的结论是：SurfaceView 不存在可用于所有场景的固定三槽模型。
+“Triple Buffering”标题沿用目录名称，但 Android 17 的结论是：SurfaceView 不存在可用于所有场景的固定三槽模型。
 
 `BufferQueueCore` 维护一组可用 slot，并用 `mMaxDequeuedBufferCount`、`mMaxAcquiredBufferCount`、`mAsyncMode`、`mDequeueBufferCannotBlock` 与配置上限共同计算本次队列允许使用的 buffer 数量。源码中的 `NUM_BUFFER_SLOTS` 是 slot 表容量，不等于每个 SurfaceView 都同时分配或流转这么多 GraphicBuffer。某次 trace 看见三块活跃 buffer，只能说明该连接在那段时间呈现出三缓冲效果。
 
@@ -532,9 +513,9 @@ SurfaceView 改变的是内容生产和合成拓扑，不会绕开 InputDispatch
 
 游戏或地图的 Producer 可能受 frame pacing 约束；视频和 Camera 的内容节奏通常不会因一次触摸而改变。不能只看 `doFrame` 或 `queueBuffer` 中的一段时间就代表完整输入时延。
 
-### Review 清单
+### 复核清单
 
-每次 Review 至少回答这些问题：
+每次分析至少回答这些问题：
 
 1. 主体像素是否位于独立 BLAST child，而非宿主 buffer？
 2. Producer 是谁，在哪个线程或服务填充 buffer？
@@ -551,7 +532,7 @@ SurfaceView 改变的是内容生产和合成拓扑，不会绕开 InputDispatch
 
 ### Android 17 源码锚点
 
-本文以 Platform `android-17.0.0_r1` 和 Kernel `android17-6.18-2026-06_r6` 为准：
+源码以 Platform `android-17.0.0_r1` 和 Kernel `android17-6.18-2026-06_r6` 为准：
 
 - [`SurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceView.java)：hole-punch、container/BLAST/background 创建、生命周期、位置回调、composition order、blur 与 transaction 对齐；
 - [`BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)：buffer acquire、buffer transaction、`mergeWithNextTransaction()` 与 release callback；
