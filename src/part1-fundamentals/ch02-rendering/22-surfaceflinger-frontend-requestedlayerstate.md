@@ -185,7 +185,7 @@ Android 17 的 `Changes` 包含：
 - 父节点 transform、crop、alpha 和可见性策略；
 - relative parent 带来的遍历位置；
 - mirror path 带来的另一组几何上下文；
-- 显示旋转和输出过滤器；
+- display rotation 和 output filter；
 - 输入区域、圆角、阴影、模糊和 metadata 继承。
 
 因此，Winscope 中的最终边界与事务参数不同，并不能直接说明事务丢失。应先确认父层级和 traversal path。
