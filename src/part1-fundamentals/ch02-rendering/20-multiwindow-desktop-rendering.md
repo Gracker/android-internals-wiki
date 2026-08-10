@@ -364,9 +364,9 @@ PiP 也要单独判断。它通常“可见但不 focusable”。持续播放视
 
 多窗口分析要避免两类查询错误：使用不存在的表名，以及把某个版本中的 slice 名当成平台通用名称。
 
-### 1. 列出当前跟踪中的 SurfaceFlinger slice 名
+### 1. 列出当前 trace 中的 SurfaceFlinger slice 名
 
-`doCompose` 不能直接作为通用过滤条件。应先列出当前跟踪中 SurfaceFlinger 线程存在的 slice 名，再筛选与合成相关的项目：
+`doCompose` 不能直接作为通用过滤条件。应先列出当前 trace 中 SurfaceFlinger 线程存在的 slice 名，再筛选与合成相关的项目：
 
 ```sql
 SELECT DISTINCT slice.name
@@ -379,7 +379,7 @@ WHERE process.name GLOB '*surfaceflinger*'
 ORDER BY 1;
 ```
 
-这一步可以直接发现版本升级、厂商裁剪或跟踪配置变化造成的 slice 名称差异。
+这一步可以直接发现版本升级、厂商裁剪或 trace config 变化造成的 slice 名称差异。
 
 ### 2. layer 快照表要使用真实 schema
 
@@ -398,7 +398,7 @@ ORDER BY s.ts DESC, l.layer_name
 LIMIT 100;
 ```
 
-这个查询用于查看某个 snapshot 中的可见 layer、名称与 HWC composition 类型。Perfetto stdlib 的 `surfaceflinger_layer` 表没有 `display_id` 列，connected display 跟踪中不能直接写 `WHERE l.display_id = 0`。区分 display 时，应先在 Winscope SurfaceFlinger output tree 中确认目标输出，再用 `android_surfaceflinger_transaction` 的 `layer_id/display_id` 和相邻 transaction 辅助定位。`android_surfaceflinger_display` 只有 display 记录，不能把同一 snapshot 的全部 layer 自动归到该 display。
+这个查询用于查看某个 snapshot 中的可见 layer、名称与 HWC composition 类型。Perfetto stdlib 的 `surfaceflinger_layer` 表没有 `display_id` 列，connected display trace 中不能直接写 `WHERE l.display_id = 0`。区分 display 时，应先在 Winscope SurfaceFlinger output tree 中确认目标输出，再用 `android_surfaceflinger_transaction` 的 `layer_id/display_id` 和相邻 transaction 辅助定位。`android_surfaceflinger_display` 只有 display 记录，不能把同一 snapshot 的全部 layer 自动归到该 display。
 
 ### 3. 完整记录 FrameTimeline 卡顿名称
 

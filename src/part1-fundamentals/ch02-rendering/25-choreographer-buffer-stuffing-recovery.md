@@ -76,7 +76,7 @@ flowchart LR
 - 独立 SurfaceView、Camera/Codec producer、引擎自有 EGL/Vulkan swapchain 可能形成自己的 render loop 和 BufferQueue；
 - 未接入 callback 的 producer 仍可能 queue-stuffing，只是不会依靠这套 Choreographer 状态机恢复。
 
-诊断时应先确认画面由谁获取、渲染和显示，再判断它是否受主线程 Choreographer 驱动。跟踪中出现 `eglSwapBuffers()` 或 `dequeueBuffer()`，不能证明主 Choreographer 已收到堆积信号。
+诊断时应先确认画面由谁 acquire、render、present，再判断它是否受主线程 Choreographer 驱动。trace 中出现 `eglSwapBuffers()` 或 `dequeueBuffer()`，不能证明主 Choreographer 已收到 stuffing signal。
 
 ## 二、等待信号从哪里产生
 

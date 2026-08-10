@@ -225,7 +225,7 @@ present fence 可靠且功能启用时，它可以补充预测样本。若样本
 
 ## 五、VSyncDispatch 如何反推唤醒时间
 
-消费者注册 callback 后，`VSyncDispatchTimerQueueEntry::schedule()` 根据工作预算寻找下一次目标 VSync。下面的伪代码保留 Android 17 实现中的主要关系，用于核对跟踪中的三个时间点：
+消费者注册 callback 后，`VSyncDispatchTimerQueueEntry::schedule()` 根据工作预算寻找下一次目标 VSync。下面的伪代码保留 Android 17 实现中的主要关系，用于在 trace 中核对三个时间点：
 
 ```text
 earliest = max(lastVsync, now + workDuration + readyDuration)
