@@ -77,55 +77,9 @@ task6_promotion_notes: "2026-07-12 20H Task6 revisiting review (post-task9-idle-
 
 # 22.10 RenderEffect 与 RuntimeShader 性能实践
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 RenderEffect 的适用场景
-- 模糊、颜色滤镜、AGSL 自定义像素处理
-- 与传统 Bitmap 预处理的成本差异
-- 适合动态效果还是静态素材预生成
-
-### 🔹 HWUI 管线中的成本来源
-- RenderNode 绑定效果后的重绘行为
-- offscreen buffer 分配与额外纹理读写
-- Blur 半径、区域大小和链式效果的成本
-
-### 🔹 RuntimeShader / AGSL 的实践边界
-- API 33+ 的能力范围
-- uniform 更新频率与每帧成本
-- Shader 编译、缓存和降级策略
-
-### 🔹 常见 UI 效果的选型
-- 毛玻璃背景
-- 列表项阴影和蒙版
-- 转场动画中的效果叠加
-
-### 🔹 Perfetto 与 GPU 工具观测
-- FrameTimeline 中的渲染耗时变化
-- RenderThread / GPU completion 的观察点
-- 配合 AGI / GPU Inspector 查纹理和 draw call
-
-### 🔹 优化清单
-- 控制效果区域
-- 避免大半径实时模糊
-- 把静态效果预渲染或缓存
-
-## 扩展
-
-### 🔸 RenderEffect 与 Hardware Layer 的交互
-- 两者都会涉及离屏渲染，但语义和收益条件不同
-
-### 🔸 Compose graphicsLayer / RenderEffect 对应关系
-- Compose graphicsLayer 的 RenderEffect 仍落到标准 HWUI 管线
-
-### 🔸 厂商 GPU 对模糊效果的差异
-- blur / AGSL 成本需要按 Adreno、Mali、PowerVR 设备实测
-
-<!-- outline-end -->
-
 RenderEffect 适合把 View 或 RenderNode 的绘制结果交给 GPU 做后处理：模糊、颜色滤镜、混合、偏移，以及 Android 13（API 33）开始支持的 AGSL 自定义像素处理。它不是“免费特效”。效果需要把节点内容先画进中间层，再读取这块纹理做处理时，成本会落到 RenderThread、GPU 像素处理、纹理带宽和图形内存上。
 
-应用侧要回答三个问题：哪些效果值得实时做，什么时候降级，以及怎样用 trace 和 GPU 工具验证。本文的平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。标准 View 或 Compose 内容仍沿 UI 线程 → RenderThread → BLAST / BufferQueue → SurfaceFlinger → HWC / RenderEngine → present 前进；RenderEffect 改变 HWUI 绘制工作，不会改变这条公共显示路径。关于 RenderNode、Hardware Layer 和 GPU 瓶颈分类，可见 2.7、18.2 和 2.10 节。
+应用侧要回答三个问题：哪些效果值得实时做，什么时候降级，以及怎样用 trace 和 GPU 工具验证。平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。标准 View 或 Compose 内容仍沿 UI 线程 → RenderThread → BLAST / BufferQueue → SurfaceFlinger → HWC / RenderEngine → present 前进；RenderEffect 改变 HWUI 绘制工作，不会改变这条公共显示路径。关于 RenderNode、Hardware Layer 和 GPU 瓶颈分类，可见 2.7、18.2 和 2.10 节。
 
 ## RenderEffect 的适用场景
 
@@ -294,7 +248,7 @@ RenderEffect 和 Hardware Layer 都可能让内容先进入离屏 GPU 纹理，�
 
 Compose 的 `graphicsLayer` 可以通过 Compose 的 RenderEffect 包装把效果应用到图层。性能模型与 View 一致：设置 RenderEffect 时，Compose 会进入离屏合成语义；`alpha < 1f`、clip、shadow、RenderEffect 组合时更容易触发额外 buffer。Compose 侧不要把效果挂到大范围根节点，优先挂到视觉区域最小的 composable。
 
-Compose 与 View 在 RenderThread 之后共用标准管线，详见 18.2 节。排查 Compose 页面时，MainThread 上看 recomposition / layout；RenderThread 和 GPU 侧仍按本节的 RenderEffect 方法做对照。
+Compose 与 View 在 RenderThread 之后共用标准管线，详见 18.2 节。排查 Compose 页面时，MainThread 上看 recomposition / layout；RenderThread 和 GPU 侧仍按上述 RenderEffect 方法做对照。
 
 ### 厂商 GPU 对模糊效果的差异
 
@@ -318,6 +272,3 @@ Compose 与 View 在 RenderThread 之后共用标准管线，详见 18.2 节。�
 - [SystemHealthManager API](https://developer.android.com/reference/android/os/health/SystemHealthManager)
 - [FrameTimeline 数据源](https://perfetto.dev/docs/data-sources/frametimeline)
 - [AGI Frame Profiler](https://developer.android.com/agi/frame-trace/frame-profiler)
-
-**结构参考素材：**
-- Clippings/Android 性能优化 — 总结 / 内存模型 / 速度优化 / 资源体积优化
