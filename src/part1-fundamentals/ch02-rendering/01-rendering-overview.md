@@ -195,7 +195,7 @@ HWC validate：设备合成或客户端合成
 HWC present → present fence → release fence
 ```
 
-各阶段并非全部按单线程串行执行。主线程、RenderThread、GPU、SurfaceFlinger 和显示硬件可以重叠处理不同帧。分析时必须保留帧号、VSync 周期和栅栏（fence）依赖，不能只把各段耗时相加。
+各阶段并非全部按单线程串行执行。主线程、RenderThread、GPU、SurfaceFlinger 和显示硬件可以重叠处理不同帧。分析时必须保留帧号、VSync 周期和 fence 依赖，不能只把各段耗时相加。
 
 ### 2.1 一帧至少跨越三个调度域
 
@@ -439,7 +439,7 @@ Android 17 的 `BufferQueueCore` 初始配置中可看到最大 acquired 和 deq
 - 应用被 VSync 节奏约束，无法持续无界生产；
 - 队列中的缓冲区在特定模式下按规则被替换或跳过；
 - SurfaceFlinger 选择满足 latch 条件的缓冲区；
-- Choreographer 检测缓冲区堆积（buffer stuffing）并调整恢复节奏。
+- Choreographer 检测 buffer stuffing 并调整恢复节奏。
 
 不同 Surface 类型、显示模式（present mode）和 BufferQueue 配置会改变行为。没有这些条件时，不应笼统写成“多画的帧都会被丢掉”。
 
