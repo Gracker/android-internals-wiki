@@ -460,7 +460,7 @@ adb logcat -b all -d | grep -E \
 # 创建 staged session
 adb shell pm install-create --staged
 
-# 创建分阶段多包父会话
+# 创建 staged multi-package parent
 adb shell pm install-create --staged --multi-package
 
 # 提交，并等待 ready/failed；0 表示不等待

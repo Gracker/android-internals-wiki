@@ -569,13 +569,13 @@ SurfaceFlinger 是系统级服务，同一主线程上的事务、snapshot 和�
 
 窗口数量多不必然触发 CLIENT；单个具有复杂色彩或特效的图层也可能要求 RenderEngine。比较前后策略时，应记录整个可见集合、Display mode Composer 输出。
 
-### 各显示设备的帧目标与栅栏
+### per-display frame target 与 fence
 
 Android 17 `Scheduler::onFrameSignal()` 先为 pacesetter display 建立目标，再计算 follower display 是否参与本轮。`FrameTargeter` 会考虑 expected present、pending present fence 与背压。每个 Display 最终拥有自己的 present fence。
 
 多显示排查至少按 `displayId` 分组：
 
-- 刷新率与预计呈现时间；
+- refresh rate 与 expected present；
 - Output 可见图层；
 - composition strategy；
 - HWC validate/present；
