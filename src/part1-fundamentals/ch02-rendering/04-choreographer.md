@@ -393,7 +393,7 @@ Traversal 可能把本帧状态交给 RenderThread，但以下工作可以继续
 - RenderThread 准备 RenderNode 树；
 - GPU 命令提交和执行；
 - `dequeueBuffer()`/`queueBuffer()`；
-- 获取栅栏发出信号；
+- acquire fence signal；
 - SurfaceFlinger transaction、latch 和合成；
 - HWC 显示提交与显示后段。
 
