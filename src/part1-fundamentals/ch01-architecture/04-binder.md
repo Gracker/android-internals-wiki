@@ -162,11 +162,11 @@ interface ICounterService {
 
 `getCount()` 没有标记 `oneway`，即使返回类型写成 `void` 也仍是同步调用。`invalidate()` 是远程异步调用，不能返回业务结果，也不能让调用方据此确认服务端已经执行。
 
-远程 AIDL 调用从目标进程的 Binder 线程池进入，不保证在服务端主线程执行，并且多个调用可以并发。AIDL 实现必须是线程安全的。若业务只能在单一线程修改状态，应在 Stub 入口尽快切换到明确的 Executor、Handler 或内部队列；不要让 Binder 工作线程长时间占着锁等待主线程。
+远程 AIDL 调用从目标进程的 Binder 线程池进入，不保证在服务端主线程执行，并且多个调用可以并发。AIDL 实现必须是线程安全的。若业务只能在单一线程修改状态，应在 Stub 入口尽快切换到明确的 Executor、Handler 或内部队列；不要让 Binder worker 长时间占着锁等待主线程。
 
 ## 为什么常说 Binder 是“一次拷贝”
 
-Android 17 的内核 Binder 在目标进程的 Binder 事务缓冲区中分配页面，再用 `copy_from_user()` 把发送方数据写入这些页面。目标进程已经把这片 buffer 映射到自己的地址空间，因此不需要再执行一次“内核缓冲区到接收方用户空间”的数据拷贝。
+Android 17 的 kernel Binder 在目标进程的 Binder transaction buffer 中分配页面，再用 `copy_from_user()` 把发送方数据写入这些页面。目标进程已经把这片 buffer 映射到自己的地址空间，因此不需要再执行一次“内核缓冲区到接收方用户空间”的数据拷贝。
 
 ACK `android17-6.18-2026-06_r6` 中的核心动作位于 `binder_alloc_copy_user_to_buffer()`：
 
@@ -222,13 +222,13 @@ Android 17 的 libbinder 仍使用以下大小：
 
 `DEFAULT_MAX_BINDER_THREADS = 15` 是 Android 17 native libbinder 的默认 `mMaxThreads`，不是“每个 Android 进程恰好只有 15 个 Binder 线程”。
 
-`ProcessState::startThreadPool()` 会先创建线程池的首个线程；驱动在没有足够 worker 时返回 `BR_SPAWN_LOOPER`，libbinder 再按需创建线程，直到配置上限。手工调用 `joinThreadPool()`、Java 运行时的接入方式和服务自身配置还会影响最终可见线程数。诊断时应读取目标进程的实际线程与配置，不能只数到 15 就宣布池耗尽。
+`ProcessState::startThreadPool()` 会先创建线程池的首个线程；驱动在没有足够 worker 时返回 `BR_SPAWN_LOOPER`，libbinder 再按需创建线程，直到配置上限。手工调用 `joinThreadPool()`、Java runtime 的接入方式和服务自身配置还会影响最终可见线程数。诊断时应读取目标进程的实际线程与配置，不能只数到 15 就宣布池耗尽。
 
 线程池有几条稳定的行为：
 
 - worker 按需创建，创建后通常存活到进程结束。
 - `setThreadPoolMaxThreadCount()` 可以修改 native pool 上限；线程池启动后不能把上限调小。
-- 一个 Binder 工作线程可以处理不同 node 的事务，服务端实现必须允许并发。
+- 一个 Binder worker 可以处理不同 node 的事务，服务端实现必须允许并发。
 - 同步嵌套调用可能复用正在等待的原调用线程，以保持跨进程递归语义。
 
 Android 17 的 `IPCThreadState` 还会记录用户态执行中的 Binder 线程数。如果达到上限的状态持续超过 100 ms，libbinder 会输出：
@@ -286,7 +286,7 @@ Android 17 默认请求启用 `BINDER_ENABLE_ONEWAY_SPAM_DETECTION`。当某个�
 
 ## 优先级继承能解决什么
 
-同步 Binder 的调用方可能是高优先级线程，而服务端 worker 原本优先级较低。Binder 驱动会临时调整处理该事务的 worker 优先级，事务完成后再恢复，减少简单的优先级反转。
+同步 Binder 的调用方可能是高优先级线程，而服务端 worker 原本优先级较低。Binder driver 会临时调整处理该事务的 worker 优先级，事务完成后再恢复，减少简单的优先级反转。
 
 Android 支持三层规则：
 
@@ -373,7 +373,7 @@ INCLUDE PERFETTO MODULE android.binder_breakdown;
 5. 接口名缺失：不要猜方法，补抓 AIDL atrace 或用 transaction code 与服务端调用栈交叉确认。
 6. 事务失败：检查 `FAILED_TRANSACTION`、buffer、进程死亡与 freezer 记录。
 
-一个 Binder 工作线程空闲时也会睡在 `binder_thread_read` 或 ioctl 等待路径。看到该 blocked function 不代表卡死；只有承载关键事务的调用线程长时间等待，或目标端没有及时开始执行时，它才是需要解释的证据。
+一个 Binder worker 空闲时也会睡在 `binder_thread_read` 或 ioctl 等待路径。看到该 blocked function 不代表卡死；只有承载关键事务的调用线程长时间等待，或目标端没有及时开始执行时，它才是需要解释的证据。
 
 ## 常见错误做法
 
@@ -391,7 +391,7 @@ INCLUDE PERFETTO MODULE android.binder_breakdown;
 
 ### 用大 `Bundle` 省接口设计
 
-Binder 缓冲区是进程级共享资源。大列表、Bitmap 和完整对象图应改为分页、文件描述符或共享内存，并给协议设置显式大小上限。
+Binder buffer 是进程级共享资源。大列表、Bitmap 和完整对象图应改为分页、文件描述符或共享内存，并给协议设置显式大小上限。
 
 ### 持锁调用远端 callback
 
@@ -399,7 +399,7 @@ Binder 缓冲区是进程级共享资源。大列表、Bitmap 和完整对象图
 
 ## 版本边界
 
-- Android 8：Treble 引入 framework/vendor Binder 上下文隔离；Binder 驱动增加 scatter-gather 与细粒度锁等改进。历史设备还可能看到 `/dev/hwbinder` 与 HIDL。
+- Android 8：Treble 引入 framework/vendor Binder context 隔离；Binder driver 增加 scatter-gather 与细粒度锁等改进。历史设备还可能看到 `/dev/hwbinder` 与 HIDL。
 - Android 11：Android 支持 HAL 使用 Stable AIDL；HIDL 现已废弃，新 HAL 应优先使用 AIDL，但已有 HIDL HAL 仍需按设备实际接口分析。
 - Android 11 及以后：cached apps freezer 改变 frozen 进程的同步与异步 Binder 行为。
 - Android 12：AOSP `frameworks/native` 已通过 `BINDER_ENABLE_ONEWAY_SPAM_DETECTION` 请求驱动启用 oneway spam detection；它是 buffer 异常诊断，不是业务流控。
