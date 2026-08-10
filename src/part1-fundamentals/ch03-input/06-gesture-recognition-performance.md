@@ -187,12 +187,12 @@ Perfetto 通常只会显示包含它的上层主线程调用。若要判断自�
 ```mermaid
 flowchart LR
     A["ACTION_DOWN"] --> B["Tap 候选<br/>调度 SHOW_PRESS、LONG_PRESS、TAP"]
-    B -->|"位移超过 TouchSlop"| C["滚动"]
-    B -->|"长按超时且未取消"| D["长按"]
+    B -->|"位移超过 TouchSlop"| C["Scroll"]
+    B -->|"长按超时且未取消"| D["Long press"]
     B -->|"ACTION_UP 仍在 Tap 区域"| E["SingleTapUp"]
-    E -->|"双击等待窗结束"| F["确认单击"]
-    E -->|"第二次 DOWN 满足时间与距离"| G["双击"]
-    C -->|"ACTION_UP 且速度超过阈值"| H["惯性滑动"]
+    E -->|"双击等待窗结束"| F["SingleTapConfirmed"]
+    E -->|"第二次 DOWN 满足时间与距离"| G["Double tap"]
+    C -->|"ACTION_UP 且速度超过阈值"| H["Fling"]
     A -->|"ACTION_CANCEL"| I["清理状态"]
 ```
 
@@ -348,7 +348,7 @@ int touchSlop =
 
 | 层次 | Android 17 中的含义 |
 |---|---|
-| `TOUCH_SLOP = 8` | 已弃用静态 API 使用的 dp 回退值 |
+| `TOUCH_SLOP = 8` | 已弃用静态 API 使用的 dp fallback |
 | `config_viewConfigurationTouchSlop` | 框架默认资源，可被设备资源覆盖 |
 | `getScaledTouchSlop()` | 按当前上下文和配置得到的像素值 |
 
@@ -459,7 +459,7 @@ Modifier.pointerInput(Unit) {
 
 Compose 对新指针的第一个事件做命中测试，形成可接收指针输入的节点链；同一指针的后续事件沿这条链传播。每个事件经过三个阶段：
 
-| 阶段 | 方向 | 常见用途 |
+| Pass | 方向 | 常见用途 |
 |---|---|---|
 | `Initial` | 父到子 | 父级预先观察或拦截式处理 |
 | `Main` | 子到父 | 默认阶段，子节点通常先消费 |
@@ -473,7 +473,7 @@ Compose 对新指针的第一个事件做命中测试，形成可接收指针输
 
 遇到滑动、双击或 Fling 异常时，按以下顺序收集证据：
 
-1. 记录完整的动作、指针 ID/索引、`downTime`、`eventTime`、坐标、输入源和轴；
+1. 记录完整的 action、pointer id/index、`downTime`、`eventTime`、坐标、source 和 axis；
 2. 确认序列最终是 `UP` 还是 `CANCEL`，以及哪个父容器改变了拦截决定；
 3. 打印运行时 `scaledTouchSlop`、最小/最大惯性滑动速度，不用源码回退值替代设备值；
 4. 核对 `VelocityTracker` 是否从 `DOWN` 开始收样、是否在读取速度前计算、是否按指针 ID 取值；
