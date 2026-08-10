@@ -32,7 +32,7 @@ sources:
 
 GWP-ASan 用两层抽样把少量 Native heap allocation 放进 guard-page 区域。命中的 use-after-free、越界或错误释放会变成带 allocation/deallocation 证据的 Native 报告。它适合从大量真实设备中发现低概率内存破坏，但不能证明未命中的代码安全，也不会修复内存破坏。
 
-本文的平台和用户空间源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。GWP-ASan 主体位于 Bionic、Zygote、debuggerd 和 `external/gwp_asan`；它没有面向应用的 Android 17 kernel 专用接口。guard page 最终依赖 `mmap()`、页权限和 `SIGSEGV`，涉及内核语义时以 `android17-6.18-2026-06_r6` 为边界。
+平台和用户空间源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。GWP-ASan 主体位于 Bionic、Zygote、debuggerd 和 `external/gwp_asan`；它没有面向应用的 Android 17 kernel 专用接口。guard page 最终依赖 `mmap()`、页权限和 `SIGSEGV`，涉及内核语义时以 `android17-6.18-2026-06_r6` 为边界。
 
 ## 1. 它解决什么问题
 

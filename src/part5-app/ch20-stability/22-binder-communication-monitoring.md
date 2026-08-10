@@ -54,55 +54,9 @@ sources:
 
 # 20.22 Binder 通信监控实战：传输耗时、异常检测与 IPC 性能治理
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 Binder 通信监控的应用层需求
-- 为什么需要监控 Binder：跨进程调用的延迟、异常、死锁对用户体验的影响
-- 常见问题：系统服务调用超时、TransactionTooLargeException、DeadObjectException
-- [结构参考: Clippings/Android 应用稳定性剖析与优化 - Binder 通信监控]
-
-### 🔹 Binder 传输耗时监控方案
-- watchdog 方案：在 Binder.transact() 前后埋点计时
-- Proxy/Stub 动态代理：拦截系统服务接口调用
-- 利用 StrictMode 的 Binder 耗时检测能力
-
-### 🔹 Binder 异常体系与线上治理
-- TransactionTooLargeException：Binder buffer 1MB 限制（每进程）
-- DeadObjectException：对端进程已死，IPC 目标不可达
-- SecurityException：权限不足导致的调用失败
-- RemoteException 家族的统一处理策略
-
-### 🔹 Binder 监控的性能开销与采样策略
-- 全量监控 vs 采样监控的取舍
-- AOP 字节码插桩在 Binder 监控中的应用
-- 监控本身的 Binder 调用开销（递归风险）
-
-### 🔹 Binder 调用链路与 ANR 关系
-- 主线程 Binder 同步等待是 ANR 的常见原因
-- ServiceManager.getService() 缓存机制与失效场景
-- Android 17 Binder 优先级继承对监控的影响 [已验证: AOSP android-17.0.0_r1]
-
-### 🔹 线上 Binder 性能画像建设
-- Binder 调用 P50/P90/P99 耗时分布
-- 按 target 进程/target 接口聚合的 TopN 耗时排行
-- Binder 异常率与 Service 死亡率的实时告警
-
-## 扩展
-
-### 🔸 Binder 缓冲区监控与优化
-- /dev/binder 的 buffer 使用情况采集
-- 大数据传输的替代方案（SharedMemory、Socket）
-
-### 🔸 Android 17 Binder 批处理与监控适配
-- 异步批处理流水线对现有监控方案的兼容性
-- [已验证: AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6 — 见正文 §11，无普通应用可用的通用异步批处理接口]
-
-<!-- outline-end -->
-
 Binder 监控最容易出现的误区，是把一次方法调用的总耗时直接命名成“Binder 传输耗时”。客户端在 AIDL 方法外计时，得到的是序列化、驱动投递、服务端排队与执行、回复传输、客户端反序列化的总和；只看这个数，无法判断时间消耗在哪一段。
 
-本文的平台源码锚点为 `android-17.0.0_r1`，Binder 驱动锚点为 `android17-6.18-2026-06_r6`。结论适用于 Android 12～Android 17；涉及隐藏接口和内核诊断能力时，会单独说明量产应用能否使用。
+平台源码锚点为 `android-17.0.0_r1`，Binder 驱动锚点为 `android17-6.18-2026-06_r6`。结论适用于 Android 12～Android 17；涉及隐藏接口和内核诊断能力时，会单独说明量产应用能否使用。
 
 ## 1. 先定义监控问题
 
