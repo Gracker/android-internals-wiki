@@ -53,9 +53,9 @@ sources:
 
 Android 不允许应用直接决定自己的进程寿命。`system_server` 根据进程承载的 Activity、Service、BroadcastReceiver、ContentProvider 以及跨进程依赖，持续计算进程重要性；lmkd 在内存压力出现时使用这份结果选择回收目标。
 
-API 37 的实现已经迁入 `com.android.server.am.psc` 包。继续以 `com.android.server.am.OomAdjuster.java` 为源码入口，会遗漏 Android 17 的 `ProcessStateController`、批处理会话、能力传播和新 tracing 字段。
+API 37 的实现已经迁入 `com.android.server.am.psc` 包。继续以 `com.android.server.am.OomAdjuster.java` 为源码入口，会遗漏 Android 17 的 `ProcessStateController`、批处理 session、能力传播和新 tracing 字段。
 
-以下结论限定于 `android-17.0.0_r1` framework /lmkd 和 `android17-6.18-2026-06_r6` 内核跟踪点。PSC、freezer、LMKD 套接字和 Perfetto 行为均以该基线为准，不外推到 Android 18/API 38+ 主线或厂商私有实现。
+以下结论限定于 `android-17.0.0_r1` framework /lmkd 和 `android17-6.18-2026-06_r6` 内核跟踪点。PSC、freezer、LMKD socket 和 Perfetto 行为均以该基线为准，不外推到 Android 18/API 38+ 主线或厂商私有实现。
 
 ## 一、进程优先级不是一个数字
 
@@ -82,7 +82,7 @@ OomAdjuster 每轮计算会同时产生多组结果：
 - `enqueueUpdateTarget(proc)` + `runPendingUpdate(reason)`：合并多个目标后更新；
 - `runFullUpdate(reason)`：全量更新；
 - `runFollowUpUpdate()`：处理有时效的状态到期；
-- `startBatchSession(reason)`：在一组服务等状态变更结束后统一计算。
+- `startBatchSession(reason)`：在一组 service 等状态变更结束后统一计算。
 
 Controller 在每次计算前调用 `commitStagedEvents()`，把异步暂存的 Activity 等状态同步到计算视图。若 batch session 仍然开启，新请求只记录目标；session 关闭后才执行 pending 或 full update。
 
@@ -93,11 +93,11 @@ Controller 在每次计算前调用 `commitStagedEvents()`，把异步暂存的 
 - full、partial、pending、follow-up 更新编排；
 - 防止更新过程递归进入；
 - 应用 `adj`、`procState`、`schedGroup` 和 capability；
-- 与 lmkd、进程组、freezer、UID 观察器和 Perfetto 交互。
+- 与 lmkd、进程组、freezer、UID observer 和 Perfetto 交互。
 
 `psc/OomAdjusterImpl.java` 承载 API 37 的具体策略：计算进程本地状态、遍历 service/provider 连接、分配 LRU 梯度和处理循环依赖。
 
-### 2.3 新的 `ProcStateController` 仍处于受标志控制的演进阶段
+### 2.3 新的 `ProcStateController` 仍处于受 flag 控制的演进阶段
 
 API 37 源码还包含基于进程图和 bucket priority queue 的 `ProcStateController`。全量更新中，`OomAdjusterImpl` 只有在 `enableProcstateControllerComputation()` 开启时才调用它。
 
@@ -115,7 +115,7 @@ API 37 用注解给出锁要求：`computeOomAdjLSP()`、`applyResultsLSP()` 等
 
 | 常量 | 值 | API 37 中的典型含义 |
 |---|---:|---|
-| `NATIVE_ADJ` | -1000 | 不由 AMS 分配 adj 的原生进程边界 |
+| `NATIVE_ADJ` | -1000 | 不由 AMS 分配 adj 的 native 进程边界 |
 | `SYSTEM_ADJ` | -900 | `system_server` |
 | `PERSISTENT_PROC_ADJ` | -800 | persistent system app |
 | `PERSISTENT_SERVICE_ADJ` | -700 | 被系统/持久进程按重要方式绑定的服务 |
@@ -124,13 +124,13 @@ API 37 用注解给出锁要求：`computeOomAdjLSP()`、`applyResultsLSP()` 等
 | `VISIBLE_APP_ADJ` | 100 | 可见 Activity 的起始档 |
 | `PERCEPTIBLE_APP_ADJ` | 200 | 普通 FGS、overlay UI 等可感知工作 |
 | `PERCEPTIBLE_MEDIUM_APP_ADJ` | 225 | 中等可感知绑定档；short FGS 使用 `225 + 1` |
-| `PERCEPTIBLE_LOW_APP_ADJ` | 250 | 高于普通服务、低于可感知组件的绑定档 |
+| `PERCEPTIBLE_LOW_APP_ADJ` | 250 | 高于普通 service、低于可感知组件的绑定档 |
 | `BACKUP_APP_ADJ` | 300 | 当前 backup target |
 | `HEAVY_WEIGHT_APP_ADJ` | 400 | 不能保存状态的 heavy-weight app |
 | `SERVICE_ADJ` | 500 | started service A 档 |
 | `HOME_APP_ADJ` | 600 | Home 进程 |
 | `PREVIOUS_APP_ADJ` | 700 | previous app 起始档 |
-| `SERVICE_B_ADJ` | 800 | 较旧或高内存的服务 B 档 |
+| `SERVICE_B_ADJ` | 800 | 较旧或高内存的 service B 档 |
 | `CACHED_APP_MIN_ADJ` | 900 | cached 区间起点 |
 | `CACHED_APP_MAX_ADJ` | 999 | cached 区间终点 |
 
@@ -161,25 +161,25 @@ private void computeOomAdjLSP(
 | instrumentation | 0 | `FOREGROUND_SERVICE` | `DEFAULT` |
 | 正在执行 broadcast receiver | 0 | `RECEIVER` | 由广播类型决定 |
 | 正在执行 service callback | 0 | `SERVICE` | callback 前后台属性决定 |
-| top 但设备休眠 | 0 | 当前 top/sleeping state | `BACKGROUND` |
+| top 但设备 sleeping | 0 | 当前 top/sleeping state | `BACKGROUND` |
 | 暂无重要组件 | `UNKNOWN_ADJ` | `CACHED_EMPTY` | `BACKGROUND` |
 
-随后再检查非顶部 Activity、FGS、overlay UI、backup、home、previous、started service、recent provider 等本地状态。
+随后再检查非 top Activity、FGS、overlay UI、backup、home、previous、started service、recent provider 等本地状态。
 
-### 4.2 可见 Activity 使用可见档，不等于前台 adj 0
+### 4.2 可见 Activity 使用 visible 档，不等于前台 adj 0
 
-非顶部但仍可见的 Activity，例如多窗口中的可见窗口，进入可见档。基础值为 `VISIBLE_APP_ADJ=100`，还可按 WindowManager 返回的层级在可见范围内细分。
+非 top 但仍可见的 Activity，例如多窗口中的可见窗口，进入 visible 档。基础值为 `VISIBLE_APP_ADJ=100`，还可按 WindowManager 返回的 layer 在 visible 范围内细分。
 
-`procState` 反映顶部、bound top、important foreground 等语义；adj 反映内存回收保护程度。把“可见 Activity = adj 0”写死，会高估它相对顶部进程的保护等级。
+`procState` 反映 top、bound top、important foreground 等语义；adj 反映内存回收保护程度。把“可见 Activity = adj 0”写死，会高估它相对 top 进程的保护等级。
 
 ### 4.3 FGS 还要区分普通、short 与 recently-top
 
 API 37 的本地策略是：
 
-- 普通非短时 FGS：`adj=200`、`procState=FOREGROUND_SERVICE`，并获得 BFSL 等相应能力；
+- 普通 non-short FGS：`adj=200`、`procState=FOREGROUND_SERVICE`，并获得 BFSL 等相应 capability；
 - short FGS 在 `procState` 宽限未超时时：`adj=226`，即 `PERCEPTIBLE_MEDIUM_APP_ADJ + 1`，不获得 BFSL；
 - recently-top 转入普通 FGS：宽限期内可提升到 `adj=50`；
-- recently-top 转入短时 FGS：宽限期内使用 `adj=51`；
+- recently-top 转入 short FGS：宽限期内使用 `adj=51`；
 - recently-top 且运行符合条件的 expedited job：相关豁免使用 `adj=52`。
 
 Short FGS 超时后会触发带 `OOM_ADJ_REASON_SHORT_FGS_TIMEOUT` 的重算。结果取决于进程是否还有 Activity、其他 FGS、started service 或绑定，不能概括为“立即固定回落到 500”。
@@ -189,12 +189,12 @@ Short FGS 超时后会触发带 `OOM_ADJ_REASON_SHORT_FGS_TIMEOUT` 的重算。�
 每个进程完成本地初值后，`OomAdjusterImpl` 使用两套有序节点队列传播连接影响：
 
 1. 按 `procState` 重要性处理 service/provider connection；
-2. 再按 adj 槽位处理可能继续降低宿主进程 adj 的连接；
+2. 再按 adj slot 处理可能继续降低 host adj 的连接；
 3. host 状态改善时重新进入对应队列，直到没有连接能继续改变结果。
 
 这套做法支持多跳依赖与循环关系，不再是“从每个进程递归 computeClients”的简单伪代码。
 
-绑定服务的传播结果受多个标志共同影响，例如：
+绑定服务的传播结果受多个 flag 共同影响，例如：
 
 - `BIND_WAIVE_PRIORITY`：连接不按常规方式提升 host；
 - `BIND_NOT_FOREGROUND`：限制调度组和前台 `procState` 传播；
@@ -203,20 +203,20 @@ Short FGS 超时后会触发带 `OOM_ADJ_REASON_SHORT_FGS_TIMEOUT` 的重算。�
 - `BIND_ALLOW_OOM_MANAGEMENT`：允许 host 更接近自身组件状态管理；
 - `BIND_ALLOW_FREEZE`：阻止 CPU_TIME 能力沿该绑定自动传播。
 
-因此，“service 至少是 500”并不成立。被顶部或持久客户端以相应标志绑定时，service host 可以达到 bound-top、persistent-service 等更高保护档；started service 在后台又可能落入 500/800。
+因此，“service 至少是 500”并不成立。被 top 或 persistent 客户端以相应 flag 绑定时，service host 可以达到 bound-top、persistent-service 等更高保护档；started service 在后台又可能落入 500/800。
 
-Provider 连接也能传播客户端重要性。持有 external process handle 的 Provider 所在进程可提升到 `adj=0`；连接释放后的短时间内，recent provider 还可能保留 `PREVIOUS_APP_ADJ`，到期后由 follow-up update 重算。
+Provider connection 也能传播客户端重要性。持有 external process handle 的 provider host 可提升到 `adj=0`；连接释放后的短时间内，recent provider 还可能保留 `PREVIOUS_APP_ADJ`，到期后由 follow-up update 重算。
 
 ### 4.5 最终分配 LRU 梯度并应用结果
 
-连接传播结束后，`applyLruAdjust()` 为仍处于未知/缓存状态的进程分配缓存 adj，并在相应标志下处理 visible/previous 梯度。`postUpdateOomAdjInnerLSP()` 再执行：
+连接传播结束后，`applyLruAdjust()` 为仍处于未知/缓存状态的进程分配 cached adj，并在相应 flag 下处理 visible/previous 梯度。`postUpdateOomAdjInnerLSP()` 再执行：
 
 - 写入变化的 oom score；
 - 切换调度组和主线程/RenderThread 优先级；
-- 更新冻结资格；
+- 更新 freezer 资格；
 - 把 `procState` 报告给应用线程、UID observer、网络策略和进程统计；
 - 发送 `process_state_changed` Perfetto 事件；
-- 必要时主动清理超额缓存进程。
+- 必要时主动清理超额 cached 进程。
 
 ## 五、`procState`、`schedGroup` 与能力
 
@@ -253,7 +253,7 @@ API 37 的 AMS 调度组常量是：
 
 进入 `top-app` 时，OomAdjuster 还会更新 UI/RenderThread 优先级；启用 FIFO UI 调度的产品走 FIFO 回调，否则使用 `THREAD_PRIORITY_TOP_APP_BOOST`。离开 `top-app` 时再恢复。
 
-### 5.3 Android 17 的冻结资格由 CPU 能力决定
+### 5.3 Android 17 的 freezer 资格由 CPU 能力决定
 
 API 37 的 `getFreezePolicy()` 逻辑很短：只要进程拥有 `PROCESS_CAPABILITY_CPU_TIME` 或 `PROCESS_CAPABILITY_IMPLICIT_CPU_TIME`，就不能冻结；两者都没有时，策略允许冻结。
 
@@ -270,7 +270,7 @@ OomAdjuster 只计算资格并回调 `onProcessFreezabilityChanged()`。`CachedA
 
 ### 6.1 `system_server` 计算分数，lmkd 监测压力并选择目标
 
-OomAdjuster 把 `curAdj` 应用到 `ProcessList.setOomAdj()`。该方法通过 lmkd 控制套接字发送 `LMK_PROCPRIO`；lmkd 校验 PID/UID/范围，更新内部进程表，并在非 `for_lmkd_only` 情况下写 kernel 的 `/proc/<pid>/oom_score_adj`。
+OomAdjuster 把 `curAdj` 应用到 `ProcessList.setOomAdj()`。该方法通过 lmkd control socket 发送 `LMK_PROCPRIO`；lmkd 校验 PID/UID/范围，更新内部进程表，并在非 `for_lmkd_only` 情况下写 kernel 的 `/proc/<pid>/oom_score_adj`。
 
 lmkd 使用 PSI、swap/thrashing 和设备属性判断何时需要回收。PSI 事件由 lmkd 直接订阅，通常不会先回调 AMS 再要求 OomAdjuster 加速 cached aging”。API 37 的 OomAdjuster 中也没有通过 `PSI_SOME`/`PSI_FULL` 分支修改缓存 adj。
 
@@ -293,7 +293,7 @@ kernel PSI / swap / thrashing
 
 当 `mEnableBatchingOomAdj` 开启且属于批量 apply，变化进程先放入 `mProcsToOomAdj`，计算末尾调用 `ProcessList.batchSetOomAdj()`。
 
-API 37 每个 `LMK_PROCS_PRIO` 包最多携带 3 个进程，每个进程有 5 个字段：PID、UID、oomadj、process type、`for_lmkd_only`。列表超过 3 个时会拆成多个 control socket 消息；batch 路径当前把 process type 固定为应用，并把 `for_lmkd_only` 写为 0（单进程 `LMK_PROCPRIO` 才有 zram 写回场景下的 `for_lmkd_only` 例外）。它不是 Binder IPC，也不会把任意数量进程放进一次调用。LMKD 批量命令编号、packet 长度和抖动决策边界可与 [4.36 Android 17 LMK_PROCS_PRIO 批量命令与 thrashing 衰减机制](../ch04-memory/4.36-android17-lmkd-procs-prio-batch.md) 交叉核对。
+API 37 每个 `LMK_PROCS_PRIO` 包最多携带 3 个进程，每个进程有 5 个字段：PID、UID、oomadj、process type、`for_lmkd_only`。列表超过 3 个时会拆成多个 control socket 消息；batch 路径当前把 process type 固定为 app，并把 `for_lmkd_only` 写为 0（单进程 `LMK_PROCPRIO` 才有 zram writeback 场景下的 `for_lmkd_only` 例外）。它不是 Binder IPC，也不会把任意数量进程放进一次调用。LMKD 批量命令编号、packet 长度和 thrashing 决策边界可与 [4.36 Android 17 LMK_PROCS_PRIO 批量命令与 thrashing 衰减机制](../ch04-memory/4.36-android17-lmkd-procs-prio-batch.md) 交叉核对。
 
 ## 七、何时触发重算
 
@@ -308,7 +308,7 @@ API 37 每个 `LMK_PROCS_PRIO` 包最多携带 3 个进程，每个进程有 5 �
 - short FGS timeout、backup、remove task；
 - service Binder call、batch update request。
 
-API 37 没有“每 1 秒无条件全量重算”的 `OOM_ADJ_UPDATE_INTERVAL`。有时效的状态会记录 `followupUpdateUptimeMs`，例如近期顶部 FGS、previous app Provider；handler 到时只把相应进程加入 pending set，再做 partial update。
+API 37 没有“每 1 秒无条件全量重算”的 `OOM_ADJ_UPDATE_INTERVAL`。有时效的状态会记录 `followupUpdateUptimeMs`，例如 recently-top FGS、previous app Provider；handler 到时只把相应进程加入 pending set，再做 partial update。
 
 若更新过程中又产生更新请求，`mOomAdjUpdateOngoing` 阻止递归进入，新目标进入 `mPendingProcessSet`。当前轮结束后统一处理 pending targets；若期间要求 full update，则下一轮直接全量计算。
 
@@ -347,7 +347,7 @@ adb shell cat /proc/<pid>/oom_score_adj
 - `rawAdj`：尚未经过 maxAdj/LRU 等最终修正的中间 adj；
 - `adjType/source/target`：哪类组件或哪条依赖把进程提升到当前档。
 
-若 `/proc/<pid>/oom_score_adj` 与 `setAdj` 短时不同，应确认进程是否刚重启、是否处于 zram 写回的 `for_lmkd_only` 特殊路径，以及 lmkd 套接字是否重连。
+若 `/proc/<pid>/oom_score_adj` 与 `setAdj` 短时不同，应确认进程是否刚重启、是否处于 zram writeback 的 `for_lmkd_only` 特殊路径，以及 lmkd socket 是否重连。
 
 ### 9.2 Perfetto 的准确入口
 
@@ -387,7 +387,7 @@ Kernel `oom/oom_score_adj_update` ftrace 事件用于核对分数写入时间；
 3. 对每次变化记录 `adjType/source/target`，不要只记最终数字；
 4. 对绑定场景逐个改变 bind flag，确认宿主的 adj、`procState` 与能力；
 5. 同时采集 `updateOomAdj_*`、`process_state_changed`、sched、Binder 和 `oom_score_adj_update`；
-6. 将计算耗时按 full/partial、进程数、连接数和触发原因分组。
+6. 将计算耗时按 full/partial、进程数、连接数和触发 reason 分组。
 
 ## 十、版本边界与源码锚点
 

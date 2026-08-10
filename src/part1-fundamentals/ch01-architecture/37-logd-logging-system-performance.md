@@ -91,7 +91,7 @@ Android 17 的 liblog 使用 `writev()` 发送头部和 payload。旧版内核 l
 
 ### 1.3 payload 上限与长消息
 
-Android 17 的 `LOGGER_ENTRY_MAX_PAYLOAD` 为 4068 字节。`LogdWrite()` 会把超出上限的直接 payload 截到可发送范围。Java `Log.printlns()` 处理长文本和堆栈时，会按 payload 预算和换行位置拆成多条，再逐条调用原生写入。
+Android 17 的 `LOGGER_ENTRY_MAX_PAYLOAD` 为 4068 字节。`LogdWrite()` 会把超出上限的直接 payload 截到可发送范围。Java `Log.printlns()` 处理长文本和堆栈时，会按 payload 预算和换行位置拆成多条，再逐条调用 native 写入。
 
 这会带来两个结果：
 
@@ -117,7 +117,7 @@ Android 17 定义了八个 log ID：
 
 | Buffer | 常见内容 |
 |---|---|
-| `main` | 应用与通用原生日志 |
+| `main` | 应用与通用 native 日志 |
 | `radio` | radio/telephony 相关日志 |
 | `events` | EventLog 二进制事件 |
 | `system` | framework/system 组件的文本日志 |
@@ -169,7 +169,7 @@ logcat 连接 `/dev/socket/logdr`。该 reader socket 使用 `SOCK_SEQPACKET`，
 
 ### 3.2 tag 与正则表达式在 logcat 客户端执行
 
-`*:S MyApp:V` 一类 tag/priority 规则由 logcat 进程的 `android_log_shouldPrintLine()` 判断。`--regex` 也由 logcat 的 `std::regex_search()` 执行。它们不会作为标签表或正则表达式交给 logd。
+`*:S MyApp:V` 一类 tag/priority 规则由 logcat 进程的 `android_log_shouldPrintLine()` 判断。`--regex` 也由 logcat 的 `std::regex_search()` 执行。它们不会作为 tag 表或正则表达式交给 logd。
 
 这个边界会直接影响性能判断：
 
@@ -197,7 +197,7 @@ adb logcat -b main --pid="$(adb shell pidof -s com.example.app)" \
 
 ### 4.1 EventLog 与 StatsD atom
 
-`LOG_ID_EVENTS` 保存 `EventLog` 风格的二进制事件，tag 可由事件标签表解析。现代 StatsD 原子事件的主传输路径不同：Android R 及以后，`packages/modules/StatsD/lib/libstatssocket` 通过独立的非阻塞 Unix datagram socket `/dev/socket/statsdw` 向 statsd 写入。
+`LOG_ID_EVENTS` 保存 `EventLog` 风格的二进制事件，tag 可由事件 tag 表解析。现代 StatsD atom 的主传输路径不同：Android R 及以后，`packages/modules/StatsD/lib/libstatssocket` 通过独立的非阻塞 Unix datagram socket `/dev/socket/statsdw` 向 statsd 写入。
 
 因此，高频 StatsD 原子事件不能描述成“先写满 logd 的 events buffer”。StatsD 有自己的 socket、丢失报告和限流语义；logd 仍定义 `LOG_ID_STATS`，也不能由名称推导出所有 atom 都经 logd 保存。分析 atom 丢失应查看 `libstatssocket` 与 statsd 的指标；分析 EventLog 保留窗口才需要查看 `events` buffer。
 
@@ -257,7 +257,7 @@ R8 会处理匹配的 `Log.*` 与 `Log.isLoggable()` 调用。这个规则近年
 | 警告与错误 | 保留稳定错误码和必要上下文 |
 | 凭据、令牌、完整账号、原始请求体 | 禁止写入 |
 
-采样率不能机械固定成“每 100 次一次”。故障可能集中在被跳过的请求，多线程共享计数器也会改变样本分布。需要采样时，应明确采样单位、稳定键、时间窗口和紧急开关，并在构造昂贵消息之前作出决定。
+采样率不能机械固定成“每 100 次一次”。故障可能集中在被跳过的请求，多线程共享计数器也会改变样本分布。需要采样时，应明确采样单位、稳定 key、时间窗口和紧急开关，并在构造昂贵消息之前作出决定。
 
 ### 5.4 隐私边界
 
@@ -300,16 +300,16 @@ AOSP 自带 `system/logging/liblog/tests/liblog_benchmark.cpp`，其中有轻载
 - 应用 `writev()` 很密集且出现 `EAGAIN`：降低写入率，保留错误码和聚合结果；
 - logd CPU 高：检查全机日志源、buffer 裁剪与 reader 数量；
 - 只有某个 logcat 进程 CPU 高：检查客户端正则、格式化和文件输出；
-- 线上现场缺失：同时检查 liblog 套接字丢弃与 logd 的旧数据裁剪，前者丢弃新日志，后者淘汰旧日志。
+- 线上现场缺失：同时检查 liblog socket drop 与 logd 的旧数据裁剪，前者丢弃新日志，后者淘汰旧日志。
 
 ## 7. 版本演进边界
 
 | 版本阶段 | 相关变化 |
 |---|---|
 | Android 4.x 及更早 | 历史实现使用内核 logger 字符设备；只用于阅读旧源码和旧设备问题 |
-| Android 5.0 起 | 用户态 logd 与 Unix 域套接字成为现代日志主路径 |
+| Android 5.0 起 | 用户态 logd 与 Unix socket 成为现代日志主路径 |
 | Android S | serialized compression 取代旧 Chatty 方案，详见 `README.compression.md` |
-| Android R 起 | StatsD 的原生侧原子事件经独立 statsd socket，避免与 EventLog 路径混写 |
+| Android R 起 | StatsD native atom 经独立 statsd socket，避免与 EventLog 路径混写 |
 | Android 17 / API 37 | logd 核心仍为 C++；默认 serialized/Zstd buffer；接收端具备受标志控制的 io_uring 路径；Rust 日志代码属于客户端能力 |
 
 版本演进可以保留旧路径，供分析历史跟踪数据时参考；当前行为判断均以 `android-17.0.0_r1` 为准。现代应用日志链路不依赖内核日志驱动实现，无需引入 `android17-6.18-2026-06_r6` 的额外假设。
@@ -327,4 +327,4 @@ AOSP 自带 `system/logging/liblog/tests/liblog_benchmark.cpp`，其中有轻载
 - 历史 Chatty 边界：`system/logging/logd/README.compression.md`
 - StatsD：`packages/modules/StatsD/lib/libstatssocket/statsd_writer.cpp`
 
-这些锚点均按 `android-17.0.0_r1` 核查。产品分支若修改了 liblog socket flags、logd 缓冲区类型或权限策略，应以设备对应源码和运行时命令输出为准。
+这些锚点均按 `android-17.0.0_r1` 核查。产品分支若修改了 liblog socket flags、logd buffer type 或权限策略，应以设备对应源码和运行时命令输出为准。
