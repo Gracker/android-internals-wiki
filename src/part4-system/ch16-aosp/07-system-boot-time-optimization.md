@@ -46,7 +46,7 @@ last_research_source: "DeepResearch/2026-06-28-android17-bootanalyze-zsygotelazy
 
 系统启动优化研究的是设备从上电到系统可用的整条路径。它横跨 bootloader、kernel、`init`、APEX、Zygote、`system_server`、SystemUI 和 Launcher，和单个 App 的 cold launch 不是同一个实验。
 
-本章的平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`，kernel 锚点是 `android17-6.18-2026-06_r6`。历史版本只用于解释机制演进；没有设备实测支撑的收益数字不作为结论。
+平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`，kernel 锚点是 `android17-6.18-2026-06_r6`。历史版本只用于解释机制演进；没有设备实测支撑的收益数字不作为结论。
 
 ## 先固定“启动完成”的含义
 

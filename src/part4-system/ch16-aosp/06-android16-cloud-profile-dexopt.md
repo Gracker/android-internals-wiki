@@ -67,27 +67,9 @@ last_deepseek_cn_review_at: 2026-07-13
 
 # 16.6 Android 16 云端 Profile 与 dexopt 安装优化
 
-Android 14 之后，应用侧 AOT 编译的控制面转到了 ART Service。Android 16 引入 SDM（Secure Dex Metadata），所以本章保留 Android 16 的历史标题；当前源码结论统一核对到 Android 17 / `android-17.0.0_r1`。
+Android 14 之后，应用侧 AOT 编译的控制面转到了 ART Service。Android 16 引入 SDM（Secure Dex Metadata）；以下源码结论统一核对到 Android 17 / `android-17.0.0_r1`。
 
 Cloud Profile、Baseline Profile 和 Startup Profile 都会影响发布包的代码执行成本，但作用阶段不同。应用开发者能稳定控制的是 Baseline Profile、Startup Profile、`.dm` 验证和本地编译状态检查。云端编译产物是否下发，取决于安装渠道、分发策略、设备端 ART 支持和产物校验结果。AOSP 能证明设备端如何接收、验证和管理产物，不能证明 Google Play 对某个包采用了哪条分发策略。
-
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 **Cloud Profile、Baseline Profile、Startup Profile 的职责边界**：区分 Play 聚合热点、开发者随包 profile、DEX 布局 profile。
-- 🔹 **Dex Metadata (.dm) 在安装与后台编译中的位置**：说明 `.dm` 的匹配规则、可携带 profile / VDEX，以及 ART Service 如何识别。
-- 🔹 **BackgroundDexOptService 与 ART Service 的调度路径**：Android 14+ 以 ART Service 为 dexopt 控制面，后台任务按设备状态触发。
-- 🔹 **System Dexopt Manager 与 Cloud Profile 的分工**：把公开可核对的 ART Service 能力和 Play 分发侧推测边界分开。
-- 🔹 **开发者能控制的 profile 产物与验证命令**：给出包内检查、设备端编译、`dumpsys` / verbose result 验证路径。
-- 🔹 **安装耗时、首次启动、后续启动之间的取舍**：说明安装期省时、首次启动收益和后续后台编译之间的关系。
-
-### 扩展（可选深入）
-
-- 🔸 Play 分发与非 Play 渠道的 profile 差异。
-- 🔸 Android 16/17 ART Service 行为变更跟踪。
-<!-- outline-end -->
 
 ## 三类 Profile 分别解决什么问题
 

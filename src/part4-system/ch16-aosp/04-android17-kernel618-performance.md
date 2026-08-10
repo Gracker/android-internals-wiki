@@ -67,26 +67,9 @@ task2b_verification_note: "2026-06-16 验证 android17-6.18 gki/aarch64/afdo/REA
 
 # 16.4 Android 17 + Kernel 6.18 系统级性能优化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 Kernel 6.12 / 6.18 相关性能变化的可核验边界
-- 🔹 EEVDF fair scheduler 与 sched_ext 的调度器变化
-- 🔹 F2FS checkpoint merge、io_uring 与 dm-verity 的存储栈优化
-- 🔹 AutoFDO for GKI Kernel 的限定收益口径
-- 🔹 ART 运行时优化与 DeliQueue lock-free MessageQueue
-- 🔹 MGLRU 与 LMK 的协同边界
-- 🔹 Perfetto 中验证 Kernel 6.18 优化的观察点
-- 🔹 Android 平台版本与 GKI 分支的版本边界
-- 🔹 常见误区与排查结论
-
-<!-- outline-end -->
-
 ## 为什么要把平台和内核分开
 
-本节使用两个固定锚点：
+核验使用两个固定锚点：
 
 - Android 平台：Android 17 / API 37 / `android-17.0.0_r1`；
 - Android common kernel：`android17-6.18-2026-06_r6`，其 `Makefile` 版本为 6.18.21。
@@ -170,7 +153,7 @@ F2FS 的一次 `fsync()` 不必然触发完整 checkpoint。需要 checkpoint �
 
 6.18 r6 的 `io_uring/` 包含 multishot、registered buffers、ring setup 和 zero-copy 相关路径。每项能力都有自己的 opcode、flag、内存注册和 fallback 条件；`IORING_SETUP_NO_MMAP` 描述 ring 内存的建立方式，不代表应用数据已经 zero-copy。
 
-AOSP 的 `external/liburing` 提供 native 静态库构建规则，但这不能证明 SQLite、Cronet、OkHttp 或 Java I/O 在 Android 17 默认使用 io_uring。普通应用还受 syscall 可用性、seccomp、SELinux、NDK API 与设备内核配置约束。缺少调用栈或 syscall 证据时，本节不把 io_uring 计入应用收益。
+AOSP 的 `external/liburing` 提供 native 静态库构建规则，但这不能证明 SQLite、Cronet、OkHttp 或 Java I/O 在 Android 17 默认使用 io_uring。普通应用还受 syscall 可用性、seccomp、SELinux、NDK API 与设备内核配置约束。缺少调用栈或 syscall 证据时，不能把 io_uring 计入应用收益。
 
 ### dm-verity multi-buffer hashing：r6 未合入
 
@@ -311,7 +294,7 @@ Android 17 的 DeliQueue 博客给出 `mq` track-event category，可用于 `sys
 
 ## 版本演进：把平台版本和 GKI 分支分开
 
-| 维度 | 锚点 | 本节结论 |
+| 维度 | 锚点 | 结论 |
 |---|---|---|
 | Android 15 相关 GKI | `android15-6.6` | fair scheduler 已有 EEVDF 路径；AutoFDO 后续投放到该 LTS 分支 |
 | Android 16 相关 GKI | `android16-6.12` | sched_ext 进入 mainline 后可在该分支使用；早期 6.12 示例可能使用 `scx_bpf_dispatch*()` 命名 |

@@ -93,30 +93,11 @@ task6_promotion_notes: '2026-07-12 20H Task6 revisiting review #3 (post-task9-id
 
 # 16.5 Android 17 (API 37) 性能行为变更与适配方法
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Android 17 行为变更的性能影响与公开量化数据
-- 🔹 DeliQueue 对 MessageQueue 锁竞争的改造与适配边界
-- 🔹 ART 分代 CMC、ProfilingManager 与 JobScheduler 诊断能力
-- 🔹 static final、Network Security Configuration、16KB 页面等 targetSdk 37 适配项
-- 🔹 迁移检查清单与跨章节参考
-
-### 扩展（可选深入）
-
-- 🔸 DeliQueue drain 触发机制与 MessageStack / MessageHeap 数据结构
-- 🔸 Generational CMC gating 条件
-- 🔸 Choreographer Buffer Stuffing Recovery
-
-<!-- outline-end -->
-
 ## 阅读边界：四组变化不能混在一起
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点。性能文章很容易把 target SDK 行为、所有应用行为、公开 API 和系统实现改动写成同一种“Android 17 强制变化”，迁移时必须按触发条件拆开。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`。性能文章很容易把 target SDK 行为、所有应用行为、公开 API 和系统实现改动写成同一种“Android 17 强制变化”，迁移时必须按触发条件拆开。
 
-| 类别 | 触发条件 | 本章涉及的项目 |
+| 类别 | 触发条件 | 涉及项目 |
 |:---|:---|:---|
 | target SDK 行为 | Android 17 上运行且 `targetSdkVersion >= 37` | 新 `MessageQueue`、`static final` 写保护、ECH、CT、原生动态加载、局域网权限、大屏约束 |
 | Android 17 平台行为 | 运行在 Android 17；文档未声明 target SDK 门槛 | 部分设备的 app memory limits、后台音频基础限制、特定配置变化不再重建 Activity |
@@ -171,7 +152,7 @@ Android Developers Blog 用 “Treiber stack + single-threaded min-heap” 解�
 - 同一 `when` 下用 `insertSeq` 保持顺序；`sendMessageAtFrontOfQueue()` 使用递减序号维持队首投递语义。
 - 移除路径会以原子标记完成逻辑删除，Looper 随后跳过或清理已移除节点。
 
-所以，“MessageStack / MessageHeap”在本章中只表示写入栈和有序读取端的职责。r1 没有 `MessageStack.java`、`MessageHeap.java`、`CombinedDeliMessageQueue/` 或 `LegacyMessageQueue/` 这些路径。源码定位应以 `CombinedMessageQueue/MessageQueue.java` 为准。
+所以，这里的“MessageStack / MessageHeap”只表示写入栈和有序读取端的职责。r1 没有 `MessageStack.java`、`MessageHeap.java`、`CombinedDeliMessageQueue/` 或 `LegacyMessageQueue/` 这些路径。源码定位应以 `CombinedMessageQueue/MessageQueue.java` 为准。
 
 “lock-free MessageQueue”也不表示整个文件没有任何锁。消息入队的共享关键路径不再依赖 legacy 全局 monitor；IdleHandler、文件描述符监听、drain 完成通知等辅助状态仍可使用 `synchronized` 或 `ReentrantLock`。它保证系统在竞争下能持续推进，不保证每个线程都在固定次数内完成操作。
 
@@ -441,7 +422,7 @@ target SDK 37 后，Android 14 对 DEX/JAR 的 Safer Dynamic Code Loading 保护
 
 ## Choreographer Buffer Stuffing Recovery
 
-这项机制早于本章的 API 37 迁移边界，但它仍存在于 `android-17.0.0_r1`，分析 Android 17 图形 trace 时容易和 DeliQueue 的效果混淆。
+这项机制早于 API 37 的迁移边界，但它仍存在于 `android-17.0.0_r1`，分析 Android 17 图形 trace 时容易和 DeliQueue 的效果混淆。
 
 `frameworks/base/core/java/android/view/Choreographer.java` 中：
 
@@ -485,7 +466,7 @@ DeliQueue 处理 Java 消息投递争用，Buffer Stuffing Recovery 处理图形
 - [ ] 将 Java 消息争用、GC、Activity 重建、buffer stuffing 和网络握手放到各自证据轨道。
 - [ ] 回归正确性、功耗、峰值 RSS 与崩溃，避免只看平均帧时间。
 
-系统与内核边界参阅 [[04-android17-kernel618-performance|16.4 Android 17 系统与内核性能优化]]。该章的内核锚点为 `android17-6.18-2026-06_r6`；本章的 API 行为不能由 kernel tag 单独推导。
+系统与内核边界参阅 [[04-android17-kernel618-performance|16.4 Android 17 系统与内核性能优化]]，其中内核锚点为 `android17-6.18-2026-06_r6`。API 行为不能由 kernel tag 单独推导。
 
 ## 参考资料
 
