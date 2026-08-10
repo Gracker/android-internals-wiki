@@ -180,7 +180,7 @@ crosvm 通过 `mmap` 分配 VM 物理内存，再用 `KVM_SET_USER_MEMORY_REGION
 
 Microdroid 的最低可启动内存受下列因素影响：
 
-- 受保护或非受保护模式；
+- protected 或 non-protected 模式；
 - debug level；
 - 启用的 APEX、ART 和载荷；
 - vCPU 数、内核和厂商模块；

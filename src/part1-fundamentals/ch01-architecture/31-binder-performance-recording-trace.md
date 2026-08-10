@@ -335,7 +335,7 @@ LIMIT 50;
 录制代码位于 `BBinder::transact()`，在 `onTransact()` 返回后执行。它保存：
 
 - `getInterfaceDescriptor()`；
-- 事务码与标志；
+- transaction `code` 与 `flags`；
 - `onTransact()` 返回状态；
 - 请求 Parcel 的数据区与对象偏移；
 - 回复 Parcel 的数据区；
