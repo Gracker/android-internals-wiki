@@ -89,46 +89,9 @@ last_deepseek_cn_review_at: '2026-06-27'
 
 # 26.17 线上网络质量监控与接入层协同
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 网络监控的分层目标
-说明客户端样本、接入层日志和系统网络状态各自回答的问题，避免只用接口总耗时判断网络故障。
-
-### 🔹 客户端阶段耗时采集
-覆盖 DNS、建连、TLS、首包、响应体、重试、队列等待等阶段，并说明 OkHttp、Cronet、自研网络库的采集入口差异。
-
-### 🔹 流量与网络状态维度
-梳理 TrafficStats、NetworkCapabilities、默认网络切换、VPN/代理/计费网络等维度在归因中的作用。
-
-### 🔹 Native Hook 与统一网络库的边界
-对比插桩、PLT Hook、统一网络库、官方指标接口的覆盖面、成本和发布风险。
-
-### 🔹 客户端与接入层对账
-说明客户端未到达接入层、接入层秒级告警、客户端维度更丰富三类差异，以及 request id / trace id 的对账方式。
-
-### 🔹 实时告警与离线分析
-区分分钟级 PV/错误率告警、小时级维度圈选、P90/P99 尾延迟分析和运营商/地域/CDN 归因。
-
-### 🔹 网络故障证据包
-定义一次线上网络故障应保留的字段：网络类型、运营商、域名、IP、协议、错误码、阶段耗时、重试次数和上报通道状态。
-
-## 扩展
-
-### 🔸 QUIC / HTTP/3 指标口径
-说明 QUIC 下 TCP/TLS 字段不再直接适用，需要协议类型、连接迁移和 0-RTT 单独建模。
-
-### 🔸 AIOps 报警算法边界
-对规则告警、时间序列异常检测和混合策略做工程取舍，标注误报、漏报和历史基线要求。
-
-### 🔸 Wi-Fi 稳定性与系统网络验证
-关联 NetworkCapabilities VALIDATED、Captive Portal、厂商 Wi-Fi 质量判断与应用侧可观测边界。
-
-<!-- outline-end -->
-
 网络质量监控回答三个问题：时间花在哪个阶段，哪些用户受到影响，客户端和接入层记录的是否为同一次请求。只存接口总耗时会把队列、DNS、路由尝试、传输握手、请求发送、首个响应头、响应体读取、重定向与重试混在一个数值里。
 
-本章的平台行为以 `android-17.0.0_r1` 为锚点。OkHttp 5.x 和 Cronet 是独立发布的库，不能从 API 37 推导其事件字段；事件必须记录网络库、库版本和协议。连接管理见 24.4，HTTPDNS 见 24.10，底层网络 APM 见 19.23，通用采样与上报见 26.3。
+平台行为以 `android-17.0.0_r1` 为锚点。OkHttp 5.x 和 Cronet 是独立发布的库，不能从 API 37 推导其事件字段；事件必须记录网络库、库版本和协议。连接管理见 24.4，HTTPDNS 见 24.10，底层网络 APM 见 19.23，通用采样与上报见 26.3。
 
 ## 网络监控的分层目标
 
@@ -155,7 +118,7 @@ last_deepseek_cn_review_at: '2026-06-27'
 
 OkHttp 5.x 的 [`EventListener`](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 是常用采集入口。dispatcher 排队、DNS、connect、secure connect、连接获取、请求发送和响应读取事件都属于同一个 `Call`，其中 connect 系列事件可能因候选路由与 Fast Fallback 重复出现，`connectionAcquired` 也可能在一个 `Call` 中出现多次。连接复用时，DNS、connect 和 TLS 事件可能缺席。采集器应保存有序事件和对应的 attempt/exchange，不能假设事件序列固定。
 
-Cronet 的公开入口是 `org.chromium.net.RequestFinishedInfo.Listener`。固定到本章核验的 Cronet API `143.7445.0`，[`RequestFinishedInfo.Metrics`](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Metrics) 提供请求开始、DNS、connect、SSL、sending、response start 和 request end 时间戳，以及 socket 复用、TTFB、总耗时和可空的传输字节数。没有发生或无法取得的阶段返回 `null`；复用连接时 DNS、connect 和 SSL 通常都为空。DNS 命中本地缓存但没有复用 socket 时，Cronet 仍可给出 DNS 时间戳，所以“存在 DNS 事件”不能直接等价为“访问了远端 DNS”。
+Cronet 的公开入口是 `org.chromium.net.RequestFinishedInfo.Listener`。固定到这里核验的 Cronet API `143.7445.0`，[`RequestFinishedInfo.Metrics`](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Metrics) 提供请求开始、DNS、connect、SSL、sending、response start 和 request end 时间戳，以及 socket 复用、TTFB、总耗时和可空的传输字节数。没有发生或无法取得的阶段返回 `null`；复用连接时 DNS、connect 和 SSL 通常都为空。DNS 命中本地缓存但没有复用 socket 时，Cronet 仍可给出 DNS 时间戳，所以“存在 DNS 事件”不能直接等价为“访问了远端 DNS”。
 
 字节字段也要注明来源。`Metrics#getReceivedByteCount()` 是当前请求的传输层接收字节，不包含之前的重定向；`UrlResponseInfo#getReceivedByteCount()` 是从请求开始累计到当前响应的最小接收字节估计，包含重定向但不覆盖所有协议开销。两个字段不能混入同一指标序列。
 
