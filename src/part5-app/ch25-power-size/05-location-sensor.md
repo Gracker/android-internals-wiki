@@ -61,23 +61,7 @@ last_deepseek_cn_review_at: 2026-06-24
 
 # 定位与传感器功耗优化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 定位精度与功耗的权衡
-- 🔹 Fused Location Provider 最佳实践
-- 🔹 Geofencing 与被动定位
-- 🔹 传感器批处理与采样率控制
-
-### 扩展（可选深入）
-
-- 🔸 （待扩展）
-
-<!-- outline-end -->
-
-## 为什么要了解定位与传感器功耗优化
+## 功耗边界
 
 定位请求可能启用 GNSS、Wi-Fi 扫描、蜂窝测位和传感器融合；传感器监听又会带来采样、FIFO 交付、应用处理器唤醒与后续计算。功耗评审不能只看 API 名称，要同时检查数据从哪里产生、多久产生一次、何时交付，以及应用收到数据后做了多少 CPU、存储和网络工作。
 
@@ -352,7 +336,7 @@ Android 17 的 `SystemSensorManager` 使用 5000 微秒作为 200 Hz 周期边�
 - [`SensorEventConnection.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/sensorservice/SensorEventConnection.cpp)：事件连接、活跃 UID 检查、flush 与 wake-up 事件确认。
 - [AOSP Sensors batching](https://source.android.com/docs/core/interaction/sensors/batching)：FIFO、报告延迟、suspend 与 wake-up/non-wake-up 契约。
 
-传感器驱动和 sensor hub 固件通常由设备厂商实现，通用 AOSP 不能给出一条适用于所有设备的 Linux 驱动路径。本节不据此推断内核行为；后续若引用通用内核实现，统一使用 `android17-6.18-2026-06_r6`，不能拿旧内核分支解释 Android 17 设备。
+传感器驱动和 sensor hub 固件通常由设备厂商实现，通用 AOSP 不能给出一条适用于所有设备的 Linux 驱动路径。这里不据此推断内核行为；后续若引用通用内核实现，统一使用 `android17-6.18-2026-06_r6`，不能拿旧内核分支解释 Android 17 设备。
 
 ## 定位和传感器的回归守门
 
@@ -366,7 +350,7 @@ adb shell dumpsys sensorservice
 adb shell dumpsys batterystats --charged
 ```
 
-`dumpsys location` 用来核对 provider、请求间隔、权限级别和前后台状态；`dumpsys sensorservice` 可以看到活跃连接、采样周期、批处理延迟、FIFO 与 wake lock 相关信息；`batterystats` 用于把位置、传感器、唤醒和进程活动关联到应用 UID。不同厂商的字段可能不同，回归脚本应保存原始文本并只解析稳定字段。
+`dumpsys location` 用来核对 provider、请求间隔、权限级别和前后台状态；`dumpsys sensorservice` 显示活跃连接、采样周期、批处理延迟、FIFO 与 wake lock 相关信息；`batterystats` 用于把位置、传感器、唤醒和进程活动关联到应用 UID。不同厂商的字段可能不同，回归脚本应保存原始文本并只解析稳定字段。
 
 测试范围至少覆盖以下边界：
 
