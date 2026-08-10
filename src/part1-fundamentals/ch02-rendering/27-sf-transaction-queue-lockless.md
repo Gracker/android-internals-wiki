@@ -188,7 +188,7 @@ pop():
 
 带有效 VSync ID 的事务已按该 ID 的节奏被 Choreographer 节流，SF 不会再按来源 UID 的节奏重复节流。使用自动时间戳的事务还会通过 `frameIsEarly()` 判断是否过早。
 
-### 5.2 缓冲区：帧屏障、背压与获取栅栏
+### 5.2 buffer：frame barrier、backpressure 与 acquire fence
 
 缓冲区过滤器会遍历事务中带缓冲区的图层状态，主要处理三类条件。
 
