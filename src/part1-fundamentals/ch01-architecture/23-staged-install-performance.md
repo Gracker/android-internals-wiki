@@ -237,7 +237,7 @@ Developer Verification 位于 session 的通用验证路径中，发生在 stage
 | APEX + APK mixed | APEX 与所有 child 作为一批验证 | 先确认 APEX 激活状态，再安装 APK child | APEX 失败会传播到同批及其他受影响的 staged session |
 | Multi-package APK | parent 管理多个 child 的一致提交 | child 在同一 parent 语义下安装 | 任一 child 失败，不能把 parent 视为部分成功 |
 
-包含 APEX 且设备支持 checkpoint 时，`resumeSession()` 不会过早把 apexd session 宣告为永久成功。session ID 会保留到 `PHASE_BOOT_COMPLETED`，届时 `markStagedSessionsAsSuccessful()` 才通知 apexd。本次启动能否完成，也属于健康检查的一部分。
+包含 APEX 且设备支持 checkpoint 时，`resumeSession()` 不会过早把 apexd session 宣告为永久成功。session ID 会保留到 `PHASE_BOOT_COMPLETED`，届时 `markStagedSessionsAsSuccessful()` 才通知 apexd。本次启动能否走到 boot completed，也属于健康检查的一部分。
 
 ## 失败处理与回退边界
 

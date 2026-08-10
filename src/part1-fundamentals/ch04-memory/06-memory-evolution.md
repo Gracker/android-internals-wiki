@@ -242,7 +242,7 @@ Native 问题需要结合 tombstone、HWASan/ASan、GWP-ASan、MTE 和 heapprofd
 
 ### heap class 是设备配置
 
-`ActivityManager.getMemoryClass()` 返回当前设备近似的普通应用 memory class，`getLargeMemoryClass()` 返回大堆对应值。两者单位为 MiB，值可能相同，也可能差异很大。
+`ActivityManager.getMemoryClass()` 返回当前设备近似的普通应用 memory class，`getLargeMemoryClass()` 返回 large heap 对应值。两者单位为 MiB，值可能相同，也可能差异很大。
 
 Android 没有提供“2 GB RAM 对应 192 MiB、8 GB RAM 对应 512 MiB”这样的跨设备固定表。设备可通过 `dalvik.vm.heapstartsize`、`heapgrowthlimit`、`heapsize`、`heaptargetutilization` 等属性配置 ART；32/64 位、低内存设备和 OEM 选择都会影响结果。
 
@@ -256,7 +256,7 @@ adb shell getprop dalvik.vm.heaptargetutilization
 adb shell dumpsys meminfo com.example.app
 ```
 
-前三项描述堆的起点、增长限制和最大配置，最末项提供当前进程 Java、Native、Graphics 等快照。属性值仍要结合进程位数和 Runtime 日志解释。
+前三项描述 heap 的起点、增长限制和最大配置，最末项提供当前进程 Java、Native、Graphics 等快照。属性值仍要结合进程位数和 Runtime 日志解释。
 
 ### `largeHeap` 只改变受管理堆等级
 
