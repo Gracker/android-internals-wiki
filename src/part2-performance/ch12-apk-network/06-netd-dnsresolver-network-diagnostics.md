@@ -40,40 +40,9 @@ last_task2a_at: "2026-05-17T16:04:00+08:00"
 
 # 12.6 netd 与 DnsResolver：DNS 解析性能和故障诊断
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 从业务错误定位到 DNS 等待段
-DNS 查询、TCP 建连、TLS 握手和 HTTP 首字节属于不同阶段。只有证据指向解析阶段，才进入 resolver 专项诊断。
-
-### 🔹 Android 17 的 resolver 与 netd 边界
-`netd` 管理 native network、路由、接口和权限；DNS Resolver 主线模块管理每个 `netId` 的解析配置、缓存以及 Private DNS。`ConnectivityService` 协调两边。
-
-### 🔹 API 37 的 DNS API 变化
-Android 17 新增带 `Context` 和 `Looper` 的 `DnsResolver` 构造方法，并加入 HTTPS 资源记录的组合查询。旧的单例入口在 API 37 废弃。
-
-### 🔹 按 Network 诊断
-DNS server、resolver 缓存、VPN、Private DNS 和应用缓存都带有网络上下文。诊断和缓存若忽略 `Network`，很容易把切网问题误判成域名或服务端故障。
-
-### 🔹 系统 DNS 与应用自定义解析
-系统解析能继承平台的网络选择、VPN 和 Private DNS 策略。HTTPDNS、应用 DoH 与 OkHttp 自定义 `Dns` 增加了业务调度能力，也增加了 bootstrap、TTL、企业网络和合规边界。
-
-### 🔹 可复现且保护隐私的证据
-客户端阶段事件、`dumpsys connectivity`、`dumpsys dnsresolver` 与脱敏 query log 应指向同一次故障。线上埋点默认不记录完整 hostname、DNS server 或目标 IP。
-
-## 扩展
-
-### 🔸 Private DNS、DoT、DoH 与 mDNS
-区分用户可配置的 Private DNS、resolver 内部的传输实现、应用自带 DoH，以及 Android 17 本地网络权限对 `.local` 查询的影响。
-
-### 🔸 Tethering 的范围
-热点转发和硬件 offload 属于共享网络的数据面，不参与本机应用的普通域名解析流程。
-
-<!-- outline-end -->
-
 DNS 位于多数新建连接的前部，但一次 HTTP 请求未必发生 DNS 查询：连接池可直接复用现有连接，HTTP/2 或 HTTP/3 也能在同一连接上承载多次请求。诊断时应先回答“本次请求是否查询 DNS、查询绑定哪条网络、结果是否进入了后续建连”，再分析 resolver 或 HTTPDNS。
 
-12.2 介绍请求阶段计时，12.3 和 12.4 分别讨论连接、协议与 TLS，12.5 讨论平台网络状态。本节沿 Android 17 的源码路径说明系统 resolver，并给出应用侧能执行的诊断顺序。
+12.2 介绍请求阶段计时，12.3 和 12.4 分别讨论连接、协议与 TLS，12.5 讨论平台网络状态。下面沿 Android 17 的源码路径说明系统 resolver，并给出应用侧能执行的诊断顺序。
 
 ## 一、四层边界：调用方、框架、resolver、netd
 

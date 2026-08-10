@@ -105,27 +105,7 @@ last_task2b_verifier_at: 2026-07-03T07:32:03+08:00
 ---
 # 12.3 网络性能深入：连接池、TLS 与传输优化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Android 网络栈全景：请求从 OkHttp 到内核协议栈的路径与耗时拆分
-- 🔹 OkHttp 连接池与复用机制：ConnectionPool、HTTP/2 多路复用、EventListener 时序
-- 🔹 TLS 握手性能与优化：TLS 1.2 / TLS 1.3、Conscrypt、证书校验开销
-- 🔹 DNS 解析性能：系统 DNS resolver、DoT / DoH、OkHttp 自定义 DNS
-- 🔹 网络请求对电池的影响：Radio State Machine、批量请求、JobScheduler 调度
-- 🔹 在 Perfetto 中分析网络性能：自定义 Trace Event、主线程阻塞、指标基线
-
-### 扩展（可选深入）
-
-- 🔸 HTTP/3 与 QUIC
-- 🔸 WebSocket 性能
-- 🔸 Retrofit 与 Coroutine 集成性能
-
-<!-- outline-end -->
-
-§12.2 讨论客户端选择、超时、重试和弱网策略，本节关注一次调用在客户端内部经历的阶段。分析时要同时保留两种视角：
+§12.2 讨论客户端选择、超时、重试和弱网策略；这里关注一次调用在客户端内部经历的阶段。分析时要同时保留两种视角：
 
 - **逻辑调用**：业务发起的一次 `Call`，可能包含排队、重定向、认证挑战、重试和多个物理连接尝试。
 - **物理交换**：一次具体的 DNS 查询、socket 建连、TLS 握手或 HTTP request/response exchange。
@@ -192,8 +172,6 @@ InetAddress[] addresses =
 
 `StrictMode` 属于尽力检测工具。JNI 直接发起的 I/O 可能避开部分检测，应用也能修改线程策略。另一类常见故障来自 UI 线程等待后台网络任务：`Future.get()`、`CountDownLatch.await()` 或 `runBlocking` 不会触发网络异常，仍会阻塞输入与首帧。
 
-[已验证: AOSP `android-17.0.0_r1`, `libcore/ojluni/src/main/java/java/net/Inet6AddressImpl.java`, `libcore/luni/src/main/java/libcore/io/BlockGuardOs.java`, `frameworks/base/core/java/android/os/StrictMode.java`]
-
 ## OkHttp 5.3.0 连接池与复用
 
 ### 共享客户端
@@ -209,8 +187,6 @@ constructor() : this(5, 5, TimeUnit.MINUTES)
 ```
 
 `5` 是池内最多保留的**空闲连接**数量，`5 分钟`是空闲连接保留时长。它不限制连接总数，也不等于“最多连接 5 个域名”。正在承载 HTTP/2 stream 的连接不是空闲连接；并发上限由 Dispatcher、HTTP/2 settings、socket 资源和服务端共同影响。源码注释还说明这些调优值可能随 OkHttp 版本变化，应用不应把它们当成永久协议约束。
-
-[已验证: OkHttp 5.3.0, `okhttp3.ConnectionPool`]
 
 ### 何时可以复用
 
@@ -316,8 +292,6 @@ OkHttp `Dns.SYSTEM` 调用 `InetAddress.getAllByName()`。AOSP 17 中，`Inet6Ad
 
 Android 10 把 resolver 迁入可更新的 `com.android.resolv` 模块；Android 11 起该模块成为强制组件。每条 Android `Network` 有独立配置，VPN、Private DNS 与网络切换都可能改变解析结果。用一个进程级永久 map 缓存 IP 会绕过这些边界。
 
-[已验证: AOSP `android-17.0.0_r1`, `java/net/AddressCache.java`, `java/net/Inet6AddressImpl.java`; Android DNS Resolver Mainline 文档]
-
 ### DoT、DoH 与 DoH3
 
 Android 9（API 28）引入 Private DNS，公开设置入口对应 DoT。Google 在 2022 年说明，系统 resolver 通过 Mainline 更新在部分 Android 10 设备及 Android 11 以上设备为受支持的 well-known resolver 启用 DoH3。AOSP 17 的实现仍位于 `packages/modules/DnsResolver/rust/src/doh/`。
@@ -337,8 +311,6 @@ Android 17（API 37，同时标注 S Extensions 22）为 `DnsResolver` 增加 `T
 `httpsTimeoutMillis` 明确表达性能取舍：A/AAAA 已返回后，继续等待 HTTPS 查询可能增加 DNS 阶段时间；不等待则可能拿不到 ALPN、ECH 与 IP hints。HTTPS RR 可让支持它的客户端提前获知 alternative endpoint 或 `h3` 能力，不能保证减少固定数量的 RTT，也不会替代 TLS 握手。
 
 OkHttp 5.3.0 的 `Dns.lookup()` 只返回 `List<InetAddress>`。把 `HttpsEndpoint` 的地址塞进这个列表，只能传递地址与顺序，ALPN、端口、priority 和 ECH 信息都会丢失。需要完整使用 HTTPS RR 的客户端必须在连接层支持这些字段，单靠 OkHttp 自定义 `Dns` 无法完成。
-
-[已验证: AOSP `android-17.0.0_r1`, `android/net/DnsResolver.java`, `android/net/dns/HttpsEndpoint.java`, `android/net/dns/HttpsRecord.java`; RFC 9460]
 
 ### 自定义 DNS 的边界
 
@@ -472,7 +444,7 @@ Retrofit 的 suspend adapter 不会把网络协议变快。EventListener 显示�
 
 同一个协程 dispatcher 同时运行长时间 CPU 解析与阻塞任务，可能形成线程饥饿。网络阶段、解析阶段和 UI 提交阶段应分别 trace，避免把网络完成后的 CPU 时间计入 TTFB。
 
-## Review 检查表
+## 复核清单
 
 - 以 Android 17 / API 37、AOSP `android-17.0.0_r1` 为平台锚点。
 - 涉及 TCP 内核实现时，以 `android17-6.18-2026-06_r6` 为源码锚点。

@@ -102,29 +102,11 @@ last_deepseek_cn_review_at: 2026-07-06
 ---
 # 12.2 网络性能优化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 网络性能指标：DNS 时间、连接时间、首字节时间(TTFB)、传输速率
-- 🔹 HTTP/2 与 HTTP/3(QUIC) 的性能差异与适用场景
-- 🔹 网络请求优化：连接复用、请求合并、预连接(preconnect)
-- 🔹 弱网优化策略：超时策略、重试策略、降级策略
-- 🔹 网络性能监控：OkHttp EventListener、NetworkCallback
-
-### 扩展（可选深入）
-
-- 🔸 CDN 策略对 Android 客户端的影响
-- 🔸 图片加载的网络优化（渐进式加载、缩略图策略）
-
-<!-- outline-end -->
-
 一次接口调用的等待时间分散在客户端排队、域名解析、路由尝试、建连、加密握手、上传、边缘节点、服务端、响应传输、解析和界面更新中。“接口耗时 2 秒”只给出了结果，无法指出哪一段消耗了时间。
 
 移动网络持续变化，客户端仍然可以控制请求时机、复用、总期限、缓存、重试和内容降级。优化工作的起点是统一计时口径，然后按协议、请求组织和网络状态选择策略。
 
-本节以 Android 17 / API 37、AOSP `android-17.0.0_r1`、OkHttp 5.3.0 和 Play services Cronet 18.0.1 为基准。系统服务、`netd`、DNS Resolver 和 `NetworkAgent` 的内部细节在后续章节展开。
+基准版本为 Android 17 / API 37、AOSP `android-17.0.0_r1`、OkHttp 5.3.0 和 Play services Cronet 18.0.1。系统服务、`netd`、DNS Resolver 和 `NetworkAgent` 的内部细节在后续章节展开。
 
 ## 一次请求应当怎样计时
 
@@ -288,7 +270,7 @@ OkHttp 5 默认启用 fast fallback，会并行尝试可用路由以降低 IPv6 
 
 ### “预连接”是一笔真实请求成本
 
-OkHttp 没有承诺任意业务请求都能通过一个公开 `preconnect()` API预建连接。发送 HEAD 或空 GET 进行 warmup 会产生 DNS、连接、TLS、服务器、流量和电量成本。后续请求还可能因网络切换、不同 authority、证书条件、连接空闲回收或服务端关闭而无法复用。
+OkHttp 没有承诺任意业务请求都能通过一个公开 `preconnect()` API 预建连接。发送 HEAD 或空 GET 进行 warmup 会产生 DNS、连接、TLS、服务器、流量和电量成本。后续请求还可能因网络切换、不同 authority、证书条件、连接空闲回收或服务端关闭而无法复用。
 
 若冷启动指标证明预热有收益，可设置无副作用、低成本、允许失败的专用 endpoint，并满足这些条件：
 
@@ -312,7 +294,7 @@ CDN 会改变 DNS 答案、边缘距离、TLS 会话、协议协商、缓存命�
 - DNS、connect、TLS、响应头等待和传输耗时；
 - 响应码、重试、回退和字节数。
 
-客户端很难仅凭 TTFB 区分边缘排队、cache miss 与源站处理。CDN 日志和服务端 trace ID应采用白名单传递，并避免把完整 URL、query、Cookie、Authorization 或用户标识写入 APM。
+客户端很难仅凭 TTFB 区分边缘排队、cache miss 与源站处理。CDN 日志和服务端 trace ID 应采用白名单传递，并避免把完整 URL、query、Cookie、Authorization 或用户标识写入 APM。
 
 ### 自定义 DNS 需要系统边界
 
@@ -629,13 +611,13 @@ Android 17 的应用 API 与服务端实现分布在 Connectivity Mainline 模�
 
 ## 版本边界
 
-| 版本 | 与本节相关的变化 |
+| 版本 | 相关变化 |
 |---|---|
-| Android 8 / API 26 | 本节范围下界；`onAvailable()` 后的 capabilities 与 link properties callback 顺序得到公开保证 |
+| Android 8 / API 26 | 范围下界；`onAvailable()` 后的 capabilities 与 link properties callback 顺序得到公开保证 |
 | Android 11 / API 30 | 平台改进 5G 场景的带宽估计；返回值仍是第一跳估计 |
 | Android 17 / API 37 | `SubscriptionInfo` 增加流媒体分配速率；target 37 的局域网访问受 `ACCESS_LOCAL_NETWORK` 约束 |
-| OkHttp 5.3.0 | 本节客户端锚点；共享 client、fast fallback、EventListener 排队事件与默认 timeout 口径以此版本为准 |
-| Cronet 18.0.1 | 本节 Play services Cronet 接入锚点；provider 可用性和协议协商需要运行时观测 |
+| OkHttp 5.3.0 | 客户端锚点；共享 client、fast fallback、EventListener 排队事件与默认 timeout 口径以此版本为准 |
+| Cronet 18.0.1 | Play services Cronet 接入锚点；provider 可用性和协议协商需要运行时观测 |
 
 ## 排查清单
 
