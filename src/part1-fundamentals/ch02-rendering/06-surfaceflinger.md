@@ -205,7 +205,7 @@ Transaction 把一组 Layer 修改作为一个提交单元。合并操作具有�
 
 ### 原子提交不保证像素已经可读
 
-一笔 transaction 可以原子地表达“新 buffer、位置和裁剪一起生效”。生产者仍可能异步写入缓冲，acquire fence 负责保护内容。Android 13 起支持受限的 unsignaled buffer latch 模式，SurfaceFlinger 可以在满足策略条件的简单更新中先推进 transaction readiness，但 RenderEngine/HWC 读取内容前仍要遵守 fence。
+一笔 transaction 可以原子地表达“新 buffer、位置和裁剪一起生效”。buffer 的 Producer 仍可能异步写入，acquire fence 负责保护内容。Android 13 起支持受限的 unsignaled buffer latch 模式，SurfaceFlinger 可以在满足策略条件的简单更新中先推进 transaction readiness，但 RenderEngine/HWC 读取内容前仍要遵守 fence。
 
 SyncTransaction、WMS transition sync 与应用的 `SurfaceSyncGroup` 解决的参与者和等待条件并不完全相同。排查跨窗口动画时，先确认哪些 Surface 被加入同一个同步组，再检查 transaction barrier、buffer readiness 和 callback；屏幕上同时移动不代表它们自动属于同一同步事务。
 

@@ -429,7 +429,7 @@ Android 17 `GraphicBufferAllocator.cpp` 定义了两个直接观察点：
 
 ### 9.1 分配抖动
 
-Surface resize、format /用途、protected 状态变化、slot 被清理、外部 buffer attach / detach，以及 additional options 更新，都可能触发 reallocation。分配路径会跨 framework、HAL、vendor allocator 和 kernel，内存压力下还可能伴随 reclaim 或 IOMMU mapping。
+Surface resize、format/usage 变化、protected 状态变化、slot 被清理、外部 buffer attach/detach，以及 additional options 更新，都可能触发 reallocation。分配路径会跨 framework、HAL、vendor allocator 和 kernel，内存压力下还可能伴随 reclaim 或 IOMMU mapping。
 
 优化时先查谁改变了 descriptor，再考虑预分配、稳定尺寸、减少 pool 重建或延后非关键资源。不能使用脱离设备、格式和压力条件的统一毫秒数。
 
@@ -437,7 +437,7 @@ Surface resize、format /用途、protected 状态变化、slot 被清理、外�
 
 Camera preview 常把 HAL 产出的 buffer 交给 SurfaceTexture、ImageReader、GPU filter、codec 或 HWC。一个 camera buffer 可以在模块间共享，但 ISP 写入、GPU 采样、颜色转换、编码器读取和显示扫描都消耗内存带宽。
 
-因此，零拷贝不等于零带宽。分析相机打开后 UI 掉帧时，应分别测量相机 fence、GPU 渲染轮次、最终 Surface 显示、内存控制器与热状态；堆名称本身不能证明物理带宽隔离。两条 BufferQueue 与中间 consumer/producer 需要分别检查，以确认积压位置。
+因此，零拷贝不等于零带宽。分析相机打开后 UI 掉帧时，应分别测量 Camera fence、GPU render pass、最终 Surface present、内存控制器与热状态；heap 名称本身不能证明物理带宽隔离。两条 BufferQueue 与中间 consumer/producer 需要分别检查，以确认积压位置。
 
 视频也遵循同一原则。SurfaceView 视频可能保留独立 layer，TextureView 会把解码缓冲再采样进宿主窗口；是否获得 HWC DEVICE 合成取决于格式、变换、受保护属性、平面和带宽等整屏条件。“共享同一缓冲”“省去一次 RenderEngine 合成”和“没有内存带宽成本”是三种不同结论。
 

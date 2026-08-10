@@ -179,7 +179,7 @@ virtual status_t queueBuffer(
 
 ### 3. `queueBuffer()`：提交 slot、元数据和生产完成 fence
 
-Producer 生成内容后调用 `queueBuffer()`。`QueueBufferInput` 携带生产完成 fence、时间戳、crop、transform、dataspace、surface damage 等信息。该 fence 到达下游后充当 acquire fence：消费者读取像素前必须遵守它。
+Producer 生成内容后调用 `queueBuffer()`。`QueueBufferInput` 携带生产完成 fence、时间戳、crop、transform、dataspace、surface damage 等信息。该 fence 到达下游后充当 acquire fence：Consumer 读取像素前必须遵守它。
 
 `queueBuffer()` 返回只说明 CPU 侧提交完成。此后还可能发生：
 
@@ -320,7 +320,7 @@ BBQBufferQueueProducer::waitForBufferRelease()
   reacquire mCore->mMutex and retry
 ```
 
-BLAST 初始化时创建 `BufferReleaseChannel` 两端，并通过独立的 `SurfaceControl.Transaction::setBufferReleaseChannel()` 把 Producer endpoint 交给 SF。`Layer::callReleaseBufferCallback()` 将 `ReleaseCallbackId`、release fence 和当前刷新率的 acquired 数写回 channel；transaction 的 release callback 入口仍然存在，BLAST 会对重复的 release 信息去重。channel 传回“哪块 buffer 被释放以及对应 fence”，后续仍可能需要等待 fence。
+BLAST 初始化时创建 `BufferReleaseChannel` 两端，并通过独立的 `SurfaceControl.Transaction::setBufferReleaseChannel()` 把 Producer endpoint 交给 SF。`Layer::callReleaseBufferCallback()` 将 `ReleaseCallbackId`、release fence 和当前刷新率的 acquired 数写回 channel；transaction 的 release callback 入口仍然存在，BLAST 会对重复的 release 信息去重。channel 传回“哪块 buffer 被释放以及对应 fence”，后续仍可能存在 fence wait。
 
 `BBQBufferQueueCore::notifyBufferReleased()` 的当前实现会中断阻塞读取，让等待线程重新检查本地 free slot。标准 App Window 的长 dequeue 不能只按 `mDequeueCondition` 分析。
 
