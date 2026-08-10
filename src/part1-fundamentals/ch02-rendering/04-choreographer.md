@@ -140,12 +140,12 @@ Choreographer 是绑定到某个 `Looper` 的帧回调调度器。它把需要�
 
 它负责：
 
-- 合并同一待处理帧的重复调度请求；
+- 合并同一 pending frame 的重复调度请求；
 - 按需向 `DisplayEventReceiver` 申请下一次 VSync；
 - 保存五类回调队列；
-- 提供稳定的帧时间、候选 FrameTimeline、截止时间和 VSync ID；
+- 提供稳定的帧时间、候选 FrameTimeline、deadline 和 VSync ID；
 - 在 `doFrame()` 中按阶段执行已经到期的回调；
-- 检测迟到、帧时间倒退和缓冲积压恢复条件。
+- 检测迟到、帧时间倒退和 buffer stuffing recovery 条件。
 
 它不负责：
 
@@ -165,10 +165,10 @@ Choreographer 是绑定到某个 `Looper` 的帧回调调度器。它把需要�
   → Choreographer.doFrame()
   → INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT
   → ViewRootImpl / HWUI / RenderThread 生产缓冲
-  → SurfaceFlinger / HWC 完成合成与显示提交
+  → SurfaceFlinger / HWC 完成合成与 present
 ```
 
-这条路径说明 Choreographer 位于应用生产阶段的起点。`doFrame()` 结束只表示这次 Looper 回调已经完成，不能证明 GPU、缓冲、SurfaceFlinger 或显示后段已经完成。
+这条路径说明 Choreographer 位于应用生产阶段的起点。`doFrame()` 结束只表示这次 Looper 回调已经完成，不能证明 GPU、buffer、SurfaceFlinger 或显示后段已经完成。
 
 ---
 
@@ -226,13 +226,13 @@ if (!mFrameScheduled) {
 }
 ```
 
-这段代码用于说明合并机制。多个组件在同一待处理帧内注册工作，只会共享一次 VSync 申请。从其他线程安排帧时，Choreographer 先把异步消息放到所属 Looper 的队首，再由正确线程调用 `DisplayEventReceiver.scheduleVsync()`。
+这段代码用于说明合并机制。多个组件在同一 pending frame 内注册工作，只会共享一次 VSync 申请。从其他线程安排帧时，Choreographer 先把异步消息放到所属 Looper 的队首，再由正确线程调用 `DisplayEventReceiver.scheduleVsync()`。
 
-`mFrameScheduled` 只合并“一次帧分发请求”，不会合并不同回调队列中的业务内容。每个到期回调仍会在对应阶段执行。
+`mFrameScheduled` 只合并“一次 frame dispatch”，不会合并不同 callback queue 中的业务内容。每个到期回调仍会在对应阶段执行。
 
 ### 2.3 `scheduleVsync()` 请求单次脉冲
 
-`DisplayEventReceiver.scheduleVsync()` 调用原生方法 `nativeScheduleVsync()`。原生连接最终向 SurfaceFlinger EventThread 发出 `requestNextVsync()`，请求类型是单次 VSync。
+`DisplayEventReceiver.scheduleVsync()` 调用 native `nativeScheduleVsync()`。native connection 最终向 SurfaceFlinger EventThread 发出 `requestNextVsync()`，请求类型是单次 VSync。
 
 如果动画还要继续，动画回调必须再次安排下一帧；如果 View 状态在本帧处理后又需要更新，`ViewRootImpl` 或相应组件也会再次注册工作。Choreographer 不会因为注册过一次回调就永久订阅每个显示周期。
 
@@ -264,7 +264,7 @@ Android 17 的 `TraversalCallback.onVsync(FrameData)` 读取 `frameData.getFrame
 
 同步屏障会阻止屏障之后的普通同步消息继续执行，异步消息仍可穿过。Choreographer 的 VSync 调度消息和 `FrameDisplayEventReceiver` 消息会标记为异步，因此 traversal 能在屏障存在时获得执行机会。
 
-常见表述“Choreographer 放置同步屏障”会把责任写错。放置和移除遍历屏障的是 `ViewRootImpl`；Choreographer 提供异步帧消息和回调分发。
+常见表述“Choreographer 放置同步屏障”会把责任写错。放置和移除 traversal barrier 的是 `ViewRootImpl`；Choreographer 提供异步帧消息和 callback dispatch。
 
 `doTraversal()` 开始时会清除 `mTraversalScheduled` 并移除屏障，再进入 `performTraversals()`。屏障忘记移除会阻塞普通消息，因此这部分代码对异常返回和取消路径很谨慎。
 
@@ -286,21 +286,21 @@ CALLBACK_INPUT
 
 | 阶段 | Android 17 跟踪子切片 | 主要工作 | 容易误解的地方 |
 |------|--------------------------|----------|----------------|
-| INPUT | `input` | 帧同步的批量输入消费、重采样等 | 普通输入事件也可以在其他时机处理 |
+| INPUT | `input` | 帧同步的 batched input 消费、重采样等 | 普通输入事件也可以在其他时机处理 |
 | ANIMATION | `animation` | 属性动画、`FrameCallback`、公开 `VsyncCallback` 等 | 回调只推进状态，不保证一定产生新缓冲 |
 | INSETS_ANIMATION | `insets_animation` | 汇总系统栏、IME 等 Insets 动画更新 | 它位于 Animation 之后、Traversal 之前 |
-| TRAVERSAL | `traversal` | ViewRoot 遍历、测量/布局/绘制、HWUI 交接 | 三项工作是否都执行取决于本帧状态 |
-| COMMIT | `commit` | 绘制后收尾与提交后回调 | 该阶段观察到的帧时间可能因前面迟到而调整 |
+| TRAVERSAL | `traversal` | ViewRoot traversal、measure/layout/draw、HWUI 交接 | 三项工作是否都执行取决于本帧状态 |
+| COMMIT | `commit` | post-draw 收尾与提交后回调 | 该阶段观察到的 frame time 可能因前面迟到而调整 |
 
 ### 4.1 INPUT 不等于全部输入处理
 
-普通输入经 `InputChannel` 到达应用后，可以由主线程异步处理。`ViewRootImpl.scheduleConsumeBatchedInput()` 注册 `CALLBACK_INPUT`，用于把一批运动事件按本帧时间消费或重采样。
+普通输入经 `InputChannel` 到达应用后，可以由主线程异步处理。`ViewRootImpl.scheduleConsumeBatchedInput()` 注册 `CALLBACK_INPUT`，用于把一批 motion event 按本帧时间消费或重采样。
 
-列表拖动时，手指仍在移动，INPUT 阶段常有批量运动事件处理；松手进入惯性滚动后，新输入减少，位移主要由 ANIMATION 阶段的滚动物理模型推进。INPUT 变短并不表示帧调度失效。
+列表拖动时，手指仍在移动，INPUT 阶段常有 batched motion work；松手进入 fling 后，新输入减少，位移主要由 ANIMATION 阶段的滚动物理模型推进。INPUT 变短并不表示帧调度失效。
 
 ### 4.2 ANIMATION 包含两个公开入口
 
-`postFrameCallback()` 把 `FrameCallback` 放进 `CALLBACK_ANIMATION`。公开的 `postVsyncCallback(VsyncCallback)` 也默认放进 ANIMATION；Android 17 另有隐藏重载，可指定回调类型。
+`postFrameCallback()` 把 `FrameCallback` 放进 `CALLBACK_ANIMATION`。公开的 `postVsyncCallback(VsyncCallback)` 也默认放进 ANIMATION；Android 17 另有隐藏重载，可指定 callback type。
 
 这两个公开回调都是一次性的，执行后自动移除。连续动画或采样器需要在回调内再次注册。
 
@@ -310,7 +310,7 @@ Input 和普通 animation 都可能修改 Insets。Choreographer 在二者之后
 
 ### 4.4 TRAVERSAL 不总是完整重走整棵树
 
-`performTraversals()` 根据布局请求、窗口变化、脏区状态和绘制状态决定本帧是否执行测量、布局、绘制。硬件加速路径的绘制主要更新 RenderNode/DisplayList 并进入 `syncAndDrawFrame()`；像素绘制和 GPU 提交由后续 HWUI/RenderThread 完成。
+`performTraversals()` 根据 layout request、窗口变化、dirty state 和绘制状态决定本帧是否执行测量、layout、draw。硬件加速路径的绘制主要更新 RenderNode/DisplayList 并进入 `syncAndDrawFrame()`；像素绘制和 GPU 提交由后续 HWUI/RenderThread 完成。
 
 看到 `traversal` 较长，要继续展开内部切片，区分：
 
@@ -320,9 +320,9 @@ Input 和普通 animation 都可能修改 Insets。Choreographer 在二者之后
 - `syncAndDrawFrame()` 等待 RenderThread；
 - 锁、Binder 或缓冲相关等待。
 
-### 4.5 COMMIT 的帧时间可能更新
+### 4.5 COMMIT 的 frame time 可能更新
 
-Choreographer 的注释明确指出：Traversal 若很重并跨过多个帧，COMMIT 阶段报告的帧时间可以更新，以更接近这批 UI 状态开始生效的帧。监控代码若混用不同阶段的帧时间，可能把这种调整误判为时钟异常。
+Choreographer 的注释明确指出：Traversal 若很重并跨过多个帧，COMMIT 阶段报告的 frame time 可以更新，以更接近这批 UI 状态开始生效的帧。监控代码若混用不同阶段的 frame time，可能把这种调整误判为时钟异常。
 
 ---
 
@@ -336,39 +336,39 @@ Choreographer 的注释明确指出：Traversal 若很重并跨过多个帧，CO
 flowchart TD
     A["FrameDisplayEventReceiver.onVsync()"] --> B["投递异步 Handler 消息"]
     B --> C["run() → Choreographer.doFrame()"]
-    C --> D["更新缓冲积压状态"]
+    C --> D["更新 buffer stuffing 状态"]
     D --> E{"需要主动延迟一帧？"}
     E -- "是" --> F["scheduleVsyncLocked() 后返回"]
-    E -- "否" --> G["FrameData.update() 选择首选时间线"]
+    E -- "否" --> G["FrameData.update() 选择 preferred timeline"]
     G --> H{"mFrameScheduled？"}
     H -- "否" --> I["返回：本次没有工作"]
-    H -- "是" --> J["计算抖动 / 必要时重同步帧时间"]
-    J --> K{"帧时间倒退或 FPS 除数导致跳帧？"}
+    H -- "是" --> J["计算抖动 / 必要时重同步 frame time"]
+    J --> K{"frame time 倒退或 FPS 除数导致跳帧？"}
     K -- "是" --> L["申请下一次 VSync 后返回"]
     K -- "否" --> M["写入 FrameInfo，清除 mFrameScheduled"]
     M --> N["INPUT → ANIMATION → INSETS_ANIMATION"]
     N --> O["TRAVERSAL → COMMIT"]
 ```
 
-收到 VSync 事件后，`doFrame()` 仍可能因为没有待处理工作、正在恢复缓冲积压、帧时间异常或 FPS 除数限制而不执行五阶段回调。
+收到 VSync 事件后，`doFrame()` 仍可能因为没有待处理工作、正在恢复 buffer backlog、frame time 异常或 FPS 除数限制而不执行五阶段回调。
 
-### 5.2 FrameData 先选择首选时间线
+### 5.2 FrameData 先选择 preferred timeline
 
-`doFrame()` 先用传入的 `VsyncEventData` 更新 `mFrameData`。一次 VSync 事件最多可携带多条候选时间线，每条包含：
+`doFrame()` 先用传入的 `VsyncEventData` 更新 `mFrameData`。一次 VSync 事件最多可携带多条候选 timeline，每条包含：
 
 - `vsyncId`；
 - `expectedPresentationTime`；
 - 截止时间 `deadline`。
 
-平台同时标记 `preferredFrameTimelineIndex`。如果主线程已经迟到，`FrameData.update()` 会在现有候选中寻找仍有效的截止时间；现有候选都过期时，还可能通过 `DisplayEventReceiver.getLatestVsyncEventData()` 向 SurfaceFlinger 查询新数据。该 Binder 查询只在需要新时间线时发生，源码也注明它可能较慢。
+平台同时标记 `preferredFrameTimelineIndex`。如果主线程已经迟到，`FrameData.update()` 会在现有候选中寻找仍有效的 deadline；现有候选都过期时，还可能通过 `DisplayEventReceiver.getLatestVsyncEventData()` 向 SurfaceFlinger 查询新数据。该 Binder 查询只在需要新 timeline 时发生，源码也注明它可能较慢。
 
-### 5.3 抖动如何影响帧时间
+### 5.3 jitter 如何影响 frame time
 
 `jitterNanos = System.nanoTime() - frameTimeNanos` 表示 `doFrame()` 开始时相对原始 VSync 时间的迟到量。迟到至少一个 `frameInterval` 时，Choreographer 会：
 
 1. 计算跨过了多少个间隔；
-2. 把用于动画的帧时间对齐到最近一个有效边界；
-3. 必要时切换首选时间线；
+2. 把用于动画的 frame time 对齐到最近一个有效边界；
+3. 必要时切换 preferred timeline；
 4. 超过日志阈值时打印 `Skipped N frames`。
 
 `debug.choreographer.skipwarning` 的默认阈值是 30。它只控制日志警告，不能当作系统判定卡顿的唯一门槛。没有 `Skipped N frames` 日志，仍可能错过截止时间；出现日志也只能说明主线程回调严重迟到，不能单靠它确认显示端结果。
@@ -377,9 +377,9 @@ flowchart TD
 
 通过迟到和时间单调性检查后，Choreographer 将下列数据写进 `FrameInfo`：
 
-- 预定 VSync 时间；
-- 当前用于动画/绘制的帧时间；
-- 首选时间线的 `vsyncId`；
+- intended VSync time；
+- 当前用于动画/绘制的 frame time；
+- preferred timeline 的 `vsyncId`；
 - 截止时间；
 - `doFrame()` 实际开始时间；
 - 当前 `frameInterval`。
@@ -394,38 +394,38 @@ Traversal 可能把本帧状态交给 RenderThread，但以下工作可以继续
 - GPU 命令提交和执行；
 - `dequeueBuffer()`/`queueBuffer()`；
 - 获取栅栏发出信号；
-- SurfaceFlinger 事务、锁存和合成；
+- SurfaceFlinger transaction、latch 和合成；
 - HWC 显示提交与显示后段。
 
 因此，“`doFrame()` 用时小于刷新周期”不能证明这一帧按时显示。需要用 FrameMetrics、FrameTimeline、RenderThread 和显示侧证据继续判断。
 
 ---
 
-## 六、帧时间：`frameTimeNanos`、截止时间与预计呈现
+## 六、帧时间：`frameTimeNanos`、deadline 与 expected present
 
 ### 6.1 `frameTimeNanos` 是稳定时间基准
 
 `FrameCallback.doFrame(long frameTimeNanos)` 接收的是系统为本帧选定的帧时间，时间基准与 `System.nanoTime()` 一致。它可以早于回调开始执行的当前时间。同一次帧分发中的所有回调共享这个稳定时间，有利于动画保持一致。
 
-动画应根据帧时间计算进度，不要用“每次回调固定增加 16.6 ms”。刷新率可变、应用渲染帧率可低于显示 VSync 频率，主线程也可能迟到或跳过候选时间线。
+动画应根据帧时间计算进度，不要用“每次回调固定增加 16.6 ms”。刷新率可变、App render rate 可低于显示 display VSync rate，主线程也可能迟到或跳过候选 timeline。
 
-### 6.2 截止时间回答“何时必须准备好”
+### 6.2 deadline 回答“何时必须准备好”
 
-`FrameTimeline.getDeadlineNanos()` 表示该候选帧必须就绪的时刻。它比“当前屏幕刷新周期是多少”更适合判断应用是否命中预算，因为应用唤醒偏移、SF 预算、刷新率和候选时间线都会影响截止时间。
+`FrameTimeline.getDeadlineNanos()` 表示该候选帧必须就绪的时刻。它比“当前屏幕刷新周期是多少”更适合判断应用是否命中预算，因为应用唤醒偏移、SF 预算、刷新率和候选 timeline 都会影响 deadline。
 
-### 6.3 预计呈现时间回答“系统预计何时呈现”
+### 6.3 expected present 回答“系统预计何时呈现”
 
-`FrameTimeline.getExpectedPresentationTimeNanos()` 表示平台预计该时间线何时呈现。这个值属于预测时间，不代表显示栅栏或实际显示结果。比较预计与实际呈现时间，才能判断这一帧是否按计划显示。
+`FrameTimeline.getExpectedPresentationTimeNanos()` 表示平台预计该 timeline 何时呈现。这个值属于预测时间，不代表 present fence 或实际显示结果。比较预计与 actual presentation，才能判断这一帧是否按计划显示。
 
 ### 6.4 VSync ID 是跨层关联键
 
-`FrameTimeline.getVsyncId()` 用于把 HWUI 生产的帧与 SurfaceFlinger 保存的时间线数据关联起来。Android 17 的跟踪切片名为 `Choreographer#doFrame <vsyncId>`，RenderThread 和 SurfaceFlinger 的相应切片也会带令牌。
+`FrameTimeline.getVsyncId()` 用于把 HWUI 生产的帧与 SurfaceFlinger 保存的 timeline 数据关联起来。Android 17 的 trace slice 名为 `Choreographer#doFrame <vsyncId>`，RenderThread 和 SurfaceFlinger 的相应切片也会带令牌。
 
-一个应用 VSync 可以携带多个候选时间线，最终帧也可能丢弃或换到后续目标。不要把“第几个 VSync 计数器”当成跨进程关联键。
+一个应用 VSync 可以携带多个候选 timeline，最终帧也可能丢弃或换到后续目标。不要把“第几个 VSync counter”当成跨进程关联键。
 
 ---
 
-## 七、FrameCallback：适合观察回调节奏，不等于显示帧率
+## 七、FrameCallback：适合观察 cadence，不等于显示帧率
 
 ### 7.1 连续采样必须主动续订
 
@@ -464,13 +464,13 @@ class CallbackCadenceSampler(
 }
 ```
 
-这段代码应在 Choreographer 所属 Looper 线程启停。它能观察回调节奏、长间隔和节奏抖动，但不能回答缓冲是否提交、GPU 是否完成、SF 是否锁存或实际何时呈现。回调自身也会给主线程增加工作，采样逻辑应保持轻量。
+这段代码应在 Choreographer 所属 Looper 线程启停。它能观察 callback cadence、长间隔和节奏抖动，但不能回答缓冲是否提交、GPU 是否完成、SF 是否锁存或实际何时呈现。回调自身也会给主线程增加工作，采样逻辑应保持轻量。
 
 ### 7.2 不要用固定阈值数“掉帧”
 
-常见实现把间隔除以 `16_666_667`，再把商减一当作掉帧数。这个算法在 90/120 Hz、动态刷新率、ARR、应用帧率覆盖和主动降帧场景都会误判。
+常见实现把间隔除以 `16_666_667`，再把商减一当作掉帧数。这个算法在 90/120 Hz、动态刷新率、ARR、App 帧率覆盖和主动降帧场景都会误判。
 
-如果只统计回调节奏，应同时记录当前帧间隔或显示/渲染帧率；如果目标是判断用户可见卡顿，应使用 FrameTimeline、FrameMetrics 或 JankStats 等呈现相关数据。
+如果只统计回调节奏，应同时记录当前 frame interval 或 display/render rate；如果目标是判断用户可见卡顿，应使用 FrameTimeline、FrameMetrics 或 JankStats 等呈现相关数据。
 
 ---
 
@@ -490,13 +490,13 @@ Choreographer.getInstance().postVsyncCallback { data ->
 }
 ```
 
-`FrameData` 和其中的 `FrameTimeline` 只在 `onVsync()` 回调期间有效。源码在回调前后切换 `mInCallback`，离开回调再访问会抛出 `IllegalStateException`。需要异步保存时，只复制长整型等基础值，不要缓存对象引用。
+`FrameData` 和其中的 `FrameTimeline` 只在 `onVsync()` 回调期间有效。源码在回调前后切换 `mInCallback`，离开回调再访问会抛出 `IllegalStateException`。需要异步保存时，只复制 long 等基础值，不要缓存对象引用。
 
-### 8.2 多条时间线用来表达可选目标
+### 8.2 多条 timeline 用来表达可选目标
 
-`getFrameTimelines()` 返回按时间排序的候选项，`getPreferredFrameTimeline()` 返回平台当前推荐项。多候选设计允许系统在高刷新率、不同渲染节奏或主线程迟到时表达后续合法呈现目标。
+`getFrameTimelines()` 返回按时间排序的候选项，`getPreferredFrameTimeline()` 返回平台当前推荐项。多候选设计允许系统在高刷新率、不同 render cadence 或主线程迟到时表达后续合法呈现目标。
 
-应用通常遵循首选时间线。低延迟渲染器或系统组件若要选择其他时间线，需要同时理解缓冲提交与 SurfaceFlinger 的令牌约定；只改变业务动画时间不能改变系统实际采用的显示帧。
+应用通常遵循 preferred timeline。低延迟渲染器或系统组件若要选择其他 timeline，需要同时理解缓冲提交与 SurfaceFlinger 的令牌约定；只改变业务动画时间不能改变系统实际采用的 display frame。
 
 ---
 
@@ -506,10 +506,10 @@ Choreographer.getInstance().postVsyncCallback { data ->
 
 | 工具 | 观察起点 | 能回答 | 不能单独回答 |
 |------|----------|--------|--------------|
-| `FrameCallback` | Choreographer 回调 | 回调间隔、主线程帧节奏 | GPU/呈现、具体阶段耗时 |
-| `VsyncCallback` | 应用 VSync 分发 | 截止时间、预计呈现、VSync ID | 实际呈现、窗口各阶段耗时 |
-| `FrameMetrics` | 硬件加速窗口已渲染帧 | 输入/动画/布局/绘制/同步/GPU/总耗时/截止时间 | 独立 Surface 内容、面板光学完成 |
-| Perfetto FrameTimeline | 应用 SurfaceFrame 与 SF DisplayFrame | 预计/实际、卡顿类型、呈现类型、跨层令牌 | 未采集的厂商/面板细节 |
+| `FrameCallback` | Choreographer callback | 回调间隔、主线程帧节奏 | GPU/present、具体阶段耗时 |
+| `VsyncCallback` | App VSync dispatch | deadline、expected present、VSync ID | actual present、Window 各阶段耗时 |
+| `FrameMetrics` | 硬件加速窗口已渲染帧 | input/animation/layout/draw/sync/GPU/total/deadline | 独立 Surface 内容、panel 光学完成 |
+| Perfetto FrameTimeline | App SurfaceFrame 与 SF DisplayFrame | expected/actual、jank type、present type、跨层令牌 | 未采集的厂商/面板细节 |
 
 ### 9.2 关键指标怎么读
 
@@ -527,9 +527,9 @@ Choreographer.getInstance().postVsyncCallback { data ->
 - API 31 的 `GPU_DURATION` 和 `DEADLINE`；
 - API 36 的 `FRAME_TIMELINE_VSYNC_ID`。
 
-`TOTAL_DURATION` 不一定等于各阶段相加，因为部分阶段可以并行。官方 API 契约指出，`TOTAL_DURATION < DEADLINE` 表示应用在分配的窗口帧预算内完成；这仍不能替代 SF/DisplayHAL 的实际呈现判断。
+`TOTAL_DURATION` 不一定等于各阶段相加，因为部分阶段可以并行。官方 API 契约指出，`TOTAL_DURATION < DEADLINE` 表示应用在分配的窗口帧预算内完成；这仍不能替代 SF/DisplayHAL 的 actual present 判断。
 
-### 9.3 监听器中先复制再异步处理
+### 9.3 Listener 中先复制再异步处理
 
 下面的写法展示正确的对象生命周期：
 
@@ -549,7 +549,7 @@ window.addOnFrameMetricsAvailableListener(
 
 ### 9.4 适用范围
 
-FrameMetrics 面向某个硬件加速窗口。`SurfaceView`、视频、相机、游戏引擎等可能有独立 Surface 和生产节奏；宿主窗口的 FrameMetrics 不能代表这些内容图层的每一帧。此类场景要结合对应生产者、图层和 FrameTimeline。
+FrameMetrics 面向某个硬件加速窗口。`SurfaceView`、视频、Camera、游戏引擎等可能有独立 Surface 和生产节奏；宿主窗口的 FrameMetrics 不能代表这些内容图层的每一帧。此类场景要结合对应 Producer、layer 和 FrameTimeline。
 
 ---
 
@@ -559,26 +559,26 @@ FrameMetrics 面向某个硬件加速窗口。`SurfaceView`、视频、相机、
 
 Android 17 常见证据包括：
 
-- 应用主线程：`Choreographer#doFrame <vsyncId>`；
+- App 主线程：`Choreographer#doFrame <vsyncId>`；
 - doFrame 子阶段：`input`、`animation`、`insets_animation`、`traversal`、`commit`；
 - RenderThread：`DrawFrame` 及同一 token；
-- 应用 FrameTimeline：Expected 与 Actual；
+- App FrameTimeline：Expected 与 Actual；
 - SurfaceFlinger FrameTimeline：DisplayFrame Expected 与 Actual；
-- `BufferTX - <layerName>`、缓冲/栅栏相关轨迹；
-- `sched_wakeup`、`sched_switch`、运行中/可运行/休眠状态。
+- `BufferTX - <layerName>`、buffer/fence 相关轨迹；
+- `sched_wakeup`、`sched_switch`、Running/Runnable/Sleeping 状态。
 
-跟踪配置、平台版本和设备实现会影响轨迹是否出现。没有某条计数器轨迹时，先检查数据源，不要用名称猜测机制失效。
+trace 配置、平台版本和设备实现会影响轨迹是否出现。没有某条 counter 时，先检查数据源，不要用名称猜测机制失效。
 
 ### 10.2 Expected 与 Actual 怎么读
 
 Perfetto FrameTimeline 从 Android 12 开始可用：
 
-- 应用 Expected 切片表示系统给应用生产目标帧的预算窗口，起点是 Choreographer 回调计划运行的时刻；
-- 应用 Actual 切片从 `Choreographer#doFrame` 或 NDK VSync 回调实际开始，结束时间取 GPU 完成与缓冲提交中更晚者；
-- SF Actual 切片覆盖 SF 工作以及其下方 Composer/DisplayHAL 到屏幕更新的显示栈区间；
-- 应用 SurfaceFrame 与 SF DisplayFrame 可通过令牌和流向关联。
+- App Expected slice Expected 切片表示系统给应用生产目标帧的预算窗口，起点是 Choreographer 回调计划运行的时刻；
+- App Actual slice Actual 切片从 `Choreographer#doFrame` 或 NDK VSync 回调实际开始，结束时间取 GPU 完成与 buffer post 中更晚者；
+- SF Actual 切片覆盖 SF 工作以及其下方 Composer/DisplayHAL 到 on-screen update 的显示栈区间；
+- App SurfaceFrame 与 SF DisplayFrame 可通过令牌和流向关联。
 
-Expected 切片长度不保证等于一个固定显示周期。应用/SF 工作预算、刷新率和时间线选择都会影响它。
+Expected 切片长度不保证等于一个固定显示周期。App/SF work budget、刷新率和 timeline 选择都会影响它。
 
 ### 10.3 一条可复用的 SQL
 
@@ -601,29 +601,29 @@ WHERE p.name = 'com.example.app'
 ORDER BY a.ts;
 ```
 
-查询结果提供逐帧令牌、卡顿分类和图层。把包名换成目标进程后，再用 `surface_frame_token` 回到界面选择对应切片，查看流向哪一个 DisplayFrame。
+查询结果提供逐帧令牌、jank 分类和图层。把包名换成目标进程后，再用 `surface_frame_token` 回到界面选择对应切片，查看流向哪一个 DisplayFrame。
 
 ### 10.4 常见现象的证据解释
 
 | 现象 | 先检查 | 可能原因 |
 |------|--------|----------|
-| `VSYNC-app` 已出现，`doFrame` 晚 | Looper 早期消息、可运行态等待、长任务、锁、Binder、GC | 回调尚未得到执行机会 |
-| `doFrame` 很长 | 五个子阶段和内部切片 | 输入/动画/遍历/RenderThread 同步成本 |
-| `doFrame` 不长，应用 Actual 很长 | RenderThread、GPU、`queueBuffer` | 应用后半段仍未完成 |
-| 应用按时完成，SF Actual 晚 | SF CPU/GPU、HWC、DisplayHAL | 系统显示侧错过目标 |
-| 回调节奏平稳，FrameTimeline 高延迟 | Expected/Actual 整体偏移、缓冲积压 | 帧率平稳但输入到显示延迟增加 |
-| 一次令牌对应多个应用 Actual 切片 | `layer_name`、`is_buffer` | 同一进程更新多个 Surface/图层 |
+| `VSYNC-app` 已出现，`doFrame` 晚 | Looper 早期消息、Runnable 等待、长任务、锁、Binder、GC | callback 尚未得到执行机会 |
+| `doFrame` 很长 | 五个子阶段和内部切片 | input/animation/traversal/RenderThread 同步成本 |
+| `doFrame` 不长，App Actual 很长 | RenderThread、GPU、`queueBuffer` | App 后半段仍未完成 |
+| App on-time，SF Actual 晚 | SF CPU/GPU、HWC、DisplayHAL | 系统显示侧错过目标 |
+| callback cadence 平稳，FrameTimeline 高延迟 | Expected/Actual 整体偏移、buffer backlog | 帧率平稳但输入到显示延迟增加 |
+| 一次 token 对应多个 App Actual slice | `layer_name`、`is_buffer` | 同一进程更新多个 Surface/layer |
 
 ### 10.5 不要把所有 `doFrame` 长度和刷新周期硬比较
 
-“60 Hz 超过 16.6 ms 就算卡顿”只适合做粗筛。现代设备可能运行 90/120 Hz、动态刷新率、ARR 或应用帧率覆盖；应用截止时间也不等于裸显示周期。
+“60 Hz 超过 16.6 ms 就算卡顿”只适合做粗筛。现代设备可能运行 90/120 Hz、动态刷新率、ARR 或 App frame-rate override；App deadline 也不等于裸显示周期。
 
 逐帧判断优先使用：
 
-1. Expected 时间线的截止时间；
-2. 应用 Actual 的 `on_time_finish`、`jank_type`；
+1. Expected 时间线的 deadline；
+2. App Actual 的 `on_time_finish`、`jank_type`；
 3. SF Actual 的呈现结果；
-4. 同一令牌的线程、GPU、缓冲和显示证据。
+4. 同一令牌的线程、GPU、buffer 和显示证据。
 
 ---
 
@@ -631,27 +631,27 @@ ORDER BY a.ts;
 
 ### 11.1 它处理的是队列积压后的延迟
 
-Android 17 的标准 HWUI/BLAST 路径会把等待缓冲释放的时长回传给 Choreographer：
+Android 17 的标准 HWUI/BLAST 路径会把等待 buffer release 的时长回传给 Choreographer：
 
 ```text
 BBQBufferQueueProducer::waitForBufferRelease() 统计等待时长
-  → BLASTBufferQueue → CanvasContext/HardwareRenderer 回调
+  → BLASTBufferQueue → CanvasContext/HardwareRenderer callback
   → ViewRootImpl 绑定 Choreographer.onWaitForBufferRelease()
   → 等待时长超过上一帧间隔的一半
   → 标记缓冲积压
 ```
 
-`BBQBufferQueueProducer` 是 Android 17 标准应用窗口的 BLAST 生产者实现。它在没有空闲缓冲、`dequeueBuffer()` 必须等待释放时进入这条路径。`onWaitForBufferRelease()` 只负责设置状态，具体动作在后续 `doFrame()` 开始时由 `updateBufferStuffingState()` 决定。
+`BBQBufferQueueProducer` 是 Android 17 标准 App Window 的 BLAST 生产者实现。它在没有 free buffer、`dequeueBuffer()` 必须等待释放时进入这条路径。`onWaitForBufferRelease()` 只负责设置状态，具体动作在后续 `doFrame()` 开始时由 `updateBufferStuffingState()` 决定。
 
 ### 11.2 恢复动作有 DELAY_FRAME 和 OFFSET
 
 当系统判定需要恢复时：
 
 - `DELAY_FRAME`：主动申请下一次 VSync 并结束本次 `doFrame()`，给队列消费留时间；
-- `OFFSET`：恢复期间把动画时间线向前偏移一个帧间隔；
+- `OFFSET`：恢复期间把动画时间线向前偏移一个 frame interval；
 - `NONE`：无需动作或恢复已经结束。
 
-相关 aconfig 标志可以控制同一段动画是否多次恢复，以及累计主动延迟是否受 100 ms 阈值限制。设备上的标志取值必须从配置或跟踪数据确认。
+相关 aconfig 标志可以控制同一段动画是否多次恢复，以及累计主动延迟是否受 100 ms 阈值限制。设备上的标志取值必须从配置或 trace 确认。
 
 Perfetto 可搜索：
 
@@ -659,7 +659,7 @@ Perfetto 可搜索：
 - `buffer stuffed`；
 - `Negative offset`；
 - `dequeueBuffer` 等待；
-- FrameTimeline 的 `Buffer Stuffing` 卡顿类型。
+- FrameTimeline 的 `Buffer Stuffing` jank type。
 
 看到主动延迟时，不能把这帧简单归因于主线程计算慢。还要检查积压是否下降、后续输入延迟是否恢复。
 
@@ -675,30 +675,30 @@ Compose 官方把 UI 更新分为：
 2. 布局（Layout）：测量与放置；
 3. 绘制（Drawing）：绘制内容。
 
-Compose 运行时使用帧时钟推进动画和需要按帧运行的状态，Android 宿主最终仍参与 ViewRoot/HWUI 的窗口生产路径。纯 Compose 窗口通常与 View 页面共享应用窗口、RenderThread、BLAST、SurfaceFlinger 和 HWC 后半段。
+Compose 运行时使用帧时钟推进动画和需要按帧运行的状态，Android 宿主最终仍参与 ViewRoot/HWUI 的窗口生产路径。纯 Compose 窗口通常与 View 页面共享 App Window、RenderThread、BLAST、SurfaceFlinger 和 HWC 后半段。
 
 ### 12.2 不要把 Compose 三阶段强行等同于 Choreographer 五阶段
 
-Choreographer 的五类回调是 Android Looper 上的调度分类；Compose 的组合、布局、绘制是 UI 运行时的工作阶段。二者粒度不同。
+Choreographer 的五类回调是 Android Looper 上的调度分类；Compose 的 Composition/Layout/Drawing 是 UI 运行时的工作阶段。二者粒度不同。
 
 一次 Compose 状态变化可能：
 
 - 触发重组；
-- 只触发重新布局；
+- 只触发 relayout；
 - 只触发重绘；
 - 因状态读取位置不同而跳过前面的阶段。
 
-不能写成“Compose 的三阶段始终全部位于一个固定 Traversal 子切片”。跟踪数据中要同时看 `Choreographer#doFrame`、Compose 跟踪、宿主遍历和 RenderThread。
+不能写成“Compose 的三阶段始终全部位于一个固定 Traversal 子切片”。trace 中要同时看 `Choreographer#doFrame`、Compose tracing、宿主遍历和 RenderThread。
 
 ### 12.3 Platform 与 Jetpack 版本要分别记录
 
-Android 17 / API 37 的平台标签不能确定应用使用的 Compose 运行时、编译器插件、Kotlin 或 BOM 版本。同一系统镜像可以运行多种 Compose 版本。
+Android 17 / API 37 的 platform tag 不能确定应用使用的 Compose runtime、compiler plugin、Kotlin 或 BOM 版本。同一系统镜像可以运行多种 Compose 版本。
 
 做性能对比时至少记录：
 
-- Android 构建版本/标签与厂商构建版本；
+- Android 构建版本/标签与 vendor build；
 - Compose Runtime/UI 与 BOM 版本；
-- Kotlin 与 Compose 编译器插件；
+- Kotlin 与 Compose compiler plugin；
 - 调试、可分析或发布构建；
 - 是否开启组合阶段跟踪；
 - 刷新率、热状态和测试输入。
@@ -715,27 +715,27 @@ Android 17 / API 37 的平台标签不能确定应用使用的 Compose 运行时
 
 ### 误区 2：每个 VSync 都会执行 `doFrame()`
 
-应用按需申请单次 VSync。没有待处理帧时不会持续执行；收到事件后也可能因无工作、缓冲恢复、帧时间检查或 FPS 除数限制提前返回。
+App 按需申请单次 VSync。没有 pending frame 时不会持续执行；收到事件后也可能因无工作、buffer recovery、frame time 检查或 FPS 除数限制提前返回。
 
 ### 误区 3：INPUT 阶段处理所有触摸事件
 
-普通输入可以异步处理。Choreographer INPUT 重点包含批量运动事件的帧同步消费和重采样。
+普通输入可以异步处理。Choreographer INPUT 重点包含 batched motion event 的帧同步消费和重采样。
 
 ### 误区 4：`FrameCallback` 就是帧率监控的完整答案
 
-它只能观察回调节奏。用户可见帧率和卡顿还涉及 RenderThread、GPU、缓冲、SF 与显示提交。
+它只能观察 callback cadence。用户可见帧率和卡顿还涉及 RenderThread、GPU、buffer、SF 与 present。
 
 ### 误区 5：`doFrame()` 超过显示周期就一定掉帧
 
-截止时间、候选时间线和后半段执行共同决定结果。使用 FrameTimeline 的预计/实际结果和卡顿类型判断具体帧。
+deadline、候选 timeline 和后半段执行共同决定结果。使用 FrameTimeline 的 expected/actual 和 jank type 判断具体帧。
 
 ### 误区 6：同步屏障由 Choreographer 插入
 
-标准窗口的遍历屏障由 `ViewRootImpl` 插入和移除；Choreographer 的异步消息能够穿过屏障。
+标准窗口 traversal barrier 由 `ViewRootImpl` 插入和移除；Choreographer 的异步消息能够穿过屏障。
 
 ### 误区 7：COMMIT 表示缓冲已显示
 
-COMMIT 是应用回调阶段。缓冲生产、SF 合成、HWC 显示提交和面板显示仍在后面。
+COMMIT 是 App callback 阶段。buffer 生产、SF 合成、HWC 显示提交和面板显示仍在后面。
 
 ---
 
@@ -743,30 +743,30 @@ COMMIT 是应用回调阶段。缓冲生产、SF 合成、HWC 显示提交和面
 
 | 版本 | 与 Choreographer 相关的变化 | 分析影响 |
 |------|------------------|----------|
-| Android 4.1 / API 16 | Project Butter 引入 Choreographer | 应用输入、动画和遍历开始围绕 VSync 调度 |
+| Android 4.1 / API 16 | Project Butter 引入 Choreographer | App 输入、动画和遍历开始围绕 VSync 调度 |
 | Android 7.0 / API 24 | FrameMetrics 公开 | 可按窗口帧观察阶段耗时 |
 | Android 8.0 / API 26 | FrameMetrics 增加 intended/actual VSync 时间 | 可识别 UI 线程未及时响应 intended VSync |
 | Android 10 / API 29 | Choreographer 已包含独立的 Insets 动画回调类别 | 五阶段顺序包含 `INSETS_ANIMATION` |
-| Android 12 / API 31 | SurfaceFlinger/Perfetto FrameTimeline 可用；FrameMetrics 增加 GPU 时长/截止时间 | 应用与 SF 可以按令牌分析预计/实际结果；此时还没有 API 33 的公开 `Choreographer.FrameData` |
-| Android 13 / API 33 | 公开 `VsyncCallback`、`FrameData`、`FrameTimeline` | 应用可读取候选时间线、截止时间和 VSync ID |
-| Android 16 / API 36 | FrameMetrics 公开 `FRAME_TIMELINE_VSYNC_ID` | 线上窗口指标更容易与跟踪令牌关联 |
-| Android 17 / API 37 | 源码基线；五类回调、多时间线、缓冲积压恢复均按 `android-17.0.0_r1` 核验 | 不把当前实现倒推成 Android 17 首次新增 |
+| Android 12 / API 31 | SurfaceFlinger/Perfetto FrameTimeline 可用；FrameMetrics 增加 GPU duration/deadline | App 与 SF 可以按令牌分析 expected/actual；此时还没有 API 33 的公开 `Choreographer.FrameData` |
+| Android 13 / API 33 | 公开 `VsyncCallback`、`FrameData`、`FrameTimeline` | App 可读取候选 timeline、deadline 和 VSync ID |
+| Android 16 / API 36 | FrameMetrics 公开 `FRAME_TIMELINE_VSYNC_ID` | 线上窗口指标更容易与 trace token 关联 |
+| Android 17 / API 37 | 源码基线；五类回调、多 timeline、buffer stuffing recovery 均按 `android-17.0.0_r1` 核验 | 不把当前实现倒推成 Android 17 首次新增 |
 
 版本表只声明有公开 API 或旧 tag 证据的起点。Android 17 当前存在的内部方法，不自动等于该版本新增。
 
 ---
 
-## 十五、框架与内核的排查边界
+## 十五、Framework 与内核的排查边界
 
 Choreographer 位于用户态框架，不直接决定线程何时获得 CPU。`FrameDisplayEventReceiver` 已投递异步消息后，目标线程仍可能处于：
 
 - 运行中（Running）：正在执行其他代码；
-- 可运行（Runnable）：已经可运行，但在运行队列等待；
-- 休眠/阻塞（Sleeping/Blocked）：等待锁、futex、Binder、缓冲或其他资源。
+- 可运行（Runnable）：已经可运行，但在 runqueue 等待；
+- 休眠/阻塞（Sleeping/Blocked）：等待锁、futex、Binder、buffer 或其他资源。
 
-框架源码回答“回调何时被安排、按什么顺序执行”；内核调度轨迹回答“线程何时被唤醒、何时被调度上 CPU”。内核行为以 `android17-6.18-2026-06_r6` 为准，通用入口是 `kernel/sched/core.c` 和 `kernel/sched/fair.c`。
+Framework 源码回答“回调何时被安排、按什么顺序执行”；kernel 调度轨迹回答“线程何时被唤醒、何时被调度上 CPU”。内核行为以 `android17-6.18-2026-06_r6` 为准，通用入口是 `kernel/sched/core.c` 和 `kernel/sched/fair.c`。
 
-Perfetto 中看到从唤醒到运行的长间隔时，再检查优先级、CFS 调度、CPU 争用、cpuset/uclamp 和热状态。没有对应跟踪数据或设备配置，不能仅凭 `doFrame()` 起点晚就推断厂商调度策略。
+Perfetto 中看到 wakeup 到运行的长间隔时，再检查优先级、CFS 调度、CPU contention、cpuset/uclamp 和热状态。没有对应 trace 或设备配置，不能仅凭 `doFrame()` 起点晚就推断厂商调度策略。
 
 ---
 
@@ -792,13 +792,13 @@ Perfetto 中看到从唤醒到运行的长间隔时，再检查优先级、CFS �
 ## Android 17 的 Choreographer 调度边界
 
 1. Choreographer 是绑定 Looper 的帧回调调度器，负责安排应用帧起点，不负责后续显示完成。
-2. 回调先进入五个队列，`mFrameScheduled` 合并同一待处理帧的 VSync 申请。
+2. callback 先进入五个队列，`mFrameScheduled` 合并同一 pending frame 的 VSync 申请。
 3. 标准 View traversal 的同步屏障由 `ViewRootImpl` 管理，异步 VSync 消息可以穿过屏障。
 4. 五阶段顺序固定为 INPUT、ANIMATION、INSETS_ANIMATION、TRAVERSAL、COMMIT；各阶段是否有工作取决于到期回调。
-5. `doFrame()` 还会处理时间线选择、抖动、帧时间单调性、FPS 除数限制和缓冲积压恢复。
-6. `frameTimeNanos` 是稳定动画时间，截止时间与预计呈现时间分别描述就绪约束和呈现目标。
-7. `FrameCallback` 适合观察回调节奏；FrameMetrics 和 Perfetto FrameTimeline 提供更完整的窗口与呈现证据。
-8. Compose 的 UI 阶段与 Choreographer 回调分类粒度不同，平台和 Jetpack 版本需要分别记录。
+5. `doFrame()` 还会处理 timeline 选择、jitter、frame time 单调性、FPS 除数限制和 buffer stuffing recovery。
+6. `frameTimeNanos` 是稳定动画时间，deadline 与 expected present 分别描述就绪约束和呈现目标。
+7. `FrameCallback` 适合观察 callback cadence；FrameMetrics 和 Perfetto FrameTimeline 提供更完整的窗口与呈现证据。
+8. Compose 的 UI 阶段与 Choreographer 回调分类粒度不同，Platform 和 Jetpack 版本需要分别记录。
 
 ---
 
