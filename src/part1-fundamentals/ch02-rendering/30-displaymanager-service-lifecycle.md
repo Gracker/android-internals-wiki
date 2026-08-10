@@ -206,7 +206,7 @@ DMS 源码明确提醒锁顺序：WMS 可能先持有 `WindowManagerService.mGlo
 
 topology 写入是一个需要单独注意的例外：Android 17 的 `DisplayTopologyCoordinator.setTopology()` 会在 `mSyncRoot` 内调用 XML store 的 `saveTopology()`。因此，频繁重排扩展屏时应测量 `setTopology` slice 与文件系统延迟，不能假设 topology 持久化已经移出锁。
 
-存在全局锁不代表应立即改成细粒度锁。应先用跟踪记录确认：
+存在全局锁不代表应立即改成细粒度锁。应先用 trace 确认：
 
 1. 哪个 tid 等待 `mSyncRoot`；
 2. 持锁线程当时执行哪个 `*Locked()` 方法；

@@ -71,7 +71,7 @@ stale 判定发生在 `mPendingEvent` 的 Key、Motion 或 Sensor 分支。已�
 - `WaitQueue` 增长说明事件已经发出但尚未完成，优先检查目标线程与 connection ANR；
 - 单个窗口不回 ACK 可能间接改变后续分发，但这不属于陈旧事件的定义，也不是唯一原因。
 
-## Android 17 的判定由策略层给出
+## Android 17 的判定由 policy 给出
 
 `InputDispatcher::isStaleEvent()` 不保存独立计时器，只把当前时间和 `EventEntry::eventTime` 交给 policy：
 

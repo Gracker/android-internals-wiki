@@ -450,7 +450,7 @@ adb shell perfetto \
 - App Window `BufferTX`、latch 与 FrameTimeline；
 - SurfaceFlinger 每个目标 Display 的 composition 与 present。
 
-系统不保证默认跟踪中包含原始 `android.sensor.hinge_angle` 连续轨道。需要原始角度时，应显式加入可控的 App/platform instrumentation。
+系统不保证默认 trace 中包含原始 `android.sensor.hinge_angle` 连续轨道。需要原始角度时，应显式加入可控的 App/platform instrumentation。
 
 ### 8.3 功能自动化与性能测试分开
 

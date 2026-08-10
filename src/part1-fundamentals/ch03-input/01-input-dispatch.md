@@ -287,7 +287,7 @@ InputDispatcher 不只选择窗口，还会根据 display/window transform 为�
 - InputTarget 的 transform；
 - App 侧 MotionEvent 坐标空间。
 
-### 4.5 策略介入入队与 dispatching 两个阶段
+### 4.5 policy 介入 queueing 与 dispatching 两个阶段
 
 可信按键进入 InputDispatcher 时可调用 `interceptKeyBeforeQueueing()`；准备发往焦点窗口前还可异步执行 `interceptKeyBeforeDispatching()`。后者的结果可以继续、跳过或延迟重试。
 
