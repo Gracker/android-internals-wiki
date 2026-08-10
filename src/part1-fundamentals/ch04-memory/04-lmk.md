@@ -498,7 +498,7 @@ Android 17 增加 MemoryLimiter，用于限制异常的单应用进程内存占�
 
 这些条件决定是否创建 enabled controller。native 层是否主动监控由 `memoryLimiterTrigger()` 控制，是否配置 swap 上限由 `memoryLimiterSwap()` 控制；`memory_limiter_disable_limits` 和 `memory_limiter_disable_kill` 还可以在运行时分别停用限制与 kill。
 
-源码会选择符合设备总 RAM 的配置中 `minimumRequiredMemTotal` 最大的一组。可见与不可见进程的内存、swap XML。`4 GB / 2 GB` 等 `sDefaultConfig` 只供测试，注释明确要求生产使用前另行评估，不能当作 Android 17 通用默认值。
+源码会选择符合设备总 RAM 的配置中 `minimumRequiredMemTotal` 最大的一组。可见与不可见进程的内存、swap 数值来自 vendor XML。`4 GB / 2 GB` 等 `sDefaultConfig` 只供测试，注释明确要求生产使用前另行评估，不能当作 Android 17 通用默认值。
 
 ### proc state 映射
 
