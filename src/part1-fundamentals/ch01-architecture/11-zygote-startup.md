@@ -253,7 +253,7 @@ ZygoteHooks.postForkCommon();
 
 - 关闭或替换不应继承的文件描述符；
 - 建立应用 mount namespace 和存储视图；
-- 设置附加组与资源限制；
+- 设置 supplementary groups 与 rlimit；
 - 切换 GID、UID；
 - 安装 seccomp filter；
 - 设置调度策略；
