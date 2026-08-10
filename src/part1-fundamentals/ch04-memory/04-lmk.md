@@ -244,7 +244,7 @@ low_ram_device || !use_minfree_levels
 - `/proc/vmstat` 中的 workingset refault、direct reclaim 和 kswapd 统计；
 - `/proc/meminfo` 中的空闲页、文件页、swap、匿名页等数据；
 - `/proc/zoneinfo` 计算出的 zone watermark；
-- 空闲交换空间与交换空间利用率；
+- free swap 与 swap utilization；
 - 文件页 refault 相对 page cache 大小得到的 thrashing 比例；
 - 上一次 kill 是否完成，以及 kill 后水位是否恢复。
 
