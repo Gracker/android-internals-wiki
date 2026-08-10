@@ -182,7 +182,7 @@ clang_autofdo_profile = ":gki/aarch64/afdo/kernel.afdo"
 
 固定标签的 README 给出 Pixel 8 结果：
 
-| 基准项目 | 提升幅度 |
+| Benchmark | Improvement |
 |---|---:|
 | Boot time | 1.1% |
 | Cold App launch time | 6.6% |

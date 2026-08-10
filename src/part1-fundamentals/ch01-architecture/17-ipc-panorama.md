@@ -158,7 +158,7 @@ Android IPC 无法简化为“Binder、Intent、共享内存三选一”。Inten
 
 ### 2.3 谁拥有内存，谁负责回收
 
-很多 IPC 缺陷源于所有权不清，传输本身并没有失败：
+IPC bug IPC 缺陷源于所有权不清，传输本身并没有失败：
 
 - Binder 对象何时调用 `linkToDeath()`、何时释放引用。
 - fd 是借用、dup 后拥有，还是随 `ParcelFileDescriptor` 关闭。
@@ -287,8 +287,8 @@ AIDL 编译器为接口生成 Proxy/Stub 和类型编解码代码。跨进程时
 
 ```text
 客户端接口调用
-  ├─ 本地对象 → 直接调用
-  └─ 远程代理
+  ├─ local object → direct call
+  └─ remote proxy
        └─ Parcel + Binder transaction
             └─ server stub + implementation
 ```
@@ -437,7 +437,7 @@ Signal handler 还受 async-signal-safe 规则约束。不要在 handler 里分�
 共享内存建立后，两个进程可以访问同一组物理页，持续读写无需每条消息再经 kernel transport copy。但仍可能发生：
 
 - producer 把数据复制进共享区域。
-- 缺页、页表建立和缓存未命中。
+- page fault、页表建立和 cache miss。
 - CPU 与设备之间的 cache maintenance。
 - consumer 再复制到自己的数据结构。
 
@@ -538,7 +538,7 @@ FMQ 先通过 HIDL 或 AIDL RPC 传递 `MQDescriptor`，双方映射 ring buffer
 单个 FMQ 的基本约束：
 
 - 只有一个 writer。
-- 同步队列：一个读取方，不允许溢出。
+- synchronized queue：一个 reader，不允许 overflow。
 - unsynchronized queue：可有多个 reader，writer 可覆盖旧数据；落后的 reader 会丢数据。
 - 两种队列都不允许欠载。
 - bidirectional 协议通常需要两条方向相反的队列。
@@ -759,7 +759,7 @@ sequence
 | --- | --- | --- |
 | Android 8（API 26） | Treble、HIDL/hwbinder、FMQ；Binder scatter-gather | HAL 控制面与高吞吐数据面开始更明确分离 |
 | Android 8.1（API 27） | Java `SharedMemory` 公共 API | App 可显式传递共享区域 fd |
-| Android 10 | 稳定 AIDL 机制 | 面向系统/厂商边界的 AIDL 接口需要显式考虑稳定性 |
+| Android 10 | Stable AIDL 稳定性机制 | 面向 system/vendor 边界的 AIDL 接口需要显式考虑稳定性 |
 | Android 11 | AIDL HAL；`vndbinder` 路线弃用 | 新 HAL 可使用稳定 AIDL `/dev/binder` |
 | Android 12 | AIDL NDK 后端支持 FMQ；GKI 2.0 推进 ION → DMA-BUF heaps | SharedMemory 与 DMA-BUF 分配器仍是两条线 |
 | Android 13 | HIDL deprecated；AVF/Microdroid 扩展通过 Binder RPC over vsock 场景 | 存量 HIDL 仍可能存在；跨 VM 不走内核 Binder |
@@ -805,8 +805,8 @@ sequence
 2. 区分上层抽象、控制传输、数据面和通知机制。
 3. Binder 调用记录接口、method、payload 和 sync/oneway。
 4. 大数据确认 Parcel 内联还是 fd/handle/descriptor。
-5. 记录文件描述符所有权、保护、映射与关闭时序。
-6. 检查背压、队列容量、溢出与丢弃策略。
+5. 记录 fd 所有权、protection、mapping 与 close 时序。
+6. 检查 backpressure、queue capacity、overflow 与丢弃策略。
 7. Binder 慢调用拆成 client、queue、server、nested call 和回复。
 8. 套接字/管道记录分帧、缓冲区、阻塞模式和对端凭据。
 9. SharedMemory/FMQ/DMA-BUF 检查同步、fence、内存序与版本。
