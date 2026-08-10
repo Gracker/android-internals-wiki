@@ -123,29 +123,9 @@ last_idle_audit_result: "pass-minor-fix"
 
 # 18.10 Android 17 SurfaceControl NDK API
 
-<!-- outline-start -->
+Platform 源码锚点为 AOSP `android-17.0.0_r1`，kernel 锚点为 `android17-6.18-2026-06_r6`。`ASurfaceControl` 从 Android 10（API 29）起向 NDK 开放，它适合已有原生渲染器、硬件缓冲池或跨进程嵌入架构的组件。普通 View 页面通常不需要绕过 HWUI 直接使用这组 API。
 
-**锚点（必须覆盖）：**
-- [18.10.1 核心概念](#核心概念) — ASurfaceControl 与 ASurfaceTransaction 的定位
-- [18.10.2 与 BLAST 的关系](#与-blast-的关系) — 共享事务模型但不等价
-- [18.10.3 典型使用流程](#典型使用流程) — 创建 → 配置 → 提交的完整路径
-- [18.10.4 关键 API 详解](#关键-api-详解) — Buffer、层级、Reparent
-- [18.10.5 Layer 层级管理](#layer-层级管理) — 动态图层树的组织
-- [18.10.6 FrameTimeline API](#frametimeline-api) — 精准控制帧着陆时间
-- [18.10.7 Fence 处理与生命周期](#fence-处理与生命周期) — 最容易踩的坑
-- [18.10.8 实战场景](#实战场景) — WebView OOP、画中画、自绘引擎
-- [18.10.9 Trace 视角](#trace-视角) — SurfaceControl 路径的识别与瓶颈分析
-
-**扩展（可选深入）：**
-- SurfaceControl 与 WebView Out-of-process Rasterization
-- Flutter Platform View 的 SurfaceControl 集成
-- 跨进程 Layer 共享
-
-<!-- outline-end -->
-
-本文以 AOSP `android-17.0.0_r1` 为 Platform 源码锚点，以 `android17-6.18-2026-06_r6` 为 kernel 锚点。`ASurfaceControl` 从 Android 10（API 29）起向 NDK 开放，它适合已有原生渲染器、硬件缓冲池或跨进程嵌入架构的组件。普通 View 页面通常不需要绕过 HWUI 直接使用这组 API。
-
-理解 SurfaceControl 的关键，是把 **Layer 状态**、**像素缓冲**、**事务** 和 **同步 fence** 分开。`ASurfaceControl` 负责指向 Layer 节点，`AHardwareBuffer` 携带像素，`ASurfaceTransaction` 描述一批状态变更，fence 决定 buffer 何时可以被读取或复用。这四类对象的职责不能互相替代。
+理解 SurfaceControl 时，要把 **Layer 状态**、**像素缓冲**、**事务** 和 **同步 fence** 分开。`ASurfaceControl` 负责指向 Layer 节点，`AHardwareBuffer` 携带像素，`ASurfaceTransaction` 描述一批状态变更，fence 决定 buffer 何时可以被读取或复用。这四类对象的职责不能互相替代。
 
 ## 核心概念
 
@@ -340,7 +320,7 @@ sequenceDiagram
 | `setDesiredHdrHeadroom()` | 35 | 为标准 HDR 内容声明期望 headroom |
 | `setBufferWithRelease()` / LUT | 36 | per-buffer 回收回调和显示 LUT |
 
-`android-17.0.0_r1` 的公开头文件没有新增标记为 API 37 的 SurfaceControl C 函数。Android 17 在本文中的意义是让所有签名、实现和 SurfaceFlinger 行为都按该 tag 复核；旧接口不会因此被列为 Android 17 新功能。
+`android-17.0.0_r1` 的公开头文件没有新增标记为 API 37 的 SurfaceControl C 函数。这里以 Android 17 为锚点复核所有签名、实现和 SurfaceFlinger 行为；旧接口不会因此被列为 Android 17 新功能。
 
 ### Buffer、几何和颜色
 
@@ -639,7 +619,7 @@ SurfaceControl 适合把更新节奏不同的少量内容分开：主画面每�
 
 ### 先建内容对象表
 
-S05 混合出图章节把内容对象作为分析单位，不按应用名或某一条线程直接归类。SurfaceControl 场景可以先填这张表：
+混合出图应以内容对象作为分析单位，不按应用名或某一条线程直接归类。SurfaceControl 场景可以先填这张表：
 
 | 内容 | Producer | 提交入口 | SF Layer / parent | buffer 标识 | acquire / release | FrameTimeline |
 |:---|:---|:---|:---|:---|:---|:---|

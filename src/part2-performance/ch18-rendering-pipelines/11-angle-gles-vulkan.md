@@ -108,23 +108,7 @@ idle_audit_result: "pass-safe-metadata-and-source-marking-fix"
 
 # 18.11 Android 17 ANGLE（GLES-over-Vulkan 翻译层）
 
-<!-- outline-start -->
-
-**锚点（必须覆盖）：**
-- ANGLE 解决的核心问题：GLES 驱动碎片化
-- 翻译层架构：GLSL → SPIR-V → Vulkan
-- 渲染时序：App 调用 GLES → ANGLE 翻译 → Vulkan 执行
-- 性能特征：翻译开销 vs 驱动一致性收益
-- 在 Perfetto 中识别 ANGLE 层的方法
-
-**扩展（可选深入）：**
-- ANGLE 启用检测与调试
-- Shader 编译差异（GLSL vs SPIR-V pipeline cache）
-- Android 15+ 的 ANGLE 生态趋势
-
-<!-- outline-end -->
-
-本文以 Android 平台 `android-17.0.0_r1` 和同 tag 的 AOSP `external/angle` 为源码锚点，讨论 Android 上最常见的 **OpenGL ES / EGL frontend + Vulkan backend**。ANGLE 项目还支持其他平台和 backend，但那些实现不用于解释本章的 Android 运行时路径。
+源码锚点为 Android 平台 `android-17.0.0_r1` 和同 tag 的 AOSP `external/angle`，这里讨论 Android 上最常见的 **OpenGL ES / EGL frontend + Vulkan backend**。ANGLE 项目还支持其他平台和 backend，但那些实现不属于这条 Android runtime path。
 
 从应用接口看，代码仍调用 GLES 和 EGL；从驱动接口看，ANGLE 维护 GLES 状态、翻译 shader、记录 Vulkan 命令并通过 Android Vulkan WSI 展示。它减少的是 GLES frontend 的厂商差异，厂商 Vulkan driver、GPU 和显示硬件仍在路径中。
 
@@ -560,7 +544,7 @@ Android 官方把 ANGLE 描述为 Android 15+ 可选的 GLES-over-Vulkan 层，�
 
 Android 17 增加 manifest `com.android.graphics.driver.prefer_angle` 请求。平台仍保留显式 Settings、platform resource、system property、ANGLE package 与 system ANGLE 多层选择，运行时字符串和 maps 仍是确认依据。
 
-本文平台行为固定到 `android-17.0.0_r1`，ANGLE 实现也固定到 AOSP `external/angle` 的同 tag。native fence 涉及的内核语义固定到 `android17-6.18-2026-06_r6`。厂商 Vulkan userspace 与 GPU kernel driver 不在 AOSP 通用源码中，设备结论还要记录 vendor build。
+平台行为固定到 `android-17.0.0_r1`，ANGLE 实现也固定到 AOSP `external/angle` 的同 tag。native fence 涉及的内核语义固定到 `android17-6.18-2026-06_r6`。厂商 Vulkan userspace 与 GPU kernel driver 不在 AOSP 通用源码中，设备结论还要记录 vendor build。
 
 ## Android 17 源码索引
 

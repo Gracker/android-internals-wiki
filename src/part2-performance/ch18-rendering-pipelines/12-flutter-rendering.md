@@ -161,23 +161,6 @@ last_idle_audit_result: "pass-frontmatter-fix"
 
 # 18.12 Android 17 Flutter 渲染管线
 
-<!-- outline-start -->
-
-**锚点（必须覆盖）：**
-- Flutter 线程模型：Flutter 3.32 stable+ 的 Merged Platform Model（UI + Platform 合并）
-- Main Thread（Dart UI task）→ Raster Thread → GPU → Display 的渲染管线
-- Impeller vs Skia 渲染后端
-- SurfaceView render mode vs TextureView render mode
-- Platform Views 的 Hybrid Composition 模式
-- 在 Perfetto 中识别 Flutter 渲染管线的方法
-
-**扩展（可选深入）：**
-- Flutter 3.32 stable+ Merged Model 的线程优化
-- Platform View 的 Z-Order 和手势问题
-- Flutter 与宿主 App 的 VSync 协调
-
-<!-- outline-end -->
-
 ## 为什么 Flutter 的渲染链需要单独分析
 
 Flutter framework 会在 Dart 侧完成 widget 更新、layout、paint 和 scene 构建，Android View 体系主要负责承载 `FlutterView`、输入、生命周期、PlatformView 与最终输出对象。因而，原生页面常用的 `ViewRootImpl.performTraversals()` → HWUI `DrawFrame` 观察法，无法完整解释 Flutter 页面。
@@ -191,9 +174,9 @@ Flutter framework 会在 Dart 侧完成 widget 更新、layout、paint 和 scene
 
 “Dart 帧已经结束”只说明 framework 交出了 scene；“Raster 已完成”也不等于该画面已经显示。Root render mode、PlatformView 策略和宿主窗口的消费节拍会继续改变后半段路径。
 
-## 本章的双版本锚点
+## Android 与 Flutter 的双版本锚点
 
-本章采用两套互相独立的版本坐标：
+分析采用两套互相独立的版本坐标：
 
 - Android 平台：Android 17 / API 37 / `android-17.0.0_r1`；
 - kernel：`android17-6.18-2026-06_r6`；
@@ -203,7 +186,7 @@ Flutter framework、engine 和 Android embedding 不属于 AOSP，也不会随 A
 
 ### 三条容易混淆的 Flutter 版本线
 
-| 能力 | 可靠边界 | 本章采用的口径 |
+| 能力 | 可靠边界 | 分析口径 |
 |---|---|---|
 | UI 与 platform thread 合并 | Flutter 3.27 release notes 已出现 Android/iOS 支持；当前架构文档写 3.29 起合并；Flutter issue #150525 的维护者更新则写 3.32 stable 起默认合并并可 opt-out | 以 **3.32 stable+** 作为保守的默认合并基线；3.29—3.31 按 engine revision 和启动配置核对 |
 | Android 默认启用 Impeller | Flutter 3.27，Android API 29+ | API 29+ 仍要核对 Impeller 是否被关闭，以及运行时选择 Vulkan 还是 GLES |
@@ -362,7 +345,7 @@ Impeller 的 shader 资产在 engine 构建期生成并打包。固定 Android V
 - 首次创建尚未命中的 pipeline；
 - GPU 频率、带宽、thermal throttling 与 driver fence wait。
 
-旧正文中关于固定 shader 变体数量、固定毫秒耗时、固定帧率跌幅以及特定 GPU 缓存命中率的数字没有对应的一手基准，不能作为通用结论。本章只保留源码能够证明的编译、选择与缓存机制。
+固定 shader 变体数量、固定毫秒耗时、固定帧率跌幅以及特定 GPU cache 命中率都没有一手基准支持，不能作为通用结论。这里仅讨论源码能够证明的编译、选择与缓存机制。
 
 ## PlatformView：TLHC、HC 与 HCPP
 
@@ -533,17 +516,17 @@ Flutter trace event 会随 build mode、engine revision 与 trace 配置变化�
 
 Android 与 Flutter 的变化应分开记录。Android 决定 View、Surface、HWUI、SurfaceFlinger/HWC 与 kernel 语义；Flutter 决定 engine、thread、renderer、embedding 和 PlatformView 策略。
 
-| 版本 | 与本章相关的边界 |
+| 版本 | 相关边界 |
 |---|---|
 | Android 12 / API 31 | BLAST 与 FrameTimeline 已形成现代分析基线；仍不能用 OS 版本推断 Flutter renderer |
 | Android 13 / API 33 | Image fence API 可供较新的 ImageReader consumer 使用；App 携带的 Flutter engine 决定是否采用 |
 | Android 14 / API 34 | 提供 HCPP 需要的 transaction synchronization 平台条件；不会自动启用 HCPP |
 | Android 15 / API 35 | 16 KB page size 设备要求 Flutter engine 与 native plugin 满足 ELF/APK 对齐；Flutter 3.27 同期默认启用 Impeller 属于 Flutter 发布决策 |
 | Android 16 / API 36 | 旧 Flutter App 仍可保留旧线程/renderer；GPU syscall filtering 场景要测试定制 engine 与旧 native plugin |
-| Android 17 / API 37 | 本章平台锚点；按 `android-17.0.0_r1` 的 TextureView、SurfaceView、SurfaceFlinger 与 AIDL Composer 解释显示端 |
+| Android 17 / API 37 | 平台锚点；按 `android-17.0.0_r1` 的 TextureView、SurfaceView、SurfaceFlinger 与 AIDL Composer 解释显示端 |
 | Flutter 3.27 | Android API 29+ 默认启用 Impeller；Android/iOS 合并线程能力进入 release notes |
 | Flutter 3.29—3.31 | 官方架构文档把 3.29 写为合并起点；对这段版本核对 engine revision 与 opt-out |
-| Flutter 3.32 stable | issue #150525 明确写为 Android/iOS 默认合并且可 opt-out；本章的保守主线 |
+| Flutter 3.32 stable | issue #150525 明确写为 Android/iOS 默认合并且可 opt-out；作为保守分析基线 |
 | Flutter 3.44 | HCPP 作为 API 34+、Impeller Vulkan 条件下的实验性 opt-in 能力 |
 
 ## 固定源码入口
