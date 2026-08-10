@@ -50,21 +50,21 @@ sources:
 
 ## 1. 先建立对象模型
 
-### 1.1 物理显示器、DisplayDevice 与 LogicalDisplay
+### 1.1 Physical Display、DisplayDevice 与 LogicalDisplay
 
 Android 显示框架区分物理设备和系统对外使用的逻辑显示器：
 
-- **物理显示器**：面板与 HWC 显示设备，由物理地址标识；
+- **物理 Display**：面板与 HWC display，由物理地址标识；
 - **`DisplayDevice`**：DisplayManager 对物理或虚拟显示设备的包装；
 - **`LogicalDisplay`**：系统用于组织图层栈、DisplayInfo、显示组和窗口内容的逻辑对象；
-- **SurfaceFlinger 显示对象 / CompositionEngine 输出**：针对最终输出建立合成状态并执行送显。
+- **SurfaceFlinger Display / CompositionEngine Output**：针对最终输出建立合成状态并执行 present。
 
 折叠设备可能让一个稳定的逻辑显示器 ID 在不同设备状态下映射到不同内建面板。它也可能保留多个逻辑显示器，并在布局中改变启用状态。具体方式由设备厂商配置决定。
 
 因此：
 
 - “内屏/外屏切换”不一定表现为 `DisplayListener.onDisplayRemoved()` 再 `onDisplayAdded()`；
-- 逻辑显示器 ID 没变，也不能推导底层物理面板、分辨率、密度或显示模式没变；
+- logical display id 没变，也不能推导底层物理面板、分辨率、density 或 mode 没变；
 - 看到两个内建面板，不代表两个面板始终能同时点亮。
 
 ### 1.2 DeviceStateToLayoutMap 决定什么
@@ -100,13 +100,13 @@ Android 17 的 `DeviceStateToLayoutMap` 从以下位置读取显示布局：
 
 `DeviceStateProviderImpl` 从厂商或数据分区的 `device_state_configuration.xml` 读取状态及条件。条件可以引用：
 
-- 上盖开关；
+- lid switch；
 - 指定字符串类型与名称的传感器；
 - 一个传感器的一个或多个数值范围。
 
-提供器按状态 ID 从小到大检查条件，选择首个匹配状态。所需传感器会以 `SENSOR_DELAY_FASTEST` 注册，但事件频率仍受具体传感器能力与 HAL 行为限制。
+Provider ID 从小到大检查条件，选择首个匹配状态。所需传感器会以 `SENSOR_DELAY_FASTEST` 注册，但事件频率仍受具体传感器能力与 HAL 行为限制。
 
-这里没有强制规定“所有折叠设备只看 `TYPE_HINGE_ANGLE`”。厂商可以组合霍尔传感器、铰链角度、上盖开关或其他传感器条件。DeviceState ID 也是设备配置值，不应在跨设备脚本中写死 `STATE_OPEN=...`。
+这里没有强制规定“所有折叠设备只看 `TYPE_HINGE_ANGLE`”。厂商可以组合霍尔传感器、hinge angle、上盖开关或其他传感器条件。DeviceState ID 也是设备配置值，不应在跨设备脚本中写死 `STATE_OPEN=...`。
 
 ### 2.2 从 DeviceState 到显示 layout
 
@@ -114,22 +114,22 @@ Android 17 的关键路径可以概括为：
 
 ```mermaid
 flowchart TD
-    A["上盖 / 铰链 / 厂商传感器条件"] --> B["DeviceStateProviderImpl"]
+    A["lid / hinge / vendor sensor 条件"] --> B["DeviceStateProviderImpl"]
     B --> C["DeviceStateManagerService 提交 DeviceState"]
     C --> D["DisplayManagerService DeviceStateListener"]
     D --> E["LogicalDisplayMapper.setDeviceState()"]
     E --> F["标记需切换的 LogicalDisplay 为 in-transition"]
     F --> G["请求相关显示器进入 OFF"]
     G --> H["全部关闭或 500 ms 超时"]
-    H --> I["应用新的 DeviceState 布局"]
+    H --> I["应用新的 DeviceState layout"]
     I --> J["LogicalDisplay 与 DisplayDevice 重映射 / 启用状态更新"]
-    J --> K["WMS / 显示遍历 / SurfaceControl 显示事务"]
+    J --> K["WMS / Display traversal / SurfaceControl display transaction"]
     K --> L["SurfaceFlinger / HWC 处理新输出"]
 ```
 
 `DeviceStateManagerService` 提交状态时会写入：
 
-- `DeviceStateChanged` 跟踪瞬时事件；
+- `DeviceStateChanged` trace instant；
 - `debug.tracing.device_state` system property；
 - `DEVICE_STATE_CHANGED` stats atom。
 
@@ -148,7 +148,7 @@ DisplayManager 收到回调后，先向 WMS 投递设备状态消息，再调用
 
 该机制通过显示器熄屏遮住窗口缩放过程中可能出现的错误尺寸。500 ms 是框架状态转换的兜底上限，不代表屏幕一定黑场 500 ms，也不代表折叠动画时长。
 
-“固定丢 1～3 帧”“第一帧高 30%～50%”等数值没有 AOSP 保证。设备的面板时序、上电顺序、Shell 过渡、应用重绘和 HWC 能力都会改变观测结果。
+原始正文中“固定丢 1–3 帧”“第一帧高 30–50%”之类数值没有 AOSP 保证。设备的面板时序、power sequence、Shell transition、应用重绘和 HWC 能力都会改变观测结果。
 
 ### 2.4 layout 应用与 SurfaceFlinger 的边界
 
@@ -178,7 +178,7 @@ RootWindowContainer
           WindowToken / WindowState
 ```
 
-这棵管理树不会与 SurfaceFlinger 图层树一一对应。Shell 过渡可以创建牵引层，把任务或窗口 Surface 临时重挂到牵引层，再为牵引层设置几何变换、裁剪、圆角半径和位置。
+这棵管理树不会与 SurfaceFlinger layer tree 一一对应。Shell transition 可以创建 leash，把 Task 或窗口 surface 临时 reparent 到 leash，再对 leash 设置 matrix、crop、corner radius 和 position。
 
 折叠动画期间看到任务牵引层缩放，不能据此判断应用每次进度更新都重新提交了一块完整缓冲区。
 
@@ -186,7 +186,7 @@ RootWindowContainer
 
 平台资源 `config_unfoldTransitionEnabled` 与 `config_unfoldTransitionHingeAngle` 决定设备是否启用相应能力。启用角度进度时，SystemUI 的 `HingeSensorAngleProvider` 获取 `TYPE_HINGE_ANGLE`，并通过后台 Handler 以 `SENSOR_DELAY_FASTEST` 接收事件。
 
-`PhysicsBasedUnfoldTransitionProgressProvider` 把铰链角度映射到 0～1 的进度，并用弹簧动画平滑更新。WM Shell 的 `UnfoldTransitionHandler` 在进度回调中创建 `SurfaceControl.Transaction`，让任务动画器更新牵引层。
+`PhysicsBasedUnfoldTransitionProgressProvider` 把铰链角度映射到 0～1 progress，并用弹簧动画平滑更新。WM Shell 的 `UnfoldTransitionHandler` 在进度回调中创建 `SurfaceControl.Transaction`，让任务动画器更新牵引层。
 
 以 fullscreen task 为例，AOSP 的 animator 主要更新：
 
@@ -207,7 +207,7 @@ RootWindowContainer
 WindowLayoutInfo → Configuration → onConfigurationChanged
 ```
 
-一次折叠或展开可能改变 `screenSize`、`smallestScreenSize`、`screenLayout`、`orientation`、`density` 或其他配置；具体集合取决于物理面板、窗口模式、旋转与厂商实现。
+一次折叠或展开可能改变 `screenSize`、`smallestScreenSize`、`screenLayout`、`orientation`、`density` 或其他配置；具体集合取决于物理面板、windowing mode、旋转与厂商实现。
 
 默认情况下，Activity 未声明自行处理的配置变化会触发重建。若使用 `android:configChanges`，应用必须重新读取受影响资源并更新界面，不能只记录回调后原样返回。
 
@@ -336,7 +336,7 @@ android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
 
 - 重新读取尺寸与资源；
 - 更新 View/Compose 的布局状态；
-- 处理显示器、密度、Insets 与相机预览等派生状态；
+- 处理 display、density、Insets 与 camera preview 等派生状态；
 - 验证资源限定符是否重新生效。
 
 这是生命周期选择，不是通用性能开关。Activity 重建较慢时，应先检查视图加载、同步 I/O、重复初始化或状态恢复成本；不能仅靠增加 `configChanges` 掩盖问题。
@@ -347,7 +347,7 @@ Compose 中窗口尺寸或姿态状态改变后，读取该状态的可组合项
 
 建议：
 
-- 在靠近自适应布局决策的位置读取 `WindowSizeClass` 和姿态；
+- 在靠近自适应布局决策的位置读取 `WindowSizeClass` / posture；
 - 传递稳定、有明确语义的紧凑、中等、扩展等级或窗格策略；
 - 避免把原始铰链角度放入页面根节点的高频状态；
 - 用 Layout Inspector、Compose 跟踪与 Perfetto 查找具体失效范围；
@@ -366,7 +366,7 @@ Android 17 对目标 SDK 37 的应用移除该退出项。官方文档将适用�
 
 按 `android:appCategory` 分类的游戏、最小宽度小于 600 dp 的屏幕，以及用户在设备比例设置中选择应用默认行为的情况属于官方列出的例外。
 
-这项变更增加了应用遇到旋转、窗口缩放、折叠和桌面窗口边界的机会，但没有改变 BLAST、SurfaceFlinger 或 HWC 的基本显示管线。
+这项变更增加了应用遇到旋转、resize、折叠和桌面窗口边界的机会，但没有改变 BLAST、SurfaceFlinger 或 HWC 的基本显示管线。
 
 ## 7. SurfaceFlinger、HWC 与像素成本
 
@@ -376,7 +376,7 @@ SurfaceFlinger FrontEnd 接收应用、WMS 和 Shell 的图层事务。Compositi
 
 分析并发内外屏时，需要分别记录：
 
-- 显示器 ID 与物理地址；
+- display id 与物理地址；
 - 当前显示模式、分辨率、密度与刷新率；
 - 目标输出的可见图层；
 - 设备合成或客户端合成；
@@ -390,18 +390,18 @@ SurfaceFlinger FrontEnd 接收应用、WMS 和 Shell 的图层事务。Compositi
 
 - HWUI/游戏/视频的渲染分辨率；
 - RenderEngine 客户端目标面积；
-- GPU 纹理、渲染目标与带宽；
+- GPU texture、render target 与带宽；
 - 缓冲区内存占用；
 - HWC 缩放器和硬件叠加层约束。
 
-最终成本还取决于损伤区域、遮挡、设备合成、动态分辨率、缓冲区格式、刷新率和内容复杂度。不同设备的内外屏尺寸差异很大，不能套用“内屏固定是外屏 2～3 倍像素”。
+最终成本还取决于 damage、遮挡、DEVICE composition、动态分辨率、buffer format、刷新率和内容复杂度。不同设备的内外屏尺寸差异很大，不能套用“内屏固定是外屏 2–3 倍像素”。
 
 ### 7.3 几何、缓冲区与送显是三类证据
 
 折叠 transition 中常同时出现：
 
-- Shell/WMS 对任务牵引层设置的几何变换、裁剪和位置；
-- 应用按新边界提交的 BLAST 缓冲区；
+- Shell/WMS 对 task leash 的 matrix、crop、position；
+- App 按新 bounds 提交的 BLAST buffer；
 - SF/HWC 针对目标显示器的送显。
 
 新几何信息可以暂时显示旧缓冲区，系统也可能用快照、启动窗口或背景层遮住重绘间隙。判断“第一帧已适配”时，应同时确认：
@@ -420,11 +420,11 @@ SurfaceFlinger FrontEnd 接收应用、WMS 和 Shell 的图层事务。Compositi
 | 时间点 | 含义 | 可用证据 |
 |---|---|---|
 | T0 | 原始物理动作 | 外部夹具、平台传感器跟踪或应用自定义传感器跟踪 |
-| T1 | DeviceState 已提交 | `DeviceStateChanged` 跟踪瞬时事件 |
-| T2 | 显示过渡或 WMS 切换开始 | DisplayThread、WMS/Shell 过渡 |
+| T1 | DeviceState 已提交 | `DeviceStateChanged` trace instant |
+| T2 | display transition / WMS switch 开始 | DisplayThread、WMS/Shell transition |
 | T3 | 应用已收到新窗口信息 | Configuration / WindowLayoutInfo 自定义跟踪 |
-| T4 | 应用新边界的缓冲区被 SF 采纳 | 应用帧、`BufferTX`、锁存事件 |
-| T5 | 目标显示器完成对应送显 | DisplayFrame、HWC、送显栅栏 |
+| T4 | App 新 bounds 的 buffer 被 SF 采纳 | App frame、`BufferTX`、latch |
+| T5 | 目标 Display 完成对应 present | DisplayFrame、HWC、present fence |
 
 测量前应声明范围是 T1→T5、T3→T5 还是 T0→光学显示。这三种数值回答的问题不同。
 
@@ -444,10 +444,10 @@ adb shell perfetto \
 - system_server 的 `DeviceStateChanged`；
 - `DisplayThread` 上的 DeviceState/DMS/WMS 工作；
 - `LogicalDisplayMapper`、显示器电源状态与逻辑显示器事件；
-- WM Shell 过渡、任务牵引层事务；
+- WM Shell transition、task leash transaction；
 - `FoldUnfoldTransitionInProgress` 异步切片和计数器（设备启用对应模块时）；
-- 应用的 `onConfigurationChanged`、Activity 重建、`Choreographer#doFrame`、测量、布局与 Compose 重组；
-- 应用窗口的 `BufferTX`、锁存事件与 FrameTimeline；
+- App `onConfigurationChanged`、Activity recreation、`Choreographer#doFrame`、measure/layout、Compose recomposition；
+- App Window `BufferTX`、latch 与 FrameTimeline；
 - SurfaceFlinger 每个目标显示器的合成与送显。
 
 系统不保证默认跟踪中包含原始 `android.sensor.hinge_angle` 连续轨道。需要原始角度时，应显式加入可控的应用或平台插桩。
@@ -490,8 +490,8 @@ adb shell dumpsys SurfaceFlinger --display
 
 这些快照分别回答：
 
-- 基础、待处理和已提交的 DeviceState 及其重写状态；
-- DeviceState 布局、LogicalDisplay、DisplayDevice、启用状态、设备状态和显示模式；
+- base/pending/committed DeviceState 与 override；
+- DeviceState layout、LogicalDisplay、DisplayDevice、enabled/state/mode；
 - WMS 的 DisplayContent、Task 和窗口边界；
 - SF 侧显示令牌、图层栈与输出配置。
 
@@ -533,7 +533,7 @@ adb shell dumpsys SurfaceFlinger --display
 - 刷新率和显示模式；
 - 客户端或设备合成；
 - 可见图层集合与过渡牵引层；
-- GPU 频率和繁忙度、内存带宽及温控状态。
+- GPU frequency/busy、内存带宽和 thermal 状态。
 
 面积、刷新率、合成策略和动画可能同时变化，应逐项对照。
 
@@ -545,13 +545,13 @@ adb shell dumpsys SurfaceFlinger --display
 
 | 平台 | 相关变化 | 分析边界 |
 |---|---|---|
-| Android 11 / API 30 | `TYPE_HINGE_ANGLE` 进入平台传感器接口 | 传感器可选、变化时上报；不等同于窗口姿态 |
-| Android 12 / API 31 | 现代 BLAST/FrameTimeline 基线 | 可按应用缓冲区、SF 图层和 DisplayFrame 分阶段分析 |
+| Android 11 / API 30 | `TYPE_HINGE_ANGLE` 进入平台 sensor API | sensor 可选、on-change；不等同于窗口 posture |
+| Android 12 / API 31 | 这里使用的现代 BLAST/FrameTimeline 基线 | 可按 App buffer、SF layer、DisplayFrame 分阶段分析 |
 | Android 12L / API 32 | 大屏系统体验与 Activity Embedding 进入主流支持范围 | 折叠设备展开后常进入多窗格或分屏，但要在运行时查询能力 |
-| Android 13 / API 33 | 多窗口与大屏路径继续演进 | 不改变 DeviceState、LogicalDisplay、应用窗口和 SF 输出的分层 |
+| Android 13 / API 33 | 多窗口与大屏路径继续演进 | 不改变 DeviceState、LogicalDisplay、App Window、SF Output 的分层 |
 | Android 14 / API 34 | 公开 `SurfaceSyncGroup`；部分设备提供后屏或双屏显示模式 | 同步接口与折叠姿态接口职责不同；特殊显示模式需查询设备能力 |
 | Android 15 / API 35 | WindowManager Extensions 6 可查询支持的姿态 | 支持的姿态是能力信息，不提供连续铰链角度 |
-| Android 16 / API 36 | 目标 SDK 36 的大屏方向、比例和可缩放性限制被忽略，保留临时退出项 | 应用要覆盖更多窗口缩放、旋转与展开状态 |
+| Android 16 / API 36 | target 36 大屏方向/比例/resizability 限制忽略，保留临时 opt-out | 应用要覆盖更多 resize、rotation 与展开态 |
 | Android 17 / API 37 | 移除上述退出项；平台源码以此版本为准 | 最小宽度大于 600 dp 时不能依赖固定方向与不可缩放声明 |
 
 ## 11. 源码与官方文档入口
@@ -559,19 +559,19 @@ adb shell dumpsys SurfaceFlinger --display
 ### Android 17 AOSP
 
 - [`DeviceStateProviderImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/policy/DeviceStateProviderImpl.java)：厂商条件、上盖或传感器监听与状态选择；
-- [`DeviceStateManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/devicestate/DeviceStateManagerService.java)：待处理和已提交状态、跟踪与回调；
-- [`LogicalDisplayMapper.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/LogicalDisplayMapper.java)：过渡、关闭等待、500 ms 超时及逻辑和物理显示器重映射；
+- [`DeviceStateManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/devicestate/DeviceStateManagerService.java)：pending/committed state、trace 与 callback；
+- [`LogicalDisplayMapper.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/LogicalDisplayMapper.java)：transition、OFF 等待、500 ms 超时、logical/physical remap；
 - [`DeviceStateToLayoutMap.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/DeviceStateToLayoutMap.java) 与 [`Layout.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/layout/Layout.java)：每个状态的显示布局；
-- [`DisplayManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/DisplayManagerService.java)：DeviceState 回调、逻辑显示器事件和显示遍历；
+- [`DisplayManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/DisplayManagerService.java)：DeviceState callback、logical display event、Display traversal；
 - [`HingeSensorAngleProvider.kt`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/unfold/src/com/android/systemui/unfold/updates/hinge/HingeSensorAngleProvider.kt) 与 [`PhysicsBasedUnfoldTransitionProgressProvider.kt`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/unfold/src/com/android/systemui/unfold/progress/PhysicsBasedUnfoldTransitionProgressProvider.kt)：可选的角度到进度转换路径；
 - [`UnfoldTransitionHandler.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/unfold/UnfoldTransitionHandler.java) 与 [`FullscreenUnfoldTaskAnimator.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/unfold/animation/FullscreenUnfoldTaskAnimator.java)：Shell 任务牵引层动画；
-- [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) 与 [`CompositionEngine`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/)：显示事务、快照与逐显示器输出。
+- [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) 与 [`CompositionEngine`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/)：display transaction、snapshot 与 per-display output。
 
 ### 应用与测试文档
 
 - [Make your app fold aware](https://developer.android.com/develop/adaptive-apps/guides/foldables/make-your-app-fold-aware)：`WindowInfoTracker`、`FoldingFeature` 与生命周期感知收集；
-- [`FoldingFeature` API](https://developer.android.com/reference/androidx/window/layout/FoldingFeature)：状态、方向、遮挡和分隔的定义；
-- [Android 17 大屏方向与缩放行为](https://developer.android.com/about/versions/17/changes/ff-restrictions-ignored)：目标 SDK 37 的规则与例外；
+- [`FoldingFeature` API](https://developer.android.com/reference/androidx/window/layout/FoldingFeature)：state、orientation、occlusion、separating 的定义；
+- [Android 17 大屏方向与缩放行为](https://developer.android.com/about/versions/17/changes/ff-restrictions-ignored)：target 37 规则与例外；
 - [Configuration and continuity](https://developer.android.com/guide/topics/large-screens/configuration-and-continuity)：Activity 重建、自行处理配置与状态连续性；
 - [Espresso Device API](https://developer.android.com/studio/test/espresso-api)：虚拟设备上的 closed/flat mode 功能测试；
 - [AOSP hinge angle sensor](https://source.android.com/docs/core/interaction/sensors/sensor-types#hinge_angle)：on-change、wake-up 与单位。

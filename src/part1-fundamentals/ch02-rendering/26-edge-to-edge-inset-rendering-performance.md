@@ -52,7 +52,7 @@ gap_source: "官方文档/AOSP结构"
 ---
 # 2.26 Edge-to-Edge 渲染与 WindowInsets 处理性能
 
-Android 15（API 35）开始对满足版本条件的 Activity 强制 Edge-to-Edge。它改变窗口布局、系统栏背景和 Insets 的责任边界，不会为应用更换渲染管线。普通 View 或 Compose 页面仍由 `ViewRootImpl → HWUI RenderThread → 应用窗口 BLAST → SurfaceFlinger → HWC` 生成并显示；状态栏、导航栏、桌面标题栏和 IME 则作为系统界面或受控 Surface 参与同一显示设备的合成。
+Android 15（API 35）开始对满足版本条件的 Activity 强制 Edge-to-Edge。它改变窗口布局、系统栏背景和 Insets 的责任边界，不会为应用更换渲染管线。普通 View 或 Compose 页面仍由 `ViewRootImpl → HWUI RenderThread → App Window BLAST → SurfaceFlinger → HWC` 生成并显示；状态栏、导航栏、桌面标题栏和 IME 则作为系统界面或受控 Surface 参与同一显示设备的合成。
 
 性能分析要区分三类问题：
 
@@ -66,7 +66,7 @@ Android 15（API 35）开始对满足版本条件的 Activity 强制 Edge-to-Edg
 
 ### 1.1 Edge-to-Edge 由运行平台和目标 SDK 共同决定
 
-在 Android 15 及更高版本设备上，目标 SDK 35 及以上的应用默认使用 Edge-to-Edge。Android 15 为目标 35 保留过 `windowOptOutEdgeToEdgeEnforcement` 临时退出项；Android 16 上，目标 SDK 36 及以上时该退出项被禁用。Android 17 延续这条边界，没有新增另一套 Edge-to-Edge 模型。
+在 Android 15 及更高版本设备上，target SDK 35 及以上的应用默认 Edge-to-Edge。Android 15 为 target 35 留过 `windowOptOutEdgeToEdgeEnforcement` 临时退出项；Android 16 上，target SDK 36 及以上时该退出项被禁用。Android 17 延续这条边界，没有新增另一套 Edge-to-Edge 模型。
 
 Android 17 `PhoneWindow` 中对应两项兼容性变更：
 
@@ -97,16 +97,16 @@ Android 15 还把目标 35 及以上应用的 `Configuration` 尺寸与系统栏
 普通硬件加速 Activity 仍沿用下面这条主线：
 
 ```text
-Insets / 输入 / 动画 / 失效刷新 / requestLayout
+Insets / input / animation / invalidate / requestLayout
     ↓
 Choreographer#doFrame
     INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT
     ↓
 ViewRootImpl.performTraversals()
     ↓
-HWUI RenderThread → 应用窗口 BLASTBufferQueue
+HWUI RenderThread → App Window BLASTBufferQueue
     ↓
-SurfaceFlinger → HWC / RenderEngine → 显示提交
+SurfaceFlinger → HWC / RenderEngine → Display present
 ```
 
 这段骨架用于确定责任位置。Edge-to-Edge 可能让应用窗口内容覆盖更大的区域，也可能因 Insets 变化触发遍历；它不会自动创建第二个应用数据生产方，也不会绕过应用窗口的 BLAST 队列。
@@ -119,27 +119,27 @@ SurfaceFlinger → HWC / RenderEngine → 显示提交
 - `calculateNavigationBarColor()` 在 Edge-to-Edge 强制场景中可把三键导航栏颜色转成对比度遮罩；
 - 这些颜色 View 最终画进当前应用窗口缓冲区，不应重复算成独立的应用 Surface。
 
-因此，系统栏透明后不一定增加透明图层，系统栏覆盖区域的像素也不一定是新增绘制。实际图层数量要从 SurfaceFlinger 图层树确认；应用窗口内部的普通 View 或 DecorView 颜色 View，不会因为视觉上像一层遮罩就变成 HWC 图层。
+因此，系统栏透明后不一定增加透明图层，系统栏覆盖区域的像素也不一定是新增绘制。实际图层数量要从 SurfaceFlinger 图层树确认；应用窗口内部的普通 View 或 DecorView 颜色 View，不会因为视觉上像一层遮罩就变成 HWC layer。
 
 ### 2.2 HWC 是否回退 CLIENT 只能从当前帧证明
 
 HWC 会按整个显示设备的可见图层集合评估合成策略。影响因素包括：
 
 - 图层的格式、数据空间、混合、变换、裁剪和受保护用途；
-- 可用叠加平面、缩放器、带宽与厂商限制；
-- SystemUI、IME、过渡牵引层、变暗层、多窗口和视频图层；
+- 可用 overlay plane、scaler、带宽与厂商限制；
+- SystemUI、IME、transition leash、dim layer、多窗口和视频 layer；
 - 当前显示模式、分辨率、色彩模式与全局变换。
 
-透明或半透明图层可能影响 HWC 选择，但不能从 Edge-to-Edge 配置直接推出 CLIENT 合成。也不存在跨设备通用的固定 GPU 额外耗时。应检查逐图层合成类型、FrameTimeline 的 `GPU Composition`、HWC/图层跟踪，或与稳定复现场景对应的 dumpsys 快照。
+透明或半透明 layer 可能影响 HWC 选择，但不能从 Edge-to-Edge 配置直接推出 CLIENT composition。也不存在“某类低端 GPU 固定增加 4–8 ms”这样的跨设备常量。要看 per-layer composition type、FrameTimeline 的 `GPU Composition`、HWC/layer trace，或与稳定复现场景对应的 dumpsys 快照。
 
 ### 2.3 新增绘制成本没有固定 dp 公式
 
 窗口内容延伸到边缘，不代表每帧都会增加一次测量和布局。各阶段是否执行取决于当前帧状态：
 
 - 边缘区域原本已在应用窗口缓冲区内，且内容静止时，可以复用已有的 RenderNode/DisplayList；
-- Insets 数值变化或监听器修改内边距、外边距、LayoutParams 时，可能请求布局；
+- Insets 数值变化或监听器修改 padding、margin、LayoutParams 时，可能请求 layout；
 - 边缘渐变、模糊、大图、视频采样或持续动画会增加实际像素工作；
-- 脏区域、缓冲区年龄、GPU 分块架构和 OEM 驱动都会影响最终成本。
+- dirty region、buffer age、GPU tile 架构和 OEM 驱动都会影响最终成本。
 
 评估 Edge-to-Edge 的 GPU 成本，应对比同一设备、页面和导航模式下的应用 GPU/RenderThread、SF 合成和功耗，不能用系统栏高度乘屏幕宽度代替测量。
 
@@ -160,16 +160,16 @@ ViewRootImpl.performTraversals()
     ↓  dispatchApplyInsets(root)
 root.dispatchApplyWindowInsets(WindowInsets)
     ↓
-View / ViewGroup 层级
+View / ViewGroup hierarchy
 ```
 
-`WindowState.computeFrameLw()` 不是 Android 17 这条分发链的可靠锚点。WMS 维护带类型的 `InsetsState`、数据源和控制对象；应用进程由 `InsetsController` 结合当前窗口边框、边界、可见性和窗口属性计算 `WindowInsets`。
+`WindowState.computeFrameLw()` 不是 Android 17 这条分发链的可靠锚点。WMS 维护带类型的 `InsetsState`、数据源和控制对象；应用进程由 `InsetsController` 结合当前窗口边框、bounds、可见性和窗口属性计算 `WindowInsets`。
 
 系统发来新的 Insets 状态时，`ViewRootImpl.notifyInsetsChanged()` 会设置 `mApplyInsetsRequested`、调用 `requestLayout()`，并在需要时安排遍历。应用主动调用 `View.requestApplyInsets()` 时，View 请求根节点重新分发；它不等于收到一次新的 WMS 状态，也不会为每种 Insets 类型分别发起一轮 Binder 请求。
 
 ### 3.2 一次 `WindowInsets` 可以同时携带多种类型
 
-状态栏、导航栏、标题栏、IME、挖孔区域、系统手势区域等信息都可以出现在同一个 `WindowInsets` 中。调用：
+状态栏、导航栏、caption、IME、cutout、system gestures 等信息都可以出现在同一个 `WindowInsets` 中。调用：
 
 ```kotlin
 val safe = insets.getInsets(
@@ -223,7 +223,7 @@ INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT
 
 `ViewGroup` 根据回调的分发模式决定是否把动画继续传给后代。这里分发的是 WindowInsets 动画回调树，不能直接视为每帧调用普通 `onApplyWindowInsets()`。
 
-回调本身在主线程帧阶段执行。修改 `translationY`、透明度等渲染属性通常不需要测量；修改内边距、外边距、约束或列表结构可能请求布局。成本取决于回调执行的操作，不能根据可见列表项数量推导固定耗时。
+回调本身在主线程帧阶段执行。修改 `translationY`、透明度等渲染属性通常不需要测量；修改内边距、margin、约束或列表结构可能请求布局。成本取决于回调执行的操作，不能根据可见列表项数量推导固定耗时。
 
 ### 4.2 Android 17 的同步 Insets 动画：满足条件才逐帧应用
 
@@ -233,7 +233,7 @@ INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT
 2. `WindowState` 计算窗口是否允许同步动画，并把结果随添加窗口或重新布局的结果交给 `ViewRootImpl`；
 3. `InsetsController` 的 `synced_insets_animation` 配置开关必须开启；
 4. `ViewRootImpl` 还要求设备满足高性能图形条件；
-5. 当前动画不能由用户控制、不能是窗口缩放动画，也不能已有 View 动画回调。
+5. 当前动画不能是 user-controlled、resize animation，也不能已有 View 动画 callback。
 
 这些条件成立时，`dispatchWindowInsetsAnimationProgress()` 会走 `notifyInsetsChanged()`，把动画进度 Insets 放入普通应用和遍历路径。源码注释说明这条路径资源开销更高，因此低端设备会被排除。
 
@@ -241,7 +241,7 @@ Android 17 已实现逐帧应用 Insets，但仅凭 API 37 无法判断某个窗
 
 ### 4.3 IME 动画时不要硬编码时长和帧数
 
-IME 动画的持续时间、插值器、刷新率和实际回调数量由系统实现、控制方式、掉帧和设备状态共同决定。“默认 300 ms、60 Hz 一定回调 18 次”不能作为 Android 17 的固定结论。
+IME 动画的持续时间、interpolator、刷新率和实际回调数量由系统实现、控制方式、掉帧和设备状态共同决定。“默认 300 ms、60 Hz 一定回调 18 次”不能作为 Android 17 的固定结论。
 
 如果 View 布局在动画开始时已切到结束状态，可以按官方建议用起点与终点的差值设置位移，避免在 `onProgress()` 中反复修改布局。下面的代码只展示关键状态；实际组件还要保存和恢复已有位移。
 
@@ -335,10 +335,10 @@ ViewCompat.setOnApplyWindowInsetsListener(list) { view, windowInsets ->
 ### 5.2 滚动内容与固定控件采用不同策略
 
 - 列表背景和滚动内容可以延伸到系统栏后方，常见做法是设置内边距并关闭 `clipToPadding`；
-- 悬浮操作按钮、输入框、底部操作按钮等交互控件应避开 `systemBars()`；
+- FAB、输入框、底部操作按钮等交互控件应避开 `systemBars()`；
 - 依赖边缘滑动的轮播控件、底部面板或游戏控制区还要考虑 `systemGestures()`；
 - 三键导航栏背景保护可参考 `tappableElement()`，不能把手势指示条高度硬编码成导航栏高度；
-- 挖孔区域、瀑布屏和圆角屏应按页面内容选择 `displayCutout()`、`waterfall()` 或 `safeDrawing()`，不能使用统一的 24/48 dp 常量。
+- cutout、瀑布屏和圆角屏应按页面内容选择 `displayCutout()`、`waterfall()` 或 `safeDrawing()`，不能用统一的 24/48 dp 常量。
 
 ### 5.3 Compose 的边界
 
@@ -367,13 +367,13 @@ ViewCompat.setOnApplyWindowInsetsListener(list) { view, windowInsets ->
 
 ## 7. Predictive Back 与 Insets 的关系
 
-预测性返回让用户预览返回目的地。Android 15 起，返回桌面、跨任务和跨 Activity 的系统动画不再依赖开发者选项；Android 16 上，目标 SDK 36 及以上的应用默认启用这些系统动画，并提供迁移或临时退出边界。
+Predictive Back 让用户预览返回目的地。Android 15 起，back-to-home、cross-task、cross-activity 系统动画不再依赖开发者选项；Android 16 上，target 36+ 应用默认启用这些系统动画，并提供迁移或临时退出边界。
 
 它不要求每个应用在同一窗口内固定绘制前后两份界面：
 
-- 返回桌面、跨任务和跨 Activity 的动画可以由系统根据窗口、任务和过渡牵引层组织；
+- back-to-home、cross-task、cross-activity 可以由系统基于窗口、Task 和 transition leash 组织动画；
 - Fragment、Navigation 或 Compose 的自定义进度动画可以在应用内部更新 UI；
-- 应用回调是否触发重组、布局或绘制，取决于具体导航库和页面实现；
+- 应用回调是否触发 composition、layout、draw，取决于具体导航库和页面实现；
 - 没有 Android 17 证据表明 Predictive Back 会自动逐帧调用 `requestApplyInsets()`。
 
 如果返回手势卡顿，先区分系统过渡与应用自定义动画。系统路径检查 WM Shell、SurfaceFlinger 图层和事务及 DisplayFrame；应用路径检查返回进度回调、Compose/Fragment 状态变化、`doFrame` 和应用 SurfaceFrame。详见 22.13。
@@ -387,11 +387,11 @@ Android 17 的 `ViewRootImpl.dispatchApplyInsets()` 自带名为 `dispatchApplyI
 建议同时采集：
 
 - 目标进程的 `Choreographer#doFrame` 与五类回调；
-- `dispatchApplyInsets`、`performTraversals` 及测量、布局、绘制；
-- 自定义的 `InsetsApply/<screen>`、`ImeProgress/<screen>` 区段；
-- RenderThread 的 `DrawFrame`、缓冲区出队和入队；
-- 应用和 SurfaceFlinger 的 FrameTimeline；
-- WMS/WM Shell 的 Insets、IME、过渡与 SurfaceControl 事务；
+- `dispatchApplyInsets`、`performTraversals`、measure/layout/draw；
+- 自定义 `InsetsApply/<screen>`、`ImeProgress/<screen>` section；
+- RenderThread `DrawFrame`、dequeue/queue buffer；
+- App 和 SurfaceFlinger FrameTimeline；
+- WMS/WM Shell Insets、IME、transition 与 SurfaceControl transaction；
 - HWC 合成类型、客户端合成和送显。
 
 ### 8.2 `performTraversals` 只能证明发生过遍历，不等于重复布局
@@ -416,7 +416,7 @@ GROUP BY s.name;
 
 ### 8.3 用 FrameTimeline 判断帧有没有错过显示时机
 
-固定的 16.67 ms 阈值只适用于 60 Hz 的简化估算；在 90/120 Hz、可变刷新率或不同调度策略下会误判。FrameTimeline 已提供预期和实际时间线、送显类型、卡顿类型及令牌，应以目标帧的截止时间为准。
+固定的 16.67 ms 阈值只适用于 60 Hz 的简化估算；在 90/120 Hz、可变刷新率或不同调度策略下会误判。FrameTimeline 已提供预期和实际时间线、present type、卡顿类型及令牌，应以目标帧的截止时间为准。
 
 下面的查询列出目标进程最慢的应用 SurfaceFrame。替换包名后，再用 `layer_name` 过滤目标窗口：
 
@@ -438,16 +438,16 @@ ORDER BY a.dur DESC
 LIMIT 40;
 ```
 
-`jank_type` 只用于缩小范围。要证明 Insets 是根因，还要让慢帧与 `dispatchApplyInsets` 或自定义回调、遍历子段、RenderThread 和 SurfaceFlinger DisplayFrame 在时间上对应。
+`jank_type` 只用于缩小范围。要证明 Insets 是根因，还要让慢帧与 `dispatchApplyInsets` callback、遍历子段、RenderThread 和 SurfaceFlinger DisplayFrame 在时间上对应。
 
 ### 8.4 合成结论必须覆盖整个显示器
 
 要验证“Edge-to-Edge 导致客户端合成”，至少完成以下对照：
 
-1. 固定设备、显示模式、导航方式和页面内容；
+1. 固定设备、Display mode、导航方式和页面内容；
 2. 对比变更前后的可见图层树；
 3. 对齐同一 DisplayFrame 的逐图层合成类型或 `GPU Composition`；
-4. 检查是否同时出现 IME、过渡、视频、变暗层、HDR 或多窗口变化；
+4. 检查是否同时出现 IME、transition、视频、dim、HDR 或多窗口变化；
 5. 查看 RenderEngine 客户端合成和送显路径，不能只看一个 `composeSurfaces` 切片的时长。
 
 只有透明栏出现、SF duration 变长或功耗上升，都不足以单独证明 HWC 回退。
@@ -456,33 +456,33 @@ LIMIT 40;
 
 | 现象 | 不能直接得出的结论 | 继续检查 |
 |---|---|---|
-| 内容画到状态栏后方 | 多了一个应用 Surface | 应用窗口图层、SystemUI 图层、DecorView 颜色视图 |
+| 内容画到状态栏后方 | 多了一个应用 Surface | App Window layer、SystemUI layer、DecorView color view |
 | Insets 数值变化 | 每种类型分别完成一次 Binder 分发 | `InsetsState` 序列、`dispatchApplyInsets` 次数 |
 | `onProgress()` 每帧出现 | 每帧都执行普通 `onApplyWindowInsets()` | 回调路径与同步应用条件 |
 | `performTraversals` 出现 | 测量、布局和绘制全部发生 | 遍历内部子段和 View 请求来源 |
-| 三键导航有半透明背景 | SurfaceFlinger 必须执行客户端合成 | DecorView 遮罩、图层合成类型 |
-| 桌面窗口出现浮动 IME | `ime()` 必为 0 | 窗口与 IME 相交情况、InsetsState、调整模式 |
+| 三键导航有半透明背景 | SurfaceFlinger 必须 CLIENT composition | DecorView scrim、layer composition type |
+| 桌面窗口出现浮动 IME | `ime()` 必为 0 | 窗口/IME 相交、InsetsState、adjust mode |
 | 预测性返回卡顿 | 应用固定渲染两份页面 | 分开检查系统过渡与应用自定义进度 |
-| `doFrame` 超过 16.67 ms | 所有刷新率下都已超时 | FrameTimeline 的预期和实际截止时间 |
+| `doFrame` 超过 16.67 ms | 所有刷新率下都已超时 | FrameTimeline expected/actual deadline |
 
 ## 10. Android 17 源码入口
 
 以下平台入口按 Android 17 / API 37 的 `android-17.0.0_r1` 核对：
 
-- [`PhoneWindow.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/policy/PhoneWindow.java)：Edge-to-Edge 兼容性变更、退出边界、`decorFitsSystemWindows` 和系统栏颜色；
-- [`DecorView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/policy/DecorView.java)：颜色视图、三键导航遮罩和系统栏消费；
+- [`PhoneWindow.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/policy/PhoneWindow.java)：Edge-to-Edge compat change、opt-out 边界、`decorFitsSystemWindows` 和系统栏颜色；
+- [`DecorView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/policy/DecorView.java)：color view、三键导航 scrim、系统栏消费；
 - [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)：Insets 状态变化、`dispatchApplyInsets`、同步动画条件与遍历；
 - [`InsetsController.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/InsetsController.java) 和 [`ViewRootInsetsControllerHost.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootInsetsControllerHost.java)：动画执行器、`CALLBACK_INSETS_ANIMATION` 和进度分发；
-- [`View.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java) 和 [`ViewGroup.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java)：监听器、重写方法、消费和新旧兄弟节点分发语义；
-- [`Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)：输入、动画、Insets 动画、遍历和提交的帧内顺序；
+- [`View.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java) 和 [`ViewGroup.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java)：listener/override、消费和新旧兄弟分发语义；
+- [`Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)：Input、Animation、Insets Animation、Traversal、Commit 的帧内顺序；
 - [`ActivityInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/ActivityInfo.java) 和 [`WindowState.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowState.java)：同步 Insets 动画的兼容性变更与窗口资格计算。
 
 这里不涉及新的内核算法。分析 CPU 调度、频率或栅栏时，内核版本仍固定为 `android17-6.18-2026-06_r6`，不能根据旧内核标签推断 Android 17 设备行为。
 
 ## 11. 检查清单
 
-- [ ] 是否按“运行平台 + 目标 SDK”判断 Edge-to-Edge 和退出项？
-- [ ] 是否分别处理手势导航、三键导航、状态栏、标题栏和挖孔区域？
+- [ ] 是否按“运行平台 + target SDK”判断 Edge-to-Edge 和退出项？
+- [ ] 是否分别处理手势导航、三键导航、status bar、caption 和 cutout？
 - [ ] 是否避免用 `Configuration.screenHeightDp` 推导系统栏后的可用高度？
 - [ ] Insets 监听器是否保留原始内边距和外边距，避免重复累加？
 - [ ] 是否在明确责任边界后才消费 Insets？
@@ -497,4 +497,4 @@ LIMIT 40;
 
 Edge-to-Edge 把“避开系统栏”的责任从窗口默认留白转给应用布局，但标准应用窗口的生产与显示主线没有改变。性能风险主要来自 Insets 变化后的主线程工作、过大的布局更新范围、动画期间逐帧应用或分发进度，以及实际显示图层集合对 HWC 策略的影响。
 
-分析 Android 17 时，应先识别普通状态变化、动画回调、同步 Insets 动画、桌面窗口缩放和预测性返回等路径。它们各有不同的调度与图层证据。区分路径后，再用 `dispatchApplyInsets`、遍历子段、FrameTimeline 和合成类型对齐同一帧，才能判断问题位于 View 层、动画逻辑、窗口策略还是显示合成。
+Android 17 Review Android 17 时，应先识别普通状态变化、动画回调、同步 Insets 动画、桌面窗口缩放和预测性返回等路径。它们各有不同的调度与图层证据。区分路径后，再用 `dispatchApplyInsets`、遍历子段、FrameTimeline 和合成类型对齐同一帧，才能判断问题位于 View 层、动画逻辑、窗口策略还是显示合成。
