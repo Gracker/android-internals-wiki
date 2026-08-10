@@ -264,7 +264,7 @@ Android 12 的 GKI 2.0 用 DMA-BUF Heaps 替换 ION 作为 GKI 分配框架。`l
 1. `BufferQueueProducer` 清理旧槽位内容并设置 `BUFFER_NEEDS_REALLOCATION`；
 2. 创建新的 `GraphicBuffer`；
 3. `GraphicBufferAllocator` 按 Mapper 版本选择 Gralloc 2/3/4/5 allocator wrapper；
-4. 厂商分配器按描述符分配，并返回原始原生句柄；
+4. vendor Allocator 按 descriptor 分配，并返回 raw native handle；
 5. 常规 `GraphicBuffer` 分配会把 allocator 返回的 raw handle 导入为当前进程可用的句柄；只有显式请求 raw handle 的内部调用方会跳过这一步；
 6. producer 看到 reallocation flag 后调用 `requestBuffer(slot)`，取得这一槽位的 `GraphicBuffer`；
 7. `queueBuffer()` 要求该槽位已经执行过 `requestBuffer()`。
@@ -292,7 +292,7 @@ Android 15 起平台支持 16 KB 页大小设备。它会影响 ELF、mmap、页
 评估图形内存时至少要区分：
 
 - 逻辑尺寸：width × height；
-- 步幅与平面布局；
+- stride 与 plane layout；
 - format、compression metadata 和 alignment；
 - `reservedSize`；
 - IOMMU/CPU / CPU mapping 与页表成本；

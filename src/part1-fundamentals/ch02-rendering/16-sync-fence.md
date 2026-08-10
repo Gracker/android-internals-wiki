@@ -180,7 +180,7 @@ Android 8.1 的 `libsync` 已同时处理旧版与新版 ioctl。读历史代码
 | release fence | consumer 释放旧缓冲时返回 | producer 再次写旧缓冲前 | consumer 对旧缓冲的读取尚未完成 |
 | present fence | HWC `present`/`presentDisplay` 每个 display frame 返回 | SurfaceFlinger、时间统计与后续显示资源管理 | 本轮 display composition 的完成条件 |
 
-### 4.1 生产完成栅栏到消费者侧称为获取栅栏
+### 4.1 Producer completion 到 consumer 侧叫 acquire fence
 
 应用调用 `queueBuffer(buffer, fence)` 时，这条栅栏表示 producer 的写入可能仍在进行。`BufferQueueProducer::queueBuffer()` 把 `QueueBufferInput` 中的字段命名为 `acquireFence`，保存到槽位，并随 `BufferItem` 交给 consumer。
 
@@ -191,7 +191,7 @@ Android 8.1 的 `libsync` 已同时处理旧版与新版 ioctl。读历史代码
 
 两种说法可以指向同一个 fd。判断语义时要注明观察方。
 
-### 4.2 消费者释放栅栏到生产者侧称为出队/释放栅栏
+### 4.2 Consumer release 到 producer 侧是 dequeue/release fence
 
 `BufferQueueConsumer::releaseBuffer(slot, frameNumber, releaseFence)` 把 release fence 保存回槽位。之后 producer 再次 `dequeueBuffer()` 选中该槽位，`BufferQueueProducer` 把同一字段作为 `outFence` 返回并清空槽位中的引用。
 
@@ -393,7 +393,7 @@ Composer HAL 向 Stable AIDL 演进，Vulkan、EGL 与 native fence 互操作继
 
 它是 HWC/display 协议的完成点。面板扫描与光学响应仍需专用测量。
 
-### 栅栏发出信号后缓冲一定空闲
+### Fence signal 后 buffer 一定 free
 
 signal 只满足同步依赖。slot 状态、GraphicBuffer 引用、Mapper handle、HWC/GPU / GPU cache 与应用对象仍会影响缓冲生命周期。
 
