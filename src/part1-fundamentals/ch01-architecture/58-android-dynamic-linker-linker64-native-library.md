@@ -49,9 +49,9 @@ linker64 有两条主要入口：
 - 进程启动：内核根据主程序的 `PT_INTERP` 装入 linker64。linker64 完成自身重定位，再装入主程序、`LD_PRELOAD` 和 `DT_NEEDED` 依赖；这些工作完成后，控制权交给程序入口。
 - 运行时装载：`dlopen()` 或 `android_dlopen_ext()` 进入 `do_dlopen()`，加载可访问范围内尚未存在的 DSO；`dlsym()` 查询符号；`dlclose()` 递减装载组引用计数并在满足条件时卸载。
 
-linker64 不是常驻系统服务，也没有跨进程共享的“已解析符号缓存”。每个进程维护自己的 `soinfo` 图、命名空间、符号查找范围和引用计数。文件页可以经页缓存在进程间复用，地址空间和重定位结果仍属于各进程。
+linker64 不是常驻系统服务，也没有跨进程共享的“已解析符号缓存”。每个进程维护自己的 `soinfo` 图、namespace、符号查找范围和引用计数。文件页可以经 page cache 在进程间复用，地址空间和重定位结果仍属于各进程。
 
-`bionic/linker/Android.bp` 将链接器配置为 `static_executable: true`。这里的“静态”表示它不能依赖另一个动态链接器替自己完成普通启动；源码注释进一步说明，链接器自身按共享对象布局链接，并使用静态库组成。“它是普通静态程序”的说法遗漏了自举重定位这一层。
+`bionic/linker/Android.bp` 将 linker 配置为 `static_executable: true`。这里的“静态”表示它不能依赖另一个动态链接器替自己完成普通启动；源码注释进一步说明，linker 自身按共享对象布局链接，并使用静态库组成。“它是普通静态程序”的说法遗漏了自举重定位这一层。
 
 ## 一次 `dlopen()` 的执行顺序
 
@@ -64,11 +64,11 @@ linker64 不是常驻系统服务，也没有跨进程共享的“已解析符�
 两个执行特征：
 
 - 同一依赖层的兄弟 DSO 不会由 linker64 自动并行加载。
-- 把依赖图改得更“扁平”不会换来链接器内部并行，只可能改变查找范围、构造顺序和待加载节点。
+- 把依赖图改得更“扁平”不会换来 linker 内部并行，只可能改变查找范围、构造顺序和待加载节点。
 
-### 阶段一：确定调用者和命名空间
+### 阶段一：确定调用者和 namespace
 
-`do_dlopen()` 先用调用地址查找所属 `soinfo`，再由 `get_caller_namespace()` 得到起始命名空间。若调用的是 `android_dlopen_ext()`，并且 `android_dlextinfo` 带有 `ANDROID_DLEXT_USE_NAMESPACE`，显式命名空间可以覆盖这一步的结果。
+`do_dlopen()` 先用调用地址查找所属 `soinfo`，再由 `get_caller_namespace()` 得到起始 namespace。若调用的是 `android_dlopen_ext()`，并且 `android_dlextinfo` 带有 `ANDROID_DLEXT_USE_NAMESPACE`，显式 namespace 可以覆盖这一步的结果。
 
 这解释了为什么同一个绝对路径或 SONAME，在 shell 测试程序里能加载，在应用进程里却可能失败：搜索起点和可见边界并不相同。
 
@@ -76,10 +76,10 @@ linker64 不是常驻系统服务，也没有跨进程共享的“已解析符�
 
 `find_libraries()` 先创建 `LoadTask`，随后遍历不断增长的任务列表。每个新 ELF 的 `DT_NEEDED` 会追加成后续任务，因此依赖发现顺序是广度优先。此时会：
 
-- 复用命名空间中已经加载且可访问的 `soinfo`；
-- 为新库打开文件、读取 ELF 头、程序头和动态段所需信息；
-- 建立父子边，记录依赖来自哪个命名空间；
-- 跨命名空间时沿允许的链接关系寻找指定 SONAME。
+- 复用 namespace 中已经加载且可访问的 `soinfo`；
+- 为新库打开文件、读取 ELF 头、Program Header 和动态段所需信息；
+- 建立父子边，记录依赖来自哪个 namespace；
+- 跨 namespace 时沿允许的链接关系寻找指定 SONAME。
 
 这里不是简单的 `find_library() → load_library() → load_dependencies()` 递归链。`LoadTask` 把“发现依赖”和“映射所有新库”分成不同阶段，便于失败时回收本次装载创建的对象。
 
@@ -87,21 +87,21 @@ linker64 不是常驻系统服务，也没有跨进程共享的“已解析符�
 
 linker64 从新任务中生成待映射列表。普通路径会打乱映射顺序；使用 `ANDROID_DLEXT_RESERVED_ADDRESS_RECURSIVE` 时，为满足保留地址区布局，顺序保持稳定。这项随机排列属于地址布局策略，不是并发调度。
 
-`ElfReader::Load()` 负责保留地址空间、映射 `PT_LOAD`、定位运行时程序头，并解析 GNU 属性。`android_dlopen_ext()` 还能通过文件描述符、文件描述符偏移、保留地址区或 RELRO 文件描述符提供特殊装载条件，WebView 加载器是 RELRO 共享能力的重要使用者。
+`ElfReader::Load()` 负责保留地址空间、映射 `PT_LOAD`、定位运行时 Program Header，并解析 GNU property。`android_dlopen_ext()` 还能通过 fd、fd offset、保留地址区或 RELRO 文件描述符提供特殊装载条件，WebView 加载器是 RELRO 共享能力的重要使用者。
 
-`mmap()` 成功只表示建立了映射。尚未访问的文件页可以继续留在磁盘或页缓存中；“`dlopen()` 完成”不代表库的全部代码页已经产生缺页并进入物理内存。
+`mmap()` 成功只表示建立了映射。尚未访问的文件页可以继续留在磁盘或 page cache 中；“`dlopen()` 完成”不代表库的全部代码页已经产生缺页并进入物理内存。
 
 ### 阶段四：预链接并登记 TLS
 
 所有新映射完成后，linker64 按广度优先顺序调用 `prelink_image()`。这一阶段解析 `.dynamic`，记录：
 
-- 字符串表、动态符号表和 GNU/SysV 哈希；
+- 字符串表、动态符号表和 GNU/SysV hash；
 - `DT_NEEDED`、`DT_RUNPATH` 和符号版本信息；
 - REL、RELA、RELR、APS2 压缩重定位的位置；
 - `DT_INIT`、`DT_INIT_ARRAY`、`DT_FINI_ARRAY`、`DT_FINI`；
 - TLS、AArch64 MTE 和其他处理器相关动态项。
 
-随后注册该 DSO 的静态 TLS 模块。若任一新库通过 `DT_AARCH64_MEMTAG_STACK` 请求栈 MTE，链接器会通知 libc 的对应回调。
+随后注册该 DSO 的静态 TLS 模块。若任一新库通过 `DT_AARCH64_MEMTAG_STACK` 请求栈 MTE，linker 会通知 libc 的对应回调。
 
 ### 阶段五：构造全局组与局部组
 
@@ -110,18 +110,18 @@ linker64 从新任务中生成待映射列表。普通路径会打乱映射顺�
 - 全局组（global group）：预加载库以及带全局可见语义的库；
 - 局部组（local group）：从当前根节点沿可访问依赖边得到的局部装载组。
 
-`SymbolLookupList` 按这两个集合组织查找顺序。依赖边穿越命名空间边界时，会产生单独的局部组根节点，随后在所属命名空间中完成链接。
+`SymbolLookupList` 按这两个集合组织查找顺序。依赖边穿越 namespace 边界时，会产生单独的 local-group root，随后在所属 namespace 中完成链接。
 
 ### 阶段六：重定位、页面保护与调试登记
 
-`soinfo::link_image()` 对局部组中尚未链接的库逐个执行以下工作：
+`soinfo::link_image()` 对 local group 中尚未链接的库逐个执行以下工作：
 
-1. 根据全局/局部查找列表解析重定位；
+1. 根据 global/local lookup list 解析重定位；
 2. 把 `PT_GNU_RELRO` 对应页面改为只读；
 3. 完成 16 KB 应用兼容路径需要的权限调整；
-4. 处理 MTE 全局对象；
+4. 处理 MTE globals；
 5. 按 `android_dlextinfo` 写出或复用共享 RELRO；
-6. 通知调试器，并把该镜像标为已链接。
+6. 通知调试器，并把该镜像标为 linked。
 
 任一环节失败，本次调用会沿失败保护路径卸载已创建的对象，`dlopen()` 返回 `nullptr`。
 
@@ -129,56 +129,56 @@ linker64 从新任务中生成待映射列表。普通路径会打乱映射顺�
 
 链接成功后，根 `soinfo` 的引用计数增加。`do_dlopen()` 随后同步调用 `soinfo::call_constructors()`，成功后才返回句柄。
 
-应用侧看到的一次 `System.loadLibrary()` 或 `dlopen()` 耗时，可能包含文件处理、映射、重定位和 ELF 构造函数。Java 调用链还包含 ART 的 `JNI_OnLoad`，不能把总时间都归因于“链接器重定位慢”。
+应用侧看到的一次 `System.loadLibrary()` 或 `dlopen()` 耗时，可能包含文件处理、映射、重定位和 ELF 构造函数。Java 调用链还包含 ART 的 `JNI_OnLoad`，不能把总时间都归因于“linker 重定位慢”。
 
 ## `soinfo`：运行时的 DSO 记录
 
 `soinfo` 是 linker64 对一个已发现 DSO 的运行时描述，不是 ELF 文件头的简单副本。Android 17 的对象中可找到这些信息：
 
-- `base`、`size`、`load_bias`、程序头；
+- `base`、`size`、`load_bias`、Program Header；
 - `.dynamic`、字符串表、符号表与哈希表；
-- 普通、PLT、RELR 和 Android 压缩重定位；
+- 普通、PLT、RELR 和 Android packed relocation；
 - 构造/析构函数数组；
 - 父子依赖边、主/次命名空间；
-- 局部组根节点、引用计数与 `RTLD_*` 标记；
+- local-group root、引用计数与 `RTLD_*` 标记；
 - TLS、MTE、GNU 属性和 CFI 相关状态；
-- 实际路径、SONAME、版本和链接状态。
+- realpath、SONAME、版本和链接状态。
 
-同一文件是否复用现有 `soinfo`，受到实际路径、SONAME、命名空间可见性和装载参数影响，不能只看文件名。不同隔离空间也可能持有各自的装载关系。
+同一文件是否复用现有 `soinfo`，受到 realpath、SONAME、namespace 可见性和装载参数影响，不能只看文件名。不同隔离空间也可能持有各自的装载关系。
 
-Android 17 源码没有“把热字段和冷字段按缓存行分开”的明确设计证据。分析性能时应观察对象数量、依赖边、符号查找和页面行为，不应从字段排列推导未经测量的缓存收益。
+Android 17 源码没有“把热字段和冷字段按 cache line 分开”的明确设计证据。分析性能时应观察对象数量、依赖边、符号查找和页面行为，不应从字段排列推导未经测量的缓存收益。
 
 ## 链接器命名空间：搜索路径与可见性
 
 `android_namespace_t` 主要维护：
 
 - `ld_library_paths_`：运行时设置的搜索路径；
-- `default_library_paths_`：配置给命名空间的常规搜索路径；
-- `permitted_paths_`：隔离命名空间可访问的额外目录；
+- `default_library_paths_`：配置给 namespace 的常规搜索路径；
+- `permitted_paths_`：isolated namespace 可访问的额外目录；
 - `allowed_libs_`：允许装入的库名集合；
 - `linked_namespaces_`：可跨边界查询的目标及 SONAME 白名单；
-- `soinfo_list_`：当前命名空间可见的 DSO。
+- `soinfo_list_`：当前 namespace 可见的 DSO。
 
-对于隔离命名空间，路径可访问性和库名都要满足配置。当前空间找不到库时，链接器只会查询已建立链接且允许该 SONAME 的目标命名空间；它不会在失败后无条件扫描 `system`、`vendor`、`product` 的全部目录。
+对于 isolated namespace，路径可访问性和库名都要满足配置。当前空间找不到库时，linker 只会查询已建立链接且允许该 SONAME 的目标 namespace；它不会在失败后无条件扫描 `system`、`vendor`、`product` 的全部目录。
 
-### 命名空间名称和配置由设备决定
+### namespace 名称和配置由设备决定
 
-`system`、`vendor`、`product` 等名称在设备配置中很常见，但它们不是 linker64 源码里不可改变的层级枚举。实际命名空间由链接器配置生成，进程类型、APEX 和厂商配置都能改变名称、路径及链接关系。
+`system`、`vendor`、`product` 等名称在设备配置中很常见，但它们不是 linker64 源码里不可改变的层级枚举。实际 namespace 由 linker config 生成，进程类型、APEX 和厂商配置都能改变名称、路径及链接关系。
 
 Android 17 的配置选择仍保留多级来源。源码会依次考虑与 APEX 可执行文件对应的配置、架构相关的 `/system/etc/ld.config.<ABI>.txt`、生成的 `/linkerconfig/ld.config.txt`、VNDK 路径和静态兜底配置。因而，“Android 17 只认 `/linkerconfig/ld.config.txt`，旧配置已经删除”并不成立。
 
-应用的 ClassLoader 命名空间还涉及 `libnativeloader` 与 ART。排查 `System.loadLibrary()` 时，应把 Java ClassLoader、NativeLoader 创建的命名空间和 bionic 的路径检查连起来看，不能只查看 `/system/lib64` 是否存在目标文件。
+应用的 ClassLoader 命名空间还涉及 `libnativeloader` 与 ART。排查 `System.loadLibrary()` 时，应把 Java ClassLoader、NativeLoader 创建的 namespace 和 bionic 的路径检查连起来看，不能只查看 `/system/lib64` 是否存在目标文件。
 
 ## Android 使用立即绑定（eager binding）
 
-传统 ELF 文档经常把 `RTLD_LAZY` 描述为“第一次调用 PLT 时再解析”。这不适用于 Android 17 的 bionic 链接器：
+传统 ELF 文档经常把 `RTLD_LAZY` 描述为“第一次调用 PLT 时再解析”。这不适用于 Android 17 的 bionic linker：
 
 - `dlopen()` 接受 `RTLD_LAZY`，但 `linker.cpp` 明确注明该模式不受支持；
 - 普通 REL/RELA 之后，PLT REL/RELA 也在 `relocate()` 中立即处理；
 - 用于延迟 TLSDESC 的动态项被忽略，源码注释是“Bionic resolves everything eagerly”；
-- `DT_BIND_NOW` 被忽略，因为相关语义已由 `DF_BIND_NOW` 表达，而 bionic 本身仍执行立即重定位。
+- `DT_BIND_NOW` 被忽略，因为相关语义已由 `DF_BIND_NOW` 表达，而 bionic 本身仍执行 eager relocation。
 
-Android 上不存在“默认延迟绑定、加 Full RELRO 后才改为立即绑定”的性能二选一，也没有 `_dl_runtime_resolve` 在首次 JNI 调用时逐项补 PLT 的常规路径。
+Android 上不存在“默认 lazy、加 Full RELRO 后才改为 eager”的性能二选一，也没有 `_dl_runtime_resolve` 在首次 JNI 调用时逐项补 PLT 的常规路径。
 
 ### Android 17 支持的重定位编码
 
@@ -186,32 +186,32 @@ Android 上不存在“默认延迟绑定、加 Full RELRO 后才改为立即绑
 
 | 编码或表 | 作用 | 运行时特征 |
 | --- | --- | --- |
-| `DT_RELR` | 压缩大量相对重定位 | 只需基址与位图展开，不查动态符号 |
-| `DT_ANDROID_RELA` + `APS2` | Android 压缩重定位 | 用分组和差值编码缩小重定位表 |
-| 普通 `.rela.dyn` | 一般数据、符号与 TLS 重定位 | 某些条目需要在查找列表中查符号 |
+| `DT_RELR` | 压缩大量 relative relocation | 只需基址与位图展开，不查动态符号 |
+| `DT_ANDROID_RELA` + `APS2` | Android packed relocation | 用分组和差值编码缩小重定位表 |
+| 普通 `.rela.dyn` | 一般数据、符号与 TLS 重定位 | 某些条目需要在 lookup list 中查符号 |
 | `.rela.plt` | PLT/GOT 函数入口 | 在 `dlopen()` 返回前完成 |
 
-32 位 ABI 可以使用 REL 及 `DT_ANDROID_REL`。在 AArch64 上，链接器的快路径覆盖 `R_AARCH64_RELATIVE`、`R_AARCH64_JUMP_SLOT`、`R_AARCH64_GLOB_DAT`、`R_AARCH64_ABS64` 等常见类型；复杂或带版本的符号进入完整查找路径。
+32 位 ABI 可以使用 REL 及 `DT_ANDROID_REL`。在 AArch64 上，linker 的快路径覆盖 `R_AARCH64_RELATIVE`、`R_AARCH64_JUMP_SLOT`、`R_AARCH64_GLOB_DAT`、`R_AARCH64_ABS64` 等常见类型；复杂或带版本的符号进入完整查找路径。
 
-`DT_ANDROID_REL(A)` 表示 APS2 压缩重定位数据，不是预链接地址信息。Android 17 也支持标准 `DT_RELR`，两者都不能让运行时“跳过大部分重定位”：它们压缩存储，并让常见相对重定位更容易批量处理，但目标地址仍要按当前进程的随机装载基址写入。
+`DT_ANDROID_REL(A)` 表示 APS2 压缩重定位数据，不是预链接地址信息。Android 17 也支持标准 `DT_RELR`，两者都不能让运行时“跳过大部分重定位”：它们压缩存储，并让常见 relative relocation 更容易批量处理，但目标地址仍要按当前进程的随机装载基址写入。
 
 ### 符号查找为何会变慢
 
 一次需要符号解析的重定位，成本取决于：
 
-- 全局/局部查找列表中要访问多少 DSO；
-- 目标库使用 GNU 哈希还是 SysV 哈希；
+- global/local lookup list 中要访问多少 DSO；
+- 目标库使用 GNU 哈希还是 SysV hash；
 - 符号是否带版本约束；
-- 弱符号、符号优先查找（symbolic lookup）、跨命名空间边界等规则；
+- weak symbol、符号优先查找（symbolic lookup）、跨 namespace 边界等规则；
 - 符号与哈希表所在页面是否已经驻留。
 
-GNU 哈希的布隆过滤器可以快速排除不匹配库，但不能保证固定的 O(1) 总成本。链接器的慢路径带有单符号查找缓存，它也不是面向整个进程、长期保存任意查询结果的通用缓存。
+GNU 哈希的 Bloom filter 可以快速排除不匹配库，但不能保证固定的 O(1) 总成本。linker 的慢路径带有单符号查找缓存，它也不是面向整个进程、长期保存任意查询结果的通用缓存。
 
 ## GNU RELRO：重定位完成后把页面设为只读
 
 RELRO 由 ELF 程序头中的 `PT_GNU_RELRO` 描述。`soinfo::link_image()` 完成重定位后调用 `protect_relro()`，后者对相应页面执行 `mprotect(PROT_READ)`。这可以阻止后续代码随意改写已完成初始化的 GOT 和其他敏感数据。
 
-判断一个库覆盖了多大 RELRO 范围，需要查看链接器生成的段，而不是寻找 `GNU_PROPERTY_RELRO`；Android 17 没有这个属性。下面的命令用于同时检查 RELRO 段、绑定标记和实际重定位表：
+判断一个库覆盖了多大 RELRO 范围，需要查看链接器生成的段，而不是寻找 `GNU_PROPERTY_RELRO`；Android 17 没有这个属性。下面的命令用于同时检查 RELRO segment、绑定标记和实际重定位表：
 
 ```bash
 llvm-readelf -lW libfoo.so | grep GNU_RELRO
@@ -219,9 +219,9 @@ llvm-readelf -dW libfoo.so | grep -E 'BIND_NOW|FLAGS'
 llvm-readelf -rW libfoo.so
 ```
 
-在 bionic 立即绑定的前提下，`BIND_NOW` 不会再制造一轮“从延迟绑定变为立即绑定”的差异。性能上应观察 RELRO 页面数量、重定位写入量、符号查找和后续 `mprotect()`；安全上则要确认预期区域确已落入 `PT_GNU_RELRO`。
+在 bionic 立即绑定的前提下，`BIND_NOW` 不会再制造一轮“从 lazy 变 eager”的差异。性能上应观察 RELRO 页面数量、重定位写入量、符号查找和后续 `mprotect()`；安全上则要确认预期区域确已落入 `PT_GNU_RELRO`。
 
-`ANDROID_DLEXT_WRITE_RELRO` 与 `ANDROID_DLEXT_USE_RELRO` 还允许把 GNU RELRO 序列化到文件描述符，供另一个地址布局匹配的进程复用。Android 17 源码特别说明 WebView 使用这条路径共享包含大量 C++ 虚函数表的 RELRO 页。它是专用加载器协议，不是所有系统 DSO 自动拥有的“预链接信息”。
+`ANDROID_DLEXT_WRITE_RELRO` 与 `ANDROID_DLEXT_USE_RELRO` 还允许把 GNU RELRO 序列化到 fd，供另一个地址布局匹配的进程复用。Android 17 源码特别说明 WebView 使用这条路径共享包含大量 C++ 虚函数表的 RELRO 页。它是专用加载器协议，不是所有系统 DSO 自动拥有的“预链接信息”。
 
 ## 构造函数：`dlopen()` 同步路径中的库代码
 
@@ -231,18 +231,18 @@ llvm-readelf -rW libfoo.so
 2. 调用当前 DSO 的 `DT_INIT`；
 3. 正序调用 `DT_INIT_ARRAY`。
 
-共享库中的 `DT_PREINIT_ARRAY` 会被忽略并产生警告；预初始化只用于主程序。卸载时顺序相反：逆序执行 `DT_FINI_ARRAY`，再执行 `DT_FINI`。
+共享库中的 `DT_PREINIT_ARRAY` 会被忽略并产生警告；preinit 只用于主程序。卸载时顺序相反：逆序执行 `DT_FINI_ARRAY`，再执行 `DT_FINI`。
 
-ELF 构造函数的 ABI 是无返回值函数。链接器没有 `DL_ERR_CONSTRUCTOR_FAILED` 供应用捕获。构造函数若触发 `SIGSEGV`、`SIGABRT` 或未处理异常，进程通常直接终止；它不会把错误转成 `dlerror()` 后恢复到 `dlopen()` 调用者。
+ELF 构造函数的 ABI 是无返回值函数。linker 没有 `DL_ERR_CONSTRUCTOR_FAILED` 供应用捕获。构造函数若触发 `SIGSEGV`、`SIGABRT` 或未处理异常，进程通常直接终止；它不会把错误转成 `dlerror()` 后恢复到 `dlopen()` 调用者。
 
 工程上应把构造函数限制为必要、可预测且不阻塞的初始化：
 
-- 不在构造函数中等待 Binder、文件锁或其他线程；
+- 不在 constructor 中等待 Binder、文件锁或其他线程；
 - 不扫描大目录，不同步读取可延后的配置；
-- 避免构造函数相互 `dlopen()` 形成复杂递归；
+- 避免 constructor 相互 `dlopen()` 形成复杂递归；
 - 需要业务上下文的工作放到显式初始化 API，并由调用方选择线程和时机。
 
-Android 17 没有 `android_set_dl postpone_init()` 之类的公开 API，可以让 `dlopen()` 跳过构造函数、稍后再补执行。若要延后工作，只能调整库代码或延后整个装载调用。
+Android 17 没有 `android_set_dl postpone_init()` 之类的公开 API，可以让 `dlopen()` 跳过 constructor、稍后再补执行。若要延后工作，只能调整库代码或延后整个装载调用。
 
 ## `JNI_OnLoad` 属于 ART 阶段
 
@@ -255,7 +255,7 @@ ART 还维护每个库的 `JNI_OnLoad` 状态：
 - 返回 `JNI_ERR` 或不支持的 JNI 版本会使这次 Java 原生库加载失败；
 - ART 不会贸然 `dlclose()` 一个已经部分注册原生方法的失败库，而是记录失败，令后续装载也失败。
 
-这和 ELF 构造函数的故障模型不同。`JNI_OnLoad` 有返回值，ART 能识别失败；构造函数没有受控失败协议。
+这和 ELF 构造函数的故障模型不同。`JNI_OnLoad` 有返回值，ART 能识别失败；constructor 没有受控失败协议。
 
 ### 静态查找与 `RegisterNatives`
 
@@ -279,22 +279,22 @@ ART 还维护每个库的 `JNI_OnLoad` 状态：
 - `dlsym()` 失败需要结合 `dlerror()` 判断；
 - `dlclose()` 失败返回非零值。
 
-bionic 把内部错误文本格式化到当前线程的 dlerror 缓冲区。它没有对应用稳定公开的 `DL_ERR_*` 枚举，也没有供所有线程争用的单一 `g_dl_error` 字符串。诊断代码应保存 `dlerror()` 文本，不要依赖自造错误码或匹配可能变化的整句文案。
+bionic 把内部错误文本格式化到当前线程的 dlerror buffer。它没有对应用稳定公开的 `DL_ERR_*` 枚举，也没有供所有线程争用的单一 `g_dl_error` 字符串。诊断代码应保存 `dlerror()` 文本，不要依赖自造错误码或匹配可能变化的整句文案。
 
-命名空间拒绝、ELF 类型或 ABI 错误、缺少符号、重定位失败都会在受控路径返回错误。构造函数崩溃、越界写和信号终止则属于进程故障，不能指望 `dlerror()` 收集。
+namespace 拒绝、ELF 类型或 ABI 错误、缺少符号、重定位失败都会在受控路径返回错误。constructor crash、越界写和信号终止则属于进程故障，不能指望 `dlerror()` 收集。
 
 ### `dlclose()` 处理的是装载组
 
 `dlclose()` 不是对一个文件简单执行 `munmap()`。Android 17 会：
 
-1. 检查局部组根节点的引用计数；
+1. 检查 local-group root 的引用计数；
 2. 检查 `RTLD_NODELETE` 与 `RTLD_GLOBAL` 等不可卸载条件；
 3. 沿依赖图区分本地卸载节点和外部装载组引用；
 4. 调用析构函数；
-5. 注销 TLS 模块、通知卸载钩子和调试器、更新 CFI 影子区；
+5. 注销 TLS 模块、通知 unload hook 和调试器、更新 CFI shadow；
 6. 释放映射与 `soinfo`，再递归处理外部引用。
 
-源码明确包含 `unregister_soinfo_tls()`，“Android 的 DSO TLS 永远不回收”并不准确。应用仍不应频繁卸载含活动线程、回调或缓存函数指针的库：链接器能维护自己的图，却无法替业务代码找到所有悬空地址。
+源码明确包含 `unregister_soinfo_tls()`，“Android 的 DSO TLS 永远不回收”并不准确。应用仍不应频繁卸载含活动线程、回调或缓存函数指针的库：linker 能维护自己的图，却无法替业务代码找到所有悬空地址。
 
 ## 16 KB 页面：同时检查 ELF 和 APK
 
@@ -304,13 +304,13 @@ Android 15 开始支持使用 16 KB 页的设备。Android 17 的 linker64 以�
 adb shell getconf PAGE_SIZE
 ```
 
-当系统页大小至少为 16 KB、ELF 的最小 `PT_LOAD p_align` 小于系统页大小且兼容模式未启用时，`ElfReader::LoadSegments()` 会返回“program alignment cannot be smaller than system page size”。Android 17 同时保留 `linker_phdr_16kib_compat.cpp` 的 4 KB 对齐兼容装载路径，因此旧库并非在所有 16 KB 设备上必然立即拒载。
+当系统 page size 至少为 16 KB、ELF 的最小 `PT_LOAD p_align` 小于系统页大小且 compatibility mode 未启用时，`ElfReader::LoadSegments()` 会返回“program alignment cannot be smaller than system page size”。Android 17 同时保留 `linker_phdr_16kib_compat.cpp` 的 4 KB 对齐兼容装载路径，因此旧库并非在所有 16 KB 设备上必然立即拒载。
 
 `bionic.linker.16kb.app_compat.enabled` 在 Android 17 源码中有三种取值：
 
-- `true`：对不满足对齐的 ELF 启用兼容路径；
-- `false`：不由该属性启用，包级应用兼容模式仍可能生效；
-- `fatal`：不启用兼容；发现对齐不足时设置中止消息并触发 `SIGABRT`，方便测试尽早暴露问题。
+- `true`：对不满足对齐的 ELF 启用 compatibility path；
+- `false`：不由该属性启用，包级 app compat mode 仍可能生效；
+- `fatal`：不启用兼容；发现对齐不足时设置 abort message 并触发 `SIGABRT`，方便测试尽早暴露问题。
 
 要在 Android 17 测试设备上对所有应用强制关闭兼容模式，并让不兼容二进制立即终止，需要同时关闭 Package Manager 的包级兼容：
 
@@ -319,9 +319,9 @@ adb shell setprop bionic.linker.16kb.app_compat.enabled fatal
 adb shell setprop pm.16kb.app_compat.disabled true
 ```
 
-只设置第一项时，包级应用兼容模式仍可能让 `should_use_16kib_app_compat_` 成立。测试完成后应恢复设备原有属性。
+只设置第一项时，包级 app compat mode 仍可能让 `should_use_16kib_app_compat_` 成立。测试完成后应恢复设备原有属性。
 
-兼容路径是迁移工具，不应作为发布质量标准。它要处理按 4 KB 对齐的相邻 ELF 段落入同一 16 KB 页时的权限冲突，代码明显比原生 16 KB 对齐路径复杂。
+兼容路径是迁移工具，不应作为发布质量标准。它要处理按 4 KB 对齐的相邻 ELF KB segment 落入同一 16 KB 页时的权限冲突，代码明显比原生 16 KB 对齐路径复杂。
 
 对应用而言有两层对齐要求：
 
@@ -339,7 +339,7 @@ zipalign -v -c -P 16 4 app-release.apk
 
 - NDK r28 及以上默认生成 16 KB 对齐的原生库；
 - NDK r27 或更早的兼容构建要同时传入 `-Wl,-z,max-page-size=16384` 和 `-Wl,-z,common-page-size=16384`；
-- 使用未压缩原生库时，AGP 8.5.1 及以上可正确处理 16 KB ZIP 对齐。
+- 使用未压缩 native library 时，AGP 8.5.1 及以上可正确处理 16 KB ZIP alignment。
 
 `android:extractNativeLibs="false"` 表示库可以从 APK 直接映射，前提是未压缩且偏移满足对齐。它不会修复 ELF 的 `p_align`，也不能代替对最终 APK 执行 `zipalign` 校验。
 
@@ -352,13 +352,13 @@ Android 17 解析的 MTE 动态项包括：
 - `DT_AARCH64_MEMTAG_STACK`；
 - `DT_AARCH64_MEMTAG_GLOBALS` 与 `DT_AARCH64_MEMTAG_GLOBALSSZ`。
 
-开启 MTE 全局对象标记时，链接器可能把含可写数据的文件映射重映射为带 `PROT_MTE` 的匿名页，然后根据描述符流给全局对象着色，再恢复应有的只读权限。这会减少相应数据页的文件共享机会。WebView 的共享 RELRO 路径为此使用确定性的全局标记，让不同进程仍能复用 RELRO 内容。
+开启 MTE 全局对象标记时，linker 可能把含可写数据的文件映射重映射为带 `PROT_MTE` 的匿名页，然后根据 descriptor stream 给全局对象着色，再恢复应有的只读权限。这会减少相应数据页的文件共享机会。WebView 的共享 RELRO 路径为此使用确定性的 global tagging，让不同进程仍能复用 RELRO 内容。
 
-BTI 走另一条路径：`linker_note_gnu_property.cpp` 解析 `GNU_PROPERTY_AARCH64_FEATURE_1_BTI`，硬件和 ELF 都满足条件时，链接器给可执行段加 `PROT_BTI`。
+BTI 走另一条路径：`linker_note_gnu_property.cpp` 解析 `GNU_PROPERTY_AARCH64_FEATURE_1_BTI`，硬件和 ELF 都满足条件时，linker 给可执行段加 `PROT_BTI`。
 
 `DT_AARCH64_PAC_PLT` 在 Android 17 的动态段解析中被列为忽略的处理器专用标签。不能据此宣称 linker64 会给进程内所有代码指针自动做 PAC 签名。PAC 是否生效取决于编译器生成的指令、ABI 和运行硬件，不是 `dlopen()` 的统一开关。
 
-APEX 只改变库的来源、配置和激活边界，不会热替换进程里已经映射的 DSO。APEX 新版本生效后，新启动进程会按新挂载与命名空间配置装载；老进程若仍持有旧映射，必须由模块自身的重启策略处理。
+APEX 只改变库的来源、配置和激活边界，不会热替换进程里已经映射的 DSO。APEX 新版本生效后，新启动进程会按新挂载与 namespace 配置装载；老进程若仍持有旧映射，必须由模块自身的重启策略处理。
 
 ## 可测量的延迟模型
 
@@ -368,23 +368,23 @@ APEX 只改变库的来源、配置和激活边界，不会热替换进程里已
 T(loadLibrary)
   = T(等待加载器锁)
   + T(命名空间和文件查找)
-  + T(ELF 读取和映射)
+  + T(ELF read and mmap)
   + T(重定位和符号查找)
-  + T(RELRO/MTE/页面保护)
-  + T(ELF 构造函数)
+  + T(RELRO/MTE/page protection)
+  + T(ELF constructors)
   + T(JNI_OnLoad)
 ```
 
-这个式子用于划分测量区间，不表示各项彼此完全独立。冷缓存会同时影响 ELF 元数据、符号表和构造函数访问的数据页；另一个线程的构造函数又可能表现为当前线程等待加载器锁。
+这个式子用于划分测量区间，不表示各项彼此完全独立。冷缓存会同时影响 ELF 元数据、符号表和构造函数访问的数据页；另一个线程的 constructor 又可能表现为当前线程等待加载器锁。
 
 下面几项经常比 `.so` 文件总大小更能解释波动：
 
 - 本次调用新增多少个 `DT_NEEDED` 节点，多少依赖已经加载；
 - APK 内直接映射、独立文件或 APEX 路径带来的文件访问差异；
 - 相对重定位、带符号重定位和 TLS 重定位的数量；
-- 查找列表宽度、导出符号数与版本约束；
-- 构造函数与 `JNI_OnLoad` 执行了多少同步工作；
-- 所需页面位于页缓存、压缩存储还是需要实际 I/O；
+- lookup list 宽度、导出符号数与版本约束；
+- constructor 与 `JNI_OnLoad` 执行了多少同步工作；
+- 所需页面位于 page cache、压缩存储还是需要实际 I/O；
 - 是否在等待其他线程持有 `g_dl_mutex`。
 
 “每个 DSO 固定 0.5 ms”“依赖每深一层增加 3–8 ms”“冷启动固定慢 5–20 倍”都缺少设备、存储、构建产物和缓存状态，不能作为 Android 17 的通用规律。库数量也没有适合所有应用的 5–8 个上限；合并 DSO 虽能减少文件和 ELF 元数据处理，也可能增大常驻映射、RELRO、更新耦合及符号冲突范围。
@@ -393,7 +393,7 @@ T(loadLibrary)
 
 ### 1. 检查静态产物
 
-这些命令分别查看依赖、动态符号、重定位和程序头：
+这些命令分别查看依赖、动态符号、重定位和 Program Header：
 
 ```bash
 llvm-readelf -dW libfoo.so | grep NEEDED
@@ -404,15 +404,15 @@ llvm-readelf -lW libfoo.so
 
 检查重点是非预期 `DT_NEEDED`、导出符号是否过多、重定位表类型和数量、`GNU_RELRO` 范围，以及 `PT_LOAD` 对齐。
 
-### 2. 用 Perfetto 区分链接与构造函数
+### 2. 用 Perfetto 区分链接与 constructor
 
-Android 17 的 `do_dlopen()` 写入 `dlopen: <name>` 与 `dlopen: <name> - loading and linking` 跟踪切片，`call_constructors()` 还写入 `calling constructors: <realpath>`。`loading and linking` 在 `find_library()` 返回后结束，外层 `dlopen` 切片则继续覆盖构造函数，因此两者的差值可以帮助定位构造阶段。
+Android 17 的 `do_dlopen()` 写入 `dlopen: <name>` 与 `dlopen: <name> - loading and linking` trace，`call_constructors()` 还写入 `calling constructors: <realpath>`。`loading and linking` 在 `find_library()` 返回后结束，外层 `dlopen` slice 则继续覆盖 constructor，因此两者的差值可以帮助定位构造阶段。
 
-锁等待不在这两条 bionic 切片内：`dlfcn.cpp` 的 `dlopen_ext()` 获取 `g_dl_mutex` 后才调用 `do_dlopen()`。测量加载器锁等待时，需要在调用侧给整个 `System.loadLibrary()` 或 `dlopen()` 加跟踪，并结合线程调度/futex 状态及同时持锁线程的 bionic 切片；调用侧切片开始到 `dlopen:` 切片出现前的区间，才可能包含等锁时间。
+锁等待不在这两条 bionic 切片内：`dlfcn.cpp` 的 `dlopen_ext()` 获取 `g_dl_mutex` 后才调用 `do_dlopen()`。测 loader-lock wait，需要在调用侧给整个 `System.loadLibrary()` 或 `dlopen()` 加跟踪，并结合线程调度/futex 状态及同时持锁线程的 bionic slice；调用侧切片开始到 `dlopen:` slice 出现前的区间，才可能包含等锁时间。
 
-若 Java 调用仍比 bionic 切片长，再检查 ART 的原生库加载与 `JNI_OnLoad`。
+若 Java 调用仍比 bionic 切片长，再检查 ART 的 native library load 与 `JNI_OnLoad`。
 
-### 3. 在可调试进程中打开链接器日志
+### 3. 在可调试进程中打开 linker 日志
 
 `debug.ld.app.<进程主名>` 和 `debug.ld.all` 接受 `dlerror`、`dlopen`、`dlsym`。下面的示例只针对指定应用，设置后要重启进程：
 
@@ -421,7 +421,7 @@ adb shell setprop debug.ld.app.com.example.app dlopen,dlerror
 adb shell am force-stop com.example.app
 ```
 
-链接器会检查进程是否可转储。普通 `user` 构建上的不可调试应用通常拿不到这些日志。测试结束后用空值清理属性，避免持续噪声：
+linker 会检查进程是否 dumpable。普通 `user` 构建上的不可调试应用通常拿不到这些日志。测试结束后用空值清理属性，避免持续噪声：
 
 ```bash
 adb shell setprop debug.ld.app.com.example.app ''
@@ -431,29 +431,29 @@ adb shell setprop debug.ld.app.com.example.app ''
 
 ### 4. 对照运行时映射
 
-`/proc/<pid>/maps` 能确认实际加载路径、权限和地址区间，`smaps` 可进一步观察文件后备页、匿名页、私有脏页与 RSS。看到 `.so` 映射不等于所有页面已驻留；分析内存时要读 `smaps`，不能只把虚拟地址区间长度相加。
+`/proc/<pid>/maps` 能确认实际加载路径、权限和地址区间，`smaps` 可进一步观察 file-backed、anonymous、private dirty 与 RSS。看到 `.so` 映射不等于所有页面已驻留；分析内存时要读 `smaps`，不能只把虚拟地址区间长度相加。
 
 ## 优化时按证据下手
 
-1. **移除非预期依赖。** 用 `DT_NEEDED` 和构建图确认来源，配合正确的目标依赖与 `--as-needed`。不要直接编辑 ELF 动态段。
-2. **控制动态导出面。** `-fvisibility=hidden` 和版本脚本能减少 `.dynsym` 中对外可见的符号。`strip` 主要删除调试符号和普通符号表，运行时仍需要的动态符号与重定位不会被随意删掉。
+1. **移除非预期依赖。** 用 `DT_NEEDED` 和构建图确认来源，配合正确的 target dependency 与 `--as-needed`。不要直接编辑 ELF 动态段。
+2. **控制动态导出面。** `-fvisibility=hidden` 和 version script 能减少 `.dynsym` 中对外可见的符号。`strip` 主要删除调试符号和普通符号表，运行时仍需要的 dynamic symbol 与 relocation 不会被随意删掉。
 3. **让当前 NDK/LLD 生成合适的压缩重定位。** RELR 或 APS2 能减小产物和读取量，但要用目标 API、ABI 和设备验证兼容性。
-4. **缩短构造函数与 `JNI_OnLoad`。** 这是调用方最能控制、也最容易从跟踪数据直接确认的一段。
+4. **缩短 constructor 与 `JNI_OnLoad`。** 这是调用方最能控制、也最容易从 trace 直接确认的一段。
 5. **避免高频装卸。** 稳定复用句柄通常比反复 `dlopen()`/`dlclose()` 安全；若必须卸载，应建立线程、回调、TLS 和函数指针的生命周期约束。
 6. **合并库前后都测。** 对比装载节点、重定位数、RELRO、文件页和增量发布影响，不设置脱离产物的库数量或体积指标。
 7. **把 16 KB 校验放进构建流水线。** 同时检查每个 ABI 的 ELF 与最终 APK/AAB 产物，兼容模式只用于发现和迁移旧库。
-8. **依据接口管理选择 JNI 注册方式。** 动态注册可收窄导出面并提前绑定；静态查找可减少注册代码。性能判断以具体跟踪数据和符号表为准。
+8. **依据接口管理选择 JNI 注册方式。** 动态注册可收窄导出面并提前绑定；静态查找可减少注册代码。性能判断以具体 trace 和符号表为准。
 
 ## 版本演进边界
 
-- Android 10 已广泛使用命名空间与 APEX 路径兼容逻辑，旧应用行为还受到目标 SDK 兼容分支影响。
+- Android 10 已广泛使用 namespace 与 APEX 路径兼容逻辑，旧应用行为还受到目标 SDK 兼容分支影响。
 - Android 11 起，LinkerConfig 生成的 `/linkerconfig/ld.config.txt` 成为常见配置来源，但 Android 17 源码仍保留其他配置选择与兜底。
 - Android 12 至 Android 14 期间，工具链、RELR、MTE 和 BTI 支持持续演进。分析旧设备时要用对应分支，不能把 Android 17 的标签与兼容路径倒推到所有版本。
 - Android 15 开始面向 16 KB 页设备发布应用兼容要求。
-- Android 17 / API 37 的源码同时包含原生 16 KB 路径、应用兼容加载器与 `fatal` 测试模式；发布产物仍应满足原生 16 KB 对齐。
+- Android 17 / API 37 的源码同时包含原生 16 KB 路径、app compatibility loader 与 `fatal` 测试模式；发布产物仍应满足原生 16 KB 对齐。
 
 ## Android 17 的装载链边界
 
-linker64 的装载顺序是：调用者命名空间决定候选库，`LoadTask` 扩展依赖，`ElfReader` 建立映射，局部组/全局组限定符号查找，重定位完成后保护 RELRO，随后同步运行构造函数。ART 的 `JNI_OnLoad` 紧接其后，但属于另一套状态机。
+linker64 的装载顺序是：调用者 namespace 决定候选库，`LoadTask` 扩展依赖，`ElfReader` 建立映射，local/global group 限定符号查找，重定位完成后保护 RELRO，随后同步运行 constructor。ART 的 `JNI_OnLoad` 紧接其后，但属于另一套状态机。
 
-遇到原生库加载慢或失败，应使用跟踪数据和 ELF 信息定位具体阶段，再决定修正依赖、导出面、重定位、构造函数、JNI 初始化、16 KB 对齐还是命名空间配置。结论应能回到 Android 17 源码和具体构建产物核对，不能把一台设备上的毫秒数写成平台规则。
+遇到 native 加载慢或失败，应使用 trace 和 ELF 信息定位具体阶段，再决定修正依赖、导出面、重定位、构造函数、JNI 初始化、16 KB 对齐还是 namespace 配置。结论应能回到 Android 17 源码和具体构建产物核对，不能把一台设备上的毫秒数写成平台规则。
