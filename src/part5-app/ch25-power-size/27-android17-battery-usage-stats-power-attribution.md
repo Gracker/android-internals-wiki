@@ -449,7 +449,7 @@ PowerMonitor 接受厂商自定义名称，BatteryConsumer 是平台固定的归
 
 版本表中的“公开 PowerMonitor”不等于“公开 BatteryUsageStats”。截至 `android-17.0.0_r1`，普通应用依旧不能读取全设备 UID mAh 列表。
 
-## Review 检查表
+## 检查表
 
 阅读或实现功耗归因功能时，可按以下顺序核对：
 

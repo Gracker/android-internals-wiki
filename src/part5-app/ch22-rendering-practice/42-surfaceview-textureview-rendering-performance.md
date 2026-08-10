@@ -640,7 +640,7 @@ Compose Foundation 还提供 `AndroidExternalSurface` 与 `AndroidEmbeddedExtern
 
 版本表用于确认某项 API 从何时可用，不代表未列出结构变化就一定没有厂商 backport。定位设备差异时，还要记录 build fingerprint、vendor graphics stack、codec/camera 和应用库版本。
 
-## 九、Review 与基准清单
+## 九、检查与基准清单
 
 ### 架构
 
