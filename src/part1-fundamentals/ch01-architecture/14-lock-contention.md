@@ -125,10 +125,10 @@ Android 跟踪记录中容易混淆的是下面五类路径。
 
 它们都可能在内核线程状态里表现为睡眠，但优化方式完全不同。
 
-- Java 监视器要找持有同一对象 monitor 的线程。
+- Java monitor 要找持有同一对象 monitor 的线程。
 - `ReentrantLock` 不属于 ART monitor，不能指望 `android_monitor_contention` 自动给出 owner。
 - native `futex_wait` 只说明某个 futex 慢路径在等待，无法据此确认它对应互斥锁或启用了优先级继承。
-- 同步 Binder 调用的 client 等的是服务端回复；服务端内部可能又卡在 Java 或原生锁上。
+- 同步 Binder 调用的 client 等的是服务端回复；服务端内部可能又卡在 Java 或 native 锁上。
 - 空闲 Looper 睡在原生轮询中属于正常行为，无需消除。
 
 ## 2. ART Monitor：`synchronized` 在 Android 17 中怎样工作
@@ -187,7 +187,7 @@ static constexpr uint64_t kLongWaitMs =
         100 * kDebugThresholdFudgeFactor;
 ```
 
-也就是发布构建为 100ms，debug 构建为 1000ms。这个常量服务于 ART 的长竞争告警逻辑，日志是否出现还受采样、owner 方法是否可解析等条件影响。
+也就是 release 构建为 100ms，debug 构建为 1000ms。这个常量服务于 ART 的长竞争告警逻辑，日志是否出现还受采样、owner 方法是否可解析等条件影响。
 
 它不能用来推导以下结论：
 
@@ -213,7 +213,7 @@ futex 是用户态原子状态与内核等待队列协作的机制；它本身�
   └─ 存在 waiter：通过 futex 唤醒等待线程
 ```
 
-`bionic/libc/bionic/pthread_mutex.cpp` 的非 PI 互斥锁路径会在竞争时调用 `__futex_wait_ex()`，释放竞争锁时调用 `__futex_wake_ex()`。无竞争时不需要每次都陷入内核。
+`bionic/libc/bionic/pthread_mutex.cpp` 的非 PI mutex 路径会在竞争时调用 `__futex_wait_ex()`，释放竞争锁时调用 `__futex_wake_ex()`。无竞争时不需要每次都陷入内核。
 
 这也是为什么 `blocked_function` 里看到 `futex_*` 仍然不能直接下结论：
 
@@ -223,7 +223,7 @@ futex 是用户态原子状态与内核等待队列协作的机制；它本身�
 - 可能是 Java 并发包最终触发的 park。
 - 只能证明线程在某个 futex 等待点睡眠，不能单凭函数名恢复锁对象和 owner。
 
-要定位原生锁，通常还需要原生调用栈、业务锁埋点、同进程线程状态，或在可复现环境中增加针对该锁的 trace。
+要定位 native 锁，通常还需要 native 调用栈、业务锁埋点、同进程线程状态，或在可复现环境中增加针对该锁的 trace。
 
 ## 4. 优先级反转与 PI-futex
 
@@ -274,15 +274,15 @@ PI 也不是修复糟糕锁设计的替代品。临界区过大、锁顺序混�
 同步 Binder 调用跨越 client、驱动和 server：
 
 ```text
-客户端线程
+Client thread
   └─ binder transaction
-      └─ Binder 驱动选择/唤醒 server thread
+      └─ Binder driver 选择/唤醒 server thread
           └─ Server Binder thread Binder 线程执行服务代码
               └─ binder reply
                   └─ Client 继续执行
 ```
 
-client 在等回复时没有持有“Binder Java monitor”。驱动使用自己的锁和 wait queue 管理事务、线程与工作项；server 的业务代码则可能再遇到 Java 监视器或 native mutex。
+client 在等 reply 时没有持有“Binder Java monitor”。驱动使用自己的锁和 wait queue 管理事务、线程与工作项；server 的业务代码则可能再遇到 Java monitor 或 native mutex。
 
 一次同步 Binder 延迟可以拆成：
 
@@ -303,9 +303,9 @@ client 在等回复时没有持有“Binder Java monitor”。驱动使用自己
 
 - `binder_select_thread_ilocked()`：为进程工作选择等待线程。
 - `binder_wakeup_thread_ilocked()`：唤醒具体线程或通知进程需要线程。
-- `binder_transaction_priority()`：根据事务与 Binder 节点限制处理 server thread 的优先级。
+- `binder_transaction_priority()`：根据事务与 binder node 限制处理 server thread 的优先级。
 
-这是 Binder 事务调度的一部分，不等同于 `PTHREAD_PRIO_INHERIT`，也不会自动提升“server thread 正在等待的某个 Java monitor owner”。如果 Binder 工作线程进入服务代码后又卡在应用锁上，仍要沿 Java 或 native owner 链继续追。
+这是 Binder 事务调度的一部分，不等同于 `PTHREAD_PRIO_INHERIT`，也不会自动提升“server thread 正在等待的某个 Java monitor owner”。如果 Binder worker 进入服务代码后又卡在应用锁上，仍要沿 Java 或 native owner 链继续追。
 
 ### 5.2 默认 15 不代表进程里固定只有 15 条 Binder 线程
 
@@ -324,17 +324,17 @@ Android 17 的 `ProcessState.cpp` 定义：
 - 业务线程也可以进入 Binder 调用上下文。
 - 服务可以在启动线程池前通过 API 配置不同上限。
 
-把这些机制压缩成“Binder 线程池固定 15 条”或“固定 16 条”都会误导跟踪分析。线程数只是容量的一部分；一个 worker 持大锁或做慢 I/O，仍可能让其他事务排队。
+把这些机制压缩成“Binder 线程池固定 15 条”或“固定 16 条”都会误导 trace 分析。线程数只是容量的一部分；一个 worker 持大锁或做慢 I/O，仍可能让其他事务排队。
 
 ## 6. system_server：Binder 慢经常只是表象
 
-App 主线程调用 AMS、WMS 或 PMS 后长时间等待回复，常见根因位于服务端，而非 Binder 驱动本身：
+App 主线程调用 AMS、WMS 或 PMS 后长时间等待 reply，常见根因位于 server 端，而非 Binder driver 本身：
 
-- Binder 工作线程等 system_server 的全局对象锁。
+- Binder worker 等 system_server 的全局对象锁。
 - owner 持锁执行长计算或磁盘 I/O。
 - owner 在持锁状态发起另一个同步 Binder 调用。
 - 多把系统锁形成长等待链。
-- Binder 工作线程接近饱和，新事务迟迟没有线程处理。
+- Binder worker 接近饱和，新事务迟迟没有线程处理。
 
 分析顺序应是：从 client transaction 跟到 server reply，再看服务端线程的状态；如果它在等锁，继续找 owner，不能停在“Binder 调用耗时”这个表面结论。
 
@@ -377,7 +377,7 @@ void updateOomAdjLocked(@OomAdjReason int oomAdjReason) {
 
 旧 MessageQueue 用同一个 `synchronized (this)` 保护有序链表，生产者入队、Looper 取消息和移除操作会在这把 monitor 上竞争。
 
-对运行在 Android 17 且 `targetSdkVersion >= 37` 的应用，DeliQueue 默认启用。它把生产者提交改为 Treiber 栈上的 CAS，由 Looper 独占两个最小堆完成同步/异步消息排序。核心消息路径不再依赖旧的单一全局 monitor，但 IdleHandler 和文件描述符记录仍有各自的小锁。
+对运行在 Android 17 且 `targetSdkVersion >= 37` 的应用，DeliQueue 默认启用。它把生产者提交改为 Treiber stack 上的 CAS，由 Looper 独占两个最小堆完成同步/异步消息排序。核心消息路径不再依赖旧的单一全局 monitor，但 IdleHandler 和文件描述符记录仍有各自的小锁。
 
 Google 公布的内部 beta trace 中，App 主线程花在锁竞争上的时间下降 15%。这个数字只描述其样本中的 MessageQueue 改造效果，不能外推到 AMS、Binder、native mutex 或业务锁。
 
@@ -394,7 +394,7 @@ DeliQueue 展示了一种有边界的无锁设计：
 
 ### 8.1 Java monitor
 
-当前 Perfetto 标准库模块名是 `android.monitor_contention`，查询表名是 `android_monitor_contention`：
+当前 Perfetto stdlib 模块名是 `android.monitor_contention`，查询表名是 `android_monitor_contention`：
 
 ```sql
 INCLUDE PERFETTO MODULE android.monitor_contention;
@@ -442,9 +442,9 @@ LIMIT 50;
 
 这一步只负责找候选。随后要结合原生栈或源码确认它对应 mutex、condvar 还是其他等待，并找 owner。不能根据 `futex_wait` 一个字符串直接断定发生了 Java 锁竞争。
 
-### 8.3 Binder 客户端与 server
+### 8.3 Binder client 与 server
 
-Perfetto 的 `android.binder` 模块可以把事务和回复关联到 client/server：
+Perfetto 的 `android.binder` 模块可以把 transaction 和 reply 关联到 client/server：
 
 ```sql
 INCLUDE PERFETTO MODULE android.binder;
@@ -467,7 +467,7 @@ LIMIT 30;
 
 再用 `android_sync_binder_thread_state_by_txn` 或 `android_sync_binder_blocked_functions_by_txn` 分解 client 与 server 两端的线程状态。若 server reply 区间叠加 Java monitor contention，就继续查 `android_monitor_contention` 给出的 owner。
 
-“client 时间长、server 时间短”可能意味着排队、调度或回复返回延迟；“server 时间长”也不能直接等同于 CPU 计算，server 可能大部分时间在锁、I/O 或嵌套 Binder 上。
+“client 时间长、server 时间短”可能意味着排队、调度或 reply 返回延迟；“server 时间长”也不能直接等同于 CPU 计算，server 可能大部分时间在锁、I/O 或嵌套 Binder 上。
 
 ## 9. 三个常见现场怎样推理
 
@@ -491,7 +491,7 @@ LIMIT 30;
 
 1. 先确认 Java 调用栈是否来自 ART monitor、AQS/park，还是 JNI/native 代码。
 2. 检查是否有对应的 `android_monitor_contention` 事件。
-3. 没有 Java 监视器证据时，按原生锁或条件等待调查。
+3. 没有 Java monitor 证据时，按 native 锁或条件等待调查。
 4. 找初始化代码，确认是否为 PI mutex；不能根据函数名猜测。
 5. 如果这是正常 condvar 等待，再查“为什么条件迟迟没有产生”，无需优化 futex 本身。
 
@@ -512,7 +512,7 @@ LIMIT 30;
 ### 10.2 再减少共享状态
 
 - 用线程封闭或消息传递代替共享可变对象。
-- 把一把全局锁拆成按对象、按分片或按子系统的锁。
+- 把一把全局锁拆成按对象、按 shard 或按子系统的锁。
 - 读多写少时考虑不可变快照、copy-on-write 或读写分离。
 - 高频计数器考虑分片，减少多个 CPU 写同一缓存行。
 
@@ -545,9 +545,9 @@ LIMIT 30;
 
 | 版本 | 可确认的同步相关变化 | 阅读方式 |
 | --- | --- | --- |
-| Android 5.0（API 21） | 应用运行时切换到 ART，Java 监视器分析以 ART `monitor.cc` / `lock_word.h` 为准 | 不沿用 Dalvik 时代实现细节解释当前系统 |
+| Android 5.0（API 21） | 应用运行时切换到 ART，Java monitor 分析以 ART `monitor.cc` / `lock_word.h` 为准 | 不沿用 Dalvik 时代实现细节解释当前系统 |
 | Android 9（API 28） | bionic 已具备 `PTHREAD_PRIO_INHERIT` mutex 属性接口 | 只说明可用；具体锁是否启用仍看初始化 |
-| Android 17（API 37） | 当前 bionic PI 互斥锁走 PI-futex；当前 ACK 为 `android17-6.18-2026-06_r6`；DeliQueue 对目标版本为 37+ 的应用默认启用 | 平台、bionic 与内核源码按本知识库统一锚点核对 |
+| Android 17（API 37） | 当前 bionic PI mutex 走 PI-futex；当前 ACK 为 `android17-6.18-2026-06_r6`；DeliQueue 对 target 37+ App 默认启用 | 平台、bionic 与 kernel 源码按本知识库统一锚点核对 |
 
 Binder 默认线程配置在历史上容易被误传。当前 Android 17 锚点下，`DEFAULT_MAX_BINDER_THREADS` 为 15，`startThreadPool()` 另行启动 main pooled thread；这个数值并非进程的固定线程总数。
 
@@ -559,15 +559,15 @@ Binder 默认线程配置在历史上容易被误传。当前 Android 17 锚点�
 
 ### “`synchronized` 一定比 `ReentrantLock` 慢”
 
-不成立。它们的功能、运行时路径和竞争行为不同。没有负载和 trace，单凭类型无法判断。
+不成立。它们的功能、运行时路径和竞争行为不同。没有 workload 和 trace，单凭类型无法判断。
 
 ### “看到 `futex_wait` 就找 Java monitor owner”
 
-不成立。先看 `android_monitor_contention` 和调用栈。futex 是底层等待机制，不是 Java 监视器的专属标签。
+不成立。先看 `android_monitor_contention` 和调用栈。futex 是底层等待机制，不是 Java monitor 的专属标签。
 
 ### “内核支持 PI，所以 Android 关键锁都有优先级继承”
 
-不成立。bionic 互斥锁必须以 `PTHREAD_PRIO_INHERIT` 初始化；Binder 的事务优先级传播又是另一套机制。
+不成立。bionic mutex 必须以 `PTHREAD_PRIO_INHERIT` 初始化；Binder 的事务优先级传播又是另一套机制。
 
 ### “Binder 调用慢就是驱动慢”
 
