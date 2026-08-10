@@ -154,7 +154,7 @@ Pointer capture 适用于第一人称视角、远程桌面、三维编辑器等�
 
 捕获有三个重要前提：
 
-- 所属 View 层级必须具有窗口焦点；
+- 所属 View hierarchy 必须具有窗口焦点；
 - 获取和失去捕获会触发设备重新配置，source 和 motion range 可能改变；
 - 窗口失去焦点时捕获会被释放；focused display 改变时，`InputDispatcher` 也会强制关闭现有捕获。
 
@@ -207,7 +207,7 @@ override fun onCapturedPointerEvent(event: MotionEvent): Boolean {
 4. 若 focused application 已存在但窗口尚未获得焦点，进入 no-focused-window 等待与超时逻辑；
 5. 对 key event，分发器还会等待先前未完成的输入，因为前一条点击可能打开新窗口并改变焦点。
 
-第 5 点解释了一个常见现象：主线程积压的鼠标事件会拖慢悬停，也可能让紧随其后的键盘输入等待。这段等待用于保持焦点顺序，不能归因于键盘硬件。
+第 5 点解释了一个常见现象：主线程积压的鼠标事件会拖慢 hover，也可能让紧随其后的键盘输入等待。这段等待用于保持焦点顺序，不能归因于键盘硬件。
 
 ### 4.2 按键重复在 InputDispatcher
 
@@ -240,7 +240,7 @@ override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
 
 这段代码允许系统重复驱动连续移动，同时把一次性初始化限定在首次按下。若每次重复都启动动画、I/O 或对象图重建，50 ms 的默认间隔很快会压住主线程。
 
-### 4.3 IME 位于 View 的 IME 前阶段与 IME 后阶段之间
+### 4.3 IME 位于 View 的 pre-IME 与 post-IME 之间
 
 应用窗口中的 key event 会依次经过：
 
@@ -274,7 +274,7 @@ flowchart LR
 - 离开旧窗口时生成 `HOVER_EXIT`；
 - `ACTION_SCROLL` 不改变当前 hover window；
 - 按下后的手势通常保持既有 touch target，直到 up/cancel；
-- 普通悬停不自动等价于窗口焦点变化。
+- 普通 hover 不自动等价于窗口焦点变化。
 
 窗口焦点由 WindowManager 的焦点规则决定。鼠标点击可能促成焦点切换，多指触控板系统手势还可带 `NO_FOCUS_CHANGE` 标志。应用不应在每条 hover 中自行调用 `requestFocus()`。
 
@@ -289,9 +289,9 @@ InputDispatcher：显示坐标 → input window
 ViewGroup：窗口局部坐标 → child View
 ```
 
-深层 View 树、频繁变化的变换属性、每次悬停都触发布局，都会提高后半段成本。框架不会因为 hover 到达就无条件让所有 View 重绘；重绘通常来自组件状态变化或应用自己的 `invalidate()`、`requestLayout()`。
+深层 View 树、频繁变化的变换属性、每次 hover 都触发布局，都会提高后半段成本。框架不会因为 hover 到达就无条件让所有 View 重绘；重绘通常来自组件状态变化或应用自己的 `invalidate()`、`requestLayout()`。
 
-### 5.3 滚动使用轴值，不能只看 x/y
+### 5.3 滚动使用 axis，不能只看 x/y
 
 鼠标滚轮和相对捕获触控板的滚动以 `ACTION_SCROLL` 报告，读取：
 
@@ -299,7 +299,7 @@ ViewGroup：窗口局部坐标 → child View
 - `AXIS_HSCROLL`；
 - 必要时结合 `ViewConfiguration` 的水平、垂直 scroll factor 转成 UI 距离。
 
-不同设备可能报告离散刻度或高分辨率连续量。业务逻辑宜累计浮点增量，在帧边界统一更新画面，避免先取整导致小量滚动丢失。
+不同设备可能报告离散刻度或高分辨率连续量。业务逻辑宜累计浮点 delta，在帧边界统一更新画面，避免先取整导致小量滚动丢失。
 
 ## 6. batching、主线程背压与 ANR
 
@@ -322,9 +322,9 @@ fun consumeMotion(event: MotionEvent, sink: (Long, Float, Float) -> Unit) {
 }
 ```
 
-这段代码按时间顺序消费 history 和当前样本。若界面只需要最新光标位置，可以只保存末尾状态；绘图、手写或速度估算才需要完整历史。
+这段代码按时间顺序消费 history 和当前样本。若 UI 只需要最新光标位置，可以只保存末尾状态；绘图、手写或速度估算才需要完整历史。
 
-`ViewRootImpl` 还会对尚未处理的 `ACTION_DRAG_LOCATION` Handler 消息保留最新一条。这个优化只针对拖放位置消息，不能推广成“所有悬停或 move 都只保留最终一条”。
+`ViewRootImpl` 还会对尚未处理的 `ACTION_DRAG_LOCATION` Handler 消息保留最新一条。这个优化只针对拖放位置消息，不能推广成“所有 hover 或 move 都只保留最终一条”。
 
 ### 6.2 input timeout 看连接等待队列
 
@@ -332,7 +332,7 @@ fun consumeMotion(event: MotionEvent, sink: (Long, Float, Float) -> Unit) {
 
 Android 17 的默认兜底 dispatching timeout 是 5 秒，并会乘硬件 timeout multiplier；具体窗口可以提供自己的 timeout。ANR 判断围绕“连接中是否有超过 timeout 的未完成条目”，没有“键盘固定 5 秒、hover 永不 ANR”这种按类型划分。
 
-连续悬停、滚轮或按键重复的风险在于放大积压：
+连续 hover、滚轮或按键重复的风险在于放大积压：
 
 1. 一条事件在主线程执行了昂贵工作；
 2. 后续事件继续进入 outbound/wait queue 或 input channel；
@@ -415,9 +415,9 @@ WMS 创建 `DragState`，将拖影 surface 放到 display overlay，并把正在
 
 ### 8.2 drop 阶段
 
-pointer 抬起后，`InputDispatcher` 把目标窗口及局部、原始坐标通知 WMS。`DragState` 再向合法目标发送 `ACTION_DROP`；普通应用目标到这个阶段才取得用于放置的 `ClipData` 和必要的 URI permission token。能够拦截全局拖放的特权窗口有单独的数据传递规则。目标窗口报告是否消费，WMS 再结束拖放并广播 `ACTION_DRAG_ENDED`。
+pointer 抬起后，`InputDispatcher` 把目标窗口及局部、原始坐标通知 WMS。`DragState` 再向合法目标发送 `ACTION_DROP`；普通应用目标到这个阶段才取得用于 drop 的 `ClipData` 和必要的 URI permission token。能够拦截全局拖放的特权窗口有单独的数据传递规则。目标窗口报告是否消费，WMS 再结束拖放并广播 `ACTION_DRAG_ENDED`。
 
-WMS 对放置结果另有 5 秒等待。这个计时属于拖放状态机，与输入通道的 connection timeout 是两个观察点。
+WMS 对 drop 结果另有 5 秒等待。这个计时属于拖放状态机，与输入通道的 connection timeout 是两个观察点。
 
 ### 8.3 大数据不要直接塞进 ClipData
 
@@ -427,9 +427,9 @@ WMS 对放置结果另有 5 秒等待。这个计时属于拖放状态机，与�
 
 - `ClipDescription` 尽早、准确地表达 MIME；
 - `ACTION_DRAG_STARTED` 只做轻量可接收判断；
-- `ACTION_DRAG_LOCATION` 只更新必要的悬停状态；
+- `ACTION_DRAG_LOCATION` 只更新必要的 hover 状态；
 - `ACTION_DROP` 校验 URI、MIME 和来源，再把耗时读取移出主线程；
-- 使用完 URI 权限后及时释放。
+- 使用完 URI permission 后及时释放。
 
 ## 9. View 与 Compose 的优化边界
 
@@ -446,10 +446,10 @@ WMS 对放置结果另有 5 秒等待。这个计时属于拖放状态机，与�
 ### Compose
 
 - 使用 `onPreviewKeyEvent`、`onKeyEvent` 或明确的 shortcut 层级表达消费顺序；
-- `pointerInput` 的键改变会重启其处理协程，避免把每次重组都变化的对象作为键；
+- `pointerInput` 的 key 改变会重启其处理协程，避免把每次重组都变化的对象作为键；
 - 高频 pointer handler 只更新轻量状态，重计算放到可控的 state/帧边界；
 - modifier 顺序会影响命中、消费和语义，性能测试时保留可复现的 modifier 链；
-- 遇到指针性能问题时同时记录 Compose 版本、编译器版本和平台版本，避免把 AndroidX 行为误归因于框架。
+- 遇到 pointer 性能问题时同时记录 Compose 版本、编译器版本和平台版本，避免把 AndroidX 行为误归因于 framework。
 
 View 与 Compose 最终共享同一个应用主线程和 input channel。换 UI toolkit 不会消除主线程阻塞、错误焦点或跨窗口命中问题。
 
@@ -463,7 +463,7 @@ View 与 Compose 最终共享同一个应用主线程和 input channel。换 UI 
 adb shell getevent -lt
 ```
 
-用它确认设备节点、`EV_KEY`、`EV_REL`、`EV_ABS` 和 `SYN_REPORT` 的到达顺序。量产设备上可能受权限限制。这里看到间隔异常，优先检查硬件、蓝牙链路、USB 集线器和内核驱动。
+用它确认设备节点、`EV_KEY`、`EV_REL`、`EV_ABS` 和 `SYN_REPORT` 的到达顺序。量产设备上可能受权限限制。这里看到间隔异常，优先检查硬件、蓝牙链路、USB hub 和内核驱动。
 
 ### 10.2 InputReader 与 InputDispatcher
 
@@ -492,12 +492,12 @@ adb shell dumpsys window
 
 ### 10.3 Perfetto / System Trace
 
-采集时至少包含输入、WindowManager、View、调度和 FrameTimeline。按同一事件 ID 或相邻时间线观察：
+采集时至少包含 input、WindowManager、View、调度和 FrameTimeline。按同一事件 ID 或相邻时间线观察：
 
 1. EventHub/InputReader 收到时间；
 2. InputDispatcher inbound、target 与 dispatch；
 3. 应用 `deliverInputEvent`；
-4. 对应主线程回调；
+4. 对应主线程 callback；
 5. 帧开始、提交与显示。
 
 常见判读：
@@ -553,7 +553,7 @@ private fun inputAgeMs(event: InputEvent): Long {
 - 捕获中切焦点、切 display、拔设备；
 - 不同键盘布局、修饰键、长按重复；
 - View 与当前项目固定版本的 Compose；
-- URI 拖放、拒绝放置、目标进程退出。
+- URI 拖放、拒绝 drop、目标进程退出。
 
 ## 12. 版本与源码边界
 
@@ -561,7 +561,7 @@ private fun inputAgeMs(event: InputEvent): Long {
 
 - Android platform：`android-17.0.0_r1`
 - API：37
-- 核心原生路径：`frameworks/native/services/inputflinger`
+- 核心 native 路径：`frameworks/native/services/inputflinger`
 - 核心 Java 路径：`frameworks/base/core/java/android/view`
 - 窗口拖放路径：`frameworks/base/services/core/java/com/android/server/wm`
 
