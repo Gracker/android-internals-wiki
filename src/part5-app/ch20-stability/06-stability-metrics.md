@@ -56,7 +56,7 @@ updated_date: "2026-07-10"
 
 # 稳定性度量与指标体系
 
-20.1 节说明了 Crash、ANR 与 OOM 的边界，本节解决另一个容易出错的问题：同一批故障数据，怎样算出可以解释、可以复算、可以指导发版的指标。
+20.1 节说明了 Crash、ANR 与 OOM 的边界。同一批故障数据还要算出可以解释、可以复算、可以指导发版的指标。
 
 这里的平台基准是 Android 17（API 37，`android-17.0.0_r1`）。Google Play 和 Firebase 的统计规则独立于 AOSP 版本，文中的阈值与产品口径按 2026 年 7 月的官方文档核对。把这些外部数字写进长期门禁之前，仍要确认服务端文档没有更新。
 
@@ -215,7 +215,7 @@ User-perceived crash rate 才是 Google Play 的 core vital。任意内部“UV 
 
 [Android vitals ANR 文档](https://developer.android.com/topic/performance/vitals/anr)也区分总体 ANR rate、user-perceived ANR rate 和 multiple ANR rate。当前只有 `Input dispatching timed out` 被计为 user-perceived ANR。Service、Broadcast、ContentProvider、JobService 等 ANR 仍要进入内部故障分析，但不能直接加到 Play 的 user-perceived 分子里。
 
-各类 ANR 的系统期限和版本差异见 20.4 节。本章不再用一张“统一超时表”代替系统判断，因为 Input、Broadcast、Service、FGS 与 Provider 走的是不同检测路径，部分超时也会以异常退出而非 ANR 收场。
+各类 ANR 的系统期限和版本差异见 20.4 节。不能用一张“统一超时表”代替系统判断，因为 Input、Broadcast、Service、FGS 与 Provider 走的是不同检测路径，部分超时也会以异常退出而非 ANR 收场。
 
 ### Bad behavior thresholds
 
@@ -384,7 +384,7 @@ $$
 
 预算耗尽后的动作也要预先约定，例如暂停扩量、只允许稳定性修复进入版本，或回滚命中高风险路径的变更。动作强度取决于剩余预算、问题范围和修复把握，不由某个匿名“行业及格线”决定。
 
-## Review 清单
+## 复核清单
 
 发布稳定性数据或把它接入门禁前，可以按下面的顺序复核：
 
