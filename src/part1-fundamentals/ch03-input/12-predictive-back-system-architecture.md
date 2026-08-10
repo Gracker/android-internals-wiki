@@ -182,7 +182,7 @@ Android 17 还提供一条减少逐帧跨进程调用的优化路径。满足以
 - 前一个 Activity 没有进程或窗口；
 - Activity 尚未创建，无法安全作为跨 Activity 目标；
 - 参与者包含不适合该路径的透明 Activity；
-- 锁屏、应用锁、锁定任务或浮动任务的条件不满足；
+- keyguard、app lock、lock task 或 floating task 条件不满足；
 - 当前 Activity 使用场景转场；
 - 多窗口中前后任务不在兼容的父层级。
 

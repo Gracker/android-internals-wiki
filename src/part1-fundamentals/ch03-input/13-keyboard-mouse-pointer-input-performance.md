@@ -139,7 +139,7 @@ Android 17 的触控板路径比“相对坐标转光标”多一层：
 ```text
 多点槽位
   → HardwareStateConverter
-  → 手势库
+  → gestures library
   → UncapturedGestureConverter / 捕获模式转换器
   → NotifyMotionArgs
 ```
@@ -475,10 +475,10 @@ adb shell dumpsys input
 
 重点看：
 
-- 设备类别、输入源、映射器与运动范围；
+- 设备 classes、sources、mapper 与 motion ranges；
 - 焦点显示器、各显示器的焦点窗口；
 - 指针捕获模式；
-- 触摸/悬停/拖放状态；
+- touch/hover/drag state；
 - 连接的出站队列、等待队列与响应状态；
 - 按键重复超时时间和间隔。
 
@@ -530,7 +530,7 @@ private fun inputAgeMs(event: InputEvent): Long {
 
 - 是否用 `event.isFromSource()` 判断事件，而非设备名称？
 - 是否区分 `SOURCE_MOUSE`、`SOURCE_MOUSE_RELATIVE` 与 `SOURCE_TOUCHPAD`？
-- 是否读取滚动轴、按钮状态、重复次数和修饰键状态？
+- 是否读取 scroll axis、button state、repeat count 和 meta state？
 - 是否把软键盘文本输入误当成硬件 `KeyEvent`？
 - 是否只在拥有窗口焦点时请求指针捕获？
 - API 37 上是否明确选择触控板相对或绝对捕获？
