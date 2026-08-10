@@ -88,7 +88,7 @@ last_deepseek_cn_review_at: 2026-07-17
 2. Composer HAL 开始执行模式切换；
 3. SurfaceFlinger 将目标模式更新为 active。
 
-第三步有两种完成方式：DisplayCommand modeset 成功且不要求刷新帧时，平台立即更新活动状态；HAL 要求先提交刷新帧时，SurfaceFlinger 会等待相关 `FrameTarget` 退出待定状态。后一条路径用到展示围栏状态，但 fence 只能证明对应显示提交已经完成，不能单独证明面板内部的 PLL、命令序列或扫描周期。
+第三步有两种完成方式：DisplayCommand modeset 成功且不要求刷新帧时，平台立即更新活动状态；HAL 要求先提交刷新帧时，SurfaceFlinger 会等待相关 `FrameTarget` 退出待定状态。后一条路径用到 present fence 状态，但 fence 只能证明对应显示提交已经完成，不能单独证明面板内部的 PLL、命令序列或扫描周期。
 
 这些时刻可能相隔若干次合成。只看 App 主线程、`Choreographer#doFrame` 或某一帧的 CPU 耗时，无法证明显示模式是否已经切换，也无法证明掉帧由模式切换引起。
 
@@ -519,7 +519,7 @@ Android 平台没有这种通用映射。结果由内容请求、系统策略、
 1. 记录设备支持模式、当前模式、config group 和系统刷新率设置。
 2. 明确应用设置帧率的 Surface、准确值、compatibility 和 change strategy。
 3. 在 Perfetto 中定位 `HasDesiredMode`、`PendingModeFps`、`ActiveModeFps`、`RenderRateFps`。
-4. 用 FrameTimeline 判断应用还是 SurfaceFlinger 错过截止时间。
+4. 用 FrameTimeline 判断 App 还是 SurfaceFlinger 错过截止时间。
 5. 对齐 HWC/present fence，确认模式何时完成。
 6. 区分纯刷新率切换、跨分辨率切换、render rate 调整和 ARR 刷新节奏变化。
 7. 在目标设备上核对 Composer 与内核日志，不用芯片平台经验替代证据。

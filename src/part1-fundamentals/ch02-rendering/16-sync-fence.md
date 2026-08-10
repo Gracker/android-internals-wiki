@@ -109,7 +109,7 @@ Fence 是异步工作的完成凭证。它不保存像素、不拥有 BufferQueu
 
 Android 图形链路需要 fence，因为 CPU、GPU、Camera ISP、codec、SurfaceFlinger、HWC 和 display controller 可以并行工作。Producer 可以先把 buffer 与 fence 交给 consumer，再让 GPU 继续写；consumer 也可以先安排显示，再返回一条稍后才 signal 的 release fence。这样既避免 CPU 在每个阶段同步阻塞，也避免 consumer 读到尚未写完的像素。
 
-分析以 Android 17/API 37、`android-17.0.0_r1` 为平台锚点，kernel 侧以 `android17-6.18-2026-06_r6` 为锚点。栅栏名称由观察边界决定，同一个同步对象从 producer 传到 consumer 后，角色名称可能变化。
+分析以 Android 17/API 37、`android-17.0.0_r1` 为平台锚点，kernel 侧以 `android17-6.18-2026-06_r6` 为锚点。fence 名称由观察边界决定，同一个同步对象从 producer 传到 consumer 后，角色名称可能变化。
 
 ## 1. Fence 描述完成，不描述开始
 
@@ -127,7 +127,7 @@ signal 是单向状态变化。已经 signal 的 fence 不会回到 pending。�
 
 ### 2.1 Kernel：dma-fence
 
-`struct dma_fence` 是内核中的跨驱动完成原语。Android 17 kernel 的 `drivers/dma-buf/dma-fence.c` 定义了 context、seqno、signal、error、timestamp、callback 与 wait 语义。
+`struct dma_fence` 是 kernel 中的跨驱动完成原语。Android 17 kernel 的 `drivers/dma-buf/dma-fence.c` 定义了 context、seqno、signal、error、timestamp、callback 与 wait 语义。
 
 同一 context 中的 fence 按 seqno 完全有序；不同 context 可能来自独立 GPU engine、display pipeline 或 codec queue，不能只比较 seqno 大小。驱动还必须保证 fence 在合理时间内结束，并提供 hang recovery 或强制完成策略，防止等待永久卡住内存管理和其他设备。
 
@@ -265,8 +265,8 @@ CLIENT composition 还会引入 RenderEngine GPU 工作和 client target。Layer
 
 merge 适合表达“等待所有前置工作”，但不应无条件合并整条显示管线：
 
-- HWC layer release fence 本来就按图层生成；
-- 显示栅栏按显示生成；
+- HWC layer release fence 本来就按 layer 生成；
+- present fence 按 display 生成；
 - 为了方便只保留一个 fd 而合并无关 fence，会扩大等待范围并掩盖慢依赖；
 - debug 名称、driver / timeline 与内部 fence 列表要保留，便于定位哪一项最晚发出信号。
 
