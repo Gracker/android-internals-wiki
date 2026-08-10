@@ -45,11 +45,11 @@ Buffer stuffing 描述数据生产方已经占用或提交过多缓冲区，而�
 
 Android 16 在 `Choreographer` 中加入 Buffer Stuffing Recovery：收到等待缓冲区释放的信号后，先主动放弃一次帧回调，再在恢复期调整传给 FrameData/FrameCallback 的时间线。Android 17 保留这条主线，并加入受开关控制的多次恢复与累计延迟上限。
 
-这套机制不增加 BufferQueue 槽位，不主动释放缓冲区，也不修复 GPU、SurfaceFlinger 或 HWC。它处理的是等待发生后的应用帧节拍。
+这套机制不增加 BufferQueue slot，不主动释放缓冲区，也不修复 GPU、SurfaceFlinger 或 HWC。它处理的是等待发生后的应用帧节拍。
 
 ## 一、适用范围
 
-Android 17 中可以完整确认的注册路径属于标准 HWUI 应用窗口：
+Android 17 中可以完整确认的注册路径属于标准 HWUI App Window：
 
 ```mermaid
 flowchart LR
@@ -62,7 +62,7 @@ flowchart LR
     CH["Choreographer"]
 
     VRI -->|"set SurfaceControl + BLASTBufferQueue"| TR
-    VRI -->|"注册等待回调"| TR
+    VRI -->|"register wait callback"| TR
     TR --> RP --> CC --> PIPE --> BBQ
     BBQ -->|"durationNanos"| CH
 ```
@@ -73,7 +73,7 @@ flowchart LR
 
 - 标准硬件加速窗口有明确注册路径；
 - 使用应用主 Choreographer 不代表任意 Surface 都接入这条回调；
-- 独立 SurfaceView、相机/编解码数据生产方、引擎自有 EGL/Vulkan 交换链可能形成自己的渲染循环和 BufferQueue；
+- 独立 SurfaceView、Camera/Codec producer、引擎自有 EGL/Vulkan swapchain 可能形成自己的 render loop 和 BufferQueue；
 - 未接入回调的数据生产方仍可能出现队列堆积，但不会依靠这套 Choreographer 状态机恢复。
 
 诊断时应先确认画面由谁获取、渲染和显示，再判断它是否受主线程 Choreographer 驱动。跟踪中出现 `eglSwapBuffers()` 或 `dequeueBuffer()`，不能证明主 Choreographer 已收到堆积信号。
@@ -87,7 +87,7 @@ flowchart LR
 - 没有空闲缓冲区或槽位；
 - 未完成缓冲区数量超过当前允许范围；
 - 消费方临时多获取一块缓冲区，用于原子获取和释放；
-- 释放围栏、SurfaceFlinger 或下游显示消费延迟，导致旧缓冲区尚不能复用。
+- release fence、SurfaceFlinger 或下游显示消费延迟，导致旧 buffer 还不能复用。
 
 对于不可阻塞或异步模式的部分组合，调用会返回 `WOULD_BLOCK`；普通阻塞路径进入 `waitForBufferRelease()`。没有空闲缓冲区是触发条件，不能把每次出队耗时都归为队列堆积。
 
@@ -108,8 +108,8 @@ flowchart TD
 
     DQ --> CHECK --> WAIT --> READ
     READ -->|"收到释放消息"| RELEASE --> DURATION --> CALLBACK --> CH
-    READ -->|"超时"| TIMEOUT["返回 TIMED_OUT"]
-    READ -->|"中断 / 错误"| RETRY["返回，由 BufferQueue 重新检查"]
+    READ -->|"timeout"| TIMEOUT["返回 TIMED_OUT"]
+    READ -->|"interrupt / error"| RETRY["返回，由 BufferQueue 重新检查"]
 ```
 
 BLAST 在解锁 BufferQueue 互斥锁后阻塞读取 `BufferReleaseChannel`。成功收到释放消息时，它先执行 `releaseBufferCallback()`，再用单调时钟计算从进入等待到收到释放消息的持续时间，最终调用已注册的回调。
@@ -130,7 +130,7 @@ if durationNanos > mLastFrameIntervalNanos / 2:
     isStuffed = true
 ```
 
-这段伪代码用于说明阈值，不表示它会读取 BufferQueue 深度。`isStuffed` 是 `AtomicBoolean`，因为等待发生在 RenderThread 或图形路径，后续恢复判断在 Choreographer 所在的 Looper 线程执行。
+这段伪代码用于说明阈值，不表示它会读取 BufferQueue depth。`isStuffed` 是 `AtomicBoolean`，因为等待发生在 RenderThread 或图形路径，后续恢复判断在 Choreographer 所在的 Looper 线程执行。
 
 阈值跟最近一帧 interval 变化：
 
@@ -142,7 +142,7 @@ if durationNanos > mLastFrameIntervalNanos / 2:
 
 表格只用于理解量级。实际判断使用 VSync 事件更新的 `mLastFrameIntervalNanos`，显示刷新率、应用渲染帧率和 ARR 下的帧间隔需要结合具体跟踪数据。
 
-该方法不会记录图层、槽位、缓冲区编号或等待原因。它只通知下一次 `doFrame()`：此前发生了足够长的缓冲区释放等待，需要评估节拍恢复。
+该方法不会记录图层、slot、缓冲区编号或等待原因。它只通知下一次 `doFrame()`：此前发生了足够长的缓冲区释放等待，需要评估节拍恢复。
 
 ## 四、Android 17 状态机有哪些字段
 
@@ -184,7 +184,7 @@ scheduleVsyncLocked()
 return
 ```
 
-本轮输入、动画、遍历和提交回调都不会运行。空出一个目标周期，为消费方释放缓冲区和队列深度下降留出时间，但源码不会在这里直接读取已释放缓冲区的数量。
+本轮输入、animation、遍历和提交回调都不会运行。空出一个目标周期，为消费方释放缓冲区和队列深度下降留出时间，但源码不会在这里直接读取已释放缓冲区的数量。
 
 ### 5.2 恢复期间：调整回调时间
 
@@ -195,7 +195,7 @@ offsetFrameTimeNanos = frameTimeNanos - frameIntervalNanos
 FrameData.update(offsetFrameTimeNanos, vsyncEventData)
 ```
 
-`FrameCallback` 与 `VsyncCallback` 从 `FrameData` 获得这一时间值及候选时间线。原始 `intendedFrameTimeNanos` 仍保留给 `FrameInfo` 和卡顿跟踪；若主线程已经晚了至少一个间隔，后续抖动重同步会重新选择时间线，并在恢复期再次减去一个间隔。
+`FrameCallback` 与 `VsyncCallback` 从 `FrameData` 获得这一时间值及候选时间线。原始 `intendedFrameTimeNanos` 仍保留给 `FrameInfo`/jank tracking；若主线程已经晚了至少一个间隔，后续抖动重同步会重新选择时间线，并在恢复期再次减去一个间隔。
 
 因此，OFFSET 不会把系统 VSync 提前。硬件 VSync、Dispatch 回调和实际显示时间都没有被改写；变化发生在应用对本轮帧时间和时间线的解释上。
 
@@ -251,18 +251,18 @@ Android 17 `DisplayEventReceiver.VsyncEventData.FRAME_TIMELINES_CAPACITY` 为 7�
 
 两者相关，但来源不同：
 
-- Choreographer 恢复：应用侧 BLAST 等待释放超过半帧后产生；
+- Choreographer recovery：App 侧 BLAST 等待 release 超过半帧后产生；
 - `JankType::BufferStuffing`：SurfaceFlinger `FrameTimeline.cpp` 根据 SurfaceFrame 的预测/实际完成、锁存与显示关系分类。
 
 Android 17 旧版分类中，如果某帧延迟显示，同时它在上一轮锁存前已经就绪，且预测显示时间原本属于上一帧，就会加上 `BufferStuffing`。实验分类还会依据显示延迟调整应用截止时间。
 
 所以：
 
-- 出现恢复跟踪，不保证对应 SurfaceFrame 最终带有 `BufferStuffing` 标志位；
-- 出现 `BufferStuffing` 标志位，也不保证该数据生产方接入主 Choreographer 回调；
+- 出现 recovery trace，不保证对应 SurfaceFrame 最终带 `BufferStuffing` bit；
+- 出现 `BufferStuffing` bit，也不保证该 producer 接入主 Choreographer callback；
 - `BufferStuffing` 在卡顿严重度计算中属于非卡顿标志位，可能作为时序上下文与其他卡顿标志位同时出现。
 
-分析时应按 VSync 编号、缓冲区帧号、图层和时间窗关联，不能只按名称相同合并事件。
+分析时应按 VSync ID、buffer/frame number、layer 和时间窗关联，不能只按名称相同合并事件。
 
 ## 九、版本边界
 
@@ -278,7 +278,7 @@ Android 17 的基础恢复机制不再受 Android 16 的旧总开关控制：首
 
 ### 10.1 确认目标 Surface
 
-记录窗口、SurfaceControl 图层、BLASTBufferQueue、数据生产线程和消费方。若主体是 SurfaceView 子层、游戏引擎 Surface 或相机/编解码输出，应先确认它是否和标准应用窗口共用 HWUI 数据生产方。
+记录窗口、SurfaceControl/layer、BLASTBufferQueue、producer 线程和 consumer。若主体是 SurfaceView child、游戏引擎 surface 或 Camera/Codec output，先确认它是否和标准 App Window 共用 HWUI producer。
 
 ### 10.2 找到释放等待
 
@@ -286,11 +286,11 @@ Android 17 的基础恢复机制不再受 Android 16 的旧总开关控制：首
 
 - `dequeueBuffer()` 或 BLAST `waitForBufferRelease()`；
 - 释放通道等待；
-- EGL/Vulkan 获取与显示提交；
+- EGL/Vulkan acquire/present；
 - 释放围栏；
 - BufferQueue 深度与槽位状态。
 
-`eglSwapBuffers()` 耗时可能包含驱动刷新、帧节奏控制、空闲槽位和围栏等待。单凭它耗时较长，不足以认定发生队列堆积。
+`eglSwapBuffers()` 耗时可能包含驱动刷新、frame pacing、空闲槽位和围栏等待。单凭它耗时较长，不足以认定发生队列堆积。
 
 ### 10.3 对齐恢复跟踪
 
@@ -322,9 +322,9 @@ Android 17 的基础恢复机制不再受 Android 16 的旧总开关控制：首
 
 | 现象 | 优先检查 |
 |---|---|
-| 主线程遍历延迟，RenderThread 尚未出队 | 测量/布局/绘制、Compose、锁、GC、Binder |
-| RenderThread 卡在空闲缓冲区或释放等待 | 队列深度、槽位、释放通道/围栏、下游消费 |
-| 应用已入队，SF/HWC 显示提交延迟 | 获取围栏、锁存、合成、HWC/显示 |
+| 主线程 traversal 晚，RenderThread 尚未 dequeue | measure/layout/draw、Compose、锁、GC、Binder |
+| RenderThread 卡在 free buffer/release wait | queue depth、slot、release channel/fence、下游消费 |
+| App 已 queue，SF/HWC present 晚 | acquire fence、latch、composition、HWC/display |
 
 三者可以连续发生。例如，主线程先迟到，随后 GPU 和队列堆积，最终 SF 错过显示时点；不能用一个标签概括整段时间线。
 
@@ -346,9 +346,9 @@ Android 17 的基础恢复机制不再受 Android 16 的旧总开关控制：首
 
 七是 VSync 事件可携带的候选时间线容量，与恢复状态数量无关。
 
-### 看到 `BufferStuffing` 卡顿标志位就一定有 Choreographer 恢复
+### “看到 `BufferStuffing` jank bit 就一定有 Choreographer recovery”
 
-SF 分类与应用恢复有不同的触发条件。独立的原生数据生产方可能只有 SF 分类，没有主 Choreographer 跟踪。
+SF 分类与应用恢复有不同的触发条件。独立的原生数据生产方可能只有 SF 分类，没有主 Choreographer trace。
 
 ### 负偏移会让这一帧更早上屏
 
@@ -360,7 +360,7 @@ SF 分类与应用恢复有不同的触发条件。独立的原生数据生产�
 2. [`HardwareRenderer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareRenderer.java) 与 HWUI RenderProxy/CanvasContext/SkiaPipeline：确认回调如何到达 BLAST；
 3. [`BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)：确认释放通道等待、持续时间与通知时机；
 4. [`BufferQueueProducer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp)：确认空闲槽位与缓冲区过多的条件；
-5. [`Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)：确认状态机、开关、延迟/偏移与抖动重同步；
+5. [`Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)：确认状态机、flags、delay/offset 与 jitter resync；
 6. [`DisplayEventReceiver.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/DisplayEventReceiver.java)：确认七项只是时间线容量；
 7. [`FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp)：确认 SF `BufferStuffing` 分类边界。
 

@@ -58,7 +58,7 @@ SurfaceFlinger 收到 `SurfaceControl.Transaction` 后，不能立即把每个�
 
 1. 这笔事务是否已经到达可应用的时点？
 2. 它携带的缓冲区、围栏和屏障是否满足当前帧的条件？
-3. 图层的父子、相对 Z 轴和镜像关系变化后，本轮应按什么顺序遍历？
+3. layer 的父子、relative Z 和 mirror 关系变化后，本轮应按什么顺序遍历？
 4. CompositionEngine 最终应读取哪份几何、可见性、内容和效果状态？
 
 Android 17 的 SurfaceFlinger FrontEnd 位于这段边界上。它消费事务，维护图层的服务端请求状态和生命周期，构建可遍历的图层图，再生成 CompositionEngine 使用的 `LayerSnapshot`。
@@ -71,14 +71,14 @@ FrontEnd 负责把客户端请求转换为当前帧可消费的状态，不覆�
 
 ```mermaid
 flowchart LR
-    Client["应用 / WMS / Shell<br/>SurfaceControl.Transaction"]
+    Client["App / WMS / Shell<br/>SurfaceControl.Transaction"]
     Queue["TransactionHandler<br/>入队与逐 applyToken 队列"]
-    Ready["就绪过滤器<br/>时间、缓冲区、屏障"]
+    Ready["readiness filters<br/>时间、buffer、barrier"]
     State["LayerLifecycleManager<br/>RequestedLayerState"]
-    Graph["LayerHierarchyBuilder<br/>图层图"]
-    Snapshot["LayerSnapshotBuilder<br/>按 Z 轴排序的快照"]
+    Graph["LayerHierarchyBuilder<br/>layer graph"]
+    Snapshot["LayerSnapshotBuilder<br/>z-ordered snapshots"]
     Latch["兼容 Layer 路径<br/>latchBufferImpl"]
-    Compose["CompositionEngine<br/>逐显示设备合成"]
+    Compose["CompositionEngine<br/>per-display composition"]
     HWC["HWC / RenderEngine"]
 
     Client --> Queue --> Ready --> State
@@ -106,7 +106,7 @@ flowchart LR
 - 新缓冲区已被锁存；
 - 目标显示设备已经完成显示提交。
 
-第一项是请求状态更新，后两项还涉及缓冲区、围栏、CompositionEngine、HWC 和显示设备。
+第一项是请求状态更新，后两项还涉及缓冲区、fence、CompositionEngine、HWC 和显示设备。
 
 ## 2. FrontEnd 与旧 `Layer` 对象共存
 
@@ -124,7 +124,7 @@ Android 17 没有用 `RequestedLayerState` 完全替换 `Layer`。
 这是一段共存实现。阅读 Android 17 源码时：
 
 - 图层请求、层级、可见性与合成输入，优先从 FrontEnd 对象理解；
-- 缓冲区锁存、释放回调和一部分历史兼容行为，仍要回到 `Layer`；
+- buffer latch、release callback 和一部分历史兼容行为，仍要回到 `Layer`；
 - 不要把 Android 12/13 的“逐个 `Layer` 更新全部状态”模型照搬到 Android 17；
 - 也不能因为看到 FrontEnd，就假设所有旧版路径都已删除。
 
@@ -157,7 +157,7 @@ struct RequestedLayerState : layer_state_t {
 
 Android 17 的 `Changes` 包含：
 
-| 分组 | 变化标志 | 主要用途 |
+| 分组 | change flags | 主要用途 |
 | --- | --- | --- |
 | 生命周期 | `Created`、`Destroyed` | 新建、销毁和监听器回调 |
 | 层级 | `Hierarchy`、`Z`、`Mirror`、`Parent`、`RelativeParent`、`AffectsChildren` | 更新图、排序和子节点继承 |
@@ -182,7 +182,7 @@ Android 17 的 `Changes` 包含：
 
 客户端的 `setPosition()` 只提供局部位置请求。`LayerSnapshotBuilder` 还要叠加以下状态：
 
-- 父节点的变换、裁剪、透明度和可见性策略；
+- 父节点 transform、crop、alpha 和可见性策略；
 - 相对父节点带来的遍历位置；
 - 镜像路径带来的另一组几何上下文；
 - 显示旋转和输出过滤器；
@@ -212,7 +212,7 @@ Android 17 的 `Changes` 包含：
 这两个集合服务于不同问题：
 
 - `getChangedLayers()`：需要更新哪些具体图层。
-- `getGlobalChanges()`：本轮是否出现要求重走层级、几何、输入或合成的变化。
+- `getGlobalChanges()`：本轮是否出现了要求重走 hierarchy、geometry、input 或 composition 的变化。
 
 ### 4.3 释放句柄不会立即删除对象
 
@@ -223,7 +223,7 @@ Android 17 的 `Changes` 包含：
 - 句柄仍存活但从屏幕根节点不可达的图层会进入离屏层级，资源不会因此立即释放；
 - 客户端用完后应显式释放 `SurfaceControl`，不要依赖 Java GC 的时机。
 
-`onHandlesDestroyed()` 先把 `handleAlive` 置为 `false`。只有图层没有父节点时，`canBeDestroyed()` 才返回 true。删除父节点时，管理器还会更新子节点、相对层级、镜像和触摸裁剪引用，并继续处理因此满足销毁条件的图层。
+`onHandlesDestroyed()` 先把 `handleAlive` 置为 `false`。只有图层没有父节点时，`canBeDestroyed()` 才返回 true。删除父节点时，管理器还会更新子节点、relative、镜像和触摸裁剪引用，并继续处理因此满足销毁条件的图层。
 
 ### 4.4 `commitChanges()` 清理本轮变化记录
 
@@ -232,7 +232,7 @@ Android 17 的 `Changes` 包含：
 1. 通知监听器哪些图层新增；
 2. 清空仍存活图层的 `what` 和 `changes`；
 3. 通知监听器哪些图层已销毁；
-4. 清空新增、销毁、变化和全局变化集合。
+4. 清空 added、destroyed、changed 和 global change 集合。
 
 它不会代替快照更新。`LayerSnapshotBuilder::update()` 必须在它之前读取变化标志。Android 17 也把 `commitChanges()` 放在快照更新、缓冲区锁存和脏区域处理之后调用。
 
@@ -250,7 +250,7 @@ Android 17 的 `Changes` 包含：
 | `Mirror` | 从另一图层或图层栈镜像 | 同一状态节点从镜像路径再次访问 |
 | `Detached_Mirror` | 镜像另一图层，并忽略镜像根的局部变换 | 区分镜像根与被镜像内容的几何 |
 
-`LayerHierarchyBuilder` 同时维护屏上根节点和离屏根节点。更新父节点、相对父节点、Z 轴或镜像时，它会重新连接或排序相应节点；发现相对 Z 轴循环时，会记录问题并调用 `fixRelativeZLoop()` 解除非法关系，避免遍历无限递归。
+`LayerHierarchyBuilder` 同时维护屏上根节点和离屏根节点。更新父节点、relative parent、Z 轴或镜像时，它会重新连接或排序相应节点；发现相对 Z 轴循环时，会记录问题并调用 `fixRelativeZLoop()` 解除非法关系，避免遍历无限递归。
 
 ### 5.2 Z 轴顺序规则
 
@@ -260,7 +260,7 @@ FrontEnd `readme.md` 将绘制顺序描述为一次中序式遍历：
 2. 访问父节点；
 3. 遍历 Z 值大于等于 0 的子节点。
 
-相对子节点在排序时按直接子节点处理。Z 值相同时，再按图层编号保持稳定顺序，较新的图层位于上方。源码不建议依赖创建顺序，调用方应尽量使用明确且唯一的 Z 值。
+relative children 值相同时，再按图层编号保持稳定顺序，较新的图层位于上方。源码不建议依赖创建顺序，调用方应尽量使用明确且唯一的 Z 值。
 
 ### 5.3 `TraversalPath` 解决镜像身份问题
 
@@ -273,7 +273,7 @@ FrontEnd `readme.md` 将绘制顺序描述为一次中序式遍历：
 
 ## 6. `TransactionHandler` 如何决定本轮应用哪些事务
 
-`queueTransaction()` 把事务推进 `mLocklessTransactionQueue`，同时增加 `TransactionQueue` 跟踪计数器。`collectTransactions()` 再按 `applyToken` 分组放入待处理队列。
+`queueTransaction()` 把事务推进 `mLocklessTransactionQueue`，同时增加 `TransactionQueue` trace counter。`collectTransactions()` 再按 `applyToken` 分组放入待处理队列。
 
 ### 6.1 顺序只在同一 `applyToken` 内保证
 
@@ -287,10 +287,10 @@ FrontEnd 文档说明，默认情况下每个进程和每个缓冲区生产方�
 
 Android 17 的 `addTransactionReadyFilters()` 按顺序注册：
 
-| 过滤器 | 主要检查 |
+| filter | 主要检查 |
 | --- | --- |
-| `transactionReadyTimelineCheck()` | 期望显示时间、VSync 节奏、FrameTimeline 预测是否过早 |
-| `transactionReadyBufferCheck()` | 缓冲区帧屏障、背压、获取围栏 |
+| `transactionReadyTimelineCheck()` | desired present time、VSync cadence、FrameTimeline 预测是否过早 |
+| `transactionReadyBufferCheck()` | buffer frame barrier、backpressure、acquire fence |
 | `isBarrierSignalledOrExpired()` | 跨事务的 WAIT/SIGNAL 令牌 |
 
 任一过滤器返回 `NotReady` 或 `NotReadyBarrier`，当前 `applyToken` 队列就会停在队首。
@@ -300,7 +300,7 @@ Android 17 的 `addTransactionReadyFilters()` 按顺序注册：
 | `TransactionReadiness` | 精确含义 |
 | --- | --- |
 | `Ready` | 所有过滤器都允许本轮应用 |
-| `NotReady` | 时间、VSync 节奏、背压或围栏等普通条件未满足 |
+| `NotReady` | 时间、VSync cadence、backpressure 或 fence 等普通条件未满足 |
 | `NotReadyBarrier` | 缓冲区帧屏障或事务令牌屏障仍在等待 |
 | `NotReadyUnsignaled` | 获取围栏尚未触发，但满足未触发锁存的候选条件 |
 
@@ -310,10 +310,10 @@ Android 17 的 `addTransactionReadyFilters()` 按顺序注册：
 
 - 事务只更新一个图层；
 - 它是本轮取出的第一笔事务；
-- Scheduler 当前不使用提前 VSync 配置；
+- Scheduler 当前不使用 early VSync config；
 - `RequestedLayerState::isSimpleBufferUpdate()` 判定为简单缓冲区更新。
 
-后一项检查会拒绝重设父节点、相对图层、图层栈、透明区域、模糊区域等变化，也会拒绝位置、透明度、颜色变换、裁剪等会改变显示语义的字段。
+后一个检查会拒绝 reparent、relative layer、layer stack、透明区域、blur region 等变化，也会拒绝 position、alpha、color transform、crop、matrix 等会改变显示语义的字段。
 
 ### 6.4 Android 17 的两类屏障
 
@@ -325,7 +325,7 @@ Android 17 的 `addTransactionReadyFilters()` 按顺序注册：
 
 **事务令牌屏障**
 
-一笔事务可以携带 `KIND_WAIT` 令牌，另一笔携带相同令牌的 `KIND_SIGNAL`。处理器会保存已经触发的令牌，默认生存时间为 5 秒；WAIT 超时后也会继续应用，以免永久阻塞。
+一笔事务可以携带 `KIND_WAIT` token，另一笔携带相同令牌的 `KIND_SIGNAL`。处理器会保存已经触发的令牌，默认生存时间为 5 秒；WAIT 超时后也会继续应用，以免永久阻塞。
 
 跨 `applyToken` 的屏障可能在一次扫描的后半段才被触发。`flushTransactions()` 因此反复扫描待处理队列，直到等待屏障的事务数量不再变化，以便在同一帧继续解开已满足条件的依赖链。
 
@@ -336,9 +336,9 @@ Android 17 的 `addTransactionReadyFilters()` 按顺序注册：
 `LayerSnapshot` 继承 `compositionengine::LayerFECompositionState`，保存 CompositionEngine 和 RenderEngine 所需的计算结果，包括：
 
 - 全局 Z 轴顺序与遍历路径；
-- 叠加父层级后的变换、边界、裁剪和可见性；
-- 缓冲区大小、`ExternalTexture`、旁带流与内容脏区；
-- 透明度、混合、数据空间、HDR、圆角、阴影、模糊和后处理状态；
+- 叠加父层级后的 transform、bounds、crop 和可见性；
+- buffer size、`ExternalTexture`、sideband 与内容脏区；
+- alpha、blend、dataspace、HDR、圆角、阴影、模糊和后处理状态；
 - 输入信息、元数据、帧率投票、游戏模式；
 - 输出过滤器、镜像裁剪和可达性。
 
@@ -350,7 +350,7 @@ Android 17 的 `addTransactionReadyFilters()` 按顺序注册：
 
 - 没有全局变化、没有强制更新、显示设备未变化时，可以直接返回；
 - 只有 `Content` 或 `Buffer` 变化时，只合并 `getChangedLayers()` 对应的快照；
-- 出现层级、几何、可见性、输入等变化时，需要继续遍历层级；
+- 出现 hierarchy、geometry、visibility、input 等变化时，需要继续遍历 hierarchy；
 - 强制更新或显示设备变化会更新全部快照，并进入完整更新。
 
 只有缓冲区变化时更新成本通常较低，这一点有源码依据，但不能据此推断所有属性更新都只修改一个对象。位置、裁剪、透明度、父节点、相对 Z 轴等字段可能影响子节点或可见区域，更新范围各不相同。
@@ -371,7 +371,7 @@ Android 17 还区分：
 
 FrontEnd 文档说明，快照在理论上可以克隆；当前实现为了减少热路径复制，会把快照移交给 CompositionEngine，显示提交后再移回构建器。`SurfaceFlinger::composite()` 通过 `addLayerSnapshotsToCompositionArgs()` 准备图层，再调用 `mCompositionEngine->present(refreshArgs)`。
 
-这次交接仍未决定各显示图层最终采用 DEVICE 还是 CLIENT 合成。CompositionEngine 与 HWC 还要根据目标输出的能力、几何、效果和资源约束继续协商。
+这次交接仍未决定各显示图层最终采用 DEVICE 还是 CLIENT composition。CompositionEngine 与 HWC 还要根据目标输出的能力、几何、效果和资源约束继续协商。
 
 ## 8. 如何从跟踪数据判断问题所在阶段
 
@@ -379,13 +379,13 @@ FrontEnd 文档说明，快照在理论上可以克隆；当前实现为了减�
 
 | 证据 | 能说明什么 | 不能单独说明什么 |
 | --- | --- | --- |
-| `TransactionQueue` 计数器 | 尚未从处理器刷新并应用的事务数量 | 阻塞在时间、屏障、围栏还是线程调度 |
-| `TransactionHandler:flushTransactions` 切片 | 本轮筛选待处理队列的 CPU 时间 | 新缓冲区已上屏 |
+| `TransactionQueue` counter | 尚未从 handler flush 应用的 transaction 数量 | 卡在时间、barrier、fence还是线程调度 |
+| `TransactionHandler:flushTransactions` slice | 本轮筛选 pending queues 的 CPU 时间 | 新 buffer 已上屏 |
 | `LayerSnapshotBuilder:update` / `FastPath` | 快照更新耗时以及是否进入快速路径 | HWC 为何选择 CLIENT 合成 |
-| `LayerLifecycleManager:commitChanges` | 监听器通知与变化标志清理耗时 | 事务就绪状态 |
+| `LayerLifecycleManager:commitChanges` | listener 通知与 change flags 清理耗时 | transaction readiness |
 | `BufferTX - <layerName>` | 某个缓冲区图层的待处理缓冲区事务 | 全部属性事务的数量 |
-| Winscope 事务/图层跟踪 | 事务、层级、可见性和几何随时间的变化 | GPU/HWC 已完成读取 |
-| 显示/释放围栏 | 显示提交或缓冲区可复用边界 | 客户端最初提交了什么请求 |
+| Winscope transaction/layer trace | transaction、层级、可见性和几何随时间的变化 | GPU/HWC 已完成读取 |
+| present/release fence | display present 或 buffer 可复用边界 | 客户端最初提交了什么请求 |
 
 `TransactionQueue` 在 `queueTransaction()` 时增加，在就绪事务被刷新后按数量减少。它持续升高只说明消费速度跟不上入队速度，还要继续检查：
 
@@ -402,7 +402,7 @@ FrontEnd 文档说明，快照在理论上可以克隆；当前实现为了减�
 验证 FrontEnd 开销时，至少准备两组负载：
 
 1. **内容/属性组**：固定图层数量，只更新缓冲区，或只更新不会改变层级的内容属性。
-2. **层级组**：使用相同数量的图层，再加入重设父节点、相对 Z 轴、镜像、创建和销毁操作。
+2. **层级组**：使用同样的 layer 数，再加入 reparent、relative Z、mirror、create/destroy。
 
 采集时固定设备、刷新率、构建类型和测试时长，并记录：
 
@@ -419,17 +419,17 @@ FrontEnd 文档说明，快照在理论上可以克隆；当前实现为了减�
 
 ### 10.1 同一视觉原子操作放在一笔事务中
 
-同一帧需要一起生效的位置、裁剪、透明度、可见性和缓冲区，应放在同一笔事务中，或按明确顺序合并后一次应用。事务合并满足结合律，但不满足交换律：后合入的同字段值会覆盖前面的值。
+同一帧需要一起生效的 position、crop、alpha、visibility 和 buffer 应放在同一笔 transaction，或按明确顺序 merge 后一次 apply。transaction merge 满足结合律，但不满足交换律：后合入的同字段值会覆盖前面的值。
 
 也不应为了减少事务数量而合并没有原子关系的更新。一笔事务中的任一关键缓冲区或屏障尚未就绪，都可能让整笔事务等待。事务粒度应由视觉一致性决定。
 
 ### 10.2 区分属性更新和层级更新
 
-重设父节点、相对 Z 轴、镜像、创建和销毁会改变层级；位置、裁剪、透明度等几何或可见性字段也可能要求更新子节点和可见区域。只更新内容时，不要反复提交没有变化的层级操作。
+reparent、relative Z、mirror、create/destroy 会改变 hierarchy；position、crop、alpha 等几何或可见性字段也可能要求更新子节点和 visible region。只更新内容时，不要顺带反复提交无变化的层级操作。
 
 ### 10.3 动画跟随正确的帧节奏
 
-由应用驱动的逐帧 `SurfaceControl` 动画通常应与 Choreographer/FrameTimeline 节奏对齐，避免定时器无界地产生事务。媒体、相机等独立数据生产方有自己的时钟，不应强行套用应用界面节奏；这类路径要通过帧率投票、时间戳和同步策略协调。
+由应用驱动的逐帧 `SurfaceControl` 动画通常应与 Choreographer/FrameTimeline 节奏对齐，避免定时器无界地产生事务。media、相机等独立数据生产方有自己的时钟，不应强行套用应用界面节奏；这类路径要通过帧率投票、时间戳和同步策略协调。
 
 ### 10.4 用完显式释放
 
@@ -440,10 +440,10 @@ FrontEnd 文档说明，快照在理论上可以克隆；当前实现为了减�
 | 版本 | 可确认的实现边界 |
 | --- | --- |
 | Android 13 / API 33 | 公开 `android-13.0.0_r1` 标签中没有这组 `FrontEnd` 文件。该版本的实现通常围绕 `Layer` 内部状态与锁存路径组织。 |
-| Android 14 / API 34 | 公开 `android-14.0.0_r1` 标签已包含 `RequestedLayerState`、生命周期、层级、快照构建器和事务处理器，因此 FrontEnd 并非 Android 15 首次引入。 |
+| Android 14 / API 34 | 公开 `android-14.0.0_r1` tag 已包含 `RequestedLayerState`、lifecycle、hierarchy、snapshot builder 和 transaction handler。不能写成“Android 15 首次引入 FrontEnd”。 |
 | Android 15 / API 35 | FrontEnd 继续演进。引用 Android 15 代码时只能说明该版本已有某机制，不能据此断言首引版本。 |
-| Android 16 / API 36 | 对象主线延续，但字段、变化标志、就绪条件和 SurfaceFlinger 兼容路径仍在变化。 |
-| Android 17 / API 37 | 上述函数名、`PostProcess` 变化、WAIT/SIGNAL 屏障、快速路径和旧版 `Layer` 共存关系均按 `android-17.0.0_r1` 解释。 |
+| Android 16 / API 36 | 对象主线延续，但字段、change flags、readiness 和 SurfaceFlinger 兼容路径仍在变化。 |
+| Android 17 / API 37 | 当前版本锚点。以上函数名、`PostProcess` change、WAIT/SIGNAL barrier、fast path 和 legacy `Layer` 共存关系均按 `android-17.0.0_r1` 解释。 |
 
 这些类位于 SurfaceFlinger 内部，不是稳定的 SDK API。调试其他 Android 版本或厂商分支时，应查看对应的标签或提交，不能只按 API 级别推测内部实现。
 
@@ -451,13 +451,13 @@ FrontEnd 文档说明，快照在理论上可以克隆；当前实现为了减�
 
 Android 17 SurfaceFlinger FrontEnd 可以按五个对象理解：
 
-- `TransactionHandler`：按应用令牌排队，并用时间、缓冲区、围栏和屏障过滤器决定本轮可应用事务。
-- `RequestedLayerState`：保存客户端请求在服务端合并后的状态，并把字段变化归类成 FrontEnd 变化标志。
+- `TransactionHandler`：按 apply token 排队，并用时间、buffer、fence 和 barrier filters 决定本轮可应用事务。
+- `RequestedLayerState`：保存客户端请求在服务端合并后的状态，并把字段变化归类成 FrontEnd change flags。
 - `LayerLifecycleManager`：维护图层身份、引用、创建、销毁和本轮变化集合。
-- `LayerHierarchyBuilder`：用图表达父节点、相对 Z 轴、镜像与离屏关系。
+- `LayerHierarchyBuilder`：用图表达 parent、relative Z、mirror 与 offscreen 关系。
 - `LayerSnapshotBuilder`：把请求状态和遍历路径计算成按 Z 轴顺序排列的快照。
 
-排查时要确认当前证据所属的层次：事务入队、请求状态、快照、缓冲区锁存、合成策略或显示提交。区分这些边界后，FrontEnd 问题可以收敛到具体队列、过滤器、图层或遍历路径。
+排查时始终问清楚当前证据属于哪一层：transaction 入队、请求状态、snapshot、buffer latch、composition strategy，还是 display present。只要这些边界没有混在一起，FrontEnd 问题就能从“SurfaceFlinger 很复杂”收敛到具体队列、filter、layer 或 traversal path。
 
 ## 参考资料
 
