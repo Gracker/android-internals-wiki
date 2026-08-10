@@ -480,7 +480,7 @@ adb shell dumpsys input
 - pointer capture mode；
 - touch/hover/drag state；
 - connection 的 outbound queue、wait queue 与 responsive 状态；
-- 按键重复超时时间和间隔。
+- key repeat timeout 和 delay。
 
 再配合：
 
