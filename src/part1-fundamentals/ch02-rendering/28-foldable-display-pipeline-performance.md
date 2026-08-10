@@ -76,7 +76,7 @@ Android 17 的 `DeviceStateToLayoutMap` 从以下位置读取 display layout：
 /vendor/etc/displayconfig/display_layout_configuration.xml
 ```
 
-每个设备状态布局可以为显示器配置：
+每个 device-state layout 可以为 Display 配置：
 
 - 物理 `DisplayAddress`；
 - logical display id；
@@ -101,7 +101,7 @@ Android 17 的 `DeviceStateToLayoutMap` 从以下位置读取 display layout：
 `DeviceStateProviderImpl` 从厂商或数据分区的 `device_state_configuration.xml` 读取状态及条件。条件可以引用：
 
 - lid switch；
-- 指定字符串类型与名称的传感器；
+- 指定 string type 与 name 的 sensor；
 - 一个 sensor 的一个或多个数值范围。
 
 Provider ID 从小到大检查条件，选择首个匹配状态。所需传感器会以 `SENSOR_DELAY_FASTEST` 注册，但事件频率仍受具体 sensor 能力与 HAL 行为限制。
@@ -348,7 +348,7 @@ Compose 中 window size 或 posture state 改变后，读取该 state 的 compos
 建议：
 
 - 在靠近自适应布局决策的位置读取 `WindowSizeClass` / posture；
-- 传递稳定、有明确语义的紧凑、中等、扩展等级或窗格策略；
+- 传递稳定、语义化的 compact/medium/expanded 或 pane strategy；
 - 避免把原始 hinge angle 放进页面根节点的高频 state；
 - 用 Layout Inspector、Compose 跟踪与 Perfetto 查找具体失效范围；
 - 对 list-detail、supporting pane 等结构优先使用 Material 3 Adaptive 组件。
@@ -378,9 +378,9 @@ SurfaceFlinger FrontEnd 接收 App、WMS 和 Shell 的 layer transaction。Compo
 
 - display id 与物理地址；
 - active mode、resolution、density 与 refresh rate；
-- 目标输出的可见图层；
+- 目标 Output 的 visible layers；
 - DEVICE / CLIENT composition；
-- 每个显示器的送显栅栏。
+- 每个 Display 的 present fence。
 
 同一图层经镜像或投影出现在两个输出时，不能把两次送显合并成一条时间线。
 
@@ -529,7 +529,7 @@ adb shell dumpsys SurfaceFlinger --display
 
 记录新旧 Display 的：
 
-- 渲染目标与应用缓冲区尺寸；
+- render target 与 app buffer 尺寸；
 - 刷新率和显示模式；
 - CLIENT/DEVICE composition；
 - 可见图层集合与过渡牵引层；
@@ -539,7 +539,7 @@ adb shell dumpsys SurfaceFlinger --display
 
 ### 9.5 双屏模式只有一侧更新
 
-确认设备是否处于支持并发内建显示器的状态，两个逻辑显示器是否启用，目标内容采用扩展、镜像还是后屏或双屏会话。随后分别检查每个显示器的图层栈、输出和送显。
+确认设备是否处于支持 concurrent internal displays 的 state，两个 logical Display 是否 enabled，目标内容是 extended、mirrored 还是 rear/dual-display session。随后分别检查每个 Display 的 layer stack、Output 和 present。
 
 ## 10. 版本演进
 

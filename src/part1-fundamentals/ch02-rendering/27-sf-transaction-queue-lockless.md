@@ -158,7 +158,7 @@ pop():
 
 客户端调用 `Transaction::apply(false, true)` 时，`oneWay=true` 会让 `ISurfaceComposer` Binder 调用带 `FLAG_ONEWAY`。它只改变客户端等待 Binder 返回的方式，不会：
 
-- 绕过按令牌分桶的先进先出队列；
+- 绕过 per-token FIFO；
 - 绕过 timeline、buffer 或 barrier 过滤；
 - 保证事务在当前 display frame 被采纳；
 - 让 acquire fence 自动变为 signaled。
@@ -298,7 +298,7 @@ Android 13 的入口使用 `mQueueLock` 保护 `mTransactionQueue`，主线程�
 
 - desired present time 或 VSync id 让 transaction 尚未到期；
 - 同 token 队头在等 acquire fence；
-- 缓冲区帧屏障或事务屏障未满足；
+- buffer frame barrier 或 transaction barrier 未满足；
 - created layer 队列、`mStateLock` 或其他组件发生锁等待；
 - CompositionEngine、RenderEngine、HWC 或 display driver 后段变慢；
 - Producer 没有及时提交 buffer。

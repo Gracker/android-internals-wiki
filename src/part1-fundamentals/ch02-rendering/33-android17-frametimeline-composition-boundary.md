@@ -202,7 +202,7 @@ FrameTimeline 的 jank 定义围绕 predicted present 与 actual present 是否�
 SurfaceFlinger 每轮根据当前可见图层集合准备 CompositionEngine 输出，并与 HWC 交互。Android 17 既可能走 `presentOrValidate()` 快路径，也可能进入 validate：
 
 1. HWC 检查当前 display/layer 状态；
-2. 验证过程返回合成类型变化与请求；
+2. validate 返回 composition type changes 与 requests；
 3. SurfaceFlinger/CompositionEngine 接受变化；
 4. 需要 CLIENT 的 layer 由 RenderEngine 合成到 client target；
 5. client target 与可 DEVICE composition 的 layer 一起交给 HWC present。
@@ -403,7 +403,7 @@ ORDER BY app.ts;
 
 一个 SF 令牌关联多条应用记录是正常现象：一次显示更新可以合成多个图层。SF 记录缺失时，应检查令牌是否无效、预测是否过期、trace 是否从帧中途开始，以及目标是否属于 FrameTimeline 覆盖有限的独立 Surface。
 
-### 计算逐帧超期时间
+### 计算 per-frame deadline overrun
 
 Perfetto v54 的 `android.frames.per_frame_metrics` 模块提供 `android_frame_stats`。下面的查询用于筛选 deadline overrun：
 

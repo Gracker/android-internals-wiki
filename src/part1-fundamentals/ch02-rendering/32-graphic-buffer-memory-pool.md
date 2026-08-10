@@ -424,7 +424,7 @@ Skia Vulkan RenderEngine、应用 Vulkan、ANGLE 或 GPU 驱动可以维护各�
 2. 是否出现 `<consumer name> buffer reallocation: ...` instant event；
 3. 是否进入 `GraphicBufferAllocator::allocate` 或 Gralloc Binder 调用；
 4. 返回的 release fence 何时 signal；
-5. 消费者何时获取或释放；
+5. Consumer 何时 acquire/release；
 6. 是否因队列已满返回等待、`WOULD_BLOCK` 或超时。
 
 只有第 2、3 项一起出现，才有直接证据把该次长耗时归到新分配。没有 reallocation 时，应优先检查 Consumer 与 fence。
@@ -477,7 +477,7 @@ Skia Vulkan RenderEngine、应用 Vulkan、ANGLE 或 GPU 驱动可以维护各�
 - Consumer 是否长时间 ACQUIRED；
 - 队列 FIFO 是否积压；
 - release fence 是否晚；
-- 异步或不可阻塞配置与超时；
+- async/cannot-block 配置与 timeout；
 - Producer 是否持续快于显示或 Consumer。
 
 盲目增加 buffer 数量可能暂时减少阻塞，同时增加内存和端到端延迟。游戏、视频和普通界面对吞吐、延迟、丢帧的取舍不同，应分别评估。
