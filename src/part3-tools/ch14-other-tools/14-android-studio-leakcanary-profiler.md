@@ -271,9 +271,9 @@ JNI 是两条证据链的交叉处。HPROF 能显示 JNI global reference 对 Ja
 
 ## 与其他章节的关系
 
-- §10.2 介绍内存泄漏的定义与生命周期模型；本节聚焦 LeakCanary、Android Studio 和 HPROF 的操作证据。
+- §10.2 介绍内存泄漏的定义与生命周期模型；这里聚焦 LeakCanary、Android Studio 和 HPROF 的操作证据。
 - §14.3 介绍 MAT、heapprofd、malloc debug、`showmap` 与系统内存工具；Native 或图形内存问题转到该节。
-- §19.5 与 §26.2 讨论线上 APM、故障采集和退出原因；本节给出原始堆的隐私边界与 Android 17 触发机制。
+- §19.5 与 §26.2 讨论线上 APM、故障采集和退出原因；这里给出原始堆的隐私边界与 Android 17 触发机制。
 - §23.1 承载 Activity、Fragment、WebView、Bitmap、协程和 listener 的应用内存案例。
 
 ## 参考资料

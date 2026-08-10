@@ -102,7 +102,7 @@ sources:
 
 # 18.23 Android 17 多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR
 
-视频播放卡顿可能来自下载、码率选择、解码、Surface 消费、合成、显示或音频时钟。把这些阶段统称为“播放器卡”，很容易在错误的层上调参数。本节固定两个核查基线：
+视频播放卡顿可能来自下载、码率选择、解码、Surface 消费、合成、显示或音频时钟。把这些阶段统称为“播放器卡”，很容易在错误的层上调参数。分析时固定两个核查基线：
 
 - Android 平台：Android 17 / API 37 / `android-17.0.0_r1`。
 - kernel：`android17-6.18-2026-06_r6`。
@@ -389,7 +389,7 @@ Android 17 增加了 VVC/H.266 的 framework MIME、MediaCodec/Codec2 API 与 MP
 
 Tunnel 倍速播放还依赖设备音频与视频硬件能力。官方实现建议把 `MediaFormat.KEY_OPERATING_RATE` 设为内容帧率与倍速的乘积，例如 60 fps 内容以 2 倍速播放时请求 120。该值表达 decoder 所需处理速率，不保证当前 codec 在 secure/HDR/tunnel 组合下可以达到。
 
-Media3 Transformer 的离线转码不属于本节播放主线。Transformer 涉及 decoder、effect、encoder、muxer、GPU/CPU 和文件 I/O，应单独分析。
+Media3 Transformer 的离线转码不属于这里讨论的播放路径。Transformer 涉及 decoder、effect、encoder、muxer、GPU/CPU 和文件 I/O，应单独分析。
 
 ## Kernel 证据边界
 
