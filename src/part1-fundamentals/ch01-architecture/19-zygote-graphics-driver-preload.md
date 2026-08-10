@@ -376,7 +376,7 @@ notifyGraphicsEnvironmentSetup
 
 ### 6.1 `setupGpuLayers`：调试 layer
 
-它处理 Vulkan/GLES / GLES debug layer 的搜索路径和选择。量产 non-debuggable App 不能随意加载外部调试代码；debuggable 状态、目标包名、全局设置和 manifest metadata 共同约束这条路径。
+它处理 Vulkan/GLES debug layer 的搜索路径和选择。量产 non-debuggable App 不能随意加载外部调试代码；debuggable 状态、目标包名、全局设置和 manifest metadata 共同约束这条路径。
 
 如果启动回归只出现在安装了 validation layer 或图形抓帧工具的测试环境，应先排除这一层，再判断是否与 Zygote preload。
 

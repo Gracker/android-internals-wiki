@@ -308,7 +308,7 @@ Android 17 的输出按 UID、接口和方法提供 `cpu_time_micros`、`max_cpu
 
 ### 8.3 用 Perfetto 关联 client、server 和调度
 
-采集 Binder driver、sched、AIDL 与锁竞争相关数据后，Android 17 Perfetto stdlib Android 17 Perfetto 标准库查询同步事务：
+采集 Binder driver、sched、AIDL 与锁竞争相关数据后，Android 17 Perfetto stdlib 可这样查询同步事务：
 
 ```sql
 INCLUDE PERFETTO MODULE android.binder;

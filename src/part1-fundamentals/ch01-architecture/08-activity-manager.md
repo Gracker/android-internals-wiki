@@ -623,7 +623,7 @@ Context.sendBroadcast()
 
 ### Android 14+ 缓存状态下的广播
 
-Android 14 起，应用处于 cached state 时，系统可以暂存发给运行时注册 Receiver 的广播，等应用离开 cached state 后再投递；某些重复广播还可能被合并。Manifest-declared broadcast Manifest Receiver 的广播不使用这套排队方式，系统可先让应用离开缓存状态再投递。
+Android 14 起，应用处于 cached state 时，系统可以暂存发给运行时注册 Receiver 的广播，等应用离开 cached state 后再投递；某些重复广播还可能被合并。Manifest-declared broadcast 不使用这套排队方式，系统可先让应用离开缓存状态再投递。
 
 这会改变 trace 的解释：
 
