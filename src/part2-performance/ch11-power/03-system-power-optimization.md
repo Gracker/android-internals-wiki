@@ -138,24 +138,6 @@ task9_review_notes: '2026-06-07 Task9 idle audit: auto-fixed broken App Archivin
 
 # 系统级功耗优化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Doze 模式的分阶段触发与维护窗口机制
-- 🔹 App Standby Buckets（Active/Working/Frequent/Rare/Restricted）的调度差异
-- 🔹 系统级限后台策略：Background Activity Starts 限制、后台定位限制
-- 🔹 省电模式下的系统行为变化
-- 🔹 厂商级功耗管理：后台冻结、自启动管理、后台杀进程策略
-
-### 扩展（可选深入）
-
-- 🔸 Adaptive Battery 的 ML 模型工作原理
-- 🔸 电池健康管理（Adaptive Charging）与性能的关系
-
-<!-- outline-end -->
-
 ## 系统为什么要限制后台工作
 
 单个 App 只知道自己的任务是否紧急，系统还要同时考虑电量、充电状态、屏幕、移动状态、温度、内存压力、网络和其他 App。Android 因此把后台资源分配拆成多组可以叠加的策略：
@@ -450,7 +432,7 @@ Perfetto 配置至少考虑 `sched/*`、`power/suspend_resume`、`power/cpu_idle
 | Android 16 / API 36 | Active bucket、top-started 和 FGS 并发 Job 受 runtime quota；多原因与历史 pending API |
 | Android 17 / API 37 | `getPendingJobReasonStats()`；listener 型 exact allow-while-idle Alarm；`IntentSender.sendIntent()` BAL opt-in |
 
-## Review 清单
+## 复核清单
 
 - 是否把 Doze 状态与 kernel suspend 证据分开？
 - 是否同时检查 Light Doze、Deep Doze 和维护窗口？
@@ -468,7 +450,7 @@ Perfetto 配置至少考虑 `sched/*`、`power/suspend_resume`、`power/cpu_idle
 
 ## 与其他章节的关系
 
-§5.6 解释 cpuidle、cpufreq、EAS 与 suspend 相关基础，§11.1 说明能量归因，§11.2 讨论 App 如何减少 WakeLock、Job、位置和网络开销。本章位于它们之间：framework 策略决定任务何时获得资源，kernel 与硬件决定设备能进入多深的低功耗状态。进程被回收时再结合 §1.3，避免把 LMKD 与功耗限制混为一类。
+§5.6 解释 cpuidle、cpufreq、EAS 与 suspend 相关基础，§11.1 说明能量归因，§11.2 讨论 App 如何减少 WakeLock、Job、位置和网络开销。这里连接两侧：framework 策略决定任务何时获得资源，kernel 与硬件决定设备能进入多深的低功耗状态。进程被回收时再结合 §1.3，避免把 LMKD 与功耗限制混为一类。
 
 ## 参考资料
 
