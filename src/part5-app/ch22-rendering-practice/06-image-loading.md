@@ -75,29 +75,13 @@ last_deepseek_cn_review_at: 2026-07-04
 
 # 图片加载与显示优化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Glide / Coil 图片加载框架性能对比
-- 🔹 图片解码与缩放策略
-- 🔹 大图加载与区域解码（BitmapRegionDecoder）
-- 🔹 图片缓存策略（内存 / 磁盘 / 网络）
-
-### 扩展（可选深入）
-
-- 🔸 AVIF / WebP 格式选型与兼容性
-
-<!-- outline-end -->
-
 图片从 URL 变成屏幕像素，要经过获取压缩数据、查缓存、解码、变换、持有像素、更新 UI、HWUI 采样和窗口 present。任何一段都可能成为首图慢、列表掉帧或内存峰值的来源。
 
-本文的平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`，kernel 观察基线固定为 `android17-6.18-2026-06_r6`。软件 Bitmap 解码完成后仍要由宿主 View 更新 DisplayList，RenderThread 再采样 Bitmap 并提交 App Window buffer。硬件 Bitmap 位于 graphics memory，适合只在硬件加速 Canvas 上显示；它仍占用图形资源，也不代表图片已经按期 present。显示阶段可结合 [Android View 标准渲染路径](../../part2-performance/ch18-rendering-pipelines/02-android-view-standard.md) 阅读。
+平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`，kernel 观察基线固定为 `android17-6.18-2026-06_r6`。软件 Bitmap 解码完成后仍要由宿主 View 更新 DisplayList，RenderThread 再采样 Bitmap 并提交 App Window buffer。硬件 Bitmap 位于 graphics memory，适合只在硬件加速 Canvas 上显示；它仍占用图形资源，也不代表图片已经按期 present。显示阶段可结合 [Android View 标准渲染路径](../../part2-performance/ch18-rendering-pipelines/02-android-view-standard.md) 阅读。
 
 ## Glide 与 Coil：按版本和约束选型
 
-本节把第三方库事实固定到 Glide `5.0.7` 与 Coil `3.5.0`。两者独立于 Android 平台发布；升级库后要重新核对默认解码器、缓存键、网络组件和 Compose API。
+第三方库相关行为以 Glide `5.0.7` 与 Coil `3.5.0` 为准。两者独立于 Android 平台发布；升级库后要重新核对默认解码器、缓存键、网络组件和 Compose API。
 
 | 维度 | Glide 5.0.7 | Coil 3.5.0 | 评审问题 |
 | --- | --- | --- | --- |
@@ -334,7 +318,7 @@ Android 官方文档说明平台从 Android 12 / API 31 支持 AVIF；Android 10
 | --- | --- | --- | --- |
 | JPEG | 照片、无透明度内容 | 全范围可用 | 有损质量、EXIF 方向、渐进编码与服务端尺寸 |
 | PNG | UI 资源、无损和透明内容 | 全范围可用 | 照片体积、色板优化、透明像素 |
-| WebP | 有损照片、无损或透明图片 | 本文覆盖范围均可解码 | 编码模式、质量、动画需求、区域解码的平台差异 |
+| WebP | 有损照片、无损或透明图片 | Android 10—17 均可解码 | 编码模式、质量、动画需求、区域解码的平台差异 |
 | AVIF | 服务端可协商的高压缩静态图或序列 | 平台解码从 API 31；平台区域解码声明到 Android 17 才包含 AVIF | 低端机 decode 时间、色彩/HDR、fallback、图片库 decoder |
 
 文件更小会减少传输和磁盘字节，但不保证 decode 或首个可见帧更短。同一组代表性图片要在目标设备上比较：
