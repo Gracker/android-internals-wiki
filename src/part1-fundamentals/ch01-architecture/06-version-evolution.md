@@ -131,7 +131,7 @@ last_idle_audit_at: "2026-07-13"
 | 版本 | 主要架构变化 | 分析问题时的影响 |
 |---|---|---|
 | Android 4.4 / API 19 | ART 作为可选运行时预览 | ART 与 Dalvik 并存，不能把后来的 ART 行为套回所有 4.4 设备 |
-| Android 5.0 / API 21 | ART 成为平台运行时；支持 64 位 ABI | 安装期编译、GC、Zygote 位数和原生 ABI 成为重要变量 |
+| Android 5.0 / API 21 | ART 成为平台运行时；支持 64 位 ABI | 安装期编译、GC、Zygote 位数和 native ABI 成为重要变量 |
 | Android 7.0 / API 24 | ART 采用 JIT、AOT、解释执行的混合策略 | 首次运行、画像积累和后台 dexopt 会改变后续性能 |
 | Android 8.0 / API 26 | Project Treble、VINTF、HIDL、VNDK | framework/vendor 边界被稳定接口、ABI 与测试套件约束 |
 | Android 10 / API 29 | Project Mainline 与 APEX | 一部分系统组件可以脱离整机 OTA 更新 |
@@ -182,7 +182,7 @@ GSI 能启动，只说明分区与接口组合越过了启动门槛。完整合�
 
 ### VNDK 与 linker namespace 的历史位置
 
-Treble 还需要解决原生 ABI 可见性。VNDK 曾提供 vendor 可以依赖的一组 framework 原生库，linker namespace 则限制不同进程和模块能看到哪些库。
+Treble 还需要解决 native ABI 可见性。VNDK 曾提供 vendor 可以依赖的一组 framework native 库，linker namespace 则限制不同进程和模块能看到哪些库。
 
 Android 15 开始废弃 VNDK。对以 Android 15 构建的 vendor/product 分区，原 VNDK 库像其他 vendor/product 可用库一样安装；VNDK APEX、相关版本属性和 vendor snapshot 等机制被移除或收缩。用于兼容旧 vendor image 的早期 VNDK APEX 仍可能存在，LL-NDK 也不属于上述废弃范围。
 
@@ -205,7 +205,7 @@ GKI 把通用内核主体和设备相关模块分开。KMI 规定 GKI 对 vendor
 
 稳定 KMI 并不表示任意 GKI 都能替换：
 
-- 不同 GKI 内核或 KMI 代际之间不承诺模块兼容；
+- 不同 GKI 内核或 KMI generation 之间不承诺模块兼容；
 - vendor modules、设备树、boot 配置和厂商功能仍需匹配；
 - 相同 Android 平台可以支持多个历史 ACK 分支。
 
@@ -264,7 +264,7 @@ ART 从 Android 12 起成为 Mainline 模块。Android 12 及以上设备可以�
 
 ### 16 KB page size
 
-Android 15 开始支持以 16 KB 页大小构建平台。更大的页面能扩大 TLB 覆盖范围、减少部分页表遍历，但也可能增加内部碎片和小映射成本。官方基准给出的收益是特定设备与工作负载结果，不应转换成“所有应用都会提升固定百分比”。
+Android 15 开始支持以 16 KB page size 构建平台。更大的页面能扩大 TLB 覆盖范围、减少部分页表遍历，但也可能增加内部碎片和小映射成本。官方基准给出的收益是特定设备与工作负载结果，不应转换成“所有应用都会提升固定百分比”。
 
 应用兼容性主要取决于 native 代码：
 
@@ -362,7 +362,7 @@ Android 17 支持多个历史 GKI 分支。`android17-6.18` 是当前新基线�
 
 Cloud Profile 和 Baseline Profile 可以让关键路径提前 AOT 编译。是否命中仍取决于分发渠道、Profile、安装状态和 ART 配置。
 
-### “16 KB 页大小只影响 NDK 应用”
+### “16 KB page size 只影响 NDK 应用”
 
 应用自身没有 C/C++ 代码，也可能通过 SDK、数据库或图形库打包 native `.so`。应检查最终 APK/AAB，而不是只检查业务源码。
 
