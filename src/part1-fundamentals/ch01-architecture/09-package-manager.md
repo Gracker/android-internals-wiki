@@ -415,10 +415,10 @@ ART Service 的 `PrimaryDexopter` 会尝试为各 ABI 创建 `.sdc`。`artd.mayb
 
 ```text
 会话已提交
-  → 重启前验证
+  → pre-reboot verification
   → mark ready
   → reboot
-  → 应用并验证
+  → apply and verify
   → mark applied
       或失败后进入回滚/失败处理
 ```
