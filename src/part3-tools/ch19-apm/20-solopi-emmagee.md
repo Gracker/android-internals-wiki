@@ -113,32 +113,6 @@ last_idle_audit_log: logs/audit/2026-08-04-20260804-223522-idle-audit-5ee2b1f4-i
 
 # SoloPi 与 Emmagee
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 [定位] 说明 SoloPi 和 Emmagee 都偏测试现场，适合 QA 和实验室辅助,不适合作为线上 APM 主方案。
-- 🔹 [SoloPi] 展开自动化录制回放、性能采集、启动耗时、设备管理、报告导出和多人协作场景。
-- 🔹 [Emmagee] 说明它作为早期单 App 性能悬浮窗的历史价值,写清维护状态和现代替代方案。
-- 🔹 [对比] 用表格比较采集指标、自动化能力、可维护性、权限要求、报告产物和适用阶段。
-- 🔹 [启动测试] 写 SoloPi 测启动耗时的口径:冷启动、热启动、清数据、清进程、首帧或页面可交互。
-- 🔹 [录制回放] 说明脚本稳定性、控件变化、网络数据、账号状态、动画等待和设备差异带来的噪声。
-- 🔹 [权限检查] 列无障碍、悬浮窗、adb、录屏、存储、后台运行等权限及失败表现。
-- 🔹 [QA 工具组] 说明 SoloPi、PerfDog、Macrobenchmark、adb、日志平台各自负责什么。
-- 🔹 [使用建议] 给回归测试、专项测试、兼容性测试三种工作流。
-- 🔹 [边界] 写清这些工具只能帮助复现和记录,根因分析仍需 Perfetto、Profiler、APM 样本。
-
-### 扩展（可选深入）
-
-- 🔸 增加 SoloPi 启动测试步骤模板和报告字段。
-- 🔸 补一个录制回放不稳定的案例,说明如何改成更稳的等待条件。
-- 🔸 对 alipay/SoloPi、NetEase/Emmagee README、维护状态和系统适配做核对。
-- 🔸 增加 QA 工具组流程图,从复现、采集、报告到专项诊断。
-- 🔸 补充测试账号、隐私数据和录屏素材的管理要求。
-
-<!-- outline-end -->
-
 ## 结论：两者都属于测试现场工具
 
 SoloPi 和 Emmagee 都不负责线上 APM 的职责。它们运行在测试设备上，擅长复现操作、观察现场和导出记录；崩溃、ANR、卡顿等问题的归因仍要回到 Perfetto、Android Studio Profiler、系统日志或应用内监控样本。
@@ -148,7 +122,7 @@ SoloPi 和 Emmagee 都不负责线上 APM 的职责。它们运行在测试设�
 - SoloPi 仍有使用价值，重点是录制回放和设备侧测试辅助。不过，公开 APK、构建链与若干采集实现都停留在较早的 Android 基线上，Android 17 / API 37 只能按“需逐机验收的测试现场工具”接入。
 - Emmagee 的 README 已明确声明 Android 7.0 不受支持。它在现代系统中的主要价值是解释旧报告和研究早期外部采样方案，不应重新纳入 Android 17 测试体系。
 
-本节以 SoloPi 源码提交 `35a4a3e3fe02deeb89df35c82dc3ba03a33f4f13`、Emmagee 源码提交 `6a382dffe74b5be6d2de78cb0c640cc67e9ce650` 为审阅基线。Android 平台上限为 Android 17 / API 37 / `android-17.0.0_r1`，涉及 `/proc` 语义时使用内核 `android17-6.18-2026-06_r6` 交叉核对。
+审阅基线为 SoloPi 源码提交 `35a4a3e3fe02deeb89df35c82dc3ba03a33f4f13`、Emmagee 源码提交 `6a382dffe74b5be6d2de78cb0c640cc67e9ce650`。Android 平台上限为 Android 17 / API 37 / `android-17.0.0_r1`，涉及 `/proc` 语义时使用内核 `android17-6.18-2026-06_r6` 交叉核对。
 
 ## SoloPi 能做什么
 
