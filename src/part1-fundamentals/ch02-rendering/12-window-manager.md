@@ -337,7 +337,7 @@ ORDER BY s.name;
 枚举完实际名字后，再围绕三个问题继续分析：
 
 - 当前帧有没有同步 relayout IPC；
-- system_server 里的耗时来自 Binder 执行、`mGlobalLock` 等待，还是动画/ policy 相关线程；
+- system_server 里卡在 Binder 执行、等 `mGlobalLock`，还是等 animation / policy 相关线程
 - 返回应用之后，额外成本落在 re-measure、Insets 分发，还是首帧 draw
 
 ## Window 动画与过渡性能
@@ -380,7 +380,7 @@ Activity open / close 动画可以按版本分层理解：
 | Android 12—14 | legacy `AppTransition` 仍覆盖一部分路径，`TransitionController` 和 Shell 过渡逐步接管 Task/Activity 级过渡 | 同时看 `wm`、`transition`、`android.anim*`、Shell 进程和 SurfaceFlinger transaction |
 | Android 15—17 | `TransitionController`/Shell / Shell transition 是 Activity、Recents、predictive back、桌面模式等场景的主要分析入口 | 先定位过渡 ID，再看 Shell handler、remote transition、leash 事务与 SF `commit`/`composite` |
 
-一次 Activity 切换里，旧 Activity 和新 Activity 的窗口往往会被包到 leash 表面下。动画过程更新 leash 的变换、alpha、crop 和图层，应用不需要每帧重绘 Activity 内容。App 侧首帧准备慢、Shell 动画线程慢、system_server 过渡状态收集慢或 SurfaceFlinger 合成慢，都会表现成切换掉帧，但根因落点不同。
+一次 Activity 切换里，旧 Activity 和新 Activity 的窗口往往会被包到 leash 表面下。动画过程更新 transform、alpha、crop 和图层，应用不需要每帧重绘 Activity 内容。App 侧首帧准备慢、Shell 动画线程慢、system_server 过渡状态收集慢或 SurfaceFlinger 合成慢，都会表现成切换掉帧，但根因落点不同。
 
 Perfetto 里不能只看 `android.anim`。如果掉帧发生在 Activity 打开/ close 期间，应按这个顺序拆：
 
@@ -412,7 +412,7 @@ Split-screen、freeform、Picture-in-Picture、Activity Embedding 和多显示�
 - 多个可见 Task/Window 的边界、Insets、focus 与 input window snapshot；
 - WindowContainerTransaction、transition participant 与 leash；
 - 尺寸/配置回调和应用的新尺寸缓冲；
-- 标题栏、IME、暗化层、壁纸、PiP 与叠加层引起的合成策略变化；
+- caption、IME、dim、wallpaper、PiP 与 overlay 引起的 composition strategy 变化；
 - 同进程多个 ViewRoot 对 UI Looper 与 RenderThread 的竞争。
 
 静止且没有状态变化的可见窗口不一定持续触发 relayout。拖拽分隔线、调整自由窗口尺寸、跨显示移动、IME 动画和过渡更容易形成高频更新。应记录每轮参与的 WindowContainer、sync id、transaction 和缓冲，不用总窗口数替代证据。

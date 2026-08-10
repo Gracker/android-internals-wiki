@@ -152,10 +152,10 @@ last_deepseek_cn_review_at: 2026-06-24
 ```text
 CPU record / submit
   → 顶点处理
-  → 图元装配 + 裁剪
-  → 光栅化
+  → primitive assembly + clipping
+  → rasterization
   → 片元着色
-  → 深度/模板测试 + 混合
+  → depth/stencil tests + blending
   → 颜色附件 / 可呈现图像
 ```
 
@@ -242,8 +242,8 @@ GLES 的 `glCompileShader()` / `glLinkProgram()` 可以触发编译与链接。V
 
 - 首次使用新的 shader/pipeline 变体；
 - app、framework、Skia 或 GPU 驱动更新；
-- 缓存标识、格式或后端变化；
-- 不同混合、裁剪、色彩空间、渲染目标或效果组合；
+- cache identity、格式或 backend 变化；
+- 不同 blend、clip、色彩空间、render target 或 effect 组合；
 - 缓存淘汰、损坏或被清理。
 
 普通应用不能假设自己能直接控制 HWUI 内部缓存，也不应把历史 Flutter `--cache-sksl` 方案套到所有 Skia/HWUI 页面。
@@ -300,7 +300,7 @@ Android 17 的 `frameworks/native/vulkan/libvulkan/swapchain.cpp` 把 Vulkan 交
 
 Android 17 的 loader/swapchain 路径增加 `VK_EXT_present_timing` 支持，可以按显示 ID 查询出队、queue operations end、first pixel out、first pixel visible 等阶段。它并非所有 Android 17 设备都可用：应用要枚举扩展，同时检查 `VK_KHR_present_id2`、`presentTiming` / `presentId2` feature，并在创建 swapchain 时启用 `VK_SWAPCHAIN_CREATE_PRESENT_TIMING_BIT_EXT`。缺少条件时可回退到 `VK_GOOGLE_display_timing` 或 Swappy。
 
-### 渲染轮次与分块式 GPU
+### Render pass 与 tile-based GPU
 
 移动 GPU 多采用 tile-based 架构，但 Vulkan 不保证某次绘制如何映射到物理 tile memory。频繁切换 render target、需要保留旧内容、全尺寸离屏绘制和高带宽附件可能增加 load/store。
 
@@ -327,9 +327,9 @@ GPU 慢帧常被分为 vertex/geometry bound、fragment/fill bound 和 bandwidth
 | --- | --- | --- | --- |
 | CPU / driver bound | GPU 队列有空洞，submit 晚 | 减少 draw call、状态切换或 command record | CPU profile、RHI/driver slice、GPU queue |
 | Vertex / geometry bound | 几何工作增加时 GPU 时间上升 | 降低 mesh/粒子或阴影几何，保持像素条件 | vertex/primitive counter、AGI geometry |
-| 片元/填充瓶颈 | 分辨率、过度绘制、着色器复杂度影响大 | 降低渲染比例、简化片元着色器、缩小效果面积 | 片元/采样计数器、着色器分析 |
-| 带宽瓶颈 | 大纹理、HDR 目标、多轮渲染、上传影响大 | 降低纹理/目标带宽，减少加载/保存 | 外部内存/缓存计数器、渲染轮次 |
-| 同步/背压 | GPU 可能有空洞，线程等待获取或栅栏 | 减少在途帧、修正节拍、减少资源冲突 | 栅栏所有者、队列深度、等待依赖 |
+| Fragment / fill bound | 分辨率、overdraw、shader 复杂度影响大 | 降 render scale、简化 fragment shader、缩小效果面积 | fragment/sample counter、shader 分析 |
+| Bandwidth bound | 大纹理、HDR target、多 pass、upload 影响大 | 降纹理/target 带宽，减少 load/store | external-memory/cache counter、render pass |
+| 同步 / back-pressure | GPU 可能有空洞，线程等 acquire/fence | 降 in-flight、修 pacing、减少资源 hazard | fence owner、queue depth、wait dependency |
 | SF client composition | App buffer ready，SF GPU 工作增加 | 比较 DEVICE/CLIENT composition | layer composition type、RenderEngine、HWC |
 | Thermal / power bound | 运行一段时间后频率下降 | 固定温度/电源条件做短长对照 | GPU frequency、thermal、power rail |
 
@@ -350,13 +350,13 @@ Debug GPU Overdraw GPU 过度绘制”只能定位 HWUI 应用窗口的逻辑重
 - 在视觉允许时减少 HDR/高精度中间目标；
 - 避免重复的全屏离屏合成。
 
-### 顶点瓶颈
+### Vertex bound
 
 应先确认 GPU 的 vertex/primitive counter 与几何复杂度相关。复杂 Path 在 HWUI 中可能走 CPU tessellation、mask/coverage 或缓存，不能因为 Path 多就归为 vertex bound。
 
 原生引擎可尝试：
 
-- LOD、视锥/遮挡剔除；
+- LOD、frustum/occlusion culling；
 - 合理合批，减少微小绘制；
 - 降低粒子、阴影 caster 与蒙皮顶点；
 - 改善顶点缓冲布局和复用；
@@ -403,7 +403,7 @@ ASTC 块越大通常压缩率越高、质量风险也越高。透明纹理、法
 - 渲染轮次开始时加载已有附件；
 - pass 结束时保存附件；
 - tile memory 容量不足或格式过大；
-- 多个全屏目标、解析、回读；
+- 多个全屏 target、resolve、readback；
 - 半透明内容和依赖旧颜色的混合；
 - driver 无法应用预期的隐藏面或压缩优化。
 
@@ -421,7 +421,7 @@ Bitmap / HardwareBuffer / Surface / ANativeWindow
   → GraphicBufferAllocator + graphics allocator HAL
   → GraphicBufferMapper + mapper HAL
   → native_handle: fd + metadata
-  → dma-buf 导出器 / 堆或厂商分配器
+  → dma-buf exporter / heap or vendor allocator
   → GPU, codec, SurfaceFlinger, HWC imports and mappings
 ```
 
@@ -431,7 +431,7 @@ Android 17 的 `frameworks/native/libs/ui/GraphicBufferAllocator.cpp` / `Graphic
 
 ### Gralloc 根据描述符选择布局
 
-分配请求至少包含宽度、高度、图层数、格式和用途。用途会描述 CPU 读写、GPU 纹理/渲染目标、视频编码器、合成器、受保护内容等需求。分配器/映射器与厂商 gralloc 可以据此选择：
+分配请求至少包含 width、height、layer count、format 和 usage。usage 会描述 CPU 读写、GPU texture/render target、video encoder、composer、protected content 等需求。Allocator/mapper 与厂商 gralloc 可以据此选择：
 
 - stride 与对齐；
 - 线性、tiled 或厂商压缩布局；
@@ -575,7 +575,7 @@ AGI Frame Profiler 继续负责单帧检查：对受支持应用查看 Vulkan AP
 ### 4. 分开 CPU、GPU 与显示
 
 - submit 晚：查 UI/Game/RHI/driver CPU；
-- 提交早、生产者栅栏晚：查 GPU 负载、队列、频率；
+- submit 早、producer fence 晚：查 GPU workload、queue、frequency；
 - buffer ready、display 晚：查 SF/HWC/composition；
 - 获取、出队或交换周期等待：查节拍、在途帧和释放操作。
 
@@ -584,7 +584,7 @@ AGI Frame Profiler 继续负责单帧检查：对受支持应用查看 Vulkan AP
 一次只改变一个维度：
 
 - 渲染比例或效果面积；
-- 片元着色器/采样；
+- fragment shader/采样；
 - mesh/粒子/阴影几何；
 - texture/target 格式与分辨率；
 - 绘制调用/状态数量；
@@ -636,7 +636,7 @@ fence wait 只说明依赖尚未完成。判断 GPU 为何晚，需要找到 fen
 
 ### “Perfetto 有 GPU Track，就能直接看 Vertex/Fragment 时间”
 
-设备可能只提供粗粒度渲染阶段或忙碌度/频率。顶点、片元、分块单元、缓存和带宽通常依赖厂商计数器或 AGI/厂商分析器。
+设备可能只提供粗粒度 render stage 或 busy/frequency。Vertex、fragment、tiler、cache 和带宽通常依赖厂商 counter 或 AGI/厂商 profiler。
 
 ### “Vulkan 使用 SPIR-V，所以没有 shader jank”
 

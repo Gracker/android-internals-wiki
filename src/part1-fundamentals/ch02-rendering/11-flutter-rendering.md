@@ -518,7 +518,7 @@ Dart 可用 `dart:developer` 的 `Timeline.startSync()` / `finishSync()` 或 `Ti
 从 DevTools 或 engine trace 选出一帧，记录帧 ID 和：
 
 - VSync callback；
-- Dart 动画/构建/布局/绘制；
+- Dart animation/build/layout/paint；
 - Raster begin/end；
 - GPU submit/completion；
 - 根缓冲入队；
@@ -532,7 +532,7 @@ Dart 可用 `dart:developer` 的 `Timeline.startSync()` / `finishSync()` 或 `Ti
 | Platform/Dart 晚 | build、layout、paint、plugin、Runnable | Dart CPU、task slice、scheduler |
 | Raster 晚 | display list、resource upload、pipeline、submit | Raster/Impeller、driver、GPU queue |
 | Raster 已交付但栅栏晚 | GPU workload、frequency、bandwidth | GPU stage/counter、producer fence |
-| 外部纹理不更新 | 相机/编解码器/插件生产者、Surface 生命周期 | 纹理 ID、队列、回调 |
+| external texture 不更新 | camera/codec/plugin producer、Surface lifecycle | texture id、queue、callback |
 | texture root ready但宿主晚 | SurfaceTexture、ViewRoot、HWUI | host traversal、DrawFrame、host queue |
 | PlatformView 错位 | 两套 traversal/transaction/latch | layer id、transaction、fence、present |
 
@@ -566,7 +566,7 @@ Flutter root Surface、host App Window 和独立 PlatformView 图层可能有不
 关联时使用多组标识：
 
 - Flutter engine frame id；
-- 纹理 ID；
+- texture id；
 - 缓冲 ID/帧号；
 - SurfaceFlinger layer id；
 - 预期/实际呈现时间；
