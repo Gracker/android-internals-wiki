@@ -286,9 +286,9 @@ WHERE p.name = 'system_server'
 ORDER BY s.dur DESC;
 ```
 
-`*_lock_acquire` 是尝试获取时发出的瞬时事件，`*_lock_held` 是成功获取后开始的区间。二者位于同一线程轨道时，可以在界面中直接观察等待与持锁的先后关系。查询结果为空时，再使用 ART 监视器竞争数据作为通用证据。
+`*_lock_acquire` 是尝试获取时发出的瞬时事件，`*_lock_held` 是成功获取后开始的区间。二者位于同一线程轨道时，可以在界面中直接观察等待与持锁的先后关系。查询结果为空时，再使用 ART monitor contention 数据作为通用证据。
 
-Perfetto 当前标准库的模块名为 `android.monitor_contention`，表名为 `android_monitor_contention`。下面的查询使用现有列名列出 `system_server` 的 Java 监视器竞争：
+Perfetto 当前标准库的模块名为 `android.monitor_contention`，表名为 `android_monitor_contention`。下面的查询使用现有列名列出 `system_server` 的 Java monitor 竞争：
 
 ```sql
 INCLUDE PERFETTO MODULE android.monitor_contention;
@@ -326,7 +326,7 @@ LIMIT 50;
 1. 在问题时间窗内找到等待线程，确认延迟来自 monitor contention，而非 Binder reply、CPU runnable、I/O 或其他原因。
 2. 查看 `big_locks` 事件或 `android_monitor_contention.lock_name`，区分全局锁与进程锁。
 3. 找到持锁线程及其持锁方法。等待方的调用栈只能说明谁受影响，持锁方才说明临界区为何变长。
-4. 把持锁区间与线程状态、Binder transaction、调度和 I/O 切片对齐。持锁线程可能在运行，也可能持锁等待另一个资源。
+4. 把持锁区间与线程状态、Binder transaction、调度和 I/O slice 对齐。持锁线程可能在运行，也可能持锁等待另一个资源。
 5. 检查同一时段的 `waiter_count` 和其他等待者。一次长等待与许多中等等待造成的总影响不同。
 6. 回到对应 Android 版本的源码，确认锁注解、获取顺序和版本差异，再决定修改位置。
 
@@ -351,7 +351,7 @@ LIMIT 50;
 | Android 11 及更早 | 没有当前这套 `mProcLock` 双锁骨架 | 不要把 Android 12 之后的 LOSP/LSP 契约套用到旧分支 |
 | Android 12 / API 31 | 引入并启用 `mProcLock`，确立组合读写锁和锁顺序 | 迁移初期仍有大量全局锁路径 |
 | Android 13—16 | 进程状态、OOM 调整、冻结与统计代码持续采用相关约定 | 具体字段和方法位置随版本变化 |
-| Android 17 / API 37 | 双锁继续启用；OOM 调整位于 `am.psc`；定义 `big_locks` Perfetto 事件 | 以 `android-17.0.0_r1` 的注解、调用点和跟踪特性为准 |
+| Android 17 / API 37 | 双锁继续启用；OOM 调整位于 `am.psc`；定义 `big_locks` Perfetto 事件 | 以 `android-17.0.0_r1` 的注解、调用点和 trace 特性为准 |
 
 ## 12. 小结
 

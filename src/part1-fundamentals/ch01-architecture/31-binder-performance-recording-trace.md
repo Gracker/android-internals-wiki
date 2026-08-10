@@ -59,7 +59,7 @@ Binder 可观测性由多套机制组成。分析等待时间、查询冻结状�
 
 这些能力没有“粗粒度到细粒度”的固定层级，也不是 Android 17 同时新增。当前版本中的源码入口只能证明 Android 17 的行为，不能反推引入版本。
 
-## 二、binderfs 特性文件表示能力，不表示运行状态
+## 二、binderfs feature 文件表示能力，不表示运行状态
 
 Android 17 的 `ProcessState::isDriverFeatureEnabled()` 只探测三项驱动能力：
 
@@ -243,7 +243,7 @@ C++ 后端在 `options.GenTraces()` 开启时，会分别在代理方法和 Stub
 
 服务端对应名称以 `cppServer` 结尾。它们与 `BBinder::transact()` 的通用服务端切片来自不同代码位置，因此轨道中可能出现嵌套切片。遇到名称相近的 AIDL 切片时，应检查名称后缀和所在进程/线程，不能按切片数量推算调用次数。
 
-源码没有给出“关闭时固定 10 ns”或“开启时固定多少微秒”的保证。关闭标签会绕过名称构造和 `trace_begin()`；开启后的成本与生成代码、名称处理、trace 缓冲区和调用频率有关，应在目标设备上测量。
+源码没有给出“关闭时固定 10 ns”或“开启时固定多少微秒”的保证。关闭 tag 会绕过名称构造和 `trace_begin()`；开启后的成本与生成代码、名称处理、trace 缓冲区和调用频率有关，应在目标设备上测量。
 
 ### 6.3 最小 Perfetto 配置
 
@@ -325,7 +325,7 @@ LIMIT 50;
 `RecordedTransaction` 同时受三个条件限制：
 
 1. libbinder 编译时定义 `BINDER_ENABLE_RECORDING`，否则 `kEnableRecording` 为 `false`；
-2. 使用内核 Binder；
+2. 使用 kernel Binder；
 3. 发起 `START_RECORDING_TRANSACTION` / `STOP_RECORDING_TRANSACTION` 的调用者 uid 为 root。
 
 `startRecordingTransactions(const Parcel& data)` 从控制事务的 `Parcel` 中读取一个 `unique_fd`。同一个 `BBinder` 一次只允许一场录制。`userdebug` 不是充分条件，必须检查目标产品的 libbinder 构建参数。
@@ -356,7 +356,7 @@ Sent Parcel Object Offsets
 End
 ```
 
-`TransactionHeader` 只有 code、flags、返回状态、RPC 版本标记、秒/纳秒时间戳和保留字段；接口名是独立 chunk。每个 chunk 由 `uint32_t chunkType`、`uint32_t dataSize`、数据、0～7 字节补齐和 64 位 XOR 校验值组成。未知 chunk 可以校验后跳过，重复 chunk 由后读到的值覆盖。
+`TransactionHeader` 只有 code、flags、返回状态、RPC version 标记、秒/纳秒时间戳和保留字段；接口名是独立 chunk。每个 chunk 由 `uint32_t chunkType`、`uint32_t dataSize`、数据、0～7 字节补齐和 64 位 XOR 校验值组成。未知 chunk 可以校验后跳过，重复 chunk 由后读到的值覆盖。
 
 源码明确标记该格式“under active development”且不稳定。录制内容可能包含账号标识、令牌、路径和业务数据；同时，序列化与文件写入发生在事务返回路径并受录制锁保护，会改变被测路径的时延。没有源码依据支持固定的 `100 ns–1 us` 开销。它适用于实验设备上的协议复现和离线检查，不应用于生产设备的常驻采集。
 
@@ -367,7 +367,7 @@ End
 1. 用 Perfetto 抓 `binder`、`aidl` 与 `sched`；
 2. 从 `android_binder_txns` 找出长 `client_dur`；
 3. 比较 `server_ts` 与 `client_ts`，再检查客户端和服务端线程状态；
-4. AIDL 切片有方法名时定位到接口；没有名称时保留 code 和两端 PID/TID，回到服务定义核对；
+4. AIDL slice 有方法名时定位到接口；没有名称时保留 code 和两端 PID/TID，回到服务定义核对；
 5. 不用 `binder_txn_latency_free` 的对象寿命替代端到端耗时。
 
 ### 10.2 冻结相关事务
@@ -381,22 +381,22 @@ End
 
 1. 事务失败后在同一 Binder 线程读取 extended error；
 2. `ENOSPC` 先检查接收进程的缓冲区占用、大事务和并发异步事务；
-3. 只有在跟踪与日志无法解释协议内容、设备可控且 libbinder 编译开关已打开时，才使用 `RecordedTransaction`；
+3. 只有在 trace 与日志无法解释协议内容、设备可控且 libbinder 编译开关已打开时，才使用 `RecordedTransaction`；
 4. 录制文件按敏感数据管理，完成分析后清理。
 
 ## 十一、源码锚点
 
 - AOSP `android-17.0.0_r1`
-  - `frameworks/native/libs/binder/Binder.cpp`：AIDL 服务端跟踪、录制权限与写入位置
+  - `frameworks/native/libs/binder/Binder.cpp`：AIDL 服务端 trace、录制权限与写入位置
   - `frameworks/native/libs/binder/IPCThreadState.cpp`：冻结 ioctl、扩展错误、oneway 告警、冻结通知
-  - `frameworks/native/libs/binder/ProcessState.cpp`：binderfs 特性探测与默认 oneway 嫌疑检测
+  - `frameworks/native/libs/binder/ProcessState.cpp`：binderfs feature 探测与默认 oneway 嫌疑检测
   - `frameworks/native/libs/binder/RecordedTransaction.cpp`、`include/binder/RecordedTransaction.h`：chunk 格式与不稳定性声明
-  - `system/tools/aidl/generate_cpp.cpp`：C++ 客户端/服务端 AIDL 跟踪生成
+  - `system/tools/aidl/generate_cpp.cpp`：C++ 客户端/服务端 AIDL trace 生成
   - `external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql`：`android_binder_txns` 字段定义
 - Kernel `android17-6.18-2026-06_r6`
   - `include/uapi/linux/android/binder.h`：冻结状态位与 ioctl UAPI
   - `drivers/android/binder.c`：冻结、扩展错误、oneway 嫌疑告警和事务释放
   - `drivers/android/binderfs.c`：feature 文件
-  - `drivers/android/binder_trace.h`：Binder 跟踪点字段
+  - `drivers/android/binder_trace.h`：Binder tracepoint 字段
 
 以上结论均以这两个版本锚点为准。迁移到旧系统或 GKI/vendor 分支时，应重新核对特性文件、tracepoint 列表、SELinux 策略和 libbinder 编译选项。
