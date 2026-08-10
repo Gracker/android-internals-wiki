@@ -67,29 +67,13 @@ last_deepseek_cn_review_at: 2026-07-15
 
 # 数据库性能优化（SQLite/Room）
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 SQLite WAL 模式与并发优化
-- 🔹 Room 的正确使用与性能陷阱
-- 🔹 索引设计与查询优化
-- 🔹 数据库迁移与版本管理
-
-### 扩展（可选深入）
-
-- 🔸 SQLite vs Realm vs ObjectBox 选型
-
-<!-- outline-end -->
-
 ## 为什么要了解数据库性能优化（SQLite/Room）
 
-本文的平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。Room 属于独立发布的 AndroidX 组件，行为应以项目锁定的 Room 版本为准，不能只用 Android API 级别推断。涉及 WAL 同步和文件持久性时，沿用 [24.1 文件 I/O 优化](01-file-io-optimization.md)中的 `android17-6.18-2026-06_r6` 内核锚点。
+平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。Room 属于独立发布的 AndroidX 组件，行为应以项目锁定的 Room 版本为准，不能只用 Android API 级别推断。涉及 WAL 同步和文件持久性时，沿用 [24.1 文件 I/O 优化](01-file-io-optimization.md)中的 `android17-6.18-2026-06_r6` 内核锚点。
 
 数据库慢通常不会表现成 CPU 满载。更常见的现象是主线程等待查询、工作线程排队申请连接、Migration 占住首次打开，或者列表滚动时 `CursorWindow` 反复填充。Perfetto 和线程栈中常见 `SQLiteConnectionPool.waitForConnection()`、`SQLiteSession.executeForCursorWindow()`、DAO 生成代码，或 `ContentResolver.query()` 的 Binder 等待。
 
-机制篇 [10.7 SQLite 与 Room 性能](../../part2-performance/ch10-memory-perf/07-sqlite-room-performance.md)介绍 SQLite 并发、`CursorWindow`、Room 执行模型和 ANR 归因。本节处理应用侧决策：怎样选择 WAL，怎样写 DAO，怎样按查询设计索引，以及怎样在发版前验证迁移。
+机制篇 [10.7 SQLite 与 Room 性能](../../part2-performance/ch10-memory-perf/07-sqlite-room-performance.md)介绍 SQLite 并发、`CursorWindow`、Room 执行模型和 ANR 归因。应用侧还要决定怎样选择 WAL，怎样写 DAO，怎样按查询设计索引，以及怎样在发版前验证迁移。
 
 ## SQLite WAL 模式与并发优化
 

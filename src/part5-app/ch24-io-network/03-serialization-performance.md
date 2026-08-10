@@ -66,25 +66,9 @@ last_deepseek_cn_review_at: 2026-07-01
 
 # 序列化性能对比与选型
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 JSON（Gson / Moshi / kotlinx.serialization）性能对比
-- 🔹 Protocol Buffers 与 FlatBuffers
-- 🔹 Parcelable vs Serializable
-- 🔹 序列化在启动和 IPC 中的性能影响
-
-### 扩展（可选深入）
-
-- 🔸 （待扩展）
-
-<!-- outline-end -->
-
 ## 为什么要了解序列化性能对比与选型
 
-本文的平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`；涉及 Binder 驱动时，内核锚点是 `android17-6.18-2026-06_r6`。JSON、Protocol Buffers、FlatBuffers 等库独立于 Android 平台发布，行为要以项目锁定的依赖版本为准。
+平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`；涉及 Binder 驱动时，内核锚点是 `android17-6.18-2026-06_r6`。JSON、Protocol Buffers、FlatBuffers 等库独立于 Android 平台发布，行为要以项目锁定的依赖版本为准。
 
 序列化会消耗 CPU，产生临时对象，也会改变包体积、混淆规则和协议演进方式。问题通常表现为冷启动解析配置时的 CPU 区段、网络响应后的分配与 GC、Binder 调用两侧的编解码，或者只在 R8 发布包中出现的字段丢失。
 
