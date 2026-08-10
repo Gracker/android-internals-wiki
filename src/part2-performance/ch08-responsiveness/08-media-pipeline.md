@@ -77,25 +77,8 @@ last_task6_audit: "2026-07-14"
 
 分析时先给现象分类。播放器显示 buffering，优先检查数据供应与 ABR；解码输出已经产生但画面晚到，继续看 Surface、fence 和合成；音频断续则从回调周期、mixer thread 与 HAL 路径追查。把所有卡顿都归到 `MediaCodec`，往往会在错误的层次花时间。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点，Media3 以 2026-07-30 的稳定版 1.10.1 为库锚点。历史演进保留到 Android 8，所有固定参数都注明对应版本或改为设备测量值。
-<!-- outline-start -->
-## 本节要点大纲
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，Media3 库锚点为 2026-07-30 的稳定版 1.10.1。历史演进保留到 Android 8，固定参数均注明对应版本或改用设备测量值。
 
-### 锚点（必须覆盖）
-
-- 🔹 视频播放管线的数据流、零拷贝路径与 `Surface` / `BufferQueue` 的角色
-- 🔹 `MediaCodec` 的 Buffer 管理、同步 / 异步模式，以及音视频同步的基本思路
-- 🔹 `MediaCodec` 与 `Surface`、Sync Fence、tunneled playback 的协同方式
-- 🔹 Media3 / ExoPlayer 的 ABR、缓冲策略、动态调度与 Player 池化
-- 🔹 AudioFlinger、AAudio、MMAP 与端到端音频延迟的构成
-- 🔹 在 Perfetto 中抓取和分析 `MediaCodec` / `AudioFlinger` 性能问题的方法
-
-### 扩展（可选深入）
-
-- 🔸 HDR / Dolby Vision 带来的额外渲染开销
-- 🔸 Camera → `MediaCodec` 编码管线的零拷贝与 GPU 处理权衡
-
-<!-- outline-end -->
 ## 先建立端到端时间线
 
 视频播放可以拆成以下阶段：
@@ -245,7 +228,7 @@ Android 17 / API 37 引入 Eclipsa video 的平台级播放与采集支持，格
 
 ### 先固定库版本与线程模型
 
-截至 2026-07-30，Media3 稳定版是 1.10.1。本章不把 1.11.0 的候选版行为写进稳定基线。播放器、renderer、track selector、load control 与 analytics 都可能在版本升级中改变默认值，性能报告应记录完整 artifact 版本。
+截至 2026-07-30，Media3 稳定版是 1.10.1，稳定基线不包含 1.11.0 候选版行为。播放器、renderer、track selector、load control 与 analytics 都可能在版本升级中改变默认值，性能报告应记录完整 artifact 版本。
 
 `ExoPlayer` 的公开调用受 application Looper 约束。跨线程直接访问 player 会抛出 wrong-thread `IllegalStateException`。网络加载、codec callback 和渲染各有内部线程，应用侧 listener 也要避免在 application Looper 上执行长任务。
 
@@ -435,7 +418,7 @@ ORDER BY max_ms DESC;
 
 ## 版本边界
 
-| 版本 | 与本章相关的变化 |
+| 版本 | 相关变化 |
 | --- | --- |
 | Android 8.0 / API 26 | AAudio native API |
 | Android 8.1 / API 27 | AAudio MMAP/NOIRQ 低延迟路径 |
@@ -443,7 +426,7 @@ ORDER BY max_ms DESC;
 | Android 11 / API 30 | `KEY_LOW_LATENCY` / `FEATURE_LowLatency`；Codec2 tunneled playback 支持 |
 | Android 15 / API 35 | dav1d AV1 software decoder 可按名称 opt-in，并可通过 Mainline 回溯到部分 Android 11+ 设备 |
 | Android 17 / API 37 | Eclipsa video 平台级播放与采集支持 |
-| Media3 1.10.1 | 本章 ABR、LoadControl、动态调度与预加载的稳定库锚点 |
+| Media3 1.10.1 | ABR、LoadControl、动态调度与预加载的稳定库锚点 |
 
 平台版本不能推导 codec 是否硬件加速、MMAP 是否可用、tunneling 是否稳定或 HDR 是否由 HWC 处理。能力查询、目标设备复现和端到端测量仍是验收依据。
 
@@ -456,7 +439,7 @@ ORDER BY max_ms DESC;
 - [`BufferQueueProducer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp) 与 [`BufferQueueConsumer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp)：图形 buffer 所有权与 fence 流转。
 - [`atrace.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/atrace/atrace.cpp)：Android 17 可用的系统 atrace category 定义。
 
-本章没有依赖某个 Linux scheduler 或驱动实现的固定时延结论。涉及 fence driver、DMA-BUF、音频 ALSA 或 codec driver 的设备定向分析时，内核源码统一以 `android17-6.18-2026-06_r6` 为锚点。
+这里不采用依赖特定 Linux scheduler 或驱动实现的固定时延结论。涉及 fence driver、DMA-BUF、音频 ALSA 或 codec driver 的设备定向分析时，内核源码统一以 `android17-6.18-2026-06_r6` 为锚点。
 
 ## 参考资料
 

@@ -41,46 +41,9 @@ gap_source: "AOSP结构/官方文档/素材驱动"
 
 # 8.12 Keystore/KeyMint 调用延迟与登录链路性能
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 调用路径：App → Android Keystore API → keystore2 → KeyMint HAL
-加工时需要拆清 Java API、系统服务、HAL、TEE/StrongBox 的边界，说明哪些成本发生在 App 进程，哪些成本来自 Binder 和安全硬件调用。
-
-### 🔹 密钥生成、签名与解密的延迟来源
-覆盖 key generation、sign/verify、encrypt/decrypt、attestation 等操作的耗时来源，区分硬件安全、随机数、证书链生成、并发 operation 池和厂商实现差异。
-
-### 🔹 认证绑定密钥与 BiometricPrompt 交互边界
-说明 user authentication、validity duration、per-use authentication 与 BiometricPrompt 的关系，避免把用户等待、UI 交互和 KeyMint 计算耗时混在一起。
-
-### 🔹 冷启动和登录流程的线程调度策略
-聚焦启动、登录、支付、会话恢复等场景：哪些 Keystore 操作不能放主线程，哪些可以预创建，哪些必须等用户认证后执行。
-
-### 🔹 设备差异：StrongBox、TEE、软件回退与并发限制
-按设备能力说明 StrongBox 与 TEE 的延迟和可用性差异，并记录 KeyMint 并发 operation 下的失败码、排队和重试边界。
-
-### 🔹 观测指标与线上归因
-建立指标清单：操作类型、算法、provider、是否 StrongBox、耗时分位值、异常码、主线程占用、登录步骤耗时和设备型号。
-
-### 🔹 治理策略：预创建、异步化、超时与降级
-给出工程策略：启动前移、后台生成、派生结果缓存、超时保护、失败重试、能力探测和安全降级边界。
-
-## 扩展
-
-### 🔸 KeyMint 并发 operation 池与 vold 占用
-AOSP 文档提到 KeyMint operation 并发数量要求；加工时可验证 vold、App 和系统服务并发请求时的资源竞争边界。
-
-### 🔸 Passkey / Credential Manager 与 Keystore 的关系
-可补充登录形态变化后，Credential Manager、passkey、硬件密钥和应用会话恢复之间的性能观测口径。
-
-### 🔸 厂商 StrongBox 延迟差异样本
-如果后续有实测素材，可补 Pixel、主流国产机、低端机的 key generation / sign / decrypt 分位值对比。
-
-<!-- outline-end -->
-
 登录流程中的一次签名或解密，可能跨越 App、`keystore2`、KeyMint HAL、TEE 或 StrongBox。若密钥绑定用户认证，还会加入系统认证 UI、传感器、Gatekeeper/biometric TA 和 Hardware Auth Token。把这些阶段合并成一个“Keystore 很慢”，既无法定位瓶颈，也容易用性能优化改变原有安全语义。
 
-本章以 Android 17 / API 37 的 `android-17.0.0_r1` 为平台源码锚点，kernel 侧固定到 `android17-6.18-2026-06_r6`。应用 API 以 Android Developers 文档为准，服务与 operation 生命周期回到 Android 17 的 framework 和 `system/security` 源码核查。
+平台源码锚点为 Android 17 / API 37 的 `android-17.0.0_r1`，kernel 侧固定到 `android17-6.18-2026-06_r6`。应用 API 以 Android Developers 文档为准，服务与 operation 生命周期回到 Android 17 的 framework 和 `system/security` 源码核查。
 
 ## 调用路径：App、Keystore2、KeyMint 与安全环境
 
@@ -409,18 +372,18 @@ Credential Manager 是初始登录的统一入口，也支持后续重新授权�
 - App 与服务端完成 assertion 验证；
 - App 自己用于会话缓存的 Keystore 解密。
 
-只有应用自行生成 Android Keystore key，或应用本身实现 credential provider 并管理相应 key 时，这些 key 才进入本章的 alias、operation 与 security-level 清单。
+只有应用自行生成 Android Keystore key，或应用本身实现 credential provider 并管理相应 key 时，这些 key 才进入 alias、operation 与 security-level 清单。
 
 ## Android 6—17 的版本边界
 
-| 版本 | 与本章相关的能力 |
+| 版本 | 相关能力 |
 |---|---|
 | Android 6 / API 23 | `KeyGenParameterSpec` 与认证绑定 key 的现代应用基线 |
 | Android 9 / API 28 | StrongBox API 与 `StrongBoxUnavailableException` |
 | Android 11 / API 30 | `setUserAuthenticationParameters()` 明确 timeout 与 auth type |
 | Android 12 / API 31 | Keystore2 + KeyMint 架构；`KeyInfo.getSecurityLevel()` |
 | Android 13 / API 33 | KeyMint v2 增加 Curve25519 等能力 |
-| Android 17 / API 37 | 本章源码锚点；Keystore2 operation、Provider 和 AIDL KeyMint 主线按固定 tag 核查 |
+| Android 17 / API 37 | 源码锚点；Keystore2 operation、Provider 和 AIDL KeyMint 主线按固定 tag 核查 |
 
 平台版本表只描述 API/架构边界。StrongBox、算法组合、operation 数和安全环境耗时仍由设备实现决定。
 

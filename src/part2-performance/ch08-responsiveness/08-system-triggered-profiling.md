@@ -23,50 +23,13 @@ sources:
 
 # 8.10 ProfilingManager 系统触发式性能追踪
 
-<!-- outline-start -->
-## 要点
-
-### 🔸 ProfilingManager 概念与用途
-系统触发式性能追踪机制在 Android 中的作用与定位
-
-### 🔸 AOSP 标准实现路径
-frameworks/base/services/core/java/com/android/server/am/ProfilingManager.java
-
-### 🔸 厂商定制实现差异
-Samsung、Xiaomi、Huawei 等主流厂商的实现特点
-
-### 🔸 降级方案兼容层
-在不支持 ProfilingManager 的设备上的性能替代方案
-
-### 🔸 与 ActivityManagerService 交互
-触发机制、权限控制、生命周期回调
-
-### 🔸 实际使用场景分析
-哪些性能问题最适合用系统触发式追踪方法
-
-### 🔸 工具集成与调试
-Perfetto、Systrace 与 ProfilingManager 的协作方式
-
-## 扩展
-
-### 🔸 厂商实现源码对比
-主流厂商如何实现自己的系统性能追踪工具
-
-### 🔸 跨版本兼容性问题
-不同 Android 版本间的 API 变更与适配
-
-### 🔸 性能影响评估
-系统级追踪机制对设备性能的实际影响分析
-
-<!-- outline-end -->
-
 ## 1. 这套 API 解决什么问题
 
 `android.os.ProfilingManager` 是面向普通应用的公开系统服务。Android 15 / API 35 提供应用主动请求 profile 的能力；Android 16 / API 36 加入系统事件触发；Android 17 / API 37 扩大了触发类型。它的目标是在公开版本应用和真实用户设备上，以受限、经过隐私处理的方式收集性能证据。
 
 这个定位与开发机上的 Android Studio Profiler、`adb` + Perfetto 不同。开发工具适合工程师手动复现，能取得更完整的系统信息；`ProfilingManager` 适合低频采样线上偶发问题，返回的 system trace 会经过 redactor，其他无关进程的信息会被删除。
 
-现稿曾出现两个相反结论：正文使用不存在的 `ProfilingConfig`、`FrameRateFeature` 等类，补充部分又声称 Android 17 没有 `ProfilingManager`。两者都不符合 `android-17.0.0_r1`。公开入口就是 `Context.getSystemService(ProfilingManager::class.java)`；Android 17 的 framework 与服务实现位于 `packages/modules/Profiling` Mainline 模块。
+Android 17 不存在 `ProfilingConfig`、`FrameRateFeature` 等类，但已提供 `ProfilingManager`。公开入口是 `Context.getSystemService(ProfilingManager::class.java)`；framework 与服务实现位于 `packages/modules/Profiling` Mainline 模块。
 
 ### 1.1 主动请求与系统触发
 
