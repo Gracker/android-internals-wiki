@@ -208,7 +208,7 @@ if (app == topApp && PROCESS_STATE_CUR_TOP == PROCESS_STATE_TOP) {
 
 Android 使用 userspace `lmkd` 监控内存压力。Android 10 及以上支持 PSI（Pressure Stall Information）模式：内核统计任务因 CPU、内存或 I/O 资源争用而停顿的时间，`lmkd` 订阅内存压力阈值。当前官方配置仍以 `ro.lmk.use_psi=true` 为默认值，但前提是设备内核启用 PSI。
 
-Android 17 的平台与内核锚点能对上这条链：
+Android 17 的 platform 与 kernel 锚点能对上这条链：
 
 - `ProcessList.setOomAdj()` 向 `lmkd` 发送 `LMK_PROCPRIO`，包含 pid、uid、adj、进程类型等字段。
 - `system/memory/lmkd/lmkd.cpp` 保存进程的 `oomadj`，读取 PSI、swap、thrashing、workingset refault 等信号后选择合格目标。
@@ -233,7 +233,7 @@ writeLmkd(buf, null);
 
 - 当前内存压力及 PSI stall；
 - 进程是否达到本轮允许回收的最小 `oom_score_adj`；
-- swap 剩余量、页缓存抖动和 workingset refault；
+- swap 剩余量、page cache thrashing 和 workingset refault；
 - 是否启用“杀最大合格进程”等策略；
 - 低内存设备与高性能设备的不同配置；
 - 厂商在产品属性与内存 cgroup 上的调整。
@@ -356,4 +356,4 @@ RSS 只是候选选择的一部分。进程重要性、PSI、swap、thrashing、
 - Android 13：cached 进程可能只有有限或没有执行时间；`ApplicationExitInfo` 增加 freezer 退出原因。
 - Android 17：进程状态计算代码位于 `com.android.server.am.psc`，常量与实现不应再引用 Android 16 的旧路径；平台新增 `mmd`，负责 ZRAM 与 swap 维护，但保留 `lmkd` 作为低内存终止决策者。
 
-本文的平台结论以 `android-17.0.0_r1` 为准；PSI 与 cgroup freezer 的内核实现以 `android17-6.18-2026-06_r6` 为准。具体设备的 feature flag、DeviceConfig、产品属性、cgroup 挂载和厂商内存策略仍需在目标构建上实测。
+平台结论以 `android-17.0.0_r1` 为准；PSI 与 cgroup freezer 的内核实现以 `android17-6.18-2026-06_r6` 为准。具体设备的 feature flag、DeviceConfig、产品属性、cgroup 挂载和厂商内存策略仍需在目标构建上实测。
