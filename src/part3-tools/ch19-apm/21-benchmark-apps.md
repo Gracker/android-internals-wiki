@@ -69,32 +69,6 @@ last_deepseek_cn_review_at: 2026-07-18
 
 # Benchmark 应用（Geekbench 6、安兔兔、3DMark、PCMark、Speedometer）
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 [定位] 说明 Geekbench、安兔兔、3DMark、PCMark、Vellamo 测的是设备能力或综合体验基线，不直接代表某个 App 的性能。
-- 🔹 [工具分工] 按 CPU、GPU、Compute、存储、网页、办公负载、综合分拆各工具关注点和适用场景。
-- 🔹 [Geekbench] 解释 single-core、multi-core、Compute 分数对启动、JSON、图片处理、加密、ML 推理的工程含义。
-- 🔹 [3DMark] 解释图形压力、frame stability、thermal throttling、stress test 对游戏和高负载 UI 的参考价值。
-- 🔹 [安兔兔 / PCMark / Vellamo] 写综合分、办公负载、历史网页测试工具的使用边界和过期风险。
-- 🔹 [测试规范] 规定设备状态、系统版本、温度、电量、刷新率、性能模式、后台进程、重复次数、取值方式。
-- 🔹 [机型分层] 设计线上机型分层方法，把 benchmark 分数与 SoC、RAM、存储、系统版本和线上指标关联。
-- 🔹 [分数解释] 说明单项分数比综合分更有用，不能用总分直接解释启动慢或卡顿。
-- 🔹 [线上连接] 说明如何把 Benchmark 结果用于低端机分组、灰度策略、性能预算和告警阈值。
-- 🔹 [历史工具] 对停止维护或口径变化的工具写处理方式：保留历史基线、停止新增、替换指标。
-
-### 扩展（可选深入）
-
-- 🔸 增加机型分层表，包含入门、中端、高端、旗舰四档和建议性能预算。
-- 🔸 补一个 Geekbench 分数与线上启动 P95 的关联示例。
-- 🔸 对 Geekbench、3DMark、PCMark 官方资料和 Vellamo 历史状态做核对。
-- 🔸 增加测试报告模板，记录分数、温度、轮次、版本和备注。
-- 🔸 补充“综合分误导”的案例，说明为什么要看单项分。
-
-<!-- outline-end -->
-
 ## 先把设备基线和 App 数据分开
 
 Geekbench、3DMark、PCMark、安兔兔和 Speedometer 给设备施加固定负载，用于描述 CPU、GPU、存储或浏览器执行路径的能力。线上 APM、Macrobenchmark 和业务场景 trace 描述的是 App 在指定版本、账号、网络和数据规模下的体验。两类数据可以互相解释，不能互相替代。
@@ -116,14 +90,14 @@ Geekbench、3DMark、PCMark、安兔兔和 Speedometer 给设备施加固定负�
 | 工具 | 当前状态 | 可比性规则 | Android 17 项目的建议 |
 |---|---|---|---|
 | Geekbench 7 | 2026-07-23 发布；官方下载页要求 Android 12+、4 GB RAM | CPU、GPU 工作负载和多核规则相对 Geekbench 6 均有改动，不能把两个大版本的分数放进同一时间序列 | 新建 Geekbench 7 基线；已有 Geekbench 6 数据冻结在独立字段 |
-| Geekbench 6 | 本章保留其公开 Benchmark Internals 作为可审计的工作负载样本 | 同一大版本也要保存精确应用版本；没有官方兼容声明时，按精确版本比较 | 用于维护既有 GB6 设备库，不再向 GB7 字段写入 |
+| Geekbench 6 | 保留其公开 Benchmark Internals 作为可审计的工作负载样本 | 同一大版本也要保存精确应用版本；没有官方兼容声明时，按精确版本比较 | 用于维护既有 GB6 设备库，不再向 GB7 字段写入 |
 | 3DMark Android | 当前应用版本 2.6.5056，发布于 2026-04-07 | 应用版本和 Wild Life、Steel Nomad Light 等测试版本是两套编号；比较时以同一测试及其版本为准 | 从设置页同时抄录应用版本、测试名、测试版本和模式 |
 | PCMark Android | 当前应用版本 3.1.4113，发布于 2026-06-15 | 3.1 与 3.0 的总分大致可比，但官方仍建议使用同一 workload 版本；Work 3.0、Storage 2.0 不可与旧测试混比 | 新报告固定 Work 3.0 或 Storage 2.0，并保存 System WebView 版本 |
 | 安兔兔 | 官方下载区当前为 V11.1.4，发布于 2026-06-30 | V11 和 V10 因测试项变化不可比；跨 OS 的分数也不用于工程回归 | 总分仅作沟通标签，归因时查看 CPU、GPU、MEM、UX 子项及 App 实测 |
 | Speedometer | 当前稳定口径为 3.1 | 3.1 修正了测量框架；不要把 3.0 和 3.1 混在一组 | 固定 Speedometer、浏览器或 WebView、系统和电源状态 |
 | Vellamo | Qualcomm 的可核验官方资料停留在 2012 年的套件介绍，没有当前版本依据 | 历史报告只能在原工具、原版本和相近环境内阅读 | 冻结旧数据，不再补录 Android 17 新设备 |
 
-Geekbench 7 发布距离本章复核只有两天。当前设备库若已积累大量 Geekbench 6 数据，不应为追新而覆盖旧列；增加 `geekbench_major=7` 和新分数字段，等样本覆盖率足够后再迁移分层规则。
+Geekbench 7 于 2026-07-23 发布。当前设备库若已积累大量 Geekbench 6 数据，不应为追新而覆盖旧列；增加 `geekbench_major=7` 和新分数字段，等样本覆盖率足够后再迁移分层规则。
 
 ## 工具分工：先选问题，再选分数
 
@@ -253,7 +227,7 @@ Qualcomm 2012 年官方资料把 Vellamo 描述为包含 HTML5 与 Metal 等章�
 
 Android 的 Media Performance Class 从 Android 12 体系引入。Android 17 / API 37 的 AOSP `Build.VERSION.MEDIA_PERFORMANCE_CLASS` 仍从设备属性读取声明值，未声明时返回 0。Jetpack Core Performance 可以从 build 信息或 Google Play services 查询兼容等级。
 
-截至本章复核日，Android 官方公开定义的等级是 30、31、33、34、35，其中没有 MPC 32；0 表示未定义。Performance Class 可向前兼容：设备升级到 Android 17 后，仍可能报告它原先满足的 33、34 或 35。不要自行创造“MPC 37”，也不要把 Android 版本号当作设备必然报告的等级。
+截至 2026-07-25，Android 官方公开定义的等级是 30、31、33、34、35，其中没有 MPC 32；0 表示未定义。Performance Class 可向前兼容：设备升级到 Android 17 后，仍可能报告它原先满足的 33、34 或 35。不要自行创造“MPC 37”，也不要把 Android 版本号当作设备必然报告的等级。
 
 | 信号 | 可以表达什么 | 不能表达什么 |
 |---|---|---|
