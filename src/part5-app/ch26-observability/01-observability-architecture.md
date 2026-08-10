@@ -56,25 +56,9 @@ last_deepseek_cn_review_at: 2026-07-03
 
 # App 可观测性架构设计
 
-<!-- outline-start -->
-## 本节要点大纲
+App 可观测性要解决线上问题处理里的四件事：判断影响面、取得现场证据、找到责任方向，并在线上验证修复结果。新版本上线后 crash 率异常，应先回答「影响多少用户、集中在哪些机型和版本」，再关联 crash 堆栈、发布记录和受控的用户操作摘要；修复进入灰度后，还要验证同口径指标是否恢复。这四个环节分别需要 Metrics（看趋势）、Logs（还原事件）、Traces（解释耗时路径）和回验。总架构可从数据模型、端侧采集、服务端处理与问题流转四个层面展开。
 
-### 锚点（必须覆盖）
-
-- 🔹 可观测性三支柱：Metrics / Logs / Traces
-- 🔹 App 侧监控体系分层设计
-- 🔹 数据采集 / 上报 / 存储 / 分析 / 告警完整路径
-- 🔹 采样策略与数据量控制
-
-### 扩展（可选深入）
-
-- 🔸 （待扩展）
-
-<!-- outline-end -->
-
-App 可观测性要解决线上问题处理里的四件事：判断影响面、取得现场证据、找到责任方向，并在线上验证修复结果。新版本上线后 crash 率异常，应先回答「影响多少用户、集中在哪些机型和版本」，再关联 crash 堆栈、发布记录和受控的用户操作摘要；修复进入灰度后，还要验证同口径指标是否恢复。这四个环节分别需要 Metrics（看趋势）、Logs（还原事件）、Traces（解释耗时路径）和回验。本节从数据模型、端侧采集、服务端处理与问题流转四个层面说明总架构。
-
-本文的平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`。可观测性协议大多由应用与服务端共同定义，不能把某个第三方 SDK 的字段误写成平台保证；涉及时间基准和线上系统 profile 时，分别以 Android 17 的 `SystemClock` 与 `ProfilingManager` 实现边界为准。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`。可观测性协议大多由应用与服务端共同定义，不能把某个第三方 SDK 的字段误写成平台保证；涉及时间基准和线上系统 profile 时，分别以 Android 17 的 `SystemClock` 与 `ProfilingManager` 实现边界为准。
 
 ## Metrics / Logs / Traces 分别回答什么问题
 
@@ -224,7 +208,7 @@ graph TD
 - 上传层：按事件优先级、网络类型、前后台状态和服务端限流批量上传。弱网下优先上传摘要，延后上传大文件。
 - 控制层：服务端下发采样率、事件开关、远程诊断命令和熔断规则；每条配置带签名、版本号、过期时间、作用范围和回滚策略。
 
-这个分层有两个基本约束。采集入口要足够便宜，主线程只提交事实；分析和聚合通常放到服务端，端侧只做必要的聚合、压缩、脱敏和容灾。`mmap` 不是“主线程写入无开销”的保证，首次缺页、扩容、同步和存储压力仍可能产生延迟。19.27 节已经展开 APM SDK 的持久化、编码协议、网络投递和自监控，本节不重复实现细节。
+这个分层有两个基本约束。采集入口要足够便宜，主线程只提交事实；分析和聚合通常放到服务端，端侧只做必要的聚合、压缩、脱敏和容灾。`mmap` 不是“主线程写入无开销”的保证，首次缺页、扩容、同步和存储压力仍可能产生延迟。19.27 节已经展开 APM SDK 的持久化、编码协议、网络投递和自监控，这里不重复实现细节。
 
 Crash 还需要一条不依赖普通异步队列的最小保全路径。进程异常退出时，后台线程可能来不及消费队列；Java uncaught exception 与 native signal 的可用能力也不同。实现应预分配必要结构、避免在 native signal handler 中调用非 async-signal-safe 操作，并在下次启动校验和补传未完成记录。具体边界见 26.2。
 
@@ -258,8 +242,6 @@ Android 官方启动优化文档区分 TTID 和 TTFD：TTID 表示首帧出现�
 - 用户级采样：对高频性能事件按用户分桶，避免每次事件随机采样造成会话时间线断裂。命中用户在一个时间窗内保持同一策略，便于拼出会话时间线。
 - 异常补采：基线指标发现异常后，对目标版本、机型和渠道短期开启更高采样率；profile 采集还要满足平台限流、设备状态、隐私和文件配额。
 - 大文件限额：HPROF、system trace 和完整日志包必须限制单设备次数、文件大小、上传网络和保留时间。
-
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
 
 采样配置要有版本号。客户端每次成功上报时带上本地配置版本，服务端可以随响应返回新配置；这条路径不保证即时到达，因此客户端还要为配置过期、长期离线和签名校验失败定义保守缺省值。配置应支持紧急关闭开关（kill switch），并限制可关闭的能力范围，避免远程配置破坏 Crash / ANR 等最低诊断能力。
 
@@ -305,7 +287,7 @@ Metrics 可以指出版本回归，Logs 可以给出支付确认事件的错误�
 
 ### 用户日志与远程诊断：现场证据层
 
-Metrics 告诉团队哪里异常，Logs 和远程诊断帮助团队回到现场。本节补上了指标之外的现场证据层：可观测性架构除了指标看板，还要能在必要时为特定用户、特定版本、特定机型补采现场。
+Metrics 告诉团队哪里异常，Logs 和远程诊断帮助团队回到现场。可观测性架构除了指标看板，还要能在必要时为特定用户、特定版本、特定机型补采现场证据。
 
 可执行的设计通常包含三类能力：
 
@@ -321,7 +303,7 @@ Android 17 的 [`SystemClock.java`](https://android.googlesource.com/platform/fr
 
 Android 17 的 [`ProfilingManager.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java) 明确写出请求受限流且不保证执行，返回结果经过裁剪并限定到请求进程。线上架构因此要把 profile 视为稀缺的补充证据：先用 Metrics 找到目标群体，再用 span/log 摘要缩小范围，随后在系统允许时采集 profile。没有回调或没有制品是正常分支，不能让诊断流程依赖它必定成功。
 
-本节没有使用 Linux kernel 私有接口，也没有从 eBPF、`/proc` 或调度器实现推导应用协议，因此不强行引入 kernel tag。后续章节若讨论内核采集路径，再统一以 `android17-6.18-2026-06_r6` 为 kernel 锚点。
+这里不使用 Linux kernel 私有接口，也不从 eBPF、`/proc` 或调度器实现推导应用协议，因此不引入 kernel tag。涉及内核采集路径的专题统一以 `android17-6.18-2026-06_r6` 为 kernel 锚点。
 
 ## 最小可用架构
 
@@ -338,10 +320,6 @@ Android 17 的 [`ProfilingManager.java`](https://android.googlesource.com/platfo
 
 ## 参考资料
 
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 34.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
 - [Android Vitals](https://developer.android.com/topic/performance/vitals)：Play 质量指标、核心指标与 28 天评估窗口。
 - [App startup analysis and optimization](https://developer.android.com/topic/performance/appstartup/analysis-optimization)：TTID、TTFD 与启动 trace。
 - [Slow rendering](https://developer.android.com/topic/performance/vitals/render)：slow/frozen frame、ANR 与 FrameTimeline。

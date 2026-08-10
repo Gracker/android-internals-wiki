@@ -51,57 +51,9 @@ sources:
 
 # 25.31 资源文件体积优化实战
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 图片资源体积优化
-- WebP 格式转换与质量 / 体积权衡
-- VectorDrawable 替代 PNG 的适用场景与性能边界
-- AVIF 格式在 Android 12+ 的支持与兼容方案
-- 图片资源重复检测与自动去重
-- 来源锚点：Android Developers 与 Android 17 AOSP 资源表 / AssetManager2 源码
-
-### 🔹 资源限定符优化
-- 多 dpi 资源（mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi）裁剪策略
-- 语言资源、屏幕方向资源的按需保留
-- 使用 ABI splits / density splits 减少单包资源量
-
-### 🔹 ARSC 文件优化
-- resources.arsc 文件结构与体积构成
-- Resource Shrinking 与 R8 的协作机制
-- 复杂资源 ID 对 ARSC 体积的影响
-- AAPT2 的 resource merging 优化
-
-### 🔹 assets 目录优化
-- 原始素材压缩策略（音频 / 字体 / 数据文件）
-- 字体子集化（subset）与可变字体
-- assets 与 res/ 的选型差异对体积的影响
-
-### 🔹 资源混淆与压缩
-- AndResGuard / R8 的资源名混淆
-- 7zip / zstd 压缩对 APK 体积的影响
-- Android App Bundle 的资源按需分发机制（详见 25.8 节）
-
-### 🔹 R8 Resource Shrinking 深度配置
-- shrinkResources true 的底层机制与风险
-- keep.xml 精细化资源保留策略
-- 反射引用资源的 safe listing
-
-## 扩展
-
-### 🔸 Play Asset Delivery 与动态资源下发
-- 大型游戏 / 应用的资源按需下载策略
-- Fast-follow 与 on-demand 分发模式
-
-### 🔸 Android 17 资源运行时与构建期边界
-- AAPT2 属于构建期工具链，不是 Android 17 runtime 自动优化
-- AssetManager2 / Resources 只消费已安装资源表并按 configuration 选择候选
-
-<!-- outline-end -->
-
 资源优化很容易变成一张格式替换清单：PNG 转 WebP、删几套 density、打开 `shrinkResources`。这张清单没有回答三个工程问题：删掉的资源是否真的不可达、某个格式在最低系统版本能否解码、AAB 上传体积与单设备下载量是否用了同一口径。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，构建工具行为采用 2026 年 7 月的 Android Developers 文档语义。AAPT2、AGP 与 R8 的版本独立于 Android 平台版本；Android 17 运行资源表，不会替应用自动压缩图片或删除无用资源。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，构建工具行为采用 2026 年 7 月的 Android Developers 文档语义。AAPT2、AGP 与 R8 的版本独立于 Android 平台版本；Android 17 运行资源表，不会替应用自动压缩图片或删除无用资源。
 
 ## 先把资源字节分成四类
 
@@ -317,7 +269,7 @@ strict mode 适合已经登记所有动态调用点、并有 release 路径测�
 
 ### WebP
 
-本文适用的 Android 8 / API 26 及以上平台均支持有损、无损与透明 WebP。常见迁移方式是：
+Android 8 / API 26 及以上平台均支持有损、无损与透明 WebP。常见迁移方式是：
 
 - 照片、运营图评估有损 WebP；
 - 透明插画比较无损 WebP 与 PNG；
@@ -558,7 +510,7 @@ AAPT2 的 [`ResourceTable.cpp`](https://android.googlesource.com/platform/framew
 
 Android 17 / API 37 没有向应用提供一个“调用后自动缩小资源”的 API。体积优化发生在素材、引用图、AAPT2/AGP/R8 和分发阶段，运行时只按已安装资源表与配置选择候选。
 
-本章不依赖 Linux kernel 专有机制，因此没有把结论关联到文件系统压缩或某个 governor。资源文件读取会经过通用 VFS/page cache，但资源格式、限定符与 shrink 结果由 Android 工具链和 framework 决定。
+这些结论不依赖 Linux kernel 专有机制，也不关联文件系统压缩或某个 governor。资源文件读取会经过通用 VFS/page cache，但资源格式、限定符与 shrink 结果由 Android 工具链和 framework 决定。
 
 ## 常见错误
 
@@ -607,7 +559,7 @@ mapping 必须与同一次构建的二进制和资源表绑定。工具版本相
 | 版本 | 与资源体积相关的边界 |
 |---|---|
 | Android 5.0（API 21） | 平台支持 split APK，后续 AAB 可按设备配置交付资源 |
-| Android 8.0（API 26） | 本章最低版本；平台支持 bundled/downloadable font 与 variable font 使用场景 |
+| Android 8.0（API 26） | 适用范围的最低版本；平台支持 bundled/downloadable font 与 variable font 使用场景 |
 | Android 12（API 31） | 平台支持 AVIF 图片，低版本仍需 fallback |
 | Android 13（API 33） | 提供系统级 per-app language，语言清单与 split 策略需要协作 |
 | AGP 8.8 | `resourceConfigurations` 弃用，应用语言过滤迁移到 `androidResources.localeFilters` |
@@ -626,7 +578,7 @@ mapping 必须与同一次构建的二进制和资源表绑定。工具版本相
 - [25.29 DEX 体积优化](29-dex-size-optimization.md)：代码引用图与 R8 诊断。
 - [25.30 Native SO 体积优化](30-native-so-size-optimization.md)：ABI、ELF 与 16 KB 对齐。
 
-本章使用以下一手资料：
+一手资料：
 
 - [AAPT2 command reference](https://developer.android.com/tools/aapt2)：compile、link、dump、diff 与 optimize。
 - [apkanalyzer command reference](https://developer.android.com/tools/apkanalyzer)：命令位置、APK 文件列表与体积比较。

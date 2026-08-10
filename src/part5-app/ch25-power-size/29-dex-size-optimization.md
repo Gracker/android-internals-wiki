@@ -43,74 +43,6 @@ last_review_finalize_run_id: 20260809-044341-4eef3020
 
 # 25.29 DEX 体积优化实战
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 DEX 文件结构与体积构成
-- DEX 二进制格式：header、string_ids、type_ids、proto_ids、field_ids、method_ids、class_defs、data
-- 体积来源：代码量（方法数/类数）、字符串池、调试信息（`debug_info_item`：行号、参数名、局部变量事件）
-- DEX 方法数 64K 限制与 Multidex 的体积代价
-
-### 🔹 R8 Full Mode 与代码缩减
-- R8 Full Mode vs Compat Mode 的体积差异
-- Keep 规则精简：避免过度 Keep 导致死代码无法剔除
-- `@Keep` 注解滥用检测与治理
-- 规则合并与去重：`-whyareyoukeeping` 诊断无用 Keep
-- 详见 25.7 节的 R8 基础
-
-### 🔹 D8 与 DexBuilder 选项调优
-- `--release` 模式对 DEX 体积的影响
-- `--min-api` 与 DEX 格式版本（DEX 037 vs 038+）
-- DEX 方法内联对体积的影响
-
-### 🔹 Debug 信息剥离与映射管理
-- 现代 R8 已在 release 模式自行处理行号映射；无需非标准 `-strip-debug` 手工破坏栈信息
-- R8 `mapping.txt` 的保留与上传（Crash symbolication 依赖）
-- ReTrace 工具与 mapping 文件管理流程
-- 如何在减小体积的同时保证线上可调试
-
-### 🔹 Multidex 体积代价与优化
-- Multidex DEX 文件数量与冷启动耗时的关联
-- Main Dex List 最小化：只保留启动必需类
-- Android 17 ART 支持多 DEX / DEX container 读取，但不向应用承诺"并行加载"性能契约 [已核对: AOSP android-17.0.0_r1，见正文 Multidex 节]
-- 通过模块化/动态特性模块减少主 APK DEX 数量
-
-### 🔹 Startup Profile 与 DEX 布局优化
-- Baseline Profile 如何影响 DEX 内类排列顺序
-- `.art` / `.oat` 文件大小与 DEX 布局的关系
-- Startup Profile 生成与 DEX 体积的 trade-off
-- 详见 21.12 节
-
-### 🔹 字符串池与资源引用优化
-- R.string.* 常量内联对 DEX 字符串池的影响
-- 常量折叠与 R8 内联优化边界
-- `@StringRes` / `@DrawableRes` 类型提示注解不自动形成 R8 keep 入口
-
-### 🔹 ProGuard / R8 诊断与体积回归监控
-- `-printusage`：被剔除的代码清单（AGP 产物 `usage.txt`）
-- `-printseeds`：存活代码清单审计（AGP 产物 `seeds.txt`）
-- DEX 体积 CI 门禁：每 PR 对比 `dexcount` 指标
-- `com.android.tools.build:apkzlib` 程序化解析 DEX 方法数
-
-## 扩展
-
-### 🔸 Kotlin Metadata 对 DEX 体积的影响
-- Kotlin 内联函数生成的 bytecode 膨胀
-- `@Metadata` 注解开销与 R8 对 Kotlin Metadata 的处理
-- K2 编译器对生成 DEX 大小的影响
-
-### 🔸 动态特性模块（DFM）的 DEX 拆分策略
-- 按功能模块拆分 DEX 的最佳实践
-- 模块间依赖与 DEX 重复代码检测
-- 详见 25.8 节
-
-### 🔸 DexArchive 与增量编译
-- D8 的 DexArchive 机制
-- 增量 DEX 构建对 CI 效率的影响
-- 布局稳定性与可缓存性
-
-<!-- outline-end -->
-
 ## 先确定优化对象
 
 DEX 优化容易被“方法数”“DEX 个数”带偏。用户感知到的是下载、安装、启动和运行时内存，工程团队操作的是另一组产物指标：
@@ -123,7 +55,7 @@ DEX 优化容易被“方法数”“DEX 个数”带偏。用户感知到的是
 | `classes.dex` 的启动代码覆盖 | 启动路径是否集中在首个 DEX | 整体 DEX 是否足够小 |
 | 设备上的 `.vdex`、`.odex`、`.art` | 安装后验证、编译和 App Image 成本 | 商店下载大小 |
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点。构建工具部分采用 2026 年 7 月的 Android Developers 文档语义。平台版本和 AGP/R8 版本是两条独立轴：升级 `targetSdk` 不会自动缩小 DEX，升级工具链也不能代替发布产物回归测试。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，构建工具部分采用 2026 年 7 月的 Android Developers 文档语义。平台版本和 AGP/R8 版本是两条独立轴：升级 `targetSdk` 不会自动缩小 DEX，升级工具链也不能代替发布产物回归测试。
 
 一个可执行的目标通常写成三组预算：
 
@@ -424,7 +356,7 @@ R8 缩短和重打包符号后，类名、包名、字段名与方法名字符�
 
 ### Android 12—17 已原生支持 multidex
 
-Android 5.0 / API 21 起，ART 原生加载 APK 中的 `classes.dex`、`classes2.dex` 等文件。本文适用的 Android 12—17 不需要 `androidx.multidex` 安装器，也不需要为了类可见性维护 legacy main dex list。
+Android 5.0 / API 21 起，ART 原生加载 APK 中的 `classes.dex`、`classes2.dex` 等文件。Android 12—17 不需要 `androidx.multidex` 安装器，也不需要为了类可见性维护 legacy main dex list。
 
 `minSdk <= 20` 的应用仍要处理 Dalvik legacy multidex：
 
@@ -599,7 +531,7 @@ Framework 的 [`DexPathList.java`](https://android.googlesource.com/platform/lib
 
 Android 17 / API 37 也没有新增一个面向应用的 DEX 体积 API。平台继续执行安装、验证、profile 与 dexopt；体积削减仍发生在源码依赖、R8 配置、D8/R8 输出和 App Bundle 交付阶段。
 
-本章不涉及内核机制，因此没有把 DEX 结论关联到 Linux kernel tag。`.dex`、`.vdex`、`.oat` 和 `.art` 的读取最终依赖文件映射与页面缓存，但应用侧体积策略无需以某个内核 governor 或文件系统实现为前提。
+DEX 结论不涉及内核专有机制，也不关联特定 Linux kernel tag。`.dex`、`.vdex`、`.oat` 和 `.art` 的读取最终依赖文件映射与页面缓存，但应用侧体积策略无需以某个内核 governor 或文件系统实现为前提。
 
 ## 常见错误
 
@@ -666,7 +598,7 @@ Android 平台版本表与 AGP 版本表放在一起是为了说明边界变化�
 - [21.12 Startup Profile 与 DEX Layout](../ch21-startup/12-startup-profile-dex-layout.md)：主 DEX 布局、profile 生成与启动验证。
 - [1.57 ART Boot Image 内存映射](../../part1-fundamentals/ch01-architecture/57-android17-art-boot-image-memory-mapping-startup.md)：`.art`、`.oat`、`.vdex` 与平台启动边界。
 
-本章使用以下一手资料：
+一手资料：
 
 - [Dalvik executable format](https://source.android.com/docs/core/runtime/dex-format)：DEX header、ID 表、data item 与 v41 container。
 - [Enable app optimization with R8](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization)：R8、Full Mode 与 AGP 版本行为。

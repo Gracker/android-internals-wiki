@@ -600,7 +600,7 @@ Android 17 普通应用只能读取 status/headroom。raw temperature、cooling 
 - [25.12 Excessive CPU 与系统处置](12-android17-excessive-cpu-kill.md)：持续 CPU 异常的线上治理。
 - [25.27 BatteryUsageStats 与功耗归因](27-android17-battery-usage-stats-power-attribution.md)：功耗读数与 UID 归因边界。
 
-本章采用以下 Android 17 源码作为直接锚点：
+Android 17 源码锚点：
 
 - [`PowerManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java)：status、headroom、threshold 与 listener。
 - [`ThermalManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java)：HAL 连接、skin 聚合、forecast、shell 与 trace counter。
