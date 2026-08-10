@@ -51,7 +51,7 @@ Binder 是 Android 本机跨进程通信的核心机制，但不是应用之间�
 
 稳定性治理的第一条规则是：**把传输是否完成、服务端是否执行、业务是否成功分开记录。** `RemoteException` 只说明 IPC 边界出现问题，不能直接证明服务端没有执行；`oneway` 调用返回也不能证明目标已经处理。
 
-本文的平台源码锚点为 `android-17.0.0_r1`，Binder 驱动锚点为 `android17-6.18-2026-06_r6`。
+平台源码锚点为 `android-17.0.0_r1`，Binder 驱动锚点为 `android17-6.18-2026-06_r6`。
 
 ## 1. 一次同步 Binder 调用有四个失败位置
 
@@ -247,7 +247,7 @@ Android 17 C++ libbinder 的 `DEFAULT_MAX_BINDER_THREADS` 是 15。源码同时�
 
 当前驱动的 spam detector 在 async 空间低于总 buffer 的 10% 后开始检查发送 pid；同一 pid 占用超过 50 个 async buffer，或占用量超过总 buffer 的 25%，会把某笔 transaction 标成 suspect。libbinder 收到 `BR_ONEWAY_SPAM_SUSPECT` 后打印“oneway spamming”和调用栈。
 
-这些数值是本章 kernel 锚点的实现细节，不是应用协议可以依赖的限流阈值。检测器提供诊断信号，不会替应用合并状态，也不保证可靠投递。高频事件应在发送前做采样、去重或 latest-only 合并；需要每条不丢的业务流应使用有背压和确认的协议，而不是无限发送 oneway。
+这些数值是当前 kernel 锚点的实现细节，不是应用协议可以依赖的限流阈值。检测器提供诊断信号，不会替应用合并状态，也不保证可靠投递。高频事件应在发送前做采样、去重或 latest-only 合并；需要每条不丢的业务流应使用有背压和确认的协议，而不是无限发送 oneway。
 
 ## 8. 排障：同时看客户端、服务端和驱动时间线
 
@@ -316,8 +316,8 @@ APM hook 只能覆盖自己能安全观察的边界。普通应用无法可靠�
 - 1.4 负责 Binder 驱动、对象引用与一次 transaction 的基础链路。
 - 1.17 负责不同 IPC 机制的选型和通用性能比较。
 - 1.18 负责 cached apps freezer 与进程生命周期。
-- 20.4 负责 ANR 证据和超时类型；本节提供 Binder 侧等待链。
-- 26.11 负责 Perfetto/eBPF 等观测工具；本节只说明 IPC 需要哪些证据。
+- 20.4 负责 ANR 证据和超时类型，这里提供 Binder 侧等待链。
+- 26.11 负责 Perfetto/eBPF 等观测工具，这里只说明 IPC 需要哪些证据。
 
 ## 小结
 
@@ -327,18 +327,18 @@ Android 17 还要求把 freezer 纳入 IPC 设计：同步 transaction 到 froze
 
 ## 参考资料
 
-- [已验证: 官方 API, `RemoteException`](https://developer.android.com/reference/android/os/RemoteException)
-- [已验证: 官方 API, `TransactionTooLargeException`](https://developer.android.com/reference/android/os/TransactionTooLargeException)
-- [已验证: 官方 API, `IBinder`](https://developer.android.com/reference/android/os/IBinder)
-- [已验证: 官方文档, Handle cached and frozen apps](https://source.android.com/docs/core/architecture/ipc/binder-freezer)
-- [已验证: 官方文档, Cached apps freezer](https://source.android.com/docs/core/perf/cached-apps-freezer)
-- [已验证: AOSP 文档, AIDL backends - Error handling](https://source.android.com/docs/core/architecture/aidl/aidl-backends#error-handling)
-- [已验证: Android 官方文档, Diagnose ANRs](https://developer.android.com/topic/performance/anrs/find-unresponsive-thread)
-- [已验证: Perfetto 文档, Android system tracing](https://perfetto.dev/docs/learning-more/android)
-- [已验证: PerfettoSQL, `android.binder` standard library](https://perfetto.dev/docs/analysis/stdlib-docs#android-binder)
-- [已验证: AOSP `android-17.0.0_r1`, `ProcessState.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/binder/ProcessState.cpp)
-- [已验证: AOSP `android-17.0.0_r1`, `IPCThreadState.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/binder/IPCThreadState.cpp)
-- [已验证: AOSP `android-17.0.0_r1`, Java Binder JNI mapping](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_util_Binder.cpp)
-- [已验证: AOSP `android-17.0.0_r1`, `Parcel.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Parcel.java)
-- [已验证: Kernel `android17-6.18-2026-06_r6`, Binder driver](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/android/binder.c)
-- [已验证: Kernel `android17-6.18-2026-06_r6`, Binder allocator](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/android/binder_alloc.c)
+- [`RemoteException`](https://developer.android.com/reference/android/os/RemoteException)
+- [`TransactionTooLargeException`](https://developer.android.com/reference/android/os/TransactionTooLargeException)
+- [`IBinder`](https://developer.android.com/reference/android/os/IBinder)
+- [Handle cached and frozen apps](https://source.android.com/docs/core/architecture/ipc/binder-freezer)
+- [Cached apps freezer](https://source.android.com/docs/core/perf/cached-apps-freezer)
+- [AIDL backends - Error handling](https://source.android.com/docs/core/architecture/aidl/aidl-backends#error-handling)
+- [Diagnose ANRs](https://developer.android.com/topic/performance/anrs/find-unresponsive-thread)
+- [Perfetto：Android system tracing](https://perfetto.dev/docs/learning-more/android)
+- [PerfettoSQL：`android.binder` standard library](https://perfetto.dev/docs/analysis/stdlib-docs#android-binder)
+- [AOSP `android-17.0.0_r1`：`ProcessState.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/binder/ProcessState.cpp)
+- [AOSP `android-17.0.0_r1`：`IPCThreadState.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/binder/IPCThreadState.cpp)
+- [AOSP `android-17.0.0_r1`：Java Binder JNI mapping](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_util_Binder.cpp)
+- [AOSP `android-17.0.0_r1`：`Parcel.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Parcel.java)
+- [Kernel `android17-6.18-2026-06_r6`：Binder driver](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/android/binder.c)
+- [Kernel `android17-6.18-2026-06_r6`：Binder allocator](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/android/binder_alloc.c)

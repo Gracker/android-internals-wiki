@@ -39,7 +39,7 @@ Native Crash 报告中的一行 `#00 pc 0000000000008a3c libfoo.so` 已经不是
 4. **符号化**：以匹配的符号产物解析函数、文件、行号和内联帧。
 5. **质量判定**：识别错符号、截断栈和缺失帧，不能把“工具输出了一串函数名”当成正确答案。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点，重点说明这五步如何衔接，以及每一步的证据边界。
+平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`，重点说明这五步如何衔接，以及每一步的证据边界。
 
 ## 要点
 
@@ -52,7 +52,7 @@ Native 诊断里经常出现两个缩写相同、含义无关的术语：
 | CFI | Call Frame Information | 描述给定 PC 处如何恢复调用者的 SP、PC 和其他寄存器，用于异常处理与栈回溯 |
 | CFI | Control Flow Integrity | 检查间接调用或跳转的目标是否合法，用于控制流安全加固 |
 
-本章没有特殊说明时，CFI 指 **Call Frame Information**。Control Flow Integrity 的违规表现受编译参数、运行库和 trap 模式影响，不能统一写成某个固定信号，也不应拿它解释普通的回溯失败。
+没有特殊说明时，CFI 指 **Call Frame Information**。Control Flow Integrity 的违规表现受编译参数、运行库和 trap 模式影响，不能统一写成某个固定信号，也不应拿它解释普通的回溯失败。
 
 ### 🔹 Android 17 的系统 tombstone 路径
 
@@ -82,7 +82,7 @@ fatal signal
 
 #### 当前主回溯器是 `libunwindstack`
 
-`crash_dump.cpp` 在 `android-17.0.0_r1` 中直接包含 `unwindstack/AndroidUnwinder.h`，并以快照进程 PID 创建 `AndroidRemoteUnwinder`。因此，本章不再把旧的 `libunwind`、`libbacktrace` 路径描述为当前 debuggerd 实现。
+`crash_dump.cpp` 在 `android-17.0.0_r1` 中直接包含 `unwindstack/AndroidUnwinder.h`，并以快照进程 PID 创建 `AndroidRemoteUnwinder`。旧的 `libunwind`、`libbacktrace` 路径不再代表当前 debuggerd 实现。
 
 `libunwindstack` 自 Android 9 / API 28 引入。其版本说明记录了这些 Android 相关能力：
 
