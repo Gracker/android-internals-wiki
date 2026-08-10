@@ -58,23 +58,6 @@ task9_review_notes: "2026-05-19 20 Task9 闲时抽检 → Task2B fixed: frontmat
 
 # 性能治理工程化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 性能治理要从“高手经验”升级成“团队机制”
-- 🔹 预算、基线、回归门禁、灰度观测、发布验收缺一不可
-- 🔹 Macrobenchmark / Baseline Profiles / CI 是工程化实践的关键支撑
-- 🔹 性能问题需要 owner、优先级、SLO 和验收标准
-- 🔹 治理体系不该只覆盖 crash / ANR，也要覆盖流畅性和启动
-
-### 扩展（可选深入）
-
-- 🔸 把性能 review 纳入代码评审流程
-- 🔸 跨端团队 / 系统团队的协作分工模型
-<!-- outline-end -->
-
 ## 从个人能力转为团队机制
 
 会读 Perfetto、会分析 heap、熟悉 ART 或 SurfaceFlinger 的工程师仍然很重要。团队风险来自这些能力只存在于少数人手中：版本回归依靠临时救火，分析方法无法复用，修复完成后也没有稳定验收。
@@ -235,7 +218,7 @@ class StartupBenchmark {
 
 Baseline Profile 指导 ART 对常用代码路径做 AOT 编译，覆盖启动和其他关键交互。Startup Profile 用于 DEX 布局，使启动相关类和方法更适合放入 primary DEX。两者用途不同，官方建议同时使用。
 
-本书 Android 8—17 范围内：
+Android 8—17 范围内：
 
 - Android 8 / API 26—27 使用 partial AOT；有 `ProfileInstaller` 时可在首轮运行后安装 Baseline Profile；
 - Android 9 / API 28 及以上还可获得 Google Play 聚合的 Cloud Profiles；
@@ -248,7 +231,7 @@ Baseline Profile 工程检查分三层：
 2. **打包**：AAB 中检查 `/BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`，APK 中检查 `/assets/dexopt/baseline.prof`。
 3. **效果**：在真机上比较带自定义 profile 的 release 变体与只含 library profile 的对照变体。
 
-profile 文件存在只是打包成功的初步证据。`ProfileVerifier` 可以查询 profile 安装/编译状态，仍不提供“某个业务方法的 Baseline Profile 命中率”。原文把命中率写成通用平台预算不够严谨，应改为打包状态、编译状态和 CUJ 性能收益三组证据。
+profile 文件存在只是打包成功的初步证据。`ProfileVerifier` 可以查询 profile 安装/编译状态，但不提供“某个业务方法的 Baseline Profile 命中率”。评估时应分别检查打包状态、编译状态和 CUJ 性能收益。
 
 生成 profile 与测量性能的设备要求也不同。官方允许为了便利在 emulator/GMD 上生成规则，因为生成过程不采集性能数值；收益测量使用物理设备。Firebase Test Lab 当前不支持 Baseline Profile 生成，这一点与“在 Test Lab 真机跑 Macrobenchmark”不能混为一谈。
 
@@ -349,7 +332,7 @@ PR 模板可以要求作者填写：
 
 稳定运行后再增加设备、场景和硬门禁。门禁数量不是成熟度指标；可靠覆盖高价值 CUJ、能够解释失败并持续验收，才说明机制有效。
 
-## 本节与其他章节的关系
+## 与其他章节的关系
 
 - §7、§8、§9 解释流畅性、启动和 ANR 的平台机制。
 - §14.12 说明 Macrobenchmark 的用法与边界。
@@ -357,7 +340,7 @@ PR 模板可以要求作者填写：
 - §15.5 讨论线上监控和保护开关。
 - §15.6 讨论测试设计与统计可靠性。
 - §15.9 连接采集、归因、工单和验收。
-- 本节定义团队怎样把这些能力放进开发和发布流程。
+- §15.10 定义团队怎样把这些能力放进开发和发布流程。
 
 平台源码锚点固定为 Android 17 / API 37 / `android-17.0.0_r1`。Benchmark、Baseline Profile 与 ProfileInstaller 属于 AndroidX/构建工具，版本应在项目依赖和基线记录中单独固定。涉及 CPU 调度、Binder driver、cgroup 或 thermal 的内核证据，使用 `android17-6.18-2026-06_r6`。
 
