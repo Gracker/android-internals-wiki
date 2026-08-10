@@ -207,7 +207,7 @@ OEM 可以调整这些属性，ART Service 也会根据 Profile、共享代码�
 
 dex2oat 是 ART 的设备端 AOT 编译器入口。对被 filter 选中的方法，主要流程可以概括为：
 
-1. 打开 DEX、引导映像和类加载器上下文；
+1. 打开 DEX、boot image 和 class loader context；
 2. 验证字节码及类型约束；
 3. 为需要编译的方法构建中间表示；
 4. 运行内联、常量传播、死代码消除、循环和寄存器分配等优化；
@@ -273,7 +273,7 @@ static size_t GetInitialCapacity() {
 - 初始容量在 16 KB 页大小下至少是两个页面；
 - `dalvik.vm.jitinitialsize` 和 `dalvik.vm.jitmaxsize` 可以覆盖默认值；
 - capacity、虚拟地址空间和实际 RSS/PSS 不是同一个指标；
-- 进程中的机器码、栈映射与性能剖析数据随工作负载增长。
+- 进程中的真实机器码、stack map 与 profiling data 随 workload 增长。
 
 空间压力下，`JitCodeCache::DoCollection(Thread*)` 扫描活动栈和 code cache 状态，保留仍然需要的代码并回收可移除项。调试信息、JVMTI、JIT-at-first-use 等模式会影响是否允许回收。不能把它简化成固定 LRU，也没有依据说大型应用“通常稳定在 4 MB”。
 
