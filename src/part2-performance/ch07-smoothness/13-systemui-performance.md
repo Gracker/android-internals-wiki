@@ -116,27 +116,9 @@ last_deepseek_cn_review_at: 2026-06-07
 
 普通 App 卡住时，受影响的画面往往局限在一个任务内。SystemUI 的状态栏、通知抽屉、锁屏和导航区域覆盖面更大，同一段阻塞还可能与 Launcher、WM Shell、目标 App 的动画重叠。只盯 `com.android.systemui` 的主线程，很容易把窗口归属、线程归属和最终呈现混在一起。
 
-本章保留 Android 12—16 的演进背景，现行结论统一以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点。涉及输入、调度和显示栅栏时，以 `android17-6.18-2026-06_r6` 为 kernel 锚点。Android 17 同时保留 legacy shade 与 SceneContainer 路径，并加入状态栏、通知抽屉、返回手势专用 UI 线程等开关。分析前需要记录目标构建的 flag、窗口和线程，不能只凭系统版本推断执行路径。
+Android 12—16 的演进用于说明版本差异，现行结论统一以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点。涉及输入、调度和显示栅栏时，以 `android17-6.18-2026-06_r6` 为 kernel 锚点。Android 17 同时保留 legacy shade 与 SceneContainer 路径，并加入状态栏、通知抽屉、返回手势专用 UI 线程等开关。分析前需要记录目标构建的 flag、窗口和线程，不能只凭系统版本推断执行路径。
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 **Android 12-17 的组件边界**：SystemUI 负责 StatusBar / Notification Shade / NavigationBar，Overview 属于 Launcher3 Quickstep。
-- 🔹 **窗口拓扑**：`super_notification_shade.xml` 把 `status_bar_expanded` 放进 `NotificationShadeWindowView`，NavigationBar 才是稳定独立窗口。
-- 🔹 **通知更新与内容绑定**：通知内容绑定在 Android 12-17 已经转向异步 apply / reapply；左侧通知图标则要区分 Android 12-14 的 presenter/controller 入口和 Android 15+ 的 icon/ui 路线。
-- 🔹 **输入路径拆分**：三按钮导航看 `NavigationBarView`，手势返回看 `EdgeBackGestureHandler + InputMonitorCompat("edge-swipe")`。
-- 🔹 **启动转场观察法**：Launcher3 Quickstep、WM Shell `Transitions`、`StartingWindowController`、目标 App 第一帧、SurfaceFlinger 要一起看。
-- 🔹 **Perfetto 定位方法**：优先确认窗口归属、MainThread/RenderThread、SurfaceFlinger Layers，再回到具体源码锚点。
-
-### 扩展（可选深入）
-
-- 🔸 **通知负载形态**：普通模板、自定义 `RemoteViews`、大图通知对 SystemUI 的压力差异。
-- 🔸 **OEM 定制变量**：状态栏层级、主题动画、插件体系会放大 AOSP 基线之外的开销。
-<!-- outline-end -->
-
-## 先把版本、flag、窗口和线程记下来
+## 版本、flag、窗口和线程
 
 Android 17 的 SystemUI 不能用一张固定架构图概括。`scene_container`、`dual_shade`、`status_bar_for_desktop`、`status_bar_root_modernization`、`status_bar_system_status_icons_in_compose`、`status_bar_ui_thread`、`notification_shade_ui_thread` 与 `edge_back_gesture_handler_thread` 都会改变观察入口。AOSP tag 证明代码存在，目标产品是否执行该分支仍由构建配置和运行时 flag 决定。
 
@@ -168,7 +150,7 @@ WM Shell 是组件边界，不能直接当成进程边界。目标产品可以�
 
 ## Android 17 的窗口拓扑
 
-大纲里关于 `super_notification_shade.xml` 的前半句与源码一致：它的根节点是 `NotificationShadeWindowView`，并通过 `<include>` 引入 `status_bar_expanded`。后半句“NavigationBar 才是稳定独立窗口”不适用于 Android 17。`status_bar_expanded` 是展开面板的布局名，不代表屏幕顶部那条状态栏窗口。
+`super_notification_shade.xml` 的根节点是 `NotificationShadeWindowView`，并通过 `<include>` 引入 `status_bar_expanded`。`status_bar_expanded` 是展开面板的布局名，不代表屏幕顶部的状态栏窗口。Android 17 中，状态栏、通知抽屉/锁屏主窗口和三按钮导航栏都有独立的 `WindowManager.addView()` 路径。
 
 Android 17 的三个窗口入口可以直接从 `WindowManager.LayoutParams` 对上：
 
@@ -204,7 +186,7 @@ Scene flag 开启时，`ShadeViewProviderModule` inflate `scene_window_root.xml`
 
 ## SceneContainer：按 Android 17 源码理解
 
-`SceneContainerFlag.isEnabled` 在 `android-17.0.0_r1` 中等于 `Flags.sceneContainer() && isEnabledOnVariant`。旧版文章所写的“一组 secondary flags 同时满足”已经过时。Automotive 等 SystemUI variant 可以通过 `isEnabledOnVariant` 强制关闭；普通产品仍要以目标构建的 aconfig 值为准。
+`SceneContainerFlag.isEnabled` 在 `android-17.0.0_r1` 中等于 `Flags.sceneContainer() && isEnabledOnVariant`，不要求一组 secondary flags 同时满足。Automotive 等 SystemUI variant 可以通过 `isEnabledOnVariant` 强制关闭；普通产品仍要以目标构建的 aconfig 值为准。
 
 `SceneContainerFrameworkModule` 注册的场景包括 `Gone`、`Communal`、`Dream`、`Occluded`、`Lockscreen`、`QuickSettings` 和 `Shade`，overlay 包括通知 Shade、QS Shade、Quick Actions 与 Bouncer。Dual Shade 生效后，某些大屏配置会省去 Shade/QS scene，改用两类 overlay。这个差异会改变 Compose 节点数量、过渡路径和 trace 名称。
 
@@ -216,7 +198,7 @@ Scene flag 开启时，`ShadeViewProviderModule` inflate `scene_window_root.xml`
 - `SceneTransitionBlurViewModel.requestWindowBackgroundBlur()` 根据 transition state 和进度请求窗口背景模糊；`WindowBackgroundBlur` log buffer 会记录请求值和支持状态。
 - `status_bar_root_modernization` 与 `status_bar_system_status_icons_in_compose` 是状态栏自身的迁移开关，不能从 `scene_container` 的值推导。
 
-模糊成本需要从目标设备的 RenderThread、GPU 和 SurfaceFlinger 数据判断。旧文中的 `debug.hwui.disable_blur_visual_feedback` 没有在 Android 17 锚点源码中形成可靠的 SystemUI 诊断契约，本章不再推荐该属性。工程验证可在可控分支中关闭具体 blur flag 或注入零半径实验，同时保留同一设备、同一场景、同一热状态的对照 trace。
+模糊成本需要从目标设备的 RenderThread、GPU 和 SurfaceFlinger 数据判断。`debug.hwui.disable_blur_visual_feedback` 没有在 Android 17 锚点源码中形成可靠的 SystemUI 诊断契约，不适合作为诊断入口。工程验证可在可控分支中关闭具体 blur flag 或注入零半径实验，同时保留同一设备、同一场景、同一热状态的对照 trace。
 
 Compose 路径的 PSS 也不能套固定增幅。Scene 数量、always-compose 策略、状态对象、缓存和 OEM 内容都会影响基线。正确做法是按 flag 组合建立冷启动后、稳定待机、展开 Shade、通知洪峰后的多组基线，再检查对象与 native/GPU 内存归属。
 
@@ -310,7 +292,7 @@ Android 17 把 per-display 资源拆到 `DisplayBackGestureHandlerImpl`。它为
 
 ## 多显示、折叠屏与桌面窗口模式
 
-Android 17 已具备 per-display status bar 基础设施。`StatusBarWindowControllerImpl` 持有 `mDisplayId`，辅助屏窗口标题带 display id；`MultiDisplayStatusBarWindowControllerStore` 按 display 提供 controller；通知图标 binder 也接受 `displayId`。旧文“StatusBar 无多实例”的判断需要废止。
+Android 17 已具备 per-display status bar 基础设施。`StatusBarWindowControllerImpl` 持有 `mDisplayId`，辅助屏窗口标题带 display id；`MultiDisplayStatusBarWindowControllerStore` 按 display 提供 controller；通知图标 binder 也接受 `displayId`。因此，StatusBar 不能再按单实例分析。
 
 这不代表每个 display 都必然创建状态栏。`DisplayContent.isSystemDecorationsSupported()` 会排除 VR 2D display 和不可信 display，再检查 display window settings、`FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS`，以及旧 display-content-mode 管理路径下的强制桌面条件。产品 flag、display 类型、信任属性和策略共同决定结果。
 
@@ -460,9 +442,9 @@ ORDER BY s.ts;
 
 ## 与其他章节的关系
 
-- **§2.5 MainThread 与 RenderThread 协作**：本章沿用标准 HWUI、BLAST 与 SurfaceFlinger 分工，并补充 SystemUI 的专用 UI 线程。
+- **§2.5 MainThread 与 RenderThread 协作**：介绍标准 HWUI、BLAST 与 SurfaceFlinger 分工；SystemUI 还需检查专用 UI 线程。
 - **§7.1 卡顿的定义与分类**：SystemUI 仍需从 FrameTimeline 的用户可见帧开始定责。
-- **§7.4 典型卡顿场景**：Shade、导航、启动和 Overview 的现象，可用本章的窗口与组件边界进一步分析。
+- **§7.4 典型卡顿场景**：Shade、导航、启动和 Overview 的现象，需要结合这里的窗口与组件边界进一步分析。
 - **§13.3 Perfetto View 解读**：线程、FrameTimeline、Layer 和 SQL 操作可参考该章。
 
 ## Android 17 源码与官方资料

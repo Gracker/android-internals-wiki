@@ -53,34 +53,13 @@ last_deepseek_cn_review_at: 2026-07-12
 
 # 7.14 GAPS：Android 动态分析目标可达性路径重建
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 目标可达性问题：静态与动态要分开看
-- 🔹 GAPS 的主链：目标方法 → 路径 → 指令 → 动态执行
-- 🔹 UI 资源 ID 逆向与 GUI 操作序列生成
-- 🔹 Perfetto 是衍生观测手段，不是论文核心组件
-- 🔹 与 FlowDroid、DroidReach 和 GUI tester 的区别
-- 🔹 放到性能分析工作流里时，边界要先写清楚
-
-### 扩展（可选深入）
-
-- 🔸 Android 动态分析工具全景
-- 🔸 GAPS 与 LLM 驱动测试的对比
-- 🔸 用 Frida hook 实现目标触达即抓 Trace
-- 🔸 论文验证环境与仓库边界
-- 🔸 局限性：哪些场景会掉精度
-<!-- outline-end -->
-
-## 先确认本文的版本边界
+## 版本边界
 
 GAPS 解决一个方法级问题：给定 APK/DEX 与目标方法，能否找出从 Android 入口到该方法的路径，并自动执行对应交互。它不负责衡量一帧是否卡顿，也不替代 Perfetto、simpleperf 或应用埋点。
 
-本文依据 2026 年 7 月 17 日发布的论文 v3 与论文公开的复现快照 README。v3 已更名为 *GAPS: Targeted Execution of Android Apps via Static Path Reconstruction*，并更新了作者、实验环境、动态基线、运行时间和 PHIL agent 数据。旧版文章中的 57.44%、Guardian 17.12%、静态分析 4.27 秒及 Android 13 模拟器均不再代表 v3。
+以下说明依据 2026 年 7 月 17 日发布的论文 v3 与论文公开的复现快照 README。v3 已更名为 *GAPS: Targeted Execution of Android Apps via Static Path Reconstruction*，并更新了作者、实验环境、动态基线、运行时间和 PHIL agent 数据。57.44%、Guardian 17.12%、静态分析 4.27 秒及 Android 13 模拟器等早期数据均不再代表 v3。
 
-平台集成部分以 Android 17 / API 37 / `android-17.0.0_r1` 为知识库锚点。论文自身的动态实验使用 Android 16 x86-64 模拟器；需要 ARM 时使用 Pixel 2 / Android 11。论文没有报告 Android 17 实验，因此本文会明确区分“论文测得的数据”和“Android 17 上建议验证的工程流程”。
+平台集成部分以 Android 17 / API 37 / `android-17.0.0_r1` 为知识库锚点。论文自身的动态实验使用 Android 16 x86-64 模拟器；需要 ARM 时使用 Pixel 2 / Android 11。论文没有报告 Android 17 实验，论文测得的数据不能直接作为 Android 17 上的工程结论。
 
 ## 方法可达性有两个判定阶段
 
@@ -133,7 +112,7 @@ GAPS 把一次查询分成静态分析与动态执行：
 
 Android 应用没有单一 `main()` 入口。GAPS 会检查 manifest 中导出的组件和 intent filter，也会分析动态注册的 receiver 及相关注册路径。ICC 映射保存组件类名、action 或关联路径，供反向遍历在合法入口处停止。
 
-论文也限定了这一步的能力：带权限的入口、系统拥有的广播，以及要求额外 data 参数的 Intent，可能有静态路径却无法自动构造出可执行输入。文章不应把 action、category、URI 和 extras 的完整求解能力写成既成实现。
+论文也限定了这一步的能力：带权限的入口、系统拥有的广播，以及要求额外 data 参数的 Intent，可能有静态路径却无法自动构造出可执行输入。当前实现不能概括为已经完整求解 action、category、URI 和 extras。
 
 ### 3. 按目标反向生成局部调用图
 
