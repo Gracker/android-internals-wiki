@@ -111,32 +111,32 @@ Android 17 上，普通 View 页面仍走标准的 HWUI 应用窗口路径。文
 
 | 层次 | 常见线程 | 主要产物 | 典型触发条件 |
 |---|---|---|---|
-| 内容处理 | 调用 `setText()` 的线程，通常是主线程 | `CharSequence`、Span、EmojiCompat 处理结果 | 数据绑定、文本更新、过滤、链接识别、表情处理 |
+| 内容处理 | 调用 `setText()` 的线程，通常是主线程 | `CharSequence`、Span、EmojiCompat 处理结果 | bind、文本更新、filter、linkify、emoji 处理 |
 | 排版准备 | 主线程，或显式预计算线程 | `MeasuredParagraph` / `MeasuredText`、行断点、`Layout` | 新文本、宽度或测量参数变化 |
 | 绘制录制 | 主线程 | RenderNode / DisplayList 中的文字绘制命令 | View 失效、DisplayList 需要重录 |
-| 绘制执行 | RenderThread / GPU | Skia 文字块、字形资源、应用窗口缓冲区 | DisplayList 回放、字形资源冷启动、GPU 提交 |
-| 显示 | SurfaceFlinger / HWC / 显示设备 | 合成后的显示帧 | 缓冲区锁存、合成、显示提交 |
+| 绘制执行 | RenderThread / GPU | Skia text blob、strike/glyph 资源、App Window buffer | DisplayList 回放、字形资源冷启动、GPU 提交 |
+| 显示 | SurfaceFlinger / HWC / Display | 合成后的 display frame | buffer latch、composition、present |
 
 下面的流程图标出排版和出图的分界。它描述的是标准硬件加速 View 页面；软件 Canvas、自定义原生文字引擎或独立 Surface 需要另行分析。
 
 ```mermaid
 flowchart LR
-    ST["setText / Span / EmojiCompat"] --> RL["检查重新布局 / requestLayout"]
+    ST["setText / Span / EmojiCompat"] --> RL["checkForRelayout / requestLayout"]
     RL --> OM["TextView.onMeasure"]
     OM --> LS{"Layout 选择"}
     LS --> BL["BoringLayout"]
     LS --> DL["DynamicLayout"]
     LS --> SL["StaticLayout"]
     SL --> MP["MeasuredParagraph / MeasuredText"]
-    MP --> MK["Minikin 分段 + HarfBuzz 整形"]
+    MP --> MK["Minikin itemize + HarfBuzz shaping"]
     MP --> LB["LineBreaker 换行"]
     BL --> LD["Layout.draw / TextLine"]
     DL --> LD
     SL --> LD
     LD --> RN["RecordingCanvas / RenderNode DisplayList"]
     RN --> RT["RenderThread / Skia"]
-    RT --> BW["应用窗口缓冲区 / BLAST"]
-    BW --> SF["SurfaceFlinger / HWC / 显示提交"]
+    RT --> BW["App Window buffer / BLAST"]
+    BW --> SF["SurfaceFlinger / HWC / present"]
 ```
 
 `measure`、`layout` 和 `draw` 是否执行，由 `ViewRootImpl.performTraversals()` 根据脏标记决定。只改变滚动位置且能复用列表项与 DisplayList 时，文字布局可能完全不重建；新列表项绑定、宽度变化、字体参数变化或 `requestLayout()` 才会让当前帧重新排版。
@@ -165,7 +165,7 @@ flowchart LR
 
 `CharacterStyle` 并不会统一让 `isBoring()` 失败，所以“有任何 Span 就不能用 BoringLayout”也不准确。通过资格检查后，文字宽度和 ellipsize 条件还要适合当前可用宽度，`TextView` 才会构造或复用 `BoringLayout`。
 
-`setSingleLine(true)` 或 `maxLines=1` 都不能强制这条路径。包含换行、RTL、代理单元表情或段落级样式时，单行显示仍可能使用 `StaticLayout`。反过来，部分 BMP 文字即使不是拉丁字母，只要满足上述条件，也可能通过 BoringLayout 资格检查。
+`setSingleLine(true)` 或 `maxLines=1` 都不能强制这条路径。包含换行、RTL、surrogate emoji 或段落级样式时，单行显示仍可能落到 `StaticLayout`。反过来，部分 BMP 文字即使不是拉丁字母，只要满足上述条件，也可能被判定为 boring。
 
 `BoringLayout` 的“简单”指单行、LTR 和较少的段落结构，不代表跳过文字整形。`isBoring()` 仍通过 `TextLine.metrics()` 计算宽度和字体指标；ellipsize 后还可能再次测量。它比完整多行换行少做一些工作，但不能简化成“一次 `Paint.measureText()`”。
 
@@ -174,15 +174,15 @@ flowchart LR
 其余常见文本由 `StaticLayout.Builder` 构建。构造过程大致分成两步：
 
 1. 为每个段落取得或创建 `PrecomputedText.ParagraphInfo`，其中保存 `MeasuredParagraph`；
-2. 把 `MeasuredParagraph` 与当前宽度、缩进、断行策略、连字符、两端对齐等约束交给 `LineBreaker.computeLineBreaks()`。
+2. 把 `MeasuredParagraph` 与当前宽度、indent、break strategy、hyphenation、justification 等约束交给 `LineBreaker.computeLineBreaks()`。
 
-`StaticLayout` 还要处理 `LeadingMarginSpan`、`LineHeightSpan`、制表符、省略、最大行数、行高和每行方向信息。长文本的成本不能只按字符数判断；段落数、文字段数量、Span 边界、字体回退、宽度和断行策略都会改变工作量。
+`StaticLayout` 还要处理 `LeadingMarginSpan`、`LineHeightSpan`、tab、ellipsize、最大行数、行高和每行方向信息。长文本是否慢，不能只按字符数判断；段落数、run 数、Span 边界、字体 fallback、宽度和断行策略都会改变工作量。
 
 ## Minikin：字体选择、整形和断行要分开看
 
 Android 17 的 Minikin `LayoutPiece` 先调用 `FontCollection.itemize()` 把输入分成字体段，再对文字脚本段调用 `hb_shape()`。`android-17.0.0_r1` 中的 `external/harfbuzz_ng` 对应 HarfBuzz 11.4.1。
 
-文字整形把 Unicode 输入映射为字形、字簇、步进量和偏移量。一个 Unicode 码点不一定对应一个字形：连字、组合附加符号、表情 ZWJ 序列、变体选择符和字体回退都会改变码点与字形的关系。不同文字脚本的开销也不能用固定倍数排序，应以目标字体、实际语料和设备测量为准。
+文字整形把 Unicode 输入映射为 glyph、cluster、advance 和 offset。不要使用“一个 Unicode 对应一个 glyph”判断复杂度：连字、组合附加符号、emoji ZWJ 序列、variation selector 和字体 fallback 都会改变码点与 glyph 的关系。不同语言脚本的开销也不能用固定倍数排序，应以目标字体、真实语料和设备测量为准。
 
 ### 断行包含两个阶段
 
@@ -198,12 +198,12 @@ Minikin 的 `WordBreaker` 使用 ICU 断行迭代器提供候选断点，`LineBr
 
 ### Android 17 的缓存边界
 
-Minikin 的 `LayoutCache` 是进程内单例 LRU，最多保存 5000 个条目；长度达到 128 个 UTF-16 代码单元的待整形片段会绕过这层缓存。缓存键包含文字上下文与范围、字体集合编号、字号、缩放/倾斜、字母/单词间距、语言区域、方向、字体特性、变体设置和连字符编辑信息。
+Minikin 的 `LayoutCache` 是进程内单例 LRU，当前最多保存 5000 个 entry；长度达到 128 个 UTF-16 code unit 的待整形 piece 会绕过这层缓存。key 包含文字上下文与 range、font collection id、字号、scale/skew、letter/word spacing、locale、方向、font feature、variation settings 和 hyphen edit。
 
 可用宽度不在文字整形缓存键中。因此：
 
 - 宽度变化通常会让 `StaticLayout` 重新断行，但相同的整形片段仍可能命中 Minikin 缓存；
-- 文本、字体、语言区域、方向或变体设置改变，会形成不同的缓存键；
+- 文本、字体、locale、方向或 variation settings 改变，会形成不同 key；
 - 两条业务文本只有局部字词相同，不代表必然共享缓存，因为缓存键还包含传入的文字上下文和范围。
 
 `TextLine` 还有一个容量为 3 的静态对象池，用于减少临时对象分配。它缓存可复用对象，不保存排版结果。Skia 的 `StrikeCache` 则管理 GPU 文字与字形资源；它和 Minikin 的文字整形缓存属于不同阶段，不能合并计算所谓的文字缓存命中率。
@@ -218,7 +218,7 @@ Span 的影响取决于类型：
 |---|---|
 | `MetricAffectingSpan` | 改变字号、Typeface、缩放等测量参数，会切分测量段 |
 | `ReplacementSpan` / `ImageSpan` | 通过 `getSize()` 提供替代宽度，并在绘制阶段执行自定义绘制 |
-| `ParagraphStyle` | 影响边距、制表符、行高或段落布局；也会让 `BoringLayout.isBoring()` 失败 |
+| `ParagraphStyle` | 影响 margin、tab、行高或段落布局；也会让 `BoringLayout.isBoring()` 失败 |
 | `CharacterStyle` | 通常改变颜色、背景或绘制效果；不一定改变测量 |
 | `ClickableSpan` | 主要增加点击命中和移动方法处理，本身不是文字测量参数 |
 
@@ -241,9 +241,9 @@ AndroidX 默认初始化器会把字体加载推迟到首个 Activity 恢复之�
 
 ### `PrecomputedText` 预计算段落测量，不包含最终宽度
 
-API 28 的 `PrecomputedText.create()` 会预先生成每个段落的 `MeasuredParagraph` 和原生 `MeasuredText`，包括文字测量和字形定位。`StaticLayout` 收到兼容的 `PrecomputedText` 后可以复用这些 `ParagraphInfo`。
+API 28 的 `PrecomputedText.create()` 会预先生成每个段落的 `MeasuredParagraph` / native `MeasuredText`，包括文字测量和字形定位。`StaticLayout` 收到兼容的 `PrecomputedText` 后可以复用这些 `ParagraphInfo`。
 
-`PrecomputedText.Params` 包含 `TextPaint`、文本方向、断行策略、连字符频率和 `LineBreakConfig`，不包含 View 最终可用的宽度。最终的断行、最大行数、省略、行距和高度计算仍在创建 `Layout` 时完成。
+`PrecomputedText.Params` 包含 `TextPaint`、text direction、break strategy、hyphenation frequency 和 `LineBreakConfig`，不包含 View 的最终可用宽度。最终的 line breaking、maxLines、ellipsize、行距和高度计算仍在创建 `Layout` 时完成。
 
 下面的示例强调两个工程边界：参数从目标 `TextView` 取得，异步结果必须防止 RecyclerView holder 复用后写回旧内容。
 
@@ -287,7 +287,7 @@ AndroidX 的 `AppCompatTextView.setTextFuture()` 会在 `onMeasure()` 中调用 
 5. 对长文本使用预计算，并让任务在列表项测量前完成；
 6. 把字体下载、Typeface 创建和大段文本解析移出首个需要显示它们的帧。
 
-`TextView.setText()` 不只保存一个引用，还可能执行过滤、监听器通知、Spannable/Watcher 处理、自动链接、文本转换，并通过 `checkForRelayout()` 立即重建内部 Layout 或请求新的 View 布局。应用层应避免重复设置相同内容。
+`TextView.setText()` 不只是保存一个引用。它还可能执行 filter、listener 通知、spannable/watcher 处理、auto-link、transformation，并通过 `checkForRelayout()` 立即重建内部 Layout 或申请新的 View layout。重复设置相同内容仍应由应用层避免。
 
 ### 不把视觉参数包装成性能开关
 
@@ -305,15 +305,15 @@ Android 17 的 Minikin `Font.cpp` 会缓存调整后的 HarfBuzz 字体和 Typef
 
 ## Perfetto：从窗口级证据逐步缩小
 
-Android 17 的 `ViewRootImpl` 在 `TRACE_TAG_VIEW` 下稳定记录窗口级 `measure`、`layout` 和 `draw`。逐 View 的 `onMeasure TextView ...` / `onLayout ...` 只有启用框架的遍历跟踪后才会出现；普通应用跟踪不能假定存在 `TextView.onMeasure()` 切片。
+Android 17 的 `ViewRootImpl` 在 `TRACE_TAG_VIEW` 下稳定记录窗口级 `measure`、`layout` 和 `draw`。逐 View 的 `onMeasure TextView ...` / `onLayout ...` 只有启用框架的遍历跟踪后才会出现；普通应用跟踪不能假定存在 `TextView.onMeasure()` slice。
 
 采集时至少启用：
 
-- `view`、`gfx` atrace 类别；
+- `view`、`gfx` atrace category；
 - 目标应用的 atrace；
 - `sched` 与 CPU frequency/idle；
 - FrameTimeline；
-- 需要判断 GPU 时，再加入设备支持的 GPU 数据源。
+- 需要判断 GPU 时，再加入设备支持的 GPU data source。
 
 先用 FrameTimeline 锁定卡顿帧，再按以下顺序判断：
 
@@ -322,8 +322,8 @@ Android 17 的 `ViewRootImpl` 在 `TRACE_TAG_VIEW` 下稳定记录窗口级 `mea
 | 主线程窗口级 `measure` 很长 | 检查当前帧为何调用 `requestLayout`，再用采样栈或自定义跟踪寻找 TextView、Span 或业务解析开销 |
 | `measure` 正常，主线程 `draw`/DisplayList 录制时间长 | 检查大量失效的 TextView、复杂 `ReplacementSpan`、阴影/路径文字和重复失效刷新 |
 | 主线程按时，RenderThread `DrawFrame` 变长 | 区分 Skia/GPU 工作、字形资源冷启动、其他 View 绘制与缓冲区等待 |
-| 应用 SurfaceFrame 按时，DisplayFrame 超时 | 沿 BLAST、SurfaceFlinger、HWC 和显示提交分析，不能继续只改文字布局 |
-| 只在首次字体、表情或生僻字出现时变慢 | 对比冷、热运行，检查字体准备、EmojiCompat 初始化和 Skia 字形缓存 |
+| App SurfaceFrame 按时，DisplayFrame 超时 | 沿 BLAST、SurfaceFlinger、HWC 和 present 分析，不能继续只改文字布局 |
+| 只在首次字体、emoji 或生僻字出现时变慢 | 对比冷/热运行，检查字体准备、EmojiCompat 初始化和 Skia strike/glyph cache |
 
 窗口级 `measure` 无法定位到具体控件时，可以在应用可控的边界补少量跟踪标记。下面的标记用于区分业务富文本构造和 `setText()`，不要在每个字符或每个 Span 上打点。
 
@@ -343,7 +343,7 @@ try {
 }
 ```
 
-如果 `buildSpans` 已经超时，应先优化内容处理；如果它很短而后续窗口级 `measure` 变长，再检查 Layout、宽度和测量指标。自定义跟踪只提供墙钟时间，还要结合 CPU 采样、线程状态和 FrameTimeline，判断线程是在执行、被抢占还是等待。
+如果 `buildSpans` 已经超时，先修内容处理；如果它很短而后续窗口级 `measure` 变长，再看 Layout、width 和 metrics。自定义 trace 只提供 wall time，还要配合 CPU sample、线程状态和 FrameTimeline 判断是在执行、被抢占还是等待。
 
 ### 基准测试至少分四组
 
@@ -352,36 +352,36 @@ try {
 | 维度 | 对照组 |
 |---|---|
 | 缓存 | 首次显示 / 重复显示 |
-| 内容 | 短拉丁文本、CJK、RTL/复杂文字、表情 ZWJ 序列、混合字体 |
+| 内容 | 短 Latin、CJK、RTL/复杂脚本、emoji ZWJ、混合字体 |
 | 排版 | 固定宽度 / 宽度变化，简单断行 / 高质量断行与连字符 |
 | 样式 | 纯文本 / `MetricAffectingSpan` / `ReplacementSpan` / ParagraphStyle |
 
-记录 Android 构建版本、字体文件和版本、语言区域、刷新率、应用构建类型和文本长度。缺少这些条件时，跨设备的倍数对比没有可比性。
+记录 Android build、字体文件/版本、locale、刷新率、应用构建类型和文本长度。没有这些条件，跨设备的“快几倍”没有可比性。
 
 ## 版本演进
 
 | 版本 / 组件 | 可核对变化 | 对性能分析的影响 |
 |---|---|---|
 | Android 5.0 / API 21 | AOSP 已有独立 `frameworks/minikin` | 平台文字测量可沿 Minikin 源码分析 |
-| Android 6.0 / API 23 | `StaticLayout.Builder` 公开 | 自定义多行排版可显式设置断行、连字符、省略等参数 |
+| Android 6.0 / API 23 | `StaticLayout.Builder` 公开 | 自定义多行排版可显式设置断行、hyphenation、ellipsize 等参数 |
 | Android 8.0 / API 26 | `StaticLayout.Builder.setJustificationMode()` 公开 | 两端对齐成为需要单独记录的排版变量 |
 | Android 9 / API 28 | `PrecomputedText` 公开 | 文字整形和测量可以提前执行，按最终宽度断行仍留在 Layout 构建阶段 |
 | Android 10 / API 29 | `TextView` / `EditText` 主题默认连字符频率改为 `NONE` | 关闭默认连字符不能作为 Android 10 及以后版本的通用优化 |
 | Android 12 / API 31 | `Canvas.drawGlyphs()` 公开；FrameTimeline 可用于标准应用窗口 | 自定义字形绘制有公开入口，掉帧归因应连接应用 SurfaceFrame 与 DisplayFrame |
 | Android 13 / API 33 | `LineBreakConfig` 公开 | 断行样式和单词样式进入测量参数与预计算兼容性判断 |
-| Android 15 / API 35 | 字形边界宽度、起始悬垂和最小字体指标 API 公开；目标 35 及以上的 `TextView` 默认使用字形边界计算宽度 | 升级目标 SDK 后需要回归文字宽度、换行、对齐与裁切 |
+| Android 15 / API 35 | bounds-for-width、start overhang 和 minimum font metrics API 公开；target 35+ 的 `TextView` 默认使用 glyph bounds 计算宽度 | 升级 target 后需要回归文字宽度、换行、对齐与裁切 |
 | Android 17 / API 37 | Minikin 当前的布局/变体缓存、HarfBuzz 11.4.1、HWUI/Skia 文字块路径均按此版本核对 | 当前方法名和缓存键按 `android-17.0.0_r1` 解读；是否为 Android 17 新增需另查历史标签 |
 | AndroidX emoji2 / appcompat | 独立于平台发布 | 记录具体依赖版本、字体来源、初始化策略与 `setTextFuture()` 是否等待 |
 
 ## 常见误区
 
-### 列表滚动时，每个 TextView 都会重走测量、布局和绘制
+### 列表滚动时，每个 TextView 都会重走 measure、layout、draw
 
 遍历会依据脏标记、MeasureSpec 和缓存决定工作。复用 DisplayList 的列表项可以只改变位置；新数据绑定、宽度变化或布局请求才可能重建文字 Layout。
 
 ### 单行文本一定使用 BoringLayout
 
-单行只是必要条件之一。RTL、代理代码单元、换行/制表符、ParagraphStyle、宽度和省略条件都会改变选择结果。
+单行只是必要条件之一。RTL、surrogate、换行/制表符、ParagraphStyle、宽度和省略条件都会改变选择结果。
 
 ### 所有 Span 都会让文字整形成本成倍增加
 
@@ -389,7 +389,7 @@ try {
 
 ### PrecomputedText 已经算好最终换行
 
-它预计算段落测量和字形定位，Params 不包含最终宽度。`StaticLayout` 仍要按当时的宽度、最大行数、省略和行距计算行布局。
+它预计算段落测量和字形定位，Params 不包含最终宽度。`StaticLayout` 仍要按当时的宽度、maxLines、省略和行距计算行布局。
 
 ### RenderThread 慢说明 TextView.onMeasure 慢
 
@@ -399,7 +399,7 @@ try {
 
 - **§2.1 / §2.4 Choreographer**：文字更新只有在触发遍历或绘制时才进入帧生产。
 - **§2.5 MainThread/RenderThread**：主线程负责内容处理、排版和 DisplayList 录制，RenderThread/GPU 负责后续执行与窗口缓冲区。
-- **§7.8 RecyclerView**：预取、载荷、ViewHolder 复用和宽度稳定性决定预计算能否及时完成。
+- **§7.8 RecyclerView**：prefetch、payload、holder 复用和宽度稳定性决定预计算是否来得及完成。
 - **§7.12 View 体系**：先找 `requestLayout()` 与脏区域来源，再判断 TextView 是否为主要贡献者。
 
 ## 参考资料
