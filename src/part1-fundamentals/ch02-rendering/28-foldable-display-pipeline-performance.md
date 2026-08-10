@@ -137,16 +137,16 @@ DisplayManager 收到回调后，先向 WMS 投递 device state 消息，再调�
 
 ### 2.3 为什么切换过程中会看到黑场或过渡层
 
-`LogicalDisplayMapper` 比较新 layout。以下情况会把 Display 标为过渡中：
+`LogicalDisplayMapper` 比较新 layout。以下情况会把 Display 标为 `in-transition`：
 
 - enabled 状态变化；
 - 同一个物理 DisplayDevice 将映射到新的 logical display id；
 - DisplayDevice 只出现在新旧 layout 的一侧；
 - Display 已处于 transition。
 
-系统先发送 transition 阶段更新，让相关 Display 关闭。所有过渡中的显示器确认 OFF 后，才会清除 transition 标记、应用新 layout 并发出后续更新。源码给这段等待设置了 **500 ms** 的强制推进超时。
+系统先发送 transition 阶段更新，让相关 Display 关闭。所有 transitioning Display 确认 OFF 后，才会清除 transition 标记、应用新 layout 并发出后续更新。源码给这段等待设置了 **500 ms** 的强制推进超时。
 
-该机制通过显示器熄屏遮住 resize 过程中可能出现的错误尺寸。500 ms 是框架状态转换的兜底上限，不代表屏幕一定黑场 500 ms，也不代表折叠动画时长。
+该机制通过 display blanking 遮住 resize 过程中可能出现的错误尺寸。500 ms 是框架状态转换的兜底上限，不代表屏幕一定黑场 500 ms，也不代表折叠动画时长。
 
 原始正文中“固定丢 1–3 帧”“第一帧高 30–50%”之类数值没有 AOSP 保证。设备的面板时序、power sequence、Shell transition、应用重绘和 HWC 能力都会改变观测结果。
 
@@ -248,7 +248,7 @@ foldingFeature.state == FoldingFeature.State.HALF_OPENED &&
 
 连续柔性屏在平放时可以 `NONE` 且不 separating；半开时通常 separating。双面板 hinge 可以 separating，即使 feature bounds 的某个维度为零。
 
-布局代码应分别判断边界、遮挡和分隔状态，不能只用 `state == FLAT` 推导“整个窗口没有铰链约束”。
+布局代码应分别判断 bounds、遮挡和分隔状态，不能只用 `state == FLAT` 推导“整个窗口没有铰链约束”。
 
 ### 4.4 生命周期安全的收集方式
 
@@ -382,7 +382,7 @@ SurfaceFlinger FrontEnd 接收 App、WMS 和 Shell 的 layer transaction。Compo
 - DEVICE / CLIENT composition；
 - 每个 Display 的 present fence。
 
-同一 layer 经 mirror 或 projection 出现在两个 Output 时，不能把两次送显合并成一条时间线。
+同一 layer 经 mirror 或 projection 出现在两个 Output 时，不能把两次 present 合并成一条时间线。
 
 ### 7.2 分辨率更高只说明潜在工作量上升
 
