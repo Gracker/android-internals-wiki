@@ -202,7 +202,7 @@ ResourcesManager#applyConfigurationToResources
 
 只要还有一个变化位未被 skip mask 覆盖，Activity 就会 relaunch。`orientation` 经常和 `screenSize`、`screenLayout`、窗口 bounds 一起变化，所以只声明 `orientation` 仍可能重建。
 
-### 客户端重建顺序
+### 客户端 relaunch 顺序
 
 `ActivityRelaunchItem.execute()` 在应用进程里建立名为 `activityRestart` 的 trace slice，然后调用 `ActivityThread.handleRelaunchActivity()`。后者先应用待处理的进程级 Configuration，再进入 `handleRelaunchActivityInner()`：
 

@@ -103,7 +103,7 @@ bool ProcessState::isDriverFeatureEnabled(const DriverFeature feature) {
 
 ### 3.1 `sync_recv` 与 `async_recv` 的含义
 
-框架层的封装很薄：传入 PID，驱动填充两个 `uint32_t` 字段。
+framework 的封装很薄：传入 PID，驱动填充两个 `uint32_t` 字段。
 
 ```cpp
 status_t IPCThreadState::getProcessFreezeInfo(
