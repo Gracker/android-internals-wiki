@@ -30,70 +30,10 @@ sources:
 
 # 24.21 SAF/DocumentFile/ContentResolver 文件访问性能选型与治理
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 Android 文件访问路径全景与性能对比
-- 直接文件路径（java.io/File）→ ScopedStorage 限制下的适用范围
-- SAF（Storage Access Framework）→ DocumentFile API → 用户授权 URI
-- ContentResolver.openFileDescriptor → MediaProvider 查询路径
-- MediaStore API → 媒体文件专用路径
-- 各路径的基准测试维度（打开/读取/写入/批量操作）
-
-### 🔹 DocumentFile 性能瓶颈分析
-- `DocumentFile.listFiles()` 与后续属性读取的查询边界
-- Uri 权限持久化（takePersistableUriPermission）的生命周期语义
-- 树状结构遍历的 N+1 查询风险与缓存策略
-
-### 🔹 ContentResolver 性能优化
-- 批量查询：ContentProviderOperation 与 applyBatch
-- Cursor 的窗口化机制（CursorWindow）与大结果集处理
-- ContentObserver 监听文件变化的性能开销
-
-### 🔹 MediaProvider 与 MediaStore 性能
-- MediaStore.Images/Video/Audio 查询性能优化
-- AND/OR 条件构造与索引利用
-- Android 13+ Photo Picker 与 SAF 的适用边界
-- MediaStore.createWriteRequest 批量授权 API
-
-### 🔹 SAF 文件操作性能优化实战
-- DocumentFile → Uri → ParcelFileDescriptor 链路分析
-- 大文件拷贝：FileChannel vs FileInputStream/FileOutputStream
-- 批量文件操作的事务性保证与性能权衡
-- ContentProvider 跨进程调用与文件描述符数据面的边界
-
-### 🔹 FUSE/BPF 与 SAF 的底层链路
-- ScopedStorage → FUSE 挂载点 → 内核 VFS → 底层文件系统
-- Android 17 FUSE passthrough / FUSE-BPF 的适用范围
-- /storage/emulated/0 路径解析与重定向机制
-
-### 🔹 应用场景性能选型指南
-- 文件管理器：SAF + DocumentFile 的最佳实践
-- 图片/视频应用：MediaStore + Thumbnail 服务
-- 文档编辑应用：SAF + 持久化 Uri 权限
-- 云同步应用：WorkManager + SAF 的后台文件操作限制
-
-### 🔹 性能监控与治理
-- 文件操作耗时监控：openFileDescriptor / query / applyBatch
-- 主线程文件操作检测与告警（StrictMode 模式）
-- 文件 IO 耗时分位数统计与 ROM 差异归因
-
-## 扩展
-
-### 🔸 Android 17 文档 API 边界
-- DocumentsContract trash/restore 与同步状态字段
-- `content://` 与 Path API 不存在通用互操作契约
-
-### 🔸 直接文件路径恢复：MANAGE_EXTERNAL_STORAGE
-- 特殊权限申请与 Google Play 审核要求
-- 性能收益 vs 权限风险的权衡评估
-
-<!-- outline-end -->
-
 文件访问性能问题通常出在选错入口：应用把 `content://` 当成本地路径，把
 `DocumentFile` 当成批量查询接口，或者在拿到文件描述符之后仍把每次读写都归因于 Binder。
-本文以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，说明 SAF、
-`DocumentFile`、`ContentResolver`、MediaStore 和直接文件路径各自适合什么场景。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，重点分析 SAF、
+`DocumentFile`、`ContentResolver`、MediaStore 和直接文件路径各自适合的场景。
 
 ## 先建立访问路径全景
 
@@ -467,7 +407,7 @@ Photo Picker 从 Android 13（API 33）进入平台，并可在部分旧版本�
 这类写权限与发起请求的 Activity 生命周期关联，并且不支持持久化或前缀授权。
 长时间后台读取 Photo Picker 结果时，应按官方指引持久化逐项读取权限。
 
-媒体查询、分页、缩略图和 generation 同步的完整方案见 24.12 节。当前章节只保留与
+媒体查询、分页、缩略图和 generation 同步的完整方案见 24.12 节；这里仅保留与
 SAF 选型交叉的边界。
 
 ## Scoped Storage、FUSE 与 BPF

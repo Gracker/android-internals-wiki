@@ -53,11 +53,11 @@ sources:
 
 # 24.22 Android 17 NFC 性能优化与无接触支付
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，覆盖 NFC 标签读取、Reader Mode、主机卡模拟（Host Card Emulation，HCE）和 off-host Secure Element 路由。Android 17 中，NFC framework 与系统服务源码都位于 `packages/modules/Nfc`；分析旧路径 `frameworks/base/core/java/android/nfc/` 或 `packages/apps/Nfc/`，会漏掉当前实现。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，覆盖 NFC 标签读取、Reader Mode、主机卡模拟（Host Card Emulation，HCE）和 off-host Secure Element 路由。Android 17 中，NFC framework 与系统服务源码都位于 `packages/modules/Nfc`；分析旧路径 `frameworks/base/core/java/android/nfc/` 或 `packages/apps/Nfc/`，会漏掉当前实现。
 
-无接触支付包含终端、射频控制器、Android NFC 服务、钱包应用、Secure Element、收单系统和支付网络。AOSP 能证明 Android 侧的分发、路由、服务绑定与 APDU 传递行为，无法替终端或支付网络承诺固定响应时间、成功率与离线额度。本章不设固定的平台指标，性能目标应由实测数据和业务协议共同确定。
+无接触支付包含终端、射频控制器、Android NFC 服务、钱包应用、Secure Element、收单系统和支付网络。AOSP 能证明 Android 侧的分发、路由、服务绑定与 APDU 传递行为，无法替终端或支付网络承诺固定响应时间、成功率与离线额度。因此不设固定的平台指标，性能目标应由实测数据和业务协议共同确定。
 
-阅读时需区分两类证据：Android Developers 与 `android-17.0.0_r1` 源码用于解释 Android 侧的路由、服务绑定和 APDU 传递；端到端支付时延与成功率则必须在目标终端和支付协议上实测。因此，本章的优化建议聚焦于 Android 侧可观测、可复现的环节，不给出平台无法保证的统一 SLA。
+证据分为两类：Android Developers 与 `android-17.0.0_r1` 源码用于解释 Android 侧的路由、服务绑定和 APDU 传递；端到端支付时延与成功率必须在目标终端和支付协议上实测。优化建议聚焦于 Android 侧可观测、可复现的环节，不给出平台无法保证的统一 SLA。
 
 ## 1. 先分清三条 NFC 路径
 
@@ -362,7 +362,7 @@ Android 17 的 `NfcService.setPowerSavingModeInternal()` 还会根据当前 adap
 
 `OffHostApduService` 是路由声明，不是让 Android Service 代替 Secure Element 处理 APDU。NFC card-emulation API 也不提供任意直接控制 Secure Element 交易 APDU 的能力；OMAPI 是另一套受访问规则约束的接口，不能与 NFC 终端侧 APDU 通道混用。
 
-支付 tokenization、动态密码、持卡人验证、离线额度、风控、收单结果和终端认证均由具体支付方案决定。AOSP 没有提供可统一配置这些策略的公开 NFC API，应用文档中也不应构造同名平台能力。
+支付 tokenization、动态密码、持卡人验证、离线额度、风控、收单结果和终端认证均由具体支付方案决定。AOSP 没有提供可统一配置这些策略的公开 NFC API，应用也不应把这些策略表述为同名平台能力。
 
 ## 8. 建立可复现的性能测量
 
@@ -428,7 +428,7 @@ Android 17 的 HCE 源码在 feature flag 开启时还会写入 `hce_active`、`
 
 ## 10. 内核与厂商实现的边界
 
-本知识库的 kernel 锚点是 `android17-6.18-2026-06_r6`。NFC 控制器可能通过 I²C、SPI、UART 或厂商专用传输连接，驱动、设备树、时钟、电源域、IRQ 和 suspend/resume 行为也可能来自 SoC 或 OEM 分支。Android common kernel 标签只能约束共用内核侧的分析起点，不能证明某款设备使用哪一个 NFC 驱动。
+kernel 锚点为 `android17-6.18-2026-06_r6`。NFC 控制器可能通过 I²C、SPI、UART 或厂商专用传输连接，驱动、设备树、时钟、电源域、IRQ 和 suspend/resume 行为也可能来自 SoC 或 OEM 分支。Android common kernel 标签只能约束共用内核侧的分析起点，不能证明某款设备使用哪一个 NFC 驱动。
 
 出现下面的证据时，再进入内核与厂商层：
 
