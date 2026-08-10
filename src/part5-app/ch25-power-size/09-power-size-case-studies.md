@@ -86,22 +86,7 @@ last_deepseek_cn_review_at: 2026-07-12
 
 # 功耗与包体积案例集
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 后台功耗异常排查实战
-- 🔹 APK 体积从 100 MB 到 50 MB 的优化路径
-- 🔹 WakeLock 泄漏导致的电量投诉治理
-
-### 扩展（可选深入）
-
-- 🔸 （待扩展）
-
-<!-- outline-end -->
-
-## 为什么要看功耗与包体积案例集
+## 案例的使用方式
 
 前面几节已经把功耗诊断、后台限制、WakeLock / Alarm、WorkManager、定位、APK 分析、R8、AAB 分发分别讲完。现在需要把这些工具放进几个完整场景，说明排查顺序、取舍点和发布守门方式。
 
@@ -253,7 +238,7 @@ Android Developers 的 wake lock 归因文档提醒：App 不直接调用 `Power
 4. **修持锁模型**：能交给 WorkManager 的任务不要手写 WakeLock；必须手写时固定 tag、带超时、`try/finally` 释放、封装在单一负责人里。
 5. **接发布守门**：新增 WakeLock、Exact Alarm、长时间后台 worker 都要进入 review；灰度看 Vitals 和自建 APM 的趋势。
 
-Android 17 源码中的责任边界可以沿着三个入口核对：[`PowerManagerService`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java) 管理系统 WakeLock 状态；[`BatteryStatsService`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java) 提供统计、历史与 `dumpsys batterystats` 入口；[`AlarmManagerService`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java) 处理 Alarm 调度、触发和唤醒。具体调用链见 §25.3，本节只用它们确认系统与应用的责任分界。
+Android 17 源码中的责任边界可以沿着三个入口核对：[`PowerManagerService`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java) 管理系统 WakeLock 状态；[`BatteryStatsService`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java) 提供统计、历史与 `dumpsys batterystats` 入口；[`AlarmManagerService`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java) 处理 Alarm 调度、触发和唤醒。具体调用链见 §25.3，这里只用它们确认系统与应用的责任分界。
 
 WakeLock 治理的代码审查清单要比“有没有 release”更细：
 
@@ -266,7 +251,7 @@ WakeLock 治理的代码审查清单要比“有没有 release”更细：
 | 替代 API | WorkManager / JobScheduler / DownloadManager / FGS 能覆盖时优先使用 | 后台同步、周期任务、下载都手写锁 |
 | 观测字段 | tag、负责人、触发源、获取/释放 uptime、超时、用户是否可见 | 线上只看到耗电，无法映射业务 |
 
-## 本节小结
+## 小结
 
 功耗与体积案例都从可比较的基线开始。功耗记录时间窗口、UID、硬件活动、业务触发源和回归指标；体积记录 dex、资源、assets、`.so`、分发形态和版本差异。缺少这些记录时，修改前后没有统一口径。
 
