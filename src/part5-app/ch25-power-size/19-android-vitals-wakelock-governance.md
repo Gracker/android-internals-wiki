@@ -69,46 +69,9 @@ last_task2b_lite_at: "2026-07-09"
 
 # 25.19 Android Vitals 过度 WakeLock 指标与治理
 
-<!-- outline-start -->
-## 要点
+## Android Vitals WakeLock 的治理范围
 
-### 🔹 指标口径：Android Vitals 到底统计什么
-围绕非豁免 partial wake lock、后台/前台服务、熄屏、24 小时累计时长、28 天会话占比建立口径表，区分单次持有时长、应用会话占比和 Play 质量阈值。
-
-### 🔹 豁免边界：audio、location、JobScheduler 用户发起 API
-解释 Android Vitals 对部分有用户收益场景的豁免规则，拆开音频播放、定位、用户发起数据传输、Foreground Service 与手动 `PowerManager.WakeLock` 的责任边界。
-
-### 🔹 归因路径：从 wake lock 名称到代码调用点
-覆盖 wake lock 命名规范、PII / 混淆导致的 `_UNKNOWN`、第三方 SDK 间接持锁、WorkSource 归因和 BatteryStats 侧记录，说明 Play Console 只能给出问题入口，不能替代端侧堆栈采集。
-
-### 🔹 本地验证：dumpsys、Batterystats 与 Battery Historian
-建立开发阶段验证流程：重置 batterystats、构造后台熄屏场景、采集 bugreport、读取 partial wakelock、核对充电状态和屏幕状态，避免把前台活跃耗电误判为 Vitals 风险。
-
-### 🔹 治理策略：替代 API、超时释放和异常兜底
-按「不要持锁」「缩短持锁」「可观测持锁」三层处理：优先使用系统托管 API，手动持锁必须设置 timeout，释放路径覆盖异常、取消、进程退出和生命周期切换。
-
-### 🔹 线上监控：比 Vitals 多拿现场
-补充端侧采集：申请堆栈、释放堆栈、持锁时长、前后台状态、充电状态、电量、任务类型、SDK 来源，用内部阈值提前发现 Vitals 风险。
-
-### 🔹 版本与分发影响：2026 Play 质量信号
-整理 2025/2026 Android Vitals wake lock 指标的分发影响、质量阈值、店铺警告风险，以及国内渠道缺少 Vitals 数据时如何用自建指标替代。
-
-## 扩展
-
-### 🔸 Stuck partial wake lock 与 excessive wake lock 的差异
-补充长时间未释放和累计时长过高两类问题的诊断差异。
-
-### 🔸 Alarm / Wi-Fi scan / background network 的联合耗电规则
-把 WakeLock 与 Android Vitals 其他电量指标放在同一套后台耗电治理框架中处理。
-
-### 🔸 厂商后台限制与 Play Vitals 阈值的冲突
-讨论 OEM 省电策略、白名单、前台服务展示和 Play 质量阈值之间的差异。
-
-<!-- outline-end -->
-
-## 为什么要单独处理 Android Vitals WakeLock
-
-25.3 节已经覆盖 `PowerManager.WakeLock` 和 Alarm 的 API 使用，11.5 节覆盖系统 WakeLock 机制。本节处理一个更窄的工程问题：Play Console 报出 excessive partial wake lock 后，团队怎样判断影响范围，又怎样把一个 wake lock tag 追到业务代码、平台 API 或第三方 SDK。
+25.3 节已经覆盖 `PowerManager.WakeLock` 和 Alarm 的 API 使用，11.5 节覆盖系统 WakeLock 机制。这里处理一个更窄的工程问题：Play Console 报出 excessive partial wake lock 后，团队怎样判断影响范围，又怎样把一个 wake lock tag 追到业务代码、平台 API 或第三方 SDK。
 
 先划清边界：Android Vitals 是 Google Play 的质量指标，不是 Android 17 framework 的运行时限制。它能给出非豁免 tag、受影响会话和持有时长，却不会提供完整调用栈、任务参数、业务 trace id 或 SDK 版本。排查时需要把 Play Console、端侧日志、`batterystats` 和系统 trace 放在一起看。
 

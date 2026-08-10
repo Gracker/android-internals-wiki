@@ -51,37 +51,6 @@ last_task6_audit: "2026-07-03"
 
 # 25.20 Android 17 allow-while-idle Listener Alarm 与短生命周期唤醒治理
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 API 37 新增了什么
-解释 `AlarmManager.setExactAndAllowWhileIdle(int, long, String, Executor, OnAlarmListener)` 与既有 `PendingIntent` 版本、`setExact()` Listener 版本的差异，明确它只适合进程仍在的短生命周期任务。
-
-### 🔹 它解决的 WakeLock 问题
-围绕长连接保活、短周期重试、消息同步和临时后台任务，说明 callback 型 allow-while-idle alarm 如何减少应用为了等待下一次任务而持有连续 WakeLock 的需求。
-
-### 🔹 权限与生命周期边界
-核对 `SCHEDULE_EXACT_ALARM`、`USE_EXACT_ALARM`、`OnAlarmListener` 豁免、进程被系统清理后的取消行为，以及 Android 14 之后 exact alarm 默认拒绝的迁移影响。
-
-### 🔹 与 WorkManager、JobScheduler、Handler 延迟任务的选型
-建立任务选型表：可延迟周期任务走 WorkManager / JobScheduler，进程内短延迟走 Handler / coroutine delay，必须熄屏精确唤醒才考虑 allow-while-idle alarm。
-
-### 🔹 电量归因与 tag 设计
-整理 tag、Executor、任务类型、屏幕状态、前后台状态、WakeLock 持有时长和 Android Vitals 过度 WakeLock 指标之间的证据关联。
-
-### 🔹 迁移与验证流程
-给出从连续 WakeLock / 轮询线程迁移到 Listener Alarm 的实验设计：构造熄屏场景、记录触发延迟、检查 batterystats、确认漏触发和重复触发边界。
-
-## 扩展
-
-### 🔸 socket 保活与 FCM / push 的边界
-对比主动维持 socket、FCM 高优先级消息、exact alarm 唤醒和后台网络限制的适用场景。
-
-### 🔸 Android Vitals WakeLock 指标联动
-把本节与 25.19 的 excessive partial wake lock 治理合并成后台唤醒门禁规则。
-
-<!-- outline-end -->
-
 Android 17 给 `setExactAndAllowWhileIdle()` 增加了公开的 `OnAlarmListener` 重载。它把“低功耗 idle 中允许唤醒”和“当前进程内直接回调”放进同一个 API，主要用于替换一类错误设计：任务已经由活跃组件管理，却为了等待下一次短动作而连续持有 partial WakeLock。
 
 这个 API 的适用范围很窄。它不能让已死亡的进程重新接收回调，也不提供持久化任务、网络成功、固定周期或无限执行时间。WakeLock 基础规范见 25.3，系统 WakeLock 机制见 11.5，JobScheduler 诊断见 25.14，Android Vitals excessive partial wake lock 口径见 25.19。
@@ -281,7 +250,7 @@ com.example.call:ring-timeout
 
 这些 tag 能按功能聚合，却不会暴露个人数据。单次连接或消息的 trace id 应写入应用日志，再通过 elapsed realtime 与 alarm 事件关联。
 
-Android 17 r1 的 `Alarm.makeTag()` 会给 wakeup alarm 的统计 tag 添加 `*walarm*:` 前缀，非 wakeup alarm 使用 `*alarm*:`。AlarmManagerService 在投递时把 `statsTag` 设为共享 WakeLock 的 history tag，并把 `WorkSource` 或 creator UID 用于电量归因。因此系统侧可以看到 UID、tag、请求时间、实际交付和唤醒次数，但不了解连接状态、重试原因和服务端游标。
+Android 17 r1 的 `Alarm.makeTag()` 会给 wakeup alarm 的统计 tag 添加 `*walarm*:` 前缀，非 wakeup alarm 使用 `*alarm*:`。AlarmManagerService 在投递时把 `statsTag` 设为共享 WakeLock 的 history tag，并把 `WorkSource` 或 creator UID 用于电量归因。因此系统侧能观察到 UID、tag、请求时间、实际交付和唤醒次数，但不了解连接状态、重试原因和服务端游标。
 
 建议记录的内部事件：
 

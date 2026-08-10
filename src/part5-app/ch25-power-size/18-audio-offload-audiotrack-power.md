@@ -54,50 +54,13 @@ last_deepseek_cn_review_at: 2026-06-20
 
 # 25.18 音频 Offload 与 AudioTrack 精确控制功耗实践
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 场景边界：什么时候音频播放值得走 Offload
-区分长音频播放、短音效、语音/助手、低延迟互动和后台播放场景，明确 Offload 适合压缩音频长时间播放，低延迟互动仍优先关注 AAudio/MMAP 与缓冲区策略。
-
-### 🔹 AAudio compressed Offload 的能力探测
-围绕 `AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED`、压缩格式、设备能力和 `AAudioStream_getPerformanceMode(stream)` 建立探测流程，避免把请求 Offload 等同于实际走到 DSP 路径。
-
-### 🔹 AudioTrack Offload 的 API 37 新边界
-覆盖 `getCodecProvenance()`、`getFlushWrittenFramesFromPositionSupport()`、`flushWrittenFramesFromPosition(long, int)`、`FLUSH_FROM_ACCURACY_EXACT` / `BEST_EFFORT`，说明它们对音频定位、切歌、广告插入和有声书断点续播的影响。
-
-### 🔹 功耗收益的验证方式
-用 CPU 时间、音频线程唤醒、batterystats、Perfetto power/audio 相关轨道和播放器侧指标验证收益；只记录可复现实验条件，不用单次主观听感下结论。
-
-### 🔹 延迟、音质与兼容性代价
-说明 Offload 可能带来的 seek 精度、音效链、倍速播放、空间音频、设备 HAL 差异和 回退代价，给出「可开启」「灰度开启」「禁用」三档策略。
-
-### 🔹 Assistant 与后台音频的版本交叉
-衔接 Android 17 `USAGE_ASSISTANT` 专用音量流、`MODE_ASSISTANT_CONVERSATION` 和 25.17 后台音频 hardening，避免把音量流隔离、后台播放资格和 Offload 能力混在一起判断。
-
-### 🔹 线上监控与回滚开关
-设计播放器侧埋点：请求模式、实际性能模式、编解码器来源、回退原因、音频定位/flush 失败、播放中断和功耗实验分组，用于灰度与回滚。
-
-## 扩展
-
-### 🔸 Media3 / ExoPlayer 与平台 Offload 能力映射
-梳理 Media3 offload 相关配置如何落到平台 `AudioTrack` / `AudioAttributes`，以及哪些播放器特性会阻断 Offload。
-
-### 🔸 DSP Offload 与 Sound Dose / 音量安全边界
-结合 Android 音频框架对压缩音频和 DSP 的处理边界，标注声压、音量安全和 HAL 上报能力的验证点。
-
-### 🔸 不同 SoC / OEM 音频 HAL 差异
-记录高通、联发科、Tensor 等设备上 Offload 支持和 fallback 的差异，只作为测试维度和设备清单，不写未验证结论。
-
-<!-- outline-end -->
-
-## 为什么把音频 Offload 单独写成实践章节
+## 音频 Offload 的适用范围
 
 长音频播放的耗电常出现在屏幕关闭之后。用户在听播客、有声书、长视频背景音或语音助手响应时，界面已经不再绘制，但播放器仍可能持续做网络、解码、写入、埋点和 WakeLock 管理。此时继续用 CPU 解码和高频写入，会把一个本该低占用的任务变成稳定耗电源。
 
 Audio offload 解决的是这类长时间播放的 CPU 参与度问题。平台把音频处理交给专用硬件或 DSP，应用可以一次写入更长的数据，框架侧数据管道暂停，CPU 有机会进入睡眠。它不是低延迟方案。游戏音效、乐器、语音通话、实时互动仍应看 AAudio low latency、MMAP、buffer size、callback 稳定性和线程调度，详见 1.16 节。
 
-本节只讨论应用侧怎么判断、怎么接入、怎么验证和怎么灰度。AudioFlinger / AAudio / MMAP 的机制详见 1.16 节；MediaCodec、Media3 与播放管线详见 8.8 和 18.23 节；Android 17 后台音频限制详见 25.17 节。
+这里讨论应用侧怎么判断、怎么接入、怎么验证和怎么灰度。AudioFlinger / AAudio / MMAP 的机制详见 1.16 节；MediaCodec、Media3 与播放管线详见 8.8 和 18.23 节；Android 17 后台音频限制详见 25.17 节。
 
 ## 场景边界：什么时候值得开启 Offload
 
@@ -330,4 +293,3 @@ DSP offload 改变音频数据经过的处理路径，但不会取消音量安�
 - [Media3 ExoPlayer battery consumption](https://developer.android.com/media/media3/exoplayer/battery-consumption)
 - [Media3 ExoPlayer track selection](https://developer.android.com/media/media3/exoplayer/track-selection)
 - [Media3 `ExoPlayer.AudioOffloadListener`](https://developer.android.com/reference/androidx/media3/exoplayer/ExoPlayer.AudioOffloadListener)
-- 内部调研：`intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md`
