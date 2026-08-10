@@ -451,7 +451,7 @@ Skia Vulkan RenderEngine、应用 Vulkan、ANGLE 或 GPU 驱动可以维护各�
 - fence 是否已 signal；
 - exporter、size 与设备 attachment 是否可见。
 
-内核数据不会指出某个对象对应 BufferQueue slot 3”。要用句柄、进程 ID、时间戳、Layer/queue 名称和尺寸，把用户空间事件与内核对象关联。更完整的 DMA-BUF 与栅栏说明见 2.15、2.16。
+内核数据不会指出某个对象“对应 BufferQueue slot 3”。要用 handle、pid、时间戳、Layer/queue 名称和尺寸，把用户空间事件与内核对象关联。更完整的 DMA-BUF 与 fence 说明见 2.15、2.16。
 
 ---
 
@@ -492,7 +492,7 @@ Skia Vulkan RenderEngine、应用 Vulkan、ANGLE 或 GPU 驱动可以维护各�
 4. 等待异步 transaction、GPU 与 fence 完成后；
 5. 重复多轮。
 
-每个阶段同时记录目标 BufferQueue dump、进程 meminfo、gralloc 跟踪和对象生命周期。若 slot/buffer 数量已回落而 mtrack 不降，继续检查 GPU 导入或厂商层；若目标队列仍存在，先查找仍持有 Surface 或消费者的用户空间对象。
+每个阶段同时记录目标 BufferQueue dump、进程 meminfo、gralloc trace 和对象生命周期。若 slot/buffer 数量已回落而 mtrack 不降，继续检查 GPU import 或厂商层；若目标队列仍存在，先查找仍持有 Surface/Consumer 的用户空间对象。
 
 ### 10.4 复用率低
 
@@ -521,7 +521,7 @@ Skia Vulkan RenderEngine、应用 Vulkan、ANGLE 或 GPU 驱动可以维护各�
 - 当前 BLAST 与 Surface 的缓存实现；
 - 当前 unlimited-slot 协商路径。
 
-这里不为每个机制标注未经 Git 历史验证的首次引入版本。需要追溯版本时，应以对应标签的文件与提交历史为证据。
+这里不为每个机制标注未经 git history 验证的首次引入版本。需要追溯版本时，应以对应 tag 的文件与提交历史为证据。
 
 ---
 

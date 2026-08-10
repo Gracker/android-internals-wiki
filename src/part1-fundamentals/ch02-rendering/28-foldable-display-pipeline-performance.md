@@ -59,7 +59,7 @@ Android 显示框架区分物理设备和系统对外使用的逻辑 Display：
 - **`LogicalDisplay`**：系统用于组织 layer stack、DisplayInfo、display group 和窗口内容的逻辑对象；
 - **SurfaceFlinger Display / CompositionEngine Output**：针对最终输出建立合成状态并执行 present。
 
-折叠设备可能让一个稳定的逻辑显示器 ID 在不同设备状态下映射到不同内建面板。它也可能保留多个逻辑 Display，并在布局中改变启用状态。具体方式由设备厂商配置决定。
+折叠设备可能让一个稳定的逻辑 display id 在不同设备状态下映射到不同内建面板。它也可能保留多个逻辑 Display，并在 layout 中改变 enabled 状态。具体方式由设备厂商配置决定。
 
 因此：
 
@@ -86,7 +86,7 @@ Android 17 的 `DeviceStateToLayoutMap` 从以下位置读取 display layout：
 - lead display；
 - brightness / refresh-rate / thermal / power throttling 策略 id。
 
-刷新率和亮度策略可以随布局改变，但 AOSP 没有“展开态固定 120 Hz、折叠态固定低刷新率”的通用规则。具体 mode 还要经过 `DisplayModeDirector`、设备配置、内容投票、热限制和用户设置。
+刷新率和亮度策略可以随 layout 改变，但 AOSP 没有“展开态固定 120 Hz、折叠态固定低刷新率”的通用规则。具体 mode 还要经过 `DisplayModeDirector`、设备配置、内容投票、热限制和用户设置。
 
 ### 1.3 多内屏并发属于设备能力
 
@@ -137,14 +137,14 @@ DisplayManager 收到回调后，先向 WMS 投递 device state 消息，再调�
 
 ### 2.3 为什么切换过程中会看到黑场或过渡层
 
-`LogicalDisplayMapper` 比较新旧布局。以下情况会把 Display 标为过渡中：
+`LogicalDisplayMapper` 比较新 layout。以下情况会把 Display 标为过渡中：
 
 - enabled 状态变化；
 - 同一个物理 DisplayDevice 将映射到新的 logical display id；
 - DisplayDevice 只出现在新旧 layout 的一侧；
 - Display 已处于 transition。
 
-系统先发送过渡阶段更新，让相关 Display 关闭。所有过渡中的显示器确认关闭后，才会清除过渡标记、应用新布局并发出后续更新。源码给这段等待设置了 **500 ms** 的强制推进超时。
+系统先发送 transition 阶段更新，让相关 Display 关闭。所有过渡中的显示器确认 OFF 后，才会清除 transition 标记、应用新 layout 并发出后续更新。源码给这段等待设置了 **500 ms** 的强制推进超时。
 
 该机制通过显示器熄屏遮住 resize 过程中可能出现的错误尺寸。500 ms 是框架状态转换的兜底上限，不代表屏幕一定黑场 500 ms，也不代表折叠动画时长。
 
@@ -161,7 +161,7 @@ DisplayManager 收到回调后，先向 WMS 投递 device state 消息，再调�
 
 后续 DisplayManager traversal 使用 `SurfaceControl.Transaction` 更新 display layer stack、flags、projection、size 和 surface。SurfaceFlinger 接收 display transaction，并为新的 display/output 状态构建合成输入。
 
-SurfaceFlinger 不负责识别手机处于书本姿态还是桌面姿态。它处理的是 system_server 已转换好的 Display 与图层状态。
+SurfaceFlinger 不负责识别手机处于书本姿态还是桌面姿态。它处理的是 system_server 已转换好的 Display 与 layer 状态。
 
 ## 3. WMS、Shell 与应用窗口
 
@@ -209,7 +209,7 @@ WindowLayoutInfo → Configuration → onConfigurationChanged
 
 一次折叠或展开可能改变 `screenSize`、`smallestScreenSize`、`screenLayout`、`orientation`、`density` 或其他配置；具体集合取决于物理面板、windowing mode、rotation 与厂商实现。
 
-默认情况下，Activity 未声明自行处理的 configuration change 会触发重建。若使用 `android:configChanges`，应用必须重新读取受影响资源并更新界面，不能只记录回调后原样返回。
+默认情况下，Activity 未声明自行处理的 configuration change 会触发重建。若使用 `android:configChanges`，应用必须重新读取受影响资源并更新 UI，不能只记录回调后原样返回。
 
 ## 4. Jetpack WindowManager：面向应用的窗口 posture
 
@@ -269,7 +269,7 @@ lifecycleScope.launch(Dispatchers.Main) {
 }
 ```
 
-这段代码解决订阅生命周期问题，不限制重组或 View 布局成本。回调中应先把姿态归一化为小而稳定的 UI state，再让受影响的区域读取它。
+这段代码解决订阅生命周期问题，不限制重组或 View layout 成本。回调中应先把 posture 归一化为小而稳定的 UI state，再让受影响的区域读取它。
 
 ## 5. 原始 hinge angle sensor 的使用边界
 
@@ -322,7 +322,7 @@ Activity 重建通常不会创建新的 ViewModel；`ViewModelStore` 会跨配�
 - 当前选中 pane 或 item；
 - 尚未提交的编辑内容。
 
-这些状态应与窗口尺寸和姿态分离。折叠或展开改变布局时，不应顺带清空业务状态或跳到另一个导航 destination。
+这些状态应与窗口尺寸和 posture 分离。折叠或展开改变布局时，不应顺带清空业务状态或跳到另一个导航 destination。
 
 ### 6.2 自行处理 configChanges 的代价
 
@@ -350,12 +350,12 @@ Compose 中 window size 或 posture state 改变后，读取该 state 的 compos
 - 在靠近自适应布局决策的位置读取 `WindowSizeClass` / posture；
 - 传递稳定、语义化的 compact/medium/expanded 或 pane strategy；
 - 避免把原始 hinge angle 放进页面根节点的高频 state；
-- 用 Layout Inspector、Compose 跟踪与 Perfetto 查找具体失效范围；
+- 用 Layout Inspector、Compose tracing 与 Perfetto 查找具体失效范围；
 - 对 list-detail、supporting pane 等结构优先使用 Material 3 Adaptive 组件。
 
 ### 6.4 Android 17 大屏行为
 
-Android 16 对目标 SDK 36 的应用引入大屏方向、宽高比与 resizability 限制忽略行为，并提供临时退出项。
+Android 16 对 target 36 的应用引入大屏方向、宽高比与 resizability 限制忽略行为，并提供临时退出项。
 
 Android 17 对 target 37 应用移除该 opt-out。官方文档将适用范围写为 smallest width 大于 600dp 的 Display；在这类环境中，以下限制不再能作为布局前提：
 
@@ -463,7 +463,7 @@ onDevice().setFlatMode()
 
 它适合验证 compact/expanded UI、pane、导航和状态保存。`@RequiresDeviceMode` 可跳过不支持相应 mode 的设备。
 
-模拟器适合功能回归，不适合产出代表用户设备的性能结论。官方 Macrobenchmark 文档也建议在物理设备上测量。性能测试可以使用 `FrameTimingMetric` 和系统跟踪，但必须提供稳定、可重复的折叠触发方式，例如人工节拍、机械夹具或受控系统测试接口。
+模拟器适合功能回归，不适合产出代表用户设备的性能结论。官方 Macrobenchmark 文档也建议在物理设备上测量。性能测试可以使用 `FrameTimingMetric` 和系统 trace，但必须提供稳定、可重复的折叠触发方式，例如人工节拍、机械夹具或受控系统测试接口。
 
 ### 8.4 device_state shell 命令的边界
 
@@ -586,6 +586,6 @@ adb shell dumpsys SurfaceFlinger --display
 4. App 处理新 window bounds、configuration 与 `FoldingFeature`；
 5. SurfaceFlinger/HWC 为每个目标 Display 合成并 present。
 
-分析性能时，应使用明确的起止时间对齐这五层。缺少同一设备、状态和刷新率下的跟踪与显示证据时，不能为折叠切换套用固定帧数或毫秒结论。
+分析性能时，应使用明确的起止时间对齐这五层。缺少同一设备、状态和刷新率下的 trace 与显示证据时，不能为折叠切换套用固定帧数或毫秒结论。
 
 > 版本范围：平台路径按 AOSP `android-17.0.0_r1` 核对；结论最高适用于 Android 17 / API 37。

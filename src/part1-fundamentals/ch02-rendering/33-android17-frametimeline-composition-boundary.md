@@ -153,14 +153,14 @@ if (acquireFenceTime == Fence::SIGNAL_TIME_PENDING) {
 
 这段代码把 CPU 提交完成与 Producer GPU 完成分开处理。应用很早调用 `queueBuffer()`，但 acquire fence 很晚才 signal，Actual SurfaceFrame 仍会延长到 GPU 可供 Consumer 读取的时刻。
 
-SurfaceFrame 的 Actual slice 结束于上述就绪边界，不延伸到最终上屏；`present_type` 与 `jank_type` 会在 DisplayFrame 获得送显反馈后回填分类结果。切片右边界不能直接作为屏幕更新时间。
+SurfaceFrame 的 Actual slice 结束于上述 ready 边界，不延伸到最终上屏；`present_type` 与 `jank_type` 会在 DisplayFrame 获得 present 反馈后回填分类结果。切片右边界不能直接作为屏幕更新时间。
 
 ### SurfaceFlinger 侧 DisplayFrame
 
 DisplayFrame 的 Actual slice 从 SurfaceFlinger 为该帧醒来或开始工作延伸到 actual present：
 
 - start 来自 `onSfWakeUp()` 或相应的实际开始记录；
-- SF CPU 结束时间由调用 `setSfPresent()` 时的时间保存；
+- SF CPU end 由调用 `setSfPresent()` 时的时间保存；
 - actual present 来自 pacesetter display 的 present fence signal；
 - client composition 存在时，分类还会把 GPU done fence 纳入 ready deadline。
 
@@ -291,7 +291,7 @@ Android 的 BufferQueue 与 fence 设计用于避免 Consumer 读取未完成内
 
 ## 采集一份可解释的 trace
 
-Perfetto 界面的 Android 预设通常会启用 FrameTimeline。需要可复现的命令行配置时，下面的配置会同时收集两类 SurfaceFlinger 数据，以及应用/SF 常用的 atrace 数据：
+Perfetto UI 的 Android preset 通常会启用 FrameTimeline。需要可复现的命令行配置时，下面的配置会同时收集两类 SurfaceFlinger 数据，以及应用/SF 常用的 atrace 数据：
 
 ```protobuf
 buffers {
@@ -367,7 +367,7 @@ WHERE a.surface_frame_token IS NOT NULL
 ORDER BY a.ts;
 ```
 
-结果中的 `dur` 是应用就绪区间，`present_type` 是后来根据显示反馈完成的分类。相同 `app_token` 出现多行时，应先查看进程与图层，不要立即去重。
+结果中的 `dur` 是应用 ready 区间，`present_type` 是后来根据显示反馈完成的分类。相同 `app_token` 出现多行时，应先查看 process 与 layer，不要立即去重。
 
 ### 按 DisplayFrame 关联应用与 SurfaceFlinger
 
@@ -434,11 +434,11 @@ ORDER BY overrun DESC;
 4. `dequeueBuffer` 是否因旧 buffer 尚未 release 而等待；
 5. 对应 DisplayFrame 是否又叠加 SF 或 Display HAL jank。
 
-SurfaceFrame `gpu_composition = false` 只表示该图层没有被 SF 放入 client composition，不能排除 HWUI 生成缓冲区时的 GPU 延迟。
+SurfaceFrame `gpu_composition = false` 只表示该 layer 没有被 SF 放入 client composition，不能排除 HWUI 生成缓冲区时的 GPU 延迟。
 
 ### SurfaceView 或游戏：画面节奏不稳
 
-不要假定原生引擎一定把 `Choreographer.FrameData` 正确传到了目标 Surface。验证令牌存在后，再沿独立图层检查：
+不要假定 Native 引擎一定把 `Choreographer.FrameData` 正确传到了目标 Surface。验证令牌存在后，再沿独立 layer 检查：
 
 ```text
 AChoreographer / engine tick
@@ -452,7 +452,7 @@ AChoreographer / engine tick
 
 ### 大量 `gpu_composition = true`
 
-这只说明 SF 频繁使用 CLIENT 合成路径。要证明它造成 deadline miss，还需要同时看到：
+这只说明 SF 频繁使用 CLIENT composition 路径。要证明它造成 deadline miss，还需要同时看到：
 
 - `SurfaceFlinger GPU Deadline Missed` 或相符的 deadline；
 - client target GPU fence signal 偏晚；
