@@ -63,7 +63,7 @@ Bionic 源码也没有单一的“BSD 实现”来源。`libc/upstream-freebsd/`
 调用路径的边界如下：
 
 ```text
-NDK / 框架 JNI / 原生系统服务
+NDK / Framework JNI / native system service
                   |
                   v
               Bionic API
@@ -209,7 +209,7 @@ Android 17 的普通非 PI 互斥量使用一个原子状态：
 
 共享 mutex 会选择跨进程 futex 操作，私有 mutex 可以使用开销更低的私有 futex。recursive 和 errorcheck 类型还要记录 owner 与递归计数。分析高频锁路径时，应确认锁类型、是否跨进程、竞争比例和临界区长度，再讨论替换同步原语。
 
-### 4.2 优先级继承互斥量
+### 4.2 Priority Inheritance mutex
 
 把 mutex protocol 配置为 `PTHREAD_PRIO_INHERIT` 后，Bionic 使用独立的 PI 状态与 `FUTEX_LOCK_PI`/`FUTEX_UNLOCK_PI` 路径。无竞争时仍尝试以原子操作获得 owner；发生竞争时由内核 `kernel/futex/pi.c` 等代码管理所有权和优先级继承。
 
