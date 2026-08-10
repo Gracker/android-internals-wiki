@@ -94,26 +94,6 @@ WakeLock 解决一个很窄的问题：设备准备进入 system suspend 时，�
 
 从 2026 年 3 月起，Google Play 已逐步对 excessive partial wake lock 指标执行商店可见性处理。功耗治理因此还涉及线上质量门槛，不能只看本地电流。
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 wake lock 为什么存在，以及 `PARTIAL_WAKE_LOCK` 为什么是功耗分析重点
-- 🔹 `PowerManager.WakeLock` 的获取、引用计数、`WorkSource` 与服务端处理
-- 🔹 wake lock 在 Android 电源状态机中的位置，以及 Doze / App Standby 对它的约束
-- 🔹 用户态 wake lock 与内核 `wakeup_source` 的关系
-- 🔹 常见泄漏模式，以及用 Battery Historian、`dumpsys batterystats`、Perfetto 排查的方法
-- 🔹 `AlarmManager`、`WorkManager`、Foreground Service 等机制与 wake lock 的关系
-- 🔹 版本演进、常见误区与 Google Play 质量门槛
-
-### 扩展（可选深入）
-
-- 🔸 Android 16+ 后台执行配额与 wake lock 的交互
-- 🔸 Android 17 `OnAlarmListener` 版 allow-while-idle 精确回调
-- 🔸 内核 `wakeup_source` 观测与 `wakeup_sources` 字段
-<!-- outline-end -->
-
 ## 11.5.1 WakeLock 阻止的是哪一层睡眠
 
 CPU 低功耗至少要区分 CPU idle 与 system suspend：
@@ -504,9 +484,9 @@ Android vitals 在以下条件下把一次会话计入 excessive partial wake lo
 
 ## 11.5.11 版本边界
 
-| 版本 | 与本章有关的变化 |
+| 版本 | 相关变化 |
 |---|---|
-| Android 8 / API 26 | 本章兼容范围起点；后台执行与位置限制已开始影响持锁场景 |
+| Android 8 / API 26 | 兼容范围起点；后台执行与位置限制已开始影响持锁场景 |
 | Android 9 / API 28 | App Standby buckets；SystemSuspend 迁移前的历史分界 |
 | Android 10 / API 29 | SystemSuspend 取代 libsuspend 成为现代用户态挂起协调路径 |
 | Android 12 / API 31 | 后台 FGS 启动限制；exact-alarm 权限 |
@@ -517,7 +497,7 @@ Android vitals 在以下条件下把一次会话计入 excessive partial wake lo
 | Android 17 / API 37 | 公开 listener 版 `setExactAndAllowWhileIdle()`；平台源码锚点 `android-17.0.0_r1` |
 | 2026-03 | Google Play excessive partial wake lock 可见性处理开始执行 |
 
-## 11.5.12 Review 清单
+## 11.5.12 复核清单
 
 - [ ] 是否存在专用 API，可省去手工 partial wake lock？
 - [ ] Manifest 是否只在确有需要时声明 `WAKE_LOCK`？
@@ -571,7 +551,3 @@ Android vitals 在以下条件下把一次会话计入 excessive partial wake lo
 - [SystemSuspend service](https://source.android.com/docs/core/power/systemsuspend)
 - [Perfetto power data sources](https://perfetto.dev/docs/data-sources/battery-counters)
 - [Battery Historian](https://developer.android.com/topic/performance/power/setup-battery-historian)
-
-### 项目内研究素材
-
-- `intake/research-feeds/2026-04-06-07-android17-power-management-wakelock-policy-aod-minmode.md`
