@@ -405,8 +405,8 @@ Android 17 的 Scheduler 为每个显示设备保存独立的选择器与 `Vsync
 
 优先使用 VSync 编号或令牌关联应用帧、SurfaceFrame 与 DisplayFrame，再比较：
 
-- 预测开始、截止和显示时间；
-- 实际开始、结束和显示时间；
+- predicted start / deadline / present；
+- actual start / end / present；
 - 应用缓冲区是否按时进入 BufferQueue；
 - SF 是否及时锁存、合成并提交 HWC；
 - 显示围栏是否晚于预期显示时间。
