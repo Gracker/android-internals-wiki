@@ -60,13 +60,13 @@ last_deepseek_cn_review_at: 2026-06-08
 
 Kotlin 协程在挂起和恢复之间可能更换执行线程，ADPF 的 `PerformanceHintManager.Session` 却用一组 Linux 线程 ID 描述周期性工作。两者能够配合，但必须同时满足三个条件：工作有明确周期，执行线程长期存在，应用能持续上报每个周期的实际耗时。默认协程调度器不保证线程身份，因此不能在任意 `suspend` 函数外面简单套一层 Hint Session。
 
-ADPF 不允许应用指定 CPU 频点，也不保证工作一定运行在某个核心。应用提供线程集合、目标时长和实际时长，系统再结合调度、动态电压频率调整和温控状态分配资源。本章以 Android 17 / API 37 的框架实现为源码锚点，公开能力边界则以 Android SDK 文档为准。线程调度基础见 5.9 节。
+ADPF 不允许应用指定 CPU 频点，也不保证工作一定运行在某个核心。应用提供线程集合、目标时长和实际时长，系统再结合调度、动态电压频率调整和温控状态分配资源。源码锚点为 Android 17 / API 37 的框架实现，公开能力边界则以 Android SDK 文档为准。线程调度基础见 5.9 节。
 
 ## PerformanceHintManager Session 的线程绑定模型
 
 `PerformanceHintManager.Session` 绑定的是 Linux 线程 ID，即 `android.os.Process.myTid()` 返回的 tid。`Thread.currentThread().id` 是 Java 线程标识，不能代替 tid。Android 官方的 [Performance Hint API 指南](https://source.android.com/docs/core/perf/performance-hint-api) 也在 Java 示例中使用 `Process.myTid()`。
 
-Session 用来描述一组共同完成周期性工作的线程，例如一帧自研渲染、一次音频处理或一个固定频率的本地推理周期。[已验证: android-17.0.0_r1 `PerformanceHintManager.java`] Android 17 的 [`PerformanceHintManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java) 对创建参数有明确校验：
+Session 用来描述一组共同完成周期性工作的线程，例如一帧自研渲染、一次音频处理或一个固定频率的本地推理周期。Android 17 的 [`PerformanceHintManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java) 对创建参数有明确校验：
 
 - `tids` 不能为 `null` 或空数组；
 - `initialTargetWorkDurationNanos` 必须大于零；
@@ -79,11 +79,11 @@ Session 用来描述一组共同完成周期性工作的线程，例如一帧自
 - 每完成一个有效工作周期，再调用 `reportActualWorkDuration()`。没有完成的周期不应伪造耗时样本。
 - Session 的状态修改由应用负责串行化。Android 17 源码注释明确要求调用方处理线程安全。
 
-API 34 起，`setThreads(int[])` 会用新数组替换整个线程集合，不是在原集合上追加。[来源: Android SDK `Session.setThreads()` 参考 + android-17.0.0_r1 框架实现] 它是同步调用，空数组会触发 `IllegalArgumentException`；线程不属于当前应用、Session 不在前台等情况也可能进入异常路径。线程集合更新应当跟随工作线程或固定线程池的生命周期，不能放进每个工作周期的热路径。
+API 34 起，`setThreads(int[])` 会用新数组替换整个线程集合，不是在原集合上追加。它是同步调用，空数组会触发 `IllegalArgumentException`；线程不属于当前应用、Session 不在前台等情况也可能进入异常路径。线程集合更新应当跟随工作线程或固定线程池的生命周期，不能放进每个工作周期的热路径。
 
 ## 协程调度导致 tid 变化时的失效场景
 
-协程是可挂起的任务，Linux 线程只是它在某一时刻的执行载体。[来源: DeepResearch/2026-05-17-kotlin-coroutine-adpf-hint-engineering.md] `Dispatchers.Default`、`Dispatchers.IO` 和 `limitedParallelism()` 约束并行度或调度策略，却不承诺同一协程始终使用同一个 tid。挂起函数恢复后可以被另一个工作线程继续执行。详见 8.6 节。
+协程是可挂起的任务，Linux 线程只是它在某一时刻的执行载体。`Dispatchers.Default`、`Dispatchers.IO` 和 `limitedParallelism()` 约束并行度或调度策略，却不承诺同一协程始终使用同一个 tid。挂起函数恢复后可以被另一个工作线程继续执行。详见 8.6 节。
 
 ADPF 与协程组合的主要风险在于：Session 记录的 tid 和实际执行工作的 tid 分离。常见失效场景有三类：
 
@@ -160,7 +160,7 @@ class AdpfWorker(
 
 `close()` 表示永久释放 Session，不能充当暂停操作。公开文档要求调用 `close()` 后不再调用该 Session 的其他方法。页面、相机或渲染模块退出时应关闭 Session；再次开始工作时创建新实例。
 
-`reportActualWorkDuration(long)` 从 API 31 起可用，参数是刚结束周期的总耗时。[来源: Android SDK `PerformanceHintManager.Session` / `WorkDuration` 参考] API 35 起，公开的 `reportActualWorkDuration(WorkDuration)` 可以同时描述周期开始时间、总时长、CPU 时长和 GPU 时长。Android 17 实现会校验这些字段：开始时间和总时长必须大于零，CPU、GPU 时长不能为负，二者也不能同时为零。时间戳应使用与框架一致的 `SystemClock.uptimeNanos()` 时间基准。
+`reportActualWorkDuration(long)` 从 API 31 起可用，参数是刚结束周期的总耗时。API 35 起，公开的 `reportActualWorkDuration(WorkDuration)` 可以同时描述周期开始时间、总时长、CPU 时长和 GPU 时长。Android 17 实现会校验这些字段：开始时间和总时长必须大于零，CPU、GPU 时长不能为负，二者也不能同时为零。时间戳应使用与框架一致的 `SystemClock.uptimeNanos()` 时间基准。
 
 上报频率按工作周期走，不按函数调用次数走。UI 或渲染类任务可以按帧上报；音视频、传感器、推理任务按自己的批次或采样周期上报。普通列表分页、一次性 JSON 解析、后台同步任务不适合为每个小任务创建 Session。它们更应该先解决线程池大小、任务合并、I/O 约束和后台执行策略，详见 25.1、25.2 节。
 
@@ -168,14 +168,14 @@ class AdpfWorker(
 
 ## ADPF API 版本边界
 
-`PerformanceHintManager.Session` 的公开 API 随 Android 版本逐步增加。[已验证: SDK API reference 与 android-17.0.0_r1 源码对照] 判断应用能否调用某个方法时，应查看 SDK API 参考文档和 `Build.VERSION.SDK_INT`；AOSP 实现里的构建期注解不能替代公开 SDK 契约。
+`PerformanceHintManager.Session` 的公开 API 随 Android 版本逐步增加。判断应用能否调用某个方法时，应查看 SDK API 参考文档和 `Build.VERSION.SDK_INT`；AOSP 实现里的构建期注解不能替代公开 SDK 契约。
 
 | API 级别 | Android 版本 | 可用能力 | 说明 |
 |----------|-------------|---------|------|
 | 31 | Android 12 | `createHintSession()`、`getPreferredUpdateRateNanos()`、`reportActualWorkDuration(long)`、`updateTargetWorkDuration()`、`close()` | 基础能力：创建 Session、查询首选更新周期、上报单值耗时、更新目标和关闭。线程列表在创建时一次性传入，不可事后替换 |
 | 34 | Android 14 | 增加 `setThreads(int[])` | 允许在 Session 存活期间替换线程列表。API 31-33 只能通过重建 Session 来更换线程 |
 | 35 | Android 15 | 增加 `setPreferPowerEfficiency(boolean)`、`reportActualWorkDuration(WorkDuration)` | 两个方法都是公开 SDK API。`WorkDuration` 可以分别提供总时长、CPU 时长、GPU 时长和周期开始时间 |
-| 36～37 | Android 16～17 | 沿用 API 35 的公开 Session 能力 | 相比 API 35，没有新增公开的 `Session` 方法；本章实现细节核对到 `android-17.0.0_r1` |
+| 36～37 | Android 16～17 | 沿用 API 35 的公开 Session 能力 | 相比 API 35，没有新增公开的 `Session` 方法；实现细节核对到 `android-17.0.0_r1` |
 
 API 31～33 应在运行时判断 `PerformanceHintManager` 和创建结果是否为空；API 34、35 新增方法还要做对应版本保护。接口存在只表示可以调用，不表示所有设备和所有负载都有收益。
 
@@ -228,7 +228,7 @@ ADPF 的评估不能只看耗时下降。它让系统提前知道工作截止时
 
 Perfetto 分析要回答三个问题：登记的 tid 是否执行了目标工作，工作周期是否满足目标时长，调度变化是否伴随能量或温控代价。可以按线程名和 tid 查询 `thread_state`，再与 `Trace.beginSection()` 标记的工作周期对齐。能量数据来自支持该指标的设备测试，并与耗时和热状态一起判断。
 
-证据边界：本章没有附带实机跟踪数据，因此不提供收益百分比，也不声称 ADPF 在某类非游戏业务中已经带来确定收益。任何新增的 Pixel 或厂商机型数据都应同时记录设备型号、Android 版本、刷新率、温度起点、测试时长、目标周期、所选耗时分位和能量指标。
+这里没有附带实机跟踪数据，因此不提供收益百分比，也不声称 ADPF 在某类非游戏业务中已经带来确定收益。任何新增的 Pixel 或厂商机型数据都应同时记录设备型号、Android 版本、刷新率、温度起点、测试时长、目标周期、所选耗时分位和能量指标。
 
 ## 小结
 
@@ -242,5 +242,3 @@ ADPF 与 Kotlin 协程可以配合，条件是周期性工作始终由已登记�
 - [`PerformanceHintManager.Session` API reference](https://developer.android.com/reference/android/os/PerformanceHintManager.Session)
 - [`WorkDuration` API reference](https://developer.android.com/reference/android/os/WorkDuration)
 - [NDK Performance Hint API](https://developer.android.com/ndk/reference/group/a-performance-hint)
-- DeepResearch：`DeepResearch/2026-05-17-kotlin-coroutine-adpf-hint-engineering.md`
-- DeepResearch：`DeepResearch/2026-05-27-adpf-performancehintmanager-api-version-boundary.md`

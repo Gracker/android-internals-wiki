@@ -67,51 +67,11 @@ last_deepseek_cn_review_at: 2026-06-08
 
 # 25.10 Hybrid/WebView 功耗与原生化取舍
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 原生 App、Web App、Hybrid 页面的能耗边界
-- 对比原生页面、纯 Web 页面、WebView 容器页面的运行时差异，区分 CPU、内存、网络、渲染和后台行为的成本来源。
-- 结合论文素材建立可复用的技术选型问题：哪些业务适合 WebView，哪些场景需要原生化或局部原生化。
-
-### 🔹 Native vs Web 能耗实验的结论与局限
-- 整理 arXiv 2308.16734 的实验对象、测量方法、指标和统计结论。
-- 单独交代样本量、场景标准化和帧时间测量的不确定性，避免把论文结论写成所有业务的通用定律。
-
-### 🔹 WebView 的 CPU、内存和网络开销来源
-- 从 Chromium 渲染进程、JavaScript 执行、DOM / CSS 布局、图片缓存、Service Worker 缓存和网络请求复用角度拆开成本。
-- 与 7.11 WebView 渲染性能、10.3 内存增长、19.26 Hybrid APM 做交叉引用，不重复写渲染机制。
-
-### 🔹 功耗基准测试方案
-- 设计原生页、WebView 页、外部浏览器 Web 页的对照实验：固定设备、亮度、网络、账号、内容、操作脚本和采样窗口。
-- 指标覆盖 BatteryStats / Power Profiler、CPU time、网络流量、PSS / RSS、帧耗时和温度，不用单一电量百分比下结论。
-
-### 🔹 原生化与 Web 优化的决策表
-- 按视频流、信息流、电商详情、活动页、登录支付、富交互工具页等业务形态给出取舍条件。
-- 将决策落到可执行动作：资源预加载、缓存策略、JSBridge 收敛、图片格式、WebView 生命周期、原生组件替换和灰度门禁。
-
-### 🔹 线上监控与发布守门
-- 建立 Hybrid 页面功耗账本：页面标识、WebView provider 版本、URL 类型、CPU / 内存 / 网络 / 卡顿 / 退出原因。
-- 与 Android Vitals、APM Session Timeline、ApplicationExitInfo 和 WebView Renderer OOM 恢复形成联动。
-
-## 扩展
-
-### 🔸 WebView provider 版本差异
-- 记录不同 WebView provider / Chromium 版本对渲染、内存和稳定性的影响，后续可结合线上 provider 分布做专项分析。
-
-### 🔸 PWA / TWA 与原生容器的边界
-- 补充 PWA、Trusted Web Activity 和普通 WebView 容器在权限、缓存、进程模型和可观测性上的差异。
-
-### 🔸 低端机与弱网场景
-- 单独讨论 Android Go、低内存设备、弱网环境中 WebView 页面的 CPU、内存和网络放大效应。
-
-<!-- outline-end -->
-
-## 为什么 Hybrid 页要单独算功耗账
+## Hybrid 页的功耗账本
 
 Hybrid 页面把应用进程、WebView provider、Chromium renderer、JavaScript、页面资源和桥调用放进同一次用户操作。电量百分比只能反映整机变化，无法指出耗电来自页面脚本、容器生命周期、网络请求还是原生侧工作。
 
-本节以 Android 17（API 37）和 `android-17.0.0_r1` 为平台锚点，比较同一业务在原生页、应用内 WebView 和外部浏览器中的成本。结论分成两类：同机对照实验得到的相对差异，以及能够在线上按页面和 provider 版本持续验证的指标。
+平台锚点为 Android 17（API 37）和 `android-17.0.0_r1`，比较同一业务在原生页、应用内 WebView 和外部浏览器中的成本。结论分成两类：同机对照实验得到的相对差异，以及能够在线上按页面和 provider 版本持续验证的指标。
 
 7.11 节负责 WebView 渲染管线，10.3 节负责内存持续增长，19.26 节负责 Hybrid APM。25.10 把这些章节的结果接到功耗账本和技术选型上。
 
@@ -151,7 +111,7 @@ WebView 的成本通常分成四类看。
 - **网络与存储**：页面可能包含重定向、第三方脚本、字体和多种图片。HTTP 缓存、Cookie、DOM storage、Service Worker 与应用自己的离线包不是同一层；清理其中一层不能证明其他层也已清空。
 - **生命周期**：页面离屏后仍可能保留 renderer、音视频和定时任务。容器要把可见性映射到 `WebView.onPause()` / `onResume()`，不再复用时从 View 树移除并调用 `destroy()`。`pauseTimers()` / `resumeTimers()` 会影响当前进程中的所有 WebView，不适合作为单页面通用开关；`clearCache()` 也不是页面退出时的清理接口。
 
-7.11 解释 WebView 渲染性能，10.3 覆盖内存持续增长，19.26 覆盖 Hybrid APM，20.10 覆盖 renderer 退出和白屏恢复。本节只汇总功耗需要的字段：页面类型、provider 版本、驻留时长、CPU 时间、PSS/RSS、网络字节、桥调用、前后台切换和 renderer 退出原因。Renderer PID 适合在本地 Perfetto/`ps` 中关联；Android 公共 WebView API 不提供可用于线上记录的 renderer PID。
+7.11 解释 WebView 渲染性能，10.3 覆盖内存持续增长，19.26 覆盖 Hybrid APM，20.10 覆盖 renderer 退出和白屏恢复。这里汇总功耗需要的字段：页面类型、provider 版本、驻留时长、CPU 时间、PSS/RSS、网络字节、桥调用、前后台切换和 renderer 退出原因。Renderer PID 适合在本地 Perfetto/`ps` 中关联；Android 公共 WebView API 不提供可用于线上记录的 renderer PID。
 
 ## 功耗基准测试方案
 
@@ -250,7 +210,7 @@ PWA、Trusted Web Activity（TWA）和普通 WebView 都能展示 Web 内容，�
 
 设备样本应包含 Android Go 或低内存设备、仍需支持的 32 位进程环境，以及线上占比较高的 WebView provider 版本。弱网测试覆盖高 RTT、丢包、DNS 失败、CDN 回源慢和网络切换。高端设备上的 Wi-Fi 数据不能代表低内存或弱网用户。
 
-## 本节小结
+## 小结
 
 Hybrid/WebView 功耗需要按页面、provider 与设备分组记录。同一内容使用同一脚本比较，才能判断差异来自页面还是容器。论文说明 Chrome Web 版本在其样本中消耗更多能耗、CPU 和内存，但它不构成 WebView 原生化结论。高频、长驻留、富交互页面在本业务测试中出现稳定劣化时，再选择整体或局部原生化；保留 WebView 的页面要持续观察 CPU、内存、网络、renderer 异常和 Android Vitals。
 

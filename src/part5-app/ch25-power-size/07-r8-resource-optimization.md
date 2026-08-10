@@ -68,23 +68,7 @@ last_deepseek_cn_review_at: 2026-06-10
 
 # R8 与资源优化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 R8 全模式（Full Mode）与兼容模式
-- 🔹 Keep 规则编写与优化
-- 🔹 资源格式优化：WebP / VectorDrawable / AVIF
-- 🔹 字体子集化与按需加载
-
-### 扩展（可选深入）
-
-- 🔸 （待扩展）
-
-<!-- outline-end -->
-
-## 为什么要了解 R8 与资源优化
+## 四类优化的职责
 
 R8、资源缩减、图片编码和字体交付处理的是四类问题：
 
@@ -93,7 +77,7 @@ R8、资源缩减、图片编码和字体交付处理的是四类问题：
 - **图片编码** 改变仍需交付的图片字节数与解码成本；
 - **字体策略** 决定字符、字重和字体文件何时交付。
 
-25.6 负责体积测量与归因，本节处理具体配置。Android 17（API 37）是平台行为锚点，R8/AGP 的行为仍由构建工具版本决定，不能仅凭设备系统版本推导。R8 和资源打包不涉及 kernel 实现，因此本节不引用 kernel 作为优化依据。
+25.6 负责体积测量与归因，这里处理具体配置。Android 17（API 37）是平台行为锚点，R8/AGP 的行为仍由构建工具版本决定，不能仅凭设备系统版本推导。R8 和资源打包不涉及 kernel 实现，因此无需用 kernel 代码作为优化依据。
 
 ## R8 全模式（Full Mode）与兼容模式
 
@@ -227,7 +211,7 @@ Keep 文件作用于合并后的全局资源，应用与 AAR 应使用包含包�
 
 Android 17 的 [`ResourceTypes.h`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/androidfw/include/androidfw/ResourceTypes.h) 定义了字符串池、资源表头、package、type spec 和 type 等二进制结构。这能解释 `resources.arsc` 的组织方式，却不能证明第三方资源表重写工具与 AGP、动态资源名、热修或资源覆盖兼容。发布流程应先使用官方缩减，再评估额外工具。
 
-## [自动发现] AOSP Soong 与应用 AGP 不能混用配置
+## AOSP Soong 与应用 AGP 不能混用配置
 
 `android-17.0.0_r1` 的平台源码使用 Soong 构建系统。下面两段是源码中的关键调用形态，用于说明 AAPT2 规则输出和 R8 诊断产物如何接入平台构建。
 

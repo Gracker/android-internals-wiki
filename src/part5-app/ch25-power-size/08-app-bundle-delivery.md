@@ -72,29 +72,13 @@ last_deepseek_cn_review_at: 2026-06-16
 
 # App Bundle 与按需分发
 
-<!-- outline-start -->
-## 本节要点大纲
+## 分发要解决的问题
 
-### 锚点（必须覆盖）
-
-- 🔹 AAB 格式与分包机制
-- 🔹 Dynamic Feature Module 实践
-- 🔹 Play Asset Delivery 与大资源管理
-- 🔹 国内分发场景的 AAB 替代方案
-
-### 扩展（可选深入）
-
-- 🔸 （待扩展）
-
-<!-- outline-end -->
-
-## 为什么要了解 App Bundle 与按需分发
-
-25.6 和 25.7 处理“产物中还有什么可以删除或缩小”，本节处理“哪些产物应该在什么时间交给哪台设备”。这两个问题相互独立：AAB 不会删除 base module 中的无用代码，R8 也不会决定低频功能是否延后下载。
+25.6 和 25.7 处理“产物中还有什么可以删除或缩小”，这里关注“哪些产物应该在什么时间交给哪台设备”。这两个问题相互独立：AAB 不会删除 base module 中的无用代码，R8 也不会决定低频功能是否延后下载。
 
 Android App Bundle（AAB）是发布格式，不是 Android 平台可直接安装的包。Google Play 根据 AAB 生成并签名 APK；设备收到的是 base APK、configuration APK、feature APK 和可能的 install-time asset split。`bundletool` 可以在本地生成同类 APK Set，用于测量和测试。构建与分发关系可参照 [About Android App Bundles](https://developer.android.com/guide/app-bundle)。
 
-本节以 Android 17（API 37）的平台安装行为为锚点。AAB 拆分与 Play Feature/Asset Delivery 由构建工具和 Google Play 服务实现，不涉及 kernel 分包逻辑，因此不引用 kernel 作为分发依据。
+平台安装行为以 Android 17（API 37）为锚点。AAB 拆分与 Play Feature/Asset Delivery 由构建工具和 Google Play 服务实现，不涉及 kernel 分包逻辑，因此无需用 kernel 代码作为分发依据。
 
 ## AAB 格式与分包机制
 
@@ -134,7 +118,7 @@ bundletool get-size total \
 - 完整安装缺少必需 split 时返回 `INSTALL_FAILED_MISSING_SPLIT`；
 - 通过 [`ApkLiteParseUtils.composePackageLiteFromApks()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/parsing/ApkLiteParseUtils.java) 形成 base、feature、`uses-split` 和 `configForSplit` 的统一视图。
 
-验证完成后，非分阶段安装进入 `installNonStaged()` 等后续流程。由此可以看到，split APK 不是任意文件集合：base、配置 split 和功能 split 必须作为同一个包的一致集合安装。Android 官方还明确说明，缺少必需 split 的侧载安装会在 Android 10 及以上设备或 Google-certified 设备失败。
+验证完成后，非分阶段安装进入 `installNonStaged()` 等后续流程。这些校验表明，split APK 不是任意文件集合：base、配置 split 和功能 split 必须作为同一个包的一致集合安装。Android 官方还明确说明，缺少必需 split 的侧载安装会在 Android 10 及以上设备或 Google-certified 设备失败。
 
 ## Dynamic Feature Module 实践
 
@@ -284,9 +268,9 @@ bundletool install-apks --apks=app-release.apks
 
 这只能验证本地 APK Set。渠道的加固、重签、签名方案、升级、安装器和审核仍要用渠道最终制品测试。Universal APK 还要单独记录体积，避免 Play 的设备裁剪结果掩盖单 APK 渠道成本。
 
-动态 DEX、JAR 或 `.so` 下载不应被当作普通体积方案。Google Play 的 [Device and Network Abuse policy](https://support.google.com/googleplay/android-developer/answer/16559646) 禁止应用从 Google Play 之外下载可执行代码；其他渠道也要逐项核对政策、安全、兼容和更新责任。本节只建议自建非代码资源交付。
+动态 DEX、JAR 或 `.so` 下载不应被当作普通体积方案。Google Play 的 [Device and Network Abuse policy](https://support.google.com/googleplay/android-developer/answer/16559646) 禁止应用从 Google Play 之外下载可执行代码；其他渠道也要逐项核对政策、安全、兼容和更新责任。自建分发只应交付非代码资源。
 
-## [自动发现] 按需分发要进入体积门禁
+## 按需分发要进入体积门禁
 
 AAB、Dynamic Feature 和 PAD 上线后，CI 要按设备、module 和下载时机保存结果：
 
