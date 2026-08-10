@@ -1,7 +1,6 @@
 # 附录 F：推荐阅读与资源
 
-> 以下资源来自 Gracker（高爷）博客 (https://www.androidperformance.com/)，按 AIW 章节分组。
-> 所有文章均为高质量原创，融入策略为：保留核心表达和观点，重新组织结构以符合章节逻辑，补充引用和交叉链接。
+> 以下资源来自 [Gracker（高爷）博客](https://www.androidperformance.com/)，按对应章节主题分组。
 
 ---
 
@@ -96,7 +95,3 @@
 | Perfetto 系列 | Perfetto 专题——Vsync | [链接](https://www.androidperformance.com/2025/08/05/Android-Perfetto-08-Vsync/) |
 | Perfetto 系列 | Perfetto 专题——Binder | [链接](https://www.androidperformance.com/2025/11/16/Android-Perfetto-10-Binder/) |
 | Perfetto 系列 | Perfetto 专题——CPU | [链接](https://www.androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/) |
-
----
-
-> 完整文章列表及元数据详见 `intake/external-resources/blog-gracker-series.md`

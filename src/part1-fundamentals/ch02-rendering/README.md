@@ -29,14 +29,14 @@ task9_reviewed_date: "2026-05-14"
 
 Android 的掉帧、首帧延迟、SurfaceView 错位、视频抖动和刷新率切换，可能发生在不同责任区间。应用主线程、HWUI RenderThread、GPU、BufferQueue、SurfaceFlinger、Composer HAL 与显示后段各有独立的时钟、队列和完成信号。定位时要先确定当前内容走哪条出图路径，再判断延迟发生在哪个时间边界。
 
-本章使用以下复核锚点：
+复核锚点如下：
 
 - platform：Android 17 / API 37 / `android-17.0.0_r1`；
 - kernel：`android17-6.18-2026-06_r6`；
 - Android 12—17 的版本变化用于解释现代 trace，版本首引保留对应 tag 或 API 文档；
 - GPU、HWC、overlay、带宽与面板策略包含厂商实现，AOSP 只能证明公共接口和 framework 行为。
 
-## 先建立公共主线
+## 公共主线
 
 标准硬件加速 App Window 的公共主线可以写成：
 
@@ -53,7 +53,7 @@ Android 的掉帧、首帧延迟、SurfaceView 错位、视频抖动和刷新率
 
 `queueBuffer` 返回只证明 Producer 已把 buffer 交回队列。GPU 写入可能仍由 acquire fence 约束，SurfaceFlinger 也可能尚未 latch。present fence 更靠近显示出口，但不包含 panel 扫描和像素响应时间。
 
-## 本章地图
+## 内容索引
 
 ### 1. 起帧、应用渲染与系统合成
 

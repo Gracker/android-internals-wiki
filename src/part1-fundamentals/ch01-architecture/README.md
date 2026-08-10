@@ -36,7 +36,7 @@ last_task9_review_log: "logs/deep-review/2026-05-14-18-deep-review.md"
 
 这一章为后续性能、稳定性和工具篇建立同一套系统坐标。面对一次慢启动、ANR、安装失败或 native 崩溃，工程师需要先确定代码运行在哪个进程、跨过哪些 IPC/ABI 边界、由谁调度，以及状态保存在用户态还是内核。
 
-本章的当前平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。涉及 Binder、调度、cgroup 和 BPF 的内核正文统一锚定 `android17-6.18-2026-06_r6`。Android 17 设备仍可能使用官方支持的较早 GKI 分支，因此书中的 6.18 结论用于源码核读，不代表每台升级设备都运行 6.18。
+当前平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。涉及 Binder、调度、cgroup 和 BPF 的内核正文统一锚定 `android17-6.18-2026-06_r6`。Android 17 设备仍可能使用官方支持的较早 GKI 分支，因此书中的 6.18 结论用于源码核读，不代表每台升级设备都运行 6.18。
 
 ## 用五层视角定位问题
 
@@ -121,7 +121,7 @@ last_task9_review_log: "logs/deep-review/2026-05-14-18-deep-review.md"
 - [1.60 ACK 6.18 BPF 可观测性](1.60-linux-610-bpf-android17-boundary.md)
 - 系统服务专题：[1.61 Telephony](1.61-android17-telephonymanager-architecture-performance.md)、[1.62 Connectivity](1.62-android17-connectivitymanager-architecture-performance.md)、[1.63 Notification](1.63-android17-notificationmanager-architecture-performance.md)、[1.64 Biometric](1.64-android17-bometricservice-architecture-performance.md)、[1.65 Location](1.65-android17-locationmanager-architecture-performance.md)、[1.66 Window](1.66-android17-windowmanager-architecture-performance.md)、[1.67 Package](1.67-android17-packagemanager-architecture-performance.md) 与 [1.68 Activity Manager](1.68-android17-activitymanager-architecture-performance.md)。
 
-目录中还保留了部分 deprecated、重复编号和历史事实核查页，供 Hermes/OpenClaw 追踪来源与修订记录。阅读主线应优先使用本页和 `SUMMARY.md` 给出的入口，不要按文件名猜测哪一篇更新。
+目录中还保留了部分 deprecated、重复编号和历史事实核查页。阅读主线以本页和 `SUMMARY.md` 给出的入口为准，不应按文件名判断内容的新旧。
 
 ## 按问题选择阅读路径
 
@@ -138,7 +138,7 @@ last_task9_review_log: "logs/deep-review/2026-05-14-18-deep-review.md"
 
 源码常量不等于性能承诺。Binder buffer、线程数、超时或队列阈值只能解释实现边界，收益与风险仍要在目标设备、相同 workload 和相同构建上测量。
 
-历史版本有助于解释设计迁移，但 Android 17 结论必须回到 `android-17.0.0_r1` 与相应内核锚点。预览文档、旧 tag、DeepResearch 摘要和 OEM 私有实现都不能替代当前源码。
+历史版本有助于解释设计迁移，但 Android 17 结论必须回到 `android-17.0.0_r1` 与相应内核锚点。预览文档、旧 tag 和 OEM 私有实现都不能替代当前源码。
 
 ## 源码锚点
 
