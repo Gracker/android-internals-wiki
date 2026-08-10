@@ -47,7 +47,7 @@ TaskSnapshot 从 Android 8.0 开始统一了两类历史能力：最近任务缩
 | Overview live tile | 正在参与 Recents animation 的真实 Task surface | remote animation leash | `RemoteAnimationTarget`、leash |
 | snapshot starting window | 旧 TaskSnapshot 作为启动占位 | 独立 starting-window surface | `TaskSnapshotWindow` |
 
-这四者的缓冲区、SurfaceControl、生命周期和性能瓶颈不同。看到 Overview 卡片时，不能直接推导屏幕上存在一个名为 TaskSnapshot 的独立 SurfaceFlinger layer。
+这四者的 buffer、SurfaceControl、生命周期和性能瓶颈不同。看到 Overview 卡片时，不能直接推导屏幕上存在一个名为 TaskSnapshot 的独立 SurfaceFlinger layer。
 
 以下分析以 Android 17 / API 37 / `android-17.0.0_r1` 为准，Launcher 侧同时参考 `packages/apps/Launcher3` 的同名标签。Android 8～16 仅用于说明版本演进。
 
@@ -70,13 +70,13 @@ Android 17 的 `TaskSnapshot` 包含：
 - density DPI；
 - snapshot id 与 capture time。
 
-这些元数据决定消费端如何旋转、裁剪、缩放和判断兼容性。只保存一张 PNG 或 JPEG，无法复现 Android 17 的启动窗口与 Overview 行为。
+这些元数据决定消费端如何旋转、裁剪、缩放和判断兼容性。只保存一张 PNG 或 JPEG，无法复现 Android 17 的 starting-window 与 Overview 行为。
 
-`HardwareBuffer` 通过 Binder 传递的是底层缓冲区句柄和引用，不需要把整张像素图复制进 Parcel。接收方仍要管理引用、等待可用状态并参与后续 GPU/HWC 合成；跨进程零像素复制仍有处理成本。
+`HardwareBuffer` 通过 Binder 传递的是底层 buffer 句柄和引用，不需要把整张像素图复制进 Parcel。接收方仍要管理引用、等待可用状态并参与后续 GPU/HWC 合成；跨进程零像素复制仍有处理成本。
 
 ### 1.2 TaskSnapshot 与 LayerSnapshot 名字相近，职责不同
 
-Android 17 的 SurfaceFlinger FrontEnd 使用 `LayerSnapshot` 描述当前帧的图层可见性、几何、Z-order、缓冲区与效果状态。WMS 的 `TaskSnapshot` 是对一个任务 Surface 子树执行屏幕捕获后生成的可复用图像。
+Android 17 的 SurfaceFlinger FrontEnd 使用 `LayerSnapshot` 描述当前帧的 layer 可见性、几何、Z-order、buffer 与效果状态。WMS 的 `TaskSnapshot` 是对一个 Task surface 子树执行 screen capture 后生成的可复用图像。
 
 两者关系如下：
 
@@ -91,9 +91,9 @@ SF LayerSnapshot 集合
 
 ## 2. Android 17 的捕获时机
 
-### 2.1 Shell 过渡在事务就绪阶段记录
+### 2.1 Shell transition 在 transaction ready 阶段记录
 
-现代过渡路径由 `SnapshotController.onTransactionReady()` 检查 `Transition.ChangeInfo`。对于满足条件且将不可见的任务，系统会在过渡事务启动前调用：
+现代过渡路径由 `SnapshotController.onTransactionReady()` 检查 `Transition.ChangeInfo`。对于满足条件且将不可见的任务，系统会在 transition transaction 启动前调用：
 
 ```text
 SnapshotController.onTransactionReady()
@@ -104,28 +104,28 @@ SnapshotController.onTransactionReady()
 Android 17 会排除或特殊处理：
 
 - 桌面与画中画变化；
-- 由组织器创建的任务；
+- organizer 创建的 Task；
 - transient hide；
 - Task 仍为 `isVisibleRequested()`；
-- 某些显示变化同时改变边界的场景。
+- 某些 display change 同时改变 bounds 的场景。
 
 传入 `ChangeInfo` 是因为任务配置可能已在过渡准备阶段改变。捕获时仍要使用关闭前的旋转和边界，避免把旧画面配上新几何。
 
 ### 2.2 休眠前还有一条捕获路径
 
-屏幕即将关闭或设备进入休眠时，`snapshotForSleeping(displayId)` 会遍历对应显示器上的可见叶任务。正在由最近任务动画控制的任务会被跳过，因为最近任务路径需要在更合适的时刻处理快照和 IME。
+屏幕即将关闭或设备进入 sleep 时，`snapshotForSleeping(displayId)` 会遍历对应 Display 上的可见 leaf Task。正在被 Recents animation 控制的 Task 会跳过，因为 Recents 路径需要在更合适的时刻处理快照和 IME。
 
-安全锁屏进入休眠时，默认显示器的桌面任务也可能被捕获，用于解锁返回桌面时的启动窗口。
+安全锁屏进入 sleep 时，默认 Display 的 home Task 也可能被捕获，用于解锁回到桌面的 starting window。
 
 ### 2.3 特权调用方可以主动请求
 
 Android 17 的隐藏系统 API `TaskSnapshotManager.takeTaskSnapshot()` 允许具备系统权限的调用方对仍可见的 Task 请求新快照。`SnapshotManagerService` 会验证 Task 存在且可见，再决定是否更新系统缓存。
 
-Launcher3 在缩略图缺失时会先读取已有快照，仍为空时再请求 `takeTaskThumbnail()`。普通第三方应用没有这组任务管理与帧缓冲区读取权限。
+Launcher3 在缩略图缺失时会先读取已有快照，仍为空时再请求 `takeTaskThumbnail()`。普通第三方应用没有这组任务管理与 framebuffer 读取权限。
 
-### 2.4 没有通用的冻结前快照钩子
+### 2.4 没有通用的 freezer-before-snapshot 钩子
 
-Android 17 的 `TaskSnapshotController` 没有“每次冻结前先截取任务”的通用入口。快照主要围绕过渡、休眠和特权主动请求生成。
+原文把 Cached App Freezer 描述成固定触发源，但 Android 17 的 `TaskSnapshotController` 没有“每次冻结前先截 Task”的通用入口。快照主要围绕 transition、sleep 和特权主动请求生成。
 
 同理，源码没有向应用承诺：
 
@@ -160,40 +160,40 @@ flowchart TD
 - 不应附着到应用的 IME Surface；
 - navigation bar surface；
 - 正在退出且不属于基础应用的部分窗口；
-- 任务明确登记在 `mExcludeLayersFromTaskSnapshot` 中的图层。
+- Task 明确登记在 `mExcludeLayersFromTaskSnapshot` 中的 layer。
 
-捕获会生成新的截图缓冲区，而非直接读取某个应用窗口最近提交的 `GraphicBuffer`。任务中可能包含多个窗口、SurfaceView、壁纸或装饰图层，SurfaceFlinger 要根据当前图层状态生成捕获结果。
+捕获会生成新的截图缓冲区，而非直接读取某个 App Window 的 `GraphicBuffer`。任务中可能包含多个窗口、SurfaceView、壁纸或装饰图层，SurfaceFlinger 要根据当前图层状态生成捕获结果。
 
 ### 3.2 同步捕获会进入 transition 关键路径
 
-`ScreenCaptureInternal.captureLayers()` 在这条路径中调用原生同步捕获，并等待 `ScreenshotHardwareBuffer` 结果。SurfaceFlinger 的 `captureLayersSync()` 最终经过 `captureScreenCommon()` 与截图渲染。
+`ScreenCaptureInternal.captureLayers()` 在这条路径中调用 native synchronous capture，并等待 `ScreenshotHardwareBuffer` 结果。SurfaceFlinger 的 `captureLayersSync()` 最终经过 `captureScreenCommon()` 与 screenshot render。
 
-高分辨率、复杂图层树、GPU 繁忙或缓冲区分配压力可能延长 WMS 和过渡的准备时间。不能只看应用的 `doFrame()` 判断进入 Overview 时的卡顿。
+这意味着高分辨率、复杂 layer 树、GPU 繁忙或 buffer 分配压力可能延长 WMS/transition 的准备时间。不能只看 App `doFrame()` 判断进入 Overview 的卡顿。
 
-AOSP 没有给出“1080p 必须耗时 5～15 ms”一类保证。截图策略、SoC、RenderEngine、图层数量、像素格式和系统负载都会改变结果，应从目标设备的跟踪记录取值。
+AOSP 没有给出“1080p 必须 5–15 ms”一类保证。截图策略、SoC、RenderEngine、layer 数量、像素格式和系统负载都会改变结果，应从目标设备 trace 取值。
 
 ### 3.3 REAL、APP_THEME 与 NONE
 
 `AbsAppSnapshotController.getSnapshotMode()` 会选择：
 
 - `SNAPSHOT_MODE_REAL`：捕获真实 Task 内容；
-- `SNAPSHOT_MODE_APP_THEME`：根据 `TaskDescription` 和窗口背景生成主题占位；
-- `SNAPSHOT_MODE_NONE`：不生成任务快照。
+- `SNAPSHOT_MODE_APP_THEME`：根据 `TaskDescription` 和 window background 生成主题占位；
+- `SNAPSHOT_MODE_NONE`：不生成 Task snapshot。
 
 Recents activity 和 dream activity 不捕获 Task snapshot。TV、IoT 或设备 overlay `config_disableTaskSnapshots=true` 也可以关闭该能力。
 
-以下情况会选择应用主题快照：
+以下情况会选择 app-theme snapshot：
 
 - Activity 调用 `setRecentsScreenshotEnabled(false)`；
-- 任务中的窗口被 `FLAG_SECURE`、敏感内容策略或设备策略判定为安全窗口。
+- Task 中窗口被 `FLAG_SECURE`、敏感内容策略或设备策略判为 secure。
 
-主题占位由 system_server 使用 `RenderNode` 和 `ThreadedRenderer.createHardwareBitmap()` 绘制，包含背景色与系统栏装饰信息，不含应用的敏感像素。
+主题占位由 system_server 使用 `RenderNode` 和 `ThreadedRenderer.createHardwareBitmap()` 绘制，包含背景色与 system-bar 装饰信息，不含应用的敏感像素。
 
 ### 3.4 两个隐私 API 的范围不同
 
 `Activity.setRecentsScreenshotEnabled(false)` 从 API 33 开始公开，只禁止 Activity 的画面被用作 Overview 表示。系统仍可能在其他允许的场景截图。
 
-`FLAG_SECURE` 的范围更广：它阻止窗口进入普通截图，并限制在非安全显示器上显示。处理登录、支付或隐私数据时，应按威胁模型选择，不能把 Overview 开关当成 `FLAG_SECURE` 的替代品。
+`FLAG_SECURE` 的范围更广：它阻止窗口进入普通截图，并限制在非安全 Display 上显示。处理登录、支付或隐私数据时，应按威胁模型选择，不能把 Overview 开关当成 `FLAG_SECURE` 的替代品。
 
 ## 4. 内存缓存、磁盘文件与分辨率
 
@@ -210,32 +210,32 @@ key 是 task id。它没有按访问顺序淘汰的 LRU 逻辑。常见清理时
 - top Activity removed 或进程死亡；
 - Task 从 Recents 删除；
 - Task 重新变为可见并完成 transition；
-- 系统显式清空快照缓存。
+- 系统显式清空 snapshot cache。
 
-进程死亡时，system_server 的运行时缓存项会删除；已经持久化的磁盘文件可以继续用于后续 Overview 或启动恢复。Launcher 进程还维护独立的缩略图缓存。
+进程死亡时，system_server 的运行时 cache entry 会删除；已经持久化的磁盘文件可以继续用于后续 Overview 或启动恢复。Launcher 进程还维护独立的缩略图缓存。
 
-Android 17 还包含由 `onlyCacheLowResTaskSnapshot` 功能开关控制的路径：高分辨率快照可在转换完成后由低分辨率版本替换，旧高分辨率缓冲区最多短暂保留 5 秒以处理并发请求。这是开关控制的内存策略，不能视为所有 Android 17 设备的固定行为。
+Android 17 还包含 `onlyCacheLowResTaskSnapshot` feature flag 路径：高分辨率 snapshot 可在转换完成后由低分辨率版本替换，旧 high-res buffer 最多短暂保留 5 秒以服务并发请求。这属于 flag 控制的内存策略，不应写成所有 Android 17 设备都固定启用。
 
-### 4.2 内存估算要包含缩放、格式与行跨度
+### 4.2 内存估算要带上 scale、format 与 stride
 
-单个未压缩缓冲区的下限估算为：
+单个未压缩 buffer 的下限估算为：
 
 ```text
 width × height × bytesPerPixel
 ```
 
-例如，1080×2400 的 RGBA_8888 可见像素约为 9.9 MiB。实际分配还受行跨度、gralloc 对齐和附加元数据影响；同时存在高低分辨率版本、Binder 引用、Launcher hardware `Bitmap` 或启动窗口引用时，总占用会进一步变化。
+例如 1080×2400 的 RGBA_8888 可见像素约 9.9 MiB。实际分配还受 row stride、gralloc 对齐和附加元数据影响；同时存在 high/low 版本、Binder 引用、Launcher hardware `Bitmap` 或 starting window 引用时，总占用会进一步变化。
 
-默认情况下，真实快照使用 RGBA_8888。设备资源覆盖项开启 `config_use16BitTaskSnapshotPixelFormat` 后，填满父窗口且不会因透明窗口与壁纸丢失透明度的任务可以使用 RGB_565。
+默认情况下，real snapshot 使用 RGBA_8888。设备 overlay 开启 `config_use16BitTaskSnapshotPixelFormat` 后，满足 fills-parent 且不会因透明窗口与壁纸丢失 alpha 的 Task 可以使用 RGB_565。
 
-因此，“低内存设备一定缓存 3～5 张、一定使用 RGB_565”没有 Android 17 源码依据。厂商可通过以下资源覆盖项调整：
+因此，“low-RAM 设备一定缓存 3–5 张、一定使用 RGB_565”没有 Android 17 源码依据。厂商可通过以下 overlay 调整：
 
 - `config_highResTaskSnapshotScale`；
 - `config_lowResTaskSnapshotScale`；
 - `config_use16BitTaskSnapshotPixelFormat`；
 - `config_disableTaskSnapshots`。
 
-AOSP 默认高分辨率缩放系数为 1.0，低分辨率缩放系数为 0.5；将低分辨率缩放系数设为 0 可以关闭缩略快照。
+AOSP 默认 high-res scale 为 1.0，low-res scale 为 0.5；将 low-res scale 设为 0 可以关闭 reduced snapshot。
 
 ### 4.3 持久化在线程队列完成
 
@@ -243,8 +243,8 @@ AOSP 默认高分辨率缩放系数为 1.0，低分辨率缩放系数为 0.5；�
 
 1. 写入快照元数据的 proto 文件；
 2. 把 HardwareBuffer 复制成软件 `Bitmap`；
-3. 写入高分辨率图像；
-4. 配置允许时生成并写入低分辨率图像。
+3. 写 high-res 图像；
+4. 配置允许时生成并写 low-res 图像。
 
 Android 17 的压缩质量常量为 95。文件位于用户 CE system 目录下：
 
@@ -260,23 +260,23 @@ Android 17 的压缩质量常量为 95。文件位于用户 CE system 目录下�
 <taskId>_reduced.jpg
 ```
 
-部分功能开关路径会用 PNG 编码高分辨率内容，但仍沿用 `.jpg` 文件名。排查文件格式时应读取文件头，不能只看后缀。
+部分 feature-flag 路径会用 PNG 编码高分辨率内容，但仍沿用 `.jpg` 文件名。排查文件格式时应读取文件头，不能只看后缀。
 
-队列会合并同一任务、用户和提供器的重复写入，并限制待处理的 HardwareBuffer 存储项数量，避免后台持久化积压无限占用图形内存。
+队列会合并同一 task/user/provider 的重复写入，并限制待处理的 HardwareBuffer 存储项数量，避免后台持久化积压无限占用图形内存。
 
 ### 4.4 从磁盘恢复包含解码和重新上传
 
-`AppSnapshotLoader` 先读取 proto 文件，再用 `BitmapFactory.decodeFile()` 解码图像，随后复制为 `Config.HARDWARE` 位图并取得 `HardwareBuffer`。
+`AppSnapshotLoader` 先读取 proto 文件，再用 `BitmapFactory.decodeFile()` 解码图像，随后复制为 `Config.HARDWARE` bitmap 并取得 `HardwareBuffer`。
 
 磁盘恢复与内存命中差别很大：
 
 | 路径 | 主要工作 |
 |---|---|
 | system_server 内存命中 | 引用管理与 Binder 传递 |
-| 磁盘高低分辨率图像加载 | 文件 I/O、图像解码、硬件位图分配 |
+| 磁盘 high/low-res 加载 | 文件 I/O、图像解码、hardware bitmap 分配 |
 | Launcher 本地缓存命中 | 直接复用 `ThumbnailData` |
 
-没有跟踪记录时，不能把 Overview 空卡统一归因于 GPU；耗时也可能出现在磁盘、Binder、Launcher 执行器或主线程数据绑定。
+没有 trace 时，不能把 Overview 空卡统一归因于 GPU；它可能卡在磁盘、Binder、Launcher executor 或主线程 bind。
 
 ## 5. Overview：静态缩略图与 live tile
 
@@ -289,67 +289,67 @@ TaskThumbnailCache
   → ActivityManagerWrapper.getTaskThumbnail()
     → TaskSnapshotManager.getTaskSnapshot()
       → SnapshotManagerService
-        → 系统缓存或磁盘
+        → system cache 或磁盘
 ```
 
-收到 `TaskSnapshot` 后，`ThumbnailData.fromSnapshot()` 调用 `wrapToBitmap()`，把 HardwareBuffer 包装为硬件 `Bitmap`，同时保存旋转、Insets、缩放系数和窗口模式等信息。
+收到 `TaskSnapshot` 后，`ThumbnailData.fromSnapshot()` 调用 `wrapToBitmap()`，把 HardwareBuffer 包装为硬件 `Bitmap`，同时保存旋转、Insets、scale、windowing mode 等信息。
 
 Android 17 Launcher3 的 `TaskThumbnailView` 是 Launcher View 层级中的 `FrameLayout`。静态快照最终设置到 `FixedSizeImageView`，由 Launcher 的 View/HWUI 管线绘制进 Launcher App Window buffer。
 
-SurfaceFlinger 看到的主体通常是 Launcher 窗口图层，而非每张最近任务卡片各有一个独立 BufferStateLayer。HWC 仍会根据整屏图层集合选择设备合成或客户端合成；hardware `Bitmap` 不保证卡片获得独立的硬件叠加层。
+SurfaceFlinger 看到的主体通常是 Launcher 窗口 layer，而不是“每张最近任务卡片各有一个独立 BufferStateLayer”。HWC 仍会按整屏 layer 集合选择 DEVICE 或 CLIENT composition；hardware `Bitmap` 不保证卡片获得独立 overlay。
 
 ### 5.2 Launcher 还有自己的缓存和预加载
 
 `TaskThumbnailCache` 的容量来自 Launcher 资源 `recentsThumbnailCacheSize`，与 system_server `SnapshotCache` 无关。它支持：
 
 - 低分辨率、高分辨率或任意分辨率请求；
-- 后台执行器加载；
-- 缓存容量变化后的裁剪；
+- 后台 executor 加载；
+- cache size 变化后的裁剪；
 - 进入 Overview 前预加载；
-- `onTaskSnapshotChanged` 后更新已有缓存项；
+- `onTaskSnapshotChanged` 后更新已有 entry；
 - `TRIM_MEMORY_RUNNING_CRITICAL` 时清空缩略图与图标缓存。
 
 排查内存时至少要区分 system_server 的 TaskSnapshot buffer、Launcher 的 hardware `Bitmap` 引用和屏幕上 Launcher App Window buffer。
 
-### 5.3 实时卡片使用真实任务牵引层
+### 5.3 live tile 是真实 Task leash
 
-Quickstep 的 `TaskUiStateMapper` 会为当前运行中的任务且允许实时显示的场景选择 `LiveTile`。最近任务动画把真实任务作为 `RemoteAnimationTarget` 交给 Launcher，Launcher 通过事务为牵引层设置几何变换、裁剪和透明度。
+Quickstep 的 `TaskUiStateMapper` 对当前 running Task 且允许实时显示的场景选择 `LiveTile`。Recents animation 把真实任务作为 `RemoteAnimationTarget` 交给 Launcher，Launcher 对 leash 应用 matrix、crop、alpha 等 transaction。
 
-实时卡片与静态缩略图的选择不能简化为：
+live tile 与静态缩略图的选择不能简化为：
 
 ```text
 进程存活 → live tile
 进程冻结或死亡 → snapshot
 ```
 
-一个仍存活的后台任务可以显示静态快照；实时卡片通常对应当前正在参与最近任务动画的运行中任务。是否显示截图还受手势状态、锁定状态、最小化状态和 Launcher 实现影响。
+一个仍存活的后台 Task 可以显示静态 snapshot；live tile 通常对应当前正在参与 Recents animation 的 running task。是否显示 screenshot 还受手势状态、锁定状态、最小化状态和 Launcher 实现影响。
 
 ### 5.4 点击卡片有两类启动路径
 
-点击当前运行中的实时卡片时，Quickstep 可以沿远程目标牵引层执行返回应用的动画。
+点击当前 running live tile 时，Quickstep 可以沿 remote target leash 执行返回应用的动画。
 
 点击静态卡片时，Launcher 发起 `startActivityFromRecents()`。随后 WMS 可能：
 
-- 直接等待已有应用窗口；
+- 直接等待已有 App Window；
 - 创建快照启动窗口；
-- 因快照不兼容而改用启动画面；
-- 在 Task/Activity 已满足显示条件时不创建启动窗口。
+- 因 snapshot 不兼容而改用 splash；
+- 在 Task/Activity 已满足显示条件时不创建 starting window。
 
-因此，Android 17 不能统一描述为“Launcher 把静态快照图层渐变切换为应用实时 Surface”。Launcher 静态缩略图、Shell 远程牵引层和 WMS 启动窗口是三套不同对象。
+因此，Android 17 不能统一描述为“Launcher 把静态 snapshot layer 渐变切换为应用实时 Surface”。Launcher 静态缩略图、Shell 远程牵引层和 WMS 启动窗口是三套不同对象。
 
 ## 6. Snapshot starting window
 
 ### 6.1 WMS 先判断能否使用旧快照
 
-`ActivityRecord.getStartingWindowType()` 会结合任务切换、进程与 Activity 状态、是否允许快照等条件选择启动窗口类型。
+`ActivityRecord.getStartingWindowType()` 会结合 task switch、进程与 Activity 状态、是否允许 snapshot 等条件选择 starting-window 类型。
 
 使用快照前还要检查：
 
 - top Activity component 是否兼容；
-- 快照旋转是否等于目标旋转；
-- 快照任务宽高比与当前边界的差值是否在源码阈值内。
+- snapshot rotation 是否等于目标 rotation；
+- snapshot task aspect ratio 与当前 bounds 的差值是否在源码阈值内。
 
-Android 17 对宽高比使用 0.01 的绝对差阈值。折叠、旋转或桌面窗口缩放后旧快照不兼容时，系统通常回退到启动画面或不显示该快照。
+Android 17 对 aspect ratio 使用 0.01 的绝对差阈值。折叠、旋转或桌面窗口 resize 后旧 snapshot 不兼容时，系统通常回退到 splash 或不显示该 snapshot。
 
 ### 6.2 Shell 创建独立 starting surface
 
@@ -357,38 +357,38 @@ Android 17 对宽高比使用 0.01 的绝对差阈值。折叠、旋转或桌面
 
 ```mermaid
 flowchart TD
-    A["ActivityRecord 选择快照启动类型"] --> B["StartingWindowInfo + TaskSnapshot"]
+    A["ActivityRecord 选择 SNAPSHOT starting type"] --> B["StartingWindowInfo + TaskSnapshot"]
     B --> C["Shell StartingWindowController"]
     C --> D["StartingSurfaceDrawer"]
     D --> E["TaskSnapshotWindow"]
     E --> F["SnapshotDrawerUtils.drawSnapshotOnSurface"]
     F --> G["SurfaceControl.Transaction.setBuffer / setColorSpace"]
-    G --> H["SurfaceFlinger 合成启动窗口图层"]
+    G --> H["SurfaceFlinger 合成 starting-window layer"]
 ```
 
-这里的快照是独立的 SurfaceControl 缓冲区图层，与 Launcher 静态卡片的 ImageView 路径不同。App BLAST 生产者提交。
+这里的快照是独立的 SurfaceControl buffer layer，与 Launcher 静态卡片的 ImageView 路径不同。App BLAST 生产者提交。
 
 ### 6.3 尺寸不一致时会缩放
 
-`SnapshotDrawerUtils` 比较快照缓冲区与目标窗口边界。尺寸相同且没有信箱偏移时，缓冲区可直接设置到根 Surface。
+`SnapshotDrawerUtils` 比较 snapshot buffer 与目标 window bounds。尺寸相同且没有 letterbox offset 时，buffer 可直接设置到 root surface。
 
 尺寸不一致时，系统会：
 
-- 创建或使用匹配缓冲区的 BLAST Surface；
+- 创建或使用匹配 buffer 的 BLAST surface；
 - 按信箱 Insets 调整位置；
 - 分别计算 X/Y 缩放系数以填充目标边框；
 - 设置快照色彩空间；
 - 提交缓冲区事务。
 
-这条路径能遮住部分窗口缩放间隙，但也可能让旧内容短暂缩放。它不能修复应用的新布局；应用仍要提交符合新边界的首帧。
+这个路径能遮住部分 resize 间隙，但也可能让旧内容短暂缩放。它不能修复 App 新布局；App 仍要提交符合新 bounds 的首帧。
 
 ### 6.4 移除时机与 IME
 
-应用内容就绪后，TaskOrganizer 请求移除启动窗口。普通快照可以立即或延迟移除；包含 IME 的快照还会等待新的 IME 绘制回调或超时。
+App 内容 ready 后，TaskOrganizer 请求移除 starting window。普通 snapshot 可以立即或延迟移除；包含 IME 的 snapshot 还会等待新 IME draw 回调或超时。
 
-Android 17 的 Shell 代码包含 100 ms、600 ms 和 3000 ms 三种延迟上限，分别用于一般延迟、IME 和固定旋转情况。它们是特定移除模式的保护值，不代表所有应用冷启动都会固定等待这些时间。
+Android 17 的 Shell 代码含 100 ms、600 ms、3000 ms 三种延迟上限，分别服务一般延迟、IME 和 fixed-rotation 情况。它们是特定 removal mode 的保护值，不是所有 App 冷启动固定等待时间。
 
-## 7. 折叠屏、多窗口与多显示器
+## 7. 折叠屏、多窗口与多 Display
 
 ### 7.1 Overview 会按元数据调整缩略图
 
@@ -397,29 +397,29 @@ Launcher3 的 `PreviewPositionHelper` 使用：
 - snapshot rotation；
 - `ThumbnailData.scale`；
 - letterbox insets；
-- 快照与卡片的宽高比；
+- snapshot 与卡片的 aspect ratio；
 - 当前设备密度；
 - 分屏边界与分区位置；
 - RTL 与大屏布局状态。
 
 它为 ImageView matrix，对静态缩略图执行旋转、裁剪和缩放。折叠后卡片显示正常，只能说明 Launcher 的缩略图适配成功，不能证明 WMS 启动窗口或应用首帧也匹配。
 
-### 7.2 启动窗口的兼容检查更严格
+### 7.2 starting window 的兼容检查更严格
 
-折叠前后的任务边界可能在旋转不变时改变宽高比。`ActivityRecord.isSnapshotOrientationCompatible()` 会比较快照的 `taskSize` 与当前任务边界；差异超过阈值时不使用快照启动窗口。
+折叠前后的 Task bounds 可能在 rotation 不变时改变宽高比。`ActivityRecord.isSnapshotOrientationCompatible()` 会比较 snapshot `taskSize` 与当前 Task bounds；差异超过阈值时不使用 snapshot starting window。
 
 Android 17 不会在每次显示变化时重新捕获所有任务；当前 `TaskSnapshotController` 没有通用的 `handleDisplayChange()` 或 `snapshotBeforeDisplayChange()` 路径。
 
 ### 7.3 一个任务归属一个 DisplayContent
 
-AOSP WindowManager 中，一个任务在某一时刻归属于一个 DisplayContent。任务可以在显示器之间移动，桌面 Overview 也可以组合展示多个任务，但不存在一个普通任务同时跨两个 DisplayContent 捕获主、副区域的通用模型。
+AOSP WindowManager 中，一个 Task 在某一时刻归属于一个 DisplayContent。Task 可以在 Display 之间移动，桌面 Overview 也可以把多个 Task 组合展示，但不存在一个普通 Task 同时跨两个 DisplayContent 捕获主、副区域的通用模型。
 
-捕获入口使用该任务自己的 `SurfaceControl` 与所在显示器的状态。排查多显示器问题时要记录：
+捕获入口使用该 Task 自己的 `SurfaceControl` 与所在 Display 的状态。排查多 Display 问题时要记录：
 
 - task id 与 display id；
 - 捕获时的 task bounds、rotation、density、windowing mode；
-- 用于显示 Overview 的显示器；
-- 启动窗口与应用窗口最终出现在哪个显示器。
+- 查看 Overview 的 display；
+- starting window 与 App Window 最终出现在哪个 Display。
 
 ## 8. 颜色、透明度与 HWC
 
@@ -427,23 +427,23 @@ AOSP WindowManager 中，一个任务在某一时刻归属于一个 DisplayConte
 
 SurfaceFlinger 捕获结果返回 `HardwareBuffer` 和 `ColorSpace`。TaskSnapshot 透传这两项：
 
-- Launcher 把缓冲区包装为硬件 `Bitmap`；
-- 启动窗口通过 `SurfaceControl.Transaction.setColorSpace()` 标记 Surface。
+- Launcher 把 buffer 包装为 hardware `Bitmap`；
+- starting window 通过 `SurfaceControl.Transaction.setColorSpace()` 标记 surface。
 
-不能假设广色域任务一定得到 `DISPLAY_P3`；最终数据空间由捕获内容、Display color mode、HDR/SDR 策略和 SurfaceFlinger 截图路径共同决定。
+不能假设 WCG Task 一定得到 `DISPLAY_P3`；最终 dataspace 由捕获内容、Display color mode、HDR/SDR 策略和 SurfaceFlinger screenshot 路径共同决定。
 
 ### 8.2 透明快照需要背景
 
-真实快照的像素格式可以是 RGBA_8888，`TaskSnapshot.isTranslucent()` 记录任务是否可能透出背景。Launcher3 会先绘制 TaskDescription background，再显示缩略图，避免透明或局部为空的快照露出错误内容。
+real snapshot 的 pixel format 可为 RGBA_8888，`TaskSnapshot.isTranslucent()` 记录 Task 是否可能透出背景。Launcher3 会先绘制 TaskDescription background，再显示 thumbnail，避免透明或局部为空的 snapshot 露出错误内容。
 
-快照启动窗口同样从 `TaskDescription` 取背景色，并处理系统栏区域。只看截图缓冲区，可能漏掉最终屏幕上的背景和装饰。
+snapshot starting window 同样从 `TaskDescription` 取背景色，并处理 system-bar 区域。只看 screenshot buffer，可能漏掉最终屏幕上的背景和装饰。
 
-### 8.3 HardwareBuffer 不决定合成类型
+### 8.3 HardwareBuffer 不决定 composition type
 
 TaskSnapshot 使用 gralloc buffer，可被 GPU 采样，也可在满足设备约束时参与 HWC DEVICE composition。最终选择取决于：
 
 - layer transform、crop、alpha 与圆角；
-- 目标显示器与数据空间；
+- 目标 Display 与 dataspace；
 - overlay 数量和格式支持；
 - 其他可见图层；
 - protected/secure 内容；
@@ -459,9 +459,9 @@ Overview 静态卡片通常已经画入 Launcher App Window；启动快照更可
 
 | 问题 | 起点 | 终点 |
 |---|---|---|
-| 后台切换卡顿 | 过渡收集或就绪 | 快照捕获返回或过渡事务生效 |
-| Overview 空卡 | Launcher 发起缩略图请求 | `TaskThumbnailView` 所在的 Launcher 帧送显 |
-| 点击最近任务闪烁 | 卡片点击或启动过渡 | 应用新缓冲区在目标显示器送显 |
+| 后台切换卡顿 | transition 收集/ready | snapshot capture 返回或 transition transaction 生效 |
+| Overview 空卡 | Launcher 发起 thumbnail 请求 | `TaskThumbnailView` 所在 Launcher 帧 present |
+| 点击最近任务闪烁 | 卡片点击/launch transition | App 新 buffer 在目标 Display present |
 | starting window 停留过久 | `TaskSnapshot#addToDisplay` | snapshot starting surface remove + App frame present |
 | 缩略图过旧 | snapshot capture time/id | 用户打开 Overview 的时间 |
 
@@ -489,7 +489,7 @@ Android 17 中可搜索：
 - `TaskSnapshot#addToDisplay`、`TaskSnapshot#relayout`、`TaskSnapshot#relayoutAsync2`；
 - Launcher thumbnail executor、View traversal、HWUI 与 FrameTimeline；
 - 最近任务动画的远程目标牵引层事务；
-- 应用首帧的 `BufferTX`、锁存事件与目标显示器送显。
+- App 首帧 `BufferTX`、latch 与目标 Display present。
 
 一个简单的 Trace Processor 查询可以先列出相关切片：
 
@@ -510,7 +510,7 @@ WHERE name GLOB '*Snapshot*'
 ORDER BY ts;
 ```
 
-这条查询只用于查找候选区间。随后还要按进程、线程、流和目标任务或显示器对齐，避免把普通截图或 SurfaceFlinger 的 `LayerSnapshot` 更新算入 TaskSnapshot。
+这条查询只用于找候选区间。下一步还要按 process/thread、flow 和目标 task/display 对齐，避免把普通 screenshot 或 SurfaceFlinger `LayerSnapshot` 更新算进 TaskSnapshot。
 
 ### 9.3 dumpsys 与文件检查
 
@@ -526,11 +526,11 @@ adb shell dumpsys meminfo <launcher-package>
 注意：
 
 - cached TaskSnapshot 没有显示到屏幕时，不一定出现在 SF layer list；
-- `SurfaceFlinger --list` 中的快照图层更可能是启动窗口；
-- system_server 与 Launcher 持有同一底层缓冲区的引用时，按进程简单相加可能重复计算共享 DMA-BUF；
+- `SurfaceFlinger --list` 看到的 snapshot layer 更可能是 starting window；
+- system_server 与 Launcher 持有同一底层 buffer 的引用时，按进程简单相加可能重复计算共享 DMA-BUF；
 - `/data/system_ce` 文件检查通常需要 root/userdebug 权限。
 
-支持的调试构建还可以用 DMA-BUF 统计工具确认导出方、inode、size Java 堆判断 TaskSnapshot 图形内存。
+支持的调试构建还可以用 DMA-BUF 统计工具确认 exporter、inode、size Java 堆判断 TaskSnapshot 图形内存。
 
 ## 10. 常见故障的定位顺序
 
@@ -538,27 +538,27 @@ adb shell dumpsys meminfo <launcher-package>
 
 依次检查：
 
-1. 过渡就绪前是否出现耗时较长的 `createSnapshot`；
-2. SF 捕获耗时出现在图层收集、缓冲区分配还是 RenderEngine；
-3. Launcher 是否同步等待磁盘快照；
-4. 是否先显示低分辨率图像，以及高分辨率更新是否造成额外绑定；
+1. transition ready 前是否发生长 `createSnapshot`；
+2. SF capture 是 layer 收集、buffer 分配还是 RenderEngine 慢；
+3. Launcher 是否同步等待 disk snapshot；
+4. low-res 是否先显示，high-res 更新是否造成额外 bind；
 5. Launcher 主线程、RenderThread 和最终 DisplayFrame 是否按时。
 
 ### 10.2 卡片显示黑色或主题色
 
-检查 `ThumbnailData.isRealSnapshot`、Activity 的最近任务截图开关、`FLAG_SECURE`、设备策略和应用锁状态。主题色卡片可能是预期的应用主题快照，不代表捕获失败。
+检查 `ThumbnailData.isRealSnapshot`、Activity 的 recents screenshot 开关、`FLAG_SECURE`、设备策略和 App lock 状态。主题色卡片可能是预期的 app-theme snapshot，并非 capture 失败。
 
 ### 10.3 卡片旧，但应用已更新
 
-记录快照 snapshot id/capture time，并确认任务最近一次转为不可见的时间。后台仍存活不代表系统会持续刷新静态缩略图；实时卡片也只覆盖正在参与最近任务动画的目标。
+记录 snapshot id/capture time，并确认 Task 最近一次何时转为不可见。后台仍存活不代表系统持续刷新静态缩略图；live tile 也只覆盖正在参与 Recents animation 的目标。
 
 ### 10.4 点击卡片后画面跳变
 
 区分三张画面：
 
-1. Launcher 静态缩略图；
+1. Launcher 静态 thumbnail；
 2. WMS/Shell snapshot starting window；
-3. 应用新提交的窗口缓冲区。
+3. App 新提交的窗口 buffer。
 
 比较三者的 task bounds、rotation、density、contentInsets、letterboxInsets 和首帧内容。只有录像无法判断跳变发生在 Launcher launch animation、starting surface 还是 App 首帧。
 
@@ -570,7 +570,7 @@ adb shell dumpsys meminfo <launcher-package>
 - 快照旋转与任务尺寸；
 - 当前任务边界与显示密度；
 - 启动窗口兼容性检查是否回退；
-- `SnapshotDrawerUtils` 是否进入尺寸不匹配缩放路径；
+- `SnapshotDrawerUtils` 是否进入 size-mismatch scale；
 - 应用新边界的缓冲区何时锁存。
 
 ### 10.6 图形内存持续上涨
@@ -579,16 +579,16 @@ adb shell dumpsys meminfo <launcher-package>
 
 - system_server running snapshot cache；
 - 功能开关控制的 5 秒高分辨率延迟缓存；
-- 持久化队列中尚未写完的 HardwareBuffer；
+- persist queue 尚未写完的 HardwareBuffer；
 - Launcher thumbnail cache；
-- 屏幕上的启动窗口与 Launcher 或应用窗口缓冲区；
+- 屏幕上的 starting window 与 Launcher/App Window buffer；
 - 其他共享 DMA-BUF 引用。
 
-磁盘中存在大量 `.jpg` 文件，不代表这些快照都驻留在图形内存中；system_server snapshot Java 堆保持平稳，也不能排除 gralloc/DMA-BUF 压力。
+磁盘中存在大量 `.jpg` 文件，不代表这些快照都驻留在图形内存中；system_server snapshot Java system_server Java heap 平稳，也不能排除 gralloc/DMA-BUF 压力。
 
 ## 11. 版本演进
 
-| 平台 | 相关变化 | 分析边界 |
+| 平台 | 相关变化 | 复核边界 |
 |---|---|---|
 | Android 8 / API 26 | 引入 TaskSnapshot 基础设施，统一最近任务缩略图与保存的 Surface | 起点是 Android 8，不是 Android 9 |
 | Android 10 / API 29 | TaskSnapshot 与现代 SurfaceControl/capture 路径继续演进 | 旧资料中的 `GraphicBuffer`、类名与锁行为不能直接套到 Android 17 |
@@ -601,34 +601,34 @@ adb shell dumpsys meminfo <launcher-package>
 ### Android 17 platform
 
 - [`SnapshotController.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/SnapshotController.java)：transition 捕获、snapshot manager Binder 服务与 visible Task 清理；
-- [`TaskSnapshotController.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/TaskSnapshotController.java)：任务触发、高低分辨率策略、休眠捕获和持久化入口；
-- [`AbsAppSnapshotController.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/AbsAppSnapshotController.java)：REAL/APP_THEME/NONE、`captureLayers`、像素格式与元数据；
+- [`TaskSnapshotController.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/TaskSnapshotController.java)：Task 触发、high/low 策略、sleep 捕获和持久化入口；
+- [`AbsAppSnapshotController.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/AbsAppSnapshotController.java)：REAL/APP_THEME/NONE、captureLayers、pixel format 与元数据；
 - [`TaskSnapshot.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/TaskSnapshot.java) 与 [`TaskSnapshotManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/TaskSnapshotManager.java)：buffer、引用、resolution 与 Binder 客户端；
 - [`SnapshotPersistQueue.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/SnapshotPersistQueue.java) 与 [`AppSnapshotLoader.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/AppSnapshotLoader.java)：后台写入、压缩与磁盘恢复；
 - [`TaskSnapshotWindow.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/TaskSnapshotWindow.java) 与 [`SnapshotDrawerUtils.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/SnapshotDrawerUtils.java)：starting surface、buffer transaction 与尺寸不匹配处理；
-- [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)：`captureLayersSync()`、`captureScreenCommon()` 与截图渲染。
+- [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)：`captureLayersSync()`、`captureScreenCommon()` 与 screenshot render。
 
 ### Android 17 Launcher3
 
 - [`TaskThumbnailCache.kt`](https://android.googlesource.com/platform/packages/apps/Launcher3/+/refs/tags/android-17.0.0_r1/quickstep/src/com/android/quickstep/TaskThumbnailCache.kt)：Launcher 高低分辨率缓存与后台加载；
 - [`TaskUiStateMapper.kt`](https://android.googlesource.com/platform/packages/apps/Launcher3/+/refs/tags/android-17.0.0_r1/quickstep/src/com/android/quickstep/recents/ui/mapper/TaskUiStateMapper.kt)：LiveTile、Snapshot、locked 与 background 状态；
-- [`TaskThumbnailView.kt`](https://android.googlesource.com/platform/packages/apps/Launcher3/+/refs/tags/android-17.0.0_r1/quickstep/src/com/android/quickstep/task/thumbnail/TaskThumbnailView.kt)：静态硬件位图的 View 绘制；
+- [`TaskThumbnailView.kt`](https://android.googlesource.com/platform/packages/apps/Launcher3/+/refs/tags/android-17.0.0_r1/quickstep/src/com/android/quickstep/task/thumbnail/TaskThumbnailView.kt)：静态 hardware Bitmap 的 View 绘制；
 - [`PreviewPositionHelper.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/shared/src/com/android/systemui/shared/recents/utilities/PreviewPositionHelper.java)：rotation、density、letterbox、split 与 crop matrix。
 
 ### 官方说明
 
-- [AOSP Task snapshots](https://source.android.com/docs/core/perf/task-snapshots)：Android 8.0 起源、最近任务与启动窗口共用缓冲区，以及高低分辨率配置；
+- [AOSP Task snapshots](https://source.android.com/docs/core/perf/task-snapshots)：Android 8.0 起源、Recents/starting window 共用 buffer 与 high/low 配置；
 - [`Activity.setRecentsScreenshotEnabled()`](https://developer.android.com/reference/android/app/Activity#setRecentsScreenshotEnabled(boolean))：API 33 的 Overview 隐私开关；
-- [`WindowManager.LayoutParams.FLAG_SECURE`](https://developer.android.com/reference/android/view/WindowManager.LayoutParams#FLAG_SECURE)：安全窗口的截图与显示器约束。
+- [`WindowManager.LayoutParams.FLAG_SECURE`](https://developer.android.com/reference/android/view/WindowManager.LayoutParams#FLAG_SECURE)：安全窗口的截图与 Display 约束。
 
 ## 小结
 
 TaskSnapshot 是一次 Task surface 子树捕获及其元数据容器。Android 17 上，它至少有三种不同的显示方式：
 
-1. Launcher 把 HardwareBuffer 包装成硬件位图，作为 Overview 静态卡片绘制；
+1. Launcher 把 HardwareBuffer 包装成 hardware Bitmap，作为 Overview 静态卡片绘制；
 2. Recents animation 把真实 Task surface 通过 remote leash 显示为 live tile；
 3. WM Shell 把旧 TaskSnapshot 设置到独立的启动窗口 Surface，等待应用内容就绪。
 
-分析这条管线时，应分别对齐捕获、缓存或磁盘、Binder、Launcher/Shell 几何、应用新缓冲区和目标显示器送显。将它们合并为“快照图层直接交给 HWC”的模型，会漏掉常见的卡顿、错帧和内存来源。
+Review 这条管线时，应分别对齐捕获、缓存/磁盘、Binder、Launcher/Shell 几何、App 新 buffer 和目标 Display present。把它们合成一条“snapshot layer 直接交给 HWC”的模型，会漏掉最常见的卡顿、错帧和内存来源。
 
 > 版本范围：平台与 Launcher 路径按 `android-17.0.0_r1` 核对；结论最高适用于 Android 17 / API 37。
