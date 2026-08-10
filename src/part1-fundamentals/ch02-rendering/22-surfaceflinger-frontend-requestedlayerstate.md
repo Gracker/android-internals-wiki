@@ -339,8 +339,8 @@ Android 17 的 `addTransactionReadyFilters()` 按顺序注册：
 - 叠加父层级后的 transform、bounds、crop 和可见性；
 - buffer size、`ExternalTexture`、sideband 与内容脏区；
 - alpha、blend、dataspace、HDR、圆角、阴影、模糊和后处理状态；
-- 输入信息、元数据、帧率投票、游戏模式；
-- 输出过滤器、镜像裁剪和可达性。
+- input info、metadata、frame-rate vote、game mode；
+- output filter、mirror crop 和 reachability。
 
 快照还供输入、无障碍和图层跟踪等模块使用，不只服务 HWC。
 
