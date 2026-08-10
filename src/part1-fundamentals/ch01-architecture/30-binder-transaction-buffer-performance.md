@@ -56,14 +56,14 @@ Binder 不存在适用于所有调用的“单笔 1 MiB 上限”。kernel Binde
 
 | 边界 | Android 17 的值或规则 | 约束对象 |
 | --- | --- | --- |
-| libbinder 映射请求 | `1 MiB - 2 × page size` | 一个内核 Binder 进程的接收缓冲区 |
+| libbinder 映射请求 | `1 MiB - 2 × page size` | 一个 kernel Binder 进程的接收缓冲区 |
 | Binder 驱动 mmap 上限 | `min(requested size, 4 MiB)` | 驱动接受的单个 `binder_alloc` 映射长度 |
 | RPC Binder 协议上限 | `600 KiB`，还要扣除协议头与对象表 | 一条 RPC Binder 命令或回复包 |
 | libbinder 大事务告警线 | `300 KiB` | kernel Binder 和 RPC Binder 的诊断告警，不是硬上限 |
 
 第一行和第二行并不矛盾。Android 17 的 AOSP `ProcessState` 主动只映射约 1 MiB；kernel r6 最多接受 4 MiB，这是驱动对调用者请求的保护上限。普通 AOSP 进程不会因为驱动允许 4 MiB 就自动得到 4 MiB。
 
-RPC Binder 不通过目标进程的 `/dev/binder` 映射区传输数据，因此 600 KiB 与内核 Binder 的约 1 MiB 接收池不能互相替代。
+RPC Binder 不通过目标进程的 `/dev/binder` 映射区传输数据，因此 600 KiB 与 kernel Binder 的约 1 MiB 接收池不能互相替代。
 
 ## 二、kernel Binder 映射区如何建立
 
@@ -104,7 +104,7 @@ mVMStart = mmap(
 
 kernel Binder 为目标进程分配请求 buffer。A 调用 B 时，请求占用 B 的 `binder_alloc`；B 返回同步回复时，回复占用 A 的 `binder_alloc`。因此，某个进程的压力既可能来自它作为服务端接收大量请求，也可能来自它作为客户端同时等待大量回复。
 
-发送方用户态 `Parcel` 的内存是另一份数据。驱动将 Parcel data、offset 数组和附加 buffer 复制或修正到接收方映射区，不能把发送方 Parcel 容量与接收方 Binder 空间视为同一个指标。
+发送方用户态 `Parcel` 的内存是另一份数据。驱动将 Parcel data、offset 数组和附加 buffer 复制或修正到接收方映射区，不能把发送方 Parcel capacity 与接收方 Binder 空间视为同一个指标。
 
 ### 3. 驱动的 4 MiB 上限
 
@@ -174,9 +174,9 @@ alloc->free_async_space = alloc->buffer_size / 2;
 
 一半空间没有被提前划成 oneway 专用区。该预算只限制异步事务最多消耗的总量，为同步请求和回复保留余地。
 
-### 2. oneway 的节点级串行会延长占用
+### 2. oneway 的 node 级串行会延长占用
 
-同一个 Binder 节点的单向事务按顺序处理。第一笔异步事务正在执行时，后续事务进入该节点的 `async_todo`。当前 buffer 释放后，驱动才把下一笔移到目标进程的可执行队列。
+同一个 Binder node 的 oneway 事务按顺序处理。第一笔异步事务正在执行时，后续事务进入该 node 的 `async_todo`。当前 buffer 释放后，驱动才把下一笔移到目标进程的可执行队列。
 
 如果生产速度高于服务端消费速度，多个 oneway buffer 会同时占据目标进程地址池；调用方已从 `BR_TRANSACTION_COMPLETE` 返回，也不代表服务端完成处理或 buffer 已经释放。
 
@@ -191,13 +191,13 @@ kernel r6 只有在 `free_async_space < buffer_size / 10` 时才开始查找主�
 
 这些是内核诊断条件，不是业务接口应追求的容量目标。接近这些条件时，目标进程的异步预算已经非常紧张。
 
-## 五、FD、Binder 对象与 scatter-gather 也占元数据空间
+## 五、FD、Binder object 与 scatter-gather 也占元数据空间
 
-通过 Binder 传递 `ParcelFileDescriptor` 或 Binder 对象时，大文件内容不会复制进 `data_size`，但事务仍包含 `flat_binder_object` 以及偏移条目。驱动还要完成对象引用或 FD 的校验与转换。
+通过 Binder 传递 `ParcelFileDescriptor` 或 Binder object 时，大文件内容不会复制进 `data_size`，但事务仍包含 `flat_binder_object` 以及 offset 条目。驱动还要完成对象引用或 FD 的校验与转换。
 
 FD 方案的主要价值是让大块数据留在文件、共享内存或其他专用缓冲区中，Binder 只承载描述符和控制信息。它不表示端到端没有数据复制：生产者可能先把数据写进共享区域，接收者也要 mmap、同步并管理生命周期。
 
-Android 8 已引入分散-聚集 Binder。Android 17 的 `BC_TRANSACTION_SG` 可以通过 `binder_transaction_data_sg` 提供 `buffers_size`，驱动把相应内容计入 `extra_buffers_size`。它属于稳定演进机制，不是 Android 17 新增的应用开关。
+Android 8 已引入 scatter-gather Binder。Android 17 的 `BC_TRANSACTION_SG` 可以通过 `binder_transaction_data_sg` 提供 `buffers_size`，驱动把相应内容计入 `extra_buffers_size`。它属于稳定演进机制，不是 Android 17 新增的应用开关。
 
 ## 六、怎样理解“大事务”与失败
 
@@ -210,7 +210,7 @@ Android 8 已引入分散-聚集 Binder。Android 17 的 `BC_TRANSACTION_SG` 可
 - 此调用的 data、offsets 和 extra buffers；
 - oneway 是否还受 `free_async_space` 限制；
 - 事务发送期间目标进程是否死亡或被冻结；
-- 走内核 Binder 还是 RPC Binder。
+- 走 kernel Binder 还是 RPC Binder。
 
 即使单笔数据明显低于映射长度，并发事务也可能使它失败。反过来，失败也不必然意味着本次 Parcel 本身接近 1 MiB。
 
@@ -234,7 +234,7 @@ Android 17 的 `BBinder::transact()` 从进入方法开始计时；超过 1000 m
 
 kernel r6 的 `binder_transaction_alloc_buf` tracepoint直接给出 `data_size`、`offsets_size`、`extra_buffers_size`，并通过事务 ID 与 `binder_transaction` 关联。Perfetto 标准 `android_binder_txns` 表没有通用的 `dataSize`/`replySize` 列；分析大小时，应在录制中加入该 ftrace event，再查看原始事件参数。
 
-debugfs `stats` 还能看到逐进程 buffer 数量和 `free async space`，但它是快照，不能代替事务级时间轴。
+debugfs `stats` 还能看到逐进程 buffer 数量和 `free async space`，但它是快照，不能代替 transaction 级时间轴。
 
 ## 七、RPC Binder 的 600 KiB 边界
 
@@ -266,11 +266,11 @@ bodySize < kRpcTransactionLimitBytes - sizeof(RpcWireHeader)
 
 因此，应用可用的 Parcel 数据必须小于 600 KiB，还要为协议结构和对象表留出空间。回复使用同样的包级约束；超出时，服务端清空回复数据，并以 `FAILED_TRANSACTION` 返回。
 
-`CommandData` 的动态分配也拒绝超过 600 KiB 的请求。`RpcTransportUtils` 把 600 KiB 用作初始最大传输块，并可在底层返回 `ENOMEM` 时缩小分块重试。传输分块不会放宽整个 RPC 命令的协议上限。
+`CommandData` 的动态分配也拒绝超过 600 KiB 的请求。`RpcTransportUtils` 把 600 KiB 用作初始最大传输 chunk，并可在底层返回 `ENOMEM` 时缩小 chunk 重试。传输分块不会放宽整个 RPC 命令的协议上限。
 
-### 3. 它不影响普通应用到系统服务的内核 Binder
+### 3. 它不影响普通 App 到系统服务的 kernel Binder
 
-`BpBinder::transact()` 先判断 `isRpcBinder()`：RPC 端点交给 `RpcSession`，其余交给 `IPCThreadState` 和内核 Binder。普通应用调用 Activity Manager、Package Manager 或 ContentProvider 通常属于后一条路径，不会因为 RPC 上限从 100 KB 变为 600 KiB 就获得更大的内核 Binder 空间。
+`BpBinder::transact()` 先判断 `isRpcBinder()`：RPC endpoint 交给 `RpcSession`，其余交给 `IPCThreadState` 和 kernel Binder。普通 App 调用 Activity Manager、Package Manager 或 ContentProvider 通常属于后一条路径，不会因为 RPC 上限从 100 KB 变为 600 KiB 就获得更大的 kernel Binder 空间。
 
 `Constants.h` 的注释将设限原因归于 Baklava 时期 RPC Binder 尚不支持共享内存。Android 17 标签仍保留同一常量和注释；设计 RPC 接口时应遵守 600 KiB 包级上限，不能假设存在自动共享内存后备路径。
 
@@ -295,7 +295,7 @@ kernel r6 在创建目标 `binder_buffer` 时把 `TF_CLEAR_BUF` 写入 `clear_on
 16 KiB 页带来两个可直接从源码确认的变化：
 
 1. `BINDER_VM_SIZE` 从 4 KiB 页设备的 1016 KiB 变为 992 KiB；
-2. `binder_install_buffer_pages()` 和页面 LRU 以 16 KiB 为安装、回收粒度。
+2. `binder_install_buffer_pages()` 和 page LRU 以 16 KiB 为安装、回收粒度。
 
 事务 buffer 的逻辑大小仍按指针宽度对齐，多个小 buffer 可以共享一页。较大的页面可能改变后备物理页数量、回收时机和内存局部性，但“每个小事务多浪费 12 KiB”之类结论无法从 allocator 得出，必须通过实测验证。
 
@@ -330,7 +330,7 @@ oneway 接口可以用序列号合并过时状态，用有界窗口限制未确�
 
 建议至少覆盖以下用例：
 
-1. 单请求逐步增加数据、object 和 extra buffer；
+1. 单请求逐步增加 data、object 和 extra buffer；
 2. 多线程并发同步请求；
 3. 服务端故意延迟消费 oneway；
 4. 请求小、回复大，以及请求大、回复小；
@@ -352,7 +352,7 @@ oneway 接口可以用序列号合并过时状态，用有界窗口限制未确�
 | kernel buffer 清零 | `binder.c`：`clear_on_free`；`binder_alloc.c`：`binder_alloc_clear_buf()` |
 | 300 KiB 日志与 600 KiB RPC 上限 | `Constants.h` |
 | RPC 请求/回复包级检查 | `RpcState.cpp`：`transactAddress()`、回复发送路径 |
-| 传输分块 | `RpcTransportUtils.h`：`kChunkMax` |
+| 传输 chunk | `RpcTransportUtils.h`：`kChunkMax` |
 | 大事务与慢事务日志 | `BpBinder.cpp`、`Binder.cpp` |
 | 请求释放与 clear flag 转发 | `IPCThreadState.cpp`：`BR_TRANSACTION` 处理分支 |
 

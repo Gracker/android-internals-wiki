@@ -57,7 +57,7 @@ Host app / system component
 framework-virtualization Java library
         │  spawn + RpcBinder over Unix-domain socket
         ▼
-virtmgr 子进程（Rust）
+virtmgr child process (Rust）
         │  one crosvm child process for each running VM
         ├─────────────────────────────┐
         ▼                             ▼
@@ -97,7 +97,7 @@ Microdroid 为 native payload 提供 Android 基础设施：Bionic、Verified Bo
 - HAL；
 - `android.*` Java framework API。
 
-启用 ART APEX 后可以使用 `java.*` 核心 API，但这不等于拥有常规 Android 应用运行环境。payload 通常是 APK 内嵌的 native shared library，由 Microdroid 载荷启动器执行。
+启用 ART APEX 后可以使用 `java.*` 核心 API，但这不等于拥有常规 Android 应用运行环境。payload 通常是 APK 内嵌的 native shared library，由 Microdroid payload launcher 执行。
 
 因此，下列推断在 API 37 中没有依据：
 
@@ -105,19 +105,19 @@ Microdroid 为 native payload 提供 Android 基础设施：Bionic、Verified Bo
 - protected Microdroid 可以直接使用 virtio-gpu 或 NPU HAL 加速通用 AI 推理；
 - 它能直接承载完整工作资料、Launcher 或 SystemUI。
 
-需要 UI、GPU 或设备直通的自定义 VM，应按具体 guest、crosvm 构建选项和产品安全策略单独评估，不能套用 Microdroid 的能力表。
+需要 UI、GPU 或设备直通的 custom VM，应按具体 guest、crosvm 构建选项和产品安全策略单独评估，不能套用 Microdroid 的能力表。
 
-## 三、pKVM 如何阻止宿主读取 pVM 内存
+## 三、pKVM 如何阻止 host 读取 pVM 内存
 
 ### 3.1 host 也受 Stage-2 约束
 
-传统 KVM 在宿主运行时通常不使用 Stage-2 限制，因此 host kernel 可以访问承载 guest 内存的物理页。pKVM 在宿主上下文也启用 Stage-2：
+传统 KVM 在 host 运行时通常不使用 Stage-2 限制，因此 host kernel 可以访问承载 guest 内存的物理页。pKVM 在 host 上下文也启用 Stage-2：
 
 - host Stage-2 使用 identity mapping，地址不重排，主要负责访问控制；
-- guest 仍有自己的 Stage-2，把客户机 IPA 映射到物理地址；
-- EL2 维护页面所有者，并决定宿主、某台 pVM、hypervisor 或设备能否映射该页。
+- guest 仍有自己的 Stage-2，把 guest IPA 映射到物理地址；
+- EL2 维护页面所有者，并决定 host、某台 pVM、hypervisor 或设备能否映射该页。
 
-Android 启动之初，除 hypervisor 保留区外的内存归宿主所有。创建 pVM 时，host 把页面捐赠给 guest；EL2 随后从宿主 Stage-2 中撤销这些页的访问权限。crosvm 进程仍保留用于建立 KVM 内存槽的虚拟地址区间和内存记账关系，但对应物理页已不在宿主 Stage-2 的可访问映射中。host CPU 或受宿主控制的设备不能凭借这段用户空间地址绕过 EL2 读取 pVM 私有页。
+Android 启动之初，除 hypervisor 保留区外的内存归 host 所有。创建 pVM 时，host 把页面 donate 给 guest；EL2 随后从 host Stage-2 中撤销这些页的访问权限。crosvm 进程仍保留用于建立 KVM memslot 的虚拟地址区间和内存记账关系，但对应物理页已不在 host Stage-2 的可访问映射中。host CPU 或受 host 控制的设备不能凭借这段用户空间地址绕过 EL2 读取 pVM 私有页。
 
 当前内核把宿主 Stage-2 标记为 `KVM_PGTABLE_S2_IDMAP`，并在 `host_stage2_set_owner_locked()` 中根据所有者 ID 建立宿主映射或记录其他所有者。保护来自 EL2 管理的权限，与某个用户空间 `shared_buf` 名称无关。
 
@@ -150,7 +150,7 @@ ret = __host_stage2_set_owner_locked(
 
 ### 3.3 共享窗口为什么影响 I/O
 
-virtio 的常规设计假设宿主设备后端可以跟随 virtqueue 描述符访问 guest buffer。pVM 私有页不满足这个假设。若每次请求都临时共享一个小 buffer，页面粒度共享还可能暴露同页中的无关数据。
+virtio 的常规设计假设 host 设备后端可以跟随 virtqueue 描述符访问 guest buffer。pVM 私有页不满足这个假设。若每次请求都临时 share 一个小 buffer，页面粒度共享还可能暴露同页中的无关数据。
 
 AVF 的 protected guest 因此为 virtqueue 和数据 buffer 预留固定共享内存窗口，guest 在私有页与共享窗口之间进行 bounce copy。性能影响包括：
 
@@ -161,7 +161,7 @@ AVF 的 protected guest 因此为 virtqueue 和数据 buffer 预留固定共享�
 
 这也是不能给所有 virtio-blk、vsock 或 Binder RPC 写一个固定微秒数的原因。
 
-## 四、内存占用与宿主内存压力
+## 四、内存占用与 host 内存压力
 
 ### 4.1 guest RAM 记在 crosvm 名下
 
@@ -182,12 +182,12 @@ Microdroid 的最低可启动内存受下列因素影响：
 
 - protected 或 non-protected 模式；
 - debug level；
-- 启用的 APEX、ART 和载荷；
-- vCPU 数、内核和厂商模块；
+- 启用的 APEX、ART 和 payload；
+- vCPU 数、内核和 vendor 模块；
 - huge page 可用性；
 - guest page cache 与运行时峰值。
 
-AOSP 的 `MicrodroidBenchmarks.canBootMicrodroidWithMemory()` 在 16～512 MiB 区间做二分尝试，只有载荷成功启动才记录结果。源码选择运行时探测，说明“kernel 8 MiB + ART 24 MiB + 设备 4 MiB”这类静态加法不能作为产品容量结论。
+AOSP 的 `MicrodroidBenchmarks.canBootMicrodroidWithMemory()` 在 16～512 MiB 区间做二分尝试，只有 payload 成功启动才记录结果。源码选择运行时探测，说明“kernel 8 MiB + ART 24 MiB + 设备 4 MiB”这类静态加法不能作为产品容量结论。
 
 ### 4.3 AOSP 的内存测量方式
 
@@ -201,9 +201,9 @@ API 37 的 benchmark 同时采集三组数据：
 
 ## 五、CPU 调度与 VM exit
 
-### 5.1 vCPU 是宿主调度器管理的线程
+### 5.1 vCPU 是 host 调度器管理的线程
 
-每个 vCPU 对应 crosvm 中的 POSIX 线程。线程调用 `KVM_RUN` 后进入 guest；出现需要 VMM 处理的 I/O、vCPU halt 或其他退出原因时，`KVM_RUN` 返回宿主用户空间。
+每个 vCPU 对应 crosvm 中的 POSIX 线程。线程调用 `KVM_RUN` 后进入 guest；出现需要 VMM 处理的 I/O、vCPU halt 或其他退出原因时，`KVM_RUN` 返回 host 用户空间。
 
 host Linux scheduler Linux 调度器仍可抢占 vCPU 线程，并把 guest 执行时间计入该线程。vCPU 线程可以使用常规 QoS 工具设置 affinity、cpuset、uclamp 和调度策略。客户机不能绕过 host scheduler 获得物理 CPU。
 
@@ -211,7 +211,7 @@ host Linux scheduler Linux 调度器仍可抢占 vCPU 线程，并把 guest 执�
 
 1. guest 内线程没有被 guest scheduler 选中；
 2. 对应 vCPU 线程在宿主上 runnable 但没有获得 CPU；
-3. vCPU 因 MMIO/virtio/中断等事件退出，在 crosvm 或宿主内核等待。
+3. vCPU 因 MMIO/virtio/中断等事件退出，在 crosvm 或 host 内核等待。
 
 只看 guest 内的 Perfetto 无法区分后两层。性能分析需要把 guest 时间线与宿主的 crosvm/vCPU 线程调度对齐。
 
@@ -222,15 +222,15 @@ virtio 用 MMIO 完成设备控制与通知，数据面主要通过共享 virtqu
 准确的优化目标通常是：
 
 - 每单位业务数据产生多少次通知和唤醒；
-- vCPU 线程退出后在宿主停留多久；
+- vCPU 线程退出后在 host 停留多久；
 - crosvm 设备处理是否受 CPU、I/O 或锁限制；
-- guest 提交深度能否覆盖宿主处理延迟。
+- guest 提交深度能否覆盖 host 处理延迟。
 
 没有设备型号、CPU 频点、负载、virtqueue 配置和统计分布时，`VM exit = 5–10 μs` 或“比 syscall 慢 3–10 倍”都不能作为 Android 17 平台结论。
 
 ## 六、vsock 与 Binder RPC 的边界
 
-### 6.1 vsock 是宿主与 pVM 的基础通信通道
+### 6.1 vsock 是 host/pVM 的基础通信通道
 
 `VirtualizationServiceInternal` 为运行中的 VM 分配 CID。CID 在 VM 存活期间唯一；VM 结束且相关 `IVirtualMachine` 引用释放后，数值可以复用。端口由 guest 服务自行选择。
 
@@ -248,7 +248,7 @@ connectToVsockServer(port)
 
 这条链路使用 Binder RPC 协议和 Binder 对象模型，但传输不依赖宿主与 guest 共享同一个 `/dev/binder` 驱动实例。guest 私有内存也不会因为传递了 Binder 对象而自动对宿主可见。
 
-对载荷 API，Binder RPC 适合控制面和结构化小消息；大数据应评估流式 vsock、文件交换或专用共享机制。选择依据包括复制次数、批量大小、失败恢复和数据敏感性，不能套用未经测量的固定延迟表。
+对 payload API，Binder RPC 适合控制面和结构化小消息；大数据应评估流式 vsock、文件交换或专用共享机制。选择依据包括复制次数、批量大小、失败恢复和数据敏感性，不能套用未经测量的固定延迟表。
 
 ### 6.3 AOSP 的测量方式值得复用
 
@@ -263,9 +263,9 @@ connectToVsockServer(port)
 
 ## 七、VM 生命周期语义
 
-### 7.1 `run()` 返回不代表载荷已就绪
+### 7.1 `run()` 返回不代表 payload 已就绪
 
-`VirtualMachine.run()` 完成启动请求后即可返回。VM 是否开始运行、OS 是否启动、payload 是否就绪，要通过 `VirtualMachineCallback` 观察。常用节点包括：
+`VirtualMachine.run()` 完成启动请求后即可返回。VM 是否开始运行、OS 是否启动、payload 是否 ready，要通过 `VirtualMachineCallback` 观察。常用节点包括：
 
 - API 调用开始；
 - vCPU 开始；
@@ -274,11 +274,11 @@ connectToVsockServer(port)
 - `onPayloadStarted()`；
 - `onPayloadReady()`。
 
-AOSP 启动基准测试将总时长分成 `VM_START`、`BOOTLOADER`、`KERNEL` 和 `USERSPACE`。更细的分段依赖 FULL 调试输出中的日志标记；debug 配置本身会改变启动路径，因此总时长与分段测试应分别标注配置。
+AOSP boot benchmark 将总时长分成 `VM_START`、`BOOTLOADER`、`KERNEL` 和 `USERSPACE`。更细的分段依赖 FULL debug 输出中的日志标记；debug 配置本身会改变启动路径，因此总时长与分段测试应分别标注配置。
 
 ### 7.2 `stop()` 会强制停止 VM
 
-API 文档把 `VirtualMachine.stop()` 比作拔电源：guest 软件不会收到正常关机通知，加密存储写入可能未持久化。需要 graceful shutdown 时，应通过载荷的 Binder/vsock 协议请求退出，并等待 `onPayloadFinished()`。
+API 文档把 `VirtualMachine.stop()` 比作拔电源：guest 软件不会收到正常关机通知，加密存储写入可能未持久化。需要 graceful shutdown 时，应通过 payload 的 Binder/vsock 协议请求退出，并等待 `onPayloadFinished()`。
 
 “正常销毁 100–500 ms，强杀 50–200 ms”没有平台保证。应分别测量：
 
@@ -296,7 +296,7 @@ API 37 的 `VirtualMachine.run()` 注释写明：并发运行数量除可用内�
 
 产品上限还受以下条件约束：
 
-- 每台 VM 的客户机 RAM、crosvm PSS 和共享内存；
+- 每台 VM 的 guest RAM、crosvm PSS 和共享内存；
 - vCPU 总数与调度容量；
 - CID、fd、进程和 SELinux 策略；
 - pKVM firmware、IOMMU 和可分配设备资源；
@@ -311,7 +311,7 @@ AOSP 基准测试包含同时创建 8 台 VM 的测试路径，说明“每个�
 | host 是否可映射 guest 私有内存 | 不可，除非 guest 显式共享 | VMM 保留访问能力 |
 | 主要目标 | host 被攻破时仍保护 guest 机密性和完整性 | 常规虚拟化与开发环境 |
 | 启动链 | pvmfw/受保护启动与实例身份参与 | 不需要同等 pVM 保护链 |
-| I/O 数据路径 | virtio 固定共享窗口与 bounce 更重要 | 可使用常规 KVM/VMM 客户机内存路径 |
+| I/O 数据路径 | virtio 固定共享窗口与 bounce 更重要 | 可使用常规 KVM/VMM guest memory 路径 |
 | 可用性 | host 仍能停止、饿死或拒绝服务 | host 同样控制资源 |
 | 远程证明 | 依赖设备和 AVF 能力，可用于 pVM | 不提供同等级 pVM 证明 |
 
@@ -343,7 +343,7 @@ AVF 也没有完全替代 TrustZone。TEE 仍承载 KeyMint、Gatekeeper 等依�
 
 ### 9.3 CPU 与 I/O
 
-1. guest Perfetto 观察载荷、客户机调度器和客户机 I/O；
+1. guest Perfetto 观察 payload、guest scheduler 和 guest I/O；
 2. host Perfetto 观察 crosvm、vCPU 线程、sched 和块 I/O；
 3. 统计每单位请求的 VM exit/通知次数；
 4. 顺序/随机、吞吐/延迟、小消息/大流量分别测试；
@@ -355,11 +355,11 @@ AVF 也没有完全替代 TrustZone。TEE 仍承载 KeyMint、Gatekeeper 等依�
 2. 从 crosvm `smaps` 分开 VMM PSS 和 `crosvm_guest` 映射；
 3. 设备允许时记录受保护共享/虚拟机监控器 protected shared/hyp KVM stats；
 4. 对 balloon/trim 前后使用相同工作集；
-5. 模拟宿主内存压力，确认 crosvm 被终止后的 VM 停止和客户端恢复策略。
+5. 模拟 host 内存压力，确认 crosvm 被终止后的 VM 停止和客户端恢复策略。
 
 ### 9.5 通信与停止
 
-1. Binder RPC 与原始 vsock 使用相同载荷逻辑和消息大小；
+1. Binder RPC 与原始 vsock 使用相同 payload 逻辑和消息大小；
 2. 明确 warmup、迭代数、连接复用与序列化格式；
 3. 单独测量连接建立、单次 RPC、steady-state 吞吐和尾延迟；
 4. 分开测 graceful payload exit 与 `stop()` 强制终止；
