@@ -239,7 +239,7 @@ f2fs 的关键优化包括:
 
 **SQLite batch atomic write**：`android-17.0.0_r1` 的 `external/sqlite/dist/Android.bp` 明确定义了 `SQLITE_ENABLE_BATCH_ATOMIC_WRITE`。SQLite 只有在 VFS 与文件系统报告相应能力、事务满足限制且走 rollback-journal 相关路径时，才可能用 batch atomic write 减少 journal 工作。WAL 有自己的追加与 checkpoint 语义，不能把这项优化写成 WAL 通用加速。设备文件系统和运行时 journal mode 都需要单独确认。
 
-在 Perfetto 中观察到 `data` 分区上大量的 `fsync` 延迟时，应先确认文件系统类型。ext4 需要关注 `jbd2` 和 `ext4_sync_file_*` 等同步写路径；f2fs 则要检查回写、checkpoint 或 GC 是否与前台 I/O 争用设备队列。f2fs 的 GC 多数时间在后台完成，但存储空间紧张时也会拖慢前台读写。
+在 Perfetto 中观察到 `data` partition 上大量 `fsync` latency 时，应先确认 filesystem type。ext4 需要关注 `jbd2` 和 `ext4_sync_file_*` 等 synchronous write path；f2fs 则要检查 writeback、checkpoint 或 GC 是否与 foreground I/O 争用 device queue。f2fs 的 GC 多数时间在 background 完成，但 storage space 紧张时也会拖慢 foreground read/write。
 
 ## Scoped Storage:权限模型与 I/O 路径变化
 
