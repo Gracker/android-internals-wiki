@@ -395,7 +395,7 @@ Android 17 对 manifest opt-in 还有设备门槛：essential tier、low-RAM 设
 
 `chooseDriverInternal()` 先排除：
 
-- 特权应用。
+- privileged App。
 - 未更新的 system App。
 
 这类组件继续使用 system driver，避免驱动更新破坏关键系统组件。
@@ -404,11 +404,11 @@ Android 17 对 manifest opt-in 还有设备门槛：essential tier、low-RAM 设
 
 ```text
 UPDATABLE_DRIVER_ALL_APPS
-  > 生产驱动选择退出
-  > 预发布驱动选择启用
-  > 生产驱动选择启用
-  > 生产驱动拒绝名单
-  > 生产驱动允许名单
+  > production opt-out
+  > prerelease opt-in
+  > production opt-in
+  > production denylist
+  > production allowlist
 ```
 
 当前属性名：
@@ -443,7 +443,7 @@ if (ThreadedRenderer.sRendererEnabled
 
 `HardwareRenderer.preload()` 的 Android 17 注释很直接：
 
-源码注释说明，这一步会启动渲染线程并初始化 EGL 或 Vulkan。
+源码注释原文为 “Start render thread and initialize EGL or Vulkan.”
 
 它要求 `GraphicsEnvironment.chooseDriver()` 已完成。native 路径如下：
 
