@@ -584,7 +584,7 @@ FrameTimeline 同时描述：
 - 应用完成晚，错过自己的 deadline；
 - 应用按时，SurfaceFlinger CPU 或 GPU 合成晚；
 - DisplayHAL 没按目标 VSync 呈现；
-- 预测误差；
+- prediction error；
 - buffer stuffing 导致稳定但高延迟；
 - 一帧被更新的帧替代；
 - UI 状态没有及时同步到 RenderThread。
@@ -728,7 +728,7 @@ ORDER BY a.ts;
 - HWC validate/present；
 - CLIENT/DEVICE composition；
 - DisplayHAL jank；
-- 显示栅栏；
+- present fence；
 - display mode 或 render rate 是否在该帧附近改变。
 
 若应用 SurfaceFrame 按时、DisplayFrame 迟到，问题范围才进入 SurfaceFlinger、HWC 或显示端。
@@ -798,7 +798,7 @@ Game Mode API 在部分 Android 12 设备提供，Android 13 及以上设备支�
 - CPU/GPU 帧时间分布；
 - 1% low 与长帧簇；
 - 温升后的稳态性能；
-- 输入到显示延迟；
+- input-to-present；
 - 功耗和表面温度；
 - 设备支持的 render rates。
 
@@ -821,7 +821,7 @@ Framework 的 RefreshRateSelector 负责投票与策略，Composer HAL 把所选
 - 显示模式/刷新回调；
 - 厂商显示跟踪点；
 - DRM vblank/page-flip 事件（设备支持时）；
-- 显示栅栏；
+- present fence；
 - 面板或外接显示器的硬件测量。
 
 ## 13. 版本演进到 Android 17

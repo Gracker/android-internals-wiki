@@ -367,9 +367,9 @@ APEX 只改变库的来源、配置和激活边界，不会热替换进程里已
 ```text
 T(loadLibrary)
   = T(loader-lock wait)
-  + T(命名空间和文件查找)
+  + T(namespace and file lookup)
   + T(ELF read and mmap)
-  + T(重定位和符号查找)
+  + T(relocation and symbol lookup)
   + T(RELRO/MTE/page protection)
   + T(ELF constructors)
   + T(JNI_OnLoad)

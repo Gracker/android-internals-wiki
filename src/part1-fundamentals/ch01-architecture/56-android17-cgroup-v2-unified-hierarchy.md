@@ -227,8 +227,8 @@ service zygote /system/bin/app_process64 ...
 Android 17 的 OomAdjuster 已位于 `services/core/java/com/android/server/am/psc/`。它综合 Activity、可见 UI、前台服务、广播、绑定关系、屏幕状态、远程动画和限制策略计算：
 
 - `oom_score_adj`；
-- 进程状态；
-- 调度组；
+- process state；
+- scheduling group；
 - capability。
 
 同一个 `PROCESS_STATE_SERVICE` 可能因正在执行前台服务回调、普通后台服务或绑定传播而得到不同 scheduling group。把所有 `PROCESS_STATE_SERVICE` 固定映射到 foreground，或把所有 cached/empty 固定映射到 restricted，都会丢失策略条件。
