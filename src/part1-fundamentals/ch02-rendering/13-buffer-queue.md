@@ -256,7 +256,7 @@ Android 17 的 `BLASTBufferQueue::initialize()` 给 Producer 设置安全默认�
 
 SF 的释放信息还会携带当前刷新率对应的 acquired 数。对于 EGL Producer，BLAST 可能暂存一部分已收到释放信息的缓冲，以适应当前刷新率低于设备最大刷新率的情况。可用深度因此取决于：
 
-- 最大出队数与最大获取数；
+- max dequeued 与 max acquired；
 - async / non-blocking 配置；
 - DEQUEUED、QUEUED、ACQUIRED 的实时数量；
 - BLAST 的 pending release；

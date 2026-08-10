@@ -540,7 +540,7 @@ adb shell getprop ro.audio.max_fast_tracks
 - App pid/uid 对应的 track。
 - output thread 类型、sample rate、format、frame count。
 - track flags 中是否接受 FAST；官方调试文档也建议用轨道列中的 `F` 确认 fast track。
-- 快速轨道可用掩码和欠载计数器。
+- fast track avail mask 和 underrun counter。
 - output 是混音、direct、offload 还是 MMAP。
 - 当前 route、device 与 active/inactive 状态。
 

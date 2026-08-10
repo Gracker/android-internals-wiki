@@ -518,7 +518,7 @@ AGDK Frame Pacing Library（Frame Pacing Library，Swappy）支持 OpenGL ES 和
 - Choreographer 时序；
 - presentation timestamp；
 - EGL/Vulkan 同步对象；
-- 交换间隔与管线模式；
+- swap interval 与 pipeline mode；
 - 多刷新率设备的 frame-rate hint。
 
 Swappy 可以主动等待以限制队列深度。Trace 中看到交换或 fence wait 时，要先判断它是合理 pacing、GPU 依赖还是被动背压，不能一律当成性能浪费。
@@ -712,7 +712,7 @@ ORDER BY a.ts;
 检查：
 
 - `dequeueBuffer` 是否等待；
-- 队列深度与释放栅栏；
+- queue depth 与 release fence；
 - `BufferTX - <layerName>`；
 - BLAST transaction 与 SurfaceFlinger latch；
 - `Buffer Stuffing` 分类与 recovery trace；
