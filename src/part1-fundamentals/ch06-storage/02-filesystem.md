@@ -64,25 +64,6 @@ auto_promoted_date: 2026-06-13
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-13
 ---
-<!-- outline-start -->
-
-
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 ext4 的核心特性与在 Android 上的使用
-- 🔹 F2FS（Flash-Friendly File System）的设计思想与在 Android 上的优势
-- 🔹 EROFS（Enhanced Read-Only File System）用于 system 分区
-- 🔹 文件系统对随机读写性能的影响
-- 🔹 fsync / fdatasync 对写性能的影响与优化
-
-### 扩展（可选深入）
-
-- 🔸 各厂商对文件系统的选型差异
-- 🔸 文件系统碎片化对长期使用后性能退化的影响
-<!-- outline-end -->
-
 ## 先把 `fsync` 卡顿放回完整 I/O 路径
 
 Perfetto 中偶尔会看到主线程进入不可中断睡眠，调用栈停在 `fsync()`、`fdatasync()` 或文件关闭附近。这个现象只能说明线程在等待持久化路径完成，不能只凭一个 syscall 就认定文件系统存在缺陷。
@@ -99,7 +80,7 @@ Perfetto 中偶尔会看到主线程进入不可中断睡眠，调用栈停在 `
 
 SQLite 也不等于“每执行一条 SQL 就调用一次 `fsync()`”。同步次数取决于事务边界、journal 模式、`PRAGMA synchronous`、是否发生 cache spill，以及文件系统是否提供 SQLite 能识别的原子批写能力。SharedPreferences 的 `apply()` 会先更新内存并把磁盘写入排到后台；它减少调用线程的直接等待，但排队的写入仍可能在组件生命周期切换时参与 ANR。
 
-> 本章源码锚点：Android 17 / API 37 / `android-17.0.0_r1`，Android Common Kernel `android17-6.18-2026-06_r6`。
+> 源码锚点：Android 17 / API 37 / `android-17.0.0_r1`，Android Common Kernel `android17-6.18-2026-06_r6`。
 
 ## VFS 与 Page Cache：统一接口不代表相同行为
 
@@ -173,7 +154,7 @@ NAT 只负责 `nid → node block address`。文件数据块地址位于 inode �
 
 默认 adaptive 模式会在 LFS 分配与 SSR（Selective Segment Reuse）之间选择。空间宽裕时，out-of-place update 更容易保持追加式写入；空间紧张时，SSR 可以复用已用 segment 中的空洞。挂载为 `mode=lfs` 时，主区域不使用随机覆盖分配，代价是需要更多连续空闲空间。
 
-F2FS 还存在 IPU（in-place update）路径。例如 Android 17 内核的 `f2fs_do_sync_file()` 会在 `fdatasync()` 或脏页较少时设置 `FI_NEED_IPU`，随后执行范围写回。由此可见，“F2FS 的每一次数据修改都是 CoW”同样过度简化。
+F2FS 还存在 IPU（in-place update）路径。例如 Android 17 内核的 `f2fs_do_sync_file()` 会在 `fdatasync()` 或脏页较少时设置 `FI_NEED_IPU`，随后执行范围写回。因此，“F2FS 的每一次数据修改都是 CoW”属于过度简化。
 
 当前 `f2fs_need_SSR()` 的判断包含几条清晰边界：
 
@@ -228,7 +209,7 @@ Android 15 开始支持 16 KB page size，Android 17 继续支持 4 KB 与 16 KB
 - `android17-6.18-2026-06_r6` 的 `include/linux/f2fs_fs.h` 明确规定 `F2FS_BLKSIZE == PAGE_SIZE`。
 - 同一源码中的默认 segment 仍含 512 个 block，因此 4 KB 页时默认 segment 为 2 MB，16 KB 页时为 8 MB。
 
-这意味着 16 KB kernel 使用的 F2FS 格式参数需要按 16 KB block 生成。设备升级是否能够保留 `/data`，取决于 OEM 的分区、迁移和升级方案，不能仅从 App 的 ELF 兼容结论推导出“旧 4 KB `/data` 可原样挂载”。对 App 工程师而言，重点仍是修复 native library 对页大小的硬编码；格式化与用户数据迁移由设备实现负责。
+16 KB kernel 使用的 F2FS 格式参数需要按 16 KB block 生成。设备升级是否能够保留 `/data`，取决于 OEM 的分区、迁移和升级方案，不能仅从 App 的 ELF 兼容结论推导出“旧 4 KB `/data` 可原样挂载”。App 工程师需要修复 native library 对页大小的硬编码；格式化与用户数据迁移由设备实现负责。
 
 ### quota、casefold 与 fscrypt
 

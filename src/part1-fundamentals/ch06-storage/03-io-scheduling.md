@@ -43,24 +43,6 @@ last_deepseek_cn_review_at: 2026-06-26
 ---
 # I/O 调度与性能
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Linux I/O 调度器：CFQ → BFQ → mq-deadline / none
-- 🔹 I/O 优先级与 cgroup blkio 控制
-- 🔹 前台 App I/O 优先级保障机制
-- 🔹 Page Cache 对读性能的加速与对内存的占用
-- 🔹 I/O 性能问题在 Perfetto 中的表现：block I/O、iowait
-
-### 扩展（可选深入）
-
-- 🔸 Direct I/O vs Buffered I/O 在 Android 场景的取舍
-- 🔸 数据库（SQLite/Room）I/O 优化最佳实践
-
-<!-- outline-end -->
-
 ## 从 D 状态开始，但不要停在 D 状态
 
 主线程出现一段 `D`（uninterruptible sleep）时，I/O 是重要嫌疑，却还不能直接定案。`D` 表示线程睡在不可中断等待点，等待对象也可能是驱动、内存回收或其他内核资源。Perfetto 的 `thread_state.io_wait=1`、`sched_blocked_reason`、文件系统 tracepoint 和 block 事件能进一步缩小范围。
@@ -75,7 +57,7 @@ last_deepseek_cn_review_at: 2026-06-26
 
 I/O scheduler 只负责块层请求进入设备前的一段。它能影响请求顺序、带宽份额和队列深度，无法抢占已经发给设备的命令，也无法修复主线程上设计不当的同步写。
 
-> 本章源码锚点：Android 17 / API 37 / `android-17.0.0_r1`，Android Common Kernel `android17-6.18-2026-06_r6`。
+> 源码锚点：Android 17 / API 37 / `android-17.0.0_r1`，Android Common Kernel `android17-6.18-2026-06_r6`。
 
 ## blk-mq 与 I/O scheduler 的位置
 
@@ -227,7 +209,7 @@ Buffered write 先把 folio 标为 dirty，writeback 随后把数据转成 bio/r
 - 文件系统需要支持 cgroup writeback，ext4 与 F2FS 均支持；
 - inode 的 writeback owner 会根据持续写入来源调整，不能把每个回写请求都归因于当时运行的 flush 线程。
 
-这解决了旧文常见的误区：缓冲写变成后台线程后，并不会必然全部丢失原进程的 cgroup 信息。支持 cgroup writeback 的路径会把 bio 关联到 inode owner 的 blkcg。
+缓冲写转交后台线程后，不会必然丢失原进程的 cgroup 信息。支持 cgroup writeback 的路径会把 bio 关联到 inode owner 的 blkcg。
 
 ### dirty sysctl 与 swappiness
 
@@ -359,7 +341,7 @@ Android 17 的 AOSP SQLite 编译了 F2FS batch atomic write 支持，运行时�
 
 6.18 Kconfig 默认提供 `IO_URING`，Android 17 GKI 也启用 FUSE/FUSE BPF。由此只能确认内核能力。若要声称 Android 17 的某条 MediaProvider、外部存储或 OTA 路径使用 io_uring，需要找到对应 AOSP 调用点、进程权限、设备配置与 trace 事件。
 
-同理，“io_uring 让 FUSE 快 40%”或“dm-verity 并行哈希让冷读快 35%”都缺少可迁移到所有 Android 17 设备的前提。本章不把这些实验数据当作平台结论。
+“io_uring 让 FUSE 快 40%”或“dm-verity 并行哈希让冷读快 35%”都缺少可迁移到所有 Android 17 设备的前提，不能作为平台结论。
 
 ## 现场检查清单
 

@@ -73,25 +73,15 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-08
 ---
 
-<!-- outline-start -->
-- 🔹 Android 存储架构:UFS/eMMC → Block Layer → 文件系统 → Scoped Storage / MediaStore
-- 🔹 UFS 3.x/4.0 vs eMMC 的性能差异
-- 🔹 分区布局:system、vendor、data、metadata 等分区的作用
-- 🔹 Scoped Storage(Android 10+)对 App I/O 行为的影响
-- 🔹 FBE(File-Based Encryption)对 I/O 性能的影响
-- 🔸 Dynamic Partition 与 Virtual A/B 的存储布局
-- 🔸 存储寿命与写入放大(Write Amplification)对性能的长期影响
-<!-- outline-end -->
-
 ## 从一个卡顿现象说起
 
-本文的平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点是 Android Common Kernel `android17-6.18-2026-06_r6`。设备的分区表、文件系统、UFS 控制器和 vendor kernel 都允许厂商配置，涉及具体机型的性能结论仍要以运行时信息为准。
+平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点是 Android Common Kernel `android17-6.18-2026-06_r6`。设备的分区表、文件系统、UFS 控制器和 vendor kernel 都允许厂商配置，涉及具体机型的性能结论仍要以运行时信息为准。
 
 在 Perfetto 里追踪主线程卡顿时，常会遇到这样的片段：线程调用 SQLite、SharedPreferences 或普通文件 API 后进入睡眠，直到写回、日志提交或设备请求完成才重新运行。SQLite 事务和 SharedPreferences 写盘是两条独立实现路径，不能看到 `fsync` 就把前者解释成后者；还要结合调用栈、文件名、文件系统事件和 block trace 判断。
 
 这类问题有时伴随 CPU 工作，有时主要消耗在 I/O wait。Android 文件访问可能经过 VFS、文件系统、fscrypt、device-mapper、块层、主机控制器和闪存；共享存储还可能经过 MediaProvider/FUSE。只有把等待时间放回对应层级，才能判断是同步点设计、文件系统回写、设备排队、加密准备还是共享存储权限路径导致延迟。
 
-本章沿数据从应用 API 到存储器件的路径梳理 Android 存储架构。
+以下沿数据从应用 API 到存储器件的路径梳理 Android 存储架构。
 
 ## 存储栈全景:从闪存芯片到应用 API
 
@@ -147,7 +137,7 @@ UFS 使用 MIPI M-PHY 差分串行链路和 UniPro，UTP 承载 UFS Command Set�
 
 ### 性能差距不能只看版本号
 
-JEDEC 版本规定接口能力，不承诺某颗量产器件一定达到某组 MB/s 或 IOPS。知识库若把厂商样品数据写成协议标准，读者很容易拿错误基线判断设备。更稳妥的比较如下：
+JEDEC 版本规定接口能力，不承诺某颗量产器件一定达到某组 MB/s 或 IOPS。把厂商样品数据写成协议标准会导致设备基线失真。比较时应区分以下维度：
 
 | 维度 | eMMC 5.1 | UFS 3.x / 4.x |
 |---|---|---|
@@ -159,7 +149,7 @@ JEDEC 版本规定接口能力，不承诺某颗量产器件一定达到某组 M
 
 **MCQ（Multi-Circular Queue）是 UFS Host Controller Interface 的能力**，不应只按“UFS 4.0 闪存特性”理解。`android17-6.18-2026-06_r6` 的 `drivers/ufs/core/ufs-mcq.c` 会根据主控能力配置读写队列、专用读队列和 polling queue；默认读写队列数还会参考 CPU 数量。设备是否启用 MCQ，要继续检查 host controller capability、驱动日志和 `/sys` 队列信息。
 
-### 怎么用这个知识?
+### 验证器件差异
 
 发现 I/O 延迟异常时，先记录器件型号、UFS/eMMC 版本、文件系统、可用空间、温度与当前后台负载，再建立这台设备自己的冷启动、随机读写和 `fsync` 基线。Perfetto 的 block request 延迟可以说明请求在设备路径上等待了多久，不能仅凭“UFS 4.0”标签设定固定毫秒阈值。
 
@@ -190,7 +180,7 @@ device-mapper 的工作基于三个概念:
 - **dm-snapshot / dm-user**:Virtual A/B 的快照层要按版本拆开。Android 11 使用 `dm-snapshot` / kernel COW;Android 12 compressed snapshots 引入 Android COW format 和 `snapuserd`,但仍需要转换到 kernel COW / `dm-snapshot`;Android 13+ userspace merge 才移除对 kernel COW 和 `dm-snapshot` 的依赖。
 - **dm-default-key**:元数据加密,对 `data` 分区进行块级加密。
 
-这些 dm 目标层层叠加,最终形成了 Android 的分区布局。后面要说明的,就是这些分区各自负责什么、怎么挂载、对性能有什么影响。
+这些 dm 目标可以叠加，形成 Android 的分区布局。各分区的职责、挂载方式和性能影响需要分别分析。
 
 ## 分区布局:system、vendor、data 与 metadata
 
@@ -215,7 +205,7 @@ Physical Partition: super
 
 ### 各分区的职责
 
-**system 分区**：包含 Android framework、系统库和系统应用，正常 verified boot 中按只读方式使用。Android 9 首发设备采用当时的 system-as-root：rootfs 内容合入 `system.img`，内核直接把它挂为根。Android 10 仍采用 system-as-root 的分区布局，但启动方式已经变化：设备必须带 ramdisk，`first-stage init` 解析 `super` metadata、创建 dm-linear 逻辑设备并挂载 `system`、`vendor`、`product` 等分区。需要淘汰的是“Android 10 dynamic partitions 不使用 system-as-root”的说法；准确边界是它不再沿用 Android 9 的 no-ramdisk、kernel-direct-mount 路径。受保护的只读分区继续由 AVB / dm-verity 验证。
+**system 分区**：包含 Android framework、系统库和系统应用，正常 verified boot 中按只读方式使用。Android 9 首发设备采用当时的 system-as-root：rootfs 内容合入 `system.img`，内核直接把它挂为根。Android 10 仍采用 system-as-root 的分区布局，但启动方式已经变化：设备必须带 ramdisk，`first-stage init` 解析 `super` metadata、创建 dm-linear 逻辑设备并挂载 `system`、`vendor`、`product` 等分区。它不再沿用 Android 9 的 no-ramdisk、kernel-direct-mount 路径。受保护的只读分区继续由 AVB / dm-verity 验证。
 
 **vendor 分区**:包含硬件抽象层(HAL)驱动、固件和厂商定制配置。这个分区的存在是 Project Treble 架构的核心--把 vendor 实现和 Android 框架解耦,使得框架可以独立升级而不需要等厂商适配。vendor 分区同样是只读的,受 dm-verity 保护。
 
@@ -249,7 +239,7 @@ f2fs 的关键优化包括:
 
 **SQLite batch atomic write**：`android-17.0.0_r1` 的 `external/sqlite/dist/Android.bp` 明确定义了 `SQLITE_ENABLE_BATCH_ATOMIC_WRITE`。SQLite 只有在 VFS 与文件系统报告相应能力、事务满足限制且走 rollback-journal 相关路径时，才可能用 batch atomic write 减少 journal 工作。WAL 有自己的追加与 checkpoint 语义，不能把这项优化写成 WAL 通用加速。设备文件系统和运行时 journal mode 都需要单独确认。
 
-在 Perfetto 中,如果我们在 `data` 分区上观察到大量的 `fsync` 延迟,可以先确认文件系统类型。如果是 ext4,关注 `jbd2` 和 `ext4_sync_file_*` 这类同步写路径;如果已经是 f2fs,再看是否有回写、checkpoint 或 GC 在和前台 I/O 抢设备队列。f2fs 的 GC 多数时间在后台完成,但存储空间紧张时,前台读写也会被它拖慢。
+在 Perfetto 中观察到 `data` 分区上大量的 `fsync` 延迟时，应先确认文件系统类型。ext4 需要关注 `jbd2` 和 `ext4_sync_file_*` 等同步写路径；f2fs 则要检查回写、checkpoint 或 GC 是否与前台 I/O 争用设备队列。f2fs 的 GC 多数时间在后台完成，但存储空间紧张时也会拖慢前台读写。
 
 ## Scoped Storage:权限模型与 I/O 路径变化
 
@@ -276,7 +266,7 @@ Android 12 增加 FUSE passthrough。设备需要匹配的 official kernel、Med
 
 Scoped Storage 对 App 开发和性能优化有几个直接影响。
 
-**访问共享媒体时,先按访问模式选接口**:目录扫描、批量查询、随机读写这类场景,优先让 MediaStore 帮我们做索引和权限判定;兼容旧库或 native 媒体栈时,再考虑 Android 11 的 direct file paths。
+**访问共享媒体时，先按访问模式选接口**：目录扫描、批量查询、随机读写等场景，优先使用 MediaStore 完成索引和权限判定；兼容旧库或 native 媒体栈时，再考虑 Android 11 的 direct file paths。
 
 **应用私有数据别混到共享存储**:只在 App 内部使用的数据,放内部存储 `/data/user/0/<package>/` 路径最省事;如果必须放 external app-specific directory,也要把它和共享媒体访问分开看,别把两条 I/O 路径混成一个模型。
 
@@ -413,7 +403,7 @@ NAND 闪存单元只能承受有限次数的 program/erase cycle。SLC、MLC、T
 
 ## 存储问题观测地图
 
-这一章反复提 Perfetto 和 I/O 诊断,如果没有一个最小观测地图,读者很容易停在"看起来像 I/O 慢"的直觉层。实战中建议按以下五层抓取。
+I/O 诊断至少需要覆盖以下五层，避免停在“看起来像 I/O 慢”的直觉判断。
 
 | 关注面 | 推荐抓取点 | 重点看什么 | 异常形态 |
 | --- | --- | --- | --- |
@@ -423,11 +413,11 @@ NAND 闪存单元只能承受有限次数的 program/erase cycle。SLC、MLC、T
 | Mount / encryption | 开机阶段的 `init`、`vold`、`wait_for_keymaster` 日志与 slice | `/metadata` 是否已挂载、`vold` 是否提前启动、`mount_all` 是否卡住 | 开机早期反复重试 KeyMint、`/data` 长时间挂不上,后续所有 I/O 都会被拖住 |
 | OTA merge | `update_engine`、`snapuserd`、Virtual A/B merge 相关后台写入 | OTA 后台 merge 是否还在持续,前台 I/O 是否被挤压 | 重启后长时间存在稳定写入流量,前台 App 随机 I/O 延迟异常 |
 
-除了 Perfetto,本章这些问题还值得和 `logcat`、`dmesg`、`mount`、`getprop` 一起交叉看。存储问题经常横跨内核、init、`vold`、MediaProvider 和 App 线程,单看一层很容易把根因看偏。
+除 Perfetto 外，还应结合 `logcat`、`dmesg`、`mount`、`getprop` 交叉验证。存储问题经常横跨内核、init、`vold`、MediaProvider 和 App 线程，单看一层容易偏离根因。
 
-## 小结:从存储架构到性能分析
+## 从存储架构定位性能问题
 
-回到开头的那个卡顿场景。当我们看到主线程在 `fsync` 上等待时,完整的分析流程应该是:
+主线程在 `fsync` 上等待时，分析流程如下：
 
 1. **调用层**：确认谁调用了 `fsync`、同步的是哪个文件，以及这一同步点是否必须位于主线程。
 2. **文件系统层**：确认 ext4/f2fs、mount option，并检查 jbd2、checkpoint、writeback 或 GC 是否与等待区间重合。
@@ -438,7 +428,7 @@ NAND 闪存单元只能承受有限次数的 program/erase cycle。SLC、MLC、T
 
 按这套顺序，Perfetto 中的“I/O wait”才能继续收敛到同步点、文件系统、块队列、共享存储或器件层面的可验证原因。
 
-存储架构的知识还将在后续章节中持续用到--第 6.2 节我们会深入文件系统的选择与调优,第 6.3 节会讨论 I/O 调度的具体策略,而存储性能的长期退化问题则与第 7 章流畅性优化中的"老设备卡顿"现象直接相关。
+第 6.2 节继续分析文件系统的选择与调优，第 6.3 节讨论 I/O 调度的具体策略；存储性能的长期退化还与第 7 章流畅性优化中的“老设备卡顿”现象相关。
 
 ## 参考资料
 
