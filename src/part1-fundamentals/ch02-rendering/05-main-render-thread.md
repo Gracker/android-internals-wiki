@@ -371,10 +371,10 @@ Android 17 的 `CanvasContext.cpp` 定义了文件内静态函数 `setBufferCoun
 
 Producer 能否继续出队还取决于：
 
-- 最大出队数与最大获取数配置；
+- max dequeued 与 max acquired 配置；
 - async / non-blocking 模式；
 - slot 当前处于 `FREE`、`DEQUEUED`、`QUEUED` 还是 `ACQUIRED`；
-- 释放栅栏是否已发出信号；
+- release fence 是否 signal；
 - BLAST 是否还有 pending release；
 - Surface 生命周期、尺寸变化与重新分配。
 

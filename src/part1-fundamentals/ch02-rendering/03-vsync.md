@@ -424,9 +424,9 @@ Android 15 引入自适应刷新率（Adaptive Refresh Rate，ARR）。ARR 所�
 此时不能看到 240 Hz 的 VSync 就断言屏幕正在以 240 fps 更新内容。需要同时区分：
 
 - VSync/TE rate；
-- 显示模式的峰值刷新率；
+- mode 的 peak refresh rate；
 - 当前 render rate；
-- 帧的预计/实际呈现节奏。
+- 帧的 expected/actual presentation cadence。
 
 ### 7.3 `minFramePeriod()` 的含义
 
@@ -446,7 +446,7 @@ Android 图形文章常把卡顿解释为“双缓冲切三缓冲”。这个模
 - consumer 最多可 acquire 的数量；
 - async/non-blocking 模式；
 - 当前 `DEQUEUED`、`QUEUED`、`ACQUIRED`、`FREE` 槽位分布；
-- 释放栅栏是否已发出信号；
+- release fence 是否 signal；
 - BLAST 待释放缓冲和当前刷新率策略。
 
 所以，Android 没有对所有 Surface 保证“默认正好三块缓冲”。
