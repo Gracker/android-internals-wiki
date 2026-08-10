@@ -56,27 +56,8 @@ finalized_by: "openclaw-task9-auto-promote"
 ---
 # Thermal 管控
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Thermal 管控路径：温度传感器 → Thermal HAL → thermal engine → 限频/限核
-- 🔹 Android Thermal API（PowerManager.THERMAL_STATUS_*）
-- 🔹 温度墙（Thermal Throttling）对性能的影响：持续高负载场景的帧率下降
-- 🔹 Thermal Mitigation 策略：限频、限核、降亮度、关闭功能
-- 🔹 如何在性能测试中排除温控干扰
-
-### 扩展（可选深入）
-
-- 🔸 各厂商 Thermal 策略差异（激进 vs 保守）
-- 🔸 Sustained Performance Mode API
-- 🔸 散热方案（石墨烯、VC 均热板）对性能稳定性的影响
-
-<!-- outline-end -->
-
 > [!NOTE] 源码锚点
-> 本章的平台实现以 AOSP `android-17.0.0_r1`（Android 17 / API 37）为准，内核机制以 `android17-6.18-2026-06_r6` 为准。温度阈值、传感器布局、降载幅度和恢复曲线属于设备配置，不能从 AOSP 推导出某款手机的具体行为。
+> 平台实现以 AOSP `android-17.0.0_r1`（Android 17 / API 37）为准，内核机制以 `android17-6.18-2026-06_r6` 为准。温度阈值、传感器布局、降载幅度和恢复曲线属于设备配置，不能从 AOSP 推导出某款手机的具体行为。
 
 ## 温控改变的是可持续性能
 
@@ -187,7 +168,7 @@ frameworks/base/services/core/java/com/android/server/power/thermal/
 4. 为 thermal headroom 收集 SKIN 温度和阈值。
 5. 对 CPU、GPU、NPU、SKIN 或 BATTERY 的 `SHUTDOWN` 状态发起相应关机流程。
 
-Android 17 的整体 status 由 SKIN 类型传感器的最高 severity 计算。由此可知，`PowerManager.getCurrentThermalStatus()` 表达的是面向用户体验的设备热状态，不是“所有芯片传感器中的最高温度”或“CPU 正在被限到几 GHz”。
+Android 17 的整体 status 由 SKIN 类型传感器的最高 severity 计算。`PowerManager.getCurrentThermalStatus()` 表达的是面向用户体验的设备热状态，不是“所有芯片传感器中的最高温度”或“CPU 正在被限到几 GHz”。
 
 ## PowerManager Thermal API
 
@@ -471,7 +452,7 @@ VC、热管和石墨材料主要改变热扩散与热容量，最终效果还受
 
 ### “Root 后关闭温控可以保持峰值性能”
 
-硬件、固件和内核可能有多层保护，关闭其中一层也不保证保持峰值。更重要的是，绕过 thermal protection 会带来安全和寿命风险，也不能代表量产体验。
+硬件、固件和内核可能有多层保护，关闭其中一层也不保证保持峰值。绕过 thermal protection 还会带来安全和寿命风险，也不能代表量产体验。
 
 ### “Thermal status 为 NONE 就没有热限制”
 
@@ -483,7 +464,7 @@ VC、热管和石墨材料主要改变热扩散与热容量，最终效果还受
 
 ## 版本边界与源码索引
 
-| Android 版本 | 关键变化 | 本章使用方式 |
+| Android 版本 | 关键变化 | 分析方式 |
 | --- | --- | --- |
 | Android 7 / API 24 | Sustained Performance Mode | 设备声明支持后使用 |
 | Android 10 / API 29 | Thermal HAL 2.0 与公开 thermal status API | 状态监听成为应用减载入口 |

@@ -62,27 +62,8 @@ last_deepseek_cn_review_at: 2026-06-30
 
 # DVFS 与功耗管理
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 DVFS（Dynamic Voltage and Frequency Scaling）的原理：频率与电压的正相关
-- 🔹 CPU frequency governor 机制：schedutil 基于 utilization 调频
-- 🔹 OPP Table：离散的频率-电压档位
-- 🔹 调频延迟对性能的影响：升频延迟 → 短暂掉帧
-- 🔹 功耗公式：P ∝ C × V² × f（为什么降压比降频更省电）
-
-### 扩展（可选深入）
-
-- 🔸 GPU DVFS 机制
-- 🔸 内存频率（DDR/LPDDR）调频对性能的影响
-- 🔸 Perfetto 中观察 CPU/GPU 频率变化的方法
-
-<!-- outline-end -->
-
 > [!NOTE] 源码锚点
-> 本章的平台源码以 AOSP `android-17.0.0_r1`（Android 17 / API 37）为准，内核调频路径以 `android17-6.18-2026-06_r6` 为准。厂商仍可替换 CPUFreq 驱动、固件和 Power HAL 策略，因此文中会区分通用机制、Android 接口与设备实现。
+> 平台源码以 AOSP `android-17.0.0_r1`（Android 17 / API 37）为准，内核调频路径以 `android17-6.18-2026-06_r6` 为准。厂商仍可替换 CPUFreq 驱动、固件和 Power HAL 策略，因此需要区分通用机制、Android 接口与设备实现。
 
 ## 先分清两个问题：完成得多快，以及消耗多少能量
 
@@ -191,7 +172,7 @@ Android 17 这一内核分支的 `sugov_get_util()` 会读取 `scx_cpuperf_targe
 
 ### 从 util 映射到支持的频率
 
-为了帮助阅读源码，下面用伪代码保留主干，省略锁、缓存与边界处理：
+省略锁、缓存与边界处理后，主干可写为以下伪代码：
 
 ```text
 util, uclamp_min, uclamp_max = collect_effective_cpu_util()

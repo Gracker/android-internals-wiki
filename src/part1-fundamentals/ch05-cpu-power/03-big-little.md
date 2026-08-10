@@ -58,7 +58,7 @@ last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度
 
 # 大小核架构
 
-> [!info] 本章源码锚点
+> [!info] 源码锚点
 > 正文按 Android 17 / API 37 / `android-17.0.0_r1` 与 kernel `android17-6.18-2026-06_r6` 复核。具体 SoC 的核心名称、编号、capacity 与 cpufreq policy 属于设备实现；未从目标设备内核或 sysfs 读取的数据不当作平台保证。
 
 ## 先区分四个容易混用的概念
@@ -100,7 +100,7 @@ DynamIQ 允许不同 CPU microarchitecture 在同一 DynamIQ cluster 中协作�
 - DynamIQ 提供的能力不等于每款 SoC 都实现 per-CPU DVFS，实际频率控制看 cpufreq policy；
 - DSU 型号、cache 容量和互连拓扑由 SoC 决定，不能用一个 Arm IP 上限描述所有 Android 设备。
 
-16 KB page size 主要改变 TLB reach、页表层级行为和内存管理成本。公开的通用 DSU 接口没有把“16 KB 页会降低 snoop filter 探测频率”定义为平台保证，因此本章不据此推导互连收益。
+16 KB page size 主要改变 TLB reach、页表层级行为和内存管理成本。公开的通用 DSU 接口没有把“16 KB 页会降低 snoop filter 探测频率”定义为平台保证，因此不能据此推导互连收益。
 
 ### 当代 SoC 不止“大”和“小”
 
@@ -451,11 +451,11 @@ CPU 准备与提交
     → CPU 后处理
 ```
 
-若 CPU 长时间睡眠等待 fence，调整 CPU affinity 无法缩短 accelerator execution；若提交线程长时间 Runnable 或 CPU-bound，则回到本章的 CPU 调度证据链。GPU/NPU 的频率、队列和利用率应使用对应数据源分析。
+若 CPU 长时间睡眠等待 fence，调整 CPU affinity 无法缩短 accelerator execution；若提交线程长时间 Runnable 或 CPU-bound，则回到 CPU 调度证据链。GPU/NPU 的频率、队列和利用率应使用对应数据源分析。
 
 ## 版本演进与当前边界
 
-| 时期 | 变化 | 本章怎样使用 |
+| 时期 | 变化 | 分析用途 |
 | --- | --- | --- |
 | 2011 起 | Arm big.LITTLE 与早期 cluster/switcher 模型 | 解释异构 CPU 的由来 |
 | Linux 4.7 起 | schedutil 进入主线 | 解释调度器利用率驱动 DVFS |
@@ -466,7 +466,7 @@ CPU 准备与提交
 
 ## 源码索引与参考资料
 
-本章的公共源码结论可从以下入口复核：
+相关公共源码结论可从以下入口复核：
 
 - kernel `Documentation/scheduler/sched-capacity.rst`；
 - kernel `Documentation/scheduler/sched-energy.rst`；
