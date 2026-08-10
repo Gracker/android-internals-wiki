@@ -138,7 +138,7 @@ review_finalize_notes: "2026-08-07 Hermes finalize-apply: 复核 deep-review 结
 
 ```text
 DEX
- ├─ 验证
+ ├─ verification
  ├─ interpreter ────────────────────┐
  ├─ JIT compile -> code cache  ├─> 执行
  └─ dex2oat -> OAT/ODEX/VDEX ──┘
