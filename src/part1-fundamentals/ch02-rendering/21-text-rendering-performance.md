@@ -103,7 +103,7 @@ last_deepseek_cn_review_at: 2026-06-17
 1. 本帧为什么需要重新排版或重录文字？
 2. 最早超时的是主线程、RenderThread/GPU，还是后续窗口显示链路？
 
-列表滚动不代表每个可见 `TextView` 每帧都会重新测量；RenderThread 上出现文字相关开销，也不能反推主线程必然重新执行文字整形。
+列表滚动不代表每个可见 `TextView` 每帧都会重新 measure；RenderThread 上出现文字相关开销，也不能反推主线程必然重新执行文字整形。
 
 ## 先按线程和产物拆开
 
@@ -152,7 +152,7 @@ flowchart LR
 - 文本可选择；
 - `mSpannable` 非空，并且当前文本没有以 `PrecomputedText` 形式保存。
 
-因此，`DynamicLayout` 不只服务于 `EditText`。可选择的普通 `TextView` 或需要监听 Span 变化的文本也可能使用它。它通过 `reflow()` 更新受编辑影响的区域，并维护供硬件加速绘制使用的分块信息；增量更新表示无需每次重建全部文本，但不保证每次编辑的成本都很小。
+因此，`DynamicLayout` 不只服务于 `EditText`。可选择的普通 `TextView` 或需要监听 Span 变化的文本也可能使用它。它通过 `reflow()` 更新受编辑影响的区域，并维护供硬件加速绘制使用的 block 信息；增量更新表示无需每次重建全部文本，但不保证每次编辑的成本都很小。
 
 ### `BoringLayout`：资格比“单行无 Span”更严格，也更细
 
@@ -180,7 +180,7 @@ flowchart LR
 
 ## Minikin：字体选择、整形和断行要分开看
 
-Android 17 的 Minikin `LayoutPiece` 先调用 `FontCollection.itemize()` 把输入分成字体段，再对 script run 调用 `hb_shape()`。`android-17.0.0_r1` 中的 `external/harfbuzz_ng` 对应 HarfBuzz 11.4.1。
+Android 17 的 Minikin `LayoutPiece` 先调用 `FontCollection.itemize()` 把输入分成字体 run，再对 script run 调用 `hb_shape()`。`android-17.0.0_r1` 中的 `external/harfbuzz_ng` 对应 HarfBuzz 11.4.1。
 
 文字整形把 Unicode 输入映射为 glyph、cluster、advance 和 offset。不要使用“一个 Unicode 对应一个 glyph”判断复杂度：连字、组合附加符号、emoji ZWJ 序列、variation selector 和字体 fallback 都会改变码点与 glyph 的关系。不同语言脚本的开销也不能用固定倍数排序，应以目标字体、真实语料和设备测量为准。
 
@@ -206,7 +206,7 @@ Minikin 的 `LayoutCache` 是进程内单例 LRU，当前最多保存 5000 个 e
 - 文本、字体、locale、方向或 variation settings 改变，会形成不同 key；
 - 两条业务文本只有局部字词相同，不代表必然共享缓存，因为 key 还包含传入的文字上下文和 range。
 
-`TextLine` 还有一个容量为 3 的静态对象池，用于减少临时对象分配。它缓存可复用对象，不保存排版结果。Skia 的 `StrikeCache` 则管理 GPU 文字 strike/glyph 资源；它和 Minikin 的文字整形缓存属于不同阶段，不能合并计算所谓的文字缓存命中率。
+`TextLine` 还有一个容量为 3 的静态对象池，用于减少临时对象分配。它缓存可复用对象，不保存排版结果。Skia 的 `StrikeCache` 则管理 GPU 文字 strike/glyph 资源；它和 Minikin shaping cache 属于不同阶段，不能合并计算所谓的文字缓存命中率。
 
 ## Span 与 Emoji：先判断它改变哪一层
 
@@ -235,7 +235,7 @@ EmojiCompat 的成本也要分开：
 - `EmojiSpan.getSize()` 和 `draw()` 属于布局/绘制阶段；
 - 新 glyph 的 Skia 资源准备属于后续绘制执行阶段。
 
-AndroidX 默认 initializer 会把字体加载推迟到首个 Activity 恢复之后，避免直接与首屏争用资源；手动配置时也要分别测量下载、初始化和首屏绘制。
+AndroidX 默认 initializer 会把字体加载推迟到首个 Activity resume 之后，避免直接与首屏争用资源；手动配置时也要分别测量下载、初始化和首屏绘制。
 
 ## 优化时优先减少无效重建
 
@@ -272,9 +272,9 @@ class MessageHolder(
 }
 ```
 
-这段代码只演示预计算结果的所有权。实际项目还要取消无用任务、限制队列长度，并按 API 版本选择平台或 AndroidX 实现。`TextView.setText(PrecomputedText)` 遇到不兼容的测量参数会抛出 `IllegalArgumentException`；只有可重新计算的方向差异时，framework 也可能重新计算。
+这段代码只演示预计算结果的所有权。实际项目还要取消无用任务、限制队列长度，并按 API 版本选择 platform 或 AndroidX 实现。`TextView.setText(PrecomputedText)` 遇到不兼容的测量参数会抛出 `IllegalArgumentException`；只有可重新计算的方向差异时，framework 也可能重新计算。
 
-AndroidX 的 `AppCompatTextView.setTextFuture()` 会在 `onMeasure()` 中调用 `future.get()`。如果后台任务尚未完成，主线程仍会阻塞等待。它适合提前预取，但不能保证调用后的主线程完全没有文字处理成本。
+AndroidX 的 `AppCompatTextView.setTextFuture()` 会在 `onMeasure()` 中调用 `future.get()`。如果后台任务尚未完成，主线程仍会阻塞等待。它适合提前 prefetch，但不能保证调用后的主线程完全没有文字处理成本。
 
 ### 列表场景按触发源优化
 
@@ -305,7 +305,7 @@ Android 17 的 Minikin `Font.cpp` 会缓存调整后的 HarfBuzz font 和 typefa
 
 ## Perfetto：从窗口级证据逐步缩小
 
-Android 17 的 `ViewRootImpl` 在 `TRACE_TAG_VIEW` 下稳定记录窗口级 `measure`、`layout` 和 `draw`。逐 View 的 `onMeasure TextView ...` / `onLayout ...` 只有启用框架的 traversal tracing 后才会出现；普通应用跟踪不能假定存在 `TextView.onMeasure()` slice。
+Android 17 的 `ViewRootImpl` 在 `TRACE_TAG_VIEW` 下稳定记录窗口级 `measure`、`layout` 和 `draw`。逐 View 的 `onMeasure TextView ...` / `onLayout ...` 只有启用 framework 的 traversal tracing 后才会出现；普通应用 trace 不能假定存在 `TextView.onMeasure()` slice。
 
 采集时至少启用：
 
