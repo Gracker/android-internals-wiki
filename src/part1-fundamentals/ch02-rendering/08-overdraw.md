@@ -413,7 +413,7 @@ Modifier.graphicsLayer {
 建议把优化做成受控 A/B：
 
 1. 固定设备、刷新率、分辨率、页面数据和操作脚本，记录电量与热状态。
-2. 开启“调试 Debug GPU Overdraw，截图或录屏定位热区；不要记录此时的帧耗时。
+2. 开启“调试 Debug GPU Overdraw”，截图或录屏定位热区；不要记录此时的帧耗时。
 3. 关闭叠加，预热页面后采集 Perfetto，找到具体的 janky `SurfaceFrame` 和对应 `DisplayFrame`。
 4. 确认 UI 线程、RenderThread、GPU completion、buffer post 和 SurfaceFlinger 中谁位于关键路径。
 5. 一次只修改一个背景、绘制范围或离屏策略。
