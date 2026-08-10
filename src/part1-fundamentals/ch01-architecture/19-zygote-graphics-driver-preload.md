@@ -419,9 +419,9 @@ ro.gfx.driver.0   # production driver package
 ro.gfx.driver.1   # prerelease driver package
 ```
 
-选择可更新驱动后，框架会：
+选择 updatable driver 后，framework 会：
 
-1. 确认驱动包是系统包。
+1. 确认 driver package 是 system package。
 2. 检查 `targetSdk` 与当前 ABI。
 3. 拼出 native library 和 APK 内 `lib/<abi>` 的搜索路径。
 4. 读取 APK 的 `assets` 目录中的 `sphal_libraries.txt`。
@@ -496,7 +496,7 @@ Gralloc 映射器已预热，不代表分配器也已预热。首次分配还可
 - `GraphicBufferAllocator` 初始化。
 - allocator HAL Binder 调用。
 - DMA-BUF heap 分配。
-- 映射器导入与元数据校验。
+- mapper import 与 metadata 校验。
 
 Android 17 的 `HardwareRenderer.preInitBufferAllocator()` 专门把 allocator singleton 初始化放到异步任务里，因为低资源设备上的这段工作可能阻塞首帧。分析时要区分 mapper 与 allocator。
 
@@ -537,7 +537,7 @@ driver 初始化可能包含：
 - ioctl/Binder 查询。
 - 读取配置与缓存。
 - 启动驱动内部线程。
-- 着色器编译器或管线缓存初始化。
+- shader compiler 或 pipeline cache 初始化。
 
 只看到 `libGLES*.so` 或 Vulkan 动态库映射，不能推断耗时全在 loader。需要对齐 CPU slice、I/O、Binder、sched 和调用栈。
 

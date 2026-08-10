@@ -483,7 +483,7 @@ LIMIT 30;
 
 1. 用 `android_binder_txns` 找 server 进程、线程和方法。
 2. 比较 client 与 server 区间，确认时间花在哪一端。
-3. 服务端工作线程若等监视器，用竞争表找持锁者。
+3. server worker 若等 monitor，用 contention 表找 owner。
 4. server worker 若在原生 native futex，结合原生栈找具体锁。
 5. 多个事务都排队时，检查 worker 饱和和某个长事务是否占住线程。
 

@@ -200,7 +200,7 @@ InstallSource.installerPackageName
 APK 删除后，系统不能再从清单和资源表中读取 Launcher Activity、label 与图标。因此 `PackageArchiver.createAndStoreArchiveState()` 必须先完成以下工作：
 
 1. 取得目标用户下的包状态。
-2. 拒绝系统应用和已更新的系统应用。
+2. 拒绝 system app 和 updated system app。
 3. 确认该用户当前安装了目标包。
 4. 找到并验证 responsible installer。
 5. 检查归档 opt-out 状态。
