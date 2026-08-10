@@ -185,24 +185,6 @@ idle_audit_result: "pass-metadata-only"
 
 # 18.15 Android 17 视频叠加与 HWC
 
-<!-- outline-start -->
-
-**锚点(必须覆盖):**
-
-- 🔹 HWC (Hardware Composer) 的核心职责：决定哪些 Layer 走硬件合成，哪些走 GPU
-- 🔹 GPU Path vs Overlay Path 的通路对比
-- 🔹 SurfaceFlinger 的合成决策流程
-- 🔹 DRM / Secure Video Path 与 Overlay 的关系
-- 🔹 在 dumpsys SurfaceFlinger 和 Perfetto 中识别 Overlay 模式
-
-**扩展(可选深入):**
-
-- 🔸 HWC 2.x / 3.x 的版本差异
-- 🔸 Tunnel Mode(Android TV / 高端手机)
-- 🔸 HWC 回退到 GPU 合成的常见触发条件
-
-<!-- outline-end -->
-
 ## SurfaceView 只提供 Overlay 候选条件
 
 “使用 `SurfaceView`，视频就会走 Overlay 并绕过 GPU”少了每帧 HWC 协商这个条件。`SurfaceView` 给视频保留了独立的 SurfaceFlinger Layer，使 HWC 有机会把该 Layer 判为 `DEVICE`；是否采用显示硬件合成，要等 SurfaceFlinger 把当前帧的完整 Layer 栈交给 HWC 后才能确定。视频格式、缩放、旋转、HDR、受保护属性、叠加 UI、可用 plane 数量和显示带宽都会改变这一帧的选择。
@@ -216,7 +198,7 @@ idle_audit_result: "pass-metadata-only"
 | 该 Layer 由 GPU 还是显示硬件合成 | SurfaceFlinger 与 Composer HAL 每帧协商 | HWC composition type |
 | 帧何时可读、何时送显、何时可复用 | BufferQueue、fence、HWC 和显示驱动 | Perfetto、fence、驱动 trace |
 
-本文以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点。内核侧以 `android17-6.18-2026-06_r6` 为锚点。Codec、DRM、Composer HAL 和显示驱动通常包含设备实现，分析某台设备时还要记录系统 build fingerprint、codec 名称、DRM 安全级别和 Composer HAL 版本。
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点为 `android17-6.18-2026-06_r6`。Codec、DRM、Composer HAL 和显示驱动通常包含设备实现，分析某台设备时还要记录系统 build fingerprint、codec 名称、DRM 安全级别和 Composer HAL 版本。
 
 ## 普通 Surface 视频的一帧怎样到达屏幕
 
@@ -363,7 +345,7 @@ HWC 的能力由 SoC 显示模块、Composer HAL、显示模式和当前 Layer �
 | `SurfaceView` + `DEVICE` | 普通 BufferQueue，SurfaceFlinger 逐帧 latch | 否 | 设备接受该 Layer 的硬件合成 | 仍有 SF/HWC/fence 工作，也可能存在其他 GPU client composition |
 | Tunneled + `SIDEBAND` | sideband handle；视频更新与同步由设备机制处理 | 否 | codec、Audio HAL、Composer HAL 与显示链共同支持 | 可用性和格式受设备约束，GPU 特效能力受限 |
 
-同一台设备上，`DEVICE` 或 `SIDEBAND` 常能减少视频相关的 GPU 采样和内存写回，但系统总功耗还包含解码、DDR、DPU、面板和背光。文章或评审中不要写固定百分比，也不要把某个 SoC 的结果推广到其他机型。
+同一台设备上，`DEVICE` 或 `SIDEBAND` 常能减少视频相关的 GPU 采样和内存写回，但系统总功耗还包含解码、DDR、DPU、面板和背光。不要写固定百分比，也不要把某个 SoC 的结果推广到其他机型。
 
 ## Tunneled playback 与 SIDEBAND
 
@@ -498,14 +480,14 @@ Android 通用内核不负责选择 `CLIENT` 或 `DEVICE`；这个决定由 Surf
 
 ## HWC2.x 到 Composer3：接口变化不等于硬件升级
 
-| 平台阶段 | Composer HAL 形态 | 对本文的影响 |
+| 平台阶段 | Composer HAL 形态 | 分析影响 |
 | --- | --- | --- |
 | Android 8–12 | HIDL `android.hardware.graphics.composer@2.1` 到 `2.4` | SurfaceFlinger 与 HWC 继续按 validate / present 模型协商 |
 | Android 11+ | Codec2 支持 tunneled playback 的标准配置路径 | C2 组件可返回 tunnel handle，设备仍需完整支持 |
 | Android 13–17 | AIDL `android.hardware.graphics.composer3` 可供厂商实现，HIDL 版本被弃用 | 命令传输与接口演进，`CLIENT` / `DEVICE` / `SIDEBAND` 的职责仍需按源码判断 |
-| Android 17 | 本文锚定 `android-17.0.0_r1` | `SKIP_VALIDATE` 注解为默认启用；框架仍受 `canSkipValidate` 和 `presentOrValidate()` 结果约束 |
+| Android 17 | 锚定 `android-17.0.0_r1` | `SKIP_VALIDATE` 注解为默认启用；框架仍受 `canSkipValidate` 和 `presentOrValidate()` 结果约束 |
 
-AIDL Composer3 不会自动增加 plane 数量，也不会让旧硬件支持新的缩放、HDR 或 protected 能力。评审机型问题时，需要把 Android API 版本、Composer HAL 接口版本和 DPU 硬件代际分别记录。
+AIDL Composer3 不会自动增加 plane 数量，也不会让旧硬件支持新的缩放、HDR 或 protected 能力。分析机型问题时，需要把 Android API 版本、Composer HAL 接口版本和 DPU 硬件代际分别记录。
 
 ## 常见误判
 

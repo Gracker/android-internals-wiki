@@ -143,24 +143,6 @@ task9_review_notes: "2026-07-07 Task9 deep-review：复核 TaskOrganizer Android
 finalized_date: "2026-07-07"
 finalized_by: "openclaw-task9-auto-promote"
 ---
-<!-- outline-start -->
-
-**锚点（必须覆盖）：**
-
-- 多窗口在 SurfaceFlinger 侧的 Layer 组织形式
-- PiP 模式的渲染流程与性能考量
-- Freeform 窗口 Resize 的竞态条件
-- BLAST Sync 如何缓解 Resize 同步问题
-- 在 Perfetto 中识别多窗口渲染问题
-
-**扩展（可选深入）：**
-
-- Android 12+ TaskFragment/RootTask 的层级变化
-- 折叠屏场景下的多窗口渲染
-- Configuration Change 对渲染的影响
-
-<!-- outline-end -->
-
 # 18.18 Android 17 PiP 与自由窗口渲染
 
 ## 多窗口问题要先分清三个对象
@@ -400,7 +382,7 @@ Android 17 的公共 kernel 锚点只解释通用调度与 fence：[`kernel/sche
 
 ## Android 8 到 Android 17 的分析边界
 
-| 平台 | 变化 | Review 时怎么用 |
+| 平台 | 变化 | 分析方式 |
 | --- | --- | --- |
 | Android 8 / API 26 | 手机 PiP 进入公开平台能力 | 进入/退出小窗要同时看 Task 几何和内容供帧 |
 | Android 11 / API 30 | BLASTBufferQueue 进入现代 App Window 提交路径 | resize 要对齐 App buffer transaction 与 layer geometry |
@@ -482,7 +464,7 @@ Android 17 的 per-display desktop windowing 还意味着内屏和外接屏可�
 - Camera/SurfaceView/游戏引擎要按新 bounds 计算 aspect ratio、crop、rotation；独立 Surface 不会自动继承 View 布局的内容语义。
 - 测试连续拖拽、快速最大化/还原、跨 Display 移动、IME、caption、旋转、折叠姿态和进程重建。
 
-## Review 清单
+## 复核清单
 
 - [ ] 已确定目标 displayId，而不是默认所有窗口都在内屏
 - [ ] 已区分普通 View 双栏、TaskFragment 和独立顶层 Window
