@@ -27,16 +27,16 @@ sources:
 
 # 22.31 Compose Modifier.Node 架构与性能迁移
 
-`Modifier.Node` 是 Compose UI 的自定义 Modifier 基础设施。它把短生命周期的配置对象与可跨重组复用的运行节点分开，适合实现绘制、测量、语义、焦点和输入等底层行为。本节说明它解决了什么问题、节点如何复用、何时无需使用它，以及迁移时容易写错的生命周期和失效逻辑。
+`Modifier.Node` 是 Compose UI 的自定义 Modifier 基础设施。它把短生命周期的配置对象与可跨重组复用的运行节点分开，适合实现绘制、测量、语义、焦点和输入等底层行为。以下说明它解决的问题、节点复用机制、无需使用它的场景，以及迁移时容易写错的生命周期和失效逻辑。
 
-本节的验证基线为：
+验证基线如下：
 
 - Android 平台：Android 17、API 37、`android-17.0.0_r1`
 - 内核：`android17-6.18-2026-06_r6`
 - Compose：Compose BOM `2026.06.01`，Compose UI 与 Foundation `1.11.4`
 - Compose UI 源码：AndroidX 提交 `854220f44ea8ea80fee824a6c5a045f39bede289`
 
-`Modifier.Node` 随 Compose UI 库发布，不由设备 API 级别或 Linux 内核版本提供。Android 17 与内核锚点用于限定本知识库的系统环境；本节涉及的节点复用、链更新和自动失效语义，应以应用实际依赖的 Compose UI 版本为准。
+`Modifier.Node` 随 Compose UI 库发布，不由设备 API 级别或 Linux 内核版本提供。Android 17 与内核锚点用于限定系统环境；节点复用、链更新和自动失效语义应以应用实际依赖的 Compose UI 版本为准。
 
 `Modifier.Node` API 在 Compose UI 1.3.0 以实验形式出现。当前项目采用 1.11.4 稳定版，因此正文不再用“从某个 Android 版本开始支持”描述它，也不把早期实验版本的内部实现当成当前契约。
 
@@ -558,7 +558,7 @@ Linux 内核锚点 `android17-6.18-2026-06_r6` 不参与 Node 链差分。只有
 
 ## 14. 源码导航与核查清单
 
-本节结论以 Compose UI 1.11.4 发布提交为准，关键文件如下：
+相关结论以 Compose UI 1.11.4 发布提交为准，关键文件如下：
 
 - [`ModifierNodeElement.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/ModifierNodeElement.kt)：`create()`、`update()`、`equals()` 与 `hashCode()` 要求
 - [`Modifier.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/Modifier.kt)：Node 生命周期、`coroutineScope`、`shouldAutoInvalidate`

@@ -30,9 +30,9 @@ sources:
 
 ## 版本锚点与结论范围
 
-本章使用三条互相独立的版本线：
+版本锚点分为三条互相独立的版本线：
 
-| 层次 | 固定锚点 | 本章用它回答什么 |
+| 层次 | 固定锚点 | 适用范围 |
 | --- | --- | --- |
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | `Surface`、BufferQueue、SurfaceFlinger、Perfetto 与系统显示边界 |
 | Android kernel | `android17-6.18-2026-06_r6` | dma-buf、dma-fence、sync_file 等 buffer 与同步语义 |
@@ -40,7 +40,7 @@ sources:
 
 Impeller 位于 Flutter Engine，不在 AOSP `android-17.0.0_r1` 源码树。Android 17 提供 Vulkan、OpenGL ES、窗口 buffer、显示合成和 tracing 能力；Flutter Engine 决定使用哪种渲染器、怎样创建图形管线，以及何时保存缓存。工程记录必须同时写 Android build 和 Flutter engine revision，只写“Android 17 上使用 Impeller”无法确定实现细节。
 
-本章的源码结论固定到 Flutter 3.44.7。Flutter 后续版本可能修改设备规避表、后端回退条件、图形管线创建时机和轨迹事件名称，升级时需要重新核对对应 tag。
+源码结论固定到 Flutter 3.44.7。Flutter 后续版本可能修改设备规避表、后端回退条件、图形管线创建时机和轨迹事件名称，升级时需要重新核对对应 tag。
 
 ## 1. 先区分着色器、图形管线与一帧显示
 
