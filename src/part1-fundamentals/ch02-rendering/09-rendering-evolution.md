@@ -430,7 +430,7 @@ Choreographer / UI Thread
   → HardwareRenderer / RenderProxy
   → RenderThread / DrawFrameTask / CanvasContext
   → SkiaOpenGL or SkiaVulkan pipeline
-  → 应用窗口 BLAST 缓冲事务
+  → App Window BLAST buffer transaction
   → SurfaceFlinger FrontEnd RequestedLayerState / LayerSnapshot
   → CompositionEngine / HWComposer / Composer3
   → 显示提交

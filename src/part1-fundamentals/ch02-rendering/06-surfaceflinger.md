@@ -171,7 +171,7 @@ Android 17 的 `SurfaceView` 还可能维护容器 Layer、BLAST buffer Layer �
 FrontEnd README 对绘制顺序给出了明确规则：
 
 - Layer 形成类似 scene graph 的层级；
-- 相对 Z 序图层按相对父节点参与排序；
+- relative-z Layer 按 relative parent 参与排序；
 - 负 z 子节点位于 parent 下方；
 - 非负 z 子节点位于 parent 上方；
 - 相同 z 值还需要稳定的次序，客户端不应依赖创建先后来控制关键遮挡关系。
@@ -369,7 +369,7 @@ Android 17 AIDL `Composition.aidl` 中没有通用 `CLIENT_BYPASS` 枚举。厂�
 
 验证策略变化要看该帧的 composition type、Layer 属性、RenderEngine slice、HWC/vendor trace 和显示结果。只看功耗或某条 SF 切片变短，证据不足。
 
-## HWC 协商：验证、验证并提交与显示提交
+## HWC 协商：validate、presentOrValidate 与 present
 
 ### Android 17 调用关系
 
@@ -394,7 +394,7 @@ getDeviceCompositionChanges(display)
     validate()
 
   读取变化后的合成类型 / 显示请求 / 图层请求
-  读取客户端目标属性 / 请求的图层 LUT
+  读取客户端目标属性 / requested layer LUTs
   acceptChanges()
 
 如最终存在 CLIENT layer:
@@ -443,16 +443,16 @@ CompositionEngine
                          + client-target fence   │
                                                  ▼
 Composer HAL / HWC
-  验证 / 显示提交
+  validate / present
   ├─ per-layer release fences → buffer 可在满足条件后复用
-  └─ 各显示设备的显示栅栏 → 本次显示提交完成边界
+  └─ per-display present fence → 本次显示提交完成边界
 ```
 
 四种边界分别回答不同问题：
 
-1. 生产者完成/获取栅栏：新缓冲何时可读；
+1. Producer completion/acquire fence：新 buffer 何时可读；
 2. client-target acquire fence：HWC 何时可读取 RenderEngine 输出；
-3. 图层释放栅栏：消费者何时不再使用对应图层缓冲；
+3. Layer release fence：Consumer 何时不再使用对应 Layer buffer；
 4. Display present fence：一次 Display present 何时到达显示栈完成边界。
 
 present fence 属于 Display，不属于某个 App Window。它也不能覆盖面板扫描、像素响应和用户感知时间；触摸到光子的测量还需要 driver trace 或外部仪器。
@@ -505,7 +505,7 @@ Android 17 userdebug/eng 跟踪数据中可关注：
 标准窗口可继续查看：
 
 - App 的 `dequeueBuffer`、`queueBuffer`；
-- BLAST 获取/释放回调；
+- BLAST acquire/release callback；
 - `BufferTX - <layerName>` pending 数量；
 - 图层缓冲 ID、帧号、期望呈现时间；
 - 获取/释放/显示栅栏；
@@ -521,7 +521,7 @@ Android 17 userdebug/eng 跟踪数据中可关注：
 - 每个图层的合成类型；
 - GPU 合成或客户端合成切片；
 - HWC validate/present、DisplayHAL 与厂商 DPU trace；
-- 各显示设备的显示栅栏、FrameTimeline 呈现/卡顿类型。
+- per-display present fence、FrameTimeline present/jank type。
 
 `dumpsys SurfaceFlinger` 适合查看图层树、Display、buffer 和 composition type 快照；它不能还原几百毫秒前某一帧的时序。Perfetto、dump 和 vendor log 应在相同设备状态下采集。
 

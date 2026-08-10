@@ -283,7 +283,7 @@ RenderNode::prepareTreeImpl()
   → prepare DisplayList and children
   → pushLayerUpdate()
       如果不再是图层、不可渲染、尺寸无效或过大
-          销毁现有图层表面
+          destroy existing layer surface
       else
           CanvasContext::createOrUpdateLayer(...)
           LayerUpdateQueue::enqueueLayerWithDamage(node, dirtyRect)
@@ -291,7 +291,7 @@ RenderNode::prepareTreeImpl()
 CanvasContext::draw()
   → SkiaPipeline::renderLayers(layerUpdateQueue, ...)
       → renderLayerImpl(node, damage)
-          清理或更新图层表面
+          clear/update the layer surface
           replay RenderNode content into dirty region
   → 使用图层结果渲染应用窗口帧
 ```
