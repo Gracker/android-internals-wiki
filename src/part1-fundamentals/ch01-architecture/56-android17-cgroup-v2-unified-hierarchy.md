@@ -348,7 +348,7 @@ SetProcessProfiles(uid, pid, {"Frozen"})
 
 向 `cgroup.freeze` 写 `1` 会发起该 cgroup 及其后代的冻结。冻结完成可能滞后于写入；内核通过 `cgroup.events` 的 `frozen` 字段报告完成状态。因此，“一次写入就原子完成冻结”不准确。
 
-### 8.2 Binder Freezer 处理 Binder Freezer
+### 8.2 Android 为什么还需要 Binder Freezer
 
 暂停调度不能解决 Binder 中已有事务、同步调用和异步队列的语义。`CachedAppOptimizer.freezeProcess()` 分两次检查 Binder 状态：
 
