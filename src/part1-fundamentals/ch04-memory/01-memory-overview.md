@@ -92,24 +92,6 @@ last_deepseek_cn_review_at: 2026-06-12
 
 # Android 内存模型全景
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Android 内存模型全景：物理内存 → 内核管理 → 用户空间（Native + Java Heap + Graphics）
-- 🔹 关键内存指标：VSS、RSS、PSS、USS 的定义与适用场景
-- 🔹 进程内存组成：Java Heap、Native Heap、Code（.dex/.so）、Stack、Graphics（GPU/EGL）
-- 🔹 procfs 接口：/proc/meminfo、/proc/<pid>/status、/proc/<pid>/smaps
-- 🔹 dumpsys meminfo 的解读方法
-
-### 扩展（可选深入）
-
-- 🔸 cgroup v1/v2 对 Android 内存控制的作用
-- 🔸 ZRAM / Swap 在 Android 上的使用与配置
-
-<!-- outline-end -->
-
 ## 先建立一张可用于排障的地图
 
 Android 应用遇到的“内存问题”至少有四类：
@@ -121,9 +103,9 @@ Android 应用遇到的“内存问题”至少有四类：
 
 这几类问题的触发条件、证据和处理方向各不相同。只看一个 PSS 数字，很难判断是哪一类。排查时应沿着“系统是否有压力、进程用了什么、哪一类对象或映射在增长、进程怎样退出”逐层缩小范围。
 
-本文的源码锚点是 AOSP `android-17.0.0_r1`（Android 17 / API 37），内核语义锚点是 `android17-6.18-2026-06_r6`。厂商可调整 ZRAM、cgroup、图形驱动和进程限制，因此设备上的节点与数值仍要以该设备为准。
+AOSP 源码以 `android-17.0.0_r1`（Android 17 / API 37）为锚点，内核语义以 `android17-6.18-2026-06_r6` 为锚点。厂商可调整 ZRAM、cgroup、图形驱动和进程限制，因此节点与数值仍以目标设备为准。
 
-下面这张图给出了排查时需要贯穿的层次。
+排查过程涉及以下层次：
 
 ```mermaid
 flowchart TB
@@ -172,11 +154,9 @@ flowchart TB
 | 共享内存 | `memfd`、历史 ashmem、Binder 共享区域等 | 同一物理页可以出现在多个进程 |
 | 图形与设备内存 | gralloc、DMA-BUF、EGL/GL/Vulkan、驱动对象 | 进程映射、memtrack 与设备侧占用可能采用不同口径 |
 
-这里有两个常见误区需要提前排除。
+`ActivityManager.getMemoryClass()` 返回的是平台根据 `dalvik.vm.heapgrowthlimit`（没有该属性时回退到 `dalvik.vm.heapsize`）给出的托管堆近似容量，单位为 MiB。它不是进程总内存上限，也不覆盖 Native、代码映射、线程栈和图形内存。`largeHeap` 对应的容量也由设备配置决定，不能写成固定值。
 
-第一，`ActivityManager.getMemoryClass()` 返回的是平台根据 `dalvik.vm.heapgrowthlimit`（没有该属性时回退到 `dalvik.vm.heapsize`）给出的托管堆近似容量，单位为 MiB。它不是进程总内存上限，也不覆盖 Native、代码映射、线程栈和图形内存。`largeHeap` 对应的容量也由设备配置决定，不能写成固定值。
-
-第二，线程栈不能统一记成“每线程 1 MiB 已用内存”。AOSP Android 17 的 ART `Thread::FixStackSize()` 会根据请求值、运行时默认值、保护区和运行环境修正栈映射；主线程还继承进程启动时创建的栈。栈映射的 VSS 与已触碰页形成的 RSS 应分别观察。
+线程栈也不能统一记成“每线程 1 MiB 已用内存”。AOSP Android 17 的 ART `Thread::FixStackSize()` 会根据请求值、运行时默认值、保护区和运行环境修正栈映射；主线程还继承进程启动时创建的栈。栈映射的 VSS 与已触碰页形成的 RSS 应分别观察。
 
 ## VSS、RSS、PSS、USS 各回答什么问题
 
@@ -262,7 +242,7 @@ Android 15 起，AOSP 支持使用 16 KiB 页大小的设备。Android 17 排查
 adb shell getconf PAGE_SIZE
 ```
 
-在 `smaps` 中还可以看到 `KernelPageSize` 和 `MMUPageSize`。兼容映射和设备实现会影响具体输出，因此分析脚本应读取字段，避免把 4096 写死。
+`smaps` 还会列出 `KernelPageSize` 和 `MMUPageSize`。兼容映射和设备实现会影响具体输出，因此分析脚本应读取字段，避免把 4096 写死。
 
 16 KiB 页会改变页表规模、缺页行为、对齐要求和小映射的内部碎片。官方文档只给出“平均内存可能略有增加”这类边界描述，没有通用的固定增幅。应用比较前后数据时，应保持 ABI、构建选项、MTE、业务负载和设备配置一致。
 

@@ -69,22 +69,20 @@ last_task9_autofix_at: "2026-06-29"
 
 # ART 虚拟机内存管理
 
-> 本章的平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。旧版本只用于解释演进。设备厂商可以调整 GC 类型、堆参数和运行时开关，因此分析具体设备时仍要以该设备的 trace、日志与属性为准。
+平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点，旧版本只用于解释演进。设备厂商可以调整 GC 类型、堆参数和运行时开关，因此具体设备仍以该设备的轨迹、日志与属性为准。
 
 ART 内存问题很少只表现为一个数字。一次掉帧可能来自 GC 暂停，也可能是应用线程等待正在运行的 GC；Java 堆仍有空闲时，分配仍可能因连续空间不足而失败；Native 分配持续增长，也会通过 ART 的登记机制触发 Java GC。
 
 读懂这些现象，需要同时回答四个问题：
 
-1. 对象分配到了哪个 space？
-2. 当前进程运行的是哪种 collector？
+1. 对象分配到了哪个空间？
+2. 当前进程运行的是哪种收集器？
 3. 这次 GC 的类型和原因分别是什么？
 4. 应用线程在 GC 期间被暂停、抢占，还是在等待分配？
 
-本章先建立 Android 17 的源码模型，再把它映射到 Perfetto 与 OOM 诊断。
+## ART 堆空间关系
 
-## 一张图理解 ART 堆
-
-ART 的 `Heap` 管理多个用途不同的 space。下面是关系图，不代表它们在每台设备上的固定虚拟地址顺序。
+ART 的 `Heap` 管理多个用途不同的内存空间。图中的关系不代表它们在每台设备上的固定虚拟地址顺序。
 
 ```mermaid
 flowchart LR
@@ -96,9 +94,9 @@ flowchart LR
     H --> G["GC 统一追踪对象可达性"]
 ```
 
-这五类 space 的差别集中在三个维度：对象从哪里来、GC 能否回收、GC 能否移动。
+这五类空间的差别集中在三个维度：对象从哪里来、GC 能否回收、GC 能否移动。
 
-| Space | 主要内容 | 可回收 | 可移动 | Android 17 关键实现 |
+| 空间 | 主要内容 | 可回收 | 可移动 | Android 17 关键实现 |
 |---|---|---:|---:|---|
 | Boot Image Space | 启动镜像中的预加载类、对象和运行时元数据 | 否 | 否 | `ImageSpace` |
 | Zygote Space | Zygote 在 fork 应用前保留下来的对象 | 应用进程中否 | 否 | `ZygoteSpace` |
@@ -110,7 +108,7 @@ flowchart LR
 
 构建系统会为 boot class path 生成 ART image。进程启动时，`ImageSpace` 将镜像映射进地址空间，进程可以直接使用其中已经布局好的类、对象和元数据。映射页可以在进程之间共享，这也是 Zygote 启动模型能降低重复内存与启动工作的基础之一。
 
-Image Space 属于 GC 的 immune space：其中的对象不由应用进程回收，也不会在应用 GC 中移动。不过，“immune”不等于 GC 完全不关心这里。Image Space 中的对象可能引用应用堆对象，ART 使用 card table、mod-union table 等结构记录这类跨 space 引用，避免每次都扫描整个镜像。
+Image Space 属于 GC 的免疫空间（immune space）：其中的对象不由应用进程回收，也不会在应用 GC 中移动。不过，GC 仍要处理这里指向应用堆对象的引用。ART 使用卡表、mod-union table 等结构记录这类跨空间引用，避免每次都扫描整个镜像。
 
 源码入口：
 
@@ -124,9 +122,9 @@ Image Space 属于 GC 的 immune space：其中的对象不由应用进程回收
 
 - 前半段成为 Zygote Space；
 - 剩余尾部成为新的 Non-moving Space；
-- 应用的普通可移动对象继续使用独立的 main moving space。
+- 应用的普通可移动对象继续使用独立的主可移动空间。
 
-因此，“把 Allocation Space 复制到 Non-moving Space 尾部”不足以描述 Android 17 的实现。这里同时涉及压缩、space 切分、class table 与 intern table 快照、mod-union table 建立。
+“把 Allocation Space 复制到 Non-moving Space 尾部”不足以描述 Android 17 的实现。该过程同时涉及压缩、空间切分、类表与 intern table 快照，以及 mod-union table 的建立。
 
 应用进程不会回收或移动 Zygote Space 中的对象。未修改的页可继续与 Zygote 共享；应用写入页会触发 Copy-on-Write，增加该进程的 Private Dirty。Zygote 对象若在 fork 后指向应用新对象，ART 仍需通过 mod-union/card 记录这些引用。
 
@@ -138,12 +136,12 @@ Image Space 属于 GC 的 immune space：其中的对象不由应用进程回收
 
 ### Main Moving Space：普通对象的主要去处
 
-Android 17 中，main moving space 的实现随 collector 改变：
+Android 17 中，主可移动空间的实现随收集器改变：
 
 - CC 使用 `RegionSpace`，每个 region 固定为 256 KiB；
 - CMC 使用连续的 `BumpPointerSpace`。
 
-这两条路径在运行时初始化时确定。`Heap` 还会同步选择对应的 allocator：CC 常用 `RegionTLAB`，CMC 使用 Bump Pointer/TLAB 路径。不能根据 Android 版本号单独推断某台设备正在使用哪条路径，厂商构建与运行时属性同样参与选择。
+这两条路径在运行时初始化时确定。`Heap` 还会同步选择对应的分配器：CC 常用 `RegionTLAB`，CMC 使用 Bump Pointer/TLAB 路径。不能根据 Android 版本号单独推断某台设备正在使用哪条路径，厂商构建与运行时属性同样参与选择。
 
 ### Large Object Space：12 KiB 只是第一个条件
 
@@ -168,7 +166,7 @@ LOS 有两种实现：
 - `FreeListSpace` 预留一段地址范围并按空闲页复用；
 - `LargeObjectMapSpace` 为对象建立独立映射，释放时解除映射。
 
-默认选择由 `USE_ART_LOW_4G_ALLOCATOR` 构建宏决定。LOS 是 discontinuous、non-moving space，回收时标记和清除对象，不参与 main moving space 的搬迁。频繁创建大 `byte[]`、`char` 数据转成的大 `String`，会增加 LOS 分配、清扫和页映射压力。
+默认选择由 `USE_ART_LOW_4G_ALLOCATOR` 构建宏决定。LOS 是不连续、不可移动的空间，回收时标记和清除对象，不参与主可移动空间的搬迁。频繁创建大 `byte[]` 或由 `char` 数据转换的大 `String`，会增加 LOS 分配、清扫和页映射压力。
 
 源码入口：
 
@@ -178,13 +176,13 @@ LOS 有两种实现：
 
 ### Non-moving Space：ART 内部的地址稳定区
 
-Android 17 在需要独立 non-moving space 时创建 `DlMallocSpace`，并把 `can_move_objects` 设为 `false`。源码注释列出的主要内容包括 `Class`、`ArtMethod`、`ArtField` 和其他被明确要求不可移动的对象。
+Android 17 在需要独立不可移动空间时创建 `DlMallocSpace`，并把 `can_move_objects` 设为 `false`。源码注释列出的主要内容包括 `Class`、`ArtMethod`、`ArtField` 和其他被明确要求不可移动的对象。
 
 Java 的 `DirectByteBuffer` 不能作为这里的通用例子。它的 Java 包装对象仍可移动，底层直接内存位于托管堆之外。现代 Bitmap 的像素存储也不能据此归入 Non-moving Space。
 
 `Heap::kDefaultNonMovingSpaceCapacity` 是 64 MiB，`-XX:NonMovingSpaceCapacity` 可以调整它。Zygote 创建阶段会切分最初的映射，所以 64 MiB 是 ART 默认配置值，不应解释成每个应用专供 DirectByteBuffer 使用的固定额度。
 
-应用代码通常不会主动选择这个 allocator。ART 在类链接、反射构造的特定路径和其他运行时内部场景中调用 `AllocNonMovableObject()`。
+应用代码通常不会主动选择这个分配器。ART 在类链接、反射构造的特定路径和其他运行时内部场景中调用 `AllocNonMovableObject()`。
 
 源码入口：
 
@@ -210,7 +208,7 @@ result = tlab_pos
 tlab_pos += aligned_object_size
 ```
 
-这段伪代码只说明地址推进方式。对象清零、类指针写入、构造发布屏障、分配统计和 instrumentation 仍由 ART 的分配入口处理。
+这段伪代码只说明地址推进方式。对象清零、类指针写入、构造发布屏障、分配统计和插桩仍由 ART 的分配入口处理。
 
 Android 17 源码中的相关常量是：
 
@@ -218,13 +216,13 @@ Android 17 源码中的相关常量是：
 - `Heap::kPartialTlabSize = 16 KiB`；
 - `RegionSpace::kRegionSize = 256 KiB`。
 
-这三个值属于不同层次。一个 region 可以承载 TLAB；默认 TLAB 大小不等于 region 大小。TLAB 用完后，`RegionSpace::AllocNewTlab()` 会持有 `region_lock_`，先尝试复用足够大的 partial TLAB，再寻找或建立合适的 region。把这里统称为“获取 heap 全局锁并 mmap 新 region”会掩盖真实分支。
+这三个值属于不同层次。一个 region 可以承载 TLAB；默认 TLAB 大小不等于 region 大小。TLAB 用完后，`RegionSpace::AllocNewTlab()` 会持有 `region_lock_`，先尝试复用足够大的 partial TLAB，再寻找或建立合适的 region。把这里统称为“获取堆全局锁并 mmap 新 region”会掩盖真实分支。
 
-CMC 的 `BumpPointerSpace` 也支持 TLAB。TLAB 因而不是 CC 专属概念，具体 allocator 要结合 collector 与 `Heap::GetCurrentAllocator()` 判断。
+CMC 的 `BumpPointerSpace` 也支持 TLAB。TLAB 因而不是 CC 专属概念，具体分配器要结合收集器与 `Heap::GetCurrentAllocator()` 判断。
 
 ### LOS 分配失败后还有一次普通 space 尝试
 
-`Heap::AllocObjectWithAllocator()` 先调用 `ShouldAllocLargeObject()`。如果 LOS 分配失败，ART 会清除本轮 LOS OOM 异常，再尝试普通 allocator。由此可见，一条最终的 OOM 日志不能只凭对象大小断定失败发生在 LOS；还要看 allocator type、剩余空间和碎片日志。
+`Heap::AllocObjectWithAllocator()` 先调用 `ShouldAllocLargeObject()`。如果 LOS 分配失败，ART 会清除本轮 LOS OOM 异常，再尝试普通分配器。一条最终的 OOM 日志不能只凭对象大小断定失败发生在 LOS；还要看分配器类型、剩余空间和碎片日志。
 
 ### 分配慢路径
 
@@ -249,15 +247,15 @@ flowchart TD
     K -->|否| L["抛出 OutOfMemoryError"]
 ```
 
-几个细节会直接影响 trace 解读：
+几个细节会直接影响轨迹解读：
 
-- 若其他线程已经在做 GC，分配线程会进入 `WaitForGcToComplete()`；这个等待本身可能形成明显卡顿。
+- 若其他线程已经在做 GC，分配线程会进入 `WaitForGcToComplete()`；等待本身可能形成明显卡顿。
 - ART 先尝试 `next_gc_type_`。这个类型由上一次 GC 后的存活量、吞吐估计和堆目标计算决定，不固定为 Young 或 Full。
 - 最终的回收会使用 `gc_plan_.back()`，收集整个堆并清除软引用。源码还用回收收益限制反复 GC，防止长期 GC thrashing。
-- 对 RosAlloc/DlMalloc 路径，满足配置和时间间隔时还可能尝试 homogeneous space compaction。
+- 对 RosAlloc/DlMalloc 路径，满足配置和时间间隔时还可能尝试同构空间规整（homogeneous space compaction）。
 - OOM 日志若显示总空闲字节大于请求大小，ART 会补充最大连续块等碎片信息。
 
-所以，“分配失败 → 后台 GC → Full GC → OOM”只是粗略图示。源码包含等待、并发竞争、allocator 变化、回收收益和碎片规整等分支。
+“分配失败 → 后台 GC → Full GC → OOM”只是粗略图示。源码还包含等待、并发竞争、分配器变化、回收收益和碎片规整等分支。
 
 ## GC 的三个名称不要混用
 
@@ -265,7 +263,7 @@ flowchart TD
 
 ### Collector：使用哪套算法
 
-Android 17 仍保留多种 collector 类型，包括 CC、CMC、CMS、Mark Sweep、Semi-space 等。常见应用进程重点关注：
+Android 17 仍保留多种收集器类型，包括 CC、CMC、CMS、Mark Sweep、Semi-space 等。常见应用进程重点关注：
 
 - `kCollectorTypeCC`：Concurrent Copying；
 - `kCollectorTypeCMC`：Concurrent Mark-Compact；
@@ -273,9 +271,9 @@ Android 17 仍保留多种 collector 类型，包括 CC、CMC、CMS、Mark Sweep
 
 ### GC type：收集多大范围
 
-`GcType` 定义了 `Sticky`、`Partial`、`Full`。在启用分代的 CC/CMC 中，`Sticky` 会选择 young collector；非 Sticky 路径选择覆盖更大范围的 collector。
+`GcType` 定义了 `Sticky`、`Partial`、`Full`。在启用分代的 CC/CMC 中，`Sticky` 会选择年轻代收集器；非 Sticky 路径选择覆盖范围更大的收集器。
 
-“Young GC”是分代 collector 的工作范围描述；“Full”是 `GcType`。日志与 trace 中还会出现 collector 自己的名称，不要只按字符串中的 `GC` 猜测范围。
+“Young GC”描述分代收集器的工作范围；“Full”是 `GcType`。日志与轨迹中还会出现收集器名称，不能只按字符串中的 `GC` 猜测范围。
 
 ### GC cause：为什么触发
 
@@ -287,10 +285,10 @@ Android 17 的常见 `GcCause` 包括：
 | `Background` | 为后续分配提前异步回收 |
 | `Explicit` | `System.gc()` / `Runtime.gc()` 等显式请求 |
 | `NativeAlloc` | ART 登记的可由 Java GC 间接释放的 Native 内存超过触发水位 |
-| `CollectorTransition` | collector/前后台策略切换 |
+| `CollectorTransition` | 收集器或前后台策略切换 |
 | `HeapTrim` | 堆 trim；它不是普通对象回收 |
 
-`GarbageCollector::Run()` 生成的 trace 名称由 cause、collector 名称和 `GC` 组成。例如 Android 17 CMC 的 collector 名称是 `concurrent mark compact`，完整名称还会带 `Alloc`、`Background` 或 `Explicit`。
+`GarbageCollector::Run()` 生成的轨迹名称由触发原因、收集器名称和 `GC` 组成。例如 Android 17 CMC 的收集器名称是 `concurrent mark compact`，完整名称还会带 `Alloc`、`Background` 或 `Explicit`。
 
 ## GC 演进：历史版本与 Android 17 当前选择
 
@@ -298,7 +296,7 @@ Android 17 的常见 `GcCause` 包括：
 
 Dalvik 主要使用非移动的 Mark-Sweep 与 `dlmalloc`。ART 5.0 之后引入 CMS 和 RosAlloc，把部分标记工作移到并发阶段，并用按 slot/run 组织的分配器减少多线程分配竞争。CMS 长期不搬移普通对象，碎片需要在后台转换或分配失败时通过额外规整处理。
 
-历史设备性能差异很大，本章不保留“暂停固定为几十毫秒”或“分配快若干倍”一类跨设备数字。判断旧设备应使用同机型、同系统、同负载的数据。
+历史设备性能差异很大，不宜引用“暂停固定为几十毫秒”或“分配快若干倍”一类跨设备数字。判断旧设备应使用同机型、同系统、同负载的数据。
 
 ### Android 8：CC 成为默认 GC plan
 
@@ -320,7 +318,7 @@ Android 10 起，默认 CC 支持分代收集。Young CC 优先处理新分配�
 
 ### CMC：用页故障协调并发压缩
 
-Android 17 的 `ShouldUseUserfaultfd()` 有两类入口。命令行显式指定 CMC 时会直接选择 CMC，这主要供测试和定制配置使用，后续仍可能进入 STW fallback。未显式指定 collector 的目标 Android 设备，需要同时满足系统属性允许 UFFD GC、`KernelSupportsUffd()` 返回成功。
+Android 17 的 `ShouldUseUserfaultfd()` 有两类入口。命令行显式指定 CMC 时会直接选择 CMC，这主要供测试和定制配置使用，后续仍可能进入 STW 回退路径。未显式指定收集器的目标 Android 设备，需要同时满足系统属性允许 UFFD GC、`KernelSupportsUffd()` 返回成功。
 
 默认设备路径中的内核探测还包括：
 
@@ -330,7 +328,7 @@ Android 17 的 `ShouldUseUserfaultfd()` 有两类入口。命令行显式指定 
 
 默认条件不满足时，read-barrier 构建会走 CC。`gUseUserfaultfd` 与 `gUseReadBarrier` 在当前实现中互为相反值，应用运行期间不会在 CC 和 CMC 之间热切换。
 
-CMC 的压缩过程会预留一段 `PROT_NONE` 的 from-space 虚拟地址，并分配按页状态表、首对象表和少量 compaction buffer。准备阶段使用 `mremap(..., MREMAP_DONTUNMAP, ...)` 等机制建立旧视图与目标视图，随后由 GC 线程或触发 fault 的 mutator 按页处理、更新引用和映射页面。
+CMC 的压缩过程会预留一段 `PROT_NONE` 的来源空间（from-space）虚拟地址，并分配按页状态表、首对象表和少量规整缓冲区。准备阶段使用 `mremap(..., MREMAP_DONTUNMAP, ...)` 等机制建立旧视图与目标视图，随后由 GC 线程或触发缺页的应用线程按页处理、更新引用和映射页面。
 
 “原地压缩且没有额外内存”会遗漏这些结构；“像 CC 一样保留完整的第二份物理堆”也不准确。CMC 需要额外虚拟地址和 GC 元数据，旧页可通过 remap 形成 from-space 视图，压缩完成后再 `madvise` 释放。分析收益应同时看 RSS/PSS、虚拟映射、GC CPU 和应用慢路径。
 
@@ -340,7 +338,7 @@ Android 16 QPR2 的官方发布说明确认 ART 引入 Generational CMC，目标
 
 `Runtime::Init()` 只有在下列条件都满足时才把 `use_generational_gc` 传入 `Heap`：
 
-- collector 支持当前分代路径：Baker read barrier 或 UFFD；
+- 收集器支持当前分代路径：Baker 读屏障或 UFFD；
 - `-Xgc` 选项允许 generational GC；
 - `ShouldUseGenerationalGC()` 返回 `true`。
 
@@ -354,7 +352,7 @@ Android 17 的 Generational CMC 在 `BumpPointerSpace` 中维护三个逻辑区�
 [ mid_gen_end, moving_space_end )     young
 ```
 
-`YoungMarkCompact` 是一层轻量包装：它把主 collector 的 `young_gen_` 设为 `true`，复用 `MarkCompact::RunPhases()`。Young collection 会处理 young 和 mid，并通过 card table 等结构找到 old-to-young 引用。
+`YoungMarkCompact` 是一层轻量包装：它把主收集器的 `young_gen_` 设为 `true`，复用 `MarkCompact::RunPhases()`。年轻代收集会处理 young 和 mid，并通过卡表等结构找到老年代指向年轻代的引用。
 
 `mark_compact.h` 明确说明，对象要经历两次 GC 才晋升到 old。一次收集结束时：
 

@@ -76,34 +76,15 @@ last_deepseek_cn_review_at: 2026-06-09
 
 # Linux 内核内存管理
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 虚拟内存与物理内存映射：页表、TLB、Page Fault
-- 🔹 Buddy 分配器与 Slab 分配器的基本原理
-- 🔹 页面回收（Page Reclaim）：LRU、kswapd、direct reclaim
-- 🔹 内存压缩（Memory Compaction）与碎片化
-- 🔹 ION / DMA-BUF 在 Android 图形内存中的角色
-
-### 扩展（可选深入）
-
-- 🔸 16K Page Size（Android 15+ 支持）对内存和性能的影响
-- 🔸 KASAN / MTE 等内存安全机制对性能的开销
-- 🔸 Huge Pages 在 Android 上的实验
-
-<!-- outline-end -->
-
 ## 这一层为什么会让应用卡住
 
 应用线程执行 `malloc()`、访问文件映射、创建线程栈或申请图形缓冲区时，最终都要经过内核。大多数请求走快速路径，耗时很短；空闲页不足、目标 zone 不满足水位、需要高阶连续页或页面已经换出时，请求会进入慢路径。
 
 慢路径可能包含缺页处理、页面回收、Swap I/O、页迁移和内存规整。它们有的在后台内核线程执行，有的直接占用发起分配的应用线程。后者进入关键帧或启动关键路径时，就会形成用户可感知的延迟。
 
-本文以 AOSP `android-17.0.0_r1` 和 Android Common Kernel `android17-6.18-2026-06_r6` 为锚点。厂商内核可以修改配置和回收策略，排查时仍需读取运行设备的配置、节点与 Trace。
+AOSP 以 `android-17.0.0_r1` 为锚点，Android Common Kernel 以 `android17-6.18-2026-06_r6` 为锚点。厂商内核可以修改配置和回收策略，排查时仍需读取运行设备的配置、节点与轨迹。
 
-下面这张图先给出物理页从分配到回收的主路径。
+物理页从分配到回收的主路径如下：
 
 ```mermaid
 flowchart LR
@@ -123,7 +104,7 @@ flowchart LR
     K --> L["返回失败或进入 OOM 处理<br/>取决于分配上下文"]
 ```
 
-图中“取决于分配上下文”很重要。GFP flags、order、可用 zone、memcg、是否允许阻塞和是否允许 I/O，都会改变慢路径。不能只凭 `MemFree` 推断一次分配会走到哪里。
+分配上下文决定慢路径：GFP flags、order、可用 zone、memcg、是否允许阻塞和是否允许 I/O 都会影响分支选择。只凭 `MemFree` 无法推断一次分配会走到哪里。
 
 ## 虚拟地址怎样变成物理访问
 
@@ -414,7 +395,7 @@ Arm MTE 可以支持用户空间 allocator 检查，也可以支撑 HW_TAGS KASA
 
 ## ART 与内核回收的 Android 17 边界
 
-ART 会通过 `madvise()` 把不再需要的页退还或标为可丢弃。Android 17 r1 的 ART 源码中可以看到 `MADV_DONTNEED`、`MADV_FREE`、`MADV_WILLNEED` 等调用，覆盖 RegionSpace、LargeObjectSpace、线程栈和映射预取等场景。
+ART 会通过 `madvise()` 把不再需要的页退还或标为可丢弃。Android 17 r1 的 ART 源码调用了 `MADV_DONTNEED`、`MADV_FREE`、`MADV_WILLNEED` 等建议，覆盖 RegionSpace、LargeObjectSpace、线程栈和映射预取等场景。
 
 同一 tag 的 `platform/art` runtime 与 GC 目录没有直接调用 `MADV_COLD`。Linux 6.18 内核支持 `MADV_COLD`，其 `mm/madvise.c` 会对范围内合适 folio 执行 `folio_deactivate()`，让它们在压力下更容易被回收。内核具备接口不代表 Android 17 ART 已采用该 GC 协作路径。
 
