@@ -80,22 +80,10 @@ updated_date: "2026-06-11"
 updated_by: openclaw-task9
 ---
 
-<!-- outline-start -->
-- 🔹 CFS / EEVDF 的基本原理：vruntime、红黑树、base_slice、eligible entity、virtual deadline
-- 🔹 调度策略分层：SCHED_DEADLINE → RT（SCHED_FIFO / SCHED_RR）→ fair（SCHED_OTHER / SCHED_BATCH）→ SCHED_IDLE
-- 🔹 nice 值与权重的换算关系
-- 🔹 CPU Affinity、cpuset 与 task profiles 对可用核心的控制
-- 🔹 调度延迟（Scheduling Latency）：runqueue wait 在 Perfetto 中的观察
-
-- 🔸 EEVDF 调度器对 CFS 的改进(Linux 6.6+)
-- 🔸 Real-time 线程在 Android 中的使用场景(Audio、SurfaceFlinger)
-- 🔸 SchedTune / UClamp 与 libprocessgroup task profiles 的 Android 控制路径
-<!-- outline-end -->
-
-> [!info] 本章源码锚点
+> [!info] 源码锚点
 > 正文按 Android 17 / API 37 / `android-17.0.0_r1` 与 kernel `android17-6.18-2026-06_r6` 复核。文中提到旧 CFS、SchedTune 或早期 Android 行为时，会明确标成历史背景，避免与当前实现混用。
 
-## 先建立一条完整的调度链
+## 调度决策链
 
 Perfetto 的 CPU 轨道只展示了收尾步骤：某个线程在某个 CPU 上运行。要解释这一步，需要把调度决策拆成五个问题：
 
@@ -122,7 +110,7 @@ Running：出现在 sched_slice
     └─ 仍可运行但被切出         → R 或 R+
 ```
 
-这条路径也是本章的诊断主线：先确认“有没有工作”，再看“为什么没有轮到它”，最终才讨论调参。
+诊断时先确认线程是否具备运行条件，再检查调度资格和 CPU 约束，并评估是否需要调参。
 
 ## 从 CFS 公平性到 EEVDF
 
@@ -145,7 +133,7 @@ Linux 6.18 的 `kernel/sched/fair.c` 仍通过 `update_curr()` 记账，并在 `
 - vruntime 为什么可以表达长期公平；
 - nice 为什么影响 CPU 份额，而不会直接承诺某次唤醒的固定延迟。
 
-到了本章的 kernel 6.18 锚点，继续把红黑树描述成“按 vruntime 排序并永远取最左节点”就会得出错误结论。`__enqueue_entity()` 仍使用增广红黑树，但比较关系由 virtual deadline 决定；每个子树还维护 `min_vruntime`，供 `__pick_eevdf()` 快速跳过没有 eligible entity 的分支。
+在 kernel 6.18 中，继续把红黑树描述成“按 vruntime 排序并永远取最左节点”会得出错误结论。`__enqueue_entity()` 仍使用增广红黑树，但比较关系由 virtual deadline 决定；每个子树还维护 `min_vruntime`，供 `__pick_eevdf()` 快速跳过没有 eligible entity 的分支。
 
 ### EEVDF 的两个选择条件
 
@@ -269,7 +257,7 @@ CPU 编号也不能用“`cpu >= 4` 就是大核”判断。SoC 的簇布局各�
 
 ### task profile 是 Android userspace 的命名控制层
 
-Android 17 的 libprocessgroup 用 task profile 把 userspace 名称映射到 cgroup 与属性动作。`system/core/libprocessgroup/profiles/task_profiles.json` 中可以看到：
+Android 17 的 libprocessgroup 用 task profile 把 userspace 名称映射到 cgroup 与属性动作。`system/core/libprocessgroup/profiles/task_profiles.json` 中定义了：
 
 - `HighEnergySaving` 加入 CPU `background` cgroup；
 - `HighPerformance` 加入 CPU `foreground` cgroup；
@@ -479,7 +467,7 @@ Runnable 只说明线程想运行但尚未运行。CPU 过载、RT 干扰、错�
 
 ## 版本边界与源码索引
 
-| 主题 | 本章当前锚点 | 历史内容的用途 |
+| 主题 | 当前锚点 | 历史内容的用途 |
 | --- | --- | --- |
 | Android 平台 | `android-17.0.0_r1` / API 37 | 说明 API 引入与旧设备差异 |
 | Linux 内核 | `android17-6.18-2026-06_r6` | 旧 CFS 用于解释 vruntime 与演进 |
@@ -487,7 +475,7 @@ Runnable 只说明线程想运行但尚未运行。CPU 过载、RT 干扰、错�
 | Android CPU 控制 | libprocessgroup task profiles、cpuset、cgroup v2 UClamp | SchedTune 用于识别旧/vendor 内核 |
 | Perfetto | Android 17 对应源码与 CPU scheduling 文档 | 旧 Systrace 术语只作兼容阅读 |
 
-本章结论可从以下源码入口复核：
+相关结论可从以下源码入口复核：
 
 - kernel `Documentation/scheduler/sched-design-CFS.rst`、`Documentation/scheduler/sched-eevdf.rst`；
 - kernel `kernel/sched/fair.c`：`update_curr()`、`entity_eligible()`、`__pick_eevdf()`、`update_deadline()`、`__setparam_fair()`；
