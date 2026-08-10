@@ -61,26 +61,7 @@ last_deepseek_cn_review_at: 2026-07-01
 
 # 6.5 SharedPreferences/DataStore 性能与 ANR 优化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 SharedPreferences 首次加载阻塞与 `awaitLoadedLocked()` 的等待点
-- 🔹 `apply()`、`QueuedWork.waitToFinish()` 与生命周期切换中的 ANR 关系
-- 🔹 SP 写入的完整过程：内存更新、后台落盘、主线程等待
-- 🔹 DataStore 的异步模型，以及它和 SP 的关键差异
-- 🔹 在 Perfetto / traces.txt 中定位 SP 相关 ANR 的方法
-- 🔹 从 SP 迁移到 DataStore 的实战策略与注意事项
-
-### 扩展（可选深入）
-
-- 🔸 MMKV 与 DataStore 的选型边界
-- 🔸 多进程 KV 存储的替代方案
-
-<!-- outline-end -->
-
-## 先记住结论：`apply()` 返回，不代表写盘与主线程再无关系
+## `apply()` 返回后的写盘与主线程关系
 
 SharedPreferences（下文简称 SP）适合少量、低频、单进程配置。它的问题不只在 XML 读写速度，还在 API 语义：
 
@@ -92,12 +73,12 @@ SharedPreferences（下文简称 SP）适合少量、低频、单进程配置。
 
 Android 17 的 `SharedPreferences` 接口文档已经明确建议：新的小型数据存储需求优先考虑 Jetpack DataStore，关系型数据和较大数据集使用 Room。
 
-本节使用两个不同的源码版本维度：
+源码基线分为两个版本维度：
 
 - 平台实现：Android 17 / API 37 / `android-17.0.0_r1`
-- Jetpack 实现：DataStore 不属于 Android 17 平台源码；文中复核到当前稳定版 1.2.1，并在涉及历史审计时注明 1.1.7
+- Jetpack 实现：DataStore 不属于 Android 17 平台源码；这里以 AndroidX DataStore 1.2.1 为准
 
-这一区分很重要。手机升级到 Android 17 不会替 App 自动升级 DataStore，最终行为由应用依赖的 AndroidX 版本决定。
+手机升级到 Android 17 不会替 App 自动升级 DataStore，最终行为由应用依赖的 AndroidX 版本决定。
 
 ## SP 对象与首次加载
 
@@ -294,7 +275,7 @@ public static void waitToFinish() {
 
 BroadcastReceiver 的 Java `onReceive()` 返回，不代表系统已经收到完成回执。队列前面的 SP 写盘过慢，仍会提高 broadcast 超时风险。
 
-组件的 ANR 窗口受组件类型、前后台状态和系统版本影响，本节不使用统一的“超过 5 秒必定 ANR”结论。可以确定的是：框架等待点把原本延后的持久化成本重新带回了组件时限。
+组件的 ANR 窗口受组件类型、前后台状态和系统版本影响，不能用统一的“超过 5 秒必定 ANR”概括。框架等待点会把原本延后的持久化成本重新带回组件时限。
 
 ## 用 traces 与 Perfetto 定位 SP
 

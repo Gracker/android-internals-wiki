@@ -32,45 +32,11 @@ gap_score: 16
 
 # 6.6 vold、FUSE 与 Scoped Storage I/O 性能边界
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 Android 外部存储路径：vold、MediaProvider 与 FUSE
-从 `/storage/emulated/0` 访问路径拆出 vold 挂载、FUSE 守护进程、MediaProvider 索引和 App 权限检查的边界。
-
-### 🔹 SDCardFS 退场后 FUSE 的性能代价
-梳理 Android 10 前后的 SDCardFS / FUSE 迁移，以及随机读写、目录遍历、权限检查带来的额外开销。
-
-### 🔹 FUSE passthrough 与非 FUSE 访问模式
-说明 passthrough 适用条件、MediaProvider 非 FUSE 通道，以及为什么媒体类批量访问不应直接压在 emulated storage 路径上。
-
-### 🔹 Scoped Storage 下随机 I/O、批量扫描与媒体访问
-把相册、下载目录、日志导出、缓存迁移这几类 App 场景拆成不同 I/O 模式，分别给出性能风险点。
-
-### 🔹 Perfetto / dumpsys / strace 观察点
-列出 `fuse`、`vold`、`media_provider`、block I/O、主线程 D 状态和 Binder 调用的排查入口。
-
-### 🔹 App 侧优化策略：MediaStore、SAF、缓存与分片写
-从可执行动作解释何时走 MediaStore、何时复制到 App 私有目录、何时做批量事务和后台迁移。
-
-### 🔹 Android 10-17 的版本边界
-梳理 scoped storage、SDCardFS deprecation、FUSE passthrough 和 MediaProvider 行为在不同 Android 版本中的差异。
-
-## 扩展
-
-### 🔸 FBE 与 16KB Page Size 对外部存储 I/O 的影响
-补充加密层、页大小和块设备读写粒度对 FUSE 路径的放大效应。
-
-### 🔸 厂商文件管理器 / 相册批量导入案例
-收集图库首扫、文件管理器复制、聊天 App 媒体迁移中的 trace 证据。
-
-<!-- outline-end -->
-
-## 本节解决什么问题
+## 排障范围
 
 `/storage/emulated/0/DCIM/Camera/a.jpg` 看起来是一条普通路径，背后却包含挂载会话、调用方身份、媒体归属、权限、元数据脱敏、兼容转码和底层文件系统访问。把所有耗时都归到“FUSE 慢”或“UFS 慢”，很难得到可复现的结论。
 
-本节不重复 §6.4 的完整版本史，重点回答三个排障问题：
+§6.4 已覆盖完整版本史；这里重点回答三个排障问题：
 
 1. `vold`、MediaProvider 和 FUSE 各自在什么时候参与。
 2. 直接路径、MediaStore URI、SAF URI 和 App 私有路径的成本为何不同。
@@ -192,7 +158,7 @@ bool direct_io = open_info_direct_io && !passthrough;
 - 内核编译开关存在，不等于产品运行时已经启用。
 - 当前 MediaProvider 源码的路径范围不应扩写到整个共享媒体目录。
 - 路径归属和 Zygote 的 App data isolation 仍参与访问控制。
-- 详细机制见 §6.7，本节只把它作为路径判断条件。
+- 详细机制见 §6.7；此处只把它作为路径判断条件。
 
 ## Scoped Storage 下的 App 场景
 
@@ -298,7 +264,7 @@ const size_t MAX_READ_SIZE = FUSE_MAX_MAX_PAGES * getpagesize();
 
 ## Android 10—17 边界速查
 
-| 版本 | 与本节直接相关的变化 | 排障边界 |
+| 版本 | 相关变化 | 排障边界 |
 | --- | --- | --- |
 | Android 10 | 引入 Scoped Storage；MediaProvider 路径执行新访问规则 | 可使用 legacy 过渡；直接路径能力与 Android 11 不同 |
 | Android 11 | MediaProvider 成为共享存储 FUSE handler；新发布 5.4+ 内核设备不能使用 SDCardFS | 升级设备可能保留 SDCardFS 下层，必须看实际挂载 |
