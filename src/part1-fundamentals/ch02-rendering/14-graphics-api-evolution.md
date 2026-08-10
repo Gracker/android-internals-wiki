@@ -177,9 +177,9 @@ Vulkan 从 Android 7.0 / API 24 开始提供。Android 官方的版本表给出�
 Vulkan 把大量隐式工作变成应用可见对象：
 
 - command buffer 明确记录命令，queue submission 明确提交批次；
-- 图像布局、管线阶段和访问掩码参与资源冒险管理；
+- image layout、pipeline stage 和访问掩码参与资源 hazard 管理；
 - memory allocation、binding、预算和回收策略由应用或 allocator 管理；
-- 管线、描述符和渲染状态的组合更早确定；
+- pipeline、descriptor 和 render state 的组合更早确定；
 - semaphore 处理 GPU 工作依赖，fence 处理主机等待，barrier 处理命令间的内存与执行依赖。
 
 这不等于 `vkCmdDraw()`“完全没有校验”或 Vulkan“自动更快”。Release 构建通常不启用 validation layer，但 loader、ICD 和应用自身封装仍有工作；录制成本还会受 descriptor 更新、pipeline 查找、内存分配和锁竞争影响。Vulkan 的优势在于应用能看到并控制更多成本，把昂贵工作移出帧关键路径。若资源生命周期、同步或缓存设计不稳，结果可能比成熟的 GLES 驱动更差。
@@ -236,14 +236,14 @@ GLES 允许应用逐步修改 context 状态，驱动在绘制前后决定怎样
 | 错误暴露 | 部分错误可由 `glGetError()` 观察 | 错误码、validation layer、GPU-assisted validation |
 | 多线程 | 多 context 可用，状态和共享同步较难 | command pool / command buffer 可按线程组织，queue 外部同步仍由应用负责 |
 
-Vulkan 适合把场景遍历、可见性、资源准备和命令录制拆到多个工作线程。它不会自动完成并行化。若所有工作线程争用同一个分配器、描述符池或管线缓存，线程数越多，锁和缓存抖动越明显。
+Vulkan 适合把场景遍历、visibility、资源准备和命令录制拆到多个工作线程。它不会自动完成并行化。若所有工作线程争用同一个分配器、描述符池或管线缓存，线程数越多，锁和缓存抖动越明显。
 
 ### 4.2 Command buffer 复用
 
 静态场景可以复用部分 secondary command buffer，减少 CPU 录制。但以下变化通常会迫使应用更新命令或其引用的数据：
 
 - 交换链重建或帧缓冲/附件变化；
-- 管线、描述符绑定或绘制数量变化；
+- pipeline、descriptor binding 或 draw 数量变化；
 - 资源生命周期和 image layout 方案变化；
 - dynamic rendering 配置或渲染目标变化。
 

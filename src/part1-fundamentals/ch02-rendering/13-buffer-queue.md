@@ -257,7 +257,7 @@ Android 17 的 `BLASTBufferQueue::initialize()` 给 Producer 设置安全默认�
 SF 的释放信息还会携带当前刷新率对应的 acquired 数。对于 EGL Producer，BLAST 可能暂存一部分已收到释放信息的缓冲，以适应当前刷新率低于设备最大刷新率的情况。可用深度因此取决于：
 
 - 最大出队数与最大获取数；
-- 异步/非阻塞配置；
+- async / non-blocking 配置；
 - DEQUEUED、QUEUED、ACQUIRED 的实时数量；
 - BLAST 的 pending release；
 - buffer 是否需要重分配；
@@ -335,7 +335,7 @@ Android 17 的 `ViewRootImpl.updateBlastSurfaceIfNeeded()` 在应用进程创建
 ```text
 RenderThread / Producer
   Surface::dequeueBuffer()
-  绘制或提交 GPU 工作
+  draw or submit GPU work
   Surface::queueBuffer(producerCompletionFence)
 
 BLASTBufferQueue::onFrameAvailable()
@@ -349,14 +349,14 @@ BLASTBufferQueue::onFrameAvailable()
         producerId,
         releaseBufferCallback,
         dequeueTime)
-    设置数据空间 / HDR 元数据 / 受损区域 / 裁剪 / 变换
+    set dataspace / HDR metadata / damage / crop / transform
     merge pending transactions up to frameNumber
     Transaction::apply()
 
 SurfaceFlinger
   接收待处理的缓冲事务
   评估就绪状态并为显示帧选择缓冲
-  合成 / 显示
+  compose / present
   向 BLAST 返回各缓冲的释放信息
 ```
 
@@ -413,7 +413,7 @@ Android 13 起，`AutoSingleLayer` 允许 SurfaceFlinger 在严格条件下先 l
 对标准 App Window，至少分开：
 
 1. App `queueBuffer()` 返回；
-2. 应用内 BLAST 获取缓冲并应用缓冲事务；
+2. App 内 BLAST acquire 并 apply buffer transaction；
 3. SF 收到待处理缓冲事务，随后锁存、选择并显示。
 
 Android 17 中常见的观测对象包括：
@@ -482,7 +482,7 @@ Producer 完成早而 `BufferTX` 晚，优先查应用内 BLAST 与事务；`Buf
 
 ### 把 `queueBuffer()` 当成已经上屏
 
-它只完成生产者提交。BLAST 获取、SF 事务、锁存、合成和显示仍在后面。
+它只完成生产者提交。BLAST Producer 事务、锁存、合成和显示仍在后面。
 
 ### 把三缓冲当成常量
 
