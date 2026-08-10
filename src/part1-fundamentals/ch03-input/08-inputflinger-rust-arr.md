@@ -190,7 +190,7 @@ Rust BaseFilter::notify_key()
   → 后续 InputListener stage
 ```
 
-这段路径解释了 `BaseFilter` 的职责：它不再修改事件，只负责经回调返回 C++。
+这段路径解释了 `BaseFilter` 的职责：它不再修改事件，只负责经 callback 返回 C++。
 
 ## Bounce、Slow、Sticky 的执行顺序
 

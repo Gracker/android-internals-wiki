@@ -208,7 +208,7 @@ core 准备完成后，把 opening/closing `RemoteAnimationTarget` 及其 leash 
 - 用当前 `Choreographer` VSync ID 标记 transaction；
 - 提交给 SurfaceFlinger 合成。
 
-这一阶段无需让目标 Activity 每帧重新 measure/layout。目标页面自身若仍在绘制，其缓冲区更新与 Shell 的动画控制层变换属于两条不同工作流。
+这一阶段无需让目标 Activity 每帧重新 measure/layout。目标页面自身若仍在绘制，其 buffer 更新与 Shell 的 leash transform 属于两条不同工作流。
 
 ### 6.2 提交后的顺序
 
