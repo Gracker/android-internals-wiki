@@ -87,7 +87,7 @@ last_deepseek_cn_review_at: 2026-06-24
 
 因此，“Java 堆没有到上限”无法证明进程没有内存问题。一次完整排查至少要回答四个问题：
 
-1. 哪个内存口径在增长：Java、原生、Graphics、共享页、交换空间，还是 FD？
+1. 哪个内存口径在增长：Java、Native、Graphics、共享页、swap，还是 FD？
 2. 增长发生在哪个业务场景，退出场景后能否回落？
 3. 增长来自仍在使用的对象、缓存、延迟释放，还是不可达却仍被引用的对象？
 4. 问题表现为 OOM、系统低内存终止、GC 干扰帧执行，还是后台驻留能力下降？
@@ -141,7 +141,7 @@ last_deepseek_cn_review_at: 2026-06-24
 ART 的收集器和代际策略会随版本、设备配置与运行状态变化，不能假设所有进程都固定使用某一种收集器，也不能把某个停顿时长当成通用门槛。诊断时应在同一设备上同时观察：
 
 - 主线程与 RenderThread 的 FrameTimeline；
-- GC 切片、线程调度和安全点；
+- GC slice、线程调度和 safepoint；
 - 分配速率、存活对象数量与回收后基线；
 - 60 Hz、90 Hz、120 Hz 等目标刷新率下的业务负载。
 
@@ -176,7 +176,7 @@ Bitmap 像素数据所在位置经历过三段变化：
 | Android 3.0～7.1 / API 11～25 | Dalvik/ART 堆 | 像素数据计入受管理堆 |
 | Android 8.0 / API 26 及以后 | 原生内存 | 平台通过 `NativeAllocationRegistry` 把原生分配压力反馈给运行时 |
 
-API 26+ 的像素数据离开 Java 堆，不代表它脱离了进程内存限制。Bitmap 仍会增加物理内存压力，原生分配注册也会影响 ART 的回收决策；分配失败仍可能表现为 `OutOfMemoryError`。排查时要同时查看 Java、原生、Graphics/memtrack 和 dmabuf 口径。
+API 26+ 的像素数据离开 Java 堆，不代表它脱离了进程内存限制。Bitmap 仍会增加物理内存压力，原生分配注册也会影响 ART 的回收决策；分配失败仍可能表现为 `OutOfMemoryError`。排查时要同时查看 Java、Native、Graphics/memtrack 和 dmabuf 口径。
 
 ### `inSampleSize`：在解码阶段减小像素数
 
@@ -502,9 +502,9 @@ override fun onTrimMemory(level: Int) {
 
 进程级缓存可以在 `Application` 实现 `ComponentCallbacks2`，短生命周期组件也可以注册独立回调。后者离开作用域时必须调用 `unregisterComponentCallbacks()`，避免注册表继续持有它。
 
-## 16 KiB 页大小
+## 16 KB Page Size
 
-Android 15 起 AOSP 支持 16 KiB 页大小。自 2025 年 11 月 1 日起，Google Play 要求面向 Android 15 / API 35+ 设备的新应用和更新在 64 位设备上支持 16 KiB 页大小。
+Android 15 起 AOSP 支持 16 KB page size。自 2025 年 11 月 1 日起，Google Play 要求面向 Android 15 / API 35+ 设备的新应用和更新在 64 位设备上支持 16 KB page size。
 
 纯 Java/Kotlin 应用只有在所有依赖也不包含原生代码时，通常无需源码修改，仍应在 16 KiB 环境测试。包含 `.so` 的应用需要同时检查：
 
@@ -566,7 +566,7 @@ Compose 改变了 UI 对象的组织方式，但生命周期和所有权原则�
 - 页面反复进入退出、旋转和多窗口；
 - 低内存回调、后台冻结与恢复。
 
-每个场景记录稳定值、峰值、退出后的回落值以及多轮后的基线漂移。至少区分 Java、原生、Graphics、总 PSS/RSS、交换空间、FD 和关键对象数量，并观察 P50、P95、P99，而非只保留平均值。
+每个场景记录稳定值、峰值、退出后的回落值以及多轮后的基线漂移。至少区分 Java、Native、Graphics、总 PSS/RSS、swap、FD 和关键对象数量，并观察 p50、p95、p99，而非只保留平均值。
 
 ### 正确理解 heap class
 
@@ -592,7 +592,7 @@ val javaHeadroom = runtime.maxMemory() - javaUsed
 
 ### `ApplicationExitInfo`
 
-Android 11 / API 30 起，`ActivityManager.getHistoricalProcessExitReasons()` 可以回查进程退出记录。`ApplicationExitInfo` 提供原因、重要性、描述、轨迹，以及最终采样到的 PSS/RSS。
+Android 11 / API 30 起，`ActivityManager.getHistoricalProcessExitReasons()` 可以回查进程退出记录。`ApplicationExitInfo` 提供 reason、importance、description、trace，以及最终采样到的 PSS/RSS。
 
 这些 PSS/RSS 值可能为 0，也不保证等于死亡瞬间峰值。`REASON_LOW_MEMORY` 能说明系统按低内存原因记录了退出，仍需结合设备内存档位、业务场景和版本分布分析。
 
@@ -602,7 +602,7 @@ Android vitals 的用户可感知低内存终止率适合观察整体影响。�
 
 Android 15 / API 35 引入 `ProfilingManager`，应用可以请求由系统管理的性能分析采集。Android 17 / API 37 的 `ProfilingTrigger` 增加：
 
-- `TRIGGER_TYPE_OOM`：应用发生未捕获的 `OutOfMemoryError` 时触发 Java 堆转储；自定义 `UncaughtExceptionHandler` 必须继续调用默认处理器；
+- `TRIGGER_TYPE_OOM`：应用发生未捕获的 `OutOfMemoryError` 时触发 Java Heap Dump；自定义 `UncaughtExceptionHandler` 必须继续调用默认 handler；
 - `TRIGGER_TYPE_ANOMALY`：由系统检测异常并触发相应产物。
 
 该能力受系统策略、速率限制和用户构建条件约束，不能保证每次异常都有产物。接入时要记录请求结果、回调状态、文件上传策略和隐私边界。
@@ -612,8 +612,8 @@ Android 15 / API 35 引入 `ProfilingManager`，应用可以请求由系统管�
 | 现象 | 首选证据 |
 | --- | --- |
 | 页面退出后 Java 对象不回落 | LeakCanary、堆转储引用链 |
-| 滚动时分配率高并伴随卡顿 | 分配记录、Perfetto FrameTimeline 与 GC |
-| 原生 PSS 持续上涨 | heapprofd、malloc debug、HWASan/ASan |
+| 滚动时分配率高并伴随卡顿 | Allocation recording、Perfetto FrameTimeline 与 GC |
+| Native PSS 持续上涨 | heapprofd、malloc debug、HWASan/ASan |
 | Graphics/dmabuf 上涨 | `dumpsys meminfo`、memtrack、dmabuf/Surface 相关轨迹 |
 | 后台进程频繁消失 | `ApplicationExitInfo`、Android vitals、lmkd/系统内存压力 |
 | FD 持续增长 | `/proc/self/fd`、StrictMode、资源所有权审查 |
@@ -646,10 +646,10 @@ Android 14+ 只保留 `UI_HIDDEN` 和 `BACKGROUND` 两个公开投递级别，�
 
 ## 复核清单
 
-- [ ] 是否分别观察 Java、原生、Graphics/dmabuf、PSS/RSS、交换空间和 FD？
+- [ ] 是否分别观察 Java、Native、Graphics/dmabuf、PSS/RSS、swap 和 FD？
 - [ ] 是否用可复现轨迹证明高频分配或 GC 与帧问题有关？
 - [ ] Bitmap 是否按目标尺寸解码，并遵守 `inBitmap`、硬件 Bitmap 和 `recycle()` 的所有权？
-- [ ] Activity、Fragment View、Handler、监听器、观察者和协程是否在正确生命周期解绑？
+- [ ] Activity、Fragment View、Handler、listener、observer 和协程是否在正确生命周期解绑？
 - [ ] JNI 的内存、全局引用、字符/数组访问和 FD 是否成对释放？
 - [ ] `onTrimMemory` 是否只做快速、可重建的资源缩减，并兼容 API 34+ 行为？
 - [ ] 所有原生依赖是否通过 16 KiB 页大小构建与设备验证？
@@ -697,5 +697,5 @@ Android 14+ 只保留 `UI_HIDDEN` 和 `BACKGROUND` 两个公开投递级别，�
 - 4.2「Linux 内存管理」：页、回收与内核压力
 - 4.3「ART 虚拟机内存管理」：分配与 GC
 - 4.4「Low Memory Killer」：lmkd、冻结与进程终止
-- 4.7「16 KiB 页大小」：构建、加载与兼容性细节
+- 4.7「16 KB Page Size」：构建、加载与兼容性细节
 - 7.2、7.3：卡顿分类与 Perfetto 分析

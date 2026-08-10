@@ -103,9 +103,9 @@ promotion_note: 'Auto-promoted: Task6(pass-light-edit-v2) + Task9(auto-fixed) + 
 
 1. **公开 API 或兼容性要求**：例如 API 26 起普通 Bitmap 像素位于原生堆。
 2. **AOSP 默认值**：例如 Android 10+ 的 CC 默认使用分代模式，但 OEM 仍能修改收集器配置。
-3. **源码已具备的可选路径**：例如 CMC、MTE、16 KiB 链接器兼容模式和 Android 17 MemoryLimiter，它们还受内核能力、特性开关、系统属性或厂商配置影响。
+3. **源码已具备的可选路径**：例如 CMC、MTE、16 KB linker compat 和 Android 17 MemoryLimiter，它们还受内核能力、feature flag、系统属性或 vendor 配置影响。
 
-把“源码中存在”直接写成“所有设备均启用”，会误判线上数据。GC 名称、页大小、MTE 和 MemoryLimiter 都应在目标设备上确认。
+把“源码中存在”直接写成“所有设备均启用”，会误判线上数据。GC 名称、page size、MTE 和 MemoryLimiter 都应在目标设备上确认。
 
 ## Android 5.0：ART 成为默认运行时
 
@@ -113,7 +113,7 @@ Android 4.4 已提供实验性的 ART，Android 5.0 将 ART 设为默认运行�
 
 ### Dalvik 到 ART 的 GC 变化
 
-Dalvik 不能简单概括为“每次 GC 全程停止世界（stop-the-world）”。Android 2.3 已引入并发 GC；不同 Dalvik 收集器、堆大小和设备会产生不同停顿。早期设备上可能出现几十毫秒甚至更长停顿，但 `50～100 ms` 不能视作固定行为。
+Dalvik 不能简单概括为“每次 GC 全程停止世界（stop-the-world）”。Android 2.3 已引入并发 GC；不同 Dalvik collector、堆大小和设备会产生不同停顿。早期设备上可能出现几十毫秒甚至更长停顿，但 `50～100 ms` 不能视作固定行为。
 
 Android 5.0 的 ART 主要使用 Concurrent Mark Sweep（CMS）系列收集器。标记工作可与应用线程并发，仍有处理根集合等暂停阶段。CMS 通常不移动对象，前台可减少压缩停顿；碎片严重、分配失败或应用转入后台时，ART 还可以执行压缩。
 
@@ -144,7 +144,7 @@ Bitmap 像素数据的位置有三段历史：
 | --- | --- | --- |
 | API 10 及更早 | 原生内存 | Java Bitmap 与原生像素释放时机分离 |
 | API 11～25 | Dalvik/ART 管理堆 | 大图直接挤占 Java Heap |
-| API 26 及以后 | 原生堆 | Java 堆指标看不到像素主体，进程压力仍存在 |
+| API 26 及以后 | Native Heap | Java Heap 指标看不到像素主体，进程压力仍存在 |
 
 Android 8.0 的变化没有让 Bitmap “脱离内存限制”。普通 Bitmap 像素虽然位于原生堆，仍消耗物理内存；Android 17 的 `Bitmap` 通过 `NativeAllocationRegistry` 登记原生分配，使 ART 能感知相应压力。分配失败仍可能抛出 `OutOfMemoryError`。
 
@@ -189,7 +189,7 @@ Android 10+ 的 CC 默认使用分代模式。年轻代收集优先处理最近�
 - 1～3 ms 一定不会掉帧；
 - Android 10 设备必定使用 OEM 未修改的默认配置。
 
-分配轨迹、GC 原因、回收前后字节数、FrameTimeline 和业务场景要一起看。
+分配轨迹、GC Trace、GC cause、回收前后字节数、FrameTimeline 和业务场景要一起看。
 
 ## Android 14～17：CMC 与 UFFD 路径
 
@@ -206,7 +206,7 @@ CMC 在短暂停顿内准备对象移动和引用更新，并用 UFFD 协调后�
 - 分代状态维护 young、mid、old 三代；
 - 对象需要经过 young 和 mid 阶段后再晋升 old，降低过早晋升；
 - 老年代到年轻代的引用仍需要卡表或记忆集信息，young GC 不能忽略老年代引用；
-- `ShouldUseGenerationalGC()` 与 `use_generational_cmc` 开关、`use_generational_gc` 属性共同决定分代选择；
+- `ShouldUseGenerationalGC()` 与 `use_generational_cmc` flag、`use_generational_gc` 属性共同决定分代选择；
 - CMC 还受 `ShouldUseUserfaultfd()`、内核能力和设备属性约束。
 
 “Android 17 使用 Generational CMC”表示 Android 17 AOSP 提供了主要新能力与默认候选路径，仍需在设备上确认。可以从进程启动日志中的 `Using generational ... GC`、Perfetto GC 切片和系统属性交叉判断。
@@ -219,8 +219,8 @@ Android 11 起，Scudo 服务于标准原生堆分配；低内存设备仍可使
 
 Scudo 是加固型分配器，目标是在可接受成本下增强堆损坏防护。它通常包含：
 
-- 主分配器：按尺寸类别处理常见小块；
-- 次级分配器：以映射方式处理较大分配；
+- Primary allocator：按 size class 处理常见小块；
+- Secondary allocator：以映射方式处理较大分配；
 - 线程本地或共享缓存：减少常见分配路径的竞争；
 - 内存块头校验和与状态检查；
 - 可配置隔离区：延迟复用已释放内存块，增加发现释放后使用的机会。
@@ -233,7 +233,7 @@ Scudo 发现损坏或可疑释放后通常终止进程并输出诊断。它属�
 
 - 隔离区的大小随 32/64 位配置而异，并非固定禁用；
 - `DeallocationTypeMismatch` 默认关闭，`malloc/delete` 不匹配未必由默认 Scudo 报出；
-- 自定义分配器不受 Scudo 内存块头保护；
+- custom allocator 不受 Scudo chunk header 保护；
 - 一个未崩溃的版本仍可能存在未命中的 UAF、越界或泄漏。
 
 原生问题需要结合 tombstone、HWASan/ASan、GWP-ASan、MTE 和 heapprofd。4.5 给出了工具选择。
@@ -256,11 +256,11 @@ adb shell getprop dalvik.vm.heaptargetutilization
 adb shell dumpsys meminfo com.example.app
 ```
 
-前三项描述堆的起点、增长限制和最大配置，最末项提供当前进程 Java、原生、Graphics 等快照。属性值仍要结合进程位数和运行时日志解释。
+前三项描述堆的起点、增长限制和最大配置，最末项提供当前进程 Java、Native、Graphics 等快照。属性值仍要结合进程位数和运行时日志解释。
 
 ### `largeHeap` 只改变受管理堆等级
 
-`android:largeHeap="true"` 请求更大的 Dalvik/ART 堆。官方文档明确指出：
+`android:largeHeap="true"` 请求更大的 Dalvik/ART Heap。官方文档明确指出：
 
 - 多数应用不需要；
 - 可用增量没有固定保证；
@@ -273,11 +273,11 @@ adb shell dumpsys meminfo com.example.app
 
 受管理堆到达增长上限且无法满足分配时，应用可能收到 Java `OutOfMemoryError`。系统整体内存紧张时，lmkd 会按进程优先级与内存压力选择目标进程；进程可能没有先发生 Java OOM。
 
-API 26+ 的 Bitmap、原生堆和 Graphics 让“Java 堆还空着、进程仍被终止”更常见。Android 17 的 MemoryLimiter 又增加了条件启用的单进程 cgroup 路径，见后文。
+API 26+ 的 Bitmap、原生堆和 Graphics 让“Java 堆还空着、进程仍被终止”更常见。Android 17 的 MemoryLimiter per-process cgroup 路径，见后文。
 
 ## MTE：Android 13 起在部分设备可用
 
-Arm Memory Tagging Extension（MTE）为指针和内存粒度单元分配标签。每个 16 字节单元对应 4 位分配标签，指针高位携带逻辑标签；访问时硬件比较两者。标签不匹配可以暴露部分越界与释放后使用。
+Arm Memory Tagging Extension（MTE）为指针和内存粒度单元分配标签。每个 16 字节单元对应 4 bit allocation tag，指针高位携带逻辑标签；访问时硬件比较两者。标签不匹配可以暴露部分越界与释放后使用。
 
 4 位标签只有有限取值，碰撞仍可能发生。MTE 是概率型检测和安全缓解，无法证明原生代码没有错误。标签存储的名义位数约为受标记内存的 1/32，运行成本还包括分配器维护、检查模式和诊断记录。
 
@@ -312,7 +312,7 @@ adb shell grep mte /proc/cpuinfo
 
 Manifest 请求只作用于支持 MTE 的设备。自定义分配器还要自行使用 `PROT_MTE`、对齐和标签指令；堆 MTE 也覆盖不了未做栈插桩的栈对象。
 
-### 栈标签
+### Stack Tagging
 
 Android 14 QPR3 起，可用 NDK 的 `-fsanitize=memtag`、`-march=armv8-a+memtag` 等选项构建调试用栈标签。该产物只在兼容设备运行，官方明确把插桩构建定位在调试用途。
 
@@ -322,7 +322,7 @@ Arm 架构和内核内部还有更多故障模式组合。Android 应用的稳�
 
 `dumpsys meminfo` 中 Graphics、GL 和其他图形口径受 memtrack HAL、驱动、buffer 共享关系及 OEM 实现影响。跨设备直接比较单个 Graphics 数字容易误判。
 
-硬件 Bitmap、Surface、视频缓冲区或 GPU 资源可能同时涉及：
+Hardware Bitmap、Surface、视频缓冲区或 GPU 资源可能同时涉及：
 
 - 进程虚拟映射和 RSS/PSS；
 - dma-buf 共享页；
@@ -332,9 +332,9 @@ Arm 架构和内核内部还有更多故障模式组合。Android 应用的稳�
 
 分析时使用同一设备、同一版本、同一场景做前后对照。`dumpsys meminfo`、Perfetto 的进程内存/图形数据源、dmabuf 信息和图形子系统工具要互相印证。
 
-## Android 15+：16 KiB 页大小
+## [自动发现] Android 15+：16 KB Page Size
 
-Android 15 起 AOSP 支持 16 KiB 页大小。自 2025 年 11 月 1 日起，Google Play 要求面向 Android 15 / API 35+ 设备的新应用和更新在 64 位设备上支持 16 KiB。
+Android 15 起 AOSP 支持 16 KB page size。自 2025 年 11 月 1 日起，Google Play 要求面向 Android 15 / API 35+ 设备的新应用和更新在 64 位设备上支持 16 KiB。
 
 ### 应用兼容性
 
@@ -361,9 +361,9 @@ Linux 为 `/proc/<pid>/smaps` 生成 `Pss`，按每个驻留页的共享情况�
 
 16 KiB 改变了页粒度，较小的独立映射、ELF 尾页和保护页可能产生更多页内空闲。普通 `malloc(5 KiB)` 通常由分配器与其他内存块共用页面，不能直接推导为“单独占一张 16 KiB 页”。内存增减要从完整映射、分配器行为、页表和工作集测量。
 
-### Android 17 链接器兼容模式
+### Android 17 linker compat
 
-`android-17.0.0_r1` 的 bionic 链接器已包含 16 KiB 应用兼容模式：
+`android-17.0.0_r1` 的 bionic 链接器已包含 16 KB App Compat：
 
 - `ElfReader::Read()` 在 16 KiB 系统发现 ELF 对齐不足时判断兼容模式；
 - `ElfReader::LoadSegments()` 调用 `Setup16KiBAppCompat()`；
@@ -372,7 +372,7 @@ Linux 为 `/proc/<pid>/smaps` 生成 `Pss`，按每个驻留页的共享情况�
 
 兼容模式是迁移辅助，不应代替重新构建和验证原生依赖。具体细节见 4.7。
 
-## Android 17：应用 MemoryLimiter
+## [自动发现] Android 17：App MemoryLimiter
 
 Android 17 在 `system_server` 中加入 MemoryLimiter。它不是公开应用 API，也不是所有 Android 17 设备都会启用。`android-17.0.0_r1` 的启用条件包括：
 
@@ -412,7 +412,7 @@ adb shell am memory-limiter status
 
 `ignore` 和 `manual` 子命令面向测试，通常需要平台调试权限，不属于普通应用的诊断接口。
 
-## Android 17 内核 6.18：MGLRU 延续
+## [自动发现] Android 17 kernel 6.18：MGLRU 延续
 
 MGLRU（Multi-Gen LRU）早于 Android 17 已进入 Android GKI。内核锚点 `android17-6.18-2026-06_r6` 的 `arch/arm64/configs/gki_defconfig` 包含：
 
@@ -439,26 +439,26 @@ adb shell cat /sys/kernel/mm/lru_gen/enabled
 | --- | --- | --- |
 | Android 5.0 | ART 成为默认运行时，CMS/RosAlloc 与 AOT | Dalvik/ART 停顿没有跨设备固定值 |
 | Android 7.0 | AOT + JIT + 解释执行的混合模式 | 代码缓存和性能配置文件进入分析范围 |
-| Android 8.0 | CC 默认；RegionTLAB/读屏障 | AOSP 基准数字不能当作应用保证 |
+| Android 8.0 | CC 默认；RegionTLAB/read barrier | AOSP 基准数字不能当 App 保证 |
 | Android 8.0 | Bitmap 像素进入原生堆；硬件 Bitmap | Java 堆不再覆盖全部图片压力 |
 | Android 10 | CC 默认使用分代模式 | Young GC 仍需测量原因、停顿和回收量 |
 | Android 11 | Scudo 覆盖标准原生堆，低内存设备例外 | 默认选项决定具体检测能力 |
 | Android 13 | 部分设备支持应用 MTE | 先确认硬件与进程模式 |
 | Android 14 | UFFD Mark-Compact 源码路径可核验 | 源码存在不代表每台设备已选择 |
 | Android 14 QPR3 | MTE 栈标签工具支持 | 插桩构建仅用于兼容设备调试 |
-| Android 15 | AOSP 支持 16 KiB 页大小 | 原生 ELF 与 APK 打包都要检查 |
-| Android 17 | 分代 CMC/YoungMarkCompact | 开关、属性、UFFD 和内核共同决定 |
+| Android 15 | AOSP 支持 16 KB page size | Native ELF 与 APK 打包都要检查 |
+| Android 17 | 分代 CMC/YoungMarkCompact | flag、属性、UFFD 和 kernel 共同决定 |
 | Android 17 | MemoryLimiter 条件启用 | cgroup 单进程阈值与 lmkd 系统压力并存 |
-| Android 17 内核 6.18 | GKI 配置延续 MGLRU | 产品内核和运行节点需要现场确认 |
+| Android 17 kernel 6.18 | GKI 配置延续 MGLRU | 产品 kernel 和运行节点需要现场确认 |
 
 ## 排查旧版本与新版本差异
 
 面对“升级系统后内存变大/变小”，按以下顺序取证：
 
 1. 固定同一 APK、同一业务数据、同一操作脚本和稳定等待时间；
-2. 记录 API、构建指纹、ABI、页大小、内核与低内存设备标志；
-3. 确认 ART 收集器、是否分代、GC 原因和回收前后数据；
-4. 分开统计 Java、原生、Graphics/dmabuf、代码、栈、交换空间和 FD；
+2. 记录 API、build fingerprint、ABI、page size、kernel 与低内存设备标志；
+3. 确认 ART collector、是否 generational、GC cause 和回收前后数据；
+4. 分开统计 Java、Native、Graphics/dmabuf、Code、Stack、swap 和 FD；
 5. 检查 Bitmap 解码配置、图片库版本、原生分配器与 MTE；
 6. 查看 `ApplicationExitInfo`、lmkd/MemoryLimiter 线索和系统压力；
 7. 用多轮 P50/P95/P99 与退出后的回落值比较。
@@ -481,7 +481,7 @@ Scudo 能发现部分内存块损坏和非法释放，并通过终止进程降�
 
 ### Android 17 设备都启用 CMC、MemoryLimiter 和 MGLRU
 
-这三项分别受 ART 配置与 UFFD、特性开关/厂商 XML、产品内核配置与运行时开关影响。AOSP 锚点证明实现存在，设备结论要现场核对。
+这三项分别受 ART 配置与 UFFD、feature flag/vendor XML、产品内核配置与运行时开关影响。AOSP 锚点证明实现存在，设备结论要现场核对。
 
 ---
 
@@ -493,7 +493,7 @@ Scudo 能发现部分内存块损坏和非法释放，并通过终止进程降�
 - `art/runtime/gc/collector/concurrent_copying.cc`：CC
 - `art/runtime/gc/collector/mark_compact.h/.cc`：CMC、`YoungMarkCompact`、三代与 UFFD
 - `art/runtime/gc/heap.cc`：Collector 创建、分代选择与运行日志
-- `frameworks/base/graphics/java/android/graphics/Bitmap.java`：原生分配与硬件 Bitmap
+- `frameworks/base/graphics/java/android/graphics/Bitmap.java`：Native 分配与 Hardware Bitmap
 - `external/scudo/`：Android Scudo 集成
 - `bionic/linker/linker_phdr.cpp`、`linker_phdr_16kib_compat.cpp`：16 KB compat
 - `frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java`：gate、状态与延迟 kill
@@ -522,6 +522,6 @@ Scudo 能发现部分内存块损坏和非法释放，并通过终止进程降�
 - 4.2：Linux reclaim、cgroup 与 MGLRU
 - 4.3：ART Collector 和分配路径
 - 4.4：lmkd、冻结与 MemoryLimiter
-- 4.5：应用 Bitmap、泄漏、原生工具与预算
+- 4.5：App Bitmap、泄漏、Native 工具与预算
 - 4.7：16 KB 构建和兼容性
 - 2.9：渲染架构与 Graphics 内存演进
