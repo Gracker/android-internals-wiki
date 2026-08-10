@@ -247,7 +247,7 @@ Android 17 的窗口输入拓扑由 `gui::WindowInfosUpdate` 提供。`InputDisp
 - Z 序；
 - owner pid/uid；
 - focus、visibility 与 input config；
-- 分发超时时间；
+- dispatching timeout；
 - trusted overlay、spy、drop-input 等安全/行为属性。
 
 焦点应用由 WindowManager 设置，主要用于无焦点窗口 ANR 与调试。focused window、焦点应用和顶部可见窗口是三个不同概念。
@@ -423,7 +423,7 @@ NativePreImeInputStage
 
 每个阶段的结果大致分为：
 
-- 完成，已处理或未处理；
+- finish handled / unhandled；
 - 转发到下一阶段；
 - defer，异步恢复。
 
@@ -581,10 +581,10 @@ InputDispatcher 的延迟聚合器会使用读取到发布、发布到消费和�
 
 检查同一时刻的：
 
-- 焦点显示器、焦点应用与焦点窗口；
+- focused display、focused application 与 focused window；
 - `WindowInfosUpdate` 中的 z-order、touchable region、transform；
 - DOWN 建立的触摸状态；
-- 叠加层、监视窗口、监视器与指针截取；
+- overlay/spy/monitor/pilfer；
 - pointer capture；
 - 窗口是否在过渡期间使用了旧拓扑。
 

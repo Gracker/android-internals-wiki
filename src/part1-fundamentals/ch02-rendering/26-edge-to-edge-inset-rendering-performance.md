@@ -125,7 +125,7 @@ SurfaceFlinger → HWC / RenderEngine → Display present
 
 HWC 会按整个显示设备的可见图层集合评估合成策略。影响因素包括：
 
-- 图层的格式、数据空间、混合、变换、裁剪和受保护用途；
+- layer 的 format、dataspace、blend、transform、crop 和 protected usage；
 - 可用 overlay plane、scaler、带宽与厂商限制；
 - SystemUI、IME、transition leash、dim layer、多窗口和视频 layer；
 - 当前显示模式、分辨率、色彩模式与全局变换。
