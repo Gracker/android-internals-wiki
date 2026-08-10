@@ -315,7 +315,7 @@ ANGLE 的结果有两面：
 - 统一 backend 有助于兼容性和驱动一致性；
 - 状态翻译、pipeline 变体和缓存 miss 也会产生 CPU/内存成本。
 
-Android 15 起 ANGLE 是可选 GLES-on-Vulkan 层；Android 17 的 `com.android.graphics.driver.prefer_angle` manifest metadata 只表达偏好，平台无法使用时会回到厂商 GLES driver。比较性能前应记录 EGL 厂商/渲染器、实际 driver、ANGLE 版本和相同 workload。
+Android 15 起 ANGLE 是可选 GLES-on-Vulkan 层；Android 17 的 `com.android.graphics.driver.prefer_angle` manifest metadata 只表达偏好，平台无法使用时会回到 vendor GLES driver。比较性能前应记录 EGL vendor/renderer、实际 driver、ANGLE 版本和相同 workload。
 
 Android 17 HWUI 目录中没有 Graphite pipeline。ANGLE 的开发分支也不能直接当作 `android-17.0.0_r1` 平台行为；“四级 PSO 缓存”“固定 2 ms 节流”等说法无法映射到该平台标签，不能用来解释当前版本。
 

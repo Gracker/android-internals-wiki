@@ -355,7 +355,7 @@ data_sources {
 
 kernel `drivers/dma-buf/sw_sync.c` 提供软件 timeline，主要用于测试、selftest 与受控软件路径。普通应用不应创建可任意 signal 的 fence 去伪造 GPU/HWC 完成；设备节点权限和 SELinux 通常也会阻止这类访问。
 
-测试代码使用 `sw_sync` 时，仍需保证依赖图会向前推进。由用户空间任意决定 signal 的 fence 进入内核资源回收或设备依赖后，容易形成内核无法观察完整因果的死锁。
+测试代码使用 `sw_sync` 时，仍需保证依赖图会向前推进。由用户空间任意决定 signal 的 fence 进入内核资源回收或设备依赖后，容易形成 kernel 无法观察完整因果的死锁。
 
 ## 12. 版本演进
 
