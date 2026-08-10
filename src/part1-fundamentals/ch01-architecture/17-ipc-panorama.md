@@ -183,7 +183,7 @@ Binder 提供调用方 UID/PID、对象引用与 SELinux binder policy；socket 
 IPC 延迟至少包含：
 
 ```text
-客户端编组
+client 编组
 + driver / kernel transport
 + server 排队与调度
 + server 业务
@@ -381,7 +381,7 @@ Unix 套接字更适合：
 - 已有流式分帧协议。
 - 需要长连接和显式背压。
 - 非 Android Binder 环境也要复用协议。
-- 需要分组边界或双向字节流。
+- 需要 packet 边界或 bidirectional byte stream。
 
 它不自动提供 Binder object identity、calling UID API、death recipient 和服务管理。把系统服务从 Binder 改成 socket，往往要自己补回身份、授权、版本、生命周期和错误协议。
 

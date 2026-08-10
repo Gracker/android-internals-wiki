@@ -230,7 +230,7 @@ Android 4.1 引入 FastMixer。官方设计文档给出的推荐周期是 2–3m
 
 FastMixer 保留：
 
-- 普通混音器的子混音。
+- Normal Mixer 的 submix。
 - client fast tracks 的混音。
 - 每条轨道的衰减。
 
@@ -400,7 +400,7 @@ AAudio/Oboe 的 data callback 运行在高优先级线程上。callback 内应�
 更稳的结构是：
 
 ```text
-普通工作线程
+普通 worker
   └─ 解码 / 网络 / 文件 / 模型计算
        └─ lock-free ring buffer
             └─ audio callback：只取固定数量帧 + 轻量 DSP
@@ -465,7 +465,7 @@ adb shell dumpsys audio
 `AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED` 从 API 36 提供。Android 17 的 `AAudio.h` 对它的定义是：
 
 - 只支持输出。
-- 走音频卸载路径。
+- 走 offloaded audio path。
 - 可在短时间内向硬件缓冲区写入数秒数据。
 - framework data pipe 随后可暂停，CPU 获得更长休眠时间。
 
