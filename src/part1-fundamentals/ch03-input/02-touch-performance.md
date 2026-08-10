@@ -264,7 +264,7 @@ for (int h = 0; h < event.getHistorySize(); h++) {
 
 ### Batching 与 WaitQueue 在 Perfetto 中的表现
 
-批处理与应用处理能力是两组不同的证据，在 Perfetto 中对应不同的 Track 和 Slice。
+批处理与 App 处理能力是两组不同的证据，在 Perfetto 中对应不同的 Track 和 Slice。
 
 **InputDispatcher 侧 — 派发/ACK 背压**：
 
@@ -493,7 +493,7 @@ void onStylusEvent(MotionEvent event, long targetTimeNanos) {
 - **3.1 Input 事件分发全流程**：输入事件从硬件到 App 的完整分发机制。
 - **2.3 VSync 机制**：buffered MOVE 会贴近 Choreographer 的 input callback 消费，目标帧也由 VSync 驱动；unbuffered path 则不等待这一回调。理解 VSync 周期、deadline 和实际刷新率，才能解释事件赶上了当前帧还是顺延到下一帧。
 - **2.4 Choreographer 与渲染流水线**：CALLBACK_INPUT 优先级、`doFrame()` 执行顺序与 Batching 实现见 2.4 节。
-- **2.5 MainThread 与 RenderThread 协作**：View 输入分发和遍历位于 MainThread，部分硬件加速渲染工作交给 RenderThread/GPU。
+- **2.5 MainThread 与 RenderThread 协作**：View 输入分发和 traversal 位于 MainThread，部分硬件加速渲染工作交给 RenderThread/GPU。
 - **8.1 响应速度原理**：输入延迟 → 处理延迟 → 输出延迟的通用模型与量化方法。
 
 ## 常见问题与误区

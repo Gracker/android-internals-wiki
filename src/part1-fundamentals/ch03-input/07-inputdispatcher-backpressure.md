@@ -69,11 +69,11 @@ verifier_checked: 2026-07-09
 
 第 3.1 节给出 Input 事件从硬件到 App 的完整路径，第 3.2 节讨论触摸响应延迟。这里聚焦 InputDispatcher 内部：事件已经进入 InputDispatcher，目标窗口却没有及时消费时，系统怎样限制积压、判定 Input ANR，并避免无响应窗口拖住新的输入目标。
 
-这类问题在轨迹中容易误判。`waitQueue` 变长只说明事件已经发布到目标连接、尚未收到客户端的 `Finished` 回执；它不能证明 App 业务代码已经读到事件，也不能直接等同于主线程 `MessageQueue` 变长。分析时要把 InputDispatcher 队列、App 主线程栈、Binder 事务、CPU 调度和窗口焦点变化放到同一个时间窗口。详见 9.3 节。
+这类问题在 trace 中容易误判。`waitQueue` 变长只说明事件已经发布到目标连接、尚未收到客户端的 `Finished` 回执；它不能证明 App 业务代码已经读到事件，也不能直接等同于主线程 `MessageQueue` 变长。分析时要把 InputDispatcher 队列、App 主线程栈、Binder 事务、CPU 调度和窗口焦点变化放到同一个时间窗口。详见 9.3 节。
 
 ## 输入通道的天然反压点
 
-InputDispatcher 到 App 的事件数据面使用 `InputChannel`。窗口连接建立时，服务端和客户端各持有一端 channel；事件分发阶段，`InputDispatcher::publishMotionEvent()` / `publishKeyEvent()` 经 `InputPublisher` 写入目标连接。事件载荷经通道文件描述符传输，不走 Binder；Binder 主要参与窗口和 channel 的建立、传递与策略回调。详见 1.17 节与 3.1 节。
+InputDispatcher 到 App 的事件数据面使用 `InputChannel`。窗口连接建立时，服务端和客户端各持有一端 channel；事件分发阶段，`InputDispatcher::publishMotionEvent()` / `publishKeyEvent()` 经 `InputPublisher` 写入目标连接。事件载荷经 channel fd 传输，不走 Binder；Binder 主要参与窗口和 channel 的建立、传递与策略回调。详见 1.17 节与 3.1 节。
 
 AOSP android-17.0.0_r1 的 `InputDispatcher::startDispatchCycleLocked()` 在写入失败时会检查返回码。返回 `WOULD_BLOCK` 时，代码分两种情况处理：
 
