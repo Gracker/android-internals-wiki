@@ -26,19 +26,19 @@ rewrite_note: "原 FUSE-BPF 前提经源码验证不存在，已基于 Linux 6.1
 
 # 6.7 Android 17 FUSE Passthrough、FUSE BPF 与 Scoped Storage I/O
 
-> 本章的平台源码基线是 Android 17 / API 37 / `android-17.0.0_r1`，内核源码基线是 `android17-6.18-2026-06_r6`。这里的 6.18 是知识库统一采用的内核源码锚点，不代表每台 Android 17 设备都运行 6.18 内核。分析量产设备时，仍要以该设备的 `uname -r`、最终内核配置、产品属性和 MediaProvider 日志为准。
+> 平台源码基线是 Android 17 / API 37 / `android-17.0.0_r1`，内核源码基线是 `android17-6.18-2026-06_r6`。6.18 只是源码锚点，不代表每台 Android 17 设备都运行 6.18 内核。分析量产设备时，仍要以该设备的 `uname -r`、最终内核配置、产品属性和 MediaProvider 日志为准。
 
-6.6 节解释了应用经过 `/storage/emulated/<user>/` 访问共享存储时的路径。本章继续回答三个容易混淆的问题：
+6.6 节解释了应用经过 `/storage/emulated/<user>/` 访问共享存储时的路径；这里继续回答三个容易混淆的问题：
 
 1. `FOPEN_DIRECT_IO`、FUSE passthrough 和 FUSE BPF 分别省掉了什么；
 2. Android 17 的 MediaProvider 在什么条件下允许某次文件打开使用 passthrough；
 3. 外部存储 I/O 偏慢时，怎样用可复现的证据判断瓶颈所在。
 
-先给出结论：Android 17 的 6.18 内核源码同时包含 FUSE passthrough 和 FUSE BPF。passthrough 以“已经打开的文件”为单位，把后续数据 I/O 交给 backing file；FUSE BPF 可以在 FUSE 操作前后执行 BPF 程序，并把受支持的操作交给 backing filesystem。它们可以共存，但用途、接入方式和覆盖路径不同。
+Android 17 的 6.18 内核源码同时包含 FUSE passthrough 和 FUSE BPF。passthrough 以“已经打开的文件”为单位，把后续数据 I/O 交给 backing file；FUSE BPF 可以在 FUSE 操作前后执行 BPF 程序，并把受支持的操作交给 backing filesystem。它们可以共存，但用途、接入方式和覆盖路径不同。
 
 ## 1. 先区分四条 I/O 路径
 
-理解本章时，不能把“绕过页缓存”“绕过 FUSE daemon”和“访问 lower filesystem”当成同一件事。
+需要区分“绕过页缓存”“绕过 FUSE daemon”和“访问 lower filesystem”。
 
 | 路径 | FUSE 页缓存 | read/write 是否需要 daemon 处理 | lower filesystem 的访问方式 | Android 17 中的典型用途 |
 |---|---|---|---|---|
@@ -353,7 +353,7 @@ Perfetto 采集至少应包含：
 
 ### “Android 17 设备一定是 6.18 内核”
 
-错误。`android17-6.18-2026-06_r6` 是本章的内核源码锚点。设备可以采用 Android 17 允许的其他产品内核，升级设备还受出厂内核冻结和厂商维护策略影响。
+错误。`android17-6.18-2026-06_r6` 是这里采用的内核源码锚点。设备可以采用 Android 17 允许的其他产品内核，升级设备还受出厂内核冻结和厂商维护策略影响。
 
 ### “`direct_io` 就是直接访问 lower fs”
 
@@ -386,7 +386,7 @@ Perfetto 采集至少应包含：
 | Android 11 | 重新以 MediaProvider FUSE 支持 direct-path Scoped Storage；官方 passthrough 从 Android 12 开始 |
 | Android 12 | 首次支持 FUSE passthrough；官方文档明确支持取决于设备内核，Android 11 升级设备因内核冻结不能获得该功能 |
 | Android 13—16 | MediaProvider、内核接口和产品实现持续演进；不能只看 Android 版本判断运行时路径 |
-| Android 17 / API 37 | 本章以 `android-17.0.0_r1` 与 `android17-6.18-2026-06_r6` 验证；内核源码同时包含 upstream passthrough 与 FUSE BPF，设备结果仍以产品配置和运行时证据为准 |
+| Android 17 / API 37 | 源码锚点为 `android-17.0.0_r1` 与 `android17-6.18-2026-06_r6`；内核源码同时包含 upstream passthrough 与 FUSE BPF，设备结果仍以产品配置和运行时证据为准 |
 
 Android 12 官方文档还说明，launch 设备只有在使用包含相应改动的官方内核并配置产品属性时才可以启用 passthrough。后续版本不应被简化成“launch 设备默认全部开启”；OEM 配置、内核能力和 MediaProvider 模块缺一不可。
 

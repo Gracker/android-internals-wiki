@@ -72,23 +72,6 @@ last_deepseek_cn_review_at: 2026-06-06
 
 # 存储相关的版本演进
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Android 7 及更早的 FUSE → 8.0-10 SDCardFS → 11 回归 FUSE 的演进
-- 🔹 Scoped Storage 的引入（Android 10+）与 MediaStore API
-- 🔹 EROFS 在 Android 12+ system 分区的启用
-- 🔹 UFS 规格演进对 Android 存储性能的影响
-
-### 扩展（可选深入）
-
-- 🔸 各版本逐步减少 App 对外部存储的直接访问权限
-- 🔸 Incremental FS 用于大型应用的按需下载
-
-<!-- outline-end -->
-
 ## 先确定基线，再谈“某个版本变快或变慢”
 
 存储问题很容易被一句“升级系统后变慢了”带偏。相同的 Android 版本，可能运行在不同内核、文件系统和闪存上；相同的 App，在不同 `targetSdkVersion` 下又可能采用不同的共享存储规则。设备是随新版本出厂，还是从旧版本升级上来，也会影响 SDCardFS、FUSE passthrough 等能力是否可用。
@@ -101,7 +84,7 @@ last_deepseek_cn_review_at: 2026-06-06
 4. **内核和模块版本**：GKI 配置、MediaProvider Mainline 模块都可能改变实现细节。
 5. **存储硬件与主控制器**：UFS 设备规格、UFSHCI 控制器版本、厂商固件和 NAND 状态不能混为一个指标。
 
-本节的当前源码基线为：
+当前源码基线为：
 
 - Android 平台：Android 17 / API 37 / `android-17.0.0_r1`
 - Android common kernel：`android17-6.18-2026-06_r6`
@@ -166,7 +149,7 @@ bool passthrough = !redaction_needed && transforms_complete;
 bool direct_io = open_info_direct_io && !passthrough;
 ```
 
-这段代码来自 `packages/providers/MediaProvider/jni/FuseDaemon.cpp` 的 `android-17.0.0_r1`。如果文件仍需位置元数据脱敏，或者按需转码尚未完成，就不能把后续数据请求直接交给底层文件系统。由此可见，passthrough 是逐文件、逐次打开决策，不是设备级的永久直通开关。
+这段代码来自 `packages/providers/MediaProvider/jni/FuseDaemon.cpp` 的 `android-17.0.0_r1`。如果文件仍需位置元数据脱敏，或者按需转码尚未完成，就不能把后续数据请求直接交给底层文件系统。passthrough 是逐文件、逐次打开决策，不是设备级的永久直通开关。
 
 同一份 Android 17 源码还包含 FUSE BPF 路径，并注明当前范围限于 `Android/data` 与 `Android/obb`。BPF 可以把部分文件系统请求转发到底层文件系统而绕过守护进程，但“内核编译了 `CONFIG_FUSE_BPF`”只代表具备基础能力，产品是否启用、目标路径是否符合规则仍需现场确认。
 
