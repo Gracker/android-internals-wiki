@@ -49,7 +49,7 @@ TaskSnapshot 从 Android 8.0 开始统一了两类历史能力：最近任务缩
 
 这四者的 buffer、SurfaceControl、生命周期和性能瓶颈不同。看到 Overview 卡片时，不能直接推导屏幕上存在一个名为 TaskSnapshot 的独立 SurfaceFlinger layer。
 
-以下分析以 Android 17 / API 37 / `android-17.0.0_r1` 为准，Launcher 侧同时参考 `packages/apps/Launcher3` 的同名标签。Android 8～16 仅用于说明版本演进。
+以下分析以 Android 17 / API 37 / `android-17.0.0_r1` 为准，Launcher 侧同时参考 `packages/apps/Launcher3` 的同名 tag。Android 8～16 仅用于说明版本演进。
 
 ## 1. TaskSnapshot 保存了什么
 
@@ -93,7 +93,7 @@ SF LayerSnapshot 集合
 
 ### 2.1 Shell transition 在 transaction ready 阶段记录
 
-现代过渡路径由 `SnapshotController.onTransactionReady()` 检查 `Transition.ChangeInfo`。对于满足条件且将不可见的任务，系统会在 transition transaction 启动前调用：
+现代 transition 路径由 `SnapshotController.onTransactionReady()` 检查 `Transition.ChangeInfo`。对于满足条件且将不可见的 Task，系统会在 transition transaction 启动前调用：
 
 ```text
 SnapshotController.onTransactionReady()
@@ -109,7 +109,7 @@ Android 17 会排除或特殊处理：
 - Task 仍为 `isVisibleRequested()`；
 - 某些 display change 同时改变 bounds 的场景。
 
-传入 `ChangeInfo` 是因为任务配置可能已在过渡准备阶段改变。捕获时仍要使用关闭前的旋转和边界，避免把旧画面配上新几何。
+传入 `ChangeInfo` 是因为 Task configuration 可能已在 transition 准备阶段改变。捕获时仍要使用关闭前的 rotation 和 bounds，避免把旧画面配上新几何。
 
 ### 2.2 休眠前还有一条捕获路径
 
@@ -121,7 +121,7 @@ Android 17 会排除或特殊处理：
 
 Android 17 的隐藏系统 API `TaskSnapshotManager.takeTaskSnapshot()` 允许具备系统权限的调用方对仍可见的 Task 请求新快照。`SnapshotManagerService` 会验证 Task 存在且可见，再决定是否更新系统缓存。
 
-Launcher3 在缩略图缺失时会先读取已有快照，仍为空时再请求 `takeTaskThumbnail()`。普通第三方应用没有这组任务管理与 framebuffer 读取权限。
+Launcher3 在缩略图缺失时会先读取已有 snapshot，仍为空时再请求 `takeTaskThumbnail()`。普通第三方应用没有这组 Task 管理与 framebuffer 读取权限。
 
 ### 2.4 没有通用的 freezer-before-snapshot 钩子
 
@@ -162,7 +162,7 @@ flowchart TD
 - 正在退出且不属于基础应用的部分窗口；
 - Task 明确登记在 `mExcludeLayersFromTaskSnapshot` 中的 layer。
 
-捕获会生成新的截图缓冲区，而非直接读取某个 App Window 的 `GraphicBuffer`。任务中可能包含多个窗口、SurfaceView、壁纸或装饰图层，SurfaceFlinger 要根据当前图层状态生成捕获结果。
+捕获会生成新的截图缓冲区，而非直接读取某个 App Window 的 `GraphicBuffer`。任务中可能包含多个窗口、SurfaceView、壁纸或装饰 layer，SurfaceFlinger 要根据当前 layer 状态生成捕获结果。
 
 ### 3.2 同步捕获会进入 transition 关键路径
 
@@ -241,7 +241,7 @@ AOSP 默认 high-res scale 为 1.0，low-res scale 为 0.5；将 low-res scale �
 
 `SnapshotPersistQueue` 使用名为 `TaskSnapshotPersister` 的后台线程。一次 store 会：
 
-1. 写入快照元数据的 proto 文件；
+1. 写入 snapshot 元数据的 proto 文件；
 2. 把 HardwareBuffer 复制成 software `Bitmap`；
 3. 写 high-res 图像；
 4. 配置允许时生成并写 low-res 图像。
@@ -366,7 +366,7 @@ flowchart TD
     G --> H["SurfaceFlinger 合成 starting-window layer"]
 ```
 
-这里的快照是独立的 SurfaceControl buffer layer，与 Launcher 静态卡片的 ImageView 路径不同。App BLAST 生产者提交。
+这里的 snapshot 是独立的 SurfaceControl buffer layer，与 Launcher 静态卡片的 ImageView 路径不同。App BLAST producer 提交。
 
 ### 6.3 尺寸不一致时会缩放
 
@@ -449,7 +449,7 @@ TaskSnapshot 使用 gralloc buffer，可被 GPU 采样，也可在满足设备�
 - protected/secure 内容；
 - HWC validate 结果。
 
-Overview 静态卡片通常已经画入 Launcher App Window；启动快照更可能表现为独立图层。两者不能共用“HWC 直接合成快照”这一结论。
+Overview 静态卡片通常已经画入 Launcher App Window；启动快照更可能表现为独立 layer。两者不能共用“HWC 直接合成 snapshot”这一结论。
 
 ## 9. 性能观测
 
@@ -491,7 +491,7 @@ Android 17 中可搜索：
 - Recents animation 的 remote target leash transaction；
 - App 首帧 `BufferTX`、latch 与目标 Display present。
 
-一个简单的 Trace Processor 查询可以先列出相关切片：
+一个简单的 Trace Processor 查询可以先列出相关 slice：
 
 ```sql
 SELECT
@@ -530,7 +530,7 @@ adb shell dumpsys meminfo <launcher-package>
 - system_server 与 Launcher 持有同一底层 buffer 的引用时，按进程简单相加可能重复计算共享 DMA-BUF；
 - `/data/system_ce` 文件检查通常需要 root/userdebug 权限。
 
-支持的调试构建还可以用 DMA-BUF 统计工具确认 exporter、inode、size Java 堆判断 TaskSnapshot 图形内存。
+支持的调试构建还可以用 DMA-BUF 统计工具确认 exporter、inode、size，并结合 Java heap 判断 TaskSnapshot 图形内存。
 
 ## 10. 常见故障的定位顺序
 
@@ -584,13 +584,13 @@ adb shell dumpsys meminfo <launcher-package>
 - 屏幕上的 starting window 与 Launcher/App Window buffer；
 - 其他共享 DMA-BUF 引用。
 
-磁盘中存在大量 `.jpg` 文件，不代表这些快照都驻留在图形内存中；system_server snapshot Java system_server Java heap 平稳，也不能排除 gralloc/DMA-BUF 压力。
+磁盘中存在大量 `.jpg` 文件，不代表这些 snapshot 都驻留在图形内存中；system_server Java heap 平稳，也不能排除 gralloc/DMA-BUF 压力。
 
 ## 11. 版本演进
 
 | 平台 | 相关变化 | 复核边界 |
 |---|---|---|
-| Android 8 / API 26 | 引入 TaskSnapshot 基础设施，统一最近任务缩略图与保存的 Surface | 起点是 Android 8，不是 Android 9 |
+| Android 8 / API 26 | 引入 TaskSnapshot 基础设施，统一 Recents thumbnail 与 saved surface | 起点是 Android 8，不是 Android 9 |
 | Android 10 / API 29 | TaskSnapshot 与现代 SurfaceControl/capture 路径继续演进 | 旧资料中的 `GraphicBuffer`、类名与锁行为不能直接套到 Android 17 |
 | Android 12 / API 31 | BLAST、Shell transition/starting-surface 架构成为现代分析基线 | WMS 管理对象、Shell leash 与 App buffer 要分开观察 |
 | Android 13 / API 33 | `Activity.setRecentsScreenshotEnabled()` 公开 | 只控制 Overview 表示，范围小于 `FLAG_SECURE` |

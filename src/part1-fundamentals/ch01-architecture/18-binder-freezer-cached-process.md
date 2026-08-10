@@ -92,7 +92,7 @@ last_task2b_by: task2b-main
 
 # 1.18 Binder Freezer 与缓存进程冻结
 
-Android 把退到后台的进程保留在内存里，是为了下次打开时少付一次冷启动成本。但进程存活不代表它仍应执行工作：如果缓存进程继续跑轮询线程、定时器或回调，它仍会消耗 CPU，甚至唤醒设备。
+Android 把退到后台的进程保留在内存里，是为了下次打开时少付一次冷启动成本。但进程存活不代表它仍应执行工作：如果 cached 进程继续跑轮询线程、定时器或回调，它仍会消耗 CPU，甚至唤醒设备。
 
 Cached apps freezer 在“继续运行”和“杀掉回收”之间增加了一种状态：
 
@@ -209,7 +209,7 @@ Android 17 当前主路径的 `getFreezePolicy()` 不再靠这两个状态决定
 
 它们是冻结执行链上的保护条件，不应重新包装成旧版 `shouldNotFreeze()` 结论。
 
-## 3. 进入缓存状态后为什么还要等 10 秒
+## 3. 进入 cached 后为什么还要等 10 秒
 
 Android 17 的默认值来自：
 
@@ -228,7 +228,7 @@ Android 17 的默认值来自：
 
 - 当前 capability 是否允许冻结。
 - `earliestFreezableTime` 是否还没到。
-- 是否有未完成的 Binder 事务导致重试。
+- 是否有 outstanding Binder transaction 导致重试。
 - 是否刚发生生命周期事件或文件锁保护。
 
 ## 4. 冻结时，Binder 必须先于 cgroup
@@ -250,7 +250,7 @@ Android 17 的 `CachedAppOptimizer.freezeProcess()` 顺序很明确：
    └─ 冻结后再次检查竞态窗口中的 pending transaction
 ```
 
-这两个动作不能交换。如果先停掉线程，再让 Binder 驱动继续接受同步事务，调用端就可能等待一个永远不会执行的 server。
+这两个动作不能交换。如果先停掉线程，再让 Binder driver 继续接受同步事务，调用端就可能等待一个永远不会执行的 server。
 
 ACK `android17-6.18-2026-06_r6` 的 `BINDER_FREEZE` 路径也说明了这一点：
 
@@ -306,7 +306,7 @@ task 进入冻结点后，`cgroup_enter_frozen()`：
 - 增加 cgroup 的 frozen task 计数。
 - 重新计算 `CGRP_FROZEN`。
 
-解冻则清除 `JOBCTL_TRAP_FREEZE`、唤醒任务，并在 `cgroup_leave_frozen()` 更新计数。
+解冻则清除 `JOBCTL_TRAP_FREEZE`、唤醒 task，并在 `cgroup_leave_frozen()` 更新计数。
 
 ### 5.2 性能含义
 
@@ -451,7 +451,7 @@ callbacks.broadcast(callback -> {
 
 - 可见 Activity 退后台时尽早收到 `TRIM_MEMORY_UI_HIDDEN`。
 - 进程进入 cached 后，runtime 可能先执行 GC。
-- 其他整理级别不保证在冻结进程中执行。
+- 其他 trim 级别不保证在 frozen 进程中执行。
 
 应用不能依赖“等 `onTrimMemory()` 再释放关键资源”来保证冻结前收尾。
 
@@ -468,7 +468,7 @@ Android 14 起，为减少无意义的解冻：
 
 官方 freezer 文档说明：当一个应用的所有进程都 frozen 时，系统会终止该应用的活动 TCP socket，避免 keepalive 唤醒 modem。需要长期可靠传递的业务应使用 FCM、JobScheduler、WorkManager 或适合其语义的系统设施，不能依赖 cached 进程维持 socket。
 
-## 9. 退出归因：区分公开原因与内部子原因
+## 9. 退出归因：区分公开 reason 与内部子原因
 
 `ApplicationExitInfo` 从 API 30 提供，`REASON_FREEZER` 从 API 33 加入公开 SDK。普通应用可在下一次启动时查询历史退出记录：
 
@@ -494,9 +494,9 @@ Android 17 源码中的内部 subreason 包括：
 | `SUBREASON_FREEZER_BINDER_IOCTL` | freeze/unfreeze Binder 或查询状态失败 |
 | `SUBREASON_FREEZER_BINDER_ASYNC_FULL` | frozen 期间异步 Binder buffer 接近耗尽 |
 
-这些 subreason 与 `getSubReason()` 是隐藏 API，普通应用不能把它们当成公开诊断接口。平台或 OEM 调试可从 `dumpsys`、`system_server` 日志与源码获得更细的信息；应用侧以公开原因、description、自己的业务状态和时间线为准。
+这些 subreason 与 `getSubReason()` 是 hidden API，普通应用不能把它们当成公开诊断接口。平台或 OEM 调试可从 `dumpsys`、`system_server` 日志与源码获得更细的信息；应用侧以公开 reason、description、自己的业务状态和时间线为准。
 
-API 30–32 没有公开 `REASON_FREEZER` 常量。不要硬编码数值 `14` 跨版本猜测；这会混淆“当时平台是否记录该原因”与“当前 SDK 里的常量值”。
+API 30–32 没有公开 `REASON_FREEZER` 常量。不要硬编码数值 `14` 跨版本猜测；这会混淆“当时平台是否记录该 reason”与“当前 SDK 里的常量值”。
 
 ## 10. 用四层证据诊断，避免根据缓存状态直接下结论
 
@@ -555,7 +555,7 @@ adb shell dumpsys activity exit-info <PACKAGE>
 
 ### 10.4 Perfetto 时间线
 
-Android 17 的 `CachedAppOptimizer` 会在 ActivityManager 跟踪下写入 `Freezer` track：
+Android 17 的 `CachedAppOptimizer` 会在 ActivityManager trace 下写入 `Freezer` track：
 
 ```text
 Freeze <process>:<pid> -1
@@ -584,7 +584,7 @@ Perfetto 未采集 ActivityManager 或 sched 数据时，“没看到事件”�
 
 ### 第一轮：正常绑定
 
-保持 binding，调用同步方法。A 的重要性会被 B 的绑定提升，通常不应进入 cached freezer。应先证明基础 IPC 正常，再分析冻结行为。
+保持 binding，调用同步方法。A 的重要性会被 B 的 binding 提升，通常不应进入 cached freezer。应先证明基础 IPC 正常，再分析冻结行为。
 
 ### 第二轮：解绑后误用旧 proxy
 
