@@ -31,7 +31,7 @@ gap_score: 18
 
 # 9.12 Android 17 ANR 输入事件超时检测双层预警机制
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为源码锚点。标题里的“双层”需要先收窄：
+源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。标题里的“双层”需要先收窄：
 
 - Android 17 的 InputDispatcher pre-ANR 目前只覆盖 **no focused window**；
 - 已有窗口迟迟不确认输入事件的 **window unresponsive** 路径没有对应的 InputDispatcher pre-ANR producer；
@@ -360,7 +360,7 @@ Perfetto 没有固定的 `/data/anr` 自动产物。需要预配置持续 trace�
 
 | 平台 | 已核对结论 |
 |---|---|
-| Android 14—16 | 不能从对应 release tag 找到本章这套 `processPreAnrsLocked()` / no-focus warning 实现 |
+| Android 14—16 | 不能从对应 release tag 找到这套 `processPreAnrsLocked()` / no-focus warning 实现 |
 | Android 17 / API 37 | 增加 InputDispatcher no-focus pre-ANR、公开 warning 投递、可选 long method tracing 与 input `AnrInfo` 载荷 |
 
 输入 timeout、WMS 归因和 ANR 主路径在更早版本已经存在，但 Android 17 的 pre-warning 行为不能倒推到 Android 14—16。
@@ -391,5 +391,3 @@ Android 17 给 no-focused-window 输入 ANR 增加了一次 deadline 前机会�
 - [AOSP `TimeoutRecord.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/TimeoutRecord.java)
 - [AOSP `LongMethodTracer.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/utils/LongMethodTracer.java)
 - [Android Developers：`ActivityManager.registerAnrWarningListener()`](<https://developer.android.com/reference/android/app/ActivityManager#registerAnrWarningListener(java.util.concurrent.Executor,java.util.function.Consumer)>)
-
-[已验证: AOSP android-17.0.0_r1]

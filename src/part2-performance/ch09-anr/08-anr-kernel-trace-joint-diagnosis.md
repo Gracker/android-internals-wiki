@@ -41,7 +41,7 @@ ANR trace 回答“取样时各线程停在哪里”，Perfetto 回答“超时�
 - 主线程等待同步 Binder，瓶颈可能在调用方、对端用户空间代码、对端调度、嵌套 Binder 调用或驱动路径。
 - 线程处于 `D` 状态，说明它在不可中断睡眠中；块 I/O、direct reclaim、驱动等待都可能产生这种状态。
 
-因此，看到 native 帧不能直接判定“内核故障”。本章的平台实现锚点为 `android-17.0.0_r1`，内核事件锚点为 `android17-6.18-2026-06_r6`。版本演进只用于解释旧设备差异。
+因此，看到 native 帧不能直接判定“内核故障”。平台实现锚点为 `android-17.0.0_r1`，内核事件锚点为 `android17-6.18-2026-06_r6`。版本演进只用于解释旧设备差异。
 
 ## 1. ANR trace 的能力边界
 
@@ -113,7 +113,7 @@ Android 17 的 `atrace.cpp` 定义了 category 到 tracepoint 的映射。诊断
 
 ### 3.2 先检查设备暴露了哪些 tracepoint
 
-下面的命令用于检查目标设备是否暴露本章使用的 event，避免采集结束后才发现数据源缺失：
+下面的命令用于检查目标设备是否暴露分析所需的 event，避免采集结束后才发现数据源缺失：
 
 ```bash
 adb shell '
@@ -223,7 +223,7 @@ Android 17 的 `ProcessErrorStateRecord` 在 ANR 处理中写入 `AM_ANR` EventL
 3. 用 ANR 文件 header 辅助对齐，不把文件写入时间当成检测时刻；
 4. 缺少系统 instant 时，用应用自定义 Track Event 标记输入、生命周期或任务起点。
 
-Perfetto SQL 的 `ts` 使用 trace 内部时钟，EventLog 和文本文件常带 wall clock。手工拼接不同产物时应使用 trace 中的 clock snapshot 或同一个业务标记做换算，不能直接拿“纳秒 ts”和日期字符串相减。
+Perfetto SQL 的 `ts` 使用 trace 内部时钟，EventLog 和日志文件常带 wall clock。手工拼接不同产物时应使用 trace 中的 clock snapshot 或同一个业务标记做换算，不能直接拿“纳秒 ts”和日期字符串相减。
 
 ## 5. 从主线程状态开始
 
