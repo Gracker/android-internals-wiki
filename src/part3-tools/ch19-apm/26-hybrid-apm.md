@@ -65,26 +65,6 @@ last_deepseek_cn_review_at: 2026-07-13
 ---
 # 混合栈与跨平台 APM (WebView / Flutter)
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 [定位] 解决纯 Native APM（如 JankStats）在遇到 WebView 或 Flutter 容器时缺少内部信号的问题，建立全栈监控视角。
-- 🔹 [WebView 性能主要指标] 解释前端性能监控（FCP、LCP、TTI、loadEventEnd）如何与 Android Native 的容器初始化耗时（Container Init）拼接，算出真实的"端到端页面加载耗时"。
-- 🔹 [H5 白屏检测] 解析线上识别 WebView 白屏的几种流派：基于 DOM 树节点抓取、基于 `onPageFinished` 拦截、以及基于 Native 层的 `PixelCopy` 异步像素采样。
-- 🔹 [JSBridge 监控] 探讨 JS 与 Native 通信桥梁的性能瓶颈监控，如何记录高频注入、大 Payload 序列化及主线程阻塞情况。
-- 🔹 [Flutter APM 融合] 说明 Flutter 3.32 stable+ merged model 下 Main(UI+Platform) / Raster / IO 线程的卡顿如何暴露给 Android 宿主；旧版与定制 Embedder 的独立 UI 线程边界何时适用；Dart 异常（Crash）如何由 Native APM 统一收集。线程归因以 2.11、18.12 的版本边界为准。
-- 🔹 [Session Timeline 统一] 讲解跨端监控的工程难点：如何在 Native、H5、Flutter 之间传递统一的 Session ID / Trace ID，确保混合页面的交互轨迹不混乱、不中断。
-
-### 扩展（可选深入）
-
-- 🔸 提供一段利用 `PerformanceObserver` 接口将前端指标回传给 Android 端侧 APM 统一存储的桥接代码示例。
-- 🔸 分析 Flutter 引擎中的 `FrameTiming` API 如何映射为 Android 的 Jank 概念。
-- 🔸 对比分析"像素截帧判白屏"对低端机带来的额外性能损耗与规避策略。
-
-<!-- outline-end -->
-
 混合栈 APM 需要同时尊重三套运行时的语义。Android 宿主知道 Activity、Window、主线程、网络和 native crash；WebView 才知道 Navigation Timing、FCP、LCP、DOM 与 JavaScript；Flutter engine 才能把 framework build、raster 和 Dart 异常分开。把三边事件放进同一条会话时间线很有价值，把它们压成一个“首屏耗时”会丢失诊断信息。
 
 平台源码固定在 Android 17 / API 37 / `android-17.0.0_r1`。WebView 能力还取决于可独立更新的 provider/Chromium 版本，Flutter 行为取决于 APK 携带的 engine revision。Android 版本不能替代这两个版本轴。
@@ -791,5 +771,5 @@ WebView 返回历史页时，旧 document 可能继续存在；bfcache、same-do
 - [`FlutterError.onError` API](https://api.flutter.dev/flutter/foundation/FlutterError/onError.html)
 - [Flutter 3.44.8 `vsync_waiter_android.cc`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/vsync_waiter_android.cc)
 - [Flutter 3.44.8 `VsyncWaiter.java`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/view/VsyncWaiter.java)
-- [本知识库：Flutter 渲染管线](../../part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md)
-- [本知识库：WebView 渲染管线](../../part2-performance/ch18-rendering-pipelines/13-webview-rendering.md)
+- [Flutter 渲染管线](../../part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md)
+- [WebView 渲染管线](../../part2-performance/ch18-rendering-pipelines/13-webview-rendering.md)

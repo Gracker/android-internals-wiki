@@ -83,29 +83,11 @@ last_task2b_by: openclaw-task2b
 
 # 各 Android 版本性能变更追踪
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Android 12-17 各版本性能相关 Release Notes 摘要
-- 🔹 Behavior Changes 对 App 性能的影响（后台限制、权限变化、进程管理）
-- 🔹 新增 API 的性能意义（FrameMetrics 增强、ProfilingManager、Dynamic Performance 等）
-- 🔹 Deprecated API 及替代方案
-- 🔹 迁移注意事项：targetSdkVersion 升级对性能行为的影响
-
-### 扩展（可选深入）
-
-- 🔸 Android 16/17 Beta/DP 中的实验性特性
-- 🔸 向前兼容策略：如何在支持多版本的同时利用新特性
-
-<!-- outline-end -->
-
 ## 为什么版本号必须进入性能结论
 
 同一个 APK 在两个系统版本上可能走入不同的调度、进程管理和运行时路径。`targetSdkVersion` 又会单独开启一部分兼容性变更。因此，“Android 17 上发生”还不足以描述问题；性能记录至少要包含设备系统版本、`targetSdkVersion`、主线模块版本和内核版本。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台上限。Android 17 对应的新 GKI 分支是 6.18，本文核验内核锚点为 `android17-6.18-2026-06_r6`。Android 17 设备仍可能采用平台支持期内的较早内核分支，看到 Android 17 不能反推设备必然运行 6.18。
+平台上限为 Android 17 / API 37 / `android-17.0.0_r1`。Android 17 对应的新 GKI 分支是 6.18，内核核验锚点为 `android17-6.18-2026-06_r6`。Android 17 设备仍可能采用平台支持期内的较早内核分支，看到 Android 17 不能反推设备必然运行 6.18。
 
 下面的“适用范围”分为两类：
 
@@ -194,7 +176,7 @@ Android 14 将字体最大缩放提高到 200%，并采用非线性缩放。大�
 
 ### ProfilingManager
 
-`ProfilingManager` 在 API 35 加入公开 SDK。App 可以通过 `requestProfiling()` 请求 Java heap dump、heap profile、stack sampling 或 system trace，并通过监听器接收结果。仅注册监听器不会开始采集；原文缺少请求调用，会让示例停在“等待一个从未发起的结果”。
+`ProfilingManager` 在 API 35 加入公开 SDK。App 可以通过 `requestProfiling()` 请求 Java heap dump、heap profile、stack sampling 或 system trace，并通过监听器接收结果。仅注册监听器不会开始采集；调用方还必须显式调用 `requestProfiling()`，否则会一直等待一个从未发起的结果。
 
 它适合在用户同意和产品采样策略允许的场景中取得现场数据。系统仍会执行速率限制，并可能拒绝请求。调用方应把“请求成功提交”“收到结果”“超时或失败”记录为不同状态。
 
@@ -399,7 +381,7 @@ NNAPI NDK 从 Android 15 起废弃。新推理方案应评估目标运行时及�
 - ProfilingManager 生成独立的 profile 产物，不能假设它自动出现在当前 Perfetto 会话中。
 - 前台服务配额、权限拒绝和 JobScheduler 等待原因需要结合 dumpsys、API 返回和系统日志，trace 只覆盖其中一部分。
 
-一次可复核的跨版本实验，应固定 APK、数据集、操作序列、设备温度和电源条件，并记录 OS build fingerprint、target、ART/Mainline 模块、页大小、内核版本。Android 17 的内核字段若为 6.18，还要记录精确 tag；本知识库的核验锚点是 `android17-6.18-2026-06_r6`。
+一次可复核的跨版本实验，应固定 APK、数据集、操作序列、设备温度和电源条件，并记录 OS build fingerprint、target、ART/Mainline 模块、页大小、内核版本。Android 17 的内核字段若为 6.18，还要记录精确 tag；这里的核验锚点是 `android17-6.18-2026-06_r6`。
 
 ## 常见误区
 

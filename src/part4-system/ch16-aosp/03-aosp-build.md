@@ -71,7 +71,7 @@ auto_promoted_by: openclaw-task9
 
 阅读源码可以说明一条路径“可能怎样运行”，构建、启动和测量才能说明目标版本“当前怎样运行”。Framework 调试依赖一套完整过程：固定源码版本，修改最小代码面，编译所属模块，把产物同步到匹配的设备镜像，再用测试、日志和 trace 验证。
 
-本章的平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`。Android 内核使用独立源码树和构建系统，内核核验锚点固定为 `android17-6.18-2026-06_r6`。两个 tag 不能互换，也不能用平台仓库中的预编译 kernel 反推它对应哪个 Android Common Kernel 提交。
+平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`。Android 内核使用独立源码树和构建系统，内核核验锚点固定为 `android17-6.18-2026-06_r6`。两个 tag 不能互换，也不能用平台仓库中的预编译 kernel 反推它对应哪个 Android Common Kernel 提交。
 
 ## 构建主机：先满足官方基线
 
@@ -100,7 +100,7 @@ sudo apt-get install git-core gnupg flex bison build-essential \
 
 ## 固定 Android 17 源码
 
-官方面向日常构建和贡献工作推荐 `android-latest-release`。该 manifest branch 会随 AOSP 最新公开 release 移动。2026 年起 AOSP 计划在 Q2 和 Q4 发布源码，因此它适合跟进最新代码，不适合复现本书结论。
+官方面向日常构建和贡献工作推荐 `android-latest-release`。该 manifest branch 会随 AOSP 最新公开 release 移动。2026 年起 AOSP 计划在 Q2 和 Q4 发布源码，因此它适合跟进最新代码，不适合复现固定版本结论。
 
 下面的命令创建固定在 `android-17.0.0_r1` 的平台 checkout：
 
@@ -338,7 +338,7 @@ fastboot flashall -w
 
 ## Android 17 内核必须单独构建
 
-AOSP 平台树主要包含预编译 kernel binary，完整 kernel 源码、工具链和构建规则位于 kernel checkout。Android 17 的新 GKI 分支是 `android17-6.18`，本知识库固定 release tag 为 `android17-6.18-2026-06_r6`。
+AOSP 平台树主要包含预编译 kernel binary，完整 kernel 源码、工具链和构建规则位于 kernel checkout。Android 17 的新 GKI 分支是 `android17-6.18`，内核核验 release tag 为 `android17-6.18-2026-06_r6`。
 
 Android 13 起的现代 Android Common Kernel 使用 Bazel/Kleaf。`build.sh` 在 Android 14 及以上不受支持。典型 GKI arm64 distribution target 是：
 

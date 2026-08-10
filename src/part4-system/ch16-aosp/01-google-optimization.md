@@ -89,19 +89,6 @@ last_deepseek_cn_review_at: 2026-07-13
 
 # Google 官方的性能优化思路
 
-<!-- outline-start -->
-## 本节要点大纲
-### 锚点(必须覆盖)
-- 🔹 Google 性能优化的核心理念:Systemic Performance、User-Perceived Performance
-- 🔹 各版本的 Performance 旗舰特性:Project Butter(4.1) → Svelte(4.4) → ART(5.0) → Treble(8.0) → Mainline(10)
-- 🔹 Android Runtime (ART) 的持续优化方向
-- 🔹 Framework 层的性能优化实践(View 系统、Handler、Binder、窗口管理)
-- 🔹 Google 官方的 Performance 文档与最佳实践总结
-### 扩展(可选深入)
-- 🔸 Android Go Edition 的性能优化策略
-- 🔸 Google 内部的性能测试基础设施(公开信息)
-<!-- outline-end -->
-
 ## 为什么要了解 Google 的性能优化思路
 VSync、Binder、ART、内存回收和 BufferQueue 分属不同子系统，性能改动却经常遵循同一条工程路径：确定用户能感知的场景，找到跨层等待或资源浪费，修改平台机制，再用基准测试与线上数据检查副作用。
 
@@ -111,7 +98,7 @@ VSync、Binder、ART、内存回收和 BufferQueue 分属不同子系统，性�
 - 理解工具的测量对象。Macrobenchmark 测关键用户旅程，Perfetto 解释跨进程时序，Android Vitals 观察线上结果，Baseline Profiles 改变代码编译状态。
 - 正确阅读版本变化。Project Butter、ART、Treble、Mainline 和 Android 17 DeliQueue 作用在不同层，不能都概括成“系统更快”。
 
-## 核心理念:两层性能观
+## 核心理念：两层性能观
 “Systemic Performance”和“User-Perceived Performance”适合作为阅读框架，不是 AOSP 中两个固定模块。前者讨论平台提供的能力与成本，后者讨论启动、响应、帧、内存和功耗怎样影响用户。
 
 ### 系统层（Systemic Performance）
@@ -131,19 +118,19 @@ AutoFDO 能说明这个边界。官方 2026 年 3 月文章分别讨论了两类
 
 Android Vitals 以用户感知 ANR 等线上指标观察结果，Macrobenchmark 在可控环境复现启动、滚动和页面切换，Perfetto 再解释每个阶段的等待。系统优化提高公共路径的效率，App 仍需控制主线程 I/O、同步 Binder、初始化顺序和每帧分配。
 
-## 版本旗舰特性:一条清晰的演进线
+## 版本旗舰特性：一条清晰的演进线
 下面的时间线包含运行时优化、低内存适配和系统模块化。Treble 与 Mainline 主要改变接口和交付方式，本身不等同于一次运行时提速。
 
-### Project Butter(Android 4.1,2012)
+### Project Butter（Android 4.1，2012）
 Project Butter 把 UI 工作组织到显示节奏上：VSync 驱动 `Choreographer` 安排 input、animation 和 traversal，图形管线通过多缓冲降低 CPU、GPU 与合成阶段互相等待的概率。它确立了按帧预算分析流畅度的方式。后续的 RenderThread、FrameMetrics、Frame Timeline 与 Frame Pacing 都沿用这种观察尺度。
 
-### Project Svelte(Android 4.4,2013)
+### Project Svelte（Android 4.4，2013）
 Project Svelte 面向 512 MB RAM 设备，重点是系统与预装应用的内存占用、后台进程成本和低内存可观测性。Android Go Edition 延续了低资源设备基线，但 App 仍需按自己的进程、资源和后台任务验证，不能把 Go 设备视为统一硬件型号。
 
-### ART 替代 Dalvik(Android 5.0,2014)
+### ART 替代 Dalvik（Android 5.0，2014）
 Android 5.0 默认使用 ART，并在安装阶段执行 AOT 编译。全量 AOT 会增加安装时间和磁盘占用，Android 7.0 起改为 interpretation、JIT 与 profile-guided AOT 的混合模式。Cloud Profiles、Baseline Profiles 和 Startup Profiles 分别介入 profile 分发、关键方法预编译和 DEX 布局，三者不能互换。
 
-### Project Treble(Android 8.0,2017)
+### Project Treble（Android 8.0，2017）
 Treble 通过稳定的 framework/vendor 接口降低系统框架升级对 vendor implementation 的耦合。它改善的是升级边界，不能据此推导某个 API 调用或渲染阶段会变快。性能改动能否到达某台设备，仍取决于模块归属、厂商集成和 OTA。
 
 ### Project Mainline（Android 10，2019）：拆分系统能力与交付路径
@@ -165,14 +152,14 @@ Android 17 的 generational CMC 属于 ART 版本能力。它能否回到旧平�
 | GKI | Android 16 的新 GKI 基线是 `android16-6.12`；Android 17 的新基线是 `android17-6.18` | Android 平台向后兼容多条受支持 GKI，不能把平台版本与唯一内核版本画等号 |
 | 16 KB page size | AOSP 从 Android 15 起支持 16 KB page size 与 16 KB ELF alignment；Android 16 增加 prebuilt alignment 检查选项 | Android 17 不是该能力的首次正式版本 |
 
-本书的 Android 17 内核新基线固定到 `android17-6.18-2026-06_r6`。该 tag 在 2026 年 6 月 release build 系列中可追溯；同一 Android 17 平台仍可能搭配官方兼容表中的旧 GKI 分支。涉及 framework 行为时看 `android-17.0.0_r1`，涉及 Binder driver、调度或内存回收时再看指定 kernel tag。
+Android 17 内核核验基线固定到 `android17-6.18-2026-06_r6`。该 tag 在 2026 年 6 月 release build 系列中可追溯；同一 Android 17 平台仍可能搭配官方兼容表中的旧 GKI 分支。涉及 framework 行为时看 `android-17.0.0_r1`，涉及 Binder driver、调度或内存回收时再看指定 kernel tag。
 
 对 App 性能分析而言，`SDK_INT`、targetSdk、ART module、kernel release 和设备配置都是独立变量。Android 17 设备上的 targetSdk 36 App 按公开行为合同保留 legacy MessageQueue，targetSdk 37+ App 才进入新兼容路径。
 
 ## ART 的持续优化方向
 ART 的性能改动可以沿编译状态、垃圾回收和 DEX 组织三条线阅读。
 
-### 编译策略:从 AOT 走向 Profile-Guided
+### 编译策略：从 AOT 走向 Profile-Guided
 官方 ART 配置文档给出的 Pixel 流程是：安装时若带 Cloud Profile，ART 对 profile 中的方法做 AOT；其余方法先解释执行，热点方法再 JIT；设备空闲充电时，后台编译服务根据本地 profile 与 cloud profile 重新编译。
 
 Baseline Profile 让开发者把关键代码路径随应用发布，减少首轮使用等待动态 profile 成熟的时间。官方文档中的“约 30%”是一些应用常见的代码执行速度改善，不是冷启动总时长的固定收益。I/O、Binder、资源加载或网络占主导时，profile 无法消除这些等待。
@@ -196,7 +183,7 @@ Baseline Profile 指定应提前编译的关键路径；Startup Profile 的重�
 ## Framework 层的性能优化实践
 Framework 改动经常改变 App、system_server 和 native service 之间的等待关系。阅读时要同时看公开行为合同、同一 tag 的实现和 trace 证据。
 
-### View 系统:持续减主线程负担
+### View 系统：持续减主线程负担
 View 绘制不能只看 UI thread。主线程处理 input、animation、measure、layout 和 display-list recording；RenderThread 消费渲染节点并驱动 GPU 工作；SurfaceFlinger 负责系统合成。RenderThread 减少了一部分主线程绘制工作，却没有移走 View 树遍历、业务代码和同步点。
 
 诊断掉帧时应按 Frame Timeline 区分 App deadline 与 SurfaceFlinger deadline，再查看 UI thread、RenderThread、GPU fence 和合成阶段。只优化 `onDraw()` 或只看主线程 CPU 都可能漏掉瓶颈。
@@ -232,7 +219,7 @@ Android 17 的 DeliQueue 将并发入队与单线程排序分开：
 
 Perfetto 中的高 nice/RT server slice 要结合 transaction 类型和 Binder node 配置解释。长事务、线程池满载、CPU 调度延迟与优先级继承是四类不同问题。
 
-### 窗口管理:BLASTBufferQueue 优化 buffer 与 transaction 的同帧提交
+### 窗口管理：BLASTBufferQueue 优化 buffer 与 transaction 的同帧提交
 BLASTBufferQueue 没有删除 BufferQueue。`BLASTBufferQueue.cpp` 仍创建 `BufferQueueCore`、producer 与 consumer；它增加的是 buffer acquire 与 `SurfaceControl::Transaction` 按 frame number 协调的机制。
 
 同一文件中的 `syncNextTransaction()`、`mergeWithNextTransaction()` 和 `applyPendingTransactions()` 分别展示等待下一 buffer transaction、按 frame number 保存待合并 transaction、取得并应用 pending transaction。它们共同说明机制，不能写成每次提交都严格按这三个函数直接顺序调用。
@@ -283,13 +270,13 @@ Android Go 设备应纳入低资源样本，但不能代替整个长尾。高刷
 这些信息支持“数据发现—受控修改—持续验证”的流程，不足以描述 Google 内部全部设备池、门禁阈值或发布系统。没有公开来源的内部平台名称和规模不应写入正文。
 
 ## 常见问题与误区
-### "系统已经越来越快了,App 端不用太管"
+### “系统已经越来越快了，App 端不用太管”
 系统优化可以缩短公共路径，无法替应用移除主线程 I/O、同步 Binder 和过早初始化。平台升级后仍要重新测量原来的 Critical User Journey，因为编译状态、targetSdk 行为和设备配置也可能变化。
 
-### "Baseline Profiles 能包治启动慢"
+### “Baseline Profiles 能包治启动慢”
 Baseline Profiles 让关键路径更早获得合适的编译状态。主线程 I/O、数据库锁、同步 Binder、资源解码和网络等待仍需分别处理。检查 profile 是否安装成功后，还要用 trace 比较编译 CPU time 与启动总时长。
 
-### "升级 Android 版本，性能自然会整体变好"
+### “升级 Android 版本，性能自然会整体变好”
 新系统可能改进 ART、MessageQueue 或图形管线，也可能增加安全检查、行为限制和迁移成本。结论必须绑定 App targetSdk、设备 build、ART module、kernel、编译状态与测试场景。
 
 ## 参考资料
