@@ -160,7 +160,7 @@ NDK 路径不可用时，engine 才把任务投到 platform task runner，通过
 
 Flutter 官方材料对这个版本边界存在冲突：架构概览仍写 3.29，而 Flutter 团队维护的跟踪 issue #150525 在 2025-05-20 的更新中明确写明，Android 和 iOS 从 Flutter 3.32 stable 起默认合并 UI thread 与 platform thread。这里采用后者作为稳定版边界；3.29—3.31 包含实现进入主线和逐步启用的过程，分析这些版本时必须核对 engine revision 与启动参数，不能只看 SDK 版本号。
 
-在合并模型中，独立 UI 线程被移除，Dart main isolate 在原生 platform thread 上运行。Flutter 3.44.8 的源码通过三处实现这一行为：
+在合并模型中，独立 UI thread 被移除，Dart main isolate 在原生 platform thread 上运行。Flutter 3.44.8 的源码通过三处实现这一行为：
 
 - `Settings::merged_platform_ui_thread` 默认取 `kEnabled`；
 - Android `FlutterMain::Init()` 调用 `SettingsFromCommandLine(command_line, true)`，不再允许用启动参数关闭线程合并；
@@ -369,7 +369,7 @@ Flutter 3.27 起，Android API 29+ 默认启用 Impeller。官方网页把不满
 - `AndroidContextDynamicImpeller` 先尝试 Vulkan。模拟器、部分 Huawei/MediaTek/已知问题 SoC、缺少必需 Vulkan extension/feature 或 Vulkan context 无效，会改建 `AndroidContextGLImpeller`，此时仍是 Impeller，只是 backend 变为 OpenGL ES；
 - API 低于 29、Vivante 设备或显式关闭 Impeller 时，非 slimpeller 构建才选择 `kSkiaOpenGLES`；software rendering 是另一条独立路径。
 
-“不支持 Vulkan 就一定退回 Skia”不适用于 3.44.8。排查时应同时记录 renderer 与后端：`Impeller/Vulkan`、`Impeller/OpenGLES`、`Skia/OpenGLES` 代表三种不同状态。`--no-enable-impeller` 和 manifest opt-out 可用于当前版本诊断，engine 已提示未来会移除 Impeller opt-out。
+“不支持 Vulkan 就一定退回 Skia”不适用于 3.44.8。排查时应同时记录 renderer 与 backend：`Impeller/Vulkan`、`Impeller/OpenGLES`、`Skia/OpenGLES` 代表三种不同状态。`--no-enable-impeller` 和 manifest opt-out 可用于当前版本诊断，engine 已提示未来会移除 Impeller opt-out。
 
 renderer 由 App 携带的 Flutter engine 决定。Android 15、16 或 17 系统升级不会替旧 APK 切换 renderer。
 
@@ -385,7 +385,7 @@ Impeller 3.44.8 README 的目标包括：
 
 `impellerc` 处理 Impeller 自带的 GLSL 4.60 shader，生成 SPIR-V、后端 shader archive 与 C++ reflection bindings。编译器不随 App 运行时发布。
 
-这能减少旧版 Skia/OpenGL 路径中常见的运行时 shader compilation jank，但不能消除首帧成本。以下工作仍可能迟到：
+这能减少 legacy Skia/OpenGL 路径中常见的运行时 shader compilation jank，但不能消除首帧成本。以下工作仍可能迟到：
 
 - Vulkan context 和 driver 初始化；
 - pipeline/cache miss 与 driver 机器码准备；
@@ -509,7 +509,7 @@ Dart 可用 `dart:developer` 的 `Timeline.startSync()` / `finishSync()` 或 `Ti
 - PlatformView API、HCPP flag 与 plugin 版本；
 - 刷新率、分辨率、温度和页面数据。
 
-### 2. 画出 View、Surface 与图层对象树
+### 2. 画出 View、Surface 与 layer 对象树
 
 确认 root 是 `FlutterSurfaceView`、`FlutterTextureView` 还是 `FlutterImageView`；列出 external texture、PlatformView、overlay 与系统窗口。每个对象写清 Producer、Consumer、buffer size/format 和 SurfaceFlinger layer。
 
@@ -616,7 +616,7 @@ Android 15 起支持 16 KB page-size 设备。Flutter App 中的 engine/AOT nati
 | Flutter 3.32 stable | Android/iOS 默认合并 UI 与 platform thread；3.29—3.31 的过渡构建按 engine revision 与参数确认。 |
 | Flutter 3.38 | Android/iOS 移除关闭 UI/platform 线程合并的选项。 |
 | Flutter 3.44 | HCPP 作为 API 34+、Vulkan/Impeller 条件下的实验性 opt-in 能力。 |
-| Flutter 3.44.8 | Flutter 源码验证标签。 |
+| Flutter 3.44.8 | Flutter 源码验证 tag。 |
 
 运行在 Android 17 上的旧 Flutter App 仍可能使用旧线程模型、legacy renderer、Virtual Display 或旧 plugin。OS 版本不能替代 APK/engine 版本识别。
 

@@ -170,7 +170,7 @@ Android 渲染史不能只记成一串版本号。拿到 Perfetto 后，工程�
 | Android 4.1 / API 16 | Project Butter、Choreographer、VSync 驱动的 UI 节拍、三重缓冲策略 | 帧工作开始与显示节拍建立明确关系 |
 | Android 5.0 / API 21 | HWUI RenderThread | UI 线程记录与同步、RenderThread 执行需要分开看 |
 | Android 6.0 / API 23 | Choreographer 增加 COMMIT 回调阶段 | 现代回调顺序开始接近当前形态 |
-| Android 7.0 / API 24 | Vulkan NDK API、`FrameMetrics` | 原生渲染多一种底层 API；App 可按窗口取得帧阶段数据 |
+| Android 7.0 / API 24 | Vulkan NDK API、`FrameMetrics` | 原生渲染多一种底层 API；App 可按 Window 取得帧阶段数据 |
 | Android 8.x / API 26–27 | AOSP HWUI 可通过 `debug.hwui.renderer` 选择 SkiaGL/SkiaVulkan，未设置时仍使用旧 OpenGL renderer | 看到 Skia 后端类不等于该版本默认启用 |
 | Android 9 / API 28 | AOSP 将 `debug.hwui.renderer` 的默认值改为 `skiagl` | 不要把旧 `OpenGLRenderer` 类名套到 Android 9 以后的 AOSP 默认主路径 |
 | Android 11 / API 30 | 主窗口路径开始使用 BLASTBufferQueue | buffer 与 SurfaceControl transaction 的关系更紧 |
@@ -201,7 +201,7 @@ API 11 同时提供 `View.setLayerType()`。`LAYER_TYPE_HARDWARE` 可以把稳�
 
 ### Android 4.0：默认值与 target API 有关
 
-硬件加速从 API 11 可用，从目标 API 14 起默认启用。以下两种情况下都可能出现软件 Canvas：
+硬件加速从 API 11 可用，从 target API 14 起默认启用。以下两种情况下都可能出现软件 Canvas：
 
 - 应用或 Activity 显式关闭硬件加速；
 - 硬件加速 View 被绘制到 Bitmap 等软件 Canvas。
@@ -303,7 +303,7 @@ Vulkan API 可用，不表示 View/HWUI 一定使用 Vulkan。应用 Vulkan rend
 
 Android 17 的 `libs/hwui/pipeline/skia/` 仍有 `SkiaOpenGLPipeline`、`SkiaVulkanPipeline` 和公共 `SkiaGpuPipeline`。设备可以按产品配置、驱动和调试设置选择后端，不能按 Android 版本断言所有设备都走同一个 backend。
 
-Skia 项目中的 Graphite 是后端研发方向。`android-17.0.0_r1` 的 HWUI 管线目录没有 Graphite 管线或默认启用路径，因此不将它列为 Android 平台里程碑。
+Skia 项目中的 Graphite 是后端研发方向。`android-17.0.0_r1` 的 HWUI pipeline 目录没有 Graphite pipeline 或默认启用路径，因此不将它列为 Android 平台里程碑。
 
 ### Vulkan 版本要求要看 launch-device 条件
 
@@ -336,7 +336,7 @@ RenderThread
 
 这条路径说明 BLAST 位于 App producer 与 SurfaceFlinger transaction 之间。`queueBuffer()` 只表示 Producer 提交了一块 buffer；SurfaceFlinger 还要收到 transaction、检查 acquire fence、选择/latch buffer，随后完成本轮显示合成。
 
-Android 12 以后 BLAST 覆盖更多窗口与 Surface 场景，但旧 BufferQueue 类型和非 BLAST 队列继续存在。Perfetto 中应按图层、连接、事务和缓冲 ID 识别对象，不要只搜索某个固定切片名称。
+Android 12 以后 BLAST 覆盖更多窗口与 Surface 场景，但旧 BufferQueue 类型和非 BLAST 队列继续存在。Perfetto 中应按 layer、connection、transaction 和 buffer id 识别对象，不要只搜索某个固定 slice 名称。
 
 ## Android 12–14：FrameTimeline 把 App 帧与显示帧关联起来
 
@@ -418,11 +418,11 @@ Android 17 起，游戏可以在 manifest 中请求优先使用 ANGLE 作为 GLE
 
 `Display.getFrameRateVelocityMapping()` 返回当前 Display 的滚动速度阈值与可行 frame rate 组成的只读、非空映射。例如一个点可以表达“速度超过 300 dp/s 时使用 120 fps”。官方契约主要面向 RecyclerView、ScrollView、AbsListView、NestedScrollView 等 fling 场景。设备从内屏切到外屏，或收到 `DisplayListener.onDisplayChanged()` 后，需要针对当前 Window 所在 Display 重新查询。
 
-这些点是 display-specific 策略输入，系统不会据此替应用自动完成帧率切换。调用方仍要按速度选择映射点，并通过 View、Surface 或其他帧率 API 表达请求；列表也仍需在每个选定 deadline 前完成 UI、RenderThread、GPU 与缓冲提交。
+这些点是 display-specific 策略输入，系统不会据此替 App 自动完成帧率切换。调用方仍要按速度选择映射点，并通过 View、Surface 或其他 frame-rate API 表达请求；列表也仍需在每个选定 deadline 前完成 UI、RenderThread、GPU 与 buffer 提交。
 
 ### Android 17 的标准 HWUI 主线
 
-回到当前版本，普通 View/Compose 应用窗口可按以下对象分析：
+回到当前版本，普通 View/Compose App Window 可按以下对象分析：
 
 ```text
 Choreographer / UI Thread
@@ -469,11 +469,11 @@ UI 线程慢时看 input、animation、traversal、measure/layout 和 display-li
 
 ### 4. Android 12+ 用 FrameTimeline 锁定帧
 
-选中目标卡顿 `SurfaceFrame` 后，再跟到对应 `DisplayFrame`。App deadline missed、SF 截止时间错过和显示 HAL 问题需要不同证据。多 Surface 页面不能只看宿主 App Window 的一条 timeline。
+选中目标 janky `SurfaceFrame` 后，再跟到对应 `DisplayFrame`。App deadline missed、SF deadline missed 和 display HAL 问题需要不同证据。多 Surface 页面不能只看宿主 App Window 的一条 timeline。
 
 ### 5. Android 15+ 分开渲染帧率与显示刷新率
 
-App 可能以 30 fps 更新，显示以 60/90/120 Hz 或 ARR 步进工作；多个图层也可能按不同节奏提交。帧是否准时应按选 timeline 和 deadline 判断，不能固定拿 16.67 ms 作为所有设备、所有帧的预算。
+App 可能以 30 fps 更新，显示以 60/90/120 Hz 或 ARR 步进工作；多个 Layer 也可能按不同 cadence。帧是否准时应按选 timeline 和 deadline 判断，不能固定拿 16.67 ms 作为所有设备、所有帧的预算。
 
 ## API、平台实现与设备能力是三层约束
 

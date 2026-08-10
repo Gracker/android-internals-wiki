@@ -125,14 +125,14 @@ Perfetto 中出现以下现象时，BufferQueue 是必须检查的一层：
 
 BufferQueue 连接一个 Producer 和一个 Consumer。Producer 写入内容，Consumer 读取内容；`BufferQueueCore` 维护 slot、各槽位绑定的 `GraphicBuffer`、队列元数据和同步对象。
 
-`GraphicBuffer` 底层通常关联可跨进程、跨设备共享的 dma-buf。双方传递槽位、buffer 引用、时间戳、crop、transform、dataspace 和栅栏，无需在每次交接时复制整帧像素。这里的“零拷贝”只描述 BufferQueue 的交接方式。TextureView 回流、截图、格式转换或 SurfaceFlinger 的 client composition 仍可能增加采样和输出缓冲。
+`GraphicBuffer` 底层通常关联可跨进程、跨设备共享的 dma-buf。双方传递 slot、buffer 引用、时间戳、crop、transform、dataspace 和 fence，无需在每次交接时复制整帧像素。这里的“零拷贝”只描述 BufferQueue 的交接方式。TextureView 回流、截图、格式转换或 SurfaceFlinger 的 client composition 仍可能增加采样和输出 buffer。
 
 Android 的可见 Surface 也不都采用同一种拓扑：
 
 | 场景 | 常见 Producer | BufferQueue Consumer 所在处 | 最终去向 |
 |---|---|---|---|
 | 标准 App Window | HWUI RenderThread | App 进程内的 BLAST | `SurfaceControl.Transaction` 进入 SF |
-| `SurfaceView`/视频/ Camera 输出 | 应用、codec HAL | 取决于该 Surface 的创建路径 | 独立 SF 图层或中间消费者 |
+| `SurfaceView`/视频/ Camera 输出 | 应用、codec HAL | 取决于该 Surface 的创建路径 | 独立 SF layer 或中间消费者 |
 | `TextureView` 输入 | 外部 Producer | App 进程中的 `SurfaceTexture` | 被宿主 HWUI 再采样 |
 | Vulkan swapchain | Vulkan queue | Android WSI/BufferQueue 路径 | 对应 Surface 的消费链 |
 
@@ -140,7 +140,7 @@ Android 的可见 Surface 也不都采用同一种拓扑：
 
 ## Producer 的三个主调用
 
-`IGraphicBufferProducer` 把选 slot、取得缓冲引用和提交内容分成不同操作。以下接口片段用于说明职责边界。
+`IGraphicBufferProducer` 把选 slot、取得 buffer 引用和提交内容分成不同操作。以下接口片段用于说明职责边界。
 
 ```cpp
 // android-17.0.0_r1
@@ -169,7 +169,7 @@ virtual status_t queueBuffer(
 - FREE 表示 slot 已回到 BufferQueue 的可选集合；
 - 返回 fence signal 后，Producer 才能安全覆盖 buffer 的旧内容。
 
-`BufferQueueProducer` 可以先返回槽位和栅栏。EGL、Vulkan、HWUI 或其他 Producer 负责等待栅栏，或把栅栏导入后续 GPU 工作。一次高层 `dequeue` 时长可能同时包含“等 free slot”和图形后端处理栅栏的时间，分析调用栈时要把两者分开。
+`BufferQueueProducer` 可以先返回 slot 和 fence。EGL、Vulkan、HWUI 或其他 Producer 负责等待 fence，或把 fence 导入后续 GPU 工作。一次高层 `dequeue` 时长可能同时包含“等 free slot”和图形后端处理栅栏的时间，分析调用栈时要把两者分开。
 
 ### 2. `requestBuffer()`：按需取得新映射
 
@@ -191,7 +191,7 @@ Producer 生成内容后调用 `queueBuffer()`。`QueueBufferInput` 携带生产
 
 ## slot 状态与栅栏要分开读
 
-Android 17 的 `BufferState` 使用计数器和共享标志表达状态。以下片段解释源码为何用 `isFree()` 等方法判断。
+Android 17 的 `BufferState` 使用计数器和 shared 标志表达状态。以下片段解释源码为何用 `isFree()` 等方法判断。
 
 ```cpp
 // frameworks/native/libs/gui/include/gui/BufferSlot.h
@@ -320,7 +320,7 @@ BBQBufferQueueProducer::waitForBufferRelease()
   reacquire mCore->mMutex and retry
 ```
 
-BLAST 初始化时创建 `BufferReleaseChannel` 两端，并通过独立的 `SurfaceControl.Transaction::setBufferReleaseChannel()` 把 Producer endpoint 交给 SF。`Layer::callReleaseBufferCallback()` 将 `ReleaseCallbackId`、release fence 和当前刷新率的 acquired 数写回通道；transaction 的 release callback 入口仍然存在，BLAST 会对重复的释放信息去重。channel 传回“哪块缓冲被释放以及对应栅栏”，后续仍可能需要等待栅栏。
+BLAST 初始化时创建 `BufferReleaseChannel` 两端，并通过独立的 `SurfaceControl.Transaction::setBufferReleaseChannel()` 把 Producer endpoint 交给 SF。`Layer::callReleaseBufferCallback()` 将 `ReleaseCallbackId`、release fence 和当前刷新率的 acquired 数写回 channel；transaction 的 release callback 入口仍然存在，BLAST 会对重复的 release 信息去重。channel 传回“哪块 buffer 被释放以及对应 fence”，后续仍可能需要等待栅栏。
 
 `BBQBufferQueueCore::notifyBufferReleased()` 的当前实现会中断阻塞读取，让等待线程重新检查本地 free slot。标准 App Window 的长 dequeue 不能只按 `mDequeueCondition` 分析。
 
@@ -330,7 +330,7 @@ BLAST 初始化时创建 `BufferReleaseChannel` 两端，并通过独立的 `Sur
 
 Android 17 的 `ViewRootImpl.updateBlastSurfaceIfNeeded()` 在应用进程创建或更新 `BLASTBufferQueue`，再把它生成的 `Surface` 交给 HWUI。BLAST 内部包含 Producer、`BufferQueueCore`、`BufferQueueConsumer` 和 `BLASTBufferItemConsumer`。
 
-以下调用骨架用于区分应用侧入队、BLAST 获取和 SF buffer transaction。
+以下调用骨架用于区分 App 侧 queue、BLAST acquire 和 SF buffer transaction。
 
 ```text
 RenderThread / Producer
@@ -360,7 +360,7 @@ SurfaceFlinger
   send per-buffer release information back to BLAST
 ```
 
-`queueBuffer()` 的 frame-available callback 先到应用内 BLAST；BLAST acquire `BufferItem` 后，才调用 `Transaction::setBuffer()` 把 buffer update 发送给 SF。本地 Consumer 直接通知 SF acquire buffer”。
+`queueBuffer()` 的 frame-available callback 先到 App 内 BLAST；BLAST acquire `BufferItem` 后，才调用 `Transaction::setBuffer()` 把 buffer update 发送给 SF。描述这条路径时，不应写成“本地 Consumer 直接通知 SF acquire buffer”。
 
 ### geometry 同步能保证到哪里
 
@@ -406,7 +406,7 @@ present fence 不是某个 App buffer 独享的 fence；release fence 也不等�
 
 ## 在 Perfetto 中建立证据链
 
-绝对毫秒阈值会随刷新率、Surface 类型、GPU/HWC、热状态和跟踪开销变化。应先采集同机型、同刷新率、同场景的顺畅基线，再比较异常段。
+绝对毫秒阈值会随刷新率、Surface 类型、GPU/HWC、热状态和 trace 开销变化。应先采集同机型、同刷新率、同场景的顺畅基线，再比较异常段。
 
 ### 三个时间点需要分开
 
@@ -429,7 +429,7 @@ Android 17 中常见的观测对象包括：
 
 `BufferTX` 增加只说明 SF 记录了一笔 pending buffer update。它没有直接给出 acquire fence 是否就绪、sync barrier 是否满足或 display 是否已使用新 buffer。计数在 latch 或 drop 后下降，也不能单独区分两种结果。
 
-BLAST 在 `acquireNextBufferLocked()` 中按帧号查找待处理的 pending FrameTimeline info，并调用 `Transaction::setFrameTimelineInfo()`；相关 trace 会带帧号和 VSync ID。`queueBuffer` slice 本身没有 VSync ID 后缀。对齐时应结合 BLAST transaction、FrameTimeline token、layer/buffer id 和相邻 SF 显示帧判断。
+BLAST 在 `acquireNextBufferLocked()` 中按 frame number 查找待处理的 pending FrameTimeline info，并调用 `Transaction::setFrameTimelineInfo()`；相关 trace 会带 frame number 和 VSync ID。`queueBuffer` slice 本身没有 VSync ID 后缀。对齐时应结合 BLAST transaction、FrameTimeline token、layer/buffer id 和相邻 SF 显示帧判断。
 
 ### `dequeueBuffer()` 变长
 
@@ -472,7 +472,7 @@ Producer 完成早而 `BufferTX` 晚，优先查 App 内 BLAST 与 transaction�
 | Android 13—16/API 33—36 | 主体仍沿 BLAST/SurfaceControl transaction 演进，公开同步与 transaction API 继续增加 | 版本差异应落到具体 API、flag、Surface 类型和设备实现 |
 | Android 17/API 37 | 当前实现包含 `BufferReleaseChannel`、动态 acquired-count反馈、buffer-stuffing recovery 与现行 FrontEnd/SF 观测 | 等待路径不能只套经典 `mDequeueCondition`，队列深度也不能写成固定三缓冲 |
 
-版本表只陈述能从固定标签或官方文档确认的内容。Android 17 源码中存在某个实现，不足以证明它从 Android 17 首次引入；判断引入版本时，还需比较历史标签和提交。
+版本表只陈述能从固定 tag 或官方文档确认的内容。Android 17 源码中存在某个实现，不足以证明它从 Android 17 首次引入；判断引入版本时，还需比较历史 tag 和提交。
 
 ## 常见误判
 
@@ -490,7 +490,7 @@ Android 17 的 max dequeued、max acquired、async extra、SF 刷新率反馈和
 
 ### 把 BLAST 当成纯性能加速器
 
-BLAST 的职责是把缓冲、frame number、fence 和受控图层状态放入明确的事务边界。它无法替未参与同步的外部 Producer 保证业务帧一致。
+BLAST 的职责是把 buffer、frame number、fence 和受控 layer 状态放入明确的 transaction 边界。它无法替未参与同步的外部 Producer 保证业务帧一致。
 
 ### 由一条 slice 判断责任方
 
