@@ -109,7 +109,7 @@ last_deepseek_cn_review_at: 2026-06-18
 
 这些数字服务于不同问题。下载体积影响网络等待，安装制品影响设备存储，ART 产物属于运行时编译结果。包体变小可能缩短下载或安装时间，却不能据此推导堆内存、启动耗时或常驻内存必然同比下降。性能结论仍需用对应指标测量。
 
-本章以 Android 17 / API 37、AOSP `android-17.0.0_r1` 和 AGP 9.3.0 为基准，讨论 release 制品的分析、缩减、分发与验证。
+以下内容以 Android 17 / API 37、AOSP `android-17.0.0_r1` 和 AGP 9.3.0 为基准，讨论 release 制品的分析、缩减、分发与验证。
 
 ## 建立可比较的体积口径
 
@@ -323,7 +323,7 @@ dependencies {
 }
 ```
 
-旧的单体 Play Core 依赖应迁移到按功能划分的库。依赖版本还需进入常规升级与安全审计，不能把本章版本视作永久锁定值。
+旧的单体 Play Core 依赖应迁移到按功能划分的库。依赖版本还需进入常规升级与安全审计，不能把这里列出的版本视作永久锁定值。
 
 On-demand feature 的清单需要声明交付模式，下面是模块清单的最小结构：
 
@@ -425,13 +425,13 @@ AAB: BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof
 
 | 版本或工具 | 与体积相关的边界 |
 |---|---|
-| Android 8 / API 26 | 本章支持范围下界；ART、split 与 profile 行为仍需按设备版本验证 |
+| Android 8 / API 26 | 支持范围下界；ART、split 与 profile 行为仍需按设备版本验证 |
 | Android 9 / API 28 | Google Play 交付 Baseline Profile 的设备侧支持范围从 Android 9 起较完整；ProfileInstaller 可覆盖更低版本 |
 | Android 15 / API 35 | 平台开始支持 16KB page-size 设备，native 制品要同时满足 ELF 与 ZIP 对齐 |
 | AGP 8.12 | 引入优化后的资源缩减，需要在 8.12/8.13 显式启用 |
 | AGP 9.0 | 启用资源缩减时自动采用优化后的资源缩减 |
-| Android 17 / API 37 | 本章平台锚点；提供 16KB backcompat fatal 测试模式 |
-| AGP 9.3.0 | 本章构建锚点；最高支持 API 37，提供 `optimization {}` DSL 和独立 R8 配置分析任务 |
+| Android 17 / API 37 | 平台锚点；提供 16KB backcompat fatal 测试模式 |
+| AGP 9.3.0 | 构建锚点；最高支持 API 37，提供 `optimization {}` DSL 和独立 R8 配置分析任务 |
 
 历史项目采用旧 DSL、单 APK 或旧 NDK 时，可以保留现有发布方式，但要分别验证其交付体积、设备覆盖和 16KB 兼容性。升级构建工具后应重新生成基线，旧版本测得的百分比不能直接沿用。
 

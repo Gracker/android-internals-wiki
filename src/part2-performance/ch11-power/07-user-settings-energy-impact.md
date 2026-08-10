@@ -73,44 +73,7 @@ last_deepseek_cn_review_at: 2026-06-28
 
 “亮度 50%、高刷开启、深色模式开启”不是测试报告里的装饰信息。它们会改变面板发光、显示时序、应用渲染、视频管线和系统调度。若两轮实验的设置不同，所得差值很可能混入了显示侧变化。
 
-本节以 Android 17 / API 37 和 AOSP `android-17.0.0_r1` 为平台锚点，同时复核论文《An Empirical Analysis of Mobile Energy Consumption Across User Configurations》。文中的论文百分比只描述一台 Samsung Galaxy S23 Ultra 上的自动化短场景，不能当作其他设备的预期收益。
-
-<!-- outline-start -->
-## 要点
-
-### 🔹 用户可控设置为什么会进入功耗模型
-把亮度、刷新率、深色模式、省电模式、网络状态、视频分辨率和消息长度拆成可观测变量，说明它们如何影响屏幕、显示链路、CPU/GPU、网络和应用负载。
-
-### 🔹 亮度是最稳定的高权重变量
-基于 2026 年 arXiv 论文的 12,000+ 数据点建立阅读顺序：先讲屏幕亮度在不同 App 和场景里的主导地位，再说明 OLED/LCD、自动亮度和户外高亮模式的边界。
-
-### 🔹 刷新率的收益和代价要按场景拆开
-把静态阅读、短视频、列表滑动、游戏和视频播放分开，说明 60Hz、90Hz、120Hz 与自适应刷新率对体验、帧预算和显示功耗的不同影响。
-
-### 🔹 深色模式不能被写成通用省电开关
-整理论文中深色模式收益偏低的观察，结合 OLED 像素发光、页面配色、亮度档位和内容类型，建立“什么时候有效、什么时候只是视觉偏好”的判断边界。
-
-### 🔹 视频分辨率、消息长度和网络状态的场景化影响
-区分解码、网络传输、缓存命中和 UI 渲染四类成本，避免把“降低分辨率”直接等同于整机功耗下降。
-
-### 🔹 测试设计：把用户设置写进功耗实验条件
-给出功耗测试的变量控制清单：亮度、刷新率、深色模式、省电模式、网络制式、温度、初始电量、充电状态、App 版本和采样窗口。
-
-### 🔹 产品策略：省电提示要给出适用条件
-将实验结果转成应用侧可执行策略：什么时候提示降低亮度、什么时候建议 60Hz、什么时候不该用“开启深色模式可显著省电”这类笼统话术。
-
-## 扩展
-
-### 🔸 与 Android 自适应刷新率策略联动
-结合 2.18、2.19 节，把用户刷新率设置、App `Surface.setFrameRate()`、RecyclerView 速度上报和系统 ARR 策略放在一张对照表里。
-
-### 🔸 与 Battery Historian / Perfetto 采样口径联动
-补充如何在 Battery Historian、Perfetto counter 和 Android Studio Profiler 中记录屏幕亮度、刷新率、温度和电量变化。
-
-### 🔸 论文复现实验模板
-提供 UIAutomator / Macrobenchmark / 手工复现实验的变量组合表，后续可整理成可运行脚本。
-
-<!-- outline-end -->
+平台锚点为 Android 17 / API 37 和 AOSP `android-17.0.0_r1`，同时复核论文《An Empirical Analysis of Mobile Energy Consumption Across User Configurations》。论文中的百分比只描述一台 Samsung Galaxy S23 Ultra 上的自动化短场景，不能当作其他设备的预期收益。
 
 ## 11.7.1 先确认能耗数字来自哪里
 
@@ -360,13 +323,13 @@ adb bugreport display-power.zip
 
 ## 11.7.10 版本边界：Android 11 到 Android 17
 
-| 平台 | 与本节相关的变化 | 阅读方式 |
+| 平台 | 相关变化 | 阅读方式 |
 |---|---|---|
 | Android 11 / API 30 | `Surface.setFrameRate()` 与多刷新率应用接入 | 应用可表达 Surface 内容帧率 |
 | Android 12 / API 31 | frame-rate API 增加兼容性相关参数 | 区分无缝与可能发生模式切换的请求 |
 | Android 15 / API 35 | 平台引入 ARR，增加 View 级帧率请求能力 | 支持受硬件、HAL 与 OEM 配置约束 |
 | Android 16 / API 36 | `Display.hasArrSupport()` 提供能力检查 | 系统版本与设备能力分开判断 |
-| Android 17 / API 37 | 本文源码锚点；显示策略继续汇集用户、应用、亮度、热与省电投票 | 以设备生效状态验证请求结果 |
+| Android 17 / API 37 | 源码锚点；显示策略继续汇集用户、应用、亮度、热与省电投票 | 以设备生效状态验证请求结果 |
 
 版本表描述平台能力演进，不表示每台升级到对应版本的设备都开放相同显示模式。刷新率列表、ARR、HBM、power rail 和 consumed-energy 数据均可能存在设备差异。
 

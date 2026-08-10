@@ -61,7 +61,7 @@ Android 17 不包含 TARE（The Android Resource Economy）。在 `android-17.0.
 
 这个版本边界值得单独成章。网上仍有不少资料把 ARC 余额、`dumpsys tare` 和 `EconomyManager` 写成 Android 17 能力；按这些资料排查，只会寻找已经删除的服务。TARE 的设计仍有学习价值，但它只能放在 Android 13—14 的历史源码中阅读。
 
-本文只覆盖 Android 17 / API 37 和历史 TARE 源码边界；Android 18/API38+ 主线变更不纳入正文结论。读者若在厂商系统中看到同名私有服务，应按该厂商版本单独取证，不能回推为 AOSP Android 17 合同。
+讨论范围限于 Android 17 / API 37 和历史 TARE 源码边界；Android 18/API38+ 主线变更不纳入结论。厂商系统若保留同名私有服务，应按对应版本单独取证，不能回推为 AOSP Android 17 合同。
 
 ## 11.8.1 结论表：哪些说法已经失效
 
@@ -300,7 +300,7 @@ adb shell dumpsys batterystats --charged > batterystats.txt
 
 本清单用于检查旧架构图或排障手册，迁移其他材料时可逐项套用：
 
-| 迁移项 | 本章状态 |
+| 迁移项 | 当前状态 |
 |---|---|
 | 删除 Android 15—17 使用 TARE 的架构图 | 已完成 |
 | 删除 `TareEconomicManager`、`AppBudgetManager` 与虚构预算方法 | 已完成 |
