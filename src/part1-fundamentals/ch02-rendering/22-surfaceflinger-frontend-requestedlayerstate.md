@@ -200,7 +200,7 @@ Android 17 的 `Changes` 包含：
 
 - 把图层加入编号映射、`mAddedLayers` 和 `mChangedLayers`；
 - 建立 parent、relative parent、mirror、touch crop 等引用；
-- 处理图层栈镜像和显示镜像；
+- 处理 layer stack mirror 和 display mirror；
 - 把 `Changes::Hierarchy` 加到全局变化集合。
 
 新建 layer 在 flush transaction 之前加入 manager。这样，同一轮里引用新 layer 的 transaction 才能解析到对应状态。

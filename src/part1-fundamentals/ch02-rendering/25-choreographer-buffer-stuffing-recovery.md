@@ -84,7 +84,7 @@ flowchart LR
 
 `BufferQueueProducer::waitForFreeSlotThenRelock()` 统计 dequeued/acquired buffer，并寻找 free buffer 或 free slot。出现以下任一情况时，producer 可能需要等待：
 
-- 没有空闲缓冲区或槽位；
+- 没有 free buffer/slot；
 - outstanding buffer 数量超过当前允许范围；
 - consumer 暂时多 acquire 一块用于原子 acquire/release；
 - release fence、SurfaceFlinger 或下游显示消费延迟，导致旧 buffer 还不能复用。
@@ -314,9 +314,9 @@ Android 17 的基础 recovery 不再由 Android 16 的旧总开关包住：首�
 - SurfaceFlinger 锁存或 CLIENT 合成变慢；
 - HWC 或显示侧释放延迟；
 - 窗口 resize、mode switch 或 transaction 条件改变 buffer 生命周期；
-- 消费方持有图像、编解码或相机缓冲区过久。
+- consumer 持有 Image/codec/camera buffer 过久。
 
-恢复机制只说明应用已经感知回压。根因仍要通过数据生产方工作负载、获取/释放围栏、SF 图层跟踪、合成类型和显示提交证据确定。
+recovery 只说明 App 已感知回压。根因仍要由 producer workload、acquire/release fence、SF layer trace、composition type 和 present 证据确定。
 
 ### 10.5 区分三个“晚”
 
