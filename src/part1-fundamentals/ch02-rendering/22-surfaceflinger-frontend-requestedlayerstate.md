@@ -199,7 +199,7 @@ Android 17 的 `Changes` 包含：
 `addLayers()` 会：
 
 - 把图层加入编号映射、`mAddedLayers` 和 `mChangedLayers`；
-- 建立父节点、相对父节点、镜像、触摸裁剪等引用；
+- 建立 parent、relative parent、mirror、touch crop 等引用；
 - 处理图层栈镜像和显示镜像；
 - 把 `Changes::Hierarchy` 加到全局变化集合。
 
@@ -319,11 +319,11 @@ Android 17 的 `addTransactionReadyFilters()` 按顺序注册：
 
 这两类机制名字相近，但数据和超时逻辑不同。
 
-**缓冲区帧屏障**
+**buffer frame barrier**
 
 `BufferData` 可以要求同一 Surface 的某个生产方帧号先被应用。`transactionReadyBufferCheck()` 会结合 `RequestedLayerState::barrierProducerId`、`barrierFrameNumber`，以及本轮已准备应用的缓冲区帧，判断依赖是否满足。Android 17 的实现对该等待使用 4 秒超时。
 
-**事务令牌屏障**
+**transaction token barrier**
 
 一笔事务可以携带 `KIND_WAIT` token，另一笔携带相同令牌的 `KIND_SIGNAL`。处理器会保存已经触发的令牌，默认生存时间为 5 秒；WAIT 超时后也会继续应用，以免永久阻塞。
 

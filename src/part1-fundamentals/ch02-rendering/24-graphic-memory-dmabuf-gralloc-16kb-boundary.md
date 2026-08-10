@@ -164,7 +164,7 @@ Android 17 的 `BufferAllocator::Alloc()` 负责打开并缓存内存堆文件�
 - BufferQueue slot；
 - EGL/Vulkan swapchain；
 - ImageReader、MediaCodec 或 Camera HAL；
-- 厂商分配器；
+- vendor allocator；
 - 业务自己的 HardwareBuffer 池。
 
 定位复用问题时，要先确定缓冲区池的所有者，不能用 `libdmabufheap` 的名字代替对象生命周期证据。
@@ -280,9 +280,9 @@ zipalign -c -P 16 -v 4 app.apk
 - Surface / 图层名称与编号；
 - producer、consumer 与所在进程；
 - BufferQueue slot、frame number、dequeue/queue/acquire/release；
-- 宽、高、行跨度、格式、用途、缓冲区编号；
+- width、height、stride、format、usage、buffer ID；
 - 重新分配前后的尺寸或用途变化；
-- 获取/释放围栏；
+- acquire/release fence；
 - BufferQueue 深度与在途缓冲区数量。
 
 三类常见的所有权关系如下：
@@ -312,7 +312,7 @@ adb shell ls /sys/kernel/dmabuf/buffers
 
 `dumpsys SurfaceFlinger`、Winscope 和 Perfetto 更适合回答生命周期与时序问题：
 
-- 尺寸、格式或用途变化是否触发重新分配；
+- resize、format/usage change 是否触发 reallocation；
 - 缓冲区是否长期占满槽位；
 - 数据生产方是否等待空闲槽位或释放围栏；
 - 消费方是否持有图像或编解码缓冲区过久；
