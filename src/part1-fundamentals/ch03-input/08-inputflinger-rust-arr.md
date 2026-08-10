@@ -276,7 +276,7 @@ UI Toolkit 可用 `HighHint` category vote 表达应用侧 touch boost。选择�
 
 它与 InputFlinger Rust filter 没有上下游关系，也不负责接收 `Boost.INTERACTION`。WindowManager 提交的窗口偏好最终会成为 SurfaceFlinger 看到的 Layer 信息之一。
 
-`DisplayPolicy.onUserActivityEventTouch()` 也不直接选择刷新率。Android 17 的实现只在设备未唤醒时处理默认显示的触摸用户活动：存在 AOD、屏下指纹浮层等休眠界面时，暂时把相关进程标记为 animating，以提高响应性。代码中没有调用 `RefreshRatePolicy`。
+`DisplayPolicy.onUserActivityEventTouch()` 也不直接选择刷新率。Android 17 的实现只在设备未 awake 时处理默认显示的触摸 user activity：存在 AOD、屏下指纹 overlay 等休眠界面时，暂时把相关进程标记为 animating，以提高响应性。代码中没有调用 `RefreshRatePolicy`。
 
 排查时可按职责拆成三层：
 
@@ -319,7 +319,7 @@ AOSP ARR 文档把 ARR 定义为：显示 VSync 频率与刷新率解耦，面�
 
 ### 实体键盘按下后迟迟没有事件
 
-先用 `dumpsys input` 查看 `InputFilter`。Rust 状态转储会列出启用的过滤器、阈值、待处理及处理中的 DOWN、threshold、pending ID。若 Slow Keys 生效，延迟应接近阈值；短按在阈值前抬起时没有后续 `KeyEvent`。
+先用 `dumpsys input` 查看 `InputFilter`。Rust dump 会列出启用的 filter、pending / ongoing DOWN、threshold 和 pending ID。若 Slow Keys 生效，延迟应接近 threshold；短按在阈值前抬起时没有后续 `KeyEvent`。
 
 如果 filter 未启用或延迟与阈值不吻合，再查看 InputDispatcher 目标、wait queue、应用 `deliverInputEvent` 和主线程调度。3.1 与 3.7 节覆盖了这部分。
 
@@ -341,7 +341,7 @@ ARR 允许显示刷新节奏随内容帧率降低。判断 jank 要看 FrameTime
 
 ## 外接设备与多显示边界
 
-外接键盘按键可能进入 Bounce / Slow / Sticky，鼠标、触控板和触摸屏的 `MotionEvent` 仍从 C++ 包装器直传。某个设备是否经过 Rust filter，不会直接决定刷新率。
+外接键盘按键可能进入 Bounce / Slow / Sticky，鼠标、触控板和触摸屏的 `MotionEvent` 仍从 C++ wrapper 直传。某个设备是否经过 Rust filter，不会直接决定刷新率。
 
 多显示场景还要区分事件目标 display、display group、WindowManager 对各显示的窗口策略，以及 SurfaceFlinger 的 pacesetter display。Android 17 当前 `onTouchHint()` 重置的是 pacesetter selector 的 kernel idle timer。跟随显示能否采用同一刷新节奏，还受显示组、候选 mode 和硬件约束；“任一显示收到输入，所有显示都升到同一刷新率”并不是源码保证。
 

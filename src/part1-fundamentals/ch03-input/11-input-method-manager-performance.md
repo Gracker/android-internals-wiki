@@ -101,7 +101,7 @@ flowchart TD
 
 这条路径有三个容易漏看的边界。
 
-第一，`InsetsController` 通过 `IWindowSession.updateRequestedVisibleTypes()` 把请求的可见类型交给 WMS。WMS 更新目标窗口的状态后，`ImeInsetsSourceProvider` 再把 IME 可见性请求的变化通知 IMMS。将现代路径概括为“应用直接通过 Binder 调用 IMMS”会漏掉 WMS 的状态机。
+第一，`InsetsController` 通过 `IWindowSession.updateRequestedVisibleTypes()` 把请求的可见类型交给 WMS。WMS 更新目标窗口的状态后，`ImeInsetsSourceProvider` 再把 IME requested-visibility 变化通知 IMMS。将现代路径概括为“应用直接通过 Binder 调用 IMMS”会漏掉 WMS 的状态机。
 
 第二，IMMS 的 `showCurrentInputLocked()` 只有在以下对象同时存在时才调用 IME：
 
@@ -155,7 +155,7 @@ AOSP `android-17.0.0_r1` 中：
 
 ## 4. 应用侧如何可靠显示和确认 IME
 
-Activity 刚创建时，View 焦点和 window focus 可能尚未同时成立。以下 AndroidX 写法会把显示请求交给窗口的 Insets controller：
+Activity 刚创建时，View focus 和 window focus 可能尚未同时成立。以下 AndroidX 写法会把显示请求交给窗口的 Insets controller：
 
 ```kotlin
 editText.requestFocus()
@@ -273,7 +273,7 @@ Compose 的 `WindowInsets.ime`、`imePadding()` 和 Insets consumption 属于 An
 
 ## 7. 用 ImeTracker 定位请求停点
 
-Android 17 的 ImeTracker 为同一次 show/hide 请求分配令牌，并跨客户端、`system_server` 和 IME 记录阶段。常用显示阶段包括：
+Android 17 的 ImeTracker 为同一次 show/hide 请求分配 token，并跨客户端、`system_server` 和 IME 记录 phase。常用显示阶段包括：
 
 | Phase | 说明 |
 |---|---|
@@ -292,7 +292,7 @@ Android 17 的 ImeTracker 为同一次 show/hide 请求分配令牌，并跨客�
 | `PHASE_CLIENT_ANIMATION_RUNNING` | 客户端动画运行中 |
 | `PHASE_CLIENT_ANIMATION_FINISHED_SHOW` | 显示动画完成 |
 
-ImeTracker 历史记录会给出请求类型、状态、持续时间、最终阶段和请求窗口。可按以下位置判断：
+ImeTracker 历史记录会给出请求类型、状态、持续时间、最终 phase 和请求窗口。可按以下位置判断：
 
 - 停在 `CLIENT_VIEW_SERVED` 之前：检查 View focus、window focus、served view 和调用时机；
 - 长时间停在 `SERVER_WAIT_IME`：检查进程启动、Service binding、session 创建和 IME 崩溃；
