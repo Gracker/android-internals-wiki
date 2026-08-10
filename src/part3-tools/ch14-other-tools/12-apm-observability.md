@@ -89,28 +89,9 @@ updated_date: "2026-07-08"
 
 # APM / 可观测性平台与 SDK 选型
 
-<!-- outline-start -->
-<!--
-本节要点大纲
-
-锚点（必须覆盖）
-
-- 🔹 先把“官方指标能力”“客户端 SDK”“后端 / 平台能力”分层
-- 🔹 `androidx.metrics` / `JankStats` 解决的是帧级指标采集，不是完整 APM
-- 🔹 `Matrix`、`KOOM`、`LeakCanary`、`btrace`、`DoKit` 的定位差异
-- 🔹 `Firebase Performance`、`Measure` 这类平台型方案的价值和边界
-- 🔹 选型先看目标：感知、定位、问题解决、成本、隐私
-
-扩展（可选深入）
-
-- 🔸 海外 SaaS APM 的客户端埋点与采样策略
-- 🔸 自建平台时的埋点 schema 和 trace-id 设计
--->
-<!-- outline-end -->
-
 一套 Android 线上可观测性系统包含信号来源、客户端上下文、采样与存储、查询告警、诊断产物和处理流程。单独接入一个帧指标库、一个崩溃 SDK 或一个 Web 控制台，都只能覆盖其中一部分。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台基线。开源项目与托管服务变化更快，采用前还要检查当前 release、维护状态、Android Gradle Plugin 兼容性、数据区域和价格。
+平台基线是 Android 17 / API 37 / `android-17.0.0_r1`。开源项目与托管服务变化更快，采用前还要检查当前 release、维护状态、Android Gradle Plugin 兼容性、数据区域和价格。
 
 ## 把三层能力分开
 

@@ -84,7 +84,7 @@ last_deepseek_cn_review_at: 2026-06-28
 
 eBPF 允许一段受验证器约束的程序在内核事件发生时执行。它能在调度、系统调用、网络、内存和用户态函数等位置采集上下文，再通过 map、ring buffer 或 perf buffer 把结果交给用户态。Android 已把它用于系统记账和诊断，但没有向普通应用开放通用的 BPF 加载接口。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台基线，内核部分以 `android17-6.18-2026-06_r6` 为源码基线。读源码时要把平台版本、设备内核和产品配置分开：平台仓库里存在某个程序，不等于任意 Android 17 设备都会加载它；内核仓库里存在某项能力，也不等于量产设备启用了对应 Kconfig。
+平台基线是 Android 17 / API 37 / `android-17.0.0_r1`，内核源码基线是 `android17-6.18-2026-06_r6`。读源码时要把平台版本、设备内核和产品配置分开：平台仓库里存在某个程序，不等于任意 Android 17 设备都会加载它；内核仓库里存在某项能力，也不等于量产设备启用了对应 Kconfig。
 
 ## 先确认自己处在哪个权限层
 
@@ -379,7 +379,7 @@ BPF ring buffer 在空间不足时，reserve 会失败，它不会阻塞等待�
 | Android 9–11 | 网络统计和策略逐步迁移到 BPF | 具体 hook 和旧 qtaguid 兼容路径随版本、内核而变 |
 | Android 12–13 | CPU time-in-state、GPU memory 等系统记账场景扩展 | map 是否加载取决于设备内核与产品配置 |
 | Android 14–16 | UprobeStats Mainline 模块、平台 BPF 程序继续扩展，Rust loader 路径逐步引入 | Mainline 版本可独立于完整 OTA 更新 |
-| Android 17 / API 37 | 正式 tag 中可见 Rust 平台 loader、legacy vendor loader、lazy Binder UprobeStats，以及更完整的内存/GPU/CPU 程序集合 | 本章结论锚定 `android-17.0.0_r1`，不拿 main 分支代替 release tag |
+| Android 17 / API 37 | 正式 tag 中可见 Rust 平台 loader、legacy vendor loader、lazy Binder UprobeStats，以及更完整的内存/GPU/CPU 程序集合 | 结论锚定 `android-17.0.0_r1`，不拿 main 分支代替 release tag |
 | Android common 6.18 | sched_ext、ring buffer、BTF/CO-RE 等内核能力继续演进 | 内核 tag 不能代替设备 Kconfig 和 vendor kernel 验证 |
 
 若一台 API 37 设备仍运行不同的 GKI 基线，或厂商移除了某个 tracepoint，平台源码里的 attach 方案可能无法工作。记录问题时应同时写下 build fingerprint、API level、`uname -r`、内核 config 来源和目标 tracepoint 是否存在。
