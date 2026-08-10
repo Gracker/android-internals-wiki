@@ -207,7 +207,7 @@ Android 8 已引入分散-聚集 Binder。Android 17 的 `BC_TRANSACTION_SG` 可
 
 - 目标进程当前剩余的连续 free buffer；
 - 同时在途的请求与回复；
-- 此调用的数据、偏移和附加缓冲区；
+- 此调用的 data、offsets 和 extra buffers；
 - oneway 是否还受 `free_async_space` 限制；
 - 事务发送期间目标进程是否死亡或被冻结；
 - 走内核 Binder 还是 RPC Binder。

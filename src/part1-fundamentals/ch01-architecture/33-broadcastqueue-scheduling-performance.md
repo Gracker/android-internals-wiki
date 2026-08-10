@@ -169,7 +169,7 @@ ContextImpl.sendBroadcast()
 
 - manifest receiver；
 - 有序广播接收者；
-- 带完成回调、不能按推定已投递方式处理的投递。
+- 带 completion callback、不能按 assumed-delivered 处理的投递。
 
 这不表示无序动态 receiver 可以长期占用主线程。它仍会阻塞该应用自己的 UI 和后续消息，可能触发输入、前台服务等其他类型 ANR；BroadcastQueue 只是不等待这次无序动态投递的完成回执。
 
