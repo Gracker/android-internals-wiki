@@ -69,49 +69,10 @@ finalized_date: "2026-07-10"
 
 # 13.18 SmartPerfetto 与可复用 Trace 分析平台
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 从单次 Trace 问答到可复用分析结果
-说明 SmartPerfetto 的问题定位：把 Perfetto UI、SQL、Skill、报告和多 Trace 对比放进同一个分析工作流；重点区分一次性问答、结果快照、HTML 报告和回归对比四类产物。
-
-### 🔹 Perfetto AI Assistant 的最小工作流
-覆盖 trace 上传、场景选择、选区上下文、`fast` / `full` / `auto` 分析模式、结果生成和人工复核入口，强调模型只接触工具返回的数据，不直接读取完整 trace。
-
-### 🔹 YAML Skill 与场景策略的分层设计
-解释 Skill、strategy、template 的职责边界：Skill 负责可执行 SQL 和表格输出，strategy 负责场景路由，template 负责报告组织；说明这套分层如何降低临场写 SQL 的不确定性。
-
-### 🔹 SQL guardrail、stdlib docs 与证据来源索引
-梳理最终可执行 SQL、stdlib include 补齐、Skill validator、`evidenceRefId`、`sourceToolCallId`、行列级引用等机制，帮助读者判断 AI 结论能否回到 trace 数据。
-
-### 🔹 多 Trace 对比与性能回归判断
-说明实时 reference trace 对比和 analysis result snapshot 对比的差异，覆盖 baseline / candidates、标准化指标、缺失指标回填、显著变化阈值和报告复核方式。
-
-### 🔹 Provider Manager 与运行时/provider 边界
-说明 provider profile、active profile、env fallback 与运行时选择的职责划分；运行时覆盖 Claude Agent SDK、OpenAI Agents SDK、Pi Agent Core、OpenCode 四条路径，由 SMARTPERFETTO_AGENT_RUNTIME 或 active provider 决定；重点写清模型配置和 SmartPerfetto 后端连接不是同一个概念。
-
-### 🔹 运行分发、权限和隐私边界
-覆盖 Docker、本地源码、桌面免安装包、CLI/API/MCP 的适用场景，并说明 trace 文件、SQL 结果、报告分享、workspace 权限和企业部署中的数据治理边界。
-
-### 🔹 和原生 Perfetto / Perfetto SDK / APM 平台的组合关系
-对比 SmartPerfetto、Perfetto UI、`trace_processor_shell`、Perfetto SDK、ProfilingManager、APM 平台的分工，给出开发期、专项排障、灰度回归和团队知识库四种使用方式。
-
-## 扩展
-
-### 🔸 Skill 质量评估与回归测试
-记录如何用固定 trace、固定 SQL 输出和 golden report 检查 Skill 是否因 Perfetto schema / stdlib 版本变化而失效。
-
-### 🔸 企业内部 Trace 分析平台接入清单
-补充多租户、provider isolation、报告权限、trace 留存周期、审计日志和脱敏策略。
-
-### 🔸 SmartPerfetto 与 AIW 知识库联动
-探索把 AIW 章节中的排障步骤转成 SmartPerfetto Skill / strategy，再把真实 trace 结果反哺到案例章节。
-
-<!-- outline-end -->
 
 一条 Perfetto trace 可以回答很多问题，但同一问题换个人、换一周、换一个工具版本，查询口径常会发生偏移。SmartPerfetto 处理的正是这段工程成本：把 Perfetto UI、`trace_processor_shell`、YAML Skill、场景策略、模型运行时、证据合约和报告存储放到同一套分析流程中，让 SQL 可以重跑，结论可以回查，多次分析可以按统一指标比较。
 
-本节的平台机制仍以 Android 17 / API 37 / `android-17.0.0_r1` 为上界，涉及内核事件时以 `android17-6.18-2026-06_r6` 为基线。工具部分核对 SmartPerfetto v1.3.0、提交 `24eba544cebf231524294aa50def33ee0e267c9e`；该版本固定使用 Perfetto v57.2 的 host 侧 `trace_processor_shell`。这两个版本轴需要分开理解：Android 版本决定设备能采到哪些数据源，host 侧 Perfetto 版本决定 trace 解析器、SQL schema 和 stdlib 能力。用 v57.2 分析 Android 10～17 的 trace，并不表示设备端已经运行 v57.2。
+平台机制以 Android 17 / API 37 / `android-17.0.0_r1` 为上界，涉及内核事件时以 `android17-6.18-2026-06_r6` 为基线。工具部分核对 SmartPerfetto v1.3.0、提交 `24eba544cebf231524294aa50def33ee0e267c9e`；该版本固定使用 Perfetto v57.2 的 host 侧 `trace_processor_shell`。这两个版本轴需要分开理解：Android 版本决定设备能采到哪些数据源，host 侧 Perfetto 版本决定 trace 解析器、SQL schema 和 stdlib 能力。用 v57.2 分析 Android 10～17 的 trace，并不表示设备端已经运行 v57.2。
 
 ## 从单次 Trace 问答到可复用分析结果
 
@@ -136,7 +97,7 @@ SmartPerfetto 也不能代替线上性能平台。线上 P90 / P99、慢帧率�
 
 | 模式 | 当前行为 | 适合场景 |
 | --- | --- | --- |
-| `fast` | 轻量提示词、核心证据工具子集、较小的 runtime 预算 | 已知问题的快速巡检 |
+| `fast` | 轻量提示词、核心证据工具子集、较小的 runtime 预算 | 已知问题的快速检查 |
 | `full` | 完整工具、计划门禁、notes、artifact 与质量门禁 | 因果链较长或需要逐层排除的问题 |
 | `auto` | 由硬规则和轻量分类器决定；无法可靠分类时走 `full` | 日常入口 |
 
@@ -275,9 +236,9 @@ Skill 进入团队流程后，应按可执行代码维护。最小测试集包�
 
 权限测试要覆盖同租户不同 workspace、不同 tenant、资源 owner、过期数据和被删除 provider。报告可见不等于原始 trace 可见，二者应有各自的授权检查与审计记录。
 
-## SmartPerfetto 与 AIW 知识库联动
+## SmartPerfetto 与技术知识库联动
 
-AIW 保存机制解释、源码锚点和调查顺序，SmartPerfetto 在具体 trace 上执行查询并保存证据。适合转换为 Skill 的内容是稳定口径，例如输入参数、SQL、输出列、单位和失败分支；依赖机型、版本或上下文判断的内容更适合放在 strategy 或章节说明中。
+技术知识库保存机制解释、源码锚点和调查顺序，SmartPerfetto 在具体 trace 上执行查询并保存证据。适合转换为 Skill 的内容是稳定口径，例如输入参数、SQL、输出列、单位和失败分支；依赖机型、版本或上下文判断的内容更适合放在 strategy 或机制说明中。
 
 一条实用的维护路径是：从章节选定一个可观察问题，编写 Skill，在固定 trace 上运行，检查报告证据，再把缺字段、厂商差异和误诊条件补回章节。章节修订后还要判断 Skill contract 是否同步变化。这样可以保持“机制说明—可执行查询—真实样本”三者一致。
 
