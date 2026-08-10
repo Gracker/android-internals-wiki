@@ -150,7 +150,7 @@ FrontEnd 快照是全局图层状态，CompositionEngine 的 Output 面向具体
 SurfaceFlinger 需要知道：
 
 - 哪个缓冲已随事务到达；
-- 生产者完成/获取栅栏是否满足读取条件；
+- Producer completion/acquire fence 是否满足读取条件；
 - 哪个缓冲被本帧快照选中；
 - RenderEngine 客户端目标何时可供 HWC 读取；
 - HWC 何时不再使用各 Layer buffer；
@@ -290,12 +290,12 @@ void Scheduler::onFrameSignal(ICompositor& compositor,
 
 Android 17 的 `SurfaceFlinger::commit(PhysicalDisplayId, FrameTargets)` 主要处理：
 
-1. 检查显示模式转换、HWC 背压和本帧目标；
+1. 检查 display mode transition、HWC backpressure 和本帧目标；
 2. 为 FrameTimeline 记录 SF wake-up；
 3. 清理 transaction flag，进入 `updateLayerSnapshots()`；
 4. 收集、筛选和应用事务；
 5. 更新图层生命周期、层级与快照；
-6. 锁存可用的新缓冲，发送事务提交回调；
+6. latch 可用的新 buffer，发送 transaction commit callback；
 7. 更新可见区域、输入、Layer history 与刷新率选择；
 8. 根据事务、buffer、display/HWC 请求判断 `mustComposite`。
 
@@ -307,7 +307,7 @@ Android 17 的 `SurfaceFlinger::commit(PhysicalDisplayId, FrameTargets)` 主要�
 
 `SurfaceFlinger::composite()` 构造 `CompositionRefreshArgs`，把物理/虚拟 Display 对应的 Output 和 frame target 交给 CompositionEngine。Output 的主流程包括：
 
-1. 更新输出与图层合成状态；
+1. 更新输出与 Layer composition state；
 2. 重建该 Output 的可见 Layer stack；
 3. 规划并写入 HWC 图层状态；
 4. `beginFrame()` 判断 dirty 与 `mMustRecompose`；
@@ -394,7 +394,7 @@ getDeviceCompositionChanges(display)
     validate()
 
   读取 changed composition types / display requests / layer requests
-  读取客户端目标属性 / requested layer LUTs
+  读取 client target property / requested layer LUTs
   acceptChanges()
 
 如最终存在 CLIENT layer:
@@ -445,7 +445,7 @@ CompositionEngine
 Composer HAL / HWC
   validate / present
   ├─ per-layer release fences → buffer 可在满足条件后复用
-  └─ per-display present fence → 本次显示提交完成边界
+  └─ per-display present fence → 本次 Display present 完成边界
 ```
 
 四种边界分别回答不同问题：
@@ -583,7 +583,7 @@ Android 17 `Scheduler::onFrameSignal()` 先为 pacesetter display 建立目标�
 
 默认屏按时不能证明外接屏按时。镜像场景还要确认 Layer snapshot 如何映射到两个 Output。
 
-## 内核与厂商驱动边界
+## Kernel 与 vendor driver 边界
 
 kernel 基线固定为 `android17-6.18-2026-06_r6`：
 
@@ -658,7 +658,7 @@ SurfaceFlinger 把多个 Producer 的缓冲与客户端事务整理成 LayerSnap
 
 1. Producer 是否按时提交缓冲；
 2. BLAST 与事务是否按时进入 SF；
-3. 提交是否在事务、快照或锁存阶段变长；
+3. commit 是否在 transaction、snapshot 或 latch 阶段变长；
 4. composite 使用 CLIENT、DEVICE 还是混合方案；
 5. RenderEngine、Composer HAL、driver 与 present fence 哪一段越过 deadline；
 6. release 是否延迟并反压应用的缓冲周转。

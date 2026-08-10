@@ -181,7 +181,7 @@ Android UI 中的矩形、圆角、文字和 Path 最终可能变成几何、cov
 
 ### Fragment Shader、测试与混合
 
-光栅器为被覆盖的采样点生成片元。片元着色器计算颜色、纹理采样或覆盖值；随后还可能经过深度/模板测试、颜色写入掩码和混合。
+Rasterizer 为被覆盖的 samples 生成 fragment。Fragment Shader 计算颜色、纹理采样或 coverage；随后还可能经过 depth/stencil test、color write mask 和 blend。
 
 alpha blending 通常由固定功能混合阶段按 pipeline state 完成，不应笼统写成 Fragment Shader 的内部职责。`RuntimeShader`、复杂滤镜、模糊、阴影、颜色空间转换和多纹理效果会增加 shader、采样或额外 pass 的成本。
 
@@ -248,7 +248,7 @@ GLES 的 `glCompileShader()` / `glLinkProgram()` 可以触发编译与链接。V
 
 普通应用不能假设自己能直接控制 HWUI 内部缓存，也不应把历史 Flutter `--cache-sksl` 方案套到所有 Skia/HWUI 页面。
 
-### 怎样确认是编译或管线创建卡顿
+### 怎样确认是 compilation/pipeline jank
 
 建议做冷/热两组采集：
 
@@ -266,7 +266,7 @@ GLES 的 `glCompileShader()` / `glLinkProgram()` 可以触发编译与链接。V
 
 - 只覆盖高概率场景；
 - 避免阻塞启动关键线程；
-- 绑定正确的渲染轮次、格式与状态变体；
+- 绑定正确的 render-pass/format/state 变体；
 - 处理驱动或应用更新后的缓存失效；
 - 记录预热时间、缓存大小和实际命中率。
 
@@ -359,7 +359,7 @@ Debug GPU Overdraw GPU 过度绘制”只能定位 HWUI 应用窗口的逻辑重
 - LOD、frustum/occlusion culling；
 - 合理合批，减少微小绘制；
 - 降低粒子、阴影 caster 与蒙皮顶点；
-- 改善顶点缓冲布局和复用；
+- 改善 vertex buffer layout 和复用；
 - 把与顶点无关的 CPU/RHI 成本分开。
 
 ### Bandwidth bound
@@ -394,13 +394,13 @@ ASTC/ETC2 是 GPU 纹理压缩格式，主要服务 GLES/Vulkan 游戏资源。�
 
 ASTC 块越大通常压缩率越高、质量风险也越高。透明纹理、法线、UI 图集和 HDR 资源应分别测试，不能只按文件大小选格式。
 
-## 分块式渲染的性能含义
+## Tile-Based Rendering 的性能含义
 
 典型分块式 GPU 会先把几何分配到屏幕图块，再在片上存储中完成一个图块的 raster、fragment 和混合，最终把需要保留的结果写回设备内存。
 
 这能减少某些中间颜色的外部内存流量，但不会消除过度绘制、纹理采样和复杂着色器的成本。以下行为仍可能增加开销：
 
-- 渲染轮次开始时加载已有附件；
+- render pass 开始时加载已有 attachment；
 - pass 结束时保存附件；
 - tile memory 容量不足或格式过大；
 - 多个全屏 target、resolve、readback；
@@ -445,7 +445,7 @@ Android 17 的 `frameworks/native/libs/ui/GraphicBufferAllocator.cpp` / `Graphic
 
 BufferQueue 管理槽位、dequeued/acquired 状态和缓冲引用。Producer dequeue 时可以触发新分配，也可以复用已有缓冲。buffer 数量受 producer/consumer、usage、尺寸变化、async/shared 模式和在途约束影响。
 
-释放栅栏表示消费者何时不再使用旧缓冲，生产者必须在重新写入前遵守依赖。队列满或释放晚会让出队、获取、交换或显示提交等待，这属于背压。
+release fence 表示 Consumer 何时不再使用旧 buffer，Producer 必须在重新写入前遵守依赖。queue 满或 release 晚会让 dequeue/acquire/swap/present 等待，这属于 back-pressure。
 
 ### ION 到 DMA-BUF Heaps
 
@@ -487,7 +487,7 @@ Perfetto 对 data source 名称做精确匹配，带后缀的 producer 必须在
 - `dumpsys meminfo <package>` 的 graphics/EGL 等分类；
 - `dumpsys SurfaceFlinger`、layer/buffer dump；
 - dma-buf heap/bufinfo；
-- Vulkan 分配回调或引擎分配器遥测；
+- Vulkan allocation callbacks 或引擎 allocator telemetry；
 - Adreno/Mali/PowerVR 的厂商 profiler；
 - AGI 内存面板与 Vulkan memory tracker。
 
@@ -583,11 +583,11 @@ AGI Frame Profiler 继续负责单帧检查：对受支持应用查看 Vulkan AP
 
 一次只改变一个维度：
 
-- 渲染比例或效果面积；
+- render scale 或 effect 面积；
 - fragment shader/采样；
 - mesh/粒子/阴影几何；
 - texture/target 格式与分辨率；
-- 绘制调用/状态数量；
+- draw-call/state 数量；
 - SurfaceFlinger DEVICE/CLIENT 条件；
 - 在途帧与节拍控制。
 

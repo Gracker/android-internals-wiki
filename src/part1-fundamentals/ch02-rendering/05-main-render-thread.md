@@ -136,7 +136,7 @@ MainThread 与 RenderThread 的并行来自相邻帧重叠：RenderThread 推进
 
 ## MainThread：从 View 树得到 RenderNode DisplayList
 
-### 测量与布局
+### Measure 与 Layout
 
 `ViewRootImpl.performTraversals()` 根据本帧状态决定是否执行测量和布局：
 
@@ -365,7 +365,7 @@ Consumer / BLAST / SurfaceFlinger
 
 从 Consumer 视角看，后一条栅栏就是 acquire fence。release fence 与槽位回收有关。SurfaceFlinger/HWC 的显示栅栏描述显示管线的提交完成进度。分析 Trace 时，先写清栅栏的生产者、等待者和所保护的缓冲，再讨论耗时。
 
-### 缓冲数量并非固定为三个
+### buffer 数量没有“永远是三个”的结论
 
 Android 17 的 `CanvasContext.cpp` 定义了文件内静态函数 `setBufferCount()`：它查询 `NATIVE_WINDOW_MIN_UNDEQUEUED_BUFFERS`，再设置 `min_undequeued_buffers + 2`。`CanvasContext::setupPipelineSurface()` 只在 NativeSurface 尚未设置额外缓冲时调用它。这个表达式不代表所有设备、所有 Surface、所有时刻都固定为三块缓冲。
 
