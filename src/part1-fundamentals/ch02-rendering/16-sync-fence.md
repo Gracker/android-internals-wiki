@@ -349,7 +349,7 @@ data_sources {
 3. 找出长等待对应的驱动、时间线、上下文、序列号和信号时刻。
 4. 回到信号方之前的 CPU 调度、GPU queue、HWC、display 或错误事件。
 
-只看等待时长无法区分生产者晚、消费者持有过久、queue-stuffing、线程抢占或硬件挂起。
+只看 wait duration 无法区分 producer 晚、consumer 持有过久、queue-stuffing、线程抢占或硬件 hang。
 
 ## 11. `sw_sync` 的边界
 
@@ -361,7 +361,7 @@ kernel `drivers/dma-buf/sw_sync.c` 提供软件 timeline，主要用于测试、
 
 ### Android 7 / API 24
 
-HWC2 已明确图层/ client target acquire fence、各图层释放栅栏与显示栅栏的接口职责，因此 Android 7 可作为现代基线。
+HWC2 已明确 layer / client target acquire fence、per-layer release fence 与 display present fence 的接口职责，因此这里以 Android 7 作为现代基线。
 
 ### Android 8–11
 
