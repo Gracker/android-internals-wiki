@@ -79,7 +79,7 @@ auto_promoted_by: openclaw-task6
 
 # 5.12 Thermal 管控深度：从内核子系统到应用主动降载
 
-本章是 [5.5 Thermal 管控](05-thermal.md) 的深入篇。5.5 建立从传感器到应用的整体视图；这里继续回答几个更具体的问题：
+[5.5 Thermal 管控](05-thermal.md) 建立了从传感器到应用的整体视图。深入分析包括以下问题：
 
 - Linux thermal governor 根据什么决定 cooling state；
 - `power_allocator` 的功耗预算与 PID 参数如何工作；
@@ -583,7 +583,7 @@ adb shell cat /sys/class/thermal/thermal_zone0/temp
 adb shell cat /sys/class/thermal/cooling_device0/cur_state
 ```
 
-zone/cooling device 编号不稳定，正式脚本应先按 `type` 建立映射。`dumpsys thermalservice` 可以看到 Framework 当前温度、status、HAL 连接与 headroom 相关状态；厂商字段和权限随 build 变化。
+zone/cooling device 编号不稳定，正式脚本应先按 `type` 建立映射。`dumpsys thermalservice` 会显示 Framework 当前温度、status、HAL 连接与 headroom 相关状态；厂商字段和权限随 build 变化。
 
 ## 系统与 OEM 调优
 

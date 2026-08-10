@@ -67,47 +67,9 @@ last_deepseek_cn_review_at: 2026-06-06
 
 # 5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 **端侧 AI 推理为什么会变成性能问题**：[已验证: 章节正文 + developer.android.com]
-  端侧推理会把 latency、内存、thermal 和硬件调度成本一起带回设备，本质是前台交互预算问题。
-
-- 🔹 **Android ML 硬件加速栈**：[已验证: developer.android.com/ndk/guides/neuralnetworks, ai.google.dev/edge/litert/android/gpu]
-  CPU / GPU / NPU / DSP 各有优缺点，公开 GPU Delegate 路径以 OpenCL / OpenGL ES 为主，NPU 可观测性依赖厂商实现。
-
-- 🔹 **NNAPI 的版本边界与迁移方向**：[已验证: developer.android.com/ndk/guides/neuralnetworks]
-  NNAPI 在 Android 8.1（API 27）引入，在 Android 15 被官方标记为 deprecated，对性能敏感 workload 建议迁移。
-
-- 🔹 **LiteRT / TFLite 管线与 Delegate 选择**：[已验证: ai.google.dev/edge/litert/android/gpu]
-  模型加载、Interpreter 初始化、Delegate 绑定、执行四阶段决定冷启动成本和稳态表现。
-
-- 🔹 **CompiledModel API V2 与 AOT 编译**：[已验证: ai.google.dev/edge/litert]
-  V2 架构通过 CompiledModel 将编译与运行分离，支持零拷贝 TensorBuffer 和 AICore 多租户调度；AOT 编译将模型预编译为硬件原生二进制，冷启动准备时间从 500ms+ 降至 50ms 以内。
-
-- 🔹 **Android 17 NPU 硬件特性声明**：[已验证: developer.android.com]
-  API 37 正式引入 `FEATURE_NEURAL_PROCESSING_UNIT`（`android.hardware.npu`）；targetSdkVersion 37（Android 17）及以上的应用如需直接访问 NPU，需要声明该 feature。
-
-- 🔹 **AICore 内存归属**：[已验证: developer.android.com/ai/aicore]
-  AICore 推理内存（PSS/RSS）是否回算到发起方 App 当前公开文档未确认；排查内存水位时建议同时观察调用方 App 和 AICore / Private Compute Services 进程。
-
-- 🔹 **Perfetto 中的 ML 推理观测对照表**：[已验证: 章节正文]
-  默认 Perfetto 看到的是调度 / 频率 / 内存 / thermal，模型阶段 slice 需要 app 或 native instrumentation，NPU 额外依赖厂商 tracepoint 或 delegate 日志。
-
-- 🔹 **AICore / Gemini Nano 与模型优化的工程判断**：[已验证: developer.android.com/ai/aicore]
-  先看设备支持、冷启动准备、共享缓存、内存和 thermal，再谈模型版本和 benchmark 数字。
-
-### 扩展（可选深入）
-
-- 🔸 **LiteRT in Play Services 的部署取舍**：GMS 依赖、国内设备回退、运行时更新节奏
-- 🔸 **量化 / 裁剪 / 蒸馏的验证顺序**：模型大小、RSS、单次 latency、持续运行后的 thermal 变化
-<!-- outline-end -->
-
 端侧推理进入相机、OCR、语音、搜索和生成式功能后，模型执行时间就成了前台交互预算的一部分。一次推理可能同时占用 CPU 时间、GPU 带宽、专用加速器、文件页和匿名内存；持续执行还会抬高温度，触发降频。于是，实验室里更快的后端，放进真实页面后未必能带来更稳定的帧时间。
 
-这一节以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，回答三个工程问题：
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，工程问题分为三项：
 
 1. 应用发起的一次推理，经过哪些准备和执行阶段；
 2. CPU、GPU、NPU 与 AICore 分别属于哪条路径；
@@ -141,7 +103,7 @@ Android 上的“端侧 AI”包含数套职责不同的组件。排查性能前
   → UI 更新
 ```
 
-这条序列用来提醒我们：用户感知的是端到端延迟，运行时报告的 kernel 时间只覆盖其中一段。常见成本包括：
+用户感知的是端到端延迟，运行时报告的 kernel 时间只覆盖其中一段。常见成本包括：
 
 - **首次准备**：打开模型、映射文件、创建运行时、分配 tensor、加载 delegate、编译子图；
 - **稳态执行**：算子计算、输入输出传输、同步等待和后处理；
@@ -195,7 +157,7 @@ DSP 擅长低功耗信号处理，也曾是许多 Android 设备的神经网络�
 
 NNAPI 在 Android 8.1 / API 27 引入。它让框架构造计算图，再由系统 runtime 和厂商驱动选择设备并准备执行。Android 15 / API 35 起，官方将 NNAPI 标记为 deprecated，并建议性能敏感的应用迁移。
 
-Android 17 源码没有删除 NNAPI。当前锚点中可以看到：
+Android 17 源码没有删除 NNAPI。当前锚点包含：
 
 - `packages/modules/NeuralNetworks/runtime/include/NeuralNetworks.h`：NDK API 带有 API 35 弃用标记；
 - `packages/modules/NeuralNetworks/runtime/`：NNAPI runtime；
@@ -491,7 +453,7 @@ CPU 还要负责预处理、后处理、图中未委托节点和提交等待。�
 
 ## Android 版本边界
 
-| 版本 | 与本章相关的变化 |
+| 版本 | 与端侧推理相关的变化 |
 |---|---|
 | Android 8.1 / API 27 | 引入 NNAPI |
 | Android 14 代设备 | AICore / Gemini Nano 开始面向部分设备提供系统级能力 |
