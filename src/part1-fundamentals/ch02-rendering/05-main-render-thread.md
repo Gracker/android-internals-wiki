@@ -363,7 +363,7 @@ Consumer / BLAST / SurfaceFlinger
 - `dequeueBuffer()` 返回的 fence 约束“何时可以重新写旧 slot”；
 - `queueBuffer()` 携带的 input fence 约束“Consumer 何时可以读取新内容”。
 
-从 Consumer 视角看，后一条 fence 就是 acquire fence。release fence 与 slot 回收有关。SurfaceFlinger/HWC 的显示栅栏描述显示管线的提交完成进度。分析 Trace 时，先写清 fence 的生产者、等待者和所保护的 buffer，再讨论耗时。
+从 Consumer 视角看，后一条 fence 就是 acquire fence。release fence 与 slot 回收有关。SurfaceFlinger/HWC 的 present fence 描述显示管线的提交完成进度。分析 Trace 时，先写清 fence 的生产者、等待者和所保护的 buffer，再讨论耗时。
 
 ### buffer 数量没有“永远是三个”的结论
 
@@ -575,7 +575,7 @@ Dialog、PopupWindow、画中画、嵌入式 Surface 等场景还要确认是否
 
 ## Kernel 边界：调度证据与图形 fence 分开看
 
-内核行为以 `android17-6.18-2026-06_r6` 为准。通用调度路径可从以下文件核对：
+kernel 行为以 `android17-6.18-2026-06_r6` 为准。通用调度路径可从以下文件核对：
 
 - `kernel/sched/core.c`：唤醒、调度核心与任务状态转换；
 - `kernel/sched/fair.c`：CFS/EEVDF 公平调度类的选择与运行队列逻辑。

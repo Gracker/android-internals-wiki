@@ -228,7 +228,7 @@ if (!mFrameScheduled) {
 
 这段代码用于说明合并机制。多个组件在同一 pending frame 内注册工作，只会共享一次 VSync 申请。从其他线程安排帧时，Choreographer 先把异步消息放到所属 Looper 的队首，再由正确线程调用 `DisplayEventReceiver.scheduleVsync()`。
 
-`mFrameScheduled` 只合并“一次 frame dispatch”，不会合并不同 callback queue 中的业务内容。每个到期回调仍会在对应阶段执行。
+`mFrameScheduled` 只合并“一次 frame dispatch”，不会合并不同 callback queue 中的业务内容。每个到期 callback 仍会在对应阶段执行。
 
 ### 2.3 `scheduleVsync()` 请求单次脉冲
 
@@ -470,7 +470,7 @@ class CallbackCadenceSampler(
 
 常见实现把间隔除以 `16_666_667`，再把商减一当作掉帧数。这个算法在 90/120 Hz、动态刷新率、ARR、App 帧率 override 和主动降帧场景都会误判。
 
-如果只统计回调节奏，应同时记录当前 frame interval 或 display/render rate；如果目标是判断用户可见 jank，应使用 FrameTimeline、FrameMetrics 或 JankStats 等呈现相关数据。
+如果只统计 callback 节奏，应同时记录当前 frame interval 或 display/render rate；如果目标是判断用户可见 jank，应使用 FrameTimeline、FrameMetrics 或 JankStats 等呈现相关数据。
 
 ---
 
@@ -509,7 +509,7 @@ Choreographer.getInstance().postVsyncCallback { data ->
 | `FrameCallback` | Choreographer callback | 回调间隔、主线程帧节奏 | GPU/present、具体阶段耗时 |
 | `VsyncCallback` | App VSync dispatch | deadline、expected present、VSync ID | actual present、Window 各阶段耗时 |
 | `FrameMetrics` | 硬件加速 Window 已渲染帧 | input/animation/layout/draw/sync/GPU/total/deadline | 独立 Surface 内容、panel 光学完成 |
-| Perfetto FrameTimeline | App SurfaceFrame 与 SF DisplayFrame | expected/actual、jank type、present type、跨层 token | 未采集的厂商/面板细节 |
+| Perfetto FrameTimeline | App SurfaceFrame 与 SF DisplayFrame | expected/actual、jank type、present type、跨层 token | 未采集的 vendor/面板细节 |
 
 ### 9.2 关键指标怎么读
 
@@ -764,7 +764,7 @@ Choreographer 位于用户态 framework，不直接决定线程何时获得 CPU�
 - Runnable：已经可运行，但在 runqueue 等待；
 - Sleeping/Blocked：等待锁、futex、Binder、buffer 或其他资源。
 
-Framework 源码回答“回调何时被安排、按什么顺序执行”；kernel 调度轨迹回答“线程何时被唤醒、何时被调度上 CPU”。内核行为以 `android17-6.18-2026-06_r6` 为准，通用入口是 `kernel/sched/core.c` 和 `kernel/sched/fair.c`。
+Framework 源码回答“回调何时被安排、按什么顺序执行”；kernel 调度轨迹回答“线程何时被唤醒、何时被调度上 CPU”。kernel 行为以 `android17-6.18-2026-06_r6` 为准，通用入口是 `kernel/sched/core.c` 和 `kernel/sched/fair.c`。
 
 Perfetto 中看到 wakeup 到运行的长间隔时，再检查优先级、CFS 调度、CPU contention、cpuset/uclamp 和热状态。没有对应 trace 或设备配置，不能仅凭 `doFrame()` 起点晚就推断厂商调度策略。
 

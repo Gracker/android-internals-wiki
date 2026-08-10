@@ -243,7 +243,7 @@ Android 5.0 的 `libs/hwui/renderthread/RenderThread.cpp` 已包含独立 Render
 1. UI 线程执行输入、动画、measure、layout，并更新失效 View 的显示列表；
 2. `ThreadedRenderer` / `HardwareRenderer` 通过 native RenderProxy 把帧任务交给 RenderThread；
 3. `DrawFrameTask::syncFrameState()` 同步 RenderNode 树、Surface 与资源状态；
-4. RenderThread 准备 Skia/GPU 工作，为应用窗口缓冲执行出队与入队；
+4. RenderThread 准备 Skia/GPU 工作，为 App Window 缓冲执行出队与入队；
 5. GPU completion fence 随 buffer 交给下游，SurfaceFlinger 再处理 transaction、latch 和合成。
 
 主线程与 RenderThread 不是严格首尾相接的两段。同步阶段必须处理本帧状态；在条件满足时，UI 线程可以在 RenderThread 完成本帧 GPU 工作前继续运行。不同 Android 版本与场景的阻塞点也不相同。
@@ -465,7 +465,7 @@ UI 线程慢时看 input、animation、traversal、measure/layout 和 display-li
 3. SurfaceFlinger 何时认为 transaction ready 并 latch；
 4. 对应 DisplayFrame 何时 present。
 
-`BufferTX - <layerName>` 只表示 SurfaceFlinger 服务端的待处理缓冲事务发生变化，不表示屏幕已经显示。
+`BufferTX - <layerName>` 只表示 SurfaceFlinger 服务端的待处理缓冲 transaction 发生变化，不表示屏幕已经显示。
 
 ### 4. Android 12+ 用 FrameTimeline 锁定帧
 
@@ -487,7 +487,7 @@ App 可能以 30 fps 更新，显示以 60/90/120 Hz 或 ARR 步进工作；多�
 
 ## Kernel 与厂商边界
 
-内核源码锚点是 `android17-6.18-2026-06_r6`。其中 `drivers/dma-buf/dma-buf.c` 管理共享 buffer 对象，`dma-fence.c` 定义异步完成依赖，`sync_file.c` 把 fence 暴露为可跨进程传递和等待的文件描述符；通用 kernel 还提供线程调度、内存回收和频率框架等基础机制。
+kernel 源码锚点是 `android17-6.18-2026-06_r6`。其中 `drivers/dma-buf/dma-buf.c` 管理共享 buffer 对象，`dma-fence.c` 定义异步完成依赖，`sync_file.c` 把 fence 暴露为可跨进程传递和等待的文件描述符；通用 kernel 还提供线程调度、内存回收和频率框架等基础机制。
 
 HWUI backend、Vulkan/GLES driver、GPU job 调度、图形内存分配、DPU/HWC plane 与 ARR HAL 含有大量厂商实现。一个 framework 版本里程碑不保证 vendor driver 同步采用相同策略。Kernel fence 只能说明异步依赖是否完成；要解释迟到原因，还需找到 fence owner、提交者和对应硬件工作。
 
