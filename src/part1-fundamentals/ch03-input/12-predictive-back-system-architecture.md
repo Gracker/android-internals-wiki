@@ -57,7 +57,7 @@ drafted_by: "openclaw-task2a"
 | `onBackCancelled()` | 取消 | 把视觉状态恢复到起点 |
 | `onBackInvoked()` | 已提交 | 执行导航、关闭容器或提交业务状态 |
 
-在 `onBackProgressed()` 中 finish Activity、pop Fragment 或写数据库，会破坏取消语义。系统动画同样遵守这一边界：手势阶段只变换动画控制层（leash）；提交后才调用真实 callback，并把预览接入正式 Transition。
+在 `onBackProgressed()` 中 finish Activity、pop Fragment 或写数据库，会破坏取消语义。系统动画同样遵守这一边界：手势阶段只变换 leash；提交后才调用真实 callback，并把预览接入正式 Transition。
 
 ### 1.2 返回目的地与动画执行者
 
@@ -317,7 +317,7 @@ IME 隐藏提交后，controller 会暂时清除 IME callbacks，使下一次返
 Android 17 在 WM Shell 中提供两类内建观测：
 
 - `LatencyTracker.ACTION_BACK_SYSTEM_ANIMATION`：从 Shell 发起 `startBackNavigation()` 到收到有效 remote animation targets；
-- InteractionJankMonitor CUJ：包括 predictive-back home、cross-task、cross-activity，对相应动画控制层的帧做 jank 统计。
+- InteractionJankMonitor CUJ：包括 predictive-back home、cross-task、cross-activity，对相应 leash 的动画帧做 jank 统计。
 
 WMS 的 proto dump / window trace 还包含 `BackNavigationController` 的 `ANIMATION_IN_PROGRESS` 与 `LAST_BACK_TYPE`。WM Shell dump 会输出 `BackAnimationController` 的 gesture、post-commit、pointer-pilfer 以及 current/queued tracker 状态。
 

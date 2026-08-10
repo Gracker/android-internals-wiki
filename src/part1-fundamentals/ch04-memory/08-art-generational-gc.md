@@ -249,7 +249,7 @@ Android 8.0 起，`Bitmap` 像素数据放在 native heap。Android 14～17 中�
 
 ## 8. 用 Perfetto 判断 GC 是否参与慢帧
 
-### 8.1 先保证轨迹包含所需数据
+### 8.1 先保证 trace 包含所需数据
 
 抓取交互 trace 时，至少需要应用调度、ART/GC 事件和 Frame Timeline。不同 Android 构建与 trace 配置能看到的轨道不同。若 SQL 表为空，应先检查 data source 和目标进程是否被采集，再判断应用没有 GC。
 

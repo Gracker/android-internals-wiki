@@ -83,7 +83,7 @@ last_deepseek_cn_review_at: 2026-06-24
 
 ## 先确定优化对象
 
-平台以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点，并兼顾 Android 8～16 的行为差异。应用内存并非一个数字：Java/Kotlin 对象主要在 ART 管理的堆中，`malloc`、Bitmap 像素和部分运行时数据位于 Native 侧，GraphicBuffer、硬件 Bitmap、Surface 等还可能出现在 Graphics、memtrack 或 dmabuf 口径中。文件描述符不属于堆，却同样可能耗尽进程资源。
+平台以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点，并兼顾 Android 8～16 的行为差异。App 的内存并非一个数字：Java/Kotlin 对象主要在 ART 管理的堆中，`malloc`、Bitmap 像素和部分运行时数据位于 Native 侧，GraphicBuffer、硬件 Bitmap、Surface 等还可能出现在 Graphics、memtrack 或 dmabuf 口径中。文件描述符不属于堆，却同样可能耗尽进程资源。
 
 因此，“Java 堆没有到上限”无法证明进程没有内存问题。一次完整排查至少要回答四个问题：
 
