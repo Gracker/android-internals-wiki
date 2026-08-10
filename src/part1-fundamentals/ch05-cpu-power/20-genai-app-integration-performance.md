@@ -33,9 +33,9 @@ rework_summary: "修复待核验标记：更正 AICore 进程段落错字，移�
 
 在 Android 17 / API 37 上讨论端侧 GenAI，先要分清“平台版本”和“模型服务版本”。Android 17 决定 App 可使用的系统 API；AICore、Gemini Nano 模型和 ML Kit GenAI 库仍可独立更新。同一台 Android 17 设备上，模型版本、支持的能力和下载状态都可能不同。因此，`SDK_INT >= 37` 不能代替运行时能力检测。
 
-本章标题中的 “Google Intelligence API” 是早期公开资料使用过的称谓。面向应用的当前入口是 **ML Kit GenAI APIs**：摘要、校对、改写、图片描述、语音识别等场景优先使用专用 API，自定义文本或多模态提示词使用 Prompt API。它们在 AICore 上调用 Gemini Nano。旧版 `com.google.ai.edge.aicore` 示例不能直接当作当前 ML Kit API 使用。
+标题中的 “Google Intelligence API” 是早期公开资料使用过的称谓。面向应用的当前入口是 **ML Kit GenAI APIs**：摘要、校对、改写、图片描述、语音识别等场景优先使用专用 API，自定义文本或多模态提示词使用 Prompt API。它们在 AICore 上调用 Gemini Nano。旧版 `com.google.ai.edge.aicore` 示例不能直接当作当前 ML Kit API 使用。
 
-本章以 Android 17 / `android-17.0.0_r1` 为平台锚点。AICore 和 Gemini Nano 不属于该 AOSP 源码标签，涉及它们的结论以当前公开 API 契约为准；公开文档没有说明的进程名、Binder 次数、加速器选择、队列策略和 OOM 优先级，本章不作实现承诺。
+平台锚点为 Android 17 / `android-17.0.0_r1`。AICore 和 Gemini Nano 不属于该 AOSP 源码标签，涉及它们的结论以当前公开 API 契约为准；公开文档没有说明的进程名、Binder 次数、加速器选择、队列策略和 OOM 优先级均不作实现承诺。
 
 ## 先选清楚执行架构
 
@@ -76,7 +76,7 @@ App
 
 ### 不要从“系统服务”推导内部细节
 
-旧稿中以下推论都超出了公开契约：
+以下推论都超出了公开契约：
 
 - 固定 AICore 包名或进程名；
 - 每个请求固定发生两次 Binder 事务；
@@ -214,7 +214,7 @@ GPU frequency 上升不能单独证明 AICore 正在用 GPU；CPU frequency 上�
 
 Android 17 的 `PerformanceHintManager.createHintSession()` 要求线程 ID 属于调用进程的线程组；`Session.setThreads()` 对不属于该 App 的线程会抛出 `SecurityException`。`setPreferPowerEfficiency(true)` 描述的也是该 hint session 内线程的调度偏好。
 
-由此可以得到一个明确边界：App 可以为自己长期存在的预处理、后处理或渲染相关工作线程建立 ADPF 会话，不能把 AICore 内部线程加入会话，也不能借此要求 AICore 的 NPU/GPU 选择某个频率。把 `setPreferPowerEfficiency(true)` 写在 `checkStatus()` 和 `generateContent()` 之间，不会自动把推理切到“能效 NPU 模式”。
+边界很明确：App 可以为自己长期存在的预处理、后处理或渲染相关工作线程建立 ADPF 会话，不能把 AICore 内部线程加入会话，也不能借此要求 AICore 的 NPU/GPU 选择某个频率。把 `setPreferPowerEfficiency(true)` 写在 `checkStatus()` 和 `generateContent()` 之间，不会自动把推理切到“能效 NPU 模式”。
 
 对短促且到达时间不固定的请求，也不要为了“用了 ADPF”临时创建线程和会话。AOSP 源码要求 hint session 面向一组相互关联、长期存在的线程；周期性工作应报告目标时间和实际工作时间。具体用法见 §5.19。
 
@@ -222,7 +222,7 @@ Android 17 的 `PerformanceHintManager.createHintSession()` 要求线程 ID 属�
 
 Android 的 `PowerManager.addThermalStatusListener()` 能通知设备当前的整体热限制级别。该状态适合做产品降级信号，但它是粗粒度、设备相关的信号，不能换算成固定的 NPU 频率或 token/s。
 
-旧稿中“持续 30～60 秒后从 200 ms 上升到 500～1000 ms”没有跨设备依据，应改为逐机型测量以下指标：
+“持续 30～60 秒后从 200 ms 上升到 500～1000 ms”没有跨设备依据，性能数据应按机型测量以下指标：
 
 - cold start、warm start 和预热后的首段延迟；
 - prefill 时间、首 token 时间、decode token/s 和完整请求时间；
@@ -257,7 +257,7 @@ withContext(Dispatchers.IO) {
 }
 ```
 
-这里的 `GPU` 只是一次显式选择示例，不是所有 Android 设备的默认答案。GPU 需要清单中的相应 native library 声明；NPU 还可能需要厂商库目录。初始化失败时应记录后端、设备和模型信息，再按目标设备验证过的策略回退。旧稿给出的“GPU → 多模态 CPU → 纯文本 CPU”固定三级顺序不是 LiteRT-LM 的通用要求，也不应捕获所有 `Throwable` 后静默继续。
+这里的 `GPU` 只是一次显式选择示例，不是所有 Android 设备的默认答案。GPU 需要清单中的相应 native library 声明；NPU 还可能需要厂商库目录。初始化失败时应记录后端、设备和模型信息，再按目标设备验证过的策略回退。“GPU → 多模态 CPU → 纯文本 CPU”的固定三级顺序不是 LiteRT-LM 的通用要求，也不应捕获所有 `Throwable` 后静默继续。
 
 LiteRT-LM 把更多控制权交给 App，也把模型存储、进程内内存、引擎初始化、会话并发和关闭责任交给 App。它与 AICore 是两种资源模型，不能只比较一次请求的平均延迟。
 
@@ -336,4 +336,3 @@ Perfetto 中看到时间重叠只说明相关性。要证明某个资源竞争�
 - [AppFunctions 概览](https://developer.android.com/ai/appfunctions)：Android 16+、实验状态、权限与工具协议边界。
 - [PerformanceHintManager.java（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/os/PerformanceHintManager.java)：hint session 的线程归属和能效偏好。
 - [PowerManager.java（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/os/PowerManager.java)：thermal status 与监听器。
-- `DeepResearch/2026-06-23-android17-ondevice-llm-inference-architecture.md`：作为历史调研导航使用；具体 API 结论以上述当前官方资料为准。

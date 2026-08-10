@@ -41,7 +41,7 @@ sources:
 # 5.17 Android 17 FGS 类型声明与后台执行性能边界
 Android 14 以后，前台服务（Foreground Service，FGS）的约束不再只有“展示通知”。系统还要判断服务类型、类型权限、运行时前置条件、后台启动资格和时长额度。任何一项不满足，都可能让服务无法晋升、被限时结束，或使进程进入 ANR / Crash 路径。
 
-本节以 Android 17 / API 37 / `android-17.0.0_r1` 为基线，说明这些检查在 `system_server` 中怎样衔接，以及它们对启动延迟、后台任务和功耗意味着什么。FGS 的选择原则见 5.8，JobScheduler / WorkManager 配额见 5.10，面向业务的迁移方案见 25.13。
+平台基线为 Android 17 / API 37 / `android-17.0.0_r1`。分析范围包括这些检查在 `system_server` 中的衔接方式，以及它们对启动延迟、后台任务和功耗的影响。FGS 的选择原则见 5.8，JobScheduler / WorkManager 配额见 5.10，面向业务的迁移方案见 25.13。
 
 ## 先区分 FGS 的五道门
 
@@ -337,7 +337,7 @@ Android 17 后台音频可用 `adb shell cmd audio set-enable-hardening` 测试�
 
 ### 把 FGS 当作用户可感知生命周期
 
-选择 FGS 的首要问题是：用户是否明确知道任务正在持续运行，并需要随时停止或查看进度。若任务可以延迟、合并、重试，JobScheduler / WorkManager 往往更符合系统调度模型。若任务是用户刚刚发起的大文件传输，评估 User-Initiated Data Transfer Job。
+选择 FGS 时，应确认用户明确知道任务正在持续运行，并需要随时停止或查看进度。若任务可以延迟、合并、重试，JobScheduler / WorkManager 往往更符合系统调度模型。若任务是用户刚刚发起的大文件传输，评估 User-Initiated Data Transfer Job。
 
 FGS 类型要匹配用途。`specialUse` 需要声明具体 subtype，并接受应用商店审核；`systemExempted` 也不是普通系统应用的通用特权。Android 官方列出的资格包括设备所有者、特定系统角色、VPN、exact alarm 等受控场景。Android 17 的 `SystemExemptedFgsTypePermission` 会核对权限和系统豁免原因，不满足条件时按类型权限校验失败处理。
 
@@ -372,7 +372,7 @@ FGS 回归测试至少包含：
 
 ## 源码核对索引
 
-本节的 Android 17 判断对应以下源码位置：
+Android 17 的判断对应以下源码位置：
 
 - `services/core/java/com/android/server/am/ActiveServices.java`
   - `setServiceForegroundInnerLocked()`；

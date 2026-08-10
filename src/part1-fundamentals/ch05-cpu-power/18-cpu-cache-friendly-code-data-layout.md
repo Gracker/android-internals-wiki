@@ -33,9 +33,9 @@ material_count: 5
 ---
 
 # 5.18 CPU Cache 友好代码与数据布局优化
-CPU cache 优化的难点不在于记住“顺序数组比链表快”，而在于先证明当前负载受内存层级限制，再让数据布局匹配访问模式。移动 SoC 的核心、频率、cache 容量、共享层级和 PMU 事件均有差异；没有测量支撑的 padding、prefetch 或对象池，很容易增加内存占用，却没有改善延迟。
+CPU cache 优化应先证明当前负载受内存层级限制，再让数据布局匹配访问模式，不能停留在“顺序数组比链表快”这类经验判断。移动 SoC 的核心、频率、cache 容量、共享层级和 PMU 事件均有差异；没有测量支撑的 padding、prefetch 或对象池，很容易增加内存占用，却没有改善延迟。
 
-本节以 Android 17 / API 37 / `android-17.0.0_r1` 和 `android17-6.18-2026-06_r6` 为基线，分别讨论 Kotlin/Java、NDK C/C++、DEX 布局和系统源码中的局部性设计。调度与大小核见 5.1、5.2、5.3，Baseline Profile 见 8.7，启动测量见 21.4。
+平台与内核基线分别为 Android 17 / API 37 / `android-17.0.0_r1` 和 `android17-6.18-2026-06_r6`。分析范围包括 Kotlin/Java、NDK C/C++、DEX 布局和系统源码中的局部性设计。调度与大小核见 5.1、5.2、5.3，Baseline Profile 见 8.7，启动测量见 21.4。
 
 ## 先建立准确的 cache 模型
 
@@ -79,7 +79,7 @@ Android common kernel `android17-6.18-2026-06_r6` 的 arm64 `arch/arm64/include/
 
 ### Hardware cache、ART inline cache 与软件缓存属于不同机制
 
-本章讨论的 L1/L2/L3 是硬件 cache。ART 的 inline cache 用接收者类型记录来优化虚调用，业务代码中的 LruCache 保存计算结果；二者也叫 cache，却不表示同一种存储层级。
+这里讨论的 L1/L2/L3 是硬件 cache。ART 的 inline cache 用接收者类型记录来优化虚调用，业务代码中的 LruCache 保存计算结果；二者也叫 cache，却不表示同一种存储层级。
 
 ART inline cache 可能让编译器生成更直接的调用路径，从而间接影响指令前端和数据访问。它不能拿来证明某个对象“进入 L1”，也不能用 L1 miss 解释所有多态调用开销。
 
@@ -329,7 +329,7 @@ simpleperf record \
 simpleperf report --sort dso,symbol
 ```
 
-是否支持该事件采样、用户态过滤和 DWARF call graph 要由 `simpleperf list` 与设备能力确认。采样结果告诉你哪些指令附近出现事件，不一定包含被访问的数据地址，也不能单独证实 false sharing。
+是否支持该事件采样、用户态过滤和 DWARF call graph 要由 `simpleperf list` 与设备能力确认。采样结果只能定位哪些指令附近出现事件，不一定包含被访问的数据地址，也不能单独证实 false sharing。
 
 debuggable / profileable 应用可使用 Simpleperf 的应用分析流程。不要把 `setenforce 0` 写成普通开发步骤；量产设备的 PMU 与 tracing 权限由系统安全策略决定。
 
@@ -395,7 +395,7 @@ Android 17 `Parcel` 的普通数据存储在 `mData` 连续缓冲区，通过 `m
 
 ### 删除与 cache 无关的伪案例
 
-PSS 的 Dalvik/native/other 分类用于内存归因，不能说明“cache 流分离”。`anon_huge_pages`、`file_pmd_mapped` 等 smaps 字段反映大页映射状态，也不能用于避免 false sharing。它们属于内存统计和 TLB/页表主题，不应作为本章的 Android 17 cache 优化案例。
+PSS 的 Dalvik/native/other 分类用于内存归因，不能说明“cache 流分离”。`anon_huge_pages`、`file_pmd_mapped` 等 smaps 字段反映大页映射状态，也不能用于避免 false sharing。它们属于内存统计和 TLB/页表主题，不应作为 Android 17 cache 优化案例。
 
 同样，SLUB 不会把所有对象大小统一向上取整到 cache-line 整数倍；具体 alignment 取决于架构、cache flags、对象大小和创建参数。16 KiB page 对 slab order、碎片和 TLB 的影响也需要单独测量。
 

@@ -68,44 +68,11 @@ last_task6_audit: "2026-07-16T21:17:00+08:00"
 
 # 5.16 GPU/NPU 异构负载调度与功耗归因
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 异构负载不等于 CPU 空闲
-说明 GPU/NPU 卸载后,CPU 仍负责输入预处理、buffer 搬运、delegate 调度、结果后处理和 UI 合成;性能归因要看端到端路径,而不是只看加速器子图耗时。
-
-### 🔹 GPU、NPU、CPU 三类路径的适用边界
-对比渲染类 GPU 负载、ML delegate / LiteRT NPU 负载、CPU fallback 的典型收益和代价,明确算子覆盖率、内存布局、同步等待和热状态对结果的影响。
-
-### 🔹 ADPF 能表达线程工作量,不能直接控制加速器
-梳理 `PerformanceHintManager.Session`、Power HAL、thermal headroom 与 GPU/NPU 频率之间的关系,避免把 ADPF 写成应用侧绑核、调频或 NPU 调度 API。
-
-### 🔹 Perfetto 与厂商工具的观测分层
-建立观测清单:CPU sched/freq、GPU frequency/counters、thermal status、power rails、FrameTimeline、delegate 日志和厂商 NPU trace;说明普通发布版设备上哪些信号可能不可见。
-
-### 🔹 持续推理和前台交互的资源竞争
-覆盖相机预览、实时翻译、AI 修图、游戏 AI 辅助等场景中,NPU/GPU 持续工作如何影响帧预算、温控和后台任务,交叉引用 5.13、22.10、25.11。
-
-### 🔹 Android 17 NPU feature 与 LiteRT 迁移后的新边界
-把 `PackageManager.FEATURE_NEURAL_PROCESSING_UNIT` / `android.hardware.npu`、LiteRT `CompiledModel`、NNAPI deprecated、厂商 delegate 与 AICore 生态能力拆开,形成可发布事实表。
-
-## 扩展
-
-### 🔸 GPU/NPU 与 EAS / devfreq cooling 的交互
-从调度器、devfreq cooling、thermal governor 角度说明 CPU 线程迁移、GPU/NPU 降频和功耗预算共享的分析方法。
-
-### 🔸 端侧 AI 性能实验模板
-给出同机型 CPU / GPU / NPU 对照、冷启动 / 稳态、p50 / p90 / p99、功耗与温度的实验字段清单。
-
-### 🔸 厂商 SoC 差异与可迁移结论
-整理 Qualcomm、MediaTek、Tensor 等平台的公开能力边界,避免把单个平台的 delegate 行为写成 Android 通用结论。
-
-<!-- outline-end -->
 把模型交给 GPU 或 NPU，只改变了其中一段计算由谁执行。输入解码、张量转换、命令提交、同步等待、结果后处理和画面合成仍可能落在 CPU、GPU 与内存子系统上。因此，异构计算的优化目标应写成一条完整的链路：
 
 > 在满足正确性与质量要求的前提下，让端到端延迟、尾延迟、能耗和热稳定性同时符合产品预算。
 
-本节以 Android 17 / API 37 / `android-17.0.0_r1` 为平台基线，以 `android17-6.18-2026-06_r6` 为内核基线，说明怎样拆开这条链路、怎样理解各层调度，以及怎样为性能结论找到足够的证据。ADPF 的基础用法见 5.9，持续推理与热管理分别见 5.13 和 5.12，Android 17 的 NPU 接口边界见 5.14。
+平台基线为 Android 17 / API 37 / `android-17.0.0_r1`，内核基线为 `android17-6.18-2026-06_r6`。分析范围包括端到端阶段、各层调度和性能证据。ADPF 的基础用法见 5.9，持续推理与热管理分别见 5.13 和 5.12，Android 17 的 NPU 接口边界见 5.14。
 
 ## 先把一次异构任务拆成阶段
 
@@ -215,7 +182,7 @@ Thermal HAL / thermal framework / 厂商热策略
 
 在 `android17-6.18-2026-06_r6` 中，`kernel/sched/fair.c` 的 `find_energy_efficient_cpu()` 为唤醒任务挑选候选 CPU，并调用 `compute_energy()` 借助 Energy Model 比较任务放到不同 CPU 后的能耗增量。这是 CPU 任务放置逻辑。
 
-CPU 频率请求位于另一条路径。`kernel/sched/cpufreq_schedutil.c` 的 `get_next_freq()` 根据利用率和容量计算候选频率，再交由 CPUFreq policy 与驱动约束。Android common kernel 在这里还保留了 `trace_android_vh_map_util_freq` 厂商 hook。由此可以得到两个明确结论：
+CPU 频率请求位于另一条路径。`kernel/sched/cpufreq_schedutil.c` 的 `get_next_freq()` 根据利用率和容量计算候选频率，再交由 CPUFreq policy 与驱动约束。Android common kernel 在这里还保留了 `trace_android_vh_map_util_freq` 厂商 hook。两项结论由此成立：
 
 - 线程迁移到哪颗 CPU 与该 CPU policy 选择什么频率需要分别分析；
 - 平台源码给出的算法边界不等于具体设备没有厂商调节。
@@ -426,11 +393,11 @@ Perfetto 的 `android.power` 可采集电池电量、charge、电流和电压。
 
 > 在设备 A、系统构建 B、runtime C、模型 D 和测试条件 E 下，NPU 候选路径相对 CPU 基线把端到端 p90 从 X 降到 Y；runtime 报告委派比例为 Z，单位任务能量变化为 W。
 
-这种表述允许读者复核，也给后续系统、驱动或模型升级留下重新测试的位置。
+这种表述便于复核，也给后续系统、驱动或模型升级留下重新测试的位置。
 
 ## 源码核对索引
 
-本节的平台判断以以下 Android 17 与内核 6.18 源码为准：
+平台判断以以下 Android 17 与内核 6.18 源码为准：
 
 - `frameworks/base/core/java/android/os/PerformanceHintManager.java`
   - Java hint session、`WorkDuration`、flagged API 与 `@TestApi` 边界。
