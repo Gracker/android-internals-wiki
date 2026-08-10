@@ -66,43 +66,6 @@ rework_result: fixed-pending-review
 
 # 4.11 Cached App Freezer 与 GC 触发边界
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 Freezer 解决的是 cached 进程继续消耗 CPU 的问题
-梳理 Cached App Freezer 的定位：它把符合条件的 cached 进程迁移到 frozen cgroup，停止线程调度，减少后台 CPU 和电量消耗；同时说明冻结本身不释放 Java Heap、Native Heap 或匿名页内存。
-
-### 🔹 OOM Adj 是入口条件，不是 LMK 决策复用
-围绕 `ProcessList.CACHED_APP_MIN_ADJ`、`FREEZER_CUTOFF_ADJ`、`CACHED_APP_LMK_FIRST_ADJ` 拆清边界：freezer 与 LMKD 都会看进程重要性，但一个暂停执行，一个杀进程释放内存，排障时不能把两者合并成“低内存处理”。
-
-### 🔹 CachedAppOptimizer 的冻结/解冻链路
-以 `psc/OomAdjuster` 的 CPU_TIME capability、`CachedAppOptimizer.freezeProcess()`、framework/native JNI 与 cgroup 写入为主线，给出冻结触发、异步处理线程、`mFrozenProcesses` 状态记录和进程移除清理路径。
-
-### 🔹 Binder Freezer 与解冻延迟
-说明 `IBinder.addFrozenStateChangeCallback` 与 binder freezer 文档的协作方式；重点放在同步 binder call、服务绑定、UI 可见性恢复等解冻入口，以及解冻延迟对调用方卡顿/ANR 的排查价值。
-
-### 🔹 GC 触发与 Freezer 没有直接因果关系
-把 ART GC 的触发路径放回 `art/runtime/gc/heap.cc`：对象分配、堆占用阈值、后台 GC 与 low-memory 信号会影响 GC；freezer 只是停止调度，不会主动触发 GC，也不会替代 `onTrimMemory()` 或 LMKD。
-
-### 🔹 16KB Page Size 影响内存粒度，不改写 freezer 语义
-解释 16KB 页对分配粒度、页对齐、native/anonymous memory 观测口径的影响；本轮已按 Android 17 基线核对 freezer 资格判断、CachedAppOptimizer 状态机与 ART `heap.cc`，未发现 page-size 分支会改写 GC/freezer 策略。
-
-### 🔹 线上归因：区分冻结、GC、LMK 与用户感知重启
-建立排障口径：Perfetto/trace 中看线程调度停顿，dumpsys activity/process 看 adj 和 frozen 状态，ApplicationExitInfo 看退出原因，GC log/heap profile 看堆事件，避免把“回前台慢”“像冷启动”“内存突然下降”混成同一类问题。
-
-## 扩展
-
-### 🔸 Android 11 QPR3 到 Android 17 的版本演进
-整理 cached app freezer、binder freezer callback、DeviceConfig throttle、16KB Page Size 支持与 Android 17 CPU_TIME capability 判断之间的时间线。
-
-### 🔸 厂商 freezer 策略差异
-补充 Pixel、国内 ROM、低内存设备上的 freezer 开关、阈值、白名单和后台保活策略差异；需要实机 trace 或厂商源码验证。
-
-### 🔸 与 1.18 Binder Freezer 的边界
-本节聚焦内存、GC 与 LMK 视角；Binder 协议与 frozen process 通信细节详见 1.18。
-
-<!-- outline-end -->
-
 ## 先分清四种机制
 
 Cached App Freezer 面向的是已经进入 cached 状态、暂时不需要执行代码的进程。它通过 cgroup freezer 停止这些进程的线程调度，减少后台 CPU 时间和电量消耗。进程仍然存在，地址空间、Java Heap、Native Heap、文件描述符和运行时状态也仍然存在。
@@ -116,7 +79,7 @@ Cached App Freezer 面向的是已经进入 cached 状态、暂时不需要执�
 | reclaim / ZRAM | 内核或系统内存服务 | 回收文件页、交换匿名页、对进程执行内存优化 | 可以减少驻留物理页 |
 | LMKD | `lmkd` 与内核压力信号 | 杀死低优先级进程 | 可以释放整个进程的资源 |
 
-官方文档也明确说明：frozen 进程的所有线程都会暂停，因而无法执行 GC，也无法处理内存 trim 回调。Android 17 的源码在冻结成功后还可以从进程外部执行 app compaction 和 ZRAM writeback；这些动作会改变 RSS 或匿名页位置，却不表示 ART 在 frozen 区间内执行了 GC。[已验证: Android Cached Apps Freezer 官方文档；AOSP android-17.0.0_r1 `CachedAppOptimizer.java`]
+官方文档也明确说明：frozen 进程的所有线程都会暂停，因而无法执行 GC，也无法处理内存 trim 回调。Android 17 的源码在冻结成功后还可以从进程外部执行 app compaction 和 ZRAM writeback；这些动作会改变 RSS 或匿名页位置，却不表示 ART 在 frozen 区间内执行了 GC。
 
 因此，看到以下现象时不要只凭时间相邻建立因果关系：
 
@@ -125,7 +88,7 @@ Cached App Freezer 面向的是已经进入 cached 状态、暂时不需要执�
 - 回到前台后表现得像重启：先确认进程是否仍在，再检查 freezer、LMK、崩溃和系统回收记录。
 - CPU 时间在后台突然停止增长：这才是 freezer 最直接的观测特征。
 
-本章的平台基线是 Android 17 / API 37 / `android-17.0.0_r1`。内核相关结论以 `android17-6.18-2026-06_r6` 为基线。
+平台基线是 Android 17 / API 37 / `android-17.0.0_r1`，内核基线是 `android17-6.18-2026-06_r6`。
 
 ## Android 17 如何判断进程能否冻结
 
@@ -146,7 +109,7 @@ frameworks/base/services/core/java/com/android/server/am/psc/Constants.java
 | `CACHED_APP_LMK_FIRST_ADJ` | `950` | cached 进程中优先交给 LMK 处理的区段起点 |
 | `CACHED_APP_MAX_ADJ` | `999` | cached 区间末端 |
 
-`ActivityManagerConstants.DEFAULT_FREEZER_CUTOFF_ADJ` 默认采用 `CACHED_APP_MIN_ADJ`。启用 `prototypeAggressiveFreezing` 时，默认值可以降到 `HOME_APP_ADJ`。运行时还可以通过 DeviceConfig 的 `freezer_cutoff_adj` 调整，并传给进程状态控制器。[已验证: AOSP android-17.0.0_r1 `ActivityManagerConstants.java`、`psc/Constants.java`]
+`ActivityManagerConstants.DEFAULT_FREEZER_CUTOFF_ADJ` 默认采用 `CACHED_APP_MIN_ADJ`。启用 `prototypeAggressiveFreezing` 时，默认值可以降到 `HOME_APP_ADJ`。运行时还可以通过 DeviceConfig 的 `freezer_cutoff_adj` 调整，并传给进程状态控制器。
 
 Android 17 的关键变化在 `psc/OomAdjuster.java`：
 
@@ -225,8 +188,6 @@ thread.scheduleTrimMemory(ComponentCallbacks2.TRIM_MEMORY_BACKGROUND);
 6. 再查询 Binder freeze info；若发现 frozen 期间出现待处理的同步事务，进入 Binder 失败处理。
 7. 冻结成功后调用 `onProcessFrozen()`，按配置安排进程外部的内存优化。
 
-[已验证: AOSP android-17.0.0_r1 `CachedAppOptimizer.java`]
-
 Binder 先冻结，cgroup 随后冻结。这个顺序让 system_server 能在停止线程调度前处理 Binder 状态，并避免同步调用方无限等待。
 
 ### 解冻动作与失败分支
@@ -286,7 +247,7 @@ Android 17 的 ART 基线是 `art/runtime/gc/heap.cc`。Freezer 没有向 `Heap`
 
 `UpdateProcessState()` 值得单独注意。进程进入后台时，ART 可以进行 collector transition；对 CMC/CC 等 collector，满足分配量和内存状态条件时，`DoPendingCollectorTransition()` 可能执行 full GC 或 managed-heap compaction。这是“进程状态影响 runtime 策略”，仍然发生在应用能运行的时段。
 
-可以用三句话记住边界：
+三项边界分别是：
 
 1. 进入后台会影响 ART 的策略选择。
 2. framework 可能在冻结前请求 runtime GC。
@@ -309,7 +270,7 @@ Android 17 还将 MMD 引入这类内存管理流程。按设备配置，冻结�
 - frozen 进程的 RSS、swap 或 ZRAM 指标仍可能变化，因为执行者在进程外部；
 - 恢复耗时可能受页面重新读入影响，需要把 unfreeze、major fault、ZRAM I/O 和 Activity launch 放到同一时间轴。
 
-这些功能受开关、设备存储和产品配置约束。AOSP 存在实现不代表每台 Android 17 设备都启用了相同策略。[已验证: AOSP android-17.0.0_r1 `CachedAppOptimizer.java`；Android MMD 官方文档]
+这些功能受开关、设备存储和产品配置约束。AOSP 存在实现不代表每台 Android 17 设备都启用了相同策略。
 
 ## Binder Freezer 决定 IPC 如何失败
 
@@ -320,8 +281,6 @@ Android 17 还将 MMD 引入这类内存管理流程。按设备配置，冻结�
 | 同步 transaction | 系统终止 frozen 服务端，避免调用方无限阻塞 | 调用方收到远端死亡或 `RemoteException`；服务端记录 freezer 退出原因 |
 | `oneway` transaction | 事务暂存在目标进程的异步缓冲区，解冻后处理 | 缓冲区溢出可能导致服务端退出；旧事件恢复后可能已经失效 |
 | 持续 callback | 由协议设计决定丢弃、合并或排队 | 解冻后事件突发、重复刷新和主线程拥塞 |
-
-[已验证: Android Binder Freezer 官方文档]
 
 ### API 36 起可以监听远端 frozen 状态
 
@@ -356,7 +315,7 @@ Android 14 及以上的公开规则同样适用于 Android 17：
 
 16KB Page Size 从 Android 15 起进入设备兼容范围。它影响 ELF segment 对齐、native 库兼容、页表开销、TLB 覆盖、page fault 和 RSS/PSS 的计量粒度。页更大时，同样的映射和碎片模式可能呈现不同的驻留内存数值。
 
-对 Android 17 相关源码的核对结果是：
+Android 17 相关源码的边界如下：
 
 - `psc/OomAdjuster.java` 的 CPU capability 与冻结资格判断没有 page-size 分支；
 - `CachedAppOptimizer.java` 的 Binder/cgroup 冻结状态机没有 page-size 分支；
@@ -444,7 +403,7 @@ ORDER BY ts;
 
 ## 版本演进到 Android 17
 
-| Android 版本 | 与本章相关的变化 |
+| Android 版本 | Freezer 与内存管理变化 |
 | --- | --- |
 | Android 11 / API 30 | 引入 Cached Apps Freezer，设备是否启用与产品配置有关 |
 | Android 13 / API 33 | cached 进程可能获得很少或没有执行时间；`REASON_FREEZER` 成为公开退出原因 |

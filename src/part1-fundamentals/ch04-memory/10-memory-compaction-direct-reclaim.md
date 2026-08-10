@@ -31,48 +31,14 @@ sources:
 
 # 4.10 内存规整与直接回收性能边界
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 问题边界：规整、回收、压缩不是同一件事
-说明 memory compaction、page reclaim、ZRAM compression 的职责差异，避免把“内存压缩”混成一个概念。
-
-### 🔹 高阶页分配为什么会触发规整
-解释连续物理页需求、迁移类型、fragmentation index 与 direct compaction 的触发条件。
-
-### 🔹 kswapd、direct reclaim 与 direct compaction 的耗时路径
-区分后台回收和分配现场同步等待，说明为什么 App 线程可能在内核态停住。
-
-### 🔹 Android 侧内存压力传导：PSI、lmkd 与进程优先级
-把内核压力信号、lmkd 决策和 `oom_score_adj` 串起来，说明规整失败与杀进程之间的关系边界。
-
-### 🔹 Perfetto / bugreport 中如何识别规整和回收
-列出可观察线索：`kswapd`、`kcompactd`、direct reclaim、page fault、PSI stall、线程 Running/Sleeping 状态。
-
-### 🔹 App 侧能做什么，不能做什么
-说明对象分配、Bitmap/Native 内存、内存峰值、后台缓存释放能降低压力，但不能直接控制内核规整策略。
-
-## 扩展
-
-### 🔸 与 16KB Page Size 的关系
-大页大小改变会影响高阶页和碎片化压力，但具体收益必须基于设备内核配置和 workload 验证。
-
-### 🔸 与低内存设备和后台保活的关系
-低内存设备上回收、swap、规整和 lmkd 决策更容易互相放大，适合作为 10.4 的实战案例入口。
-
-### 🔸 厂商内核调参差异
-不同设备的 watermark、compaction、ZRAM、lmkd 参数差异可能改变观测结果，需要在 17.2/17.1 中交叉引用。
-
-<!-- outline-end -->
-
 一次应用卡顿可能同时伴随 `kswapd` 活跃、memory PSI 上升、ZRAM 写入和 `lmkd` 杀进程。时间上相邻，不代表它们由同一段代码执行，也不代表处理的是同一个问题。
 
-本章以 Android 17 的两组源码为准：
+分析以 Android 17 的两组源码为准：
 
 - Android Common Kernel `android17-6.18-2026-06_r6`，提交 `bcbd6575c301ef871ea15e7ac0fc83909e17ef56`；
 - AOSP `android-17.0.0_r1` 的 `lmkd`、`CachedAppOptimizer` 和 JNI 实现。
 
-源码复核后的首要结论是：Linux 物理页规整、页面回收、ZRAM 压缩、Android cached app compaction 是四种不同操作。诊断时先确认事件属于哪一层，再讨论性能影响。
+Linux 物理页规整、页面回收、ZRAM 压缩、Android cached app compaction 是四种不同操作。诊断时先确认事件属于哪一层，再讨论性能影响。
 
 ## 1. 四个容易混淆的机制
 
@@ -276,7 +242,7 @@ if (suitable) {
 }
 ```
 
-当前 kernel tag 的 sysctl 文档写明 `extfrag_threshold` 默认值为 500；设备的实际值仍应现场读取。这个阈值不是“超过就保证规整成功”，它只是 costly-order 规整适用性判断的一项启发式输入。
+当前 kernel tag 的 sysctl 文档写明 `extfrag_threshold` 默认值为 500；设备的实际值仍应现场读取。该阈值参与 costly-order 规整适用性判断，即使超过也不保证规整成功。
 
 读取 `extfrag_index` 需要 `CONFIG_DEBUG_FS`、`CONFIG_COMPACTION` 和相应权限，量产设备通常无法直接访问。缺少该指标时，可以用 buddy 分布、迁移类型、规整结果和分配 order 建立间接证据，不能仅凭 `MemAvailable` 宣布存在物理碎片。
 
