@@ -105,27 +105,9 @@ last_deepseek_cn_review_at: 2026-06-28
 
 # 18.9 Android 17 Vulkan 原生渲染管线
 
-<!-- outline-start -->
-
-**锚点（必须覆盖）：**
-- [18.9.1 为什么选择 Vulkan](#为什么选择-vulkan) — 与 GLES 的主要区别
-- [18.9.2 Android Vulkan Profile (AVP)](#android-vulkan-profile-avp) — 碎片化问题的标准化方案
-- [18.9.3 渲染流程详解](#渲染流程详解) — Acquire → Submit → Present 的完整流程
-- [18.9.4 Pipeline Barrier 与 Image Layout](#pipeline-barrier-与-image-layout) — 显式同步的要点
-- [18.9.5 Presentation Mode](#presentation-mode) — Android native WSI 的支持边界
-- [18.9.6 Swappy Frame Pacing](#swappy-frame-pacing) — Android 官方的帧节奏库
-- [18.9.7 Trace 视角](#trace-视角) — Vulkan 调用路径的识别特征
-
-**扩展（可选深入）：**
-- Command Buffer 多线程并行录制
-- Validation Layers 的使用与调试
-- Vulkan 与 SurfaceControl 的集成
-
-<!-- outline-end -->
-
 Vulkan 把资源、命令和同步的责任交给应用，但 Android 的显示后半段没有消失。App 仍要通过 `VK_KHR_android_surface` 把 `VkSurfaceKHR` 接到 `ANativeWindow`，swapchain image 仍映射到 Android GraphicBuffer/BufferQueue，提交后仍要经过 SurfaceFlinger、HWC 和 display present。
 
-本文以 `android-17.0.0_r1` 的 Android WSI、SurfaceFlinger/RenderEngine 为 Platform 锚点，以 `android17-6.18-2026-06_r6` 的 dma-buf/dma-fence 为 kernel 锚点。Vulkan driver 和 GPU job scheduler 由设备实现，AOSP 能固定接口与所有权，不能替目标设备回答 GPU 工作何时完成。
+平台源码锚点为 `android-17.0.0_r1` 的 Android WSI、SurfaceFlinger/RenderEngine，kernel 锚点为 `android17-6.18-2026-06_r6` 的 dma-buf/dma-fence。Vulkan driver 和 GPU job scheduler 由设备实现，AOSP 能固定接口与所有权，不能替目标设备回答 GPU 工作何时完成。
 
 ## 为什么选择 Vulkan
 
@@ -337,7 +319,7 @@ sequenceDiagram
 - Fence：把某次 queue 工作完成状态暴露给 host；
 - Pipeline barrier/event：在 command stream 内定义执行顺序、内存可见性、image layout 与 queue-family ownership。
 
-Semaphore signal 不能代替 image layout transition，barrier 也不能代替 present 对 render-finished semaphore 的等待。同步 Review 要同时检查 execution dependency、memory dependency 和 resource state。
+Semaphore signal 不能代替 image layout transition，barrier 也不能代替 present 对 render-finished semaphore 的等待。同步分析要同时检查 execution dependency、memory dependency 和 resource state。
 
 ### acquired image 的 layout
 
@@ -547,7 +529,7 @@ Graphite 的 `flushAndSubmit()` 用 Recording、wait/signal backend semaphores �
 
 ### Android 12—17 边界
 
-| 平台 | 变化 | Review 重点 |
+| 平台 | 变化 | 分析重点 |
 |---|---|---|
 | Android 12 / API 31 | BLAST 与 FrameTimeline 形成现代显示诊断基线 | 区分 App submit、SF latch 与 display present |
 | Android 13 / API 33 | Composer AIDL 主线；Game Mode/FPS intervention 可能改变游戏帧率 | 目标 cadence 要结合系统 intervention |

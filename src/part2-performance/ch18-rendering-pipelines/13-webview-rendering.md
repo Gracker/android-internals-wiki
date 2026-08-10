@@ -158,30 +158,11 @@ idle_audit_notes: "2026-07-27 idle audit: 未发现未来版本越界、验证�
 
 # 18.13 Android 17 WebView 渲染管线
 
-<!-- outline-start -->
-
-**锚点（必须覆盖）：**
-
-- WebView 的进程模型：Browser Code / GPU Services / Renderer 进程
-- 三层边界：官方 Android System WebView provider 内部路径 / 宿主全屏托管分支 / 第三方 SDK 扩展路径
-- 官方 provider 内部两条常见路径：GL Functor / SurfaceControl 独立子 Surface
-- 宿主全屏 custom view 与第三方 Texture-like 实现的 producer / consumer 关系
-- 常见现场对比表
-- 如何判断当前 WebView 走哪条路径
-
-**扩展（可选深入）：**
-
-- WebViewFactory 初始化与 Chromium 内核加载
-- Hardware Draw Functor API（Android 10+）
-- 国内 X5/UC 内核的特殊实现
-
-<!-- outline-end -->
-
 ## 这条管线为什么容易看错
 
 WebView 同时跨过 Chromium 与 Android 两套渲染系统。网页侧负责 JavaScript、样式、布局、绘制列表、栅格化和 compositor frame；宿主侧仍要完成 View 遍历、HWUI 绘制、窗口 buffer 提交以及 SurfaceFlinger 合成。只盯着 App 主线程，会漏掉 renderer 和 GPU service；只看到 Chromium compositor，也不能推导出网页拥有独立的 SurfaceFlinger layer。
 
-本文固定三组锚点，其中 Android 平台和 WebView provider 是两条彼此独立的版本线：
+这里固定三组锚点，其中 Android 平台和 WebView provider 是两条彼此独立的版本线：
 
 - Android 平台固定在 Android 17 / API 37 / `android-17.0.0_r1`，用来解释 framework、HWUI、SurfaceControl 和显示系统的接口；
 - kernel 固定在 `android17-6.18-2026-06_r6`，用来解释 dma-buf、dma-fence / sync_file、调度与内存回收；
@@ -199,7 +180,7 @@ WebView 现场常被混在一起的内容有三类。
 | 宿主全屏托管 | `WebChromeClient.onShowCustomView()` 与宿主全屏容器 | 页面进入 fullscreen mode 后，WebView 把一个 `View` 交给宿主 | 回调给出的 `View` 必然是 `SurfaceView` 或 `TextureView` |
 | 第三方 SDK 扩展 | X5、UC、定制 Chromium 或厂商包装层 | 可能使用 Texture-like、独立 Surface、ImageReader 或私有桥接 | 可以直接套用 Android System WebView 的内部类名与 trace slice |
 
-后文提到的 “SurfaceControl 子 Surface” 指官方 provider 对 overlay 候选的提升能力。普通网页主体通常仍由 functor 画进宿主 App Window；视频、受保护内容或满足条件的 provider overlay 才可能增加独立 layer。这个限定是理解整章的关键。
+“SurfaceControl 子 Surface”在这里指官方 provider 对 overlay 候选的提升能力。普通网页主体通常仍由 functor 画进宿主 App Window；视频、受保护内容或满足条件的 provider overlay 才可能增加独立 layer。分析时必须保留这一限定。
 
 ## 进程模型：三个执行域
 
@@ -271,7 +252,7 @@ Android 17 的调用边界可以概括为：
 
 这条链路解释了为什么 WebView 首次创建可能很重：它可能同时包含包选择、RELRO / native library、Java 类加载、Chromium 初始化、renderer 建立、网络和页面首帧。稳态滚动 trace 不能回答冷启动问题。
 
-AndroidX WebKit 当前提供 `WebViewCompat.startUpWebView()`，可以把允许在后台执行的启动工作提前到可控时机，其余工作仍可能分段回到主线程。调用后若马上访问别的 WebView API，UI 线程仍可能等待初始化完成；预热还会增加进程与内存驻留，应按真实启动路径评估。使用这一 API 时，应以项目采用的 AndroidX WebKit 版本文档为准。
+AndroidX WebKit 当前提供 `WebViewCompat.startUpWebView()`，可以把允许在后台执行的启动工作提前到可控时机，其余工作仍可能分段回到主线程。调用后若马上访问别的 WebView API，UI 线程仍可能等待初始化完成；预热还会增加进程与内存驻留，应按真实启动路径评估。使用这一 API 时，应以项目所用 AndroidX WebKit 版本的官方说明为准。
 
 ## 官方 provider 的标准硬件路径：functor / DrawFn
 
@@ -611,7 +592,7 @@ kernel 统一到 `android17-6.18-2026-06_r6` 后，host window 与媒体 overlay
 
 ### WebView provider
 
-Chromium 是可更新组件。下面固定在本文复核时的上游 revision `4e18c703f7cd950c890e14105da8eff42192af6a`，用于解释当前实现；处理设备问题时应切到该 provider 对应的 revision。
+Chromium 是可更新组件。这里以上游 revision `4e18c703f7cd950c890e14105da8eff42192af6a` 解释当前实现；处理设备问题时应切到该 provider 对应的 revision。
 
 - [`draw_fn.h`](https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/public/browser/draw_fn.h)、[`aw_draw_fn_impl.cc`](https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/browser/gfx/aw_draw_fn_impl.cc)：HWUI DrawFn 与 provider callback；
 - [`aw_contents.cc`](https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/browser/aw_contents.cc)、[`browser_view_renderer.cc`](https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/browser/gfx/browser_view_renderer.cc)：硬件 / 软件 draw 分流与 synchronous compositor；
