@@ -280,7 +280,7 @@ Binder flow 只说明 transaction 关系。调用方 slice 的持续时间、目
 
 ## Android 17 源码入口
 
-以下路径用于复核本章结论：
+以下路径用于复核上述结论：
 
 1. init 三阶段入口：`system/core/init/main.cpp`，AOSP `android-17.0.0_r1`。
 2. Zygote preload、fork SystemServer 与 socket loop：`frameworks/base/core/java/com/android/internal/os/ZygoteInit.java`，AOSP `android-17.0.0_r1`。
