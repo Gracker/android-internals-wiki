@@ -195,7 +195,7 @@ Android 17 默认场景如下。
 | Mainline 更新后首次开机 | `boot-after-mainline-update` | 重点处理 SystemUI 和 Launcher；Launcher 使用 `speed-profile`，SystemUI 由 `dalvik.vm.systemuicompilerfilter` 决定 | 不会对所有应用重新执行 AOT |
 | 应用安装 | `install`、`install-fast`、`install-bulk*` | DM 含 cloud profile 时用 `speed-profile`，否则用 `verify` | fast scenario 或 incremental install 可以跳过安装期 dexopt |
 | 日常后台优化 | `bg-dexopt` / `inactive` | 每日空闲且充电时运行；对 primary 和 secondary dex 做 profile-guided dexopt | 条件消失时任务会被取消；稍后重试不代表失败 |
-| 更新应用前优化 | `ab-ota` | OTA/Mainline / Mainline 时，在空闲充电窗口对新依赖环境做 Pre-reboot Dexopt，目标为 `speed-profile` | 用户提前重启时可能未完成，剩余包先以 `verify` 运行 |
+| 更新应用前优化 | `ab-ota` | OTA/Mainline 时，在空闲充电窗口对新依赖环境做 Pre-reboot Dexopt，目标为 `speed-profile` | 用户提前重启时可能未完成，剩余包先以 `verify` 运行 |
 | 命令行 | `cmdline` | 默认 `verify`，可显式指定支持的 filter | 指定 `speed-profile` 不保证 profile 可用 |
 
 标准属性默认值是：
