@@ -52,7 +52,7 @@ reviewed_date: "2026-07-20"
 
 “点了没反应”“滑动不跟手”“返回动画晚一拍”可能发生在输入采集、目标选择、应用消费、渲染或显示中的任一区间。帧率正常也不能证明输入及时到达应用。分析这类问题，要把输入事件与产生视觉反馈的那一帧对齐。
 
-本章使用以下源码锚点：
+源码锚点如下：
 
 - platform：Android 17 / API 37 / `android-17.0.0_r1`；
 - kernel：`android17-6.18-2026-06_r6`；
@@ -133,7 +133,7 @@ Adaptive Refresh Rate 位于显示时序与刷新率策略侧，没有替换 Inp
 
 高刷设备上的触控分析要同时记录 input sample cadence、应用帧调度、实际 VSync period、active mode 和 present。刷新率提高也无法修复焦点错误、应用主线程阻塞或 connection backpressure。
 
-## 4. 本章地图
+## 4. 内容索引
 
 ### 4.1 分发与端到端延迟
 
@@ -159,7 +159,7 @@ Adaptive Refresh Rate 位于显示时序与刷新率策略侧，没有替换 Inp
 - [3.8 InputFlinger Rust 与 ARR](08-inputflinger-rust-arr.md)：Rust filter 的实现范围，以及动态刷新率对测量口径的影响。
 - [3.11 InputMethodManager](11-input-method-manager-performance.md)：IME client/session、焦点、show/hide、Insets 与键盘显示性能。
 - [3.13 键盘、鼠标与指针输入](13-keyboard-mouse-pointer-input-performance.md)：桌面模式下的 hover、scroll、cursor、capture、focus 与多 display。
-- [3.12 Input 系统参考文献](参考资料.md)：Android 17 与 kernel 固定 tag 的源码索引。
+- [3.14 Input 系统参考文献](参考资料.md)：Android 17 与 kernel 固定 tag 的源码索引。
 
 ## 5. 按现象选择阅读路径
 

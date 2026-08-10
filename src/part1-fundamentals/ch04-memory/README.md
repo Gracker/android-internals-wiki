@@ -2,14 +2,14 @@
 
 Android 内存问题不只表现为 OOM。GC pause、page fault、direct reclaim、zram I/O、进程冻结与解冻、图形 buffer 占用、内存压力下的进程回收，都可能转化为启动变慢、交互卡顿、后台重建或整机抖动。
 
-本章使用以下复核锚点：
+复核锚点如下：
 
 - platform：Android 17 / API 37 / `android-17.0.0_r1`；
 - kernel：`android17-6.18-2026-06_r6`；
 - 历史演进允许保留旧版本行为，当前类名、配置和调用关系按固定 tag 核对；
 - 设备厂商可能修改 allocator、GPU/display 驱动、zram、LMKD 参数和冻结策略，设备级结论需要运行时证据。
 
-## 1. 先区分内存域
+## 1. 内存域
 
 同一个进程的“内存”由多个来源组成：
 
@@ -23,7 +23,7 @@ Android 内存问题不只表现为 OOM。GC pause、page fault、direct reclaim
 | Kernel memory | slab、page table、driver allocation | kernel 与驱动 | slabinfo、vmstat、meminfo、vendor trace |
 | Compressed swap | zram 中的匿名页 | kernel reclaim、swap 与 zram | SwapTotal/SwapFree、zram mm_stat、swapin/swapout |
 
-Java heap dump看不到 native、graphics、page cache 和 kernel allocation。进程 RSS 也会把共享页面完整计入每个进程。选择指标前，要先说明调查的是 object retention、进程 footprint、系统 pressure，还是跨进程共享 buffer。
+Java heap dump 看不到 native、graphics、page cache 和 kernel allocation。进程 RSS 也会把共享页面完整计入每个进程。选择指标前，要先说明调查的是 object retention、进程 footprint、系统 pressure，还是跨进程共享 buffer。
 
 ## 2. 压力处理不是固定流水线
 
@@ -52,7 +52,7 @@ Java heap dump看不到 native、graphics、page cache 和 kernel allocation。�
 
 PSS 与 CPU cache locality 属于不同层级。cache line 描述 CPU cache 传输/一致性粒度，page 描述虚拟内存映射与记账粒度，ART card table 用于 GC remembered set。三者数值或现象接近时也不能互相替代。
 
-## 4. 本章地图
+## 4. 内容索引
 
 ### 4.1 基础模型
 
@@ -70,7 +70,7 @@ PSS 与 CPU cache locality 属于不同层级。cache line 描述 CPU cache 传�
 - [4.14 ART Region 碎片与 compaction](14-art-gc-region-fragmentation-compaction.md)：对象碎片、region space 与移动 GC。
 - [4.16 ART TLAB 与对象分配](16-art-tlab-object-allocation-performance.md)：thread-local allocation、refill 与 slow path。
 - [4.21 ART HeapTask 调度](21-art-heaptask-scheduling-pipeline.md)：HeapTask、TaskProcessor、GC/trim 任务与并发边界。
-- [4.21 ART HeapTask 补充稿](4.21-art-heaptask-scheduling-pipeline.md)：保留的同主题复核记录，阅读时以固定 tag 的类和子类为准。
+- [4.21 ART HeapTask 补充](4.21-art-heaptask-scheduling-pipeline.md)：同主题的补充说明，阅读时以固定 tag 的类和子类为准。
 
 ### 4.3 Kernel reclaim、compaction、zram 与 freezer
 
@@ -99,9 +99,9 @@ PSS 与 CPU cache locality 属于不同层级。cache line 描述 CPU cache 传�
 - [4.35 CPU cache locality 与 PSS](4.35-android17-cpu-cache-locality-pss-accounting.md)：区分 cache line、page、ART card 与 smaps 记账。
 - [4.36 高级内存诊断](4.36-android17-advanced-memory-optimization.md)：按 Java/native/graphics/kernel/pressure 选择观测工具。
 
-### 4.6 AppFlow 与 AI Agent 材料的边界稿
+### 4.6 AppFlow 与 AI Agent 的能力边界
 
-这组内容涉及产品、厂商方案或尚无 Android 17 公共 AOSP 实现的命名。它们应作为兼容性设计或事实核查阅读，不能写成平台内置能力。
+这组内容涉及产品、厂商方案或尚无 Android 17 公共 AOSP 实现的命名，只能用于兼容性设计和能力边界分析，不能写成平台内置能力。
 
 - [4.04 AppFlow 与 Android 17 LMKD 兼容性](4.04-AppFlow与Android-17-LMKD兼容性方案.md)
 - [4.5 AppFlow 与 lmkd 兼容性复核](4.5-appflow-lmkd-compatibility.md)
@@ -109,67 +109,7 @@ PSS 与 CPU cache locality 属于不同层级。cache line 描述 CPU cache 传�
 
 跨应用共享数据要使用有权限和生命周期约束的 IPC、provider、service、shared memory 或持久化机制。Android 17 没有一个名为“AI Agent Memory Sandbox”的通用内存子系统。
 
-## 5. Deprecated、重复与来源不成立的稿件
-
-下面这些文件继续保留，以免破坏历史链接和 Hermes 状态机。正文已标明弃用、重定向或事实核查结论，不应作为 Android 17 实现依据。
-
-### 5.1 LMKD/AppFlow 重复稿
-
-- [LMK_PROCS_PRIO 批处理旧稿](04.1-07-04-android17-lmkd-procs-prio-batch-thrashing-ma.md)
-- [AppFlow/LMKDv2 旧稿](18-appflowlmkdv2.md)
-- [AppFlow/LMKD 联合调度旧稿](4-11-android17-appflow-与-lmkd-v2-内存联合调度协作机制.md)
-- [AppFlow/LMKD v2 collaboration 旧稿](4-12-appflow-lmkd-v2-collaboration.md)
-- [AppFlow 兼容性重复稿](4.10-AppFlow与Android-17-LMKD兼容性方案.md)
-- [LMKD “用户态迁移”旧稿](4.37-android17-lmkd-userspace-migration.md)
-- [LMKD mainline fork 旧稿](4.48-android17-lmkd-procs-prio-batch-thrashing-mainline-fork.md)
-
-lmkd 在早期 Android 版本中已经是 userspace daemon。“Android 17 从 kernel 迁移到 userspace”属于错误版本叙述。
-
-### 5.2 ART HeapTask 重复稿
-
-- [ART HeapTask System Deep Dive 旧稿](04.40-art-heaptask-system-deep-dive.md)
-- [ART HeapTask Advanced Scheduling 旧稿](04.42-art-heaptask-advanced-scheduling.md)
-- [HeapTask 七子类旧稿](4.34-android17-art-heaptask-system-7-subclasses.md)
-- [HeapTask/GC suppression 旧稿一](4.36-android17-art-heaptask-concurrent-gc-suppression.md)
-- [HeapTask/GC suppression 旧稿二](4.37-android17-art-heaptask-concurrent-gc-suppression.md)
-- [HeapTask 并发与 GC 抑制旧稿](4.38-android-17-art-heaptask-并发与-gc-抑制.md)
-
-HeapTask 的可用子类、队列和 suppression 语义要从 `android-17.0.0_r1` 的 `TaskProcessor`、`HeapTask` 与各实际 subclass 枚举，不能依赖固定“七类”或泛化的优先级继承说法。
-
-### 5.3 AI Agent Memory 重复稿
-
-- [AI Agent Memory Management 旧稿](04.40-ai-agent-memory-management.md)
-- [AI Agent Memory Sandboxing 旧稿](04.41-ai-agent-memory-sandboxing.md)
-- [AI Agent memory management 采集稿](04.5-07-04-ai-agent-memory-management.md)
-- [AI Agent sandbox reuse 采集稿](04.5-07-05-android17-ai-agent-memory-sandboxed-data-reu.md)
-- [AI Agent 内存沙箱旧稿](4.01-ai-agent内存沙箱化与跨应用数据复用.md)
-- [AI Agent Memory 4.23 旧稿](4.23-android17-ai-agent-memory.md)
-- [AI Agent Memory 4.33 旧稿](4.33-android17-ai-agent-memory-sandboxed-data-reuse.md)
-- [AI Agent sandbox reuse 4.35 旧稿](4.35-android17-ai-agent-memory-sandboxed-reuse.md)
-- [AI Agent sandbox reuse 4.36 旧稿](4.36-android17-ai-agent-memory-sandboxed-data-reuse.md)
-- [AI Agent memory management 4.37 旧稿](4.37-android17-ai-agent-memory-management.md)
-- [AI Agent sandbox reuse 4.37 旧稿](4.37-android17-ai-agent-memory-sandboxed-data-reuse.md)
-- [AI Agent 内存沙箱 4.38 旧稿](4.38-android-17-ai-agent-内存沙箱化.md)
-- [AI Agent memory 4.46 旧稿](4.46-android17-ai-agent-memory.md)
-- [AI Agent sandbox reuse 4.46 草稿](4.46-android17-ai-agent-memory-sandboxed-data-reuse.md)
-- [AI Agent Memory Management 4.47 草稿](4.47-ai-agent-memory-management.md)
-
-### 5.4 PSS、MTE、LOS 与 Linux 碎片材料
-
-- [CPU cache locality/PSS 1.1 旧稿](1.1-android-17-api-37-cpu-缓存局部性与-pss-内存核算源码机制.md)
-- [CPU cache locality/PSS 4.38 旧稿一](4.38-android-17-api-37-cpu-缓存局部性与-pss-内存核算源码机制.md)
-- [CPU cache locality/PSS 4.38 旧稿二](4.38-android-17-cpu-缓存局部性与-pss-内存核算.md)
-- [MTE 4.47 旧稿](4.47-android17-arm-mte.md)
-- [LargeObjectSpace `mSponge` 旧稿](4.38-android17-largeobjectspace-msponge.md)
-- [Phoronix Linux 6.10 采集稿](1.1-phoronix---linux-610-内核引入了创新的内存碎片整理机制通过智能预分配和动态调整策略大幅提升长期运.md)
-- [Linux 6.10 碎片整理旧稿一](4.38-linux-610-内核内存碎片整理机制.md)
-- [Linux 6.10 碎片整理采集稿](4.38-phoronix---linux-610-内核引入了创新的内存碎片整理机制通过智能预分配和动态调整策略大幅提升长期运.md)
-- [Linux 6.10 fragmentation 旧稿](4.39-linux-6.10-memory-fragmentation.md)
-- [Linux 6.10 fragmentation 4.45 旧稿](4.45-linux610-memory-fragmentation.md)
-
-`mSponge` 方案通过修改 ART 内部计数规避限制，会破坏堆记账、GC 触发条件与并发不变量，也依赖可写代码/数据与符号布局。它不属于可部署的 Android 内存优化。
-
-## 6. 按现象选择阅读顺序
+## 5. 按现象选择阅读顺序
 
 | 现象 | 阅读顺序 | 优先证据 |
 |---|---|---|
@@ -183,7 +123,7 @@ HeapTask 的可用子类、队列和 suppression 语义要从 `android-17.0.0_r1
 
 内存问题采集时应记录 build、进程状态、前后台、总内存、swap/zram、PSI、刷新率/温度及复现场景。单张 `dumpsys meminfo` 快照只能说明采样时刻，趋势和因果关系要靠时间序列、allocation callsite 与系统 trace。
 
-## 7. 固定源码入口
+## 6. 固定源码入口
 
 - [ART `gc/heap.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.cc)：heap accounting、GC/trim 与 collector 入口；
 - [lmkd `lmkd.cpp`](https://android.googlesource.com/platform/system/memory/lmkd/+/android-17.0.0_r1/lmkd.cpp)：pressure monitor、控制命令、进程选择与 kill；

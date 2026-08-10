@@ -1,10 +1,10 @@
 # 第 6 章：存储与 I/O
 
-> 本章的平台源码统一锚定 AOSP `android-17.0.0_r1` / Android 17（API 37）；涉及内核机制时，以 `android17-6.18-2026-06_r6` 为核对基线。量产设备的文件系统、块设备、调度器和厂商补丁以产品配置为准。
+> 平台源码统一锚定 AOSP `android-17.0.0_r1` / Android 17（API 37）；涉及内核机制时，以 `android17-6.18-2026-06_r6` 为核对基线。量产设备的文件系统、块设备、调度器和厂商补丁以产品配置为准。
 
 Android I/O 问题常以“偶发”的样子出现：主线程某次读取被 page fault 拉长，`fsync()` 等待闪存完成写入，后台任务与前台启动争用块设备，或共享存储请求经过 MediaProvider 和 FUSE 后增加了延迟。只看 Java 调用栈，容易把存储等待误判成业务计算。
 
-这一章不按“哪个文件系统一定更快”给结论，而是先确认请求经过哪条路径、在什么位置等待，再讨论优化：
+分析从请求路径和等待位置开始，再讨论优化，不预设哪个文件系统更快：
 
 - 应用私有目录通常经由 VFS、ext4/F2FS、device-mapper 和块层到达存储设备；
 - 共享存储还要考虑 MediaProvider、FUSE、passthrough、FUSE BPF 和 scoped storage 权限检查；
@@ -14,7 +14,7 @@ Android I/O 问题常以“偶发”的样子出现：主线程某次读取被 p
 
 eMMC、UFS 和 NVMe 的队列能力不同，ext4 与 F2FS 的写入、回收和一致性策略也不同。Android 平台允许产品选择其中的组合，不能把“UFS 已普及”或“F2FS 随机写一定优于 ext4”当作设备事实。调试前应记录挂载表、文件系统、块设备、内核配置和测试负载。
 
-## 本章内容
+## 内容索引
 
 - [6.1 Android 存储架构](./01-storage-architecture.md)：分区、挂载、FBE、vold、应用目录与共享存储边界；
 - [6.2 Android 文件系统](./02-filesystem.md)：ext4、F2FS、EROFS、OverlayFS 及产品选择；
@@ -24,7 +24,7 @@ eMMC、UFS 和 NVMe 的队列能力不同，ext4 与 F2FS 的写入、回收和�
 - [6.6 vold、FUSE 与 scoped storage I/O](./06-vold-fuse-scoped-storage-io.md)：共享存储访问路径和性能边界；
 - [6.7 FUSE passthrough 与 FUSE BPF](./07-fuse-bpf-scoped-storage-io-performance.md)：Android 17 下快路径的适用条件与观测方法。
 
-本目录还保留若干专题页，分别解释 SharedPreferences ANR、AndroidX DataStore 多进程一致性，以及 Linux 物理内存规整。部分 deprecated 文件是为 Hermes/OpenClaw 流水线保留的历史隔离页，页面会明确指向可引用的正文。
+SharedPreferences ANR 和 AndroidX DataStore 多进程一致性另有专题页；Linux 物理内存规整应结合内存管理章节阅读。
 
 ## 阅读建议
 
@@ -37,4 +37,4 @@ eMMC、UFS 和 NVMe 的队列能力不同，ext4 与 F2FS 的写入、回收和�
 3. 区分同步语义、队列拥塞、闪存长尾、文件系统回收和权限路径成本；
 4. 在同一设备、同一构建和同一温度条件下做单变量复测。
 
-如果问题发生在应用启动，可把本章与启动章节一起阅读；如果伴随 reclaim、PSI 或 page fault，应同时查看内存管理章节。
+应用启动阶段的 I/O 问题可结合启动章节分析；伴随 reclaim、PSI 或 page fault 时，还应查看内存管理章节。
