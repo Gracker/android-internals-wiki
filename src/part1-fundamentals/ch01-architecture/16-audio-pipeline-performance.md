@@ -241,7 +241,7 @@ FastMixer 保留：
 `android-17.0.0_r1` 的 `PlaybackThread::createTrack_l()` 明确写着：
 
 ```cpp
-    // 客户端表达 FAST 偏好，最终由服务端决定
+// client expresses a preference for FAST, but we get the final say
 if (*flags & AUDIO_OUTPUT_FLAG_FAST) {
     if (audio_is_linear_pcm(format)
             && /* channel conversion is acceptable */
@@ -521,7 +521,7 @@ Android 17 为 `USAGE_ASSISTANT` 增加独立的 Assistant volume stream，使�
 - 输入/输出设备与连接方式。
 - App API、usage、format、sample rate、channel count。
 - 请求的和实际的共享/性能模式。
-- 缓冲区容量、大小、每次突发帧数。
+- buffer capacity、size、frames per burst。
 - 是否启用 effects、spatial audio、hardening 测试开关。
 - 复现时设备是否切路由、熄屏、发热或有并发音频。
 
