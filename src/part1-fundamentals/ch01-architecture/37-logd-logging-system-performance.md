@@ -312,7 +312,7 @@ AOSP 自带 `system/logging/liblog/tests/liblog_benchmark.cpp`，其中有轻载
 | Android R 起 | StatsD native atom 经独立 statsd socket，避免与 EventLog 路径混写 |
 | Android 17 / API 37 | logd 核心仍为 C++；默认 serialized/Zstd buffer；接收端具备受 flag 控制的 io_uring 路径；Rust logging 代码属于客户端能力 |
 
-版本演进可以保留旧路径，供分析历史跟踪数据时参考；当前行为判断均以 `android-17.0.0_r1` 为准。现代应用日志链路不依赖 kernel 日志驱动实现，无需引入 `android17-6.18-2026-06_r6` 的额外假设。
+版本演进可以保留旧路径，供分析历史 trace 时参考；当前行为判断均以 `android-17.0.0_r1` 为准。现代应用日志链路不依赖 kernel 日志驱动实现，无需引入 `android17-6.18-2026-06_r6` 的额外假设。
 
 ## 8. 源码核查清单
 

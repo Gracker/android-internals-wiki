@@ -55,7 +55,7 @@ Android 不允许应用直接决定自己的进程寿命。`system_server` 根�
 
 API 37 的实现已经迁入 `com.android.server.am.psc` 包。继续以 `com.android.server.am.OomAdjuster.java` 为源码入口，会遗漏 Android 17 的 `ProcessStateController`、批处理 session、能力传播和新 tracing 字段。
 
-以下结论限定于 `android-17.0.0_r1` framework /lmkd 和 `android17-6.18-2026-06_r6` 内核跟踪点。PSC、freezer、LMKD socket 和 Perfetto 行为均以该基线为准，不外推到 Android 18/API 38+ 主线或厂商私有实现。
+以下结论限定于 `android-17.0.0_r1` framework /lmkd 和 `android17-6.18-2026-06_r6` kernel 跟踪点。PSC、freezer、LMKD socket 和 Perfetto 行为均以该基线为准，不外推到 Android 18/API 38+ 主线或厂商私有实现。
 
 ## 一、进程优先级不是一个数字
 
@@ -408,4 +408,4 @@ Android 13 以后，cached 进程可能获得很少或零 CPU 时间；Android 1
   - [Low memory killer daemon](https://source.android.com/docs/core/perf/lmkd)
   - [Cached apps freezer](https://source.android.com/docs/core/perf/cached-apps-freezer)
 
-排查进程为何被终止时，应保持这条边界：组件和依赖决定重要性，OomAdjuster 计算并应用重要性，lmkd 监测内存压力并选择目标，内核落实分数与进程控制。混用这四层术语，会把正常的 cached 回收误判成 OomAdjuster 计算错误，或把错误的绑定关系误判成 lmkd 过于激进。
+排查进程为何被终止时，应保持这条边界：组件和依赖决定重要性，OomAdjuster 计算并应用重要性，lmkd 监测内存压力并选择目标，kernel 落实分数与进程控制。混用这四层术语，会把正常的 cached 回收误判成 OomAdjuster 计算错误，或把错误的绑定关系误判成 lmkd 过于激进。

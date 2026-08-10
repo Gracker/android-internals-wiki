@@ -447,7 +447,7 @@ Android 17 的 `BufferQueueCore` 初始配置中可看到最大 acquired 和 deq
 
 ### 6.1 标准 App Window 中的 BLASTBufferQueue
 
-在现代 Android 的普通应用窗口路径中，应用进程内的 `BLASTBufferQueue` 承担应用侧 BufferQueue consumer 角色，并把取得的缓冲区包装进 `SurfaceComposerClient::Transaction`。它通过 `setBuffer()` 把栅栏、帧号和 release callback 等信息提交给 SurfaceFlinger。
+在现代 Android 的普通应用窗口路径中，应用进程内的 `BLASTBufferQueue` 承担应用侧 BufferQueue consumer 角色，并把取得的缓冲区包装进 `SurfaceComposerClient::Transaction`。它通过 `setBuffer()` 把 fence、帧号和 release callback 等信息提交给 SurfaceFlinger。
 
 这条路径可以简化为：
 
@@ -502,7 +502,7 @@ Present fence 是 Android 显示栈的呈现完成时序锚点，但它不等同
 
 ### 7.2 等待 fence 不一定是 GPU 算力不足
 
-一次栅栏等待只能说明依赖尚未满足。上游原因可能是：
+一次 fence 等待只能说明依赖尚未满足。上游原因可能是：
 
 - GPU 工作排队或执行时间长；
 - producer 提交过晚；
@@ -527,7 +527,7 @@ SurfaceFlinger 管理系统可见 Layer 的状态，接收来自 WindowManager�
 7. 对需要客户端合成的部分调用 RenderEngine；
 8. 传播 present 与 release 同步信息。
 
-具体执行路径受 Scheduler、显示设备、Layer 状态、预测结果和 HWC 返回值影响。分析跟踪数据时，应围绕当前帧的事务、Layer、FrameTimeline 与 HWC 事件建立对应关系。
+具体执行路径受 Scheduler、显示设备、Layer 状态、预测结果和 HWC 返回值影响。分析 trace 时，应围绕当前帧的事务、Layer、FrameTimeline 与 HWC 事件建立对应关系。
 
 ### 8.1 Latch 不是无条件拿最新缓冲区
 
