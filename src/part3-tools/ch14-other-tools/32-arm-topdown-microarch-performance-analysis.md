@@ -44,38 +44,6 @@ android17_review_notes: "2026-08-04：deep-review 复核 simpleperf stat/list/re
 ---
 # 14.32 ARM Topdown 微架构性能分析方法论与 Android 实践
 
-<!-- outline-start -->
-
-## 源码复核后的提纲
-
-### Topdown 的用途
-
-- 四个一级类别用于选择下一轮调查方向，不能替代函数、指令和内存地址归因。
-- Intel TMAM 与 Arm Topdown 共用部分术语，但 PMU 事件、公式和机器宽度必须按 CPU 型号选择。
-- slot 与 cycle、instruction、sample 是不同计量单位。
-
-### Android 17 的采集边界
-
-- simpleperf `stat` 读取计数，`record/report` 做样本归因；simpleperf 不直接计算 Topdown 四类。
-- `simpleperf list raw` 会按 MIDR 数据库和运行时探测输出设备可用事件及 CPU 范围。
-- Android 17 源码包含 Arm SPE 采集与解码，不包含名为 `brbe` 的采集后端。
-- simpleperf 不会自动输出 `.perfetto-trace`，也没有把 perf.data 转换成 Streamline `.apc` 的标准路径。
-
-### 公式和实验约束
-
-- 本章只用 Neoverse V1 r1p2 公式演示“CPU 专属公式”的含义，不把该公式套到手机 SoC。
-- Topdown 需要同一计数窗口内的匹配事件；group 超出 PMU counter 数量时应拆分实验并报告误差。
-- 异构 CPU 要按同构簇解释，迁核、DVFS、热状态和统计域需要与结果一起保存。
-- 缺少 CPU telemetry specification 时，只发布原始 PMU 线索，不生成四类百分比。
-
-### 归因与优化
-
-- Frontend、Backend、Bad Speculation、Retiring 都需要二级事件和样本证据。
-- PGO、BOLT、预取、对齐、向量化和无分支改写均为待验证假设，不能按一级分类机械套用。
-- Perfetto 用于核对调度、频率、idle、热状态和业务窗口，不代替 PMU 计数。
-
-<!-- outline-end -->
-
 ## 14.32.1 Topdown 能回答什么
 
 一次 CPU 性能分析通常会遇到两个不同的问题：
@@ -87,9 +55,9 @@ Topdown 处理前一个问题。它把处理器流水线的执行机会归入少
 
 因此，Topdown 是诊断顺序，不是优化处方。看到 Backend Bound 偏高后直接加预取，或者看到 Frontend Bound 偏高后直接改链接布局，都缺少中间的归因证据。
 
-本章以 Android 17 / API 37、AOSP `android-17.0.0_r1` 中的 simpleperf 为平台锚点。Arm Telemetry Solution 的示例公式来自它支持的具体 CPU 数据库；这些公式不能自动套到任意 Android SoC。
+平台锚点是 Android 17 / API 37 与 AOSP `android-17.0.0_r1` 中的 simpleperf。Arm Telemetry Solution 的示例公式来自它支持的具体 CPU 数据库；这些公式不能自动套到任意 Android SoC。
 
-本章的结论边界也限于参考资料列出的版本：AOSP simpleperf、Android common kernel 的 perf 权限说明，以及 Arm 对 Topdown/Telemetry Solution 的公开文档。未被这些资料覆盖的厂商内核补丁、后续平台版本的 simpleperf 变化、SoC 私有 PMU 扩展和商业性能工具链，不作为本文判断依据。
+结论范围限于参考资料列出的版本：AOSP simpleperf、Android common kernel 的 perf 权限说明，以及 Arm 对 Topdown/Telemetry Solution 的公开文档。厂商内核补丁、后续平台版本的 simpleperf 变化、SoC 私有 PMU 扩展和商业性能工具链不在范围内。
 
 ## 14.32.2 Intel TMAM 与 Arm Topdown 的关系
 
@@ -170,7 +138,7 @@ AOSP Android 17 的 `simpleperf/event_table.json` 收录了 Arm64 通用原始�
 - `stat` 输出某段时间内累计发生多少次事件；
 - `record` 输出抽样位置，样本还会受采样周期、skid 和调用栈质量影响。
 
-原稿提到用 `record` 和 `report --print-sample-period` 直接读取 Topdown 四类占比，这条路径在 `android-17.0.0_r1` 中不存在。
+`record` 和 `report --print-sample-period` 不能直接读取 Topdown 四类占比；这条路径在 `android-17.0.0_r1` 中不存在。
 
 ### Arm topdown-tool：Linux perf 上的公式引擎
 
@@ -379,7 +347,7 @@ Android SoC 常有多种 CPU 核。不同簇的事件支持、流水线宽度和
 
 优化后 Backend Bound 百分比可能上升，同时总 cycles 大幅下降。这可能是其他类别下降得更快。每轮都要同时保存墙钟耗时、cycles、instructions、绝对事件数和派生百分比。
 
-## 14.32.8 审校结论
+## 14.32.8 结论
 
 Android 17 上可执行的可靠路径是：
 
@@ -392,7 +360,7 @@ Android 17 上可执行的可靠路径是：
 
 缺少 CPU 专属公式时，保留“前端 stall 事件升高”“分支错误增加”这类可核验描述，比生成看似完整的四个百分比更可靠。
 
-本文依据参考资料中列明的 AOSP `android-17.0.0_r1`、Android common kernel `android17-6.18-2026-06_r6`、Arm Topdown/Telemetry Solution 文档与 Neoverse V1 r1p2 示例定义。把该方法落到具体手机 SoC 时，还要补入对应 CPU 的 telemetry specification、设备 `simpleperf list raw` 输出和同窗口计数原始记录；在这些证据缺失前，不应把示例公式升级为通用 Android 结论。
+依据包括 AOSP `android-17.0.0_r1`、Android common kernel `android17-6.18-2026-06_r6`、Arm Topdown/Telemetry Solution 文档与 Neoverse V1 r1p2 示例定义。把该方法落到具体手机 SoC 时，还要补入对应 CPU 的 telemetry specification、设备 `simpleperf list raw` 输出和同窗口计数原始记录；在这些证据缺失前，不应把示例公式升级为通用 Android 结论。
 
 ## 参考资料
 
@@ -415,9 +383,3 @@ Android 17 上可执行的可靠路径是：
 - [Arm：Arm 与 Intel Topdown 对照](https://learn.arm.com/learning-paths/cross-platform/topdown-compare/2-code-examples/)
 - [Arm Telemetry Solution 6d4f550d053c：Neoverse V1 r1p2 指标定义](https://gitlab.arm.com/telemetry-solution/telemetry-solution/-/blob/6d4f550d053c4a5f322d966fc2b1c95ae403eb9b/data/pmu/cpu/specifications/neoverse/neoverse_v1_r1p2_pmu.json)
 - [Perfetto：TraceConfig](https://perfetto.dev/docs/concepts/config)
-
-## 元信息
-
-- **适用读者**：Android 系统/性能工程师，需要 CPU 微架构视角优化 hot path。
-- **前置知识**：参见 5.28（CPU 调度）、14.24（simpleperf 基础）。
-- **平台锚点**：Android 17 / API 37 / `android-17.0.0_r1`。

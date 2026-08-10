@@ -102,26 +102,6 @@ android17_review_notes: "2026-07-30：保留全部 task6/task9/OpenClaw 字段�
 
 # 性能指标体系
 
-<!-- outline-start -->
-
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 流畅性指标：FPS、Janky Frame Rate、Frame Time P90/P99、Frozen Frame Rate
-- 🔹 响应速度指标：TTID、TTFD、Click-to-Display
-- 🔹 稳定性指标：ANR Rate、Crash Rate
-- 🔹 内存指标：PSS、Java Heap Usage、OOM Rate
-- 🔹 功耗指标：Battery Drain Rate、Active/Idle Power
-- 🔹 指标体系设计：线上 vs 线下、聚合粒度、分位数选择
-
-### 扩展（可选深入）
-
-- 🔸 Google Play Console 中的 Android Vitals 指标
-- 🔸 自定义业务性能指标的设计原则
-
-<!-- outline-end -->
-
 ## 指标先写合同，再写数值
 
 “启动耗时”“掉帧率”“OOM 率”都只是名字。团队要得到可比较的数据，还要定义事件、分母、统计窗口和排除条件。缺少这些信息，同名看板可能统计着不同对象。
@@ -477,5 +457,3 @@ Play 阈值用于平台健康评估，且可能更新。内部预算需要绑定
 - [AOSP：Power Stats HAL](https://source.android.com/docs/core/power/power-stats-hal)
 - [Android Developers：Manage your app's memory](https://developer.android.com/topic/performance/memory)
 - [Android Developers：Battery Historian](https://developer.android.com/topic/performance/power/battery-historian)
-
-<!-- AIW-review-verified-2026-07-30 -->

@@ -91,36 +91,17 @@ android17_review_notes: "2026-07-30：保留全部 task6/task9/OpenClaw 字段�
 
 # 性能优化的术、道、器
 
-<!-- outline-start -->
-
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 性能优化之「道」：用户体验驱动、数据驱动、持续优化
-- 🔹 性能优化之「术」：分析方法、优化策略、防劣化手段
-- 🔹 性能优化之「器」：工具链的选择与组合
-- 🔹 性能优化的投入产出思维：优先高频场景、高影响面
-- 🔹 性能优化的误区：过早优化、局部优化、忽视度量
-
-### 扩展（可选深入）
-
-- 🔸 Google 的性能文化：speed matters、performance budget
-- 🔸 性能工程师的能力模型
-
-<!-- outline-end -->
-
-## 本章讨论什么
+## 道、术、器的分工
 
 性能工程面对的对象，是一个在特定设备、系统版本、构建产物和运行环境中执行的完整系统。一次卡顿可能同时包含主线程排队、Binder 等待、RenderThread 提交、GPU 执行和 SurfaceFlinger 合成；一次启动回退也可能来自编译状态、磁盘缓存、进程状态或业务初始化。只盯住某个函数耗时，很容易把症状当成原因。
 
-本章用「道、术、器」组织这套工作：
+「道、术、器」分别承担三类工作：
 
 - 「道」决定要改善哪个用户场景，以及用什么数据判断改善是否成立。
 - 「术」规定从现象到证据、从假设到验证的分析顺序。
 - 「器」负责采集、查询和呈现证据，每种工具都有可见范围与扰动成本。
 
-平台结论以 Android 17 / API 37 / `android-17.0.0_r1` 为上限。文中保留 Android 7、10、11 等历史节点，是为了说明 API 和观测口径的演进。本文没有分析内核实现，因此不引用 `android17-6.18-2026-06_r6` 的具体行为。
+平台结论以 Android 17 / API 37 / `android-17.0.0_r1` 为上限。Android 7、10、11 等历史节点用于说明 API 和观测口径的演进。这里不分析内核实现，因此不引用 `android17-6.18-2026-06_r6` 的具体行为。
 
 ## 「道」：从用户场景定义性能
 
@@ -414,5 +395,3 @@ AOSP 在 Android 11 tag 已包含 `frameworks/native/libs/gui/BLASTBufferQueue.c
 - [Jeff Dean、Sanjay Ghemawat：Performance Hints](https://abseil.io/fast/hints.html)
 - Brendan Gregg, *Systems Performance: Enterprise and the Cloud*, 2nd Edition, Addison-Wesley, 2020
 - [Liao et al.：Automatically Analyzing Performance Issues in Android Apps: How Far Are We?](https://arxiv.org/abs/2407.05090)
-
-<!-- AIW-review-verified-2026-07-30 -->
