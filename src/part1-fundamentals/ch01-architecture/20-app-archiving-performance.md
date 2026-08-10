@@ -122,12 +122,12 @@ Android 15 把应用归档做成了平台能力；Android 17 延续并完善了�
 已归档
   ├─ 当前用户的 installed = false
   ├─ ArchiveState 保存入口、标题和图标
-  ├─ 用户数据保留，缓存/代码缓存被清理
+  ├─ 用户数据保留，cache / code cache 被清理
   └─ Launcher 展示系统合成的归档入口
           │ requestUnarchive() / 点击归档图标
           ▼
 恢复安装
-  ├─ 负责恢复的安装器获取 APK
+  ├─ responsible installer 获取 APK
   ├─ PackageInstaller 会话完成正常安装校验
   ├─ installed = true，清除 ArchiveState
   └─ ACTION_PACKAGE_ADDED 表示安装完成
@@ -140,7 +140,7 @@ Android 15 把应用归档做成了平台能力；Android 17 延续并完善了�
 | 状态 | APK | 用户数据 | Launcher 入口 | 恢复责任方 |
 |---|---|---|---|---|
 | 已安装 | 有 | 有 | 真实 Activity | 不需要恢复 |
-| 已归档 | 可能已删除，取决于多用户状态 | 保留 | `ArchiveState` 合成入口 | 负责恢复的安装器 |
+| 已归档 | 可能已删除，取决于多用户状态 | 保留 | `ArchiveState` 合成入口 | responsible installer |
 | 卸载但保留数据 | 通常无 | 保留 | 没有平台归档入口 | 没有标准恢复契约 |
 | `installPackageArchived()` 创建的归档包 | 无 APK，只有归档元数据 | API 不负责生成业务数据 | 归档入口 | 指定安装器 |
 
@@ -155,9 +155,9 @@ Android 15 把应用归档做成了平台能力；Android 17 延续并完善了�
 - `DELETE_PACKAGES`，通常只授予系统或特权组件；或
 - `REQUEST_DELETE_PACKAGES`，没有静默删除资格时仍会进入用户确认。
 
-SDK 注解只是第一层。服务端还会校验调用方包名与 Binder UID、跨用户权限，以及后续卸载策略。持有 `REQUEST_DELETE_PACKAGES` 不等于可以静默归档任意应用。
+SDK 注解只是第一层。服务端还会校验 caller package 与 Binder UID、跨用户权限，以及后续卸载策略。持有 `REQUEST_DELETE_PACKAGES` 不等于可以静默归档任意应用。
 
-归档前可先调用 `PackageManager.isAppArchivable(packageName)`。它适合用于界面能力判断，但不承诺操作一定成功：设备策略、应用锁、用户限制、包状态变化或确认流程仍可能导致归档失败。
+归档前可先调用 `PackageManager.isAppArchivable(packageName)`。它适合用于界面能力判断，但不承诺操作一定成功：设备策略、App Lock、用户限制、包状态变化或确认流程仍可能导致归档失败。
 
 ### 2.2 `PackageArchiver`
 
@@ -197,13 +197,13 @@ InstallSource.installerPackageName
 
 ## 3. 为什么必须先保存 `ArchiveState`
 
-APK 删除后，系统不能再从清单和资源表中读取 Launcher Activity、标签与图标。因此 `PackageArchiver.createAndStoreArchiveState()` 必须先完成以下工作：
+APK 删除后，系统不能再从清单和资源表中读取 Launcher Activity、label 与图标。因此 `PackageArchiver.createAndStoreArchiveState()` 必须先完成以下工作：
 
 1. 取得目标用户下的包状态。
 2. 拒绝系统应用和已更新的系统应用。
 3. 确认该用户当前安装了目标包。
 4. 找到并验证负责恢复的安装器。
-5. 检查归档选择退出状态。
+5. 检查归档 opt-out 状态。
 6. 通过 `LauncherApps.getActivityList()` 取得至少一个 Launcher Activity。
 7. 保存每个入口的标题、原始组件名和图标。
 
@@ -230,28 +230,28 @@ Android 17 的 `ArchiveState` 包含：
 DELETE_ARCHIVE | DELETE_KEEP_DATA
 ```
 
-需要为所有用户归档时再加 `DELETE_ALL_USERS`。公开的 `requestArchive()` 默认只针对当前 `PackageInstaller` 所在用户；命令行的 `pm archive` 默认选择所有用户，测试时不要混用这两种语义。
+需要为所有用户归档时再加 `DELETE_ALL_USERS`。公开的 `requestArchive()` 默认只针对当前 `PackageInstaller` 所在用户；shell 的 `pm archive` 默认选择 all users，测试时不要混用这两种语义。
 
 两个核心标志的职责不同：
 
 - `DELETE_ARCHIVE`：告诉删除与广播链路这是归档，不是普通卸载。
 - `DELETE_KEEP_DATA`：保留包设置和用户数据，使后续安装可以恢复原有身份与数据。
 
-归档仍会进入 `PackageInstallerService.uninstall()` 和 `DeletePackageHelper`。因此设备管理员、禁止卸载策略、受保护包、应用锁等限制仍然生效。删除路径会冻结并通常终止目标包；这与 LMKD 根据 PSI 和 adj 终止进程是两套机制。
+归档仍会进入 `PackageInstallerService.uninstall()` 和 `DeletePackageHelper`。因此设备管理员、禁止卸载策略、受保护包、App Lock 等限制仍然生效。删除路径会冻结并通常终止目标包；这与 LMKD 根据 PSI 和 adj 终止进程是两套机制。
 
 删除成功时，包移除广播会携带 `EXTRA_ARCHIVAL=true`，同时把 `EXTRA_REPLACING` 设为 true、`EXTRA_DATA_REMOVED` 设为 false。接收方由此可以把归档与删除应用数据的普通卸载区分开。
 
 ### 4.1 删除 APK 的多用户前提
 
-APK 和原生库位于包级代码目录，可被多个 Android 用户共用；`installed` 与 `ArchiveState` 则是逐用户状态。Android 17 的删除逻辑因此分成两种情况。
+APK 和 native library 位于包级代码目录，可被多个 Android 用户共用；`installed` 与 `ArchiveState` 则是 per-user 状态。Android 17 的删除逻辑因此分成两种情况。
 
 #### 只归档一个用户，其他用户仍安装
 
 系统只把当前用户标记为未安装并清理相关状态。代码目录继续保留，因为其他用户仍要运行同一份 APK。
 
-此时能够稳定回收的是归档路径清理的缓存/代码缓存，不能把整个 APK 大小都计入收益。
+此时能够稳定回收的是归档路径清理的缓存/ code cache；不能把整个 APK 大小都计入收益。
 
-#### 归档唯一仍安装该包的用户
+#### 归档唯一仍安装 user
 
 如果没有其他用户安装该包，而且 PMS 没有因内部缓存策略保留未安装包，删除流程才会移除包级代码和资源。`PackageSetting` 因 `DELETE_KEEP_DATA` 继续存在，并携带归档状态。
 
@@ -272,10 +272,10 @@ APK 和原生库位于包级代码目录，可被多个 Android 用户共用；`
 | 对象 | Android 17 归档结果 | 说明 |
 |---|---|---|
 | CE / DE 用户数据 | 保留 | 数据库、SharedPreferences、账号态等可在恢复后继续使用 |
-| 缓存 | 清理 | `FLAG_CLEAR_CACHE_ONLY` |
-| 代码缓存 | 清理 | `FLAG_CLEAR_CODE_CACHE_ONLY` |
-| ART 应用配置文件 | 删除路径会销毁 | 归档没有设置保留配置文件的标志 |
-| APK / 分包 / 原生库 | 条件性删除 | 受其他用户与 PMS 缓存策略影响 |
+| cache | 清理 | `FLAG_CLEAR_CACHE_ONLY` |
+| code cache | 清理 | `FLAG_CLEAR_CODE_CACHE_ONLY` |
+| ART app profile | 删除路径会销毁 | 归档没有设置 keep-profile flag |
+| APK / split / native library | 条件性删除 | 受其他用户与 PMS 缓存策略影响 |
 | 任意共享存储文件 | 没有“全部删除”保证 | 不应把归档当成外部文件清理器 |
 | `ArchiveState` 与归档图标 | 保留 | 用于 Launcher 展示与恢复 |
 
@@ -288,9 +288,9 @@ APK 和原生库位于包级代码目录，可被多个 Android 用户共用；`
 ```text
 aInfo == null
   └─ PackageArchiver.isIntentResolvedToArchivedApp()
-       ├─ 包必须处于归档状态
+       ├─ package 必须处于归档状态
        ├─ Intent 必须包含显式组件
-       └─ 组件必须匹配 ArchiveState 中的原始入口
+       └─ component 必须匹配 ArchiveState 中的原始入口
 ```
 
 只有三项都满足，系统才调用 `requestUnarchiveOnActivityStart()`。普通的类名写错、组件被移除或包完全卸载，仍按 `START_CLASS_NOT_FOUND` 处理，不会被归档逻辑吞掉。
@@ -300,7 +300,7 @@ aInfo == null
 Android 17 的实现允许：
 
 - Shell。
-- 当前用户或配置文件父用户的默认 Launcher。
+- 当前用户或 profile parent 的默认 Launcher。
 - 能解析 HOME Intent 的 Launcher 应用。
 
 源码方法注释仍写着“default/Home Launcher or Shell”，但实现已放宽到其他 Launcher 应用。非默认 Launcher 即使有资格触发，也会强制显示恢复确认。
@@ -314,11 +314,11 @@ Android 17 的实现允许：
 `PackageArchiver.requestUnarchive()` 会先验证：
 
 - 目标包在该用户下处于归档状态。
-- 调用方包名与 UID 一致。
+- caller package 与 UID 一致。
 - 调用者声明或持有 `REQUEST_INSTALL_PACKAGES` / `INSTALL_PACKAGES`。
 - 跨用户权限满足。
 
-若需要用户确认，系统先通过 `STATUS_PENDING_USER_ACTION` 返回确认 Intent。确认通过后，框架层为负责恢复的安装器创建草稿会话：
+若需要用户确认，系统先通过 `STATUS_PENDING_USER_ACTION` 返回确认 Intent。确认通过后，Framework 为 responsible installer 创建草稿会话：
 
 ```text
 MODE_FULL_INSTALL
@@ -326,7 +326,7 @@ appPackageName = 目标包
 installFlags = INSTALL_UNARCHIVE_DRAFT | INSTALL_UNARCHIVE
 ```
 
-重复点击时，系统会复用同一目标包的有效草稿会话；若恢复已在进行，符合配置的 Launcher 会打开会话详情，不会并行发起第二次下载。
+重复点击时，系统会复用同一目标包的有效 draft session；若恢复已在进行，符合配置的 Launcher 会打开会话详情，不会并行发起第二次下载。
 
 ### 6.2 系统向安装器发送显式广播
 
@@ -339,7 +339,7 @@ Intent.ACTION_UNARCHIVE_PACKAGE
   └─ EXTRA_UNARCHIVE_ALL_USERS
 ```
 
-广播使用 `setPackage(installerPackage)`，`Intent` 定义也标记为只能显式发送。系统给安装器一个临时后台执行窗口；Android 17 AOSP 常量为 120 秒。这是实现细节，并未规定下载必须在 120 秒内完成；安装器仍应尽快转入合规的前台或安装会话工作流。
+广播使用 `setPackage(installerPackage)`，`Intent` 定义也标记为 explicit-only。系统给安装器一个临时后台执行窗口；Android 17 AOSP 常量为 120 秒。这是实现细节，并未规定下载必须在 120 秒内完成；安装器仍应尽快转入合规的前台或 session 工作流。
 
 ### 6.3 安装器的恢复契约
 
@@ -348,13 +348,13 @@ Intent.ACTION_UNARCHIVE_PACKAGE
 1. 读取包名与 `unarchiveId`。
 2. 判断账号、网络、可用包和空间。
 3. 通过 `reportUnarchivalState()` 返回“可开始”或具体错误。
-4. 创建完整安装会话，在 `SessionParams` 中设置目标包与 `unarchiveId`。
-5. 写入基础 APK/分包 APK 并提交。
+4. 创建 full-install session，在 `SessionParams` 中设置目标包与 `unarchiveId`。
+5. 写入基础 base APK 并提交。
 6. 让标准 PackageInstaller / PMS 安装链路完成签名、版本、策略和包扫描。
 
-`unarchiveId` 把广播与安装会话绑定起来。即使安装器没有设置它，Android 17 也会尝试按包名、安装器 UID 和用户复用草稿会话，但显式设置可以消除并发歧义。
+`unarchiveId` 把广播与安装会话绑定起来。即使安装器没有设置它，Android 17 也会尝试按包名、installer UID 和用户复用 draft session，但显式设置可以消除并发歧义。
 
-`INSTALL_UNARCHIVE` 不是安装器可随意伪造的“跳过确认”开关。`PackageInstallerService` 会清掉外部传入值，仅在目标已归档、请求安装器与负责恢复的安装器匹配时重新设置。它允许在恢复确认完成后跳过第二次安装确认，但不会跳过 APK 签名和正常安装校验。
+`INSTALL_UNARCHIVE` 不是安装器可随意伪造的“跳过确认”开关。`PackageInstallerService` 会清掉外部传入值，仅在目标已归档、请求安装器与 responsible installer 匹配时重新设置。它允许在恢复确认完成后跳过第二次安装确认，但不会跳过 APK 签名和正常安装校验。
 
 ### 6.4 安装完成不会自动重放第一次点击
 
@@ -371,7 +371,7 @@ Launcher 或产品层可以展示下载进度，并在安装完成后让用户�
 |---|---|---|
 | `requestArchive()` 的 `EXTRA_STATUS` | 待用户操作、成功或失败；success 才表示归档删除完成 | 不代表一定回收了完整 APK 大小 |
 | `requestUnarchive()` 的 `EXTRA_UNARCHIVE_STATUS` | 安装器是否接受请求，或为什么不能开始 | 不代表 APK 已安装 |
-| 恢复会话成功/对应的 `ACTION_PACKAGE_ADDED` | APK 已重新安装，归档状态已清除 | 不代表应用首帧已经完成 |
+| 恢复 session success /对应的 `ACTION_PACKAGE_ADDED` | APK 已重新安装，归档状态已清除 | 不代表应用首帧已经完成 |
 
 恢复链路可能给出以下状态：
 
@@ -396,7 +396,7 @@ T_user_ready
 
 ### 8.1 `T_framework_request`
 
-包括 `ActivityStarter` 发现类不存在、匹配 `ArchiveState`、校验 Launcher 与确认策略、创建草稿会话和发送恢复广播。这些工作主要在 `system_server` 内完成，通常远短于网络和安装。如果这里很慢，应优先检查 `system_server` 锁竞争、Package Manager 处理线程排队和会话 I/O。
+包括 `ActivityStarter` 发现类不存在、匹配 `ArchiveState`、校验 Launcher 与确认策略、创建 draft session 和发送恢复广播。这些工作主要在 `system_server` 内完成，通常远短于网络和安装。如果这里很慢，应优先检查 `system_server` 锁竞争、Package Manager 处理线程排队和会话 I/O。
 
 ### 8.2 `T_installer_prepare`
 
@@ -404,13 +404,13 @@ T_user_ready
 
 ### 8.3 `T_download_and_install`
 
-包括网络下载与分包选择、会话写入和提交、签名与版本校验、包扫描、权限状态恢复、dexopt/ART 工作和 `ACTION_PACKAGE_ADDED`。这通常是恢复的主要耗时，不能用 `PackageArchiver` 的短耗时掩盖安装器与 PackageInstaller 的长尾。
+包括网络下载与分包选择、session 写入和提交、签名与版本校验、包扫描、权限状态恢复、dexopt/ART 工作和 `ACTION_PACKAGE_ADDED`。这通常是恢复的主要耗时，不能用 `PackageArchiver` 的短耗时掩盖安装器与 PackageInstaller 的长尾。
 
 ### 8.4 `T_next_launch`
 
 恢复后的启动仍是普通应用冷启动：Zygote fork、`bindApplication`、Provider、`Application`、Activity 与首帧都不会被归档机制跳过。
 
-归档路径还清理了缓存、代码缓存和应用配置文件，所以首次启动可能比应用持续安装时的冷启动更慢。内置 Baseline Profile、合理的启动依赖和较小的安装包仍有作用，但不能据此承诺恢复后一定完成 AOT 编译。
+归档路径还清理了缓存、code cache 和 app profile，所以首次启动可能比应用持续安装时的冷启动更慢。内置 Baseline Profile、合理的启动依赖和较小的安装包仍有作用，但不能据此承诺恢复后一定完成 AOT 编译。
 
 ## 9. 指标与观测
 
@@ -419,9 +419,9 @@ T_user_ready
 | 指标 | 起点 | 终点 | 主要责任域 |
 |---|---|---|---|
 | `T_archive_done` | 发起归档 | `requestArchive` success | PMS / installd / 存储 |
-| `T_unarchive_accepted` | 点击或调用恢复 | `UNARCHIVAL_OK` | `system_server` / 安装器 |
-| `T_package_restored` | 点击或调用恢复 | 会话成功 / `ACTION_PACKAGE_ADDED` | 网络 / 安装器 / PMS |
-| `T_first_frame_after_restore` | 恢复完成后的启动 | 首帧完成 | 应用启动链 |
+| `T_unarchive_accepted` | 点击或调用恢复 | `UNARCHIVAL_OK` | `system_server` / installer |
+| `T_package_restored` | 点击或调用恢复 | session success / `ACTION_PACKAGE_ADDED` | 网络 / installer / PMS |
+| `T_first_frame_after_restore` | 恢复完成后的启动 | 首帧完成 | App 启动链 |
 
 如果产品点击一次后自动等待并打开应用，可额外定义端到端指标，但必须注明“自动打开”由哪一层实现。
 
@@ -453,7 +453,7 @@ Perfetto 中至少同时观察：
 - installd、dex2oat / ART 相关工作。
 - 恢复完成后的目标应用进程与首帧。
 
-测量磁盘收益时要记录其他用户是否仍安装该包，并分别统计基础 APK、分包、原生库、缓存、代码缓存与用户数据。忽略多用户条件，既可能把“只清了缓存”误报成归档失效，也可能把其他清理任务释放的空间算给归档。
+测量磁盘收益时要记录其他用户是否仍安装该包，并分别统计基础 APK、split、native library、cache、code cache 与用户数据。忽略多用户条件，既可能把“只清了缓存”误报成归档失效，也可能把其他清理任务释放的空间算给归档。
 
 ## 10. 安全与策略边界
 
@@ -461,9 +461,9 @@ Perfetto 中至少同时观察：
 
 - 归档调用方的包名/UID 必须匹配。
 - 归档与恢复分别受删除、安装和跨用户权限约束。
-- 负责恢复的安装器由既有 `InstallSource` 决定。
+- responsible installer 由既有 `InstallSource` 决定。
 - 恢复广播只显式发送给该安装器。
-- 草稿会话绑定安装器 UID、目标包和用户。
+- draft session 绑定安装器 UID、目标包和用户。
 - `INSTALL_UNARCHIVE` 由系统重新判定，不能由普通安装器强行保留。
 - 恢复 APK 继续经过标准安装、签名和版本校验。
 - 设备所有者、工作资料策略、应用锁和用户限制仍可阻止操作。
@@ -477,9 +477,9 @@ Perfetto 中至少同时观察：
 | 版本 | 平台能力 |
 |---|---|
 | Android 14 及以前 | 没有公开的 OS-level `requestArchive()` / `requestUnarchive()`；应用商店可实现自己的归档方案 |
-| Android 15 / API 35 | 引入平台归档 API、`ArchiveState`、`ACTION_UNARCHIVE_PACKAGE`、Launcher 归档入口和仅含元数据的归档安装 |
-| Android 16 / API 36 | 延续平台能力并迭代 Launcher/会话处理 |
-| Android 17 / API 37 | 本章当前源码锚点；以 `android-17.0.0_r1` 的多用户删除、草稿会话、确认与 Launcher 行为为准 |
+| Android 15 / API 35 | 引入平台归档 API、`ArchiveState`、`ACTION_UNARCHIVE_PACKAGE`、Launcher 归档入口和 metadata-only archived install |
+| Android 16 / API 36 | 延续平台能力并迭代 Launcher / session 处理 |
+| Android 17 / API 37 | 当前源码锚点；以 `android-17.0.0_r1` 的多用户删除、draft session、确认与 Launcher 行为为准 |
 
 Android 15 的“移除 APK 与缓存、保留用户数据”是 API 契约层的概括；Android 17 源码补充了一个实现边界：其他用户仍安装时，共享 APK 必须保留。
 
@@ -495,7 +495,7 @@ Android 15 的“移除 APK 与缓存、保留用户数据”是 API 契约层�
 
 ### 误区三：`UNARCHIVAL_OK` 表示应用已经恢复
 
-不是。它只表示恢复可开始，安装完成要看会话状态或 `ACTION_PACKAGE_ADDED`。
+不是。它只表示恢复可开始，安装完成要看 session 或 `ACTION_PACKAGE_ADDED`。
 
 ### 误区四：系统会自动重放第一次点击
 
@@ -507,7 +507,7 @@ AOSP Android 17 没有这个保证。首次启动已返回 `START_ABORTED`。
 
 ### 误区六：数据保留意味着性能状态完全保留
 
-不成立。缓存、代码缓存和应用配置文件都可能被清理，恢复后的首次启动要单独测量。
+不成立。cache、code cache 和 app profile 都可能被清理，恢复后的首次启动要单独测量。
 
 ## 13. 源码阅读索引
 
@@ -516,16 +516,16 @@ AOSP Android 17 没有这个保证。首次启动已返回 `START_ABORTED`。
 - [`ArchivedPackageInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/ArchivedPackageInfo.java)：无 APK 归档安装所需的包、签名和入口元数据。
 - [`Intent.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/Intent.java)：`ACTION_UNARCHIVE_PACKAGE` 与 `EXTRA_ARCHIVAL`。
 - [`LauncherApps.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/LauncherApps.java)：Launcher 兼容选项。
-- [`PackageArchiver.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageArchiver.java)：归档状态、恢复请求、图标和安装器协议主线。
+- [`PackageArchiver.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageArchiver.java)：归档状态、恢复请求、图标和 installer 协议主线。
 - [`ArchiveState.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/pkg/ArchiveState.java)：归档状态数据模型。
-- [`PackageInstallerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageInstallerService.java)：卸载确认、草稿会话、恢复标志与归档安装。
+- [`PackageInstallerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageInstallerService.java)：卸载确认、draft session、unarchive flag 与 archived install。
 - [`PackageInstallerSession.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageInstallerSession.java)：恢复安装的用户确认与状态上报。
 - [`DeletePackageHelper.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/DeletePackageHelper.java)：单用户/全用户删除和代码目录回收条件。
-- [`RemovePackageHelper.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/RemovePackageHelper.java)：缓存、代码缓存、配置文件与用户数据边界。
+- [`RemovePackageHelper.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/RemovePackageHelper.java)：cache、code cache、profile 与用户数据边界。
 - [`InstallPackageHelper.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/InstallPackageHelper.java)：恢复安装后清除归档状态。
 - [`BroadcastHelper.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/BroadcastHelper.java)：归档与安装广播的 extras。
 - [`LauncherAppsService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/LauncherAppsService.java)：合成归档 Launcher Activity。
-- [`PackageManagerShellCommand.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageManagerShellCommand.java)：`pm archive`、`request-unarchive` 和元数据命令。
+- [`PackageManagerShellCommand.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageManagerShellCommand.java)：`pm archive`、`request-unarchive` 和 metadata 命令。
 - [`ActivityStarter.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityStarter.java)：`START_CLASS_NOT_FOUND` 到恢复请求的切换。
 - [Android 15 App archiving 官方说明](https://developer.android.com/about/versions/15/features#app-archiving)
 - [PackageInstaller API](https://developer.android.com/reference/android/content/pm/PackageInstaller)
@@ -533,13 +533,13 @@ AOSP Android 17 没有这个保证。首次启动已返回 `START_ABORTED`。
 
 ## 小结
 
-Android 17 的应用归档流程可以概括为：
+Android 17 的 App Archiving 可以概括为：
 
 ```text
 先保存可恢复入口
   → 用 DELETE_ARCHIVE | DELETE_KEEP_DATA 转换包状态
   → Launcher 展示归档入口
-  → 点击后把恢复请求交给负责恢复的安装器
+  → 点击后把恢复请求交给 responsible installer
   → 安装器通过普通 PackageInstaller 会话恢复 APK
   → 安装成功后清除 ArchiveState
 ```
@@ -548,4 +548,4 @@ Android 17 的应用归档流程可以概括为：
 
 1. 归档状态按用户保存，APK 却可能由多个用户共享。
 2. `UNARCHIVAL_OK` 是“开始恢复”，不是“恢复完成”。
-3. 归档保留业务数据，但会清理缓存和配置文件；恢复后的启动性能必须重新测量。
+3. 归档保留业务数据，但会清理缓存和 profile；恢复后的启动性能必须重新测量。
