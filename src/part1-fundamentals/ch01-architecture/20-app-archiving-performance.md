@@ -318,7 +318,7 @@ Android 17 的实现允许：
 - 调用者声明或持有 `REQUEST_INSTALL_PACKAGES` / `INSTALL_PACKAGES`。
 - 跨用户权限满足。
 
-若需要用户确认，系统先通过 `STATUS_PENDING_USER_ACTION` 返回确认 Intent。确认通过后，Framework 为 responsible installer 创建草稿会话：
+若需要用户确认，系统先通过 `STATUS_PENDING_USER_ACTION` 返回确认 Intent。确认通过后，Framework 为 responsible installer 创建草稿 session：
 
 ```text
 MODE_FULL_INSTALL

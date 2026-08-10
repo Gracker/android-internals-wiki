@@ -222,7 +222,7 @@ Android 16 扩展了 AIDL Audio HAL 对 Configurable Audio Policy（CAP）的支
 | AAudio MMAP | PCM | 降低输入、输出或往返延迟 | HAL/driver/profile 必须支持；shared/exclusive 语义不同 |
 | Direct / Offload | 压缩音频或设备支持的 direct 格式 | 降低软件处理与长播放功耗，或保持特殊格式 | 设备能力、format、attributes 和独占资源决定是否可用 |
 
-低延迟和低功耗是两套目标。MMAP / Fast 为交互式音频缩短排队；offload 允许硬件队列承接更多数据，让 CPU 与框架层数据管道休眠更久。不能因为两者都“绕过了部分普通 mixer 工作”就把它们视为同一路径。
+低延迟和低功耗是两套目标。MMAP / Fast 为交互式音频缩短排队；offload 允许硬件队列承接更多数据，让 CPU 与 framework 数据管道休眠更久。不能因为两者都“绕过了部分普通 mixer 工作”就把它们视为同一路径。
 
 ## 4. FastMixer：请求只是 hint，以接纳结果为准
 
@@ -466,7 +466,7 @@ adb shell dumpsys audio
 
 - 只支持 output。
 - 走 offloaded audio path。
-- 可在短时间内向硬件缓冲区写入数秒数据。
+- 可在短时间内向 hardware buffer 写入数秒数据。
 - framework data pipe 随后可暂停，CPU 获得更长 sleep 时间。
 
 它服务于长音频省电，不服务于交互式低延迟，也不能与 `LOW_LATENCY` 同时成立。成功打开后仍应读取实际 performance mode，并通过 dumpsys 确认 output 类型；“offloaded”不能自动证明具体 DSP 型号或硬件解码实现。
