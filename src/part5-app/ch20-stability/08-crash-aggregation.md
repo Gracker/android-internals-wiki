@@ -56,24 +56,7 @@ task2b_verify_result: "stale-state-fixed: task6_state revisiting→reviewed (alr
 ---
 # 崩溃聚合与归因分析
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 堆栈聚合算法与去重策略
-- 🔹 崩溃归因维度：版本、机型、OS、场景
-- 🔹 自动分派与责任人匹配
-- 🔹 崩溃趋势分析与异常告警
-- 🔹 基于 AI 的崩溃智能归类
-
-### 扩展（可选深入）
-
-- 🔸 （待扩展）
-
-<!-- outline-end -->
-
-20.6 节把 Crash 事件、受影响安装实例、会话和启动尝试分成了不同指标。本节处理服务端的下一步：怎样把海量 occurrence 归入可解释的问题簇，怎样判断它集中在哪些人群，以及怎样把证据交给合适的团队。
+20.6 节把 Crash 事件、受影响安装实例、会话和启动尝试分成了不同指标。服务端随后要把海量 occurrence 归入可解释的问题簇，判断它集中在哪些人群，并把证据交给合适的团队。
 
 平台锚点是 Android 17（API 37，`android-17.0.0_r1`）。聚合算法本身不属于 Android API，但输入数据受 `Throwable`、R8、debuggerd tombstone、`ApplicationExitInfo` 和构建产物约束。忽略这些约束，哈希做得再复杂也只会稳定地产生错误分组。
 

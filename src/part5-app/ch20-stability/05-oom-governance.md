@@ -63,21 +63,9 @@ last_deepseek_cn_review_at: 2026-07-12
 
 # OOM 治理
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 OOM 的 ART 投递机制与预分配 OOM 对象兜底
-- 🔹 Java Heap OOM 的错误字段、产生路径与治理方向
-- 🔹 Native 内存 OOM、线程数 OOM、FD 泄漏 OOM 与虚拟内存耗尽的排查入口
-- 🔹 OOM 兜底、安全降级与大型 App 内存预算管理
-
-<!-- outline-end -->
-
 `OutOfMemoryError` 只是 Android 进程资源失败的一种表现。Java heap 达到 ART growth limit、native-backed API 分配失败、线程创建失败，都可能投递 OOME；普通 `malloc()` / `mmap()` 失败也可能只返回错误，FD 耗尽通常表现为 `EMFILE` 或 abort，LMKD 结束进程时则没有 Java 异常。
 
-治理工作的入口是保留原始错误、退出原因和进程资源快照，再按分配域选择证据。本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点；涉及 Linux 资源限制的说明以 `android17-6.18-2026-06_r6` 为 kernel 锚点。
+治理工作的入口是保留原始错误、退出原因和进程资源快照，再按分配域选择证据。平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`；涉及 Linux 资源限制的说明以 `android17-6.18-2026-06_r6` 为 kernel 锚点。
 
 ## OOM 的投递机制
 
@@ -275,7 +263,7 @@ soa.Self()->ThrowOutOfMemoryError(msg.c_str());
 
 FD 是独立的内核资源。进程达到 `RLIMIT_NOFILE` 后，`open()`、`socket()`、`pipe()`、`eventfd()` 或 `epoll_create1()` 可能返回 `EMFILE`；系统级 file table 压力还可能表现为 `ENFILE`。`android17-6.18-2026-06_r6/fs/file.c` 的 FD 分配路径会按当前 files table 与 limit 返回 `-EMFILE`。
 
-FD 耗尽通常不经过 ART OOME。它保留在本章，是为了让内存、线程、FD 和地址空间使用同一套进程资源看板，同时保持事件类型分开。
+FD 耗尽通常不经过 ART OOME。仍应将内存、线程、FD 和地址空间放进同一套进程资源看板，同时保持事件类型分开。
 
 ### FORTIFY 与真实上限
 
