@@ -97,7 +97,7 @@ flowchart TD
     J --> K["唤醒默认 Display 等待者"]
 ```
 
-图中的 physical display token 由 SurfaceFlinger 持有并返回给 framework。DMS 不会为本地物理屏重新创建令牌。
+图中的 physical display token 由 SurfaceFlinger 持有并返回给 framework。DMS 不会为本地物理屏重新创建 token。
 
 ### 1.2 等待 phase 与超时值
 
@@ -215,7 +215,7 @@ topology 写入是一个需要单独注意的例外：Android 17 的 `DisplayTop
 
 ### 3.3 DMS 不在普通逐帧热路径
 
-稳定显示期间，App buffer 锁存和 HWC validate/present 不经过 DMS 的 `mSyncRoot`。DMS 的主要观察窗口通常是：
+稳定显示期间，App buffer latch 和 HWC validate/present 不经过 DMS 的 `mSyncRoot`。DMS 的主要观察窗口通常是：
 
 - 开机默认屏发现；
 - 外接屏插拔；
@@ -244,7 +244,7 @@ topology 写入是一个需要单独注意的例外：Android 17 的 `DisplayTop
 
 ### 4.2 Layout 使用物理地址，不只看运行时 id
 
-DeviceState Layout 按显示器的物理 address / unique identity 找设备，并规定：
+DeviceState Layout 按 Display 的物理 address / unique identity 找设备，并规定：
 
 - logical display id；
 - 是否 enabled；
@@ -652,7 +652,7 @@ adb shell logcat -b system -s \
 
 ### 12.4 refresh rate 已变但动画节奏异常
 
-收到 DisplayInfo 显示模式回调后，确认：
+收到 DisplayInfo mode callback 后，确认：
 
 - Choreographer 预测周期是否更新；
 - App 是否仍按旧 frame-rate vote；
@@ -661,7 +661,7 @@ adb shell logcat -b system -s \
 - 目标 Display present cadence；
 - 外接屏是否受 primary VSync 驱动和 cadence 转换。
 
-DMS mode 变化与应用逐帧生产是两个阶段。
+DMS mode 变化与 App 逐帧生产是两个阶段。
 
 ### 12.5 `setDisplayPowerMode` 很慢
 

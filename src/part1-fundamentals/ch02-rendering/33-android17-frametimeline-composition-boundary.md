@@ -124,7 +124,7 @@ Android 17 的关键对象是 `FrameTimelineInfo`：
 4. `FrameTimeline::createSurfaceFrameForToken()` 用 `vsyncId` 查询预测值并创建 `SurfaceFrame`；
 5. SurfaceFlinger 完成本轮 display 分类时，把对应 `DisplayFrame` token 写入 SurfaceFrame trace packet。
 
-`FrameTimelineInfo.aidl` 中还包含 `startTimeNanos`、`vsyncResyncedJitterNanos` 与 `dequeueBufferDurationNanos`。令牌除了标识 UI 帧，还携带分类所需的应用侧时序信息。
+`FrameTimelineInfo.aidl` 中还包含 `startTimeNanos`、`vsyncResyncedJitterNanos` 与 `dequeueBufferDurationNanos`。token 除了标识 UI 帧，还携带分类所需的应用侧时序信息。
 
 token 可能无效或过期。`SurfaceFrame::trace()` 会跳过无效 token；预测过期时，expected 时间戳已经不能用于正常比较，Android 17 会采用专门的过期分类与 trace 处理。因此，看到 `prediction_type = Expired Prediction` 时，应先处理 token/调度延迟，不能继续机械计算 Expected 与 Actual 的差。
 
@@ -153,7 +153,7 @@ if (acquireFenceTime == Fence::SIGNAL_TIME_PENDING) {
 
 这段代码把 CPU 提交完成与 Producer GPU 完成分开处理。应用很早调用 `queueBuffer()`，但 acquire fence 很晚才 signal，Actual SurfaceFrame 仍会延长到 GPU 可供 Consumer 读取的时刻。
 
-SurfaceFrame 的 Actual slice 结束于上述 ready 边界，不延伸到最终上屏；`present_type` 与 `jank_type` 会在 DisplayFrame 获得 present 反馈后回填分类结果。切片右边界不能直接作为屏幕更新时间。
+SurfaceFrame 的 Actual slice 结束于上述 ready 边界，不延伸到最终上屏；`present_type` 与 `jank_type` 会在 DisplayFrame 获得 present 反馈后回填分类结果。slice 右边界不能直接作为屏幕更新时间。
 
 ### SurfaceFlinger 侧 DisplayFrame
 
@@ -193,7 +193,7 @@ FrameTimeline 的 jank 定义围绕 predicted present 与 actual present 是否�
 
 `POST`、`HWC_COMPOSITION_QUEUED`、`RELEASE_FENCE` 等枚举在这组 Android 17 SurfaceFlinger 生产调用点中没有活跃发射点。分析脚本不应要求每帧出现完整枚举序列，也不应仅因缺少 `RELEASE_FENCE` 事件便断言 buffer 已经或尚未可复用。
 
-`android.surfaceflinger.frame` 数据源承载这些 `GraphicsFrameEvent`；`android.surfaceflinger.frametimeline` 承载 SurfaceFrame/DisplayFrame。两者用途不同，需要结合图层、缓冲区 ID、buffer id、frame number 与相邻时间关系观察。
+`android.surfaceflinger.frame` 数据源承载这些 `GraphicsFrameEvent`；`android.surfaceflinger.frametimeline` 承载 SurfaceFrame/DisplayFrame。两者用途不同，需要结合 layer、buffer id、frame number 与相邻时间关系观察。
 
 ## CLIENT、DEVICE 与 `gpu_composition`
 
@@ -273,7 +273,7 @@ proto 同时携带 legacy 与 experimental 的 jank/present 值，并明确标�
 | 黄色 | 只用于 App track：应用帧 janky，但责任被归到 SurfaceFlinger |
 | 蓝色 | dropped frame；App 与 SF 侧的具体丢帧语义不同 |
 
-颜色适合定位候选帧，根因仍需结合字段、token flow、线程 slice、buffer 与栅栏证明。
+颜色适合定位候选帧，根因仍需结合字段、token flow、线程 slice、buffer 与 fence 证明。
 
 ## fence 与 BufferQueue：不要把三个方向混在一起
 
@@ -291,7 +291,7 @@ Android 的 BufferQueue 与 fence 设计用于避免 Consumer 读取未完成内
 
 ## 采集一份可解释的 trace
 
-Perfetto UI 的 Android preset 通常会启用 FrameTimeline。需要可复现的命令行配置时，下面的配置会同时收集两类 SurfaceFlinger 数据，以及应用/SF 常用的 atrace 数据：
+Perfetto UI 的 Android preset 通常会启用 FrameTimeline。需要可复现的命令行配置时，下面的配置会同时收集两类 SurfaceFlinger 数据，以及 App/SF 常用的 atrace 数据：
 
 ```protobuf
 buffers {
@@ -369,7 +369,7 @@ ORDER BY a.ts;
 
 结果中的 `dur` 是应用 ready 区间，`present_type` 是后来根据显示反馈完成的分类。相同 `app_token` 出现多行时，应先查看 process 与 layer，不要立即去重。
 
-### 按 DisplayFrame 关联应用与 SurfaceFlinger
+### 按 DisplayFrame 关联 App 与 SurfaceFlinger
 
 下面的查询用 `display_frame_token` 把每个应用 SurfaceFrame 关联到同一轮 SF DisplayFrame：
 
@@ -401,7 +401,7 @@ LEFT JOIN sf USING (display_frame_token)
 ORDER BY app.ts;
 ```
 
-一个 SF token 关联多条应用记录是正常现象：一次显示更新可以合成多个 layer。SF 记录缺失时，应检查 token 是否无效、预测是否过期、trace 是否从帧中途开始，以及目标是否属于 FrameTimeline 覆盖有限的独立 Surface。
+一个 SF token 关联多条 App 记录是正常现象：一次显示更新可以合成多个 layer。SF 记录缺失时，应检查 token 是否无效、预测是否过期、trace 是否从帧中途开始，以及目标是否属于 FrameTimeline 覆盖有限的独立 Surface。
 
 ### 计算 per-frame deadline overrun
 
@@ -434,11 +434,11 @@ ORDER BY overrun DESC;
 4. `dequeueBuffer` 是否因旧 buffer 尚未 release 而等待；
 5. 对应 DisplayFrame 是否又叠加 SF 或 Display HAL jank。
 
-SurfaceFrame `gpu_composition = false` 只表示该 layer 没有被 SF 放入 client composition，不能排除 HWUI 生成缓冲区时的 GPU 延迟。
+SurfaceFrame `gpu_composition = false` 只表示该 layer 没有被 SF 放入 client composition，不能排除 HWUI 生成 buffer 时的 GPU 延迟。
 
 ### SurfaceView 或游戏：画面节奏不稳
 
-不要假定 Native 引擎一定把 `Choreographer.FrameData` 正确传到了目标 Surface。验证令牌存在后，再沿独立 layer 检查：
+不要假定 Native 引擎一定把 `Choreographer.FrameData` 正确传到了目标 Surface。验证 token 存在后，再沿独立 layer 检查：
 
 ```text
 AChoreographer / engine tick
