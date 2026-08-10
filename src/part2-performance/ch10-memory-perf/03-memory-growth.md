@@ -132,7 +132,7 @@ adb shell 'pid=$(pidof com.example.app); grep -E "VmRSS|RssAnon|RssFile|RssShmem
 - 清空缓存后回落，说明该缓存贡献了占用；缓存外仍可能同时存在泄漏。
 - 稳定状态下的 heap dump 和 GC Root 路径，才能确认 Java 生命周期错误。
 
-10.2 节给出了 retained object 的证据链。本节关注有意保留的数据如何设预算，以及释放后 resident memory 为何可能滞后。
+10.2 节给出了 retained object 的证据链。这里关注有意保留的数据如何设预算，以及释放后 resident memory 为何可能滞后。
 
 ## 3. 缓存必须有可执行的预算
 
