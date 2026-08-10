@@ -125,11 +125,11 @@ task9_p2_issues: 0
 
 # 2.20 多窗口与桌面模式渲染性能
 
-在平板分屏、折叠屏展开态、PiP 或外接显示器场景中，可见 window/layer 数量、应用工作负载和显示拓扑可能同时变化。SurfaceFlinger 要处理更大的图层集合和更复杂的 composition decision，窗口 resize 还可能在不同时刻到达。掉帧可能来自应用、WindowManager/Shell、SurfaceFlinger、GPU、Composer HAL 或显示硬件，不能只看应用主线程。
+在平板分屏、折叠屏展开态、PiP 或外接显示器场景中，可见 window/layer 数量、应用工作负载和 display 拓扑可能同时变化。SurfaceFlinger 要处理更大的 layer 集合和更复杂的 composition decision，窗口 resize 还可能在不同时刻到达。掉帧可能来自 App、WindowManager/Shell、SurfaceFlinger、GPU、Composer HAL 或显示硬件，不能只看 App 主线程。
 
 分析的起点是区分分屏、PiP、desktop windowing、connected displays 对应的显示会话，再建立 Display、Window、进程与图层的映射。映射准确后，Perfetto 中的 App jank、SurfaceFlinger jank、HWC 策略变化和 display present 才能归到正确对象。
 
-## 多窗口形态和显示会话
+## 多窗口形态和 display 会话
 
 以下四类场景的会话边界不同。
 
@@ -143,17 +143,17 @@ task9_p2_issues: 0
 
 | 场景 | 公开边界 | 会话形态 | 渲染观察点 |
 |---|---|---|---|
-| Split-screen | Android 7.0（API 24）平台支持 | 一块屏幕里并排两个可见 app window | 同时可见图层增多，分割线和系统栏常驻 |
+| Split-screen | Android 7.0（API 24）平台支持 | 一块屏幕里并排两个可见 app window | 同时可见 layer 增多，分割线和系统栏常驻 |
 | PiP | Android 7.0 在部分设备提供，Android 8.0（API 26）扩展到小屏 | 一块屏幕里包含主窗口和持续更新的小窗 | 小窗经常持续提交 buffer，并与主窗口叠加 |
 | Freeform / desktop windowing | 大屏或兼容设备上的可调整大小窗口 | 一块或多块屏幕里的多个可调整大小窗口 | layer 数量和窗口遮挡关系更复杂，composition decision 更频繁 |
 | 手机 + connected display | 手机连接外接显示器 | 手机保持原有状态，外屏启动独立 desktop session，形成两个显示会话 | SurfaceFlinger 同时驱动两个 display，会话内容彼此独立 |
-| desktop windowing 设备 + 外接显示器 | 平板等 desktop windowing 设备连接外屏 | 桌面会话跨两块屏幕扩展，窗口和光标可跨屏移动 | 仍是同一套桌面会话，但显示范围更大、像素更多 |
+| desktop windowing 设备 + 外接显示器 | 平板等 desktop windowing 设备连接外屏 | 桌面会话跨两块屏幕扩展，窗口和光标可跨屏移动 | 仍是同一套桌面会话，但 display 范围更大、像素更多 |
 
 ```mermaid
 flowchart LR
-    S["单个物理 Display"] --> SS["Split-screen<br/>两个任务同屏"]
+    S["单个物理 Display"] --> SS["Split-screen<br/>两个 Task 同屏"]
     S --> PP["PiP<br/>主窗口 + pinned window"]
-    S --> DW["Desktop windowing<br/>多个可移动任务"]
+    S --> DW["Desktop windowing<br/>多个可移动 Task"]
     CD["Connected displays"] --> PH["手机内屏会话"]
     CD --> EX["外屏桌面会话"]
     TD["支持 desktop windowing 的平板 + 外屏"] --> WS["同一桌面 workspace 跨两个 Display"]
@@ -168,18 +168,18 @@ flowchart LR
 | 对象 | 所在层 | 主要职责 |
 |---|---|---|
 | physical display / `PhysicalDisplayId` | SurfaceFlinger / Composer | 物理连接、mode、VSync、HWC present |
-| `DisplayDevice` | DMS 适配器层 | 表示本地、virtual、Wi-Fi、overlay 等显示设备 |
-| `LogicalDisplay` / `displayId` | DMS 策略层 | 向系统暴露逻辑显示、layer stack、投影和 display group |
+| `DisplayDevice` | DMS adapter 层 | 表示 local、virtual、Wi-Fi、overlay 等显示设备 |
+| `LogicalDisplay` / `displayId` | DMS policy 层 | 向系统暴露逻辑显示、layer stack、投影和 display group |
 | `DisplayContent` | WindowManager | 按 `displayId` 组织任务、Window、Insets、focus 与过渡 |
-| CompositionEngine Output | SurfaceFlinger | 为目标输出构造可见图层集合并与 HWC 协商 |
+| CompositionEngine Output | SurfaceFlinger | 为目标输出构造可见 layer 集合并与 HWC 协商 |
 
 `LogicalDisplay.java` 的类注释说明：logical display 与 display device 是正交概念，映射可以是 many-to-many，也可能没有直接关系。镜像、虚拟显示和 display projection 都会打破“一块 logical display 对应一块物理屏”的简化模型。因此，必须分别记录 DMS 的 `displayId`、SurfaceFlinger 的 physical display id、layer stack 和 HWC 显示句柄。
 
 ### physical display 的发现与 logical display 的建立
 
-`LocalDisplayAdapter.registerLocked()` 从 SurfaceFlinger 枚举 physical display id，并用 `tryConnectDisplayLocked()` 读取令牌、静态信息、动态模式信息和 desired mode specs。新设备先成为 `LocalDisplayDevice`，再由 `DisplayDeviceRepository` 通知 `LogicalDisplayMapper` 建立或更新 logical display。
+`LocalDisplayAdapter.registerLocked()` 从 SurfaceFlinger 枚举 physical display id，并用 `tryConnectDisplayLocked()` 读取 token、静态信息、动态 mode 信息和 desired mode specs。新设备先成为 `LocalDisplayDevice`，再由 `DisplayDeviceRepository` 通知 `LogicalDisplayMapper` 建立或更新 logical display。
 
-`mDevices.size() == 0` 只决定 `LocalDisplayDevice` 的 `mIsFirstDisplay`，影响首屏资源和背光等初始化。默认逻辑显示还要经过 `LogicalDisplayMapper` 的布局与 `FLAG_ALLOWED_TO_BE_DEFAULT_DISPLAY` 规则，不能只凭枚举顺序推断 `displayId=0`。
+`mDevices.size() == 0` 只决定 `LocalDisplayDevice` 的 `mIsFirstDisplay`，影响首屏资源和背光等初始化。默认逻辑显示还要经过 `LogicalDisplayMapper` 的 layout 与 `FLAG_ALLOWED_TO_BE_DEFAULT_DISPLAY` 规则，不能只凭枚举顺序推断 `displayId=0`。
 
 ```mermaid
 flowchart LR
@@ -203,9 +203,9 @@ flowchart LR
 
 `ExternalDisplayPolicy.isExternalDisplayLocked()` 以 `Display.TYPE_EXTERNAL` 识别外接 logical display，并负责启用、thermal 限制、连接事件和统计。Android 17 中，`isDisplayContentModeManagementEnabled()` 为真时，`isExtendedDisplayAllowed()` 不再依赖开发者选项；但允许 extended content mode”不等于连接后必然自动进入桌面扩展。
 
-是否自动启用还受布局、boot 阶段、用户确认、thermal 状态和设备配置影响。应用侧只能根据运行时 `DisplayManager`、当前 Activity 上下文与 window metrics 判断，不能用 Android 版本号推导外屏已经可用。
+是否自动启用还受 layout、boot 阶段、用户确认、thermal 状态和设备配置影响。应用侧只能根据运行时 `DisplayManager`、当前 activity context 与 window metrics 判断，不能用 Android 版本号推导外屏已经可用。
 
-### DMS 遍历如何进入显示事务
+### DMS traversal 如何进入显示 transaction
 
 `mSyncRoot` 的源码注释是“保护 DMS 的大部分状态”，并非所有显示工作都在这把锁内完成。`scheduleTraversalLocked()` 用单个 `mPendingTraversal` 合并重复请求，Handler 收到 `MSG_REQUEST_TRAVERSAL` 后调用 `WindowManagerInternal.requestTraversalFromDisplayManager()`。随后 WMS 回调 DMS 的 `performTraversal()`：logical display 的 layer stack、orientation、projection 和 Surface 状态进入对应的 `SurfaceControl.Transaction`；desired mode specs 则由 `ModeRequestManager` 收集后交给 display adapter 批量应用。
 
@@ -213,17 +213,17 @@ flowchart LR
 
 ### DMS 与 SurfaceFlinger 的观察面
 
-- `dumpsys display`：查看 logical display、display group、DisplayDevice、当前布局、device state 和 power controller。
-- `dumpsys SurfaceFlinger` / Winscope：查看 physical/virtual output、layer tree、projection 与每个输出的合成状态。
+- `dumpsys display`：查看 logical display、display group、DisplayDevice、当前 layout、device state 和 power controller。
+- `dumpsys SurfaceFlinger` / Winscope：查看 physical/virtual output、layer tree、projection 与每个 output 的 composition 状态。
 - `surfaceflinger_layer`：提供全局 layer snapshot，没有 `display_id` 列。
-- `android_surfaceflinger_display`：提供同一快照中的显示信息，但没有通用的图层外键。
+- `android_surfaceflinger_display`：提供同一 snapshot 中的 display 信息，但没有通用的 layer 外键。
 - `android_surfaceflinger_transaction`：包含 `layer_id` 与 `display_id`，适合确认某次事务的目标，不能代替最终 output-layer 可见性。
 
 多屏归属应结合 Winscope 的 output tree、display transaction、layer parent chain 和目标时间片确认。不能仅按 `snapshot_id` 连接两个表，就把快照中的所有图层归给每一个 display。
 
 ## 先建立 Window、线程和 Surface 拓扑
 
-多窗口不一定对应多进程。一个进程可以有多个顶层窗口，每个窗口有自己的 `ViewRootImpl`、窗口 Surface 和 BLAST 缓冲区流；这些窗口仍可能共享 UI Looper 和 HWUI RenderThread。
+多窗口不一定对应多进程。一个进程可以有多个顶层 Window，每个 Window 有自己的 `ViewRootImpl`、窗口 Surface 和 BLAST buffer 流；这些窗口仍可能共享 UI Looper 和 HWUI RenderThread。
 
 | 证据 | 执行拓扑 | 性能含义 |
 |---|---|---|
@@ -236,7 +236,7 @@ flowchart LR
 
 判断时应按 `pid/tid/ViewRootImpl/WindowState/layerId/displayId` 建表。屏幕上的两个面板也可能只是同一 Activity 中的双栏 View，此时只有一个 ViewRoot 和 App Window buffer，不应按多窗口管线分析。
 
-## WMS 几何属性与 App buffer 是两条输入
+## WMS geometry 与 App buffer 是两条输入
 
 窗口缩放、PiP 和 Shell 过渡同时涉及管理状态、layer 几何属性和应用内容：
 
@@ -252,14 +252,14 @@ Shell 过渡常把任务或 Activity Surface 临时重设到 leash 上执行动�
 
 WMS 内部的 `BLASTSyncEngine` 可以等待一组 WindowContainer 的 draw/transaction；公开的 `SurfaceSyncGroup` 面向应用与嵌入 Surface。两者只等待已注册参与者，不能替相机、codec 或游戏引擎的下一业务帧建立同步关系。
 
-## SurfaceFlinger 与 HWC 按输出组织合成
+## SurfaceFlinger 与 HWC 按 Output 组织合成
 
 SurfaceFlinger FrontEnd 接收所有窗口、Shell/WMS 几何属性和 buffer transaction，更新 layer hierarchy 与快照；CompositionEngine 再为每个 Output/Display 构造可见图层集合。同一图层还可能因镜像或 display projection 出现在多个 output，不能只检查全局图层是否存在。
 
 多窗口的成本主要来自三类变化：
 
-1. 可见图层、leash、caption、dim、IME 与 SystemUI 图层增多；
-2. scale、rotation、alpha、HDR/SDR、protected content 等组合让 HWC 策略更复杂；
+1. 可见 layer、leash、caption、dim、IME 与 SystemUI layer 增多；
+2. scale、rotation、alpha、HDR/SDR、protected content 等组合让 HWC strategy 更复杂；
 3. 多个 output 带来各自的 mode、可见 layer 集合、client target 和 present。
 
 窗口变多不一定切换到 CLIENT composition，单个复杂窗口也可能触发 GPU 合成。应比较相邻帧整个输出的图层属性和 DEVICE/CLIENT 结果，不能把图层数量直接换算成 GPU 开销。
@@ -288,7 +288,7 @@ Android 17 为目标 SDK 37 及以上的应用启用无锁 `MessageQueue`（Deli
 
 官方 desktop windowing 文档描述标题栏 Insets、可调整大小窗口、taskbar 和多实例交互；其中 `PROPERTY_SUPPORTS_MULTI_INSTANCE_SYSTEM_UI` 从 Android 15 开始提供。文档没有通用的 `applyCachedState` Perfetto slice，也不能支撑“SurfaceControl 属性持久化缓存”这一平台结论。设备是否启用 desktop windowing、connected display content mode 和多实例入口，仍要在运行时确认。
 
-### 16 KB 页大小不是多窗口专属机制
+### 16 KB page size 不是多窗口专属机制
 
 16 KB 页大小会影响原生库兼容性和进程内存布局，但不会创建另一条多窗口渲染管线。评估多窗口驻留内存时，可用 `linux.process_stats` 查看进程 RSS/交换空间，用 `linux.process_stats`，系统 `MemAvailable`，再结合 `android.memory.process`、GPU memory、`dumpsys meminfo` 和 LMK 事件判断。
 
@@ -362,7 +362,7 @@ PiP 也要单独判断。它通常可见但不 focusable”。持续播放视频
 
 ## Perfetto 和 dumpsys 的正确观察面
 
-多窗口分析要避免两类查询错误：使用不存在的表名，以及把某个版本中的切片名当成平台通用名称。
+多窗口分析要避免两类查询错误：使用不存在的表名，以及把某个版本中的 slice 名当成平台通用名称。
 
 ### 1. 列出当前跟踪中的 SurfaceFlinger 切片名
 
@@ -417,12 +417,12 @@ FrameTimeline 中，App 侧和 SurfaceFlinger 侧至少要分成三类：
 | Android 版本 | 公开变化 | 对渲染分析的影响 |
 |---|---|---|
 | 7.0 (API 24) | 引入分屏，freeform capability 进入平台 | SurfaceFlinger 开始稳定处理多个可见 app window |
-| 8.0 (API 26) | PiP 扩展到小屏设备 | 主窗口之外增加一条持续更新的小窗图层 |
+| 8.0 (API 26) | PiP 扩展到小屏设备 | 主窗口之外增加一条持续更新的小窗 layer |
 | 10 (API 29) | Multi-resume + `onTopResumedActivityChanged()` | 失去焦点不再等于离开 `RESUMED`，生命周期判断需要细分 |
 | 12 (API 31) | 多窗口成为大屏设备的标准行为 | 平板、折叠屏更频繁进入 resizable / compatibility mode |
 | 12L (API 32) | 大屏系统 UI、多任务与 Activity Embedding 体验增强 | 同一 Task window 可包含并列的 Activity container，视觉双栏仍可能只有一个顶层窗口 |
-| 13 (API 33) | Composer HAL 转向 AIDL；AutoSingleLayer 仅覆盖受限的单 layer buffer update | HAL 接口变化不改变各显示设备的 HWC 职责；不能用 unsignaled latch 解释跨窗口同步 |
-| 14 (API 34) | `SurfaceSyncGroup` 成为公开 API | 应用和嵌入 Surface 可收集同步事务，WMS 内部仍使用独立 sync engine |
+| 13 (API 33) | Composer HAL 转向 AIDL；AutoSingleLayer 仅覆盖受限的单 layer buffer update | HAL 接口变化不改变 per-display HWC 职责；不能用 unsignaled latch 解释跨窗口同步 |
+| 14 (API 34) | `SurfaceSyncGroup` 成为公开 API | 应用和嵌入 Surface 可收集同步 transaction，WMS 内部仍使用独立 sync engine |
 | 15 (API 35) | target 35 edge-to-edge；`PROPERTY_SUPPORTS_MULTI_INSTANCE_SYSTEM_UI` 提供多实例声明 | caption、Insets 和多实例窗口增加布局与任务组织变量，不改变 BLAST/SF 主线 |
 | 16 (API 36) | target 36 在 `sw >= 600dp` 时忽略方向、宽高比和 resizability 限制，并提供临时 opt-out | 窗口尺寸与方向变化更常见；测试要覆盖 desktop window、外屏、折叠状态和 compatibility mode |
 | 17 (API 37) | target 37 不再支持上述 opt-out；`recreateOnConfigChanges` 扩展到新的默认不重建配置类型；target 37 启用无锁 MessageQueue | 大屏适配不能依赖固定方向或不可缩放；DeliQueue 的收益仅限 Looper 队列，显示主线仍按 Android 17 AOSP 分析 |
