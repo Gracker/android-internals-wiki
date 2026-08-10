@@ -63,7 +63,7 @@ SurfaceFlinger 收到 `SurfaceControl.Transaction` 后，不能立即把每个�
 
 Android 17 的 SurfaceFlinger FrontEnd 位于这段边界上。它消费 transaction，维护 layer 的服务端请求状态和生命周期，构建可遍历的 layer 图，再生成 CompositionEngine 使用的 `LayerSnapshot`。
 
-下文的平台实现按 Android 17 / API 37 的 `android-17.0.0_r1` 核对。获取围栏、释放围栏和 dma-fence 的内核语义见 §2.16；这里集中说明 SurfaceFlinger 如何把围栏作为事务就绪与缓冲区使用条件。
+下文的平台实现按 Android 17 / API 37 的 `android-17.0.0_r1` 核对。acquire fence、release fence 和 dma-fence 的内核语义见 §2.16；这里集中说明 SurfaceFlinger 如何把 fence 作为 transaction readiness 与 buffer 使用条件。
 
 ## 1. FrontEnd 的职责边界
 
