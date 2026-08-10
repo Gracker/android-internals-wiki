@@ -82,40 +82,9 @@ last_deepseek_cn_review_at: 2026-06-03
 
 # 5.14 Android 17 ML Runtime 与 NPU 访问边界
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 NPU 能力声明与 Android 17 访问限制
-区分 `PackageManager.FEATURE_NEURAL_PROCESSING_UNIT` 声明、PackageManager feature 检测、目标 API 约束，以及未声明时的直接 NPU 访问边界。
-
-### 🔹 LiteRT CompiledModel 的执行模型
-梳理 `CompiledModel`、`Accelerator.NPU/GPU/CPU` fallback、模型加载、输入输出 buffer 与运行时调度路径。
-
-### 🔹 AOT 编译与 AI Pack 分发
-说明主机侧编译、设备 SoC 匹配、Google Play AI Pack 下发、首次推理延迟和包体积之间的取舍。
-
-### 🔹 NNAPI HAL 与厂商 NPU delegate
-区分 HIDL 1.3 历史接口、Android 12+ AIDL HAL、QNN/NeuroPilot 等厂商 delegate、支持 op 查询和 partial delegation。
-
-### 🔹 端侧推理的性能与功耗边界
-围绕 TTFT、单次推理延迟、峰值内存、热降频、后台限制建立可观测指标。
-
-### 🔹 公开 API、Preview 能力与闭源组件边界
-标清 LiteRT、NNAPI、AICore、厂商 SDK 的可验证范围，避免把 GMS 闭源能力误写成 AOSP 公共能力。
-
-## 扩展
-
-### 🔸 Google Tensor / EdgeTPU 能力验证
-Tensor 设备上的 NPU delegate 能力只采用公开资料和可复现实验结论；厂商私有实现不外推为 Android 平台通用能力。
-
-### 🔸 LiteRT 与旧 TFLite/NNAPI 迁移对照表
-整理旧项目从 TFLite delegate 迁移到 LiteRT 的工程检查清单。
-
-<!-- outline-end -->
-
 Android 17 为 NPU 访问增加了明确的平台控制面：目标 API 37 的应用要直接访问 NPU，必须在清单中声明 `android.hardware.npu`。这项变化解决的是 UID 能否直接向 NPU 提交工作，以及系统如何把应用优先级传给 NPU 调度层。它没有给普通应用增加一个通用的“执行任意模型”Framework API。
 
-应用仍需选择 LiteRT、厂商 SDK、系统托管服务或旧 NNAPI 路径。每条路径都有自己的模型格式、运行时、硬件覆盖和分发方式。本节以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，先讲平台怎样限制直接访问，再讲 LiteRT CompiledModel、AOT/JIT、Neural Networks HAL 和厂商后端怎样衔接。
+应用仍需选择 LiteRT、厂商 SDK、系统托管服务或旧 NNAPI 路径。每条路径都有自己的模型格式、运行时、硬件覆盖和分发方式。平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`；分析范围包括平台的直接访问限制，以及 LiteRT CompiledModel、AOT/JIT、Neural Networks HAL 和厂商后端的衔接方式。
 
 端侧推理的通用性能分析见 5.11 节；LLM 的 TTFT、TPOT、DVFS 与能效测量见 5.13 节。
 

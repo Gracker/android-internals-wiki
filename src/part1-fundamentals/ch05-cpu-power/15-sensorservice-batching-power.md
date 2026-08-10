@@ -61,46 +61,9 @@ last_deepseek_cn_review_at: 2026-06-16
 
 # 5.15 SensorService 与传感器批处理功耗模型
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 传感器耗电的三类成本
-区分传感器本体采样、sensor hub / HAL 缓冲、应用处理器被唤醒后处理事件三类成本，避免把“采样频率低”直接等同于“省电”。
-
-### 🔹 SensorService 在系统功耗路径里的位置
-梳理 App `SensorManager`、framework sensors service、native `SensorService`、Sensor HAL 和硬件 FIFO 的分工，说明系统如何把多个客户端的采样需求合并给底层。
-
-### 🔹 `samplingPeriodUs` 与 `maxReportLatencyUs`
-解释采样周期和最大上报延迟的不同含义：前者控制数据产生频率，后者控制批量交付窗口；批处理收益来自减少 AP 唤醒次数，不来自减少传感器采样本身。
-
-### 🔹 wake-up / non-wake-up sensor 与 sensor hub
-说明 wake-up sensor、non-wake-up sensor、significant motion、step counter 等类型对 suspend、唤醒和事件交付的影响，并标出不同设备硬件能力差异。
-
-### 🔹 批处理失效的常见原因
-覆盖硬件 FIFO 不足、多个客户端请求高频低延迟、前后台生命周期未退订、监听器泄漏、厂商 HAL 限制等导致批处理窗口被打断的情况。
-
-### 🔹 Perfetto、Battery Historian 与 `dumpsys sensorservice` 观察点
-给出后续正文需要验证的证据入口：sensor event 频率、wake lock、AP wakeup、CPU freq、battery stats、`dumpsys sensorservice` active connections 与 batching 状态。
-
-### 🔹 与 App 层传感器治理的边界
-本节负责系统路径和功耗模型，25.5 节负责 App 侧 API 选择、生命周期退订和业务降级；正文只做交叉引用，不重复写实战策略。
-
-## 扩展
-
-### 🔸 Sensor Direct Channel 与高频传感器流
-后续可补充 API 26+ direct channel 在高频传感器数据通路中的适用边界，以及它与普通事件回调的功耗差异。
-
-### 🔸 OEM sensor hub 策略差异
-后续可收集 Pixel、Qualcomm、MediaTek 设备上的 FIFO 深度、wake-up sensor 支持和厂商 HAL 日志差异。
-
-### 🔸 与定位、蓝牙和后台任务的功耗归因协同
-后续可把传感器批处理与 FLP、BLE scan、JobScheduler/WorkManager 放在同一条电量归因时间线上。
-
-<!-- outline-end -->
-
 SensorService 的功耗问题常被简化为“采样频率越低越省电”。这只覆盖传感器本体的一部分成本。一次传感器请求还会占用 sensor hub/FIFO、唤醒应用处理器（Application Processor，AP），并让 system_server、native SensorService 和应用回调线程参与数据交付。
 
-本节以 Android 17 / API 37 / `android-17.0.0_r1` 为源码锚点，解释采样周期、批量延迟、wake-up 属性、多客户端聚合和 AP suspend 之间的关系。版本沿革只保留理解当前行为所需的节点：Android 4.4 引入规范化 batching，API 26 增加 Sensor Direct Channel，Android 12 对部分运动/姿态传感器增加高采样率限制，Android 17 继续保留这些机制并增加受 flag 控制的 frozen-PID 处理路径。
+源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。分析范围包括采样周期、批量延迟、wake-up 属性、多客户端聚合和 AP suspend 的关系。版本沿革只保留理解当前行为所需的节点：Android 4.4 引入规范化 batching，API 26 增加 Sensor Direct Channel，Android 12 对部分运动/姿态传感器增加高采样率限制，Android 17 继续保留这些机制并增加受 flag 控制的 frozen-PID 处理路径。
 
 ## 传感器耗电来自三个位置
 
@@ -429,7 +392,7 @@ Battery stats 的 sensor active time 不等于 sensor 芯片的精确能量，Ba
 
 ## 与应用治理章节的分工
 
-本节解释系统如何合并采样请求、怎样借助 FIFO 减少 AP wakeup，以及 Android 17 的采样率和 frozen-PID 边界。25.5 节负责应用侧决策：选择 sensor、生命周期所有权、页面不可见后的注销、业务降级，以及定位与 sensor 的协同。
+系统侧关注采样请求的合并、借助 FIFO 减少 AP wakeup，以及 Android 17 的采样率和 frozen-PID 边界。25.5 节负责应用侧决策：选择 sensor、生命周期所有权、页面不可见后的注销、业务降级，以及定位与 sensor 的协同。
 
 应用侧最重要的规则仍然是：
 
