@@ -113,7 +113,7 @@ switch (mMapper.getMapperVersion()) {
 它提供两类能力：
 
 - 生成 `GraphicBufferAllocator buffers:` dump；
-- 汇总当前登记条目的估算大小，并维护跟踪事件。
+- 汇总当前登记条目的估算大小，并维护 trace event。
 
 列表中没有“已释放、等待匹配”的条目，也没有按规格查找旧 handle 的接口，因此它不承担 framework 通用内存池的职责。
 
@@ -206,7 +206,7 @@ AOSP 测试覆盖了扩展到 128、256 等数量。这个能力与“Gralloc �
 - shared buffer 模式是否已有固定 slot；
 - 当前是否允许新分配。
 
-普通出队的选择顺序是：
+普通 dequeue 的选择顺序是：
 
 1. 优先取 `mFreeBuffers.front()`，因为它已经带有 buffer；
 2. 没有可复用 buffer 且 `mAllowAllocation` 为 true 时，再取 `mFreeSlots`；
@@ -215,7 +215,7 @@ AOSP 测试覆盖了扩展到 128、256 等数量。这个能力与“Gralloc �
 
 “dequeue 慢”因此有多种原因：等 slot、等 Consumer、等 release fence、执行新分配、Binder 调度或线程本身未运行。仅看一个长 slice 无法断定是 Gralloc。
 
-### 4.2 兼容性检查不要求用途完全相等
+### 4.2 兼容性检查不要求 usage 完全相等
 
 找到 slot 后，`GraphicBuffer::needsReallocation()` 检查：
 
@@ -229,16 +229,16 @@ if ((usage & USAGE_PROTECTED) !=
         (inUsage & USAGE_PROTECTED)) return true;
 ```
 
-宽、高、格式和层数必须相等。普通用途采用“已有用途覆盖请求用途”的关系：旧 buffer 多出的兼容用途位不会自动触发重分配。`USAGE_PROTECTED` 单独要求精确匹配，避免保护属性被当作普通超集处理。
+宽、高、格式和 layer count 必须相等。普通 usage 采用“已有 usage 覆盖请求 usage”的关系：旧 buffer 多出的兼容 usage 位不会自动触发重分配。`USAGE_PROTECTED` 单独要求精确匹配，避免保护属性被当作普通超集处理。
 
-在 `BQ_EXTENDEDALLOCATE` flag ID 与队列当前世代不一致时，也会要求重分配。
+在 `BQ_EXTENDEDALLOCATE` flag 生效的构建中，slot 保存的 additional-options generation id 与队列当前 generation 不一致时，也会要求重分配。
 
 ### 4.3 分配就在 `dequeueBuffer()` 内完成
 
 需要新 buffer 时，`BufferQueueProducer::dequeueBuffer()` 会：
 
 1. 把 slot 标为 DEQUEUED，清除旧 `GraphicBuffer` 映射；
-2. 设置 `mIsAllocating`，并在返回标志中加入 `BUFFER_NEEDS_REALLOCATION`；
+2. 设置 `mIsAllocating`，并在返回 flag 中加入 `BUFFER_NEEDS_REALLOCATION`；
 3. 释放 `BufferQueueCore::mMutex`；
 4. 创建 `GraphicBuffer`，进入 `GraphicBufferAllocator` 和 Gralloc；
 5. 重新取得锁，把新对象安装到该 slot；
@@ -248,7 +248,7 @@ if ((usage & USAGE_PROTECTED) !=
 
 ### 4.4 `requestBuffer()` 完成 slot 映射握手
 
-`dequeueBuffer()` 返回 slot 与标志后，`Surface` 检查：
+`dequeueBuffer()` 返回 slot 与 flag 后，`Surface` 检查：
 
 ```cpp
 if ((result & BUFFER_NEEDS_REALLOCATION) || gbuf == nullptr) {
@@ -322,7 +322,7 @@ slot 编号本身没有跨 disconnect 的永久身份。重连后，即使数字
 `GraphicBuffer` 可能：
 
 - 自己通过 allocator 创建数据，析构时走 `GraphicBufferAllocator::free()`；
-- 只拥有导入后的 handle，析构时走 Mapper 的 `freeBuffer()`；
+- 只拥有 import 后的 handle，析构时走 Mapper 的 `freeBuffer()`；
 - 只包装外部 handle，不取得所有权。
 
 不能把每个 `GraphicBuffer` 析构都描述成“从 `sAllocList` 删除一项”。只有由该 allocator 登记并按相应 owner 语义持有的 handle 才符合这条路径。
@@ -331,7 +331,7 @@ slot 编号本身没有跨 disconnect 的永久身份。重连后，即使数字
 
 ### 6.4 SurfaceView 反复创建不等于已有通用泄漏结论
 
-SurfaceView、TextureView、普通应用窗口使用的 Consumer 和合成路径不同。反复创建 Surface 后图形指标增长，可能来自：
+SurfaceView、TextureView、普通应用窗口使用的 Consumer 和合成路径不同。反复创建 Surface 后 Graphics 指标增长，可能来自：
 
 - 旧 BufferQueue 或 BLAST transaction 尚未完成清理；
 - 应用仍持有 `Surface`、`SurfaceTexture`、codec、EGLSurface 或 native window；
@@ -356,7 +356,7 @@ mAllocator->allocate2(*descriptorInfo, 1, &result);
 
 这里的 `count` 固定为 1。不能因为 AIDL 支持批量语义，就宣称 BufferQueue 的普通 reallocation 会一次批量申请多块。`BufferQueueProducer::allocateBuffers()` 可以预分配多个可用 slot，但实现仍按 slot 逐块创建 `GraphicBuffer`，还会处理分配期间配置变化的竞态。
 
-### 7.2 AIDL 描述不规定堆、压缩或缓存算法
+### 7.2 AIDL 描述不规定 heap、压缩或缓存算法
 
 `BufferDescriptorInfo` 包含：
 

@@ -264,7 +264,7 @@ Android 官方手写笔文档把延迟拆为硬件与 OS 输入处理、应用�
 
 ### InputDispatcher 很快，用户就会立刻看到反馈
 
-分发到确认的延迟正常，只说明窗口及时消费了输入。应用可能没有重绘，或新 buffer 仍在等待 present。
+dispatch-to-ACK 正常只说明窗口及时消费了输入。应用可能没有重绘，或新 buffer 仍在等待 present。
 
 ### `eventTime` 就是手指接触屏幕的时刻
 

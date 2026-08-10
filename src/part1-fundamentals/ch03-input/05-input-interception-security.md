@@ -165,7 +165,7 @@ gesture monitor 对应的窗口带有 **spy** input config。Android 17 还强�
 
 SystemUI 的边缘返回手势使用这套模式：先用 gesture monitor 观察边缘触摸，确认系统返回手势后再 pilfer。“收到副本”与“主动接管”对目标 App 的影响完全不同。
 
-在 Perfetto 中，目标窗口的触摸 slice 会以 `ACTION_CANCEL` 中断，同时系统 UI 进程开始处理手势。如果 App 的触摸流意外中断，可以检查是否有系统监视窗口截取了指针。
+在 Perfetto 中，目标窗口的 touch slice 会以 `ACTION_CANCEL` 中断，同时系统 UI 进程开始处理手势。如果 App 的触摸流意外中断，可以检查是否有系统监视窗口截取了指针。
 
 ### InputMonitor 与 InputFilter 的区别
 

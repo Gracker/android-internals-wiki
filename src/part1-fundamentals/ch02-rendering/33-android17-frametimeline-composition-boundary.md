@@ -64,7 +64,7 @@ task9_review_notes: "2026-07-10 Task9 deep-review: auto-fixed。P0 2 / P1 1 已�
 
 # 2.33 Android 17 FrameTimeline：应用、SurfaceFlinger 与合成边界
 
-FrameTimeline 用于判断一帧是否按调度器预测的时间显示，以及延误更接近应用、SurfaceFlinger、GPU composition 还是 Display HAL。它无法覆盖所有生产者，也不能单独证明某段 CPU 或 GPU 工作就是根因。
+FrameTimeline 用于判断一帧是否按调度器预测的时间显示，以及延误更接近应用、SurfaceFlinger、GPU composition 还是 Display HAL。它无法覆盖所有 Producer，也不能单独证明某段 CPU 或 GPU 工作就是根因。
 
 以下分析以 Android 17 / API 37 的 `android-17.0.0_r1` 为平台版本，以 `android17-6.18-2026-06_r6` 为内核同步版本。公共显示主线如下：
 
