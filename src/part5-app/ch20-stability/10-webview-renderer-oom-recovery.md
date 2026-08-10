@@ -63,58 +63,9 @@ last_deepseek_cn_review_at: 2026-06-09
 
 # 20.10 WebView Renderer OOM 与白屏恢复
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 Renderer 进程退出的稳定性风险
-- WebView 多进程模型下 App 与 Renderer 的关系
-- OOM / crash / kill 三类退出表现
-- 白屏、页面状态丢失和宿主崩溃的差异
-
-### 🔹 onRenderProcessGone() 的处理契约
-- 返回 true / false 的后果
-- RenderProcessGoneDetail 能提供的信息
-- 多个 WebView 共用 Renderer 时的处理范围
-
-### 🔹 销毁与重建流程
-- 从 View 树移除旧 WebView
-- 清理 Activity、Adapter、缓存对象中的引用
-- 创建新 WebView 并恢复 URL / 状态
-
-### 🔹 OOM 诱因排查
-- 大图、视频、长列表和 JS heap 的风险场景
-- Renderer 优先级与前后台状态
-- 与系统低内存治理的关系
-
-### 🔹 线上治理策略
-- 白屏率、Renderer gone 次数和恢复成功率
-- 灰度开关和兜底页
-- 低版本和不同 WebView Provider 的差异
-
-### 🔹 案例复盘模板
-- 问题发现信号
-- 日志与 ApplicationExitInfo / Crash 上报拼接
-- 修复后指标验证
-
-## 扩展
-
-### 🔸 WebViewRenderProcessClient 的提前降载策略
-- Renderer 无响应 / 恢复回调的治理边界
-- 主动终止前必须具备 `onRenderProcessGone()` 兜底
-
-### 🔸 WebView Provider 版本差异跟踪
-- provider package / version / Chromium milestone 上报
-- 按 provider version 聚合白屏恢复与二次 gone 指标
-
-### 🔸 Renderer OOM 与页面内存预算
-- 页面资源、并发 WebView 与后台保活的预算边界
-- 分阶段采集基线，用 p95 / p99 找异常页面
-
-<!-- outline-end -->
-
 WebView 页面突然变白时，宿主 Activity 可能仍能响应，导航栏和原生按钮也都正常。若同时收到 `onRenderProcessGone()`，可以确认关联的 WebView Renderer 已退出；此时旧 `WebView` 失效，`reload()`、`goBack()`、`evaluateJavascript()` 和 JS Bridge 调用都不能作为补救手段。
 
-本节以 Android 17 / API 37 / `android-17.0.0_r1` 的 framework 契约为平台锚点。WebView provider 是独立更新的 Chromium 或厂商实现，还要记录设备上的 provider 包名与版本。涉及内存压力的内核观察统一以 `android17-6.18-2026-06_r6` 为锚点。
+平台锚点是 Android 17 / API 37 / `android-17.0.0_r1` 的 framework 契约。WebView provider 是独立更新的 Chromium 或厂商实现，还要记录设备上的 provider 包名与版本。涉及内存压力的内核观察统一以 `android17-6.18-2026-06_r6` 为锚点。
 
 ## 先分清平台、Provider 和进程
 
