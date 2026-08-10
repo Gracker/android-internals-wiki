@@ -59,37 +59,11 @@ p2: 0
 
 # FrameMetrics
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 [定位] 说明 FrameMetrics 用来拆一帧内部耗时，适合分析 layout、draw、sync、command issue、swap 等阶段分布。
-- 🔹 [指标表] 列出 `TOTAL_DURATION`、`INPUT_HANDLING_DURATION`、`LAYOUT_MEASURE_DURATION`、`DRAW_DURATION`、`SYNC_DURATION`、`COMMAND_ISSUE_DURATION`、`SWAP_BUFFERS_DURATION`、`DEADLINE` 等指标含义和版本边界。
-- 🔹 [接入方式] 展开 `Window.addOnFrameMetricsAvailableListener`、HandlerThread、Window 生命周期、页面切换和回收。
-- 🔹 [阶段归因] 每个阶段给对应排查方向：主线程布局、RenderThread、GPU、Surface、系统调度、资源加载。
-- 🔹 [DEADLINE] 说明高刷新率设备下为什么应优先看 deadline / expected duration 相关口径。
-- 🔹 [聚合策略] 设计端侧窗口聚合，不保留所有原始帧；字段包含 page、frame count、p50/p95、slow count、stage max。
-- 🔹 [边界] 说明 FrameMetrics 不提供业务函数栈、网络状态、后台线程细节，需要和 tracing / Perfetto 配合。
-- 🔹 [Compose / View] 写清 Compose 最终仍落到 Window / View 渲染指标，但 UI 状态需要额外标记。
-- 🔹 [使用建议] 说明哪些页面适合采、哪些场景应降采样，如何避免 listener 泄漏和后台线程拥塞。
-- 🔹 [与 JankStats] 对比事件粒度、字段语义、易用性、线上聚合成本和专项诊断价值。
-
-### 扩展（可选深入）
-
-- 🔸 增加 FrameMetrics 接入代码，并标注 HandlerThread 和 Window 生命周期关键行。
-- 🔸 补一张“指标阶段 -> 可能原因 -> 下一步工具”的表。
-- 🔸 对 Android FrameMetrics API reference 做版本核对，特别是 DEADLINE 可用性。
-- 🔸 增加一个高刷新率设备上 16ms 口径失效的例子。
-- 🔸 补充与 Macrobenchmark FrameTimingMetric 的关系。
-
-<!-- outline-end -->
-
 ## FrameMetrics 提供一帧内部耗时分项
 
 `FrameMetrics` 是 Android 7.0（API 24）加入的平台 API。它监听一个硬件加速 `Window` 由 HWUI 渲染出的帧，并给出输入、动画、布局、绘制、RenderThread 同步、GPU 命令提交、buffer swap 等阶段的时间。
 
-本章的平台源码锚点是 Android 17 / API 37 的 `android-17.0.0_r1`。FrameMetrics 的公开链路位于 framework 与 HWUI，本章结论不依赖某个 kernel 函数；需要追查 dma-fence、sync file 或驱动等待时，kernel 统一以 `android17-6.18-2026-06_r6` 为准，并结合目标设备的 vendor trace。
+平台源码锚点是 Android 17 / API 37 的 `android-17.0.0_r1`。FrameMetrics 的公开链路位于 framework 与 HWUI，相关结论不依赖某个 kernel 函数；需要追查 dma-fence、sync file 或驱动等待时，kernel 统一以 `android17-6.18-2026-06_r6` 为准，并结合目标设备的 vendor trace。
 
 FrameMetrics 适合回答“这个 Window 的慢帧更集中在哪个阶段”。它不提供业务调用栈，也不直接观察 SurfaceFlinger、HWC、显示驱动或屏幕 present。看到 `DRAW_DURATION` 升高，只能把范围收窄到 UI 绘制与 display-list 生成附近，不能直接认定某个 View、Composable 或业务函数是根因。
 
@@ -99,7 +73,7 @@ Android 17 的 UI 线程和 RenderThread 共同填写一份 `FrameInfo` 时间�
 
 `FrameMetricsObserver` 为公开 listener 复用同一个 `FrameMetrics` 对象，`FrameMetricsReporter` 在每帧完成后把对应数组送给 observer。注册 listener 之前已经排队的旧 surface / old frame 会被过滤，不会补发成历史数据。
 
-> [自动发现] Android 17 的 `FrameMetricsObserver` 创建 `HardwareRendererObserver` 时明确传入 `false /* waitForPresentTime */`。因此公开回调不等待 display present time；“收到了 FrameMetrics”只能证明 HWUI 帧统计已可用，不能证明这帧已经被 SurfaceFlinger 采纳或已经送到屏幕。
+Android 17 的 `FrameMetricsObserver` 创建 `HardwareRendererObserver` 时明确传入 `false /* waitForPresentTime */`。因此公开回调不等待 display present time；“收到了 FrameMetrics”只能证明 HWUI 帧统计已可用，不能证明这帧已经被 SurfaceFlinger 采纳或已经送到屏幕。
 
 ## 指标表：先看时间区间，再谈归因
 
