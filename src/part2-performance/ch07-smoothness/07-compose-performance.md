@@ -51,7 +51,7 @@ sources:
 
 Compose 性能问题不能只用“重组次数多”解释。一帧可能慢在 Composition、Layout、Drawing，也可能慢在 RenderThread、GPU、BufferQueue、SurfaceFlinger 或显示侧。有效的优化从慢帧证据出发，再把成本定位到对应阶段和代码。
 
-本文的平台基线为 Android 17 / API 37 / `android-17.0.0_r1`，内核基线为 `android17-6.18-2026-06_r6`。Compose Runtime、UI、Foundation 和 Compiler 独立于 Android 平台发布；复现实验时还要记录 Kotlin、Compose Compiler、Compose BOM 与各组件版本。Android API level 无法说明 Strong Skipping、Lazy 预取或 Runtime 内部机制是否存在。
+平台基线为 Android 17 / API 37 / `android-17.0.0_r1`，内核基线为 `android17-6.18-2026-06_r6`。Compose Runtime、UI、Foundation 和 Compiler 独立于 Android 平台发布；复现实验时还要记录 Kotlin、Compose Compiler、Compose BOM 与各组件版本。Android API level 无法说明 Strong Skipping、Lazy 预取或 Runtime 内部机制是否存在。
 
 ## 先建立完整的帧模型
 
@@ -293,7 +293,7 @@ Baseline Profile 让 ART 在安装或后台优化阶段预编译关键代码路�
 - **“重组次数越少越好。”** 目标是满足帧 deadline 和交互体验，次数只是诊断线索。
 - **“Baseline Profile 能解决全部 Compose 卡顿。”** 它改善代码编译状态，对 I/O、布局和 GPU 问题无能为力。
 
-## Review 检查表
+## 复核清单
 
 - 是否同时记录 Android、kernel、Kotlin、Compose Compiler、Runtime/UI/Foundation 版本；
 - 是否从 FrameTimeline 选定具体慢帧，而非只看平均 FPS；

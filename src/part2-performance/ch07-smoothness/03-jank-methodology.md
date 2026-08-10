@@ -77,24 +77,6 @@ last_task9_review_log: 'logs/deep-review/2026-06-19-11-audit.md'
 
 # 卡顿分析方法论
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 流畅性问题的完整分析流程：复现 → 抓 Trace → 定位帧 → 分析主线程/RenderThread/SF
-- 🔹 Perfetto 中定位 Jank 帧的方法：FrameTimeline、Expected vs Actual
-- 🔹 Systrace 中关键标记的解读：doFrame、DrawFrame、SurfaceFlinger onMessageReceived
-- 🔹 CPU 调度问题导致的 Jank：识别 Runnable 过长、Uninterruptible Sleep
-- 🔹 分析模板：标准化的 Jank 分析 Checklist
-
-### 扩展（可选深入）
-
-- 🔸 FrameMetrics API 在线上监控中的应用
-- 🔸 使用 SQL 查询 Perfetto Trace 进行批量分析
-
-<!-- outline-end -->
-
 ## 分析目标：把异常帧变成可复核因果链
 
 卡顿分析的交付物不应停在“主线程有一个长 slice”或“CPU 频率较低”。一份可复核结论要记录复现场景、目标 SurfaceFrame / DisplayFrame、责任边界、关键线程或 fence，以及修复后的同场景对照。
