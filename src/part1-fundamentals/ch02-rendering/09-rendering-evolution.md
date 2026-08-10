@@ -460,7 +460,7 @@ UI 线程慢时看输入、animation、traversal、measure/layout 和 display-li
 
 需要回答四个问题：
 
-1. 生产者何时将哪个帧号入队；
+1. Producer 何时 queue 哪个 frame number；
 2. BLAST 何时把缓冲放入哪次事务；
 3. SurfaceFlinger 何时认为 transaction ready 并 latch；
 4. 对应 DisplayFrame 何时 present。

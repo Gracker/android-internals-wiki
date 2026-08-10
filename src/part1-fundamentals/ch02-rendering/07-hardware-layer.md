@@ -324,9 +324,9 @@ H = ceil(h / 64) × 64
 
 这里的 `w`、`h` 是 RenderNode 尺寸，`b` 是每像素字节数。这个结果仍只是下界，真实成本还可能包含：
 
-- 行/图块对齐和分配器粒度；
+- row/tile 对齐和 allocator 粒度；
 - 像素格式、色彩空间与 HDR 精度；
-- 后端/驱动的渲染目标与纹理元数据；
+- backend/driver 的 render target 与纹理元数据；
 - blur、shadow、MSAA 或效果处理使用的临时表面；
 - 缓存、staging 与延迟释放。
 
@@ -450,7 +450,7 @@ Compose UI 1.11.4 的核心语义是：
 
 - `Modifier.graphicsLayer` 先提供绘制指令隔离与整体变换；
 - draw layer 不保证分配离屏缓冲；
-- 图层被栅格化时，内容才会进入离屏缓冲；
+- layer 被 rasterize 时，内容才会进入 offscreen buffer；
 - 内容绘制指令不变时，渲染管线可以重新发出已有指令，而不必重跑应用绘制代码。
 
 `CompositingStrategy` 决定何时强制离屏：
