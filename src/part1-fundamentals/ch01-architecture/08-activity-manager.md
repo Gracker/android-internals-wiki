@@ -190,7 +190,7 @@ AMS 相关证据主要来自三类数据：
 - Binder transaction、线程状态和 Java monitor contention；
 - EventLog，例如 `am_proc_start`、`am_proc_bound`、`am_anr`、`am_crash`、`am_kill`。
 
-EventLog 不是普通切片。只有跟踪启用了 Android logs 数据源并包含 events buffer，`android_logs` 表中才会有这些记录。下面的查询同时保留消息内容，便于读取 PID、进程名和原因：
+EventLog 不是普通 slice。只有 trace 启用了 Android logs 数据源并包含 events buffer，`android_logs` 表中才会有这些记录。下面的查询同时保留消息内容，便于读取 PID、进程名和原因：
 
 ```sql
 SELECT
@@ -277,7 +277,7 @@ WHERE process_name = 'com.example.app'
 ORDER BY ts;
 ```
 
-能否得到完整结果取决于跟踪配置。看到 adj 升高只能说明保护程度下降；判断死亡原因还要结合 lmkd 日志、`ApplicationExitInfo`、`am_proc_died` 和内存压力。`am_kill` 表示 AMS 记录了一次主动终止，不能仅凭这个标签断言“进程被 lmkd 回收”。
+能否得到完整结果取决于 trace 配置。看到 adj 升高只能说明保护程度下降；判断死亡原因还要结合 lmkd 日志、`ApplicationExitInfo`、`am_proc_died` 和内存压力。`am_kill` 表示 AMS 记录了一次主动 kill，不能仅凭这个 tag 断言“进程被 lmkd 回收”。
 
 ---
 
@@ -366,11 +366,11 @@ ANR 不是统一的“主线程卡 5 秒”。不同系统模块在投递不同�
 | 前台执行 Service | 20 秒基础值 | 对应 Service 执行回调完成 |
 | 后台执行 Service | 200 秒基础值 | 对应 Service 执行回调完成 |
 
-这些值不是跨设备 API 契约。AOSP 会乘以 `Build.HW_TIMEOUT_MULTIPLIER`，设备厂商也可能调整。Android 14+ 的广播计时还会为 CPU 饥饿进程扩展窗口：官方诊断文档给出的范围是前台优先级 10～20 秒、后台优先级 60～120 秒。
+这些值不是跨设备 API 契约。AOSP 会乘以 `Build.HW_TIMEOUT_MULTIPLIER`，设备厂商也可能调整。Android 14+ 的广播计时还会为 CPU-starved 进程扩展窗口：官方诊断文档给出的范围是前台优先级 10～20 秒、后台优先级 60～120 秒。
 
 ### Input ANR
 
-Input ANR 从原生 `InputDispatcher` 开始。典型路径是：
+Input ANR 从 native `InputDispatcher` 开始。典型路径是：
 
 ```text
 InputDispatcher.processAnrsLocked()
@@ -395,7 +395,7 @@ InputDispatcher.processAnrsLocked()
 - `Runnable` 很久：查 CPU 饥饿和系统负载；
 - `Sleeping` 且在 Binder：沿 Binder reply 找服务端；
 - `Sleeping` 且在锁等待：找持锁线程；
-- 主线程已经空闲：堆栈可能采得太晚，需回看 ANR 前的跟踪。
+- 主线程已经空闲：堆栈可能采得太晚，需回看 ANR 前的 trace。
 
 ### Broadcast ANR
 
@@ -625,9 +625,9 @@ Context.sendBroadcast()
 
 Android 14 起，应用处于 cached state 时，系统可以暂存发给运行时注册 Receiver 的广播，等应用离开 cached state 后再投递；某些重复广播还可能被合并。Manifest-declared broadcast Manifest Receiver 的广播不使用这套排队方式，系统可先让应用离开缓存状态再投递。
 
-这会改变跟踪的解释：
+这会改变 trace 的解释：
 
-- “广播发送后很久才进入 `onReceive()`”可能是设计内的缓存排队，不一定是 AMS 卡住；
+- “广播发送后很久才进入 `onReceive()`”可能是设计内的 cached 排队，不一定是 AMS 卡住；
 - Manifest Receiver 仍可能触发进程启动，启动风暴要结合隐式广播限制和具体 `action` 判断；
 - 实际的 Receiver ANR 计时从 `BroadcastQueueImpl` 调度目标 Receiver 时开始，不从广播发送时开始。
 

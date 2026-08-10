@@ -157,7 +157,7 @@ DEX
 | Android 7.0+ | 解释器 + JIT + profile-guided AOT | 运行时热身和后台编译换取更小产物 |
 | Android 9+ | Google Play 可在安装时交付 Baseline/Cloud Profile | 安装时就能按真实或预设热点做部分 AOT |
 | Android 12+ | ART 成为 Mainline 模块 | 运行时和编译器行为可随模块更新变化 |
-| Android 14+ | ART Service 管理应用的设备端 dexopt | 编译原因、优先级和产物管理集中到 ART 模块 |
+| Android 14+ | ART Service 管理应用 on-device dexopt | 编译原因、优先级和产物管理集中到 ART 模块 |
 | Android 17 | 延续混合执行与 ART Service 架构 | 仍应以 Profile、filter 和设备状态解释结果 |
 
 Android 17 没有把应用统一切到“云端机器码”或“全量 AOT”。Cloud Profile 分发的是 Profile，设备仍按本机指令集、运行时和依赖生成编译产物。
@@ -190,7 +190,7 @@ enum Filter {
 
 `space*` 与 `everything*` 也存在于当前源码，但主要面向系统和产品配置。不能只按名称把 filter 排成简单的“越靠后越快”：Profile 质量、代码布局、存储 I/O、类加载和实际路径都会影响结果。
 
-Android 14+ ART Service 为不同 dexopt 原因配置 filter。AOSP 的标准默认值包括：
+Android 14+ ART Service 为不同 dexopt reason 配置 filter。AOSP 的标准默认值包括：
 
 ```properties
 pm.dexopt.first-boot=verify
@@ -205,7 +205,7 @@ OEM 可以调整这些属性，ART Service 也会根据 Profile、共享代码�
 
 ## dex2oat 做了什么
 
-dex2oat 是 ART 的设备端 AOT 编译器入口。对被 filter 选中的方法，主要流程可以概括为：
+dex2oat 是 ART 的 on-device AOT 编译器入口。对被 filter 选中的方法，主要流程可以概括为：
 
 1. 打开 DEX、boot image 和 class loader context；
 2. 验证字节码及类型约束；
@@ -230,7 +230,7 @@ ART 会校验这些依赖。强行复制另一台设备或另一版本的 `.odex
 
 ### ART Service 与编译并发
 
-Android 14 起，应用的设备端 dexopt 由 ART Service 负责。`pm.dexopt.<reason>.concurrency` 控制可并发的 dex2oat 进程数，`dalvik.vm.*dex2oat-threads` 控制单个 dex2oat 的线程数。两者共同决定并行规模。
+Android 14 起，应用的 on-device dexopt 由 ART Service 负责。`pm.dexopt.<reason>.concurrency` 控制可并发的 dex2oat 进程数，`dalvik.vm.*dex2oat-threads` 控制单个 dex2oat 的线程数。两者共同决定并行规模。
 
 提高并发可能缩短批处理总时间，也可能增加峰值内存、上下文切换、温升和前台竞争。产品调优必须在目标设备上测首启、OTA、后台维护和交互延迟，不能只看 dexopt 完成时间。
 
@@ -253,7 +253,7 @@ JIT 的典型过程是：
 
 OSR（On-Stack Replacement）允许长循环在方法尚未返回时切入编译代码。JIT 也能利用运行时类型反馈做去虚化和内联，但编译本身会消耗 CPU 和内存。
 
-### JIT 代码缓存的数字要注明层级
+### JIT code cache 的数字要注明层级
 
 Android 17 固定标签中的源码默认值是：
 
@@ -394,7 +394,7 @@ adb shell pm compile --reset com.example.app
 
 `speed-profile` 没有可用 Profile 时，结果会受 ART Service 策略影响。每次实验都要重新 dump 状态，不能只凭命令退出码判断最终 filter。
 
-### `oatdump`、Profile 导出与权限边界
+### `oatdump`、profile dump 与权限边界
 
 `oatdump` 适合检查与构建匹配的 OAT/ODEX/VDEX，`pm dump-profiles --dump-classes-and-methods <package>` 可以让 ART Service 导出文本 Profile。它们属于平台/设备调试工具：
 
@@ -407,7 +407,7 @@ adb shell pm compile --reset com.example.app
 
 ## 在 Perfetto 中怎样识别编译成本
 
-录制时可以启用 `dalvik` atrace category，再配合调度、CPU 频率和必要的 callstack 数据。不要依赖一份旧 trace 里的固定 slice 名称：Android 17 ART 大量使用 `ScopedTrace(__FUNCTION__)` 或 `__PRETTY_FUNCTION__`，名称会随实现和构建变化。
+录制时可以启用 `dalvik` atrace category，再配合调度、CPU frequency 和必要的 callstack 数据。不要依赖一份旧 trace 里的固定 slice 名称：Android 17 ART 大量使用 `ScopedTrace(__FUNCTION__)` 或 `__PRETTY_FUNCTION__`，名称会随实现和构建变化。
 
 可靠的观察点包括：
 
@@ -423,13 +423,13 @@ adb shell pm compile --reset com.example.app
 
 ### “存在 ODEX 就说明应用已经全量编译”
 
-ODEX 可以只包含部分方法的机器码，甚至 filter 只做验证。以 `pm art dump` 和 OAT 文件头为准。
+ODEX 可以只包含部分方法的机器码，甚至 filter 只做验证。以 `pm art dump` 和 oat header 为准。
 
 ### “Baseline Profile 会加速所有代码”
 
 它只引导命中的方法和类。未覆盖路径仍可能解释执行或 JIT，业务自身的 I/O、锁和算法成本也不会消失。
 
-### “JIT 代码缓存上限就是进程实际内存”
+### “JIT code cache 上限就是进程实际内存”
 
 上限只是 capacity 配置。实际映射、提交页面、RSS/PSS 和有效机器码大小需要分别测量。
 
@@ -443,6 +443,6 @@ Cloud Profile 是聚合后的编译提示，设备用它指导本地 dex2oat。�
 
 ### “Mainline 更新后所有应用一定全部重编译”
 
-是否失效取决于 boot class path、ART 版本、产物校验和依赖。应观察具体 dexopt 原因和 artifact 状态，不从“发生过更新”直接推导全量重编译。
+是否失效取决于 boot class path、ART 版本、产物校验和依赖。应观察具体 dexopt reason 和 artifact 状态，不从“发生过更新”直接推导全量重编译。
 
 ART 性能优化需要可重复验证：确认当前编译过滤器与 Profile，测出解释/JIT/AOT 的实际成本，再改 Profile 或代码，并用相同发布构建的包和相同设备复测。只看版本号、文件扩展名或一条 JIT 切片，都不足以解释启动性能。

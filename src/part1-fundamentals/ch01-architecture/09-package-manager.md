@@ -159,12 +159,12 @@ last_review_finalize_run_id: "20260806-120548-9b08ffcd"
 
 | 模块 | 所在进程 | 主要职责 | 不应归给它的工作 |
 |---|---|---|---|
-| `PackageInstallerSession` | `system_server` | 管理会话、密封、校验、提交和结果回调 | 不直接解析全部包状态 |
+| `PackageInstallerSession` | `system_server` | 管理 session、密封、校验、提交和结果回调 | 不直接解析全部包状态 |
 | PMS / `InstallPackageHelper` | `system_server` | 扫描、协调签名与权限、处理包状态、提交安装结果 | 不直接运行 `dex2oat` |
 | `Installer` | `system_server` | `installd` Binder 客户端 | 不是安装策略中心 |
 | `installd` | native daemon | 应用数据目录、权限、标签及底层文件操作 | Android 14+ 不负责组织整套 dexopt 策略 |
-| ART Service / `artd` | `system_server` / native daemon | 组织和执行设备端 dexopt，管理编译产物 | 不负责发布 PackageManager 状态 |
-| `dex2oat` | 独立原生进程 | 按 ART Service 给出的参数生成 OAT、VDEX 等产物 | 不决定包是否允许安装 |
+| ART Service / `artd` | `system_server` / native daemon | 组织和执行 on-device dexopt，管理编译产物 | 不负责发布 PackageManager 状态 |
+| `dex2oat` | 独立 native 进程 | 按 ART Service 给出的参数生成 OAT、VDEX 等产物 | 不决定包是否允许安装 |
 
 Android 14 起，设备端 AOT 编译的控制面已经迁移到 ART Service。PMS 中仍能看到 `DexOptHelper`，但它更接近安装侧的桥接层：根据安装状态发起请求，最终由 `ArtManagerLocal`、`artd` 和 `dex2oat` 完成编译。把 Android 17 的安装编译简单画成“PMS 调 installd 做 dexopt”，会遗漏实际的调度和执行位置。
 
@@ -174,7 +174,7 @@ Android 14 起，设备端 AOT 编译的控制面已经迁移到 ART Service。P
 
 `PackageManagerService` 运行在 `system_server`。它维护已安装包、组件、签名、权限、共享库和用户安装状态，是 Activity、Service、Provider 解析以及权限检查的基础数据来源。
 
-Android 17 的 `SystemServer.startBootstrapServices()` 用 `StartPackageManagerService` trace 包住 `PackageManagerService.main(...)`。它位于引导阶段，而不是更晚的 `startCoreServices()` 或 `startOtherServices()`。原因很直接：许多服务启动时已经需要查询包和权限信息。
+Android 17 的 `SystemServer.startBootstrapServices()` 用 `StartPackageManagerService` trace 包住 `PackageManagerService.main(...)`。它位于 bootstrap 阶段，而不是更晚的 `startCoreServices()` 或 `startOtherServices()`。原因很直接：许多服务启动时已经需要查询包和权限信息。
 
 开机初始化会处理两类信息：
 
@@ -192,7 +192,7 @@ Android 17 的 `SystemServer.startBootstrapServices()` 用 `StartPackageManagerS
 - `PackageStateInternal`：供系统内部查询的包状态视图；
 - `PackageInfo`：根据调用者权限、用户和 flags 生成的公共 API 返回对象。
 
-因此，`getPackageInfo()` 不是从一个全局 Map 原样取出 `PackageInfo`。它要基于调用者可见性、用户状态和查询标志生成结果。包数量、查询标志和对象构造成本，都可能影响查询耗时。
+因此，`getPackageInfo()` 不是从一个全局 Map 原样取出 `PackageInfo`。它要基于调用者可见性、用户状态和查询 flags 生成结果。包数量、查询 flags 和对象构造成本，都可能影响查询耗时。
 
 ---
 
@@ -211,17 +211,17 @@ Android 17 的 PMS 仍有多个锁，不能用“PMS 已经无锁化”概括：
 1. 大量只读查询不必每次都重新获取 PMS 的主锁并复制全部状态；
 2. 查询变慢仍可能来自快照重建、对象生成、包可见性过滤、Binder 排队或其他锁竞争。
 
-所以，Perfetto 中一次慢 `getPackageInfo` 不能只凭 Android 版本就排除锁竞争，也不能看到 `Computer` 就断言读请求完全无锁。应该把 Java monitor contention、Binder 调度和对应线程切片放在一起看。
+所以，Perfetto 中一次慢 `getPackageInfo` 不能只凭 Android 版本就排除锁竞争，也不能看到 `Computer` 就断言读请求完全无锁。应该把 Java monitor contention、Binder 调度和对应线程 slice 放在一起看。
 
 ---
 
 ## 普通 APK 安装怎样提交
 
-无论入口是 `adb install` 还是应用商店的 `PackageInstaller` API，普通安装最终都会进入会话模型。一个会话可以包含基础 APK、split APK、安装元数据以及一个或多个 child session。
+无论入口是 `adb install` 还是应用商店的 `PackageInstaller` API，普通安装最终都会进入 session 模型。一个 session 可以包含 base APK、split APK、安装元数据以及一个或多个 child session。
 
-### 1. 写入和密封会话
+### 1. 写入和密封 session
 
-安装器先创建会话，再把文件写入暂存目录。`PackageInstallerSession.commit()` 不会直接修改 PMS 的包表；它先密封会话，防止继续改写内容。
+安装器先创建 session，再把文件写入 staging 目录。`PackageInstallerSession.commit()` 不会直接修改 PMS 的包表；它先密封 session，防止继续改写内容。
 
 Android 17 中，密封后的处理大致是：
 
@@ -235,7 +235,7 @@ PackageInstallerSession.commit()
               └─ 发送 MSG_INSTALL
 ```
 
-密封和持久化很重要。进程死亡或系统重启后，系统需要知道会话处于可恢复、已失败还是待安装状态。
+密封和持久化很重要。进程死亡或系统重启后，系统需要知道 session 处于可恢复、已失败还是待安装状态。
 
 ### 2. 进入安装请求
 
@@ -409,12 +409,12 @@ ART Service 的 `PrimaryDexopter` 会尝试为各 ABI 创建 `.sdc`。`artd.mayb
 
 ## 分阶段安装与 APEX
 
-普通 APK 会话通常在当前开机周期完成。`StagingManager` 处理的是必须重启后才能完成的 staged session，常见于 APEX 或需要原子应用的系统更新。
+普通 APK session 通常在当前开机周期完成。`StagingManager` 处理的是必须重启后才能完成的 staged session，常见于 APEX 或需要原子应用的系统更新。
 
 `PackageSessionVerifier` 会进行公共校验；对 staged session，还要处理重启前验证、`apexd` 交互、checkpoint/rollback，以及 ready、applied、failed 等状态。可以把它理解成一个跨重启事务：
 
 ```text
-会话已提交
+session committed
   → pre-reboot verification
   → mark ready
   → reboot
@@ -431,7 +431,7 @@ ART Service 的 `PrimaryDexopter` 会尝试为各 ABI 创建 `.sdc`。`artd.mayb
 
 Android 15（API 35）引入系统级 App Archiving，Android 17 延续了这套能力。归档不是普通卸载：
 
-- APK 和缓存可以被移除；
+- APK 和 cache 可以被移除；
 - 用户数据被保留；
 - Launcher 仍可展示归档入口；
 - 用户点击后，由负责的安装器恢复归档应用。
@@ -455,7 +455,7 @@ Android 17 的 `PackageArchiver` 使用带 `DELETE_ARCHIVE` 与 `DELETE_KEEP_DAT
 - atrace 的 `pm`、`dalvik` 分类；
 - 如果分析 IncFS，再加入相关内核与 I/O 事件。
 
-Android 17 源码中可直接找到的切片名称包括：
+Android 17 源码中可直接找到的 trace 名称包括：
 
 - `StartPackageManagerService`
 - `scanDir [...]`
@@ -476,10 +476,10 @@ Android 17 源码中可直接找到的切片名称包括：
 1. **确定时间边界**：从 session commit 到安装结果回调，不要把 APK 下载时间混进来。
 2. **看 `system_server` 的阶段**：prepare、scan、reconcile、dexopt、commit 中哪段最长。
 3. **展开到执行进程**：dexopt 长就看 `artd` / `dex2oat`；数据目录长就看 `installd`；增量读取长就看数据加载器与 IncFS。
-4. **区分运行、排队和 I/O 阻塞**：长切片不等于线程一直在 CPU 上执行。
+4. **区分运行、排队和 I/O 阻塞**：长 slice 不等于线程一直在 CPU 上执行。
 5. **核对设备状态**：温度、充电、idle、存储压力和并发安装都会改变结果。
 
-下面的 SQL 可先列出安装相关切片，作为继续分析的入口：
+下面的 SQL 可先列出安装相关 slice，作为继续分析的入口：
 
 ```sql
 SELECT
@@ -500,7 +500,7 @@ ORDER BY s.dur DESC
 LIMIT 100;
 ```
 
-这条查询只能发现已有切片。某个阶段没有切片时，还要结合线程状态、Binder、I/O 和日志判断，不能把“没搜到名字”当作“阶段没有执行”。
+这条查询只能发现已有 slice。某个阶段没有 slice 时，还要结合线程状态、Binder、I/O 和日志判断，不能把“没搜到名字”当作“阶段没有执行”。
 
 ---
 
@@ -520,7 +520,7 @@ Android 17 的安装路径明确允许 dexopt 失败而不让整个安装失败�
 
 ### “有 Baseline Profile 就必然安装时完成 AOT”
 
-Profile 是否可用、由谁交付、何时编译都取决于安装渠道和设备策略。应以 `pm art dump` 和实际跟踪为准。
+Profile 是否可用、由谁交付、何时编译都取决于安装渠道和设备策略。应以 `pm art dump` 和实际 trace 为准。
 
 ### “Startup Profile 是设备端编译步骤”
 
@@ -543,7 +543,7 @@ Android 17 源码把它作为可选 ART 管理文件。没有 `.sdm` 是正常�
 | Android 11 | IncFS 与 APK Signature Scheme v4 支持增量安装 | 安装与下载可以重叠，需要观察缺块读取和 `.idsig` |
 | Android 14 | on-device dexopt 迁移到 ART Service | 编译问题要从 PMS 继续追到 `ArtManagerLocal`、`artd` 和 `dex2oat` |
 | Android 15 | 系统级 App Archiving | 归档恢复不是普通冷启动 |
-| Android 16 | Android 17 源码注释确认 `.sdm` 格式由此引入 | 可选云编译输入进入会话签名与 ART 产物管理 |
+| Android 16 | Android 17 源码注释确认 `.sdm` 格式由此引入 | 可选云编译输入进入 session 签名与 ART 产物管理 |
 | Android 17 | 当前固定基线；保留 ART 管理文件校验、SDM/SDC 复用判断和现代安装提交路径 | 以 `android-17.0.0_r1` 的实际 feature flag 和产品配置判断行为 |
 
 版本变化必须能由固定标签或官方文档确认。没有类、提交或官方行为说明支撑的说法，不应写成平台事实。

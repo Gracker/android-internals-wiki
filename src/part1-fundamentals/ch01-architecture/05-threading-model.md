@@ -223,7 +223,7 @@ Android 17 对以 API 37 为目标版本的应用启用新的无锁 MessageQueue
 
 没有到期消息时，Java MessageQueue 会进入 native poll。Android 17 的 `system/core/libutils/Looper.cpp` 创建 epoll 实例和用于唤醒的 eventfd，等待时调用 `epoll_wait()`。
 
-新消息改变下一次到期时间时，生产者写入 eventfd 唤醒 Looper。通过原生 Looper 或 MessageQueue 文件描述符监听接口注册的 fd，也可以由同一轮 epoll 等待发现。线程此时处于阻塞睡眠，不是在 Java 层不断检查队列。
+新消息改变下一次到期时间时，生产者写入 eventfd 唤醒 Looper。通过 native Looper 或 MessageQueue 文件描述符监听接口注册的 fd，也可以由同一轮 epoll 等待发现。线程此时处于阻塞睡眠，不是在 Java 层不断检查队列。
 
 Binder 线程池是另一条等待路径。Binder 工作线程通过 Binder 驱动的读写 ioctl 等待事务，默认不依赖主线程 Looper 的 epoll。Perfetto 中看到主线程睡在 `epoll_wait`，不能据此判断 Binder 线程也处于同一种等待。
 
@@ -263,7 +263,7 @@ RenderThread 主要负责：
 - 管理 HWUI 的渲染上下文；
 - 执行一部分可以脱离主线程推进的属性动画。
 
-Android 17 的 `RenderThread::getInstance()` 懒加载名为 `RenderThread` 的线程。`threadLoop()` 把线程 nice 调整为 `PRIORITY_DISPLAY`，然后初始化原生 Looper、Choreographer 及图形后端。普通应用的 RenderThread 不应被笼统描述为 `SCHED_FIFO` 实时线程。
+Android 17 的 `RenderThread::getInstance()` 懒加载名为 `RenderThread` 的线程。`threadLoop()` 把线程 nice 调整为 `PRIORITY_DISPLAY`，然后初始化 native Looper、Choreographer 及图形后端。普通应用的 RenderThread 不应被笼统描述为 `SCHED_FIFO` 实时线程。
 
 ### `syncAndDrawFrame()` 是主线程与 RenderThread 的交接点
 
