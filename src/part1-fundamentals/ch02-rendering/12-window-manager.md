@@ -244,7 +244,7 @@ StartingWindow 的移除时机会影响启动体感：
 
 Insets 变化会先走 `mApplyInsetsRequested`、`dispatchApplyInsets()`，并可能引起 measure/layout、窗口属性变化或强制 relayout，但 `insetsChanged` 不是 Android 17 这段 `if` 的独立布尔条件。`invalidate()` 的纯 draw 不会因此进入 WMS；`requestLayout()` 也只有在上述条件成立时才跨进程。
 
-Android 14+ 增加了 `relayoutAsync()`。Android 17 的 `canRelayoutAsync()` 会检查 starting window、待处理 sync/seq、AM/WMS `WindowConfiguration` 差异等条件；随后客户端用本地 `InsetsState` 和 `WindowConfiguration` 计算 frame。若位置和尺寸同时变化、需要取得新的 sync seq，就回到同步 relayout。启用 fluid-resize/client-surface 相关 flag 后，分支还会不同，Review 必须以目标 build 的 feature flags 为准。
+Android 14+ 增加了 `relayoutAsync()`。Android 17 的 `canRelayoutAsync()` 会检查 starting window、待处理 sync/seq、AM/WMS `WindowConfiguration` 差异等条件；随后客户端用本地 `InsetsState` 和 `WindowConfiguration` 计算 frame。若位置和尺寸同时变化、需要取得新的 sync seq，就回到同步 relayout。启用 fluid-resize/client-surface 相关 flag 后，分支还会不同，核对时必须以目标 build 的 feature flags 为准。
 
 服务端实现很薄：`Session.relayoutAsync()`/`relayoutAsync2()` 复用 `relayout(...)`，只把 `outRelayoutResult` 设为 `null`，随后仍进入 `WindowManagerService.relayoutWindow()`。Trace 上的区别是应用 UI 线程不等待帧、Insets、SurfaceControl 和 sync seq 返回；system_server 仍要处理属性变化、`mGlobalLock` 与后续 placement。分析时要把当前遍历和之后的 `IWindow.resized()`/Insets / Insets callback 放在同一段时间线里。
 
