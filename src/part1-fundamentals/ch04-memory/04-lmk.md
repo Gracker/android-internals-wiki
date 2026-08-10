@@ -365,7 +365,7 @@ LMK 自身的目标是缩短内存压力持续时间。体验问题通常出现�
 
 ### Perfetto
 
-以下配置同时采集用户空间 LMK、adj 变化和系统内存计数。旧内核 LMK 事件只在分析历史设备时添加。
+以下配置同时采集 userspace LMK、adj 变化和系统内存计数。旧内核 LMK 事件只在分析历史设备时添加。
 
 ```protobuf
 buffers {
@@ -438,7 +438,7 @@ adb logcat -b all -s lowmemorykiller ActivityManager MemoryLimiter
 3. 核对 victim 当时的 adj 和内存构成；
 4. 最终确认用户返回后是否产生新进程与启动代价。
 
-仅看到 `lmkd` 在轨迹中运行，无法证明它导致卡顿。一次 `dumpsys meminfo` 快照也无法解释数十秒前的 kill。
+仅看到 `lmkd` 在 trace 中运行，无法证明它导致卡顿。一次 `dumpsys meminfo` 快照也无法解释数十秒前的 kill。
 
 ## `onTrimMemory()` 与 cached app freezer 的边界
 

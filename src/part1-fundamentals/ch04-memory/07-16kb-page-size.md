@@ -147,7 +147,7 @@ Google 公布的初期 Pixel 测试结果如下：
 
 ### 3.1 纯 Java/Kotlin App
 
-如果应用及其全部依赖都没有原生代码，Android 官方将其视为已支持 16 KiB 页。仍要跑一遍 16 KiB 设备测试，因为很多 SDK 会通过 AAR 带入 `.so`。看到 JNI、Rust、游戏引擎、媒体编解码库或加固壳时，应直接进入 native 检查流程。
+如果 App 及其全部依赖都没有 native 代码，Android 官方将其视为已支持 16 KiB 页。仍要跑一遍 16 KiB 设备测试，因为很多 SDK 会通过 AAR 带入 `.so`。看到 JNI、Rust、游戏引擎、媒体编解码库或加固壳时，应直接进入 native 检查流程。
 
 可以先用下面的命令列出 APK 中的共享库：
 
@@ -183,7 +183,7 @@ AGP 8.3 到 8.5 可能已经生成满足要求的 ELF，但 bundletool 默认生
 
 ### 3.3 检查 ELF program header
 
-以下命令用于查看每个 LOAD 段的对齐值：
+以下命令用于查看每个 LOAD segment 的对齐值：
 
 ```bash
 llvm-objdump -p libyour.so | grep -A 1 LOAD
@@ -487,7 +487,7 @@ CONT_PTE_SIZE = 128 × 16 KiB = 2 MiB
 - 整个 2MB 范围落在同一个 folio 内；
 - 映射属于可处理的用户空间普通内存。
 
-“启用 `CONFIG_ARM64_CONTPTE` 后每 2 MiB 都只占一个 TLB entry”过于绝对。mTHP 提供较大的 folio，contpte 负责符合条件的 2 MiB PTE 组；较小 mTHP 即使减少了缺页，也不会自动满足 2 MiB contpte 折叠条件。CPU 还可能有硬件页聚合能力，那是另一个层面的实现。
+“启用 `CONFIG_ARM64_CONTPTE` 后每 2 MiB 都只占一个 TLB entry”过于绝对。mTHP 提供较大的 folio，contpte 负责符合条件的 2 MiB PTE 组；较小 mTHP 即使减少了 fault，也不会自动满足 2 MiB contpte fold 条件。CPU 还可能有硬件页聚合能力，那是另一个层面的实现。
 
 ### 9.4 三种机制的边界
 
