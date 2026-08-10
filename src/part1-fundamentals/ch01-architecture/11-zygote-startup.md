@@ -165,7 +165,7 @@ primary 或 secondary Zygote
 
 ## Zygote 在开机时预加载什么
 
-Android 17 的 `ZygoteInit.main()` 先解析启动参数，并根据 `--enable-lazy-preload` 决定是否立即执行 `preload()`；随后创建 `ZygoteServer`，再按参数派生 `system_server`。常见的 64 位主 Zygote 由 `init.zygote64.rc` 启动，带 `--start-system-server`，没有 lazy 参数，所以先预加载，再派生 `system_server`。
+Android 17 的 `ZygoteInit.main()` 先解析启动参数，并根据 `--enable-lazy-preload` 决定是否立即执行 `preload()`；随后创建 `ZygoteServer`，再按参数 fork system_server。常见的 64 位 primary Zygote 由 `init.zygote64.rc` 启动，带 `--start-system-server`，没有 lazy 参数，所以先预加载，再 fork system_server。
 
 `ZygoteInit.preload()` 的当前顺序是：
 
@@ -229,7 +229,7 @@ Process.ZYGOTE_PROCESS.preloadDefault(Build.SUPPORTED_32_BIT_ABIS[0]);
 
 任务约在 WebView preparation 前一秒启动；WebView preparation 会等待这个 future。`preloadDefault()` 通过 Zygote socket 发送 `--preload-default`。返回 `true` 表示本次触发了 lazy preload，`false` 表示此前已经完成或 Zygote 并非 lazy 模式。
 
-这是特定 init 配置下的行为。纯 64-only、纯 32 位和厂商自定义 Zygote 配置可能不同，分析设备时要同时看 `ro.zygote`、实际 init 服务和对应进程。
+这是特定 init 配置下的行为。纯 64-only、纯 32-only 和厂商自定义 Zygote 配置可能不同，分析设备时要同时看 `ro.zygote`、实际 init service 和对应进程。
 
 ---
 
@@ -249,7 +249,7 @@ ZygoteHooks.postForkCommon();
 
 `preFork()` 要让 ART 和运行时进入适合 fork 的状态。JNI 的 `nativeForkAndSpecialize()` 调用 `ForkCommon()`；子进程再进入 `SpecializeCommon()`。
 
-特化包含的步骤远多于修改 UID。Android 17 的原生实现包含：
+特化包含的步骤远多于修改 UID。Android 17 的 native 实现包含：
 
 - 关闭或替换不应继承的文件描述符；
 - 建立应用 mount namespace 和存储视图；
@@ -262,7 +262,7 @@ ZygoteHooks.postForkCommon();
 - 设置进程名、调试与内存安全选项；
 - 运行 ART 的 post-fork child hooks。
 
-这些步骤既是安全边界，也是进程创建时间的一部分。某次启动在 `PostFork` 内显著变慢时，应检查挂载、文件描述符、SELinux、调度和运行时钩子，不能只看 `fork()` 系统调用本身。
+这些步骤既是安全边界，也是进程创建时间的一部分。某次启动在 `PostFork` 内显著变慢时，应检查 mount、文件描述符、SELinux、调度和运行时 hook，不能只看 `fork()` 系统调用本身。
 
 ### 内核中的 fork 与 COW
 
@@ -275,7 +275,7 @@ ACK `android17-6.18-2026-06_r6` 中，`copy_process()` 通过 `copy_mm()` 复制
 - 私有可写页在被修改后逐步私有化；
 - 预加载后对象越容易被子进程修改，共享收益越低。
 
-已退出的普通应用进程不是后续应用的父进程。`lmkd` 杀掉缓存应用，不会让下一次 fork 脱离 Zygote，也不会因为“缓存子进程少了”直接降低 Zygote 写时复制复用率。内存压力可以通过回收文件页、swap、调度与 I/O 间接影响启动，但那是另一条因果路径。
+已退出的普通应用进程不是后续应用的父进程。`lmkd` 杀掉缓存应用，不会让下一次 fork 脱离 Zygote，也不会因为“缓存子进程少了”直接降低 Zygote COW 复用率。内存压力可以通过回收文件页、swap、调度与 I/O 间接影响启动，但那是另一条因果路径。
 
 ### 16KB page size 不是单向收益
 
@@ -285,13 +285,13 @@ ACK `android17-6.18-2026-06_r6` 中，`copy_process()` 通过 `copy_mm()` 复制
 
 ---
 
-## USAP：预先派生，按需特化
+## USAP：先 fork，后特化
 
 USAP 是未特化应用进程（Unspecialized App Process）。启用后，primary/secondary Zygote 可以预先维护一小组尚未绑定具体应用身份的进程。满足条件的启动请求直接发到 USAP socket，现有进程调用 `specializeAppProcess()` 完成 UID、GID、SELinux 等特化，不再为这次请求派生新进程。
 
 普通路径和 USAP 路径的区别是：
 
-| 路径 | 本次请求是否派生新进程 | Java 入口 | 共同结果 |
+| 路径 | 本次请求是否新 fork | Java 入口 | 共同结果 |
 |---|---|---|---|
 | 普通 Zygote | 是 | `forkAndSpecialize()` | 子进程完成特化并进入应用入口 |
 | USAP 命中 | 否，使用池中现有进程 | `specializeAppProcess()` | 现有进程完成特化并进入应用入口 |
@@ -321,7 +321,7 @@ adb shell getprop dalvik.vm.usap_pool_enabled
 
 `ZygoteServer(boolean isPrimaryZygote)` 用于系统 primary/secondary Zygote，设置 `mUsapPoolSupported = true`。无参 `ZygoteServer()` 用于 child zygote，明确设置 `mUsapPoolSupported = false`。
 
-App Zygote 和 WebView Zygote 不从主 Zygote 的 USAP 池取进程，也不维护自己的 USAP 池。两者通过各自的子 Zygote 套接字接收后续 fork 请求。
+App Zygote 和 WebView Zygote 不从主 Zygote 的 USAP 池取进程，也不维护自己的 USAP 池。两者通过各自 child zygote socket 接收后续 fork 请求。
 
 ---
 
@@ -343,7 +343,7 @@ ZygoteConnection.handleChildProc()
       → IActivityManager.attachApplication()
 ```
 
-`nativeZygoteInit()` 最终进入 `AppRuntime.onZygoteInit()`，为普通应用启动 Binder thread pool。child zygote 使用 `childZygoteInit()`，跳过这套普通应用初始化，再进入自己的 Zygote 服务端循环。
+`nativeZygoteInit()` 最终进入 `AppRuntime.onZygoteInit()`，为普通应用启动 Binder thread pool。child zygote 使用 `childZygoteInit()`，跳过这套普通应用初始化，再进入自己的 Zygote server 循环。
 
 应用调用 `attachApplication()` 回到 `system_server` 后，AMS 才发送 `bindApplication`。接着才有：
 
@@ -441,7 +441,7 @@ EventLog 只有在 trace 启用 Android logs 并包含 events buffer 时才可�
 | Android 8 | AOSP 出现 `WebViewZygote` | WebView 相关进程有独立预加载父进程 |
 | Android 9 | `PreloadAppProcessHALs` 出现在 Zygote preload | gralloc mapper HAL 开始在主 Zygote 阶段预热 |
 | Android 10 | `PreloadGraphicsDriver` 替代旧 `preloadOpenGL`；AOSP 出现 USAP、App Zygote 与 `ZygotePreload` | 普通 fork、USAP、WebView/App child zygote 需要分开判断 |
-| Android 17 | 当前固定基线；保留可选 `HttpEngine.preload()`、secondary lazy preload Zygote 延迟预加载和当前 USAP 策略 | 以产品开关、ABI/init 配置和实际跟踪判断生效路径 |
+| Android 17 | 当前固定基线；保留可选 `HttpEngine.preload()`、secondary lazy preload Zygote 延迟预加载和当前 USAP 策略 | 以产品 flag、ABI/init 配置和实际 trace 判断生效路径 |
 
 历史版本只用于说明机制何时出现。当前行为与路径一律回到 `android-17.0.0_r1`，内核 COW 一律回到 `android17-6.18-2026-06_r6`。
 
@@ -451,11 +451,11 @@ EventLog 只有在 trace 启用 Android logs 并包含 events buffer 时才可�
 
 ### “`system_server` 通过 Binder 调用 Zygote”
 
-创建进程命令走 Zygote `LocalSocket`。Binder 用在启动请求进入 `system_server`，以及子进程附加回 `system_server` 等位置。
+创建进程命令走 Zygote `LocalSocket`。Binder 用在启动请求进入 `system_server`，以及子进程 attach 回 `system_server` 等位置。
 
 ### “看到 `PostFork` 就证明刚执行了 fork”
 
-普通 fork 和 USAP 特化都会开始 `PostFork` trace。还要查看 USAP 配置、PID 和父进程事件。
+普通 fork 和 USAP specialize 都会开始 `PostFork` trace。还要查看 USAP 配置、PID 和父进程事件。
 
 ### “预加载越多，应用一定越快”
 
@@ -467,7 +467,7 @@ EventLog 只有在 trace 启用 Android logs 并包含 events buffer 时才可�
 
 ### “lmkd 杀缓存应用会破坏 Zygote 的父子复用”
 
-普通应用一直从 Zygote 或 USAP 派生，不从其他缓存应用派生。`lmkd` 清理子进程不会改变这个父进程关系。
+普通应用一直从 Zygote 或 USAP 派生，不从其他缓存应用 fork。`lmkd` 清理子进程不会改变这个父进程关系。
 
 ### “16KB 页让 fork 固定快 75%”
 
@@ -487,4 +487,4 @@ EventLog 只有在 trace 启用 Android logs 并包含 events buffer 时才可�
 6. `ZygoteInit.zygoteInit()` / `RuntimeInit.applicationInit()`：进入 `ActivityThread.main()`；
 7. `ActivityThread.attach()` 与 AMS attach：从新进程回到 `bindApplication`。
 
-冷启动跟踪中的每段时间都可对应到具体进程和职责：创建慢检查 Zygote，特化慢检查原生安全准备，绑定慢检查应用初始化，首帧慢检查组件与渲染。Zygote 优化应限定在它负责的范围内。
+冷启动 trace 中的每段时间都可对应到具体进程和职责：创建慢检查 Zygote，特化慢检查原生安全准备，绑定慢检查应用初始化，首帧慢检查组件与渲染。Zygote 优化应限定在它负责的范围内。
