@@ -76,7 +76,7 @@ Compose UI 1.11.4 的 `AndroidView` 会创建 `ViewFactoryHolder`，其父类 `A
 5. Compose draw modifier 经 `AndroidViewsHandler` 调用 holder 的 `draw()`；
 6. 指针、nested scroll、semantics、insets 与 bring-into-view 经过各自的互操作桥。
 
-View 并没有转成 composable。它的测量、布局、绘制和事件模型仍然存在，外层调度则由 Compose `LayoutNode` 接管。
+View 并没有转成 composable。View 的测量、布局、绘制和事件模型仍然存在，外层调度则由 Compose `LayoutNode` 接管。
 
 ### `ComposeView`：一个 ViewGroup 承载一个 Compose 根
 
