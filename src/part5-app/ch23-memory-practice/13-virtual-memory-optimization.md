@@ -40,7 +40,7 @@ material_count: 4
 
 虚拟内存问题经常和 Java heap OOM、native heap、线程上限混在一起。处理这类问题时，第一步是确认失败来自地址空间、物理内存、VMA 数量还是线程资源。只盯着一个很大的 VSS 数字，容易把正常的地址预留当成泄漏。
 
-本文以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点；涉及内核 `/proc` 与 VMA 语义时，以 `android17-6.18-2026-06_r6` 为内核锚点。Android 10—16 的历史行为只用于解释存量设备，不高于 Android 17。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`；涉及内核 `/proc` 与 VMA 语义时，以 `android17-6.18-2026-06_r6` 为内核锚点。Android 10—16 的历史行为只用于解释存量设备，不高于 Android 17。
 
 ## 1. VSS 先看语义，再看数值
 
@@ -245,7 +245,7 @@ CPU 密集任务的并发度可从 CPU 核数起步，IO 任务没有通用的�
 
 ### 3.3 栈大小与 hook 的边界
 
-`Thread(ThreadGroup, Runnable, String, long)` 把 stack size 定义为平台相关的建议值。Android 17 ART 还会在正数建议值上增加 1 MiB 和保护区。初稿中的“传负数让无符号加法回绕成 512 KiB”依赖 Java/JNI/C++ 转换细节，属于未公开契约，构建变化后可能得到超大栈、`pthread_attr_setstacksize()` 失败或进程异常，不进入生产方案。
+`Thread(ThreadGroup, Runnable, String, long)` 把 stack size 定义为平台相关的建议值。Android 17 ART 还会在正数建议值上增加 1 MiB 和保护区。“传负数让无符号加法回绕成 512 KiB”依赖 Java/JNI/C++ 转换细节，属于未公开契约，构建变化后可能得到超大栈、`pthread_attr_setstacksize()` 失败或进程异常，不进入生产方案。
 
 对 `pthread_create()` 做 PLT hook 也不能覆盖所有线程来源，并会改变系统库与三方库的栈假设。若只为诊断，可在可调试构建中记录调用栈和 attr；若要修改 stack size，必须按 ABI、4/16 KiB 页、递归深度、JNI 框架大小和极端调用链做压力测试。默认生产策略仍是减少线程数量。
 
@@ -282,7 +282,7 @@ WebView loader 后续把 `gReservedAddress` 和 `gReservedSize` 交给 `android_
 安全策略只有两类：
 
 - 业务不需要 WebView 时，避免初始化 provider 和相关 SDK，接受 Zygote reservation 仍计入 VSS；
-- 需要隔离 WebView时，按产品架构放入受控进程，管理该进程生命周期，并测量总 PSS、启动时延和 Binder 代价。
+- 需要隔离 WebView 时，按产品架构放入受控进程，管理该进程生命周期，并测量总 PSS、启动时延和 Binder 代价。
 
 把 WebView Activity 放到子进程不会自动移除主进程继承的 reservation；它的收益主要来自已提交页、WebView 对象与故障边界的隔离。
 
