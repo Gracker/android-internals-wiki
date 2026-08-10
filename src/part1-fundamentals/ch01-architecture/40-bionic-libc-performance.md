@@ -193,13 +193,13 @@ Android 17 的默认子线程栈定义在 `pthread_internal.h`：
 
 `pthread_attr_setschedpolicy` 接受的是 Linux 调度策略，例如 `SCHED_OTHER`/`SCHED_NORMAL`、`SCHED_BATCH`、`SCHED_IDLE`、`SCHED_FIFO` 和 `SCHED_RR`。实时策略还受权限、优先级范围与系统策略约束。
 
-Android 的 `top-app` 属于 task profile、cgroup 和系统调度配置，`SCHED_TOP_APP` 不是 Bionic 或 Linux 的 `SCHED_*` 常量。前台进程获得怎样的 CPU 集合、uclamp 或其他调度参数，由框架、libprocessgroup、设备配置和内核共同决定。应用不能通过 `pthread_attr_setschedpolicy(..., 5)` 把线程变成 `top-app`；数值碰巧相同也没有这层语义。
+Android 的 `top-app` 属于 task profile、cgroup 和系统调度配置，`SCHED_TOP_APP` 不是 Bionic 或 Linux 的 `SCHED_*` 常量。前台进程获得怎样的 CPU 集合、uclamp 或其他调度参数，由 framework、libprocessgroup、设备配置和内核共同决定。应用不能通过 `pthread_attr_setschedpolicy(..., 5)` 把线程变成 `top-app`；数值碰巧相同也没有这层语义。
 
 ## 4. mutex 与 condition variable：用户态快路径和内核等待
 
 ### 4.1 普通 mutex
 
-Android 17 的普通非 PI 互斥量使用一个原子状态：
+Android 17 的普通非 PI mutex 使用一个原子状态：
 
 - `0`：未锁；
 - `1`：已锁、尚未发现竞争；
@@ -207,7 +207,7 @@ Android 17 的普通非 PI 互斥量使用一个原子状态：
 
 无竞争的 `pthread_mutex_lock` 通过 atomic compare-and-exchange 从 `0` 改为 `1`，不进入内核。竞争路径把状态改为 `2`，然后调用 futex wait；解锁发现旧状态为 `2` 时，调用 futex 唤醒一个等待者。源码中没有能够证明“Android 17 新增 optimistic spinning”的分支。
 
-共享 mutex 会选择跨进程 futex 操作，私有 mutex 可以使用开销更低的私有 futex。recursive 和 errorcheck 类型还要记录 owner 与递归计数。分析高频锁路径时，应确认锁类型、是否跨进程、竞争比例和临界区长度，再讨论替换同步原语。
+共享 mutex 会选择跨进程 futex 操作，私有 mutex 可以使用开销更低的 private futex。recursive 和 errorcheck 类型还要记录 owner 与递归计数。分析高频锁路径时，应确认锁类型、是否跨进程、竞争比例和临界区长度，再讨论替换同步原语。
 
 ### 4.2 Priority Inheritance mutex
 
@@ -225,7 +225,7 @@ PI 可以缓解高优先级线程等待低优先级持锁者造成的优先级�
 4. 对旧 state 执行 futex wait；
 5. 减少等待者并重新获得 mutex。
 
-`signal`/`broadcast` 会增加状态，再分别唤醒一个或多个等待者。该实现允许 spurious wakeup；POSIX 调用者仍须使用谓词循环：
+`signal`/`broadcast` 会增加 state，再分别 wake 一个或多个等待者。该实现允许 spurious wakeup；POSIX 调用者仍须使用谓词循环：
 
 ```cpp
 pthread_mutex_lock(&mutex);
@@ -379,7 +379,7 @@ Android 17 将部分 arm64 字符串/内存例程链接自 `external/arm-optimiz
 
 `pthread_cancel` 缺失时，应采用协作式取消：原子标志、eventfd/pipe 唤醒、可中断队列或上层任务状态。不要用信号模拟任意点取消，因为库代码、锁状态和资源释放都可能停在不可恢复的位置。
 
-glibc 的 benchmark 也不能直接预测 Android。Android 设备的分配器、动态链接器、内核配置、SoC cache、温控和进程策略都不同，需要在 Android 目标设备上使用相同编译器选项和数据集测试。
+glibc 的 benchmark 也不能直接预测 Android。Android 设备的分配器、动态链接器、内核配置、SoC cache、温控和进程策略都不同，需要在 Android target 上使用相同编译器选项和数据集测试。
 
 ## 10. 诊断工具如何选择
 
@@ -393,7 +393,7 @@ glibc 的 benchmark 也不能直接预测 Android。Android 设备的分配器�
 | 线程数或栈占用异常 | `/proc/<pid>/maps`、Perfetto、线程 dump | `stack_and_tls:<tid>` 映射、实际触页、高水位 |
 | Native crash 符号化 | tombstone、debuggerd、带 build ID 的符号文件 | `backtrace_symbols` 只提供进程内基础转换，不能替代完整离线符号化 |
 
-malloc debug 通过 `libc.debug.malloc.options` 或对应环境配置安装垫片。guard、fill、backtrace 等选项可以组合，但开销不同；尤其逐次 unwind 会改变分配时序和竞争。heapprofd 适合按时间采样实际负载，HWASan/MTE 适合查非法访问，工具选择应与问题类型匹配。
+malloc debug 通过 `libc.debug.malloc.options` 或对应环境配置安装 shim。guard、fill、backtrace 等选项可以组合，但开销不同；尤其逐次 unwind 会改变分配时序和竞争。heapprofd 适合按时间采样实际负载，HWASan/MTE 适合查非法访问，工具选择应与问题类型匹配。
 
 ## 11. 面向 NDK 代码的检查清单
 
@@ -416,6 +416,6 @@ Android 17 中，Bionic 的性能角色可以归纳为四层：
 - 分派层：把 Native Heap 调用交给 Scudo/jemalloc，并允许调试与采样插入；
 - 装载层：根据 ELF、页大小和硬件能力选择装载与 IFUNC 路径。
 
-定位问题时，应沿实际调用链逐层确认：当前使用哪个分配器、dispatch 是否被工具替换、锁是否发生竞争、线程包含哪些实际映射、页大小和 ELF 对齐是否匹配、arm64 解析器选择了哪个实现。基于这些证据得出的结论才能在 Android 17 设备上复现，也能解释版本升级后的行为变化。
+定位问题时，应沿实际调用链逐层确认：当前使用哪个分配器、dispatch 是否被工具替换、锁是否发生竞争、线程包含哪些实际映射、页大小和 ELF 对齐是否匹配、arm64 resolver 选择了哪个实现。基于这些证据得出的结论才能在 Android 17 设备上复现，也能解释版本升级后的行为变化。
 
 Native Heap 的进一步分析见 **23.11 Scudo 分配器与 Native Heap 性能边界**；16 KB 页的系统影响见 **4.7 16KB Page Size 与 Android 性能**；MTE 和 16 KB 兼容性治理分别见 **20.11** 与 **20.13**。

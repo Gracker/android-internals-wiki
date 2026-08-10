@@ -38,9 +38,9 @@ sources:
 
 # 1.58 Android Dynamic Linker (linker64) 架构与 Native 库加载性能边界
 
-Android 进程执行原生代码之前，要把 ELF 文件映射进地址空间，找到依赖库，解析动态符号，写入重定位结果，再调整页面权限并运行初始化函数。64 位进程中的这些工作由 bionic 动态链接器完成，常见解释器路径是 `/system/bin/linker64`。
+Android 进程执行原生代码之前，要把 ELF 文件映射进地址空间，找到依赖库，解析动态符号，写入重定位结果，再调整页面权限并运行初始化函数。64 位进程中的这些工作由 bionic dynamic linker 完成，常见解释器路径是 `/system/bin/linker64`。
 
-平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为准；涉及 `mmap()`、文件缺页和写时复制的内核行为以 `android17-6.18-2026-06_r6` 为准。VNDK 可见性规则见 [1.55 Android 17 VNDK 隔离与 native 库加载性能影响](1.55-android17-vndk-isolation-native-library-performance.md)；以下内容聚焦 linker64 的执行顺序及各阶段对启动时间、内存和故障定位的影响。
+平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为准；涉及 `mmap()`、文件缺页和 COW 的内核行为以 `android17-6.18-2026-06_r6` 为准。VNDK 可见性规则见 [1.55 Android 17 VNDK 隔离与 native 库加载性能影响](1.55-android17-vndk-isolation-native-library-performance.md)；以下内容聚焦 linker64 的执行顺序及各阶段对启动时间、内存和故障定位的影响。
 
 ## linker64 的职责边界
 
@@ -59,7 +59,7 @@ linker64 不是常驻系统服务，也没有跨进程共享的“已解析符�
 
 `bionic/linker/dlfcn.cpp` 中的 `dlopen`、`dlsym`、`dlclose`、`dl_iterate_phdr` 等入口都会持有 `g_dl_mutex`。它是 `PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP`，因此构造函数递归调用 `dlopen()` 时不会因重复加锁立刻死锁。
 
-递归锁不等于并行装载。Android 17 的 `find_libraries()` 使用顺序循环扩展依赖、映射文件、预链接和重定位。另一个线程同时进入链接器 API 时要等待这把锁。由于 `do_dlopen()` 在返回前还会调用 ELF 构造函数，耗时构造函数也会延长其他线程等待加载器锁的时间。
+递归锁不等于并行装载。Android 17 的 `find_libraries()` 使用顺序循环扩展依赖、映射文件、预链接和重定位。另一个线程同时进入 linker API 时要等待这把锁。由于 `do_dlopen()` 在返回前还会调用 ELF 构造函数，耗时构造函数也会延长其他线程等待加载器锁的时间。
 
 两个执行特征：
 
@@ -118,7 +118,7 @@ linker64 从新任务中生成待映射列表。普通路径会打乱映射顺�
 
 1. 根据 global/local lookup list 解析重定位；
 2. 把 `PT_GNU_RELRO` 对应页面改为只读；
-3. 完成 16 KB 应用兼容路径需要的权限调整；
+3. 完成 16 KB app compatibility 路径需要的权限调整；
 4. 处理 MTE globals；
 5. 按 `android_dlextinfo` 写出或复用共享 RELRO；
 6. 通知调试器，并把该 image 标为 linked。
@@ -205,13 +205,13 @@ Android 上不存在“默认 lazy、加 Full RELRO 后才改为 eager”的性�
 - weak symbol、符号优先查找（symbolic lookup）、跨 namespace 边界等规则；
 - 符号与 hash 表所在页面是否已经驻留。
 
-GNU 哈希的 Bloom filter 可以快速排除不匹配库，但不能保证固定的 O(1) 总成本。linker 的慢路径带有单符号查找缓存，它也不是面向整个进程、长期保存任意查询结果的通用缓存。
+GNU hash 的 Bloom filter 可以快速排除不匹配库，但不能保证固定的 O(1) 总成本。linker 的慢路径带有单符号查找缓存，它也不是面向整个进程、长期保存任意查询结果的通用缓存。
 
 ## GNU RELRO：重定位完成后把页面设为只读
 
-RELRO 由 ELF 程序头中的 `PT_GNU_RELRO` 描述。`soinfo::link_image()` 完成重定位后调用 `protect_relro()`，后者对相应页面执行 `mprotect(PROT_READ)`。这可以阻止后续代码随意改写已完成初始化的 GOT 和其他敏感数据。
+RELRO 由 ELF Program Header 中的 `PT_GNU_RELRO` 描述。`soinfo::link_image()` 完成重定位后调用 `protect_relro()`，后者对相应页面执行 `mprotect(PROT_READ)`。这可以阻止后续代码随意改写已完成初始化的 GOT 和其他敏感数据。
 
-判断一个库覆盖了多大 RELRO 范围，需要查看链接器生成的段，而不是寻找 `GNU_PROPERTY_RELRO`；Android 17 没有这个属性。下面的命令用于同时检查 RELRO segment、绑定标记和实际重定位表：
+判断一个库覆盖了多大 RELRO 范围，需要查看链接器生成的 segment，而不是寻找 `GNU_PROPERTY_RELRO`；Android 17 没有这个 property。下面的命令用于同时检查 RELRO segment、绑定标记和实际重定位表：
 
 ```bash
 llvm-readelf -lW libfoo.so | grep GNU_RELRO
@@ -219,7 +219,7 @@ llvm-readelf -dW libfoo.so | grep -E 'BIND_NOW|FLAGS'
 llvm-readelf -rW libfoo.so
 ```
 
-在 bionic 立即绑定的前提下，`BIND_NOW` 不会再制造一轮“从 lazy 变 eager”的差异。性能上应观察 RELRO 页面数量、重定位写入量、符号查找和后续 `mprotect()`；安全上则要确认预期区域确已落入 `PT_GNU_RELRO`。
+在 bionic eager binding 的前提下，`BIND_NOW` 不会再制造一轮“从 lazy 变 eager”的差异。性能上应观察 RELRO 页面数量、重定位写入量、符号查找和后续 `mprotect()`；安全上则要确认预期区域确已落入 `PT_GNU_RELRO`。
 
 `ANDROID_DLEXT_WRITE_RELRO` 与 `ANDROID_DLEXT_USE_RELRO` 还允许把 GNU RELRO 序列化到 fd，供另一个地址布局匹配的进程复用。Android 17 源码特别说明 WebView 使用这条路径共享包含大量 C++ vtable 的 RELRO 页。它是专用加载器协议，不是所有 system DSO 自动拥有的“预链接信息”。
 
@@ -356,7 +356,7 @@ Android 17 解析的 MTE 动态项包括：
 
 BTI 走另一条路径：`linker_note_gnu_property.cpp` 解析 `GNU_PROPERTY_AARCH64_FEATURE_1_BTI`，硬件和 ELF 都满足条件时，linker 给可执行 segment 加 `PROT_BTI`。
 
-`DT_AARCH64_PAC_PLT` 在 Android 17 的动态段解析中被列为忽略的处理器专用标签。不能据此宣称 linker64 会给进程内所有代码指针自动做 PAC 签名。PAC 是否生效取决于编译器生成的指令、ABI 和运行硬件，不是 `dlopen()` 的统一开关。
+`DT_AARCH64_PAC_PLT` 在 Android 17 的动态段解析中被列为忽略的处理器专用 tag。不能据此宣称 linker64 会给进程内所有代码指针自动做 PAC 签名。PAC 是否生效取决于编译器生成的指令、ABI 和运行硬件，不是 `dlopen()` 的统一开关。
 
 APEX 只改变库的来源、配置和激活边界，不会热替换进程里已经映射的 DSO。APEX 新版本生效后，新启动进程会按新挂载与 namespace 配置装载；老进程若仍持有旧映射，必须由模块自身的重启策略处理。
 
@@ -408,7 +408,7 @@ llvm-readelf -lW libfoo.so
 
 Android 17 的 `do_dlopen()` 写入 `dlopen: <name>` 与 `dlopen: <name> - loading and linking` trace，`call_constructors()` 还写入 `calling constructors: <realpath>`。`loading and linking` 在 `find_library()` 返回后结束，外层 `dlopen` slice 则继续覆盖 constructor，因此两者的差值可以帮助定位构造阶段。
 
-锁等待不在这两条 bionic 切片内：`dlfcn.cpp` 的 `dlopen_ext()` 获取 `g_dl_mutex` 后才调用 `do_dlopen()`。测 loader-lock wait，需要在调用侧给整个 `System.loadLibrary()` 或 `dlopen()` 加跟踪，并结合线程调度/futex 状态及同时持锁线程的 bionic slice；调用侧切片开始到 `dlopen:` slice 出现前的区间，才可能包含等锁时间。
+锁等待不在这两条 bionic slice 内：`dlfcn.cpp` 的 `dlopen_ext()` 获取 `g_dl_mutex` 后才调用 `do_dlopen()`。测 loader-lock wait，需要在调用侧给整个 `System.loadLibrary()` 或 `dlopen()` 加 trace，并结合线程调度/futex 状态及同时持锁线程的 bionic slice；调用侧 slice 开始到 `dlopen:` slice 出现前的区间，才可能包含等锁时间。
 
 若 Java 调用仍比 bionic slice 长，再检查 ART 的 native library load 与 `JNI_OnLoad`。
 
@@ -421,7 +421,7 @@ adb shell setprop debug.ld.app.com.example.app dlopen,dlerror
 adb shell am force-stop com.example.app
 ```
 
-linker 会检查进程是否 dumpable。普通 `user` 构建上的不可调试应用通常拿不到这些日志。测试结束后用空值清理属性，避免持续噪声：
+linker 会检查进程是否 dumpable。普通 `user` build 上的不可调试应用通常拿不到这些日志。测试结束后用空值清理属性，避免持续噪声：
 
 ```bash
 adb shell setprop debug.ld.app.com.example.app ''

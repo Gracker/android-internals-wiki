@@ -37,7 +37,7 @@ sources:
 
 # 1.56 Android 17 cgroup v1/v2 混合层级与进程资源隔离机制
 
-Android 17 使用 cgroup 管理 CPU 调度、CPU 集合、I/O、内存、进程冻结与进程组生命周期。平台通过 `libprocessgroup` 和任务配置（task profile）隐藏底层文件路径，使框架和 native service 只表达“后台”“top-app”“冻结”等意图。
+Android 17 使用 cgroup 管理 CPU 调度、CPU 集合、I/O、内存、进程冻结与进程组生命周期。平台通过 `libprocessgroup` 和任务配置（task profile）隐藏底层文件路径，使 framework 和 native service 只表达“后台”“top-app”“冻结”等意图。
 
 `android-17.0.0_r1` 的 AOSP 默认配置仍是 cgroup v1/v2 混合拓扑。cgroup v2 的“统一层级”只约束 v2 控制器；它没有把 Android 的 v1 `cpu`、`cpuset`、`blkio` 自动并入同一棵树。
 
@@ -82,7 +82,7 @@ Android 17 使用 cgroup 管理 CPU 调度、CPU 集合、I/O、内存、进程�
 | freezer | v2 核心接口 | `/sys/fs/cgroup` | 冻结 app/system 的 per-process cgroup |
 | memory | v2，可选 | `/sys/fs/cgroup` | per-process 统计、保护、限制与回收接口 |
 
-Android 17 AOSP 中不存在统一的 `/dev/cgroot/cpu/top-app` 基线路径。CPU 配置写 `/dev/cpuctl/...`，cpuset 配置写 `/dev/cpuset/...`，freezer 和 v2 内存控制器则写 `/sys/fs/cgroup/...`。
+Android 17 AOSP 中不存在统一的 `/dev/cgroot/cpu/top-app` 基线路径。CPU profile 写 `/dev/cpuctl/...`，cpuset profile 写 `/dev/cpuset/...`，freezer 和 v2 memory 则写 `/sys/fs/cgroup/...`。
 
 ### 1.2 一个进程可以同时出现在多棵树
 
@@ -162,9 +162,9 @@ Android 17 的 action 不限于移动 cgroup：
 - `Compact`：通过 memory cgroup 的 `memory.reclaim` 发起回收；
 - aggregate profile：按顺序执行多个 profile。
 
-`SetClamps` 不是 Android 17 `task_profiles.cpp` 支持的动作。UClamp 通过 `UClampMin`、`UClampMax`、`UClampLatencySensitive` attribute 或 cgroup 初始配置表达。
+`SetClamps` 不是 Android 17 `task_profiles.cpp` 支持的 action。UClamp 通过 `UClampMin`、`UClampMax`、`UClampLatencySensitive` attribute 或 cgroup 初始配置表达。
 
-### 3.3 AOSP 默认配置的映射
+### 3.3 AOSP 默认 Profile 的映射
 
 下面只列出 `android-17.0.0_r1` 中能直接从 JSON 确认的映射：
 
@@ -218,7 +218,7 @@ service zygote /system/bin/app_process64 ...
     task_profiles ProcessCapacityHigh MaxPerformance
 ```
 
-`Service::Start()` 在子进程执行 `exec` 前应用这些配置。Android 12 起，`task_profiles` 替代直接写 `writepid /dev/.../tasks` 的旧写法。profile 名稳定后，产品可以改变底层 controller 或路径而不修改服务定义。
+`Service::Start()` 在子进程执行 `exec` 前应用这些 profile。Android 12 起，`task_profiles` 替代直接写 `writepid /dev/.../tasks` 的旧写法。profile 名稳定后，产品可以改变底层 controller 或路径而不修改 service 定义。
 
 ## 5. OomAdjuster 如何决定应用的调度组
 
@@ -245,7 +245,7 @@ Android 17 的 OomAdjuster 已位于 `services/core/java/com/android/server/am/p
 | `SCHED_GROUP_FOREGROUND_WINDOW` | `THREAD_GROUP_FOREGROUND_WINDOW` |
 | 其他默认情形 | `THREAD_GROUP_DEFAULT` |
 
-OomAdjuster 通过 `mProcessGroupHandler` 异步发送组变更，再由回调调整应用及相关子进程。profile 文件写入不在 OomAdjuster 的计算循环内执行。状态字段先更新、cgroup 迁移随后执行，因此短时间观察可能同时看到“新 sched group”与“旧 cgroup 路径”；不能预设固定的 100～200 ms 窗口。
+OomAdjuster 通过 `mProcessGroupHandler` 异步发送组变更，再由 callback 调整应用及相关子进程。profile 文件写入不在 OomAdjuster 的计算循环内执行。状态字段先更新、cgroup 迁移随后执行，因此短时间观察可能同时看到“新 sched group”与“旧 cgroup 路径”；不能预设固定的 100～200 ms 窗口。
 
 进入或离开 `top-app` 时，framework 还可能单独调整主线程/RenderThread nice，或在配置允许时切换 FIFO UI scheduling。这些动作和 cgroup 迁移有关联，但属于不同内核接口，排查时要分别取证。
 
@@ -262,7 +262,7 @@ OomAdjuster 通过 `mProcessGroupHandler` 异步发送组变更，再由回调�
 
 cpuset 挂载使用 `noprefix`，实际文件名是 `/dev/cpuset/<group>/cpus` 和 `mems`，不是 v2 风格的 `cpuset.cpus`。
 
-init 只保证组和权限存在，并把根 CPU 掩码复制为初始值。具体 SoC 的 `top-app`、`foreground`、`background` CPU 掩码由设备配置写入。AOSP 不能证明“background 固定为 0-3”或“top-app 固定为 0-7”。
+init 只保证组和权限存在，并把根 CPU mask 复制为初始值。具体 SoC 的 `top-app`、`foreground`、`background` CPU mask 由设备配置写入。AOSP 不能证明“background 固定为 0-3”或“top-app 固定为 0-7”。
 
 ### 6.2 UClamp 的位置与含义
 
@@ -288,7 +288,7 @@ UClamp 钳制调度器看到的利用率上下界，会影响选核与调频决�
 - `cpu.weight` 以 1～10000 的权重在活跃兄弟 cgroup 间分配 fair-class CPU 时间；
 - `cpu.max` 用 `$MAX $PERIOD` 限制带宽，`max` 表示不设上限。
 
-Android 17 AOSP 默认把 CPU 控制器挂在 v1 `/dev/cpuctl`，不能用这两个 v2 文件解释平台基线。厂商若通过 `cgroups.json` 把 CPU 改为 v2，才需要核对 `cpu.weight`、`cpu.max` 与 subtree activation。具体产品是否这样配置，应从设备文件和 mountinfo 判断。
+Android 17 AOSP 默认把 CPU controller 挂在 v1 `/dev/cpuctl`，不能用这两个 v2 文件解释平台基线。厂商若通过 `cgroups.json` 把 CPU 改为 v2，才需要核对 `cpu.weight`、`cpu.max` 与 subtree activation。具体产品是否这样配置，应从设备文件和 mountinfo 判断。
 
 ## 7. v2 memory controller
 
@@ -304,7 +304,7 @@ Android 17 的 `task_profiles.json` 为 memory controller 定义了：
 - `SwapMax` → `memory.swap.max`；
 - `MemUsage` 等兼容 attribute。
 
-memory controller 在默认 `cgroups.json` 中标为可选。设备不支持、没有启用或被厂商改为其他布局时，不能假定相应配置动作会沿 AOSP 路径成功执行。
+memory controller 在默认 `cgroups.json` 中标为 optional。设备不支持、没有启用或被 vendor 改为其他布局时，不能假定相应配置动作会沿 AOSP 路径成功执行。
 
 ### 7.2 四个接口的语义边界
 
@@ -317,7 +317,7 @@ memory controller 在默认 `cgroups.json` 中标为可选。设备不支持、�
 
 `memory.low` 不能概括成“低于该值绝不回收”；它提供尽力而为的保护。`memory.high` 也不是普通告警阈值，超限会让该 cgroup 中的进程进入强回收和节流。
 
-AOSP 默认配置暴露这些能力，但没有给所有应用统一写入 `memory.max`/`memory.high`。是否设置、设置多少属于产品策略。不要用假设的 system_server 上限、工作资料（Work Profile）上限或固定阈值解释未知设备。
+AOSP 默认 profile 暴露这些能力，但没有给所有应用统一写入 `memory.max`/`memory.high`。是否设置、设置多少属于产品策略。不要用假设的 system_server 上限、工作资料（Work Profile）上限或固定阈值解释未知设备。
 
 ### 7.3 与 LMKD 的边界
 
@@ -356,7 +356,7 @@ SetProcessProfiles(uid, pid, {"Frozen"})
 2. Binder 侧满足冻结条件后，调用 `setProcessFrozen(..., true)` 写入 cgroup freezer，并记录 framework 冻结状态；
 3. 写入后再调用 `getBinderFreezeInfo(pid)`。若两步之间又出现 `TXNS_PENDING_WHILE_FROZEN`，同样进入失败处理逻辑。
 
-第二次检查用于覆盖 Binder 冻结与 cgroup 冻结之间的竞态窗口。解冻时，源码读取 Binder freeze info；若没有需要终止进程的同步事务，就解冻 Binder，随后写 cgroup freezer。cgroup 冻结器负责停止线程运行，Binder 驱动负责 IPC 边界；两者不会被一条 `cgroup.freeze` 写操作自动合并。
+第二次检查用于覆盖 Binder 冻结与 cgroup 冻结之间的竞态窗口。解冻时，源码读取 Binder freeze info；若没有需要终止进程的同步事务，就解冻 Binder，随后写 cgroup freezer。cgroup freezer 负责停止线程运行，Binder 驱动负责 IPC 边界；两者不会被一条 `cgroup.freeze` 写操作自动合并。
 
 完整的 pending transaction、oneway 和同步调用规则见 **1.18 Binder Freezer 与缓存进程冻结性能**。
 
@@ -438,7 +438,7 @@ Android 17 的资源分组可以分成三层：
 - `libprocessgroup` 将稳定的 profile 名转换为 cgroup、scheduler、timer slack 或 memory action；
 - 内核按 v1/v2 controller 的实际配置执行调度、限制、回收和冻结。
 
-平台基线中，CPU、cpuset、blkio 仍在 v1，freezer 与可选 memory 位于 v2。v2 的每 per-UID/per-process 树提供进程隔离、冻结、kill 和内存文件；`top-app`/`background` 的 CPU 差异仍来自 `/dev/cpuctl`、`/dev/cpuset` 及设备参数。
+平台基线中，CPU、cpuset、blkio 仍在 v1，freezer 与可选 memory 位于 v2。v2 的 per-UID/per-process 树提供进程隔离、冻结、kill 和 memory 文件；`top-app`/`background` 的 CPU 差异仍来自 `/dev/cpuctl`、`/dev/cpuset` 及设备参数。
 
 定位问题时，应从设备当前拓扑出发：确认 controller 版本与路径，再确认 profile action 和 PID/TID 归属，然后用 trace 验证性能后果。把“Android 17 支持 cgroup v2”理解为“所有 controller 已迁入统一树”，会让后续 CPU、memory、freezer 结论全部偏离源码。
 
