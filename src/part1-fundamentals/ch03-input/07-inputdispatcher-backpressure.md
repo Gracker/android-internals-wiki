@@ -90,8 +90,8 @@ InputDispatcher 内部有三类队列需要区分：
 | 队列 | 含义 | 典型观察结论 |
 |------|------|--------------|
 | `inboundQueue` | 已进入 InputDispatcher、等待路由和分发的事件 | Dispatcher 忙、策略等待、焦点窗口未就绪，或前序事件阻塞了分发 |
-| `outboundQueue` | 已确定目标连接、等待发布到该连接的分发项 | 目标通道不可写，或该连接还有尚未发布的事件 |
-| `waitQueue` | 已发布到客户端通道、等待 `Finished` 的分发项 | 完成回路滞后；仍需结合客户端线程状态判断卡在读取前还是处理过程中 |
+| `outboundQueue` | 已确定目标连接、等待发布到该连接的分发项 | 目标 channel 不可写，或该连接还有尚未发布的事件 |
+| `waitQueue` | 已发布到客户端 channel、等待 `Finished` 的分发项 | 完成回路滞后；仍需结合客户端线程状态判断卡在读取前还是处理过程中 |
 
 ```mermaid
 flowchart LR
@@ -114,7 +114,7 @@ InputDispatcher 维护两条不同的 ANR 路径：
 1. **分发项已发布但迟迟没有完成**：超时依据来自 `waitQueue` / `mAnrTracker`。
 2. **focused application 存在，但需要焦点的事件找不到 focused window**：事件留在 `mPendingEvent`，计时依据来自 `mNoFocusedWindowAnrState`。触摸可以按坐标命中窗口；单凭一次普通触摸不会触发这类 no-focused-window ANR。
 
-Android 17 在功能开关 `mAnrWarningCallbackInputDispatcherEnabled` 开启时，会为第二条路径运行 `processNoFocusedWindowPreAnrLocked()`。剩余时间进入预警窗口后，InputDispatcher 调用策略层的 `notifyPreNoFocusedWindowAnr()`，并用 `notifiedPreAnr` 防止重复通知。ANR 预警只提供提前诊断信号，不会自行设置 `responsive=false`、显示 ANR 对话框或改变事件路由；完整超时仍由 `processAnrsLocked()` 处理。
+Android 17 在功能开关 `mAnrWarningCallbackInputDispatcherEnabled` 开启时，会为第二条路径运行 `processNoFocusedWindowPreAnrLocked()`。剩余时间进入预警窗口后，InputDispatcher 调用策略层的 `notifyPreNoFocusedWindowAnr()`，并用 `notifiedPreAnr` 防止重复通知。pre-ANR 只提供提前诊断信号，不会自行设置 `responsive=false`、显示 ANR 对话框或改变事件路由；完整超时仍由 `processAnrsLocked()` 处理。
 
 
 ## 目标窗口无响应后的连接隔离
@@ -128,7 +128,7 @@ Android 17 在功能开关 `mAnrWarningCallbackInputDispatcherEnabled` 开启时
 
 ## 跨应用切换时的队列裁剪策略
 
-输入反压影响体验明显的场景之一，是用户不再等待当前应用，转而点击另一个应用或系统区域。InputDispatcher 对这种情况有专门的裁剪逻辑。
+输入反压影响体验明显的场景之一，是用户不再等待当前 App，转而点击另一个 App 或系统区域。InputDispatcher 对这种情况有专门的裁剪逻辑。
 
 在 no-focused-window 等待期间，如果出现新的 pointer `ACTION_DOWN`，`shouldPruneInboundQueueLocked()` 会命中测试其位置。目标窗口属于另一个 application token，或该位置存在可响应的 spy window 时，InputDispatcher 把这个新事件记录为 `mNextUnblockedEvent`。在队列推进到它之前，key 等 focus-dispatched 事件会按 `DropReason::BLOCKED` 丢弃；pointer-class motion 仍走自己的按坐标分发路径。
 
@@ -141,11 +141,11 @@ Android 17 在功能开关 `mAnrWarningCallbackInputDispatcherEnabled` 开启时
 
 观察 InputDispatcher 反压，优先看两个入口。
 
-`adb shell dumpsys input` 能直接看到 Input Dispatcher State。官方 dumpsys 文档展示了 `PendingEvent`、`InboundQueue`、connection、`OutboundQueue` 与 `WaitQueue` 等结构，但示例来自较旧实现，字段名会随版本变化。Android 17 当前源码在每个连接上输出 `status`、`isFocusMonitor` 和 `responsive`。现场排查时，至少记录三项：
+`adb shell dumpsys input` 能直接看到 Input Dispatcher State。官方 dumpsys 文档展示了 `PendingEvent`、`InboundQueue`、connection、`OutboundQueue` 与 `WaitQueue` 等结构，但示例来自较旧实现，字段名会随版本变化。Android 17 当前源码在每个 connection 上输出 `status`、`isFocusMonitor` 和 `responsive`。现场排查时，至少记录三项：
 
 - `FocusedWindow` / focused application：确认事件应该发给谁，是否处在 no-focused-window 等待。
 - 目标 connection 的 `OutboundQueue` / `WaitQueue` 长度和 age：确认事件卡在写入前，还是写入后等 ACK。
-- `Input Dispatcher State at time of last ANR`：确认 ANR 原因与当时的队列快照。
+- `Input Dispatcher State at time of last ANR`：确认 ANR reason 与当时的队列快照。
 
 Perfetto 侧看 ATRACE counter。AOSP android-17.0.0_r1 里 `traceInboundQueueLengthLocked()` 写 `iq`，`traceOutboundQueueLength()` 写 `oq:<channel>`，`traceWaitQueueLength()` 写 `wq:<channel>`。这些是 counter，不是 slice。`wq` 持续上升说明 ACK 回路被压住；`oq` 上升更接近 channel 写入受限或 waitQueue 未释放；`iq` 上升可能是 dispatcher 前端积压、焦点等待或策略等待。
 
