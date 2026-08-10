@@ -44,7 +44,7 @@ gap_score: 15
 
 Binder 可观测性由多套机制组成。分析等待时间、查询冻结状态、读取失败原因、查看 AIDL 方法名和录制 Parcel 内容，各自依赖不同的实现层。混用这些机制会导致两类错误：用状态位计算事务量，或把调试录制当成可常驻的线上监控。
 
-以下分析以 Android 17 / API 37、AOSP `android-17.0.0_r1` 和内核 `android17-6.18-2026-06_r6` 为准，说明各项能力提供的证据、调用边界及其与 Perfetto 结果的对应关系。常规 Binder 跟踪配置、SQL 字段和排障流程见 [1.32 Android 17 Binder IPC 性能监控](01.32-android17-binder-ipc-performance-monitoring.md)。
+以下分析以 Android 17 / API 37、AOSP `android-17.0.0_r1` 和内核 `android17-6.18-2026-06_r6` 为准，说明各项能力提供的证据、调用边界及其与 Perfetto 结果的对应关系。常规 Binder trace 配置、SQL 字段和排障流程见 [1.32 Android 17 Binder IPC 性能监控](01.32-android17-binder-ipc-performance-monitoring.md)。
 
 ## 一、按证据类型选择工具
 
@@ -86,7 +86,7 @@ bool ProcessState::isDriverFeatureEnabled(const DriverFeature feature) {
 }
 ```
 
-每项结果以函数内的 `static bool` 缓存，因此同一进程不会在每次事务中重复打开特性文件。`readDriverFeatureFile()` 只读取首字符并判断是否为 `'1'`。
+每项结果以函数内的 `static bool` 缓存，因此同一进程不会在每次事务中重复打开 feature 文件。`readDriverFeatureFile()` 只读取首字符并判断是否为 `'1'`。
 
 内核 `binderfs.c` 在 Android 17 的 6.18 分支中创建四个文件：
 
@@ -97,7 +97,7 @@ bool ProcessState::isDriverFeatureEnabled(const DriverFeature feature) {
 
 第四项存在于当前内核，但 `ProcessState::DriverFeature` 没有对应枚举，不能将其视为 libbinder 的通用能力探测接口。
 
-还要区分 `freeze_notification` 与冻结 ioctl。前者表示客户端能否通过 `BC_REQUEST_FREEZE_NOTIFICATION` 订阅远端 Binder 的冻结状态变化；`IPCThreadState::freeze()` 和 `getProcessFreezeInfo()` 直接调用 `BINDER_FREEZE`、`BINDER_GET_FROZEN_INFO`，不会预先读取这个特性文件。feature 文件只声明驱动是否实现该项协议，不包含调用量、队列长度或延迟。
+还要区分 `freeze_notification` 与冻结 ioctl。前者表示客户端能否通过 `BC_REQUEST_FREEZE_NOTIFICATION` 订阅远端 Binder 的冻结状态变化；`IPCThreadState::freeze()` 和 `getProcessFreezeInfo()` 直接调用 `BINDER_FREEZE`、`BINDER_GET_FROZEN_INFO`，不会预先读取这个 feature 文件。feature 文件只声明驱动是否实现该项协议，不包含调用量、队列长度或延迟。
 
 ## 三、冻结查询返回状态位，不是事务计数
 
@@ -159,7 +159,7 @@ if (ret >= 0 && binder_txns_pending_ilocked(target_proc))
 
 因此，`timeout_ms` 是等待旧事务排空的期限，不是“冻结多长时间”。冻结成功后持续到调用 `freeze(pid, false, ...)`；解冻路径同时清除 `sync_recv` 和 `async_recv`。
 
-冻结后的新同步事务会失败，并向发送端返回冻结相关错误。oneway 事务可进入冻结进程的待处理工作，发送端还可能收到 `BR_TRANSACTION_PENDING_FROZEN`。分析长时间的异步 Binder 流时，冻结是候选原因之一，但当前内核没有名为 `binder_freeze` 的 Binder tracepoint，不能用这个不存在的事件标记区间。
+冻结后的新同步事务会失败，并向发送端返回冻结相关错误。oneway 事务可进入冻结进程的待处理工作，发送端还可能收到 `BR_TRANSACTION_PENDING_FROZEN`。分析长时间的异步 Binder flow 时，冻结是候选原因之一，但当前内核没有名为 `binder_freeze` 的 Binder tracepoint，不能用这个不存在的事件标记区间。
 
 ### 3.3 冻结通知是另一条协议
 
@@ -167,7 +167,7 @@ if (ret >= 0 && binder_txns_pending_ilocked(target_proc))
 
 这条协议用于判断持有的远端 Binder 是否发生冻结状态变化。`BINDER_GET_FROZEN_INFO` 则按 PID 查询冻结期间是否收到过事务。两者的对象、数据结构和使用目的不同。
 
-以上接口属于平台原生 Binder 组件，不是 Android SDK 提供给普通应用的健康检查 API。能够打开相应 Binder 设备，也不代表产品的 SELinux 策略和调用方身份允许将其用于任意进程管理。
+以上接口属于平台 native Binder 组件，不是 Android SDK 提供给普通应用的健康检查 API。能够打开相应 Binder 设备，也不代表产品的 SELinux 策略和调用方身份允许将其用于任意进程管理。
 
 ## 四、扩展错误是线程级的一次性信息
 
@@ -204,7 +204,7 @@ case BR_TRANSACTION_COMPLETE:
     // complete the sender-side transaction
 ```
 
-这里打印的是正在发送 oneway 的线程栈。告警不由接收端的 `BBinder::onTransact()` 生成，也不表示驱动已经对调用方实施通用限流。定位时应回到发送栈，再用 Perfetto 的异步 Binder 流核对接口、频率和目标进程。
+这里打印的是正在发送 oneway 的线程栈。告警不由接收端的 `BBinder::onTransact()` 生成，也不表示驱动已经对调用方实施通用限流。定位时应回到发送栈，再用 Perfetto 的异步 Binder flow 核对接口、频率和目标进程。
 
 ## 六、AIDL Trace 提供方法名，不提供 Parcel 内容
 
@@ -241,13 +241,13 @@ C++ 后端在 `options.GenTraces()` 开启时，会分别在代理方法和 Stub
     "AIDL::cpp::IExample::doWork::cppClient");
 ```
 
-服务端对应名称以 `cppServer` 结尾。它们与 `BBinder::transact()` 的通用服务端切片来自不同代码位置，因此轨道中可能出现嵌套切片。遇到名称相近的 AIDL 切片时，应检查名称后缀和所在进程/线程，不能按切片数量推算调用次数。
+服务端对应名称以 `cppServer` 结尾。它们与 `BBinder::transact()` 的通用服务端切片来自不同代码位置，因此轨道中可能出现嵌套切片。遇到名称相近的 AIDL slice 时，应检查名称后缀和所在进程/线程，不能按切片数量推算调用次数。
 
 源码没有给出“关闭时固定 10 ns”或“开启时固定多少微秒”的保证。关闭 tag 会绕过名称构造和 `trace_begin()`；开启后的成本与生成代码、名称处理、trace 缓冲区和调用频率有关，应在目标设备上测量。
 
 ### 6.3 最小 Perfetto 配置
 
-下面的配置同时采集 AIDL 方法切片、Binder 流与线程调度。缓冲区大小和时长应按复现窗口调整。
+下面的配置同时采集 AIDL 方法切片、Binder flow 与线程调度。缓冲区大小和时长应按复现窗口调整。
 
 ```protobuf
 buffers {
@@ -273,7 +273,7 @@ data_sources {
 duration_ms: 10000
 ```
 
-`ATRACE_TAG_AIDL` 只提供方法切片。跨进程连线来自 Binder ftrace 事件，线程迟迟没有运行的原因则依赖调度事件。只打开 `aidl` category，不能替代 Binder 驱动与 `sched` 数据。
+`ATRACE_TAG_AIDL` 只提供方法切片。跨进程连线来自 Binder ftrace 事件，线程迟迟没有运行的原因则依赖调度事件。只打开 `aidl` category，不能替代 Binder driver 与 `sched` 数据。
 
 ## 七、API 37 的 Perfetto 表没有 `dispatch_dur`
 
@@ -316,7 +316,7 @@ LIMIT 50;
 
 触发点位于 `binder_free_transaction()`。它说明某个内核 `binder_transaction` 对象何时被释放，可借助 `debug_id` 与 `binder_transaction` 事件关联。两事件的时间差是该内核对象的存活区间，不等于应用看到的端到端调用耗时：服务端何时释放接收缓冲区、错误路径以及 oneway 处理方式都会影响对象寿命。
 
-当前 `binder_trace.h` 有 `binder_transaction` 和 `binder_transaction_received`，回复仍通过 `binder_transaction` 的 `reply` 字段表示；不存在名为 `binder_reply` 的 tracepoint。也不存在 `binder_freeze` tracepoint。诊断脚本应检查设备的 `/sys/kernel/tracing/events/binder/`，不要把界面中的 `binder reply` slice 名称当成内核事件名。
+当前 `binder_trace.h` 有 `binder_transaction` 和 `binder_transaction_received`，回复仍通过 `binder_transaction` 的 `reply` 字段表示；不存在名为 `binder_reply` 的 tracepoint。也不存在 `binder_freeze` tracepoint。诊断脚本应检查设备的 `/sys/kernel/tracing/events/binder/`，不要把 UI 中的 `binder reply` slice 名称当成内核事件名。
 
 ## 九、RecordedTransaction 适合受控复现，不适合常驻监控
 
@@ -374,8 +374,8 @@ End
 
 1. 由负责进程冻结的系统组件记录冻结/解冻操作；
 2. 把 `sync_recv` 当位图解析，禁止累计求和；
-3. 需要观察句柄对应的远端状态变化时使用 freeze notification；
-4. 用 Binder 异步流判断 oneway 是在冻结期间等待，还是服务端线程繁忙。
+3. 需要观察 handle 对应的远端状态变化时使用 freeze notification；
+4. 用 Binder async flow 判断 oneway 是在冻结期间等待，还是服务端线程繁忙。
 
 ### 10.3 失败与内容复现
 
@@ -399,4 +399,4 @@ End
   - `drivers/android/binderfs.c`：feature 文件
   - `drivers/android/binder_trace.h`：Binder tracepoint 字段
 
-以上结论均以这两个版本锚点为准。迁移到旧系统或 GKI/vendor 分支时，应重新核对特性文件、tracepoint 列表、SELinux 策略和 libbinder 编译选项。
+以上结论均以这两个版本锚点为准。迁移到旧系统或 GKI/vendor 分支时，应重新核对 feature 文件、tracepoint 列表、SELinux 策略和 libbinder 编译选项。

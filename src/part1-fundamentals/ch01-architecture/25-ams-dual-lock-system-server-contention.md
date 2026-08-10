@@ -201,7 +201,7 @@ private void updateOomAdjLSP(@OomAdjReason int oomAdjReason) {
 
 `performUpdateOomAdjLSP()`、`updateAndTrimProcessLSP()` 等后续方法也标注为同时受两把锁保护。双锁没有让一次完整的 OOM adj 更新与所有 AMS 全局操作并行。它提供的收益之一，是让只需读取或修改独立进程状态的其他路径可以绕开全局锁等待。
 
-分析性能时必须保留这项边界。若跟踪显示 OOM adj 期间 `mGlobalLock` 长时间被持有，不能因双锁已经启用就排除 OOM adj；仍需查看持锁线程在计算、Binder 调用、内核调度和 I/O 上分别花了多少时间。
+分析性能时必须保留这项边界。若 trace 显示 OOM adj 期间 `mGlobalLock` 长时间被持有，不能因双锁已经启用就排除 OOM adj；仍需查看持锁线程在计算、Binder 调用、内核调度和 I/O 上分别花了多少时间。
 
 ### 6.2 时区更新：只用进程锁遍历 LRU
 
@@ -223,7 +223,7 @@ case UPDATE_TIME_ZONE: {
 } break;
 ```
 
-该路径展示了 `LOSP` 的作用：读取 LRU 不必占用 `mGlobalLock`。风险在于，代码会在 `mProcLock` 内向多个应用进程发起 Binder 调用。即使这些调用通常是单向分发，也要通过跟踪判断临界区是否因调度、Binder 驱动拥塞或目标进程状态而拉长。
+该路径展示了 `LOSP` 的作用：读取 LRU 不必占用 `mGlobalLock`。风险在于，代码会在 `mProcLock` 内向多个应用进程发起 Binder 调用。即使这些调用通常是单向分发，也要通过 trace 判断临界区是否因调度、Binder 驱动拥塞或目标进程状态而拉长。
 
 ### 6.3 CachedAppOptimizer：进程锁保护冻结与压缩队列
 
@@ -240,7 +240,7 @@ final class ActivityManagerProcLock implements ActivityManagerGlobalLock {
 }
 ```
 
-源码注释说明，这个独立类型可让 CPU 优先级提升器识别临界区。Android 17 中可以直接验证的实现是 `ThreadPriorityBooster`：AMS 分别为全局锁和进程锁创建一个 booster，目标优先级都是 `THREAD_PRIORITY_FOREGROUND`。
+源码注释说明，这个独立类型可让 CPU booster 识别临界区。Android 17 中可以直接验证的实现是 `ThreadPriorityBooster`：AMS 分别为全局锁和进程锁创建一个 booster，目标优先级都是 `THREAD_PRIORITY_FOREGROUND`。
 
 `ThreadPriorityBooster.boost()` 会读取当前线程的 Linux nice 值；若当前优先级低于目标值，便通过 `setThreadPriority()` 提升当前线程。嵌套临界区由线程局部计数器记录，最外层退出时恢复原优先级。
 
@@ -265,7 +265,7 @@ Android 17 的 `ActivityManagerService` 定义了 `big_locks` 类别下的四组
 | `mGlobalLock` | `ams_lock_acquire` | `ams_lock_held` |
 | `mProcLock` | `proc_lock_acquire` | `proc_lock_held` |
 
-这些事件受 `android.os.Flags.perfettoSdkTracingV3()` 控制。分析某台设备前，应确认构建是否启用相应特性、trace 配置是否采集 `big_locks` 类别，以及结果中是否出现这些切片。源码定义了事件，不代表每份跟踪都包含它们。
+这些事件受 `android.os.Flags.perfettoSdkTracingV3()` 控制。分析某台设备前，应确认构建是否启用相应特性、trace 配置是否采集 `big_locks` 类别，以及结果中是否出现这些 slice。源码定义了事件，不代表每份 trace 都包含它们。
 
 如果事件存在，可以先用下面的查询列出 `system_server` 中的持锁区间。它的用途是找到长持锁段，并定位到具体线程：
 
@@ -342,7 +342,7 @@ LIMIT 50;
 - `ActivityManager.getRunningAppProcesses()` 是进程可见性查询，不会因为“读取列表”就刷新 LRU。`UsageStatsManager` 提供应用使用记录，语义不同，不能当作进程列表的通用替代品。
 - `ServiceConnection.onServiceConnected()` 等回调在应用进程中按 `ServiceDispatcher` 配置的执行器或 Handler 分发。回调里发起新的系统调用可能形成新的同步 IPC，但不能据此声称 system_server 仍持有原来的 AMS 锁。
 
-平台代码的优化需要遵守更严格的条件：缩短锁内工作、避免持锁进行不可控的跨进程调用、在安全时复制快照后释放锁，并用相同负载的跟踪验证等待时间和持锁时间。任何移锁操作都要先证明对象生命周期与组合写锁规则仍成立。
+平台代码的优化需要遵守更严格的条件：缩短锁内工作、避免持锁进行不可控的跨进程调用、在安全时复制快照后释放锁，并用相同负载的 trace 验证等待时间和持锁时间。任何移锁操作都要先证明对象生命周期与组合写锁规则仍成立。
 
 ## 11. 版本边界
 

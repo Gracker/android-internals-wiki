@@ -99,15 +99,15 @@ Android 的普通安装本来就有事务边界。Android 17 的 `InstallPackage
 
 这三层可以叠加。一个 staged parent 可以包含多个 child，其中既有 APEX，也有 APK。此时既要满足多包同组提交规则，又要满足 staged 的跨重启状态机。
 
-普通安装的原子性也有边界。`installPackagesTraced()` 要求可预见错误在提交前被发现，并把系统状态修改集中到 Commit；但 `commitReconciledScanResultLocked()` 的源码注释同时警告，Commit 中抛出异常仍可能留下不一致状态。这是 Package Manager 的逻辑事务划分，不等同于数据库式或掉电安全的完整回滚。Staged Install 增加了持久化状态、apexd 协调和文件系统 checkpoint，用于需要跨重启激活的更新。
+普通安装的原子性也有边界。`installPackagesTraced()` 要求可预见错误在 Commit 前被发现，并把系统状态修改集中到 Commit；但 `commitReconciledScanResultLocked()` 的源码注释同时警告，Commit 中抛出异常仍可能留下不一致状态。这是 Package Manager 的逻辑事务划分，不等同于数据库式或掉电安全的完整回滚。Staged Install 增加了持久化状态、apexd 协调和文件系统 checkpoint，用于需要跨重启激活的更新。
 
 ## API 边界：谁能创建 staged session
 
 `PackageInstaller.SessionParams#setStaged()` 从 Android 10 / API 29 开始提供。Android 17 中它仍是 `@SystemApi`，并要求 `android.permission.INSTALL_PACKAGES`。普通应用即使声明 `REQUEST_INSTALL_PACKAGES`，也不能因此获得 staged 安装能力。
 
-调用 `setStaged()` 后，这个会话被安排到下一次重启时安装。若它是 multi-package parent，所有 child 都必须采用一致的 staged 属性；rollback 属性也有同样约束。任一 child 在激活时失败，整组都不能按部分成功处理。
+调用 `setStaged()` 后，这个 session 被安排到下一次重启时安装。若它是 multi-package parent，所有 child 都必须采用一致的 staged 属性；rollback 属性也有同样约束。任一 child 在激活时失败，整组都不能按部分成功处理。
 
-另一个边界是免重启 APEX 更新。APEX 可以声明支持 rebootless update，但免重启 APEX 不属于 staged session。命令行使用 `--force-non-staged` 走另一条路径。明确设置为 staged 的会话都要等待重启。
+另一个边界是免重启 APEX 更新。APEX 可以声明支持 rebootless update，但 rebootless APEX 不属于 staged session。命令行使用 `--force-non-staged` 走另一条路径。明确设置为 staged 的会话都要等待重启。
 
 ## Android 17 的完整状态机
 
@@ -135,7 +135,7 @@ Android 的普通安装本来就有事务边界。Android 17 的 `InstallPackage
                                 └─ StagingManager.commitSession(...)
 ```
 
-`StagingManager.commitSession()` 接到的是已经走完当前验证流程的会话。它负责把会话纳入重启恢复管理；它不是 `commit()` 后的第一站，也不会替代前面的解析、Developer Verification 或 `PackageSessionVerifier`。
+`StagingManager.commitSession()` 接到的是已经走完当前验证流程的 session。它负责把 session 纳入重启恢复管理；它不是 `commit()` 后的第一站，也不会替代前面的解析、Developer Verification 或 `PackageSessionVerifier`。
 
 ### ready、applied、failed 是三个持久化状态
 
@@ -147,9 +147,9 @@ Android 的普通安装本来就有事务边界。Android 17 的 `InstallPackage
 | `isApplied` | 更新已成功应用 | 是 |
 | `isFailed` | session 已失败，并保存错误码与错误信息 | 是 |
 
-三者会以 `isReady`、`isApplied`、`isFailed` 属性写入 `/data/system/install_sessions.xml`。较大的会话数据存放在 `/data/system/install_sessions/`。`PackageInstallerService` 重启后从 XML 恢复状态，不依赖调用方重新提交。
+三者会以 `isReady`、`isApplied`、`isFailed` 属性写入 `/data/system/install_sessions.xml`。较大的 session 数据存放在 `/data/system/install_sessions/`。`PackageInstallerService` 重启后从 XML 恢复状态，不依赖调用方重新提交。
 
-对 staged 或 APEX session，`buildSessionDir()` 会把会话目录放在数据分区的暂存目录中，内部存储通常表现为：
+对 staged 或 APEX session，`buildSessionDir()` 会把会话目录放在数据分区的 staging 目录中，内部存储通常表现为：
 
 ```text
 /data/app-staging/session_<sessionId>/
@@ -164,9 +164,9 @@ Android 的普通安装本来就有事务边界。Android 17 的 `InstallPackage
 1. `session.setSessionReady()`，让 Package Installer 先持久化 ready。
 2. `mApexManager.markStagedSessionReady(sessionId)`，再告诉 apexd 可以激活。
 
-如果设备在第 1 步后、第 2 步前重启，apexd 没收到 ready，不会激活这批 APEX；重启恢复阶段可以把会话判为失败。如果先通知 apexd、后写 Package Installer 状态，窗口期重启就可能出现 APEX 已激活、APK 侧却不知道该继续哪个会话的不一致状态。
+如果设备在第 1 步后、第 2 步前重启，apexd 没收到 ready，不会激活这批 APEX；重启恢复阶段可以把 session 判为失败。如果先通知 apexd、后写 Package Installer 状态，窗口期重启就可能出现 APEX 已激活、APK 侧却不知道该继续哪个 session 的不一致状态。
 
-这段顺序直接展示了分阶段安装的原子性来源：持久化状态与 apexd 状态之间采用了明确的提交次序，不能简化成一句“重启后提升”。
+这段顺序直接展示了分阶段安装的原子性来源：持久化状态与 apexd 状态之间采用了明确的提交次序，不能简化成一句“重启后 promote”。
 
 ## 重启前到底检查什么
 
@@ -211,9 +211,9 @@ Developer Verification 位于 session 的通用验证路径中，发生在 stage
                            └─ 普通 APK 安装事务
 ```
 
-`restoreSessions()` 发现 build fingerprint 与提交时记录不一致后，会让待恢复会话失败。系统镜像已经改变，重启前完成的验证不能继续作为当前系统上的有效结论。
+`restoreSessions()` 发现 build fingerprint 与提交时记录不一致后，会让待恢复 session 失败。系统镜像已经改变，重启前完成的验证不能继续作为当前系统上的有效结论。
 
-尚未就绪的会话不会被强行安装。Android 17 会把它移出本轮立即恢复集合，并在 `BOOT_COMPLETED` 之后重新触发验证。因此，本次开机通常不会应用该会话，系统也不会绕过检查继续安装。
+尚未就绪的会话不会被强行安装。Android 17 会把它移出本轮立即恢复集合，并在 `BOOT_COMPLETED` 之后重新触发 verification。因此，本次开机通常不会应用该会话，系统也不会绕过检查继续安装。
 
 ## checkpoint 不等同于 Virtual A/B
 
@@ -249,7 +249,7 @@ Developer Verification 位于 session 的通用验证路径中，发生在 stage
 | `abortCommittedSession()` | abandon 已 commit、尚未重启的 session，并确保相关 APEX session 被中止 |
 | `abortCheckpoint()` | 记录 staged-install 失败原因、回退 active APEX，并调用 StorageManager 放弃文件系统变更 |
 
-APK-only session APK 会话在重启后的安装失败，通常会调用 `setSessionFailed()` 并清理自己的 stage。包含 APEX 的失败更严重：系统可能调用 `revertActiveSessions()`，再通过 checkpoint 回退；回退本身失败时还可能触发重启，以免继续运行在无法确认一致性的系统状态中。
+APK-only session 在重启后的安装失败，通常会调用 `setSessionFailed()` 并清理自己的 stage。包含 APEX 的失败更严重：系统可能调用 `revertActiveSessions()`，再通过 checkpoint 回退；回退本身失败时还可能触发重启，以免继续运行在无法确认一致性的系统状态中。
 
 恢复阶段若发现某个 APEX session 已处于 activation failed、unknown、reverted、revert in progress 或 revert failed 等失败状态，会阻止相关 session 继续应用。出现“一个 APEX session failed，其他 staged session 也被标记失败”时，不应按普通 APK 的独立失败模型排查。
 
@@ -263,7 +263,7 @@ APK-only session APK 会话在重启后的安装失败，通常会调用 `setSes
 
 ## Android 17 的 dexopt 边界
 
-旧实现常被描述为：PMS 调用 installd，installd 从 `run_dex2oat.cpp` 读取 `restore-dex2oat-threads`，再直接派生 dex2oat。把这套描述用于 Android 17 staged APK，会得到错误的性能模型。
+旧实现常被描述为：PMS 调用 installd，installd 从 `run_dex2oat.cpp` 读取 `restore-dex2oat-threads`，再直接 fork dex2oat。把这套描述用于 Android 17 staged APK，会得到错误的性能模型。
 
 Android 17 的应用安装 dexopt 已由 ART Service 负责。staged APK 在重启后进入普通 APK 安装事务，`InstallPackageHelper` 准备 dexopt 请求，`DexOptHelper.performDexoptIfNeededAsync()` 再调用 `ArtManagerLocal.dexoptPackage()`。ART Service 通过 artd 管理编译请求和产物；底层仍可能运行 dex2oat，但调度入口已不再沿用 PMS → installd dexopt 主线。
 
@@ -276,7 +276,7 @@ Android 17 的应用安装 dexopt 已由 ART Service 负责。staged APK 在重�
 
 `InstallScenarioHelper` 还会根据电池和 thermal 状态调整批量安装策略。最终 compiler filter 受设备配置、安装参数、profile 和 ART Service 策略共同影响，不能只看一个 `dalvik.vm.*dex2oat-filter` 属性下结论。
 
-APEX 本身不会作为普通应用交给这条 dexopt 路径。mixed session 中需要应用 dexopt 的是 APK child。
+APEX 本身不会作为普通 app 交给这条 dexopt 路径。mixed session 中需要 app dexopt 的是 APK child。
 
 安装时的 dexopt 采用尽力而为策略。Android 17 的 `DexOptHelper` 明确避免仅因 dexopt 步骤失败就让应用安装失败。因此：
 
@@ -301,7 +301,7 @@ APEX 本身不会作为普通应用交给这条 dexopt 路径。mixed session �
 - APEX 提交和验证；
 - 建立检查点并持久化就绪状态。
 
-这部分的结束条件是 `SessionInfo.isStagedSessionReady()`，不能以 `commit()` 返回为准。验证中包含异步步骤，调用方必须通过回调或查询会话状态等待 ready/failed。
+这部分的结束条件是 `SessionInfo.isStagedSessionReady()`，不能以 `commit()` 返回为准。验证中包含异步步骤，调用方必须通过回调或查询 session 状态等待 ready/failed。
 
 ### 窗口二：reboot 与 early boot
 
@@ -310,7 +310,7 @@ APEX 本身不会作为普通应用交给这条 dexopt 路径。mixed session �
 - 关机和重启本身；
 - apexd 的 APEX 验证、激活与挂载；
 - 文件系统 checkpoint 状态；
-- `system_server` 启动到 Package Installer 开始恢复会话的时间。
+- `system_server` 启动到 Package Installer 开始恢复 session 的时间。
 
 这一段通常需要 boot trace，并同时保留 apexd 日志。只采集 `system_server` 启动后的 atrace，会漏掉 APEX 已经完成的 early-boot 工作。
 
@@ -340,7 +340,7 @@ WHERE name IN (
 ORDER BY ts;
 ```
 
-不要预设 `verifyPackage`、`collectCertificates`、`commitPackageSettings`、`relabel` 一定是稳定存在的切片名。不同版本和厂商分支可能没有这些名称，应先在目标跟踪中确认再编写 SQL。
+不要预设 `verifyPackage`、`collectCertificates`、`commitPackageSettings`、`relabel` 一定是稳定存在的 slice 名。不同版本和厂商分支可能没有这些名称，应先在目标 trace 中确认再编写 SQL。
 
 查看 artd、dex2oat、apexd、installd 和 `system_server` 的 CPU 调度时间，可以使用进程维度的查询：
 
@@ -379,7 +379,7 @@ CPU 时间不能替代墙钟时间。若 `dex2oat` 的 CPU 时间不高但 slice
 
 ### Session 一直不能变为 ready
 
-先确认卡在重启前，而非已经重启但尚未应用：
+先确认卡在重启前，而非已经重启但尚未 applied：
 
 ```bash
 adb shell pm list staged-sessions --only-parent
@@ -397,7 +397,7 @@ adb logcat -b all -d | grep -E \
 5. 含 APEX 时，apexd 提交、容器签名和包名检查是否通过。
 6. `/data` 剩余空间是否足以写 stage 和后续安装产物。
 
-不要把“commit 命令已返回当成就绪。命令行测试可使用 `--staged-ready-timeout` 等待 ready/failed；超时只说明等待窗口结束，不能自动证明系统死锁。
+不要把“commit 命令已返回”当成 ready。命令行测试可使用 `--staged-ready-timeout` 等待 ready/failed；超时只说明等待窗口结束，不能自动证明系统死锁。
 
 ### ready 但重启后没有 applied
 
@@ -450,7 +450,7 @@ adb logcat -b all -d | grep -E \
   'INSTALL_FAILED_INSUFFICIENT_STORAGE|PackageInstaller|StagingManager|apexd'
 ```
 
-目录读取受构建类型和 SELinux 权限限制。看不到 `/data/app-staging` 不等于目录不存在，也不能因此排除空间问题。mixed/APEX session 还要结合 apexd 日志和 `dumpsys apexservice`，不要把 `/data/apex/active` 当成 Package Installer 写 APK 的暂存目录。
+目录读取受 build 类型和 SELinux 权限限制。看不到 `/data/app-staging` 不等于目录不存在，也不能因此排除空间问题。mixed/APEX session 还要结合 apexd 日志和 `dumpsys apexservice`，不要把 `/data/apex/active` 当成 Package Installer 写 APK 的 staging 目录。
 
 ## 常用命令
 
@@ -484,7 +484,7 @@ adb shell pm install-abandon <session-id>
 | Android 10 / API 29 | `setStaged()`、staged APEX/APK 与相关 SessionInfo 状态成为平台能力 |
 | Android 11–13 | staged install、APEX、rollback 与 checkpoint 继续演进；具体并发和回退策略要按对应 tag 核对 |
 | Android 14–16 | ART Service 成为应用 dexopt 的主要管理层，不能继续沿用旧 PMS/installd 主线描述 |
-| Android 17 / API 37 | 当前锚点：Developer Verification 参与适用的会话验证；StagingManager 与 ART Service 行为按 `android-17.0.0_r1` 核对 |
+| Android 17 / API 37 | 当前锚点：Developer Verification 参与适用的 session 验证；StagingManager 与 ART Service 行为按 `android-17.0.0_r1` 核对 |
 
 回看任何旧版本问题时，都要同时锁定 framework、ART 和 apexd 的版本。只把 framework 文件换成 Android 17、却继续引用旧 installd dexopt 或旧 apexd 状态机，会得到跨版本拼接的结论。
 
