@@ -104,7 +104,7 @@ last_task9_audit_log: "logs/deep-review/2026-06-09-14-audit.md"
 last_task9_autofix_at: "2026-06-09"
 ---
 
-# VSync 机制
+# 2.3 VSync 机制
 
 ## Android 17 的 VSync 分析模型
 
@@ -222,6 +222,10 @@ flowchart LR
 
 `VSyncPredictor::validate()` 会检查新时间戳与当前理想周期的对齐程度，过滤重复或明显不一致的样本。样本足够后，它对“VSync 序号—时间戳”做简单线性回归，斜率代表估计周期，截距描述相位。
 
+这里有几组容易被误写成同一个“预测误差”的常量：默认历史窗口/最少样本是 20/6，时间戳相位校验与近重复样本使用 20% 容差，`VSyncTracker::kPredictorThreshold` 的 200 ms 用于优先考虑近期样本，Reactor 在模式切换期确认观测周期使用 10% allowance。它们分别属于 Predictor 历史、样本校验、近期样本选择和 Reactor 周期确认，不能互相替代。
+
+默认多样本路径会对序号和时间戳做最小二乘拟合。`validate()` 先按理想周期取模检查相位，再寻找邻近历史样本；距离小于一个周期 20% 的时间戳会被当作重复样本。这个 20% 不是“允许预测偏离目标呈现时间 20%”。
+
 这套模型的目标是回答：
 
 > 从给定时刻往后，哪个时刻最适合作为下一次目标 VSync？
@@ -241,6 +245,8 @@ Android 17 在满足以下条件时可以采用一条不同分支：
 ### 3.3 为什么硬件 VSync 会开关
 
 持续接收硬件回调会增加唤醒和功耗。模型稳定后，`VSyncReactor` 可以告诉 `VsyncSchedule` 当前不再需要更多硬件样本，系统随后关闭 HWC VSync；发生 mode 切换、模型漂移或需要重新校准时，再开启采样。
+
+`VSyncReactor` 会把 HWC VSync 与 present fence 作为两类校准证据。模式切换期间，若 HWC 直接携带 period，就把它和目标周期比较；否则比较相邻硬件样本。过渡期可以暂时忽略 present fence，避免把新旧 mode 交界处的时间戳写入错误模型。看到硬件 VSync 重新密集出现，优先确认是否处于重新采样或周期确认，而不是直接归因为 App 或驱动异常。
 
 Android 17 的硬件 VSync 状态包括 `Enabled`、`Disabled` 和 `Disallowed`。present fence 是否参与模型、kernel idle timer、外部显示和设备配置都会影响采样策略。看到硬件 VSync 持续开启，只能说明当前实现仍在请求样本；还要结合控制器状态和设备配置，不能直接判定为驱动错误。
 
@@ -269,6 +275,8 @@ auto nextWakeupTime =
 ```
 
 第一行选择一个足够晚、仍能容纳全部预算的预测 VSync；第二行向前扣除工作时间和就绪时间。实际源码还会处理已经 armed 的回调、避免跳过既定目标、合并相近唤醒以及定时器误差。
+
+Dispatch 的 500 µs timer slack 用于合并时间接近的 callback 唤醒，3 ms minimum VSync distance 用于避免把同一或过近目标当成两次独立 VSync。二者是定时分发约束，不是 GPU pipeline 的固定安全余量。
 
 用时间轴表示：
 

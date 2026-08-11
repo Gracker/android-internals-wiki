@@ -130,9 +130,12 @@ last_task2b_lite_at: '2026-06-26'
 task2b_verified_at: '2026-06-26T07:27:19+08:00'
 task2b_verify_result: 'promoted-to-finalized: task6 pass-light-edit + task9 pass-tech-review
   + queue clear'
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch02-rendering/25-choreographer-buffer-stuffing-recovery.md"
 ---
 
-# Choreographer 与渲染流水线
+# 2.4 Choreographer 与渲染流水线
 
 ## Choreographer 管理“何时开始一帧”
 
@@ -652,6 +655,14 @@ BBQBufferQueueProducer::waitForBufferRelease() 统计等待时长
 - `NONE`：无需动作或恢复已经结束。
 
 相关 aconfig flag 可以控制同一段动画是否多次恢复，以及累计主动延迟是否受 100 ms 阈值限制。设备上的 flag 取值必须从配置或 trace 确认。
+
+状态机需要分清四个量：`isStuffed` 只表示 RenderThread 一侧刚报告过一次长 release wait，`isRecovering` 表示 App 帧时间线仍在恢复，`numberWaitsForNextVsync` 统计主动或被动等待过的 VSync 次数，`accumulatedDelayNanos` 只累计 `DELAY_FRAME` 带来的动画延迟。它们都不是 BufferQueue depth 或被占用 buffer 数。
+
+首次进入恢复时，`DELAY_FRAME` 会跳过本轮 input、animation、traversal 和 commit callback，安排下一次 VSync。恢复期的 `OFFSET` 只把交给 `FrameData.update()` 的 frame time 减去一个 interval；硬件 VSync、真实唤醒和 present 时间不会倒退。系统发现自上一次未偏移 callback 以来已有足够长的自然空闲后，才清理恢复状态。
+
+Android 17 有两个独立 flag：`buffer_stuffing_multi_recovery` 允许同一动画内多次主动 delay，`buffer_stuffing_recovery_threshold` 启用时用 100 ms 限制累计主动延迟。源码中存在常量不等于量产设备一定开启对应分支。
+
+Choreographer recovery 与 FrameTimeline 的 `BufferStuffing` jank bit 也不是同一事件。前者来自标准 HWUI/BLAST producer 的 release wait callback；后者由 SurfaceFlinger 根据 predicted/actual finish、latch 和 present 关系分类。独立 SurfaceView、Camera、Codec 或自建 renderer 可能发生 queue stuffing，却没有主 Choreographer recovery trace。
 
 Perfetto 可搜索：
 

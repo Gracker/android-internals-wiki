@@ -1,6 +1,7 @@
 ---
-title: "Android 17 FrameTimeline GPU/CPU 合成边界判定机制"
-chapter: "2.33"
+title: "Android 17 FrameTimeline、FrameTracer 与合成边界"
+chapter: "2.30"
+section: "2.30"
 status: "finalized"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-08"
@@ -11,7 +12,7 @@ last_task6_audit: "2026-07-10"
 last_task6_review_at: "2026-07-03T16:19:00+08:00"
 last_task6_at: 2026-07-08T08:10:41+08:00
 tags: [rendering, frametimeline, gpu-cpu-boundary, android17, surfaceflinger, hwc, perfetto]
-related_chapters: ["2.1", "2.4", "2.6", "2.25"]
+related_chapters: ["2.1", "2.4", "2.6", "2.13"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-29"
 gap_source: "DeepResearch"
@@ -60,9 +61,13 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-18
 last_task9_autofix_at: "2026-07-10"
 task9_review_notes: "2026-07-10 Task9 deep-review: auto-fixed。P0 2 / P1 1 已局部修复：DisplayFrame gpu_composition 源码片段、Perfetto stdlib SQL 表名、trace 配置边界。详见 logs/deep-review/2026-07-10-14-deep-review.md。"
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch02-rendering/2.32-android-17-frametimeline-数据结构.md"
+  - "src/part1-fundamentals/ch02-rendering/2.52-android17-gpu-debug-performance-tools.md"
 ---
 
-# 2.33 Android 17 FrameTimeline：应用、SurfaceFlinger 与合成边界
+# 2.30 Android 17 FrameTimeline、FrameTracer 与合成边界
 
 FrameTimeline 用于判断一帧是否按调度器预测的时间显示，以及延误更接近应用、SurfaceFlinger、GPU composition 还是 Display HAL。它无法覆盖所有 Producer，也不能单独证明某段 CPU 或 GPU 工作就是根因。
 
@@ -127,6 +132,27 @@ Android 17 的关键对象是 `FrameTimelineInfo`：
 `FrameTimelineInfo.aidl` 中还包含 `startTimeNanos`、`vsyncResyncedJitterNanos` 与 `dequeueBufferDurationNanos`。token 除了标识 UI 帧，还携带分类所需的应用侧时序信息。
 
 token 可能无效或过期。`SurfaceFrame::trace()` 会跳过无效 token；预测过期时，expected 时间戳已经不能用于正常比较，Android 17 会采用专门的过期分类与 trace 处理。因此，看到 `prediction_type = Expired Prediction` 时，应先处理 token/调度延迟，不能继续机械计算 Expected 与 Actual 的差。
+
+### TokenManager 的容量边界
+
+源码注释把预测描述为大约保留 120 ms，但 Android 17 的具体实现是固定容量环，不是为每个 token 建一个 TTL 定时器。生产速度、刷新率和是否及时消费都会影响某个 token 何时被覆盖。分析“prediction expired”时，应检查 token 创建、transaction 到达和 SurfaceFlinger 消费之间的真实时间，不要把 120 ms 当作精确过期闹钟。
+
+## FrameTracer 与 FrameTimeline 的身份边界
+
+Android 图形 trace 中有两个独立的数据源：
+
+| 维度 | FrameTracer | FrameTimeline |
+|---|---|---|
+| 数据源 | `android.surfaceflinger.frame` | `android.surfaceflinger.frametimeline` |
+| 核心标识 | buffer id、frame number、layer name | surface token、display token、pid、layer name |
+| 主要问题 | buffer 在 dequeue、queue、fence、latch、present 哪段停留 | expected/actual 是否偏离、哪一侧被分类为 jank |
+| Trace Processor | `frame_slice` | `expected_frame_timeline_slice`、`actual_frame_timeline_slice` |
+
+两套 Proto 没有声明 `FrameTracer.frame_number = FrameTimeline.surface_frame_token`。可靠关联需要同一 layer、producer、相邻时间窗、buffer/transaction 事件和 display token 共同收窄；只按整数相等 join 会把无关帧拼在一起。
+
+FrameTracer 的事件时间位于外层 `TracePacket.timestamp`。带 fence 的事件会先进入 pending tracker，fence signal 后再闭合 span；立即完成的事件可能表现为 instant。Trace Processor 依据事件 phase 构造 `frame_slice`，因此不能假设每个枚举都对应一条固定 duration slice，也不能由协议中存在某个枚举推断 Android 17 的生产代码一定发射它。
+
+FrameTimeline 的 expected/actual start packet 用 cookie 建立 slice，end packet 用同一 cookie 闭合。Trace Processor 再把 surface/display token、pid、layer、present type、prediction type 和 jank bit 暴露给 SQL。数据源名称不是 SQL 表名，FrameTracer 的 `frame_slice` 也不是 FrameTimeline actual 表的别名。
 
 ## 怎样解读预期值与实际值
 
@@ -274,6 +300,15 @@ proto 同时携带 legacy 与 experimental 的 jank/present 值，并明确标�
 | 蓝色 | dropped frame；App 与 SF 侧的具体丢帧语义不同 |
 
 颜色适合定位候选帧，根因仍需结合字段、token flow、线程 slice、buffer 与 fence 证明。
+
+## TimeStats 与 JankTracker 的统计边界
+
+FrameTimeline 负责逐帧计划、完成时间和 jank 分类；另外两套机制处理聚合与通知：
+
+- `TimeStats` 按 layer 与 display 汇总 present-to-present、post-to-present、acquire-to-present、jank、composition 等趋势，可通过受控的 `dumpsys SurfaceFlinger --timestats` 或 statsd pull 做前后对照。它不是逐帧根因表，也不保证提供任意分位数。
+- `JankTracker` 接收已经分类的结果，按 listener 批量投递；Android 17 的 batch 以 50 条为边界，并支持显式 flush。通知晚到只说明批量或调度延迟，不表示 jank 到那一刻才被判定。
+
+一轮诊断应先用 FrameTimeline 找出同一 SurfaceFrame/DisplayFrame 的异常，再用 FrameTracer、线程 slice、BufferTX、fence 与 HWC 解释阶段；最后用 TimeStats 验证现象是否在稳定样本中持续。若业务需要在线反馈，再核对 JankTracker listener 收到的 bit、批次和 flush 时机。
 
 ## fence 与 BufferQueue：不要把三个方向混在一起
 

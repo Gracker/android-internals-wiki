@@ -136,7 +136,7 @@ auto_promoted_date: 2026-06-15
 auto_promoted_by: openclaw-task6
 ---
 
-# 帧率与刷新率
+# 2.2 帧率与刷新率
 
 打开 Perfetto 后，应用轨道里可能有一帧标红，Display 轨道的刷新率又恰好从 120 Hz 切到 60 Hz。仅凭这两个现象，不能断定刷新率切换导致了卡顿。红色帧可能来自应用迟交、GPU 迟完成或 BufferQueue 积压；刷新率变化也可能只是内容投票或系统 policy 的正常结果。
 

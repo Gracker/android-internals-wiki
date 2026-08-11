@@ -149,7 +149,7 @@ last_task9_autofix_at: 2026-06-15
 last_task9_review_log: logs/deep-review/2026-06-15-07-deep-review.md
 ---
 
-# 渲染机制的版本演进
+# 2.9 渲染机制的版本演进
 
 Android 渲染史不能只记成一串版本号。拿到 Perfetto 后，工程师需要回答三个问题：
 

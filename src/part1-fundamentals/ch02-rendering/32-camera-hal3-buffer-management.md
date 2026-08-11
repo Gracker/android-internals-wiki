@@ -1,10 +1,11 @@
 ---
 title: "Camera HAL3 Buffer 管理与 BufferQueue 协作的内存模型"
-chapter: "2.31"
+chapter: "2.32"
+section: "2.32"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [camera, hal3, buffer, bufferqueue, memory, performance]
-related_chapters: ["2.29", "13.9", "18.14"]
+related_chapters: ["2.13", "2.15", "2.16", "13.9", "18.14"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-25"
 gap_source: "素材驱动"
@@ -44,7 +45,7 @@ sources:
     path: "https://source.android.com/docs/whatsnew/android-17-release"
 ---
 
-# 2.31 Camera HAL3 Buffer 管理与 BufferQueue 协作的内存模型
+# 2.32 Camera HAL3 Buffer 管理与 BufferQueue 协作的内存模型
 
 Camera HAL3 不维护覆盖预览、录像、分析和拍照的公共 GraphicBuffer 池。Camera2 会配置若干输出 `Surface`，camera service 为每个输出建立 stream；每个 stream 再通过自己的队列与 Surface 后面的 consumer 协作。HAL 在这条链路中负责生产图像，而 GraphicBuffer 的分配、缓存、跨进程传递和回收由 framework、图形分配器、BufferQueue、HAL 与 consumer 共同完成。
 

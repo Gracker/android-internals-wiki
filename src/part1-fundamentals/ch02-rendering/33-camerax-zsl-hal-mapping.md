@@ -1,10 +1,11 @@
 ---
 title: "CameraX ZSL 与 HAL Reprocessing Request 的映射关系"
-chapter: "2.32"
+chapter: "2.33"
+section: "2.33"
 status: ready-for-review
 applicable_versions: "CameraX 1.2.0 - 1.6.1; Android 6.0 (API 23) - Android 17 (API 37)"
 tags: [camerax, zsl, camera2, camera-pipe, hal3, reprocessing, android-17]
-related_chapters: ["2.31", "13.9"]
+related_chapters: ["2.32", "13.9"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-25"
 gap_source: "素材驱动"
@@ -54,7 +55,7 @@ sources:
     path: "Writer/rendering_pipelines/S11_camera_type.md"
 ---
 
-# 2.32 CameraX ZSL 与 HAL Reprocessing Request 的映射关系
+# 2.33 CameraX ZSL 与 HAL Reprocessing Request 的映射关系
 
 CameraX 的零快门延迟（Zero Shutter Lag，ZSL）模式会持续保留近期拍摄的 `PRIVATE` 图像。用户按下快门时，如果缓存里存在满足条件的图像，CameraX 将该图像和与它同一时间戳的 `TotalCaptureResult` 送入 Camera2 可重处理会话，再请求设备输出 JPEG。相机不需要为这次请求重新曝光，所以照片内容可以来自按键之前。
 
@@ -368,7 +369,7 @@ ring 保存的是尚未关闭的 `ImageProxy`。每保留一帧，就有一块 `
 - repeating request 被 output 反压拖慢；
 - 预览、分析或其他共享 camera 资源出现连带延迟。
 
-这类问题要按 [Camera HAL3 Buffer 管理](./2.31-camera-hal3-buffer-management.md) 的方法分 stream 检查。preview 正常不能证明 ZSL output 和 input queue 正常。
+这类问题要按 [Camera HAL3 Buffer 管理](./32-camera-hal3-buffer-management.md) 的方法分 stream 检查。preview 正常不能证明 ZSL output 和 input queue 正常。
 
 ### 8.2 input buffer 的所有权跨过 HAL
 

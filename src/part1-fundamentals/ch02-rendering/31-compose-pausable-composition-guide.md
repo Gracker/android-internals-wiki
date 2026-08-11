@@ -1,6 +1,7 @@
 ---
 title: "Compose Pausable Composition 实战指南"
-chapter: "2.29"
+chapter: "2.31"
+section: "2.31"
 status: ready-for-review
 drafted_date: "2026-07-02"
 applicable_versions: "Compose Runtime 1.8.0 - 1.11.4; Android 6.0 (API 23) - Android 17 (API 37)"
@@ -25,10 +26,10 @@ sources:
   - type: official
     path: "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
 tags: ["Pausable Composition", "Compose", "性能优化", "增量加载", "时间切片"]
-related_chapters: ["2.28"]
+related_chapters: ["2.4", "22.3", "22.16"]
 ---
 
-# 2.29 Compose Pausable Composition 实战指南
+# 2.31 Compose Pausable Composition 实战指南
 
 Pausable Composition 对应用工程师的价值主要体现在 Lazy Layout 预取：Foundation 可以把即将进入视口的 item 子组合分多次推进，剩余帧预算不足时请求暂停，后续再继续。业务代码通常不直接创建 `PausableComposition`，也没有公开的“时间片大小、并发组合数、优先级权重”配置。
 
@@ -39,7 +40,7 @@ Pausable Composition 对应用工程师的价值主要体现在 Lazy Layout 预�
 3. 怎样用同一版本做可重复的开关对照；
 4. 怎样从 Macrobenchmark 和 Perfetto 判断瓶颈在哪个阶段。
 
-Runtime 对象模型、状态机、`RecordingApplier` 与 Android scheduler 的源码细节见 2.28，这里聚焦应用侧的使用和测量。
+Runtime 对象模型、状态机、`RecordingApplier` 与 Lazy prefetch 的公共边界可配合[第 22 章 Compose 性能优化](../../part5-app/ch22-rendering-practice/03-compose-performance.md)阅读；本文聚焦应用侧的使用和测量。
 
 ## 1. 先确认三个版本轴
 
@@ -543,4 +544,4 @@ Pausable Composition 负责子组合。动画时钟、网络请求、`produceSta
 
 ### 关联章节
 
-- **2.28 Compose Pausable Composition 深度分析**：Runtime 状态机、RecordingApplier 与 Lazy prefetch 源码
+- [第 22 章 Compose 性能优化](../../part5-app/ch22-rendering-practice/03-compose-performance.md)：Runtime 状态机、RecordingApplier、Lazy prefetch 与应用级 Compose 性能边界

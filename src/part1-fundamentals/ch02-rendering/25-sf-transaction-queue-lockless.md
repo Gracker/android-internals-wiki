@@ -1,6 +1,7 @@
 ---
 title: "SurfaceFlinger 事务队列：无锁入口、分桶与就绪过滤"
-chapter: "2.27"
+chapter: "2.25"
+section: "2.25"
 status: ready-for-review
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 drafted_date: "2026-06-11"
@@ -27,7 +28,7 @@ sources:
     path: "DeepResearch/2026-06-08-android-17-sf-transaction-queue-lockless-architecture.md"
 ---
 
-# 2.27 SurfaceFlinger Transaction Queue：无锁入口、分桶与就绪过滤
+# 2.25 SurfaceFlinger Transaction Queue：无锁入口、分桶与就绪过滤
 
 ## 1. 先限定“无锁架构”的范围
 

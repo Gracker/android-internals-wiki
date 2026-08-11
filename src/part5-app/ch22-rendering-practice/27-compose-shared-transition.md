@@ -82,7 +82,7 @@ SharedTransition overlay 是 `SharedTransitionScope` 根节点 draw pass 内的�
 
 共享元素可以增加应用侧的图形层记录、裁剪、缩放、透明混合和过绘制，进而推迟窗口 buffer 完成时间；它不会因为进入 Compose overlay 就直接增加 HWC 要合成的窗口 layer 数量。
 
-按生产者/结果位置模型，App 内部的 GPU 图形层或离屏中间结果仍由宿主窗口消费，只有独立提交给 `SurfaceControl` 的 buffer 才会自然对应独立 SurfaceFlinger layer。BufferQueue 与 SurfaceFlinger 的生产者/消费者模型见 [2.32 GraphicBuffer 内存池化与 BufferQueue Slot 复用机制](../../part1-fundamentals/ch02-rendering/32-graphic-buffer-memory-pool.md)。
+按生产者/结果位置模型，App 内部的 GPU 图形层或离屏中间结果仍由宿主窗口消费，只有独立提交给 `SurfaceControl` 的 buffer 才会自然对应独立 SurfaceFlinger layer。BufferQueue 的 slot、GraphicBuffer 复用与 SurfaceFlinger 生产者/消费者模型见 [2.13 图形缓冲区管理](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)。
 
 ### 1.5 没有“最多五个元素”的平台阈值
 

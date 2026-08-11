@@ -725,6 +725,6 @@ Kotlin 2.0 起 Compose compiler 随 Kotlin 一同发布，项目应应用与 Kot
 - [Android 17 `FrameTimeline.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/graphics/FrameTimeline.java)
 - [Android common kernel `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)
 - [本知识库：Jetpack Compose 性能优化](03-compose-performance.md)
-- [本知识库：Android 17 FrameTimeline](../../part1-fundamentals/ch02-rendering/33-android17-frametimeline-composition-boundary.md)
+- [本知识库：Android 17 FrameTimeline](../../part1-fundamentals/ch02-rendering/30-android17-frametimeline-composition-boundary.md)
 
 以上版本化结论核查于 2026-07-29。编译器报告样例来自 Kotlin 2.3.20 编译器对最小源码的实测输出；升级 Kotlin 或 Compose 后，应重新生成报告并复核字段、功能开关与 Trace 名称。

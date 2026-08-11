@@ -15,6 +15,7 @@
 | 章节 | 审阅前正文 | 审阅后正文 | 状态 | 完成日期 |
 | --- | ---: | ---: | --- | --- |
 | ch01 系统架构全景 | 65 | 50 | 已完成 | 2026-08-11 |
+| ch02 渲染系统 | 42 | 34 | 已完成 | 2026-08-11 |
 | ch06 存储与 I/O | 12 | 5 | 已完成 | 2026-08-11 |
 | ch03 输入系统 | 14 | 8 | 已完成 | 2026-08-11 |
 | ch04 内存管理 | 29 | 17 | 已完成 | 2026-08-11 |
@@ -39,9 +40,24 @@
 | ch24 I/O 与网络优化 | 23 | 19 | 已完成 | 2026-08-11 |
 | ch25 功耗与包体积优化 | 30 | 19 | 已完成 | 2026-08-11 |
 | ch26 应用可观测性 | 30 | 25 | 已完成 | 2026-08-11 |
-| ch02 渲染机制 | 42 | 待审阅 | 未开始 | - |
+当前规范正文总数为 454 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
 
-当前规范正文总数为 462 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+## ch02 渲染系统
+
+保留后的连续编号为 2.1～2.34。内容按“帧生产与系统合成 → 绘制、GPU 与图形接口 → Window、Buffer 与同步 → 帧节奏与显示策略 → 窗口形态与显示管线 → Compose、Camera 与模式选择”组织；原先的重复小数编号、2.51/2.52 跳号和重复主题已收敛。
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `2.15-android17-gpu-debug-tools.md` / `2.51-android17-gpu-debug-performance-tools.md` / `10-gpu-rendering.md` | 将工具选择、Perfetto GPU data source、counter descriptor、Trace Processor SQL、GPU memory/frequency 和帧级工具递进方法并入 GPU 主文 | `../src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md`（2.10） |
+| `2.29-Android-17-桌面模式窗口管理性能.md` / `20-multiwindow-desktop-rendering.md` | 将 per-display desktop、WM Shell decoration、fluid/veiled resize、WCT/transition 与 App buffer 同步并入多窗口主文 | `../src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md`（2.20） |
+| `2.32-android-17-frametimeline-数据结构.md` / `2.52-android17-gpu-debug-performance-tools.md` / 原 `33-android17-frametimeline-composition-boundary.md` | 统一 FrameTimeline、FrameTracer、token/frame number、Trace Processor、TimeStats、JankTracker 与 CLIENT/DEVICE 合成边界 | `../src/part1-fundamentals/ch02-rendering/30-android17-frametimeline-composition-boundary.md`（2.30） |
+| `24-graphic-memory-dmabuf-gralloc-16kb-boundary.md` / `15-dmabuf-gralloc.md` | 将 DMA-BUF Heap 页对齐、Android 17 ION 移除、system heap/IOMMU 与 16 KB App 兼容边界并入共享内存主文 | `../src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md`（2.15） |
+| `32-graphic-buffer-memory-pool.md` / `13-buffer-queue.md` | 将 slot 四类容器、复用/分配选择、`sAllocList` 估算与“framework 通用显存池”误区并入 BufferQueue 主文 | `../src/part1-fundamentals/ch02-rendering/13-buffer-queue.md`（2.13） |
+| `25-choreographer-buffer-stuffing-recovery.md` / `04-choreographer.md` | 将 stuffing callback 范围、DELAY/OFFSET 状态机、两个 aconfig flag 与 FrameTimeline 分类边界并入 Choreographer 主文 | `../src/part1-fundamentals/ch02-rendering/04-choreographer.md`（2.4） |
+
+Compose Pausable Composition、Camera HAL3、CameraX ZSL、HDR、TaskSnapshot、DMS、折叠屏、Edge-to-Edge、SF FrontEnd/transaction queue 与 Display Mode 选择都具有独立责任链，分别保留。活动目录、跨章引用和统计已切换到新编号；历史日志、关闭 finding、素材索引与 `consolidated_from` 保留旧路径。
 
 ## ch01 系统架构全景
 

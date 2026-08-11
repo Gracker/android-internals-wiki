@@ -1,10 +1,11 @@
 ---
 title: "DisplayManagerService：显示器发现、拓扑、功耗与渲染交接"
-chapter: "2.30"
+chapter: "2.28"
+section: "2.28"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [display, dms, multi-display, foldable, surfaceflinger, syncroot]
-related_chapters: ["2.3", "2.6", "2.20", "2.23", "2.28", "18.5"]
+related_chapters: ["2.3", "2.6", "2.20", "2.23", "2.26", "18.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-24"
 gap_source: "DeepResearch素材驱动"
@@ -45,7 +46,7 @@ sources:
     path: "frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
 ---
 
-# 2.30 DisplayManagerService：Display 发现、拓扑、功耗与渲染交接
+# 2.28 DisplayManagerService：Display 发现、拓扑、功耗与渲染交接
 
 `DisplayManagerService`（DMS）管理 Display 的发现、身份、能力、逻辑映射、状态、功耗和对外事件。它会把 Display 配置交给 WindowManager、InputManager 和 SurfaceFlinger，但不负责应用逐帧绘制，也不直接决定某个 layer 使用 HWC DEVICE 还是 CLIENT composition。
 

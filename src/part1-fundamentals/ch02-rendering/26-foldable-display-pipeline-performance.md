@@ -1,6 +1,7 @@
 ---
 title: "折叠屏显示切换、窗口连续性与渲染性能"
-chapter: "2.28"
+chapter: "2.26"
+section: "2.26"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [foldable, display, rendering, jetpack-windowmanager, hinge, large-screen]
@@ -32,7 +33,7 @@ sources:
     path: "frameworks/base/packages/SystemUI/unfold/"
 ---
 
-# 2.28 折叠屏显示切换、窗口连续性与渲染性能
+# 2.26 折叠屏显示切换、窗口连续性与渲染性能
 
 折叠屏的性能问题常被简化为“大屏像素更多，所以 GPU 更慢”，但像素量只能解释部分现象。一次折叠或展开可能同时触发：
 

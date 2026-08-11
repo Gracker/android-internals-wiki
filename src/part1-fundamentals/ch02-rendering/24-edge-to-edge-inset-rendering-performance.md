@@ -1,7 +1,7 @@
 ---
 title: "Android 17 Edge-to-Edge 渲染与 WindowInsets 处理性能"
-chapter: "2.26"
-section: "2.26"
+chapter: "2.24"
+section: "2.24"
 status: ready-for-review
 drafted_date: "2026-06-05"
 drafted_by: openclaw-task2a
@@ -50,7 +50,7 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-06-04"
 gap_source: "官方文档/AOSP结构"
 ---
-# 2.26 Edge-to-Edge 渲染与 WindowInsets 处理性能
+# 2.24 Edge-to-Edge 渲染与 WindowInsets 处理性能
 
 Android 15（API 35）开始对满足版本条件的 Activity 强制 Edge-to-Edge。它改变的是窗口布局、系统栏背景和 Insets 的责任边界，不会为应用换一条渲染管线。普通 View 或 Compose 页面仍由 `ViewRootImpl → HWUI RenderThread → App Window BLAST → SurfaceFlinger → HWC` 生成并显示；状态栏、导航栏、桌面 caption 和 IME 则作为系统 UI 或受控 surface 参与同一 Display 的合成。
 

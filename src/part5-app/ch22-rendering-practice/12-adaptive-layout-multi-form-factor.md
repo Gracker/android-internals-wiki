@@ -4,7 +4,7 @@ chapter: "22.12"
 status: ready-for-review
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37); Jetpack WindowManager / Compose Material 3 adaptive APIs"
 tags: [adaptive, layout, desktop, foldable, large-screen, window-size-class, performance]
-related_chapters: ["22.1", "22.3", "2.28", "2.30"]
+related_chapters: ["22.1", "22.3", "2.26", "2.28"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-27"
 gap_source: "官方文档/每日信息/AOSP结构"
@@ -33,9 +33,9 @@ sources:
   - type: official
     path: "https://perfetto.dev/docs/data-sources/frametimeline"
   - type: local
-    path: "src/part1-fundamentals/ch02-rendering/2.28-Compose-Pausable-Composition-深度分析.md"
+    path: "src/part1-fundamentals/ch02-rendering/31-compose-pausable-composition-guide.md"
   - type: local
-    path: "src/part2-rendering/ch02-rendering/2.30-android17-frametimeline.md"
+    path: "src/part1-fundamentals/ch02-rendering/30-android17-frametimeline-composition-boundary.md"
 consolidated_from:
   - "src/part5-app/ch22-rendering-practice/14-desktop-windowing-large-screen-performance.md"
 ---
