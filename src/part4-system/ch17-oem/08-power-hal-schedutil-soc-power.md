@@ -1,11 +1,12 @@
 ---
-title: "SoC 特异性功耗优化策略：高通/联发科/三星"
-chapter: "17.9"
+title: "SoC 功耗控制：Power HAL、schedutil 与厂商差异"
+chapter: "17.8"
+section: "17.8"
 status: ready-for-review
 drafted_date: "2026-07-12"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
-last_verified: "2026-07-12"
-last_verified_against: "AOSP android-17.0.0_r1, hardware/interfaces/power/aidl/, kernel/sched/cpufreq_schedutil.c"
+last_verified: "2026-08-11"
+last_verified_against: "AOSP android-17.0.0_r1 Power framework/AIDL, android17-6.18-2026-06_r6 schedutil/sched_ext and vendor driver sources"
 confidence: medium
 sources:
   - type: research
@@ -26,14 +27,20 @@ sources:
     path: "obsidian/Cubox/高通Perflock - yooooooo - 博客园-2024-11-18.md"
   - type: note
     path: "§17.2 SoC 平台差异 (finalized) — CPU/GPU 硬件架构对比"
+  - type: research
+    path: "DeepResearch/2026-07-10-android17-soc-vendor-power-hal-stats-schedutil-closedloop.md"
+  - type: research
+    path: "DeepResearch/2026-07-15-android17-sched-ext-6.18-vendor-hook-cpufreq-loop.md"
 tags: [SoC, power, Qualcomm, MediaTek, Samsung, DCVS, schedutil, PowerHAL, 功耗优化]
-related_chapters: ["17.2", "17.21", "5.4", "5.6", "5.9"]
+related_chapters: ["17.2", "17.4", "17.9", "5.4", "5.6", "5.9"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-05"
 gap_source: "研究素材/知识盲区"
+consolidated_from:
+  - "17.21-android17-soc-vendor-power-hal-schedutil-loop.md"
 ---
 
-# 17.9 SoC 特异性功耗优化策略：高通、联发科与三星
+# SoC 功耗控制：Power HAL、schedutil 与厂商差异
 
 同一款应用在三台旗舰机上出现不同的耗电、温升和稳态性能，原因通常不止 CPU 核心数量。系统软件会把帧预算、交互、相机、音频等工作负载信息送给厂商实现，内核再结合调度负载、频率约束、温控上限和固件决策控制硬件。SoC 型号、整机散热、屏幕、基带、厂商参数及应用行为都会改变结果。
 
@@ -62,6 +69,43 @@ gap_source: "研究素材/知识盲区"
 
 厂商 Power HAL 收到 hint 后可以调整 CPU、GPU、内存总线或空闲策略，也可以按本机策略忽略它。由此不能推出固定映射，例如“`LAUNCH` 一定调用 RPMh”或“`GAME` 一定锁定某档 GPU 频率”。这类结论需要目标设备的 HAL 源码、厂商 trace marker 或寄存器级证据。
 
+### Mode/Boost 与 Hint Session 是两条入口
+
+`Mode` 和 `Boost` 由系统场景或特权调用触发。`PowerManagerService` 中的交互、亮灭屏、Device Idle 等事件进入 `setPowerModeInternal()` 或 `setPowerBoostInternal()`；Binder 对外暴露的相应方法要求 `DEVICE_POWER` 权限。例如 `LAUNCH` 在省电策略禁止启动 boost 时会先被 framework 过滤：
+
+```java
+private boolean setPowerModeInternal(int mode, boolean enabled) {
+    if (mode == Mode.LAUNCH && enabled && mBatterySaverStateMachine != null
+            && mBatterySaverStateMachine.getBatterySaverController()
+                    .isLaunchBoostDisabled()) {
+        return false;
+    }
+    return mNativeWrapper.nativeSetPowerMode(mode, enabled);
+}
+```
+
+native 侧依次经过 `PowerManagerService` JNI、`PowerHalController`、`PowerHalLoader` 和 `AidlHalWrapper`。wrapper 会缓存 mode/boost 支持查询，连接失效后让后续调用尝试重连。Android 17 仍保留 HIDL wrapper 作为旧实现兼容路径，量产机应根据实际连接而不是平台版本判断 IPC 形态。
+
+普通应用的 `PerformanceHintManager` 则进入 `HintManagerService`，系统端校验 UID、TGID、TID、进程状态和会话生命周期，再交给 `IPowerHintSession`。Android 17 的 AIDL v7 支持 `createHintSessionWithConfig()`；v5 起还可通过可选 FMQ channel 降低高频报告的 Binder 往返。FMQ 不可用时仍要回退到 Binder 会话路径。
+
+```mermaid
+flowchart TD
+    scene["系统场景或特权调用"] --> pms["PowerManagerService"]
+    pms --> mode["IPower setMode / setBoost"]
+    app["应用周期工作"] --> hint["PerformanceHintManager / HintManagerService"]
+    hint --> session["IPower hint session / 可选 FMQ"]
+    mode -.->|OEM 可选映射| control["uclamp / QoS / 固件资源请求"]
+    session -.->|OEM 可选映射| control
+    wake["调度、唤醒与约束"] --> cfs["fair-class utilization"]
+    scx["SCX BPF scheduler"] --> target["SCX CPU performance target"]
+    cfs --> sugov["schedutil"]
+    target --> sugov
+    control -.->|product-specific| sugov
+    sugov --> driver["cpufreq driver / OPP"]
+```
+
+实线是 Android 17 可验证的标准接口，虚线是厂商可选映射。AOSP 没有定义 Power HAL 直接调用 SCX BPF helper 的通用路径。
+
 ## Android 17 内核中的频率决策
 
 Android 17 内核锚点 `android17-6.18-2026-06_r6` 中，`schedutil` 的 `sugov_get_util()` 已接入 `sched_ext` 的 CPU 性能目标。下面的节选用于说明 CFS 与 SCX 共同参与时的计算入口。
@@ -73,9 +117,19 @@ if (!scx_switched_all())
     util += cpu_util_cfs_boost(sg_cpu->cpu);
 ```
 
-当所有调度类都切换到 SCX 时，频率侧采用 `scx_cpuperf_target()`；部分切换时，代码还会叠加 CFS 利用率。把 CFS 描述为仅在 SCX 缺失时启用的备用路径，会漏掉部分切换这一分支。后续代码仍会纳入 iowait boost、有效最小/最大利用率等约束。
+SCX BPF scheduler 通过 `scx_bpf_cpuperf_set(cpu, perf)` 写入相对于该 CPU 最大性能的线性目标，范围为 `[0, SCX_CPUPERF_ONE]`，并触发 `cpufreq_update_util()`。这不是 kHz 或 OPP 序号；CPU 分组、policy、OPP、驱动、频率上下限和 thermal 仍会改变最终结果。SCX 启用过程中先把每 CPU target 初始化为 `SCX_CPUPERF_ONE`，运行后再由 BPF 策略更新。
 
-频率更新节奏也没有跨设备固定为 10 ms。该内核版本在 governor 初始化时使用 `cpufreq_policy_transition_delay_us(policy)` 设置 `rate_limit_us`，返回值受 cpufreq 驱动和 policy 能力影响。驱动支持 fast switch 时可以走快速路径；不支持时会排队执行延迟更新。
+三种运行状态应分开解释：
+
+| SCX 状态 | SCX target | fair-class 利用率 | `schedutil` 输入 |
+| --- | ---: | ---: | --- |
+| 未启用 | 0 | 加入 | fair-class 利用率及后续约束 |
+| partial switch | BPF 目标 | 加入 | SCX target 与 fair-class 利用率之和，再应用约束 |
+| full switch | BPF 目标 | 不加入 | SCX target，再应用 iowait、uclamp 等约束 |
+
+因此，把 fair class 描述为仅在 SCX 缺失时启用的备用路径，会漏掉 partial switch。
+
+频率更新节奏也没有跨设备固定为 10 ms。`sugov_should_update_freq()` 先检查 policy 更新资格和 limits 变化，普通更新再受 `freq_update_delay_ns` 约束，初值来自 `cpufreq_policy_transition_delay_us(policy)`。`get_next_freq()` 经 `map_util_freq()` 或 vendor hook 给出原始频率，再由 `cpufreq_driver_resolve_freq()` 解析成驱动支持的档位。支持 fast switch 时直接更新，否则排队进入 deferred path。共享 policy 还会在 policy 内多个 CPU 之间取处理后的最大利用率，给某个 CPU 写 target 不等于硬件只改它的频率。
 
 以下几项不能按 SoC 品牌直接假设：
 
@@ -86,6 +140,12 @@ if (!scx_switched_all())
 - SCX 调度器是否启用，以及接管了哪些调度类。
 
 排查目标机时，应读取 governor、policy、频率表、idle state 和 thermal zone 的运行态，再结合内核配置与设备树解释 trace。只看通用内核源码不足以还原产品配置。
+
+### Android vendor hook 和异常恢复
+
+`android17-6.18-2026-06_r6/include/trace/hooks/sched.h` 中名称含 `android_vh_scx_` 的 hook 声明共 11 个，覆盖启用状态、异常退出、CPU 可运行性、迁移、入队、slice 和调度类切换修正。它们是 GKI vendor module 扩展点，不是 Power HAL 到 SCX 的标准协议，数量和签名也属于具体 tag。
+
+SCX 遇到 BPF 错误、runnable task stall 或 `SysRq-S` 时会终止调度器并把任务交回 fair class；`SysRq-D` 只触发 dump。退出后 `scx_cpuperf_target()` 返回 0，`scx_switched_all()` 为 false，下次 `schedutil` 更新会重新加入 fair-class 利用率。OEM 在 SCX 之外保留的 boost、uclamp 或固件状态仍需要自己设计超时和清理。Power HAL 服务死亡后的 wrapper 重连与 SCX 退出是两条独立恢复路径。
 
 ## 三类厂商公开驱动能证明什么
 
@@ -230,6 +290,32 @@ API 35 起，普通应用可通过 `SystemHealthManager.getSupportedPowerMonitor
 
 ODPM rail 在电池输出的下游测量子系统能量，不受设备是否充电直接影响，但它不一定覆盖屏幕、射频或 PMIC 损耗。不同设备的 rail 名也没有统一可比含义。跨设备总功耗比较仍以校准过的外部功耗仪更稳妥，片上 rail 更适合做单机内部归因。
 
+## 按控制链路做运行态排查
+
+第一步是固定产品配置：build fingerprint、kernel release、`CONFIG_SCHED_CLASS_EXT`、governor、cpufreq policy 分组和当前 thermal 状态。编译进 SCX 不等于已加载 BPF scheduler，加载也不等于 full switch。
+
+Android 17 可读的 sched_ext 状态分两层：
+
+| 节点 | 含义 |
+| --- | --- |
+| `/sys/kernel/sched_ext/state` | `disabled`、`enabling`、`enabled` 或 `disabling` |
+| `/sys/kernel/sched_ext/switch_all` | 当前是否接管全部符合条件的普通任务 |
+| `/sys/kernel/sched_ext/nr_rejected` | 显式请求 `SCHED_EXT` 却被拒绝的累计数 |
+| `/sys/kernel/sched_ext/enable_seq` | 本次开机成功启用 scheduler 的序列 |
+| `/sys/kernel/sched_ext/root/ops` | 当前活动 BPF scheduler 名称 |
+| `/sys/kernel/sched_ext/root/events` | 当前 tag 定义的 fallback、dispatch 和 bypass 计数 |
+
+`root/` 只在活动 scheduler 对象存在时创建，采集脚本要允许缺失，也不能把 `events` 字段集当成跨 kernel tag 稳定 ABI。
+
+然后按以下顺序缩小问题：
+
+1. 确认 mode、boost 或 hint session 的发起方、权限、支持结果、持续时间与取消点。
+2. 对齐 fair-class runnable、SCX policy、`switch_all`、产品公开的 `cpuperf_target`、iowait 和 uclamp。
+3. 检查 governor 更新是否被 remote update、rate limit 或未变化目标挡住，再检查 policy min/max、thermal 与 driver table。
+4. 把 driver 请求、实际频率、任务完成时间、帧性能、温度和能量放到同一时间轴。
+
+一次可复查的 trace 至少覆盖 framework 场景与业务 marker、`sched_switch` / `sched_wakeup`、任务 policy 与 CPU 位置、SCX 和产品 trace、cpufreq limits/frequency、thermal 与 uclamp。`setMode()` 是 `oneway` AIDL 调用；没有 HAL marker 时应做启用/取消对照并观察约束变化，不能仅靠时间相邻建立因果。PowerStats 的 rail 或 residency 是结果观测支路，不参与 `schedutil` 选频，具体能力差异见 17.9。
+
 ## 一套可复现的实验流程
 
 ### 1. 定义问题和指标
@@ -297,10 +383,15 @@ Android 17 为各厂商提供同一套 Power AIDL 契约，厂商仍可按硬件
 ### Android 17 / AOSP
 
 - [Power AIDL `IPower.aidl`（android-17.0.0_r1）](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/aidl/android/hardware/power/IPower.aidl)
+- [PowerManagerService（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java)
+- [Power HAL controller（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/powermanager/PowerHalController.cpp)
+- [HintManagerService（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/hint/HintManagerService.java)
 - `hardware/interfaces/power/aidl/android/hardware/power/Mode.aidl`（19 个 Mode）
 - `hardware/interfaces/power/aidl/android/hardware/power/Boost.aidl`（6 个 Boost）
 - `hardware/interfaces/power/stats/aidl/`（PowerStats AIDL v2）
 - [Android 17 kernel `cpufreq_schedutil.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c)
+- [Android 17 `sched_ext` 核心实现](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/ext.c)
+- [Android 17 scheduler vendor hooks](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/hooks/sched.h)
 - `drivers/soc/qcom/rpmh.c`
 - `drivers/soc/qcom/rpmh-rsc.c`
 - `drivers/cpufreq/qcom-cpufreq-hw.c`
@@ -320,7 +411,8 @@ Android 17 为各厂商提供同一套 Power AIDL 契约，厂商仍可按硬件
 ### 交叉阅读
 
 - §17.2 SoC 平台差异：CPU/GPU 硬件架构
-- §17.21 Android 17 SoC 厂商 Power HAL 与 schedutil
+- §17.4 sched_ext 与 OEM 调度实践
+- §17.9 Android 17 Power Stats HAL 的 OEM 实现差异
 - §5.4 DVFS 与功耗管理
 - §5.6 Android 功耗管理
 - §5.9 ADPF 自适应性能框架

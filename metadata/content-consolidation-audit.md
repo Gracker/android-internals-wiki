@@ -28,9 +28,27 @@
 | ch14 其他分析工具 | 32 | 28 | 已完成 | 2026-08-11 |
 | ch15 性能方法论 | 12 | 10 | 已完成 | 2026-08-11 |
 | ch16 AOSP 性能优化 | 12 | 11 | 已完成 | 2026-08-11 |
-| 其余 12 章 | 368 | 待审阅 | 未开始 | - |
+| ch17 OEM 与设备差异 | 12 | 10 | 已完成 | 2026-08-11 |
+| 其余 11 章 | 356 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 538 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 536 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch17 OEM 与设备差异
+
+保留后的连续编号为 17.1～17.10，依次覆盖 OEM 归因方法、SoC 平台差异、应用协作案例、sched_ext 与 MUSCHED、游戏输入、Media Performance Class、Private Space/App Lock、Power HAL/schedutil、PowerStats 与车载性能。
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `04-sched-ext-oem-bpf-scheduler.md` / `08-musched-vip-scheduling-practice.md` | 保留 sched_ext 的编译、运行、DSQ、schedutil、vendor hook 和 trace 主线；将 MUSCHED 的语义标注、VIP 预算、锁/Binder 传播、选核、量产数据和 6.18 迁移成本作为同一机制的 OEM 案例合并 | `../src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md`（17.4） |
+| `09-soc-specific-power-optimization.md` / `17.21-android17-soc-vendor-power-hal-schedutil-loop.md` | 合并 Power AIDL、Mode/Boost、Hint Session/FMQ、SCX 三种状态、cpufreq 解析、vendor hook、异常恢复、高通/联发科/三星公开驱动边界和实验方法 | `../src/part4-system/ch17-oem/08-power-hal-schedutil-soc-power.md`（17.8） |
+| `17.23-power-stats-hal-oem-implementation.md` | PowerStats 是结果计量与归因链路，不参与 schedutil 控制；保留为独立主题并改为连续编号 | `../src/part4-system/ch17-oem/09-power-stats-hal-oem-implementation.md`（17.9） |
+| `25.21-android-auto-car-os-performance.md` | 正文实际位于 ch17，且原编号与 ch25 的 PerformanceHintManager 冲突；保留 Android Auto/AAOS 责任边界、模板、Surface、媒体、VHAL、CarWatchdog 和电源管理，改为 17.10 | `../src/part4-system/ch17-oem/10-android-auto-car-os-performance.md`（17.10） |
+| `03-industry-cases.md` 中的 Jetpacker/GenAI 路由教程 | 与 OEM 性能协作无关，且端云选型和 AppFunctions 已由 ch05 与 ch16 专题承载；从案例篇移除，保留 Samsung、Game Mode/ADPF、TikTok/抖音和多形态设备证据 | `../src/part4-system/ch17-oem/03-industry-cases.md`（17.3） |
+| 原 17.1～17.7 中未合并的主题 | 仍能独立回答归因、硬件差异、案例、输入、设备能力和隐私边界问题；统一 frontmatter、H1 与目录标题 | `01-oem-overview.md`～`07-private-space-app-lock-boundary.md` |
+
+章节 README、`src/SUMMARY.md`、changelog 映射、活动跨章引用和统计口径已经切换到连续编号。历史 changelog、review 日志、素材索引、freshness 快照与 `consolidated_from` 保留旧编号和路径。
 
 ## ch16 AOSP 性能优化
 
@@ -57,7 +75,7 @@
 | 原正文 | 处理结果 | 当前承载位置 |
 | --- | --- | --- |
 | `09-observability-closed-loop.md` / `10-performance-governance.md` | 合并监控异常、采样与聚合之后的归因、工单、发布和验收流程；删除与 15.5 重复的 JankStats、ApplicationExitInfo 和线上采样教程，以及与 14.9/15.6 重复的 Macrobenchmark 与 Baseline Profile 示例 | `../src/part3-tools/ch15-methodology/09-performance-governance.md`（15.9） |
-| `15.12-android-performance-research-methodology.md` | 删除第二套总方法论、工具选型、Perfetto 采集/SQL、优化和测试教程；独有的证据等级、替代假设与知识交付规范并入总论，Perfetto 与 Power HAL 细节继续由 13.2、13.9、13.22、5.4 和 17.21 承载 | `../src/part3-tools/ch15-methodology/01-philosophy.md`（15.1） |
+| `15.12-android-performance-research-methodology.md` | 删除第二套总方法论、工具选型、Perfetto 采集/SQL、优化和测试教程；独有的证据等级、替代假设与知识交付规范并入总论，Perfetto 与 Power HAL 细节继续由 13.2、13.9、13.22、5.4 和 17.8 承载 | `../src/part3-tools/ch15-methodology/01-philosophy.md`（15.1） |
 | `15.11-google-android-bench-ai-coding-evaluation-methodology.md` | 主题独立，改为连续编号 15.10，并移除 H1 中重复的章节号 | `../src/part3-tools/ch15-methodology/10-google-android-bench-ai-coding-evaluation-methodology.md` |
 | `08-empirical-performance-issues.md` | 主题独立；统一 H1，不再在正文标题中重复章节号 | `../src/part3-tools/ch15-methodology/08-empirical-performance-issues.md` |
 

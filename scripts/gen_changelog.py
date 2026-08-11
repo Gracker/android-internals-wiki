@@ -162,6 +162,13 @@ CHAPTER_FILES = {
     "17.1": "src/part4-system/ch17-oem/01-oem-overview.md",
     "17.2": "src/part4-system/ch17-oem/02-soc-differences.md",
     "17.3": "src/part4-system/ch17-oem/03-industry-cases.md",
+    "17.4": "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
+    "17.5": "src/part4-system/ch17-oem/05-oem-game-mode-input-priority.md",
+    "17.6": "src/part4-system/ch17-oem/06-media-performance-class-device-capability.md",
+    "17.7": "src/part4-system/ch17-oem/07-private-space-app-lock-boundary.md",
+    "17.8": "src/part4-system/ch17-oem/08-power-hal-schedutil-soc-power.md",
+    "17.9": "src/part4-system/ch17-oem/09-power-stats-hal-oem-implementation.md",
+    "17.10": "src/part4-system/ch17-oem/10-android-auto-car-os-performance.md",
 }
 
 def git(*args):

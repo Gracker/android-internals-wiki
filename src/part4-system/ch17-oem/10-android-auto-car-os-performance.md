@@ -1,6 +1,7 @@
 ---
-title: "Android Auto/Car OS 性能优化"
-chapter: "25.21"
+title: "Android Auto 与 Android Automotive OS 性能优化"
+chapter: "17.10"
+section: "17.10"
 status: finalized
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: [Android Auto, Car OS, 车载, 性能优化]
@@ -33,7 +34,7 @@ last_review_finalize_at: 2026-08-09T04:17:59+08:00
 last_review_finalize_run_id: 20260809-041759-36cf131f
 ---
 
-# 25.21 Android Auto 与 Android Automotive OS 性能优化
+# Android Auto 与 Android Automotive OS 性能优化
 
 Android Auto 和 Android Automotive OS（AAOS）面向同一块车载屏幕，执行位置、渲染责任、网络归属和电源生命周期却不同。性能分析若没有先区分平台，常会把手机投射延迟归到车机应用，或把 AAOS 的 Vehicle HAL 能力套到 Android Auto 客户端。
 
