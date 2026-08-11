@@ -4,8 +4,8 @@ title: "ANR 监控体系"
 chapter: "26.4"
 section: "26.4"
 status: "finalized"
-applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-06-30"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
+last_verified: "2026-08-04"
 last_verified_against: "AOSP android-17.0.0_r1 + Android Developers ANR / Android vitals docs + Clippings structure references"
 confidence: medium-high
 drafted_date: "2026-05-15"
@@ -13,8 +13,14 @@ polish_count: 0
 sources:
 - type: aosp
   path: frameworks/base/core/java/android/app/ApplicationExitInfo.java
+- type: official
+  path: developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,int,int)
+- type: official
+  path: developer.android.com/topic/performance/vitals/anr
 tags: [anr-monitoring, sigquit, main-thread-monitor, play-vitals, application-exit-info]
-related_chapters: ["26.1", "20.4", "9.3", "19.24"]
+related_chapters: ["26.1", "20.4", "9.3", "9.9", "19.24", "19.27"]
+consolidated_from:
+- src/part2-performance/ch09-anr/9.11-enterprise-anr-monitoring-platform-design.md
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task6_review_notes: "2026-07-01 Task6 revisiting re-review (idle-audit auto-fix 后): pass-light-edit。L1/L2 无新增问题；Task9 idle-audit source version anchoring 后写作复审通过。自动晋升 finalized。"
@@ -47,6 +53,21 @@ ANR 监控解决的是两个问题：用户遇到无响应时能不能被统计�
 ANR 监控可以拆成四层：系统 ANR 记录、Play Vitals 指标、端侧卡顿预警、现场快照。系统 ANR 负责确认事件，端侧快照负责补足上下文，Play Vitals 负责提供发布质量红线。ANR 根因分析流程详见 9.3 节，治理策略详见 20.4 节，Crash / ANR 捕获底层实现详见 19.24 节。
 
 平台源码上界为 Android 17 / API 37 / `android-17.0.0_r1`。ANR 的判定、队列和 trace 生成位于 framework、ART 与 debuggerd 等用户空间组件，不依赖 Android 17 kernel 的专有实现，因此不为这些结论附加 kernel tag。
+
+## 能力与证据分层
+
+同一个“ANR 监控 SDK”在不同权限和系统版本上拿到的证据并不相同。平台应把能力层级写入事件，而不是把缺失字段伪装成同一口径：
+
+| 部署层级 | 可用入口 | 能证明什么 | 主要边界 |
+|---|---|---|---|
+| 普通 App，Android 8—10 | 主线程哨兵、Looper 历史、自有 breadcrumb | 运行期出现过可疑长卡顿 | 不是系统确认的 ANR，不能读取 `/data/anr` |
+| 普通 App，Android 11+ | 上述能力 + `ApplicationExitInfo` | 本 UID 的历史退出与 `REASON_ANR`，trace 可能可读 | 历史接口，不保证实时、完整或始终有 trace |
+| 普通 App，Android 17 | 上述能力 + ANR warning、结构化 `AnrInfo` | 部分 deadline 前预警及关联 ID/类型 | API 37、best-effort，覆盖与限流受平台实现约束 |
+| system/OEM、root 或 userdebug | DropBox、`/data/anr`、完整日志、statsd、bugreport、Perfetto | 跨 UID 与系统依赖的完整现场 | 需要平台权限、SELinux 策略或调试环境 |
+
+`getProcessesInErrorState()` 返回的是调用时仍处于错误状态的瞬时快照，正常时可以为 `null`；Android 13 起普通应用只能看到本 UID，轮询还可能重复读取或错过快速恢复事件。它适合作为补充信号，不应承担事件账本。`ApplicationExitInfo` 才是 Android 11+ 的历史退出入口，但非空 trace 也不能覆盖真实的 `exit_reason`：进程可能从 ANR 恢复，稍后因其他原因退出，而记录仍附带先前的 ANR trace。
+
+因此事件模型至少要保留 `authority`：系统退出、当前错误状态、Android 17 warning、端侧 suspected stall、Play 聚合或 OEM 系统事件分别入库，之后再关联。ANR warning 只是 deadline 前的 best-effort 信号，不等于系统已经判定 ANR；其 API、`AnrInfo` 和生产者覆盖见 [§9.9 Android 17 ANR 预警回调](../../part2-performance/ch09-anr/09-android17-anr-warning-callback.md)。
 
 ## 系统侧 ANR 记录与 traces 采集
 
@@ -146,6 +167,34 @@ ANR 现场还原依赖快照质量。只上传一段主线程栈，很多问题�
 | system_exit_info | `ApplicationExitInfo` 的实际 reason、status、description、时间戳和 trace 摘要 | 补系统确认并防止误标事件类型 |
 
 这些字段不要求每次都全量上报。运行期可先写本地 ring buffer；疑似 ANR 出现时按可配置的时间窗与字节上限截取关键记录。后续拿到退出历史时，再以进程、时间戳、session_id 和 trace 摘要做关联；关联失败的记录保持独立，不能为了得到完整事件而强行拼接。
+
+## 事件、落盘与去重
+
+设备侧应把“事实”和“推断”分开保存。最小事件 envelope 包含稳定 `event_id`、`schema_version`、`event_kind`、`authority`、设备与应用构建、进程身份、观测时间、原始附件摘要，以及独立的 `derived` 区域。服务端解析器只能版本化地填写 `derived`，不能改写退出原因、原始时间戳或附件 digest。
+
+ANR 发生时主线程已不可依赖，进程也可能很快被杀。平稳期维护有界 ring buffer，故障时只冻结索引与少量元数据；本地 spool 按证据价值分级：
+
+| 优先级 | 内容 | 策略 |
+|---|---|---|
+| P0 | 系统 exit、warning key、trace/profile manifest | 独立配额；durable write 后才推进查询游标 |
+| P1 | 主线程哨兵、有限重复栈 | 每进程/场景限频，合并同一 episode |
+| P2 | breadcrumb、资源趋势、普通样本 | 环形覆盖，拥塞时优先丢弃 |
+
+spool 还要限制总容量、单文件大小、文件数和保留期，提供 checksum、schema version、截断恢复与多进程写入策略。上传使用 at-least-once 语义、指数退避和随机抖动；服务端确认后再删除，响应丢失时依靠稳定 event id 安全重传。
+
+去重分三层进行：传输层按 event id 与附件 digest 幂等；事故层用 Android 17 的 `(anrType, anrId)` 或带时间约束的进程身份关联 warning、watchdog 与 exit；问题层在符号化后按 detector、主线程卡点、锁/Binder 对端和构建版本聚类。关联后的信号仍保留各自 authority，避免把一场事故的 warning、疑似卡顿和系统退出计成三次 ANR。
+
+## 服务端闭环与治理
+
+完整链路通常由接入网关、原始事件库、附件对象存储、R8/native 符号服务、可重放解析器、版本化聚类、指标告警和诊断工作台组成。组件选型可以变化，数据契约不能含糊：原始附件不可丢，parser 与 cluster revision 可追溯，解析失败可重放，mapping 按 versionCode/mapping id、native 符号按 build id 精确匹配。
+
+候选归因必须保存 `supporting_evidence[]`、`contradictions[]`、`missing_evidence[]` 与规则版本。只有 `BinderProxy.transact()` 栈不能证明服务端慢，只有 iowait 或 fault 不能证明存储根因，只有 load 也不能证明 CPU 饥饿。机器学习更适合在稳定 schema、符号化和人工标签之后做候选排序，不应直接改工单归属或自动回滚。
+
+指标至少区分系统确认 ANR、受影响用户、user-perceived ANR、warning 后恢复、suspected stall、trace/profile 可用率和符号化成功率。自建平台与 Play Vitals 的数据来源、采样和分母不同，趋势可以对照，数值不能合并成一条“统一 ANR 率”。
+
+trace、breadcrumb、URL、文件路径、Intent 和线程名都可能含敏感信息。设备侧优先保存枚举 scene id，去除 URL query/fragment，不上传输入文本、账号、token 或完整 extras；原始 trace、R8 mapping 和 native symbols 使用独立权限、保留期、下载审计与删除流程。远程诊断配置必须带签名、TTL、目标 cohort、采样和资源上限，并只执行预编译 allowlist 能力。
+
+建设顺序应先稳定 authority、事件 ID、隐私字段与原始事件库，再接 `ApplicationExitInfo`、有界 breadcrumb/哨兵、符号服务与聚类，随后对接 Play 发布维度；Android 17 warning/`AnrInfo` 和 Profiling trigger 按版本加入，OEM trace/DropBox/Perfetto 放在独立特权能力层。验证至少覆盖 CPU 循环、monitor、Binder、I/O/reclaim、各类组件超时、ANR 后恢复/被杀、多进程、离线重传、trace 被覆盖及 SDK 自身资源回归。
 
 ## 现场还原的分析顺序
 

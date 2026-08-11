@@ -8,7 +8,7 @@ last_verified: "2026-07-16"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 tags: [page-fault, minor-fault, major-fault, mmap, memory, observability]
-related_chapters: ["26.25", "4.01", "9.13"]
+related_chapters: ["26.25", "4.01", "9.3"]
 sources:
   - type: aosp
     path: "frameworks/base/core/jni/android_os_Debug.cpp"

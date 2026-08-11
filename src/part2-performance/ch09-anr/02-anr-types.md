@@ -80,7 +80,7 @@ auto_promoted_date: "2026-07-09"
 updated_by: "openclaw-task9"
 updated_date: "2026-07-09"
 ---
-# ANR 类型与触发条件
+# 9.2 ANR 类型与触发条件
 
 ## 先认超时契约，再看线程栈
 
@@ -318,7 +318,7 @@ Android 17 的 Provider ANR 入口来自 `ContentProviderClient.setDetectNotResp
 
 普通应用在主线程执行慢 `query()` 仍可能触发 ANR，只是类型通常由外层契约决定。例如主线程等待 Provider 超过输入期限，报告会归为 Input ANR。Provider 端耗尽 Binder 线程也可能拖慢多个调用方；这是一种因果链，不能据此把所有慢 Provider 调用标成 Provider ANR。
 
-Provider 的两条系统路径和案例分析见 [9.9 ContentProvider ANR 双路径](09-contentprovider-anr-double-path.md)。
+Provider 的四条超时路径和案例分析见 [9.8 ContentProvider 超时与 ANR 四路径](08-contentprovider-timeout-anr.md)。
 
 ## JobService：8 秒回调限制和 job 运行时限无关
 

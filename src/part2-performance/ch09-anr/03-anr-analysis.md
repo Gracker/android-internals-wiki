@@ -6,8 +6,8 @@ section: "9.3"
 status: finalized
 drafted_date: "2026-04-02"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-05-08"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-07-16"
+last_verified_against: "AOSP android-17.0.0_r1 / Android Common Kernel android17-6.18-2026-06_r6"
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
@@ -29,8 +29,14 @@ sources:
     path: "https://developer.android.com/reference/android/os/ProfilingManager"
   - type: official
     path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
-tags: ['anr', 'traces', 'perfetto', 'analysis', 'cpu-usage']
-related_chapters: ["9.1", "9.2", "9.4", "9.5", "1.4", "2.4"]
+  - type: aosp
+    path: "frameworks/base/core/java/com/android/internal/os/ProcessCpuTracker.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/ResourcePressureUtil.java"
+tags: ['anr', 'traces', 'perfetto', 'analysis', 'cpu-usage', 'processcputracker', 'psi']
+related_chapters: ["9.1", "9.2", "9.4", "9.5", "1.4", "2.4", "26.25"]
+consolidated_from:
+  - "src/part2-performance/ch09-anr/13-anr-log-cpu-analysis-methodology.md"
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-06-06
@@ -63,7 +69,7 @@ last_deepseek_cn_review_at: 2026-06-07
 pipeline_stage: ready-to-publish
 ---
 
-# ANR 分析方法
+# 9.3 ANR 分析方法
 
 ## 先建立证据模型
 
@@ -403,6 +409,29 @@ full avg10=0.00 avg60=0.00 avg300=0.00 total=34803
 
 这里的 `full avg10=0.00` 只表示按显示精度计算的最近 10 秒趋势为零；累计 `total` 仍可能包含更早的 full stall。要判断当前事件，应比较两个邻近采样的 `total`，不能用启动以来的累计值直接归因。
 
+### CPU 摘要的两种采样窗口
+
+Android 17 的 ANR 路径可能输出两套 `ProcessCpuTracker` 结果，二者不能混成同一时间窗：
+
+| 结果 | 采样器 | 内容 | 时间边界 |
+|---|---|---|---|
+| 全局进程榜 | `AppProfiler.mProcessCpuTracker` | 最多十个活跃进程，不含线程明细 | 长期复用；两次更新至少间隔 5 秒，区间可能跨过 ANR |
+| 临时进程榜 | `new ProcessCpuTracker(true)` | 活跃进程及其活跃线程 | `init()` 后等待约 200 ms 再 `update()`；用于挑选最多两个额外抓栈进程，静默后台 ANR 可能跳过 |
+
+`ProcessErrorStateRecord` 记录的 `anrTime` 位于 ANR 处理开始附近。临时榜通常在它之后采样，因此标题可以出现 `ms later`；长期榜则可能覆盖 deadline 之前、之后或两侧。解析每个 CPU 块时应保存 `sample_start`、`sample_end`、`duration`、相对 `anrTime` 的方向、采样器类型，以及与超时窗口的重叠关系。只覆盖转储阶段的数据，只能说明“抓栈时仍观察到该现象”。
+
+进程和线程行以各自两个采样点之间的 uptime 为分母，多线程进程超过 `100%` 合法。`TOTAL` 行的分母则是所有 CPU 的 `/proc/stat` 增量总和；其非 idle 百分比包含 `iowait`，不能当作纯执行利用率，也不能和进程行直接相减。AOSP `ProcessCpuTracker` 的标准输出不会附带 `R/S/D`，带状态字符的格式应按厂商扩展或其他采集器解析，并保留来源命名空间。
+
+`minor`、`major` fault 是两个采样点之间的事件数，不是分配量或 I/O 字节数。页大小可能是 4 KB、16 KB 或其他值，major fault 的后备介质也可能是 zram；只有当 fault 增量与 D 状态、reclaim、文件系统或 block I/O 在同一时间窗闭合时，才能提高存储或内存压力解释的可信度。
+
+自动解析器应把输出严格分为三层：
+
+1. **事实字段**：原始时间窗、进程/线程 user 与 kernel、fault delta、`TOTAL`、load 和 PSI；
+2. **派生观察**：跨核执行、全机繁忙、资源压力，以及采样与 deadline 是否重叠；
+3. **候选解释**：每项同时列出支持证据、反证、缺失材料和规则版本。
+
+不要内置跨设备的固定结论，例如 “iowait 超过 5% 就是 I/O 瓶颈” 或 “major fault 超过 100 次就是磁盘问题”。阈值应来自同机型、同场景、同采样窗口的基线；时间不重叠、字段缺失或 OEM 格式未知时，解析器要降低置信度并保留原文。
+
 ## 一套可复用的分析流程
 
 ### 1. 固定事件身份
@@ -597,7 +626,7 @@ Android 17 还会收集 parent、system_server、persistent、可能的输入法
 - [§9.2 ANR 类型与触发条件](02-anr-types.md)：各类型的 Android 17 触发边界。
 - [§1.4 Binder IPC](../../part1-fundamentals/ch01-architecture/04-binder.md)：同步事务、线程池与调用链。
 - [§2.4 Choreographer 与渲染流水线](../../part1-fundamentals/ch02-rendering/04-choreographer.md)：主线程帧调度和渲染期限。
-- [§9.4 特殊场景的 ANR](04-special-anr.md)：冻结、焦点和厂商场景。
+- [§9.4 特殊与跨边界 ANR](04-special-anr.md)：冻结、焦点和厂商场景。
 - [§9.5 ANR 案例集](05-case-studies.md)：把证据流程用于完整案例。
 
 ## 参考资料
@@ -608,6 +637,9 @@ Android 17 还会收集 parent、system_server、persistent、可能的输入法
 - [Android Developers：ProfilingTrigger](https://developer.android.com/reference/android/os/ProfilingTrigger)
 - [Android Developers：trigger-based capture](https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture)
 - [AOSP android-17.0.0_r1：ProcessErrorStateRecord](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ProcessErrorStateRecord.java)
+- [AOSP android-17.0.0_r1：ProcessCpuTracker](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ProcessCpuTracker.java)
+- [AOSP android-17.0.0_r1：AppProfiler](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppProfiler.java)
+- [AOSP android-17.0.0_r1：ResourcePressureUtil](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/ResourcePressureUtil.java)
 - [AOSP android-17.0.0_r1：StackTracesDumpHelper](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/StackTracesDumpHelper.java)
 - [AOSP android-17.0.0_r1：AnrHelper](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AnrHelper.java)
 - [AOSP android-17.0.0_r1：AnrLatencyTracker](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/anr/AnrLatencyTracker.java)

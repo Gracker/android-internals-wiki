@@ -1,6 +1,7 @@
 ---
-title: "ANR Kernel Trace 联合诊断与系统事件关联"
-chapter: "9.8"
+title: "ANR 与 Kernel Trace 联合诊断"
+chapter: "9.7"
+section: "9.7"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [anr, ftrace, kernel-trace, atrace, perfetto, diagnosis, system-events]
@@ -31,7 +32,7 @@ sources:
     path: "intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md"
 ---
 
-# 9.8 ANR Kernel Trace 联合诊断与系统事件关联
+# 9.7 ANR 与 Kernel Trace 联合诊断
 
 ANR trace 回答“取样时各线程停在哪里”，Perfetto 回答“超时窗口内发生过什么”。两份证据处理的是两个时间尺度，联合诊断的目的，是把线程转储中的等待点放回调度、Binder、文件系统和块设备的时间线上。
 

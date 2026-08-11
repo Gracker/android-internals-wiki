@@ -17,7 +17,7 @@ sources:
   - type: blog
     path: "Clippings/线上疑难问题 45.md"
 tags: [proc, ProcessCpuTracker, CPU, monitoring, observability, /proc/stat]
-related_chapters: ["26.01", "26.03", "9.13"]
+related_chapters: ["26.01", "26.03", "9.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "参考书驱动（Clippings/线上疑难问题 45.md）"

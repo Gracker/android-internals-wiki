@@ -1,6 +1,7 @@
 ---
-title: "Android 17 ANR 输入事件超时检测双层预警机制"
-chapter: "9.12"
+title: "Android 17 Input ANR 与 pre-ANR 实现"
+chapter: "9.10"
+section: "9.10"
 status: ready-for-review
 drafted_date: "2026-07-03"
 drafted_by: "openclaw-task2a"
@@ -21,17 +22,17 @@ sources:
     path: "DeepResearch/2026-07-02-android17-input-anr-mechanism.md"
   - type: research
     path: "DeepResearch/2026-06-15-anr-detection-inputdispatcher-ams-anrhelper-source.md"
-tags: [ANR, InputDispatcher, pre-ANR, 双层预警, Android17, TimeoutRecord, AnrTimer]
-related_chapters: ["9.1", "9.2", "9.10", "3.1"]
+tags: [ANR, InputDispatcher, pre-ANR, Android17, TimeoutRecord, AnrTimer]
+related_chapters: ["9.1", "9.2", "9.9", "3.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-03"
 gap_source: "研究素材+AOSP验证"
 gap_score: 18
 ---
 
-# 9.12 Android 17 ANR 输入事件超时检测双层预警机制
+# 9.10 Android 17 Input ANR 与 pre-ANR 实现
 
-源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。标题里的“双层”需要先收窄：
+源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。InputDispatcher 的 pre-ANR 覆盖范围需要先明确：
 
 - Android 17 的 InputDispatcher pre-ANR 目前只覆盖 **no focused window**；
 - 已有窗口迟迟不确认输入事件的 **window unresponsive** 路径没有对应的 InputDispatcher pre-ANR producer；
@@ -157,7 +158,7 @@ flowchart TD
 
 `AnrWarningController` 再向该 UID 下已经注册 listener 的进程投递。warning payload 没有 PID 或 Activity token；多进程 App 应按 `(type, id, boot/session)` 去重。
 
-公开 API、11 个类型和载荷字段见 [9.10 Android 17 ANR 预警回调](10-android17-anr-warning-callback.md)。
+公开 API、11 个类型和载荷字段见 [9.9 Android 17 ANR 预警回调](09-android17-anr-warning-callback.md)。
 
 ## 5. warning 时可选的 Long Method Trace
 
@@ -321,7 +322,7 @@ Android 17 在这些位置留下系统 trace 标记：
 4. 找 `inputDispatchingTimedOut()` 与 ANR report 的 ErrorId；
 5. 用 main thread、Binder、fence、CPU 和 I/O 时间轴判断为何窗口没有出现。
 
-Perfetto 没有固定的 `/data/anr` 自动产物。需要预配置持续 trace、triggered trace 或 Profiling trigger，详见 [9.8 ANR 与 Kernel Trace 联合诊断](08-anr-kernel-trace-joint-diagnosis.md)。
+Perfetto 没有固定的 `/data/anr` 自动产物。需要预配置持续 trace、triggered trace 或 Profiling trigger，详见 [9.7 ANR 与 Kernel Trace 联合诊断](07-anr-kernel-trace-joint-diagnosis.md)。
 
 ## 14. 工程接入建议
 
