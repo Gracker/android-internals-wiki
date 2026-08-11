@@ -1,6 +1,7 @@
 ---
 title: "Android 17 LocationManager 架构与性能优化"
-chapter: "1.65"
+chapter: "1.46"
+section: "1.46"
 status: ready-for-review
 drafted_date: "2026-07-17"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -61,13 +62,13 @@ sources:
   - type: official
     path: "developer.android.com/develop/sensors-and-location/location/background"
 tags: [location, gps, gnss, system-service, geofence, hal, performance, power]
-related_chapters: ["1.44", "1.62", "1.66", "5.7", "8.4"]
+related_chapters: ["1.38", "1.43", "1.47", "5.7", "8.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "AOSP结构"
 ---
 
-# 1.65 Android 17 LocationManager 架构与性能优化
+# 1.46 Android 17 LocationManager 架构与性能优化
 
 `LocationManager` 是 Android 平台位置 API 的客户端入口。应用选定 provider，描述更新间隔、质量、批处理延迟等需求，再通过 Binder 把请求交给 `system_server`。服务端负责权限检查、前后台限制、请求合并、Provider 调度、结果裁剪和回调投递。
 
@@ -608,8 +609,8 @@ Perfetto 可组合 `sched`、`binder_driver`、CPU frequency/idle、wakelock/pow
 
 | 关联章节 | 内容边界 |
 | --- | --- |
-| §1.44 | Binder oneway、线程调度与回调完成通知 |
-| §1.62 | network/fused Provider 的网络依赖，但定位算法不由 ConnectivityManager 决定 |
+| §1.29 | Binder oneway、线程调度与回调完成通知 |
+| §1.43 | network/fused Provider 的网络依赖，但定位算法不由 ConnectivityManager 决定 |
 | §5.7 | 应用定位周期、后台限制与电池预算 |
 | §8.4 | Executor/主线程拥塞造成的通用响应延迟 |
 

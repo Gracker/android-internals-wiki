@@ -1,6 +1,7 @@
 ---
 title: Android Staged Install 与安装原子性性能
 chapter: '1.23'
+section: '1.23'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-07-25'
@@ -48,6 +49,8 @@ related_chapters:
 - '1.9'
 - '1.7'
 - '1.20'
+- '1.21'
+- '1.27'
 - '16.6'
 created_by: task2a-knowledge-gap
 created_date: '2026-06-04'
@@ -78,6 +81,11 @@ task9_p1_issues: '0'
 task9_p2_issues: '0'
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-01
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch01-architecture/1.45-staged-install-state-machine.md"
+  - "src/part1-fundamentals/ch01-architecture/1.46-android17-staged-install-mechanism.md"
+  - "src/part1-fundamentals/ch01-architecture/1.49-Android-17-Staged-Install-状态机-提交-恢复链路.md"
 ---
 # 1.23 Android Staged Install 与安装原子性性能
 

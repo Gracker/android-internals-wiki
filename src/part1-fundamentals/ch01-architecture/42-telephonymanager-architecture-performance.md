@@ -1,6 +1,7 @@
 ---
 title: "Android 17 TelephonyManager 架构、状态传播与性能边界"
-chapter: "1.61"
+chapter: "1.42"
+section: "1.42"
 status: ready-for-review
 drafted_date: "2026-07-17"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37); 主锚点 android-17.0.0_r1"
@@ -33,13 +34,13 @@ sources:
   - type: official
     path: "https://developer.android.com/reference/android/telephony/TelephonyCallback"
 tags: [telephony, architecture, system-service, binder, radio-hal, callback, multi-sim]
-related_chapters: ["1.8", "1.44", "1.62", "24.10"]
+related_chapters: ["1.8", "1.38", "1.43", "24.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "AOSP结构"
 ---
 
-# 1.61 Android 17 TelephonyManager 架构、状态传播与性能边界
+# 1.42 Android 17 TelephonyManager 架构、状态传播与性能边界
 
 ## 进程模型
 

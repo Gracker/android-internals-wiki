@@ -113,7 +113,7 @@ last_review_finalize_run_id: "20260807-100535-f89828e4"
 review_finalize_notes: "2026-08-07 Hermes finalize-apply: 复核 deep-review 结论、frontmatter/source 边界与正文可读性；未发现开放 P0/P1/P2，推进 finalized。"
 ---
 
-# ART 编译管线与 dex2oat 优化
+# 1.7 ART 编译管线与 dex2oat 优化
 
 一个方法在 Android 上运行时，不一定只有一种执行形态。ART 可以解释 DEX 字节码、在运行期用 JIT 编译热点，也可以加载 dex2oat 预先生成的 AOT 代码。
 

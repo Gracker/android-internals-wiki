@@ -1,6 +1,7 @@
 ---
 title: "Android 17 AVF 架构与 pKVM 隔离性能边界"
 chapter: "1.32"
+section: "1.32"
 status: ready-for-review
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 tags: [avf, virtualization, pkvm, crosvm, microdroid, vm-lifecycle, isolation-overhead]

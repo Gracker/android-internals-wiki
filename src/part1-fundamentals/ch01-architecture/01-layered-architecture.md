@@ -66,7 +66,7 @@ last_task9_autofix_at: "2026-07-08"
 last_task9_audit_log: "logs/deep-review/2026-07-08-18-audit.md"
 ---
 
-# Android 分层架构
+# 1.1 Android 分层架构
 
 Android 的“五层架构”是一张职责地图，不是五个严格套叠的进程。一个应用进程同时包含应用代码、Framework 客户端代码、ART 和原生库；`system_server` 既运行 Java 系统服务，也加载 JNI 库；SurfaceFlinger 是独立的原生服务进程；HAL 既可能通过 Binder 跨进程提供服务，也可能以同进程共享库存在于旧实现中。
 

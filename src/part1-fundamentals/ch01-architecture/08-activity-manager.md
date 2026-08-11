@@ -95,10 +95,15 @@ tags:
 related_chapters:
 - '1.3'
 - '1.4'
+- '1.10'
+- '1.25'
+- '1.33'
+- '1.34'
+- '1.47'
 - '4.4'
+- '5.8'
 - '8.1'
 - '8.2'
-- '5.8'
 last_task2b_lite_at: '2026-06-26T09:35:00+08:00'
 drafted_date: '2026-04-05'
 created_by: task2a-knowledge-gap
@@ -151,6 +156,9 @@ task9_review_notes: '2026-07-01 Task9 idle-audit: auto-fixed Android 17 source b
   Task9 00:33：AUTO-FIX Perfetto monitor contention SQL 表名/列名；回到 Task6 复审。 | 2026-05-28
   Task9 deep-review: pass-tech-review。复核 Task6 回流后的技术口径；P0 0 / P1 0 / P2 0；queue 无
   pending，自动晋升 finalized。'
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch01-architecture/1.68-android17-activitymanager-architecture-performance.md"
 ---
 
 # 1.8 Activity Manager Service 与性能分析

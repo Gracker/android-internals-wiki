@@ -1,6 +1,7 @@
 ---
 title: "Android AI 手机技术栈：平台接口、端侧推理与协作边界"
-chapter: "1.30"
+chapter: "1.26"
+section: "1.26"
 status: finalized
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37); 当前源码锚点 android-17.0.0_r1"
 tags: [android, ai, ecosystem, hardware, llm, performance]
@@ -32,7 +33,7 @@ sources:
   path: https://developers.google.com/edge/litert/android
 ---
 
-# 1.30 Android AI 手机技术栈：平台接口、端侧推理与协作边界
+# 1.26 Android AI 手机技术栈：平台接口、端侧推理与协作边界
 
 ## 1.30.1 先把交付边界分开
 

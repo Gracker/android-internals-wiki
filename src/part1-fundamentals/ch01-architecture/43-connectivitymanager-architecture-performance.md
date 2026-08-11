@@ -1,7 +1,7 @@
 ---
 title: "Android 17 ConnectivityManager：架构、网络选择与性能"
-chapter: "1.62"
-section: "1.62"
+chapter: "1.43"
+section: "1.43"
 status: ready-for-review
 drafted_date: "2026-07-17"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
@@ -50,7 +50,7 @@ sources:
   - type: official
     path: "developer.android.com/about/versions/17/behavior-changes-17"
 tags: [connectivity, network, system-service, mainline, network-monitor, netstats, vpn]
-related_chapters: ["1.61", "1.63", "12.1", "12.3", "24.17", "5.7"]
+related_chapters: ["1.42", "1.44", "5.7", "12.1", "12.3", "24.17"]
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
@@ -60,7 +60,7 @@ created_date: "2026-07-17"
 gap_source: "AOSP结构"
 ---
 
-# 1.62 Android 17 ConnectivityManager：架构、网络选择与性能
+# 1.43 Android 17 ConnectivityManager：架构、网络选择与性能
 
 ## 进程模型
 

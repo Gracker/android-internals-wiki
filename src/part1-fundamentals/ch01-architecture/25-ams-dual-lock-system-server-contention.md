@@ -1,6 +1,7 @@
 ---
 title: "AMS 双锁架构与 system_server 锁竞争优化"
 chapter: "1.25"
+section: "1.25"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [lock-contention, system-server, ams, process-record, dual-lock, LOSP, LSP, OomAdjuster, performance]

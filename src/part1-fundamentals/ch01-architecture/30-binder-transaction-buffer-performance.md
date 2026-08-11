@@ -1,10 +1,11 @@
 ---
 title: "Android 17 Binder Transaction Buffer：内核分配、异步预算与 RPC 上限"
 chapter: "1.30"
+section: "1.30"
 status: ready-for-review
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 tags: [binder, ipc, transaction-buffer, performance, android17, rpc-binder]
-related_chapters: ["1.4", "1.17", "1.25", "1.10", "1.38"]
+related_chapters: ["1.4", "1.10", "1.17", "1.29", "1.38"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-27"
 drafted_date: "2026-06-28"
@@ -44,13 +45,17 @@ sources:
     path: "https://developer.android.com/reference/android/os/SharedMemory"
   - type: official
     path: "https://source.android.com/docs/core/architecture/hidl/binder-ipc"
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch01-architecture/1.31-android17-binder-rpc.md"
+  - "src/part1-fundamentals/ch01-architecture/1.44-android17-binder-sz4m-kernel-buffer-pool.md"
 ---
 
 # 1.30 Android 17 Binder Transaction Buffer：内核分配、异步预算与 RPC 上限
 
 Binder 不存在适用于所有调用的“单笔 1 MiB 上限”。kernel Binder 为每个进程建立接收事务的映射区，多笔在途请求、oneway、回复和 Binder object 会共同占用这块空间。RPC Binder 使用另一套传输和协议上限。“Binder 上限是 1 MiB”这种说法缺少并发、方向、异步预算和协议头等必要条件。
 
-以下分析以 `android-17.0.0_r1` 和 `android17-6.18-2026-06_r6` 为准，覆盖映射区大小、驱动分配与回收、单向事务压力，以及 Android 17 中 600 KiB RPC 上限对应的路径。事务时序观测见 [1.32](01.32-android17-binder-ipc-performance-monitoring.md)，oneway 排队见 [1.25](01.25-android17-binder-ipc-async-batch-pipeline.md)。
+以下分析以 `android-17.0.0_r1` 和 `android17-6.18-2026-06_r6` 为准，覆盖映射区大小、驱动分配与回收、单向事务压力，以及 Android 17 中 600 KiB RPC 上限对应的路径。事务时序观测见 [1.31](31-binder-performance-recording-trace.md)，oneway 排队见 [1.29](29-binder-async-transaction-queue.md)。
 
 ## 一、三类大小边界
 
@@ -150,7 +155,7 @@ allocated = align(data_size, pointer_size)
 
 如果找不到合适的 free buffer，`binder_alloc_new_buf_locked()` 返回 `-ENOSPC`。异步预算不足也返回 `-ENOSPC`。这条路径不会阻塞等待旧 buffer 释放，也不会借 `BR_SPAWN_LOOPER` 扩大线程池。
 
-`BR_SPAWN_LOOPER` 处理的是服务进程缺少可用 Binder 线程，与接收缓冲区分配失败属于不同问题。native 调用通常看到 `FAILED_TRANSACTION`；Java 层如何映射为 `TransactionTooLargeException` 或其他异常，取决于 JNI 的启发式规则，详见 [1.32](01.32-android17-binder-ipc-performance-monitoring.md)。
+`BR_SPAWN_LOOPER` 处理的是服务进程缺少可用 Binder 线程，与接收缓冲区分配失败属于不同问题。native 调用通常看到 `FAILED_TRANSACTION`；Java 层如何映射为 `TransactionTooLargeException` 或其他异常，取决于 JNI 的启发式规则，详见 [1.31](31-binder-performance-recording-trace.md)。
 
 ### 4. buffer 何时归还
 

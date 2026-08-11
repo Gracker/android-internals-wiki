@@ -1,6 +1,7 @@
 ---
 title: "Android 17 cgroup v1/v2 混合层级与进程资源隔离机制"
-chapter: "1.56"
+chapter: "1.48"
+section: "1.48"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [cgroup, cgroup-v2, 资源限制, 进程隔离, CPU, 内存, 后台限制, libprocessgroup, task-profiles]
@@ -35,7 +36,7 @@ sources:
     path: "Documentation/admin-guide/cgroup-v2.rst (android17-6.18-2026-06_r6)"
 ---
 
-# 1.56 Android 17 cgroup v1/v2 混合层级与进程资源隔离机制
+# 1.48 Android 17 cgroup v1/v2 混合层级与进程资源隔离机制
 
 Android 17 使用 cgroup 管理 CPU 调度、CPU 集合、I/O、内存、进程冻结与进程组生命周期。平台通过 `libprocessgroup` 和任务配置（task profile）隐藏底层文件路径，使 framework 和 native service 只表达“后台”“top-app”“冻结”等意图。
 

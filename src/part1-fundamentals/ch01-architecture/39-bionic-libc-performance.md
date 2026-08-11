@@ -1,6 +1,7 @@
 ---
 title: "Bionic libc 性能演进与系统级影响"
-chapter: "1.40"
+chapter: "1.39"
+section: "1.39"
 status: ready-for-review
 drafted_date: "2026-06-29"
 applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"
@@ -40,7 +41,7 @@ drafted_by: "task2a-content-processing"
 gap_source: "AOSP结构"
 ---
 
-# 1.40 Bionic libc 性能演进与系统级影响
+# 1.39 Bionic libc 性能演进与系统级影响
 
 Bionic 位于 Android 原生运行时的公共路径上。系统调用封装、线程创建、同步原语、ELF 装载、字符串函数以及 Native Heap 的入口都经过它。分析 Bionic 性能需要划清实现边界：某个 API 由 Bionic 导出，不代表算法主体也在 Bionic 仓库。
 

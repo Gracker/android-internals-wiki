@@ -1,6 +1,7 @@
 ---
 title: "Android logd 日志系统性能与开销"
 chapter: "1.37"
+section: "1.37"
 status: ready-for-review
 drafted_date: "2026-06-28"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"

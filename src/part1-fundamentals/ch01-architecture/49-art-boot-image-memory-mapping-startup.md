@@ -1,6 +1,7 @@
 ---
 title: "ART Boot Image 内存映射与启动性能"
-chapter: "1.57"
+chapter: "1.49"
+section: "1.49"
 status: "ready-for-review"
 drafted_date: "2026-07-15"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -39,7 +40,7 @@ created_date: "2026-07-15"
 gap_source: "章节深挖"
 ---
 
-# 1.57 ART Boot Image 内存映射与启动性能
+# 1.49 ART Boot Image 内存映射与启动性能
 
 Boot Image 处在 ART 启动、系统镜像预编译和 Zygote 共享内存的交点。排查开机变慢、Zygote 私有脏页增长或 ART Mainline 更新后的编译行为时，需要分别观察镜像文件、编译 profile 和 Zygote 预加载。
 

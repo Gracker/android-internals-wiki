@@ -1,10 +1,11 @@
 ---
 title: "Android 17 VNDK 隔离与 native 库加载性能影响"
-chapter: "1.55"
+chapter: "1.40"
+section: "1.40"
 status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [vndk, linker, native-library, dlopen, namespace, performance, self-contained-hal]
-related_chapters: ["1.1", "1.58"]
+related_chapters: ["1.1", "1.50"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-09"
 gap_source: "DeepResearch + research-gaps"
@@ -33,7 +34,7 @@ sources:
     path: "https://source.android.com/docs/core/architecture/vndk/linker-namespace"
 ---
 
-# 1.55 Android 17 VNDK 隔离与 native 库加载性能影响
+# 1.40 Android 17 VNDK 隔离与 native 库加载性能影响
 
 
 ## 一、Android 17 的 VNDK 边界
