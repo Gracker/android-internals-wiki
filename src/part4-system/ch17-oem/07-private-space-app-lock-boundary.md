@@ -1,6 +1,7 @@
 ---
 title: "Private Space 与应用锁的兼容性边界"
 chapter: "17.7"
+section: "17.7"
 status: finalized
 drafted_date: "2026-05-25"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37) QPR2；手持设备通用逐应用锁无公开 SDK，AAOS App Lock 另行说明"
@@ -46,9 +47,9 @@ created_date: "2026-05-25"
 gap_source: "官方文档/每日信息/素材驱动"
 ---
 
-# 17.7 Private Space 与应用锁的兼容性边界
+# Private Space 与应用锁的兼容性边界
 
-## 17.7.1 先分清四类“锁”
+## 先分清四类“锁”
 
 用户说“这个 App 被锁了”，背后的系统机制可能完全不同。排查前应先确认安全边界：
 
@@ -65,7 +66,7 @@ Android Automotive 的 App Lock 容易造成名称误读。它是 Android 14 起
 
 因此，业务代码不能把 `Private Space locked`、`OEM authentication canceled` 和 `App session expired` 归为同一种状态。三者的生命周期、权限与恢复路径都不同。
 
-## 17.7.2 Private Space 的系统模型
+## Private Space 的系统模型
 
 Private Space 从 Android 15 / API 35 引入，建立在 Android 多用户框架上，profile 类型是 `android.os.usertype.profile.PRIVATE`。同一个包安装到主用户和 private profile 后，会形成两份用户域实例：
 
@@ -88,7 +89,7 @@ Private Space 的主要状态如下：
 
 设备只能创建一个 Private Space，它属于主用户。它可以和工作资料、clone profile 共存。Settings 在锁定时也要遵守隐藏要求，不能通过应用列表侧漏私密空间中安装了什么。
 
-## 17.7.3 普通 App 所处的边界
+## 普通 App 所处的边界
 
 普通业务 App 只应处理“自己当前运行在哪个 Android 用户中”。它无法通过公开、可移植的方式枚举主用户的 Private Space，也不应把品牌、userId 范围或进程 UID 当作 Private Space 探针。
 
@@ -103,7 +104,7 @@ Private Space 的主要状态如下：
 
 这种限制也是隐私设计的一部分。若任意 App 都能判断设备是否创建了 Private Space、其中是否正在运行或安装了哪些包，Private Space 的隐藏语义就会被削弱。
 
-## 17.7.4 Launcher 与系统组件如何接入
+## Launcher 与系统组件如何接入
 
 默认 Launcher 的职责不同。Android 17 源码给 hidden profile 访问设置了两条权限路径：
 
@@ -162,7 +163,7 @@ fun readPrivateProfileStates(
 
 Launcher 还应监听 `Intent.ACTION_PROFILE_AVAILABLE` 与 `Intent.ACTION_PROFILE_UNAVAILABLE`，并从 `Intent.EXTRA_USER` 读取发生变化的 profile。广播表示 quiet mode 变化，收到广播后仍应重新查询当前状态，避免依赖过期缓存。`ACTION_MANAGED_PROFILE_AVAILABLE` 一类名称限定 managed profile，不适合作为 Private Space 的唯一监听入口。
 
-## 17.7.5 启动、最近任务与通知
+## 启动、最近任务与通知
 
 Private Space 锁定后，系统隐藏其中应用的 Launcher 图标、最近任务和通知。这里有三项容易写错：
 
@@ -192,7 +193,7 @@ val promptInfo = BiometricPrompt.PromptInfo.Builder()
 
 `FLAG_SECURE` 也不是应用锁。它可限制窗口截图和在非安全显示器上的呈现，适合保护已打开的敏感内容；它不会认证用户，也不会阻止其他入口启动 Activity。
 
-## 17.7.6 Sharesheet、Photo Picker 与 URI 授权
+## Sharesheet、Photo Picker 与 URI 授权
 
 Private Space 解锁时，系统可以通过 Sharesheet 和 Photo Picker 提供受控的跨空间交互。锁定后，private profile 停止，其中的应用和内容会从这些系统入口中消失。
 
@@ -215,7 +216,7 @@ Android 16 QPR2 增加了从主空间向 Private Space 移动或复制文件的�
 
 媒体解码、转码与缓存的性能处理见 24.13；这里仅界定 user/profile、provider 可用性与 URI grant 的关系。
 
-## 17.7.7 OEM App Lock 的兼容策略
+## OEM App Lock 的兼容策略
 
 OEM 手持设备应用锁可能位于 Activity 启动、任务切换、通知展示或厂商安全中心中，也可能覆盖其中几项。它未必创建独立 profile，锁定时是否终止进程、暂停后台任务或隐藏通知都由固件实现决定。
 
@@ -233,7 +234,7 @@ Android 17 没有供普通 App 查询“OEM 是否锁了我”的统一 API，�
 
 系统认证页属于 App 进程外的 UI。测试脚本若只等待某个 Activity 出现，很容易把用户尚未认证判断成启动超时。自动化用例应把“出现厂商认证页”“用户取消”“认证成功后继续启动”分成不同结果。
 
-## 17.7.8 观测与隐私
+## 观测与隐私
 
 Private Space 的存在本身带有隐私含义。普通 App 的线上日志不应尝试推导或上传 `user_serial_number`、userId、私密空间应用列表。对 userId 做哈希仍可能产生稳定跨会话标识，不能自动解决隐私风险。
 
@@ -258,7 +259,7 @@ Private Space 的存在本身带有隐私含义。普通 App 的线上日志不�
 
 测试报告要写明设备、Build fingerprint、API level、QPR 或厂商版本、Launcher 版本和复现入口。只写“Android 17 应用锁异常”无法判断问题来自 AOSP Private Space、AAOS App Lock、OEM 策略，还是 App 自有鉴权。
 
-## 17.7.9 Android 17 结论
+## Android 17 结论
 
 以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点，可确认以下边界：
 
@@ -269,7 +270,7 @@ Private Space 的存在本身带有隐私含义。普通 App 的线上日志不�
 - Android Automotive App Lock 是车载特权组件，不应外推到手持设备。
 - 需要保护 App 内敏感页面时，应实现统一路由鉴权与安全会话，并把它和系统 profile 锁分开测试。
 
-## References
+## 参考资料
 
 - [Private space | Android Open Source Project](https://source.android.com/docs/security/features/private-space)
 - [Android 17 feature summary](https://developer.android.com/about/versions/17/summary)

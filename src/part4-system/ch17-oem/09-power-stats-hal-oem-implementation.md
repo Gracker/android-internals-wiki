@@ -1,10 +1,11 @@
 ---
-title: "Android 17 Power Stats HAL OEM厂商功耗统计实现差异"
-chapter: "17.23"
+title: "Android 17 Power Stats HAL 的 OEM 实现差异"
+chapter: "17.9"
+section: "17.9"
 status: finalized
 applicable_versions: "Android 17 (API 37)"
 tags: [Android17, PowerStats, HAL, 功耗, OEM]
-related_chapters: ["11.1", "14.8"]
+related_chapters: ["5.4", "11.1", "14.8", "17.8"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-08"
 gap_source: "daily-info + research-gaps"
@@ -32,7 +33,7 @@ sources:
     path: "DeepResearch/2026-07-08-android17-powerstats-hal-oem-implementation.md"
 ---
 
-# 17.23 Android 17 Power Stats HAL OEM厂商功耗统计实现差异
+# Android 17 Power Stats HAL 的 OEM 实现差异
 
 Android 17 的 Power Stats 链路把设备功耗统计拆成三类对象：`PowerEntity` 负责状态驻留时间，`EnergyConsumer` 负责按组件/UID 的能耗归因，`Channel` 负责底层 rail energy meter。AOSP 只定义稳定 HAL 边界、framework 采集与持久化路径；真实设备上能看到多少 rail、能否做 per-UID attribution、时间戳是否稳定，主要取决于 vendor 的 PowerStats HAL 实现质量。
 

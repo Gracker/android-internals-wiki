@@ -1,6 +1,7 @@
 ---
 title: "Media Performance Class 与设备能力分级"
 chapter: "17.6"
+section: "17.6"
 status: ready-for-review
 drafted_date: "2026-05-18"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37); Android 11 可通过 Jetpack Core / Google Play services 回退读取"
@@ -36,7 +37,7 @@ source_candidates:
   - "https://android-developers.googleblog.com/2022/03/using-performance-class-to-optimize.html"
 ---
 
-# 17.6 Media Performance Class 与设备能力分级
+# Media Performance Class 与设备能力分级
 
 Media Performance Class（MPC）是设备声明的一组媒体体验下限。它把 codec、相机、音频、显示、内存、存储和图形等要求绑定到一个整数，App 可在运行时读取该值并选择默认体验。
 

@@ -1,6 +1,7 @@
 ---
 title: "OEM 游戏模式输入优先级与触控调度"
 chapter: "17.5"
+section: "17.5"
 status: ready-for-review
 drafted_date: "2026-05-17"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -40,7 +41,7 @@ source_refs:
   - "https://developer.android.com/games/optimize/adpf/gamemode/gamemode-api"
 ---
 
-# 17.5 OEM 游戏模式输入优先级与触控调度
+# OEM 游戏模式输入优先级与触控调度
 
 “打开游戏模式后触控更跟手”是一条体验描述，不能直接推导出 InputDispatcher 获得了游戏专属优先级。Android 17 的 AOSP Game Mode、InputDispatcher 和窗口刷新率源码中，没有一条公开的“游戏事件优先队列”。
 

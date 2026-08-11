@@ -1,13 +1,13 @@
 ---
-title: "sched_ext 与 OEM BPF 调度器"
+title: "sched_ext 与 OEM 调度实践"
 chapter: "17.4"
 section: "17.4"
 status: finalized
 drafted_date: "2026-05-15"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 16 (GKI 6.12) - Android 17 (API 37); OEM backport depends on vendor kernel"
-last_verified: "2026-05-29"
-last_verified_against: "Linux sched_ext documentation, Android common android16-6.12 ext.c/ext.h/cpufreq_schedutil.c, OPPO hmbird_sched proc source"
+last_verified: "2026-08-11"
+last_verified_against: "Android 17 kernel 6.18 sched_ext, OSDI '26 MUSCHED paper, Android 17 Binder driver, third-party hmbird_sched proc source"
 confidence: medium
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
@@ -37,8 +37,16 @@ sources:
     path: "https://raw.githubusercontent.com/Wuzikh1/sched_ext/main/hmbird_sched_proc_main.c"
   - type: official
     path: "https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12"
-tags: ["sched-ext", "bpf", "oem", "scheduler", "kernel-6.12"]
-related_chapters: ["5.1", "5.2", "5.7", "14.23", "17.2"]
+  - type: research
+    path: "Clippings/Chinasys2026：荣耀MUSCHED在移动设备中的调度优化.md"
+  - type: research
+    path: "DeepResearch/荣耀 MUSCHED 的 VIP 与 Binder 优先级传递深度调研.md"
+  - type: official
+    path: "https://www.usenix.org/conference/osdi26/presentation/xiao"
+tags: ["sched-ext", "bpf", "oem", "scheduler", "MUSCHED", "VIP", "Binder"]
+related_chapters: ["5.1", "5.2", "5.3", "5.7", "14.23", "17.2", "17.5"]
+consolidated_from:
+  - "08-musched-vip-scheduling-practice.md"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-29"
 task6_state: reviewed
@@ -73,7 +81,7 @@ last_task9_audit_result: "pass-idle-audit"
 last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度3（版本差异覆盖）检查通过；Android common android16-6.12 sched_ext paths/constants/sysfs 和 OPPO hmbird proc 控制面口径一致；无 P0/P1 问题，符合 Android 17 版本边界要求。"
 ---
 
-# 17.4 sched_ext 与 OEM BPF 调度器
+# sched_ext 与 OEM 调度实践
 
 ## 阅读前要分开的三件事
 
@@ -409,6 +417,61 @@ task profile 可能同时改变 cpuset、uclamp 和其他 cgroup 属性。排查
 
 这样能够区分“任务没有资格去某颗 CPU”“调度器没有把任务及时送过去”和“任务到了 CPU 但容量请求受限”三类问题。
 
+## MUSCHED：从通用机制到量产 OEM 策略
+
+MUSCHED 是荣耀面向移动交互负载设计的语义感知调度框架。项目从 2021 年开始研究，2024 年 1 月进入量产，2026 年以 OSDI 论文发表。它适合作为 sched_ext 从内核接口走向产品策略的完整案例，但论文没有公开实现源码。
+
+因此证据边界要分三层：MUSCHED 架构、参数和实验结果以论文为准；通用 sched_ext 和 Binder 行为以 Android 17 内核为准；论文未说明的 struct_ops flag、私有 kfunc、引用计数和固件配置，不能从通用内核能力反推成产品事实。
+
+### 语义标注与有界 VIP 服务
+
+120 Hz 的显示周期约为 8.33 ms。一次触控可能依次唤醒主线程、RenderThread、窗口动画线程、Binder 服务线程和合成线程。单个线程只需运行很短时间，端到端路径却跨越多个进程和同步点。仅降低 nice 值不能让远端 Binder 线程或锁持有者一同变快；大量改成 `SCHED_FIFO` / `SCHED_RR` 又会带来普通任务饥饿、功耗和温升风险。
+
+MUSCHED 把工作拆成两侧：
+
+- 用户空间识别启动、滑动、动画和窗口切换等场景，根据线程角色、离线 trace 和 beta 用户 jank trace 更新 BPF Map 中的 VIP 候选、场景和生存时间。
+- 内核侧维护每 CPU VIP 队列，在没有可运行 RT 任务时先服务 VIP，再服务普通任务，并负责时间片、累计预算和跨 CPU 均衡。
+
+论文将有效顺序概括为 `RT > VIP > CFS`。VIP 是 MUSCHED 的产品策略，不是 upstream Linux 新增的固定 `sched_class`，也不意味着 Android 17 存在 `SCHED_VIP`。论文没有公开它采用 full 还是 partial switch；前者可在 BPF 策略内把普通与 VIP 任务放入不同 DSQ，后者还需安全地将候选线程切换到 `SCHED_EXT`。
+
+论文公开的队列策略是：每 CPU 一个 FIFO VIP 队列，单次 slice 为 3 ms；slice 用完但累计预算仍有剩余时回到队尾，累计预算耗尽则临时撤销 VIP。论文中 Audio、Video、WebView 和 Display 的预算分别是 20 ms、10 ms、120 ms 和 20 ms。这些是特定实现的 profiling 结果，不是 Android API 或可跨设备复制的默认值。
+
+### 锁与 Binder 依赖传播
+
+只提升等待线程，无法缩短锁持有者或远端服务线程的 runnable 等待。MUSCHED 针对 futex、mutex 和 rwsem 提供两类有界策略：
+
+- 等待队列同时存在普通与 VIP waiter 时，允许 VIP 越过若干非关键 waiter。
+- VIP waiter 被普通线程持锁阻塞时，临时把 VIP 标签传给 owner；锁释放、依赖消失或超过生存时间后撤销。
+
+这些是 OEM 实现，不代表 Android 17 的普通锁已获得相同语义。多级锁链、owner 退出、超时、信号中断、多个 boost 来源和环依赖都需要实现级证据；论文没有公开引用计数和环检测细节。
+
+Android 17 Binder 驱动已会在同步事务中处理 Linux policy/prio，保存服务线程原值，并在回复、失败或线程重新等待时恢复。MUSCHED 的 VIP 是自有状态，Binder 默认路径不会自动复制。论文说明了同步事务上的 VIP 传播，但没有公开它使用 vendor hook、tracepoint、kfunc 还是私有 Binder 改动。oneway 事务、嵌套 `A → B → C`、线程池复用、事务失败和调用方死亡都必须单独验证标签生命周期。
+
+### 选核、负载均衡与产品证据
+
+MUSCHED 的选核原则是优先空闲且允许运行的 CPU，其次是没有 RT/VIP 任务的 CPU，再选没有 RT 且 VIP 较少的 CPU。论文的产品实现还会扫描 performance cores；“大核优先”不能外推到其他 SoC，CPU capacity、affinity、thermal pressure 和 idle state 都会改变结果。
+
+负载均衡同时包含 idle CPU 从其他 runqueue pull 任务，以及 tick 发现当前 CPU 正运行 RT、某个 VIP 已 runnable 超过 4 ms 时的 push。4 ms 是论文样机与 120 Hz 场景下的调优点，不是 sched_ext 常量。
+
+论文的实验室环境是荣耀 Magic7、Snapdragon 8 Elite、MagicOS 9、Android 15 和 Linux 6.6。10 个应用各测试 100 次，报告冷启动平均时间降低 14.8%、标准差降低 24.25%，VIP 任务 sleep 与 runnable 时间分别降低 71.8% 和 52.6%，PiP 视频通话并发的前台场景响应延迟降低 9.8%～22.8%。这些数字只覆盖论文条件。
+
+论文还报告自 2024 年 1 月起覆盖超过 2,000 万台设备的量产统计：动画、滑动和启动的每千小时异常分别从 27.2 降到 20.4、10.5 降到 6.8、94.5 降到 65.5。论文未公开设备分层、实验分桶和置信区间，应把它视为产品证据，而不是通用基准。论文没有“触控到显示最高降低 31%”或“消除 92% 掉帧”的结论。
+
+### 量产成本与 Android 17 迁移
+
+论文暴露出“内核支持 sched_ext”与“能量产移动调度器”之间的距离：团队扩展了当时不支持 `BPF_MAP_TYPE_STRUCT_OPS` 的 Android `bpfloader`；用 `BPF_F_LINK` 驱动内部生命周期；受 verifier 的无界循环、动态内存和 512 字节栈限制，把复杂逻辑移入厂商 kfunc。高度优化的游戏收益很小，某大型 MOBA 样本的帧率没有显著改善，电流与机身温度还略有变差。
+
+从 Linux 6.6 迁移到 Android 17 / 6.18 时，至少要复查：
+
+- 旧 `scx_bpf_dispatch()` / `scx_bpf_consume()` 到 DSQ insert/move API 的变更；
+- full/partial switch 的任务范围和回退行为；
+- 每 CPU DSQ、hotplug、cpuset、affinity 和隔离 CPU；
+- 3 ms slice 和 4 ms runnable 阈值在新 SoC、刷新率与 thermal pressure 下是否仍成立；
+- Binder 同步、嵌套、失败、oneway 与线程池复用的标签生命周期；
+- futex、mutex、rwsem 的 owner 追踪，以及 BPF loader、BTF、kfunc、SELinux 和 watchdog 回退。
+
+MUSCHED、ADPF 和 Game Mode 不在同一控制层。MUSCHED 消费 OEM 场景与线程依赖，ADPF Hint Session 报告应用周期工作，Game Mode 表达用户或游戏选择的模式。普通 App 没有 MUSCHED VIP SDK；可执行的路径是使用公开 API、减少关键窗口的排队与持锁，并在目标设备上验证各策略的合并顺序。
+
 ## Android 17 的工程结论
 
 - Android 17 arm64 GKI 默认编译 sched_ext 能力；AOSP 或量产设备是否加载 BPF 调度器仍需运行时证据。
@@ -417,6 +480,7 @@ task profile 可能同时改变 cpuset、uclamp 和其他 cgroup 属性。排查
 - Android 17 的 schedutil 已消费 sched_ext CPU performance target，并在 full 与 partial 模式采用不同的 fair-util组合逻辑。
 - Android vendor hook 可能改变调度细节；同一套 upstream 机制在不同设备上可能表现不同。
 - 第三方 `hmbird_sched` 文件只能证明一套公开控制面线索，不能替代 OEM 官方源码、量产固件状态或 BPF 策略实现。
+- MUSCHED 证明语义标注、有界 VIP 预算和依赖传播可在量产中组合，但它不是 Android 17 默认能力，论文也不足以还原私有实现。
 - App 团队通常无法控制 sched_ext。可执行的工作是减少关键窗口的 runnable 竞争、记录完整线程属性，并用多信号 trace 识别设备侧差异。
 
 ## 参考资料
@@ -431,3 +495,6 @@ task profile 可能同时改变 cpuset、uclamp 和其他 cgroup 属性。排查
 - [Perfetto CPU scheduling data source](https://perfetto.dev/docs/data-sources/cpu-scheduling)
 - [PerfettoSQL 入门](https://perfetto.dev/docs/analysis/perfetto-sql-getting-started)
 - [第三方 `hmbird_sched` proc 控制面线索](https://github.com/Wuzikh1/sched_ext/blob/main/hmbird_sched_proc_main.c)
+- [OSDI ’26 MUSCHED 论文介绍](https://www.usenix.org/conference/osdi26/presentation/xiao)
+- [OSDI ’26 MUSCHED 论文 PDF](https://www.usenix.org/system/files/osdi26-xiao.pdf)
+- [Android 17 / 6.18 Binder 驱动](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)

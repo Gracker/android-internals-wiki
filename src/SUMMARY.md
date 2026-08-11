@@ -392,19 +392,17 @@
   - [16.10 Android 17 ARM64 内核安全缓解机制性能开销与调优](part4-system/ch16-aosp/10-arm64-kernel-security-mitigation-performance.md)
   - [16.11 AOHP：将 Android 改造为 Agent 原生 OS](part4-system/ch16-aosp/11-agent-native-os.md)
 
-- [第 17 章：OEM 优化](part4-system/ch17-oem/README.md)
-  - [OEM 性能优化的通用思路](part4-system/ch17-oem/01-oem-overview.md)
-  - [SoC 平台差异](part4-system/ch17-oem/02-soc-differences.md)
-  - [行业案例](part4-system/ch17-oem/03-industry-cases.md)
-  - [17.4 sched_ext 与 OEM BPF 调度器](part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md)
+- [第 17 章：OEM 与设备差异](part4-system/ch17-oem/README.md)
+  - [17.1 OEM 性能优化的通用思路](part4-system/ch17-oem/01-oem-overview.md)
+  - [17.2 SoC 平台差异](part4-system/ch17-oem/02-soc-differences.md)
+  - [17.3 OEM 与大型应用协作案例](part4-system/ch17-oem/03-industry-cases.md)
+  - [17.4 sched_ext 与 OEM 调度实践](part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md)
   - [17.5 OEM 游戏模式输入优先级与触控调度](part4-system/ch17-oem/05-oem-game-mode-input-priority.md)
   - [17.6 Media Performance Class 与设备能力分级](part4-system/ch17-oem/06-media-performance-class-device-capability.md)
   - [17.7 Private Space 与应用锁的兼容性边界](part4-system/ch17-oem/07-private-space-app-lock-boundary.md)
-  - [17.8 MUSCHED 调度实践：VIP 队列、场景标注与跨进程优先级传播](part4-system/ch17-oem/08-musched-vip-scheduling-practice.md)
-  - [17.9 SoC 特异性功耗优化策略：高通、联发科与三星](part4-system/ch17-oem/09-soc-specific-power-optimization.md)
-  - [17.21 Android 17 SoC 厂商 Power HAL 与 schedutil 控制路径](part4-system/ch17-oem/17.21-android17-soc-vendor-power-hal-schedutil-loop.md)
-  - [17.23 Android 17 Power Stats HAL OEM厂商功耗统计实现差异](part4-system/ch17-oem/17.23-power-stats-hal-oem-implementation.md)
-  - [25.21 Android Auto 与 Android Automotive OS 性能优化](part4-system/ch17-oem/25.21-android-auto-car-os-performance.md)
+  - [17.8 SoC 功耗控制：Power HAL、schedutil 与厂商差异](part4-system/ch17-oem/08-power-hal-schedutil-soc-power.md)
+  - [17.9 Android 17 Power Stats HAL 的 OEM 实现差异](part4-system/ch17-oem/09-power-stats-hal-oem-implementation.md)
+  - [17.10 Android Auto 与 Android Automotive OS 性能优化](part4-system/ch17-oem/10-android-auto-car-os-performance.md)
 
 ---
 
