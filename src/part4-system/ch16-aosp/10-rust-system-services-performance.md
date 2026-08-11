@@ -4,7 +4,7 @@ chapter: "16.10"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [rust, ffi, jni, system-services, keystore, bluetooth, dns-resolver, bionic, scudo, monomorphization]
-related_chapters: ["1.4", "1.32", "3.8", "14.21", "20.16"]
+related_chapters: ["1.4", "1.32", "3.8", "14.24", "20.16"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-28"
 drafted_date: "2026-06-30"

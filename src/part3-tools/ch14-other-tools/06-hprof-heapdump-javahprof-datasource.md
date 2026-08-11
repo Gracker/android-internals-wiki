@@ -1,7 +1,8 @@
 ---
 
 title: HPROF Heap Dump 管线与 Perfetto java_hprof 数据源
-chapter: 14.22
+chapter: 14.6
+section: 14.6
 status: finalized
 pipeline_stage: ready-to-publish
 task6_state: reviewed
@@ -50,7 +51,7 @@ sources:
   - type: obsidian
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-app_exit_info_tracker_and_koom_fork_hprof.md"
 tags: [hprof, heap-dump, art, perfetto, java_hprof, memory-analysis]
-related_chapters: ["10.1", "10.2", "14.3", "14.14", "19.3"]
+related_chapters: ["10.1", "10.2", "14.5", "19.3"]
 created_by: task2a-knowledge-gap
 created_date: 2026-06-07
 gap_source: 素材驱动/DeepResearch/AOSP
@@ -64,7 +65,7 @@ last_deepseek_cn_review_at: 2026-07-17
 android17_review_notes: "区分完整 ART HPROF 与 Perfetto 引用图；校正 dumpheap 参数、AMS freezer、ART 双遍历、java_hprof fork 管线、权限与 SQL 表结构"
 ---
 
-# 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源
+# 14.6 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源
 
 Android 上的“Java 堆转储”至少包含两类产物：
 
@@ -75,7 +76,7 @@ Android 上的“Java 堆转储”至少包含两类产物：
 
 这两条管线都从 ART 的托管堆取快照，产物和暂停边界却不相同。`android.java_hprof` 这个名字容易造成误会：Perfetto 在目标进程中 fork 后直接写 `HeapGraph` protobuf packet，不会先落一份 HPROF 再解析。
 
-§10.2 讨论泄漏模型，§14.14 讨论 Android Studio Memory Profiler 与 LeakCanary。这里聚焦采集管线、数据边界和 Android 17 上可核对的源码行为。
+§10.2 讨论泄漏模型，§14.5 讨论 Android Studio Memory Profiler 与 LeakCanary。这里聚焦采集管线、数据边界和 Android 17 上可核对的源码行为。
 
 ## 完整 HPROF：从 Shell 到 ART
 

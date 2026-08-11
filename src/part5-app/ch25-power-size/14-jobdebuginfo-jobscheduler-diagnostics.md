@@ -32,7 +32,7 @@ sources:
   - type: clippings-structure-ref
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [jobscheduler, workmanager, background-work, power, diagnostics]
-related_chapters: ["5.10", "14.17", "25.4", "25.13", "26.12"]
+related_chapters: ["5.10", "14.12", "25.4", "25.13", "26.12"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-22"
 gap_source: "官方文档/每日信息/章节深挖"

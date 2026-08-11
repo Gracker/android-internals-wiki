@@ -56,7 +56,7 @@ drafted_date: 2026-04-08
 drafted_by: openclaw-task2a
 reviewed_date: "2026-06-07"
 reviewed_by: openclaw-task6
-related_chapters: [13.1, 13.2, 13.9, 14.10, 1.5]
+related_chapters: [13.1, 13.2, 13.9, 14.23, 1.5]
 task2b_state: "fixed"
 last_task2b_rerun_at: 2026-05-08T16:50:00+08:00
 task9_result: "auto-fixed"
@@ -468,7 +468,7 @@ ORDER BY name, idx;
 
 静态 tracepoint 适合长期保留的内核语义事件。字段布局随内核演进，但事件位置由维护者在源码中选择，通常比函数符号更稳定。eBPF 可以附着到现有 tracepoint，在内核侧过滤或聚合；也可以用 kprobe、kretprobe、uprobe 和 uretprobe 观察尚无静态事件的函数。
 
-kprobe 与 uprobe 依赖函数符号、内联、优化和二进制版本。平台升级后，探针位置与参数解释必须重新验证。BPF 程序若只在 map 中计数，与每次命中都向用户空间输出事件的成本差异很大。因此，静态 tracepoint、eBPF 聚合和 Perfetto 全量时间线应按问题组合，不能用一个固定开销表决定取舍。§14.10 会继续讨论 Android 动态探针的权限、版本边界和验证方法。
+kprobe 与 uprobe 依赖函数符号、内联、优化和二进制版本。平台升级后，探针位置与参数解释必须重新验证。BPF 程序若只在 map 中计数，与每次命中都向用户空间输出事件的成本差异很大。因此，静态 tracepoint、eBPF 聚合和 Perfetto 全量时间线应按问题组合，不能用一个固定开销表决定取舍。§14.23 会继续讨论 Android 动态探针的权限、版本边界和验证方法。
 
 ## Android 17 启动期 Trace
 

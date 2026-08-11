@@ -128,5 +128,37 @@
 
 > 原专题解读中的 I/O/功耗查询并入 13.9；重复的版本综述、数据源综述和 pprof/Simpleperf 专题由 13.1、13.11、13.18、13.19 统一承载；闭源 PerfDog 实现推测不再作为规范正文。完整映射见 `metadata/content-consolidation-audit.md`。
 
+## 第 14 章：其他分析工具 (ch14-other-tools)
+- [x] 14.1 Android Studio Profiler (`src/part3-tools/ch14-other-tools/01-as-profiler.md`)
+- [x] 14.2 Simpleperf (`src/part3-tools/ch14-other-tools/02-simpleperf.md`)
+- [x] 14.3 Android 17 simpleperf 微架构级性能采样 (`src/part3-tools/ch14-other-tools/03-android17-simpleperf-microarch-profiling.md`)
+- [x] 14.4 ARM Topdown 微架构性能分析 (`src/part3-tools/ch14-other-tools/04-arm-topdown-microarch-performance-analysis.md`)
+- [x] 14.5 内存分析工具 (`src/part3-tools/ch14-other-tools/05-memory-tools.md`)
+- [x] 14.6 HPROF Heap Dump 与 Perfetto java_hprof (`src/part3-tools/ch14-other-tools/06-hprof-heapdump-javahprof-datasource.md`)
+- [x] 14.7 dumpsys 系列命令 (`src/part3-tools/ch14-other-tools/07-dumpsys.md`)
+- [x] 14.8 Battery Historian 与功耗分析工具 (`src/part3-tools/ch14-other-tools/08-battery-historian.md`)
+- [x] 14.9 自动化性能测试与回归门禁 (`src/part3-tools/ch14-other-tools/09-automation-tools.md`)
+- [x] 14.10 三方性能库与可观测性选型 (`src/part3-tools/ch14-other-tools/10-third-party-libs-observability.md`)
+- [x] 14.11 ProfilingManager (`src/part3-tools/ch14-other-tools/11-profiling-manager.md`)
+- [x] 14.12 statsd 与系统级指标采集 (`src/part3-tools/ch14-other-tools/12-statsd-system-metrics.md`)
+- [x] 14.13 StrictMode 性能检查与开发期诊断 (`src/part3-tools/ch14-other-tools/13-strictmode-performance-diagnostics.md`)
+- [x] 14.14 Android CLI 与 Agent 化性能调试工作流 (`src/part3-tools/ch14-other-tools/14-android-cli-agent-performance-workflow.md`)
+- [x] 14.15 GPU 图形调试与分析工具 (`src/part3-tools/ch14-other-tools/15-gpu-debug-tools.md`)
+- [x] 14.16 Perfetto GPU Counter 与 GPU Memory 事件分析 (`src/part3-tools/ch14-other-tools/16-gpu-performance-profiling-advanced.md`)
+- [x] 14.17 Android Performance Analyzer (`src/part3-tools/ch14-other-tools/17-android-performance-analyzer.md`)
+- [x] 14.18 Android 17 AGI Frame Profiler (`src/part3-tools/ch14-other-tools/18-android17-agi-frame-profiler-gapii-spy.md`)
+- [x] 14.19 GpuService GPU 内存可观测性 (`src/part3-tools/ch14-other-tools/19-android17-gpuservice-gpu-memory-observability.md`)
+- [x] 14.20 Android Camera 性能与 Perfetto 分析 (`src/part3-tools/ch14-other-tools/20-camera-performance-analysis.md`)
+- [x] 14.21 Winscope 与窗口/合成状态调试 (`src/part3-tools/ch14-other-tools/21-winscope-window-composition-debugging.md`)
+- [x] 14.22 Layout Inspector 与 ViewDebug (`src/part3-tools/ch14-other-tools/22-layout-inspector-viewdebug.md`)
+- [x] 14.23 eBPF/BPF 性能分析 (`src/part3-tools/ch14-other-tools/23-ebpf-performance-analysis.md`)
+- [x] 14.24 eBPF 系统架构与 bpfloader (`src/part3-tools/ch14-other-tools/24-ebpf-bpfloader-architecture.md`)
+- [x] 14.25 Android 17 eBPF 可观测性程序矩阵 (`src/part3-tools/ch14-other-tools/25-android17-ebpf-observability-matrix.md`)
+- [x] 14.26 Hook 基础设施与性能工具实现 (`src/part3-tools/ch14-other-tools/26-hook-infrastructure.md`)
+- [x] 14.27 R8 Configuration Analyzer (`src/part3-tools/ch14-other-tools/27-r8-configuration-analyzer.md`)
+- [x] 14.28 GAPS 动态分析目标可达性 (`src/part3-tools/ch14-other-tools/28-gaps-dynamic-analysis.md`)
+
+> 原 APM 选型、LeakCanary Profiler task 和 Macrobenchmark 门禁正文分别并入 14.10、14.5、14.9；ftrace/atrace/Perfetto bridge 由 13.8 统一承载。完整映射见 `metadata/content-consolidation-audit.md`。
+
 # All Tasks Completed
 The comprehensive technical audit for Part 2 (Performance) has been finalized. 69 detailed review reports have been generated and archived in `logs/external-review/`. All Android 15/16/17 performance characteristics have been synchronized.

@@ -4,7 +4,7 @@ chapter: "22.30"
 status: ready-for-review
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: [flutter, impeller, shader, vulkan, opengl, gpu, compilation, rendering]
-related_chapters: ["22.3", "22.10", "2.10", "14.8"]
+related_chapters: ["22.3", "22.10", "2.10", "14.15"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-05"
 gap_source: "研究素材/章节深挖"

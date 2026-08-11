@@ -6,7 +6,7 @@ section_title: "Android 17 Jetpack WebGPU 渲染与计算管线"
 status: ready-for-review
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
 tags: [webgpu, gpu, dawn, androidx, compute, rendering, vulkan, opengl-es]
-related_chapters: ["2.14", "14.8", "18.8", "18.9", "18.11"]
+related_chapters: ["2.14", "14.15", "18.8", "18.9", "18.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-27"
 drafted_date: "2026-06-27"

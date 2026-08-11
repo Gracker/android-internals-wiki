@@ -452,4 +452,4 @@ Stack Overflow、GitHub issue 与 commit 的主导类别都是 Memory Consumptio
 - [Android 17 `IPCThreadState.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/IPCThreadState.cpp)
 - [Android 17 `CachedAppOptimizer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java)
 - [Android common kernel `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6)
-- 相关章节：§7.10（View 体系性能优化）、§9.1（ANR 设计思想）、§10.1（App 内存分析）、§14.4（`dumpsys gfxinfo`）、§15.3（性能指标体系）
+- 相关章节：§7.10（View 体系性能优化）、§9.1（ANR 设计思想）、§10.1（App 内存分析）、§14.7（`dumpsys gfxinfo`）、§15.3（性能指标体系）

@@ -1,6 +1,7 @@
 ---
 title: Android Performance Analyzer 与系统性能分析
-chapter: 14.18
+chapter: 14.17
+section: 14.17
 status: ready-for-review
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags: [工具使用, 系统分析, 性能诊断]
@@ -52,13 +53,13 @@ sources:
   - type: internal
     path: "src/part3-tools/ch14-other-tools/02-simpleperf.md"
   - type: internal
-    path: "src/part3-tools/ch14-other-tools/04-dumpsys.md"
+    path: "src/part3-tools/ch14-other-tools/07-dumpsys.md"
   - type: internal
-    path: "src/part3-tools/ch14-other-tools/11-battery-historian.md"
+    path: "src/part3-tools/ch14-other-tools/08-battery-historian.md"
 review_notes: "2026-07-26 deep-review：原稿宣称 APA 是 Android 17 正式平台工具但缺少来源。本次 rework 不把 APA 当作已证实工具，而是保留章节编号并改写为风险边界和工具路由页；后续若取得 AOSP/官方文档证据，再另行扩写 APA 细节。"
 android17_review_notes: "2026-07-30：Android Developers 已发布 APA 首页、下载、Quickstart、Record/View/Analyze 文档；正文据官方资料重建。明确 APA 是独立发布的 open-beta 桌面工具，设备最低 Android 12，并以 android-17.0.0_r1 和 android17-6.18-2026-06_r6 解释 Perfetto/ftrace 数据边界。旧 rework/task 字段保留供 Hermes 追踪。"
 ---
-# 14.18 Android Performance Analyzer 与系统性能分析
+# 14.17 Android Performance Analyzer 与系统性能分析
 
 Android Performance Analyzer（APA）是 Google 面向 Android App 与游戏提供的独立桌面性能工具。官方在 2026 年 5 月发布 open beta，当前公开能力以 System Profiler 为主：录制 system trace、在项目中管理多份 trace、查看 CPU/GPU/内存/功耗与 SurfaceFlinger 数据、运行 PerfettoSQL，并为 Vulkan 工作负载补充可选的调试信息。
 
@@ -208,7 +209,7 @@ WHERE ts.state = 'R'
 ORDER BY ts.dur DESC;
 ```
 
-结果表示线程已经可运行、但在该区间内没有执行。它可能来自 CPU 竞争、优先级、调度约束或更高优先级工作，不能仅凭一行结果断言根因。下一步应回到对应时间窗，检查 CPU Scheduling、wakeup、当前运行线程、频率与相关 slice。更多查询模式见 13.22 的 Perfetto SQL 查询手册。
+结果表示线程已经可运行、但在该区间内没有执行。它可能来自 CPU 竞争、优先级、调度约束或更高优先级工作，不能仅凭一行结果断言根因。下一步应回到对应时间窗，检查 CPU Scheduling、wakeup、当前运行线程、频率与相关 slice。更多查询模式见 13.9 的 Perfetto SQL 查询手册。
 
 官方还提供 Perfetto SQL skill 与 Perfetto Analysis skill，供 AI agent 生成查询或给出分析起点。生成结果必须检查当前 trace 的表、字段、单位和进程范围；AI 给出的自然语言解释不能替代 trace 证据。
 

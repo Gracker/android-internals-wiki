@@ -45,7 +45,7 @@ sources:
   - type: research
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-19-android-dmabuf-gralloc-16kb-boundary.md"
 tags: [dmabuf, gralloc, bufferqueue, graphic-memory, 16kb-page-size]
-related_chapters: ["2.13", "2.15", "2.16", "4.7", "14.15"]
+related_chapters: ["2.13", "2.15", "2.16", "4.7", "14.21"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-19"
 gap_source: "每日信息/DeepResearch/官方文档/AOSP结构"

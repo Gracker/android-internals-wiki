@@ -5,7 +5,7 @@ status: "finalized"
 drafted_date: "2026-05-23"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [stability, thread, fd, oom, observability]
-related_chapters: ["20.5", "20.7", "26.2", "26.5", "14.13"]
+related_chapters: ["20.5", "20.7", "26.2", "26.5", "14.26"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-23"
 gap_source: "参考书素材 + research-gaps + AOSP/官方文档对照"

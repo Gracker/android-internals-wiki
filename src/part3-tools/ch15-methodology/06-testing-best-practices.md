@@ -53,7 +53,7 @@ tags:
   - benchmark
   - research
 related_chapters:
-  - "14.6"
+  - "14.9"
   - "15.5"
   - "8.3"
   - "13.2"
@@ -594,8 +594,7 @@ trace 与结果不一致时，依次检查 metric 语义、测量范围、应用
 - §5.5 解释 Thermal HAL、framework 状态与设备降频。
 - §8.3 定义冷、温、热启动及优化路径。
 - §13.2 介绍 Perfetto 抓取与实验配置。
-- §14.6 介绍 Android 自动化性能工具。
-- §14.27 说明 Macrobenchmark 回归门禁的工程配置。
+- §14.9 介绍 Android 自动化性能工具与 Macrobenchmark 回归门禁。
 - §15.3 定义指标合同、SLO 和统计方向。
 - §15.5 说明线上采样、聚合与报警。
 

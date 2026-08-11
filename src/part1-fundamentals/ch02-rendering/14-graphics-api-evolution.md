@@ -62,7 +62,7 @@ related_chapters:
 - '2.9'
 - '2.10'
 - '2.17'
-- '14.8'
+- '14.15'
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
 last_task2b_lite_at: '2026-06-25'

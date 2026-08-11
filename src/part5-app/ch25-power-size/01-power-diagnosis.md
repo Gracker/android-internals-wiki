@@ -43,7 +43,7 @@ sources:
   - type: blog
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [power-diagnosis, battery-historian, power-profiler, batterystats]
-related_chapters: ["25.2", "11.1", "11.2", "14.11"]
+related_chapters: ["25.2", "11.1", "11.2", "14.8"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -84,7 +84,7 @@ last_task9_autofix_at: "2026-06-22"
 2. 把设备级能量变化转换成同一时间窗内的 CPU、网络、GNSS、WakeLock 等证据。
 3. 把系统证据定位到线程、请求、定位订阅或唤醒锁标签，再验证修改前后的差异。
 
-功耗模型、硬件电流计与 BatteryStats 的计算原则见 §11.1；后台任务、Alarm、网络与定位策略见 §11.2；Battery Historian 的部署见 §14.11。这里专注于采集、解读和归因。
+功耗模型、硬件电流计与 BatteryStats 的计算原则见 §11.1；后台任务、Alarm、网络与定位策略见 §11.2；Battery Historian 的部署见 §14.8。这里专注于采集、解读和归因。
 
 ## 先分清三类证据
 

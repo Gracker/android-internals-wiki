@@ -35,7 +35,7 @@ sources:
   - type: clipping
     path: "Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md"
 tags: [android17, memory-limits, memory-leak, applicationexitinfo, profilingmanager, leakcanary]
-related_chapters: ["4.1", "4.4", "10.2", "14.14", "20.5", "23.1", "26.9", "26.12"]
+related_chapters: ["4.1", "4.4", "10.2", "14.5", "20.5", "23.1", "26.9", "26.12"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-19"
 gap_source: "官方文档/每日信息/章节深挖/Clippings结构参考"
@@ -318,7 +318,7 @@ MemoryLimiter 退出记录属于低敏感度的系统诊断摘要；heap dump �
 - LMKD 与进程优先级：4.4。
 - 进程退出归因：26.9。
 - ProfilingManager 通用能力：26.12。
-- Android Studio 内存工具：14.14。
+- Android Studio 内存工具：14.5。
 
 Android 17 的 MemoryLimiter 增加了一类可识别的系统终止原因，但根因仍要回到原有的 Java、native、图形、线程和业务场景证据。
 

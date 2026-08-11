@@ -7,7 +7,7 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-02"
 confidence: medium
 tags: [learning-path, performance, framework, perfetto, apm]
-related_chapters: ["13.0", "14.13", "15.7", "19.0", "21.4", "21.12"]
+related_chapters: ["13.0", "14.26", "15.7", "19.0", "21.4", "21.12"]
 created_by: "openclaw-manual-intake"
 created_date: "2026-07-02"
 gap_source: "manual-request/android-performance-learning-path"

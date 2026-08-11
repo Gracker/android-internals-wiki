@@ -1,6 +1,7 @@
 ---
 title: "Android 17 eBPF 性能可观测性程序矩阵扩展"
 chapter: "14.25"
+section: "14.25"
 status: ready-for-review
 drafted_date: "2026-07-02"
 applicable_versions: "Android 17 (API 37)"
@@ -35,16 +36,16 @@ sources:
   - type: official
     path: "source.android.com/docs/core/architecture/kernel/bpf"
 tags: [eBPF, observability, CPU-cycle, DMA-BUF, wakelock, lock-contention, Rust, Android17]
-related_chapters: ["14.10", "14.21", "5.1", "5.4"]
+related_chapters: ["14.23", "14.24", "5.1", "5.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-02"
 gap_source: "每日技术文章 intake"
 android17_review_notes: "合并源码调研附录；按 Android 17 tag 核对构建架构、加载开关、attach 类型、map 字段、用户态读取方式和能力边界"
 ---
 
-# 14.25 Android 17 eBPF 性能可观测性程序 matrix 扩展
+# 14.25 Android 17 eBPF 性能可观测性程序矩阵扩展
 
-§14.10 介绍 eBPF 性能工具，§14.21 讲解 Android 17 `bpfloader`。这里沿着“构建产物 → 启动加载 → attach → 输出 → 用户态消费”检查 Android 17 新增的四组程序：
+§14.23 介绍 eBPF 性能工具，§14.24 讲解 Android 17 `bpfloader`。这里沿着“构建产物 → 启动加载 → attach → 输出 → 用户态消费”检查 Android 17 新增的四组程序：
 
 - `cyclePerUid.bpf`：x86_64 平台的 per-UID CPU cycle 统计。
 - `dmabufIter.bpf`：DMA-BUF 全局快照迭代器。

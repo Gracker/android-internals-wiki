@@ -231,7 +231,7 @@ Battery Historian 已不再积极维护，适合读取已有 bugreport 的系统
 
 现成的等价证据可以直接用 `bugreport` 与 `dumpsys` 组合取得，不必等 Trace 里刚好有现成的 `device_idle` 轨道。
 
-第一组证据看 Doze 状态切换。设备灭屏、静止、未充电后，`dumpsys deviceidle` 会从 active 进入 idle / idle maintenance。对应的 Battery Historian 时间线里，`screen` 熄灭后 `cpu_running` 会从连续活跃收缩成稀疏脉冲，`job`、`alarm`、`network` 条带集中出现在短暂窗口里；这和官方 Doze 文档描述的 maintenance window 行为一致。14.11《Battery Historian 与功耗分析工具》已经把 `cpu_running`、`wake_lock`、`job`、`alarm` 这些行的读法拆开讲过，可以直接拿来做对照。
+第一组证据看 Doze 状态切换。设备灭屏、静止、未充电后，`dumpsys deviceidle` 会从 active 进入 idle / idle maintenance。对应的 Battery Historian 时间线里，`screen` 熄灭后 `cpu_running` 会从连续活跃收缩成稀疏脉冲，`job`、`alarm`、`network` 条带集中出现在短暂窗口里；这和官方 Doze 文档描述的 maintenance window 行为一致。14.8《Battery Historian 与功耗分析工具》已经把 `cpu_running`、`wake_lock`、`job`、`alarm` 这些行的读法拆开讲过，可以直接拿来做对照。
 
 第二组证据看后台任务被延后。把目标包切到 `Rare` 或 `Restricted` 桶后，先用 `dumpsys jobscheduler <package>` 看 pending reason、quota 和约束，再看 Battery Historian 的 `job` 行或 Perfetto 里的 CPU / network burst。正常现象是任务没有消失，而是执行时间被挪到配额允许或 Doze 维护窗口到来之后。11.4《功耗分析案例集》里的 AlarmManager 滥用案例能看到每 60 秒一次的 `alarm` 唤醒条带，JobScheduler 生命周期错误案例能看到 30 分钟 `WakeLock` 条带；两组样本的问题类型不同，但都提供了可复核的对照，可用于区分系统主动延后与任务异常持续运行。
 

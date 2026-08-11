@@ -1,7 +1,8 @@
 ---
 
 title: Winscope 与窗口/合成状态可视化调试
-chapter: 14.15
+chapter: 14.21
+section: 14.21
 status: ready-for-review
 drafted_date: 2026-05-19
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
@@ -28,13 +29,13 @@ sources:
   - type: daily-info
     path: "intake/daily-info/2026-05-19.md"
 tags: [winscope, surfaceflinger, windowmanager, perfetto, tracing, rendering, input]
-related_chapters: ["2.6", "2.12", "2.13", "2.16", "3.1", "13.3", "13.10", "14.4"]
+related_chapters: ["2.6", "2.12", "2.13", "2.16", "3.1", "13.3", "13.9", "14.7"]
 created_by: task2a-knowledge-gap
 created_date: 2026-05-19
 gap_source: 官方文档/每日信息/AOSP工具文档
 ---
 
-# 14.15 Winscope 与窗口/合成状态可视化调试
+# 14.21 Winscope 与窗口/合成状态可视化调试
 
 Winscope 记录 WindowManager、SurfaceFlinger、Shell transitions、SurfaceControl transactions、Input、IME、ProtoLog 和 ViewCapture 等状态，再按时间轴回放。它适合回答这些问题：目标窗口是否进入可见状态，目标 layer 是否带 buffer，哪一层遮住了它，哪笔 transaction 修改了位置或透明度，转场参与者是否被合并或中止，触摸区域与焦点是否匹配。
 

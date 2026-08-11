@@ -1,10 +1,11 @@
 ---
 title: "Perfetto GPU Counter 与 GPU Memory 事件分析"
-chapter: "14.28"
+chapter: "14.16"
+section: "14.16"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [gpu, profiling, perfetto, gpu-counter, gpu-memory, android17]
-related_chapters: ["2.10", "2.14", "13.10", "14.8"]
+related_chapters: ["2.10", "2.14", "13.9", "14.15"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-06"
 gap_source: "素材驱动/AOSP结构/官方文档"
@@ -61,7 +62,7 @@ sources:
   path: Writer/rendering_pipelines/S13_game_type.md
 ---
 
-# 14.28 Perfetto GPU Counter 与 GPU Memory 事件分析
+# 14.16 Perfetto GPU Counter 与 GPU Memory 事件分析
 
 > **版本边界**：范围限于 Android 17 / `android-17.0.0_r1` 中可在 AOSP `external/perfetto` 核验的 GPU counter descriptor、GPU counter event、GPU memory event 与 Trace Processor 导入链路。跨厂商性能阈值、Ray Tracing、NPU/ML 协同、远程 GPU 调试与完整 AGI 工作流不在讨论范围内。
 

@@ -7,7 +7,7 @@ pipeline_stage: ready-to-publish
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 tags: ["Camera", "Camera2", "HAL3", "ZSL", "多流并发", "SurfaceView", "ImageReader", "渲染管线"]
 reviewed_by: "openclaw-task6"
-related_chapters: ["2.13", "2.15", "14.9", "18.6", "18.7", "18.10", "18.15"]
+related_chapters: ["2.13", "2.15", "14.20", "18.6", "18.7", "18.10", "18.15"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 sources:
@@ -520,7 +520,7 @@ Android 17 平台继续使用 HAL3 request-result 与多 output Surface 模型�
 ## 与其他章节的关系
 
 - **§2.15 DMA-BUF、Gralloc 与跨进程图形内存共享**：Camera buffer handle 与 fence 的内存模型；
-- **§14.9 Android Camera 性能与 Perfetto 分析**：Camera trace 配置、SQL 与案例；
+- **§14.20 Android Camera 性能与 Perfetto 分析**：Camera trace 配置、SQL 与案例；
 - **§18.6 SurfaceView、§18.7 TextureView**：预览 carrier 的窗口与显示路径；
 - **§18.10 SurfaceControl API 深入**：SurfaceView preview layer 的 transaction 与 fence；
 - **§18.15 Video Overlay / HWC**：录像与预览 layer 进入 HWC 后的 composition 决策。

@@ -2,7 +2,8 @@
 
 
 title: statsd 与系统级指标采集
-chapter: 14.17
+chapter: 14.12
+section: 14.12
 status: finalized
 drafted_date: 2026-05-20
 applicable_versions: Android 11 (API 30) - Android 17 (API 37)
@@ -35,7 +36,7 @@ sources:
   - type: official
     path: "https://developer.android.com/tools/adb"
 tags: [statsd, observability, perfetto, tools]
-related_chapters: ["13.9", "13.10", "14.10", "15.3", "26.3"]
+related_chapters: ["13.8", "13.9", "14.23", "15.3", "26.3"]
 created_by: task2a-knowledge-gap
 created_date: 2026-05-20
 gap_source: AOSP结构/官方文档/已有章节深挖
@@ -53,7 +54,7 @@ last_task9_at: 2026-07-02
 task9_review_notes: "2026-07-02 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 0；收窄 AOSP 证据锚点到 android-17.0.0_r1，补齐 StatsManagerService 在配置/权限/重注册链路中的角色，修正 DeepResearch 延伸阅读中的 JNI/Android 17 新增权限表述；回到 Task6 复审。详见 logs/deep-review/2026-07-02-07-deep-review.md。"
 ---
 
-# 14.17 statsd 与系统级指标采集
+# 14.12 statsd 与系统级指标采集
 
 Android 平台的系统级指标并不只来自 Perfetto Trace。许多事件型信号，例如 ANR、LMK、JobScheduler 状态、启动事件、功耗和网络统计，都通过 statsd 汇总成 atom，再按配置生成报告。
 
@@ -126,7 +127,7 @@ statsd 在性能排障里最有价值的地方，是提供跨版本相对稳定�
 | 启动 | `AppStartOccurred`、`AppStartCanceled`、`AppStartFullyDrawn`、`AppStartMemoryStateCaptured` | 启动事件、fully drawn、启动期间内存快照 | Macrobenchmark、Perfetto app startup 切片，详见 21.x |
 | 功耗 | `WakelockStateChanged`、`KernelWakelock`、`BatterySaverModeStateChanged`、`CpuTimePerUidFreq` | wakelock、CPU 时间、节电状态变化 | Batterystats、Battery Historian、Perfetto power rail，详见 25.x |
 | 游戏与帧相关 | `GameModeChanged`、`GameModeConfigurationChanged`、`InputEventLatencyReported` | 游戏模式和输入延迟相关事件是否出现 | FrameTimeline、SurfaceFlinger、GPU counter，详见 22.x |
-| UprobeStats / eBPF | `UprobeStatsInternalError`、`UprobeStatsInvocation`、`UprobeStatsBpfAttached`、`UprobeStatsBpfMapPolled` | attach、调用、map poll 或内部错误是否被记录 | eBPF 程序、Perfetto trace、UprobeStats 模块日志，详见 14.10 节 |
+| UprobeStats / eBPF | `UprobeStatsInternalError`、`UprobeStatsInvocation`、`UprobeStatsBpfAttached`、`UprobeStatsBpfMapPolled` | attach、调用、map poll 或内部错误是否被记录 | eBPF 程序、Perfetto trace、UprobeStats 模块日志，详见 14.23 节 |
 
 表里的字段不应该直接写死到长期看板里。`atoms.proto` 会随平台版本演进，同名 atom 的字段语义、可见范围、模块归属都有变动风险。长期看板要记录 Android 版本、构建指纹、atom ID、字段版本，并保留配置文件的版本号。
 
@@ -213,7 +214,7 @@ adb shell cmd stats print-logs 0
 statsd 和 Perfetto 经常出现在同一次排障里，但两者的证据类型不同。statsd 是聚合后的指标和事件报告，Perfetto 是时间轴。排障顺序可以按下面的方式组织：
 
 1. 用 statsd 确认事件是否发生：查报告中的 atom、UID、包名、reason、bucket、次数和状态持续时间。
-2. 用 Perfetto 还原事件附近的时序：查主线程、RenderThread、Binder、调度、memory counter、FrameTimeline。Perfetto 采集基础设施详见 13.9 节，SQL 分析详见 13.10 节。
+2. 用 Perfetto 还原事件附近的时序：查主线程、RenderThread、Binder、调度、memory counter、FrameTimeline。Perfetto 采集基础设施详见 13.8 节，SQL 分析详见 13.9 节。
 3. 用 logcat 和 dumpsys 补系统状态：ActivityManager、JobScheduler、PowerManager、lmkd、SurfaceFlinger 等日志或 dump 能解释 statsd 字段背后的状态。
 4. 用专项工具复核指标口径：功耗看 Batterystats / Battery Historian，内存看 heapprofd / meminfo，渲染看 FrameTimeline / SurfaceFlinger，APM 上报看 26.3 节。
 

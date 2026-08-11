@@ -1,8 +1,8 @@
 ---
 
 title: dumpsys 系列命令
-chapter: '14.4'
-section: '14.4'
+chapter: '14.7'
+section: '14.7'
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 task6_result: pass-light-edit
@@ -67,7 +67,7 @@ last_task6_audit: "2026-07-06"
 task2b_verifier_notes: "2026-07-09 Task2B Verifier: status finalized→ready-for-review; Task9 idle audit auto-fixed (P0 1), pipeline task6_pending + task6_state revisiting correct, status was stale finalized."
 ---
 
-# dumpsys 系列命令
+# 14.7 dumpsys 系列命令
 
 ## 为什么需要 dumpsys
 
@@ -181,7 +181,7 @@ PSS 是归属模型，不是硬件计量值。Android 17 的 `Debug.MemoryInfo.g
 - `Graphics` 依赖 graphics driver 通过 libmemtrack 上报 smaps 未覆盖的归属。GraphicBuffer、dma-buf 和跨进程共享可能分散在 `Graphics`、`GL`、设备映射及其他类别，某一行下降缓慢不能单独证明纹理泄漏。
 - `Code`、`Stack`、`.so mmap` 等文件映射和线程相关分类要结合进程数、ABI、动态模块与线程数量解释。
 
-完整的对象图、native 分配栈和 dma-buf 归因流程见 §14.3 [内存分析工具](03-memory-tools.md)。
+完整的对象图、native 分配栈和 dma-buf 归因流程见 §14.5 [内存分析工具](05-memory-tools.md)。
 
 ### 采样趋势
 

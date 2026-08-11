@@ -1,10 +1,11 @@
 ---
 title: "GpuService GPU 内存可观测性架构：GpuMem eBPF 追踪 / GpuMemTracer Perfetto 桥接 / GpuStats statsd 归因"
-chapter: "14.30"
+chapter: "14.19"
+section: "14.19"
 status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [GPU, GpuService, GpuMem, eBPF, Perfetto, statsd, memory-tracking, observability]
-related_chapters: ["10.7", "14.8", "14.10", "14.21", "14.25", "14.28", "2.32"]
+related_chapters: ["10.7", "14.15", "14.16", "14.23", "14.24", "14.25", "2.32"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-11"
 gap_source: "DeepResearch素材驱动"
@@ -53,13 +54,13 @@ confidence: high
 android17_review_notes: "2026-07-30：逐项复核 BPF attach/map、GpuMemTracer 初始事件、GpuStats statsd pull、memtrack 与 DMA-BUF iterator；修正 Binder 服务名，命令统一为 dumpsys gpu。原 task6/task9/Hermes finalize 字段完整保留。"
 ---
 
-# 14.30 GpuService GPU 内存可观测性架构
+# 14.19 GpuService GPU 内存可观测性架构
 
 Android 17（`android-17.0.0_r1`）中，`frameworks/native/services/gpuservice/` 提供 GPU 内存观测路径。GpuService 不分配 GPU 内存，也不维护用户态显存池；它读取 GPU 驱动上报的累计值，并通过 dumpsys、Perfetto 和 statsd 暴露给诊断工具。buffer 的分配、复用与回收仍由 gralloc、图形实现和厂商驱动负责。
 
 平台侧锚点为 `android-17.0.0_r1`，内核侧锚点为 `android17-6.18-2026-06_r6`。Android 12 至 Android 16 只用于说明能力演进。
 
-## 14.30.1 三层观测栈：同一类 GPU 事实，不同消费通道
+## 14.19.1 三层观测栈：同一类 GPU 事实，不同消费通道
 
 GpuService 里与 GPU 内存和驱动归因相关的主体可以拆成三层：
 
@@ -71,7 +72,7 @@ GpuService 里与 GPU 内存和驱动归因相关的主体可以拆成三层：
 
 `GpuMem` 持有只读 BPF map，`GpuMemTracer` 通过 `GpuMem::traverseGpuMemTotals()` 遍历它，Perfetto 的 ftrace 更新则来自驱动的同一个 tracepoint ABI。`GpuStats` 不统计 GPU 内存字节，它保存驱动加载和功能使用事实。排查 GPU 内存增长时，GpuMem 与 Perfetto 负责占用趋势，GpuStats 用来补充驱动选择和失败模式。
 
-## 14.30.2 GpuService 启动与初始化边界
+## 14.19.2 GpuService 启动与初始化边界
 
 `GpuService.cpp` 的构造函数同步创建核心对象，然后把可能阻塞的 BPF 初始化放到独立线程里。下面的源码片段展示两条初始化线程：
 
@@ -100,7 +101,7 @@ GpuService::GpuService()
 
 析构期会给 GpuMem 与 GpuWork 设置停止标志，再 `join()` 两条初始化线程。成员对象随后析构，`GpuMem::~GpuMem()` 调用 `bpf_detach_tracepoint()`。`stop()` 只打断 attach 重试；已经启动的 `GpuMemTracerThread` 是分离线程，源码没有为它定义独立的停止协议。gpuservice 通常与进程同寿命，不能把这段实现当作可反复创建和销毁的通用组件模板。
 
-## 14.30.3 GpuMem：基于 eBPF 的进程级 GPU 内存快照
+## 14.19.3 GpuMem：基于 eBPF 的进程级 GPU 内存快照
 
 `GpuMem.h` 定义了 tracepoint、pinned program 和 map 路径。下面是与初始化直接相关的常量：
 
@@ -167,7 +168,7 @@ key 是 `uint64_t = (gpu_id << 32) | pid`：高 32 位放 `gpu_id`，低 32 位�
 
 `dump()` 和 `traverseGpuMemTotals()` 通过 `getFirstKey()` / `getNextKey()` 逐项读取 map。遍历期间驱动仍可更新 map，因此输出是 best-effort 快照，不具备跨 entry 的原子一致性；中途的 value 或 next-key 读取错误还会提前结束遍历。GpuMem 能回答驱动最近上报的进程总量，无法指出哪一个 DMA-BUF 或 BufferQueue slot 占用最大。
 
-## 14.30.4 `dumpsys gpu`：即时查询入口
+## 14.19.4 `dumpsys gpu`：即时查询入口
 
 `GpuService.cpp::doDump()` 对 shell / dump 权限调用方开放，调用方需要满足 `uid == AID_SHELL` 或持有 `android.permission.DUMP`。常用命令族如下：
 
@@ -188,7 +189,7 @@ C++ 组件名是 `GpuService`，注册到 ServiceManager 的服务名却是 `gpu
 
 排查建议：不要用单次 dumpsys 判断泄漏。`--gpumem` 是瞬时快照，应在场景前、中、后多次采样，关注同一 pid 的 `size` 是否随场景退出归零或回落。
 
-## 14.30.5 GpuMemTracer 与 ftrace：初始值加后续更新
+## 14.19.5 GpuMemTracer 与 ftrace：初始值加后续更新
 
 `GpuMemTracer` 把同一份 `GpuMem` map 作为 Perfetto 初始状态。下面的常量是 Android 17 注册的数据源名：
 
@@ -235,7 +236,7 @@ data_sources {
 
 `android.gpu.memory` 写入 trace 启动时已有的非零 entry；`linux.ftrace` 记录会话期间驱动发出的更新。只启用前者会得到一次起始遍历，只启用后者可能缺少首次变化之前的基线。该链路是事件驱动的，不做固定周期 polling；驱动没有发出 tracepoint 时，轨道也不会变化。
 
-## 14.30.6 GpuStats：statsd 驱动与功能使用归因
+## 14.19.6 GpuStats：statsd 驱动与功能使用归因
 
 `GpuStats` 保存图形驱动加载和功能使用信息，不保存 GPU 内存字节数。`GpuStats.h` 对内存占用设置了以下上限：
 
@@ -271,7 +272,7 @@ GpuStats 在第一次收到驱动或目标统计时才向 statsd 注册 `GPU_STA
 
 `toggleAngleAsSystemDriver(enabled)` 只允许 appId 为 `AID_SYSTEM` 且持有 `android.permission.ACCESS_GPU_SERVICE` 的调用方切换，开启时尝试写入 `persist.graphics.egl=angle`。`/system/etc/angle/feature_config_vk.binarypb` 属于另一条配置路径：`FeatureOverrideParser` 在 GpuService 构造期间解析一次并缓存，设备启动后文件变化不会自动重载。系统驱动属性、feature override 与 GpuStats 彼此有关联，但源码没有把它们实现成单向的三阶段处理链。
 
-## 14.30.7 从进程总量走到 DMA-BUF
+## 14.19.7 从进程总量走到 DMA-BUF
 
 GpuMem 没有 DMA-BUF 标识，buffer 级定位需要补充其他数据源：
 
@@ -328,7 +329,7 @@ adb shell dumpsys SurfaceFlinger
 
 进程总量在场景结束后没有立即归零，也不自动构成泄漏。驱动缓存、对象延迟销毁、异步 fence 和进程仍存活都可能保留内存。判断依据应包含稳定窗口、多轮重复和对象生命周期证据。
 
-## 14.30.8 各组件的职责边界
+## 14.19.8 各组件的职责边界
 
 - **GpuService / GpuMem**：读取驱动上报的全局与进程 GPU 内存总量，不拥有这些 allocation。
 - **GpuMemTracer / Perfetto ftrace**：提供 trace 起始值和会话内更新，用于观察时间变化。
@@ -338,9 +339,9 @@ adb shell dumpsys SurfaceFlinger
 - **SurfaceFlinger dump**：提供 layer 与合成状态，不能替代 DMA-BUF 引用分析。
 - **gfxinfo / GraphicsStats**：报告帧耗时与 jank，不提供 GPU 内存总账。
 
-§10.7 讨论应用与图形内存症状，§14.8 介绍 GPU 调试工具，§14.25 展开 eBPF 观测范围。这里的范围限于 GpuService、GPU memory tracepoint、GpuStats 和 DMA-BUF 对账之间的接口关系。
+§10.7 讨论应用与图形内存症状，§14.15 介绍 GPU 调试工具，§14.25 展开 eBPF 观测范围。这里的范围限于 GpuService、GPU memory tracepoint、GpuStats 和 DMA-BUF 对账之间的接口关系。
 
-## 14.30.9 失败模式与结论强度
+## 14.19.9 失败模式与结论强度
 
 ### GpuMem 初始化失败
 

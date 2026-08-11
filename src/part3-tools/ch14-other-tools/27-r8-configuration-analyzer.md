@@ -1,7 +1,7 @@
 ---
 title: "R8 Configuration Analyzer 与 keep 规则体积归因"
-chapter: "14.20"
-section: "14.20"
+chapter: "14.27"
+section: "14.27"
 status: ready-for-review
 drafted_date: "2026-05-23"
 applicable_versions: "Android 17 (API 37)；AGP 9.3.0+ / R8 9.3.7-dev+；旧 AGP 需替换内置 R8 后手动生成报告"
@@ -47,7 +47,7 @@ gap_source: "官方文档"
 android17_review_notes: "2026-07-30：补齐 AGP 9.3 standalone analyzer task、新 optimization DSL 与 .keep source set；纠正旧 AGP 仍需 R8 9.3.7-dev+、consumer rule 不能靠新增窄规则抵消、报告分数不等于实际体积收益、JNI descriptor class 也需保护等边界。运行验证锚定 Android 17 / API 37 / android-17.0.0_r1；本工具运行在构建主机，不依赖 android17-6.18-2026-06_r6 内核实现。"
 ---
 
-# 14.20 R8 Configuration Analyzer 与 keep 规则体积归因
+# 14.27 R8 Configuration Analyzer 与 keep 规则体积归因
 
 ## 为什么需要单独看 R8 Configuration Analyzer
 

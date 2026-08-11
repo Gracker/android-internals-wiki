@@ -25,9 +25,29 @@
 | ch11 功耗 | 8 | 7 | 已完成 | 2026-08-11 |
 | ch12 网络性能 | 8 | 3 | 已完成 | 2026-08-11 |
 | ch13 Perfetto | 27 | 22 | 已完成 | 2026-08-11 |
-| 其余 15 章 | 424 | 待审阅 | 未开始 | - |
+| ch14 其他分析工具 | 32 | 28 | 已完成 | 2026-08-11 |
+| 其余 14 章 | 392 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 546 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 542 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch14 其他分析工具
+
+保留后的连续编号为 14.1～14.28。内容按问题证据重新排列：IDE 与 CPU 分析（14.1～14.4）、内存与系统快照（14.5～14.8）、自动化和线上治理（14.9～14.14）、GPU/窗口/布局（14.15～14.22）、eBPF、Hook、构建归因与动态分析（14.23～14.28）。
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `14-android-studio-leakcanary-profiler.md` | 删除第二套 LeakCanary、HPROF 与线上内存取证教程；保留 Panda/Quail IDE task、instrumentation 泄漏断言、测试样本和 release 隔离边界 | `../src/part3-tools/ch14-other-tools/05-memory-tools.md`（14.5） |
+| `12-apm-observability.md` | 删除与三方性能库选型重复的平台与 SDK 清单；保留 JankStats、FrameMetrics、ApplicationExitInfo、Vitals 的官方信号分层，以及 schema、主键、采样、隐私和开销口径 | `../src/part3-tools/ch14-other-tools/10-third-party-libs-observability.md`（14.10） |
+| `27-macrobenchmark-automation-gate.md` | 删除第二套 Macrobenchmark 工程与指标教程；保留配对实验、绝对/相对预算、样本不足与 inconclusive、温度/网络/cache 噪声控制和异常 trace 诊断 | `../src/part3-tools/ch14-other-tools/09-automation-tools.md`（14.9） |
+| `14.31-android17-ftrace-atrace-perfetto-bridge.md` | 与 Perfetto 章的 tracing infrastructure 重复，没有保留第二套 tracefs/atrace/Perfetto probe 说明 | `../src/part3-tools/ch13-perfetto/08-tracing-infrastructure.md`（13.8） |
+| 14.1 中的 ProfilingManager 完整 API 教程 | 压缩为生产设备受限采集入口；API 35～37、系统触发、限流、脱敏与产物交付只在专项维护 | `../src/part3-tools/ch14-other-tools/11-profiling-manager.md`（14.11） |
+| 原 14.24、14.32、14.3、14.22、14.4、14.11、14.6、14.5、14.7 | 按 CPU → 内存 → 快照 → 自动化 → 可观测性顺序改为 14.3～14.11 | `03-android17-simpleperf-microarch-profiling.md`～`11-profiling-manager.md` |
+| 原 14.17、14.23、14.19、14.8、14.28、14.18、14.29、14.30、14.9、14.15、14.16 | 按系统指标/CLI → GPU → Camera → 窗口/布局顺序改为 14.12～14.22 | `12-statsd-system-metrics.md`～`22-layout-inspector-viewdebug.md` |
+| 原 14.10、14.21、14.25、14.13、14.20、14.26 | 按 eBPF 工具/加载/矩阵 → Hook → R8 → GAPS 顺序改为 14.23～14.28 | `23-ebpf-performance-analysis.md`～`28-gaps-dynamic-analysis.md` |
+
+章节 README、`src/SUMMARY.md`、changelog 映射、活动跨章链接、审阅清单和统计口径已经切换到连续编号。历史 changelog、review 日志、关闭 finding 和受保护素材索引保留旧路径。
 
 ## ch13 Perfetto
 
@@ -161,7 +181,7 @@
 | --- | --- | --- |
 | `08-media-pipeline.md` | 删除跨音频、视频、Camera 和播放器实战的横向重复稿；低延迟/HDR/Eclipsa 组合能力补入播放管线主文 | 1.16、18.14、`../src/part2-performance/ch18-rendering-pipelines/23-media-codec2-tunneled-media3-abr.md`、22.43 |
 | `09-game-performance.md` | 合并 Game Mode/State、ADPF、Swappy、headroom 和四组对照实验 | `../src/part2-performance/ch18-rendering-pipelines/16-game-engine.md`、5.9 |
-| `08-system-triggered-profiling.md` | 合并 system trigger、设备验证、线上 redaction 与 Android 8—14 降级策略 | `../src/part3-tools/ch14-other-tools/07-profiling-manager.md`（14.7） |
+| `08-system-triggered-profiling.md` | 合并 system trigger、设备验证、线上 redaction 与 Android 8—14 降级策略 | `../src/part3-tools/ch14-other-tools/11-profiling-manager.md`（14.11） |
 | `11-native-library-loading-dynamic-linker.md` | 合并启动关键路径、`JNI_OnLoad`、三方 SDK/引擎和最终 APK/AAB 门禁 | `../src/part1-fundamentals/ch01-architecture/58-android-dynamic-linker-linker64-native-library.md`（1.58） |
 | `17-kotlin-flow-backpressure-performance.md` / `19-thread-model-dispatcher-selection.md` | 合并 Flow 热流/背压/flatten、Executor/HandlerThread、线程优先级、EEVDF 与 ADPF TID 边界 | `../src/part2-performance/ch08-responsiveness/06-coroutine-performance.md`（8.6） |
 | `20-jni-overhead-native-interop-performance.md` | 合并 ART transition、数组复制、引用表、Attach/Detach、pthread 与微基准方法 | `../src/part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md`（1.15） |
@@ -198,7 +218,7 @@
 | `11-webview-performance.md` | 合并 provider 版本、启动、JS Bridge、宿主 HWUI、renderer 生命周期和诊断方法 | `../src/part5-app/ch22-rendering-practice/07-webview-optimization.md`、18.13 |
 | `12-view-layout-performance.md` | 主题独立，改为连续编号 7.10 | `../src/part2-performance/ch07-smoothness/10-view-layout-performance.md` |
 | `13-systemui-performance.md` | 主题独立，改为连续编号 7.11 | `../src/part2-performance/ch07-smoothness/11-systemui-performance.md` |
-| `14-gaps-dynamic-analysis.md` | 从流畅度章移出；作为目标方法可达性与自动执行工具补齐工具章空缺编号 | `../src/part3-tools/ch14-other-tools/26-gaps-dynamic-analysis.md`（14.26） |
+| `14-gaps-dynamic-analysis.md` | 从流畅度章移出；作为目标方法可达性与自动执行工具归入工具章 | `../src/part3-tools/ch14-other-tools/28-gaps-dynamic-analysis.md`（14.28） |
 | `15-scenario-playbooks.md` | 删除与分析方法、典型场景重复的第二套 runbook；问题卡、责任链、场景分流和结论模板由主文统一承载 | `../src/part2-performance/ch07-smoothness/03-jank-methodology.md`、`../src/part2-performance/ch07-smoothness/04-typical-scenarios.md` |
 | `16-power-thermal-jank-playbook.md` | 拆回功耗诊断与 Thermal 治理主文；补入 thermal throttling 到卡顿的可证伪因果链 | `../src/part5-app/ch25-power-size/01-power-diagnosis.md`、`../src/part5-app/ch25-power-size/28-thermal-manager-throttling-performance.md` |
 | `17-fragmenttransaction-commit-jank.md` | 合并提交 API、主线程消息、生命周期、首帧与 Perfetto 诊断 | `../src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md`；7.4 保留场景入口 |

@@ -27,7 +27,7 @@ sources:
   - type: research
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-hwc-overlay-plane-capability-sf-composition-downgrade.md"
 tags: [hwc, surfaceflinger, overlay-plane, client-composition, jank, perfetto, winscope]
-related_chapters: ["2.6", "2.15", "2.16", "7.4", "7.6", "14.15", "18.15"]
+related_chapters: ["2.6", "2.15", "2.16", "7.4", "7.6", "14.21", "18.15"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-23"
 gap_source: "章节深挖/研究素材/AOSP 结构/官方文档"

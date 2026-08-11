@@ -56,7 +56,7 @@ sources:
     path: "https://developers.google.com/android/drivers"
 section: "16.3"
 tags: ['aosp', 'build', 'soong', 'ninja', 'emulator', 'cuttlefish', 'debug']
-related_chapters: ["16.1", "16.2", "15.7", "14.7"]
+related_chapters: ["16.1", "16.2", "15.7", "14.11"]
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-08
 last_task2b_verifier_at: "2026-07-07T23:28:23+08:00"

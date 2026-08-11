@@ -1,6 +1,7 @@
 ---
 title: "StrictMode 性能检查与开发期诊断"
-chapter: "14.23"
+chapter: "14.13"
+section: "14.13"
 status: finalized
 task2b_result: fixed-lite
 task2b_state: fixed
@@ -13,7 +14,7 @@ pipeline_stage: ready-to-publish
 last_task2b_lite_at: 2026-06-17
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
 tags: [strictmode, disk-read, disk-write, network, custom-penalty, performance-diagnostics]
-related_chapters: ["15.6", "14.4", "21.3"]
+related_chapters: ["15.6", "14.7", "21.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-07"
 drafted_date: "2026-06-08"
@@ -49,7 +50,7 @@ last_deepseek_cn_review_at: 2026-06-19
 android17_review_notes: "校正 ThreadPolicy 线程范围、BlockGuard 检查点、penalty 执行、Binder 违规回传、临时放行、CI 安装位置及 Android 17 flagged VmPolicy"
 ---
 
-# 14.23 StrictMode 性能检查与开发期诊断
+# 14.13 StrictMode 性能检查与开发期诊断
 
 StrictMode 是一组运行时规则：代码经过 Android 或 libcore 预埋的检查点时，规则可以报告磁盘读写、网络访问、显式 GC、资源未关闭和若干安全违规。它适合在开发、自动化测试和平台集成阶段暴露可疑行为。
 

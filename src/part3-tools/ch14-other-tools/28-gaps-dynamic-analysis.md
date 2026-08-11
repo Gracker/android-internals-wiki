@@ -1,7 +1,7 @@
 ---
 title: "GAPS：Android 动态分析目标可达性路径重建"
-chapter: "14.26"
-section: "14.26"
+chapter: "14.28"
+section: "14.28"
 status: "finalized"
 applicable_versions: "论文动态实验：Android 16 x86-64 模拟器；ARM 场景：Pixel 2 / Android 11；Android 17 仅工程集成边界"
 tags: [dynamic-analysis, gui-testing, static-analysis, method-reachability, android-testing]
@@ -51,7 +51,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-12
 ---
 
-# 14.26 GAPS：Android 动态分析目标可达性路径重建
+# 14.28 GAPS：Android 动态分析目标可达性路径重建
 
 ## 版本边界
 

@@ -1,7 +1,7 @@
 ---
 title: Hook 基础设施与性能工具实现原理
-chapter: '14.13'
-section: '14.13'
+chapter: '14.26'
+section: '14.26'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-06-24'
@@ -53,8 +53,7 @@ tags:
 - wx
 - perf-measurement
 - mainline-modules
-related_chapters:
-- 14.7 ProfilingManager；20.7 异常处理架构；20.12 SafeMode
+related_chapters: ["14.11", "20.7", "20.12"]
 created_by: codex
 created_date: '2026-04-21'
 drafted_by: codex
@@ -114,7 +113,7 @@ tech_score: 3/5
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-16
 ---
-# 14.13 Hook 基础设施与性能工具实现原理
+# 14.26 Hook 基础设施与性能工具实现原理
 
 Hook 适合补充已有观测手段覆盖不到的调用边界。例如 Perfetto 已经指出主线程在一次 JNI 调用内停留了 40 ms，但 trace 中没有这段 native 代码的阶段信息；这时可以在自有进程内拦截少量目标函数，记录耗时、参数分类或调用栈。
 

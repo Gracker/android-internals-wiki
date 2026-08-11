@@ -76,7 +76,7 @@ related_chapters:
 - '2.6'
 - '2.9'
 - '3.2'
-- '14.3'
+- '14.5'
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
 reviewed_date: "2026-06-23"

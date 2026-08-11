@@ -35,7 +35,7 @@ sources:
   - type: source
     path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6"
 tags: [governance, benchmark, ci, budget, release]
-related_chapters: ["7.1", "8.1", "8.3", "9.1", "14.12", "15.3", "15.5", "15.6", "15.9"]
+related_chapters: ["7.1", "8.1", "8.3", "9.1", "14.9", "15.3", "15.5", "15.6", "15.9"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
@@ -335,7 +335,7 @@ PR 模板可以要求作者填写：
 ## 与其他章节的关系
 
 - §7、§8、§9 解释流畅性、启动和 ANR 的平台机制。
-- §14.12 说明 Macrobenchmark 的用法与边界。
+- §14.9 说明 Macrobenchmark 的用法与回归门禁边界。
 - §15.3 定义性能指标契约。
 - §15.5 讨论线上监控和保护开关。
 - §15.6 讨论测试设计与统计可靠性。

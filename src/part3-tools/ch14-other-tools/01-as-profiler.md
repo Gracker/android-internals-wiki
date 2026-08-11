@@ -10,13 +10,13 @@ reviewed_by: "openclaw-task6"
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37) (ProfilingManager: Android 14+)"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 task9_state: reviewed
 last_task9_at: 2026-07-14T06:26:25+08:00
 task9_audit_type: deep-review
 last_task9_review_log: logs/deep-review/2026-07-14-06-deep-review.md
 last_verified: "2026-05-28"
-last_verified_against: "Android Studio Profiler docs + Power Profiler docs + ProfilingManager API 34-36 / trigger-based profiling docs (2026-07-14 Task2B fix)"
+last_verified_against: "Android Studio Profiler docs + Power Profiler docs + Android 17 tracing boundary"
 task9_result: pass-tech-review
 confidence: high
 sources:
@@ -46,33 +46,11 @@ sources:
   path: https://developer.android.com/studio/profile/power-profiler
 - type: official
   path: https://developer.android.com/reference/android/os/ProfilingManager
-- type: official
-  path: https://developer.android.com/reference/android/os/ProfilingTrigger
-- type: official
-  path: https://developer.android.com/sdk/api_diff/37/changes/android.os.ProfilingTrigger
-- type: official
-  path: https://developer.android.com/sdk/api_diff/36.1/changes/android.os.ProfilingTrigger
-- type: official
-  path: https://developer.android.com/sdk/api_diff/36.1/changes/android.os.ProfilingManager
-- type: official
-  path: https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture
-- type: official
-  path: https://developer.android.com/topic/performance/tracing/profiling-manager/retrieve-and-analyze
-- type: official
-  path: https://developer.android.com/topic/performance/tracing/profiling-manager/querying-profiles
-- type: aosp
-  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java
-- type: aosp
-  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java
-- type: aosp
-  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingResult.java
-- type: aosp
-  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/ProfilingService.java
 tags: 
 last_task2b_lite_at: "2026-05-28"
 last_task2b_main_at: "2026-07-14"
 task6_result: pass-light-edit
-related_chapters: ["5.4", "13.3", "13.5", "13.7", "14.2", "14.11"]
+related_chapters: ["5.4", "13.3", "13.5", "13.7", "14.2", "14.8"]
 task2b_state: fixed
 task2b_result: fixed
 pipeline_stage: ready-to-publish
@@ -96,7 +74,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-11
 ---
 
-# Android Studio Profiler
+# 14.1 Android Studio Profiler
 
 ## Profiler 解决什么问题
 
@@ -249,77 +227,11 @@ ODPM 把设备级功耗分成若干 rail，可能包括 CPU Big/Mid/Little、GPU
 
 官方当前说明中，Power Profiler 的 ODPM 数据要求 Pixel 6 或更新的 Pixel 设备，并运行 Android 10（API 29）及以上。没有 ODPM 的设备仍可能通过库仑计和电池计量器提供容量、剩余电荷与瞬时电流；可用字段要以连接设备的结果为准。
 
-## 使用分析器 API 在代码中触发分析
+## 生产设备中的受限采集入口
 
-`ProfilingManager` 的版本边界如下：
+Android Studio Profiler 主要服务于连接设备上的交互式分析。若问题只能在真实用户设备或接近发布的构建中出现，应改用 `ProfilingManager` 请求或注册系统触发式采集；它有独立的版本、限流、脱敏、产物交付和隐私边界，不能按 IDE 任务的行为推断。
 
-- Android 15（API 35）加入 `requestProfiling()` 和全局结果监听器，可请求 system trace、Java heap dump、heap profile 或 stack sampling。
-- Android 16（API 36）加入 `addProfilingTriggers()`；该 API 级别公开 `APP_FULLY_DRAWN` 与 `ANR`。
-- Android 16 的 API 36.1 小版本加入 `APP_REQUEST_RUNNING_TRACE`、`KILL_FORCE_STOP`、`KILL_RECENTS`、`KILL_TASK_MANAGER`，并增加 `requestRunningSystemTrace()` 与 `addAllProfilingTriggers()`。
-- Android 17（API 37）加入 `OOM`、`ANOMALY`、`KILL_EXCESSIVE_CPU_USAGE`、`COLD_START` 和 `APP_COMPAT`。`android-17.0.0_r1` 的实现位于 `packages/modules/Profiling`，不在 `frameworks/base/core/java/android/os`。
-
-`ProfilingTrigger` 中这些常量都带有 `TRIGGER_TYPE_` 前缀，下表为便于阅读省略该前缀。Android 17 各触发器交付的产物并不相同：
-
-| 触发器 | 发生条件 | 产物与边界 |
-|---|---|---|
-| `APP_FULLY_DRAWN` | 冷启动后调用 `reportFullyDrawn()` | 正在运行的后台 system trace 快照 |
-| `ANR` | 系统已经识别 ANR、尝试结束 App 之前 | 正在运行的后台 system trace 快照；触发不代表 App 最终一定被杀 |
-| `APP_REQUEST_RUNNING_TRACE` | App 调用 `requestRunningSystemTrace()` | 若当时有后台 trace，则返回它的快照；调用前必须注册该触发器 |
-| `KILL_FORCE_STOP` / `KILL_RECENTS` / `KILL_TASK_MANAGER` | 用户分别从设置、最近任务或任务管理器结束 App | 正在运行的后台 system trace 快照 |
-| `KILL_EXCESSIVE_CPU_USAGE` | App 因 CPU 使用过量并以 `REASON_EXCESSIVE_RESOURCE_USAGE` 退出 | 正在运行的后台 system trace 快照 |
-| `OOM` | App 抛出 `OutOfMemoryError` | Java heap dump；自定义 `UncaughtExceptionHandler` 必须继续调用默认异常处理器 |
-| `COLD_START` | 系统识别到冷启动 | 新启动的 system trace 与 stack sampling；到 `reportFullyDrawn()` 停止，否则默认 5 秒 |
-| `ANOMALY` / `APP_COMPAT` | 系统检测到异常行为或未来版本不再支持的行为 | 产物随异常类型变化，`ProfilingResult.getTag()` 提供补充分类 |
-
-后台 system trace 使用环形缓冲区，满后覆盖较早事件，触发快照只保证保留触发前最近一段活动。`COLD_START` 另用丢弃式缓冲区（discard buffer），满后丢弃新事件以保留启动初期记录。两类触发都受系统采样窗口和限流约束，注册成功不等于一定能收到产物。
-
-下面的 API 37 示例注册冷启动与 ANR 两类触发器。传入的 `Executor` 由调用方持有，便于跟随进程组件管理线程生命周期：
-
-```kotlin
-import android.content.Context
-import android.os.ProfilingManager
-import android.os.ProfilingResult
-import android.os.ProfilingTrigger
-import android.util.Log
-import androidx.annotation.RequiresApi
-import java.util.concurrent.Executor
-
-@RequiresApi(37)
-fun registerProfilingTriggers(context: Context, executor: Executor) {
-    val manager = context.getSystemService(ProfilingManager::class.java) ?: return
-
-    manager.registerForAllProfilingResults(executor) { result ->
-        val path = result.resultFilePath
-        if (result.errorCode == ProfilingResult.ERROR_NONE && path != null) {
-            Log.i(
-                "Profiling",
-                "trigger=${result.triggerType}, tag=${result.tag}, file=$path",
-            )
-        } else {
-            Log.w(
-                "Profiling",
-                "collection failed: error=${result.errorCode}, "
-                    + "message=${result.errorMessage}",
-            )
-        }
-    }
-
-    manager.addProfilingTriggers(
-        listOf(
-            ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_COLD_START)
-                .setRateLimitingPeriodHours(6)
-                .build(),
-            ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANR)
-                .setRateLimitingPeriodHours(6)
-                .build(),
-        ),
-    )
-}
-```
-
-`addProfilingTriggers()` 的结果只投递给全局监听器。生产接入通常先注册监听器再添加触发器，以缩小事件发生时尚无投递入口的窗口。每种触发器只保留一个注册项，重复添加会替换旧配置。App 设置的小时级限流叠加在系统限流之上；触发条件满足与产物交付都没有成功保证。
-
-成功文件位于 App 自己的存储目录，路径必须从 `ProfilingResult.getResultFilePath()` 读取。App 负责上传、保留、删除和隐私策略，不能把返回路径当成永久制品地址。`ProfilingManager` 产出的 system trace 会经过脱敏：其他进程被合并为 `OtherProcesses`，部分依赖完整系统数据的 PerfettoSQL 查询不能用于这类 trace。
+完整的 API 35—37 演进、`requestProfiling()`、后台 trace、触发器矩阵、结果文件管理与降级策略统一见 [14.11 ProfilingManager](11-profiling-manager.md)。本节只保留工具选择边界，避免两处维护同一套 API 细节。
 
 ## 常见问题与误区
 
@@ -348,16 +260,5 @@ fun registerProfilingTriggers(context: Context, executor: Executor) {
 - [Record Native allocations](https://developer.android.com/studio/profile/record-native-allocations)
 - [Power Profiler](https://developer.android.com/studio/profile/power-profiler)
 - [ProfilingManager API reference](https://developer.android.com/reference/android/os/ProfilingManager)
-- [ProfilingTrigger API reference](https://developer.android.com/reference/android/os/ProfilingTrigger)
-- [Android 17 `ProfilingTrigger` API diff](https://developer.android.com/sdk/api_diff/37/changes/android.os.ProfilingTrigger)
-- [Android 16 API 36.1 `ProfilingTrigger` diff](https://developer.android.com/sdk/api_diff/36.1/changes/android.os.ProfilingTrigger)
-- [Android 16 API 36.1 `ProfilingManager` diff](https://developer.android.com/sdk/api_diff/36.1/changes/android.os.ProfilingManager)
-- [Trigger-based profiling](https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture)
-- [Retrieve and analyze ProfilingManager data](https://developer.android.com/topic/performance/tracing/profiling-manager/retrieve-and-analyze)
-- [Query ProfilingManager profiles](https://developer.android.com/topic/performance/tracing/profiling-manager/querying-profiles)
-- [Android 17 `ProfilingManager.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java)
-- [Android 17 `ProfilingTrigger.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java)
-- [Android 17 `ProfilingResult.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingResult.java)
-- [Android 17 `ProfilingService.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/ProfilingService.java)
 - [Android 17 `Trace.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java)
 - [Android 17 Perfetto source tree](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/)

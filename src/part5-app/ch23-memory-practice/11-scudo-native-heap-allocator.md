@@ -33,7 +33,7 @@ sources:
   - type: book
     path: "Clippings/Android 应用稳定性剖析与优化 - Native 内存泄漏监控：寻找 Native 中不可达内存.md"
 tags: [native-memory, scudo, allocator, heapprofd, gwp-asan]
-related_chapters: ["4.5", "14.3", "20.11", "23.3", "26.16"]
+related_chapters: ["4.5", "14.5", "20.11", "23.3", "26.16"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-24"
 gap_source: "素材驱动/官方文档/Clippings结构参考"

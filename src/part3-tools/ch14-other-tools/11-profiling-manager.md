@@ -1,7 +1,7 @@
 ---
 title: "ProfilingManager"
-chapter: "14.7"
-section: "14.7"
+chapter: "14.11"
+section: "14.11"
 section_title: "ProfilingManager"
 status: finalized
 updated_by: "hermes-aiw-review-finalize-apply"
@@ -71,7 +71,7 @@ last_review_finalize_at: "2026-07-31T12:07:10+08:00"
 last_review_finalize_run_id: "20260731-120710-6c773bef"
 ---
 
-# 14.7 ProfilingManager
+# 14.11 ProfilingManager
 
 > 技术基线是 Android 17 / API 37 / `android-17.0.0_r1`。ProfilingManager 属于 Mainline 模块，可通过 Google Play system update 独立更新，因此设备行为可能与 AOSP tag 存在差异。
 
@@ -297,4 +297,4 @@ Android 8—14 没有等价的线上 profile API。降级目标是保留可比�
 - [13.1 Perfetto 简介与演进](../ch13-perfetto/01-perfetto-intro.md)：trace 容器、UI 与基础分析概念
 - [15.5 线上性能监控](../ch15-methodology/05-online-monitoring.md)：采样预算、上传和告警
 - [9.1 ANR 设计思想](../../part2-performance/ch09-anr/01-anr-design.md)：ANR 信号、trace 与归因边界
-- [8.2 Android 17 系统启动优化与 bootanalyze 工具链](../../part1-fundamentals/ch08-startup/8.2-Android-17-系统启动优化与-bootanalyze-工具链.md)：系统启动 trace 与应用冷启动 trace 的边界
+- [16.7 Android 系统启动耗时优化与 bootanalyze](../../part4-system/ch16-aosp/07-system-boot-time-optimization.md)：系统启动 trace 与应用冷启动 trace 的边界

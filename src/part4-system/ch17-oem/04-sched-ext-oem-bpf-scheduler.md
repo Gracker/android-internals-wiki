@@ -38,7 +38,7 @@ sources:
   - type: official
     path: "https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12"
 tags: ["sched-ext", "bpf", "oem", "scheduler", "kernel-6.12"]
-related_chapters: ["5.1", "5.2", "5.7", "14.10", "17.2"]
+related_chapters: ["5.1", "5.2", "5.7", "14.23", "17.2"]
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-29"
 task6_state: reviewed
