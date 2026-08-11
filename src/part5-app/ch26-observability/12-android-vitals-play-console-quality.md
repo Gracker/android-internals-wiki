@@ -1,7 +1,7 @@
 ---
 title: "Android Vitals 与 Play Console 质量指标归因"
-chapter: "26.15"
-section: "26.15"
+chapter: "26.12"
+section: "26.12"
 status: ready-for-review
 drafted_date: "2026-05-21"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37); Google Play Android vitals 2026 口径"
@@ -9,7 +9,7 @@ last_verified: "2026-05-21"
 last_verified_against: "Android Developers / Play Developer Reporting API docs, updated 2026-03-05"
 confidence: high
 tags: [observability, android-vitals, play-console, quality-metrics, release-quality]
-related_chapters: ["20.6", "21.8", "22.8", "23.7", "25.2", "26.3", "26.6", "26.7", "26.14"]
+related_chapters: ["20.6", "21.8", "22.8", "23.7", "25.2", "26.3", "26.6", "26.7"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-21"
 gap_source: "官方文档/Clippings结构参考/AOSP结构对照"
@@ -52,7 +52,7 @@ sources:
     path: "https://developers.google.com/play/developer/reporting/reference/rest/v1alpha1/vitals.anrrate"
 ---
 
-# 26.15 Android Vitals 与 Play Console 质量指标归因
+# 26.12 Android Vitals 与 Play Console 质量指标归因
 
 Android Vitals 是 Google Play 对线上技术质量的外部观测。它回答的是：从 Play 安装应用、允许共享使用情况与诊断数据的用户，是否正在经历稳定性、性能或功耗问题。内部 APM 回答的是另一个问题：问题出现在哪个版本、场景和调用路径，能否在灰度阶段定位并止损。两套数据的采集范围、分母和时效不同，应当相互校验，不能直接比较两个百分比的大小。
 
@@ -173,7 +173,7 @@ User-perceived LMK 常呈现为界面消失或进度丢失，Java crash handler 
 
 每个团队都可以设置比 Play 更早的趋势预警，但预警值应由历史基线、当前样本量和可接受风险推导，并保留变更记录。直接把 1.09% 或 0.47% 乘一个固定系数，无法处理低流量版本、设备集中度和指标季节性。
 
-A/B 实验同样受质量护栏约束。内部 crash、ANR、启动、帧耗时和功耗数据用于实验期间早停；Android Vitals 用于外部复核和较长窗口的风险观察。实验统计与多重检验见 26.14 节。
+A/B 实验同样受质量护栏约束。内部 crash、ANR、启动、帧耗时和功耗数据用于实验期间早停；Android Vitals 用于外部复核和较长窗口的风险观察。实验统计与多重检验见 26.6 节。
 
 ## 数据延迟、采样盲区与误判边界
 

@@ -37,9 +37,28 @@
 | ch23 内存优化实战 | 18 | 10 | 已完成 | 2026-08-11 |
 | ch24 I/O 与网络优化 | 23 | 19 | 已完成 | 2026-08-11 |
 | ch25 功耗与包体积优化 | 30 | 19 | 已完成 | 2026-08-11 |
-| 其余 3 章 | 137 | 待审阅 | 未开始 | - |
+| ch26 应用可观测性 | 30 | 25 | 已完成 | 2026-08-11 |
+| 其余 2 章 | 107 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 482 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 477 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch26 应用可观测性
+
+保留后的连续编号为 26.1～26.25。内容按“架构、Crash/ANR 与性能采集 → 排障、实验和发布门禁 → 退出/启动与系统诊断 → Vitals、存储、网络、评分和端侧日志 → 功耗、插桩与系统级采集 → ART/Profilo、非 Play 与 JVMTI”组织；案例、低版本补充和约束专题回到负责完整机制的主文，所有 H1 与 frontmatter 编号统一。
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `05-online-troubleshooting.md` / `08-observability-case-studies.md` | 将下载 99%、低端机启动、支付卡顿、后台耗电四类证据路径和 Runbook 验收并入线上排障方法论，案例不再脱离流程单列 | `../src/part5-app/ch26-observability/05-online-troubleshooting.md`（26.5） |
+| `09-application-exit-info.md` / `10-legacy-process-exit-attribution.md` | 统一 API 30+ 系统退出记录与 API 21～29 应用推断；保留 confirmed/suspected/unknown 证据等级、来源隔离和统一事件模型 | `../src/part5-app/ch26-observability/08-application-exit-info.md`（26.8） |
+| `06-ab-testing-regression.md` / `14-performance-experiment-statistics.md` | 将 estimand、cluster bootstrap、P90/P99 差值区间、尾部违约率、混合分布、序贯与多重比较、异常值和实验登记并入 A/B 与回归主文 | `../src/part5-app/ch26-observability/06-ab-testing-regression.md`（26.6） |
+| `03-performance-collection.md` / `22-monitoring-under-memory-privacy-constraints.md` / `26.14-android14-memory-tracking-integration.md` | 将 `libmeminfo` / `libmemevents` 能力边界、公开内存指标、后台冻结和内存压力下的降级状态机并入性能采集主文 | `../src/part5-app/ch26-observability/03-performance-collection.md`（26.3） |
+| 原 26.11～26.13、26.15～26.21、26.23～26.29 中其余主题 | eBPF、版本化诊断、启动归因、Vitals、存储、网络、评分、端侧日志、Battery Historian、字节码插桩、heapprofd、procfs CPU、Page Fault、XTrace、Profilo、非 Play 与 JVMTI 均能独立回答问题，依次改为连续编号 26.9～26.25 | `../src/part5-app/ch26-observability/09-ebpf-online-tracing-binder-semantics.md`～`../src/part5-app/ch26-observability/25-jvmti-agent-art-runtime-dynamic-monitoring.md` |
+
+XTrace 与 JVMTI 都涉及 ART 运行时，但前者是未开源的线上动态追踪论文方案，后者是受 debuggable 边界限制的标准实验入口；合并会混淆支持范围，因此分别保留。procfs CPU、Page Fault、heapprofd、Profilo 和非 Play ROM 也各自保留独立问题边界。
+
+章节 README、`src/SUMMARY.md`、活动队列、跨章引用和统计口径已经切换到新编号。历史 changelog、review/audit 日志、关闭 finding、素材索引与 `consolidated_from` 保留旧路径和编号。
 
 ## ch25 功耗与包体积优化
 
@@ -477,7 +496,7 @@
 | `24-android17-app-hibernation-performance.md` | 主题独立，改为连续编号 5.17 | `../src/part1-fundamentals/ch05-cpu-power/17-android17-app-hibernation-performance.md` |
 | `5.21-cross-app-agent-system-primitive.md` | 从 CPU/Power 移出；合并 Accessibility、VoiceInteraction 与 AppFunctions 的选择边界 | `../src/part4-system/ch16-aosp/11-agent-native-os.md` |
 | `5.24-android17-binder-sz4m-kernel-buffer-pool-priority-set-called-dedup.md` | 删除已标记 outdated 的迁移壳；Binder 唯一正文不变 | `../src/part1-fundamentals/ch01-architecture/1.44-android17-binder-sz4m-kernel-buffer-pool.md` |
-| `5.33-android17-performance-score-attribution-sourcecode.md` | 删除重复评分与样本池稿；保留 ADPF/headroom 主文和第 26 章唯一评分正文 | 5.9、`../src/part5-app/ch26-observability/18-app-performance-score.md` |
+| `5.33-android17-performance-score-attribution-sourcecode.md` | 删除重复评分与样本池稿；保留 ADPF/headroom 主文和第 26 章唯一评分正文 | 5.9、`../src/part5-app/ch26-observability/15-app-performance-score.md` |
 
 章节 README、`src/SUMMARY.md`、活动跨章链接和自动化脚本映射已经切换到连续编号。历史 changelog、已关闭 finding、queue/source 索引与 `consolidated_from` 保留旧路径；原 README 中两个从未存在的 5.18/5.22 链接已移除。
 

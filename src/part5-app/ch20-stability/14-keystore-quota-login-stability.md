@@ -30,7 +30,7 @@ sources:
   - type: aosp-doc
     path: "https://source.android.com/docs/security/features/keystore/implementer-ref"
 tags: [stability, keystore, keymint, android17, login]
-related_chapters: ["8.9", "20.2", "20.7", "26.5", "26.9"]
+related_chapters: ["8.9", "20.2", "20.7", "26.5", "26.8"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-25"
 gap_source: "官方文档/每日信息/AOSP结构"
@@ -294,7 +294,7 @@ target SDK 从 36 升到 37 时，已有 key 不会被系统自动清理。若�
 
 错误消息可能包含 alias 或内部信息，上报前要清洗。账号槽位应使用不可逆且不可跨用户关联的标识；简单 SHA-256 账号 ID 仍可能被字典反查。密钥、token、证书私密内容、完整 alias 都不进入日志。
 
-如果配额错误导致启动崩溃，下次启动可读取 Android 11+ 的 `ApplicationExitInfo`，再与本地保存的最近一次 key 操作关联。退出记录只能说明进程因 crash、ANR 等原因结束，不能单独证明 Keystore 是根因；业务异常时间、进程名和本次启动 session 才能完成归因。详细用法见 26.9。
+如果配额错误导致启动崩溃，下次启动可读取 Android 11+ 的 `ApplicationExitInfo`，再与本地保存的最近一次 key 操作关联。退出记录只能说明进程因 crash、ANR 等原因结束，不能单独证明 Keystore 是根因；业务异常时间、进程名和本次启动 session 才能完成归因。详细用法见 26.8。
 
 ## 9. 灰度与压测
 
@@ -331,7 +331,7 @@ target 37 放量前至少确认：
 
 8.9 关注应用进程、keystore2、KeyMint HAL、TEE/StrongBox 之间的延迟、operation slot 和线程调度；这里关注持久 key entry 数量与 alias 生命周期。operation 并发上限和每 UID key 数量是两套资源约束，报告中应分别统计。
 
-20.7 统一讨论异常恢复、crash loop 与 SafeMode，26.9 讨论 `ApplicationExitInfo`。这里提供 Keystore 故障分类和恢复状态；进程退出记录只能作为时间与结果证据。
+20.7 统一讨论异常恢复、crash loop 与 SafeMode，26.8 讨论 `ApplicationExitInfo`。这里提供 Keystore 故障分类和恢复状态；进程退出记录只能作为时间与结果证据。
 
 ## 小结
 

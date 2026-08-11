@@ -1,10 +1,11 @@
 ---
 title: "Battery Historian 与性能指标集成"
-chapter: "26.20"
+chapter: "26.17"
+section: "26.17"
 status: ready-for-review
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 tags: [Battery Historian, 性能监控, 电池, 指标集成]
-related_chapters: ["26.3", "26.15", "26.18"]
+related_chapters: ["26.3", "26.12", "26.15"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-16"
 gap_source: "素材驱动/官方文档/章节深挖"
@@ -19,7 +20,7 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/powerstats/"
 ---
 
-# 26.20 Battery Historian 与性能指标集成
+# 26.17 Battery Historian 与性能指标集成
 
 Battery Historian 适合把一次受控实验中的系统事件放到同一条时间轴上。它能帮助回答“电量下降时，屏幕、CPU、Job、网络、定位和 WakeLock 处于什么状态”，却不能直接证明某个事件消耗了多少能量。Android 官方已经标注 Battery Historian [不再积极维护](https://developer.android.com/topic/performance/power/battery-historian)，并建议优先考虑 system trace、Macrobenchmark `PowerMetric` 或 Android Studio Power Profiler。
 

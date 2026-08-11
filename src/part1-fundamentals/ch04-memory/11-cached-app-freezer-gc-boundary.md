@@ -14,7 +14,7 @@ last_verified_against: "AOSP android-17.0.0_r1 frameworks/base services/core/jav
 confidence: medium-high
 pipeline_stage: ready-for-review
 tags: [cached-app-freezer, gc, lmkd, oom-adj, binder-freezer, memory]
-related_chapters: ["1.18", "4.2", "4.3", "4.4", "4.7", "5.8", "20.5", "26.9"]
+related_chapters: ["1.18", "4.2", "4.3", "4.4", "4.7", "5.8", "20.5", "26.8"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-19"
 gap_source: "每日信息/DeepResearch/AOSP结构/官方文档"

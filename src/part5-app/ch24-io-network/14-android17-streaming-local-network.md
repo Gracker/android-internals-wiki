@@ -32,7 +32,7 @@ sources:
   - type: clippings-structure
     path: "[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]"
 tags: [network, android17, streaming, local-network, connectivity]
-related_chapters: ["12.1", "12.2", "16.5", "24.4", "24.9", "24.10", "26.17"]
+related_chapters: ["12.1", "12.2", "16.5", "24.4", "24.9", "24.10", "26.14"]
 created_by: "task2a-knowledge-gap"
 drafted_by: "openclaw-task2a"
 created_date: "2026-05-24"
@@ -82,7 +82,7 @@ Android 17 同时增加了流媒体数据计划速率接口和本地网络访问
 | --- | --- | --- | --- | --- |
 | 蜂窝流媒体 | 点播、直播、音频流、RTC 上行 | 订阅对象提供流媒体上下行速率上限 | 初始质量过高、缓冲增加、上行编码超出预算 | ABR、编码器和清晰度编排 |
 | 本地网络 | Cast、IoT、mDNS、SSDP、本地 HTTP 服务 | 目标 API 37 后默认阻断，需系统设备选择器或运行时权限 | 发现失败、UDP `EPERM`、TCP 超时、入站连接失败 | 权限与设备选择流程 |
-| 普通互联网请求 | 登录、Feed、配置、图片、遥测 | 不由上述速率上限或本地网络权限统一控制 | DNS、TLS、连接、服务端或队列失败 | 24.9、24.4、26.17 |
+| 普通互联网请求 | 登录、Feed、配置、图片、遥测 | 不由上述速率上限或本地网络权限统一控制 | DNS、TLS、连接、服务端或队列失败 | 24.9、24.4、26.14 |
 
 建议在诊断事件中记录低基数的 `request_class`，例如 `media_segment`、`lan_discovery` 和 `api`。不要把订阅标识、设备地址或服务实例名写入通用遥测。
 

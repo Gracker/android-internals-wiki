@@ -5,7 +5,7 @@ section: "14.24"
 status: ready-for-review
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: [ebpf, bpfloader, rust, bpf, system-architecture, timeInState]
-related_chapters: ["13.8", "14.23", "17.4", "26.11"]
+related_chapters: ["13.8", "14.23", "17.4", "26.9"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-07"
 drafted_date: "2026-06-07"
@@ -364,4 +364,4 @@ adb shell ls /sys/kernel/tracing/events/power/cpu_frequency
 - [Android common kernel 6.18 GPU memory tracepoint](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/gpu_mem.h)
 - [AOSP eBPF architecture documentation](https://source.android.com/docs/core/architecture/kernel/bpf)
 
-> 🔗 交叉引用：eBPF 工具链（bpftrace、simpleperf）和 UprobeStats 详见 §14.23；功耗统计中的 timeInState 详见 §5.6；Perfetto 数据源配置详见 §13.8，线上 Binder 语义采集见 §26.11。
+> 🔗 交叉引用：eBPF 工具链（bpftrace、simpleperf）和 UprobeStats 详见 §14.23；功耗统计中的 timeInState 详见 §5.6；Perfetto 数据源配置详见 §13.8，线上 Binder 语义采集见 §26.9。

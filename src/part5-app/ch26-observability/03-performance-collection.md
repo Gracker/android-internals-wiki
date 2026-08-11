@@ -1,8 +1,9 @@
 ---
 title: 性能指标采集与上报
 chapter: '26.3'
+section: '26.3'
 status: finalized
-applicable_versions: Android 14 (API 34) - Android 17 (API 37)
+applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-08-09'
 last_source_verified_at: '2026-08-09'
 last_verified_against: AOSP android-17.0.0_r1 StatsD/AM/Debug/Build sources + AndroidX
@@ -71,6 +72,10 @@ sources:
   path: https://developer.android.com/reference/android/os/Debug
 - type: official
   path: https://developer.android.com/reference/android/os/Debug.MemoryInfo
+- type: source
+  path: https://android.googlesource.com/platform/system/memory/+/refs/tags/android-17.0.0_r1/libmeminfo/
+- type: source
+  path: https://android.googlesource.com/platform/system/memory/+/refs/tags/android-17.0.0_r1/libmeminfo/libmemevents/
 - type: official
   path: https://developer.android.com/reference/android/app/ActivityManager
 - type: official
@@ -89,7 +94,7 @@ sources:
   path: https://square.github.io/leakcanary/getting_started/
 ---
 
-# 性能指标采集与上报
+# 26.3 性能指标采集与上报
 
 ## 概览
 
@@ -358,6 +363,14 @@ if (proc_mem.SmapsOrRollup(&stats)) {
 | Android 14-17 | graphics / gl / other 三类 memtrack PSS | `android_os_Debug.cpp` 中 `graphics_memory_pss` 与 `memtrack_proc_graphics_pss()` / `memtrack_proc_gl_pss()` / `memtrack_proc_other_pss()` 在这些版本均存在 |
 | Android 17 | 同一分类口径，叠加 MemoryLimiter / Freezer 影响 | 三分类不是 Android 17 新增能力；精度取决于 HAL/driver，上述源码没有给出 ±5% 平台保证 |
 
+### 3.5 `libmeminfo` 与 `libmemevents` 的系统侧边界
+
+`Debug.getMemoryInfo()` 的 JNI 最终使用 `libmeminfo` 汇总进程内存。`ProcMemInfo::SmapsOrRollup()` 优先读取 `smaps_rollup`，不可用时退回逐 VMA 的 `smaps`；平台组件还可以使用 pagemap、kpageflags 与 kpagecount 做更高成本的 VMA 或 working-set 诊断。这些 native 类面向 platform、vendor 与 APEX 集成，不是普通 App 新增的对象跟踪 API。应用侧继续以 `Debug.MemoryInfo`、`ActivityManager.MemoryInfo` 和调试工具为兼容边界。
+
+Android 14 相关源码中的 `libmemevents` 使用 eBPF ring buffer 接收 OOM victim、direct reclaim、kswapd 与 vendor LMK 等内存事件，Android 17 仍保留这条系统路径。它依赖内核 tracepoint、BPF 能力、受信 loader 和 SELinux 策略；设备存在该源码不表示普通 App 可以订阅，也不表示每台 Android 14–17 设备暴露相同事件。线上 SDK 只能保存自身公开指标，平台或 OEM 组件才可把这类事件与 App 快照放到同一时间线。
+
+因此，内存监控按成本分两层：常态使用聚合快照发现 PSS、nativePss、GC 或后台回落异常；命中诊断条件后，再在受控设备或受信系统组件中使用 VMA 扫描、`libmemevents`、Perfetto、heap dump 或 heapprofd。聚合值负责发现趋势，深度工具负责解释来源，二者不能互相冒充。
+
 ---
 
 ## 4. Battery Historian 与性能指标整合
@@ -537,6 +550,20 @@ Android 17 的性能监控权限分层明确：
 
 后台持续上传应使用与任务语义匹配的 API。需要跨进程重启完成、允许延后的批量上传可交给 WorkManager，并通过网络、电量和存储 constraint 表达执行条件；前台页面内的短时采样随页面生命周期停止。不要用一句“Android 17 限制更严格”代替具体 API 和约束说明。
 
+### 8.3 约束驱动的采集降级状态机
+
+监控 SDK 不能把后台定时器当成持续时钟。Cached app 可能被冻结，WorkManager 只保证在约束允许时获得执行机会，内存压力下继续申请大附件还会放大故障。实现时可以把生命周期、任务回调和系统结果收敛成下面的状态机：
+
+| 状态 | 采集 | 本地处理 | 上报 |
+| --- | --- | --- | --- |
+| Foreground | 用户旅程、帧、网络、低频内存与业务指标 | 有界聚合、采样和脱敏 | 批量发送或入队 |
+| UI hidden / Background | 停止周期轮询，只保留必要业务事件 | 释放可重建缓存，写小型状态摘要 | 交给受约束的持久化任务 |
+| Cached / Frozen | 不假设存在用户态执行机会 | 不补造冻结期间样本 | 等待系统解冻 |
+| Restart / Resume | 查询退出记录、注册 profiling 结果监听、读取待传队列 | 标记不可观测区间，去重并恢复 | 先传关键摘要，再按预算传附件 |
+| Memory pressure observed | 停止高成本 profile 与大对象采集 | 缩小 buffer、拒绝新批次、保存丢弃计数 | 不因压力立即制造额外网络工作 |
+
+状态转换只能由实际生命周期、任务开始/停止和公开系统结果驱动。App 无法可靠查询“当前是否被冻结”，因为被冻结时本身就没有执行代码的机会；恢复后只能承认这段数据缺失，并记录 `unsupported`、`not_scheduled`、`frozen_gap`、`budget_exhausted` 等原因，不能用零填充。
+
 ---
 
 ## 9. 数据处理与上报策略
@@ -634,7 +661,7 @@ Android 14-17 的性能监控不是按一个虚构的 "PERFORMANCE_METRICS_ATOM"
 2. **框架层**：AndroidX `JankStats` 负责帧级实时诊断，`Debug.MemoryInfo` 负责进程级内存采集——两者都不需要特殊权限。
 3. **App 层**：电池感知采样率、网络指标聚合、上报策略和缓存管理由 App 自行实现或通过 Firebase Performance 等 SDK 接入。
 
-Android 17 需要重点补充的是 MemoryLimiter 的设备可选边界和 `ActivityManager.MemoryInfo.freeMem` 新字段。Compaction 与 Freezer 不是 Android 17 才出现，普通 App 也不能直接读取其完整事件流。线上系统应保存一致分母、策略版本和纳入概率；详细 trace、heap dump 与逐帧数据按成本和授权条件采集。
+Android 17 需要重点补充的是 MemoryLimiter 的设备可选边界和 `ActivityManager.MemoryInfo.freeMem` 新字段。Compaction 与 Freezer 不是 Android 17 才出现，`libmeminfo` / `libmemevents` 也不构成普通 App 的新公开对象跟踪接口。线上系统应保存一致分母、策略版本、纳入概率和缺失原因，并按前台、后台、冻结、恢复与内存压力状态降级；详细 trace、heap dump 与逐帧数据只在成本和授权条件允许时采集。
 
 ## 延伸阅读
 

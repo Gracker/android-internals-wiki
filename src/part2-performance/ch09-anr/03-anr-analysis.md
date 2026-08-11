@@ -34,7 +34,7 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/ResourcePressureUtil.java"
 tags: ['anr', 'traces', 'perfetto', 'analysis', 'cpu-usage', 'processcputracker', 'psi']
-related_chapters: ["9.1", "9.2", "9.4", "9.5", "1.4", "2.4", "26.25"]
+related_chapters: ["9.1", "9.2", "9.4", "9.5", "1.4", "2.4", "26.20"]
 consolidated_from:
   - "src/part2-performance/ch09-anr/13-anr-log-cpu-analysis-methodology.md"
 task9_result: auto-fixed

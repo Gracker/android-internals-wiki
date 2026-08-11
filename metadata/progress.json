@@ -1,27 +1,27 @@
 {
   "schema_version": 3,
   "scope": "Canonical chapter bodies under the 26 directories defined by metadata/v1.0-definition.md; README, SUMMARY, preface and appendix are excluded.",
-  "total": 482,
+  "total": 477,
   "draft": 0,
-  "ready-for-review": 158,
-  "finalized": 323,
+  "ready-for-review": 156,
+  "finalized": 320,
   "needs-review": 0,
   "verified": 1,
   "outdated": 0,
-  "ready_to_publish": 267,
+  "ready_to_publish": 265,
   "status_counts": {
-    "ready-for-review": 158,
-    "finalized": 323,
+    "ready-for-review": 156,
+    "finalized": 320,
     "verified": 1
   },
   "pipeline_stage_counts": {
-    "ready-to-publish": 267,
-    "unspecified": 131,
-    "finalized": 51,
+    "ready-to-publish": 265,
+    "unspecified": 130,
+    "finalized": 50,
     "ready-for-review": 24,
     "deep-review": 2,
     "rework-verified": 1,
-    "deep_review_passed": 2,
+    "deep_review_passed": 1,
     "reviewed": 2,
     "rework_verified": 1,
     "task6_ready_for_review": 1
@@ -52,9 +52,9 @@
     "23": 10,
     "24": 19,
     "25": 19,
-    "26": 30
+    "26": 25
   },
-  "summary_local_links": 521,
+  "summary_local_links": 516,
   "queue_snapshot": {
     "total": 23,
     "body-applied": 9,
@@ -63,7 +63,7 @@
     "review-finalized": 1,
     "completed": 1
   },
-  "last_updated": "2026-08-11T19:20:00+08:00",
-  "last_action": "chapter 25 content consolidation: 30 canonical bodies reduced to 19; power attribution, WakeLock/Alarm, WorkManager, location, ADPF, CPU and FGS supplements merged into owning articles; package-size specialties renumbered continuously",
+  "last_updated": "2026-08-11T20:10:00+08:00",
+  "last_action": "chapter 26 content consolidation: 30 canonical bodies reduced to 25; case studies, legacy exit attribution, experiment statistics, constrained monitoring and Android 14 memory tracking merged into owning articles; retained topics renumbered continuously",
   "generated_from": "chapter frontmatter and src/SUMMARY.md"
 }

@@ -1,6 +1,7 @@
 ---
 title: "Page Fault 类型分析与 Android 实践"
-chapter: "26.26"
+chapter: "26.21"
+section: "26.21"
 status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 drafted_date: "2026-07-16"
@@ -8,7 +9,7 @@ last_verified: "2026-07-16"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 tags: [page-fault, minor-fault, major-fault, mmap, memory, observability]
-related_chapters: ["26.25", "4.01", "9.3"]
+related_chapters: ["26.20", "4.01", "9.3"]
 sources:
   - type: aosp
     path: "frameworks/base/core/jni/android_os_Debug.cpp"
@@ -19,7 +20,7 @@ created_date: "2026-07-16"
 gap_source: "参考书驱动（Clippings/线上疑难问题 46.md）"
 ---
 
-# 26.26 Page Fault 类型分析与 Android 实践
+# 26.21 Page Fault 类型分析与 Android 实践
 
 ## 读数前先分清三类指标
 

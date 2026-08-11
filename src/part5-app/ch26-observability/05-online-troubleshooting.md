@@ -5,7 +5,7 @@ section: "26.5"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37) (API 36 / 36.1)"
 last_verified: "2026-08-06"
-last_verified_against: "Android Developers / AOSP android-17.0.0_r1 docs / Firebase docs / Play Console docs / Clippings structure references; cross-checked with 26.12 versioned diagnostics"
+last_verified_against: "Android Developers / AOSP android-17.0.0_r1 docs / Firebase docs / Play Console docs / Clippings structure references; cross-checked with 26.10 versioned diagnostics"
 confidence: medium-high
 drafted_date: "2026-05-15"
 polish_count: 1
@@ -16,6 +16,10 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md"
   - type: clipping
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md"
+  - type: clipping
+    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7.md"
+  - type: clipping
+    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md"
   - type: official
     path: "https://developer.android.com/privacy-and-security/risks/log-info-disclosure"
   - type: official
@@ -70,7 +74,7 @@ last_review_finalize_run_id: "20260805-220526-b99bf55c"
 review_finalize_notes: "2026-08-05 review-finalize: verified structure, Android 10-17/API 29-37 version boundaries, remote logging/privacy, bug report/Crashlytics, ProfilingManager/ProfilingTrigger, Play staged rollout, Remote Config rollout, Android vitals, and StatsD ordinary-app permission boundary; no Android 18/API 38+ claims found. Promoted to finalized."
 ---
 
-# 线上问题排查方法论
+# 26.5 线上问题排查方法论
 
 ## 线上问题排查流程
 
@@ -186,6 +190,21 @@ Google Play staged rollout 可以停止继续分发，但已经收到该版本�
 - **结论**：定位到的模块、修复方式、验证方式、后续防复发项。
 
 这个模板用于减少遗漏。排障人员拿到单子后，可以直接判断缺哪类证据。结论栏要区分“已由复现实验或代码路径证明”“由时间与分桶相关性支持”“证据仍不充分”，避免把同时发生的变更直接写成根因。
+
+## 从症状到证据的案例索引
+
+常见事故不需要各自维护一篇独立案例文档。把症状拆成阶段，再按同一份证据包推进，既能复用排障流程，也能避免“常见原因”被写成既定根因。
+
+| 用户症状 | 首先拆分的阶段 | 必须关联的证据 | 典型止损动作 |
+| --- | --- | --- | --- |
+| 下载卡在 99% | 正文接收、flush、校验、解压、rename、数据库更新、UI 状态 | DNS/connect/TLS/TTFB、`Range`/`Content-Range`、期望与已写字节、剩余空间、校验结果、状态转换、request ID | 暂停有问题的断点续传或收尾路径，保留失败批次 |
+| 低端机启动 P95 上升 | 进程创建、`Application`、Provider、首帧、业务 ready | 启动类型、设备档位、本地数据量、编译状态、磁盘 I/O、类加载、初始化 Trace、构建与配置版本 | 缩小灰度，对受影响设备关闭可选初始化 |
+| 支付页卡约 3 秒 | UI 主线程、Binder、网络、锁、服务端等待、超时重试 | 页面阶段名、线程状态、请求 ID、DNS/TLS/TTFB、服务端日志、配置版本、代表性 Trace | 关闭可疑实验或重试策略，切换受支持的备用链路 |
+| 后台耗电无法复现 | 任务调度、wakelock、网络批次、前台服务、进程状态 | 任务 enqueue/start/stop、约束、省电与热状态、wakelock、网络、Battery Historian/Perfetto 时间线 | 停止高频任务或诊断采集，收紧后台策略 |
+
+这些案例共用一个闭环：先确认指标和状态定义，再检查采集链路是否完整；按版本、设备、渠道和场景圈定影响面；找同一时间窗内的发布、配置和服务端变更；抽取代表样本补日志或 Trace；执行可撤销的止损；最后用原口径验证恢复。若只有时间相关性，结论保持为候选，直到代码路径、对照实验、回滚或可重复 Trace 提供更强证据。
+
+Runbook 至少要固定负责人、告警入口、证据查询、权限申请、止损开关、升级路径、恢复判定和复盘动作。每次演练还应覆盖队列满、上传失败、schema 不兼容、时钟偏差和诊断开关无法下发，避免只验证事故链路的成功分支。
 
 
 ### 平台与 OEM 补充：StatsD 的权限边界

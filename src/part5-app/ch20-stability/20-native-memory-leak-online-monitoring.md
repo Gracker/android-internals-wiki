@@ -4,7 +4,7 @@ chapter: "20.20"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [native, memory-leak, malloc, Scudo, mallinfo, monitoring, online]
-related_chapters: ["20.3", "20.10", "20.17", "23.3", "26.24"]
+related_chapters: ["20.3", "20.10", "20.17", "23.3", "26.19"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "素材驱动+章节深挖"
@@ -309,7 +309,7 @@ heapprofd 能提供：
 
 生产环境更适合在异常趋势、MemoryLimiter anomaly 或灰度命中后开启短窗口采样。持续高频 profiling 会增加 CPU、内存、trace 存储和隐私成本。
 
-Android 15 / API 35 起，普通应用可通过 `ProfilingManager` 请求受系统管理的 heap profile；Android 10—14 的 profileable、debuggable、shell initiator 约束和完整配置见 [26.24 heapprofd 生产级部署与权限模型](../ch26-observability/24-heapprofd-production-deployment-permissions.md)。实施时应复用该章已经验证的权限模型、guardrail 和符号化流程，不要再维护一套私有规则。
+Android 15 / API 35 起，普通应用可通过 `ProfilingManager` 请求受系统管理的 heap profile；Android 10—14 的 profileable、debuggable、shell initiator 约束和完整配置见 [26.19 heapprofd 生产级部署与权限模型](../ch26-observability/19-heapprofd-production-deployment-permissions.md)。实施时应复用该章已经验证的权限模型、guardrail 和符号化流程，不要再维护一套私有规则。
 
 ## 7. Scudo、GWP-ASan、HWASan、MTE 各自查什么
 

@@ -36,7 +36,7 @@ sources:
 - type: official
   path: https://developer.android.com/studio/command-line/dumpsys
 tags: [[power, audio, foreground-service, android-17, media-playback]]
-related_chapters: ["1.16", "5.8", "18.21", "11.2", "16.5", "25.15", "26.17"]
+related_chapters: ["1.16", "5.8", "18.21", "11.2", "16.5", "25.15", "26.14"]
 created_by: "task2a-knowledge-gap"
 drafted_by: "task2a-knowledge-gap"
 created_date: "2026-05-24"

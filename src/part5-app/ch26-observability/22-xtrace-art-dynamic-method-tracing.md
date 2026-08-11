@@ -1,10 +1,11 @@
 ---
 title: "生产级 ART 动态方法追踪 — XTrace 架构与实战"
-chapter: "26.23"
+chapter: "26.22"
+section: "26.22"
 status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 tags: [ART, tracing, instrumentation, XTrace, dynamic-tracing, production, Ghost-Bug, bytedance]
-related_chapters: ["1.7", "13.1", "26.21"]
+related_chapters: ["1.7", "13.1", "26.18"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-30"
 drafted_date: "2026-07-03"
@@ -24,7 +25,7 @@ sources:
     path: "art/runtime/art_method.h (android-17.0.0_r1)"
 ---
 
-# 26.23 生产级 ART 动态方法追踪：XTrace 论文机制与 Android 17 边界
+# 26.22 生产级 ART 动态方法追踪：XTrace 论文机制与 Android 17 边界
 
 XTrace 试图解决一个很难兼顾的问题：线上事件发生后才知道该观察哪个方法，同时又不能重新发版，也不能让全量方法追踪拖慢用户设备。论文给出的思路很有启发性，但它不是 Android SDK 的一部分，也没有公开实现。这里围绕三个可以核实的问题展开：
 
@@ -313,4 +314,4 @@ XTrace 是一份有价值但尚不能独立复现的系统设计研究。它的�
 6. Android Developers：[ProfilingManager](https://developer.android.com/reference/android/os/ProfilingManager)、[调用栈采样](https://developer.android.com/studio/profile/sample-callstack)。
 7. AOSP 文档：[ART TI](https://source.android.com/docs/core/runtime/art-ti)。
 8. Perfetto：[Tracing documentation](https://perfetto.dev/docs/)。
-9. [26.21 编译期字节码插桩与监控自动化]。
+9. [26.18 编译期字节码插桩与监控自动化]。

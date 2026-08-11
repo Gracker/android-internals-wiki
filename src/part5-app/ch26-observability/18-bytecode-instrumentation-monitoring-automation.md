@@ -1,6 +1,7 @@
 ---
 title: 编译期字节码插桩与监控自动化
-chapter: '26.21'
+chapter: '26.18'
+section: '26.18'
 status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-06-26'
@@ -40,7 +41,7 @@ created_date: '2026-06-26'
 gap_source: 素材驱动/参考书
 ---
 
-# 26.21 编译期字节码插桩与监控自动化
+# 26.18 编译期字节码插桩与监控自动化
 
 字节码插桩适合解决“规则明确、调用点很多、人工埋点容易遗漏”的问题，例如给一组业务入口加 trace、把已有 API 调用改写到监控桥接层，或检查某类调用是否符合约束。它不能自动获得所有性能问题的因果关系，也不适合修改 Android framework、ART 或任意第三方库的内部实现。
 

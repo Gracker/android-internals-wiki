@@ -1,7 +1,7 @@
 ---
 title: "App Performance Score 与性能质量评分归因"
-chapter: "26.18"
-section: "26.18"
+chapter: "26.15"
+section: "26.15"
 status: finalized
 drafted_date: "2026-05-23"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37); App Performance Score Preview 2026"
@@ -11,7 +11,7 @@ confidence: high
 consolidated_from:
   - "src/part1-fundamentals/ch05-cpu-power/5.33-android17-performance-score-attribution-sourcecode.md"
 tags: [app-performance-score, android-vitals, macrobenchmark, baseline-profile, performance-governance, observability]
-related_chapters: ["15.3", "15.6", "15.9", "19.11", "26.3", "26.15"]
+related_chapters: ["15.3", "15.6", "15.9", "19.11", "26.3", "26.6", "26.12"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-23"
 gap_source: "官方文档"
@@ -71,13 +71,13 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-17
 ---
 
-# 26.18 App Performance Score 与性能质量评分归因
+# 26.15 App Performance Score 与性能质量评分归因
 
 团队拿到一个 0～100 的性能分数后，需要判断它能否转化为可复测的工程任务。[App Performance Score](https://developer.android.com/topic/performance/app-score) 是 Google 在 2026 年仍标为 Preview 的评估框架，包含静态与动态两类评分：静态评分检查源码配置和工具采用情况，动态评分观察指定物理设备上的运行表现。
 
 分数只表示评估表中还有多少改进空间，不是线上用户体验的综合 KPI。评分项可转换成配置修正、自动化路径、trace 分析和发布验证四类任务，Android 17 平台指标则提供旁证。
 
-26.3 介绍端侧性能采集，26.14 介绍实验统计，26.15 说明 Android Vitals 与 Play 的线上口径。这里讨论评分到行动的映射，不重复这些章节的采集实现。
+26.3 介绍端侧性能采集，26.6 介绍实验统计，26.12 说明 Android Vitals 与 Play 的线上口径。这里讨论评分到行动的映射，不重复这些章节的采集实现。
 
 ## App Performance Score 的定位
 
@@ -88,7 +88,7 @@ App Performance Score 适合研发阶段的快速评估。官方页面给出 0�
 | 工具或系统 | 回答的问题 | 适合阶段 | 不适合做的事 |
 |---|---|---|---|
 | App Performance Score | 工程配置和受测路径是否存在评分表覆盖的缺口 | 研发评估、专项立项、版本验收前 | 不能直接给出根因，也不能替代线上监控 |
-| Android Vitals / Play Console | Play 用户最近窗口内是否出现坏行为，是否影响商店可见性 | 线上质量裁决、版本趋势复核 | 数据有窗口延迟，不能替代实时报警；详见 26.15 节 |
+| Android Vitals / Play Console | Play 用户最近窗口内是否出现坏行为，是否影响商店可见性 | 线上质量裁决、版本趋势复核 | 数据有窗口延迟，不能替代实时报警；详见 26.12 节 |
 | Macrobenchmark | 某条启动、滚动或页面路径在受控设备上的耗时与 trace 证据 | CI、专项回归、性能预算 | 不能覆盖所有真实用户路径；脚本质量决定结论质量 |
 | Perfetto / Android Studio Profiler | 某次慢启动、慢帧或线程调度异常的时间线证据 | 根因定位、案例复盘、前后 trace 对比 | 单次 trace 不能代表用户总体分布 |
 | 自建 APM | 版本、设备、渠道、用户路径上的长期指标和报警 | 灰度、发布、线上治理 | 指标口径容易漂移，需要记录定义和版本 |
@@ -166,7 +166,7 @@ Android Vitals 反映 Play 用户的线上质量，App Performance Score 反映�
 | 决策用途 | 找改进队列、评估专项收益、设置 CI 预算 | 判断线上坏行为、发版暂停、商店可见性风险 |
 | 盲区 | 覆盖路径有限，设备组合有限 | 有窗口延迟，国内渠道和非 Play 分发覆盖不足 |
 
-[Android Vitals 官方说明](https://developer.android.com/topic/performance/vitals)覆盖稳定性、性能、电池和权限等问题；2026 年的 core vitals 包括 user-perceived crash rate、user-perceived ANR rate 与 excessive partial wake lock，部分阈值会影响 Google Play 可见性。具体阈值、设备类型和执行日期见 26.15，不能从 App Performance Score 推导。
+[Android Vitals 官方说明](https://developer.android.com/topic/performance/vitals)覆盖稳定性、性能、电池和权限等问题；2026 年的 core vitals 包括 user-perceived crash rate、user-perceived ANR rate 与 excessive partial wake lock，部分阈值会影响 Google Play 可见性。具体阈值、设备类型和执行日期见 26.12，不能从 App Performance Score 推导。
 
 发版前用 App Performance Score 与 benchmark 查出可预防问题，例如 release 未启用 R8、profile 未进入产物、受控设备上的启动或渲染回归；上线后用 Vitals 与自建 APM 判断用户是否受影响。实验室结果良好而线上指标恶化时，应按版本、设备、入口和用户路径比较 Play 分组、内部 APM、benchmark trace 与变更记录，不能用实验室分数否定线上数据。
 

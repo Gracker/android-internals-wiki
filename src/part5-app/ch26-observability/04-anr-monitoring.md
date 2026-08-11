@@ -44,7 +44,7 @@ last_task9_autofix_at: "2026-06-30"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-03
 ---
-# ANR 监控体系
+# 26.4 ANR 监控体系
 
 ## ANR 监控解决什么问题
 

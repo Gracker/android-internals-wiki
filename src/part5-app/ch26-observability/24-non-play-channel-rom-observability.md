@@ -1,10 +1,11 @@
 ---
 title: "非 Play 渠道性能监控与国内厂商 ROM 适配可观测性"
-chapter: "26.28"
+chapter: "26.24"
+section: "26.24"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [non-play, domestic, ROM, observability, monitoring, OEM, channel]
-related_chapters: ["25.25", "26.3", "26.18", "26.22"]
+related_chapters: ["25.25", "26.3", "26.15"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "研究素材+每日信息+章节深挖"
@@ -41,7 +42,7 @@ sources:
     path: "https://support.google.com/googleplay/android-developer/answer/9844486?hl=en"
 ---
 
-# 26.28 非 Play 渠道性能监控与国内厂商 ROM 适配可观测性
+# 26.24 非 Play 渠道性能监控与国内厂商 ROM 适配可观测性
 
 ## 非 Play 分发的观测缺口
 
@@ -311,7 +312,7 @@ CPU 监控也要保持应用边界。`ProcessCpuTracker` 是 framework 内部实
 - `/proc/self/stat` 或 `/proc/self/task/<tid>/stat` 读取当前进程可见计数，并按内核时钟频率换算；
 - ProfilingManager、Perfetto 或 Simpleperf 在各自允许的环境中做采样分析。
 
-`/proc` 可见性、字段解析和采样开销应按 [26.25] 的边界处理。某个节点不可读时记录能力缺失，不要通过扩大权限或扫描其他进程规避。
+`/proc` 可见性、字段解析和采样开销应按 [26.20] 的边界处理。某个节点不可读时记录能力缺失，不要通过扩大权限或扫描其他进程规避。
 
 ## 渠道性能比较如何避免误判
 

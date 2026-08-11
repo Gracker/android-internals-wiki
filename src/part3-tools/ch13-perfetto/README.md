@@ -79,7 +79,7 @@ Perfetto 是 Android 性能分析的统一时间轴。渲染、输入、启动�
 - [13.21 Perfetto v57 状态轨道与版本边界](21-perfetto-v57-state-tracks.md)
 - [13.22 Trace 采集可靠性与可复现诊断](22-trace-reliability.md)
 
-heapprofd 的生产部署与权限模型属于线上可观测性，见 [§26.24 heapprofd 生产级部署与权限模型](../../part5-app/ch26-observability/24-heapprofd-production-deployment-permissions.md)。
+heapprofd 的生产部署与权限模型属于线上可观测性，见 [§26.19 heapprofd 生产级部署与权限模型](../../part5-app/ch26-observability/19-heapprofd-production-deployment-permissions.md)。
 
 ## 按任务选择阅读路径
 
