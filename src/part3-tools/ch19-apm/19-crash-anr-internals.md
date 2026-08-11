@@ -1,14 +1,14 @@
 ---
 title: "崩溃与 ANR 捕获机制"
-chapter: "19.24"
-section: "19.24"
+chapter: "19"
+section: "19.19"
 drafted_date: "2026-04-24"
 drafted_by: "gemini"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
-related_chapters: ["19.0", "19.03", "19.16"]
+related_chapters: ["19.0", "19.03", "19.13"]
 task6_state: reviewed
 task6_result: "pass-light-edit"
 reviewed_date: "2026-06-02"
@@ -464,7 +464,7 @@ ProfilingManager 从 API 35 提供 app-driven profiling。ProfilingTrigger 从 A
 
 API 37 的 OOM trigger 有一条容易被多 SDK 破坏的前置条件：自定义 `UncaughtExceptionHandler` 必须调用 default handler。若稳定性 SDK 吞掉 `OutOfMemoryError`，系统 trigger 无法工作；应用只能在资源尚可时自行调用 `requestProfiling()`，而 crash 当下再请求通常太晚。
 
-Profiling API 的完整请求、回调、36.1 扩展版本判断与 rate-limit 处理见第 19.16 章。这里只把它作为稳定性证据源接入同一 incident id。
+Profiling API 的完整请求、回调、36.1 扩展版本判断与 rate-limit 处理见第 19.13 章。这里只把它作为稳定性证据源接入同一 incident id。
 
 ## 10. 版本化接入建议
 

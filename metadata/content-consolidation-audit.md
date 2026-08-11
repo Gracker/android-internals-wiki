@@ -30,9 +30,27 @@
 | ch16 AOSP 性能优化 | 12 | 11 | 已完成 | 2026-08-11 |
 | ch17 OEM 与设备差异 | 12 | 10 | 已完成 | 2026-08-11 |
 | ch18 渲染管线专题 | 27 | 25 | 已完成 | 2026-08-11 |
-| 其余 10 章 | 329 | 待审阅 | 未开始 | - |
+| ch19 APM 工具与性能监控生态 | 28 | 22 | 已完成 | 2026-08-11 |
+| 其余 9 章 | 301 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 534 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 528 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch19 APM 工具与性能监控生态
+
+保留后的连续编号为 19.1～19.22。内容按“全景与准入 → 当前客户端工具 → 历史方案 → 官方帧与 trace API → Benchmark/编译/系统取证 → 托管平台 → 实验室工具与设备基线 → 网络、稳定性、功耗、混合栈和端侧架构”组织。
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `19.10-apm-tool-compatibility.md` | 删除与 Matrix、KOOM、BlockCanary、AndroidGodEye 正文重复的逐工具兼容性复述；独有的七层准入、成对变体、4 KB/16 KB 设备矩阵、测量字段和验收清单并入全景篇 | `../src/part3-tools/ch19-apm/01-apm-landscape.md`（19.1） |
+| `06-blockcanary.md` / `08-argusapm.md` / `10-other-opensource-apm.md` | 将已停止维护、只适合原理参考或存量迁移的项目统一为历史开源 APM；保留 Looper dispatch/采样/Printer 语义、Argus 架构与迁移，以及 AndroidGodEye/Collie/Rabbit 的设计取舍 | `../src/part3-tools/ch19-apm/08-open-source-apm-history.md`（19.8） |
+| `11-jankstats.md` / `12-framemetrics.md` | 合并同一 Window 帧监控链路；JankStats 负责 UI context 与线上分布，FrameMetrics 负责阶段、Window/Surface 边界和 API 36+ Vsync join；去掉两篇互相重复的分工、指标和聚合说明 | `../src/part3-tools/ch19-apm/09-jankstats-framemetrics.md`（19.9） |
+| `19-perfdog.md` / `20-solopi-emmagee.md` | 合并实验室外部观测与操作复现：PerfDog 负责趋势，SoloPi 负责路径，Emmagee 只解释历史；共享一套权限、环境、报告和 Perfetto/Macrobenchmark 分工 | `../src/part3-tools/ch19-apm/16-testing-tools.md`（19.16） |
+| `21-benchmark-apps.md` / `22-storage-benchmark.md` | 将存储作为设备能力向量的一部分并入通用设备 Benchmark；保留 AndroBench/A1 历史边界、CPDT/PCMark 替代、I/O 协议、路径/cache/durability 和业务证据链 | `../src/part3-tools/ch19-apm/17-device-benchmarks.md`（19.17） |
+| 原 19.7、19.9、19.13～19.18、19.23～19.27 | DoKit、Measure、Tracing、Benchmark、Baseline Profiles、ProfilingManager、Firebase、商业平台和五个采集/架构专题仍能独立回答问题，依次改为连续编号 | `06-dokit.md`～`22-apm-client-architecture.md` |
+
+章节 README、`src/SUMMARY.md`、changelog/review 脚本、活动跨章引用和统计口径已经切换到新编号。历史 changelog、review/audit 日志、关闭 finding、素材索引与 `consolidated_from` 保留旧路径和编号。
 
 ## ch18 渲染管线专题
 

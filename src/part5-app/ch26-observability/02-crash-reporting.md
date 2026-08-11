@@ -45,7 +45,7 @@ sources:
   - type: aosp
     path: "system/core/debuggerd/crash_dump.cpp"
 tags: [crash-reporting, symbolication, deobfuscation, alerting]
-related_chapters: ["26.1", "20.2", "20.3", "19.24", "20.8"]
+related_chapters: ["26.1", "20.2", "20.3", "19.19", "20.8"]
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: reviewed
@@ -75,7 +75,7 @@ last_deepseek_cn_review_at: 2026-06-06
 
 # Crash 上报体系搭建
 
-Crash 上报体系的任务很明确：进程即将退出时，尽可能保存足以定位问题的证据，并在后续可用的执行窗口把证据送到分析系统。Java Crash、Native Crash 的捕获机制在 20.2、20.3 和 19.24 中展开；这里关注端到端工程设计，包括本地留存、多进程归集、符号化、告警和发布门禁。
+Crash 上报体系的任务很明确：进程即将退出时，尽可能保存足以定位问题的证据，并在后续可用的执行窗口把证据送到分析系统。Java Crash、Native Crash 的捕获机制在 20.2、20.3 和 19.19 中展开；这里关注端到端工程设计，包括本地留存、多进程归集、符号化、告警和发布门禁。
 
 平台源码上界为 Android 17 / API 37 / `android-17.0.0_r1`。崩溃主路径位于 framework、bionic 与 debuggerd 等用户空间组件，不依赖某项 Android 17 内核专有实现，因此不为结论附加 kernel tag。
 

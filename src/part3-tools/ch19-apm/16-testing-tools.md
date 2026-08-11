@@ -1,7 +1,7 @@
 ---
-title: PerfDog
+title: PerfDog、SoloPi 与 Emmagee
 chapter: '19'
-section: '19.19'
+section: '19.16'
 status: finalized
 drafted_date: '2026-04-24'
 drafted_by: codex
@@ -22,6 +22,8 @@ tags:
 - tools
 related_chapters:
 - '19.0'
+consolidated_from:
+- "src/part3-tools/ch19-apm/20-solopi-emmagee.md"
 sources:
 - type: official
   path: https://perfdog.qq.com/
@@ -95,7 +97,7 @@ last_deepseek_cn_review_at: 2026-07-09
 ---
 
 
-# PerfDog
+# PerfDog、SoloPi 与 Emmagee
 
 ## PerfDog 的位置：实验室观测工具
 
@@ -413,9 +415,63 @@ Android 没有向普通工具保证一套跨厂商一致的 GPU 利用率、频�
 
 常规 Network 的 Recv/Send 是流量观察。要解释延迟或丢包，需要 PerfDog 网络分析、抓包、服务端日志或受控弱网记录提供额外证据。
 
+## SoloPi：复现工具，不是指标真值源
+
+SoloPi 的开源部分提供录制回放、设备侧操作、悬浮窗采样和视觉响应分析，适合 QA 固定复现路径；一机多控并未完整开源。公开 v0.12.0 基线使用 AGP 4.0.2、compile/targetSdk 29 和 NDK r16，上游没有 Android 17 兼容报告。
+
+讨论兼容时要分开两个问题：旧 target 29 APK 能否在某台 API 37 设备运行，以及源码升级到 targetSdk 37 后能否满足现代规则。前者只证明一组 APK、系统镜像与厂商策略共同可用，不能替代后者的构建、权限、前台服务、存储和 16 KB 验收。
+
+### Android 17 准入项
+
+| 关卡 | 通过条件 | 失败信号 |
+|---|---|---|
+| ADB 通道 | 设备内连接持续执行 shell | 授权或密钥失效、厂商断连 |
+| 无障碍 | 公开 selector 能稳定读、点、输 | 多个节点冲突、回放命中错误 |
+| 悬浮窗 | 可显示、拖动和关闭 | AppOp 拒绝、触摸冲突 |
+| MediaProjection | 每次录制重新授权并正常结束 | 黑屏、复用授权、前台服务失败 |
+| 后台存活 | 切到被测 App 后服务与控制通道持续 | 脚本中止、通知消失 |
+| 存储与导出 | CSV、截图和视频位于合规路径 | 旧共享目录写入失败 |
+| 指标语义 | 每个字段与独立来源对读 | 固定 0、旧值、单位或进程归属错误 |
+| 16 KB | 最终 APK 与动态插件均兼容 | native 库装载或插件加载失败 |
+
+SoloPi 会反射非 SDK 的 `AccessibilityNodeInfo.getSourceNodeId()` 构建节点 ID，失败后多个节点可能都降级为 0；录屏能力还涉及 MediaProjection、`mediaProjection` 前台服务类型与 API 34+ 专用权限。迁到 targetSdk 37 时应以公开资源 ID、类名、文本、描述、窗口和边界组合节点，且每次捕获重新获得用户授权。
+
+### 字段口径必须逐项标注
+
+| 字段 | 公开源码路径 | 使用边界 |
+|---|---|---|
+| CPU | 高权限 shell 读取 `/proc/stat` 与 `/proc/<pid>/stat` | 依赖 ADB、PID 和 procfs；多进程要核对归属 |
+| PSS | `getProcessMemoryInfo(pids)` | Android 10+ 普通 App 跨 UID 结果受限 |
+| Private Dirty | shell 解析 `dumpsys meminfo` | 依赖权限和文本格式 |
+| 网络 | `/proc/<pid>/net/dev` 或全局 TrafficStats | 前者是 network namespace 接口计数，后者含全机流量，均不是目标进程精确字节 |
+| FPS | 解析 `dumpsys gfxinfo ... framestats` | 适合现场趋势，不替代 FrameTimeline |
+| 视觉响应 | MediaProjection 录屏 + 图像差异 | 点击到画面稳定，不是系统 TTID/TTFD |
+| 电流/功率 | BatteryManager 与历史 sysfs 路径 | 设备级数据，单位、符号和传感器需实测 |
+
+每个结果同时记录 `verified`、`degraded`、`unavailable` 或 `unknown`。字段有值不代表语义正确，脚本跑完也不能掩盖其中一项失效。视觉响应可以作为用户体验补充；系统启动由 Macrobenchmark 的 TTID/TTFD 与 `reportFullyDrawn()` 单列。
+
+录制回放的性能价值来自路径一致性。固定数据、账号、刷新率和动画，使用状态等待替代固定 sleep；正式轮次前先跑正确性，通过后再启用 PerfDog、Macrobenchmark 或 Perfetto。回放失败率与性能结果分开统计，避免把等待控件超时当成 App 变慢。
+
+## Emmagee：只用于解释历史报告
+
+Emmagee V2.5.1 发布于 2017 年，上游 README 已明确 Android 7.0 不受支持。其目标 PID、TopActivity、CPU、PSS、流量和电流依赖受限的进程枚举、`/proc`、跨 UID API、旧 sysfs 或 Root shell；这些限制会破坏整条采样链，不存在 Android 17 上“降精度继续用”的可靠路线。
+
+旧 CSV 只能在原工具、原版本、相近设备与系统条件下阅读。缺少版本和口径时，把数值作为背景材料，不重新接入、补跑或与 PerfDog/SoloPi 当前字段直接换算。
+
+## 三种工具怎样协作
+
+| 工具 | 主要职责 | 不应负责 |
+|---|---|---|
+| SoloPi | 固定操作、回放、视觉响应和现场辅助 | 根因、线上分布或跨工具指标真值 |
+| PerfDog | 外部帧、CPU、内存、温度与功耗趋势 | 函数和线程级因果 |
+| Macrobenchmark | 受控编译/启动状态下的可重复基准 | 第三方 App 和真实用户分布 |
+| Perfetto | 调度、Binder、渲染、I/O 与系统时间线 | 业务正确性断言 |
+
+推荐链路是 SoloPi 或确定性 UIAutomator 固定路径，PerfDog 筛选异常区间，Macrobenchmark 固化可自动测量的 App 场景，Perfetto继续归因。权限、Restricted Settings、无线 ADB、录屏、截图和 CSV 只在隔离设备与测试账号中使用，产物需要脱敏、访问控制和删除期限。
+
 ## 结论
 
-在 Android 17 / API 37 上，PerfDog 仍适合作为低接入成本的实验室观测和回归工具。可靠使用它依赖四条纪律：
+在 Android 17 / API 37 上，PerfDog 仍适合作为低接入成本的实验室观测工具，SoloPi 适合经过逐项验收后的操作复现，Emmagee 只留作历史解释。可靠使用依赖四条纪律：
 
 - 先确认窗口、可用指标与连接模式，再开始采集。
 - 把设备、温度、刷新率、网络和脚本写进报告。
@@ -442,3 +498,8 @@ Android 没有向普通工具保证一套跨厂商一致的 GPU 利用率、频�
 - [Android Thermal mitigation](https://source.android.com/docs/core/power/thermal-mitigation)
 - [Android slow rendering 与 FrameTimeline](https://developer.android.com/topic/performance/vitals/render)
 - [Android Studio UI jank detection](https://developer.android.com/studio/profile/jank-detection)
+- [SoloPi 固定源码](https://github.com/alipay/SoloPi/tree/35a4a3e3fe02deeb89df35c82dc3ba03a33f4f13)
+- [SoloPi 性能工具 Wiki](https://github.com/alipay/SoloPi/wiki/Performance)
+- [Emmagee 固定源码](https://github.com/NetEase/Emmagee/tree/6a382dffe74b5be6d2de78cb0c640cc67e9ce650)
+- [Android MediaProjection 指南](https://developer.android.com/media/grow/media-projection)
+- [Android 16 KB 页面兼容指南](https://developer.android.com/guide/practices/page-sizes)

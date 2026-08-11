@@ -4,28 +4,29 @@ import subprocess
 import time
 
 files = [
-    "src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md",
-    "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md",
-    "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
-    "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md",
-    "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md",
-    "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
-    "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md",
-    "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
-    "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
-    "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md",
-    "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
-    "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md",
-    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
-    "src/part2-performance/ch18-rendering-pipelines/18-variable-refresh-rate.md",
-    "src/part2-performance/ch18-rendering-pipelines/19-eyedropper-crossdevice.md",
-    "src/part2-performance/ch18-rendering-pipelines/20-android-xr-spatial-ui-rendering.md",
-    "src/part2-performance/ch18-rendering-pipelines/21-media-codec2-tunneled-media3-abr.md",
-    "src/part2-performance/ch18-rendering-pipelines/22-advanced-professional-video-apv.md",
-    "src/part2-performance/ch18-rendering-pipelines/23-compose-rendering-pipeline.md",
-    "src/part2-performance/ch18-rendering-pipelines/24-android17-hwui-vulkan-multi-queue.md",
-    "src/part2-performance/ch18-rendering-pipelines/25-webgpu-android-pipeline.md",
-    "src/part2-performance/ch18-rendering-pipelines/README.md"
+    "src/part3-tools/ch19-apm/01-apm-landscape.md",
+    "src/part3-tools/ch19-apm/02-tencent-matrix.md",
+    "src/part3-tools/ch19-apm/03-koom.md",
+    "src/part3-tools/ch19-apm/04-btrace.md",
+    "src/part3-tools/ch19-apm/05-leakcanary.md",
+    "src/part3-tools/ch19-apm/06-dokit.md",
+    "src/part3-tools/ch19-apm/07-measure.md",
+    "src/part3-tools/ch19-apm/08-open-source-apm-history.md",
+    "src/part3-tools/ch19-apm/09-jankstats-framemetrics.md",
+    "src/part3-tools/ch19-apm/10-tracing-sdk.md",
+    "src/part3-tools/ch19-apm/11-jetpack-benchmark.md",
+    "src/part3-tools/ch19-apm/12-baseline-profiles.md",
+    "src/part3-tools/ch19-apm/13-profiling-manager.md",
+    "src/part3-tools/ch19-apm/14-firebase-performance.md",
+    "src/part3-tools/ch19-apm/15-commercial-apm.md",
+    "src/part3-tools/ch19-apm/16-testing-tools.md",
+    "src/part3-tools/ch19-apm/17-device-benchmarks.md",
+    "src/part3-tools/ch19-apm/18-network-apm-internals.md",
+    "src/part3-tools/ch19-apm/19-crash-anr-internals.md",
+    "src/part3-tools/ch19-apm/20-battery-thermal-apm.md",
+    "src/part3-tools/ch19-apm/21-hybrid-apm.md",
+    "src/part3-tools/ch19-apm/22-apm-client-architecture.md",
+    "src/part3-tools/ch19-apm/README.md"
 ]
 
 prompt_template = """按照 logs/external-review/aiw-gemini-review-pack.md 规范，review 下面这个文章。不要偷懒，不要代写正文，必须给出完整的 markdown 报告。目标文件：{filepath}
@@ -44,9 +45,9 @@ for filepath in files:
     
     prompt = prompt_template.format(filepath=filepath, content=content)
     
-    out_filename = "logs/external-review/15.18-" + os.path.basename(filepath)
+    out_filename = "logs/external-review/19-" + os.path.basename(filepath)
     if os.path.basename(filepath) == "README.md":
-        out_filename = "logs/external-review/15.README-ch18.md"
+        out_filename = "logs/external-review/19.README-ch19.md"
         
     print(f"Reviewing {filepath} -> {out_filename}")
     

@@ -2,7 +2,7 @@
 
 title: androidx.tracing（Tracing SDK）
 chapter: '19'
-section: '19.13'
+section: '19.10'
 status: "finalized"
 drafted_date: '2026-04-24'
 drafted_by: codex

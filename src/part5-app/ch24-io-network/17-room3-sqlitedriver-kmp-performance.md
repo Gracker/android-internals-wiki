@@ -35,7 +35,7 @@ sources:
   - type: daily-info
     path: "intake/daily-info/2026-05-22.md"
 tags: [room3, sqlite, sqlitedriver, kmp, ksp, database-performance]
-related_chapters: ["14.1", "19.14", "24.2"]
+related_chapters: ["14.1", "19.11", "24.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-25"
 gap_source: "官方文档/每日信息"

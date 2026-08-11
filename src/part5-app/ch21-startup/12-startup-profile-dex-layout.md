@@ -8,10 +8,10 @@ drafted_date: "2026-05-25"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
 last_verified: "2026-05-25"
-last_verified_against: "Android Developers Startup Profiles / Baseline Profiles docs 2026-05; AOSP android-17.0.0_r1 ART profman + dex2oat; AIW 1.7/8.7/19.15/21.4"
+last_verified_against: "Android Developers Startup Profiles / Baseline Profiles docs 2026-05; AOSP android-17.0.0_r1 ART profman + dex2oat; AIW 1.7/8.7/19.12/21.4"
 confidence: medium-high
 tags: [startup-profile, baseline-profile, dex-layout, startup-optimization, macrobenchmark]
-related_chapters: ["21.1", "21.4", "8.7", "19.15", "1.7"]
+related_chapters: ["21.1", "21.4", "8.7", "19.12", "1.7"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-25"
 gap_source: "章节深挖/官方文档"

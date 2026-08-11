@@ -18,7 +18,7 @@ related_chapters:
 review_notes: "2026-04-28 task9 deep-review: needs-rework。P1 2（WebView 可见状态 API 与跨时钟校准）。"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-07-04"
-section: "19.26"
+section: "19.21"
 sources:
 - type: official
   path: https://developer.android.com/reference/android/view/PixelCopy

@@ -1,8 +1,8 @@
 ---
 
-title: JankStats
+title: JankStats 与 FrameMetrics
 chapter: '19'
-section: '19.11'
+section: '19.09'
 status: "finalized"
 drafted_date: '2026-04-24'
 drafted_by: codex
@@ -14,6 +14,8 @@ tags:
 - apm
 related_chapters:
 - '19.0'
+consolidated_from:
+- "src/part3-tools/ch19-apm/12-framemetrics.md"
 sources:
 - type: official
   path: https://developer.android.com/reference/androidx/metrics/performance/JankStats
@@ -50,7 +52,7 @@ last_deepseek_cn_review_at: 2026-07-14
 ---
 
 
-# JankStats
+# JankStats 与 FrameMetrics
 
 ## JankStats 是官方帧级卡顿入口
 
@@ -208,6 +210,50 @@ JankStats 更适合线上统计和 UI context，FrameMetrics 更适合读取平�
 - SurfaceControl jank data 在 API 36+ 补 compositor 分类，并可通过 `FRAME_TIMELINE_VSYNC_ID` 与 FrameMetrics 关联。
 
 FrameMetrics 的部分阶段可能并行，`TOTAL_DURATION` 也不等于各字段简单相加。某帧 `DRAW_DURATION` 较高只是一条定位线索，仍需 Perfetto、业务 trace 或可复现 benchmark 验证。
+
+### FrameMetrics 的数据边界
+
+Android 17 的 UI 线程和 RenderThread 共同填写 `FrameInfo` 时间戳数组，`FrameMetrics` 再按固定起止索引计算公开指标。公开 listener 会复用同一个 `FrameMetrics` 对象，并且 `FrameMetricsObserver` 不等待 display present time。因此收到回调只表示 HWUI 帧统计已经可用，不表示 SurfaceFlinger 已采纳该 buffer 或屏幕已经呈现。
+
+| 指标 | API | Android 17 时间区间或取值 | 排查入口 |
+|---|---:|---|---|
+| `UNKNOWN_DELAY_DURATION` | 24+ | `INTENDED_VSYNC → HANDLE_INPUT_START` | 前序消息、调度、Binder 或锁使 UI 线程晚启动 |
+| `INPUT_HANDLING_DURATION` | 24+ | `HANDLE_INPUT_START → ANIMATION_START` | 输入处理 |
+| `ANIMATION_DURATION` | 24+ | `ANIMATION_START → PERFORM_TRAVERSALS_START` | animation callback 与状态更新 |
+| `LAYOUT_MEASURE_DURATION` | 24+ | `PERFORM_TRAVERSALS_START → DRAW_START` | measure/layout 与 `requestLayout()` 扩散 |
+| `DRAW_DURATION` | 24+ | `DRAW_START → SYNC_QUEUED` | display-list 记录和自定义绘制 |
+| `SYNC_DURATION` | 24+ | `SYNC_START → ISSUE_DRAW_COMMANDS_START` | RenderNode 状态同步、RenderThread 压力 |
+| `COMMAND_ISSUE_DURATION` | 24+ | `ISSUE_DRAW_COMMANDS_START → SWAP_BUFFERS` | RenderThread CPU 与 driver submission |
+| `SWAP_BUFFERS_DURATION` | 24+ | API 31+ 为 `SWAP_BUFFERS → SWAP_BUFFERS_COMPLETED` | BufferQueue 背压、swap 或消费等待 |
+| `TOTAL_DURATION` | 24+ | `INTENDED_VSYNC → FRAME_COMPLETED` | HWUI 生产并提交帧的总区间，不是 present duration |
+| `FIRST_DRAW_FRAME` | 24+ | window visibility-change flag | 新 Window 首次 draw，需与稳态帧分开 |
+| `GPU_DURATION` | 31+ | API 33+ 为 submission complete 到 GPU complete | GPU workload 或 contention 线索 |
+| `DEADLINE` | 31+ | `INTENDED_VSYNC → FRAME_DEADLINE` | 应用生产本帧的预算 |
+| `FRAME_TIMELINE_VSYNC_ID` | 36+ | FrameTimeline Vsync id | 与 compositor jank data 关联的 join key |
+
+指标不可用时 `getMetric()` 返回 `-1`，不能用零补齐。各阶段还可能并行，`SYNC_QUEUED → SYNC_START` 等间隙没有独立公开字段，GPU completion 也不保证被 total 完整包含，所以 `TOTAL_DURATION - sum(stages)` 不能命名为“其他耗时”后直接归因。
+
+GPU 与 swap 的定义必须按 API 分桶：API 24—30 的 swap 结束于 `FRAME_COMPLETED` 且没有 GPU/deadline；API 31—32 的 GPU 从 swap 起算；API 33—35 改为从 command submission complete 起算；API 36—37 再增加 Vsync id。跨桶比较原始值会把平台定义变化误判成回归。
+
+### Window 与外部内容的观察范围
+
+| 页面内容 | FrameMetrics 能看到 | 看不到 |
+|---|---|---|
+| 普通 View / 标准 Compose | 宿主 Window 的 UI、RenderThread 与 swap | 具体 View/Composable 调用栈、SurfaceFlinger 和 present |
+| TextureView | 外部 buffer 被 HWUI 采样并混合后的宿主成本 | 外部 Producer 自身的生产、第一套 BufferQueue 与输入 fence |
+| SurfaceView | 宿主 UI、hole-punch、几何和控制层帧 | 独立内容 Surface 的 Producer、BufferQueue 与 layer 帧 |
+| Dialog、PopupWindow、多窗口 | 每个已注册 Window 各自的帧 | 未注册 Window，且不同 Window 不会自动合并 |
+| 软件渲染 Window | 无硬件渲染帧统计 | 软件 Canvas 完整耗时 |
+
+视频、相机、游戏或 SurfaceView 主体内容慢时，宿主 FrameMetrics 正常不能排除问题。需要按内容 layer 继续查 producer queue、acquire/release fence、SurfaceFlinger latch、HWC 与 present timing。
+
+### 直接监听 FrameMetrics
+
+只在 API 24+、硬件加速且 DecorView 已建立的 Window 注册。listener 所在 Handler 应是专用线程，回调返回前只复制需要的数值并更新有界聚合；文件、JSON 与网络不能进入逐帧路径。停止采集时先移除 listener，再退出线程。`droppedReportsSinceLastCallback` 表示观测器来不及消费，不等于显示系统丢了相同数量的帧，但它意味着统计分母已有缺口，必须单列数据质量。
+
+页面状态不能在延迟回调到达时直接读取“当前 route”。API 26+ 使用 `INTENDED_VSYNC_TIMESTAMP` 与应用维护的状态区间做交集；API 24—25 只做 Window session 级聚合，或在路由切换时明确结束旧窗口。Vsync id 是逐帧高基数，只保存在有限异常样本或短期 join cache 中。
+
+JankStats 在 API 24+ 内部已经注册 FrameMetrics listener。若应用再直接注册一条 listener，必须量化重复回调、聚合和对象分配成本。常规线上分布优先用 JankStats；只有需要 layout/draw/sync/command/swap/GPU 分段或 API 36+ compositor join 时，才对受控样本开启直接 FrameMetrics。
 
 ### 帧性能监控工具横向对比
 

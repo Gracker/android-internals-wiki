@@ -255,7 +255,7 @@ Play Vitals 与 SDK 看板出现不同结果很常见：
 | `ApplicationExitInfo` | API 30+ 的历史退出原因与部分 trace | 能补上 LMK、ANR、signal 等进程外证据 | 只能在后续进程读取；记录和 trace 可能缺失 |
 | `ProfilingManager` | API 35+ 的按请求采集，以及较新版本的系统触发采集 | 系统管理速率、存储与结果交付 | 触发不保证一定产生结果；必须做版本与能力检测 |
 
-Android 17 / API 37 的 `ProfilingTrigger` 增加了 OOM 等触发类型。应用需要注册感兴趣的 trigger，并接受“系统可能因速率、资源或策略不返回结果”的约束，不能把它当作每次 OOM 必达的回调。API 演进与接入方式见 [19.16 ProfilingManager](../../part3-tools/ch19-apm/16-profiling-manager.md)。
+Android 17 / API 37 的 `ProfilingTrigger` 增加了 OOM 等触发类型。应用需要注册感兴趣的 trigger，并接受“系统可能因速率、资源或策略不返回结果”的约束，不能把它当作每次 OOM 必达的回调。API 演进与接入方式见 [19.13 ProfilingManager](../../part3-tools/ch19-apm/13-profiling-manager.md)。
 
 是否建设自研采集，不应只看 DAU。更有用的判断标准是：现有平台缺少的证据是否持续阻塞定位，能否长期维护 Android 版本兼容、隐私治理、符号服务、去重和成本控制。
 

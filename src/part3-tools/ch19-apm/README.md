@@ -52,7 +52,7 @@ task9_review_notes: "2026-05-08 Task9 21:32：pass-tech-review。无 P0/P1；P2 
 
 应用上线后仍会出现卡顿、启动慢、ANR、内存泄漏和 OOM，但通常无法通过 adb 直连设备采集 trace。APM（Application Performance Monitoring）以受控开销采集生产环境信号，用于发现、聚合和定位这些问题。
 
-内容按具体工具和项目组织，说明能力范围、接入方式、架构与生产约束。工具之间相互独立，可以按问题查阅。
+内容按“全景与准入、当前工具、历史方案、官方 API、平台、实验室工具、采集机制与端侧架构”组织。相邻工具共享的方法、兼容性评测和报告规范只保留一次，具体实现边界留在对应小节。
 
 ## 全景分类
 
@@ -119,38 +119,32 @@ Vellamo、AndroBench、A1 SD Bench、Emmagee 不再作为现代 Android 推荐�
 
 ## 内容索引
 
-- 19.1 APM 全景图与分类体系
-- 19.2 Tencent Matrix
-- 19.3 KOOM
-- 19.4 btrace / RheaTrace
-- 19.5 LeakCanary
-- 19.6 BlockCanary
-- 19.7 DoraemonKit / DoKit
-- 19.8 ArgusAPM
-- 19.9 Measure
-- 19.10 其他开源 APM 库（AndroidGodEye、Collie、Rabbit）
-- 19.11 JankStats
-- 19.12 FrameMetrics
-- 19.13 androidx.tracing（Tracing SDK）
-- 19.14 Jetpack Benchmark（Microbenchmark + Macrobenchmark）
-- 19.15 Baseline Profiles 与编译优化
-- 19.16 ProfilingManager
-- 19.17 Firebase Performance
-- 19.18 商业 APM 平台（Sentry、APMPlus、Bugly）
-- 19.19 PerfDog
-- 19.20 SoloPi 与历史 Emmagee
-- 19.21 Benchmark 应用（Geekbench 6、安兔兔、3DMark、PCMark、Speedometer）
-- 19.22 存储 Benchmark（AndroBench、A1 SD Bench）
-- 19.23 网络 APM 底层捕获原理
-- 19.24 崩溃与 ANR 捕获机制
-- 19.25 耗电与发热监控 (Battery & Thermal)
-- 19.26 混合栈与跨平台 APM (WebView / Flutter)
-- 19.27 千万级 DAU 的 APM 端侧架构
-- 19.10 补充：APM 工具基准测试与兼容性验证
+- [19.1 APM 全景图与分类体系](01-apm-landscape.md)
+- [19.2 Tencent Matrix](02-tencent-matrix.md)
+- [19.3 KOOM](03-koom.md)
+- [19.4 btrace / RheaTrace](04-btrace.md)
+- [19.5 LeakCanary](05-leakcanary.md)
+- [19.6 DoraemonKit / DoKit](06-dokit.md)
+- [19.7 Measure](07-measure.md)
+- [19.8 历史开源 APM：BlockCanary、ArgusAPM、AndroidGodEye、Collie 与 Rabbit](08-open-source-apm-history.md)
+- [19.9 JankStats 与 FrameMetrics](09-jankstats-framemetrics.md)
+- [19.10 androidx.tracing（Tracing SDK）](10-tracing-sdk.md)
+- [19.11 Jetpack Benchmark（Microbenchmark + Macrobenchmark）](11-jetpack-benchmark.md)
+- [19.12 Baseline Profiles 与编译优化](12-baseline-profiles.md)
+- [19.13 ProfilingManager](13-profiling-manager.md)
+- [19.14 Firebase Performance](14-firebase-performance.md)
+- [19.15 商业 APM 平台（Sentry、APMPlus、Bugly）](15-commercial-apm.md)
+- [19.16 PerfDog、SoloPi 与 Emmagee](16-testing-tools.md)
+- [19.17 设备 Benchmark（CPU、GPU、Web 与存储）](17-device-benchmarks.md)
+- [19.18 网络 APM 底层捕获原理](18-network-apm-internals.md)
+- [19.19 崩溃与 ANR 捕获机制](19-crash-anr-internals.md)
+- [19.20 耗电与发热监控 (Battery & Thermal)](20-battery-thermal-apm.md)
+- [19.21 混合栈与跨平台 APM (WebView / Flutter)](21-hybrid-apm.md)
+- [19.22 千万级 DAU 的 APM 端侧架构](22-apm-client-architecture.md)
 
 ## 阅读建议
 
 - 初次搭建线上 APM：先读 19.1，再按当前问题选择 2—3 个工具。
 - 已在使用某个工具：直接进入对应条目核对实现与边界。
 - 需要选型：结合 14.10 的框架和各工具的详细分析。
-- 关注 Benchmark 方向：19.21 覆盖通用 Benchmark 应用，19.22 覆盖存储基线工具。
+- 关注实验室与 Benchmark：19.16 负责操作复现和外部观测，19.17 统一 CPU、GPU、Web、存储与设备分层。

@@ -17,7 +17,7 @@ pipeline_stage: finalized
 last_review_finalize_at: "2026-08-02T22:05:39+08:00"
 last_review_finalize_run_id: "20260802-220539-df74ad6c"
 tags: [bluetooth, ble, power, batterystats, connectivity, app-standby]
-related_chapters: ["11.1", "11.2", "11.5", "19.25", "25.5"]
+related_chapters: ["11.1", "11.2", "11.5", "19.20", "25.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "AOSP结构+官方文档+每日信息"

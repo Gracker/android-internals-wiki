@@ -11,6 +11,8 @@ last_verified_against: "Android Developers JankStats / FrameMetrics / Applicatio
 confidence: medium
 tags: [apm]
 related_chapters: ["19.0"]
+consolidated_from:
+  - "src/part3-tools/ch19-apm/19.10-apm-tool-compatibility.md"
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance"
@@ -382,6 +384,38 @@ Android 17 上可以把 ProfilingManager 接入少量高价值样本，例如：
 
 ## 选型：从团队约束推导组合
 
+选型之前先区分“能解析依赖”和“能进入生产”。一个 APM artifact 的 Android 17 准入至少包含构建、打包、启动、采集、失败降级、停用恢复与隐私七层；仓库 README、低 `minSdk`、一次启动成功或 AOSP 中仍存在同名私有字段，都不能替代这七层证据。
+
+### 用成对变体测量 APM 自身开销
+
+同一 commit 至少准备以下 release 变体，保持 R8、签名、ABI、资源和业务配置一致：
+
+| 变体 | 内容 | 用途 |
+|---|---|---|
+| `baseline` | 不包含被测 SDK | 建立设备与业务基线 |
+| `linked-off` | 包含依赖，但模块全部关闭 | 观察打包、类加载和初始化前影响 |
+| `module-on` | 一次只开启一个模块 | 将成本归属到具体采集器 |
+| `production-set` | 生产计划中的模块、采样与上传配置 | 验证组合效应 |
+| `event-trigger` | 受控制造 block、dump、leak 或上传失败 | 测量峰值和失败恢复 |
+
+测试至少覆盖冷启动、前台空闲、固定交互、高频 Message、后台静置和受控异常；轮次按 baseline/variant 交替或随机排列，每轮使用相同的温度、电量、刷新率、网络和数据状态。Android 17 还要分别覆盖 4 KB 与严格 16 KB page-size 环境，以及业务占比高的厂商 ROM。
+
+CPU 使用 Perfetto 中的进程/线程 running time，帧使用 FrameTimeline、JankStats 或 FrameMetrics，内存同时记录 PSS、RSS、Java/native heap 和峰值，启动由 Macrobenchmark 控制模式。I/O、网络、唤醒、包体、事件丢失、关闭后残留线程和异常恢复也要进入结果。不能从源码操作数估算“低于 0.1%”或把周期 tracker 与一次 heap dump 汇总成同一个平均开销。
+
+发布表同时给绝对差值、相对差值、中位数、尾部值、最差有效轮和样本数。没有实测的数据保留为空；性能差但流程完整的轮次不能按异常值删除。最终 APK/AAB 中所有 native 依赖还要分别检查 ELF LOAD segment、ZIP 对齐和真机 page size，这三项不是同一个证据。
+
+### Android 17 接入准入清单
+
+- 固定仓库、commit、依赖坐标、AGP、NDK、R8、targetSdk 与配置版本。
+- clean、增量、configuration cache、各 variant 和最终安装产物均通过。
+- manifest、权限、Provider、Service、通知、`PendingIntent`、文件目录和网络安全完成现代化审查。
+- 4 KB/16 KB 设备验证安装、初始化、正常事件、边界事件、失败事件和关闭模块。
+- 反射、私有符号、Hook、Printer、子进程、磁盘和上传失败都会显式降级，不以“没有报告”冒充“没有问题”。
+- 关闭模块后恢复 Hook/Printer，停止线程与任务，缓存满足大小、年龄、重试和删除限制。
+- 报告保存原始 trace、脚本 commit、测试顺序、判废原因和 SDK 自监控数据。
+
+具体工具的构建和运行边界留在各自正文：Matrix 看 19.2，KOOM 看 19.3，BlockCanary 与历史开源项目看 19.8。这样兼容性结论只维护一次，通用实验协议也不再单独占用一个重复编号。
+
 | 团队条件 | 优先能力 | 原因 |
 |---|---|---|
 | 没有线上性能平台 | Android vitals + crash/ANR + 基础启动/页面指标 | 建立稳定趋势和版本分组，再补专项 |
@@ -407,15 +441,15 @@ Matrix、KOOM、btrace/RheaTrace、Measure、Firebase、Sentry、APMPlus 等工�
 
 ## 后续章节怎样分工
 
-- 19.2 Matrix、19.7 DoKit、19.8 ArgusAPM、19.9 Measure：看综合客户端框架的采集与工程边界；
+- 19.2 Matrix、19.6 DoKit、19.7 Measure：看当前客户端框架的采集与工程边界；
 - 19.3 KOOM、19.5 LeakCanary：看 Java/native 内存和泄漏专项；
 - 19.4 btrace/RheaTrace：看方法级 trace 与在线采样；
-- 19.6 BlockCanary：理解 Looper 长消息方案及其盲区；
-- 19.11 JankStats、19.12 FrameMetrics、19.13 Tracing SDK：看官方帧信号与应用 trace；
-- 19.14 Benchmark、19.15 Baseline Profiles、19.16 ProfilingManager：看回归测量、编译优化和系统受控取证；
-- 19.17 Firebase、19.18 商业平台：看托管平台的指标、采样和服务端能力；
-- 19.19—19.22：看外部性能测试与设备 benchmark；
-- 19.23—19.27：看网络、crash/ANR、功耗、混合栈和大规模端侧架构。
+- 19.8：理解 BlockCanary、ArgusAPM 等历史方案能保留的设计和必须替换的实现；
+- 19.9、19.10：看官方帧信号与应用 trace；
+- 19.11—19.13：看回归测量、编译优化和系统受控取证；
+- 19.14、19.15：看托管平台的指标、采样和服务端能力；
+- 19.16、19.17：看外部性能测试、操作复现与设备 benchmark；
+- 19.18—19.22：看网络、crash/ANR、功耗、混合栈和大规模端侧架构。
 
 阅读某个工具前，先回答它处在“线上采集、系统信号、线下诊断、回归测量”中的哪一层。这样能避免用一款工具负责它没有数据权限或没有证据深度的问题。
 

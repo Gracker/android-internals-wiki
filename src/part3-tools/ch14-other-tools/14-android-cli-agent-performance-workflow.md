@@ -37,7 +37,7 @@ sources:
   - type: blog
     path: "intake/daily-info/2026-05-21.md"
 tags: [android-cli, agent, performance-tooling, android-studio, perfetto]
-related_chapters: ["13.9", "13.12", "14.1", "14.17", "19.14"]
+related_chapters: ["13.9", "13.12", "14.1", "14.17", "19.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-22"
 gap_source: "官方文档/每日信息/研究素材"
@@ -81,7 +81,7 @@ Android CLI 的定位是命令入口和工作流胶水。它不生成帧级证�
 | Android Studio Profiler | App 进程内 CPU、内存、网络、功耗如何变化 | CPU / Memory / Power / System Trace 数据，详见 14.1 节 | IDE 交互强，批量回归和跨 trace 对比能力有限 |
 | Android Performance Analyzer | CPU、GPU、内存、功耗、SurfaceFlinger 事件如何同时变化 | Perfetto Trace 项目、GPU counter、截图时间线，详见 14.17 节 | Beta 阶段；结论仍要回到 trace 数据复核 |
 | Perfetto UI / Trace Processor | Trace 里的线程、slice、counter、帧时间如何定量分析 | `.perfetto-trace`、SQL 查询、表格结果，详见 13.10 和 13.12 节 | 采集、场景复现和项目管理需要另行组织 |
-| Macrobenchmark / Jetpack Benchmark | 同一场景在多次运行里的指标是否稳定 | 启动耗时、帧时间、Baseline Profile 验证结果 | 需要设计可重复场景和设备基线，详见 19.14 节 |
+| Macrobenchmark / Jetpack Benchmark | 同一场景在多次运行里的指标是否稳定 | 启动耗时、帧时间、Baseline Profile 验证结果 | 需要设计可重复场景和设备基线，详见 19.11 节 |
 
 这张表决定了 Android CLI 的用法：它是 agent 的控制台，性能结论交给 Trace、Profiler、SQL、APA 或 Benchmark。一轮排障可以从 CLI 建立复现状态开始，再用 Trace / Profiler 采集证据，后续用 SQL、APA 或 Benchmark 把结论整理成可复查记录。
 
@@ -210,7 +210,7 @@ Android skills 是面向 AI 工具和 agent 的指令包，用来把 Android 领
 | 分析 | `android studio find-declaration/find-usages/open-file` 关联源码 | Perfetto SQL、APA、Profiler 做证据分析 | SQL、截图、源码定位 |
 | 回归 | agent 准备同一入口状态；计时窗口外可用 Journey | Macrobenchmark 或 CI 门禁对比指标 | 趋势表、阈值判断、失败截图 |
 
-Android CLI 负责准备环境、运行 App 和定位源码。14.17 节的 APA 在同一窗口分析 CPU、GPU、内存、功耗与 SurfaceFlinger；13.9 节的 Perfetto SQL 从 trace 表中计算定量结果；19.14 节的 Macrobenchmark 重复执行受控场景并输出指标。工具之间通过设备基线、APK、操作脚本、trace 和查询关联。
+Android CLI 负责准备环境、运行 App 和定位源码。14.17 节的 APA 在同一窗口分析 CPU、GPU、内存、功耗与 SurfaceFlinger；13.9 节的 Perfetto SQL 从 trace 表中计算定量结果；19.11 节的 Macrobenchmark 重复执行受控场景并输出指标。工具之间通过设备基线、APK、操作脚本、trace 和查询关联。
 
 ## CI 与本地 agent 工作流模板
 

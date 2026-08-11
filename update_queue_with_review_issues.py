@@ -18,7 +18,7 @@ def add_review_issues_to_queue():
     
     # Review issues found for each chapter
     review_issues = {
-        "src/part3-tools/ch19-apm/23-network-apm-internals.md": [
+        "src/part3-tools/ch19-apm/18-network-apm-internals.md": [
             {
                 "type": "L4",
                 "location": "活人感",
@@ -26,7 +26,7 @@ def add_review_issues_to_queue():
                 "suggestion": "建议重写相关段落，使用更自然的表达方式"
             }
         ],
-        "src/part3-tools/ch19-apm/26-hybrid-apm.md": [
+        "src/part3-tools/ch19-apm/21-hybrid-apm.md": [
             {
                 "type": "L3", 
                 "location": "内容深度",

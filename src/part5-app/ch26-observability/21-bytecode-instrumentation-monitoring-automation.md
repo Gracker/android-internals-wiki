@@ -32,8 +32,8 @@ related_chapters:
 - '26.3'
 - '14.26'
 - '19.2'
-- '19.23'
-- '19.27'
+- '19.18'
+- '19.22'
 drafted_date: '2026-06-26'
 created_by: task2a-knowledge-gap
 created_date: '2026-06-26'
