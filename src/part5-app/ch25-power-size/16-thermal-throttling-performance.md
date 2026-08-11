@@ -1,10 +1,11 @@
 ---
-title: "ThermalManager 热节流适配与性能降级治理实战"
-chapter: "25.28"
+title: "热节流适配与性能降级治理"
+chapter: "25.16"
+section: "25.16"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [thermal, throttling, performance-degradation, power, ThermalManager, ThrottlingSeverity]
-related_chapters: ["5.4", "5.9", "25.1", "25.12", "25.27"]
+related_chapters: ["5.4", "5.9", "25.1", "25.13"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "AOSP结构+官方文档+章节深挖"
@@ -35,7 +36,7 @@ last_review_finalize_at: 2026-08-03T20:20:38+08:00
 last_review_finalize_run_id: 20260803-201256-f2e7359d
 ---
 
-# 25.28 ThermalManager 热节流适配与性能降级治理实战
+# 热节流适配与性能降级治理
 
 ## 先校正 API 名称
 
@@ -613,8 +614,8 @@ Android 17 普通应用只能读取 status/headroom。raw temperature、cooling 
 - [5.9 ADPF](../../part1-fundamentals/ch05-cpu-power/09-adpf.md)：Performance Hint Session、Game Mode 与 capacity headroom。
 - [5.5 Thermal 管控](../../part1-fundamentals/ch05-cpu-power/05-thermal.md)：governor、cooling device、Thermal HAL、Framework status/headroom 与 Perfetto。
 - [25.1 功耗诊断与分析方法](01-power-diagnosis.md)：功耗与性能实验方法。
-- [25.12 Excessive CPU 与系统处置](12-android17-excessive-cpu-kill.md)：持续 CPU 异常的线上治理。
-- [25.27 BatteryUsageStats 与功耗归因](27-android17-battery-usage-stats-power-attribution.md)：功耗读数与 UID 归因边界。
+- [25.13 应用层 CPU 优化](13-application-cpu-optimization.md)：持续 CPU 异常、excessive CPU 终止与线上治理。
+- [25.1 功耗诊断与分析方法](01-power-diagnosis.md)：BatteryUsageStats、PowerMonitor 与 UID 归因边界。
 
 Android 17 源码锚点：
 

@@ -138,13 +138,13 @@
     "title": "插件化包体积优化 — 历史演进与现代替代方案",
     "priority": 80,
     "status": "rejected",
-    "path": "src/part5-app/ch25-power-size/29-dex-size-optimization.md",
+    "path": "src/part5-app/ch25-power-size/17-dex-size-optimization.md",
     "original_chapter": "25.32",
     "original_path": "src/part5-app/ch25-power-size/32-plugin-dynamic-loading-size-optimization.md",
-    "mapped_to": "src/part5-app/ch25-power-size/29-dex-size-optimization.md",
+    "mapped_to": "src/part5-app/ch25-power-size/17-dex-size-optimization.md",
     "resolved_at": "2026-08-06T10:05:34+08:00",
     "resolution": "Standalone gap-mined chapter was removed; plugin and dynamic-loading size trade-offs map to the canonical DEX size optimization chapter.",
-    "target_path": "src/part5-app/ch25-power-size/29-dex-size-optimization.md"
+    "target_path": "src/part5-app/ch25-power-size/17-dex-size-optimization.md"
   },
   {
     "section": "freshness",

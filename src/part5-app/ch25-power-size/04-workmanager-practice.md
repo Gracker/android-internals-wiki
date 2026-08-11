@@ -1,6 +1,7 @@
 ---
-title: "25.4 WorkManager 实战与后台任务调度"
+title: "WorkManager 实战与后台任务调度"
 chapter: "25.4"
+section: "25.4"
 status: finalized
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: [android-system, performance, optimization, background-task]
@@ -21,12 +22,14 @@ reviewed_date: "2026-07-31"
 reviewed_by: "hermes-aiw-review-finalize-apply"
 last_verified: "2026-07-31"
 confidence: high
+consolidated_from:
+  - "src/part5-app/ch25-power-size/14-jobdebuginfo-jobscheduler-diagnostics.md"
 sources:
 - type: aosp
   path: '[androidx.work 2.9 公共 API; Android 14/15 Background Processing 官方指南; AOSP android-17.0.0_r1]'
 ---
 
-# 25.4 WorkManager 实战与后台任务调度
+# WorkManager 实战与后台任务调度
 
 基线为 Android 17（API 37，`android-17.0.0_r1`）和 WorkManager 2.11.2 稳定版。WorkManager 2.11.x 的 `minSdk` 是 23，因此不再讨论旧版本库在 API 14–22 上使用 `AlarmManager` 的兼容路径。
 
@@ -422,6 +425,25 @@ adb shell am broadcast \
 诊断广播会在 logcat 中输出最近完成、正在运行和已调度工作；将包名替换为被测应用。WorkManager 2.10.0 起为交给 JobScheduler 的 Job 增加 Worker trace tag，Android 17 的 `dumpsys jobscheduler` 输出因此更容易关联到具体 Worker，但脚本仍不应依赖未经承诺的输出文本格式。
 
 Perfetto 适合回答“Worker 运行时占用了哪些线程和 CPU 时间”，不适合单独回答“为何尚未获得调度”。Trace section 名属于库实现细节，升级 WorkManager 后可能改变。
+
+### Pending Reasons 与 JobDebugInfo
+
+Android 17 功能页把一组待执行原因能力称为 JobDebugInfo，但公开 SDK 中没有同名类。应用调用的入口仍在 `JobScheduler`，历史元素类型是 `PendingJobReasonsInfo`：
+
+| API | 起始版本 | 回答的问题 |
+| --- | ---: | --- |
+| `getPendingJobReason(jobId)` | 34 | 返回一个主要等待原因，适合快速提示 |
+| `getPendingJobReasons(jobId)` | 36 | 当前有哪些原因同时阻止执行 |
+| `getPendingJobReasonsHistory(jobId)` | 36 | 网络、电量、Doze、配额等原因怎样变化 |
+| `getPendingJobReasonStats(jobId)` | 37 | 每种原因累计等待多久 |
+
+多个原因可以同时计时，所以 stats 各项之和可能大于 Job 的实际等待时间。Job 完成或取消后，历史/统计查询可能因对象已不存在而抛 `IllegalArgumentException`；采集层应把它当成竞态，转查自己的完成记录。查询范围还受 UID 与 `JobScheduler` namespace 限制，使用 `forNamespace()` 调度时必须从同一 namespace 查询。
+
+原因常量只给出排查方向：`CONSTRAINT_*` 指向显式约束，`QUOTA` 指向待机分组或运行额度，`BACKGROUND_RESTRICTION` / `APP_STANDBY` 指向应用状态，`DEVICE_STATE` 还可能包含 Doze、热状态、内存压力或并发槽位。它们必须与 WorkInfo、停止原因、`dumpsys jobscheduler` 和业务阶段日志一起解释。
+
+WorkManager 使用自己的 WorkRequest UUID，系统 API 查询的是平台 Job ID；应用不应依赖 WorkManager 内部分配的映射。量产采集只保留低基数字段，例如任务类型、API level、当前原因集合、少量 top stats、停止原因、重试次数与等待时长桶，不上传原始 Job ID、WorkRequest UUID、URL、文件名或完整 `dumpsys`。
+
+发布门禁应区分“合理等待”和“设计错误”：低优先级同步等待充电或未计费网络通常说明约束生效；用户发起任务长期等待 `QUOTA`、任务反复入队却不完成、或重试放大配额消耗，才需要改成 UIDT、前台入口、唯一任务、分片与更合理的退避。
 
 ## 初始化与执行资源
 

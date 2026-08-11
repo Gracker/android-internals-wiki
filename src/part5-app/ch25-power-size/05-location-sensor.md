@@ -7,6 +7,8 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-14"
 last_verified_against: "Android Developers location / sensors docs + Google Play services LocationRequest docs + AOSP sensor batching docs + Clippings structure references"
 confidence: medium-high
+consolidated_from:
+  - "src/part5-app/ch25-power-size/22-location-services-performance.md"
 drafted_date: "2026-05-14"
 polish_count: 0
 sources:
@@ -337,6 +339,41 @@ Android 17 的 `SystemSensorManager` 使用 5000 微秒作为 200 Hz 周期边�
 - [AOSP Sensors batching](https://source.android.com/docs/core/interaction/sensors/batching)：FIFO、报告延迟、suspend 与 wake-up/non-wake-up 契约。
 
 传感器驱动和 sensor hub 固件通常由设备厂商实现，通用 AOSP 不能给出一条适用于所有设备的 Linux 驱动路径。这里不据此推断内核行为；后续若引用通用内核实现，统一使用 `android17-6.18-2026-06_r6`，不能拿旧内核分支解释 Android 17 设备。
+
+## 后台定位、前台服务与定位现场
+
+定位能力要同时检查运行系统、`targetSdkVersion`、权限授予、位置总开关和当前可见性：
+
+| 版本边界 | 需要处理的规则 |
+| --- | --- |
+| Android 8+ | 普通后台应用的位置更新受到频率限制；持续导航或共享应使用用户可见的 location FGS |
+| Android 10+ | 后台定位使用 `ACCESS_BACKGROUND_LOCATION`；location FGS 声明 `foregroundServiceType="location"` |
+| Android 11+ | target 30+ 不能在一次请求中同时申请前台与后台定位，后台权限要在功能上下文中分阶段解释 |
+| Android 12+ | 用户可以只授予 approximate；从后台启动 FGS 还受通用限制 |
+| Android 14+ | target 34+ 声明 `FOREGROUND_SERVICE_LOCATION`，创建服务时满足 coarse/fine 与 while-in-use 前提 |
+
+声明 location FGS 不会自动获得位置权限，也不能绕过后台启动限制。用户持续导航、运动记录或位置共享时，应从可见界面启动服务，展示停止入口，并在 `onDestroy()` 中移除同一个 callback；只关心进入/离开区域时使用 geofencing；页面附近内容在页面会话结束时停止请求。
+
+本地排查先从活动请求而不是缓存位置开始：
+
+```bash
+adb shell dumpsys location
+adb shell dumpsys location gps
+adb shell dumpsys location --gnssmetrics
+adb shell dumpsys powerstats
+```
+
+检查调用 UID、请求是否 active、间隔/质量以及业务拥有者是否已结束。`last location` 仍存在只说明有缓存，不能证明 provider 正在工作；listener 数量多也不自动等于泄漏。设备有 powerstats rail 时，它仍是设备级累计量，不是当前 App 的 GNSS 精确归因。
+
+## GNSS 原始测量、Wi-Fi RTT 与 BLE 测距
+
+这三类 API 更接近“采集测量值”，不能替代普通定位，也没有跨设备固定的精度或功耗：
+
+- GNSS 原始测量需要 `ACCESS_FINE_LOCATION`，API 31 的 full tracking 会要求芯片关闭占空比，只在算法确需连续载波相位时开启。看到某个载波频率只证明本次观测包含该信号，不证明定位解算使用了双频。
+- Wi-Fi RTT 从扫描得到的真实 `ScanResult` 构建请求。target 33+ 使用 `NEARBY_WIFI_DEVICES`，回调按 MAC 地址关联；Android 17 的 `STATUS_BUSY_TRY_LATER` 应按建议延迟退避，不能立刻循环请求。
+- BLE RSSI 受人体遮挡、姿态、天线和多径影响，适合区域判定或排序，不应直接承诺米级距离。后台会被限制为低功耗扫描，所有会话必须保存同一个 `ScanCallback` 并显式 `stopScan()`。
+
+门店场景可以先用 geofence 缩小候选区域，再在用户进入相关功能或满足后台条件时启动有界 RTT/BLE 会话。每个测量会话都要记录能力检查、权限、开始/停止、样本数、失败和重试，避免“定位已结束，扫描仍在运行”。
 
 ## 定位和传感器的回归守门
 

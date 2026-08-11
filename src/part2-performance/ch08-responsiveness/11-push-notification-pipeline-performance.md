@@ -319,7 +319,7 @@ FCM SDK、Google Play services 和 Android 平台版本要分别记录。Android
 - [§9.6 Notification 性能与 ANR](../ch09-anr/06-notification-performance-anr.md)：`notify()` 同步边界、NLS 回调和通知 ANR。
 - [§8.2 App 启动流程](02-app-launch.md)：进程创建与 `Application.onCreate()`。
 - [§25.4 WorkManager 实战](../../part5-app/ch25-power-size/04-workmanager-practice.md)：regular / expedited work 与后台调度。
-- [§25.13 FGS 超时与 JobScheduler 配额](../../part5-app/ch25-power-size/13-fgs-timeout-jobscheduler-quota.md)：FGS 类型、超时与恢复。
+- [§25.15 前台服务类型执行模型](../../part5-app/ch25-power-size/15-foreground-service-execution-model.md)：FGS 类型、超时、Job 配额与恢复。
 - [§4.11 Cached App Freezer](../../part1-fundamentals/ch04-memory/11-cached-app-freezer-gc-boundary.md)：缓存冻结与解冻边界。
 - [§1.4 Binder IPC](../../part1-fundamentals/ch01-architecture/04-binder.md)：同步 Binder 与线程等待。
 

@@ -1,6 +1,7 @@
 ---
 title: "应用层 CPU 优化实战指南"
-chapter: "25.23"
+chapter: "25.13"
+section: "25.13"
 status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [CPU优化, 应用实践, 线程池, 性能优化]
@@ -11,6 +12,9 @@ gap_source: "研究盲区 Task9 发现"
 last_verified: "2026-07-26"
 last_verified_against: "AOSP android-17.0.0_r1 / android17-6.18"
 confidence: medium-high
+consolidated_from:
+  - "src/part5-app/ch25-power-size/12-android17-excessive-cpu-kill.md"
+  - "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md"
 pipeline_stage: task6_ready_for_review
 task6_state: ready-for-review
 task9_state: ready-for-review
@@ -31,7 +35,7 @@ sources:
     path: "DeepResearch/2026-07-02-android17-threadpoolexecutor-times-syscall-source-deepdive.md"
 ---
 
-# 25.23 应用层 CPU 优化实战指南
+# 应用层 CPU 优化实战指南
 
 > 平台源码上限为 `android-17.0.0_r1`，内核口径为 `android17-6.18-2026-06_r6`。普通应用示例只使用 public SDK/NDK；`/proc` 文件可能因设备策略而不可读，相关方案都必须允许采样失败。
 
@@ -288,6 +292,33 @@ std::optional<double> EquivalentCores(
 需要延后、可持久化、受网络或充电等条件约束的后台工作，应使用 WorkManager 或 JobScheduler 表达约束。系统会结合设备状态调度，但不承诺精确执行时刻。不要通过高频轮询 `/proc/stat` 自建“空闲探测器”，轮询本身也会增加唤醒。
 
 评估预加载时，至少同时看命中率、废弃工作比例、CPU 时间、I/O、RSS/PSS、启动与帧性能回归。只有用户收益覆盖设备成本时，这项预加载才值得保留。
+
+## 周期任务：避免固定频率补跑制造恢复尖峰
+
+`scheduleAtFixedRate()` 按起点维持固定节拍；任务因冻结、CPU 挂起或长执行错过周期后，旧实现可能连续追赶。Android 16 对 target 36+ 默认启用 `STPE_SKIP_MULTIPLE_MISSED_PERIODIC_TASKS`，最多立即补一次；`android-17.0.0_r1` 已直接采用新的时间校正逻辑，不再保留该 target 分支。
+
+平台变化只限制 `ScheduledThreadPoolExecutor` 自己的追赶，不会处理业务手写补发循环、多个独立定时器或三方 SDK 队列。周期任务应先按语义分类：
+
+| 需求 | 更合适的机制 |
+| --- | --- |
+| 前台、要求相位、允许进程退出后丢失 | `scheduleAtFixedRate()`，生命周期结束时取消 |
+| 只要求每次完成后间隔一段时间 | `scheduleWithFixedDelay()` |
+| 可延期、需跨进程/重启、带约束 | WorkManager / JobScheduler |
+| 用户可感知的精确时刻 | 合适的 AlarmManager 接口 |
+
+固定频率任务的异常默认会抑制后续执行；取消后还应启用 remove-on-cancel 或明确清理队列。采集冻结→恢复→首帧完成的完整区间，检查后台 Runnable 是否与主线程、RenderThread 和网络重连同时争用 CPU。升级 target 时同时审计广告、埋点、APM、IM 等 SDK 内部定时器，不能只测试应用自有线程池。
+
+## Android 17 excessive CPU 终止与取证
+
+Android 17 新增 `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`，它把既有的 excessive resource usage 终止路径接入触发式性能分析；触发器提供事后系统跟踪快照，不负责决定任务能否执行。`ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE` 从 API 30 已公开，不能把终止机制本身误写成 Android 17 新增。
+
+AOSP r1 的主要检查对象是 Home 与缓存进程。系统按检查窗口计算进程累计 CPU 时间，阈值可由系统配置和 OEM 修改；多线程累计 CPU 时间可以超过单核墙钟时间，所以源码百分比不等同于性能面板的整机 CPU 占比。JobScheduler/WorkManager 配额决定任务资格与运行额度，excessive CPU 路径决定缓存进程是否因持续 CPU 被终止，两者没有直接调用关系。
+
+后台任务常见关联不是“Worker 一运行就被杀”，而是 Worker 已结束或被停止后，协程、独立线程、JNI、子进程或 Binder 循环仍在工作；进程随后降为缓存状态。治理重点是唯一任务、分类退避、取消传播、有界并发、分片与检查点，而不是围绕某个 AOSP 默认阈值设计轮询。
+
+API 37 应用可以预注册触发器和全局结果监听器。`ProfilingResult` 只有 trigger type、文件路径、tag 与错误信息，没有公开 pid 或 Work ID；归档层应把结果与最近的 `ApplicationExitInfo`、`processStateSummary`、任务开始/结束、停止原因和线程命名做“可能关联”，不能伪造精确映射。没有结果也不表示没有发生终止，后台跟踪和采集都受频率与可用性限制。
+
+排查顺序固定为：未启动先查 pending reason；启动后被停止查 Work/Job stop reason；进程死亡查 `ApplicationExitInfo`；原因是 excessive resource usage 时再查 ProfilingResult 与 Perfetto；任务已经结束而 CPU 仍持续时，回到未取消线程、协程、JNI 与子进程。
 
 ## 锁竞争：低 CPU 也可能让用户等很久
 

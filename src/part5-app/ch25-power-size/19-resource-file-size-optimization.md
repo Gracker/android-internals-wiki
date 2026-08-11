@@ -1,10 +1,11 @@
 ---
 title: "资源文件体积优化实战"
-chapter: "25.31"
+chapter: "25.19"
+section: "25.19"
 status: finalized
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [包体积, 资源优化, 图片压缩, ARSC, AAPT2]
-related_chapters: ["25.6", "25.7", "25.8", "25.29", "25.30"]
+related_chapters: ["25.6", "25.7", "25.8", "25.17", "25.18"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "Clippings性能优化参考书（资源文件体积优化实战章）"
@@ -49,7 +50,7 @@ sources:
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/tools/aapt2/ResourceTable.cpp
 ---
 
-# 25.31 资源文件体积优化实战
+# 资源文件体积优化实战
 
 资源优化很容易变成一张格式替换清单：PNG 转 WebP、删几套 density、打开 `shrinkResources`。这张清单没有回答三个工程问题：删掉的资源是否真的不可达、某个格式在最低系统版本能否解码、AAB 上传体积与单设备下载量是否用了同一口径。
 
@@ -575,8 +576,8 @@ mapping 必须与同一次构建的二进制和资源表绑定。工具版本相
 - [25.6 APK 体积分析与瘦身](06-apk-analysis.md)：APK 结构与总体分析入口。
 - [25.7 R8 与资源优化](07-r8-resource-optimization.md)：代码 keep 与资源缩减协作。
 - [25.8 App Bundle 与动态交付](08-app-bundle-delivery.md)：configuration APK、Dynamic Feature 与 PAD。
-- [25.29 DEX 体积优化](29-dex-size-optimization.md)：代码引用图与 R8 诊断。
-- [25.30 Native SO 体积优化](30-native-so-size-optimization.md)：ABI、ELF 与 16 KB 对齐。
+- [25.17 DEX 体积优化](17-dex-size-optimization.md)：代码引用图与 R8 诊断。
+- [25.18 Native SO 体积优化](18-native-so-size-optimization.md)：ABI、ELF 与 16 KB 对齐。
 
 一手资料：
 

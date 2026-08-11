@@ -1,6 +1,7 @@
 ---
 title: "Native SO 体积优化实战"
-chapter: "25.30"
+chapter: "25.18"
+section: "25.18"
 status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [native, so, elf, strip, ndk, abi, 16kb-page-size, apk-size]
@@ -49,7 +50,7 @@ sources:
   path: '[Android Common Kernel mm/mmap.c @ android17-6.18-2026-06_r6](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/mmap.c)'
 ---
 
-# 25.30 Native SO 体积优化实战
+# Native SO 体积优化实战
 
 Native 库优化常被简化成“strip 一下，再删一个 ABI”。这种做法会漏掉三类成本：ELF 内仍存活的代码和数据、同一库在不同交付配置中的副本，以及安装后由 linker 映射的页面与重定位。若只看仓库里的 `.so` 文件大小，很容易把上传包、用户下载、安装占用和运行时内存混在一起。
 

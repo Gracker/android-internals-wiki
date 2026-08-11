@@ -43,7 +43,7 @@ sources:
   - type: book-structure
     path: "Clippings/Android 性能优化 - so 文件的体积优化实战.md"
 tags: [apk-size, apk-analyzer, r8, resource-shrink, abi-filter]
-related_chapters: ["25.7", "25.8", "25.29", "25.30", "25.31"]
+related_chapters: ["25.7", "25.8", "25.17", "25.18", "25.19"]
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part2-performance/ch12-apk-network/01-apk-size.md"
@@ -78,7 +78,7 @@ finalized_by: openclaw-task6-auto-promote
 ---
 
 
-# 25.6 APK 体积分析与瘦身
+# APK 体积分析与瘦身
 
 ## 先统一体积口径
 
@@ -88,7 +88,7 @@ finalized_by: openclaw-task6-auto-promote
 - **设备交付量**：普通单 APK 渠道交付一个完整 APK；App Bundle 渠道交付与设备配置匹配的一组 split APK。比较 AAB 时必须固定 ABI、密度、语言、SDK 和动态功能集合。
 - **安装占用**：除了已安装 APK，还可能包含提取后的 native 库、编译产物、应用数据和缓存。减少下载量不保证安装占用按相同比例下降。
 
-APK 或 APK 集合中常见的主体包括 `classes*.dex`、`resources.arsc`、`res/`、`assets/`、`lib/<abi>/`、编译后的 `AndroidManifest.xml` 和签名数据。它们的构建、交付和加载方式不同，不能用同一种办法处理。DEX、native library 与资源的专项分析分别见 25.29、25.30 和 25.31；这里建立统一测量、归因和发布门禁。
+APK 或 APK 集合中常见的主体包括 `classes*.dex`、`resources.arsc`、`res/`、`assets/`、`lib/<abi>/`、编译后的 `AndroidManifest.xml` 和签名数据。它们的构建、交付和加载方式不同，不能用同一种办法处理。DEX、native library 与资源的专项分析分别见 25.17、25.18 和 25.19；这里建立统一测量、归因和发布门禁。
 
 ### APK 是带平台约束的 ZIP
 
@@ -211,7 +211,7 @@ AGP 8.12/8.13 需要通过 `android.r8.optimizedResourceShrinking=true` 手动�
 
 “资源混淆”要区分官方构建优化与第三方重写工具。R8/AGP 的资源缩减、资源表优化属于受支持流程；自行重写资源名、路径、`resources.arsc` 或 R8 中间产物并不是通用 AGP 能力，可能破坏动态查找、资源覆盖、增量更新和诊断工具。没有明确工具版本、产物校验和完整回归时，不应把它列为默认步骤。
 
-Android 17 的 [`ResourceTypes.h`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/androidfw/include/androidfw/ResourceTypes.h) 定义了资源表数据结构。它说明 `resources.arsc` 是编译后的二进制资源表，却不能证明任意资源表改写都兼容平台和构建工具。资源专项优化与验证流程见 25.7 和 25.31 节。
+Android 17 的 [`ResourceTypes.h`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/androidfw/include/androidfw/ResourceTypes.h) 定义了资源表数据结构。它说明 `resources.arsc` 是编译后的二进制资源表，却不能证明任意资源表改写都兼容平台和构建工具。资源专项优化与验证流程见 25.7 和 25.19 节。
 
 推荐的处理顺序是：移除无用资源，开启官方缩减，处理大文件和替代资源，再评估交付拆分。每一步都检查启动、换肤、通知图标、桌面 Widget、WebView/JNI 桥接和多语言路径。
 
@@ -252,7 +252,7 @@ android {
 
 ### 16 KB page size 是兼容门槛
 
-Android 15 开始支持 16 KB 基础页设备。到 Android 17（API 37），含 native 库的应用仍要同时满足 ELF load segment 对齐和 APK 中未压缩 `.so` 的 ZIP 对齐。Google Play 自 2025 年 11 月 1 日起，要求面向 Android 15/API 35 及以上设备的新应用和更新支持 16 KB page size。当前推荐工具链是 AGP 8.5.1 及以上、NDK r28 及以上，并确认所有预编译 `.so` 也兼容；仅升级自己编译的库不够。完整迁移边界见 [Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes) 和 25.30 节。
+Android 15 开始支持 16 KB 基础页设备。到 Android 17（API 37），含 native 库的应用仍要同时满足 ELF load segment 对齐和 APK 中未压缩 `.so` 的 ZIP 对齐。Google Play 自 2025 年 11 月 1 日起，要求面向 Android 15/API 35 及以上设备的新应用和更新支持 16 KB page size。当前推荐工具链是 AGP 8.5.1 及以上、NDK r28 及以上，并确认所有预编译 `.so` 也兼容；仅升级自己编译的库不够。完整迁移边界见 [Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes) 和 25.18 节。
 
 下面的命令用于确认测试设备的运行时页大小、AAB 请求的页对齐方式，以及最终 APK 内未压缩 shared library 的 ZIP 对齐。`zipalign -P 16` 需要 Android SDK Build-Tools 35.0.0 或更高版本。
 
@@ -286,4 +286,4 @@ CI 应保存已发布 release 制品、候选 release 制品、构建工具版�
 
 APK 体积分析先固定制品与设备口径，再按 DEX、资源、assets 和 native 库归因。DEX 关注依赖、R8 入口与宽泛 keep rules；资源关注可达性、替代资源和交付范围；native 库关注 ABI、符号、动态功能与 16 KB 对齐。AAB 是上传制品，设备 APK Set 才能回答用户下载了什么。
 
-交付物应是一份可复现的体积账：基线制品、候选制品、工具版本、设备规格、目录增量、兼容结果和诊断文件齐全。R8 与资源格式的专项处理见 25.7，AAB 与动态交付见 25.8，native 库和 16 KB 对齐见 25.30。
+交付物应是一份可复现的体积账：基线制品、候选制品、工具版本、设备规格、目录增量、兼容结果和诊断文件齐全。R8 与资源格式的专项处理见 25.7，AAB 与动态交付见 25.8，native 库和 16 KB 对齐见 25.18。
