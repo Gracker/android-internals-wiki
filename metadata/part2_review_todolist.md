@@ -40,10 +40,15 @@
 - [x] 9.1 ANR 设计思想 (`src/part2-performance/ch09-anr/01-anr-design.md`)
 - [x] 9.2 ANR 类型与触发条件 (`src/part2-performance/ch09-anr/02-anr-types.md`)
 - [x] 9.3 ANR 分析方法 (`src/part2-performance/ch09-anr/03-anr-analysis.md`)
-- [x] 9.4 特殊场景的 ANR (`src/part2-performance/ch09-anr/04-special-anr.md`)
+- [x] 9.4 特殊与跨边界 ANR (`src/part2-performance/ch09-anr/04-special-anr.md`)
 - [x] 9.5 案例集 (`src/part2-performance/ch09-anr/05-case-studies.md`)
 - [x] 9.6 Notification 性能与 ANR (`src/part2-performance/ch09-anr/06-notification-performance-anr.md`)
-- [x] 9.7 ANR 非技术故障诊断 (`src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md`)
+- [x] 9.7 ANR 与 Kernel Trace 联合诊断 (`src/part2-performance/ch09-anr/07-anr-kernel-trace-joint-diagnosis.md`)
+- [x] 9.8 ContentProvider 超时与 ANR 四路径 (`src/part2-performance/ch09-anr/08-contentprovider-timeout-anr.md`)
+- [x] 9.9 Android 17 ANR 预警回调与类型枚举 (`src/part2-performance/ch09-anr/09-android17-anr-warning-callback.md`)
+- [x] 9.10 Android 17 Input ANR 与 pre-ANR 实现 (`src/part2-performance/ch09-anr/10-android17-input-anr-prewarning.md`)
+
+> 原“非技术故障诊断”的通用归因内容回收到 9.2—9.4，历史 InputTransport 平台缺陷并入 9.5；CPU 日志方法论并入 9.3；企业监控平台设计并入 26.4。完整映射见 `metadata/content-consolidation-audit.md`。
 
 ## 第 10 章：内存性能 (ch10-memory-perf)
 - [x] 10.1 App 内存分析 (`src/part2-performance/ch10-memory-perf/01-app-memory-analysis.md`)

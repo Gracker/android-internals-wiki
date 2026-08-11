@@ -1,10 +1,11 @@
 ---
 title: "Android 17 ANR 预警回调与类型枚举"
-chapter: "9.10"
+chapter: "9.9"
+section: "9.9"
 status: ready-for-review
 applicable_versions: "Android 17 (API 37)"
 tags: [ANR, warning, callback, AnrTypes, observability, IAnrWarningCallback]
-related_chapters: ["9.1", "9.2", "9.3", "9.8", "26.1"]
+related_chapters: ["9.1", "9.2", "9.3", "9.7", "26.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-02"
 drafted_date: "2026-07-02"
@@ -32,7 +33,7 @@ sources:
     path: "DeepResearch/2026-06-15-anr-detection-inputdispatcher-ams-anrhelper-source.md"
 ---
 
-# 9.10 Android 17 ANR 预警回调与类型枚举
+# 9.9 Android 17 ANR 预警回调与类型枚举
 
 Android 17 / API 37 增加了公开的 ANR warning API。应用可以向 `ActivityManager` 注册 listener，在部分 ANR 计时器接近 deadline 时收到 `AnrWarningResult`。
 
@@ -44,7 +45,7 @@ Android 17 / API 37 增加了公开的 ANR warning API。应用可以向 `Activi
 
 warning 不会暂停或延长原计时器。它适合记录轻量状态、串起 warning 与事后退出记录，不适合在回调里临时执行全线程 dump、同步落盘或网络上传。
 
-平台锚点为 `android-17.0.0_r1`。ANR 的 timeout 与报告管线见 [§9.1 ANR 设计思想](01-anr-design.md)，线程转储和 Perfetto 联合分析见 [§9.3](03-anr-analysis.md) 与 [§9.8](08-anr-kernel-trace-joint-diagnosis.md)。
+平台锚点为 `android-17.0.0_r1`。ANR 的 timeout 与报告管线见 [§9.1 ANR 设计思想](01-anr-design.md)，线程转储和 Perfetto 联合分析见 [§9.3](03-anr-analysis.md) 与 [§9.7](07-anr-kernel-trace-joint-diagnosis.md)。
 
 ## 1. 公开 API 在 `android.app`
 
@@ -319,7 +320,7 @@ Android 17 的 `AnrWarningController` 在存在目标 UID callback 时发出：
 - instant name：`AnrWarningDetected`；
 - args：`anrId`、`errorId`、`anrTimeoutMs`、`consumedTimeMs`。
 
-最终 ANR 处理中，`ProcessErrorStateRecord` 还可发出 `ANR Detected` instant。抓取配置需要启用 `debug.anr` Track Event category，详细配置见 [§9.8](08-anr-kernel-trace-joint-diagnosis.md#3-android-17-中可用的数据源)。
+最终 ANR 处理中，`ProcessErrorStateRecord` 还可发出 `ANR Detected` instant。抓取配置需要启用 `debug.anr` Track Event category，详细配置见 [§9.7](07-anr-kernel-trace-joint-diagnosis.md#3-android-17-中可用的数据源)。
 
 分析时可按下面的时间关系核对：
 
@@ -411,4 +412,4 @@ Android 17 / API 37 把 ANR 类型、预警载荷和 listener 注册做成公开
 - [AOSP android-17.0.0_r1：ProfilingManager](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java)
 - [§9.1 ANR 设计思想](01-anr-design.md)
 - [§9.3 ANR 分析方法](03-anr-analysis.md)
-- [§9.8 ANR Kernel Trace 联合诊断](08-anr-kernel-trace-joint-diagnosis.md)
+- [§9.7 ANR 与 Kernel Trace 联合诊断](07-anr-kernel-trace-joint-diagnosis.md)

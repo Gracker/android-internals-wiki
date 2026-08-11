@@ -46,6 +46,8 @@ related_chapters:
 - '9.3'
 - '9.4'
 - '1.4'
+consolidated_from:
+- src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task6_result: "pass-light-edit"
@@ -77,9 +79,9 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-03
 ---
 
-# 案例集
+# 9.5 案例集
 
-相关基础定义见 §9.1 ANR 的设计思想、§9.2 ANR 类型与触发条件、§9.3 ANR 分析方法和 §9.4 特殊场景的 ANR。
+相关基础定义见 §9.1 ANR 的设计思想、§9.2 ANR 类型与触发条件、§9.3 ANR 分析方法和 §9.4 特殊与跨边界 ANR。
 
 ## 先给证据分级
 
@@ -91,7 +93,7 @@ last_deepseek_cn_review_at: 2026-07-03
 | 强推断 | 多项证据指向同一方向，仍缺少一段直接证据 | 高概率相关因素 |
 | 未闭合 | 只找到相关日志、异常负载或静态堆栈，时间或对象无法对齐 | 保留线索，继续取证 |
 
-以下包含五个线上样本和一个匿名化的锁顺序示例。样本中的包名、时间和关键数值来自原始材料；锁顺序示例用于完整演示死锁图的还原过程，不冒充线上原始事件。
+以下包含五个线上样本、一个匿名化的锁顺序示例，以及一个有 AOSP 提交记录支撑的历史平台缺陷。样本中的包名、时间和关键数值来自原始材料；锁顺序示例用于完整演示死锁图的还原过程，不冒充线上原始事件。
 
 | 案例 | ANR 表象 | 结论强度 | 能学到什么 |
 |---|---|---|---|
@@ -101,6 +103,7 @@ last_deepseek_cn_review_at: 2026-07-03
 | 4 | 被冻结进程持有输入连接 | 已确认 | freezer 日志、输入连接与 A/B 验证 |
 | 5 | 目标进程启动超时后无焦点 | 强推断 | `am_process_start_timeout` 的源码含义 |
 | 6 | Service 执行期间两锁互等 | 已确认于示例 | 锁图、修复边界与 Binder 资源环 |
+| 7 | finished signal 丢失导致输入队列堆积 | 平台缺陷已确认 | 怎样用日志、源码演进和系统镜像 A/B 排除 App 归因 |
 
 ## 案例 1：高内存与 I/O 压力下的无焦点窗口 ANR
 
@@ -499,6 +502,31 @@ Android 17 的 `ProcessState.cpp` 定义 `DEFAULT_MAX_BINDER_THREADS = 15`，并
 
 ---
 
+## 案例 7：InputTransport finished signal 的历史平台缺陷
+
+一个公开的旧版 Android 游戏案例记录了 InputDispatcher 等待队列持续堆积：
+
+```text
+Input dispatching timed out
+(Waiting to send non-key event because the touched window has not finished
+processing certain input events that were delivered to it over 500.0ms ago.
+Wait queue length: 27. Wait queue head age: 5504.1ms.)
+```
+
+这段 reason 只能证明派发端当时看到 27 个未完成事件，不能单独证明游戏主线程慢，也不能直接证明平台缺陷。案例报告称 Looper 历史里没有能覆盖 deadline 的长消息，并通过动态 input 日志把问题缩小到 `InputTransport.cpp`；因为原始 bugreport 与 trace 没有公开，这部分只能作为次级证据。
+
+AOSP Gerrit 给出了更强的源码证据：
+
+1. 2015 年 change `172237` 为适配 integer sanitizer，重写了若干 unsigned decrement loop；
+2. 2017 年 change `396876` 明确修复 `sendFinishedSignal` 的逻辑错误；
+3. 后一提交说明，前一改动漏掉了把 head sequence 加入 `mSeqChains` 的关键迭代，使一批 sequence 无法正确 finished，最终令 wait queue 持续增长并触发 ANR。
+
+**结论强度：平台缺陷已确认，具体产品事件为强推断。** AOSP 提交足以确认历史代码缺陷及其机制；产品日志与这一机制吻合，但缺少完整原始现场，不能宣称二者已经逐事件闭合。该问题在 Android 17 源码中早已修复，不应重新套用旧补丁。
+
+这个案例更重要的是提供一套平台归因方法：先从 reason 确认未完成事件，再证明 App 侧缺少可解释 deadline 的长任务，随后用 sequence/finish 动态日志缩小范围，以源码补丁解释队列为何不下降，最后在修补前后的系统镜像上运行同一输入压力测试。只有走完这条链，才能把“被记账应用”与“实际责任边界”分开。
+
+---
+
 ## InputDispatcher WaitQueue 怎样用于以上案例
 
 Android 17 的 InputDispatcher 为每个 connection 维护 `waitQueue`，其中保存已派发、尚未收到完成通知的事件。源码提供两组可观测入口：
@@ -597,6 +625,7 @@ ANR 瞬时 trace 可能采到 `nativePollOnce`、锁等待或已经返回后的�
 - [ProcessList.java：进程启动超时消息](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ProcessList.java)
 - [ActivityManagerService.java：attachApplication 与 start timeout 处理](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)
 - [ProcessState.cpp：Binder 默认最大线程请求值](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/binder/ProcessState.cpp)
+- [InputTransport.cpp：finished signal](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/input/InputTransport.cpp)
 - [am_event_tags.logtags：freeze/unfreeze event 定义](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/EventLogTags.logtags)
 
 ### 案例来源与平台文档
@@ -607,3 +636,5 @@ ANR 瞬时 trace 可能采到 `nativePollOnce`、锁等待或已经返回后的�
 - [今日头条 ANR 优化实践：告别 SharedPreference 等待](https://mp.weixin.qq.com/s/kfF83UmsGM5w43rDCH544g)
 - [疑难 ANR 原因分析：冻结导致](https://mp.weixin.qq.com/s?__biz=MzkzOTQ4NDUyNg==&mid=2247489094)
 - [Android Developers：诊断 ANR](https://developer.android.com/topic/performance/vitals/anr)
+- [AOSP Gerrit 172237：2015 unsigned loop 重构](https://android-review.googlesource.com/c/platform/frameworks/native/+/172237)
+- [AOSP Gerrit 396876：2017 sendFinishedSignal 修复](https://android-review.googlesource.com/c/platform/frameworks/native/+/396876)

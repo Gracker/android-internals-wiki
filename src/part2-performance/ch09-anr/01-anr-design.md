@@ -79,7 +79,7 @@ p2: 1
 last_task2b_verifier_at: "2026-07-11T11:34:06+08:00"
 task2b_verifier_notes: "Task9 idle-audit auto-fix on 2026-07-11 set task6_state: revisiting + pipeline_stage: task6_pending, but status remained finalized. Corrected to ready-for-review for Task6 re-review."
 ---
-# ANR 设计思想
+# 9.1 ANR 设计思想
 
 ## 从“用户等了多久”理解 ANR
 
@@ -396,7 +396,7 @@ PID 会复用，进程也可能在 ANR 后重启。只按包名合并多份报�
 4. 用 Perfetto 还原超时前几秒的调度、Binder、锁和主线程任务。
 5. 用版本、机型、进程生命周期与同时间段系统日志排除错误归因。
 
-更完整的 trace 逐段阅读方法见 [9.3 ANR 分析方法](03-anr-analysis.md)，系统与内核联合诊断见 [9.8 ANR 与内核 trace 联合诊断](08-anr-kernel-trace-joint-diagnosis.md)。
+更完整的 trace 逐段阅读方法见 [9.3 ANR 分析方法](03-anr-analysis.md)，系统与内核联合诊断见 [9.7 ANR 与 Kernel Trace 联合诊断](07-anr-kernel-trace-joint-diagnosis.md)。
 
 ## Android 8 到 Android 17 的演进重点
 
@@ -407,7 +407,7 @@ PID 会复用，进程也可能在 ANR 后重启。只按包名合并多份报�
 - **Android 14（API 34）**：面向目标 SDK 34 及以上的部分 `JobService` 回调超时会按明确 ANR 报告；广播派发进入现代队列实现，超时可依据进程状态调整。
 - **Android 15（API 35）**：公开 `ProfilingManager` 的主动采集能力；AOSP Watchdog 已具备 1/4 期限处的 pre-watchdog 采集。
 - **Android 16（API 36）**：公开 `ProfilingTrigger.TRIGGER_TYPE_ANR` 和系统触发式 profiling 注册能力，为 ANR 增加一份时间段证据。
-- **Android 17（API 37）**：`TimeoutRecord` 可映射公开 `AnrTypes`；`ApplicationExitInfo.getAnrInfo()` 提供结构化 ANR 元数据；`ActivityManager.registerAnrWarningListener()` 允许应用按尽力而为原则接收临近 ANR 期限的预警。详情见 [9.10 Android 17 ANR Warning Callback](10-android17-anr-warning-callback.md)。
+- **Android 17（API 37）**：`TimeoutRecord` 可映射公开 `AnrTypes`；`ApplicationExitInfo.getAnrInfo()` 提供结构化 ANR 元数据；`ActivityManager.registerAnrWarningListener()` 允许应用按尽力而为原则接收临近 ANR 期限的预警。详情见 [9.9 Android 17 ANR 预警回调](09-android17-anr-warning-callback.md)。
 
 版本演进的方向很清楚：检测器保留各自的协议语义，AMS 加强统一编排；诊断材料从一次线程快照扩展到结构化退出信息、早期预警和可选的时间段 profiling。传统 trace 仍是基础证据，只是它不再负责全部解释任务。
 

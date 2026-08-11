@@ -1,6 +1,7 @@
 ---
-title: "ContentProvider ANR 双路径：Publish 超时与 Call Hang 检测"
-chapter: "9.9"
+title: "ContentProvider 超时与 ANR 四路径"
+chapter: "9.8"
+section: "9.8"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [anr, content-provider, publish-timeout, call-hang, ams]
@@ -25,7 +26,7 @@ sources:
     path: developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs
 ---
 
-# 9.9 ContentProvider ANR 双路径：Publish 超时与 Call Hang 检测
+# 9.8 ContentProvider 超时与 ANR 四路径
 
 ContentProvider 相关卡死至少涉及四个计时器，其中只有一条路径直接进入 Provider 宿主进程的 ANR 管线：
 
@@ -370,4 +371,4 @@ Jetpack App Startup 会把多个 initializer 放进一个 `InitializationProvide
 - [AOSP android-17.0.0_r1：Build.HW_TIMEOUT_MULTIPLIER](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Build.java)
 - [§9.2 ANR 类型与触发条件](02-anr-types.md)
 - [§9.3 ANR 分析方法](03-anr-analysis.md)
-- [§9.8 ANR Kernel Trace 联合诊断](08-anr-kernel-trace-joint-diagnosis.md)
+- [§9.7 ANR 与 Kernel Trace 联合诊断](07-anr-kernel-trace-joint-diagnosis.md)

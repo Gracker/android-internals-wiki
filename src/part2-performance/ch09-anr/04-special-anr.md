@@ -1,5 +1,5 @@
 ---
-title: "特殊场景的 ANR"
+title: "特殊与跨边界 ANR"
 chapter: "9.4"
 section: "9.4"
 polish_count: 1
@@ -70,7 +70,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-15
 last_task9_autofix_at: "2026-06-15"
 ---
-# 特殊场景的 ANR
+# 9.4 特殊与跨边界 ANR
 
 [§9.2 ANR 类型与触发条件](02-anr-types.md) 和 [§9.3 ANR 分析方法](03-anr-analysis.md) 说明了 Android 17 detector、时间点和证据等级，下面沿用这些定义。
 

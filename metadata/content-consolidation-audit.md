@@ -20,9 +20,36 @@
 | ch05 CPU 调度与能耗管理 | 38 | 17 | 已完成 | 2026-08-11 |
 | ch07 流畅度 | 20 | 14 | 已完成 | 2026-08-11 |
 | ch08 响应速度 | 20 | 12 | 已完成 | 2026-08-11 |
-| 其余 20 章 | 490 | 待审阅 | 未开始 | - |
+| ch09 ANR | 13 | 10 | 已完成 | 2026-08-11 |
+| 其余 19 章 | 477 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 563 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 560 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch09 ANR
+
+保留后的连续编号为：
+
+- 9.1 ANR 设计思想
+- 9.2 ANR 类型与触发条件
+- 9.3 ANR 分析方法
+- 9.4 特殊与跨边界 ANR
+- 9.5 案例集
+- 9.6 Notification 性能与 ANR
+- 9.7 ANR 与 Kernel Trace 联合诊断
+- 9.8 ContentProvider 超时与 ANR 四路径
+- 9.9 Android 17 ANR 预警回调与类型枚举
+- 9.10 Android 17 Input ANR 与 pre-ANR 实现
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `07-non-technical-anr-diagnosis.md` | 删除重复的类型边界、跨进程归因、线程状态和系统压力流程；独有的 InputTransport finished-signal 历史平台缺陷补入案例集 | 9.2～9.5，重点为 `../src/part2-performance/ch09-anr/05-case-studies.md` |
+| `13-anr-log-cpu-analysis-methodology.md` | 合并长期/临时 ProcessCpuTracker 采样窗、百分比分母、fault/PSI 边界和三层解析模型 | `../src/part2-performance/ch09-anr/03-anr-analysis.md`（9.3） |
+| `9.11-enterprise-anr-monitoring-platform-design.md` | 从 ANR 原理章移出；能力与证据分层、事件 authority、端侧 spool、三层去重、服务端闭环、隐私和验证归入可观测性主文 | `../src/part5-app/ch26-observability/04-anr-monitoring.md`（26.4） |
+| 原 9.8 / 9.9 / 9.10 / 9.12 | 每篇均有独立的完整源码责任链，保留并依次改为连续编号 9.7～9.10；Provider 标题按正文的四条计时路径修正，Input 标题不再把局部 pre-ANR 能力泛化为“双层预警” | `07-anr-kernel-trace-joint-diagnosis.md`～`10-android17-input-anr-prewarning.md` |
+
+章节 README、`src/SUMMARY.md`、活动跨章链接和统计口径已经切换到连续编号。历史 changelog、已关闭 finding 与 `consolidated_from` 保留旧路径。
 
 ## ch08 响应速度
 
