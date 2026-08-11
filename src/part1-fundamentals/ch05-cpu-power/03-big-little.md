@@ -56,7 +56,7 @@ last_task9_audit_result: "pass-idle-audit"
 last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度3（版本差异覆盖）复核通过；android16-6.12 与 android17-6.18 的 schedutil `sugov_get_util()`/`scx_cpuperf_target()` 路径一致；未发现超出 Android 17/API 37 的源码结论。"
 ---
 
-# 大小核架构
+# 5.3 大小核架构
 
 > [!info] 源码锚点
 > 正文按 Android 17 / API 37 / `android-17.0.0_r1` 与 kernel `android17-6.18-2026-06_r6` 复核。具体 SoC 的核心名称、编号、capacity 与 cpufreq policy 属于设备实现；未从目标设备内核或 sysfs 读取的数据不当作平台保证。

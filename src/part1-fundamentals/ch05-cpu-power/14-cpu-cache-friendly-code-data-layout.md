@@ -1,7 +1,7 @@
 ---
 title: "CPU Cache 友好代码与数据布局优化"
-chapter: "5.18"
-section: "5.18"
+chapter: "5.14"
+section: "5.14"
 status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-05"
@@ -32,7 +32,7 @@ gap_score: 16
 material_count: 5
 ---
 
-# 5.18 CPU Cache 友好代码与数据布局优化
+# 5.14 CPU Cache 友好代码与数据布局优化
 CPU cache 优化应先证明当前负载受内存层级限制，再让数据布局匹配访问模式，不能停留在“顺序数组比链表快”这类经验判断。移动 SoC 的核心、频率、cache 容量、共享层级和 PMU 事件均有差异；没有测量支撑的 padding、prefetch 或对象池，很容易增加内存占用，却没有改善延迟。
 
 平台与内核基线分别为 Android 17 / API 37 / `android-17.0.0_r1` 和 `android17-6.18-2026-06_r6`。分析范围包括 Kotlin/Java、NDK C/C++、DEX 布局和系统源码中的局部性设计。调度与大小核见 5.1、5.2、5.3，Baseline Profile 见 8.7，启动测量见 21.4。

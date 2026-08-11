@@ -62,7 +62,7 @@ last_deepseek_cn_review_at: 2026-07-06
 
 多进程可以隔离崩溃、内存峰值和重型 native 模块，也会新增一份进程运行时、初始化链路和 IPC 边界。它是一项架构取舍，不能代替主进程自身的启动治理。
 
-App 可以控制的部分包括：是否拆进程、何时拉起、每个进程初始化什么、调用方怎样等待远程能力，以及如何在 Android 17 上验证收益。进程优先级与回收规则见[进程模型](../../part1-fundamentals/ch01-architecture/03-process-model.md)，冷启动分段与 TTID/TTFD 见[启动分析](./01-startup-analysis.md)，后台任务约束见[后台执行限制](../../part1-fundamentals/ch05-cpu-power/08-background-execution.md)。
+App 可以控制的部分包括：是否拆进程、何时拉起、每个进程初始化什么、调用方怎样等待远程能力，以及如何在 Android 17 上验证收益。进程优先级与回收规则见[进程模型](../../part1-fundamentals/ch01-architecture/03-process-model.md)，冷启动分段与 TTID/TTFD 见[启动分析](./01-startup-analysis.md)，后台任务约束见[后台执行限制](../../part1-fundamentals/ch05-cpu-power/07-background-execution.md)。
 
 ## 1. 先确认拆进程的目的
 

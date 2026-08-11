@@ -474,5 +474,5 @@ class PeriodicHintWorker(
 
 - [**8.6 Kotlin Coroutine 性能实践**](06-coroutine-performance.md)：协程结构、异常与取消。
 - [**8.17 Kotlin Flow 背压**](17-kotlin-flow-backpressure-performance.md)：流式并发和缓冲语义。
-- [**5.31 Android 17 EEVDF**](../../part1-fundamentals/ch05-cpu-power/31-android17-eevdf-scheduler.md)：r6 fair scheduler 的虚拟时间与 deadline。
-- [**5.10 JobScheduler/WorkManager**](../../part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md)：持久化后台任务。
+- [**5.1 Linux 进程调度基础**](../../part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md)：r6 fair/EEVDF 的虚拟时间与 deadline。
+- [**5.8 JobScheduler/WorkManager**](../../part1-fundamentals/ch05-cpu-power/08-jobscheduler-workmanager-performance.md)：持久化后台任务。

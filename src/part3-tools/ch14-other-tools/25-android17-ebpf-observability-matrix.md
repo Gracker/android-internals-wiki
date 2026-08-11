@@ -35,7 +35,7 @@ sources:
   - type: official
     path: "source.android.com/docs/core/architecture/kernel/bpf"
 tags: [eBPF, observability, CPU-cycle, DMA-BUF, wakelock, lock-contention, Rust, Android17]
-related_chapters: ["14.10", "14.21", "5.1", "5.27"]
+related_chapters: ["14.10", "14.21", "5.1", "5.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-02"
 gap_source: "每日技术文章 intake"

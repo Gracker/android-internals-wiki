@@ -3,8 +3,8 @@
 
 status: finalized
 title: JobScheduler/WorkManager 调度与后台任务性能
-chapter: '5.10'
-section: '5.10'
+chapter: '5.8'
+section: '5.8'
 drafted_date: '2026-04-06'
 polish_count: 1
 polish_date: '2026-04-09'
@@ -16,6 +16,9 @@ reviewed_by: openclaw-task6
 last_verified_against: AOSP android-16.0.0_r1, developer.android.com reference, perfetto.dev
   stdlib docs, Android Vitals docs
 confidence: medium
+consolidated_from:
+  - "src/part1-fundamentals/ch05-cpu-power/05.26-android17-jobscheduler-service-cpu-quota.md"
+  - "src/part1-fundamentals/ch05-cpu-power/23-android17-jobscheduler-system-throttling.md"
 sources:
 - type: official
   path: https://developer.android.com/reference/android/app/job/JobScheduler
@@ -53,7 +56,7 @@ tags:
 - quota
 related_chapters:
 - '5.6'
-- '5.8'
+- '5.7'
 - '1.5'
 - '11.2'
 - '15.5'
@@ -85,7 +88,7 @@ last_deepseek_cn_review_at: 2026-06-07
 ---
 
 
-# JobScheduler/WorkManager 调度与后台任务性能
+# 5.8 JobScheduler/WorkManager 调度与后台任务性能
 
 ## 为什么后台任务需要系统调度
 
@@ -99,7 +102,7 @@ JobScheduler 的做法是让应用声明“做什么、需要哪些条件、允�
 2. 任务迟迟不运行时，怎样区分约束、配额、设备状态和应用自身问题；
 3. WorkManager、Expedited Job、UIDT、Foreground Service 和精确闹钟分别适合什么场景。
 
-Doze、App Standby 与后台执行限制的策略背景见 5.6 和 5.8 节。平台源码以 `android-17.0.0_r1` 为基准。
+Doze、App Standby 与后台执行限制的策略背景见 5.6 和 5.7 节。平台源码以 `android-17.0.0_r1` 为基准。
 
 ## JobScheduler 的调度模型
 
@@ -121,7 +124,7 @@ val result = context.getSystemService(JobScheduler::class.java).schedule(job)
 
 生产代码要检查 `schedule()` 的返回值。`RESULT_SUCCESS` 只表示系统接受了任务，并不表示任务已经启动；参数无效、达到调度限制或 Expedited Job 没有可用配额时，都可能得到 `RESULT_FAILURE` 或在构建阶段抛出异常。
 
-AlarmManager 仍有适用场景，例如闹钟、日历提醒等面向用户的精确时间事件。它的精确闹钟访问权限、Doze 行为和不同重载的生命周期边界见 5.8 节。普通同步和维护任务优先交给 JobScheduler 或 WorkManager，让系统获得批处理空间。
+AlarmManager 仍有适用场景，例如闹钟、日历提醒等面向用户的精确时间事件。它的精确闹钟访问权限、Doze 行为和不同重载的生命周期边界见 5.7 节。普通同步和维护任务优先交给 JobScheduler 或 WorkManager，让系统获得批处理空间。
 
 ### Android 17 源码中的核心组件
 
@@ -250,6 +253,10 @@ App Standby Buckets 的版本边界需要分开看：
 
 `QuotaController` 维护的是一组随版本演进的策略和执行历史，不能用一个固定的“每天 N 分钟”公式描述。设备厂商、系统版本、应用状态和 bucket 都会影响结果。Android 16 又扩大了运行时配额的适用范围：应用在前台时启动、随后进入后台的 job，以及与 Foreground Service 并行的 job，也不能再假设始终不计入后台 job 运行额度。
 
+这里的 quota 记录 job 执行会话的 elapsed time，而不是读取线程的 CPU time。JobService 内部阻塞网络、等待 Binder 或主动 sleep，仍可能占用一次执行窗口；反过来，多线程并行也不会按各线程 CPU 时间简单相加成一个公开“CPU 配额”。如果材料使用“CPU 时间配额”一词，必须先核对它指的是系统的执行时长、厂商私有策略，还是应用自己的 CPU 预算。
+
+一次 job 能否开始可按五个关口定位：调度请求被接受、显式与隐式约束满足、quota/standby policy 放行、并发槽位与优先级选中、`JobServiceContext` 成功绑定执行。开始后还可能因超时、约束丢失、thermal、Doze 或系统停止原因结束。`schedule()` 成功、`isReady()` 为真和 `onStartJob()` 已回调是三个不同状态。
+
 排查积压时，显式约束和配额要同时查看。网络、电量都满足而 `PENDING_JOB_REASON_QUOTA` 长时间存在，继续放宽网络条件没有帮助；此时应减少触发频率、合并请求、缩短执行时间，或者重新判断任务是否属于用户发起的传输。
 
 ### Expedited Job
@@ -349,7 +356,7 @@ Android 16 起，long-running worker 会消耗应用的 JobScheduler 运行时�
 - 用户持续可见、类型符合且需要长时间运行的非纯传输工作：评估直接 Foreground Service；
 - 可分片、可延期的维护任务：拆成可恢复的普通 WorkRequest。
 
-把 Worker 提升到前台，不会获得无限运行额度。Foreground Service 自身还有启动限制、service type、权限和分类型时长规则，详见 5.8 节。
+把 Worker 提升到前台，不会获得无限运行额度。Foreground Service 自身还有启动限制、service type、权限和分类型时长规则，详见 5.7 节。
 
 ## 后台任务选型
 

@@ -1,7 +1,7 @@
 ---
 title: "SensorService 与传感器批处理功耗模型"
-chapter: "5.15"
-section: "5.15"
+chapter: "5.13"
+section: "5.13"
 status: finalized
 drafted_date: "2026-05-19"
 applicable_versions: "Android 4.4 (API 19) - Android 17 (API 37)"
@@ -59,7 +59,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-16
 ---
 
-# 5.15 SensorService 与传感器批处理功耗模型
+# 5.13 SensorService 与传感器批处理功耗模型
 
 SensorService 的功耗问题常被简化为“采样频率越低越省电”。这只覆盖传感器本体的一部分成本。一次传感器请求还会占用 sensor hub/FIFO、唤醒应用处理器（Application Processor，AP），并让 system_server、native SensorService 和应用回调线程参与数据交付。
 

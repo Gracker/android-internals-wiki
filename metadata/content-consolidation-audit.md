@@ -17,9 +17,56 @@
 | ch06 存储与 I/O | 12 | 5 | 已完成 | 2026-08-11 |
 | ch03 输入系统 | 14 | 8 | 已完成 | 2026-08-11 |
 | ch04 内存管理 | 29 | 17 | 已完成 | 2026-08-11 |
-| 其余 23 章 | 567 | 待审阅 | 未开始 | - |
+| ch05 CPU 调度与能耗管理 | 38 | 17 | 已完成 | 2026-08-11 |
+| 其余 22 章 | 529 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 597 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 576 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch05 CPU 调度与能耗管理
+
+保留后的连续编号为：
+
+- 5.1 Linux 进程调度基础
+- 5.2 EAS 能量感知调度
+- 5.3 大小核架构
+- 5.4 DVFS 与功耗管理
+- 5.5 Thermal 管控
+- 5.6 Android 功耗管理
+- 5.7 后台执行限制与优化
+- 5.8 JobScheduler/WorkManager 调度与后台任务性能
+- 5.9 ADPF 自适应性能框架
+- 5.10 端侧 AI 推理性能：NPU/GPU 加速与 LiteRT 管线
+- 5.11 移动端 LLM 推理的 DVFS 与能效边界
+- 5.12 Android 17 ML Runtime 与 NPU 访问边界
+- 5.13 SensorService 与传感器批处理功耗模型
+- 5.14 CPU Cache 友好代码与数据布局优化
+- 5.15 系统托管 GenAI：AICore、OnDeviceIntelligence 与资源竞争
+- 5.16 Bluetooth LE Audio 延迟与功耗性能
+- 5.17 Android 17 App Hibernation 状态机与冷启动恢复性能
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `07-cpu-evolution.md` | 删除横向版本概览；scheduler、DVFS、功耗和后台执行版本边界回到机制主文 | 5.1、5.4、5.6～5.8 |
+| `31-android17-eevdf-scheduler.md` / `5.32-linux-610-bpf-dvfs-schedutil-loop.md` / `5.34-android17-task-scheduler-optimization.md` | 合并 EEVDF、`sched_ext`、Android task profile 与分层诊断 | `../src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md`、5.4、5.7、5.8 |
+| `5.28-android17-pelt-boost-revert-amu-pmu-microarch-frequency-limiting.md` | 合并 PELT 版本边界、AMU/PMU 诊断和提频收益验证 | `../src/part1-fundamentals/ch05-cpu-power/02-eas.md`、`../src/part1-fundamentals/ch05-cpu-power/04-dvfs.md` |
+| `5.21-android17-battery-optimization-soc-architecture.md` / `5.29-android17-gpu-dvfs-headroom-power-advisor.md` / `5.35-pms-cpuidle-schedutil.md` | 合并 Power HAL、PowerStats、GPU headroom/PowerAdvisor、CPUIdle 与 schedutil 边界 | 5.4、5.6、5.9 |
+| `12-thermal-management-deep-dive.md` | 合并 kernel/HAL/Framework 分层、JobScheduler thermal 消费、主动降载与实验方法 | `../src/part1-fundamentals/ch05-cpu-power/05-thermal.md` |
+| `25-low-power-standby-background-performance.md` | 合并 LPS 状态机、网络与 WakeLock 消费者、豁免和观测方法 | `../src/part1-fundamentals/ch05-cpu-power/06-android-power.md` |
+| `08-background-execution.md` / `17-fgs-type-declaration-background-performance.md` / `21-adaptive-battery-app-standby-coordination.md` | 合并 FGS 五道门、待机桶消费者、Doze、Alarm 与缓存进程冻结并改为 5.7 | `../src/part1-fundamentals/ch05-cpu-power/07-background-execution.md` |
+| `05.26-android17-jobscheduler-service-cpu-quota.md` / `10-jobscheduler-workmanager-performance.md` / `23-android17-jobscheduler-system-throttling.md` | 合并 elapsed-time quota、五个执行关口、controller、并发槽位和公开调试接口并改为 5.8 | `../src/part1-fundamentals/ch05-cpu-power/08-jobscheduler-workmanager-performance.md` |
+| `5.19-ondevice-ai-adpf-intelligent-scheduling.md` | 合并 HintSession 的 TID、周期、NDK workload hint 与端侧 AI 使用边界 | `../src/part1-fundamentals/ch05-cpu-power/09-adpf.md` |
+| `11-ondevice-ml-inference-performance.md` / `16-gpu-npu-heterogeneous-scheduling.md` | 合并异构 buffer、copy、fence、队列与归因方法并改为 5.10 | `../src/part1-fundamentals/ch05-cpu-power/10-ondevice-ml-inference-performance.md` |
+| `13-mobile-llm-dvfs-energy.md` / `14-android17-ml-runtime-npu-boundary.md` / `15-sensorservice-batching-power.md` / `18-cpu-cache-friendly-code-data-layout.md` | 主题独立，依次改为连续编号 5.11～5.14 | `11-mobile-llm-dvfs-energy.md`～`14-cpu-cache-friendly-code-data-layout.md` |
+| `20-genai-app-integration-performance.md` / `5.30-android17-ondevice-intelligence-framework-performance.md` | 合并 AICore/ML Kit 与 OEM ODI 的公开范围、进程调度、资源归属和观测边界并改为 5.15 | `../src/part1-fundamentals/ch05-cpu-power/15-genai-app-integration-performance.md` |
+| `22-bluetooth-le-audio-performance.md` / `5.23-android17-background-audio-hardening-leaudio-power-source.md` | Android 17 后台音频 hardening 并入 5.7；LE scan/offload/HFP 边界并入 LE Audio 主文并改为 5.16 | 5.7、`../src/part1-fundamentals/ch05-cpu-power/16-bluetooth-le-audio-performance.md` |
+| `24-android17-app-hibernation-performance.md` | 主题独立，改为连续编号 5.17 | `../src/part1-fundamentals/ch05-cpu-power/17-android17-app-hibernation-performance.md` |
+| `5.21-cross-app-agent-system-primitive.md` | 从 CPU/Power 移出；合并 Accessibility、VoiceInteraction 与 AppFunctions 的选择边界 | `../src/part4-system/ch16-aosp/12-agent-native-os.md` |
+| `5.24-android17-binder-sz4m-kernel-buffer-pool-priority-set-called-dedup.md` | 删除已标记 outdated 的迁移壳；Binder 唯一正文不变 | `../src/part1-fundamentals/ch01-architecture/1.44-android17-binder-sz4m-kernel-buffer-pool.md` |
+| `5.33-android17-performance-score-attribution-sourcecode.md` | 删除重复评分与样本池稿；保留 ADPF/headroom 主文和第 26 章唯一评分正文 | 5.9、`../src/part5-app/ch26-observability/18-app-performance-score.md` |
+
+章节 README、`src/SUMMARY.md`、活动跨章链接和自动化脚本映射已经切换到连续编号。历史 changelog、已关闭 finding、queue/source 索引与 `consolidated_from` 保留旧路径；原 README 中两个从未存在的 5.18/5.22 链接已移除。
 
 ## ch04 内存管理
 

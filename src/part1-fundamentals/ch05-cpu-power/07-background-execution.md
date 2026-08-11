@@ -4,14 +4,20 @@
 
 status: "finalized"
 title: 后台执行限制与优化
-chapter: '5.8'
-section: '5.8'
+chapter: '5.7'
+section: '5.7'
 applicable_versions: Android 6.0 (API 23) - Android 17 (API 37)
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
 last_verified: "2026-06-21"
 last_verified_against: "Android Developers Android 17 bg-audio docs + JobScheduler/IBinder API reference + source.android cached apps freezer docs"
 confidence: high
+consolidated_from:
+  - "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md"
+  - "src/part1-fundamentals/ch05-cpu-power/17-fgs-type-declaration-background-performance.md"
+  - "src/part1-fundamentals/ch05-cpu-power/21-adaptive-battery-app-standby-coordination.md"
+  - "src/part1-fundamentals/ch05-cpu-power/5.23-android17-background-audio-hardening-leaudio-power-source.md"
+  - "src/part1-fundamentals/ch05-cpu-power/5.34-android17-task-scheduler-optimization.md"
 sources:
 - type: official
   path: https://developer.android.com/training/monitoring-device-state/doze-standby
@@ -68,7 +74,7 @@ tags:
 - BAL
 related_chapters:
 - '5.6'
-- '5.7'
+- '5.8'
 - '11.2'
 - '8.4'
 pipeline_stage: ready-to-publish
@@ -100,7 +106,7 @@ reviewed_date: 2026-06-21
 ---
 
 
-# 5.8 后台执行限制与优化
+# 5.7 后台执行限制与优化
 
 ## 为什么要了解后台执行限制
 
@@ -201,6 +207,12 @@ public static final int STANDBY_BUCKET_NEVER = 50; // @hide
 
 开发者侧最常用的查询入口仍然是 `UsageStatsManager.getAppStandbyBucket()`。测试时可以用 `adb shell am get-standby-bucket <package>` 读取当前桶位，用 `adb shell am set-standby-bucket <package> <bucket>` 强制切桶。
 
+### Bucket 是资源控制器的共同输入，不是单独的执行器
+
+`AppStandbyController` 维护 bucket 与变更 reason，预测组件、用户交互和系统规则都可能更新它。随后 JobScheduler 的 `QuotaController`、AlarmManager、NetworkPolicyManagerService，以及 Battery Saver 相关的 `AppStateTrackerImpl` 各自消费应用状态。它们没有合并成一个“Adaptive Battery 调度器”：同一 bucket 对 job、alarm、network 的影响不同，还会叠加 charging、Doze、用户后台限制与豁免。
+
+预测得到的 bucket 也有时效性。Android 17 AOSP 中，预测超过约 12 小时没有刷新后会失效并重新由系统规则评估；该超时不是“12 小时后应用必进 Rare”的产品契约。排查状态跳变时，应记录 bucket、reason、预测时间、设备状态以及各消费者自己的 dumpsys，而不是只看设置页中的 Adaptive Battery 开关。
+
 ### 观测方法：先看 dumpsys，再看 Battery Historian / Perfetto
 
 排查后台任务时，不能假设 Trace 中一定存在 `device_idle` track。能否直接看到 Doze 状态切换，取决于 trace config、系统版本和厂商裁剪。
@@ -228,6 +240,8 @@ Battery Historian 已不再积极维护，适合读取已有 bugreport 的系统
 ## 前台服务：用户可感知工作的运行契约
 
 当 App 需要在后台持续做用户可感知的事情，前台服务（Foreground Service，FGS）仍然是最直接的手段。代价也很明确，系统要求它对用户可见，并且越来越严格地校验“你为什么要开这个 FGS”。
+
+FGS 是否能运行要依次通过五道门：调用时应用是否有后台启动资格，manifest 是否声明服务类型，类型专属权限是否齐全，camera/microphone/location 等 while-in-use 条件是否在调用时成立，以及服务是否在时限内调用 `startForeground()` 并持续满足通知与超时规则。异常发生在哪一阶段，决定应查 `ForegroundServiceStartNotAllowedException`、`SecurityException`、类型错误还是 promotion timeout。FGS 只改变生命周期与用户可见性，不承诺更高 CPU 优先级或固定频率。
 
 ### 前台服务类型体系
 

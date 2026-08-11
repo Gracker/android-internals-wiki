@@ -1,8 +1,8 @@
 ---
 
-title: 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线
-chapter: '5.11'
-section: '5.11'
+title: 端侧 AI 推理性能：NPU/GPU 加速与 LiteRT 管线
+chapter: '5.10'
+section: '5.10'
 status: finalized
 pipeline_stage: ready-to-publish
 task6_state: "reviewed"
@@ -25,6 +25,8 @@ applicable_versions: Android 8.1 (API 27) - Android 17 (API 37)
 last_verified: '2026-06-04'
 last_verified_against: Android API reference API 37 + developer.android.com + ai.google.dev/edge/litert; AOSP android-17.0.0_r1
 confidence: high
+consolidated_from:
+  - "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
 sources:
 - type: official
   path: developer.android.com/ndk/guides/neuralnetworks
@@ -65,7 +67,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-06
 ---
 
-# 5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线
+# 5.10 端侧 AI 推理性能：NPU/GPU 加速与 LiteRT 管线
 
 端侧推理进入相机、OCR、语音、搜索和生成式功能后，模型执行时间就成了前台交互预算的一部分。一次推理可能同时占用 CPU 时间、GPU 带宽、专用加速器、文件页和匿名内存；持续执行还会抬高温度，触发降频。于是，实验室里更快的后端，放进真实页面后未必能带来更稳定的帧时间。
 
@@ -111,6 +113,8 @@ Android 上的“端侧 AI”包含数套职责不同的组件。排查性能前
 - **内存压力**：权重、tensor arena、delegate workspace、硬件缓冲区和编译缓存同时驻留；
 - **热衰减**：连续推理几分钟后，CPU、GPU 或 NPU 频率受热策略限制；
 - **队列延迟**：请求排队、跨进程调用、系统服务或厂商运行时调度。
+
+异构管线还要显式记录 buffer 所有权与同步边界。CPU 预处理、GPU/NPU 执行和 CPU 后处理之间可能经过 tensor 重排、cache flush/invalidate、`AHardwareBuffer`/dmabuf 导入以及 fence 等待。零拷贝只在格式、布局、allocator、生命周期和后端都兼容时成立；共享一个 buffer 对象并不自动消除驱动内部复制。测量表应至少分开提交、排队、执行、fence wait 与数据转换，避免把 CPU 等待时间算成加速器计算。
 
 因此，优化目标应写成可测量的产品预算，例如“相机预览期间 P95 端到端延迟低于一帧、无新增卡顿、连续运行十分钟温度等级可接受”。单次最短推理耗时不足以代表用户体验。
 

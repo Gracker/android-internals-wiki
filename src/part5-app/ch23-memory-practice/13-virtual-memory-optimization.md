@@ -28,7 +28,7 @@ sources:
   - type: blog
     path: "[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]"
 tags: [virtual-memory, VSS, thread-stack, maps-analysis, oom-prevention, memory-optimization, webview-reservation]
-related_chapters: ["20.5", "4.3", "4.4", "23.6", "23.3", "5.18"]
+related_chapters: ["20.5", "4.3", "4.4", "23.6", "23.3", "5.14"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-03"
 gap_source: "Clippings结构参考/AOSP结构"

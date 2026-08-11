@@ -7,6 +7,8 @@ applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-07-13"
 last_verified_against: "arXiv 2606.23449 (AOHP paper) + AOSP android-17.0.0_r1 framework 参照"
 confidence: medium
+consolidated_from:
+  - "src/part1-fundamentals/ch05-cpu-power/5.21-cross-app-agent-system-primitive.md"
 sources:
   - type: paper
     path: "https://arxiv.org/abs/2606.23449"
@@ -17,7 +19,7 @@ sources:
     path: "Android 17 AppFunctions framework"
     note: "参照对比方向"
 tags: [agent-os, aohp, ai-agent, android-architecture, information-flow-security, virtual-display]
-related_chapters: ["1.30", "5.30", "4.22"]
+related_chapters: ["1.30", "5.15", "4.16"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-13"
 gap_source: "素材驱动"
@@ -352,6 +354,8 @@ AppFunctions 提供结构化参数和结果，但不会替 provider 自动完成
 
 ## 7. AOHP 与 AppFunctions 的准确对照
 
+标准 Android 上常被用于跨应用 agent 的三条入口不能互换：`AccessibilityService` 面向辅助功能，依据可访问性树观察和操作 UI；`VoiceInteractionService` 是每用户选择的 assistant 角色入口；AppFunctions 由目标应用主动发布结构化能力。三者的 `BIND_*` 权限约束服务实现者，不是调用方在 manifest 中声明后即可获得的通行证。产品应优先采用目标应用明确发布的 function；只有业务确属辅助功能或系统 assistant 时，才使用相应服务角色，并把用户授权、可见提示与撤销路径纳入设计。
+
 | 维度 | AOHP 研究原型 | Android 17 AppFunctions |
 | --- | --- | --- |
 | 交付方式 | AOSP fork + system services + privileged app/CLI | Android platform API + system_server service + Jetpack 辅助库 |
@@ -461,7 +465,6 @@ AOHP 当前多个服务共用 `MANAGE_AOHP_VIRTUAL_DISPLAY` signature|privileged
 
 ### 库内延伸
 
-- [Android 17 OnDeviceIntelligence 框架](../../part1-fundamentals/ch05-cpu-power/5.30-android17-ondevice-intelligence-framework-performance.md)
-- [跨应用 agent 系统原语](../../part1-fundamentals/ch05-cpu-power/5.21-cross-app-agent-system-primitive.md)
-- [AI agent 内存隔离](../../ch03-memory/3.16-ai-agent-memory-sandbox-reuse/3.16.--ai-agent-内存沙箱数据复用机制.md)
+- [系统托管 GenAI 与 OnDeviceIntelligence](../../part1-fundamentals/ch05-cpu-power/15-genai-app-integration-performance.md)
+- [跨进程内存共享与端侧推理预算](../../part1-fundamentals/ch04-memory/16-cross-process-memory-ai-inference.md)
 - [Agent Perfetto 分析协议](../../part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md)

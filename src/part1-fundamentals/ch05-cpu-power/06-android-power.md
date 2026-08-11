@@ -7,6 +7,10 @@ applicable_versions: "Android 6.0 (API 23) - Android 17 (API 37)"
 last_verified: "2026-06-21"
 last_verified_against: "AOSP android-17.0.0_r1 (frameworks/base, frameworks/native, hardware/interfaces); android-14.0.0_r1 historical TARE check; Android 16/17 official docs"
 confidence: medium
+consolidated_from:
+  - "src/part1-fundamentals/ch05-cpu-power/5.21-android17-battery-optimization-soc-architecture.md"
+  - "src/part1-fundamentals/ch05-cpu-power/25-low-power-standby-background-performance.md"
+  - "src/part1-fundamentals/ch05-cpu-power/5.35-pms-cpuidle-schedutil.md"
 sources:
   - type: official
     path: android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java
@@ -73,7 +77,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-22
 ---
 
-# Android 功耗管理
+# 5.6 Android 功耗管理
 
 > [!NOTE] 源码锚点
 > 平台实现以 AOSP `android-17.0.0_r1`（Android 17 / API 37）为准，内核休眠与唤醒机制以 `android17-6.18-2026-06_r6` 为准。Doze 时序、App Standby 分桶、功率模型与 vendor Power HAL 策略允许由设备配置，因此不使用固定分钟数或固定频率描述通用行为。
@@ -126,6 +130,10 @@ PMS 还会用 `Mode.INTERACTIVE` 通知 AIDL Power HAL 交互状态。这个 mod
 - **suspend-to-RAM**：平台支持时可进入更深状态，内存自刷新，更多设备与总线断电或低功耗。
 
 所以，“CPU idle 比例接近 100%”不能证明系统已经 suspend；Trace 中没有调度 slice 也可能只是采集缺失。应使用 `power/suspend_resume` 等事件确认 system suspend 边界。
+
+### CPUIdle 与 schedutil 在 runnable 边界两侧工作
+
+cpuidle governor 只在 CPU 已没有 runnable task、准备进入 idle 时选择空闲状态；schedutil 则在 CPU 执行或负载变化时把利用率需求映射成 CPUFreq 请求。PMS 可以通过 interactive 状态、suspend blocker 与 Power HAL mode 改变外部条件，但不会替内核逐 CPU 选择 idle state 或频率。一次唤醒中常同时出现 idle exit、任务 runnable、升频和 framework 交互提示，时间相邻不代表存在一条固定的 PMS → cpuidle → schedutil 调用链。
 
 ## WakeLock：类型、语义与责任
 
@@ -272,13 +280,19 @@ Adaptive Battery 可以借助预测结果影响 standby bucket 和后台资源�
 
 可靠表述应停在可观察边界：应用所在 bucket 会动态变化，OEM 可以提供预测组件；应用应使用系统调度 API并对延迟、停止和重试负责。
 
+### Low Power Standby 在非交互期间限制网络与 WakeLock 效力
+
+Low Power Standby（LPS）与 Doze、App Standby 和 App Hibernation 是不同状态机。Android 13 起它可以在设备非交互、超过配置超时后启用；Android 17 的 framework 主要把策略交给两个消费者：网络策略限制部分后台 UID 的联网能力，PowerManagerService 让不在允许范围内的 WakeLock 不再阻止低功耗状态。
+
+LPS 不会删除 WakeLock，也不会取消 Job。交互恢复或应用命中 package、feature、allowed reason 等豁免后，限制可以解除。验证时读取 `dumpsys power` 的 Low Power Standby 状态与 policy，并同时观察网络访问、WakeLock/suspend blocker 和 `power/suspend_resume`；只看到一次请求超时，无法区分 LPS、Doze、待机桶或网络故障。
+
 ## JobScheduler 与 WorkManager
 
 ### 为什么它们通常比手工 WakeLock 合适
 
 JobScheduler 能把多个应用的可延期工作按充电、网络、idle、storage、quota 等条件批量执行，从而减少频繁唤醒和无线电重复建链。WorkManager 在现代 Android 上通常借助 JobScheduler，并提供持久化、依赖链和跨版本适配。
 
-它们不承诺精确执行时间，也不取消 Doze、App Standby、thermal 或 quota。Android 17 的详细 JobScheduler 机制见 [5.26 JobScheduler quota](05.26-android17-jobscheduler-service-cpu-quota.md)。
+它们不承诺精确执行时间，也不取消 Doze、App Standby、thermal 或 quota。Android 17 的详细 JobScheduler 机制见 [5.8 JobScheduler/WorkManager](08-jobscheduler-workmanager-performance.md)。
 
 ### 选择 API
 

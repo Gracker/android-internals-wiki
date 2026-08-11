@@ -27,7 +27,7 @@ sources:
   - type: note
     path: "§17.2 SoC 平台差异 (finalized) — CPU/GPU 硬件架构对比"
 tags: [SoC, power, Qualcomm, MediaTek, Samsung, DCVS, schedutil, PowerHAL, 功耗优化]
-related_chapters: ["17.2", "17.21", "5.21", "5.29", "15.1"]
+related_chapters: ["17.2", "17.21", "5.4", "5.6", "5.9"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-05"
 gap_source: "研究素材/知识盲区"
@@ -321,6 +321,6 @@ Android 17 为各厂商提供同一套 Power AIDL 契约，厂商仍可按硬件
 
 - §17.2 SoC 平台差异：CPU/GPU 硬件架构
 - §17.21 Android 17 SoC 厂商 Power HAL 与 schedutil
-- §5.21 Android 17 SoC 厂商电池优化架构
-- §5.29 Android 17 GPU DVFS Headroom 与 SurfaceFlinger PowerAdvisor
-- §15.1 Android 17 PMS cpuidle/schedutil
+- §5.4 DVFS 与功耗管理
+- §5.6 Android 功耗管理
+- §5.9 ADPF 自适应性能框架

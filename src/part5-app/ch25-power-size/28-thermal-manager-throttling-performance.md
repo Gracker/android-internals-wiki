@@ -595,7 +595,7 @@ Android 17 普通应用只能读取 status/headroom。raw temperature、cooling 
 
 - [5.5 Android 热管理与 Thermal API](../../part1-fundamentals/ch05-cpu-power/05-thermal.md)：从内核 thermal zone、HAL 到应用 API 的基础。
 - [5.9 ADPF](../../part1-fundamentals/ch05-cpu-power/09-adpf.md)：Performance Hint Session、Game Mode 与 capacity headroom。
-- [5.12 Android 17 热管理源码深读](../../part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md)：governor、cooling device、HAL v1—v3、Framework forecast 与 Perfetto。
+- [5.5 Thermal 管控](../../part1-fundamentals/ch05-cpu-power/05-thermal.md)：governor、cooling device、Thermal HAL、Framework status/headroom 与 Perfetto。
 - [25.1 功耗诊断与分析方法](01-power-diagnosis.md)：功耗与性能实验方法。
 - [25.12 Excessive CPU 与系统处置](12-android17-excessive-cpu-kill.md)：持续 CPU 异常的线上治理。
 - [25.27 BatteryUsageStats 与功耗归因](27-android17-battery-usage-stats-power-attribution.md)：功耗读数与 UID 归因边界。

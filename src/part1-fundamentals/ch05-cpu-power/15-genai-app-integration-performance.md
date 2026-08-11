@@ -1,12 +1,15 @@
 ---
-title: "GenAI 应用集成性能边界：AICore 调度、Google Intelligence API 与资源竞争"
-chapter: "5.20"
+title: "系统托管 GenAI：AICore、OnDeviceIntelligence 与资源竞争"
+chapter: "5.15"
+section: "5.15"
 status: ready-for-review
 drafted_date: "2026-06-18"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-07-26"
 last_verified_against: "Android 17/API 37 公开文档"
 confidence: medium-low
+consolidated_from:
+  - "src/part1-fundamentals/ch05-cpu-power/5.30-android17-ondevice-intelligence-framework-performance.md"
 sources:
   - type: official
     path: "developer.android.com/ai/aicore"
@@ -17,7 +20,7 @@ sources:
   - type: deepresearch
     path: "DeepResearch/2026-06-23-android17-ondevice-llm-inference-architecture.md"
 tags: ["GenAI", "AICore", "端侧AI", "性能优化", "NPU", "IPC"]
-related_chapters: ["5.11", "5.13", "5.14", "5.19", "25.11"]
+related_chapters: ["5.9", "5.10", "5.11", "5.12", "25.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-18"
 gap_source: "官方文档/章节深挖"
@@ -29,11 +32,11 @@ last_rework_run_id: "20260726-093549-rework-4d26677f"
 rework_summary: "修复待核验标记：更正 AICore 进程段落错字，移除未经核验的具体模型内存表，改为 Android 17 基线下的安全观测口径；补充 DeepResearch 来源并明确剩余风险。"
 ---
 
-# 5.20 GenAI 应用集成性能边界：AICore 调度、Google Intelligence API 与资源竞争
+# 5.15 系统托管 GenAI：AICore、OnDeviceIntelligence 与资源竞争
 
 在 Android 17 / API 37 上讨论端侧 GenAI，先要分清“平台版本”和“模型服务版本”。Android 17 决定 App 可使用的系统 API；AICore、Gemini Nano 模型和 ML Kit GenAI 库仍可独立更新。同一台 Android 17 设备上，模型版本、支持的能力和下载状态都可能不同。因此，`SDK_INT >= 37` 不能代替运行时能力检测。
 
-标题中的 “Google Intelligence API” 是早期公开资料使用过的称谓。面向应用的当前入口是 **ML Kit GenAI APIs**：摘要、校对、改写、图片描述、语音识别等场景优先使用专用 API，自定义文本或多模态提示词使用 Prompt API。它们在 AICore 上调用 Gemini Nano。旧版 `com.google.ai.edge.aicore` 示例不能直接当作当前 ML Kit API 使用。
+“Google Intelligence API” 是早期公开资料使用过的称谓。面向应用的当前入口是 **ML Kit GenAI APIs**：摘要、校对、改写、图片描述、语音识别等场景优先使用专用 API，自定义文本或多模态提示词使用 Prompt API。它们在 AICore 上调用 Gemini Nano。旧版 `com.google.ai.edge.aicore` 示例不能直接当作当前 ML Kit API 使用。
 
 平台锚点为 Android 17 / `android-17.0.0_r1`。AICore 和 Gemini Nano 不属于该 AOSP 源码标签，涉及它们的结论以当前公开 API 契约为准；公开文档没有说明的进程名、Binder 次数、加速器选择、队列策略和 OOM 优先级均不作实现承诺。
 
@@ -51,6 +54,10 @@ rework_summary: "修复待核验标记：更正 AICore 进程段落错字，移�
 | 适合场景 | 支持设备上的标准能力、低接入成本、共享系统模型 | 自选模型、离线模型版本控制、专用后端和自定义推理流程 |
 
 两条路径都在设备上执行，但工程责任并不相同。AICore 路径应围绕“状态、配额、前台限制和端到端延迟”设计；LiteRT-LM 路径还要负责模型文件、内存峰值、后端兼容和引擎关闭等工作。
+
+Android 17 还包含受权限保护的 OnDeviceIntelligence（ODI）framework。它由 OEM 提供管理 service 与隔离推理 service，通过 `Feature`、prepare/process/streaming request、数据补充回调和 `InferenceInfo` 组织系统级能力。ODI 是 `@SystemApi`/特权集成面，不是普通应用替代 ML Kit GenAI 的公共 SDK；AICore 的模型、配额和设备支持契约也不能套到 OEM ODI provider 上。
+
+ODI 的 system_server 逻辑会按调用 UID 的前台 importance 建立带 `BIND_SCHEDULE_LIKE_TOP_APP` 的高优先级连接。这能提高绑定服务的进程调度地位，但不构成模型、token 或 deadline 的统一推理优先队列，也不直接控制 NPU 频率。`InferenceInfo` 只记录 UID、开始/结束与暂停时长，不包含能量或加速器类型；OEM 若要做功耗归因，还需额外结合 runtime 与 SoC counter。
 
 ## AICore 公开保证了什么
 
@@ -194,7 +201,7 @@ AICore 管理共享模型，使 App 不必把 Gemini Nano 放进自己的 APK、
 | 整机 | MemAvailable、PSI、lmkd 事件、后台进程回收 | 功能是否把设备推入持续内存压力 |
 | 业务 | 请求成功率、页面重建、进程死亡与恢复 | 内存压力是否已经影响用户流程 |
 
-不要根据“系统服务”身份猜测 LMK 的回收顺序，也不要假定调用方死亡后推理一定继续。若需要分析回收原因，应把 lmkd 事件、进程状态、PSI 和请求时间线放在一起。§4.4 说明了 Android 17 的 LMK 机制，§5.18 说明了 PSS/RSS/USS 与 memtrack 的统计边界。
+不要根据“系统服务”身份猜测 LMK 的回收顺序，也不要假定调用方死亡后推理一定继续。若需要分析回收原因，应把 lmkd 事件、进程状态、PSI 和请求时间线放在一起。§4.4 说明了 Android 17 的 LMK 机制，§5.14 说明了 Cache 与内存统计的层级边界。
 
 ## 渲染、CPU 与共享硬件资源
 
@@ -216,7 +223,7 @@ Android 17 的 `PerformanceHintManager.createHintSession()` 要求线程 ID 属�
 
 边界很明确：App 可以为自己长期存在的预处理、后处理或渲染相关工作线程建立 ADPF 会话，不能把 AICore 内部线程加入会话，也不能借此要求 AICore 的 NPU/GPU 选择某个频率。把 `setPreferPowerEfficiency(true)` 写在 `checkStatus()` 和 `generateContent()` 之间，不会自动把推理切到“能效 NPU 模式”。
 
-对短促且到达时间不固定的请求，也不要为了“用了 ADPF”临时创建线程和会话。AOSP 源码要求 hint session 面向一组相互关联、长期存在的线程；周期性工作应报告目标时间和实际工作时间。具体用法见 §5.19。
+对短促且到达时间不固定的请求，也不要为了“用了 ADPF”临时创建线程和会话。AOSP 源码要求 hint session 面向一组相互关联、长期存在的线程；周期性工作应报告目标时间和实际工作时间。具体用法见 §5.9。
 
 ## 热状态与降级
 
@@ -319,11 +326,11 @@ Perfetto 中看到时间重叠只说明相关性。要证明某个资源竞争�
 
 ## 与其他章节的关联
 
-- **§5.11 端侧 AI 推理性能**：LiteRT、模型优化和设备后端的基础。
-- **§5.13 移动端 LLM 推理的 DVFS 与能效边界**：prefill、decode 与持续负载测量。
-- **§5.14 Android 17 ML Runtime 与 NPU 访问边界**：平台与厂商加速器边界。
-- **§5.19 端侧 AI 调度与 ADPF 智能优化**：本进程工作线程的 hint session 用法。
-- **§5.18 CPU Cache Locality 与 PSS 统计**：PSS/RSS/USS、SwapPss 与 memtrack。
+- **§5.10 端侧 AI 推理性能**：LiteRT、模型优化和设备后端的基础。
+- **§5.11 移动端 LLM 推理的 DVFS 与能效边界**：prefill、decode 与持续负载测量。
+- **§5.12 Android 17 ML Runtime 与 NPU 访问边界**：平台与厂商加速器边界。
+- **§5.9 ADPF 自适应性能框架**：本进程工作线程的 hint session 用法。
+- **§5.14 CPU Cache 友好代码与数据布局**：Cache 与内存统计的层级边界。
 - **§4.4 Low Memory Killer**：lmkd、PSI 与进程状态。
 - **§2.5 MainThread 与 RenderThread**：流式结果更新与帧时间。
 

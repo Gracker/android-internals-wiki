@@ -254,18 +254,18 @@ files_data = {
         "p1_count": 1
     },
     "5.7": {
-        "filename": "07-cpu-evolution.md",
+        "filename": "07-background-execution.md",
         "ch_num": "5",
-        "topic": "CPU 架构演进与性能趋势",
-        "aosp_path": "N/A",
-        "func_name": "N/A",
-        "android_ver": "ARMv8/v9",
-        "component": "ARM Architecture",
-        "missing_part": "ARMv9 引入的 SVE2/MTE (Memory Tagging Extension) 对底层代码性能和内存安全的影响",
-        "missing_func": "N/A",
-        "trace_event": "cpu_cycles",
-        "blind_spot": "大核 X 系列架构的乱序执行深度增加对分支预测失败惩罚的影响",
-        "conclusion": "移动端 CPU 架构演进注重 IPC 提升与 AI 计算融合，开发者需关注新指令集优化与热点函数的向量化。",
+        "topic": "后台执行限制与优化",
+        "aosp_path": "frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java",
+        "func_name": "setAppStandbyBucket",
+        "android_ver": "Android 6-17",
+        "component": "DeviceIdle / App Standby / ActivityManager",
+        "missing_part": "Doze、待机桶、FGS 与缓存进程冻结如何分别限制后台执行",
+        "missing_func": "DeviceIdleController / CachedAppOptimizer",
+        "trace_event": "suspend_resume / sched_switch",
+        "blind_spot": "OEM 分桶与豁免策略如何改变 Job、Alarm 和网络限制",
+        "conclusion": "后台执行要按设备状态、应用状态和任务 API 分层诊断，不能把延迟统一归因于 CPU 调度。",
         "p1_count": 1
     }
 }

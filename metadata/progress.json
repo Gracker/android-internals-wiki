@@ -1,26 +1,25 @@
 {
   "schema_version": 3,
   "scope": "Canonical chapter bodies under the 26 directories defined by metadata/v1.0-definition.md; README, SUMMARY, preface and appendix are excluded.",
-  "total": 597,
+  "total": 576,
   "draft": 0,
-  "ready-for-review": 207,
-  "finalized": 388,
+  "ready-for-review": 196,
+  "finalized": 379,
   "needs-review": 0,
   "verified": 1,
-  "outdated": 1,
-  "ready_to_publish": 309,
+  "outdated": 0,
+  "ready_to_publish": 305,
   "status_counts": {
-    "ready-for-review": 207,
-    "finalized": 388,
-    "verified": 1,
-    "outdated": 1
+    "ready-for-review": 196,
+    "finalized": 379,
+    "verified": 1
   },
   "pipeline_stage_counts": {
-    "ready-to-publish": 309,
-    "unspecified": 169,
-    "finalized": 73,
-    "ready-for-review": 30,
-    "deep-review": 3,
+    "ready-to-publish": 305,
+    "unspecified": 160,
+    "finalized": 68,
+    "ready-for-review": 29,
+    "deep-review": 2,
     "rework-verified": 3,
     "deep_review_passed": 4,
     "deep-reviewed": 1,
@@ -34,7 +33,7 @@
     "2": 42,
     "3": 8,
     "4": 17,
-    "5": 38,
+    "5": 17,
     "6": 5,
     "7": 20,
     "8": 20,
@@ -57,7 +56,7 @@
     "25": 30,
     "26": 30
   },
-  "summary_local_links": 636,
+  "summary_local_links": 615,
   "queue_snapshot": {
     "total": 23,
     "body-applied": 9,
@@ -66,7 +65,7 @@
     "review-finalized": 1,
     "completed": 1
   },
-  "last_updated": "2026-08-11T10:43:36+08:00",
-  "last_action": "chapter 4 content consolidation: 29 canonical bodies reduced to 17, with ART allocation/GC, lmkd pressure, MemoryLimiter, trim, diagnostics and product-boundary topics regrouped",
+  "last_updated": "2026-08-11T11:13:00+08:00",
+  "last_action": "chapter 5 content consolidation: 38 canonical bodies reduced to 17, with scheduler/DVFS, background policy, JobScheduler, ADPF, on-device AI and system GenAI topics regrouped",
   "generated_from": "chapter frontmatter and src/SUMMARY.md"
 }
