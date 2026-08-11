@@ -19,7 +19,7 @@ sources:
   - type: aosp
     path: "frameworks/support/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/"
 tags: [macrobenchmark, benchmark, ci, performance-gate, baseline-profile, androidx]
-related_chapters: ["8.7", "13.21", "16.1", "21.4"]
+related_chapters: ["8.7", "13.1", "16.1", "21.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-05"
 gap_source: "Official docs/AOSP structure"
@@ -182,7 +182,7 @@ val bindMetric = TraceSectionMetric(
 
 `TraceMetric("name") { "SELECT ..." }` 不是 1.4.1 支持的构造方式。1.4.1 提供了实验性的抽象类 `TraceMetric`：自定义 metric 可以重写 `getMeasurements()`，通过 `TraceProcessor.Session` 执行 SQL；也可以在 CI 中用独立 `trace_processor` 后处理导出的 trace。两条路径都要版本化查询、Perfetto 版本、schema 和单位。
 
-完整的 trace 版本边界见 [13.21 Perfetto 版本演进](../ch13-perfetto/13.21-perfetto-version-evolution.md)。
+完整的 trace 版本边界见 [13.1 Perfetto 简介与演进](../ch13-perfetto/01-perfetto-intro.md)。
 
 ## 7. PowerMetric 的边界
 

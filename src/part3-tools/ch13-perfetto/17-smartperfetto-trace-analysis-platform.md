@@ -1,18 +1,18 @@
 ---
 
 title: "SmartPerfetto 与可复用 Trace 分析平台"
-chapter: "13.18"
-section: "13.18"
+chapter: "13.17"
+section: "13.17"
 status: "finalized"
 drafted_date: "2026-05-18"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)；Perfetto trace schema / stdlib 能力按工具版本降级"
 last_verified: "2026-06-19"
-last_verified_against: "SmartPerfetto main c4884fa73f98c71224e105304dc1c1ff98051de1; README; backend/src/types/multiTraceComparison.ts; backend/src/services/standardMetricBackfillService.ts; backend/src/services/enterpriseMigration.ts; backend/src/services/traceMetadataStore.ts; AIW 13.3/13.10/13.16/13.17/26.3/26.12/26.14"
+last_verified_against: "SmartPerfetto main c4884fa73f98c71224e105304dc1c1ff98051de1; README; backend/src/types/multiTraceComparison.ts; backend/src/services/standardMetricBackfillService.ts; backend/src/services/enterpriseMigration.ts; backend/src/services/traceMetadataStore.ts; AIW 13.3/13.9/13.15/13.16/26.3/26.12/26.14"
 confidence: medium
 task6_review_notes: "2026-06-19 17 Task6 复审（Task9 auto-fix 后）：L1 修复 1 处 AI 模板结尾；L2 通过；L3 标注 🔧 企业版排查段风格不一致（bullet-only，缺叙述），不影响本轮通过；送 Task9 最终确认。"
 tags: [perfetto, smartperfetto, trace-analysis, ai-assistant, sql-guardrail, observability]
-related_chapters: ["13.3", "13.10", "13.14", "13.16", "13.17", "26.3", "26.12", "26.14"]
+related_chapters: ["13.3", "13.9", "13.13", "13.15", "13.16", "26.3", "26.12", "26.14"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-18"
 gap_source: "每日信息/素材驱动/章节深挖"
@@ -48,11 +48,11 @@ sources:
   - type: github
     path: "https://github.com/Gracker/SmartPerfetto"
   - type: internal
-    path: "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
+    path: "src/part3-tools/ch13-perfetto/09-perfetto-sql-cookbook.md"
   - type: internal
-    path: "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+    path: "src/part3-tools/ch13-perfetto/15-agent-perfetto-analysis-protocol.md"
   - type: internal
-    path: "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md"
+    path: "src/part3-tools/ch13-perfetto/16-perfetto-sdk-in-app-tracing.md"
   - type: internal
     path: "src/part5-app/ch26-observability/03-performance-collection.md"
   - type: internal
@@ -67,7 +67,7 @@ finalized_by: "openclaw-task9-auto-promote"
 finalized_date: "2026-07-10"
 ---
 
-# 13.18 SmartPerfetto 与可复用 Trace 分析平台
+# 13.17 SmartPerfetto 与可复用 Trace 分析平台
 
 
 一条 Perfetto trace 可以回答很多问题，但同一问题换个人、换一周、换一个工具版本，查询口径常会发生偏移。SmartPerfetto 处理的正是这段工程成本：把 Perfetto UI、`trace_processor_shell`、YAML Skill、场景策略、模型运行时、证据合约和报告存储放到同一套分析流程中，让 SQL 可以重跑，结论可以回查，多次分析可以按统一指标比较。
@@ -188,7 +188,7 @@ v1.3.0 还有一个需要单独标注的快照缺口。常规 runtime 选择器�
 
 trace 可能含有进程名、线程名、业务路径、URL 片段、用户操作节奏、设备信息与 slice 参数。上传、provider 投影、Result ID、HTML 报告、日志、workspace 分享和留存清理都应按敏感数据管理。私有源码与外部知识源只有在本次请求显式选择、scope 与授权校验通过后才进入 runtime；它们不会自动暴露给普通 trace 会话。使用 `provider_send` 时还需要注册级许可和本次运行许可。
 
-SmartPerfetto 只能分析调用方有权提供的 trace。Perfetto SDK 或 AndroidX Tracing 可以增加应用内事件，但不会赋予应用读取整机 ftrace、其他进程或系统服务内部数据的权限。系统级采集仍受 `profileable` / `debuggable`、adb、ProfilingManager、系统签名权限和设备策略约束，参见 13.17 与 26.12 节。
+SmartPerfetto 只能分析调用方有权提供的 trace。Perfetto SDK 或 AndroidX Tracing 可以增加应用内事件，但不会赋予应用读取整机 ftrace、其他进程或系统服务内部数据的权限。系统级采集仍受 `profileable` / `debuggable`、adb、ProfilingManager、系统签名权限和设备策略约束，参见 13.16 与 26.12 节。
 
 ## 和原生 Perfetto / Perfetto SDK / APM 平台的组合关系
 
@@ -218,7 +218,7 @@ Skill 进入团队流程后，应按可执行代码维护。最小测试集包�
 
 启动、滑动、ANR、Binder、I/O、内存和功耗场景都需要成功样本与缺字段样本。缺字段样本用于验证降级路径，例如缺少 FrameTimeline 时，帧级结论必须标为不完整。SmartPerfetto 固定 trace processor 版本后仍需运行 canonical trace 回归；升级 v57.2 之后的版本时，还要重新核对 schema、stdlib symbol index、标准指标和 golden 输出。
 
-13.10 的 SQL 口径、13.14 的 Jank/CUJ 查询、13.16 的调查协议以及 26.14 的回归判定可以转为 Skill contract。contract 应声明输入、输出、单位、证据解释、适用版本、缺失数据分支和人工复核入口。
+13.9 的 SQL 口径、13.13 的 Jank/CUJ 查询、13.15 的调查协议以及 26.14 的回归判定可以转为 Skill contract。contract 应声明输入、输出、单位、证据解释、适用版本、缺失数据分支和人工复核入口。
 
 ## 企业内部 Trace 分析平台接入清单
 

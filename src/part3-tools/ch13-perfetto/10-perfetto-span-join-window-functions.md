@@ -1,7 +1,7 @@
 ---
 title: "Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数"
-chapter: "13.11"
-section: "13.11"
+chapter: "13.10"
+section: "13.10"
 section_title: "Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数"
 status: finalized
 drafted_date: "2026-05-15"
@@ -26,7 +26,7 @@ sources:
   - type: aosp
     path: "external/perfetto/src/trace_processor/perfetto_sql/stdlib/sched/thread_executing_span_with_slice.sql"
 tags: ["perfetto", "sql", "span-join", "trace-processor", "frame-analysis"]
-related_chapters: ["13.10", "13.6", "14.10"]
+related_chapters: ["13.9", "13.5", "14.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/研究素材"
@@ -60,7 +60,7 @@ last_deepseek_cn_review_at: 2026-07-12
 last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度3（版本差异覆盖）检查通过；AOSP android-17.0.0_r1 external/perfetto 的 SPAN_JOIN、sched.cpu/ucpu、cpu_frequency_counters 与 flattened slice 路径复核通过；无 P0/P1/P2。"
 ---
 
-# 13.11 Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数
+# 13.10 Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数
 
 区间关联最容易出现“SQL 能运行，数字却多算或少算”的问题。帧、线程调度状态和锁等待已经带有 `ts + dur`；CPU 频率、内存等计数器只有采样时刻，要先补出有效区间。输入区间一旦重叠、分区键选错或末端边界没有定义，`SPAN_JOIN` 不会替查询者修正语义。
 

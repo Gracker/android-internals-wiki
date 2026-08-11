@@ -467,4 +467,4 @@ AOHP 当前多个服务共用 `MANAGE_AOHP_VIRTUAL_DISPLAY` signature|privileged
 
 - [系统托管 GenAI 与 OnDeviceIntelligence](../../part1-fundamentals/ch05-cpu-power/15-genai-app-integration-performance.md)
 - [跨进程内存共享与端侧推理预算](../../part1-fundamentals/ch04-memory/16-cross-process-memory-ai-inference.md)
-- [Agent Perfetto 分析协议](../../part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md)
+- [Agent Perfetto 分析协议](../../part3-tools/ch13-perfetto/15-agent-perfetto-analysis-protocol.md)

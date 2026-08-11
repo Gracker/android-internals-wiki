@@ -1,7 +1,7 @@
 ---
 title: "Perfetto SDK 与应用内 Trace 数据源"
-chapter: "13.17"
-section: "13.17"
+chapter: "13.16"
+section: "13.16"
 status: "finalized"
 drafted_date: "2026-05-17"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)；system backend 依赖设备侧 traced 服务，低版本按设备能力降级"
@@ -30,7 +30,7 @@ sources:
   - type: blog
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/性能工具-Perfetto(4)-通过SDK抓取信息-2026-05-02.md"
 tags: [perfetto, tracing-sdk, in-app-tracing, custom-data-source, observability]
-related_chapters: ["13.2", "13.9", "19.13", "26.3", "26.12"]
+related_chapters: ["13.2", "13.8", "19.13", "26.3", "26.12"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "素材驱动/官方文档"
@@ -73,7 +73,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-28
 ---
 
-# 13.17 Perfetto SDK 与应用内 Trace 数据源
+# 13.16 Perfetto SDK 与应用内 Trace 数据源
 
 
 平台源码锚点是 AOSP `android-17.0.0_r1`。`android17-6.18-2026-06_r6` 只约束 system trace 中的 ftrace、调度和内核事件；Perfetto SDK 的 TrackEvent 编码、共享内存写入和 producer IPC 都在用户态完成。应用使用的 SDK release 与设备内置的 Perfetto 版本也要分开记录，不能用 Android API level 代替 SDK revision。
@@ -403,7 +403,7 @@ custom data source 的验收标准更高：原始 trace 中有 packet、Trace Pr
 ### 相关章节
 
 - 13.2 Trace 抓取：系统 TraceConfig 与命令行
-- 13.9 Android Tracing 基础设施：producer、service、consumer
+- 13.8 Android Tracing 基础设施：producer、service、consumer
 - 19.13 AndroidX Tracing：Java/Kotlin 埋点
 - 26.3 性能指标上报：线上指标与文件治理
 - 26.12 诊断能力演进：权限、采样和版本化协议

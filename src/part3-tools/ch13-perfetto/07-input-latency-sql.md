@@ -3,8 +3,8 @@
 
 
 title: "Perfetto 输入延迟 SQL 深度分析"
-chapter: "13.8"
-section: "13.8"
+chapter: "13.7"
+section: "13.7"
 status: "finalized"
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
@@ -22,7 +22,7 @@ sources:
   - type: research
     path: intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md
 tags: [Perfetto, SQL, input-latency, android.input, input-events, trace-analysis]
-related_chapters: ["3.1", "3.2", "13.3", "13.5"]
+related_chapters: ["3.1", "3.2", "13.3", "13.9"]
 pipeline_stage: "ready-to-publish"
 task2b_result: fixed
 task2b_state: fixed
@@ -51,7 +51,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-17
 ---
 
-# 13.8 Perfetto 输入延迟 SQL 深度分析
+# 13.7 Perfetto 输入延迟 SQL 深度分析
 
 ## 分析边界与源码锚点
 
@@ -696,7 +696,7 @@ SQL 适合重复执行的筛选和统计：
 - Binder、锁、GC、I/O、频率与 `SurfaceFlinger` 是否同时异常；
 - SQL 的进程、通道和帧关联是否符合现场。
 
-实用流程是用 SQL 产出时间戳、事件 ID、进程、通道、帧 ID 和异常分段，再到 UI 展开该点，修复后用相同 SQL 与相同采集条件复测。§13.5 侧重时间线专题观察，这里提供可重复的量化入口。
+实用流程是用 SQL 产出时间戳、事件 ID、进程、通道、帧 ID 和异常分段，再到 UI 展开该点，修复后用相同 SQL 与相同采集条件复测。§13.9 提供通用查询框架，这里进一步给出输入流水线的可重复量化入口。
 
 ## `TraceConfig`：按问题选择采集面
 
@@ -857,4 +857,4 @@ print(summary.to_string(index=False))
 - §3.2 触摸延迟、预测与低延迟渲染
 - §9.3 ANR 分析方法
 - §13.3 Perfetto View 解读
-- §13.5 Perfetto 专题分析
+- §13.9 Perfetto SQL 性能分析实战手册

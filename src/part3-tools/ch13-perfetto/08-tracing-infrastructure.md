@@ -1,8 +1,8 @@
 ---
 
 title: "Android Tracing 基础设施:atrace、ftrace 与 Perfetto 数据采集原理"
-chapter: 13.9
-section: 13.9
+chapter: 13.8
+section: 13.8
 status: finalized
 pipeline_stage: ready-to-publish
 task6_state: reviewed
@@ -56,7 +56,7 @@ drafted_date: 2026-04-08
 drafted_by: openclaw-task2a
 reviewed_date: "2026-06-07"
 reviewed_by: openclaw-task6
-related_chapters: [13.1, 13.2, 13.5, 14.10, 1.5]
+related_chapters: [13.1, 13.2, 13.9, 14.10, 1.5]
 task2b_state: "fixed"
 last_task2b_rerun_at: 2026-05-08T16:50:00+08:00
 task9_result: "auto-fixed"
@@ -84,7 +84,7 @@ last_deepseek_cn_review_at: "2026-06-07"
 
 
 
-# 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理
+# 13.8 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理
 
 Perfetto 界面里的调度切片、应用自定义区间和计数器来自多条采集路径。某条轨道没有数据时，只查 SQL 往往定位不到原因：事件可能没有在 tracefs 中启用，也可能已经写入内核缓冲区却来不及读取，还可能在 Perfetto 的共享内存或中央缓冲区中丢失。
 

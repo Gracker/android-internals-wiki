@@ -271,7 +271,7 @@ AndroidX `JankStats` 面向应用内逐帧监测，可把页面、交互状态�
 - [渲染管线总览](../ch18-rendering-pipelines/01-pipeline-overview.md)：按 Producer、Surface、layer 与合成路径识别出图类型。
 - [7.2 卡顿原因体系](02-jank-causes.md)：从归因类型进入 CPU、GPU、调度、同步与 buffer 根因。
 - [7.3 卡顿分析流程与方法](03-jank-methodology.md)：把异常帧、线程状态和子系统证据组织成可复现结论。
-- [FrameTimeline Perfetto 分析](../../part3-tools/ch13-perfetto/20-frame-timeline-api33-perfetto-analysis.md)：补充 trace 配置与 SQL 查询。
+- [FrameTimeline Perfetto 分析](../../part3-tools/ch13-perfetto/19-frame-timeline-api33-perfetto-analysis.md)：补充 trace 配置与 SQL 查询。
 
 ## 参考资料
 

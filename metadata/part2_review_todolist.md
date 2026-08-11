@@ -102,5 +102,31 @@
 
 > 原 APK 体积总览归入 25.6，客户端网络深浅两版合并为 12.1；ConnectivityService/NetworkAgent 归入 1.62，Privacy Sandbox 退场归入 21.10。完整映射见 `metadata/content-consolidation-audit.md`。
 
+## 第 13 章：Perfetto (ch13-perfetto)
+- [x] 13.1 Perfetto 简介与演进 (`src/part3-tools/ch13-perfetto/01-perfetto-intro.md`)
+- [x] 13.2 Trace 抓取 (`src/part3-tools/ch13-perfetto/02-trace-capture.md`)
+- [x] 13.3 Perfetto View 解读 (`src/part3-tools/ch13-perfetto/03-perfetto-view.md`)
+- [x] 13.4 命令行打开超大 Trace (`src/part3-tools/ch13-perfetto/04-large-traces.md`)
+- [x] 13.5 线程 CPU 状态分析 (`src/part3-tools/ch13-perfetto/05-thread-cpu-states.md`)
+- [x] 13.6 Perfetto 指标、自动化与高级用法 (`src/part3-tools/ch13-perfetto/06-advanced-usage.md`)
+- [x] 13.7 Perfetto 输入延迟 SQL 深度分析 (`src/part3-tools/ch13-perfetto/07-input-latency-sql.md`)
+- [x] 13.8 Android Tracing 基础设施 (`src/part3-tools/ch13-perfetto/08-tracing-infrastructure.md`)
+- [x] 13.9 Perfetto SQL 性能分析实战手册 (`src/part3-tools/ch13-perfetto/09-perfetto-sql-cookbook.md`)
+- [x] 13.10 SPAN_JOIN 与窗口函数 (`src/part3-tools/ch13-perfetto/10-perfetto-span-join-window-functions.md`)
+- [x] 13.11 Profile 导入与 Flamegraph 分析 (`src/part3-tools/ch13-perfetto/11-perfetto-profiles-flamegraph.md`)
+- [x] 13.12 CPU 频率与 DVFS 关联分析 (`src/part3-tools/ch13-perfetto/12-cpu-frequency-dvfs-analysis.md`)
+- [x] 13.13 DataGrid、Data Explorer 与 Jank CUJ (`src/part3-tools/ch13-perfetto/13-perfetto-data-explorer-jank-cuj.md`)
+- [x] 13.14 BufferQueue 阻塞的 Perfetto 识别 (`src/part3-tools/ch13-perfetto/14-bufferqueue-blocking-perfetto.md`)
+- [x] 13.15 Agent 辅助 Perfetto 分析协议 (`src/part3-tools/ch13-perfetto/15-agent-perfetto-analysis-protocol.md`)
+- [x] 13.16 Perfetto SDK 与应用内 Trace 数据源 (`src/part3-tools/ch13-perfetto/16-perfetto-sdk-in-app-tracing.md`)
+- [x] 13.17 SmartPerfetto 与可复用 Trace 分析平台 (`src/part3-tools/ch13-perfetto/17-smartperfetto-trace-analysis-platform.md`)
+- [x] 13.18 FrameTracer 与 Graphics Frame Event (`src/part3-tools/ch13-perfetto/18-frametracer-graphics-frame-event.md`)
+- [x] 13.19 FrameTimeline：Expected 与 Actual (`src/part3-tools/ch13-perfetto/19-frame-timeline-api33-perfetto-analysis.md`)
+- [x] 13.20 android.os.Trace 与应用级自定义追踪 (`src/part3-tools/ch13-perfetto/20-android-trace-api-custom-tracing.md`)
+- [x] 13.21 Perfetto v57 状态轨道与版本边界 (`src/part3-tools/ch13-perfetto/21-perfetto-v57-state-tracks.md`)
+- [x] 13.22 Trace 采集可靠性与可复现诊断 (`src/part3-tools/ch13-perfetto/22-trace-reliability.md`)
+
+> 原专题解读中的 I/O/功耗查询并入 13.9；重复的版本综述、数据源综述和 pprof/Simpleperf 专题由 13.1、13.11、13.18、13.19 统一承载；闭源 PerfDog 实现推测不再作为规范正文。完整映射见 `metadata/content-consolidation-audit.md`。
+
 # All Tasks Completed
 The comprehensive technical audit for Part 2 (Performance) has been finalized. 69 detailed review reports have been generated and archived in `logs/external-review/`. All Android 15/16/17 performance characteristics have been synchronized.

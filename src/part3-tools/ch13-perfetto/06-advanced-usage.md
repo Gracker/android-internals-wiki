@@ -1,7 +1,7 @@
 ---
-title: "Perfetto 的高级用法"
-chapter: "13.7"
-section: "13.7"
+title: "Perfetto 指标、自动化与高级用法"
+chapter: "13.6"
+section: "13.6"
 drafted_date: "2026-04-03"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-07-31"
@@ -66,7 +66,7 @@ last_deepseek_cn_review_at: 2026-06-20
 ---
 
 
-# Perfetto 的高级用法
+# 13.6 Perfetto 指标、自动化与高级用法
 
 单份系统轨迹可以支持一次诊断，可复用查询、结构化指标、批量分析、持续集成和应用埋点还要解决跨人员、跨构建和跨日期的一致性。同一条分析规则应给出含义一致的结果，并在异常发生时保留足够的原始证据。
 

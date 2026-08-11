@@ -1,6 +1,6 @@
 ---
 title: "android.os.Trace API 深度解析与应用级自定义追踪"
-chapter: "13.26"
+chapter: "13.20"
 status: ready-for-review
 drafted_date: "2026-07-06"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -17,7 +17,7 @@ sources:
   - type: official
     path: "developer.android.com/reference/android/os/Trace"
 tags: [trace, systrace, perfetto, tracing, debugging, custom-trace]
-related_chapters: ["13.1", "13.3", "13.5", "13.17", "14.27"]
+related_chapters: ["13.1", "13.3", "13.9", "13.16", "14.27"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-05"
 drafted_by: "task2a-content-processing"
@@ -33,7 +33,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-13
 ---
 
-# 13.26 android.os.Trace API 深度解析与应用级自定义追踪
+# 13.20 android.os.Trace API 深度解析与应用级自定义追踪
 
 `android.os.Trace` 给应用代码提供了一组很小的 ATrace 接口：同步切片、跨线程异步切片和数值 Counter。抓取系统 trace 时，这些业务语义会与调度、Binder、I/O、FrameTimeline 和渲染事件共享时间基准，工程师因而能回答“系统为何在这段业务代码里耗时”。
 
@@ -503,7 +503,7 @@ Macrobenchmark 会为每次测量保留 Perfetto trace，应用 section 因此�
 4. 用版本化 PerfettoSQL 继续拆分调度、I/O、Binder 和子切片；
 5. 在同设备、同 APK、同 compilation mode 下复测。
 
-`TraceSectionMetric` 适合稳定、低基数 section。任意 SQL 后处理应锁定 Trace Processor/Perfetto 版本，并保留原始 trace。自动化门禁的设备和统计策略见 [14.27 Macrobenchmark 框架与自动化性能门禁](../ch14-other-tools/27-macrobenchmark-automation-gate.md)，Perfetto schema 的版本边界见 [13.21 Perfetto 版本演进](13.21-perfetto-version-evolution.md)。
+`TraceSectionMetric` 适合稳定、低基数 section。任意 SQL 后处理应锁定 Trace Processor/Perfetto 版本，并保留原始 trace。自动化门禁的设备和统计策略见 [14.27 Macrobenchmark 框架与自动化性能门禁](../ch14-other-tools/27-macrobenchmark-automation-gate.md)，Perfetto schema 的版本边界见 [13.1 Perfetto 简介与演进](01-perfetto-intro.md)。
 
 ## 12. 排错清单
 

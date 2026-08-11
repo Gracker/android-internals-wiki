@@ -393,9 +393,9 @@ ORDER BY b.client_dur DESC;
 - [7.1 卡顿的定义与分类](01-jank-definition.md)：JankType、token 与指标边界。
 - [7.2 卡顿原因体系](02-jank-causes.md)：按 App、buffer、SF、display 与系统因素解释根因。
 - [2.5 MainThread 与 RenderThread](../../part1-fundamentals/ch02-rendering/05-main-render-thread.md)：HWUI 线程同步。
-- [FrameTimeline Perfetto 分析](../../part3-tools/ch13-perfetto/20-frame-timeline-api33-perfetto-analysis.md)：FrameTimeline 数据与 SQL。
-- [Perfetto SQL Cookbook](../../part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md)：窗口查询和标准库用法。
-- [BufferQueue 阻塞分析](../../part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md)：slot、fence 与 backpressure。
+- [FrameTimeline Perfetto 分析](../../part3-tools/ch13-perfetto/19-frame-timeline-api33-perfetto-analysis.md)：FrameTimeline 数据与 SQL。
+- [Perfetto SQL Cookbook](../../part3-tools/ch13-perfetto/09-perfetto-sql-cookbook.md)：窗口查询和标准库用法。
+- [BufferQueue 阻塞分析](../../part3-tools/ch13-perfetto/14-bufferqueue-blocking-perfetto.md)：slot、fence 与 backpressure。
 
 ## 参考资料
 

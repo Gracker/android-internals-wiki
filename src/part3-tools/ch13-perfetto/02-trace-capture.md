@@ -133,7 +133,7 @@ updated_date: "2026-07-11"
 last_task9_audit: 2026-07-11
 ---
 
-# Trace 抓取
+# 13.2 Trace 抓取
 
 ## 抓取配置决定分析上限
 
@@ -430,7 +430,7 @@ ATrace_endSection();
 
 这段标记仍走 App tracing tag，抓取时同样要设置 `atrace_apps`。AOSP 平台内部代码常见 `<cutils/trace.h>` 与 `ATRACE_BEGIN`，它们不属于普通 NDK App 的公开集成方式。
 
-Perfetto C++ SDK 的 Track Event 可以提供 category、flow、显式轨道和结构化 annotation。它是另一套埋点路径，具体集成见 §13.26 和 §13.17；只需要 Java/Kotlin 方法区间时，`android.os.Trace` 更直接。
+Perfetto C++ SDK 的 Track Event 可以提供 category、flow、显式轨道和结构化 annotation。它是另一套埋点路径，具体集成见 §13.20 和 §13.16；只需要 Java/Kotlin 方法区间时，`android.os.Trace` 更直接。
 
 ## Long trace：周期写文件
 
@@ -618,7 +618,7 @@ ORDER BY severity, name;
 
 ## 后续阅读
 
-§13.3 讲 Perfetto UI，§13.4 讲大型 trace，§13.6 讲线程 CPU 状态。拿到 trace 后，先完成上述五项质量检查，再进入具体主题分析。
+§13.3 讲 Perfetto UI，§13.4 讲大型 trace，§13.5 讲线程 CPU 状态。拿到 trace 后，先完成上述五项质量检查，再进入具体主题分析。
 
 ## 参考资料
 

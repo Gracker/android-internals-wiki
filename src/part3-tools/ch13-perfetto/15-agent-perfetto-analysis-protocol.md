@@ -1,7 +1,7 @@
 ---
 title: "Agent 辅助 Perfetto 分析协议"
-chapter: "13.16"
-section: "13.16"
+chapter: "13.15"
+section: "13.15"
 status: ready-for-review
 drafted_date: "2026-05-17"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -14,7 +14,7 @@ rework_result: "ready-for-review"
 rework_notes: "2026-08-08 rework：处理待验证标记；将 linux.cpu.utilization 通配口径收窄为已核验的 linux.cpu.utilization.process，并在正文官方资料区补充 Android 17 固定标签下的关键 stdlib/source 路径锚点；未越过 Android 17 / android-17.0.0_r1 基线，章节回流 ready-for-review 等待 Task6/Task9 复审。"
 confidence: medium-high
 tags: [perfetto, trace-analysis, agent-workflow, performance-tools]
-related_chapters: ["13.2", "13.10", "13.15", "15.6", "26.5"]
+related_chapters: ["13.2", "13.9", "13.14", "15.6", "26.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材+官方仓库"
@@ -88,11 +88,11 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-11
 ---
 
-# 13.16 Agent 辅助 Perfetto 分析协议
+# 13.15 Agent 辅助 Perfetto 分析协议
 
 Agent 辅助 Perfetto 分析的目标是让 trace 调查可复查。人工查看 Perfetto UI 很快，但结论容易散落在截图、口头判断和临时 SQL 里；换一份 trace 或换一名分析者后，很难重放同一条推理路径。分析协议吸收了 `android/skills/profilers` 固定提交中的约束和 Perfetto 官方 Agent Skill 的主机侧工具边界：输入完整、SQL 经执行验证、证据与假设分开、报告注明版本和采集缺口。
 
-在 13.2 节 Trace 抓取、13.10 节 Perfetto SQL 常用模板、13.15 节 BufferQueue 阻塞案例的基础上，这里聚焦 Agent 调查流程：怎样提问、怎样取证、怎样避免过早下结论。
+在 13.2 节 Trace 抓取、13.9 节 Perfetto SQL 常用模板、13.14 节 BufferQueue 阻塞案例的基础上，这里聚焦 Agent 调查流程：怎样提问、怎样取证、怎样避免过早下结论。
 
 平台源码锚点是 Android 17 / API 37、`android-17.0.0_r1`；该标签在 `platform/external/perfetto` 对应提交 `ece66975738007dd0978b911d8a2077e49b8f31e`。涉及调度和内核等待时，内核锚点是 `android17-6.18-2026-06_r6`。主机侧 SQL 在 Perfetto v57.2、提交 `da1d152cff27890903d158fe96751de3aab883cc` 的 Trace Processor 上验证，并覆盖 Android 17 标签中的标准库。Perfetto v57.1 引入官方 Agent Skill，v57.2 修复 Trace Processor 解析带内嵌 proto descriptor 的部分 trace 时出现的兼容问题。
 
@@ -117,7 +117,7 @@ Perfetto v57.1 发布了符合 Agent Skills 规范的官方 skill。它教 Agent
 
 这套协议和普通 Perfetto 教程的差异在这里：教程关注概念、UI 操作和案例解释；协议关注 Agent 行为约束。一次合格的 Agent 调查至少要留下四类材料：输入条件、查询语句、查询结果、排除过的方向。没有这些材料，报告里的“主线程卡在 Binder”“GPU 阻塞”“I/O 竞争”都只是口头判断。
 
-对 Android 性能优化来说，协议的价值集中在三类场景：疑难 trace 复盘、Benchmark 回归后的批量归因、线上问题证据包分析。明确的小问题仍然可以直接用 UI 或 13.10 节的 SQL 模板处理；开放式问题才需要完整协议，例如“这次启动为什么慢”“滑动为什么掉帧”“用户反馈点击后界面冻结”。
+对 Android 性能优化来说，协议的价值集中在三类场景：疑难 trace 复盘、Benchmark 回归后的批量归因、线上问题证据包分析。明确的小问题仍然可以直接用 UI 或 13.9 节的 SQL 模板处理；开放式问题才需要完整协议，例如“这次启动为什么慢”“滑动为什么掉帧”“用户反馈点击后界面冻结”。
 
 ## 输入约束：分析前先把问题收窄
 
@@ -451,7 +451,7 @@ Perfetto 提供事件、状态和时间关系，优化动作通常还要回到�
 - **slice 名称 → App trace marker**：回到产生 marker 的业务代码，确认标记范围；Java 可从 `Trace.beginSection()` 等调用点查起，native marker 则查对应 ATrace API。
 - **Binder 方法 → Framework 服务**：从接口描述符、transaction、服务名与服务端进程映射到固定标签的 AOSP 实现，再结合服务端线程状态判断阻塞点。
 - **native 符号 → AOSP / vendor 模块**：用符号、构建 ID、进程与调用栈定位同一次构建的二进制；缺少匹配符号时标注 vendor 闭源边界。
-- **FrameTimeline / SurfaceFlinger → 图形栈章节**：队列、fence、BufferQueue、HWC 等机制回到 2.13、2.16、13.15，不在报告里重复写原理。
+- **FrameTimeline / SurfaceFlinger → 图形栈章节**：队列、fence、BufferQueue、HWC 等机制回到 2.13、2.16、13.14，不在报告里重复写原理。
 
 源码关联要固定版本边界。平台代码使用 `android-17.0.0_r1`，内核使用 `android17-6.18-2026-06_r6`，业务与厂商代码记录仓库提交和构建 ID。trace 证据可以证明某个窗口里的对象、状态和依赖，源码用于解释这条构建路径怎样产生对应事件。缺少调用栈、符号、transaction 对应关系或业务 marker 时，不能把 trace 现象直接写成具体代码根因。
 

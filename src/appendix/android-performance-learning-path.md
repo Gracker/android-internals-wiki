@@ -59,7 +59,7 @@ flowchart LR
 | 问题族 | 现象定义 | 主证据 | 常见混淆项 | 推荐入口 |
 |---|---|---|---|---|
 | 启动 | 冷、温、热启动下的 TTID 与 TTFD 分布 | Macrobenchmark、启动 trace、`reportFullyDrawn()` | 把首帧当作内容全部可交互；混用不同编译状态 | [启动分析](../part5-app/ch21-startup/01-startup-analysis.md)、[Baseline Profile 实践](../part5-app/ch21-startup/04-baseline-profile-practice.md) |
-| 卡顿 | 特定交互中的慢帧比例、帧时长分布 | FrameTimeline、主线程与 RenderThread slice、SurfaceFlinger timeline | 只按主线程耗时归因；忽略刷新率与 deadline | [卡顿定义](../part2-performance/ch07-smoothness/01-jank-definition.md)、[FrameTimeline 分析](../part3-tools/ch13-perfetto/20-frame-timeline-api33-perfetto-analysis.md) |
+| 卡顿 | 特定交互中的慢帧比例、帧时长分布 | FrameTimeline、主线程与 RenderThread slice、SurfaceFlinger timeline | 只按主线程耗时归因；忽略刷新率与 deadline | [卡顿定义](../part2-performance/ch07-smoothness/01-jank-definition.md)、[FrameTimeline 分析](../part3-tools/ch13-perfetto/19-frame-timeline-api33-perfetto-analysis.md) |
 | ANR | ANR 类型、触发时间、目标进程与系统负载 | 系统 ANR 记录、线程栈、Perfetto、Binder 状态 | 把事后主线程栈当成触发瞬间；只看应用进程 | [ANR 设计](../part2-performance/ch09-anr/01-anr-design.md) |
 | 内存 | PSS/RSS、Java heap、native heap、GPU/共享内存或资源数量的异常增长 | heap dump、heapprofd、smaps、meminfo、对象/FD/线程计数 | 把 PSS 增长全部归入 Java 泄漏；忽略缓存与共享页 | [内存基础](../part1-fundamentals/ch04-memory/01-memory-overview.md) |
 | 功耗与发热 | 固定工作量下的能量、功率、温度、频率和完成时间 | PowerStats/BatteryStats、CPU/GPU 频率、thermal 事件、工作量计数 | 用电量百分比比较短实验；忽略屏幕、信号和温控阶段 | [Android 功耗](../part1-fundamentals/ch05-cpu-power/06-android-power.md) |
@@ -81,8 +81,8 @@ flowchart LR
 Perfetto 的价值在于把应用 slice、线程调度、频率、Binder、内存、图形管线和系统事件放到同一时钟域。学习时按“可靠采集、界面定位、SQL 复现”三个层次推进：
 
 1. 阅读 [Perfetto 概览](../part3-tools/ch13-perfetto/01-perfetto-intro.md) 和 [trace 采集](../part3-tools/ch13-perfetto/02-trace-capture.md)，保存采集配置。
-2. 阅读 [线程 CPU 状态](../part3-tools/ch13-perfetto/06-thread-cpu-states.md)，区分 Running、Runnable、Sleeping 和不可中断等待。
-3. 阅读 [Perfetto SQL 手册](../part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md)，把界面上的判断转换成查询。
+2. 阅读 [线程 CPU 状态](../part3-tools/ch13-perfetto/05-thread-cpu-states.md)，区分 Running、Runnable、Sleeping 和不可中断等待。
+3. 阅读 [Perfetto SQL 手册](../part3-tools/ch13-perfetto/09-perfetto-sql-cookbook.md)，把界面上的判断转换成查询。
 
 ### 三个起步实验
 
