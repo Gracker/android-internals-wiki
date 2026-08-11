@@ -233,14 +233,13 @@
   - [10.7 GPU 与图形内存统计](part2-performance/ch10-memory-perf/07-gpu-graphics-memory-tracking.md)
 
 - [第 11 章：功耗](part2-performance/ch11-power/README.md)
-  - [Android 功耗模型](part2-performance/ch11-power/01-power-model.md)
-  - [App 耗电优化](part2-performance/ch11-power/02-app-power-optimization.md)
-  - [系统级功耗优化](part2-performance/ch11-power/03-system-power-optimization.md)
+  - [11.1 Android 功耗模型](part2-performance/ch11-power/01-power-model.md)
+  - [11.2 App 耗电优化](part2-performance/ch11-power/02-app-power-optimization.md)
+  - [11.3 系统级功耗优化](part2-performance/ch11-power/03-system-power-optimization.md)
   - [11.4 案例集](part2-performance/ch11-power/04-case-studies.md)
   - [11.5 WakeLock 机制与功耗分析](part2-performance/ch11-power/05-wakelock.md)
   - [11.6 Bluetooth 扫描与连接功耗分析](part2-performance/ch11-power/06-bluetooth-scan-connection-power.md)
   - [11.7 用户设置对能耗的影响：亮度、刷新率与深色模式](part2-performance/ch11-power/07-user-settings-energy-impact.md)
-  - [11.8 TARE 退场：Android 17 后台任务预算与电量归因](part2-performance/ch11-power/08-tare-economic-model.md)
 
 - [第 12 章：包体积与网络](part2-performance/ch12-apk-network/README.md)
   - [APK 体积优化](part2-performance/ch12-apk-network/01-apk-size.md)

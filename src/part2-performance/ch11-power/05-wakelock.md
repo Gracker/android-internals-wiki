@@ -1,5 +1,5 @@
 ---
-title: "Wakelock 机制与功耗分析"
+title: "WakeLock 机制与功耗分析"
 section: "11.5"
 chapter: "11.5"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"

@@ -109,7 +109,7 @@ review_notes: "2026-05-08 10:28 task9 deep-review: pass-tech-review；无 P0/P1�
 ---
 
 
-# App 耗电优化
+# 11.2 App 耗电优化
 
 ## 从系统行为理解 App 耗电
 
@@ -138,57 +138,9 @@ App 不能直接决定电池消耗多少。它提交工作、请求硬件资源�
 
 `PARTIAL_WAKE_LOCK` 保持 CPU 运行，屏幕仍可关闭。旧的 `SCREEN_DIM_WAKE_LOCK`、`SCREEN_BRIGHT_WAKE_LOCK` 和 `FULL_WAKE_LOCK` 已废弃；Activity 需要防止屏幕熄灭时，应使用 `FLAG_KEEP_SCREEN_ON` 或 `View.setKeepScreenOn()`，这样界面不可见后系统能恢复正常屏幕策略。
 
-许多高层 API 已经管理唤醒：
+WorkManager、JobScheduler、媒体、位置和下载等高层 API 已经在各自的执行窗口内管理唤醒条件。业务只有在“CPU 休眠会让当前短操作无法安全完成”时才应直接持锁；锁应有单一所有者、稳定且不含隐私的 tag、由业务截止时间推导的超时，并在 `finally` 中释放。超时只是故障保护，不能代替正常释放。
 
-- WorkManager、JobScheduler 在系统分配的执行窗口内处理运行条件。
-- Media3、位置服务、下载框架各有自己的生命周期与系统协作方式。
-- Alarm 的接收回调只适合触发短工作，持续任务应转交 Job 或 WorkManager。
-
-业务只有在“CPU 休眠会让当前操作无法安全完成”时才应直接持有 WakeLock。锁的 tag 使用稳定、可搜索的字符串，格式通常为 `包或模块:用途`；不要拼入账号、URL、文件名等隐私数据。
-
-### 获取、超时与释放
-
-下面的 Java 示例演示单一所有者如何给 WakeLock 设置业务上限。`maxHoldMillis` 由任务的截止时间或协议超时推导，示例没有假设所有工作都能在固定一分钟内完成。
-
-```java
-void runWithCpuAwake(long maxHoldMillis) {
-    PowerManager powerManager = getSystemService(PowerManager.class);
-    PowerManager.WakeLock wakeLock = powerManager.newWakeLock(
-            PowerManager.PARTIAL_WAKE_LOCK,
-            "com.example.sync:commit");
-
-    // 单一所有者更容易保证 acquire/release 成对。
-    wakeLock.setReferenceCounted(false);
-    wakeLock.acquire(maxHoldMillis);
-    try {
-        commitAlreadyDownloadedData();
-    } finally {
-        if (wakeLock.isHeld()) {
-            wakeLock.release();
-        }
-    }
-}
-```
-
-超时是故障保护，不能替代 `finally`。如果多个调用方共享一把引用计数锁，每次 `acquire()` 都要对应一次 `release()`；改成非引用计数前，要确认锁只有一个清晰的所有者。异步回调跨越多个对象时，更稳妥的做法是把锁与一次任务实例绑定，并在成功、失败、取消三条路径中结束同一生命周期。
-
-频繁获取和释放短锁也可能阻止设备进入深度休眠。若一批连续操作共享同一不可中断窗口，可以在有明确上限的前提下覆盖整批工作；不能为了减少 Binder 调用而把锁扩展到空闲等待期。
-
-### 从 App 锁到内核唤醒源
-
-在 `android-17.0.0_r1` 中，公开 API 位于 `PowerManager.WakeLock`，系统侧由 `PowerManagerService` 记录 UID、tag、级别和状态。内核 `android17-6.18-2026-06_r6` 的 `struct wakeup_source`、`__pm_stay_awake()` 与 `__pm_relax()` 位于 `include/linux/pm_wakeup.h` 和 `drivers/base/power/wakeup.c`。
-
-两层对象不能按 tag 一一对应。App WakeLock 会经过 system server 与 SystemSuspend 等组件聚合，驱动也可以独立注册 wakeup source。分析时应先用 UID/tag 找到 App 责任，再用 suspend、wakeup source 和驱动事件解释设备为何没有进入休眠。
-
-### Android Vitals 的口径
-
-当前 Android Vitals 把 24 小时内在后台或前台服务状态持有的非豁免 partial WakeLock 累计达到 2 小时视为 excessive。音频、位置和 JobScheduler 等文档列出的场景有豁免规则。若 28 天窗口中超过 5% 的 app sessions 受影响，Google Play 可能降低应用在相关展示面的可见性。
-
-这是一条平台质量阈值，并不表示“低于 2 小时就健康”。一次十分钟的无意义锁已经足以伤害待机。排查入口按稳定性排序：
-
-1. bugreport 与 Battery Historian 的 `Partial Wakelock`。
-2. `adb shell dumpsys batterystats --history` 中的 UID/tag 时间线。
-3. 设备支持相应数据源时，再用 Perfetto 对齐 suspend、CPU 调度和 `power/wakelock`。
+客户端对象显示 held，不等于这把锁在当前电源策略下仍有效；App tag、PowerManagerService 的 suspend blocker、SystemSuspend 和内核 `wakeup_source` 也不是可以一一对应的对象。源码调用链、安全示例、Doze/LPS 边界、Android Vitals 口径与逐层排障方法统一见 [11.5 WakeLock 机制与功耗分析](05-wakelock.md)。
 
 ## WorkManager 与 JobScheduler：把延迟空间交给系统
 
