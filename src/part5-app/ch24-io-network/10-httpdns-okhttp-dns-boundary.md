@@ -47,7 +47,7 @@ last_verified_against: "OkHttp 5.x docs + OkHttp source 728e4d575d8e9a09bbab04ef
 drafted_date: "2026-05-16"
 reviewed_date: "2026-05-16"
 reviewed_by: "openclaw-task6"
-related_chapters: ["12.2", "12.3", "24.4", "24.5", "26.3"]
+related_chapters: ["12.1", "12.3", "24.4", "24.5", "26.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "章节深挖/研究素材"

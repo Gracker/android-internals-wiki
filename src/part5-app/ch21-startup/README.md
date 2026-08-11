@@ -15,7 +15,7 @@
 - [21.7 多进程启动优化](07-multiprocess-startup.md)
 - [21.8 启动监控与度量](08-startup-monitoring.md)
 - [21.9 启动优化案例集](09-startup-case-studies.md)
-- [21.10 SDK Runtime 与广告 SDK 启动隔离性能](10-sdk-runtime-ad-sdk-startup.md)
+- [21.10 Privacy Sandbox 退场与广告 SDK 启动治理](10-sdk-runtime-ad-sdk-startup.md)
 - [21.11 云端 Profile、DM 文件与安装后编译优化](11-cloud-profile-dm-install-compile.md)
 - [21.12 Startup Profile 与 DEX Layout 启动优化](12-startup-profile-dex-layout.md)
 - [21.13 ART GC 抑制与启动性能优化](13-art-gc-suppression-startup-performance.md)

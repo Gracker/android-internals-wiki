@@ -7,7 +7,7 @@ drafted_date: "2026-05-25"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 16 (API 36) - Android 17 (API 37)"
 tags: [network, tls, ech, android17, network-security-config]
-related_chapters: ["12.4", "24.4", "24.5", "24.16"]
+related_chapters: ["12.2", "24.4", "24.5", "24.16"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-25"
 gap_source: "官方文档/每日信息"
@@ -53,7 +53,7 @@ Android 17 / API 37 为网络库提供了 ECH 所需的 DNS、TLS 与按域名�
 - 没有 ECH 配置、配置失配、代理拦截和证书透明度失败时分别发生什么。
 - 连接复用、DNS 等待和协议切换是否改变业务耗时。
 
-平台源码锚点为 `android-17.0.0_r1`。ECH 不依赖应用可见的内核接口，因此不引用内核标签。TLS 1.3、证书链、连接池和 HTTP/2、HTTP/3 原理见 12.4、24.4 与 24.5。
+平台源码锚点为 `android-17.0.0_r1`。ECH 不依赖应用可见的内核接口，因此不引用内核标签。TLS 1.3、证书链、连接池和 HTTP/2、HTTP/3 原理见 12.2、24.4 与 24.5。
 
 ## ECH 的 Android 17 适配边界
 
@@ -236,9 +236,9 @@ dig HTTPS api.example.com +short
 
 隐私日志保留域名分类、错误类型、网络库版本、粗粒度网络环境和协议即可。不要记录完整 URL、令牌、用户输入、证书私钥材料或 ECH 配置原始字节。
 
-## 与 12.4 TLS 性能章节的边界
+## 与 12.2 TLS 性能章节的边界
 
-12.4 解释 TLS 1.3、证书、CT、SNI、HPKE、会话恢复和安全连接成本。这里说明 Android 17 如何表达按域名 ECH 策略、网络库如何取得 ECH 配置，以及应用怎样验证接入。握手耗时、证书链和 0-RTT 等问题仍按 12.4 的方法分析。
+12.2 解释 TLS 1.3、证书、CT、SNI、HPKE、会话恢复和安全连接成本。这里说明 Android 17 如何表达按域名 ECH 策略、网络库如何取得 ECH 配置，以及应用怎样验证接入。握手耗时、证书链和 0-RTT 等问题仍按 12.2 的方法分析。
 
 ## 与 24.16 本地网络权限适配的关系
 

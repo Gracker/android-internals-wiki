@@ -1,7 +1,7 @@
 ---
 title: "netd 与 DnsResolver：DNS 解析性能和故障诊断"
-chapter: "12.6"
-section: "12.6"
+chapter: "12.3"
+section: "12.3"
 status: ready-for-review
 drafted_date: "2026-05-17"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -9,7 +9,7 @@ last_verified: "2026-07-31"
 last_verified_against: "Android 17 / API 37 / AOSP android-17.0.0_r1"
 confidence: high
 tags: [netd, dnsresolver, network-performance, connectivity, diagnostics]
-related_chapters: ["12.2", "12.3", "12.5", "24.4", "24.10"]
+related_chapters: ["12.1", "12.2", "1.62", "24.4", "24.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "AOSP结构+官方文档+每日信息"
@@ -38,11 +38,11 @@ sources:
 last_task2a_at: "2026-05-17T16:04:00+08:00"
 ---
 
-# 12.6 netd 与 DnsResolver：DNS 解析性能和故障诊断
+# 12.3 netd 与 DnsResolver：DNS 解析性能和故障诊断
 
 DNS 位于多数新建连接的前部，但一次 HTTP 请求未必发生 DNS 查询：连接池可直接复用现有连接，HTTP/2 或 HTTP/3 也能在同一连接上承载多次请求。诊断时应先回答“本次请求是否查询 DNS、查询绑定哪条网络、结果是否进入了后续建连”，再分析 resolver 或 HTTPDNS。
 
-12.2 介绍请求阶段计时，12.3 和 12.4 分别讨论连接、协议与 TLS，12.5 讨论平台网络状态。下面沿 Android 17 的源码路径说明系统 resolver，并给出应用侧能执行的诊断顺序。
+12.1 介绍请求阶段、连接和传输协议，12.2 讨论 TLS，1.62 说明平台网络状态与系统选网。下面沿 Android 17 的源码路径说明系统 resolver，并给出应用侧能执行的诊断顺序。
 
 ## 一、四层边界：调用方、框架、resolver、netd
 
@@ -182,7 +182,7 @@ Android 的公开 Private DNS 设置以 DoT 模式和 provider hostname 为用�
 
 应用从 `InetAddress`、OkHttp `Dns` 或普通 `DnsResolver.query()` 回调中无法可靠判断这次查询经 DoT 还是 DoH。可观测的公开状态主要是 `LinkProperties` 中 Private DNS 是否生效、provider name 及已验证服务器。诊断报告应写“Private DNS 状态”，不要在没有平台证据时写死传输协议。
 
-Private DNS 保护应用到 resolver 服务之间的 DNS 上游流量。它不替代 HTTPS，也不自动隐藏 TLS ClientHello 中的服务器名称；ECH 的适用条件见 12.4。
+Private DNS 保护应用到 resolver 服务之间的 DNS 上游流量。它不替代 HTTPS，也不自动隐藏 TLS ClientHello 中的服务器名称；ECH 的适用条件见 12.2。
 
 ### 5.2 应用 DoH 是另一套解析策略
 
@@ -211,7 +211,7 @@ DNS Resolver 模块已支持对 `.local` 名称发起一次性 mDNS 查询。它
 4. HTTP 请求头发送、首字节与结束；
 5. 取消、网络切换和进程生命周期事件。
 
-连接复用时没有 DNS 与 connect 事件是正常现象。若 DNS 很快而 connect 超时，检查路由、地址族与目标 IP；若 TLS 慢，转到 12.4；若首字节慢，检查服务端、CDN 与回源。
+连接复用时没有 DNS 与 connect 事件是正常现象。若 DNS 很快而 connect 超时，检查路由、地址族与目标 IP；若 TLS 慢，转到 12.2；若首字节慢，检查服务端、CDN 与回源。
 
 ### 6.2 固定故障的网络上下文
 

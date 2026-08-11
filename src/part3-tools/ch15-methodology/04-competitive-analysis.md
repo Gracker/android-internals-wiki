@@ -32,7 +32,7 @@ sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp"
 tags: ['competitive-analysis', 'benchmark', 'startup', 'fps', 'apk-size', 'methodology']
-related_chapters: ["7.3", "8.3", "12.1", "13.2", "14.1", "15.3"]
+related_chapters: ["7.3", "8.3", "25.6", "13.2", "14.1", "15.3"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed

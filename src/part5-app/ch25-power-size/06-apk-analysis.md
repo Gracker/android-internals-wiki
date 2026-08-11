@@ -8,8 +8,8 @@ chapter: "25.6"
 section: "25.6"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-07-12"
-last_verified_against: "Android Developers docs 2026-06 + AOSP android-17.0.0_r1"
+last_verified: "2026-08-11"
+last_verified_against: "Android Developers APK/App Bundle/R8/16 KB docs 2026-07 + AOSP android-17.0.0_r1 + AGP 9.3.0"
 confidence: medium
 drafted_date: "2026-05-14"
 polish_count: 0
@@ -43,7 +43,10 @@ sources:
   - type: book-structure
     path: "Clippings/Android 性能优化 - so 文件的体积优化实战.md"
 tags: [apk-size, apk-analyzer, r8, resource-shrink, abi-filter]
-related_chapters: ["25.7", "25.8", "12.1"]
+related_chapters: ["25.7", "25.8", "25.29", "25.30", "25.31"]
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part2-performance/ch12-apk-network/01-apk-size.md"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -75,7 +78,7 @@ finalized_by: openclaw-task6-auto-promote
 ---
 
 
-# APK 体积分析与瘦身
+# 25.6 APK 体积分析与瘦身
 
 ## 先统一体积口径
 
@@ -85,7 +88,18 @@ finalized_by: openclaw-task6-auto-promote
 - **设备交付量**：普通单 APK 渠道交付一个完整 APK；App Bundle 渠道交付与设备配置匹配的一组 split APK。比较 AAB 时必须固定 ABI、密度、语言、SDK 和动态功能集合。
 - **安装占用**：除了已安装 APK，还可能包含提取后的 native 库、编译产物、应用数据和缓存。减少下载量不保证安装占用按相同比例下降。
 
-APK 或 APK 集合中常见的主体包括 `classes*.dex`、`resources.arsc`、`res/`、`assets/`、`lib/<abi>/`、编译后的 `AndroidManifest.xml` 和签名数据。它们的构建、交付和加载方式不同，不能用同一种办法处理。APK 结构和三类主要产物的基础原理见 12.1 节；这里关注测量、归因和发布门禁。
+APK 或 APK 集合中常见的主体包括 `classes*.dex`、`resources.arsc`、`res/`、`assets/`、`lib/<abi>/`、编译后的 `AndroidManifest.xml` 和签名数据。它们的构建、交付和加载方式不同，不能用同一种办法处理。DEX、native library 与资源的专项分析分别见 25.29、25.30 和 25.31；这里建立统一测量、归因和发布门禁。
+
+### APK 是带平台约束的 ZIP
+
+ZIP 目录只能说明文件组织，不能替代 Android 的安装和加载语义：
+
+- `classes*.dex` 保存字节码；单个 DEX 的 `method_ids` 上限是 65,536 个方法引用，不是整个应用只能定义 65,536 个方法。
+- `resources.arsc` 与 `res/` 组成编译资源，`assets/` 保存按原始文件接口读取的内容；静态缩减器无法仅凭业务代码判断所有 asset 是否仍被使用。
+- `lib/<abi>/` 保存各 ABI 的 ELF 库。条目是否压缩会同时影响下载字节、安装提取和直接映射条件。
+- V1/JAR 签名会在 `META-INF/` 生成清单与签名文件；V2/V3 签名位于 APK Signing Block；V4 安装还可能使用独立 `.idsig`。看到 `META-INF/` 不能反推出制品只采用 V1。
+
+因此，评审表要同时记录 ZIP 压缩大小、原始大小、设备实际获得的 split 集合与安装后形态。未压缩条目让 APK 文件变大，却可能减少安装期提取或支持直接映射；它不是可以单独判错的体积回归。
 
 ## APK Analyzer 与体积构成分析
 

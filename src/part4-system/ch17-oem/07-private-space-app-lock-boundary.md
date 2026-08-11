@@ -40,7 +40,7 @@ sources:
   - type: blog
     path: "intake/daily-info/2026-05-25.md"
 tags: [private-space, app-lock, user-profile, launcher, notification, media-access]
-related_chapters: ["1.3", "1.9", "12.2", "17.1", "20.7", "24.13", "26.3"]
+related_chapters: ["1.3", "1.9", "12.1", "17.1", "20.7", "24.13", "26.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-25"
 gap_source: "官方文档/每日信息/素材驱动"

@@ -12,7 +12,7 @@ pipeline_stage: ready-to-publish
 last_verified_against: "Android Developers Cronet / network access optimization docs 2026-05-22 + android-17.0.0_r1 (verified via git ls-remote; APIs cross-checked against android-17.0.0_r1 tag on googlesource) + OkHttp 5.x docs"
 confidence: medium
 tags: [network, latency, weak-network, cronet, okhttp, power]
-related_chapters: ["24.4", "24.5", "24.10", "24.11", "26.17", "12.3", "25.2"]
+related_chapters: ["24.4", "24.5", "24.10", "24.11", "26.17", "12.1", "25.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-22"
 gap_source: "Clippings参考书/官方文档/章节深挖"

@@ -1,7 +1,7 @@
 ---
 title: "Android 网络安全与 TLS 性能优化"
-chapter: "12.4"
-section: "12.4"
+chapter: "12.2"
+section: "12.2"
 status: finalized
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
@@ -43,7 +43,7 @@ sources:
   - type: official
     path: "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/QuicOptions.Builder.html"
 tags: [network-security, tls, ech, hpke, certificate-transparency, cleartext, performance]
-related_chapters: ["12.2", "12.3", "1.6"]
+related_chapters: ["12.1", "12.3", "1.6"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+AOSP结构"
@@ -90,7 +90,7 @@ last_deepseek_cn_review_at: 2026-07-08
 last_task2b_verifier_at: "2026-07-07T23:28:23+08:00"
 ---
 
-# 12.4 Android 网络安全与 TLS 性能优化
+# 12.2 Android 网络安全与 TLS 性能优化
 
 一个 HTTPS 请求在传输业务数据前，可能依次经过 DNS、传输层建连、TLS 握手和证书验证。短请求的业务数据很少，建连阶段反而可能占据大部分等待时间。分析这类问题时，不能把所有耗时都记到“TLS”名下，也不能用降低验证强度来换取表面上的延迟下降。
 
@@ -284,8 +284,8 @@ Perfetto 不会自动生成通用的 OkHttp 握手轨道。若要把网络阶段
 
 ## 与其他章节的关联
 
-- **§12.2 网络性能优化**：连接池、缓存、HTTP/2 和 HTTP/3 决定新连接出现的频率。
-- **§12.3 网络性能深入**：DNS、Socket、OkHttp 事件和系统网络栈提供更完整的诊断路径。
+- **§12.1 网络性能优化**：连接池、缓存、HTTP/2、HTTP/3 与 OkHttp 事件决定新连接出现的频率并提供分段指标。
+- **§12.3 netd 与 DnsResolver**：系统 DNS、Private DNS、HTTPS 资源记录与每网络解析状态。
 - **§1.6 版本演进**：适合核对 targetSdk 与运行系统共同改变行为的案例。
 
 ## 参考资料

@@ -35,7 +35,7 @@ sources:
   - type: book-structure
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
 tags: [photo-picker, mediaprovider, transcoding, storage, io-performance]
-related_chapters: ["12.1", "20.10", "22.6", "22.35", "24.12", "26.16"]
+related_chapters: ["25.6", "20.10", "22.6", "22.35", "24.12", "26.16"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-22"
 gap_source: "官方文档/每日信息/素材驱动/AOSP结构"

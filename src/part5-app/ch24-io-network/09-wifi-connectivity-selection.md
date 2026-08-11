@@ -44,7 +44,7 @@ sources:
   - type: book_structure
     path: "Clippings/线上疑难问题该如何排查和跟踪?-Android开发高手课-极客时间 20.md"
 tags: [wifi, connectivity, network, latency, scoring, performance]
-related_chapters: ["12.2", "12.3", "24.4", "24.5", "15.3"]
+related_chapters: ["12.1", "24.4", "24.5", "15.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "AOSP结构/研究素材"
@@ -77,7 +77,7 @@ pipeline_stage: ready-to-publish
 
 平台源码锚点是 Android 17（API 37）/ `android-17.0.0_r1`。应用看到默认网络可用之前，系统至少完成了两类决策：Wi-Fi 模块在可连接的 AP 中选择网络，Connectivity 模块在 Wi-Fi、蜂窝、以太网、VPN 等并存网络中为每个请求选择满足者。两类决策使用不同的输入，不能合并成一个“网络分数”。
 
-Wi-Fi 图标、RSSI、`NET_CAPABILITY_VALIDATED` 和业务接口成功分别描述无线关联、链路信号、系统公网探测和目标服务可达性。它们可以同时出现不同结果。排查连接切换时，要把系统选择事件、HTTP 交换和业务恢复分开记录。连接池、TLS 与 HTTP 协议细节见 12.2、12.3、24.4 和 24.5。
+Wi-Fi 图标、RSSI、`NET_CAPABILITY_VALIDATED` 和业务接口成功分别描述无线关联、链路信号、系统公网探测和目标服务可达性。它们可以同时出现不同结果。排查连接切换时，要把系统选择事件、HTTP 交换和业务恢复分开记录。连接池、TLS 与 HTTP 协议细节见 12.1、12.2、24.4 和 24.5。
 
 ## 要点
 

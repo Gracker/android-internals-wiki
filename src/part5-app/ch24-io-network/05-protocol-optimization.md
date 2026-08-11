@@ -18,7 +18,7 @@ sources:
   - type: aosp
     path: "https://android.googlesource.com/platform/external/cronet/+/android-17.0.0_r1/android/java/src/android/net/http/ConnectionMigrationOptions.java"
 tags: [http2, http3, quic, grpc, protocol]
-related_chapters: ["24.4", "12.3", "12.4"]
+related_chapters: ["24.4", "12.1", "12.2"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -47,7 +47,7 @@ last_deepseek_cn_review_at: 2026-07-06
 - HTTP/3 在 QUIC 上提供 HTTP 语义，避免 TCP 字节流导致的跨 stream 传输层队头阻塞，并支持连接迁移机制。
 - gRPC 是 RPC 框架和调用契约，Android 上的常用传输仍是 HTTP/2；它不等于 HTTP/3。
 
-平台锚点为 Android 17 / API 37 / AOSP `android-17.0.0_r1`，客户端与协议依据为 OkHttp 5.3.0、RFC 9113、RFC 9000、RFC 9114 和当前 gRPC 官方文档。连接池、DNS、超时和重试边界见 [24.4 网络架构与连接管理](04-network-architecture.md)，分段性能与 TLS 见 [12.3 网络性能深入](../../part2-performance/ch12-apk-network/03-network-performance-deep.md) 和 [12.4 网络安全与 TLS 性能](../../part2-performance/ch12-apk-network/04-network-security-tls-performance.md)。
+平台锚点为 Android 17 / API 37 / AOSP `android-17.0.0_r1`，客户端与协议依据为 OkHttp 5.3.0、RFC 9113、RFC 9000、RFC 9114 和当前 gRPC 官方文档。连接池、DNS、超时和重试边界见 [24.4 网络架构与连接管理](04-network-architecture.md)，分段性能与 TLS 见 [12.1 网络性能优化](../../part2-performance/ch12-apk-network/01-network-performance.md) 和 [12.2 网络安全与 TLS 性能](../../part2-performance/ch12-apk-network/02-network-security-tls-performance.md)。
 
 ## 先区分协议、客户端和传输实现
 

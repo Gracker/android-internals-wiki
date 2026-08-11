@@ -1,7 +1,7 @@
 ---
 title: "网络性能优化"
-chapter: "12"
-section: '12.2'
+chapter: "12.1"
+section: '12.1'
 status: finalized
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
@@ -21,7 +21,7 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-28T06:28:00+08:00"
 pipeline_stage: ready-to-publish
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-07-31'
+last_verified: '2026-08-11'
 last_verified_against: 'AOSP android-17.0.0_r1；Android 17 / API 37；OkHttp 5.3.0；Cronet Play services 18.0.1；HTTP/2、HTTP/3 与 QUIC RFC（2026-07）'
 confidence: high
 sources:
@@ -40,6 +40,10 @@ sources:
 - type: official
   path: https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/CronetEngine.Builder
 - type: official
+  path: https://developer.android.com/reference/android/net/http/HttpEngine.Builder
+- type: official
+  path: https://developer.android.com/reference/androidx/tracing/Trace
+- type: official
   path: https://developer.android.com/reference/android/telephony/SubscriptionInfo
 - type: official
   path: https://developer.android.com/privacy-and-security/local-network-permission
@@ -47,6 +51,8 @@ sources:
   path: https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/README.md
 - type: source
   path: https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/OkHttpClient.kt
+- type: source
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/ConnectionPool.kt
 - type: source
   path: https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt
 - type: rfc
@@ -67,6 +73,8 @@ sources:
   path: packages/modules/NetworkStack/src/com/android/server/connectivity/NetworkMonitor.java
 - type: aosp
   path: frameworks/base/telephony/java/android/telephony/SubscriptionInfo.java
+- type: aosp
+  path: libcore/luni/src/main/java/libcore/io/BlockGuardOs.java
 tags:
 - network
 - OkHttp
@@ -76,9 +84,15 @@ tags:
 - weak-network
 - performance
 related_chapters:
-- '12.1'
-- '6.1'
+- '12.2'
+- '12.3'
+- '1.62'
+- '24.4'
+- '24.5'
 - '8.1'
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
 last_task9_audit: '2026-07-03'
 last_task6_audit: "2026-06-22"
 last_task2b_at: "2026-05-28T04:50:00+08:00"
@@ -100,13 +114,19 @@ task9_review_notes: "2026-05-28 Task9 auto-fix: 修正 OkHttp EventListener conn
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-06
 ---
-# 12.2 网络性能优化
+# 12.1 网络性能优化
 
 一次接口调用的等待时间分散在客户端排队、域名解析、路由尝试、建连、加密握手、上传、边缘节点、服务端、响应传输、解析和界面更新中。“接口耗时 2 秒”只给出了结果，无法指出哪一段消耗了时间。
 
 移动网络持续变化，客户端仍然可以控制请求时机、复用、总期限、缓存、重试和内容降级。优化工作的起点是统一计时口径，然后按协议、请求组织和网络状态选择策略。
 
-基准版本为 Android 17 / API 37、AOSP `android-17.0.0_r1`、OkHttp 5.3.0 和 Play services Cronet 18.0.1。系统服务、`netd`、DNS Resolver 和 `NetworkAgent` 的内部细节在后续章节展开。
+基准版本为 Android 17 / API 37、AOSP `android-17.0.0_r1`、OkHttp 5.3.0 和 Play services Cronet 18.0.1。`netd` 与 DNS Resolver 的内部细节见 12.3，系统选网与 `NetworkAgent` 见 1.62。
+
+## 应用网络栈和主线程边界
+
+Android 应用常见的 HTTP 路径不能合写成一条调用栈：OkHttp 自己管理连接池，TCP 通常经 `java.net.Socket`，TLS 经平台 JSSE/Conscrypt；Cronet 使用 Chromium native 网络栈；API 34 起的 `HttpEngine` 使用设备提供的实现。HTTP/3/QUIC 状态机位于 Cronet/HttpEngine 的用户空间 provider，内核只看到 UDP/IP/socket，OkHttp 5.3.0 则没有稳定公开的 HTTP/3 配置入口。
+
+主线程禁网也要区分“直接发起网络”与“等待后台网络”。Android 17 的 `Inet6AddressImpl` 在 DNS 缓存检查前调用 `BlockGuard.getThreadPolicy().onNetwork()`，`BlockGuardOs` 还覆盖 connect、阻塞 poll 与 recvmsg 等入口；JNI 直接 I/O 可能避开部分检测。`Future.get()`、`CountDownLatch.await()` 或 `runBlocking` 虽不会抛 `NetworkOnMainThreadException`，仍会让 UI 等待后台请求并造成卡顿或 ANR。
 
 ## 一次请求应当怎样计时
 
@@ -203,7 +223,7 @@ dependencies {
 
 构造 `CronetEngine` 前要调用 `CronetProviderInstaller.installProvider(Context)`，并处理 Play services 缺失、需要更新或安装失败。官方 `cronet-fallback` 是能力较弱的 Java fallback，不能预设它与 native Cronet 具有相同的 HTTP/3、性能和连接迁移表现。
 
-一个进程通常只创建一个 `CronetEngine`。多个 engine 不能并发使用同一个 storage directory。若应用打包 native Cronet provider，还要按 §12.1 验证 ABI、符号和 16KB page-size 兼容性；页大小变化对初始化耗时没有通用收益比例。
+一个进程通常只创建一个 `CronetEngine`。多个 engine 不能并发使用同一个 storage directory。若应用打包 native Cronet provider，还要按 [25.30 Native SO 体积优化](../../part5-app/ch25-power-size/30-native-so-size-optimization.md) 验证 ABI、符号和 16KB page-size 兼容性；页大小变化对初始化耗时没有通用收益比例。
 
 ### 协议选择要看线上分组
 
@@ -249,7 +269,9 @@ fun clientFor(
 
 `newBuilder()` 派生的 client 会共享连接池和线程资源。业务可按交互请求、上传、流式读取等类别配置策略。代理、信任管理器、证书固定、DNS 或协议要求相互冲突时，才需要认真评估独立 client。
 
-连接可否复用还受 scheme、host、port、代理、DNS 路由、TLS、ALPN 和证书约束。HTTP/2 可以在满足证书与路由安全条件时做 connection coalescing，但应用不能假定两个域名一定共享连接。
+OkHttp 5.3.0 默认最多保留 5 条**空闲**连接 5 分钟；这不是连接总数或域名数量上限。正在承载 HTTP/2 stream 的连接不属于空闲连接，并发仍受 Dispatcher、服务端 stream 配置、socket 与系统资源共同约束。调参前先统计新建连接率、空闲回收和服务端 keep-alive，不能只凭默认数字扩大池。
+
+连接可否复用还受 scheme、port、代理、DNS、socket/TLS 配置、hostname verifier 和 certificate pinner 等完整 `Address` 约束。HTTP/2 跨主机 connection coalescing 还要求现有连接指向同一 IP/端口、证书覆盖新主机、使用兼容的主机名校验与 pin；应用不能假定两个域名一定共享连接。
 
 OkHttp 5 默认启用 fast fallback，会并行尝试可用路由以降低 IPv6 / IPv4 连接等待。这会让一次 `Call` 出现多组 connect 事件，监控代码要按 attempt 保存。
 
@@ -390,6 +412,14 @@ cache miss 时，`onlyIfCached()` 会得到 504 `Unsatisfiable Request`，不会
 
 弱网降级可以选择已有缓存、较低分辨率、较小分页、暂停自动播放或延后非交互同步。网络 transport 只是提示；同一 Wi‑Fi 可能经过拥塞链路，蜂窝也可能有良好吞吐。策略输入应结合用户设置、metered、roaming、系统估计和近期请求观测，并设置滞回，避免频繁切换画质。
 
+## 长连接、解析与后台流量
+
+WebSocket 适合高频双向消息，但长连接不会自动省电。固定 ping/pong、代理或 NAT 空闲超时、网络切换后的重复重连都可能让蜂窝 radio 频繁保持活跃；低频通知优先复用 FCM 等系统通道，高频业务则要共同定义心跳、退避、会话恢复和消息去重。
+
+Retrofit 的 suspend adapter 也不会让协议本身更快。EventListener 已显示网络完成、业务仍迟迟拿不到数据时，应继续拆分 Converter/JSON 解析、数据库和 UI 映射；协程取消还要确认会传到 `Call.cancel()`。网络、CPU 解析和界面提交分别 trace，避免把网络完成后的 CPU 时间计入 TTFB。
+
+日志、遥测和可延迟同步应在应用内合批，并交给 WorkManager/JobScheduler 表达网络、电量和充电约束。蜂窝 tail time 会受设备、RAT、信号和运营商配置影响，不能引用固定时长；是否节能要比较唤醒次数、radio 活跃窗口、字节量和任务完成率。
+
 ## 监控：EventListener 与 NetworkCallback
 
 ### OkHttp EventListener
@@ -468,146 +498,21 @@ val monitoredClient = OkHttpClient.Builder()
 
 指标上传要限制基数并保护隐私。建议记录经过白名单映射的接口模板、协议、状态码、错误类别和时间分段；完整 URL、query、header、请求体、响应体、Cookie 与 token 不应进入网络性能日志。
 
-### ConnectivityManager.NetworkCallback
+### 用 Perfetto 对齐网络与线程
 
-`NetworkCallback` 描述系统已知的网络状态，不能测量某个业务 host 的延迟。下列三个概念要分开：
+Perfetto 不会自动把 OkHttp `Call` 展成 DNS、TLS 和 TTFB。可以用 AndroidX Tracing 的异步 slice 标记整个逻辑调用，用唯一 cookie 区分同名并发请求；阶段事件仍由 EventListener 记录单调时钟，再按 Call、route 和 attempt 关联。trace 名称只使用低基数常量，不写完整 URL、用户 ID、token 或查询参数。
 
-- `NET_CAPABILITY_INTERNET`：网络配置为可访问公网；
-- `NET_CAPABILITY_VALIDATED`：系统最近一次探测确认了公网连通；
-- 业务请求成功：目标 DNS、路由、TLS、CDN 和服务端均可用。
+主线程出现 `nativePollOnce` 通常只是 Looper 空闲。只有调用栈、线程状态和时间重叠共同指向 `Future.get()`、锁、socket 或协程桥接点时，才能判断 UI 在等待网络。网络 slice 与主线程慢区间重叠只能建立相关性，业务 request ID 和同步对象栈才能补足因果证据。
 
-注册 default network callback 需要 `ACCESS_NETWORK_STATE`。基础权限可这样声明：
+### NetworkCallback 只描述平台网络状态
 
-```xml
-<uses-permission android:name="android.permission.INTERNET" />
-<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-```
+`NetworkCallback` 不能测量业务 host 的 DNS、TLS 或响应延迟。`INTERNET` 是网络能力声明，`VALIDATED` 是系统公网探测结果，业务请求成功仍取决于目标域名、路由、证书、CDN 和服务端。应用只需把 capability、metered、blocked、VPN 与网络切换作为请求策略输入；回调顺序、每 UID 100 个共享 request/callback 配额、注册生命周期、FullScore 选择和 linger 统一见 [1.62 Android 17 ConnectivityManager：架构、网络选择与性能](../../part1-fundamentals/ch01-architecture/1.62-android17-connectivitymanager-architecture-performance.md)。
 
-这两个权限用于公网请求与读取网络状态，不会授予 Android 17 的广泛局域网访问能力。
+后台任务若只关心“有网”或“非计费网络”，优先使用 WorkManager/JobScheduler constraint。网络切换后也不要统一清空连接池或立即重放全部失败请求，应让网络库先处理连接状态，再由业务幂等和退避策略决定恢复。
 
-Android 8 / API 26 起，`onAvailable()` 后会按序收到 `onCapabilitiesChanged()` 和 `onLinkPropertiesChanged()`。不要在 `onAvailable()` 内同步调用 `getNetworkCapabilities()` 或 `getLinkProperties()`，返回对象可能已经过期。
+## Android 17 的平台策略输入
 
-下面的监控器保存应用 default network 的最小快照：
-
-```kotlin
-data class DefaultNetworkState(
-    val network: Network?,
-    val validatedInternet: Boolean,
-    val metered: Boolean,
-    val downstreamKbpsEstimate: Int,
-)
-
-class DefaultNetworkMonitor(context: Context) : Closeable {
-    private val cm = context.getSystemService(ConnectivityManager::class.java)
-    private var registered = false
-    private var currentNetwork: Network? = null
-
-    @Volatile
-    var state = DefaultNetworkState(
-        network = null,
-        validatedInternet = false,
-        metered = true,
-        downstreamKbpsEstimate = 0,
-    )
-        private set
-
-    private val callback = object : ConnectivityManager.NetworkCallback() {
-        override fun onAvailable(network: Network) {
-            currentNetwork = network
-            state = state.copy(network = network, validatedInternet = false)
-        }
-
-        override fun onCapabilitiesChanged(
-            network: Network,
-            capabilities: NetworkCapabilities,
-        ) {
-            currentNetwork = network
-            val internet = capabilities.hasCapability(
-                NetworkCapabilities.NET_CAPABILITY_INTERNET
-            )
-            val validated = capabilities.hasCapability(
-                NetworkCapabilities.NET_CAPABILITY_VALIDATED
-            )
-            val unmetered = capabilities.hasCapability(
-                NetworkCapabilities.NET_CAPABILITY_NOT_METERED
-            )
-            state = DefaultNetworkState(
-                network = network,
-                validatedInternet = internet && validated,
-                metered = !unmetered,
-                downstreamKbpsEstimate =
-                    capabilities.linkDownstreamBandwidthKbps,
-            )
-        }
-
-        override fun onLost(network: Network) {
-            if (currentNetwork == network) {
-                currentNetwork = null
-                state = DefaultNetworkState(
-                    network = null,
-                    validatedInternet = false,
-                    metered = true,
-                    downstreamKbpsEstimate = 0,
-                )
-            }
-        }
-    }
-
-    @Synchronized
-    fun start() {
-        if (!registered) {
-            cm.registerDefaultNetworkCallback(callback)
-            registered = true
-        }
-    }
-
-    @Synchronized
-    override fun close() {
-        if (registered) {
-            cm.unregisterNetworkCallback(callback)
-            registered = false
-        }
-    }
-}
-```
-
-Default network 可能是 VPN，也可能在 Wi‑Fi 与蜂窝间切换。`onLost()` 对 default callback 表示该 `Network` 不再是应用默认网络，它不保证设备上没有其他网络。切换时还可能很快收到新 `onAvailable()`，所以业务应等待新快照或请求结果，避免立即批量重试。
-
-系统把每个 UID 的 callback 与 network request 数量限制在共享额度内。组件销毁或监控不再使用时必须调用 `unregisterNetworkCallback()`。后台任务若只关心“有网”或“非计费网络”，优先交给 WorkManager constraints。
-
-## Android 17 的网络边界
-
-### 运营商分配的流媒体速率
-
-Android 17 在 `SubscriptionInfo` 新增：
-
-- `getStreamingAppMaxDownlinkKbps()`
-- `getStreamingAppMaxUplinkKbps()`
-
-返回值表示运营商依据 GSMA TS.43 为流媒体应用分配的上下行最大速率，单位 Kbps；未知或不适用时返回 `SubscriptionPlan.BITRATE_UNKNOWN`。它适合给媒体码率选择提供上限，不能当作当前链路测速结果。读取 subscription 信息还受对应 telephony 权限、角色或 carrier privilege 约束。
-
-AOSP 17 的实现与 API 注释位于 [`SubscriptionInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/telephony/java/android/telephony/SubscriptionInfo.java)。
-
-### 局域网运行时权限
-
-面向 Android 17 / API 37 的应用若直接发现或连接局域网设备，需要适配 `ACCESS_LOCAL_NETWORK`，或采用系统提供的隐私保护 picker。广泛访问局域网时声明：
-
-```xml
-<uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
-```
-
-该权限属于 `NEARBY_DEVICES` 组，需要运行时检查与请求。只访问公网的应用不需要它；targetSdk 低于 37 的应用也不应提前请求。拒绝或撤销后，投屏、智能家居、mDNS 和直接访问私网 IP 的代码要给出可恢复状态，不能把权限阻断归类成普通弱网超时。
-
-## 平台源码锚点
-
-Android 17 的应用 API 与服务端实现分布在 Connectivity Mainline 模块：
-
-- [`ConnectivityManager.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java)：callback 注册、数量限制与权限契约。
-- [`NetworkCapabilities.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/NetworkCapabilities.java)：capability、transport 和第一跳带宽估计。
-- [`ConnectivityService.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/service/src/com/android/server/ConnectivityService.java)：网络选择、default network 与 callback 分发。
-- [`NetworkMonitor.java`](https://android.googlesource.com/platform/packages/modules/NetworkStack/+/android-17.0.0_r1/src/com/android/server/connectivity/NetworkMonitor.java)：公网验证与 captive portal 探测。
-
-`NET_CAPABILITY_VALIDATED` 来自系统探测状态，业务只应把它作为策略输入。目标服务仍可能因 DNS、路由、证书、区域或服务端故障而不可达。
+`SubscriptionInfo.getStreamingAppMaxDownlinkKbps()` / `getStreamingAppMaxUplinkKbps()` 表示运营商为流媒体应用分配的速率上限，未知时返回 `BITRATE_UNKNOWN`；它不是链路测速。targetSdk 37 的局域网功能还需适配 `ACCESS_LOCAL_NETWORK` 或系统 picker，权限拒绝不能归类成普通弱网。完整的权限、NetworkCallback、FullScore、网络切换和系统源码边界见 [1.62 Android 17 ConnectivityManager](../../part1-fundamentals/ch01-architecture/1.62-android17-connectivitymanager-architecture-performance.md)。
 
 ## 版本边界
 

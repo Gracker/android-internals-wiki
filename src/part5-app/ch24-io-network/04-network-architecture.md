@@ -58,7 +58,7 @@ task9_state: "reviewed"
 task9_result: "auto-fixed"
 task2b_result: "fixed-lite"
 task2b_state: "fixed"
-related_chapters: ["24.5", "12.2", "12.3"]
+related_chapters: ["24.5", "12.1", "12.2"]
 last_task6_at: "2026-07-08T08:10:41+08:00"
 last_task6_audit: "2026-07-08"
 last_task2b_lite_at: "2026-07-08"
@@ -80,7 +80,7 @@ last_deepseek_cn_review_at: 2026-07-08
 
 一次请求显示为“慢”，内部可能经历 Dispatcher 排队、DNS 查询、多条地址竞速、TCP 建连、TLS 握手、服务端等待和响应体读取。只修改某个超时参数，无法判断时间花在哪个阶段，也容易把局部故障变成更长的等待。
 
-应用架构需要处理四个问题：怎样复用连接，怎样选择解析策略，怎样隔离不同类型的流量，以及怎样在网络变化和请求失败时控制重试。一次调用的分段计时与协议细节见 [12.3 网络性能深入](../../part2-performance/ch12-apk-network/03-network-performance-deep.md)，TLS 信任边界见 [12.4 网络安全与 TLS 性能](../../part2-performance/ch12-apk-network/04-network-security-tls-performance.md)。
+应用架构需要处理四个问题：怎样复用连接，怎样选择解析策略，怎样隔离不同类型的流量，以及怎样在网络变化和请求失败时控制重试。一次调用的分段计时与协议细节见 [12.1 网络性能优化](../../part2-performance/ch12-apk-network/01-network-performance.md)，TLS 信任边界见 [12.2 网络安全与 TLS 性能](../../part2-performance/ch12-apk-network/02-network-security-tls-performance.md)。
 
 平台结论以 Android 17 / API 37 / AOSP `android-17.0.0_r1` 为锚点，客户端结论以 OkHttp 5.3.0 为锚点。OkHttp 是独立发布的库；项目升级客户端版本后，还要复核默认参数和事件定义。
 

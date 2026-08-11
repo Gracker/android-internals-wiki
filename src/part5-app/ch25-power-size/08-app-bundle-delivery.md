@@ -44,7 +44,7 @@ sources:
   - type: book-structure
     path: "Clippings/Android 性能优化 - 通过插件化来优化包体积（下）.md"
 tags: [app-bundle, aab, dynamic-feature, play-asset-delivery]
-related_chapters: ["25.6", "25.7", "12.1"]
+related_chapters: ["25.6", "25.7"]
 pipeline_stage: "ready-to-publish"
 task6_state: reviewed
 task9_state: reviewed

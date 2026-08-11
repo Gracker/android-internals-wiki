@@ -4,7 +4,7 @@ chapter: "25.31"
 status: finalized
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [包体积, 资源优化, 图片压缩, ARSC, AAPT2]
-related_chapters: ["12.1", "25.7", "25.8", "25.29", "25.30"]
+related_chapters: ["25.6", "25.7", "25.8", "25.29", "25.30"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "Clippings性能优化参考书（资源文件体积优化实战章）"
@@ -572,7 +572,7 @@ mapping 必须与同一次构建的二进制和资源表绑定。工具版本相
 
 ## 延伸阅读与源码锚点
 
-- [12.1 APK 体积优化](../../part2-performance/ch12-apk-network/01-apk-size.md)：APK 结构与总体分析入口。
+- [25.6 APK 体积分析与瘦身](06-apk-analysis.md)：APK 结构与总体分析入口。
 - [25.7 R8 与资源优化](07-r8-resource-optimization.md)：代码 keep 与资源缩减协作。
 - [25.8 App Bundle 与动态交付](08-app-bundle-delivery.md)：configuration APK、Dynamic Feature 与 PAD。
 - [25.29 DEX 体积优化](29-dex-size-optimization.md)：代码引用图与 R8 诊断。

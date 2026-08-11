@@ -40,7 +40,7 @@ sources:
   - type: github
     path: "https://github.com/android/skills/blob/main/performance/r8-analyzer/SKILL.md"
 tags: [r8, app-size, build-tools, keep-rules, apk-optimization]
-related_chapters: ["12.1", "25.7", "14.1"]
+related_chapters: ["25.6", "25.7", "14.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-23"
 gap_source: "官方文档"
@@ -51,7 +51,7 @@ android17_review_notes: "2026-07-30：补齐 AGP 9.3 standalone analyzer task、
 
 ## 为什么需要单独看 R8 Configuration Analyzer
 
-APK 体积排查通常从 12.1 节的 APK Analyzer 开始：先看 `classes.dex`、`resources.arsc`、`res/`、`lib/` 哪一块在增长，再判断该动 R8、资源、图片还是 native 库。这个入口能回答“结果变大在哪里”，但回答不了“哪条 keep 规则让 R8 放弃了哪些优化”。
+APK 体积排查通常从 25.6 节的 APK Analyzer 开始：先看 `classes.dex`、`resources.arsc`、`res/`、`lib/` 哪一块在增长，再判断该动 R8、资源、图片还是 native 库。这个入口能回答“结果变大在哪里”，但回答不了“哪条 keep 规则让 R8 放弃了哪些优化”。
 
 R8 Configuration Analyzer 补的是后一半。它把最终合并后的 R8 配置映射到类、字段和方法，给出 shrinking、optimization、obfuscation 三类分数，并列出影响最大的 keep 规则和被覆盖的规则。体积治理到 keep 规则这一层时，它比肉眼读 `proguard-rules.pro` 更可靠，因为最终生效的规则还包括默认 AGP 规则、App 自定义规则、各个 AAR 传进来的 consumer rules，以及部分工具生成的规则。
 
@@ -260,7 +260,7 @@ R8 Configuration Analyzer 适合回答：
 - 哪些规则互相覆盖，哪些宽规则可以收窄。
 - full mode 迁移后，哪些兜底规则正在吞掉收益。
 
-两者合用时，先用 APK Analyzer 确认 dex 体积异常，再用 analyzer 找规则原因；如果异常在图片、字体、native 库，R8 报告不会提供直接答案，应回到 12.1 和 25.7 节的资源与包结构治理。
+两者合用时，先用 APK Analyzer 确认 dex 体积异常，再用 analyzer 找规则原因；如果异常在图片、字体、native 库，R8 报告不会提供直接答案，应回到 25.6 和 25.7 节的资源与包结构治理。
 
 ## 框架规则评审表
 
