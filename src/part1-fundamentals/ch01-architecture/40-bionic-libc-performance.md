@@ -33,7 +33,7 @@ sources:
   - type: official
     path: "source.android.com/docs/security/test/memory-safety/arm-mte"
 tags: [bionic, libc, malloc, scudo, mte, 16kb-page, pthread, ndk, arm64]
-related_chapters: ["4.7", "4.16", "23.11", "20.10", "20.11"]
+related_chapters: ["4.7", "4.16", "23.3", "20.10", "20.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-28"
 drafted_by: "task2a-content-processing"
@@ -418,4 +418,4 @@ Android 17 中，Bionic 的性能角色可以归纳为四层：
 
 定位问题时，应沿实际调用链逐层确认：当前使用哪个分配器、dispatch 是否被工具替换、锁是否发生竞争、线程包含哪些实际映射、页大小和 ELF 对齐是否匹配、arm64 resolver 选择了哪个实现。基于这些证据得出的结论才能在 Android 17 设备上复现，也能解释版本升级后的行为变化。
 
-Native Heap 的进一步分析见 **23.11 Scudo 分配器与 Native Heap 性能边界**；16 KB 页的系统影响见 **4.6 16 KB Page Size 与 Android 性能**；MTE 和 16 KB 兼容性治理分别见 **20.11** 与 **20.13**。
+Native Heap 与 Scudo 的进一步分析见 **23.3 Native 内存管理与优化**；16 KB 页的系统影响见 **4.6 16 KB Page Size 与 Android 性能**；MTE 和 16 KB 兼容性治理分别见 **20.11** 与 **20.13**。

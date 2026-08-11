@@ -5,8 +5,8 @@ chapter: "23.7"
 section: "23.7"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-06-08"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Developers Debug/ActivityManager/ComponentCallbacks2 + Clippings/Android 性能优化"
+last_verified: "2026-08-11"
+last_verified_against: "AOSP android-17.0.0_r1 + Android Developers Debug/ActivityManager/ComponentCallbacks2/Memory Advice + Clippings/Android 性能优化"
 confidence: medium
 drafted_date: "2026-05-14"
 polish_count: 0
@@ -28,13 +28,17 @@ sources:
 - type: official
   path: https://developer.android.com/studio/profile/capture-heap-dump
 - type: aosp
-  path: frameworks/base/core/java/android/os/Debug.java @ android-16.0.0_r1
+  path: frameworks/base/core/java/android/os/Debug.java @ android-17.0.0_r1
 - type: aosp
-  path: frameworks/base/core/java/android/app/ActivityManager.java @ android-16.0.0_r1
+  path: frameworks/base/core/java/android/app/ActivityManager.java @ android-17.0.0_r1
 - type: aosp
-  path: frameworks/base/core/java/android/content/ComponentCallbacks2.java @ android-16.0.0_r1
+  path: frameworks/base/core/java/android/content/ComponentCallbacks2.java @ android-17.0.0_r1
 - type: aosp
-  path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java @ android-16.0.0_r1
+  path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java @ android-17.0.0_r1
+- type: official
+  path: https://developer.android.com/games/sdk/memory-advice/overview
+- type: clipping
+  path: "货拉拉司机 Android 端内存治理实践（本地归档 Cubox）"
 - type: blog
   path: '[结构参考: Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md]'
 - type: blog
@@ -68,6 +72,9 @@ last_task6_review_log: "logs/review/2026-06-08-16-review.md"
 last_task6_audit: "2026-06-08"
 deepseek_cn_review_state: needs-structure-rework
 last_deepseek_cn_review_at: 2026-06-12
+consolidated_from:
+  - "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
+  - "src/part5-app/ch23-memory-practice/10-memory-advice-api.md"
 ---
 
 # 内存监控与线上治理
@@ -354,9 +361,19 @@ fun readRecentMemoryExits(
 }
 ```
 
-`getPss()` 和 `getRss()` 是系统上一次采样值，可能为零，也不是进程死亡前一刻的精确内存。`getDescription()` 的一般格式没有稳定保证；这里匹配的 `MemoryLimiter:AnonSwap` 是 Android 17 r1 行为文档明确给出的标记，不应扩展成对其他 description 文本的解析。23.9 节会继续说明 Memory Limiter 的设备范围和测试命令。
+`getPss()` 和 `getRss()` 是系统上一次采样值，可能为零，也不是进程死亡前一刻的精确内存。`getDescription()` 的一般格式没有稳定保证；这里匹配的 `MemoryLimiter:AnonSwap` 是 Android 17 r1 行为文档明确给出的标记，不应扩展成对其他 description 文本的解析。23.6 节会继续说明 Memory Limiter 的设备范围和测试命令。
 
 [源码锚点: AOSP `android-17.0.0_r1`, `frameworks/base/core/java/android/app/ApplicationExitInfo.java`]
+
+### Memory Advice 只作为存量项目的历史信号
+
+Memory Advice API 的 beta 已结束，并在 2026 年 2 月被官方标记为 deprecated。新项目不再增加这项依赖；已接入的游戏或引擎可以在迁移期把它保留为信号层的一项输入。
+
+它是独立 Games SDK 中的 native 库，不是 Android framework 服务。`GetAvailableMemory()` 返回预测比例与初始化时设备总内存的乘积，不等于 `/proc/meminfo` 的 `MemAvailable`；`OK`、`APPROACHING_LIMIT`、`CRITICAL` 也是模型和规则给出的建议，不能承诺下一次分配、LMKD 或 Android 17 MemoryLimiter 的结果。
+
+watcher 在库自己的线程中运行，并且状态恢复为 `OK` 时不回调。回调只能把压力请求写入线程安全的策略入口，纹理、mesh、音频、场景资源和 GPU buffer 必须回到引擎规定的线程分批释放。注销与回调还可能存在并发窗口，`user_data` 生命周期要覆盖可能仍在执行的 callback。
+
+迁移后的结构保持四层：信号层汇总资产计数、PSS/RSS、生命周期与历史退出；策略层按设备和场景输出资源档位；执行层在正确线程降规格或释放可重建资源；验证层比较峰值、回落、帧时间与 LMK/MemoryLimiter。这样移除旧库时，不需要改写每个资源模块。
 
 ## 内存快照线上采集
 
@@ -442,6 +459,22 @@ Java heap dump 可能包含对象字符串、用户输入、请求响应、缓�
 - 可分析性：保留构建符号、混淆映射、版本、进程、触发规则和场景标签。
 
 收到文件路径后，不要在 callback 中直接做压缩和网络上传。callback 只登记结果与错误，后续任务再核对文件、策略和设备条件。分析完成后要能从问题签名回查对应版本与样本分组，但不需要把原始用户路径写进文件名。
+
+## 把案例与预算写成可复用证据
+
+一条内存案例应形成：用户场景 → 可重复动作 → 同口径前后快照 → 引用链或分配栈 → 资源所有权缺陷 → 最小修改 → 同场景复测 → 线上结果。只有快照相关性时，结论仍是待验证假设。
+
+预算也不能只给 App 一个 MB 数。每条记录至少包含平台与构建、设备档位、进程、场景与检查点、Java/Native/Graphics/总 PSS、样本量与分位数、负责人、处置和回滚。`memoryClass` 是 Java Heap 近似上限，不是进程 PSS 预算。
+
+货拉拉公开复盘可拆成三类不同记录，不能笼统合并成“图片模块增长”：
+
+| 场景 | 主要证据 | 根因方向 | 验收重点 |
+| --- | --- | --- | --- |
+| 首页反复展示弹窗 | Heap Dump 引用链与布局对象累积 | Lifecycle observer 未注销，旧 Dialog/View 仍可达 | 对象不再随次数累积 |
+| 相机帧录制与识别 | `byte[]` 高占比、频繁 GC | 高频创建、释放与复用不足 | 分配速率、峰值、GC、灰度 OOM |
+| 图片发送与旋转 | Native 峰值与大 Bitmap | 第一次解码前没有尺寸约束 | 解码/变换峰值和退出回落 |
+
+修复后保留受影响版本、复现输入、原始证据、被排除的假设、资源所有者、修改与回滚、离线前后数据、灰度样本和防复发门禁。负结果也应记录，避免下一次面对相同曲线重新猜测。
 
 ## 发布门禁与线上复盘
 

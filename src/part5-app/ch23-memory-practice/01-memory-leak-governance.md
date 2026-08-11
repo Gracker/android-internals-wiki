@@ -33,9 +33,16 @@ sources:
   path: https://github.com/KwaiAppTeam/KOOM
 - type: official
   path: https://perfetto.dev/docs/data-sources/native-heap-profiler
+- type: aosp
+  path: "android-17.0.0_r1: art/runtime/hprof/hprof.cc; art/runtime/signal_catcher.cc; art/perfetto_hprof/perfetto_hprof.cc; external/perfetto/src/profiling/memory/java_hprof_producer.{h,cc}"
+- type: clipping
+  path: "货拉拉司机 Android 端内存治理实践（本地归档 Cubox）"
+consolidated_from:
+  - "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
+  - "src/part5-app/ch23-memory-practice/23.25-android-17-memory-leak-monitoring-framework.md"
 ---
 
-# 23.1 内存泄漏检测与治理
+# 内存泄漏检测与治理
 
 内存泄漏排查最容易出现两个误区：看到内存上涨就判断“泄漏”，看到 OOM 又只盯 Java 堆。Android 应用的内存同时包含 ART managed heap、native heap、线程栈、代码与文件映射、图形缓冲区等部分。某个对象仍可达，也不等于它一定违反业务生命周期。
 
@@ -232,6 +239,14 @@ class FeedFragment : Fragment(R.layout.feed) {
 
 这段写法让收集任务随 View 生命周期停止和重启。Fragment 本体仍在 back stack、但 View 已销毁时，不会继续把旧 View 树留在收集回调里。Compose 场景对应使用 `LaunchedEffect`、`DisposableEffect`、`collectAsStateWithLifecycle` 等与组合生命周期绑定的入口。
 
+### 2.8 案例：常驻 Activity 如何保留已关闭弹窗
+
+货拉拉司机端公开复盘中的首页弹窗问题，展示了“业务事件—对象增长—引用链—生命周期缺口”的完整证据链。测试人员每两秒触发一次弹窗，约八分钟、约 240 次展示后观察到内存上涨约 50 MB；线上 OOM 样本中的弹窗展示次数超过 2000 次。这些数字只描述当时版本和测试口径，尚不足以证明泄漏。
+
+Heap Dump 进一步显示 `SolverVariable[]`、`SolverVariable`、`ArrayRow` 等布局对象持续增加，一条引用链从弹窗 `mView` 经 `LifecycleRegistry.mObserverMap` 到常驻 `MainActivity`。代码审查最终确认：Dialog 初始化时注册了 Activity 生命周期观察者，`dismiss` 时却没有移除。修复后应使用同一事件序列复测，确认观察者、旧 Dialog/View 和布局对象不再随展示次数累积。
+
+这个案例的关键不是弹窗或 ConstraintLayout，而是注册方、注销方和资源生命周期终点不一致。相同方法也适用于监听器、回调、Flow collector 和外部 SDK observer。
+
 ## 3. 证据链：从“内存上涨”到引用路径
 
 ### 3.1 固定复现场景
@@ -336,7 +351,18 @@ Android 17 / API 37 新增了与内存诊断直接相关的 trigger：
 
 请求受系统 rate limiter、设备状态和采集条件约束，不保证每次事件都有结果。OOM 发生时原进程通常无法继续可靠工作，结果需要在后续进程启动并注册 listener 后接收。
 
-### 6.2 注册 trigger 和结果监听
+### 6.2 区分完整 HPROF 与 Perfetto HeapGraph
+
+Android 17 已不能用 `kill -10 <pid>` 触发 HPROF。`SignalCatcher::HandleSigUsr1()` 的现行语义是强制 GC 和保存 profile，源码日志明确标注 `no HPROF`。内存取证要区分两条管线：
+
+- **完整 HPROF 文件**：应用显式调用 `Debug.dumpHprofData(path)`，或由具备权限的 `am dumpheap` / Android Studio 进入 ART `Hprof::Dump()`；适合交给成熟解析器做离线 dominator 和引用链分析。
+- **Perfetto ART HeapGraph**：配置 `android.java_hprof` 数据源，由 Perfetto producer 使用 `__SIGRTMIN + 6` 通知目标进程，ART 插件 fork 后把 `HeapGraph` packet 写入 trace；适合和时间线关联，但产物不是先落盘的完整 `.hprof`。
+
+Native heapprofd 使用另一条数据源和 `__SIGRTMIN + 4`，不能因为 Java HeapGraph 可采集，就推断 native profile 也满足权限和运行条件。
+
+完整 HPROF 在 Android 17 中先遍历堆计算输出长度，再进行第二遍写入；segment 以最多 128 个对象或 4 KiB 输出为边界。直接流式写入能避免为整个 dump 再持有一份大 buffer，但 dump 仍会暂停、遍历并输出大量数据。Perfetto HeapGraph 同样有 fork、页表、Copy-on-Write、trace buffer 和子进程序列化成本。两类产物都只能在调试、灰度或系统受控触发下采集，不能放进常规高频监控。
+
+### 6.3 注册 trigger 和结果监听
 
 下面的 Kotlin 示例只在 API 37 及以上注册 OOM 与 anomaly trigger，并在采集成功时把系统生成的文件路径交给应用自己的上传调度器：
 

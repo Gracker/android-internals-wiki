@@ -17,7 +17,7 @@ pipeline_stage: "finalized"
 task6_state: "reviewed"
 task9_state: "reviewed"
 tags: [observability, monitoring, memory-limiter, privacy, android17, apm]
-related_chapters: ["26.1", "26.3", "26.9", "26.12", "23.9", "4.5", "4.11", "5.8", "5.17", "15.5"]
+related_chapters: ["26.1", "26.3", "26.9", "26.12", "23.6", "4.5", "4.11", "5.8", "5.17", "15.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-27"
 gap_source: "研究素材/官方文档/AOSP结构/知识盲区"
@@ -48,7 +48,7 @@ sources:
 
 APM 不能假设进程会一直运行、系统会按固定周期调度任务，也不能把系统诊断权限当成普通 App 能力。Android 14 的 cached app freezer、Android 17 的 MemoryLimiter、长期存在的后台调度与日志权限边界，会共同暴露依赖定时轮询、常驻进程和跨进程抓取的监控设计缺陷。
 
-平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`。涉及 cgroup memory controller 与 freezer 时，内核锚点为 `android17-6.18-2026-06_r6`。重点是监控 SDK 怎样在资源与隐私边界内保持可解释的数据，不重复 23.9 的 MemoryLimiter 实现细节和 26.12 的 ProfilingManager 完整版本表。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`。涉及 cgroup memory controller 与 freezer 时，内核锚点为 `android17-6.18-2026-06_r6`。重点是监控 SDK 怎样在资源与隐私边界内保持可解释的数据，不重复 23.6 的 MemoryLimiter 实现细节和 26.12 的 ProfilingManager 完整版本表。
 
 ## 三类约束要分开处理
 

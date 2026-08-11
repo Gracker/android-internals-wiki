@@ -12,21 +12,14 @@ App 内存问题通常表现为泄漏、频繁分配、GC 抖动、Native Heap �
 - [23.4 Java Heap 优化策略](04-java-heap-optimization.md)
 - [23.5 内存抖动与 GC 治理](05-memory-churn-gc.md)
 - [23.6 大内存与多进程策略](06-large-heap-multiprocess.md)
-- [23.6 补充：Android 17 ART HeapTask 与 GC 抑制边界](23.6-heaptask-concurrent-gc-suppression.md)
 - [23.7 内存监控与线上治理](07-memory-monitoring.md)
-- [23.8 内存优化案例集](08-memory-case-studies.md)
-- [23.9 Android 17 App Memory Limits 与内存泄漏治理](09-android17-app-memory-limits.md)
-- [23.10 Memory Advice API 与游戏内存压力治理](10-memory-advice-api.md)
-- [23.11 Scudo 分配器与 Native Heap 性能边界](11-scudo-native-heap-allocator.md)
-- [23.12 Jetpack Compose 内存分配与 GC 影响](12-compose-memory-allocation-gc.md)
-- [23.13 应用虚拟内存优化实战](13-virtual-memory-optimization.md)
-- [补充：端侧大模型推理的内存管理](22.09-ondevice-llm-memory-management.md)
-- [23.24 Android 17 AI 推理加速与 NeuralNetworks HAL 优化](23.24-android-17-ai-推理加速与-neuralnetworks-hal-优化.md)
-- [23.25 Android 17 HPROF 边界与应用侧内存泄漏监控设计](23.25-android-17-memory-leak-monitoring-framework.md)
-- [23.26 ART 堆内存分布与 OOM 触发路径实战](23.26-art-heap-distribution-oom-trigger-path.md)
+- [23.8 Jetpack Compose 内存分配与 GC 影响](08-compose-memory-allocation-gc.md)
+- [23.9 应用虚拟内存优化实战](09-virtual-memory-optimization.md)
+- [23.10 端侧大模型推理的内存管理](10-ondevice-llm-memory-management.md)
 
 ## 阅读建议
 
-- 泄漏问题可从 23.1、23.3 和 23.7 开始，分配抖动可直接进入 23.5。
+- 泄漏问题可从 23.1、23.3 和 23.7 开始，分配抖动可直接进入 23.5；Compose 场景进入 23.8。
 - Native 场景应同时检查 allocator、线程栈、mmap 和图形缓冲区，不能只看 Java Heap。
+- 大内存、多进程与 Android 17 MemoryLimiter 统一见 23.6，端侧模型的权重、KV Cache 和后端缓冲预算见 23.10。
 - 线上数据需要记录设备内存等级、进程状态和系统压力，便于区分应用增长与系统回收。

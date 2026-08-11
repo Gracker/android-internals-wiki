@@ -4,7 +4,7 @@ chapter: "20.20"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [native, memory-leak, malloc, Scudo, mallinfo, monitoring, online]
-related_chapters: ["20.3", "20.10", "20.17", "23.3", "23.11", "26.24"]
+related_chapters: ["20.3", "20.10", "20.17", "23.3", "26.24"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "素材驱动+章节深挖"

@@ -29,7 +29,7 @@ sources:
   - type: research
     path: "DeepResearch/2026-06-28-android17-memorylimiter-procstate-polling-statsd.md"
 tags: [memory, onTrimMemory, memory-management, android17, aosp, ComponentCallbacks2, CachedAppOptimizer, MemoryLimiter, cgroup]
-related_chapters: ["4.3", "4.4", "4.11", "4.13", "10.4", "23.13"]
+related_chapters: ["4.3", "4.4", "4.11", "4.13", "10.4", "23.9"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-29"
 gap_source: "素材驱动/AOSP结构"

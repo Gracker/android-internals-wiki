@@ -55,6 +55,8 @@ last_deepseek_cn_review_at: 2026-06-30
 last_task6_audit: "2026-07-17"
 last_task9_audit: "2026-06-30"
 last_task9_autofix_at: "2026-06-30"
+consolidated_from:
+  - "src/part5-app/ch23-memory-practice/23.6-heaptask-concurrent-gc-suppression.md"
 ---
 
 # 内存抖动与 GC 治理
@@ -109,6 +111,20 @@ Android 17 的 `Heap::PostForkChildAction()` 在 `initial_heap_size_ < growth_li
 因此，启动后看到一次后台 GC 时，要同时查看 GC cause、进程启动时间和前后的分配轨道。不能仅凭“启动附近出现 GC”就归因到某个页面的临时对象。
 
 [源码锚点: AOSP `android-17.0.0_r1`, `art/runtime/gc/heap.cc::Heap::PostForkChildAction()`, `TriggerPostForkCCGcTask`]
+
+### HeapTaskDaemon 串行执行整条堆任务队列
+
+`HeapTaskDaemon` 进入 `VMRuntime.runHeapTasks()` 后，由 native `TaskProcessor::RunAllTasks()` 按 `target_run_time_` 取任务。一次循环只执行一个 `HeapTask`：`GetTask()`、`Run()`、`Finalize()`，然后才取下一项。`ConcurrentGCTask` 中的 concurrent 描述 collector 可以与应用线程并发完成部分阶段，不表示多个堆任务会在 daemon 上并行。
+
+这条队列还承载 HeapTrim、收集器切换、time-based 阈值复查和部分启动维护。向它注入阻塞任务或暂停 daemon，会一起延迟这些工作。`TaskProcessor::Stop()` 也不是简单清空队列：停止后会忽略尚未到期的目标时间并排空剩余任务，错误干预可能造成逾期任务集中执行。
+
+### 并发 GC 请求如何判定和去重
+
+Android 17 的 `ShouldConcurrentGCForJava()` 有阈值与 time-based 两种分支。它可能返回“不需要 GC”“请求 `ConcurrentGCTask`”或“安排 `TimeBasedGcThresholdCheckTask`”。`num_bytes_allocated_` 是包含完整活跃 TLAB 的近似已分配字节，不是逐对象精确值，也不是 PSS。
+
+多个线程同时满足条件时，`RequestConcurrentGC()` 通过 GC 序号和 `max_gc_requested_` 的原子推进合并请求；只有成功推进序号的线程入队。任务执行时还会检查目标序号，若其他路径已经完成更新的 GC，本次任务不会重复收集。去重依赖这个序号协议，而不是扫描队列里是否已有同名任务。
+
+新对象在请求入队期间由 Handle 临时保护，因为 `TaskProcessor::AddTask()` 可能让线程挂起，移动式 GC 可能同时更新对象地址。这是 ART 的对象安全机制，不是应用可利用的“并发 GC 对象池”。
 
 ## 典型内存抖动场景
 
@@ -274,6 +290,10 @@ suspend fun <T> processInChunks(
 ### “看到 GC 就要抑制 GC”
 
 GC 请求反映了堆状态和分配行为。AOSP 里，`ShouldConcurrentGCForJava()` 判定需要回收后才会请求 `ConcurrentGCTask`；应用侧盲目抑制 GC 只会把回收延后。除非做虚拟机研究或受控实验，业务应用不要通过 native hook 阻塞 `HeapTaskDaemon`。
+
+修改 `ConcurrentGCTask::Run()` 的 vtable 依赖非公开 C++ ABI，也只会拦住一类后台请求；分配失败路径仍会等待或触发 GC。伪造 `num_bytes_allocated_` 不会增加 allocator 空间或物理内存，还会让 GC 起点、分配限制、trace 和回收记账互相矛盾。强行向 `TaskProcessor` 注入阻塞任务则会影响整条堆维护队列。三种方案都不能进入三方应用生产构建。
+
+`onTrimMemory()` 也不是 HeapTrim 或 GC 请求。Android 17 中它经 `ActivityThread` 分发给 `ComponentCallbacks2`；应用释放缓存只是让对象变得可回收，运行时仍自行决定何时 GC。API 34 起大部分旧 running trim level 已不再发送，应用主要利用 `UI_HIDDEN` 和 `BACKGROUND` 释放可重建资源，不在回调里调用 `System.gc()`。
 
 ### “对象池一定能减少卡顿”
 
