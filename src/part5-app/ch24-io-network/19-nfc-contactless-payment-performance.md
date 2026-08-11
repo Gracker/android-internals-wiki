@@ -1,6 +1,7 @@
 ---
 title: "Android 17 NFC 性能优化与无接触支付"
-chapter: "24.22"
+chapter: "24.19"
+section: "24.19"
 status: ready-for-review
 applicable_versions: "Android 16 (API 35) - Android 17 (API 37)"
 tags: ["Android", "连接性", "NFC"]
@@ -51,7 +52,7 @@ sources:
   path: DeepResearch/2026-07-05-background-audio-hardening-power.md
 ---
 
-# 24.22 Android 17 NFC 性能优化与无接触支付
+# Android 17 NFC 性能优化与无接触支付
 
 平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，覆盖 NFC 标签读取、Reader Mode、主机卡模拟（Host Card Emulation，HCE）和 off-host Secure Element 路由。Android 17 中，NFC framework 与系统服务源码都位于 `packages/modules/Nfc`；分析旧路径 `frameworks/base/core/java/android/nfc/` 或 `packages/apps/Nfc/`，会漏掉当前实现。
 

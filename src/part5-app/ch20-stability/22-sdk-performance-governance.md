@@ -4,7 +4,7 @@ chapter: "20.22"
 status: finalized
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [SDK治理, 第三方库, 性能评估, 启动阻塞, 稳定性]
-related_chapters: ["21.3", "20.1", "23.1", "24.14"]
+related_chapters: ["21.3", "20.1", "23.1", "24.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "Clippings参考书+日常痛点+AOSP SDK Runtime"
@@ -303,7 +303,7 @@ Android 17 的 [所有应用行为变更](https://developer.android.com/about/ve
 - 对照关闭 SDK、关闭某功能或更换版本后的场景差值；
 - 将上传负载、协议开销、失败重试和长连接心跳分开统计。
 
-网络请求的端到端分层方法见 [网络请求性能实战](../ch24-io-network/14-network-request-performance-playbook.md)。
+网络请求的端到端分层方法见 [网络架构与连接管理](../ch24-io-network/04-network-architecture.md)。
 
 ### 6.4 功耗看场景，不看请求次数
 

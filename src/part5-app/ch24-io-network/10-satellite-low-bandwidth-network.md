@@ -1,7 +1,7 @@
 ---
 title: "卫星与低带宽网络适配"
-chapter: "24.11"
-section: "24.11"
+chapter: "24.10"
+section: "24.10"
 status: ready-for-review
 drafted_date: "2026-05-20"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37); Android 16 QPR2 约束卫星网络能力；低带宽/高时延网络场景"
@@ -9,7 +9,7 @@ last_verified: "2026-05-20"
 last_verified_against: "Android Developers constrained satellite networks 2026-02-26; Android 17 features; AOSP main NetworkCapabilities.java / ServiceState.java"
 confidence: medium
 tags: [network, satellite, low-bandwidth, connectivity, reliability]
-related_chapters: ["12.1", "1.62", "12.3", "24.4", "24.5", "24.7", "24.10", "26.3"]
+related_chapters: ["12.1", "1.62", "12.3", "24.4", "24.5", "24.7", "24.9", "26.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-20"
 gap_source: "官方文档/每日信息/章节深挖"
@@ -39,7 +39,7 @@ sources:
     path: "intake/daily-info/2026-05-20.md"
 ---
 
-# 24.11 卫星与低带宽网络适配
+# 卫星与低带宽网络适配
 
 卫星直连让移动网络重新受到严格的数据预算约束：吞吐有限，往返时延较高，连接可能
 间歇可用，系统还可能限制后台应用访问。应用适配不能停在显示一个卫星图标。请求优先
@@ -403,7 +403,7 @@ HTTP/1.1、HTTP/2、HTTP/3、gRPC 和 WebSocket 的表现取决于代理、网�
 - WebSocket 和 gRPC 流的心跳、重连受服务端策略控制，后台不可用时停止保活；
 - HTTP/3 需要在真实运营商路径上验证，QUIC 可能受网关和可用 UDP 路径影响；
 - 大文件使用可恢复上传或 Range 下载时，要同时控制分块数量，避免过小分块增加轮次；
-- HTTPDNS 查询不进入 `Dns.lookup()` 的同步路径，按 24.10 的缓存与系统解析边界处理。
+- HTTPDNS 查询不进入 `Dns.lookup()` 的同步路径，按 24.9 的缓存与系统解析边界处理。
 
 卫星网络可能只允许部分应用、目标和协议。连接库成功识别卫星传输，不代表运营商一定
 允许任意站点。产品设计需要保留“当前服务不可用”的明确状态。

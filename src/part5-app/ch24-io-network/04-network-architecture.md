@@ -20,6 +20,8 @@ sources:
   path: https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/DnsResolver.java
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/StrictMode.java
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework-t/src/android/net/TrafficStats.java
 - type: official
   path: https://source.android.com/docs/core/ota/modular-system/dns-resolver
 - type: official
@@ -44,6 +46,8 @@ sources:
   path: https://www.rfc-editor.org/rfc/rfc9110.html
 - type: reference
   path: https://www.rfc-editor.org/rfc/rfc6585.html
+- type: reference
+  path: https://www.rfc-editor.org/rfc/rfc7233.html
 - type: aosp
   path: system/dns-resolver
 last_verified: "2026-06-03"
@@ -72,6 +76,10 @@ task2b_verify_result: "stale-state-fixed: task6_state revisiting→reviewed (alr
 task6_review_notes_round2: "2026-07-08 Task6 revisiting-review round2: pass-light-edit (3 L1 fixes: frontmatter引号清理, Android 35→android-17.0.0_r1, path字段修正)"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-08
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+- "src/part5-app/ch24-io-network/08-io-network-case-studies.md"
+- "src/part5-app/ch24-io-network/14-network-request-performance-playbook.md"
 ---
 
 # 网络架构与连接管理
@@ -181,6 +189,19 @@ class NetworkEventListener : EventListener() {
 
 连接池命中时，DNS 与建连事件可能全部缺席。重定向、认证和 route 重试又可能让同一组事件出现多次。采集时要以一次逻辑 `Call` 为父级，再为每次 DNS、建连和交换分配事件序号；不能把第一组事件直接当作整次调用的唯一阶段。
 
+一次请求进入 DNS 前，还可能停留在业务队列、OkHttp Dispatcher 或缓存判定。端到端时间线应覆盖业务入队、异步排队、直接/条件缓存命中、DNS、每次 connect/TLS 尝试、请求写入、TTFB、响应体消费以及解码入库。TTFB 是请求发出后到收到响应首部的等待，不是“解析响应头所花的时间”；流式上传、双工请求和长连接还要单独定义边界。
+
+指标应分成四层，避免重试把一次用户动作统计成多次失败：
+
+| 层级 | 示例 | 应记录的标识与预算 |
+| --- | --- | --- |
+| 逻辑操作 | 刷新首页、提交订单、上传草稿 | `operation_id`、总截止时间、允许的总字节、最终结果 |
+| 网络调用 | 一次 OkHttp `Call` 或 Cronet `UrlRequest` | `call_id`、调用序号、缓存路径、取消原因 |
+| 连接尝试 | IPv6、IPv4、代理或替代地址 | `attempt_id`、地址族、匿名化 `Network`、失败分类 |
+| HTTP 交换 | 重定向、401 跟进、业务层重试 | `exchange_id`、响应码、发送/接收字节 |
+
+逻辑操作成功率、网络调用成功率、连接尝试成功率和缓存可用率必须使用各自分母。若把 Fast Fallback 的每个地址尝试都当请求，会虚增失败率；若只保留获胜连接，又看不到某个地址族持续故障。生产遥测只使用路由模板、错误分类与匿名化网络标识，不能记录完整 URL、查询参数、Cookie、Authorization、原始 IP、证书正文或未经清洗的异常消息。
+
 ## DNS 优化与 HTTPDNS
 
 ### 系统 DNS 仍是默认基线
@@ -244,7 +265,7 @@ Android 17 的 [`NetworkCapabilities`](https://android.googlesource.com/platform
 - `NET_CAPABILITY_VALIDATED` 表示系统最近一次验证一般互联网成功，不证明业务端点此刻可达。
 - `NET_CAPABILITY_NOT_METERED` 表示网络不按流量计费。大传输应看该能力，而不是用 Wi-Fi 或蜂窝 transport 代替。
 
-`VALIDATED` 适合提示离线状态、延迟非紧急公网同步和标记遥测数据，不适合作为每个 API 请求的前置条件。系统验证可能刚失效，业务端点仍可达；局域网、企业专网和 captive portal 也可能没有一般互联网验证。Android 17 的局域网访问约束见 [24.16 Android 17 流媒体与本地网络](16-android17-streaming-local-network.md)。
+`VALIDATED` 适合提示离线状态、延迟非紧急公网同步和标记遥测数据，不适合作为每个 API 请求的前置条件。系统验证可能刚失效，业务端点仍可达；局域网、企业专网和 captive portal 也可能没有一般互联网验证。Android 17 的局域网访问约束见 [24.14 Android 17 流媒体与本地网络](14-android17-streaming-local-network.md)。
 
 ### 用回调维护有时序的状态
 
@@ -366,6 +387,25 @@ WorkManager 的长运行 Worker 由前台服务与 JobScheduler 协作执行。A
 
 可延迟流量应合并传输，并用 `UNMETERED`、充电和电量等约束表达成本偏好。无线电尾部耗电随设备、制式、信号和运营商配置变化，不能把某个固定秒数写进通用调度算法。
 
+### 大文件传输必须围绕可恢复状态设计
+
+大文件失败后的成本远高于普通 API。下载任务至少持久化资源标识、临时文件、已验证字节数、总长度、强 ETag 或其他稳定版本、摘要与任务状态；上传任务则要区分“客户端已发送”和“服务端已确认”。进度只放在内存中，无法承受切网、进程终止或系统停止任务。
+
+恢复 HTTP 下载时应遵守以下协议：
+
+- 发送 `Range: bytes=<offset>-`，并用 `If-Range` 携带强验证器；
+- 只有收到 `206 Partial Content`，且 `Content-Range` 起点、终点和总长度都与记录一致时才追加；
+- 收到 `200 OK` 说明服务端发送完整表示，应丢弃或重建旧临时文件，不能直接追加；
+- 收到 `416 Range Not Satisfiable` 时重新核对 `Content-Range` 与本地长度，不能直接宣告完成；
+- 透明内容编码会改变字节偏移，断点协议要固定编码表示，必要时使用 `Accept-Encoding: identity`；
+- 完成后校验长度、摘要或签名，再以原子方式发布正式文件。
+
+上传前不要把整份文件读入字节数组。用户选择的 `content://` 内容应复制到应用拥有的不可变暂存文件，或通过 `ACTION_OPEN_DOCUMENT` 获取持久 URI 权限；即便已持久授权，原文档被移动或删除后仍要进入可恢复错误。OkHttp 的文件请求体可流式发送，但暂存文件在重试完成前必须保持路径、长度和内容不变。
+
+断点上传还需要服务端协议共同保证：创建稳定 `uploadId`；每个分片携带范围、长度与校验值；服务端原子确认并让重复分片得到同一结果；客户端只持久化已确认范围；完成操作使用幂等语义，并由服务端验证完整长度与摘要。分片并发与大小应依据网络、服务端限制和设备 I/O 实测，进度回调按时间或变化幅度节流。
+
+验收先验证恢复正确性，再比较吞吐：覆盖 `206`/`200`/`416`、远端表示变化、网络切换、进程终止、任务停止、存储不足、URI 失效、多任务争用和计费网络策略。完整传输的本地长度/摘要、正式文件发布状态与服务端完成状态必须一致。
+
 ## 弱网优化从失败阶段开始
 
 延长全部超时并增加重试次数，会让失败请求占用更多连接、线程、电量和用户等待时间。处理弱网前，应先确认失败发生在哪个阶段。
@@ -420,6 +460,12 @@ HTTP 语义提供起点，但服务端契约仍需确认：
 
 Android 网络调用不能进入主线程。AOSP `android-17.0.0_r1` 的 `StrictMode` 在启用网络检测和对应终止策略时，由 `onNetwork()` 抛出 `NetworkOnMainThreadException`。UI 线程等待后台 `Future`、锁或 `runBlocking` 不一定触发同一异常，却仍会卡住输入与绘制，排查时要同时检查线程等待关系。
 
+### 流量归因只能回答其公开口径
+
+`TrafficStats.getUidRxBytes()` 与 `getUidTxBytes()` 返回当前 UID 自开机以来、跨所有网络接口累计的网络层字节，适合做进程内前后差值与粗粒度异常发现。它不提供单请求、单域名或后台移动网络字节；设备重启后归零，不支持时返回 `UNSUPPORTED`，VPN、CLAT 等路径也不能据此做结算或安全审计。历史用量要使用 `NetworkStatsManager` 并遵守权限与用户授权，`setThreadStatsTag()` 只做归因标签，不会替应用限流、取消或执行后台约束。
+
+网络方案上线时至少比较逻辑操作的 P50/P95/P99 和超时率，每个操作产生的调用数、连接尝试数与总字节，缓存直接/条件命中率，切网或页面退出后的遗留请求，以及后台移动流量和任务完成时效。平均耗时下降而 P99、重试次数或后台字节上升，不能判定优化有效。
+
 ## 账号、安全与资源隔离
 
 Cookie、认证头和业务拦截器属于请求策略，连接池本身不会保存某次请求的这些 HTTP 头。登录态和匿名态可以通过不同的派生客户端或请求构造器表达，不必仅因为账号不同就创建全新的连接池。
@@ -437,7 +483,7 @@ TLS、代理与 socket 配置会参与连接资格判断。使用不同 trust ma
 
 ## Wi-Fi 选网只保留应用观测边界
 
-默认网络由 Connectivity 系统按请求能力、网络评分、用户选择、验证状态和设备配置决定，应用不能用一个 RSSI 阈值复现系统结果。相关源码链路见 [24.9 Wi-Fi 评分、网络选择与连接切换性能](09-wifi-connectivity-selection.md)。
+默认网络由 Connectivity 系统按请求能力、网络评分、用户选择、验证状态和设备配置决定，应用不能用一个 RSSI 阈值复现系统结果。相关源码链路见 [24.8 Wi-Fi 评分、网络选择与连接切换性能](08-wifi-connectivity-selection.md)。
 
 应用侧应记录：
 
@@ -468,8 +514,8 @@ TLS、代理与 socket 配置会参与连接资格判断。使用不同 trust ma
 - [24.5 协议优化](05-protocol-optimization.md)：HTTP/2、HTTP/3、gRPC 与协议协商。
 - [24.6 数据缓存](06-data-caching.md)：HTTP 缓存、多级缓存与新鲜度。
 - [24.7 离线优先](07-offline-first.md)：离线队列、同步和冲突处理。
-- [24.9 Wi-Fi 连接与选择](09-wifi-connectivity-selection.md)：系统评分、默认网络与切换。
-- [24.16 Android 17 流媒体与本地网络](16-android17-streaming-local-network.md)：局域网能力与 Android 17 访问边界。
+- [24.8 Wi-Fi 连接与选择](08-wifi-connectivity-selection.md)：系统评分、默认网络与切换。
+- [24.14 Android 17 流媒体与本地网络](14-android17-streaming-local-network.md)：局域网能力与 Android 17 访问边界。
 
 ## 源码与规范依据
 

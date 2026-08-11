@@ -27,6 +27,8 @@ sources:
     path: "https://developer.android.com/topic/libraries/architecture/datastore"
   - type: official
     path: "https://developer.android.com/reference/android/content/SharedPreferences.Editor"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/QueuedWork"
   - type: blog
     path: "https://github.com/Tencent/MMKV/wiki/design_eng"
   - type: clippings
@@ -60,6 +62,9 @@ last_task6_review_log: "logs/review/2026-06-08-16-review.md"
 last_task6_audit: "2026-06-08"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-21
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part5-app/ch24-io-network/08-io-network-case-studies.md"
 ---
 
 # 文件 I/O 优化
@@ -156,6 +161,26 @@ fun observeLaunchFlag(context: Context): Flow<Boolean> =
 DataStore 也不是数据库替代品。多表查询、条件检索、分页和关系事务交给 Room/SQLite；少量配置、强类型设置以及 SP 键值迁移才适合 DataStore。
 
 [官方文档：[`SharedPreferences`](https://developer.android.com/reference/android/content/SharedPreferences)、[`SharedPreferences.Editor`](https://developer.android.com/reference/android/content/SharedPreferences.Editor)、[DataStore](https://developer.android.com/topic/libraries/architecture/datastore)]
+
+### 从 `QueuedWork.waitToFinish()` 还原 SharedPreferences ANR
+
+看到页面停止、应用进入后台或 Service 回调结束时的 ANR，主线程停在 `QueuedWork.waitToFinish()`，不能因为业务代码使用了 `apply()` 就排除 SharedPreferences。`apply()` 只是把调用点与磁盘写入分开：它先更新内存，再向 `QueuedWork` 登记等待磁盘完成的 finisher；框架稍后在 Activity 停止、Service 命令结束和 Service 销毁等边界等待这些工作。`commit()` 则会直接等待 `writtenToDiskLatch`，没有其他磁盘写入时，当前调用线程还可能参与写文件。
+
+排查要把同一时间窗口里的五类证据拼在一起：
+
+| 证据 | 观测方式 | 判断点 |
+| --- | --- | --- |
+| ANR 主线程 | ANR trace、bugreport | 是否停在 `QueuedWork.waitToFinish()` 或首次加载等待 |
+| 磁盘线程 | Perfetto 与同窗口线程栈 | 是否在 XML 序列化、`writeToFile()`、`FileUtils.sync()` 或块设备等待 |
+| 写入来源 | 统一存储封装 | 偏好文件类别、调用线程、生命周期阶段、写入类型和次数 |
+| 文件状态 | 应用内部诊断 | XML 大小、项目数量、备份文件是否存在 |
+| 生命周期 | Activity、Service 与广播时序 | 写入是否集中在停止、销毁或回调返回前 |
+
+日志只记录经过分类的业务来源或稳定散列，不输出原始键和值。StrictMode 能发现主线程同步磁盘访问，却不能证明此前的 `apply()` 是否会在生命周期边界造成等待；两类证据不能互相替代。
+
+治理时先按数据语义决定迁移方向：小型设置进入 Preferences/Proto DataStore，结构化和可查询数据进入 Room，高频瞬时状态尽量只保留在内存，需要确认的用户操作必须暴露持久化失败，跨进程数据使用明确支持跨进程一致性的存储或单进程服务。不要用固定 debounce 冒充持久化保证；只有“中间状态可丢，只需保留较新值”的数据才允许合并写入，并且要写明进程终止后的恢复规则。
+
+验收也不要记录无法公开观测的“`apply()` 完成耗时”。应比较同一偏好文件的大小、项目数和写入次数，生命周期结束前后的写入分布，Perfetto 中 `queued-work-looper` 与主线程等待，以及 `QueuedWork.waitToFinish()` 相关 ANR 的归一化比例。回归场景至少覆盖冷启动首次读取、连续修改后立即切后台、Service 停止、进程终止、存储压力、升级迁移和多进程误用。
 
 ## MMKV 的原理与适用场景
 

@@ -1,6 +1,7 @@
 ---
 title: "Android 17 NetworkStatsService 与 NetworkPolicyManagerService 移动数据 quota 限速源码路径"
-chapter: "24.20"
+chapter: "24.17"
+section: "24.17"
 status: "finalized"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [network, io, http]

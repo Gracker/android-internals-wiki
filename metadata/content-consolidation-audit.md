@@ -33,11 +33,29 @@
 | ch19 APM 工具与性能监控生态 | 28 | 22 | 已完成 | 2026-08-11 |
 | ch20 应用稳定性治理 | 27 | 22 | 已完成 | 2026-08-11 |
 | ch21 启动优化 | 20 | 16 | 已完成 | 2026-08-11 |
-| ch22 渲染性能实战 | 45 | 30 | 已完成 | 2026-08-11 |
+| ch22 渲染性能实战 | 45 | 31 | 已完成 | 2026-08-11 |
 | ch23 内存优化实战 | 18 | 10 | 已完成 | 2026-08-11 |
-| 其余 5 章 | 190 | 待审阅 | 未开始 | - |
+| ch24 I/O 与网络优化 | 23 | 19 | 已完成 | 2026-08-11 |
+| 其余 4 章 | 167 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 496 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 493 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch24 I/O 与网络优化
+
+保留后的连续编号为 24.1～24.19。内容按“文件与数据库 → 序列化 → 网络架构、协议、缓存与离线 → 选网、解析和低带宽 → 媒体数据 → 网络基线与平台能力 → 近场连接和文件访问”组织；案例证据回到负责完整机制的主文，CameraX 回到渲染实战章，H1 不再重复章节号。
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `01-file-io-optimization.md` / `08-io-network-case-studies.md` 的 SharedPreferences 案例 | 将 `QueuedWork.waitToFinish()` 生命周期 ANR 的源码路径、同窗口取证、数据迁移选择和验收矩阵并入文件 I/O 主文 | `../src/part5-app/ch24-io-network/01-file-io-optimization.md`（24.1） |
+| `02-database-optimization.md` / `17-room3-sqlitedriver-kmp-performance.md` | 将 Room 3.0.1、SQLite 2.7.0、KSP/schema、平台与 bundled driver、PooledConnection、SupportSQLite wrapper、二进制回退、KMP 与迁移基准并入数据库主文 | `../src/part5-app/ch24-io-network/02-database-optimization.md`（24.2） |
+| `04-network-architecture.md` / `14-network-request-performance-playbook.md` / `08-io-network-case-studies.md` 的网络与大文件案例 | 统一连接池、分段时间线、operation/call/attempt/exchange 指标、Dispatcher、弱网与重试、安全、流量归因，以及 Range/If-Range 和可恢复上传协议 | `../src/part5-app/ch24-io-network/04-network-architecture.md`（24.4） |
+| `12-mediastore-mediaprovider-performance.md` / `13-photo-picker-transcoding-performance.md` | 两篇有交叉但观测对象不同：前者治理全库索引、Provider/FUSE 与 generation，后者治理用户选择后的 URI、解码、转码和上传准备；分别保留为 24.11、24.12 | `../src/part5-app/ch24-io-network/11-mediastore-mediaprovider-performance.md`、`../src/part5-app/ch24-io-network/12-photo-picker-transcoding-performance.md` |
+| `24.18-camerax-3.0-performance-boundary.md` | CameraX 是独立的应用侧渲染/相机用例配置主题，不属于 I/O 与网络；保留全部 Preview、ImageAnalysis、ImageCapture、VideoCapture、Extensions、热管理和取证内容，移入渲染实战 | `../src/part5-app/ch22-rendering-practice/31-camerax-performance.md`（22.31） |
+| 原 24.9～24.22 中其余主题 | Wi-Fi、HTTPDNS、卫星网络、网络基线、流媒体/本地网络、ECH、Bluetooth、quota、SAF 与 NFC 均能独立回答问题，依次改为连续编号 24.8～24.19 | `../src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md`～`../src/part5-app/ch24-io-network/19-nfc-contactless-payment-performance.md` |
+
+章节 README、`src/SUMMARY.md`、活动队列、跨章引用和统计口径已经切换到新编号。历史 changelog、review/audit 日志、关闭 finding、素材索引与 `consolidated_from` 保留旧路径和编号。
 
 ## ch23 内存优化实战
 
@@ -61,7 +79,7 @@
 
 ## ch22 渲染性能实战
 
-保留后的连续编号为 22.1～22.30。内容按“通用 View 与资源实践 → 图形效果、页面切换、多形态与刷新率 → Compose 列表、导航、布局、状态和诊断 → Vulkan、Flutter、Modifier、Bitmap、Canvas、Surface 与媒体”组织；重复的点状专题回收到负责完整机制和验证闭环的正文，H1 不再重复章节号。
+保留后的连续编号为 22.1～22.31。内容按“通用 View 与资源实践 → 图形效果、页面切换、多形态与刷新率 → Compose 列表、导航、布局、状态和诊断 → Vulkan、Flutter、Modifier、Bitmap、Canvas、Surface、媒体与 CameraX”组织；重复的点状专题回收到负责完整机制和验证闭环的正文，H1 不再重复章节号。
 
 合并映射：
 
@@ -81,6 +99,7 @@
 | `28-compose-compiler-metrics-recomposition-diagnostics.md` / `22.40-compose-compiler-v2-k2-migration-performance.md` / `37-compose-runtime-tracing-perfetto-integration.md` | 合并 K2/Compose Compiler 迁移、构建测量、编译器报告、Runtime Tracing 配置和 Perfetto 判读 | `../src/part5-app/ch22-rendering-practice/22-compose-compiler-recomposition-diagnostics.md`（22.22） |
 | `35-bitmap-decode-pipeline-imagedecoder.md` / `17-hardware-bitmap-rendernode.md` | 将 Hardware Bitmap、RenderNode/display list 生命周期、首次纹理准备和资源指标并入 Bitmap 解码主文 | `../src/part5-app/ch22-rendering-practice/26-bitmap-decode-imagedecoder.md`（22.26） |
 | 原 22.12～22.13、22.18、22.23～22.25、22.29～22.31、22.36、22.38、22.42～22.43 中未合并主题 | Fragment、预测返回、ARR、Navigation、Widget、Text、Vulkan、Impeller、Modifier、共享元素、Canvas、Surface 与 Media3 均能独立回答问题，依次改为连续编号 | `../src/part5-app/ch22-rendering-practice/10-fragment-transaction-performance.md`～`../src/part5-app/ch22-rendering-practice/30-media3-video-rendering.md` |
+| ch24 的 `24.18-camerax-3.0-performance-boundary.md` | 正文实际讨论 Preview、ImageAnalysis、ImageCapture、VideoCapture、Extensions 与相机渲染取证，归入应用渲染实战并更正重复编号 | `../src/part5-app/ch22-rendering-practice/31-camerax-performance.md`（22.31） |
 
 章节 README、`src/SUMMARY.md`、活动队列、跨章引用和统计口径已经切换到新编号。历史 changelog、review/audit 日志、关闭 finding、素材索引与 `consolidated_from` 保留旧路径和编号。
 

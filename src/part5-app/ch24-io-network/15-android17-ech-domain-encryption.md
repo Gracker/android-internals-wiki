@@ -1,13 +1,13 @@
 ---
 title: "Android 17 ECH 与 domainEncryption 网络适配"
-chapter: "24.18"
-section: "24.18"
+chapter: "24.15"
+section: "24.15"
 status: ready-for-review
 drafted_date: "2026-05-25"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 16 (API 36) - Android 17 (API 37)"
 tags: [network, tls, ech, android17, network-security-config]
-related_chapters: ["12.2", "24.4", "24.5", "24.16"]
+related_chapters: ["12.2", "24.4", "24.5", "24.14"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-25"
 gap_source: "官方文档/每日信息"
@@ -39,7 +39,7 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]"
 ---
 
-# 24.18 Android 17 ECH 与 domainEncryption 网络适配
+# Android 17 ECH 与 domainEncryption 网络适配
 
 ## 适配范围
 
@@ -165,7 +165,7 @@ Android 17 的功能页面说明 HttpEngine、WebView 与 OkHttp 将在后续更
 
 上线记录应包含网络库坐标与版本、WebView provider 版本、Android 构建号、TLS provider、是否使用自定义 DNS、服务端 ECH 发布状态。只记录“使用 OkHttp”或“使用 WebView”不够精确。
 
-HTTPDNS 与只返回 IP 地址的自定义 `Dns` 接口需要单独审查。ECH 配置位于 HTTPS 资源记录中；解析实现若只交付 A、AAAA 结果，网络库可能拿不到 `EchConfigList`。HTTPDNS 的适配边界见 24.10。
+HTTPDNS 与只返回 IP 地址的自定义 `Dns` 接口需要单独审查。ECH 配置位于 HTTPS 资源记录中；解析实现若只交付 A、AAAA 结果，网络库可能拿不到 `EchConfigList`。HTTPDNS 的适配边界见 24.9。
 
 ## 失败与回退判定
 
@@ -179,7 +179,7 @@ ECH 失败应按发生阶段分类：
 | `EchConfigMismatchException` | 客户端缓存的配置与服务端当前配置不一致 | 验证公开名称与证书，再使用服务端给出的重试配置 |
 | 普通 TLS 证书失败 | 证书链、主机名、证书透明度或代理证书问题 | 单独核对证书错误，禁用 ECH 不会修复证书 |
 | HTTP/3 失败而 HTTP/2 成功 | UDP、QUIC、地址或协议协商问题 | 按 24.5 的协议路径分析 |
-| 私网地址、`.local` 或设备发现失败 | `ACCESS_LOCAL_NETWORK` 未获授权 | 按 24.16 的本地网络权限路径分析 |
+| 私网地址、`.local` 或设备发现失败 | `ACCESS_LOCAL_NETWORK` 未获授权 | 按 24.14 的本地网络权限路径分析 |
 
 ECH GREASE 用随机内容模拟 ECH 扩展，帮助发现会阻断未知扩展的中间设备。它没有可用的服务端 ECH 配置，不能加密真实 SNI。观测系统至少要分开记录 ECH 被接受、GREASE、策略禁用、没有配置、配置失配与其他 TLS 错误。
 
@@ -240,9 +240,9 @@ dig HTTPS api.example.com +short
 
 12.2 解释 TLS 1.3、证书、CT、SNI、HPKE、会话恢复和安全连接成本。这里说明 Android 17 如何表达按域名 ECH 策略、网络库如何取得 ECH 配置，以及应用怎样验证接入。握手耗时、证书链和 0-RTT 等问题仍按 12.2 的方法分析。
 
-## 与 24.16 本地网络权限适配的关系
+## 与 24.14 本地网络权限适配的关系
 
-24.16 处理 Android 17 `ACCESS_LOCAL_NETWORK`、局域网设备发现、Cast、IoT 与本地 HTTP 服务。这里处理公网 HTTPS 连接中的 ECH 与 Network Security Configuration。两者的失败阶段不同。
+24.14 处理 Android 17 `ACCESS_LOCAL_NETWORK`、局域网设备发现、Cast、IoT 与本地 HTTP 服务。这里处理公网 HTTPS 连接中的 ECH 与 Network Security Configuration。两者的失败阶段不同。
 
 公网域名的 TLS 握手失败应检查 DNS HTTPS 记录、ECH、CT、证书与协议回退。RFC 1918 地址、链路本地地址、`.local`、mDNS、SSDP 和本地 HTTP 服务失败时，应先检查本地网络权限。工单中记录目标地址类别和失败阶段，可以避免把权限拒绝误报为 TLS 问题。
 

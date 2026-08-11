@@ -2,7 +2,7 @@
 
 渲染优化需要把布局、绘制、动画、图片、列表和页面切换放进同一帧预算中分析，并通过 Trace 与线上帧率数据验证改动。
 
-第 2 章和第 18 章分析系统渲染管线，第 7 章讨论卡顿定位；这里聚焦 View、Jetpack Compose、WebView、Flutter 和视频播放等 App 侧场景。
+第 2 章和第 18 章分析系统渲染管线，第 7 章讨论卡顿定位；这里聚焦 View、Jetpack Compose、WebView、Flutter、视频播放和 CameraX 等 App 侧场景。
 
 ## 内容索引
 
@@ -36,9 +36,11 @@
 - [22.28 Compose Canvas 自定义绘制性能实战](28-compose-canvas-custom-drawing.md)
 - [22.29 SurfaceView 与 TextureView 渲染性能选型实战](29-surfaceview-textureview.md)
 - [22.30 Media3 视频播放渲染管线性能实战](30-media3-video-rendering.md)
+- [22.31 CameraX 性能边界与实战（Android 15-17）](31-camerax-performance.md)
 
 ## 阅读建议
 
 - 按 UI 技术栈或卡顿场景选择条目，无须按编号顺序阅读。
 - View 项目可先读 22.1、22.2、22.4 和 22.8；Compose 项目可从 22.3、22.16 和 22.22 开始。
 - 改动前后都应保留 Trace、帧率和设备配置，避免只凭主观体验判断效果。
+- 相机预览、分析、拍照和录像的应用侧配置见 22.31；HAL3 request/result、BufferQueue 与 fence 的系统链路继续回到 18.14。

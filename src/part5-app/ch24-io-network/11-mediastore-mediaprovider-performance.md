@@ -1,6 +1,7 @@
 ---
 title: "MediaStore 与 MediaProvider 性能治理"
-chapter: "24.12"
+chapter: "24.11"
+section: "24.11"
 status: ready-for-review
 drafted_date: "2026-05-21"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -46,7 +47,7 @@ sources:
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
 ---
 
-# 24.12 MediaStore 与 MediaProvider 性能治理
+# MediaStore 与 MediaProvider 性能治理
 
 ## 为什么媒体库会变成性能问题
 

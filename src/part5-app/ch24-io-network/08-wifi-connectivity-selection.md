@@ -1,7 +1,7 @@
 ---
 title: "Wi-Fi 评分、网络选择与连接切换性能"
-chapter: "24.9"
-section: "24.9"
+chapter: "24.8"
+section: "24.8"
 status: finalized
 drafted_date: "2026-05-15"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -73,7 +73,7 @@ task6_l1_l2_fixes: 0
 pipeline_stage: ready-to-publish
 ---
 
-# 24.9 Wi-Fi 评分、网络选择与连接切换性能
+# Wi-Fi 评分、网络选择与连接切换性能
 
 平台源码锚点是 Android 17（API 37）/ `android-17.0.0_r1`。应用看到默认网络可用之前，系统至少完成了两类决策：Wi-Fi 模块在可连接的 AP 中选择网络，Connectivity 模块在 Wi-Fi、蜂窝、以太网、VPN 等并存网络中为每个请求选择满足者。两类决策使用不同的输入，不能合并成一个“网络分数”。
 
