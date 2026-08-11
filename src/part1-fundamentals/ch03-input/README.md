@@ -1,11 +1,11 @@
 ---
-title: "第 3 章:输入系统"
+title: "第 3 章：输入系统"
 chapter: "3.0"
 section: "3.0"
-status: "finalized"
+status: "ready-for-review"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-07-20"
-last_verified_against: "AOSP android-17.0.0_r1; ch03 finalized subchapters 3.1/3.3/3.4/3.5/3.8/3.10/3.11; Android Developers Predictive Back / MotionPredictor / ARR docs"
+last_verified: "2026-08-11"
+last_verified_against: "AOSP android-17.0.0_r1; kernel android17-6.18-2026-06_r6; consolidated ch03 structure 3.1-3.8"
 confidence: "high"
 tags:
   - input
@@ -23,11 +23,8 @@ related_chapters:
   - "3.6"
   - "3.7"
   - "3.8"
-  - "3.9"
-  - "3.10"
-  - "3.11"
-pipeline_stage: "finalized"
-task6_state: reviewed
+pipeline_stage: "ready-for-review"
+task6_state: "pending-verification"
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
@@ -46,6 +43,8 @@ last_review_finalize_run_id: "20260720-150534-9a0187cb"
 review_finalize_notes: "2026-07-20 Hermes AIW review/finalize: 按 android-17.0.0_r1 与已 finalized 的 ch03 子章节复核总览;收窄 InputFlinger Rust、Predictive Back、DeliQueue 和 MotionPredictor 表述后晋升 finalized。"
 reviewed_by: hermes-aiw-review-finalize-apply
 reviewed_date: "2026-07-20"
+last_consolidated_at: "2026-08-11"
+consolidation_note: "完整审阅原 14 篇正文后收敛为 8 篇：InputDispatcher 分发/反压/stale 合并，触摸延迟/预测/HCI/低延迟渲染合并，Rust 键盘 filter 归入外设输入，ARR 回归触摸与第 2 章显示边界，删除重复参考索引页。"
 ---
 
 # 第 3 章：输入系统
@@ -137,41 +136,32 @@ Adaptive Refresh Rate 位于显示时序与刷新率策略侧，没有替换 Inp
 
 ### 4.1 分发与端到端延迟
 
-- [3.1 Input 事件分发全流程](01-input-dispatch.md)：从 kernel/evdev、EventHub、InputReader 到 InputDispatcher 和应用窗口。
-- [3.2 触摸响应性能](02-touch-performance.md)：采样、batching、应用消费、帧调度与视觉反馈。
-- [3.9 端到端输入延迟预算](09-input-latency-budget-perception.md)：建立可测量的阶段预算，并区分设备、系统、应用和显示成本。
+- [3.1 Input 事件分发：队列、反压与丢弃](01-input-dispatch.md)：从 kernel/evdev 到应用窗口，并统一 InputDispatcher 队列、channel 反压、ANR、stale 和 drop reason。
+- [3.2 触摸延迟、预测与低延迟渲染](02-touch-performance.md)：采样、batching/resampling、四种测量口径、HCI 阈值、MotionPredictor、front buffer 与 ARR 交互边界。
 
-### 4.2 手势、预测与返回
+### 4.2 手势与返回
 
-- [3.3 手势导航与系统交互](03-gesture-navigation.md)：系统手势截获、导航策略与应用窗口之间的边界。
-- [3.4 输入延迟与预测输入](04-input-latency-prediction.md)：MotionPredictor、resampling、prediction horizon 与 trace 证据。
-- [3.6 手势识别算法](06-gesture-recognition-performance.md)：GestureDetector、VelocityTracker、多点手势与算法成本。
-- [3.12 Predictive Back](12-predictive-back-system-architecture.md)：back callback、WindowManager、SystemUI 动画和 SurfaceControl 的协作。
+- [3.3 手势导航与系统交互](03-gesture-navigation.md)：系统边缘手势、exclusion rect、pointer pilfer 与导航策略。
+- [3.5 手势识别算法与性能优化](05-gesture-recognition-performance.md)：GestureDetector、VelocityTracker、View/Compose 消费、嵌套滚动与算法成本。
+- [3.7 Predictive Back 系统架构](07-predictive-back-system-architecture.md)：back callback、WindowManager、WM Shell/SystemUI 动画和 SurfaceControl 的协作。
 
-### 4.3 路由、安全、回压与丢弃
+### 4.3 安全、IME 与桌面输入
 
-- [3.5 输入拦截与安全](05-input-interception-security.md)：焦点、窗口遮挡、monitor、filter、注入权限与安全策略。
-- [3.7 InputDispatcher 回压](07-inputdispatcher-backpressure.md)：inbound/connection queue、finish signal、无响应窗口与 ANR。
-- [3.10 stale event 判定](10-inputdispatcher-stale-event.md)：过期事件、drop reason、timeout 与版本边界。
-
-### 4.4 Filter、IME 与桌面输入
-
-- [3.8 InputFlinger Rust 与 ARR](08-inputflinger-rust-arr.md)：Rust filter 的实现范围，以及动态刷新率对测量口径的影响。
-- [3.11 InputMethodManager](11-input-method-manager-performance.md)：IME client/session、焦点、show/hide、Insets 与键盘显示性能。
-- [3.13 键盘、鼠标与指针输入](13-keyboard-mouse-pointer-input-performance.md)：桌面模式下的 hover、scroll、cursor、capture、focus 与多 display。
-- [3.14 Input 系统参考文献](参考资料.md)：Android 17 与 kernel 固定 tag 的源码索引。
+- [3.4 输入事件拦截与安全](04-input-interception-security.md)：InputFilter、InputMonitor、无障碍、注入权限与安全策略。
+- [3.6 InputMethodManager 与软键盘性能](06-input-method-manager-performance.md)：IME client/session、焦点、show/hide、Insets 与键盘显示性能。
+- [3.8 键盘、鼠标与指针输入](08-keyboard-mouse-pointer-input-performance.md)：Rust Bounce/Slow/Sticky Keys，hover、scroll、pointer capture、focus、拖放与多 display。
 
 ## 5. 按现象选择阅读路径
 
 | 现象 | 阅读顺序 | 先确认的证据 |
 |---|---|---|
-| 点击无响应 | 3.1 → 3.5 → 3.7 → 3.10 | device event、target window、connection、drop/timeout |
-| 滑动不跟手 | 3.2 → 3.4 → 3.9 | sample、batch、resample/prediction、应用帧、present |
-| 输入 ANR | 3.1 → 3.7 → 3.10 | dispatch start、wait queue、finish signal、ANR reason |
-| 返回动画晚或错位 | 3.3 → 3.12 → 第 2 章渲染 | back callback、transition、SurfaceControl transaction、present |
-| IME 弹出慢 | 3.11 → 3.5 → 第 2 章 WindowInsets | IME target、session、show request、Insets animation、present |
-| 高刷下触控节奏不稳 | 3.2 → 3.4 → 3.8 → 第 2 章 ARR | input cadence、VSync period、active mode、frame/present |
-| 鼠标 hover 或键盘焦点异常 | 3.13 → 3.5 → 3.1 | device/source、display、focus、pointer capture、target |
+| 点击无响应 | 3.1 → 3.4 | device event、target window、connection、drop/timeout、拦截或注入策略 |
+| 滑动不跟手 | 3.2 → 3.5 | sample、batch/resampling、识别与消费、应用帧、present |
+| 输入 ANR 或 stale/drop | 3.1 | inbound/outbound/wait queue、finish signal、ANR/drop reason |
+| 返回动画晚或错位 | 3.3 → 3.7 → 第 2 章渲染 | back callback、transition、SurfaceControl transaction、present |
+| IME 弹出慢 | 3.6 → 3.4 → 第 2 章 WindowInsets | IME target、session、show request、Insets animation、present |
+| 高刷下触控节奏不稳 | 3.2 → 第 2 章 ARR | input cadence、interaction boost、VSync period、active mode、frame/present |
+| 鼠标 hover、键盘过滤或焦点异常 | 3.8 → 3.4 → 3.1 | device/source、Rust filter、display、focus、pointer capture、target |
 
 渲染与显示阶段可对照[第 2 章 VSync](../ch02-rendering/03-vsync.md)、[Choreographer](../ch02-rendering/04-choreographer.md)、[Sync Fence](../ch02-rendering/16-sync-fence.md)和[Adaptive Refresh Rate](../ch02-rendering/18-adaptive-refresh-rate.md)。
 

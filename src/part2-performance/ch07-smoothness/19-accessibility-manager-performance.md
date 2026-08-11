@@ -4,7 +4,7 @@ chapter: "7.19"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [accessibility, jank, layout, a11y, performance, rendering]
-related_chapters: ["7.2", "7.3", "2.5", "9.2", "3.5"]
+related_chapters: ["7.2", "7.3", "2.5", "9.2", "3.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-05"
 drafted_date: "2026-06-05"
@@ -150,7 +150,7 @@ Android 17 提供 ancestors、siblings、hybrid/depth-first/breadth-first descen
 
 开启两个服务也不代表成本是一个服务的两倍。服务的 `eventTypes`、`packageNames`、`notificationTimeout`、window-content capability、缓存使用和查询策略比数量更有解释力。
 
-Touch exploration、按键过滤、手势观察和放大还会改变输入管线。遇到点击延迟或手势差异时，应把输入过滤与 AccessibilityEvent/NodeInfo 成本分开；按键过滤的系统路径见 [3.5 输入拦截与安全](../../part1-fundamentals/ch03-input/05-input-interception-security.md)。
+Touch exploration、按键过滤、手势观察和放大还会改变输入管线。遇到点击延迟或手势差异时，应把输入过滤与 AccessibilityEvent/NodeInfo 成本分开；按键过滤的系统路径见 [3.4 输入拦截与安全](../../part1-fundamentals/ch03-input/04-input-interception-security.md)。
 
 ## 应用侧：保持语义正确，再去掉无意义工作
 

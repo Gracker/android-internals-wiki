@@ -330,7 +330,7 @@ RecyclerView 1.4.0 会在 `OverScroller` 滚动时调用 API 35 的 `View.setFra
 - [卡顿定义与 FrameTimeline](01-jank-definition.md)
 - [卡顿分析方法论](03-jank-methodology.md)
 - [RecyclerView 列表滑动性能](08-recyclerview-performance.md)
-- [输入延迟与预测](../../part1-fundamentals/ch03-input/04-input-latency-prediction.md)
+- [3.2 触摸延迟、预测与低延迟渲染](../../part1-fundamentals/ch03-input/02-touch-performance.md)
 - [可变刷新率与帧率选择](../ch18-rendering-pipelines/19-variable-refresh-rate.md)
 - [标准 View/HWUI 渲染管线](../ch18-rendering-pipelines/02-android-view-standard.md)
 

@@ -93,7 +93,7 @@ related_chapters:
   - '1.2'
   - '1.7'
   - '2.3'
-  - '3.5'
+  - '3.4'
   - '8.2'
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a

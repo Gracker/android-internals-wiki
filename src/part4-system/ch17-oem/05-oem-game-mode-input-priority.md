@@ -27,7 +27,7 @@ sources:
   - type: research
     path: "DeepResearch/2026-05-12-oem-game-mode-input-priority-research.md"
 tags: [oem, game-mode, input, touch-latency, refresh-rate, perfetto]
-related_chapters: ["3.5", "3.9", "8.9", "17.2"]
+related_chapters: ["3.2", "3.4", "8.9", "17.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材/AOSP结构/官方文档"

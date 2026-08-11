@@ -12,10 +12,10 @@
 
 | 口径 | 数量 | 说明 |
 |------|------|------|
-| 规范章节正文 | 615 篇 | 402 finalized、211 ready-for-review、1 verified、1 outdated |
-| `src/SUMMARY.md` | 654 个本地链接 | 覆盖前言、26 章、附录和全部保留正文，0 失效、0 重复 |
+| 规范章节正文 | 609 篇 | 396 finalized、211 ready-for-review、1 verified、1 outdated |
+| `src/SUMMARY.md` | 648 个本地链接 | 覆盖前言、26 章、附录和全部保留正文，0 失效、0 重复 |
 | `metadata/queue.json` | 23 条 | 9 body-applied、7 rejected、5 superseded、1 review-finalized、1 completed |
-| `pipeline_stage=ready-to-publish` | 322 篇 | 来自规范章节正文 frontmatter 聚合 |
+| `pipeline_stage=ready-to-publish` | 316 篇 | 来自规范章节正文 frontmatter 聚合 |
 
 当前工作重点：
 

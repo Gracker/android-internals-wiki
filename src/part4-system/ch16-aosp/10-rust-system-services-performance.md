@@ -450,7 +450,7 @@ heapprofd 能观察经过 malloc/free 的 Rust 分配。配置采样时要记录
 
 - [1.4 Binder IPC 机制与性能影响](../../part1-fundamentals/ch01-architecture/04-binder.md)：补充 Binder transaction、线程池与 Parcel 成本。
 - [1.32 Android 17 AVF 架构与 pKVM 隔离性能边界](../../part1-fundamentals/ch01-architecture/32-virtualization-framework-pkvm-performance.md)：补充 VirtualizationService 与内核虚拟化边界。
-- [3.8 InputFlinger Rust 组件与自适应刷新率协同](../../part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md)：另一个渐进式 Rust 组件案例。
+- [3.8 键盘、鼠标与指针输入](../../part1-fundamentals/ch03-input/08-keyboard-mouse-pointer-input-performance.md)：其中的 InputFlinger Rust 键盘 filter 是另一个渐进式 Rust 组件案例。
 - [1.40 Bionic libc 性能演进与系统级影响](../../part1-fundamentals/ch01-architecture/40-bionic-libc-performance.md)：补充 libc malloc、动态链接与 Scudo 接口。
 - [14.2 Simpleperf](../../part3-tools/ch14-other-tools/02-simpleperf.md)：补充 native CPU 采样和 PMU 事件。
 - [20.16 Android 17 Keystore 配额与登录故障治理](../../part5-app/ch20-stability/16-keystore-quota-login-stability.md)：补充 Keystore2 业务与稳定性诊断。
