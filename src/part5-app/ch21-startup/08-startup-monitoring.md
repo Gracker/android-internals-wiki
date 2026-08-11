@@ -16,6 +16,12 @@ sources:
     path: "https://developer.android.com/topic/performance/appstartup/analysis-optimization"
   - type: official
     path: "https://developer.android.com/reference/android/app/Activity#reportFullyDrawn()"
+  - type: official
+    path: "https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/ApplicationStartInfo.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/ActivityManager.java (android-17.0.0_r1)"
   - type: clippings-structure-ref
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
   - type: clippings-structure-ref
@@ -49,6 +55,9 @@ task6_review_notes: "2026-06-03 Task6 复审：pass-light-edit。L1/L2 复审通
 task9_review_notes: "2026-06-03 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 0；ApplicationStartInfo、reportFullyDrawn 与 Android Vitals 启动阈值口径复核通过，自动晋升 finalized。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-17
+consolidated_from:
+  - "src/part5-app/ch21-startup/17-startup-insights-api-observability.md"
+  - "src/part5-app/ch21-startup/09-startup-case-studies.md#一份可直接使用的复盘模板"
 ---
 
 # 启动监控与度量
@@ -193,10 +202,49 @@ Android 15（API 35）加入 `ApplicationStartInfo` 和 `ActivityManager` 查询
 - `getStartupState()`：记录仍在启动、发生错误或已经画出首帧；
 - `getStartupTimestamps()`：launch、fork、bindApplication、Application.onCreate、first frame、fully drawn 等单调时间戳；
 - `getStartComponent()`：Android 16（API 36）加入，用于区分 Activity、Service、Broadcast 和 Provider。
+- `getLaunchMode()`、`wasForceStopped()` 与去除 extras 的启动 Intent：用于补充任务和进程状态；原始 Intent、URI 与 referrer 默认不进入遥测。
 
 `reason` 与 `start component` 不应混用。原因表示为什么启动，组件表示哪类组件触发进程创建。同一个原因可能覆盖多种组件，Android 17 源码也明确要求用 `getStartComponent()` 判断四大组件类型。
 
-### 3.1 时间戳不是每项都保证存在
+### 3.1 Android 15、16、17 的能力边界
+
+这组 API 的主体在 Android 15 已经提供，Android 17 是本文的源码校验锚点，不应把既有能力误写成新功能。
+
+| 能力 | API 35 / Android 15 | API 36 / Android 16 | API 37 / Android 17 |
+| --- | --- | --- | --- |
+| `ApplicationStartInfo`、历史查询、首帧完成监听 | 加入 | 保留 | 保留 |
+| 8 个系统时间戳、21–30 开发者时间戳 | 加入 | 保留 | 保留 |
+| `getLaunchMode()`、`wasForceStopped()`、去除 extras 的启动 Intent | 加入 | 保留 | 保留 |
+| `getStartComponent()` 与组件常量 | 无 | 加入 | 保留 |
+
+API 36 以下不能读取 `getStartComponent()`。Service 启动的 `LAUNCH` 时间戳在 Android 15–16 还存在官方精度限制；Android 17 已越过该边界。
+
+### 3.2 记录形成与状态
+
+system_server 的 `AppStartInfoTracker` 先建立启动记录，随后由进程创建、应用绑定、首帧和 fully drawn 等路径逐步补入字段。应用通过 `ActivityManager` 读取的是记录副本，不是一条包含线程调度、Binder 和 I/O 的完整 trace。
+
+| `getStartupState()` | 含义 | 可依赖的节点 |
+| --- | --- | --- |
+| `STARTUP_STATE_STARTED` | 启动仍在进行 | `LAUNCH` |
+| `STARTUP_STATE_ERROR` | 启动失败，记录不会继续完整化 | 只使用已经存在的节点 |
+| `STARTUP_STATE_FIRST_FRAME_DRAWN` | Activity 已走到首帧 | `LAUNCH`、`BIND_APPLICATION`、`APPLICATION_ONCREATE`、`FIRST_FRAME` |
+
+平台没有 `FULLY_DRAWN` 状态；它只是依赖应用调用 `reportFullyDrawn()` 的可选时间戳。首帧完成监听只在记录进入 `FIRST_FRAME_DRAWN` 时触发：失败启动、纯 Service/Broadcast/Provider 拉起可能没有回调，不能把“监听未回调”直接判成启动失败。
+
+八个系统时间戳的常量编号也不代表发生顺序：
+
+| 时间戳 | 语义与限制 |
+| --- | --- |
+| `LAUNCH` | 系统组件启动起点，不一定是桌面图标点击 |
+| `FORK` | 可选的进程 fork 节点，不表示进程初始化完成 |
+| `BIND_APPLICATION` | 系统调用应用绑定的节点 |
+| `APPLICATION_ONCREATE` | 调用 `Application.onCreate()` 前的节点 |
+| `FIRST_FRAME` | 首帧绘制，不单独证明 SurfaceFlinger 已呈现或页面可交互 |
+| `FULLY_DRAWN` | 应用定义并上报的完成边界，始终可能缺失 |
+| `INITIAL_RENDERTHREAD_FRAME` | 可选的初始 RenderThread 帧 |
+| `SURFACEFLINGER_COMPOSITION_COMPLETE` | 可选的合成完成节点，仍不等于业务 ready |
+
+### 3.3 时间戳不是每项都保证存在
 
 `getHistoricalProcessStartReasons(maxNum)` 返回最近到最旧的环形缓冲记录，也可能包含尚未完成的启动。读取前要检查 `getStartupState()`，读取 Map 时要检查 key 是否存在。
 
@@ -204,11 +252,36 @@ Android 15（API 35）加入 `ApplicationStartInfo` 和 `ActivityManager` 查询
 
 跨版本还要保留一个限制：官方 API 文档说明，Service 触发的 `START_TIMESTAMP_LAUNCH` 在 Android 16（Baklava / API 36）及以下可能不准确。Android 17 锚点已越过这个限制；分析 Android 15–16 存量设备时仍需标记该样本，不能用这项时间戳做精确 Service 启动回归。
 
-### 3.2 把业务点写进平台启动记录
+### 3.4 读取当前进程的正确记录
 
-API 35 起，`ActivityManager.addStartInfoTimestamp()` 允许应用使用 21–30 的保留 key 添加自定义单调时间戳。它能把 `content_ready` 与系统的 launch、fork、bind 和 first frame 放在同一份记录中。相同 key 会覆盖旧值；`reportFullyDrawn()` 之后添加的点会被丢弃。
+历史列表还会混入同一应用近期的其他进程或相邻启动。选择当前记录时至少按 PID、进程名过滤，再按 `LAUNCH` 取最新项；不能无条件取列表第 0 项。
 
-下面的代码注册首帧完成监听，并用保留区第一个 key 写入首屏内容 ready：
+```kotlin
+@RequiresApi(35)
+fun latestCurrentProcessStart(
+    activityManager: ActivityManager,
+    maxRecords: Int = 16,
+): ApplicationStartInfo? = activityManager
+    .getHistoricalProcessStartReasons(maxRecords)
+    .asSequence()
+    .filter { info ->
+        info.pid == Process.myPid() &&
+            info.processName == Application.getProcessName()
+    }
+    .maxByOrNull { info ->
+        info.startupTimestamps[
+            ApplicationStartInfo.START_TIMESTAMP_LAUNCH
+        ] ?: Long.MIN_VALUE
+    }
+```
+
+生产采集还应核对 launch 时间与当前应用会话。需要 `FULLY_DRAWN` 时，在业务条件满足并调用 `reportFullyDrawn()` 后重新查询；首帧回调中的旧副本通常没有这个节点。
+
+### 3.5 把业务点写进平台启动记录
+
+API 35 起，`ActivityManager.addStartInfoTimestamp()` 允许应用使用 21–30 的保留 key 添加自定义单调时间戳。它能把 `route_resolved` 这类首帧前业务点与系统的 launch、fork、bind 和 first frame 放在同一份记录中。公开注释称相同 key 会覆盖旧值，并称 `reportFullyDrawn()` 之后添加的点会被丢弃；但 `android-17.0.0_r1` 的 tracker 实现会拒绝重复 key，而且记录进入首帧完成状态后不再接受开发者 key。按当前源码，生产代码应把开发者 key 当作“首帧前、每次启动只写一次”的节点。通常发生在首帧后的 `content_ready` 继续使用应用遥测，并由 `reportFullyDrawn()` 表达约定的完成边界。
+
+下面的代码注册首帧完成监听，并用保留区第一个 key 写入首帧前的路由决策完成点：
 
 ```kotlin
 @RequiresApi(35)
@@ -217,7 +290,7 @@ class PlatformStartInfoCollector(
     private val callbackExecutor: Executor,
 ) {
     companion object {
-        const val TIMESTAMP_CONTENT_READY =
+        const val TIMESTAMP_ROUTE_RESOLVED =
             ApplicationStartInfo
                 .START_TIMESTAMP_RESERVED_RANGE_DEVELOPER_START
     }
@@ -232,9 +305,9 @@ class PlatformStartInfoCollector(
         }
     }
 
-    fun markContentReady() {
+    fun markRouteResolved() {
         activityManager.addStartInfoTimestamp(
-            TIMESTAMP_CONTENT_READY,
+            TIMESTAMP_ROUTE_RESOLVED,
             SystemClock.elapsedRealtimeNanos(),
         )
     }
@@ -242,9 +315,15 @@ class PlatformStartInfoCollector(
     fun latestCurrentProcessRecord(): ApplicationStartInfo? {
         return activityManager
             .getHistoricalProcessStartReasons(8)
-            .firstOrNull { info ->
+            .asSequence()
+            .filter { info ->
                 info.pid == Process.myPid() &&
                     info.processName == Application.getProcessName()
+            }
+            .maxByOrNull { info ->
+                info.startupTimestamps[
+                    ApplicationStartInfo.START_TIMESTAMP_LAUNCH
+                ] ?: Long.MIN_VALUE
             }
     }
 }
@@ -253,6 +332,25 @@ class PlatformStartInfoCollector(
 监听回调由指定 Executor 执行，里面只应复制必要字段并交给采集队列。历史列表覆盖应用近期多个进程启动，不能无条件取第 0 项；示例按当前 PID 和进程名过滤，生产代码还应核对最新 launch 时间与当前启动代次。业务 key 的编号和含义要随监控 schema 固定，避免不同版本把同一个 key 解释成不同事件。
 
 `ApplicationStartInfo` 适合校准系统起点和启动分类，Android 10–14 仍需兼容自建埋点。完整 API 设计见[ApplicationStartInfo](../ch26-observability/13-application-start-info.md)。
+
+### 3.6 阶段耗时必须防守缺失与乱序
+
+不要把缺失 key 补成 0，也不要按常量编号排序。只有起止节点都存在且终点不早于起点时，区间才有效：
+
+```kotlin
+fun startupDurationMs(
+    info: ApplicationStartInfo,
+    fromKey: Int,
+    toKey: Int,
+): Double? {
+    val startNs = info.startupTimestamps[fromKey] ?: return null
+    val endNs = info.startupTimestamps[toKey] ?: return null
+    if (endNs < startNs) return null
+    return (endNs - startNs) / 1_000_000.0
+}
+```
+
+采集端应保留原始节点、字段存在位和 `startupState`，让服务端能在 schema 调整或发现平台差异后重新派生区间。
 
 ## 4. 线上聚合不能只画平均值
 
@@ -380,7 +478,55 @@ Android Vitals 的专项边界和 Play Console 使用方式见[Android Vitals �
 
 Macrobenchmark 必须记录 `StartupMode`、`CompilationMode`、设备、温度、电量和迭代数。`StartupMode.COLD` 代表进程冷启动，不代表设备 page cache 也被清空。Baseline Profile 实验还要区分 Profile 是否安装，避免把编译差异归给业务代码。
 
-Perfetto 中先找 Android App Startups 派生轨道，再与应用自定义 trace 对齐。一个 task 在墙钟上持续 80 ms，不代表它消耗了 80 ms CPU；线程可能在等待 Binder、锁、I/O 或调度。优化结论要由对应轨道证明。
+Perfetto 中先找 Android App Startups 派生轨道，再与应用自定义 trace 对齐。一个 task 在墙钟上持续 80 ms，不代表它消耗了 80 ms CPU；线程可能在等待 Binder、锁、I/O 或调度。优化结论要由对应轨道证明。标准库查询可以先稳定列出 trace 中识别出的启动，再围绕目标 `startup_id` 展开线程、Binder、I/O、GC 和帧证据：
+
+```sql
+INCLUDE PERFETTO MODULE android.startup.startups;
+
+SELECT startup_id, package, startup_type, dur / 1e6 AS duration_ms
+FROM android_startups
+ORDER BY ts;
+```
+
+Android 15+ 还可用 `ProfilingManager` 请求受系统约束的 trace 或 stack sample。它比 `ApplicationStartInfo` 重得多，只适合问题版本或受控样本，并要遵守系统限额、设备成本、隐私与上传策略。
+
+## 8. 用同一份模板沉淀复盘
+
+复盘要把现象、证据、假设、改动和结果分开，避免把一次相关性写成根因。下面的最小模板可直接用于 PR 或性能专项：
+
+```markdown
+# <入口 / 问题> 启动优化复盘
+
+## 1. 范围
+- App commit / versionCode、release variant、R8、编译模式：
+- 设备 / Android / RAM / ABI / 温度与电量：
+- 入口 / 账号 / 数据 / 网络、cold / warm / hot 定义：
+- 统计窗口、样本量、采样率：
+
+## 2. 用户症状
+- TTID / TTFD 的 P50、P90 与完成率：
+- 首屏前 ANR / Crash / 退出、受影响 cohort：
+
+## 3. 证据
+- ApplicationStartInfo 区间、Macrobenchmark、Perfetto：
+- task / Provider / manifest、首次出现的版本或配置：
+
+## 4. 根因假设
+- 假设、支持证据、反证、仍未知：
+
+## 5. 单变量改动
+- 改动、目标区间、风险、灰度与回滚开关：
+
+## 6. 验证
+- 线下 before / after 分布：
+- 线上同 cohort 的 TTID / TTFD / frame / ANR / Crash / 业务护栏：
+- 结果是否超过历史噪声与产品预算：
+
+## 7. 后续
+- 门禁、owner、截止时间、回滚条件：
+```
+
+若无法写出“哪条证据会推翻当前假设”，通常说明结论还停留在猜测。每次只改变一个可解释变量；当代码、Profile、服务端配置和样本结构同时改变时，结果只能说明整个版本组合发生变化。
 
 ## 检查清单
 

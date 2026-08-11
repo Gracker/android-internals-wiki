@@ -1,23 +1,23 @@
 {
   "schema_version": 3,
   "scope": "Canonical chapter bodies under the 26 directories defined by metadata/v1.0-definition.md; README, SUMMARY, preface and appendix are excluded.",
-  "total": 523,
+  "total": 519,
   "draft": 0,
-  "ready-for-review": 174,
-  "finalized": 348,
+  "ready-for-review": 173,
+  "finalized": 345,
   "needs-review": 0,
   "verified": 1,
   "outdated": 0,
-  "ready_to_publish": 282,
+  "ready_to_publish": 280,
   "status_counts": {
-    "ready-for-review": 174,
-    "finalized": 348,
+    "ready-for-review": 173,
+    "finalized": 345,
     "verified": 1
   },
   "pipeline_stage_counts": {
-    "ready-to-publish": 282,
-    "unspecified": 146,
-    "finalized": 61,
+    "ready-to-publish": 280,
+    "unspecified": 145,
+    "finalized": 60,
     "ready-for-review": 25,
     "deep-review": 2,
     "rework-verified": 1,
@@ -47,14 +47,14 @@
     "18": 25,
     "19": 22,
     "20": 22,
-    "21": 20,
+    "21": 16,
     "22": 45,
     "23": 18,
     "24": 23,
     "25": 30,
     "26": 30
   },
-  "summary_local_links": 562,
+  "summary_local_links": 558,
   "queue_snapshot": {
     "total": 23,
     "body-applied": 9,
@@ -63,7 +63,7 @@
     "review-finalized": 1,
     "completed": 1
   },
-  "last_updated": "2026-08-11T16:20:00+08:00",
-  "last_action": "chapter 20 content consolidation: 27 canonical bodies reduced to 22; duplicate signal, SafeMode, Binder and memory-safety topics merged, and cross-topic cases returned to their owning articles",
+  "last_updated": "2026-08-11T16:45:00+08:00",
+  "last_action": "chapter 21 content consolidation: 20 canonical bodies reduced to 16; App Startup dependency-graph, Startup Profile, Startup Insights and case-study material merged into their owning articles",
   "generated_from": "chapter frontmatter and src/SUMMARY.md"
 }

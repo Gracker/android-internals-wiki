@@ -2,8 +2,8 @@
 
 
 title: "云端 Profile、DM 文件与安装后编译优化"
-chapter: "21.11"
-section: "21.11"
+chapter: "21.10"
+section: "21.10"
 status: finalized
 drafted_date: "2026-05-21"
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
@@ -68,7 +68,7 @@ last_task9_audit: 2026-06-22
 last_task9_autofix_at: 2026-06-22
 ---
 
-# 21.11 云端 Profile、DM 文件与安装后编译优化
+# 云端 Profile、DM 文件与安装后编译优化
 
 ## Profile 在发布后如何生效
 

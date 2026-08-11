@@ -1,6 +1,7 @@
 ---
 title: "ART GC 抑制与启动性能优化"
-chapter: "21.13"
+chapter: "21.11"
+section: "21.11"
 status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [gc-suppression, startup, art-runtime, heap-task-daemon, native-hook, concurrent-gc]
@@ -22,7 +23,7 @@ sources:
     path: "DeepResearch/2026-05-24-android17-art-gc-compose-pause.md"
 ---
 
-# 21.13 ART GC 抑制与启动性能优化
+# ART GC 抑制与启动性能优化
 
 三方 App 没有受支持的“暂停 ART GC”接口，也不应修改 `libart.so` 的任务函数或 vtable。所谓 GC 抑制，是**降低启动阶段的分配速率和存活对象规模，让 ART 更少达到 GC 触发条件**。
 

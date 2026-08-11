@@ -1,6 +1,7 @@
 ---
 title: "Compose 首次组合开销与启动性能"
-chapter: "21.15"
+chapter: "21.13"
+section: "21.13"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-27"
@@ -27,7 +28,7 @@ created_date: "2026-06-26"
 gap_source: "章节深挖"
 ---
 
-# 21.15 Compose 首次组合开销与启动性能
+# Compose 首次组合开销与启动性能
 
 Compose 首屏比传统 View 页面多一个 composition 阶段，但“用了 Compose 就固定多花几十毫秒”不是可复用的结论。View 页面也要负责 XML inflate、对象绑定、measure、layout 和 draw；Compose 则把 UI 描述执行、Slot Table 维护、节点创建，以及后续的 layout、draw 放进首帧路径。两者的成本结构不同，不能脱离设备、构建类型、编译状态和页面内容给出统一差值。
 
@@ -138,7 +139,7 @@ Compose 作为库发布，库代码没有 platform boot image 的编译条件。
 
 Startup Profile 是启动相关规则的子集。R8 在构建期使用它调整 DEX 布局，尽量把启动路径放在更合适的位置，尤其是主 DEX。它不是 Android 15 才出现的运行时能力，也不是 ART 在安装阶段“优先编译一份较小 Profile”。
 
-当前官方工具要求的核心边界是 AGP、Baseline Profile Gradle Plugin、Macrobenchmark 与 R8 配置；DEX layout optimization 自 AGP 8.3 起默认开启。library 可以贡献 Baseline Profile，但不能替应用贡献 Startup Profile，后者来自应用定义的启动测试。详细生成与产物校验见 [§21.12 Startup Profile 与 DEX 布局](./12-startup-profile-dex-layout.md)。
+当前官方工具要求的核心边界是 AGP、Baseline Profile Gradle Plugin、Macrobenchmark 与 R8 配置；DEX layout optimization 自 AGP 8.3 起默认开启。library 可以贡献 Baseline Profile，但不能替应用贡献 Startup Profile，后者来自应用定义的启动测试。详细生成与产物校验见 [§21.4 Baseline Profile 与 Startup Profile 实战](./04-baseline-profile-practice.md)。
 
 ### 4.3 不要用类预加载代替 Profile
 

@@ -440,7 +440,7 @@ ORDER BY s.startup_id, s.slice_dur DESC;
 
 Baseline Profile 不会跳过业务初始化，也不会消除磁盘、Binder、锁或网络等待；Startup Profile 也不等于“把类放到文件前面就会进入 CPU cache”。它影响的是 DEX 文件组织和读取局部性，收益要用固定编译模式的启动基准验证。
 
-两者的实践分别见 [Baseline Profile 实战](./04-baseline-profile-practice.md)与 [Startup Profile 与 DEX 布局](./12-startup-profile-dex-layout.md)。启动期 ART/GC 行为见 [ART 启动期 GC 调节](./13-art-gc-suppression-startup-performance.md)。
+两者的实践统一见 [Baseline Profile 与 Startup Profile 实战](./04-baseline-profile-practice.md)。启动期 ART/GC 行为见 [ART 启动期 GC 调节](./11-art-gc-suppression-startup-performance.md)。
 
 ## 8. 从 Trace 到修复的判断顺序
 

@@ -1,10 +1,11 @@
 ---
 title: "设备分级性能策略实战"
-chapter: "21.19"
+chapter: "21.16"
+section: "21.16"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [device-tier, performance-strategy, device-year-class, feature-flag, degradation]
-related_chapters: ["21.16", "21.18", "23.07", "25.06"]
+related_chapters: ["21.14", "21.15", "23.07", "25.06"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "素材驱动/章节深挖"
@@ -33,7 +34,7 @@ sources:
   path: https://developer.android.com/topic/performance/performance-class
 ---
 
-# 21.19 设备分级性能策略实战
+# 设备分级性能策略实战
 
 设备分级的目的，是给一次具体工作选择可承受的资源预算。图片解码关心内存和屏幕尺寸，视频播放关心编解码能力，复杂动画关心 GPU、刷新率和当前温控状态。把这些差异压成一个“高、中、低”总分，往往会让某项能力很强、另一项能力较弱的设备收到错误策略。
 

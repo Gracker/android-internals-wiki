@@ -4,7 +4,7 @@ chapter: "25.29"
 status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [dex, r8, d8, apk-size, code-shrinking, baseline-profile, multidex]
-related_chapters: ["25.6", "25.7", "21.12", "1.57"]
+related_chapters: ["25.6", "25.7", "21.4", "1.57"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "Clippings参考书驱动"
@@ -595,7 +595,7 @@ Android 平台版本表与 AGP 版本表放在一起是为了说明边界变化�
 - [25.6 APK 体积分析与瘦身](06-apk-analysis.md)：APK/AAB、资源、native library 与交付口径。
 - [25.7 R8 与资源优化](07-r8-resource-optimization.md)：Full Mode、keep rule 与资源优化。
 - [25.8 App Bundle 与动态交付](08-app-bundle-delivery.md)：base、feature 与设备专用 APK。
-- [21.12 Startup Profile 与 DEX Layout](../ch21-startup/12-startup-profile-dex-layout.md)：主 DEX 布局、profile 生成与启动验证。
+- [21.4 Baseline Profile 与 Startup Profile 实战](../ch21-startup/04-baseline-profile-practice.md)：主 DEX 布局、profile 生成与启动验证。
 - [1.57 ART Boot Image 内存映射](../../part1-fundamentals/ch01-architecture/57-android17-art-boot-image-memory-mapping-startup.md)：`.art`、`.oat`、`.vdex` 与平台启动边界。
 
 一手资料：

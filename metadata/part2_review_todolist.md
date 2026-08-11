@@ -106,7 +106,7 @@
 - [x] 12.2 Android 网络安全与 TLS 性能优化 (`src/part2-performance/ch12-apk-network/02-network-security-tls-performance.md`)
 - [x] 12.3 netd 与 DnsResolver：DNS 解析性能和故障诊断 (`src/part2-performance/ch12-apk-network/03-netd-dnsresolver-network-diagnostics.md`)
 
-> 原 APK 体积总览归入 25.6，客户端网络深浅两版合并为 12.1；ConnectivityService/NetworkAgent 归入 1.62，Privacy Sandbox 退场归入 21.10。完整映射见 `metadata/content-consolidation-audit.md`。
+> 原 APK 体积总览归入 25.6，客户端网络深浅两版合并为 12.1；ConnectivityService/NetworkAgent 归入 1.62，Privacy Sandbox 退场归入 21.9。完整映射见 `metadata/content-consolidation-audit.md`。
 
 ## 第 13 章：Perfetto (ch13-perfetto)
 - [x] 13.1 Perfetto 简介与演进 (`src/part3-tools/ch13-perfetto/01-perfetto-intro.md`)

@@ -8,7 +8,7 @@ last_verified: "2026-07-05"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 tags: [ART, GC, HeapTask, TaskProcessor, GC抑制, 启动性能, 内存管理]
-related_chapters: ["4.3", "4.7", "4.8", "4.11", "4.14", "21.13", "23.6"]
+related_chapters: ["4.3", "4.7", "4.8", "4.11", "4.14", "21.11", "23.6"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-05"
 gap_source: "研究素材"

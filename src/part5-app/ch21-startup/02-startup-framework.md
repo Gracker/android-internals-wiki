@@ -31,6 +31,9 @@ sources:
     path: "github.com/alibaba/alpha/tree/04fe7f22c469de66fed98c341334c954dfabafb2"
 tags: [startup-framework, dag, app-startup, async-init, thread-pool, task-scheduling]
 related_chapters: ["21.1", "21.6", "8.3", "1.5"]
+consolidated_from:
+  - "src/part5-app/ch21-startup/20-modular-startup-dependency-graph.md"
+  - "src/part5-app/ch21-startup/09-startup-case-studies.md#案例二"
 task6_state: reviewed
 task6_review_notes_final: "2026-07-02 Task6 round3 (post-Task9-autofix): pass-light-edit. L1 fix×1 (真正→删). L2 pass. Anchors all covered. Auto-promoted: task9=pass, queue=completed."
 task6_review_notes_round4: "2026-07-03 Task6 round4 (re-confirm): pass-light-edit. L1 clean. L2 pass. No new L3/L4 issues. AUTO-PROMOTED: task6=pass-light-edit, task9=auto-fixed(=pass), queue=completed."
@@ -69,7 +72,7 @@ last_deepseek_cn_review_at: 2026-07-04
 
 平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`。Jetpack App Startup 固定到 1.2.0；Alpha 的代码结论固定到仓库提交 `04fe7f22c469de66fed98c341334c954dfabafb2`。
 
-`ApplicationStartInfo` 的准确分析见 [Startup Insights API 与启动可观测性](./17-startup-insights-api-observability.md)。
+`ApplicationStartInfo` 的准确分析见 [启动监控与度量](./08-startup-monitoring.md)。
 
 ## 1. 编排前先删任务
 
@@ -292,6 +295,45 @@ App Startup 适合：
 - 一个默认 Provider 不会因为应用存在四个子进程就自动执行四次。
 
 1.2.0 修复了 Provider 定义在 secondary process 时的 metadata 查找问题，这表示库支持显式的多进程 Provider 配置，不表示所有 initializer 默认复制到每个进程。最终行为必须以 merged manifest 为准。
+
+需要在命名进程运行独立初始化图时，应使用单独的 `InitializationProvider` 子类、唯一 authority 和只属于该进程的 metadata：
+
+```kotlin
+class WorkerInitializationProvider : InitializationProvider()
+```
+
+```xml
+<provider
+    android:name=".WorkerInitializationProvider"
+    android:authorities="${applicationId}.androidx-startup.worker"
+    android:exported="false"
+    android:process=":worker">
+
+    <meta-data
+        android:name="com.example.worker.WorkerInitializer"
+        android:value="androidx.startup" />
+</provider>
+```
+
+这会在 `:worker` 进程形成独立的 `AppInitializer`、依赖遍历和结果缓存，不会与默认进程共享“已初始化”状态。跨进程完成关系仍要用 Binder、Provider 或持久状态表达，不能画成一条进程内 DAG 边。
+
+### 5.4 发现、遍历与动态特性边界
+
+App Startup 1.2.0 的 manifest discovery 先读取当前 `InitializationProvider` 的 `ProviderInfo.metaData`，只接受 value 等于 `androidx.startup` 标记的条目，再对 key 执行 `Class.forName()` 并收集实现了 `Initializer` 的类。发现结束后才进入依赖初始化。
+
+初始化算法是进程内的深度优先遍历：
+
+1. 节点进入递归路径时加入 `initializing` 集合；
+2. 先递归执行 `dependencies()`；
+3. 依赖完成后同步调用当前节点的 `create()`；
+4. 返回值写入 `mInitialized`，当前进程后续请求直接复用；
+5. 路径再次遇到同一类时抛出循环依赖异常。
+
+这套算法不保证同层无依赖节点的稳定顺序。metadata 与集合遍历顺序都不是业务契约；有先后要求就必须写进 `dependencies()`。`isEagerlyInitialized()` 只表示节点是否来自 manifest 主动发现，不表示组件健康、异步准备完成或跨进程可用。
+
+主动发现会在 Provider 阶段直接加载 initializer 类。若 metadata 指向尚未安装的动态特性模块，`Class.forName()` 失败会被包装成 `StartupException`，进程可能在 `Application.onCreate()` 之前终止。可选模块的桥接 initializer 应留在 base，或等模块安装完成后从明确业务入口手动初始化；不要假设 ClassLoader 会跳过缺失类。
+
+App Startup 会为发现过程和 initializer 创建 Trace section。排查时同时检查 merged manifest、每个进程的 Provider、`Startup`/initializer slice、主线程 I/O/Binder/锁和首个消费者的延迟。`create()` slice 结束只证明同步方法返回；内部提交的异步工作仍需自己的完成事件。
 
 ## 6. Alpha：旧代码可以参考，不能按现代库假设
 

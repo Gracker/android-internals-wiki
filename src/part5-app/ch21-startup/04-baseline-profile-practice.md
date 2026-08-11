@@ -1,5 +1,5 @@
 ---
-title: "Baseline Profile 实战"
+title: "Baseline Profile 与 Startup Profile 实战"
 chapter: "21.4"
 section: "21.4"
 status: finalized
@@ -16,6 +16,10 @@ sources:
     path: "https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile"
   - type: official
     path: "https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles"
+  - type: official
+    path: "https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations"
+  - type: official
+    path: "https://developer.android.com/topic/performance/baselineprofiles/confirm-startup-profiles"
   - type: aosp
     path: "art/profman/profman.cc"
   - type: aosp
@@ -30,6 +34,9 @@ sources:
     path: "src/part3-tools/ch19-apm/12-baseline-profiles.md"
 tags: [baseline-profile, aot, dex-layout, macrobenchmark]
 related_chapters: ["21.1", "8.7", "1.7", "19.12"]
+consolidated_from:
+  - "src/part5-app/ch21-startup/12-startup-profile-dex-layout.md"
+  - "src/part5-app/ch21-startup/09-startup-case-studies.md#案例三"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: "reviewed"
@@ -52,7 +59,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-25
 ---
 
-# Baseline Profile 实战
+# Baseline Profile 与 Startup Profile 实战
 
 ## 范围
 
@@ -400,7 +407,45 @@ Startup Profile 在构建时应用，不靠 APK 中的独立 `startup.prof` 给 
 - 比较 DEX 数量、布局和 page fault；
 - 用同编译模式 Macrobenchmark 比较 TTID/TTFD。
 
-不要把收益表述成“类靠近就一定命中 CPU cache”。这里优化的是 DEX 文件布局和读取局部性，运行时结果仍受设备、文件映射、编译状态与代码路径影响。详细分析见 [Startup Profile 与 DEX 布局](./12-startup-profile-dex-layout.md)。
+不要把收益表述成“类靠近就一定命中 CPU cache”。这里优化的是 DEX 文件布局和读取局部性，运行时结果仍受设备、文件映射、编译状态与代码路径影响。
+
+### 10.3 证明 release 产物保留了布局
+
+验证不能停在仓库中存在 `startup-prof.txt`。应逐层回答生成、消费和发布产物是否一致：
+
+| 证据 | 能证明什么 | 不能证明什么 |
+| --- | --- | --- |
+| `startup-prof.txt` 及其 diff | generator 采到了哪些启动规则 | R8 已消费规则 |
+| release 的 R8 配置与构建日志 | 构建具备 DEX layout 条件 | 最终 DEX 未被后处理改写 |
+| APK Analyzer 中的 `classes.dex` | 关键启动类实际位于哪个 DEX | 设备端已经 profile-guided 编译 |
+| AAB 的 `BUNDLE-METADATA/com.android.tools/r8.json` | 哪些 DEX 被标记为 startup DEX | metadata 一定对应最终文件 |
+| metadata checksum 与 DEX SHA-256 | R8 后的 DEX 没有被加固、插桩或重打包悄悄替换 | 布局一定带来可测收益 |
+
+AGP 8.8+ 可以从 AAB 的 `r8.json` 检查至少一个 DEX 是否带有 `"startup": true`，并将其中 checksum 与包内对应 DEX 的 SHA-256 对齐。两者不一致时，应先定位 R8 之后的处理链，不能依据旧 metadata 宣称发布包保留了布局。
+
+主 DEX 容量也是约束。规则过宽时，初始显示以外的 CUJ 会挤占 `classes.dex`，真正的启动代码反而溢出。单 DEX 应用因布局优化变为两个 DEX 不一定是回归：构建工具可能把启动代码集中在主 DEX，并把非启动代码移到后续 DEX。判断依据应是启动类分布、R8 诊断和测量结果，而不是只看 DEX 个数。
+
+### 10.4 用单变量 A/B 隔离布局收益
+
+DEX layout A/B 的源码、资源、R8 规则、签名配置、Baseline Profile、安装步骤和设备端 `CompilationMode` 必须一致，唯一变量是是否向 D8/R8 提供 Startup Profile。若一组同时移除 Baseline Profile，测到的差异会混合 ART 编译和 DEX 布局，无法解释各自贡献。
+
+实验至少记录 TTID、TTFD、P50/P90/P95、离散程度和失败样本，并用 Perfetto 核对：
+
+- DEX 映射、文件读取和缺页是否收敛；
+- 类加载区间是否缩短；
+- 两组 JIT/AOT 状态是否一致；
+- Binder、SQLite、锁、网络、资源解码是否掩盖布局收益；
+- 反射、动态 DEX 或条件分支是否让关键代码没有进入规则。
+
+杀进程后的 cold startup 不等于设备 page cache 也冷。除非实验具备可重复的存储冷态控制，否则首轮结果不能直接解释成稳定的 DEX I/O 收益。
+
+### 10.5 常见失效模式
+
+- **规则过宽**：主 DEX 接近容量上限，非首屏 CUJ 挤占布局预算；缩小到初始显示路径。
+- **生成环境漂移**：弹窗、实验、账号和网络分支让同一提交产生不同规则；固定测试环境并审查 diff。
+- **构建后改写 DEX**：`r8.json` checksum 与最终 DEX 不一致；修复加固、插桩或重打包链路。
+- **AOT 状态污染**：实验组的 compiler filter 不同；固定编译模式后再比较布局。
+- **瓶颈不在 DEX**：trace 显示主要时间落在 Binder、数据库、锁或网络；保留 Profile，同时治理真正关键路径。
 
 ## 11. 维护与回归
 

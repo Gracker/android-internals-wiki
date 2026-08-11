@@ -1,6 +1,7 @@
 ---
 title: "依赖注入框架性能：Dagger/Hilt/Koin 启动开销与优化"
-chapter: "21.14"
+chapter: "21.12"
+section: "21.12"
 status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [dependency-injection, dagger, hilt, koin, startup, ksp, kapt]
@@ -21,7 +22,7 @@ sources:
     path: "https://dagger.dev/hilt"
 ---
 
-# 21.14 依赖注入框架性能：Dagger/Hilt/Koin 启动开销与优化
+# 依赖注入框架性能：Dagger/Hilt/Koin 启动开销与优化
 
 依赖注入的启动成本不能用“框架有多重”概括。一次注入至少包含四类工作：创建容器/组件、建立 provider 字段、解析 binding、执行对象构造与初始化。Dagger/Hilt 把解析关系生成成 Java 代码；Koin 在运行时注册和查询 definition。两者的主要成本位置不同，但重对象的构造函数、`@Provides` 或 definition lambda 才常是启动长尾。
 
