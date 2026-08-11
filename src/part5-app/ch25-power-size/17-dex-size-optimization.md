@@ -1,6 +1,7 @@
 ---
 title: "DEX 体积优化实战"
-chapter: "25.29"
+chapter: "25.17"
+section: "25.17"
 status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [dex, r8, d8, apk-size, code-shrinking, baseline-profile, multidex]
@@ -41,7 +42,7 @@ last_review_finalize_at: 2026-08-09T04:43:41+08:00
 last_review_finalize_run_id: 20260809-044341-4eef3020
 ---
 
-# 25.29 DEX 体积优化实战
+# DEX 体积优化实战
 
 ## 先确定优化对象
 

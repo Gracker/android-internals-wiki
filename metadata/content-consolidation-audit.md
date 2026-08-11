@@ -36,9 +36,29 @@
 | ch22 渲染性能实战 | 45 | 31 | 已完成 | 2026-08-11 |
 | ch23 内存优化实战 | 18 | 10 | 已完成 | 2026-08-11 |
 | ch24 I/O 与网络优化 | 23 | 19 | 已完成 | 2026-08-11 |
-| 其余 4 章 | 167 | 待审阅 | 未开始 | - |
+| ch25 功耗与包体积优化 | 30 | 19 | 已完成 | 2026-08-11 |
+| 其余 3 章 | 137 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 493 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 482 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch25 功耗与包体积优化
+
+保留后的连续编号为 25.1～25.19。内容按“功耗诊断与后台治理 → WakeLock、Alarm、任务、定位和传感器 → APK 分析、压缩与分发 → 特殊运行场景和 ADPF → 音频、CPU、OEM、FGS 与热管理 → DEX、Native SO 和资源体积”组织；点状平台更新回到负责完整机制和验证闭环的主文，H1 不再重复章节号。
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `01-power-diagnosis.md` / `09-power-size-case-studies.md` 的功耗归因案例 / `27-android17-battery-usage-stats-power-attribution.md` | 将系统归因、BatteryUsageStats 查询、UID/进程映射、设备条件、复现窗口和对照实验统一到功耗诊断主文；案例不再脱离机制单列 | `../src/part5-app/ch25-power-size/01-power-diagnosis.md`（25.1） |
+| `03-wakelock-alarm.md` / `19-android-vitals-wakelock-governance.md` / `20-android17-allow-while-idle-listener-alarm.md` / 原案例集对应案例 | 合并 Vitals 指标、部分 WakeLock 归因、listener alarm、`OnAlarmListener`、StrictMode、Doze 配额和回归门禁，保留 WakeLock 与 Alarm 的单一治理入口 | `../src/part5-app/ch25-power-size/03-wakelock-alarm.md`（25.3） |
+| `04-workmanager-practice.md` / `14-jobdebuginfo-jobscheduler-diagnostics.md` | 将 pending reason、JobDebugInfo、JobScheduler/WorkManager 对照诊断和设备端取证并入后台任务实践 | `../src/part5-app/ch25-power-size/04-workmanager-practice.md`（25.4） |
+| `05-location-sensor.md` / `22-location-services-performance.md` | 合并 FLP、平台 LocationManager、批处理、精度、监听生命周期、后台限制和 dumpsys/Perfetto 证据，删除第二套定位概览 | `../src/part5-app/ch25-power-size/05-location-sensor.md`（25.5） |
+| `11-adpf-coroutine-thread-migration.md` / `16-adpf-power-efficiency-powermonitor.md` / `21-performance-hint-manager-practice.md` | 统一 PerformanceHintManager、ADPF、协程/线程迁移、session 生命周期、PowerMonitor、热状态和单变量能效验证；以完整的 ADPF 能效主文承载 | `../src/part5-app/ch25-power-size/10-performance-hint-adpf-power.md`（25.10） |
+| `12-android17-excessive-cpu-kill.md` / `15-scheduledexecutor-fixedrate-android16.md` / `23-application-cpu-optimization.md` | 将 excessive CPU 终止、固定频率追赶、线程池与周期任务治理并入应用 CPU 优化，统一 CPU 时间、调度、功耗与稳定性证据 | `../src/part5-app/ch25-power-size/13-application-cpu-optimization.md`（25.13） |
+| `13-fgs-timeout-jobscheduler-quota.md` / `26-android17-fgs-type-execution-model-background-launch-performance.md` | 合并 FGS 类型、启动边界、timeout、JobScheduler quota、后台切换和版本兼容，避免按单个限制拆成两篇 | `../src/part5-app/ch25-power-size/15-foreground-service-execution-model.md`（25.15） |
+| 原 25.10、25.17～25.18、25.25、25.28～25.31 中未合并主题 | Hybrid/WebView、两类音频、OEM 后台限制、热节流以及 DEX、Native SO、资源体积都能独立回答问题，依次改为连续编号 25.9、25.11～25.12、25.14、25.16～25.19 | `../src/part5-app/ch25-power-size/09-hybrid-webview-power.md`～`../src/part5-app/ch25-power-size/19-resource-file-size-optimization.md` |
+
+章节 README、`src/SUMMARY.md`、活动队列、跨章引用和统计口径已经切换到新编号。历史 changelog、review/audit 日志、关闭 finding、素材索引与 `consolidated_from` 保留旧路径和编号。
 
 ## ch24 I/O 与网络优化
 

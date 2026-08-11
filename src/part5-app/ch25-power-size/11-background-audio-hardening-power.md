@@ -1,7 +1,7 @@
 ---
 title: "Android 17 后台音频硬化与播放功耗治理"
-chapter: "25.17"
-section: "25.17"
+chapter: "25.11"
+section: "25.11"
 status: finalized
 drafted_date: "2026-05-24"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -36,7 +36,7 @@ sources:
 - type: official
   path: https://developer.android.com/studio/command-line/dumpsys
 tags: [[power, audio, foreground-service, android-17, media-playback]]
-related_chapters: ["1.16", "5.8", "18.21", "11.2", "16.5", "25.13", "26.17"]
+related_chapters: ["1.16", "5.8", "18.21", "11.2", "16.5", "25.15", "26.17"]
 created_by: "task2a-knowledge-gap"
 drafted_by: "task2a-knowledge-gap"
 created_date: "2026-05-24"
@@ -77,7 +77,7 @@ pipeline_stage: ready-to-publish
 last_task2b_lite_at: 2026-07-05
 ---
 
-# 25.17 Android 17 后台音频硬化与播放功耗治理
+# Android 17 后台音频硬化与播放功耗治理
 
 ## 后台音频的治理范围
 
@@ -88,7 +88,7 @@ Android 17 同时限制后台音频播放、音频焦点请求、音量与铃声
 - 系统是否允许这次音频交互：页面是否可见、前台服务是否存在、服务有没有 while-in-use（WIU）能力、音频用途是否符合豁免条件。
 - 播放失效后是否仍消耗资源：网络请求、解码线程、WakeLock、MediaSession 和前台服务是否按停止原因释放。
 
-平台源码基线为 Android 17 / API 37 / `android-17.0.0_r1`。AudioFlinger、AAudio 和音频线程调度参见 1.16；后台执行规则参见 5.8 与 25.13；Media3、Codec2 和多媒体管线参见 18.21。
+平台源码基线为 Android 17 / API 37 / `android-17.0.0_r1`。AudioFlinger、AAudio 和音频线程调度参见 1.16；后台执行规则参见 5.8 与 25.15；Media3、Codec2 和多媒体管线参见 18.21。
 
 ## 两级限制：先看 FGS，再看 WIU
 

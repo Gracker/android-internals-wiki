@@ -1,7 +1,7 @@
 ---
 title: "音频 Offload 与 AudioTrack 精确控制功耗实践"
-chapter: "25.18"
-section: "25.18"
+chapter: "25.12"
+section: "25.12"
 status: finalized
 drafted_date: "2026-05-24"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37); AAudio offload API 36+, AudioTrack flush/provenance API 37"
@@ -9,7 +9,7 @@ last_verified: "2026-05-24"
 last_verified_against: "Android Developers AudioTrack / AAudio / Android 17 features / Media3 docs 2026-05；AOSP Android 17 源码待复核"
 confidence: medium
 tags: [audio, power, aaudio, audiotrack, offload, android17]
-related_chapters: ["1.16", "18.21", "25.17", "26.3"]
+related_chapters: ["1.16", "18.21", "25.11", "26.3"]
 created_by: "task2a-knowledge-gap"
 drafted_by: "task2a-knowledge-gap"
 created_date: "2026-05-24"
@@ -52,7 +52,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-20
 ---
 
-# 25.18 音频 Offload 与 AudioTrack 精确控制功耗实践
+# 音频 Offload 与 AudioTrack 精确控制功耗实践
 
 ## 音频 Offload 的适用范围
 
@@ -60,7 +60,7 @@ last_deepseek_cn_review_at: 2026-06-20
 
 Audio offload 解决的是这类长时间播放的 CPU 参与度问题。平台把音频处理交给专用硬件或 DSP，应用可以一次写入更长的数据，框架侧数据管道暂停，CPU 有机会进入睡眠。它不是低延迟方案。游戏音效、乐器、语音通话、实时互动仍应看 AAudio low latency、MMAP、buffer size、callback 稳定性和线程调度，详见 1.16 节。
 
-这里讨论应用侧怎么判断、怎么接入、怎么验证和怎么灰度。AudioFlinger / AAudio / MMAP 的机制详见 1.16 节；MediaCodec、Media3 与播放管线详见 18.21 节；Android 17 后台音频限制详见 25.17 节。
+这里讨论应用侧怎么判断、怎么接入、怎么验证和怎么灰度。AudioFlinger / AAudio / MMAP 的机制详见 1.16 节；MediaCodec、Media3 与播放管线详见 18.21 节；Android 17 后台音频限制详见 25.11 节。
 
 ## 场景边界：什么时候值得开启 Offload
 
@@ -238,7 +238,7 @@ Android 17 引入 `USAGE_ASSISTANT` 专用音量流，Assistant 回复音量可�
 这件事只解决音量控制归属，不解决后台播放资格，也不证明音频走了 offload。Assistant 音频要分三条线判断：
 
 - 音量线：是否使用 `USAGE_ASSISTANT`，应用是否属于可使用 `MODE_ASSISTANT_CONVERSATION` 的 Assistant 集成。
-- 后台线：退后台或锁屏后是否满足 Android 17 后台音频 hardening、FGS 与 while-in-use 规则，详见 25.17 节。
+- 后台线：退后台或锁屏后是否满足 Android 17 后台音频 hardening、FGS 与 while-in-use 规则，详见 25.11 节。
 - 省电线：长回复或长内容播放是否满足 offload 条件，短回复优先保证延迟和可打断性。
 
 

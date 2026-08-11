@@ -1,10 +1,11 @@
 ---
 title: "OEM 厂商差异化后台限制与功耗诊断实战"
-chapter: "25.25"
+chapter: "25.14"
+section: "25.14"
 status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [oem-doze, background-restriction, power-optimization, vendor-doze, chinese-oem]
-related_chapters: ["25.2", "25.3", "25.4", "25.13", "11.2", "11.3"]
+related_chapters: ["25.2", "25.3", "25.4", "25.15", "11.2", "11.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "research-gaps+daily-info"
@@ -26,7 +27,7 @@ last_review_finalize_at: "2026-07-25T16:05:49+08:00"
 last_review_finalize_run_id: "20260725-160531-5200f347"
 ---
 
-# 25.25 OEM 厂商差异化后台限制与功耗诊断实战
+# OEM 厂商差异化后台限制与功耗诊断实战
 
 平台基线为 Android 17（API 37，`android-17.0.0_r1`）。排查 OEM 后台问题时，不从“某厂商会杀应用”的传闻出发，而是先回答三个有证据可查的问题：
 

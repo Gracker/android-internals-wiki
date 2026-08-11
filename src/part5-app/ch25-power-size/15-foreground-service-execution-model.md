@@ -1,14 +1,17 @@
 ---
 title: "Android 17 前台服务类型执行模型与后台启动性能边界"
-chapter: "25.26"
+chapter: "25.15"
+section: "25.15"
 status: ready-for-review
 drafted_date: "2026-07-16"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-07-16"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
+consolidated_from:
+  - "src/part5-app/ch25-power-size/13-fgs-timeout-jobscheduler-quota.md"
 tags: ['foreground-service', 'fgs-type', 'background-launch', 'power', 'android17', 'bals']
-related_chapters: ['25.13', '25.25', '8.11']
+related_chapters: ["25.4", "25.14", "8.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "AOSP结构 + 官方文档 + research-gaps"
@@ -26,7 +29,7 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 ---
 
-# 25.26 Android 17 前台服务类型执行模型与后台启动性能边界
+# Android 17 前台服务类型执行模型与后台启动性能边界
 
 前台服务（Foreground Service，FGS）用于承载用户已经知晓、离开页面后仍需继续的工作，例如播放、导航、通话和屏幕采集。它提供持续通知和较高的进程存活权重，却不承诺独占 CPU、无限运行、后台随时启动或后台随时拉起页面。
 
@@ -279,7 +282,19 @@ Android 17 的 `getTimeLimitedFgsType()` 只处理 `dataSync` 和 `mediaProcessi
 
 用户明确触发的大文件传输可评估 user-initiated data transfer job。可延期、可重试、带网络或充电约束的工作更适合 WorkManager 或 JobScheduler。长时间 Worker 使用 FGS 时，仍要遵守 FGS 类型、启动和超时规则。
 
-更多超时与 Job 配额细节参见 [25.13 Foreground Service 超时与 JobScheduler 配额治理](./13-fgs-timeout-jobscheduler-quota.md)。
+Job 配额与 FGS 时长是两套预算。排障时分别保存 FGS 类型/运行区间/超时回调，以及 Job 的待机分组、pending reason、stop reason、运行时长和是否与 FGS 同时运行。`ForegroundService` 只表达用户可感知的持续工作，不会让同进程 Job 获得无限额度。
+
+### 5.5 长任务必须可恢复
+
+系统没有向应用公开 `dataSync` 或 `mediaProcessing` 的精确剩余额度。任务不能等到 `onTimeout()` 才集中保存进度，而应持续提交已经被文件系统或服务端确认的检查点：
+
+- 下载按 Range 与校验块记录，上传按服务端确认分片记录，转码按输入时间段与输出校验记录；
+- 每个分片具备幂等键，防止结果已写入、状态未更新时重复产生副作用；
+- `onTimeout()` 只记录、发出取消、释放资源并停止服务，不等待数据库、网络或编码线程；
+- FGS、UIDT、Job 与 WorkManager 共享同一份持久任务状态，并用租约或原子状态保证只有一个执行者；
+- 约束与任务价值匹配，用户正在等待的工作不应被无意义的充电/空闲约束拖住。
+
+Job/Worker 收到停止只表示调度器结束本次执行，不会自动终止应用自建线程、native 工作或子进程。取消信号必须一直传播到底层；否则旧执行残留与新一轮恢复并发，既增加 CPU/功耗，也会破坏幂等性。
 
 ## 6. FGS 对进程优先级和性能的影响
 
@@ -385,7 +400,7 @@ adb logcat | grep AudioHardening
 
 测试结束后可用 `set-enable-hardening disable` 恢复默认测试设置。`AudioHardening` 记录中的 `partial` 表示缺少 FGS，`full` 表示存在 FGS 但缺少 WIU 能力。
 
-相关的音频功耗与生命周期设计参见 [25.17 Android 17 后台音频强化与功耗](./17-background-audio-hardening-power.md)。
+相关的音频功耗与生命周期设计参见 [25.11 Android 17 后台音频硬化与播放功耗治理](./11-background-audio-hardening-power.md)。
 
 ## 9. 选择 FGS、Job 或 WorkManager
 
@@ -400,7 +415,7 @@ adb logcat | grep AudioHardening
 
 方案选择应从用户可感知性、是否允许延期、失败后能否恢复、所需资源和平台配额出发。把所有后台任务包进 FGS 会增加通知干扰、功耗、超时和商店审核风险。
 
-推送触发细节参见 [8.11 推送通知管线性能](../../part2-performance/ch08-responsiveness/11-push-notification-pipeline-performance.md)。OEM 额外后台策略的取证方法参见 [25.25 OEM 厂商差异化后台限制与功耗诊断](./25-android17-oem-background-restriction-power-diagnosis.md)。
+推送触发细节参见 [8.11 推送通知管线性能](../../part2-performance/ch08-responsiveness/11-push-notification-pipeline-performance.md)。OEM 额外后台策略的取证方法参见 [25.14 OEM 厂商差异化后台限制与功耗诊断](./14-oem-background-restriction-power-diagnosis.md)。
 
 ## 10. 可观测性与故障注入
 

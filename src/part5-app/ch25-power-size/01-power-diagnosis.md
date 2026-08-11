@@ -9,6 +9,8 @@ last_verified_against: "AOSP android-17.0.0_r1 (primary) + android-16.0.0_r1 + a
 confidence: medium-high
 consolidated_from:
   - "src/part2-performance/ch07-smoothness/16-power-thermal-jank-playbook.md"
+  - "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
+  - "src/part5-app/ch25-power-size/27-android17-battery-usage-stats-power-attribution.md"
 drafted_date: "2026-05-10"
 polish_count: 0
 sources:
@@ -385,6 +387,24 @@ flowchart LR
 [`BatteryUsageStatsProvider`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java) 在构建 `BatteryUsageStats` 时调用 `PowerAttributor.estimatePowerConsumption()`。Android 17 使用的 [`MultiStatePowerAttributor`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/MultiStatePowerAttributor.java) 配置各功耗组件的处理器，并通过 `PowerStatsExporter` 把聚合结果写入构建器。
 
 各处理器会根据组件采用不同输入。例如 [`CpuPowerStatsProcessor`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/CpuPowerStatsProcessor.java) 读取 CPU 活跃时间、核簇和频点对应的 `PowerProfile` 参数；若采集结果带有 EnergyConsumer 数据，再用硬件能量调整各功耗分组（power bracket）的估算。移动网络处理器也会根据可用信息在 `PowerProfile` 与硬件能量之间校准。因而 Android 17 的归因不是简单的“全实测”或“全模型”二选一。
+
+### BatteryUsageStats、PowerMonitor 与 HealthStats 的能力边界
+
+三套名称相近的接口不能互相替代：
+
+| 入口 | 普通应用能否使用 | 数据范围 | 主要用途 |
+| --- | --- | --- | --- |
+| `BatteryStatsManager.getBatteryUsageStats()` | 不能；属于隐藏系统接口并要求 `BATTERY_STATS` | device、all-apps、UID、组件及可选状态维度 | 设置页、系统服务和 bugreport 的 UID 功耗归因 |
+| `SystemHealthManager.getPowerMonitorReadings()` | API 35 起可以 | 设备提供的 ODPM rail 或 modeled consumer，自开机累计 μWs | 同机、同场景的设备级能量窗口比较 |
+| `SystemHealthManager.takeMyUidSnapshot()` | 可以 | 本 UID 的 CPU、网络、WakeLock 等资源活动 | 解释应用在同一窗口内做了什么，不直接输出 mAh |
+
+`BatteryUsageStats` 的 device 总量可以大于 all-apps：屏幕、基带待机和共享硬件中无法可靠分摊的部分会留在设备侧。Android 17 的 CPU 处理器会把频点模型、硬件总量和 UID time-in-bracket 结合起来；WakeLock 处理器估算的是阻止 CPU 休眠的机会成本；屏幕总量再按 top activity duration 分给 UID。这些都是归因结果，不是每个 UID 都有一块独立电表。
+
+Android 17 的标准 `BatteryConsumer` 没有 GPU 组件，PowerStats AIDL 的标准 `EnergyConsumerType` 也没有 GPU 枚举。厂商可以暴露名为 GPU、G3D 或其他名称的 monitor，但它只适合在相同设备构建上做差值，不能冒充跨设备的 UID GPU mAh。
+
+普通应用读取 `PowerMonitor` 时还要处理两个实现边界：设备可以返回空列表；Android 17 普通调用路径可能复用 20 秒内的缓存读数并加入随机扰动。两次快照只有在 monitor 相同、时间戳前进、累计值未回退时才能做差。短于读数分辨率的启动或单帧场景应改用 Perfetto rail、Power Profiler 或外接仪器。
+
+一次可复核的应用侧实验应把三组增量放在一起保存：monitor 的 μWs、`HealthStats` 的本 UID CPU/网络/WakeLock 活动，以及完成任务数。这样可以回答“设备能量是否变化、应用行为为何变化”，但仍不能声称拿到了系统设置页的 UID 精确电量。
 
 ### Android 15 到 Android 17 的变化
 

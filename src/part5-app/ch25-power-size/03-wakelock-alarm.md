@@ -7,6 +7,10 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-29"
 last_verified_against: "AOSP android-17.0.0_r1 + Android Developers wake lock / alarm docs + Clippings structure references"
 confidence: medium-high
+consolidated_from:
+  - "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
+  - "src/part5-app/ch25-power-size/19-android-vitals-wakelock-governance.md"
+  - "src/part5-app/ch25-power-size/20-android17-allow-while-idle-listener-alarm.md"
 drafted_date: "2026-05-14"
 polish_count: 0
 sources:
@@ -273,7 +277,11 @@ fun scheduleProcessLocalIdleAlarm(
 }
 ```
 
-Listener 版本不需要 `SCHEDULE_EXACT_ALARM`，但它也不是持久化 Alarm。调用进程没有活动组件后，系统可以取消它；组件结束时也应调用 `alarmManager.cancel(listener)`。它仍受允许空闲分发的频率限制，不适合循环安排高频回调。需要在进程死亡或组件结束后仍然触发时，使用 `PendingIntent` 版本并满足精确 Alarm 权限。示例中的 `@RequiresApi` 来自 `androidx.annotation.RequiresApi`；该 API 的完整边界见 [Android 17 功能说明](https://developer.android.com/about/versions/17/features)与 §25.20。
+Listener 版本不需要 `SCHEDULE_EXACT_ALARM`，但它也不是持久化 Alarm。调用进程没有活动组件后，系统可以取消它；组件结束时也应调用 `alarmManager.cancel(listener)`。它仍受允许空闲分发的频率限制，不适合循环安排高频回调。需要在进程死亡或组件结束后仍然触发时，使用 `PendingIntent` 版本并满足精确 Alarm 权限。示例中的 `@RequiresApi` 来自 `androidx.annotation.RequiresApi`；完整边界在本节继续说明。
+
+这个重载的完整工程边界可以压缩成四个条件：活跃组件仍在、idle 中确实需要唤醒、回调能快速同步完成、丢失后能够恢复。Android 17 会在投递 listener 前由 AlarmManager 获取共享 WakeLock，`onAlarm()` 返回后再完成投递并释放；因此回调内通常不应再获取应用 WakeLock。把工作另起异步线程后立即返回，会失去这段系统保护。
+
+listener alarm 以进程内 Binder callback 交付。应用进入 cached/frozen、listener Binder 死亡或拥有组件结束时，系统可以移除它；进程死亡后必须仍能交付的提醒应使用 `PendingIntent`。Android 17 还为 listener + allow-while-idle 维护独立 quota，AOSP 默认值只用于解释实现，不能被业务写成固定心跳承诺。每次 callback 完成后再按当前协议状态安排下一次 one-shot alarm，并记录 requested/fired/callback 时间，避免形成不可观测的周期唤醒器。
 
 ## Exact Alarm 权限变化（Android 12+）
 
@@ -354,6 +362,16 @@ UI 收到 `PERMISSION_REQUIRED` 后，应先解释用户功能为何需要精确
 - 相邻提醒是否可以合并，接收器是否只做短小工作。
 
 ## 扩展：功耗回归守门
+
+### Android Vitals 的 excessive 与 stuck 口径
+
+Google Play 的 WakeLock 指标只统计特定状态下的非豁免 partial WakeLock。当前 excessive 口径关注 24 小时内的累计量，stuck 口径关注单次长持有；一个未超过单次阈值的高频短锁，累计后仍可能成为 excessive。因而内部监控至少同时保存单次最长时长、窗口累计时长、次数和重叠区间。
+
+Vitals 的豁免跟“由哪个平台 API 创建锁”有关，不跟手动 tag 的名字有关。音频、定位或用户发起 Job 的平台锁可能在指标中豁免；业务自行调用 `newWakeLock()`，即使 tag 写成 Audio 或 Location，也不会自动获得豁免。前台服务同样不是豁免项。
+
+Play Console 通常只能给出 tag、受影响会话和持续时间，端侧还要补调用现场。手动锁使用稳定、低基数且不含用户信息的 tag，例如 `com.example.sync:message-refresh`；应用日志再关联任务类型、版本、获取/释放栈 hash、前后台与充电状态。WorkManager/JobScheduler 生成的 `*job*` tag 可能随系统和库版本变化，看到系统 tag 时应回查 Worker/Job、约束、重试与停止原因，而不是在源码里搜索完整字符串。
+
+本地复现应覆盖屏幕关闭、应用在后台或运行 FGS、设备由电池供电的区间。`dumpsys power` 回答当前持锁者，BatteryStats/bugreport 还原累计区间，Perfetto 的 power 轨道把 WakeLock、Alarm、Job、screen state 与线程工作对齐。未计入 Play 指标不等于耗电合理；国内渠道和企业分发仍应保留相同的内部门禁。
 
 WakeLock 和 Alarm 的回归要覆盖安排、触发、取消和失败恢复。测试周期应包含业务完整的提醒或重试过程，不照抄固定息屏时长。
 

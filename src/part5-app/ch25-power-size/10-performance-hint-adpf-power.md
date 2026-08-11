@@ -61,13 +61,16 @@ sources:
   - type: structure
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [adpf, power-efficiency, powermonitor, power-rails, perfetto, power-optimization]
-related_chapters: ["5.9", "11.2", "25.1", "25.11"]
+related_chapters: ["5.9", "11.2", "25.1", "25.16"]
+consolidated_from:
+  - "src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md"
+  - "src/part5-app/ch25-power-size/21-performance-hint-manager-practice.md"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-23"
 gap_source: "素材驱动/官方文档/AOSP 结构"
-title: "ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证"
-chapter: "25.16"
-section: "25.16"
+title: "PerformanceHintManager 与 ADPF 能效验证"
+chapter: "25.10"
+section: "25.10"
 status: finalized
 drafted_by: "task2a-knowledge-gap"
 pipeline_stage: finalized
@@ -113,7 +116,22 @@ last_review_finalize_at: "2026-08-02T10:05:51+08:00"
 last_review_finalize_run_id: "20260802-100551-c614c850"
 last_review_finalize_notes: "Hermes AIW review-finalize: 复核 2026-08-02 rework 已闭合 PowerMonitor/Perfetto 一致性实验问题；将 AOSP 锚点从 main/android-16 表述收敛到 android-17.0.0_r1，并补正 Android 17 SessionMode 枚举；正文无 Android 18/API38 越界结论。"
 ---
-# 25.16 ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证
+# PerformanceHintManager 与 ADPF 能效验证
+
+`PerformanceHintManager` 接收周期性工作的线程集合、目标时长和实际时长，不提供“加速开关”。Android 17 没有新增另一套公开 Java 接口；这一版的重点是把 Java、NDK、协程线程身份、能效模式和 PowerMonitor 验证放在同一个工作流中。
+
+## API 版本与调用路径
+
+| API level | Java | NDK |
+| ---: | --- | --- |
+| 31 | 创建 Session、更新 target、上报单值 actual、关闭 | — |
+| 33 | 延续基础能力 | 基础 manager/session API |
+| 34 | `setThreads()` | `APerformanceHint_setThreads()` |
+| 35 | `setPreferPowerEfficiency()`、`WorkDuration` | 能效模式与分项时长 |
+| 36 | 无对应新增 Java Session 方法 | creation config、feature probing、graphics pipeline、Java Session 借用 |
+| 37 | 延续现有公开能力 | `android-17.0.0_r1` 未新增 API 37 函数 |
+
+Java 调用经过 framework JNI、native client、`HintManagerService` 和 Power HAL。高频 target/actual 更新在设备支持时可走 FMQ，失败或未建立 channel 时回退 Binder，因此不能笼统写成“每帧必定一次 Binder”。系统还会根据 UID 进程状态暂停/恢复 Session；应用调用成功不代表 HAL 一定采用每条数据。
 
 ## 适用场景：什么时候该把线程标成节能优先
 
@@ -193,7 +211,15 @@ class PowerEfficientBatchWorker(
 }
 ```
 
-`PerformanceHintManager.Session` 不是线程安全对象，因此示例把创建、上报与关闭都放在同一个调度器中。`finally` 保证失败周期也会上报已经消耗的时间；业务仍需单独记录异常结果。多线程 batch 可以登记多个 tid，但要在线程身份稳定后再创建或更新 session。`Dispatchers.IO` 这类弹性线程池会在不同 tid 之间迁移协程，不适合作为固定线程集合直接登记；相关边界见 25.11 节。
+`PerformanceHintManager.Session` 不是线程安全对象，因此示例把创建、上报与关闭都放在同一个调度器中。`finally` 保证失败周期也会上报已经消耗的时间；业务仍需单独记录异常结果。多线程 batch 可以登记多个 tid，但要在线程身份稳定后再创建或更新 session。`Dispatchers.IO` 这类弹性线程池会在不同 tid 之间迁移协程，不适合作为固定线程集合直接登记；相关边界在下一节继续说明。
+
+### 协程迁移与 TID 所有权
+
+Session 绑定 Linux TID，即 `Process.myTid()`，不是 `Thread.currentThread().id`。`Dispatchers.Default`、`Dispatchers.IO` 和 `limitedParallelism()` 都不承诺同一协程挂起恢复后仍在同一个 TID 上。常见错误是在某个 `suspend` 函数开头登记当前线程，恢复后却由另一工作线程执行；系统收到的线程集合与真实负载随即分离。
+
+适合 ADPF 的协程负载应由单线程或小规模固定 `Executor` 承载，在线程启动后采集 TID；一个周期的业务块不要在中途切换 dispatcher。Session 创建、`setThreads()`、target 更新、actual 上报和 `close()` 由同一 owner 串行执行。线程池重建时，API 31—33 关闭旧 Session 并重建；API 34+ 可在生命周期边界完整替换线程数组，但不能每周期更新。
+
+API 36 的 `APerformanceHint_borrowSessionFromJava()` 可以让 JNI 代码借用 Java Session，避免重复创建。native 侧不能关闭借用指针，Java 对象关闭后也不能继续使用。没有稳定周期、稳定线程和可信 actual 测量时，应先处理并发、任务队列与生命周期，不应强行套 ADPF。
 
 ## Power Efficiency Mode 的系统语义
 
@@ -304,6 +330,8 @@ data_sources: {
 
 这份配置只能保证请求采集，不能保证设备一定提供 rail 数据。拿到 trace 后，先确认 power rail 轨道是否存在，再把 `Trace.beginSection("pe_batch_cycle")` 标记的工作窗口与 CPU frequency、thread state、thermal status 对齐。只看电池百分比或单次电流值，很容易把充电状态、屏幕亮度、网络波动和后台任务混进结论。
 
+开发阶段还应执行 `adb shell dumpsys performance_hint`，核对 Session 的 PID/UID、TID、target、`AllowedByProcState`、`ForcePaused`、`PowerEfficient` 和设备能力。Perfetto 中的 `ADPF Session <id> target duration`、`actual duration`、TID 与 mode counter 用来确认提示数据确实进入客户端路径，再与 sched、频率、deadline miss 和 thermal 对齐。statsd 的 ADPF atom 属于系统遥测，不是普通应用的实时查询接口。
+
 ## 实验设计：同时看耗时和单位任务能耗
 
 Power Efficiency Mode 应按单位任务验收：固定设备、温度起点、输入数据和工作负载，再比较耗时与能耗。
@@ -376,7 +404,7 @@ Power Efficiency Mode 和 Thermal API 处理的是同一类长期负载问题的
 
 ### 误区二：把输入和渲染线程也标成节能优先
 
-输入、主线程、RenderThread、音视频低延迟线程一般不适合默认节能优先。它们的尾部延迟更敏感，错误 hint 会把用户感知问题放大。图形、游戏和相机相关周期任务如果要接入，应先按 5.9 和 25.11 的 session 边界验证线程身份。
+输入、主线程、RenderThread、音视频低延迟线程一般不适合默认节能优先。它们的尾部延迟更敏感，错误 hint 会把用户感知问题放大。图形、游戏和相机相关周期任务如果要接入，应先按 5.9 和本节的 Session 边界验证线程身份。
 
 ### 误区三：PowerMonitor 的 rail 名称能跨设备对比
 

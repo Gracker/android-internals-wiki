@@ -223,7 +223,7 @@ dependencies {
 
 构造 `CronetEngine` 前要调用 `CronetProviderInstaller.installProvider(Context)`，并处理 Play services 缺失、需要更新或安装失败。官方 `cronet-fallback` 是能力较弱的 Java fallback，不能预设它与 native Cronet 具有相同的 HTTP/3、性能和连接迁移表现。
 
-一个进程通常只创建一个 `CronetEngine`。多个 engine 不能并发使用同一个 storage directory。若应用打包 native Cronet provider，还要按 [25.30 Native SO 体积优化](../../part5-app/ch25-power-size/30-native-so-size-optimization.md) 验证 ABI、符号和 16KB page-size 兼容性；页大小变化对初始化耗时没有通用收益比例。
+一个进程通常只创建一个 `CronetEngine`。多个 engine 不能并发使用同一个 storage directory。若应用打包 native Cronet provider，还要按 [25.18 Native SO 体积优化](../../part5-app/ch25-power-size/18-native-so-size-optimization.md) 验证 ABI、符号和 16KB page-size 兼容性；页大小变化对初始化耗时没有通用收益比例。
 
 ### 协议选择要看线上分组
 

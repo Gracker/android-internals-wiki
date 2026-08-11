@@ -1,7 +1,7 @@
 ---
 title: "Hybrid/WebView 功耗与原生化取舍"
-chapter: "25.10"
-section: "25.10"
+chapter: "25.9"
+section: "25.9"
 status: finalized
 drafted_date: "2026-05-15"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -65,7 +65,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-08
 ---
 
-# 25.10 Hybrid/WebView 功耗与原生化取舍
+# Hybrid/WebView 功耗与原生化取舍
 
 ## Hybrid 页的功耗账本
 
@@ -73,7 +73,7 @@ Hybrid 页面把应用进程、WebView provider、Chromium renderer、JavaScript
 
 平台锚点为 Android 17（API 37）和 `android-17.0.0_r1`，比较同一业务在原生页、应用内 WebView 和外部浏览器中的成本。结论分成两类：同机对照实验得到的相对差异，以及能够在线上按页面和 provider 版本持续验证的指标。
 
-18.13 节负责 WebView 渲染管线，22.7 节负责 WebView 优化实战，10.3 节负责内存持续增长，19.21 节负责 Hybrid APM。25.10 把这些章节的结果接到功耗账本和技术选型上。
+18.13 节负责 WebView 渲染管线，22.7 节负责 WebView 优化实战，10.3 节负责内存持续增长，19.21 节负责 Hybrid APM。本节把这些章节的结果接到功耗账本和技术选型上。
 
 ## 原生 App、Web App、Hybrid 页面的能耗边界
 

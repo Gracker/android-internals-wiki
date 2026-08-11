@@ -404,7 +404,7 @@ Android 17 / API 37 继续提供 Thermal API、ADPF 与 CPU/GPU headroom 相关�
 - [分析方法](./03-jank-methodology.md)
 - [典型场景](./04-typical-scenarios.md)
 - [优化策略](./05-optimization.md)
-- [ThermalManager 热节流适配与性能降级治理实战](../../part5-app/ch25-power-size/28-thermal-manager-throttling-performance.md)
+- [热节流适配与性能降级治理](../../part5-app/ch25-power-size/16-thermal-throttling-performance.md)
 - [系统内存压力与 lmkd](../../part1-fundamentals/ch04-memory/04-lmk.md)
 - [Android Thermal](../../part1-fundamentals/ch05-cpu-power/05-thermal.md)
 - [ADPF](../../part1-fundamentals/ch05-cpu-power/09-adpf.md)
