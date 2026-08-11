@@ -7,6 +7,12 @@ applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
 last_verified: '2026-06-29'
 last_verified_against: AOSP android-17.0.0_r1 (frameworks/base, hardware/interfaces/power), Linux kernel 6.6 (android15-6.6), Linux kernel 6.12 (android16-6.12)
 confidence: medium
+consolidated_from:
+  - "src/part1-fundamentals/ch05-cpu-power/5.21-android17-battery-optimization-soc-architecture.md"
+  - "src/part1-fundamentals/ch05-cpu-power/5.28-android17-pelt-boost-revert-amu-pmu-microarch-frequency-limiting.md"
+  - "src/part1-fundamentals/ch05-cpu-power/5.29-android17-gpu-dvfs-headroom-power-advisor.md"
+  - "src/part1-fundamentals/ch05-cpu-power/5.32-linux-610-bpf-dvfs-schedutil-loop.md"
+  - "src/part1-fundamentals/ch05-cpu-power/5.35-pms-cpuidle-schedutil.md"
 sources:
 - type: material
   path: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md
@@ -60,7 +66,7 @@ last_deepseek_cn_review_at: 2026-06-30
 
 
 
-# DVFS 与功耗管理
+# 5.4 DVFS 与功耗管理
 
 > [!NOTE] 源码锚点
 > 平台源码以 AOSP `android-17.0.0_r1`（Android 17 / API 37）为准，内核调频路径以 `android17-6.18-2026-06_r6` 为准。厂商仍可替换 CPUFreq 驱动、固件和 Power HAL 策略，因此需要区分通用机制、Android 接口与设备实现。
@@ -264,6 +270,14 @@ Android 17 的 `GameManagerService` 在游戏前台状态变化时控制 `Mode.G
 
 WakeLock 的职责是约束系统挂起或相关电源状态。AOSP 没有“每次 acquire WakeLock 都调用 `Boost.INTERACTION` 200 毫秒”的通用链路，排障时不要把两者混为一谈。
 
+### 从 framework 提示到频率请求没有固定直连
+
+Power HAL 是场景提示与厂商策略的边界，schedutil 是内核的 CPUFreq governor。`setMode()`、`setBoost()` 与 hint session 进入 vendor HAL 后，可以被实现为 UClamp、cpuset、devfreq、固件投票或其他私有策略；AOSP 不规定它们必须写某个 schedutil 参数。`IPowerStats` 则负责能量消费者、meter 与 residency 等观测，它不会反向决定 governor 行为。
+
+Android common 6.18 还允许 `sched_ext` 用 `scx_bpf_cpuperf_set()` 提交 CPU performance target。该入口与 CFS/PELT 路径会在 schedutil 中汇合，随后仍受 policy 上下限、driver、firmware 与 thermal pressure 约束。不能把“内核已有 BPF kfunc”写成“Android 17 使用 BPF 直接控频”；需要在目标设备确认 `sched_ext` 状态、加载的 BPF 程序与 CPUFreq 路径。
+
+AMU、PMU 和厂商 counter 可帮助解释同频不同效：AMU 反映架构活动/参考周期，PMU 可以提供指令、周期、cache miss 与 stall 等事件。它们是反馈或诊断来源，不是 AOSP 统一的升频仲裁器。比较“提频是否有收益”时，应在相同 workload 下同时报告完成时间、指令/周期、内存 stall、温度和能量，避免仅凭 utilization 或频率轨迹下结论。
+
 ## 用 Perfetto 观察 CPU DVFS
 
 ### 频率轨迹表示什么
@@ -320,6 +334,8 @@ GPU 通常有自己的时钟、电压域、利用率统计和 governor/固件策
 - CPU 是否及时提交了 GPU 工作。
 
 Android 17 的 ADPF `WorkDuration` 可以携带 CPU/GPU 实际工作时长，目的是给平台更完整的反馈；它不会把 CPUFreq governor 变成 GPU governor。Perfetto 是否显示 GPU 频率、轨迹叫什么、数值是请求级别还是硬件反馈，都取决于 GPU 驱动和数据源。
+
+Android 17 的 CPU/GPU headroom API 提供未来窗口内的容量余量估计，适合应用做质量或并发降级；它不是 GPU 利用率、频率或硬件忙碌时间。SurfaceFlinger 的 `PowerAdvisor` 也会围绕显示合成工作向 Power HAL 建立 hint session，但这条系统侧反馈链与应用读取 GPU headroom 没有固定直接调用关系。设备是否把两者映射到同一 GPU/devfreq 策略，需要 vendor trace、HAL 实现和 GPU counter 共同证明。
 
 ### DDR/LPDDR 关注带宽、延迟与竞争
 

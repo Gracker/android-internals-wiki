@@ -1,10 +1,11 @@
 ---
 title: "Android 17 App Hibernation 状态机与冷启动恢复性能"
-chapter: "5.24"
+chapter: "5.17"
+section: "5.17"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [app-hibernation, app-standby, background-limits, power-management, cold-restart]
-related_chapters: ["5.8", "5.21", "5.17", "1.20"]
+related_chapters: ["5.7", "1.20"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-27"
 drafted_date: "2026-06-30"
@@ -26,7 +27,7 @@ sources:
     path: "https://developer.android.com/about/versions/15/behavior-changes-15#app-hibernation"
 ---
 
-# 5.24 Android 17 App Hibernation 状态机与冷启动恢复性能
+# 5.17 Android 17 App Hibernation 状态机与冷启动恢复性能
 
 App Hibernation 面向“安装后长期没有被使用”的应用。它会把包置于类似手动 Force stop 的状态，回收缓存和可选的 dexopt 产物，并配合 unused-app policy 重置一部分运行时权限。对应用团队而言，最重要的后果有三个：原有后台入口不能继续工作、权限不会在退出休眠时自动恢复、首次再启动可能同时产生冷进程、缓存重建和代码重新优化的成本。
 

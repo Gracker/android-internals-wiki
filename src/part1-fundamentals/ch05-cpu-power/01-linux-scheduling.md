@@ -31,6 +31,10 @@ last_verified: '2026-06-11'
 last_verified_against: Linux 6.6 sched-design-CFS + kernel/sched/fair.c/debug.c,
   bionic pthread.h android-16.0.0_r1, libprocessgroup task_profiles.json android-16.0.0_r1
 confidence: high
+consolidated_from:
+  - "src/part1-fundamentals/ch05-cpu-power/31-android17-eevdf-scheduler.md"
+  - "src/part1-fundamentals/ch05-cpu-power/5.32-linux-610-bpf-dvfs-schedutil-loop.md"
+  - "src/part1-fundamentals/ch05-cpu-power/5.34-android17-task-scheduler-optimization.md"
 sources:
 - type: blog
   path: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md
@@ -79,6 +83,8 @@ last_task9_autofix_at: "2026-06-11"
 updated_date: "2026-06-11"
 updated_by: openclaw-task9
 ---
+
+# 5.1 Linux 进程调度基础
 
 > [!info] 源码锚点
 > 正文按 Android 17 / API 37 / `android-17.0.0_r1` 与 kernel `android17-6.18-2026-06_r6` 复核。文中提到旧 CFS、SchedTune 或早期 Android 行为时，会明确标成历史背景，避免与当前实现混用。
@@ -168,6 +174,12 @@ adb shell cat /sys/kernel/debug/sched/base_slice_ns
 ```
 
 量产设备可能未挂载 debugfs，也可能禁止 shell 读取。节点不可见只说明观测条件不足，不能据此判断调度器没有使用 EEVDF。
+
+### `sched_ext` 是可替换调度策略入口，不是 Android 17 的默认选人器
+
+`android17-6.18-2026-06_r6` 已包含 `sched_ext` 与 BPF scheduler class。它允许具备系统权限的实现加载 BPF 调度策略，并可通过 `scx_bpf_cpuperf_set()` 向 CPU 性能控制传递目标。这个事实只证明内核具备接口，不能证明量产设备已经启用某个 BPF 调度器。
+
+验证时至少同时检查内核配置、`/sys/kernel/sched_ext/state`（节点存在且可读时）、已加载 BPF program/link，以及 trace 中是否出现对应 `sched_ext` 事件。状态为 `disabled` 时，普通任务仍由本文描述的 fair/EEVDF 路径选择。即使 `sched_ext` 已启用，它也不直接写 CPUFreq driver；性能目标仍要经过 schedutil、policy、driver、固件与 thermal 上限，详见 5.4。
 
 kernel 6.18 还包含 slice protection、`RUN_TO_PARITY`、`PREEMPT_SHORT` 和 deferred dequeue 等细节。它们会影响一次请求何时允许被抢占、短请求怎样参与竞争以及睡眠任务的 lag 怎样衰减。面向 Trace 分析时，记住下面三点更有用：
 

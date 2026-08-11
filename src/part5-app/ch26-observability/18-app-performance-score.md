@@ -8,6 +8,8 @@ applicable_versions: "Android 11 (API 30) - Android 17 (API 37); App Performance
 last_verified: "2026-05-23"
 last_verified_against: "Android Developers App Performance Score / Android Vitals / Macrobenchmark / Baseline Profiles docs"
 confidence: high
+consolidated_from:
+  - "src/part1-fundamentals/ch05-cpu-power/5.33-android17-performance-score-attribution-sourcecode.md"
 tags: [app-performance-score, android-vitals, macrobenchmark, baseline-profile, performance-governance, observability]
 related_chapters: ["15.3", "15.6", "15.10", "19.14", "26.3", "26.15"]
 created_by: "task2a-knowledge-gap"

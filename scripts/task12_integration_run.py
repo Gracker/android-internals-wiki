@@ -33,12 +33,20 @@ SECTION_MAP = {
     "5.1": ("src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md", "5.1 Linux 进程调度基础"),
     "5.2": ("src/part1-fundamentals/ch05-cpu-power/02-eas.md", "5.2 EAS 能量感知调度"),
     "5.3": ("src/part1-fundamentals/ch05-cpu-power/03-big-little.md", "5.3 大小核架构"),
-    "5.4": ("src/part1-fundamentals/ch05-cpu-power/04-dvfs.md", "5.4 DVFS 动态调频"),
-    "5.8": ("src/part1-fundamentals/ch05-cpu-power/08-background-execution.md", "5.8 后台执行限制"),
+    "5.4": ("src/part1-fundamentals/ch05-cpu-power/04-dvfs.md", "5.4 DVFS 与功耗管理"),
+    "5.5": ("src/part1-fundamentals/ch05-cpu-power/05-thermal.md", "5.5 Thermal 管控"),
+    "5.6": ("src/part1-fundamentals/ch05-cpu-power/06-android-power.md", "5.6 Android 功耗管理"),
+    "5.7": ("src/part1-fundamentals/ch05-cpu-power/07-background-execution.md", "5.7 后台执行限制与优化"),
+    "5.8": ("src/part1-fundamentals/ch05-cpu-power/08-jobscheduler-workmanager-performance.md", "5.8 JobScheduler/WorkManager 调度与后台任务性能"),
     "5.9": ("src/part1-fundamentals/ch05-cpu-power/09-adpf.md", "5.9 ADPF 自适应性能框架"),
-    "5.10": ("src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md", "5.10 JobScheduler/WorkManager 性能"),
-    "5.11": ("src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md", "5.11 端侧 AI 推理性能"),
-    "5.12": ("src/part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md", "5.12 热管理深度分析"),
+    "5.10": ("src/part1-fundamentals/ch05-cpu-power/10-ondevice-ml-inference-performance.md", "5.10 端侧 AI 推理性能：NPU/GPU 加速与 LiteRT 管线"),
+    "5.11": ("src/part1-fundamentals/ch05-cpu-power/11-mobile-llm-dvfs-energy.md", "5.11 移动端 LLM 推理的 DVFS 与能效边界"),
+    "5.12": ("src/part1-fundamentals/ch05-cpu-power/12-android17-ml-runtime-npu-boundary.md", "5.12 Android 17 ML Runtime 与 NPU 访问边界"),
+    "5.13": ("src/part1-fundamentals/ch05-cpu-power/13-sensorservice-batching-power.md", "5.13 SensorService 与传感器批处理功耗模型"),
+    "5.14": ("src/part1-fundamentals/ch05-cpu-power/14-cpu-cache-friendly-code-data-layout.md", "5.14 CPU Cache 友好代码与数据布局优化"),
+    "5.15": ("src/part1-fundamentals/ch05-cpu-power/15-genai-app-integration-performance.md", "5.15 系统托管 GenAI：AICore、OnDeviceIntelligence 与资源竞争"),
+    "5.16": ("src/part1-fundamentals/ch05-cpu-power/16-bluetooth-le-audio-performance.md", "5.16 Bluetooth LE Audio 延迟与功耗性能"),
+    "5.17": ("src/part1-fundamentals/ch05-cpu-power/17-android17-app-hibernation-performance.md", "5.17 Android 17 App Hibernation 状态机与冷启动恢复性能"),
     "6.0": ("src/part1-fundamentals/ch06-storage/README.md", "6.0 存储章节导读"),
     "6.1": ("src/part1-fundamentals/ch06-storage/01-storage-architecture.md", "6.1 存储架构"),
     "6.2": ("src/part1-fundamentals/ch06-storage/02-filesystem.md", "6.2 文件系统"),
@@ -239,7 +247,7 @@ QUEUE_DATA = {
             }
         ]
     },
-    "5.8": {
+    "5.7": {
         "priority": 95,
         "issues": [
             {
@@ -284,7 +292,7 @@ QUEUE_DATA = {
             }
         ]
     },
-    "5.10": {
+    "5.8": {
         "priority": 85,
         "issues": [
             {
@@ -303,7 +311,7 @@ QUEUE_DATA = {
             }
         ]
     },
-    "5.11": {
+    "5.10": {
         "priority": 85,
         "issues": [
             {
@@ -322,7 +330,7 @@ QUEUE_DATA = {
             }
         ]
     },
-    "5.12": {
+    "5.5": {
         "priority": 85,
         "issues": [
             {
@@ -601,25 +609,25 @@ GAPS_DATA = {
         {"description": "uclamp_min 对启动耗时的影响", "importance": "高", "direction": "Android Framework 如何通过 CPUSet/CGroup 设置 uclamp_min", "related": "5.4"},
         {"description": "SCMI Fastchannels", "importance": "中", "direction": "ARM 官方 SCMI 规范 MMIO 调频通道", "related": "5.4"},
     ],
-    "5.8": [
-        {"description": "Binder Freezer Driver 协同机制", "importance": "高", "direction": "FrozenStateChangeCallback 在 AOSP 中的具体应用场景", "related": "5.8"},
-        {"description": "Android 16 UIDT 额度详情", "importance": "中", "direction": "UIDT 是否受 App Standby Bucket 进一步限制", "related": "5.8, 5.10"},
+    "5.7": [
+        {"description": "Binder Freezer Driver 协同机制", "importance": "高", "direction": "FrozenStateChangeCallback 在 AOSP 中的具体应用场景", "related": "5.7"},
+        {"description": "Android 16 UIDT 额度详情", "importance": "中", "direction": "UIDT 是否受 App Standby Bucket 进一步限制", "related": "5.7, 5.8"},
     ],
     "5.9": [
         {"description": "GPU 目标设定的 WorkDuration 分拆版本", "importance": "中", "direction": "updateTargetWorkDuration 是否也有类似 WorkDuration 的分拆", "related": "5.9"},
-        {"description": "ADPF 非游戏场景策略", "importance": "高", "direction": "ProfilingManager TRIGGER_TYPE_ANOMALY 如何利用 ADPF 信号", "related": "5.9, 5.11"},
+        {"description": "ADPF 非游戏场景策略", "importance": "高", "direction": "ProfilingManager TRIGGER_TYPE_ANOMALY 如何利用 ADPF 信号", "related": "5.9, 5.10"},
+    ],
+    "5.8": [
+        {"description": "updateEstimatedNetworkBytes API", "importance": "中", "direction": "Android 14+ 估算带宽 API 对调度优先级的影响", "related": "5.8"},
+        {"description": "TRANSFER_THROUGHPUT_UTILIZATION", "importance": "中", "direction": "Android 16+ 对大文件传输 job 的吞吐量监测逻辑", "related": "5.8"},
     ],
     "5.10": [
-        {"description": "updateEstimatedNetworkBytes API", "importance": "中", "direction": "Android 14+ 估算带宽 API 对调度优先级的影响", "related": "5.10"},
-        {"description": "TRANSFER_THROUGHPUT_UTILIZATION", "importance": "中", "direction": "Android 16+ 对大文件传输 job 的吞吐量监测逻辑", "related": "5.10"},
+        {"description": "PODAI (Play for On-device AI) 动态分发", "importance": "高", "direction": "通过 Play Services 动态分发 NPU 加速库解决 APK 体积", "related": "5.10"},
+        {"description": "零拷贝 TensorBuffer", "importance": "中", "direction": "HardwareBuffer 与 LiteRT NPU 直接内存共享", "related": "5.10"},
     ],
-    "5.11": [
-        {"description": "PODAI (Play for On-device AI) 动态分发", "importance": "高", "direction": "通过 Play Services 动态分发 NPU 加速库解决 APK 体积", "related": "5.11"},
-        {"description": "零拷贝 TensorBuffer", "importance": "中", "direction": "HardwareBuffer 与 LiteRT NPU 直接内存共享", "related": "5.11"},
-    ],
-    "5.12": [
-        {"description": "皮肤温度估算模型 (Thermal Model)", "importance": "中", "direction": "OEM 如何利用 power_allocator tzp 在 sysfs 中暴露物理参数", "related": "5.12"},
-        {"description": "Android 16 NDK AThermal_getThermalHeadroomThresholds", "importance": "高", "direction": "原生代码直接获取 Throttling 状态切换精确数值", "related": "5.12"},
+    "5.5": [
+        {"description": "皮肤温度估算模型 (Thermal Model)", "importance": "中", "direction": "OEM 如何利用 power_allocator tzp 在 sysfs 中暴露物理参数", "related": "5.5"},
+        {"description": "Android 16 NDK AThermal_getThermalHeadroomThresholds", "importance": "高", "direction": "原生代码直接获取 Throttling 状态切换精确数值", "related": "5.5"},
     ],
     "6.0": [
         {"description": "16KB Page Size 对底层存储性能的变革", "importance": "中", "direction": "结合 Android 15 行为变更，评估对 I/O 吞吐量的影响", "related": "6.0, 4.7"},
@@ -678,7 +686,7 @@ SUGGESTIONS_DATA = {
         {"type": "Perfetto 优化", "location": "SQL 示例", "problem": "使用 process_name 较慢", "suggestion": "推荐使用 upid 替代 process_name 以利用索引"},
     ],
     "5.0": [
-        {"type": "阅读建议", "location": "阅读建议", "problem": "未区分内核开发与应用优化", "suggestion": "App 开发者关注 5.8/5.9/5.10，系统工程师关注 5.1-5.5"},
+        {"type": "阅读建议", "location": "阅读建议", "problem": "未区分内核开发与应用优化", "suggestion": "App 开发者关注 5.7-5.10，系统工程师关注 5.1-5.6"},
     ],
     "5.1": [
         {"type": "Perfetto SQL", "location": "EEVDF 排队", "problem": "缺少前瞻性 SQL", "suggestion": "增加识别 EEVDF Lag 限制导致排队的示例 SQL"},
@@ -694,7 +702,7 @@ SUGGESTIONS_DATA = {
     "5.4": [
         {"type": "延迟构成", "location": "升频延迟", "problem": "200ms 延迟未拆解", "suggestion": "区分硬件物理切换(us 级)与 PELT 衰减惯性(32-64ms)"},
     ],
-    "5.8": [
+    "5.7": [
         {"type": "数据支撑", "location": "App Standby", "problem": "Active 桶限额背景缺失", "suggestion": "补充 Android 16 Active 桶引入限额背景"},
         {"type": "交叉引用", "location": "后台执行对前台性能", "problem": "未引用 LMK", "suggestion": "显式引用 4.4 节关于 LMK 的描述"},
     ],
@@ -702,14 +710,14 @@ SUGGESTIONS_DATA = {
         {"type": "版本差异", "location": "Thermal API", "problem": "仅描述 NDK 监听器", "suggestion": "补充 Android 16 Java 层预测回调 forecastHeadroom"},
         {"type": "版本差异", "location": "版本演进表", "problem": "Android 17 为[待验证]", "suggestion": "填充 ADPF 扩展至非游戏场景内容"},
     ],
-    "5.10": [
+    "5.8": [
         {"type": "源码准确性", "location": "JobScheduler 内部架构", "problem": "assignJobToContext 应为 assignJobsToContextsLocked", "suggestion": "修正方法名"},
         {"type": "边界说明", "location": "WorkManager 持久化", "problem": "未提强制停止后的行为", "suggestion": "补充 Force Stop 后 WorkManager 也不执行"},
     ],
-    "5.11": [
+    "5.10": [
         {"type": "版本差异", "location": "GPU Delegate", "problem": "未提 Android 15 优化", "suggestion": "标注 LiteRT GPU Delegate 在 Android 15 通过 OpenCL 优化实现 1.4x 提速"},
     ],
-    "5.12": [
+    "5.5": [
         {"type": "最佳实践", "location": "getThermalHeadroom", "problem": "调用频率无建议", "suggestion": "建议每秒调用不超过 1 次，避免 Binder 开销"},
     ],
     "6.0": [

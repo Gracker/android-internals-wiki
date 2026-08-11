@@ -40,7 +40,7 @@ sources:
 
 三者可能互相影响，却没有一一对应关系。把更多图片留在 `LruCache` 中，业务命中率可能提高，同时也会扩大 Java/native live set、增加 GC 和内存带宽压力。Startup Profile 改善的是 DEX 文件布局，不能直接宣称 L1 instruction cache miss 一定下降。
 
-校验锚点为 Android 17 / API 37 / `android-17.0.0_r1` 和 common kernel `android17-6.18-2026-06_r6`，重点讨论应用可控的做法。更完整的硬件局部性与 false sharing 原理见[CPU Cache 友好代码与数据布局](../../part1-fundamentals/ch05-cpu-power/18-cpu-cache-friendly-code-data-layout.md)，DEX 构建流程见[Startup Profile 与 DEX 布局](./12-startup-profile-dex-layout.md)。
+校验锚点为 Android 17 / API 37 / `android-17.0.0_r1` 和 common kernel `android17-6.18-2026-06_r6`，重点讨论应用可控的做法。更完整的硬件局部性与 false sharing 原理见[CPU Cache 友好代码与数据布局](../../part1-fundamentals/ch05-cpu-power/14-cpu-cache-friendly-code-data-layout.md)，DEX 构建流程见[Startup Profile 与 DEX 布局](./12-startup-profile-dex-layout.md)。
 
 ## 1. 先把硬件 cache 模型说准
 

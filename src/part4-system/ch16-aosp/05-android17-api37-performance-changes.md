@@ -310,7 +310,7 @@ API 36 已提供当前 reasons 与有限历史。API 37 新增：
 - history 回答约束在何时变化。
 - stats 回答长期占比最高的约束，但不能由各项相加计算 wall time。
 
-WorkManager 场景还要建立 WorkSpec 与系统 job ID 的映射。否则，拿错 job ID 会把调度问题变成数据对齐问题。后台调度机制参阅 [[10-jobscheduler-workmanager-performance|JobScheduler/WorkManager 调度与后台任务性能]]。
+WorkManager 场景还要建立 WorkSpec 与系统 job ID 的映射。否则，拿错 job ID 会把调度问题变成数据对齐问题。后台调度机制参阅 [[08-jobscheduler-workmanager-performance|5.8 JobScheduler/WorkManager 调度与后台任务性能]]。
 
 ## target SDK 37 适配项
 

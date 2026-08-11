@@ -1,12 +1,15 @@
 ---
 title: "Bluetooth LE Audio 延迟与功耗性能"
-chapter: "5.22"
+chapter: "5.16"
+section: "5.16"
 status: ready-for-review
 drafted_date: "2026-06-26"
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 last_verified: "2026-06-26"
 last_verified_against: "Android Core Specification 5.4, AOSP android-17.0.0_r1"
 confidence: medium
+consolidated_from:
+  - "src/part1-fundamentals/ch05-cpu-power/5.23-android17-background-audio-hardening-leaudio-power-source.md"
 sources:
   - type: official
     path: "developer.android.com/about/versions/13/features (LE Audio support)"
@@ -19,13 +22,13 @@ sources:
   - type: aosp
     path: "system/media/audio/include/system/audio.h (AUDIO_DEVICE_OUT_BLE_SPEAKER, AUDIO_DEVICE_OUT_BLE_HEADSET)"
 tags: [bluetooth, le-audio, lc3, latency, power, audio, isochronous]
-related_chapters: ["1.16", "5.15", "11.6"]
+related_chapters: ["1.16", "5.13", "11.6"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-26"
 gap_source: "官方文档"
 ---
 
-# 5.22 Bluetooth LE Audio 延迟与功耗性能
+# 5.16 Bluetooth LE Audio 延迟与功耗性能
 
 Android 13（API 33）加入了系统级 LE Audio 支持。到 Android 17（API 37），AOSP 同时保留 Classic Audio 与 LE Audio：A2DP、HFP、LE Audio 单播和 LE Audio 广播会按设备能力、音频场景及系统策略共存。过渡期内，双模耳机仍很常见，不能把 LE Audio 理解成系统会无条件淘汰 Classic Audio。
 
@@ -240,6 +243,8 @@ Controller 有独立的定时与射频调度能力，不要求 AP 在每个 CIS/
 维持 Bluetooth 连接也不等于 Android 设备被禁止进入某个名为“Deep Doze”的状态。活跃音频、音频 wakelock、应用前后台状态和系统电源策略会共同影响 suspend/idle。要判断 LE Audio 是否让 AP 退出深 idle，应查看 trace 中的调度、wakeup source、AudioFlinger 周期和电源轨数据。
 
 Controller 重传主要消耗 Controller 和射频资源。它也可能通过数据短缺、状态事件或 Host 路径间接改变 AP 负载，但不能笼统写成“与 CPU DVFS 完全无关”。CPU 频率只反映其中一部分成本。
+
+Android 17 的 Bluetooth 栈还会在 suspend 场景管理 LE background scan，并按 controller/offload 能力决定哪些扫描可留在硬件。看到扫描在灭屏后减少，不能直接归因于 LE Audio codec；应同时核对 scan client、offload filter、设备 idle 与 active audio group。HFP active-device handover 也属于 Classic 通话路径，不应与 LE Audio route 切换合成同一条时延结论。
 
 ### 如何做可比较的功耗实验
 

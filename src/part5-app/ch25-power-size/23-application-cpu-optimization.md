@@ -4,7 +4,7 @@ chapter: "25.23"
 status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [CPU优化, 应用实践, 线程池, 性能优化]
-related_chapters: ["5.1", "5.27"]
+related_chapters: ["5.1", "5.9"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-02"
 gap_source: "研究盲区 Task9 发现"

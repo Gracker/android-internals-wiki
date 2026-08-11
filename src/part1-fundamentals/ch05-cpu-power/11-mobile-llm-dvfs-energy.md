@@ -1,8 +1,8 @@
 ---
 
 title: "移动端 LLM 推理的 DVFS 与能效边界"
-chapter: "5.13"
-section: "5.13"
+chapter: "5.11"
+section: "5.11"
 status: finalized
 drafted_date: "2026-05-16"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -10,7 +10,7 @@ last_verified: "2026-05-16"
 last_verified_against: "AOSP android-16.0.0_r1 + Android 官方文档 + Google AI Edge LLM docs 2026-05-28 + Perfetto docs + arXiv 2507.02135"
 confidence: medium
 tags: [android, dvfs, eas, adpf, llm, on-device-ai, power]
-related_chapters: ["5.2", "5.4", "5.9", "5.11", "5.12", "11.3"]
+related_chapters: ["5.2", "5.4", "5.5", "5.9", "5.10", "11.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "素材驱动/研究素材/官方文档"
@@ -62,7 +62,7 @@ last_task2b_verifier_at: "2026-06-14T11:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
 ---
 
-# 5.13 移动端 LLM 推理的 DVFS 与能效边界
+# 5.11 移动端 LLM 推理的 DVFS 与能效边界
 
 端侧 LLM 推理同时占用 CPU、GPU 或 NPU、内存带宽以及散热预算。其计算形态会随阶段变化：prefill 负责处理输入上下文，decode 负责持续生成输出；模型加载、后端编译、采样和 KV cache 管理又会在两段计算之外引入额外开销。只看平均 CPU 利用率或一次 tokens/s，通常不足以解释用户感受到的等待、抖动和发热。
 
@@ -73,7 +73,7 @@ last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
 3. 普通应用能调节哪些负载参数，哪些操作只属于系统、厂商或 root 实验；
 4. 怎样判断优化是在节能，还是把耗电和热限频推迟到下一轮请求。
 
-EAS、CPUFreq、ADPF、端侧 AI 后端和温控的基础分别见 5.2、5.4、5.9、5.11、5.12 节。这里将这些机制放到同一条 LLM 请求时间线上。
+EAS、CPUFreq、ADPF、端侧 AI 后端和温控的基础分别见 5.2、5.4、5.9、5.10、5.5 节。这里将这些机制放到同一条 LLM 请求时间线上。
 
 ## 先统一指标和测量边界
 
@@ -332,7 +332,7 @@ CPU、GPU、NPU 的名字不能代表整张图都在该硬件执行。应从运�
 
 LiteRT-LM 是 Google AI Edge 在 AOSP 之外维护的端侧生成式 AI 运行时项目。其公开仓库提供 Kotlin / C++ 接口、`.litertlm` 模型格式以及 CPU、GPU、NPU 后端支持说明；具体硬件覆盖受版本、模型和设备影响。应用应锁定经过验证的 LiteRT-LM 版本和模型产物，并保存运行时日志。
 
-`android-17.0.0_r1` 只能锚定 Android 平台 API、Framework 与 HAL，不能用来锚定 LiteRT-LM 的仓库版本。阅读 AOSP 源码和阅读 LiteRT-LM release 必须分成两条版本记录。系统服务提供的模型能力也不等同于应用内嵌 LiteRT-LM，二者的模型、权限、更新和资源管理边界不同，详见 5.11 节。
+`android-17.0.0_r1` 只能锚定 Android 平台 API、Framework 与 HAL，不能用来锚定 LiteRT-LM 的仓库版本。阅读 AOSP 源码和阅读 LiteRT-LM release 必须分成两条版本记录。系统服务提供的模型能力也不等同于应用内嵌 LiteRT-LM，二者的模型、权限、更新和资源管理边界不同，详见 5.10 节。
 
 ## 建立可复现的能效实验
 
@@ -448,7 +448,7 @@ E_request = ∫ V(t) × I(t) dt
 - 在后台或高温时暂停非必要 prefill；
 - 提前向用户展示“设备较热，生成速度可能下降”，并支持取消。
 
-thermal headroom 是预测信号，数值方向和可用性要按 API 文档处理。它适合辅助选择负载档位，不能保证未来某一时刻仍有固定频率预算。相关 API 与 Android 17 的阈值语义见 5.12 节。
+thermal headroom 是预测信号，数值方向和可用性要按 API 文档处理。它适合辅助选择负载档位，不能保证未来某一时刻仍有固定频率预算。相关 API 与 Android 17 的阈值语义见 5.5 节。
 
 ## 常见现象的排查顺序
 

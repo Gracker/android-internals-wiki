@@ -8,6 +8,8 @@ applicable_versions: Android 9 (API 28) - Android 17 (API 37)
 last_verified: '2026-07-09'
 last_verified_against: Android 17 android-17.0.0_r1 platform source, Android common kernel android17-6.18, Linux 6.6/6.12 scheduler docs
 confidence: high
+consolidated_from:
+  - "src/part1-fundamentals/ch05-cpu-power/5.28-android17-pelt-boost-revert-amu-pmu-microarch-frequency-limiting.md"
 sources:
 - type: blog
   path: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md
@@ -76,7 +78,7 @@ verifier_checked: 2026-07-09
 ---
 
 
-# EAS 能量感知调度
+# 5.2 EAS 能量感知调度
 
 > [!info] 源码锚点
 > 正文按 Android 17 / API 37 / `android-17.0.0_r1` 与 kernel `android17-6.18-2026-06_r6` 复核。Linux 5.x、6.6、6.12 和 Android 10—16 只用于说明演进，不代表当前实现。

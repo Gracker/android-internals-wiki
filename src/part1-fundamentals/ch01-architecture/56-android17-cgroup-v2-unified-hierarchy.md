@@ -4,7 +4,7 @@ chapter: "1.56"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [cgroup, cgroup-v2, 资源限制, 进程隔离, CPU, 内存, 后台限制, libprocessgroup, task-profiles]
-related_chapters: ["1.3", "1.18", "5.1", "5.2", "5.7", "5.28"]
+related_chapters: ["1.3", "1.18", "5.1", "5.2", "5.7"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-15"
 gap_source: "AOSP结构"

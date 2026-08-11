@@ -25,6 +25,9 @@ gap_source: 官方文档+研究素材+AOSP结构
 gap_score: 15/20
 confidence: medium
 last_verified: '2026-08-08'
+consolidated_from:
+  - "src/part1-fundamentals/ch05-cpu-power/5.19-ondevice-ai-adpf-intelligent-scheduling.md"
+  - "src/part1-fundamentals/ch05-cpu-power/5.29-android17-gpu-dvfs-headroom-power-advisor.md"
 sources:
 - type: official
   path: https://developer.android.com/reference/android/os/PerformanceHintManager

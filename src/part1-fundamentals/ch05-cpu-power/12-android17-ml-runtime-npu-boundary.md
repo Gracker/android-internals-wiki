@@ -1,9 +1,9 @@
 ---
 title: "Android 17 ML Runtime 与 NPU 访问边界"
-chapter: "5.14"
+chapter: "5.12"
 task6_review_notes: "2026-06-02 Task6 23: pass-light-edit。Task2B 已删除编辑态补充块，Android 17/API 37 边界、NN HAL 分层口径和闭源组件边界均可进入 Task9 待审。"
 section_title: "Android 17 ML Runtime 与 NPU 访问边界"
-section: "5.14"
+section: "5.12"
 status: "finalized"
 drafted_date: "2026-05-16"
 drafted_by: task2a-knowledge-gap
@@ -33,7 +33,7 @@ sources:
   - type: research
     path: "DeepResearch/2026-05-26-android-17-npu-aicore-lert-capability-boundary.md"
 tags: [android17, litert, npu, nnapi, on-device-ai, performance]
-related_chapters: ["5.11", "5.13", "16.5", "25.11"]
+related_chapters: ["5.10", "5.11", "16.5", "25.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "素材驱动/官方文档/AOSP结构"
@@ -80,13 +80,13 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-03
 ---
 
-# 5.14 Android 17 ML Runtime 与 NPU 访问边界
+# 5.12 Android 17 ML Runtime 与 NPU 访问边界
 
 Android 17 为 NPU 访问增加了明确的平台控制面：目标 API 37 的应用要直接访问 NPU，必须在清单中声明 `android.hardware.npu`。这项变化解决的是 UID 能否直接向 NPU 提交工作，以及系统如何把应用优先级传给 NPU 调度层。它没有给普通应用增加一个通用的“执行任意模型”Framework API。
 
 应用仍需选择 LiteRT、厂商 SDK、系统托管服务或旧 NNAPI 路径。每条路径都有自己的模型格式、运行时、硬件覆盖和分发方式。平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`；分析范围包括平台的直接访问限制，以及 LiteRT CompiledModel、AOT/JIT、Neural Networks HAL 和厂商后端的衔接方式。
 
-端侧推理的通用性能分析见 5.11 节；LLM 的 TTFT、TPOT、DVFS 与能效测量见 5.13 节。
+端侧推理的通用性能分析见 5.10 节；LLM 的 TTFT、TPOT、DVFS 与能效测量见 5.11 节。
 
 ## `android.hardware.npu`：声明、安装过滤与能力检测
 
@@ -389,7 +389,7 @@ NPU 命中只有在端到端指标改善时才有产品价值。建议把实验�
 | 编译/加载时间 | 创建 environment 到 `CompiledModel` 可用 | JIT cache miss、runtime 加载、AOT 不匹配 |
 | 首次推理 | buffer 准备到第一份结果 | 首轮预热、内存页、后端初始化 |
 | 稳态延迟 | 固定输入、多次执行 | 调度抖动、复制、partial delegation |
-| LLM TTFT/TPOT | 按 5.13 节的 token 边界 | prefill/decode 后端不同、KV cache 增长 |
+| LLM TTFT/TPOT | 按 5.11 节的 token 边界 | prefill/decode 后端不同、KV cache 增长 |
 | 峰值内存 | 初始化和执行阶段分别采集 | compiler workspace、tensor、cache、重复模型 |
 | 请求能量 | 同一供电与屏幕条件下积分 | 整机基线、USB 充电、后台任务 |
 | 持续性能 | 运行到温度和频率趋于稳定 | thermal clamp、共享 NPU 竞争 |

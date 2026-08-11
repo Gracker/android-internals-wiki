@@ -8,7 +8,7 @@ last_verified: "2026-07-16"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 tags: ['battery-stats', 'power-attribution', 'batterystats', 'power-profile', 'android17', 'powerstats-hal']
-related_chapters: ['25.1', '25.25', '26.20', '5.21']
+related_chapters: ['25.1', '25.25', '26.20', '5.4']
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "AOSP结构 + research-gaps"
@@ -464,7 +464,7 @@ PowerMonitor 接受厂商自定义名称，BatteryConsumer 是平台固定的归
 - GPU 结论是否限定到具体设备 monitor，是否错误引用平台不存在的 GPU component。
 - 对比实验是否固定设备状态、运行多轮并保留 trace 证据。
 
-系统功耗模型的基础推导见 [11.1 功耗模型](../../part2-performance/ch11-power/01-power-model.md)，SoC 与厂商实现边界见 [5.21 Android 17 SoC 电池优化架构](../../part1-fundamentals/ch05-cpu-power/5.21-android17-battery-optimization-soc-architecture.md)。
+系统功耗模型的基础推导见 [11.1 功耗模型](../../part2-performance/ch11-power/01-power-model.md)，SoC、Power HAL 与厂商实现边界见 [5.4 DVFS 与功耗管理](../../part1-fundamentals/ch05-cpu-power/04-dvfs.md)。
 
 ## 源码锚点
 

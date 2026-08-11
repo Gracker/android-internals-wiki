@@ -8,6 +8,8 @@ applicable_versions_note: "已验证范围 Android 7-14；Android 15-17 为待�
 last_verified: "2026-06-06"
 last_verified_against: "PowerManager#getThermalHeadroom + #getThermalHeadroomThresholds docs + SystemHealthManager headroom docs + source.android.com thermal mitigation docs"
 confidence: medium
+consolidated_from:
+  - "src/part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md"
 sources:
   - type: "official"
     path: "developer.android.com/games/optimize/adpf"
@@ -16,7 +18,7 @@ sources:
   - type: "official"
     path: "developer.android.com/reference/android/os/PowerManager"
 tags: ["thermal", "power", "adpf", "perfetto", "cpu"]
-related_chapters: ["5.1", "5.2", "5.3", "5.4", "5.6", "5.9", "5.12", "7.3"]
+related_chapters: ["5.1", "5.2", "5.3", "5.4", "5.6", "5.9", "7.3"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2"
 polish_count: 2
@@ -54,7 +56,7 @@ last_task9_audit_log: "logs/deep-review/2026-06-23-04-audit.md"
 finalized_date: "2026-06-23"
 finalized_by: "openclaw-task9-auto-promote"
 ---
-# Thermal 管控
+# 5.5 Thermal 管控
 
 > [!NOTE] 源码锚点
 > 平台实现以 AOSP `android-17.0.0_r1`（Android 17 / API 37）为准，内核机制以 `android17-6.18-2026-06_r6` 为准。温度阈值、传感器布局、降载幅度和恢复曲线属于设备配置，不能从 AOSP 推导出某款手机的具体行为。
@@ -169,6 +171,12 @@ frameworks/base/services/core/java/com/android/server/power/thermal/
 5. 对 CPU、GPU、NPU、SKIN 或 BATTERY 的 `SHUTDOWN` 状态发起相应关机流程。
 
 Android 17 的整体 status 由 SKIN 类型传感器的最高 severity 计算。`PowerManager.getCurrentThermalStatus()` 表达的是面向用户体验的设备热状态，不是“所有芯片传感器中的最高温度”或“CPU 正在被限到几 GHz”。
+
+### Framework 聚合状态与后台任务限制是两条消费路径
+
+`ThermalManagerService` 把 HAL 的温度回调聚合成公开 thermal status 与 headroom；其他系统服务可以独立消费 thermal 状态。Android 17 的 JobScheduler 会在设备 thermal 压力上升时减少可运行后台工作，但具体 job 是否停止还取决于其优先级、当前执行阶段与其他约束。应用看到 job 因 thermal reason 挂起，只能说明调度政策在降载，不能据此推断某个 thermal zone、cooling device 或 CPU 频点。
+
+排查时应把两条证据链分开：一条是 HAL temperature/status → framework status/headroom；另一条是 cooling device、CPU/GPU cap、JobScheduler 等消费者的实际动作。只有时间对齐后，才能说明某次性能下降由哪项 mitigation 造成。
 
 ## PowerManager Thermal API
 
