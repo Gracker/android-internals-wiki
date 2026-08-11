@@ -1,7 +1,7 @@
 ---
 title: "BluetoothSocket read 断开语义与长连接治理"
-chapter: "24.19"
-section: "24.19"
+chapter: "24.16"
+section: "24.16"
 status: ready-for-review
 drafted_date: "2026-05-25"
 drafted_by: "openclaw-task2a"
@@ -10,7 +10,7 @@ last_verified: "2026-05-25"
 last_verified_against: "Android Developers Android 17 behavior changes / Bluetooth transfer-data guide 2026-05-25; AOSP packages/modules/Bluetooth refs/heads/main"
 confidence: medium
 tags: [bluetooth, io, network, android17, long-connection]
-related_chapters: ["11.6", "12.1", "24.4", "24.14"]
+related_chapters: ["11.6", "12.1", "24.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-25"
 gap_source: "官方文档/Android17行为变更/Part5结构参考"
@@ -31,7 +31,7 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]"
 ---
 
-# 24.19 BluetoothSocket read 断开语义与长连接治理
+# BluetoothSocket read 断开语义与长连接治理
 
 ## 适配问题
 
@@ -339,7 +339,7 @@ Perfetto、应用跟踪与 BatteryStats 可以用于核对断线后的线程、�
 
 11.6 节负责 Bluetooth 扫描、连接和功耗分析。这里仅在断线扫描、重连预算和 socket 线程处引用 11.6，不重复 BLE 扫描限制。
 
-24.14 节负责公网请求的弱网处理和重试预算。Bluetooth socket 可以复用失败分类、幂等性和总时间预算，但错误仍需独立建模，不能归入 HTTP 的 DNS、连接或读取超时。
+24.4 节负责公网请求的弱网处理和重试预算。Bluetooth socket 可以复用失败分类、幂等性和总时间预算，但错误仍需独立建模，不能归入 HTTP 的 DNS、连接或读取超时。
 
 26.17 节负责线上网络质量监控。Bluetooth socket 应作为独立通道上报，原始事件保留 `socket_type`、`read_exit_reason`、`connection_id` 和 `retry_stop_reason`。
 

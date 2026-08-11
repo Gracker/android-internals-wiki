@@ -1,21 +1,21 @@
 {
   "schema_version": 3,
   "scope": "Canonical chapter bodies under the 26 directories defined by metadata/v1.0-definition.md; README, SUMMARY, preface and appendix are excluded.",
-  "total": 496,
+  "total": 493,
   "draft": 0,
   "ready-for-review": 162,
-  "finalized": 333,
+  "finalized": 330,
   "needs-review": 0,
   "verified": 1,
   "outdated": 0,
-  "ready_to_publish": 276,
+  "ready_to_publish": 273,
   "status_counts": {
     "ready-for-review": 162,
-    "finalized": 333,
+    "finalized": 330,
     "verified": 1
   },
   "pipeline_stage_counts": {
-    "ready-to-publish": 276,
+    "ready-to-publish": 273,
     "unspecified": 134,
     "finalized": 52,
     "ready-for-review": 25,
@@ -48,13 +48,13 @@
     "19": 22,
     "20": 22,
     "21": 16,
-    "22": 30,
+    "22": 31,
     "23": 10,
-    "24": 23,
+    "24": 19,
     "25": 30,
     "26": 30
   },
-  "summary_local_links": 535,
+  "summary_local_links": 532,
   "queue_snapshot": {
     "total": 23,
     "body-applied": 9,
@@ -63,7 +63,7 @@
     "review-finalized": 1,
     "completed": 1
   },
-  "last_updated": "2026-08-11T18:20:00+08:00",
-  "last_action": "chapter 23 content consolidation: 18 canonical bodies reduced to 10; leak, Scudo, ART OOM, HeapTask, MemoryLimiter, Memory Advice, case-study and AI-memory supplements merged into their owning articles",
+  "last_updated": "2026-08-11T19:10:00+08:00",
+  "last_action": "chapter 24 content consolidation: 23 canonical bodies reduced to 19; SharedPreferences, Room 3, request-governance and transfer cases merged into owning articles; CameraX moved to chapter 22 as 22.31",
   "generated_from": "chapter frontmatter and src/SUMMARY.md"
 }

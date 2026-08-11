@@ -1,6 +1,7 @@
 ---
 title: "Photo Picker、媒体转码与缓存治理"
-chapter: "24.13"
+chapter: "24.12"
+section: "24.12"
 status: ready-for-review
 drafted_date: "2026-05-22"
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
@@ -35,13 +36,13 @@ sources:
   - type: book-structure
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
 tags: [photo-picker, mediaprovider, transcoding, storage, io-performance]
-related_chapters: ["25.6", "20.9", "22.6", "22.35", "24.12", "26.16"]
+related_chapters: ["25.6", "20.9", "22.6", "22.35", "24.11", "26.16"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-22"
 gap_source: "官方文档/每日信息/素材驱动/AOSP结构"
 ---
 
-# 24.13 Photo Picker、媒体转码与缓存治理
+# Photo Picker、媒体转码与缓存治理
 
 ## Photo Picker 负责选择授权，后续处理仍在应用侧
 
@@ -55,7 +56,7 @@ Photo Picker 把“用户允许应用读取哪些图片或视频”交给系统�
 - 大图采样、视频读取、上传与取消。
 - 应用私有临时文件和失败任务的清理。
 
-平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，重点是选择完成后的应用路径。`MediaStore` 索引、FUSE、缩略图和兼容媒体转码原理见 24.12 节；图片解码与 Bitmap 缓存见 22.6、22.35 节；文件 I/O 与网络上传见 24.1、24.6 节。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，重点是选择完成后的应用路径。`MediaStore` 索引、FUSE、缩略图和兼容媒体转码原理见 24.11 节；图片解码与 Bitmap 缓存见 22.6、22.35 节；文件 I/O 与网络上传见 24.1、24.6 节。
 
 ## Photo Picker 的性能边界
 
@@ -321,7 +322,7 @@ AVC SDR。MediaStore、直接路径、SAF、使用 MediaStore URI 的系统分�
 兼容转码只适合离机上传、导出和分享。本机播放直接使用设备解码器；网格预览使用
 缩略图 API。资源级 `media_capabilities.xml` 会影响应用的多条读取路径，容易让
 本机播放或缩略图发生计划外转换。按打开调用传入
-`ApplicationMediaCapabilities` 更适合能力不同的业务路径，具体代码见 24.12。
+`ApplicationMediaCapabilities` 更适合能力不同的业务路径，具体代码见 24.11。
 
 ## MediaProvider 与缓存清理链路
 
@@ -597,9 +598,9 @@ OEM 差异通过 `isPhotoPickerAvailable(context)`、SDK Extension、实际 Inte
 解析结果和错误分类观测。只有官方兼容方案不能覆盖且有长期验证要求时，才增加
 厂商专用分支。
 
-## 与 24.12 MediaStore / MediaProvider 的交叉引用
+## 与 24.11 MediaStore / MediaProvider 的交叉引用
 
-24.12 已说明 `MediaStore` 查询、`MediaProvider` 索引、FUSE、缩略图、
+24.11 已说明 `MediaStore` 查询、`MediaProvider` 索引、FUSE、缩略图、
 version/generation 和兼容媒体转码。这里补充选择器启动、Picker URI 生命周期、
 云媒体读取、HDR 请求、私有临时文件和多选队列。
 
@@ -615,7 +616,7 @@ version/generation 和兼容媒体转码。这里补充选择器启动、Picker 
 `dumpsys media.transcoding` 查看媒体转码会话；Android 17 AOSP MediaProvider
 使用完整组件名
 `com.android.providers.media.module/com.android.providers.media.MediaProvider`
-观察。命令、Provider version/generation 与批量媒体操作详见 24.12。
+观察。命令、Provider version/generation 与批量媒体操作详见 24.11。
 
 ## 实战检查清单
 

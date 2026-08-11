@@ -1,7 +1,7 @@
 ---
 title: "Android 17 流媒体网络预算与本地网络权限适配"
-chapter: "24.16"
-section: "24.16"
+chapter: "24.14"
+section: "24.14"
 status: finalized
 drafted_date: "2026-05-24"
 applicable_versions: "Android 16 (API 36) - Android 17 (API 37)"
@@ -32,7 +32,7 @@ sources:
   - type: clippings-structure
     path: "[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]"
 tags: [network, android17, streaming, local-network, connectivity]
-related_chapters: ["12.1", "12.2", "16.5", "24.10", "24.11", "24.14", "26.17"]
+related_chapters: ["12.1", "12.2", "16.5", "24.4", "24.9", "24.10", "26.17"]
 created_by: "task2a-knowledge-gap"
 drafted_by: "openclaw-task2a"
 created_date: "2026-05-24"
@@ -62,7 +62,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-04
 ---
 
-# 24.16 Android 17 流媒体网络预算与本地网络权限适配
+# Android 17 流媒体网络预算与本地网络权限适配
 
 ## 范围
 
@@ -72,7 +72,7 @@ Android 17 同时增加了流媒体数据计划速率接口和本地网络访问
 - `ACCESS_LOCAL_NETWORK` 控制应用能否发现或连接局域网设备，也控制局域网设备能否连接应用进程中的服务器。
 - 登录、Feed、配置和图片列表等互联网请求仍按 DNS、连接、重试与弱网规则处理。
 
-平台基准为 Android 17 / API 37 / `android-17.0.0_r1`。24.11 说明低带宽与卫星网络，24.14 说明请求预算，24.18 说明 ECH 与证书透明度；这里集中处理流媒体速率信号和局域网授权。
+平台基准为 Android 17 / API 37 / `android-17.0.0_r1`。24.10 说明低带宽与卫星网络，24.4 说明请求预算，24.15 说明 ECH 与证书透明度；这里集中处理流媒体速率信号和局域网授权。
 
 ## 先给网络路径分类
 
@@ -82,7 +82,7 @@ Android 17 同时增加了流媒体数据计划速率接口和本地网络访问
 | --- | --- | --- | --- | --- |
 | 蜂窝流媒体 | 点播、直播、音频流、RTC 上行 | 订阅对象提供流媒体上下行速率上限 | 初始质量过高、缓冲增加、上行编码超出预算 | ABR、编码器和清晰度编排 |
 | 本地网络 | Cast、IoT、mDNS、SSDP、本地 HTTP 服务 | 目标 API 37 后默认阻断，需系统设备选择器或运行时权限 | 发现失败、UDP `EPERM`、TCP 超时、入站连接失败 | 权限与设备选择流程 |
-| 普通互联网请求 | 登录、Feed、配置、图片、遥测 | 不由上述速率上限或本地网络权限统一控制 | DNS、TLS、连接、服务端或队列失败 | 24.10、24.14、26.17 |
+| 普通互联网请求 | 登录、Feed、配置、图片、遥测 | 不由上述速率上限或本地网络权限统一控制 | DNS、TLS、连接、服务端或队列失败 | 24.9、24.4、26.17 |
 
 建议在诊断事件中记录低基数的 `request_class`，例如 `media_segment`、`lan_discovery` 和 `api`。不要把订阅标识、设备地址或服务实例名写入通用遥测。
 
@@ -340,7 +340,7 @@ Native 网络代码可以在 TCP 套接字上调用 `android_getnetworkblockedre
 
 本地网络权限拒绝不能触发所有互联网请求降级，蜂窝数据计划上限也不能限制 Wi-Fi 局域网控制。
 
-Android 17 对目标 API 37 的应用还默认启用 ECH 配置。只有网络库和服务端都支持时才会协商 ECH；没有配置时可能发送 ECH GREASE。`<domainEncryption>` 控制域名级 ECH 模式，它不授予局域网访问，也不改变 `ACCESS_LOCAL_NETWORK` 的判定。详细安全边界见 24.18。
+Android 17 对目标 API 37 的应用还默认启用 ECH 配置。只有网络库和服务端都支持时才会协商 ECH；没有配置时可能发送 ECH GREASE。`<domainEncryption>` 控制域名级 ECH 模式，它不授予局域网访问，也不改变 `ACCESS_LOCAL_NETWORK` 的判定。详细安全边界见 24.15。
 
 ## 验证与灰度
 

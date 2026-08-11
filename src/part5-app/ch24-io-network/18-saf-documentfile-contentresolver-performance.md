@@ -1,10 +1,11 @@
 ---
 title: "SAF/DocumentFile/ContentResolver 文件访问性能选型与治理"
-chapter: "24.21"
+chapter: "24.18"
+section: "24.18"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [SAF, DocumentFile, ContentResolver, ScopedStorage, IO, performance, file-access]
-related_chapters: ["6.6", "6.7", "24.1", "24.12"]
+related_chapters: ["6.6", "6.7", "24.1", "24.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "AOSP结构+官方文档"
@@ -28,7 +29,7 @@ sources:
   path: Android common kernel android17-6.18 FUSE passthrough/BPF
 ---
 
-# 24.21 SAF/DocumentFile/ContentResolver 文件访问性能选型与治理
+# SAF/DocumentFile/ContentResolver 文件访问性能选型与治理
 
 文件访问性能问题通常出在选错入口：应用把 `content://` 当成本地路径，把
 `DocumentFile` 当成批量查询接口，或者在拿到文件描述符之后仍把每次读写都归因于 Binder。
@@ -407,7 +408,7 @@ Photo Picker 从 Android 13（API 33）进入平台，并可在部分旧版本�
 这类写权限与发起请求的 Activity 生命周期关联，并且不支持持久化或前缀授权。
 长时间后台读取 Photo Picker 结果时，应按官方指引持久化逐项读取权限。
 
-媒体查询、分页、缩略图和 generation 同步的完整方案见 24.12 节；这里仅保留与
+媒体查询、分页、缩略图和 generation 同步的完整方案见 24.11 节；这里仅保留与
 SAF 选型交叉的边界。
 
 ## Scoped Storage、FUSE 与 BPF

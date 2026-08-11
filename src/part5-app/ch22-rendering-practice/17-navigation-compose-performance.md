@@ -4,7 +4,7 @@ chapter: "22.17"
 status: ready-for-review
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: [Jetpack, Compose, 性能优化, 导航]
-related_chapters: ["22.13", "22.15", "24.8"]
+related_chapters: ["22.13", "22.15", "24.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-16"
 gap_source: "素材驱动/官方文档/章节深挖"

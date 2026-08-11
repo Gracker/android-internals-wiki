@@ -9,7 +9,7 @@ last_verified: "2026-07-31"
 last_verified_against: "Android 17 / API 37 / AOSP android-17.0.0_r1"
 confidence: high
 tags: [netd, dnsresolver, network-performance, connectivity, diagnostics]
-related_chapters: ["12.1", "12.2", "1.62", "24.4", "24.10"]
+related_chapters: ["12.1", "12.2", "1.62", "24.4", "24.9"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "AOSP结构+官方文档+每日信息"

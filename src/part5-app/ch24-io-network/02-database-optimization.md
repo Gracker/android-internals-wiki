@@ -32,6 +32,12 @@ sources:
   - type: official
     path: "https://developer.android.com/training/data-storage/room/migrating-db-versions"
   - type: official
+    path: "https://developer.android.com/jetpack/androidx/releases/room3"
+  - type: official
+    path: "https://developer.android.com/blog/posts/modernizing-the-room"
+  - type: official
+    path: "https://developer.android.com/kotlin/multiplatform/room"
+  - type: official
     path: "https://developer.android.com/reference/androidx/room/RoomDatabase.JournalMode"
   - type: official
     path: "https://dl.google.com/dl/android/maven2/androidx/room/room-runtime-android/2.8.4/room-runtime-android-2.8.4-sources.jar"
@@ -54,7 +60,7 @@ sources:
   - type: clippings
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [sqlite, room, wal, database-index, query-optimization]
-related_chapters: ["24.1", "24.17", "9.3", "6.3"]
+related_chapters: ["24.1", "9.3", "6.3", "14.1"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -82,6 +88,7 @@ last_deepseek_cn_review_at: 2026-07-15
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md"
+  - "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md"
 ---
 
 # 数据库性能优化（SQLite/Room）
@@ -159,7 +166,7 @@ val database = Room.databaseBuilder(
 
 这段代码不会保证一定启用 WAL，低内存设备可能得到 `TRUNCATE`。若自定义执行器，Room 文档要求查询执行器有线程上限且不能运行在主线程；事务最多同时执行一个。共享事务执行器还要遵守文档中的死锁约束，不应复制一套固定线程数到所有应用。
 
-使用 Room 3 / `SQLiteDriver` 的项目不能照搬 framework `SQLiteConnectionPool` 的连接数和 `CursorWindow` 结论。驱动会改变 Room 下方的 SQLite 实现与数据传递路径，具体边界见 [24.17 Room 3、SQLiteDriver 与 KMP 性能](17-room3-sqlitedriver-kmp-performance.md)。
+使用 Room 3 / `SQLiteDriver` 的项目不能照搬 framework `SQLiteConnectionPool` 的连接数和 `CursorWindow` 结论。驱动会改变 Room 下方的 SQLite 实现与数据传递路径，具体边界见下文的 [Room 3 与 SQLiteDriver 迁移边界](#room-3-与-sqlitedriver-迁移边界)。
 
 ### Session、连接池与等待对象
 
@@ -465,6 +472,108 @@ class AppDatabaseMigrationTest {
 - 破坏性重建只用于可恢复数据，并记录触发情况。
 
 [官方文档：[迁移 Room 数据库](https://developer.android.com/training/data-storage/room/migrating-db-versions)、[`MigrationTestHelper`](https://developer.android.com/reference/androidx/room/testing/MigrationTestHelper)]
+
+## Room 3 与 SQLiteDriver 迁移边界
+
+Room 3 不是 Room 2 的普通小版本升级。它保留 `@Database`、`@Entity`、`@Dao` 与 `@Query` 的基本模型，但改变了 Maven 坐标、运行期 SQLite 接口、代码生成链和异步 API。截至 2026-07-29，稳定基线是 Room 3.0.1 与 SQLite 2.7.0；两个库要分别锁定版本，不能因为同属 AndroidX 就假设同步递增。
+
+| 维度 | Room 2.x 常见用法 | Room 3.0.1 | 迁移检查 |
+| --- | --- | --- | --- |
+| 包名与坐标 | `androidx.room:*` | `androidx.room3:room3-*` | 更新依赖、导入、反射类名与混淆规则 |
+| SQLite 接口 | `SupportSQLiteDatabase`、`Cursor` | `SQLiteDriver`、`SQLiteConnection`、`SQLiteStatement` | 替换直接查询、回调与迁移签名 |
+| 代码生成 | KAPT、Java AP 或 KSP | 只支持 KSP，生成 Kotlin | 数据模块启用 Kotlin 与 KSP，检查增量编译 |
+| DAO 调用 | 同步、Executor、协程并存 | 数据库操作使用协程或响应式接口 | DAO 改为 `suspend`、`Flow` 等类型 |
+| 失效通知 | `InvalidationTracker.Observer` | `InvalidationTracker.createFlow()` | 改写观察者注册与注销 |
+| 多平台 | 以 Android 为主 | Android、Apple、JVM、JS、WasmJS | 每个平台分别选择驱动与建立基线 |
+
+Room 3 只生成 Kotlin，但 KSP 仍能处理 Java 编写的数据库、DAO 和实体；Java 调用方也可调用生成代码。包含这些声明的模块仍必须启用 Kotlin 编译器与 KSP。`androidx.room` 与 `androidx.room3` 可以同时出现在依赖图中，主要用于避免 WorkManager 等传递依赖造成类冲突；这不表示两个 Room 实例可以并发打开同一个数据库文件。
+
+### 固定依赖、驱动与 schema 输出
+
+下面的最小配置选择平台 `AndroidSQLiteDriver`。若使用 `BundledSQLiteDriver`，替换为 `androidx.sqlite:sqlite-bundled:2.7.0`；不要同时引入两个实现，再让不同模块各自选择引擎。
+
+```kotlin
+plugins {
+    id("com.android.library")
+    id("org.jetbrains.kotlin.android")
+    id("com.google.devtools.ksp")
+    id("androidx.room3")
+}
+
+val roomVersion = "3.0.1"
+val sqliteVersion = "2.7.0"
+
+dependencies {
+    implementation("androidx.room3:room3-runtime:$roomVersion")
+    ksp("androidx.room3:room3-compiler:$roomVersion")
+    implementation("androidx.sqlite:sqlite-framework:$sqliteVersion")
+}
+
+room3 {
+    schemaDirectory("$projectDir/schemas")
+}
+```
+
+Room Gradle Plugin 要求配置 `schemaDirectory`。带构建变体的项目会在变体目录下生成 schema JSON；它们是自动迁移与迁移测试的输入，必须提交仓库，并由 CI 检查未提交差异。构建性能要分别测完整构建、DAO/Entity 增量构建、普通 Kotlin 增量构建和远端缓存命中；固定 Gradle、JDK、Kotlin、KSP 与缓存条件后，结论才可比较。
+
+Android 上的两种驱动不能共用一套未经验证的性能结论：
+
+| 项目 | `AndroidSQLiteDriver` | `BundledSQLiteDriver` |
+| --- | --- | --- |
+| SQLite 引擎 | Android 系统提供 | AndroidX 随库携带原生 SQLite |
+| 版本一致性 | 随系统变化 | 各受支持平台更一致 |
+| 连接池 | 驱动内部已有连接池 | 驱动本身没有连接池，Room 配置连接池 |
+| 线程边界 | 平台连接池处理并发 | 单个连接不能被多个线程同时使用 |
+| 工程代价 | 不增加一份 SQLite 原生库 | 增加包体、装载和原生兼容成本 |
+
+`AndroidSQLiteDriver.hasConnectionPool` 为 `true`，Room 的 `setSingleConnectionPool()` 与 `setMultipleConnectionPool(...)` 对它不生效。`BundledSQLiteDriver.hasConnectionPool` 为 `false`；默认情况下，Room 对 `TRUNCATE` 使用单连接，对 WAL 使用读写连接池。增加连接数不等于吞吐提升，写入仍受 SQLite 串行化约束，配置不当还可能得到 `SQLITE_BUSY`。Android 专用应用应在相同数据库、journal mode、设备和构建类型下比较两种驱动，再决定是否接受随库 SQLite 的体积与初始化代价。
+
+```kotlin
+fun buildAppDatabase(context: Context): AppDatabase =
+    Room.databaseBuilder(
+        context.applicationContext,
+        AppDatabase::class.java,
+        "app.db"
+    )
+        .setDriver(AndroidSQLiteDriver())
+        .build()
+```
+
+若配置 `setQueryCoroutineContext(...)`，上下文必须包含 `CoroutineDispatcher`。不要用更大的调度器掩盖慢查询、长事务或连接占用。
+
+### 直接查询与兼容包装层
+
+Room 3 中，`RoomDatabase.useReaderConnection()` / `useWriterConnection()` 交给调用方的是受池管理的连接。直接查询应在作用域内调用 `usePrepared()`，不能把 connection 或 statement 保存到成员变量，也不能在占用连接时执行网络、JSON 解析或大段业务计算。
+
+```kotlin
+suspend fun findUserName(
+    db: AppDatabase,
+    userId: Long,
+): String? = db.useReaderConnection { connection ->
+    connection.usePrepared(
+        "SELECT name FROM users WHERE id = ?"
+    ) { statement ->
+        statement.bindLong(1, userId)
+        if (statement.step()) statement.getText(0) else null
+    }
+}
+```
+
+参数绑定避免 SQL 注入与文本抖动，但不会替应用修正索引、数据分布或事务范围。连接等待超过内部期限会抛出 `SQLiteException`，应纳入稳定性监控。跨数据库事务也要显式规定调用顺序；SQLite 的单库事务不能提供跨库原子提交。
+
+Room 3 移除了 Room 接口中的 `SupportSQLiteDatabase`、`SupportSQLiteOpenHelper` 和 Android `Cursor`。`androidx.room3:room3-sqlite-wrapper:3.0.1` 可在迁移期通过 `getSupportWrapper()` 暂时适配调试面板、一次性导出或尚未改造的第三方库。Migration、Callback、高频查询和批量写入应迁移到 `SQLiteConnection`、DAO 或受池管理的连接 API；不要把 wrapper 放进新的全局工具类继续扩大旧接口。
+
+### schema 回退、KMP 与性能验收
+
+每个仍受支持的来源 schema 都要经过 `MigrationTestHelper`。测试除 schema identity 外，还应覆盖非空列、默认值、索引、外键、触发器、FTS5、`WITHOUT ROWID`、复合关系键、大数据集重建与迁移中断。Room 2 与 Room 3 包名可以共存，但迁移同一个文件时只能有一个打开者。
+
+应用二进制回退比 Maven 依赖回退更困难。新版本把设备 schema 从 N 升到 N+1 后，旧应用必须能识别 N+1，或提供验证过的降级迁移；远程开关不能撤销已经写入的 schema。`fallbackToDestructiveMigrationOnDowngrade()` 只适用于明确允许丢失的数据。灰度前应执行“旧版本写入 → 新版本迁移并读写 → 旧版本重新打开”的完整测试。
+
+Room 3 支持 JS 与 WasmJS，SQLite 2.7.0 的 `WebWorkerSQLiteDriver` 可通过 Web Worker 与 OPFS 保存数据库，但项目要自行提供符合消息协议的 worker。跨 Web 与非 Web 的公共代码可评估 `androidx.sqlite:sqlite-async:2.7.0`；Android、Web、Apple 与桌面 JVM 必须分别建立性能基线，共享 DAO 不会消除驱动、文件系统和线程模型的差异。
+
+迁移性能要拆开应用启动、首次打开、每段 Migration、首个关键 DAO、稳定期查询和连接等待。为这些边界添加自定义 trace，再用固定数据集的 Macrobenchmark、Perfetto、查询计划和数据库测试交叉验证。记录表行数、索引、数据库/WAL 大小、驱动、journal mode、Room 版本、设备、构建类型、R8 与 Baseline Profile；平均值不能替代尾延迟和迁移失败率。
+
+迁移清单可以收敛为：锁定 Room 3.0.1 与 SQLite 2.7.0；启用 Kotlin/KSP 和 schema 输出；选择并验证单一驱动；迁移同步 DAO、回调与 SupportSQLite 扩展点；从每个支持版本执行升级与二进制回退测试；最后在灰度中观察迁移失败、`SQLiteException`、ANR、数据库损坏与关键操作耗时。
 
 ## 扩展：SQLite vs Realm vs ObjectBox 选型
 

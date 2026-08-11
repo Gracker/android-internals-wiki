@@ -31,7 +31,7 @@ sources:
   - type: aosp
     path: "libcore/dalvik/src/main/java/dalvik/system/CloseGuard.java"
 tags: [observability, storage, io, sqlite, matrix]
-related_chapters: ["24.1", "24.2", "24.12", "26.3", "26.5"]
+related_chapters: ["24.1", "24.2", "24.11", "26.3", "26.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-21"
 gap_source: "Clippings参考书/研究盲区/官方文档/AOSP结构"

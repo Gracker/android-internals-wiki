@@ -1,7 +1,7 @@
 ---
 title: "HTTPDNS 与 OkHttp Dns 执行边界"
-chapter: "24.10"
-section: "24.10"
+chapter: "24.9"
+section: "24.9"
 status: "finalized"
 pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37) / OkHttp 4.x - 5.x"
@@ -72,7 +72,7 @@ last_deepseek_cn_review_at: 2026-07-11
 verifier_promoted: "2026-06-25T19:28 Task2B Verifier: both Task6(pass-light-edit) + Task9(auto-fixed) complete, queue clear, promoted to finalized"
 ---
 
-# 24.10 HTTPDNS 与 OkHttp Dns 执行边界
+# HTTPDNS 与 OkHttp Dns 执行边界
 
 HTTPDNS 的风险集中在调用位置。OkHttp 要在建连前把主机名转换成一组
 `InetAddress`，`Dns.lookup()` 返回之前，请求还没有进入 TCP 连接阶段。如果在这个

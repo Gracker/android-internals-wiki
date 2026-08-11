@@ -28,7 +28,7 @@ sources:
   - type: kernel
     path: "Android Common Kernel android17-6.18-2026-06_r6 include/uapi/linux/{fuse,android_fuse}.h"
 tags: [storage, fuse, scoped-storage, vold, io]
-related_chapters: ["6.1", "6.2", "6.3", "6.4", "24.12", "24.13"]
+related_chapters: ["6.1", "6.2", "6.3", "6.4", "24.11", "24.12"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-24"
 gap_source: "AOSP结构/官方文档/章节深挖"

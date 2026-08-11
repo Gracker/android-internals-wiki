@@ -1,10 +1,11 @@
 ---
 title: "CameraX 性能边界与实战（Android 15-17）"
-chapter: "24.18"
+chapter: "22.31"
+section: "22.31"
 status: ready-for-review
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 tags: [CameraX, 图像处理, 性能优化, 相机]
-related_chapters: ["14.20", "18.14", "24.12"]
+related_chapters: ["14.20", "18.14", "22.29", "24.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-16"
 gap_source: "素材驱动/官方文档/章节深挖"
@@ -33,9 +34,12 @@ sources:
   path: src/part3-tools/ch14-other-tools/20-camera-performance-analysis.md
 - type: internal-chapter
   path: src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+- "src/part5-app/ch24-io-network/24.18-camerax-3.0-performance-boundary.md"
 ---
 
-# 24.18 Android 17 CameraX 1.6 性能边界与实战
+# CameraX 性能边界与实战（Android 15-17）
 
 CameraX 的性能问题不能用“多了一层封装”概括。应用看到的是 `Preview`、`ImageCapture`、`ImageAnalysis` 和 `VideoCapture`；设备执行的仍是相机服务、Camera HAL、sensor、ISP、输出 Surface、编码器与各个消费者。一次卡顿可能发生在用例配置、会话重建、HAL 出帧、预览合成、分析线程、编码或文件写入中的任一段。
 

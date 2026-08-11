@@ -12,7 +12,7 @@ confidence: high
 deep_reviewed_date: "2026-08-09"
 deep_review_run_id: "20260809-203506-deep-review-ecd9cb0e"
 tags: [media, apv, mediacodec, professional-video, android16, android17]
-related_chapters: ["18.21", "14.20", "24.13", "26.3"]
+related_chapters: ["18.21", "14.20", "24.12", "26.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-26"
 gap_source: "官方文档/AOSP结构/素材驱动"
