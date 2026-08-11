@@ -36,7 +36,7 @@
 ## 内容结构
 
 - **第一部分：Android 系统运行机制** — 架构、渲染、输入、内存、CPU/功耗、存储
-- **第二部分：性能专题** — 流畅性、响应速度、ANR、内存性能、功耗、包体积
+- **第二部分：性能专题** — 流畅性、响应速度、ANR、内存性能、功耗、网络性能
 - **第三部分：工具与方法论** — Perfetto、Simpleperf、MAT、dumpsys、APM、方法论
 - **第四部分：系统级优化与行业实践** — AOSP 优化、厂商实践
 - **第五部分：应用层优化** — 稳定性、启动、渲染、内存、I/O、功耗、可观测性
@@ -80,9 +80,9 @@ mdbook serve
 
 截至 2026-08-11，当前活动口径已经统一：
 
-- 规范章节正文共 556 篇：`finalized` 370、`ready-for-review` 185、`verified` 1。
-- `pipeline_stage=ready-to-publish` 的正文为 298 篇；其余遗留流水线状态按 `metadata/progress.json` 聚合展示。
-- `src/SUMMARY.md` 包含 595 个本地链接，链接目标和重复项检查均通过。
+- 规范章节正文共 551 篇：`finalized` 367、`ready-for-review` 183、`verified` 1。
+- `pipeline_stage=ready-to-publish` 的正文为 295 篇；其余遗留流水线状态按 `metadata/progress.json` 聚合展示。
+- `src/SUMMARY.md` 包含 590 个本地链接，链接目标和重复项检查均通过。
 - `metadata/queue.json` 共有 23 条活动/审计记录：9 条 `body-applied`、7 条 `rejected`、5 条 `superseded`、1 条 `review-finalized`、1 条 `completed`。
 - `metadata/inventory.json` 只索引项目外的素材文档，不再把本仓库 `src/` 当作外部输入。
 

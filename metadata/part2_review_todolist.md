@@ -95,11 +95,12 @@
 - [x] 18.20 链路分析方法论 (`src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md`)
 - [x] 18.21 EyeDropper API 与跨设备协作性能 (`src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md`)
 
-## 第 12 章：包体积与网络 (ch12-apk-network)
-- [x] 12.1 APK 体积优化 (`src/part2-performance/ch12-apk-network/01-apk-size.md`)
-- [x] 12.2 网络性能优化 (`src/part2-performance/ch12-apk-network/02-network-performance.md`)
-- [x] 12.3 网络性能深入 (`src/part2-performance/ch12-apk-network/03-network-performance-deep.md`)
-- [x] 12.4 Android 网络安全与 TLS 性能优化 (`src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md`)
+## 第 12 章：网络性能 (ch12-apk-network)
+- [x] 12.1 网络性能优化 (`src/part2-performance/ch12-apk-network/01-network-performance.md`)
+- [x] 12.2 Android 网络安全与 TLS 性能优化 (`src/part2-performance/ch12-apk-network/02-network-security-tls-performance.md`)
+- [x] 12.3 netd 与 DnsResolver：DNS 解析性能和故障诊断 (`src/part2-performance/ch12-apk-network/03-netd-dnsresolver-network-diagnostics.md`)
+
+> 原 APK 体积总览归入 25.6，客户端网络深浅两版合并为 12.1；ConnectivityService/NetworkAgent 归入 1.62，Privacy Sandbox 退场归入 21.10。完整映射见 `metadata/content-consolidation-audit.md`。
 
 # All Tasks Completed
 The comprehensive technical audit for Part 2 (Performance) has been finalized. 69 detailed review reports have been generated and archived in `logs/external-review/`. All Android 15/16/17 performance characteristics have been synchronized.

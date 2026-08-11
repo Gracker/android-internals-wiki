@@ -60,7 +60,7 @@ related_chapters:
   - '4.2'
   - '6.1'
   - '8.2'
-  - '12.1'
+  - '25.6'
   - '16.2'
 drafted_date: "2026-05-17"
 created_by: "task2a-knowledge-gap"

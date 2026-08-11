@@ -10,7 +10,7 @@ last_verified: "2026-05-25"
 last_verified_against: "Android Developers Android 17 behavior changes / Bluetooth transfer-data guide 2026-05-25; AOSP packages/modules/Bluetooth refs/heads/main"
 confidence: medium
 tags: [bluetooth, io, network, android17, long-connection]
-related_chapters: ["11.6", "12.2", "24.4", "24.14"]
+related_chapters: ["11.6", "12.1", "24.4", "24.14"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-25"
 gap_source: "官方文档/Android17行为变更/Part5结构参考"

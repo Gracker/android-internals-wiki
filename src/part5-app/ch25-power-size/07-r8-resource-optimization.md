@@ -36,7 +36,7 @@ sources:
   - type: book-structure
     path: "Clippings/Android 性能优化 - dex 文件的体积优化实战.md"
 tags: [r8, proguard, webp, vector-drawable, font-subsetting]
-related_chapters: ["25.6", "12.1", "25.8"]
+related_chapters: ["25.6", "25.8"]
 pipeline_stage: ready-to-publish
 task6_state: "reviewed"
 task9_state: reviewed

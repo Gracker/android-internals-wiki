@@ -23,9 +23,30 @@
 | ch09 ANR | 13 | 10 | 已完成 | 2026-08-11 |
 | ch10 内存性能 | 10 | 7 | 已完成 | 2026-08-11 |
 | ch11 功耗 | 8 | 7 | 已完成 | 2026-08-11 |
-| 其余 17 章 | 459 | 待审阅 | 未开始 | - |
+| ch12 网络性能 | 8 | 3 | 已完成 | 2026-08-11 |
+| 其余 16 章 | 451 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 556 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 551 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch12 网络性能
+
+保留后的连续编号为：
+
+- 12.1 网络性能优化
+- 12.2 Android 网络安全与 TLS 性能优化
+- 12.3 netd 与 DnsResolver：DNS 解析性能和故障诊断
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `01-apk-size.md` | 从网络性能章移出；合并 APK 的 ZIP 结构、DEX 引用上限、资源与 ELF 压缩、签名块和多种体积口径，DEX、native library、资源与分发细节继续由既有专项承载 | `../src/part5-app/ch25-power-size/06-apk-analysis.md`（25.6），以及 25.7、25.8、25.29～25.31 |
+| `03-network-performance-deep.md` | 合并网络栈层次、BlockGuard、连接池精确默认值、HTTP/3/Cronet、长连接、协程、后台网络与 Perfetto 取证；删除与基础稿重复的 DNS、TLS、超时和重试说明 | `../src/part2-performance/ch12-apk-network/01-network-performance.md`（12.1） |
+| `05-connectivity-service-network-callback.md` / `08-networkagent-lifecycle-scoring.md` | 从应用网络性能章移出；合并 NetworkAgentInfo 生命周期、netId、offer、FullScore、rematch、linger、回调 API 与 Android 17 能力边界 | `../src/part1-fundamentals/ch01-architecture/1.62-android17-connectivitymanager-architecture-performance.md`（1.62） |
+| `07-privacy-sandbox-performance.md` | 从网络性能章移出；合并 Topics、Ad Selection、Measurement 与 SDK Runtime 的退场状态、版本边界和迁移清单 | `../src/part5-app/ch21-startup/10-sdk-runtime-ad-sdk-startup.md`（21.10） |
+| 原 12.2 / 12.4 / 12.6 | 客户端网络性能、TLS 和 DNS 三条边界均可独立回答问题，依次改为连续编号 12.1～12.3 | `01-network-performance.md`～`03-netd-dnsresolver-network-diagnostics.md` |
+
+章节 README、`src/SUMMARY.md`、复审清单、阅读路径、活动跨章链接和统计口径已经切换到连续编号。历史 changelog、原始规格、素材索引与 `consolidated_from` 保留旧路径。
 
 ## ch11 功耗
 

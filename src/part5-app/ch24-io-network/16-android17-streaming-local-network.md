@@ -32,7 +32,7 @@ sources:
   - type: clippings-structure
     path: "[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]"
 tags: [network, android17, streaming, local-network, connectivity]
-related_chapters: ["12.2", "12.4", "16.5", "24.10", "24.11", "24.14", "26.17"]
+related_chapters: ["12.1", "12.2", "16.5", "24.10", "24.11", "24.14", "26.17"]
 created_by: "task2a-knowledge-gap"
 drafted_by: "openclaw-task2a"
 created_date: "2026-05-24"

@@ -41,7 +41,7 @@ sources:
   - type: clippings
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [compression, caching, gzip, brotli, offline-sync]
-related_chapters: ["24.4", "24.7", "12.2"]
+related_chapters: ["24.4", "24.7", "12.1"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -109,7 +109,7 @@ OkHttp 5.3.0 还提供通用 `CompressionInterceptor`。它把注册算法组成
 | 加密或高熵内容 | 通常不再压缩 | 输出接近随机分布，通用压缩难以缩小 |
 | 很小的响应 | 以端到端测量决定 | 编码头、压缩器初始化和 CPU 成本可能高于传输收益 |
 
-图片和视频应优先调整尺寸、格式、码率和分片策略，相关网络边界见 24.5，端到端耗时分析见 12.2。
+图片和视频应优先调整尺寸、格式、码率和分片策略，相关网络边界见 24.5，端到端耗时分析见 12.1。
 
 请求体压缩需要服务端明确接受对应的请求 `Content-Encoding`。批量日志或大型结构化上传可以评估请求压缩；表单和小型写请求不应默认启用。压缩包装可能改变请求体是否可重复发送，重试前要继续遵守 24.4 的幂等与一次性请求体边界。
 

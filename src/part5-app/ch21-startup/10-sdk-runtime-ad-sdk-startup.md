@@ -1,12 +1,12 @@
 ---
-title: "SDK Runtime 与广告 SDK 启动隔离性能"
+title: "Privacy Sandbox 退场与广告 SDK 启动治理"
 chapter: "21.10"
 section: "21.10"
 status: ready-for-review
 drafted_date: "2026-05-19"
-applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
-last_verified: "2026-05-19"
-last_verified_against: "AOSP fullsdk android-34 API source + Android Developers / Privacy Sandbox docs"
+applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
+last_verified: "2026-08-11"
+last_verified_against: "AOSP android-17.0.0_r1 AdServices and SDK sandbox APIs + Android Developers / Privacy Sandbox phaseout status"
 confidence: medium
 sources:
   - type: official
@@ -17,12 +17,22 @@ sources:
     path: "https://developer.android.com/design-for-safety/privacy-sandbox/reference/sdksandbox/SdkSandboxManager"
   - type: official
     path: "https://developer.android.com/jetpack/androidx/releases/privacysandbox-sdkruntime"
+  - type: official
+    path: "https://privacysandbox.google.com/overview/status"
+  - type: official
+    path: "https://privacysandbox.google.com/blog/update-on-plans-for-privacy-sandbox-technologies"
   - type: aosp
     path: "platform/prebuilts/fullsdk/sources/android-34/android/app/sdksandbox/SdkSandboxManager.java"
   - type: aosp
     path: "platform/prebuilts/fullsdk/sources/android-34/android/app/sdksandbox/SandboxedSdkProvider.java"
   - type: aosp
     path: "platform/prebuilts/fullsdk/sources/android-34/android/app/sdksandbox/SandboxedSdk.java"
+  - type: aosp
+    path: "packages/modules/AdServices/adservices/framework/java/android/adservices/topics/TopicsManager.java"
+  - type: aosp
+    path: "packages/modules/AdServices/adservices/framework/java/android/adservices/adselection/AdSelectionManager.java"
+  - type: aosp
+    path: "packages/modules/AdServices/adservices/framework/java/android/adservices/measurement/MeasurementManager.java"
   - type: clippings-structure
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
   - type: clippings-structure
@@ -32,7 +42,10 @@ sources:
   - type: clippings-structure
     path: "Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md"
 tags: [sdk-runtime, privacy-sandbox, startup, ads-sdk, ipc]
-related_chapters: ["8.2", "21.1", "21.2", "21.6", "26.3"]
+related_chapters: ["8.2", "21.1", "21.2", "21.6", "25.10", "26.3"]
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part2-performance/ch12-apk-network/07-privacy-sandbox-performance.md"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-19"
 gap_source: "官方文档/AOSP结构/每日信息"
@@ -45,9 +58,9 @@ source_refs:
   - "intake/daily-info/2026-05-19.md"
 ---
 
-# 21.10 SDK Runtime 与广告 SDK 启动隔离性能
+# 21.10 Privacy Sandbox 退场与广告 SDK 启动治理
 
-SDK Runtime 在 Android 14 出现，又在 Android 17 退场。理解这段版本演进很重要，因为旧文章和 Privacy Sandbox 设计页仍会展示 `SdkSandboxManager.loadSdk()`、独立 sandbox 进程与 Binder 接口；面向 Android 17 的新代码却不能继续把它当作可采用的平台方案。
+Privacy Sandbox on Android 的 Topics、Protected Audience、Attribution Reporting 与 SDK Runtime 都已进入退场过程。理解这段版本演进很重要，因为旧文章和设计页仍会展示 `getTopics()`、`selectAds()`、`registerSource()`、`SdkSandboxManager.loadSdk()` 与独立 sandbox 进程；面向 Android 17 的新代码却不能继续把它们当作可采用的平台方案。
 
 讨论分为两部分：
 
@@ -71,7 +84,22 @@ Android 17 的 `packages/modules/AdServices` 源码与公开文档一致：
 
 API 符号仍然存在，但不能据此推断能力可用。`SDK_INT >= 34` 也不能作为接入判断。Android 17 新项目不应围绕 `SdkSandboxManager`、runtime-enabled SDK bundle 或旧 sandbox 生命周期构建广告架构。
 
-### 1.2 版本表
+### 1.2 其他 AdServices API 也不能作为新依赖
+
+Google 在 2025 年 10 月 17 日公告退役 Privacy Sandbox on Android 相关技术，官方状态页将 Topics、Protected Audience、Attribution Reporting、SDK Runtime 等能力标记为计划逐步退出，但没有给出统一的 Android 移除版本。源码存在、manager 可获取或旧接入文档仍在线，都不能单独证明能力可用于新业务。
+
+Android 17 Framework 的边界更具体：
+
+| 能力 | Android 17 行为 | 迁移判断 |
+| --- | --- | --- |
+| Topics | `TopicsManager` 已废弃，服务结果会被转换为废弃异常 | 停止新查询，不再为它预热服务进程 |
+| Ad Selection / Custom Audience | manager 已废弃，选取、加入等入口返回废弃错误 | 移除竞价与 audience 维护依赖 |
+| Attribution Measurement | `MeasurementManager` 已废弃，但仍处于 soft removal，不能概括成所有设备立即失败 | 停止新集成；把当前成功视作迁移窗口而非长期合同 |
+| SDK Runtime | API 37 deprecated，官方说明 sandbox 不再受支持 | Android 17 明确关闭平台路径 |
+
+旧 Topics epoch、竞价 JavaScript、registration URI 网络获取和延迟报告只用于解释遗留流量。它们不再构成需要继续优化的 Android 17 热路径。Privacy Sandbox 退场也没有自动扩大 GAID、App Set ID 或第一方标识的用途；替代方案仍需重新通过隐私、政策、安全和性能评审。
+
+### 1.3 版本表
 
 | 系统 / 工具 | 状态 | 工程决策 |
 | --- | --- | --- |
@@ -340,6 +368,15 @@ class AdSdkGateway(
 实验同时观察启动、稳定性和广告业务 guardrail。首帧变快但广告填充骤降，或收入改善但 ANR/P99 上升，都需要产品与技术共同决定，不由单一指标自动判定。
 
 ## 8. 迁移清单
+
+### 从旧 Privacy Sandbox 业务 API 退出
+
+- [ ] 搜索 `TopicsManager`、`AdSelectionManager`、`CustomAudienceManager` 与 `MeasurementManager` 的调用点、权限、配置和依赖。
+- [ ] 用远程开关停止新请求，页面布局和广告填充不再等待这些结果。
+- [ ] 区分 deprecated、unsupported、disabled、security、rate limit、网络错误与调用方本地超时；永久废弃错误不进入重试队列。
+- [ ] 盘点 registration、bidding、trusted-data 与 reporting endpoint 的剩余流量，确认旧后台任务和数据库记录的删除边界。
+- [ ] 只记录受控的 feature、call-site、平台/extension 版本、结果分类、端到端时间和 fallback；不上传 topic、audience、竞价信号或完整 registration URI。
+- [ ] 替代广告、归因和标识方案分别完成合规评审，不把 GAID 当作默认回退。
 
 ### 从 Android 14–16 SDK Runtime 迁移到 Android 17
 

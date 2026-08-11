@@ -1,36 +1,31 @@
-# 第 12 章：包体积与网络性能
+# 第 12 章：网络性能
 
-内容覆盖两类直接影响用户等待时间的问题：安装包交付成本，以及请求从应用代码到 Android 网络栈的端到端开销。
+本章聚焦请求从应用代码进入 Android 网络栈后的端到端成本：请求排队、域名解析、连接复用、传输协议、TLS 握手，以及 `netd` 和每网络 DNS 状态。包体积治理已经统一归入第 25 章，系统网络选择与 `NetworkCallback` 语义由 1.62 承载。
 
-前半部分关注 APK/AAB、HTTP、连接池和 TLS；后半部分进入 `ConnectivityService`、`netd`、DNS Resolver、`NetworkAgent` 与 Android 17 的网络选择策略。分析时要区分应用侧慢请求、系统侧网络状态变化和连接迁移，并为每一类问题采集对应证据。
+排查时先拆分一次请求的阶段，再根据证据进入 TLS 或 DNS 专项；不要把 Wi-Fi 图标、系统网络验证、DNS 可用性和目标服务可达性混成同一个结论。
 
 ## 章节地图
 
 | 章节 | 主题 | 解决的问题 |
 |---|---|---|
-| [12.1 APK 体积优化](01-apk-size.md) | APK/AAB 结构、R8、资源与 native library | 包为什么变大，如何按组成部分测量和压缩 |
-| [12.2 网络性能优化](02-network-performance.md) | DNS、连接、协议、请求调度 | 一次请求的时间花在哪里 |
-| [12.3 网络性能深入](03-network-performance-deep.md) | 连接池、TLS、HTTP/2、HTTP/3 | 如何减少握手、排队和重复建连 |
-| [12.4 网络安全与 TLS 性能](04-network-security-tls-performance.md) | TLS 配置、证书、Network Security Config | 如何在安全边界内分析握手与信任失败 |
-| [12.5 ConnectivityService 与网络状态监听](05-connectivity-service-network-callback.md) | `NetworkCallback`、capabilities、请求配额 | 应用收到的网络回调代表什么 |
-| [12.6 netd 与 DNS Resolver](06-netd-dnsresolver-network-diagnostics.md) | per-network DNS、Private DNS、netd | DNS 失败应在哪一层取证 |
-| [12.7 Privacy Sandbox on Android 退场](07-privacy-sandbox-performance.md) | Android 17 API 状态与迁移 | 旧 Privacy Sandbox 集成在 Android 17 如何处理 |
-| [12.8 NetworkAgent 与 FullScore](08-networkagent-lifecycle-scoring.md) | agent 生命周期、网络排序、rematch、linger | 系统怎样为请求选择并替换网络 |
+| [12.1 网络性能优化](01-network-performance.md) | DNS、连接池、协议、请求调度与长连接 | 一次请求的时间花在哪里，怎样减少排队、握手和重复建连 |
+| [12.2 Android 网络安全与 TLS 性能优化](02-network-security-tls-performance.md) | TLS 配置、证书、Network Security Config | 如何在安全边界内分析握手与信任失败 |
+| [12.3 netd 与 DnsResolver](03-netd-dnsresolver-network-diagnostics.md) | per-network DNS、Private DNS、`netd` | DNS 失败应在哪一层取证 |
 
 ## 阅读路径
 
-### 应用性能排查
+### 应用网络性能排查
 
-按 12.2 → 12.3 → 12.4 阅读。先建立请求阶段模型，再检查连接复用和传输协议，随后处理 TLS 安全配置。若现象伴随 Wi-Fi/蜂窝切换或 VPN，继续阅读 12.5 和 12.8。
+按 12.1 → 12.2 阅读。先建立请求阶段模型并确认连接是否复用，再处理 TLS 握手、证书链和信任配置；若问题集中在解析、Private DNS 或特定网络，继续阅读 12.3。
 
 ### 系统网络栈排查
 
-按 12.5 → 12.8 → 12.6 阅读。先确定应用回调和 request 的语义，再还原 `NetworkRanker` 的选择与 linger，随后核对 netd 路由和每网络 DNS 状态。
+先读 1.62，确定 `NetworkRequest`、`NetworkCallback`、网络排序、rematch 和 linger 的语义，再用 12.3 检查 `netd` 路由与每网络 DNS 状态。Wi-Fi、蜂窝、卫星或 VPN 切换的业务恢复策略继续参阅第 24 章。
 
 ### 包体积治理
 
-12.1 是包体积主题的独立入口。分析对象应明确区分 APK、App Bundle、设备生成 APK 和安装后占用，避免把不同口径的数字放在一起比较。
+包结构与总体分析入口已归入 25.6；R8/资源收缩、App Bundle 交付、DEX、native library 和资源文件专项分别见 25.7、25.8、25.29、25.30、25.31。分析对象应明确区分 AAB、通用 APK、设备生成 APK、下载体积和安装后占用。
 
 ## 版本边界
 
-正文统一以 Android 17 / API 37 / AOSP `android-17.0.0_r1` 为当前平台锚点。涉及 HTTP 客户端、TLS provider 和 Play 服务组件时，以各文章记录的依赖版本与来源为准。版本演进段落用于解释旧设备行为，不应用旧整数网络分数或已退场 API 推导 Android 17 的系统行为。
+正文统一以 Android 17 / API 37 / AOSP `android-17.0.0_r1` 为当前平台锚点。涉及 HTTP 客户端、TLS provider 和协议实现时，以各文章记录的依赖版本与来源为准。版本演进段落用于解释旧设备行为，不应用旧整数网络分数或已退场 API 推导 Android 17 的系统行为。
