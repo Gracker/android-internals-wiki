@@ -1,29 +1,29 @@
 {
   "schema_version": 3,
   "scope": "Canonical chapter bodies under the 26 directories defined by metadata/v1.0-definition.md; README, SUMMARY, preface and appendix are excluded.",
-  "total": 615,
+  "total": 609,
   "draft": 0,
   "ready-for-review": 211,
-  "finalized": 402,
+  "finalized": 396,
   "needs-review": 0,
   "verified": 1,
   "outdated": 1,
-  "ready_to_publish": 322,
+  "ready_to_publish": 316,
   "status_counts": {
     "ready-for-review": 211,
-    "finalized": 402,
+    "finalized": 396,
     "verified": 1,
     "outdated": 1
   },
   "pipeline_stage_counts": {
-    "ready-to-publish": 322,
-    "unspecified": 182,
+    "ready-to-publish": 316,
+    "unspecified": 180,
     "finalized": 74,
-    "ready-for-review": 20,
+    "ready-for-review": 23,
     "deep-review": 3,
     "rework-verified": 3,
     "deep_review_passed": 4,
-    "deep-reviewed": 2,
+    "deep-reviewed": 1,
     "reviewed": 2,
     "rework-applied-awaiting-review": 1,
     "rework_verified": 1,
@@ -32,7 +32,7 @@
   "chapter_article_counts": {
     "1": 65,
     "2": 42,
-    "3": 14,
+    "3": 8,
     "4": 29,
     "5": 38,
     "6": 5,
@@ -57,7 +57,7 @@
     "25": 30,
     "26": 30
   },
-  "summary_local_links": 654,
+  "summary_local_links": 648,
   "queue_snapshot": {
     "total": 23,
     "body-applied": 9,
@@ -66,7 +66,7 @@
     "review-finalized": 1,
     "completed": 1
   },
-  "last_updated": "2026-08-11T09:52:24+08:00",
-  "last_action": "chapter 6 content consolidation: 12 canonical bodies reduced to 5, with misplaced memory compaction material merged into chapter 4",
+  "last_updated": "2026-08-11T10:16:50+08:00",
+  "last_action": "chapter 3 content consolidation: 14 canonical bodies reduced to 8, with InputDispatcher, touch latency, prediction, HCI and Rust keyboard filter topics regrouped",
   "generated_from": "chapter frontmatter and src/SUMMARY.md"
 }

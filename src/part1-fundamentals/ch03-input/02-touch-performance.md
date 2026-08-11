@@ -1,10 +1,10 @@
 ---
 
 
-title: "触摸响应的性能分析"
+title: "触摸延迟、预测与低延迟渲染"
 chapter: "3.2"
 section: "3.2"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -31,8 +31,16 @@ sources:
     path: "developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features"
   - type: official
     path: "developer.android.com/jetpack/androidx/releases/input"
-tags: [touch, input, latency, InputReader, InputDispatcher, sampling-rate, batching, Choreographer, responsiveness]
-related_chapters: ["3.1", "2.3", "2.4", "2.5", "8.1"]
+  - type: official
+    path: "developer.android.com/jetpack/androidx/releases/graphics"
+  - type: official
+    path: "perfetto.dev/docs/analysis/sql-tables/android-input"
+  - type: research
+    path: "DeepResearch/2026-05-11-hci-perception-input-latency-analysis.md"
+  - type: research
+    path: "intake/research-feeds/2026-04-05-15-motionprediction-low-latency-graphics.md"
+tags: [touch, input-latency, HCI, InputReader, InputDispatcher, sampling-rate, batching, resampling, MotionPredictor, front-buffer, Choreographer, responsiveness]
+related_chapters: ["3.1", "2.3", "2.4", "2.5", "2.18", "2.19", "7.9", "8.1", "13.8", "15.3"]
 task2b_rework_date: "2026-05-08"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-07-12"
@@ -45,7 +53,7 @@ task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-07-12"
 task2b_lite_note: "版本锚点从 android-16.0.0_r1 更新到 android-17.0.0_r1（6 处正文 + frontmatter）；依据同目录 §3.9、§3.13 已验证 android-17.0.0_r1 路径一致性"
-task6_state: reviewed
+task6_state: "pending-verification"
 task6_result: pass-light-edit
 task9_state: reviewed
 task6_reviewed_date: "2026-05-08"
@@ -62,10 +70,14 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-12
 last_task9_autofix_at: "2026-07-12"
 last_task9_audit: "2026-06-06"
-pipeline_stage: ready-to-publish
+pipeline_stage: ready-for-review
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md"
+  - "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md"
 ---
 
-# 触摸响应的性能分析
+# 3.2 触摸延迟、预测与低延迟渲染
 
 ## 为什么需要关注触摸响应
 
@@ -79,6 +91,35 @@ pipeline_stage: ready-to-publish
 - **连续跟手**：手指或笔持续移动时，屏幕轨迹与当前位置相差多少时间和空间。
 
 连续跟手会反复暴露位置差，通常比一次点击更容易显出延迟。工程测试应在目标设备上分别统计点击响应和连续手势，至少报告刷新率、触控模式、冷/热状态、P50/P90/P99 以及丢帧情况。缺少这些条件的单一数字不适合作为产品 SLA。
+
+## 先统一测量口径
+
+“输入延迟”常指四种不同区间，不声明起止点就无法比较：
+
+| 口径 | 起点 | 终点 | 不包含的主要部分 |
+|---|---|---|---|
+| hardware-to-read | 触控控制器或 kernel event | EventHub / InputReader 读到 | App 处理、渲染和显示 |
+| dispatch-to-ACK | InputDispatcher 发布 | framework 收到 `FINISHED` | ACK 后的渲染、合成与 panel |
+| read-to-present | InputReader `readTime` | 关联帧 present | 触控 IC 扫描前段与 panel photon |
+| touch-to-photon | 物理接触 | 目标像素实际变化 | 原则上覆盖整条链，通常需外部仪器 |
+
+可执行的阶段预算应记录证据来源，而不是把几个经验数相加：
+
+| 阶段 | 常用时间点 | 责任边界 |
+|---|---|---|
+| 采样与驱动 | 外部接触、evdev `eventTime`、`readTime` | 触控 IC、固件、总线与 kernel |
+| 读取与分发 | `readTime`、dispatch / receive | InputReader、InputDispatcher、目标进程调度 |
+| 应用处理 | receive / finish、`deliverInputEvent` | View/Compose、IME、主线程和异步 InputStage |
+| 生产与合成 | frame start / finish / present | Choreographer、RenderThread/GPU、BufferQueue、SurfaceFlinger |
+| 面板输出 | present 到光学变化 | HWC、显示时序和面板响应 |
+
+CPU 与 GPU 可能并行，多个样本也可能合并到一帧；FrameTimeline 的 present 时刻还早于面板上某个像素完成响应。因此预算表的作用是分配调查责任，不是拼出一个看似精确的总数。
+
+### HCI 阈值不能脱离任务
+
+直接操控的感知线索与离散点击差异很大。UIST 2012 的连续拖动实验中，参与者在该装置和 1 ms reference 下的 JND 分布约为 2.38–11.36 ms；CHI 2013 的 land-on 离散反馈实验则得到更宽的 20–100 ms 范围。这些数字只说明“任务会改变感知敏感度”，不是 Android 17 设备的通用验收线。
+
+产品指标应按交互原语建立：点击看首个可见反馈；拖动与书写同时看时间滞后、空间偏差、步幅波动和预测误差；游戏还要分开本地判定、渲染帧和网络确认。同一脚本至少覆盖 P50/P90/P95、刷新率、温控和电源模式。
 
 ## 触摸响应延迟的组成
 
@@ -348,6 +389,37 @@ data_sources: {
 - **FrameTimeline**：确认应用帧是否 miss deadline，以及 SurfaceFlinger 帧何时 present。
 - **CPU/Scheduler Track**：确认主线程和 RenderThread 的 Running/Runnable/Blocked 区间，再看 CPU frequency。
 
+### 用 `android.input` 拆分 dispatch-to-ACK 与 read-to-present
+
+Perfetto 标准库的 `android_input_events` 把 socket 往返与关联帧分开：
+
+- `dispatch_latency_dur = receive.ts - dispatch.ts`；
+- `handling_latency_dur = finish.ts - receive.ts`；
+- `ack_latency_dur = finish_ack.ts - finish.ts`；
+- `total_latency_dur = finish_ack.ts - dispatch.ts`；
+- `end_to_end_latency_dur = frame.present_time - frame.read_time`。
+
+`total_latency_dur` 只到 `FINISHED` ACK，不表示画面已显示。`end_to_end_latency_dur` 从 InputReader read time 起算，不含触控 IC 前段和 panel photon 延迟。标准库无法确定事件驱动的帧时，可能选后续最近帧并把 `is_speculative_frame` 设为 `true`；这类样本适合看分布，不宜当作单个事件的确定因果证据。
+
+```sql
+INCLUDE PERFETTO MODULE android.input;
+
+SELECT
+  process_name,
+  event_action,
+  total_latency_dur / 1e6 AS dispatch_to_ack_ms,
+  end_to_end_latency_dur / 1e6 AS read_to_present_ms,
+  is_speculative_frame
+FROM android_input_events
+WHERE end_to_end_latency_dur IS NOT NULL
+ORDER BY read_to_present_ms DESC
+LIMIT 50;
+```
+
+`android_motion_events` / `android_key_events` 和 `android_input_event_dispatch` 来自结构化 `android.input.inputevent` 数据源。后者用 `event_id`、`vsync_id` 和 `window_id` 表达投递关系，本身不包含 dispatch 开始、结束或 ACK 耗时。
+
+FrameTimeline 还可出现“帧率稳定、但整体晚一帧”的 high-latency state。典型的 Buffer Stuffing 会让应用持续在旧 buffer present 前提交新 buffer；单帧工作虽然按时结束，可见内容仍落后。此时要同时检查 `on_time_finish`、`present_type`、`jank_type`、SurfaceFlinger DisplayFrame 和实际 present，不能用“没有慢帧”推导“输入延迟正常”。
+
 ### 用 dumpsys input 辅助排查
 
 `adb shell dumpsys input` 命令可以获取 Input 系统的实时状态，包括：
@@ -427,7 +499,7 @@ batching 后的一枚 `MotionEvent` 只做一次 View 分发；只有应用主�
 
 ## Motion Prediction：面向笔迹/绘图的感知降延迟
 
-Motion Prediction 涉及三层概念，各自独立：
+Motion Prediction 涉及四层概念，各自独立：
 
 - **framework API**：`android.view.MotionPredictor`，API 34 加入。
 - **AndroidX 库**：`androidx.input:input-motionprediction`，为不同系统版本提供封装。
@@ -470,6 +542,25 @@ void onStylusEvent(MotionEvent event, long targetTimeNanos) {
 
 实际代码还要在 `ACTION_UP` / `ACTION_CANCEL` 清理临时预测层，并处理多 pointer、重采样点和模型不可用。普通按钮点击没有连续轨迹可预测；列表滑动也应先修复调度、主线程和帧 deadline 问题，再评估 prediction 是否适合产品交互。
 
+## 前缓冲与低延迟图形
+
+传统多缓冲路径要等应用渲染、buffer swap、SurfaceFlinger 合成和显示刷新。整屏 UI 需要这条稳定路径；对手写的局部增量笔迹，等待完整多缓冲提交会让墨迹持续落后笔尖。
+
+Jetpack low-latency graphics 把短生命周期增量内容放到专用的 front-buffered layer，以暂时的 tearing 风险换取更早可见：
+
+- `GLFrontBufferedRenderer`：用 OpenGL 管理笔迹增量层和持久多缓冲层；
+- `CanvasFrontBufferedRenderer`：同时管理 front-buffered layer 与完整场景，`commit()` 时重画并提交稳定内容；
+- `LowLatencyCanvasView`：在 View 层级上方管理临时单缓冲 overlay，commit 后隐藏 overlay，由普通 View 路径保留最终内容。
+
+| 场景 | 前缓冲适用性 | 原因 |
+|---|---|---|
+| 签名、白板、手写笔迹 | 适合 | 增量区域小，预测段可在真实样本到达后修正 |
+| 整屏列表滚动 | 不适合 | 更新范围大，容易出现撕裂和层次错位 |
+| 普通按钮反馈 | 通常不适合 | 需要与 View 状态、无障碍和动画系统保持一致 |
+| 画笔、游戏准星 | 取决于引擎 | 只有引擎能正确管理局部增量层才适用 |
+
+手写优化可组成一条明确的临时—持久回路：读取真实样本及 history，必要时用 unbuffered dispatch 缩短到达等待，用 MotionPredictor 只产生短窗口临时点，在前缓冲层绘制；真实样本到达后修正预测段，抬笔或分段结束时 `commit()` 到多缓冲层并清理临时内容。只加预测而不修正会在急转时回弹；只加前缓冲而不限制区域，撕裂可能比延迟更显眼。
+
 ## 厂商触控优化方案
 
 这里只讨论可从系统行为验证的共性做法，不把某个厂商的营销规格写成通用结论。
@@ -486,11 +577,19 @@ void onStylusEvent(MotionEvent event, long targetTimeNanos) {
 
 厂商 ROM 常会在输入到来后短时间提高 CPU/GPU 频率，或提高 UI 相关线程的调度优先级。不同平台会给这类机制使用不同名称，但策略是否存在、持续多长、是否把线程放到大核，都必须以目标设备的 trace 和内核/ROM 实现为准，不能写成固定数值。排查时应直接查看 Perfetto 中的 CPU frequency、线程调度和 SurfaceFlinger/RenderThread 行为。
 
+### 交互提示与自适应刷新率的边界
+
+Android 17 中，InputDispatcher 会把符合条件的 Key、touch Motion 和其他 Motion 分类为 user activity，默认对同类型设置 100 ms 最小 poke 间隔。PowerManager 的 interaction boost 一方面进入 Power HAL，另一方面通知 SurfaceFlinger；Scheduler 随后把有效 touch timer 转成全局 touch signal。方法名中虽然有 touch，上游 interaction boost 不只由触摸触发。
+
+这个 signal 只是 `RefreshRateSelector` 的一个排名输入。Layer 的显式帧率投票、显示策略范围、候选 mode、面板/HAL 能力和 thermal 仍可改变结果。应用还可用 `Window.setFrameRateBoostOnTouchEnabled()` 表达是否允许 touch boost，用 View/Window 帧率 API 提交偏好；这些都不保证当前帧一定进入最高刷新率。
+
+验证时应同时观察 Power `userActivity`、SurfaceFlinger `TouchState`、`Touch Boost` / `Touch Boost [late]`、Layer vote、当前 render/refresh rate 与 FrameTimeline。完整的 ARR 选择和显示时序放在 2.18 与 2.19，这里只保留与输入延迟直接相关的交互边界。
+
 ## 与其他章节的关系
 
 触摸响应与输入分发、帧调度和渲染链路交叉关联：
 
-- **3.1 Input 事件分发全流程**：输入事件从硬件到 App 的完整分发机制。
+- **3.1 Input 事件分发：队列、反压与丢弃**：输入事件从硬件到 App 的完整分发机制。
 - **2.3 VSync 机制**：buffered MOVE 会贴近 Choreographer 的 input callback 消费，目标帧也由 VSync 驱动；unbuffered path 则不等待这一回调。理解 VSync 周期、deadline 和实际刷新率，才能解释事件赶上了当前帧还是顺延到下一帧。
 - **2.4 Choreographer 与渲染流水线**：CALLBACK_INPUT 优先级、`doFrame()` 执行顺序与 Batching 实现见 2.4 节。
 - **2.5 MainThread 与 RenderThread 协作**：View 输入分发和 traversal 位于 MainThread，部分硬件加速渲染工作交给 RenderThread/GPU。
@@ -564,5 +663,8 @@ evdev → EventHub → InputReader → TouchInputMapper → InputDispatcher
   - `frameworks/base/core/java/android/view/MotionPredictor.java`
   - `external/perfetto/protos/perfetto/config/android/android_input_event_config.proto`
 - Android 官方文档：[Input 系统概述](https://source.android.com/docs/core/interaction/input)、[通过 adb 抓取 Input Trace](https://source.android.com/docs/core/graphics/winscope/capture/adb)、[MotionEvent](https://developer.android.com/reference/android/view/MotionEvent)、[MotionPredictor](https://developer.android.com/reference/android/view/MotionPredictor)、[Advanced Stylus](https://developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features)、[AndroidX Input](https://developer.android.com/jetpack/androidx/releases/input)
+- AndroidX 低延迟图形：[`CanvasFrontBufferedRenderer`](https://developer.android.com/reference/androidx/graphics/lowlatency/CanvasFrontBufferedRenderer)、[`LowLatencyCanvasView`](https://developer.android.com/reference/androidx/graphics/lowlatency/LowLatencyCanvasView)
+- Perfetto：[`android.input` 标准库](https://perfetto.dev/docs/analysis/stdlib-docs#android-input)、[FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
+- HCI 原始研究：[Ng 等，UIST 2012](https://dl.acm.org/doi/10.1145/2380116.2380124)、[Jota 等，CHI 2013](https://www.tactuallabs.com/papers/howFastIsFastEnoughCHI13.pdf)、[Henze 等，MobileHCI 2016](https://nhenze.net/uploads/Software-Reduced-Touchscreen-Latency.pdf)
 - [高爷 - Systrace 基础知识：Input 解读](https://www.androidperformance.com/2019/10/27/Android-Systrace-Input/)
 - [高爷 - Systrace 响应速度实战 1](https://www.androidperformance.com/2022/03/20/android-systrace-Responsiveness-in-action-1/)

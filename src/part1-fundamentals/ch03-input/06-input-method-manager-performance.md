@@ -1,10 +1,11 @@
 ---
 title: "InputMethodManager 与软键盘性能"
-chapter: "3.11"
+chapter: "3.6"
+section: "3.6"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [input, ime, keyboard, animation, latency, rendering]
-related_chapters: ["3.1", "3.4", "3.9", "2.4", "7.4"]
+related_chapters: ["3.1", "3.2", "2.4", "7.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-05"
 drafted_date: "2026-06-05"
@@ -24,7 +25,7 @@ sources:
     path: "developer.android.com/develop/ui/views/touch-and-input/keyboard-input"
 ---
 
-# 3.11 InputMethodManager 与软键盘性能
+# 3.6 InputMethodManager 与软键盘性能
 
 软键盘的显示会跨越应用、`system_server` 和 IME 三个进程，还要等待 IME 窗口具备可动画的 Surface。`showSoftInput()` 的调用耗时几乎不包含用户等待的区间；只看应用主线程，也可能漏掉 IME 冷启动、会话创建和窗口控制权延迟。
 

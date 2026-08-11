@@ -1,6 +1,6 @@
 ---
-status: "finalized"
-title: Input 事件分发全流程
+status: "ready-for-review"
+title: Input 事件分发：队列、反压与丢弃
 chapter: '3.1'
 section: '3.1'
 last_task6_at: "2026-06-20T20:11:02+08:00"
@@ -31,6 +31,12 @@ sources:
   - type: aosp
     path: frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
   - type: aosp
+    path: frameworks/native/services/inputflinger/dispatcher/include/InputDispatcherPolicyInterface.h
+  - type: aosp
+    path: frameworks/native/services/inputflinger/docs/anr.md
+  - type: aosp
+    path: system/libbase/include/android-base/properties.h
+  - type: aosp
     path: frameworks/native/libs/input/InputTransport.cpp
   - type: aosp
     path: frameworks/base/core/java/android/view/ViewRootImpl.java
@@ -38,11 +44,11 @@ sources:
     path: frameworks/base/core/java/android/view/ViewGroup.java
   - type: kernel
     path: common/drivers/input/evdev.c
-tags: [InputReader, InputDispatcher, EventHub, InputChannel, InputTransport, ViewRootImpl, ANR, Perfetto]
-related_chapters: ["3.2", "3.4", "3.7", "3.10", "3.12", "9.1"]
+tags: [InputReader, InputDispatcher, EventHub, InputChannel, InputTransport, ViewRootImpl, backpressure, stale-event, ANR, Perfetto]
+related_chapters: ["3.2", "3.4", "3.7", "3.8", "9.1", "9.2", "13.8"]
 task6_result: "pass-light-edit"
-task6_state: reviewed
-pipeline_stage: "ready-to-publish"
+task6_state: "pending-verification"
+pipeline_stage: "ready-for-review"
 task6_reviewed_date: "2026-06-20"
 task9_state: "reviewed"
 task9_result: "auto-fixed"
@@ -74,9 +80,13 @@ last_idle_audit_at: "2026-08-07T14:35:13+08:00"
 last_idle_audit_run_id: "20260807-143513-idle-audit-d0114de0"
 last_idle_audit_log: "logs/audit/2026-08-07-20260807-143513-idle-audit-d0114de0-idle-audit.md"
 last_idle_audit_notes: "2026-08-07 闲时抽检通过：未发现 Android 18/API38 越界、待验证残留、frontmatter 缺项或 P0/P1 技术错误；quality_flags pending-verification-marker 与 thin-source-marking 经核查仍不适用；仅更新审计元数据。"
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
+  - "src/part1-fundamentals/ch03-input/10-inputdispatcher-stale-event.md"
 ---
 
-# 3.1 Input 事件分发全流程
+# 3.1 Input 事件分发：队列、反压与丢弃
 
 一次点击“没有反应”，至少可能卡在五个位置：内核尚未产生 evdev 事件、InputReader 没有及时读取、InputDispatcher 没有选出目标窗口、事件已经发出但应用尚未消费、应用收到事件后没有完成 View/IME 处理。它们在 Perfetto 上都可能表现为输入延迟，但排查方法完全不同。
 
@@ -392,7 +402,7 @@ fd 可读时：
 - channel 已收到消息，不代表 Java 立刻逐条执行 `dispatchTouchEvent()`；
 - 下一帧 input callback 前的短等待可能是设计内 batching，不应自动视为调度故障。
 
-输入 batch、resampling 与绘制帧的关系见 3.2、3.4。
+输入 batch、resampling、预测与绘制帧的关系统一见 3.2。
 
 ### 6.3 ViewRootImpl 的 pending queue
 
@@ -523,11 +533,74 @@ Android 17 的 dispatcher loop 在 flag `enable_anr_warning_callback_input_dispa
 
 单独看到 `wq=1`，只能说明有一个已发布事件尚未完成。
 
+### 7.6 channel 写满时的反压
+
+`InputDispatcher::startDispatchCycleLocked()` 把目标连接的队首事件经 `InputPublisher` 写入 channel。写入返回 `WOULD_BLOCK` 时要分两种状态：
+
+- `waitQueue` 已有未完成事件：保留 `outboundQueue` 队首，等客户端继续消费并回传 `FINISHED`；
+- `waitQueue` 为空却仍不可写：channel 理应没有旧事件占用，当前实现将这视为异常，终止该连接的 dispatch cycle 并通知 policy。
+
+这个反压点由 socket 的实际可写状态触发，不需要根据主线程状态猜测。队列归因要分开看：
+
+| 队列 | 事件所在阶段 | 堆积时优先检查 |
+|---|---|---|
+| `inboundQueue` / `mPendingEvent` | 尚未完成目标选择 | dispatcher 调度、policy、焦点与窗口状态 |
+| `outboundQueue` | 已经为某连接建立分发项，尚未写入 channel | channel 可写性、前序完成回路 |
+| `waitQueue` | 已写入客户端，等待 `FINISHED` | 客户端读取、InputStage、主线程、IME 与 ACK 回写 |
+
+### 7.7 无响应连接的隔离与恢复
+
+`mAnrTracker` 的最早 deadline 到期后，InputDispatcher 会先把相应连接标为 `responsive=false`，清理该 token 的 tracker 唤醒点，再根据 `waitQueue` 队首生成无响应原因并合成取消事件。新的触摸目标选择会跳过这类连接，focus input monitor 也不再接收新事件，但这不等于整个输入系统停止。
+
+客户端恢复后传回 `FINISHED`，dispatcher 删除对应 `waitQueue` 条目；剩余条目都未过期时，`processConnectionResponsiveLocked()` 才通知 policy 连接恢复。它证明的是完成队列重新健康，不能代替业务功能验证。
+
+### 7.8 新交互如何裁剪旧积压
+
+等待旧应用焦点窗口时，若出现指向另一应用的新 pointer down，或可响应的 spy window 能接手，InputDispatcher 可通过 `mNextUnblockedEvent` 标记新交互边界。该边界前的部分 Key 和非 pointer Motion 会按 `BLOCKED` 清理，pointer Motion 不在这个分支中按 `BLOCKED` 丢弃。它的目的是让用户转向新窗口时不被旧积压长时间拖住，不是通用的“只保留最新事件”策略。
+
 ---
 
-## 八、Perfetto：按时间域拆输入延迟
+## 八、stale event 与主动丢弃
 
-### 8.1 Android 17 的 input-event data source
+stale 机制阻止已失去时效的新按键或新手势起点继续进入目标窗口。Android 17 默认 policy 使用：
+
+```text
+currentTime - eventTime >= 10s × HwTimeoutMultiplier()
+```
+
+`HwTimeoutMultiplier()` 读取只读属性 `ro.hw_timeout_multiplier`，缺省值为 1。这是系统保护阈值，不是交互体验目标；厂商分支也可修改 policy。
+
+### 8.1 stale 与 ANR 的对象不同
+
+stale 在 `mPendingEvent` 的 Key、Motion 或 Sensor 分支中比较事件年龄。已经发出并进入 `waitQueue` 的事件不会再回到 stale 判定，而是由 `AnrTracker` 按 `timeoutTime` 检查。因此：
+
+- 只有 stale：注入程序可能带了过旧的 `eventTime`，或 inbound/pending 长时间停滞；
+- 只有 ANR：事件已经投递，应用没有按时 ACK；
+- 解除 dispatch frozen 后成批 stale：事件在冻结期间一起变老。
+
+Key 和 Motion 使用 monotonic 时域。SensorEntry 的 timestamp 使用 boottime，判定时也换成当前 boottime。注入或驱动端用错时钟基准，也会制造大量假 stale。
+
+### 8.2 不同事件的丢弃语义
+
+| 事件 | Android 17 的处理 |
+|---|---|
+| Key | 标为 `DropReason::STALE`，不写入目标窗口；注入返回失败 |
+| 新的 pointer Motion | 同一 display/device 没有进行中 touch 或 hover 时可丢弃 |
+| 进行中的 pointer stroke | 为维持 DOWN—MOVE—UP/CANCEL 状态一致，允许继续分发 |
+| SensorEntry | 会记录 stale/drop，但 Android 17 的 `dispatchSensorLocked()` 仍投递 policy callback |
+| Focus / TouchModeChanged / DeviceReset | 不走 stale 分支 |
+
+丢弃后，`dropInboundEventLocked()` 还会按已分发状态合成取消事件：Key 和非 pointer Motion 使用 non-pointer cancel，pointer Motion 使用 pointer cancel。所以“原 stale event 未投递”与“应用之后收到 CANCEL”可以同时成立；CANCEL 是清理旧状态，不是补发原事件。
+
+### 8.3 drop reason 的优先级
+
+Android 17 的原因集为 `POLICY / DISABLED / BLOCKED / STALE / NO_POINTER_CAPTURE`。主循环先判断 `POLICY` 和 `DISABLED`，只有仍为 `NOT_DROPPED` 时才检查 stale；Key 和非 pointer Motion 随后才可能命中 `BLOCKED`。旧版文章常见的 `APP_SWITCH` 不在 Android 17 枚举中，历史日志必须对照对应 release tag。
+
+---
+
+## 九、Perfetto：按时间域拆输入延迟
+
+### 9.1 Android 17 的 input-event data source
 
 Android 17 的 inputflinger 实现注册了：
 
@@ -539,7 +612,7 @@ android.input.inputevent
 
 坐标、设备标识等输入数据涉及隐私。生产采集应使用受控规则和 redaction，不要默认抓取所有完整事件。
 
-### 8.2 五段延迟
+### 9.2 五段延迟
 
 | 区间 | 计算 | 主要检查对象 |
 |---|---|---|
@@ -551,7 +624,7 @@ android.input.inputevent
 
 InputDispatcher 的 latency aggregator 本身就使用 read-to-deliver、deliver-to-consume 和 consume-to-finish 等时间。最终一段需要 FrameTimeline、应用帧、SurfaceFlinger 与 present 证据，不能从 `finishInputEvent()` 推出像素已经上屏。
 
-### 8.3 怎样解读计数器
+### 9.3 怎样解读计数器
 
 | 现象 | 初步方向 | 还要验证 |
 |---|---|---|
@@ -565,9 +638,9 @@ counter 名包含 channel/window 名，trace 里可能被截断；多窗口应�
 
 ---
 
-## 九、可重复的排查顺序
+## 十、可重复的排查顺序
 
-### 9.1 没有收到事件
+### 10.1 没有收到事件
 
 1. `getevent -lt`：确认目标 evdev 节点是否有事件及时间戳；
 2. `dumpsys input`：确认设备是否启用、source/viewport 是否正确；
@@ -577,7 +650,7 @@ counter 名包含 channel/window 名，trace 里可能被截断；多窗口应�
 
 `adb shell input tap`、`keyevent` 等注入从 framework 路径进入，可用于绕过真实硬件与 evdev。注入成功只说明注入点之后的链路可以工作。
 
-### 9.2 事件到了错误窗口
+### 10.2 事件到了错误窗口
 
 检查同一时刻的：
 
@@ -590,7 +663,7 @@ counter 名包含 channel/window 名，trace 里可能被截断；多窗口应�
 
 不要只看 WMS `mCurrentFocus`。触摸目标不一定等于键盘焦点。
 
-### 9.3 点击卡顿或滑动不跟手
+### 10.3 点击卡顿或滑动不跟手
 
 先按五段延迟表找到最长区间，再进入对应线程：
 
@@ -602,7 +675,7 @@ counter 名包含 channel/window 名，trace 里可能被截断；多窗口应�
 
 按时间分段后，便不会因看到 `deliverInputEvent` 就把所有延迟归给 View。
 
-### 9.4 输入 ANR
+### 10.4 输入 ANR
 
 保存 ANR 前后的：
 
@@ -615,7 +688,7 @@ counter 名包含 channel/window 名，trace 里可能被截断；多窗口应�
 
 若属于 no-focused-window，继续查窗口添加与 focus transaction；若属于 connection timeout，查最早超时的 wait entry 与目标线程。
 
-### 9.5 InputChannel 创建或断开失败
+### 10.5 InputChannel 创建或断开失败
 
 窗口创建失败且没有正常的 `oq/wq` 时，检查：
 
@@ -630,19 +703,19 @@ counter 名包含 channel/window 名，trace 里可能被截断；多窗口应�
 
 ---
 
-## 十、几个容易混淆的边界
+## 十一、几个容易混淆的边界
 
-### 10.1 `MotionEvent` 与 Compose `PointerEvent`
+### 11.1 `MotionEvent` 与 Compose `PointerEvent`
 
 InputDispatcher 发布原生按键/动作消息，应用 framework 构造 `android.view.MotionEvent`。Compose 在 Android 平台上从宿主 View 收到 MotionEvent，再转换为 Compose pointer 数据，并进行多 pass 分发。
 
 两者共享前半段系统链路，应用内部阶段不同。Compose 的消费标记、协程手势识别和 hit path 可能产生额外耗时，因此二者在 Perfetto 上不会“完全一致”。
 
-### 10.2 返回键与预测性返回
+### 11.2 返回键与预测性返回
 
-物理 `KEYCODE_BACK` 可以走焦点按键分发。预测性返回手势还涉及系统手势识别、BackNavigationController、窗口 back callback 与动画协议，不能简化成普通 KeyEvent 一定进入 `Activity.dispatchKeyEvent()`。完整边界见 3.12。
+物理 `KEYCODE_BACK` 可以走焦点按键分发。预测性返回手势还涉及系统手势识别、BackNavigationController、窗口 back callback 与动画协议，不能简化成普通 KeyEvent 一定进入 `Activity.dispatchKeyEvent()`。完整边界见 3.7。
 
-### 10.3 `finishInputEvent()` 与画面完成
+### 11.3 `finishInputEvent()` 与画面完成
 
 finish 表示应用对该输入消息的处理阶段结束，并把 handled 状态回给 InputDispatcher。它不保证：
 
@@ -655,13 +728,13 @@ finish 表示应用对该输入消息的处理阶段结束，并把 handled 状�
 
 输入到显示延迟必须继续跟踪关联帧。
 
-### 10.4 Show taps 不能替代输入 trace
+### 11.4 Show taps 不能替代输入 trace
 
 系统触点可视化与应用窗口渲染使用不同的 Surface/路径。它能帮助判断系统是否感知手势，但圆点移动不代表目标 App 已经收到、消费或显示业务结果。
 
 ---
 
-## 十一、版本边界
+## 十二、版本边界
 
 | 版本 | 已核验差异 |
 |---|---|
@@ -676,7 +749,7 @@ finish 表示应用对该输入消息的处理阶段结束，并把 handled 状�
 
 ---
 
-## 十二、源码阅读入口
+## 十三、源码阅读入口
 
 - `common/drivers/input/evdev.c`：evdev client buffer、read/poll 和用户空间 ABI
 - `frameworks/native/services/inputflinger/reader/EventHub.cpp`：epoll、inotify、RawEvent 时间戳
@@ -693,9 +766,7 @@ finish 表示应用对该输入消息的处理阶段结束，并把 handled 状�
 
 ## 交叉引用
 
-- **3.2 触摸响应的性能分析**：batch、resampling 与应用触摸处理
-- **3.4 输入延迟与预测输入**：预测、采样与输入到显示时间
-- **3.7 InputDispatcher 反压**：`iq/oq/wq` 堆积
-- **3.10 stale event**：过期事件的 policy
-- **3.12 Predictive Back**：返回手势、窗口回调与动画
+- **3.2 触摸延迟、预测与低延迟渲染**：采样、重采样、预测与输入到显示时间
+- **3.7 Predictive Back**：返回手势、窗口回调与动画
+- **3.8 键盘、鼠标与指针输入**：外接设备、焦点与桌面模式
 - **9.1 ANR**：AMS/WMS 侧 TimeoutRecord、trace 与判责

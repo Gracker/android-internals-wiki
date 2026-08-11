@@ -1,6 +1,7 @@
 ---
 title: "键盘、鼠标与指针输入性能 — 桌面模式交互管线"
-chapter: "3.13"
+chapter: "3.8"
+section: "3.8"
 status: ready-for-review
 drafted_date: "2026-06-27"
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
@@ -24,6 +25,16 @@ sources:
     path: "frameworks/base/core/java/android/view/DragEvent.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/input/InputManagerService.java"
+  - type: aosp
+    path: "frameworks/native/services/inputflinger/InputFilter.cpp"
+  - type: aosp
+    path: "frameworks/native/services/inputflinger/rust/input_filter.rs"
+  - type: aosp
+    path: "frameworks/native/services/inputflinger/rust/bounce_keys_filter.rs"
+  - type: aosp
+    path: "frameworks/native/services/inputflinger/rust/slow_keys_filter.rs"
+  - type: aosp
+    path: "frameworks/native/services/inputflinger/rust/sticky_keys_filter.rs"
   - type: official
     path: "https://developer.android.com/develop/ui/views/touch-and-input/input-events"
   - type: official
@@ -31,13 +42,18 @@ sources:
   - type: official
     path: "https://developer.android.com/guide/topics/large-screens/handle-multi-window-mode"
 tags: [input, keyboard, mouse, pointer, desktop-mode, hover, drag-drop, performance]
-related_chapters: ["3.1", "3.2", "3.4", "3.5", "3.7", "2.20", "22.14"]
+related_chapters: ["3.1", "3.2", "3.4", "3.6", "2.20", "22.14"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-27"
 gap_source: "官方文档/AOSP结构/每日信息"
+pipeline_stage: "ready-for-review"
+task6_state: "pending-verification"
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md"
 ---
 
-# 3.13 键盘、鼠标与指针输入性能 — 桌面模式交互管线
+# 3.8 键盘、鼠标与指针输入性能 — 桌面模式交互管线
 
 手机上的输入优化常以触摸为中心。到了大屏、多窗口和桌面窗口场景，键盘、鼠标、触控板会把另外几类问题放大：
 
@@ -264,6 +280,46 @@ flowchart LR
 
 应用快捷键应按语义消费并返回 `true`，只在 `ACTION_DOWN && repeatCount == 0` 执行一次性命令。系统快捷键、IME 组合和辅助功能仍有更高优先级。
 
+### 4.4 Rust 键盘过滤器位于 InputFlinger 主链中
+
+Android 17 的 native listener 顺序包含：
+
+```text
+InputReader
+  → UnwantedInteractionBlocker
+  → InputFilter
+  → PointerChoreographer
+  → InputProcessor
+  → Metrics / InteractionReporter
+  → InputDispatcher
+```
+
+`InputFilter` 是 C++ wrapper，其内部的 Rust 链只处理键盘辅助功能。`notifyMotion()`、sensor、switch、vibrator state、device reset 和 pointer-capture change 从 wrapper 直接通知下一层；InputReader、PointerChoreographer、InputProcessor 和 InputDispatcher 仍是 C++ 实现。因此这是键盘路径的局部组件，不是“InputFlinger 已用 Rust 重写”。
+
+C++ 与 Rust 之间使用 local AIDL 接口和 cxxbridge bootstrap。按键进入 `IInputFilter.notifyKey()`，过滤后经 `IInputFilterCallbacks.sendKeyEvent()` 回到 C++ listener。这些调用位于同一 InputFlinger 进程和调用链，没有跨进程 Binder transaction。
+
+配置变化时，Rust 从 `BaseFilter` 开始依次包上 Sticky、Slow 和 Bounce，所以三者同时开启时的执行顺序为：
+
+```text
+BounceKeysFilter
+  → SlowKeysFilter
+  → StickyKeysFilter
+  → BaseFilter
+  → C++ callback
+```
+
+| Filter | 设备与事件边界 | 语义 | 性能表现 |
+|---|---|---|---|
+| Bounce Keys | 非虚拟、受支持键盘；事件带 `SOURCE_KEYBOARD` | 同设备同 `keyCode` 的下一次 DOWN 落在阈值内时，丢弃该 DOWN 及配对 UP | 不设定时等待；快速重复按键消失 |
+| Slow Keys | 与 Bounce 相同的受支持设备集 | 首个 DOWN 进入 pending，按住到阈值后才向后发送；提前 UP 则整次短按不再传递 | 接受的 DOWN 有意延后一个阈值 |
+| Sticky Keys | 受支持的非虚拟字母键盘 | 在修饰键 UP 时切换 off / latched / locked，合并 `metaState` | 没有阈值等待，但改变修饰键传递与状态 |
+
+Bounce 和 Slow 的受支持设备必须是非虚拟键盘，且为外接设备或内置 `Alphabetic` 键盘；外接的非字母键盘也可能生效。Sticky 的设备集更窄，为非虚拟 `Alphabetic` 键盘。这些条件不能仅从外设名称推断，应查 InputReader/InputFilter dump。
+
+Slow Keys 会把延后后的 DOWN 改写为新 `downTime/eventTime`，并添加禁止 key repeat 的 policy flag。等待由名为 `InputFilter` 的线程和 timeout callback 完成。因此“短按稳定消失”或“延迟接近配置 threshold”时，要先检查 Slow Keys；InputDispatcher 反压则会同时出现目标、connection queue 或应用线程异常。
+
+Rust state 初始为 disabled，任一 filter 安装后转为 enabled。Android 17 在“曾开启、随后全部关闭”时可能仍保持 enabled，但重建后的链只有透传 `BaseFilter`；功能上不再有 Bounce/Slow/Sticky 语义，只可能多一次本地调用回路。这是 `android-17.0.0_r1` 的实现细节，不应被应用当成 API 契约。
+
 ## 5. 鼠标、hover、滚轮与窗口命中
 
 ### 5.1 指针目标来自位置
@@ -478,6 +534,7 @@ adb shell dumpsys input
 - 设备 classes、sources、mapper 与 motion ranges；
 - focused display、各 display 的 focused window；
 - pointer capture mode；
+- Rust InputFilter 的 enabled/filter chain、Slow Keys pending/ongoing DOWN 与 threshold；
 - touch/hover/drag state；
 - connection 的 outbound queue、wait queue 与 responsive 状态；
 - key repeat timeout 和 delay。
@@ -574,6 +631,9 @@ Android 17 需要特别记住的变化是触控板 pointer capture 模式：默�
 - [AOSP `CursorInputMapper.cpp`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/inputflinger/reader/mapper/CursorInputMapper.cpp)
 - [AOSP `TouchpadInputMapper.cpp`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/inputflinger/reader/mapper/TouchpadInputMapper.cpp)
 - [AOSP `InputDispatcher.cpp`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp)
+- [AOSP `InputFilter.cpp`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/inputflinger/InputFilter.cpp)
+- [AOSP Rust `input_filter.rs`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/inputflinger/rust/input_filter.rs)
+- [AOSP Rust keyboard filters](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/inputflinger/rust/)
 - [AOSP `ViewRootImpl.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/view/ViewRootImpl.java)
 - [AOSP `View.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/view/View.java)
 - [AOSP `DragDropController.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/wm/DragDropController.java)

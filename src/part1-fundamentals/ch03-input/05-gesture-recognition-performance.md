@@ -1,8 +1,8 @@
 ---
 
 title: 手势识别算法与性能优化
-chapter: '3.6'
-section: '3.6'
+chapter: '3.5'
+section: '3.5'
 status: finalized
 task2b_result: fixed
 task2b_state: fixed
@@ -42,7 +42,6 @@ related_chapters:
 - '3.1'
 - '3.2'
 - '3.3'
-- '3.4'
 - '2.4'
 
 task9_result: auto-fixed
@@ -66,7 +65,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-22
 ---
 
-# 手势识别算法与性能优化
+# 3.5 手势识别算法与性能优化
 
 ## 为什么要了解手势识别算法
 
@@ -438,7 +437,7 @@ case MotionEvent.ACTION_MOVE:
 1. 同一设备上，所有应用都出现相同的原始坐标缺口，优先检查固件、驱动和设备配置；
 2. `getevent` 已出现样本，但 framework/app 没收到，检查 InputReader、窗口路由和输入消费者；
 3. App 收到连续 `MotionEvent`，只有某个控件改变了轨迹或阈值，检查控件识别器；
-4. 只在系统导航边缘发生冲突，结合第 3.3、3.5 节检查系统手势与监控通道。
+4. 只在系统导航边缘发生冲突，结合第 3.3、3.4 节检查系统手势与监控通道。
 
 内核锚点 `android17-6.18-2026-06_r6` 只能说明通用输入子系统的版本边界。没有具体设备的驱动、固件和 overlay 源码时，不对厂商算法细节下结论。
 

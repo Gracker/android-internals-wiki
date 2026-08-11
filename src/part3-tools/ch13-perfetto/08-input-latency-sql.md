@@ -22,7 +22,7 @@ sources:
   - type: research
     path: intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md
 tags: [Perfetto, SQL, input-latency, android.input, input-events, trace-analysis]
-related_chapters: ["3.1", "3.4", "13.3", "13.5"]
+related_chapters: ["3.1", "3.2", "13.3", "13.5"]
 pipeline_stage: "ready-to-publish"
 task2b_result: fixed
 task2b_state: fixed
@@ -854,7 +854,7 @@ print(summary.to_string(index=False))
 - [Android 17 inputevent `Trace Processor` 解析器](https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/importers/proto/winscope/android_input_event_parser.cc)
 - [Android 17 `InputDispatcher.cpp`](https://android.googlesource.com/platform/frameworks/native/+/ae266dcb706d083868578cfedce381ef44488a07/services/inputflinger/dispatcher/InputDispatcher.cpp)
 - [Android 17 通用内核 6.18 锚点](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6)
-- §3.4 输入延迟与预测输入技术
+- §3.2 触摸延迟、预测与低延迟渲染
 - §9.3 ANR 分析方法
 - §13.3 Perfetto View 解读
 - §13.5 Perfetto 专题分析

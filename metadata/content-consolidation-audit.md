@@ -15,9 +15,39 @@
 | 章节 | 审阅前正文 | 审阅后正文 | 状态 | 完成日期 |
 | --- | ---: | ---: | --- | --- |
 | ch06 存储与 I/O | 12 | 5 | 已完成 | 2026-08-11 |
-| 其余 25 章 | 610 | 待审阅 | 未开始 | - |
+| ch03 输入系统 | 14 | 8 | 已完成 | 2026-08-11 |
+| 其余 24 章 | 596 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 615 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 609 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch03 输入系统
+
+保留后的连续编号为：
+
+- 3.1 Input 事件分发：队列、反压与丢弃
+- 3.2 触摸延迟、预测与低延迟渲染
+- 3.3 手势导航与系统交互
+- 3.4 输入事件拦截与安全机制
+- 3.5 手势识别算法与性能优化
+- 3.6 InputMethodManager 与软键盘性能
+- 3.7 Predictive Back 系统架构与动画管线性能
+- 3.8 键盘、鼠标与指针输入性能
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `04-input-latency-prediction.md` | 合并 MotionPredictor、前缓冲、Perfetto 量化和手写组合方案 | `../src/part1-fundamentals/ch03-input/02-touch-performance.md` |
+| `07-inputdispatcher-backpressure.md` | 合并 `iq/oq/wq`、`WOULD_BLOCK`、无响应隔离和队列裁剪 | `../src/part1-fundamentals/ch03-input/01-input-dispatch.md` |
+| `08-inputflinger-rust-arr.md` | Rust Bounce/Slow/Sticky Keys 归入外设输入；interaction boost 与 ARR 测量边界归入触摸延迟，完整 ARR 仍由 2.18/2.19 承载 | 3.8、3.2、2.18、2.19 |
+| `09-input-latency-budget-perception.md` | 合并四种延迟口径、阶段预算、HCI 研究边界和 FrameTimeline high-latency state | `../src/part1-fundamentals/ch03-input/02-touch-performance.md` |
+| `10-inputdispatcher-stale-event.md` | 合并 stale policy、进行中 stroke 豁免、合成 CANCEL 和 drop reason 优先级 | `../src/part1-fundamentals/ch03-input/01-input-dispatch.md` |
+| `05-input-interception-security.md` / `06-gesture-recognition-performance.md` | 主题独立，改为连续编号 3.4 / 3.5 | `04-input-interception-security.md` / `05-gesture-recognition-performance.md` |
+| `11-input-method-manager-performance.md` / `12-predictive-back-system-architecture.md` | 主题独立，改为连续编号 3.6 / 3.7 | `06-input-method-manager-performance.md` / `07-predictive-back-system-architecture.md` |
+| `13-keyboard-mouse-pointer-input-performance.md` | 改为 3.8，并吸收 Rust 键盘 filter | `08-keyboard-mouse-pointer-input-performance.md` |
+| `参考资料.md` | 删除重复参考索引页；固定 tag 入口保留在章节 README 和各主题参考资料 | `../src/part1-fundamentals/ch03-input/README.md` |
+
+活动跨章链接、`src/SUMMARY.md` 和 changelog 映射已切换到新编号与路径。历史审计记录和关闭 finding 中的旧路径按维护规则保留。
 
 ## ch06 存储与 I/O
 

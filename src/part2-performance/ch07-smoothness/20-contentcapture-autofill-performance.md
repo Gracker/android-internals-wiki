@@ -156,7 +156,7 @@ Autofill Session 需要新响应时，经 `ActivityTaskManager.requestAutofillDa
 
 这组协作会增加 system_server、提供方、IME 和渲染服务之间的 IPC 与等待，也可能与键盘显示动画重叠。它不会要求 IME 独立创建第二份 AssistStructure。Android 17 的主、次提供方路径也可以复用现有 `FillContext`；有几个提供方不能直接换算成几轮应用 View 遍历。
 
-IME 自身的启动、`InputConnection` 与窗口动画问题见 [3.11 InputMethodManager 性能影响](../../part1-fundamentals/ch03-input/11-input-method-manager-performance.md)。Binder 等待与异步预算可结合 [1.4 Binder IPC](../../part1-fundamentals/ch01-architecture/04-binder.md) 继续分析。
+IME 自身的启动、`InputConnection` 与窗口动画问题见 [3.6 InputMethodManager 性能影响](../../part1-fundamentals/ch03-input/06-input-method-manager-performance.md)。Binder 等待与异步预算可结合 [1.4 Binder IPC](../../part1-fundamentals/ch01-architecture/04-binder.md) 继续分析。
 
 ## 把成本按线程和进程拆开
 

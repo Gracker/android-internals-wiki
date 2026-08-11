@@ -1,6 +1,7 @@
 ---
 title: "Predictive Back 系统架构与动画管线性能"
-chapter: "3.12"
+chapter: "3.7"
+section: "3.7"
 status: ready-for-review
 drafted_date: "2026-06-24"
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
@@ -25,14 +26,14 @@ sources:
   - type: official
     path: "https://developer.android.com/about/versions/15/changes/predictive-back"
 tags: [predictive-back, input, animation, window-manager, gesture, system-architecture, task-transition]
-related_chapters: ["3.1", "3.3", "3.4", "22.13", "2.12", "8.1"]
+related_chapters: ["3.1", "3.2", "3.3", "22.13", "2.12", "8.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-24"
 gap_source: "官方文档+AOSP结构"
 drafted_by: "openclaw-task2a"
 ---
 
-# Predictive Back 系统架构与动画管线性能
+# 3.7 Predictive Back 系统架构与动画管线性能
 
 预测性返回（Predictive Back）把返回操作分成“手势预览”和“提交导航”两个阶段。手指移动时，系统或应用只更新可撤销的视觉状态；手势提交后，返回 callback 才执行 `finish()`、pop back stack、隐藏 IME 等动作。
 
