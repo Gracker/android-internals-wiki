@@ -4,7 +4,7 @@ chapter: "25.30"
 status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [native, so, elf, strip, ndk, abi, 16kb-page-size, apk-size]
-related_chapters: ["25.6", "25.8", "1.55", "1.58", "20.13"]
+related_chapters: ["25.6", "25.8", "1.55", "1.58", "20.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "Clippings参考书驱动"
@@ -580,7 +580,7 @@ Android 平台、NDK、AGP 与 Play 发布政策不能按行互相替代。项�
 
 - [25.6 APK 体积分析与瘦身](06-apk-analysis.md)：DEX、资源、native 与 assets 的统一体积账。
 - [25.8 App Bundle 与动态交付](08-app-bundle-delivery.md)：ABI configuration APK 与 Dynamic Feature。
-- [20.13 16 KB Page Size 兼容性与 Native 崩溃治理](../ch20-stability/13-16kb-page-size-native-compatibility.md)：ELF/ZIP 检查、backcompat 和故障归因。
+- [20.11 16KB Page Size 兼容性与 Native 崩溃治理](../ch20-stability/11-16kb-page-size-native-compatibility.md)：ELF/ZIP 检查、backcompat 和故障归因。
 - [1.55 Android 17 VNDK 隔离](../../part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md)：平台 native 可见性。
 - [1.58 Android Dynamic Linker](../../part1-fundamentals/ch01-architecture/58-android-dynamic-linker-linker64-native-library.md)：linker64 加载、重定位、RELRO 与 namespace。
 

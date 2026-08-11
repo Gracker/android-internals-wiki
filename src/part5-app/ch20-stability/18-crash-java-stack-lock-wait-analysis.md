@@ -1,6 +1,6 @@
 ---
 title: "Crash 状态下 Java 线程堆栈获取与锁等待分析"
-chapter: "20.24"
+chapter: "20.18"
 status: ready-for-review
 drafted_date: "2026-07-16"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -8,7 +8,7 @@ last_verified: "2026-07-16"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 tags: [crash, java-stack, ThreadList, StackVisitor, MonitorInfo, lock-wait, ART]
-related_chapters: ["20.02", "20.03", "20.15", "20.18", "26.27"]
+related_chapters: ["20.2", "20.3", "20.15", "20.16", "26.27"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "参考书驱动（Clippings/线上疑难问题 46.md）"
@@ -29,7 +29,7 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - Java Crash 分析与监控原理.md"
 ---
 
-# 20.24 Crash 状态下 Java 线程堆栈获取与锁等待分析
+# Crash 状态下 Java 线程堆栈获取与锁等待分析
 
 “Crash 时取全部 Java 栈”不是一个单一问题。Java 未捕获异常、Native 致命信号、系统 ANR 和进程退出后的回捞，拥有不同的运行时状态、权限和安全边界。把它们放进同一个 signal handler 方案，往往会把一次可诊断故障变成死锁、二次崩溃或残缺报告。
 
@@ -177,7 +177,7 @@ OOM 路径尤其要克制。`getAllStackTraces()` 本身会创建 Map 和大量�
 
 Android 8 起，系统按需启动 `crash_dump32/64`，由 debuggerd/tombstoned 生成诊断数据。系统 tombstone 能提供崩溃线程寄存器、maps，并为进程内各线程生成 native 或可识别的混合栈；它不等价于 ART SIGQUIT 的 Java monitor dump，也不能保证给出 Java monitor owner。
 
-普通应用应保留 debuggerd 的 signal 链。Android 12 / API 31 起，应用可在下次启动查询 `ApplicationExitInfo.REASON_CRASH_NATIVE`，并从 `getTraceInputStream()` 读取 tombstone protobuf。完整的 Native 栈采集与符号化边界见 [Native 栈回溯与符号化](18-native-stack-unwinding-symbolication.md) 和 [Android 17 signal/debuggerd 迁移](19-android17-signal-handler-debuggerd-migration.md)。
+普通应用应保留 debuggerd 的 signal 链。Android 12 / API 31 起，应用可在下次启动查询 `ApplicationExitInfo.REASON_CRASH_NATIVE`，并从 `getTraceInputStream()` 读取 tombstone protobuf。完整的 Native 栈采集与符号化边界见 [Native 栈回溯与符号化](16-native-stack-unwinding-symbolication.md)，系统 signal/debuggerd 链路见 [Native Crash 治理](03-native-crash-governance.md)。
 
 ### ANR：系统 trace 与事前采样互补
 

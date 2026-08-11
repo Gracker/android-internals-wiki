@@ -53,7 +53,7 @@ tags:
 - wx
 - perf-measurement
 - mainline-modules
-related_chapters: ["14.11", "20.7", "20.12"]
+related_chapters: ["14.11", "20.12", "20.17"]
 created_by: codex
 created_date: '2026-04-21'
 drafted_by: codex

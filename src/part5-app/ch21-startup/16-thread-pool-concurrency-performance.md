@@ -17,7 +17,7 @@ sources:
   - type: blog
     path: "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/"
 tags: [thread-pool, concurrency, cpu-scheduling, startup, coroutines]
-related_chapters: ["1.5", "5.1", "8.6", "20.14"]
+related_chapters: ["1.5", "5.1", "8.6", "20.19"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-26"
 gap_source: "素材驱动/参考书"

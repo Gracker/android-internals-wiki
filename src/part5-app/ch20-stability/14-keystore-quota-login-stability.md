@@ -1,7 +1,7 @@
 ---
 title: "Android 17 Keystore 配额与登录故障治理"
-chapter: "20.16"
-section: "20.16"
+chapter: "20.14"
+section: "20.14"
 status: ready-for-review
 drafted_date: "2026-05-25"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
@@ -36,7 +36,7 @@ created_date: "2026-05-25"
 gap_source: "官方文档/每日信息/AOSP结构"
 ---
 
-# 20.16 Android 17 Keystore 配额与登录故障治理
+# Android 17 Keystore 配额与登录故障治理
 
 Android 17 开始按应用 UID 限制 Android Keystore 中的 key 数量。非系统应用以 API 37 为目标版本时，上限为 50,000；其他应用为 200,000，系统应用也使用 200,000。达到上限后，系统不会删除旧 key，也不会阻止应用继续使用仍然有效的旧 key；被拒绝的是新的生成或导入请求。
 
@@ -331,7 +331,7 @@ target 37 放量前至少确认：
 
 8.9 关注应用进程、keystore2、KeyMint HAL、TEE/StrongBox 之间的延迟、operation slot 和线程调度；这里关注持久 key entry 数量与 alias 生命周期。operation 并发上限和每 UID key 数量是两套资源约束，报告中应分别统计。
 
-20.7 讨论异常恢复架构，20.12 讨论 crash loop 与 SafeMode，26.9 讨论 `ApplicationExitInfo`。这里提供 Keystore 故障分类和恢复状态；进程退出记录只能作为时间与结果证据。
+20.7 统一讨论异常恢复、crash loop 与 SafeMode，26.9 讨论 `ApplicationExitInfo`。这里提供 Keystore 故障分类和恢复状态；进程退出记录只能作为时间与结果证据。
 
 ## 小结
 

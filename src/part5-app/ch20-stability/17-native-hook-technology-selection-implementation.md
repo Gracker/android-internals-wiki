@@ -1,10 +1,10 @@
 ---
-title: "Native Hook 技术选型与实现原理"
-chapter: "20.15"
+title: "Native Hook 技术选型与实现"
+chapter: "20.17"
 status: finalized
 applicable_versions: "Android 17 (API 37) - Android 17 (API 37)"
 tags: ['Native Hook', 'Inline Hook', 'GOT/PLT', 'ARM64', 'bionic linker', 'debuggerd']
-related_chapters: ['20.14', '20.19', '14.26']
+related_chapters: ['20.12', '20.3', '14.26']
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-14"
 gap_source: "章节深挖"
@@ -32,7 +32,7 @@ last_review_finalize_at: "2026-07-28T08:18:33+08:00"
 last_review_finalize_run_id: "20260728-081833-99d1a2d7"
 ---
 
-# 20.15 Native Hook 技术选型与实现
+# Native Hook 技术选型与实现
 
 Native Hook 的风险不在“把地址换掉”这一行代码，而在命中范围、并发改写、ABI 一致性、动态装载和平台防护。只按 GOT、Trap、Inline 三个名词选型，很容易把不同层次的机制混在一起。
 
@@ -419,7 +419,7 @@ DECLARED -> RESOLVING -> INSTALLING -> ACTIVE
 
 观察自有或指定第三方 ELF 的 `openat`、`close`、`dup`、`socket` 等导入调用时，PLT/GOT Hook 通常比进程级 Inline Hook 更容易限定影响面。代理函数应保存 `errno`，使用无分配记录路径，并把“未经过导入槽的直接 syscall”写入覆盖盲区。
 
-这类方案适合辅助定位 FD 泄漏，不应替代 `/proc/self/fd` 快照、资源所有权和调用栈采样。参见 20.14《线程与 FD 资源监控》。
+这类方案适合辅助定位 FD 泄漏，不应替代 `/proc/self/fd` 快照、资源所有权和调用栈采样。参见 20.12《FD 资源监控与治理》。
 
 ### 9.2 分配器监控
 
@@ -503,6 +503,6 @@ DECLARED -> RESOLVING -> INSTALLING -> ACTIVE
 关联阅读：
 
 - 14.26《Android Hook 基础设施》
-- 20.14《线程与 FD 资源监控》
-- 20.18《Native 栈回溯与符号化》
-- 20.19《Android 17 信号处理与 debuggerd 架构》
+- 20.12《FD 资源监控与治理》
+- 20.16《Native 栈回溯与符号化》
+- 20.3《Native Crash 分析与 debuggerd 链路》

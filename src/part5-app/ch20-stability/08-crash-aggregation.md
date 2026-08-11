@@ -1,10 +1,10 @@
 ---
-title: "\"崩溃聚合与归因分析\""
-chapter: "\"20.8\""
-section: "\"20.8\""
+title: "崩溃聚合与归因分析"
+chapter: "20.8"
+section: "20.8"
 status: "finalized"
 pipeline_stage: "ready-to-publish"
-applicable_versions: "\"Android 10 (API 29) - Android 17 (API 37)\""
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [crash-aggregation, attribution, alerting, stack-dedup, clustering]
 confidence: "medium"
 sources:
@@ -28,10 +28,10 @@ sources:
   path: https://firebase.google.com/docs/crashlytics/android/customize-crash-reports
 - type: reference
   path: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
-last_verified: "\"2026-06-03\""
-last_verified_against: "\"AOSP android-16.0.0_r1, Firebase Crashlytics docs, Sentry docs\""
-drafted_date: "\"2026-05-11\""
-reviewed_date: "\"2026-06-03\""
+last_verified: "2026-06-03"
+last_verified_against: "AOSP android-16.0.0_r1, Firebase Crashlytics docs, Sentry docs"
+drafted_date: "2026-05-11"
+reviewed_date: "2026-06-03"
 reviewed_by: "openclaw-task6"
 polish_count: "1"
 task6_result: "pass-light-edit"
@@ -40,15 +40,15 @@ task9_state: "reviewed"
 task9_result: "auto-fixed"
 task2b_result: "fixed"
 task2b_state: "fixed"
-related_chapters: "[\"20.6\", \"26.2\", \"19.15\"]"
-last_task2b_at: "\"2026-06-03T00:50:00+08:00\""
-task2b_review_notes: "\"2026-06-03 Task2B fallback 回炉：补齐堆栈相似度聚类算法边界，修正尾部匹配和 cause chain 过度简化，收敛 ML 指标表述。\""
+related_chapters: ["20.6", "26.2", "19.15"]
+last_task2b_at: "2026-06-03T00:50:00+08:00"
+task2b_review_notes: "2026-06-03 Task2B fallback 回炉：补齐堆栈相似度聚类算法边界，修正尾部匹配和 cause chain 过度简化，收敛 ML 指标表述。"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "\"2026-06-03\""
-last_task9_at: "\"2026-06-03T09:20:00+08:00\""
+task9_reviewed_date: "2026-06-03"
+last_task9_at: "2026-06-03T09:20:00+08:00"
 last_task6_at: "2026-06-03T03:06:00+08:00"
 last_task6_audit: "2026-07-11"
-last_task9_autofix_at: "\"2026-06-03\""
+last_task9_autofix_at: "2026-06-03"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-26
 task2b_verified_at: "2026-06-26T07:27:19+08:00"

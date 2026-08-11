@@ -1,9 +1,11 @@
 ---
 title: "线程泄漏与匿名线程监控实战"
-chapter: "20.25"
+chapter: "20.19"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-tags: [thread, leak, monitoring, stability, ThreadGroup, pthread, FD]
-related_chapters: ["20.1", "20.5", "20.14", "20.24", "20.27"]
+tags: [thread, leak, monitoring, stability, ThreadGroup, pthread]
+related_chapters: ["20.1", "20.5", "20.12", "20.18", "20.21"]
+consolidated_from:
+  - "src/part5-app/ch20-stability/09-stability-case-studies.md#案例一"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "素材驱动+章节深挖"
@@ -70,7 +72,7 @@ last_review_finalize_at: "2026-07-31T20:08:09+08:00"
 last_review_finalize_run_id: "20260731-200809-b4d1007d"
 ---
 
-# 20.25 线程泄漏与匿名线程监控实战
+# 线程泄漏与匿名线程监控实战
 
 平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`，涉及 task 创建、`/proc` 和资源限制时的内核锚点是 `android17-6.18-2026-06_r6`。
 
@@ -124,7 +126,7 @@ Android 17 的 `ThreadGroup.activeCount()` 文档和实现都说明返回值是�
 
 Android 17 的实现先取得 Java 线程记录，再逐个调用 `getStackTrace()`，会创建 map 和每条线程的栈数组。各条栈采样时间不同，线程还可能在过程中结束。它适合在低成本趋势触发后生成诊断快照，不适合秒级调用，也不能覆盖没有 Java peer 的纯 native pthread。
 
-需要分析 Java crash、ANR 和跨线程栈采集机制时，参见 [20.24 Java Crash 堆栈与锁等待诊断](24-crash-java-stack-lock-wait-analysis.md)；进程级线程与 FD 常态监控见 [20.14 线程与 FD 资源监控治理](14-thread-fd-resource-monitoring.md)。
+需要分析 Java crash、ANR 和跨线程栈采集机制时，参见 [20.18 Java Crash 堆栈与锁等待诊断](18-crash-java-stack-lock-wait-analysis.md)；进程级线程与 FD 常态监控见 [20.12 FD 资源监控与治理](12-fd-resource-monitoring.md)。
 
 ### `/proc` 快照必须容忍线程并发退出
 
@@ -277,7 +279,7 @@ Java `Thread` 又经过 ART 的 `FixStackSize()`：传入 0 时先取运行时 `
 
 估算不能只做“线程数 × 1 MB”。应在目标 ABI、页大小、设备内存和相同业务负载上比较 `/proc/self/maps`、`smaps_rollup`、RSS 与 task 数的共同变化。
 
-线程也不天然持有一个 FD。`/proc/self/task/<tid>` 是 procfs 视图，不是进程为每条线程常驻打开的文件描述符。线程和 FD 一起增长，通常表示同一个模块同时创建 worker 与 socket、pipe、eventfd 或文件；需要按 owner 和时间线证明关联。FD 的计数、限额与复用规则见 20.14。
+线程也不天然持有一个 FD。`/proc/self/task/<tid>` 是 procfs 视图，不是进程为每条线程常驻打开的文件描述符。线程和 FD 一起增长，通常表示同一个模块同时创建 worker 与 socket、pipe、eventfd 或文件；需要按 owner 和时间线证明关联。FD 的计数、限额与复用规则见 20.12。
 
 ## 线程创建失败没有单一“上限”
 
@@ -407,6 +409,22 @@ data_sources: {
 Perfetto 不能自动给出 Java 创建调用点，也看不到已经退出但未 join 的 pthread 用户空间映射。前者要与 factory/受控采样关联，后者要依赖 pthread 成对事件或内存映射证据。
 
 ## 三类案例怎样判
+
+### `pthread_create` OOM 与页面线程泄漏
+
+看到 `OutOfMemoryError: pthread_create (...) failed` 只能确认 ART 在线程创建路径投递了 OOME，不能从 Java heap 尚有余量排除资源耗尽。失败可能发生在 ART `Thread`/JNI 环境分配、Bionic stack/TLS 映射或 kernel clone；还要保留原始错误、线程数、`VmSize`/RSS、ABI、页大小、进程角色和近期增长。
+
+一个可重复的调查过程是：
+
+1. 按进程角色和设备档位画 Linux task 数、Java 线程、pool 实例、队列、VmSize 与 RSS 时间线；
+2. 在增长刚越过基线时采集 `/proc/self/task` 名称分布和有限 Java 栈，不等到创建已经失败；
+3. 用统一 `ThreadFactory`、executor registry 或诊断构建的 pthread 包装定位创建 owner；
+4. 页面/组件退出后等待契约规定的宽限期，确认线程、pool 和任务是否回落；
+5. 修复 owner 的取消、shutdown、join/detach 和重复初始化，而不是提高阈值或缩小未知线程栈。
+
+复现样例应运行在独立测试进程：重复进入页面，每次错误创建一组 `HandlerThread`/executor 且不退出，直到 task 数和虚拟地址映射呈阶梯增长。修复版保存 owner，在 `onDestroy`/`close` 中停止任务、`quitSafely()` 或 `shutdown()`，并等待明确终止。验收比较相同循环次数后的峰值、回落时间、任务完成率和内存，而不是只证明“不再抛 OOM”。
+
+告警使用基线、增长斜率和回落三者组合。固定的 400/500 不是 Android 平台上限；阈值要按主进程、WebView/媒体进程、ABI、设备内存和实际栈成本校准。fatal 路径只写入预生成的有界摘要，不能在资源即将耗尽时创建上传线程或抓取全部线程栈。
 
 ### 广告 SDK 出现大量短名称线程
 

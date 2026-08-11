@@ -406,7 +406,7 @@ App 到 `keystore2`、`keystore2` 到 Binderized KeyMint HAL 都经过 Binder。
 - [§8.2 App 启动全流程](02-app-launch.md)：首帧、TTID/TTFD 与初始化时机。
 - [§8.3 启动优化策略](03-launch-optimization.md)：延迟初始化、线程调度和回归。
 - [§8.10 BiometricPrompt 与 Credential Manager](10-biometric-credential-login-performance.md)：认证 UI、凭据选择与登录流程。
-- [§20.16 Keystore 配额与登录稳定性](../../part5-app/ch20-stability/16-keystore-quota-login-stability.md)：alias 增长、配额和账号生命周期。
+- [§20.14 Keystore 配额与登录稳定性](../../part5-app/ch20-stability/14-keystore-quota-login-stability.md)：alias 增长、配额和账号生命周期。
 - [§26.3 性能指标采集](../../part5-app/ch26-observability/03-performance-collection.md)：端侧指标、采样与上报。
 
 ## 参考资料

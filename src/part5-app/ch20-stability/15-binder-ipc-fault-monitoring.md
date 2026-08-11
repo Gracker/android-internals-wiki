@@ -1,10 +1,12 @@
 ---
-title: "Binder 异常体系与 IPC 故障性能边界"
-chapter: "20.17"
+title: "Binder IPC 故障与性能监控"
+chapter: "20.15"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [binder, ipc, exception, transaction-too-large, dead-object, stability, performance]
 related_chapters: ["1.4", "1.17", "1.18", "20.4", "26.11"]
+consolidated_from:
+  - "src/part5-app/ch20-stability/22-binder-communication-monitoring.md"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-04"
 drafted_date: "2026-06-04"
@@ -45,7 +47,7 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - Binder 异常：原来 Binder 异常真不少！.md"
 ---
 
-# 20.17 Binder 异常体系与 IPC 故障性能边界
+# Binder IPC 故障与性能监控
 
 Binder 是 Android 本机跨进程通信的核心机制，但不是应用之间唯一的数据通道：socket、pipe、共享内存和文件描述符同样存在。Binder 的优势是对象引用、身份传递、线程调度和 AIDL 契约都由系统协同完成；代价是一次看似普通的方法调用，可能同时受 Parcel 大小、目标进程存活、线程池、冻结状态和远端异常影响。
 
@@ -276,7 +278,80 @@ ANR 先看主线程是否停在 `BinderProxy.transactNative`，再沿 Perfetto f
 
 日志可搜索 `FAILED BINDER TRANSACTION`、`oneway spamming`、`Sending oneway calls to frozen process`，但 tag、级别和可见性会随构建变化。日志只作为辅助证据。
 
-## 9. 稳定性与性能指标
+## 9. 自有 AIDL 的持续监控
+
+客户端在 AIDL proxy 外层计时，得到的是同步端到端等待：
+
+```text
+marshal + driver out + server queue + server execution
+        + reply + unmarshal
+```
+
+这个值适合衡量用户体验，但不能命名为“Binder 传输耗时”。`oneway` 外层计时只覆盖序列化和本地提交，不表示远端已经执行；同进程 local Binder 可能直接调用 Stub，也应与跨进程样本分开。
+
+普通应用没有可依赖的全局 Binder Hook。`Binder.ProxyTransactListener` 和 `BinderInternal.Observer` 属于隐藏或平台内部接口，native/Rust Binder 也不一定经过同一 Java 入口。应用拥有 AIDL 契约时，优先用显式 client/server wrapper；系统服务只在少数公开 manager 调用点记录业务语义。
+
+下面的包装器保留逻辑接口、线程、耗时和原始失败类型，不依赖隐藏 API：
+
+```kotlin
+data class IpcCallSample(
+    val service: String,
+    val method: String,
+    val oneway: Boolean,
+    val durationNanos: Long,
+    val mainThread: Boolean,
+    val failureClass: String?,
+)
+
+interface IpcRecorder {
+    // 非阻塞、无 Binder/网络调用、不会向调用方抛异常。
+    fun tryRecord(sample: IpcCallSample): Boolean
+}
+
+inline fun <T> measuredIpc(
+    service: String,
+    method: String,
+    oneway: Boolean,
+    recorder: IpcRecorder,
+    block: () -> T,
+): T {
+    val started = SystemClock.elapsedRealtimeNanos()
+    var failureClass: String? = null
+    try {
+        return block()
+    } catch (failure: Throwable) {
+        failureClass = failure.javaClass.name
+        throw failure
+    } finally {
+        try {
+            recorder.tryRecord(
+                IpcCallSample(
+                    service,
+                    method,
+                    oneway,
+                    SystemClock.elapsedRealtimeNanos() - started,
+                    Looper.myLooper() == Looper.getMainLooper(),
+                    failureClass,
+                )
+            )
+        } catch (_: Throwable) {
+            // 监控故障不能遮蔽业务结果；这里也不能递归记录日志。
+        }
+    }
+}
+```
+
+标签只能来自编译期稳定枚举，不能包含 URI、用户 ID、参数或异常 message。recorder 使用固定容量缓冲，满时丢弃并计数；高频接口可写入预分配 ring buffer，编码和上传放到独立线程。服务端 wrapper 记录 `server_enter/server_exit`；需要关联时把 request ID 纳入业务协议，不能靠两端墙钟日志猜测。
+
+### 长尾采样与 Perfetto
+
+总体分位数和慢调用诊断需要两条采样路径：低比例均匀采样估计 P50/P90/P99，超过接口阈值的调用进入有冷却与速率上限的诊断缓冲。若只上传慢样本，得到的只是“慢调用中的分布”。远端一次死亡可能让多条并发调用同时抛 `DeadObjectException`，死亡率要按 connection epoch 或 death notification 去重。
+
+常驻指标发现接口后，再用 Perfetto 对齐 `android.binder`、`binder_driver`、`sched`、AIDL atrace 和应用 slice：先看客户端线程，再沿 flow 找服务端是否排队、等 CPU、等锁、执行或发起下游 IPC，最后看 reply 后客户端何时恢复。trace debug ID 只适合单次 trace 关联，不是长期业务主键。
+
+监控实现不得在关键路径发 Binder、写同步日志、访问磁盘或网络，也不得争用全局重锁。采样决策在调用前完成，配置错误时可以熔断监控，但不能改变业务异常、重试或返回值。
+
+## 10. 稳定性与性能指标
 
 建议把 IPC 作为独立指标域，不要只看 Java crash：
 
@@ -294,7 +369,7 @@ ANR 先看主线程是否停在 `BinderProxy.transactNative`，再沿 Perfetto f
 
 APM hook 只能覆盖自己能安全观察的边界。普通应用无法可靠全局 hook 所有 Binder proxy；反射或 native hook 还可能改变时序。自有 AIDL 应在生成代码外的 client wrapper 和 service implementation 记录，系统 API 则依赖公开 trace、异常和方法级埋点。
 
-## 10. Android 17 验证清单
+## 11. Android 17 验证清单
 
 | 用例 | 预期 |
 |---|---|
@@ -311,7 +386,7 @@ APM hook 只能覆盖自己能安全观察的边界。普通应用无法可靠�
 | frozen 进程收到同步 transaction | 观察 frozen reply 与 `REASON_FREEZER`，不按普通 ANR 归因 |
 | AIDL 客户端/服务端版本错配 | unknown transaction、默认值和错误方向可定位 |
 
-## 11. 与相邻章节的边界
+## 12. 与相邻章节的边界
 
 - 1.4 负责 Binder 驱动、对象引用与一次 transaction 的基础链路。
 - 1.17 负责不同 IPC 机制的选型和通用性能比较。

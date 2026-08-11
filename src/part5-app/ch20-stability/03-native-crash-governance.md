@@ -15,6 +15,9 @@ last_verified_against: "AOSP android-17.0.0_r1 (debuggerd/crash_dump, tombstoned
 confidence: medium
 drafted_date: "2026-05-11"
 polish_count: 0
+consolidated_from:
+  - "src/part5-app/ch20-stability/19-android17-signal-handler-debuggerd-migration.md"
+  - "src/part5-app/ch20-stability/09-stability-case-studies.md#案例二"
 sources:
   - type: aosp
     path: "system/core/debuggerd/crash_dump.cpp"
@@ -126,7 +129,25 @@ Android 17 linker 在早期调用 [`linker_debuggerd_init()`](https://android.go
 
 [`debuggerd_handler.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp) 使用预先准备的 pseudothread 栈和受控的 fork/exec 协议；[`crash_dump.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp) 通过 `ptrace` 读取现场，并创建崩溃地址空间的快照进程来缩短原进程所有线程的暂停时间。进程内 handler 仍处于严格受限的 signal context，不能据此认为任意 C++ 逻辑都可以安全执行。
 
-`crash_dump` 还会连接 `/data/system/ndebugsocket` 通知 ActivityManager。Native Crash 不经过 Java `UncaughtExceptionHandler`；应用安装 Java fatal handler 无法覆盖这条路径。Android 17 linker wiring 的文件迁移与版本边界见 [20.19 Android 17 signal handler / debuggerd 迁移](19-android17-signal-handler-debuggerd-migration.md)。
+`crash_dump` 还会连接 `/data/system/ndebugsocket` 通知 ActivityManager。Native Crash 不经过 Java `UncaughtExceptionHandler`；应用安装 Java fatal handler 无法覆盖这条路径。
+
+#### linker wiring 与 Runtime APEX 边界
+
+linker 的职责是尽早把 allocator、GWP-ASan、crash detail 等回调接入 debuggerd，而不是负责生成 tombstone。Android 17 的 Runtime APEX 组合会影响 wiring 所在文件和条件分支；这属于平台内部装配差异，不是应用可调用的稳定接口。应用不应查找 linker 私有 `soinfo`、debuggerd 私有 handler 或 ART special handler 来拼装自己的崩溃链。
+
+评审平台差异时，应沿“linker 注册入口 → debuggerd handler → crash_dump → tombstoned”逐段核对，并固定 Android tag 与模块 Build ID。只看到同名函数或某个偏移存在，不能证明厂商构建具有相同 ABI。
+
+#### alternate signal stack 与 pseudothread 栈不是同一块内存
+
+`SA_ONSTACK` 让致命 signal handler 在当前线程已有可用 alternate stack 时切换过去，主要应对线程栈损坏或接近耗尽的现场。debuggerd 预留的 pseudothread 栈则供崩溃转储协作线程使用，前后还带 guard page。它不会为进程中每条业务线程自动安装一块 alternate stack。
+
+自研采集器若依赖 altstack，必须明确谁安装、谁恢复、大小如何按 ABI 验证，以及与其他 SDK 共存时是否覆盖旧配置。把 debuggerd 的 pseudothread 栈大小照搬成业务 `sigaltstack()` 参数没有依据。
+
+#### CrashInfo wire protocol 与 tag bit
+
+崩溃进程和 `crash_dump` 之间通过版本化的 CrashInfo 协议传递最小现场。协议版本、字段和内部 signal 编号都属于平台私有实现；Android 17 中出现 v4 不能推导为“Android 17 首次引入 v4”，更不能让应用硬编码内部结构解析。
+
+Android 17 debuggerd 注册 flags 包含 `SA_EXPOSE_TAGBITS`，允许内核在支持时保留 fault address 的 tag 信息。它改善 MTE/GWP-ASan 报告可读性，却不会让普通 SIGSEGV 自动获得内存错误根因。Recoverable GWP-ASan 和 permissive MTE 只有在平台确认并完成报告的特定分支才可能返回；Crash SDK 不应从地址形态自行决定吞掉信号或继续执行。
 
 ## Tombstone 逐层解读
 
@@ -383,6 +404,36 @@ POSIX signal context 中只能调用 async-signal-safe 操作。工程上应进�
 通过 `dlopen("libc.so") + dlsym("sigaction")` 绕过 ART wrapper，不是“保证 APM handler 被调用”的推荐方案。Android 的 SignalChain 自己就用类似方式寻找真实 libc 符号，以保护平台先行处理；应用再次绕过会直接竞争内核 disposition。若 handler 消费信号、不正确转发或返回到同一条 fault 指令，系统 tombstone 可能缺失，进程也可能陷入重复信号。
 
 自研前应评估成熟 SDK 是否已经处理 Android 版本、handler 顺序、alternate stack、恢复默认 disposition和重新投递信号。任何自研实现都要在 Android 10～17、各 ABI、MTE/GWP-ASan、多个 SDK 共存和 16 KB page-size 设备上做故障注入。
+
+### 多个 Native Crash 采集器的冲突验证
+
+接入第二个采集器后缺少堆栈，不一定是 handler 覆盖。先把产物链拆成四段：现场是否生成、文件是否完整、符号是否匹配、上传与解析是否成功。只有原始产物和 Build ID 已确认无误，才继续检查 signal disposition。
+
+内核对每个信号维护一份 disposition；后一次 `sigaction()` 会替换前一次，并通过 `oldact` 返回旧值。保存旧 handler 不等于自动获得安全的调用链：`SIG_DFL`、`SIG_IGN`、`SA_SIGINFO`、线程 mask、重复进入、altstack 和重新投递都必须保留原语义。两个闭源 SDK 都试图充当链路 owner 时，很难证明组合正确。
+
+下面的只读探针只适合 debuggable 集成测试，调用点位于各 SDK 初始化前后，而不是 fatal handler 内：
+
+```cpp
+struct HandlerSnapshot {
+  int flags;
+  uintptr_t entry;
+};
+
+int SnapshotHandler(int signo, HandlerSnapshot* out) {
+  struct sigaction current = {};
+  if (sigaction(signo, nullptr, &current) != 0) return errno;
+
+  out->flags = current.sa_flags;
+  out->entry = (current.sa_flags & SA_SIGINFO)
+      ? reinterpret_cast<uintptr_t>(current.sa_sigaction)
+      : reinterpret_cast<uintptr_t>(current.sa_handler);
+  return 0;
+}
+```
+
+函数地址受 ASLR 影响，只用于同一进程内比较。即使入口被正确串接，也必须用行为结果验收。推荐让一个组件负责 fatal Native 信号，其他 SDK 关闭 Native 捕获，只保留 Java、性能或上传能力；依赖升级后重跑冲突测试。
+
+每个支持的 ABI 和主要 Android 版本至少注入 `abort()`、空指针读写、栈溢出、多线程同时 fault，以及设备支持时的 MTE/GWP-ASan 错误。通过标准同时覆盖应用产物、`ApplicationExitInfo`、系统 tombstone、离线符号化和服务端接收；缺少其中一项时，应标出失败阶段，不能用一个“堆栈完整率”掩盖原因。
 
 ## 线程级“安全点”：只能作为实验性故障隔离
 

@@ -1,8 +1,8 @@
 ---
 
 title: "WebView Renderer OOM 与白屏恢复"
-chapter: "20.10"
-section: "20.10"
+chapter: "20.9"
+section: "20.9"
 status: finalized
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-08"
@@ -61,7 +61,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-09
 ---
 
-# 20.10 WebView Renderer OOM 与白屏恢复
+# WebView Renderer OOM 与白屏恢复
 
 WebView 页面突然变白时，宿主 Activity 可能仍能响应，导航栏和原生按钮也都正常。若同时收到 `onRenderProcessGone()`，可以确认关联的 WebView Renderer 已退出；此时旧 `WebView` 失效，`reload()`、`goBack()`、`evaluateJavascript()` 和 JS Bridge 调用都不能作为补救手段。
 

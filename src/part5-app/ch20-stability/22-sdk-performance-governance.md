@@ -1,6 +1,6 @@
 ---
 title: "第三方 SDK 性能影响评估与治理实战"
-chapter: "20.28"
+chapter: "20.22"
 status: finalized
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [SDK治理, 第三方库, 性能评估, 启动阻塞, 稳定性]
@@ -32,7 +32,7 @@ sources:
   path: Privacy Sandbox SDK Runtime architecture and backward compatibility
 ---
 
-# 20.28 第三方 SDK 性能影响评估与治理实战
+# 第三方 SDK 性能影响评估与治理实战
 
 第三方 SDK 治理需要一套可重复的证据链：发布包中究竟包含什么、代码在何时执行、消耗了哪些资源、异常由谁触发，以及出问题后能否快速停止调用或回退版本。一张“可接入/不可接入”的静态名单回答不了这些问题。
 
@@ -256,7 +256,7 @@ Android 17 的内核接口定义可核对 [`Documentation/filesystems/proc.rst`]
 
 若 SDK 自带有语义的缓存/队列计数器，也应纳入同一时间线。供应商指标可以帮助解释，但不能代替系统级内存差值。
 
-SDK 使用独立进程时，可以分别观测宿主和子进程，却仍要报告两者的合计用户成本。关于 Java 泄漏的 retained path 分析见 [内存泄漏治理](../ch23-memory-practice/01-memory-leak-governance.md)，native 分配归因见 [Native 内存泄漏线上监控](./26-native-memory-leak-online-monitoring.md)。
+SDK 使用独立进程时，可以分别观测宿主和子进程，却仍要报告两者的合计用户成本。关于 Java 泄漏的 retained path 分析见 [内存泄漏治理](../ch23-memory-practice/01-memory-leak-governance.md)，native 分配归因见 [Native 内存泄漏线上监控](./20-native-memory-leak-online-monitoring.md)。
 
 ### 5.3 Android 17 内存上限
 
@@ -289,7 +289,7 @@ Android 17 的 [所有应用行为变更](https://developer.android.com/about/ve
 - 宿主回调 SDK、SDK 回调宿主时，顶部帧不代表工作发起者；
 - 混淆、内联和 stripped native library 会降低栈的可读性。
 
-应用自有适配层应给关键任务增加稳定的 Trace 名称、请求 ID 和来源标签；线程泄漏与匿名线程治理见 [线程泄漏与匿名线程监控](./25-thread-leak-anonymous-thread-monitoring.md)。
+应用自有适配层应给关键任务增加稳定的 Trace 名称、请求 ID 和来源标签；线程泄漏与匿名线程治理见 [线程泄漏与匿名线程监控](./19-thread-leak-anonymous-thread-monitoring.md)。
 
 ### 6.3 网络字节不能只看 UID
 

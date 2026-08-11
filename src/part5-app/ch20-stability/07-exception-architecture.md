@@ -7,6 +7,8 @@ pipeline_stage: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [exception-handling, safemode, hotfix, graceful-degradation]
 confidence: medium
+consolidated_from:
+  - "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md"
 sources:
 - type: reference
   path: kotlinx-coroutines-android/src/AndroidExceptionPreHandler.kt
@@ -119,7 +121,7 @@ Android 17 的 [`RuntimeInit.java`](https://android.googlesource.com/platform/fr
 
 Native signal handler 的限制比 Java handler 更严格。`SIGSEGV`、`SIGABRT` 等信号可能发生在 allocator、动态链接器或持锁代码里，handler 不能调用非 async-signal-safe 函数。日志框架、C++ 容器、JNI、malloc、互斥锁和大部分文件封装都不在安全范围内。
 
-生产方案通常使用 Crashpad、Breakpad 或经过验证的 APM Native SDK，由预先建立的文件描述符、独立 dumper 进程或系统 debuggerd 保留现场。应用自己的 handler 还要考虑旧 handler 链、`SA_SIGINFO`、备用信号栈、重入和恢复默认 disposition，细节见 20.3、20.18 与 20.19。
+生产方案通常使用 Crashpad、Breakpad 或经过验证的 APM Native SDK，由预先建立的文件描述符、独立 dumper 进程或系统 debuggerd 保留现场。应用自己的 handler 还要考虑旧 handler 链、`SA_SIGINFO`、备用信号栈、重入和恢复默认 disposition，系统链路见 20.3，回溯与符号化细节见 20.16。
 
 ### 协程异常不是新的系统 Crash 类型
 
@@ -285,6 +287,62 @@ launch marker 的写入位置要早于可选 SDK 和动态业务容器。若应�
 - 记录 `safe_mode_enter`、禁用模块、证据等级和退出原因，但不把兜底模式的成功算作完整模式成功；
 - 版本升级后保留上一版本的失败摘要用于分析，同时清空不再适用的 breaker 计数。
 
+### 启动租约：先记录进度，再判断失败
+
+一个残留 marker 只能说明上一次没有走到成功点，不能单独证明发生了 Crash。用户强停、LMK、设备重启、覆盖安装、并发进程写入和文件提交中断都可能留下相同状态。SafeMode 应把三类数据分开：
+
+| 数据 | 回答的问题 | 保存边界 |
+|---|---|---|
+| `LaunchLease` | 上一次启动走到了哪个阶段 | 按版本、进程和入口隔离 |
+| `FailureOccurrence` | 哪个退出证据能与该启动关联 | 有数量、时间和隐私上限 |
+| `DegradationPlan` | 下次启动跳过哪些模块 | 按模块、页面、进程和版本限定 |
+
+启动租约可按 `LAUNCHING → PROCESS_READY → INTERACTIVE → PROBATION → HEALTHY` 推进。入口必须先读取旧租约，再写入本轮 `launchId`；若先覆盖文件，上一轮阶段和时间窗都会丢失。租约至少保存 schema、`versionCode`、安装时间、进程角色、随机 `launchId`、粗粒度启动入口、墙钟、`elapsedRealtime`、boot sequence、阶段和 plan ID。不要保存 URL、账号或 Intent 参数。
+
+`ApplicationExitInfo.getTimestamp()` 使用墙钟，`elapsedRealtime()` 只适合同一次开机内计算时长，两者不能直接相减。boot sequence 变化、elapsed 倒退或墙钟偏移异常时，应降低证据置信度，而不是增加失败次数。
+
+`AtomicFile` 可以让单文件保持旧版或新版可读，但不提供线程锁和跨进程锁。单进程仍需串行化读写；多进程应使用 `lease-main`、`lease-push`、`lease-web` 等独立文件，再由一个明确 owner 汇总。格式还要有版本、长度上限、校验和与损坏文件隔离，读不到时安全退化。
+
+### 两阶段证据核对
+
+SafeMode 决策分成快速路径和补偿路径：
+
+1. **快速路径**只读取此前已经确认的本地失败样本，在可选 SDK、插件和 WebView 预热之前选择计划。单独残留的 `LAUNCHING` 只允许触发低风险动作，例如推迟非必要预热。
+2. **补偿路径**在启动后查询 `ApplicationExitInfo`，按进程、时间窗、版本、旧租约阶段、本地 fatal envelope 和已消费标识关联上一轮退出。先筛元数据，再在后台受限读取 trace；trace 为空不能反证没有 ANR 或 Native Crash。
+
+退出原因要分流：`REASON_CRASH`、`REASON_CRASH_NATIVE`、启动窗口内的 `REASON_ANR` 和 `REASON_INITIALIZATION_FAILURE` 在完成关联后可参与 Crash Loop；`REASON_LOW_MEMORY` 与过量资源进入资源保护；用户停止、包更新、权限变化和主动退出默认不增加 Crash 计数。`SIGKILL` 也不能自动解释为 LMK。
+
+`ActivityManager.setProcessStateSummary()` 可附带最多 128 字节的关联摘要，适合保存格式版本、`launchId` 短哈希、进程角色、阶段和 plan ID。它不是 UI 状态仓库，也不是隐私保护机制；只在关键里程碑更新。
+
+### 多进程、版本和恢复计划
+
+每个进程独立持有租约，只有汇总 owner 能更新失败样本与计划。独立服务或推送进程死亡时，默认只隔离对应功能；进程仍存活时，其他进程不能仅凭租约年龄判定它已经失败。
+
+建议用下面的键组织有界历史：
+
+```text
+installationEpoch / versionCode / processRole / startupRoute / signature
+```
+
+新版本关闭旧桶的直接决策权，但保留诊断摘要；经审核后，可以让共用同一 native 库或配置的版本继承特定计划。恢复时一次只启用一组依赖，并设置冷却时间、最长持续时间、最大尝试次数和单独的进入/退出条件，避免在完整模式与受限模式之间振荡。
+
+计划应表示为 `moduleId + action + scope + reason + expiry`。图片预热、动态插件、推荐和埋点等可选能力可以延迟或关闭；数据库强制迁移、身份认证和支付校验不能绕过。WebView renderer gone 属于页面级恢复，不直接增加宿主主进程的 Crash Loop。
+
+### SafeMode 验证矩阵
+
+测试应覆盖状态与证据的组合，而不是只测计数器：
+
+- Java Crash、Native Crash、启动 ANR、LMK、用户停止在各租约阶段的分类；
+- 墙钟前后跳、设备重启、覆盖安装、升级与回滚；
+- 同名进程多条退出记录、重复消费和候选歧义；
+- 租约为空、截断、未知 schema 和校验失败；
+- 多进程并发启动、owner 中断和计划传播；
+- 观察期成功、复发、过期和用户主动尝试正常启动；
+- WebView renderer 反复退出只触发页面计划；
+- 故障注入后系统 tombstone、退出历史和本地 envelope 仍可关联。
+
+指标至少包括进入率、候选转确认率、退出记录匹配/歧义率、普通与降级启动的交互成功率、计划误触发率和重复进入率。兜底模式启动成功不能计作完整模式恢复。
+
 ## 降级策略：功能、页面与进程
 
 ### 在明确边界捕获异常
@@ -339,7 +397,7 @@ override fun onRenderProcessGone(
 
 同一个 renderer 可能服务多个 WebView，系统会为每个受影响实例分别调用回调。代码只清理参数给出的实例，同时确保 Activity、Fragment、adapter 和 registry 不再持有它；不能在第一次回调里假设其他 WebView 仍可用。返回 `false` 时，renderer 若崩溃会导致应用 Crash，若被系统杀死则应用会被杀。
 
-`didCrash() == false` 表示 renderer 被系统结束，常见背景是内存压力，但不能仅凭该布尔值断言 OOM。恢复策略要限制重建次数；持续内存压力下立即创建同样的 WebView，容易形成 renderer 重建循环。20.10 专门讨论 WebView renderer OOM 恢复。
+`didCrash() == false` 表示 renderer 被系统结束，常见背景是内存压力，但不能仅凭该布尔值断言 OOM。恢复策略要限制重建次数；持续内存压力下立即创建同样的 WebView，容易形成 renderer 重建循环。20.9 专门讨论 WebView renderer OOM 恢复。
 
 ## 灰度发布、回滚与热修复
 

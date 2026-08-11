@@ -1,11 +1,13 @@
 ---
-title: "线程与 FD 资源监控治理"
-chapter: "20"
+title: "FD 资源监控与治理"
+chapter: "20.12"
 status: "finalized"
 drafted_date: "2026-05-23"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-tags: [stability, thread, fd, oom, observability]
+tags: [stability, fd, resource-exhaustion, observability]
 related_chapters: ["20.5", "20.7", "26.2", "26.5", "14.26"]
+consolidated_from:
+  - "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-23"
 gap_source: "参考书素材 + research-gaps + AOSP/官方文档对照"
@@ -14,15 +16,9 @@ last_verified_against: "AOSP android-16.0.0_r1 / Android Developers API referenc
 confidence: medium
 sources:
   - type: blog
-    path: "Clippings/Android 应用稳定性剖析与优化 - 线程监控：如何解决“匿名”线程？.md"
-  - type: blog
     path: "Clippings/Android 应用稳定性剖析与优化 - 实现 FD 监控：文件描述符（FD）超限怎么办？.md"
   - type: blog
     path: "Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/libcore/+/refs/tags/android-16.0.0_r1/ojluni/src/main/java/java/lang/Thread.java"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-16.0.0_r1/runtime/native/java_lang_Thread.cc"
   - type: aosp
     path: "https://android.googlesource.com/platform/bionic/+/refs/tags/android-16.0.0_r1/libc/private/bionic_fortify.h"
   - type: official
@@ -32,7 +28,7 @@ sources:
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 last_task2a_at: "2026-05-23T03:09:00+08:00"
-section: "20.14"
+section: "20.12"
 task9_state: "reviewed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-13"
@@ -52,139 +48,11 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-22
 ---
 
-# 20.14 线程与 FD 资源监控治理
+# FD 资源监控与治理
 
-## 资源治理先分三层
+FD 耗尽会让文件、socket、pipe、eventfd、epoll 等创建路径失败，也可能因高编号进入旧式 `select()` 而触发 FORTIFY abort。治理需要同时区分打开数量、编号、对象类型、generation 与 owner，不能把 `/proc/self/fd` 的一次快照当成完整所有权账本。
 
-线程和文件描述符属于不同资源，但它们有相似的故障形态：进程在较长时间里持续创建，直到某次普通操作成为报错点。触发失败的 `Thread.start()`、`open()` 或 `socket()` 不一定是泄漏来源。
-
-一套可解释的监控需要分三层：
-
-| 层次 | 线程 | FD |
-| --- | --- | --- |
-| 低成本趋势 | Linux task 数、线程池活动数和历史高水位 | 当前打开数量、soft limit 和历史高水位 |
-| 触发式快照 | Java 线程名、状态、栈顶和重点线程完整栈 | symlink 类型分布、目标归一化和 top-N |
-| 短时归因 | `ThreadFactory`、任务包装、构建期插桩或受控 native 采集 | 创建/复制/关闭事件、generation 与采样栈 |
-
-低成本趋势用于常态监控；详细快照只在接近风险区、增长异常或诊断开关开启时执行；创建堆栈采集只在小范围、有限时段启用。三层数据不能混成一个“资源分数”，否则无法判断告警来自数量、增长还是归因证据。
-
-平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`，涉及 `/proc` 语义时的内核锚点是 `android17-6.18-2026-06_r6`。
-
-## 线程：Linux task、Java Thread 与线程池不是同一个视角
-
-进程里的 Linux task 数包含 Java 线程、ART 线程、Binder 线程、纯 native `pthread` 等。Java 的 `Thread.getAllStackTraces()` 只能提供拥有 Java `Thread` peer 且能被 ART 枚举到的线程栈；线程池统计则只描述该池管理的 worker 和队列。
-
-| 入口 | 适合回答 | 不能证明 |
-| --- | --- | --- |
-| `/proc/self/status` 的 `Threads` | 当前进程有多少 Linux task | 每个 task 的创建者 |
-| `/proc/self/task/<tid>/comm` | Linux TID 与内核可见短名称 | 完整 Java 名称和 Java 创建栈 |
-| `Thread.getAllStackTraces()` | 采样时刻的 Java 线程、状态与栈 | 所有纯 native 线程和历史创建点 |
-| `ThreadPoolExecutor` 指标 | pool size、active、queue、completed | 其他线程池或直接创建的线程 |
-| Perfetto / tombstone / ANR traces | 调度、阻塞与故障时栈 | 长期增长来源，除非同时有趋势数据 |
-
-Android 17 的 `Thread.getAllStackTraces()` 通过 `getAllThreadsInternal()` 取得线程快照，再逐个调用 `getStackTrace()`。这个过程会分配 map 和栈数组，成本随线程数与栈深增长，不能作为秒级计数器，更不能等到 `pthread_create` 已经失败时才开始采集。
-
-### 常态只读数量
-
-`android17-6.18-2026-06_r6` 的 proc 文档定义了 `/proc/<pid>/status` 中的 `Threads` 字段。下面的代码只读取当前进程，不访问其他应用。
-
-```kotlin
-fun readLinuxThreadCount(): Int? {
-    return try {
-        File("/proc/self/status").bufferedReader().useLines { lines ->
-            lines.firstOrNull { it.startsWith("Threads:") }
-                ?.substringAfter(':')
-                ?.trim()
-                ?.toIntOrNull()
-        }
-    } catch (_: IOException) {
-        null
-    } catch (_: SecurityException) {
-        null
-    }
-}
-```
-
-这个值适合记录趋势和高水位。读取失败应记为“缺测”，不能写成 0。若需要更细的 native task 名称，再按需枚举 `/proc/self/task`；常态监控没有必要为每个 TID 读取 `comm` 和 `status`。
-
-### Java threadId 不是 Linux TID
-
-API 36 起，`Thread.getId()` 被废弃，推荐使用 final 的 `threadId()`。二者返回 Java `Thread` 的生命周期 ID，都不是 Linux TID。Perfetto、tombstone、`/proc/self/task` 和 `Process.myTid()` 使用的是 Linux TID，不能直接拿 Java ID 去关联。
-
-若业务线程由统一 `ThreadFactory` 创建，可以在线程开始执行时登记两种 ID。下面的示例还给线程名加入稳定模块前缀。
-
-```kotlin
-class TrackedThreadFactory(
-    private val module: String,
-    private val registry: ThreadRegistry
-) : ThreadFactory {
-    private val sequence = AtomicInteger()
-
-    override fun newThread(task: Runnable): Thread {
-        val name = module + "-" + sequence.incrementAndGet()
-        return Thread({
-            val current = Thread.currentThread()
-            val javaId = if (Build.VERSION.SDK_INT >= 36) {
-                current.threadId()
-            } else {
-                @Suppress("DEPRECATION")
-                current.id
-            }
-            val linuxTid = Process.myTid()
-
-            registry.tryOnStart(javaId, linuxTid, name)
-            try {
-                task.run()
-            } finally {
-                registry.tryOnStop(javaId, linuxTid)
-            }
-        }, name)
-    }
-}
-```
-
-`ThreadRegistry` 必须有容量上限，`tryOnStart/tryOnStop` 还要遵守 no-throw 契约，不能执行 I/O 或捕获完整栈。生产版 factory 还应明确优先级、daemon 属性和未捕获异常处理器。Linux 的线程名字段长度有限，模块标识应放在名称前部；完整业务来源保存在受限的 registry 中。线程名不要包含账号、订单、URL 或用户输入。
-
-## 线程来源：先治理创建入口
-
-Android 17 的 `Thread()`、`Thread(Runnable)` 和 `Thread(ThreadGroup, Runnable)` 仍会生成 `Thread-N` 默认名称。大量 `Thread-123` 说明缺少可见来源，但不能单凭名称认定泄漏。
-
-处理顺序建议是：
-
-1. 自有线程池统一使用有界 `ThreadPoolExecutor` 或明确语义的 coroutine dispatcher；
-2. 每个自有 pool 使用 `ThreadFactory`，记录模块、用途、队列和拒绝策略；
-3. 静态检查直接 `new Thread()`、`Executors.newCachedThreadPool()` 和未关闭的 `HandlerThread`；
-4. 对工程内仍无法改造的调用点，再考虑 AGP ASM instrumentation；
-5. 三方与动态代码以依赖版本、运行时快照和受控采样归因。
-
-一个 coroutine 不等于一个线程。协程可能复用 dispatcher 的少量 worker；反过来，某些 SDK 会绕开协程和 Java executor 直接调用 `pthread_create()`。指标要分别记录任务队列和 Linux task，不能把协程数量当作线程数。
-
-### 构建期插桩的边界
-
-AGP 8.x 应使用当前的 instrumentation/ASM visitor 接口，不再依赖旧 Transform API。插桩可以给工程内无名构造补来源 ID，或在构造后调用 registry，但需要解决：
-
-- 各个构造重载的 operand stack 形状；
-- R8 混淆前后来源 ID 的稳定映射；
-- project scope 与 dependency scope 的覆盖差异；
-- 增量构建与缓存是否复用了旧字节码；
-- 已带业务名称的线程不能被覆盖；
-- 插入代码抛异常时不能阻止线程创建。
-
-因此，插桩产物要做字节码校验和启动测试。正文不提供“替换构造描述符”式伪代码，因为少压入一个参数或处理错 `ThreadGroup` 重载就可能得到 verifier error。比起改写全部三方字节码，优先修正自有创建入口通常更安全。
-
-### Java 与 native 创建链路
-
-Java `Thread.start()` 会进入 ART 的 `Thread_nativeCreate()`，再调用 `Thread::CreateNativeThread()`。纯 native `pthread_create()` 不必经过 Java 构造和 `ThreadFactory`，所以 Java 插桩无法覆盖所有线程。
-
-native SDK 的治理应要求：
-
-- 通过统一包装创建线程并设置稳定名称；
-- 明确默认栈大小、最大并发和退出协议；
-- 库卸载或功能关闭时能停止并 join 自己的 worker；
-- 在诊断构建中记录采样后的创建栈；
-- 不使用 `pthread_cancel` 或 Java `Thread.stop()` 清理未知线程。
-
-线程创建失败可能来自进程/用户限制、native 内存、虚拟地址空间、栈映射或系统资源压力。看到 `OutOfMemoryError: pthread_create` 或 `pthread_create ... failed` 时，应同时查看线程数、`VmSize`、栈大小、进程角色和错误日志，不能只用 Java heap 余量排除 OOM。
+平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`，涉及 `/proc`、rlimit 与 FD 分配语义时的内核锚点是 `android17-6.18-2026-06_r6`。线程、协程和 Native 内存分别由本章后续条目治理；这里只在它们与 FD 共享故障现场时说明证据关系。
 
 ## FD：数量、编号、对象和 owner 要分开
 
@@ -375,7 +243,7 @@ Crash、ANR 和 OOM 的完整判定分别见 20.3、20.4、20.5。资源章节�
 - 隔离进程中的可选功能可以停止并按受控条件重建；
 - 主进程无法安全恢复时，展示升级或重试入口。
 
-不要强制关闭任意 FD、停止未知线程、清除用户数据或把主进程自杀写成常态方案。SafeMode 只能跳过有明确边界的可选模块，详见 20.12。
+不要强制关闭任意 FD、停止未知线程、清除用户数据或把主进程自杀写成常态方案。SafeMode 只能跳过有明确边界的可选模块，详见 20.7。
 
 ## 崩溃现场只写最小证据
 

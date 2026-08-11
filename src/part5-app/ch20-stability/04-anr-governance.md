@@ -9,6 +9,8 @@ last_verified_against: "AOSP android-17.0.0_r1, kotlinx-coroutines 1.9.x, develo
 confidence: medium
 drafted_date: "2026-05-11"
 polish_count: 0
+consolidated_from:
+  - "src/part5-app/ch20-stability/09-stability-case-studies.md#案例三"
 sources:
   - type: aosp
     path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java"
@@ -293,6 +295,32 @@ class ArticleViewModel(
 provider 发布完成后，`query()`、`insert()`、`call()` 等入口还可能被并发调用。远程调用经 Binder 线程进入进程；同进程调用则可能在调用线程直接执行。provider 实现不能依赖“所有方法都在主线程”，也不能用一把大锁包住数据库、文件和 IPC。
 
 Android 17 的 publish 基线来自 `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`。`ContentProviderHelper` 中等待 provider 就绪、请求方检测 provider 无响应等路径有各自的条件和时限。报告里必须保留 ANR 类型和描述，不能看到 provider 名称就套用 10 秒发布结论。
+
+#### 案例：清单合并引入的 SDK Provider
+
+一次 SDK 升级后，冷启动 P95 和启动附近 ANR 同时上升，主线程栈停在 SDK Provider 的 `onCreate()`。这仍只是候选位置，应依次验证同步磁盘、数据库迁移、Binder/网络等待、类加载与页错误，以及 `Application.onCreate()` 本身的区间。
+
+调查从 release variant 的 merged manifest 开始，记录 Provider 来源依赖、authority、process、`initOrder`、direct-boot 属性和官方关闭自动初始化方式。Android 17 的 `ActivityThread.handleBindApplication()` 会先安装本地 Provider，再调用 `Application.onCreate()`；清单合并加入的组件即使没有被业务主动调用，也可能抢占启动主线程。外部 Provider 访问、Job、Service、Broadcast 或推送还可能触发非桌面启动，数据必须携带启动原因和进程名。
+
+自有 Provider 可用稳定的 Trace section 标记短区间：
+
+```kotlin
+class DiagnosticsProvider : ContentProvider() {
+    override fun onCreate(): Boolean {
+        Trace.beginSection("DiagnosticsProvider#onCreate")
+        return try {
+            installLightweightHooks(requireNotNull(context).applicationContext)
+            true
+        } finally {
+            Trace.endSection()
+        }
+    }
+}
+```
+
+trace 只负责测量，不会让初始化变快。`installLightweightHooks()` 只能保留主线程可接受的注册工作。明确支持后台执行的磁盘与解析可以移出 Provider；可延迟能力改为按需初始化；要求主线程的 SDK 步骤仍保留在主线程并压缩。不能把所有初始化统一丢给 `Dispatchers.IO`，否则会制造 readiness 竞态或违反 SDK 线程契约。
+
+修复后至少重放全新安装、跨 schema 覆盖升级、桌面/Provider/Service/Broadcast/Job/推送启动、主/独立进程、离线/弱网、初始化完成前立即调用和多调用方并发等待。Macrobenchmark 比较启动分布，Perfetto 确认主线程区间，`ApplicationStartInfo` 对齐系统启动节点，`ApplicationExitInfo`/ANR trace 复核退出。若启动尾延迟下降但 SDK 初始化失败率上升，修复仍不合格。
 
 ### BroadcastReceiver：`goAsync()` 不增加时间
 

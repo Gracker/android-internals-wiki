@@ -1,15 +1,17 @@
 ---
-title: "MTE memtagMode 与 Native 崩溃治理"
-chapter: "20.11"
-section: "20.11"
+title: "MTE 与 GWP-ASan Native 内存安全检测"
+chapter: "20.10"
+section: "20.10"
 status: finalized
 drafted_date: "2026-05-16"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-05-16"
-last_verified_against: "AOSP android-17.0.0_r1 / Android Developers docs / source.android.com MTE docs"
+last_verified_against: "AOSP android-17.0.0_r1 / Android Developers MTE and GWP-ASan docs / source.android.com memory-safety docs"
 confidence: medium
-tags: ["mte", "memtag", "native-crash", "stability", "security"]
+tags: ["mte", "gwp-asan", "memtag", "native-crash", "stability", "security"]
 related_chapters: ["4.5", "10.5", "14.5", "20.3", "23.3"]
+consolidated_from:
+  - "src/part5-app/ch20-stability/23-gwp-asan-probabilistic-memory-safety-android17.md"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/官方文档"
@@ -22,12 +24,16 @@ sources:
     path: "https://developer.android.com/ndk/guides/arm-mte"
   - type: official
     path: "https://developer.android.com/ndk/guides/memory-debug"
+  - type: official
+    path: "https://developer.android.com/ndk/guides/gwp-asan"
   - type: aosp
     path: "frameworks/base/core/java/com/android/internal/os/Zygote.java"
   - type: aosp
     path: "frameworks/base/core/jni/com_android_internal_os_Zygote.cpp"
   - type: aosp
     path: "bionic/libc/bionic/malloc_common.cpp"
+  - type: aosp
+    path: "bionic/libc/bionic/gwp_asan_wrappers.cpp"
   - type: material
     path: "DeepResearch/2026-05-13-android-mte-memtag-async-asymm-analysis.md"
   - type: structure
@@ -52,7 +58,7 @@ last_task9_audit: "2026-06-30"
 last_task9_autofix_at: "2026-06-30"
 ---
 
-# 20.11 MTE memtagMode 与 Native 崩溃治理
+# MTE 与 GWP-ASan Native 内存安全检测
 
 MTE 把一部分 Native 内存越界和释放后访问转换成可识别的 `SIGSEGV`。它同时是安全缓解和稳定性诊断能力：错误会更早终止进程，静默内存破坏减少，短期 Crash 数却可能上升。治理目标应写成“发现、定位并修复内存安全缺陷”，不能只追求 MTE Crash 数下降。
 
@@ -316,6 +322,76 @@ MTE tag mismatch 通常表示进程违反了 tagged-memory 访问约束，不应
 - [ ] 性能、功耗、Crash 与业务恢复都完成对照
 - [ ] 回滚版本和关键状态持久化已经演练
 
+## GWP-ASan：概率式 Guarded Pool
+
+MTE 用硬件 tag 检查受保护映射的访问，GWP-ASan 则把少量 Native heap allocation 放进带 guard page 的独立 pool。两者都能发现 use-after-free 和越界，但命中范围、成本和报告语义不同；线上可以组合使用，不能把它们的覆盖率相加成“内存安全百分比”。
+
+### 两层抽样决定覆盖面
+
+GWP-ASan 先决定某次进程启动是否启用，再从该进程的 allocation 中抽样。只有同时通过两层选择的对象才进入 guarded slot，因此“应用启用了 GWP-ASan”不代表所有 malloc 都受保护，也不能用固定的 `1/N` 推导某个缺陷的准确发现率。
+
+Android 的 `android:gwpAsanMode` 支持三种请求：
+
+| 值 | 语义 | 适用范围 |
+|---|---|---|
+| `default` | 服从平台默认与进程抽样 | 生产基线 |
+| `never` | 不为该应用/进程请求 GWP-ASan | 已有明确兼容阻断时使用 |
+| `always` | 每次进程启动启用，但 allocation 仍被抽样 | 测试、dogfood 或受控 canary |
+
+进程级配置可以覆盖 application 级配置。最终 merged manifest 才是审计对象；`always` 只取消进程启动这一层抽样，不会让每次 allocation 都进入 pool。
+
+Android 17 的大致路径是：Zygote 根据应用配置和平台策略选择模式，Bionic 在 allocator 初始化阶段把 GWP-ASan 接入 malloc dispatch，再由 guarded pool 管理被采中的 slot。它不是通过修改每个 ELF 的 PLT/GOT 实现，因此与应用自建 malloc hook 的覆盖和冲突模型不同。
+
+### Guarded slot 怎样暴露错误
+
+每个采样 allocation 占用一个 slot，slot 邻近页保持不可访问。越界跨到 guard page 时触发 fault；对象释放后，slot 进入隔离状态，旧指针再次访问也会 fault。metadata 保存 allocation/deallocation 的线程和栈，debuggerd 将其写入 Native crash 报告。
+
+它有明确盲区：
+
+- 未被采中的 allocation 不受保护；
+- 越界仍落在 slot 可访问范围内时可能不触发；
+- slot 复用会缩短某个旧地址的可诊断窗口；
+- 直接 `mmap`、自研 arena、stack/global 和 GPU buffer 不属于同一 allocator 路径；
+- 普通内存泄漏不会因为对象长期未释放而自动触发 GWP-ASan。
+
+page size 会改变 guarded pool 的虚拟地址布局和开销，16 KB 设备必须单独压测，但不会把 slot 数量或抽样策略自动变成原来的四分之一。报告必须记录实际页大小、ABI、Build ID 和进程配置。
+
+### Recoverable 模式仍是高优先级故障
+
+Android 14+ 的部分生产配置允许 debuggerd 在完成 GWP-ASan 报告后恢复执行。这个分支由平台根据 metadata 和进程状态确认；应用自定义 `SIGSEGV` handler 通常不会收到该 fault，也不应尝试复刻恢复判断。
+
+“进程没有立刻退出”不代表状态安全。发生 UAF/越界后，业务结果已经不可信；recoverable event 仍应进入稳定性指标、去重、告警和修复队列。对有副作用的操作尤其不能因为继续运行就自动重试。
+
+### 报告、聚合与修复
+
+GWP-ASan 报告优先读取错误类型、fault address 与 slot 边界、allocation/deallocation stack、访问线程、模块 Build ID 和 relative PC。栈可能因采样、metadata 生命周期、unwind 或符号缺失而不完整；字段缺失要显式记录，不能补猜。
+
+聚合键可以使用：
+
+```text
+error type
++ allocation top stable frames
++ deallocation top stable frames
++ faulting module/function
++ app build / ABI / module Build ID
+```
+
+绝对地址、线程 ID 和完整错误文本不适合长期 fingerprint。一个事件可能同时出现在应用 SDK、tombstone、`ApplicationExitInfo` 和 Play 平台，按启动 ID、时间、signal、Build ID 与关键 frame 去重，同时保留来源差异。
+
+修复仍回到对象所有权：谁分配、谁释放、异步任务或容器为何在释放后继续持有地址。先在相同 Build ID 上用报告定位，再用 `always`、HWASan 或 MTE SYNC 的受控构建扩大复现概率；不能靠提高抽样率代替生命周期修复。
+
+### MTE、GWP-ASan 与其他工具的分工
+
+| 工具 | 强项 | 不负责 |
+|---|---|---|
+| GWP-ASan | 低成本线上概率捕获 heap UAF/越界 | 普通泄漏、全部 allocation |
+| MTE | 硬件 tag 检查与安全缓解，支持受控线上策略 | 精确引用图、同 granule 必然检测 |
+| HWASan | 测试/dogfood 高覆盖 heap、stack 错误 | 低开销量产常驻 |
+| heapprofd | sampled allocation/free 栈与未释放增长 | 判定 UAF/越界 |
+| Scudo | allocator hardening 与部分一致性错误 | 业务 owner 和泄漏根因 |
+
+生产基线通常保留 `default`，用分阶段发布观察命中率、进程启动分母、fatal/recoverable 事件、符号完整率和业务影响；`always` 只进入能承受额外虚拟地址、性能成本与 fatal hit 的范围。灰度报告必须同时写清进程启动覆盖和 allocation sampling，避免把没有命中解释为没有缺陷。
+
 ## 源码与官方资料
 
 - [Android 17 `Zygote.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/os/Zygote.java)
@@ -331,6 +407,8 @@ MTE tag mismatch 通常表示进程违反了 tagged-memory 访问约束，不应
 - [AOSP：MTE configuration](https://source.android.com/docs/security/test/memory-safety/mte-configuration)
 - [AOSP：Understand MTE reports](https://source.android.com/docs/security/test/memory-safety/mte-reports)
 - [Android NDK：memory error debugging](https://developer.android.com/ndk/guides/memory-debug)
+- [Android NDK：GWP-ASan](https://developer.android.com/ndk/guides/gwp-asan)
+- [Android 17 Bionic GWP-ASan allocator](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/gwp_asan_wrappers.cpp)
 
 ## 小结
 
