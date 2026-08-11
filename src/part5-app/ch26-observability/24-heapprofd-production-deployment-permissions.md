@@ -4,7 +4,7 @@ chapter: "26.24"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [heapprofd, heap-profiling, memory, production, perfetto, permissions, native-leak]
-related_chapters: ["4.3", "4.9", "8.39", "10.8", "13.22", "14.1", "14.3", "23.11", "23.25", "26.16"]
+related_chapters: ["4.3", "4.9", "8.39", "10.7", "13.22", "14.1", "14.3", "23.11", "23.25", "26.16"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-06"
 drafted_date: "2026-07-12"

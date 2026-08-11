@@ -57,7 +57,9 @@
 - [x] 10.4 低内存对系统性能的影响 (`src/part2-performance/ch10-memory-perf/04-low-memory-impact.md`)
 - [x] 10.5 案例集 (`src/part2-performance/ch10-memory-perf/05-case-studies.md`)
 - [x] 10.6 内存抖动与频繁 GC (`src/part2-performance/ch10-memory-perf/06-memory-churn.md`)
-- [x] 10.7 SQLite/Room 数据库性能优化 (`src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md`)
+- [x] 10.7 GPU 与图形内存统计 (`src/part2-performance/ch10-memory-perf/07-gpu-graphics-memory-tracking.md`)
+
+> 原 SQLite/Room 正文归入 24.2，ART GC 碎片与 compaction 正文归入 4.7；重复的全章优化导读由本章 README 与 10.1 统一承载。完整映射见 `metadata/content-consolidation-audit.md`。
 
 ## 第 11 章：功耗 (ch11-power)
 - [x] 11.1 Android 功耗模型 (`src/part2-performance/ch11-power/01-power-model.md`)

@@ -23,6 +23,8 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc
 - type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/space/region_space.cc
+- type: aosp
   path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/write_barrier-inl.h
 - type: aosp
   path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/accounting/card_table.h
@@ -71,6 +73,7 @@ last_deepseek_cn_review_at: 2026-05-27
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch04-memory/14-art-gc-region-fragmentation-compaction.md"
+  - "src/part2-performance/ch10-memory-perf/10-art-gc-fragmentation-regions-optimization.md"
 ---
 # 4.7 ART 分代 GC、Region 碎片与暂停分析
 
@@ -262,7 +265,7 @@ Concurrent Copying 以 RegionSpace 为主要 moving space。Android 17 会结合
 - `LivePercentNewlyAllocated`：新分配或低存活 region 可按存活比例决定搬迁；
 - `UnevacFromSpace`：高存活 region 暂时保留，避免为了少量空洞复制大量对象。
 
-75% 是非 large region 的一项存活率选择阈值，不是整个 Java heap 的碎片告警线。RegionSpace 中跨多个 region 的 large region 也不等于 Large Object Space；前者仍属于 moving-space 布局，后者是独立非移动大对象空间。
+`RegionSpace::ShouldBeEvacuated()` 的条件还需要逐项读：large live region 不搬迁；force-all 模式直接搬迁；新分配 region 会被搬迁；其他普通 region 只有在按对齐后已分配字节计算的存活率严格低于 75% 时才搬迁。75% 因而只是这条实现路径的局部选择阈值，不是整个 Java heap 的碎片告警线。RegionSpace 中跨多个 region 的 large region 也不等于 Large Object Space；前者仍属于 moving-space 布局，后者是独立非移动大对象空间。
 
 ### CMC 与 UFFD 处理页级搬迁
 
@@ -358,6 +361,10 @@ ORDER BY avg_running_ms DESC;
 ```
 
 running 高时，继续查分配速率、存活对象和 full collection；runnable 高时，同时查系统负载和 CPU 调度。二者也可能一起升高。
+
+### 9.5 CMC fault counter 只覆盖 GC 线程
+
+Android 17 的 `MarkCompact::TraceFaults()` 记录 `Majflt-GC` 与 `Minflt-GC` 两个 atrace counter。前者表示 GC 线程的 major fault，可能涉及文件回读或 ZRAM 解压；后者表示 GC 线程的 minor fault，例如 COW 或匿名页分配。源码明确说明这两个 counter 不覆盖 userfault，因此它们只能证明 GC 线程自身发生了 fault。若 `Majflt-GC` 上升，还要对齐 swap、ZRAM、文件回读和系统内存压力，不能直接归因为某个 CMC 目标页。
 
 ## 10. 用 GC timing、分配 profile 和 heap dump 补证据
 

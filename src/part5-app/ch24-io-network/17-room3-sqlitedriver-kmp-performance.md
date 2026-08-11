@@ -35,7 +35,7 @@ sources:
   - type: daily-info
     path: "intake/daily-info/2026-05-22.md"
 tags: [room3, sqlite, sqlitedriver, kmp, ksp, database-performance]
-related_chapters: ["10.7", "14.1", "19.14", "24.2"]
+related_chapters: ["14.1", "19.14", "24.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-25"
 gap_source: "官方文档/每日信息"
@@ -74,7 +74,7 @@ last_deepseek_cn_review_at: 2026-06-21
 
 Room 3.0 改变了包名、数据库驱动、代码生成器和异步接口。迁移工作因此不能只改依赖版本，还要检查运行期数据库 I/O、KSP 与 schema 输出、旧 `SupportSQLite` 扩展点，以及数据库升级后的应用降级能力。
 
-平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，依赖基线为 Room 3.0.1 与 SQLite 2.7.0。`AndroidSQLiteDriver` 使用 Android 17 平台 SQLite；`BundledSQLiteDriver` 使用随库发布的原生 SQLite，两者不能共用一套未经实测的性能结论。分析不涉及内核接口，因此没有内核源码锚点。SQLite 锁、WAL、CursorWindow、Room 2.x 线程模型和 ANR 观察详见 10.7 节；查询、索引和事务优化详见 24.2 节；Profiler 与 Perfetto 的使用详见 14.1 节。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，依赖基线为 Room 3.0.1 与 SQLite 2.7.0。`AndroidSQLiteDriver` 使用 Android 17 平台 SQLite；`BundledSQLiteDriver` 使用随库发布的原生 SQLite，两者不能共用一套未经实测的性能结论。分析不涉及内核接口，因此没有内核源码锚点。SQLite 锁、WAL、CursorWindow、Room 2.x 线程模型、ANR 观察、查询、索引和事务优化统一见 24.2 节；Profiler 与 Perfetto 的使用详见 14.1 节。
 
 ## Room 3.0 的变化边界
 

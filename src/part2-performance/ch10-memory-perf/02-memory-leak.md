@@ -66,7 +66,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-13
 ---
 
-# 内存泄漏
+# 10.2 内存泄漏
 
 > 适用范围：Android 8.0（API 26）至 Android 17（API 37）。平台行为和公开 API 以 `android-17.0.0_r1` 为源码锚点。
 
