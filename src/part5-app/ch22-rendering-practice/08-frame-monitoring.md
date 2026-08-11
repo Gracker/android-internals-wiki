@@ -59,6 +59,8 @@ last_task9_audit: "2026-06-12"
 last_task9_autofix_at: "2026-06-12"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-13
+consolidated_from:
+  - "src/part5-app/ch22-rendering-practice/09-rendering-case-studies.md"
 ---
 
 # 帧率监控与线上卡顿治理
@@ -496,6 +498,24 @@ overrun_p99 >= baseline_overrun_p99 + policy.min_p99_regression
 - Android 17 trace 中出现 buffer-stuffing recovery 时，把主动恢复和原始 backlog 分开解释。
 
 验收目标是一条可以复核的证据链：异常属于哪个 Window 或 Surface、哪一组用户和交互状态、应用是否超过 deadline、compositor 怎样分类、哪一段耗时或代码栈重复出现。具备这些信息后，问题才能稳定分派，修复也能用同一口径验证。
+
+## 从监控告警回到一次可复核的渲染复盘
+
+案例不再单独汇编，而是用同一份复盘契约回流到监控闭环。每次问题至少保留以下字段：
+
+| 字段 | 必填内容 |
+| --- | --- |
+| 用户场景 | 页面、操作、数据规模、前后台、窗口模式 |
+| 样本条件 | app commit、构建类型、设备/系统、刷新率、温控、网络与缓存冷热 |
+| 现象 | deadline miss 分布、JankStats state、首个异常时间点 |
+| 分层证据 | 主线程、RenderThread/GPU、BufferQueue、SurfaceFlinger/HWC 各自的正常与异常证据 |
+| 根因 | 最早偏离预期时间线的对象，以及排除过的相邻候选 |
+| 改动 | 只改变的变量、降级与回滚开关 |
+| 验收 | 相同脚本下的 P50/P90/P95/P99、慢帧率、内存/功耗和视觉正确性 |
+
+大型首页、复杂动画、图片列表和 WebView 的表象不同，复盘顺序相同：先由线上分桶找到稳定场景，再用 release-like Macrobenchmark 复现，最后在 Perfetto 中从异常 App SurfaceFrame/DisplayFrame 反向定位。一次 trace 只能解释一次执行，不能代替线上分布；全局平均 FPS 也不能证明某个局部修复有效。
+
+结论必须写清“证据边界”。例如 `onDraw` 很长只能证明 UI 录制慢，`queueBuffer()` 返回只能证明 Producer 提交，某个 Composable 高频执行也不能证明它让帧错过 deadline。复盘关闭前还要把修复固化为自动化用户旅程、JankStats state、阈值与负责人；否则案例只是一次性的排障故事。
 
 ## 源码与文档索引
 

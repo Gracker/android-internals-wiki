@@ -32,30 +32,30 @@
     "target_path": "src/part3-tools/ch13-perfetto/02-trace-capture.md"
   },
   {
-    "chapter": "22.20",
-    "title": "Compose 状态订阅与重组控制实战",
+    "chapter": "22.3",
+    "title": "Jetpack Compose 性能优化实战",
     "priority": 80,
     "status": "rejected",
-    "path": "src/part5-app/ch22-rendering-practice/20-compose-performance-blind-spots.md",
+    "path": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
     "original_chapter": "22.44",
     "original_path": "src/part5-app/ch22-rendering-practice/44-compose-state-subscription-recomposition-control.md",
-    "mapped_to": "src/part5-app/ch22-rendering-practice/20-compose-performance-blind-spots.md",
+    "mapped_to": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
     "resolved_at": "2026-08-06T10:05:34+08:00",
     "resolution": "Standalone gap-mined chapter was removed; the topic is covered by the canonical Compose performance blind-spots chapter.",
-    "target_path": "src/part5-app/ch22-rendering-practice/20-compose-performance-blind-spots.md"
+    "target_path": "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
   },
   {
-    "chapter": "22.22",
-    "title": "Compose LazyGrid 性能优化实战",
+    "chapter": "22.16",
+    "title": "Compose LazyList 与预取调度性能",
     "priority": 80,
     "status": "rejected",
-    "path": "src/part5-app/ch22-rendering-practice/22-compose-lazylist-performance.md",
+    "path": "src/part5-app/ch22-rendering-practice/16-compose-lazylist-performance.md",
     "original_chapter": "22.45",
     "original_path": "src/part5-app/ch22-rendering-practice/45-compose-lazygrid-performance.md",
-    "mapped_to": "src/part5-app/ch22-rendering-practice/22-compose-lazylist-performance.md",
+    "mapped_to": "src/part5-app/ch22-rendering-practice/16-compose-lazylist-performance.md",
     "resolved_at": "2026-08-06T10:05:34+08:00",
     "resolution": "Standalone gap-mined chapter was removed; LazyGrid belongs in the canonical Compose lazy layout performance chapter.",
-    "target_path": "src/part5-app/ch22-rendering-practice/22-compose-lazylist-performance.md"
+    "target_path": "src/part5-app/ch22-rendering-practice/16-compose-lazylist-performance.md"
   },
   {
     "chapter": "20.18",

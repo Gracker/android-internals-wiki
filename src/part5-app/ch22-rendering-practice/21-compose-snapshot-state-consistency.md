@@ -1,10 +1,10 @@
 ---
-title: "Compose Snapshot 系统深度：状态一致性模型与性能开销"
-chapter: "22.39"
+title: "Compose Snapshot、状态一致性与并发"
+chapter: "22.21"
 status: finalized
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 tags: [compose, snapshot, state, recomposition, performance]
-related_chapters: ["22.03", "22.20", "22.28", "22.31"]
+related_chapters: ["22.3", "22.22", "22.25"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "AOSP结构/章节深挖"
@@ -31,9 +31,11 @@ sources:
   path: https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/MutableSnapshot
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java
+consolidated_from:
+  - "src/part5-app/ch22-rendering-practice/22.29-jetpack-compose-并发安全机制.md"
 ---
 
-# 22.39 Compose Snapshot 系统深度：状态一致性模型与性能开销
+# Compose Snapshot、状态一致性与并发
 
 Snapshot 系统同时服务于 `mutableStateOf`、Snapshot State 集合、Composition 读依赖、Layout/Drawing 观察以及 `snapshotFlow`。它更接近一套进程内的多版本状态协议，而不是一个“状态变化就重组”的回调容器。
 
@@ -44,7 +46,7 @@ Snapshot 系统同时服务于 `mutableStateOf`、Snapshot State 集合、Compos
 3. 一组修改能否应用到父 Snapshot 或全局状态；
 4. 哪些观察域读过这些对象，需要重新执行。
 
-以下集中分析 Snapshot 自身。Recomposer 的线程与帧调度见 [§22.29 Jetpack Compose 并发安全机制](22.29-jetpack-compose-并发安全机制.md)，Compose 到 Android 17 显示系统的路径见 [§18.23 Jetpack Compose 渲染管线架构](../../part2-performance/ch18-rendering-pipelines/23-compose-rendering-pipeline.md)。
+以下集中分析 Snapshot 自身，并在后文补齐 Recomposer、ComposeView 与业务并发边界；Compose 到 Android 17 显示系统的路径见 [§18.23 Jetpack Compose 渲染管线架构](../../part2-performance/ch18-rendering-pipelines/23-compose-rendering-pipeline.md)。
 
 ## 1. 固定版本与术语校正
 
@@ -443,9 +445,27 @@ context element 会在协程恢复时 enter、挂起时 leave；它不会 dispos
 
 Snapshot 的主体位于 common source set，版本与 observer 契约跨目标共享；当前 Snapshot 的线程存储、同步原语、frame clock 和 UI dispatcher 由目标实现。共享代码应围绕不可变状态、单一写者和显式事务编写，避免把 Android 主线程、Looper 或 WindowRecomposer 规则带到其他目标。
 
-## 10. 性能成本模型
+## 10. Recomposer、ComposeView 与业务并发边界
 
-### 10.1 读成本
+Recomposer 注册 Snapshot apply observer，把 changed StateObject 与已知 Composition 的读取依赖相交后放入待处理集合。它的 `stateLock` 保护 Composition、invalidation 和调度状态，不是一把覆盖所有 State 写入、重组和 `applyChanges()` 的全局互斥锁；Runtime 会在锁内取批次、在锁外执行较重的 Composition 工作。
+
+帧时钟只提供调度节奏，不保证“每次写入各重组一次”或“每个显示帧只重组一次”。帧前多次写入可以合并，同一 frame callback 也可能处理尾随失效。标准 Android `WindowRecomposer` 使用窗口 UI 线程的 dispatcher/frame clock；测试、自建 Recomposer 和多平台宿主可以不同，结论必须从 runner context 与创建路径确认。
+
+每个 `ComposeView` 有独立 Composition，却通常沿 View tree 找到并共享同一窗口 Recomposer。不同 Window/ViewRoot、自定义 parent composition context 或测试基础设施才可能创建多个 Recomposer。多个 Composition 仍共享进程内 Snapshot 系统；是否共享线程和 frame clock 不能只靠数 ComposeView 推断。
+
+Snapshot 保证版本可见性和可应用的事务，不替业务选择唯一写者。`state.value++` 仍是读—改—写，多个生产者可能丢更新；搜索、分页和支付结果的代次、取消与重试应由 `MutableStateFlow.update`、Actor、Mutex、数据库事务或明确请求协议处理。多字段天然共同变化时，一份不可变 `UiState` 通常比多个 State 再补事务更清楚。
+
+## 11. Flow、produceState 与 Effect
+
+`collectAsState*` 把外部 Flow 写入 Compose State，`produceState` 在 Composition 生命周期内运行 producer，`snapshotFlow` 则观察 Snapshot read 并输出冷 Flow。`produceState` 没有额外批量提交机制；key 改变时取消旧任务，但同一个 remembered State 不会自动重置 initialValue。回调源用 `awaitDispose` 解除注册，阻塞 I/O 仍由 repository 切到合适 dispatcher。
+
+`snapshotFlow` 在只读 Snapshot 中重跑读取 block，并按结果 `equals` 过滤。它可能跳过中间状态，因此适合观察“当前状态”，不适合统计每次点击、传感器样本或业务事件；这些应从事件源建 Channel/Flow。它也不能修复两个写者同时执行复合更新的竞争。
+
+Effect 取消要与资源 owner 对齐：页面内持续工作用 `LaunchedEffect(key)`，用户事件使用 `rememberCoroutineScope()`，跨页面业务请求放 ViewModel 或更长生命周期状态持有者。Snapshot State 可以跨线程读写，不代表 View、Canvas、窗口、Looper callback 和线程绑定 SDK 可跨线程使用。
+
+## 12. 性能成本模型
+
+### 12.1 读成本
 
 一次 State 读取可能包含：
 
@@ -457,7 +477,7 @@ Snapshot 的主体位于 common source set，版本与 observer 契约跨目标�
 
 活跃 Snapshot 长时间不 dispose，会使热对象保留更多 record，增加内存与遍历负担。
 
-### 10.2 写成本
+### 12.2 写成本
 
 一次有效写入可能包含：
 
@@ -470,7 +490,7 @@ Snapshot 的主体位于 common source set，版本与 observer 契约跨目标�
 
 写入相等值在 structural policy 下会提前结束。`neverEqualPolicy()` 会放弃这层过滤，只应在每次赋值都代表有效变化时使用。
 
-### 10.3 apply 成本
+### 12.3 apply 成本
 
 apply 的热区来自：
 
@@ -491,9 +511,9 @@ apply 的热区来自：
 
 选择依据是读取边界与业务不变量，不宜按“State 越少越快”或“拆得越细越快”做统一判断。
 
-## 11. Profiling：哪些工具能证明什么
+## 13. Profiling：哪些工具能证明什么
 
-### 11.1 Compose Compiler reports 不测 Snapshot 运行时
+### 13.1 Compose Compiler reports 不测 Snapshot 运行时
 
 Compiler reports 提供 composable 的 restartable、skippable 与参数 stability 信息。它们可以解释某个 scope 为何无法跳过，不能给出：
 
@@ -503,17 +523,17 @@ Compiler reports 提供 composable 的 restartable、skippable 与参数 stabili
 - changed set 大小；
 - observer fan-out。
 
-编译器结论要与运行时 trace、重组计数和业务 marker 配合。详细配置见 [§22.28 Compose Compiler Metrics 与重组诊断](28-compose-compiler-metrics-recomposition-diagnostics.md)。
+编译器结论要与运行时 trace、重组计数和业务 marker 配合。详细配置见 [§22.22 Compose Compiler Metrics 与重组诊断](22-compose-compiler-recomposition-diagnostics.md)。
 
-### 11.2 Perfetto 中没有默认逐 State 轨道
+### 13.2 Perfetto 中没有默认逐 State 轨道
 
 Runtime 1.11.4 可见的 Snapshot 相关 verbose slice 是 `Compose:applyObservers`。它只有在 `ComposeToolingFlags.isVerboseTracingEnabled` 开启时才记录，覆盖 observer 调用阶段，不覆盖整个冲突检查、record 合入和清理。
 
-Composition tracing 通过 `androidx.compose.runtime:runtime-tracing` 暴露 composable 源码位置与重组切片。它适合回答“哪个 composable 在执行”，无法自动显示“哪个 StateObject 的哪次 setter 造成这轮失效”。配置与录制见 [§22.37 Compose Runtime Tracing](37-compose-runtime-tracing-perfetto-integration.md)。
+Composition tracing 通过 `androidx.compose.runtime:runtime-tracing` 暴露 composable 源码位置与重组切片。它适合回答“哪个 composable 在执行”，无法自动显示“哪个 StateObject 的哪次 setter 造成这轮失效”。配置与录制见 [§22.22 Compose Runtime Tracing](22-compose-compiler-recomposition-diagnostics.md)。
 
 不要依赖固定的 `compose:snapshot-apply` 名称或固定毫秒阈值。trace 名、verbose 开关与可见粒度会随 Runtime 版本改变。
 
-### 11.3 Experimental tooling observer
+### 13.3 Experimental tooling observer
 
 Runtime 提供 `Snapshot.observeSnapshots()` 与 `SnapshotObserver`，可观察 Snapshot 创建、应用和 dispose，并为新 Snapshot 安装 read/write observer。该 API 标注 `ExperimentalComposeRuntimeApi`，文档说明它会给全部 Snapshot 增加全局开销。
 
@@ -536,7 +556,7 @@ fun installSnapshotProbe(totalChanged: AtomicLong): ObserverHandle =
 
 回调可能从任意线程到达，探针自身必须线程安全。SnapshotObserver 回调内不支持调用任何 Snapshot API，也不应读取或写入 MutableState。结束测量后调用返回的 `ObserverHandle.dispose()`；生产构建不要常驻。
 
-### 11.4 分层测量
+### 13.4 分层测量
 
 建议把一次性能调查分成四组证据：
 
@@ -547,9 +567,9 @@ fun installSnapshotProbe(totalChanged: AtomicLong): ObserverHandle =
 
 Snapshot 变化频繁但 UI 线程仍按时，不能据此认定卡顿来自 Snapshot。反过来，重组很少也无法排除 Layout、Drawing、RenderThread 或 GPU 成本。
 
-## 12. 测试 Snapshot 一致性
+## 14. 测试 Snapshot 一致性
 
-### 12.1 固定三类断言
+### 14.1 固定三类断言
 
 Snapshot 相关测试至少覆盖：
 
@@ -559,7 +579,7 @@ Snapshot 相关测试至少覆盖：
 
 write-skew 测试还要覆盖跨对象业务不变量。只测“没有抛异常”会漏掉 serializable 约束。
 
-### 12.2 记录一次计算读了哪些 State
+### 14.2 记录一次计算读了哪些 State
 
 `Snapshot.takeSnapshot(readObserver = ...)` 可在测试中记录 StateObject 读取。下面的辅助代码用于检查一个纯计算的依赖集合。
 
@@ -581,7 +601,7 @@ read observer 在发生读取的线程同步执行。用 identity set 可以避�
 
 `Snapshot.observe { ... }` 会添加观察者而不引入新的隔离版本；其内部使用 `TransparentObserverSnapshot` 或 mutable 变体。这两个类型是 internal 实现，应用应使用公开 `Snapshot.observe`，不要依赖内部类名。
 
-## 13. Android 17 与 kernel 边界
+## 15. Android 17 与 kernel 边界
 
 Snapshot apply 只改变应用进程内的状态版本。纯 Compose 页面要显示新像素，仍经过：
 
@@ -591,7 +611,7 @@ Snapshot apply 只改变应用进程内的状态版本。纯 Compose 页面要�
 
 kernel `android17-6.18-2026-06_r6` 调度应用主线程、RenderThread、Binder 与系统服务线程，并通过 cpuset、uclamp、调度类和 cpufreq 影响它们何时获得 CPU。kernel 不识别 StateObject、record chain 或 RecomposeScope。Snapshot 锁等待要在应用进程解释，GPU fence 与 present 延迟要沿显示管线解释。
 
-## 14. 审查清单
+## 16. 审查清单
 
 - [ ] Android platform、kernel 与 Compose Runtime 版本分别记录。
 - [ ] 每个手工创建的 Snapshot 都有确定的 apply/dispose 路径。
@@ -607,7 +627,7 @@ kernel `android17-6.18-2026-06_r6` 调度应用主线程、RenderThread、Binder
 - [ ] Experimental Snapshot observer 只在受控诊断中启用，结束后 dispose handle。
 - [ ] Compose 之后的 HWUI、BLAST、SurfaceFlinger 与 present timing 继续按层检查。
 
-## 15. 源码与文档索引
+## 17. 源码与文档索引
 
 | 主题 | 固定来源 | 核查内容 |
 | --- | --- | --- |
@@ -624,4 +644,4 @@ kernel `android17-6.18-2026-06_r6` 调度应用主线程、RenderThread、Binder
 | Android 17 窗口提交 | [`BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)、[`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) | App Window buffer 到显示系统 |
 | Android 17 kernel | [`kernel/sched/core.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c) | 线程调度边界 |
 
-相关章节：[§22.3 Jetpack Compose 性能优化](03-compose-performance.md)、[§22.20 Compose 性能盲区](20-compose-performance-blind-spots.md)、[§22.29 Compose 并发安全](22.29-jetpack-compose-并发安全机制.md)、[§22.31 Modifier.Node](31-compose-modifier-node-architecture-performance.md)。
+相关章节：[§22.3 Jetpack Compose 性能优化](03-compose-performance.md)、[§22.22 Compose Compiler 与重组诊断](22-compose-compiler-recomposition-diagnostics.md)、[§22.25 Modifier.Node](25-compose-modifier-node.md)。

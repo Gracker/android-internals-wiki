@@ -1,6 +1,6 @@
 ---
 title: "App Widget 更新性能：RemoteViews IPC 与 Glance 渲染"
-chapter: "22.24"
+chapter: "22.18"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [appwidget, remoteviews, glance, ipc, widget-performance]
@@ -26,7 +26,7 @@ sources:
     path: "frameworks/base/core/java/android/widget/RemoteViewsAdapter.java"
 ---
 
-# 22.24 App Widget 更新性能：RemoteViews IPC 与 Glance 渲染
+# App Widget 更新性能：RemoteViews IPC 与 Glance 渲染
 
 App Widget 的界面由 Launcher、SystemUI 或其他 `AppWidgetHost` 承载。提供方进程负责生成 `RemoteViews`，`system_server` 中的 AppWidget 服务负责校验和缓存，宿主进程负责创建 View、执行动作并参与后续绘制。这种跨进程模型决定了优化重点：控制更新次数、动作数量、布局创建成本、集合数据量和图像内存。
 

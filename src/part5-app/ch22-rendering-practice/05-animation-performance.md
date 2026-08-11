@@ -68,6 +68,8 @@ last_task9_audit: "2026-07-10"
 updated_by: openclaw-task9
 updated_date: "2026-07-10"
 last_task9_autofix_at: "2026-07-10"
+consolidated_from:
+  - "src/part5-app/ch22-rendering-practice/11-animated-vector-drawable-performance.md"
 ---
 
 # 动画性能优化
@@ -262,6 +264,14 @@ Android 17 源码包含 buffer stuffing recovery。窗口 buffer 排队过深时
 Perfetto 中遇到动画帧间隔异常时，可搜索 `Buffer stuffing recovery`、`buffer stuffed` 和 `Negative offset`，再检查 `dequeueBuffer` wait、FrameTimeline 的 `Buffer Stuffing`、目标 layer 的 `BufferTX` 与后续 backlog。出现主动 delay 时，该帧不能直接归因为 Animator 计算或 CPU 算力不足。相关 aconfig flag 可变，设备行为要以当前 build 配置和 trace 为准。
 
 ## 转场动画：限制捕获范围和目标数量
+
+## AnimatedVectorDrawable：先确认运行线程再优化
+
+AnimatedVectorDrawable 的动画属性可以由 RenderThread 处理，也可能因为属性类型、回调或软件绘制条件退回 UI 线程。是否“线程化”不能只看资源类型：先在 Perfetto 中确认动画期间主线程是否持续执行 `Choreographer#doFrame`、属性更新或 traversal，再检查 RenderThread 和 GPU。主线程没有逐帧更新也不表示动画已经按期 present，仍要继续看窗口 buffer、FrameTimeline 和显示后段。
+
+AVD 适合路径、颜色和 transform 数量有限的图标动画。路径节点、关键帧和同时播放实例越多，插值、DisplayList 更新与 GPU 覆盖成本越高；资源应复用 `Drawable.ConstantState` 能安全创建的实例，但每个可见控件仍需独立的可变动画状态。列表复用时必须在 detach/recycle 停止动画并重置进度，避免不可见 holder 继续占用帧时钟。
+
+出现版本或设备差异时，建立三组对照：原 AVD、等价静态 vector、简化路径/关键帧 AVD。若静态组仍慢，问题不在动画插值；若主线程组明显改善但 GPU duration 不变，说明只是移动了 CPU 工作。软件 Canvas、截图和离屏 Bitmap 路径也要单独验证，因为它们不能沿用硬件窗口的 RenderThread 结论。
 
 `TransitionManager.beginDelayedTransition(sceneRoot, transition)` 会立即捕获 start values，并安排在下一次 pre-draw 捕获 end values，然后为变化目标创建 Animator。`sceneRoot` 很大时，捕获遍历、布局影响和候选目标都会扩大；具体成本还取决于 Transition 类型与 target/exclude 配置。
 

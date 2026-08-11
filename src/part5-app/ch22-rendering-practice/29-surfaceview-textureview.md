@@ -1,10 +1,10 @@
 ---
 title: "SurfaceView 与 TextureView 渲染性能选型实战"
-chapter: "22.42"
+chapter: "22.29"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [surfaceview, textureview, surfacecontrol, rendering, gpu, video, camera]
-related_chapters: ["22.17", "22.35", "2.1", "18.16"]
+related_chapters: ["22.26", "2.1", "18.16"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "AOSP结构/官方文档/章节深挖"
@@ -30,7 +30,7 @@ sources:
   path: CameraX PreviewView, Media3 PlayerView, Compose AndroidView / external surface references
 ---
 
-# 22.42 SurfaceView 与 TextureView 渲染性能选型实战
+# SurfaceView 与 TextureView 渲染性能选型实战
 
 `SurfaceView` 和 `TextureView` 都能接收 Camera、MediaCodec、EGL 或 Vulkan 生成的 buffer，差别落在“这块 buffer 在哪里被消费”：
 
@@ -686,10 +686,10 @@ TextureView 把外部 BufferQueue 交给应用内 HWUI。它能够使用普通 V
 
 ## 相关章节
 
-- [Hardware Bitmap 与 RenderNode](17-hardware-bitmap-rendernode.md)
-- [Adaptive Refresh Rate 实战](18-adaptive-refresh-rate-practice.md)
-- [Compose ↔ View 互操作性能实战](41-compose-view-interop-performance.md)
-- [Media3 视频渲染管线性能实战](43-media3-video-rendering-pipeline-performance.md)
+- [Hardware Bitmap 与 RenderNode](26-bitmap-decode-imagedecoder.md)
+- [Adaptive Refresh Rate 实战](14-adaptive-refresh-rate.md)
+- [Compose ↔ View 互操作性能实战](13-compose-view-interop.md)
+- [Media3 视频渲染管线性能实战](30-media3-video-rendering.md)
 
 ## 参考资料
 

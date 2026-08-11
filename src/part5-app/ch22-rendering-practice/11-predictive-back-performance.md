@@ -1,7 +1,7 @@
 ---
 title: "Predictive Back 动画与页面切换性能"
-chapter: "22.13"
-section: "22.13"
+chapter: "22.11"
+section: "22.11"
 status: ready-for-review
 drafted_date: "2026-05-18"
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37); AndroidX Activity 1.8.0+; AndroidX Fragment 1.7.0+; AndroidX Transition 1.5.0+; AndroidX NavigationEvent 1.0+"
@@ -9,7 +9,7 @@ last_verified: "2026-05-18"
 last_verified_against: "Android Developers docs; AndroidX Activity / Fragment / Transition / NavigationEvent release notes; Perfetto FrameTimeline docs"
 confidence: medium
 tags: [predictive-back, rendering, animation, fragment, compose]
-related_chapters: ["3.3", "7.4", "18.2", "22.3", "22.12"]
+related_chapters: ["3.3", "7.4", "18.2", "22.3", "22.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-18"
 gap_source: "官方文档/AndroidX 版本演进/AOSP 结构"
@@ -44,9 +44,9 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 ---
 
-# 22.13 Predictive Back 动画与页面切换性能
+# Predictive Back 动画与页面切换性能
 
-Predictive Back 把“返回”从一次离散事件改成一段可取消、可预览、可按进度驱动的交互。页面切换性能的判断点也随之移动：卡顿不再只发生在 `popBackStack()` 或 `finish()` 之后，手指从屏幕边缘滑动的每一帧都可能暴露主线程、布局、动画和合成成本。系统手势入口见 [§3.3 手势导航](../../part1-fundamentals/ch03-input/03-gesture-navigation.md)，View 一帧时序见 [§18.2 Android View 标准管线](../../part2-performance/ch18-rendering-pipelines/02-android-view-standard.md)，FragmentTransaction 的提交语义见 [§22.12 FragmentTransaction 提交链路](12-fragment-transaction-performance.md)；以下聚焦应用侧的接入、降级和 Perfetto 定位方法。
+Predictive Back 把“返回”从一次离散事件改成一段可取消、可预览、可按进度驱动的交互。页面切换性能的判断点也随之移动：卡顿不再只发生在 `popBackStack()` 或 `finish()` 之后，手指从屏幕边缘滑动的每一帧都可能暴露主线程、布局、动画和合成成本。系统手势入口见 [§3.3 手势导航](../../part1-fundamentals/ch03-input/03-gesture-navigation.md)，View 一帧时序见 [§18.2 Android View 标准管线](../../part2-performance/ch18-rendering-pipelines/02-android-view-standard.md)，FragmentTransaction 的提交语义见 [§22.10 FragmentTransaction 提交链路](10-fragment-transaction-performance.md)；以下聚焦应用侧的接入、降级和 Perfetto 定位方法。
 
 分析时把每帧计算量、状态读写范围、主线程排队和渲染提交分开看。任务调度会改变响应延迟，因此不要把数据加载、页面销毁和事务提交挤进 progress 回调。
 
@@ -195,7 +195,7 @@ val callback = object : OnBackPressedCallback(true) {
 }
 ```
 
-`controlDelayedTransition()` 需要 Android 14+，并且每次动画只使用一个 controller；自定义 Transition 还要明确支持 seeking。这里的排查点是 `showPreviousStateForPreview()`：如果它触发新的 Fragment inflate、`RecyclerView` 首屏绑定或图片加载，返回手势一开始就会吃掉主线程预算。Fragment 返回栈由 Fragment 1.7+ 自己 seek 时，不应再手动创建第二个 controller 或额外调用 `popBackStack()`；事务执行边界见 [§22.12](12-fragment-transaction-performance.md)。
+`controlDelayedTransition()` 需要 Android 14+，并且每次动画只使用一个 controller；自定义 Transition 还要明确支持 seeking。这里的排查点是 `showPreviousStateForPreview()`：如果它触发新的 Fragment inflate、`RecyclerView` 首屏绑定或图片加载，返回手势一开始就会吃掉主线程预算。Fragment 返回栈由 Fragment 1.7+ 自己 seek 时，不应再手动创建第二个 controller 或额外调用 `popBackStack()`；事务执行边界见 [§22.10](10-fragment-transaction-performance.md)。
 
 ## Compose NavigationEvent：把进度状态限制在动画层
 
@@ -299,7 +299,7 @@ ahead-of-time 分发要求手势开始前就确定谁接管返回。官方 WebVi
 
 跨 Activity 和 back-to-home 动画属于系统可见转场。Android 15 起相关系统动画不再依赖开发者选项；应用要移除 root Activity 上无必要的消费型 callback，并确认没有通过 manifest opt-out。Android 16 增加观察型 callback，允许日志在不消费返回的情况下运行；Android 17 则取消 API 36 的单 observer 数量限制。
 
-跨 Activity 自定义动画的风险在于目标窗口准备时间。如果上一个 Activity 需要冷启动、恢复复杂 View 树或重新绑定列表，手势预览阶段会露出空白、快照或旧内容。治理动作是把返回目标 Activity 的首帧准备纳入页面切换预算，和 21.x 启动优化、22.12 Fragment 事务预算一起看。
+跨 Activity 自定义动画的风险在于目标窗口准备时间。如果上一个 Activity 需要冷启动、恢复复杂 View 树或重新绑定列表，手势预览阶段会露出空白、快照或旧内容。治理动作是把返回目标 Activity 的首帧准备纳入页面切换预算，和 21.x 启动优化、22.10 Fragment 事务预算一起看。
 
 ## 扩展：大屏、多窗口与 foldable
 

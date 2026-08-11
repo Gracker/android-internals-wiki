@@ -1,6 +1,6 @@
 ---
-title: "Bitmap 解码管线性能与 ImageDecoder 实战"
-chapter: "22.35"
+title: "Bitmap 解码、Hardware Bitmap 与 RenderNode"
+chapter: "22.26"
 status: ready-for-review
 drafted_date: "2026-07-18"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -9,6 +9,7 @@ last_verified_against: "AOSP android-17.0.0_r1"
 confidence: medium
 consolidated_from:
   - "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md"
+  - "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
 sources:
   - type: aosp
     path: "frameworks/base/graphics/java/android/graphics/ImageDecoder.java"
@@ -35,13 +36,13 @@ sources:
   - type: clippings-structure-ref
     path: "Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md"
 tags: [bitmap, image-decoder, decode-pipeline, hardware-bitmap, image-format, mmap, inbitmap]
-related_chapters: ["22.6", "22.17", "23.2"]
+related_chapters: ["22.6", "23.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "章节深挖"
 ---
 
-# 22.35 Bitmap 解码管线性能与 ImageDecoder 实战
+# Bitmap 解码、Hardware Bitmap 与 RenderNode
 
 > **源码锚点**
 >
@@ -52,7 +53,7 @@ gap_source: "章节深挖"
 >
 > 这里的“Android 17 行为”以这些源码为准。编解码器实现、图形内存分配和内存统计还会受 SoC、厂商 gralloc 与驱动影响，因此设备实测仍是性能结论的一部分。
 
-讨论范围是压缩图片数据如何变成可绘制像素，以及这些像素如何进入 Android 17 的 HWUI 渲染路径。图片请求、缓存与框架选型见 [22.6 图片加载](./06-image-loading.md)，Hardware Bitmap 的绘制侧行为见 [22.17 Hardware Bitmap 与 RenderNode](./17-hardware-bitmap-rendernode.md)，Bitmap 内存治理见 [23.2 Bitmap 优化](../ch23-memory-practice/02-bitmap-optimization.md)。
+讨论范围是压缩图片数据如何变成可绘制像素，以及这些像素如何进入 Android 17 的 HWUI 渲染路径。图片请求、缓存与框架选型见 [22.6 图片加载](./06-image-loading.md)；本文同时覆盖 Hardware Bitmap 与 RenderNode 的绘制侧行为，Bitmap 内存治理见 [23.2 Bitmap 优化](../ch23-memory-practice/02-bitmap-optimization.md)。
 
 ## 1. 先建立正确的解码模型
 
@@ -466,7 +467,17 @@ thread listener 存在 `ThreadLocal` 中，process listener 是进程共享状�
 
 `setTargetColorSpace()`、`setOnPartialImageListener()` 和四种 allocator 都早于 API 37，不能列为 Android 17 新增能力。Android 17 的当前公开变化应以 API diff 中这四个 listener 方法为准。
 
-## 13. 错误恢复与安全边界
+## 13. RenderNode 与首次纹理准备
+
+Hardware Bitmap 进入 View/Compose 后仍作为宿主 RenderNode/DisplayList 引用的图片资源。RenderNode 保存绘制命令和属性，不等于缓存整块栅格结果；translation、scale、alpha 等属性可在内容不变时复用已录制命令，图片对象或 draw 内容变化仍要重录。`RecordingCanvas` 会保留所画 Bitmap 的引用，因此业务缓存移除对象，不代表仍存活的 View/RenderNode 已立即释放它；自建 RenderNode 结束生命周期时可调用 `discardDisplayList()`，框架 View 的内部节点交给框架管理。
+
+Android 17 的 HWUI 对非 Hardware Bitmap 可进入 `prepareToDraw()` / `PinAsTexture()` 的显式纹理准备分支；Hardware Bitmap 已在创建阶段完成主要图形缓冲上传，所以跳过这段路径。收益是移动工作发生的时间和存储形态，不是让上传消失：格式转换、AHardwareBuffer 分配、GL/Vulkan 提交和驱动延迟仍可能落在解码完成前或首次使用时。
+
+对照实验应固定同一图片字节、目标尺寸、色彩空间、缓存冷热和页面，分别采集：软件 Bitmap 直接显示、软件 Bitmap 提前 `prepareToDraw()`、Hardware Bitmap 显示，以及三组内存缓存命中。比较请求开始到目标帧 present、decode、upload/prepare slice、DrawFrame、GPU completion 和 Graphics/dmabuf/PSS。Hardware 组首绘更稳但解码完成更晚，只能说明成本前移，端到端是否改善仍看总等待。
+
+Hardware Bitmap 不会变成 SurfaceFlinger 独立 layer，`computeApproximateMemoryUsage()` 也不包含 child RenderNode 和 Bitmap。页面退出后的评审要同时检查图片库 active resource、View/Drawable/display list 引用、Graphics/GL/PSS、dmabuf/GPU memory 与 FD 趋势；不能按“每张图固定一个 FD”或 `width × height × 4` 估算完整代价。
+
+## 14. 错误恢复与安全边界
 
 `OnPartialImageListener` 在编解码器报告输入不完整或数据错误后收到 `DecodeException`。返回接受只表示调用方愿意使用当前可得到的结果，不表示平台提供渐进式网络图片流，也不表示损坏内容已经安全。
 
@@ -480,7 +491,7 @@ thread listener 存在 `ThreadLocal` 中，process listener 是进程共享状�
 
 Android 17 源码中存在受特性开关保护的解码分配限制实现，但它不属于 API 37 已确认的稳定公开契约。应用不能把尚未公开的接口当作生产保护，应在请求层做尺寸预检和内存预算。
 
-## 14. 评审清单
+## 15. 评审清单
 
 遇到图片解码或首次绘制问题时，可以按下面的顺序核查：
 
@@ -498,7 +509,7 @@ Android 17 源码中存在受特性开关保护的解码分配限制实现，但
 - 格式性能是否来自同尺寸、同设备、冷热缓存分开的测量；
 - native 堆、共享内存和图形内存是否用多种观测互相校验。
 
-## 15. 结论
+## 16. 结论
 
 Bitmap 解码优化的核心是控制输出像素、明确存储需求，并把 I/O、编解码器、分配、上传和绘制分别测量。
 

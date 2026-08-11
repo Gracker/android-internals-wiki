@@ -1,10 +1,10 @@
 ---
-title: "Compose ↔ View 互操作性能实战"
-chapter: "22.41"
+title: "Compose First 与 View/Compose 互操作性能实战"
+chapter: "22.13"
 status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [compose, interop, androidview, composeview, rendering-performance, migration]
-related_chapters: ["22.3", "22.15", "22.22", "22.31"]
+related_chapters: ["22.3", "22.16", "22.25"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "AOSP结构/官方文档/章节深挖"
@@ -27,9 +27,11 @@ sources:
   path: AndroidX Compose UI, UI ViewBinding, Foundation 1.11.4 source artifacts and public API references
 - type: aosp
   path: AOSP android-17.0.0_r1 ViewRootImpl, Choreographer, SurfaceView, TextureView, HWUI WebViewFunctor
+consolidated_from:
+  - "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md"
 ---
 
-# 22.41 Compose ↔ View 互操作性能实战
+# Compose First 与 View/Compose 互操作性能实战
 
 Compose 与 View 互操作有两个方向：
 
@@ -52,6 +54,14 @@ Compose 与 View 互操作有两个方向：
 Compose 独立于 Android platform 发布。`android-17.0.0_r1` 能固定 `ViewRootImpl`、`SurfaceView`、`TextureView` 和 HWUI，不能固定 AndroidX Compose 1.11.4 的实现；Compose 的实现要按对应 artifact 源码核查。
 
 Google Maven 中的 Compose BOM 2026.06.01 把 UI、Runtime 和 Foundation 都约束为 1.11.4。BOM 只负责 AndroidX library 版本，Kotlin 2.4.10 与 Compose compiler plugin 2.4.10 仍按 Kotlin 工具链配置。
+
+### Compose First 是新增能力的默认入口，不是存量重写命令
+
+官方的 Compose First 路线表示新 UI 能力、示例和工具投入优先进入 Compose；`android.widget` 与 Fragment、RecyclerView 等 View-based 库处于 complete/maintenance 维护边界，不等于既有页面立刻失去支持。迁移候选应按业务改版、状态模型、平台适配收益和现有基线排序，而不是为了统一技术栈一次性重写。
+
+新页面可以默认 Compose，但相机、地图、广告、WebView、播放器和厂商 SDK 仍可能只提供 View 或独立 Surface。每个长期 interop 边界要记录 owner、替换条件、生命周期、状态来源和性能负责人。页面本身稳定、指标达标且依赖复杂 View SDK 时，保留 View 往往比无基线迁移更可控。
+
+迁移工具或自动化 skill 只能完成 XML、主题和组件结构转换，不能证明导航、SavedState、焦点、IME、无障碍、资源释放与帧性能等价。每批只改变一个清晰区域，保留旧实现的截图、release benchmark 和 trace；通过后再扩大范围。Compose Multiplatform 又是另一项跨目标决策，Android 页面迁移成功不能推导 iOS、桌面或 Web 的组件、输入与性能表现。
 
 三项常见说法需要收窄：
 
@@ -734,9 +744,9 @@ Compose test rule 会同步它掌握的 Compose 工作；虚拟测试时钟不�
 ## 相关章节
 
 - [Compose 性能优化实战](03-compose-performance.md)
-- [Compose First 与 View/Compose 混合迁移性能边界](15-compose-first-view-migration-performance.md)
-- [Compose LazyList/LazyGrid 滑动性能深度优化](22-compose-lazylist-performance.md)
-- [Compose Modifier.Node 架构与性能迁移](31-compose-modifier-node-architecture-performance.md)
+- [Compose First 与 View/Compose 混合迁移性能边界](13-compose-view-interop.md)
+- [Compose LazyList/LazyGrid 滑动性能深度优化](16-compose-lazylist-performance.md)
+- [Compose Modifier.Node 架构与性能迁移](25-compose-modifier-node.md)
 
 ## 参考资料
 

@@ -1,10 +1,10 @@
 ---
 title: "Impeller Shader 编译性能与 Flutter 渲染稳定性"
-chapter: "22.30"
+chapter: "22.24"
 status: ready-for-review
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: [flutter, impeller, shader, vulkan, opengl, gpu, compilation, rendering]
-related_chapters: ["22.3", "22.10", "2.10", "14.15"]
+related_chapters: ["22.3", "22.9", "2.10", "14.15"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-05"
 gap_source: "研究素材/章节深挖"
@@ -26,7 +26,7 @@ sources:
   path: 'Android 17 android-17.0.0_r1 Surface, BufferQueueProducer, SurfaceFlinger; android17-6.18-2026-06_r6 dma-buf and sync_file'
 ---
 
-# 22.30 Impeller Shader 编译性能与 Flutter 渲染稳定性
+# Impeller Shader 编译性能与 Flutter 渲染稳定性
 
 ## 版本锚点与结论范围
 

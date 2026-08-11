@@ -1,10 +1,10 @@
 ---
-title: "Adaptive Layout 与多形态设备渲染适配性能"
-chapter: "22.27"
+title: "Adaptive Layout、桌面窗口与多形态设备性能"
+chapter: "22.12"
 status: ready-for-review
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37); Jetpack WindowManager / Compose Material 3 adaptive APIs"
 tags: [adaptive, layout, desktop, foldable, large-screen, window-size-class, performance]
-related_chapters: ["22.1", "22.3", "22.14", "2.28", "2.30"]
+related_chapters: ["22.1", "22.3", "2.28", "2.30"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-27"
 gap_source: "官方文档/每日信息/AOSP结构"
@@ -36,11 +36,11 @@ sources:
     path: "src/part1-fundamentals/ch02-rendering/2.28-Compose-Pausable-Composition-深度分析.md"
   - type: local
     path: "src/part2-rendering/ch02-rendering/2.30-android17-frametimeline.md"
-  - type: local
-    path: "src/part5-app/ch22-rendering-practice/14-desktop-windowing-large-screen-performance.md"
+consolidated_from:
+  - "src/part5-app/ch22-rendering-practice/14-desktop-windowing-large-screen-performance.md"
 ---
 
-# 22.27 Adaptive Layout 与多形态设备渲染适配性能
+# Adaptive Layout、桌面窗口与多形态设备性能
 
 ## 版本口径与源码锚点
 
@@ -396,6 +396,14 @@ resize 时同步解码最大尺寸图片会占用 CPU、堆内存和主线程时
 - 用户是否要求继续播放、采集或同步。
 
 “失去焦点便停止全部工作”会中断仍需显示的内容，“只在 `onPause()` 降载”又可能让后台可见窗口持续高频刷新。策略应按业务类型定义，并在分屏切焦点、PiP、桌面多实例和外接屏中验证。
+
+### 桌面窗口的多实例、拖拽与共享状态
+
+桌面窗口化会让同一应用同时拥有多个 task，甚至跨显示器展示同一业务对象。`PROPERTY_SUPPORTS_MULTI_INSTANCE_SYSTEM_UI` 只允许系统 UI 提供新窗口入口，不会自动解决 launch mode、路由、草稿冲突和数据库并发。状态应拆成三层：实例内的滚动/选择/pane 状态、由 repository 管理并带 revision/事务的共享业务状态，以及可共享但不能隐含“当前窗口”的进程级缓存与连接池。
+
+跨窗口拖拽只在回调里传递轻量 `ClipData`、URI 和授权；MIME 校验、Bitmap 解码、缩略图与导入事务放后台。Android 15 的同应用跨窗口 drag flag 与未处理 drop 的 `IntentSender` 入口也需要重新经过 task 路由和权限验证，不能把大对象序列化进 Intent 或 Binder。
+
+同一进程的多个 Window 各有 `ViewRootImpl` 和 buffer 周转，却可能共享 UI Looper 与进程级 RenderThread。窗口 B 自身的 `DrawFrame` 很短，也可能排在窗口 A 的长任务之后错过 deadline；跨显示器则要分别记录 `displayId`、density、刷新率、color mode 和每屏 present。连接/断开外屏、跨屏拖动、最大化/还原、输入焦点切换都应作为独立用例。
 
 桌面窗口还要覆盖鼠标 hover、滚轮、右键、键盘快捷键、Tab 焦点和 caption Insets。WindowManager 1.6 alpha 才引入的精确指针 engagement API 不属于 1.5.1 稳定基线，不能用 alpha API 描述稳定版实现。
 

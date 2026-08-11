@@ -1,10 +1,10 @@
 ---
-title: "Compose 布局系统：测量阶段、缓存机制与 Intrinsic 性能"
-chapter: "22.25"
+title: "Compose 布局、SubcomposeLayout 与测量性能"
+chapter: "22.19"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [compose, layout, measurement, intrinsic, performance]
-related_chapters: ["22.3", "22.21", "22.22", "7.10", "2.4"]
+related_chapters: ["22.3", "22.15", "22.16", "7.10", "2.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-25"
 gap_source: "章节深挖+AOSP结构"
@@ -17,9 +17,11 @@ sources:
     path: "frameworks/base/core/java/androidx/compose/ui/layout/LayoutNode.kt"
   - type: official
     path: "https://developer.android.com/jetpack/compose/layout"
+consolidated_from:
+  - "src/part5-app/ch22-rendering-practice/34-compose-subcompose-layout-performance.md"
 ---
 
-# 22.25 Compose 布局系统：测量阶段、缓存机制与 Intrinsic 性能
+# Compose 布局、SubcomposeLayout 与测量性能
 
 Compose 布局性能要回答三个问题：哪个状态读取触发了布局、哪些节点进入了测量或放置、这些工作是否让目标帧错过截止时间。重组次数只能解释组合阶段，无法代替布局证据。
 
@@ -268,7 +270,7 @@ Modifier 从外到内包装内容。`padding(16.dp).size(40.dp)` 与 `size(40.dp
 - 预取、lookahead 和正式布局在同一交互中叠加；
 - 组件嵌套让一个外层约束变化影响多个 Subcompose 区域。
 
-普通 `Layout` 适合子节点集合在组合阶段已经确定的场景。单纯换成 `ComposableLambda` 不会提供测量期按约束组合的能力。Subcompose 的节点复用、预取和测量细节见 [22.34 SubcomposeLayout 性能](34-compose-subcompose-layout-performance.md)。
+普通 `Layout` 适合子节点集合在组合阶段已经确定的场景。单纯换成 `ComposableLambda` 不会提供测量期按约束组合的能力。Subcompose 的节点复用、预取和测量细节在下文集中说明。
 
 ### 2. Compose 1.11.4 使用 `LookaheadScope`
 
@@ -284,7 +286,19 @@ Lookahead 也不能简化成“每帧固定两次测量，耗时翻倍”。源�
 - `Compose:layout`；
 - 动画期间创建、复用和绘制的节点数。
 
-## 七、`Remeasurement.forceRemeasure()` 的边界
+## 七、SubcomposeLayout：slot 身份、复用与实际成本
+
+普通 `Layout` 在 measure 前已经拿到确定的 `Measurable`；`SubcomposeLayout` 则允许 measure 根据约束或兄弟尺寸调用 `subcompose(slotId, content)`。它适合 Lazy layout、`BoxWithConstraints`、先测主体再决定覆盖层等真实依赖，不应只因组件“复杂”就使用。
+
+slotId 是子 Composition 的身份边界，同一逻辑 slot 在相邻 pass 中必须稳定，在一次 pass 内必须唯一。无参 `SubcomposeLayoutState()` 默认不保留离场 slot；自定义复用策略还要分别定义保留哪些 id、两个 id 是否兼容。LazyLayout 在此之上用 key 维护业务身份、用 `contentType` 判断结构兼容，并缓存当前 measure pass 已请求的 item；这些都不是跨版本可依赖的固定池容量契约。
+
+一次 measure 的成本来自实际请求的 slot 数、content 是否失效、产生的节点数量和子树测量，而不是固定“两趟”或随嵌套层数指数增长。父约束变化会重新执行 measure policy；若结构只在少数断点变化，可在页面上层先归约为 compact/expanded 模式，避免每个 item 各自套 `BoxWithConstraints`。
+
+SubcomposeLayout 使用 `NoIntrinsicsMeasurePolicy`。父级通过 `IntrinsicSize.Min/Max` 查询到它时会直接失败，不会先完整 intrinsic 组合再正式测量。要实现 match-parent 类依赖，应重写父布局的测量顺序；组件尺寸能由外层约束表达时，直接传入约束。当前 Compose UI 也没有公开的 `@IntrinsicMeasurer` 注解可绕过这项限制。
+
+Lookahead 负责先得到目标 geometry，approach pass 再接近目标；它与“测量时才决定组合哪些内容”是两种能力。嵌套两者时分别观察 lookahead、正式 measure、subcompose 和 draw，不能把额外布局 pass 误写成额外 GPU render。工具侧 Compiler Metrics 只能解释 slot content 的可跳过性，Layout Inspector 只给组合线索；实际 subcompose/measure 次数需要 Perfetto、自定义稳定计数或最小对照实验。
+
+## 八、`Remeasurement.forceRemeasure()` 的边界
 
 公开的 `Remeasurement` 关联一个布局节点，`forceRemeasure()` 会同步标记并执行该节点的测量/布局。官方 API 把它限定在少数复杂布局，例如滚动过程中必须同步消费偏移并重新测量子节点。
 
@@ -299,7 +313,7 @@ Lookahead 也不能简化成“每帧固定两次测量，耗时翻倍”。源�
 
 后移读取不能改变 UI 语义。点击区域、父布局占位或可访问性边界必须随位置变化时，图层变换和布局位移的行为并不相同。
 
-## 八、怎样测量 Compose 布局成本
+## 九、怎样测量 Compose 布局成本
 
 ### 1. Trace 名称有语义，颜色没有
 
@@ -365,7 +379,7 @@ Layout Inspector 可以显示 Composable 的组合次数和跳过次数。Compos
 
 即使启用了组合跟踪，布局节点归因仍可能需要自定义 `Trace.beginSection()`、最小复现或基准变体。不要把某个 Composable 的组合 slice 当作它全部测量与绘制成本。
 
-## 九、排查案例的判断顺序
+## 十、排查案例的判断顺序
 
 ### 场景 A：没有明显重组，滚动仍掉帧
 
@@ -397,7 +411,7 @@ Layout Inspector 可以显示 Composable 的组合次数和跳过次数。Compos
 
 只比较平均帧率会掩盖少数长帧。FrameTimingMetric 的分位数和对应 trace 能保留异常帧位置。
 
-## 十、提交前检查清单
+## 十一、提交前检查清单
 
 - [ ] 记录 Android 版本、Compose BOM、Compose UI、Kotlin 与 Compose Compiler 插件
 - [ ] 用 FrameTimeline 确认目标帧已经错过截止时间

@@ -1,5 +1,5 @@
 ---
-title: "Jetpack Compose 性能优化"
+title: "Jetpack Compose 性能优化实战"
 chapter: "22.3"
 section: "22.3"
 status: finalized
@@ -49,6 +49,8 @@ last_task9_audit_result: "pass-idle-audit"
 last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度3（版本差异覆盖）复核通过；AndroidX androidx-compose-release 中 PausableComposition/ProduceState/SnapshotState/LazyLayoutCacheWindow 路径可核，官方 Strong Skipping 与 Compose Foundation 1.10.0-alpha05/1.10.6 release notes 口径一致，AOSP android-17.0.0_r1 ART generational GC 锚点可核；未发现 Android 18/API 38+ 或 P0/P1。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-26
+consolidated_from:
+  - "src/part5-app/ch22-rendering-practice/20-compose-performance-blind-spots.md"
 ---
 # Jetpack Compose 性能优化实战
 
@@ -366,6 +368,16 @@ LazyColumn {
 `onReset` 可能先于下一次 `update`，也可能进入暂时停用后才被释放；清理逻辑应允许重复调用。若嵌入的是 `SurfaceView`、WebView、播放器或相机预览，图形分析还要跟随它自己的 BufferQueue 和 SurfaceFlinger layer，不能只看 Compose 宿主窗口。
 
 ## 升级与验收
+
+## Effect 与 producer 的生命周期盲区
+
+`rememberCoroutineScope()` 适合由点击、拖动等事件启动工作；需要随 key 进入、变化和退出自动管理的持续任务，应直接使用 `LaunchedEffect(key)`。把任务从 Effect 再转交到 remembered scope，会让 key 变化只取消“启动者”，旧任务却继续消费旧数据。Composition 离开时 `Job.cancel()` 只传播取消信号；阻塞 I/O、没有检查取消的 CPU 循环、耗时 `NonCancellable` 清理和外部 callback 都可能延长实际退出时间，因此要用任务 `finally`、订阅计数和资源 owner 验证，而不是用“页面退出后对象还在”直接判泄漏。
+
+`produceState` 的本质是 remembered `MutableState` 加 keyed `LaunchedEffect`：key 变化会取消旧 producer，但不会自动把同一个 State 重置为新的 `initialValue`。需要在切换用户或请求时立即显示 Loading，producer 必须显式赋值；回调式数据源用 `awaitDispose` 解除注册，长期 Flow 则依靠 `collect` 自身的取消与 `finally`，不要把不可达的 `awaitDispose` 写在无限收集之后。
+
+State 的 conflation 只过滤相等结果或让观察者跳过中间值，不会减少上游网络、解析和每次赋值。高频源要在数据层明确采用 `sample`、`conflate`、`distinctUntilChanged` 或领域聚合；多个数据源必须共同满足业务不变量时，先在 ViewModel 产出一份不可变 `UiState`，不要期待两个独立 producer 恰好同帧完成。
+
+Strong Skipping 只改变可组合调用和 lambda 的跳过机会，不改变 scope 的 Job、Effect key、State mutation policy 或 producer 取消语义。Pausable Composition 也只切分尚未 apply 的 Composition；已经启动的网络请求、Flow collector 和 callback 不会随它自动暂停。
 
 升级 Kotlin 或 Compose 时，先记录解析后的精确依赖。下面的命令用于确认 app 的 Runtime、Foundation 和 UI 版本，configuration 名按项目 variant 调整。
 

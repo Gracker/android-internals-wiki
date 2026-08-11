@@ -178,7 +178,7 @@ Android 11 / API 30 起，应用可在 codec 声明 `FEATURE_LowLatency` 后设�
 
 HDR、Dolby Vision、secure、high-frame-rate、low-latency 与 tunnel 要按实际组合查询和测试。显示支持、decoder profile、extractor metadata、secure Surface、HWC plane 和 tone mapping 任一环节都可能改变结果。Android 17 还增加 Eclipsa video 的平台播放与采集能力；这同样只说明 framework 能传递相应动态元数据，不保证所有 SoC、显示或 codec 组合都走硬件低成本路径。
 
-完整音频输出、AAudio/MMAP 与回调预算由 [1.16 Audio Pipeline](../../part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md) 承载；Camera 到 encoder 的 Surface 管线见 [18.14 Camera](14-camera-pipeline.md)；Media3 的 Surface 生命周期、prewarming、effects、HDR/DRM、首帧与播放器侧观测见 [22.43 Media3 实战](../../part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md)。本节只保留播放控制面、Codec2/OMX、tunnel 与 ABR 的共同边界。
+完整音频输出、AAudio/MMAP 与回调预算由 [1.16 Audio Pipeline](../../part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md) 承载；Camera 到 encoder 的 Surface 管线见 [18.14 Camera](14-camera-pipeline.md)；Media3 的 Surface 生命周期、prewarming、effects、HDR/DRM、首帧与播放器侧观测见 [22.30 Media3 实战](../../part5-app/ch22-rendering-practice/30-media3-video-rendering.md)。本节只保留播放控制面、Codec2/OMX、tunnel 与 ABR 的共同边界。
 
 ## 三种视频承载路径不能混为一谈
 

@@ -1,10 +1,10 @@
 ---
 title: "Navigation Compose 性能优化"
-chapter: "22.23"
+chapter: "22.17"
 status: ready-for-review
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: [Jetpack, Compose, 性能优化, 导航]
-related_chapters: ["22.15", "22.21", "24.8"]
+related_chapters: ["22.13", "22.15", "24.8"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-16"
 gap_source: "素材驱动/官方文档/章节深挖"
@@ -61,7 +61,7 @@ last_rework_reason: "cleared pending-verification-marker; expanded frontmatter s
 task9_review_notes: "Deep-review 将原占位大纲改写为有来源边界的工程审计稿：收窄到 Android 14-17 与 AndroidX Navigation Compose，不引入 Android 18/API 38+ 结论；补充路线建模、状态读取、返回栈、动画、深链、LazyList、监控清单。页面级数值仍需项目 Macrobenchmark/Perfetto 实测；rework 2026-08-01 清除 pending-verification-marker 启发式触发词并扩充 frontmatter sources。"
 ---
 
-# 22.23 Navigation Compose 性能优化
+# Navigation Compose 性能优化
 
 ## 1. 版本基线与边界
 
@@ -90,7 +90,7 @@ Hilt 示例采用 AndroidX Hilt 1.4.0。从 Hilt 1.3.0 起，Compose 的 `hiltVi
 5. `NavHost` 在动画稳定后调用 `onTransitionComplete()`，进入页才允许升到 `RESUMED`，已经弹出的离开页才允许进入 `DESTROYED`；未请求保存的 entry 随后可以清理 ViewModelStore。
 6. 宿主窗口继续沿 `Choreographer → ViewRootImpl / Compose host → HWUI RenderThread → BLAST → SurfaceFlinger → HWC` 出图。
 
-普通 `NavHost` 没有为每个 destination 建立独立 Surface。进入页和离开页的 Compose 内容写进同一个 App Window buffer；SurfaceFlinger 通常只看到宿主窗口 layer。完整显示路径见 [18.23 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/23-compose-rendering-pipeline.md)，动画阶段见 [22.21 Compose 动画性能](21-compose-animation-performance.md)。
+普通 `NavHost` 没有为每个 destination 建立独立 Surface。进入页和离开页的 Compose 内容写进同一个 App Window buffer；SurfaceFlinger 通常只看到宿主窗口 layer。完整显示路径见 [18.23 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/23-compose-rendering-pipeline.md)，动画阶段见 [22.15 Compose 动画性能](15-compose-animation-performance.md)。
 
 这条链把问题分成四类：
 
@@ -247,7 +247,7 @@ Android 14 到 Android 17 的系统返回手势由平台和 Activity back API �
 
 这段过程会让前一页提前参与组合和绘制。前一页恢复时若同步重建列表、重新发起请求或恢复昂贵资源，拖动过程就可能出现慢帧。2.9.8 已修复一处预测返回竞态，但应用仍需在 Android 14、15、16、17 的真机上覆盖完成、取消、快速反向与连续返回。
 
-平台手势输入、Activity back dispatcher、Navigation 动画和 HWUI 出图属于不同层。某一层出现修复，不能推导其余层没有问题。预测返回的专项分析见 [22.13 预测返回性能](13-predictive-back-performance.md)。
+平台手势输入、Activity back dispatcher、Navigation 动画和 HWUI 出图属于不同层。某一层出现修复，不能推导其余层没有问题。预测返回的专项分析见 [22.11 预测返回性能](11-predictive-back-performance.md)。
 
 ## 7. 多返回栈：状态恢复会交换时间与内存
 
@@ -333,7 +333,7 @@ LazyColumn {
 }
 ```
 
-稳定 key 用于保持业务对象身份，`contentType` 用于声明可复用兼容性；二者都不负责阻止重复导航。若 `UserRow` 在滚动时频繁执行，检查列表实例、item 参数、父级 State 读取与 callback 捕获。Lazy 布局细节见 [22.22 Compose Lazy 布局性能](22-compose-lazylist-performance.md)。
+稳定 key 用于保持业务对象身份，`contentType` 用于声明可复用兼容性；二者都不负责阻止重复导航。若 `UserRow` 在滚动时频繁执行，检查列表实例、item 参数、父级 State 读取与 callback 捕获。Lazy 布局细节见 [22.16 Compose Lazy 布局性能](16-compose-lazylist-performance.md)。
 
 处理快速连点时，可在用例层只接受一次未完成操作，或在 UI 状态进入 `Navigating` 后暂时禁用按钮。基于 `currentDestination` 做简单判重只能覆盖一部分情况，因为返回栈分发、动画和业务事件可能处在不同时间点。
 

@@ -195,7 +195,7 @@ GapWorker 通过 `recyclerView.post(this)` 投到主线程队列。legacy Messag
 
 它不会清空主线程前序消息，也不保证 GapWorker 立即运行。`onBindViewHolder()`、item measure/layout、图片解码和 `willCreateInTime()` 算法都没有因此改变。只有 trace 在同一慢帧附近给出 MessageQueue monitor contention，才有理由把一部分延迟归到旧队列；没有该证据时，应继续检查前序 callback、线程调度和 RecyclerView 自身工作。
 
-DeliQueue 还会影响反射 `MessageQueue.mMessages` 的监控或测试库：新实现为兼容保留字段，但该字段始终为 `null`。Android 17 官方迁移要求 Espresso 3.7.0 及以上、Robolectric 4.17 及以上；应用监控应使用 FrameTimeline、JankStats、公开 Looper 能力与自定义 trace。机制与 A/B 方法参见[Android 17 DeliQueue 与 RecyclerView 预取时序](../../part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md)。
+DeliQueue 还会影响反射 `MessageQueue.mMessages` 的监控或测试库：新实现为兼容保留字段，但该字段始终为 `null`。Android 17 官方迁移要求 Espresso 3.7.0 及以上、Robolectric 4.17 及以上；应用监控应使用 FrameTimeline、JankStats、公开 Looper 能力与自定义 trace。机制与 A/B 方法参见[Android 17 DeliQueue 与 RecyclerView 预取时序](../../part5-app/ch22-rendering-practice/02-recyclerview-practice.md)。
 
 ## DiffUtil 与增量更新
 
@@ -374,7 +374,7 @@ LinearLayoutManager、GridLayoutManager 与 StaggeredGridLayoutManager 的锚点
 - [卡顿分析方法论](03-jank-methodology.md)
 - [Jetpack Compose 性能优化](07-compose-performance.md)
 - [可变刷新率与帧率选择](../ch18-rendering-pipelines/18-variable-refresh-rate.md)
-- [Android 17 DeliQueue 与 RecyclerView 预取时序](../../part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md)
+- [Android 17 DeliQueue 与 RecyclerView 预取时序](../../part5-app/ch22-rendering-practice/02-recyclerview-practice.md)
 
 ## 参考资料
 
