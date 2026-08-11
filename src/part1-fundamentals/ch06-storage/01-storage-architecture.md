@@ -73,6 +73,8 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-08
 ---
 
+# 6.1 Android 存储架构
+
 ## 从一个卡顿现象说起
 
 平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点是 Android Common Kernel `android17-6.18-2026-06_r6`。设备的分区表、文件系统、UFS 控制器和 vendor kernel 都允许厂商配置，涉及具体机型的性能结论仍要以运行时信息为准。

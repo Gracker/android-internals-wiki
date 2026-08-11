@@ -2,9 +2,9 @@
 last_task9_at: "2026-07-01T02:28:16+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-04-20
-title: "SharedPreferences/DataStore 性能与 ANR 优化"
-chapter: "6.5"
-status: finalized
+title: "SharedPreferences 与 DataStore：I/O、ANR 与多进程一致性"
+chapter: "6.4"
+status: ready-for-review
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"
@@ -37,9 +37,9 @@ sources:
     path: "AndroidX DataStore 1.2.1 DataStoreImpl.kt / FileStorage.kt / MultiProcessCoordinator.android.kt / MulticastFileObserver.android.kt / SharedCounter.android.kt"
 tags: [sharedpreferences, datastore, anr, io, storage, performance, queuedwork]
 related_chapters: ["6.1", "6.3", "9.1", "9.2", "8.2", "4.5"]
-section: "6.5"
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+section: "6.4"
+pipeline_stage: "ready-for-review"
+task6_state: "pending-verification"
 task9_state: "reviewed"
 last_idle_audit_at: "2026-08-04T18:35:51+08:00"
 last_idle_audit_run_id: "20260804-183551-idle-audit-29d2feef"
@@ -57,9 +57,13 @@ task9_p1_issues: 0
 task9_p2_issues: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-01
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch06-storage/6.03-Android-17-SharedPreferencesImpl-ANR机制.md"
+  - "src/part1-fundamentals/ch06-storage/6.1-androidx-datastore--ipc-源码级验证-draft.md"
 ---
 
-# 6.5 SharedPreferences/DataStore 性能与 ANR 优化
+# 6.4 SharedPreferences 与 DataStore：I/O、ANR 与多进程一致性
 
 ## `apply()` 返回后的写盘与主线程关系
 
@@ -379,6 +383,8 @@ Proto DataStore 的 schema 更利于审查和演进，但 protobuf 不能自动�
 
 自建 `DataStoreFactory` 时，scope 应与应用级数据拥有者同寿命。不要在 Activity、Fragment 或一次请求中重复创建实例，也不要让 `produceFile` 每次返回不同路径。
 
+多进程场景中的“每个进程一个实例”仍然指向同一个 canonical file。所有进程必须使用 `MultiProcessDataStoreFactory`，不能把单进程和多进程工厂混用于同一文件；transform 返回的数据对象也必须保持不可变，否则进程内缓存的 hash 校验会失去意义。
+
 ### 错误与损坏要分开处理
 
 下面的代码用于给 Preferences DataStore 的读流提供 I/O 失败降级：
@@ -477,11 +483,17 @@ override suspend fun incrementAndGetVersion(): Int =
 
 生产源码还包含文件锁死锁错误的退避重试与共享读锁兼容处理，不能用上面的精简代码替换库实现。
 
+读路径拿不到进程内 mutex 或共享文件锁时，仍可读取当前正式文件，但不会把这次无锁结果作为稳定缓存提交。后续由共享版本和文件通知重新校准。这个设计让读取不必等待正在生成的 `.tmp` 文件，同时保证缓存只有在稳定快照上更新。
+
 ### 写入顺序要按源码理解
 
 1.2.1 的 `DataStoreImpl.writeData()` 在持有协调锁和 `writeScope` 时，先递增共享版本，再把新对象写入临时文件。临时文件完成 `sync()` 后，`FileStorage` 才把它原子移动到目标文件；该移动会触发 `MOVED_TO` 通知。
 
 版本先递增是刻意设计：如果先替换文件、随后在递增版本前进程退出，其他进程可能长时间认为缓存仍是最新。版本、锁与文件观察器需要一起工作，不能把某一个机制单独视为跨进程事务。
+
+`updateData()` 的 transform 位于跨进程独占锁范围内。它应保持短小、确定且无副作用；网络请求、长计算或另一把业务锁会延长所有进程的写等待。DataStore 的事务边界覆盖一个完整对象，不提供多文件原子提交、字段级更新或历史版本回滚。
+
+`FileObserver(MOVED_TO)` 只在目标进程存在活跃 `data` Flow collector 时用于唤醒刷新；collector 数量回到零后，观察任务会停止。下一次读取仍会比较共享版本，因此通知不是不可丢失的事件日志。
 
 不要直接修改 `.preferences_pb`、`.lock`、`.version` 或 `.tmp`。文件锁属于协作式协议，绕过 DataStore 的直接文件写入会破坏版本和通知关系。
 

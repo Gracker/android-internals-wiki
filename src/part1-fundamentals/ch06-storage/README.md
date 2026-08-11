@@ -19,12 +19,10 @@ eMMC、UFS 和 NVMe 的队列能力不同，ext4 与 F2FS 的写入、回收和�
 - [6.1 Android 存储架构](./01-storage-architecture.md)：分区、挂载、FBE、vold、应用目录与共享存储边界；
 - [6.2 Android 文件系统](./02-filesystem.md)：ext4、F2FS、EROFS、OverlayFS 及产品选择；
 - [6.3 I/O 调度与性能](./03-io-scheduling.md)：块层、调度器、writeback 与请求延迟；
-- [6.4 Android 存储演进](./04-storage-evolution.md)：按版本梳理权限、加密与共享存储变化；
-- [6.5 SharedPreferences 与 DataStore](./05-sharedpreferences-datastore.md)：同步写盘、异步持久化与迁移边界；
-- [6.6 vold、FUSE 与 scoped storage I/O](./06-vold-fuse-scoped-storage-io.md)：共享存储访问路径和性能边界；
-- [6.7 FUSE passthrough 与 FUSE BPF](./07-fuse-bpf-scoped-storage-io-performance.md)：Android 17 下快路径的适用条件与观测方法。
+- [6.4 SharedPreferences 与 DataStore](./04-sharedpreferences-datastore.md)：首次加载、`QueuedWork`、ANR、多进程一致性与迁移边界；
+- [6.5 vold、MediaProvider 与 FUSE](./05-vold-mediaprovider-fuse.md)：共享存储控制面、数据面、passthrough、FUSE BPF 与现场取证。
 
-SharedPreferences ANR SharedPreferences ANR、AndroidX DataStore 多进程一致性另有专题页；Linux 物理内存规整应结合内存管理章节阅读。
+SharedPreferences ANR 与 AndroidX DataStore 多进程一致性已经并入 6.4；passthrough 和 FUSE BPF 已并入 6.5。Linux 物理内存规整不属于存储主题，统一见 [4.10 内存规整与直接回收性能边界](../ch04-memory/10-memory-compaction-direct-reclaim.md)。Photo Picker、媒体转码和应用层缓存治理见 [24.13 Photo Picker、媒体转码与缓存治理](../../part5-app/ch24-io-network/13-photo-picker-transcoding-performance.md)。
 
 ## 阅读建议
 

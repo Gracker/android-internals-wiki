@@ -41,7 +41,7 @@ last_task9_review_log: "logs/deep-review/2026-06-05-20-deep-review.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-26
 ---
-# I/O 调度与性能
+# 6.3 I/O 调度与性能
 
 ## 从 D 状态开始，但不要停在 D 状态
 
@@ -394,4 +394,4 @@ Android 17 的 AOSP SQLite 编译了 F2FS batch atomic write 支持，运行时�
 
 Android 17 的 GKI 提供 mq-deadline、Kyber 和多种 blk-cgroup QoS 能力，BFQ 仍是可选项；AOSP task profile 基线继续用 blkio v1 区分 background 与根组。vendor 可以覆盖这些配置，所以任何“Android 17 默认 scheduler”结论都要回到实机验证。
 
-下一节（6.4）会从调度层继续走向 UFS、文件系统与版本演进中的设备差异。
+应用配置持久化的同步边界见 6.4，MediaProvider/FUSE 共享存储路径见 6.5。

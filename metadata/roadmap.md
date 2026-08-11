@@ -1,27 +1,28 @@
 # 项目路线图
 
-## 当前状态（2026-08-06）
+## 当前状态（2026-08-11）
 
 - 框架搭建：完成
 - 内容范围：正文已经覆盖 ch01-ch26、前言、附录和若干 Android 17 / 工具链扩展条目
-- 当前阶段：alpha 精修期，正文批量 review / finalize 持续进行
+- 当前阶段：alpha 内容收敛期，按章逐篇审阅、合并重复正文并统一编号
 - 发布形态：mdBook 中文版优先，英文版在 v1.0 中文内容冻结后启动
-- 当前风险：目录架构已经恢复，但正文仍有 293 篇尚未进入 `ready-to-publish`；活动 queue 还有 9 条待闭环记录，遗留状态名仍需收敛
+- 当前风险：目录架构已经恢复，但正文仍有 293 篇尚未进入 `ready-to-publish`；活动 queue 还有 9 条 `body-applied` 待后续复核，遗留状态名仍需收敛
 
 当前统计口径：
 
 | 口径 | 数量 | 说明 |
 |------|------|------|
-| 规范章节正文 | 622 篇 | 388 finalized、216 ready-for-review、15 draft、2 needs-review、1 verified |
-| `src/SUMMARY.md` | 661 个本地链接 | 覆盖前言、26 章、附录和全部保留正文，0 失效、0 重复 |
-| `metadata/queue.json` | 17 条 | 9 pending、7 rejected、1 completed |
-| `pipeline_stage=ready-to-publish` | 329 篇 | 来自规范章节正文 frontmatter 聚合 |
+| 规范章节正文 | 615 篇 | 402 finalized、211 ready-for-review、1 verified、1 outdated |
+| `src/SUMMARY.md` | 654 个本地链接 | 覆盖前言、26 章、附录和全部保留正文，0 失效、0 重复 |
+| `metadata/queue.json` | 23 条 | 9 body-applied、7 rejected、5 superseded、1 review-finalized、1 completed |
+| `pipeline_stage=ready-to-publish` | 322 篇 | 来自规范章节正文 frontmatter 聚合 |
 
 当前工作重点：
 
 | 优先级 | 工作 | 说明 |
 |--------|------|------|
-| P0 | 消费 `metadata/queue.json` pending 项 | 当前剩余时效性与 DeepResearch 条目 |
+| P0 | 复核 `metadata/queue.json` 的 body-applied 项 | 当前剩余时效性与 DeepResearch 条目 |
+| P0 | 逐章收敛重复与过拆正文 | 每章完整阅读、同步活动引用和统计后独立提交；进度见 `content-consolidation-audit.md` |
 | P0 | 统一遗留状态名 | 收敛 status / pipeline_stage 的旧枚举，避免发布判断分叉 |
 | P1 | 完整构建验证 | 在具备 mdBook + Mermaid 的环境持续执行 HTML 构建 |
 | P1 | 清理临时产物 | 根目录报告、旧 backup、临时 JSON 不再进入提交 |

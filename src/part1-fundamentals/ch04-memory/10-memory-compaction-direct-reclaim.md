@@ -4,8 +4,8 @@ chapter: "4.10"
 status: ready-for-review
 drafted_date: "2026-05-19"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-19"
-last_verified_against: "AOSP android-mainline kernel/common + AOSP platform/system/memory/lmkd main + Android 官方文档"
+last_verified: "2026-08-11"
+last_verified_against: "Android Common Kernel android17-6.18-2026-06_r6 mm/{page_alloc,compaction,vmstat}.c, include/trace/events/{compaction,vmscan}.h; AOSP android-17.0.0_r1 lmkd/CachedAppOptimizer/mmd; Linux VM sysctl and THP documentation"
 confidence: medium
 tags: [memory, linux-kernel, compaction, direct-reclaim, lmkd]
 related_chapters: ["4.2", "4.4", "10.4", "13.6"]
@@ -27,6 +27,12 @@ sources:
     path: "platform/system/memory/lmkd refs/heads/main lmkd.cpp"
   - type: aosp
     path: "kernel/common.git refs/heads/android-mainline include/trace/events/{compaction.h,vmscan.h}"
+  - type: kernel
+    path: "Android Common Kernel android17-6.18-2026-06_r6 mm/{page_alloc,compaction,vmstat}.c"
+  - type: official
+    path: "https://docs.kernel.org/admin-guide/sysctl/vm.html"
+  - type: official
+    path: "https://docs.kernel.org/admin-guide/mm/transhuge.html"
 ---
 
 # 4.10 内存规整与直接回收性能边界
@@ -257,16 +263,35 @@ if (suitable) {
 
 ### 6.1 `kcompactd` 不只在失败后工作
 
-Android 17 kernel 仍支持 `vm.compaction_proactiveness`。该值范围为 0 到 100，当前 common kernel 源码默认 20：
+Android 17 kernel 仍支持 `vm.compaction_proactiveness`。该值范围为 0 到 100，当前 common kernel 源码默认 20。主动规整使用相对 `COMPACTION_HPAGE_ORDER` 的外部碎片分数，并按 zone 占 node 的页数加权。阈值由参数换算：
+
+```text
+low  = 100 - compaction_proactiveness
+high = min(low + min(10, low / 2), 100)
+```
+
+默认值 20 对应 `low=80`、`high=90`。node 分数高于 high 时，`kcompactd` 可以启动主动规整；工作持续到各 zone 分数接近 low，或遇到锁竞争、没有进展等退避条件。`kswapd` 正在运行时，主动规整会跳过，避免两类后台内存工作同时争用资源。
+
+参数行为还包括：
 
 - 0 关闭 proactive compaction；
 - 写入非零值会立即触发一次主动规整；
-- 更高值会提高后台规整积极程度；
+- 更高值会降低触发门槛，提高后台规整积极程度；
 - 极端值可能产生过量后台规整和延迟尖峰。
 
 厂商可以改变配置和运行值。分析设备时读取实际 sysctl，不要把 common kernel 默认值当成所有 Android 17 产品的固定参数。
 
-### 6.2 线程状态不能替代调用栈
+### 6.2 三个参数服务不同决策
+
+| 参数 | 取值与默认值 | 作用范围 | 不能推导的结论 |
+|---|---|---|---|
+| `vm.compaction_proactiveness` | 0—100，common kernel 默认 20 | 控制主动规整；0 不会关闭 direct compaction 或分配驱动的 `kcompactd` | 不能按 RAM 容量直接套固定值 |
+| `vm.extfrag_threshold` | 0—1000，默认 500 | 帮助 costly-order 分配判断更适合规整还是回收 | 与主动规整的 0—100 分数不是同一个量 |
+| `vm.compact_unevictable_allowed` | 普通内核默认 1，PREEMPT_RT 默认 0 | 决定规整是否检查 unevictable LRU 上的页 | 允许迁移不表示 mlocked 页访问没有停顿 |
+
+向 `vm.compact_memory` 写 1 会手工规整所有 node。它适合受控实验，不是日常清理内存的接口。`/sys/devices/system/node/node*/compact` 还依赖 NUMA、sysfs、权限和产品配置，量产设备未必提供。
+
+### 6.3 线程状态不能替代调用栈
 
 执行 direct reclaim 或 direct compaction 的线程可能：
 
@@ -462,6 +487,19 @@ adb shell cat /sys/kernel/debug/extfrag/extfrag_index
 
 该命令通常需要 root/userdebug/eng 环境。采集失败属于权限或配置结果，不能换算成碎片程度。
 
+### 9.4 调参必须是可回滚的单变量实验
+
+一次可复核的实验至少包含以下步骤：
+
+1. 用业务指标定义目标，例如相机首帧 P99、游戏最大帧耗时或连续运行后的高阶分配长尾。
+2. 固定设备、构建、温度、前后台应用集合和工作负载，采集默认配置下的延迟、vmstat 增量、buddy/extfrag 快照与 Trace。
+3. 找到目标 order、zone、migratetype 和分配者，再决定是否调整规整参数。
+4. 每轮只改一个参数，记录原值并在测试后明确恢复；写入非零 `compaction_proactiveness` 本身会立即唤醒 `kcompactd`，写入瞬间不能当作稳态样本。
+5. 同时比较前台 P95/P99、`kcompactd` CPU 时间、扫描量、direct compaction、分配失败、PSI、LMKD/OOM 和功耗。
+6. 恢复默认值后复测，排除温度、缓存与执行顺序造成的假收益。
+
+`drop_caches` 不执行物理规整，还会制造额外 cache miss 和 I/O。除非实验目标就是冷缓存，否则不要用它重置规整测试。
+
 ## 10. App 侧如何降低触发概率
 
 应用无法设置设备的 watermark、`compaction_proactiveness`、ZRAM 算法或 `lmkd` 策略。能够控制的是自身的分配峰值、驻留页和释放时机。
@@ -510,6 +548,12 @@ Android 14 起不再投递其他 legacy `onTrimMemory` 级别，相关常量在 
 - RSS、ZRAM、page fault、LMK 与用户可感知延迟。
 
 16KB 设备上的 native mmap/ELF 对齐兼容属于另一个问题，应结合 4.7 阅读。
+
+### 11.1 mTHP 要按实际字节大小分析
+
+multi-size THP（mTHP）允许匿名内存使用大于 base page、又小于传统 PMD-sized THP 的 2 的幂倍页面。它仍由 PTE 映射，可以减少部分 page fault 和 TLB 压力，也会引入更高阶的物理页需求。
+
+Android 17 common kernel 的 arm64 GKI 启用了 `CONFIG_TRANSPARENT_HUGEPAGE=y` 与 `CONFIG_TRANSPARENT_HUGEPAGE_MADVISE=y`，不代表产品启用了所有 mTHP size。设备会按实际字节数暴露 `hugepages-*kB` 目录；4KB base page 上的 order-2 是 16KB，16KB base page 上则是 64KB。报告应同时记录 base page、实际 huge page size、分配/fallback 计数和规整事件，不要只写 order。
 
 ## 12. 低内存设备与厂商差异
 

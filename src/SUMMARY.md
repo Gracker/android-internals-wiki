@@ -210,18 +210,11 @@
   - [5.35 Android 17 PowerManagerService、cpuidle 与 schedutil 的协作边界](part1-fundamentals/ch05-cpu-power/5.35-pms-cpuidle-schedutil.md)
 
 - [第 6 章：存储性能](part1-fundamentals/ch06-storage/README.md)
-  - [01-storage-architecture](part1-fundamentals/ch06-storage/01-storage-architecture.md)
-  - [02-filesystem](part1-fundamentals/ch06-storage/02-filesystem.md)
-  - [I/O 调度与性能](part1-fundamentals/ch06-storage/03-io-scheduling.md)
-  - [存储相关的版本演进](part1-fundamentals/ch06-storage/04-storage-evolution.md)
-  - [6.5 SharedPreferences/DataStore 性能与 ANR 优化](part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md)
-  - [6.6 vold、FUSE 与 Scoped Storage I/O 性能边界](part1-fundamentals/ch06-storage/06-vold-fuse-scoped-storage-io.md)
-  - [6.7 Android 17 FUSE Passthrough、FUSE BPF 与 Scoped Storage I/O](part1-fundamentals/ch06-storage/07-fuse-bpf-scoped-storage-io-performance.md)
-  - [6.03 Android 17 SharedPreferencesImpl ANR 机制](part1-fundamentals/ch06-storage/6.03-Android-17-SharedPreferencesImpl-ANR机制.md)
-  - [6.1 Android 17 上的 DataStore 1.2.1 多进程一致性机制](part1-fundamentals/ch06-storage/6.1-androidx-datastore--ipc-源码级验证-draft.md)
-  - [6.19 Android 17 / Linux 6.18 内存规整机制](part1-fundamentals/ch06-storage/6.19-linux-6.10-内存碎片整理机制.md)
-  - [6.20 Android 17 / Linux 6.18 内存规整调优与排障](part1-fundamentals/ch06-storage/6.20-linux-6-10-memory-compaction-optimization.md)
-  - [第 6 章：存储与 I/O 主题分流](part1-fundamentals/ch06-storage/ch06-storage.md)
+  - [6.1 Android 存储架构](part1-fundamentals/ch06-storage/01-storage-architecture.md)
+  - [6.2 文件系统](part1-fundamentals/ch06-storage/02-filesystem.md)
+  - [6.3 I/O 调度与性能](part1-fundamentals/ch06-storage/03-io-scheduling.md)
+  - [6.4 SharedPreferences 与 DataStore：I/O、ANR 与多进程一致性](part1-fundamentals/ch06-storage/04-sharedpreferences-datastore.md)
+  - [6.5 vold、MediaProvider 与 FUSE：共享存储 I/O 路径](part1-fundamentals/ch06-storage/05-vold-mediaprovider-fuse.md)
 
 ---
 

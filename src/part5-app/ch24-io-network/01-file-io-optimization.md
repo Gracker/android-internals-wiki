@@ -70,7 +70,7 @@ last_deepseek_cn_review_at: 2026-06-21
 
 文件 I/O 在 App 性能里很容易被低估。CPU 火焰图里看不到多少计算量，主线程却可能卡在 `read()`、`write()`、`fsync()`、缺页或 `QueuedWork.waitToFinish()`；Perfetto 中它可能处于可中断睡眠、不可中断睡眠或等待锁的状态，用户看到的是启动变慢、点击无响应和页面切换掉帧。
 
-Android 存储栈、I/O 调度、页缓存和 SharedPreferences 的内部路径见 [6.1 Android 存储架构](../../part1-fundamentals/ch06-storage/01-storage-architecture.md)、[6.3 I/O 调度与性能](../../part1-fundamentals/ch06-storage/03-io-scheduling.md)和 [6.5 SharedPreferences/DataStore 性能](../../part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md)。应用侧要回答四个取舍：哪些 I/O 不能放在主线程，哪些键值数据该迁移，什么时候 MMKV 合适，普通文件读写怎样避免并发和同步持久化放大尾延迟。
+Android 存储栈、I/O 调度、页缓存和 SharedPreferences 的内部路径见 [6.1 Android 存储架构](../../part1-fundamentals/ch06-storage/01-storage-architecture.md)、[6.3 I/O 调度与性能](../../part1-fundamentals/ch06-storage/03-io-scheduling.md)和 [6.4 SharedPreferences/DataStore](../../part1-fundamentals/ch06-storage/04-sharedpreferences-datastore.md)。应用侧要回答四个取舍：哪些 I/O 不能放在主线程，哪些键值数据该迁移，什么时候 MMKV 合适，普通文件读写怎样避免并发和同步持久化放大尾延迟。
 
 ## 主线程 I/O 的危害与 StrictMode 检测
 
