@@ -73,7 +73,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-20
 ---
 
-# Android 功耗模型
+# 11.1 Android 功耗模型
 
 “某应用耗了多少电”看似只有一个数字，平台内部却要完成三件不同的工作：
 

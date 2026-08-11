@@ -66,7 +66,11 @@
 - [x] 11.2 App 耗电优化 (`src/part2-performance/ch11-power/02-app-power-optimization.md`)
 - [x] 11.3 系统级功耗优化 (`src/part2-performance/ch11-power/03-system-power-optimization.md`)
 - [x] 11.4 案例集 (`src/part2-performance/ch11-power/04-case-studies.md`)
-- [x] 11.5 Wakelock 机制与功耗分析 (`src/part2-performance/ch11-power/05-wakelock.md`)
+- [x] 11.5 WakeLock 机制与功耗分析 (`src/part2-performance/ch11-power/05-wakelock.md`)
+- [x] 11.6 Bluetooth 扫描与连接功耗分析 (`src/part2-performance/ch11-power/06-bluetooth-scan-connection-power.md`)
+- [x] 11.7 用户设置对能耗的影响：亮度、刷新率与深色模式 (`src/part2-performance/ch11-power/07-user-settings-energy-impact.md`)
+
+> 原 11.8 的 TARE 历史边界并入 5.8；Android 17 控制器、配额、pending reason 与排障内容由 5.8 既有正文统一承载。11.2 的重复 WakeLock 教程收束为 11.5 的入口。完整映射见 `metadata/content-consolidation-audit.md`。
 
 ## 第 18 章：渲染链路全景 (ch18-rendering-pipelines)
 - [x] 18.1 渲染链路分类与选择矩阵 (`src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md`)

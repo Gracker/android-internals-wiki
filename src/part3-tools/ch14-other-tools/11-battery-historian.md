@@ -518,4 +518,4 @@ Android 17 的返回循环对两种缓存都调用有界随机化函数。fine �
 
 ---
 
-**延伸阅读**：[11.1 Android 功耗模型](../../part2-performance/ch11-power/01-power-model.md) · [11.2 App 耗电优化](../../part2-performance/ch11-power/02-app-power-optimization.md) · [11.5 Wakelock 机制与功耗分析](../../part2-performance/ch11-power/05-wakelock.md) · [14.1 Android Studio Profiler](01-as-profiler.md) · [15.5 线上性能监控](../ch15-methodology/05-online-monitoring.md)
+**延伸阅读**：[11.1 Android 功耗模型](../../part2-performance/ch11-power/01-power-model.md) · [11.2 App 耗电优化](../../part2-performance/ch11-power/02-app-power-optimization.md) · [11.5 WakeLock 机制与功耗分析](../../part2-performance/ch11-power/05-wakelock.md) · [14.1 Android Studio Profiler](01-as-profiler.md) · [15.5 线上性能监控](../ch15-methodology/05-online-monitoring.md)

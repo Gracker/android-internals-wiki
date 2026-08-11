@@ -15,9 +15,9 @@
 - [11.5 WakeLock 机制与功耗分析](05-wakelock.md)
 - [11.6 Bluetooth 扫描与连接功耗分析](06-bluetooth-scan-connection-power.md)
 - [11.7 用户设置对能耗的影响](07-user-settings-energy-impact.md)
-- [11.8 TARE 退场：Android 17 后台任务预算与电量归因](08-tare-economic-model.md)
 
 ## 阅读建议
 
 - App 侧耗电：先读 11.1 和 11.2，再进入对应专项。
 - 系统或整机分析：结合 11.3、11.4 与 CPU/thermal 章节。
+- 后台任务配额与 TARE 的版本边界：读 [5.8 JobScheduler/WorkManager 调度与后台任务性能](../../part1-fundamentals/ch05-cpu-power/08-jobscheduler-workmanager-performance.md)。

@@ -10,15 +10,16 @@ polish_count: 1
 polish_date: '2026-04-09'
 polish_by: task2b-polish
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-04-27'
+last_verified: '2026-08-11'
 reviewed_date: 2026-06-07
 reviewed_by: openclaw-task6
-last_verified_against: AOSP android-16.0.0_r1, developer.android.com reference, perfetto.dev
-  stdlib docs, Android Vitals docs
+last_verified_against: AOSP android-17.0.0_r1, AOSP android-13.0.0_r1 / android-14.0.0_r1 historical TARE implementation and removal commit 4a98dd235a70, developer.android.com reference, perfetto.dev stdlib docs, Android Vitals docs
 confidence: medium
 consolidated_from:
   - "src/part1-fundamentals/ch05-cpu-power/05.26-android17-jobscheduler-service-cpu-quota.md"
   - "src/part1-fundamentals/ch05-cpu-power/23-android17-jobscheduler-system-throttling.md"
+  - "src/part2-performance/ch11-power/08-tare-economic-model.md"
+last_consolidated_at: "2026-08-11"
 sources:
 - type: official
   path: https://developer.android.com/reference/android/app/job/JobScheduler
@@ -44,6 +45,14 @@ sources:
   path: frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobInfo.java
 - type: aosp
   path: frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/4a98dd235a708115db41e722776eff3ef9ed09fe
+- type: aosp-historical
+  path: android-14.0.0_r1/apex/jobscheduler/service/java/com/android/server/tare/InternalResourceService.java
+- type: aosp-historical
+  path: android-14.0.0_r1/apex/jobscheduler/service/java/com/android/server/tare/Analyst.java
+- type: aosp-historical
+  path: android-14.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/controllers/TareController.java
 tags:
 - jobscheduler
 - workmanager
@@ -523,14 +532,23 @@ Android Vitals 当前以 24 小时内累计至少 2 小时的非豁免 partial W
 
 ## Android 8.0 到 Android 17 的演进
 
+### TARE 是 Android 13—14 的历史分支
+
+TARE（The Android Resource Economy）曾尝试用 ARC 账户、action bill、price 与 reward 协调 JobScheduler 和 AlarmManager 的后台资源。它出现在 Android 13—14 的 AOSP 源码中；Android 14 的 `EconomyManager` 仍是 `@hide` / `@TestApi`，默认模式为关闭，因此三方应用从未获得可依赖的公开预算合同。
+
+历史实现也不是“按每个 UID 的 mAh 直接扣 ARC”。`Analyst` 读取的是整机 screen-off realtime、screen-off discharge 与电量变化，用作调节全局 consumption limit 的校准信号；具体应用的账目来自调度 action 和 policy。BatteryStats 的耗电归因与 TARE 的应用账本不能互相替换。
+
+AOSP 提交 [`4a98dd235a708115db41e722776eff3ef9ed09fe`](https://android.googlesource.com/platform/frameworks/base/+/4a98dd235a708115db41e722776eff3ef9ed09fe) 于 2024 年 3 月删除了 `EconomyManager`、`InternalResourceService`、`TareController`、`CONSTRAINT_TARE_WEALTH`、`resource_economy` 服务和相关 dump 路径，并恢复 `QuotaController` 的持续生效。Android 15—17 均不包含 TARE；这些版本中 `PENDING_JOB_REASON_QUOTA` 表示 JobScheduler 时间/次数配额，不能解释为 ARC 余额不足，也不应再用 `dumpsys tare` 排障。OEM 若保留同名私有实现，需要按对应构建单独取证。
+
 | 平台 | 相关变化 |
 |---|---|
 | Android 8.0 / API 26 | 后台 Service 限制生效；持久后台工作更依赖 JobScheduler 等受控入口 |
 | Android 9 / API 28 | 引入四档 App Standby Buckets，job quota 与应用活跃程度结合 |
 | Android 11 / API 30 | 增加 `STANDBY_BUCKET_RESTRICTED` 常量；该档在 Android 11 默认未启用 |
 | Android 12 / API 31 | 公开 Expedited Job；限制从后台启动 Foreground Service |
-| Android 13 / API 33 | 公开 `JobInfo.Builder.setPriority()` |
-| Android 14 / API 34 | 加入 UIDT、单个 pending reason 查询；priority 文档明确 namespace 范围 |
+| Android 13 / API 33 | 公开 `JobInfo.Builder.setPriority()`；AOSP 引入隐藏的 TARE 实验实现 |
+| Android 14 / API 34 | 加入 UIDT、单个 pending reason 查询；priority 文档明确 namespace 范围；TARE 仍为隐藏、默认关闭的内部路径 |
+| Android 15 / API 35 | AOSP 已删除 TARE，JobScheduler 继续使用 quota、后台资格、Doze、显式约束与设备状态 |
 | Android 16 / API 36 | 增加当前全部 pending reasons 与有限历史；运行时 quota 覆盖范围扩大 |
 | Android 17 / API 37 | 增加 `getPendingJobReasonStats()`；ProfilingTrigger 增加冷启动、OOM、excessive CPU kill 触发类型 |
 

@@ -1,7 +1,8 @@
 ---
 
 title: "案例集"
-chapter: "11.04"
+chapter: "11.4"
+section: "11.4"
 status: finalized
 pipeline_stage: ready-to-publish
 applicable_versions: "['Android 14.0 (API 34) - Android 17.0 (API 37)']"

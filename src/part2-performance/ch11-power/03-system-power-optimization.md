@@ -136,7 +136,7 @@ task9_review_notes: '2026-06-07 Task9 idle audit: auto-fixed broken App Archivin
 ---
 
 
-# 系统级功耗优化
+# 11.3 系统级功耗优化
 
 ## 系统为什么要限制后台工作
 
