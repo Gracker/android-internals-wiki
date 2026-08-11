@@ -27,9 +27,26 @@
 | ch13 Perfetto | 27 | 22 | 已完成 | 2026-08-11 |
 | ch14 其他分析工具 | 32 | 28 | 已完成 | 2026-08-11 |
 | ch15 性能方法论 | 12 | 10 | 已完成 | 2026-08-11 |
-| 其余 13 章 | 380 | 待审阅 | 未开始 | - |
+| ch16 AOSP 性能优化 | 12 | 11 | 已完成 | 2026-08-11 |
+| 其余 12 章 | 368 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 540 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 538 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch16 AOSP 性能优化
+
+保留后的连续编号为 16.1～16.11，依次覆盖平台优化方法、版本变更、AOSP 构建调试、Kernel 6.18、Android 17 适配、Profile/DM/SDM 安装编译、系统启动、AppFlow、Rust、ARM64 安全缓解和 AOHP。
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `01-google-optimization.md` | 删除与 16.2/16.4/16.5 重复的版本史、ART、DeliQueue、Binder 与 BLAST 机制说明；保留并重写为平台问题判断、分层证据、交付版本轴、实验和回滚方法 | `../src/part4-system/ch16-aosp/01-google-optimization.md`（16.1） |
+| `04-android17-kernel618-performance.md` 中的 ART 与 DeliQueue | 从 Kernel 专题移除重复的平台运行时内容；generational CMC、MessageQueue gate 与迁移测试统一由 16.5 承载 | `../src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md`（16.5） |
+| `06-android16-cloud-profile-dexopt.md` / `09-android17-sdm-install-performance.md` | 合并 Baseline/Startup/Cloud Profile、DM/SDM/SDC、ART Service、安装/后台 dexopt、运行时加载、A/B/C 实验和应用侧检查 | `../src/part4-system/ch16-aosp/06-profile-dm-sdm-install-compilation.md`（16.6） |
+| 原 16.10～16.12 | Rust、ARM64 安全缓解与 AOHP 均能独立回答问题，依次改为连续编号 16.9～16.11 | `09-rust-system-services-performance.md`～`11-agent-native-os.md` |
+| `参考资料.md` | 通用版本锚点和引用规则并入章节 README；主题来源继续留在各正文，不再保留独立目录项 | `../src/part4-system/ch16-aosp/README.md` |
+
+章节 README、`src/SUMMARY.md`、changelog 映射、活动跨章链接、复审清单和统计口径已经切换到连续编号。历史 changelog、review 日志、关闭 finding、freshness 快照与 `consolidated_from` 保留旧编号和路径。
 
 ## ch15 性能方法论
 
@@ -282,7 +299,7 @@
 | `20-genai-app-integration-performance.md` / `5.30-android17-ondevice-intelligence-framework-performance.md` | 合并 AICore/ML Kit 与 OEM ODI 的公开范围、进程调度、资源归属和观测边界并改为 5.15 | `../src/part1-fundamentals/ch05-cpu-power/15-genai-app-integration-performance.md` |
 | `22-bluetooth-le-audio-performance.md` / `5.23-android17-background-audio-hardening-leaudio-power-source.md` | Android 17 后台音频 hardening 并入 5.7；LE scan/offload/HFP 边界并入 LE Audio 主文并改为 5.16 | 5.7、`../src/part1-fundamentals/ch05-cpu-power/16-bluetooth-le-audio-performance.md` |
 | `24-android17-app-hibernation-performance.md` | 主题独立，改为连续编号 5.17 | `../src/part1-fundamentals/ch05-cpu-power/17-android17-app-hibernation-performance.md` |
-| `5.21-cross-app-agent-system-primitive.md` | 从 CPU/Power 移出；合并 Accessibility、VoiceInteraction 与 AppFunctions 的选择边界 | `../src/part4-system/ch16-aosp/12-agent-native-os.md` |
+| `5.21-cross-app-agent-system-primitive.md` | 从 CPU/Power 移出；合并 Accessibility、VoiceInteraction 与 AppFunctions 的选择边界 | `../src/part4-system/ch16-aosp/11-agent-native-os.md` |
 | `5.24-android17-binder-sz4m-kernel-buffer-pool-priority-set-called-dedup.md` | 删除已标记 outdated 的迁移壳；Binder 唯一正文不变 | `../src/part1-fundamentals/ch01-architecture/1.44-android17-binder-sz4m-kernel-buffer-pool.md` |
 | `5.33-android17-performance-score-attribution-sourcecode.md` | 删除重复评分与样本池稿；保留 ADPF/headroom 主文和第 26 章唯一评分正文 | 5.9、`../src/part5-app/ch26-observability/18-app-performance-score.md` |
 

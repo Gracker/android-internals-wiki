@@ -1,14 +1,15 @@
 ---
 title: "Android 17 ARM64 内核安全缓解机制性能开销与调优"
-chapter: "16.11"
+chapter: "16.10"
+section: "16.10"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [kernel-security, ARM64, KASLR, KPTI, Spectre, PAC, BTI, MTE, GCS, CFI, performance-overhead]
-related_chapters: ["5.1", "5.4", "5.5", "4.9", "16.4", "16.5", "16.10"]
+related_chapters: ["5.1", "5.4", "5.5", "4.9", "16.4", "16.5", "16.9"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-09"
 drafted_date: "2026-07-11"
-last_verified: "2026-07-30"
+last_verified: "2026-08-11"
 last_verified_against: "Android 17 / API 37 / AOSP android-17.0.0_r1; Android Common Kernel android17-6.18-2026-06_r6 (gki_defconfig, ARM64 and arch Kconfig, entry, KASLR, Spectre, PAC, MTE, GCS, kernel parameters)"
 confidence: high
 sources:
@@ -40,9 +41,9 @@ sources:
     path: "https://source.android.com/docs/security/test/memory-safety/arm-mte"
 ---
 
-# 16.11 Android 17 ARM64 内核安全缓解机制性能开销与调优
+# Android 17 ARM64 内核安全缓解机制性能开销与调优
 
-> **版本口径**：平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为准，内核源码以 `android17-6.18-2026-06_r6` 为准。配置、硬件能力和运行时策略共同决定安全机制是否生效。MTE 的应用实践见 §4.9，Rust 系统组件的边界见 §16.10。
+> **版本口径**：平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为准，内核源码以 `android17-6.18-2026-06_r6` 为准。配置、硬件能力和运行时策略共同决定安全机制是否生效。MTE 的应用实践见 §4.9，Rust 系统组件的边界见 §16.9。
 
 ## 1. 先确认三个条件
 

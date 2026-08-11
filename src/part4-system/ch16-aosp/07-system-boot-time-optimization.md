@@ -42,7 +42,7 @@ last_research_at: "2026-06-28"
 last_research_source: "DeepResearch/2026-06-28-android17-bootanalyze-zsygotelazy-sourcepath-correction.md"
 ---
 
-# 16.7 Android 系统启动耗时优化与 bootanalyze
+# Android 系统启动耗时优化与 bootanalyze
 
 系统启动优化研究的是设备从上电到系统可用的整条路径。它横跨 bootloader、kernel、`init`、APEX、Zygote、`system_server`、SystemUI 和 Launcher，和单个 App 的 cold launch 不是同一个实验。
 

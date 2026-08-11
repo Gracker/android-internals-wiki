@@ -1,7 +1,7 @@
 ---
-
-title: "Android 17 SDM 安装编译流程性能"
-chapter: "16.9"
+title: "Profile、DM 与 Secure Dex Metadata 安装编译"
+chapter: "16.6"
+section: "16.6"
 status: finalized
 last_task2b_at: 2026-07-13
 last_task2b_lite_at: 2026-07-13
@@ -25,9 +25,9 @@ task6_review_notes: "2026-07-13T22:10 复审：L1 禁用词(链路)已修 5 处�
 task9_review_notes: "2026-07-13 Task9 deep review 发现 P0/P1 问题；2026-07-13 Task2B 回炉修复：P0-DexMetadataHelper 源码锚点核实(现稿正确否定 pm.dexopt.dm.require_manifest / require_fsverity 属性，这三项在 r1 中不存在)+P1-性能数据验证方法补充+P1-SDM 版本演进对比(Android 14→17)。2026-07-29 hermes-aiw-review-finalize-apply 复审通过。"
 review_type: task9-deep-tech-review
 last_task9_review_log: logs/deep-review/2026-07-13-22-deep-review.md
-applicable_versions: "Android 16 (API 36) - Android 17 (API 37)"
+applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 drafted_date: "2026-06-11"
-last_verified: "2026-07-30"
+last_verified: "2026-08-11"
 last_verified_against: "AOSP android-17.0.0_r1 (PackageInstallerSession / PackageManagerShellCommand / DexOptHelper / PrimaryDexopter / Dexopter / DexoptStatus / ReasonMapping / ArtFileManager / ArtManagedInstallFileHelper / DexMetadataHelper / artd / oat_file / sdc_file / path_utils); Configure ART"
 confidence: high
 sources:
@@ -67,17 +67,28 @@ sources:
     path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/installd/dexopt.cpp"
   - type: official
     path: "https://source.android.com/docs/core/runtime/configure"
+  - type: official
+    path: "https://source.android.com/docs/core/runtime/configure/art-service"
+  - type: official
+    path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
+  - type: official
+    path: "https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations"
+  - type: official
+    path: "https://developer.android.com/topic/performance/baselineprofiles/confirm-startup-profiles"
   - type: material
     path: "DeepResearch/2026-06-09-android17-cloud-compilation-sdm-dm-ondevice-flow.md"
   - type: material
     path: "intake/research-feeds/2026-04-07-11-android16-cloud-compilation-baseline-startup-profiles.md"
-tags: ["SDM", "cloud-compilation", "dexopt", "ART-Service", "install-performance", "Android-16", "Android-17"]
-related_chapters: ["16.6", "1.9", "1.23", "21.11"]
+tags: ["profile", "DM", "SDM", "cloud-compilation", "dexopt", "ART-Service", "install-performance"]
+related_chapters: ["1.7", "1.9", "1.23", "21.4", "21.11"]
+consolidated_from:
+  - "16.6 Android 16 云端 Profile 与 dexopt 安装优化"
+  - "16.9 Android 17 SDM 安装编译流程性能"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-11"
 ---
 
-# Android 17 Secure Dex Metadata：安装、验证与运行时加载
+# Profile、DM 与 Secure Dex Metadata 安装编译
 
 ## 结论
 
@@ -97,9 +108,23 @@ SDM 只覆盖 base APK 与 split APK 内的 **primary dex**。动态生成或由
 
 AOSP `android-17.0.0_r1` 是以下结论的平台源码锚点。云端如何选择设备配置并生成 SDM 不属于 AOSP 开源设备端实现，讨论范围只包括系统能够验证的接收、决策和加载行为。
 
-## 1. 先分清 DM、SDM 与 SDC
+## 1. 先分清 Profile、DM、SDM 与 SDC
 
-### 1.1 `.dm`：Dex Metadata
+### 1.1 三类 Profile 解决不同问题
+
+Profile 是 ART 或构建工具的输入，SDM 则可以携带指定 ISA 的 AOT 代码。把两者都叫“云端编译”会掩盖生成方、交付方式和验证方法。
+
+| 类型 | 生产者与位置 | 主要作用 | 开发者控制度 |
+| --- | --- | --- | --- |
+| Baseline Profile | 应用或库团队生成，随 APK/AAB 发布 | 让关键路径在新安装或更新后更早进入 profile-guided AOT | 高，可在 CI 生成和检查 |
+| Startup Profile | 由构建流程交给 R8/AGP 使用 | 调整 DEX layout，减少启动期跨页和跨 DEX 读取 | 中，结果体现在 DEX 布局而非运行时独立 profile |
+| Cloud Profile | 分发侧依据用户样本生成，经 DM 等安装输入交付 | 为新设备提供更接近真实热路径的 profile | 低，取决于渠道、样本与设备 ART 策略 |
+
+Baseline Profile 面向 Day-0 覆盖，不能等待真实用户样本成熟；Startup Profile 只负责构建期布局；Cloud Profile 提供 profile 输入，仍可能需要设备端 `dex2oat`。Cloud Compilation/SDM 更进一步，分发的是预生成编译产物。它们可以同时存在，不能互相替代。
+
+应用包中的稳定检查点包括 APK 的 `assets/dexopt/baseline.prof`，以及 AAB 的 `BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`。Startup Profile 的结果应检查构建元数据和最终 DEX 布局，不应寻找安装时的 `startup.prof`。
+
+### 1.2 `.dm`：Dex Metadata
 
 `.dm` 是 ZIP 文件，文件名与对应 APK 同基名：
 
@@ -119,7 +144,7 @@ ART Service 的 `DexMetadataHelper.getType()` 检查 ZIP 中的 `primary.prof` �
 
 AOSP 的 [Configure ART](https://source.android.com/docs/core/runtime/configure) 文档描述了常见的 Pixel 策略：Play 分发的 DM 可携带 cloud profile，ART 对其中列出的方法做 AOT 编译；没有 DM 时，该策略可能在安装期不做 AOT。它描述的是一种产品配置，OEM 仍可通过 ART Service 配置选择不同的安装 compiler filter。
 
-### 1.2 `.sdm`：Secure Dex Metadata
+### 1.3 `.sdm`：Secure Dex Metadata
 
 SDM 的文件名多一段指令集名称。`artd/path_utils.cc` 的构造规则可概括为：
 
@@ -142,7 +167,7 @@ SDM 使用 APK Signature Scheme v3 校验。`ArtManagedInstallFileHelper.validat
 
 SDM 的签名约束说明它可以通过安装会话安全接收。AOSP 没有限定调用方必须是 Play；`adb install-multiple` 也识别 `.apk`、`.dm` 与 `.sdm` 后缀。难点在于获得名称正确、与 APK signer 完全一致且适配目标 ISA 的有效产物，普通开发构建通常没有这样的 SDM。
 
-### 1.3 `.sdc`：Secure Dex Metadata Companion
+### 1.4 `.sdc`：Secure Dex Metadata Companion
 
 SDC 由设备生成，不随应用商店下载。`PrimaryDexopter.onDexoptStart()` 会在 Android 16 及以上、非 pre-reboot 流程中，按 primary dex 的每个 ABI 请求 `artd.maybeCreateSdc()`。
 
@@ -216,6 +241,14 @@ if (status == DexoptResult.DEXOPT_PERFORMED && !mInjector.isPreReboot()) {
 ```
 
 删除动作也说明 SDM 是可被本机编译结果替代的 dexopt artifact。即使没有立即删除，ART 文件 GC 也会回收失效产物。
+
+### 2.4 安装编译与后台 dexopt 是两个时点
+
+Android 14 之后，应用设备端 AOT 编译的控制面由 ART Service 承担。标准配置通常让 first boot、OTA 后首次启动优先保证可用，再由后台任务执行 profile-guided 编译；产品可以覆盖这些 compiler filter，不能把 Pixel 默认策略写成所有 OEM 的固定行为。
+
+Android 17 的常规 `BackgroundDexoptJob` 以 device idle、charging 和 battery-not-low 等条件约束后台工作。新安装后立即启动时，后台 dexopt 可能还未发生；多次启动后的编译状态也可能已经被本地 JIT profile 和后台编译改变。比较 Profile 或 SDM 收益时，应固定安装来源和编译状态，并把“安装结束”“首次启动”“后台 dexopt 后启动”分组。
+
+`speed-profile` 表示编译器使用了可用 profile，不能单独区分 Baseline、Cloud 或设备本地 profile。`install-dm` 也只说明调用中携带过 DM。实际输入、compiler filter、reason 和产物位置要结合 `pm art dump`、安装日志和 trace 判断。
 
 ## 3. 运行时怎样使用 SDM
 
@@ -405,6 +438,20 @@ ORDER BY ts;
 
 Baseline Profile 与 cloud profile 的覆盖来源不同。前者随应用构建发布，后者由分发侧运行数据生成；两者都可能成为 ART 编译输入，不能把 SDM 当作 Baseline Profile 的替代品。
 
+### 7.3 应用团队可复核的产物与状态
+
+CI 先检查 Baseline Profile 是否进入 release 包，再在同一设备上验证 compiler filter：
+
+```bash
+unzip -l app-release.apk | grep 'assets/dexopt/baseline.prof'
+unzip -l app-release.aab | grep 'BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof'
+adb install -r app-release.apk
+adb shell pm compile -m speed-profile -f -v com.example.app
+adb shell pm art dump com.example.app
+```
+
+这些命令只能证明构建产物和当前设备状态，不能证明渠道已经下发 Cloud Profile 或 SDM。若要验证 Profile 的启动收益，应使用同一 APK、设备和脚本，对比未编译与要求 Baseline Profile 的 Macrobenchmark 组；若要验证 SDM，则使用第 5 节的 APK / APK+DM / APK+DM+SDM 三组输入。两类实验不要混为一个“云端优化开关”。
+
 ## 8. 版本边界
 
 | 平台版本 | SDM 相关状态 |
@@ -435,7 +482,7 @@ Baseline Profile 与 cloud profile 的覆盖来源不同。前者随应用构建
 
 ## 相关章节
 
-- [16.6 Android 16 云端 Profile 与 dexopt 安装优化](./06-android16-cloud-profile-dexopt.md)：补充 DM cloud profile 与本机 dexopt 决策。
 - [1.7 ART 编译管线与 dex2oat 优化](../../part1-fundamentals/ch01-architecture/07-art-compilation.md)：解释 ODEX、VDEX、AOT、JIT 与 compiler filter。
 - [1.23 Android Staged Install 与安装原子性性能](../../part1-fundamentals/ch01-architecture/23-staged-install-performance.md)：区分安装会话的 staged 语义与 Secure Dex Metadata。
+- [21.4 Baseline Profile 实战](../../part5-app/ch21-startup/04-baseline-profile-practice.md)：从应用侧生成、打包和回归 Baseline Profile。
 - [21.11 云端 Profile、DM 文件与安装后编译优化](../../part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md)：从应用启动角度补充 DM 与 Profile。
