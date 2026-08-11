@@ -42,8 +42,8 @@ SECTION_MAP = {
     "6.0": ("src/part1-fundamentals/ch06-storage/README.md", "6.0 存储章节导读"),
     "6.1": ("src/part1-fundamentals/ch06-storage/01-storage-architecture.md", "6.1 存储架构"),
     "6.2": ("src/part1-fundamentals/ch06-storage/02-filesystem.md", "6.2 文件系统"),
-    "6.4": ("src/part1-fundamentals/ch06-storage/04-storage-evolution.md", "6.4 存储版本演进"),
-    "6.5": ("src/part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md", "6.5 SP/DataStore 优化"),
+    "6.4": ("src/part1-fundamentals/ch06-storage/04-sharedpreferences-datastore.md", "6.4 SharedPreferences/DataStore"),
+    "6.5": ("src/part1-fundamentals/ch06-storage/05-vold-mediaprovider-fuse.md", "6.5 vold/MediaProvider/FUSE"),
     "7.2": ("src/part2-performance/ch07-smoothness/02-jank-causes.md", "7.2 卡顿原因体系"),
     "7.3": ("src/part2-performance/ch07-smoothness/03-jank-methodology.md", "7.3 卡顿分析方法论"),
     "7.4": ("src/part2-performance/ch07-smoothness/04-typical-scenarios.md", "7.4 典型场景卡顿根因"),
@@ -402,6 +402,18 @@ QUEUE_DATA = {
         "priority": 85,
         "issues": [
             {
+                "type": "知识补强",
+                "location": "sLoadExecutor 描述",
+                "detail": "未强调全进程唯一单线程池导致的级联效应",
+                "suggestion": "明确多 SP 文件全局串行化，小文件被大文件卡住的风险",
+                "evidence": ["AOSP Android 15+ sLoadExecutor 为静态单线程池"]
+            }
+        ]
+    },
+    "6.5": {
+        "priority": 85,
+        "issues": [
+            {
                 "type": "源码缺失",
                 "location": "FUSE 回归部分",
                 "detail": "未点出 MediaProvider 进程中 FuseDaemon.cpp 的核心角色",
@@ -421,18 +433,6 @@ QUEUE_DATA = {
                 "detail": "未给出确认 MCQ 激活状态的 sysfs 方法",
                 "suggestion": "增加 /sys/devices/platform/soc/*.ufshc/mcq_active 检查命令",
                 "evidence": []
-            }
-        ]
-    },
-    "6.5": {
-        "priority": 85,
-        "issues": [
-            {
-                "type": "知识补强",
-                "location": "sLoadExecutor 描述",
-                "detail": "未强调全进程唯一单线程池导致的级联效应",
-                "suggestion": "明确多 SP 文件全局串行化，小文件被大文件卡住的风险",
-                "evidence": ["AOSP Android 15+ sLoadExecutor 为静态单线程池"]
             }
         ]
     },
@@ -634,12 +634,12 @@ GAPS_DATA = {
         {"description": "Inline Encryption (fscrypt) 与 UFS Keyslot", "importance": "高", "direction": "blk-crypto 与 UFS Keyslot 管理", "related": "6.2"},
     ],
     "6.4": [
-        {"description": "16KB 页对 F2FS 挂载参数的影响", "importance": "高", "direction": "Android 15 16KB 模式下 F2FS block_size 限制", "related": "6.4, 4.7"},
-        {"description": "MediaProvider 位置脱敏 (Redaction) 对 FUSE 读延迟的量化影响", "importance": "中", "direction": "对比有/无位置信息照片的 CPU 周期消耗", "related": "6.4"},
+        {"description": "16KB Page Size 对 I/O 密集型存储的影响", "importance": "中", "direction": "Android 15 强制 16KB 页对 XML 解析和文件落盘的性能提升", "related": "6.4, 4.7"},
+        {"description": "MultiProcessDataStoreFactory 锁机制", "importance": "中", "direction": "核实基于 FileLock 的实现及极端竞争下性能", "related": "6.4"},
     ],
     "6.5": [
-        {"description": "16KB Page Size 对 I/O 密集型存储的影响", "importance": "中", "direction": "Android 15 强制 16KB 页对 XML 解析和文件落盘的性能提升", "related": "6.5, 4.7"},
-        {"description": "MultiProcessDataStoreFactory 锁机制", "importance": "中", "direction": "核实基于 FileLock 的实现及极端竞争下性能", "related": "6.5"},
+        {"description": "16KB 页对 F2FS 挂载参数的影响", "importance": "高", "direction": "Android 15 16KB 模式下 F2FS block_size 限制", "related": "6.5, 4.7"},
+        {"description": "MediaProvider 位置脱敏 (Redaction) 对 FUSE 读延迟的量化影响", "importance": "中", "direction": "对比有/无位置信息照片的 CPU 周期消耗", "related": "6.5"},
     ],
     "7.2": [
         {"description": "Android 17 Generational GC STW 表现", "importance": "高", "direction": "验证 ART Mainline 演进对 UI 线程暂停时间的实际压制效果", "related": "7.2, 4.8"},
@@ -722,11 +722,11 @@ SUGGESTIONS_DATA = {
         {"type": "源码补强", "location": "SQLite 原子写", "problem": "只提 START ioctl", "suggestion": "补充 COMMIT 和 ABORT ioctl 完整闭环"},
     ],
     "6.4": [
-        {"type": "版本门槛", "location": "FUSE Passthrough", "problem": "未标注内核门槛", "suggestion": "补充需要 Kernel 5.4+ 且 CONFIG_FUSE_PASSTHROUGH=y"},
-    ],
-    "6.5": [
         {"type": "实战建议", "location": "sLoadExecutor", "problem": "级联效应警示不足", "suggestion": "明确多 SP 文件全局串行化风险"},
         {"type": "版本差异", "location": "MMKV vs DataStore", "problem": "未提 16KB 适配差异", "suggestion": "MMKV mmap 在 16KB 页设备需 native 适配"},
+    ],
+    "6.5": [
+        {"type": "版本门槛", "location": "FUSE Passthrough", "problem": "未标注内核门槛", "suggestion": "补充需要 Kernel 5.4+ 且 CONFIG_FUSE_PASSTHROUGH=y"},
     ],
     "7.2": [
         {"type": "背景说明", "location": "华为 VSync 异常", "problem": "描述为错误注入", "suggestion": "补充 OEM 功耗平衡 Smart Refresh Rate 策略背景"},

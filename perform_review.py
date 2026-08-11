@@ -153,7 +153,7 @@ def main():
     chapters = [
         "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part4-system/ch16-aosp/03-aosp-build.md",
         "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch02-rendering/03-vsync.md",
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch06-storage/04-storage-evolution.md"
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch06-storage/04-sharedpreferences-datastore.md"
     ]
     
     reviews = []

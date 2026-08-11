@@ -1,6 +1,7 @@
 ---
-title: "vold、FUSE 与 Scoped Storage I/O 性能边界"
-chapter: "6.6"
+title: "vold、MediaProvider 与 FUSE：共享存储 I/O 路径"
+chapter: "6.5"
+section: "6.5"
 status: ready-for-review
 drafted_date: "2026-05-24"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -22,21 +23,30 @@ sources:
     path: "packages/providers/MediaProvider/jni/FuseDaemon.cpp"
   - type: aosp
     path: "packages/providers/MediaProvider/src/com/android/providers/media/MediaProvider.java"
+  - type: kernel
+    path: "Android Common Kernel android17-6.18-2026-06_r6 fs/fuse/{backing,passthrough,iomode,fuse_bpf_backing}.c"
+  - type: kernel
+    path: "Android Common Kernel android17-6.18-2026-06_r6 include/uapi/linux/{fuse,android_fuse}.h"
 tags: [storage, fuse, scoped-storage, vold, io]
-related_chapters: ["6.1", "6.2", "6.3", "24.12"]
+related_chapters: ["6.1", "6.2", "6.3", "6.4", "24.12", "24.13"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-24"
 gap_source: "AOSP结构/官方文档/章节深挖"
 gap_score: 16
+pipeline_stage: ready-for-review
+task6_state: pending-verification
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch06-storage/07-fuse-bpf-scoped-storage-io-performance.md"
 ---
 
-# 6.6 vold、FUSE 与 Scoped Storage I/O 性能边界
+# 6.5 vold、MediaProvider 与 FUSE：共享存储 I/O 路径
 
 ## 排障范围
 
 `/storage/emulated/0/DCIM/Camera/a.jpg` 看起来是一条普通路径，背后却包含挂载会话、调用方身份、媒体归属、权限、元数据脱敏、兼容转码和底层文件系统访问。把所有耗时都归到“FUSE 慢”或“UFS 慢”，很难得到可复现的结论。
 
-§6.4 已覆盖完整版本史；这里重点回答三个排障问题：
+本文回答三个排障问题：
 
 1. `vold`、MediaProvider 和 FUSE 各自在什么时候参与。
 2. 直接路径、MediaStore URI、SAF URI 和 App 私有路径的成本为何不同。
@@ -125,6 +135,17 @@ Android 11 的 FUSE 调优包含 read-ahead、writeback cache、权限缓存、A
 
 ## passthrough 与 FUSE BPF 的边界
 
+先区分三种经常被混写成“直通”的能力：
+
+| 路径 | FUSE 页缓存 | `read`/`write` 是否到 daemon | lower filesystem 怎样参与 |
+|---|---|---|---|
+| 普通缓存 FUSE | 使用 | 缓存未命中、回写等情况需要 | daemon 再访问 lower fs |
+| `FOPEN_DIRECT_IO` | 对该 open 绕过 | 仍然需要 | daemon 处理 FUSE 请求；direct I/O 不等于 lower-fs 直通 |
+| FUSE passthrough | 数据路径不使用 FUSE 页缓存 | `open` 需要；获准后的数据 I/O 通常不需要 | 内核通过本次 open 绑定的 backing file 转发 |
+| FUSE BPF + backing | 取决于操作 | BPF/backing 已处理的操作可以不交给 daemon | inode/dentry 关联 backing path，BPF 决定保留、移除或替换 |
+
+`direct_io` 只改变 FUSE 页缓存语义。没有 passthrough 或 BPF backing 时，请求仍经 `/dev/fuse` 到 MediaProvider。passthrough 也不会绕过 Scoped Storage：归属、权限、redaction 和转码都在 `open` 阶段判断。
+
 ### passthrough 是逐文件打开决策
 
 Android 12 支持 FUSE passthrough。Android 11 升级到 Android 12 的设备受冻结内核限制，不能因系统升级自动获得该能力；以 Android 12 出厂且使用官方支持内核的设备才具备当时的启用条件。
@@ -149,6 +170,18 @@ bool direct_io = open_info_direct_io && !passthrough;
 
 文件需要位置元数据脱敏，或者转码尚未完成时，MediaProvider 不能让后续读取绕过 daemon。passthrough 的收益集中在已获准文件的 `read`/`write` 数据搬运，对目录枚举、MediaStore 查询和首次 `open` 没有同等作用。
 
+Android 17 的源码同时兼容 Android 早期 passthrough 接口与 upstream FUSE passthrough。上游协议的建立过程是：daemon 打开 lower-fs 文件，向 FUSE connection 注册并取得 `backing_id`，再在 open 回复中携带 `FOPEN_PASSTHROUGH` 与该 ID。内核随后为这次 FUSE open 创建独立 backing file，文件关闭后关系结束。
+
+内核的 `backing_file_read_iter()` / `backing_file_write_iter()` 省掉的是 FUSE 数据请求往返；VFS、lower filesystem、fscrypt、页缓存、块层和闪存仍在路径中。passthrough 写还会获取 inode lock，并更新 FUSE inode 属性及缓存状态。多个 writer 访问同一 inode 时，不能把 passthrough 理解成无锁并发。
+
+`FOPEN_PASSTHROUGH` 与 `FOPEN_DIRECT_IO` 可以同时出现。在该组合下，Android 17 内核允许 read/write 继续发给 FUSE server，而 mmap 使用 backing file。看到 passthrough 标志时，仍需结合整组 open flags 判断各操作去向。
+
+### `iomode` 保护缓存与 backing 一致性
+
+Android 17 的 `fuse_file` 区分 cached、uncached 与 passthrough mode。cached I/O 不能和破坏缓存一致性的 direct write 任意并发；同一 FUSE inode 也不能同时绑定互相冲突的 backing file。Android common kernel 为 MediaProvider 的 mixed-mode 用例放宽了一条上游 `-ETXTBSY` 拒绝分支，但仍保留 conflicting backing 检查、direct-write 锁和 passthrough write 的 inode lock。
+
+这类 Android 补丁解决的是合法组合的兼容性，不代表同一文件可以由任意多进程、任意缓存模式无代价并发访问。
+
 ### FUSE BPF 当前主要服务 App 专属目录
 
 `android17-6.18-2026-06_r6` 的 GKI 配置包含 `CONFIG_FUSE_FS=y` 与 `CONFIG_FUSE_BPF=y`。Android 17 MediaProvider 源码注明，FUSE BPF 当前限制在 `Android/data` 与 `Android/obb`，通过 backing fd 把符合规则的请求交给底层文件系统。
@@ -158,7 +191,9 @@ bool direct_io = open_info_direct_io && !passthrough;
 - 内核编译开关存在，不等于产品运行时已经启用。
 - 当前 MediaProvider 源码的路径范围不应扩写到整个共享媒体目录。
 - 路径归属和 Zygote 的 App data isolation 仍参与访问控制。
-- 详细机制见 §6.7；此处只把它作为路径判断条件。
+- `FuseDaemon.cpp` 在 lookup 返回中使用 `FUSE_ACTION_KEEP`、`FUSE_ACTION_REMOVE` 或 `FUSE_ACTION_REPLACE` 安装、移除或替换 BPF/backing 关系。
+
+`vold` 提供了另一半边界：`IsFuseBpfEnabled()` 为 false 时，它把 lower fs 的 `Android/data` 和 `Android/obb` bind mount 到用户可见树；启用 BPF 时跳过这组 bind mount，由 FUSE BPF/backing 路径负责相应操作。这套机制主要服务受保护的 App 专属目录，不是 `DCIM`、`Pictures` 或 `Download` 的通用加速开关。
 
 ## Scoped Storage 下的 App 场景
 
@@ -222,6 +257,20 @@ adb shell 'dumpsys -l | grep -i media'
 - `getdents64`、`statx`/`newfstatat`、`openat` 次数。
 - MediaStore 查询返回行数和 projection。
 - 首次扫描与热缓存扫描分别耗时。
+
+### 先枚举 FUSE tracepoint，再判断数据路径
+
+`android17-6.18-2026-06_r6` 的 `fs/fuse/fuse_trace.h` 定义了 `fuse_request_send` 与 `fuse_request_end`。产品内核可能裁剪事件，采集前先读取 tracefs 的 `available_events`：
+
+```bash
+adb shell su 0 sh -c '
+TRACE=/sys/kernel/tracing
+[ -d "$TRACE/events" ] || TRACE=/sys/kernel/debug/tracing
+grep "^fuse:" "$TRACE/available_events"
+'
+```
+
+受控 I/O 窗口中出现 `FUSE_READ` 或 `FUSE_WRITE` send 事件，说明相应请求进入 daemon。只有 `FUSE_OPEN` 而没有 read/write，可能符合 passthrough/BPF backing，也可能来自页缓存命中、测试未产生预期 syscall、读取失败或采集窗口不完整。还要对齐文件来源、冷暖缓存、MediaProvider 日志、应用 syscall 和 lower-fs/block 事件。
 
 ### strace 只在可调试测试环境使用
 
@@ -321,9 +370,11 @@ App 侧优先让数据归属与 API 匹配：媒体列表使用 MediaStore，文
 - AOSP `packages/providers/MediaProvider/src/com/android/providers/media/fuse/FuseDaemon.java`（`android-17.0.0_r1`）
 - AOSP `packages/providers/MediaProvider/jni/FuseDaemon.cpp`（`android-17.0.0_r1`）
 - Android common kernel `arch/arm64/configs/gki_defconfig`（`android17-6.18-2026-06_r6`）
+- Android common kernel `fs/fuse/backing.c`、`passthrough.c`、`iomode.c`、`fuse_bpf_backing.c`（`android17-6.18-2026-06_r6`）
+- Android common kernel `include/uapi/linux/fuse.h`、`include/uapi/linux/android_fuse.h`（`android17-6.18-2026-06_r6`）
 - §6.1「Android 存储架构」
 - §6.2「文件系统」
 - §6.3「I/O 调度与性能」
-- §6.4「存储相关的版本演进」
-- §6.7「FUSE BPF 与 Scoped Storage I/O 性能」
+- §6.4「SharedPreferences 与 DataStore」
 - §24.12「MediaStore 与 MediaProvider 性能治理」
+- §24.13「Photo Picker、媒体转码与缓存治理」

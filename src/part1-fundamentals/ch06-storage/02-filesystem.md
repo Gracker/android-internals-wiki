@@ -64,6 +64,9 @@ auto_promoted_date: 2026-06-13
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-13
 ---
+
+# 6.2 文件系统
+
 ## 先把 `fsync` 卡顿放回完整 I/O 路径
 
 Perfetto 中偶尔会看到主线程进入不可中断睡眠，调用栈停在 `fsync()`、`fdatasync()` 或文件关闭附近。这个现象只能说明线程在等待持久化路径完成，不能只凭一个 syscall 就认定文件系统存在缺陷。
