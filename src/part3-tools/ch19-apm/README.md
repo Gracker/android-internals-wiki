@@ -8,7 +8,7 @@ applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-24"
 confidence: medium
 tags: [apm, monitoring, benchmark, observability, matrix, koom, btrace]
-related_chapters: ["14.10", "14.26", "15.5", "15.9", "15.10"]
+related_chapters: ["14.10", "14.26", "15.5", "15.9"]
 sources:
   - type: official
     path: https://developer.android.com/topic/performance
@@ -115,7 +115,7 @@ Vellamo、AndroBench、A1 SD Bench、Emmagee 不再作为现代 Android 推荐�
 
 - **第 13 章（Perfetto）**：Perfetto 是线下 trace 分析工具。btrace/RheaTrace 可以把方法调用写成可导入 Perfetto 的 trace 数据；Tracing SDK 用 `Trace.beginSection` / `androidx.tracing.trace {}` 给 Perfetto 添加进程内 slice；JankStats 不直接生成 Perfetto trace 文件，它通过 `OnFrameListener` / `FrameData` 输出帧级 jank 数据和 UI state，适合与 Perfetto、FrameTimeline、Tracing SDK 一起归因。
 - **第 14 章**：14.10 统一说明三方性能库和 APM 可观测性选型，14.26 说明 Hook 基础设施；第 19 章分别展开具体工具。
-- **第 15 章（方法论）**：15.5、15.9 和 15.10 说明线上监控、问题流转与治理，第 19 章说明各工具的能力与边界。
+- **第 15 章（方法论）**：15.5 和 15.9 说明线上监控、问题流转与治理，第 19 章说明各工具的能力与边界。
 
 ## 内容索引
 

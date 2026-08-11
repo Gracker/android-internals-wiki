@@ -342,10 +342,8 @@
   - [性能测试最佳实践](part3-tools/ch15-methodology/06-testing-best-practices.md)
   - [AOSP 代码阅读](part3-tools/ch15-methodology/07-aosp-reading.md)
   - [15.8 Android 性能问题实证：真实世界的分类与代码模式](part3-tools/ch15-methodology/08-empirical-performance-issues.md)
-  - [从采集到治理的反馈回路](part3-tools/ch15-methodology/09-observability-closed-loop.md)
-  - [性能治理工程化](part3-tools/ch15-methodology/10-performance-governance.md)
-  - [15.11 Google Android Bench：AI 编码能力评测方法论](part3-tools/ch15-methodology/15.11-google-android-bench-ai-coding-evaluation-methodology.md)
-  - [15.12 Android 性能优化研究方法论](part3-tools/ch15-methodology/15.12-android-performance-research-methodology.md)
+  - [15.9 性能反馈回路与治理工程化](part3-tools/ch15-methodology/09-performance-governance.md)
+  - [15.10 Google Android Bench：AI 编码能力评测方法论](part3-tools/ch15-methodology/10-google-android-bench-ai-coding-evaluation-methodology.md)
 
 - [第 19 章：APM](part3-tools/ch19-apm/README.md)
   - [APM 全景图与分类体系](part3-tools/ch19-apm/01-apm-landscape.md)

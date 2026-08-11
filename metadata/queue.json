@@ -1,7 +1,7 @@
 [
   {
-    "section": "15.12",
-    "section_title": "Android 性能优化研究方法论",
+    "section": "13.2",
+    "section_title": "Perfetto Trace 采集",
     "priority": 95,
     "reason": "[Deep Tech Review - Idle Audit] Missing critical Android 17 features and outdated references",
     "material_paths": [
@@ -26,7 +26,10 @@
     "status": "completed",
     "completed_at": "2026-07-17T22:54:05+08:00",
     "completed_by": "task2b-main-repair",
-    "target_path": "src/part3-tools/ch15-methodology/15.12-android-performance-research-methodology.md"
+    "original_section": "15.12",
+    "original_target_path": "src/part3-tools/ch15-methodology/15.12-android-performance-research-methodology.md",
+    "resolution": "原 15.12 已在方法论收敛中删除；Perfetto 缓冲区、heapprofd 资格和采集边界由 13.2 统一承载。",
+    "target_path": "src/part3-tools/ch13-perfetto/02-trace-capture.md"
   },
   {
     "chapter": "22.20",

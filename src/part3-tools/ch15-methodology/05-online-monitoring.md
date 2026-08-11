@@ -54,7 +54,7 @@ sources:
   - type: aosp
     path: "packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java"
 tags: [monitoring, APM, FrameMetrics, JankStats, ANR, startup, production]
-related_chapters: ["7.1", "7.3", "8.1", "9.3", "14.1", "14.9", "14.10", "15.3", "15.4", "15.9", "15.10"]
+related_chapters: ["7.1", "7.3", "8.1", "9.3", "14.1", "14.9", "14.10", "15.3", "15.4", "15.9"]
 pipeline_stage: ready-to-publish
 task2b_result: fixed
 task2b_state: fixed
@@ -597,8 +597,7 @@ Vitals 的 UI Toolkit 渲染统计不覆盖直接 OpenGL/Vulkan 主画面；游�
 - §14.9 说明自动化测试与 Macrobenchmark 回归门禁。
 - §15.3 定义指标合同、SLO 与 Google Play 外部口径。
 - §15.4 讨论跨应用测量时的可比性。
-- §15.9 将监控、实验、修复和验证组织成持续流程。
-- §15.10 讨论团队责任与发布机制。
+- §15.9 将监控、实验、修复、团队责任和发布验收组织成持续流程。
 
 ## FAQ
 

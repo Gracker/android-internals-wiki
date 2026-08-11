@@ -1,13 +1,13 @@
 ---
-title: "性能治理工程化"
-chapter: "15.10"
-section: "15.10"
+title: "性能反馈回路与治理工程化"
+chapter: "15.9"
+section: "15.9"
 status: finalized
 drafted_date: "2026-04-21"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-07-30"
-last_verified_against: "Android 17 / API 37 / AOSP android-17.0.0_r1；AndroidX Benchmark 1.4.1 sources；Baseline Profiles 与 Android Vitals 官方文档"
+last_verified: "2026-08-11"
+last_verified_against: "Android 17 / API 37 / AOSP android-17.0.0_r1；AndroidX Benchmark 1.4.1 sources；Baseline Profiles、Android Vitals 与 Perfetto 官方文档"
 confidence: medium-high
 sources:
   - type: official
@@ -30,12 +30,17 @@ sources:
     path: "https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles"
   - type: official
     path: "https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations"
+  - type: official
+    path: "https://perfetto.dev/docs/instrumentation/track-events"
   - type: source
     path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1"
   - type: source
     path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6"
-tags: [governance, benchmark, ci, budget, release]
-related_chapters: ["7.1", "8.1", "8.3", "9.1", "14.9", "15.3", "15.5", "15.6", "15.9"]
+tags: [governance, observability, benchmark, ci, budget, release]
+related_chapters: ["7.1", "8.1", "8.3", "9.1", "14.9", "14.10", "15.3", "15.5", "15.6"]
+consolidated_from:
+  - "15.9 从采集到治理的反馈回路"
+  - "15.10 性能治理工程化"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
@@ -56,7 +61,7 @@ last_task9_review_log: "logs/deep-review/2026-05-19-20-audit.md"
 task9_review_notes: "2026-05-19 20 Task9 闲时抽检 → Task2B fixed: frontmatter 官方来源 URL 已替换为 benchmarking-overview。"
 ---
 
-# 性能治理工程化
+# 性能反馈回路与治理工程化
 
 ## 从个人能力转为团队机制
 
@@ -71,6 +76,30 @@ task9_review_notes: "2026-05-19 20 Task9 闲时抽检 → Task2B fixed: frontmat
 - 修复通过什么线下测试和线上指标验收。
 
 机制的目标是可重复决策。不同工程师面对同一份数据，应得到相近的发布结论；对结论有异议时，也能查到预算、基线、例外和证据。
+
+## 从信号到验收的反馈回路
+
+监控平台持续收到数据，不等于问题正在被治理。一条异常只有完成“发现 → 归因 → 修复 → 验收”，才会改变后续版本。回路中需要同时保留四类对象：
+
+| 对象 | 回答的问题 | 不能单独回答 |
+|---|---|---|
+| 指标与分布 | 影响范围、趋势和异常分群 | 单个样本为何变慢 |
+| 事件与会话 | 某次操作经历了哪些业务阶段 | 调度、锁和跨进程根因 |
+| trace、profile、heap、ANR trace | 现场执行和资源关系 | 对全部用户的影响 |
+| 工单与发布记录 | 谁处理、何时交付、怎样验收 | 运行时技术事实 |
+
+一条可执行的流程包含八个阶段：
+
+1. **采集**：按 §15.3 的指标合同和 §15.5 的平台边界记录信号。
+2. **采样**：把概率已知的基线样本与异常触发的诊断样本分开。
+3. **聚合**：展示分母、样本量、缺失率、schema 和采样配置。
+4. **归因**：从异常分群进入正常/异常样本，用 trace、源码和对照实验验证假设。
+5. **告警**：同时检查绝对预算、相对回归、最小样本和数据健康。
+6. **流转**：为问题指定当前 owner、状态、时限和下一项动作。
+7. **修复**：记录改动机制、风险、开关、回滚条件和守护指标。
+8. **验收**：在线下同协议复测，并在线上同分群确认用户结果。
+
+若工单缺少指标合同、可回查样本、当前 owner、修复版本或验收条件，流程就停在了中间。告警关闭也不能自动解释为修复成功；采样切换、上报中断或用户构成变化同样会让曲线下降。
 
 ## 五个支点
 
@@ -164,78 +193,13 @@ Google Play 的 Android Vitals 提供发布质量信号，自建指标提供更�
 
 验收结果关联 commit、build、benchmark JSON、trace、dashboard 和工单。后续发现回归时，可以区分“当时没有信号”“规则没有触发”“例外放行”和“发布后环境变化”。
 
-## Macrobenchmark 进入 CI 的正确方式
+## Benchmark 与 Profile 在治理中的位置
 
-Macrobenchmark 在独立 `com.android.test` 模块中从应用外部驱动 CUJ。target app 应使用接近 release 的 benchmark 变体，保持 non-debuggable，并通过 `<profileable>` 允许读取详细 trace。CI 构建 target APK 与 test APK，再安装到固定真机执行。
+Macrobenchmark 的工程配置、迭代、编译模式和统计处理由 §14.9 与 §15.6 统一说明。本节只保留治理要求：CI 必须把目标 APK、测试 APK、设备与环境 manifest、原始 JSON、每轮 trace、失败日志和统计程序版本绑定到同一次运行；门禁程序先验证条件一致与数据质量，再比较绝对预算、相对回归和历史噪声。临界结果在同一设备复测，阻断结果附正常与异常 trace。
 
-下面的测试已按 AndroidX Benchmark 1.4.1 源码核对，用于测量带 Baseline Profile 的冷启动。它把编译模式写进用例，避免 CI 默认值变化后仍沿用旧基线。
+Baseline Profile 与 Startup Profile 也分成三项验收：规则是否覆盖稳定 CUJ、产物是否正确打包、真机上的目标场景是否获得收益。profile 文件存在不能证明目标代码已完成预期编译，更不能证明用户指标改善。生成规则、检查产物和测量收益是三个独立动作；具体工具操作继续由 §14.9 与启动专题维护。
 
-```kotlin
-@LargeTest
-@RunWith(AndroidJUnit4::class)
-class StartupBenchmark {
-    @get:Rule
-    val benchmarkRule = MacrobenchmarkRule()
-
-    @Test
-    fun coldStartupWithBaselineProfile() =
-        benchmarkRule.measureRepeated(
-            packageName = TARGET_PACKAGE,
-            metrics = listOf(StartupTimingMetric()),
-            compilationMode = CompilationMode.Partial(
-                baselineProfileMode = BaselineProfileMode.Require,
-                warmupIterations = 0,
-            ),
-            startupMode = StartupMode.COLD,
-            iterations = 10,
-            setupBlock = {
-                pressHome()
-            },
-        ) {
-            startActivityAndWait()
-        }
-}
-```
-
-`BaselineProfileMode.Require` 会要求 APK 内存在可安装的 Baseline Profile，适合验证 profile 场景。`StartupMode.COLD` 会在 setup 与 measure 之间终止 app 进程；它描述进程冷启动，不等于设备重启后的全系统冷缓存。每个 iteration 会生成相应的 system trace，CI 还应归档 benchmark JSON。
-
-测试脚本要固定应用状态。若 CUJ 依赖不稳定网络，可使用受控测试后端或确定性数据；不要把公网波动当成 app 启动回归。需要测网络场景时，网络延迟本身也要成为实验变量和输出。
-
-### 从结果到门禁
-
-不要直接对单次 median 写一条 shell 比较。门禁程序应读取 JSON，并做以下检查：
-
-1. 验证设备、build、metric、compilation/startup mode 与基线匹配。
-2. 排除框架明确标记为错误的运行，保留排除原因。
-3. 比较每次 iteration，检查候选差值是否大于历史噪声。
-4. 同时应用绝对预算和相对回归预算。
-5. 对临界结果自动在同一设备复测。
-6. 阻断时附上最慢 iteration 的 trace 和基线 trace。
-
-真机池也会漂移。设备系统更新、换电池、存储老化或环境温度变化后，应重新建立基线，不能静默继承旧数据。
-
-## Baseline Profiles 与 Startup Profiles
-
-Baseline Profile 指导 ART 对常用代码路径做 AOT 编译，覆盖启动和其他关键交互。Startup Profile 用于 DEX 布局，使启动相关类和方法更适合放入 primary DEX。两者用途不同，官方建议同时使用。
-
-Android 8—17 范围内：
-
-- Android 8 / API 26—27 使用 partial AOT；有 `ProfileInstaller` 时可在首轮运行后安装 Baseline Profile；
-- Android 9 / API 28 及以上还可获得 Google Play 聚合的 Cloud Profiles；
-- Cloud Profile 需要真实使用数据并有分发延迟，不能保护新版本最初一批用户；
-- 非 Play 分发渠道的安装和编译行为需要单独验证。
-
-Baseline Profile 工程检查分三层：
-
-1. **生成**：`BaselineProfileRule` 覆盖启动与稳定 CUJ，profile 随重要代码变化更新。
-2. **打包**：AAB 中检查 `/BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`，APK 中检查 `/assets/dexopt/baseline.prof`。
-3. **效果**：在真机上比较带自定义 profile 的 release 变体与只含 library profile 的对照变体。
-
-profile 文件存在只是打包成功的初步证据。`ProfileVerifier` 可以查询 profile 安装/编译状态，但不提供“某个业务方法的 Baseline Profile 命中率”。评估时应分别检查打包状态、编译状态和 CUJ 性能收益。
-
-生成 profile 与测量性能的设备要求也不同。官方允许为了便利在 emulator/GMD 上生成规则，因为生成过程不采集性能数值；收益测量使用物理设备。Firebase Test Lab 当前不支持 Baseline Profile 生成，这一点与“在 Test Lab 真机跑 Macrobenchmark”不能混为一谈。
-
-每次发布不必无条件扩大 profile。规则过宽会增加编译、磁盘和安装成本，官方文档还给出打包后二进制 profile 小于 1.5 MB 的约束。CUJ owner 要审查新增 journey 是否稳定、常用，并验证对其他场景没有负面影响。
+设备系统更新、电池老化、存储状态变化、Benchmark 升级或测试脚本变更后，应重新评估噪声并建立有迁移记录的新基线，不能静默沿用旧结果。
 
 ## 代码评审中的性能检查
 
@@ -279,6 +243,31 @@ PR 模板可以要求作者填写：
 - 期望对方验证的具体问题。
 
 “trace 里 system_server 很忙”不足以完成转交。需要沿 Binder flow、线程状态、锁、I/O 或调度证据指出可调查入口。涉及内核的判断固定到 `android17-6.18-2026-06_r6`；厂商设备按设备对应源码复核。
+
+### 工单状态与验收责任
+
+性能工单可以使用 `detected → triaged → investigating → fixing → validating → resolved`。`false-positive`、`duplicate`、`cannot-reproduce` 与 `accepted-risk` 应作为有理由、有操作者和时间戳的终态，不能全部写成“关闭”。
+
+工单至少携带指标合同、异常窗口、基线与回归版本、受影响分群、样本量、采样配置、正常/异常证据、已确认事实、候选假设、当前 owner、计划版本和回滚条件。进入 `validating` 前，必须先写线上验收窗口、最小样本和成功条件，避免结果出现后再挑选口径。
+
+## 证据连接与数据生命周期
+
+聚合图、单次事件、诊断制品和发布记录需要稳定连接，但连接键不能进入高基数指标标签：
+
+| 键 | 用途 |
+|---|---|
+| `event_id` | 客户端重试幂等与单事件去重 |
+| `session_id` / `page_instance_id` | 关联一次会话或页面实例 |
+| `process_instance_id` | 区分进程生命周期，避免只依赖会复用的 PID |
+| `trace_id` / artifact ID | 从异常事件进入受控保存的 trace、heap 或 tombstone |
+| `build_id` / `version_code` | 对齐二进制、mapping、symbols 和发布记录 |
+| `event_schema_version` / `sampling_config_version` | 解释字段、算法与采样策略变化 |
+
+进程内阶段耗时使用明确的 monotonic clock，跨设备和发布窗口使用 UTC wall time；两类时间戳不能直接相减。schema 改变单位、分母或含义时升版本，生产者、消费者、看板和告警在同一变更记录中写明兼容窗口。
+
+存储按用途分层：近期聚合和可检索事件服务告警，降采样趋势用于长期比较，trace、heap、tombstone 等高敏附件单独加密、缩短保留期并记录访问审计。每个数据源都要有 owner、日量、保留期、删除机制和停采条件。
+
+多业务线共享平台时，`tenant_id` 必须来自受信任的服务端身份或发布配置。查询、缓存、附件、导出、告警和审计全程执行 tenant + role 校验；在 ID 前加租户前缀只能避免碰撞，不能构成访问隔离。
 
 ## 例外机制
 
@@ -339,8 +328,7 @@ PR 模板可以要求作者填写：
 - §15.3 定义性能指标契约。
 - §15.5 讨论线上监控和保护开关。
 - §15.6 讨论测试设计与统计可靠性。
-- §15.9 连接采集、归因、工单和验收。
-- §15.10 定义团队怎样把这些能力放进开发和发布流程。
+- 本节把这些能力连接到采集、归因、工单、发布和验收流程，不再重复各工具的 API 教程。
 
 平台源码锚点固定为 Android 17 / API 37 / `android-17.0.0_r1`。Benchmark、Baseline Profile 与 ProfileInstaller 属于 AndroidX/构建工具，版本应在项目依赖和基线记录中单独固定。涉及 CPU 调度、Binder driver、cgroup 或 thermal 的内核证据，使用 `android17-6.18-2026-06_r6`。
 

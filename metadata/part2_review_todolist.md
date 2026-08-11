@@ -160,5 +160,19 @@
 
 > 原 APM 选型、LeakCanary Profiler task 和 Macrobenchmark 门禁正文分别并入 14.10、14.5、14.9；ftrace/atrace/Perfetto bridge 由 13.8 统一承载。完整映射见 `metadata/content-consolidation-audit.md`。
 
+## 第 15 章：性能方法论 (ch15-methodology)
+- [x] 15.1 性能优化的术、道、器 (`src/part3-tools/ch15-methodology/01-philosophy.md`)
+- [x] 15.2 如何区分系统问题和 App 问题 (`src/part3-tools/ch15-methodology/02-system-vs-app.md`)
+- [x] 15.3 性能指标体系 (`src/part3-tools/ch15-methodology/03-metrics.md`)
+- [x] 15.4 竞品分析方法 (`src/part3-tools/ch15-methodology/04-competitive-analysis.md`)
+- [x] 15.5 线上性能监控 (`src/part3-tools/ch15-methodology/05-online-monitoring.md`)
+- [x] 15.6 性能测试最佳实践 (`src/part3-tools/ch15-methodology/06-testing-best-practices.md`)
+- [x] 15.7 AOSP 代码阅读 (`src/part3-tools/ch15-methodology/07-aosp-reading.md`)
+- [x] 15.8 Android 性能问题实证 (`src/part3-tools/ch15-methodology/08-empirical-performance-issues.md`)
+- [x] 15.9 性能反馈回路与治理工程化 (`src/part3-tools/ch15-methodology/09-performance-governance.md`)
+- [x] 15.10 Google Android Bench：AI 编码能力评测方法论 (`src/part3-tools/ch15-methodology/10-google-android-bench-ai-coding-evaluation-methodology.md`)
+
+> 原反馈回路与治理工程化两篇合并为 15.9；重复的研究方法论并入 15.1，并由 Perfetto、测试和 Power HAL 专章继续承载工具细节。完整映射见 `metadata/content-consolidation-audit.md`。
+
 # All Tasks Completed
 The comprehensive technical audit for Part 2 (Performance) has been finalized. 69 detailed review reports have been generated and archived in `logs/external-review/`. All Android 15/16/17 performance characteristics have been synchronized.

@@ -1,6 +1,7 @@
 ---
 title: "Google Android Bench：AI 编码能力评测方法论"
-chapter: "15.11"
+chapter: "15.10"
+section: "15.10"
 status: ready-for-review
 drafted_date: "2026-07-17"
 applicable_versions: "Android 工程任务（平台结论最高 Android 17 / API 37；评测框架版本单独固定）"
@@ -21,10 +22,10 @@ sources:
   - type: dataset
     path: "https://hub.harborframework.com/datasets/android-bench/android-bench/latest"
 tags: ["android-bench", "ai-evaluation", "coding-agent", "methodology"]
-related_chapters: ["15.6", "15.10"]
+related_chapters: ["15.6", "15.9"]
 ---
 
-# 15.11 Google Android Bench：AI 编码能力评测方法论
+# Google Android Bench：AI 编码能力评测方法论
 
 ## Android Bench 测量什么
 
