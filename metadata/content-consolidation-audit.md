@@ -26,9 +26,25 @@
 | ch12 网络性能 | 8 | 3 | 已完成 | 2026-08-11 |
 | ch13 Perfetto | 27 | 22 | 已完成 | 2026-08-11 |
 | ch14 其他分析工具 | 32 | 28 | 已完成 | 2026-08-11 |
-| 其余 14 章 | 392 | 待审阅 | 未开始 | - |
+| ch15 性能方法论 | 12 | 10 | 已完成 | 2026-08-11 |
+| 其余 13 章 | 380 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 542 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 540 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch15 性能方法论
+
+保留后的连续编号为 15.1～15.10，依次覆盖总方法论、系统/App 归因、指标合同、竞品分析、线上监控、性能测试、AOSP 阅读、实证研究、反馈回路与团队治理，以及 AI 编码评测。
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `09-observability-closed-loop.md` / `10-performance-governance.md` | 合并监控异常、采样与聚合之后的归因、工单、发布和验收流程；删除与 15.5 重复的 JankStats、ApplicationExitInfo 和线上采样教程，以及与 14.9/15.6 重复的 Macrobenchmark 与 Baseline Profile 示例 | `../src/part3-tools/ch15-methodology/09-performance-governance.md`（15.9） |
+| `15.12-android-performance-research-methodology.md` | 删除第二套总方法论、工具选型、Perfetto 采集/SQL、优化和测试教程；独有的证据等级、替代假设与知识交付规范并入总论，Perfetto 与 Power HAL 细节继续由 13.2、13.9、13.22、5.4 和 17.21 承载 | `../src/part3-tools/ch15-methodology/01-philosophy.md`（15.1） |
+| `15.11-google-android-bench-ai-coding-evaluation-methodology.md` | 主题独立，改为连续编号 15.10，并移除 H1 中重复的章节号 | `../src/part3-tools/ch15-methodology/10-google-android-bench-ai-coding-evaluation-methodology.md` |
+| `08-empirical-performance-issues.md` | 主题独立；统一 H1，不再在正文标题中重复章节号 | `../src/part3-tools/ch15-methodology/08-empirical-performance-issues.md` |
+
+章节 README、`src/SUMMARY.md`、changelog 映射、活动跨章链接、审阅清单和统计口径已经切换到连续编号。历史 changelog、review 日志、关闭 finding 与 `consolidated_from` 保留旧编号和路径。
 
 ## ch14 其他分析工具
 

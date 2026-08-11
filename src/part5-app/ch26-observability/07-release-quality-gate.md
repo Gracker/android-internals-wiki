@@ -32,7 +32,7 @@ sources:
   - type: official
     path: "https://developers.google.com/android-publisher/api-ref/rest/v3/edits.tracks"
 tags: [quality-gate, release, canary, rollback]
-related_chapters: ["26.6", "26.3", "15.10"]
+related_chapters: ["26.6", "26.3", "15.9"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 reviewed_by: openclaw-task6

@@ -11,7 +11,7 @@ confidence: high
 consolidated_from:
   - "src/part1-fundamentals/ch05-cpu-power/5.33-android17-performance-score-attribution-sourcecode.md"
 tags: [app-performance-score, android-vitals, macrobenchmark, baseline-profile, performance-governance, observability]
-related_chapters: ["15.3", "15.6", "15.10", "19.14", "26.3", "26.15"]
+related_chapters: ["15.3", "15.6", "15.9", "19.14", "26.3", "26.15"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-23"
 gap_source: "官方文档"
