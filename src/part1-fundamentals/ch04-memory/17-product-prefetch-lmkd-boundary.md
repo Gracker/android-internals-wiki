@@ -1,15 +1,20 @@
 ---
-title: "Android 17 LMKD 与 AppFlow 兼容性方案"
-chapter: "4.5"
+title: "产品侧内存预取与 lmkd 边界"
+chapter: "4.17"
 status: ready-for-review
 applicable_versions: "Android 16 (API 35) - Android 17 (API 37)"
 tags: ['LMKD', 'AppFlow', '内存管理', '兼容性', '冷启动']
-related_chapters: ['4.1', '4.04']
+related_chapters: ['4.4', '4.13', '4.16']
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-01"
 last_verified: "2026-07-01"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
+pipeline_stage: ready-for-review
+task6_state: pending-verification
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch04-memory/4.04-AppFlow与Android-17-LMKD兼容性方案.md"
 sources:
   - type: aosp
     path: "system/memory/lmkd/"
@@ -19,9 +24,9 @@ sources:
     path: "source.android.com/docs/core/perf/lmkd"
 ---
 
-# 4.5 Android 17 LMKD 与 AppFlow 兼容性方案
+# 4.17 产品侧内存预取与 lmkd 边界
 
-## 源码边界
+## 先确认源码边界
 
 `android-17.0.0_r1` 中没有 `AppFlowManager`、`AppFlowState`、`AppFlowMemoryAllocator`、`MemoryLimiterCompat` 或 `lmkd_appflow_compat.xml`。AOSP lmkd 也没有 AppFlow 会话、冷启动内存预分配协议、两阶段提交或状态回滚接口。
 
@@ -177,7 +182,7 @@ Cached App Freezer 根据进程进入 cached 状态安排冻结。`CachedAppOpti
 
 ## 7. 与 MemoryLimiter 的边界
 
-Android 17 `MemoryLimiter` 位于 `system_server`，面向符合条件的 not-visible 进程设置 cgroup `memory.high` 与 `memory.swap.high`。它有自己的进程状态映射、检查周期、profiling 与 kill 流程。
+Android 17 `MemoryLimiter` 位于 `system_server`，面向符合条件的进程设置 cgroup `memory.high` 与 `memory.swap.max`。它有自己的进程状态映射、检查周期、profiling 与 kill 流程。
 
 MemoryLimiter 没有 `getQuota(packageName)` 这样的 AppFlow 公开接口，也不会向 lmkd 发送“配额转换”。AppFlow 应遵守两点：
 
@@ -270,4 +275,4 @@ Perfetto 中先定位启动区间，再对齐：
 - `mm/vmscan.c`
 - `mm/workingset.c`
 
-LMKD 的 PSI 与决策细节见 [4.50 LMKD PSI 分层内存压力治理](4.50-lmkd-v2-psi-tiered-pressure-governance.md)，批量 adj packet 见 [4.36 LMK_PROCS_PRIO 批量命令](4.36-android17-lmkd-procs-prio-batch.md)，MemoryLimiter 见 [4.17 Android 17 MemoryLimiter 与内存监控影响](17-android17-MemoryLimiter-与内存监控影响.md)。
+LMKD 的 PSI、thrashing、批量 adj packet 与 kill 决策见 [4.4 系统内存压力与 lmkd](04-lmk.md)，MemoryLimiter 见 [4.13 Android 17 MemoryLimiter](13-android17-memorylimiter.md)。

@@ -1,7 +1,7 @@
 ---
-title: "ART FinalizerDaemon 与 ReferenceQueue 性能边界"
-chapter: "4.9"
-section: "4.9"
+title: "ART FinalizerDaemon、Cleaner 与 ReferenceQueue"
+chapter: "4.8"
+section: "4.8"
 status: finalized
 drafted_date: "2026-05-15"
 drafted_by: "openclaw-task2a"
@@ -57,7 +57,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-24
 ---
 
-# 4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界
+# 4.8 ART FinalizerDaemon、Cleaner 与 ReferenceQueue
 
 看到 `FinalizerDaemon` 忙、FD 数量上涨或 CloseGuard 告警时，先把几个相邻概念分开：
 

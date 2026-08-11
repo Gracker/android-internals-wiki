@@ -67,11 +67,10 @@ tags:
 related_chapters: 
   - "4.2 Linux 内核内存管理"
   - "4.3 ART 虚拟机内存管理"
-  - "4.4 Low Memory Killer"
-  - "4.5 App 内存优化"
-  - "4.6 内存相关的版本演进"
-  - "4.7 16KB Page Size 与 Android 性能"
-  - "4.8 ART 分代垃圾回收与 GC 暂停优化"
+  - "4.4 系统内存压力与 lmkd"
+  - "4.5 App 内存优化与诊断"
+  - "4.6 16 KB Page Size 与 Android 性能"
+  - "4.7 ART 分代 GC、Region 碎片与暂停分析"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -90,7 +89,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-12
 ---
 
-# Android 内存模型全景
+# 4.1 Android 内存模型全景
 
 ## 先建立一张可用于排障的地图
 

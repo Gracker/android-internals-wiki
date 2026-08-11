@@ -1,6 +1,6 @@
 ---
-title: "Android 17 onTrimMemory 链路源码解析与公平内存适配实战"
-chapter: "4.18"
+title: "onTrimMemory 回调与 ART Heap Trim"
+chapter: "4.14"
 status: ready-for-review
 drafted_date: "2026-06-29"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
@@ -29,15 +29,20 @@ sources:
   - type: research
     path: "DeepResearch/2026-06-28-android17-memorylimiter-procstate-polling-statsd.md"
 tags: [memory, onTrimMemory, memory-management, android17, aosp, ComponentCallbacks2, CachedAppOptimizer, MemoryLimiter, cgroup]
-related_chapters: ["4.4", "4.11", "4.17", "4.15", "10.4", "23.13"]
+related_chapters: ["4.3", "4.4", "4.11", "4.13", "10.4", "23.13"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-29"
 gap_source: "素材驱动/AOSP结构"
+pipeline_stage: ready-for-review
+task6_state: pending-verification
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch04-memory/4.49-android17-trim-memory-api-evolution.md"
 ---
 
-# 4.18 Android 17 `onTrimMemory()` 调用链与公平内存适配
+# 4.14 onTrimMemory 回调与 ART Heap Trim
 
-## 范围与结论
+## 先看范围与结论
 
 - Android 17 常规向应用发送的 level 只剩 `UI_HIDDEN(20)` 与 `BACKGROUND(40)`。
 - `UI_HIDDEN` 由 `system_server` 的 `AppProfiler` 发送；`BACKGROUND` 由 `CachedAppOptimizer` 在安排 cached app freeze 前发送。
@@ -174,7 +179,27 @@ override fun onTrimMemory(level: Int) {
 - cache 在常态运行时就要有容量上限；
 - 清理后记录条目数和估算字节，方便验证收益。
 
-`onTrimMemory()` 释放的是引用与产品 cache。它不会直接触发 ART GC、heap compaction、kernel direct reclaim 或 kswapd。ART 会按分配压力、heap footprint 与进程状态独立安排 GC；GC 完成后可以另行安排 HeapTrimTask。详细边界见 [4.49 trimMemory API 演进与 ART Heap Trim](4.49-android17-trim-memory-api-evolution.md)。
+`onTrimMemory()` 释放的是引用与产品 cache。它不会直接触发 ART GC、heap compaction、kernel direct reclaim 或 kswapd。ART 会按分配压力、heap footprint 与进程状态独立安排 GC；GC 完成后可以另行安排 HeapTrimTask。
+
+### ART Heap Trim 是另一条异步链
+
+`ActivityThread.handleTrimMemory()` 没有调用 `VMRuntime.requestConcurrentGC()`、`requestHeapTrim()` 或 `trimHeap()`。应用在回调里断开强引用后，对象只是变成可回收；GC 何时发生仍由 ART 的分配压力、目标 footprint、collector 与进程状态决定。
+
+ART 的 heap trim 通常从 GC 完成处发起：
+
+```text
+Heap::CollectGarbageInternal()
+  → Heap::RequestTrim()
+  → HeapTrimTask（Android 17 默认等待 5 秒）
+  → Heap::Trim()
+  → TrimIndirectReferenceTables()
+  → TrimSpaces()
+  → ArenaPool::TrimMaps()
+```
+
+`RequestTrim()` 会合并重复请求；`Heap::Trim()` 负责把分配器中可归还的页面、JNI 引用表和部分 runtime arena 交还或标记给内核。它不等于 “Major GC + compaction”，也不按 trim level 选择 young/old generation。
+
+进程前后台变化还会沿 `ActivityThread.updateProcessState()` → `VMRuntime.updateProcessState()` 影响 ART collector transition 与 heap footprint。它可能和 `onTrimMemory(20/40)` 时间接近，但不是同一次调用。另一个严重低内存入口 `handleLowMemory()` 会处理 `onLowMemory()` 并请求 GC，也不能套用到 `handleTrimMemory()`。
 
 ## 7. lmkd、freezer 与 MemoryLimiter 要分开看
 
@@ -188,7 +213,7 @@ override fun onTrimMemory(level: Int) {
 
 MemoryLimiter 的 Android 17 执行代码配置 `memory.high` 与 `memory.swap.max`，没有配置 `memory.swap.high`。阈值来自平台配置，不存在适用于所有设备和进程的固定 2GB/4GB 配额。
 
-首次 `memory.high` 事件、red-zone 检查和后续 kill 属于 MemoryLimiter 自己的状态机。它没有为目标应用派发专属 `onTrimMemory()`；30 秒的 profiling/kill 延迟也不是应用可依赖的自救窗口。源码与监控方法见 [4.17 Android 17 MemoryLimiter 与内存监控影响](17-android17-MemoryLimiter-与内存监控影响.md)。
+首次 `memory.high` 事件、red-zone 检查和后续 kill 属于 MemoryLimiter 自己的状态机。它没有为目标应用派发专属 `onTrimMemory()`；30 秒的 profiling/kill 延迟也不是应用可依赖的自救窗口。源码与监控方法见 [4.13 Android 17 MemoryLimiter：memcg 限制与超限诊断](13-android17-memorylimiter.md)。
 
 “公平运行内存”可以作为产品目标，不能写成 Android 17 的公共 API。公平性的证据应包括目标 App 释放量、恢复成本、其他 App 留存、系统 kill 与交互响应，不能只看本进程 PSS。
 

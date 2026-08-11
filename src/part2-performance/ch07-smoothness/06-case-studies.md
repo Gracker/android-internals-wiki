@@ -405,7 +405,7 @@ Android 17 / API 37 继续提供 Thermal API、ADPF 与 CPU/GPU headroom 相关�
 - [典型场景](./04-typical-scenarios.md)
 - [优化策略](./05-optimization.md)
 - [功耗与温控卡顿手册](./16-power-thermal-jank-playbook.md)
-- [LMKD、PSI 与低内存检测](../../part1-fundamentals/ch04-memory/15-psi-lowmemdetector-lmkd-architecture.md)
+- [系统内存压力与 lmkd](../../part1-fundamentals/ch04-memory/04-lmk.md)
 - [Android Thermal](../../part1-fundamentals/ch05-cpu-power/05-thermal.md)
 - [ADPF](../../part1-fundamentals/ch05-cpu-power/09-adpf.md)
 - [视频 Overlay 与 HWC](../ch18-rendering-pipelines/15-video-overlay-hwc.md)

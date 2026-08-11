@@ -1,9 +1,9 @@
 ---
 
-title: ART 分代垃圾回收与 GC 暂停优化
-chapter: '4.8'
-section: '4.8'
-status: finalized
+title: ART 分代 GC、Region 碎片与暂停分析
+chapter: '4.7'
+section: '4.7'
+status: ready-for-review
 drafted_date: '2026-04-06'
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 last_verified: '2026-04-12'
@@ -44,8 +44,8 @@ tags:
 reviewed_date: 2026-07-02
 reviewed_by: openclaw-task6
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1/L2无需修改，文章质量良好。无需回炉。'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: ready-for-review
+task6_state: pending-verification
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: pass-tech-review
@@ -68,10 +68,13 @@ last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
 deepseek_cn_review_state: needs-structure-rework
 last_deepseek_cn_review_at: 2026-05-27
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch04-memory/14-art-gc-region-fragmentation-compaction.md"
 ---
-# 4.8 ART 分代垃圾回收与 GC 暂停分析
+# 4.7 ART 分代 GC、Region 碎片与暂停分析
 
-ART 源码以 Android 17 / API 37 的 `android-17.0.0_r1` 为准，内核能力以 `android17-6.18-2026-06_r6` 为准。§4.3 介绍了 ART 堆、分配器与收集器的整体关系。
+ART 源码以 Android 17 / API 37 的 `android-17.0.0_r1` 为准，内核能力以 `android17-6.18-2026-06_r6` 为准。§4.3 介绍 ART 堆、分配器与收集器的整体关系。
 
 GC 与慢帧重叠，只能说明两件事同时发生。要判断 GC 是否参与造成慢帧，还要拆开暂停时间、GC 线程运行时间、GC 线程等待 CPU 的时间，以及主线程和 RenderThread 当时的调度情况。
 
@@ -247,9 +250,33 @@ LOS 对排查的意义主要在于识别大块 `byte[]`、`char[]`、`int[]`、�
 
 Android 8.0 起，`Bitmap` 像素数据放在 native heap。Android 14～17 中，大图带来的内存压力仍很重要，但像素内存不能按 Java LOS 对象计算。应结合 Java wrapper、native allocation、图形缓冲和 GPU 资源分别观察。
 
-## 8. 用 Perfetto 判断 GC 是否参与慢帧
+## 8. Region 碎片与 compaction 的准确边界
 
-### 8.1 先保证 trace 包含所需数据
+ART heap 的碎片、native allocator 碎片与 Linux 物理页碎片属于不同地址层级。ART compaction 移动 managed object，目标是整理对象空间；Linux `mm/compaction.c` 迁移物理页，目标是形成连续 buddy 空闲块。两者都可能出现在同一时间窗，但不能共享一套“碎片率”。
+
+### CC 的三种 evacuation 结果
+
+Concurrent Copying 以 RegionSpace 为主要 moving space。Android 17 会结合 collection 范围、region 年龄、分配状态和存活率，为 region 选择不同结果：
+
+- `ForceEvac`：本轮必须搬迁；
+- `LivePercentNewlyAllocated`：新分配或低存活 region 可按存活比例决定搬迁；
+- `UnevacFromSpace`：高存活 region 暂时保留，避免为了少量空洞复制大量对象。
+
+75% 是非 large region 的一项存活率选择阈值，不是整个 Java heap 的碎片告警线。RegionSpace 中跨多个 region 的 large region 也不等于 Large Object Space；前者仍属于 moving-space 布局，后者是独立非移动大对象空间。
+
+### CMC 与 UFFD 处理页级搬迁
+
+CMC 会先标记存活对象、计算压紧后的目标地址并修正引用，再用 userfaultfd/SIGBUS 相关能力协调应用重新访问尚未处理页面时的填充。其运行条件还受 `MREMAP_DONTUNMAP`、UFFD feature、系统属性和 ART flag 约束；条件不满足时可能选择 CC 或 STW fallback。
+
+Generational CMC 的 `YoungMarkCompact` 复用主 `MarkCompact`，用 young/mid/old 边界缩小常见回收范围。young collection 不等于只看新区域：old-to-young 引用仍需要 card/remembered information，存活对象要经过 young、mid 两轮才晋升 old。
+
+### 诊断时先确认 collector
+
+同样的“GC 后 RSS 没下降”可能来自存活集过大、Unevac region、LOS、allocator 保留页面，或 Java heap 之外的 native/graphics 增长。诊断顺序应是：确认 collector 与 generational 状态，区分 young/full 和 cause，再对齐暂停、对象存活、region/LOS 与 RSS/PSS。不要仅凭一次 full GC 或单个 heap utilization 数字声明“碎片严重”。
+
+## 9. 用 Perfetto 判断 GC 是否参与慢帧
+
+### 9.1 先保证 trace 包含所需数据
 
 抓取交互 trace 时，至少需要应用调度、ART/GC 事件和 Frame Timeline。不同 Android 构建与 trace 配置能看到的轨道不同。若 SQL 表为空，应先检查 data source 和目标进程是否被采集，再判断应用没有 GC。
 
@@ -261,7 +288,7 @@ Android 8.0 起，`Bitmap` 像素数据放在 native heap。Android 14～17 中�
 4. 对重叠事件比较 wall、running、runnable 和 interruptible/uninterruptible 时间。
 5. 再决定是否抓分配 profile 或 heap dump。
 
-### 8.2 汇总 GC 类型与时长
+### 9.2 汇总 GC 类型与时长
 
 下面的查询适合回答“哪类 GC 多、总共回收了多少、wall time 多少”：
 
@@ -283,7 +310,7 @@ ORDER BY gc_count DESC;
 
 `gc_dur` 是事件 wall duration。`reclaimed_mb` 由 Perfetto 的 heap counter 区间变化推导，适合在同一 trace 中比较趋势，不应当作所有堆空间释放量的精确账本。
 
-### 8.3 查 GC 与 jank 帧的时间交集
+### 9.3 查 GC 与 jank 帧的时间交集
 
 下面的查询按进程和时间区间找交集：
 
@@ -310,7 +337,7 @@ ORDER BY gc.gc_ts;
 
 查询结果证明两者重叠，不证明因果。还需检查应用线程暂停、GC 线程调度以及同一帧中的其他阻塞。
 
-### 8.4 区分 GC 执行和等待 CPU
+### 9.4 区分 GC 执行和等待 CPU
 
 下面的查询把 running 与 runnable 分开：
 
@@ -332,9 +359,9 @@ ORDER BY avg_running_ms DESC;
 
 running 高时，继续查分配速率、存活对象和 full collection；runnable 高时，同时查系统负载和 CPU 调度。二者也可能一起升高。
 
-## 9. 用 GC timing、分配 profile 和 heap dump 补证据
+## 10. 用 GC timing、分配 profile 和 heap dump 补证据
 
-### 9.1 SIGQUIT 的累计 GC 统计
+### 10.1 SIGQUIT 的累计 GC 统计
 
 在允许调试的设备上，可以向目标进程发送 `SIGQUIT`：
 
@@ -346,7 +373,7 @@ ART 会把线程栈、锁和累计 GC timing 写入 ANR trace，搜索 `Dumping 
 
 发送 `SIGQUIT` 会触发一次诊断转储。压测脚本应控制次数，并避免在用户生产会话中随意执行。
 
-### 9.2 ART allocation profiling 看谁在分配
+### 10.2 ART allocation profiling 看谁在分配
 
 Perfetto 的 `heap_profile` 工具在 Android 12 及以后可选择已注册的 heap。当前命令行示例使用的 ART heap 名称为 `com.android.art`：
 
@@ -356,7 +383,7 @@ tools/heap_profile -p <PID> --heaps com.android.art
 
 它以采样方式记录 ART 分配及调用栈，适合定位滚动、解析或动画期间的分配热点。采样间隔会影响精度与开销，profile 也会扰动被测进程，因此要使用相同场景做前后对照。
 
-### 9.3 Java heap dump 看谁在保留
+### 10.3 Java heap dump 看谁在保留
 
 Perfetto ART heap dump 需要 Android 11 及以后。它记录完整的 Java 对象引用图和保留关系，不记录分配调用栈，也不包含普通 HPROF 中的对象内容。
 
@@ -367,9 +394,9 @@ Android 13 及以后，某些通过 `NativeAllocationRegistry` 关联的 native 
 - “谁在高频创建对象？”——抓 ART allocation profile。
 - “谁把这批对象一直留着？”——抓 Java heap dump。
 
-## 10. 应用侧如何降低 GC 干扰
+## 11. 应用侧如何降低 GC 干扰
 
-### 10.1 从已证实的热点开始
+### 11.1 从已证实的热点开始
 
 先录制可重复场景，确认分配调用栈、GC 类型和慢帧关系，再改代码。只看到 heap 曲线呈锯齿状还不够，因为正常运行的 managed heap 本来就会分配和回收。
 
@@ -380,7 +407,7 @@ Android 13 及以后，某些通过 `NativeAllocationRegistry` 关联的 native 
 3. 造成 full 或 blocking GC 的存活对象和短时峰值。
 4. 普通低频业务对象。
 
-### 10.2 移出每帧分配
+### 11.2 移出每帧分配
 
 自定义绘制中，确定可安全复用的绘图对象可以放到字段中：
 
@@ -400,7 +427,7 @@ class MeterView(context: Context) : View(context) {
 
 循环中的字符串拼接、装箱、临时集合也值得检查。优化目标是减少 profile 中已经出现的热点，不需要把所有小对象都改成手写缓存。
 
-### 10.3 谨慎使用对象池
+### 11.3 谨慎使用对象池
 
 Android 系统中的 `Message`、`MotionEvent` 等类型有明确的高频使用模式和生命周期约束。普通应用对象未必适合照搬对象池。
 
@@ -408,13 +435,13 @@ Android 系统中的 `Message`、`MotionEvent` 等类型有明确的高频使用
 
 对短小的 managed 对象，ART 的 TLAB 分配通常很快。先消除无意义的分配或调整算法，往往比维护通用对象池更可靠。
 
-### 10.4 复用大缓冲区要限制生命周期
+### 11.4 复用大缓冲区要限制生命周期
 
 网络、图片、音视频和序列化代码常反复创建大 `byte[]`。可以按业务并发上限复用缓冲区，或分批处理数据，避免短时间堆积多个峰值。
 
 缓存过大会抬高常驻内存，并可能触发 Android 17 的应用内存限制或系统回收。缓冲池应有容量上限，页面离开或任务结束后释放长期引用；低内存回调可作为收缩信号，不能代替容量设计。
 
-### 10.5 Compose 以重组证据为准
+### 11.5 Compose 以重组证据为准
 
 Compose 重组不等于每次都会创建 lambda 或状态对象。编译器可以记忆部分值，稳定性推断、参数变化和 API 使用方式也会影响重组范围。
 
@@ -427,7 +454,7 @@ Compose 重组不等于每次都会创建 lambda 或状态对象。编译器可�
 
 `remember` 会延长对象生命周期。将大型集合或上下文相关对象无条件记忆，可能以更高保留量换取更少分配，需要同时看 allocation profile 和 heap dump。
 
-### 10.6 显式资源关闭与 GC 分工
+### 11.6 显式资源关闭与 GC 分工
 
 文件、游标、压缩器、图像解码器和 native handle 应通过 `close()`、`use {}` 或明确的生命周期释放。GC 负责 managed object 的可达性，不能提供及时释放外部资源的时限保证。
 
@@ -435,7 +462,7 @@ Compose 重组不等于每次都会创建 lambda 或状态对象。编译器可�
 
 不要把 `System.gc()` 当作常规优化。若显式 GC 未被运行时禁止，`Heap::CollectGarbage()` 会以 explicit cause 请求 `gc_plan_.back()` 对应的回收计划，通常涉及较大范围；调用也可能被配置忽略。业务代码无法借它稳定控制暂停时机。
 
-## 11. 一次 GC 卡顿排查示例
+## 12. 一次 GC 卡顿排查示例
 
 假设列表快速滚动时出现间歇性慢帧，可以按以下顺序缩小范围：
 
@@ -449,7 +476,7 @@ Compose 重组不等于每次都会创建 lambda 或状态对象。编译器可�
 
 若修改后分配量下降，而长尾帧没有改善，说明原来的 GC 重叠可能只是伴随现象。此时应回到 Binder、锁、I/O、CPU 调度或 GPU 等方向继续查。
 
-## 12. 常见问题
+## 13. 常见问题
 
 ### Young GC 没有扫描整个 old，如何保证不漏对象？
 
@@ -471,7 +498,7 @@ Compose 重组不等于每次都会创建 lambda 或状态对象。编译器可�
 
 分代策略可以用更多次、成本较低的 young collection 替代 full collection。次数单独增加不代表退化，应同时比较总 GC CPU、暂停长尾、blocking GC、回收吞吐、RSS 和用户场景耗时。
 
-## 13. 版本结论
+## 14. 版本结论
 
 | 版本 | 分代 GC 变化 |
 | --- | --- |

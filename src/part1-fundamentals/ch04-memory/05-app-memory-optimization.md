@@ -2,8 +2,8 @@
 
 
 
-status: finalized
-title: App 内存优化
+status: ready-for-review
+title: App 内存优化与诊断
 section: '4.5'
 chapter: '4.5'
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
@@ -55,8 +55,8 @@ review_round: 5
 polish_count: 1
 polish_date: '2026-04-08'
 polish_by: task2b-polish
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: ready-for-review
+task6_state: pending-verification
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-04T04:55:01"
@@ -76,10 +76,14 @@ last_task9_review_log: "logs/deep-review/2026-06-04-08-deep-review.md"
 last_task9_autofix_at: "2026-06-04"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-24
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch04-memory/4.35-android17-cpu-cache-locality-pss-accounting.md"
+  - "src/part1-fundamentals/ch04-memory/4.36-android17-advanced-memory-optimization.md"
 ---
 
 
-# App 内存优化
+# 4.5 App 内存优化与诊断
 
 ## 先确定优化对象
 
@@ -618,6 +622,43 @@ Android 15 / API 35 引入 `ProfilingManager`，应用可以请求由系统管�
 | 后台进程频繁消失 | `ApplicationExitInfo`、Android vitals、lmkd/系统内存压力 |
 | FD 持续增长 | `/proc/self/fd`、StrictMode、资源所有权审查 |
 
+## PSS 与 CPU cache locality 分属不同层级
+
+内存占用和访问效率可能同时改善或恶化，但测量对象不同：
+
+| 粒度 | 典型大小与职责 | 主要证据 |
+|---|---|---|
+| CPU cache line | 由目标 CPU 决定；承载 cache 传输与一致性 | PMU、simpleperf、调度与 CPU 拓扑 |
+| 基础 page | 4 KiB 或 16 KiB；承载映射、fault、RSS/PSS | `smaps`、page fault、Perfetto process stats |
+| ART card | Android 17 为 1024 B 地址范围；记录引用写入候选 | ART GC trace 与源码 |
+
+PSS 由内核按驻留页的 mapcount 分摊。`Debug.MemoryInfo` 的详细路径读取 `smaps` 并加入 memtrack，快速 `Debug.getPss()` 则由 libmeminfo 在 rollup 与完整 smaps 之间选择。CPU 换核、cache miss 或 false sharing 不会直接改变 PSS 算法；它们只有在改变实际触页、对象布局或工作集后，才可能间接影响驻留页。
+
+优化局部性时，应保持工作量、线程亲和与设备状态一致，分别采集结构体/数组布局和访问顺序、CPU/cluster 调度、目标设备支持的 PMU cache 事件，以及相同时间窗内的 RSS/PSS。不要用 “PSS 下降” 代替 cache miss 证据，也不要用单个 cache-miss 计数证明内存占用已经优化。
+
+## 从轻量计数逐级进入 profiler
+
+Perfetto 中常用的四个内存数据源回答不同问题：
+
+| 数据源 | 回答的问题 | 主要限制 |
+|---|---|---|
+| `linux.process_stats` | 进程 RSS、状态和 adj 如何变化 | 完整 PSS 需要显式 `scan_smaps_rollup`，且受 procfs/ptrace 权限限制 |
+| `linux.sys_stats` | meminfo、vmstat、PSI、buddyinfo 的系统背景 | 每类字段需要在配置中显式开启 |
+| `android.heapprofd` | 哪些 native 分配调用栈仍有存活采样 | 采样间隔、unwind 和传输会增加开销，且不覆盖所有 mapping/驱动内存 |
+| `android.java_hprof` | 哪些 managed object 被谁保留 | 重量级对象图快照，会暂停并增加目标进程内存 |
+
+`linux.process_stats` 的周期下限是 100 ms，但下限不是推荐频率。heapprofd 的 `sampling_interval_bytes` 越小，调用栈与传输成本通常越高；`all=true` 会尝试覆盖大量合格进程，不适合作为普通诊断默认值。使用 `block_client` 还可能直接拖慢目标进程。
+
+一轮可复现的调查按以下顺序加深：
+
+1. 固定用户可见问题、设备、build 和时间区间。
+2. 用 process/sys stats、调度、fault/reclaim 与少量 `dumpsys meminfo` 判断 Java、native、graphics、mapping、swap 或系统 pressure 中哪一层异常。
+3. 只对命中的方向启用 Java HPROF、heapprofd、memtrack/DMA-BUF、MTE 或内核 compaction 证据。
+4. 保存完整 Perfetto config、采样间隔、目标 PID、profileable 状态和 profiler 自身 CPU/内存开销。
+5. 用同一工作量比较优化前后，不把 profiler on/off 两组数据直接混为产品收益。
+
+最后把“释放”拆成四个时刻：业务断开引用、GC/allocator 标为空闲、runtime/allocator 归还页面、内核回收后 RSS/PSS 下降。对象不可达后 PSS 没有立刻下降，不足以证明泄漏；PSS 暂时下降也不能证明所有权问题已经修复。
+
 ## 常见误区
 
 ### `System.gc()` 能修复内存问题
@@ -696,6 +737,6 @@ Android 14+ 只保留 `UI_HIDDEN` 和 `BACKGROUND` 两个公开投递 level，�
 - 4.1「Android 内存模型全景」：进程内存口径
 - 4.2「Linux 内存管理」：页、回收与内核压力
 - 4.3「ART 虚拟机内存管理」：分配与 GC
-- 4.4「Low Memory Killer」：lmkd、冻结与进程终止
-- 4.7「16 KB Page Size」：构建、加载与兼容性细节
+- 4.4「系统内存压力与 lmkd」：压力检测、优先级与进程终止
+- 4.6「16 KB Page Size」：构建、加载与兼容性细节
 - 7.2、7.3：卡顿分类与 Perfetto 分析

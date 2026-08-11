@@ -358,7 +358,7 @@ Android 17 平台侧可固定查看：
 ## 与其他章节的关系
 
 - [§1.15 JNI/NDK 性能](../../part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md)：跨语言调用、引用、拷贝和线程附着。
-- [§4.7 16KB Page Size](../../part1-fundamentals/ch04-memory/07-16kb-page-size.md)：页表、TLB、ELF 和系统级影响。
+- [§4.6 16 KB Page Size](../../part1-fundamentals/ch04-memory/06-16kb-page-size.md)：页表、TLB、ELF 和系统级影响。
 - [§8.2 App 启动全流程](02-app-launch.md)：native load 在进程启动和首帧中的位置。
 - [§8.3 启动优化策略](03-launch-optimization.md)：TTID/TTFD、初始化编排和回归。
 - [§14.13 Hook 基础设施](../../part3-tools/ch14-other-tools/13-hook-infrastructure.md)：PLT、inline hook 与平台保护边界。

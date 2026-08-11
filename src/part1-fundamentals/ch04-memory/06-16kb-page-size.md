@@ -1,8 +1,8 @@
 ---
 
-title: "16KB Page Size 与 Android 性能"
-chapter: "4.7"
-section: "4.7"
+title: "16 KB Page Size 与 Android 性能"
+chapter: "4.6"
+section: "4.6"
 status: finalized
 drafted_date: "2026-04-06"
 reviewed_date: "2026-06-28"
@@ -72,7 +72,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-28
 ---
 
-# 4.7 16 KB Page Size 与 Android 性能
+# 4.6 16 KB Page Size 与 Android 性能
 
 Android 的 16 KiB 页适配包含两个问题：
 

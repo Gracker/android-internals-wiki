@@ -52,7 +52,7 @@ sources:
 
 “内存还有空闲，分配却变慢”“GC 频率突然升高”“进程 RSS 很大”经常被统称为内存碎片。这样的描述不足以支持优化决策。ART moving space、LargeObjectSpace、Native heap、虚拟地址空间和 Linux 物理页都有各自的碎片模型，处理手段也不同。
 
-当前平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，讨论范围是 GC 碎片怎样转化为应用性能问题，以及如何用可复现证据定位。CC、CMC、RegionSpace 和 `UnevacFromSpace` 的完整源码结构见 [§4.14 ART GC Region 碎片化与 Compaction 策略](../../part1-fundamentals/ch04-memory/14-art-gc-region-fragmentation-compaction.md)；这里侧重端侧诊断和应用优化。
+当前平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，讨论范围是 GC 碎片怎样转化为应用性能问题，以及如何用可复现证据定位。CC、CMC、RegionSpace 和 `UnevacFromSpace` 的完整源码结构见 [§4.7 ART 分代 GC、Region 碎片与暂停分析](../../part1-fundamentals/ch04-memory/07-art-generational-gc.md)；这里侧重端侧诊断和应用优化。
 
 `RegionSpace`、`ShouldBeEvacuated()`、`YoungMarkCompact`、CMC pause、LOS 判定和 GC trace slice 的结论，以 `android-17.0.0_r1` ART 源码、Android 17 官方说明、ART GC debug 文档与 Perfetto memory profiling 文档为边界。没有实机 trace 或 benchmark 支撑的内容只用于说明排查流程，不作为量化收益或跨设备保证。
 

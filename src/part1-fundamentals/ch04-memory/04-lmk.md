@@ -1,13 +1,13 @@
 ---
-status: finalized
-title: Low Memory Killer
+status: ready-for-review
+title: 系统内存压力与 lmkd
 section: 4.4
 chapter: 4.4
 drafted_date: 2026-03-31
 reviewed_date: 2026-05-10
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: "reviewed"
+task6_state: "pending-verification"
 _audit: 2026-05-21
 last_task6_audit_log: logs/review/2026-05-21-21-audit.md
 last_task6_audit: 2026-06-14
@@ -39,10 +39,15 @@ repaired_date: 2026-04-27
 repaired_by: openclaw-task2b
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-09
-pipeline_stage: ready-to-publish
+pipeline_stage: ready-for-review
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch04-memory/15-psi-lowmemdetector-lmkd-architecture.md"
+  - "src/part1-fundamentals/ch04-memory/4.36-android17-lmkd-procs-prio-batch.md"
+  - "src/part1-fundamentals/ch04-memory/4.50-lmkd-v2-psi-tiered-pressure-governance.md"
 ---
 
-# Low Memory Killer
+# 4.4 系统内存压力与 lmkd
 
 ## 先把 LMK 放回 Android 内存体系
 
@@ -175,6 +180,8 @@ Android 17 的命令号在 Framework `ProcessList.java` 与 `system/memory/lmkd/
 
 批量命令每个包最多放 3 个进程，每个记录有 PID、UID、adj、process type 和 `for_lmkd_only` 五个字段。Android 17 的 `ProcessList.batchSetOomAdj()` 固定把末尾一个字段写成 0，因此批量路径不支持只更新 `lmkd` 内部值。
 
+每包三条来自控制包最多 16 个 `int`：一个命令字加三组、每组五个字段。批量路径减少 socket write 和 daemon 收包次数，但它不是一次原子事务。`lmkd` 会逐条校验 PID、UID、adj 和字段范围；某条记录失败不代表其他记录自动回滚。`for_lmkd_only` 只决定是否同时写 `/proc/<pid>/oom_score_adj`，不是“只在压力时生效”的延迟更新开关。
+
 连接建立后，`ProcessList.onLmkdConnect()` 会：
 
 1. 发送 `LMK_PROCPURGE`，清掉旧连接留下的登记；
@@ -237,6 +244,10 @@ low_ram_device || !use_minfree_levels
 
 上面的表达式用来说明默认选择条件：low-RAM 设备或未启用 minfree legacy 模式时采用新策略。若强制使用旧策略，Android 17 还要求 memcg v1；`mp_event_common()` 已标记 `[[deprecated("memcg v1 is not supported after Dec. 2026")]]`。这条注解是源码中的支持期限提示，不宜扩写成某个 Android 产品版本的兼容承诺。
 
+`LowMemDetector` 和 “LMKD v2” 都不是 `android-17.0.0_r1` 中的正式类名或版本对象。前者最多表示低内存检测这一概念，后者常用于旧资料中区分 userspace lmkd 与早期内核模块。当前源码应按 `use_new_strategy`、PSI trigger、memevents 和具体函数解释。
+
+Android 17 的 `libpsi` 为 lmkd 打开全局 `/proc/pressure/memory`，并没有遍历每个 App 的 `memory.pressure`。`ro.config.per_app_memcg`、Reaper 使用 `cgroup.kill`、cgroup v2 支持局部 PSI，是三个不同事实；它们不能推出 lmkd 会按“哪个 App cgroup 的 PSI 最高”选择 victim。
+
 ### PSI 唤醒之后还要检查什么
 
 新策略收到 PSI 或轮询事件后，会继续读取并比较：
@@ -275,6 +286,12 @@ Android 17 新策略的主要 kill reason 包括：
 普通低水位分支使用 `ro.lmk.lowmem_min_oom_score`。Android 17 默认是 `PREVIOUS_APP_ADJ + 1`，即 701，并且源码把它限制为不低于 `PERCEPTIBLE_APP_ADJ + 1`，即 201。
 
 “701 等于从 cached 开始杀”并不严谨。启用 previous ladder 时，701～799 可能包含 previous 进程；800 是 service B；900 以上才是 cached。关闭该阶梯时，701～799 可能没有对应进程，但门槛仍是 701。严重 stall 下门槛可以降到 0，使前台层也进入候选范围。
+
+`__mp_event_psi()` 按固定顺序评估 vendor 事件、kill 后仍低水位、critical PSI、low swap、thrashing、direct reclaim 与普通低水位。前面的分支命中后会确定本轮 reason，后面的条件不会覆盖它。诊断日志中的 reason 因而不仅说明“哪些条件为真”，也反映了源码判断顺序。
+
+thrashing 来自 `workingset_refault_file` 相对窗口起点 active/inactive file pages 的增长率，描述文件页工作集反复丢失；它不是匿名页换入率、ZRAM 压缩率或 PSI `full`。成功 kill 后，部分 reason 会按 `thrashing_limit_decay` 降低下一轮动态阈值；没有合适 victim 时，历史 refault 可经过衰减保留到下一窗口。
+
+还要区分三个相近开关：`thrashing_limit_critical` 可取消额外的 perceptible 保护；`stall_limit_critical` 比较 memory `full avg10`；`direct_reclaim_threshold_ms` 只在 memevents 能提供 direct-reclaim 起止时判断卡死。它们不是一个“critical thrashing”条件。
 
 ### 候选选择
 
@@ -326,6 +343,10 @@ ATRACE_INSTANT_FOR_TRACK(LOG_TAG, desc);
 - 向订阅的 Framework 客户端发送 kill 和 stats 消息。
 
 `ProcessList` 收到 `LMK_PROCKILL` 后，把记录交给 `AppExitInfoTracker`，应用退出历史会标记为 `ApplicationExitInfo.REASON_LOW_MEMORY`。
+
+### 主事件处理超时的 watchdog
+
+lmkd 为事件 handler 启动 2 秒 watchdog。超时后，独立线程从 `oom_score_adj=1000` 向 0 搜索有效候选，通过 Reaper 同步 kill 一个进程并记录 `killinfo`。这条紧急路径不会重新执行完整的 PSI、水位和 reason 决策；日志中的 `lmkd watchdog timed out!` 应与普通压力 kill 分开统计。
 
 ## LMK、Linux OOM、进程内 OOM 与 MemoryLimiter
 

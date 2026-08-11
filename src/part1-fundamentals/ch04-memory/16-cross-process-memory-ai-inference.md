@@ -1,6 +1,6 @@
 ---
-title: "Android 17 AI Agent 内存沙箱化与跨应用数据复用"
-chapter: "4.22"
+title: "跨进程内存共享与端侧推理预算"
+chapter: "4.16"
 status: ready-for-review
 drafted_date: "2026-07-06"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
@@ -21,15 +21,15 @@ sources:
   - type: aosp
     path: "system/sepolicy/ — SELinux policy for isolated processes"
 tags: [ai-agent, memory, sandbox, data-reuse, isolation, ml-runtime, sharedmemory]
-related_chapters: ["4.3", "4.5", "4.18", "5.20", "5.21", "5.27", "23.25"]
+related_chapters: ["4.3", "4.5", "4.13", "5.20", "5.21", "5.27", "23.25"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-06"
 gap_source: "素材驱动/研究素材"
 ---
 
-# 4.22 Android 17 AI Agent 内存沙箱化与跨应用数据复用
+# 4.16 跨进程内存共享与端侧推理预算
 
-Android 17 / API 37 没有名为“AI Agent 进程”的内核对象，也没有为 Agent 定义专用的内存命名空间。模型推理、工具调用和跨应用协作仍受 Android 已有机制约束：应用 UID、进程地址空间、Binder、文件描述符、SELinux、cgroup v2、AMS 进程状态和 lmkd。
+Android 17 / API 37 没有名为“AI Agent 进程”的内核对象，也没有为 Agent 定义专用内存命名空间。模型推理、工具调用和跨应用协作仍受 Android 已有机制约束：应用 UID、进程地址空间、Binder、文件描述符、SELinux、cgroup v2、AMS 进程状态和 lmkd。
 
 看到某个产品使用 AICore、私有推理服务或厂商 NPU service 时，不能把该产品的包名、进程优先级和缓存策略写成 AOSP Android 17 的通用行为。`com.google.android.aicore` 不属于 AOSP `android-17.0.0_r1`；它在具体设备上的生命周期和内存策略要以该设备实现为准。
 
@@ -41,7 +41,7 @@ Android 17 / API 37 没有名为“AI Agent 进程”的内核对象，也没有
 - `android:process`、isolated service 和系统推理服务提供的隔离强度不同；
 - Android 17 的 MemoryLimiter 与 lmkd 仍依据进程状态、设备配置和内存压力工作，没有通用的“正在执行 AI”进程标签；设备配置可以单独豁免默认的 sandboxed inference service package。
 
-## 4.22.1 先确定内存属于哪个进程
+## 4.16.1 先确定内存属于哪个进程
 
 端侧推理常见四种部署方式：
 
@@ -92,7 +92,7 @@ Manifest 可以声明：
 
 宿主应通过受约束的 Binder 接口传入完成一次请求所需的 fd、只读共享区和最少元数据。需要 GPU、codec 或其他硬件服务时，还要确认该设备为对应 isolated domain 配置了哪些服务与设备权限。AOSP 的 `isolated_compute_app` 有单独的 SELinux 规则，普通 `isolated_app` 不能据此获得相同能力。
 
-## 4.22.2 RSS、PSS 与共享页怎样记账
+## 4.16.2 RSS、PSS 与共享页怎样记账
 
 跨进程复用常见的误判是：“两个进程都显示 400 MiB RSS，所以系统用了 800 MiB。”RSS 会把当前驻留在每个进程页表中的共享页完整计入每个进程，直接相加会重复。
 
@@ -115,7 +115,7 @@ Manifest 可以声明：
 
 分析模型内存时，至少要分别记录 Java heap、native heap、file mapping、shared/dma-buf、swap 和驱动侧内存。单看 `Debug.MemoryInfo.getTotalPss()` 无法解释每一类生命周期。
 
-## 4.22.3 IPC 先传控制信息，再传大块数据
+## 4.16.3 IPC 先传控制信息，再传大块数据
 
 Android 17 的 libbinder 在 `ProcessState.cpp` 为接收端映射：
 
@@ -139,7 +139,7 @@ Android 17 的 libbinder 在 `ProcessState.cpp` 为接收端映射：
 
 “通过 Binder 传 fd”仍会传一个小 Parcel。被共享的是 fd 指向的对象，控制消息本身没有消失。
 
-## 4.22.4 SharedMemory：共享页加上能力句柄
+## 4.16.4 SharedMemory：共享页加上能力句柄
 
 `android.os.SharedMemory` 是 `Parcelable`。Android 17 Java 实现通过 native `ashmem_create_region()` 创建区域，映射时调用 `mmap(..., MAP_SHARED, ...)`。是否由 libcutils 在设备上使用 memfd 兼容实现，不应仅凭 Java 类名推断。
 
@@ -204,7 +204,7 @@ try {
 - 对长度、offset、格式和校验值做边界检查；
 - 取消请求时关闭不再需要的 fd，并让双方解除 mapping。
 
-## 4.22.5 HardwareBuffer：硬件互操作能力由契约决定
+## 4.16.5 HardwareBuffer：硬件互操作能力由契约决定
 
 `HardwareBuffer` 是可 Parcelable 的硬件缓冲对象，格式与 usage flags 描述预期用途。它可以被 GPU、传感器、codec 或其他辅助处理单元访问，但这不等于任意 NPU 都能直接读取任意 `HardwareBuffer`。
 
@@ -220,7 +220,7 @@ try {
 
 不要把 `HardwareBuffer` 统一称为“GPU 显存”。许多 Android 设备使用统一物理内存，buffer 的分配 heap、缓存属性和硬件可见性由 gralloc 与驱动决定。
 
-## 4.22.6 ContentProvider：共享数据，不暴露进程内存
+## 4.16.6 ContentProvider：共享数据，不暴露进程内存
 
 `ContentProvider` 适合让目标 App 保留数据所有权，调用方按 URI、权限和查询条件读取。它提供的关键能力是访问控制和数据协议，而不是让 Agent 任意读取另一个 App 的地址空间。
 
@@ -236,7 +236,7 @@ try {
 
 这样可以把“小型索引”和“大型内容”分开，也能在 provider 侧执行撤销、审计和按用户隔离。
 
-## 4.22.7 App Functions：受控函数调用，不是共享内存 API
+## 4.16.7 App Functions：受控函数调用，不是共享内存 API
 
 `AppFunctionManager.executeAppFunction()` 和 `AppFunctionService` 从 Android 16 / API 36 开始提供。Android 17 / API 37 仍由 system_server 处理执行请求；permission-v2 路径的 AOSP 校验包括：
 
@@ -254,7 +254,7 @@ Android 17 / API 37 新增了 `AppFunctionUriGrant` 和 `ExecuteAppFunctionRespo
 
 App Functions 也不会自动获得目标 App 的全部数据。目标函数只能读取目标 App 自己有权访问的内容，并由函数实现决定返回哪些字段。
 
-## 4.22.8 模型推理内存要按阶段和后端计算
+## 4.16.8 模型推理内存要按阶段和后端计算
 
 端侧生成式模型的常见内存可拆成：
 
@@ -317,7 +317,7 @@ kv_bytes
 
 会话结束后 Java/native 对象已经不可达，也不保证 RSS 立刻下降。要区分“对象仍被引用”“allocator 留存”“干净文件页仍驻留”和“驱动仍持有 buffer”。
 
-## 4.22.9 Android 17 MemoryLimiter 与 lmkd 的边界
+## 4.16.9 Android 17 MemoryLimiter 与 lmkd 的边界
 
 ### MemoryLimiter 的生产值由设备配置决定
 
@@ -335,14 +335,14 @@ Android 17 的 `MemoryLimiter.java` 包含一份 `sDefaultConfig`：visible 内�
 | --- | --- | --- |
 | visible | TOP、BOUND_TOP、IMPORTANT_FOREGROUND、TOP_SLEEPING | vendor 配置的 visible memory/swap |
 | notVisible | FOREGROUND_SERVICE、SERVICE、RECEIVER、HOME 等 | vendor 配置的 notVisible memory/swap |
-| cached | 各类 cached state | `memory.high` 忽略，`memory.swap.high` 禁用 |
+| cached | 各类 cached state | `memory.high` 忽略，`memory.swap.max` 设为 `max` |
 | persistent | PERSISTENT、PERSISTENT_UI | 两项均不限制 |
 
 这里的 visible 是 MemoryLimiter 自己的分组，不能与窗口可见性或某个 App 组件名直接等同。
 
 还有一个与端侧推理直接相关的例外：`initializeExemptList()` 会读取 `config_defaultOnDeviceSandboxedInferenceService`，把配置的 package 加入豁免列表。设备默认的 sandboxed inference service 因而可能不受该 limiter 管理。第三方 `:inference` 进程不会仅因名字含有 inference 就自动获得豁免。
 
-`memory.high` 是 cgroup v2 的高水位控制，会让超限分配进入回收和节流压力；它不是“到值立即 OOM”的硬上限。`memory.swap.high` 控制交换压力。具体延迟变化取决于页面类型、工作集、swap、存储与内核回收，不能从阈值推导固定的 P99 倍数。
+`memory.high` 是 cgroup v2 的高水位控制，会让超限分配进入回收和节流压力；它不是“到值立即 OOM”的硬上限。Android 17 JNI 实际写入 `memory.swap.max`，它限制该 cgroup 可使用的 swap。具体延迟变化取决于页面类型、工作集、swap、存储与内核回收，不能从阈值推导固定的 P99 倍数。
 
 ### lmkd 仍以进程优先级和设备策略选受害者
 
@@ -358,7 +358,7 @@ Android 17 lmkd 的 kill 日志还读取 RSS、匿名 RSS、swap、dma-buf PSS �
 
 相关内核行为以 `android17-6.18-2026-06_r6` 为 kernel 锚点；Android 用户空间源码以 `android-17.0.0_r1` 为锚点。
 
-## 4.22.10 一套可执行的测量方法
+## 4.16.10 一套可执行的测量方法
 
 ### 第一步：画出 PID、UID 与 fd 所有权
 
@@ -410,7 +410,7 @@ Perfetto 中可启用：
 
 heapprofd 面向 native heap 分配，不能覆盖只读模型文件 mapping 的全部驻留页，也不能替代 dma-buf 和加速器驱动统计。Java heap 还要结合 ART heap dump、allocation sampling 或 `dumpsys meminfo`。
 
-## 4.22.11 设计评审清单
+## 4.16.11 设计评审清单
 
 ### 进程与隔离
 
@@ -442,7 +442,7 @@ heapprofd 面向 native heap 分配，不能覆盖只读模型文件 mapping 的
 - 共享区是否可能残留上一会话的敏感内容？
 - 参数长度、offset、格式、版本和取消时序是否做了防御性校验？
 
-## 4.22.12 源码索引
+## 4.16.12 源码索引
 
 | 主题 | Android 17 / API 37 源码 |
 | --- | --- |
@@ -463,7 +463,7 @@ heapprofd 面向 native heap 分配，不能覆盖只读模型文件 mapping 的
 | isolated / isolated_compute 策略 | [`system/sepolicy/private/isolated_app.te`](https://android.googlesource.com/platform/system/sepolicy/+/android-17.0.0_r1/private/isolated_app.te)、[`isolated_compute_app.te`](https://android.googlesource.com/platform/system/sepolicy/+/android-17.0.0_r1/private/isolated_compute_app.te) |
 | Binder buffer 分配 | [`kernel/common/drivers/android/binder_alloc.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_alloc.c)，`android17-6.18-2026-06_r6` |
 
-## 4.22.13 小结
+## 4.16.13 小结
 
 - Android 17 没有通用的 AI Agent 进程类别；先确认内存由哪个 PID、UID、cgroup 和驱动持有。
 - `:inference` 提供地址空间与故障隔离，但通常仍是应用 UID；敏感代码需要评估 isolated service。

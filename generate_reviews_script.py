@@ -119,22 +119,7 @@ files_data = {
         "p1_count": 1
     },
     "4.6": {
-        "filename": "06-memory-evolution.md",
-        "ch_num": "4",
-        "topic": "Android 内存架构演进",
-        "aosp_path": "system/memory/lmkd/lmkd.c",
-        "func_name": "mp_event_common",
-        "android_ver": "12",
-        "component": "lmkd",
-        "missing_part": "LMKD 从基于 vmpressure 切换到基于 PSI (Pressure Stall Information) 的演进细节",
-        "missing_func": "init_psi_monitor",
-        "trace_event": "lmkd_kill",
-        "blind_spot": "PSI 指标在不同内核版本下的计算差异及其对 LMKD 杀进程策略的影响",
-        "conclusion": "Android 12 以后全面启用 PSI 监控内存压力，相较于 vmpressure 反应更灵敏。",
-        "p1_count": 1
-    },
-    "4.7": {
-        "filename": "07-16kb-page-size.md",
+        "filename": "06-16kb-page-size.md",
         "ch_num": "4",
         "topic": "16KB Page Size 适配",
         "aosp_path": "bionic/libc/bionic/malloc_common.cpp",
@@ -148,8 +133,8 @@ files_data = {
         "conclusion": "16KB 页大小会使系统预留内存变多，App NDK 开发必须确保内存分配页对齐，否则直接 SIGBUS。",
         "p1_count": 1
     },
-    "4.8": {
-        "filename": "08-art-generational-gc.md",
+    "4.7": {
+        "filename": "07-art-generational-gc.md",
         "ch_num": "4",
         "topic": "ART 世代垃圾回收 (Generational CC)",
         "aosp_path": "art/runtime/gc/collector/concurrent_copying.cc",

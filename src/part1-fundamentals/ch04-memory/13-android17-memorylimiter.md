@@ -1,6 +1,6 @@
 ---
-title: "4.18 Android 17 MemoryLimiter 深度解析"
-chapter: "4.18"
+title: "Android 17 MemoryLimiter：memcg 限制与超限诊断"
+chapter: "4.13"
 status: ready-for-review
 drafted_date: "2026-07-02"
 applicable_versions: "Android 17 (API 37)"
@@ -28,17 +28,17 @@ sources:
   - type: kernel-doc
     path: "kernel.org Documentation/admin-guide/cgroup-v2.rst"
 tags: [MemoryLimiter, memory, cgroup-v2, memcg, system-architecture, Android-17]
-related_chapters: ["4.4", "4.5", "4.11", "4.15", "4.17"]
+related_chapters: ["4.4", "4.5", "4.11", "4.14"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-02"
 gap_source: "章节深挖"
 ---
 
-# 4.18 Android 17 MemoryLimiter 深度解析
+# 4.13 Android 17 MemoryLimiter：memcg 限制与超限诊断
 
-> 源码以 AOSP `android-17.0.0_r1` 与内核 `android17-6.18-2026-06_r6` 为基准。§4.17 关注 MemoryLimiter 对应用监控的影响；这里沿源码调用链说明它的启用条件、memcg 写入、从事件监听到轮询的切换，以及联合超限后的延迟杀进程流程。
+> 源码以 AOSP `android-17.0.0_r1` 与内核 `android17-6.18-2026-06_r6` 为基准。本文沿源码调用链说明启用条件、memcg 写入、从事件监听到轮询的切换、联合超限后的延迟杀进程流程，以及现场监控口径。
 
-## 实现边界
+## 先确认实现边界
 
 MemoryLimiter 是 `system_server` 内的一套按进程配置和监控 memcg 的机制。它根据进程状态选择一组内存参数，由 JNI 写入该进程的 cgroup v2 文件；当进程进入持续高内存区间时，它还可以采集诊断信息并请求 AMS 杀进程。
 
@@ -326,7 +326,6 @@ Android 17 中还存在若干命名与实现不一致之处，例如 Java 的 `s
 
 ## 延伸阅读
 
-- §4.4 Low Memory Killer：lmkd 的压力检测与进程选择
-- §4.11 Cached App Freezer 与 GC 触发边界
-- §4.15 Android 17 PSI/LowMemDetector 与 lmkd
-- §4.17 Android 17 MemoryLimiter 与内存监控影响
+- §4.4 系统内存压力与 lmkd：包括 PSI、thrashing 与 kill 决策
+- §4.11 Cached App Freezer、外部页回收与 GC 边界
+- §4.14 `onTrimMemory()` 回调：MemoryLimiter 不向目标应用发送专属 trim
