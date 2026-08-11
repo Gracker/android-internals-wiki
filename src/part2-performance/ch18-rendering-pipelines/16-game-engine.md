@@ -4,7 +4,9 @@ chapter: "18.16"
 status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 tags: ["Unity", "Unreal", "Game-Engine", "Swappy", "Frame-Pacing", "Vulkan", "GLES", "渲染链路"]
-related_chapters: ["2.4", "2.5", "8.9", "18.6", "18.8", "18.9", "18.15", "18.19", "18.22", "18.23"]
+related_chapters: ["2.4", "2.5", "5.9", "18.6", "18.8", "18.9", "18.15", "18.19", "18.22", "18.23"]
+consolidated_from:
+  - "src/part2-performance/ch08-responsiveness/09-game-performance.md"
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 pipeline_stage: ready-to-publish
@@ -477,6 +479,18 @@ Power HAL mode 还要与面向用户的 Game Mode 分开。Android 13 的 `GameS
 
 稳定出现 30、40、45、60 或 90 FPS 上限时，先查询 Game Mode、intervention 和 frame-rate vote，再检查引擎 limiter。不要看到固定上限就直接归因于 GPU。
 
+### CPU/GPU headroom 进入低频控制回路
+
+Android 16 / API 36 起，支持设备可通过 `SystemHealthManager.getCpuHeadroom()` 和 `getGpuHeadroom()` 返回 0～100 的余量估计；暂时不可计算时可能返回 `NaN`，不支持时可能抛出 `UnsupportedOperationException`。查询至少会经过同步 Binder，渲染关键线程不能直接等待。应用应读取平台给出的最小查询间隔，在独立执行器低频采样并缓存结果。
+
+headroom 适合驱动画质控制器的趋势判断，不适合一次采样后立刻升降档。动态分辨率、阴影、后处理、simulation rate 和目标 FPS 要有滞回区间与最短保持时间；thermal headroom 仍单独采集，因为它描述热趋势，不等于当前 CPU/GPU 可用余量。
+
+### 把用户模式、系统 intervention 与 OEM 面板拆开实验
+
+同一场景至少保留四组变量：游戏自己的 Standard 基线、只切 Game Mode、只改 `game_overlay` intervention、最后再打开 OEM 游戏面板。每轮固定温度、亮度、刷新率、电源、场景和输入脚本，并记录游戏内部 target FPS / render scale、实际 present interval、频率、thermal 与 headroom。
+
+`cmd game mode` 只改变用户模式；`device_config` 的 `game_overlay` 可能改变 downscale 或 FPS throttling，通常还需要重启进程。实验前保存原值，结束后恢复。若游戏已经声明自行处理某种模式，系统可能跳过相应 intervention；测试构建需要明确记录这项声明，避免把“未生效”误判成设备缺陷。
+
 ## Draw call、Batching 与 GPU 成本
 
 每个 draw call 都会产生 CPU 侧命令准备、状态检查和 driver 成本，但“draw call 少”不自动代表 GPU 快：
@@ -681,7 +695,7 @@ OEM 策略、画质、thermal、frame-rate vote 与引擎上限都可能限制�
 ## 与其他章节的关系
 
 - [2.4 Choreographer](../../part1-fundamentals/ch02-rendering/04-choreographer.md)：VSync、回调与帧调度。
-- [8.9 游戏性能与 Game Mode](../ch08-responsiveness/09-game-performance.md)：游戏侧性能治理。
+- [5.9 ADPF 自适应性能框架](../../part1-fundamentals/ch05-cpu-power/09-adpf.md)：Hint Session、Game Mode / State、headroom 与 thermal 反馈。
 - [18.6 SurfaceView](06-surfaceview.md)：独立 Surface、BLAST 与生命周期。
 - [18.8 OpenGL ES](08-opengl-es.md)：EGL window surface 和 GLES 提交。
 - [18.9 Vulkan](09-vulkan-native.md)：Android Vulkan swapchain 与显式同步。

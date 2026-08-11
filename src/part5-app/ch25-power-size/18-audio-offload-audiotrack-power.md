@@ -9,7 +9,7 @@ last_verified: "2026-05-24"
 last_verified_against: "Android Developers AudioTrack / AAudio / Android 17 features / Media3 docs 2026-05；AOSP Android 17 源码待复核"
 confidence: medium
 tags: [audio, power, aaudio, audiotrack, offload, android17]
-related_chapters: ["1.16", "8.8", "18.23", "25.17", "26.3"]
+related_chapters: ["1.16", "18.23", "25.17", "26.3"]
 created_by: "task2a-knowledge-gap"
 drafted_by: "task2a-knowledge-gap"
 created_date: "2026-05-24"
@@ -60,7 +60,7 @@ last_deepseek_cn_review_at: 2026-06-20
 
 Audio offload 解决的是这类长时间播放的 CPU 参与度问题。平台把音频处理交给专用硬件或 DSP，应用可以一次写入更长的数据，框架侧数据管道暂停，CPU 有机会进入睡眠。它不是低延迟方案。游戏音效、乐器、语音通话、实时互动仍应看 AAudio low latency、MMAP、buffer size、callback 稳定性和线程调度，详见 1.16 节。
 
-这里讨论应用侧怎么判断、怎么接入、怎么验证和怎么灰度。AudioFlinger / AAudio / MMAP 的机制详见 1.16 节；MediaCodec、Media3 与播放管线详见 8.8 和 18.23 节；Android 17 后台音频限制详见 25.17 节。
+这里讨论应用侧怎么判断、怎么接入、怎么验证和怎么灰度。AudioFlinger / AAudio / MMAP 的机制详见 1.16 节；MediaCodec、Media3 与播放管线详见 18.23 节；Android 17 后台音频限制详见 25.17 节。
 
 ## 场景边界：什么时候值得开启 Offload
 

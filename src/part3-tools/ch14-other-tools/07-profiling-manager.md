@@ -61,8 +61,10 @@ last_deepseek_cn_review_at: "2026-07-01"
 last_task6_audit: "2026-07-06"
 last_task6_audit_result: "l1-minor-fixes-closed-loop-action-verb"
 last_verified: "2026-07-31"
-last_verified_against: "AOSP android-17.0.0_r1 (ProfilingManager.java, ProfilingResult.java, ProfilingTrigger.java) + developer.android.com AndroidX Profiling docs + §8.10 finalized cross-reference (SDK_INT_FULL / VERSION_CODES_FULL.BAKLAVA_1 for 36.1)"
+last_verified_against: "AOSP android-17.0.0_r1 (ProfilingManager.java, ProfilingResult.java, ProfilingTrigger.java) + developer.android.com AndroidX Profiling docs + SDK_INT_FULL / VERSION_CODES_FULL.BAKLAVA_1 for 36.1"
 confidence: medium
+consolidated_from:
+  - "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md"
 last_deep_review_at: "2026-07-30T20:35:18+08:00"
 last_deep_review_run_id: "20260730-203518-deep-review-c1183d58"
 last_review_finalize_at: "2026-07-31T12:07:10+08:00"
@@ -105,7 +107,7 @@ boolean hasProfiling36_1 =
             && Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1);
 ```
 
-API 37 已包含这组接口。Android 16 设备则要用 `SDK_INT_FULL` 查询 minor release 版本；通过版本字符串、机型名单或系统更新日期推测能力都不可靠。编译期也应使用包含相应 minor release API 的 SDK。详细的 36.1 版本判断说明见 §8.10。
+API 37 已包含这组接口。Android 16 设备则要用 `SDK_INT_FULL` 查询 minor release 版本；通过版本字符串、机型名单或系统更新日期推测能力都不可靠。编译期也应使用包含相应 minor release API 的 SDK。详细的 36.1 版本判断见下文“System-triggered profiling 的运行方式”。
 
 ## 发起一次显式请求
 
@@ -181,7 +183,7 @@ system trace 会移除其他应用和进程的信息，因而 PerfettoSQL 可查
 
 系统会周期性、带随机性地启动后台 trace，并使用 ring buffer 保存最近数据。事件发生时，只有后台 trace 正在运行且配额允许，才会生成 running trace snapshot。因此，注册 trigger 代表允许系统在条件满足时采样，不代表每次 ANR、结束进程或 fully drawn 都能得到文件。
 
-API 37 的 trigger 分层如下。逐项停止条件和服务端路径见 §8.10。
+API 37 的 trigger 分层如下，表中同时列出逐项停止条件和产物边界。
 
 | 版本 | trigger | 产物与触发语义 |
 |---|---|---|
@@ -251,6 +253,14 @@ API 37 的 trigger 分层如下。逐项停止条件和服务端路径见 §8.10
 
 ProfilingManager 生成的是诊断证据，监控系统仍需负责触发策略、样本元数据、传输、访问权限、留存和删除。线上指标异常用于定位样本，profile 用于解释某次现场，两者不要混成同一种数据。
 
+## 设备验证与旧版本降级
+
+Mainline 模块、厂商 Perfetto data source、系统负载、存储与后台 trace 抽样都会影响成功率。设备覆盖表至少记录 build fingerprint、完整 SDK 版本、Profiling 模块版本、请求或 trigger 类型、错误码、文件大小和可查询 schema。某一品牌成功率偏低时，先按这些字段聚合，再判断是否存在 OEM 差异；不能把一次未产出文件直接解释为 trigger 未执行。
+
+测试设备可用官方 `profiling_testing` DeviceConfig 开关维持目标包的后台 trace、关闭 rate limiter 或保留临时未裁剪结果。它们只服务隔离测试，实验结束必须恢复，生产代码不能依赖这些开关。分析 production system trace 时还要标记 redacted 来源：跨进程表或 SQL 为空，可能是采集窗口未覆盖，也可能是 redactor 删除了无关进程。
+
+Android 8—14 没有等价的线上 profile API。降级目标是保留可比较指标和复现线索：启动/帧耗时使用应用计时、FrameMetrics/JankStats 与 vitals，业务慢操作使用稳定低基数的 Trace slice，崩溃/ANR 使用 `ApplicationExitInfo` 和诊断平台，本地重现再用 Perfetto、Profiler、heap dump 或 Macrobenchmark。`Trace.beginSection()` 只写事件，本身不会启动或保存 system trace。
+
 ## 上线前检查清单
 
 - API 35、API 36、version 36.1、API 37 的代码路径分别受运行时能力保护。
@@ -284,7 +294,6 @@ ProfilingManager 生成的是诊断证据，监控系统仍需负责触发策略
 
 ## 相关章节
 
-- [8.10 ProfilingManager 系统触发式性能追踪](../../part2-performance/ch08-responsiveness/08-system-triggered-profiling.md)：逐项 trigger 的停止条件、产物与服务端路径
 - [13.1 Perfetto 简介与演进](../ch13-perfetto/01-perfetto-intro.md)：trace 容器、UI 与基础分析概念
 - [15.5 线上性能监控](../ch15-methodology/05-online-monitoring.md)：采样预算、上传和告警
 - [9.1 ANR 设计思想](../../part2-performance/ch09-anr/01-anr-design.md)：ANR 信号、trace 与归因边界

@@ -57,7 +57,7 @@ last_task9_audit: "2026-06-06"
 last_task9_autofix_at: "2026-06-06"
 task9_review_notes_r2: "2026-06-06 Task9 idle-audit: auto-fixed。P0 0 / P1 1 / P2 0；补 Android 17 targetSdk 37 配置变更默认不重启 Activity 与 android:recreateOnConfigChanges 边界，回到 Task6 复审。"
 ---
-# 其他响应速度场景
+# 8.4 其他响应速度场景
 
 ## 把“响应快”定义成可测量的终点
 

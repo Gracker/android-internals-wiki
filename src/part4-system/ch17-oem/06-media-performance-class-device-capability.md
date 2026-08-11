@@ -25,7 +25,7 @@ sources:
   - type: aosp
     path: "frameworks/support/core/core-performance-play-services/src/main/java/androidx/core/performance/play/services/PlayServicesDevicePerformance.kt"
 tags: [media-performance-class, device-capability, oem, camera, media]
-related_chapters: ["8.8", "14.9", "17.2", "18.14", "25.10"]
+related_chapters: ["18.23", "14.9", "17.2", "18.14", "25.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-18"
 gap_source: "官方文档"

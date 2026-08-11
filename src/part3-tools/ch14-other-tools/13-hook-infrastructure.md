@@ -54,7 +54,7 @@ tags:
 - perf-measurement
 - mainline-modules
 related_chapters:
-- 8.10 ProfilingManager; 20.7 异常处理架构; 20.12 SafeMode
+- 14.7 ProfilingManager；20.7 异常处理架构；20.12 SafeMode
 created_by: codex
 created_date: '2026-04-21'
 drafted_by: codex

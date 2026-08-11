@@ -1,6 +1,7 @@
 ---
 title: "Keystore/KeyMint 调用延迟与登录链路性能"
-chapter: "8.12"
+chapter: "8.9"
+section: "8.9"
 status: ready-for-review
 drafted_date: "2026-05-22"
 applicable_versions: "Android 6 (API 23) - Android 17 (API 37)"
@@ -39,7 +40,7 @@ created_date: "2026-05-22"
 gap_source: "AOSP结构/官方文档/素材驱动"
 ---
 
-# 8.12 Keystore/KeyMint 调用延迟与登录链路性能
+# 8.9 Keystore/KeyMint 调用延迟与登录链路性能
 
 登录流程中的一次签名或解密，可能跨越 App、`keystore2`、KeyMint HAL、TEE 或 StrongBox。若密钥绑定用户认证，还会加入系统认证 UI、传感器、Gatekeeper/biometric TA 和 Hardware Auth Token。把这些阶段合并成一个“Keystore 很慢”，既无法定位瓶颈，也容易用性能优化改变原有安全语义。
 
@@ -404,7 +405,7 @@ App 到 `keystore2`、`keystore2` 到 Binderized KeyMint HAL 都经过 Binder。
 
 - [§8.2 App 启动全流程](02-app-launch.md)：首帧、TTID/TTFD 与初始化时机。
 - [§8.3 启动优化策略](03-launch-optimization.md)：延迟初始化、线程调度和回归。
-- [§8.13 BiometricPrompt 与 Credential Manager](13-biometric-credential-login-performance.md)：认证 UI、凭据选择与登录流程。
+- [§8.10 BiometricPrompt 与 Credential Manager](10-biometric-credential-login-performance.md)：认证 UI、凭据选择与登录流程。
 - [§20.16 Keystore 配额与登录稳定性](../../part5-app/ch20-stability/16-keystore-quota-login-stability.md)：alias 增长、配额和账号生命周期。
 - [§26.3 性能指标采集](../../part5-app/ch26-observability/03-performance-collection.md)：端侧指标、采样与上报。
 

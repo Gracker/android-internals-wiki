@@ -88,7 +88,7 @@ task2b_verifier_notes: "2026-07-09 Task2B Verifier: task9_state reviewed→pendi
 last_task9_review_log: "logs/deep-review/2026-07-09-04-deep-review.md"
 ---
 
-# 响应速度原理
+# 8.1 响应速度原理
 
 ## 响应速度要量哪一段
 

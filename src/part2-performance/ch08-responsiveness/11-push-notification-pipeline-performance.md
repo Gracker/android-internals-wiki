@@ -1,6 +1,7 @@
 ---
 title: "推送通知管线性能：FCM 投递延迟与 NotificationManagerService 渲染"
-chapter: "8.14"
+chapter: "8.11"
+section: "8.11"
 status: ready-for-review
 drafted_date: "2026-06-18"
 drafted_by: "openclaw-task2a"
@@ -26,7 +27,7 @@ created_date: "2026-06-18"
 gap_source: "官方文档/章节深挖"
 ---
 
-# 8.14 推送通知管线性能：FCM 投递延迟与 NotificationManagerService 渲染
+# 8.11 推送通知管线性能：FCM 投递延迟与 NotificationManagerService 渲染
 
 “推送慢”至少可能指五件事：服务端请求晚、FCM 传输晚、设备回调晚、应用发布通知晚、SystemUI 显示晚。它们跨越云端、Google Play services、应用进程、`system_server` 与 SystemUI，没有一个公开 API 能给出全部阶段的同一时钟。
 

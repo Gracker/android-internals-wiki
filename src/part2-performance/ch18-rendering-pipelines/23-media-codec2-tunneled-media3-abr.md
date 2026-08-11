@@ -10,7 +10,9 @@ last_verified: "2026-07-31"
 last_verified_against: "android-17.0.0_r1 (MediaCodec, MediaFormat, MediaCodecInfo, MediaCodec.cpp, CCodec, CCodecBufferChannel, CCodecConfig, C2Config, ACodec) / Media3 1.10.1 commit 5fb306449733dd71595700c1227ad6087578c559 / Multimedia tunneling 官方文档 2026-06-17 / Writer rendering_pipelines S03、S04、S12 / android17-6.18-2026-06_r6"
 confidence: high
 tags: [media, codec2, mediacodec, tunneled-playback, media3, abr, video-playback]
-related_chapters: ["2.6", "2.13", "2.16", "18.6", "18.15", "24.5", "26.3"]
+related_chapters: ["1.16", "2.6", "2.13", "2.16", "18.6", "18.14", "18.15", "22.43", "24.5", "26.3"]
+consolidated_from:
+  - "src/part2-performance/ch08-responsiveness/08-media-pipeline.md"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-21"
 gap_source: "研究素材/AOSP结构/官方文档"
@@ -169,6 +171,14 @@ Codec 名称仍是线上诊断的关键字段。API level 只能说明框架能�
 - input/output PTS 与异常诊断信息。
 
 `android-17.0.0_r1` 的 `CCodec::ClientListener::onWorkDone()` 接收 `C2Work` 列表并转交 CCodec；`ACodec.cpp` 仍保留 tunneled video 配置。看到 `MediaCodec` Java 栈相同，不应推断两台设备的 native buffer 周转也相同。
+
+### 低延迟、HDR 与动态元数据属于组合能力
+
+Android 11 / API 30 起，应用可在 codec 声明 `FEATURE_LowLatency` 后设置 `MediaFormat.KEY_LOW_LATENCY`。这项能力要求 decoder 避免持有超出编码标准所需的数据，不会删除 B-frame 重排、网络 jitter buffer、Surface 排队或显示 VSync；运行时还可通过 `PARAMETER_KEY_LOW_LATENCY` 调整。验收要同时记录 codec name、profile/level、首帧、稳态掉帧、功耗和热状态，不能从 API 可用性推出固定延迟。
+
+HDR、Dolby Vision、secure、high-frame-rate、low-latency 与 tunnel 要按实际组合查询和测试。显示支持、decoder profile、extractor metadata、secure Surface、HWC plane 和 tone mapping 任一环节都可能改变结果。Android 17 还增加 Eclipsa video 的平台播放与采集能力；这同样只说明 framework 能传递相应动态元数据，不保证所有 SoC、显示或 codec 组合都走硬件低成本路径。
+
+完整音频输出、AAudio/MMAP 与回调预算由 [1.16 Audio Pipeline](../../part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md) 承载；Camera 到 encoder 的 Surface 管线见 [18.14 Camera](14-camera-pipeline.md)；Media3 的 Surface 生命周期、prewarming、effects、HDR/DRM、首帧与播放器侧观测见 [22.43 Media3 实战](../../part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md)。本节只保留播放控制面、Codec2/OMX、tunnel 与 ABR 的共同边界。
 
 ## 三种视频承载路径不能混为一谈
 

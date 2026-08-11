@@ -72,7 +72,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-14
 ---
 
-# 启动优化策略
+# 8.3 启动优化策略
 
 ## 工程决策边界
 

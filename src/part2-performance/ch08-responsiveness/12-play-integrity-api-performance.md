@@ -1,6 +1,7 @@
 ---
 title: "Play Integrity API 性能与集成延迟"
-chapter: "8.15"
+chapter: "8.12"
+section: "8.12"
 status: ready-for-review
 drafted_date: "2026-06-19"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -21,13 +22,13 @@ sources:
   - type: official
     path: "https://developers.google.com/google-play/integrity/reference"
 tags: [play-integrity, safetynet, attestation, login-latency, anti-fraud, network-latency]
-related_chapters: ["8.12", "8.13", "8.14", "12.3", "12.4"]
+related_chapters: ["8.9", "8.10", "8.11", "12.3", "12.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-19"
 gap_source: "AOSP结构/官方文档"
 ---
 
-# 8.15 Play Integrity API 性能与集成延迟
+# 8.12 Play Integrity API 性能与集成延迟
 
 Play Integrity API 给业务服务端提供应用、账号授权、设备环境以及可选风险信号。它适合保护登录、支付提交、兑换、排行榜上报等会到达服务端的动作。返回结果是一组风险输入，业务仍要结合账号、交易和行为信息制定处置规则。
 
@@ -443,8 +444,8 @@ async slice 能跨线程覆盖 `Task` 的等待区间。它显示的是从应用
 
 ## 交叉引用
 
-- **8.12 Keystore / KeyMint 调用延迟**：设备密钥与 Key Attestation 的耗时和信任边界
-- **8.13 BiometricPrompt 与 Credential Manager 登录链路**：登录 UI、凭据获取与服务端认证的阶段划分
-- **8.14 推送通知管线性能**：跨进程与服务端路径的分段观测方法
+- **8.9 Keystore / KeyMint 调用延迟**：设备密钥与 Key Attestation 的耗时和信任边界
+- **8.10 BiometricPrompt 与 Credential Manager 登录链路**：登录 UI、凭据获取与服务端认证的阶段划分
+- **8.11 推送通知管线性能**：跨进程与服务端路径的分段观测方法
 - **12.3 网络性能深入**：移动网络、连接复用与尾延迟
 - **12.4 Android 网络安全与 TLS 性能**：业务上行与服务端出站连接的安全和性能边界
