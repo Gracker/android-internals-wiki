@@ -1,6 +1,7 @@
 ---
 title: "Binder 线程池管理与 IPC 线程饥饿性能边界"
 chapter: "1.38"
+section: "1.38"
 status: ready-for-review
 drafted_date: "2026-06-28"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -27,10 +28,14 @@ sources:
   - type: blog
     path: "DeepResearch/2026-06-27-android17-binder-async-frozen-batch-pipeline.md"
 tags: [binder, thread-pool, starvation, ANR, IPC, system_server]
-related_chapters: ["1.4", "1.8", "1.25", "1.34", "9.1"]
+related_chapters: ["1.4", "1.8", "1.25", "1.29", "1.34", "9.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-28"
 gap_source: "AOSP结构+章节深挖"
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch01-architecture/1.48-android17-binder-priority-inheritance.md"
+  - "src/part1-fundamentals/ch01-architecture/1.54-binder-thread-pool-implementation/1.54-binder-thread-pool-implementation.md"
 ---
 
 # 1.38 Binder 线程池管理与 IPC 线程饥饿性能边界
@@ -238,6 +243,10 @@ libbinder 对前者返回 `FROZEN_OBJECT` 或兼容的 `FAILED_TRANSACTION`，�
 `binder_select_thread_ilocked()` 从 `waiting_threads` 链表头取出一个等待线程，因此空闲 worker 的选择顺序是 FIFO。这个事实不代表事务执行时“所有 worker 优先级完全相同”。
 
 选中线程后，驱动调用 `binder_transaction_priority()`。它会综合事务携带的优先级、Binder node 的最低优先级与 `inherit_rt` 配置，临时调整服务线程调度属性；事务结束后再恢复保存的优先级。实时策略还受 node 配置和驱动限制。
+
+同步事务会从调用线程携带可继承的调度输入；普通 oneway 不继承调用方优先级，而是使用 Binder node 的最低优先级策略。`FLAT_BINDER_FLAG_INHERIT_RT` 只决定 node 是否允许继承实时调度策略，不等于给所有事务强制提升优先级。calling UID/PID 等身份字段也不携带 CPU 调度优先级，身份传播与调度继承是两套机制。
+
+驱动在事务开始前保存 worker 的原优先级，完成后恢复。Android 17 的 `SET`、`PENDING`、`ABORT` 状态用于保护“设置事务优先级”和“恢复原优先级”之间的竞态：若恢复请求与正在进行的设置交错，恢复动作会延后或取消，避免旧事务把新事务刚设置的优先级覆盖。它约束的是同一 worker 上的事务切换，不是跨进程的全局优先级仲裁。
 
 需要分开理解：
 

@@ -255,7 +255,7 @@ flowchart TD
 - [7.3 卡顿分析流程与方法](03-jank-methodology.md)：trace 配置、窗口约束与 SQL 分析。
 - [2.5 MainThread 与 RenderThread](../../part1-fundamentals/ch02-rendering/05-main-render-thread.md)：HWUI 两条线程的同步边界。
 - [1.4 Binder 机制](../../part1-fundamentals/ch01-architecture/04-binder.md)：同步事务、线程池与优先级传播。
-- [Android 17 DeliQueue](../../part1-fundamentals/ch01-architecture/01.26-messagqueue-deliqueue-optimization.md)：数据结构、启用条件与 A/B 方法。
+- [1.13 Android 17 DeliQueue](../../part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md)：数据结构、启用条件与 A/B 方法。
 - [4.3 ART 内存管理](../../part1-fundamentals/ch04-memory/03-art-memory.md)：GC 类型、pause 与堆行为。
 - [5.5 温控管理](../../part1-fundamentals/ch05-cpu-power/05-thermal.md) 与 [5.9 ADPF](../../part1-fundamentals/ch05-cpu-power/09-adpf.md)：thermal 与 performance hint 边界。
 - [3.1 输入分发](../../part1-fundamentals/ch03-input/01-input-dispatch.md)：输入到应用消费的证据。

@@ -103,7 +103,7 @@ last_task9_log: "logs/deep-review/2026-07-02-00-deep-review.md"
 last_task9_review_log: "logs/deep-review/2026-07-02-00-deep-review.md"
 ---
 
-# Binder IPC 机制与性能影响
+# 1.4 Binder IPC 机制与性能影响
 
 Binder 把跨进程通信包装成方法调用，但跨进程边界并没有消失。一次看似普通的接口调用，仍然包含参数编组、驱动投递、服务端排队、线程调度、业务处理和结果返回。任何一段变慢，都会反映到调用线程的延迟中。
 

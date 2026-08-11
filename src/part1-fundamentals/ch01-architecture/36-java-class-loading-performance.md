@@ -1,6 +1,7 @@
 ---
 title: "Android Java 类加载链路与启动期类加载性能"
 chapter: "1.36"
+section: "1.36"
 status: ready-for-review
 drafted_date: "2026-06-28"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"

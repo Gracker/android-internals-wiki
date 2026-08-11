@@ -14,6 +14,7 @@
 
 | 章节 | 审阅前正文 | 审阅后正文 | 状态 | 完成日期 |
 | --- | ---: | ---: | --- | --- |
+| ch01 系统架构全景 | 65 | 50 | 已完成 | 2026-08-11 |
 | ch06 存储与 I/O | 12 | 5 | 已完成 | 2026-08-11 |
 | ch03 输入系统 | 14 | 8 | 已完成 | 2026-08-11 |
 | ch04 内存管理 | 29 | 17 | 已完成 | 2026-08-11 |
@@ -38,9 +39,31 @@
 | ch24 I/O 与网络优化 | 23 | 19 | 已完成 | 2026-08-11 |
 | ch25 功耗与包体积优化 | 30 | 19 | 已完成 | 2026-08-11 |
 | ch26 应用可观测性 | 30 | 25 | 已完成 | 2026-08-11 |
-| 其余 2 章 | 107 | 待审阅 | 未开始 | - |
+| ch02 渲染机制 | 42 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 477 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 462 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch01 系统架构全景
+
+保留后的连续编号为 1.1～1.50。内容按“系统主线 → 平台行为与公共架构 → Binder、运行时与内核 → 系统服务与 native 装载”组织；原先的 `01.x`、`1.x`、整数文件名、重复小数编号和 `gap-*` 已统一。
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `01.26-messagqueue-deliqueue-optimization.md` / `13-messagequeue-deliqueue.md` | 两篇都解释 Android 17 DeliQueue；保留已通过多轮技术复核的完整实现、兼容开关、A/B 与误判边界 | `../src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md`（1.13） |
+| `1.11-android17-contentprovider-optimization.md` / `10-content-provider.md` | 将 API 37 取消后无响应监测与版本差分并入 Provider 生命周期、Binder、CursorWindow、超时和诊断主文 | `../src/part1-fundamentals/ch01-architecture/10-content-provider.md`（1.10） |
+| `1.45-*` / `1.46-*` / `1.49-*` / `23-staged-install-performance.md` | 合并 session 状态、持久化、pre-reboot verification、apexd、checkpoint、恢复和三段性能测量 | `../src/part1-fundamentals/ch01-architecture/23-staged-install-performance.md`（1.23） |
+| `1.48-Android-17-ResourcesManager-*` / `24-resourcesmanager-configuration-performance.md` | Activity relaunch 位掩码、资源限定符、compat policy、热派发与 Perfetto 分支回到 Configuration 主文 | `../src/part1-fundamentals/ch01-architecture/24-resourcesmanager-configuration-performance.md`（1.24） |
+| `08-activity-manager.md` / `1.68-android17-activitymanager-*` | AMS/ATMS、ProcessStateController、lmkd、组件调度与性能诊断统一到 AMS 主文；锁和 OOM 细节继续由 1.25/1.34 承载 | `../src/part1-fundamentals/ch01-architecture/08-activity-manager.md`（1.8） |
+| `09-package-manager.md` / `1.67-android17-packagemanager-*` | 包扫描、安装、ART/IncFS、查询快照、权限服务、可见性、Split、UID 与更新冲突统一到 PMS 主文 | `../src/part1-fundamentals/ch01-architecture/09-package-manager.md`（1.9） |
+| `1.41-android-17-机器学习驱动的任务调度器.md` | 事实核查并入版本演进：明确 JobScheduler、App Standby、OomAdjuster、ADPF 与内核调度器的职责，不保留伪“统一 ML Scheduler”章节 | `../src/part1-fundamentals/ch01-architecture/06-version-evolution.md`（1.6） |
+| `01.25-*` / `01.30-android17-binder-transaction-queue-*` | 合并 sync/oneway 排队、冻结分流、async 配额、命令批处理、业务确认与 Perfetto 方法 | `../src/part1-fundamentals/ch01-architecture/29-binder-async-transaction-queue.md`（1.29） |
+| `1.31-android17-binder-rpc.md` / `1.44-android17-binder-sz4m-*` / `30-binder-transaction-buffer-*` | kernel Binder 映射、分配/回收、异步预算、4 MiB 驱动上限与 RPC Binder 600 KiB 边界统一 | `../src/part1-fundamentals/ch01-architecture/30-binder-transaction-buffer-performance.md`（1.30） |
+| `01.32-android17-binder-ipc-performance-monitoring.md` / `31-binder-performance-recording-trace.md` | Perfetto SQL、debugfs/binderfs、AIDL trace、冻结状态、扩展错误、Parcel 边界与事务录制统一 | `../src/part1-fundamentals/ch01-architecture/31-binder-performance-recording-trace.md`（1.31） |
+| `1.48-android17-binder-priority-inheritance.md` / `1.54-binder-thread-pool-implementation/*` / `38-binder-thread-pool-starvation-*` | 线程创建/选择、饥饿、冻结、优先级继承与 SET/PENDING/ABORT 恢复竞态统一 | `../src/part1-fundamentals/ch01-architecture/38-binder-thread-pool-starvation-performance.md`（1.38） |
+
+Android AI、应用分发、显示架构、AVF、BroadcastQueue、ART、logd、Bionic、VNDK、BPF、六个系统服务、cgroup、Boot Image 和 Dynamic Linker 各自保留独立问题边界。活动目录、队列、跨章引用和统计已切换到新编号；历史 changelog、review finding 与 `consolidated_from` 保留旧路径。
 
 ## ch26 应用可观测性
 
@@ -309,7 +332,7 @@ XTrace 与 JVMTI 都涉及 ART 运行时，但前者是未开源的线上动态�
 | --- | --- | --- |
 | `01-apk-size.md` | 从网络性能章移出；合并 APK 的 ZIP 结构、DEX 引用上限、资源与 ELF 压缩、签名块和多种体积口径，DEX、native library、资源与分发细节继续由既有专项承载 | `../src/part5-app/ch25-power-size/06-apk-analysis.md`（25.6），以及 25.7、25.8、25.29～25.31 |
 | `03-network-performance-deep.md` | 合并网络栈层次、BlockGuard、连接池精确默认值、HTTP/3/Cronet、长连接、协程、后台网络与 Perfetto 取证；删除与基础稿重复的 DNS、TLS、超时和重试说明 | `../src/part2-performance/ch12-apk-network/01-network-performance.md`（12.1） |
-| `05-connectivity-service-network-callback.md` / `08-networkagent-lifecycle-scoring.md` | 从应用网络性能章移出；合并 NetworkAgentInfo 生命周期、netId、offer、FullScore、rematch、linger、回调 API 与 Android 17 能力边界 | `../src/part1-fundamentals/ch01-architecture/1.62-android17-connectivitymanager-architecture-performance.md`（1.62） |
+| `05-connectivity-service-network-callback.md` / `08-networkagent-lifecycle-scoring.md` | 从应用网络性能章移出；合并 NetworkAgentInfo 生命周期、netId、offer、FullScore、rematch、linger、回调 API 与 Android 17 能力边界 | `../src/part1-fundamentals/ch01-architecture/43-connectivitymanager-architecture-performance.md`（1.43） |
 | `07-privacy-sandbox-performance.md` | 从网络性能章移出；合并 Topics、Ad Selection、Measurement 与 SDK Runtime 的退场状态、版本边界和迁移清单 | `../src/part5-app/ch21-startup/09-sdk-runtime-ad-sdk-startup.md`（21.9） |
 | 原 12.2 / 12.4 / 12.6 | 客户端网络性能、TLS 和 DNS 三条边界均可独立回答问题，依次改为连续编号 12.1～12.3 | `01-network-performance.md`～`03-netd-dnsresolver-network-diagnostics.md` |
 
@@ -410,7 +433,7 @@ XTrace 与 JVMTI 都涉及 ART 运行时，但前者是未开源的线上动态�
 | `08-media-pipeline.md` | 删除跨音频、视频、Camera 和播放器实战的横向重复稿；低延迟/HDR/Eclipsa 组合能力补入播放管线主文 | 1.16、18.14、`../src/part2-performance/ch18-rendering-pipelines/21-media-codec2-tunneled-media3-abr.md`、22.43 |
 | `09-game-performance.md` | 合并 Game Mode/State、ADPF、Swappy、headroom 和四组对照实验 | `../src/part2-performance/ch18-rendering-pipelines/16-game-engine.md`、5.9 |
 | `08-system-triggered-profiling.md` | 合并 system trigger、设备验证、线上 redaction 与 Android 8—14 降级策略 | `../src/part3-tools/ch14-other-tools/11-profiling-manager.md`（14.11） |
-| `11-native-library-loading-dynamic-linker.md` | 合并启动关键路径、`JNI_OnLoad`、三方 SDK/引擎和最终 APK/AAB 门禁 | `../src/part1-fundamentals/ch01-architecture/58-android-dynamic-linker-linker64-native-library.md`（1.58） |
+| `11-native-library-loading-dynamic-linker.md` | 合并启动关键路径、`JNI_OnLoad`、三方 SDK/引擎和最终 APK/AAB 门禁 | `../src/part1-fundamentals/ch01-architecture/50-dynamic-linker-native-library.md`（1.50） |
 | `17-kotlin-flow-backpressure-performance.md` / `19-thread-model-dispatcher-selection.md` | 合并 Flow 热流/背压/flatten、Executor/HandlerThread、线程优先级、EEVDF 与 ADPF TID 边界 | `../src/part2-performance/ch08-responsiveness/06-coroutine-performance.md`（8.6） |
 | `20-jni-overhead-native-interop-performance.md` | 合并 ART transition、数组复制、引用表、Attach/Detach、pthread 与微基准方法 | `../src/part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md`（1.15） |
 | `21-broadcast-performance-cross-process-overhead.md` | 合并发送/排队/执行分段、`goAsync()`、sticky、系统事件和任务机制选择 | `../src/part1-fundamentals/ch01-architecture/33-broadcastqueue-scheduling-performance.md`（1.33） |
@@ -495,7 +518,7 @@ XTrace 与 JVMTI 都涉及 ART 运行时，但前者是未开源的线上动态�
 | `22-bluetooth-le-audio-performance.md` / `5.23-android17-background-audio-hardening-leaudio-power-source.md` | Android 17 后台音频 hardening 并入 5.7；LE scan/offload/HFP 边界并入 LE Audio 主文并改为 5.16 | 5.7、`../src/part1-fundamentals/ch05-cpu-power/16-bluetooth-le-audio-performance.md` |
 | `24-android17-app-hibernation-performance.md` | 主题独立，改为连续编号 5.17 | `../src/part1-fundamentals/ch05-cpu-power/17-android17-app-hibernation-performance.md` |
 | `5.21-cross-app-agent-system-primitive.md` | 从 CPU/Power 移出；合并 Accessibility、VoiceInteraction 与 AppFunctions 的选择边界 | `../src/part4-system/ch16-aosp/11-agent-native-os.md` |
-| `5.24-android17-binder-sz4m-kernel-buffer-pool-priority-set-called-dedup.md` | 删除已标记 outdated 的迁移壳；Binder 唯一正文不变 | `../src/part1-fundamentals/ch01-architecture/1.44-android17-binder-sz4m-kernel-buffer-pool.md` |
+| `5.24-android17-binder-sz4m-kernel-buffer-pool-priority-set-called-dedup.md` | 删除已标记 outdated 的迁移壳；事务 buffer 内容现已收敛到唯一正文 | `../src/part1-fundamentals/ch01-architecture/30-binder-transaction-buffer-performance.md` |
 | `5.33-android17-performance-score-attribution-sourcecode.md` | 删除重复评分与样本池稿；保留 ADPF/headroom 主文和第 26 章唯一评分正文 | 5.9、`../src/part5-app/ch26-observability/15-app-performance-score.md` |
 
 章节 README、`src/SUMMARY.md`、活动跨章链接和自动化脚本映射已经切换到连续编号。历史 changelog、已关闭 finding、queue/source 索引与 `consolidated_from` 保留旧路径；原 README 中两个从未存在的 5.18/5.22 链接已移除。

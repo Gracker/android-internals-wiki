@@ -1,6 +1,7 @@
 ---
 title: "Android 应用分发与内容共享：PackageInstaller、AAB 和 Sharesheet 的系统边界"
-chapter: "1.31"
+chapter: "1.27"
+section: "1.27"
 status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 tags: [packageinstaller, shortcutservice, chooseractivity, app-bundle, distribution]
@@ -45,7 +46,7 @@ sources:
     path: "https://source.android.com/docs/compatibility/17/android-17-cdd#4_application_packaging_compatibility"
 ---
 
-# 1.31 Android 应用分发与内容共享：PackageInstaller、AAB 和 Sharesheet 的系统边界
+# 1.27 Android 应用分发与内容共享：PackageInstaller、AAB 和 Sharesheet 的系统边界
 
 应用安装和应用间分享都会用到 `PackageManager`、`Intent` 等平台能力，但两者没有共同的“分发流水线”。安装处理的是可执行软件包及其身份；分享处理的是一次跨应用的数据传递。先把这条边界划清，后面的性能与安全问题才不会相互混淆。
 

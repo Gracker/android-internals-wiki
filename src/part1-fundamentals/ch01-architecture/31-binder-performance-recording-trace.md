@@ -1,6 +1,7 @@
 ---
-title: "Android 17 Binder 调试能力：AIDL Trace、冻结状态、扩展错误与事务录制"
+title: "Android 17 Binder 可观测性：Perfetto、AIDL Trace、内核快照与事务录制"
 chapter: "1.31"
+section: "1.31"
 status: ready-for-review
 drafted_date: "2026-06-27"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
@@ -33,18 +34,21 @@ sources:
   - type: kernel
     path: "drivers/android/binder_trace.h (android17-6.18-2026-06_r6)"
 tags: [binder, ipc, performance-monitoring, tracing, perfetto, aidl, recording]
-related_chapters: ["1.4", "1.25", "1.30", "1.32", "13.5"]
+related_chapters: ["1.4", "1.29", "1.30", "1.38", "13.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-27"
 gap_source: "DeepResearch"
 gap_score: 15
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch01-architecture/01.32-android17-binder-ipc-performance-monitoring.md"
 ---
 
-# 1.31 Android 17 Binder 调试能力：AIDL Trace、冻结状态、扩展错误与事务录制
+# 1.31 Android 17 Binder 可观测性：Perfetto、AIDL Trace、内核快照与事务录制
 
 Binder 可观测性由多套机制组成。分析等待时间、查询冻结状态、读取失败原因、查看 AIDL 方法名和录制 Parcel 内容，各自依赖不同的实现层。混用这些机制会导致两类错误：用状态位计算事务量，或把调试录制当成可常驻的线上监控。
 
-以下分析以 Android 17 / API 37、AOSP `android-17.0.0_r1` 和内核 `android17-6.18-2026-06_r6` 为准，说明各项能力提供的证据、调用边界及其与 Perfetto 结果的对应关系。常规 Binder trace 配置、SQL 字段和排障流程见 [1.32 Android 17 Binder IPC 性能监控](01.32-android17-binder-ipc-performance-monitoring.md)。
+以下分析以 Android 17 / API 37、AOSP `android-17.0.0_r1` 和内核 `android17-6.18-2026-06_r6` 为准，说明各项能力提供的证据、调用边界及其与 Perfetto 结果的对应关系。
 
 ## 一、按证据类型选择工具
 
@@ -318,7 +322,21 @@ LIMIT 50;
 
 当前 `binder_trace.h` 有 `binder_transaction` 和 `binder_transaction_received`，回复仍通过 `binder_transaction` 的 `reply` 字段表示；不存在名为 `binder_reply` 的 tracepoint。也不存在 `binder_freeze` tracepoint。诊断脚本应检查设备的 `/sys/kernel/tracing/events/binder/`，不要把 UI 中的 `binder reply` slice 名称当成内核事件名。
 
-## 九、RecordedTransaction 适合受控复现，不适合常驻监控
+## 九、debugfs 只能提供现场快照
+
+`/sys/kernel/debug/binder/`（或产品映射的对应调试目录）里的 `state`、`stats`、`transactions`、`transaction_log`、`failed_transaction_log` 和 `proc/<pid>` 用来查看当前对象、线程、buffer 与有限的事务记录。它们不是时序数据库：两次读取之间已经完成并释放的事务可能完全看不到，读取本身也无法恢复 runnable 延迟、锁等待或 CPU 执行区间。
+
+逐进程文件适合回答“目标进程当下有多少 Binder 线程、哪些线程在等待、是否存在未释放 buffer、free async space 是否异常”；Perfetto 适合回答“事务何时发送、服务端何时开始、线程为何没有运行”。binderfs 的 `features/*` 又是第三类信息，只表示驱动是否支持某项协议，不能当作运行状态或调用计数。
+
+出现缓冲区压力时，应把 `binder_transaction_alloc_buf` 的 `data_size`、`offsets_size`、`extra_buffers_size` 与目标进程的并发事务、free async space、oneway spam 告警一起看。Java 的 `TransactionTooLargeException` 是对多类失败的启发式映射，不是驱动返回“这一笔精确超过 1 MiB”的专用错误。
+
+## 十、Parcel 与应用侧观测边界
+
+Java `Parcel` 有对象池，typed Parcelable 由生成/显式代码写入字段；native `Parcel` 会按实现策略扩容。无论使用 `byte[]`、`Bundle` 还是 Parcelable，大块数据都不会自动变成共享内存。需要传输图片、模型或批量二进制时，应使用 fd、共享内存或流式协议，只在 Parcel 中传控制信息和句柄。
+
+应用侧的耗时埋点可以定位某个接口的分位数和失败率，但只能看到调用边界，不能独立解释 Binder driver、服务端排队与调度。采集时至少记录接口/方法、同步或 oneway、调用线程、目标进程、Parcel 估算大小和超时/错误类型；采样和聚合必须限制基数，不能在线上记录 Parcel 原文。
+
+## 十一、RecordedTransaction 适合受控复现，不适合常驻监控
 
 ### 9.1 启用条件
 
@@ -360,7 +378,7 @@ End
 
 源码明确标记该格式“under active development”且不稳定。录制内容可能包含账号标识、令牌、路径和业务数据；同时，序列化与文件写入发生在事务返回路径并受录制锁保护，会改变被测路径的时延。没有源码依据支持固定的 `100 ns–1 us` 开销。它适用于实验设备上的协议复现和离线检查，不应用于生产设备的常驻采集。
 
-## 十、一个可复用的诊断顺序
+## 十二、一个可复用的诊断顺序
 
 ### 10.1 慢事务
 
@@ -384,7 +402,7 @@ End
 3. 只有在 trace 与日志无法解释协议内容、设备可控且 libbinder 编译开关已打开时，才使用 `RecordedTransaction`；
 4. 录制文件按敏感数据管理，完成分析后清理。
 
-## 十一、源码锚点
+## 十三、源码锚点
 
 - AOSP `android-17.0.0_r1`
   - `frameworks/native/libs/binder/Binder.cpp`：AIDL 服务端 trace、录制权限与写入位置

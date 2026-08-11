@@ -108,6 +108,9 @@ task2b_verifier_result: ready-for-task6
 last_deepseek_cn_review_at: 2026-07-14
 last_task9_audit: "2026-07-16 00:20:31"
 last_task9_idle_audit_log: "logs/deep-review/2026-07-16-00-audit.md"
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch01-architecture/1.11-android17-contentprovider-optimization.md"
 ---
 
 # 1.10 ContentProvider 性能与优化
@@ -257,6 +260,16 @@ LIMIT ?
 `applyBatch()` 的批次并非越大越好。它减少往返次数，却可能让单笔 parcel 过大并触发 `TransactionTooLargeException`。批大小应通过真实数据分布测试。
 
 图片、视频和大文件应通过 `openFile()`、`openAssetFile()` 或 `openTypedAssetFile()` 返回 `ParcelFileDescriptor`，不要塞进 `Bundle` 或 `ContentValues`。
+
+### Android 17 的取消后无响应监测
+
+Android 17 在受权限的 system API 路径上补充了两种监测入口，但没有给普通应用增加统一的 CRUD 超时：
+
+- `setDetectNotRespondingOnCancel()` 从调用方发出取消后开始计时；
+- `setCallNotCancelledTimeout()` 是测试入口，用来设置“调用开始后迟迟没有取消”的监测窗口；
+- 原有 `setDetectNotResponding(fixed)` 在对应 feature flag 开启时仍保持固定时长语义。
+
+计时到期后，`NotRespondingRunnable` 会通过 `ContentResolver.appNotRespondingViaProvider()` 通知系统处理已连接但无响应的 Provider。它是系统侧故障治理能力，不会向普通应用自动抛出 `TimeoutException`。普通应用仍应在工作线程发起查询，传入 `CancellationSignal`，在业务截止时间到达时调用 `cancel()`，并丢弃截止时间之后返回的结果。取消是协作式的：Provider 和数据库路径仍须检查取消信号。
 
 ---
 

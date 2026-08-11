@@ -112,9 +112,12 @@ last_deepseek_cn_review_at: "2026-06-29"
 last_task9_audit: "2026-07-13"
 last_task9_autofix_at: "2026-06-07"
 last_idle_audit_at: "2026-07-13"
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch01-architecture/1.41-android-17-机器学习驱动的任务调度器.md"
 ---
 
-# Android 版本演进中的架构变化
+# 1.6 Android 版本演进中的架构变化
 
 分析 Android 问题时，“这是 Android 17 设备”还不够。实际行为至少由五个版本维度共同决定：
 
@@ -307,6 +310,18 @@ API 37 扩展 `ProfilingTrigger`，新增或公开用于 cold start、OOM、过�
 
 `android-17.0.0_r1` 源码仍用 aconfig/`@FlaggedApi` 管理部分新增接口和 trigger。应用应以最终 API 37 SDK、设备构建和 API 可用性为准，不把预览版或单一产品的 flag 状态推广到所有 Android 17 设备。
 
+### Android 17 没有统一的“机器学习任务调度器”
+
+固定 tag 中不存在面向所有应用、名为 `MLScheduler` 或等价名称的统一任务调度器。容易被混写成“机器学习调度”的能力实际上分属不同层次：
+
+- `JobScheduler` 根据约束、配额、standby bucket 和 deadline 决定后台任务何时可运行；
+- `AppStandbyController` 可以消费系统特权预测结果，但这不等于 JobScheduler 自己运行一个公开的 ML 模型；
+- `OomAdjuster` 与 `ProcessStateController` 计算进程重要性，再把 `oom_score_adj` 交给 lmkd；
+- ADPF 的 `PerformanceHintManager` 让应用报告工作时长目标，由系统和设备实现选择资源策略；
+- ACK 6.18 的 EEVDF、公平调度、uclamp、cpuset 与 task profile 仍是内核和系统策略机制，不是 Android 17 新增的通用 ML 调度 API。
+
+如果 OEM 产品确有预测式调度扩展，结论至少要包含组件/包名、模型输入、控制输出、进入 task profile、uclamp 或其他执行机制的调用链，以及固定 build fingerprint 下的对照 trace。只有营销名称、版本号或一组没有原始数据的百分比，不能证明平台存在统一调度器。
+
 ## 隐私与后台限制也会改变性能工具
 
 系统架构不仅由分区和内核组成。权限与后台策略同样会改变采集工具能看到什么、任务能运行多久。
@@ -365,5 +380,9 @@ Cloud Profile 和 Baseline Profile 可以让关键路径提前 AOT 编译。是�
 ### “16 KB page size 只影响 NDK 应用”
 
 应用自身没有 C/C++ 代码，也可能通过 SDK、数据库或图形库打包 native `.so`。应检查最终 APK/AAB，而不是只检查业务源码。
+
+### “Android 17 用机器学习统一调度 Job、进程与 CPU”
+
+这些职责由 JobScheduler/App Standby、AMS/OomAdjuster、ADPF 和内核调度器分别承担。除非目标设备能给出明确的 OEM 组件和控制链路，否则应把这类说法记录为待验证的产品假设。
 
 分析版本演进时，要把“平台发布了什么”“设备启用了什么”“应用因 targetSdk 得到了什么行为”分开。三层证据一致后，才能用版本差异解释性能现象。

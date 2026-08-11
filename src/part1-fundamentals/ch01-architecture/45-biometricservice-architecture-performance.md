@@ -1,6 +1,7 @@
 ---
 title: "Android 17 BiometricService 架构与性能优化"
-chapter: "1.64"
+chapter: "1.45"
+section: "1.45"
 status: ready-for-review
 drafted_date: "2026-07-17"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -59,13 +60,13 @@ sources:
   - type: aosp-doc
     path: "source.android.com/docs/security/features/authentication"
 tags: [biometric, system-service, architecture, fingerprint, face, hal, tee, performance]
-related_chapters: ["1.44", "1.63", "8.9", "8.10", "20.14"]
+related_chapters: ["1.38", "1.44", "8.9", "8.10", "20.14"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "AOSP结构"
 ---
 
-# 1.64 Android 17 BiometricService 架构与性能优化
+# 1.45 Android 17 BiometricService 架构与性能优化
 
 版本范围是 Android 17 / API 37 / AOSP `android-17.0.0_r1`。这里讨论应用通过 `BiometricPrompt` 发起的认证；锁屏直接调用 `FingerprintManager`、录入流程和厂商私有解锁通道属于其他路径。
 
@@ -795,7 +796,7 @@ Android 17 仍保留旧设备 HAL 兼容适配。版本号只能说明 framework
 
 | 章节 | 分工 |
 | --- | --- |
-| §1.44 Binder IPC 优先级继承 | Binder 调度和优先级传播 |
+| §1.38 Binder 线程池与优先级继承 | Binder 调度和优先级传播 |
 | §8.9 Keystore/KeyMint | 密钥授权、CryptoObject、KeyMint 与 StrongBox |
 | §8.10 BiometricPrompt 登录性能 | 登录业务的端到端指标和线上观测 |
 | §20.14 Keystore 治理 | 密钥生命周期、失效与异常治理 |

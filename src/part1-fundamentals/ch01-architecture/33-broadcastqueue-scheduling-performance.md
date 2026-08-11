@@ -1,6 +1,7 @@
 ---
 title: "Android 17 BroadcastQueue 进程级调度与广播性能边界"
 chapter: "1.33"
+section: "1.33"
 status: ready-for-review
 drafted_date: "2026-06-27"
 drafted_by: "openclaw-task2a"

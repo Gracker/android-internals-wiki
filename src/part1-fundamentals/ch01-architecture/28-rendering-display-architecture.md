@@ -1,6 +1,7 @@
 ---
-title: "Android 17 渲染新技术"
-chapter: "01"
+title: "Android 显示与渲染架构总览"
+chapter: "1.28"
+section: "1.28"
 status: "ready-for-review"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [architecture, rendering, performance]
@@ -13,10 +14,10 @@ sources:
     path: "frameworks/native/services/surfaceflinger"
   - type: aosp
     path: "frameworks/base/core/java/android/view/"
-related_chapters: ["02"]
+related_chapters: ["2.1", "2.6", "18.1"]
 ---
 
-# Android 17 渲染新技术
+# 1.28 Android 显示与渲染架构总览
 
 
 ## 证据范围

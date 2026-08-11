@@ -506,13 +506,13 @@ Perfetto 不会自动把 OkHttp `Call` 展成 DNS、TLS 和 TTFB。可以用 And
 
 ### NetworkCallback 只描述平台网络状态
 
-`NetworkCallback` 不能测量业务 host 的 DNS、TLS 或响应延迟。`INTERNET` 是网络能力声明，`VALIDATED` 是系统公网探测结果，业务请求成功仍取决于目标域名、路由、证书、CDN 和服务端。应用只需把 capability、metered、blocked、VPN 与网络切换作为请求策略输入；回调顺序、每 UID 100 个共享 request/callback 配额、注册生命周期、FullScore 选择和 linger 统一见 [1.62 Android 17 ConnectivityManager：架构、网络选择与性能](../../part1-fundamentals/ch01-architecture/1.62-android17-connectivitymanager-architecture-performance.md)。
+`NetworkCallback` 不能测量业务 host 的 DNS、TLS 或响应延迟。`INTERNET` 是网络能力声明，`VALIDATED` 是系统公网探测结果，业务请求成功仍取决于目标域名、路由、证书、CDN 和服务端。应用只需把 capability、metered、blocked、VPN 与网络切换作为请求策略输入；回调顺序、每 UID 100 个共享 request/callback 配额、注册生命周期、FullScore 选择和 linger 统一见 [1.43 Android 17 ConnectivityManager：架构、网络选择与性能](../../part1-fundamentals/ch01-architecture/43-connectivitymanager-architecture-performance.md)。
 
 后台任务若只关心“有网”或“非计费网络”，优先使用 WorkManager/JobScheduler constraint。网络切换后也不要统一清空连接池或立即重放全部失败请求，应让网络库先处理连接状态，再由业务幂等和退避策略决定恢复。
 
 ## Android 17 的平台策略输入
 
-`SubscriptionInfo.getStreamingAppMaxDownlinkKbps()` / `getStreamingAppMaxUplinkKbps()` 表示运营商为流媒体应用分配的速率上限，未知时返回 `BITRATE_UNKNOWN`；它不是链路测速。targetSdk 37 的局域网功能还需适配 `ACCESS_LOCAL_NETWORK` 或系统 picker，权限拒绝不能归类成普通弱网。完整的权限、NetworkCallback、FullScore、网络切换和系统源码边界见 [1.62 Android 17 ConnectivityManager](../../part1-fundamentals/ch01-architecture/1.62-android17-connectivitymanager-architecture-performance.md)。
+`SubscriptionInfo.getStreamingAppMaxDownlinkKbps()` / `getStreamingAppMaxUplinkKbps()` 表示运营商为流媒体应用分配的速率上限，未知时返回 `BITRATE_UNKNOWN`；它不是链路测速。targetSdk 37 的局域网功能还需适配 `ACCESS_LOCAL_NETWORK` 或系统 picker，权限拒绝不能归类成普通弱网。完整的权限、NetworkCallback、FullScore、网络切换和系统源码边界见 [1.43 Android 17 ConnectivityManager](../../part1-fundamentals/ch01-architecture/43-connectivitymanager-architecture-performance.md)。
 
 ## 版本边界
 

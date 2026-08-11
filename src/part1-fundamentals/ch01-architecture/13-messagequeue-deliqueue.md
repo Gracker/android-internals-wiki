@@ -93,6 +93,9 @@ last_task6_audit: "2026-06-20"
 last_task9_issues: "P0:0 P1:0 P2:0; post-Task6 confirmation pass"
 last_task2b_verifier_at: "2026-07-14T23:27:08+08:00"
 task2b_verifier_notes: "2026-07-14 23:25 Task2B Verifier: auto-promote to finalized. task6_result=pass-light-edit, task9_result=pass-tech-review, queue clear, body 208 lines. pipeline_stage was stuck at task9_pending."
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch01-architecture/01.26-messagqueue-deliqueue-optimization.md"
 ---
 
 # 1.13 MessageQueue 机制与 DeliQueue 无锁优化

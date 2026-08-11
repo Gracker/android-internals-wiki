@@ -1,6 +1,7 @@
 ---
 title: "Android 17 / ACK 6.18 BPF 可观测性与可编程边界"
-chapter: "1.60"
+chapter: "1.41"
+section: "1.41"
 status: finalized
 drafted_date: "2026-07-17"
 reviewed_date: "2026-08-06"
@@ -31,7 +32,7 @@ sources:
   - type: official
     path: "https://docs.kernel.org/bpf/btf.html"
 tags: [bpf, ebpf, kernel, observability, gki, ack-6.18, android17]
-related_chapters: ["2.6", "14.25", "14.18", "4.50", "5.4", "1.59"]
+related_chapters: ["1.48", "2.6", "4.50", "5.4", "14.18", "14.25"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 drafted_by: "task2a-content-processing"
@@ -47,7 +48,7 @@ last_review_finalize_at: "2026-08-06T16:08:13+08:00"
 last_review_finalize_run_id: "20260806-160557-24b5c632"
 ---
 
-# 1.60 Android 17 / ACK 6.18 BPF 可观测性与可编程边界
+# 1.41 Android 17 / ACK 6.18 BPF 可观测性与可编程边界
 
 ## 范围与判断
 
@@ -384,7 +385,7 @@ adb shell dmesg | grep -i -E 'bpf|bpfloader|verifier'
 - §14.25 负责从工具角度组织 BPF 能力表和现场核查方法。
 - §4.50 负责 PSI、LMKD 与内存压力处置；这里只说明 BPF 事件可补充哪些上下文。
 - §5.4 负责 DVFS 和 schedutil；这里不把 power tracepoint 观测写成调频控制。
-- §1.59 已澄清 Android 17 不存在 AOSP 系统级“ML Scheduler”，这里不再以该概念解释 runqueue 或进程优先级。
+- §1.6 已澄清 Android 17 不存在 AOSP 系统级“ML Scheduler”，这里不再以该概念解释 runqueue 或进程优先级。
 
 ## 小结
 

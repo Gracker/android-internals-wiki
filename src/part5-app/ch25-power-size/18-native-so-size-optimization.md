@@ -582,8 +582,8 @@ Android 平台、NDK、AGP 与 Play 发布政策不能按行互相替代。项�
 - [25.6 APK 体积分析与瘦身](06-apk-analysis.md)：DEX、资源、native 与 assets 的统一体积账。
 - [25.8 App Bundle 与动态交付](08-app-bundle-delivery.md)：ABI configuration APK 与 Dynamic Feature。
 - [20.11 16KB Page Size 兼容性与 Native 崩溃治理](../ch20-stability/11-16kb-page-size-native-compatibility.md)：ELF/ZIP 检查、backcompat 和故障归因。
-- [1.55 Android 17 VNDK 隔离](../../part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md)：平台 native 可见性。
-- [1.58 Android Dynamic Linker](../../part1-fundamentals/ch01-architecture/58-android-dynamic-linker-linker64-native-library.md)：linker64 加载、重定位、RELRO 与 namespace。
+- [1.40 Android 17 VNDK 隔离](../../part1-fundamentals/ch01-architecture/40-vndk-isolation-native-library-performance.md)：平台 native 可见性。
+- [1.50 Android Dynamic Linker](../../part1-fundamentals/ch01-architecture/50-dynamic-linker-native-library.md)：linker64 加载、重定位、RELRO 与 namespace。
 
 一手资料：
 

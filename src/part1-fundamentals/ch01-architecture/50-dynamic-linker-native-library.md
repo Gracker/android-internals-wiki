@@ -1,10 +1,11 @@
 ---
 title: "Android Dynamic Linker (linker64) 架构与 Native 库加载性能边界"
-chapter: "1.58"
+chapter: "1.50"
+section: "1.50"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [linker64, dynamic-linker, ELF, dlopen, namespace, RELRO, native-library, bionic]
-related_chapters: ["1.15", "1.55", "4.6", "8.2"]
+related_chapters: ["1.15", "1.40", "4.6", "8.2"]
 consolidated_from:
   - "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
 created_by: "task2a-knowledge-gap"
@@ -38,11 +39,11 @@ sources:
     path: "https://source.android.com/docs/core/architecture/vndk/linker-namespace"
 ---
 
-# 1.58 Android Dynamic Linker (linker64) 架构与 Native 库加载性能边界
+# 1.50 Android Dynamic Linker (linker64) 架构与 Native 库加载性能边界
 
 Android 进程执行原生代码之前，要把 ELF 文件映射进地址空间，找到依赖库，解析动态符号，写入重定位结果，再调整页面权限并运行初始化函数。64 位进程中的这些工作由 bionic dynamic linker 完成，常见解释器路径是 `/system/bin/linker64`。
 
-平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为准；涉及 `mmap()`、文件缺页和 COW 的内核行为以 `android17-6.18-2026-06_r6` 为准。VNDK 可见性规则见 [1.55 Android 17 VNDK 隔离与 native 库加载性能影响](1.55-android17-vndk-isolation-native-library-performance.md)；以下内容聚焦 linker64 的执行顺序及各阶段对启动时间、内存和故障定位的影响。
+平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为准；涉及 `mmap()`、文件缺页和 COW 的内核行为以 `android17-6.18-2026-06_r6` 为准。VNDK 可见性规则见 [1.40 Android 17 VNDK 隔离与 native 库加载性能影响](40-vndk-isolation-native-library-performance.md)；以下内容聚焦 linker64 的执行顺序及各阶段对启动时间、内存和故障定位的影响。
 
 ## linker64 的职责边界
 

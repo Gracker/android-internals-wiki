@@ -1,6 +1,7 @@
 ---
 title: "Android 17 ART 去优化：触发、栈重建与性能诊断"
 chapter: "1.35"
+section: "1.35"
 status: ready-for-review
 drafted_date: "2026-06-28"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"

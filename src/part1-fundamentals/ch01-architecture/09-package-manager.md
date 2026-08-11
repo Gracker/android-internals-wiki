@@ -143,6 +143,9 @@ last_body_apply_source: "queue: AIW 时效性巡检 / src/part1-fundamentals/ch0
 last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
 last_review_finalize_at: "2026-08-06T12:07:15+08:00"
 last_review_finalize_run_id: "20260806-120548-9b08ffcd"
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch01-architecture/1.67-android17-packagemanager-architecture-performance.md"
 ---
 
 # 1.9 Package Manager Service 与应用安装性能
@@ -439,6 +442,33 @@ Android 15（API 35）引入系统级 App Archiving，Android 17 延续了这套
 Android 17 的 `PackageArchiver` 使用带 `DELETE_ARCHIVE` 与 `DELETE_KEEP_DATA` 语义的删除路径，并保存 `ArchiveState`。归档状态可包含可启动 Activity 信息、安装器标题和归档时间。`ActivityStarter` 遇到归档目标时，可以转入请求恢复流程，而不是按“组件不存在”直接失败。
 
 恢复完成后会出现相应包添加事件。对启动性能而言，归档后的第一次点击包含重新获取和恢复包的成本，不能与普通冷启动放在同一组数据里。
+
+## 查询、权限与应用身份边界
+
+安装只是 PMS 的一条主线。包查询和权限状态也会影响启动、跨包调用与系统服务性能，分析时需要把下面几层分开。
+
+### 查询快照、客户端缓存与包可见性
+
+服务端通过 `Computer` 快照减少长时间持有 PMS 主锁；应用侧的 `ApplicationPackageManager` 还可能缓存部分查询结果。缓存命中只能说明省去了一部分 Binder 或对象构造成本，不能证明结果不受版本、用户、调用 UID 和可见性规则影响。
+
+Android 11 以后，普通应用的包查询受 `<queries>`、自动可见规则和调用身份限制。`AppsFilterImpl` 参与服务端过滤，因此“查询为空”未必表示包没有安装；诊断应同时记录 caller UID、userId、查询 API、flags 和 manifest 可见性声明。系统组件或持有特权权限的工具得到的结果不能直接外推到普通应用。
+
+### 权限服务不是 PMS 内部的一张表
+
+Android 17 的权限状态由 `AccessCheckingService` 及其 permission/access policy 组件维护，PMS 仍提供包、UID、签名和安装状态等事实，并在对外接口中完成协作。权限检查慢时，需要区分：
+
+- 调用方 Binder 排队；
+- PMS/权限服务的快照或锁；
+- 跨用户、可见性和签名关系计算；
+- 首次构造或失效后的缓存重建。
+
+把所有权限工作都归到 `PackageManagerService.mLock` 会遗漏当前架构边界。
+
+### Split、UID 与更新冲突
+
+一个已安装包可以包含 base APK、config split 和动态特性 split。`PackageInstallerSession` 以一次 session 表达待提交文件集合；缺失必须的 split、版本不一致或签名不匹配会在验证/协调阶段失败。Play Feature Delivery 属于分发层，设备最终仍以 PackageInstaller/PMS 接收到的文件集合为准。
+
+Linux UID、应用数据目录、SELinux domain 和 runtime permission 共同构成沙箱。包名相同并不自动允许覆盖安装：签名 lineage、versionCode、shared UID 历史约束、安装来源和系统/数据分区关系都会影响结果。安装流程中的 package freeze 用于阻止更新窗口里的并发启动或状态变化，也不是“应用休眠”或“冻结缓存进程”。
 
 ---
 

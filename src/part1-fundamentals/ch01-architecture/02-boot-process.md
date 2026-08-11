@@ -85,7 +85,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-03
 ---
 
-# 系统启动全流程
+# 1.2 系统启动全流程
 
 “开机耗时”必须先定义终点。Bootloader 把控制权交给内核、`system_server` 进入 `run()`、屏幕被允许点亮、Launcher 提交首帧、用户收到 `LOCKED_BOOT_COMPLETED` 或 `BOOT_COMPLETED`，都可以成为里程碑，但它们回答的问题不同。比较设备或版本时，如果起点和终点不一致，数字没有可比性。
 

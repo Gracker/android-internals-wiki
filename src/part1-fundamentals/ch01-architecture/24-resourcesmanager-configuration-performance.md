@@ -1,6 +1,7 @@
 ---
 title: "ResourcesManager 与 Configuration 变更性能"
 chapter: "1.24"
+section: "1.24"
 status: "finalized"
 drafted_date: "2026-06-04"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -86,6 +87,9 @@ finalized_by: "openclaw-task9-auto-promote"
 finalized_date: "2026-07-03"
 last_task6_audit: "2026-07-13"
 last_task6_audit_notes: "Idle audit: Fixed L1 issues (对齐→页面对齐, reduced 通过/如果 usage), 12 sources still missing paths, applicable_versions includes Android 12 for comparison only"
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch01-architecture/1.48-Android-17-ResourcesManager-Configuration-Activity-Relaunch-判定模型.md"
 ---
 # 1.24 ResourcesManager 与 Configuration 变更性能
 

@@ -1,6 +1,7 @@
 ---
 title: "Android 17 WindowManager 架构与性能优化"
-chapter: "1.66"
+chapter: "1.47"
+section: "1.47"
 status: finalized
 applicable_versions: "Android 17 (API 37)"
 last_verified: "2026-08-06"
@@ -76,13 +77,13 @@ sources:
   - type: official
     path: "developer.android.com/reference/android/view/SurfaceControl"
 tags: [window, ui, performance, system-service]
-related_chapters: ["1.44", "1.67"]
+related_chapters: ["1.9", "1.38"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "aosp-core-services"
 last_body_apply_at: "2026-08-06T17:15:31+08:00"
 last_body_apply_run_id: "20260806-171506-e38f1c04"
-last_body_apply_source: "metadata/queue.json:freshness:src/part1-fundamentals/ch01-architecture/1.66-android17-windowmanager-architecture-performance.md"
+last_body_apply_source: "metadata/queue.json:freshness:src/part1-fundamentals/ch01-architecture/47-windowmanager-architecture-performance.md"
 task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed
@@ -91,7 +92,7 @@ last_review_finalize_at: "2026-08-06T18:06:50+08:00"
 last_review_finalize_run_id: "20260806-180514-cfb32a81"
 ---
 
-# 1.66 Android 17 WindowManager 架构与性能优化
+# 1.47 Android 17 WindowManager 架构与性能优化
 
 WindowManager 需要保持四套状态一致：
 
@@ -661,7 +662,7 @@ T5  SurfaceFlinger commit / present
 
 | 关联章节 | 内容边界 |
 | --- | --- |
-| §1.44 | `IWindowSession` Binder、oneway/sync relayout 与 `system_server` 锁竞争 |
-| §1.67 | PackageManager 提供包/组件信息，但窗口 token、显示与焦点由 WMS/ATMS 管理 |
+| §1.4 | `IWindowSession` Binder、oneway/sync relayout 与 `system_server` 锁竞争 |
+| §1.9 | PackageManager 提供包/组件信息，但窗口 token、显示与焦点由 WMS/ATMS 管理 |
 
 `android-17.0.0_r1` 包含上述窗口添加、两种 Surface 所有权、BLASTBufferQueue、surface placement、BLASTSyncEngine、transition、visibility 与 input integration。设备侧合成能力、gralloc buffer 策略和显示时序由具体产品实现决定，性能结论应附 trace、设备和复现条件。

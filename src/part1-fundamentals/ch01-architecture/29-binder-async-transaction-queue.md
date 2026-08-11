@@ -1,6 +1,7 @@
 ---
-title: "Android 17 Binder IPC 异步机制与批处理流水线"
-chapter: "1.25"
+title: "Android 17 Binder 异步事务与排队机制"
+chapter: "1.29"
+section: "1.29"
 status: finalized
 applicable_versions: "Android 17 (API 37)"
 tags: [binder, ipc, 异步机制, 批处理]
@@ -67,9 +68,12 @@ sources:
     path: "kernel/common/drivers/android/binder_alloc.c (android17-6.18-2026-06_r6)"
   - type: official-docs
     path: "https://perfetto.dev/docs/analysis/stdlib-docs#android-binder"
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch01-architecture/01.30-android17-binder-transaction-queue-optimization.md"
 ---
 
-# 1.25 Android 17 Binder IPC 异步机制与批处理流水线
+# 1.29 Android 17 Binder 异步事务与排队机制
 
 Binder 的 oneway 调用经常被概括成“异步、不会阻塞”。这句话只覆盖了调用方不等待业务回复这一层。调用方仍要把事务提交给驱动，驱动仍要为目标进程分配缓冲区，目标 Binder 线程仍要执行服务端代码；缓冲区耗尽、目标死亡或冻结等状态也可能在提交阶段反馈给调用方。
 

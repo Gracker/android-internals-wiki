@@ -118,7 +118,7 @@ last_review_finalize_run_id: "20260807-081516-9264ee2d"
 review_finalize_notes: "Hermes AIW review/finalize：按 android-17.0.0_r1 / android17-6.18 基线复核主线程 Looper、MessageQueue 实现选择、RenderThread 交接、调度优先级、虚拟线程边界；未发现 P0/P1/P2 阻断项，推进 finalized。"
 ---
 
-# 线程模型
+# 1.5 线程模型
 
 Android 应用的线程模型远比“主线程加几个后台线程”复杂。一次点击可能依次经过主线程的输入分发、业务代码、Binder 调用和渲染提交；其中任何线程被锁、I/O 或调度延迟拖住，都可能让这一帧错过显示期限。
 

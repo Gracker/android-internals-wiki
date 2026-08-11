@@ -597,7 +597,7 @@ Android 平台版本表与 AGP 版本表放在一起是为了说明边界变化�
 - [25.7 R8 与资源优化](07-r8-resource-optimization.md)：Full Mode、keep rule 与资源优化。
 - [25.8 App Bundle 与动态交付](08-app-bundle-delivery.md)：base、feature 与设备专用 APK。
 - [21.4 Baseline Profile 与 Startup Profile 实战](../ch21-startup/04-baseline-profile-practice.md)：主 DEX 布局、profile 生成与启动验证。
-- [1.57 ART Boot Image 内存映射](../../part1-fundamentals/ch01-architecture/57-android17-art-boot-image-memory-mapping-startup.md)：`.art`、`.oat`、`.vdex` 与平台启动边界。
+- [1.49 ART Boot Image 内存映射](../../part1-fundamentals/ch01-architecture/49-art-boot-image-memory-mapping-startup.md)：`.art`、`.oat`、`.vdex` 与平台启动边界。
 
 一手资料：
 
