@@ -1,10 +1,10 @@
 ---
 title: "Kotlin 协程泄漏诊断与结构化并发性能监控"
-chapter: "20.27"
+chapter: "20.21"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [coroutine, leak, structured-concurrency, performance, monitoring]
-related_chapters: ["20.25", "20.21", "8.6"]
+related_chapters: ["20.12", "20.19", "8.6"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "AOSP结构/章节深挖"
@@ -27,7 +27,7 @@ sources:
   path: AOSP android-17.0.0_r1 / Android 17 API 37 platform boundary
 ---
 
-# 20.27 Kotlin 协程泄漏诊断与结构化并发性能监控
+# Kotlin 协程泄漏诊断与结构化并发性能监控
 
 平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`。协程与 Lifecycle 属于独立发布的库，不能把 Android 版本当成库版本；涉及库实现时以 `kotlinx.coroutines 1.11.0` 的公开源码/API 与 AndroidX Lifecycle 公共文档为验证边界。涉及 Linux task 调度时以内核 `android17-6.18-2026-06_r6` 为边界；协程本身没有可由内核直接识别的 task 类型。
 
@@ -45,7 +45,7 @@ Android 17 不认识“协程”这个调度单位。平台看到的是 `Handler
 
 “Job 已经 completed，但监控表还保存着它”属于监控器自身的对象滞留。“线程池仍有空闲 worker”属于线程资源治理。两者都要修，但不能和活跃协程混为一类。
 
-协程挂起时不占用一个专属线程，却仍保留 continuation、`CoroutineContext` 和被 lambda 捕获的对象。它恢复时也可能换到另一个 worker。因此，线程数和协程数没有一一对应关系。线程层的归因与阈值见 [20.25 线程泄漏与匿名线程监控](./25-thread-leak-anonymous-thread-monitoring.md)。
+协程挂起时不占用一个专属线程，却仍保留 continuation、`CoroutineContext` 和被 lambda 捕获的对象。它恢复时也可能换到另一个 worker。因此，线程数和协程数没有一一对应关系。线程层的归因与阈值见 [20.19 线程泄漏与匿名线程监控](./19-thread-leak-anonymous-thread-monitoring.md)。
 
 ### 1.1 判断泄漏要同时满足“超期”和“仍被持有”
 
@@ -248,7 +248,7 @@ suspend fun fetch(request: Request): Response =
 
 Android 内核调度的是线程。协程恢复到哪个 worker，就临时继承该 worker 的 nice、cgroup 和调度属性。在线程池协程中调用 `Process.setThreadPriority()` 会修改可复用 worker；后续无关任务也可能继承该值，协程换 worker 后又失去预期。
 
-需要稳定线程属性的组件应使用有界的专用 executor，并在 ThreadFactory 中设置线程属性，再把它转成 dispatcher。相关线程必须由 owner 关闭并纳入 [20.25](./25-thread-leak-anonymous-thread-monitoring.md) 的 task/线程池监控。
+需要稳定线程属性的组件应使用有界的专用 executor，并在 ThreadFactory 中设置线程属性，再把它转成 dispatcher。相关线程必须由 owner 关闭并纳入 [20.19](./19-thread-leak-anonymous-thread-monitoring.md) 的 task/线程池监控。
 
 ## 5. Android 上不能依赖全局协程枚举
 

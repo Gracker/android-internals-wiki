@@ -31,9 +31,28 @@
 | ch17 OEM 与设备差异 | 12 | 10 | 已完成 | 2026-08-11 |
 | ch18 渲染管线专题 | 27 | 25 | 已完成 | 2026-08-11 |
 | ch19 APM 工具与性能监控生态 | 28 | 22 | 已完成 | 2026-08-11 |
-| 其余 9 章 | 301 | 待审阅 | 未开始 | - |
+| ch20 应用稳定性治理 | 27 | 22 | 已完成 | 2026-08-11 |
+| 其余 8 章 | 274 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 528 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 523 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch20 应用稳定性治理
+
+保留后的连续编号为 20.1～20.22。内容按“故障类型 → 度量、恢复与聚合 → 内存安全和平台兼容 → IPC/栈/Hook 诊断 → FD、线程、Native 内存与协程生命周期 → SDK 治理”组织；H1 不再重复章节号。
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `03-native-crash-governance.md` / `19-android17-signal-handler-debuggerd-migration.md` | 合并 fatal signal、SignalChain、linker wiring、altstack/pseudothread、CrashInfo、tag bit、debuggerd/tombstone 与采集器共存验证；栈回溯和符号化深挖继续由独立条目承载 | `../src/part5-app/ch20-stability/03-native-crash-governance.md`（20.3） |
+| `07-exception-architecture.md` / `12-safemode-crash-loop-recovery.md` | 将 SafeMode 收回异常恢复架构，保留 LaunchLease、两阶段退出证据核对、降级计划、多进程/版本分桶、迟滞恢复与验证矩阵；删除重复的 Java/Native/ANR 捕获说明 | `../src/part5-app/ch20-stability/07-exception-architecture.md`（20.7） |
+| `17-binder-exception-ipc-fault-performance.md` / `22-binder-communication-monitoring.md` | 合并 Binder 异常、共享 buffer/freezer/oneway/重试语义与 client/server wrapper、均匀+慢样本采样、Perfetto 长尾分析和监控安全约束 | `../src/part5-app/ch20-stability/15-binder-ipc-fault-monitoring.md`（20.15） |
+| `11-mte-memtag-native-crash.md` / `23-gwp-asan-probabilistic-memory-safety-android17.md` | 合并 MTE 与 GWP-ASan 两类 Native 内存安全检测；分别保留 tag/guarded pool、配置、抽样、recoverable 报告和工具分工，共用符号、事件、灰度与修复闭环 | `../src/part5-app/ch20-stability/10-mte-gwp-asan-native-memory-safety.md`（20.10） |
+| `09-stability-case-studies.md` | 不再保留跨主题案例集；Native 采集器冲突、ContentProvider 启动 ANR、`pthread_create` OOM 的复现与验收分别回流到 Native Crash、ANR 和线程治理正文 | 20.3、20.4、20.19 |
+| `14-thread-fd-resource-monitoring.md` / `25-thread-leak-anonymous-thread-monitoring.md` / `20.27-coroutine-leak-*.md` | 删除 FD 稿中与线程专题重复的 task/ThreadFactory/创建链；保留纯 FD 所有权与限额。线程和协程因观测对象、生命周期与修复动作不同，继续独立承载 | 20.12、20.19、20.21 |
+| 原 20.10、20.13～20.18、20.24～20.28 中未合并的主题 | WebView、16 KB、DCL、Keystore、Native unwind、Hook、Java 锁栈、线程、Native 内存、协程和 SDK 均能独立回答问题，依次改为连续编号 | `09-webview-renderer-oom-recovery.md`～`22-sdk-performance-governance.md` |
+
+章节 README、`src/SUMMARY.md`、活动队列、跨章引用和统计口径已经切换到新编号。历史 changelog、review/audit 日志、已关闭 finding、素材索引、锁归档与旧 intake 摘要保留发生时的路径。
 
 ## ch19 APM 工具与性能监控生态
 

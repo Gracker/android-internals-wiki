@@ -4,29 +4,29 @@ import subprocess
 import time
 
 files = [
-    "src/part3-tools/ch19-apm/01-apm-landscape.md",
-    "src/part3-tools/ch19-apm/02-tencent-matrix.md",
-    "src/part3-tools/ch19-apm/03-koom.md",
-    "src/part3-tools/ch19-apm/04-btrace.md",
-    "src/part3-tools/ch19-apm/05-leakcanary.md",
-    "src/part3-tools/ch19-apm/06-dokit.md",
-    "src/part3-tools/ch19-apm/07-measure.md",
-    "src/part3-tools/ch19-apm/08-open-source-apm-history.md",
-    "src/part3-tools/ch19-apm/09-jankstats-framemetrics.md",
-    "src/part3-tools/ch19-apm/10-tracing-sdk.md",
-    "src/part3-tools/ch19-apm/11-jetpack-benchmark.md",
-    "src/part3-tools/ch19-apm/12-baseline-profiles.md",
-    "src/part3-tools/ch19-apm/13-profiling-manager.md",
-    "src/part3-tools/ch19-apm/14-firebase-performance.md",
-    "src/part3-tools/ch19-apm/15-commercial-apm.md",
-    "src/part3-tools/ch19-apm/16-testing-tools.md",
-    "src/part3-tools/ch19-apm/17-device-benchmarks.md",
-    "src/part3-tools/ch19-apm/18-network-apm-internals.md",
-    "src/part3-tools/ch19-apm/19-crash-anr-internals.md",
-    "src/part3-tools/ch19-apm/20-battery-thermal-apm.md",
-    "src/part3-tools/ch19-apm/21-hybrid-apm.md",
-    "src/part3-tools/ch19-apm/22-apm-client-architecture.md",
-    "src/part3-tools/ch19-apm/README.md"
+    "src/part5-app/ch20-stability/01-stability-overview.md",
+    "src/part5-app/ch20-stability/02-java-crash-governance.md",
+    "src/part5-app/ch20-stability/03-native-crash-governance.md",
+    "src/part5-app/ch20-stability/04-anr-governance.md",
+    "src/part5-app/ch20-stability/05-oom-governance.md",
+    "src/part5-app/ch20-stability/06-stability-metrics.md",
+    "src/part5-app/ch20-stability/07-exception-architecture.md",
+    "src/part5-app/ch20-stability/08-crash-aggregation.md",
+    "src/part5-app/ch20-stability/09-webview-renderer-oom-recovery.md",
+    "src/part5-app/ch20-stability/10-mte-gwp-asan-native-memory-safety.md",
+    "src/part5-app/ch20-stability/11-16kb-page-size-native-compatibility.md",
+    "src/part5-app/ch20-stability/12-fd-resource-monitoring.md",
+    "src/part5-app/ch20-stability/13-android17-native-dcl-stability.md",
+    "src/part5-app/ch20-stability/14-keystore-quota-login-stability.md",
+    "src/part5-app/ch20-stability/15-binder-ipc-fault-monitoring.md",
+    "src/part5-app/ch20-stability/16-native-stack-unwinding-symbolication.md",
+    "src/part5-app/ch20-stability/17-native-hook-technology-selection-implementation.md",
+    "src/part5-app/ch20-stability/18-crash-java-stack-lock-wait-analysis.md",
+    "src/part5-app/ch20-stability/19-thread-leak-anonymous-thread-monitoring.md",
+    "src/part5-app/ch20-stability/20-native-memory-leak-online-monitoring.md",
+    "src/part5-app/ch20-stability/21-coroutine-leak-diagnosis-structured-concurrency-performance.md",
+    "src/part5-app/ch20-stability/22-sdk-performance-governance.md",
+    "src/part5-app/ch20-stability/README.md"
 ]
 
 prompt_template = """按照 logs/external-review/aiw-gemini-review-pack.md 规范，review 下面这个文章。不要偷懒，不要代写正文，必须给出完整的 markdown 报告。目标文件：{filepath}
@@ -45,9 +45,9 @@ for filepath in files:
     
     prompt = prompt_template.format(filepath=filepath, content=content)
     
-    out_filename = "logs/external-review/19-" + os.path.basename(filepath)
+    out_filename = "logs/external-review/20-" + os.path.basename(filepath)
     if os.path.basename(filepath) == "README.md":
-        out_filename = "logs/external-review/19.README-ch19.md"
+        out_filename = "logs/external-review/20.README-ch20.md"
         
     print(f"Reviewing {filepath} -> {out_filename}")
     

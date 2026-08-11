@@ -33,7 +33,7 @@ sources:
   - type: book
     path: "Clippings/Android 应用稳定性剖析与优化 - Native 内存泄漏监控：寻找 Native 中不可达内存.md"
 tags: [native-memory, scudo, allocator, heapprofd, gwp-asan]
-related_chapters: ["4.5", "14.5", "20.11", "23.3", "26.16"]
+related_chapters: ["4.5", "14.5", "20.10", "23.3", "26.16"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-24"
 gap_source: "素材驱动/官方文档/Clippings结构参考"
@@ -43,7 +43,7 @@ gap_source: "素材驱动/官方文档/Clippings结构参考"
 
 Native 内存曲线变大时，先确认正在看哪一种“大小”。`Debug.getNativeHeapAllocatedSize()`、`dumpsys meminfo` 的 Native Heap、`smaps` 的匿名映射、heapprofd 的未释放样本和 Graphics PSS 来自不同统计路径。它们可以同时变化，也可能朝相反方向变化。
 
-平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。涉及页大小、`/proc` 和 MTE 的内核边界时，以 `android17-6.18-2026-06_r6` 为基线。Scudo 属于用户态分配器，内核版本不会把某次 `malloc()` 自动归为业务泄漏。Native 内存分层见 4.5 节，常规排查见 23.3 节，MTE 崩溃分析见 20.11 节。
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。涉及页大小、`/proc` 和 MTE 的内核边界时，以 `android17-6.18-2026-06_r6` 为基线。Scudo 属于用户态分配器，内核版本不会把某次 `malloc()` 自动归为业务泄漏。Native 内存分层见 4.5 节，常规排查见 23.3 节，MTE/GWP-ASan 崩溃分析见 20.10 节。
 
 ## 先把五种口径分开
 
@@ -236,7 +236,7 @@ Recoverable 模式没有立即结束进程，不表示内存破坏已恢复。�
 - ASYNC 会延后到内核入口处报告，性能成本较低，故障地址与访问位置不如 SYNC 精确；
 - ASYMM 对读写采用不同检查方式，最终行为还受设备硬件和平台配置影响。
 
-应用 manifest 的 `android:memtagMode` 只表达进程请求，设备是否支持、平台如何配置以及 CPU 核心的有效模式都要一并确认。20.11 节详细说明 MTE 报告和灰度策略。
+应用 manifest 的 `android:memtagMode` 只表达进程请求，设备是否支持、平台如何配置以及 CPU 核心的有效模式都要一并确认。20.10 节详细说明 MTE/GWP-ASan 报告和灰度策略。
 
 ## 16 KB Page Size 与 Native Heap
 

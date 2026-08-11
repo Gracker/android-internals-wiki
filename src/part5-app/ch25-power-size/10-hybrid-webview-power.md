@@ -9,7 +9,7 @@ last_verified: "2026-05-15"
 last_verified_against: "AOSP android-16.0.0_r1 WebView loader + Android Developers docs 2026-03"
 confidence: medium
 tags: [webview, hybrid, power, energy, battery, benchmark]
-related_chapters: ["10.3", "11.1", "19.21", "20.10", "22.7", "25.1", "25.2"]
+related_chapters: ["10.3", "11.1", "19.21", "20.9", "22.7", "25.1", "25.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "论文素材 + 官方文档 + 章节覆盖缺口"

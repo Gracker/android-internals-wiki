@@ -1,10 +1,10 @@
 ---
 title: "Native 内存泄漏线上监控实战：malloc 钩子、Scudo 追踪与 mallinfo 治理"
-chapter: "20.26"
+chapter: "20.20"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [native, memory-leak, malloc, Scudo, mallinfo, monitoring, online]
-related_chapters: ["20.3", "20.15", "20.23", "23.3", "23.11"]
+related_chapters: ["20.3", "20.10", "20.17", "23.3", "23.11", "26.24"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "素材驱动+章节深挖"
@@ -39,7 +39,7 @@ sources:
     path: "https://developer.android.com/ndk/guides/memory-debug"
 ---
 
-# 20.26 Native 内存泄漏线上监控实战：malloc 钩子、Scudo 追踪与 mallinfo 治理
+# Native 内存泄漏线上监控实战：malloc 钩子、Scudo 追踪与 mallinfo 治理
 
 Native 内存问题很少能靠一条曲线定性。`malloc` 仍然存活的字节、分配器向内核映射的页、进程驻留页、按比例分摊后的 PSS，以及 GPU 或 dma-buf 占用，回答的是不同问题。若把它们都叫作“Native Heap”，告警会互相矛盾，定位也容易走偏。
 
@@ -276,7 +276,7 @@ Android 8 以后，linker namespace 会影响库的可见性、加载和符号�
 - 离线按 Build ID 符号化；
 - 缓冲区满时丢弃并计数，不阻塞分配线程。
 
-完整调用栈若必须在线采集，需要结合 [20.18 Native 栈回溯与符号化](./18-native-stack-unwinding-symbolication.md) 评估 unwind 安全性与成本。hook 自身还应具备远程关闭、时限、进程白名单和崩溃熔断，避免诊断功能扩大故障面。
+完整调用栈若必须在线采集，需要结合 [20.16 Native 栈回溯与符号化](./16-native-stack-unwinding-symbolication.md) 评估 unwind 安全性与成本。hook 自身还应具备远程关闭、时限、进程白名单和崩溃熔断，避免诊断功能扩大故障面。
 
 ### 5.4 “每 1000 次取 1 次”不是通用采样答案
 
@@ -309,7 +309,7 @@ heapprofd 能提供：
 
 生产环境更适合在异常趋势、MemoryLimiter anomaly 或灰度命中后开启短窗口采样。持续高频 profiling 会增加 CPU、内存、trace 存储和隐私成本。
 
-Android 15 / API 35 起，普通应用可通过 `ProfilingManager` 请求受系统管理的 heap profile；Android 10—14 的 profileable、debuggable、shell initiator 约束和完整配置见 [8.39 Android 17 heapprofd 生产级部署](../../part1-fundamentals/ch08-startup/8.39-android17-heapprofd-production-deployment.md)。实施时应复用该章已经验证的权限模型、guardrail 和符号化流程，不要再维护一套私有规则。
+Android 15 / API 35 起，普通应用可通过 `ProfilingManager` 请求受系统管理的 heap profile；Android 10—14 的 profileable、debuggable、shell initiator 约束和完整配置见 [26.24 heapprofd 生产级部署与权限模型](../ch26-observability/24-heapprofd-production-deployment-permissions.md)。实施时应复用该章已经验证的权限模型、guardrail 和符号化流程，不要再维护一套私有规则。
 
 ## 7. Scudo、GWP-ASan、HWASan、MTE 各自查什么
 
@@ -330,7 +330,7 @@ Android 11 起，Scudo 用于大多数 Android Native 分配；低内存设备�
 - MTE 依赖 Arm 硬件标签能力、64 位进程与设备系统配置。它和编译器插桩的 HWASan 是两条路径。
 - ASan 官方已标为被其他工具取代。官方给出的量级约为 CPU +100%、代码 +50%、内存 +100%，不能写成所有应用固定“2—3 倍”。
 
-HWASan 官方给出的典型成本约为 CPU +100%、代码 +50%、内存 +10%—35%，仍应以应用实测为准。GWP-ASan 的生产灰度配置与 tombstone 分析见 [20.23 GWP-ASan 概率式内存安全检测](./23-gwp-asan-probabilistic-memory-safety-android17.md)，MTE 的配置和故障解释见 [20.11 MTE memtagMode 与 Native 崩溃治理](./11-mte-memtag-native-crash.md)。
+HWASan 官方给出的典型成本约为 CPU +100%、代码 +50%、内存 +10%—35%，仍应以应用实测为准。GWP-ASan 的生产灰度、MTE 配置与两类报告的差异统一见 [20.10 MTE 与 GWP-ASan Native 内存安全检测](./10-mte-gwp-asan-native-memory-safety.md)。
 
 ## 8. Scudo 选项与 `mallopt`：调 allocator，不是修泄漏
 

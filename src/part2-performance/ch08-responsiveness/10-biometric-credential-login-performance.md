@@ -30,7 +30,7 @@ sources:
   - type: aosp
     path: "frameworks/base/services/credentials/java/com/android/server/credentials/CredentialManagerService.java"
 tags: [responsiveness, biometric, credential-manager, passkeys, keystore]
-related_chapters: ["8.9", "20.16", "26.12", "26.15"]
+related_chapters: ["8.9", "20.14", "26.12", "26.15"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-26"
 gap_source: "AOSP结构/官方文档/素材驱动"
@@ -346,7 +346,7 @@ Jetpack 库版本和平台 API level 要分别记录。`BiometricPromptData` 来
 
 ## 与稳定性和观测章节的分工
 
-[§20.16 Keystore 配额与登录稳定性](../../part5-app/ch20-stability/16-keystore-quota-login-stability.md) 负责 key 生命周期、配额、失效与恢复。这里仅将这些结果视为登录阶段的一类终态。
+[§20.14 Keystore 配额与登录稳定性](../../part5-app/ch20-stability/14-keystore-quota-login-stability.md) 负责 key 生命周期、配额、失效与恢复。这里仅将这些结果视为登录阶段的一类终态。
 
 [§26.12 版本化诊断](../../part5-app/ch26-observability/12-versioned-diagnostics.md) 负责系统 trace、`ApplicationExitInfo`、`ProfilingManager` 与诊断权限。[§26.15 Android Vitals 与 Play Console](../../part5-app/ch26-observability/15-android-vitals-play-console-quality.md) 负责 ANR、Crash、LMK、启动和功耗等外部质量口径。Vitals 没有“生物识别登录慢”专用指标，内部 `flow_id`、版本与页面信息要能和发布批次对应。
 

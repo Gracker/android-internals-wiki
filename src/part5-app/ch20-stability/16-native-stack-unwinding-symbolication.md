@@ -1,6 +1,6 @@
 ---
 title: "Native 堆栈回溯与符号化机制"
-chapter: "20.18"
+chapter: "20.16"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 drafted_date: "2026-06-27"
@@ -27,7 +27,7 @@ created_date: "2026-06-26"
 gap_source: "素材驱动/参考书"
 ---
 
-# 20.18 Native 堆栈回溯与符号化机制
+# Native 堆栈回溯与符号化机制
 
 Native Crash 报告中的一行 `#00 pc 0000000000008a3c libfoo.so` 已经不是进程里的绝对地址。系统回溯器先找到了该 PC 所属的内存映射，再把它换算成 ELF 内的相对 PC；离线工具还要找到 Build ID 完全一致的未裁剪 ELF，才可能恢复函数、内联调用链与源码行。
 
@@ -448,11 +448,11 @@ Branch Target Identification 约束间接分支的合法落点。它不改变 `r
 
 #### MTE
 
-Android 17 的 `crash_dump` 同时保存可能带 tag 的 fault address 与去 tag 后的地址。MTE 同步、异步故障的定位能力不同；不要在上传前只保留一个被清洗过的地址。更完整的 MTE 诊断与治理见 20.11。
+Android 17 的 `crash_dump` 同时保存可能带 tag 的 fault address 与去 tag 后的地址。MTE 同步、异步故障的定位能力不同；不要在上传前只保留一个被清洗过的地址。更完整的 MTE/GWP-ASan 诊断与治理见 20.10。
 
 #### 16 KB 页
 
-16 KB 页会影响 ELF segment 对齐与 APK 内嵌 `.so` 的打包要求，但不会把符号地址统一放大或缩小四倍。符号化仍以 maps、ELF program header、load bias 和 Build ID 为准。Native 库兼容性检查见 20.13。
+16 KB 页会影响 ELF segment 对齐与 APK 内嵌 `.so` 的打包要求，但不会把符号地址统一放大或缩小四倍。符号化仍以 maps、ELF program header、load bias 和 Build ID 为准。Native 库兼容性检查见 20.11。
 
 ### 🔹 回溯失败时怎样定位是哪一层断了
 
@@ -510,8 +510,8 @@ Android 17 的 `crash_dump` 同时保存可能带 tag 的 fault address 与去 t
 ### 🔸 与相邻章节的分工
 
 - 20.3：Native Crash 信号类型、采集治理与线上处置。
-- 20.11：MTE 的同步/异步模式、诊断信息与灰度策略。
-- 20.13：16 KB 页下的 ELF、打包和第三方库兼容。
+- 20.10：MTE/GWP-ASan 的检测机制、报告和灰度策略。
+- 20.11：16 KB 页下的 ELF、打包和第三方库兼容。
 - 14.2、14.26：ART/JNI 与 native 内存相关基础。
 
 ## 源码与官方资料

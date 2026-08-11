@@ -1,6 +1,6 @@
 ---
 title: "16KB Page Size 兼容性与 Native 崩溃治理"
-chapter: "20.13"
+chapter: "20.11"
 status: finalized
 drafted_date: "2026-05-18"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
@@ -25,7 +25,7 @@ sources:
   - type: blog
     path: "https://github.com/android/ndk/issues/2026"
 tags: [stability, native-crash, 16kb-page-size, ndk, elf]
-related_chapters: ["4.7", "20.3", "20.11", "23.3", "25.6"]
+related_chapters: ["4.7", "20.3", "20.13", "23.3", "25.6"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-18"
 gap_source: "素材驱动/官方文档/AOSP结构/Clippings结构参考"
@@ -41,7 +41,7 @@ source_refs:
   - "https://source.android.com/docs/core/architecture/16kb-page-size/16kb-backcompat-option"
 ---
 
-# 20.13 16KB Page Size 兼容性与 Native 崩溃治理
+# 16KB Page Size 兼容性与 Native 崩溃治理
 
 Android 15 / API 35 起，AOSP 支持使用 16 KB 基础页的设备。自 2025 年 11 月 1 日起，Google Play 要求面向 Android 15 及以上设备的新应用和更新在 64 位设备上支持 16 KB 页。到 Android 17 / API 37，这已经是发布兼容性要求，不只是性能实验。
 

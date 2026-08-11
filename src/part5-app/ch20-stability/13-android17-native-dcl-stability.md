@@ -1,13 +1,13 @@
 ---
 title: "Android 17 Native DCL 只读约束与动态库加载稳定性"
-chapter: "20.15"
-section: "20.15"
+chapter: "20.13"
+section: "20.13"
 status: "finalized"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-05-25"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: [stability, native, dynamic-code-loading, android17, system-load]
-related_chapters: ["1.58", "20.3", "20.13", "1.15"]
+related_chapters: ["1.58", "20.3", "20.11", "20.17", "1.15"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-25"
 gap_source: "官方文档/AOSP结构/每日信息"
@@ -63,13 +63,13 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-19
 ---
 
-# 20.15 Android 17 Native DCL 只读约束与动态库加载稳定性
+# Android 17 Native DCL 只读约束与动态库加载稳定性
 
 Android 17 把 native 动态代码加载的只读要求加到了 `System.load(path)` 路径。应用以 Android 17（API 37）为目标版本时，`System.load()` 看到目标文件仍可写，会在进入 native linker 前抛出 `UnsatisfiedLinkError`。受影响的常见场景包括：运行时下载 `.so`、从插件包解压 `.so`、把 assets 中的库释放到私有目录，以及某些兼容旧系统的“二次解压再加载”方案。
 
 这项检查只解决“加载时文件仍可修改”这一类竞态。只读权限不能证明文件来自可信发布方，也不能替代签名、哈希、ABI、ELF、依赖库与回滚检查。排障时应把平台门禁、制品可信度和 linker 失败拆成三组证据。
 
-平台源码锚点为 `android-17.0.0_r1`。16KB page size 相关结论沿用 20.13 的 Android 17 平台基线，不涉及 kernel 专属逻辑。
+平台源码锚点为 `android-17.0.0_r1`。16KB page size 相关结论沿用 20.11 的 Android 17 平台基线，不涉及 kernel 专属逻辑。
 
 ## 1. 先分清四条加载路径
 
@@ -233,7 +233,7 @@ private fun publishLibrary(
 
 ### 5.3 16KB page size 要检查 ELF program header
 
-运行时释放出的裸 `.so` 要检查 ELF `PT_LOAD` 的 `p_align`，并按 20.13 的 Android 17 规则验证。APK ZIP 对齐只与“从 APK 直接 mmap 未压缩库”有关；文件已经解压到私有目录后，ZIP 对齐不再是该文件的加载条件。两者不要混成一个检查项。
+运行时释放出的裸 `.so` 要检查 ELF `PT_LOAD` 的 `p_align`，并按 20.11 的 Android 17 规则验证。APK ZIP 对齐只与“从 APK 直接 mmap 未压缩库”有关；文件已经解压到私有目录后，ZIP 对齐不再是该文件的加载条件。两者不要混成一个检查项。
 
 ## 6. 多进程与回滚
 
@@ -255,7 +255,7 @@ private fun publishLibrary(
 | Android 17 可写拒绝 | 消息包含 `Attempt to load writable file`，`canWrite() == true` | 标记发布流程故障，禁止重试同一路径 |
 | 非绝对路径 | 消息包含 `Expecting an absolute path` | 修正 `System.load()` 调用参数 |
 | ABI / ELF 不匹配 | `wrong ELF class`、`bad ELF magic` 或机器类型不符 | 禁用该制品，回到匹配 ABI |
-| 16KB 不兼容 | ELF segment 对齐门禁失败或 linker 对齐错误 | 回到符合 20.13 基线的构建 |
+| 16KB 不兼容 | ELF segment 对齐门禁失败或 linker 对齐错误 | 回到符合 20.11 基线的构建 |
 | 依赖 / namespace | `library ... not found`、不可访问依赖 | 修正 `DT_NEEDED` 或随包依赖 |
 | 符号错误 | `cannot locate symbol` | 回滚库与调用方版本组合 |
 | 签名 / 摘要失败 | 本地验证未通过，尚未调用 loader | 删除临时文件并告警 |
@@ -290,7 +290,7 @@ private fun publishLibrary(
 | native `dlopen()` 加载测试文件 | 验证它不经过 Java `load0()`；制品仍必须按可信只读规则发布 |
 | 清单签名、SHA-256、长度任一错误 | 在 loader 调用前拒绝 |
 | 错 ABI、错 ELF class、缺少 `DT_NEEDED`、未解析符号 | 分类为 linker/制品问题，不误报为权限问题 |
-| 4KB 对齐库运行在 16KB 环境 | 被 20.13 的门禁或运行测试发现 |
+| 4KB 对齐库运行在 16KB 环境 | 被 20.11 的门禁或运行测试发现 |
 | 两个进程同时发布和加载 | 读取者只见完整 `PUBLISHED` 版本 |
 | rename 后、选择指针更新前杀进程 | 重启恢复到旧选择或完成可验证恢复 |
 | 新版本加载失败 | 写入 `BAD`，新进程回退 last-known-good，不循环重试 |
@@ -302,7 +302,7 @@ private fun publishLibrary(
 
 - 1.58 负责 native linker namespace、依赖解析与加载性能，这里只引用其加载约束。
 - 20.3 负责 signal crash、tombstone、backtrace 和符号化。只读拒绝通常是 Java `UnsatisfiedLinkError`，尚未进入 native 执行。
-- 20.13 负责 16KB page size 的 ELF 与 APK 兼容，这里只把对应结果纳入制品门禁。
+- 20.11 负责 16KB page size 的 ELF 与 APK 兼容，这里只把对应结果纳入制品门禁。
 - 1.15 负责 JNI 注册与调用边界。库加载失败后继续调用 native 方法，才会产生后续 JNI 故障。
 
 ## 参考资料

@@ -100,7 +100,7 @@ Android 17 的 Native crash 不能概括为“debuggerd 守护进程捕获信号
 3. [`crash_dump`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp) 通过 `ptrace` 暂停并读取目标线程，连接 `tombstoned` 取得输出文件描述符，生成文本与 protobuf 形式的 tombstone。
 4. [`tombstoned`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/tombstoned/tombstoned.cpp) 管理 tombstone 的存储与轮转；栈回溯使用的是 Android 的 `libunwindstack`，不应写成泛指的 `libunwind`。
 
-tombstone 的诊断价值来自信号、`si_code`、fault address、寄存器、线程栈、内存映射、Build ID 和内存标签等信息。线上符号化必须按 ABI、Build ID 和发布版本取回未剥离符号；只按 `.so` 文件名匹配，很容易把地址解析到错误源码。详见 [20.3 Native Crash 治理](03-native-crash-governance.md)、[20.18 Native 栈回溯与符号化](18-native-stack-unwinding-symbolication.md)和 [20.19 Android 17 debuggerd 迁移](19-android17-signal-handler-debuggerd-migration.md)。
+tombstone 的诊断价值来自信号、`si_code`、fault address、寄存器、线程栈、内存映射、Build ID 和内存标签等信息。线上符号化必须按 ABI、Build ID 和发布版本取回未剥离符号；只按 `.so` 文件名匹配，很容易把地址解析到错误源码。系统信号与 debuggerd 链路见 [20.3 Native Crash 治理](03-native-crash-governance.md)，更深入的 unwind 与符号解析见 [20.16 Native 栈回溯与符号化](16-native-stack-unwinding-symbolication.md)。
 
 ## ANR：系统的存活性判定
 
@@ -147,7 +147,7 @@ Native `malloc` 失败通常返回 `nullptr` 并设置错误状态；调用方�
 
 创建线程需要线程控制结构、栈映射和内核任务资源。`pthread_create` 返回 `EAGAIN` 或其他失败后，Java 层可能抛出带有 `pthread_create` 信息的 `OutOfMemoryError`。这种故障应同时检查线程数量、线程来源、栈大小和进程资源限制。
 
-文件描述符耗尽通常表现为 `EMFILE`、打开文件或 socket 失败，它与虚拟地址空间耗尽不是一回事。FD 泄漏可能继续引发数据库、网络、资源加载或 Binder 相关异常，监控时应单列 FD 数量与类别。[20.14 线程与 FD 资源监控](14-thread-fd-resource-monitoring.md)会展开这类资源故障。
+文件描述符耗尽通常表现为 `EMFILE`、打开文件或 socket 失败，它与虚拟地址空间耗尽不是一回事。FD 泄漏可能继续引发数据库、网络、资源加载或 Binder 相关异常，监控时应单列 FD 数量与类别。[20.12 FD 资源监控](12-fd-resource-monitoring.md)会展开这类资源故障。
 
 ### LMKD 与 kernel OOM
 
@@ -338,7 +338,7 @@ Android 17 / API 37 的 `ProfilingTrigger` 增加了 OOM 等触发类型。应�
 - [20.4 ANR 治理](04-anr-governance.md)：不同 ANR 入口的 trace 与系统链路。
 - [20.5 OOM 治理](05-oom-governance.md)：Java、Native、线程、映射与 LMK。
 - [20.6 稳定性指标](06-stability-metrics.md)：分子、分母、聚类、基线与发版门禁。
-- [20.10 WebView renderer OOM 恢复](10-webview-renderer-oom-recovery.md)：宿主与渲染进程的故障隔离。
+- [20.9 WebView renderer OOM 恢复](09-webview-renderer-oom-recovery.md)：宿主与渲染进程的故障隔离。
 
 ## 源码与文档锚点
 

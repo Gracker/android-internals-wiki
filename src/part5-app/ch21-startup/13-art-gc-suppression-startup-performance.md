@@ -4,7 +4,7 @@ chapter: "21.13"
 status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [gc-suppression, startup, art-runtime, heap-task-daemon, native-hook, concurrent-gc]
-related_chapters: ["1.7", "4.8", "21.1", "21.6", "23.5", "20.15"]
+related_chapters: ["1.7", "4.8", "21.1", "21.6", "23.5", "20.13"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-04"
 drafted_date: "2026-06-05"

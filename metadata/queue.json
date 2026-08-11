@@ -62,13 +62,13 @@
     "title": "Crash 报告 SDK 架构选型与 tombstone 解析实战",
     "priority": 80,
     "status": "rejected",
-    "path": "src/part5-app/ch20-stability/18-native-stack-unwinding-symbolication.md",
+    "path": "src/part5-app/ch20-stability/16-native-stack-unwinding-symbolication.md",
     "original_chapter": "20.29",
     "original_path": "src/part5-app/ch20-stability/29-crash-sdk-architecture-tombstone-parsing.md",
-    "mapped_to": "src/part5-app/ch20-stability/18-native-stack-unwinding-symbolication.md",
+    "mapped_to": "src/part5-app/ch20-stability/16-native-stack-unwinding-symbolication.md",
     "resolved_at": "2026-08-06T10:05:34+08:00",
     "resolution": "Standalone gap-mined chapter was removed; tombstone parsing maps to the canonical native stack unwinding and symbolication chapter.",
-    "target_path": "src/part5-app/ch20-stability/18-native-stack-unwinding-symbolication.md"
+    "target_path": "src/part5-app/ch20-stability/16-native-stack-unwinding-symbolication.md"
   },
   {
     "chapter": "24.14",

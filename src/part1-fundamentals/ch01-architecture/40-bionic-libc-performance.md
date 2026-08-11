@@ -33,7 +33,7 @@ sources:
   - type: official
     path: "source.android.com/docs/security/test/memory-safety/arm-mte"
 tags: [bionic, libc, malloc, scudo, mte, 16kb-page, pthread, ndk, arm64]
-related_chapters: ["4.7", "4.16", "23.11", "20.11", "20.13"]
+related_chapters: ["4.7", "4.16", "23.11", "20.10", "20.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-28"
 drafted_by: "task2a-content-processing"
@@ -293,7 +293,7 @@ Android 17 的 Bionic 包含 `note_memtag_heap_async.S` 和 `note_memtag_heap_sy
 
 MTE 的成本与 CPU 实现、访问模式、Scudo tagging、是否采集分配/释放堆栈以及系统首选模式有关。硬件完成 tag compare 也不等于整条链路零成本。应在同一设备、同一温控和同一工作负载下对比 off/async/sync，并同时查看 CPU、功耗、帧延迟和 Native Heap 指标。
 
-更多配置和报告解析见 [AOSP MTE 文档](https://source.android.com/docs/security/test/memory-safety/arm-mte) 以及 **20.11 MTE memtagMode 与 Native 崩溃治理**。
+更多配置和报告解析见 [AOSP MTE 文档](https://source.android.com/docs/security/test/memory-safety/arm-mte) 以及 **20.10 MTE 与 GWP-ASan Native 内存安全检测**。
 
 ## 7. 16 KB 页：运行时页大小、ELF 对齐和兼容装载
 
