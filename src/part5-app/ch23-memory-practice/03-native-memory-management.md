@@ -9,8 +9,8 @@ reviewed_date: 2026-06-08
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-06-08"
-last_verified_against: "AOSP android-16.0.0_r1 / Android Developers docs / Perfetto docs"
+last_verified: "2026-08-11"
+last_verified_against: "AOSP android-17.0.0_r1 / Android Developers docs / Perfetto docs"
 confidence: medium
 polish_count: 1
 sources:
@@ -25,11 +25,15 @@ sources:
   - type: official
     path: "https://developer.android.com/ndk/guides/gwp-asan"
   - type: aosp
-    path: "android.googlesource.com/platform/bionic/+/android-16.0.0_r1/libc/malloc_debug/README.md"
+    path: "android.googlesource.com/platform/bionic/+/android-17.0.0_r1/libc/malloc_debug/README.md"
   - type: aosp
-    path: "android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/jni/android_os_Debug.cpp"
+    path: "android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_os_Debug.cpp"
   - type: aosp
-    path: "android.googlesource.com/platform/system/memory/libmeminfo/+/android-16.0.0_r1/androidprocheaps.cpp"
+    path: "android.googlesource.com/platform/system/memory/libmeminfo/+/android-17.0.0_r1/androidprocheaps.cpp"
+  - type: official
+    path: "https://source.android.com/docs/security/test/scudo"
+  - type: official
+    path: "https://developer.android.com/guide/practices/page-sizes"
   - type: blog
     path: "Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md"
 tags: [native-memory, malloc, asan, hwasan, so-memory]
@@ -53,6 +57,9 @@ task9_review_notes: "2026-05-14 Task9 01:41：pass-tech-review。无 P0/P1；Tas
 task2b_result: fixed
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-11
+consolidated_from:
+  - "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
+  - "src/part5-app/ch23-memory-practice/11-scudo-native-heap-allocator.md"
 ---
 
 # Native 内存管理与优化
@@ -231,15 +238,40 @@ SO 库相关内存要拆成装载成本、运行时分配和可写脏页。三�
 
 指标上报要区分“占用高”和“泄漏”。缓存命中带来的短时 Native Heap 增长不一定是问题；退出场景、收到 `onTrimMemory()` 或完成任务后仍不回落，只能构成进一步分析的信号，还需要分配栈与对象生命周期证明原因。allocator 可能保留空闲页，PSS 没有立刻下降也不能单独证明对象仍然存活。
 
-## 🔸 jemalloc / scudo allocator 差异
+## Scudo 与 Native Heap 的统计边界
 
-Android 应用通常不直接选择系统 allocator，但 allocator 会影响碎片率、释放回收、错误检测和 `smaps` 命名。排查时关注现象，不要把问题写成“换 allocator 就能解决”。
+Android 应用通常不直接选择系统 allocator，但 allocator 会影响碎片、页归还、错误检测和 `smaps` 命名。Android 11 起常规设备使用 Scudo，低内存设备仍可能使用 jemalloc；最终实现应根据设备构建、VMA 名称和 tombstone 确认。
 
-Android 官方 Scudo 文档说明：从 Android 11 开始，除低内存设备继续使用 jemalloc 外，Android 用 Scudo 处理 native 分配。Scudo 是带有安全加固与部分错误检测能力的 allocator，不是 ASan/HWASan 那样覆盖更广的 sanitizer，不能保证发现每次越界或 use-after-free。Android 17 的 Bionic 源码也把设备端 heap 实现指向 `external/scudo`。
+### 四种数值不要互相替代
 
-设备厂商仍可带来配置差异。判断某个 Android 17 进程使用何种 allocator 时，应检查该设备的构建、`smaps` 名称和 tombstone，而不是只依据系统版本。`[anon:scudo:*]` 可以作为 Scudo 映射的线索；它本身不能说明泄漏或内存破坏已经发生。
+| 口径 | 数据来源 | 适合回答的问题 | 覆盖不到的部分 |
+| --- | --- | --- | --- |
+| `Debug.getNativeHeapAllocatedSize()` | `mallinfo().uordblks` | allocator 当前记为已分配的字节 | 任意 `mmap()`、线程栈、共享库、Graphics |
+| `dumpsys meminfo` 的 Native Heap | heap VMA 的 PSS/RSS 分类 | Native Heap 对物理内存的贡献 | 具体分配调用栈 |
+| `/proc/$pid/smaps` / `showmap` | 内核 VMA 与页统计 | 匿名映射、文件映射、栈和 so 分别占多少 | 每次 `malloc()` 的调用者 |
+| heapprofd / Native Allocations | 录制窗口内的分配、释放与栈 | 哪些路径分配、哪些样本仍存活 | 录制前分配和绕过 allocator 的映射 |
 
-[源码锚点: AOSP `android-17.0.0_r1`, `platform/bionic/README.md`, `platform/external/scudo`]
+Android 17 的 `android_os_Debug.cpp` 直接把 `mallinfo().uordblks` 返回为 `getNativeHeapAllocatedSize()`。`libmeminfo` 则把 `[heap]`、`[anon:libc_malloc]`、`[anon:scudo:*]` 和 `[anon:GWP-ASan*]` 等 VMA 归到 Native Heap，并按页面计算 PSS/RSS。两条统计路径不同，所以 allocator allocated 下降后，Native Heap PSS 不要求同步下降。
+
+### `free()` 后 RSS 没回落不等于泄漏
+
+业务调用 `free()` 后，chunk 已不能再访问，但 allocator 可以把它放进 quarantine、线程缓存或空闲结构，等待复用或批量归还操作系统。Scudo 的 quarantine 和 release interval 在安全检查、锁竞争、复用速度与 RSS 回落之间做取舍。普通应用不应通过 `SCUDO_OPTIONS` 或 `__scudo_default_options` 把这类系统配置当作常规省内存开关。
+
+泄漏判断仍需同时满足可重复增长和对象归因：固定场景中 allocated 持续上升，heapprofd 的未释放样本集中在稳定调用栈，业务缓存过期后仍不回落，并且 Graphics、线程栈、文件映射等旁路不能解释增量。
+
+### Scudo ERROR 是发现点，不一定是破坏点
+
+Scudo 会在发现 corrupted chunk header、invalid chunk state、misaligned pointer、allocation type mismatch 或 invalid sized delete 等异常时终止进程。若线程 B 在 `free()` 时发现 header 已损坏，真正的越界写可能早已发生在线程 A。排查必须保留完整 tombstone、错误文本、fault address、Build ID、ABI、相关线程和匹配的未剥离符号；再用 GWP-ASan、MTE 或 HWASan 补充 allocation、deallocation 与 access 证据。
+
+GWP-ASan 是抽样检测，Recoverable 模式写出 tombstone 后继续运行也不代表进程已经恢复正确状态。MTE 的 SYNC、ASYNC 和 ASYMM 模式在定位精度与成本上不同，manifest 请求还受设备硬件和系统配置约束。这些工具定位内存安全错误，不能替代 heapprofd 的容量归因。
+
+### 16 KiB 页与三方 so
+
+16 KiB 页会改变 ELF segment 对齐、APK 中未压缩 so 的 zip alignment、`mmap()` 约束以及 allocator region 的页面粒度。它不会让每个小对象都占用独立 16 KiB，也不能从 PSS 增量直接反推出 `malloc()` 对象数。含 native 代码的应用应检查所有 ABI，运行时通过 `getconf PAGE_SIZE` 获取实际页大小，清理 loader 和三方库中写死的 4096 字节假设。
+
+三方 so 的报告至少保存 SDK 版本、so Build ID、ABI、输入与并发、设备页大小、heapprofd 样本和相同场景的 `meminfo`。缺少 Build ID 时，同名 so 可能来自不同二进制，聚合后的调用栈没有可比性。
+
+[源码锚点: AOSP `android-17.0.0_r1`, `frameworks/base/core/jni/android_os_Debug.cpp`, `system/memory/libmeminfo/androidprocheaps.cpp`, `platform/bionic/libc/bionic/malloc_common.cpp`, `platform/external/scudo`]
 
 ## 排查清单
 

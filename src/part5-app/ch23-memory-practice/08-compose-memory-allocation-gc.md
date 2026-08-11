@@ -1,10 +1,10 @@
 ---
 title: "Jetpack Compose 内存分配与 GC 影响"
-chapter: "23.12"
+chapter: "23.8"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [compose, memory, gc, allocation, slottable, recomposition]
-related_chapters: ["4.8", "7.7", "10.6", "22.3", "22.20", "23.5"]
+related_chapters: ["4.8", "7.7", "10.6", "22.3", "23.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-19"
 drafted_date: "2026-06-19"
@@ -24,9 +24,11 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动？.md]"
   - type: blog
     path: "[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]"
+consolidated_from:
+  - "src/part5-app/ch23-memory-practice/12-compose-memory-allocation-gc.md"
 ---
 
-# 23.12 Jetpack Compose 内存分配与 GC 影响
+# Jetpack Compose 内存分配与 GC 影响
 
 ## 范围与版本
 

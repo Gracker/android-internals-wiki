@@ -4,8 +4,8 @@ chapter: "23.4"
 section: "23.4"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-06-08"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Developers ComponentCallbacks2 + Clippings/Android 性能优化"
+last_verified: "2026-08-11"
+last_verified_against: "AOSP android-17.0.0_r1 + Android Developers ComponentCallbacks2 + Clippings/Android 性能优化"
 confidence: medium
 drafted_date: "2026-05-14"
 reviewed_date: "2026-05-14"
@@ -64,6 +64,8 @@ last_deepseek_cn_review_at: 2026-06-18
 task2b_state: fixed
 last_task2b_verifier_at: "2026-06-14T11:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
+consolidated_from:
+  - "src/part5-app/ch23-memory-practice/23.26-art-heap-distribution-oom-trigger-path.md"
 ---
 
 # Java Heap 优化策略
@@ -129,6 +131,45 @@ object JavaHeapPressure {
 ```
 
 这段代码只能做趋势信号。它不知道对象是否可回收，也不知道 Native、Graphics 等进程内存；单次超过阈值不能证明泄漏。线上若采用该信号，还要限制采样频率、合并连续事件，并同时记录场景与缓存命中变化。
+
+## ART 分配失败与 OOM 触发路径
+
+普通对象的快路径失败后，`Heap::AllocateInternalWithGc()` 不会立即抛出 OOME。Android 17 会先等待正在运行的 GC；若等待期间完成过回收则重试分配；随后按 `next_gc_type_` 执行 blocking GC，必要时使用覆盖范围更大的回收并清除 SoftReference。对支持的 allocator，运行时还可能在满足配置和时间间隔时尝试 homogeneous space compaction。仍无法满足请求，才进入 OOME。
+
+这里没有设备无关的“Young GC → Full GC”固定两步顺序。`next_gc_type_` 取决于 collector、代际状态、上次 GC 和 heap 目标。分配线程也可能主要耗时在等待另一线程执行 GC，因此 Perfetto 中的业务停顿可能长于单次 pause。
+
+### 读懂 OOME 文本
+
+Android 17 的典型错误会包含本次 allocation size、free bytes、until OOM、target footprint 和 growth limit：
+
+```text
+Failed to allocate a 48 byte allocation with 3610680 free bytes and
+3526KB until OOM, target footprint 536870912, growth limit 536870912;
+giving up on allocation because <1% of heap free after GC.
+```
+
+- `free bytes` 是 ART 统计的 heap 空闲总量，不保证目标 allocator 有合适连续块；
+- `until OOM` 是距离 growth limit 的估算增长空间；
+- `target footprint` 是当前调节目标，会随 GC 和分配变化，不是硬上限；
+- `growth limit` 才是普通应用 Java Heap 的增长限制；
+- `<1% ... after GC` 表示完成本次分配后无法保留运行时要求的最小空闲比例。
+
+小对象也可能在堆贴近限制时失败；大数组失败还要检查输入尺寸、乘法溢出和连续空间。ART 构造 OOME 本身再次失败时会使用启动阶段预分配的异常对象，所以线上不应假设每次都有完整错误文本，也不要在 OOM handler 中再创建大集合或同步抓取完整 heap dump。
+
+### 先区分四种“内存不足”
+
+| 现场 | 主要证据 | 排查方向 |
+| --- | --- | --- |
+| Java Heap OOM | `Failed to allocate`、对象存活集、growth limit | 泄漏、合法存活集、分配抖动、单次大对象 |
+| Native allocation 失败 | `malloc` / `mmap` 错误、native 栈、PSS/VMA | allocator、匿名映射、Graphics、请求大小 |
+| Thread OOM | `pthread_create (... stack) failed`、线程数、errno | 每线程栈、VMA、native memory、task limit |
+| FD / 地址空间耗尽 | `EMFILE` / `ENOMEM`、fd/VMA/最大连续空洞 | 资源关闭、32 位地址空间、线程与映射数量 |
+
+Native 失败只有部分 Framework/JNI 入口会转换为 Java OOME；FD 用尽也通常直接返回 `EMFILE`。不要把所有带 `OutOfMemoryError` 或 `ENOMEM` 的现场都归入 ART 对象泄漏。
+
+### 不修改 ART 内部计数来“扩堆”
+
+`largeHeap` 只扩展 Java Heap growth limit，不增加设备 RAM，也不处理 native、Graphics、线程栈或无界缓存。修改 `num_bytes_allocated_`、`large_object_threshold_`、伪造 freed bytes、hook allocator 绕过 GC 或解除 ART Space mapping，会破坏 allocation counter、bitmap、card table、Space membership 与 GC root 的一致性，不能进入生产方案。Android 17 的 LOS 源码也不存在所谓固定 512 MiB `mSponge` 平台能力。
 
 ## 大对象与集合优化
 
@@ -276,7 +317,7 @@ Java Heap 优化可以按四步推进：
 3. 如果曲线有尖峰但能回落，检查大对象、集合复制、缓存预算和批处理峰值。
 4. 如果 GC 频率高且伴随卡顿，转 23.5 节看内存抖动，再据此减少分配热点。
 
-Android 17 / API 37 为 `ProfilingTrigger` 增加 `TRIGGER_TYPE_OOM` 和 `TRIGGER_TYPE_ANOMALY`。OOM 触发器为未捕获的 `OutOfMemoryError` 采集 Java heap dump；自定义 `Thread.UncaughtExceptionHandler` 必须继续调用默认 handler，系统才能观察到该事件。anomaly 触发器可报告包括过量内存在内的系统异常，返回的 artifact 类型由异常决定。这些能力用于取得难以在线下复现的证据，不替代堆预算和代码修正。具体的生产监控与 Android 17 内存限制分别见 23.7、23.9 节。
+Android 17 / API 37 为 `ProfilingTrigger` 增加 `TRIGGER_TYPE_OOM` 和 `TRIGGER_TYPE_ANOMALY`。OOM 触发器为未捕获的 `OutOfMemoryError` 采集 Java heap dump；自定义 `Thread.UncaughtExceptionHandler` 必须继续调用默认 handler，系统才能观察到该事件。anomaly 触发器可报告包括过量内存在内的系统异常，返回的 artifact 类型由异常决定。这些能力用于取得难以在线下复现的证据，不替代堆预算和代码修正。具体的生产监控与 Android 17 内存限制分别见 23.7、23.6 节。
 
 一次有效改动至少要回答三件事：分配对象数或字节数是否下降，峰值或稳定占用是否改善，CPU、I/O、网络请求与用户场景指标是否出现回退。只降低 Java Heap 峰值却增加其他资源成本，不能视为完成优化。
 

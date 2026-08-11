@@ -1,11 +1,11 @@
 ---
 title: "端侧大模型推理的内存管理"
-chapter: "22.9"
+chapter: "23.10"
 status: ready-for-review
 drafted_date: "2026-06-25"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-06-25"
-last_verified_against: "AIW 5.11 / 23.10 / 4.15 已验证数据；Memory Advice API deprecated beta (developer.android.com 2026-02)"
+last_verified_against: "AIW 5.11 / 23.6 / 23.7 / 4.15 已验证数据；Memory Advice API deprecated beta (developer.android.com 2026-02)"
 confidence: medium
 sources:
   - type: official
@@ -23,14 +23,17 @@ sources:
   - type: clippings-structure-ref
     path: "Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md"
 tags: [端侧AI, 大模型, 内存管理, 推理优化, MemoryAdvice, KVCache, 量化]
-related_chapters: ["5.11", "5.14", "23.9", "23.10", "4.3", "4.15", "10.3"]
+related_chapters: ["5.11", "5.12", "23.6", "23.7", "23.9", "4.3", "4.15", "10.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-24"
 gap_source: "章节深挖"
 drafted_by: "openclaw-task2a"
+consolidated_from:
+  - "src/part5-app/ch23-memory-practice/22.09-ondevice-llm-memory-management.md"
+  - "src/part5-app/ch23-memory-practice/23.24-android-17-ai-推理加速与-neuralnetworks-hal-优化.md"
 ---
 
-# 22.9 端侧大模型推理的内存管理
+# 端侧大模型推理的内存管理
 
 端侧大模型的内存风险很少只来自模型文件。权重、KV Cache、prefill 临时张量、运行时编译产物、GPU/NPU 缓冲区、应用自身的 Java 与 native 内存，会在不同阶段形成不同峰值。模型能够加载，也不等于长上下文生成、并发会话和后台切换能够稳定运行。
 
@@ -102,6 +105,14 @@ drafted_by: "openclaw-task2a"
 - 第一次 inference 前后的增量。
 
 把模型文件大小、native heap 和 GPU 缓冲区直接相加也可能重复计算同一物理页。跨域比较应优先使用进程 PSS，并保留各分类作为归因线索。
+
+### 1.5 16 KiB 页与数据搬运也会形成峰值
+
+16 KiB 页设备会改变模型文件映射、native allocator region 和小映射的页面粒度。自研 loader 不能写死 4096 字节对齐；文件 `mmap()` 的 offset 必须遵守运行时页大小，APK/ELF 也要按官方 16 KiB 兼容要求构建。页变大不会自动让每个 tensor 占用独立 16 KiB，但会改变内部碎片和驻留页的观察结果。
+
+跨进程或跨硬件后端传递大 tensor 时，Binder 只传控制信息、句柄和小型元数据。数据本体优先使用运行时 tensor buffer、`SharedMemory`、文件描述符或满足 consumer 约束的 `AHardwareBuffer`。Java direct `ByteBuffer` 通常没有可访问的 array，不能用 `arrayOffset()` 推断 native 地址。即便共享缓冲区能够 import，也要用 trace 验证是否发生 CPU staging copy、后端重排或额外设备副本。
+
+模型加载、delegate 初始化和首次 compilation 不放在主线程。Perfetto 中除了计算 slice，还要查看 Binder wait、Runnable 排队、page fault、大块 memcpy 和后端返回码，避免把数据搬运与初始化等待误判为“算子计算慢”。
 
 ## 2. 设备 RAM 不是应用预算
 
@@ -192,7 +203,7 @@ allocator、驱动缓存或文件页可能让数值延迟回落，所以“旧�
 
 ### 4.1 不为新项目接入 Memory Advice
 
-[Memory Advice API](https://developer.android.com/games/sdk/memory-advice/overview) 的 beta 已结束，库已被官方标记为 deprecated。它属于 AGDK 的实验性 native 库，不是 Android 17 新增的平台内存接口。现有项目可以在迁移期保留观测，但不应把它作为新推理管线唯一的准入或降级信号；接口状态与迁移边界详见 [23.10 Memory Advice API](10-memory-advice-api.md)。
+[Memory Advice API](https://developer.android.com/games/sdk/memory-advice/overview) 的 beta 已结束，库已被官方标记为 deprecated。它属于 AGDK 的实验性 native 库，不是 Android 17 新增的平台内存接口。现有项目可以在迁移期保留观测，但不应把它作为新推理管线唯一的准入或降级信号；接口状态与迁移边界详见 [内存监控与线上治理](07-memory-monitoring.md)。
 
 ### 4.2 `onTrimMemory()` 只负责机会性释放
 
@@ -315,7 +326,7 @@ Android 17 `Debug.java` 中的 `getGpuTotalUsageKb()` 和 `getGpuPrivateMemoryKb
 - delegate/运行时自带 profiler；
 - SoC 厂商工具，用于只在对应设备上解释驱动内存。
 
-Native heap 统计与 Scudo 边界详见 [23.11 Scudo 与 native heap](11-scudo-native-heap-allocator.md)。同一场景应保留完整工具版本和设备 build fingerprint，避免直接横向比较厂商字段。
+Native heap 统计与 Scudo 边界详见 [Native 内存管理与优化](03-native-memory-management.md)。同一场景应保留完整工具版本和设备 build fingerprint，避免直接横向比较厂商字段。
 
 ## 7. 内存压力下的动作顺序
 

@@ -1,7 +1,7 @@
 ---
 title: "应用虚拟内存优化实战"
-chapter: "23.13"
-section: "23.13"
+chapter: "23.9"
+section: "23.9"
 status: ready-for-review
 drafted_date: "2026-07-03"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -34,9 +34,11 @@ created_date: "2026-07-03"
 gap_source: "Clippings结构参考/AOSP结构"
 gap_score: 16
 material_count: 4
+consolidated_from:
+  - "src/part5-app/ch23-memory-practice/13-virtual-memory-optimization.md"
 ---
 
-# 23.13 应用虚拟内存优化实战
+# 应用虚拟内存优化实战
 
 虚拟内存问题经常和 Java heap OOM、native heap、线程上限混在一起。处理这类问题时，第一步是确认失败来自地址空间、物理内存、VMA 数量还是线程资源。只盯着一个很大的 VSS 数字，容易把正常的地址预留当成泄漏。
 

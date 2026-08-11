@@ -34,9 +34,30 @@
 | ch20 应用稳定性治理 | 27 | 22 | 已完成 | 2026-08-11 |
 | ch21 启动优化 | 20 | 16 | 已完成 | 2026-08-11 |
 | ch22 渲染性能实战 | 45 | 30 | 已完成 | 2026-08-11 |
-| 其余 6 章 | 208 | 待审阅 | 未开始 | - |
+| ch23 内存优化实战 | 18 | 10 | 已完成 | 2026-08-11 |
+| 其余 5 章 | 190 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 504 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 496 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch23 内存优化实战
+
+保留后的连续编号为 23.1～23.10。内容按“泄漏与图片 → Native/Scudo 与 Java Heap → 分配/GC → 大内存、多进程与系统限制 → 线上治理 → Compose、虚拟内存与端侧模型”组织；重复补充稿回到对应主文，H1 不再重复章节号。
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `01-memory-leak-governance.md` / `23.25-android-17-memory-leak-monitoring-framework.md` / 案例集泄漏案例 | 将 retained object、引用链、LeakCanary/KOOM、完整 HPROF 与 Perfetto HeapGraph 双管线、线上 trigger 和弹窗 observer 案例统一到泄漏治理主文 | `../src/part5-app/ch23-memory-practice/01-memory-leak-governance.md`（23.1） |
+| `02-bitmap-optimization.md` / 案例集图片峰值 | 在 Bitmap 尺寸、复用与 Hardware Bitmap 主文中补入“第一次像素分配前约束尺寸”的公开案例和峰值验收 | `../src/part5-app/ch23-memory-practice/02-bitmap-optimization.md`（23.2） |
+| `03-native-memory-management.md` / `11-scudo-native-heap-allocator.md` / 案例集 Native 排查 | 合并 allocator、VMA、heapprofd、Scudo 统计口径、页保留、错误归因、16 KiB 与三方 so 取证 | `../src/part5-app/ch23-memory-practice/03-native-memory-management.md`（23.3） |
+| `04-java-heap-optimization.md` / `23.26-art-heap-distribution-oom-trigger-path.md` | 将 allocator/LOS、GC 重试、OOME 字段、四类内存不足与禁止修改 ART 内部计数并入 Java Heap 主文 | `../src/part5-app/ch23-memory-practice/04-java-heap-optimization.md`（23.4） |
+| `05-memory-churn-gc.md` / `23.6-heaptask-concurrent-gc-suppression.md` | 合并 HeapTaskDaemon 串行队列、time-based GC、请求序号去重、post-fork 与三类 GC 抑制风险 | `../src/part5-app/ch23-memory-practice/05-memory-churn-gc.md`（23.5） |
+| `06-large-heap-multiprocess.md` / `09-android17-app-memory-limits.md` | 将 MemoryLimiter 启用条件、AnonSwap、进程状态、退出标记和故障注入收回大内存/多进程策略 | `../src/part5-app/ch23-memory-practice/06-large-heap-multiprocess.md`（23.6） |
+| `07-memory-monitoring.md` / `10-memory-advice-api.md` / 案例集预算模板 | 统一线上指标、退出归因、系统 profile、deprecated Memory Advice 迁移、资源策略、案例记录与发版门禁 | `../src/part5-app/ch23-memory-practice/07-memory-monitoring.md`（23.7） |
+| `12-compose-memory-allocation-gc.md` / `13-virtual-memory-optimization.md` | 两个主题均能独立回答问题，仅重编号为连续的 23.8、23.9 | `../src/part5-app/ch23-memory-practice/08-compose-memory-allocation-gc.md`、`../src/part5-app/ch23-memory-practice/09-virtual-memory-optimization.md` |
+| `22.09-ondevice-llm-memory-management.md` / `23.24-android-17-ai-推理加速与-neuralnetworks-hal-优化.md` | 端侧模型保留权重、KV Cache、后端缓冲、压力和生命周期主线；吸收 16 KiB、共享 tensor 与搬运峰值，通用 NNAPI/调度内容继续由第 5 章承载 | `../src/part5-app/ch23-memory-practice/10-ondevice-llm-memory-management.md`（23.10） |
+
+章节 README、`src/SUMMARY.md`、活动队列、跨章引用和统计口径已经切换到新编号。历史 changelog、review/audit 日志、关闭 finding、素材索引与 `consolidated_from` 保留旧路径和编号。
 
 ## ch22 渲染性能实战
 

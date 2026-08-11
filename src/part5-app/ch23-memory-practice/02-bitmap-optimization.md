@@ -35,6 +35,8 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]"
   - type: blog
     path: "[结构参考: Clippings/Android 性能优化 - 原理：重新认识内存.md]"
+  - type: clipping
+    path: "货拉拉司机 Android 端内存治理实践（本地归档 Cubox）"
 tags: [bitmap, insamplesize, native-memory, inbitmap, hardware-bitmap]
 related_chapters: ["23.1", "22.6", "22.35", "4.3"]
 pipeline_stage: ready-to-publish
@@ -60,6 +62,8 @@ last_task9_audit_log: "logs/deep-review/2026-06-30-10-audit.md"
 last_task9_autofix_at: "2026-06-30"
 updated_date: "2026-06-30"
 updated_by: openclaw-task9
+consolidated_from:
+  - "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
 ---
 
 # Bitmap 与图片内存优化
@@ -278,6 +282,12 @@ fun decodeWithReuse(
 - 目标 View 可能跑在软件渲染路径，或者业务里显式创建了软件 `Canvas`。
 
 图片库的默认策略可以按用途拆开：展示型图片优先允许硬件 Bitmap，编辑型图片强制软件 Bitmap；列表页根据设备内存、圆角/变换需求和占位图策略决定。不要只按“硬件更省内存”或“软件更兼容”做全局开关，Bitmap 的使用方式才是判断依据。
+
+## 案例：在第一次像素分配前限制尺寸
+
+货拉拉公开复盘记录过一个图片发送峰值：发送前后 Native 内存突增，内存分类把增长指向大 Bitmap，代码检查发现旋转逻辑先完整解码原图，再做缩放与方向变换。最终结果即使很小，峰值阶段仍可能同时持有原图像素和变换后的中间结果。
+
+这类问题的修改点应前移到第一次像素分配之前：先读取边界与 EXIF 方向，根据上传或展示目标计算采样尺寸，再解码、旋转或裁剪。验收至少覆盖处理前基线、解码峰值、变换峰值、上传结束和页面退出后的回落，并使用接近业务允许上限的图片尺寸与方向组合。只比较操作结束后的平均值，会漏掉真正触发 OOM 的瞬时峰值。
 
 ## 一套可执行的排查顺序
 

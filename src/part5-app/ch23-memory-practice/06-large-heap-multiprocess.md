@@ -5,8 +5,8 @@ chapter: "23.6"
 section: "23.6"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-06-08"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Developers ComponentCallbacks2 + Android Developers memory docs + Clippings/Android 性能优化"
+last_verified: "2026-08-11"
+last_verified_against: "AOSP android-17.0.0_r1 + Android Developers App Memory Limits / ComponentCallbacks2 / memory docs + Clippings/Android 性能优化"
 confidence: medium
 drafted_date: "2026-05-14"
 polish_count: 0
@@ -24,13 +24,17 @@ sources:
   - type: official
     path: "https://developer.android.com/google/play/requirements/64-bit"
   - type: aosp
-    path: "frameworks/base/core/java/android/app/ActivityThread.java @ android-16.0.0_r1"
+    path: "frameworks/base/core/java/android/app/ActivityThread.java @ android-17.0.0_r1"
   - type: aosp
-    path: "frameworks/base/core/java/android/app/ActivityManager.java @ android-16.0.0_r1"
+    path: "frameworks/base/core/java/android/app/ActivityManager.java @ android-17.0.0_r1"
   - type: aosp
-    path: "frameworks/base/core/java/android/content/ComponentCallbacks2.java @ android-16.0.0_r1"
+    path: "frameworks/base/core/java/android/content/ComponentCallbacks2.java @ android-17.0.0_r1"
   - type: aosp
-    path: "art/runtime/thread.cc @ android-16.0.0_r1"
+    path: "art/runtime/thread.cc @ android-17.0.0_r1"
+  - type: official
+    path: "https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java @ android-17.0.0_r1"
   - type: blog
     path: "[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md]"
   - type: blog
@@ -64,6 +68,8 @@ last_task6_review_log: "logs/review/2026-06-08-16-review.md"
 last_task6_audit: "2026-06-08"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-15
+consolidated_from:
+  - "src/part5-app/ch23-memory-practice/09-android17-app-memory-limits.md"
 ---
 
 # 大内存与多进程策略
@@ -80,7 +86,7 @@ last_deepseek_cn_review_at: 2026-06-15
 
 先确认失败类型，再选择手段：Java Heap OOM 回到 23.4 节检查对象与缓存；低内存杀进程看 4.4 节的 LMKD 与进程优先级；`pthread_create`、`mmap` 或 linker 失败需要同时检查线程数、映射布局、ABI 和资源限制。WebView、Graphics 或 Native 指标上涨，也要先确认具体分配方。
 
-Android 17 还在部分设备上引入基于设备总 RAM 的 app memory limits，目标是限制极端泄漏和异常值。该机制适用于运行在 Android 17 上的应用，不受 `targetSdkVersion` 控制；是否启用以及限制状态需要从设备查询。`largeHeap` 或拆分进程都不能作为绕过系统内存约束的方案，退出识别与取证详见 23.9 节。
+Android 17 还在部分设备上引入基于设备总 RAM 的 app memory limits，目标是限制极端泄漏和异常值。该机制适用于运行在 Android 17 上的应用，不受 `targetSdkVersion` 控制；是否启用以及限制状态需要从设备查询。`largeHeap` 或拆分进程都不能作为绕过系统内存约束的方案，退出识别与取证见本节后文。
 
 ## largeHeap 的使用场景与代价
 
@@ -209,11 +215,27 @@ override fun onTrimMemory(level: Int) {
 
 [源码锚点: AOSP `android-17.0.0_r1`, `art/runtime/thread.cc`, `FixStackSize()` 与 `Thread::CreateNativeThread()`]
 
-### 验证 Android 17 App Memory Limits
+### Android 17 App Memory Limits
 
-Android 17 的 App Memory Limits 只在部分设备启用，限制取决于设备总 RAM，并区分 visible 与 non-visible 进程。它与 ART 的 `memoryClass`、`largeHeap` 和 LMKD 不是同一个限制。发生命中时，可从 `ApplicationExitInfo` 看到 `REASON_OTHER`，且 `getDescription()` 包含 `MemoryLimiter:AnonSwap`。
+App Memory Limits 属于 Android 17 对所有应用生效的行为变更，不按 `targetSdkVersion` 判断，但只在部分设备启用。AOSP r1 要求功能标志开启、存在 `/vendor/etc/memory-limiter-config.xml`，并能按设备 `MemTotal` 匹配至少一组配置。配置分别给 visible 与 not-visible 进程设置限制；同一进程前台正常、进入后台后命中限制并不矛盾。
 
-下面的命令用于测试启用了该功能的 Android 17 设备。运行前需要把 `TEST_LIMIT_MB` 设置为测试方案选择的整数 MB；该值是故障注入条件，不是线上预算。
+它与 ART `memoryClass`、`largeHeap` 和 LMKD 不是同一套约束。native `MemoryLimiter` 监视 cgroup `memory.high` 事件，并用下面的量判断是否超限：
+
+> `memory.stat` 中的 `anon + shmem`，再加 `memory.swap.current`
+
+源码把它称为 `AnonSwap`。`memory.high` 负责节流和直接回收，`memory.swap.max` 限制该 cgroup 的匿名页继续换出；最终 profiling 与终止决定由 Android 用户空间完成。`AnonSwap` 不是 PSS、RSS 或 Java Heap 的别名。
+
+Android 17 r1 超限后会先解除当前 `memory.high` / `memory.swap.max`，条件满足时发送 `TRIGGER_TYPE_ANOMALY`，再延迟发出终止请求，为 profiler 留出处理时间。源码中的延迟常量不是应用可依赖的宽限期，业务状态仍要在正常流程中持续保存。
+
+退出归因应同时检查：
+
+- `ApplicationExitInfo.getReason() == REASON_OTHER`；
+- `getDescription()` 包含稳定 token `MemoryLimiter:AnonSwap`；
+- 退出前进程状态、场景、PSS/RSS 最近采样与 anomaly profile 能关联到同一事件。
+
+`getPss()` / `getRss()` 可能为零，也不保证是终止瞬间数值；`getTraceInputStream()` 也不是 MemoryLimiter 的固定附件。命中只能证明匿名页、共享内存与 swap 的组合超过设备策略，不能单独证明泄漏。大图处理、AI 推理、WebView 或音视频峰值同样可能触发。
+
+下面的命令用于专用测试设备。`TEST_LIMIT_MB` 是根据当前场景基线选择的故障注入值，不是线上预算：
 
 ```bash
 target_pid="$(adb shell pidof com.example.app:editor | tr -d '\r')"
@@ -223,7 +245,7 @@ adb shell am memory-limiter manual "$target_pid" "$test_limit_mb"
 adb shell am memory-limiter manual "$target_pid" none
 ```
 
-`status` 只查询当前状态；`manual` 会修改指定 PID 的测试限制，`none` 移除手动值并恢复系统默认限制（如果设备有默认值）。这些命令在未启用 Memory Limiter 的设备上没有效果。不要用 `max` 或 `ignore all` 掩盖测试失败；完整的退出取证流程见 23.9 节。
+先用 `status` 保存设备是否启用以及 visible / not-visible 配置；每次 `manual` 后重新查询状态，测试结束恢复 `none`。`android-17.0.0_r1` 的 shell parser 只接受整数与 `none`，针对该 tag 的脚本不发送较新文档中出现的 `max`。`ignore all` 会改变整机策略，也不应用来掩盖回归失败。
 
 ## 64 位迁移与内存空间扩展
 
