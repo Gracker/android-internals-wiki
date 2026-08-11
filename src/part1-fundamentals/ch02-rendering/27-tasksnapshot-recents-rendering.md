@@ -1,6 +1,7 @@
 ---
 title: "TaskSnapshot 捕获、Overview 缩略图与启动窗口"
-chapter: "2.29"
+chapter: "2.27"
+section: "2.27"
 status: ready-for-review
 drafted_date: "2026-06-24"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -34,7 +35,7 @@ gap_source: "AOSP结构+章节深挖"
 gap_score: 14
 ---
 
-# 2.29 TaskSnapshot 捕获、Overview 缩略图与启动窗口
+# 2.27 TaskSnapshot 捕获、Overview 缩略图与启动窗口
 
 TaskSnapshot 从 Android 8.0 开始统一了两类历史能力：最近任务缩略图和 WindowManager 保存的 Surface。到了 Android 17，同一份 `TaskSnapshot` 仍可用于多个场景，但各场景的显示对象并不相同。
 

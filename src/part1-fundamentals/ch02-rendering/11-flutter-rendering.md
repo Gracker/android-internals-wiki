@@ -1,5 +1,5 @@
 ---
-title: 2.11 Flutter 渲染管线与性能
+title: Flutter 渲染管线与性能
 chapter: 2.11
 section: 2.11
 status: finalized

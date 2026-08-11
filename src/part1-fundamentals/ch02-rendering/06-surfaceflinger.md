@@ -88,7 +88,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-12
 ---
 
-# SurfaceFlinger 与合成
+# 2.6 SurfaceFlinger 与合成
 
 ## SurfaceFlinger 位于哪一段
 

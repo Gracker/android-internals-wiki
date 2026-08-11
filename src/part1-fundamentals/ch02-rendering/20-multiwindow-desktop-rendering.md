@@ -121,6 +121,9 @@ last_deepseek_cn_review_at: 2026-07-08
 task9_p0_issues: 0
 task9_p1_issues: 0
 task9_p2_issues: 0
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch02-rendering/2.29-Android-17-桌面模式窗口管理性能.md"
 ---
 
 # 2.20 多窗口与桌面模式渲染性能
@@ -235,6 +238,23 @@ flowchart LR
 `Choreographer` 在源码中是 ThreadLocal，不是“每个 Window 一个”。`RenderThread::getInstance()` 则提供进程级 HWUI RenderThread。共享线程不代表共享 BufferQueue：每个 App Window 仍独立提交 buffer，拥有自己的 acquire/release 关系和 layer identity。
 
 判断时应按 `pid/tid/ViewRootImpl/WindowState/layerId/displayId` 建表。屏幕上的两个 pane 也可能只是同一 Activity 中的双栏 View，此时只有一个 ViewRoot 和 App Window buffer，不应按多窗口管线分析。
+
+## Android 17 桌面窗口的 Shell 路径
+
+桌面模式的 caption、最大化菜单、拖拽与 resize handle 由 SystemUI 进程中的 WM Shell window-decoration 子系统管理，不属于应用 `PhoneWindow` 的 `DecorView`。一扇桌面窗口至少要区分 App Window、Task/container leash、Shell decoration 与 resize 过渡层；它们可能属于不同进程、Surface 和帧循环。
+
+`DesktopTasksController` 通过 `WindowContainerTransaction` 改变 task bounds、windowing mode、层级和 display 归属。后台 task 进入桌面、运行中 task 转为 freeform、freeform 最大化/还原和退出桌面会走不同 transition；“画面已经开始动画”不表示 WMS active bounds、App configuration 和新尺寸 buffer 已在同一时刻完成。
+
+Android 17 的 window decoration 可以复用 `ViewHost`，减少 caption 反复创建的成本。它仍不会把 decoration 合入 App View 树：Shell host 有自己的 ViewRoot/Surface 生命周期，App 内容有独立的 BLAST buffer。排查 caption 卡顿时先看 SystemUI/Shell 线程；排查内容重布局则回到目标 App UI/RenderThread。
+
+拖拽和 resize 还要分两类：
+
+- 只移动位置时，Shell 可以直接更新 task surface 的 position，避免每次 pointer move 都触发 App configuration。
+- fluid resize 会持续改变 leash/bounds，并等待 App 产生匹配新尺寸的内容；veiled resize 先移动遮罩或预览，结束时再提交最终 bounds。
+
+fluid resize 期间，几何先到而新 buffer 未到时，旧内容可能被暂时缩放；veiled resize 则可能把成本推迟到结束点。应记录当前策略、pointer/input、WCT、transition start/finish transaction、App relayout/traversal、BLAST buffer 尺寸和 display present，不能把“模糊”统一归因于 GPU sampling。
+
+WMS 内部 `BLASTSyncEngine` 与 transition handler 会协调参与同一过渡的 WindowContainer 和 surface transaction。start transaction 建立起始视觉状态，finish transaction 恢复或提交最终状态；未注册的 Camera、codec、SurfaceView producer 不会因为同屏就自动参加该同步协议。
 
 ## WMS geometry 与 App buffer 是两条输入
 

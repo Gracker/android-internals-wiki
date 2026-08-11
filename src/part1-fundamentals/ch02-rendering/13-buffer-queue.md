@@ -105,6 +105,9 @@ last_deepseek_cn_review_at: 2026-06-12
 last_task9_autofix_at: "2026-06-11"
 task6_result: "pass-light-edit"
 task6_reviewed_date: "2026-06-12"
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch02-rendering/32-graphic-buffer-memory-pool.md"
 ---
 
 # 2.13 图形缓冲区管理 (BufferQueue)
@@ -264,6 +267,16 @@ SF 的 release 信息还会携带当前刷新率对应的 acquired 数。对于 
 - release fence 的完成时间。
 
 看到三个 buffer 时，可以称其为三缓冲工作形态；不能由此反推所有 Surface 都固定分配三块。
+
+### slot 复用不是 framework 通用显存池
+
+Android 17 的 `BufferQueueCore` 默认准备 64 个 slot 索引，但刚创建的队列可以一块 `GraphicBuffer` 都没有。slot 分布在四类容器：`mFreeSlots` 保存尚未绑定 buffer 的 FREE slot，`mFreeBuffers` 保存仍绑定旧 buffer 的 FREE slot，`mUnusedSlots` 保存当前不计入可用数量且无 buffer 的 slot，`mActiveBuffers` 保存 DEQUEUED、QUEUED、ACQUIRED 等活动 slot。64 描述索引容量，不描述已分配内存数量；经过 Consumer/Producer 显式协商的路径还可以扩展 slot 数。
+
+普通 `dequeueBuffer()` 优先从 `mFreeBuffers.front()` 取得已分配对象；没有可复用 buffer 且允许分配时，才选择 `mFreeSlots` 并在 `dequeueBuffer()` 内创建新 `GraphicBuffer`。`requestBuffer()` 只是把新映射交给 Producer 缓存，分配动作不发生在这个调用中。
+
+`GraphicBufferAllocator` 的 `sAllocList` 记录当前 handle、请求者和估算尺寸，用于 dump 与 `mem.gralloc.*` trace；释放时条目会移除，列表没有按规格查找已释放 handle 的接口。稳定渲染中的“池化”主要来自 slot 保留 `GraphicBuffer` 绑定。vendor allocator 或驱动是否另有 free-list、heap cache 或压缩布局，必须用设备实现和对象身份取证，不能从 AOSP slot 复用反推。
+
+清理 slot 也只释放 BufferQueue 自己持有的引用。Producer `Surface` 缓存、Consumer/BLAST/SF buffer cache、EGLImage、Vulkan import、其他进程 handle 或驱动 attachment 仍可能延长底层分配寿命。因此 `FREE`、slot 中没有 `GraphicBuffer`、底层物理页已回收是三个不同结论。
 
 ## `dequeueBuffer()` 等待的精确条件
 

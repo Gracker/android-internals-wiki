@@ -88,7 +88,7 @@ last_task9_autofix_at: "2026-07-09"
 verifier_checked: 2026-07-09
 ---
 
-# Hardware Layer
+# 2.7 Hardware Layer
 
 ## 区分三种“Layer”
 

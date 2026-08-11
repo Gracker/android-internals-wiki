@@ -267,7 +267,7 @@ AndroidX `JankStats` 面向应用内逐帧监测，可把页面、交互状态�
 ## 与其他章节的关系
 
 - [2.1 渲染架构全景](../../part1-fundamentals/ch02-rendering/01-rendering-overview.md)：理解应用生产、SurfaceFlinger 合成与显示提交。
-- [Android 17 GPU 调试与性能工具链](../../part1-fundamentals/ch02-rendering/2.52-android17-gpu-debug-performance-tools.md)：查看 FrameTimeline、FrameTracer、TimeStats 等工具的职责边界。
+- [Android 17 FrameTimeline、FrameTracer 与合成边界](../../part1-fundamentals/ch02-rendering/30-android17-frametimeline-composition-boundary.md)：查看 FrameTimeline、FrameTracer、TimeStats 与 JankTracker 的职责边界。
 - [渲染管线总览](../ch18-rendering-pipelines/01-pipeline-overview.md)：按 Producer、Surface、layer 与合成路径识别出图类型。
 - [7.2 卡顿原因体系](02-jank-causes.md)：从归因类型进入 CPU、GPU、调度、同步与 buffer 根因。
 - [7.3 卡顿分析流程与方法](03-jank-methodology.md)：把异常帧、线程状态和子系统证据组织成可复现结论。

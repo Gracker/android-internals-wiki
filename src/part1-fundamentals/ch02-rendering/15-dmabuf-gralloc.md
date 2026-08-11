@@ -114,6 +114,9 @@ last_deepseek_cn_review_at: 2026-07-08
 last_task2b_verifier_at: "2026-07-08T03:31:42+08:00"
 task2b_verifier_result: "status-corrected-ready-for-task6"
 task2b_verifier_notes: "2026-07-08 Task2B Verifier: status finalized→ready-for-review; auto-fixed by Task9, pipeline=task6_pending, queue clear. Ready for Task6 re-review."
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch02-rendering/24-graphic-memory-dmabuf-gralloc-16kb-boundary.md"
 ---
 
 # 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享
@@ -299,6 +302,20 @@ Android 15 起平台支持 16 KB page size 设备。它会影响 ELF、mmap、�
 - 多进程统计是否重复计算同一 dma-buf inode。
 
 `GraphicBufferAllocator` 的 `stride × height × bytesPerPixel` 只是部分格式的估算，源码也把 dump 文案写成 estimate。判断 16 KB 设备上的变化应使用 allocator metadata、dma-buf size 和目标设备测量。
+
+### 4.3 DMA-BUF Heap 的页对齐边界
+
+在 `android17-6.18-2026-06_r6` 中，通用 `dma_heap_buffer_alloc()` 会对传入长度执行 `PAGE_ALIGN`。16 KB kernel 因而把交给 DMA-BUF Heap 的最终长度向上取整到 16 KB；这一步发生在 Gralloc 已经决定 stride、plane、压缩 metadata 和实现对齐之后，不能反推所有 GraphicBuffer 的 stride 都是 16 KB 倍数。
+
+通用 system heap 可以用多个不同 order 的 page 构造 `sg_table`，不承诺整块 buffer 物理连续。IOMMU domain 还会按自己的 `pgsize_bitmap` 选择映射粒度；CPU base page、IOMMU page 和 GPU page table 不是同一个参数。
+
+Android 17 的 `libdmabufheap` 已移除 ION 实现。`Alloc()` 打开目标 `/dev/dma_heap/<name>` 失败后直接返回错误，带 `legacy_align` 的 overload 只保留二进制兼容，`CheckIonSupport()` 固定为 false。`AllocSystem()` 是否选择 `system-uncached` 也只描述通用库入口；vendor Gralloc 仍可根据 format、usage、protected content 和硬件约束选择其他 exporter。
+
+### 4.4 16 KB App 兼容不是图形内存开关
+
+ELF `LOAD` segment、APK 中未压缩 `.so`、`mmap()` 参数和硬编码 `4096` 属于应用运行时兼容问题。它们可以用 `getconf PAGE_SIZE`、`readelf -lW` 和 `zipalign -c -P 16` 分别验证，但通过这些检查既不能证明 GraphicBuffer layout 改变，也不能证明 GPU/HWC 性能提升。
+
+排查时把三组证据分开保存：页大小与 native binary 兼容；Surface、slot、buffer id、format/usage 和 fence 生命周期；dma-buf inode、size、exporter 与跨进程引用。多个进程导入同一个 inode 时不能把每个进程的映射大小相加成唯一物理占用。
 
 ## 5. GraphicBuffer 怎样跨进程
 

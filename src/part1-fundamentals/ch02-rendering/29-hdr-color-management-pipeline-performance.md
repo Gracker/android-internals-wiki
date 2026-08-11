@@ -1,6 +1,7 @@
 ---
 title: "HDR 显示管线与色彩管理性能"
-chapter: "2.31"
+chapter: "2.29"
+section: "2.29"
 status: ready-for-review
 drafted_date: "2026-06-29"
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
@@ -37,7 +38,7 @@ created_date: "2026-06-28"
 gap_source: "AOSP结构+官方文档"
 ---
 
-# 2.31 HDR 显示管线与色彩管理性能
+# 2.29 HDR 显示管线与色彩管理性能
 
 HDR 问题经常被压缩成一句“换成 10 bit，再做 tone mapping”。这句话漏掉了五个相互独立的维度：
 

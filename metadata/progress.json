@@ -1,23 +1,23 @@
 {
   "schema_version": 3,
   "scope": "Canonical chapter bodies under the 26 directories defined by metadata/v1.0-definition.md; README, SUMMARY, preface and appendix are excluded.",
-  "total": 462,
+  "total": 454,
   "draft": 0,
-  "ready-for-review": 151,
-  "finalized": 311,
+  "ready-for-review": 142,
+  "finalized": 312,
   "needs-review": 0,
   "verified": 0,
   "outdated": 0,
   "ready_to_publish": 263,
   "status_counts": {
-    "ready-for-review": 151,
-    "finalized": 311
+    "ready-for-review": 142,
+    "finalized": 312
   },
   "pipeline_stage_counts": {
     "ready-to-publish": 263,
-    "unspecified": 123,
-    "finalized": 44,
-    "ready-for-review": 25,
+    "unspecified": 115,
+    "finalized": 45,
+    "ready-for-review": 24,
     "deep-review": 1,
     "rework-verified": 1,
     "deep_review_passed": 1,
@@ -27,7 +27,7 @@
   },
   "chapter_article_counts": {
     "1": 50,
-    "2": 42,
+    "2": 34,
     "3": 8,
     "4": 17,
     "5": 17,
@@ -53,7 +53,7 @@
     "25": 19,
     "26": 25
   },
-  "summary_local_links": 501,
+  "summary_local_links": 493,
   "queue_snapshot": {
     "total": 23,
     "body-applied": 9,
@@ -62,7 +62,7 @@
     "review-finalized": 1,
     "completed": 1
   },
-  "last_updated": "2026-08-11T21:15:00+08:00",
-  "last_action": "chapter 1 content consolidation: 65 canonical bodies reduced to 50; DeliQueue, ContentProvider, Staged Install, ResourcesManager, AMS/PMS and Binder duplicates merged into owning articles; retained topics renumbered continuously as 1.1-1.50",
+  "last_updated": "2026-08-11T22:30:00+08:00",
+  "last_action": "chapter 2 content consolidation: 42 canonical bodies reduced to 34; GPU diagnostics, desktop mode, FrameTimeline, BufferQueue/GraphicBuffer, DMA-BUF/16KB and Choreographer stuffing duplicates merged into owning articles; retained topics renumbered continuously as 2.1-2.34",
   "generated_from": "chapter frontmatter and src/SUMMARY.md"
 }

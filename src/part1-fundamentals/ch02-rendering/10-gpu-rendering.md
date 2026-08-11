@@ -2,7 +2,7 @@
 
 status: finalized
 section: '2.10'
-title: GPU 渲染深入
+title: GPU 渲染、调试与性能分析
 chapter: '2.10'
 applicable_versions: Android 5.0 - Android 17 (API 21-37)
 last_verified: '2026-07-25'
@@ -115,9 +115,13 @@ p1: "0"
 p2: "0"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-24
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch02-rendering/2.15-android17-gpu-debug-tools.md"
+  - "src/part1-fundamentals/ch02-rendering/2.51-android17-gpu-debug-performance-tools.md"
 ---
 
-# GPU 渲染深入
+# 2.10 GPU 渲染、调试与性能分析
 
 “主线程不忙，所以 GPU 慢”会混淆不同的完成边界。UI 线程结束、RenderThread 提交、GPU completion、buffer queue 和 present 彼此独立；任何一个边界迟到，都可能让画面错过目标周期。
 
@@ -557,6 +561,78 @@ AGI Frame Profiler 继续负责单帧检查：对受支持应用查看 Vulkan AP
 ### GPU Rendering 柱状图
 
 开发者选项中的柱状图主要反映 HWUI 各阶段的时间代理。它适合快速发现 View 页面是否接近帧预算，不适合分析独立 Vulkan game Surface，也不能单独区分 vertex、fragment 和 bandwidth。
+
+## GPU Trace 数据源与证据链
+
+GPU 数据不是由 SurfaceFlinger 统一产生。采集前先查询目标设备的 data-source descriptor 与 tracefs event，再按问题逐层加数据，避免“空轨道等于 GPU 空闲”的误判。
+
+| 数据入口 | 主要证据 | 关键边界 |
+|---|---|---|
+| `gpu.renderstages` | GPU queue、stage、context、submission、render pass | 粒度由 producer 决定，不等于逐 draw capture |
+| `gpu.counters*` | 设备描述符定义的硬件计数器 | 名称、单位、block capacity 和采样方式不可跨 GPU 套用 |
+| `power/gpu_frequency` | DVFS 频率变化 | event 常由 vendor kernel 提供；频率不等于利用率 |
+| `android.gpu.memory` + `gpu_mem_total` | trace 起点快照与后续 GPU addressable total | total 不是本次 allocation 增量，也不是唯一物理驻留量 |
+| `vulkan.memory_tracker` | Vulkan create、bind、destroy 与 heap/type | 不覆盖 GLES、HWC、Camera、Codec 和全部 vendor 私有池 |
+| FrameTimeline / FrameTracer | 帧 deadline、jank 与 layer buffer 生命周期 | 不提供 shader 指令或硬件瓶颈根因 |
+
+`GpuRenderStagesConfig` 的 `low_overhead=true` 会把多个细粒度 stage 合并为 workload stage，适合先定位问题窗口；`full_loadstore` 和更详细的 per-stage metric 会增加观测成本，应该只在固定复现场景后短时开启。`submission_id` 是 producer 可选的提交标识：Vulkan 通常对应一次 `vkQueueSubmit`，但它不是 FrameTimeline token、BufferQueue frame number 或 SurfaceFlinger layer sequence。
+
+硬件 counter 必须连同 descriptor 保存。descriptor 会声明 counter id、名称、单位、可选峰值、group 以及 counter block capacity；一次请求超过 block capacity，producer 可能拒绝、只启用子集或 multiplex。`counter_period_ns` 越短，采样扰动越大；`fix_gpu_clock` 会改变 DVFS 条件，只适合受控 A/B。
+
+Android 17 的 Trace Processor 会把 GPU counter 的“向前回看型”值回填到前一个样本区间。计算平均频率、带宽或利用率时应按 duration 加权，不能直接平均所有 `counter.value`。`gpu_slice` 也不只包含 render stage，它还可能包含 Vulkan event 与 GPU log；查询时要按 track type 过滤：
+
+```sql
+SELECT
+  s.ts / 1e6 AS ts_ms,
+  s.dur / 1e6 AS dur_ms,
+  p.name AS process_name,
+  t.name AS hardware_queue,
+  s.name AS stage_name,
+  s.submission_id,
+  s.context_id
+FROM gpu_slice AS s
+JOIN track AS t ON s.track_id = t.id
+LEFT JOIN process AS p ON s.upid = p.upid
+WHERE t.type = 'gpu_render_stage'
+ORDER BY s.ts;
+```
+
+频率与内存优先使用带 duration 的 stdlib 视图：
+
+```sql
+INCLUDE PERFETTO MODULE android.gpu.frequency;
+INCLUDE PERFETTO MODULE android.gpu.memory;
+
+SELECT ts, dur, gpu_id, gpu_freq
+FROM android_gpu_frequency
+ORDER BY ts;
+
+SELECT m.ts, m.dur, p.name, m.gpu_memory
+FROM android_gpu_memory_per_process AS m
+JOIN process AS p USING (upid)
+ORDER BY m.ts;
+```
+
+表为空时，依次检查数据源是否注册、配置名称是否精确匹配、driver 是否上报、权限是否满足以及目标 API 是否处于 producer 覆盖范围。不要补造不存在的关联字段。
+
+## 从系统 Trace 到帧级工具
+
+一轮完整分析按证据粒度递进：
+
+1. 用 APA/Perfetto 的 sched、应用 marker、FrameTimeline、FrameTracer、BufferQueue、frequency/memory 找到具体进程、Surface 和异常帧。
+2. 对齐 CPU submission、GPU stage、producer fence、queue、SurfaceFlinger latch/composition 和 display present，先区分 App GPU 与 RenderEngine GPU。
+3. 依据 descriptor 短时加入少量 counter 或详细 stage，一次只验证一个假设。
+4. 需要 draw、shader、pipeline、texture 或资源级证据时，再用 AGI Frame Profiler、RenderDoc、Sokatoa 或厂商 profiler。
+5. 关闭 fixed clock、强制 client composition、instrumentation 和调试 layer，以量产配置重复多轮。
+
+AGI 的 Vulkan frame capture、GLES-on-ANGLE capture、RenderDoc 与 Sokatoa 都可能改变原始驱动路径或时序。它们用来解释已定位的 GPU 窗口，不替代原始系统 Trace。AOSP 的 `sfdo force-client-composition` 适合做 HWC/RenderEngine 单变量对照，`flatland` 适合平台合成基准；两者都不是应用 GPU profiler，测试结束后必须恢复设备状态。
+
+下列证据门槛可以减少误判：
+
+- CPU submission 按时、同一进程/context 的 GPU stage 跨过 deadline、producer fence 同步变晚，且降低 render scale 或关闭 pass 后窗口缩短，才足以把方向指向 App GPU workload。
+- App buffer 很早 ready、DisplayFrame 仍 late，并且 RenderEngine/client-target 或 HWC/present 证据变晚，问题才更靠近系统合成或显示。
+- GPU memory total 上升只说明统计口径内的 addressable total 变化；需要 Vulkan event、dma-buf、buffer 数量、进程退出后状态和厂商分配证据才能判断泄漏。
+- GPU fence 长时间不 signal只形成“疑似 GPU/驱动停滞”；hang/reset 结论还需要 vendor kernel log、fault/reset event、device-lost 或 crash dump。
 
 ## 一套可复现的 GPU 排查流程
 

@@ -133,7 +133,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-11
 ---
 
-# Android 渲染架构全景
+# 2.1 Android 渲染架构全景
 
 一次触摸已经改变了 View 的状态，下一帧却没有按时出现在屏幕上。问题可能出在主线程遍历、RenderThread、GPU、应用侧 BufferQueue、SurfaceFlinger，甚至显示合成阶段。只看一段 `draw` 耗时，很难判断阻塞发生在哪里。
 

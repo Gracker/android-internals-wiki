@@ -95,7 +95,7 @@ task9_p1_issues: 0
 task9_p2_issues: 0
 ---
 
-# MainThread 与 RenderThread 协作
+# 2.5 MainThread 与 RenderThread 协作
 
 ## Android 17 标准硬件加速窗口路径
 
