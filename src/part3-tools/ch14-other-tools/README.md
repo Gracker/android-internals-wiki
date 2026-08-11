@@ -31,6 +31,7 @@ Perfetto 提供统一时间轴，其他工具用于回答 CPU sampling、heap、
 - [14.23 StrictMode 性能检查与开发期诊断](23-strictmode-performance-diagnostics.md)
 - [14.24 Android 17 simpleperf 微架构级性能采样与工作流增强](24-android17-simpleperf-microarch-profiling.md)
 - [14.25 Android 17 eBPF 性能可观测性程序 matrix 扩展](25-android17-ebpf-observability-matrix.md)
+- [14.26 GAPS：Android 动态分析目标可达性路径重建](26-gaps-dynamic-analysis.md)
 - [14.27 Macrobenchmark 框架与自动化性能门禁](27-macrobenchmark-automation-gate.md)
 - [14.28 Perfetto GPU Counter 与 GPU Memory 事件分析](28-gpu-performance-profiling-advanced.md)
 - [14.29 Android 17 AGI Frame Profiler gapii Spy 架构与单帧 GPU 捕获机制](14.29-android17-agi-frame-profiler-gapii-spy.md)

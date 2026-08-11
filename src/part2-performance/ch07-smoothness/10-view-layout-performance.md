@@ -1,7 +1,7 @@
 ---
 title: "View 体系性能优化：布局层级、inflate 与 measure/layout 开销"
-chapter: "7.12"
-section: "7.12"
+chapter: "7.10"
+section: "7.10"
 status: "finalized"
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
@@ -52,7 +52,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-06
 ---
 
-# 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销
+# 7.10 View 体系性能优化：布局层级、inflate 与 measure/layout 开销
 
 View UI 在创建、测量和摆放阶段都会占用主线程。分析基线固定为 Android 17 / API 37 / `android-17.0.0_r1`；只有在继续追踪调度、CPU 频率、内存回收或 fence 等内核现象时，才采用 `android17-6.18-2026-06_r6`。View 的布局算法位于 framework，单凭内核 trace 无法解释某个容器为何反复测量。
 

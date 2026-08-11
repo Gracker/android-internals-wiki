@@ -12,12 +12,13 @@
 - [x] 7.7 Jetpack Compose 性能优化 (`src/part2-performance/ch07-smoothness/07-compose-performance.md`)
 - [x] 7.8 RecyclerView 列表滑动性能深度优化 (`src/part2-performance/ch07-smoothness/08-recyclerview-performance.md`)
 - [x] 7.9 感知流畅性：步幅波动与无掉帧卡顿 (`src/part2-performance/ch07-smoothness/09-perceived-smoothness.md`)
-- [x] 7.10 图片加载与 Bitmap 性能优化 (`src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md`)
-- [x] 7.11 WebView 渲染性能与优化 (`src/part2-performance/ch07-smoothness/11-webview-performance.md`)
-- [x] 7.12 View 体系性能优化 (`src/part2-performance/ch07-smoothness/12-view-layout-performance.md`)
-- [x] 7.13 SystemUI 性能分析 (`src/part2-performance/ch07-smoothness/13-systemui-performance.md`)
-- [x] 7.14 GAPS：动态分析目标可达性路径重建 (`src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md`)
-- [x] 7.15 场景化性能作战手册 (`src/part2-performance/ch07-smoothness/15-scenario-playbooks.md`)
+- [x] 7.10 View 体系性能优化 (`src/part2-performance/ch07-smoothness/10-view-layout-performance.md`)
+- [x] 7.11 SystemUI 性能分析 (`src/part2-performance/ch07-smoothness/11-systemui-performance.md`)
+- [x] 7.12 HWC Overlay Plane 与合成降级排查 (`src/part2-performance/ch07-smoothness/12-hwc-overlay-composition-downgrade.md`)
+- [x] 7.13 AccessibilityManagerService 与无障碍服务性能影响 (`src/part2-performance/ch07-smoothness/13-accessibility-manager-performance.md`)
+- [x] 7.14 ContentCaptureService 与 Autofill 性能影响 (`src/part2-performance/ch07-smoothness/14-contentcapture-autofill-performance.md`)
+
+> 原 7.14 GAPS 已移至 14.26；图片、WebView、场景手册与 Fragment 专题的审阅结果已合并到当前 canonical 正文，映射见 `metadata/content-consolidation-audit.md`。
 
 ## 第 8 章：响应速度 (ch08-responsiveness)
 - [x] 8.1 响应速度原理 (`src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md`)

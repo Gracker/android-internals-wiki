@@ -1,8 +1,8 @@
 ---
 
 title: "HWC Overlay Plane 与合成降级排查"
-chapter: "7.18"
-section: "7.18"
+chapter: "7.12"
+section: "7.12"
 status: finalized
 drafted_date: "2026-05-23"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -27,7 +27,7 @@ sources:
   - type: research
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-hwc-overlay-plane-capability-sf-composition-downgrade.md"
 tags: [hwc, surfaceflinger, overlay-plane, client-composition, jank, perfetto, winscope]
-related_chapters: ["2.6", "2.15", "2.16", "7.6", "7.15", "14.15", "18.15"]
+related_chapters: ["2.6", "2.15", "2.16", "7.4", "7.6", "14.15", "18.15"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-23"
 gap_source: "章节深挖/研究素材/AOSP 结构/官方文档"
@@ -55,7 +55,7 @@ last_deepseek_cn_review_at: 2026-06-23
 last_task6_audit: "2026-07-01T02:15:04+08:00"
 ---
 
-# 7.18 HWC Overlay Plane 与合成降级排查
+# 7.12 HWC Overlay Plane 与合成降级排查
 
 ## 诊断边界：App 按时交帧，屏幕仍可能迟到
 

@@ -16,8 +16,10 @@ rework_date: '2026-04-04'
 rework_by: openclaw-task2b
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-07-30'
-last_verified_against: "AOSP android-17.0.0_r1, AndroidX Fragment 1.8.x (17-fragmenttransaction-commit-jank source chain), platform OnBackInvokedCallback/OnBackAnimationCallback @ API 33+, Perfetto/Winscope, Android 17 CDD"
+last_verified_against: "AOSP android-17.0.0_r1, AndroidX Fragment 1.8.x (AIW 22.12 source chain), platform OnBackInvokedCallback/OnBackAnimationCallback @ API 33+, Perfetto/Winscope, Android 17 CDD"
 confidence: high
+consolidated_from:
+- src/part2-performance/ch07-smoothness/15-scenario-playbooks.md
 sources:
 - type: blog
   path: obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md
@@ -70,7 +72,7 @@ last_review_finalize_at: "2026-07-30T10:05:03+08:00"
 last_review_finalize_run_id: "20260730-100503-40fd0f28"
 ---
 
-# 典型场景分析
+# 7.4 典型场景分析
 
 ## 场景名只负责缩小范围
 
@@ -181,7 +183,7 @@ AndroidX Fragment 的 `commit()` 把事务加入 FragmentManager 队列（经 `e
 - `setReorderingAllowed(true)` 允许 FragmentManager 优化同一批操作的状态变化，并改善 transition/lifecycle 语义。它不能消除布局、业务初始化或 GPU 工作。
 - `commitAllowingStateLoss()` 改变的是保存状态后的提交约束，用它规避卡顿会引入状态丢失风险。
 
-取证时可分别标记“发起 commit”“pending actions 开始/结束”“目标 Fragment 首次可见”和“第一帧 present”。若卡点在 `onCreateView()`、`onViewCreated()` 或首个 layout，处理页面构建；若 App buffer 已按时，继续检查 transition transaction 和 display frame。更完整的源码链路见 [FragmentTransaction 提交时序与主线程卡顿](./17-fragmenttransaction-commit-jank.md)。
+取证时可分别标记“发起 commit”“pending actions 开始/结束”“目标 Fragment 首次可见”和“第一帧 present”。若卡点在 `onCreateView()`、`onViewCreated()` 或首个 layout，处理页面构建；若 App buffer 已按时，继续检查 transition transaction 和 display frame。更完整的源码链路见 [22.12 FragmentTransaction 提交链路与页面切换性能](../../part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md)。
 
 ### Shared element
 
@@ -245,7 +247,7 @@ Dialog 和 PopupWindow 都会给 WindowManager 增加窗口对象，并拥有各
 - 新 layer 加入后，HWC 的 DEVICE/CLIENT 分配变化；
 - GPU 带宽、client target 或 present fence 延迟。
 
-“出现额外 layer”不等同于“一定走 GPU client composition”。HWC 是否使用 overlay 要看整组 layers 的格式、变换、混合、保护属性、资源和厂商能力。可把弹出前后的 layer composition type、client target、GPU 时长与 present 结果放在一起比较。深入案例见 [HWC Overlay Plane 与合成降级排查](./18-hwc-overlay-composition-downgrade.md)。
+“出现额外 layer”不等同于“一定走 GPU client composition”。HWC 是否使用 overlay 要看整组 layers 的格式、变换、混合、保护属性、资源和厂商能力。可把弹出前后的 layer composition type、client target、GPU 时长与 present 结果放在一起比较。深入案例见 [HWC Overlay Plane 与合成降级排查](./12-hwc-overlay-composition-downgrade.md)。
 
 ---
 
@@ -351,7 +353,7 @@ WebView 是可更新组件。平台源码可以锚定 `android-17.0.0_r1`，Chro
 | 视频晚而页面滚动正常 | 独立媒体 layer、codec、fence、HWC |
 | host buffer 已提交但屏幕晚 | SurfaceFlinger/HWC、DisplayFrame |
 
-Renderer 退出应结合进程生命周期、LMK/OOM 证据与 `WebViewClient.onRenderProcessGone()`。除非应用自行插桩，不要预设 trace 中存在名为 `render_process_gone` 的 slice。完整结构见 [WebView 渲染管线](../ch18-rendering-pipelines/13-webview-rendering.md) 和 [WebView 性能](./11-webview-performance.md)。
+Renderer 退出应结合进程生命周期、LMK/OOM 证据与 `WebViewClient.onRenderProcessGone()`。除非应用自行插桩，不要预设 trace 中存在名为 `render_process_gone` 的 slice。完整结构见 [WebView 渲染管线](../ch18-rendering-pipelines/13-webview-rendering.md) 和 [WebView 性能优化实战](../../part5-app/ch22-rendering-practice/07-webview-optimization.md)。
 
 ---
 
@@ -403,7 +405,6 @@ Renderer 退出应结合进程生命周期、LMK/OOM 证据与 `WebViewClient.on
 - [卡顿的定义与 FrameTimeline 语义](./01-jank-definition.md)
 - [卡顿原因分类](./02-jank-causes.md)
 - [可复现的卡顿分析方法](./03-jank-methodology.md)
-- [场景化性能排查手册](./15-scenario-playbooks.md)
 - [渲染管线总览](../ch18-rendering-pipelines/01-pipeline-overview.md)
 - [多窗口渲染](../ch18-rendering-pipelines/05-android-view-multi-window.md)
 - [渲染管线分析方法](../ch18-rendering-pipelines/20-pipeline-analysis-methodology.md)

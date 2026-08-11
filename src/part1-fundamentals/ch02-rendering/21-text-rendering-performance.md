@@ -70,7 +70,7 @@ related_chapters:
 - '2.4'
 - '2.5'
 - '7.8'
-- '7.12'
+- '7.10'
 task9_result: auto-fixed
 repaired_date: '2026-04-23'
 repaired_by: openclaw-task2b
@@ -400,7 +400,7 @@ Traversal 会依据脏标记、MeasureSpec 和缓存决定工作。复用 Displa
 - **§2.1 / §2.4 Choreographer**：文字更新只有在触发 traversal 或 draw 时才进入帧生产。
 - **§2.5 MainThread/RenderThread**：主线程负责内容处理、排版和 DisplayList 录制，RenderThread/GPU 负责后续执行与窗口 buffer。
 - **§7.8 RecyclerView**：prefetch、payload、holder 复用和宽度稳定性决定预计算是否来得及完成。
-- **§7.12 View 体系**：先找 `requestLayout()` 与脏区域来源，再判断 TextView 是否为主要贡献者。
+- **§7.10 View 体系**：先找 `requestLayout()` 与脏区域来源，再判断 TextView 是否为主要贡献者。
 
 ## 参考资料
 

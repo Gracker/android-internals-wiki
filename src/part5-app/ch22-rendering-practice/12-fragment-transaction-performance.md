@@ -8,6 +8,8 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37); AndroidX Fragme
 last_verified: "2026-06-22"
 last_verified_against: "AndroidX fragment release branch commit f39ca3510efb2347ebfef231e25a3e804922450d FragmentManager/BackStackRecord/FragmentTransaction + AndroidX Fragment 1.8.9/1.9.0-alpha01 release notes + Perfetto FrameTimeline Android 12+ docs"
 confidence: medium
+consolidated_from:
+  - "src/part2-performance/ch07-smoothness/17-fragmenttransaction-commit-jank.md"
 sources:
   - type: source
     path: "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/BackStackRecord.java"
@@ -30,7 +32,7 @@ sources:
   - type: book-structure
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [fragment, rendering, jank, startup, androidx]
-related_chapters: ["7.17", "8.4", "13.3", "18.2", "22.1", "22.3"]
+related_chapters: ["7.4", "8.4", "13.3", "18.2", "22.1", "22.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "素材驱动/AOSP结构/官方文档"

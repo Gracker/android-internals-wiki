@@ -51,7 +51,7 @@ sources:
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
 tags: [perfetto, bufferqueue, frametimeline, jank, surfaceflinger, rendering]
-related_chapters: ["2.13", "2.16", "7.15", "18.20"]
+related_chapters: ["2.13", "2.16", "7.4", "18.20"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "素材驱动/章节深挖"

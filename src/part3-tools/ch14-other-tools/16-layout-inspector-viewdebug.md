@@ -49,7 +49,7 @@ sources:
   - type: blog
     path: "技术文章/source/juejin-android/2026-05-11-75967106-2026年了，Android开发该如何调.md"
 tags: [layout-inspector, viewdebug, android-studio, compose, view-hierarchy]
-related_chapters: ["7.12", "14.1", "22.1", "22.3"]
+related_chapters: ["7.10", "14.1", "22.1", "22.3"]
 created_by: task2a-knowledge-gap
 created_date: 2026-05-19
 gap_source: 素材驱动/官方文档/AOSP结构

@@ -36,7 +36,7 @@ sources:
   - type: official
     path: "https://developer.android.com/reference/androidx/webkit/WebViewCompat"
 tags: [webview, oom, stability, renderer-process, recovery]
-related_chapters: ["7.11", "18.13", "22.7", "26.2"]
+related_chapters: ["18.13", "22.7", "26.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/官方文档"

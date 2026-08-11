@@ -5,13 +5,13 @@ section: "22.1"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-29"
-last_verified_against: "AOSP android-17.0.0_r1 ViewRootImpl/View/LayoutInflater/ViewStub/FrameMetrics, Android Developers Blog ConstraintLayout benchmark, AndroidX AsyncLayoutInflater 1.1.0 source/docs, AIW 7.12/22.3"
+last_verified_against: "AOSP android-17.0.0_r1 ViewRootImpl/View/LayoutInflater/ViewStub/FrameMetrics, Android Developers Blog ConstraintLayout benchmark, AndroidX AsyncLayoutInflater 1.1.0 source/docs, AIW 7.10/22.3"
 confidence: medium
 drafted_date: "2026-05-13"
 polish_count: 1
 sources:
   - type: aiw
-    path: "src/part2-performance/ch07-smoothness/12-view-layout-performance.md"
+    path: "src/part2-performance/ch07-smoothness/10-view-layout-performance.md"
   - type: aiw
     path: "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
   - type: aiw
@@ -31,7 +31,7 @@ sources:
   - type: clippings-structure-ref
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [layout, constraintlayout, viewstub, inflate, hierarchy]
-related_chapters: ["22.3", "7.12", "2.5"]
+related_chapters: ["22.3", "7.10", "2.5"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -64,7 +64,7 @@ last_deepseek_cn_review_at: 2026-07-06
 
 # 布局优化策略
 
-应用侧布局优化要把 View 体系的递归测量、`LayoutInflater` 流程和 `requestLayout()` 触发路径转成页面改造、代码选型和 trace 验收方法；相关机制见 7.12。目标很具体：减少首帧和页面切换里的主线程布局时间，让 Measure / Layout 不再挤占目标帧的 deadline。
+应用侧布局优化要把 View 体系的递归测量、`LayoutInflater` 流程和 `requestLayout()` 触发路径转成页面改造、代码选型和 trace 验收方法；相关机制见 7.10。目标很具体：减少首帧和页面切换里的主线程布局时间，让 Measure / Layout 不再挤占目标帧的 deadline。
 
 平台源码统一以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点，内核侧统一到 `android17-6.18-2026-06_r6`。这些改动位于标准 HWUI App Window 的主线程准备阶段：`Choreographer#doFrame` 执行 Traversal，`ViewRootImpl` 按脏标记选择 Measure、Layout 和 Draw，再通过 `syncAndDrawFrame()` 把 RenderNode 树状态交给 RenderThread。布局变快只证明 App 主线程少做了工作，不能直接证明 buffer 已按时被 SurfaceFlinger 采纳或送显。
 
@@ -72,7 +72,7 @@ last_deepseek_cn_review_at: 2026-07-06
 
 布局优化要从一帧里发生了什么看起。子 View 的 `requestLayout()` 沿父链传播到 `ViewRootImpl` 后，根节点设置 `mLayoutRequested` 并安排一次 Traversal；同一个待处理帧中的重复调度会被合并。`performTraversals()` 再根据窗口和 View 树状态决定是否调用 `performMeasure()`、`performLayout()` 与 `performDraw()`，三段工作并非每帧固定执行。
 
-Measure 是递归过程：父容器向子节点传递 `MeasureSpec`，子节点报告测量尺寸，父容器再据此确定自己的尺寸。Layout 从父容器分配的位置继续递归到子节点。节点越多、嵌套越深、父容器规则越复杂，主线程执行的代码通常越多；多轮测量会进一步放大这部分成本。详见 7.12 节。
+Measure 是递归过程：父容器向子节点传递 `MeasureSpec`，子节点报告测量尺寸，父容器再据此确定自己的尺寸。Layout 从父容器分配的位置继续递归到子节点。节点越多、嵌套越深、父容器规则越复杂，主线程执行的代码通常越多；多轮测量会进一步放大这部分成本。详见 7.10 节。
 
 布局层级不只涉及深度。更常见的成本来自三类结构：
 

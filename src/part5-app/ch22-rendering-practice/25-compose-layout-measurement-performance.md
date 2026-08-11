@@ -4,7 +4,7 @@ chapter: "22.25"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [compose, layout, measurement, intrinsic, performance]
-related_chapters: ["22.3", "22.21", "22.22", "7.12", "2.4"]
+related_chapters: ["22.3", "22.21", "22.22", "7.10", "2.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-25"
 gap_source: "章节深挖+AOSP结构"

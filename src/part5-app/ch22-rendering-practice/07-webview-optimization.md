@@ -9,6 +9,8 @@ last_verified_against: "AOSP android-17.0.0_r1, Android Developers docs, Chromiu
 confidence: medium
 drafted_date: "2026-05-13"
 polish_count: 1
+consolidated_from:
+  - "src/part2-performance/ch07-smoothness/11-webview-performance.md"
 sources:
   - type: clippings-structure-ref
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
@@ -47,7 +49,7 @@ sources:
   - type: research-note
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-05-webview-render-process-oom-recovery-onrendeprocessgone.md"
 tags: [webview, preload, offline-package, jsbridge, h5-performance]
-related_chapters: ["22.1", "7.11", "18.13", "26.2"]
+related_chapters: ["22.1", "18.13", "26.2"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -99,7 +101,7 @@ WebView 页面打开后出现白屏、无法点击、滚动掉帧或页面重载
 - kernel 固定为 `android17-6.18-2026-06_r6`，用于解释内存回收、dma-buf 与 fence 等基础语义；
 - WebView provider 由设备上的可更新包提供。复现记录还要包含 provider 包名、`versionName` 和 `versionCode`。
 
-同为 Android 17 的设备可以安装不同 provider 版本。平台源码能说明 `WebViewFactory` 怎样选择和装入 provider，却无法替代对应 Chromium revision。更完整的线程和显示链路可结合 [7.11 WebView 渲染性能与优化](../../part2-performance/ch07-smoothness/11-webview-performance.md) 与 [18.13 WebView 渲染管线](../../part2-performance/ch18-rendering-pipelines/13-webview-rendering.md) 阅读。
+同为 Android 17 的设备可以安装不同 provider 版本。平台源码能说明 `WebViewFactory` 怎样选择和装入 provider，却无法替代对应 Chromium revision。更完整的线程和显示链路见 [18.13 WebView 渲染管线](../../part2-performance/ch18-rendering-pipelines/13-webview-rendering.md)。
 
 ## 页面打开时间怎样量
 

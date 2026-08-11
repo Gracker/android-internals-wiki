@@ -44,7 +44,7 @@ sources:
   - type: library-doc
     path: "https://coil-kt.github.io/coil/image_loaders/"
 tags: [image-loading, glide, coil, bitmap-decode, image-cache]
-related_chapters: ["22.1", "23.2", "7.10"]
+related_chapters: ["22.1", "22.35", "23.2"]
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: "reviewed"

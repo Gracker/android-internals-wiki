@@ -4,8 +4,8 @@
 
 
 title: SystemUI 性能分析
-chapter: '7.13'
-section: '7.13'
+chapter: '7.11'
+section: '7.11'
 status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags:
@@ -112,7 +112,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-07
 ---
 
-# 7.13 SystemUI 性能分析
+# 7.11 SystemUI 性能分析
 
 普通 App 卡住时，受影响的画面往往局限在一个任务内。SystemUI 的状态栏、通知抽屉、锁屏和导航区域覆盖面更大，同一段阻塞还可能与 Launcher、WM Shell、目标 App 的动画重叠。只盯 `com.android.systemui` 的主线程，很容易把窗口归属、线程归属和最终呈现混在一起。
 

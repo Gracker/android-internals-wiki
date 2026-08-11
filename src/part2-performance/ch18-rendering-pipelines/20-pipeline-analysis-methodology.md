@@ -551,7 +551,7 @@ WebView / Flutter / 游戏等框架
 | RecyclerView 滑动卡顿 | 18.2 + 7.8 |
 | SurfaceView 视频黑屏 / 闪烁 | 18.6 + 18.15 |
 | TextureView 功耗高 | 18.7 |
-| WebView 页面拖慢宿主窗口 | 18.13 + 7.11 |
+| WebView 页面拖慢宿主窗口 | 18.13 + 22.7 |
 | Camera 预览掉帧 | 18.14 + 14.9 |
 | Flutter 嵌入原生 View 性能差 | 18.12 |
 | 游戏帧率不稳 | 18.16 |

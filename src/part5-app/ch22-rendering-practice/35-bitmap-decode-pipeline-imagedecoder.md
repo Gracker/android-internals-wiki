@@ -7,6 +7,8 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-18"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: medium
+consolidated_from:
+  - "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md"
 sources:
   - type: aosp
     path: "frameworks/base/graphics/java/android/graphics/ImageDecoder.java"
@@ -14,6 +16,8 @@ sources:
     path: "frameworks/base/graphics/java/android/graphics/BitmapFactory.java"
   - type: aosp
     path: "frameworks/base/graphics/java/android/graphics/Bitmap.java"
+  - type: aosp
+    path: "frameworks/base/graphics/java/android/graphics/Gainmap.java"
   - type: aosp
     path: "frameworks/base/graphics/java/android/graphics/BitmapRegionDecoder.java"
   - type: aosp
@@ -31,7 +35,7 @@ sources:
   - type: clippings-structure-ref
     path: "Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md"
 tags: [bitmap, image-decoder, decode-pipeline, hardware-bitmap, image-format, mmap, inbitmap]
-related_chapters: ["22.6", "22.17", "23.2", "7.10"]
+related_chapters: ["22.6", "22.17", "23.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "章节深挖"
@@ -238,6 +242,14 @@ Hardware Bitmap 是 App 绘制命令使用的资源，不会因为自身存在�
 | AVIF | 基于 AV1 图像编码，支持较丰富的色彩能力 | 编码配置、位深、设备实现、目标尺寸 |
 
 Android 17 的 `BitmapRegionDecoder.java` 明确列出 JPEG、PNG、WebP、HEIF 和 AVIF。这个列表表示当前平台区域解码器接受这些格式，不表示旧 API 版本都具备相同能力，也不表示所有输入特性都能等价处理。版本兼容必须在应用最低 API 和目标设备上验证。
+
+### 5.1 Ultra HDR 与 Gainmap
+
+Android 14 起，Ultra HDR 图片可在 SDR base image 之外携带 gainmap。Android 17 的 `BitmapFactory.cpp` 会从 codec 取得 gainmap，解码为独立 Bitmap 并附着到 base Bitmap；Hardware Bitmap 路径还会为 gainmap 创建对应的 hardware backing。`Gainmap.java` 保存 gainmap contents Bitmap 与显示参数。
+
+这类图片的持有成本要同时计算 base Bitmap、gainmap Bitmap、解码与缩放期间的临时缓冲，以及 software 或 hardware backing。`Bitmap.getAllocationByteCount()` 只描述当前 Bitmap 的 backing，不能代表附着的 gainmap 和全部图形分配，因此不存在可跨设备套用的固定倍数。实测时应同时记录两层 Bitmap 的尺寸、配置、stride，以及进程 Graphics、Native Heap 和 PSS 的变化。
+
+`bitmap.setGainmap(null)` 只解除 base Bitmap 对 gainmap 的关联；其他 Java 或 native 引用结束后，对应资源才具备释放条件。移除 gainmap 还会改变 HDR 效果、显示能力适配和色彩一致性，不应作为低端机的无条件节省内存开关。
 
 选择线上格式时，应对同一视觉内容记录：
 

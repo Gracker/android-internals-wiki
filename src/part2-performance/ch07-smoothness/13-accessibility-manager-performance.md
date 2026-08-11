@@ -1,6 +1,7 @@
 ---
 title: "AccessibilityManagerService 与无障碍服务性能影响"
-chapter: "7.19"
+chapter: "7.13"
+section: "7.13"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [accessibility, jank, layout, a11y, performance, rendering]
@@ -27,7 +28,7 @@ sources:
     path: "frameworks/base/core/java/android/view/accessibility/AccessibilityInteractionClient.java"
 ---
 
-# 7.19 AccessibilityManagerService 与无障碍服务性能影响
+# 7.13 AccessibilityManagerService 与无障碍服务性能影响
 
 Android 无障碍框架同时服务于屏幕阅读、开关控制、放大、语音控制、测试自动化和其他辅助功能。性能分析不能把这些形态压成一个“无障碍已开启”开关：服务订阅的事件、是否读取窗口内容、节点查询频率、输入模式和自身实现都不同。
 

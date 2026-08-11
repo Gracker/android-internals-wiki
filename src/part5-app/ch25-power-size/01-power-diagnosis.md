@@ -7,6 +7,8 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-22"
 last_verified_against: "AOSP android-17.0.0_r1 (primary) + android-16.0.0_r1 + android-15.0.0_r1 (version diff) + Android Developers power docs + Clippings structure references"
 confidence: medium-high
+consolidated_from:
+  - "src/part2-performance/ch07-smoothness/16-power-thermal-jank-playbook.md"
 drafted_date: "2026-05-10"
 polish_count: 0
 sources:
