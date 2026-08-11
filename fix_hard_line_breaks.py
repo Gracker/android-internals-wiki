@@ -66,8 +66,8 @@ def fix_hard_line_breaks_in_file(file_path):
 
 def main():
     chapters = [
-        'src/part3-tools/ch19-apm/23-network-apm-internals.md',
-        'src/part3-tools/ch19-apm/26-hybrid-apm.md', 
+        'src/part3-tools/ch19-apm/18-network-apm-internals.md',
+        'src/part3-tools/ch19-apm/21-hybrid-apm.md',
         'src/part2-performance/ch08-responsiveness/08-media-pipeline.md'
     ]
     

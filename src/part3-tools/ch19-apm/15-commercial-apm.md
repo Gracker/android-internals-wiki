@@ -2,7 +2,7 @@
 
 title: "商业 APM 平台（Sentry、APMPlus、Bugly）"
 chapter: "19"
-section: "19.18"
+section: "19.15"
 status: "finalized"
 drafted_date: "2026-04-24"
 drafted_by: "codex"

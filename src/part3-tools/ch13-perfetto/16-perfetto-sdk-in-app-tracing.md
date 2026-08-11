@@ -30,7 +30,7 @@ sources:
   - type: blog
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/性能工具-Perfetto(4)-通过SDK抓取信息-2026-05-02.md"
 tags: [perfetto, tracing-sdk, in-app-tracing, custom-data-source, observability]
-related_chapters: ["13.2", "13.8", "19.13", "26.3", "26.12"]
+related_chapters: ["13.2", "13.8", "19.10", "26.3", "26.12"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "素材驱动/官方文档"
@@ -404,6 +404,6 @@ custom data source 的验收标准更高：原始 trace 中有 packet、Trace Pr
 
 - 13.2 Trace 抓取：系统 TraceConfig 与命令行
 - 13.8 Android Tracing 基础设施：producer、service、consumer
-- 19.13 AndroidX Tracing：Java/Kotlin 埋点
+- 19.10 AndroidX Tracing：Java/Kotlin 埋点
 - 26.3 性能指标上报：线上指标与文件治理
 - 26.12 诊断能力演进：权限、采样和版本化协议

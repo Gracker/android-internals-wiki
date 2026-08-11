@@ -1,8 +1,11 @@
 ---
-title: "其他开源 APM 库(AndroidGodEye、Collie、Rabbit)"
+title: "历史开源 APM：BlockCanary、ArgusAPM、AndroidGodEye、Collie 与 Rabbit"
 chapter: "19"
-section: "19.10"
+section: "19.08"
 status: finalized
+consolidated_from:
+- "src/part3-tools/ch19-apm/06-blockcanary.md"
+- "src/part3-tools/ch19-apm/08-argusapm.md"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: "['apm', 'monitoring']"
 drafted_date: "2026-04-24"
@@ -90,7 +93,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-13
 ---
 
-# 其他开源 APM 库(AndroidGodEye、Collie、Rabbit)
+# 历史开源 APM：BlockCanary、ArgusAPM、AndroidGodEye、Collie 与 Rabbit
 
 ## 这些项目适合看设计取舍
 
@@ -111,6 +114,59 @@ AndroidGodEye、Collie、Rabbit 都曾试图用较低的接入成本覆盖多种
 | Collie | [`bfdc6782`](https://github.com/happylishang/Collie/tree/bfdc6782d568bfcefef01e846e81ccfd5a7e3470) | 1.1.8；AGP 7.2.1；`compileSdk` / `targetSdk` 30；`minSdk` 21 | 可阅读运行时实现，但指标口径和依赖要逐项替换或复测 |
 | Rabbit | [`d29f293a`](https://github.com/SusionSuc/rabbit-client/tree/d29f293a373167b03fc946e763d57e72157ab0e5) | README 标注 1.0.3；AGP 3.5.3；`compileSdk` / `targetSdk` 28；`minSdk` 19 | Gradle 插件不能直接进入 AGP 8.0+ 工程 |
 | Matrix | [`3b8293bd`](https://github.com/Tencent/matrix/tree/3b8293bd65d47eeea7caf1f32a3a5d4d5eab60e7) | 2.1.0；插件编译依赖 AGP 4.0.0；README 声明支持 AGP 3.5/4.0/4.1 | Trace Gradle 插件仍受 Transform API 删除影响 |
+
+BlockCanary 和 ArgusAPM 也归入本节。两者分别完整保留了早期 Looper 长消息采样与“一体化客户端 APM”的实现，但发布物均停在现代 Android 之前；新项目不应为它们继续保留独立接入章节。
+
+## BlockCanary：保留 Looper 长消息原理
+
+BlockCanary 1.5.0 使用公开的 `Looper.setMessageLogging()` 获取每次 `Message` dispatch 的起止边界，再由后台线程采样主线程 Java 栈。它测到的是一次 dispatch 的 wall time，不包含消息在队列中的 delivery delay，也不是从输入、RenderThread、GPU 到屏幕 present 的整帧耗时。
+
+上游 1.5.0 停在 2017 年，仍使用 AGP 2.2.2、compileSdk 23 和 targetSdk 22。analyzer manifest 的 exported、旧通知、`PendingIntent`、外部存储、IMEI 与权限实现都不符合现代平台要求。因此 Android 17 项目只借鉴原理，不直接依赖旧 AAR。
+
+### 真实采样窗口与盲区
+
+采样不是从 dispatch 开始就固定每 300 ms 抓栈：
+
+1. 第一次 Printer 回调记录 wall time 和主线程 CPU time，并启动 sampler。
+2. 首次采样被安排在 `threshold × 0.8`；默认 dump interval 又等于 block threshold。
+3. dispatch 结束时按 wall time 判断是否超阈值，再异步组装报告并停止 sampler。
+4. 若时间窗内没有栈样本，原实现不会生成 `BlockInfo`。
+
+阈值 1000 ms、采样间隔 300 ms 的 1200 ms dispatch，计划采样点约在 800 ms 和 1100 ms，前 200 ms 的真正热点可能完全错过。采样栈只说明采样瞬间主线程所在位置：wall time 很长、thread CPU 很短时，仍要用 Perfetto 区分 Runnable 饥饿、Binder、锁或 I/O；两者都长才更接近持续 CPU 工作。
+
+`Looper` 只有一个 message logger 槽位，后安装 SDK 会覆盖先安装者，BlockCanary 停止时又会设为 `null`。自研方案若由应用控制所有观察者，可以安装一个 hub 分发回调；它仍无法阻止另一个 SDK 后续覆盖。Android 17 虽然还有隐藏的 `Looper.Observer` 和 slow-log 阈值，但普通 App 不应通过反射把它们当稳定替代。
+
+现代最小实现应满足：
+
+- 用 `uptimeMillis()` 或纳秒单调时钟计算 wall duration，并保留 `currentThreadTimeMillis()`。
+- Printer 回调只做常数级状态更新；抓栈、签名、序列化、磁盘和上传进入有界后台队列。
+- 识别 dispatch start/finish 前缀并处理调试器、重复初始化、Printer 冲突和停止恢复。
+- 阈值、采样间隔、最大样本数、页面/交互与配置版本随事件上报。
+- 帧体验由 JankStats/FrameMetrics 负责；系统已经判定的 ANR 由 ApplicationExitInfo 与系统 trace 负责。
+
+## ArgusAPM：完整架构样本与迁移对象
+
+ArgusAPM 是 360 在 2018 年开源的客户端 APM。它把编译期织入、运行时 task、ContentProvider、SQLite 批量缓存、云控接口和上传接口放在一个仓库里，适合学习模块边界；公开代码末次提交在 2019 年，Bintray 发布渠道和免费服务均已退出，新项目不应把它作为生产依赖。
+
+其采集链可概括为：Gradle 插件完成 AspectJ/ASM 织入，运行时 task 生成事件，未导出的 ContentProvider 汇总多进程写入，`DbCache` 按 15 秒或 100 条批量入库，宿主实现 `IRuleRequest` 与 `IUpload` 对接云控和服务端。
+
+| 旧能力 | 实际来源与口径 | Android 17 处理 |
+|---|---|---|
+| 启动/页面 | attach 到 decor `post()`、生命周期 AOP 或 Instrumentation hook | 不等于 TTID/TTFD；移除 hidden Instrumentation hook |
+| FPS | Choreographer callback 按秒计数，只保存低 FPS 窗口 | 只作线索，改用 JankStats/FrameMetrics |
+| 卡顿/Watchdog | Looper Printer 或后台 tick，默认约 4.5 秒 | 命名为 stall 预警，不冒充系统 ANR |
+| ANR | 周期扫描 `/data/anr/` | 普通 API 37 App 不可依赖；迁到 ApplicationExitInfo/平台能力 |
+| 网络 | OkHttp interceptor 和旧 URLConnection/HttpClient 改写 | 缺 DNS/connect/TLS；失败请求还可能不落库 |
+| 内存/文件/进程 | PSS 快照、目录遍历和 SDK 看到的进程 | 不是泄漏、介质或存活率结论 |
+| 函数/WebView | 固定签名 ASM；末次代码中 task 未完整注册 | 不能因 class 存在就宣称功能可用 |
+
+旧 Gradle 插件依赖 `AppExtension`、`registerTransform()` 与旧 AGP 内部类型，consumer rules 还包含无参数 `-dontwarn`、`-dontoptimize` 和宽泛 keep。迁移必须改为按 variant 的 Android Components Instrumentation/Artifacts API，重新验证 Kotlin、协程、lambda、R8、增量构建与插桩失败行为，不能只替换一个类名。
+
+运行时还需移除 `ActivityThread.mInstrumentation` 反射、`/data/anr`、旧动态广播、`NetworkInfo`、不可重置设备标识、外部存储根目录和全局 WebView JS bridge。Argus 核心没有 native `.so`，不代表宿主 uploader 或其他组合 SDK 自动满足 16 KB page size。
+
+多进程通过 Provider 收敛写入的思路仍可借鉴，但每个进程必须有明确模块表，只有一个进程负责清理、云控和上传。原 `DataHelper.readAll()` 在不足 1000 条的末批回调失败后仍可能删除数据，迁移时要改为至少一次投递、服务端 event-id 幂等和显式 ACK。
+
+存量项目按下面顺序退出：先冻结旧事件、开关、表、看板和 R8 规则；移除构建插件；在上传适配层补 schema、event/session/trace/process id 与单调时钟；按模块双写新 collector；连续两个发布周期稳定后再删除旧 AAR、Provider、权限、数据库和服务端 schema。
 
 这里的兼容性判断不等于“所有运行时模块在 Android 17 都会崩溃”。它只表示 upstream 没有提供 `targetSdk 37`、API 37 与当前 AGP 的完整验证，因此不能把旧版本 README 当成生产准入报告。
 
@@ -410,6 +466,12 @@ Collie 的无界队列提醒我们：把工作移出主线程只解决了调用�
 AndroidGodEye、Collie 和 Rabbit 的主要价值，是把早期移动端监控的工程取舍完整地留在源码里。到了 Android 17，系统已经提供更准确的帧、启动、退出、ANR 预警和 profiling 信号；旧项目中的模块化、限频和调试 UI 仍值得借鉴，依赖私有反射、固定帧率、主动 GC 和旧 Transform API 的实现则应替换。
 
 ## 参考资料
+
+- [BlockCanary 固定源码 `ed688391`](https://github.com/markzhai/AndroidPerformanceMonitor/tree/ed688391cdf95742892ce61494736667cf5baf08)
+- [Android 17 `Looper`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Looper.java)
+- [ArgusAPM 固定源码 `75ead19`](https://github.com/Qihoo360/ArgusAPM/tree/75ead19ca98a8a1f776688e9df5b572f20c80b12)
+- [ArgusAPM 任务注册](https://github.com/Qihoo360/ArgusAPM/blob/75ead19ca98a8a1f776688e9df5b572f20c80b12/argus-apm/argus-apm-main/src/main/java/com/argusapm/android/core/tasks/TaskManager.java)
+- [ArgusAPM 批量读取与删除](https://github.com/Qihoo360/ArgusAPM/blob/75ead19ca98a8a1f776688e9df5b572f20c80b12/argus-apm/argus-apm-main/src/main/java/com/argusapm/android/core/storage/DataHelper.java)
 
 - AndroidGodEye README（固定 commit）：https://github.com/Kyson/AndroidGodEye/blob/459f5cb5a2a4d176ff63f27322644a8191df2af9/README.md
 - AndroidGodEye 构建基线：https://github.com/Kyson/AndroidGodEye/blob/459f5cb5a2a4d176ff63f27322644a8191df2af9/build.gradle

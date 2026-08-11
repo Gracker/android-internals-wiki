@@ -18,7 +18,7 @@ sources:
 - type: official
   path: developer.android.com/topic/performance/vitals/anr
 tags: [anr-monitoring, sigquit, main-thread-monitor, play-vitals, application-exit-info]
-related_chapters: ["26.1", "20.4", "9.3", "9.9", "19.24", "19.27"]
+related_chapters: ["26.1", "20.4", "9.3", "9.9", "19.19", "19.22"]
 consolidated_from:
 - src/part2-performance/ch09-anr/9.11-enterprise-anr-monitoring-platform-design.md
 pipeline_stage: "ready-to-publish"
@@ -50,7 +50,7 @@ last_deepseek_cn_review_at: 2026-07-03
 
 ANR 监控解决的是两个问题：用户遇到无响应时能不能被统计到，研发拿到一条记录后能不能还原现场。只看系统弹窗或 Play Console，通常只能知道“发生过 ANR”；只做主线程卡顿监控，又容易把长卡顿误判成系统 ANR。
 
-ANR 监控可以拆成四层：系统 ANR 记录、Play Vitals 指标、端侧卡顿预警、现场快照。系统 ANR 负责确认事件，端侧快照负责补足上下文，Play Vitals 负责提供发布质量红线。ANR 根因分析流程详见 9.3 节，治理策略详见 20.4 节，Crash / ANR 捕获底层实现详见 19.24 节。
+ANR 监控可以拆成四层：系统 ANR 记录、Play Vitals 指标、端侧卡顿预警、现场快照。系统 ANR 负责确认事件，端侧快照负责补足上下文，Play Vitals 负责提供发布质量红线。ANR 根因分析流程详见 9.3 节，治理策略详见 20.4 节，Crash / ANR 捕获底层实现详见 19.19 节。
 
 平台源码上界为 Android 17 / API 37 / `android-17.0.0_r1`。ANR 的判定、队列和 trace 生成位于 framework、ART 与 debuggerd 等用户空间组件，不依赖 Android 17 kernel 的专有实现，因此不为这些结论附加 kernel tag。
 

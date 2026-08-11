@@ -3,7 +3,7 @@
 
 title: 耗电与发热监控 (Battery & Thermal)
 chapter: '19'
-section: '19.25'
+section: '19.20'
 status: finalized
 finalized_by: openclaw-task2b-verifier
 drafted_date: '2026-04-24'
@@ -20,7 +20,7 @@ tags:
 - wakelock
 related_chapters:
 - '19.0'
-- '19.19'
+- '19.16'
 pipeline_stage: ready-to-publish
 task2b_result: fixed
 task2b_state: fixed

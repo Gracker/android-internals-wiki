@@ -56,7 +56,7 @@ sources:
   - type: aosp
     path: "https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/debuggerd/proto/tombstone.proto"
 tags: [applicationexitinfo, observability, crash, anr, oom, lmk]
-related_chapters: ["14.26", "19.24", "20.2", "20.3", "20.4", "20.5", "26.2", "26.5"]
+related_chapters: ["14.26", "19.19", "20.2", "20.3", "20.4", "20.5", "26.2", "26.5"]
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-04"
 last_task6_at: "2026-07-12T21:10:00+08:00"
@@ -277,7 +277,7 @@ Crash-free users、ANR rate 等产品指标需要稳定的用户分母和来源�
 
 GWP-ASan、MTE、HWASan 发现内存安全错误时，进程可能以 Native crash 或 abort 结束。Native crash envelope 应保存构建是否启用相关工具、ABI、signal、fault address、build ID 和工具提供的结构化信息；后续再用 `REASON_CRASH_NATIVE` 与 tombstone protobuf 补充系统现场。
 
-关联时间容差要根据两条采集链路的时间精度、排队延迟和设备 wall clock 质量确定。processName、ABI、signal、fault address、top native frame 与 build ID 一致时可提高匹配置信度。工具报告用于解释内存错误类型，tombstone 用于补充线程、寄存器、内存映射和系统上下文；原始来源仍需保留。GWP-ASan/MTE 原理见 14.26、19.24 和 20.3。
+关联时间容差要根据两条采集链路的时间精度、排队延迟和设备 wall clock 质量确定。processName、ABI、signal、fault address、top native frame 与 build ID 一致时可提高匹配置信度。工具报告用于解释内存错误类型，tombstone 用于补充线程、寄存器、内存映射和系统上下文；原始来源仍需保留。GWP-ASan/MTE 原理见 14.26、19.19 和 20.3。
 
 ## 低版本可观测性能力对照表
 

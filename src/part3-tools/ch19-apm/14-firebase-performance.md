@@ -3,7 +3,7 @@ title: "Firebase Performance"
 deepseek_polish_state: done
 last_deepseek_polish_at: '2026-05-25'
 chapter: "19"
-section: "19.17"
+section: "19.14"
 status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"
@@ -12,7 +12,7 @@ last_verified: "2026-04-25"
 last_verified_against: "Firebase Performance custom-code-traces / screen-traces / troubleshooting docs, Firebase Android SDK 20.1.0+ Fragment screen rendering boundary, external review 2026-04-25"
 confidence: medium
 tags: [apm]
-related_chapters: ["19.0", "19.11"]
+related_chapters: ["19.0", "19.9"]
 sources:
   - type: official
     path: "https://firebase.google.com/docs/perf-mon"

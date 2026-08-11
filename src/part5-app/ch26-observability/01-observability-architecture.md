@@ -26,7 +26,7 @@ sources:
   - type: official
     path: "https://firebase.google.com/docs/perf-mon"
 tags: [observability, metrics, logs, traces, architecture]
-related_chapters: ["26.2", "26.3", "19.27", "15.9"]
+related_chapters: ["26.2", "26.3", "19.22", "15.9"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
@@ -204,11 +204,11 @@ graph TD
 
 - 采集层：接入 Crash、ANR、启动、卡顿、内存、网络、耗电、业务场景等信号。采集代码只做时间戳、场景 ID、错误码、摘要字段，不能同步写文件或发网络请求。
 - 缓冲层：使用有界队列或 `RingBuffer`（环形缓冲区）处理高频事件。队列满时按事件等级丢弃，丢弃数进入 SDK 自监控字段。
-- 存储层：普通性能样本进入小块分片文件；Crash、ANR、HPROF、Perfetto trace 这类大文件走独立目录和配额。详见 19.27 节的端侧 APM 存储设计。
+- 存储层：普通性能样本进入小块分片文件；Crash、ANR、HPROF、Perfetto trace 这类大文件走独立目录和配额。详见 19.22 节的端侧 APM 存储设计。
 - 上传层：按事件优先级、网络类型、前后台状态和服务端限流批量上传。弱网下优先上传摘要，延后上传大文件。
 - 控制层：服务端下发采样率、事件开关、远程诊断命令和熔断规则；每条配置带签名、版本号、过期时间、作用范围和回滚策略。
 
-这个分层有两个基本约束。采集入口要足够便宜，主线程只提交事实；分析和聚合通常放到服务端，端侧只做必要的聚合、压缩、脱敏和容灾。`mmap` 不是“主线程写入无开销”的保证，首次缺页、扩容、同步和存储压力仍可能产生延迟。19.27 节已经展开 APM SDK 的持久化、编码协议、网络投递和自监控，这里不重复实现细节。
+这个分层有两个基本约束。采集入口要足够便宜，主线程只提交事实；分析和聚合通常放到服务端，端侧只做必要的聚合、压缩、脱敏和容灾。`mmap` 不是“主线程写入无开销”的保证，首次缺页、扩容、同步和存储压力仍可能产生延迟。19.22 节已经展开 APM SDK 的持久化、编码协议、网络投递和自监控，这里不重复实现细节。
 
 Crash 还需要一条不依赖普通异步队列的最小保全路径。进程异常退出时，后台线程可能来不及消费队列；Java uncaught exception 与 native signal 的可用能力也不同。实现应预分配必要结构、避免在 native signal handler 中调用非 async-signal-safe 操作，并在下次启动校验和补传未完成记录。具体边界见 26.2。
 

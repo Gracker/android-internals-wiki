@@ -31,7 +31,7 @@ sources:
   - type: clipping
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [case-study, rendering, optimization, recyclerview, compose, jank]
-related_chapters: ["22.1", "22.2", "22.3", "22.8", "7.8", "13.6", "19.18"]
+related_chapters: ["22.1", "22.2", "22.3", "22.8", "7.8", "13.6", "19.15"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed

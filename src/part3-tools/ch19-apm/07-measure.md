@@ -2,7 +2,7 @@
 
 title: Measure
 chapter: '19'
-section: '19.09'
+section: '19.07'
 status: "finalized"
 drafted_date: '2026-04-24'
 drafted_by: codex

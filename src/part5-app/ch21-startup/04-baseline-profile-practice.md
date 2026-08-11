@@ -5,7 +5,7 @@ section: "21.4"
 status: finalized
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
 last_verified: "2026-06-07"
-last_verified_against: "Android Developers BaselineProfileRule API / Baseline Profiles docs, AOSP android-16.0.0_r1 art/profman + art/dex2oat, AIW 8.7 / 19.15"
+last_verified_against: "Android Developers BaselineProfileRule API / Baseline Profiles docs, AOSP android-16.0.0_r1 art/profman + art/dex2oat, AIW 8.7 / 19.12"
 confidence: medium
 drafted_date: "2026-05-12"
 polish_count: 0
@@ -27,9 +27,9 @@ sources:
   - type: local
     path: "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md"
   - type: local
-    path: "src/part3-tools/ch19-apm/15-baseline-profiles.md"
+    path: "src/part3-tools/ch19-apm/12-baseline-profiles.md"
 tags: [baseline-profile, aot, dex-layout, macrobenchmark]
-related_chapters: ["21.1", "8.7", "1.7", "19.15"]
+related_chapters: ["21.1", "8.7", "1.7", "19.12"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: "reviewed"

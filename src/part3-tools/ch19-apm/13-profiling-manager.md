@@ -1,7 +1,7 @@
 ---
 title: "ProfilingManager"
 chapter: "19"
-section: "19.16"
+section: "19.13"
 status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"
@@ -13,7 +13,7 @@ last_rework_run_id: "20260730-173557-rework-d7fa8e54"
 rework_notes: "2026-07-30 rework：解决 2 个启发式 quality_flag。pending-verification-marker：§'按结果类型选请求' 首句 '待验证的问题' 改为 '要排查的性能问题'（消除误触发词，语义不变）。thin-source-marking：在版本边界声明、文件后缀来源、trigger 登记语义三处补内联 [来源:] 标记（共 3 处，≥2 阈值），全部映射既有 frontmatter sources。章节本身已是 finalized + ready-to-publish，sources 完备（12 条），本次为启发式标记清除，不改技术结论。"
 confidence: medium
 tags: [apm, profiling, perfetto]
-related_chapters: ["19.11", "19.12", "19.13", "15.5", "13.1", "9.1", "8.2"]
+related_chapters: ["19.9", "19.10", "15.5", "13.1", "9.1", "8.2"]
 sources:
   - type: official
     path: "https://developer.android.com/reference/android/os/ProfilingManager"

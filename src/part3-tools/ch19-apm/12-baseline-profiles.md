@@ -1,7 +1,7 @@
 ---
 title: "Baseline Profiles 与编译优化"
 chapter: "19"
-section: "19.15"
+section: "19.12"
 status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"

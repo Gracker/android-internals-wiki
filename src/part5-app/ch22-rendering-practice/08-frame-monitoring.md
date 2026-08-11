@@ -31,11 +31,9 @@ sources:
   - type: aosp
     path: "frameworks/base/core/java/android/view/FrameMetrics.java"
   - type: aiw
-    path: "src/part3-tools/ch19-apm/11-jankstats.md"
+    path: "src/part3-tools/ch19-apm/09-jankstats-framemetrics.md"
   - type: aiw
-    path: "src/part3-tools/ch19-apm/12-framemetrics.md"
-  - type: aiw
-    path: "src/part3-tools/ch19-apm/06-blockcanary.md"
+    path: "src/part3-tools/ch19-apm/08-open-source-apm-history.md"
   - type: clippings-structure-ref
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
   - type: clippings-structure-ref
@@ -43,7 +41,7 @@ sources:
   - type: clippings-structure-ref
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [frame-rate, jankstats, choreographer, online-monitoring]
-related_chapters: ["22.1", "22.3", "7.2", "7.9", "19.06", "19.11", "19.12", "26.3"]
+related_chapters: ["22.1", "22.3", "7.2", "7.9", "19.8", "19.9", "26.3"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 last_task6_at: '2026-06-13'
@@ -65,7 +63,7 @@ last_deepseek_cn_review_at: 2026-06-13
 
 # 帧率监控与线上卡顿治理
 
-线上卡顿治理需要把发现、聚合和定位接成一条可执行流程：明确观测边界，保留可归因字段，用受控采样补充代码上下文，再把异常聚合成可分派的问题。卡顿成因见 7.2 节，JankStats 与 FrameMetrics 的接口细节见 19.11 和 19.12 节。
+线上卡顿治理需要把发现、聚合和定位接成一条可执行流程：明确观测边界，保留可归因字段，用受控采样补充代码上下文，再把异常聚合成可分派的问题。卡顿成因见 7.2 节，JankStats 与 FrameMetrics 的接口细节见 19.9 节。
 
 平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。涉及线程调度与 fence 等内核证据时，锚点是 `android17-6.18-2026-06_r6`。
 

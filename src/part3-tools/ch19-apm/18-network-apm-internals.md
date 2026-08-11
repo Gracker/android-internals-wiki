@@ -18,7 +18,7 @@ pipeline_stage: "ready-to-publish"
 related_chapters:
 - '19.0'
 - '19.08'
-- '19.17'
+- '19.14'
 review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: no banned
   words. L2: excellent structure and rhythm. All 7 anchors + 3 extensions covered.
   task9_result=needs-rework, not eligible for auto-promotion. | ⚡ 2026-05-01 task6
@@ -27,7 +27,7 @@ review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: no 
   task6 review: L1/L2 小修完成（术语换为“分解”，结束动作改成“请求结束”）；无新增 L3/L4 回炉项，等待 Task9 复审。'
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-31"
-section: '19.23'
+section: '19.18'
 sources:
 - type: reference
   path: https://square.github.io/okhttp/features/events/

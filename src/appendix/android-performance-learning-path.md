@@ -166,13 +166,13 @@ LIMIT 50;
 
 | 主题 | 学习入口 | 实验目标 | 边界条件 |
 |---|---|---|---|
-| Macrobenchmark | [Jetpack Benchmark](../part3-tools/ch19-apm/14-jetpack-benchmark.md) | 固定启动模式、CompilationMode、迭代次数和设备状态，输出原始样本及分位数 | target app 需满足 Macrobenchmark 对 profileable/non-debuggable 构建的要求 |
+| Macrobenchmark | [Jetpack Benchmark](../part3-tools/ch19-apm/11-jetpack-benchmark.md) | 固定启动模式、CompilationMode、迭代次数和设备状态，输出原始样本及分位数 | target app 需满足 Macrobenchmark 对 profileable/non-debuggable 构建的要求 |
 | Baseline Profile | [Baseline Profile 实践](../part5-app/ch21-startup/04-baseline-profile-practice.md) | 用 `BaselineProfileRule` 生成关键用户路径，比较无 profile、首次安装和 profile 已编译状态 | 每个 release 都要重新生成并验证；收益依赖代码路径和设备 |
 | Startup Profile / DEX layout | [Startup Profile 与 DEX 布局](../part5-app/ch21-startup/12-startup-profile-dex-layout.md) | 检查生成文件、R8/D8 消费结果和主 dex 布局，再用启动 trace 验证类加载变化 | 文件存在不能证明已进入最终产物 |
 | App Startup | [启动分析](../part5-app/ch21-startup/01-startup-analysis.md) | 把无依赖的首帧前初始化移后，检查功能正确性与启动分布 | 延迟初始化可能把耗时转移到首次交互 |
 | 16 KB page size | [16 KB page size](../part1-fundamentals/ch04-memory/06-16kb-page-size.md) | 检查 APK/AAB 中 ELF LOAD segment 对齐、打包对齐和目标设备加载 | Java/Kotlin-only 应用与包含预编译 native 库的检查范围不同 |
 | ADPF | [PerformanceHintManager](../part1-fundamentals/ch05-cpu-power/09-adpf.md) | 创建 `PerformanceHintSession`，稳定报告工作时长和 target duration，观察性能及能耗 | hint 是协作信号，不承诺固定频率或调度结果 |
-| ProfilingManager | [ProfilingManager](../part3-tools/ch19-apm/16-profiling-manager.md) | 在 API 35+ 请求 system trace、heap dump、heap profile 或 stack sampling，记录回调与失败 | 请求受系统限流，系统可以拒绝；产品设计不能假定每次都有产物 |
+| ProfilingManager | [ProfilingManager](../part3-tools/ch19-apm/13-profiling-manager.md) | 在 API 35+ 请求 system trace、heap dump、heap profile 或 stack sampling，记录回调与失败 | 请求受系统限流，系统可以拒绝；产品设计不能假定每次都有产物 |
 
 ### 基准实验记录模板
 

@@ -1,9 +1,9 @@
 ---
 
 
-title: Benchmark 应用（Geekbench 6、安兔兔、3DMark、PCMark、Speedometer）
+title: 设备 Benchmark（CPU、GPU、Web 与存储）
 chapter: '19'
-section: '19.21'
+section: '19.17'
 status: finalized
 drafted_date: '2026-04-24'
 drafted_by: codex
@@ -23,6 +23,8 @@ tags:
 - pcmark
 related_chapters:
 - '19.0'
+consolidated_from:
+- "src/part3-tools/ch19-apm/22-storage-benchmark.md"
 sources:
 - type: official
   path: https://www.geekbench.com/
@@ -67,7 +69,7 @@ last_deepseek_cn_review_at: 2026-07-18
 ---
 
 
-# Benchmark 应用（Geekbench 6、安兔兔、3DMark、PCMark、Speedometer）
+# 设备 Benchmark（CPU、GPU、Web 与存储）
 
 ## 先把设备基线和 App 数据分开
 
@@ -195,6 +197,50 @@ PCMark Android 3.1.4113 是当前应用版本，Work 3.0 包含 Web Browsing、V
 - Storage 2.0 的 Database 子项使用 SQLite，但 App 的 schema、索引、事务、WAL、文件系统和缓存状态都会改变结果。
 
 PCMark 3.1 发布说明指出，3.1 与 3.0 总体分数大致可比，同时明确建议在相同 workload 版本间比较。工程回归应遵守更严格的后一句：版本或 workload 变化就切分时间序列。Work 3.0、Storage 2.0 也不能与 Work 2.0、Storage 1.0 混比。
+
+## 存储专项 Benchmark：协议比工具名重要
+
+存储工具只能描述“这台设备在这套路径、参数和缓存状态下”的 I/O 背景，不能指出 App 哪个文件、线程或 SQL 慢，也不能证明一次 `write()` 已经持久化到闪存。从分数到业务结论还要补 App 路径、调用栈、事务、查询计划与用户场景。
+
+### AndroBench、A1 SD Bench 与现代替代
+
+AndroBench 可公开核对的协议源于 2011 年：顺序读文件 32 MB、写文件 2 MB，随机测试使用 4 KiB 操作，每项三轮平均。文件规模很容易被现代设备的页缓存、写缓冲和短时突发能力主导。A1 SD Bench 公开描述了 Quick、Longer、Accurate、Random I/O、RAM、SD/USB 与自定义路径，但没有足够信息说明 cache、同步、块大小、预分配和汇总算法。
+
+两者保留用于解释历史报告，不作为 Android 17 新设备库的默认基线。历史连续性要求补测时，保存 APK 版本、hash、模式和全部参数。
+
+现代设备实验室优先选择协议可审计的工具或业务自建基准：
+
+- CPDT 可以配置文件大小、4 KiB random、write buffering 与 in-memory caching，并导出时序；仍需固定源码版本并先做 API 37 兼容验证。
+- PCMark Storage 2.0 提供内部、外部与 SQLite 的组合 workload，但输出仍是工作负载分数，不是裸 UFS 吞吐。
+- 最有预测力的方案是在目标 App 实际目录中复用相同文件格式、SQLite schema、事务、同步语义和线程模型。
+
+### 四类指标与必要参数
+
+| 指标 | 必填参数 | 可提出的假设 | 不能直接解释 |
+|---|---|---|---|
+| 顺序读吞吐 | 文件、buffer、cache、并发 | 大资源连续读取上限 | 大量小文件冷启动 |
+| 顺序写吞吐 | 文件、buffer、direct/buffered、sync 语义 | 下载、导出、批量日志 | 单事务 commit 延迟 |
+| 随机读 IOPS/latency | block、范围、QD、线程、分布 | 小块读取与索引背景 | 目录扫描和反序列化 CPU |
+| 随机写 IOPS/latency | 上述参数 + 同步频率和预分配 | 数据库日志与元数据更新风险 | 业务事务设计是否合理 |
+
+IOPS 不带 block size 和 queue depth 没有工程意义。吞吐越高越好，但坏尾位于低侧，多轮报告应看 median 与 P10；latency 越低越好，单操作可看 p50/p95/p99。只有五轮时不渲染稳定分位数，使用 median、min/max 与 MAD。
+
+### 路径、缓存与持久化语义
+
+| 路径 | Android 17 访问模型 | 结果边界 |
+|---|---|---|
+| `filesDir` / `cacheDir` / database | App 私有内部存储 | 接近业务私有数据，但仍包含加密、文件系统和内核缓存 |
+| `getExternalFilesDir()` | App-specific external | 可能位于共享或可移除卷，不能假设永远可用 |
+| MediaStore | 集合、权限与 provider | 包含 Binder、元数据和介质路径 |
+| SAF | 用户授权的 URI / tree | 包含 DocumentsProvider 与底层介质 |
+| SD / USB | 卷、文件系统、读卡器和授权 | 不只代表卡片本身 |
+| RAM | 内存复制或内存文件 | 不进入闪存排名 |
+
+普通 buffered write 返回可能只表示数据进入页缓存；没有 `fsync`、`fdatasync` 或等价协议时，不能宣称安全落盘。冷读、热读和 reboot 后首次读取是三组不同实验；量产 user build 不应为跑分写 `drop_caches`。剩余空间、文件系统 GC、discard、加密、温度、后台媒体扫描和系统更新都要记录。
+
+SQLite 分数也使用工具自己的表、索引、journal 和事务。业务验证要检查批量写是否在同一事务、WAL 与 synchronous、checkpoint、N+1 查询、索引和 `EXPLAIN QUERY PLAN`，并用真实数据记录 p50/p95 latency 与 rows scanned。
+
+存储 Benchmark 只负责设备背景；Perfetto 的 database/文件系统事件、Matrix IO Canary 或 StrictMode 提供时间与调用位置，A/B 业务测试证明修改有效。比如“随机写弱设备 + 启动主线程重复小写 + trace 对齐 + 批量后台写后 P95 回落”才能支持因果链，单张跑分截图不能。
 
 ## 安兔兔：总分只保留为沟通标签
 
@@ -446,3 +492,7 @@ conclusion:
 - [AOSP `Build.VERSION.MEDIA_PERFORMANCE_CLASS`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Build.java)
 - [AOSP `ThermalManagerService`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java)
 - [Linux thermal sysfs（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/driver-api/thermal/sysfs-api.rst)
+- [AndroBench 论文 DOI](https://doi.org/10.1007/978-3-642-27552-4_89)
+- [CPDT 固定源码](https://github.com/maxim-saplin/CrossPlatformDiskTest/tree/a507cda4f487afc9334e0f02673af34a366961d9)
+- [Android SQLite 性能指南](https://developer.android.com/topic/performance/sqlite-performance-best-practices)
+- [Linux F2FS 文档（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/f2fs.rst)

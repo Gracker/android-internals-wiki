@@ -29,7 +29,7 @@ sources:
   - type: official
     path: "https://developer.android.com/training/permissions/usage-notes"
 tags: [observability, logging, diagnostics, remote-debugging, profiling]
-related_chapters: ["13.17", "14.11", "15.9", "19.27", "26.3", "26.5", "26.12"]
+related_chapters: ["13.17", "14.11", "15.9", "19.22", "26.3", "26.5", "26.12"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-26"
 gap_source: "参考书结构/章节深挖/官方文档"

@@ -1,7 +1,7 @@
 ---
 title: "DoraemonKit / DoKit"
 chapter: "19"
-section: "19.07"
+section: "19.06"
 status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"

@@ -5,7 +5,7 @@ status: finalized
 finalized_by: openclaw-task2b-verifier
 title: 千万级 DAU 的 APM 端侧架构
 chapter: '19'
-section: '19.27'
+section: '19.22'
 drafted_date: '2026-05-13'
 drafted_by: openclaw-task2a
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
@@ -21,11 +21,11 @@ tags:
 related_chapters:
 - '19.0'
 - '19.02'
-- '19.09'
-- '19.13'
-- '19.23'
-- '19.24'
-- '19.26'
+- '19.07'
+- '19.10'
+- '19.18'
+- '19.19'
+- '19.21'
 sources:
 - type: source
   path: https://raw.githubusercontent.com/Tencent/mars/master/mars/libraries/mars_android_sdk/src/main/java/com/tencent/mars/xlog/Xlog.java
@@ -332,7 +332,7 @@ block envelope:
 | 自有日志回捞 | 只能回捞 SDK 自己持久化且获准采集的日志 | 普通 App 无权读取全设备 logcat |
 | system Perfetto / 其他进程 Hprof | 普通 App 不具备 | 需要 adb、测试环境或系统/特权能力 |
 
-Android 17 上的重取证优先复用 [19.16 ProfilingManager](16-profiling-manager.md) 已定义的 app-driven 与 trigger 流程。系统会做限流，客户端还要设置更低的本地预算。Perfetto SDK 的 system mode 适合 adb/lab 场景；in-process mode 不需要特权，但不能冒充带内核调度信息的 system trace。
+Android 17 上的重取证优先复用 [19.13 ProfilingManager](13-profiling-manager.md) 已定义的 app-driven 与 trigger 流程。系统会做限流，客户端还要设置更低的本地预算。Perfetto SDK 的 system mode 适合 adb/lab 场景；in-process mode 不需要特权，但不能冒充带内核调度信息的 system trace。
 
 Java heap dump 可能包含 token、会话、地址、订单和密钥材料。普通用户设备上只允许有明确数据用途、可审计授权和严格人群范围的方案；能由端侧类计数或摘要回答的问题，不上传原始 heap。内部 build 与用户支持场景也要设置文件上限、加密、访问审计和短保留期。
 
@@ -533,12 +533,12 @@ flowchart LR
 
 具体采集与诊断入口分别见：
 
-- [19.13 Perfetto Tracing SDK](13-tracing-sdk.md)
-- [19.16 ProfilingManager](16-profiling-manager.md)
-- [19.23 网络 APM 内部实现](23-network-apm-internals.md)
-- [19.24 Crash / ANR 捕获内部实现](24-crash-anr-internals.md)
-- [19.25 Battery / Thermal APM](25-battery-thermal-apm.md)
-- [19.26 Hybrid APM](26-hybrid-apm.md)
+- [19.10 Perfetto Tracing SDK](10-tracing-sdk.md)
+- [19.13 ProfilingManager](13-profiling-manager.md)
+- [19.18 网络 APM 内部实现](18-network-apm-internals.md)
+- [19.19 Crash / ANR 捕获内部实现](19-crash-anr-internals.md)
+- [19.20 Battery / Thermal APM](20-battery-thermal-apm.md)
+- [19.21 Hybrid APM](21-hybrid-apm.md)
 
 ## 参考资料
 

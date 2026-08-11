@@ -50,7 +50,7 @@ tags:
 - stability
 related_chapters:
 - '9.3'
-- '19.24'
+- '19.19'
 - '20.8'
 - '23.7'
 - '26.2'
