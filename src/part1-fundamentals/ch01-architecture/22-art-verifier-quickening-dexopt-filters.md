@@ -35,7 +35,7 @@ last_task6_review_log: logs/review/2026-07-03-13-review.md
 task6_state: reviewed
 task9_state: reviewed
 drafted_date: 2026-05-24
-related_chapters: ["1.7", "1.9", "16.6", "21.11"]
+related_chapters: ["1.7", "1.9", "16.6", "21.10"]
 created_by: task2a-knowledge-gap
 created_date: 2026-05-24
 gap_source: 研究素材/官方文档/AOSP结构
@@ -415,7 +415,7 @@ Android 17 先尝试 Pre-reboot Dexopt。若用户很快重启、设备没有足
 - 1.7：ART 解释器、JIT、AOT 与 profile 的完整管线。
 - 1.9：PackageManager 安装 session 与 dexopt 调用位置。
 - 16.6：Cloud Profile 的生成、传递与覆盖边界。
-- 21.11：DexMetadata、DM / SDM 和安装后编译验证。
+- 21.10：DexMetadata、DM / SDM 和安装后编译验证。
 
 ## References
 

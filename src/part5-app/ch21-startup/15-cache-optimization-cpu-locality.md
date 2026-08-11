@@ -1,7 +1,7 @@
 ---
 title: "缓存优化实战：冷热端分离、重排序与 CPU 缓存命中率提升"
-chapter: "21.18"
-section: "21.18"
+chapter: "21.15"
+section: "21.15"
 status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 drafted_date: "2026-07-16"
@@ -9,7 +9,7 @@ last_verified: "2026-07-16"
 last_verified_against: "AOSP android-17.0.0_r1; ARM Cortex-A Technical Reference Manual; developer.android.com/topic/performance"
 confidence: medium
 tags: [cache, cpu, cache-locality, cache-line, lru, redex, dex-layout, performance]
-related_chapters: ["21.1", "21.4", "21.6", "21.12", "5.1", "27.1"]
+related_chapters: ["21.1", "21.4", "21.6", "21.14", "5.1", "27.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "素材驱动(Clippings)"
@@ -30,7 +30,7 @@ sources:
     path: "https://github.com/facebook/redex"
 ---
 
-# 21.18 缓存优化实战：冷热端分离、重排序与 CPU 缓存命中率提升
+# 缓存优化实战：冷热端分离、重排序与 CPU 缓存命中率提升
 
 “缓存优化”在 Android 工程里至少指三种机制：
 
@@ -40,7 +40,7 @@ sources:
 
 三者可能互相影响，却没有一一对应关系。把更多图片留在 `LruCache` 中，业务命中率可能提高，同时也会扩大 Java/native live set、增加 GC 和内存带宽压力。Startup Profile 改善的是 DEX 文件布局，不能直接宣称 L1 instruction cache miss 一定下降。
 
-校验锚点为 Android 17 / API 37 / `android-17.0.0_r1` 和 common kernel `android17-6.18-2026-06_r6`，重点讨论应用可控的做法。更完整的硬件局部性与 false sharing 原理见[CPU Cache 友好代码与数据布局](../../part1-fundamentals/ch05-cpu-power/14-cpu-cache-friendly-code-data-layout.md)，DEX 构建流程见[Startup Profile 与 DEX 布局](./12-startup-profile-dex-layout.md)。
+校验锚点为 Android 17 / API 37 / `android-17.0.0_r1` 和 common kernel `android17-6.18-2026-06_r6`，重点讨论应用可控的做法。更完整的硬件局部性与 false sharing 原理见[CPU Cache 友好代码与数据布局](../../part1-fundamentals/ch05-cpu-power/14-cpu-cache-friendly-code-data-layout.md)，DEX 构建流程见[Baseline Profile 与 Startup Profile 实战](./04-baseline-profile-practice.md)。
 
 ## 1. 先把硬件 cache 模型说准
 
@@ -79,7 +79,7 @@ done'
 
 线程迁移到另一核心后，新核心的私有 cache 可能没有近期工作集，但一致性系统仍维护数据可见性，原核心 cache 也不会因为迁移被软件整体清空。迁移成本取决于共享 cache、cluster、工作集、频率和同期带宽竞争。
 
-`PerformanceHintManager` 让应用向系统提交相关线程、目标工作时长和实际工作时长。系统可以据此调整策略，但 API 没有承诺把线程放到某个“大核”，也没有承诺降低 cache miss。生产代码通过 `sched_setaffinity()` 固定所谓大核，会绕过系统对负载、热状态、cpuset 和能耗的判断。调度细节见[线程池与并发性能](./16-thread-pool-concurrency-performance.md)。
+`PerformanceHintManager` 让应用向系统提交相关线程、目标工作时长和实际工作时长。系统可以据此调整策略，但 API 没有承诺把线程放到某个“大核”，也没有承诺降低 cache miss。生产代码通过 `sched_setaffinity()` 固定所谓大核，会绕过系统对负载、热状态、cpuset 和能耗的判断。调度细节见[线程池与并发性能](./14-thread-pool-concurrency-performance.md)。
 
 ## 2. 冷热端分离解决的是缓存污染
 
@@ -287,7 +287,7 @@ Android 17 ART 的 `ClassLinker::LinkFieldsHelper::LinkFields()` 会先放引用
 
 ART 的短命对象分配路径很快，对象池会延长对象生命周期，并引入重置、所有权、同步和泄漏风险。一个回收到池里的对象下次取出时，未必仍位于当前核心的 cache。
 
-对象池只适合分配与回收已被证实是瓶颈、对象重置可验证、池上限清晰的场景。启动路径应同时比较直接分配、批量分配和复用方案，并观察 allocated bytes、GC、live set、CPU time 与 TTID/TTFD。相关 GC 边界见[ART GC 与启动性能](./13-art-gc-suppression-startup-performance.md)。
+对象池只适合分配与回收已被证实是瓶颈、对象重置可验证、池上限清晰的场景。启动路径应同时比较直接分配、批量分配和复用方案，并观察 allocated bytes、GC、live set、CPU time 与 TTID/TTFD。相关 GC 边界见[ART GC 与启动性能](./11-art-gc-suppression-startup-performance.md)。
 
 ## 4. DEX 重排序优化的是文件页局部性
 
@@ -312,7 +312,7 @@ ART 的短命对象分配路径很快，对象池会延长对象生命周期，�
 - `BaselineProfileRule.collect(..., includeInStartupProfile = true)` 生成启动规则；
 - 生成文件位于 `src/<variant>/generated/baselineProfiles/startup-prof.txt`，由 AGP 消费。
 
-规则过宽会让启动代码溢出首个 DEX，并增加文件与构建成本。生成后要用 APK Analyzer 检查关键类所在 DEX；AGP 8.8+ 还可查看 AAB 中 `r8.json` 的 DEX `"startup": true` 标记。操作步骤与 A/B 设计见[Baseline Profile 实战](./04-baseline-profile-practice.md)和[Startup Profile 与 DEX 布局](./12-startup-profile-dex-layout.md)。
+规则过宽会让启动代码溢出首个 DEX，并增加文件与构建成本。生成后要用 APK Analyzer 检查关键类所在 DEX；AGP 8.8+ 还可查看 AAB 中 `r8.json` 的 DEX `"startup": true` 标记。操作步骤与 A/B 设计见[Baseline Profile 与 Startup Profile 实战](./04-baseline-profile-practice.md)。
 
 ### 4.2 不从 Baseline Profile 推导 native code 排列
 

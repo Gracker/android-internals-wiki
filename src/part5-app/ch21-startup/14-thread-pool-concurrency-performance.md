@@ -1,6 +1,7 @@
 ---
 title: "线程池与并发调度性能实战"
-chapter: "21.16"
+chapter: "21.14"
+section: "21.14"
 status: ready-for-review
 drafted_date: "2026-07-01"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -23,7 +24,7 @@ created_date: "2026-06-26"
 gap_source: "素材驱动/参考书"
 ---
 
-# 21.16 线程池与并发调度性能实战
+# 线程池与并发调度性能实战
 
 启动优化经常把“移到后台线程”和“缩短启动”写成同一件事。任务离开主线程后，仍会竞争 CPU、存储、Binder、内存带宽和锁；主线程若等待它的结果，排队时间也会进入启动关键路径。线程数增加只能扩大并发机会，无法消除依赖和资源上限。
 

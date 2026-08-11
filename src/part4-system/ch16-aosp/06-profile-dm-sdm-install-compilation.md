@@ -80,7 +80,7 @@ sources:
   - type: material
     path: "intake/research-feeds/2026-04-07-11-android16-cloud-compilation-baseline-startup-profiles.md"
 tags: ["profile", "DM", "SDM", "cloud-compilation", "dexopt", "ART-Service", "install-performance"]
-related_chapters: ["1.7", "1.9", "1.23", "21.4", "21.11"]
+related_chapters: ["1.7", "1.9", "1.23", "21.4", "21.10"]
 consolidated_from:
   - "16.6 Android 16 云端 Profile 与 dexopt 安装优化"
   - "16.9 Android 17 SDM 安装编译流程性能"
@@ -485,4 +485,4 @@ adb shell pm art dump com.example.app
 - [1.7 ART 编译管线与 dex2oat 优化](../../part1-fundamentals/ch01-architecture/07-art-compilation.md)：解释 ODEX、VDEX、AOT、JIT 与 compiler filter。
 - [1.23 Android Staged Install 与安装原子性性能](../../part1-fundamentals/ch01-architecture/23-staged-install-performance.md)：区分安装会话的 staged 语义与 Secure Dex Metadata。
 - [21.4 Baseline Profile 实战](../../part5-app/ch21-startup/04-baseline-profile-practice.md)：从应用侧生成、打包和回归 Baseline Profile。
-- [21.11 云端 Profile、DM 文件与安装后编译优化](../../part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md)：从应用启动角度补充 DM 与 Profile。
+- [21.10 云端 Profile、DM 文件与安装后编译优化](../../part5-app/ch21-startup/10-cloud-profile-dm-install-compile.md)：从应用启动角度补充 DM 与 Profile。

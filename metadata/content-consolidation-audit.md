@@ -32,9 +32,26 @@
 | ch18 渲染管线专题 | 27 | 25 | 已完成 | 2026-08-11 |
 | ch19 APM 工具与性能监控生态 | 28 | 22 | 已完成 | 2026-08-11 |
 | ch20 应用稳定性治理 | 27 | 22 | 已完成 | 2026-08-11 |
-| 其余 8 章 | 274 | 待审阅 | 未开始 | - |
+| ch21 启动优化 | 20 | 16 | 已完成 | 2026-08-11 |
+| 其余 7 章 | 254 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 523 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 519 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch21 启动优化
+
+保留后的连续编号为 21.1～21.16。内容按“启动路径与任务图 → Provider、Profile、首屏和多进程 → 监控 → 特殊 SDK 与设备编译 → GC、DI、Compose、并发、局部性和设备分级”组织；H1 不再重复章节号。
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `02-startup-framework.md` / `20-modular-startup-dependency-graph.md` / 原案例二 | 合并 AndroidX App Startup 的 manifest 发现、DFS 依赖遍历、循环检测、手动初始化、多进程 Provider、动态特性边界和启动任务治理；删除案例页中重复的 DAG 迁移说明 | `../src/part5-app/ch21-startup/02-startup-framework.md`（21.2） |
+| `04-baseline-profile-practice.md` / `12-startup-profile-dex-layout.md` / 原案例三 | 将 Startup Profile 收回 Profile 主文，保留生成范围、AGP/R8 条件、`r8.json`/checksum、APK Analyzer、单变量 layout A/B 和失效模式；删除第二套 Profile 概览与案例演练 | `../src/part5-app/ch21-startup/04-baseline-profile-practice.md`（21.4） |
+| `08-startup-monitoring.md` / `17-startup-insights-api-observability.md` / 原案例模板 | 合并 `ApplicationStartInfo` 的 API 35～37 边界、记录状态、八类时间戳、当前进程选择、开发者 key 源码差异、安全区间计算、线上 cohort 与工具分工；复盘模板并入监控闭环 | `../src/part5-app/ch21-startup/08-startup-monitoring.md`（21.8） |
+| `09-startup-case-studies.md` 其余内容 | 大型 App 初始化、GC、任务框架和 Profile 案例均重复 21.1～21.4、21.6、21.8、21.11 的机制与实验流程，不再保留独立案例汇编 | 21.1～21.4、21.6、21.8、21.11 |
+| 原 21.10～21.11、21.13～21.16、21.18～21.19 | 广告 SDK、设备端 Profile/DM、GC、DI、Compose、线程池、缓存局部性和设备分级均能独立回答问题，依次改为连续编号 21.9～21.16 | `../src/part5-app/ch21-startup/09-sdk-runtime-ad-sdk-startup.md`～`../src/part5-app/ch21-startup/16-device-tier-performance-strategy.md` |
+
+章节 README、`src/SUMMARY.md`、活动跨章引用和统计口径已经切换到新编号。历史 changelog、review/audit 日志、关闭 finding、素材索引、锁文件与 `consolidated_from` 保留旧路径和编号。
 
 ## ch20 应用稳定性治理
 
@@ -188,7 +205,7 @@
 | `01-apk-size.md` | 从网络性能章移出；合并 APK 的 ZIP 结构、DEX 引用上限、资源与 ELF 压缩、签名块和多种体积口径，DEX、native library、资源与分发细节继续由既有专项承载 | `../src/part5-app/ch25-power-size/06-apk-analysis.md`（25.6），以及 25.7、25.8、25.29～25.31 |
 | `03-network-performance-deep.md` | 合并网络栈层次、BlockGuard、连接池精确默认值、HTTP/3/Cronet、长连接、协程、后台网络与 Perfetto 取证；删除与基础稿重复的 DNS、TLS、超时和重试说明 | `../src/part2-performance/ch12-apk-network/01-network-performance.md`（12.1） |
 | `05-connectivity-service-network-callback.md` / `08-networkagent-lifecycle-scoring.md` | 从应用网络性能章移出；合并 NetworkAgentInfo 生命周期、netId、offer、FullScore、rematch、linger、回调 API 与 Android 17 能力边界 | `../src/part1-fundamentals/ch01-architecture/1.62-android17-connectivitymanager-architecture-performance.md`（1.62） |
-| `07-privacy-sandbox-performance.md` | 从网络性能章移出；合并 Topics、Ad Selection、Measurement 与 SDK Runtime 的退场状态、版本边界和迁移清单 | `../src/part5-app/ch21-startup/10-sdk-runtime-ad-sdk-startup.md`（21.10） |
+| `07-privacy-sandbox-performance.md` | 从网络性能章移出；合并 Topics、Ad Selection、Measurement 与 SDK Runtime 的退场状态、版本边界和迁移清单 | `../src/part5-app/ch21-startup/09-sdk-runtime-ad-sdk-startup.md`（21.9） |
 | 原 12.2 / 12.4 / 12.6 | 客户端网络性能、TLS 和 DNS 三条边界均可独立回答问题，依次改为连续编号 12.1～12.3 | `01-network-performance.md`～`03-netd-dnsresolver-network-diagnostics.md` |
 
 章节 README、`src/SUMMARY.md`、复审清单、阅读路径、活动跨章链接和统计口径已经切换到连续编号。历史 changelog、原始规格、素材索引与 `consolidated_from` 保留旧路径。

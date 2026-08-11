@@ -1,7 +1,7 @@
 ---
 title: "Privacy Sandbox 退场与广告 SDK 启动治理"
-chapter: "21.10"
-section: "21.10"
+chapter: "21.9"
+section: "21.9"
 status: ready-for-review
 drafted_date: "2026-05-19"
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
@@ -58,7 +58,7 @@ source_refs:
   - "intake/daily-info/2026-05-19.md"
 ---
 
-# 21.10 Privacy Sandbox 退场与广告 SDK 启动治理
+# Privacy Sandbox 退场与广告 SDK 启动治理
 
 Privacy Sandbox on Android 的 Topics、Protected Audience、Attribution Reporting 与 SDK Runtime 都已进入退场过程。理解这段版本演进很重要，因为旧文章和设计页仍会展示 `getTopics()`、`selectAds()`、`registerSource()`、`SdkSandboxManager.loadSdk()` 与独立 sandbox 进程；面向 Android 17 的新代码却不能继续把它们当作可采用的平台方案。
 
