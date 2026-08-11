@@ -23,7 +23,7 @@ sources:
   - type: official
     path: "developer.android.com/ndk/reference/group/logging"
 tags: [logd, logging, performance, rust, kernel, logcat, buffer]
-related_chapters: ["1.4", "1.5", "1.34", "26.19"]
+related_chapters: ["1.4", "1.5", "1.34", "26.16"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-28"
 gap_source: "AOSP结构+官方文档"

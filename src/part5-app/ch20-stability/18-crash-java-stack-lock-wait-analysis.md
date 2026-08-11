@@ -8,7 +8,7 @@ last_verified: "2026-07-16"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 tags: [crash, java-stack, ThreadList, StackVisitor, MonitorInfo, lock-wait, ART]
-related_chapters: ["20.2", "20.3", "20.15", "20.16", "26.27"]
+related_chapters: ["20.2", "20.3", "20.15", "20.16", "26.23"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "参考书驱动（Clippings/线上疑难问题 46.md）"

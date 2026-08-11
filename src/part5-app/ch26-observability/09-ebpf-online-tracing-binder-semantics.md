@@ -1,7 +1,7 @@
 ---
 title: "eBPF 在线追踪与 Binder 语义重建"
-chapter: "26.11"
-section: "26.11"
+chapter: "26.9"
+section: "26.9"
 status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-05-17"
@@ -69,7 +69,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-29
 ---
 
-# 26.11 eBPF 在线追踪与 Binder 语义重建
+# 26.9 eBPF 在线追踪与 Binder 语义重建
 
 线上排障依赖日志、应用埋点和短窗口 Trace。它们没有覆盖到的系统调用与 Binder 边界，可以在具备系统权限的设备上通过 ftrace 或 eBPF 补充。这里的“在线”指设备运行期间持续或按条件追踪，不代表普通应用能在商店发布包中加载 BPF 程序。
 

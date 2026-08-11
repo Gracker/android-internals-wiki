@@ -341,7 +341,7 @@ Perfetto、应用跟踪与 BatteryStats 可以用于核对断线后的线程、�
 
 24.4 节负责公网请求的弱网处理和重试预算。Bluetooth socket 可以复用失败分类、幂等性和总时间预算，但错误仍需独立建模，不能归入 HTTP 的 DNS、连接或读取超时。
 
-26.17 节负责线上网络质量监控。Bluetooth socket 应作为独立通道上报，原始事件保留 `socket_type`、`read_exit_reason`、`connection_id` 和 `retry_stop_reason`。
+26.14 节负责线上网络质量监控。Bluetooth socket 应作为独立通道上报，原始事件保留 `socket_type`、`read_exit_reason`、`connection_id` 和 `retry_stop_reason`。
 
 ## 检查清单
 

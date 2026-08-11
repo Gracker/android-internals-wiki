@@ -4,7 +4,7 @@ minimum_recall: 1.0
 queries:
   - id: ebpf-binder-semantics
     query: eBPF Binder 语义重建 在线追踪
-    expected_path: src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md
+    expected_path: src/part5-app/ch26-observability/09-ebpf-online-tracing-binder-semantics.md
   - id: recyclerview-rendering
     query: RecyclerView 滑动渲染性能优化
     expected_path: src/part2-performance/ch07-smoothness/08-recyclerview-performance.md

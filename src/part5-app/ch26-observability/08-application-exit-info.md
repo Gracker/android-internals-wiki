@@ -1,10 +1,10 @@
 ---
 title: "ApplicationExitInfo 与进程退出归因"
-chapter: "26.9"
-section: "26.9"
+chapter: "26.8"
+section: "26.8"
 status: finalized
 drafted_date: "2026-05-15"
-applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
+applicable_versions: "Android 5 (API 21) - Android 17 (API 37)"
 last_verified: "2026-07-12"
 last_verified_against: "AOSP android-17.0.0_r1 ApplicationExitInfo.java, ActivityManager.java, AppExitInfoTracker.java, NativeTombstoneManager.java, tombstone.proto + Android Developers docs"
 confidence: medium
@@ -71,7 +71,7 @@ last_task9_audit_notes: "idle audit auto-fix: source anchors pinned to android-1
 last_task9_autofix_at: "2026-07-12"
 ---
 
-# 26.9 ApplicationExitInfo 与进程退出归因
+# 26.8 ApplicationExitInfo 与进程退出归因
 
 `ApplicationExitInfo` 补充的是系统视角的近期进程退出记录。进程可能来不及执行 Crash SDK 的回调，Android 仍可保存 reason、status、importance、时间、最近一次内存采样和部分 trace。Android 11 / API 30 起，应用可以在后续进程中查询这些记录，用于分类 Crash、ANR、低内存终止、用户操作和包状态变化。
 
@@ -204,6 +204,25 @@ API 29 及以下没有公开的历史退出原因 API。应用可以保存退出
 KOOM 一类 fork-dump 方案会暂停 ART、fork 子进程并在子进程生成 HPROF。它依赖 ART 私有符号、动态链接和特定版本兼容代码，不是 Android SDK 能力。若项目采用此类方案，应把支持版本、ROM 验证、失败回退、隐私、磁盘峰值和停用开关作为准入条件；Android 17 的正式发布构建不能因为旧版本方案而默认启用私有 ART 依赖。
 
 API 30+ 仍可保留轻量状态机，用来提供业务场景和发现系统记录缺失，但 reason 以公开系统字段为主。低版本状态机只能输出带置信度的候选类别。
+
+### 低版本证据等级与统一事件模型
+
+Android 5–10 的退出推断必须把结论、置信度和原始证据分开保存。一个未闭合的会话标记只说明上次进程没有完成预期写入，不能区分 `SIGKILL`、LMK、设备重启、用户停止、包更新或写盘失败。建议使用下面的证据等级：
+
+| 应用结论 | 最低证据 | 对外口径 |
+| --- | --- | --- |
+| `JAVA_CRASH_CONFIRMED` | 完整未捕获异常记录可对应上一会话 | 应用确认的 Java crash |
+| `NATIVE_CRASH_CONFIRMED` | 完整 minidump 或经校验的 signal report | 应用确认的 Native crash |
+| `ANR_CONFIRMED_EXTERNAL` | Play、bugreport 或厂商系统 trace 可与会话匹配 | 外部平台确认的 ANR |
+| `ANR_SUSPECTED` | watchdog 连续保存主线程与调度现场 | 应用观测到卡死，不等于系统 ANR |
+| `LOW_MEMORY_SUSPECTED` | 会话未闭合且退出前内存、线程、FD 或堆证据异常 | 疑似内存压力，不写成 LMKD 已确认 |
+| `ABNORMAL_END_UNKNOWN` | 只有未闭合标记，或多类证据冲突 | 原因未知 |
+
+统一数据域中，`system_reason_code` 只接收 API 30+ `ApplicationExitInfo` 的公开 reason；`legacy_reason` 只接收应用规则结论；`reason_source` 区分 `android_system`、`external_platform`、`app_confirmed` 和 `app_inferred`。两类 reason 不能用 `coalesce()` 抹平。事件还应保留 `session_id`、`process_name`、设备启动周期、上一进程启动单调时间、发现旧会话的时间、`confidence`、`evidence[]`、附件引用、采集器与规则版本。
+
+低版本没有可靠退出时间，下一次启动时间只是“发现旧会话未闭合”的时间。PID 也会复用；关联时应使用 session、process、build、设备启动周期和 evidence fingerprint。外部 ANR 或崩溃记录无法唯一匹配时，保留候选及分数，不要为了生成一个统一事件而丢掉来源关系。
+
+调试环境的 `/data/anr/`、system event log、`dumpsys` 和 LMKD 记录可以补证，但普通发布包不能把它们作为稳定线上接口。KOOM 一类 fork-dump 方案只能在进程仍有执行机会时保存 Java heap 现场，并依赖 ART 私有实现；它可以进入 `evidence[]`，不能把疑似内存压力升级为系统确认。所有 minidump、HPROF、maps、线程栈和日志附件都要单独控制采样、存储、加密、访问和删除。
 
 ## 端侧存储与上报设计
 

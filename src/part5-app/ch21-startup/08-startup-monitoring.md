@@ -331,7 +331,7 @@ class PlatformStartInfoCollector(
 
 监听回调由指定 Executor 执行，里面只应复制必要字段并交给采集队列。历史列表覆盖应用近期多个进程启动，不能无条件取第 0 项；示例按当前 PID 和进程名过滤，生产代码还应核对最新 launch 时间与当前启动代次。业务 key 的编号和含义要随监控 schema 固定，避免不同版本把同一个 key 解释成不同事件。
 
-`ApplicationStartInfo` 适合校准系统起点和启动分类，Android 10–14 仍需兼容自建埋点。完整 API 设计见[ApplicationStartInfo](../ch26-observability/13-application-start-info.md)。
+`ApplicationStartInfo` 适合校准系统起点和启动分类，Android 10–14 仍需兼容自建埋点。完整 API 设计见[ApplicationStartInfo](../ch26-observability/11-application-start-info.md)。
 
 ### 3.6 阶段耗时必须防守缺失与乱序
 
@@ -412,7 +412,7 @@ TTFD 上报容易出现幸存者偏差：完成启动的会话有数值，启动
 => 暂停灰度并进入归因
 ```
 
-这段规则中的预算和噪声带要由产品历史数据确定。高流量版本可以使用 bootstrap 置信区间；低流量灰度可先看中位数、MAD、样本明细和线下 benchmark，避免把不稳定的 P99 当成发布结论。实验统计细节见[性能实验统计](../ch26-observability/14-performance-experiment-statistics.md)。
+这段规则中的预算和噪声带要由产品历史数据确定。高流量版本可以使用 bootstrap 置信区间；低流量灰度可先看中位数、MAD、样本明细和线下 benchmark，避免把不稳定的 P99 当成发布结论。实验统计细节见[性能实验统计](../ch26-observability/06-ab-testing-regression.md)。
 
 ### 5.1 归因顺序
 
@@ -463,7 +463,7 @@ Vitals 与自建监控应同时保留：
 
 两边数据不一致时，检查版本覆盖、启动类型、统计窗口、渠道、设备分布、采样条件和 TTFD 完成率。不要通过乘一个固定系数把自建 TTID“换算”为 Vitals。
 
-Android Vitals 的专项边界和 Play Console 使用方式见[Android Vitals 与 Play Console](../ch26-observability/15-android-vitals-play-console-quality.md)。
+Android Vitals 的专项边界和 Play Console 使用方式见[Android Vitals 与 Play Console](../ch26-observability/12-android-vitals-play-console-quality.md)。
 
 ## 7. 线下与线上怎样互证
 

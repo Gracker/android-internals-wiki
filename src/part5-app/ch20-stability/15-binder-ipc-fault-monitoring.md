@@ -4,7 +4,7 @@ chapter: "20.15"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [binder, ipc, exception, transaction-too-large, dead-object, stability, performance]
-related_chapters: ["1.4", "1.17", "1.18", "20.4", "26.11"]
+related_chapters: ["1.4", "1.17", "1.18", "20.4", "26.9"]
 consolidated_from:
   - "src/part5-app/ch20-stability/22-binder-communication-monitoring.md"
 created_by: "task2a-knowledge-gap"
@@ -392,7 +392,7 @@ APM hook 只能覆盖自己能安全观察的边界。普通应用无法可靠�
 - 1.17 负责不同 IPC 机制的选型和通用性能比较。
 - 1.18 负责 cached apps freezer 与进程生命周期。
 - 20.4 负责 ANR 证据和超时类型，这里提供 Binder 侧等待链。
-- 26.11 负责 Perfetto/eBPF 等观测工具，这里只说明 IPC 需要哪些证据。
+- 26.9 负责 Perfetto/eBPF 等观测工具，这里只说明 IPC 需要哪些证据。
 
 ## 小结
 

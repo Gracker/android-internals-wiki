@@ -9,7 +9,7 @@ last_verified: "2026-05-22"
 last_verified_against: "AOSP local sources android-35; Android Developers connectivity/Cronet docs 2026-02/03"
 confidence: medium
 tags: [network, cronet, http3, dns, weak-network, performance]
-related_chapters: ["12.1", "12.2", "24.4", "24.5", "24.9", "26.17"]
+related_chapters: ["12.1", "12.2", "24.4", "24.5", "24.9", "26.14"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-22"
 gap_source: "参考书素材/官方文档/AOSP结构"

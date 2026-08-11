@@ -1,7 +1,7 @@
 ---
 title: 线上网络质量监控与接入层协同
-chapter: '26.17'
-section: '26.17'
+chapter: '26.14'
+section: '26.14'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-07-12'
@@ -87,7 +87,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: '2026-06-27'
 ---
 
-# 26.17 线上网络质量监控与接入层协同
+# 26.14 线上网络质量监控与接入层协同
 
 网络质量监控回答三个问题：时间花在哪个阶段，哪些用户受到影响，客户端和接入层记录的是否为同一次请求。只存接口总耗时会把队列、DNS、路由尝试、传输握手、请求发送、首个响应头、响应体读取、重定向与重试混在一个数值里。
 

@@ -1,6 +1,7 @@
 ---
 title: "线上存储、I/O 与 SQLite 可观测性"
-chapter: "26.16"
+chapter: "26.13"
+section: "26.13"
 status: ready-for-review
 drafted_date: "2026-05-21"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -37,7 +38,7 @@ created_date: "2026-05-21"
 gap_source: "Clippings参考书/研究盲区/官方文档/AOSP结构"
 ---
 
-# 26.16 线上存储、I/O 与 SQLite 可观测性
+# 26.13 线上存储、I/O 与 SQLite 可观测性
 
 存储故障很少只有一个症状。一次“打开页面卡住”可能包含主线程读文件、SQLite 连接等待和目录扫描；一次“数据丢了”可能来自磁盘空间不足、损坏恢复策略或尚未持久化的写入。这里关注如何留下足以区分这些路径的线上证据。文件 I/O 和 SQLite 的优化方法分别见 24.1、24.2，通用采集预算见 26.3。
 
@@ -74,7 +75,7 @@ Wall time 与 CPU time 应分开。wall time 很长而当前线程 CPU time 很�
 | StrictMode / BlockGuard | 经 libcore OS 层上报的线程磁盘读写，以及未缓冲 I/O、SQLite/Closable 泄漏信号 | 三方 Native 代码直接调用 libc 的全部 I/O；精确字节数和设备耗时 | debug、自动化测试、dogfood；生产仅在评估成本后受控开启 |
 | Native interposition / Hook | 命中的 libc 或目标库 I/O 符号，可覆盖部分 Java 与 Native 路径 | 内联调用、直接 syscall、未命中符号、mmap 后缺页、异步回写 | 专项灰度；必须按 API、ABI、加载顺序和目标库验证 |
 | adb Perfetto | sched、频率、应用 trace、database atrace，以及设备允许的 ftrace/block/filemap 数据 | 没有启用或无权限的数据源；一次 trace 之外的长期分布 | 实验室复现和开发设备诊断 |
-| `ProfilingManager` system trace | Android 15+ 受系统限流的应用请求采集；Android 17 还可结合部分系统 trigger | 不保证每次请求成功，也不等同于任意 adb Perfetto 配置 | 线上小范围诊断，版本细节见 26.12 |
+| `ProfilingManager` system trace | Android 15+ 受系统限流的应用请求采集；Android 17 还可结合部分系统 trigger | 不保证每次请求成功，也不等同于任意 adb Perfetto 配置 | 线上小范围诊断，版本细节见 26.10 |
 
 ### StrictMode 能证明什么
 
@@ -262,7 +263,7 @@ I/O 和 SQL 都是高频事件，采集器必须在设计阶段设定 CPU、内�
 - 24.12 负责 MediaStore、Scoped Storage、FUSE 与媒体扫描成本。
 - 26.3 负责指标分位数、采样、上报预算和劣化检测。
 - 26.5 负责远程证据包、受限诊断、灰度隔离和问题单流程。
-- 26.12 负责 `ProfilingManager` 与 trigger 的系统版本边界。
+- 26.10 负责 `ProfilingManager` 与 trigger 的系统版本边界。
 
 这些事件字段用于把问题导航到对应章节，不重复给出另一套优化规则。
 
@@ -310,7 +311,7 @@ Android 官方 SQLite 性能文档给出的 Perfetto 配置是在 `linux.ftrace`
 
 应用调用与 block request 不是一一对应。页缓存会让 read 不到设备，延迟回写会让 write 与 block I/O 分离，多个请求还可能合并；文件系统、dm-crypt 和存储驱动又会增加层次。trace 的目标是建立时序证据，不是按相同时间戳强行配对每个 Java 调用和每个 block event。
 
-Android 15+ 的 `ProfilingManager` 可以请求受控 system trace，Android 17 的 trigger 能覆盖更多系统事件，但请求受系统限流且可能没有产物。线上应上传采集请求、结果状态和 trace 关联 ID；原始 trace 的合规、保留和访问控制沿用 26.12，不在存储事件里额外保存一份。
+Android 15+ 的 `ProfilingManager` 可以请求受控 system trace，Android 17 的 trigger 能覆盖更多系统事件，但请求受系统限流且可能没有产物。线上应上传采集请求、结果状态和 trace 关联 ID；原始 trace 的合规、保留和访问控制沿用 26.10，不在存储事件里额外保存一份。
 
 ## 小结
 

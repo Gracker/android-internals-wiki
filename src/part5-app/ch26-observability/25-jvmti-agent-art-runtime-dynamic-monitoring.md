@@ -1,10 +1,11 @@
 ---
-title: "26.29 JVMTI Agent — ART 运行时动态监控的实验入口与证据边界"
-chapter: "26.29"
+title: "JVMTI Agent — ART 运行时动态监控的实验入口与证据边界"
+chapter: "26.25"
+section: "26.25"
 status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [JVMTI, ART, runtime-monitoring, dynamic-instrumentation, profilo, method-tracing]
-related_chapters: ["26.21", "26.23", "26.27", "1.35", "14.1"]
+related_chapters: ["26.18", "26.22", "26.23", "1.35", "14.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "Clippings参考书+AOSP源码+章节深挖"
@@ -18,7 +19,7 @@ sources:
   - type: aosp
     path: "art/openjdkjvmti/ti_redefine.cc (android-17.0.0_r1) — 经由本卷 [1.35] 交叉引用"
   - type: aosp
-    path: "art/runtime/instrumentation.h / instrumentation.cc (android-17.0.0_r1) — 经由本卷 [26.23] 交叉引用"
+    path: "art/runtime/instrumentation.h / instrumentation.cc (android-17.0.0_r1) — 经由本卷 [26.22] 交叉引用"
   - type: aosp
     path: "tools/base/profiler/native/perfa/perfa.cc + memory/memory_tracking_env.cc (Android Studio 源码树 platform/tools/base) — 经由本卷 [14.1] 交叉引用"
   - type: official
@@ -38,10 +39,10 @@ last_review_finalize_at: "2026-07-30T14:10:00+08:00"
 last_review_finalize_run_id: "20260730-140532-12094eb9"
 last_rework_at: "2026-07-29T14:25:42+08:00"
 last_rework_run_id: "20260729-142542-rework-afd64006"
-rework_resolution: "第四轮 rework：从本卷已验证章节 [1.35][14.1][26.23] 引入 AOSP android-17.0.0_r1 源码级 JVMTI 交叉引用（events.cc / deopt_manager.cc / ti_redefine.cc / instrumentation.h），解决唯一来源为 Android CLI 博文的问题；CLI 材料降级为实验工具节；标题保持但副标题已明确为实验入口与证据边界。confidence 从 low 提升至 medium。"
+rework_resolution: "第四轮 rework：从本卷已验证章节 [1.35][14.1][26.22] 引入 AOSP android-17.0.0_r1 源码级 JVMTI 交叉引用（events.cc / deopt_manager.cc / ti_redefine.cc / instrumentation.h），解决唯一来源为 Android CLI 博文的问题；CLI 材料降级为实验工具节；标题保持但副标题已明确为实验入口与证据边界。confidence 从 low 提升至 medium。"
 ---
 
-# 26.29 JVMTI Agent — ART 运行时动态监控的实验入口与证据边界
+# 26.25 JVMTI Agent — ART 运行时动态监控的实验入口与证据边界
 
 ## JVMTI 的使用边界
 
@@ -240,7 +241,7 @@ extern "C" JNIEXPORT jint JNICALL Agent_OnLoad(
 
 [`deopt_manager.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/openjdkjvmti/deopt_manager.cc) 对请求做计数。启用 full 或 thread 级事件时增加对应请求，停用时移除；多个 agent 或多个事件可以同时持有请求。因此，全量去优化可以撤销，但必须等相关请求都被移除。
 
-`kLimited` 也不是“零影响”。例如设置某个 breakpoint 时，ART 还需要处理目标方法及活动栈；method entry/exit 则会走 ART Instrumentation 的方法事件路径。详细的入口替换、解释器 stub 与 JIT 关系见 [1.35]，Instrumentation listener 的回调位置见 [26.23]。
+`kLimited` 也不是“零影响”。例如设置某个 breakpoint 时，ART 还需要处理目标方法及活动栈；method entry/exit 则会走 ART Instrumentation 的方法事件路径。详细的入口替换、解释器 stub 与 JIT 关系见 [1.35]，Instrumentation listener 的回调位置见 [26.22]。
 
 ## 类重定义要分清标准入口与 ART 扩展
 
@@ -281,9 +282,9 @@ debuggable 是硬边界。即使应用不通过 Google Play 分发，把 debugga
 | Native 分配 | heapprofd / Android Studio Memory Profiler |
 | API 35 及以上的应用 profile 请求 | ProfilingManager，接受限流和不保证执行的契约 |
 | Java 崩溃、ANR、进程退出 | 应用稳定性采集与 `ApplicationExitInfo` |
-| ART 私有 hook 实验 | 仅在固定版本和受控设备验证，边界见 [26.23] |
+| ART 私有 hook 实验 | 仅在固定版本和受控设备验证，边界见 [26.22] |
 
-JVMTI 与 [26.21] 的编译期插桩也不是互相替代。编译期插桩能进入 release，但只能观察构建时选定的点；JVMTI 能在运行中选择事件和类，却要求 debuggable，并可能改变 ART 执行形态。
+JVMTI 与 [26.18] 的编译期插桩也不是互相替代。编译期插桩能进入 release，但只能观察构建时选定的点；JVMTI 能在运行中选择事件和类，却要求 debuggable，并可能改变 ART 执行形态。
 
 ## 一次可复现的 JVMTI 实验
 

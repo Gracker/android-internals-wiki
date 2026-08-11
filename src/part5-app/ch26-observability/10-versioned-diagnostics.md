@@ -1,7 +1,7 @@
 ---
 title: "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger"
-chapter: "26.12"
-section: "26.12"
+chapter: "26.10"
+section: "26.10"
 status: finalized
 pipeline_stage: ready-to-publish
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -78,7 +78,7 @@ last_task9_audit: "2026-06-28"
 last_task9_review_log: "logs/deep-review/2026-06-28-22-deep-review.md"
 ---
 
-# 26.12 Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger
+# 26.10 Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger
 
 同一个故障发生在 Android 10 和 Android 17 上，可取得的系统证据并不相同。诊断系统需要先判断设备版本和能力，再决定采集入口。版本号只能说明 API 的上限，不能保证系统一定生成了某份附件。
 

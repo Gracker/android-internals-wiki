@@ -1,7 +1,7 @@
 ---
 title: "ApplicationStartInfo 与启动归因上报"
-chapter: "26.13"
-section: "26.13"
+chapter: "26.11"
+section: "26.11"
 status: finalized
 drafted_date: "2026-05-18"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
@@ -42,7 +42,7 @@ sources:
   - type: aosp
     path: "packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java"
 tags: [observability, startup, application-start-info, profilingmanager]
-related_chapters: ["8.2", "14.11", "26.9", "26.12"]
+related_chapters: ["8.2", "14.11", "26.8", "26.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-18"
 gap_source: "研究素材/官方文档/章节深挖/Clippings结构参考"
@@ -72,7 +72,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-27
 ---
 
-# 26.13 ApplicationStartInfo 与启动归因上报
+# 26.11 ApplicationStartInfo 与启动归因上报
 
 启动耗时只有放在启动类型、启动原因和前一次进程状态里，才具备稳定的解释力。一次桌面图标冷启动、一次最近任务恢复、一次广播拉起和一次低内存后的状态恢复，即便首帧耗时相同，优化方向也可能完全不同。
 
@@ -338,11 +338,11 @@ Macrobenchmark 的 `StartupMode.COLD/WARM/HOT` 控制测试前置状态；`Appli
 
 Android 15 以下继续使用 Application/Activity 生命周期、首帧、`reportFullyDrawn()` 和业务 ready 埋点。系统字段不可用时填 `unavailable`，不能用业务推断值伪装成 `ApplicationStartInfo`。
 
-## 与 26.12 的边界
+## 与 26.10 的边界
 
-26.12 解释 Android 10–17 的退出追溯、App-driven profiling 和系统 trigger 总体能力。启动记录侧聚焦 SDK 协议、分桶、时间戳、前后进程关联和监控接入。
+26.10 解释 Android 10–17 的退出追溯、App-driven profiling 和系统 trigger 总体能力。启动记录侧聚焦 SDK 协议、分桶、时间戳、前后进程关联和监控接入。
 
-ProfilingManager 的四类主动采集、结果字段、限流和 trigger 全表放在 26.12；启动流程与 TTID/TTFD 机制放在 8.2；退出原因细节放在 26.9。这里引用这些能力，只为说明一次启动样本如何进入线上证据体系。
+ProfilingManager 的四类主动采集、结果字段、限流和 trigger 全表放在 26.10；启动流程与 TTID/TTFD 机制放在 8.2；退出原因细节放在 26.8。这里引用这些能力，只为说明一次启动样本如何进入线上证据体系。
 
 ## 源码与官方文档锚点
 

@@ -1,7 +1,7 @@
 ---
 title: "端侧高可用日志与诊断命令通道"
-chapter: "26.19"
-section: "26.19"
+chapter: "26.16"
+section: "26.16"
 status: finalized
 drafted_date: "2026-05-26"
 drafted_by: "openclaw-task2a"
@@ -29,7 +29,7 @@ sources:
   - type: official
     path: "https://developer.android.com/training/permissions/usage-notes"
 tags: [observability, logging, diagnostics, remote-debugging, profiling]
-related_chapters: ["13.17", "14.11", "15.9", "19.22", "26.3", "26.5", "26.12"]
+related_chapters: ["13.17", "14.11", "15.9", "19.22", "26.3", "26.5", "26.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-26"
 gap_source: "参考书结构/章节深挖/官方文档"
@@ -60,9 +60,9 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-19
 ---
 
-# 26.19 端侧高可用日志与诊断命令通道
+# 26.16 端侧高可用日志与诊断命令通道
 
-端侧日志与诊断命令通道处理的是同一类现场：问题发生在用户设备上，常规监控只能看到结果，工程师仍缺少复现路径、运行状态和时间线。平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，讨论范围是普通 App 在公开 API 和应用沙箱内可以建设的能力。26.5 介绍排障流程，26.12 介绍 `ApplicationExitInfo`、`ProfilingManager` 与 `ProfilingTrigger` 的版本边界。
+端侧日志与诊断命令通道处理的是同一类现场：问题发生在用户设备上，常规监控只能看到结果，工程师仍缺少复现路径、运行状态和时间线。平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，讨论范围是普通 App 在公开 API 和应用沙箱内可以建设的能力。26.5 介绍排障流程，26.10 介绍 `ApplicationExitInfo`、`ProfilingManager` 与 `ProfilingTrigger` 的版本边界。
 
 这套设施只能提高证据可得性，无法承诺每次故障都有完整证据。进程可能在缓冲区刷新前被杀，设备可能没有剩余空间，用户也可能清除数据或卸载 App。设计目标应写成可度量的丢失窗口、上传时限和隐私边界。
 
@@ -263,7 +263,7 @@ Android 的[日志安全建议](https://developer.android.com/privacy-and-securi
 
 网络诊断要把 DNS、连接、TLS、HTTP、CDN、网关和业务服务的证据按一次尝试关联起来。`trace_id` 可表示分布式调用，客户端还应区分逻辑请求 `request_id` 与每次重试 `attempt_id`，否则多个地址、协议或连接复用会被误合并。
 
-24.15、26.17 说明网络质量与请求归因；这里规定诊断命令如何安全触发和回传。命令可执行以下受限动作：
+24.15、26.14 说明网络质量与请求归因；这里规定诊断命令如何安全触发和回传。命令可执行以下受限动作：
 
 - 对业务控制的诊断域名解析，回传解析耗时、IP 族、A/AAAA 数量和分类错误码。DNS 服务器地址与原始结果列表通常没有必要上传。
 - 向固定探测端点建立 TCP / TLS 连接，回传阶段耗时、协议和错误类别，不上传证书正文、请求 header 或 body。

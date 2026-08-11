@@ -30,7 +30,7 @@ sources:
   - type: aosp
     path: "frameworks/base/services/credentials/java/com/android/server/credentials/CredentialManagerService.java"
 tags: [responsiveness, biometric, credential-manager, passkeys, keystore]
-related_chapters: ["8.9", "20.14", "26.12", "26.15"]
+related_chapters: ["8.9", "20.14", "26.10", "26.12"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-26"
 gap_source: "AOSP结构/官方文档/素材驱动"
@@ -329,7 +329,7 @@ SystemUI 和 Framework API 提供一致的应用接口，sensor HAL、显示协�
 
 内核锚点只覆盖 Binder IPC。生物传感器驱动和厂商实现通常位于设备或 vendor 代码，认证策略与会话状态位于 Framework、系统服务和 HAL。不能依据 common kernel 的 `binder.c` 推断指纹采集耗时；它能帮助验证跨进程等待和 Binder 调度是否异常。
 
-普通线上进程没有权限读取完整系统 trace。实验室可以结合 Perfetto、SystemUI 日志、`system_server` 轨迹和厂商 HAL 日志定位；线上证据能力与权限分级见 [§26.12 版本化诊断](../../part5-app/ch26-observability/12-versioned-diagnostics.md)。
+普通线上进程没有权限读取完整系统 trace。实验室可以结合 Perfetto、SystemUI 日志、`system_server` 轨迹和厂商 HAL 日志定位；线上证据能力与权限分级见 [§26.10 版本化诊断](../../part5-app/ch26-observability/10-versioned-diagnostics.md)。
 
 ## 版本边界
 
@@ -348,7 +348,7 @@ Jetpack 库版本和平台 API level 要分别记录。`BiometricPromptData` 来
 
 [§20.14 Keystore 配额与登录稳定性](../../part5-app/ch20-stability/14-keystore-quota-login-stability.md) 负责 key 生命周期、配额、失效与恢复。这里仅将这些结果视为登录阶段的一类终态。
 
-[§26.12 版本化诊断](../../part5-app/ch26-observability/12-versioned-diagnostics.md) 负责系统 trace、`ApplicationExitInfo`、`ProfilingManager` 与诊断权限。[§26.15 Android Vitals 与 Play Console](../../part5-app/ch26-observability/15-android-vitals-play-console-quality.md) 负责 ANR、Crash、LMK、启动和功耗等外部质量口径。Vitals 没有“生物识别登录慢”专用指标，内部 `flow_id`、版本与页面信息要能和发布批次对应。
+[§26.10 版本化诊断](../../part5-app/ch26-observability/10-versioned-diagnostics.md) 负责系统 trace、`ApplicationExitInfo`、`ProfilingManager` 与诊断权限。[§26.12 Android Vitals 与 Play Console](../../part5-app/ch26-observability/12-android-vitals-play-console-quality.md) 负责 ANR、Crash、LMK、启动和功耗等外部质量口径。Vitals 没有“生物识别登录慢”专用指标，内部 `flow_id`、版本与页面信息要能和发布批次对应。
 
 ## 小结
 

@@ -53,7 +53,7 @@ related_chapters:
   - '1.4'
   - '1.17'
   - '5.8'
-  - '26.9'
+  - '26.8'
 drafted_date: "2026-05-15"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"

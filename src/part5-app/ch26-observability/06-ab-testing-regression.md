@@ -31,6 +31,12 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals"
   - type: official
     path: "https://firebase.google.com/docs/ab-testing/abtest-config"
+  - type: official
+    path: "https://firebase.google.com/docs/ab-testing/ab-concepts"
+  - type: paper
+    path: "https://www.kdd.org/kdd2019/accepted-papers/view/diagnosing-sample-ratio-mismatch-in-online-controlled-experiments-a-taxonomy-and-rules-of-thumb-for-practitioners"
+  - type: paper
+    path: "https://arxiv.org/abs/1512.04922"
 tags: [ab-testing, regression, ci-cd, performance-gate]
 related_chapters: ["26.7", "26.3", "15.6"]
 pipeline_stage: ready-to-publish
@@ -57,7 +63,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-15
 ---
 
-# A/B Test 与性能回归防护
+# 26.6 A/B Test 与性能回归防护
 
 ## 发布阶段需要回答的问题
 
@@ -94,6 +100,24 @@ Firebase A/B Testing 的 Remote Config 实验可以配置目标人群、基线�
 最小可检测效应来自产品决策，而不是“统计上能测到的最小数字”。关键分群需要单独检查统计功效；样本不足时报告“方向与不确定区间”，不把短期波动写成收益。设备群过细时，可先用实验室 benchmark 排除确定性风险，再积累线上证据。
 
 A/A Test 用于检查分桶、曝光、上报和统计任务是否校准。它不能证明平台永远无偏，也不要求每次指标差异都恰好为零；团队应观察长期假阳性率、置信区间覆盖率和 Sample Ratio Mismatch（SRM）。SRM 检查要覆盖全量与预注册关键分群，并沿 assignment → fetch → activation → metric → upload 逐层定位丢失。多主张、多分群或多次查看结果时，应预先选择多重比较或序贯控制方法，不能对每次查看都套用一次固定终点检验。
+
+### 长尾指标的判定协议
+
+P90/P99 的主效应应直接定义为 `Qτ(variant) - Qτ(baseline)`，并对差值构造区间；分别查看两组 quantile 区间是否重叠，不能替代差值区间。按用户或安装分桶时，cluster bootstrap 必须以随机化单元重采样，并让被抽中的单元携带其全部合格事件。直接按帧、启动或请求重采样会破坏单元内相关性，也会让高活跃用户获得额外权重。
+
+尾部报告不只给一个 P99。还要预先登记体验阈值 `L`，报告 `P(X > L)` 的违约率、阈值以上的 excess duration、独立实验单元数和每单元事件分布。若区间同时包含可接受改善和不可接受退化，结论就是 inconclusive，不能用单点方向替代不确定性。
+
+分群 quantile 也不能线性相加。总体分布是 `F(x) = Σg wgFg(x)`，总体 quantile 是混合 CDF 的逆函数，并不等于各群 quantile 的加权和。归因时要分别回答人群构成是否变化，以及相同分群内部的分布是否变化；需要标准化时，把两组重加权到同一参考构成后重新计算经验分布，而不是计算“样本量 × P90 delta”。
+
+### 查看频率、多重比较与异常值
+
+每天查看一次普通固定终点 p-value，并在第一次越线时停止，会抬高假阳性率。平台应在实验登记时选择 fixed horizon、带 alpha spending 的有限次 group sequential，或经过校准的 anytime-valid inference。Crash、ANR、数据损坏和严重性能伤害可以触发安全停止，但安全停止只说明需要止损，不自动证明方案有效。
+
+多个确认性主张要控制 family-wise error；大量设备、场景和时间分群只能标为 exploratory，发现后进入复现实验。数据清洗也要在揭盲前登记：负耗时、时钟混用、重复事件和错误 join 可以判无效；低端机、热限频、冷缓存与弱网造成的真实慢样本属于用户体验，不能因为数值极端而删除。winsorization 或 trimmed mean 可以作为敏感性分析，不能替代原始分位值与违约率。
+
+### 实验登记与决策结果
+
+一份可审计的实验登记至少保存 treatment 与作用路径、eligibility、assignment unit、exposure、主 estimand、护栏、聚类单位、MDE、业务可行动差异、伤害线、CI 方法、分配比例、成熟窗口、SRM 与缺失数据规则、预注册分群、停止规则和数据 schema。最终结果只落到四类之一：`adopt`、`reject/harm`、`inconclusive`、`invalid-data`。“未显著”不等于没有差异，数据漏斗或 SRM 已损坏时也不能继续比较收益。
 
 ## 性能回归自动检测
 
