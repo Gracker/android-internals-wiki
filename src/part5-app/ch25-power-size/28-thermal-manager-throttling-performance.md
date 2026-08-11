@@ -9,6 +9,8 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "AOSP结构+官方文档+章节深挖"
 confidence: high
+consolidated_from:
+  - "src/part2-performance/ch07-smoothness/16-power-thermal-jank-playbook.md"
 last_verified: 2026-08-03
 last_verified_against: "android-17.0.0_r1 / android17-6.18"
 sources:
@@ -397,6 +399,20 @@ fun requestedTier(signals: ThermalSignals): WorkloadTier {
 ## CPU、GPU 与应用性能的证据
 
 thermal status 升级可能伴随 CPU/GPU 限制，status 本身无法证明具体动作。CPU 主线程变慢、GPU 帧延长、充电速度下降或屏幕亮度变化，都要分别取证。
+
+### 把热限制与卡顿连成因果链
+
+“设备发热”和“界面卡顿”同时出现，只能建立相关性。要把 thermal throttling 写成性能退化原因，至少需要串起以下顺序：
+
+1. 固定场景输入后，目标进程或相关系统组件形成持续负载；
+2. thermal status、headroom、temperature trip 或 cooling state 发生可重复变化；
+3. CPU/GPU frequency limit、capacity 或完成时间显示可用资源受到约束；
+4. 在工作量保持稳定时，线程执行时间、Runnable 等待、GPU completion 或帧时间随后恶化；
+5. 冷却设备或降低单一负载变量后，限制与性能退化按预测回落。
+
+缺少第 2、3 项时，低频可能只是普通 DVFS；缺少稳定工作量与对照组时，无法排除业务负载本身变化；缺少回落过程时，还应检查 Battery Saver、刷新率切换、后台争用和厂商 boost 策略。Perfetto 中应把 `ThermalManagerService.status`、thermal/cooling 事件、`cpu_frequency_limits`、scheduler、FrameTimeline、RenderThread 与 GPU fence 放在同一窗口，不用单条红帧或一次温度读数完成归因。
+
+功耗与热问题的时间尺度也要分开：单帧和输入反馈用短时 trace，数分钟温升用持续 trace 或周期快照，灭屏 WakeLock、Job 与网络重试则回到 [25.1 功耗诊断与分析方法](01-power-diagnosis.md) 的 Batterystats 窗口。三类结果通过同一设备、build、场景和时间戳关联，不把 power rail 的设备级能量直接记到某个 Java 方法。
 
 ### CPU 受限
 

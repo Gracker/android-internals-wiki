@@ -88,7 +88,7 @@ finalized_date: "2026-07-08"
 updated_by: "openclaw-task9"
 updated_date: "2026-07-08"
 ---
-# 案例集
+# 7.6 案例集
 
 ## 案例证据怎样使用
 
@@ -304,7 +304,7 @@ CLIENT composition 只表示 SurfaceFlinger 需要把相关 layers 渲染进 cli
 
 成功标准是目标设备上 CLIENT/DEVICE 分配或 GPU 工作发生预期变化，SF jank type 和 present 长尾同时改善。App 主线程变短与这一结论无直接等价关系。
 
-Android 17 源码锚点是 `SurfaceFlinger.cpp`、CompositionEngine 的 `Output.cpp`、`RenderEngine` 和 `HWComposer.cpp`。详细步骤见 [HWC Overlay Plane 与合成降级排查](./18-hwc-overlay-composition-downgrade.md)。
+Android 17 源码锚点是 `SurfaceFlinger.cpp`、CompositionEngine 的 `Output.cpp`、`RenderEngine` 和 `HWComposer.cpp`。详细步骤见 [HWC Overlay Plane 与合成降级排查](./12-hwc-overlay-composition-downgrade.md)。
 
 来源：[Android 系统平台性能案例](https://www.androidperformance.com/2019/09/05/Android-Jank-Due-To-System/)、[Hardware Composer HAL](https://source.android.com/docs/core/graphics/implement-hwc)。
 
@@ -404,7 +404,7 @@ Android 17 / API 37 继续提供 Thermal API、ADPF 与 CPU/GPU headroom 相关�
 - [分析方法](./03-jank-methodology.md)
 - [典型场景](./04-typical-scenarios.md)
 - [优化策略](./05-optimization.md)
-- [功耗与温控卡顿手册](./16-power-thermal-jank-playbook.md)
+- [ThermalManager 热节流适配与性能降级治理实战](../../part5-app/ch25-power-size/28-thermal-manager-throttling-performance.md)
 - [系统内存压力与 lmkd](../../part1-fundamentals/ch04-memory/04-lmk.md)
 - [Android Thermal](../../part1-fundamentals/ch05-cpu-power/05-thermal.md)
 - [ADPF](../../part1-fundamentals/ch05-cpu-power/09-adpf.md)

@@ -5,7 +5,7 @@ section: "18.13"
 status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)(WebView provider 可独立更新;SurfaceControl 子 Surface 需 Android 12+ 平台支持,并结合 provider / Chromium milestone 判断)"
 tags: ["WebView", "Chromium", "GL-Functor", "SurfaceControl", "SurfaceTexture", "X5内核", "渲染管线"]
-related_chapters: ["2.5", "2.6", "7.11", "18.6", "18.7", "18.10"]
+related_chapters: ["2.5", "2.6", "18.6", "18.7", "18.10", "22.7"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 sources:
@@ -611,7 +611,7 @@ Chromium 是可更新组件。这里以上游 revision `4e18c703f7cd950c890e1410
 
 ## 与其他章节的关系
 
-- **§7.11 WebView 渲染性能与优化**：从页面、宿主和业务指标处理 WebView 性能；
+- **§22.7 WebView 性能优化实战**：从页面、宿主和业务指标处理 WebView 性能；
 - **§18.6 SurfaceView、§18.7 TextureView**：全屏 custom view 或第三方 SDK 返回具体 View 类型后，回到对应管线；
 - **§18.10 SurfaceControl API 深入**：overlay transaction、layer tree 和 fence；
 - **§2.5 MainThread 与 RenderThread 协作**：宿主 View traversal 与 HWUI 提交；

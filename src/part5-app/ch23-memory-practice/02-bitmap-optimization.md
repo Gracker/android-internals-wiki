@@ -36,7 +36,7 @@ sources:
   - type: blog
     path: "[结构参考: Clippings/Android 性能优化 - 原理：重新认识内存.md]"
 tags: [bitmap, insamplesize, native-memory, inbitmap, hardware-bitmap]
-related_chapters: ["23.1", "22.6", "7.10", "4.3"]
+related_chapters: ["23.1", "22.6", "22.35", "4.3"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed

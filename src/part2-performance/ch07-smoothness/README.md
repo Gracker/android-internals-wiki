@@ -15,23 +15,17 @@
 - [7.7 Jetpack Compose 性能优化](07-compose-performance.md)
 - [7.8 RecyclerView 列表滑动性能深度优化](08-recyclerview-performance.md)
 - [7.9 感知流畅性：步幅波动与无掉帧卡顿](09-perceived-smoothness.md)
-- [7.10 图片加载与 Bitmap 性能优化](10-image-bitmap-performance.md)
-- [7.11 WebView 渲染性能与优化](11-webview-performance.md)
-- [7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销](12-view-layout-performance.md)
-- [7.13 SystemUI 性能分析](13-systemui-performance.md)
-- [7.14 GAPS：Android 动态分析目标可达性路径重建](14-gaps-dynamic-analysis.md)
-- [7.15 场景化性能作战手册](15-scenario-playbooks.md)
-- [7.16 功耗、温控与卡顿联合排查](16-power-thermal-jank-playbook.md)
-- [7.17 FragmentTransaction 提交引发的卡顿](17-fragmenttransaction-commit-jank.md)
-- [7.18 HWC Overlay 合成降级分析](18-hwc-overlay-composition-downgrade.md)
-- [7.19 Accessibility 链路性能](19-accessibility-manager-performance.md)
-- [7.20 ContentCapture 与 Autofill 性能](20-contentcapture-autofill-performance.md)
+- [7.10 View 体系性能优化：布局层级、inflate 与 measure/layout 开销](10-view-layout-performance.md)
+- [7.11 SystemUI 性能分析](11-systemui-performance.md)
+- [7.12 HWC Overlay Plane 与合成降级排查](12-hwc-overlay-composition-downgrade.md)
+- [7.13 AccessibilityManagerService 与无障碍服务性能影响](13-accessibility-manager-performance.md)
+- [7.14 ContentCaptureService 与 Autofill 性能影响](14-contentcapture-autofill-performance.md)
 
 ## 阅读建议
 
 - 系统学习流畅性时，按 `7.1 → 7.2 → 7.3` 阅读，建立帧时间、根因和证据之间的关系。
-- 排查线上卡顿时，可从 `7.3`、`7.4`、`7.6` 和 `7.15` 选择与现场最接近的入口。
-- 分析具体 UI 技术栈时，按问题进入 `7.7` 到 `7.13`，分别检查 Compose、RecyclerView、图片、WebView、View 布局和 SystemUI。
-- 卡顿与系统状态同时变化时，结合 `7.16` 的功耗、温控和调度证据判断。
-- 卡顿集中在事务提交、合成策略或系统辅助服务时，分别查阅 `7.17` 到 `7.20`。
-- 需要将动态分析结果映射到 Perfetto 证据时，阅读 `7.14`，再结合第 13 章的工具说明执行采集。
+- 排查线上卡顿时，从 `7.3`、`7.4` 和 `7.6` 选择与现场最接近的入口。
+- 分析具体 UI 技术栈时，进入 `7.7`～`7.11`，分别检查 Compose、RecyclerView、感知节奏、View 布局和 SystemUI。
+- 卡顿与功耗、温控同时变化时，结合 25.1 与 25.28 的功耗账本、thermal 和调度证据判断。
+- 卡顿集中在页面事务、图片、WebView 或显示合成时，分别查阅 22.12、22.35、22.7/18.13 与 `7.12`。
+- 无障碍、ContentCapture 或 Autofill 改变页面成本时，分别查阅 `7.13`、`7.14`；目标方法自动触达工具 GAPS 已归入 14.26。

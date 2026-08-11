@@ -78,7 +78,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-05
 ---
 
-# 优化策略
+# 7.5 优化策略
 
 ## 优化从一条可证伪的假设开始
 

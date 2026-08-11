@@ -19,7 +19,7 @@ sources:
   - type: aosp
     path: "frameworks/base/graphics/java/android/graphics/Color.java"
 tags: [custom-view, ondraw, canvas, hardware-acceleration, invalidate, viewrootimpl, hwui]
-related_chapters: ["22.1", "2.5", "2.7", "2.10", "7.12"]
+related_chapters: ["22.1", "2.5", "2.7", "2.10", "7.10"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: "reviewed"

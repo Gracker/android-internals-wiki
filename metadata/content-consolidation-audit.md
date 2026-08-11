@@ -18,9 +18,45 @@
 | ch03 输入系统 | 14 | 8 | 已完成 | 2026-08-11 |
 | ch04 内存管理 | 29 | 17 | 已完成 | 2026-08-11 |
 | ch05 CPU 调度与能耗管理 | 38 | 17 | 已完成 | 2026-08-11 |
-| 其余 22 章 | 529 | 待审阅 | 未开始 | - |
+| ch07 流畅度 | 20 | 14 | 已完成 | 2026-08-11 |
+| 其余 21 章 | 510 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 576 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 571 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch07 流畅度
+
+保留后的连续编号为：
+
+- 7.1 卡顿的定义与分类
+- 7.2 卡顿原因体系
+- 7.3 卡顿分析方法论
+- 7.4 典型场景分析
+- 7.5 优化策略
+- 7.6 案例集
+- 7.7 Jetpack Compose 性能优化
+- 7.8 RecyclerView 列表滑动性能深度优化
+- 7.9 感知流畅性：步幅波动与无掉帧卡顿
+- 7.10 View 体系性能优化：布局层级、inflate 与 measure/layout 开销
+- 7.11 SystemUI 性能分析
+- 7.12 HWC Overlay Plane 与合成降级排查
+- 7.13 AccessibilityManagerService 与无障碍服务性能影响
+- 7.14 ContentCaptureService 与 Autofill 性能影响
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `10-image-bitmap-performance.md` | 删除重复的请求、解码、BitmapPool、Hardware Bitmap 与 Perfetto 说明；保留独有的 Ultra HDR/Gainmap 内存边界 | 22.6、22.17、`../src/part5-app/ch22-rendering-practice/35-bitmap-decode-pipeline-imagedecoder.md` |
+| `11-webview-performance.md` | 合并 provider 版本、启动、JS Bridge、宿主 HWUI、renderer 生命周期和诊断方法 | `../src/part5-app/ch22-rendering-practice/07-webview-optimization.md`、18.13 |
+| `12-view-layout-performance.md` | 主题独立，改为连续编号 7.10 | `../src/part2-performance/ch07-smoothness/10-view-layout-performance.md` |
+| `13-systemui-performance.md` | 主题独立，改为连续编号 7.11 | `../src/part2-performance/ch07-smoothness/11-systemui-performance.md` |
+| `14-gaps-dynamic-analysis.md` | 从流畅度章移出；作为目标方法可达性与自动执行工具补齐工具章空缺编号 | `../src/part3-tools/ch14-other-tools/26-gaps-dynamic-analysis.md`（14.26） |
+| `15-scenario-playbooks.md` | 删除与分析方法、典型场景重复的第二套 runbook；问题卡、责任链、场景分流和结论模板由主文统一承载 | `../src/part2-performance/ch07-smoothness/03-jank-methodology.md`、`../src/part2-performance/ch07-smoothness/04-typical-scenarios.md` |
+| `16-power-thermal-jank-playbook.md` | 拆回功耗诊断与 Thermal 治理主文；补入 thermal throttling 到卡顿的可证伪因果链 | `../src/part5-app/ch25-power-size/01-power-diagnosis.md`、`../src/part5-app/ch25-power-size/28-thermal-manager-throttling-performance.md` |
+| `17-fragmenttransaction-commit-jank.md` | 合并提交 API、主线程消息、生命周期、首帧与 Perfetto 诊断 | `../src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md`；7.4 保留场景入口 |
+| `18-hwc-overlay-composition-downgrade.md` / `19-accessibility-manager-performance.md` / `20-contentcapture-autofill-performance.md` | 主题独立，依次改为连续编号 7.12～7.14 | `12-hwc-overlay-composition-downgrade.md`～`14-contentcapture-autofill-performance.md` |
+
+章节 README、`src/SUMMARY.md`、活动跨章链接和统计口径已经切换到连续编号。历史 changelog、已关闭 finding、已完成 todo 与 `consolidated_from` 保留旧路径。
 
 ## ch05 CPU 调度与能耗管理
 

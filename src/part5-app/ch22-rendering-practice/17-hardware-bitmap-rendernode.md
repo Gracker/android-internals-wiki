@@ -35,7 +35,7 @@ sources:
   - type: clipping-structure
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
 tags: [rendering, bitmap, rendernode, hwui, surfaceflinger]
-related_chapters: ["2.5", "2.13", "2.15", "7.10", "22.6", "23.2"]
+related_chapters: ["2.5", "2.13", "2.15", "22.6", "22.35", "23.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-26"
 gap_source: "素材驱动/AOSP结构/官方文档"

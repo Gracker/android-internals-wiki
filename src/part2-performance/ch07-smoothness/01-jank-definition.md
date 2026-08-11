@@ -59,7 +59,7 @@ related_chapters:
 - '2.5'
 - '7.2'
 - '7.3'
-- '7.15'
+- '7.4'
 - '8.1'
 - '9.1'
 task9_result: "pass-tech-review"
@@ -99,7 +99,7 @@ last_task2b_verifier_at: "2026-07-11T11:34:06+08:00"
 task2b_verifier_notes: "Task9 idle-audit auto-fix on 2026-07-11 set task6_state: revisiting + pipeline_stage: task6_pending, but status remained finalized. Corrected to ready-for-review for Task6 re-review."
 last_task9_review_notes: "2026-07-11 Task9 deep-review: pass-tech-review。P0/P1/P2 0；复核 Android 17 FrameTimeline/JankInfo、VsyncConfiguration phase、Perfetto android.frames.timeline/android.binder SQL 口径，Task6 已通过且 queue 无 pending，自动晋升 finalized。详见 logs/deep-review/2026-07-11-13-deep-review.md。"
 ---
-# 卡顿的定义与分类
+# 7.1 卡顿的定义与分类
 
 ## 从用户描述到可验证问题
 

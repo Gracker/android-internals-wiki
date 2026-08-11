@@ -15,6 +15,8 @@ applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-03-31'
 last_verified_against: AOSP android-16.0.0_r1, Perfetto 官方文档
 confidence: high
+consolidated_from:
+- src/part2-performance/ch07-smoothness/15-scenario-playbooks.md
 sources:
 - type: blog
   path: obsidian/Personal-Knowlodge/source/Android-Perfetto-03-how-to-analysis-perfetto.md
@@ -75,7 +77,7 @@ last_task9_review_log: 'logs/deep-review/2026-06-19-11-audit.md'
 ---
 
 
-# 卡顿分析方法论
+# 7.3 卡顿分析方法论
 
 ## 分析目标：把异常帧变成可复核因果链
 

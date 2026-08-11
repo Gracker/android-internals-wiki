@@ -4,7 +4,7 @@ chapter: "2.28"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [foldable, display, rendering, jetpack-windowmanager, hinge, large-screen]
-related_chapters: ["2.6", "2.12", "2.18", "2.20", "3.2", "7.12", "22.14"]
+related_chapters: ["2.6", "2.12", "2.18", "2.20", "3.2", "7.10", "22.14"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-23"
 drafted_date: "2026-06-24"

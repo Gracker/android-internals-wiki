@@ -35,7 +35,7 @@ sources:
   - type: book-structure
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
 tags: [photo-picker, mediaprovider, transcoding, storage, io-performance]
-related_chapters: ["7.10", "12.1", "20.10", "22.6", "24.12", "26.16"]
+related_chapters: ["12.1", "20.10", "22.6", "22.35", "24.12", "26.16"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-22"
 gap_source: "官方文档/每日信息/素材驱动/AOSP结构"
@@ -55,7 +55,7 @@ Photo Picker 把“用户允许应用读取哪些图片或视频”交给系统�
 - 大图采样、视频读取、上传与取消。
 - 应用私有临时文件和失败任务的清理。
 
-平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，重点是选择完成后的应用路径。`MediaStore` 索引、FUSE、缩略图和兼容媒体转码原理见 24.12 节；图片解码与 Bitmap 缓存见 7.10、22.6 节；文件 I/O 与网络上传见 24.1、24.6 节。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，重点是选择完成后的应用路径。`MediaStore` 索引、FUSE、缩略图和兼容媒体转码原理见 24.12 节；图片解码与 Bitmap 缓存见 22.6、22.35 节；文件 I/O 与网络上传见 24.1、24.6 节。
 
 ## Photo Picker 的性能边界
 

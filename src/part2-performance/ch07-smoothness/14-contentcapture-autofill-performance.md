@@ -1,10 +1,11 @@
 ---
 title: "ContentCaptureService 与 Autofill 性能影响"
-chapter: "7.20"
+chapter: "7.14"
+section: "7.14"
 status: finalized
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
 tags: [contentcapture, autofill, jank, ipc, accessibility]
-related_chapters: ["7.19", "7.12", "1.4"]
+related_chapters: ["7.13", "7.10", "1.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-27"
 gap_source: "AOSP结构/章节深挖"
@@ -32,7 +33,7 @@ sources:
     path: "developer.android.com/identity/autofill/autofill-optimize"
 ---
 
-# 7.20 ContentCaptureService 与 Autofill 性能影响
+# 7.14 ContentCaptureService 与 Autofill 性能影响
 
 ContentCapture 与 Autofill 都会读取 View 的结构化信息，却使用不同的触发条件、数据模型和进程路径。平台源码锚点为 Android 17 / API 37、`android-17.0.0_r1`。两条链路与密码管理器、IME、WebView 同时出现时，需要分别归因。
 

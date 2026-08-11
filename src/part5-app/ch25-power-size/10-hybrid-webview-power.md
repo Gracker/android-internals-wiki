@@ -9,7 +9,7 @@ last_verified: "2026-05-15"
 last_verified_against: "AOSP android-16.0.0_r1 WebView loader + Android Developers docs 2026-03"
 confidence: medium
 tags: [webview, hybrid, power, energy, battery, benchmark]
-related_chapters: ["7.11", "10.3", "11.1", "19.26", "20.10", "25.1", "25.2"]
+related_chapters: ["10.3", "11.1", "19.26", "20.10", "22.7", "25.1", "25.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "论文素材 + 官方文档 + 章节覆盖缺口"
@@ -73,7 +73,7 @@ Hybrid 页面把应用进程、WebView provider、Chromium renderer、JavaScript
 
 平台锚点为 Android 17（API 37）和 `android-17.0.0_r1`，比较同一业务在原生页、应用内 WebView 和外部浏览器中的成本。结论分成两类：同机对照实验得到的相对差异，以及能够在线上按页面和 provider 版本持续验证的指标。
 
-7.11 节负责 WebView 渲染管线，10.3 节负责内存持续增长，19.26 节负责 Hybrid APM。25.10 把这些章节的结果接到功耗账本和技术选型上。
+18.13 节负责 WebView 渲染管线，22.7 节负责 WebView 优化实战，10.3 节负责内存持续增长，19.26 节负责 Hybrid APM。25.10 把这些章节的结果接到功耗账本和技术选型上。
 
 ## 原生 App、Web App、Hybrid 页面的能耗边界
 
@@ -111,7 +111,7 @@ WebView 的成本通常分成四类看。
 - **网络与存储**：页面可能包含重定向、第三方脚本、字体和多种图片。HTTP 缓存、Cookie、DOM storage、Service Worker 与应用自己的离线包不是同一层；清理其中一层不能证明其他层也已清空。
 - **生命周期**：页面离屏后仍可能保留 renderer、音视频和定时任务。容器要把可见性映射到 `WebView.onPause()` / `onResume()`，不再复用时从 View 树移除并调用 `destroy()`。`pauseTimers()` / `resumeTimers()` 会影响当前进程中的所有 WebView，不适合作为单页面通用开关；`clearCache()` 也不是页面退出时的清理接口。
 
-7.11 解释 WebView 渲染性能，10.3 覆盖内存持续增长，19.26 覆盖 Hybrid APM，20.10 覆盖 renderer 退出和白屏恢复。这里汇总功耗需要的字段：页面类型、provider 版本、驻留时长、CPU 时间、PSS/RSS、网络字节、桥调用、前后台切换和 renderer 退出原因。Renderer PID 适合在本地 Perfetto/`ps` 中关联；Android 公共 WebView API 不提供可用于线上记录的 renderer PID。
+18.13 解释 WebView 渲染管线，22.7 覆盖优化实战，10.3 覆盖内存持续增长，19.26 覆盖 Hybrid APM，20.10 覆盖 renderer 退出和白屏恢复。这里汇总功耗需要的字段：页面类型、provider 版本、驻留时长、CPU 时间、PSS/RSS、网络字节、桥调用、前后台切换和 renderer 退出原因。Renderer PID 适合在本地 Perfetto/`ps` 中关联；Android 公共 WebView API 不提供可用于线上记录的 renderer PID。
 
 ## 功耗基准测试方案
 

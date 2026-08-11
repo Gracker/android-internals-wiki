@@ -1,17 +1,17 @@
 ---
 title: "GAPS：Android 动态分析目标可达性路径重建"
-chapter: "7.14"
-section: "7.14"
+chapter: "14.26"
+section: "14.26"
 status: "finalized"
-applicable_versions: "论文实验环境：Android 13 x86-64 emulator；ARM 场景：Pixel 2 Android 11"
+applicable_versions: "论文动态实验：Android 16 x86-64 模拟器；ARM 场景：Pixel 2 / Android 11；Android 17 仅工程集成边界"
 tags: [dynamic-analysis, gui-testing, static-analysis, method-reachability, android-testing]
 related_chapters: ["7.3", "7.4", "13.1", "13.3"]
 created_by: "openclaw-task2a"
 created_date: "2026-04-10"
 gap_source: "研究素材"
 confidence: medium
-last_verified: "2026-04-21"
-last_verified_against: "arXiv 2511.23213 v2, ACM paper text, samudoria/GAPS README"
+last_verified: "2026-07-17"
+last_verified_against: "arXiv 2511.23213 v3 + 论文公开复现快照 README"
 sources:
   - type: repo
     path: "https://github.com/samudoria/GAPS"
@@ -51,7 +51,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-12
 ---
 
-# 7.14 GAPS：Android 动态分析目标可达性路径重建
+# 14.26 GAPS：Android 动态分析目标可达性路径重建
 
 ## 版本边界
 

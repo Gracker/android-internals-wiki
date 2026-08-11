@@ -47,7 +47,7 @@ sources:
   path: Android官方文档:Jetpack Compose Performance
 ---
 
-# Jetpack Compose 性能优化
+# 7.7 Jetpack Compose 性能优化
 
 Compose 性能问题不能只用“重组次数多”解释。一帧可能慢在 Composition、Layout、Drawing，也可能慢在 RenderThread、GPU、BufferQueue、SurfaceFlinger 或显示侧。有效的优化从慢帧证据出发，再把成本定位到对应阶段和代码。
 
