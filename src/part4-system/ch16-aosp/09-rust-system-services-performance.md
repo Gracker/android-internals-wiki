@@ -1,6 +1,7 @@
 ---
-title: "Rust 化系统服务性能边界与 FFI 开销分析"
-chapter: "16.10"
+title: "Android 17 平台 Rust 性能边界：Binder、CXX 与 Soong"
+chapter: "16.9"
+section: "16.9"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [rust, ffi, jni, system-services, keystore, bluetooth, dns-resolver, bionic, scudo, monomorphization]
@@ -8,7 +9,7 @@ related_chapters: ["1.4", "1.32", "3.8", "14.24", "20.16"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-28"
 drafted_date: "2026-06-30"
-last_verified: "2026-07-30"
+last_verified: "2026-08-11"
 last_verified_against: "AOSP android-17.0.0_r1 (Keystore2 / DnsResolver / UWB / Bluetooth / VirtualizationService / libbinder_rs / Soong Rust / android-crates-io); official Android Rust, AIDL backend, and Scudo documentation"
 confidence: high
 sources:
@@ -40,7 +41,7 @@ sources:
     path: "https://security.googleblog.com/2022/12/memory-safe-languages-in-android-13.html"
 ---
 
-# 16.10 Android 17 平台 Rust 性能边界：Binder、CXX 与 Soong
+# Android 17 平台 Rust 性能边界：Binder、CXX 与 Soong
 
 ## 结论
 

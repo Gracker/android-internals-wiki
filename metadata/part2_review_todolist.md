@@ -174,5 +174,20 @@
 
 > 原反馈回路与治理工程化两篇合并为 15.9；重复的研究方法论并入 15.1，并由 Perfetto、测试和 Power HAL 专章继续承载工具细节。完整映射见 `metadata/content-consolidation-audit.md`。
 
+## 第 16 章：AOSP 性能优化 (ch16-aosp)
+- [x] 16.1 AOSP 性能优化的分层方法 (`src/part4-system/ch16-aosp/01-google-optimization.md`)
+- [x] 16.2 各 Android 版本性能变更追踪 (`src/part4-system/ch16-aosp/02-version-changes.md`)
+- [x] 16.3 AOSP 源码编译与调试环境 (`src/part4-system/ch16-aosp/03-aosp-build.md`)
+- [x] 16.4 Android 17 Kernel 6.18 性能机制与验证 (`src/part4-system/ch16-aosp/04-android17-kernel618-performance.md`)
+- [x] 16.5 Android 17（API 37）性能行为变更与适配 (`src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md`)
+- [x] 16.6 Profile、DM 与 Secure Dex Metadata 安装编译 (`src/part4-system/ch16-aosp/06-profile-dm-sdm-install-compilation.md`)
+- [x] 16.7 Android 系统启动耗时优化与 bootanalyze (`src/part4-system/ch16-aosp/07-system-boot-time-optimization.md`)
+- [x] 16.8 AppFlow：GB 级应用冷启动内存联合调度 (`src/part4-system/ch16-aosp/08-appflow-large-app-cold-launch-memory-scheduling.md`)
+- [x] 16.9 Android 17 平台 Rust 性能边界 (`src/part4-system/ch16-aosp/09-rust-system-services-performance.md`)
+- [x] 16.10 Android 17 ARM64 内核安全缓解机制性能开销 (`src/part4-system/ch16-aosp/10-arm64-kernel-security-mitigation-performance.md`)
+- [x] 16.11 AOHP：将 Android 改造为 Agent 原生 OS (`src/part4-system/ch16-aosp/11-agent-native-os.md`)
+
+> 原 16.6 与 16.9 合并为 Profile/DM/SDM 安装编译主文；16.1 和 16.4 清除与版本适配主文重复的机制说明；通用参考页并入章节 README。完整映射见 `metadata/content-consolidation-audit.md`。
+
 # All Tasks Completed
 The comprehensive technical audit for Part 2 (Performance) has been finalized. 69 detailed review reports have been generated and archived in `logs/external-review/`. All Android 15/16/17 performance characteristics have been synchronized.

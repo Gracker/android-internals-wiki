@@ -1,7 +1,7 @@
 ---
-title: "Android 17 (API 37) 性能行为变更与适配方法"
-chapter: 16.5
-section: 16.5
+title: "Android 17（API 37）性能行为变更与适配方法"
+chapter: "16.5"
+section: "16.5"
 status: finalized
 drafted_date: 2026-04-08
 applicable_versions: "Android 17 (API 37)"
@@ -91,7 +91,7 @@ task6_review_notes: "2026-07-12 17H: Task6 revisiting review #2: pass-light-edit
 task6_promotion_notes: '2026-07-12 20H Task6 revisiting review #3 (post-task9-idle-audit): pass-light-edit。L1修复: "Soong链路"→"Soong构建流程"（禁用词1处）。L1其余禁用词扫描零命中。L2开头/节奏/结构/读者视角全通过。锚点5/5覆盖，扩展3/3覆盖。Task9 idle audit auto-fix后写作质量未受影响。无新增L3/L4回炉。AUTO-PROMOTED: task6=pass-light-edit, task9=auto-fixed(=pass), queue=completed。'
 ---
 
-# 16.5 Android 17 (API 37) 性能行为变更与适配方法
+# Android 17（API 37）性能行为变更与适配方法
 
 ## 阅读边界：四组变化不能混在一起
 

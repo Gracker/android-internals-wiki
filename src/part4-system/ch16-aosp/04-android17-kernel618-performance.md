@@ -1,5 +1,5 @@
 ---
-title: "Android 17 + Kernel 6.18 系统级性能优化"
+title: "Android 17 Kernel 6.18 性能机制与验证"
 section: "16.4"
 chapter: "16.4"
 status: finalized
@@ -60,12 +60,14 @@ last_idle_audit_at: "2026-07-27T10:35:11+08:00"
 last_idle_audit_run_id: "20260727-103511-idle-audit-5f410a75"
 last_idle_audit_result: pass-metadata-source-boundary-fix
 last_idle_audit_log: "logs/audit/2026-07-27-20260727-103511-idle-audit-5f410a75-idle-audit.md"
-last_verified: "2026-07-30"
+last_verified: "2026-08-11"
 confidence: high
+consolidated_from:
+  - "16.4 中重复的 ART generational CMC 与 DeliQueue 内容移至 16.5"
 task2b_verification_note: "2026-06-16 验证 android17-6.18 gki/aarch64/afdo/README.md 原文，正文 AutoFDO benchmark 数据准确。清除版本演进表的待确认标注，补充 Binder benchmark 多次运行最佳结果取值限定。"
 ---
 
-# 16.4 Android 17 + Kernel 6.18 系统级性能优化
+# Android 17 Kernel 6.18 性能机制与验证
 
 ## 为什么要把平台和内核分开
 
@@ -91,8 +93,6 @@ GKI（Generic Kernel Image）把通用内核与板级 vendor modules 分开，�
 | io_uring | 6.18 源码含完整实现 | 内核能力不等于 Android 公共 API，也不等于框架采用 |
 | AutoFDO | GKI 配置含 `CONFIG_AUTOFDO_CLANG=y`，tag 内含 `kernel.afdo` | README 数据是 Pixel 8 preliminary benchmark |
 | MGLRU | GKI 配置含 `CONFIG_LRU_GEN=y` 与 `CONFIG_LRU_GEN_ENABLED=y` | 页回收策略；不能直接换算为 lmkd kill 降幅 |
-| generational CMC | `android-17.0.0_r1` ART `mark_compact.cc` | Android runtime 行为，可经 ART module 更新覆盖旧平台设备 |
-| lock-free `MessageQueue` | `android-17.0.0_r1` CombinedMessageQueue 源码与 API 37 行为文档 | 对 targetSdk 37+ 应用生效，反射私有成员存在兼容风险 |
 
 设备测试记录至少应包含 platform build、kernel release、GKI tag 或 build ID、vendor boot、挂载参数、CPU 拓扑、温度、benchmark 输入和样本统计。缺少这些信息时，结果只适合做该设备的排查线索。
 
@@ -205,34 +205,7 @@ r6 README 给出的流程是：
 
 确认设备收益时，要先证明设备内核由对应 profile 构建。只看到源码目录中的 `kernel.afdo` 还不够；还需关联 GKI release artifact、build config 与设备运行的 kernel build ID。严格 A/B 应保持源码、配置、工具链和设备一致，只改变是否应用 profile。
 
-## ART 运行时优化
-
-ART 与 `MessageQueue` 是 Android 平台侧改动，不能用 Linux kernel 版本解释它们的启用条件。
-
-### Concurrent Mark-Compact + Generational GC
-
-`android-17.0.0_r1` 的 `runtime/gc/collector/mark_compact.cc` 包含 generational CMC。自上次 GC 后的分配属于 young generation；存活一次后进入 mid generation，再存活一次后晋升 old generation。young collection 扫描 young 与 mid 区域，并借助 card table 处理 old-to-young 引用，避免每轮都扫描完整 old generation。
-
-源码中的 `ShouldUseGenerationalGC()` 还受 ART flag 与 `persist.device_config.runtime_native_boot.use_generational_gc` 影响，属性默认值为 true。Android 17 发布说明只报告“更频繁、成本更低的 young-generation collections”和内部测试中的干扰、最大 RSS 改善，没有公开可通用于应用的百分比。
-
-应用评估应按 GC 类型分组记录 pause、concurrent phase CPU time、freed bytes、allocation rate 与峰值 RSS。一次 trace 中 full GC 变少不能单独证明页面卡顿已经改善，还要检查 GC 线程抢占、主线程 runnable delay 和帧 deadline。
-
-ART 是 Mainline module。官方说明该类 ART 改进也可通过 Google Play System Update 覆盖 Android 12 及以上的部分设备，因此“平台版本是 Android 17”和“设备已运行同一 ART 实现”也要分开记录。
-
-### DeliQueue lock-free MessageQueue
-
-DeliQueue 属于 Android 17 / API 37 行为。Android 17 behavior change 文档规定，targetSdk 37 及以上应用接收 lock-free `android.os.MessageQueue`；使用反射读取私有字段或方法的测试、SDK 与工具需要迁移。
-
-源码锚点是 `frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java`。`USE_NEW_MESSAGEQUEUE` compat change 与 `Flags.useConcurrentMessageQueueInApps()` 参与实现选择。官方设计说明把新结构描述为 producer 侧 Treiber stack 和 Looper 独占的 deadline-ordered queue；producer 通过 CAS 插入，Looper 负责排序、到期处理与 tombstone 清理。
-
-官方博客的数据来自内部 beta tester traces 和相同测试设备：
-
-- app 主线程 lock contention time 减少 15%；
-- app missed frames 减少 4%；
-- System UI 与 Launcher interaction missed frames 减少 7.7%；
-- startup 到 first frame drawn 的 P95 减少 9.1%。
-
-这些值只描述博客的测试集合。低并发队列、很短的队列或主要瓶颈位于消息执行阶段的应用，收益可能不同。测试代码应使用 Android 17 新增的 `TestLooperManager.peekWhen()` 与 `poll()`，停止依赖 `MessageQueue` 私有布局。
+ART generational CMC 与 DeliQueue 属于平台运行时和 Framework，不是 Kernel 6.18 能力。它们的 gate、源码和测试方法统一由 16.5 承载，本节只在 A/B 设计中把 ART/Framework build 视为必须固定的控制变量。
 
 ## MGLRU 与页面回收优化
 
@@ -275,12 +248,8 @@ Perfetto 展示运行结果，不会仅凭一条 track 告诉你“EEVDF、MGLRU
 | F2FS | `f2fs_sync_file_enter/exit`、checkpoint 事件、block request | 同步写与 checkpoint 分别耗时多久 |
 | dm-verity | block request、CPU sampling、`verity_*` 栈 | r6 当前 cold read 卡在 I/O 或 hashing 的比例 |
 | MGLRU | `mm_vmscan_*`、PSI、page fault、swap、lmkd 事件 | reclaim stall、refault 与 kill 如何变化 |
-| ART GC | ART GC slices、heap counters、线程调度 | young/full GC 的频率、时长与线程干扰 |
-| DeliQueue | monitor contention、FrameTimeline、startup、`mq` track events | 旧队列锁竞争与消息积压是否影响帧或启动 |
 
 `sched_switch` 只能反映谁获得 CPU，不能还原 `pick_eevdf()` 的全部候选和 virtual deadline。`sched_ext_dump` 用于错误或主动 dump，也不等同于每次 BPF 调度决定的流水记录。需要细看策略时，应为目标 BPF scheduler 添加自己的 trace events。
-
-Android 17 的 DeliQueue 博客给出 `mq` track-event category，可用于 `system_server` 的 MessageQueue tracing。应用侧旧队列竞争可查询 `android.monitor_contention` 模块中的 `short_blocked_method` 与主线程标记，再与 FrameTimeline 或 startup 区间关联。
 
 ### A/B 设计
 
@@ -299,7 +268,7 @@ Android 17 的 DeliQueue 博客给出 `mq` track-event category，可用于 `sys
 | Android 15 相关 GKI | `android15-6.6` | fair scheduler 已有 EEVDF 路径；AutoFDO 后续投放到该 LTS 分支 |
 | Android 16 相关 GKI | `android16-6.12` | sched_ext 进入 mainline 后可在该分支使用；早期 6.12 示例可能使用 `scx_bpf_dispatch*()` 命名 |
 | Android 17 当前内核 | `android17-6.18-2026-06_r6`，Linux 6.18.21 | 使用 `scx_bpf_dsq_insert*()`；GKI 配置开启 sched_ext、AutoFDO 与 MGLRU；tag 含 6.18.21 AFDO profile |
-| Android 17 平台 | `android-17.0.0_r1` / API 37 | generational CMC 位于 ART；lock-free `MessageQueue` 对 targetSdk 37+ 应用启用 |
+| Android 17 平台 | `android-17.0.0_r1` / API 37 | 只作为实验控制变量；平台运行时变化见 16.5 |
 
 F2FS checkpoint merge、MGLRU 与 io_uring 都有跨分支历史。dm-verity multi-buffer hashing 仍是 r6 之外的补丁证据，不能列入该 tag 的功能集合。
 
@@ -321,10 +290,6 @@ EEVDF 使用 lag、slice 与 virtual deadline，不读取 Android UI 语义。UI
 
 lmkd 仍按 Android 的压力与进程优先级策略决策。MGLRU 位于页面回收层，只能经 reclaim、PSI、refault 和可用内存间接影响 kill 条件。
 
-**“AFDO、DeliQueue 和 dm-verity 补丁的百分比可以相加。”**
-
-三组数字来自不同设备、benchmark、统计方式和执行层，其中 dm-verity 补丁还未进入 r6。相加没有统计意义，也无法预测某个应用。
-
 ## 参考资料
 
 - [Android 17 GKI 6.18 release builds：r6 tag 与 SHA](https://source.android.com/docs/core/architecture/kernel/gki-android17-6_18-release-builds)
@@ -343,9 +308,4 @@ lmkd 仍按 Android 的压力与进程优先级策略决策。MGLRU 位于页面
 - [MGLRU 内核文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/mm/multigen_lru.rst)
 - [r6 AutoFDO profile README](https://android.googlesource.com/kernel/common/+show/refs/tags/android17-6.18-2026-06_r6/gki/aarch64/afdo/README.md)
 - [Android Developers Blog：Kernel AutoFDO 投放与采集流程](https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html)
-- [Android 17 发布说明：generational CMC 与 DeliQueue](https://developer.android.com/blog/posts/android-17-is-here)
-- [Android 17 ART generational CMC 源码](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.cc)
-- [Android 17 lock-free MessageQueue 行为变更](https://developer.android.com/about/versions/17/behavior-changes-17)
-- [Android 17 CombinedMessageQueue 源码](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedMessageQueue/MessageQueue.java)
-- [Android Developers Blog：DeliQueue 设计、Perfetto 与测试数据](https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html)
 - [AOSP `external/liburing` Android 17 tag](https://android.googlesource.com/platform/external/liburing/+/refs/tags/android-17.0.0_r1)

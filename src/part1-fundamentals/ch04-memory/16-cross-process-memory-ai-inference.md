@@ -21,7 +21,7 @@ sources:
   - type: aosp
     path: "system/sepolicy/ — SELinux policy for isolated processes"
 tags: [ai-agent, memory, sandbox, data-reuse, isolation, ml-runtime, sharedmemory]
-related_chapters: ["4.3", "4.5", "4.13", "5.10", "5.11", "5.15", "16.12", "23.25"]
+related_chapters: ["4.3", "4.5", "4.13", "5.10", "5.11", "5.15", "16.11", "23.25"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-06"
 gap_source: "素材驱动/研究素材"
