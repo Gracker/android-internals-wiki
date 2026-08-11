@@ -1,7 +1,7 @@
 ---
 title: "Perfetto Profile 导入与 Flamegraph 分析"
-chapter: "13.12"
-section: "13.12"
+chapter: "13.11"
+section: "13.11"
 status: "finalized"
 pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)（Simpleperf 导入）；Android 15 (API 35) - Android 17 (API 37)（Perfetto linux.perf 采集，需 profileable/debuggable/userdebug）"
@@ -52,7 +52,7 @@ drafted_date: "2026-05-15"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-05-15"
 reviewed_by: "openclaw-task6"
-related_chapters: "[\"13.2\", \"13.3\", \"13.10\", \"14.2\", \"14.8\"]"
+related_chapters: "[\"13.2\", \"13.3\", \"13.9\", \"14.2\", \"14.8\"]"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "研究素材/官方发布说明"
@@ -84,7 +84,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-17
 ---
 
-# 13.12 Perfetto Profile 导入与 Flamegraph 分析
+# 13.11 Perfetto Profile 导入与 Flamegraph 分析
 
 平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。Perfetto v53、v54 带来的格式支持属于分析端能力，不能直接换算成设备 API 等级；设备侧 `linux.perf` 采集则有 Android 版本、系统构建类型和应用可分析性要求。读这类资料时，要把“文件能否被新版 Perfetto 打开”和“设备能否录到调用栈”分成两项检查。
 

@@ -1,10 +1,10 @@
 ---
-title: "Android 17 Perfetto v57 AI 技能与状态轨道"
-chapter: "13.27"
+title: "Perfetto v57 状态轨道与版本边界"
+chapter: "13.21"
 status: ready-for-review
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
-tags: ["Perfetto", "AI", "性能分析", "状态追踪", "调试工具"]
-related_chapters: ["13.1", "13.10", "13.21", "13.26"]
+tags: ["Perfetto", "TrackEvent", "状态追踪", "版本边界"]
+related_chapters: ["13.1", "13.9", "13.15", "13.16", "13.20"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-06"
 drafted_date: "2026-07-12"
@@ -18,88 +18,28 @@ sources:
     path: "protos/perfetto/trace/track_event/track_event.proto (v57.1 tag)"
   - type: aosp
     path: "protos/perfetto/trace/track_event/state_descriptor.proto (v57.1 tag)"
-  - type: official
-    path: "https://perfetto.dev/docs/getting-started/using-ai"
 ---
 
-# 13.27 Android 17 Perfetto v57 AI 技能与状态轨道
+# 13.21 Perfetto v57 状态轨道与版本边界
 
-> Android 平台版本、Perfetto 上游版本和 AI skill 版本各自升级，不能用“Android 17 支持 Perfetto v57”概括。平台基线固定为 Android 17 / API 37 / `android-17.0.0_r1`，上游工具基线固定为 Perfetto v57.1。
+> Android 平台版本、Perfetto SDK 与主机分析器各自升级，不能用“Android 17 支持 Perfetto v57”概括。平台基线固定为 Android 17 / API 37 / `android-17.0.0_r1`，上游工具基线固定为 Perfetto v57.1。
 
 ## 三条版本线
 
 `android-17.0.0_r1` 的 `external/perfetto/CHANGELOG` 顶部记录了一个尚未发布的 Android `aflags` 补丁，紧接着的完整上游版本是 **v54.0（2026-02-27）**。同一标签下的 `track_event.proto` 只定义到 `TYPE_COUNTER = 4`，没有 `TYPE_STATE`。
 
-Perfetto **v57.1** 于 2026 年 7 月 2 日发布。v57.0 因 AI skill 安装包缺少配套 `trace_processor` wrapper 而没有公开发布。状态轨道、AI skill、journald 采集等能力属于这条上游版本线。
-
-AI skill 安装在开发机的编码代理环境中。它调用随 skill 安装的 Trace Processor，不会升级设备中的 `/system/bin/perfetto`、`traced`、`traced_probes` 或 Android Framework API。
+Perfetto **v57.1** 于 2026 年 7 月 2 日发布。状态轨道、journald 采集和新版 Trace Processor/UI 属于上游工具版本线，不会自动升级设备中的 `/system/bin/perfetto`、`traced`、`traced_probes` 或 Android Framework API。
 
 | 对象 | 采用的版本 | 在哪里运行 | 能否直接提供 v57 状态轨道 |
 |---|---|---|---|
 | Android 平台 Perfetto | `android-17.0.0_r1`：v54.0 加平台补丁 | Android 17 设备 | 不能；平台 proto 没有 `TYPE_STATE` |
 | Perfetto v57.1 SDK / Trace Processor / UI | `v57.1` tag | 应用、测试工具或开发机 | C/C++ 生产与解析路径可用 |
-| Perfetto AI skill | `ai-agents` 安装源，随安装带 wrapper | Claude Code、Codex 等主机侧代理 | 能分析 v57.1 支持的表；不负责设备端生产事件 |
 
 这个拆分会影响方案选择：
 
-- 只想让代理分析 Android 17 trace：安装 AI skill 即可，设备端无需更换 Perfetto。
+- 只升级主机侧分析器：可以读取新版 schema 和标准库，但不会补出设备未录制的数据。
 - 想在 trace 中得到原生 `state` 表：生产端和分析端都要具备 v57 状态轨道能力。
 - 只能依赖 Android 17 系统内置组件：继续使用 slice、instant、counter 等 v54 能力，不要发出 `TYPE_STATE` 后假定平台工具可以解释。
-
-## AI skill：给代理一套可审计的 Trace Processor 用法
-
-### 它提供什么
-
-官方 skill 教代理完成四类工作：
-
-1. 调用 `trace_processor`；
-2. 编写 PerfettoSQL；
-3. 在 Android 上录制 trace；
-4. 按引导流程分析 Android 内存和 GPU 问题。
-
-每种安装方式都携带一个 `trace_processor` wrapper，因此无需再单独下载分析二进制。代理收到 trace 路径和问题后，会探测表结构、执行 SQL，再依据查询结果组织诊断。官方文档还提供 Android 内存和 GPU 的引导式分析；文档没有承诺固定数量的工作流，文章和自动化脚本不应写死“六个工作流”之类的数字。
-
-AI skill 缩短的是查询和解释时间。下面几类缺口仍需工程师处理：
-
-- 录制配置没有启用目标数据源，trace 中不会凭空出现数据；
-- 事件名称、线程归属或时钟域定义错误，代理无法替生产端修正语义；
-- 一条能执行的 SQL 不等于因果证据，调度竞争、锁等待、GPU 阻塞等结论仍要交叉验证；
-- skill、wrapper 和 SQL 标准库会更新，同一问题在未固定版本时可能得到不同查询计划或结果。
-
-### 安装
-
-下面的命令来自 v57.1 发布说明和当前官方 AI 使用文档，用于把 skill 安装到对应代理环境：
-
-```text
-# Claude Code
-/plugin marketplace add google/perfetto@ai-agents
-
-# Codex
-codex plugin marketplace add google/perfetto --ref ai-agents
-
-# 其他支持 Python 3 的代理或自定义目录
-curl -fsSL https://get.perfetto.dev/agents-install \
-  | python3 - --target <skill-directory>
-```
-
-前两种方式使用 Perfetto 的 `ai-agents` 安装源；兜底安装器也支持 `--agent <claude|codex|opencode|antigravity|pi>`。团队环境应额外记录安装源的 commit、wrapper 报告的 Trace Processor 版本和查询文件，避免只保存一段自然语言结论。
-
-### 一次可复查的分析应留下什么
-
-给代理的问题要包含 trace 路径、观察窗口、目标进程以及衡量标准。例如：
-
-> 分析 `startup.pftrace` 中 `com.example.app` 启动后前 2 秒。列出 CPU 时间最高的线程，给出所用 SQL、每一步结果行数和 Trace Processor 版本；没有证据时标为未知。
-
-交付物至少保留以下内容：
-
-- 原始 trace 的散列值；
-- 录制配置和设备 build fingerprint；
-- skill 安装源 commit 与 Trace Processor 版本；
-- 完整 SQL、查询结果和单位；
-- 结论对应的时间区间、进程、线程或轨道；
-- 反例检查，例如目标进程是否发生重启、trace 是否截断、数据源是否丢包。
-
-Trace 可能含进程名、日志、内存地址、URL 和业务标识。把文件交给远端模型前，应确认组织的数据处理规则；能够在本机执行的 SQL 尽量留在本机，只发送经过裁剪或聚合的结果。
 
 ## State track 的数据模型
 
@@ -256,10 +196,10 @@ ORDER BY total_ms DESC;
 这是改动最小的方案：
 
 1. Android 17 继续使用系统 Perfetto 录制 sched、ftrace、atrace、FrameTimeline、heap profile 等既有数据；
-2. 开发机安装 v57.1 AI skill 或固定版本的 Trace Processor；
+2. 开发机安装固定版本的 v57.1 或更高 Trace Processor；
 3. 代理读取 trace，执行 SQL 并输出证据。
 
-这个方案能获得 AI 辅助查询和新分析器修复，不能让旧生产端产生 `TYPE_STATE`。
+这个方案能获得新分析器的表结构、标准库和解析修复，不能让旧生产端产生 `TYPE_STATE`。
 
 ### 路径二：应用携带新版 SDK 生产 state track
 
@@ -299,23 +239,21 @@ Android 17 的 tracing service 通常只负责搬运 producer 写入的 trace pa
 
 ## 评审清单
 
-评审含 v57 state track 或 AI 分析的改动时，可逐项检查：
+评审含 v57 state track 的改动时，可逐项检查：
 
 - [ ] Android 平台锚点写成 Android 17 / API 37 / `android-17.0.0_r1`
 - [ ] 平台内置 Perfetto 标为 v54.0 加平台补丁，没有写成 v57
-- [ ] producer SDK、Trace Processor、UI 和 AI skill 各自记录版本或 commit
+- [ ] producer SDK、Trace Processor 和 UI 各自记录版本或 commit
 - [ ] state track 使用稳定轨道身份和有限状态集合
 - [ ] idle 通过清空表达，指标没有漏掉 idle 分母
 - [ ] SQL 使用 `state.value` 和 `state.dur`，没有重复用 `LEAD()` 推导时长
 - [ ] `dur = -1` 按 trace 边界处理，并注明只是观测窗口
 - [ ] Java 示例已经由项目采用的 artifact 编译验证
-- [ ] AI 结论附 SQL、单位、结果行数和 trace 散列
 - [ ] trace 上传、公开 URL 和模型访问符合数据处理规则
 
 ## 源码与官方资料
 
 - [Perfetto v57.1 release notes](https://github.com/google/perfetto/releases/tag/v57.1)
-- [Using AI with Perfetto](https://perfetto.dev/docs/getting-started/using-ai)
 - [Android 17 标签下的 Perfetto CHANGELOG](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/CHANGELOG)
 - [Android 17 标签下的 TrackEvent proto](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/trace/track_event/track_event.proto)
 - [v57.1 TrackEvent proto](https://github.com/google/perfetto/blob/v57.1/protos/perfetto/trace/track_event/track_event.proto)

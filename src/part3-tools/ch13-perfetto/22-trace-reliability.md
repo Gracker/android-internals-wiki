@@ -1,10 +1,10 @@
 ---
-title: "Perfetto v54 Data Explorer 深度分析"
-chapter: "13.23"
+title: "Trace 采集可靠性与可复现诊断"
+chapter: "13.22"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: ["Perfetto", "Data Explorer", "v54", "性能分析", "数据可视化", "Trace Processor"]
-related_chapters: ["13.20", "13.21"]
+related_chapters: ["13.2", "13.4", "13.13", "13.15"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-02"
 gap_source: "素材驱动"
@@ -22,9 +22,9 @@ sources:
   - type: aosp
     path: "external/perfetto/ (android-17.0.0_r1)"
 ---
-# 13.23 Perfetto v54：从采集可靠性到可复现诊断
+# 13.22 Trace 采集可靠性与可复现诊断
 
-> 平台基线是 Android 17 / API 37 / `android-17.0.0_r1`，工具基线是该平台 `external/perfetto` 中包含的 Perfetto v54.0。界面操作与 SQL 节点图见 [13.21 Perfetto v54 Data Explorer 与性能分析](./13.21-perfetto-v54-data-explorer-analysis.md)，CUJ 指标源码见 [13.20 Perfetto v54 Data Explorer 与 Jank CUJ](./13.20-Perfetto-v54-Data-Explorer-与-Jank-CUJ.md)。
+> 平台基线是 Android 17 / API 37 / `android-17.0.0_r1`，工具基线是该平台 `external/perfetto` 中包含的 Perfetto v54.0。界面操作、SQL 节点图与 CUJ 指标口径见 [13.13 DataGrid、Data Explorer 与 Jank CUJ](13-perfetto-data-explorer-jank-cuj.md)。
 
 ---
 

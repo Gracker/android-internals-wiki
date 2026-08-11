@@ -1,6 +1,6 @@
 ---
-title: 13.10 Perfetto SQL 性能分析实战手册
-chapter: '13.10'
+title: 13.9 Perfetto SQL 性能分析实战手册
+chapter: '13.9'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
@@ -52,7 +52,7 @@ last_idle_audit_at: 2026-07-31T18:35:16+08:00
 last_idle_audit_run_id: 20260731-183516-idle-audit-68cd3ad3
 ---
 
-# 13.10 Perfetto SQL 性能分析实战手册
+# 13.9 Perfetto SQL 性能分析实战手册
 
 Perfetto UI 适合寻找可疑时间段，SQL 适合回答能复查的定量问题：某一帧错过了多少时间预算，主线程在分析窗口内运行了多久，Binder 客户端时间由哪些调度状态组成，一次 GC 的墙上时间中有多少时间在等待 CPU。查询结果只说明 Trace 中已经采集到的事件。缺少 FrameTimeline、调度、Binder 或 ART 事件时，空表不能证明系统没有发生对应行为。
 
@@ -1058,6 +1058,131 @@ ORDER BY overrun.overrun DESC, frames.ts;
 
 状态总量接近 `do_frame_ms`，说明调度事件覆盖较完整；差值较大时应检查 Trace 是否从区间中途开始、是否有数据丢失，或 UI 线程标识是否正确。锁时间属于睡眠时间中的一个具体原因，不应再与各状态相加作为“总耗时”。
 
+## I/O：把线程等待与块设备活动分开
+
+块设备事件描述请求何时进入和离开设备队列，文件系统事件描述更高层的读写、同步和页操作。线程进入 `D` 状态，不能单独证明它在等待存储；块设备繁忙，也不能单独证明请求来自目标进程。
+
+录制前先检查目标设备公开的文件系统和块事件：
+
+```bash
+adb shell 'cat /sys/kernel/tracing/available_events' \
+  | grep -E '^(block|f2fs|ext4|erofs):'
+```
+
+设备输出决定 `ftrace_events` 能配置哪些事件。采集结束后还要检查 `stats` 中的 `unknown_ftrace_events` 与 `failed_ftrace_events`，避免把未启用的数据源误读成“没有 I/O”。
+
+Android 17 的 `linux.block_io` 模块可以按设备查看仍在队列或设备中的活动请求：
+
+```sql
+INCLUDE PERFETTO MODULE linux.block_io;
+
+SELECT
+  ts,
+  linux_device_major_id(dev) AS major_id,
+  linux_device_minor_id(dev) AS minor_id,
+  ops_in_queue_or_device
+FROM linux_active_block_io_operations_by_device
+WHERE ops_in_queue_or_device > 0
+ORDER BY ts;
+```
+
+这张表回答“哪台块设备在何时有多少请求”，不包含应用进程和文件路径。应用归因至少还需要以下证据中的两类：
+
+- 目标线程的文件、SQLite、资源加载或自定义 Trace slice 与设备活动重叠；
+- 同一区间的 `thread_state` 为 `D`，并且 `sched_blocked_reason` 或内核调用栈指向块层、文件系统或页故障路径；
+- 文件系统事件携带的 inode、设备或操作类型与块设备请求相符；
+- 停止目标操作或切换到对照场景后，线程等待和设备压力同步变化。
+
+`SharedPreferences.commit()` 会同步等待结果；`apply()` 虽先更新内存并安排磁盘写入，但 `QueuedWork` 仍可能在组件停止时等待后台任务。SQLite 事务、`fsync`、首次资源页故障和系统回写也要按各自事件验证。全量 `raw_syscalls/sys_enter` / `sys_exit` 事件率很高，只应在短窗口、足够 buffer 和明确复现场景下启用。
+
+## 功耗：联合频率、空闲、Suspend 与唤醒锁
+
+CPU 频率高只表示策略选择了较高频点，不能单独推出 CPU 正在持续执行大量工作。调度负载、Governor、Boost、热限制、CPU 容量和任务所在集群都会影响频率。功耗分析至少要联合 CPU 运行时间、频率、空闲状态、Suspend 和唤醒锁。
+
+下面的配置片段采集频率、空闲、系统休眠和内核唤醒锁；buffer 与时长仍需按目标设备的数据率调整：
+
+```protobuf
+data_sources {
+  config {
+    name: "linux.ftrace"
+    ftrace_config {
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "power/cpu_frequency"
+      ftrace_events: "power/cpu_idle"
+      ftrace_events: "power/suspend_resume"
+      ftrace_events: "power/wakeup_source_activate"
+      ftrace_events: "power/wakeup_source_deactivate"
+    }
+  }
+}
+
+data_sources {
+  config {
+    name: "android.kernel_wakelocks"
+    kernel_wakelocks_config { poll_ms: 1000 }
+  }
+}
+```
+
+部分设备不会公开完整的 suspend、wakeup source 或 idle 事件。USB 调试连接本身也可能阻止设备进入完整系统休眠，测试记录必须注明供电与连接方式。
+
+下面的查询把系统休眠区间与唤醒锁累计持有时间放进同一结果集：
+
+```sql
+INCLUDE PERFETTO MODULE android.suspend;
+INCLUDE PERFETTO MODULE android.kernel_wakelocks;
+
+WITH power_summary AS (
+  SELECT
+    'suspend_state' AS category,
+    power_state AS item,
+    SUM(dur) AS total_dur
+  FROM android_suspend_state
+  GROUP BY power_state
+
+  UNION ALL
+
+  SELECT
+    'wakelock' AS category,
+    name AS item,
+    SUM(held_dur) AS total_dur
+  FROM android_kernel_wakelocks
+  GROUP BY name
+)
+SELECT
+  category,
+  item,
+  ROUND(total_dur / 1e9, 3) AS total_s
+FROM power_summary
+ORDER BY category, total_dur DESC;
+```
+
+`android_suspend_state` 将 trace 时间补成 `awake` 与 `suspended` 区间。`android_kernel_wakelocks.held_dur` 是相邻采样点之间的累计持有时间增量。唤醒锁持有与耗电相关，但仍需找到持有者和同一区间中的实际工作。
+
+CPU 频率应按区间做时间加权，而不是对离散采样点直接求平均：
+
+```sql
+INCLUDE PERFETTO MODULE linux.cpu.frequency;
+
+SELECT
+  cpu,
+  ROUND(SUM(freq * dur) / SUM(dur) / 1000.0, 1) AS weighted_avg_mhz,
+  ROUND(MAX(freq) / 1000.0, 1) AS max_mhz,
+  ROUND(SUM(dur) / 1e9, 3) AS covered_s
+FROM cpu_frequency_counters
+WHERE freq IS NOT NULL AND dur > 0
+GROUP BY cpu
+ORDER BY cpu;
+```
+
+`freq` 的单位是 kHz。加权平均频率适合比较相同设备和场景中的策略结果，不是能量估算：CPU 可能高频空闲，也可能低频持续运行。还要关联 `cpu_idle_counters`、`sched`、功率轨和电池电流。系统无法 Suspend 时，再按时间顺序检查显示状态、用户空间/内核唤醒锁、活跃定时器和 `android.wakeups` 给出的唤醒或休眠失败原因。
+
+## 跨进程证据使用稳定身份
+
+启动、Binder 和显示都跨进程。启动使用 `startup_id` 与 `android_startup_processes.upid`；Binder 使用 `binder_txn_id` / `binder_reply_id`；帧使用 `surface_frame_token`、`display_frame_token` 与 flow；调度使用 `utid` / `upid`。PID、TID、进程名和线程名只用于筛选与展示，不能承担唯一身份。
+
+跨进程区间应来自同一录制会话。合并不同设备或不同会话的 trace 时，必须有可验证的时钟快照和同步事件；仅按文件起点平移，不能支撑毫秒级因果判断。
+
 ## 从 SQL 结果回到证据链
 
 SQL 排名适合缩小范围，性能结论仍要经过时间、线程、事件和源码四项核对：
@@ -1087,4 +1212,7 @@ SQL 排名适合缩小范围，性能结论仍要经过时间、线程、事件�
 - [Android 17 `android.startup.time_to_display` 标准库源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/startup/time_to_display.sql)
 - [Android 17 `android.anrs` 标准库源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/anrs.sql)
 - [Android 17 `android.monitor_contention` 标准库源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/monitor_contention.sql)
+- [Android 17 `linux.block_io` 标准库源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/block_io.sql)
+- [Android 17 `android.suspend` 标准库源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/suspend.sql)
+- [Android 17 `android.kernel_wakelocks` 标准库源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/kernel_wakelocks.sql)
 - [Android 17 kernel 6.18 `sched` tracepoint 定义](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h)

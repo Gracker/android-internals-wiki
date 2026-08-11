@@ -1,10 +1,10 @@
 ---
 title: "Frame Timeline API 33 Perfetto 深度分析：Expected vs Actual Timeline"
-chapter: "13.20"
+chapter: "13.19"
 status: ready-for-review
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 tags: [Perfetto, FrameTimeline, Jank, Choreographer, 渲染性能分析]
-related_chapters: ["2.4", "2.32", "13.5", "13.8", "13.14", "13.19"]
+related_chapters: ["2.4", "2.32", "13.7", "13.9", "13.13", "13.18"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 drafted_date: "2026-07-16"
@@ -28,13 +28,13 @@ sources:
     path: "intake/research-feeds/2026-04-10-07-frame-timeline-perfetto-visualization-choreographer-api33.md"
 ---
 
-# 13.20 Frame Timeline API 33 Perfetto 深度分析：Expected vs Actual Timeline
+# 13.19 Frame Timeline API 33 Perfetto 深度分析：Expected vs Actual Timeline
 
 FrameTimeline 把调度预测、应用出帧、SurfaceFlinger 合成和显示提交放到同一组帧身份上，适合回答三个问题：哪一帧偏离了预测、偏差发生在应用侧还是显示合成侧、下一步应查看哪条线程或 buffer 路径。
 
 平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`。FrameTimeline trace 数据源从 Android 12 / API 31 起可用；标题中的 API 33 指 `Choreographer.VsyncCallback`、`FrameData` 与 `FrameTimeline` 公共 API 的引入版本。涉及 dma-buf、sync_file 或 dma-fence 时，内核锚点固定为 `android17-6.18-2026-06_r6`。SQL 按 Perfetto v57.2 的内置表验证。
 
-FrameTimeline 的内部对象与分类流程见 §2.32，buffer 阶段事件见 §13.19，CUJ 聚合见 §13.14。这里集中处理 Expected/Actual 语义、API 33 回调、采集配置和可执行 SQL。
+FrameTimeline 的内部对象与分类流程见 §2.32，buffer 阶段事件见 §13.18，CUJ 聚合见 §13.13。这里集中处理 Expected/Actual 语义、API 33 回调、采集配置和可执行 SQL。
 
 ## 两类帧
 
@@ -184,7 +184,7 @@ data_sources {
 }
 ```
 
-这段内容不能单独作为采集配置运行。采集时长和 buffer 容量应根据复现窗口、设备内存与实际数据速率设定，不存在适用于所有场景的固定数值。`android.surfaceflinger.frame` 为可选的 buffer 阶段数据源，见 §13.19。定位单个应用时应把 `atrace_apps` 换成目标包名；全局 `*` 会增加 ftrace 体积。生产问题还需按假设加入 GPU counter、binder、memory 或 power 数据，避免无关数据挤占环形缓冲区。
+这段内容不能单独作为采集配置运行。采集时长和 buffer 容量应根据复现窗口、设备内存与实际数据速率设定，不存在适用于所有场景的固定数值。`android.surfaceflinger.frame` 为可选的 buffer 阶段数据源，见 §13.18。定位单个应用时应把 `atrace_apps` 换成目标包名；全局 `*` 会增加 ftrace 体积。生产问题还需按假设加入 GPU counter、binder、memory 或 power 数据，避免无关数据挤占环形缓冲区。
 
 下面的命令使用文本配置采集并拉回 trace。
 
@@ -395,4 +395,4 @@ FrameTimeline trace 的最低平台是 Android 12，API 33 只限定应用代码
 - [Perfetto FrameTimeline 官方文档](https://perfetto.dev/docs/data-sources/frametimeline)
 - [Perfetto v57.2 FrameTimeline importer](https://github.com/google/perfetto/blob/v57.2/src/trace_processor/importers/proto/frame_timeline_event_parser.cc)
 - [Perfetto v57.2 `android.frames.timeline` 标准库](https://github.com/google/perfetto/blob/v57.2/src/trace_processor/perfetto_sql/stdlib/android/frames/timeline.sql)
-- §13.19 FrameTracer：buffer event、fence 与 frame identity 的边界
+- §13.18 FrameTracer：buffer event、fence 与 frame identity 的边界

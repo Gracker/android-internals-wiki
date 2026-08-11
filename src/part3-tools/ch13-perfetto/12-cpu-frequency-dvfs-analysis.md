@@ -1,7 +1,7 @@
 ---
 title: "Perfetto CPU 频率与 DVFS 关联分析"
-chapter: "13.13"
-section: "13.13"
+chapter: "13.12"
+section: "13.12"
 status: finalized
 drafted_date: "2026-05-16"
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
@@ -14,7 +14,7 @@ rework_result: "ready-for-review"
 rework_notes: "2026-08-07 rework：复核 pending-verification-marker/thin-source-marking；补齐 frontmatter 精确源码锚点，正文增加证据边界说明，去除未使用的 DeepResearch material 路由；章节回流 ready-for-review 等待 Task6/Task9 复审。"
 confidence: medium-high
 tags: [perfetto, cpu-frequency, dvfs, power, scheduling]
-related_chapters: ["5.2", "5.4", "11.1", "13.6"]
+related_chapters: ["5.2", "5.4", "11.1", "13.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "素材驱动/官方文档/AOSP 结构"
@@ -74,7 +74,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-13
 ---
 
-# 13.13 Perfetto CPU 频率与 DVFS 关联分析
+# 13.12 Perfetto CPU 频率与 DVFS 关联分析
 
 平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点是 `android17-6.18-2026-06_r6`。Perfetto 的 CPU Frequency 轨道记录软件可见的频率状态，线程轨道记录调度状态。两者落在同一时间窗，才能回答“线程 Running 时，所在 CPU 报告了什么频率”。
 

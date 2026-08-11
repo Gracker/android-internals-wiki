@@ -1,6 +1,6 @@
 ---
 title: "FrameTracer 与 Graphics Frame Event 数据通路"
-chapter: "13.19"
+chapter: "13.18"
 status: ready-for-review
 drafted_date: "2026-06-27"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -17,13 +17,13 @@ sources:
   - type: research
     path: "DeepResearch/2026-06-26-android17-frametracer-graphics-frame-event.md"
 tags: [perfetto, frametracer, graphics, buffer-lifecycle, surfaceflinger, gpu]
-related_chapters: ["13.5", "13.14", "13.15", "13.17", "2.6", "18.2"]
+related_chapters: ["13.9", "13.13", "13.14", "13.19", "2.6", "18.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-27"
 gap_source: "研究素材"
 ---
 
-# 13.19 FrameTracer 与 Graphics Frame Event 数据通路
+# 13.18 FrameTracer 与 Graphics Frame Event 数据通路
 
 FrameTimeline 可以判断某个 SurfaceFrame 或 DisplayFrame 是否按预测时间完成，FrameTracer 则提供 buffer 从 Producer 持有、提交、可读、latch 到 present 的观测点。两套数据经常出现在同一条 trace 中，却使用不同的身份与时间语义。混用 `frame_number`、FrameTimeline token 和三类 fence，会让一段可执行查询变成错误归因。
 

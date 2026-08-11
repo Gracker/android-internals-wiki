@@ -5,7 +5,7 @@ section: "9.7"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [anr, ftrace, kernel-trace, atrace, perfetto, diagnosis, system-events]
-related_chapters: ["9.3", "9.5", "13.9", "26.4"]
+related_chapters: ["9.3", "9.5", "13.8", "26.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-04"
 drafted_date: "2026-06-05"
@@ -689,5 +689,5 @@ BPF 程序仍会在事件路径上执行，事件频率、map 操作、栈采样
 - [Android Common Kernel android17-6.18-2026-06_r6：block trace events](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/block.h)
 - [§9.3 ANR 分析方法](03-anr-analysis.md)
 - [§9.5 ANR 案例集](05-case-studies.md)
-- [§13.9 ftrace / atrace / trace_marker](../../part3-tools/ch13-perfetto/09-tracing-infrastructure.md)
+- [§13.8 ftrace / atrace / trace_marker](../../part3-tools/ch13-perfetto/08-tracing-infrastructure.md)
 - [§26.4 ANR 监控体系](../../part5-app/ch26-observability/04-anr-monitoring.md)

@@ -30,7 +30,7 @@ tags:
 - hal3
 related_chapters:
 - '2.13'
-- '13.5'
+- '13.9'
 - '11.2'
 - '4.3'
 task6_result: "pass-light-edit"
@@ -499,7 +499,7 @@ kernel 锚点 `android17-6.18-2026-06_r6` 可用于解释 dma-buf、sync_file、
 - [2.13 图形缓冲区管理](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)：BufferQueue、GraphicBuffer 与 fence 基础；
 - [4.3 ART 内存管理](../../part1-fundamentals/ch04-memory/03-art-memory.md)：Java 可达性、native allocation 与 GC；
 - [11.2 App 耗电优化](../../part2-performance/ch11-power/02-app-power-optimization.md)：功耗实验与归因；
-- [13.5 Perfetto 专题解读](../ch13-perfetto/05-topic-analysis.md)：Track、slice、counter 和 SQL；
+- [13.9 Perfetto SQL 性能分析实战手册](../ch13-perfetto/09-perfetto-sql-cookbook.md)：Track、slice、counter 和 SQL；
 - [18.14 Camera 渲染管线](../../part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md)：多流、ZSL、timestamp base、secure path 与显示拓扑；
 - [18.6 SurfaceView](../../part2-performance/ch18-rendering-pipelines/06-surfaceview.md) 与 [18.7 TextureView](../../part2-performance/ch18-rendering-pipelines/07-textureview.md)：两种 preview carrier 的显示路径。
 

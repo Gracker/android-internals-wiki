@@ -24,9 +24,28 @@
 | ch10 内存性能 | 10 | 7 | 已完成 | 2026-08-11 |
 | ch11 功耗 | 8 | 7 | 已完成 | 2026-08-11 |
 | ch12 网络性能 | 8 | 3 | 已完成 | 2026-08-11 |
-| 其余 16 章 | 451 | 待审阅 | 未开始 | - |
+| ch13 Perfetto | 27 | 22 | 已完成 | 2026-08-11 |
+| 其余 15 章 | 424 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 551 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 546 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch13 Perfetto
+
+保留后的连续编号为 13.1～13.22，依次覆盖简介、采集、UI、大文件、线程状态、指标自动化、输入延迟、Tracing 基础设施、SQL 手册、区间关联、Profile、DVFS、Data Explorer/CUJ、BufferQueue、Agent 协议、应用内 SDK、SmartPerfetto、FrameTracer、FrameTimeline、`android.os.Trace`、v57 state track 与采集可靠性。
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `05-topic-analysis.md` | 删除第二套启动、帧、Binder 与内存分析导读；独有的块 I/O、Suspend、WakeLock、频率驻留和跨进程身份查询并入 SQL 手册 | `../src/part3-tools/ch13-perfetto/09-perfetto-sql-cookbook.md`（13.9） |
+| `13.21-perfetto-version-evolution.md` | 删除把版本时间线、heapprofd、FrameTimeline 与 Systrace 混在一起的重复概览；平台/分析端版本轴、服务演进与数据源可用性由简介统一承载 | `../src/part3-tools/ch13-perfetto/01-perfetto-intro.md`（13.1） |
+| `13.25-perfdog-android-platform-gpu-performance-data-sources.md` | 删除对闭源 PerfDog 内部采集实现的推测；可验证的 GPU/BufferQueue/FrameTimeline 证据继续由图形帧专题和其他工具章承载 | 13.14、13.18、13.19；ch14 后续单独审阅 |
+| `17-android17-data-sources.md` | 删除重复的数据源综述；`linux.perf`、FrameTracer、FrameTimeline 的配置、权限、解析与 SQL 分别由三个专项承载 | `11-perfetto-profiles-flamegraph.md`、`18-frametracer-graphics-frame-event.md`、`19-frame-timeline-api33-perfetto-analysis.md` |
+| `21-perfetto-pprof-simpleperf-native-visualization.md` | 删除第二套 pprof/Simpleperf/Linux perf 说明；格式边界、采集、符号化、火焰图和同轴分析由 Profile 主文统一承载 | `../src/part3-tools/ch13-perfetto/11-perfetto-profiles-flamegraph.md`（13.11） |
+| 原 13.27 的 AI skill 教程 | 与 Agent 调查协议重复，删除安装与交付清单；保留 v57 state track 的生产、查询和 Android 17 版本边界 | 13.15、13.21 |
+| 原 13.6～13.20、13.23、13.26～13.27 | 保留主题边界，统一文件名、frontmatter 与 H1 为连续 13.5～13.22 | `05-thread-cpu-states.md`～`22-trace-reliability.md` |
+
+章节 README、`src/SUMMARY.md`、changelog 映射、活动跨章链接、审阅清单和统计口径已经切换到连续编号。历史 changelog、review 日志、关闭 finding 和受保护素材索引保留旧路径。
 
 ## ch12 网络性能
 

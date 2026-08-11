@@ -43,7 +43,7 @@ sources:
   - type: chapter
     path: "part2-performance/ch08-responsiveness/02-app-launch.md (App launch stages, see 8.2)"
   - type: chapter
-    path: "part3-tools/ch13-perfetto/08-input-latency-sql.md (Perfetto SQL input latency deep dive)"
+    path: "part3-tools/ch13-perfetto/07-input-latency-sql.md (Perfetto SQL input latency deep dive)"
 tags: [Binder, Trace, 冷启动, IPC, 性能分析, Perfetto, oneway, freezer, threadpool]
 related_chapters: ["1.4", "1.18", "1.38", "2.4", "8.2", "9.1"]
 created_by: "task2a-knowledge-gap"
@@ -650,7 +650,7 @@ Android 17 锚点包含两类相关能力：
 - [**1.18 Binder Freezer**](../../part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md)：cached process 冻结与事务边界。
 - [**1.38 Binder 线程池饥饿**](../../part1-fundamentals/ch01-architecture/38-binder-thread-pool-starvation-performance.md)：线程池容量、嵌套调用与系统级排查。
 - [**8.2 应用启动**](02-app-launch.md)：冷、温、热启动阶段和启动指标。
-- [**13.10 Perfetto SQL 手册**](../../part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md)：通用 SQL、时间窗口和表关联。
+- [**13.9 Perfetto SQL 手册**](../../part3-tools/ch13-perfetto/09-perfetto-sql-cookbook.md)：通用 SQL、时间窗口和表关联。
 
 ## 检查清单
 

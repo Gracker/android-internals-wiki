@@ -1,8 +1,8 @@
 ---
 
 title: "BufferQueue 阻塞的 Perfetto 识别"
-chapter: "13.15"
-section: "13.15"
+chapter: "13.14"
+section: "13.14"
 status: finalized
 drafted_date: "2026-05-17"
 drafted_by: "openclaw-task2a"
@@ -92,7 +92,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-16
 ---
 
-# 13.15 BufferQueue 阻塞的 Perfetto 识别
+# 13.14 BufferQueue 阻塞的 Perfetto 识别
 
 平台源码锚点是 Android 17 / API 37、`android-17.0.0_r1`；涉及调度状态与 fence 内核语义时，锚点是 `android17-6.18-2026-06_r6`。Android 12—16 只用于解释版本演进。
 

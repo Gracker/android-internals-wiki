@@ -126,7 +126,7 @@ last_deepseek_cn_review_at: 2026-06-19
 ---
 
 
-# Perfetto View 解读
+# 13.3 Perfetto View 解读
 
 ## 读图顺序比轨道数量更重要
 
@@ -178,7 +178,7 @@ Area Selection 不只有起止时间，还包含所选轨道。修改轨道外�
 
 分析一帧时，常用组合是 App 主线程、RenderThread、FrameTimeline、`surfaceflinger` 主线程和相关 CPU。分析同步 Binder 时，把客户端线程与服务端 Binder 线程一起 Pin。Pin 只改变显示位置，不改变数据或时间对齐。
 
-Omnibox 输入 `:` 可以进入 SQL 模式。查询结果包含 `ts` 与 `dur` 时，可以生成 Debug Slice Track；包含 `ts` 与 `value` 时，可以生成 Debug Counter Track。复杂查询留到 §13.5，这里只把它当作“把筛选结果放回时间轴”的入口。
+Omnibox 输入 `:` 可以进入 SQL 模式。查询结果包含 `ts` 与 `dur` 时，可以生成 Debug Slice Track；包含 `ts` 与 `value` 时，可以生成 Debug Counter Track。复杂查询留到 §13.9，这里只把它当作“把筛选结果放回时间轴”的入口。
 
 ## 轨道描述的是哪一层
 
@@ -299,13 +299,13 @@ Binder 分析依赖相应的驱动 tracepoint 和 Trace Processor 解析。同�
 3. 服务端 Slice 内是 Running、锁等待、D 状态还是再次发起 Binder。
 4. reply 何时返回，客户端从唤醒到 Running 又等了多久。
 
-Android 17 的 `stdlib/android/binder.sql` 会把 Binder transaction 与 reply、线程和进程关联起来。UI 跳转适合看单个案例，批量统计应使用该标准库或 §13.5 的查询模板。
+Android 17 的 `stdlib/android/binder.sql` 会把 Binder transaction 与 reply、线程和进程关联起来。UI 跳转适合看单个案例，批量统计应使用该标准库或 §13.9 的查询模板。
 
 ### FrameTimeline Flow
 
 选中 App 的 Actual Timeline Slice 时，Perfetto 可以通过 surface frame token 关联对应的 SurfaceFlinger display frame；选中 display frame 时，也可以显示这次合成包含的多个应用 frame。这个 Flow 表达帧的消费关系，比仅按时间重叠匹配可靠。
 
-Flow 不等于 BufferQueue frame number，也不替代 acquire、present 和 release fence。SurfaceView 等独立 Surface 路径还受 FrameTimeline 覆盖范围限制，具体边界见 §13.20 和 §15。
+Flow 不等于 BufferQueue frame number，也不替代 acquire、present 和 release fence。SurfaceView 等独立 Surface 路径还受 FrameTimeline 覆盖范围限制，具体边界见 §13.19 和 §15。
 
 ## FrameTimeline：从异常帧进入
 

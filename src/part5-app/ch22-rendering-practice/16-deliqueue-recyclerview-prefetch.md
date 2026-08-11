@@ -9,7 +9,7 @@ last_verified: "2026-05-24"
 last_verified_against: "Android Developers MessageQueue behavior change page + Android Developers Blog 2026-02-17 + AndroidX RecyclerView API docs"
 confidence: medium
 tags: [recyclerview, deliqueue, messagequeue, android17, jank, rendering]
-related_chapters: ["1.13", "7.8", "13.14", "19.11", "22.2"]
+related_chapters: ["1.13", "7.8", "13.13", "19.11", "22.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-24"
 gap_source: "研究素材/官方文档/章节深挖/Clippings结构参考"
@@ -157,7 +157,7 @@ ORDER BY SUM(dur) DESC;
 4. 对齐 App `SurfaceFrame` 与 SurfaceFlinger `DisplayFrame`。`jank_type` 描述超期原因，`present_type` 描述显示时序；App 超期与目标 layer 未按期 present 需要分别验证。
 5. 用 JankStats state 或自定义 trace 标记页面、列表类型、数据规模、图片来源、Diff 批次和滚动动作。
 
-FrameTimeline 与 CUJ 的字段用法见 [13.14 Perfetto DataGrid 与 Jank CUJ](../../part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md)，JankStats 场景标记见 [19.11 JankStats](../../part3-tools/ch19-apm/11-jankstats.md)。第三方应用不会自动获得完整的系统 CUJ 业务名称，需要自己维护 state。
+FrameTimeline 与 CUJ 的字段用法见 [13.13 Perfetto DataGrid 与 Jank CUJ](../../part3-tools/ch13-perfetto/13-perfetto-data-explorer-jank-cuj.md)，JankStats 场景标记见 [19.11 JankStats](../../part3-tools/ch19-apm/11-jankstats.md)。第三方应用不会自动获得完整的系统 CUJ 业务名称，需要自己维护 state。
 
 官方博客还提供 `track_event` 的 `mq` category，用于观察 `system_server` 的 MessageQueue tracing。普通应用应以 monitor contention、Looper/RecyclerView slice、scheduler、FrameTimeline 与自定义 trace 为主，不能把 system_server 专用配置当作应用 SDK。
 
@@ -259,7 +259,7 @@ target 37 的完整回归还应覆盖：
 - [1.13 MessageQueue 与 DeliQueue](../../part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md)：Treiber stack、双堆、同步屏障、tombstone、Message 回收与 compat 选择。
 - [7.8 RecyclerView 性能](../../part2-performance/ch07-smoothness/08-recyclerview-performance.md)：RecyclerView 1.4.0 的 GapWorker、缓存、DiffUtil、payload 与 trace。
 - [22.2 RecyclerView 实战](02-recyclerview-practice.md)：业务页面中的 ViewHolder 复用、列表更新、图片和 ARR。
-- [13.14 Perfetto DataGrid 与 Jank CUJ](../../part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md)：FrameTimeline、jank 类型和 CUJ 查询。
+- [13.13 Perfetto DataGrid 与 Jank CUJ](../../part3-tools/ch13-perfetto/13-perfetto-data-explorer-jank-cuj.md)：FrameTimeline、jank 类型和 CUJ 查询。
 - [19.11 JankStats](../../part3-tools/ch19-apm/11-jankstats.md)：应用侧帧状态与线上分桶。
 
 ## 小结

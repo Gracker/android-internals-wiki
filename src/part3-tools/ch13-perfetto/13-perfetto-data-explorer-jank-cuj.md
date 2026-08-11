@@ -2,8 +2,8 @@
 
 
 title: "Perfetto DataGrid 与 Jank CUJ 标准库"
-chapter: "13.14"
-section: "13.14"
+chapter: "13.13"
+section: "13.13"
 status: "finalized"
 drafted_date: "2026-05-16"
 applicable_versions: "Perfetto v54+ / Android 12 (API 31) - Android 17 (API 37)"
@@ -28,7 +28,7 @@ sources:
   - type: research
     path: "intake/research-feeds/2026-04-14-07-perfetto-v54-data-explorer-jank-cuj-heap-graph-stats.md"
 tags: [perfetto, datagrid, jank, cuj, sql, frametimeline]
-related_chapters: ["7.3", "7.4", "13.3", "13.8", "13.10", "13.11", "13.12"]
+related_chapters: ["7.3", "7.4", "13.3", "13.7", "13.9", "13.10", "13.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/官方文档"
@@ -72,7 +72,7 @@ last_idle_audit_log: "logs/audit/2026-08-08-20260808-223555-idle-audit-4ec8c98d-
 updated_by: "aiw-polish-idle-audit"
 updated_date: "2026-08-08"
 ---
-# 13.14 Perfetto DataGrid 与 Jank CUJ 标准库
+# 13.13 Perfetto DataGrid 与 Jank CUJ 标准库
 
 平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，分析器锚点是该源码标签中的 Perfetto。上游 Perfetto v54.0 只作为版本演进参照：它引入了 DataGrid 改进、Jank CUJ 相关线程、基于计数器的加权卡顿、`heap_graph_stats` 和两种采样格式导入能力。Android 17 的 Perfetto 已包含 v54 之后的改动，不能用“Android 17 等于 v54.0”概括。
 

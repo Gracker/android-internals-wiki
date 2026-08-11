@@ -57,7 +57,7 @@ sources:
     path: "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traceconv/main.cc"
     role: "Android 17 traceconv mode 与参数"
 tags: [perfetto, trace_processor, sql, python, cli, large-traces]
-related_chapters: ["13.1", "13.2", "13.3", "13.5"]
+related_chapters: ["13.1", "13.2", "13.3", "13.9", "13.22"]
 task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
@@ -85,7 +85,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-04
 ---
 
-# 命令行打开超大 Trace
+# 13.4 命令行打开超大 Trace
 
 ## 大 Trace 的压力来自运行时表示
 
