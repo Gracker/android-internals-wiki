@@ -183,7 +183,7 @@ AndroidX Fragment 的 `commit()` 把事务加入 FragmentManager 队列（经 `e
 - `setReorderingAllowed(true)` 允许 FragmentManager 优化同一批操作的状态变化，并改善 transition/lifecycle 语义。它不能消除布局、业务初始化或 GPU 工作。
 - `commitAllowingStateLoss()` 改变的是保存状态后的提交约束，用它规避卡顿会引入状态丢失风险。
 
-取证时可分别标记“发起 commit”“pending actions 开始/结束”“目标 Fragment 首次可见”和“第一帧 present”。若卡点在 `onCreateView()`、`onViewCreated()` 或首个 layout，处理页面构建；若 App buffer 已按时，继续检查 transition transaction 和 display frame。更完整的源码链路见 [22.12 FragmentTransaction 提交链路与页面切换性能](../../part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md)。
+取证时可分别标记“发起 commit”“pending actions 开始/结束”“目标 Fragment 首次可见”和“第一帧 present”。若卡点在 `onCreateView()`、`onViewCreated()` 或首个 layout，处理页面构建；若 App buffer 已按时，继续检查 transition transaction 和 display frame。更完整的源码链路见 [22.10 FragmentTransaction 提交链路与页面切换性能](../../part5-app/ch22-rendering-practice/10-fragment-transaction-performance.md)。
 
 ### Shared element
 

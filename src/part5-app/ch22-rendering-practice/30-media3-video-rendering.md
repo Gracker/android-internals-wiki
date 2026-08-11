@@ -1,10 +1,10 @@
 ---
 title: "Media3 视频播放渲染管线性能实战"
-chapter: "22.43"
+chapter: "22.30"
 status: finalized
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 tags: [media3, exoplayer, videoplayback, mediacodec, rendering, performance]
-related_chapters: ["22.42", "12.33", "25.17", "25.18"]
+related_chapters: ["22.29", "12.33", "25.17", "25.18"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "AOSP结构/官方文档"
@@ -29,7 +29,7 @@ last_review_finalize_run_id: "20260725-180545-04713644"
 review_finalize_note: "2026-07-25 review: 修正 KEY_ALLOW_FRAME_DROP 字段语义与 ExoPlayer 默认行为的证据边界；确认 MediaCodec/BufferQueue/ANGLE 源码锚点均限定在 android-17.0.0_r1，未上升为 Android 18/API38+ 或厂商通用结论。本章可 finalized。"
 ---
 
-# 22.43 Media3 视频播放渲染管线性能实战
+# Media3 视频播放渲染管线性能实战
 
 视频已经被 decoder 解出，不代表用户已经看见这一帧。普通 Media3 播放还要经过帧时序判断、`releaseOutputBuffer()`、输出 `Surface`、BufferQueue、SurfaceFlinger、HWC 和面板扫描。任一阶段延迟，都可能表现为首帧慢、画面卡住、声音继续或掉帧。
 
@@ -305,7 +305,7 @@ Compose 页面应把以下状态分开记录：
 - decoder 是否仍连接原 Surface；
 - 新 Surface 的首帧是否已被 renderer 释放。
 
-Surface 与 Compose 生命周期的详细处理见 [Compose ↔ View 互操作性能实战](41-compose-view-interop-performance.md)。
+Surface 与 Compose 生命周期的详细处理见 [Compose ↔ View 互操作性能实战](13-compose-view-interop.md)。
 
 ## 七、Surface 切换与 decoder 复用
 
@@ -567,7 +567,7 @@ TextureView 的视频内容进入宿主 App Window 后，视频更新要赶上�
 
 显示刷新率提高不能补偿 decoder 在目标倍速下处理不足。
 
-刷新率选择的系统细节见 [Android 17 DisplayMode 与刷新率选择](../../part2-rendering/ch02-rendering/2.31-android17-display-mode-refresh-rate-selection.md)。
+刷新率选择的系统细节见 [Android 17 DisplayMode 与刷新率选择](../../part1-fundamentals/ch02-rendering/34-display-mode-refresh-rate-selection.md)。
 
 ## 十三、首帧、seek 与转场
 
@@ -933,10 +933,10 @@ tunnel 不依赖普通逐帧 `queueBuffer()` 作为主证据。采样重点转�
 
 ## 相关章节
 
-- [SurfaceView 与 TextureView 渲染性能选型实战](42-surfaceview-textureview-rendering-performance.md)
-- [Compose ↔ View 互操作性能实战](41-compose-view-interop-performance.md)
+- [SurfaceView 与 TextureView 渲染性能选型实战](29-surfaceview-textureview.md)
+- [Compose ↔ View 互操作性能实战](13-compose-view-interop.md)
 - [多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR](../../part2-performance/ch18-rendering-pipelines/21-media-codec2-tunneled-media3-abr.md)
-- [Android 17 DisplayMode 与刷新率选择](../../part2-rendering/ch02-rendering/2.31-android17-display-mode-refresh-rate-selection.md)
+- [Android 17 DisplayMode 与刷新率选择](../../part1-fundamentals/ch02-rendering/34-display-mode-refresh-rate-selection.md)
 
 ## 源码与官方资料
 

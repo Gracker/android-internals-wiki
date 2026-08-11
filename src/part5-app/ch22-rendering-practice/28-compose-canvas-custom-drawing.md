@@ -1,13 +1,13 @@
 ---
 title: "Compose Canvas 自定义绘制性能实战"
-chapter: "22.38"
+chapter: "22.28"
 status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-08-01"
 last_verified_against: "AOSP android-17.0.0_r1; Compose UI 1.11.4 (854220f44ea8ea80fee824a6c5a045f39bede289); android17-6.18-2026-06_r6; Android/Compose 官方文档"
 confidence: high
 tags: [compose, canvas, custom-drawing, drawbehind, drawwithcontent, graphicslayer, rendernode]
-related_chapters: ["2.1", "2.3", "7.7", "22.3", "22.25", "22.31"]
+related_chapters: ["2.1", "2.3", "7.7", "22.3", "22.19", "22.25"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "章节深挖 + 官方文档"
@@ -61,7 +61,7 @@ sources:
     note: "Baseline Profile / ART AOT 覆盖范围边界"
 ---
 
-# 22.38 Compose Canvas 自定义绘制性能实战
+# Compose Canvas 自定义绘制性能实战
 
 ## 1. 范围与版本锚点
 
@@ -486,7 +486,7 @@ Hardware Bitmap 不等于“任何场景零拷贝”。缩放、颜色空间、�
 
 ### 8.3 `drawImage` 仍要控制解码与目标尺寸
 
-Canvas 不负责替应用选择合适的 decode 尺寸。大图缩到很小仍会占用解码内存和采样带宽。图片加载应在 decode 阶段设置目标尺寸、颜色空间和 allocator，详见 22.35。
+Canvas 不负责替应用选择合适的 decode 尺寸。大图缩到很小仍会占用解码内存和采样带宽。图片加载应在 decode 阶段设置目标尺寸、颜色空间和 allocator，详见 22.26。
 
 ## 9. 四类实战场景
 
@@ -576,7 +576,7 @@ Canvas 性能场景应固定输入轨迹、数据、动画时长、viewport、�
 
 Compose 1.11.4 的 `AndroidComposeView.dispatchDraw()` 当前带有 `AndroidOwner:draw` trace，但它覆盖 root draw 与 dirty layer 更新，不等于某个 Canvas。
 
-[Composition Tracing](37-compose-runtime-tracing-perfetto-integration.md) 记录 Composable 在 composition 中的执行时序，不会自动给每个 draw modifier body 或 GPU draw op 建立 slice。两类 trace 不能混用。
+[Composition Tracing](22-compose-compiler-recomposition-diagnostics.md) 记录 Composable 在 composition 中的执行时序，不会自动给每个 draw modifier body 或 GPU draw op 建立 slice。两类 trace 不能混用。
 
 定位按层次进行：
 

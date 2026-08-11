@@ -1,10 +1,10 @@
 ---
 title: "Compose Modifier.Node 架构与性能迁移"
-chapter: "22.31"
+chapter: "22.25"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [compose, modifier-node, performance, architecture-migration, recomposition]
-related_chapters: ["22.3", "22.20", "22.21", "22.22", "22.25", "22.28", "7.7"]
+related_chapters: ["22.3", "22.15", "22.16", "22.19", "22.22", "7.7"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 drafted_date: "2026-07-16"
@@ -25,7 +25,7 @@ sources:
     path: "Compose 1.7 release notes — Modifier.Node stable"
 ---
 
-# 22.31 Compose Modifier.Node 架构与性能迁移
+# Compose Modifier.Node 架构与性能迁移
 
 `Modifier.Node` 是 Compose UI 的自定义 Modifier 基础设施。它把短生命周期的配置对象与可跨重组复用的运行节点分开，适合实现绘制、测量、语义、焦点和输入等底层行为。以下说明它解决的问题、节点复用机制、无需使用它的场景，以及迁移时容易写错的生命周期和失效逻辑。
 

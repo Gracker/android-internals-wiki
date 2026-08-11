@@ -1,6 +1,6 @@
 ---
 title: "Adaptive Refresh Rate 与帧率策略实战"
-chapter: "22.18"
+chapter: "22.14"
 status: ready-for-review
 drafted_date: "2026-05-26"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
@@ -32,7 +32,7 @@ gap_source: "官方文档/章节深挖/素材驱动"
 gap_score: "18/20"
 ---
 
-# 22.18 Adaptive Refresh Rate 与帧率策略实战
+# Adaptive Refresh Rate 与帧率策略实战
 
 ## 从三个帧率开始判断
 

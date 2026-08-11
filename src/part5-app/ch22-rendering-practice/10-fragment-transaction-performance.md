@@ -1,7 +1,7 @@
 ---
 title: "FragmentTransaction 提交链路与页面切换性能"
-chapter: "22.12"
-section: "22.12"
+chapter: "22.10"
+section: "22.10"
 status: finalized
 drafted_date: "2026-05-16"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37); AndroidX Fragment 1.4 - 1.8+"
@@ -67,7 +67,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-11
 ---
 
-# 22.12 FragmentTransaction 提交链路与页面切换性能
+# FragmentTransaction 提交链路与页面切换性能
 
 Fragment 页面切换的耗时，不能只看 `commit()` 调用点。`commit()` 多数时候只把事务放进 `FragmentManager` 的待执行队列；页面是否创建 View、何时触发布局、是否挤占下一帧，取决于后续 `execPendingActions()` 这段主线程工作。做页面切换性能排查时，要把 Fragment 事务、View inflate / layout、动画和帧观测放到同一条时间线上看；Android 12+ 可以用 FrameTimeline，Android 10/11 设备则退回 Choreographer / RenderThread 切片和自定义 trace。
 

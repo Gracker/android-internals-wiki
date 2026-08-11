@@ -279,7 +279,7 @@ Macrobenchmark 会产出 system trace。初始分析可按这条顺序进行：
 
 细粒度 composable 名称需要 `androidx.compose.runtime:runtime-tracing`。使用 Compose BOM 时依赖无需单列版本。Android Studio 可以自动完成常规 system trace 配置；手动 terminal 采集还需要 `tracing-perfetto`、仅测试构建使用的 `tracing-perfetto-binary`、`track_event` data source 和 `ENABLE_TRACING` 广播。Macrobenchmark 的完整 composition tracing 还要按官方文档配置 `androidx.benchmark.fullTracing.enable=true`。
 
-不要在 `Application.onCreate()` 中调用一个笼统的 `Trace.enable()`，也不要假定 Android 15 到 Android 17 会自动打开细粒度 Compose tracing。采集方式取决于 Android Studio、Macrobenchmark 或手动 Perfetto 路径，详见 [§22.37 Compose Runtime Tracing](../ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md)。
+不要在 `Application.onCreate()` 中调用一个笼统的 `Trace.enable()`，也不要假定 Android 15 到 Android 17 会自动打开细粒度 Compose tracing。采集方式取决于 Android Studio、Macrobenchmark 或手动 Perfetto 路径，详见 [§22.22 Compose Runtime Tracing](../ch22-rendering-practice/22-compose-compiler-recomposition-diagnostics.md)。
 
 `FrameMetrics` 和 `FrameTimingMetric` 适合回答帧是否超时，不能单独说明慢在 composition。反过来，某个 composable slice 较长也不等于用户已经看到卡顿；还要与同一帧 deadline、主线程和 RenderThread 工作对齐。
 
@@ -331,6 +331,6 @@ Macrobenchmark 会产出 system trace。初始分析可按这条顺序进行：
 - [§21.4 Baseline Profile 实战](./04-baseline-profile-practice.md)
 - [§21.8 启动性能监控](./08-startup-monitoring.md)
 - [§22.3 Compose 性能优化](../ch22-rendering-practice/03-compose-performance.md)
-- [§22.15 View/Compose 混合迁移](../ch22-rendering-practice/15-compose-first-view-migration-performance.md)
-- [§22.22 Compose LazyList 性能](../ch22-rendering-practice/22-compose-lazylist-performance.md)
+- [§22.13 View/Compose 混合迁移](../ch22-rendering-practice/13-compose-view-interop.md)
+- [§22.16 Compose LazyList 性能](../ch22-rendering-practice/16-compose-lazylist-performance.md)
 - [§18.23 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/23-compose-rendering-pipeline.md)

@@ -1,6 +1,6 @@
 ---
-title: "Compose Compiler Metrics 与 Recomposition 诊断体系"
-chapter: "22.28"
+title: "Compose Compiler、Runtime Tracing 与重组诊断"
+chapter: "22.22"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-01"
@@ -8,7 +8,7 @@ last_verified_against: "Compose BOM 2026.06.00, Kotlin 2.2, Compose Compiler Gra
 confidence: high
 drafted_date: "2026-07-01"
 tags: [compose, compiler, recomposition, diagnostics, stability, perfetto, ci]
-related_chapters: ["22.3", "22.20", "7.7"]
+related_chapters: ["22.3", "7.7"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-27"
 gap_source: "章节深挖+官方文档"
@@ -22,9 +22,12 @@ sources:
     path: "developer.android.com/jetpack/androidx/releases/compose-compiler"
   - type: official
     path: "developer.android.com/jetpack/compose/compiler"
+consolidated_from:
+  - "src/part5-app/ch22-rendering-practice/22.40-compose-compiler-v2-k2-migration-performance.md"
+  - "src/part5-app/ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md"
 ---
 
-# 22.28 Compose Compiler Metrics 与 Recomposition 诊断体系
+# Compose Compiler、Runtime Tracing 与重组诊断
 
 Compose 性能排查容易混淆三类证据：编译器生成了什么代码、运行时执行了哪些组合函数、用户看到的帧是否按时显示。它们分别回答不同问题，不能互相代替。
 
@@ -629,6 +632,26 @@ python3 tools/compose_metrics_snapshot.py \
 
 帧预算受刷新率、设备性能、热状态和同一帧其他工作影响。应从产品 CUJ 和受控实验建立项目阈值，文章无法给出适用于所有设备的常数。
 
+## K2 / Compose Compiler 迁移：先固定构建语义
+
+Kotlin 2.0 起 Compose compiler 随 Kotlin 一同发布，项目应应用与 Kotlin 完全同版本的 `org.jetbrains.kotlin.plugin.compose`。K2 是 Kotlin 前端/分析管线，Compose compiler plugin 仍负责 `@Composable` 的参数改写、组、change mask、lambda memoization 和 tracing marker；两者不能简化成“K2 自动优化 Compose UI”。
+
+迁移时先删除旧 `androidx.compose.compiler:compiler` 依赖、`kotlinCompilerExtensionVersion` 和重复的 `freeCompilerArgs` 插件 option，再在 Compose DSL 中配置 reports、metrics、stability file 等选项。Android 17 / targetSdk 37 不决定 Kotlin 或 Compose compiler 版本；AGP built-in Kotlin、kapt/KSP 和 Compose Multiplatform 也要按各自兼容矩阵核对。
+
+增量编译性能用 Gradle Profiler 或可重复脚本分别测 clean build、无改动 build、单 Kotlin 文件、公共 model 和资源变化。固定 Gradle/AGP/Kotlin/JDK、daemon/JVM 参数、配置缓存、远程缓存和机器负载，并保存 build scan 或 task 失效原因。一次 IDE Build 窗口的体感不能证明 K2 或 Compose plugin 带来收益。
+
+编译成功也不等于运行时性能改善。迁移前后用同一业务代码、release/R8、Baseline Profile、设备与用户旅程比较启动和帧分位数；compiler reports 只能解释生成属性，不能推导重组次数或 frame deadline。value class、Kotlin metadata、R8、Live Edit 与 kapt 故障应作为构建兼容问题单独记录，不要混入 Compose 帧归因。
+
+## Runtime Tracing 的采集与解释边界
+
+`runtime-tracing` 通过 AndroidX Startup 安装全局 tracer，把 compiler 注入的 Composable marker 送到 Perfetto SDK。激活 tracer 与录制 session 是两件事：目标进程必须成功加载匹配的 `tracing-perfetto` binary，trace config 还要订阅 `track_event`；完整渲染调查另需 FrameTimeline、ftrace/sched、gfx/view、RenderThread 和 SurfaceFlinger 数据源。
+
+诊断产物应保持 profileable、non-debuggable。`tracing-perfetto-binary` 会明显增加体积，只放 benchmark/diagnostic 变体；通过 adb 广播激活 `TracingReceiver` 需要 `android.permission.DUMP`，普通线上应用不能把它当远程开关。API 35+ 的 `ProfilingManager` 可以请求受限、隐私删减的 system trace，但是否包含逐个 Composable 仍取决于目标构建和 tracing 激活，不能自动替代 Runtime Tracing 协议。
+
+一条 Composable slice 是同线程同步区间，`dur` 包含 Running、Runnable 与阻塞时间。父 slice 包含子 slice，所有 inclusive duration 不能直接相加；先按名称、线程和时间筛选候选，再计算 occurrence、inclusive 和扣除直接子 slice 的 self time。slice 能证明函数在该窗口执行过，不能直接给出哪一个 State 导致失效，也不能覆盖 Layout、Drawing、RenderThread 或 GPU。
+
+可靠顺序是：FrameTimeline 锁定异常帧 → 主线程对齐 composition slice、状态/业务 marker、measure/layout/draw → 检查线程状态和 GC/Binder/I/O → UI 按时则继续 RenderThread、buffer、SF 与 present。线上 APM 负责筛选页面、设备和操作 cohort；完整 trace 涉及源码位置、线程和用户时序，必须有配额、保留期、访问控制和隐私策略。
+
 ## 十一、逐个问题的诊断流程
 
 1. 定义可重复的用户操作，例如打开会话列表并滚动三屏。
@@ -702,6 +725,6 @@ python3 tools/compose_metrics_snapshot.py \
 - [Android 17 `FrameTimeline.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/graphics/FrameTimeline.java)
 - [Android common kernel `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)
 - [本知识库：Jetpack Compose 性能优化](03-compose-performance.md)
-- [本知识库：Android 17 FrameTimeline](../../part2-rendering/ch02-rendering/2.30-android17-frametimeline.md)
+- [本知识库：Android 17 FrameTimeline](../../part1-fundamentals/ch02-rendering/33-android17-frametimeline-composition-boundary.md)
 
 以上版本化结论核查于 2026-07-29。编译器报告样例来自 Kotlin 2.3.20 编译器对最小源码的实测输出；升级 Kotlin 或 Compose 后，应重新生成报告并复核字段、功能开关与 Trace 名称。

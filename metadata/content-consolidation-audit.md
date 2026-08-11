@@ -33,9 +33,35 @@
 | ch19 APM 工具与性能监控生态 | 28 | 22 | 已完成 | 2026-08-11 |
 | ch20 应用稳定性治理 | 27 | 22 | 已完成 | 2026-08-11 |
 | ch21 启动优化 | 20 | 16 | 已完成 | 2026-08-11 |
-| 其余 7 章 | 254 | 待审阅 | 未开始 | - |
+| ch22 渲染性能实战 | 45 | 30 | 已完成 | 2026-08-11 |
+| 其余 6 章 | 208 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 519 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 504 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch22 渲染性能实战
+
+保留后的连续编号为 22.1～22.30。内容按“通用 View 与资源实践 → 图形效果、页面切换、多形态与刷新率 → Compose 列表、导航、布局、状态和诊断 → Vulkan、Flutter、Modifier、Bitmap、Canvas、Surface 与媒体”组织；重复的点状专题回收到负责完整机制和验证闭环的正文，H1 不再重复章节号。
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `02-recyclerview-practice.md` / `16-deliqueue-recyclerview-prefetch.md` | 将 Android 17 DeliQueue 的启用边界、GapWorker 关系、targetSdk 37 A/B 与预取验收并入 RecyclerView 主文 | `../src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md`（22.2） |
+| `03-compose-performance.md` / `20-compose-performance-blind-spots.md` | 合并 effect/producer 生命周期、`produceState`、conflation、Strong Skipping 与 Pausable 责任边界，避免第二套 Compose 总览 | `../src/part5-app/ch22-rendering-practice/03-compose-performance.md`（22.3） |
+| `05-animation-performance.md` / `11-animated-vector-drawable-performance.md` | AnimatedVectorDrawable 的线程回退、属性成本和测量方法并入通用动画主文 | `../src/part5-app/ch22-rendering-practice/05-animation-performance.md`（22.5） |
+| `08-frame-monitoring.md` / `09-rendering-case-studies.md` | 线上帧监控保留唯一指标与证据链；跨主题案例集压缩为可复用的复盘模板并回流监控闭环 | `../src/part5-app/ch22-rendering-practice/08-frame-monitoring.md`（22.8） |
+| `10-rendereffect-runtime-shader-performance.md` / `19-runtimecolorfilter-runtimexfermode-performance.md` | 合并 RenderEffect、RuntimeShader、RuntimeColorFilter 和 RuntimeXfermode 的 API 边界、draw-command 语义、缓存与 GPU 取证 | `../src/part5-app/ch22-rendering-practice/09-runtime-graphics-effects.md`（22.9） |
+| `14-desktop-windowing-large-screen-performance.md` / `27-adaptive-layout-multi-form-factor-performance.md` | 折叠屏、大屏、桌面窗口、多实例、拖放、共享状态和 resize 证据统一到多形态布局主文 | `../src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md`（22.12） |
+| `15-compose-first-view-migration-performance.md` / `41-compose-view-interop-performance.md` | Compose First 决策、迁移门槛与 View/Compose 生命周期、嵌套和性能测量合并为互操作主文 | `../src/part5-app/ch22-rendering-practice/13-compose-view-interop.md`（22.13） |
+| `21-compose-animation-performance.md` / `32-compose-infinite-animation-vector-converter-performance.md` / `44-compose-pager-advanced-animations.md` | 无限动画、VectorConverter、资源动画与 Pager 的状态、`graphicsLayer`、预加载和嵌套滚动并入 Compose 动画主文 | `../src/part5-app/ch22-rendering-practice/15-compose-animation-performance.md`（22.15） |
+| `22-compose-lazylist-performance.md` / `33-compose-pausable-composition-performance.md` | PausableComposition 的状态机、调度预算、cache window 与阶段证据并入 LazyList/预取主文 | `../src/part5-app/ch22-rendering-practice/16-compose-lazylist-performance.md`（22.16） |
+| `25-compose-layout-measurement-performance.md` / `34-compose-subcompose-layout-performance.md` | 将 slot 身份、复用、intrinsic、lookahead 与诊断归回 Compose 布局和测量主题 | `../src/part5-app/ch22-rendering-practice/19-compose-layout-measurement.md`（22.19） |
+| `22.39-compose-snapshot-system-state-consistency-performance.md` / `22.29-jetpack-compose-并发安全机制.md` | Snapshot record、apply/冲突、Recomposer、ComposeView、Flow 和 effect 的并发责任统一到状态一致性主文 | `../src/part5-app/ch22-rendering-practice/21-compose-snapshot-state-consistency.md`（22.21） |
+| `28-compose-compiler-metrics-recomposition-diagnostics.md` / `22.40-compose-compiler-v2-k2-migration-performance.md` / `37-compose-runtime-tracing-perfetto-integration.md` | 合并 K2/Compose Compiler 迁移、构建测量、编译器报告、Runtime Tracing 配置和 Perfetto 判读 | `../src/part5-app/ch22-rendering-practice/22-compose-compiler-recomposition-diagnostics.md`（22.22） |
+| `35-bitmap-decode-pipeline-imagedecoder.md` / `17-hardware-bitmap-rendernode.md` | 将 Hardware Bitmap、RenderNode/display list 生命周期、首次纹理准备和资源指标并入 Bitmap 解码主文 | `../src/part5-app/ch22-rendering-practice/26-bitmap-decode-imagedecoder.md`（22.26） |
+| 原 22.12～22.13、22.18、22.23～22.25、22.29～22.31、22.36、22.38、22.42～22.43 中未合并主题 | Fragment、预测返回、ARR、Navigation、Widget、Text、Vulkan、Impeller、Modifier、共享元素、Canvas、Surface 与 Media3 均能独立回答问题，依次改为连续编号 | `../src/part5-app/ch22-rendering-practice/10-fragment-transaction-performance.md`～`../src/part5-app/ch22-rendering-practice/30-media3-video-rendering.md` |
+
+章节 README、`src/SUMMARY.md`、活动队列、跨章引用和统计口径已经切换到新编号。历史 changelog、review/audit 日志、关闭 finding、素材索引与 `consolidated_from` 保留旧路径和编号。
 
 ## ch21 启动优化
 

@@ -1,8 +1,8 @@
 ---
 
-title: "RenderEffect 与 RuntimeShader 性能实践"
-chapter: "22.10"
-section: "22.10"
+title: "RenderEffect 与 Runtime 图形 API 性能实践"
+chapter: "22.9"
+section: "22.9"
 status: finalized
 drafted_date: "2026-05-15"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -73,9 +73,11 @@ last_task9_audit_at: "2026-07-12T18:24:52+08:00"
 last_task9_autofix_at: "2026-07-12"
 last_task9_audit_notes: "idle audit auto-fix: 将源码主线锚点从 android-16.0.0_r1 更新为 android-17.0.0_r1；复核 RenderEffect/RuntimeShader/View/RenderNode 在 Android 17 下路径与关键 API 仍成立；章节回到 Task6 复审。"
 task6_promotion_notes: "2026-07-12 20H Task6 revisiting review (post-task9-idle-audit): pass-light-edit。L1禁用词扫描零命中。L2开头/节奏/结构/读者视角全通过。锚点6/6覆盖，扩展3/3覆盖。Task9 idle audit auto-fix（源码锚点更新为android-17.0.0_r1）后写作质量未受影响。无新增L3/L4回炉。AUTO-PROMOTED: task6=pass-light-edit, task9=auto-fixed(=pass), queue=clear。"
+consolidated_from:
+  - "src/part5-app/ch22-rendering-practice/19-runtimecolorfilter-runtimexfermode-performance.md"
 ---
 
-# 22.10 RenderEffect 与 RuntimeShader 性能实践
+# RenderEffect 与 Runtime 图形 API 性能实践
 
 RenderEffect 适合把 View 或 RenderNode 的绘制结果交给 GPU 做后处理：模糊、颜色滤镜、混合、偏移，以及 Android 13（API 33）开始支持的 AGSL 自定义像素处理。它不是“免费特效”。效果需要把节点内容先画进中间层，再读取这块纹理做处理时，成本会落到 RenderThread、GPU 像素处理、纹理带宽和图形内存上。
 
@@ -235,6 +237,16 @@ AGI 适合在开发和预发布阶段做 GPU 分析。Frame Profiler 直接追�
 - **缓存静态结果**：大背景、固定蒙版、品牌氛围图优先用预渲染资源；资源策略也要按图片压缩、格式选择和使用频率拆开考虑。
 - **建立降级开关**：Android 16 / API 36+ 设备若支持 `SystemHealthManager.getGpuHeadroom()`，可把 GPU Headroom 作为质量调节信号之一。有效结果范围是 0—100，也可能暂时返回 `Float.NaN`；一次有效调用至少包含一笔同步 Binder transaction，可能超过 1 ms，不能在 UI/RenderThread 或逐帧回调中查询。调用侧要处理 `UnsupportedOperationException`、`IllegalArgumentException`，并遵守 `getGpuHeadroomMinIntervalMillis()`。旧版本或不支持该能力的设备，继续使用设备档位、温控、帧 overrun 和灰度开关。
 - **写清版本边界**：`RenderEffect` 需要 API 31+，`RuntimeShader` / `createRuntimeShaderEffect()` 需要 API 33+。API guard 要包住所有调用点，包括清空效果。
+
+## RuntimeColorFilter 与 RuntimeXfermode：区分节点效果和绘制命令
+
+`RenderEffect` 作用于 RenderNode/图层的结果；API 36 的 `RuntimeColorFilter` 与 `RuntimeXfermode` 则进入具体 draw command。两者都使用 AGSL，却不能互换：前者适合对一整棵已绘制内容做 blur、shader 或 chain，后者分别改变 source 颜色或 source/destination 的混合关系。
+
+`RuntimeColorFilter` 的 shader 输入是当前 draw command 产生的 source color；`RuntimeXfermode` 同时接收 source 与 destination。destination 指“当前 Canvas 目标里已经存在的像素”，其范围受 draw 顺序、clip、`saveLayer()` 和离屏 layer 影响。需要把混合限制在组件 bounds 时，应显式建立最小离屏作用域；没有隔离就直接使用 dst 语义，可能影响父 Canvas 已绘制内容。
+
+AGSL 颜色遵守 premultiplied alpha。shader 输出若把 RGB 与 alpha 当作互不相关的直通道，透明边缘容易产生色边；使用 wide color 或 HDR 时还要验证输入/输出色域与精度。动态 uniform 可复用同一个 shader/filter/xfermode 实例并更新数值，不要逐帧重新解析 AGSL 或重建对象；shader 结构、混合模式或作用范围改变时再重建。
+
+测量时把四组变量分开：普通 `SrcOver`、单独 color filter、单独 xfermode、完整 filter+xfermode/layer。比较 UI 线程 draw recording、RenderThread、GPU duration、离屏目标和 FrameTimeline；像素正确性用截图对照覆盖透明边缘、不同背景、裁剪和 API guard。API 36 以下必须走明确 fallback，清理路径也要移除旧的 filter/xfermode 引用。
 
 ## 扩展
 

@@ -80,6 +80,8 @@ task9_p1_issues: 0
 task9_p2_issues: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-16
+consolidated_from:
+  - "src/part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md"
 ---
 
 # RecyclerView 最佳实践
@@ -257,6 +259,21 @@ fun RecyclerView.configureHorizontalCards(
 
 
 ## RecyclerView vs LazyColumn 性能对比
+
+## Android 17 DeliQueue：只改变消息入队，不替代列表优化
+
+Android 17 在 `targetSdkVersion >= 37` 时启用新的 DeliQueue 路径：生产者通过无锁栈提交消息，Looper 再把同步、异步消息整理进各自的堆。它缓解的是旧 `MessageQueue` monitor 上的生产者/消费者竞争，不会缩短 `onCreateViewHolder()`、`onBindViewHolder()`、item measure/layout、图片解码、RenderThread 或 SurfaceFlinger 的工作。
+
+RecyclerView 1.4.0 的 `GapWorker.postFromTraversal()` 仍通过 `RecyclerView.post()` 把一次预取任务送入主线程队列。DeliQueue 可以减少这次 post 与后台生产者争锁的概率，但从 post 到 `GapWorker.run()` 之间仍可能有前序消息、长 callback 和 CPU 调度延迟。预取自身也只覆盖 holder 获取、create 和 bind；下一帧的 measure/layout 仍需单独分析。
+
+排查时按证据分流：
+
+- 主线程出现指向 legacy `MessageQueue` 的 `monitor contention`，才把队列锁列为候选；切换 `USE_NEW_MESSAGEQUEUE` 后必须重启进程再做同 APK A/B。
+- `RV Prefetch` 很晚、却没有队列锁等待时，检查前序 Looper 消息、主线程 Runnable 时间和调度轨道。
+- `RV onCreateViewHolder` / `RV onBindViewHolder` 很长时，回到 pool、payload、图片和数据转换；`RV OnLayout` 很长时，回到约束和布局层级。
+- App SurfaceFrame 按时而 DisplayFrame 迟到时，继续检查目标 layer、fence、SurfaceFlinger 与 HWC，不把它归到 DeliQueue。
+
+target 37 适配还要清点反射 `MessageQueue.mMessages` 的测试、监控和调试工具；DeliQueue 路径保留该字段只为二进制兼容，其值不再代表真实队列。官方要求的 Espresso/Robolectric 版本与 Looper mode 应纳入回归。业务侧仍要合并同一 item 的高频结果、限制一次主线程 drain 的批量，并让 lifecycle 能取消尚未应用的更新；无锁队列不能修复消息风暴。
 
 `LazyColumn` 和 RecyclerView 都围绕可见窗口按需准备 item，也都可能为预取或 beyond-bounds 操作准备窗口之外的内容。列表中有多种 item 时，`contentType` 可以帮助 Compose 在兼容类型之间复用组合。这个方向和 RecyclerView 的 `viewType` / Pool 很像：类型划分越接近可兼容的 UI 结构，复用效果越稳定。
 

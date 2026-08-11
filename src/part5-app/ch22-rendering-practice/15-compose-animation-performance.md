@@ -1,7 +1,7 @@
 ---
-title: "Jetpack Compose 动画性能深度优化"
-chapter: "22.21"
-section: "22.21"
+title: "Jetpack Compose 动画性能实战"
+chapter: "22.15"
+section: "22.15"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-05"
@@ -15,14 +15,17 @@ sources:
   - type: research
     path: "DeepResearch/2026-06-02-android-compose-derivedstate-sso-deep-source-analysis.md"
 tags: [compose, animation, animated-visibility, transition, animatable, strong-skipping, performance]
-related_chapters: ["22.3", "22.5", "22.20", "7.7", "2.11"]
+related_chapters: ["22.3", "22.5", "7.7", "2.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-05"
 gap_source: "研究素材"
 drafted_date: "2026-06-05"
+consolidated_from:
+  - "src/part5-app/ch22-rendering-practice/32-compose-infinite-animation-vector-converter-performance.md"
+  - "src/part5-app/ch22-rendering-practice/44-compose-pager-advanced-animations.md"
 ---
 
-# 22.21 Jetpack Compose 动画性能深度优化
+# Jetpack Compose 动画性能实战
 
 Compose 动画每帧会做多少工作，取决于动画值在哪里被读取、哪些阶段因此失效、过渡期间保留了多少内容，以及 App 交帧后的显示链路。库版本基线为 Compose 1.10.0，平台基线为 Android 17 / API 37 的 `android-17.0.0_r1`。Compose 独立于 Android 平台发布，不能用 API 37 推导 Compose 行为。
 
@@ -258,7 +261,27 @@ class ExpandAnimationBenchmark {
 
 Baseline Profile 可以让 ART 提前编译被关键用户旅程覆盖的 App 与库代码，减少首次运行时的解释和 JIT 成本。它不能预编译 GPU shader、消除离屏合成，也不会改变 Snapshot 失效范围。用同一 Macrobenchmark 对比 profile 前后数据，才知道当前动画是否受编译状态影响。
 
-## 13. 检查清单
+## 13. 无限动画、VectorConverter 与资源动画
+
+`rememberInfiniteTransition()` 表达“进入 Composition 后持续运行，离开后停止”。同一个 transition 的子动画共享一条帧循环，不会为每个值注册独立 VSync；每个子项仍要维护状态并执行插值。隐藏组件只设 `alpha = 0f`、移到屏外或盖住它，都不会使其离开 Composition。对于明确不可见的 loading、呼吸光和背景粒子，应让对应分支真正移出组合，或由业务状态停止动画。
+
+系统动画时长缩放为 0 时，Compose 会把无限动画推进到目标值并等待缩放恢复，不会继续逐帧 tick。产品要验证这个目标值是不是合理静止画面，并为“减少动态效果”保留可理解的 UI。
+
+一组视觉值若能由同一相位推导，可只保留一个 `animateFloat()`，在 drawing/layer 阶段计算颜色、缩放和偏移。`TwoWayConverter<T, V>` 只负责业务值与 `AnimationVector1D`～`4D` 的双向映射；维度必须对应独立变量，单位和有效域要清楚。`convertFromVector()` 每帧创建复杂对象时，应比较拆成内置标量动画或相位推导的分配成本。
+
+Animated Vector XML 是另一条资源链：`AnimatedImageVector` 解析 vector/animator 资源并按 progress 绘制，不经过 `TwoWayConverter`。资源应按 id 稳定记忆，避免在动画帧内重复解析；路径节点、关键帧和同时播放数量仍需在目标设备上测量。
+
+## 14. Pager 动画：区分当前页、稳定页和目标页
+
+Pager 的 `currentPage` 会在拖动跨过 snap 判定点时变化，不代表滚动完成；曝光、资源 owner 和业务选中应优先观察 `settledPage`，动画目标可以使用 `targetPage`。任意 page 到当前吸附位置的距离用 `getOffsetDistanceInPages(page)`，避免手写公式在 `currentPage` 切换时反转符号。
+
+页面的 alpha、scale、rotation 和 translation 读取应放进 `graphicsLayer {}`，让滚动只更新图层属性；正文提前读取 `currentPageOffsetFraction` 会让依赖该值的页面持续重组。高频 state 读取被延后不等于动画零成本：clip、shadow、alpha 和大面积旋转仍可能增加离屏与 GPU 带宽。
+
+`beyondViewportPageCount` 表示额外组合、测量和放置的 page，不包含内部预取；从默认值开始逐页增加，并同时比较首次进入页的 compose/measure、内存峰值与命中率。`visiblePagesInfo` 是高频测量结果，不是页面生命周期。视频、地图和 WebView 等重资源应由 `settledPage`、可见性和 lifecycle 共同控制。
+
+同向嵌套 Pager/Lazy 容器要明确 nested-scroll owner、fling 交接和到边后的继续滚动；负 `pageSpacing` 产生重叠时，还要验证 zIndex、命中区域、裁剪和无障碍顺序。点击 Tab 启动的 `animateScrollToPage()` 可被新手势或新 mutation 取消，调用返回后不能无条件认为目标页已经稳定展示。
+
+## 15. 检查清单
 
 - 动画值在哪个阶段读取？是否在更早阶段也被解引用？
 - 值变化后需要 Composition、measure、placement、Draw 还是 layer property update？
@@ -271,7 +294,7 @@ Baseline Profile 可以让 ART 提前编译被关键用户旅程覆盖的 App �
 - Studio 工具、实验室基准和线上指标是否各自回答了合适的问题？
 - 优化是否在 release/profileable 构建和代表性设备上复测？
 
-## 14. 源码与资料索引
+## 16. 源码与资料索引
 
 Compose 行为按以下 1.10.0 source JAR 复核：
 

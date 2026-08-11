@@ -1,6 +1,6 @@
 ---
-title: "Compose LazyList/LazyGrid 滑动性能深度优化"
-chapter: "22.22"
+title: "Compose LazyList 与预取调度性能"
+chapter: "22.16"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-08"
@@ -8,7 +8,7 @@ last_verified_against: "Compose BOM 2025.12.00 (Compose 1.10), Kotlin 2.2, Andro
 confidence: medium-high
 drafted_date: "2026-06-08"
 tags: [compose, lazylist, lazygrid, jank, recomposition, performance, scrolling, recycling]
-related_chapters: ["22.3", "22.2", "22.20", "22.21", "7.9", "18.12"]
+related_chapters: ["22.3", "22.2", "22.15", "7.9", "18.12"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-08"
 gap_source: "参考书结构/章节深挖/官方文档/社区热点"
@@ -35,13 +35,15 @@ sources:
     path: "https://developer.android.com/develop/ui/compose/lists"
   - type: research
     path: "intake/research-feeds/2026-04-01-12-compose-performance-milestone-2025.md"
+consolidated_from:
+  - "src/part5-app/ch22-rendering-practice/33-compose-pausable-composition-performance.md"
 ---
 
-# 22.22 Compose LazyList/LazyGrid 滑动性能深度优化
+# Compose LazyList 与预取调度性能
 
 Lazy layout 把数据集总量与同时 Composition 的 item 数量分开，但它不会自动消除慢 item、错误身份、重复测量、同步 I/O 或 GPU 过载。库基线为 Compose Foundation 1.10.0，平台基线为 Android 17 / API 37 的 `android-17.0.0_r1`。Compose Foundation 独立发布，`targetSdk=37` 不会改变 LazyList 的 key、复用或预取语义。
 
-普通 LazyColumn、LazyGrid 仍通过宿主 App Window 的标准 HWUI 路径出图。主线程上的 Composition、measure、placement 和 DisplayList 更新只是前半程，后面还有 RenderThread、GPU、buffer 提交、SurfaceFlinger、HWC 与 present。显示边界见 [18.23 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/23-compose-rendering-pipeline.md)，重组基础见 [22.3 Compose 性能](03-compose-performance.md)，列表动画的阶段判断见 [22.21 Compose 动画性能](21-compose-animation-performance.md)。
+普通 LazyColumn、LazyGrid 仍通过宿主 App Window 的标准 HWUI 路径出图。主线程上的 Composition、measure、placement 和 DisplayList 更新只是前半程，后面还有 RenderThread、GPU、buffer 提交、SurfaceFlinger、HWC 与 present。显示边界见 [18.23 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/23-compose-rendering-pipeline.md)，重组基础见 [22.3 Compose 性能](03-compose-performance.md)，列表动画的阶段判断见 [22.15 Compose 动画性能](15-compose-animation-performance.md)。
 
 ## 1. LazyLayout 每次滚动会做什么
 
@@ -349,13 +351,25 @@ LIMIT 100;
 
 如果怀疑 allocation churn，使用 allocation recording 或合适的 heap profiler 找分配栈；heap size counter 只能显示存量变化，不能给出每次分配的类型与调用点。GC 与 jank 同时出现也只说明时序相关，还要找到导致回收压力的对象来源。
 
-## 13. Android 17 与 kernel 边界
+## 13. PausableComposition：只切分预组合阶段
+
+PausableComposition 是 Runtime 提供的子 Composition 状态机，Foundation 的 Lazy 预取决定是否使用它。它不会把所有 Composition 自动改成可暂停，也不能切分 measure、图片解码、Binder、GPU 或任意 Kotlin 代码。Foundation 1.11.4 的一项预取可拆成 compose、apply、nested prefetch 和 measure；只有 compose 能在编译器生成的合法 restart scope 边界暂停。
+
+公开控制流是 `setPausableContent()` → 多次 `resume(shouldPause)` → `apply()`。`shouldPause=true` 只是请求，当前调用可能继续到下一个合法边界；组合完成后如果已读取 State 在 apply 前又变化，`isComplete` 也可能回到未完成。`cancel()` 或异常会让 paused handle、乃至它所属的 Composition 进入不可继续复用的状态，因此业务层通常不应直接构造和管理它。
+
+Android 端预取调度器在主线程消息队列的帧间空隙运行。当前 Foundation 使用 `View.drawingTime`、显示刷新周期、下一帧估算与历史 compose/measure 成本判断是否还有预算，并不直接读取 Android 17 `FrameData` 的 deadline。trace 中要把平台 preferred FrameTimeline 与 Compose 的预取预算分别记录，不能把“都有 deadline 概念”写成同一数据源。
+
+`LazyLayoutCacheWindow` 决定前方准备和后方保留的范围，PausableComposition 只改变候选 item 的组合调度。扩大 ahead 会增加 CPU 预取，扩大 behind 会延长节点、状态和图片资源寿命。判断回归时分别看 `compose:lazy:prefetch:*` 的 compose/apply/measure slice、下一帧启动时间、FrameTimeline overrun 与内存峰值：compose 变短但 apply/measure 仍长，并不表示预取问题已经解决。
+
+业务优化顺序仍是稳定 key/contentType、移出同步 I/O 和复杂转换、稳定 item 尺寸，再调 cache window 与预取。版本 flag、显示刷新率、数据集、构建类型和设备热状态必须写入 A/B；“升级到某版 Compose”不能代替实验结论。
+
+## 14. Android 17 与 kernel 边界
 
 Android 17 平台锚点是 `android-17.0.0_r1`。它提供 `Choreographer`、FrameTimeline、HWUI、窗口和系统合成路径。Compose 1.10.0 的 LazyLayout 算法打包在 App 内；升级 targetSdk 不能单独开启 Pausable Composition、cache window 或新的 item reuse policy。
 
 kernel 锚点是 `android17-6.18-2026-06_r6`。scheduler、cpufreq、thermal、memory reclaim 和 fence wait 会改变主线程、RenderThread 或 GPU 驱动任务何时运行，但不决定 key/contentType、item disposal 和 Paging generation。只有 trace 显示 runnable delay、频率/热限制、reclaim 或 fence wait 时，才进入 kernel 证据。
 
-## 14. LazyList 与 RecyclerView 的选型
+## 15. LazyList 与 RecyclerView 的选型
 
 没有脱离页面的固定胜者。Compose LazyLayout 与 RecyclerView 都支持按需创建和复用，但状态模型、布局、预取、动画和工具链不同。公开资料不能替代当前 App 的 release benchmark。
 
@@ -364,7 +378,7 @@ kernel 锚点是 `android17-6.18-2026-06_r6`。scheduler、cpufreq、thermal、m
 - RecyclerView item 内大量 `ComposeView` 会增加 composition 生命周期管理；LazyColumn 中大量 `AndroidView` 也会增加 View 创建、复用和桥接成本。
 - 同一页面的两种实现要在相同数据、图片缓存、编译模式、设备温度和交互脚本下比较。
 
-## 15. 检查清单
+## 16. 检查清单
 
 - key 是否稳定、唯一、Bundle-saveable，并代表业务实体？
 - contentType 是否代表结构兼容性，是否过粗或过细？
@@ -378,7 +392,7 @@ kernel 锚点是 `android17-6.18-2026-06_r6`。scheduler、cpufreq、thermal、m
 - Grid 的列数、span、lane 和图片比例变化是否造成 remeasure？
 - 慢帧是否由 FrameTimeline、主线程、RenderThread/GPU 和系统合成共同证明？
 
-## 16. 源码与资料索引
+## 17. 源码与资料索引
 
 Compose 行为按精确版本复核：
 

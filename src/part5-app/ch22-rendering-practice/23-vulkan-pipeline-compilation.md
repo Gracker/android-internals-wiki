@@ -1,6 +1,6 @@
 ---
-title: "Android 17 GPU Vulkan 异步编译管线管理器调度策略"
-chapter: "ch22.29"
+title: "Android 17 Vulkan 管线编译与调度策略"
+chapter: "22.23"
 status: ready-for-review
 drafted_date: "2026-06-28"
 applicable_versions: "Android 16 (API 35) - Android 17 (API 37)"
@@ -31,7 +31,7 @@ created_date: "2026-06-27"
 gap_source: "daily-info + research-gaps"
 ---
 
-# ch22.29 Android 17 GPU Vulkan 异步编译管线管理器调度策略
+# Android 17 Vulkan 管线编译与调度策略
 
 “异步编译管线管理器”适合作为工程问题的名称，却不是 Android 17 对所有应用公开的一项系统能力。普通 View/Compose 应用、直接使用 Vulkan 的游戏，以及经 ANGLE 运行的 OpenGL ES 应用，管线由不同组件创建，应用可控制的范围也不同。若一开始没有分清路径，后续看到的缓存、线程、Trace 和优化建议很容易互相错配。
 

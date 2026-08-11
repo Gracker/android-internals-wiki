@@ -1,10 +1,10 @@
 ---
-title: "SharedTransitionLayout — Compose 共享元素过渡动画性能优化"
-chapter: "22.36"
+title: "Compose SharedTransitionLayout 共享元素性能"
+chapter: "22.27"
 status: finalized
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 tags: [Compose, SharedTransition, Animation, Performance, Rendering]
-related_chapters: ["22.5", "22.21", "22.3", "2.1"]
+related_chapters: ["22.5", "22.15", "22.3", "2.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "AOSP结构/官方文档"
@@ -43,7 +43,7 @@ sources:
     path: "android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java"
 ---
 
-# 22.36 SharedTransitionLayout — Compose 共享元素过渡动画性能优化
+# Compose SharedTransitionLayout 共享元素性能
 
 > **源码锚点**
 >
@@ -54,7 +54,7 @@ sources:
 >
 > `SharedTransitionLayout` 位于 Compose Animation 的 `commonMain`，匹配、Lookahead、图形层和 overlay 都由 AndroidX 实现。Android Framework 与内核没有名为 SharedTransitionLayout 的专用渲染路径；Android 17 负责它进入 HWUI 后的标准窗口绘制、BufferQueue、SurfaceFlinger 与显示流程。
 
-这里关注共享元素过渡对组合、布局、绘制和 GPU 的影响。一般 Compose 性能方法见 [22.3 Compose 性能](./03-compose-performance.md)，普通动画成本见 [22.5 动画性能](./05-animation-performance.md) 与 [22.21 Compose 动画性能](./21-compose-animation-performance.md)。
+这里关注共享元素过渡对组合、布局、绘制和 GPU 的影响。一般 Compose 性能方法见 [22.3 Compose 性能](./03-compose-performance.md)，普通动画成本见 [22.5 动画性能](./05-animation-performance.md) 与 [22.15 Compose 动画性能](./15-compose-animation-performance.md)。
 
 ## 1. 先校正常见误差
 

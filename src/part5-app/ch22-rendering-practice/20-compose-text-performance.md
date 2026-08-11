@@ -1,6 +1,6 @@
 ---
 title: "Compose Text 性能深度优化"
-chapter: "22.27"
+chapter: "22.20"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags:
@@ -54,7 +54,7 @@ sources:
   path: https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-text/src/androidMain/kotlin/androidx/compose/ui/text/android/TextLayout.android.kt
 ---
 
-# 22.27 Compose Text 性能：从文本布局缓存到整帧证据
+# Compose Text 性能深度优化
 
 Compose 文本卡顿不能只看重组次数。一次文本更新可能停在组合、测量、字体解析、绘制或显示系统中的任意一段；同样的 `Text` 调用还可能进入两套不同的 Modifier 节点实现。排查时要同时回答：哪项输入变了、是否重新排版、目标帧最终晚在什么位置。
 
@@ -130,7 +130,7 @@ Compose Foundation 1.11.4 的 `BasicText(String, ...)` 在以下条件都满足�
 
 高度仍可能影响裁剪和省略。旧段落高于新的最大高度，或旧结果已经超过 `maxLines` 时，缓存会重新计算。列表项宽度在滚动期间保持不变，通常有利于复用；窗口尺寸、折叠状态、Insets 或父布局反复改变宽度会让文本重新断行。
 
-更完整的 Compose 测量失效机制见 [22.25 Compose 布局测量性能](25-compose-layout-measurement-performance.md)。
+更完整的 Compose 测量失效机制见 [22.19 Compose 布局测量性能](19-compose-layout-measurement.md)。
 
 ### 3. 创建新对象不等于一定重新排版
 
@@ -224,7 +224,7 @@ fun MeasuredTitle(
 - 调用点传入的是同一集合实例还是每次新建；
 - 目标 Composable 是否读取了会变化的状态。
 
-相关诊断方法见 [22.28 Compose Compiler 指标与重组诊断](28-compose-compiler-metrics-recomposition-diagnostics.md)。
+相关诊断方法见 [22.22 Compose Compiler 指标与重组诊断](22-compose-compiler-recomposition-diagnostics.md)。
 
 ### 2. `@Stable` 和 `@Immutable` 是开发者承诺
 
@@ -265,7 +265,7 @@ fun ArticleBody(paragraphs: List<ParagraphUiModel>) {
 }
 ```
 
-`ParagraphUiModel` 只有不可变的基础类型，满足示例中的 `@Immutable` 契约；`List` 参数本身仍要结合强跳过规则判断。长文章使用 Lazy 布局只组合可见项，详细复用条件见 [22.22 Compose LazyList 性能](22-compose-lazylist-performance.md)。
+`ParagraphUiModel` 只有不可变的基础类型，满足示例中的 `@Immutable` 契约；`List` 参数本身仍要结合强跳过规则判断。长文章使用 Lazy 布局只组合可见项，详细复用条件见 [22.16 Compose LazyList 性能](16-compose-lazylist-performance.md)。
 
 ## 五、怎样写富文本和自绘文本
 
@@ -352,7 +352,7 @@ fun LabeledBackground(
 }
 ```
 
-`drawWithCache` 的构建块会在尺寸或读取到的状态变化时重跑。`color` 在该块中参与背景和文本绘制，所以颜色变化也会重建绘制缓存，但 `TextMeasurer` 仍可复用布局结果。若颜色每帧变化且这段重建可测得成本，可用绘制 lambda 读取最新颜色，把测量输入保持不变。Canvas 的其他约束见 [22.38 Compose Canvas 自定义绘制性能](38-compose-canvas-custom-drawing-performance.md)。
+`drawWithCache` 的构建块会在尺寸或读取到的状态变化时重跑。`color` 在该块中参与背景和文本绘制，所以颜色变化也会重建绘制缓存，但 `TextMeasurer` 仍可复用布局结果。若颜色每帧变化且这段重建可测得成本，可用绘制 lambda 读取最新颜色，把测量输入保持不变。Canvas 的其他约束见 [22.28 Compose Canvas 自定义绘制性能](28-compose-canvas-custom-drawing.md)。
 
 ### 3. 缓存容量按重复输入数量设置
 

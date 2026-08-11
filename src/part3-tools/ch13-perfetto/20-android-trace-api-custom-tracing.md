@@ -467,7 +467,7 @@ Counter 的算术平均值会受到采样频率影响。要计算时间加权平
 
 逐元素循环、每像素处理、每次 Compose 小函数调用等位置容易让 trace 开销支配原始工作。要么把范围提升到 batch，要么采样少量实例，并用 A/B trace 核对埋点对帧时间的影响。
 
-Compose Runtime tracing 有自己的版本、依赖和切片语义，详见 [22.37 Compose Runtime Tracing](../../part5-app/ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md)。不要在每个 `@Composable` 内手工 begin/end，也不要让同步 section 跨过可挂起操作。
+Compose Runtime tracing 有自己的版本、依赖和切片语义，详见 [22.22 Compose Runtime Tracing](../../part5-app/ch22-rendering-practice/22-compose-compiler-recomposition-diagnostics.md)。不要在每个 `@Composable` 内手工 begin/end，也不要让同步 section 跨过可挂起操作。
 
 ### 10.2 Ring buffer 会覆盖旧事件
 
