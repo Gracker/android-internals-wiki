@@ -272,7 +272,7 @@ RecyclerView 1.4.0 的 release notes 把这项能力称为 `Adaptive refresh rat
 - Android 17 View/HWUI：把速度随帧提交给窗口渲染信息
 - Android 17 Display 与显示策略：结合设备能力、其他投票和策略选择刷新行为
 
-速度上报不是刷新率命令。RecyclerView 不查询设备是否支持 ARR，也不指定切换到多少 Hz。Android 17 的 `Display.hasArrSupport()`、`getSupportedRefreshRates()` 与 `getSuggestedFrameRate(int)` 属于平台能力查询。刷新率选择及 Perfetto 证据参见[可变刷新率与帧率选择](../ch18-rendering-pipelines/19-variable-refresh-rate.md)。
+速度上报不是刷新率命令。RecyclerView 不查询设备是否支持 ARR，也不指定切换到多少 Hz。Android 17 的 `Display.hasArrSupport()`、`getSupportedRefreshRates()` 与 `getSuggestedFrameRate(int)` 属于平台能力查询。刷新率选择及 Perfetto 证据参见[可变刷新率与帧率选择](../ch18-rendering-pipelines/18-variable-refresh-rate.md)。
 
 ## 在 Perfetto 中分析 RecyclerView 性能
 
@@ -373,7 +373,7 @@ LinearLayoutManager、GridLayoutManager 与 StaggeredGridLayoutManager 的锚点
 - [卡顿定义与 FrameTimeline](01-jank-definition.md)
 - [卡顿分析方法论](03-jank-methodology.md)
 - [Jetpack Compose 性能优化](07-compose-performance.md)
-- [可变刷新率与帧率选择](../ch18-rendering-pipelines/19-variable-refresh-rate.md)
+- [可变刷新率与帧率选择](../ch18-rendering-pipelines/18-variable-refresh-rate.md)
 - [Android 17 DeliQueue 与 RecyclerView 预取时序](../../part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md)
 
 ## 参考资料

@@ -46,7 +46,7 @@ ARR 处理显示节奏，却不会缩短应用一帧的 CPU、GPU 或解码耗�
 
 平台实现固定到 Android 17 / API 37 / `android-17.0.0_r1`，kernel 边界固定到 `android17-6.18-2026-06_r6`。ARR 从 Android 15 进入平台；面向应用的支持条件是 Android 15 QPR1 及以上，并且设备实现对应 Composer3 HAL 能力。版本满足条件仍不能证明某块 Display 支持 ARR。
 
-在 ARR 配置中，Display VSync/TE 节拍可以与内容刷新节拍分开。面板在同一个 display mode 内，按 TE 周期的离散倍数选择呈现时机。这样可以减少仅为改变刷新率而切换 display mode 的次数，也能让静态内容和低频动画降低高刷驻留。相关系统机制见 [2.2 帧率](../../part1-fundamentals/ch02-rendering/02-framerate.md) 和 [18.19 可变刷新率渲染管线](../../part2-performance/ch18-rendering-pipelines/19-variable-refresh-rate.md)。
+在 ARR 配置中，Display VSync/TE 节拍可以与内容刷新节拍分开。面板在同一个 display mode 内，按 TE 周期的离散倍数选择呈现时机。这样可以减少仅为改变刷新率而切换 display mode 的次数，也能让静态内容和低频动画降低高刷驻留。相关系统机制见 [2.2 帧率](../../part1-fundamentals/ch02-rendering/02-framerate.md) 和 [18.18 可变刷新率渲染管线](../../part2-performance/ch18-rendering-pipelines/18-variable-refresh-rate.md)。
 
 应用侧保留两项责任：控制产帧成本和节奏，并向系统准确描述内容偏好。ARR 不会修复主线程超时、RenderThread 堵塞、GPU 迟完成、视频时间戳错误或 BufferQueue 堆积。
 

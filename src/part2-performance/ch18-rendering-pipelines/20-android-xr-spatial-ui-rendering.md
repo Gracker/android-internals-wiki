@@ -1,7 +1,7 @@
 ---
 title: "Android 17 / Android XR 空间 UI 与环境资产渲染性能"
-chapter: "18.22"
-section: "18.22"
+chapter: "18.20"
+section: "18.20"
 section_title: "Android 17 / Android XR 空间 UI 与环境资产渲染性能"
 status: ready-for-review
 drafted_by: "openclaw-task2a"
@@ -111,7 +111,7 @@ sources:
     role: "线程 Running、Runnable 与阻塞等待的通用调度边界"
 ---
 
-# 18.22 Android 17 / Android XR 空间 UI 与环境资产渲染性能
+# 18.20 Android 17 / Android XR 空间 UI 与环境资产渲染性能
 
 ## Android XR 渲染需要区分哪些边界
 

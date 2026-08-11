@@ -9,7 +9,7 @@ last_verified: "2026-05-19"
 last_verified_against: "Android Developers adaptive app docs; Android 16/17 behavior changes; Android Developers Blog 2026 desktop windowing; Perfetto FrameTimeline docs; AOSP/Perfetto source paths from local DeepResearch"
 confidence: medium
 tags: [desktop-windowing, large-screen, rendering, adaptive-ui, multi-window]
-related_chapters: ["2.20", "18.18", "22.1", "22.3", "22.13"]
+related_chapters: ["2.20", "18.5", "22.1", "22.3", "22.13"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-19"
 gap_source: "每日信息/官方文档/Android Developers Blog"
@@ -56,7 +56,7 @@ sources:
 
 桌面窗口化让一个 Activity 的可用区域在运行中连续变化。窗口拖拽会触发布局计算，跨显示器移动可能带来 density、Insets 与资源选择变化，多实例还会让同一份业务数据被多个 task 同时观察。分析这些现象时，需要同时保留应用线程、WindowManager、SurfaceFlinger 和目标 Display 四个视角。
 
-平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`，kernel 调度与 fence 观察固定为 `android17-6.18-2026-06_r6`。版本沿革只用于解释兼容行为。系统侧窗口树与 Display 拓扑见 [2.20 多窗口与桌面模式渲染性能](../../part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md)，PiP/freeform 的 geometry 与 BLAST 同步见 [18.18 PiP 与自由窗口渲染](../../part2-performance/ch18-rendering-pipelines/18-pip-freeform.md)；以下集中讨论应用实现、测试与归因。
+平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`，kernel 调度与 fence 观察固定为 `android17-6.18-2026-06_r6`。版本沿革只用于解释兼容行为。系统侧窗口树与 Display 拓扑见 [2.20 多窗口与桌面模式渲染性能](../../part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md)，PiP/freeform 的 geometry 与 BLAST 同步见 [18.5 多窗口、PiP 与自由窗口渲染](../../part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md#pip-与-freeform-的特殊边界)；以下集中讨论应用实现、测试与归因。
 
 大屏不会凭空产生一种新渲染管线。它会增加同一帧中的 `measure`、`layout`、`draw`、图片请求、输入回调和窗口状态变化，也会放大缓存失效与线程排队。优化时仍按执行成本、等待时间、缓存命中和提交时序逐项取证。
 

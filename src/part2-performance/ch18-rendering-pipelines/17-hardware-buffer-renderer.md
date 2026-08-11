@@ -18,7 +18,7 @@ related_chapters:
   - 18.2
   - 18.10
   - 18.15
-  - 18.20
+  - 18.1
 created_by: rendering-pipelines-merge
 created_date: 2026-04-09
 pipeline_stage: "ready-to-publish"

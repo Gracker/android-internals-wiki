@@ -60,7 +60,7 @@ Compose 性能优化要回答两个问题：哪一段工作错过了本帧 deadl
 - Compose 依赖以 BOM `2025.12.00` 为基线。该 BOM 把 Runtime、Foundation 和 UI 固定到 `1.10.0`。
 - Compose Compiler 随 Kotlin 2.2 Gradle plugin 使用。Strong Skipping 属于编译器行为，Lazy 预取属于 Foundation 行为，两者都不能从 Android platform tag 推断。
 
-普通 `ComposeView` 不会单独创建 Surface。内容仍由当前 App Window 的 HWUI 路径输出：UI 线程完成 Composition、Layout、Drawing 记录，经 `HardwareRenderer.syncAndDrawFrame()` 交给 RenderThread，随后经过 BLAST、SurfaceFlinger、HWC 和 present。页面嵌入 `SurfaceView`、`TextureView`、WebView 或视频组件后，要按对应 Producer 和 layer 重新分类。完整管线可结合 [Compose 渲染管线架构](../../part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md) 阅读。
+普通 `ComposeView` 不会单独创建 Surface。内容仍由当前 App Window 的 HWUI 路径输出：UI 线程完成 Composition、Layout、Drawing 记录，经 `HardwareRenderer.syncAndDrawFrame()` 交给 RenderThread，随后经过 BLAST、SurfaceFlinger、HWC 和 present。页面嵌入 `SurfaceView`、`TextureView`、WebView 或视频组件后，要按对应 Producer 和 layer 重新分类。完整管线可结合 [Compose 渲染管线架构](../../part2-performance/ch18-rendering-pipelines/23-compose-rendering-pipeline.md) 阅读。
 
 ## 从状态读取阶段控制工作范围
 

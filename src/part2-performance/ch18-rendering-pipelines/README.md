@@ -1,59 +1,40 @@
-# 第 18 章：渲染链路全景
+# 第 18 章：渲染管线专题
 
-Android 渲染系统包含多条出图路径。
-
-普通 View、SurfaceView、TextureView、Flutter、WebView、OpenGL ES、Vulkan、Camera 和视频叠加的 Producer、Consumer、同步方式与瓶颈不同。套用一条统一路径会混淆责任边界。
-
-分析前要先确认当前问题经过哪条出图路径，再选择对应的时间点和工具。
-
-## 基础索引
-
-- **BufferQueue、BLASTBufferQueue 与 Vsync**：后续 SurfaceView、TextureView、Flutter、WebView、Camera 等渲染路径都绕不开这套生产者、消费者和事务同步模型。
-- **FrameTimeline 与 JankTracker**：Android 12+ 分析 jank 时，Expected Timeline / Actual Timeline 是主要观察入口，不能只看旧式 VSync slice。
-- **RenderEffect、AGSL、可更新 GPU 驱动、Game Mode API**：这些能力决定现代 UI 特效、驱动更新和游戏渲染调优该从哪里入手。
-
-三组索引用于确认 Producer、Consumer、同步点和观测入口。具体路径不明确时，应先回到这些对象重新对齐证据。
+Android 渲染不是一条固定流水线。分析前先确认 Producer、输出 Surface、layer 拓扑和最终合成位置，再进入对应专项；框架名、控件名或单个长 slice 都不能代替对象证据。
 
 ## 内容索引
 
-- `18.1` 渲染路径分类与选型对照
-- `18.2` Android View 标准路径（BLAST 深入）
-- `18.3` Android View 软件渲染路径
-- `18.4` Android View 混合渲染路径
-- `18.5` Android View 多窗口路径
-- `18.6` SurfaceView 直出路径
-- `18.7` TextureView 合成路径
-- `18.8` OpenGL ES 渲染路径
-- `18.9` Vulkan 原生渲染路径
-- `18.10` SurfaceControl API 深入
-- `18.11` ANGLE（GLES-over-Vulkan 翻译层）
-- `18.12` Flutter 渲染路径
-- `18.13` WebView 渲染路径（四种模式）
-- `18.14` Camera 渲染管线
-- `18.15` 视频叠加与 HWC
-- `18.16` 游戏引擎渲染路径
-- `18.17` Hardware Buffer Renderer
-- `18.18` PIP 与自由窗口渲染
-- `18.19` 可变刷新率渲染管线
-- `18.20` 渲染分析方法（含 Frame Timeline / JankTracker 观察）
-- `18.21` EyeDropper API 与跨设备协作性能
-- `18.22` Android XR 空间 UI 与环境资产渲染性能
-- `18.23` 多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR
-- `18.24` Advanced Professional Video 与专业视频编解码管线
-- `18.25` Jetpack Compose 渲染管线架构
-- `18.26` HWUI Vulkan 多队列并行渲染与帧边界管理
-- `18.27` Jetpack WebGPU 渲染与计算管线
-
----
+- [18.1 渲染管线分类、选型与分析方法](01-pipeline-overview.md)
+- [18.2 Android View 标准管线（BLAST 深入）](02-android-view-standard.md)
+- [18.3 Android 17 软件与离屏渲染路径](03-android-view-software.md)
+- [18.4 Android 17 混合渲染链路](04-android-view-mixed.md)
+- [18.5 Android 17 多窗口、PiP 与自由窗口渲染](05-android-view-multi-window.md)
+- [18.6 Android 17 SurfaceView 独立 Surface 路径](06-surfaceview.md)
+- [18.7 Android 17 TextureView 宿主合成链路](07-textureview.md)
+- [18.8 Android 17 EGL / OpenGL ES 渲染链路](08-opengl-es.md)
+- [18.9 Android 17 Vulkan 原生渲染管线](09-vulkan-native.md)
+- [18.10 Android 17 SurfaceControl NDK API](10-surface-control-api.md)
+- [18.11 Android 17 ANGLE（GLES-over-Vulkan 翻译层）](11-angle-gles-vulkan.md)
+- [18.12 Android 17 Flutter 渲染管线](12-flutter-rendering.md)
+- [18.13 Android 17 WebView 渲染管线](13-webview-rendering.md)
+- [18.14 Android 17 Camera 渲染管线](14-camera-pipeline.md)
+- [18.15 Android 17 视频叠加与 HWC](15-video-overlay-hwc.md)
+- [18.16 Android 17 游戏引擎渲染链路](16-game-engine.md)
+- [18.17 Android 17 HardwareBufferRenderer](17-hardware-buffer-renderer.md)
+- [18.18 Android 17 可变刷新率（ARR/VRR）渲染管线](18-variable-refresh-rate.md)
+- [18.19 Android 17 EyeDropper API 与跨设备协作性能](19-eyedropper-crossdevice.md)
+- [18.20 Android 17 / Android XR 空间 UI 与环境资产渲染性能](20-android-xr-spatial-ui-rendering.md)
+- [18.21 Android 17 多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR](21-media-codec2-tunneled-media3-abr.md)
+- [18.22 Android 17 Advanced Professional Video 与专业视频编解码管线](22-advanced-professional-video-apv.md)
+- [18.23 Android 17 Jetpack Compose 渲染管线架构](23-compose-rendering-pipeline.md)
+- [18.24 Android 17 HWUI Vulkan 多队列并行渲染与帧边界管理](24-android17-hwui-vulkan-multi-queue.md)
+- [18.25 Android 17 Jetpack WebGPU 渲染与计算管线](25-webgpu-android-pipeline.md)
 
 ## 阅读建议
 
-- **基础路径**：先看基础索引，再读 `18.1`，然后进入 `18.2` 到 `18.7`。
-- **性能分析**：从 `18.20` 开始，遇到具体问题时再回到对应路径，并把 BufferQueue / VSync 放回同一条时间线。
-- **组件路径**：按 `18.2 → 18.7 → 18.10 → 18.20` 阅读，连接 BLAST、SurfaceControl 和 FrameTimeline。
+- 普通 View 或 Compose：先读 [18.1](01-pipeline-overview.md)，再按 [18.2](02-android-view-standard.md) → [18.23](23-compose-rendering-pipeline.md) 进入具体框架。
+- Surface、图形 API 与多 layer：按 [18.4](04-android-view-mixed.md) → [18.6](06-surfaceview.md) / [18.7](07-textureview.md) → [18.8](08-opengl-es.md) / [18.9](09-vulkan-native.md) → [18.10](10-surface-control-api.md) 阅读。
+- 视频、Camera 与游戏：分别从 [18.14](14-camera-pipeline.md)、[18.15](15-video-overlay-hwc.md)、[18.16](16-game-engine.md) 切入，再补 [18.18](18-variable-refresh-rate.md) 和 [18.21](21-media-codec2-tunneled-media3-abr.md)。
+- 任一性能问题都回到 [18.1 的统一分析方法](01-pipeline-overview.md#统一分析方法)，把 Producer、BufferQueue、fence、SurfaceFlinger、HWC 与 present 放回同一帧。
 
-针对视频层、Flutter 或 TextureView 等具体问题，可按以下顺序阅读：
-
-1. 确定问题所属的出图路径。
-2. 阅读对应组件章节。
-3. 使用 `18.20` 的分析方法复核。
+原独立 PiP/Freeform 正文已并入 18.5，原独立分析方法正文已并入 18.1；其余专项保持一篇一主题。

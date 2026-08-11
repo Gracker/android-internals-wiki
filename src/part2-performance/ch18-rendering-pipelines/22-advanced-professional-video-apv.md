@@ -1,7 +1,7 @@
 ---
 title: "Android 17 Advanced Professional Video 与专业视频编解码管线"
-chapter: "18.24"
-section: "18.24"
+chapter: "18.22"
+section: "18.22"
 section_title: "Android 17 Advanced Professional Video 与专业视频编解码管线"
 status: ready-for-review
 drafted_date: "2026-05-26"
@@ -12,7 +12,7 @@ confidence: high
 deep_reviewed_date: "2026-08-09"
 deep_review_run_id: "20260809-203506-deep-review-ecd9cb0e"
 tags: [media, apv, mediacodec, professional-video, android16, android17]
-related_chapters: ["18.23", "14.20", "24.13", "26.3"]
+related_chapters: ["18.21", "14.20", "24.13", "26.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-26"
 gap_source: "官方文档/AOSP结构/素材驱动"
@@ -89,7 +89,7 @@ sources:
     role: "设备温控策略依赖的 thermal framework 锚点"
 ---
 
-# 18.24 Android 17 Advanced Professional Video 与专业视频编解码管线
+# 18.22 Android 17 Advanced Professional Video 与专业视频编解码管线
 
 平台源码固定到 Android 17 / API 37 的 `android-17.0.0_r1`，kernel 固定到 `android17-6.18-2026-06_r6`。APV 在 Android 16 引入，Android 16 的 36.1 次版本补上 `MediaRecorder.VideoEncoder.APV`，Android 17 又增加录制质量参数。版本演进按公开接口说明，源码结论均以 Android 17 tag 为准。
 

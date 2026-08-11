@@ -319,7 +319,7 @@ Winscope 中应检查 Shell transition 的参与者、WindowManager 状态、Sur
 
 应记录媒体 presentation timestamp、解码输入/输出、目标 Surface 的 frame number、queue/acquire/release、display present 和音频时钟。UI 的 App FrameTimeline 正常，不能证明独立视频 layer 连续更新；反过来，视频连续也不能证明控制栏动画流畅。
 
-HWC overlay 能减少 GPU 合成压力，但它取决于格式、缩放、旋转、HDR、保护内容、其他 layers 与硬件资源。检查目标 layer 的实际 composition type，不要依据 SurfaceView 或 MediaCodec 名称推断 overlay。详见 [视频 Overlay 与 HWC](../ch18-rendering-pipelines/15-video-overlay-hwc.md) 和 [MediaCodec2、Tunneled Playback 与 Media3 ABR](../ch18-rendering-pipelines/23-media-codec2-tunneled-media3-abr.md)。
+HWC overlay 能减少 GPU 合成压力，但它取决于格式、缩放、旋转、HDR、保护内容、其他 layers 与硬件资源。检查目标 layer 的实际 composition type，不要依据 SurfaceView 或 MediaCodec 名称推断 overlay。详见 [视频 Overlay 与 HWC](../ch18-rendering-pipelines/15-video-overlay-hwc.md) 和 [MediaCodec2、Tunneled Playback 与 Media3 ABR](../ch18-rendering-pipelines/21-media-codec2-tunneled-media3-abr.md)。
 
 ---
 
@@ -407,7 +407,7 @@ Renderer 退出应结合进程生命周期、LMK/OOM 证据与 `WebViewClient.on
 - [可复现的卡顿分析方法](./03-jank-methodology.md)
 - [渲染管线总览](../ch18-rendering-pipelines/01-pipeline-overview.md)
 - [多窗口渲染](../ch18-rendering-pipelines/05-android-view-multi-window.md)
-- [渲染管线分析方法](../ch18-rendering-pipelines/20-pipeline-analysis-methodology.md)
+- [渲染管线分析方法](../ch18-rendering-pipelines/01-pipeline-overview.md#统一分析方法)
 
 ## 参考资料
 

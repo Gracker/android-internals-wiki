@@ -1,7 +1,7 @@
 ---
 title: "Android 17 可变刷新率（ARR/VRR）渲染管线"
-chapter: "18.19"
-section: "18.19"
+chapter: "18.18"
+section: "18.18"
 section_title: "Android 17 可变刷新率（ARR/VRR）渲染管线"
 status: finalized
 applicable_versions: "多刷新率背景：Android 11 (API 30) - Android 14；ARR 主体：Android 15 QPR1 - Android 17 (API 37)"
@@ -136,7 +136,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-05
 ---
 
-# 18.19 Android 17 可变刷新率（ARR/VRR）渲染管线
+# 18.18 Android 17 可变刷新率（ARR/VRR）渲染管线
 
 ## 为什么这一节容易误判
 

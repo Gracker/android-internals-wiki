@@ -33,7 +33,7 @@ sources:
 - kernel：`android17-6.18-2026-06_r6`；
 - UI 工具链：Compose BOM `2025.12.00`、Compose Runtime `1.10.0`、Kotlin `2.2`。
 
-Compose Runtime 是随应用发布的 AndroidX 库，Android platform tag 不包含对应代码。Android 17 提供 Looper、Choreographer、HWUI、FrameTimeline 等宿主能力；Runtime 和 Compiler 行为要按项目解析出的依赖版本核查。重组、稳定性和阶段性读取的通用方法见 [22.3 Compose 性能优化](03-compose-performance.md)，显示路径见 [18.25 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md)。
+Compose Runtime 是随应用发布的 AndroidX 库，Android platform tag 不包含对应代码。Android 17 提供 Looper、Choreographer、HWUI、FrameTimeline 等宿主能力；Runtime 和 Compiler 行为要按项目解析出的依赖版本核查。重组、稳定性和阶段性读取的通用方法见 [22.3 Compose 性能优化](03-compose-performance.md)，显示路径见 [18.23 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/23-compose-rendering-pipeline.md)。
 
 ## `rememberCoroutineScope`：用于事件，不用于启动副作用
 

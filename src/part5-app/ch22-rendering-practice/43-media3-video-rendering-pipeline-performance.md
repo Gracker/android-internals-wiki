@@ -529,7 +529,7 @@ tunnel 没有绕开 SurfaceFlinger。Surface 的 sideband stream 仍对应一个
 
 产品首帧指标应把“播放器首帧事件”与“用户可见首帧”命名为两个指标，避免把 callback 时间当作显示完成。
 
-更完整的 tunnel、Codec2 与 ABR 内容见 [多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR](../../part2-performance/ch18-rendering-pipelines/23-media-codec2-tunneled-media3-abr.md)。
+更完整的 tunnel、Codec2 与 ABR 内容见 [多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR](../../part2-performance/ch18-rendering-pipelines/21-media-codec2-tunneled-media3-abr.md)。
 
 ## 十二、帧率匹配与倍速
 
@@ -935,7 +935,7 @@ tunnel 不依赖普通逐帧 `queueBuffer()` 作为主证据。采样重点转�
 
 - [SurfaceView 与 TextureView 渲染性能选型实战](42-surfaceview-textureview-rendering-performance.md)
 - [Compose ↔ View 互操作性能实战](41-compose-view-interop-performance.md)
-- [多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR](../../part2-performance/ch18-rendering-pipelines/23-media-codec2-tunneled-media3-abr.md)
+- [多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR](../../part2-performance/ch18-rendering-pipelines/21-media-codec2-tunneled-media3-abr.md)
 - [Android 17 DisplayMode 与刷新率选择](../../part2-rendering/ch02-rendering/2.31-android17-display-mode-refresh-rate-selection.md)
 
 ## 源码与官方资料

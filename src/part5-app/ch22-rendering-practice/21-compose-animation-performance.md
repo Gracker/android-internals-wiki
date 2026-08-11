@@ -26,7 +26,7 @@ drafted_date: "2026-06-05"
 
 Compose 动画每帧会做多少工作，取决于动画值在哪里被读取、哪些阶段因此失效、过渡期间保留了多少内容，以及 App 交帧后的显示链路。库版本基线为 Compose 1.10.0，平台基线为 Android 17 / API 37 的 `android-17.0.0_r1`。Compose 独立于 Android 平台发布，不能用 API 37 推导 Compose 行为。
 
-普通 Compose 页面仍由宿主 App Window 的 HWUI 管线出图。状态计算和部分 Composition、Layout、Draw 工作发生在主线程，RenderThread、GPU、BLAST、SurfaceFlinger 与 HWC 继续负责后半程。完整边界见 [18.25 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md)。这里聚焦动画给这条路径增加的工作。
+普通 Compose 页面仍由宿主 App Window 的 HWUI 管线出图。状态计算和部分 Composition、Layout、Draw 工作发生在主线程，RenderThread、GPU、BLAST、SurfaceFlinger 与 HWC 继续负责后半程。完整边界见 [18.23 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/23-compose-rendering-pipeline.md)。这里聚焦动画给这条路径增加的工作。
 
 ## 1. 用“读取阶段”判断动画成本
 

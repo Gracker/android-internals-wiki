@@ -1,7 +1,7 @@
 ---
 title: "Android 17 EyeDropper API 与跨设备协作性能"
-chapter: "18.21"
-section: "18.21"
+chapter: "18.19"
+section: "18.19"
 section_title: "Android 17 EyeDropper API 与跨设备协作性能"
 status: finalized
 applicable_versions: "Android 17 (API 37)"
@@ -11,7 +11,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-07-15T09:27:11+08:00"
 last_task9_audit: "2026-07-15"
 tags: [eyedropper, activity-result, color-picking, system-ui, collaboration]
-related_chapters: ["2.6", "8.2", "18.20"]
+related_chapters: ["2.6", "8.2", "18.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-10"
 gap_source: "官方文档+新特性"
@@ -99,7 +99,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-17
 ---
 
-# Android 17 EyeDropper API 与跨设备协作性能
+# 18.19 Android 17 EyeDropper API 与跨设备协作性能
 
 ## EyeDropper 需要明确哪些边界
 

@@ -134,8 +134,8 @@ related_chapters:
 - '2.10'
 - '18.6'
 - '18.7'
-- '18.19'
-- '18.23'
+- '18.18'
+- '18.21'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 task9_result: "auto-fixed"
@@ -349,28 +349,7 @@ HWC 的能力由 SoC 显示模块、Composer HAL、显示模式和当前 Layer �
 
 ## Tunneled playback 与 SIDEBAND
 
-普通非 tunneled 播放中，App 或播放器依据 media clock 调用 `releaseOutputBuffer()`，视频帧经 Surface 的队列进入 SurfaceFlinger。Tunneled playback 把逐帧选择和 A/V 同步下移到设备视频链路：
-
-- 按需播放在 Android 5 及以后可使用与音频时间戳同步的 AudioTrack clock；
-- 直播电视在 Android 11 及以后还可使用 tuner 提供的 PCR/STC；
-- codec 组件返回 sideband handle，框架通过 `native_window_set_sideband_stream()` 把它关联到 Surface；
-- HWC 按音频或 tuner 时钟选择视频帧。只有其他 Layer 或 sideband Layer 的位置、尺寸等状态变化时，普通 validate/present 周期才需要更新这一层的状态。
-
-App 侧必须查询 codec 的 `FEATURE_TunneledPlayback`，并为相应场景配置 `MediaFormat.KEY_AUDIO_SESSION_ID` 或 `KEY_HARDWARE_AV_SYNC_ID`。Android 17 的 Codec2 路径在 `CCodec.cpp` 中配置 `C2PortTunneledModeTuning`、查询 `C2PortTunnelHandleTuning::output`，随后设置 sideband stream。
-
-这条路径不要简化成“所有 SurfaceView 视频的增强模式”。AOSP 的设备文档要求低层播放器使用 `SurfaceView`，但 codec、音频、HWC 和厂商同步器还要同时支持。PiP 圆角、模糊和其他 GPU 特效也可能因为 buffer 绕开普通图形路径而受限。
-
-### Trace 中“没有逐帧 queueBuffer”可能是正常现象
-
-普通 Surface 视频应能看到 codec producer、BufferQueue、latch 与合成的逐帧活动。`SIDEBAND` Layer 的 buffer 更新和内容同步不经通常的 validate/present 周期，因此 Layer 状态稳定时，看不到同样密度的 `queueBuffer` / `latchBuffer` 不能直接判成 trace 丢数据。
-
-诊断 tunneled 播放要同时确认：
-
-- codec 是否选择了声明 tunneled-playback 的组件；
-- SurfaceFlinger Layer 是否带 sideband 状态；
-- HWC composition type 是否为 `SIDEBAND`；
-- AudioTrack 或 tuner 时钟是否在推进；
-- 厂商 media/display trace 中是否有 frame selection、late/drop 或同步异常。
+Tunneled playback 把逐帧选择和 A/V 同步下移到 codec、音频/tuner 时钟与设备显示链，sideband layer 因而不一定出现普通 Surface 视频同等密度的 `queueBuffer` 和 latch 事件。这里仅保留它与 HWC composition type 的边界：确认 codec 能力、sideband 状态、`SIDEBAND` composition 和设备时钟后，才能把缺少逐帧图形事件解释为正常路径。Codec2 配置、Media3 ABR、音视频同步和完整排障统一见 [18.21 多媒体播放管线](21-media-codec2-tunneled-media3-abr.md)。
 
 ## DRM、Secure Video 与 Overlay
 
@@ -521,7 +500,7 @@ GPU 可能在画 App UI、client target 或其他应用内容。应核对视频 
 - [2.10 GPU 渲染深入](../../part1-fundamentals/ch02-rendering/10-gpu-rendering.md)：RenderEngine/client composition 的 GPU 侧成本。
 - [18.6 SurfaceView](06-surfaceview.md)：独立 Surface、窗口层级和生命周期。
 - [18.7 TextureView](07-textureview.md)：`SurfaceTexture` 采样与 App Window 合成。
-- [18.23 多媒体播放管线](23-media-codec2-tunneled-media3-abr.md)：解封装、Codec2、tunneled playback 和播放策略。
+- [18.21 多媒体播放管线](21-media-codec2-tunneled-media3-abr.md)：解封装、Codec2、tunneled playback 和播放策略。
 
 ## 源码核对清单
 

@@ -51,7 +51,7 @@ sources:
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
 tags: [perfetto, bufferqueue, frametimeline, jank, surfaceflinger, rendering]
-related_chapters: ["2.13", "2.16", "7.4", "18.20"]
+related_chapters: ["2.13", "2.16", "7.4", "18.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "素材驱动/章节深挖"
@@ -105,7 +105,7 @@ Perfetto 文档把 `Buffer Stuffing` 定义为一种队列状态：App 在前一
 - TextureView 先由外部 Producer 写 SurfaceTexture，再由宿主 HWUI 采样进 App Window，至少要区分输入队列与宿主窗口队列；
 - Camera、视频和游戏的 Producer 可能跨进程，并且可以有不同的排队策略。
 
-BufferQueue 的 slot 与 fence 基础见 2.13、2.16 节；标准窗口、SurfaceView、TextureView、混合渲染和 Camera 的路径选择见 18.20 节。
+BufferQueue 的 slot 与 fence 基础见 2.13、2.16 节；标准窗口、SurfaceView、TextureView、混合渲染和 Camera 的路径选择见 18.1 节。
 
 ## 从 FrameTimeline 找到目标 Surface
 

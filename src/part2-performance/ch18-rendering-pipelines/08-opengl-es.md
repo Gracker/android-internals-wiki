@@ -1,6 +1,7 @@
 ---
 title: Android 17 EGL / OpenGL ES 渲染链路
 chapter: '18.8'
+section: '18.8'
 status: finalized
 applicable_versions: Android 9 (API 28) - Android 17 (API 37)
 tags:
