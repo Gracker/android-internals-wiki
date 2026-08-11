@@ -6,16 +6,16 @@
 - 内容范围：正文已经覆盖 ch01-ch26、前言、附录和若干 Android 17 / 工具链扩展条目
 - 当前阶段：alpha 内容收敛期，按章逐篇审阅、合并重复正文并统一编号
 - 发布形态：mdBook 中文版优先，英文版在 v1.0 中文内容冻结后启动
-- 当前风险：目录架构已经恢复，但正文仍有 293 篇尚未进入 `ready-to-publish`；活动 queue 还有 9 条 `body-applied` 待后续复核，遗留状态名仍需收敛
+- 当前风险：目录架构已经恢复，但正文仍有 288 篇尚未进入 `ready-to-publish`；活动 queue 还有 9 条 `body-applied` 待后续复核，遗留状态名仍需收敛
 
 当前统计口径：
 
 | 口径 | 数量 | 说明 |
 |------|------|------|
-| 规范章节正文 | 609 篇 | 396 finalized、211 ready-for-review、1 verified、1 outdated |
-| `src/SUMMARY.md` | 648 个本地链接 | 覆盖前言、26 章、附录和全部保留正文，0 失效、0 重复 |
+| 规范章节正文 | 597 篇 | 388 finalized、207 ready-for-review、1 verified、1 outdated |
+| `src/SUMMARY.md` | 636 个本地链接 | 覆盖前言、26 章、附录和全部保留正文，0 失效、0 重复 |
 | `metadata/queue.json` | 23 条 | 9 body-applied、7 rejected、5 superseded、1 review-finalized、1 completed |
-| `pipeline_stage=ready-to-publish` | 316 篇 | 来自规范章节正文 frontmatter 聚合 |
+| `pipeline_stage=ready-to-publish` | 309 篇 | 来自规范章节正文 frontmatter 聚合 |
 
 当前工作重点：
 

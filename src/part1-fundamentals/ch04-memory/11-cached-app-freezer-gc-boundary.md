@@ -2,7 +2,7 @@
 
 
 
-title: "Cached App Freezer 与 GC 触发边界"
+title: "Cached App Freezer、外部页回收与 GC 边界"
 chapter: "4.11"
 section: "4.11"
 status: ready-for-review
@@ -42,6 +42,10 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java"
   - type: aosp
+    path: "frameworks/base/services/core/jni/com_android_server_am_CachedAppOptimizer.cpp"
+  - type: aosp
+    path: "system/core/libprocessgroup/profiles/task_profiles.json"
+  - type: aosp
     path: "art/runtime/gc/heap.cc"
   - type: research
     path: "DeepResearch/2026-05-19-android-cached-app-freezer-gc-trigger.md"
@@ -62,9 +66,12 @@ last_rework_at: "2026-08-03T21:35:04+08:00"
 last_rework_run_id: "20260803-213504-rework-1a73105a"
 rework_by: aiw-polish-rework
 rework_result: fixed-pending-review
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch04-memory/04.20-android17-memory-compaction-freezer-performance-impact.md"
 ---
 
-# 4.11 Cached App Freezer 与 GC 触发边界
+# 4.11 Cached App Freezer、外部页回收与 GC 边界
 
 ## 先分清四种机制
 
@@ -271,6 +278,27 @@ Android 17 还将 MMD 引入这类内存管理流程。按设备配置，冻结�
 - 恢复耗时可能受页面重新读入影响，需要把 unfreeze、major fault、ZRAM I/O 和 Activity launch 放到同一时间轴。
 
 这些功能受开关、设备存储和产品配置约束。AOSP 存在实现不代表每台 Android 17 设备都启用了相同策略。
+
+### app compaction 的 profile 与执行后端
+
+`CachedAppOptimizer.CompactProfile` 描述要处理的映射范围：`SOME` 偏向文件页，`ANON` 偏向匿名页，`FULL` 同时覆盖两者。它不是 persistent-process profile，也不等于 ART 的 young/full GC。
+
+Android 17 有两类执行后端：
+
+- 逐 VMA 后端读取目标进程 maps，使用 `process_madvise()` 分批提交；文件页常用 `MADV_COLD`，匿名页常用 `MADV_PAGEOUT`。一次进程级请求可能拆成多次 syscall。
+- `use_memcg_for_compaction` 开启且 task profile 可用时，通过 `CompactFull`、`CompactAnon` 或 `CompactFile` 把目标 memcg 的 `memory.current` 写入 `memory.reclaim`，并用 swappiness 参数偏向匿名页或文件页；不支持时回退到逐 VMA 后端。
+
+`memory.reclaim` 是主动回收接口，内核可以少回收或多回收，少于请求量时可返回 `EAGAIN`。flag 改变的是执行后端，不会把触发条件变成 per-process PSI，也不会跳过 OOM adj、冻结完成、RSS 和时间节流。
+
+Android 17 的 `ENABLE_SHARED_AND_CODE_COMPACT` 在该 tag 下为 `false`。profile 解析可能把 `FULL` 收窄为 `ANON`，把 `SOME` 变成 `NONE`；低 free-swap 时 `FULL` 还可能先降级。因此应以 resolved profile 和实际结果解释，而不是只看最初请求名。
+
+### 监控端如何解释冻结区间
+
+Freezer 的 atrace 事件是 instant，`dur` 不能当作冻结时长。应按同一 PID 配对 `Freeze` 与下一条 `Unfreeze`，并在可访问时用目标 cgroup 的 `cgroup.events:frozen` 确认内核已完成冻结。`/proc/<pid>/status` 的 `D` 表示不可中断睡眠，不是 freezer 专用状态。
+
+进程内监控在线程被冻结后无法继续写日志或采样。解冻后的首个 callback 会观察到很大的 wall-clock 间隔；帧率与 watchdog 应把这段空洞标为 background-frozen，并重置时间基线，不能填成 0 FPS 或一帧数分钟。RSS/PSS 在冻结期间仍可能因外部 reclaim、ZRAM writeback 或共享分摊变化而改变。
+
+`am_compact`、`am_freeze`、`am_unfreeze` EventLog 和 `AM_COMPACT` 的前后 RSS、resolved action、耗时与 ZRAM delta，适合与 Perfetto、cgroup 状态和应用恢复时间交叉验证。一次 `FULL` 请求不证明 Native 最终执行了 `MADV_PAGEOUT` 或 memcg reclaim。
 
 ## Binder Freezer 决定 IPC 如何失败
 

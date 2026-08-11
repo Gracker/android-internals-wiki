@@ -1,5 +1,5 @@
 ---
-status: finalized
+status: ready-for-review
 task9_reviewed_date: "2026-06-07"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-06T01:20:00+08:00"
@@ -52,8 +52,8 @@ related_chapters:
 - '4.3'
 - '4.4'
 - '2.6'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: ready-for-review
+task6_state: pending-verification
 task6_reviewed_date: 2026-06-04
 task9_state: reviewed
 task9_result: auto-fixed
@@ -71,10 +71,13 @@ last_task9_autofix_at: "2026-06-06"
 task6_reviewed_by: openclaw-task6
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-09
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md"
 ---
 
 
-# Linux 内核内存管理
+# 4.2 Linux 内核内存管理
 
 ## 这一层为什么会让应用卡住
 
@@ -372,7 +375,7 @@ adb shell getconf PAGE_SIZE
 
 Android 官方初始测试报告了应用启动、功耗、相机启动和系统启动等平均收益，也明确说明 16 KiB 设备平均会使用略多内存，设备和应用结果会变化。不要从官方平均值推导某个应用的预期收益；应在目标构建上测量 fault、页表、RSS、启动 I/O 和帧时间。
 
-使用 Native 代码的应用还要保证 ELF LOAD 段和打包对齐，避免把 4096 写死。只使用 Java/Kotlin 的应用通常已经兼容，但仍需在 16 KiB 环境执行功能与性能测试。完整迁移要求见 4.7 节。
+使用 Native 代码的应用还要保证 ELF LOAD 段和打包对齐，避免把 4096 写死。只使用 Java/Kotlin 的应用通常已经兼容，但仍需在 16 KiB 环境执行功能与性能测试。完整迁移要求见 4.6 节。
 
 ### THP 的尺寸也不能写死为 2 MiB
 
@@ -401,7 +404,20 @@ ART 会通过 `madvise()` 把不再需要的页退还或标为可丢弃。Androi
 
 Silk 等研究工作讨论了对象热度与内核页热度之间的偏差，这类方案可以作为研究方向；没有进入 `android-17.0.0_r1` 的 ART 调用链时，不能写成 Android 17 系统行为。
 
-ANON_VMA_LAZY 同理。`android17-6.18-2026-06_r6` 中没有该接口或配置，相关社区 patch 与厂商测试应放在独立专题，并清楚标注 patch 版本、测试设备和未合入状态。
+### 尚未合入的 `ANON_VMA_LAZY` 提案
+
+`anon_vma` 为匿名映射建立 reverse mapping（rmap）关系，使内核能从 folio 反查映射它的 VMA，并服务页面迁移、回收、KSM、NUMA balancing 和 `fork()` 后的 COW。普通匿名 VMA 已把实际物理页分配延迟到首次 page fault；`ANON_VMA_LAZY` 讨论的是把 `anon_vma` 结构及其 interval tree 关系也进一步延迟，并不是让 `mmap()` 第一次具有惰性分配。
+
+在 Android Common Kernel `android17-6.18-2026-06_r6` 中，没有 `CONFIG_ANON_VMA_LAZY`、同名源码符号或 Kconfig 入口。公开讨论中的提案曾报告减少 `anon_vma` slab 与部分 `fork()` 开销，但上游评审指出了 VMA 生命周期、interval tree 完整性、锁覆盖和映射类型覆盖不足等问题。因此，它只能作为未合入的设计探索，不能写成 Android 17 已启用的内存优化。
+
+检查厂商内核是否有私有实现时，应同时核对：
+
+- 内核配置、源码符号和补丁提交，而不是只看 Android API level；
+- `/proc/slabinfo` 中 `anon_vma`、`anon_vma_chain` 的数量与对象大小；
+- 同一负载下 `fork()`、VMA 数、minor fault、rmap 相关 CPU 时间和页面迁移结果；
+- KSM、NUMA balancing、page migration、COW 与进程退出等正确性压力测试。
+
+仅看到 `anon_vma` slab 下降，不能证明完整提案存在；厂商也可能通过 VMA 合并、分配器调整或其他补丁得到相似结果。
 
 ## 一套面向性能问题的取证顺序
 

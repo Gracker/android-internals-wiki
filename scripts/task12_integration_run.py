@@ -27,8 +27,8 @@ TIME = now.strftime("%H:%M")
 SECTION_MAP = {
     "4.0": ("src/part1-fundamentals/ch04-memory/README.md", "4.0 内存章节导读"),
     "4.5": ("src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md", "4.5 App 内存优化"),
-    "4.7": ("src/part1-fundamentals/ch04-memory/07-16kb-page-size.md", "4.7 16KB Page Size"),
-    "4.8": ("src/part1-fundamentals/ch04-memory/08-art-generational-gc.md", "4.8 ART 分代 GC"),
+    "4.6": ("src/part1-fundamentals/ch04-memory/06-16kb-page-size.md", "4.6 16 KB Page Size"),
+    "4.7": ("src/part1-fundamentals/ch04-memory/07-art-generational-gc.md", "4.7 ART 分代 GC、Region 碎片与暂停分析"),
     "5.0": ("src/part1-fundamentals/ch05-cpu-power/README.md", "5.0 CPU 与功耗章节导读"),
     "5.1": ("src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md", "5.1 Linux 进程调度基础"),
     "5.2": ("src/part1-fundamentals/ch05-cpu-power/02-eas.md", "5.2 EAS 能量感知调度"),
@@ -60,9 +60,9 @@ QUEUE_DATA = {
             {
                 "type": "交叉引用缺失",
                 "location": "本章内容列表",
-                "detail": "列表仅包含 4.1-4.6，遗漏 4.7(16KB Page Size) 和 4.8(ART 分代 GC)",
-                "suggestion": "补齐 4.7、4.8 索引，确保与目录文件一致",
-                "evidence": ["磁盘文件存在 07-16kb-page-size.md 和 08-art-generational-gc.md"]
+                "detail": "章节导读需要覆盖 4.1-4.17 的当前主文",
+                "suggestion": "按当前连续编号核对索引，确保与目录文件一致",
+                "evidence": ["磁盘文件存在 06-16kb-page-size.md 和 07-art-generational-gc.md"]
             },
             {
                 "type": "版本差异缺失",
@@ -106,7 +106,7 @@ QUEUE_DATA = {
             }
         ]
     },
-    "4.7": {
+    "4.6": {
         "priority": 85,
         "issues": [
             {
@@ -125,7 +125,7 @@ QUEUE_DATA = {
             }
         ]
     },
-    "4.8": {
+    "4.7": {
         "priority": 85,
         "issues": [
             {
@@ -562,23 +562,23 @@ QUEUE_DATA = {
 # Research gaps: section_key -> [{description, importance, direction, related_sections}]
 GAPS_DATA = {
     "4.0": [
-        {"description": "16KB Page Size 对现有三方库的破坏性影响评估", "importance": "高", "direction": "整理受影响常见三方库清单", "related": "4.7"},
+        {"description": "16KB Page Size 对现有三方库的破坏性影响评估", "importance": "高", "direction": "整理受影响常见三方库清单", "related": "4.6"},
         {"description": "MGLRU 运行时监控方法", "importance": "中", "direction": "通过 sysfs 接口观察多代 LRU 实际回收效率", "related": "4.0"},
-        {"description": "MTE 硬件级防御机制细节", "importance": "中", "direction": "硬件 Tag 与物理内存 1/32 映射关系及性能代价", "related": "4.6"},
+        {"description": "MTE 硬件级防御机制细节", "importance": "中", "direction": "硬件 Tag 与物理内存 1/32 映射关系及性能代价", "related": "4.15"},
     ],
     "4.5": [
         {"description": "dmabuf 追踪", "importance": "中", "direction": "Perfetto 中 dmabuf track 如何反映 GPU 内存分配", "related": "4.5"},
         {"description": "ActivityManager.getMyMemoryState 性能开销", "importance": "中", "direction": "主动获取 trimLevel 的性能开销与适用场景", "related": "4.5"},
-        {"description": "16KB 对齐下内存浪费量化", "importance": "低", "direction": "大量小图场景内部碎片增量估算", "related": "4.5, 4.7"},
+        {"description": "16KB 对齐下内存浪费量化", "importance": "低", "direction": "大量小图场景内部碎片增量估算", "related": "4.5, 4.6"},
+    ],
+    "4.6": [
+        {"description": "Bionic Linker 16KB Compat Mode 内存重映射逻辑", "importance": "高", "direction": "阅读 bionic/linker/linker.cpp 中 Linker 类对页大小对齐失败的处理", "related": "4.6"},
+        {"description": "RELRO 填充 Bug 对 16KB 系统的影响", "importance": "中", "direction": "研究旧版 lld 链接器产生的 RELRO 对齐错误", "related": "4.6"},
     ],
     "4.7": [
-        {"description": "Bionic Linker 16KB Compat Mode 内存重映射逻辑", "importance": "高", "direction": "阅读 bionic/linker/linker.cpp 中 Linker 类对页大小对齐失败的处理", "related": "4.7"},
-        {"description": "RELRO 填充 Bug 对 16KB 系统的影响", "importance": "中", "direction": "研究旧版 lld 链接器产生的 RELRO 对齐错误", "related": "4.7"},
-    ],
-    "4.8": [
-        {"description": "userfaultfd 在 CMC 中的页错误开销", "importance": "中", "direction": "深入研究 SIGBUS 处理器在 CMC 中的性能损耗", "related": "4.8"},
-        {"description": "mid_generation 具体晋升阈值", "importance": "高", "direction": "确认是否硬编码为 1 次或存在动态调整逻辑", "related": "4.8"},
-        {"description": "Android 17 DeliQueue 与 GC 优化协同", "importance": "中", "direction": "ART 调度器如何利用 DeliQueue 规避 GC 高峰", "related": "4.8"},
+        {"description": "userfaultfd 在 CMC 中的页错误开销", "importance": "中", "direction": "深入研究 SIGBUS 处理器在 CMC 中的性能损耗", "related": "4.7"},
+        {"description": "mid_generation 具体晋升阈值", "importance": "高", "direction": "确认是否硬编码为 1 次或存在动态调整逻辑", "related": "4.7"},
+        {"description": "Android 17 DeliQueue 与 GC 优化协同", "importance": "中", "direction": "ART 调度器如何利用 DeliQueue 规避 GC 高峰", "related": "4.7"},
     ],
     "5.0": [
         {"description": "ADPF (Adaptive Performance Framework) 架构", "importance": "高", "direction": "PerformanceHintManager 如何通过 PowerHAL 影响 CPU 频率", "related": "5.9"},
@@ -671,10 +671,10 @@ SUGGESTIONS_DATA = {
         {"type": "数据支撑", "location": "120Hz 掉帧计算", "problem": "描述精彩但可更量化", "suggestion": "给出公式示例: Vsync(8.33ms) < UI Work(4ms) + GC Pause(5ms) = Frame Drop"},
         {"type": "源码准确性", "location": "Bitmap.java 路径", "problem": "路径对应旧分支", "suggestion": "标注此路径对应 AOSP 现代版本 android-15.0.0_r1+"},
     ],
-    "4.7": [
+    "4.6": [
         {"type": "内容优化", "location": "构建工具链要求", "problem": "AGP 8.5 描述冗长", "suggestion": "直接强调 AGP 8.5.1+ 是修复 bundletool 16KB 对齐 Bug 的关键版本"},
     ],
-    "4.8": [
+    "4.7": [
         {"type": "Perfetto 优化", "location": "SQL 示例", "problem": "使用 process_name 较慢", "suggestion": "推荐使用 upid 替代 process_name 以利用索引"},
     ],
     "5.0": [

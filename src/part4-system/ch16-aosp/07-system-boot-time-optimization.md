@@ -457,7 +457,7 @@ Android Developers 的 16 KB page size 文档给出一组初始测试：system b
 - Zygote fork、USAP 和 preload 机制见 [[11-zygote-startup|1.11 Zygote 机制与启动性能优化]]。
 - ART compiler filter 与 dex2oat 见 [[07-art-compilation|1.7 ART 编译管线与 dex2oat 优化]]。
 - Perfetto 配置与采集见 [[02-trace-capture|13.2 Trace 采集]]。
-- 16 KB kernel/用户态边界见 [[07-16kb-page-size|4.7 16 KB Page Size]]。
+- 16 KB kernel/用户态边界见 [[06-16kb-page-size|4.6 16 KB Page Size]]。
 
 ## 参考资料
 

@@ -1,6 +1,6 @@
 ---
 title: "Android 17 ARM MTE 内存标签扩展实战"
-chapter: "4.9"
+chapter: "4.15"
 status: ready-for-review
 drafted_date: "2026-07-06"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -33,13 +33,13 @@ sources:
     path: "DeepResearch/2026-05-26-android-mte-asymm-auto-enablement-mechanism.md"
 ---
 
-# 4.9 Android 17 ARM MTE 内存标签扩展实战
+# 4.15 Android 17 ARM MTE 内存标签扩展实战
 
 平台源码以 AOSP `android-17.0.0_r1` 为基准，内核以 `android17-6.18-2026-06_r6` 为基准。讨论范围包括应用 native heap、stack、globals，以及 Android 如何把 manifest 配置传给 bionic 和 Scudo。
 
 MTE 只能检查使用了 tagged memory 的 native 内存访问。Java/Kotlin 对象仍由 ART 管理；32 位进程、未启用 MTE 的映射、未正确设置 tag 的自定义分配器也不在同一保护范围内。
 
-## MTE 硬件架构演进：从 FEAT_MTE 到 FEAT_MTE4
+## MTE 硬件能力：从 FEAT_MTE 到 FEAT_MTE4
 
 ### Logical tag 与 allocation tag 的比较
 

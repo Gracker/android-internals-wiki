@@ -1,6 +1,6 @@
 ---
-title: "ART HeapTask 调度管线与 Android 17 新增子类"
-chapter: "4.21"
+title: "ART HeapTask 调度、启动维护与冻结边界"
+chapter: "4.9"
 status: ready-for-review
 drafted_date: "2026-07-05"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -8,7 +8,7 @@ last_verified: "2026-07-05"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 tags: [ART, GC, HeapTask, TaskProcessor, GC抑制, 启动性能, 内存管理]
-related_chapters: ["4.8", "4.9", "4.11", "4.14", "4.16", "21.13", "23.5"]
+related_chapters: ["4.3", "4.7", "4.8", "4.11", "4.14", "21.13", "23.6"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-05"
 gap_source: "研究素材"
@@ -33,9 +33,9 @@ sources:
     path: "DeepResearch/2026-07-05-android17-art-heaptask-system-7-subclasses-source-closed-loop.md"
 ---
 
-# 4.21 ART HeapTask 调度管线与 Android 17 新增子类
+# 4.9 ART HeapTask 调度、启动维护与冻结边界
 
-`HeapTask` 是 ART 进程内的一种延时任务抽象。它把“何时执行”和“执行什么”分开：`TaskProcessor` 按目标时间维护任务队列，Java 层的 `HeapTaskDaemon` 串行执行到期任务。GC 请求、堆裁剪、启动期清理、低开销方法追踪停止等工作都能借用这套机制。
+`HeapTask` 是 ART 进程内的延时任务抽象。它把“何时执行”和“执行什么”分开：`TaskProcessor` 按目标时间维护任务队列，Java 层的 `HeapTaskDaemon` 串行执行到期任务。GC 请求、堆裁剪、启动期清理、低开销方法追踪停止等工作都能借用这套机制。
 
 它有两个边界：
 
@@ -44,7 +44,7 @@ sources:
 
 源码以 `android-17.0.0_r1` 为当前锚点。由于缺少逐 tag 证据，不能根据标题中的“新增子类”反推历史起点。Android 17 的生产源码中可以找到 **10 个** `HeapTask` 派生类，其中 6 个定义在 `heap.cc`。
 
-## 4.21.1 从 Java 守护线程进入 native 调度器
+## 4.9.1 从 Java 守护线程进入 native 调度器
 
 `libcore` 的 `Daemons` 创建四个守护线程：`HeapTaskDaemon`、`ReferenceQueueDaemon`、`FinalizerDaemon` 和 `FinalizerWatchdogDaemon`。其中 `HeapTaskDaemon` 的主循环可简化为：
 
@@ -86,7 +86,7 @@ java.lang.Daemons$HeapTaskDaemon
 
 `HeapTask` 继承 `SelfDeletingTask`。任务从队列取出并执行 `Run()` 后，`RunAllTasks()` 紧接着调用 `Finalize()`；默认实现会释放任务对象。因此，已经把所有权交给处理器的任务不能由提交方再次释放。
 
-## 4.21.2 队列怎样保证时间顺序
+## 4.9.2 队列怎样保证时间顺序
 
 `TaskProcessor` 的核心容器是：
 
@@ -127,7 +127,7 @@ Android 17 中的 `CollectorTransitionTask` 和 `TimeBasedGcThresholdCheckTask` 
 
 这个语义与 Java 源码中“运行到停止且没有待处理任务”为止的注释一致。
 
-## 4.21.3 Android 17 中到底有多少种 HeapTask
+## 4.9.3 Android 17 中到底有多少种 HeapTask
 
 统计数量必须先约定范围。只看 `art/runtime/gc/heap.cc` 有 6 种；搜索 Android 17 ART runtime 的生产 C++ 源码，共有 10 种。测试文件里的 `RecursiveTask`、`TestOrderTask` 不计入生产类型。
 
@@ -158,7 +158,7 @@ static constexpr bool kAsyncReferenceQueueAdd = false;
 
 所以，继承关系只能证明它具备任务接口，不能证明它在当前构建中由 `HeapTaskDaemon` 异步执行。
 
-## 4.21.4 GC、切换和裁剪任务怎样避免重复工作
+## 4.9.4 GC、切换和裁剪任务怎样避免重复工作
 
 ### ConcurrentGCTask：用 GC 序号合并请求
 
@@ -205,7 +205,7 @@ static constexpr bool kAsyncReferenceQueueAdd = false;
 
 这是一套“检查—估算—再检查”机制，不是固定周期定时器。
 
-## 4.21.5 fork 后为何先放宽堆目标，再逐步降低
+## 4.9.5 fork 后为何先放宽堆目标，再逐步降低
 
 应用进程刚从 zygote fork 出来时，类加载、资源初始化和首帧准备会产生集中分配。Android 17 的 `Heap::PostForkChildAction()` 先降低启动期 GC 干扰，再逐步恢复常态。
 
@@ -252,7 +252,7 @@ static constexpr bool kAsyncReferenceQueueAdd = false;
 
 任务运行时还会比较 GC 序号。若启动期间已经发生 GC，它不会再申请一轮；只有长期未做 GC 的进程才会收到后台 GC 请求。因而不能把这段代码概括为“fork 后固定 10 秒强制 GC”或“每个进程固定创建三个有效任务”。
 
-## 4.21.6 启动完成、追踪与 JIT 任务
+## 4.9.6 启动完成、追踪与 JIT 任务
 
 ### StartupCompletedTask 有显式通知和超时兜底
 
@@ -276,7 +276,7 @@ JIT post-fork 阶段在满足配置条件时安排一个 10 秒后的任务。�
 
 它展示了 `HeapTask` 的另一个用途：队列不只服务 GC，还可承载需要在 ART 专用守护线程延后检查的 runtime 工作。
 
-## 4.21.7 进程被冻结时会发生什么
+## 4.9.7 进程被冻结时会发生什么
 
 `TaskProcessor` 没有专门识别 Cached App Freezer 的代码。进程冻结时，`HeapTaskDaemon` 无法获得 CPU，条件变量的目标时间可以继续逾期。进程解冻后：
 
@@ -287,7 +287,7 @@ JIT post-fork 阶段在满足配置条件时安排一个 10 秒后的任务。�
 
 是否会执行 GC 仍取决于每个任务自身的守卫条件，例如 GC 序号、pending 指针和当前收集器状态。看到解冻后连续的 ART 工作时，应逐项核对任务条件，不宜直接归因于“冻结期间积累了多轮 GC”。
 
-## 4.21.8 如何在 Perfetto 中验证
+## 4.9.8 如何在 Perfetto 中验证
 
 `TaskProcessor::RunAllTasks()` 没有给每个 `HeapTask` 自动包一层通用 trace，因此不能假定 Perfetto 必然出现与 C++ 类名相同的 slice。可依次查这些可靠信号：
 
@@ -314,7 +314,7 @@ JIT post-fork 阶段在满足配置条件时安排一个 10 秒后的任务。�
 
 这种方法从可见证据回推具体任务，比看到 `HeapTaskDaemon` 忙碌就推断“ART 在强制回收”更可靠。
 
-## 4.21.9 应用侧能做什么，不能做什么
+## 4.9.9 应用侧能做什么，不能做什么
 
 应用可做的是减少触发任务后的代价：
 
@@ -328,7 +328,7 @@ JIT post-fork 阶段在满足配置条件时安排一个 10 秒后的任务。�
 
 若系统产品确需调整策略，应在固定 AOSP tag 的平台源码中修改并运行 ART 测试、启动测试、GC 压力测试和冻结/解冻测试，同时保留 feature flag 或设备配置入口。普通应用的优化目标应放在分配模式和对象生命周期上。
 
-## 4.21.10 源码索引
+## 4.9.10 源码索引
 
 | 主题 | Android 17 / `android-17.0.0_r1` 源码 |
 |---|---|
@@ -345,7 +345,7 @@ JIT post-fork 阶段在满足配置条件时安排一个 10 秒后的任务。�
 | boot image 方法映射任务 | `art/runtime/jit/jit.cc` |
 | GC slice 命名 | `art/runtime/gc/collector/garbage_collector.cc` |
 
-## 4.21.11 小结
+## 4.9.11 小结
 
 - `HeapTaskDaemon` 是 Java 执行线程，`TaskProcessor` 是 native 时间队列和调度循环。
 - 队列按 `target_run_time_` 排序；改期必须移除后重插，停止时会提前排空剩余任务。

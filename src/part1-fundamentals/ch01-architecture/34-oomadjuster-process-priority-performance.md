@@ -293,7 +293,7 @@ kernel PSI / swap / thrashing
 
 当 `mEnableBatchingOomAdj` 开启且属于批量 apply，变化进程先放入 `mProcsToOomAdj`，计算末尾调用 `ProcessList.batchSetOomAdj()`。
 
-API 37 每个 `LMK_PROCS_PRIO` 包最多携带 3 个进程，每个进程有 5 个字段：PID、UID、oomadj、process type、`for_lmkd_only`。列表超过 3 个时会拆成多个 control socket 消息；batch 路径当前把 process type 固定为 app，并把 `for_lmkd_only` 写为 0（单进程 `LMK_PROCPRIO` 才有 zram writeback 场景下的 `for_lmkd_only` 例外）。它不是 Binder IPC，也不会把任意数量进程放进一次调用。LMKD 批量命令编号、packet 长度和 thrashing 决策边界可与 [4.36 Android 17 LMK_PROCS_PRIO 批量命令与 thrashing 衰减机制](../ch04-memory/4.36-android17-lmkd-procs-prio-batch.md) 交叉核对。
+API 37 每个 `LMK_PROCS_PRIO` 包最多携带 3 个进程，每个进程有 5 个字段：PID、UID、oomadj、process type、`for_lmkd_only`。列表超过 3 个时会拆成多个 control socket 消息；batch 路径当前把 process type 固定为 app，并把 `for_lmkd_only` 写为 0（单进程 `LMK_PROCPRIO` 才有 zram writeback 场景下的 `for_lmkd_only` 例外）。它不是 Binder IPC，也不会把任意数量进程放进一次调用。LMKD 批量命令编号、packet 长度和 thrashing 决策边界可与 [4.4 系统内存压力与 lmkd](../ch04-memory/04-lmk.md) 交叉核对。
 
 ## 七、何时触发重算
 

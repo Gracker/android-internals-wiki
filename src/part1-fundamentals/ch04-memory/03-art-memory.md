@@ -2,8 +2,8 @@
 title: "ART 虚拟机内存管理"
 chapter: '4.3'
 section: '4.3'
-status: "finalized"
-pipeline_stage: "ready-to-publish"
+status: "ready-for-review"
+pipeline_stage: "ready-for-review"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [memory, lmk, gc]
 confidence: medium
@@ -27,6 +27,8 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/space/large_object_space.cc
 - type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/allocator/rosalloc.h
+- type: aosp
   path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/gc_cause.h
 - type: aosp
   path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/jit/jit_code_cache.cc
@@ -48,7 +50,7 @@ polish_by: task2b-polish
 last_task2b_at: "2026-06-09T20:59:35+08:00"
 last_task6_at: '2026-06-30T05:09:02+08:00'
 last_task6_audit: 2026-06-09
-task6_state: "reviewed"
+task6_state: "pending-verification"
 task6_result: pass-light-edit
 task9_state: "reviewed"
 task9_reviewed_date: '2026-06-30'
@@ -65,9 +67,12 @@ last_deepseek_cn_review_at: 2026-06-30
 last_task9_audit: 2026-06-09
 task9_result: "auto-fixed"
 last_task9_autofix_at: "2026-06-29"
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part1-fundamentals/ch04-memory/16-art-tlab-object-allocation-performance.md"
 ---
 
-# ART 虚拟机内存管理
+# 4.3 ART 虚拟机内存管理
 
 平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点，旧版本只用于解释演进。设备厂商可以调整 GC 类型、堆参数和运行时开关，因此具体设备仍以该设备的 trace、日志与属性为准。
 
@@ -219,6 +224,27 @@ Android 17 源码中的相关常量是：
 这三个值属于不同层次。一个 region 可以承载 TLAB；默认 TLAB 大小不等于 region 大小。TLAB 用完后，`RegionSpace::AllocNewTlab()` 会持有 `region_lock_`，先尝试复用足够大的 partial TLAB，再寻找或建立合适的 region。把这里统称为“获取 heap 全局锁并 mmap 新 region”会掩盖真实分支。
 
 CMC 的 `BumpPointerSpace` 也支持 TLAB。TLAB 因而不是 CC 专属概念，具体 allocator 要结合 collector 与 `Heap::GetCurrentAllocator()` 判断。
+
+#### partial TLAB、默认 TLAB 与 region 不是同一个尺寸
+
+TLAB refill 不是单一路径：
+
+- 当前 TLAB 尾部仍有空间时，ART 可以先扩展可用范围；
+- `BumpPointerSpace` 通常以 32 KiB 默认 TLAB 为参考申请连续区间；
+- `RegionSpace` 会按对象大小和可用 region 计算 partial TLAB，16 KiB 是默认参考值，单个 region 则是 256 KiB；
+- refill 需要进入共享空间的锁保护，但成功后的普通对象分配仍回到线程本地 bump-pointer 快路径。
+
+因此，看到 16 KiB、32 KiB 和 256 KiB 时，应先确认它描述的是 partial TLAB、默认 TLAB 还是 RegionSpace region。它们也不随设备基础页大小机械保持倍数关系。
+
+#### RosAlloc 的线程本地 run
+
+Mark-Sweep / CMS 系列 collector 在 Android 17 中仍可使用 RosAlloc。RosAlloc 把小对象按 size bracket 放入 run，并优先使用线程本地 run；共享 run 的分配与回收才需要进入对应 bracket 的锁。超过小对象 bracket 的请求按页粒度处理。
+
+这意味着两种常见描述都不准确：TLAB 并非所有 collector 的唯一快路径，RosAlloc 也不是每次小对象分配都获取一个 heap 全局锁。诊断要先确认当前 collector 与 allocator，再解释锁竞争或 refill 成本。
+
+#### instrumentation 会改变被观察的快路径
+
+分配记录、JVMTI instrumentation 或精细采样可能让分配经过额外 hook、统计与调用栈采集。优化实验应保留同一 profiler 配置；不能把开启逐次分配记录后的耗时直接外推到未插桩的发布构建。
 
 ### LOS 分配失败后还有一次普通 space 尝试
 
@@ -399,7 +425,7 @@ Finalizer 的执行是异步的。对象变成不可达后，仍要经过发现�
 
 `ReferenceQueue` 适合接收引用状态变化通知，但它也需要消费方持续取队列。未消费队列、清理动作阻塞或 Native 资源未登记，都可能让“Java 对象已不可达”与“系统资源已释放”之间出现较长间隔。
 
-FinalizerDaemon、ReferenceQueue 与超时诊断在 [4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界](09-finalizer-referencequeue.md) 中展开。
+FinalizerDaemon、ReferenceQueue 与超时诊断在 [4.8 ART FinalizerDaemon、Cleaner 与 ReferenceQueue](08-finalizer-referencequeue.md) 中展开。
 
 ## JIT、Profile 与 ART 内存
 
@@ -429,7 +455,7 @@ Android 17 的 ART 大量使用运行时 `gPageSize`：
 
 LOS 默认阈值仍是固定 12 KiB，没有随 16 KiB 基础页改成 16 KiB 或 48 KiB。看到旧资料中的 `3 * kPageSize` 时，应回到当前 tag 的 `heap.h` 核对。
 
-页变大还会影响提交粒度、内部碎片、TLB 覆盖和缺页成本，但方向与幅度依赖对象分布和设备。整机启动、功耗或相机数据不能归因到 ART 某一个 allocator。系统级分析参见 [4.7 16KB Page Size 与 Android 性能](07-16kb-page-size.md)。
+页变大还会影响提交粒度、内部碎片、TLB 覆盖和缺页成本，但方向与幅度依赖对象分布和设备。整机启动、功耗或相机数据不能归因到 ART 某一个 allocator。系统级分析参见 [4.6 16 KB Page Size 与 Android 性能](06-16kb-page-size.md)。
 
 ## 在 Perfetto 中观察 ART GC
 
@@ -598,15 +624,17 @@ DirectByteBuffer 的 Native backing memory 位于 Java heap 外，Java wrapper �
 5. 用 Java heap profile 找对象类型和持有链，用 heapprofd/系统统计检查 Native 与图形内存。
 6. 对比优化前后的分配率、live set、GC CPU、等待长尾和 missed frame，不只比较 GC 次数。
 
+定位分配热点时，Android Studio allocation recording 适合开发期观察对象类型与调用点；Android 12+ 的 Perfetto ART allocation profiling 可按 `com.android.art` heap 采样调用栈。两者都会扰动分配路径，先用较低开销的 GC slice、等待事件和堆计数缩小时间窗，再打开定向 profile。
+
 ## 与其他章节的关系
 
 - [4.1 Android 内存模型全景](01-memory-overview.md)：把 ART heap 放回 RSS/PSS、Native、图形和内核统计中。
 - [4.2 Linux 内核内存管理](02-linux-memory.md)：解释 ART 的 `mmap`、缺页、回收和页大小如何由内核承载。
-- [4.4 Low Memory Killer](04-lmk.md)：lmkd 依据系统压力与进程重要性杀进程，和 Java OOM 是两套机制。
-- [4.8 ART 分代垃圾回收与 GC 暂停优化](08-art-generational-gc.md)：继续分析 young/full 选择与分代回收。
-- [4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界](09-finalizer-referencequeue.md)：展开引用队列、daemon 和资源释放。
-- [4.14 ART GC Region 碎片化与 Compaction 策略](14-art-gc-region-fragmentation-compaction.md)：深入 CC region 与 CMC 压缩。
-- [4.16 ART TLAB 与对象分配性能](16-art-tlab-object-allocation-performance.md)：展开 allocator fast path 与 TLAB 复用。
+- [4.4 系统内存压力与 lmkd](04-lmk.md)：lmkd 依据系统压力与进程重要性杀进程，和 Java OOM 是两套机制。
+- [4.6 16 KB Page Size 与 Android 性能](06-16kb-page-size.md)：解释页大小对映射、对齐和 ART 内存的影响。
+- [4.7 ART 分代 GC、Region 碎片与暂停分析](07-art-generational-gc.md)：继续分析 young/full 选择、Region 碎片与移动回收。
+- [4.8 ART FinalizerDaemon、Cleaner 与 ReferenceQueue](08-finalizer-referencequeue.md)：展开引用队列、daemon 和资源释放。
+- [4.9 ART HeapTask 调度、启动维护与冻结边界](09-art-heaptask-scheduling-pipeline.md)：展开 GC、collector 切换与 heap trim 的异步调度。
 
 ## 参考资料
 

@@ -16,9 +16,52 @@
 | --- | ---: | ---: | --- | --- |
 | ch06 存储与 I/O | 12 | 5 | 已完成 | 2026-08-11 |
 | ch03 输入系统 | 14 | 8 | 已完成 | 2026-08-11 |
-| 其余 24 章 | 596 | 待审阅 | 未开始 | - |
+| ch04 内存管理 | 29 | 17 | 已完成 | 2026-08-11 |
+| 其余 23 章 | 567 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 609 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 597 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch04 内存管理
+
+保留后的连续编号为：
+
+- 4.1 Android 内存模型全景
+- 4.2 Linux 内核内存管理
+- 4.3 ART 虚拟机内存管理
+- 4.4 系统内存压力与 lmkd
+- 4.5 App 内存优化与诊断
+- 4.6 16 KB Page Size 与 Android 性能
+- 4.7 ART 分代 GC、Region 碎片与暂停分析
+- 4.8 ART FinalizerDaemon、Cleaner 与 ReferenceQueue
+- 4.9 ART HeapTask 调度、启动维护与冻结边界
+- 4.10 内存规整与直接回收性能边界
+- 4.11 Cached App Freezer、外部页回收与 GC 边界
+- 4.12 ZRAM 压缩交换与应用重启延迟
+- 4.13 Android 17 MemoryLimiter：memcg 限制与超限诊断
+- 4.14 onTrimMemory 回调与 ART Heap Trim
+- 4.15 Android 17 ARM MTE 内存标签扩展实战
+- 4.16 跨进程内存共享与端侧推理预算
+- 4.17 产品侧内存预取与 lmkd 边界
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `06-memory-evolution.md` | 删除横向版本概览；ART、Bitmap/Scudo、16 KB、MTE、MemoryLimiter 与 MGLRU 的版本边界回到各自机制主文 | 4.2、4.3、4.5、4.6、4.7、4.13、4.15 |
+| `13-anon-vma-lazy-memory-optimization.md` | 合并提案事实核查、公开 tag 边界和厂商验证方法 | `../src/part1-fundamentals/ch04-memory/02-linux-memory.md` |
+| `16-art-tlab-object-allocation-performance.md` | 合并 TLAB、RosAlloc thread-local run、slow path 与 allocation profiling | `../src/part1-fundamentals/ch04-memory/03-art-memory.md` |
+| `15-psi-lowmemdetector-lmkd-architecture.md` / `4.36-android17-lmkd-procs-prio-batch.md` / `4.50-lmkd-v2-psi-tiered-pressure-governance.md` | 合并 PSI、批量控制协议、thrashing、kill reason 与不存在的版本化命名事实核查 | `../src/part1-fundamentals/ch04-memory/04-lmk.md` |
+| `4.35-android17-cpu-cache-locality-pss-accounting.md` / `4.36-android17-advanced-memory-optimization.md` | 合并 PSS 与 cache locality 的层级边界、Perfetto 数据源和分阶段诊断方法 | `../src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md` |
+| `07-16kb-page-size.md` / `08-art-generational-gc.md` / `09-finalizer-referencequeue.md` / `21-art-heaptask-scheduling-pipeline.md` | 主题独立，依次改为连续编号 4.6～4.9 | `06-16kb-page-size.md`～`09-art-heaptask-scheduling-pipeline.md` |
+| `14-art-gc-region-fragmentation-compaction.md` | 合并 Region 碎片、CC evacuation 与 CMC/UFFD compaction 边界 | `../src/part1-fundamentals/ch04-memory/07-art-generational-gc.md` |
+| `04.20-android17-memory-compaction-freezer-performance-impact.md` | 合并 app compaction profile、memcg reclaim、监控口径与 freezer 事件 | `../src/part1-fundamentals/ch04-memory/11-cached-app-freezer-gc-boundary.md` |
+| `4.18-android-17-memorylimiter-深度解析.md` | 主题独立，改为 4.13；删除对不存在 4.17 配套正文的依赖 | `../src/part1-fundamentals/ch04-memory/13-android17-memorylimiter.md` |
+| `04.18-android17-ontrimmemory-source-fair-adaptation.md` / `4.49-android17-trim-memory-api-evolution.md` | 合并 framework trim dispatch、应用回调与 ART HeapTrimTask | `../src/part1-fundamentals/ch04-memory/14-ontrimmemory-art-heap-trim.md` |
+| `4.9-android17-memory-tagging-extension-mte.md` | 主题独立，改为连续编号 4.15 | `../src/part1-fundamentals/ch04-memory/15-android17-memory-tagging-extension-mte.md` |
+| `4.22-android17-ai-agent-memory-sandboxed-data-reuse.md` | 改为 4.16，并以平台存在的跨进程共享与端侧推理预算为标题 | `../src/part1-fundamentals/ch04-memory/16-cross-process-memory-ai-inference.md` |
+| `4.5-appflow-lmkd-compatibility.md` / `4.04-AppFlow与Android-17-LMKD兼容性方案.md` | 合并为产品侧预取方案的权限、预算、降级与 lmkd/MemoryLimiter 边界 | `../src/part1-fundamentals/ch04-memory/17-product-prefetch-lmkd-boundary.md` |
+
+章节 README、`src/SUMMARY.md`、活动跨章链接和自动化脚本映射已经切换到连续编号。历史 changelog、已关闭 finding 与 `consolidated_from` 保留旧路径。
 
 ## ch03 输入系统
 

@@ -253,7 +253,7 @@ return GetBoolProperty(
 
 应用不应修改 ART 的 device-config 或假定所有 Android 17 设备使用同一 collector。OEM 配置、ART Mainline 更新和运行时选项都可能改变选择；Android 17 的 ART 改进还可通过 Google Play 系统更新覆盖 Android 12 及以上版本。
 
-验证时以目标进程的 GC 事件、暂停分布、分配速率和 RSS 为证据。对同一 workload 对比 young/full collection 次数、GC CPU 时间、mutator stall 与峰值 RSS，比只查一个属性更可靠。需要展开 collector 与暂停分析时，参阅 [[08-art-generational-gc|4.8 ART 分代垃圾回收与 GC 暂停优化]]。
+验证时以目标进程的 GC 事件、暂停分布、分配速率和 RSS 为证据。对同一 workload 对比 young/full collection 次数、GC CPU 时间、mutator stall 与峰值 RSS，比只查一个属性更可靠。需要展开 collector 与暂停分析时，参阅 [[07-art-generational-gc|4.7 ART 分代 GC、Region 碎片与暂停分析]]。
 
 ## ProfilingManager：系统事件提供采集时机
 
@@ -398,7 +398,7 @@ llvm-readelf -lW lib/arm64-v8a/libexample.so
 adb shell getconf PAGE_SIZE
 ```
 
-bundle 配置应显示 `PAGE_ALIGNMENT_16K`，`zipalign` 应通过，`readelf` 中每个 `LOAD` segment 的 Align 不得低于 `2**14`，设备命令应返回 `16384`。工具通过后还要在 16KB emulator 或设备上覆盖启动、动态加载、数据库、媒体与 mmap 场景。Android 17 还能把 16KB backcompat 设为 `fatal`，用于让不兼容二进制立即终止；它适合测试，不是发布兼容方案。原理和排查步骤参阅 [[07-16kb-page-size|4.7 16KB Page Size 与 Android 性能]]。
+bundle 配置应显示 `PAGE_ALIGNMENT_16K`，`zipalign` 应通过，`readelf` 中每个 `LOAD` segment 的 Align 不得低于 `2**14`，设备命令应返回 `16384`。工具通过后还要在 16KB emulator 或设备上覆盖启动、动态加载、数据库、媒体与 mmap 场景。Android 17 还能把 16KB backcompat 设为 `fatal`，用于让不兼容二进制立即终止；它适合测试，不是发布兼容方案。原理和排查步骤参阅 [[06-16kb-page-size|4.6 16 KB Page Size 与 Android 性能]]。
 
 ## 运行在 Android 17 时还要检查的项目
 

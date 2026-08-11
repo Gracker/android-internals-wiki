@@ -54,72 +54,42 @@ PSS 与 CPU cache locality 属于不同层级。cache line 描述 CPU cache 传�
 
 ## 4. 内容索引
 
-### 4.1 基础模型
+本章按“模型 → 运行时 → 系统压力 → 产品边界”展开。每个主题只保留一个主入口，版本事实核查、观测方法和原先拆散的小节已经合并到对应主文。
 
-- [4.1 Android 内存模型全景](01-memory-overview.md)：进程地址空间、ART/native、共享页、graphics 与系统压力。
-- [4.2 Linux 内核内存管理](02-linux-memory.md)：page、zone、LRU、reclaim、swap、compaction 与 OOM。
-- [4.3 ART 虚拟机内存管理](03-art-memory.md)：ART heap、space、allocator、GC 与 native accounting。
-- [4.4 Low Memory Killer](04-lmk.md)：lmkd、`oom_score_adj`、pressure signal 与 kill decision。
-- [4.5 App 内存优化](05-app-memory-optimization.md)：用 profile 和生命周期证据减少 retention、峰值与抖动。
-- [4.6 内存版本演进](06-memory-evolution.md)：按具体机制与 tag 对照版本变化。
+| 编号 | 主题 | 解决的问题 |
+|---|---|---|
+| [4.1](01-memory-overview.md) | Android 内存模型全景 | 统一解释地址空间、RSS/PSS/USS、共享页、图形内存、zram 与系统压力。 |
+| [4.2](02-linux-memory.md) | Linux 内核内存管理 | page、zone、Buddy、SLUB、reclaim、swap、compaction、DMA-BUF 与尚未合入的 `ANON_VMA_LAZY`。 |
+| [4.3](03-art-memory.md) | ART 虚拟机内存管理 | heap space、allocator、TLAB、GC、native accounting、JIT 与 profile。 |
+| [4.4](04-lmk.md) | 系统内存压力与 lmkd | PSI、`oom_score_adj`、控制协议、批量优先级、thrashing、kill reason 与 watchdog。 |
+| [4.5](05-app-memory-optimization.md) | App 内存优化与诊断 | retention、Bitmap、native heap、PSS、cache locality、Perfetto 与线上分层诊断。 |
+| [4.6](06-16kb-page-size.md) | 16 KB Page Size 与 Android 性能 | ELF/APK 对齐、linker 兼容、mmap 假设、迁移验证与性能测量。 |
+| [4.7](07-art-generational-gc.md) | ART 分代 GC、Region 碎片与暂停分析 | young/full collection、Region 碎片、CC/CMC compaction 与暂停归因。 |
+| [4.8](08-finalizer-referencequeue.md) | ART FinalizerDaemon、Cleaner 与 ReferenceQueue | 引用处理、串行终结、Cleaner 所有权与队列积压。 |
+| [4.9](09-art-heaptask-scheduling-pipeline.md) | ART HeapTask 调度、启动维护与冻结边界 | GC、collector 切换、heap trim、启动维护任务与冻结状态下的调度。 |
+| [4.10](10-memory-compaction-direct-reclaim.md) | 内存规整与直接回收性能边界 | 高阶分配、direct reclaim、compaction、PSI 与卡顿取证。 |
+| [4.11](11-cached-app-freezer-gc-boundary.md) | Cached App Freezer、外部页回收与 GC 边界 | 进程冻结/解冻、app compaction、memcg reclaim、Binder 与 ART GC 的责任边界。 |
+| [4.12](12-zram-compressed-swap-relaunch.md) | ZRAM 压缩交换与应用重启延迟 | 匿名页换出、MMD、writeback/prefetch、swapin fault 与恢复长尾。 |
+| [4.13](13-android17-memorylimiter.md) | Android 17 MemoryLimiter | memcg 限制、`memory.high`、`memory.swap.max`、red-zone 轮询与超限诊断。 |
+| [4.14](14-ontrimmemory-art-heap-trim.md) | onTrimMemory 回调与 ART Heap Trim | framework 回调分发、应用释放策略与 ART 异步裁剪之间的边界。 |
+| [4.15](15-android17-memory-tagging-extension-mte.md) | Android 17 ARM MTE | tagging mode、同步/异步 fault、Scudo/Bionic 集成、启用条件与诊断。 |
+| [4.16](16-cross-process-memory-ai-inference.md) | 跨进程内存共享与端侧推理预算 | SharedMemory/HardwareBuffer、PSS 记账、进程隔离与模型推理峰值。 |
+| [4.17](17-product-prefetch-lmkd-boundary.md) | 产品侧内存预取与 lmkd 边界 | 外部预取模块的权限、预算、状态机、降级与 lmkd/MemoryLimiter 边界。 |
 
-### 4.2 ART 分配、GC 与后台任务
-
-- [4.8 ART 分代 GC](08-art-generational-gc.md)：young/old collection、pause 与吞吐权衡。
-- [4.9 FinalizerDaemon 与 ReferenceQueue](09-finalizer-referencequeue.md)：finalization、reference processing 与队列积压。
-- [4.14 ART Region 碎片与 compaction](14-art-gc-region-fragmentation-compaction.md)：对象碎片、region space 与移动 GC。
-- [4.16 ART TLAB 与对象分配](16-art-tlab-object-allocation-performance.md)：thread-local allocation、refill 与 slow path。
-- [4.21 ART HeapTask 调度](21-art-heaptask-scheduling-pipeline.md)：HeapTask、TaskProcessor、GC/trim 任务与并发边界。
-- [4.21 ART HeapTask 补充](4.21-art-heaptask-scheduling-pipeline.md)：同主题的补充说明，阅读时以固定 tag 的类和子类为准。
-
-### 4.3 Kernel reclaim、compaction、zram 与 freezer
-
-- [4.10 内存规整与 direct reclaim](10-memory-compaction-direct-reclaim.md)：高阶分配、reclaim stall、compaction 与 latency。
-- [4.11 Cached App Freezer 与 GC](11-cached-app-freezer-gc-boundary.md)：冻结进程、GC 请求和解冻的责任边界。
-- [4.12 ZRAM 与应用重启延迟](12-zram-compressed-swap-relaunch.md)：压缩、swap I/O、fault 与 relaunch 成本。
-- [4.13 ANON_VMA_LAZY 事实核查](13-anon-vma-lazy-memory-optimization.md)：说明 Android 17/kernel 固定 tag 中没有该功能，避免把提案或错误材料当成现状。
-- [4.20 Compaction 与 Freezer 对监控的影响](04.20-android17-memory-compaction-freezer-performance-impact.md)：区分 kernel compaction、ART compaction 与 cached-app freezer。
-
-### 4.4 PSI、lmkd、trim 与 MemoryLimiter
-
-- [4.15 PSI/LowMemDetector 与 lmkd](15-psi-lowmemdetector-lmkd-architecture.md)：区分 legacy detector、PSI monitor 与当前 lmkd 逻辑。
-- [4.17 MemoryLimiter 与监控](17-android17-MemoryLimiter-与内存监控影响.md)：先确认设备是否启用对应 cgroup/BPF 路径，再解释统计影响。
-- [4.18 MemoryLimiter 深入](4.18-android-17-memorylimiter-深度解析.md)：cgroup memory、BPF map、memcg 与 PSS 口径的边界。
-- [4.18 onTrimMemory 与公平适配](04.18-android17-ontrimmemory-source-fair-adaptation.md)：framework trim dispatch、API 演进与应用 cache 策略。
-- [4.36 lmkd 批量优先级命令与 thrashing](4.36-android17-lmkd-procs-prio-batch.md)：控制 socket、批处理命令和 thrashing 衰减的源码入口。
-- [4.49 trimMemory API 演进](4.49-android17-trim-memory-api-evolution.md)：ComponentCallbacks2、ActivityThread 与 ART heap trim。
-- [4.50 lmkd v2/PSI 分层治理事实核查](4.50-lmkd-v2-psi-tiered-pressure-governance.md)：把 AOSP 已存在机制与材料中的版本化命名分开。
-
-`MemoryLimiter`、批量 lmkd command 或厂商 pressure policy 不应由 “Android 17” 四个字推导为全设备默认。文章中的 feature flag、build target、BPF program 与运行时状态必须逐项确认。
-
-### 4.5 Page size、MTE、cache locality 与观测
-
-- [4.7 16KB Page Size](07-16kb-page-size.md)：ABI、ELF alignment、mapping 与兼容性，不把 page size 当作固定性能增益。
-- [4.9 Android 17 ARM MTE](4.9-android17-memory-tagging-extension-mte.md)：tagging mode、同步/异步 fault、进程启用条件与开销。
-- [4.35 CPU cache locality 与 PSS](4.35-android17-cpu-cache-locality-pss-accounting.md)：区分 cache line、page、ART card 与 smaps 记账。
-- [4.36 高级内存诊断](4.36-android17-advanced-memory-optimization.md)：按 Java/native/graphics/kernel/pressure 选择观测工具。
-
-### 4.6 AppFlow 与 AI Agent 的能力边界
-
-这组内容涉及产品、厂商方案或尚无 Android 17 公共 AOSP 实现的命名，只能用于兼容性设计和能力边界分析，不能写成平台内置能力。
-
-- [4.04 AppFlow 与 Android 17 LMKD 兼容性](4.04-AppFlow与Android-17-LMKD兼容性方案.md)
-- [4.5 AppFlow 与 lmkd 兼容性复核](4.5-appflow-lmkd-compatibility.md)
-- [4.22 AI Agent 进程隔离与数据复用边界](4.22-android17-ai-agent-memory-sandboxed-data-reuse.md)
-
-跨应用共享数据要使用有权限和生命周期约束的 IPC、provider、service、shared memory 或持久化机制。Android 17 没有一个名为“AI Agent Memory Sandbox”的通用内存子系统。
+`MemoryLimiter`、批量 lmkd command 或厂商 pressure policy 不应由“Android 17”四个字推导为全设备默认。文章中的 feature flag、build target、BPF program 与运行时状态必须逐项确认。跨应用共享也必须使用有权限和生命周期约束的 IPC、provider、service、shared memory 或持久化机制；Android 17 没有名为“AI Agent Memory Sandbox”或“LMKD v2”的通用平台子系统。
 
 ## 5. 按现象选择阅读顺序
 
 | 现象 | 阅读顺序 | 优先证据 |
 |---|---|---|
-| Java heap 持续增长 | 4.1 → 4.3 → 4.5 → 4.8/4.9 | allocation profile、heap dump、GC、reference/finalizer queue |
-| Native/PSS 增长 | 4.1 → 4.2 → 4.35 → 4.36 | smaps、native heap、mmap、shared mapping、callsite |
-| 分配时偶发长卡顿 | 4.8 → 4.10 → 4.14 → 4.16 | GC pause、direct reclaim、compaction、TLAB refill |
-| 后台恢复慢 | 4.11 → 4.12 → 4.15 → 4.4 | freezer、swapin fault、PSI、lmkd kill 与 process start |
-| 低内存设备频繁杀进程 | 4.4 → 4.15 → 4.36 lmkd → 4.50 | PSI、vmstat、lmkd decision、oom_score_adj、kill reason |
+| Java heap 持续增长 | 4.1 → 4.3 → 4.5 → 4.7/4.8 | allocation profile、heap dump、GC、reference/finalizer queue |
+| Native/PSS 增长 | 4.1 → 4.2 → 4.5 → 4.15 | smaps、native heap、mmap、shared mapping、MTE fault |
+| 分配时偶发长卡顿 | 4.3 → 4.7 → 4.9 → 4.10 | GC pause、HeapTask、direct reclaim、compaction、TLAB refill |
+| 后台恢复慢 | 4.11 → 4.12 → 4.4 | freezer、swapin fault、PSI、lmkd kill 与 process start |
+| 低内存设备频繁杀进程 | 4.4 → 4.10 → 4.12 → 4.13 | PSI、vmstat、lmkd decision、zram、memcg 与 kill reason |
 | 图形内存偏高 | 4.1 → 第 2 章 DMA-BUF/Gralloc | dma-buf、gralloc、buffer 数、Producer/Consumer、GPU/vendor counter |
-| 16KB 兼容或 MTE fault | 4.7 / 4.9 MTE | ELF alignment、mapping、tagging mode、fault address 与 stack |
+| 16 KB 兼容或 MTE fault | 4.6 / 4.15 | ELF alignment、mapping、tagging mode、fault address 与 stack |
+| 多进程推理峰值或预取反噬 | 4.16 → 4.17 → 4.13 → 4.4 | PID/UID、PSS、fd、阶段峰值、memcg、lmkd decision |
 
 内存问题采集时应记录 build、进程状态、前后台、总内存、swap/zram、PSI、刷新率/温度及复现场景。单张 `dumpsys meminfo` 快照只能说明采样时刻，趋势和因果关系要靠时间序列、allocation callsite 与系统 trace。
 

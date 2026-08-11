@@ -547,7 +547,7 @@ Android 14 起不再投递其他 legacy `onTrimMemory` 级别，相关常量在 
 - 迁移成功率和 `compact_fail` 增量；
 - RSS、ZRAM、page fault、LMK 与用户可感知延迟。
 
-16KB 设备上的 native mmap/ELF 对齐兼容属于另一个问题，应结合 4.7 阅读。
+16 KB 设备上的 native mmap/ELF 对齐兼容属于另一个问题，应结合 4.6 阅读。
 
 ### 11.1 mTHP 要按实际字节大小分析
 
