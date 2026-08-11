@@ -373,7 +373,7 @@ Macrobenchmark 应在 release-like、可比较的编译模式下运行，并覆�
 
 Layout Inspector 的重组计数适合定位候选点；Compose compiler metrics/reports 可解释稳定性；Perfetto 与 FrameTimeline 负责确认用户看到的帧。三者应对到同一交互，不能用“重组次数下降”单独宣布流畅度改善。
 
-详见 [Compose 性能](./07-compose-performance.md) 与 [Compose 渲染管线](../ch18-rendering-pipelines/25-compose-rendering-pipeline.md)。
+详见 [Compose 性能](./07-compose-performance.md) 与 [Compose 渲染管线](../ch18-rendering-pipelines/23-compose-rendering-pipeline.md)。
 
 ---
 
@@ -437,7 +437,7 @@ Android 17 AOSP 的 RenderThread 会设置显示相关优先级，标准源码�
 - [典型场景](./04-typical-scenarios.md)
 - [View 标准硬件渲染](../ch18-rendering-pipelines/02-android-view-standard.md)
 - [软件与离屏渲染](../ch18-rendering-pipelines/03-android-view-software.md)
-- [渲染管线分析方法](../ch18-rendering-pipelines/20-pipeline-analysis-methodology.md)
+- [渲染管线分析方法](../ch18-rendering-pipelines/01-pipeline-overview.md#统一分析方法)
 
 ## 参考资料
 

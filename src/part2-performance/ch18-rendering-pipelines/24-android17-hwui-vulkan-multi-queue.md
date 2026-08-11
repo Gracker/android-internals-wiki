@@ -1,7 +1,7 @@
 ---
 title: "Android 17 HWUI Vulkan 多队列并行渲染与帧边界管理"
-chapter: "18.26"
-section: "18.26"
+chapter: "18.24"
+section: "18.24"
 section_title: "Android 17 HWUI Vulkan 多队列并行渲染与帧边界管理"
 status: ready-for-review
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
@@ -92,7 +92,7 @@ gap_score:
   total: 19
 ---
 
-# 18.26 Android 17 HWUI Vulkan 多队列并行渲染与帧边界管理
+# 18.24 Android 17 HWUI Vulkan 多队列并行渲染与帧边界管理
 
 Android 17 的 HWUI Vulkan 后端会从同一个 graphics queue family 取得两条 `VkQueue`：queue 0 服务 RenderThread 的窗口绘制，queue 1 服务 `HardwareBitmapUploader` 的 AHardwareBuffer 上传。它们共享 `VkDevice`，各自绑定一个 Skia `GrDirectContext`。
 

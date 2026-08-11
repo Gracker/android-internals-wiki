@@ -29,9 +29,27 @@
 | ch15 性能方法论 | 12 | 10 | 已完成 | 2026-08-11 |
 | ch16 AOSP 性能优化 | 12 | 11 | 已完成 | 2026-08-11 |
 | ch17 OEM 与设备差异 | 12 | 10 | 已完成 | 2026-08-11 |
-| 其余 11 章 | 356 | 待审阅 | 未开始 | - |
+| ch18 渲染管线专题 | 27 | 25 | 已完成 | 2026-08-11 |
+| 其余 10 章 | 329 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 536 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 534 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch18 渲染管线专题
+
+保留后的连续编号为 18.1～18.25。内容按“分类与通用分析 → View/Surface/图形 API → 框架与硬件 Producer → 刷新率、跨设备、XR、媒体与新图形能力”组织。
+
+合并映射：
+
+| 原正文或重复小节 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `20-pipeline-analysis-methodology.md` | 删除第二套渲染分类、十二锚点、Producer/Consumer/fence、Perfetto、瓶颈和选型教程；独有的事实/关联/结论分层、对象身份卡、统一取证步骤、SQL 与复核清单并入章节总览 | `../src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md`（18.1） |
+| `18-pip-freeform.md` | 删除与多窗口正文重复的 WMS/SF 双树、线程共享、BLAST sync、HWC 和 Trace 教程；独有的 PictureInPictureParams、PiP 过渡、geometry/buffer 组合及 Android 17 配置重建边界并入多窗口主文 | `../src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md`（18.5） |
+| 18.3 中的 HardwareBufferRenderer 与直接 setBuffer 教程 | 压缩为软件/离屏分类边界；所有权、fence、提交和回收协议统一由 18.10 与 18.17 承载 | 18.3、18.10、18.17 |
+| 18.15 中的 tunneled playback 完整教程 | 只保留 SIDEBAND 对 HWC/trace 判读的影响；Codec2、Media3、音视频同步和排障统一由播放管线承载 | `../src/part2-performance/ch18-rendering-pipelines/21-media-codec2-tunneled-media3-abr.md`（18.21） |
+| 18.16 中的小游戏、云游戏、AR、XR 四套缩略教程 | 压缩为责任边界和路由；TextureView、媒体/sideband、OpenXR runtime/compositor 分别回到专项 | 18.7、18.20、18.21 |
+| 原 18.19、18.21～18.27 | VRR、EyeDropper、XR、媒体、APV、Compose、HWUI Vulkan 多队列与 WebGPU 均能独立回答问题，依次改为连续编号 18.18～18.25 | `18-variable-refresh-rate.md`～`25-webgpu-android-pipeline.md` |
+
+章节 README、`src/SUMMARY.md`、changelog/review 脚本、复审清单、活动跨章链接和统计口径已经切换到新编号。历史 changelog、review/audit 日志、关闭 finding、素材索引与 `consolidated_from` 保留旧路径。
 
 ## ch17 OEM 与设备差异
 
@@ -230,7 +248,7 @@
 
 | 原正文 | 处理结果 | 当前承载位置 |
 | --- | --- | --- |
-| `08-media-pipeline.md` | 删除跨音频、视频、Camera 和播放器实战的横向重复稿；低延迟/HDR/Eclipsa 组合能力补入播放管线主文 | 1.16、18.14、`../src/part2-performance/ch18-rendering-pipelines/23-media-codec2-tunneled-media3-abr.md`、22.43 |
+| `08-media-pipeline.md` | 删除跨音频、视频、Camera 和播放器实战的横向重复稿；低延迟/HDR/Eclipsa 组合能力补入播放管线主文 | 1.16、18.14、`../src/part2-performance/ch18-rendering-pipelines/21-media-codec2-tunneled-media3-abr.md`、22.43 |
 | `09-game-performance.md` | 合并 Game Mode/State、ADPF、Swappy、headroom 和四组对照实验 | `../src/part2-performance/ch18-rendering-pipelines/16-game-engine.md`、5.9 |
 | `08-system-triggered-profiling.md` | 合并 system trigger、设备验证、线上 redaction 与 Android 8—14 降级策略 | `../src/part3-tools/ch14-other-tools/11-profiling-manager.md`（14.11） |
 | `11-native-library-loading-dynamic-linker.md` | 合并启动关键路径、`JNI_OnLoad`、三方 SDK/引擎和最终 APK/AAB 门禁 | `../src/part1-fundamentals/ch01-architecture/58-android-dynamic-linker-linker64-native-library.md`（1.58） |

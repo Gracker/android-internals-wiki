@@ -33,7 +33,7 @@ sources:
   - type: research
     path: "Obsidian/DeepResearch/2026-05-20-android-choreographer-buffer-stuffing-recovery.md"
 tags: [rendering, choreographer, bufferqueue, vsync, android16, android17]
-related_chapters: ["2.4", "2.13", "2.16", "13.15", "18.20"]
+related_chapters: ["2.4", "2.13", "2.16", "13.15", "18.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-21"
 gap_source: "研究素材/AOSP结构"

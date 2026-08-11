@@ -77,7 +77,7 @@ Google 在 2026 年明确采用 Compose First：新的 Android UI 库、示例�
 | Jetpack Compose | BOM `2026.06.01`，Runtime/UI/Foundation `1.11.4`；`1.12.0-beta02` 只作预览观察 | Composition、Layout、Draw、Lazy 预取、runtime tracing 和互操作 API 的当前行为 |
 | Android common kernel | `android17-6.18-2026-06_r6` | 线程调度、CPU 频率以及 dma-fence 等系统现象 |
 
-Compose 独立于 Android 平台发布。`android-17.0.0_r1` 不能证明某个 Compose Runtime 或 Foundation 特性已经启用；BOM 也不能证明设备上的 SurfaceFlinger 或内核实现。RecyclerView 复用、Compose 应用优化和显示管线的详细背景分别见 [22.2 RecyclerView 性能优化实战](02-recyclerview-practice.md)、[22.3 Jetpack Compose 性能优化](03-compose-performance.md)、[18.25 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md) 与 [18.2 Android View 标准管线](../../part2-performance/ch18-rendering-pipelines/02-android-view-standard.md)。
+Compose 独立于 Android 平台发布。`android-17.0.0_r1` 不能证明某个 Compose Runtime 或 Foundation 特性已经启用；BOM 也不能证明设备上的 SurfaceFlinger 或内核实现。RecyclerView 复用、Compose 应用优化和显示管线的详细背景分别见 [22.2 RecyclerView 性能优化实战](02-recyclerview-practice.md)、[22.3 Jetpack Compose 性能优化](03-compose-performance.md)、[18.23 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/23-compose-rendering-pipeline.md) 与 [18.2 Android View 标准管线](../../part2-performance/ch18-rendering-pipelines/02-android-view-standard.md)。
 
 ## Compose First 改变新增 UI 能力入口
 

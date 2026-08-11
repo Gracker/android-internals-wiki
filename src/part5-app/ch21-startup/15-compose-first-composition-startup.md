@@ -8,7 +8,7 @@ last_verified_against: "Compose BOM 2025.12.00, Kotlin 2.2, AOSP androidx-compos
 confidence: medium-high
 drafted_date: "2026-06-27"
 tags: [compose, startup, first-composition, baseline-profile, cold-start]
-related_chapters: ["21.3", "21.4", "22.3", "22.20", "22.26", "18.25"]
+related_chapters: ["21.3", "21.4", "22.3", "22.20", "22.26", "18.23"]
 sources:
   - type: androidx
     path: "platform/frameworks/support/+/androidx-compose-release/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt"
@@ -332,4 +332,4 @@ Macrobenchmark 会产出 system trace。初始分析可按这条顺序进行：
 - [§22.3 Compose 性能优化](../ch22-rendering-practice/03-compose-performance.md)
 - [§22.15 View/Compose 混合迁移](../ch22-rendering-practice/15-compose-first-view-migration-performance.md)
 - [§22.22 Compose LazyList 性能](../ch22-rendering-practice/22-compose-lazylist-performance.md)
-- [§18.25 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md)
+- [§18.23 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/23-compose-rendering-pipeline.md)

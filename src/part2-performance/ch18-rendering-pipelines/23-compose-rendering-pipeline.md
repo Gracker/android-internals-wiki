@@ -1,7 +1,7 @@
 ---
 title: "Android 17 Jetpack Compose 渲染管线架构"
-chapter: "18.25"
-section: "18.25"
+chapter: "18.23"
+section: "18.23"
 section_title: "Android 17 Jetpack Compose 渲染管线架构"
 status: finalized
 task2b_result: fixed
@@ -148,7 +148,7 @@ last_task9_audit_log: "logs/deep-review/2026-06-29-05-deep-review.md"
 last_task9_autofix_at: "2026-06-29"
 ---
 
-# 18.25 Android 17 Jetpack Compose 渲染管线架构
+# 18.23 Android 17 Jetpack Compose 渲染管线架构
 
 Compose 改写了 UI 的描述、状态追踪和节点更新方式，却没有绕过 Android 的 App Window 渲染管线。对一个开启硬件加速、没有额外独立 Surface 的普通 Compose 页面，像素仍经由 `ViewRootImpl`、HWUI、RenderThread、App Window 的 BLAST BufferQueue、SurfaceFlinger 和 HWC 到达屏幕。
 

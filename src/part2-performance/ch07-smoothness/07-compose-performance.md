@@ -93,7 +93,7 @@ Composition 会维护 group、key、`remember` 值和调用结构等运行时信
 7. SurfaceFlinger 选择可用 buffer，完成 layer 合成计划，再交给 HWC 或 RenderEngine。
 8. present fence 给出显示栈的时间锚点。
 
-所以，Composition 或 Drawing 结束都不代表画面已经显示；`queueBuffer()` 返回也不代表 SurfaceFlinger 已 latch。完整证据链参见[Jetpack Compose 渲染管线架构](../ch18-rendering-pipelines/25-compose-rendering-pipeline.md)。
+所以，Composition 或 Drawing 结束都不代表画面已经显示；`queueBuffer()` 返回也不代表 SurfaceFlinger 已 latch。完整证据链参见[Jetpack Compose 渲染管线架构](../ch18-rendering-pipelines/23-compose-rendering-pipeline.md)。
 
 Android 17 平台侧可从 [`Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)、[`ThreadedRenderer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ThreadedRenderer.java)、[`HardwareRenderer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareRenderer.java)和 [`RenderThread.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/RenderThread.cpp)核对窗口帧入口。内核标签用于解释线程调度、频率、fence 与 dma-buf 行为，不定义 Recomposition、`LayoutNode` 或 Strong Skipping。
 
@@ -312,7 +312,7 @@ Baseline Profile 让 ART 在安装或后台优化阶段预编译关键代码路�
 - [卡顿分析方法论](03-jank-methodology.md)
 - [卡顿优化原则](05-optimization.md)
 - [RecyclerView 性能优化](08-recyclerview-performance.md)
-- [Jetpack Compose 渲染管线架构](../ch18-rendering-pipelines/25-compose-rendering-pipeline.md)
+- [Jetpack Compose 渲染管线架构](../ch18-rendering-pipelines/23-compose-rendering-pipeline.md)
 - [AOSP 标准 View/HWUI 渲染管线](../ch18-rendering-pipelines/02-android-view-standard.md)
 
 ## 参考资料

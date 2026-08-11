@@ -73,11 +73,11 @@
 > 原 11.8 的 TARE 历史边界并入 5.8；Android 17 控制器、配额、pending reason 与排障内容由 5.8 既有正文统一承载。11.2 的重复 WakeLock 教程收束为 11.5 的入口。完整映射见 `metadata/content-consolidation-audit.md`。
 
 ## 第 18 章：渲染链路全景 (ch18-rendering-pipelines)
-- [x] 18.1 渲染链路分类与选择矩阵 (`src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md`)
+- [x] 18.1 渲染管线分类、选型与分析方法 (`src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md`)
 - [x] 18.2 Android View 标准链路 (BLAST) (`src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md`)
 - [x] 18.3 Android View 软件渲染链路 (`src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md`)
 - [x] 18.4 Android View 混合渲染链路 (`src/part2-performance/ch18-rendering-pipelines/04-android-view-mixed.md`)
-- [x] 18.5 Android View 多窗口链路 (`src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md`)
+- [x] 18.5 Android 17 多窗口、PiP 与自由窗口渲染 (`src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md`)
 - [x] 18.6 SurfaceView 直出链路 (`src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md`)
 - [x] 18.7 TextureView 合成链路 (`src/part2-performance/ch18-rendering-pipelines/07-textureview.md`)
 - [x] 18.8 OpenGL ES 渲染链路 (`src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md`)
@@ -90,10 +90,16 @@
 - [x] 18.15 视频叠加与 HWC (`src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md`)
 - [x] 18.16 游戏引擎渲染链路 (`src/part2-performance/ch18-rendering-pipelines/16-game-engine.md`)
 - [x] 18.17 Hardware Buffer Renderer (`src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md`)
-- [x] 18.18 PIP 与自由窗口渲染 (`src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md`)
-- [x] 18.19 可变刷新率渲染管线 (`src/part2-performance/ch18-rendering-pipelines/19-variable-refresh-rate.md`)
-- [x] 18.20 链路分析方法论 (`src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md`)
-- [x] 18.21 EyeDropper API 与跨设备协作性能 (`src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md`)
+- [x] 18.18 可变刷新率渲染管线 (`src/part2-performance/ch18-rendering-pipelines/18-variable-refresh-rate.md`)
+- [x] 18.19 EyeDropper API 与跨设备协作性能 (`src/part2-performance/ch18-rendering-pipelines/19-eyedropper-crossdevice.md`)
+- [x] 18.20 Android XR 空间 UI 与环境资产渲染性能 (`src/part2-performance/ch18-rendering-pipelines/20-android-xr-spatial-ui-rendering.md`)
+- [x] 18.21 多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR (`src/part2-performance/ch18-rendering-pipelines/21-media-codec2-tunneled-media3-abr.md`)
+- [x] 18.22 Advanced Professional Video 与专业视频编解码管线 (`src/part2-performance/ch18-rendering-pipelines/22-advanced-professional-video-apv.md`)
+- [x] 18.23 Jetpack Compose 渲染管线架构 (`src/part2-performance/ch18-rendering-pipelines/23-compose-rendering-pipeline.md`)
+- [x] 18.24 HWUI Vulkan 多队列并行渲染与帧边界管理 (`src/part2-performance/ch18-rendering-pipelines/24-android17-hwui-vulkan-multi-queue.md`)
+- [x] 18.25 Jetpack WebGPU 渲染与计算管线 (`src/part2-performance/ch18-rendering-pipelines/25-webgpu-android-pipeline.md`)
+
+> 原 18.18 的 PiP/Freeform 正文并入 18.5，原 18.20 的通用分析方法并入 18.1；其余专项改为连续编号。完整映射见 `metadata/content-consolidation-audit.md`。
 
 ## 第 12 章：网络性能 (ch12-apk-network)
 - [x] 12.1 网络性能优化 (`src/part2-performance/ch12-apk-network/01-network-performance.md`)

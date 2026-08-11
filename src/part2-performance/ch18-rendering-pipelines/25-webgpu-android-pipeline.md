@@ -1,7 +1,7 @@
 ---
 title: "Android 17 Jetpack WebGPU 渲染与计算管线"
-chapter: "18.27"
-section: "18.27"
+chapter: "18.25"
+section: "18.25"
 section_title: "Android 17 Jetpack WebGPU 渲染与计算管线"
 status: ready-for-review
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
@@ -112,7 +112,7 @@ sources:
     role: "早期研究入口；结论已回到固定 artifact 与源码复核"
 ---
 
-# 18.27 Android 17 Jetpack WebGPU 渲染与计算管线
+# 18.25 Android 17 Jetpack WebGPU 渲染与计算管线
 
 Jetpack WebGPU 把 WebGPU 的对象模型带到 Kotlin：应用通过 `GPUInstance`、`GPUAdapter`、`GPUDevice`、`GPUQueue`、pipeline、bind group 和 command encoder 描述 GPU 工作，AndroidX 随 AAR 打包 Dawn 原生实现，再由 Dawn 选择 Vulkan 或 OpenGL ES 后端。
 

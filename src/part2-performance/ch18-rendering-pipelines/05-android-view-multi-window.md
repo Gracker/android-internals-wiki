@@ -1,11 +1,11 @@
 ---
-title: Android 17 多窗口渲染路径
+title: Android 17 多窗口、PiP 与自由窗口渲染
 chapter: '18.5'
 section: '18.5'
 status: finalized
 applicable_versions: Android 9 (API 28) - Android 17 (API 37)
 last_verified: '2026-07-31'
-last_verified_against: AOSP android-17.0.0_r1 ViewRootImpl/Choreographer/HWUI/WindowManager/SurfaceFlinger/HWC + kernel android17-6.18-2026-06_r6 + Android 17 target 37 large-screen guidance
+last_verified_against: AOSP android-17.0.0_r1 ViewRootImpl/Choreographer/HWUI/WindowManager/PictureInPictureParams/PictureInPictureUiState/PipTaskOrganizer/AppCompatRecreateOnConfigChangePolicy/SurfaceFlinger/HWC + kernel android17-6.18-2026-06_r6 + Android 17 target 37 large-screen guidance
 confidence: high
 tags:
 - multi-window
@@ -16,11 +16,16 @@ tags:
 - WindowManager
 - SurfaceFlinger
 - multi-display
+- PiP
+- Freeform
 related_chapters:
 - '2.1'
+- '2.20'
 - '18.2'
 - '18.4'
-- '18.18'
+- '18.10'
+consolidated_from:
+- src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 pipeline_stage: ready-to-publish
@@ -81,6 +86,24 @@ sources:
 - type: official
   path: https://developer.android.com/blog/posts/prepare-your-app-for-the-resizability-and-orientation-changes-in-android-17
   role: target 37 resizability/orientation 规则与豁免
+- type: official
+  path: https://developer.android.com/develop/ui/views/picture-in-picture
+  role: PiP 生命周期、auto-enter、sourceRectHint 与 UI state
+- type: official
+  path: https://developer.android.com/guide/topics/resources/runtime-changes
+  role: Android 17 Configuration 默认不重建项与 recreateOnConfigChanges
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/PictureInPictureParams.java
+  role: sourceRectHint、auto-enter、seamless resize 及 r1 默认值实现
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/PictureInPictureUiState.java
+  role: 进入 PiP 动画阶段的 UI state 回调
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/pip/PipTaskOrganizer.java
+  role: PiP leash 动画、seamless resize 决策与最终 WindowContainerTransaction
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/AppCompatRecreateOnConfigChangePolicy.java
+  role: 配置资源扫描与 Activity 是否重建的实现
 task9_result: auto-fixed
 task9_review_notes: "2026-05-07 Task9 08:36:needs-rework。P0 0 / P1 1 / P2 2;分屏/桌面多窗口仍有同进程泛化问题。2026-06-07 Task2B 主修复：修正 PopupWindow 窗口独立性描述；修正交叉引用路径（part1-foundation→part1-fundamentals）。 | 2026-06-07 Task9 auto-fixed:P1 修正 RenderThread syncFrameState/UI 线程释放边界与 Trace 时长判读;回到 Task6 复审。"
 task9_reviewed_by: openclaw-task9
@@ -99,7 +122,7 @@ last_deepseek_cn_review_at: 2026-07-04
 ---
 
 
-# 18.5 Android 17 多窗口渲染路径
+# 18.5 Android 17 多窗口、PiP 与自由窗口渲染
 
 多窗口分析要同时区分 Window、进程和 Display。两个窗口可能共享 UI Looper 与 HWUI RenderThread，也可能来自不同进程；它们还可能位于不同 Display，拥有不同 mode、deadline 和 present fence。
 
@@ -336,6 +359,43 @@ WMS `BLASTSyncEngine` 等待一组 WindowContainer 的 draw/surface transaction�
 
 `AutoSingleLayer` 只适用于单 layer 简单 buffer update，跨 layer、geometry 和 sync transaction 不适用，不能完成 PiP/resize/多窗口同步。
 
+## PiP 与 Freeform 的特殊边界
+
+PiP 和 Freeform 没有另起一套应用绘制引擎。普通 View 仍由 ViewRoot/HWUI 生产窗口 buffer，视频或 Camera 的独立 Surface 仍由各自 Producer 供帧；变化主要发生在 Task/Window bounds、transition leash、layer geometry 和同屏合成策略。
+
+### PiP 进入流程与参数
+
+应用请求进入 PiP 后，WindowManager 把目标 Task 切到 pinned windowing mode，WM Shell 取得 Task leash 并连续应用 position、crop、scale、round 和 alpha 等 transaction；动画结束再提交最终 WindowContainerTransaction。系统可以先变换旧内容，因此不要求应用在每个动画采样点都生成新 buffer。视频以 24/30 fps 供帧而 Display 以 60/90/120 Hz present 时，重复使用同一视频 buffer 也是正常行为。
+
+`PictureInPictureParams` 会直接改变 transition 质量：
+
+| 参数或回调 | 正确边界 |
+| --- | --- |
+| `sourceRectHint` | 指向进入小窗后仍可见的内容区域；它是进出动画提示，不是持续阶段的 crop API |
+| `setAutoEnterEnabled(true)` | API 31+ 手势回桌面时让系统更早知道进入意图，避免依赖较晚的生命周期回调 |
+| `setSeamlessResizeEnabled(true)` | 只适合可连续缩放的内容，典型是视频；复杂 UI 应明确设为 `false` 并验证 snapshot/cross-fade |
+| `onPictureInPictureUiStateChanged()` | target API 35+ 可在进入动画开始时隐藏标题、推荐卡片等非必要 UI |
+
+Android 17 r1 中，未设置的 `autoEnterEnabled` 返回 `false`。`seamlessResizeEnabled` 的注释与运行路径存在差异：getter 对空值返回 `false`，`PipTaskOrganizer` 又直接用该 getter 决定 resize 结束时是否走 snapshot cross-fade。因此应用不要依赖隐式默认值；视频明确传 `true`，复杂 UI 明确传 `false`，并在旋转、折叠或内容 bounds 变化后更新 params。
+
+PiP 的常见风险包括：leash geometry 已变化但新 buffer 还没到、圆角/alpha/HDR 组合改变 HWC strategy、旧大 buffer 未 release 而新尺寸 buffer 已分配，以及进入小窗后仍维持不必要的高分辨率或高帧率。SurfaceFlinger 缩小 layer 不会自动改变 Producer 的分辨率和 cadence。
+
+### Freeform resize：分开 geometry 与 buffer
+
+把旧几何/内容记为 `G0/B0`，新几何/内容记为 `G1/B1`：
+
+| 组合 | 视觉结果 |
+| --- | --- |
+| `G0 + B0` | 旧窗口仍一致 |
+| `G1 + B0` | 旧内容被缩放、裁剪或 letterbox；不一定是错误 |
+| `G1 + B1` | 新几何与新内容一致 |
+| `G0 + B1` | 新内容落在旧几何中，通常是需要避免的错拍 |
+| snapshot / starting layer | 系统内容覆盖应用重绘间隙 |
+
+WMS `BLASTSyncEngine` 收集加入 sync group 的 WindowContainer transaction；应用窗口的 `BLASTBufferQueue` 把下一块 buffer 变成 SurfaceControl transaction；API 34+ 的 `SurfaceSyncGroup` 面向应用和嵌入 Surface。三者目的相关，但参与对象、权限和 ready 条件不同。独立 codec、Camera 或游戏 Producer 没有加入同步关系时，不会被 WMS 自动等待。
+
+Android 17 还改变了部分配置变化的重建边界：键盘、键盘可见性、导航设备、触摸屏、颜色模式，以及进出 `UI_MODE_TYPE_DESK`，默认可跳过 Activity 重建并派发 `onConfigurationChanged()`。`AppCompatRecreateOnConfigChangePolicy` 会检查限定资源，应用也可通过 `android:recreateOnConfigChanges` 明确选择。排查时以实际生命周期回调和 ActivityRecord 决策为准，不能只按 manifest 推测。
+
 ## Trace 视角
 
 ### 按 Display 分组
@@ -488,7 +548,7 @@ common kernel 无法说明具体设备的 HWC plane、DPU、GPU 和 Display driv
 
 - [18.2 Android View 标准管线](02-android-view-standard.md)
 - [18.4 混合出图](04-android-view-mixed.md)
-- [18.18 PiP / Freeform](18-pip-freeform.md)
+- 本节“PiP 与 Freeform 的特殊边界”
 - [2.6 SurfaceFlinger](../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md)
 - [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)
 

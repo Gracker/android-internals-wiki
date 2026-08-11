@@ -256,23 +256,11 @@ software Canvas 支持 dirty region，但“只重画脏区”还不完整。And
 
 ### GPU 离屏与 `HardwareBuffer`
 
-Android 14 / API 34 的 `HardwareBufferRenderer` 把 `RenderNode` 场景画入调用方提供的 `HardwareBuffer`。它与 `HardwareRenderer` 共享进程级 common render thread：
-
-- `RenderResult#getFence()` 是生产完成 fence，消费者读取 buffer 前要等待或继续传递；
-- renderer 不会在每次 draw 前清空 buffer，复用时要全量覆盖或显式清屏；
-- `close()` 释放 renderer 资源，不会替调用方关闭传入的 `HardwareBuffer`。
-
-纯离屏结果如果只给编码、算法或缓存消费，不会产生 display present fence。若稍后由宿主窗口采样，要跟踪宿主帧；若交给独立 `SurfaceControl`，则继续跟踪 transaction、latch、composition、present 与 release。
+`HardwareBufferRenderer` 属于 GPU 离屏生产，不是整窗口软件 Canvas。它把 RenderNode 输出到调用方持有的 `HardwareBuffer`，完成 fence 只证明生产结束，不代表已经送显；复用、清屏、所有权和后续提交的完整规则统一见 [18.17 HardwareBufferRenderer](17-hardware-buffer-renderer.md)。本节只用它说明“离屏”与“软件”是两个正交维度。
 
 ### `SurfaceControl.Transaction#setBuffer()` 直接提交
 
-Android 13 / API 33 起，公开 Java API 可以把 `HardwareBuffer` 直接设置到 `SurfaceControl`。它绕过该 layer 在 Producer 侧的 `dequeueBuffer()` / `queueBuffer()` 循环，没有绕过 SurfaceFlinger。
-
-Java 文档要求 buffer 同时支持 `USAGE_COMPOSER_OVERLAY` 和 `USAGE_GPU_SAMPLED_IMAGE`，因为设备可能使用硬件 plane，也可能由 GPU 采样。usage 表示允许的消费者，不保证 HWC 选择 DEVICE composition。
-
-提交时仍在生产的 buffer 必须携带有效 `SyncFence`。Java 文档称它为 presentation fence；从消费者角度看，它保护“生产完成、可以读取”的 acquire 边界。一个 transaction 同时设置多块 buffer 时，所有 production fence 都满足后才能保持这组更新的原子一致性。
-
-连续生产还要使用专门的 release callback。回调携带的 `SyncFence` 若有效，复用 buffer 前必须等待。Transaction committed/completed 只描述事务阶段，不能替代 buffer 的安全回收协议。Android 16 / API 36 起，NDK 提供 `ASurfaceTransaction_setBufferWithRelease()` 补齐这一边界。
+`Transaction#setBuffer()` 可以绕过该 layer 的常规 `dequeueBuffer()` / `queueBuffer()` 循环，但不会绕过 SurfaceFlinger。仍在生产的 buffer 要携带 production/acquire fence，连续复用还要等待 release callback；usage 只表示允许的消费者，不保证 HWC 选择 DEVICE。完整提交与回收协议由 [18.10 SurfaceControl API](10-surface-control-api.md) 和 [18.17](17-hardware-buffer-renderer.md) 维护。
 
 ## 与硬件加速路径的核心差异
 

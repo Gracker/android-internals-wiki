@@ -137,14 +137,14 @@ Compose 最终仍由 Android 宿主出图；Flutter 的 root render mode 和 Pla
 
 | 当前场景 | 第 2 章基础 | 第 18 章分型 |
 |---|---|---|
-| 普通 View / Compose 页面 | [2.1](01-rendering-overview.md) → [2.4](04-choreographer.md) → [2.5](05-main-render-thread.md) | [标准 View](../../part2-performance/ch18-rendering-pipelines/02-android-view-standard.md)、[Compose](../../part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md) |
+| 普通 View / Compose 页面 | [2.1](01-rendering-overview.md) → [2.4](04-choreographer.md) → [2.5](05-main-render-thread.md) | [标准 View](../../part2-performance/ch18-rendering-pipelines/02-android-view-standard.md)、[Compose](../../part2-performance/ch18-rendering-pipelines/23-compose-rendering-pipeline.md) |
 | SurfaceView / TextureView | [2.13](13-buffer-queue.md) → [2.16](16-sync-fence.md) → [2.6](06-surfaceflinger.md) | [SurfaceView](../../part2-performance/ch18-rendering-pipelines/06-surfaceview.md)、[TextureView](../../part2-performance/ch18-rendering-pipelines/07-textureview.md) |
 | WebView / Flutter | [2.5](05-main-render-thread.md) → [2.13](13-buffer-queue.md) | [WebView](../../part2-performance/ch18-rendering-pipelines/13-webview-rendering.md)、[Flutter](../../part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md) |
 | Camera / 视频 | [2.13](13-buffer-queue.md) → [2.16](16-sync-fence.md) → [2.19](19-refresh-rate-switching.md) | [Camera](../../part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md)、[Video/HWC](../../part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md) |
 | OpenGL ES / Vulkan / 游戏 | [2.14](14-graphics-api-evolution.md) → [2.17](17-frame-pacing.md) | [OpenGL ES](../../part2-performance/ch18-rendering-pipelines/08-opengl-es.md)、[Vulkan](../../part2-performance/ch18-rendering-pipelines/09-vulkan-native.md)、[游戏](../../part2-performance/ch18-rendering-pipelines/16-game-engine.md) |
-| 多窗口 / 折叠屏 / 桌面模式 | [2.12](12-window-manager.md) → [2.20](20-multiwindow-desktop-rendering.md) → [2.30](30-displaymanager-service-lifecycle.md) | [多窗口](../../part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md)、[PiP/Freeform](../../part2-performance/ch18-rendering-pipelines/18-pip-freeform.md) |
+| 多窗口 / 折叠屏 / 桌面模式 | [2.12](12-window-manager.md) → [2.20](20-multiwindow-desktop-rendering.md) → [2.30](30-displaymanager-service-lifecycle.md) | [多窗口、PiP 与 Freeform](../../part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md) |
 
-若路径尚未确定，可从[渲染管线分类与选择](../../part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md)建立 Producer、Surface、layer 与合成位置的映射，再用[渲染管线分析方法](../../part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md)复原异常帧。
+若路径尚未确定，可从[渲染管线分类、选型与分析方法](../../part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md)建立 Producer、Surface、layer 与合成位置的映射，并复原异常帧。
 
 ## 按现象选择阅读顺序
 

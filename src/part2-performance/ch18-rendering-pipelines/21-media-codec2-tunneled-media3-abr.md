@@ -1,7 +1,7 @@
 ---
 title: "Android 17 多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR"
-chapter: "18.23"
-section: "18.23"
+chapter: "18.21"
+section: "18.21"
 section_title: "Android 17 多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR"
 status: ready-for-review
 drafted_date: "2026-05-21"
@@ -102,7 +102,7 @@ sources:
     role: "dma-fence 的完成与 wait 语义"
 ---
 
-# 18.23 Android 17 多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR
+# 18.21 Android 17 多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR
 
 视频播放卡顿可能来自下载、码率选择、解码、Surface 消费、合成、显示或音频时钟。把这些阶段统称为“播放器卡”，很容易在错误的层上调参数。分析时固定两个核查基线：
 

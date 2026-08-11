@@ -38,7 +38,7 @@ sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
 tags: [surfaceflinger, vsync, frame-rate, arr, rendering, scheduler]
-related_chapters: ["2.3", "2.18", "2.19", "18.19", "13.14"]
+related_chapters: ["2.3", "2.18", "2.19", "18.18", "13.14"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-18"
 gap_source: "研究素材/官方文档/AOSP结构"

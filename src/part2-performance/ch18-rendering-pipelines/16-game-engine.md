@@ -1,10 +1,11 @@
 ---
 title: "Android 17 游戏引擎渲染链路"
 chapter: "18.16"
+section: "18.16"
 status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 tags: ["Unity", "Unreal", "Game-Engine", "Swappy", "Frame-Pacing", "Vulkan", "GLES", "渲染链路"]
-related_chapters: ["2.4", "2.5", "5.9", "18.6", "18.8", "18.9", "18.15", "18.19", "18.22", "18.23"]
+related_chapters: ["2.4", "2.5", "5.9", "18.6", "18.8", "18.9", "18.15", "18.18", "18.20", "18.21"]
 consolidated_from:
   - "src/part2-performance/ch08-responsiveness/09-game-performance.md"
 created_by: "rendering-pipelines-merge"
@@ -608,43 +609,9 @@ acquire、swap、present 或 Swappy wait 周期性变长。继续检查 pending 
 
 ## 小游戏、云游戏、AR 与 XR 的边界
 
-### 小游戏容器
+这些场景只在本地 game loop 与显示段上复用本节方法，端到端责任边界不同：小游戏还要拆 JS/runtime、bridge 与宿主 `SurfaceView`/`TextureView`；云游戏要把云端排队、渲染、编码和网络遥测接到本地解码与 present；手机 AR 要统一 Camera、IMU/pose、render target 与 present 的时钟；头显 XR 由 OpenXR runtime/compositor 负责 predicted display、reprojection 与最终显示交接，不保证经过普通 App `queueBuffer()`。
 
-小游戏常在宿主进程内增加 JS / TS runtime、Canvas / WebGL 翻译层和 native bridge。独立 `SurfaceView` / `SurfaceControl` 输出会作为自己的 Layer 进入 SurfaceFlinger；`TextureView` 输出则要由宿主窗口再次消费。
-
-Android 17 的 TextureView 分支是：producer `queueBuffer()` 触发 `OnFrameAvailable`，`TextureView` 标记 layer update 并 `invalidate()`；宿主 draw 中的 `applyUpdate()` 调用 `TextureLayer.updateSurfaceTexture()`，再由 `HardwareRenderer.pushLayerUpdate()` 送到 RenderThread。`DrawFrameTask::syncFrameState()` 调用 `DeferredLayerUpdater::apply()`，后者通过 `ASurfaceTexture_dequeueBuffer()` 取得最新 `AHardwareBuffer`。这条分支最终进入 SurfaceFlinger 的是宿主 app window，小游戏的中间 buffer 只是 HWUI 采样输入。
-
-`DeferredLayerUpdater.cpp` 还说明，同步队列模式下会丢弃除最新一帧外的 pending frame。看到小游戏 producer 连续提交，不等于宿主按相同节奏逐帧显示；JS task、bridge、GL submit、TextureView invalidation 和 host draw 都要分别标记。
-
-### 云游戏
-
-云游戏本地链分为输入上行与视频下行。本机 trace 可以覆盖 input dispatch、网络发送/接收、jitter buffer、MediaCodec 解码、本地输出 carrier、SurfaceFlinger 和 display present；云端排队、渲染、编码与网络往返需要服务端 timestamp 或协议 telemetry。
-
-本地 carrier 会改变后半段：
-
-- 解码到 `SurfaceView` 时，沿非 tunneled 视频独立 Layer 路径显示；
-- 解码到 `TextureView` 时，经 SurfaceTexture / TextureLayer 回到宿主窗口；
-- WebRTC 或自研 GL renderer 会回到本地 GLES / Vulkan producer；
-- tunneled playback 只有在 trace、codec 配置或 sideband handle 能证明 `HW_AV_SYNC` / sideband 路径时才能成立。
-
-Android display present fence 只覆盖本地显示段，不能代表云端 frame 已完成，也不能单独给出端到端交互延迟。
-
-### 手机 AR
-
-手机 AR 在 game loop 前加入 Camera HAL、camera sensor timestamp、IMU、VIO / SLAM 和 pose prediction，App 再把相机背景与虚拟内容渲染到 GLES / Vulkan Surface。camera timestamp、pose timestamp、render target time 与 Android display present 属于不同阶段，不能互相代换；做 motion-to-photon 分析时必须统一时钟域并保留映射关系。
-
-### 头显 XR / OpenXR
-
-OpenXR App 的典型一帧顺序是：
-
-1. `xrWaitFrame()` 让应用与 runtime 节拍同步，并返回 `predictedDisplayTime`、`predictedDisplayPeriod` 和 `shouldRender`。
-2. 应用调用 `xrBeginFrame()`，再通过 `xrAcquireSwapchainImage()` / `xrWaitSwapchainImage()` 取得 runtime swapchain image。
-3. 引擎按同一个 predicted display time 更新 pose、渲染眼图，并调用 `xrReleaseSwapchainImage()`。
-4. `xrEndFrame()` 提交 composition layers；runtime compositor 随后执行 layer composition、reprojection / timewarp 和设备显示交接。
-
-这条主链没有保证经过普通 Android App `queueBuffer()`。部分 runtime 会暴露 Android Layer，另一些会进入 vendor compositor 或显示驱动；只有 runtime 和设备侧证据足够时，才能把最终 XR present 映射到 SurfaceFlinger / HWC。App FrameTimeline 通常也不足以界定完整 motion-to-photon。
-
-看到“游戏包名”不代表一定套用本地 GLES / Vulkan game loop。先确认最终 buffer producer、输出 carrier 和 present 责任方，再选择证据。
+不要在这里维护四套缩略教程。TextureView 的消费语义见 [18.7](07-textureview.md)，云游戏本地视频与 sideband 见 [18.21](21-media-codec2-tunneled-media3-abr.md)，XR runtime/compositor 见 [18.20](20-android-xr-spatial-ui-rendering.md)。进入对应专题前，先确认最终 buffer Producer、输出 carrier、时钟域和 present 责任方。
 
 ## 内核和驱动侧
 
@@ -700,9 +667,9 @@ OEM 策略、画质、thermal、frame-rate vote 与引擎上限都可能限制�
 - [18.8 OpenGL ES](08-opengl-es.md)：EGL window surface 和 GLES 提交。
 - [18.9 Vulkan](09-vulkan-native.md)：Android Vulkan swapchain 与显式同步。
 - [18.15 视频叠加与 HWC](15-video-overlay-hwc.md)：云游戏视频 carrier、CLIENT / DEVICE 与 tunneled sideband。
-- [18.19 可变刷新率](19-variable-refresh-rate.md)：frame-rate vote、ARR 和 display mode。
-- [18.22 Android XR 空间 UI](22-android-xr-spatial-ui-rendering.md)：OpenXR runtime、compositor 与显示边界。
-- [18.23 Media Codec2 与 Tunneled Playback](23-media-codec2-tunneled-media3-abr.md)：云游戏本地视频解码和 sideband 证据。
+- [18.18 可变刷新率](18-variable-refresh-rate.md)：frame-rate vote、ARR 和 display mode。
+- [18.20 Android XR 空间 UI](20-android-xr-spatial-ui-rendering.md)：OpenXR runtime、compositor 与显示边界。
+- [18.21 Media Codec2 与 Tunneled Playback](21-media-codec2-tunneled-media3-abr.md)：云游戏本地视频解码和 sideband 证据。
 
 ## Android 17 源码核对清单
 

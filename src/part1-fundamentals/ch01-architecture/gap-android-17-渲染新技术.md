@@ -135,7 +135,7 @@ present fence 不包含 panel 扫描、像素响应和人眼感知时间。定�
 
 | 路径 | 主体 Producer 与 layer 形态 | 排查重点 | 深入阅读 |
 |---|---|---|---|
-| 标准 View / Compose Host | MainThread 准备状态，HWUI RenderThread/GPU 产出宿主 Window buffer | `doFrame`、`syncAndDrawFrame`、BLAST、FrameTimeline | [标准 Android View](../../part2-performance/ch18-rendering-pipelines/02-android-view-standard.md)、[Compose](../../part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md) |
+| 标准 View / Compose Host | MainThread 准备状态，HWUI RenderThread/GPU 产出宿主 Window buffer | `doFrame`、`syncAndDrawFrame`、BLAST、FrameTimeline | [标准 Android View](../../part2-performance/ch18-rendering-pipelines/02-android-view-standard.md)、[Compose](../../part2-performance/ch18-rendering-pipelines/23-compose-rendering-pipeline.md) |
 | CPU 或离屏绘制 | CPU `lockCanvas()`、软件 layer，或 GPU/HardwareBuffer 离屏产出 | 生产目标、消费方、production fence 与 display fence | [软件渲染](../../part2-performance/ch18-rendering-pipelines/03-android-view-software.md)、[HardwareBufferRenderer](../../part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md) |
 | SurfaceView | 宿主 Window 与独立 child Surface 各有 Producer | container 几何、child buffer、hole-punch、HWC composition | [SurfaceView](../../part2-performance/ch18-rendering-pipelines/06-surfaceview.md) |
 | TextureView | 外部 Producer 写入 SurfaceTexture，HWUI 再采样进宿主 Window | 外部 BufferQueue、宿主采样、宿主窗口提交 | [TextureView](../../part2-performance/ch18-rendering-pipelines/07-textureview.md) |
@@ -267,4 +267,4 @@ FrameTimeline 对标准 App Window 很有价值，对 SurfaceView 主体、Camer
 9. 结论来自固定 tag 源码、runtime trace、设备能力查询，还是厂商文档？
 10. 优化前后的指标、场景、刷新率、温度与驱动版本是否一致？
 
-完成这十项映射后，问题会收敛到应用生产、GPU 执行、buffer 周转、SurfaceFlinger 消费、HWC composition 或 display 后段中的一个责任区间。具体场景的操作步骤见[渲染管线分析方法](../../part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md)。
+完成这十项映射后，问题会收敛到应用生产、GPU 执行、buffer 周转、SurfaceFlinger 消费、HWC composition 或 display 后段中的一个责任区间。具体场景的操作步骤见[渲染管线分析方法](../../part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md#统一分析方法)。
