@@ -81,7 +81,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-13
 ---
 
-# 内存持续增长
+# 10.3 内存持续增长
 
 > 适用范围：Android 8.0（API 26）至 Android 17（API 37）。平台源码以 `android-17.0.0_r1` 为锚点；涉及物理页分配与规整时，以 `android17-6.18-2026-06_r6` 为内核锚点。
 
@@ -413,7 +413,7 @@ WebView 基线要同时记录 App 进程、renderer 进程和 GPU/Graphics 分�
 - [§10.1 App 内存分析](01-app-memory-analysis.md)：指标口径、采集工具和基线方法。
 - [§10.2 内存泄漏](02-memory-leak.md)：retained object、GC Root 与 Native 未释放路径。
 - [§10.6 内存抖动与频繁 GC](06-memory-churn.md)：高分配率与 GC/帧时间关联。
-- [§10.8 GPU 内存追踪](08-gpu-memory-tracking.md)：Graphics、DMA-BUF、Surface 与 GPU 资源归因。
+- [§10.7 GPU 与图形内存统计](07-gpu-graphics-memory-tracking.md)：Graphics、DMA-BUF、Surface 与 GPU 资源归因。
 - [§4.5 App 内存优化](../../part1-fundamentals/ch04-memory/05-app-memory-optimization.md)：进程级内存预算与系统压力。
 
 ## 参考资料

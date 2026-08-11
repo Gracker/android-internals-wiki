@@ -77,7 +77,7 @@ last_deepseek_cn_review_at: 2026-06-17
 task2b_state: fixed
 ---
 
-# 低内存对系统性能的影响
+# 10.4 低内存对系统性能的影响
 
 > 适用范围：Android 10（API 29）至 Android 17（API 37）。平台源码以 `android-17.0.0_r1` 为锚点；回收、水位线、PSI、ZRAM 与页规整以 `android17-6.18-2026-06_r6` 为内核锚点。
 

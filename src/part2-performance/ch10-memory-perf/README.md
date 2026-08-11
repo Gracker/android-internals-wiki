@@ -18,11 +18,9 @@
 | PSI、换页、lmkd、后台重启或整机卡顿 | [10.4 低内存对系统性能的影响](04-low-memory-impact.md) |
 | 需要查看从症状到证据的完整案例 | [10.5 案例集](05-case-studies.md) |
 | live set 稳定，但短命分配和 GC 很频繁 | [10.6 内存抖动](06-memory-churn.md) |
-| SQLite/Room 查询、CursorWindow 或分页造成峰值 | [10.7 SQLite / Room 性能](07-sqlite-room-performance.md) |
-| Graphics、DMA-BUF 或 GPU private memory 增长 | [10.8 GPU / 图形内存统计](08-gpu-memory-tracking.md) |
-| ART region、CMC、LOS 或 compaction 引起疑问 | [10.10 ART GC 碎片化与 Compaction](10-art-gc-fragmentation-regions-optimization.md) |
-
-[10.01 Android 内存性能优化](10.01-android-memory-performance-optimization.md) 提供全章决策框架，适合在问题类型还不明确时先读。
+| Graphics、DMA-BUF 或 GPU private memory 增长 | [10.7 GPU 与图形内存统计](07-gpu-graphics-memory-tracking.md) |
+| SQLite/Room 查询、CursorWindow 或分页造成峰值 | [24.2 数据库性能优化](../../part5-app/ch24-io-network/02-database-optimization.md) |
+| ART region、CMC、LOS 或 compaction 引起疑问 | [4.7 ART 分代 GC、Region 碎片与暂停分析](../../part1-fundamentals/ch04-memory/07-art-generational-gc.md) |
 
 ## 分析顺序
 
@@ -62,9 +60,9 @@ GC 只能处理 managed heap 中不可达的对象。Native owner、Surface、co
 
 ## 阅读建议
 
-- App 侧排障可从 10.01 和 10.1 开始，再按内存域进入对应小节。
+- App 侧排障从 10.1 开始，再按内存域进入对应小节。
 - OOM、GC 抖动和前后台恢复问题，建议与第 4 章的 ART、lmkd、MemoryLimiter、内核回收章节对照。
-- 图形与渲染问题要把第 10.8 章和渲染专题放在同一时间线分析，避免只看 Java heap。
+- 图形与渲染问题要把第 10.7 章和渲染专题放在同一时间线分析，避免只看 Java heap。
 - 平台或 OEM 调试还应保存 cgroup、PSI、lmkd、MemoryLimiter 与 ART 配置，不能用 API level 代替设备实际状态。
 
 ## 证据边界

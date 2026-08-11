@@ -282,7 +282,7 @@ HAL 必须避免不同 memtrack type 重复记账，但设备是否支持某个�
 
 源码锚点：[`IMemtrack.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/memtrack/aidl/android/hardware/memtrack/IMemtrack.aidl)
 
-GPU 专项工具与 layer/buffer 追踪见 10.8 节；这里仅将 Graphics 从 Java/Native heap 口径中分离。
+GPU 专项工具与 layer/buffer 追踪见 10.7 节；这里仅将 Graphics 从 Java/Native heap 口径中分离。
 
 ## 6. 建立可比较的基线
 
@@ -454,5 +454,5 @@ activityManager.setProcessStateSummary(state)
 - **4.5 Low Memory Killer 与进程优先级**
 - **10.2 内存泄漏分析**
 - **10.6 内存抖动**
-- **10.8 GPU 内存追踪**
+- **10.7 GPU 与图形内存统计**
 - **13.1 Perfetto 内存数据源**

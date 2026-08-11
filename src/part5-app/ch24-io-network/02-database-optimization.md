@@ -4,8 +4,8 @@ chapter: "24.2"
 section: "24.2"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-06-30"
-last_verified_against: "AOSP android-17.0.0_r1 + Android Developers SQLite/Room docs + AndroidX Room source"
+last_verified: "2026-08-11"
+last_verified_against: "AOSP android-17.0.0_r1 + Android Developers SQLite/Room docs + AndroidX Room 2.8.4 source"
 last_verified_android17: "2026-06-30"
 confidence: medium
 drafted_date: "2026-05-14"
@@ -16,7 +16,13 @@ sources:
   - type: aosp
     path: "frameworks/base/core/java/android/database/sqlite/SQLiteConnectionPool.java"
   - type: aosp
+    path: "frameworks/base/core/java/android/database/sqlite/SQLiteSession.java"
+  - type: aosp
     path: "frameworks/base/core/java/android/database/sqlite/SQLiteGlobal.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/database/CursorWindow.java"
+  - type: aosp
+    path: "frameworks/base/libs/androidfw/CursorWindow.cpp"
   - type: aosp
     path: "frameworks/base/core/res/res/values/config.xml"
   - type: official
@@ -26,11 +32,21 @@ sources:
   - type: official
     path: "https://developer.android.com/training/data-storage/room/migrating-db-versions"
   - type: official
+    path: "https://developer.android.com/reference/androidx/room/RoomDatabase.JournalMode"
+  - type: official
+    path: "https://dl.google.com/dl/android/maven2/androidx/room/room-runtime-android/2.8.4/room-runtime-android-2.8.4-sources.jar"
+  - type: official
+    path: "https://dl.google.com/dl/android/maven2/androidx/room/room-runtime/2.8.4/room-runtime-2.8.4-sources.jar"
+  - type: official
     path: "https://source.android.com/docs/core/perf/compatibility-wal"
   - type: official
     path: "https://sqlite.org/wal.html"
   - type: official
     path: "https://sqlite.org/eqp.html"
+  - type: official
+    path: "https://sqlite.org/walformat.html"
+  - type: official
+    path: "https://sqlite.org/withoutrowid.html"
   - type: clippings
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
   - type: clippings
@@ -38,7 +54,7 @@ sources:
   - type: clippings
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [sqlite, room, wal, database-index, query-optimization]
-related_chapters: ["24.1", "10.7", "6.3"]
+related_chapters: ["24.1", "24.17", "9.3", "6.3"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -63,6 +79,9 @@ last_task6_review_log: logs/review/2026-05-14-08-review.md
 task6_review_notes: "2026-05-14 Task6：四层质检通过；L1/L2 无需正文改动。满足 task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending，自动晋升 finalized。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-15
+last_consolidated_at: "2026-08-11"
+consolidated_from:
+  - "src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md"
 ---
 
 # 数据库性能优化（SQLite/Room）
@@ -73,11 +92,11 @@ last_deepseek_cn_review_at: 2026-07-15
 
 数据库慢通常不会表现成 CPU 满载。更常见的现象是主线程等待查询、工作线程排队申请连接、Migration 占住首次打开，或者列表滚动时 `CursorWindow` 反复填充。Perfetto 和线程栈中常见 `SQLiteConnectionPool.waitForConnection()`、`SQLiteSession.executeForCursorWindow()`、DAO 生成代码，或 `ContentResolver.query()` 的 Binder 等待。
 
-机制篇 [10.7 SQLite 与 Room 性能](../../part2-performance/ch10-memory-perf/07-sqlite-room-performance.md)介绍 SQLite 并发、`CursorWindow`、Room 执行模型和 ANR 归因。应用侧还要决定怎样选择 WAL，怎样写 DAO，怎样按查询设计索引，以及怎样在发版前验证迁移。
+本节把 SQLite 并发、`CursorWindow`、Room 执行模型、ANR 归因和应用优化放在同一条证据链里。先确认线程在执行 SQL、等连接、等 Binder 还是等待首次打开，再决定修改日志模式、查询、索引、事务或迁移。
 
 ## SQLite WAL 模式与并发优化
 
-WAL（Write-Ahead Logging）把事务变更追加到 `-wal` 文件，checkpoint 再把页面合并回主库。它允许读事务与写事务并发，提交也常能受益于追加写。WAL 仍只有一个活跃写者，多个写事务会依次等待。
+回滚日志模式会在修改主库页之前保存旧内容，写事务进入需要排除读者的阶段时，新的读写访问会受锁状态限制。WAL（Write-Ahead Logging）改为把新页追加到 `-wal` 文件：读事务记录自己的 end mark，从主库与不超过该位置的 WAL frame 组成一致快照；写者可以在既有读者读取旧快照时继续追加。两种模式都只有一个活跃写者，WAL 提供的是读写并发，不是并行写入。
 
 Android 官方性能文档建议：除使用 `ATTACH DATABASE` 的场景外启用 WAL，并在 WAL 下使用 `synchronous=NORMAL`。这个选择改变持久性边界：应用进程崩溃后事务仍可恢复，但设备断电或内核崩溃可能回滚已经返回成功的事务。订单、支付或跨库依赖不能只按吞吐量选择同步级别。
 
@@ -108,9 +127,22 @@ Android 9 引入 Compatibility WAL 时，[官方历史文档](https://source.and
 
 [源码锚点：[`SQLiteGlobal.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteGlobal.java)、[`config.xml`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/res/values/config.xml)]
 
+### Checkpoint、长读事务与生效值
+
+checkpoint 把已提交的 WAL frame 写回主库。`PASSIVE` checkpoint 可以推进到活跃读事务允许的位置；持有较老 end mark 的长读事务会让它提前停止，而后续写入仍可继续追加，于是 `-wal` 文件可能持续增长。这个现象不能只靠调小 autocheckpoint 阈值修复，应先找到没有结束的读事务和过长的 Cursor 生命周期。
+
+```sql
+PRAGMA journal_mode;
+PRAGMA page_size;
+PRAGMA wal_autocheckpoint;
+PRAGMA wal_checkpoint(PASSIVE);
+```
+
+`wal_checkpoint` 的结果包含 busy 状态、WAL frame 数和已 checkpoint frame 数。后两者长期拉开时，应对齐长读事务、写入批次和 checkpoint 时机。普通 checkpoint 使用 WAL 共享内存中的写锁、checkpoint 锁与读标记协调，不能概括为“先取得主数据库 EXCLUSIVE 锁”。切换 journal mode、恢复和带截断语义的操作另有锁边界。
+
 ### Room 怎样选择 journal mode
 
-`JournalMode.AUTOMATIC` 的当前 API 契约是：API 低于 16 或低内存设备选择 `TRUNCATE`，其余情况选择 `WRITE_AHEAD_LOGGING`。这是 AndroidX Room 的契约，不是 Android 17 平台保证；升级 Room 时仍要复核依赖版本的 API 文档和 release notes。
+Room 2.8.4 必须按 source set 区分。Android `actual` API 有 `AUTOMATIC`、`TRUNCATE` 和 `WRITE_AHEAD_LOGGING`，Builder 默认是 `AUTOMATIC`；它在非 low-RAM 设备解析为 WAL，在 low-RAM 设备解析为 `TRUNCATE`。common/KMP 声明只有后两项，Builder 默认 WAL。官网聚合 API 可能同时呈现不同 source set 的说明，因此 Android 项目应核对 `RoomDatabase.android.kt`，KMP/driver 项目则核对实际目标和依赖源码。
 
 下面的配置用于展示一个可审计的 Room 打开入口。日志模式和 Migration 都在同一个 builder 中明确声明；执行器先保留 Room 默认值，只有追踪结果证明默认调度不符合业务需求时才自定义。
 
@@ -128,6 +160,12 @@ val database = Room.databaseBuilder(
 这段代码不会保证一定启用 WAL，低内存设备可能得到 `TRUNCATE`。若自定义执行器，Room 文档要求查询执行器有线程上限且不能运行在主线程；事务最多同时执行一个。共享事务执行器还要遵守文档中的死锁约束，不应复制一套固定线程数到所有应用。
 
 使用 Room 3 / `SQLiteDriver` 的项目不能照搬 framework `SQLiteConnectionPool` 的连接数和 `CursorWindow` 结论。驱动会改变 Room 下方的 SQLite 实现与数据传递路径，具体边界见 [24.17 Room 3、SQLiteDriver 与 KMP 性能](17-room3-sqlitedriver-kmp-performance.md)。
+
+### Session、连接池与等待对象
+
+Android framework 的 `SQLiteDatabase` 为每条线程保存一个 `SQLiteSession`。Session 只维护事务与连接使用状态；真正执行语句时仍要向 `SQLiteConnectionPool` 申请连接。线程停在 `waitForConnection()` 表示当前没有符合要求的连接可用，不等于它长时间卡在保护池状态的 Java monitor 上。
+
+WAL 下，平台池可用非主连接服务只读工作，写事务仍需要主连接亲和性；增加 reader 也不会增加 SQLite writer 数量。Room 2.8.4 的默认 SupportSQLite 兼容路径使用 passthrough pool，实际连接管理仍在 framework；只有驱动本身没有连接池时，`RoomConnectionManager` 才自建池，并把 WAL 映射为最多 4 个 reader、1 个 writer，`TRUNCATE` 下各为 1 个。这些数字是特定路径的当前实现，不是应用可依赖的稳定契约。看到连接等待时，先查长事务、慢 reader、未关闭资源、writer 队列和首次打开，不要先扩池。
 
 WAL 的应用侧检查项：
 
@@ -153,6 +191,8 @@ DAO 方法按执行模型分开设计：
 | `suspend` 方法 | Room 异步执行机制 | 单次读写、批量写入 | 事务范围过大会长期占用连接 |
 | `Flow` | 观察表失效后重新查询 | UI 订阅数据变化 | 表中任意行变化都可能触发重查 |
 | `PagingSource` | 分页列表 | 大列表、离线缓存 | 深 offset 仍可能扫描许多行，游标分页需按查询设计 |
+
+Room 2.8.4 已提供 reader/writer connection API：同步 DAO 在调用线程执行；`suspend` DAO 通过 Room 的协程上下文申请连接；`Flow` 在收集后查询并在表失效时重查；`useReaderConnection()`、`useWriterConnection()` 是显式连接入口。Android 兼容路径仍保留 `queryExecutor` / `transactionExecutor`，驱动路径和 common/KMP 路径则不应套用同一套 executor 结论。排障时要看项目实际 source set、驱动、生成代码和 sources.jar。
 
 下面的 DAO 用来区分列表投影和详情实体。列表只选择渲染所需列，正文等大字段留到详情查询；调用方还要限制 `limit` 的合法范围。
 
@@ -220,6 +260,26 @@ Room 线上排查还要加可观测入口：
 
 Android 17 的 `dumpsys meminfo <package>` 在 `DATABASES` 和 `POOL STATS` 中提供 SQLite 页、连接与语句缓存统计。该版本里 `cache size` 表示已缓存预编译语句的数量；较早版本的同名列可能只是命中与未命中计数之和。跨版本看板必须按平台版本解释字段。
 
+### CursorWindow 只保存结果片段
+
+framework 驱动下，`SQLiteCursor` 不要求一次把全部结果装入内存。目标行离开现有窗口时，`SQLiteCursor.onMove()` 会经 `fillWindow()`、`SQLiteQuery.fillWindow()` 进入 `SQLiteSession.executeForCursorWindow()`，所以大结果集可能表现为多轮 SQL 步进与窗口重填。Android 17 的系统资源默认值是 2048 KB；OEM 资源覆盖和显式构造仍可能改变容量。
+
+窗口容量不是单行可以无限增长的承诺。单行文本或 BLOB 放不进窗口时，减少结果总行数没有帮助，应缩小该行和 projection。窗口能够创建但滚动不断跨边界时，则要减少结果宽度、改进分页，并用 trace 统计 refill，而不是盲目放大窗口。调用方还应及时关闭 Cursor，并给允许取消的查询传入 `CancellationSignal`。
+
+ContentProvider 跨进程返回 Cursor 时，Provider 侧的 `CursorToBulkCursorAdaptor` 按位置获取或重填窗口。native `CursorWindow::writeToParcel()` 对 ashmem-backed window 传递复制后的文件描述符；没有 ashmem FD 时按已用容量把数据写入 Parcel。因此，`TransactionTooLargeException`、单行过宽和窗口 refill 是三类问题，不能都归因为“2 MB Binder 限制”。
+
+### 从 ANR 还原数据库等待
+
+数据库 ANR 可以按停点依次缩小范围：
+
+1. 主线程直接进入生成 DAO 或 `executeForCursorWindow()`：检查 first open、SQL 计划、返回行数与 projection。
+2. 线程停在 `waitForConnection()`：寻找持有 reader/writer connection 的线程、事务起止和未关闭资源。
+3. 客户端停在 `ContentResolver.query()` 的 Binder reply：转到 Provider 进程，追踪同一 transaction 的 SQL、Migration 或连接等待。
+4. writer 遇到 `SQLITE_BUSY` / `SQLITE_LOCKED`：对齐另一连接或进程的事务、WAL 与 checkpoint。
+5. Cursor 移动时卡住：确认是否跨窗口触发 refill，以及 Provider 端是否重新执行或继续步进 SQL。
+
+`StrictMode.detectDiskReads()` / `detectDiskWrites()` 可以提前暴露主线程磁盘访问，但不能发现“主线程等待后台数据库”的所有间接路径。Perfetto 的 Java monitor contention 也不覆盖 SQLite 文件锁、WAL 共享内存锁或 `waitForConnection()` 的 park。结论至少应保存 trace 时间戳、SQL、查询计划、数据库与 Room 版本、journal mode、page size 和数据规模。
+
 [官方文档：[异步 DAO 查询](https://developer.android.com/training/data-storage/room/async-queries)、[`RoomDatabase.Builder`](https://developer.android.com/reference/androidx/room/RoomDatabase.Builder)、[SQLite 性能排查工具](https://developer.android.com/topic/performance/sqlite-performance-best-practices)]
 
 ## 索引设计与查询优化
@@ -282,7 +342,41 @@ LIMIT 50;
 
 查询回归可以进入 CI：为关键 DAO 准备有代表性的规模与分布，验证结果正确性、索引是否存在，并对明显的计划退化和耗时变化报警。不要断言完整的 `EXPLAIN QUERY PLAN` 文本；SQLite 明确不保证该输出格式跨版本稳定。
 
-[SQLite 文档：[`EXPLAIN QUERY PLAN`](https://sqlite.org/eqp.html)、[Query Planner](https://sqlite.org/queryplanner.html)]
+### Paging 的 OFFSET 与 keyset 边界
+
+Room 2.8.4 的 `LimitOffsetPagingSource` 会包装 DAO 原查询并使用 `LIMIT ... OFFSET ...`。Paging 负责 load、refresh、预取和失效通知，深页跳过成本仍由 SQLite 承担；projection 中的正文或 BLOB 也仍会进入结果承载结构。
+
+当列表有稳定的复合排序键时，可以在 DAO 中显式提供 keyset 查询：
+
+```sql
+SELECT id, conversation_id, sent_at, preview
+FROM messages
+WHERE conversation_id = :conversationId
+  AND (
+      sent_at < :cursorSentAt
+      OR (sent_at = :cursorSentAt AND id < :cursorId)
+  )
+ORDER BY sent_at DESC, id DESC
+LIMIT :limit;
+```
+
+对应索引应覆盖 `conversation_id, sent_at, id` 的过滤与排序顺序。Keyset 避免深 OFFSET，却不支持按页码任意跳转；refresh anchor、数据插入和相同时间值都要由业务语义处理。
+
+### `WITHOUT ROWID` 与 PRAGMA 的适用边界
+
+普通表的 `INTEGER PRIMARY KEY` 已是 rowid 别名。`WITHOUT ROWID` 更适合较短的非整数或复合主键，并且查询频繁沿主键访问的表；它不支持 `AUTOINCREMENT`，大主键还会复制进二级索引。迁移前必须用真实数据比较库大小与读写耗时，不能把它当作通用省空间开关。
+
+PRAGMA 同时包含持久状态与每连接状态。`journal_mode`、`synchronous`、`wal_autocheckpoint`、`busy_timeout`、`cache_size` 和 `page_size` 的生效范围不同；Room 或平台连接池创建多个 connection 后，在一个临时连接执行 per-connection PRAGMA 不代表其他连接继承。配置应通过受支持的 Builder、驱动或 open callback 统一下发，并逐连接验证。`busy_timeout` 只能把锁冲突改成等待，无法消除长事务，还可能把 UI 或 Binder 路径上的快速失败变成长卡顿。
+
+[SQLite 文档：[`EXPLAIN QUERY PLAN`](https://sqlite.org/eqp.html)、[Query Planner](https://sqlite.org/queryplanner.html)、[`WITHOUT ROWID`](https://sqlite.org/withoutrowid.html)]
+
+## 调度、多进程与加密数据库
+
+SQLite 的单 writer 约束不负责业务顺序、优先级和背压。高频写入可以进入一个有容量上限的业务队列，在语义允许时合并可替代更新；事务只包住不可分割的数据变更，不在其中等待网络、未知回调或无关锁。读并发也要用目标设备的吞吐、P95/P99 延迟、I/O 和 page cache 一起定上限，多开 reader 可能只是把大扫描同时压向存储层。
+
+多个进程打开同一数据库文件时，journal mode、schema 版本和连接配置必须一致。SQLite 文件锁与 WAL 负责数据库级协调，Room 的 multi-instance invalidation 只通知其他实例哪些表发生变化，既不提供分布式事务，也不解决跨进程写入顺序。高频写入宜由明确的 owner 进程统一接收；Migration、备份、恢复和清库也要有唯一协调者。若客户端停在 Binder，应同时采集 Provider 进程，不能只看调用端栈。
+
+SQLCipher 会把额外成本放进打开、密钥派生和页读写路径。代价受 SQLCipher 版本、cipher page size、KDF 参数、硬件、工作集、page cache 与索引共同影响，不能引用固定百分比。对比实验至少覆盖冷打开、热查询、批量事务、checkpoint、Migration 和低端设备，并固定持久性设置。Android Keystore 可以保护密钥材料，但不等于 SQLite 页级透明加密。
 
 ## 数据库迁移与版本管理
 

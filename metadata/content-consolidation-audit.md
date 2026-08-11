@@ -21,9 +21,33 @@
 | ch07 流畅度 | 20 | 14 | 已完成 | 2026-08-11 |
 | ch08 响应速度 | 20 | 12 | 已完成 | 2026-08-11 |
 | ch09 ANR | 13 | 10 | 已完成 | 2026-08-11 |
-| 其余 19 章 | 477 | 待审阅 | 未开始 | - |
+| ch10 内存性能 | 10 | 7 | 已完成 | 2026-08-11 |
+| 其余 18 章 | 467 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 560 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 557 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch10 内存性能
+
+保留后的连续编号为：
+
+- 10.1 App 内存分析
+- 10.2 内存泄漏
+- 10.3 内存持续增长
+- 10.4 低内存对系统性能的影响
+- 10.5 案例集
+- 10.6 内存抖动与频繁 GC
+- 10.7 GPU 与图形内存统计
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `10.01-android-memory-performance-optimization.md` | 删除与章节 README、内存分析、泄漏、增长、抖动和低内存专题重复的第二套全章导读 | `../src/part2-performance/ch10-memory-perf/README.md`、10.1～10.6 |
+| `07-sqlite-room-performance.md` | 从内存性能章移出；合并回滚日志/WAL、checkpoint、Session/连接池、CursorWindow、Room 2.8.4、Paging、PRAGMA、多进程与数据库 ANR 诊断 | `../src/part5-app/ch24-io-network/02-database-optimization.md`（24.2） |
+| `10-art-gc-fragmentation-regions-optimization.md` | 合并 CC evacuation 的精确条件与 CMC fault counter；重复的分代、LOS、Perfetto、allocation profile 和应用优化由既有主文承载 | `../src/part1-fundamentals/ch04-memory/07-art-generational-gc.md`（4.7）、10.6 |
+| 原 10.8 GPU 正文 | 主题独立，改为连续编号 10.7，并统一标题与活动跨章引用 | `../src/part2-performance/ch10-memory-perf/07-gpu-graphics-memory-tracking.md` |
+
+章节 README、`src/SUMMARY.md`、复审清单、活动跨章链接和统计口径已经切换到连续编号。历史 changelog、已关闭 finding、素材索引与 `consolidated_from` 保留旧路径。
 
 ## ch09 ANR
 
