@@ -7,6 +7,8 @@ applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-07-25'
 last_verified_against: AOSP android-17.0.0_r1 + Android NDK official documentation
 confidence: high
+consolidated_from:
+  - "src/part2-performance/ch08-responsiveness/20-jni-overhead-native-interop-performance.md"
 sources:
   - type: official
     path: "https://developer.android.com/ndk/guides/jni-tips"
@@ -100,6 +102,10 @@ Managed caller
 ### 1.1 Transition
 
 普通 JNI 调用需要让 ART 知道线程从 managed 状态进入 native 状态，并按 JNI ABI 传递 `JNIEnv*`、`jobject` / `jclass` 和业务参数。返回时再恢复运行时状态、处理引用和异常。
+
+Android 17 中，普通入口会经过 ART 的 JNI trampoline，建立本次调用的 local-reference segment，并把线程从 Runnable 切换到 Native；返回时再恢复 Runnable、检查挂起请求和 pending exception。对象参数还要进入引用表并在 native 侧解码，纯 primitive 参数则没有这层对象引用处理。由此可见，“一次 JNI 调用”不是一条固定指令：方法属性、参数类型、编译状态和运行时挂起请求都会改变路径。
+
+`@FastNative` 与 `@CriticalNative` 保持线程为 Runnable，省去普通状态切换，但也推迟了线程响应 GC suspend 的机会。`@CriticalNative` 进一步去掉 `JNIEnv*`、`jclass` 和对象参数能力。它们适合极短、无锁、无 I/O 的叶子函数；长计算即使平均更快，也可能放大 GC 尾延迟。
 
 官方 `@CriticalNative` 文档保留了一组 2016 年 7 月、`angler-userdebug` 上的参考数据：
 
@@ -332,7 +338,15 @@ native 代码需要获得当前线程的环境时：
 - 或用 `PushLocalFrame()` / `PopLocalFrame()` 管理一批引用。
 - 必要时用 `EnsureLocalCapacity()` 预留容量。
 
-JNI 规范只要求 VM 确保至少 16 个 local reference slot。Android 实现可能扩容，但“可能扩容”不是无限创建引用的理由。
+JNI 规范只要求 VM 确保至少 16 个 local reference slot。Android 8 移除了旧的固定小容量限制，Android 17 的 Local Reference Table 可以扩容，但初始存储和后续扩容仍消耗进程资源；“可以扩容”不是无限创建引用的理由。长循环优先按批次 `PushLocalFrame()` / `PopLocalFrame()`，保证提前退出和异常路径也会弹出 frame。
+
+### 5.3 Attach、Detach 与物理线程的生命周期
+
+首次 `AttachCurrentThread()` 不只是返回一个指针。ART 还要建立 `Thread`、`JNIEnvExt`、local-reference table、Java `Thread` peer、线程组和运行时登记。已经 attach 的线程再次调用会返回当前环境，但把 attach/detach 放进每个小任务仍会增加生命周期复杂度。
+
+可靠做法是让一个 owner 管理长期物理线程或有上限的线程池：线程入口查询 `GetEnv()`，只在本 owner 首次附着时记录 `attached_here=true`，退出时仅对这类线程执行 Detach。RAII 对象的生命周期必须覆盖物理线程，而不是线程池中的单个任务；`JNIEnv*` 永远不能跨线程保存。
+
+native 线程本身也不是免费资源。Android 17 的 bionic `pthread_create()` 要建立 stack/guard/TLS 映射并通过 `clone` 创建内核 task；首次触碰栈页还会产生缺页。默认栈的虚拟地址预留不等于等量常驻 RSS，但高频创建仍会叠加映射、TLS、调度实体、ART attach 和缓存冷启动成本。按真实栈深度测量 stack size，并复用线程，通常比为每个数据块创建 pthread 更可靠。
 
 ## 6. 引用、异常与所有权
 
@@ -408,12 +422,14 @@ Android 8 后，ART 使用紧凑字符串表示，并采用 moving GC。即使�
 
 ### 8.1 Primitive 数组
 
-`Get<PrimitiveType>ArrayElements()` 允许 VM：
+JNI 规范允许 `Get<PrimitiveType>ArrayElements()`：
 
 - 返回指向 managed 数组的直接指针，并在此期间固定数组。
 - 或分配 native buffer，把数组复制进去。
 
-调用方不能假设哪一种发生。必须用对应 `Release<PrimitiveType>ArrayElements()` 结束生命周期。
+调用方不能把某一种实现当成跨版本契约。对 Android 17 的可移动 primitive 数组，ART 的普通 Elements 路径通常建立 native 副本并 `memcpy`；`GetPrimitiveArrayCritical()` 则可通过限制 moving GC / thread flip 提供直接地址。这个实现差异说明为什么大数组要同时测复制成本与 GC 影响，不能只比较 API 名称。所有 Elements 调用仍必须用对应 `Release<PrimitiveType>ArrayElements()` 结束生命周期。
+
+如果只读写一个明确区间，`Get/Set<PrimitiveType>ArrayRegion()` 用一次显式复制换取简单生命周期，常比持有 Elements 指针更容易审计。大批量数据可比较 Region、Elements、Critical 与 Direct Buffer，但应把调用次数、字节量、临时分配、GC pause 和 P95/P99 一起记录。
 
 release mode 的语义：
 
@@ -525,6 +541,8 @@ Perfetto UI/Trace Processor 解析的是采样点与调用栈，并不记录每�
 - 同时保留带检查的 correctness 测试。
 
 只报告平均值会掩盖 GC、调度和锁带来的长尾，至少看 P50/P95/P99。
+
+Android 17 源码中的 `benchmark/jni-perf` 可作为实验设计参考：它比较空 JNI 入口和 ART 内部路径，但依赖平台构建与内部头文件，不能直接复制到普通 APK，也不提供跨设备通用常数。应用侧应使用 AndroidX Microbenchmark 分开测试 regular、Fast、Critical、Region、Elements 和批处理接口，并消费返回值，避免编译器删除无可见效果的工作。
 
 ## 10. 16KB page size：Android 17 上必须验证的 native 边界
 

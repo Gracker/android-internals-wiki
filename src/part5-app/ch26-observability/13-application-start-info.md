@@ -42,7 +42,7 @@ sources:
   - type: aosp
     path: "packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java"
 tags: [observability, startup, application-start-info, profilingmanager]
-related_chapters: ["8.2", "8.10", "14.7", "26.9", "26.12"]
+related_chapters: ["8.2", "14.7", "26.9", "26.12"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-18"
 gap_source: "研究素材/官方文档/章节深挖/Clippings结构参考"

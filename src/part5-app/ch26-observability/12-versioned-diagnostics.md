@@ -50,7 +50,7 @@ drafted_date: "2026-05-17"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-06-28"
 reviewed_by: "openclaw-task6"
-related_chapters: ["26.2", "26.5", "14.7", "8.10", "13.2", "15.5", "20.3", "19.24"]
+related_chapters: ["26.2", "26.5", "14.7", "13.2", "15.5", "20.3", "19.24"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材/官方文档/章节深挖"

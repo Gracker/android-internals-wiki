@@ -1,6 +1,7 @@
 ---
 title: "BiometricPrompt 与 Credential Manager 登录链路性能"
-chapter: "8.13"
+chapter: "8.10"
+section: "8.10"
 status: ready-for-review
 drafted_date: "2026-05-26"
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37); Credential Manager single tap Android 15 (API 35) - Android 17 (API 37)"
@@ -29,13 +30,13 @@ sources:
   - type: aosp
     path: "frameworks/base/services/credentials/java/com/android/server/credentials/CredentialManagerService.java"
 tags: [responsiveness, biometric, credential-manager, passkeys, keystore]
-related_chapters: ["8.12", "20.16", "26.12", "26.15"]
+related_chapters: ["8.9", "20.16", "26.12", "26.15"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-26"
 gap_source: "AOSP结构/官方文档/素材驱动"
 ---
 
-# 8.13 BiometricPrompt 与 Credential Manager 登录链路性能
+# 8.10 BiometricPrompt 与 Credential Manager 登录链路性能
 
 登录页只记录一个 `login_cost_ms`，排查时几乎没有方向。一次凭据登录可能包含 provider 查询、系统选择器、用户停留、传感器认证、passkey assertion、服务端验证和会话初始化；一次会话内重新授权又可能只经过 `BiometricPrompt`、Keystore 与业务操作。两个流程都会出现系统认证界面，调用者、数据边界和可观测信号却不同。
 
@@ -228,7 +229,7 @@ provider 集成时有四条硬约束：
 
 当前 [Android 生物认证指南的 auth-per-use 章节](https://developer.android.com/identity/sign-in/biometric-auth#auth-per-use-keys) 给出的密钥策略允许 `AUTH_BIOMETRIC_STRONG | AUTH_DEVICE_CREDENTIAL`；AndroidX `BiometricPrompt.authenticate(info, crypto)` 的参考文档补充了 Android 11 之前的兼容限制。指南中“不带 `CryptoObject`”的说明位于 time-based key 流程，不能外推到 Android 11+ 的 auth-per-use key。
 
-密钥授权还要与 prompt 策略一致。密钥只允许 strong biometric 时，prompt 允许 device credential 并不能让 PIN 解锁这把密钥。密钥允许两种认证器时，调用方仍需处理 key 失效、认证 token 不匹配和安全级别差异。完整的初始化顺序、KeyMint operation 与异常分类见 [§8.12 Keystore/KeyMint 调用链延迟](12-keystore-keymint-latency.md)。
+密钥授权还要与 prompt 策略一致。密钥只允许 strong biometric 时，prompt 允许 device credential 并不能让 PIN 解锁这把密钥。密钥允许两种认证器时，调用方仍需处理 key 失效、认证 token 不匹配和安全级别差异。完整的初始化顺序、KeyMint operation 与异常分类见 [§8.9 Keystore/KeyMint 调用链延迟](09-keystore-keymint-latency.md)。
 
 性能埋点至少拆成这些时间段：
 

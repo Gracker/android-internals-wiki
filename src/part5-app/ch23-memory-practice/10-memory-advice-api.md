@@ -35,7 +35,7 @@ sources:
   - type: clippings-structure-ref
     path: "Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md"
 tags: [memory-advice, agdk, game-memory, low-memory, native-memory]
-related_chapters: ["8.9", "10.1", "10.4", "23.3", "23.7", "23.9", "26.9"]
+related_chapters: ["18.16", "10.1", "10.4", "23.3", "23.7", "23.9", "26.9"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-21"
 gap_source: "官方文档/AOSP结构/每日信息"

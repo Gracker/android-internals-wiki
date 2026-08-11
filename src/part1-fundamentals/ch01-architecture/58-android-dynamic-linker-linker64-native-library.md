@@ -4,7 +4,9 @@ chapter: "1.58"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [linker64, dynamic-linker, ELF, dlopen, namespace, RELRO, native-library, bionic]
-related_chapters: ["1.15", "1.55", "8.11"]
+related_chapters: ["1.15", "1.55", "4.6", "8.2"]
+consolidated_from:
+  - "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-15"
 gap_source: "AOSP结构"
@@ -389,6 +391,14 @@ T(loadLibrary)
 
 “每个 DSO 固定 0.5 ms”“依赖每深一层增加 3–8 ms”“冷启动固定慢 5–20 倍”都缺少设备、存储、构建产物和缓存状态，不能作为 Android 17 的通用规律。库数量也没有适合所有应用的 5–8 个上限；合并 DSO 虽能减少文件和 ELF 元数据处理，也可能增大常驻映射、RELRO、更新耦合及符号冲突范围。
 
+### 把加载点放回应用启动关键路径
+
+`System.loadLibrary()` 的外层 wall time 会同时覆盖 ART / `libnativeloader`、linker、ELF constructor 和 `JNI_OnLoad`。它若由 `ContentProvider`、App Startup initializer、`Application.onCreate()` 或静态初始化块触发，就会直接进入冷启动关键路径。排查时应先扫描应用和三方 SDK 的 `System.loadLibrary()` / `System.load()`，再给可控加载点加稳定 trace 名称；否则只看到一个 `dlopen` slice，仍无法定位是哪个业务模块触发。
+
+把加载从首帧前挪走不等于优化完成。首次功能入口如果因此多出同步等待，只是把延迟换了位置。更稳妥的策略是按功能依赖确定最晚加载点，在明确的空闲窗口预热，并保留取消、超时和失败回退。`JNI_OnLoad` 只做 VM 校验、native 注册和少量确定状态；文件 I/O、设备枚举、大对象构造和线程创建放进可观测的显式初始化阶段。
+
+并发调用多个 `System.loadLibrary()` 也不是通用加速方案。公开 linker 操作共用 `g_dl_mutex`，DSO 依赖、constructor 与 SDK 全局状态还可能有隐含顺序；只有已经证明互不依赖、且不阻塞首帧的预热任务才适合并行实验。
+
 ## 分阶段排查
 
 ### 1. 检查静态产物
@@ -443,6 +453,10 @@ adb shell setprop debug.ld.app.com.example.app ''
 6. **合并库前后都测。** 对比装载节点、重定位数、RELRO、文件页和增量发布影响，不设置脱离产物的库数量或体积指标。
 7. **把 16 KB 校验放进构建流水线。** 同时检查每个 ABI 的 ELF 与最终 APK/AAB 产物，兼容模式只用于发现和迁移旧库。
 8. **依据接口管理选择 JNI 注册方式。** 动态注册可收窄导出面并提前绑定；静态查找可减少注册代码。性能判断以具体 trace 和符号表为准。
+
+对三方 SDK 和跨平台引擎，还要记录 APK/AAB 内路径、ABI、build ID、`DT_NEEDED`、LOAD alignment、constructor / `JNI_OnLoad` 和首次触发线程。React Native、Flutter、Unity、Unreal、Cocos 的“官方版本支持 16 KB”不能替代最终产物扫描，旧插件仍可能覆盖正确 flags。
+
+CI 应检查每个 release APK/AAB，而不是只读 CMake 参数。至少验证所有 ABI 的 ELF LOAD segment、未压缩 `.so` 的 ZIP alignment、AAB page-alignment 配置、`DT_NEEDED` 与动态符号规模，并在 16 KB 设备覆盖启动、动态 feature、native plugin 和低内存场景。源码 flag 正确但最终 split 被旧 bundletool 或三方产物破坏，仍属于发布失败。
 
 ## 版本演进边界
 

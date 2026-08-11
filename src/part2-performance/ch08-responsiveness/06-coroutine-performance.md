@@ -1,6 +1,6 @@
 ---
 status: "finalized"
-title: Kotlin Coroutine 性能实践
+title: Kotlin Coroutine、Flow 与线程调度实践
 chapter: '8.6'
 section: '8.6'
 drafted_date: '2026-04-02'
@@ -16,9 +16,12 @@ polish_review_date: '2026-04-09'
 polish_review_by: openclaw-task6
 review_cycle: 4
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-04-02'
-last_verified_against: kotlinx.coroutines 1.9.x / Kotlin 2.1.x / Kotlin 2.2
+last_verified: '2026-08-09'
+last_verified_against: kotlinx.coroutines 1.11.0 / Android 17 android-17.0.0_r1 / kernel android17-6.18-2026-06_r6
 confidence: medium-high
+consolidated_from:
+  - "src/part2-performance/ch08-responsiveness/17-kotlin-flow-backpressure-performance.md"
+  - "src/part2-performance/ch08-responsiveness/19-thread-model-dispatcher-selection.md"
 sources:
 - type: official
   path: https://kotlinlang.org/docs/coroutines-guide.html
@@ -60,7 +63,7 @@ last_task6_audit: "2026-07-09T10:20:48.680322"
 
 
 
-# Kotlin Coroutine 性能实践
+# 8.6 Kotlin Coroutine、Flow 与线程调度实践
 
 协程能把等待从线程中移开，也能把过多的小任务塞进同一条调度路径。判断性能时要区分四件事：协程是否挂起、continuation 是否需要 dispatch、目标线程何时得到 CPU、业务代码运行多久。把这四段都叫作“协程切换”会掩盖瓶颈。
 
@@ -291,6 +294,12 @@ suspend fun collectPipelines(
 
 StateFlow 或 SharedFlow 是热流，页面停止显示后上游可能继续运行。是否停止上游由 `stateIn/shareIn` 的 SharingStarted 策略和外部 scope 决定；`repeatOnLifecycle` 只控制当前 UI collector。排查后台耗电时要同时看共享上游的 owner、停止超时和订阅数量。
 
+### StateFlow、SharedFlow 与 flatten 的资源语义
+
+`StateFlow` 是只有一个当前值的状态容器，按 `Any.equals` 合并相同值；更新会遍历活跃订阅者，成本随订阅者数量增长。`SharedFlow` 是广播流，`replay`、`extraBufferCapacity` 和 `onBufferOverflow` 共同决定慢订阅者如何影响 emitter。两者都不会自动拥有上游生命周期，`shareIn` / `stateIn` 的 scope 与 `SharingStarted` 才决定上游何时启动、停止和保留最后状态。
+
+`flatMapConcat` 顺序处理内层流，`flatMapMerge(concurrency)` 允许多条内层流并发，`flatMapLatest` 在新值到来时取消旧内层流。并发上限必须服从数据库连接、HTTP client、文件描述符和内存预算；取消只有在内层操作协作取消时才会及时生效。操作符链本身不会为每一级都创建 Job，但 `buffer`、`flowOn`、`channelFlow` 和并发 flatten 会引入协程或 Channel 边界。
+
 ## 在 Perfetto、调试器和 CPU Profiler 中定位协程
 
 ### 三类工具回答不同问题
@@ -413,6 +422,22 @@ class NativeSessionExecutor : Closeable {
 ```
 
 专用 Dispatcher 持有原生线程，创建和销毁都有成本。它应由 Application 级服务、Repository 或其他明确 owner 复用，并在生命周期结束时关闭。不要在每次请求中创建 Executor，也不要用 Java 的 `Thread.MAX_PRIORITY` 代替 Android 线程优先级与负载测量。
+
+### Executor、HandlerThread 与队列所有权
+
+自定义 `ExecutorCoroutineDispatcher` 的 owner 还要定义 queue、rejection、停止接单、shutdown timeout 和未完成任务语义。`Executors.newFixedThreadPool()` 使用无界队列；线程数固定不代表提交侧有背压。需要有界策略时显式构造 `ThreadPoolExecutor`，并让 rejection 对应清楚的业务失败或降级。
+
+`HandlerThread` 只在 API 明确要求 `Looper` / `Handler`、线程亲和或 MessageQueue 语义时使用。它是一个常驻线程和一条串行队列，长 callback 会阻塞所有后续消息；owner 结束时调用 `quitSafely()`，必要时在其他线程带超时 `join()`。普通串行状态操作优先比较 `limitedParallelism(1)`、Mutex、actor/Channel 和单线程 Executor：前者不保证固定 TID，也不保证一个含 suspension 的操作整体互斥。
+
+`Channel` 的发送/接收以挂起等待，不占住物理线程；`BlockingQueue.put/take` 会阻塞调用线程。两者都能设计有界背压，也都需要明确关闭、取消和异常协议，不能把 BlockingQueue 概括成“没有背压”。
+
+### 线程优先级与 ADPF 不能从协程名字推导
+
+`Process.setThreadPriority()` 设置 Linux nice，`Thread.setPriority()` 维护 Java priority 语义；它们的数值范围、继承和 runtime 行为不同。Android 的 task profile、cpuset、uclamp、进程状态、thermal 和 OEM 策略仍会改变线程实际获得的 CPU。需要 Android nice 时在目标线程入口设置并测量，不要从创建者线程或 `CoroutineName` 推断内核优先级。
+
+Linux 6.18 的 EEVDF 在 runnable fair entity 中按 eligibility 与 virtual deadline 选择任务。协程 continuation 尚在用户态 scheduler 队列，与 worker 已 Runnable 但没获得 CPU 是两层等待：前者用提交/开始埋点和 worker 压力判断，后者用 Perfetto `sched` / `thread_state`、频率、cgroup 与 uclamp 判断。
+
+ADPF session 绑定长期存在的一组 TID，不绑定 coroutine ID。周期性渲染、音视频或稳定计算若确实需要 ADPF，应让明确 owner 的长期 worker 承载，按完整周期上报 wall duration，并在 worker 被替换时更新 TID；不要为每次 `launch`、suspend 或 resume 创建 session。
 
 ## Android 17 与内核 6.18 下的边界
 

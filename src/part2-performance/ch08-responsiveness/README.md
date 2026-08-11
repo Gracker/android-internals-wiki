@@ -13,24 +13,17 @@
 - [8.3 启动优化策略](03-launch-optimization.md)
 - [8.4 其他响应速度场景](04-other-scenarios.md)
 - [8.5 案例集](05-case-studies.md)
-- [8.6 Kotlin Coroutine 性能实践](06-coroutine-performance.md)
+- [8.6 Kotlin Coroutine、Flow 与线程调度实践](06-coroutine-performance.md)
 - [8.7 Baseline Profiles 与编译优化实践](07-baseline-profiles.md)
-- [8.8 Android 多媒体管线性能](08-media-pipeline.md)
-- [8.9 Android 游戏性能与 Game Mode/State API](09-game-performance.md)
-- [8.10 ProfilingManager 系统触发式性能追踪](08-system-triggered-profiling.md)
-- [8.11 Native 库加载与动态链接性能](11-native-library-loading-dynamic-linker.md)
-- [8.12 Keystore/KeyMint 调用延迟与登录链路性能](12-keystore-keymint-latency.md)
-- [8.13 BiometricPrompt 与 Credential Manager 登录链路性能](13-biometric-credential-login-performance.md)
-- [8.14 推送通知管线性能](14-push-notification-pipeline-performance.md)
-- [8.15 Play Integrity API 性能与集成延迟](15-play-integrity-api-performance.md)
-- [8.17 Kotlin Flow 背压、操作符链与响应式性能边界](17-kotlin-flow-backpressure-performance.md)
-- [8.18 Binder Trace 驱动的 Activity 冷启动性能分析](18-binder-trace-cold-start-analysis.md)
-- [8.19 Android 线程模型与调度器选型实战](19-thread-model-dispatcher-selection.md)
-- [8.20 JNI 调用开销与 Native 互操作性能边界](20-jni-overhead-native-interop-performance.md)
-- [8.21 Broadcast 性能与跨进程通信开销治理](21-broadcast-performance-cross-process-overhead.md)
+- [8.8 Binder Trace 驱动的 Activity 冷启动性能分析](08-binder-trace-cold-start-analysis.md)
+- [8.9 Keystore/KeyMint 调用延迟与登录链路性能](09-keystore-keymint-latency.md)
+- [8.10 BiometricPrompt 与 Credential Manager 登录链路性能](10-biometric-credential-login-performance.md)
+- [8.11 推送通知管线性能](11-push-notification-pipeline-performance.md)
+- [8.12 Play Integrity API 性能与集成延迟](12-play-integrity-api-performance.md)
 
 ## 阅读建议
 
-- 启动体验：优先阅读 `8.1`、`8.2`、`8.3`。
+- 启动体验：优先阅读 `8.1`、`8.2`、`8.3`；需要逐笔 IPC 归因时再读 `8.8`。
 - “点了没反应”“切页慢”“首屏空白久”：从 `8.1` 和 `8.4` 开始。
-- 多媒体、游戏、登录、推送等专项场景：进入对应扩展条目。
+- 并发、Flow 与线程调度统一从 `8.6` 进入；登录与可信校验阅读 `8.9`、`8.10`、`8.12`。
+- 多媒体和游戏的端到端主文已回归 `18.23` 与 `18.16`；ProfilingManager、JNI、动态链接和 Broadcast 分别由 `14.7`、`1.15`、`1.58`、`1.33` 承载。

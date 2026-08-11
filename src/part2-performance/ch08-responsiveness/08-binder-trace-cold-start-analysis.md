@@ -1,6 +1,7 @@
 ---
 title: "Binder Trace 驱动的 Activity 冷启动性能分析"
-chapter: "8.18"
+chapter: "8.8"
+section: "8.8"
 status: "finalized"
 drafted_date: "2026-07-02"
 last_task2b_at: 2026-07-11T04:53:33+08:00
@@ -82,7 +83,7 @@ last_task9_audit_result: "pass-idle-audit"
 last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度3（版本差异覆盖）复核通过；AOSP android-17.0.0_r1 external/perfetto binder.sql/binder_breakdown/binder_tracker 与 kernel android17-6.18 binder.c/binder_trace.h 语义一致；无 P0/P1，记录 P3: IPCThreadState.cpp 中 transact() 在 android-17.0.0_r1 为 L921（正文 L854 行号漂移），不影响技术结论。"
 ---
 
-# 8.18 Binder Trace 驱动的 Activity 冷启动性能分析
+# 8.8 Binder Trace 驱动的 Activity 冷启动性能分析
 
 Binder Trace 可以定位冷启动路径上的 IPC 瓶颈，包括用 Perfetto 的 `android.binder` 标准库拆分事务、识别线程池饱和与 frozen 回执干扰，以及关联主线程阻塞因果链。Binder 机制原理见 §1.4、§1.18 和 §1.38，冷启动阶段划分见 §8.2。
 

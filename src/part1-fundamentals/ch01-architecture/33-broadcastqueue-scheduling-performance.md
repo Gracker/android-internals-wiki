@@ -8,6 +8,8 @@ applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
+consolidated_from:
+  - "src/part2-performance/ch08-responsiveness/21-broadcast-performance-cross-process-overhead.md"
 sources:
   - type: official
     path: "developer.android.com/develop/background-work/background-tasks/broadcasts"
@@ -287,6 +289,18 @@ Manifest receiver 的 IntentFilter 在安装阶段解析，但投递时仍要查
 - 对跨应用广播设置发送/接收权限；
 - 高频状态变化只发送必要字段，或通知接收方读取权威状态源；
 - 需要去重时明确使用 delivery group，不能期待系统猜测业务语义。
+
+### 7.4 `goAsync()` 要有提交点和失败语义
+
+`goAsync()` 只把完成回执从 `onReceive()` 返回点延后到 `PendingResult.finish()`，不会暂停广播 ANR 计时，也不会让进程获得持久任务保证。实现时要先定义清楚的提交点：幂等任务已持久化入队、ordered result 已写完，或短任务确实完成；随后在 `finally` 中调用 `finish()`。只启动一条裸线程再立刻结束 receiver，进程可能在工作完成前被回收。
+
+短异步任务仍应使用应用级 scope、独立 dispatcher 和短于系统窗口的内部 deadline。下载、上传、数据库迁移、大目录扫描以及要求进程死亡后重试的任务，应由 receiver 快速校验和去重，再交给 WorkManager、JobScheduler 或有明确生命周期的服务。
+
+### 7.5 sticky、系统事件与业务状态要分开
+
+sticky broadcast 保存的是最近一次 Intent，后注册 receiver 可立即取得它；它不是带版本、一致性和事务语义的状态仓库。平台仍保留少量系统 sticky 事件，普通应用不应为业务状态新增 sticky 协议。需要当前值时优先读取权威存储，再把广播当作“状态可能变化”的通知。
+
+`BOOT_COMPLETED` 和 `PACKAGE_*` 事件尤其容易形成启动风暴。receiver 内只做 action/用户/包名校验、幂等去重和任务入队；包扫描、索引重建与网络同步交给受约束任务，并把同一启动周期内的重复事件合并。发送端调用很快返回只说明 AMS 接受了请求，不表示下游完成，端到端指标必须包含系统排队、必要的进程启动和应用执行。
 
 ## 八、Android 17 的可观测性
 

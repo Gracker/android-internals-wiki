@@ -26,11 +26,15 @@
 - [x] 8.3 启动优化策略 (`src/part2-performance/ch08-responsiveness/03-launch-optimization.md`)
 - [x] 8.4 其他响应速度场景 (`src/part2-performance/ch08-responsiveness/04-other-scenarios.md`)
 - [x] 8.5 案例集 (`src/part2-performance/ch08-responsiveness/05-case-studies.md`)
-- [x] 8.6 Kotlin Coroutine 性能实践 (`src/part2-performance/ch08-responsiveness/06-coroutine-performance.md`)
+- [x] 8.6 Kotlin Coroutine、Flow 与线程调度实践 (`src/part2-performance/ch08-responsiveness/06-coroutine-performance.md`)
 - [x] 8.7 Baseline Profiles 与编译优化实践 (`src/part2-performance/ch08-responsiveness/07-baseline-profiles.md`)
-- [x] 8.8 Android 多媒体管线性能 (`src/part2-performance/ch08-responsiveness/08-media-pipeline.md`)
-- [x] 8.9 Android 游戏性能 (`src/part2-performance/ch08-responsiveness/09-game-performance.md`)
-- [x] 8.10 ProfilingManager 系统触发式性能追踪 (`src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md`)
+- [x] 8.8 Binder Trace 驱动的 Activity 冷启动性能分析 (`src/part2-performance/ch08-responsiveness/08-binder-trace-cold-start-analysis.md`)
+- [x] 8.9 Keystore/KeyMint 调用延迟与登录链路性能 (`src/part2-performance/ch08-responsiveness/09-keystore-keymint-latency.md`)
+- [x] 8.10 BiometricPrompt 与 Credential Manager 登录链路性能 (`src/part2-performance/ch08-responsiveness/10-biometric-credential-login-performance.md`)
+- [x] 8.11 推送通知管线性能 (`src/part2-performance/ch08-responsiveness/11-push-notification-pipeline-performance.md`)
+- [x] 8.12 Play Integrity API 性能与集成延迟 (`src/part2-performance/ch08-responsiveness/12-play-integrity-api-performance.md`)
+
+> 原多媒体、游戏、ProfilingManager、Native 加载、JNI 与 Broadcast 正文已合并到对应主文；Flow 与线程调度并入 8.6。完整映射见 `metadata/content-consolidation-audit.md`。
 
 ## 第 9 章：ANR (ch09-anr)
 - [x] 9.1 ANR 设计思想 (`src/part2-performance/ch09-anr/01-anr-design.md`)

@@ -8,7 +8,7 @@ last_verified: "2026-07-16"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 tags: ['foreground-service', 'fgs-type', 'background-launch', 'power', 'android17', 'bals']
-related_chapters: ['25.13', '25.25', '8.14']
+related_chapters: ['25.13', '25.25', '8.11']
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "AOSP结构 + 官方文档 + research-gaps"
@@ -400,7 +400,7 @@ adb logcat | grep AudioHardening
 
 方案选择应从用户可感知性、是否允许延期、失败后能否恢复、所需资源和平台配额出发。把所有后台任务包进 FGS 会增加通知干扰、功耗、超时和商店审核风险。
 
-推送触发细节参见 [8.14 推送通知管线性能](../../part2-performance/ch08-responsiveness/14-push-notification-pipeline-performance.md)。OEM 额外后台策略的取证方法参见 [25.25 OEM 厂商差异化后台限制与功耗诊断](./25-android17-oem-background-restriction-power-diagnosis.md)。
+推送触发细节参见 [8.11 推送通知管线性能](../../part2-performance/ch08-responsiveness/11-push-notification-pipeline-performance.md)。OEM 额外后台策略的取证方法参见 [25.25 OEM 厂商差异化后台限制与功耗诊断](./25-android17-oem-background-restriction-power-diagnosis.md)。
 
 ## 10. 可观测性与故障注入
 

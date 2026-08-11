@@ -19,9 +19,43 @@
 | ch04 内存管理 | 29 | 17 | 已完成 | 2026-08-11 |
 | ch05 CPU 调度与能耗管理 | 38 | 17 | 已完成 | 2026-08-11 |
 | ch07 流畅度 | 20 | 14 | 已完成 | 2026-08-11 |
-| 其余 21 章 | 510 | 待审阅 | 未开始 | - |
+| ch08 响应速度 | 20 | 12 | 已完成 | 2026-08-11 |
+| 其余 20 章 | 490 | 待审阅 | 未开始 | - |
 
-当前规范正文总数为 571 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+当前规范正文总数为 563 篇。这里的“已完成”表示该章每篇正文均已阅读并完成本轮结构收敛，不代表所有技术结论都已达到发布状态。
+
+## ch08 响应速度
+
+保留后的连续编号为：
+
+- 8.1 响应速度原理
+- 8.2 App 启动全流程
+- 8.3 启动优化策略
+- 8.4 其他响应速度场景
+- 8.5 案例集
+- 8.6 Kotlin Coroutine、Flow 与线程调度实践
+- 8.7 Baseline Profiles 与编译优化实践
+- 8.8 Binder Trace 驱动的 Activity 冷启动性能分析
+- 8.9 Keystore/KeyMint 调用延迟与登录链路性能
+- 8.10 BiometricPrompt 与 Credential Manager 登录链路性能
+- 8.11 推送通知管线性能
+- 8.12 Play Integrity API 性能与集成延迟
+
+合并映射：
+
+| 原正文 | 处理结果 | 当前承载位置 |
+| --- | --- | --- |
+| `08-media-pipeline.md` | 删除跨音频、视频、Camera 和播放器实战的横向重复稿；低延迟/HDR/Eclipsa 组合能力补入播放管线主文 | 1.16、18.14、`../src/part2-performance/ch18-rendering-pipelines/23-media-codec2-tunneled-media3-abr.md`、22.43 |
+| `09-game-performance.md` | 合并 Game Mode/State、ADPF、Swappy、headroom 和四组对照实验 | `../src/part2-performance/ch18-rendering-pipelines/16-game-engine.md`、5.9 |
+| `08-system-triggered-profiling.md` | 合并 system trigger、设备验证、线上 redaction 与 Android 8—14 降级策略 | `../src/part3-tools/ch14-other-tools/07-profiling-manager.md`（14.7） |
+| `11-native-library-loading-dynamic-linker.md` | 合并启动关键路径、`JNI_OnLoad`、三方 SDK/引擎和最终 APK/AAB 门禁 | `../src/part1-fundamentals/ch01-architecture/58-android-dynamic-linker-linker64-native-library.md`（1.58） |
+| `17-kotlin-flow-backpressure-performance.md` / `19-thread-model-dispatcher-selection.md` | 合并 Flow 热流/背压/flatten、Executor/HandlerThread、线程优先级、EEVDF 与 ADPF TID 边界 | `../src/part2-performance/ch08-responsiveness/06-coroutine-performance.md`（8.6） |
+| `20-jni-overhead-native-interop-performance.md` | 合并 ART transition、数组复制、引用表、Attach/Detach、pthread 与微基准方法 | `../src/part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md`（1.15） |
+| `21-broadcast-performance-cross-process-overhead.md` | 合并发送/排队/执行分段、`goAsync()`、sticky、系统事件和任务机制选择 | `../src/part1-fundamentals/ch01-architecture/33-broadcastqueue-scheduling-performance.md`（1.33） |
+| `18-binder-trace-cold-start-analysis.md` | 内容足以独立回答启动期 Binder 归因，保留并改为连续编号 8.8 | `../src/part2-performance/ch08-responsiveness/08-binder-trace-cold-start-analysis.md` |
+| `12-keystore-keymint-latency.md`～`15-play-integrity-api-performance.md` | 四个专项边界独立，依次改为连续编号 8.9～8.12 | `09-keystore-keymint-latency.md`～`12-play-integrity-api-performance.md` |
+
+章节 README、`src/SUMMARY.md`、活动跨章链接和统计口径已经切换到连续编号。历史 changelog、已关闭 finding、锁文件与 `consolidated_from` 保留旧路径。
 
 ## ch07 流畅度
 

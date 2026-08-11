@@ -1,28 +1,27 @@
 {
   "schema_version": 3,
   "scope": "Canonical chapter bodies under the 26 directories defined by metadata/v1.0-definition.md; README, SUMMARY, preface and appendix are excluded.",
-  "total": 571,
+  "total": 563,
   "draft": 0,
-  "ready-for-review": 193,
-  "finalized": 377,
+  "ready-for-review": 189,
+  "finalized": 373,
   "needs-review": 0,
   "verified": 1,
   "outdated": 0,
-  "ready_to_publish": 303,
+  "ready_to_publish": 300,
   "status_counts": {
-    "ready-for-review": 193,
-    "finalized": 377,
+    "ready-for-review": 189,
+    "finalized": 373,
     "verified": 1
   },
   "pipeline_stage_counts": {
-    "ready-to-publish": 303,
-    "unspecified": 159,
+    "ready-to-publish": 300,
+    "unspecified": 154,
     "finalized": 68,
     "ready-for-review": 29,
     "deep-review": 2,
     "rework-verified": 2,
     "deep_review_passed": 4,
-    "deep-reviewed": 1,
     "reviewed": 2,
     "rework_verified": 1,
     "task6_ready_for_review": 1
@@ -35,7 +34,7 @@
     "5": 17,
     "6": 5,
     "7": 14,
-    "8": 20,
+    "8": 12,
     "9": 13,
     "10": 10,
     "11": 8,
@@ -55,7 +54,7 @@
     "25": 30,
     "26": 30
   },
-  "summary_local_links": 610,
+  "summary_local_links": 602,
   "queue_snapshot": {
     "total": 23,
     "body-applied": 9,
@@ -64,7 +63,7 @@
     "review-finalized": 1,
     "completed": 1
   },
-  "last_updated": "2026-08-11T11:41:06+08:00",
-  "last_action": "chapter 7 content consolidation: 20 canonical bodies reduced to 14, with image, WebView, scenario, thermal and Fragment topics merged into their canonical homes and GAPS moved to 14.26",
+  "last_updated": "2026-08-11T12:03:27+08:00",
+  "last_action": "chapter 8 content consolidation: 20 canonical bodies reduced to 12, with media, game, profiling, native loading, Flow/threading, JNI and Broadcast topics merged into their canonical homes",
   "generated_from": "chapter frontmatter and src/SUMMARY.md"
 }

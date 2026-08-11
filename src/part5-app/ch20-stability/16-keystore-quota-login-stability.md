@@ -30,7 +30,7 @@ sources:
   - type: aosp-doc
     path: "https://source.android.com/docs/security/features/keystore/implementer-ref"
 tags: [stability, keystore, keymint, android17, login]
-related_chapters: ["8.12", "20.2", "20.7", "26.5", "26.9"]
+related_chapters: ["8.9", "20.2", "20.7", "26.5", "26.9"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-25"
 gap_source: "官方文档/每日信息/AOSP结构"
@@ -329,7 +329,7 @@ target 37 放量前至少确认：
 
 ## 10. 与相邻章节的边界
 
-8.12 关注应用进程、keystore2、KeyMint HAL、TEE/StrongBox 之间的延迟、operation slot 和线程调度；这里关注持久 key entry 数量与 alias 生命周期。operation 并发上限和每 UID key 数量是两套资源约束，报告中应分别统计。
+8.9 关注应用进程、keystore2、KeyMint HAL、TEE/StrongBox 之间的延迟、operation slot 和线程调度；这里关注持久 key entry 数量与 alias 生命周期。operation 并发上限和每 UID key 数量是两套资源约束，报告中应分别统计。
 
 20.7 讨论异常恢复架构，20.12 讨论 crash loop 与 SafeMode，26.9 讨论 `ApplicationExitInfo`。这里提供 Keystore 故障分类和恢复状态；进程退出记录只能作为时间与结果证据。
 

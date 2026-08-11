@@ -7,7 +7,7 @@ drafted_by: "openclaw-task2a"
 drafted_date: "2026-05-25"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: [stability, native, dynamic-code-loading, android17, system-load]
-related_chapters: ["8.11", "20.3", "20.13", "1.15"]
+related_chapters: ["1.58", "20.3", "20.13", "1.15"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-25"
 gap_source: "官方文档/AOSP结构/每日信息"
@@ -300,7 +300,7 @@ private fun publishLibrary(
 
 ## 10. 与相邻章节的边界
 
-- 8.11 负责 native linker namespace、依赖解析与加载性能，这里只引用其加载约束。
+- 1.58 负责 native linker namespace、依赖解析与加载性能，这里只引用其加载约束。
 - 20.3 负责 signal crash、tombstone、backtrace 和符号化。只读拒绝通常是 Java `UnsatisfiedLinkError`，尚未进入 native 执行。
 - 20.13 负责 16KB page size 的 ELF 与 APK 兼容，这里只把对应结果纳入制品门禁。
 - 1.15 负责 JNI 注册与调用边界。库加载失败后继续调用 native 方法，才会产生后续 JNI 故障。
