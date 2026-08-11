@@ -1,8 +1,8 @@
 ---
 
 title: "eBPF/BPF 在 Android 性能分析中的应用"
-chapter: "14.10"
-section: "14.10"
+chapter: "14.23"
+section: "14.23"
 status: "finalized"
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
@@ -80,7 +80,7 @@ last_deepseek_cn_review_at: 2026-06-28
 ---
 
 
-# 14.10 eBPF/BPF 在 Android 性能分析中的应用
+# 14.23 eBPF/BPF 在 Android 性能分析中的应用
 
 eBPF 允许一段受验证器约束的程序在内核事件发生时执行。它能在调度、系统调用、网络、内存和用户态函数等位置采集上下文，再通过 map、ring buffer 或 perf buffer 把结果交给用户态。Android 已把它用于系统记账和诊断，但没有向普通应用开放通用的 BPF 加载接口。
 

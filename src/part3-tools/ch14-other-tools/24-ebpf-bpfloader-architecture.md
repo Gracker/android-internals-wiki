@@ -1,10 +1,11 @@
 ---
 title: "eBPF 系统架构：bpfloader Rust 化与 BPF 程序组织"
-chapter: "14.21"
+chapter: "14.24"
+section: "14.24"
 status: ready-for-review
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: [ebpf, bpfloader, rust, bpf, system-architecture, timeInState]
-related_chapters: ["14.10", "17.4", "26.11"]
+related_chapters: ["13.8", "14.23", "17.4", "26.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-07"
 drafted_date: "2026-06-07"
@@ -57,9 +58,9 @@ android17_review_notes:
   - "删除无来源的触发频率、功耗数字、dumpsys bpf 与直接 cat map 等错误说明"
 ---
 
-# 14.21 eBPF 系统架构：bpfloader Rust 化与 BPF 程序组织
+# 14.24 eBPF 系统架构：bpfloader Rust 化与 BPF 程序组织
 
-§14.10 介绍如何用 eBPF 工具定位性能问题。这里转向系统启动：Android 17 在什么时机装载系统、Mainline 和厂商 BPF 对象，谁负责把已加载的 program 附着到 tracepoint，用户空间又怎样读取 map。
+§14.23 介绍如何用 eBPF 工具定位性能问题。这里转向系统启动：Android 17 在什么时机装载系统、Mainline 和厂商 BPF 对象，谁负责把已加载的 program 附着到 tracepoint，用户空间又怎样读取 map。
 
 这三个动作必须分开理解：
 
@@ -363,4 +364,4 @@ adb shell ls /sys/kernel/tracing/events/power/cpu_frequency
 - [Android common kernel 6.18 GPU memory tracepoint](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/gpu_mem.h)
 - [AOSP eBPF architecture documentation](https://source.android.com/docs/core/architecture/kernel/bpf)
 
-> 🔗 交叉引用：eBPF 工具链（bpftrace、simpleperf）和 UprobeStats 详见 §14.10；功耗统计中的 timeInState 详见 §5.6；Perfetto 数据源配置详见 §26.11。
+> 🔗 交叉引用：eBPF 工具链（bpftrace、simpleperf）和 UprobeStats 详见 §14.23；功耗统计中的 timeInState 详见 §5.6；Perfetto 数据源配置详见 §13.8，线上 Binder 语义采集见 §26.11。

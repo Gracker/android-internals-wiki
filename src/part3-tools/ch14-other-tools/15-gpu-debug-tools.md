@@ -1,7 +1,7 @@
 ---
 title: "GPU 图形调试与分析工具"
-chapter: "14.8"
-section: "14.8"
+chapter: "14.15"
+section: "14.15"
 status: finalized
 pipeline_stage: ready-to-publish
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37) (AGI 支持 Android 11+, APA 支持 Android 12+, Sokatoa 支持 Android 13+)"
@@ -95,7 +95,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-07
 last_task9_review_log: "logs/deep-review/2026-07-07-12-deep-review.md"
 ---
-# 14.8 GPU 图形调试与分析工具
+# 14.15 GPU 图形调试与分析工具
 
 ## 分析对象是一条显示时间线
 

@@ -57,7 +57,7 @@ sources:
   - type: clippings-structure-ref
     path: "Clippings/Android 性能优化 - dex 文件的体积优化实战.md"
 tags: [case-study, power, wakelock, apk-size, optimization, release-gate]
-related_chapters: ["25.1", "25.2", "25.3", "25.6", "25.7", "25.8", "11.1", "11.2", "14.11"]
+related_chapters: ["25.1", "25.2", "25.3", "25.6", "25.7", "25.8", "11.1", "11.2", "14.8"]
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-05-31"
 reviewed_by: openclaw-task6

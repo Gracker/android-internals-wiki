@@ -1,6 +1,7 @@
 ---
 title: "ARM Topdown 微架构性能分析方法论与 Android 实践"
-chapter: "14.32"
+chapter: "14.4"
+section: "14.4"
 status: finalized
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 drafted_date: "2026-07-16"
@@ -34,7 +35,7 @@ sources:
 - type: paper
   path: Yasin, A. "A Top-Down Method for Performance Analysis and Counters Architecture", ISPASS 2014
 tags: ['arm-topdown', 'microarchitecture', 'perf', 'simpleperf', 'performance-analysis', 'pmu']
-related_chapters: ['5.4', '14.24']
+related_chapters: ['5.4', '14.3']
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "研究素材 + 每日信息"
@@ -42,9 +43,9 @@ gap_score: "15/20"
 processed_by: "task2a-draft"
 android17_review_notes: "2026-08-04：deep-review 复核 simpleperf stat/list/record、Arm SPE、Perfetto sample filter、raw event 生成规则和 Neoverse V1 r1p2 公式边界；保留 Android 17 / android-17.0.0_r1 锚点，不引入后续平台主线结论。"
 ---
-# 14.32 ARM Topdown 微架构性能分析方法论与 Android 实践
+# 14.4 ARM Topdown 微架构性能分析方法论与 Android 实践
 
-## 14.32.1 Topdown 能回答什么
+## 14.4.1 Topdown 能回答什么
 
 一次 CPU 性能分析通常会遇到两个不同的问题：
 
@@ -59,7 +60,7 @@ Topdown 处理前一个问题。它把处理器流水线的执行机会归入少
 
 结论范围限于参考资料列出的版本：AOSP simpleperf、Android common kernel 的 perf 权限说明，以及 Arm 对 Topdown/Telemetry Solution 的公开文档。厂商内核补丁、后续平台版本的 simpleperf 变化、SoC 私有 PMU 扩展和商业性能工具链不在范围内。
 
-## 14.32.2 Intel TMAM 与 Arm Topdown 的关系
+## 14.4.2 Intel TMAM 与 Arm Topdown 的关系
 
 Ahmad Yasin 在 2014 年 ISPASS 论文中提出了面向 Intel 乱序处理器的 Top-Down 分析方法。论文用 pipeline slot 统计 Retiring、Bad Speculation、Frontend Bound 和 Backend Bound。后来 Intel 将这套体系扩展为多级 TMAM。
 
@@ -92,7 +93,7 @@ Slot 表示一个周期内处理器理论上可以接收或处理的一次操作
 
 同一次、同一 CPU 上取得的有效计数代入匹配公式后，四类通常应接近 100%。出现负值、明显超过 100% 或各类相加大幅偏离 100% 时，应先检查 CPU 公式、事件支持、计数复用、线程迁移和采集时段。
 
-## 14.32.3 公式属于 CPU，不属于 Arm64
+## 14.4.3 公式属于 CPU，不属于 Arm64
 
 Arm Telemetry Solution 把公式放在每款 CPU 的 telemetry 数据中。以仓库中的 Neoverse V1 r1p2 定义为例，一级公式包含以下参数：
 
@@ -116,7 +117,7 @@ AOSP Android 17 的 `simpleperf/event_table.json` 收录了 Arm64 通用原始�
 
 任何一道门没有通过，都应把结果降级为普通 PMU 线索，不能标成完整的 Arm Topdown 百分比。
 
-## 14.32.4 Android 17 中各工具的边界
+## 14.4.4 Android 17 中各工具的边界
 
 ### simpleperf stat：计数
 
@@ -160,7 +161,7 @@ Android 17 simpleperf 源码包含 `SPERecorder` 与 `SPEDecoder`，`simpleperf 
 
 SPE 不是一级 Topdown 公式的替代品。它更适合在 Backend Bound 已由计数确认后，帮助定位延迟落在哪些指令或地址。Android 17 该版本源码中没有名为 `brbe` 的 simpleperf 后端，不能把 BRBE 写成通用可用的采集选项。
 
-## 14.32.5 一套可复现的 Android 工作流
+## 14.4.5 一套可复现的 Android 工作流
 
 ### 步骤一：固定问题和 workload
 
@@ -294,7 +295,7 @@ adb shell simpleperf report \
 
 如果 Backend Bound 上升的那轮同时发生了迁到小核、热降频或 workload 窗口错位，应先修正实验。频率降低会改变 cycles、耗时和内存等待的相对表现；它不是某个 Topdown 类别的单一原因。
 
-## 14.32.6 从指标到修改：保持假设可证伪
+## 14.4.6 从指标到修改：保持假设可证伪
 
 ### Frontend Bound
 
@@ -321,7 +322,7 @@ SoA、预取、对齐、`restrict`、向量化和软件流水都有适用条件�
 
 Retiring 占比高说明流水线大部分可计量 slot 在退休操作，不代表这些操作都值得执行。解码同一数据两次、复制多余缓冲区或使用标量循环，都可能产生很高的 Retiring。此时应把 instructions、业务工作量与耗时一起看。
 
-## 14.32.7 常见失真来源
+## 14.4.7 常见失真来源
 
 ### 异构 CPU 聚合
 
@@ -347,7 +348,7 @@ Android SoC 常有多种 CPU 核。不同簇的事件支持、流水线宽度和
 
 优化后 Backend Bound 百分比可能上升，同时总 cycles 大幅下降。这可能是其他类别下降得更快。每轮都要同时保存墙钟耗时、cycles、instructions、绝对事件数和派生百分比。
 
-## 14.32.8 结论
+## 14.4.8 结论
 
 Android 17 上可执行的可靠路径是：
 

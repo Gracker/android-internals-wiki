@@ -9,7 +9,7 @@ last_verified: "2026-05-16"
 last_verified_against: "AOSP android-17.0.0_r1 / Android Developers docs / source.android.com MTE docs"
 confidence: medium
 tags: ["mte", "memtag", "native-crash", "stability", "security"]
-related_chapters: ["4.5", "10.5", "14.3", "20.3", "23.3"]
+related_chapters: ["4.5", "10.5", "14.5", "20.3", "23.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/官方文档"

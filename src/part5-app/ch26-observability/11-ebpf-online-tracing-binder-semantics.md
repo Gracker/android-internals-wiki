@@ -7,7 +7,7 @@ applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-05-17"
 drafted_by: "openclaw-task2a"
 last_verified: "2026-05-17"
-last_verified_against: "arXiv:2604.27830 / source.android eBPF docs / Android Developers ProfilingManager docs / AIW 1.4、14.10、26.5"
+last_verified_against: "arXiv:2604.27830 / source.android eBPF docs / Android Developers ProfilingManager docs / AIW 1.4、14.23、26.5"
 confidence: medium
 sources:
   - type: clipping
@@ -27,13 +27,13 @@ sources:
   - type: official
     path: "https://developer.android.com/privacy-and-security/risks/log-info-disclosure"
   - type: internal
-    path: "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
+    path: "src/part3-tools/ch14-other-tools/23-ebpf-performance-analysis.md"
   - type: internal
     path: "src/part1-fundamentals/ch01-architecture/04-binder.md"
   - type: internal
     path: "src/part5-app/ch26-observability/05-online-troubleshooting.md"
 tags: [ebpf, binder, observability, tracing, online-diagnosis, security-audit]
-related_chapters: ["1.4", "13.9", "14.10", "26.5"]
+related_chapters: ["1.4", "13.9", "14.23", "26.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/素材驱动"
@@ -42,7 +42,7 @@ material_count: 3
 source_refs:
   - 论文/Android-2026-05-03-WOOTdroid/03-精读.md
   - https://arxiv.org/abs/2604.27830
-  - src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md
+  - src/part3-tools/ch14-other-tools/23-ebpf-performance-analysis.md
   - src/part1-fundamentals/ch01-architecture/04-binder.md
 pipeline_stage: ready-to-publish
 task6_state: reviewed

@@ -26,7 +26,7 @@ sources:
   - type: aosp
     path: "external/perfetto/src/trace_processor/perfetto_sql/stdlib/sched/thread_executing_span_with_slice.sql"
 tags: ["perfetto", "sql", "span-join", "trace-processor", "frame-analysis"]
-related_chapters: ["13.9", "13.5", "14.10"]
+related_chapters: ["13.9", "13.5", "14.23"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/研究素材"

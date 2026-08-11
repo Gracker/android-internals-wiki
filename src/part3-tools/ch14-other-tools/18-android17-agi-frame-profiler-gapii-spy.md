@@ -1,10 +1,11 @@
 ---
 title: "Android 17 AGI Frame Profiler gapii Spy 架构与单帧 GPU 捕获机制"
-chapter: "14.29"
+chapter: "14.18"
+section: "14.18"
 status: ready-for-review
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 tags: [agi, gpu-debug, gapii, gapidapk, vulkan-layer, gpu-capture, frame-profiler, gpu-replay]
-related_chapters: ["14.8", "14.28", "2.3"]
+related_chapters: ["14.15", "14.16", "2.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-09"
 gap_source: "DeepResearch + research-gaps"
@@ -29,9 +30,9 @@ sources:
     path: "Writer/rendering_pipelines/S13_game_type.md"
 ---
 
-# 14.29 Android 17 AGI Frame Profiler gapii Spy 架构与单帧 GPU 捕获机制
+# 14.18 Android 17 AGI Frame Profiler gapii Spy 架构与单帧 GPU 捕获机制
 
-## 14.29.1 版本边界：Android 平台与 AGI 工具分开锚定
+## 14.18.1 版本边界：Android 平台与 AGI 工具分开锚定
 
 Android GPU Inspector（AGI）不是 `android-17.0.0_r1` 平台源码中的系统组件。该 tag 的 AOSP manifest 没有 `external/android-gui`、`gapii` 或 `gapis` project；AGI 在独立的 [`google/agi`](https://github.com/google/agi) 仓库和发布渠道中维护。因而，“Android 17 上使用 AGI”要拆成两条可核验基线：
 
@@ -42,7 +43,7 @@ Android GPU Inspector（AGI）不是 `android-17.0.0_r1` 平台源码中的系�
 
 当前官方 quickstart 要求受支持的物理设备运行 Android 11 或更高版本，Android Emulator 不受支持。历史 AGI release 对 Android 10 的兼容记录不能代替当前工具验证；在 Android 17 上也要经过 AGI 的 device validation，支持状态由 OS、GPU 与 driver 共同决定。
 
-## 14.29.2 System Profile 与 Frame Profile 解决不同问题
+## 14.18.2 System Profile 与 Frame Profile 解决不同问题
 
 AGI 提供 System Profile 与 Frame Profile，两者的数据来源和分析尺度不同。
 
@@ -87,7 +88,7 @@ flowchart LR
 
 图中的 GraphicsSpy 与 `libgapii.so` 都加载在目标 App 进程内；GAPIS 和 UI 位于开发机；gapir 在 Android 设备上执行重放。主机负责解析和生成 replay payload，不会用开发机 GPU 代替目标设备驱动重放。
 
-## 14.29.3 Android 17 怎样把 GraphicsSpy 放进目标进程
+## 14.18.3 Android 17 怎样把 GraphicsSpy 放进目标进程
 
 ### Android 设备使用 global settings，不依赖 `VK_LAYER_PATH`
 
@@ -125,7 +126,7 @@ layer 设置以 package 为单位。某些游戏会在包内启动独立的渲�
 
 它不是同时接受 PID、package 和进程名的通用平台接口。package 由 `gpu_debug_app` 选择，进程由 `debug.agi.procname` 进一步过滤，PID 只用于 AGI 在启动后确认进程已经出现。
 
-## 14.29.4 gapidapk 不是持续采集 GPU 数据的 AIDL 服务
+## 14.18.4 gapidapk 不是持续采集 GPU 数据的 AIDL 服务
 
 AGI 为不同 ABI 准备独立 package，例如：
 
@@ -146,7 +147,7 @@ AGI 为不同 ABI 准备独立 package，例如：
 
 源码也没有支持“AI 压缩算法、GPU 数据加密存储、动态采样率或 GPU 访问审计日志”这些描述。安全边界应回到 Android 的 debuggable 状态、Vulkan layer 注入条件、adb 授权、layer package 与目标 package 选择。
 
-## 14.29.5 一帧捕获从连接到结束发生了什么
+## 14.18.5 一帧捕获从连接到结束发生了什么
 
 AGI 开发文档把 Vulkan Frame Profile 的主要步骤写得很具体：
 
@@ -167,7 +168,7 @@ AGI 开发文档把 Vulkan Frame Profile 的主要步骤写得很具体：
 
 `.gfxtrace` 可以包含多个线程的 API 调用，ProtoPack object group 也可能交错。捕获器会记录调用和内存观察，但这不保证所有未显式同步的竞态都能稳定复现。Vulkan 应用在抓帧前应通过 validation layer，资源生命周期、host memory 修改和 queue 同步要符合 API 约束。
 
-## 14.29.6 `.gfxtrace` 的内容与边界
+## 14.18.6 `.gfxtrace` 的内容与边界
 
 正确扩展名是 `.gfxtrace`。AGI `v3.3.3` 使用自定义 ProtoPack v2 容器封装 protobuf message，而不是普通的“一个 protobuf 文件”。
 
@@ -206,7 +207,7 @@ Android Developers 的 Vulkan 工具文档明确提醒，图形 trace 不能假�
 - 目标 App 版本、ABI、所用 Vulkan extension；
 - 捕获时是否经 ANGLE、是否启用 validation layer。
 
-## 14.29.7 GAPIS 与 GAPIR 各自负责什么
+## 14.18.7 GAPIS 与 GAPIR 各自负责什么
 
 ### GAPIS：解析、状态演算与 replay 生成
 
@@ -231,7 +232,7 @@ AGI `v3.3.3` 的 `replay2/` 目录包含 handle remapper、memory remapper、rep
 
 GFXReconstruct 是另一个开源 capture/replay 项目。AGI 当前公开文档和上述源码没有把它列为 `.gfxtrace` 的采集器，也没有“GFXReconstruct 生成命令流、replay2 在主机端执行”的链路证据。排查代码时不要把三个项目的名词混在一起。
 
-## 14.29.8 OpenGL ES 通过 ANGLE 进入 Frame Profile
+## 14.18.8 OpenGL ES 通过 ANGLE 进入 Frame Profile
 
 AGI 官方 Frame Profile 入口区分：
 
@@ -242,7 +243,7 @@ AGI 官方 Frame Profile 入口区分：
 
 当前 AGI 源码文档写明工具主线只支持 Vulkan；这与官方 UI 的 OpenGL on ANGLE 说明一致。没有证据支持“gapii 直接替换全部 GLES 2.0/3.x 函数”或“ANGLE D3D11 on Vulkan”这类 Android 描述。Android 上的 ANGLE 后端是 Vulkan 方向，D3D11 属于其他平台语境。
 
-## 14.29.9 Frame Profiler 能展示什么，不能由什么推导
+## 14.18.9 Frame Profiler 能展示什么，不能由什么推导
 
 官方 Frame Profiler UI 提供 Commands、Framebuffer、Geometry、Memory、Performance、Pipeline、Shader、State、Textures 与 Report 等视图。这些视图来自 capture state、resource 和必要的设备 replay。
 
@@ -278,7 +279,7 @@ Frame Profile 可以记录应用的 `vkQueuePresentKHR()`，但这条 API 调用
 
 Frame Profile 能提供单帧内部证据，不会自动给出跨设备通用阈值，也没有可核验的 Android 17“机器学习性能预测、AI 异常检测、云端趋势分析或 Sokatoa 扩展”。涉及这些能力时必须给出独立产品文档、版本和可复现实验。
 
-## 14.29.10 常见失败怎样定位
+## 14.18.10 常见失败怎样定位
 
 ### App 启动后没有 gapii 连接
 
@@ -325,7 +326,7 @@ adb shell setprop debug.agi.procname ""
 
 这三个 `angle_*` 键只与 OpenGL on ANGLE 抓帧有关；原生 Vulkan 抓帧通常不会设置它们。清理后重启目标 App，再用 `settings get global ...` 和 `getprop debug.agi.procname` 确认没有残留。global settings 会跨重启保存，遗留的 layer 或 ANGLE 配置可能继续影响同包进程。
 
-## 14.29.11 源码与官方文档索引
+## 14.18.11 源码与官方文档索引
 
 ### Android 17 平台侧
 
@@ -360,7 +361,7 @@ adb shell setprop debug.agi.procname ""
 - [AGI troubleshooting](https://developer.android.com/agi/troubleshooting)
 - [Android Vulkan 工具与 trace 可移植性说明](https://developer.android.com/games/develop/vulkan/tools-and-advanced-features)
 
-## 14.29.12 小结
+## 14.18.12 小结
 
 - Android 17 提供 Vulkan debug layer 的发现与安全机制；AGI 是独立版本化的开发工具，不能把 AGI 功能写成 Android 17 平台新增项。
 - System Profile 走 Perfetto，Frame Profile 走 GraphicsSpy、gapii、`.gfxtrace`、GAPIS 与设备侧 GAPIR。

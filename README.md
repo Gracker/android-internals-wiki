@@ -80,7 +80,7 @@ mdbook serve
 
 截至 2026-08-11，当前活动口径已经统一：
 
-- 规范章节正文共 546 篇：`finalized` 362、`ready-for-review` 183、`verified` 1。
+- 规范章节正文共 542 篇：`finalized` 361、`ready-for-review` 180、`verified` 1。
 - `pipeline_stage=ready-to-publish` 的正文为 292 篇；其余遗留流水线状态按 `metadata/progress.json` 聚合展示。
 - `src/SUMMARY.md` 包含 585 个本地链接，链接目标和重复项检查均通过。
 - `metadata/queue.json` 共有 23 条活动/审计记录：9 条 `body-applied`、7 条 `rejected`、5 条 `superseded`、1 条 `review-finalized`、1 条 `completed`。

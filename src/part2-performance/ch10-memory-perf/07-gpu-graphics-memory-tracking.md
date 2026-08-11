@@ -49,7 +49,7 @@ sources:
   - type: research
     path: "DeepResearch/2026-07-11-android17-gpu-memory-tracking-pool-defrag.md"
 tags: [gpu-memory, dmabuf, gralloc, perfetto, memory-tracking, graphics, memtrack]
-related_chapters: ["2.15", "4.2", "10.1", "14.8", "22.17", "23.2"]
+related_chapters: ["2.15", "4.2", "10.1", "14.15", "22.17", "23.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-07"
 gap_source: "AOSP结构/章节深挖/官方文档"

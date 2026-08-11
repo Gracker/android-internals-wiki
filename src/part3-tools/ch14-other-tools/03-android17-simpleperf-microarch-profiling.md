@@ -1,10 +1,11 @@
 ---
 title: "Android 17 simpleperf 微架构级性能采样与工作流增强"
-chapter: "14.24"
+chapter: "14.3"
+section: "14.3"
 status: ready-for-review
 applicable_versions: "Android 17 (API 37)"
 tags: [simpleperf, ARM-SPE, TRBE, profiling, microarchitecture, AutoFDO]
-related_chapters: ["14.2", "14.10", "14.21"]
+related_chapters: ["14.2", "14.23", "14.24"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-02"
 drafted_date: "2026-07-02"
@@ -37,7 +38,7 @@ sources:
 android17_review_notes: "按 android-17.0.0_r1 与 android17-6.18-2026-06_r6 重写；区分硬件能力、内核驱动和 Simpleperf 解码能力，并核对 Android 16 到 Android 17 的版本差异"
 ---
 
-# 14.24 Android 17 simpleperf 微架构级性能采样与工作流增强
+# 14.3 Android 17 simpleperf 微架构级性能采样与工作流增强
 
 §14.2 讲解了 Simpleperf 的常规 PMU 采样。Android 17 在这套基础上增加了 SPE 采集与解码，并补齐了一批长时采集、应用进程跟踪和 ETM profile 转换能力。讨论范围限于已经进入 `android-17.0.0_r1` 的行为；设备能否使用 SPE、ETE、TRBE 或特定 PMU 事件，仍由 SoC、内核配置和权限共同决定。
 
@@ -52,7 +53,7 @@ Android 16 与 Android 17 的差异需要分开看：
 | devfreq / `pmu_lib` | 无对应自动保护流程 | `stat --use-devfreq-counters` 增加恢复保护和 `pmu_lib` 后备路径 |
 | 内核模块 ETM AutoFDO | `.ko` 地址映射不完整 | `inject` 可从模块 `.text` 建立可执行映射并生成 AutoFDO profile |
 
-## 14.24.1 先分清 PMU、SPE 和 ETM
+## 14.3.1 先分清 PMU、SPE 和 ETM
 
 三种机制都可以由 Simpleperf 驱动，但它们回答的问题不同。
 
@@ -64,7 +65,7 @@ Android 16 与 Android 17 的差异需要分开看：
 
 SPE 是 Armv8.2-A 开始提供的可选统计分析扩展，运行在 AArch64 环境；它不以 ARMv9 为前提。ETM/ETE 负责生成指令 trace，TRBE 和 ETR 负责保存 trace。TRBE 自身不生成微架构采样数据。
 
-## 14.24.2 Android 17 的 SPE 采集链路
+## 14.3.2 Android 17 的 SPE 采集链路
 
 ### 从 sysfs 事件到 AUX 数据
 
@@ -131,7 +132,7 @@ Android 17 的 decoder 没有把以下 packet 信息转换成 perf sample 字段
 
 SPE 的 packet 由硬件写入 profiling buffer，不要求每个样本触发一次 PMU 溢出中断。不过，Linux SPE 驱动仍要处理 AUX 缓冲区装填、截断、冲突和 IRQ。采样间隔过小或缓冲消费不及时会产生丢失记录。开销与丢失率必须在目标设备和目标负载上测量，不能套用固定百分比。
 
-## 14.24.3 TRBE 是 CoreSight sink
+## 14.3.3 TRBE 是 CoreSight sink
 
 CoreSight 链路可以概括为：
 
@@ -167,7 +168,7 @@ adb shell su root simpleperf record \
 
 `:k` 将事件限制在内核态。系统级 ETM 通常要求 root；Simpleperf 也会阻止普通 profileable 应用 UID 采集内核 ETM，以免泄露受 KASLR 保护的地址。
 
-## 14.24.4 `record --background` 的进程语义
+## 14.3.4 `record --background` 的进程语义
 
 Android 17 新增的 `--background` 适合脚本启动有限时长的采集。实现使用一次 `fork()`：
 
@@ -200,7 +201,7 @@ adb shell ls -l /data/local/tmp/app-perf.data
 
 `SIGKILL` 不给进程执行清理的机会，可能留下不完整数据；它不适合作为常规停止方式。后台模式也不等同于无人值守的全天采集，文件增长、设备温度、丢样和静默失败仍需外部监控。
 
-## 14.24.5 `--app` 与新进程跟踪
+## 14.3.5 `--app` 与新进程跟踪
 
 `--app <package>` 在 Android 16 已经存在。它让 Simpleperf 等待包对应的初始进程；非 root 场景依赖 `run-as`，目标 APK 必须允许调试。Android 17 的增量能力出现在 `stat` 的 `NewThreadMonitor`：
 
@@ -226,7 +227,7 @@ wait "$stat_adb_pid"
 
 这里的 `stat_adb_pid` 是主机端 adb 进程，不是设备上的 Simpleperf PID。`--app` 单独使用时，不应宣称它会持续纳入全部后续子进程；动态纳入依赖 `--monitor-new-thread`。
 
-## 14.24.6 `--use-devfreq-counters` 与 `pmu_lib`
+## 14.3.6 `--use-devfreq-counters` 与 `pmu_lib`
 
 `pmu_lib` 处理不作用于每次 `simpleperf stat`。它位于 `DevfreqCounters::Use()`，只在显式传入 `--use-devfreq-counters` 时运行，而且要求 root。
 
@@ -250,7 +251,7 @@ adb shell su root simpleperf stat \
 
 该选项会改变内存延迟相关 governor 或暂时停用供应商计数器，测量结果也会受到状态切换影响。正常退出时析构逻辑负责恢复；进程被 `SIGKILL`、崩溃或设备异常重启时，恢复逻辑可能没有机会运行。实验脚本应在运行前后记录 governor 和 `enable_counters`，发现状态未恢复时按设备内核文档处理。
 
-## 14.24.7 从内核模块 ETM trace 生成 AutoFDO profile
+## 14.3.7 从内核模块 ETM trace 生成 AutoFDO profile
 
 内核模块 `.ko` 往往没有可供常规 DSO 逻辑使用的 ELF program header。Android 17 的 `cmd_inject` 新增 `KernelModuleDso`：
 
@@ -278,7 +279,7 @@ simpleperf inject \
 
 生成 `zram.afdo` 只完成 profile 制备。能否用于内核模块构建、编译器接受哪种 profile，以及优化后是否改善目标负载，都要由对应 Android 17 内核构建规则和基准测试确认。
 
-## 14.24.8 选择分析手段
+## 14.3.8 选择分析手段
 
 | 现象 | 优先工具 | 原因 |
 |---|---|---|
@@ -289,7 +290,7 @@ simpleperf inject \
 
 一个稳妥的调查顺序是：用 Perfetto 或常规 PMU 缩小问题范围，再按问题类型选择 SPE 或 ETM。SPE 和 ETM 都可能增加数据量与系统负载，短时预检、目标设备基线以及丢失记录检查缺一不可。
 
-## 14.24.9 核验清单
+## 14.3.9 核验清单
 
 - `simpleperf list` 中确认目标 SPE 或 `cs-etm` 事件存在。
 - 从 sysfs 核对 SPE 配置字段，不复制其他 SoC 的事件字符串。

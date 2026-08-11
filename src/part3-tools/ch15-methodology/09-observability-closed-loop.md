@@ -43,7 +43,7 @@ sources:
   - type: source
     path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6"
 tags: [observability, apm, pipeline, governance, monitoring]
-related_chapters: ["7.1", "8.1", "9.1", "14.12", "15.3", "15.5", "15.6", "15.10"]
+related_chapters: ["7.1", "8.1", "9.1", "14.10", "15.3", "15.5", "15.6", "15.10"]
 pipeline_stage: ready-for-review
 task6_state: pending-review
 task6_result: rework-applied

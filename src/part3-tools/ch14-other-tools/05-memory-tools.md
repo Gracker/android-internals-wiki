@@ -1,21 +1,25 @@
 ---
 title: 内存分析工具
-chapter: '14.3'
-section: '14.3'
+chapter: '14.5'
+section: '14.5'
 status: "finalized"
 reviewed_date: "2026-05-30"
 reviewed_by: "openclaw-task6"
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-05-30'
-last_verified_against: AOSP android-17.0.0_r1 (system/memory/libmeminfo + bionic libc/memory malloc_debug/malloc_hooks) + Perfetto native-heap-profiler docs + Android Developers memory docs
-
-# 注意：本章内容基于 Android 16-17 版本验证，Android 17 (API 37) 相关特性已进入主线，实际使用时需注意版本差异。
+last_verified: '2026-07-30'
+last_verified_against: Android Studio Quail 2 + LeakCanary 2.14 + AOSP android-17.0.0_r1 (system/memory/libmeminfo + bionic libc/memory malloc_debug/malloc_hooks) + Perfetto native-heap-profiler docs
 confidence: high
 sources:
   - type: aosp
     path: bionic/libc/memory/malloc_debug
+  - type: official
+    path: https://developer.android.com/studio/preview/features
+  - type: official
+    path: https://square.github.io/leakcanary/ui-tests/
+  - type: official
+    path: https://square.github.io/leakcanary/leakcanary-for-releases/
 tags: 
 related_chapters: 
 pipeline_stage: "ready-to-publish"
@@ -56,7 +60,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-20
 ---
 
-# 内存分析工具
+# 14.5 内存分析工具
 
 ## 先确定要测哪一种内存
 
@@ -180,6 +184,36 @@ fun setVisibleHeapDumpThreshold(retainedObjectCount: Int) {
 4. 修复后重复相同操作，等待保留对象消失，并确认没有换成另一条签名。
 
 LeakCanary 不会自动覆盖所有单例、缓存和业务容器。自定义对象应显式观察；只表现为“大量仍然合法存活对象”的内存膨胀，应转到堆转储的 Histogram 与 Dominator Tree。
+
+### Android Studio LeakCanary task 与 CI 接入
+
+Android Studio Panda 3 起提供专用 LeakCanary Profiler task。设备仍负责运行应用和生成堆现场，Shark 转到开发机分析，报告可以从可疑引用跳回工程源码。后续 Quail 稳定版继续提供这项能力；它属于 IDE 发布线，与 Android API 版本没有绑定关系。
+
+几种入口的职责不同：
+
+| 入口 | 适合的阶段 | 主要证据 | 边界 |
+|---|---|---|---|
+| LeakCanary 2.14 | 日常开发和手工走查 | 生命周期对象的泄漏引用链 | 默认观察范围有限，堆转储会暂停应用 |
+| Android Studio LeakCanary task | 本地稳定复现后的源码定位 | Shark 报告与工程源码之间的导航 | 依赖 IDE、构建和被测 APK 版本匹配 |
+| Memory Profiler Heap Dump | 对象数量、支配关系和通用 HPROF 检查 | 实例、retained size、引用关系 | 需要开发者判断生命周期是否合法 |
+| 系统或线上触发 | 难以本地复现的内存限制现场 | 退出信息、受控 HPROF 或 profile | 受配额、隐私、磁盘和上传成本限制 |
+
+LeakCanary 2.14 还提供 instrumentation 集成。依赖只加入测试 APK，并在测试成功后执行泄漏断言：
+
+```kotlin
+dependencies {
+    androidTestImplementation(
+        "com.squareup.leakcanary:leakcanary-android-instrumentation:2.14"
+    )
+}
+
+@get:Rule
+val detectLeaksAfterTestSuccess = DetectLeaksAfterTestSuccess()
+```
+
+这类断言适合生命周期明确、操作可重复的端到端场景。测试应固定页面操作、空闲等待和后台任务清理；异步任务尚未结束时，保留对象不等于稳定泄漏。团队还可以维护少量确定性样例，例如单例保存 Activity、Fragment View binding 未清理、延迟消息、全局协程、Listener 未注销和 WebView/播放器未释放，用同一脚本同时验证“能发现”和“修复后消失”。
+
+线上使用实验性的 release 观察能力时，至少要有远程开关、低采样率、磁盘配额、充电/空闲条件、失败恢复、访问控制与过期策略。原始 HPROF 可能包含业务对象，不应默认上传；优先保存 leak signature、裁剪后的引用路径和不含业务值的统计字段。
 
 ## MAT：离线分析 Java 堆对象图
 
@@ -679,6 +713,9 @@ Android 17 的内核接口与标记故障处理可从 [`memory-tagging-extension
 - [LeakCanary 工作原理](https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/)
 - [LeakCanary 2.14 安装](https://square.github.io/leakcanary/getting_started/)
 - [LeakCanary 手动安装 API](https://square.github.io/leakcanary/api/leakcanary/-app-watcher/manual-install/)
+- [LeakCanary UI tests](https://square.github.io/leakcanary/ui-tests/)
+- [LeakCanary for release builds](https://square.github.io/leakcanary/leakcanary-for-releases/)
+- [Android Studio release updates](https://developer.android.com/studio/preview/features)
 - [Eclipse Memory Analyzer](https://eclipse.dev/mat/)
 - [Android Studio Heap Dump](https://developer.android.com/studio/profile/capture-heap-dump)
 - [Android Bitmap 内存版本边界](https://developer.android.com/topic/performance/graphics/manage-memory)

@@ -1,7 +1,8 @@
 ---
 
 title: Layout Inspector 与 ViewDebug 布局调试
-chapter: 14.16
+chapter: 14.22
+section: 14.22
 status: finalized
 task6_state: reviewed
 task6_result: pass-light-edit
@@ -56,7 +57,7 @@ gap_source: 素材驱动/官方文档/AOSP结构
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-28
 ---
-# 14.16 Layout Inspector 与 ViewDebug 布局调试
+# 14.22 Layout Inspector 与 ViewDebug 布局调试
 
 Layout Inspector 查看应用进程内正在运行的 View、Compose 或混合 UI：节点是否存在、父子关系如何、bounds 与属性是什么、Compose 节点重组或跳过了多少次。它提供的是组件树与属性现场。帧耗时交给 Perfetto，窗口与 SurfaceFlinger layer 状态交给 Winscope，GPU 命令和 buffer 像素问题交给 AGI 或对应 Producer 工具。
 

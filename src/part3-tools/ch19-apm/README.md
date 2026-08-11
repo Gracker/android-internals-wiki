@@ -8,7 +8,7 @@ applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-24"
 confidence: medium
 tags: [apm, monitoring, benchmark, observability, matrix, koom, btrace]
-related_chapters: ["14.5", "14.12", "14.13", "15.5", "15.9", "15.10"]
+related_chapters: ["14.10", "14.26", "15.5", "15.9", "15.10"]
 sources:
   - type: official
     path: https://developer.android.com/topic/performance
@@ -114,7 +114,7 @@ Vellamo、AndroBench、A1 SD Bench、Emmagee 不再作为现代 Android 推荐�
 ## 与其他章节的关系
 
 - **第 13 章（Perfetto）**：Perfetto 是线下 trace 分析工具。btrace/RheaTrace 可以把方法调用写成可导入 Perfetto 的 trace 数据；Tracing SDK 用 `Trace.beginSection` / `androidx.tracing.trace {}` 给 Perfetto 添加进程内 slice；JankStats 不直接生成 Perfetto trace 文件，它通过 `OnFrameListener` / `FrameData` 输出帧级 jank 数据和 UI state，适合与 Perfetto、FrameTimeline、Tracing SDK 一起归因。
-- **第 14 章**：14.5 概述三方性能库，14.12 提供 APM 选型框架，14.13 说明 Hook 基础设施；第 19 章分别展开具体工具。
+- **第 14 章**：14.10 统一说明三方性能库和 APM 可观测性选型，14.26 说明 Hook 基础设施；第 19 章分别展开具体工具。
 - **第 15 章（方法论）**：15.5、15.9 和 15.10 说明线上监控、问题流转与治理，第 19 章说明各工具的能力与边界。
 
 ## 内容索引
@@ -152,5 +152,5 @@ Vellamo、AndroBench、A1 SD Bench、Emmagee 不再作为现代 Android 推荐�
 
 - 初次搭建线上 APM：先读 19.1，再按当前问题选择 2—3 个工具。
 - 已在使用某个工具：直接进入对应条目核对实现与边界。
-- 需要选型：结合 14.12 的框架和各工具的详细分析。
+- 需要选型：结合 14.10 的框架和各工具的详细分析。
 - 关注 Benchmark 方向：19.21 覆盖通用 Benchmark 应用，19.22 覆盖存储基线工具。

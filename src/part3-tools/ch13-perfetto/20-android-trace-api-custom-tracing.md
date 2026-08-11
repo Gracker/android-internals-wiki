@@ -17,7 +17,7 @@ sources:
   - type: official
     path: "developer.android.com/reference/android/os/Trace"
 tags: [trace, systrace, perfetto, tracing, debugging, custom-trace]
-related_chapters: ["13.1", "13.3", "13.9", "13.16", "14.27"]
+related_chapters: ["13.1", "13.3", "13.9", "13.16", "14.9"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-05"
 drafted_by: "task2a-content-processing"
@@ -503,7 +503,7 @@ Macrobenchmark 会为每次测量保留 Perfetto trace，应用 section 因此�
 4. 用版本化 PerfettoSQL 继续拆分调度、I/O、Binder 和子切片；
 5. 在同设备、同 APK、同 compilation mode 下复测。
 
-`TraceSectionMetric` 适合稳定、低基数 section。任意 SQL 后处理应锁定 Trace Processor/Perfetto 版本，并保留原始 trace。自动化门禁的设备和统计策略见 [14.27 Macrobenchmark 框架与自动化性能门禁](../ch14-other-tools/27-macrobenchmark-automation-gate.md)，Perfetto schema 的版本边界见 [13.1 Perfetto 简介与演进](01-perfetto-intro.md)。
+`TraceSectionMetric` 适合稳定、低基数 section。任意 SQL 后处理应锁定 Trace Processor/Perfetto 版本，并保留原始 trace。自动化门禁的设备和统计策略见 [14.9 Macrobenchmark 框架与自动化性能门禁](../ch14-other-tools/09-automation-tools.md)，Perfetto schema 的版本边界见 [13.1 Perfetto 简介与演进](01-perfetto-intro.md)。
 
 ## 12. 排错清单
 

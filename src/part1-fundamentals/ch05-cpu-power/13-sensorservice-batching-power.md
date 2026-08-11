@@ -28,7 +28,7 @@ sources:
   - type: aosp
     path: "frameworks/native/services/sensorservice/SensorEventConnection.cpp"
 tags: [sensorservice, sensors, power, batching, cpu-wakeup]
-related_chapters: ["5.6", "11.2", "25.5", "14.11"]
+related_chapters: ["5.6", "11.2", "25.5", "14.8"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-19"
 gap_source: "AOSP 结构/官方文档"

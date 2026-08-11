@@ -8,7 +8,7 @@ last_verified: "2026-05-21"
 last_verified_against: "Android Developers Compose First docs/blog, Compose performance docs, Compose Foundation 1.9/1.10 发布说明, local DeepResearch 2026-05-15/18"
 confidence: medium
 tags: [compose, view-interop, rendering, migration, performance]
-related_chapters: ["7.7", "22.2", "22.3", "18.2", "14.18"]
+related_chapters: ["7.7", "22.2", "22.3", "18.2", "14.17"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-21"
 gap_source: "每日信息/官方文档/研究素材"
@@ -192,7 +192,7 @@ Strong Skipping 从 Kotlin `2.0.20` 起默认启用。restartable composable 可
 | Baseline Profile | 让 ART 提前编译关键路径 | Compose runtime 之外，业务热点路径是否被覆盖 |
 | Android Studio Profiler / System Trace | 采集 Perfetto 系统轨道；配合 composition tracing 展开 composable | 超期发生在 composition、layout、draw、GC、RenderThread 或系统等待 |
 | Perfetto / FrameTimeline | 对齐 App SurfaceFrame、SF DisplayFrame、目标 layer 与 present | 应用是否按 expected deadline 交帧，目标 buffer 是否按期显示 |
-| Android Performance Analyzer | 在 open beta 工具中联合查看 CPU、GPU、内存、功耗和 SurfaceFlinger | 适合作为跨子系统调查入口；不宜作为唯一 CI 门禁，详见 [14.18](../../part3-tools/ch14-other-tools/18-android-performance-analyzer.md) |
+| Android Performance Analyzer | 在 open beta 工具中联合查看 CPU、GPU、内存、功耗和 SurfaceFlinger | 适合作为跨子系统调查入口；不宜作为唯一 CI 门禁，详见 [14.17](../../part3-tools/ch14-other-tools/17-android-performance-analyzer.md) |
 
 [Composition tracing](https://developer.android.com/develop/ui/compose/tooling/tracing) 需要引入 `runtime-tracing`；自定义 Perfetto 配置还要启用 `track_event` data source。采集应使用 profileable、non-debuggable build，因为 debug 构建的解释、检查与调试开销会污染耗时。生产包是否保留 tracing strings 需要按 APK 体积与现场诊断需求决定。
 

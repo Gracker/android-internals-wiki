@@ -1,13 +1,13 @@
 ---
-title: "三方性能库"
-chapter: "14.5"
-section: "14.5"
+title: "三方性能库与可观测性选型"
+chapter: "14.10"
+section: "14.10"
 status: finalized
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
-last_verified: "2026-06-17"
-last_verified_against: "external review + GitHub upstream READMEs + AndroidX/AGP docs + bytedance/btrace 3.0 README/INTRODUCTION"
+last_verified: "2026-07-08"
+last_verified_against: "AOSP android-17.0.0_r1 + AndroidX metrics / Android Vitals docs + GitHub upstream READMEs + bytedance/btrace 3.0 README/INTRODUCTION"
 confidence: medium
 sources:
   - type: blog
@@ -34,6 +34,16 @@ sources:
     path: "https://github.com/markzhai/AndroidPerformanceMonitor (BlockCanary)"
   - type: blog
     path: "https://github.com/SusionSuc/rabbit-client (Rabbit)"
+  - type: official
+    path: https://developer.android.com/reference/androidx/metrics/performance/JankStats
+  - type: official
+    path: https://developer.android.com/topic/performance/vitals
+  - type: official
+    path: https://developer.android.com/reference/android/app/ApplicationExitInfo
+  - type: aosp
+    path: frameworks/base/core/java/android/view/FrameMetrics.java
+  - type: official
+    path: https://opentelemetry.io/docs/platforms/client-apps/android/
 tags:
   - android
   - research
@@ -41,8 +51,7 @@ tags:
   - observability
   - tracing
 related_chapters:
-  - "14.12"
-  - "14.13"
+  - "14.26"
   - "15.5"
   - "15.9"
 pipeline_stage: ready-to-publish
@@ -77,7 +86,7 @@ last_deepseek_cn_review_at: 2026-06-29
 ---
 
 
-# 三方性能库
+# 14.10 三方性能库与可观测性选型
 
 ## 三方性能库补足的场景
 
@@ -349,33 +358,9 @@ Rhea 后续以 `btrace` 开源。旧文章常把 Rhea 1.0、2.0 和“Rhea 3.0�
 
 当前原理与限制见 [btrace README](https://github.com/bytedance/btrace/blob/master/README.MD) 和 [btrace 3.0 Introduction](https://github.com/bytedance/btrace/blob/master/INTRODUCTION.MD)；早期方法插桩路线可对照[抖音 Rhea 文章](https://mp.weixin.qq.com/s/vkBeZ6hmVn_RaXS5Xv_L2g)阅读。
 
-## 扩展：Hook 机制对比
+## Hook 能力只在这里做选型
 
-“用了 native Hook”提供的信息太少。评审时至少要写清目标符号、拦截位置、ABI、装载时机、链式调用规则、失败降级和系统版本范围。
-
-### PLT Hook：改写调用方的重定位槽
-
-ELF 调用外部符号时，会根据 relocation 记录经由 GOT/PLT 槽获得目标地址。PLT Hook 解析调用方 ELF 的 relocation，把匹配槽位从原函数改为代理函数。它修改的是“某个调用方如何调用外部符号”，没有覆盖同一 ELF 内的直接调用、静态链接、编译器内联、未匹配的符号版本或其他 syscall 路径。
-
-xHook README 只声明 Android 4.0—10 / API 14—29。Android 17 项目不能因为 Matrix 或 KOOM 内含 xHook 派生代码，就推断该 fork 已覆盖 API 37。要核对 fork commit、linker namespace、REL/RELA/RELR、延迟装载和 16 KB page size。
-
-ByteHook 是仍在活跃维护的 PLT Hook 实现，`v1.1.2` README 明确列出 Android 4.1—17 / API 16—37，并支持同一函数的多次 hook/unhook、自动处理新装载 ELF 和代理栈回溯。这个声明比 xHook 的范围更新，但生产接入仍要在目标 so 集合与 ROM 上做故障注入。
-
-资料可查 [xHook README](https://github.com/iqiyi/xHook) 与 [ByteHook README](https://github.com/bytedance/bhook)。
-
-### Inline Hook：改写被调函数入口
-
-Inline Hook 会改写目标函数入口指令，跳到代理或 trampoline，再在需要时执行被覆盖的原始指令并返回。它可以覆盖 ELF 内部直接调用，但需要正确搬移 PC-relative 指令、处理短函数与指令边界、协调并发改写、修改页权限，并刷新 instruction cache。
-
-ShadowHook `v2.0.1` README 明确列出 Android 4.1—17 / API 16—37，支持 `armeabi-v7a` 与 `arm64-v8a`，并提供 hook/intercept、自动处理新 ELF、循环调用保护、操作记录和代理函数回溯。其手册也要求调用方阅读生产注意事项；一行 `shadowhook_hook_sym_name()` 成功不代表后续装载、unhook、异常回溯和多 Hook 链都安全。
-
-Android 17 验收至少覆盖 4 KB/16 KB page size、arm64、目标函数带 BTI/PAC 的情况、CFI/unwind、RELRO、并发首次调用、动态 `dlopen()`、代理递归和崩溃现场可符号化。平台内部函数不是稳定 ABI；即使 Hook 框架支持 API 37，目标 ART/libc/libbinder 符号仍可能因构建与 OEM 修改而不同。
-
-详情见 [ShadowHook README](https://github.com/bytedance/android-inline-hook)。
-
-### 构建期字节码改写
-
-ASM/字节码改写不改进程中的 native 指令，也不受 linker relocation 限制。它只能处理进入构建输入且未被排除的 class；反射、JNI、动态下发代码和系统 framework 不在普通 class transform 的覆盖范围内。插入的探针仍有运行成本，替换调用还会改变异常、线程和资源语义。验证重点是 bytecode verifier、stack map frame、增量构建、R8、混淆 mapping 与多插件顺序。
+Matrix、KOOM、btrace 等工具会使用 PLT Hook、Inline Hook、ART/JVMTI 或构建期字节码改写，但“使用了 Hook”不足以证明兼容性。选型时至少记录目标符号、拦截位置、ABI、装载时机、链式调用规则、失败降级、4 KB/16 KB page size、BTI/PAC、CFI/unwind 和目标 ROM。具体实现、回调安全与验证矩阵统一放在 [Hook 基础设施与性能工具实现原理](26-hook-infrastructure.md)，本节不再重复维护两套原理说明。
 
 ## 工具选型指南
 
@@ -403,6 +388,26 @@ ASM/字节码改写不改进程中的 native 指令，也不受 linker relocatio
 **数据需要共同主键。** 卡顿、OOM、网络和启动数据若各自使用不同 session、时间源、版本号与用户匿名标识，事后无法关联。统一 monotonic/wall clock 换算、process start id、session id、build id、mapping id、ABI、page size 和采样配置，比统一 UI 更优先。
 
 **监控必须可关闭。** 远程开关应支持按模块、版本、设备层级和采样组关闭，并设本地最大磁盘、内存、CPU 时间、上传次数与超时。监控代码发生崩溃、ANR 或 OOM 时，要能确认它是否参与了事故。
+
+## 从信号到平台：统一可观测性口径
+
+三方 SDK 之外，还应先复用平台与 Jetpack 已有信号：
+
+| 信号 | 适合回答的问题 | 主要边界 |
+|---|---|---|
+| `JankStats` | Window 每帧的 jank 判断和 UI 状态 | 不负责上传、聚合、告警或生成 trace |
+| `FrameMetrics` | API 24+ 的 measure/layout、draw、sync、swap、deadline 等原始阶段耗时 | 低版本回退、jank 判断和状态管理要自行实现 |
+| `ApplicationExitInfo` | API 30+ 的进程退出 reason、importance、PSS/RSS 与可选 trace | 历史条数有限，trace 可能为空，隐藏 subreason 不是公开契约 |
+| `ProfilingManager` | API 35+ 由系统代采 system trace、heap dump/profile 和 stack trace | 配额、采集时机和交付由系统控制，详见 ProfilingManager 专章 |
+| Android Vitals | 分发侧的稳定线上基线 | 聚合口径不替代单次故障的本地证据 |
+
+平台内的数据也要分层：metric 是低成本数值，event 是离散事实，span 表示有起止的操作，profile 是较大的深度诊断产物，snapshot 则是 HPROF、tombstone、ANR trace 或截图。不要把它们都叫作“trace”，也不要用一种采样策略处理所有类型。
+
+自建 schema 至少保留 event time、monotonic time、session/process start、app/build/mapping ID、设备与系统版本、metric 单位、sampling rule/probability，以及大型 artifact 的 hash、大小、类型、加密和过期时间。数据模型必须能区分“没有发生”“没有采集”“被采样丢弃”“上传失败”和“解析失败”；把这些情况都存成 `null` 会让发生率与覆盖率失真。
+
+Session ID 表示一段使用期，trace ID 表示一次操作或请求树，两者不要由账号、手机号或设备标识直接生成。跨端传播优先使用 W3C `traceparent`，并只向允许的自有域名传播；URL、SQL、页面标题和堆对象等高基数字段应先归一化或哈希，HPROF、截图与 trace 使用独立权限和保留期。
+
+采样预算按数据类型分开：crash/ANR 事件可保持高覆盖，frame 与网络 span 采用稳定规则采样，大型 profile/snapshot 只在异常、系统触发或远程诊断窗口内获取。接入前后都要在低端设备上比较启动、帧、内存、功耗、磁盘和网络开销；远程开关必须能按模块熔断。
 
 ## 常见问题与误区
 
@@ -434,3 +439,8 @@ ASM/字节码改写不改进程中的 native 指令，也不受 linker relocatio
 - [Alpha](https://github.com/alibaba/alpha)
 - [Anchors](https://github.com/DSAppTeam/Anchors)
 - [AppInit](https://github.com/hacket/AppInit)
+- [JankStats API](https://developer.android.com/reference/androidx/metrics/performance/JankStats)
+- [Android Vitals](https://developer.android.com/topic/performance/vitals)
+- [ApplicationExitInfo API](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+- [Android 17 FrameMetrics](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java)
+- [OpenTelemetry Android](https://opentelemetry.io/docs/platforms/client-apps/android/)

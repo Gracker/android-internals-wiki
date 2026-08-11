@@ -33,7 +33,7 @@ sources:
   - type: aosp
     path: "Android common android16-6.12 drivers/android/binder.c"
 tags: ["sched-ext", "eBPF", "VIP调度", "OEM优化", "荣耀", "优先级传播", "Binder", "场景感知", "sched_ext"]
-related_chapters: ["5.1", "5.2", "5.3", "14.10", "17.4", "17.5"]
+related_chapters: ["5.1", "5.2", "5.3", "14.23", "17.4", "17.5"]
 ---
 
 # 17.8 MUSCHED 调度实践：VIP 队列、场景标注与跨进程优先级传播

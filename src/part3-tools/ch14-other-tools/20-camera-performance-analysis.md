@@ -1,8 +1,8 @@
 ---
 
 title: Android Camera 性能与 Perfetto 分析
-chapter: '14.9'
-section: '14.9'
+chapter: '14.20'
+section: '14.20'
 status: "finalized"
 drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
@@ -71,7 +71,7 @@ last_task2b_lite_at: "2026-07-13"
 ---
 
 
-# 14.9 Android Camera 性能与 Perfetto 分析
+# 14.20 Android Camera 性能与 Perfetto 分析
 
 Camera 性能问题通常横跨 App、Framework、HAL、内核驱动和显示系统。预览卡顿、拍照慢、录像丢帧、内存上涨分别对应不同观测点：有的看 `cameraserver` 和 HAL slice，有的看 BufferQueue，有的看 `CameraMetadataNative` 引用保留和 native allocation。
 

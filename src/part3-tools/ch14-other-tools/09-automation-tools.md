@@ -1,6 +1,6 @@
 ---
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-chapter: 14.6
+chapter: 14.9
 confidence: medium
 drafted_date: 2026-04-04
 last_task2b_at: "2026-05-22T07:21:00+08:00"
@@ -10,15 +10,15 @@ last_task6_review_log: logs/review/2026-05-22-08-review.md
 last_task9_at: "2026-05-22T07:43:01+08:00"
 last_task9_audit: 2026-05-22
 last_task9_review_log: logs/deep-review/2026-05-22-07-deep-review.md
-last_verified: 2026-04-26
-last_verified_against: "AndroidX docs + AndroidX Benchmark PowerMetric @RequiresApi(Q) + Android test docs + external review"
-related_chapters: 
+last_verified: 2026-07-30
+last_verified_against: "AndroidX Benchmark 1.4.1 stable + Android test docs + Android 17 / API 37 + android-17.0.0_r1"
+related_chapters: ["8.7", "13.9", "15.3", "15.6"]
 repaired_by: openclaw-task2b
 repaired_date: 2026-04-26
 review_round: 4
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-04"
-section: 14.6
+section: 14.9
 sources:
 - type: official
   path: developer.android.com/topic/performance/benchmarking
@@ -52,14 +52,14 @@ task9_state: "reviewed"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-30
 pipeline_stage: "ready-to-publish"
-title: 自动化测试工具
+title: 自动化性能测试与回归门禁
 updated_by: openclaw-task2b
 updated_date: 2026-04-26
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-10
 ---
 
-# 自动化测试工具
+# 14.9 自动化性能测试与回归门禁
 
 ## 为什么要用自动化工具做性能测试
 
@@ -444,6 +444,20 @@ JSON 的 `context` 包含设备型号、build fingerprint 和 CPU 等信息。�
 告警可采用“相对近期稳定窗口 + 绝对体验预算”双条件。相对窗口发现小幅持续退化，绝对预算防止历史基线本身已经过慢。命中告警后查看对应迭代 Trace；只靠百分比无法区分应用回归、温度变化、系统任务和云设备实例差异。
 
 Android 17 的平台分析锚点是 `android-17.0.0_r1`，内核侧是 [`android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)。量产设备通常还包含厂商内核提交、调频策略和 thermal 配置，所以同为 API 37 也不能直接合并结果。趋势库必须以设备 build fingerprint 分组。
+
+### 门禁统计与噪声处理
+
+不同指标使用不同摘要：启动以 median 为主并保留每次迭代值；帧指标查看 `frameOverrunMs` 的 p90/p95/p99 并保存慢帧 trace；自定义 section 明确 count、sum 或 first；功耗只做同机、稳定窗口的系统级 A/B。一次 benchmark invocation 内的多个 iteration 共享温度、缓存和后台状态，不能当作多个独立设备样本。
+
+AndroidX JSON schema 会随库版本扩展。门禁前先把原始结果转换为内部稳定结构，并校验 benchmark、metric、unit、device/build fingerprint、compilation mode、iteration 数、APK hash 和实验区组。字段缺失时中止比较，不把缺失值当成 0。
+
+稳定门禁采用配对设计：同一设备和环境区组内分别运行 baseline 与 candidate，交替或随机安排顺序，每次 invocation 先形成一个摘要，再把多轮独立摘要组成 pairs。预算同时包含业务定义的绝对增量和相对增量；样本不足直接拒绝比较，置信区间跨越门槛时标为 inconclusive，待设备冷却后补充独立配对。不能重复抽样同一次 invocation 的 iteration 来凑独立样本。
+
+噪声控制至少记录电量与充电状态、thermal、CPU frequency/idle、刷新率、后台账号与每轮时间。若后半段随温度单调变慢，应停止并冷却设备。网络使用固定离线数据、测试服务器或录制响应，账号、缓存、AB flag 和列表内容都要固定。
+
+`StartupMode.COLD` 会停止目标进程，默认配置还可能清理 shader cache 并请求系统清理 page cache；这不等于设备重启后的所有缓存都为空。DNS、GPU 驱动、系统服务和业务数据缓存各有生命周期。page cache 清理影响整机，同一性能设备上不要并行运行其它任务，也不要在外层脚本重复清理。
+
+指标退化后，找到 candidate 的异常迭代及同设备 baseline，按相同 journey 边界比较 trace：启动检查 process start、Binder、class load、GC、I/O 和首帧；帧问题检查 FrameTimeline、UI thread、RenderThread、GPU 与 SurfaceFlinger；最后用版本化 Trace Processor SQL 量化同一时间窗。门禁负责发现回归，trace 负责解释原因。
 
 ## 在 Perfetto 中的表现
 

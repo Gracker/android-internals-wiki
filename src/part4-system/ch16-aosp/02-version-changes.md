@@ -46,7 +46,7 @@ sources:
   - type: source
     path: "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java"
 tags: ['version-changes', 'behavior-changes', 'api-evolution', 'migration', 'performance-api']
-related_chapters: ["1.6", "2.9", "4.6", "5.7", "6.4", "9.2", "13.1", "14.7"]
+related_chapters: ["1.6", "2.9", "4.6", "5.7", "6.4", "9.2", "13.1", "14.11"]
 task6_state: reviewed
 task6_result: "pass-light-edit"
 reviewed_by: openclaw-task6

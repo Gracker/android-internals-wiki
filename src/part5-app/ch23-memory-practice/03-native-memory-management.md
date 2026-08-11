@@ -33,7 +33,7 @@ sources:
   - type: blog
     path: "Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md"
 tags: [native-memory, malloc, asan, hwasan, so-memory]
-related_chapters: ["23.2", "4.1", "4.2", "10.1", "14.3"]
+related_chapters: ["23.2", "4.1", "4.2", "10.1", "14.5"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -65,7 +65,7 @@ last_deepseek_cn_review_at: 2026-06-11
 
 Java Heap 没有持续增长，不代表进程的内存占用稳定。使用 JNI、音视频 SDK、地图 SDK、游戏引擎、图片库或加密库的应用，Native Heap、匿名 `mmap`、共享库映射和图形缓冲都可能让 PSS 上升。后果可能是后台进程更早被回收、前台发生内存压力或 native crash。
 
-应用侧排查先确认增长属于哪一种系统统计，再按问题类型选择 heapprofd、`libmemunreachable`、malloc_debug、ASan、HWASan、GWP-ASan 或 MTE。容量问题与非法访问需要不同证据：前者关注分配栈和存活量，后者关注越界、释放后访问等错误现场。底层内存模型详见 4.1、4.2 节，工具细节详见 14.3 节。
+应用侧排查先确认增长属于哪一种系统统计，再按问题类型选择 heapprofd、`libmemunreachable`、malloc_debug、ASan、HWASan、GWP-ASan 或 MTE。容量问题与非法访问需要不同证据：前者关注分配栈和存活量，后者关注越界、释放后访问等错误现场。底层内存模型详见 4.1、4.2 节，工具细节详见 14.5 节。
 
 ## Native 内存由哪些部分组成
 

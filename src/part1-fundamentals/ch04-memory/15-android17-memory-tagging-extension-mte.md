@@ -8,7 +8,7 @@ last_verified: "2026-07-06"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 tags: [Android 17, MTE, Memory Safety, ARM, Hardware Architecture, Scudo, Bionic]
-related_chapters: ["20.11", "4.5", "14.3", "23.3"]
+related_chapters: ["20.11", "4.5", "14.5", "23.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-06"
 gap_source: "研究素材"

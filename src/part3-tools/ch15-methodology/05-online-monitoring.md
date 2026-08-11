@@ -54,7 +54,7 @@ sources:
   - type: aosp
     path: "packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java"
 tags: [monitoring, APM, FrameMetrics, JankStats, ANR, startup, production]
-related_chapters: ["7.1", "7.3", "8.1", "9.3", "14.1", "14.6", "14.12", "15.3", "15.4", "15.9", "15.10"]
+related_chapters: ["7.1", "7.3", "8.1", "9.3", "14.1", "14.9", "14.10", "15.3", "15.4", "15.9", "15.10"]
 pipeline_stage: ready-to-publish
 task2b_result: fixed
 task2b_state: fixed
@@ -594,7 +594,7 @@ Vitals 的 UI Toolkit 渲染统计不覆盖直接 OpenGL/Vulkan 主画面；游�
 - §2.4、§7.1、§8.1 解释 Choreographer、FrameTimeline 与图形流水线。
 - §7.3 提供卡顿归因步骤。
 - §9.3 解释系统 ANR 类型、超时与 trace 分析。
-- §14.6、§14.27 说明测试与 Macrobenchmark 门禁。
+- §14.9 说明自动化测试与 Macrobenchmark 回归门禁。
 - §15.3 定义指标合同、SLO 与 Google Play 外部口径。
 - §15.4 讨论跨应用测量时的可比性。
 - §15.9 将监控、实验、修复和验证组织成持续流程。

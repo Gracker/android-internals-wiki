@@ -21,7 +21,7 @@ sources:
   - type: blog
     path: "Android NDK r23 release notes — FP unwinding default"
 tags: [native, crash, stack-unwinding, symbolication, ndk, elf, tombstone, cfi]
-related_chapters: ["20.3", "9.3", "14.2", "14.13"]
+related_chapters: ["20.3", "9.3", "14.2", "14.26"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-26"
 gap_source: "素材驱动/参考书"
@@ -512,7 +512,7 @@ Android 17 的 `crash_dump` 同时保存可能带 tag 的 fault address 与去 t
 - 20.3：Native Crash 信号类型、采集治理与线上处置。
 - 20.11：MTE 的同步/异步模式、诊断信息与灰度策略。
 - 20.13：16 KB 页下的 ELF、打包和第三方库兼容。
-- 14.2、14.13：ART/JNI 与 native 内存相关基础。
+- 14.2、14.26：ART/JNI 与 native 内存相关基础。
 
 ## 源码与官方资料
 
