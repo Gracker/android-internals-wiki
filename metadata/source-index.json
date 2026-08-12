@@ -38,9 +38,13 @@
       "status": "applied",
       "applied_at": "2026-07-19T18:27:36+08:00",
       "applied_run_id": "20260719-182618-1abc2d42",
-      "target_path": "src/part4-system/ch17-oem/17.21-android17-soc-vendor-power-hal-schedutil-loop.md",
+      "target_path": null,
       "previous_action": "indexed-only-chapter-freeze",
-      "canonical_target_chapter": "ch17"
+      "canonical_target_chapter": "ch17",
+      "previous_route_status": null,
+      "previous_target_path": "src/part4-system/ch17-oem/17.21-android17-soc-vendor-power-hal-schedutil-loop.md",
+      "route_status": "target-missing-after-consolidation",
+      "notes": "target removed in content consolidation; needs human/auto reroute"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-android17-art-markcompact-young-wrapper-source-verification.md",
@@ -219,8 +223,12 @@
       "status": "applied",
       "applied_at": "2026-07-19T18:30:46+08:00",
       "applied_run_id": "20260719-183046-4ec5ae7e",
-      "target_path": "src/part1-fundamentals/ch05-cpu-power/5.33-android17-performance-score-attribution-sourcecode.md",
-      "canonical_target_chapter": "ch05"
+      "target_path": null,
+      "canonical_target_chapter": "ch05",
+      "previous_route_status": null,
+      "previous_target_path": "src/part1-fundamentals/ch05-cpu-power/5.33-android17-performance-score-attribution-sourcecode.md",
+      "route_status": "target-missing-after-consolidation",
+      "notes": "target removed in content consolidation; needs human/auto reroute"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-16-android17-oem-background-restriction.md",
@@ -230,7 +238,7 @@
       "section": "17.1",
       "processed_at": "2026-07-17T06:14:31.983422",
       "action": "body-applied",
-      "target_path": "src/part5-app/ch25-power-size/25-android17-oem-background-restriction-power-diagnosis.md",
+      "target_path": null,
       "route_confidence": 25,
       "route_terms": [
         "厂商差异化省电策略",
@@ -241,13 +249,16 @@
         "bg-restriction-exemption",
         "配置豁免"
       ],
-      "route_status": "existing-chapter-routed",
+      "route_status": "target-missing-after-consolidation",
       "routed_at": "2026-07-25T13:53:24.486291+08:00",
       "previous_action": "indexed-only-chapter-freeze",
       "status": "applied",
       "applied_at": "2026-07-25T15:18:53+08:00",
       "applied_run_id": "20260725-151525-21e58a30",
-      "canonical_target_chapter": "ch25"
+      "canonical_target_chapter": "ch25",
+      "previous_route_status": "existing-chapter-routed",
+      "previous_target_path": "src/part5-app/ch25-power-size/25-android17-oem-background-restriction-power-diagnosis.md",
+      "notes": "target removed in content consolidation; needs human/auto reroute"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md",
@@ -266,7 +277,7 @@
       "section": "14.13",
       "processed_at": "2026-07-17T06:14:31.983422",
       "action": "body-applied",
-      "target_path": "src/part5-app/ch20-stability/20.15-native-hook-technology-selection-implementation.md",
+      "target_path": null,
       "route_confidence": 64,
       "route_terms": [
         "native",
@@ -278,13 +289,16 @@
         "rtld",
         "lazy"
       ],
-      "route_status": "existing-chapter-routed",
+      "route_status": "target-missing-after-consolidation",
       "routed_at": "2026-07-25T13:53:24.486291+08:00",
       "status": "applied",
       "applied_at": "2026-07-28T07:15:05+08:00",
       "applied_run_id": "20260728-071505-5c898420",
       "previous_action": "indexed-only-chapter-freeze",
-      "canonical_target_chapter": "ch20"
+      "canonical_target_chapter": "ch20",
+      "previous_route_status": "existing-chapter-routed",
+      "previous_target_path": "src/part5-app/ch20-stability/20.15-native-hook-technology-selection-implementation.md",
+      "notes": "target removed in content consolidation; needs human/auto reroute"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-windowmanager-architecture-sourcecode.md",
@@ -315,8 +329,12 @@
       "previous_action": "direct-inject",
       "applied_at": "2026-07-20T07:15:21+08:00",
       "applied_run_id": "20260720-071521-dbc00327",
-      "target_path": "src/part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md",
-      "canonical_target_chapter": "ch22"
+      "target_path": null,
+      "canonical_target_chapter": "ch22",
+      "previous_route_status": null,
+      "previous_target_path": "src/part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md",
+      "route_status": "target-missing-after-consolidation",
+      "notes": "target removed in content consolidation; needs human/auto reroute"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-cloud-profiles-systemserver-onboot.md",
@@ -355,7 +373,7 @@
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
       "action": "body-applied",
       "score": 19,
-      "target_path": "src/part1-fundamentals/ch01-architecture/1.66-android17-windowmanager-architecture-performance.md",
+      "target_path": null,
       "route_confidence": 37,
       "route_terms": [
         "windowmanagerservice",
@@ -367,13 +385,16 @@
         "addwindow",
         "windowtoken"
       ],
-      "route_status": "existing-chapter-routed",
+      "route_status": "target-missing-after-consolidation",
       "routed_at": "2026-07-25T13:53:24.486291+08:00",
       "previous_action": "indexed-only-chapter-freeze",
       "status": "applied",
       "applied_at": "2026-07-26T07:15:29+08:00",
       "applied_run_id": "20260726-071529-abfc0d7c",
-      "canonical_target_chapter": "ch01"
+      "canonical_target_chapter": "ch01",
+      "previous_route_status": "existing-chapter-routed",
+      "previous_target_path": "src/part1-fundamentals/ch01-architecture/1.66-android17-windowmanager-architecture-performance.md",
+      "notes": "target removed in content consolidation; needs human/auto reroute"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android3-video-rendering-pipeline-sourcecode.md",
@@ -387,7 +408,7 @@
       "status": "applied",
       "applied_at": "2026-07-25T17:15:40+08:00",
       "applied_run_id": "20260725-171540-c68b5cac",
-      "target_path": "src/part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md",
+      "target_path": null,
       "route_confidence": 34,
       "route_terms": [
         "media3",
@@ -399,9 +420,12 @@
         "mode",
         "setoutputsurface"
       ],
-      "route_status": "existing-chapter-routed",
+      "route_status": "target-missing-after-consolidation",
       "routed_at": "2026-07-25T13:53:24.486291+08:00",
-      "canonical_target_chapter": "ch22"
+      "canonical_target_chapter": "ch22",
+      "previous_route_status": "existing-chapter-routed",
+      "previous_target_path": "src/part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md",
+      "notes": "target removed in content consolidation; needs human/auto reroute"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md",
@@ -415,8 +439,12 @@
       "status": "applied",
       "applied_at": "2026-07-20T07:15:21+08:00",
       "applied_run_id": "20260720-071521-dbc00327",
-      "target_path": "src/part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md",
-      "canonical_target_chapter": "ch22"
+      "target_path": null,
+      "canonical_target_chapter": "ch22",
+      "previous_route_status": null,
+      "previous_target_path": "src/part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md",
+      "route_status": "target-missing-after-consolidation",
+      "notes": "target removed in content consolidation; needs human/auto reroute"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-cloud-profiles-systemserver-onboot.md",
@@ -430,8 +458,12 @@
       "score": 17,
       "applied_at": "2026-07-19T22:16:26+08:00",
       "applied_run_id": "20260719-221555-b0bff823",
-      "target_path": "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md",
-      "canonical_target_chapter": "ch25"
+      "target_path": null,
+      "canonical_target_chapter": "ch25",
+      "previous_route_status": null,
+      "previous_target_path": "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md",
+      "route_status": "target-missing-after-consolidation",
+      "notes": "target removed in content consolidation; needs human/auto reroute"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md",
@@ -439,7 +471,7 @@
       "summary": "拆解 DisplayModeController 四态状态机、RefreshRateSelector 三组输入评分（Layer vote + Global Signals + Policy）、getRankedFrameRatesLocked 浮点分曲线、FrameRateOverrideMappings 双路 override 合并、modeset_state_machine flag 双槽/单槽切换。",
       "chapter": "ch02",
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
       "score": 19,
       "target_path": "src/part1-fundamentals/ch02-rendering/34-display-mode-refresh-rate-selection.md",
       "route_confidence": 45,
@@ -455,7 +487,11 @@
       ],
       "route_status": "existing-chapter-routed",
       "routed_at": "2026-07-25T13:53:24.486291+08:00",
-      "canonical_target_chapter": "ch02"
+      "canonical_target_chapter": "ch02",
+      "previous_action": "indexed-only-chapter-freeze",
+      "status": "applied",
+      "applied_at": "2026-08-10T19:15:18+08:00",
+      "applied_run_id": "20260810-191518-8c420f19"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-18-76250748-Android现代架构不需要事件总.md",
@@ -1048,7 +1084,7 @@
       "processed_at": "2026-07-23T06:20:34.268771+08:00",
       "action": "body-applied",
       "score": 19,
-      "target_path": "src/part1-fundamentals/ch01-architecture/01.26-messagqueue-deliqueue-optimization.md",
+      "target_path": null,
       "route_confidence": 31,
       "route_terms": [
         "lock-free",
@@ -1060,13 +1096,16 @@
         "无锁入队",
         "looper"
       ],
-      "route_status": "existing-chapter-routed",
+      "route_status": "target-missing-after-consolidation",
       "routed_at": "2026-07-25T13:53:24.486291+08:00",
       "previous_action": "indexed-only-chapter-freeze",
       "status": "applied",
       "applied_at": "2026-07-25T19:15:51+08:00",
       "applied_run_id": "20260725-191551-6f04a0a1",
-      "canonical_target_chapter": "ch01"
+      "canonical_target_chapter": "ch01",
+      "previous_route_status": "existing-chapter-routed",
+      "previous_target_path": "src/part1-fundamentals/ch01-architecture/01.26-messagqueue-deliqueue-optimization.md",
+      "notes": "target removed in content consolidation; needs human/auto reroute"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-morning-CC-iOS模拟器-HF评测越狱-AGENTS评审规则-研究材料/master-research.md",
@@ -1157,8 +1196,12 @@
       "status": "applied",
       "applied_at": "2026-07-24T07:15:55+08:00",
       "applied_run_id": "20260724-071534-2a71a09c",
-      "target_path": "src/part5-app/ch26-observability/29-jvmti-agent-art-runtime-dynamic-monitoring.md",
-      "canonical_target_chapter": "ch26"
+      "target_path": null,
+      "canonical_target_chapter": "ch26",
+      "previous_route_status": null,
+      "previous_target_path": "src/part5-app/ch26-observability/29-jvmti-agent-art-runtime-dynamic-monitoring.md",
+      "route_status": "target-missing-after-consolidation",
+      "notes": "target removed in content consolidation; needs human/auto reroute"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-24-76369472-能告诉我：你为什么用 MVI 吗？反正我不理解！.md",
@@ -1259,8 +1302,12 @@
       "status": "body-applied",
       "applied_at": "2026-07-25T07:15:14+08:00",
       "applied_run_id": "20260725-071514-c8dfcc93",
-      "target_path": "src/part5-app/ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md",
-      "canonical_target_chapter": "ch22"
+      "target_path": null,
+      "canonical_target_chapter": "ch22",
+      "previous_route_status": null,
+      "previous_target_path": "src/part5-app/ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md",
+      "route_status": "target-missing-after-consolidation",
+      "notes": "target removed in content consolidation; needs human/auto reroute"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-25-76369472-能告诉我-你为什么用-MVI-吗-反正我不理解.md",
@@ -1846,9 +1893,9 @@
       "summary": "--- source: opencli-twitter fetched: 2026-07-30 research_topic: Harness memory and substitutable model system --- # Primary X signals (opencli twitter) ## OpenAI ARC-AGI-3 harness thread ### @OpenAI 2082616636989952217 G",
       "chapter": "ch16",
       "processed_at": "2026-07-31T06:20:37.476501+08:00",
-      "action": "quarantined-misroute",
+      "action": "needs-reroute",
       "score": 0,
-      "target_path": "src/part1-fundamentals/ch06-storage/6.03-Android-17-SharedPreferencesImpl-ANR机制.md",
+      "target_path": null,
       "route_confidence": 28,
       "route_terms": [
         "research",
@@ -1860,7 +1907,7 @@
         "aiw",
         "references"
       ],
-      "route_status": "quarantined-misroute-3x-rejected",
+      "route_status": "target-missing-after-consolidation",
       "rejected_at": "2026-07-31T13:15:33+08:00",
       "rejected_run_id": "20260731-131533-d602fc9b",
       "rejected_reason": "Material is AI agent harness/memory X-signals (OpenAI ARC-AGI-3, Nadella, Kimi K3, T3 Code); target is AOSP SharedPreferencesImpl ANR chapter. Zero topical overlap; route_confidence=28 with generic stopwords. Prevented fabrication.",
@@ -1887,7 +1934,10 @@
       "re_surfaced_7th_run_id": "20260801-111545-40ce0efd",
       "re_surfaced_7th_action": "body-apply-rejected-misroute-fail-closed",
       "re_surfaced_7th_reason": "7th selector re-surface of quarantined-misroute-3x-rejected item (run 20260801-111545-40ce0efd). Material verified again: 100% AI-agent-harness/LLM content (OpenAI ARC-AGI-3 retained reasoning/context compaction, Nadella substitutable-model-system, Unsloth K3 1-bit, T3 Code iOS/Android). Target src/part1-fundamentals/ch06-storage/6.03-Android-17-SharedPreferencesImpl-ANR机制.md is AOSP SharedPreferencesImpl/QueuedWork/ANR (android-17.0.0_r1). Zero topical overlap; route_confidence=28; all route_terms are stopwords. Fail-closed: no chapter body change, no SUMMARY change, no new file, no fabrication. ROOT CAUSE FIXED this run: selector aiw-body-apply-context.py only checked the action field against a skip-set that did NOT contain \"quarantined-misroute\", so route_status=quarantined-* items leaked through. Added route_status.startswith(\"quarantined\") and action.startswith(\"quarantined\") guards plus route_confidence<30 skip. Re-ran selector after fix -> no-new-input (quarantined item correctly skipped, no other routable candidate).",
-      "canonical_target_chapter": "ch06"
+      "canonical_target_chapter": "ch06",
+      "previous_route_status": "quarantined-misroute-3x-rejected",
+      "previous_target_path": "src/part1-fundamentals/ch06-storage/6.03-Android-17-SharedPreferencesImpl-ANR机制.md",
+      "notes": "target removed in content consolidation; needs human/auto reroute"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-30-morning-Harness记忆-可替换模型-研究材料/references/06-t3-architecture.md",
@@ -2115,9 +2165,9 @@
       "summary": "--- phase: 1 topic: 科研 Agent 结果验收 created: 2026-08-04 tags: [ai-agent, research-agent, verification, opencli-twitter] sources: [opencli-twitter, x-brief] --- ## 执行摘要 - 本次产出文件：`/Users/chris/Library/Mobile Documents/iCloud",
       "chapter": "ch16",
       "processed_at": "2026-08-05T06:20:24.157313+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "needs-reroute",
       "score": 19,
-      "target_path": "src/part1-fundamentals/ch01-architecture/1.49-Android-17-Staged-Install-状态机-提交-恢复链路.md",
+      "target_path": null,
       "route_confidence": 25,
       "route_terms": [
         "research",
@@ -2128,9 +2178,12 @@
         "sources",
         "aiw"
       ],
-      "route_status": "provisional-low-confidence",
+      "route_status": "target-missing-after-consolidation",
       "canonical_target_chapter": "ch01",
-      "route_migration_reason": "route_confidence 25 below shared threshold 30"
+      "route_migration_reason": "route_confidence 25 below shared threshold 30",
+      "previous_route_status": "provisional-low-confidence",
+      "previous_target_path": "src/part1-fundamentals/ch01-architecture/1.49-Android-17-Staged-Install-状态机-提交-恢复链路.md",
+      "notes": "target removed in content consolidation; needs human/auto reroute"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-04-Agent验收-实时语音-权限边界-研究材料/master-research.md",
@@ -2138,9 +2191,9 @@
       "summary": "--- phase: 1 topic: 开放权重 Agent 模型验收、实时语音 Agent、企业连接器权限 created: 2026-08-04 tags: [ai-agent, deep-research, opencli-twitter] sources: [opencli-twitter, x-brief] --- ## 执行摘要 - 本次产出文件：[[DeepResearch/2026-08-04-Agent验收-实时语音-",
       "chapter": "ch16",
       "processed_at": "2026-08-05T06:20:24.157313+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "needs-reroute",
       "score": 19,
-      "target_path": "src/part3-tools/ch13-perfetto/13.27-android17-perfetto-v57-ai-skill-state-tracks.md",
+      "target_path": null,
       "route_confidence": 25,
       "route_terms": [
         "research",
@@ -2151,9 +2204,12 @@
         "sources",
         "aiw"
       ],
-      "route_status": "provisional-low-confidence",
+      "route_status": "target-missing-after-consolidation",
       "canonical_target_chapter": "ch13",
-      "route_migration_reason": "route_confidence 25 below shared threshold 30"
+      "route_migration_reason": "route_confidence 25 below shared threshold 30",
+      "previous_route_status": "provisional-low-confidence",
+      "previous_target_path": "src/part3-tools/ch13-perfetto/13.27-android17-perfetto-v57-ai-skill-state-tracks.md",
+      "notes": "target removed in content consolidation; needs human/auto reroute"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Gracker的Rss订阅/2026-08-06-Gracker的Rss订阅.md",
@@ -2275,9 +2331,9 @@
       "summary": "--- phase: 1 sub_question: Sol Advisor 验收闸门 + AGENTS.md 生产改写 + Codex harness 下一代叙事 official_material_status: Sol=已抓官方文档; AGENTS八条=二手转述+agents.md站点; Codex=个人工程帖 --- # Dump · 验收闸门与规则层 ## A. Sol Advisor（GitHub README + Luna",
       "chapter": "ch16",
       "processed_at": "2026-08-06T06:20:37.666993+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "needs-reroute",
       "score": 17,
-      "target_path": "src/part3-tools/ch13-perfetto/13.27-android17-perfetto-v57-ai-skill-state-tracks.md",
+      "target_path": null,
       "route_confidence": 25,
       "route_terms": [
         "dump",
@@ -2288,9 +2344,12 @@
         "github",
         "aiw"
       ],
-      "route_status": "provisional-low-confidence",
+      "route_status": "target-missing-after-consolidation",
       "canonical_target_chapter": "ch13",
-      "route_migration_reason": "route_confidence 25 below shared threshold 30"
+      "route_migration_reason": "route_confidence 25 below shared threshold 30",
+      "previous_route_status": "provisional-low-confidence",
+      "previous_target_path": "src/part3-tools/ch13-perfetto/13.27-android17-perfetto-v57-ai-skill-state-tracks.md",
+      "notes": "target removed in content consolidation; needs human/auto reroute"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-05-morning-LFM25-Jetpacker-AGENTS-Sol-研究材料/02-dump-jetpacker-hybrid.md",
@@ -2664,6 +2723,191 @@
       "summary": "--- source: https://arxiv.org/abs/2607.28802 title: Model or Harness? An Interaction-Centric Taxonomy for Localizing Agent Failures fetched: 2026-08-09T21:10:00 research_topic: Agent 失败归因表 sub_question: 论文原文核验 --- ## 执行摘",
       "chapter": "ch16",
       "processed_at": "2026-08-10T06:20:29.071207+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "[RSS订阅] 给旧高通内核补 gpu_frequency tracepoint，让 Perfetto 显示 GPU 频率",
+      "title": "[RSS订阅] 给旧高通内核补 gpu_frequency tracepoint，让 Perfetto 显示 GPU 频率",
+      "summary": "Perfetto UI 的 GPU 频率轨道依赖 Linux 标准 tracepoint `power/gpu_frequency`，而基于 Linux 4.9 的高通 BSP（如 sdm710）在 `include/trace/events/power.h` 中没有定义该事件，KGSL 驱动只上报自有的 `trace_kgsl_pwrlevel`，导致抓到的 trace 里既无频率折线也查不到对应 counter 数据。作者的修法是先在标准电源头文件中补齐 `gpu_frequency` 宏定义（参数为频率与 gpu_id），再在 `drivers/gpu/msm/kgsl_pwrctrl.c` 的频率切换函数中补一次事件触发，重新编译 boot.img 刷机后 Perfetto UI 与 SQL 查询均可取到 GPU 频率数据。",
+      "chapter": "ch05",
+      "processed_at": "2026-08-11T06:20:49.092108+08:00",
+      "action": "needs-reroute",
+      "score": 17,
+      "target_path": null,
+      "route_confidence": 33,
+      "route_terms": [
+        "rss",
+        "frequency",
+        "tracepoint",
+        "linux",
+        "power",
+        "include",
+        "trace",
+        "events"
+      ],
+      "route_status": "target-missing-after-consolidation",
+      "previous_route_status": "existing-chapter-routed",
+      "previous_target_path": "src/part1-fundamentals/ch05-cpu-power/5.32-linux-610-bpf-dvfs-schedutil-loop.md",
+      "notes": "target removed in content consolidation; needs human/auto reroute"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-11-76302986-Android开发快3倍Google说的.md",
+      "title": "[技术文章] Android 开发快 3 倍！Google 说的Google 提供了一套对大模型友好的命令行工具（CLI），并且配套下",
+      "summary": "> 发布时间: 2026-04-20T00:56:04.000Z > 原文链接: https://juejin.cn/post/7630298684077391923 2026-04-20 2,400 阅读6分钟 Android Learning 上周五晚上的时候，我看到一条 Android 博客消息： Android CLI and skills: Build Andr...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-11T06:20:49.092108+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-11-76357025-安卓黑科技多平台商品详情页一键跳转APP.md",
+      "title": "[技术文章] 安卓黑科技：实现多平台商品详情页一键跳转APP安卓黑科技：实现多平台商品详情页一键跳转APP 一、开篇引入 在如今的移动",
+      "summary": "> 发布时间: 2026-05-04T14:16:37.000Z > 原文链接: https://juejin.cn/post/7635702552887115827 2026-05-04 1,192 阅读26分钟 在如今的移动互联网时代，电商购物和短视频娱乐已成为我们生活中不可或缺的一部分。你是否有过这样的体验：在浏览网页或者使用某些应用时，看到一款心仪的商品，比如在抖...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-11T06:20:49.092108+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-11-76373536-Android终于做桌面了三星DeX早已把路趟完.md",
+      "title": "[技术文章] Android 终于做桌面了，而三星 DeX 早已把路趟完今年3月，Google 在 Android Developer",
+      "summary": "> 发布时间: 2026-05-09T00:53:04.000Z > 原文链接: https://juejin.cn/post/7637353693052600366 2026-05-09 1,230 阅读4分钟 > 本文首发于公众号”Android技术圈“ 今年3月，Google 在 Android Developers 博客里正式把 connected display...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-11T06:20:49.092108+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-11-76443945-升级Flutter3.44踩HCPP和AGP9的坑.md",
+      "title": "[技术文章] 升级Flutter 3.44，我踩了HCPP和AGP 9的坑Flutter 3.44跟着Google I/O 2026一",
+      "summary": "> 发布时间: 2026-05-27T09:04:23.000Z > 原文链接: https://juejin.cn/post/7644394520038654015 2026-05-27 1,521 阅读5分钟 Flutter 3.44跟着Google I/O 2026一起发了，我周末升级了一下项目，踩了不少坑，写出来给准备升级的同学参考。 我项目里嵌了不少原生Andr...",
+      "chapter": "ch06",
+      "processed_at": "2026-08-11T06:20:49.092108+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-10-evening-本地常驻Agent三层边界-研究材料/master-research.md",
+      "title": "[DeepResearch] 2026-08-10 evening DeepResearch · 本地常驻 Agent 三层边界",
+      "summary": "--- date: 2026-08-10 tags: [ai-agent, local-agent, runtime, safety, inference] sources: [opencli-twitter, obsidian] --- ## 执行摘要 - 本材料包：`/Users/chris/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepRese",
+      "chapter": "ch16",
+      "processed_at": "2026-08-11T06:20:49.092108+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-10-morning-AgentHarness安全与性能-研究材料/master-research.md",
+      "title": "[DeepResearch] 2026-08-10 morning DeepResearch · Agent harness 安全与性能",
+      "summary": "--- date: 2026-08-10 tags: [ai-agent, research] sources: [opencli-twitter, obsidian] --- ## 执行摘要 - 本次产出材料包：`/Users/chris/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-10-morning-Agen",
+      "chapter": "ch16",
+      "processed_at": "2026-08-11T06:20:49.092108+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-12-76302986-Android开发快3倍Google说的.md",
+      "title": "[技术文章] Android 开发快 3 倍！Google 说的Google 提供了一套对大模型友好的命令行工具（CLI），并且配套下",
+      "summary": "> 发布时间: 2026-04-20T00:56:04.000Z > 原文链接: https://juejin.cn/post/7630298684077391923 2026-04-20 2,416 阅读6分钟 Android Learning 上周五晚上的时候，我看到一条 Android 博客消息： Android CLI and skills: Build Andr...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-12T06:20:08.099535+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-12-76357025-安卓黑科技：实现多平台商品详情页一键跳转.md",
+      "title": "[技术文章] 安卓黑科技：实现多平台商品详情页一键跳转APP安卓黑科技：实现多平台商品详情页一键跳转APP 一、开篇引入 在如今的移动",
+      "summary": "> 发布时间: 2026-05-04T14:16:37.000Z > 原文链接: https://juejin.cn/post/7635702552887115827 2026-05-04 808 阅读26分钟 在如今的移动互联网时代，电商购物和短视频娱乐已成为我们生活中不可或缺的一部分。你是否有过这样的体验：在浏览网页或者使用某些应用时，看到一款心仪的商品，比如在抖音上...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-12T06:20:08.099535+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-12-76366645-彻底告别Flutter屏幕适配底层玩法.md",
+      "title": "[技术文章] 彻底告别 .w/.h/.sp！Flutter 屏幕适配的底层玩法，一次接入全局生效你是不是也被这些坑折磨过？ 做 F",
+      "summary": "> 发布时间: 2026-05-07T01:29:18.000Z > 原文链接: https://juejin.cn/post/7636664584355250222 用户9542157333485 2026-05-07 981 阅读7分钟 做 Flutter 的同学，屏幕适配这道坎几乎人人都绕不过去。 设计师只给一套 375×667 的稿子，产品说\"要和设计稿一模一样\"...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-12T06:20:08.099535+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-12-76444766-学吧Android全新的嵌入式照片选择器.md",
+      "title": "[技术文章] 学吧！Android 全新的嵌入式照片选择器AndroidX 推出了全新的嵌入式照片选择器（EmbeddedPhotoP",
+      "summary": "> 发布时间: 2026-05-28T00:39:32.000Z > 原文链接: https://juejin.cn/post/7644476634998538249 2026-05-28 1,193 阅读5分钟 2022 年，Android 团队推出了照片选择器，让用户能更隐私地分享媒体文件。用户可以通过可浏览的界面按日期从新到旧查看媒体库，并且只授予应用访问所选文件的...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-12T06:20:08.099535+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-12-juejin-android.md",
+      "title": "[技术文章] 掘金 Android 技术文章抓取 · 2026-08-12",
+      "summary": "> 抓取源：掘金 Android 分类（id_type=2, sort_type=200, cate_id=6809635626879549454），分页拉取前 40 条候选，按 view>=1000 | collect>=30 | digg>=20 初筛后用 opencli web read 拉正文，最终以 10 分制评分，仅保留 > 7.0 的条目。 > 全部候选均...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-12T06:20:08.099535+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-11-evening-Xirp-Agent工作台-研究材料/references/Xirp_—_Know_your_systems,_so_your_agents_can_too/Xirp_—_Know_your_systems,_so_your_agents_can_too.md",
+      "title": "[DeepResearch] Xirp — Know your systems, so your agents can too",
+      "summary": "# Xirp — Know your systems, so your agents can too > 原文链接: https://xirp.spotify.com/ --- XirpPortal Tap into the full potential of Xirp. Request access to your own Portal instance, included with the beta. ![The Xirp desk",
+      "chapter": "ch16",
+      "processed_at": "2026-08-12T06:20:08.099535+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-11-morning-Agent运行栈与手机QA-研究材料/quality-gate.md",
+      "title": "[DeepResearch] quality-gate",
+      "summary": "--- phase: 2c topic: 让 Agent 控制真机之后，Android QA 还差三层证据 created: 2026-08-11 --- ## 执行摘要 - 质检对象：`/Users/chris/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Content/Drafts/2026-08-11-草稿-让Agent控制真机之后AndroidQA",
+      "chapter": "ch16",
+      "processed_at": "2026-08-12T06:20:08.099535+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-11-morning-Agent运行栈与手机QA-研究材料/master-research.md",
+      "title": "[DeepResearch] Master Research: Agent 运行栈与手机 QA",
+      "summary": "--- phase: master topic: Agent 运行栈、团队 coding agent 工作台、手机 Agent QA、Agent 安全默认值 created: 2026-08-11 tags: [ai-agent, android-ai-perf, coding-agent, research] --- ## 执行摘要 - 材料包：`/Users/chris/Library/Mobile Documents/iCloud",
+      "chapter": "ch16",
+      "processed_at": "2026-08-12T06:20:08.099535+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-11-morning-Agent运行栈与手机QA-研究材料/references/04-mobile-harness-twitter-and-github.md",
+      "title": "[DeepResearch] 04-mobile-harness-twitter-and-github",
+      "summary": "--- source: https://x.com/nielsmdt99/status/2086764772914082004 + https://github.com/droidrun/mobile-harness source_type: opencli-twitter-and-google-result title: mobile-harness / mobilerun-core 信号归档 fetched: 2026-08-11",
+      "chapter": "ch16",
+      "processed_at": "2026-08-12T06:20:08.099535+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-11-morning-Agent运行栈与手机QA-研究材料/references/01-xirp-spotify.md",
+      "title": "[DeepResearch] 01-xirp-spotify",
+      "summary": "--- source: https://xirp.spotify.com title: Xirp - Know your systems, so your agents can too fetched: 2026-08-11 research_topic: Agent 运行栈与团队 coding agent 工作台 --- ## 执行摘要 - 归档来源：Spotify Xirp 官网。 - 关键事实：Xirp 是 agentic dev",
+      "chapter": "ch16",
+      "processed_at": "2026-08-12T06:20:08.099535+08:00",
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"

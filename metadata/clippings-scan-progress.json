@@ -129,9 +129,9 @@
       ]
     }
   ],
-  "last_scan_date": "2026-08-10",
-  "total_knowledge_points": 842,
-  "total_suggestions": 261,
+  "last_scan_date": "2026-08-12",
+  "total_knowledge_points": 858,
+  "total_suggestions": 269,
   "total_gaps": 21,
   "skipped_files": [
     {
@@ -655,7 +655,47 @@
       "processed_at": "2026-08-10T06:30:30.363149+08:00",
       "chapter": "ch24",
       "points": 3
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 51.md": {
+      "processed_at": "2026-08-11T06:30:50.410396+08:00",
+      "chapter": "ch24",
+      "points": 2
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 52.md": {
+      "processed_at": "2026-08-11T06:30:50.411041+08:00",
+      "chapter": "ch24",
+      "points": 2
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 53.md": {
+      "processed_at": "2026-08-11T06:30:50.411567+08:00",
+      "chapter": "ch24",
+      "points": 2
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 54.md": {
+      "processed_at": "2026-08-11T06:30:50.412018+08:00",
+      "chapter": "ch24",
+      "points": 2
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 55.md": {
+      "processed_at": "2026-08-12T06:30:09.248723+08:00",
+      "chapter": "ch24",
+      "points": 2
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 56.md": {
+      "processed_at": "2026-08-12T06:30:09.249509+08:00",
+      "chapter": "ch24",
+      "points": 2
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 57.md": {
+      "processed_at": "2026-08-12T06:30:09.250068+08:00",
+      "chapter": "ch24",
+      "points": 2
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 58.md": {
+      "processed_at": "2026-08-12T06:30:09.250634+08:00",
+      "chapter": "ch24",
+      "points": 2
     }
   },
-  "cursor": 92
+  "cursor": 100
 }
