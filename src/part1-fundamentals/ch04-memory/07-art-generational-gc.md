@@ -5,9 +5,11 @@ chapter: '4.7'
 section: '4.7'
 status: ready-for-review
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
-last_verified: '2026-04-12'
-last_verified_against: AOSP android-17.0.0_r1 (art/runtime/gc) + Android 17 release notes + perfetto.dev stdlib/docs + developer.android.com/topic/performance/graphics/manage-memory
-confidence: medium
+last_verified: '2026-08-12'
+last_verified_against: AOSP android-17.0.0_r1 ART runtime/gc source set (runtime.cc, heap.*, mark_compact.*, region_space.*, write_barrier-inl.h, card_table.h) + Android 17 release notes + ART GC debug/improvements docs + Perfetto android.garbage_collection/heap profiling docs + developer.android.com graphics memory docs; rework refresh for AIW-FRESH-704a10ad8e3f94fc
+last_rework_at: '2026-08-12T13:43:41+08:00'
+last_rework_run_id: '20260812-133503-rework-3aeaea29'
+confidence: medium-high
 sources:
 - type: official
   path: https://developer.android.com/blog/posts/android-17-is-here
@@ -15,12 +17,20 @@ sources:
   path: https://source.android.com/docs/core/runtime/gc-debug
 - type: official
   path: https://source.android.com/docs/core/runtime/improvements
+- type: official
+  path: https://developer.android.com/topic/performance/graphics/manage-memory
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/runtime.cc
 - type: aosp
   path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.h
 - type: aosp
   path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.cc
 - type: aosp
   path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.h
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap-inl.h
 - type: aosp
   path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/space/region_space.cc
 - type: aosp
@@ -43,8 +53,8 @@ tags:
 - gc
 - perfetto
 pipeline_stage: ready-for-review
-task6_state: pending-verification
-task9_state: reviewed
+task6_state: pending-review
+task9_state: pending-review
 task2b_state: "fixed"
 last_consolidated_at: "2026-08-11"
 consolidated_from:
