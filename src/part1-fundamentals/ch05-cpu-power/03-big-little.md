@@ -2,11 +2,13 @@
 title: "大小核架构"
 chapter: "5.3"
 section: "5.3"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
-last_verified: "2026-04-29"
-last_verified_against: "ARM official documentation, Linux kernel 6.12, Snapdragon 8 Elite specs"
-confidence: high  # 架构原理和 schedutil 机制描述经过 AOSP 源码和 ARM 官方文档双重验证
+last_verified: "2026-08-12"
+last_verified_against: "Android 17 / API 37 / AOSP android-17.0.0_r1; Android common kernel android17-6.18-2026-06_r6 scheduler docs and source (sched-capacity, sched-energy, fair.c, cpufreq_schedutil.c); AOSP task_profiles UClamp/cpuset controls; Perfetto CPU scheduling and linux.cpu.frequency docs/source; Arm public docs retained as background source, not as device-specific Android 17 guarantee"
+last_rework_at: "2026-08-12T17:35:54+08:00"
+last_rework_run_id: "20260812-173533-rework-5b334e2d"
+confidence: high
 sources:
   - type: blog
     path: "Personal-Knowlodge/source/Android-Perfetto-09-CPU.md"
@@ -19,13 +21,31 @@ sources:
   - type: official
     path: "https://perfetto.dev/docs/data-sources/cpu-scheduling"
   - type: official
+    path: "https://perfetto.dev/docs/analysis/stdlib-docs#linux-cpu-frequency"
+  - type: source
+    path: "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/cpu/frequency.sql"
+  - type: official
+    path: "https://docs.kernel.org/scheduler/sched-capacity.html"
+  - type: official
     path: "https://docs.kernel.org/scheduler/sched-energy.html"
+  - type: official
+    path: "https://docs.kernel.org/scheduler/schedutil.html"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-capacity.rst"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-energy.rst"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/fair.c"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libprocessgroup/profiles/task_profiles.json"
 tags: ['big.LITTLE', 'DynamIQ', 'schedutil', 'cpufreq', 'capacity', 'cluster', 'DVFS', 'PELT', 'RTG', 'core-migration', 'EAS', 'HMP']
 related_chapters: ["5.1", "5.2", "5.4", "5.5", "5.6", "2.5"]
 task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
+task6_state: pending-review
+task9_state: pending-review
+pipeline_stage: ready-for-review
 ---
 
 # 5.3 大小核架构

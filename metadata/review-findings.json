@@ -1774,6 +1774,9 @@
     },
     {
       "chapter": "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
+      "close_note": "Rework refreshed stale source verification for 5.3 against Android 17 / API 37 android-17.0.0_r1, Android common kernel android17-6.18-2026-06_r6 scheduler docs/source, AOSP task_profiles, Perfetto CPU scheduling/frequency docs/source, and retained Arm docs only as background; frontmatter returned to ready-for-review for Task6/Task9.",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20260812-173533-rework-5b334e2d",
       "created_at": "2026-08-12T02:00:32.165961+08:00",
       "created_by": "hermes-aiw-weekly-source-audit",
       "created_run_id": "freshness-2026-08-12",
@@ -1784,10 +1787,10 @@
       "source_paths": [
         "src/part1-fundamentals/ch05-cpu-power/03-big-little.md"
       ],
-      "status": "open",
+      "status": "verified",
       "summary": "last source verification 2026-04-29 older than 90 days",
       "type": "stale-source-verification",
-      "updated_at": "2026-08-12T02:00:32.165961+08:00"
+      "updated_at": "2026-08-12T17:43:08.926259+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
