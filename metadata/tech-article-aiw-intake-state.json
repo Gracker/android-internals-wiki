@@ -2026,6 +2026,126 @@
       "status": "appended",
       "title": "Juejin Android Intake · 2026-08-10"
     },
+    "source/juejin-android/2026-08-11-76302986-Android开发快3倍Google说的.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "e05c282648343416",
+      "last_appended": "2026-08-11T05:25:41.679254+08:00",
+      "last_seen": "2026-08-11T05:25:41.679254+08:00",
+      "mtime": 1786392875.5882785,
+      "score": 12,
+      "sha256": "4c93dd4407f64b7000a135bfd870334b73b5d05a1e26261cb7e9342edebf733f",
+      "size": 10628,
+      "status": "appended",
+      "title": "Android 开发快 3 倍！Google 说的Google 提供了一套对大模型友好的命令行工具（CLI），并且配套下"
+    },
+    "source/juejin-android/2026-08-11-76357025-安卓黑科技多平台商品详情页一键跳转APP.md": {
+      "chapter": "待分类",
+      "entry_id": "3f1e185d6e0bbbaf",
+      "last_appended": "2026-08-11T05:25:41.679254+08:00",
+      "last_seen": "2026-08-11T05:25:41.679254+08:00",
+      "mtime": 1786392875.556632,
+      "score": 13,
+      "sha256": "db4d7db7fd91b9658e13391aaf9a6ec8589af5473059f505c60aa6e3cd652b20",
+      "size": 37438,
+      "status": "appended",
+      "title": "安卓黑科技：实现多平台商品详情页一键跳转APP安卓黑科技：实现多平台商品详情页一键跳转APP 一、开篇引入 在如今的移动"
+    },
+    "source/juejin-android/2026-08-11-76373536-Android终于做桌面了三星DeX早已把路趟完.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "9f1e55e6976ce39d",
+      "last_appended": "2026-08-11T05:25:41.679254+08:00",
+      "last_seen": "2026-08-11T05:25:41.679254+08:00",
+      "mtime": 1786392875.5262263,
+      "score": 7,
+      "sha256": "975d352c7599c92adb329ba60366c4ad3f3d405b8e1612d509bba0f56ebdb315",
+      "size": 6769,
+      "status": "appended",
+      "title": "Android 终于做桌面了，而三星 DeX 早已把路趟完今年3月，Google 在 Android Developer"
+    },
+    "source/juejin-android/2026-08-11-76443945-升级Flutter3.44踩HCPP和AGP9的坑.md": {
+      "chapter": "ch06-storage",
+      "entry_id": "71a7fdf2c2ed5db9",
+      "last_appended": "2026-08-11T05:25:41.679254+08:00",
+      "last_seen": "2026-08-11T05:25:41.679254+08:00",
+      "mtime": 1786392883.954706,
+      "score": 13,
+      "sha256": "23bb1a6b2c60049c60d10ce55631cdaf0e78048b0abcc1adc07a2f05a8f5ddd1",
+      "size": 8369,
+      "status": "appended",
+      "title": "升级Flutter 3.44，我踩了HCPP和AGP 9的坑Flutter 3.44跟着Google I/O 2026一"
+    },
+    "source/juejin-android/2026-08-11-juejin-android.md": {
+      "chapter": "待分类",
+      "entry_id": "aa6a3bbd0596119d",
+      "last_appended": "2026-08-11T05:25:41.679254+08:00",
+      "last_seen": "2026-08-11T05:25:41.679254+08:00",
+      "mtime": 1786393007.471034,
+      "score": 16,
+      "sha256": "14372ee927f05329256a9fb760f6471a51e1062d9602b8853f71cbda58661dac",
+      "size": 6390,
+      "status": "appended",
+      "title": "Juejin Android Intake · 2026-08-11"
+    },
+    "source/juejin-android/2026-08-12-76302986-Android开发快3倍Google说的.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "e737efedf7e0422f",
+      "last_appended": "2026-08-12T05:25:00.305863+08:00",
+      "last_seen": "2026-08-12T05:25:00.305863+08:00",
+      "mtime": 1786479288.7583776,
+      "score": 13,
+      "sha256": "74cf1bd07ff6678bca09a87e495079f67777e63b55f5803cb902506dadb2c0a3",
+      "size": 10805,
+      "status": "appended",
+      "title": "Android 开发快 3 倍！Google 说的Google 提供了一套对大模型友好的命令行工具（CLI），并且配套下"
+    },
+    "source/juejin-android/2026-08-12-76357025-安卓黑科技：实现多平台商品详情页一键跳转.md": {
+      "chapter": "待分类",
+      "entry_id": "7f8c4e8a471b3316",
+      "last_appended": "2026-08-12T05:25:00.305863+08:00",
+      "last_seen": "2026-08-12T05:25:00.305863+08:00",
+      "mtime": 1786479288.7577798,
+      "score": 14,
+      "sha256": "b6156d7c7d5949f46080d130d934b5050b407db39f5306d98ad0d80c318043ff",
+      "size": 37021,
+      "status": "appended",
+      "title": "安卓黑科技：实现多平台商品详情页一键跳转APP安卓黑科技：实现多平台商品详情页一键跳转APP 一、开篇引入 在如今的移动"
+    },
+    "source/juejin-android/2026-08-12-76366645-彻底告别Flutter屏幕适配底层玩法.md": {
+      "chapter": "待分类",
+      "entry_id": "67748441516bf262",
+      "last_appended": "2026-08-12T05:25:00.305863+08:00",
+      "last_seen": "2026-08-12T05:25:00.305863+08:00",
+      "mtime": 1786479296.4134743,
+      "score": 13,
+      "sha256": "141f19c2f4ecbc1ce3ad02dc445688b1f821c7ce5d8f64f84cabf1307eb9fa04",
+      "size": 13388,
+      "status": "appended",
+      "title": "彻底告别 .w/.h/.sp！Flutter 屏幕适配的底层玩法，一次接入全局生效你是不是也被这些坑折磨过？ 做 F"
+    },
+    "source/juejin-android/2026-08-12-76444766-学吧Android全新的嵌入式照片选择器.md": {
+      "chapter": "待分类",
+      "entry_id": "c3b81f34ee4ced8e",
+      "last_appended": "2026-08-12T05:25:00.305863+08:00",
+      "last_seen": "2026-08-12T05:25:00.305863+08:00",
+      "mtime": 1786479288.7581258,
+      "score": 10,
+      "sha256": "353150f158cd9ef76957c15371148ae9171437ab4959ff04ae87e459a1000f6d",
+      "size": 13701,
+      "status": "appended",
+      "title": "学吧！Android 全新的嵌入式照片选择器AndroidX 推出了全新的嵌入式照片选择器（EmbeddedPhotoP"
+    },
+    "source/juejin-android/2026-08-12-juejin-android.md": {
+      "chapter": "待分类",
+      "entry_id": "4c4f0c9b4eabcc6a",
+      "last_appended": "2026-08-12T05:25:00.305863+08:00",
+      "last_seen": "2026-08-12T05:25:00.305863+08:00",
+      "mtime": 1786479333.6411984,
+      "score": 13,
+      "sha256": "e5634df0b157af88072a25b3adc35d3e01439451b8897300932de2c241d67e02",
+      "size": 5730,
+      "status": "appended",
+      "title": "掘金 Android 技术文章抓取 · 2026-08-12"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -3833,24 +3953,24 @@
     }
   },
   "last_report": {
-    "appended": 1,
-    "considered": 1,
-    "cutoff": "2026-08-09T05:20:54.393198+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-10.md",
+    "appended": 5,
+    "considered": 5,
+    "cutoff": "2026-08-11T05:20:41.679254+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-12.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1767,
+    "scanned": 1777,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 28,
-      "unchanged": 335
+      "unchanged": 341
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-08-10T05:25:21.634309+08:00",
+  "last_run_at": "2026-08-12T05:25:00.305863+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

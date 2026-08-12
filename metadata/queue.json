@@ -333,10 +333,13 @@
     "added_by": "hermes-aiw-weekly-source-audit",
     "added_at": "2026-08-05T02:00:49.077158+08:00",
     "status": "body-applied",
-    "target_path": "src/part1-fundamentals/ch05-cpu-power/5.34-android17-task-scheduler-optimization.md",
+    "target_path": null,
     "action": "body-applied",
     "applied_at": "2026-08-06T19:15:47+08:00",
-    "applied_run_id": "20260806-191525-9f6a25ce"
+    "applied_run_id": "20260806-191525-9f6a25ce",
+    "previous_target_path": "src/part1-fundamentals/ch05-cpu-power/5.34-android17-task-scheduler-optimization.md",
+    "target_missing_after_consolidation": true,
+    "notes": "target removed in content consolidation"
   },
   {
     "section": "freshness",

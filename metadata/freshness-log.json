@@ -1,5 +1,5 @@
 {
-  "last_check": "2026-08-10T02:05:35.308181+08:00",
+  "last_check": "2026-08-12T02:00:32.165961+08:00",
   "check_id": "freshness-2026-07-17-02-00",
   "cron_id": "220c1be3-a8db-4dfe-982e-5e275cef4b54",
   "summary": {
@@ -132,9 +132,118 @@
     "part4-system/ch16-aosp/04-android17-kernel612-performance.md",
     "part4-system/ch16-aosp/09-android17-sdm-install-performance.md"
   ],
-  "last_run_at": "2026-08-10T02:05:35.308181+08:00",
+  "last_run_at": "2026-08-12T02:00:32.165961+08:00",
   "scanned": 80,
-  "risks": [],
+  "risks": [
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch03-input/02-touch-performance.md",
+      "target_path": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
+      "severity": "medium",
+      "rule_id": "stale-source-verification",
+      "evidence": "2026-03-31",
+      "reason": "last source verification 2026-03-31 older than 90 days",
+      "action": "重新核验至 Android 17"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch04-memory/02-linux-memory.md",
+      "target_path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
+      "severity": "medium",
+      "rule_id": "stale-source-verification",
+      "evidence": "2026-03-31",
+      "reason": "last source verification 2026-03-31 older than 90 days",
+      "action": "重新核验至 Android 17"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch04-memory/04-lmk.md",
+      "target_path": "src/part1-fundamentals/ch04-memory/04-lmk.md",
+      "severity": "medium",
+      "rule_id": "stale-source-verification",
+      "evidence": "2026-05-09",
+      "reason": "last source verification 2026-05-09 older than 90 days",
+      "action": "重新核验至 Android 17"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch04-memory/07-art-generational-gc.md",
+      "target_path": "src/part1-fundamentals/ch04-memory/07-art-generational-gc.md",
+      "severity": "medium",
+      "rule_id": "stale-source-verification",
+      "evidence": "2026-04-12",
+      "reason": "last source verification 2026-04-12 older than 90 days",
+      "action": "重新核验至 Android 17"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
+      "target_path": "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
+      "severity": "medium",
+      "rule_id": "stale-source-verification",
+      "evidence": "2026-04-29",
+      "reason": "last source verification 2026-04-29 older than 90 days",
+      "action": "重新核验至 Android 17"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch06-storage/02-filesystem.md",
+      "target_path": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
+      "severity": "medium",
+      "rule_id": "stale-source-verification",
+      "evidence": "2026-04-23",
+      "reason": "last source verification 2026-04-23 older than 90 days",
+      "action": "重新核验至 Android 17"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch06-storage/03-io-scheduling.md",
+      "target_path": "src/part1-fundamentals/ch06-storage/03-io-scheduling.md",
+      "severity": "medium",
+      "rule_id": "stale-source-verification",
+      "evidence": "2026-05-09",
+      "reason": "last source verification 2026-05-09 older than 90 days",
+      "action": "重新核验至 Android 17"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch07-smoothness/03-jank-methodology.md",
+      "target_path": "src/part2-performance/ch07-smoothness/03-jank-methodology.md",
+      "severity": "medium",
+      "rule_id": "stale-source-verification",
+      "evidence": "2026-03-31",
+      "reason": "last source verification 2026-03-31 older than 90 days",
+      "action": "重新核验至 Android 17"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch07-smoothness/05-optimization.md",
+      "target_path": "src/part2-performance/ch07-smoothness/05-optimization.md",
+      "severity": "medium",
+      "rule_id": "stale-source-verification",
+      "evidence": "2026-04-20",
+      "reason": "last source verification 2026-04-20 older than 90 days",
+      "action": "重新核验至 Android 17"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch07-smoothness/10-view-layout-performance.md",
+      "target_path": "src/part2-performance/ch07-smoothness/10-view-layout-performance.md",
+      "severity": "medium",
+      "rule_id": "stale-source-verification",
+      "evidence": "2026-04-25",
+      "reason": "last source verification 2026-04-25 older than 90 days",
+      "action": "重新核验至 Android 17"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch07-smoothness/11-systemui-performance.md",
+      "target_path": "src/part2-performance/ch07-smoothness/11-systemui-performance.md",
+      "severity": "medium",
+      "rule_id": "stale-source-verification",
+      "evidence": "2026-04-26",
+      "reason": "last source verification 2026-04-26 older than 90 days",
+      "action": "重新核验至 Android 17"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch08-responsiveness/02-app-launch.md",
+      "target_path": "src/part2-performance/ch08-responsiveness/02-app-launch.md",
+      "severity": "medium",
+      "rule_id": "stale-source-verification",
+      "evidence": "2026-04-20",
+      "reason": "last source verification 2026-04-20 older than 90 days",
+      "action": "重新核验至 Android 17"
+    }
+  ],
   "queued": 0,
   "runs": [
     {
@@ -465,8 +574,127 @@
       "findings_added": 0,
       "legacy_queue_migrated": 0,
       "queued": 0
+    },
+    {
+      "last_run_at": "2026-08-12T02:00:32.165961+08:00",
+      "scanned": 80,
+      "cursor_start": 80,
+      "cursor_next": 160,
+      "risks": [
+        {
+          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch03-input/02-touch-performance.md",
+          "target_path": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
+          "severity": "medium",
+          "rule_id": "stale-source-verification",
+          "evidence": "2026-03-31",
+          "reason": "last source verification 2026-03-31 older than 90 days",
+          "action": "重新核验至 Android 17"
+        },
+        {
+          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch04-memory/02-linux-memory.md",
+          "target_path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
+          "severity": "medium",
+          "rule_id": "stale-source-verification",
+          "evidence": "2026-03-31",
+          "reason": "last source verification 2026-03-31 older than 90 days",
+          "action": "重新核验至 Android 17"
+        },
+        {
+          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch04-memory/04-lmk.md",
+          "target_path": "src/part1-fundamentals/ch04-memory/04-lmk.md",
+          "severity": "medium",
+          "rule_id": "stale-source-verification",
+          "evidence": "2026-05-09",
+          "reason": "last source verification 2026-05-09 older than 90 days",
+          "action": "重新核验至 Android 17"
+        },
+        {
+          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch04-memory/07-art-generational-gc.md",
+          "target_path": "src/part1-fundamentals/ch04-memory/07-art-generational-gc.md",
+          "severity": "medium",
+          "rule_id": "stale-source-verification",
+          "evidence": "2026-04-12",
+          "reason": "last source verification 2026-04-12 older than 90 days",
+          "action": "重新核验至 Android 17"
+        },
+        {
+          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
+          "target_path": "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
+          "severity": "medium",
+          "rule_id": "stale-source-verification",
+          "evidence": "2026-04-29",
+          "reason": "last source verification 2026-04-29 older than 90 days",
+          "action": "重新核验至 Android 17"
+        },
+        {
+          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch06-storage/02-filesystem.md",
+          "target_path": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
+          "severity": "medium",
+          "rule_id": "stale-source-verification",
+          "evidence": "2026-04-23",
+          "reason": "last source verification 2026-04-23 older than 90 days",
+          "action": "重新核验至 Android 17"
+        },
+        {
+          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch06-storage/03-io-scheduling.md",
+          "target_path": "src/part1-fundamentals/ch06-storage/03-io-scheduling.md",
+          "severity": "medium",
+          "rule_id": "stale-source-verification",
+          "evidence": "2026-05-09",
+          "reason": "last source verification 2026-05-09 older than 90 days",
+          "action": "重新核验至 Android 17"
+        },
+        {
+          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch07-smoothness/03-jank-methodology.md",
+          "target_path": "src/part2-performance/ch07-smoothness/03-jank-methodology.md",
+          "severity": "medium",
+          "rule_id": "stale-source-verification",
+          "evidence": "2026-03-31",
+          "reason": "last source verification 2026-03-31 older than 90 days",
+          "action": "重新核验至 Android 17"
+        },
+        {
+          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch07-smoothness/05-optimization.md",
+          "target_path": "src/part2-performance/ch07-smoothness/05-optimization.md",
+          "severity": "medium",
+          "rule_id": "stale-source-verification",
+          "evidence": "2026-04-20",
+          "reason": "last source verification 2026-04-20 older than 90 days",
+          "action": "重新核验至 Android 17"
+        },
+        {
+          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch07-smoothness/10-view-layout-performance.md",
+          "target_path": "src/part2-performance/ch07-smoothness/10-view-layout-performance.md",
+          "severity": "medium",
+          "rule_id": "stale-source-verification",
+          "evidence": "2026-04-25",
+          "reason": "last source verification 2026-04-25 older than 90 days",
+          "action": "重新核验至 Android 17"
+        },
+        {
+          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch07-smoothness/11-systemui-performance.md",
+          "target_path": "src/part2-performance/ch07-smoothness/11-systemui-performance.md",
+          "severity": "medium",
+          "rule_id": "stale-source-verification",
+          "evidence": "2026-04-26",
+          "reason": "last source verification 2026-04-26 older than 90 days",
+          "action": "重新核验至 Android 17"
+        },
+        {
+          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch08-responsiveness/02-app-launch.md",
+          "target_path": "src/part2-performance/ch08-responsiveness/02-app-launch.md",
+          "severity": "medium",
+          "rule_id": "stale-source-verification",
+          "evidence": "2026-04-20",
+          "reason": "last source verification 2026-04-20 older than 90 days",
+          "action": "重新核验至 Android 17"
+        }
+      ],
+      "findings_added": 12,
+      "legacy_queue_migrated": 0,
+      "queued": 0
     }
   ],
-  "findings_added": 0,
+  "findings_added": 12,
   "legacy_queue_migrated": 0
 }

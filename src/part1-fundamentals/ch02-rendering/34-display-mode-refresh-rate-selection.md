@@ -1,21 +1,21 @@
 ---
 title: "Android 17 Display Mode 选择与 RefreshRateSelector 评分机制"
 chapter: "2.34"
-status: "finalized"
+status: "ready-for-review"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-08-09"
 last_verified_against: "AOSP android-17.0.0_r1; common kernel android17-6.18-2026-06_r6"
 last_idle_audit_at: "2026-08-05"
 last_idle_audit_run_id: "20260805-223530-idle-audit-20677657"
 task9_state: "body-applied"
-pipeline_stage: "finalized"
+pipeline_stage: "ready-for-review"
 confidence: high
 drafted_date: "2026-07-17"
 last_task6_audit: "2026-08-09"
-last_body_apply_at: "2026-08-09T09:17:01+08:00"
-last_body_apply_run_id: "20260809-091529-696a441f"
+last_body_apply_at: "2026-08-10T19:15:18+08:00"
+last_body_apply_run_id: "20260810-191518-8c420f19"
 task2b_state: "body-applied"
-task6_state: "verified"
+task6_state: "pending-verification"
 tags: [rendering, surfaceflinger, refresh-rate, frame-rate-override, display-mode, android17, hwc, vrr]
 related_chapters: ["2.30", "2.6"]
 created_by: "task3-source-research"
@@ -79,6 +79,8 @@ source_evidence:
 
 以下分析以 AOSP `android-17.0.0_r1` 为平台锚点，以通用内核 `android17-6.18-2026-06_r6` 为内核锚点。文中只陈述可由 Android 17 源码确认的行为；面板切换耗时、显示驱动跟踪点和功耗收益仍由具体设备实现决定。
 
+本章的源码锚点分为三组：`DisplayModeController` 负责把 Scheduler 的目标模式分流为无操作、仅渲染节拍更新、合并待处理请求或物理模式切换；`RefreshRateSelector` 同时接收图层投票、全局信号与 DisplayManager policy；`FrameRateOverrideMappings` 则维护 UID 级帧率覆盖，并且后门覆盖优先于内容推导覆盖。[来源: DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md; 已验证: frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp, Scheduler/RefreshRateSelector.cpp, Scheduler/FrameRateOverrideMappings.cpp @ android-17.0.0_r1]
+
 ## 1. 先分清五个帧率
 
 显示问题中常见的误判，是把内容帧率、渲染帧率和面板刷新率都叫作“FPS”。Android 17 源码至少区分下面五个量：
@@ -111,6 +113,8 @@ Android 17 的决策路径可以压缩为以下顺序：
 6. 需要更换模式 ID 时，`DisplayModeController::initiateModeChange()` 调用 Composer/HWC；切换完成后再更新活动模式、VSYNC 模型和显示事件。
 
 在这条路径中，DisplayManager 策略划定允许范围，图层投票表达内容需求，Scheduler 负责排名，`DisplayModeController` 负责执行。`DisplayModeRequest` 并非应用直接提交给 SurfaceFlinger 的公共请求。
+
+排障时可以先按“策略边界 → 图层需求 → 评分排名 → 执行动作”拆日志：policy 只决定候选池，`LayerHistory` 决定每个可见图层的 vote，`getRankedFrameRatesLocked()` 才把 vote、触摸/空闲/点亮等信号和 tie-break 合成排序结果；最终是否进入 HWC mode set 还要看 `DisplayModeController::setDesiredMode()` 的动作返回值。[来源: DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md; 已验证: frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp, Display/DisplayModeController.cpp @ android-17.0.0_r1]
 
 ### 2.1 策略包含两层范围
 
@@ -197,6 +201,8 @@ Java 公共常量 `FRAME_RATE_COMPATIBILITY_AT_LEAST` 进入原生图层后对�
 ## 5. 排名不是一个通用公式
 
 旧资料常把 `RefreshRateSelector` 简化成“计算目标值与候选值的距离，再把所有图层相加”。Android 17 会按投票类型进入不同分支，距离分只覆盖其中一部分。
+
+读源码时要避免把材料里的“浮点分曲线”理解成唯一公式：Android 17 确实在多个分支使用距离/比例类分数，但 `ExplicitCategory`、`ExplicitExact`、`ExplicitDefault`、触摸延后升频、空闲早返回和分数相同后的高低帧率偏好都会改变最终顺序；因此一次异常只能用具体 vote 类型和当时信号解释，不能只用“目标帧率越近越高分”概括。[来源: DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md; 已验证: frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp @ android-17.0.0_r1]
 
 ### 5.1 距离分的含义
 
@@ -312,6 +318,8 @@ Scheduler 会为多个物理显示器生成选择结果。节奏基准显示器�
 内容帧率覆盖用于在显示器保持某个物理刷新率运行时，按 UID 为应用事件节拍选择一个可整除的较低渲染帧率。MRR 分支不会给出低于 30 fps 的覆盖值；ARR 分支从应用请求候选中保留能整除当前显示刷新率的值。某 UID 含 `Max` 或 `Heuristic` 图层、满足触摸升频条件，或没有可评分意见时，也可能不生成覆盖值。
 
 游戏模式干预值和游戏默认帧率不写入这两个映射表。它们进入 `LayerHistory`，改变图层投票，再间接影响模式排名和后续内容帧率覆盖计算。若把两者看成同一张 UID 表，就会混淆“显示模式选择”与“应用回调限频”。
+
+如果正在查“应用请求了 60 fps 但 UID override 不是 60”的问题，应先区分两条表：后门表是按 UID 直接写入并优先返回，内容表是选择器根据当前内容需求整表刷新；游戏模式干预不会直接写入这两个映射，而是先改变 `LayerHistory` 的 vote，再间接影响模式选择与覆盖生成。[来源: DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md; 已验证: frameworks/native/services/surfaceflinger/Scheduler/FrameRateOverrideMappings.cpp, Scheduler/LayerHistory.cpp @ android-17.0.0_r1]
 
 ## 9. 内核空闲计时器的平台边界
 
