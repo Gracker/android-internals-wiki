@@ -6,15 +6,10 @@ status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [device-tier, performance-strategy, device-year-class, feature-flag, degradation]
 related_chapters: ["21.14", "21.15", "23.07", "25.06"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-17"
-gap_source: "素材驱动/章节深挖"
 last_draft_polish_at: "2026-08-06T23:45:29+08:00"
 last_draft_polish_run_id: "20260806-234529-draft-polish-b425a06d"
 last_verified: "2026-08-06"
 last_verified_against: "AOSP android-17.0.0_r1 + android17-6.18-2026-06_r6 + Android developer docs"
-reviewed_date: "2026-08-07"
-reviewed_by: "hermes-aiw-review-finalize-apply"
 last_review_finalize_at: "2026-08-07T12:09:10+08:00"
 last_review_finalize_run_id: "20260807-120726-dea40797"
 confidence: high

@@ -8,11 +8,6 @@ last_verified: "2026-07-02"
 confidence: medium
 tags: [learning-path, performance, framework, perfetto, apm]
 related_chapters: ["13.0", "14.26", "15.7", "19.0", "21.4"]
-created_by: "openclaw-manual-intake"
-created_date: "2026-07-02"
-gap_source: "manual-request/android-performance-learning-path"
-material_paths:
-  - "intake/manual-requests/2026-07-02-android-performance-learning-gap.md"
 pipeline_stage: "draft"
 task6_state: "pending"
 task9_state: "pending"

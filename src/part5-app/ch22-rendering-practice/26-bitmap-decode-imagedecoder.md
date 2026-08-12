@@ -2,7 +2,6 @@
 title: "Bitmap 解码、Hardware Bitmap 与 RenderNode"
 chapter: "22.26"
 status: ready-for-review
-drafted_date: "2026-07-18"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-18"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -37,9 +36,6 @@ sources:
     path: "Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md"
 tags: [bitmap, image-decoder, decode-pipeline, hardware-bitmap, image-format, mmap, inbitmap]
 related_chapters: ["22.6", "23.2"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-16"
-gap_source: "章节深挖"
 ---
 
 # Bitmap 解码、Hardware Bitmap 与 RenderNode

@@ -7,8 +7,6 @@ applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
 last_verified: "2026-06-07"
 last_verified_against: "Android Developers BaselineProfileRule API / Baseline Profiles docs, AOSP android-16.0.0_r1 art/profman + art/dex2oat, AIW 8.7 / 19.12"
 confidence: medium
-drafted_date: "2026-05-12"
-polish_count: 0
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
@@ -41,22 +39,6 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: "reviewed"
 task2b_state: "fixed"
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-07
-task6_result: pass-light-edit
-last_task6_at: 2026-06-07T13:06:00+08:00
-task6_reviewed_date: "2026-05-12"
-last_task6_audit: "2026-05-26"
-last_task6_audit_log: "logs/review/2026-05-26-17-audit.md"
-task9_result: "auto-fixed"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-13"
-last_task9_at: "2026-05-13T01:43:00+08:00"
-last_task9_audit: "2026-06-07"
-last_task9_autofix_at: "2026-06-07"
-task6_autofix_trigger: true
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-25
 ---
 
 # Baseline Profile 与 Startup Profile 实战

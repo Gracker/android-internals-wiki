@@ -3,8 +3,6 @@ title: "Android CLI 与 Agent 化性能调试工作流"
 chapter: "14.14"
 section: "14.14"
 status: finalized
-drafted_date: "2026-05-22"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 17 (API 37)；Android CLI 1.0+；Android Studio Quail 2 Canary 1+（studio 命令预览能力）"
 last_verified: "2026-07-30"
 last_verified_against: "Android CLI 文档更新至 2026-06-16；Journeys 更新至 2026-07-17；Macrobenchmark 更新至 2026-07-14；android-17.0.0_r1 / android17-6.18-2026-06_r6"
@@ -38,33 +36,9 @@ sources:
     path: "intake/daily-info/2026-05-21.md"
 tags: [android-cli, agent, performance-tooling, android-studio, perfetto]
 related_chapters: ["13.9", "13.12", "14.1", "14.17", "19.11"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-22"
-gap_source: "官方文档/每日信息/研究素材"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-last_task2a_at: "2026-05-22T03:16:00+08:00"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-22"
-task6_result: pass-light-edit
 task9_state: reviewed
-last_task6_at: "2026-05-22T04:07:00+08:00"
-last_task6_audit: "2026-07-07"
-last_task6_review_log: "logs/review/2026-05-22-04-review.md"
-task6_review_notes: "2026-05-22 task6 review：pass-light-edit。小修 1 处（补 section 元数据）。无 B 类大问题；Task9 尚未通过，未自动晋升。"
-task9_result: pass-tech-review
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-22"
-last_task9_at: "2026-05-22T04:51:16+08:00"
-task9_review_notes: "2026-05-22 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1（CI 模板需补 AVD create 前置条件，已写入 suggestions）。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-07-17-08-idle-audit.md"
-last_task9_audit: "2026-07-17"
-last_idle_task9_at: "2026-07-17T18:00:00+08:00"
-deepseek_polish_state: done
-last_deepseek_polish_at: "2026-05-24"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-24
-android17_review_notes: "2026-07-30：按 Android CLI、Journeys、Android skills 与 Macrobenchmark 当前官方文档复核命令和边界；补充 android update 与 sdk update 的区别、AVD 创建前置条件、run --type 文档矛盾、Journey 非确定性、模拟器指标限制，以及 Android 17 / API 37 / android-17.0.0_r1 与 android17-6.18-2026-06_r6 的证据锚点。原 task6/task9/OpenClaw 字段保留。"
 ---
 
 # 14.14 Android CLI 与 Agent 化性能调试工作流

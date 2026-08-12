@@ -4,8 +4,6 @@ chapter: "26.9"
 section: "26.9"
 status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-drafted_date: "2026-05-17"
-drafted_by: "openclaw-task2a"
 last_verified: "2026-05-17"
 last_verified_against: "arXiv:2604.27830 / source.android eBPF docs / Android Developers ProfilingManager docs / AIW 1.4、14.23、26.5"
 confidence: medium
@@ -34,39 +32,10 @@ sources:
     path: "src/part5-app/ch26-observability/05-online-troubleshooting.md"
 tags: [ebpf, binder, observability, tracing, online-diagnosis, security-audit]
 related_chapters: ["1.4", "13.9", "14.23", "26.5"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-16"
-gap_source: "研究素材/素材驱动"
-gap_score: 17
-material_count: 3
-source_refs:
-  - 论文/Android-2026-05-03-WOOTdroid/03-精读.md
-  - https://arxiv.org/abs/2604.27830
-  - src/part3-tools/ch14-other-tools/23-ebpf-performance-analysis.md
-  - src/part1-fundamentals/ch01-architecture/04-binder.md
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-17"
-task6_result: pass-light-edit
 task9_state: reviewed
-task2a_result: draft-ready-for-review
-last_task2a_at: "2026-05-17T01:12:00+08:00"
-task9_result: pass-tech-review
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_at: "2026-06-05T12:27:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-05-12-deep-review.md"
 task2b_state: fixed
-task2b_result: fixed
-last_task9_at: "2026-06-05T12:27:00+08:00"
-last_task9_audit: "2026-07-12"
-last_task9_audit_at: "2026-07-12T21:25:10+08:00"
-last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度3（版本差异覆盖）检查通过；android-17.0.0_r1 system/bpf loader 与 kernel/common android16-6.12 Binder uapi/driver 锚点一致；L158 的 android-mainline 待验证标注属 P2 观察，不影响 Android 17 结论。"
-last_task9_audit_result: "pass-idle-audit"
-last_task9_audit_log: "logs/deep-review/2026-07-12-21-audit.md"
-last_task6_audit: "2026-07-11"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-29
 ---
 
 # 26.9 eBPF 在线追踪与 Binder 语义重建

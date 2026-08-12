@@ -9,8 +9,6 @@ last_verified_against: "Android Developers location / sensors docs + Google Play
 confidence: medium-high
 consolidated_from:
   - "src/part5-app/ch25-power-size/22-location-services-performance.md"
-drafted_date: "2026-05-14"
-polish_count: 0
 sources:
   - type: official
     path: "https://developer.android.com/develop/sensors-and-location/location/battery"
@@ -39,26 +37,7 @@ related_chapters: ["25.1", "25.2", "11.2"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
-last_task9_autofix_at: "2026-06-03"
-task9_result: auto-fixed
-last_task9_at: "2026-05-14T18:30:00+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-14"
-last_task9_review_log: "logs/deep-review/2026-05-14-18-deep-review.md"
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: "2026-06-03T14:54:49+08:00"
-task2b_fixed_by: "openclaw-task2b"
-task2b_fixed_date: "2026-06-03"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-03"
-task6_result: pass-light-edit
-last_task6_at: "2026-06-03T21:36:06+08:00"
-last_task6_audit: "2026-07-16"
-last_task6_review_log: logs/review/2026-05-14-19-review.md
-task6_review_notes: "2026-05-14 Task6：L1/L2 小修 2 处；写作层通过。保留 Task9 P1 回炉队列，未自动晋升。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-24
 ---
 
 # 定位与传感器功耗优化

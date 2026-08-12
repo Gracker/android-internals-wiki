@@ -7,9 +7,6 @@ applicable_versions: "Android 9 - Android 17 (API 37)"
 last_verified: "2026-07-08"
 last_verified_against: "Android 17 (android-17.0.0_r1), AOSP cgroups/task_profiles/init/vold/MediaProvider source, dynamic partitions / metadata encryption / system-as-root docs, Android 11-12 shared storage docs, SQLite compile & WAL docs"
 confidence: medium
-polish_count: 1
-polish_date: "2026-04-06"
-polish_by: task2b-polish
 sources:
 - type: reference
   path: 手机Android存储性能优化架构分析（Linux阅码场）
@@ -37,40 +34,10 @@ sources:
   path: JEDEC UFS 4.0 Standard (JESD220E)
 tags: ['storage', 'ufs', 'emmc', 'partition', 'scoped-storage', 'mediastore', 'fuse', 'fbe', 'dynamic-partition', 'virtual-ab', 'f2fs']
 related_chapters: ['6.2', '6.3', '4.1', '7.1']
-created: 2026-04-01
-drafted_date: 2026-04-01
-drafted_by: openclaw-task2a
-reviewed_date: 2026-06-15
-task6_reviewed_date: "2026-06-15"
-last_task6_audit: 2026-06-15
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
-reviewers: []
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
-task9_result: auto-fixed
-task2b_result: fixed
 task2b_state: fixed
-task9_reviewed_date: "2026-06-15"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-08T15:31:54+08:00"
-last_task9_review_log: "logs/deep-review/2026-07-08-15-audit.md"
-last_task9_audit: "2026-07-08"
-last_task9_audit_at: "2026-07-08T15:31:54+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-08-15-audit.md"
-task9_review_notes: "2026-06-15 18:20 Task9 final复核：AUTO-FIX。AOSP android-16.0.0_r1 FsCrypt.cpp 中函数名为 fscrypt_prepare_user_storage，正文误写为 fs_prepare_user_storage；已修正源码锚点，回到 Task6 复审。；2026-07-08 15:31 Task9 idle audit：AUTO-FIX。按 Android 17 边界复核 android-17.0.0_r1：libprocessgroup cgroups/task_profiles 仍使用 blkio priority profiles；vold FsCrypt.cpp/Utils.cpp 关键函数路径存在；MediaProvider 仍保留 FUSE passthrough 判断。正文中 android-15/16 锚点已改为 android-17.0.0_r1，版本表补到 Android 17，回到 Task6 复审。"
-
-last_task2b_at: "2026-06-15T16:52:36+08:00"
-last_task9_autofix_at: "2026-07-08"
-last_task6_at: "2026-06-15T18:42:00+08:00"
-last_task6_review_log: "logs/review/2026-06-15-18-review.md"
-task6_review_notes: "2026-06-15 18:42 Task6 final review（自动晋升 finalized）：章节通过四层质检，L1/L2 硬规则通过，L3/L4 内容深度符合要求；2 处 L1/L2 小修已完成；outline 7/7 覆盖；自动晋升条件已满足（Task6 pass-light-edit + Task9 pass-tech-review + 无 pending 条目）。"
-task6_l1_l2_fixes: 2
-task6_l3_l4_issues: 0
-task6_new_rework: false
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-08
 ---
 
 # 6.1 Android 存储架构

@@ -3,7 +3,6 @@ title: "ResourcesManager 与 Configuration 变更性能"
 chapter: "1.24"
 section: "1.24"
 status: "finalized"
-drafted_date: "2026-06-04"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1 ResourcesManager / ResourcesKey / ConfigurationController / ActivityRecord / ActivityThread / AppCompatRecreateOnConfigChangePolicy / DisplayContent / WindowToken；Android 17 官方行为变更文档"
@@ -51,42 +50,10 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java @ android-17.0.0_r1"
 tags: [resources, configuration, activity-recreation, performance, resourcesmanager, configChanges, edge-to-edge]
 related_chapters: ["1.8", "2.12", "8.2", "16.5"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-04"
-gap_source: "研究素材+AOSP结构"
-gap_score: 16
-gap_score_detail: "素材丰富度 3 | 相关性 4 | 读者需求度 4 | 时效性 5"
 pipeline_stage: "ready-to-publish"
 task6_state: reviewed
 task9_state: "reviewed"
-task2b_result: fixed
 task2b_state: fixed
-last_task2b_lite_at: 2026-06-30
-task9_result: "pass-tech-review"
-last_task9_at: "2026-07-03T04:37:48+08:00"
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-30
-last_task6_at: "2026-07-03T04:11:01+08:00"
-last_task9_autofix_at: "2026-07-02"
-last_task9_audit: "2026-07-02"
-last_task9_audit_log: "logs/deep-review/2026-07-02-13-audit.md"
-last_task9_review_log: "logs/deep-review/2026-07-03-04-deep-review.md"
-task6_review_notes_round3: "2026-07-03 Task6 revisiting-review round3 (post-Task9 autofix): pass-light-edit. L1 scan: 0 banned words (页面对齐 is page alignment = false positive), 0 high-freq violations. Frontmatter sources have 7 entries missing path values (minor metadata gap, not blocking). L2: structure intact, outline 9/9 anchors covered, extensions covered. No new L3/L4 issues. task9_result=auto-fixed (not pass-tech-review), cannot auto-promote."
-task6_review_notes_round2: "2026-07-02 Task6 revisiting-review round2 (post-Task9 autofix): pass-light-edit. L1 fix: banned word 链路 x4 in body + x1 in frontmatter -> 路径/调用路径. Task9 idle audit auto-fixed enableLessActivityRecreationOnConfigChange scope, recreateOnConfigChanges compat change boundary, FixedRotation trace判定边界. L2: structure intact, outline 9/9 anchors covered. No new L3/L4 issues. task9_result=auto-fixed (not pass-tech-review), cannot auto-promote."
-task9_review_notes: "2026-07-03 04:37 Task9 deep-review：ResourcesManager / ATMS / ActivityRecord / FixedRotation / AppCompatRecreateOnConfigChangePolicy Android 17 源码路径复核通过；无 P0/P1；1 条性能倍率数据待补实测，写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-30 Task9 复审通过: Android 17 ResourcesManager/Configuration/FixedRotation/Compose 状态边界已按源码和官方行为限定复核，无新增 P0/P1。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Android 17 enableLessActivityRecreationOnConfigChange 适用范围、recreateOnConfigChanges/compat change 边界、FixedRotation 与 Perfetto trace 判定边界；回到 Task6 复审。"
-task9_p0_issues: 0
-task9_p1_issues: 0
-task9_p2_issues: 1
-task2b_rework_issues: "2026-06-30 Task2B main: L3 content depth — added Perfetto-based Activity recreate measurement methodology with SQL; expanded foldable/multi-window section with Perfetto diagnostic queries, Samsung/Pixel Fold divergence patterns, and multi-window resize debouncing strategies"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-04
-task9_reviewed_date: "2026-07-03"
-task9_reviewed_by: "openclaw-task9"
-finalized_by: "openclaw-task9-auto-promote"
-finalized_date: "2026-07-03"
-last_task6_audit: "2026-07-13"
-last_task6_audit_notes: "Idle audit: Fixed L1 issues (对齐→页面对齐, reduced 通过/如果 usage), 12 sources still missing paths, applicable_versions includes Android 12 for comparison only"
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch01-architecture/1.48-Android-17-ResourcesManager-Configuration-Activity-Relaunch-判定模型.md"

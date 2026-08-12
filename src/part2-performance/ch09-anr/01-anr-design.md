@@ -2,15 +2,9 @@
 title: "ANR 设计思想"
 chapter: "9.1"
 section: "9.1"
-drafted_date: "2026-04-02"
-polish_count: 1
-polish_date: "2026-04-07"
-polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-20"
 last_verified_against: "AOSP android-11.0.0_r1 / android-14.0.0_r1 / android-15.0.0_r1 / android-17.0.0_r1, packages/modules/Profiling android-16.0.0_r1 / android-17.0.0_r1, Android Vitals ANR docs"
-reviewed_date: "2026-05-27"
-reviewed_by: openclaw-task9
 confidence: medium
 sources:
   - type: aosp
@@ -33,51 +27,11 @@ sources:
     path: "https://developer.android.com/about/versions/17/features"
 tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher, anrhelper, sigquit]
 related_chapters: ["9.2", "9.3", "1.5", "7.1", "8.1", "15.3", "15.5"]
-review_notes: "2026-05-26 task6 revisiting review: pass-light-edit. L1/L2 小修完成；queue 无 pending，但 task9_result 仍为 needs-rework，等待 Task9 复核。"
-
-last_task2b_at: "2026-05-26T22:50:00+08:00"
-last_task2b_rework_at: "2026-05-26T22:50:00+08:00"
-task2b_fixed_at: "2026-04-26T15:45:22+08:00"
-rework_by: openclaw-task2b
-last_task2b_rework: "2026-05-26T22:50:00+08:00"
-rework_type: "review回炉修复（Task9 问题单）"
-repaired_date: "2026-04-26"
-repaired_by: "openclaw-task2b"
-auto_finalized_by: openclaw-task6
-auto_finalized_date: "2026-05-02"
 status: "finalized"
 pipeline_stage: "ready-to-publish"
-task9_result: "pass-tech-review"
 task9_state: "reviewed"
 task2b_state: "fixed"
-task2b_result: "fixed"
-task9_reviewed_date: "2026-07-11"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-07-11T12:37:01+08:00"
-task9_review_notes: "2026-07-11 Task9 deep-review: pass-tech-review。P0/P1 0；P2 1 写入 suggestions（Android 15 前台服务约束仍标 [待验证]，建议补源或删去非主线判断）；Task6 已通过且 queue 无 pending，自动晋升 finalized。详见 logs/deep-review/2026-07-11-12-deep-review.md。 | 2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-06 Task9 10:24：pass-tech-review。P0/P1 0；P2 2 写入 suggestions（ANR 2.3 版本口径、Watchdog 60s/30s 半程检查）；Task6 已通过且 queue 无 pending，自动晋升 finalized。；2026-05-25 Task9 闲时抽检：needs-rework。P0 1（Dropbox tag 进程类别边界）；P2 1（Watchdog 60s/30s 半程检查口径）；详见 logs/deep-review/2026-05-25-12-audit.md。 | 2026-05-25 16:22 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 写入 suggestions（Android 10/13 ANR trace 存储演进口径需补源或去重）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-26 19:26 Task9 deep-review：needs-rework。P0 1（ProfilingManager 系统触发 API 与 ANR trigger 产物类型写错）；P1 0；P2 0；已写入 queue。 | 2026-05-27 01:22 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 已有 suggestions 不重复写入（Android 10/13 ANR trace 存储口径需后续补源或去重）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 14:31 Task9 闲时抽检 auto-fix：修正 ANR 版本口径（BroadcastQueueModernImpl 仅 Android 14/15；Android 16/17 为 BroadcastQueueImpl + AnrTimer；Watchdog 15s pre-watchdog 为 Android 15+；blamePendingFocusRequest 在 Android 14-17 均可见），回到 Task6 复审。 | 2026-07-11 Task9 idle-audit AUTO-FIX: P0 2 / P1 0 / P2 0；修正 Android 17 ContentResolver MIME 查询超时/AMS 方法名口径，以及 ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 产物类型（running system trace snapshot）；回到 Task6 复审。详见 logs/deep-review/2026-07-11-09-audit.md。"
 task6_state: "reviewed"
-task6_result: "pass-light-edit"
-last_task9_audit: "2026-07-11"
-last_task9_audit_at: "2026-07-11T09:29:58+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-11-09-audit.md"
-last_task6_at: "2026-07-11T12:06:00+08:00"
-last_task6_audit: "2026-06-25"
-last_task6_audit_at: "2026-06-25T14:05:00+08:00"
-last_task6_review_log: "logs/review/2026-07-11-12-review.md"
-task6_review_notes: "2026-07-11 Task6 revisiting-review: pass-light-edit。Task9 idle-audit auto-fix(ContentResolver MIME查询超时/AMS方法名口径, ProfilingTrigger KILL_EXCESSIVE_CPU产物类型)回流后写作层复审通过；L1扫描命中'链路'4处(参考资料/附录区域, 链路→路径/流程)已修复；'真正'2处(限额内)；高频词达标；L2开头/节奏/结构/读者引导通过；outline 5/5锚点全覆盖；无L1/L2遗留, 无L3/L4回炉项。送Task9终审确认。 | 2026-06-25 Task6：闲时抽检复审；L1/L2 无新增问题（禁用词命中真正×2，未达阈值；高频词达标；版本边界 Android 17 以内）；修复 1 处英文术语未翻译（state→状态）；锚点覆盖完整 5/5；无 L3/L4 问题。"
-last_task9_review_log: "logs/deep-review/2026-07-11-12-deep-review.md"
-auto_promoted_by: openclaw-task9
-auto_promoted_date: "2026-07-11"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-11
-last_task9_autofix_at: "2026-07-11"
-updated_by: openclaw-task9
-updated_date: "2026-07-11"
-p0: 0
-p1: 0
-p2: 1
-last_task2b_verifier_at: "2026-07-11T11:34:06+08:00"
-task2b_verifier_notes: "Task9 idle-audit auto-fix on 2026-07-11 set task6_state: revisiting + pipeline_stage: task6_pending, but status remained finalized. Corrected to ready-for-review for Task6 re-review."
 ---
 # 9.1 ANR 设计思想
 

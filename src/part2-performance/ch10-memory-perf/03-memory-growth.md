@@ -4,18 +4,10 @@ title: 内存持续增长
 chapter: '10.3'
 section: '10.3'
 status: finalized
-drafted_date: '2026-04-02'
-drafted_by: openclaw-task2a
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-07-31'
 last_verified_against: AOSP android-17.0.0_r1; Android common kernel android17-6.18-2026-06_r6
-reviewed_date: "2026-05-27"
-reviewed_by: "openclaw-task6"
-polish_count: 1
-polish_date: '2026-04-08'
-polish_by: task2b-polish
 confidence: high
-word_count: ~8000
 sources:
 - type: blog
   path: OPPO内存反碎片优化原理
@@ -59,26 +51,8 @@ related_chapters:
 - '4.5'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task6_result: "pass-light-edit"
 task9_state: reviewed
-task2b_result: "fixed-lite"
 task2b_state: fixed
-task9_result: auto-fixed
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-28"
-last_task9_at: "2026-06-13T03:24:38+08:00"
-last_task6_at: "2026-05-27T23:15:00+08:00"
-last_task6_audit: '2026-06-22'
-last_task6_audit_result: minor-fixes
-last_task9_audit: "2026-06-13"
-last_task2b_lite_at: "2026-05-27"
-last_task6_review_log: "logs/review/2026-05-27-23-review.md"
-last_task9_autofix_at: "2026-06-13"
-task6_review_notes: "2026-05-27 23:15 Task6：revisiting 写作复审通过；L1/L2 小修 3 项（删除正文编辑标记 2 处，压缩否定-纠正式句式 1 处）；无新增 L3/L4 回炉项。"
-last_task9_review_log: "logs/deep-review/2026-06-13-03-audit.md"
-task9_review_notes: "2026-06-13 03:20 Task9 闲时抽检：AUTO-FIX Bitmap 缓存像素数据 Java Heap/Native Heap 版本边界；回到 Task6 复审。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-13
 ---
 
 # 10.3 内存持续增长

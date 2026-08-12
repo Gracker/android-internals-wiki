@@ -116,47 +116,14 @@ sources:
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c
   role: dma-fence 的 sync_file fd 接口
-reviewed_date: "2026-07-04"
-reviewed_by: "openclaw-task6"
-created_by: "rendering-pipelines-merge"
-created_date: "2026-04-09"
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-task6_result: "pass-light-edit"
-task2b_result: fixed
-task2b_verifier_note: "2026-07-04T15:29:52+08:00 task9_state reviewed→pending: Task6 已于 07-04 复审通过，章节等待 Task9 复审"
-last_task2b_at: "2026-07-04T18:52:42+08:00"
-task9_result: pass-tech-review
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-07-04
-last_task9_at: "2026-07-04T18:20:00+08:00"
-repaired_date: "2026-04-26"
-repaired_by: "openclaw-task2b"
-last_task9_audit: "2026-06-28"
-last_task9_audit_at: "2026-06-28T11:34:55+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-28-11-audit.md"
-last_task6_at: "2026-07-04T20:18:00+08:00"
-task6_reviewed_date: "2026-07-04T20:18:00+08:00"
-task6_reviewed_by: "openclaw-task6"
-task6_l1_l2_fixes: "3"
-task6_l3_l4_issues: "0"
 last_verified_against: "Flutter 3.44.7 docs + Flutter commit 8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2 (VsyncWaiterAndroid, VsyncWaiter, Animator, Rasterizer, Android embedding, SurfaceProducer, Impeller, PlatformViewsController/2) / android-17.0.0_r1 (TextureView.java, SurfaceView.java, SurfaceFlinger.cpp) / android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, sync_file.c)"
-task2b_fix_source: task9-deep-tech-review
-task2b_fix_summary: "Flutter merged UI+Platform 线程模型版本边界从 3.29+→3.32 stable+，旧模型边界从 3.28-→3.31-，与 2.11/18.12 交叉引用闭环（依据 Flutter issue #150525 + release-notes-3.32.0）"
-last_task9_review_log: logs/deep-review/2026-07-02-10-deep-review.md
-last_task9_autofix_at: "2026-07-02"
-updated_by: openclaw-task9
-updated_date: 2026-07-02
-p0: 0
-p1: 1
-p2: 1
-task9_review_notes: "2026-07-02 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 1；修正 Flutter Android VSync 入口为 NDK AChoreographer 优先、Java VsyncWaiter fallback，修正 Perfetto trace 关键词与 applicable_versions 元数据；回到 Task6 复审。详见 logs/deep-review/2026-07-02-10-deep-review.md。"
 last_verified: "2026-07-31"
 confidence: high
 last_idle_audit_at: "2026-07-29T22:35:32+08:00"
 last_idle_audit_run_id: "20260729-223532-idle-audit-fc0aee5f"
-last_idle_audit_result: "pass-frontmatter-fix"
 ---
 
 # 18.12 Android 17 Flutter 渲染管线

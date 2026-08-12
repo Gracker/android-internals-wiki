@@ -44,47 +44,10 @@ related_chapters:
 - '24.10'
 - '26.3'
 - '26.5'
-drafted_date: '2026-05-22'
-created_by: task2a-knowledge-gap
-created_date: '2026-05-22'
-gap_source: 参考书素材/知识盲区/官方文档/AOSP结构
-last_task2a_at: '2026-05-22T15:04:00+08:00'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task6_result: pass-light-edit
-task6_review_notes: "2026-07-13 Task6 re-review: pass-light-edit。L1/L2 clean; 而不是 pattern 3→2 fixed; task9_result aligned to pass-tech-review; auto-promoted to finalized。"
 task9_state: reviewed
-reviewed_by: openclaw-task6
-reviewed_date: '2026-07-13'
-last_task6_at: '2026-07-13T01:10:47+08:00'
-last_task6_review_log: logs/review/2026-07-13-01-review.md
-task9_result: pass-tech-review
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-06-04'
-last_task9_at: '2026-07-12T21:39:02+08:00'
-last_task9_audit: '2026-07-12'
-last_task9_audit_log: logs/deep-review/2026-07-12-21-audit.md
-last_task9_audit_at: '2026-07-12T21:39:02+08:00'
-last_task9_audit_result: auto-fixed
-last_task9_audit_notes: 'idle audit auto-fix: source anchors updated from local android-35 SDK / Chromium lkgr to AOSP android-17.0.0_r1 Connectivity sources and versioned Cronet API evidence; no queue item.'
-last_task9_autofix_at: '2026-07-12T21:39:02+08:00'
-last_task9_autofix_log: logs/deep-review/2026-07-12-21-audit.md
-last_task9_review_log: logs/deep-review/2026-06-04-09-deep-review.md
-task9_review_notes: '2026-06-04 Task9 deep review: pass-tech-review。P0/P1 0；HTTP/3/Cronet
-  Android 17 指标字段保留为 P3 follow-up，不阻塞发布。'
-task2b_result: fixed
 task2b_state: fixed
-last_task2b_at: '2026-06-03T14:50:00+08:00'
-task2b_fixed_by: openclaw-task2b
-task2b_fixed_date: '2026-06-03'
-last_task2b_review_log: logs/deep-review/2026-05-22-15-deep-review.md
-updated_by: openclaw-task9
-updated_date: '2026-07-12'
-p0: '0'
-p1: '0'
-p2: '0'
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: '2026-06-27'
 ---
 
 # 26.14 线上网络质量监控与接入层协同

@@ -3,7 +3,6 @@ title: "Android 17 BiometricService 架构与性能优化"
 chapter: "1.45"
 section: "1.45"
 status: ready-for-review
-drafted_date: "2026-07-17"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -61,9 +60,6 @@ sources:
     path: "source.android.com/docs/security/features/authentication"
 tags: [biometric, system-service, architecture, fingerprint, face, hal, tee, performance]
 related_chapters: ["1.38", "1.44", "8.9", "8.10", "20.14"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-17"
-gap_source: "AOSP结构"
 ---
 
 # 1.45 Android 17 BiometricService 架构与性能优化

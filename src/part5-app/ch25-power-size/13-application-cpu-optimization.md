@@ -6,9 +6,6 @@ status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [CPU优化, 应用实践, 线程池, 性能优化]
 related_chapters: ["5.1", "5.9"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-02"
-gap_source: "研究盲区 Task9 发现"
 last_verified: "2026-07-26"
 last_verified_against: "AOSP android-17.0.0_r1 / android17-6.18"
 confidence: medium-high
@@ -22,8 +19,6 @@ last_draft_polish_at: "2026-07-26T15:35:39+08:00"
 last_draft_polish_run_id: "20260726-153539-draft-polish-19d43518"
 last_review_finalize_at: "2026-07-26T16:08:37+08:00"
 last_review_finalize_run_id: "20260726-160837-29efbe02"
-reviewed_by: "hermes-aiw-review-finalize-apply"
-review_note: "Rework 已将 public SDK 示例、system/priv-app 能力与源码摘录边界拆清，并移除偏向锁/伪 JNI 等误导表述；保持 ready-for-review，暂不 finalized。"
 last_rework_at: "2026-07-26T17:35:54+08:00"
 last_rework_run_id: "20260726-173554-rework-19d43518"
 sources:

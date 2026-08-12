@@ -3,14 +3,10 @@ title: "用户设置对能耗的影响：亮度、刷新率与深色模式"
 chapter: "11.7"
 section: "11.7"
 status: "finalized"
-drafted_date: "2026-05-22"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-07-31"
 last_verified_against: "AOSP android-17.0.0_r1；Android 17 / API 37 SDK；arXiv 2604.25587v1；Android 官方显示与功耗文档 2026-07"
 confidence: high
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-22"
-gap_source: "每日信息/研究论文/官方文档"
 sources:
   - type: paper
     path: "https://arxiv.org/abs/2604.25587"
@@ -50,23 +46,6 @@ pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: fixed
-task6_result: "pass-light-edit"
-task6_reviewed_date: "2026-06-07"
-task6_reviewed_by: "openclaw-task6"
-last_task6_at: "2026-06-07T12:12:00+08:00"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-07"
-task6_review_notes: "2026-06-07 task6 首次 review: L1/L2 通过（禁用词零命中、高频词合规、NOT-X-BUT-Y 仅 2 处且合理）；outline 7/7 锚点全覆盖；叙述风格符合 writing-guide；无需小修。无 B 类大问题。"
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-06-07"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-07T12:24:00+08:00"
-last_task9_audit: 2026-07-10
-last_task6_audit: 2026-07-07
-last_task9_review_log: "logs/deep-review/2026-06-07-12-deep-review.md"
-review_notes: "2026-06-07 Task9 深度技术审计通过：无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-28
 ---
 
 # 11.7 用户设置对能耗的影响：亮度、刷新率与深色模式

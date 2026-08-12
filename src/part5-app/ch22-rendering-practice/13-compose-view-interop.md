@@ -5,9 +5,6 @@ status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [compose, interop, androidview, composeview, rendering-performance, migration]
 related_chapters: ["22.3", "22.16", "22.25"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-17"
-gap_source: "AOSP结构/官方文档/章节深挖"
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized
@@ -16,8 +13,6 @@ last_draft_polish_run_id: "20260805-193505-draft-polish-8643c743"
 last_verified: "2026-08-05"
 last_verified_against: "Android android-17.0.0_r1; AndroidX Compose BOM 2026.06.01 / UI Runtime Foundation 1.11.4; Kotlin/Compose compiler 2.4.10; android17-6.18 kernel notes only for device-side mechanisms"
 confidence: medium-high
-reviewed_date: "2026-08-05"
-reviewed_by: hermes-aiw-review-finalize-apply
 last_review_finalize_at: "2026-08-05T20:06:52+08:00"
 last_review_finalize_run_id: "20260805-200652-bf2f8aa5"
 sources:

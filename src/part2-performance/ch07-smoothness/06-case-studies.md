@@ -3,14 +3,9 @@
 title: 案例集
 chapter: '7.6'
 section: '7.6'
-drafted_date: '2026-04-01'
-drafted_by: openclaw-task2a
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-07-07'
 last_verified_against: "AOSP android-17.0.0_r1 / AnimatedVectorDrawable fallbackOntoUI / Android 14 cached process freezing / ComponentCallbacks2 / Lottie vs AVD Perfetto 特征"
-polish_count: 1
-polish_date: '2026-04-04'
-polish_by: task2b-polish
 confidence: medium-high
 sources:
 - type: blog
@@ -48,45 +43,11 @@ related_chapters:
 - '2.5'
 - '2.7'
 - '4.4'
-review_count: 2
-task2b_result: "fixed"
-task2b_rework_date: "2026-05-25T11:23:10+08:00"
-task2b_fixed_at: '2026-05-09T15:40:00+08:00'
-last_task2b_at: "2026-05-27T06:51:00+08:00"
-task9_result: "pass-tech-review"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-08"
-last_task9_at: "2026-07-08T01:27:42+08:00"
-last_task9_autofix_at: "2026-07-07"
-last_task9_review_log: "logs/deep-review/2026-07-08-01-deep-review.md"
-task9_review_notes: "2026-05-25 11 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；案例六仍把 5 个 Layer 超过 4 个 Overlay Plane 写成确定根因，需改成有实机 HWC/Layer trace 证据的条件判断。 | 2026-05-27 08:22 Task9 deep-review：pass-tech-review。P0 0 / P1 0 / P2 0；案例六 HWC 降级已改为设备证据条件判断，7 个案例的数据占位均有明确待验证边界；自动晋升 finalized。 | 2026-07-07 21:20 Task9 idle audit auto-fix：将源码基准重锚到 android-17.0.0_r1；复核 AVD fallback、View hardware layer、SF CLIENT 合成链路、PowerManager thermal API 与 cached app freezer；P0 0 / P1 1（已修复） / P2 0。 | 2026-07-08 01 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 1；复核 AVD fallbackOntoUI、View hardware layer、Android 14+ cached app freezer、SurfaceFlinger CLIENT 合成路径、PowerManager thermal API、ComponentCallbacks2/onTrimMemory 与 Lottie/AVD 边界；无阻断问题，Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-p0: 0
-p1: 0
-p2: 0
 task2b_state: "fixed"
-last_task2b_verifier_at: "2026-07-07T23:28:23+08:00"
-task2b_verifier_result: "ready-for-task6"
 status: finalized
 pipeline_stage: "ready-to-publish"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-27"
 task6_state: "reviewed"
-task6_reviewed_date: "2026-05-27"
-task6_reviewed_by: "openclaw-task6"
-last_task6_at: "2026-07-08T01:15:53+08:00"
-last_task6_review_log: "logs/review/2026-07-08-01-review.md"
-review_type: "task6-writing-quality-review"
 task9_state: "reviewed"
-task6_review_notes: '2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;案例结构与表达通过。既有 Task9 P1 队列仍 pending:案例六 HWC Overlay Plane 证据边界需由 Task2B 修复。 | 2026-05-27 06:09 Task6：L1/L2 小修 5 处；案例六 HWC Overlay Plane 证据边界与文末源码调研原始块仍属 L3 风险，已写入 queue.json（priority 90）交 Task2B/Task9。 | 2026-05-27 07:11 Task6：pass-light-edit。案例六 HWC Overlay Plane 证据边界已收敛为条件判断；将 AnimatedVectorDrawable 源码补充从参考资料后移回案例四附近；无新增 L3/L4 回炉项。Task9 仍为 needs-rework/pending，送 Task9 复审。 | 2026-07-08 01 Task6 revisiting-review: pass-light-edit；L1 小修 1 处（禁用词"链路"→"调用链"）；outline 锚点全覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。'
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-08
-last_task9_audit: "2026-07-07"
-last_task6_audit: "2026-07-01"
-task6_result: "pass-light-edit"
-finalized_by: "openclaw-task9-auto-promote"
-finalized_date: "2026-07-08"
-updated_by: "openclaw-task9"
-updated_date: "2026-07-08"
 ---
 # 7.6 案例集
 

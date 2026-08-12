@@ -4,17 +4,12 @@ chapter: "18.20"
 section: "18.20"
 section_title: "Android 17 / Android XR 空间 UI 与环境资产渲染性能"
 status: ready-for-review
-drafted_by: "openclaw-task2a"
-drafted_date: "2026-05-19"
 applicable_versions: "Android XR / Jetpack XR SDK Developer Preview 4；Android 17 (API 37)"
 last_verified: "2026-07-31"
 last_verified_against: "Android 17 / API 37 与 android-17.0.0_r1 公共图形栈 / Android XR Developer Preview 4 / XR Compose 1.0.0-alpha16 / XR Runtime、SceneCore、ARCore 1.0.0-beta01 / XR Projected 1.0.0-alpha10 / Compose Glimmer 1.0.0-alpha16 / Unity Android XR Extensions / OpenXR 1.1 / android17-6.18-2026-06_r6"
 confidence: high
 tags: [android-xr, jetpack-xr, compose, rendering, assets, performance]
 related_chapters: ["2.1", "2.10", "18.1", "18.8", "18.12", "22.3", "25.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-19"
-gap_source: "官方文档/AOSP结构"
 sources:
   - type: internal-reference
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S01_rendering_types_overview.md"

@@ -3,16 +3,12 @@ title: "Predictive Back 动画与页面切换性能"
 chapter: "22.11"
 section: "22.11"
 status: ready-for-review
-drafted_date: "2026-05-18"
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37); AndroidX Activity 1.8.0+; AndroidX Fragment 1.7.0+; AndroidX Transition 1.5.0+; AndroidX NavigationEvent 1.0+"
 last_verified: "2026-05-18"
 last_verified_against: "Android Developers docs; AndroidX Activity / Fragment / Transition / NavigationEvent release notes; Perfetto FrameTimeline docs"
 confidence: medium
 tags: [predictive-back, rendering, animation, fragment, compose]
 related_chapters: ["3.3", "7.4", "18.2", "22.3", "22.10"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-18"
-gap_source: "官方文档/AndroidX 版本演进/AOSP 结构"
 sources:
   - type: official
     path: "https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture"

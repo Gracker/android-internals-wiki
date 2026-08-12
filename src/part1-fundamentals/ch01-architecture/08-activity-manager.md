@@ -104,58 +104,10 @@ related_chapters:
 - '5.8'
 - '8.1'
 - '8.2'
-last_task2b_lite_at: '2026-06-26T09:35:00+08:00'
-drafted_date: '2026-04-05'
-created_by: task2a-knowledge-gap
-created_date: '2026-04-04'
-gap_source: AOSP结构+官方文档+研究素材+读者需求
-rework_date: '2026-04-05'
-rework_by: task2a
-reviewed_by: openclaw-task6
-reviewed_date: '2026-07-01'
-task6_result: pass-light-edit
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-last_task6_audit: '2026-07-01'
 task9_state: reviewed
-task9_result: auto-fixed
 task2b_state: fixed
-task2b_result: fixed
-last_task9_at: '2026-07-01T00:39:52+08:00'
-task9_reviewed_date: '2026-07-01'
-task9_reviewed_by: openclaw-task9
-review_round: '9'
-last_task9_audit: '2026-07-01'
-task6_reviewed_by: openclaw-task6
-task6_reviewed_at: '2026-05-18T20:16:50+08:00'
-last_task6_at: '2026-07-01T09:07:00+08:00'
-last_task6_review_log: logs/review/2026-06-09-09-review.md
-last_task2b_at: '2026-05-27T22:50:00+08:00'
-last_task2b_log: 'frontmatter backlog fallback: logs/deep-review/2026-05-18-19-deep-review.md'
-task2b_notes: 修复 Task9 P95：top-sleeping oom_adj、Service ANR ProcessAnrTimer、ANR dump
-  文件路径、Broadcast delivery timeout 起点与 Android 14/15/16 广播队列类名。
-last_task9_review_log: logs/deep-review/2026-07-01-00-audit.md
-last_task9_autofix_at: '2026-07-01'
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: '2026-07-01'
-task6_l1_l2_fixes: '5'
-task6_l3_l4_issues: '0'
-last_task9_audit_log: logs/deep-review/2026-07-01-00-audit.md
-task6_review_notes: '2026-07-01 Task6 revisiting re-review (idle-audit auto-fix 后):
-  pass-light-edit。L1 小修 7 处（禁用词"链路"×7 → 流程/调用链/计算路径/路径）；无 L2/L3/L4 新增问题。Task9 idle-audit
-  source version anchoring 后写作复审通过。自动晋升 finalized。'
-task9_review_notes: '2026-07-01 Task9 idle-audit: auto-fixed Android 17 source baseline;
-  OomAdjuster moved to com.android.server.am.psc; updated OOM constants/source anchors
-  and android-17.0.0_r1 verification markers; P0 1 / P1 0 / P2 0; returned to Task6
-  review. | 2026-06-09 Task9 deep-review: pass-tech-review。复核 Task9 idle-audit auto-fix
-  与 Task6 回流；AOSP android-16.0.0_r1 源码锚点、Android 17 官方行为边界、queue pending 状态均通过；P0
-  0 / P1 0 / P2 0；自动晋升 finalized。 | 2026-06-09 Task9 idle-audit: auto-fixed P0 source
-  anchors: ProcessAnrTimer is an inner class of ActiveServices, not a standalone source
-  file; activity cold-start process launch uses ATMS.startProcessAsync() -> ActivityManagerInternal.startProcess(),
-  not AMS.startProcessAsync(); P0 2 / P1 0 / P2 0; returned to Task6 review. | 2026-05-28
-  Task9 00:33：AUTO-FIX Perfetto monitor contention SQL 表名/列名；回到 Task6 复审。 | 2026-05-28
-  Task9 deep-review: pass-tech-review。复核 Task6 回流后的技术口径；P0 0 / P1 0 / P2 0；queue 无
-  pending，自动晋升 finalized。'
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch01-architecture/1.68-android17-activitymanager-architecture-performance.md"

@@ -6,17 +6,11 @@ status: finalized
 applicable_versions: "Android 17 (API 37)"
 tags: [Android17, PowerStats, HAL, 功耗, OEM]
 related_chapters: ["5.4", "11.1", "14.8", "17.8"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-08"
-gap_source: "daily-info + research-gaps"
-priority: 80
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized
 last_draft_polish_at: "2026-08-05T11:35:04+08:00"
 last_draft_polish_run_id: "20260805-113504-draft-polish-f93bb337"
-reviewed_date: "2026-08-05"
-reviewed_by: "hermes-aiw-review-finalize-apply"
 last_review_finalize_at: "2026-08-05T12:08:38+08:00"
 last_review_finalize_run_id: "20260805-120725-a2b4bf2b"
 last_verified: "2026-08-05"

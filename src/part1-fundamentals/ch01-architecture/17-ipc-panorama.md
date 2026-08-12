@@ -67,38 +67,10 @@ related_chapters:
   - '2.15'
   - '4.1'
   - '9.1'
-created_date: '2026-04-09'
-reviewed_date: '2026-07-25'
-reviewed_by: Codex
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
 task2b_state: fixed
-task2b_result: fixed
-deepseek_cn_review_state: done
-created_by: "manual-request"
-review_log: "logs/review/2026-05-08-04-review.md"
-last_task2b_at: "2026-04-24T09:54:00+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-19"
-last_task9_at: "2026-06-19T05:28:49+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-19-05-deep-review.md"
-task6_reviewed_date: "2026-06-19"
-last_task6_at: "2026-06-19T05:08:51+08:00"
-last_task6_audit: "2026-06-17"
-task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 auto-fix（Parcel::writeBlob mAllowFds 边界、ashmem/memfd 版本门禁、RpcBinder/vsock 数据边界、Stable AIDL HAL 时间线）回流后写作层复审通过；L1/L2 无需小修，章节文风干净；无 L3/L4 回炉项，送 Task9 终审。"
-task9_review_notes: "2026-05-08 04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 仅建议；无 queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-05-08-04-deep-review.md。 | 2026-05-08 03:44 Task2B rework: P0 BINDER_VM_SIZE 改为 sysconf(_SC_PAGE_SIZE)*2；P0 Parcel::writeBlob BLOB_INPLACE_LIMIT 改为 16KB，ashmem 路径重写 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。 | 2026-05-26 20:20 Task9 闲时抽检：pass-tech-review。P0/P1 0；P2 2（RpcBinder/vsock 数据边界、Stable AIDL HAL 时间线表述需修正）；详见 logs/deep-review/2026-05-26-20-audit.md。 | 2026-06-18 Task9 idle-audit: auto-fixed。P1 1：修正 ashmem-compatible memfd 版本边界，android-17.0.0_r1 中默认 memfd 路径要求 memfd SELinux capability、vendor API 202604 与 app target SDK min 37；P2 3：修正 RpcBinder/vsock 数据边界、Stable AIDL HAL 时间线与 Parcel::writeBlob 零拷贝口径。 | 2026-06-19 Task9 deep-review AUTO-FIX: P0 1 / P1 0 / P2 0；复核 AOSP android-17.0.0_r1 Parcel.cpp，修正 writeBlob >16KB 走 ashmem fd 的条件，补充 mAllowFds 为 true 的边界；回到 Task6 复审。详见 logs/deep-review/2026-06-19-01-deep-review.md。 | 2026-06-19 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；复核 android-17.0.0_r1 Binder buffer、Parcel::writeBlob、ashmem/memfd 门禁、InputChannel/socketpair 与 HIDL/AIDL HAL 边界，Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-last_task9_audit: "2026-07-09"
-last_task9_audit_log: "logs/deep-review/2026-07-09-17-audit.md"
-last_task9_autofix_at: "2026-06-19"
-updated_by: "openclaw-task9"
-updated_date: "2026-06-19"
-p0: 0
-p1: 0
-p2: 0
-last_deepseek_cn_review_at: 2026-06-22
 ---
 
 # 1.17 IPC 全景：Android 进程间通信机制对比与性能选型

@@ -4,15 +4,10 @@ title: "Native 内存管理与优化"
 chapter: "23.3"
 section: "23.3"
 status: finalized
-drafted_date: "2026-05-14"
-reviewed_date: 2026-06-08
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-08-11"
 last_verified_against: "AOSP android-17.0.0_r1 / Android Developers docs / Perfetto docs"
 confidence: medium
-polish_count: 1
 sources:
   - type: official
     path: "https://source.android.com/docs/core/tests/debug/native-memory"
@@ -42,21 +37,6 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-task6_review_notes: "2026-05-14 task6 review: 修正 malloc_debug 限制表述，替换禁用语境下的抽象词；四层质检通过，无新增 L3/L4 回炉项，等待 Task9 review。 | 2026-06-08 Task6 (revisiting→finalized): pass-light-edit. Task9 auto-fixed malloc_debug nested quotes + AOSP anchor downgrade. L1/L2 clean. No B-class issues. Auto-promoted: task6=pass-light-edit, task9=auto-fixed, queue clear."
-last_task6_review_log: logs/review/2026-06-08-04-review.md
-last_task6_at: "2026-06-08T04:12:56+08:00"
-last_task6_audit: "2026-06-06"
-task9_result: auto-fixed
-task9_reviewed_date: 2026-05-14
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-08T03:20:00+08:00"
-last_task9_autofix_at: "2026-06-08"
-last_task9_audit: "2026-06-08"
-last_task9_review_log: logs/deep-review/2026-06-08-03-audit.md
-task9_review_notes: "2026-05-14 Task9 01:41：pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。本轮 P2 源码锚点补充已写入 suggestions.md。 | 2026-06-08 Task9 idle audit 03:20:auto-fixed。P0 1 / P1 0 / P2 1; 修正 malloc_debug wrap.<APP> 示例缺少嵌套引号的问题，并将旧 AOSP 锚点降到 android-16.0.0_r1；回到 Task6 复审。"
-task2b_result: fixed
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-11
 consolidated_from:
   - "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
   - "src/part5-app/ch23-memory-practice/11-scudo-native-heap-allocator.md"

@@ -2,21 +2,10 @@
 title: 过度绘制
 chapter: 2.8
 section: 2.8
-polish_count: 1
-polish_date: 2026-04-05
-polish_by: task2b-polish
 applicable_versions: Android 4.2 (API 17) - Android 17 (API 37)
 last_verified: 2026-07-25
 last_verified_against: AOSP android-17.0.0_r1 Properties.h/Properties.cpp, SkiaPipeline.cpp, RenderNodeDrawable.cpp, Canvas.java; androidx.compose.ui:ui:1.11.4 GraphicsLayerModifier.kt/GraphicsLayerScope.kt; kernel android17-6.18-2026-06_r6 dma-buf/dma-fence
-drafted_date: 2026-03-30
 confidence: high
-reviewed_date: 2026-04-30
-reviewed_by: openclaw-task6
-last_task6_at: 2026-07-03T12:13:55+08:00
-last_task6_audit: 2026-07-03
-task6_result: pass-light-edit
-task2b_result: fixed
-last_task2b_at: 2026-04-30T08:40:00+08:00
 task2b_state: fixed
 task9_state: reviewed
 task6_state: reviewed
@@ -67,25 +56,6 @@ sources:
     path: Writer/rendering_pipelines/S12_video_overlay_hwc_type.md
 tags: [overdraw, hwui, skia, gpu, compose, perfetto, agi]
 related_chapters: ["2.6", "2.7", "2.10", "7.1", "7.5"]
-task9_result: pass-tech-review
-task9_reviewed_date: 2026-07-03
-task9_reviewed_by: openclaw-task9
-last_task9_at: 2026-07-03T13:28:31+08:00
-last_task9_audit: 2026-07-03
-last_task9_audit_at: 2026-07-03T05:26:04+08:00
-last_task9_audit_log: logs/deep-review/2026-07-03-05-audit.md
-review_notes: '2026-04-30 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P3 1。2026-07-03 task9 audit auto-fixed：AOSP 主线锚点更新到 android-17.0.0_r1，回到 Task6 复审。 | 2026-07-03 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足 pass-tech-review 自动晋升条件，送 Task9 复核。 | 2026-07-03 09 Task9 deep-review: pass-tech-review；无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-03 13 Task9 deep-review pass-tech-review；无新增 P0/P1/P2；章节保持 finalized。'
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-07
-last_task9_autofix_at: 2026-07-03
-last_task2b_verifier_at: 2026-07-03T07:32:03+08:00
-last_task9_review_log: logs/deep-review/2026-07-03-13-deep-review.md
-p0: 0
-p1: 0
-p2: 0
-task9_p0_issues: 0
-task9_p1_issues: 0
-task9_p2_issues: 0
 ---
 
 # 2.8 过度绘制

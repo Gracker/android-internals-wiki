@@ -38,43 +38,14 @@ tags:
   - battery-historian
   - jobscheduler
   - power-management
-drafted_date: "2026-04-01"
-drafted_by: openclaw-task2a
-reviewed_date: "2026-06-02"
-task6_reviewed_date: "2026-06-02"
 task6_state: reviewed
-task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: auto-fixed
-task9_reviewed_date: "2026-06-21"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-21T15:27:38+08:00"
-last_task9_audit: "2026-06-21"
-last_task9_autofix_at: "2026-06-21"
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: "2026-06-02T08:50:00+08:00"
 pipeline_stage: ready-to-publish
-reviewed_by: openclaw-task6
-review_round: 8
 related_chapters:
   - "5.1"
   - "5.2"
   - "5.4"
-last_task9_review_log: "logs/deep-review/2026-06-21-15-audit.md"
-task9_review_notes: "2026-06-21 Task9 闲时抽检：auto-fixed。已将源码锚点升级到 android-17.0.0_r1；修正 TARE tag 状态、Notifier/BatteryStatsImpl 路径、JobScheduler 10 分钟时限版本边界，并把不存在的 JobDebugInfo 改为 PendingJobReasonsInfo/getPendingJobReasonStats 口径；回到 Task6 复审。"
-reviewed_at: "2026-06-02T01:05:00+08:00"
-last_task6_at: "2026-06-22T01:10:00+08:00"
-last_task6_review_log: "logs/review/2026-06-22-01-review.md"
-task6_review_notes: "2026-06-22 01 Task6 revisiting-review (Task9 autofix 后复审): pass-light-edit。L1 修复 1 处形容词+冒号起手式（'趋势很明确:'→直接陈述）。L2 开头/节奏/结构/读者视角均通过。无 B 类问题。自动晋升 finalized。"
-p0: 0
-p1: 0
-p2: 0
-task6_l1_l2_fixes: 1
-task6_l3_l4_issues: 0
-task6_new_rework: false
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-22
 ---
 
 # 5.6 Android 功耗管理

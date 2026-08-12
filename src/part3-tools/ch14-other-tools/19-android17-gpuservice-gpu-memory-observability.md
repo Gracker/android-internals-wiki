@@ -6,9 +6,6 @@ status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [GPU, GpuService, GpuMem, eBPF, Perfetto, statsd, memory-tracking, observability]
 related_chapters: ["10.7", "14.15", "14.16", "14.23", "14.24", "14.25", "2.32"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-11"
-gap_source: "DeepResearch素材驱动"
 sources:
   - type: aosp
     tag: "android-17.0.0_r1"
@@ -46,12 +43,9 @@ task9_state: reviewed
 pipeline_stage: finalized
 last_verified: "2026-07-30"
 last_verified_against: "AOSP android-17.0.0_r1 frameworks/native GpuService/GpuMem/GpuMemTracer/GpuStats + hardware/interfaces memtrack；Android common kernel android17-6.18-2026-06_r6 gpu_mem tracepoint"
-reviewed_date: "2026-07-25"
-reviewed_by: "hermes-aiw-review-finalize-apply"
 last_review_finalize_at: "2026-07-25T22:08:43+08:00"
 last_review_finalize_run_id: "20260725-220514-28dd4501"
 confidence: high
-android17_review_notes: "2026-07-30：逐项复核 BPF attach/map、GpuMemTracer 初始事件、GpuStats statsd pull、memtrack 与 DMA-BUF iterator；修正 Binder 服务名，命令统一为 dumpsys gpu。原 task6/task9/Hermes finalize 字段完整保留。"
 ---
 
 # 14.19 GpuService GPU 内存可观测性架构

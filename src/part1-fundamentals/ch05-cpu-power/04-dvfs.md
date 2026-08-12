@@ -28,40 +28,10 @@ tags:
   - opp
   - perfetto
 related_chapters: 
-drafted_date: '2026-04-01'
-drafted_by: openclaw-task2
-polish_count: 1
-polish_date: '2026-04-07'
-polish_by: task2b-polish
-task9_result: auto-fixed
-task9_reviewed_date: '2026-06-07'
 task2b_state: fixed
-task2b_result: fixed
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-06-29T19:26:54+08:00'
-last_task9_autofix_at: '2026-06-29'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task6_result: pass-light-edit
 task9_state: reviewed
-reviewed_by: openclaw-task6
-reviewed_date: '2026-06-07'
-task6_reviewed_date: '2026-06-30'
-last_task6_at: '2026-06-30T04:06:00+08:00'
-last_task6_audit: '2026-07-13'
-last_task2b_at: '2026-06-07T16:50:00+08:00'
-last_task6_review_log: logs/review/2026-05-06-18-review.md
-task6_review_notes: 2026-06-30 Task6 04:06 revisiting pass-light-edit. Task9 auto-fix (android-17.0.0_r1 锚点升级) 后写作复审；L1/L2 全面扫描零命中，无 B 类问题；queue 无 pending，自动晋升 finalized。 | 2026-06-07 Task6 19:14：Task9 auto-fix 后写作复审（revisiting）；L1/L2 全面扫描零命中，无需修复；送 Task9 做最终 pass 确认。 |  2026-05-06T16:04 Task2B 修复后待 Task6 复审。 | 2026-05-06 Task6 13:13：Task2B
-  修复后写作复审；清理 frontmatter 重复键并统一流水线状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06
-  16:24 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown 围栏，无新增 L3/L4 回炉项，送 Task9 复审。
-  | 2026-05-06 18:18 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown 断行、统一数值单位空格和少量
-  L2 表达；无新增 L3/L4 回炉项，送 Task9 复审。
-last_task9_review_log: logs/deep-review/2026-06-29-19-audit.md
-task9_review_notes: "2026-06-29 19:26 Task9 闲时抽检 auto-fixed：P1 1；Android 17 tag 已公开，Framework/Power HAL 源码锚点从 android-16.0.0_r1 升到 android-17.0.0_r1；回到 Task6 复审。 | 2026-06-07 19:20 Task9 pass-tech-review：P0 0 / P1 0 / P2 0；复核今日 auto-fix 结果通过，queue 无 pending，自动晋升 finalized。 | 2026-06-07 18:20 Task9 auto-fixed：P2 3；收紧 Perfetto/SCMI 频率口径、修正 7.3 相对链接、修正 scaling_cur_freq 与 thermal trip point 设备边界。回到 Task6 复审。 | 2026-06-07 17:20 Task9 auto-fixed：P0 2；修正 GameManagerService loading power mode 入口为 setGameState/notifyGraphicsEnvironmentSetup，并将 Power HAL Mode 枚举 CAMERA 修为 CAMERA_STREAMING_*。回到 Task6 复审。 | 2026-06-07 17:05 Task6 revisiting pass-light-edit. L1 禁用词「落地」→「实现于」1处. 送Task9复审. | 2026-06-07 Task9 闲时抽检：needs-rework。P0 2 / P1 1；Android 17 源码锚点未公开且补充块把 GameManagerService/PowerManager powerHint 链路写错，已写入 queue P95。"
-last_task9_audit: '2026-06-29'
-review_type: task9-idle-audit
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-30
 ---
 
 

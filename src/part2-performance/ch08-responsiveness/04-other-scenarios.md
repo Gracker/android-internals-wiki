@@ -3,17 +3,10 @@ title: "其他响应速度场景"
 chapter: "8.4"
 section: "8.4"
 status: finalized
-drafted_date: "2026-04-02"
-drafted_by: "openclaw-task2a"
-reviewed_date: "2026-05-08"
-reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-06"
 last_verified_against: "AOSP android-16.0.0_r1 Activity/InputDispatcher/View/ViewRootImpl + AndroidX ViewPager2 1.1.0 / Fragment 1.8.9 sources + Android 17 Beta config-change docs"
 confidence: medium
-polish_count: 1
-polish_date: "2026-04-07"
-polish_by: "task2b-polish"
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/app/Activity.java"
@@ -33,29 +26,8 @@ tags: ['responsiveness', 'page-switch', 'click-response', 'search', 'viewpager2'
 related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
-task6_result: "pass-light-edit"
-task9_result: auto-fixed
 task9_state: "reviewed"
-task9_reviewed_date: 2026-06-06
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-06T11:20:00+08:00"
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: "2026-05-07T17:40:00+08:00"
-repaired_date: "2026-05-07"
-repaired_by: "openclaw-task2b"
-review_notes: "2026-05-07 task2b rework R2: P0 Activity 启动路径改为 Android 9+ ClientTransaction 模型（含 8.x 旧路径说明）；P0 Binder 线程池常量改为 15；P1 删除 ViewPager2 自定义 LayoutManager prefetch 建议，补公开 API 限制说明；2026-05-07 19:05 Task6 复审：L1/L2 轻量修复通过，交回 Task9。 | 2026-05-08 Task6 09:07：复审 Task2B 修复后的 FragmentManager trace 残留表述；删除自动 slice 断言，统一为业务侧插桩口径，并完成 L1/L2 小修，等待 Task9 技术复审。 | 2026-05-08 Task9 09:27：pass-tech-review。P0/P1 0；P2 新增 2 条 suggestions（distinctUntilChanged 连续去重语义、Ripple 首帧绘制条件）；无 active queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish。"
-task9_review_notes: "2026-05-07 19:30 Task9 deep-review: needs-rework。P0 2 / P1 5 / P2 3。Top: 4.1 MemoryLimiter 误写为 PSS/exit reason；8.4 FragmentManager 自动 trace slice 未证实；19.13 协程 async trace 示例不可编译且异常路径不闭合。 | 2026-05-08 Task9 09:27：pass-tech-review。P0/P1 0；P2 新增 2 条 suggestions（distinctUntilChanged 连续去重语义、Ripple 首帧绘制条件）；无 active queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish。"
-task6_reviewed_date: "2026-05-08"
-last_task6_at: "2026-05-08T09:08:46+08:00"
-last_task6_audit: "2026-07-12"
-last_task6_review_log: "logs/review/2026-05-08-09-review.md"
-last_task9_review_log: logs/deep-review/2026-06-06-11-audit.md
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-06
-last_task9_audit: "2026-06-06"
-last_task9_autofix_at: "2026-06-06"
-task9_review_notes_r2: "2026-06-06 Task9 idle-audit: auto-fixed。P0 0 / P1 1 / P2 0；补 Android 17 targetSdk 37 配置变更默认不重启 Activity 与 android:recreateOnConfigChanges 边界，回到 Task6 复审。"
 ---
 # 8.4 其他响应速度场景
 

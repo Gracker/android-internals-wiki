@@ -7,12 +7,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-30"
 last_verified_against: "Android Developers docs 2026-06-30 + OkHttp 5.x docs + RFC 9110/9111 + AOSP android-17.0.0_r1"
 confidence: medium
-drafted_date: "2026-05-14"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-14"
-last_task6_audit: "2026-07-08"
-task6_result: pass-light-edit
-polish_count: 1
 sources:
   - type: official
     path: "https://developer.android.com/training/data-storage/app-specific"
@@ -46,15 +40,6 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-last_task2a_at: "2026-05-14T11:04:00+08:00"
-task9_result: auto-fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-30"
-last_task9_at: "2026-06-30T22:26:27+08:00"
-last_task9_audit: "2026-06-30"
-last_task9_autofix_at: "2026-06-30"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-06
 ---
 
 # 数据压缩与缓存策略

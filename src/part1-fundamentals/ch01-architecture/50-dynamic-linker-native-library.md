@@ -8,9 +8,6 @@ tags: [linker64, dynamic-linker, ELF, dlopen, namespace, RELRO, native-library, 
 related_chapters: ["1.15", "1.40", "4.6", "8.2"]
 consolidated_from:
   - "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-15"
-gap_source: "AOSP结构"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high

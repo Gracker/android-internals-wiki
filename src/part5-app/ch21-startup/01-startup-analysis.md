@@ -8,7 +8,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-12"
 last_verified_against: "AOSP android-15.0.0_r1, Android Developers launch-time docs"
 confidence: medium
-drafted_date: "2026-05-12"
 sources:
 - type: aosp
   path: frameworks/base/core/java/android/view/ViewRootImpl.java
@@ -36,30 +35,6 @@ pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: fixed
-task2b_result: fixed-lite
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-04"
-task6_reviewed_date: "2026-06-02"
-task6_result: "pass-light-edit"
-last_task6_at: "2026-06-04T05:07:00+08:00"
-last_task6_review_log: "logs/review/2026-06-02-07-review.md"
-last_task6_audit: 2026-07-17
-task6_review_notes: "2026-06-04 Task6 revisiting-review: L1/L2 无新增问题，章节整洁。自动晋升 finalized。"
-task9_result: auto-fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-02"
-last_task9_at: "2026-06-02T01:20:00+08:00"
-last_task9_review_log: logs/deep-review/2026-06-02-01-deep-review.md
-task9_review_notes: "2026-06-02 Task9 auto-fix：将 ART 启动期 GC 口径从 Android 8+ 抑制 GC 修正为 Android 10+ fork 后临时放宽堆目标、2 秒后收缩；回到 Task6 复审。"
-last_task2b_lite_at: "2026-06-01"
-last_task9_autofix_at: "2026-06-02"
-last_task2b_verifier_at: "2026-06-02T03:33:00+08:00"
-last_task2b_verifier_log: "logs/rework/2026-06-02-03-task2b-verifier.md"
-task6_reviewed_at: "2026-06-02T07:07:00+08:00"
-task6_reviewed_by: openclaw-task6
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-16
-last_deepseek_polish_at: 2026-06-16
 ---
 
 # 启动完整路径分析（App 视角）

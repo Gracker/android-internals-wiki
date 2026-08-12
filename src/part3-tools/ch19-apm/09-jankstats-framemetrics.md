@@ -4,8 +4,6 @@ title: JankStats 与 FrameMetrics
 chapter: '19'
 section: '19.09'
 status: "finalized"
-drafted_date: '2026-04-24'
-drafted_by: codex
 applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
 last_verified: '2026-05-31'
 last_verified_against: AndroidX metrics-performance 1.0.0 JankStatsApi16/24/26/31 implementation + PerformanceMetricsState + AOSP FrameMetrics Android 11/12 DEADLINE boundary
@@ -22,33 +20,9 @@ sources:
 - type: official
   path: https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/maven-metadata.xml
 pipeline_stage: "ready-to-publish"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-31"
-task6_result: pass-light-edit
 task6_state: "reviewed"
-last_task6_audit: "2026-06-12"
-last_task6_at: "2026-05-31T21:05:00+08:00"
 task9_state: "reviewed"
 task2b_state: "fixed"
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-05-31"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-31T21:20:00+08:00"
-task2b_result: "fixed"
-last_task2b_at: "2026-05-31T20:52:00+08:00"
-repaired_date: '2026-05-31'
-repaired_by: openclaw-task2b
-task6_reviewed_date: "2026-05-31"
-last_task6_review_log: "logs/review/2026-05-31-21-review.md"
-task6_review_notes: "2026-05-31 Task6 revisiting-review: L1/L2 小修 3 处；Compose 示例补齐 state 清理，送 Task9 复核。"
-last_task9_audit: "2026-07-08"
-last_task9_audit_at: "2026-07-08T16:24:49+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-08-16-audit.md"
-task9_review_notes: "2026-05-31 Task9 deep review: AndroidX metrics-performance 1.0.0 / JankStatsApi16/24/26/31 / FrameMetrics.DEADLINE 复核通过，无 P0/P1，自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-05-31-21-deep-review.md"
-last_task2b_rework_log: "Task2B 2026-05-31: 按 2026-05-21 Task9 fallback 问题修正 JankStats API16/24/26/31 实现分层与 FrameMetrics.DEADLINE API31 版本边界。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-14
 ---
 
 

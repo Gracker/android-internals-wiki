@@ -1,6 +1,5 @@
 ---
 
-drafted_date: "2026-05-24"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-08-08"
 last_verified_against: "Android Developers API reference + AOSP android-17.0.0_r1（PowerStatsService/StatsPullAtomCallbackImpl/IPowerStats.aidl/Power HAL AIDL）"
@@ -65,56 +64,20 @@ related_chapters: ["5.9", "11.2", "25.1", "25.16"]
 consolidated_from:
   - "src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md"
   - "src/part5-app/ch25-power-size/21-performance-hint-manager-practice.md"
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-23"
-gap_source: "素材驱动/官方文档/AOSP 结构"
 title: "PerformanceHintManager 与 ADPF 能效验证"
 chapter: "25.10"
 section: "25.10"
 status: finalized
-drafted_by: "task2a-knowledge-gap"
 pipeline_stage: finalized
 task6_state: reviewed
 task9_state: "reviewed"
-task2b_result: "fixed"
-task2b_rework_date: "2026-06-13"
-last_task2b_at: "2026-06-13T14:50:00+08:00"
-reviewed_by: hermes-aiw-review-finalize-apply
-reviewed_date: 2026-08-02
-task6_result: pass-light-edit
-last_task6_at: 2026-06-13T16:18:11+08:00
-last_task6_review_log: "logs/review/2026-06-13-16-review.md"
-task6_review_notes: "2026-06-13 Task6 回炉复审(revisiting→reviewed): pass-light-edit。L1 修复见 review 日志；L2/L3/L4 无新增问题；Task9 已 auto-fixed；queue 无 pending；自动晋升 finalized。"
-
-task9_result: "auto-fixed"
-task9_reviewed_date: "2026-06-13"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-13T15:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-13-15-deep-review.md"
-task9_review_notes: "2026-06-13 Task9 深度技术复审: auto-fixed。P0 1 / P1 1 / P2 1；已修复 SessionMode 枚举、headroom 版本与返回值边界、FMQ/版本演进表，回到 Task6 复审。"
-last_task9_autofix_at: "2026-06-13"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-21
 task2b_state: "fixed"
-last_task9_audit: 2026-06-13
-finalized_date: "2026-08-02"
-finalized_by: "hermes-aiw-review-finalize-apply"
 last_idle_audit_at: "2026-08-08T10:35:09+08:00"
 last_idle_audit_run_id: "20260808-103509-idle-audit-13a21d51"
-last_idle_audit_result: "pass-no-body-change"
-last_idle_audit_log: "logs/audit/2026-08-08-20260808-103509-idle-audit-13a21d51-idle-audit.md"
-last_idle_audit_notes: "2026-08-08 idle-audit: finalized 章节抽检通过；未发现 Android 18/API38 越界结论、待验证残留、来源缺口或需降级问题。正文不改动，仅刷新 idle-audit / last_verified 元数据。"
-previous_rework_at: "2026-07-31T17:35:08+08:00"
-previous_rework_run_id: "20260731-173508-rework-13a21d51"
-previous_rework_notes: "2026-07-31 rework: 当时曾尝试修正延伸阅读摘要中的 PowerStatsService 缓存阈值矛盾，但把 r1 普通路径误写为过大的缓存年龄；2026-08-04/08-06 idle-audit 已按 android-17.0.0_r1 一手源码统一更正为普通 20_000 ms / 高精度 250 ms。PowerMonitor/Perfetto 一致性实验问题已在 2026-08-02 rework/finalize 闭合。"
-last_rework_verify_at: "2026-08-02T09:36:04+08:00"
 last_rework_at: "2026-08-02T09:36:04+08:00"
 last_rework_run_id: "20260802-093547-rework-13a21d51"
-last_rework_result: "ready-for-review"
-last_rework_notes: "2026-08-02 rework: 处理一致性实验标记与 source 覆盖不足；将 PowerMonitorReadings 与 Perfetto 一致性从未闭合结论改为设备同窗验证方案，补入 2026-07-07 PowerStats HAL OEM 差异报告为 source，并将章节状态退回 ready-for-review 供 Task6 复审。"
 last_review_finalize_at: "2026-08-02T10:05:51+08:00"
 last_review_finalize_run_id: "20260802-100551-c614c850"
-last_review_finalize_notes: "Hermes AIW review-finalize: 复核 2026-08-02 rework 已闭合 PowerMonitor/Perfetto 一致性实验问题；将 AOSP 锚点从 main/android-16 表述收敛到 android-17.0.0_r1，并补正 Android 17 SessionMode 枚举；正文无 Android 18/API38 越界结论。"
 ---
 # PerformanceHintManager 与 ADPF 能效验证
 

@@ -6,14 +6,8 @@ status: finalized
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
 tags: [contentcapture, autofill, jank, ipc, accessibility]
 related_chapters: ["7.13", "7.10", "1.4"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-27"
-gap_source: "AOSP结构/章节深挖"
-drafted_date: "2026-06-28"
 last_verified: "2026-08-02"
 last_verified_against: "AOSP android-17.0.0_r1"
-reviewed_date: "2026-08-02"
-reviewed_by: "hermes-aiw-review-finalize-apply"
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized

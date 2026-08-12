@@ -3,8 +3,6 @@ title: "低内存对系统性能的影响"
 chapter: "10.4"
 section: "10.4"
 status: finalized
-drafted_date: "2026-04-02"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-31"
 last_verified_against: "AOSP android-17.0.0_r1; Android common kernel android17-6.18-2026-06_r6"
@@ -42,38 +40,9 @@ sources:
     path: "https://perfetto.dev/docs/data-sources/memory-counters"
 tags: ['low-memory', 'kswapd', 'direct-reclaim', 'lmkd', 'GC', 'memory-pressure', 'PSI', 'ZRAM', 'Perfetto', 'MGLRU', 'cgroup', 'mm-events', 'vmscan', 'oom-score-adj']
 related_chapters: ["4.1", "4.2", "4.4", "4.5", "4.8", "10.1", "10.6"]
-reviewed_date: "2026-05-05"
-reviewed_by: openclaw-task6
-polish_count: 5
-polish_date: "2026-04-22"
-polish_by: "task6-review"
-task2b_result: fixed
 task6_state: "reviewed"
-task6_result: pass-light-edit
-rework_by: openclaw-task2b
-rework_type: "review回炉修复（External Review 问题单）"
-repaired_date: "2026-05-05"
-repaired_by: "openclaw-task2b"
-review_round: 8
-task9_result: auto-fixed
 task9_state: reviewed
 pipeline_stage: ready-to-publish
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-17T12:31:45+08:00"
-review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；mm_events 源码/官方文档锚点需重核，Android 17 Generational CMC 默认化断言需收窄。 | 2026-05-05 Task2B 09:56：P0 mm_events源码锚点已修正为system/memory/lmkd/mm_events.c+libmemevents/；官方链接改为AOSP仓库直链；mem.mm_events SQL视图标注待验证。P1 Generational CMC全面默认已收窄为AOSP main可见+runtime flag条件化。 | 2026-05-05 Task6 12:26：revisiting 写作复审，清理第一人称、拟人化标题和少量填充词；L1/L2 通过，queue 无 pending，等待 Task9 复审。 | 2026-05-05 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 1；mm_events 源码路径与 Android 12+ 版本线仍错误，lmkd PSI some/full 触发语义需修正，Trace 配置中的 lmkd atrace category 需校正。 | 2026-05-05 Task2B 20:34：P0 mm_events源码路径已修正(lmkd.cpp+libmeminfo/libmemevents)；版本线收窄至Android 15+；PSI触发语义改为三档(LOW/MEDIUM→PSI some, CRITICAL→PSI full) | 2026-05-05 Task9 21:00：needs-rework。P0 1（Trace 配置 atrace_categories:\\\\\"lmkd\\\\\" 不在 AOSP atrace category 中，需改 lowmemorykiller ftrace/memory 口径）；P1 0。 | 2026-05-05 Task6 23:26：revisiting 写作复审，微调开头连锁反应表述；L1/L2 通过，queue 无 pending，转 Task9 复审。 | 2026-05-06 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；关闭上一轮 mm_events/Generational CMC/Trace category pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 1 / P1 0 / P2 0；低内存 Trace 配置中的 lmk 捕获口径错误：AOSP `memory` category 不启用 lowmemorykiller，`lowmemorykiller/lowmemorykiller` 事件名不可核，应改为 `memreclaim` category 或 legacy `lowmemorykiller/lowmemory_kill`，并标注现代 lmkd ATrace/ProcessKilled 边界。 | 2026-05-24 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；复核 lmk Trace 配置已从 memory/错误事件名修正为 memreclaim + legacy lowmemorykiller/lowmemory_kill，并补现代 lmkd ATrace/ProcessKilled 边界；queue 无 pending，Task6 已通过，自动晋升 finalized。"
-task6_reviewed_date: "2026-06-17"
-last_task6_at: "2026-06-17T19:12:00+08:00"
-last_task6_audit: "2026-06-13"
-last_task9_review_log: "logs/deep-review/2026-05-24-15-deep-review.md"
-last_task9_audit: "2026-06-17"
-last_task9_audit_at: "2026-06-17T12:31:45+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-17-12-audit.md"
-last_task9_autofix_at: "2026-06-17"
-task9_review_notes: "2026-06-17 Task9 idle audit AUTO-FIX: Android 17 lmkd PSI monitor / kill trace version boundary fixed; AOSP source links pinned to android-17.0.0_r1; returned to Task6."
-updated_date: "2026-06-17"
-updated_by: openclaw-task9
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-17
 task2b_state: fixed
 ---
 

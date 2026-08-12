@@ -7,11 +7,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-30"
 last_verified_against: "AOSP android-17.0.0_r1 + Android Developers"
 confidence: medium
-drafted_date: "2026-05-13"
-reviewed_date: "2026-05-14"
-reviewed_by: "openclaw-task6"
-task6_result: pass-light-edit
-polish_count: 1
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/graphics/manage-memory"
@@ -43,25 +38,6 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-task6_review_notes: "2026-05-14 task6 review: 修正否定纠正式开头、版本线表述和硬件 Bitmap 限制句；四层质检通过，无新增 L3/L4 回炉项，等待 Task9 review。"
-last_task6_review_log: "logs/review/2026-05-14-01-review.md"
-last_task6_at: "2026-05-14T01:14:00+08:00"
-last_task6_audit: 2026-07-15
-task9_result: auto-fixed
-task9_reviewed_date: 2026-05-14
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-30T10:25:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-30-10-audit.md"
-task9_review_notes: "2026-05-14 Task9 01:41：pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。本轮无阻塞问题。 | 2026-06-30 10 Task9 idle audit auto-fix: 按 Android 17 基线复核 Bitmap.java / BitmapFactory.java / BaseCanvas.java / ImageDecoder.java，将旧 AOSP 验证标记更新到 android-17.0.0_r1，并修正正文 Android 10-16 覆盖口径为 Android 10-17；回到 Task6 复审。"
-task2b_result: fixed
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-30
-last_task9_audit: "2026-06-30"
-last_task9_audit_at: "2026-06-30T10:25:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-30-10-audit.md"
-last_task9_autofix_at: "2026-06-30"
-updated_date: "2026-06-30"
-updated_by: openclaw-task9
 consolidated_from:
   - "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
 ---

@@ -101,39 +101,12 @@ sources:
     role: "通用 DRM vblank 状态、计数与时间接口"
 tags: ["VRR", "ARR", "Variable-Refresh-Rate", "LTPO", "setFrameRate", "FrameTimeline", "渲染管线"]
 related_chapters: ["2.3", "2.18", "2.19"]
-created_by: "rendering-pipelines-merge"
-created_date: "2026-04-09"
 pipeline_stage: ready-to-publish
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-12"
-task6_result: pass-light-edit
 task6_state: reviewed
-last_task6_audit: "2026-06-13"
-task9_result: auto-fixed
 task9_state: reviewed
-task9_reviewed_date: 2026-06-12
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-12T00:20:00+08:00"
-last_task9_audit: 2026-06-12
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: "2026-04-26T14:46:27+08:00"
-repaired_date: "2026-04-26"
-repaired_by: openclaw-task2b
-last_task9_autofix_at: 2026-06-12
-last_task9_review_log: "logs/deep-review/2026-06-12-00-audit.md"
-updated_date: 2026-06-12
-updated_by: openclaw-task9
-task9_review_notes: "2026-06-12 00:20 Task9 idle audit auto-fix: 修正 18.19 源码补充段的版本锚点与两个源码符号名；AOSP android-16.0.0_r4 与官方 ARR/Perfetto 文档复核无新增 P0/P1，回到 Task6 复审。"
 last_idle_audit_at: "2026-07-26T10:37:31+08:00"
 last_idle_audit_run_id: "20260726-103558-idle-audit-c11ac4a7"
-last_idle_audit_log: "logs/audit/2026-07-26-20260726-103558-idle-audit-c11ac4a7-idle-audit.md"
-last_task9_audit_log: "logs/audit/2026-07-26-20260726-103558-idle-audit-c11ac4a7-idle-audit.md"
-idle_audit_notes: "2026-07-26 Hermes idle audit: 补齐 last_verified/confidence/sources；按 android-17.0.0_r1 复核 Scheduler.cpp 与 RefreshRateSelector.cpp 的同名入口，修正源码锚点函数名 calculateLayerScoreLocked；未发现 Android 18/API38 越界或需降级问题。"
-
-last_task6_at: "2026-06-12T04:05:00+08:00"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-05
 ---
 
 # 18.18 Android 17 可变刷新率（ARR/VRR）渲染管线

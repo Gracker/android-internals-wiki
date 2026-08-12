@@ -5,9 +5,6 @@ status: finalized
 applicable_versions: "Android 17 (API 37) - Android 17 (API 37)"
 tags: ['Native Hook', 'Inline Hook', 'GOT/PLT', 'ARM64', 'bionic linker', 'debuggerd']
 related_chapters: ['20.12', '20.3', '14.26']
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-14"
-gap_source: "章节深挖"
 confidence: medium-high
 last_verified: "2026-07-28"
 sources:
@@ -21,13 +18,10 @@ sources:
     path: "system/core/debuggerd/handler/debuggerd_handler.cpp android-17.0.0_r1"
 last_body_apply_at: "2026-07-28T07:15:05+08:00"
 last_body_apply_run_id: "20260728-071505-5c898420"
-last_body_apply_source: "source-index:18:DeepResearch/2026-07-14-android17-native-hook-three-schools-inlinhook-arm64.md"
 task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized
-reviewed_date: "2026-07-28"
-reviewed_by: "hermes-aiw-review-finalize-apply"
 last_review_finalize_at: "2026-07-28T08:18:33+08:00"
 last_review_finalize_run_id: "20260728-081833-99d1a2d7"
 ---

@@ -3,7 +3,6 @@ title: "Android 17 Binder 可观测性：Perfetto、AIDL Trace、内核快照与
 chapter: "1.31"
 section: "1.31"
 status: ready-for-review
-drafted_date: "2026-06-27"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6"
@@ -35,10 +34,6 @@ sources:
     path: "drivers/android/binder_trace.h (android17-6.18-2026-06_r6)"
 tags: [binder, ipc, performance-monitoring, tracing, perfetto, aidl, recording]
 related_chapters: ["1.4", "1.29", "1.30", "1.38", "13.5"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-27"
-gap_source: "DeepResearch"
-gap_score: 15
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch01-architecture/01.32-android17-binder-ipc-performance-monitoring.md"

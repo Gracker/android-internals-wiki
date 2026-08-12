@@ -3,18 +3,6 @@ status: "finalized"
 title: Kotlin Coroutine、Flow 与线程调度实践
 chapter: '8.6'
 section: '8.6'
-drafted_date: '2026-04-02'
-drafted_by: openclaw-task2a
-reviewed_date: "2026-06-05"
-reviewed_by: openclaw-task6
-reworked_date: '2026-04-06'
-reworked_by: openclaw-task2b
-polish_count: 1
-polish_date: '2026-04-08'
-polish_by: task2b-polish
-polish_review_date: '2026-04-09'
-polish_review_by: openclaw-task6
-review_cycle: 4
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-08-09'
 last_verified_against: kotlinx.coroutines 1.11.0 / Android 17 android-17.0.0_r1 / kernel android17-6.18-2026-06_r6
@@ -43,22 +31,8 @@ related_chapters:
 - '8.2'
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
-task6_result: "pass-light-edit"
 task9_state: reviewed
-task9_result: auto-fixed
-task9_reviewed_date: "2026-06-05"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-05T06:20:00+08:00"
 task2b_state: fixed
-task2b_result: fixed-lite
-last_task2b_lite_at: "2026-06-05"
-task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。；2026-06-05 task9 deep-review: auto-fixed。修正 ADPF API 版本边界、reportActualWorkDuration 调用语义、结构化并发并发度描述与 Kotlin 2.2 性能百分比。"
-last_task6_at: "2026-06-05T08:10:00+08:00"
-last_task9_autofix_at: "2026-06-05"
-last_task9_review_log: "logs/deep-review/2026-06-05-06-deep-review.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-05
-last_task6_audit: "2026-07-09T10:20:48.680322"
 ---
 
 

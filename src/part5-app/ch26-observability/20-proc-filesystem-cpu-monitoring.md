@@ -3,7 +3,6 @@ title: "ProcessCpuTracker 与 /proc 伪文件系统 CPU 数据采集"
 chapter: "26.20"
 section: "26.20"
 status: ready-for-review
-drafted_date: "2026-07-16"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-07-16"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -19,9 +18,6 @@ sources:
     path: "Clippings/线上疑难问题 45.md"
 tags: [proc, ProcessCpuTracker, CPU, monitoring, observability, /proc/stat]
 related_chapters: ["26.1", "26.3", "9.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-16"
-gap_source: "参考书驱动（Clippings/线上疑难问题 45.md）"
 ---
 
 # 26.20 ProcessCpuTracker 与 /proc 伪文件系统 CPU 数据采集

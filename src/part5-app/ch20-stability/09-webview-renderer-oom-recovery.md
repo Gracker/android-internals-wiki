@@ -8,8 +8,6 @@ applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-08"
 last_verified_against: "AOSP android-16.0.0_r1 frameworks/base WebView APIs, Android Developers API refs through API 37, AndroidX WebKit API reference, Clippings structure reference"
 confidence: medium
-drafted_date: "2026-05-15"
-polish_count: 0
 sources:
   - type: clippings-structure-ref
     path: "Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md"
@@ -37,28 +35,10 @@ sources:
     path: "https://developer.android.com/reference/androidx/webkit/WebViewCompat"
 tags: [webview, oom, stability, renderer-process, recovery]
 related_chapters: ["18.13", "22.7", "26.2"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-15"
-gap_source: "素材驱动/官方文档"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-15"
-task6_result: pass-light-edit
 task6_state: reviewed
-last_task6_audit: "2026-07-04"
 task9_state: reviewed
 task2b_state: fixed
 pipeline_stage: ready-to-publish
-task9_result: auto-fixed
-task9_reviewed_date: '2026-06-08'
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-06-08T16:24:00+08:00'
-last_task9_audit: '2026-06-08'
-last_task9_audit_log: 'logs/deep-review/2026-06-08-16-audit.md'
-last_task9_autofix_at: '2026-06-08'
-task9_review_notes: '2026-05-15 task9 deep-review: pass-tech-review。无 P0/P1；P2 3；满足 Task6 pass 与 queue 无 pending，自动晋升 finalized。 | 2026-06-08 16 Task9 idle audit: auto-fixed。将 AOSP master 源码锚点收敛到 android-16.0.0_r1；补正 rendererPriorityAtExit 共享 Renderer 语义、WebViewCompat(context) 签名和 ApplicationExitInfo 证据标签；未使用 Android 18/API 38+ 内容。'
-last_task9_review_log: 'logs/deep-review/2026-06-08-16-audit.md'
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-09
 ---
 
 # WebView Renderer OOM 与白屏恢复

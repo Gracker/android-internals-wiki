@@ -3,17 +3,12 @@ title: "netd 与 DnsResolver：DNS 解析性能和故障诊断"
 chapter: "12.3"
 section: "12.3"
 status: ready-for-review
-drafted_date: "2026-05-17"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-31"
 last_verified_against: "Android 17 / API 37 / AOSP android-17.0.0_r1"
 confidence: high
 tags: [netd, dnsresolver, network-performance, connectivity, diagnostics]
 related_chapters: ["12.1", "12.2", "1.62", "24.4", "24.9"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-17"
-gap_source: "AOSP结构+官方文档+每日信息"
-gap_score: 16
 sources:
   - type: official
     path: "https://source.android.com/docs/core/ota/modular-system/dns-resolver"
@@ -35,7 +30,6 @@ sources:
     path: "https://android.googlesource.com/platform/packages/modules/DnsResolver/+/android-17.0.0_r1/DnsResolverService.cpp"
   - type: aosp
     path: "https://android.googlesource.com/platform/packages/modules/DnsResolver/+/android-17.0.0_r1/PrivateDnsConfiguration.cpp"
-last_task2a_at: "2026-05-17T16:04:00+08:00"
 ---
 
 # 12.3 netd 与 DnsResolver：DNS 解析性能和故障诊断

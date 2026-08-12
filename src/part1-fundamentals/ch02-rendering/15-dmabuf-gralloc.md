@@ -10,10 +10,6 @@ last_verified_against: Android 17 / API 37 / android-17.0.0_r1; hardware/interfa
   android-17.0.0_r1; system/memory/libdmabufheap android-17.0.0_r1;
   android17-6.18-2026-06_r6; Writer rendering_pipelines S08/S11/S12
 confidence: high
-drafted_date: '2026-04-05'
-drafted_by: openclaw-task2a
-reviewed_date: "2026-07-08"
-reviewed_by: "openclaw-task6"
 sources:
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/ui/GraphicBuffer.cpp
@@ -85,35 +81,10 @@ related_chapters:
 - '4.2'
 - '4.7'
 - '1.4'
-created_by: task2a-knowledge-gap
-created_date: '2026-04-05'
-gap_source: 素材驱动+AOSP结构+每日信息
-gap_score: 17/20
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-07-08"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-08T05:25:42+08:00"
-last_task9_audit: 2026-07-08
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: 2026-07-07T04:52:50+08:00
-task9_review_notes: "2026-07-08 Task9 idle audit:auto-fixed。将 Android 16 语境残留收敛到 android-17.0.0_r1 / Android 12-17 基准；源码锚点复核无 P0/P1，回到 Task6 复审。 | 2026-07-08 04 Task9 deep-review AUTO-FIX: 修正 16KB page size 下 DMA-BUF 尾部空洞与多进程 import/PSS 归因边界；共享 buffer 不会因 import 物理复制多份，回到 Task6 复审。 | 2026-07-08 05 Task9 终审: pass-tech-review。复核上一轮 16KB page size / DMA-BUF import 归因 auto-fix 与 Task6 pass-light-edit；AOSP android-17.0.0_r1 源码锚点成立，queue 无 pending，自动晋升 finalized。"
-last_task6_at: "2026-07-08T05:06:00+08:00"
-last_task6_review_log: "logs/review/2026-06-14-16-review.md"
-task6_review_notes: "2026-07-08 05:06 Task6 复审(revisiting→reviewed):pass-light-edit。Task9 auto-fix 后文稿复查：L1 禁用词/高频词全清（正文「对齐」为内存 alignment 技术语，非黑话）；L2 结构/节奏/可读性通过；outline 6/6 覆盖。修复 frontmatter 重复 task6_review_notes 键。L3 观察：版本演进段可补 trace 观察引导。task9_result=auto-fixed，回 Task9 终审。"
-last_task9_review_log: "logs/deep-review/2026-07-08-05-deep-review.md"
-last_task9_autofix_at: "2026-07-08"
-task6_reviewed_date: "2026-06-14"
-last_task6_audit: "2026-07-05"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-08
-last_task2b_verifier_at: "2026-07-08T03:31:42+08:00"
-task2b_verifier_result: "status-corrected-ready-for-task6"
-task2b_verifier_notes: "2026-07-08 Task2B Verifier: status finalized→ready-for-review; auto-fixed by Task9, pipeline=task6_pending, queue clear. Ready for Task6 re-review."
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch02-rendering/24-graphic-memory-dmabuf-gralloc-16kb-boundary.md"

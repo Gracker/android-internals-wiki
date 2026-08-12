@@ -3,7 +3,6 @@ title: "Android 17 Keystore 配额与登录故障治理"
 chapter: "20.14"
 section: "20.14"
 status: ready-for-review
-drafted_date: "2026-05-25"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-05-25"
 last_verified_against: "Android Developers Android 17 behavior changes, API level 37 diff, AOSP Keystore docs"
@@ -31,9 +30,6 @@ sources:
     path: "https://source.android.com/docs/security/features/keystore/implementer-ref"
 tags: [stability, keystore, keymint, android17, login]
 related_chapters: ["8.9", "20.2", "20.7", "26.5", "26.8"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-25"
-gap_source: "官方文档/每日信息/AOSP结构"
 ---
 
 # Android 17 Keystore 配额与登录故障治理

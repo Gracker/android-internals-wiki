@@ -4,44 +4,16 @@ title: "SmartPerfetto 与可复用 Trace 分析平台"
 chapter: "13.17"
 section: "13.17"
 status: "finalized"
-drafted_date: "2026-05-18"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)；Perfetto trace schema / stdlib 能力按工具版本降级"
 last_verified: "2026-06-19"
 last_verified_against: "SmartPerfetto main c4884fa73f98c71224e105304dc1c1ff98051de1; README; backend/src/types/multiTraceComparison.ts; backend/src/services/standardMetricBackfillService.ts; backend/src/services/enterpriseMigration.ts; backend/src/services/traceMetadataStore.ts; AIW 13.3/13.9/13.15/13.16/26.3/26.6/26.10"
 confidence: medium
-task6_review_notes: "2026-06-19 17 Task6 复审（Task9 auto-fix 后）：L1 修复 1 处 AI 模板结尾；L2 通过；L3 标注 🔧 企业版排查段风格不一致（bullet-only，缺叙述），不影响本轮通过；送 Task9 最终确认。"
 tags: [perfetto, smartperfetto, trace-analysis, ai-assistant, sql-guardrail, observability]
 related_chapters: ["13.3", "13.9", "13.13", "13.15", "13.16", "26.3", "26.6", "26.10"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-18"
-gap_source: "每日信息/素材驱动/章节深挖"
-gap_score: 17
-material_count: 4
 pipeline_stage: "ready-to-publish"
 task6_state: reviewed
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-19"
-task6_result: pass-light-edit
-task6_l1_l2_fixes: 1
-task6_l3_l4_issues: 0
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
 task2b_state: fixed
-task2b_result: fixed
-task9_reviewed_date: "2026-07-10"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-10T13:30:33+08:00"
-last_task9_review_log: "logs/deep-review/2026-07-10-13-deep-review.md"
-task9_review_notes: "2026-07-10 Task9 idle-audit: needs-rework。P0 0 / P1 1 / P2 0；复核 SmartPerfetto main 1508f99788bfcf18cc861e4bf4f8b472e84240c3，cutover 阶段 readAuthority=db，readTraceMetadataForContext() 在企业模式下按 trace_assets scope 读取且无 filesystem fallback；正文 L273-L290 把“DB 失败后回退文件系统”写成长期修复和监控目标，与当前企业迁移/权限边界冲突，已写入 queue.json。详见 logs/deep-review/2026-07-10-09-audit.md。 | 2026-05-28 11 Task9 auto-fix: 协调 SmartPerfetto main 标准对比指标列表与回填能力边界；回到 Task6 复审。 | 2026-05-28 12 Task9 复审：pass-tech-review。P0 0 / P1 0 / P2 0；自动晋升 finalized。 | 2026-06-19 15 Task9 闲时抽检：发现 SmartPerfetto main 运行时边界已从双运行时扩展为四类 runtime/provider 路径，写入 P1 回炉。 | 2026-06-19 16 Task9 deep-review: auto-fixed。P0 0 / P1 1（已修复）/ P2 0；标准回填能力按 SmartPerfetto main c4884fa73f98 明确为 startup.total_ms、scrolling.avg_fps、scrolling.frame_count、scrolling.jank_count、scrolling.jank_rate_pct，回到 Task6 复审。 | 2026-06-19 17 Task9 final review: pass-tech-review。P0 0 / P1 0 / P2 0；复核 16 点 SmartPerfetto 运行时/provider 边界与标准回填键 auto-fix、Task6 复审结果；queue 无 pending，自动晋升 finalized。 | 2026-07-10 Task9 回流复审: pass-tech-review。P0 0 / P1 0 / P2 0；复核 SmartPerfetto main 609ac843c268f53a6e93c2061d3c1dde29ce3e91 的 runtime/provider、标准指标回填与企业 cutover 读路径，正文已一致；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-last_task2b_at: 2026-07-10T10:50:00+08:00
-task2b_fixed_by: openclaw-task2b
-last_task2b_lite_at: 2026-06-19
-last_task6_at: "2026-07-10T12:20:00+08:00"
-last_task6_review_log: "logs/review/2026-06-19-17-review.md"
-last_task9_audit: "2026-07-10"
-last_task6_audit: "2026-07-01"
-last_task9_audit_log: "logs/deep-review/2026-07-10-09-audit.md"
 sources:
   - type: blog
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/RSS/rss-tech/2026-05-18_RSS_886623bf54.md"
@@ -57,14 +29,6 @@ sources:
     path: "src/part5-app/ch26-observability/03-performance-collection.md"
   - type: internal
     path: "src/part5-app/ch26-observability/06-ab-testing-regression.md"
-last_task9_autofix_at: "2026-07-10"
-updated_date: 2026-07-10
-updated_by: openclaw-task2b
-p0: 0
-p1: 0
-p2: 0
-finalized_by: "openclaw-task9-auto-promote"
-finalized_date: "2026-07-10"
 ---
 
 # 13.17 SmartPerfetto 与可复用 Trace 分析平台

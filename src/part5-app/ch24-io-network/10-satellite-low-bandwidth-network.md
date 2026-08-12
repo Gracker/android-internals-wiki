@@ -3,17 +3,12 @@ title: "卫星与低带宽网络适配"
 chapter: "24.10"
 section: "24.10"
 status: ready-for-review
-drafted_date: "2026-05-20"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37); Android 16 QPR2 约束卫星网络能力；低带宽/高时延网络场景"
 last_verified: "2026-05-20"
 last_verified_against: "Android Developers constrained satellite networks 2026-02-26; Android 17 features; AOSP main NetworkCapabilities.java / ServiceState.java"
 confidence: medium
 tags: [network, satellite, low-bandwidth, connectivity, reliability]
 related_chapters: ["12.1", "1.62", "12.3", "24.4", "24.5", "24.7", "24.9", "26.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-20"
-gap_source: "官方文档/每日信息/章节深挖"
-gap_score: 15
 sources:
   - type: official
     path: "https://developer.android.com/develop/connectivity/satellite/constrained-networks"

@@ -68,49 +68,15 @@ related_chapters:
   - "8.2"
   - "8.3"
   - "16.1"
-drafted_date: "2026-04-05"
-drafted_by: "openclaw-task2a"
-polish_count: 2
-polish_date: "2026-04-17"
-polish_by: "task2b-polish"
-reviewed_date: "2026-08-07"
-reviewed_by: "hermes-aiw-review-finalize-apply"
-task6_result: pass-light-edit
-task2b_result: fixed
 task6_state: reviewed
-review_round: 6
-repaired_date: "2026-04-25"
-repaired_by: "openclaw-task2b"
-review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；P0/P1 写入 queue.json，P2 写入 suggestions.md。"
-last_task6_at: "2026-06-20T08:08:00+08:00"
-last_task6_review_log: "logs/review/2026-06-20-08-review.md"
-task6_review_notes: "2026-06-20 08:08 Task6 revisiting review: pass-light-edit。L1 禁用词 0 命中，L2 可读性通过；Task9 idle-audit auto-fixed（JitCodeCache DoCollection + 404 链接修正）后正文未回退；task6+task9 双通过且 queue 无 pending，自动晋升 finalized。"
-task9_result: pass-tech-review
 task9_state: reviewed
-last_task2b_at: "2026-05-26T03:19:12+08:00"
 task2b_state: fixed
-task9_reviewed_date: "2026-06-20"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-20T05:27:05+08:00"
-task9_review_notes: "2026-05-26 Task9 deep-review 04:30: pass-tech-review。P0 0 / P1 0 / P2 1；JIT code cache 4MB 工程值仍需补实测出处；Task6 已通过且 queue 无 pending，自动晋升 finalized。 2026-06-20 Task9 idle-audit auto-fixed: JitCodeCache 回收入口按 android-15/16/17 修正为 DoCollection(Thread*)，保留 android-14 旧名边界；修正两个 404 source.android 官方链接；回到 Task6 复审。"
-last_task6_audit: "2026-07-13"
-last_task6_audit_log: "logs/review/2026-07-13-11-audit.md"
-last_task6_audit_notes: "L1/L2 格式规范修复完成，保持 finalized 状态"
-last_task9_review_log: "logs/deep-review/2026-06-20-05-audit.md"
-last_task9_audit: "2026-06-20"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: "2026-06-20"
-last_task9_autofix_at: "2026-06-20"
 last_body_apply_at: "2026-08-07T07:15:26+08:00"
 last_body_apply_run_id: "20260807-071512-04a03874"
-last_body_apply_source: "queue:freshness:src/part1-fundamentals/ch01-architecture/07-art-compilation.md"
 last_deep_review_at: "2026-08-07T08:36:48+08:00"
 last_deep_review_run_id: "20260807-083648-deep-review-962ac2dc"
-last_deep_review_log: "logs/deep-review/2026-08-07-20260807-083648-deep-review-962ac2dc-deep-review.md"
-deep_review_notes: "2026-08-07 deep-review: 复核 android-17.0.0_r1 ART/JIT/Profile 边界；未发现 Android 18/API38+ 主线结论，修正正文自引用来源标注并关闭 task9 pending 状态。P0 0 / P1 0 / P2 1（已修复）。"
 last_review_finalize_at: "2026-08-07T10:08:18+08:00"
 last_review_finalize_run_id: "20260807-100535-f89828e4"
-review_finalize_notes: "2026-08-07 Hermes finalize-apply: 复核 deep-review 结论、frontmatter/source 边界与正文可读性；未发现开放 P0/P1/P2，推进 finalized。"
 ---
 
 # 1.7 ART 编译管线与 dex2oat 优化

@@ -3,8 +3,6 @@ title: "写在前面"
 chapter: "preface.1"
 status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-drafted_date: "2026-06-22"
-drafted_by: openclaw-task2a
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1; Android Common Kernel android17-6.18-2026-06_r6; developer.android.com; source.android.com"
 confidence: medium

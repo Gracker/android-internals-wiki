@@ -3,18 +3,12 @@ title: "Android Vitals 与 Play Console 质量指标归因"
 chapter: "26.12"
 section: "26.12"
 status: ready-for-review
-drafted_date: "2026-05-21"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37); Google Play Android vitals 2026 口径"
 last_verified: "2026-05-21"
 last_verified_against: "Android Developers / Play Developer Reporting API docs, updated 2026-03-05"
 confidence: high
 tags: [observability, android-vitals, play-console, quality-metrics, release-quality]
 related_chapters: ["20.6", "21.8", "22.8", "23.7", "25.2", "26.3", "26.6", "26.7"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-21"
-gap_source: "官方文档/Clippings结构参考/AOSP结构对照"
-gap_score: 18
-material_count: 13
 sources:
   - type: clipping
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md"

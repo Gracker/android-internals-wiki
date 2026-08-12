@@ -4,15 +4,8 @@ chapter: "15.2"
 section: "15.2"
 status: "finalized"
 pipeline_stage: "ready-to-publish"
-task2b_result: fixed
 task2b_state: fixed
 task6_state: "reviewed"
-task6_reviewed_date: "2026-06-19"
-last_task6_at: "2026-06-19T04:25:46+08:00"
-task6_result: "pass-light-edit"
-last_task2b_lite_at: 2026-06-17
-drafted_date: "2026-04-04"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-07-30"
 last_verified_against: "AOSP android-17.0.0_r1；Android common kernel android17-6.18-2026-06_r6；Perfetto thread_state、FrameTimeline、memory counters 文档"
@@ -66,36 +59,7 @@ related_chapters:
   - "13.3"
   - "13.6"
   - "15.1"
-last_task6_audit: "2026-06-18"
-task6_reviewed_by: "openclaw-task6"
-task6_l1_l2_fixes: 0
-task6_l3_l4_issues: 0
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
-last_task9_at: "2026-06-19T09:26:10+08:00"
-task9_reviewed_date: "2026-06-19"
-task9_reviewed_by: "openclaw-task9"
-last_task9_review_log: "logs/deep-review/2026-06-19-09-deep-review.md"
-task9_review_notes: "2026-06-19 Task9 deep-review: auto-fixed。修正 ANR 阈值表中 startForegroundService 超时口径：Android 13-17 使用 service_start_foreground_timeout_ms=30s + service_start_foreground_anr_delay_ms=10s；fgs_start_foreground_timeout 属于普通 startService 后升前台的资格重算窗口。证据：AOSP android-17.0.0_r1 ActivityManagerConstants/ActiveServices；回到 Task6 复审。 | 2026-06-19 Task9 final-review: pass-tech-review。复核上轮 ANR FGS timeout auto-fix、Broadcast timeout CPU starvation 放宽、Perfetto thread_state/process_counter_track、SurfaceFlinger commit/composite 和 FrameTimeline SF jank 口径；未发现 P0/P1/P2，Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-p0: 0
-p1: 0
-p2: 0
-review_round: 6
-repaired_date: "2026-04-27"
-repaired_by: "openclaw-task2b"
-last_task2b_at: "2026-06-19T02:53:39+08:00"
-finalized_date: "2026-06-19"
-finalized_by: "openclaw-task9"
-last_task9_audit: "2026-07-09"
-last_task9_audit_log: "logs/deep-review/2026-07-09-12-audit.md"
-last_task9_autofix_at: "2026-06-19"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-19
-last_task2b_recovery: data recovery from commit 2c5c7c85 after Lite truncation (ec2e99c4)
-last_task2b_by: openclaw-task2b
-task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 auto-fix（ANR 阈值表 startForegroundService 超时口径修正）已确认干净。L1 禁用词/高频词/翻译腔/元叙述 0 命中。L2 可读性通过。outline 5/5 覆盖。L1-L2 小修 0 处，无 B 类问题。task9_result=auto-fixed，待 Task9 最终确认。"
-last_task6_review_log: "logs/review/2026-06-19-04-review.md"
-android17_review_notes: "2026-07-30：保留全部 task6/task9/OpenClaw 字段与 outline；把归因改为观测事实、直接原因、代码/配置所有者和改动责任四层；修正 Runnable、D 状态、kswapd、GC、SurfaceFlinger、RenderThread、Binder 与 thermal 的过度归因；内核锚点升级到 android17-6.18-2026-06_r6。"
 ---
 
 # 如何区分系统问题和 App 问题

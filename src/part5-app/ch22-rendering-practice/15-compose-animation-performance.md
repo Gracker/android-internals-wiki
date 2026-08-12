@@ -16,10 +16,6 @@ sources:
     path: "DeepResearch/2026-06-02-android-compose-derivedstate-sso-deep-source-analysis.md"
 tags: [compose, animation, animated-visibility, transition, animatable, strong-skipping, performance]
 related_chapters: ["22.3", "22.5", "7.7", "2.11"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-05"
-gap_source: "研究素材"
-drafted_date: "2026-06-05"
 consolidated_from:
   - "src/part5-app/ch22-rendering-practice/32-compose-infinite-animation-vector-converter-performance.md"
   - "src/part5-app/ch22-rendering-practice/44-compose-pager-advanced-animations.md"

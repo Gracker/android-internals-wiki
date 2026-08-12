@@ -46,36 +46,10 @@ related_chapters:
 - '4.4'
 - '7.2'
 - '7.3'
-drafted_date: '2026-03-31'
-drafted_by: openclaw-task2
-reviewed_date: 2026-06-04
-reviewed_by: openclaw-task6
-review_type: draft-review
-review_round: 5
-polish_count: 1
-polish_date: '2026-04-08'
-polish_by: task2b-polish
 pipeline_stage: ready-for-review
 task6_state: pending-verification
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: "2026-06-04T04:55:01"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-04"
-task9_review_notes: "2026-06-04 Task9 deep review: auto-fixed。修正 onTrimMemory 在 Android 16 的 ApplicationThread→主线程分发链、Debug.getPss API level、heapprofd 开销边界和 System.gc 使用边界;已回到 Task6 复审。"
-task6_result: pass-light-edit
-last_task6_at: "2026-06-23T20:08:00+08:00"
-last_task6_review_log: "logs/review/2026-06-23-20-review.md"
-task6_review_notes: '2026-06-23 task6 revisiting-review: pass-light-edit。L1 修复 1 处（恰恰相反→删除）。L2 全部通过。无B类大问题。task2b 已 fixed，task9 auto-fixed，queue.json 无 pending，自动晋升 finalized。'
-review_notes: 2026-05-12 Task6 16：15：L1/L2 小修 29 处（禁用词、第一人称导航、中英文间距、待验证标注）；L3 数据/Perfetto 证据缺口已写入 queue.json（priority 90）。
-last_task9_at: "2026-06-24T09:27:00+08:00"
-last_task9_audit: '2026-06-24'
-task9_result: pass-tech-review
 task9_state: reviewed
-last_task9_review_log: "logs/deep-review/2026-06-04-08-deep-review.md"
-last_task9_autofix_at: "2026-06-04"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-24
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch04-memory/4.35-android17-cpu-cache-locality-pss-accounting.md"

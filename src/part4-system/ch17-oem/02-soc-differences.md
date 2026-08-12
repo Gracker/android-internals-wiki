@@ -1,11 +1,8 @@
 ---
 
-task2b_rework_date: "2026-05-25T11:23:10+08:00"
 title: "SoC 平台差异"
 chapter: "17.2"
 section: "17.2"
-drafted_date: "2026-04-04"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-15"
 last_verified_against: "Qualcomm / MediaTek / Samsung / Google 官方产品页，Google Tensor G5 官方博文，ARM Cortex-X925 官方资料，AOSP android-17.0.0_r1，Android common android14-6.1 / android15-6.6 / android16-6.12 / android17-6.18"
@@ -33,35 +30,9 @@ sources:
     path: "多来源综合(web search 验证)"
 tags: [qualcomm, mediatek, samsung, exynos, tensor, adreno, mali, xclipse, soc, cpu, gpu]
 related_chapters: ["5.1", "5.3", "5.4", "2.10", "17.1"]
-task2b_result: "fixed"
-last_task2b_at: "2026-05-17T19:17:39"
-task9_result: "auto-fixed"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-15"
-last_task9_at: "2026-06-15T21:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-15-21-deep-review.md"
-task9_review_notes: "2026-05-25 11 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；8 Elite Gen 5 Vulkan、Dimensity 9500 core/GPU、Snapdragon LPDDR5X 带宽规格与官方资料不一致。 | 2026-05-27 06:23 Task9 auto-fix：按 Qualcomm / MediaTek 官方产品规格修正 8 Elite Gen 5 图形 API、Dimensity 9500 八核 CPU / Mali-G1 Ultra MC12、Snapdragon 8 Elite LPDDR5x 口径；无 queue pending。 | 2026-05-27 07:24 Task9 auto-fix：Android common 6.12 不存在 kernel/sched/energy.c；EAS 选核源码锚点改为 kernel/sched/fair.c 的 find_energy_efficient_cpu()/compute_energy()，回到 Task6 复审。 | 2026-05-27 08:22 Task9 auto-fix：按 Android common 6.1/6.6/6.12 复核 EEVDF 版本口径，避免把调度器切换绑定到 Android API；回到 Task6 复审。 | 2026-05-27 09:40 Task9 deep-review：pass-tech-review。复核 08:22 EEVDF 版本口径 auto-fix 后，Task6 09:16 仅改术语括号，未引入技术变化；queue 无 pending，自动晋升 finalized。 | 2026-06-15 19:25 Task9 idle-audit auto-fix：补充 Android 17 支持的 android17-6.18 kernel 分支口径；复核 fair.c find_energy_efficient_cpu()/compute_energy()/EEVDF 与 sched_ext ext.c 锚点；回到 Task6 复审。 | 2026-06-15 20:30 Task9 auto-fix：修正 Cortex-X925 L2/ROB 旧口径、Tensor G5 发布与 Pixel 10 RAM 机型差异、Geekbench 工具名；补充 Google/ARM 官方来源；回到 Task6 复审。 | 2026-06-15 21:20 Task9 auto-fix：清理正文误嵌 Task6 复审记录；修正 Exynos 2500/2600 时间与拓扑口径、schedutil cpufreq_update_util 触发口径与 DSU 表述；回到 Task6 复审。"
-p0: 0
-p1: 0
-p2: 0
 pipeline_stage: "ready-to-publish"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-15"
-task6_result: pass-light-edit
 task6_state: reviewed
-task6_reviewed_date: "2026-06-15"
-task6_reviewed_by: openclaw-task6
-last_task6_at: "2026-06-15T22:30:00+08:00"
-last_task6_audit: "2026-06-15"
-last_task6_review_log: "logs/review/2026-06-15-22-review.md"
-review_type: task6-writing-quality-review
 task9_state: "reviewed"
-last_task9_audit: "2026-06-15"
-last_task9_audit_log: "logs/deep-review/2026-06-15-19-audit.md"
-task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;常见问题后的联发科调度源码素材块仍未并入正文,已继续并入 queue.json priority 95。保留 Task9 2025/2026 SoC 规格 P0 pending。 | 2026-05-27 07:11 Task6：pass-light-edit。将文末联发科调度源码锚点移入 CPU 调度策略小节；L1 禁用词扫描无新增命中；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-05-27 08:07 Task6：pass-light-edit。L1/L2 文风复扫无新增命中；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-05-27 09:16 Task6：pass-light-edit。修正术语括号格式；L1 禁用词与高频词扫描无命中；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。 | 2026-06-15 20:16 Task6 复审:pass-light-edit。Task9 idle-audit 补充 android17-6.18 kernel 分支口径后文风复扫;L1 禁用词/高频词/翻译腔动词均无命中;outline 5/5 + 扩展 2/2 覆盖;待验证 26.7% < 30%;无 L1/L2 新增问题;无 L3/L4 回炉项。Task9 result 为 auto-fixed,未满足自动晋升 finalized 条件,送 Task9 复审。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-16
-last_deepseek_polish_at: 2026-06-16
 status: finalized
 task2b_state: fixed
 ---

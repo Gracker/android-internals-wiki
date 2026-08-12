@@ -6,8 +6,6 @@ status: finalized
 applicable_versions: "Android 17 (API 37)"
 last_verified: "2026-08-06"
 last_verified_against: "AOSP android-17.0.0_r1"
-reviewed_date: "2026-08-06"
-reviewed_by: "hermes-aiw-review-finalize-apply"
 confidence: high
 sources:
   - type: aosp
@@ -78,12 +76,8 @@ sources:
     path: "developer.android.com/reference/android/view/SurfaceControl"
 tags: [window, ui, performance, system-service]
 related_chapters: ["1.9", "1.38"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-17"
-gap_source: "aosp-core-services"
 last_body_apply_at: "2026-08-06T17:15:31+08:00"
 last_body_apply_run_id: "20260806-171506-e38f1c04"
-last_body_apply_source: "metadata/queue.json:freshness:src/part1-fundamentals/ch01-architecture/47-windowmanager-architecture-performance.md"
 task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed

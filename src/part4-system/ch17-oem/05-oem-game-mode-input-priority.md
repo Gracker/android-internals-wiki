@@ -3,7 +3,6 @@ title: "OEM 游戏模式输入优先级与触控调度"
 chapter: "17.5"
 section: "17.5"
 status: ready-for-review
-drafted_date: "2026-05-17"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-05-17"
 last_verified_against: "AOSP android-15.0.0_r1; Android Developers Game Mode API; Android ViewGroup touch docs"
@@ -29,16 +28,6 @@ sources:
     path: "DeepResearch/2026-05-12-oem-game-mode-input-priority-research.md"
 tags: [oem, game-mode, input, touch-latency, refresh-rate, perfetto]
 related_chapters: ["3.2", "3.4", "18.16", "17.2"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-17"
-gap_source: "研究素材/AOSP结构/官方文档"
-gap_score: 17
-material_count: 3
-source_refs:
-  - "DeepResearch/2026-05-12-oem-game-mode-input-priority-research.md"
-  - "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/app/GameManagerService.java"
-  - "https://cs.android.com/android/platform/superproject/+/master:frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp"
-  - "https://developer.android.com/games/optimize/adpf/gamemode/gamemode-api"
 ---
 
 # OEM 游戏模式输入优先级与触控调度

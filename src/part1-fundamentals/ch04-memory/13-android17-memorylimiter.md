@@ -2,7 +2,6 @@
 title: "Android 17 MemoryLimiter：memcg 限制与超限诊断"
 chapter: "4.13"
 status: ready-for-review
-drafted_date: "2026-07-02"
 applicable_versions: "Android 17 (API 37)"
 last_verified: "2026-08-07"
 last_verified_against: "AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6"
@@ -29,9 +28,6 @@ sources:
     path: "kernel.org Documentation/admin-guide/cgroup-v2.rst"
 tags: [MemoryLimiter, memory, cgroup-v2, memcg, system-architecture, Android-17]
 related_chapters: ["4.4", "4.5", "4.11", "4.14"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-02"
-gap_source: "章节深挖"
 ---
 
 # 4.13 Android 17 MemoryLimiter：memcg 限制与超限诊断

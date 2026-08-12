@@ -6,9 +6,6 @@ status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [kernel-security, ARM64, KASLR, KPTI, Spectre, PAC, BTI, MTE, GCS, CFI, performance-overhead]
 related_chapters: ["5.1", "5.4", "5.5", "4.9", "16.4", "16.5", "16.9"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-09"
-drafted_date: "2026-07-11"
 last_verified: "2026-08-11"
 last_verified_against: "Android 17 / API 37 / AOSP android-17.0.0_r1; Android Common Kernel android17-6.18-2026-06_r6 (gki_defconfig, ARM64 and arch Kconfig, entry, KASLR, Spectre, PAC, MTE, GCS, kernel parameters)"
 confidence: high

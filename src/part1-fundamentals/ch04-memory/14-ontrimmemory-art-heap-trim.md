@@ -2,7 +2,6 @@
 title: "onTrimMemory 回调与 ART Heap Trim"
 chapter: "4.14"
 status: ready-for-review
-drafted_date: "2026-06-29"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-06-29"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -30,9 +29,6 @@ sources:
     path: "DeepResearch/2026-06-28-android17-memorylimiter-procstate-polling-statsd.md"
 tags: [memory, onTrimMemory, memory-management, android17, aosp, ComponentCallbacks2, CachedAppOptimizer, MemoryLimiter, cgroup]
 related_chapters: ["4.3", "4.4", "4.11", "4.13", "10.4", "23.9"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-29"
-gap_source: "素材驱动/AOSP结构"
 pipeline_stage: ready-for-review
 task6_state: pending-verification
 last_consolidated_at: "2026-08-11"

@@ -4,15 +4,11 @@ chapter: "21.15"
 section: "21.15"
 status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-drafted_date: "2026-07-16"
 last_verified: "2026-07-16"
 last_verified_against: "AOSP android-17.0.0_r1; ARM Cortex-A Technical Reference Manual; developer.android.com/topic/performance"
 confidence: medium
 tags: [cache, cpu, cache-locality, cache-line, lru, redex, dex-layout, performance]
 related_chapters: ["21.1", "21.4", "21.6", "21.14", "5.1", "27.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-16"
-gap_source: "素材驱动(Clippings)"
 sources:
   - type: clippings-structure
     path: "[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率]"

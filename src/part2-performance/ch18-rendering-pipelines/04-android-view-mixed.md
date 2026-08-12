@@ -52,8 +52,6 @@ sources:
     role: "公开同步组契约"
 tags: ["hybrid-composition", "SurfaceView", "TextureView", "SurfaceControl", "SurfaceSyncGroup", "mixed-rendering", "parallel-pipeline", "video-playback", "HWC"]
 related_chapters: ["2.1", "2.6", "18.2", "18.6", "18.7", "18.10", "18.15"]
-created_by: "rendering-pipelines-merge"
-created_date: "2026-04-09"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -63,21 +61,6 @@ last_verified_against: "AOSP android-17.0.0_r1 TextureView/HWUI/SurfaceView/BLAS
 confidence: high
 last_idle_audit_at: "2026-07-27T18:35:19+08:00"
 last_idle_audit_run_id: "20260727-183519-idle-audit-207a0280"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-02"
-task6_result: pass-light-edit
-review_note: "Task 6 二审(2026-05-02):补 frontmatter section/sources; task6 三审(2026-05-02): re-review pass; Task9 复审(2026-05-09): pass-tech-review，自动晋升 finalized"
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-09"
-task2b_fixed_at: "2026-05-08T23:46:33"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-09T00:37:58+08:00"
-last_task9_audit: "2026-07-16"
-last_task6_audit: "2026-06-20"
-last_task6_at: "2026-05-23T03:05:00+08:00"
-task2b_result: fixed
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-15
 ---
 
 # 18.4 Android 17 混合渲染链路

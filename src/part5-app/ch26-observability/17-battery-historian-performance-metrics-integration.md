@@ -6,10 +6,6 @@ status: ready-for-review
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 tags: [Battery Historian, 性能监控, 电池, 指标集成]
 related_chapters: ["26.3", "26.12", "26.15"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-16"
-gap_source: "素材驱动/官方文档/章节深挖"
-drafted_date: "2026-06-16"
 last_verified: "2026-06-18"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high

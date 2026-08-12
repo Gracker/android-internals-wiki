@@ -6,9 +6,6 @@ status: finalized
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: [android-system, performance, optimization, background-task]
 related_chapters: ["ch25"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-25"
-gap_source: "知识缺口挖掘"
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized
@@ -18,8 +15,6 @@ last_rework_at: "2026-07-31"
 last_rework_run_id: "20260731-133535-rework-18fed3d8"
 last_review_finalize_at: "2026-07-31"
 last_review_finalize_run_id: "20260731-140539-58ae1e95"
-reviewed_date: "2026-07-31"
-reviewed_by: "hermes-aiw-review-finalize-apply"
 last_verified: "2026-07-31"
 confidence: high
 consolidated_from:

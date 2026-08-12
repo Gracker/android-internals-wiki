@@ -5,9 +5,6 @@ status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [native, memory-leak, malloc, Scudo, mallinfo, monitoring, online]
 related_chapters: ["20.3", "20.10", "20.17", "23.3", "26.19"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-16"
-gap_source: "素材驱动+章节深挖"
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized
@@ -15,8 +12,6 @@ last_draft_polish_at: "2026-08-03T15:35:11+08:00"
 last_draft_polish_run_id: "20260803-153511-draft-polish-5d4831f5"
 last_verified: "2026-08-03"
 last_verified_against: "android-17.0.0_r1 / android17-6.18-2026-06_r6"
-reviewed_date: "2026-08-03"
-reviewed_by: hermes-aiw-review-finalize-apply
 last_review_finalize_at: "2026-08-03T16:06:58+08:00"
 last_review_finalize_run_id: "20260803-160658-53d1b7cb"
 confidence: high

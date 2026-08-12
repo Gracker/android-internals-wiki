@@ -5,7 +5,6 @@ title: "Perfetto DataGrid 与 Jank CUJ 标准库"
 chapter: "13.13"
 section: "13.13"
 status: "finalized"
-drafted_date: "2026-05-16"
 applicable_versions: "Perfetto v54+ / Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-19"
 last_verified_against: "Perfetto v54.0 source (ab21398/v54.0); AOSP android-17.0.0_r1 ViewRootImpl/JankTracker/ProfileData/FrameTracker/JankInfo/Cuj/UIInteractionFrameInfoReported"
@@ -29,48 +28,12 @@ sources:
     path: "intake/research-feeds/2026-04-14-07-perfetto-v54-data-explorer-jank-cuj-heap-graph-stats.md"
 tags: [perfetto, datagrid, jank, cuj, sql, frametimeline]
 related_chapters: ["7.3", "7.4", "13.3", "13.7", "13.9", "13.10", "13.11"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-16"
-gap_source: "研究素材/官方文档"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-07-11"
-task6_result: "pass-light-edit"
-last_task6_at: "2026-07-11T12:06:00+08:00"
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-07-11"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-07-11T12:37:01+08:00"
-task2b_result: fixed-lite
 task2b_state: "fixed"
 task6_state: "reviewed"
 task9_state: "reviewed"
 pipeline_stage: "ready-to-publish"
-last_task2b_lite_at: "2026-05-28"
-last_task6_review_log: "logs/review/2026-07-11-12-review.md"
-task6_l1_l2_fixes: 1
-task6_l3_l4_issues: 0
-task6_review_notes: "2026-07-11 Task6 revisiting-review (round 6): pass-light-edit。Task9 idle-audit auto-fix(CUJ counter API: beginSection只写slice, counter需setCounter)回流后写作层复审通过；L1扫描命中'链路'1处(报告链路→报告路径)已修复；'对齐'3处均为技术语境(data/vsync alignment)非黑话用法；高频词达标；L2开头/节奏/结构/读者引导通过；outline 6/6锚点全覆盖；否定-纠正结构2处(限额内)；无L1/L2遗留, 无L3/L4回炉项。送Task9终审确认。"
-last_task9_autofix_at: "2026-07-11"
-last_task9_review_log: "logs/deep-review/2026-07-11-12-deep-review.md"
-task9_review_notes: "2026-07-11 Task9 deep-review: pass-tech-review。P0/P1/P2 0；复核 Perfetto v54.0 DataGrid/ExplorePage、CUJ counter metrics、android.cujs.* 与 AOSP android-17.0.0_r1 JankTracker/Trace API 锚点；Task6 已通过且 queue 无 pending，自动晋升 finalized。详见 logs/deep-review/2026-07-11-12-deep-review.md。 | 2026-07-11 Task9 idle-audit AUTO-FIX: P0 1 / P1 0 / P2 0；修正自定义 CUJ marker 与 counter API 数据流：`Trace.beginSection()` / `endSection()` 只写 slice，counter metrics 需要 `Trace.setCounter(\"J<my_cuj>#totalFrames\", value)` 写出 `J<*>#*` process counter；同时把 FrameTimeline 文档来源从 Perfetto main 锚定到 v54.0；回到 Task6 复审。详见 logs/deep-review/2026-07-11-10-audit.md。 | 2026-07-10 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；复核 Perfetto v54 DataGrid/ExplorePage summarizer API、android.cujs.*、weighted jank counter 与 AOSP JankTracker/FrameTimeline 锚点；Task6 已通过且 queue 无 pending，自动晋升 finalized。详见 logs/deep-review/2026-07-10-04-deep-review.md。 | 2026-07-10 Task9 idle-audit AUTO-FIX: P0 1 / P1 0 / P2 0；修正 Perfetto v54.0 ExplorePage 执行模型源码锚点：`engine.analyzeStructuredQuery` / `NodePanel.updateQuery()` 不属于当前 v54.0 调用链，改为 summarizer API（`createSummarizer` / `updateSummarizerSpec` / `querySummarizer`）与 `SQLDataSource` 物化表展示路径；回到 Task6 复审。详见 logs/deep-review/2026-07-10-03-audit.md。 | 2026-06-19 Task9 deep-review: pass-tech-review。复核 Perfetto v54.0 android.cujs.base / cuj_frame_counters / internal counters / ExplorePage，以及 AOSP android-17.0.0_r1 ViewRootImpl / JankTracker / FrameTracker / stats atoms；无 P0/P1/P2。Task6 已通过且 queue 无 pending，自动晋升 finalized。详见 logs/deep-review/2026-06-19-12-deep-review.md。 | 2026-06-19 Task9 deep-review AUTO-FIX: P0 1 / P1 0 / P2 0；修正 statsd 侧不存在的 `frame_missed` atom 标识，改为 android-17.0.0_r1 `UI_INTERACTION_FRAME_INFO_REPORTED` atom 及 `missed_frames` / `app_missed_frames` / `sf_missed_frames` 字段；回到 Task6 复审。详见 logs/deep-review/2026-06-19-07-deep-review.md。 | 2026-06-19 Task9 deep-review AUTO-FIX: P0 2 / P1 0 / P2 0；修正 android-17.0.0_r1 ViewRootImpl traversal 回调源码锚点（TraversalCallback#onVsync）与 JankTracker JankType 判定表（补入 kMissedDeadline / kMissedDeadlineLegacy 边界）；回到 Task6 复审。详见 logs/deep-review/2026-06-19-06-deep-review.md。 | 2026-06-18 Task9 idle-audit auto-fix：修正 android-17.0.0_r1 ViewRootImpl 行号、JankTracker 方法名、JankInfo/Cuj 源码锚点、Perfetto v54 CUJ counter 进程过滤和 weighted jank metric 转换口径；回到 Task6 复审。 | 2026-05-28 Task9 auto-fix：修正 android.cujs.base 源码路径、FrameTimeline/JankStats 版本表和 FrameTimeline trace data source 配置口径；回到 Task6 复审。 | 2026-05-28 06 Task9 auto-fix: 修正 JankStats API 级别，收窄 Perfetto v54.0 weighted_missed_frames 字段版本边界，回到 Task6 复审。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 Perfetto v54.0 DataGrid、CUJ counter metrics、android.cujs.* 与 FrameTimeline/JankStats 版本边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-19 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 0；Perfetto v55.0 DataExplorer 只保留为非 Android 17 范围边界，移除 v55 操作建议，正文结论收窄到 v54.0 / Android 17；回到 Task6 复审。详见 logs/deep-review/2026-06-19-05-deep-review.md。"
-p0: 0
-p1: 0
-p2: 0
-task9_reviewed_at: "2026-07-11T12:37:01+08:00"
-last_task6_audit: "2026-07-02"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-11
-last_task9_audit: "2026-07-11"
-last_task2b_verifier_at: "2026-07-11T11:34:06+08:00"
-task2b_verifier_notes: "Task9 idle-audit auto-fix on 2026-07-11 set task6_state: revisiting + pipeline_stage: task6_pending, but status remained finalized. Corrected to ready-for-review for Task6 re-review."
-auto_promoted_by: "openclaw-task9"
-auto_promoted_date: "2026-07-11"
 last_idle_audit_at: "2026-08-08"
 last_idle_audit_run_id: "20260808-223555-idle-audit-4ec8c98d"
-last_idle_audit_result: "pass-no-new-safe-fix"
-last_idle_audit_log: "logs/audit/2026-08-08-20260808-223555-idle-audit-4ec8c98d-idle-audit.md"
-updated_by: "aiw-polish-idle-audit"
-updated_date: "2026-08-08"
 ---
 # 13.13 Perfetto DataGrid 与 Jank CUJ 标准库
 

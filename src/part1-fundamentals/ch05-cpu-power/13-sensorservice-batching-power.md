@@ -3,7 +3,6 @@ title: "SensorService 与传感器批处理功耗模型"
 chapter: "5.13"
 section: "5.13"
 status: finalized
-drafted_date: "2026-05-19"
 applicable_versions: "Android 4.4 (API 19) - Android 17 (API 37)"
 last_verified: "2026-06-09"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Source sensors docs"
@@ -29,34 +28,10 @@ sources:
     path: "frameworks/native/services/sensorservice/SensorEventConnection.cpp"
 tags: [sensorservice, sensors, power, batching, cpu-wakeup]
 related_chapters: ["5.6", "11.2", "25.5", "14.8"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-19"
-gap_source: "AOSP 结构/官方文档"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-reviewed_date: "2026-06-09"
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
 task9_state: reviewed
-last_task6_at: "2026-06-09T20:10:00+08:00"
-last_task6_review_log: "logs/review/2026-06-09-20-review.md"
-task9_result: auto-fixed
-last_task9_at: "2026-06-09T19:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-09-19-audit.md"
 task2b_state: fixed
-task2b_result: fixed
-updated_date: "2026-06-09"
-updated_by: openclaw-task9
-last_task9_audit: "2026-06-09"
-last_task9_autofix_at: "2026-06-09"
-task9_reviewed_date: "2026-06-09"
-task9_reviewed_by: openclaw-task9
-p0: 0
-p1: 1
-p2: 0
-task9_review_notes: "2026-06-09 19 Task9 idle audit auto-fix: AOSP main 源码锚点不满足 Android 17 边界；android-17.0.0_r1 Gitiles 查询返回 404，已改为 android-16.0.0_r1 复核锚点并把适用范围收窄到 Android 16；回到 Task6 复审。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-16
 ---
 
 # 5.13 SensorService 与传感器批处理功耗模型

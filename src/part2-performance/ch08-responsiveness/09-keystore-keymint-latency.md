@@ -3,7 +3,6 @@ title: "Keystore/KeyMint 调用延迟与登录链路性能"
 chapter: "8.9"
 section: "8.9"
 status: ready-for-review
-drafted_date: "2026-05-22"
 applicable_versions: "Android 6 (API 23) - Android 17 (API 37)"
 last_verified: "2026-05-22"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers Keystore/BiometricPrompt docs, AOSP KeyMint docs"
@@ -35,9 +34,6 @@ sources:
     path: "https://arxiv.org/html/2507.07927v1"
 tags: [keystore, keymint, strongbox, biometricprompt, startup, responsiveness]
 related_chapters: ["6.1", "8.2", "8.3", "20.2", "26.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-22"
-gap_source: "AOSP结构/官方文档/素材驱动"
 ---
 
 # 8.9 Keystore/KeyMint 调用延迟与登录链路性能

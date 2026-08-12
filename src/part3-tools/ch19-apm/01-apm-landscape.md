@@ -3,8 +3,6 @@
 title: "APM 全景图与分类体系"
 chapter: "19"
 section: "19.01"
-drafted_date: "2026-04-24"
-drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-25"
 last_verified_against: "Android Developers JankStats / FrameMetrics / ApplicationExitInfo / ProfilingManager docs, Firebase docs, GitHub upstream READMEs, External Review 2026-04-25"
@@ -34,40 +32,11 @@ sources:
     path: "https://github.com/bytedance/btrace"
   - type: blog
     path: "https://github.com/measure-sh/measure"
-task2b_result: fixed
-last_task2b_at: "2026-05-22T11:21:56+08:00"
-last_task6_audit: "2026-06-13"
-last_task9_audit: "2026-06-15"
-last_task9_audit_at: "2026-06-15T03:20:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-15-03-audit.md"
 status: finalized
 task9_state: reviewed
-task9_result: auto-fixed
 task2b_state: fixed
 pipeline_stage: ready-to-publish
-task9_reviewed_date: "2026-05-22"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-15T03:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-22-11-deep-review.md"
-task9_review_notes: "2026-05-22 Task9 re-review: pass-tech-review。P0/P1=0；ApplicationExitInfo reason 版本边界与 AppExitInfoTracker 消息路径已修正；queue 无 pending，Task6 已通过，自动晋升 finalized。 2026-06-15 Task9 idle audit: AUTO-FIX source anchor boundary; AppExitInfoTracker / ProcessList / ApplicationExitInfo references pinned from AOSP mainline/android-15 note to android-16.0.0_r1 after direct source verification; P0/P1=0, Task6 revisiting."
-last_task9_autofix_at: "2026-06-15"
-reviewed_date: "2026-05-22"
-reviewed_by: "openclaw-task6"
 task6_state: reviewed
-task6_result: pass-light-edit
-last_task6_at: "2026-06-15T04:09:51+08:00"
-last_task6_review_log: logs/review/2026-06-15-04-review.md
-review_notes: "2026-05-21 task9 idle audit: needs-rework。P0：AppExitInfoTracker 源码位置写错；ApplicationExitInfo reason 常量值错位，写入 queue 条目 task9-audit-20260521-19.01-appexitinfo-constants-source。2026-05-21 task2b rework: AppExitInfoTracker 源码位置从 ProcessList 内部类修正为顶层类 AppExitInfoTracker.java；reason 常量按 AOSP ApplicationExitInfo.java 修正（SIGNALED=2, LOW_MEMORY=3, CRASH=4, CRASH_NATIVE=5, ANR=6 等）；消息表同步修正；删除不存在的 REASON_PROCESS_ENTRY_NULL。2026-05-22 Task6 re-review: L1/L2 pass-light-edit，修正 frontmatter 重复 key 与术语表达；Task9 P1 queue 已存在，保持 task2b_pending。 2026-06-15 Task6 revisiting review: pass-light-edit。L1 小修 0 处。无 L3/L4 回炉项。task9_result=auto-fixed (P0/P1=0), queue 无 pending, 自动晋升 finalized。"
-finalized_date: 2026-06-15
-finalized_by: openclaw-task6
-auto_promoted_date: 2026-06-15
-auto_promoted_by: openclaw-task6
-last_deepseek_polish_at: 2026-05-26
-deepseek_polish_state: done
-task6_reviewed_date: 2026-06-15
-task6_reviewed_by: openclaw-task6
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-18
 ---
 
 # APM 全景图与分类体系

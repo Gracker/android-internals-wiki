@@ -6,26 +6,8 @@ section: '5.1'
 status: "finalized"
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
-task6_result: "pass-light-edit"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-12"
-reviewed_at: "2026-05-18T01:08:00+08:00"
-last_task6_at: "2026-06-12T01:08:00+08:00"
-task6_reviewed_date: "2026-05-18"
-review_round: 5
-task2b_fixed_date: '2026-05-16T11:26:08+08:00'
-task2b_fixed_issues:
-  - oom-adj-section-trimmed-to-cross-reference
-  - eevdf-sysctl-params-and-rt-version-timeline-added
-  - diagnostic-decision-framework-added
-task6_review_notes: "2026-05-18 task6 复审：pass-light-edit。完成标点/中英文间距/SQL 别名等 L1/L2 小修；无新增 B 类问题。Task9 已 pass-tech-review 且 queue.json 无 pending，自动晋升 finalized。"
 task9_state: reviewed
-task9_result: auto-fixed
-task9_reviewed_date: "2026-06-11"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-11T15:20:00+08:00"
 task2b_state: fixed
-task2b_result: fixed
 applicable_versions: Android 6.0 (API 23) - Android 17 (API 37, EEVDF 部分需 6.6+ 内核)
 last_verified: '2026-06-11'
 last_verified_against: Linux 6.6 sched-design-CFS + kernel/sched/fair.c/debug.c,
@@ -67,21 +49,6 @@ related_chapters:
 - '5.3'
 - '2.5'
 - '7.3'
-drafted_date: '2026-03-31'
-polish_count: 1
-polish_date: '2026-04-06'
-polish_by: task2b-polish
-review_type: post-polish-quality-gate
-task9_review_notes: "2026-05-18 Task9 00:25 → pass-tech-review；前轮 P0/P1 已修复，剩余 P2（SoC 迁移数据、SQL 聚合、sched_base_slice 默认值边界）沿用既有 suggestions，不重复入队；等待 Task6 回炉。 | 2026-06-11 15 Task9 idle audit auto-fix: 修正 Linux 6.6 EEVDF base_slice debugfs 路径、默认值边界与 AOSP source tag 锚点；未发现 Android/API 38+ 越界内容，回到 Task6 复审。"
-last_task9_review_log: "logs/deep-review/2026-06-11-15-audit.md"
-last_task6_review_log: "logs/review/2026-05-18-01-review.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-29
-last_task6_audit: "2026-06-12"
-last_task9_audit: "2026-06-11"
-last_task9_autofix_at: "2026-06-11"
-updated_date: "2026-06-11"
-updated_by: openclaw-task9
 ---
 
 # 5.1 Linux 进程调度基础

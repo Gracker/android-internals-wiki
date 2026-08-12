@@ -3,19 +3,8 @@ status: ready-for-review
 title: 系统内存压力与 lmkd
 section: 4.4
 chapter: 4.4
-drafted_date: 2026-03-31
-reviewed_date: 2026-05-10
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
 task6_state: "pending-verification"
-_audit: 2026-05-21
-last_task6_audit_log: logs/review/2026-05-21-21-audit.md
-last_task6_audit: 2026-06-14
-last_task6_at: "2026-05-21T21:06:00+08:00"
 task9_state: "reviewed"
-polish_count: 1
-polish_date: 2026-04-05
-polish_by: task2b-polish
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: 2026-05-09
 last_verified_against: "AOSP android-4.0.1_r1 init.rc/ProcessList.java, android-8.1"
@@ -25,20 +14,7 @@ sources:
   path: AOSP ProcessList.java, lmkd.cpp, reaper.cpp, OomAdjuster.java, CachedAppOptimizer.java; source.android.com/docs/core/perf/lmkd; developer.android.com/about/versions/17/behavior-changes-all
 tags: "LMK, lmkd, OOM, oom_score_adj, PSI, memory-pressure, process-priority, CachedAppOptimizer, Android-17"
 related_chapters: "4.1, 4.3, 1.3, 10.4"
-task9_result: auto-fixed
 task2b_state: fixed
-task2b_result: fixed
-task9_reviewed_date: 2026-06-08
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-08T22:20:00+08:00"
-review_notes: "2026-04-27 task2b: 修复 Task9 P0/P1 与 external P1；校正旧 LMK 初始化、userspace"
-last_task9_autofix_at: 2026-06-08
-last_task2b_at: "2026-06-08T21:06:43+08:00"
-task2b_fixed_by: openclaw-task2b
-repaired_date: 2026-04-27
-repaired_by: openclaw-task2b
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-09
 pipeline_stage: ready-for-review
 last_consolidated_at: "2026-08-11"
 consolidated_from:

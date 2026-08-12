@@ -3,7 +3,6 @@ title: "Media Performance Class 与设备能力分级"
 chapter: "17.6"
 section: "17.6"
 status: ready-for-review
-drafted_date: "2026-05-18"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37); Android 11 可通过 Jetpack Core / Google Play services 回退读取"
 last_verified: "2026-05-18"
 last_verified_against: "AOSP main Build.java + Android 16 CDD + Android Developers Performance class docs"
@@ -27,14 +26,6 @@ sources:
     path: "frameworks/support/core/core-performance-play-services/src/main/java/androidx/core/performance/play/services/PlayServicesDevicePerformance.kt"
 tags: [media-performance-class, device-capability, oem, camera, media]
 related_chapters: ["18.21", "14.20", "17.2", "18.14", "25.10"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-18"
-gap_source: "官方文档"
-source_candidates:
-  - "https://developer.android.com/topic/performance/performance-class"
-  - "https://source.android.com/docs/compatibility/16/android-16-cdd"
-  - "https://source.android.com/docs/compatibility/cts/media-cts"
-  - "https://android-developers.googleblog.com/2022/03/using-performance-class-to-optimize.html"
 ---
 
 # Media Performance Class 与设备能力分级

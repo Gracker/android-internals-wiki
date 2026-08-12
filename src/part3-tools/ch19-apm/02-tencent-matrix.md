@@ -3,8 +3,6 @@ title: "Tencent Matrix"
 chapter: "19"
 section: "19.02"
 status: finalized
-drafted_date: "2026-04-24"
-drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-27"
 last_verified_against: "Tencent Matrix README/wiki + Matrix.java Builder#pluginListener + AGP Transform API removal notes + external review AGP8/methodMapping assets"
@@ -20,26 +18,6 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-reviewed_date: "2026-04-24"
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
-task2b_result: fixed
-last_task6_audit: "2026-07-16"
-last_task2b_at: "2026-04-27T22:40:00+08:00"
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-06"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-06T04:36:19+08:00"
-last_task9_audit: "2026-07-09"
-last_task9_audit_log: "logs/deep-review/2026-07-09-19-audit.md"
-repaired_date: "2026-04-27"
-repaired_by: openclaw-task2b
-review_notes: "2026-05-06 task9 deep-review: pass-tech-review。P1 0 / P2 2；无 P0/P1，记录 Matrix README/API 与 AGP 版本边界建议。"
-
-deepseek_polish_state: done
-last_deepseek_polish_at: 2026-05-25
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-16
 ---
 
 # Tencent Matrix

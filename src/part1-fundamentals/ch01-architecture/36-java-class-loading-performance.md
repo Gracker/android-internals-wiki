@@ -3,7 +3,6 @@ title: "Android Java 类加载链路与启动期类加载性能"
 chapter: "1.36"
 section: "1.36"
 status: ready-for-review
-drafted_date: "2026-06-28"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -47,9 +46,6 @@ sources:
     path: "https://developer.android.com/topic/performance/baselineprofiles/difference-baseline-startup"
 tags: [classloader, class-loading, dexpathlist, startup, verification, art]
 related_chapters: ["1.7", "1.9", "1.11", "1.22", "8.2", "21.1", "21.4"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-28"
-gap_source: "AOSP结构/章节深挖"
 ---
 
 # 1.36 Android Java 类加载链路与启动期类加载性能

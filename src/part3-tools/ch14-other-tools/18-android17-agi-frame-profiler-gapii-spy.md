@@ -6,13 +6,9 @@ status: ready-for-review
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 tags: [agi, gpu-debug, gapii, gapidapk, vulkan-layer, gpu-capture, frame-profiler, gpu-replay]
 related_chapters: ["14.15", "14.16", "2.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-09"
-gap_source: "DeepResearch + research-gaps"
 last_verified: "2026-07-30"
 last_verified_against: "AOSP android-17.0.0_r1 frameworks/native Vulkan loader + AGI v3.3.3 (5f97b4fd99a9459320b782203ce2de5351a1e661) + Android Developers AGI docs updated through 2026-05-19"
 confidence: high
-android17_review_notes: "校正旧 frontmatter 的不存在 AOSP 路径和 404 文档；确认 v3.3.3 仍为当前稳定版、官方要求 Android 11+；补充 Native/Game 出图边界、ANGLE 残留清理和 Frame Profile 不覆盖 SF/HWC/present 的验收规则。git 历史确认本章从未写入 task6/task9 字段，未伪造状态。"
 sources:
   - type: aosp
     path: "frameworks/native/vulkan/libvulkan/layers_extensions.cpp @ android-17.0.0_r1"

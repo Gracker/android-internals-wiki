@@ -5,23 +5,13 @@ chapter: 14.22
 section: 14.22
 status: finalized
 task6_state: reviewed
-task6_result: pass-light-edit
 task2b_state: fixed
-task2b_result: fixed-lite
-task9_result: auto-fixed
 task9_state: reviewed
 pipeline_stage: ready-to-publish
-last_task2b_lite_at: 2026-06-28
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-29
-last_task9_autofix_at: 2026-06-28
-last_task9_audit: 2026-06-28
-drafted_date: 2026-05-19
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: 2026-07-30
 last_verified_against: Android Studio Quail 2 / Android Developers Layout Inspector docs updated 2026-07-20 / android-17.0.0_r1
 confidence: medium
-last_task6_audit: 2026-07-14
 sources: 
   - type: official
     path: "https://developer.android.com/studio/debug/layout-inspector"
@@ -51,11 +41,6 @@ sources:
     path: "技术文章/source/juejin-android/2026-05-11-75967106-2026年了，Android开发该如何调.md"
 tags: [layout-inspector, viewdebug, android-studio, compose, view-hierarchy]
 related_chapters: ["7.10", "14.1", "22.1", "22.3"]
-created_by: task2a-knowledge-gap
-created_date: 2026-05-19
-gap_source: 素材驱动/官方文档/AOSP结构
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-28
 ---
 # 14.22 Layout Inspector 与 ViewDebug 布局调试
 

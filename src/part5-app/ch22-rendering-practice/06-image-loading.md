@@ -8,8 +8,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-02"
 last_verified_against: "AOSP android-17.0.0_r1, Android Developers docs, Glide/Coil docs, Clippings 结构参考"
 confidence: medium
-drafted_date: "2026-05-13"
-polish_count: 0
 sources:
   - type: clippings-structure-ref
     path: "Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md"
@@ -49,28 +47,6 @@ pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: "fixed"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-07-04"
-task6_reviewed_date: "2026-05-13"
-task6_result: pass-light-edit
-last_task6_at: "2026-07-04T08:05:00+08:00"
-last_task6_audit: "2026-07-04"
-last_task6_review_log: "logs/review/2026-05-13-09-review.md"
-task6_review_notes: "2026-07-04 Task6 复审：L1 轻修（禁用词\"链路\"→\"流程\"；删除元叙述句）；四层质检通过，task9 已 auto-fixed，queue 无 pending，自动晋升 finalized。"
-finalized_date: "2026-07-04"
-finalized_by: "openclaw-task6-auto-promote"
-task9_result: auto-fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-05-19'
-last_task9_at: "2026-07-02T15:26:14+08:00"
-last_task9_audit: "2026-07-02"
-last_task9_audit_log: "logs/deep-review/2026-07-02-15-audit.md"
-last_task9_autofix_at: "2026-07-02"
-last_task9_review_log: "logs/deep-review/2026-05-19-07-deep-review.md"
-task9_review_notes: "2026-07-02 Task9 闲时抽检：复核 Android 17 源码路径与 BitmapRegionDecoder 格式版本差异；auto-fix Android 17 锚点和区域解码 AVIF 版本边界，回到 Task6 复审。"
-task2b_result: "fixed"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-04
 ---
 
 # 图片加载与显示优化

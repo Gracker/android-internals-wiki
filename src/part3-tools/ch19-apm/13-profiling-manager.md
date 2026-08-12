@@ -3,14 +3,11 @@ title: "ProfilingManager"
 chapter: "19"
 section: "19.13"
 status: finalized
-drafted_date: "2026-04-24"
-drafted_by: "codex"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)（app-driven API 35；system-triggered 触发器覆盖 API 36、version 36.1、API 37）"
 last_verified: "2026-07-30"
 last_verified_against: "AOSP android-17.0.0_r1 packages/modules/Profiling (ProfilingService / ProfilingManager / ProfilingTrigger / ProfilingResult) + developer.android ProfilingManager / ProfilingTrigger / ProfilingResult + AndroidX Profiling reference | 2026-07-30 rework: cleared pending-verification-marker (待验证→要排查) + thin-source-marking (补 3 处内联 [来源:] 标记)"
 last_rework_at: "2026-07-30T17:35:57+08:00"
 last_rework_run_id: "20260730-173557-rework-d7fa8e54"
-rework_notes: "2026-07-30 rework：解决 2 个启发式 quality_flag。pending-verification-marker：§'按结果类型选请求' 首句 '待验证的问题' 改为 '要排查的性能问题'（消除误触发词，语义不变）。thin-source-marking：在版本边界声明、文件后缀来源、trigger 登记语义三处补内联 [来源:] 标记（共 3 处，≥2 阈值），全部映射既有 frontmatter sources。章节本身已是 finalized + ready-to-publish，sources 完备（12 条），本次为启发式标记清除，不改技术结论。"
 confidence: medium
 tags: [apm, profiling, perfetto]
 related_chapters: ["19.9", "19.10", "15.5", "13.1", "9.1", "8.2"]
@@ -47,39 +44,6 @@ pipeline_stage: ready-to-publish
 task6_state: "reviewed"
 task9_state: reviewed
 task2b_state: fixed
-task9_result: pass-tech-review
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-07-08"
-last_task6_at: "2026-07-07T20:11:24+08:00"
-last_task6_audit: "2026-06-20"
-last_task6_review_log: "logs/review/2026-06-14-11-review.md"
-last_task9_at: "2026-07-08T00:31:29+08:00"
-last_task9_audit: "2026-07-07"
-last_task9_audit_log: "logs/deep-review/2026-07-07-19-audit.md"
-task9_audit_notes: "2026-07-07 Task9 idle audit：auto-fixed。P0 1：android-17.0.0_r1 ProfilingService 输出 Java heap dump 后缀为 .perfetto-java-heap-dump，正文原写 .hprof 已修正。"
-task9_review_notes: "2026-06-14 Task9 deep review：pass-tech-review。复核 ProfilingManager API35、ProfilingTrigger API36/36.1/API37、SDK_INT_FULL/BAKLAVA_1、AndroidX Profiling builder 与限流/结果目录口径；无 P0/P1，queue 无 pending，Task6 已通过，自动晋升 finalized。 | 2026-07-07 Task9 idle audit：auto-fixed。P0 1：将 Java heap dump 产物后缀从 .hprof 修正为 android-17.0.0_r1 ProfilingService 实际输出 .perfetto-java-heap-dump，回到 Task6 复审。"
-task2b_result: fixed
-last_task2b_at: "2026-05-31T18:50:00+08:00"
-task2b_fixed_at: "2026-05-31T18:50:00+08:00"
-task2b_rework_source: "frontmatter backlog fallback; logs/deep-review/2026-05-20-07-deep-review.md"
-task2b_rework_notes: "修复 Task9 19.16：拆开 profileable/shell 与线上 ProfilingManager 前提；补 OOM trigger 默认 uncaught handler 透传要求；补 rate limiter cost/hour/day/week 模型；替换 404 官方 guide URL。"
-repaired_date: "2026-04-25"
-repaired_by: "openclaw-task2b"
-task6_result: "pass-light-edit"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-07-07"
-last_task9_review_log: "logs/deep-review/2026-07-08-00-deep-review.md"
-task6_reviewed_date: "2026-07-07"
-last_task2b_verifier_at: "2026-07-07T23:28:23+08:00"
-last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
-last_task9_autofix_at: "2026-07-07"
-task6_review_notes: '2026-07-07 Task6 revisiting review: pass-light-edit；Task9 auto-fix .hprof→.perfetto-java-heap-dump 已验证正确；L1/L2 扫描干净；锚点 5/5 覆盖；无 L3/L4 回炉项。task9_result=auto-fixed 非 pass-tech-review，未自动晋升。 | 2026-06-14 Task6 revisiting review: pass-light-edit；terminology 一致性修复 artifact→产物 (5处)；Task9 auto-fix SDK_INT_FULL 已验证正确；无新增 Task2B 回炉项。'
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-08
-finalized_date: "2026-07-08"
-finalized_by: openclaw-task9-auto-promote
-auto_promoted_date: "2026-07-08"
-auto_promoted_by: openclaw-task9
 ---
 
 

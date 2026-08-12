@@ -19,38 +19,12 @@ tags:
 - leakcanary
 - apm
 - android-17
-task9_result: auto-fixed
-task6_result: pass-light-edit-v3
 task6_state: reviewed
 task9_state: reviewed
-task2b_result: fixed
 task2b_state: fixed
-last_task2b_main_at: '2026-06-29T08:52:56+08:00'
-reviewed_by: openclaw-task6
-reviewed_date: '2026-06-29'
 pipeline_stage: ready-to-publish
-task9_review_notes: '2026-06-27 Task2B Lite: 修复网络聚合、JankStats关系锚点缺失，重写隐私保护与数据生命周期管理，验证内存分类精度数据补充测试条件，确认
-  LeakCanary ScheduleRef 机制描述准确性。2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题。2026-06-29
-  Task9 Idle Audit: StatsD 虚构 PERFORMANCE_METRICS_ATOM/API/权限主线已重写为 android-17.0.0_r1
-  可验证内容。2026-06-29 Task2B 主修复: 全章源码级重写——移除虚构 PERFORMANCE_METRICS_ATOM(10244)、删除不存在的
-  StatsManager.pullAtoms()/logEvent()/READ_PRECISE_STATS、修正 StatsManager→addConfig/query/setPullAtomCallback、重写
-  StatsCompanionService 描述、电机感知/URL归一化/网络限额/缓存策略降级为APM自建策略示例。 2026-06-29 Task9 Deep
-  Tech Review: 发现 StatsD pull atom 方向、StatsManager 签名/查询路径、APP_START_OCCURRED ID/字段、JankStats
-  API 多处源码级错误，已写入 queue P95 回 Task2B。 2026-06-29 Task2B 主修复: 修正 StatsD pull atom 方向(setPullAtomCallback
-  是数据提供方非消费方)、修正 addConfig 返回 void + 补充 getReports 查询路径、重写 §1.3 示例(删除虚构 APP_START_OCCURRED
-  ID 10141/atom.getLatencyMillis() + 改为三条 App 可用路径+特权组件 pull atom 提供方示例)、修正 JankStats
-  API(createAndTrack/isTrackingEnabled/createAndTrack 替代 addFrameListener/setEnabled/setSamplingRate)、修正
-  FrameData 字段(frameDurationUiNanos/states 替代 frameOverrunNanos)、修正 §4.2/§6.1/§8.1/总结
-  中 pull atom 描述。 2026-06-29 Task9 Deep Tech Review auto-fix: 修正 StatsLog 公开 breadcrumb
-  与任意 StatsEvent SystemApi 边界、StatsManager query/权限签名、JankStats StateInfo/Java setter、Freezer
-  cgroup 语义、memtrack/StatsD 版本演进表、Android 17 SDK 常量与未验证留存数据。'
-last_task9_audit: '2026-08-09'
-last_task9_at: '2026-08-09T03:47:35+08:00'
-last_task9_autofix_at: '2026-06-29'
-last_task6_audit: '2026-07-17T21:13:00+08:00'
 last_idle_audit_at: '2026-08-09T03:47:35+08:00'
 last_idle_audit_run_id: '20260809-034735-idle-audit-0e177ec8'
-last_idle_audit_log: logs/audit/2026-08-09-20260809-034735-idle-audit-0e177ec8-idle-audit.md
 sources:
 - type: source
   path: https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/framework/java/android/app/StatsManager.java

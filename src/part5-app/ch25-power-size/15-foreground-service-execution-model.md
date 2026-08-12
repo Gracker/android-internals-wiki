@@ -3,7 +3,6 @@ title: "Android 17 前台服务类型执行模型与后台启动性能边界"
 chapter: "25.15"
 section: "25.15"
 status: ready-for-review
-drafted_date: "2026-07-16"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-07-16"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -12,10 +11,6 @@ consolidated_from:
   - "src/part5-app/ch25-power-size/13-fgs-timeout-jobscheduler-quota.md"
 tags: ['foreground-service', 'fgs-type', 'background-launch', 'power', 'android17', 'bals']
 related_chapters: ["25.4", "25.14", "8.11"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-16"
-gap_source: "AOSP结构 + 官方文档 + research-gaps"
-gap_score: "17/20"
 sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActiveServices.java (android-17.0.0_r1)"

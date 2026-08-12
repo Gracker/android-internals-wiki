@@ -1,20 +1,10 @@
 ---
-last_task9_at: "2026-07-01T02:28:16+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-04-20
 title: "SharedPreferences 与 DataStore：I/O、ANR 与多进程一致性"
 chapter: "6.4"
 status: ready-for-review
-drafted_date: "2026-04-08"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"
 last_verified: "2026-07-01"
 last_verified_against: "AOSP android-17.0.0_r1 SharedPreferencesImpl.java / QueuedWork.java / ActivityThread.java / BroadcastReceiver.java / SharedPreferences.java / ContextImpl.java; AndroidX DataStore core 1.2.1 source/AAR; historical audit notes referenced 1.1.7"
-last_verified_android17: "2026-07-01"
-last_verified_android17_source: "AOSP android-17.0.0_r1 frameworks/base/core/java/android/app/SharedPreferencesImpl.java (897行, diff android-16.0.0_r3 仅 2 行新增 @RavenwoodKeepWholeClass 注解, 无运行时行为变更) + SharedPreferences.java (421 行, javadoc 彻底重写, 官方声明不推荐使用) + ContextImpl.java (4107 行, SP 缓存逻辑零变化)"
-reviewed_date: "2026-04-20"
-reviewed_by: "openclaw-task6"
-task6_result: pass-light-edit
 confidence: medium
 sources:
   - type: blog
@@ -43,20 +33,7 @@ task6_state: "pending-verification"
 task9_state: "reviewed"
 last_idle_audit_at: "2026-08-04T18:35:51+08:00"
 last_idle_audit_run_id: "20260804-183551-idle-audit-29d2feef"
-last_idle_audit_log: "logs/audit/2026-08-04-20260804-183551-idle-audit-29d2feef-idle-audit.md"
-task9_result: "auto-fixed"
 task2b_state: "fixed"
-task2b_result: fixed
-last_task9_audit: "2026-07-01"
-last_task6_audit: 2026-07-17
-last_task9_audit_log: "logs/deep-review/2026-07-01-02-audit.md"
-last_task9_autofix_at: "2026-07-01"
-task9_review_notes: "2026-07-01 Task9 idle audit auto-fix: AOSP anchors refreshed to android-17.0.0_r1; corrected DataStore native library packaging from nonexistent datastore-multiprocess artifact to datastore-core-android AAR and removed stale ShadowSharedCounter fallback snippet. No open P0/P1 after fix."
-task9_p0_issues: 0
-task9_p1_issues: 0
-task9_p2_issues: 0
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-01
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch06-storage/6.03-Android-17-SharedPreferencesImpl-ANR机制.md"

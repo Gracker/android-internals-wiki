@@ -5,8 +5,6 @@ section: "21.5"
 status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 confidence: medium
-drafted_date: "2026-05-13"
-polish_count: 0
 sources:
   - type: aosp
     path: "frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/"
@@ -26,38 +24,12 @@ sources:
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
 tags: [splash-screen, perceived-performance, skeleton-screen, starting-window, window-background, splashscreen-compat]
 related_chapters: ["2.12", "8.3", "21.1"]
-created_by: "task2a-content-processing"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-07-10"
-task6_reviewed_date: "2026-07-10"
-task6_result: "pass-light-edit"
-task6_review_notes: "2026-06-16 Task6 revisiting review: pass-light-edit。四层质检全部通过，写作质量无问题。自动晋升 finalized / ready-to-publish。"
-last_task6_at: "2026-07-10T01:09:00+08:00"
-last_task6_review_log: "logs/review/2026-06-16-01-review.md"
-
-task2b_result: fixed
-last_task2b_at: "2026-06-16T00:51:53"
-task2b_fixed_date: "2026-06-16"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-11
 last_verified: "2026-07-09"
 last_verified_against: "AOSP android-17.0.0_r1; AndroidX core-splashscreen 1.2.0"
-task9_result: "auto-fixed"
 task9_state: "reviewed"
 task2b_state: "fixed"
 task6_state: "reviewed"
 pipeline_stage: "ready-to-publish"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-09"
-last_task9_at: "2026-07-09T16:30:36+08:00"
-last_task9_autofix_at: "2026-07-09"
-last_task9_review_log: "logs/deep-review/2026-07-09-16-deep-review.md"
-updated_by: "openclaw-task9"
-updated_date: "2026-07-09"
-p0: 0
-p1: 1
-p2: 1
-task9_review_notes: "2026-06-16 Task9：needs-rework。P0 2 / P1 1。core-splashscreen API 下限、兼容模式/退出动画、postSplashScreenTheme 崩溃口径需回炉。 | 2026-06-16 01:20 Task9 复审：pass-tech-review。P0/P1 0；P2 2 已写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-16 12:40 Task9：auto-fixed。复核 core-splashscreen 1.2.0 AAR/source，修正 minSdk/API21-22 降级行为、低版本圆形 mask、Perfetto/度量工具名，回 Task6 复审。 | 2026-07-09 16 Task9 deep-review AUTO-FIX：P0 0 / P1 1 / P2 1；AOSP 锚点由 android-15.0.0_r1 重锚到 android-17.0.0_r1，并修正 SplashScreen 动画时长口径；回 Task6 复审。"
 ---
 # Splash Screen 与感知启动速度
 

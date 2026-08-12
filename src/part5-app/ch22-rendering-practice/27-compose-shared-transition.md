@@ -5,9 +5,6 @@ status: finalized
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 tags: [Compose, SharedTransition, Animation, Performance, Rendering]
 related_chapters: ["22.5", "22.15", "22.3", "2.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-16"
-gap_source: "AOSP结构/官方文档"
 last_verified: "2026-08-01"
 last_verified_against: "AndroidX Compose Animation 1.11.4 源码快照 854220f44ea8ea80fee824a6c5a045f39bede289；Android 17 / API 37 / android-17.0.0_r1；内核 android17-6.18-2026-06_r6；官方 Compose Shared elements 文档"
 confidence: high
@@ -16,8 +13,6 @@ task6_state: "reviewed"
 task9_state: "reviewed"
 last_draft_polish_at: "2026-08-01T11:35:38+08:00"
 last_draft_polish_run_id: "20260801-113538-draft-polish-9c0d3e58"
-reviewed_date: "2026-08-01"
-reviewed_by: "hermes-aiw-review-finalize-apply"
 last_review_finalize_at: "2026-08-01T12:06:00+08:00"
 last_review_finalize_run_id: "20260801-120559-a2aecf57"
 sources:

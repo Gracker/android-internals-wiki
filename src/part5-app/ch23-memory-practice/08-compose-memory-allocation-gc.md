@@ -5,9 +5,6 @@ status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [compose, memory, gc, allocation, slottable, recomposition]
 related_chapters: ["4.8", "7.7", "10.6", "22.3", "23.5"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-19"
-drafted_date: "2026-06-19"
 last_verified: "2026-06-19"
 last_verified_against: "androidx-main (Compose 1.8.x) / AOSP android-16.0.0_r1"
 confidence: medium

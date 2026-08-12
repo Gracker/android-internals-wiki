@@ -4,8 +4,6 @@ title: "eBPF/BPF 在 Android 性能分析中的应用"
 chapter: "14.23"
 section: "14.23"
 status: "finalized"
-drafted_date: "2026-04-07"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
 last_verified: "2026-06-14"
 last_verified_against: "AOSP android-16.0.0_r4 (platform/system/bpf, packages/modules/UprobeStats, frameworks/native/services/gpuservice); Android common kernel android16-6.12 (include/linux/vmalloc.h, include/trace/events/syscalls.h); external/perfetto android-16.0.0_r4 (data_source_config.proto)"
@@ -45,38 +43,10 @@ sources:
     path: "intake/research-feeds/2026-04-03-07-sched-ext-bpf-scheduler.md"
 tags: [eBPF, BPF, observability, tracing, sched_ext, kernel, performance, bpfloader, UprobeStats]
 related_chapters: ["14.2", "13.1", "5.1", "1.14"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-07"
-gap_source: "AOSP结构+官方文档+研究素材"
-polish_count: 4
-polish_date: "2026-06-14"
-polish_by: "task2b-main"
-p0: 0
-p1: 0
-p2: 1
-task6_result: "pass-light-edit"
-task6_reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-06-14"
 task6_state: "reviewed"
-last_task6_at: "2026-06-14T04:07:46+08:00"
-task9_result: "auto-fixed"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-14"
 task9_state: "reviewed"
-task2b_result: "fixed"
 task2b_state: "fixed"
-task2b_rework_date: "2026-06-14T02:50:00+08:00"
 pipeline_stage: "ready-to-publish"
-last_task2b_at: "2026-06-14T02:50:00+08:00"
-last_task2b_lite_at: "2026-06-14T01:35:00+08:00"
-last_task6_audit: "2026-07-01"
-last_task9_at: "2026-06-14T03:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-14-03-deep-review.md"
-updated_by: "openclaw-task9"
-updated_date: "2026-06-14"
-last_task9_autofix_at: "2026-06-14"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-28
 ---
 
 

@@ -6,9 +6,6 @@ status: ready-for-review
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 tags: [binder, ipc, transaction-buffer, performance, android17, rpc-binder]
 related_chapters: ["1.4", "1.10", "1.17", "1.29", "1.38"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-27"
-drafted_date: "2026-06-28"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6"
 confidence: high

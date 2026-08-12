@@ -52,35 +52,10 @@ related_chapters:
 - '1.21'
 - '1.27'
 - '16.6'
-created_by: task2a-knowledge-gap
-created_date: '2026-06-04'
-drafted_date: '2026-06-04'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
-task2b_result: fixed
 task2b_state: fixed
-last_task2b_at: '2026-06-30T12:52:33+08:00'
-task2b_rework_notes: "2026-06-30 Task2B main: L3 content depth fixes — replaced estimated % breakdown with reproducible Perfetto measurement methodology; added 3 concrete troubleshooting scenarios (session stuck/dex2oat timeout/storage full) with Perfetto SQL and logcat diagnostic steps"
-task9_result: auto-fixed
-last_task9_at: '2026-06-30T16:31:10+08:00'
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: '2026-07-01'
-last_task6_at: '2026-07-01T08:09:00+08:00'
-last_task6_audit: '2026-07-08'
-task6_review_notes: '2026-07-01 Task6 revisiting re-review: pass-light-edit。L1 小修
-  4 处（禁用词"链路"×3 → 路径/序列 + mermaid 箭头中文破折号修正）；无 L2/L3/L4 新增问题。Task9 auto-fix（P0 伪方法名已修正）后写作复审通过。自动晋升
-  finalized。2026-07-08 Task6 闲时抽检：L1小修2处，符合规范。'
-last_task9_autofix_at: '2026-06-30'
-last_task9_review_log: logs/deep-review/2026-06-30-16-deep-review.md
-task9_review_notes: '2026-06-30 Task9 复审 auto-fix: 修正源码补充区 readSessionSettingsLocked()
-  伪方法名与 session XML 属性名;回到 Task6 复审。'
-task9_p0_issues: '1'
-task9_p1_issues: '0'
-task9_p2_issues: '0'
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-01
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch01-architecture/1.45-staged-install-state-machine.md"

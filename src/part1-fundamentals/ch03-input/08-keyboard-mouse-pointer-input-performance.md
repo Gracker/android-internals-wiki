@@ -3,7 +3,6 @@ title: "键盘、鼠标与指针输入性能 — 桌面模式交互管线"
 chapter: "3.8"
 section: "3.8"
 status: ready-for-review
-drafted_date: "2026-06-27"
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 last_verified: "2026-06-27"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -43,9 +42,6 @@ sources:
     path: "https://developer.android.com/guide/topics/large-screens/handle-multi-window-mode"
 tags: [input, keyboard, mouse, pointer, desktop-mode, hover, drag-drop, performance]
 related_chapters: ["3.1", "3.2", "3.4", "3.6", "2.20", "22.14"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-27"
-gap_source: "官方文档/AOSP结构/每日信息"
 pipeline_stage: "ready-for-review"
 task6_state: "pending-verification"
 last_consolidated_at: "2026-08-11"

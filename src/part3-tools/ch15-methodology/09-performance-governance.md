@@ -3,8 +3,6 @@ title: "性能反馈回路与治理工程化"
 chapter: "15.9"
 section: "15.9"
 status: finalized
-drafted_date: "2026-04-21"
-drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-08-11"
 last_verified_against: "Android 17 / API 37 / AOSP android-17.0.0_r1；AndroidX Benchmark 1.4.1 sources；Baseline Profiles、Android Vitals 与 Perfetto 官方文档"
@@ -43,22 +41,8 @@ consolidated_from:
   - "15.10 性能治理工程化"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task6_result: pass-light-edit
-reviewed_date: "2026-04-21"
-reviewed_by: openclaw-task6
 task9_state: reviewed
-repaired_date: "2026-04-22"
-repaired_by: "codex"
-task9_result: fixed
-task9_reviewed_date: "2026-05-19"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-19T21:04:13+08:00"
-last_task6_audit: "2026-07-15"
-task2b_result: fixed
 task2b_state: fixed
-last_task9_audit: "2026-05-19"
-last_task9_review_log: "logs/deep-review/2026-05-19-20-audit.md"
-task9_review_notes: "2026-05-19 20 Task9 闲时抽检 → Task2B fixed: frontmatter 官方来源 URL 已替换为 benchmarking-overview。"
 ---
 
 # 性能反馈回路与治理工程化

@@ -3,11 +3,6 @@ title: "内存抖动与频繁 GC"
 chapter: "10.6"
 section: "10.6"
 status: "finalized"
-polish_count: 1
-polish_date: "2026-04-09"
-polish_by: "task2b-polish"
-drafted_date: "2026-04-03"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-07-31"
 last_verified_against: "AOSP android-17.0.0_r1（ART collector_type.h、runtime.cc、heap.cc、mark_compact.cc、region_space.cc；BinderInternal.java）/ Android Common Kernel android17-6.18-2026-06_r6（fs/userfaultfd.c、mm/mremap.c）/ Perfetto heapprofd 与 ART allocation profiling 文档 / Android Studio Java/Kotlin allocation recording / Compose Runtime 1.12.0-rc01 release notes / Compose strong skipping 与 performance best practices / Kotlin value class 文档"
@@ -49,37 +44,9 @@ sources:
   path: kotlinlang.org/docs/inline-classes.html
 tags: "[\"memory\", \"gc\", \"churn\", \"object-pool\", \"tlab\", \"autoboxing\", \"heapprofd\"]"
 related_chapters: "[\"4.3\", \"7.1\", \"7.2\", \"10.1\", \"10.4\"]"
-word_count: "~7500"
-reviewed_date: "2026-07-10"
-reviewed_by: "openclaw-task6"
-task6_result: "pass-light-edit"  # 2026-07-10 revisiting review pass
 task6_state: "reviewed"
-task6_reviewed_date: "2026-07-10"
-last_task6_at: "2026-07-10T01:09:00+08:00"
-last_task6_audit: "2026-07-10"
-last_task6_review_log: "logs/review/2026-07-10-01-review.md"
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-07-10"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-10T12:30:03+08:00"
-last_task9_audit: "2026-07-09"
-task9_review_notes: "2026-07-10 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；ART CMC/GcWatcher 与 heapprofd 主线复核通过；量化性能数据作为 P2 建议补一手 benchmark；queue 无 pending，自动晋升 finalized。"
 task2b_state: "fixed"
-task2b_result: "fixed"
-task2b_rework_date: "2026-05-08"
-task2b_fixed_at: "2026-05-08T04:51:42.168874+08:00"
-last_task2b_at: "2026-07-09T22:52:12+08:00"
-last_task2b_lite_at: 2026-06-22
-review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b修复heapprofd命令和版本边界后内容无新L1/L2问题。GC版本拆分准确，代码示例规范，优化建议实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。 | 2026-05-08 Task6 05:05：revisiting→reviewed；修复 frontmatter/source YAML、无语言围栏和禁用/口语化表述，无新增 L3/L4 回炉项，待 Task9 复审。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 3；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-09 23:25 Task2B Verifier：状态修正 status=finalized 与 pipeline_stage=task6_pending 矛盾；Task2B 已修复 (t2b_state=fixed) 但 status 阻止 Task6 拾取。status: finalized→ready-for-review，章节已正确回流 Task6。"
-last_task9_review_log: "logs/deep-review/2026-07-10-12-deep-review.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-18
-updated_by: "openclaw-task9"
-updated_date: "2026-07-10"
-last_task9_autofix_at: "2026-07-10"
-finalized_date: "2026-07-10"
-finalized_by: "openclaw-task9-auto-promote"
 ---
 
 # 10.6 内存抖动与频繁 GC

@@ -6,9 +6,6 @@ status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [oom, oom_score_adj, process_state_controller, process_priority, lmkd, freezer, AMS]
 related_chapters: ["4.4", "1.3", "1.8", "5.8", "4.11", "1.18"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-27"
-drafted_date: "2026-06-27"
 last_verified: "2026-08-08"
 last_verified_against: "AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6"
 confidence: high

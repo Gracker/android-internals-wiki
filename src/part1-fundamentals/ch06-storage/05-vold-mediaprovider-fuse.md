@@ -3,7 +3,6 @@ title: "vold、MediaProvider 与 FUSE：共享存储 I/O 路径"
 chapter: "6.5"
 section: "6.5"
 status: ready-for-review
-drafted_date: "2026-05-24"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-24"
 last_verified_against: "Android Developers shared media docs; AOSP storage scoped/fuse-passthrough/sdcardfs-deprecate docs; AOSP android-16.0.0_r1 system/vold + packages/providers/MediaProvider"
@@ -29,10 +28,6 @@ sources:
     path: "Android Common Kernel android17-6.18-2026-06_r6 include/uapi/linux/{fuse,android_fuse}.h"
 tags: [storage, fuse, scoped-storage, vold, io]
 related_chapters: ["6.1", "6.2", "6.3", "6.4", "24.11", "24.12"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-24"
-gap_source: "AOSP结构/官方文档/章节深挖"
-gap_score: 16
 pipeline_stage: ready-for-review
 task6_state: pending-verification
 last_consolidated_at: "2026-08-11"

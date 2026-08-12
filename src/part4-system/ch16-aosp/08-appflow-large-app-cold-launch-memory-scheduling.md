@@ -3,10 +3,8 @@ title: "AppFlow：GB 级应用冷启动内存联合调度"
 chapter: "16.8"
 section: "16.8"
 status: finalized
-drafted_date: "2026-05-23"
 applicable_versions: "Android 15 - Android 17（研究原型，非 AOSP 主线）"
 last_verified: "2026-07-30"
-last_task9_audit: "2026-07-11"
 last_verified_against: "AppFlow arXiv 2603.17259v1; AOSP android-17.0.0_r1 lmkd/ProcessList/CachedAppOptimizer/UsageStatsManager/ApplicationExitInfo; Android Common Kernel android17-6.18-2026-06_r6 mm/vmscan.c"
 confidence: high
 sources:
@@ -36,9 +34,6 @@ sources:
     path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c"
 tags: [aosp-performance, cold-start, memory-scheduling, lmkd, file-preload]
 related_chapters: ["4.4", "6.3", "8.2", "16.7", "21.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-23"
-gap_source: "研究素材 + 论文精读 + 官方/外部搜索"
 ---
 
 # AppFlow：GB 级应用冷启动内存联合调度

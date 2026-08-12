@@ -6,14 +6,8 @@ status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-03"
 last_verified_against: "AOSP android-17.0.0_r1, Jetpack App Startup 1.2.0 sources, alibaba/alpha 04fe7f2 (artifact 1.0.0.1)"
-task9_result: fixed
-task9_reviewed_date: "2026-07-06"
-task9_reviewed_by: "openclaw-task9-idle-audit"
-last_task9_audit: "2026-07-06"
 pipeline_stage: ready-to-publish
 confidence: medium
-drafted_date: "2026-05-12"
-polish_count: 1
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/app/Application.java"
@@ -35,33 +29,8 @@ consolidated_from:
   - "src/part5-app/ch21-startup/20-modular-startup-dependency-graph.md"
   - "src/part5-app/ch21-startup/09-startup-case-studies.md#案例二"
 task6_state: reviewed
-task6_review_notes_final: "2026-07-02 Task6 round3 (post-Task9-autofix): pass-light-edit. L1 fix×1 (真正→删). L2 pass. Anchors all covered. Auto-promoted: task9=pass, queue=completed."
-task6_review_notes_round4: "2026-07-03 Task6 round4 (re-confirm): pass-light-edit. L1 clean. L2 pass. No new L3/L4 issues. AUTO-PROMOTED: task6=pass-light-edit, task9=auto-fixed(=pass), queue=completed."
 task9_state: reviewed
 task2b_state: fixed
-task2b_result: fixed-lite
-last_task2b_lite_at: "2026-07-06"
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-21
-task6_result: pass-light-edit
-
-last_task9_autofix_at: "2026-07-02"
-task6_reviewed_date: "2026-05-22"
-task9_review_notes: "2026-07-02 Task9 normal deep-review AUTO-FIX：对照 AOSP android-17.0.0_r1 ActivityThread、Android Developers TTID/TTFD 文档和 alibaba/alpha 04fe7f2 源码，修正 ContentProvider 生命周期边界、Alpha 超时封装示例、await 封装示例和 TTID 指标说明；回到 Task6 复审。"
-last_task9_review_log: "logs/deep-review/2026-07-02-19-deep-review.md"
-last_task6_at: "2026-07-02T19:14:49+08:00"
-last_task6_review_log: "logs/review/2026-06-21-20-review.md"
-task6_review_notes: '2026-07-02 18:10 Task6 revisiting-review: needs-rework。L1/L2复扫通过, 无新增小修。L3/L4问题已在queue.json(pending)。保持ready-for-review, 送Task2B。 | 2026-06-01 23:07 Task6 revisiting-review：L1/L2 复扫无新增小修，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。'
-last_task2b_at: "2026-07-02T18:50:00+08:00"
-task2b_notes: "2026-06-01 Task2B fallback: 按 logs/deep-review/2026-05-22-03-deep-review.md 修正 Alpha Project.Builder/getInstance/默认 ExecutorService/执行模型，并收窄线程优先级建议。2026-07-02 Task2B round2: 补充 Alpha 错误处理与超时机制、Application 生命周期集成方式、启动框架选型常见陷阱与场景化引导。"
-task6_review_notes_round2: "2026-07-02 Task6 revisiting-review round2: pass-light-edit. L1 fix: remove banned word. L2 pass. No new L3/L4 issues."
-task6_l1_l2_fixes: 1
-task6_l3_l4_issues: 0
-task6_new_rework: false
-last_task2b_verify_at: "2026-06-21T19:30:09+08:00"
-task2b_verifier_notes: "状态修正：Task9 auto-fix 后 status 应为 ready-for-review，原 finalized 已回退。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-04
 ---
 
 # 启动框架设计与任务编排

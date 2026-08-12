@@ -7,8 +7,6 @@ tags: [memory-leak, performance, optimization, governance]
 related_chapters: ["4.1 Android 内存模型全景", "10.1 App 内存分析"]
 last_verified: "2026-08-09"
 last_verified_against: "Android 17 / API 37 / AOSP android-17.0.0_r1; Android official docs; LeakCanary docs; KOOM repository; Perfetto heapprofd docs"
-reviewed_date: "2026-08-09"
-reviewed_by: hermes-aiw-review-finalize-apply
 last_review_finalize_at: "2026-08-09T04:25:25+08:00"
 last_review_finalize_run_id: "20260809-042525-7671f9ac"
 confidence: high

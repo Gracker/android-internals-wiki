@@ -3,8 +3,6 @@ title: "DoraemonKit / DoKit"
 chapter: "19"
 section: "19.06"
 status: finalized
-drafted_date: "2026-04-24"
-drafted_by: "codex"
 applicable_versions: "版本需按 artifact / AndroidX / Gradle / AGP 单独验证；README 明确覆盖 3.5.0 / 3.5.0.1 与 AGP 3.3.0+"
 last_verified: "2026-04-27"
 last_verified_against: "didi/DoKit README + Android/README + DoKitPlugin.kt + Okhttp3ClassTransformer.kt + PerformanceDataManager.java"
@@ -18,26 +16,8 @@ sources:
     path: "https://github.com/didi/DoKit/blob/master/Android/README.md"
 pipeline_stage: ready-to-publish
 task6_state: "reviewed"
-task6_reviewed_date: "2026-04-27"
-task6_result: "pass-light-edit"
-last_task6_audit: "2026-07-09"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-04-25"
 task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-04-27"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-27T11:27:00+08:00"
-last_task9_audit: "2026-07-08"
-task2b_result: fixed
 task2b_state: fixed
-review_round: 3
-last_task2b_at: "2026-04-27T04:40:00+08:00"
-review_notes: "2026-04-27 Task9 复审通过：DoKit README 版本矩阵、registerTransform/AGP8 风险、OkHttp ASM 注入、PerformanceDataManager 采样口径与 dokit.cn 出站边界已覆盖。"
-last_deepseek_polish_at: 2026-05-26
-deepseek_polish_state: done
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-17
 ---
 
 # DoraemonKit / DoKit
