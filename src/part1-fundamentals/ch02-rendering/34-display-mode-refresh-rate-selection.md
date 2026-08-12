@@ -1,21 +1,23 @@
 ---
 title: "Android 17 Display Mode 选择与 RefreshRateSelector 评分机制"
 chapter: "2.34"
-status: "ready-for-review"
+status: "finalized"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
-last_verified: "2026-08-09"
+last_verified: "2026-08-12"
 last_verified_against: "AOSP android-17.0.0_r1; common kernel android17-6.18-2026-06_r6"
 last_idle_audit_at: "2026-08-05"
 last_idle_audit_run_id: "20260805-223530-idle-audit-20677657"
-task9_state: "body-applied"
-pipeline_stage: "ready-for-review"
+task9_state: "reviewed"
+pipeline_stage: "finalized"
 confidence: high
 last_body_apply_at: "2026-08-10T19:15:18+08:00"
 last_body_apply_run_id: "20260810-191518-8c420f19"
-task2b_state: "body-applied"
-task6_state: "pending-verification"
+task2b_state: "fixed"
+task6_state: "reviewed"
 tags: [rendering, surfaceflinger, refresh-rate, frame-rate-override, display-mode, android17, hwc, vrr]
 related_chapters: ["2.30", "2.6"]
+last_review_finalize_at: "2026-08-12T14:05:07+08:00"
+last_review_finalize_run_id: "20260812-140507-01043da4"
 sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp"
@@ -433,7 +435,7 @@ Perfetto 中至少关联这些证据：
 - 显示帧的实际送显时间使用 HWC/送显栅栏反馈，仍包含厂商显示路径；
 - 模式切换期间要同时查看 VSYNC 周期切换、请求待处理/完成状态和 FrameTimeline，不能假定固定“几十毫秒”完成。
 
-FrameTimeline 的令牌、预期/实际 SurfaceFrame、DisplayFrame 和栅栏边界见 [2.30 Android 17 FrameTimeline](2.30-android17-frametimeline.md)。
+FrameTimeline 的令牌、预期/实际 SurfaceFrame、DisplayFrame 和栅栏边界见 [2.30 Android 17 FrameTimeline](30-android17-frametimeline-composition-boundary.md)。
 
 ## 14. 版本演进边界
 
