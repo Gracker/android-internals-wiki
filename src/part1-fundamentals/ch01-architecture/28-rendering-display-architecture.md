@@ -2,18 +2,50 @@
 title: "Android 显示与渲染架构总览"
 chapter: "1.28"
 section: "1.28"
-status: "ready-for-review"
+status: "finalized"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [architecture, rendering, performance]
-last_verified: "2026-06-23"
-last_verified_against: "AOSP general knowledge"
-confidence: medium
+last_verified: "2026-08-12"
+last_verified_against: "AOSP android-17.0.0_r1 Choreographer / ViewRootImpl / HWUI RenderThread / BufferQueue / BLASTBufferQueue / SurfaceFlinger FrontEnd / HWComposer / FrameTimeline；Composer3 AIDL；kernel android17-6.18-2026-06_r6 dma-buf / sync_file / dma-fence"
+confidence: high
 sources:
   - type: aosp
-    path: "frameworks/native/services/surfaceflinger"
+    path: "frameworks/base/core/java/android/view/Choreographer.java @ android-17.0.0_r1"
   - type: aosp
-    path: "frameworks/base/core/java/android/view/"
+    path: "frameworks/base/core/java/android/view/ViewRootImpl.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/graphics/java/android/graphics/HardwareRenderer.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/libs/hwui/renderthread/CanvasContext.cpp @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/native/libs/gui/BufferQueueProducer.cpp @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/native/libs/gui/BLASTBufferQueue.cpp @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/native/services/surfaceflinger/FrontEnd/RequestedLayerState.cpp @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/native/services/surfaceflinger/FrontEnd/LayerSnapshotBuilder.cpp @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp @ android-17.0.0_r1"
+  - type: aosp
+    path: "hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3 @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/api/current.txt @ android-14.0.0_r1/android-15.0.0_r1/android-16.0.0_r1/android-17.0.0_r1"
+  - type: kernel
+    path: "drivers/dma-buf/dma-buf.c / drivers/dma-buf/sync_file.c / include/linux/dma-fence.h @ android17-6.18-2026-06_r6"
 related_chapters: ["2.1", "2.6", "18.1"]
+pipeline_stage: "ready-to-publish"
+task6_state: reviewed
+task9_state: reviewed
+task2b_state: fixed
+last_review_finalize_at: "2026-08-12"
+last_review_finalize_run_id: "20260812-180536-6f5d26ba"
 ---
 
 # 1.28 Android 显示与渲染架构总览
@@ -167,9 +199,9 @@ Camera、视频、游戏属于 Producer 或业务类型，SurfaceView、TextureV
 | Android 12 / API 31 | BLAST 与 FrameTimeline 已进入现代 App Window 主线 | 标准 Window 可用 App/SF expected/actual timeline；独立 Surface 仍需 layer、BufferQueue 和 fence 证据 |
 | Android 13 / API 33 | `AutoSingleLayer` 下的 latch-unsignaled 策略成为重要边界；Composer HAL 进入 AIDL 时代 | acquire fence 未 signal 不代表 transaction 一定无法先 latch，内容读取仍受 fence 约束 |
 | Android 14 / API 34 | 标准公共主线延续；SurfaceView 增加任意 alpha 与公开 lifecycle 策略 | SurfaceView 的透明度和 Surface 保留行为要按版本确认 |
-| Android 15 / API 35 | Window/SurfaceView 可以表达 desired HDR headroom；支持设备可使用 ARR | headroom 和 frame-rate 请求都是期望值，不能证明实际亮度、刷新率或 composition type |
-| Android 16 / API 36 | SurfaceView 增加整数 `compositionOrder` | 多 Surface 页面要记录 parent、relative layer 和 Z-order |
-| Android 17 / API 37 | 现行 FrontEnd snapshot、预测 present 调度与 HWC 流程；SurfaceView 增加 blur region | 当前对象名按 `android-17.0.0_r1` 解释；厂商合成能力仍需设备证据 |
+| Android 15 / API 35 | Window/SurfaceView 可以表达 desired HDR headroom，支持设备可使用 ARR；Android 15/16 API 文本中的 headroom 方法仍带 `limited_hdr` flag | headroom 和 frame-rate 请求都是期望值，不能证明实际亮度、刷新率或 composition type；功能 flag 与设备能力都要核对 |
+| Android 16 / API 36 | SurfaceView API 文本中出现带 `surface_view_set_composition_order` flag 的整数 `compositionOrder` | 多 Surface 页面要记录 parent、relative layer 和 Z-order；flag-gated API 不能当成所有设备无条件可用 |
+| Android 17 / API 37 | 现行 FrontEnd snapshot、预测 present 调度与 HWC 流程；SurfaceView API 文本中出现带 `surface_view_set_blur_regions` flag 的 blur region | 当前对象名按 `android-17.0.0_r1` 解释；厂商合成能力和 flag 状态仍需设备证据 |
 
 这些版本差异没有建立“版本越新，所有页面越快”的因果关系。Android 17 的渲染评审应把版本能力、应用用法、设备实现和运行时证据分别记录。
 
