@@ -7,11 +7,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-08-11"
 last_verified_against: "AOSP android-17.0.0_r1 + Android Developers ComponentCallbacks2 + Clippings/Android 性能优化"
 confidence: medium
-drafted_date: "2026-05-14"
-reviewed_date: "2026-05-14"
-reviewed_by: "openclaw-task6"
-task6_result: pass-light-edit
-polish_count: 1
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/memory"
@@ -46,24 +41,7 @@ related_chapters: ["23.1", "23.5", "4.3", "4.8"]
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: "reviewed"
-task6_review_notes: "2026-05-14 task6 review: 修正否定纠正式表达、缓存预算和 GC 友好段落；四层质检通过，无新增 L3/L4 回炉项，等待 Task9 review。"
-last_task6_review_log: "logs/review/2026-05-14-01-review.md"
-last_task6_at: "2026-05-14T01:14:00+08:00"
-last_task6_audit: 2026-07-15
-task9_result: auto-fixed
-task9_reviewed_date: 2026-05-14
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-08T05:20:00+08:00"
-last_task9_audit: 2026-06-08
-last_task9_autofix_at: 2026-06-08
-last_task9_review_log: logs/deep-review/2026-06-08-05-audit.md
-task9_review_notes: "2026-06-08 Task9 idle audit：AUTO-FIX，补充 API 34+/35+ onTrimMemory 等级边界，回到 Task6 复审。"
-task2b_result: fixed
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-18
 task2b_state: fixed
-last_task2b_verifier_at: "2026-06-14T11:25:00+08:00"
-last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
 consolidated_from:
   - "src/part5-app/ch23-memory-practice/23.26-art-heap-distribution-oom-trigger-path.md"
 ---

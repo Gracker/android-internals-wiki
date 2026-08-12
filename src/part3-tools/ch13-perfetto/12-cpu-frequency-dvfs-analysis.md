@@ -3,24 +3,14 @@ title: "Perfetto CPU 频率与 DVFS 关联分析"
 chapter: "13.12"
 section: "13.12"
 status: finalized
-drafted_date: "2026-05-16"
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
 last_verified: "2026-08-07"
 last_verified_against: "Android 17 / API 37 / AOSP android-17.0.0_r1 Perfetto sources; Android common kernel android17-6.18-2026-06_r6 CPUFreq/CPUIdle sources; arXiv 2507.02135v1 with explicit Android 13 Pixel/Tensor G2 boundary; 2026-08-07 rework cleared pending-verification/thin-source flags"
 last_rework_at: "2026-08-07T21:35:15+08:00"
 last_rework_run_id: "20260807-213515-rework-952e31cf"
-last_rework_log: "logs/rework/2026-08-07-20260807-213515-rework-952e31cf-rework.md"
-rework_result: "ready-for-review"
-rework_notes: "2026-08-07 rework：复核 pending-verification-marker/thin-source-marking；补齐 frontmatter 精确源码锚点，正文增加证据边界说明，去除未使用的 DeepResearch material 路由；章节回流 ready-for-review 等待 Task6/Task9 复审。"
 confidence: medium-high
 tags: [perfetto, cpu-frequency, dvfs, power, scheduling]
 related_chapters: ["5.2", "5.4", "11.1", "13.5"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-16"
-gap_source: "素材驱动/官方文档/AOSP 结构"
-material_paths:
-  - "Cubox/Perfetto查看CPU 频率部分指导-2026-05-03.md"
-  - "论文/Android-2026-05-15-DVFS-LLM-Performance/03-精读.md"
 sources:
   - type: source
     path: "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/docs/data-sources/cpu-freq.md"
@@ -48,30 +38,10 @@ sources:
     path: "论文/Android-2026-05-15-DVFS-LLM-Performance/03-精读.md"
 pipeline_stage: finalized
 task6_state: reviewed
-task6_result: rework-applied
-reviewed_by: "hermes-aiw-review-finalize-apply"
-reviewed_date: "2026-08-08"
-last_task6_at: "2026-08-08T14:05:39+08:00"
 last_review_finalize_at: "2026-08-08T14:05:39+08:00"
 last_review_finalize_run_id: "20260808-140539-40d25f76"
-last_task6_review_log: "logs/review/2026-05-28-04-review.md"
-last_task6_audit: "2026-06-21"
-task6_l1_l2_fixes: 1
-task6_l3_l4_issues: 0
-task6_review_notes: "2026-05-28 Task6：Task2B fixed-lite 后复审通过；L1/L2 小修 1 处，禁用词与高频词扫描无命中；outline 10/10 覆盖；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，未自动晋升。"
 task9_state: reviewed
 task2b_state: "fixed"
-task9_result: rework-applied
-task2b_result: "fixed-lite"
-last_task2b_lite_at: "2026-05-28"
-task9_reviewed_by: "hermes-aiw-review-finalize-apply"
-task9_reviewed_date: "2026-08-08"
-last_task9_at: "2026-08-08T14:05:39+08:00"
-task9_review_notes: "2026-05-28 Task9 04:30：pass-tech-review；无 P0/P1；queue 无 pending，Task6 已通过，自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-05-28-04-deep-review.md"
-last_task9_audit: "2026-07-09"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-13
 ---
 
 # 13.12 Perfetto CPU 频率与 DVFS 关联分析

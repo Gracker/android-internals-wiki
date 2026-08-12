@@ -3,8 +3,6 @@ title: "Android 17 BroadcastQueue 进程级调度与广播性能边界"
 chapter: "1.33"
 section: "1.33"
 status: ready-for-review
-drafted_date: "2026-06-27"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -44,9 +42,6 @@ sources:
     path: "frameworks/base/core/java/android/os/PerfettoCategories.java"
 tags: [broadcast, broadcastqueue, scheduler, AMS, ANR, broadcast-process-queue]
 related_chapters: ["1.8", "9.2", "5.8", "1.34", "5.17"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-27"
-gap_source: "AOSP结构/章节深挖"
 ---
 
 # 1.33 Android 17 BroadcastQueue 进程级调度与广播性能边界

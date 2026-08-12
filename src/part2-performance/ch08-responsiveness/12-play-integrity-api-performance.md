@@ -3,7 +3,6 @@ title: "Play Integrity API 性能与集成延迟"
 chapter: "8.12"
 section: "8.12"
 status: ready-for-review
-drafted_date: "2026-06-19"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-19"
 last_verified_against: "Android Developers Play Integrity documentation, Play Integrity API reference, Google Play developer guides"
@@ -23,9 +22,6 @@ sources:
     path: "https://developers.google.com/google-play/integrity/reference"
 tags: [play-integrity, safetynet, attestation, login-latency, anti-fraud, network-latency]
 related_chapters: ["8.9", "8.10", "8.11", "12.1", "12.2"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-19"
-gap_source: "AOSP结构/官方文档"
 ---
 
 # 8.12 Play Integrity API 性能与集成延迟

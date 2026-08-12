@@ -1,12 +1,8 @@
 ---
 title: "Firebase Performance"
-deepseek_polish_state: done
-last_deepseek_polish_at: '2026-05-25'
 chapter: "19"
 section: "19.14"
 status: finalized
-drafted_date: "2026-04-24"
-drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-25"
 last_verified_against: "Firebase Performance custom-code-traces / screen-traces / troubleshooting docs, Firebase Android SDK 20.1.0+ Fragment screen rendering boundary, external review 2026-04-25"
@@ -26,30 +22,8 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon/screen-traces"
 pipeline_stage: "ready-to-publish"
 task6_state: reviewed
-task6_result: pass-light-edit
 task9_state: "reviewed"
 task2b_state: fixed
-task2b_result: fixed
-task9_result: "pass-tech-review"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-08"
-last_task9_at: "2026-05-08T02:30:38+08:00"
-reviewed_by: openclaw-task9
-reviewed_date: "2026-05-08"
-last_task2b_at: "2026-05-07T23:47:13+08:00"
-repaired_date: "2026-04-25"
-repaired_by: openclaw-task2b
-last_task6_at: "2026-05-08T02:09:46+08:00"
-last_task6_audit: 2026-07-05
-task6_review_notes: "2026-05-08 01:08 task6 revisiting-review: pass-light-edit。复核 Task2B 回炉修正后的写作层，修复 6 处 L1/L2 文风与可读性问题；保留 task9_result=pending 等待 Task9 复审。 | 2026-05-08 02:09 task6 revisiting-review: pass-light-edit。修复 YAML 引号、重复验证句和 8 处 L1/L2 表达问题；Task9 仍为 pending，未自动晋升。"
-task9_review_notes: "2026-05-08 01:32 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。 | 2026-05-08 01:40 Task2B rework: P0 attribute key 32->40 + reserved prefix；P0 Cronet 改为 HttpMetric manual trace；P1 EventListener 删除无证据断言 | 2026-05-08 02 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-last_task9_audit: "2026-07-10"
-last_task9_audit_log: "logs/deep-review/2026-07-10-18-audit.md"
-last_task9_audit_at: "2026-07-10T18:28:45+08:00"
-last_task9_audit_result: "pass-audit-p2-only"
-task9_audit_notes: "2026-07-10 Task9 idle audit: pass-audit-p2-only。P0 0 / P1 0 / P2 2；复核 Firebase Performance 官方 get-started/troubleshooting/network/screen-traces/custom-code-traces 文档、Firebase Android SDK Trace/HttpMetric/AppStartTrace 源码与 Android 17 Process API；未发现需写入 queue.json 的源码错误或版本越界。P2：_app_start 起点表述可在下次编辑时从平台 uptime API 收紧到 SDK 当前 elapsedRealtime 源码口径；screen rendering 60Hz 假设仍建议补正文。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-14
 ---
 # Firebase Performance
 

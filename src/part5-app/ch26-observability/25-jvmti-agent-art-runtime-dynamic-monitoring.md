@@ -6,9 +6,6 @@ status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [JVMTI, ART, runtime-monitoring, dynamic-instrumentation, profilo, method-tracing]
 related_chapters: ["26.18", "26.22", "26.23", "1.35", "14.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-17"
-gap_source: "Clippings参考书+AOSP源码+章节深挖"
 last_verified: "2026-07-29"
 confidence: medium
 sources:
@@ -28,18 +25,14 @@ sources:
     path: "技术文章/source/juejin-android/2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md"
 last_body_apply_at: "2026-07-24T07:15:55+08:00"
 last_body_apply_run_id: "20260724-071534-2a71a09c"
-last_body_apply_source: "source-index:91"
 task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized
-reviewed_date: "2026-07-30"
-reviewed_by: hermes-aiw-review-finalize-apply
 last_review_finalize_at: "2026-07-30T14:10:00+08:00"
 last_review_finalize_run_id: "20260730-140532-12094eb9"
 last_rework_at: "2026-07-29T14:25:42+08:00"
 last_rework_run_id: "20260729-142542-rework-afd64006"
-rework_resolution: "第四轮 rework：从本卷已验证章节 [1.35][14.1][26.22] 引入 AOSP android-17.0.0_r1 源码级 JVMTI 交叉引用（events.cc / deopt_manager.cc / ti_redefine.cc / instrumentation.h），解决唯一来源为 Android CLI 博文的问题；CLI 材料降级为实验工具节；标题保持但副标题已明确为实验入口与证据边界。confidence 从 low 提升至 medium。"
 ---
 
 # 26.25 JVMTI Agent — ART 运行时动态监控的实验入口与证据边界

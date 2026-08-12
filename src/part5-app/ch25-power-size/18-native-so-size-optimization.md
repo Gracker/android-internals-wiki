@@ -6,9 +6,6 @@ status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [native, so, elf, strip, ndk, abi, 16kb-page-size, apk-size]
 related_chapters: ["25.6", "25.8", "1.55", "1.58", "20.11"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-17"
-gap_source: "Clippings参考书驱动"
 confidence: medium-high
 last_verified: "2026-08-01"
 last_verified_against: "Android 17 android-17.0.0_r1; kernel android17-6.18-2026-06_r6; NDK r28 / AGP 8.5.1+ 16 KB 语义; developer.android.com 官方文档 (2026-07)"
@@ -17,8 +14,6 @@ task6_state: "reviewed"
 task9_state: "reviewed"
 last_draft_polish_at: "2026-08-01"
 last_draft_polish_run_id: "20260801-153513-draft-polish-1348b67f"
-reviewed_date: "2026-08-01"
-reviewed_by: "hermes-aiw-review-finalize-apply"
 last_review_finalize_at: "2026-08-01"
 last_review_finalize_run_id: "20260801-160517-c1f1b427"
 sources:

@@ -3,8 +3,6 @@ title: 性能优化的术、道、器
 chapter: '15.1'
 section: '15.1'
 status: finalized
-drafted_date: '2026-04-04'
-drafted_by: openclaw-task2a
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 last_verified: '2026-07-30'
 last_verified_against: AOSP android-17.0.0_r1；Android SDK API 37；AndroidX Benchmark 1.4.1
@@ -61,35 +59,7 @@ consolidated_from:
 pipeline_stage: "ready-to-publish"
 task9_state: "reviewed"
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_lite_at: 2026-07-09
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-05"
-task9_result: "auto-fixed"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-17"
-last_task9_at: "2026-06-17T06:25:31+08:00"
-last_task2b_at: "2026-05-23T11:17:28+08:00"
-task2b_fixed_at: "2026-04-27T13:40:00+08:00"
-task9_review_notes: "2026-05-23 task9 idle audit: needs-rework。P0 2 / P1 0 / P2 0。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-17 06:25 Task9 idle audit auto-fix：修正 BLASTBufferQueue 版本归属；AOSP android-11.0.0_r1 已有 frameworks/native/libs/gui/BLASTBufferQueue.cpp，android-10.0.0_r1 无该文件。未发现 Android 18/API 38+ 越界内容，回到 Task6 复审。"
-task6_reviewed_date: "2026-05-05"
-last_task6_at: "2026-06-17T08:09:32+08:00"
-last_task9_audit: "2026-06-17"
-last_task9_audit_log: "logs/deep-review/2026-06-17-06-audit.md"
-last_task2b_verifier_at: "2026-06-17T07:29:33+08:00"
-task2b_verifier_note: "status finalized→ready-for-review; task9 auto-fix 回流 Task6 复审"
-task6_refinalize_note: "2026-06-17 Task6 复审通过（revisiting）；Task9 auto-fix BLASTBufferQueue 版本归属修正无文风/格式问题，L1/L2 全部通过；自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-06-17-06-audit.md"
 task6_state: "reviewed"
-last_task6_audit: "2026-06-17"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-17
-last_task9_autofix_at: "2026-06-17"
-p0: 0
-p1: 0
-p2: 0
-android17_review_notes: "2026-07-30：保留全部 task6/task9/OpenClaw 字段与 outline 标记；平台锚点升级到 android-17.0.0_r1/API 37；按源码修正 ProfilingManager、ProfilingTrigger、BLAST、FrameMetrics、ART profile 与工具边界；删除无法追溯到原始材料的商业百分比及自动化能力承诺。本文不讨论内核实现，未引入 kernel 版本断言。"
 ---
 
 # 性能优化的术、道、器

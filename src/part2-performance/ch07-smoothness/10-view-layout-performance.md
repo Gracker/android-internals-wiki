@@ -3,14 +3,9 @@ title: "View 体系性能优化：布局层级、inflate 与 measure/layout 开�
 chapter: "7.10"
 section: "7.10"
 status: "finalized"
-drafted_date: "2026-04-08"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-25"
 last_verified_against: "AOSP android-16.0.0_r1 ViewRootImpl / ViewDebug / ViewHierarchyEncoder"
-reviewed_date: "2026-06-05"
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
 confidence: high
 sources:
   - type: official
@@ -27,29 +22,10 @@ sources:
     path: "frameworks/base/core/java/android/view/Choreographer.java"
 tags: [view, layout, inflate, measure, draw, constraintlayout, viewstub, async-inflate, jank]
 related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.5", "8.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-08"
-gap_source: "AOSP结构+官方文档+读者需求"
 pipeline_stage: "ready-to-publish"
-finalized_date: "2026-06-05"
-finalized_by: "openclaw-task6-auto-promote"
 task6_state: "reviewed"
 task9_state: reviewed
-task9_result: auto-fixed
 task2b_state: fixed
-task2b_result: fixed-lite
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-05"
-last_task9_at: "2026-06-05T16:21:00+08:00"
-last_task2b_lite_at: "2026-06-04"
-last_task2b_at: "2026-06-04T12:57:00+08:00"
-last_task6_audit: "2026-06-26"
-last_task9_audit: "2026-05-21"
-task9_review_notes: "2026-06-05 Task9 auto-fix: ViewTreeObserver 附录从 Android 17 API 37 标题降级为 Android 16 源码边界，避免在 android-17.0.0_r1 tag 未发布时写成 Android 17 新增结论。"
-last_task6_at: "2026-06-05T17:22:30"
-last_task9_autofix_at: 2026-06-05
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-06
 ---
 
 # 7.10 View 体系性能优化：布局层级、inflate 与 measure/layout 开销

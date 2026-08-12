@@ -52,48 +52,10 @@ sources:
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
 last_verified: "2026-07-07"
 last_verified_against: "developer.android.com/agi, developer.android.com/android-performance-analyzer, developer.android.com/blog/posts/introducing-android-performance-analyzer-the-next-evolution-in-profiling-for-android, perfetto.dev/docs/data-sources/gpu, github.com/sarc-acl/sokatoa, AOSP android-17.0.0_r1 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto"
-drafted_date: "2026-04-05"
-drafted_by: "openclaw-task2a"
-reviewed_date: 2026-07-07
-reviewed_by: openclaw-task6
 related_chapters: ["2.10", "2.14", "13.3", "14.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-05"
-gap_source: "AOSP结构+官方文档+研究素材"
-last_task2b_by: "openclaw-task2b-main"
-task2b_result: fixed
-task6_result: pass-light-edit
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-task9_result: auto-fixed
-task9_reviewed_date: "2026-07-06"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-07T12:33:06+08:00"
-last_task9_audit: "2026-07-06"
-last_task2b_lite_at: "2026-07-09"
-last_task9_autofix_at: "2026-07-07"
-last_task6_audit: "2026-07-15"
-last_task6_audit_log: "logs/review/2026-06-29-15-audit.md"
-last_task9_audit_log: "logs/deep-review/2026-07-06-14-deep-review.md"
-task9_review_summary: "2026-07-07 Task9 AUTO-FIX：修正 Perfetto GPU counter AOSP 源码路径为 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto；回到 Task6 复审。"
-last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
-task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态流转。"
-last_task2b_at: "2026-07-06T12:50:00+08:00"
-last_task2b_source: "task9-deep-tech-review (2026-07-06 re-review)"
-last_task2b_priority: 95
-task2b_note: "2026-07-06 Task2B 修复：APA System Profiler 版本覆盖与演进段落扩充、AGI与APA对比表修正、Android 17 ANGLE denylist 确认流程补充。源码调研内容整合。"
-last_task6_at: 2026-07-07T15:10:00+08:00
-task6_reviewed_date: "2026-07-06"
-task6_reviewed_at: "2026-07-06T12:12:00+08:00"
-task6_reviewed_by: "openclaw-task6"
-task6_l1_l2_fixes: 7
-task6_l3_l4_issues: 0
-finalized_date: 2026-07-07
-finalized_by: openclaw-task6-auto-promote
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-07
-last_task9_review_log: "logs/deep-review/2026-07-07-12-deep-review.md"
 ---
 # 14.15 GPU 图形调试与分析工具
 

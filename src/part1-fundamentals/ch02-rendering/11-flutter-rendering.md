@@ -36,47 +36,10 @@ sources:
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/
 - type: material
   path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S10_flutter_type.md
-drafted_date: 2026-04-01
-drafted_by: openclaw-task2a
-finalized_date: 2026-05-22
-finalized_by: openclaw-task9-auto-promote
-auto_promoted_date: 2026-05-22
-auto_promoted_by: openclaw-task9
-polish_count: 1
-polish_date: 2026-04-05
-polish_by: task2b-polish
 related_chapters: ['2.1', '2.3', '2.4', '2.5', '7.1', '7.7', '18.12']
-task2b_result: fixed
-last_task2b_at: "2026-07-01T18:54:04+08:00"
-last_task9_audit: 2026-07-05
-last_task9_audit_log: logs/deep-review/2026-07-05-10-audit.md
-last_task6_audit: 2026-06-13
 task9_state: reviewed
-task9_result: pass-tech-review
 task2b_state: fixed
-task9_reviewed_date: 2026-07-02
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-07-02T10:41:17+08:00"
-last_task9_review_log: logs/deep-review/2026-07-02-10-deep-review.md
-task9_review_notes: "2026-05-22 Task9 deep review: pass-tech-review。无 P0/P1/P2；16KB plugin 合规链路已拆清 AGP zip alignment、ELF p_align 与 native 4KB 假设。queue 无 pending，Task6 已通过，自动晋升 finalized。 | 2026-07-02 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 0；修正 Flutter Android VSync 入口为 NDK AChoreographer 优先、Java VsyncWaiter fallback，并同步 Perfetto trace 关键词；回到 Task6 复审。详见 logs/deep-review/2026-07-02-10-deep-review.md。"
-reviewed_date: 2026-07-02
-reviewed_by: openclaw-task6
 task6_state: reviewed
-task6_result: pass-light-edit
-last_task6_at: 2026-07-02T20:11:00+08:00
-last_task6_review_log: logs/review/2026-05-22-16-review.md
-review_notes: "2026-05-09 task6 re-review (revisiting): pass-light-edit。L1 禁用词 4 处已修复。无 B 类大问题。评分：结构 5/5·措辞 4/5·一致性 5/5·验证 4/5·元数据 5/5。2026-05-22 Task6 re-review: L1/L2 pass-light-edit，修复 frontmatter 重复 key、结构性元叙述与口语化表达 7 处；Task9 P1/P2 queue 已存在，保持 task2b_pending。2026-05-22 Task6 re-review: pass-light-edit。L1/L2 小修 14 处（结构性元叙述、ASCII 破折号、标点与几处过度口语表达）。Task9 P1/P2 queue 已存在，保持 task2b_pending。 2026-05-22 16:06 Task6 re-review: pass-light-edit。L1/L2 小修 5 处；压掉不必要的“我们”第一人称和开头问题句式；既有 Task9 P1（16KB plugin packaging/ELF/runtime 边界）queue 保留，保持 task2b_pending。 2026-05-22 19:26 Task9 re-review: pass-tech-review，P0/P1/P2=0；queue 无 pending，自动晋升 finalized。"
-updated_by: openclaw-task9
-updated_date: 2026-07-02
-p0: 0
-p1: 1
-p2: 0
-auto_promoted: True
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-03
-task2b_fix_source: task9-deep-tech-review
-task2b_fix_summary: "Flutter merged UI+Platform 线程模型版本边界从 3.29+→3.32 stable+，旧模型边界从 3.28-→3.31-，与 2.11/18.12 交叉引用闭环（依据 Flutter issue #150525 + release-notes-3.32.0）"
-last_task9_autofix_at: "2026-07-02"
 ---
 # 2.11 Flutter 渲染管线与性能
 

@@ -6,50 +6,10 @@ status: finalized
 applicable_versions: "Android 17 (API 37)"
 tags: [binder, ipc, 异步机制, 批处理]
 related_chapters: ["1.4", "1.13"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-16"
-gap_source: "DeepResearch"
 pipeline_stage: ready-to-publish
-task2b_result: fixed
 task2b_state: fixed
-last_task6_audit: "2026-07-16"
 task6_state: reviewed
-task6_result: pass-light-edit
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
-last_task2b_at: "2026-06-28T08:50:00+08:00"
-task2b_main_at: "2026-07-02T00:55:01.138143+08:00"
-last_task2b_lite_at: "2026-07-01"
-last_research_at: "2026-06-27T20:55:00+08:00"
-last_research_report: "DeepResearch/2026-06-27-android17-binder-async-frozen-batch-pipeline.md"
-last_task9_at: "2026-07-03T04:37:48+08:00"
-last_task9_reviewed_by: "openclaw-task9-2026-07-02"
-last_task9_issues: "P0:0 P1:0 P2:0; idle audit auto-fixed kernel version-difference table and oneway wait boundary"
-last_task9_autofix_at: "2026-07-02"
-last_task9_audit: "2026-07-02"
-last_task6_at: "2026-07-03T04:11:01+08:00"
-reviewed_date: 2026-07-02
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-04
-task6_review_notes: 07-01 23 Task6：needs-rework（三路重复 ×3、版本表述、标题不匹配、加工注释）。07-02 01 Task6 revisiting：pass-light-edit。Task2B 已修复全部回炉项（三路重复简化、版本表述修正、加工注释删除）；L1 小修 2 处（Section 11 子节编号 12.x→11.x、typo 正模式→正确模式）；outline 4/4 覆盖；待 Task9 复审 P0:3/P1:2 后决定是否晋升。 07-02 02 Task6 reviewed：pass-light-edit。L1 小修 3 处（交叉引用标题 1.13 IPC→MessageQueue、Section 13 子标题层级 ###A-E→####A-E、同步语义描述修正）；outline 4/4 覆盖、2/2 扩展；无 B 类大问题。task9_result=auto-fixed（非 pass-tech-review），不满足自动晋升条件，待 Task9 复审。
-last_task9_review_log: "logs/deep-review/2026-07-03-04-deep-review.md"
-task6_review_notes_round4: "2026-07-03 Task6 revisiting-review round4 (post-Task9 autofix): pass-light-edit. L1 fixes: 6 (Section 12 Java code blocks single-space→4-space indentation x4 blocks; banned word 链路→机制; filler 真正 removed). L2: structure intact, outline 4/4 anchors + 2/2 extensions covered. No new L3/L4 issues. task9_result=auto-fixed + queue.json has 1 pending entry (priority 85), cannot auto-promote."
-task6_review_notes_round3: "2026-07-02 Task6 revisiting-review round3 (post-Task9 autofix): pass-light-edit. L1 scan: 0 banned words, 真正=1 (within limit). L2: structure intact, outline 4/4 anchors + 2/2 extensions covered. Sections 10-13 (kernel deep-dive) well-structured. Appendix A source-level supplement properly marked. queue.json has 1 pending entry (priority 85 DeepResearch), cannot auto-promote."
-p0: 0
-p1: 0
-p2: 0
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-03"
-finalized_by: "openclaw-task9-auto-promote"
-finalized_date: "2026-07-02"
-updated_by: "openclaw-task9"
-updated_date: "2026-07-02"
-task9_p0_issues: 0
-task9_p1_issues: 0
-task9_p2_issues: 1
-task9_review_notes: "2026-07-03 04:37 Task9 deep-review：libbinder 与 android17-6.18 binder driver 核心锚点复核通过；无 P0/P1；Binder 基准/Trace 数据仍待补，写入 suggestions；因 queue.json 仍有 1 条 pending，未自动晋升。"
-last_task2b_verifier_at: "2026-07-03T07:32:03+08:00"
-verifier_action: "auto-promote: task6 pass-light-edit + task9 pass-tech-review, no task2b-relevant queue pending"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1; kernel/common android17-6.18-2026-06_r6"
 confidence: high

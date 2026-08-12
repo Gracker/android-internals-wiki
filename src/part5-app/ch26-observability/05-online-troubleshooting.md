@@ -7,8 +7,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37) (API 36 / 36.1)"
 last_verified: "2026-08-06"
 last_verified_against: "Android Developers / AOSP android-17.0.0_r1 docs / Firebase docs / Play Console docs / Clippings structure references; cross-checked with 26.10 versioned diagnostics"
 confidence: medium-high
-drafted_date: "2026-05-15"
-polish_count: 1
 sources:
   - type: clipping
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md"
@@ -43,35 +41,11 @@ related_chapters: ["26.1", "15.5", "13.2"]
 pipeline_stage: "ready-for-review"
 task6_state: "pending-review"
 task9_state: "pending-review"
-task6_review_notes: '2026-06-04 task6 re-review (round 2): pass-light-edit. L1/L2 clean. Fixed frontmatter formatting (leading blank lines). All 4 anchors + 1 extension covered. task9_result=auto-fixed. Score: structure 4/5, wording 4/5, consistency 4/5, verification 4/5, metadata 4/5.'
-task6_reviewed_by: openclaw-task6
-task6_reviewed_at: "2026-05-15T03:11:00+08:00"
-last_task6_review_log: logs/review/2026-06-04-20-review.md
-last_task6_at: "2026-06-04T20:15:00+08:00"
-reviewed_date: "2026-08-05"
-reviewed_by: hermes-aiw-review-finalize-apply
-task6_result: pass-light-edit
-task9_result: auto-fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-04"
-last_task9_at: "2026-06-04T09:20:00+08:00"
-last_task9_review_log: logs/deep-review/2026-06-04-09-deep-review.md
-task2b_result: fixed
-last_task9_autofix_at: "2026-06-04"
-task9_review_notes: "2026-06-04 Task9 auto-fix: clarified ProfilingTrigger API 36 vs version 36.1 boundary for APP_REQUEST_RUNNING_TRACE."
-deepseek_cn_review_state: structure-reworked
-last_deepseek_cn_review_at: 2026-06-12
 task2b_state: fixed
-last_task2b_verifier_at: "2026-06-14T11:25:00+08:00"
-last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
 last_rework_at: "2026-08-06T09:37:37+08:00"
 last_rework_run_id: "20260806-093722-rework-e80242a0"
-last_rework_log: "logs/rework/2026-08-06-20260806-093722-rework-e80242a0-rework.md"
-rework_result: "verification-marker-cleared"
-rework_notes: "2026-08-06 rework: cleared stale verification quality flag by removing review-marker wording from the evidence-template guidance; returned chapter to ready-for-review so task6/task9 can re-check the bounded edit."
 last_review_finalize_at: "2026-08-05T22:06:15+08:00"
 last_review_finalize_run_id: "20260805-220526-b99bf55c"
-review_finalize_notes: "2026-08-05 review-finalize: verified structure, Android 10-17/API 29-37 version boundaries, remote logging/privacy, bug report/Crashlytics, ProfilingManager/ProfilingTrigger, Play staged rollout, Remote Config rollout, Android vitals, and StatsD ordinary-app permission boundary; no Android 18/API 38+ claims found. Promoted to finalized."
 ---
 
 # 26.5 线上问题排查方法论

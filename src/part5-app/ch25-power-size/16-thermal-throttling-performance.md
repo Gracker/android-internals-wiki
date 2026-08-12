@@ -6,9 +6,6 @@ status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [thermal, throttling, performance-degradation, power, ThermalManager, ThrottlingSeverity]
 related_chapters: ["5.4", "5.9", "25.1", "25.13"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-16"
-gap_source: "AOSP结构+官方文档+章节深挖"
 confidence: high
 consolidated_from:
   - "src/part2-performance/ch07-smoothness/16-power-thermal-jank-playbook.md"
@@ -30,8 +27,6 @@ task9_state: reviewed
 pipeline_stage: finalized
 last_draft_polish_at: 2026-08-03T19:35:49+08:00
 last_draft_polish_run_id: 20260803-193549-draft-polish-4a642e80
-reviewed_date: 2026-08-03
-reviewed_by: hermes-aiw-review-finalize-apply
 last_review_finalize_at: 2026-08-03T20:20:38+08:00
 last_review_finalize_run_id: 20260803-201256-f2e7359d
 ---

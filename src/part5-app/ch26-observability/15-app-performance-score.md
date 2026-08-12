@@ -3,7 +3,6 @@ title: "App Performance Score 与性能质量评分归因"
 chapter: "26.15"
 section: "26.15"
 status: finalized
-drafted_date: "2026-05-23"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37); App Performance Score Preview 2026"
 last_verified: "2026-05-23"
 last_verified_against: "Android Developers App Performance Score / Android Vitals / Macrobenchmark / Baseline Profiles docs"
@@ -12,9 +11,6 @@ consolidated_from:
   - "src/part1-fundamentals/ch05-cpu-power/5.33-android17-performance-score-attribution-sourcecode.md"
 tags: [app-performance-score, android-vitals, macrobenchmark, baseline-profile, performance-governance, observability]
 related_chapters: ["15.3", "15.6", "15.9", "19.11", "26.3", "26.6", "26.12"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-23"
-gap_source: "官方文档"
 sources:
   - type: clipping
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md"
@@ -50,25 +46,8 @@ sources:
     path: "https://developer.android.com/android-performance-analyzer"
 task6_state: reviewed
 pipeline_stage: ready-to-publish
-last_task2a_at: "2026-05-23T20:04:00+08:00"
-task2a_result: drafted
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-07-16"
-task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: fixed
-task2b_result: fixed
-last_task6_at: "2026-07-16T20:24:00+08:00"
-last_task6_audit: "2026-07-16"
-task9_result: auto-fixed
-last_task9_at: "2026-05-23T20:25:42+08:00"
-last_task9_audit: "2026-07-07"
-last_task9_autofix_at: 2026-07-15
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-16"
-task9_review_notes: "2026-05-23 20:25 Task9 深度技术审计：pass-tech-review。P0 0 / P1 0 / P2 0；官方 App Performance Score、Vitals、Macrobenchmark、Baseline Profiles、APA 口径复核通过；自动晋升 finalized。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-17
 ---
 
 # 26.15 App Performance Score 与性能质量评分归因

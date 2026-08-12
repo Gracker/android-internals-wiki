@@ -11,8 +11,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-08-11"
 last_verified_against: "Android Developers APK/App Bundle/R8/16 KB docs 2026-07 + AOSP android-17.0.0_r1 + AGP 9.3.0"
 confidence: medium
-drafted_date: "2026-05-14"
-polish_count: 0
 sources:
   - type: official
     path: "https://developer.android.com/studio/debug/apk-analyzer"
@@ -51,30 +49,6 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-reviewed_by: openclaw-task6
-reviewed_date: "2026-07-12"
-task6_result: "pass-light-edit"
-last_task6_at: "2026-07-12T12:15:00+08:00"
-last_task6_review_log: "logs/review/2026-06-06-10-review.md"
-task6_review_notes: "2026-07-12 Task6 revisiting 复审：pass-light-edit。L1 修复 2 处（链路→流程、关键是删除）；L2 结构/节奏/读者视角通过；task9 idle audit auto-fixed（P2 版本锚点）等效通过；无新增 L3/L4 回炉项。自动晋升 finalized。"
-task2b_result: fixed-lite
-task9_result: auto-fixed
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-06"
-last_task9_at: "2026-06-06T10:21:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-06-10-deep-review.md"
-task9_review_notes: "2026-06-06 09:20 Task9 deep-review: auto-fixed。修正 apkanalyzer --human-readable 全局参数位置；证据为 Android Developers apkanalyzer 语法。回 Task6 复审。 | 2026-06-06 10:21 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-last_task2b_lite_at: 2026-06-03
-last_task9_autofix_at: "2026-07-12"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-12
-last_task9_audit: "2026-07-12"
-last_task9_audit_log: "logs/deep-review/2026-07-12-09-audit.md"
-last_task9_audit_at: "2026-07-12T09:26:38+08:00"
-last_task9_audit_result: auto-fixed-idle-audit
-last_task9_audit_notes: "idle audit: P2 source-anchor auto-fix; AOSP PackageAbiHelperImpl/NativeLibraryHelper/ResourceTypes references moved from android-16.0.0_r1 to android-17.0.0_r1 after path and symbol verification; no P0/P1."
-finalized_date: "2026-07-12"
-finalized_by: openclaw-task6-auto-promote
 ---
 
 

@@ -3,7 +3,6 @@ title: "Wi-Fi 评分、网络选择与连接切换性能"
 chapter: "24.8"
 section: "24.8"
 status: finalized
-drafted_date: "2026-05-15"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: '2026-06-04'
 last_verified_against: 'AOSP android-16.0.0_r1 (packages/modules/Wifi, packages/modules/Connectivity, packages/modules/NetworkStack) + Android Developers / source.android.com docs'
@@ -45,31 +44,9 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪?-Android开发高手课-极客时间 20.md"
 tags: [wifi, connectivity, network, latency, scoring, performance]
 related_chapters: ["12.1", "24.4", "24.5", "15.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-15"
-gap_source: "AOSP结构/研究素材"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-04"
-task6_result: pass-light-edit
 task6_state: "reviewed"
-last_task6_at: "2026-06-04T03:10:02+08:00"
-task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit（revisit）。L1/L2 禁用词/高频词/AI填充词零命中。无新增回炉项。task9_result=auto-fixed 未达 pass-tech-review 口径，不自动晋升，待 task9 复审。"
 task9_state: "reviewed"
-task9_result: 'auto-fixed'
 task2b_state: 'fixed'
-task9_reviewed_by: 'openclaw-task9'
-task9_reviewed_date: '2026-06-04'
-last_task9_at: '2026-06-04T00:20:00+08:00'
-last_task9_review_log: 'logs/deep-review/2026-06-04-00-deep-review.md'
-task2b_result: 'fixed'
-task2b_fixed_date: '2026-06-03'
-task2b_fixed_at: '2026-06-03T10:53:52'
-last_task2b_at: '2026-06-03T10:53:52'
-last_task9_autofix_at: '2026-06-04'
-task9_review_notes: '2026-06-04 Task9 00:20：auto-fixed。将 Wi-Fi / Connectivity 源码锚点收敛到 android-16.0.0_r1，并修正 WifiConnectedNetworkScorer 的真实源码位置为 WifiManager 嵌套 SystemApi；回到 Task6 复审。'
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-04
-task6_l1_l2_fixes: 0
 pipeline_stage: ready-to-publish
 ---
 

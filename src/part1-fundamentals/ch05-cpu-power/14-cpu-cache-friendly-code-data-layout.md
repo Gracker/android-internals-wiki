@@ -24,12 +24,6 @@ sources:
     path: "https://developer.arm.com/documentation"
 tags: [cpu-cache, cache-line, false-sharing, data-layout, dex-reordering, redex, locality, startup-optimization]
 related_chapters: ["5.1", "5.3", "8.7", "16.6", "21.4"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-05"
-drafted_date: "2026-06-05"
-gap_source: "Clippings结构参考/AOSP结构/章节深挖"
-gap_score: 16
-material_count: 5
 ---
 
 # 5.14 CPU Cache 友好代码与数据布局优化

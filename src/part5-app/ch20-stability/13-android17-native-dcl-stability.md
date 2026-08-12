@@ -3,23 +3,13 @@ title: "Android 17 Native DCL 只读约束与动态库加载稳定性"
 chapter: "20.13"
 section: "20.13"
 status: "finalized"
-drafted_by: "openclaw-task2a"
-drafted_date: "2026-05-25"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: [stability, native, dynamic-code-loading, android17, system-load]
 related_chapters: ["1.58", "20.3", "20.11", "20.17", "1.15"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-25"
-gap_source: "官方文档/AOSP结构/每日信息"
 last_verified: "2026-05-25"
 last_verified_against: "Android Developers Android 14/17 behavior changes; Android Dynamic Code Loading security guidance; Android NDK JNI tips; AOSP native library namespace docs"
 confidence: medium
-task2a_state: processed
-task2a_result: processed-draft
 task6_state: "reviewed"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-25"
-task6_result: pass-light-edit
 task9_state: "reviewed"
 pipeline_stage: "ready-to-publish"
 sources:
@@ -33,34 +23,7 @@ sources:
     path: "https://developer.android.com/ndk/guides/jni-tips#native-libraries"
   - type: aosp
     path: "https://source.android.com/docs/core/permissions/namespaces_libraries"
-source_refs:
-  - "[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md]"
-  - "[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Backtrace：Native 堆栈信息获取.md]"
-  - "[结构参考: Clippings/Android 应用稳定性剖析与优化 - ELF 文件与 readelf & objdump ：了解 ELF 格式与解析工具.md]"
-  - "[结构参考: Clippings/Android 应用稳定性剖析与优化 - Android.bp 文件与符号表：如何才能找到函数符号？.md]"
-  - "[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Hook 全解析：Native 闯关入门秘籍.md]"
-task9_result: "pass-tech-review"
 task2b_state: fixed
-task2b_result: fixed-lite
-last_task2b_lite_at: "2026-06-01"
-task9_reviewed_date: "2026-06-01"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-01T08:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-01-08-deep-review.md"
-task9_review_notes: "2026-06-01 Task9 deep-review: pass-tech-review。复核 Android 17 Native DCL System.load 只读约束、Android 14 DEX/JAR DCL 顺序、发布状态机与崩溃归因边界；无 P0/P1/P2，Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-p0: 0
-p1: 0
-p2: 0
-updated_by: "openclaw-task9"
-updated_date: "2026-06-01"
-task9_p0_issues: 0
-task9_p1_issues: 0
-task9_p2_issues: 0
-last_task6_audit: "2026-07-12"
-last_task9_audit: "2026-07-07"
-last_task9_audit_log: "logs/deep-review/2026-07-07-20-audit.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-19
 ---
 
 # Android 17 Native DCL 只读约束与动态库加载稳定性

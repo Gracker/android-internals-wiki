@@ -8,8 +8,6 @@ last_verified: "2026-06-30"
 last_verified_against: "AndroidX RecyclerView 1.4.0 sources.jar + Android Developers docs + AIW 7.8/22.1/2.4；AndroidX RecyclerView 为独立 artifact，不属于 android-17.0.0_r1 platform tag"
 confidence: medium
 androidx_source_note: "AndroidX RecyclerView 源码以 androidx.recyclerview:recyclerview:1.4.0 sources.jar 为不可变基线；RecyclerView 是 AndroidX artifact，不属于 android-17.0.0_r1 platform tag。"
-drafted_date: "2026-05-13"
-polish_count: 1
 sources:
   - type: androidx
     path: "androidx.recyclerview:recyclerview:1.4.0 sources.jar (RecyclerView.java)"
@@ -55,31 +53,6 @@ pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: reviewed
 task2b_state: fixed
-task2b_result: fixed-lite
-task6_result: "pass-light-edit"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-30"
-task6_reviewed_date: "2026-06-30"
-last_task6_at: "2026-06-30T03:11:11+08:00"
-last_task6_audit: "2026-06-07"
-last_task6_review_log: "logs/review/2026-06-30-03-review.md"
-task6_reviewed_at: "2026-06-30T02:13:00+08:00"
-task6_reviewed_by: openclaw-task6
-task6_review_notes: "2026-06-30 Task6 revisit复审：Task9 auto-fix已收敛源码锚点到 androidx.recyclerview:1.4.0 sources.jar；写作质检通过（禁用词0/高频词0/物理动词0/结构元叙述0/锚点全覆盖）；无L1/L2问题，无需小修；task9_result为auto-fixed，待Task9最终确认后可晋升finalized。"
-task9_result: pass-tech-review
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-30"
-last_task9_at: "2026-06-30T04:35:04+08:00"
-last_task9_audit: "2026-06-30"
-last_task2b_lite_at: "2026-06-30"
-last_task9_review_log: "logs/deep-review/2026-06-30-04-deep-review.md"
-task9_review_notes: "2026-06-30 Task9 闲时抽检：P1 版本/源码锚点问题；AndroidX sources 原使用移动分支，需固定到可接受基线或标注未进入 Android 17。 | 2026-06-30 Task9 auto-fix：源码锚点从移动分支收敛到 androidx.recyclerview:recyclerview:1.4.0 sources.jar；1.4.0 source jar 已验证包含 RecyclerView/DiffUtil/AsyncListDiffer/ListAdapter/LinearLayoutManager/GapWorker/SimpleItemAnimator 等本文引用标识符；回到 Task6 复审。 | 2026-06-30 Task9 final review：AndroidX RecyclerView 1.4.0 source jar 与官方文档复核通过；本轮无 P0/P1/P2；Task6 已通过且 queue.json 中 22.2 无 pending，自动晋升 finalized。"
-last_task9_autofix_at: "2026-06-30"
-task9_p0_issues: 0
-task9_p1_issues: 0
-task9_p2_issues: 0
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-16
 consolidated_from:
   - "src/part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md"
 ---

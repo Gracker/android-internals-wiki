@@ -3,30 +3,13 @@ title: "Profile、DM 与 Secure Dex Metadata 安装编译"
 chapter: "16.6"
 section: "16.6"
 status: finalized
-last_task2b_at: 2026-07-13
-last_task2b_lite_at: 2026-07-13
-task6_result: passed
-reviewed_by: hermes-aiw-review-finalize-apply
-reviewed_date: "2026-07-29"
-last_task6_at: "2026-07-29T18:06:00+08:00"
-task9_result: passed
 task9_state: reviewed
-last_task9_at: "2026-07-29T18:06:00+08:00"
-task9_reviewed_by: hermes-aiw-review-finalize-apply
-task9_reviewed_date: "2026-07-29"
-task2b_result: fixed
 task2b_state: fixed
 task6_state: reviewed
 pipeline_stage: finalized
 last_review_finalize_at: "2026-07-29T18:06:00+08:00"
 last_review_finalize_run_id: "20260729-180555-eb91bcdc"
-task2b_rework_notes: "2026-07-13 重度回炉：(1)删除 §2-6 全部 8 处虚构代码(DeviceBasedDexopt/ProfileBasedDexopt/InstallProcessor/BackgroundCompiler/ArtDaemon/FileUtils::OptimizeFileAccess/InstallSessionOptimizer/InstallExecutor/DexoptManager/CompilationRequestOptimizer 等类和方法在 AOSP android-17.0.0_r1 中不存在)；(2)全文从百科词条式列表重写为 Type A 机制原理叙述；(3)§7-10 空洞内容压缩为实用调试指导；(4)新增 Perfetto 观测 SDM 编译指导；(5)性能数据标注来源警告和验证方法。已回送 Task6 复审。"
-task6_review_notes: "2026-07-13T22:10 复审：L1 禁用词(链路)已修 5 处。B 类大问题：虚构代码/百科词条结构/§7-10空洞/无Trace指导/数据无来源。2026-07-13 重度回炉已全部处理。"
-task9_review_notes: "2026-07-13 Task9 deep review 发现 P0/P1 问题；2026-07-13 Task2B 回炉修复：P0-DexMetadataHelper 源码锚点核实(现稿正确否定 pm.dexopt.dm.require_manifest / require_fsverity 属性，这三项在 r1 中不存在)+P1-性能数据验证方法补充+P1-SDM 版本演进对比(Android 14→17)。2026-07-29 hermes-aiw-review-finalize-apply 复审通过。"
-review_type: task9-deep-tech-review
-last_task9_review_log: logs/deep-review/2026-07-13-22-deep-review.md
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
-drafted_date: "2026-06-11"
 last_verified: "2026-08-11"
 last_verified_against: "AOSP android-17.0.0_r1 (PackageInstallerSession / PackageManagerShellCommand / DexOptHelper / PrimaryDexopter / Dexopter / DexoptStatus / ReasonMapping / ArtFileManager / ArtManagedInstallFileHelper / DexMetadataHelper / artd / oat_file / sdc_file / path_utils); Configure ART"
 confidence: high
@@ -84,8 +67,6 @@ related_chapters: ["1.7", "1.9", "1.23", "21.4", "21.10"]
 consolidated_from:
   - "16.6 Android 16 云端 Profile 与 dexopt 安装优化"
   - "16.9 Android 17 SDM 安装编译流程性能"
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-11"
 ---
 
 # Profile、DM 与 Secure Dex Metadata 安装编译

@@ -2,7 +2,6 @@
 title: "Perfetto 指标、自动化与高级用法"
 chapter: "13.6"
 section: "13.6"
-drafted_date: "2026-04-03"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-07-31"
 last_verified_against: "Android 17 / API 37 / android-17.0.0_r1 (Perfetto ece66975738007dd0978b911d8a2077e49b8f31e); Perfetto Trace Processor v57.2; android17-6.18-2026-06_r6"
@@ -38,31 +37,11 @@ tags:
   - android
   - perfetto
   - research
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-07"
-task9_reviewed_by: openclaw-task9
-last_task2b_at: "2026-05-07T15:44:35+08:00"
-last_task9_at: "2026-05-07T17:29:52+08:00"
-last_task9_audit: "2026-07-09"
-last_task9_audit_log: "logs/deep-review/2026-07-09-13-audit.md"
-task9_review_notes: "2026-05-07 Task9 17:29：pass-tech-review。P0 0 / P1 0 / P2 4（均为既有 suggestions 或日志记录，本轮不重复写入）；自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-05-07-17-deep-review.md"
-
 status: finalized
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-07"
-task6_result: pass-light-edit
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: ready-to-publish
 task2b_state: fixed
-last_task6_at: "2026-05-07T17:07:00+08:00"
-last_task6_audit: "2026-07-16"
-last_task6_review_log: "logs/review/2026-05-07-17-review.md"
-task2b_result: fixed
-task6_review_notes: "2026-05-07 Task6 17:07：Task2B 修复后写作复审；清理形容词冒号起手句 1 处，frontmatter 去重并更新状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-20
 ---
 
 

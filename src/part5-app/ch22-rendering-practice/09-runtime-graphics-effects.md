@@ -4,25 +4,15 @@ title: "RenderEffect 与 Runtime 图形 API 性能实践"
 chapter: "22.9"
 section: "22.9"
 status: finalized
-drafted_date: "2026-05-15"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-12"
 last_verified_against: "AOSP android-17.0.0_r1 + Android Developers docs"
 confidence: high
 tags: ["rendereffect", "runtimeshader", "agsl", "hwui", "gpu"]
 related_chapters: ["2.7", "2.10", "18.2", "22.5"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-15"
-gap_source: "素材驱动/AOSP结构"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-last_task6_at: "2026-07-12T20:19:00+08:00"
-task6_result: pass-light-edit
-reviewed_date: 2026-07-12
-reviewed_by: openclaw-task6
 task9_state: reviewed
-last_task6_review_log: "logs/review/2026-06-03-03-review.md"
-task6_review_notes: "2026-06-03 Task6 复审：pass-light-edit。L1/L2 复审通过；无禁用词、无版本越界、锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。"
 sources:
   - type: aosp
     path: "AOSP android-17.0.0_r1 frameworks/base/graphics/java/android/graphics/RenderEffect.java"
@@ -54,25 +44,7 @@ sources:
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
   - type: clippings
     path: "Clippings/Android 性能优化 - 资源文件的体积优化实战.md"
-task9_result: auto-fixed
 task2b_state: fixed
-task9_reviewed_date: "2026-06-03"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-03T05:27:37+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-03-05-deep-review.md"
-task9_review_notes: "2026-06-03 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 0；RenderEffect、RuntimeShader、View.setRenderEffect 与 GPU Headroom 版本边界复核通过，自动晋升 finalized。"
-task2b_result: "fixed"
-last_task2b_at: "2026-06-03T00:50:00+08:00"
-task2b_review_notes: "2026-06-03 Task2B fallback 回炉：修正 RuntimeShader uniform 更新后的重绘语义，收敛 GPU counter/GPU Headroom 版本边界，补上 Android 16 源码锚点口径。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-13
-last_task9_audit: "2026-07-12"
-last_task9_audit_log: "logs/deep-review/2026-07-12-18-audit.md"
-last_task9_audit_result: "auto-fixed"
-last_task9_audit_at: "2026-07-12T18:24:52+08:00"
-last_task9_autofix_at: "2026-07-12"
-last_task9_audit_notes: "idle audit auto-fix: 将源码主线锚点从 android-16.0.0_r1 更新为 android-17.0.0_r1；复核 RenderEffect/RuntimeShader/View/RenderNode 在 Android 17 下路径与关键 API 仍成立；章节回到 Task6 复审。"
-task6_promotion_notes: "2026-07-12 20H Task6 revisiting review (post-task9-idle-audit): pass-light-edit。L1禁用词扫描零命中。L2开头/节奏/结构/读者视角全通过。锚点6/6覆盖，扩展3/3覆盖。Task9 idle audit auto-fix（源码锚点更新为android-17.0.0_r1）后写作质量未受影响。无新增L3/L4回炉。AUTO-PROMOTED: task6=pass-light-edit, task9=auto-fixed(=pass), queue=clear。"
 consolidated_from:
   - "src/part5-app/ch22-rendering-practice/19-runtimecolorfilter-runtimexfermode-performance.md"
 ---

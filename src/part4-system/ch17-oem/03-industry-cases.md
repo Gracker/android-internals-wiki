@@ -29,36 +29,13 @@ sources:
     path: "https://developer.android.com/jetpack/androidx/releases/window"
 tags: ['case-study', 'game-mode', 'adpf', 'startup', 'foldable', 'oem', 'industry']
 related_chapters: ["5.6", "7.4", "7.5", "8.2", "8.3", "11.1", "16.1", "17.1", "17.2"]
-drafted_date: "2026-04-04"
-drafted_by: "openclaw-task2a"
 task6_state: reviewed
-reviewed_by: hermes-aiw-review-finalize-apply
-reviewed_date: "2026-08-06"
-task6_result: "pass-light-edit"
-last_task6_audit: "2026-07-15"
-last_task6_audit_log: "logs/review/2026-07-15-18-audit.md"
-last_task6_audit_notes: "idle audit: L1 禁用词全清；中英文间距干净；高频词(优化48/性能38/设备28)均主题固有；frontmatter 完整；4个🔹锚点全覆盖；无 L1/L2 问题，无需修改。"
 status: finalized
 pipeline_stage: finalized
 task9_state: reviewed
-task9_result: pass-tech-review
 task2b_state: fixed
-task2b_result: fixed
-repaired_date: "2026-04-27"
-repaired_by: "openclaw-task2b"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-04"
-last_task9_at: "2026-05-04T10:37:13+08:00"
-last_task2b_at: "2026-04-27T14:50:00+08:00"
-last_task9_audit: "2026-07-08"
-last_task9_audit_log: "logs/deep-review/2026-07-08-14-audit.md"
-last_task9_audit_notes: "idle audit: no P0/P1; android-17.0.0_r1 source paths rechecked; GameManager/PowerManager API version guards rechecked; existing P2 guards remain for FileProvider attachInfo, Thermal thresholds, Game State API."
-review_notes: "2026-04-28 task9 deep-review: pass-tech-review；无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。；2026-05-04 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 3。核心 API 与案例链路可通过；仅有 Thermal thresholds API 版本守卫、FileProvider 插桩细节、折叠屏多窗口数据支撑三处 P2。；2026-08-06 hermes review/finalize: 复核 Jetpacker hybrid inference 新增段落与 Android 17/API 边界，未发现 P0/P1/P2 open issue，推进 finalized。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-21
 last_body_apply_at: "2026-08-06T09:15:33+08:00"
 last_body_apply_run_id: "20260806-091503-909828fa"
-last_body_apply_source: "source-index:194; 04-jetpacker-intro.md"
 last_review_finalize_at: "2026-08-06T10:06:06+08:00"
 last_review_finalize_run_id: "20260806-100508-973d0b7e"
 ---

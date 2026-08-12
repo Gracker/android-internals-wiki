@@ -116,37 +116,9 @@ sources:
     path: Writer/rendering_pipelines/S14_react_native_type.md
   - type: writer
     path: Writer/rendering_pipelines/images/DIAGRAM_MANIFEST.md
-drafted_date: 2026-03-30
-drafted_by: openclaw-task2a
-task6_reviewed_date: 2026-06-15
-reviewed_date: 2026-06-15
-reviewed_by: openclaw-task6
-polish_count: 1
-polish_date: 2026-04-05
-polish_by: task2b-polish
 task6_state: reviewed
-task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: auto-fixed
 task2b_state: fixed
-task2b_result: fixed-lite
-last_task2b_at: "2026-06-15T06:50:00+08:00"
-last_task2b_lite_at: 2026-06-29
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-06-15
-last_task9_at: "2026-06-15T07:26:56+08:00"
-task9_review_notes: "2026-06-15 Task9 re-review: AUTO-FIX。修正 FrameMetrics 常量 COMMANDS_DURATION -> COMMAND_ISSUE_DURATION；修正 Android 16 Vulkan 1.4、VP_ANDROID_16_minimums 与 AVP 2025 的层级边界；移除 Android 17 Choreographer 新增帧控制接口的无证据断言。P0/P1 已局部修复，queue 无新增 pending，回到 Task6 复审。"
-task6_review_notes: "2026-06-15 08:06 Task6 revisiting re-review: pass-light-edit。Task9 auto-fix 全部验证通过（COMMAND_ISSUE_DURATION 常量修正、Vulkan 1.4/VP_ANDROID_16_minimums/AVP 2025 层级边界澄清、Android 17 Choreographer 无证据断言已移除）。L1 禁用词/高频词扫描无命中；否定-纠正结构 2 次卡线但未超限。修标题括号一致性 （Android 4.1）→(Android 4.1)。无 L3/L4 新增回炉项，queue 无 pending。自动晋升 finalized。 2026-05-27 12:06 Task6 revisiting：pass-light-edit。移除源码调研 HTML 注释，统一正文中文标点与中英文混排；L1 禁用词与高频词扫描无命中；无新增 L3/L4 回炉项，送 Task9 复审。"
-last_task6_review_log: logs/review/2026-05-27-12-review.md
-last_task6_at: "2026-06-15T08:06:00+08:00"
-last_task2b_verifier_at: "2026-05-27T11:44:00+08:00"
-task2b_verifier_result: ready-for-task6
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-15
-last_task9_audit: 2026-06-15
-last_task9_audit_log: logs/deep-review/2026-06-15-06-audit.md
-last_task9_autofix_at: 2026-06-15
-last_task9_review_log: logs/deep-review/2026-06-15-07-deep-review.md
 ---
 
 # 2.9 渲染机制的版本演进

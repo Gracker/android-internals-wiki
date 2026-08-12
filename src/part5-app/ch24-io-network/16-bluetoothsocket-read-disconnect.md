@@ -3,19 +3,12 @@ title: "BluetoothSocket read 断开语义与长连接治理"
 chapter: "24.16"
 section: "24.16"
 status: ready-for-review
-drafted_date: "2026-05-25"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5 (API 21) - Android 17 (API 37)"
 last_verified: "2026-05-25"
 last_verified_against: "Android Developers Android 17 behavior changes / Bluetooth transfer-data guide 2026-05-25; AOSP packages/modules/Bluetooth refs/heads/main"
 confidence: medium
 tags: [bluetooth, io, network, android17, long-connection]
 related_chapters: ["11.6", "12.1", "24.4"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-25"
-gap_source: "官方文档/Android17行为变更/Part5结构参考"
-gap_score: 18
-material_count: 4
 sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/behavior-changes-17"

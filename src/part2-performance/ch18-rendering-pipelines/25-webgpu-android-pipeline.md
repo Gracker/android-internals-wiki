@@ -7,9 +7,6 @@ status: ready-for-review
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
 tags: [webgpu, gpu, dawn, androidx, compute, rendering, vulkan, opengl-es]
 related_chapters: ["2.14", "14.15", "18.8", "18.9", "18.11"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-27"
-drafted_date: "2026-06-27"
 last_verified: "2026-07-31"
 last_verified_against: "androidx.webgpu 1.0.0-alpha05 / AndroidX c48b772dd76241af6af60bee13d3cad0e4520306 / Dawn 9d41fdf36977cca92361c6ae2769129bbaaafd9b / android-17.0.0_r1 / Writer rendering_pipelines S01、S03、S04 / android17-6.18-2026-06_r6"
 confidence: medium

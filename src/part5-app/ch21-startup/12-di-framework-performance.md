@@ -6,10 +6,6 @@ status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [dependency-injection, dagger, hilt, koin, startup, ksp, kapt]
 related_chapters: ["21.1", "21.2", "21.3", "21.6", "8.2", "1.9"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-24"
-gap_source: "AOSP结构+社区高频痛点"
-drafted_date: "2026-06-24"
 last_verified: "2026-06-24"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high

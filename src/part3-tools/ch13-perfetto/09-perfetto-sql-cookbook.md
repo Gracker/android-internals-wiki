@@ -9,12 +9,8 @@ tags:
 - sql
 - cookbook
 task6_state: reviewed
-task6_result: pass-light-edit
 task9_state: reviewed
 pipeline_stage: ready-to-publish
-reviewed_by: openclaw-task6
-last_task6_at: 2026-07-12
-last_task6_audit: 2026-07-17
 last_verified: 2026-07-31
 confidence: high
 sources:

@@ -4,7 +4,6 @@ chapter: "18.21"
 section: "18.21"
 section_title: "Android 17 多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR"
 status: ready-for-review
-drafted_date: "2026-05-21"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)；当前平台锚点 Android 17 / API 37；Media3 1.10.1"
 last_verified: "2026-07-31"
 last_verified_against: "android-17.0.0_r1 (MediaCodec, MediaFormat, MediaCodecInfo, MediaCodec.cpp, CCodec, CCodecBufferChannel, CCodecConfig, C2Config, ACodec) / Media3 1.10.1 commit 5fb306449733dd71595700c1227ad6087578c559 / Multimedia tunneling 官方文档 2026-06-17 / Writer rendering_pipelines S03、S04、S12 / android17-6.18-2026-06_r6"
@@ -13,11 +12,6 @@ tags: [media, codec2, mediacodec, tunneled-playback, media3, abr, video-playback
 related_chapters: ["1.16", "2.6", "2.13", "2.16", "18.6", "18.14", "18.15", "22.43", "24.5", "26.3"]
 consolidated_from:
   - "src/part2-performance/ch08-responsiveness/08-media-pipeline.md"
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-21"
-gap_source: "研究素材/AOSP结构/官方文档"
-gap_score: 18
-material_count: 6
 sources:
   - type: internal-reference
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S03_surfaceview_type.md"

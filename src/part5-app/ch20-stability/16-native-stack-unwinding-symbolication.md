@@ -3,7 +3,6 @@ title: "Native 堆栈回溯与符号化机制"
 chapter: "20.16"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-drafted_date: "2026-06-27"
 last_verified: "2026-06-27"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
@@ -22,9 +21,6 @@ sources:
     path: "Android NDK r23 release notes — FP unwinding default"
 tags: [native, crash, stack-unwinding, symbolication, ndk, elf, tombstone, cfi]
 related_chapters: ["20.3", "9.3", "14.2", "14.26"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-26"
-gap_source: "素材驱动/参考书"
 ---
 
 # Native 堆栈回溯与符号化机制

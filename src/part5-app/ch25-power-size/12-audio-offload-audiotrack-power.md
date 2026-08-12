@@ -3,32 +3,16 @@ title: "音频 Offload 与 AudioTrack 精确控制功耗实践"
 chapter: "25.12"
 section: "25.12"
 status: finalized
-drafted_date: "2026-05-24"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37); AAudio offload API 36+, AudioTrack flush/provenance API 37"
 last_verified: "2026-05-24"
 last_verified_against: "Android Developers AudioTrack / AAudio / Android 17 features / Media3 docs 2026-05；AOSP Android 17 源码待复核"
 confidence: medium
 tags: [audio, power, aaudio, audiotrack, offload, android17]
 related_chapters: ["1.16", "18.21", "25.11", "26.3"]
-created_by: "task2a-knowledge-gap"
-drafted_by: "task2a-knowledge-gap"
-created_date: "2026-05-24"
-gap_source: "研究素材/官方文档/AOSP结构/Clippings结构参考"
-gap_score: 16
-material_count: 6
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-task9_result: auto-fixed
-task9_autofix_at: "2026-05-31"
-task6_autofix_trigger: true
-task6_result: pass-light-edit
-task6_reviewed_at: "2026-05-31T10:08:00+08:00"
-task6_reviewed_by: openclaw-task6
-last_task6_at: "2026-06-18T21:10:00+08:00"
-last_task6_audit: "2026-06-18"
-last_task6_review_log: "logs/review/2026-06-05-13-review.md"
 sources:
   - type: clippings-structure
     path: "[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]"
@@ -48,8 +32,6 @@ sources:
     path: "https://developer.android.com/media/media3/exoplayer/battery-consumption"
   - type: official
     path: "https://developer.android.com/media/media3/exoplayer/track-selection"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-20
 ---
 
 # 音频 Offload 与 AudioTrack 精确控制功耗实践

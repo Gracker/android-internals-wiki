@@ -6,9 +6,6 @@ status: ready-for-review
 applicable_versions: "Android 16 (API 35) - Android 17 (API 37)"
 tags: ["Android", "连接性", "NFC"]
 related_chapters: ["ch05-cpu-power"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-07"
-gap_source: "daily-info"
 last_verified: "2026-08-09"
 last_source_verified_at: "2026-08-09"
 last_verified_against: "Android 17/API 37 official NFC docs and AOSP packages/modules/Nfc android-17.0.0_r1 source anchors; unrelated audio hardening material remains rejected"
@@ -20,7 +17,6 @@ last_deep_review_at: "2026-07-27T12:35:27+08:00"
 last_deep_review_run_id: "20260727-123527-deep-review-455b9e9f"
 last_rework_at: "2026-08-09T03:14:43+08:00"
 last_rework_run_id: "20260809-031354-rework-bf063b3b"
-rework_summary: "Rework closed finding-c8aaa40d5450 by binding the chapter to Android Developers NFC/HCE/API-diff docs and AOSP packages/modules/Nfc android-17.0.0_r1 sources, rejecting unrelated audio material, and keeping all performance guidance as measurement methodology rather than fixed platform guarantees."
 sources:
 - type: official-docs
   ref: Android 17 / API 37 android.nfc API diff

@@ -2,7 +2,6 @@
 title: "各 Android 版本性能变更追踪"
 chapter: "16.2"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-drafted_date: "2026-04-04"
 last_verified: 2026-07-30
 last_verified_against: AOSP android-17.0.0_r1 / Android 12-17 behavior changes / Android 17 API 37 reference / android17-6.18-2026-06_r6
 confidence: high
@@ -48,37 +47,11 @@ sources:
 tags: ['version-changes', 'behavior-changes', 'api-evolution', 'migration', 'performance-api']
 related_chapters: ["1.6", "2.9", "4.6", "5.7", "6.4", "9.2", "13.1", "14.11"]
 task6_state: reviewed
-task6_result: "pass-light-edit"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-29"
-last_task6_audit: "2026-06-12"
 section: "16.2"
 status: finalized
-last_task2b_lite_at: "2026-06-29"
-task2b_result: fixed
-last_task9_audit: "2026-06-11"
-task6_reviewed_date: "2026-05-29"
-task6_reviewed_by: openclaw-task6
-last_task6_at: "2026-06-29T23:10:00+08:00"
-last_task6_review_log: "logs/review/2026-05-29-07-review.md"
-task6_review_notes: "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；清理 1 处否定纠正式句型与参考材料中英文间距；Task9 auto-fixed 后无 queue pending，晋升 finalized；无新增 L3/L4 回炉项。"
-last_task9_autofix_at: "2026-06-29"
-task6_reviewed_at: "2026-05-29T07:07:00+08:00"
-task6_l1_l2_fixes: 3
-task6_l3_l4_issues: 0
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-29
-task9_result: "auto-fixed"
 task9_state: reviewed
 task2b_state: fixed
 pipeline_stage: ready-to-publish
-last_task9_at: "2026-06-29T17:40:20+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-29-17-deep-review.md"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-29"
-task9_review_notes: "2026-06-29 Task9 auto-fix: NNAPI 源码路径/ExecutionPlan.cpp 片段重锚 packages/modules/NeuralNetworks android-17.0.0_r1；ADPF CPU/GPU hints、SessionTag/SessionMode 公开 API 边界修正，回到 Task6 复审。"
-last_task2b_at: 2026-06-29T16:56:18+08:00
-last_task2b_by: openclaw-task2b
 ---
 
 # 各 Android 版本性能变更追踪

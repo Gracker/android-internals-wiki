@@ -4,20 +4,10 @@ chapter: "13.3"
 section: "13.3"
 section_title: "Perfetto View 解读"
 status: finalized
-drafted_date: "2026-04-03"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
 last_verified: "2026-07-31"
 last_verified_against: "AOSP android-17.0.0_r1（external/perfetto ece66975738007dd0978b911d8a2077e49b8f31e、frameworks/native ae266dcb706d083868578cfedce381ef44488a07）+ android17-6.18-2026-06_r6 + 2026-07-31 Perfetto/Android 官方文档"
 confidence: high
-reviewed_date: "2026-06-09"
-reviewed_by: "openclaw-task6"
-task6_result: pass-light-edit
-task6_l1_l2_fixes: 4
-task6_l3_l4_issues: 0
-last_task6_at: "2026-06-09T20:10:00+08:00"
-last_task6_review_log: "logs/review/2026-06-09-20-review.md"
-task6_review_notes: "2026-05-28 12 Task6 复审：L1/L2 小修 4 处，清理重复表述、冗余强调和少量术语化表达；无 L3/L4 回炉项，送 Task9 技术复审。"
 sources:
   - type: internal-reference
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/当 Perfetto 显示 Running 时,Android 程序到底在做什么? .md"
@@ -97,32 +87,10 @@ tags:
   - thread-state
   - cpu-scheduling
 related_chapters: ["13.1", "13.2", "13.4", "2.6", "14.2", "14.5"]
-polish_count: 1
-polish_date: "2026-04-10"
-polish_by: "task2b-polish"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-task2b_result: fixed
-task9_result: auto-fixed
-last_task2b_at: "2026-05-28T10:50:00+08:00"
-task2b_fixed_by: openclaw-task2b
-updated_date: "2026-06-09"
-updated_by: openclaw-task9
-last_task9_audit: "2026-06-09"
-last_task9_at: "2026-06-09T17:25:15+08:00"
-last_task6_audit: "2026-06-10"
-last_task9_review_log: "logs/deep-review/2026-06-09-17-audit.md"
-last_task9_autofix_at: "2026-06-09"
-task9_review_notes: "2026-05-28 11 Task9 auto-fix: 修正 Perfetto UI 404 文档链接/打开入口说明，并修正 SurfaceFlinger Android 13+ commit/composite/present 排查入口；回到 Task6 复审。 | 2026-05-28 12 Task9 复审：pass-tech-review。P0 0 / P1 0 / P2 0；自动晋升 finalized。 | 2026-06-09 17 Task9 idle audit auto-fix: 修正 Perfetto v52 暗色主题实验状态与当前 UI Theme 命令说明；未发现 Android/API 38+ 越界内容，回到 Task6 复审。"
-task9_reviewed_date: "2026-06-09"
-task9_reviewed_by: openclaw-task9
-p0: 0
-p1: 0
-p2: 0
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-19
 ---
 
 

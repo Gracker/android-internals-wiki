@@ -6,10 +6,6 @@ title: "Perfetto 输入延迟 SQL 深度分析"
 chapter: "13.7"
 section: "13.7"
 status: "finalized"
-drafted_date: "2026-04-06"
-drafted_by: "openclaw-task2a"
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-04
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-04"
 last_verified_against: "Perfetto stdlib docs android.input + android/input.sql + FrameTimeline trace config docs"
@@ -24,31 +20,9 @@ sources:
 tags: [Perfetto, SQL, input-latency, android.input, input-events, trace-analysis]
 related_chapters: ["3.1", "3.2", "13.3", "13.9"]
 pipeline_stage: "ready-to-publish"
-task2b_result: fixed
 task2b_state: fixed
 task6_state: "reviewed"
-task6_result: "pass-light-edit"
 task9_state: reviewed
-task9_result: auto-fixed
-
-last_task2b_at: "2026-04-26T08:55:00+08:00"
-task9_reviewed_date: "2026-06-04"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-04T06:48:42+08:00"
-repaired_date: "2026-04-26"
-repaired_by: "openclaw-task2b"
-finalized_date: "2026-06-05"
-finalized_by: "openclaw-task6"
-last_task9_audit: "2026-05-20"
-last_task9_audit_log: "logs/deep-review/2026-05-20-18-audit.md"
-task9_review_notes: "2026-06-04 task9 deep-review: auto-fixed。修正 outline 中旧 Perfetto android.input 表名与指标名。"
-last_task9_autofix_at: "2026-06-04"
-last_task9_review_log: "logs/deep-review/2026-06-04-06-deep-review.md"
-last_task6_at: "2026-06-05T08:10:00+08:00"
-last_task6_audit: "2026-07-05"
-task6_review_notes: '2026-06-04 Task6 18:15: pass-light-edit(revisit#2). Task9 auto-fix confirmed OK; sources frontmatter fixed (empty entries replaced with actual URLs). L1/L2 pass. No new rework items. Sending to Task9 for final confirmation.'
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-17
 ---
 
 # 13.7 Perfetto 输入延迟 SQL 深度分析

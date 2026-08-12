@@ -2,7 +2,6 @@
 title: "Android 17 Vulkan 管线编译与调度策略"
 chapter: "22.23"
 status: ready-for-review
-drafted_date: "2026-06-28"
 applicable_versions: "Android 16 (API 35) - Android 17 (API 37)"
 last_verified: "2026-06-28"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -26,9 +25,6 @@ sources:
     path: "https://source.android.com/docs/core/graphics"
 tags: [Vulkan, GPU, 异步编译, 管线调度, PipelineManager, AGI, Perfetto]
 related_chapters: ["2.10", "2.14", "2.24", "22.8"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-27"
-gap_source: "daily-info + research-gaps"
 ---
 
 # Android 17 Vulkan 管线编译与调度策略

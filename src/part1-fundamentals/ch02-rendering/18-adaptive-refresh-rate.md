@@ -1,13 +1,9 @@
 ---
 
 
-task2b_rework_date: "2026-05-25T11:23:10+08:00"
-
 title: Adaptive Refresh Rate 与动态帧率控制
 chapter: '2.18'
 section: '2.18'
-drafted_date: '2026-04-05'
-drafted_by: openclaw-task2a
 applicable_versions: ARR 主体：Android 15-QPR1 - Android 17 (API 37)；背景：Android 11-14 多刷新率支持
 last_verified: '2026-07-25'
 last_verified_against: "Android 17 / API 37 / android-17.0.0_r1；android17-6.18-2026-06_r6；Composer3 v3+；Android ARR 与 Perfetto 官方文档；Writer rendering_pipelines S01/S08/S12"
@@ -81,33 +77,9 @@ related_chapters:
 - '2.16'
 task6_state: "reviewed"
 task2b_state: "fixed"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-14"
-task6_result: pass-light-edit
-task2b_result: "fixed"
-last_task2b_at: '2026-05-17T19:17:39'
-repaired_date: '2026-04-26'
-repaired_by: openclaw-task2b
-task6_reviewed_date: "2026-06-14"
-last_task6_at: "2026-06-14T13:08:00+08:00"
-last_task6_review_log: "logs/review/2026-06-14-13-review.md"
-task6_review_notes: "2026-06-14 Task6 revisiting review: 全文 L1-L4 扫描通过，零禁用词，零填充词，零翻译腔。确实(1次)功能用法。2个[待验证]标注合理。Task9 auto-fix(EarlyGpu)已纳入。无L1/L2需修，无B类大问题。自动晋升finalized。"
 status: "finalized"
 pipeline_stage: "ready-to-publish"
 task9_state: "reviewed"
-task9_result: "auto-fixed"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-14"
-last_task9_at: "2026-06-14T12:30:44+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-14-12-audit.md"
-task9_review_notes: "2026-06-14 Task9 idle audit:auto-fixed VsyncModulator config name EarlyGl -> EarlyGpu against AOSP android-16.0.0_r1;no queue entry;returned to Task6."
-p0: 0
-p1: 0
-p2: 0
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-14
-last_task9_audit: "2026-06-14"
-last_task9_autofix_at: "2026-06-14"
 ---
 
 

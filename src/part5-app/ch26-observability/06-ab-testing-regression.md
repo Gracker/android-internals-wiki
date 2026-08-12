@@ -8,8 +8,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-04"
 last_verified_against: "Android Developers Macrobenchmark docs 2026-05-19 + Firebase docs + Clippings structure references"
 confidence: medium
-drafted_date: "2026-05-15"
-polish_count: 0
 sources:
   - type: clipping
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md"
@@ -41,26 +39,8 @@ tags: [ab-testing, regression, ci-cd, performance-gate]
 related_chapters: ["26.7", "26.3", "15.6"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-04
-task6_result: pass-light-edit
-last_task6_at: "2026-06-04T06:08:46+08:00"
-task6_review_notes: "2026-05-15 Task6 05:15：needs-rework。完成 L1/L2 小修 4 处；L3 技术/证据边界已标注并合并 queue，交 Task2B。"
 task9_state: reviewed
 task2b_state: fixed
-task9_result: auto-fixed
-task9_reviewed_date: "2026-06-04"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-04T03:20:00+08:00"
-task9_review_notes: "2026-06-04 Task9 auto-fix：补充 StartupTimingMetric.timeToFullDisplayMs 在 Android 10/API 29 及以下可能不可用的版本边界；回到 Task6 复审。"
-task2b_result: fixed
-last_task2b_at: 2026-06-04T00:55:43+08:00
-task2b_fixed_by: openclaw-task2b-main
-task2b_fix_round: 2026-06-04-00
-last_task9_autofix_at: "2026-06-04"
-last_task9_review_log: "logs/deep-review/2026-06-04-03-deep-review.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-15
 ---
 
 # 26.6 A/B Test 与性能回归防护

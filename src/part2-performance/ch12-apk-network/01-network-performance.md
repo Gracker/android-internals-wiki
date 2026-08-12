@@ -3,22 +3,9 @@ title: "网络性能优化"
 chapter: "12.1"
 section: '12.1'
 status: finalized
-drafted_date: '2026-04-03'
-drafted_by: openclaw-task2a
-reviewed_date: "2026-05-28"
-polish_count: 1
-polish_date: '2026-04-10'
-polish_by: task2b-polish
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
 task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: "fixed"
-task2b_result: fixed
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-05-28"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-28T06:28:00+08:00"
 pipeline_stage: ready-to-publish
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-08-11'
@@ -93,26 +80,6 @@ related_chapters:
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
-last_task9_audit: '2026-07-03'
-last_task6_audit: "2026-06-22"
-last_task2b_at: "2026-05-28T04:50:00+08:00"
-last_task2b_source: "frontmatter-fallback/task9-deep-tech-review"
-last_task2b_note: "修复 OkHttp EventListener 文档锚点、Cronet 0-RTT 配置边界、16KB Cronet 冷启动无来源百分比、NetworkCapabilities 带宽估算 Android 16/eBPF 口径。"
-last_task6_at: "2026-05-28T06:11:00+08:00"
-task6_reviewed_by: openclaw-task6
-task6_reviewed_at: "2026-05-28T06:11:00+08:00"
-last_task6_review_log: "logs/review/2026-05-28-06-review.md"
-task6_l1_l2_fixes: 0
-task6_l3_l4_issues: 0
-task6_review_notes: "2026-05-28 05 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处（补齐正文 H1 章节号）；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B 已 fixed，送 Task9 复审。 | 2026-05-28 06 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足 pass-tech-review 自动晋升条件，送 Task9 复核。"
-last_task9_autofix_at: "2026-05-28"
-last_task9_review_log: "logs/deep-review/2026-05-28-06-deep-review.md"
-p0: 0
-p1: 0
-p2: 0
-task9_review_notes: "2026-05-28 Task9 auto-fix: 修正 OkHttp EventListener connect/TTFB 指标口径，并收窄 ADPF setPreferPowerEfficiency 调度语义，回到 Task6 复审。 | 2026-05-28 06 Task9复审: pass-tech-review；无 P0/P1/P2；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-06
 ---
 # 12.1 网络性能优化
 

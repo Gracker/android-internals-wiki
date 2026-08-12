@@ -3,8 +3,6 @@ title: "三方性能库与可观测性选型"
 chapter: "14.10"
 section: "14.10"
 status: finalized
-drafted_date: "2026-04-03"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-07-08"
 last_verified_against: "AOSP android-17.0.0_r1 + AndroidX metrics / Android Vitals docs + GitHub upstream READMEs + bytedance/btrace 3.0 README/INTRODUCTION"
@@ -56,33 +54,8 @@ related_chapters:
   - "15.9"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-review_round: 4
 task9_state: reviewed
-task9_result: auto-fixed
-task9_reviewed_date: "2026-05-28"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-17T05:27:45+08:00"
 task2b_state: fixed
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-28"
-task6_result: pass-light-edit
-last_task6_at: "2026-06-17T08:09:32+08:00"
-last_task6_review_log: "logs/review/2026-06-17-08-review.md"
-last_task6_audit: "2026-07-02"
-task2b_result: fixed
-last_task2b_at: "2026-05-28T18:50:00+08:00"
-repaired_date: "2026-05-28"
-repaired_by: "openclaw-task2b"
-last_task9_audit: "2026-06-17"
-last_task9_review_log: "logs/deep-review/2026-05-28-19-deep-review.md"
-task9_review_notes: "2026-05-28 Task9 deep review: pass-tech-review; no P0/P1; P2 suggestions written to intake/suggestions.md; auto-promoted finalized. 2026-06-17 Task9 idle audit: AUTO-FIX btrace 3.0 Android capability boundary; current open-source path requires PC/adb and online support is roadmap; added Android 8+/64-bit/Android 15 allocation-monitor limits; return to Task6 revisiting."
-last_task9_autofix_at: "2026-06-17"
-last_task9_audit_log: "logs/deep-review/2026-06-17-05-audit.md"
-last_task2b_verifier_at: "2026-06-17T07:29:33+08:00"
-task2b_verifier_note: "status finalized→ready-for-review; task9 auto-fix 回流 Task6 复审"
-task6_refinalize_note: "2026-06-17 Task6 复审通过（revisiting）；Task9 auto-fix 内容无文风/格式问题，L1/L2 全部通过；自动晋升 finalized。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-29
 ---
 
 

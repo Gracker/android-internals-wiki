@@ -42,34 +42,10 @@ sources:
   path: https://github.com/Kotlin/kotlinx.coroutines/tree/1.11.0/ui/kotlinx-coroutines-android
 last_verified: "2026-08-09"
 last_verified_against: "AOSP android-17.0.0_r1, Android Developers docs, Kotlin docs, Clippings structure references"
-drafted_date: "2026-05-15"
-polish_count: 2
 related_chapters: ["20.2", "20.3", "26.2"]
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-23
-task6_result: pass-light-edit
-last_task6_at: "2026-06-23T11:12:00+08:00"
-last_task6_review_log: "logs/review/2026-06-23-11-review.md"
-task6_review_notes: "2026-06-23 Task6 二轮复审(Task9 08:34 auto-fix 后回归):pass-light-edit。Task9 修复(parentFile.fdatasync()→android.system.Os.open()+Os.fsync(), REASON_INITIALIZATION_FAILURE 补入 SafeMode 白名单)已验证到位,无引入新写作问题。无禁用词/高频词命中(正文)。不是X而是Y 句式 1 次(在限制内)。承担 1 处(line 272,中文日常用法,非物理动作隐喻,保留)。L1/L2 全部通过,无 B 类问题。queue.json 无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,送回 Task9 最终确认。"
-last_task2b_lite_at: "2026-06-16"
-last_task2a_at: "2026-05-15T05:33:00+08:00"
-task9_result: pass-tech-review
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: 2026-08-09
-last_task9_at: "2026-08-09T12:47:37+08:00"
-last_task9_audit: "2026-08-09"
-last_task9_review_log: "logs/deep-review/2026-08-09-20260809-123557-deep-review-6fc42164-deep-review.md"
-last_task9_autofix_at: "2026-07-18"
-task9_review_notes: "2026-06-23 Task9 最终确认: pass-tech-review。P0 0 / P1 5 / P2 8；主要技术问题已闭环，剩余 P2 建议已写入 suggestions.md。SafeMode 状态机、ApplicationExitInfo 集成、多进程崩溃处理等核心架构验证通过。 2026-07-18 Task9 idle-audit: auto-fixed。P0 1：修正 ApplicationExitInfo android-17.0.0_r1 reason 常量计数/编号，移除未进入 Android 17 的 REASON_CRITICAL_PROCESS_DIED，并校准同一核验段 AOSP 行号与 AppExitInfoTracker 应用侧边界。 2026-08-09 Deep Review: pass-tech-review。P2：Java 未捕获异常段落移除未由 RuntimeInit 段落直接支撑的 ProfilingTrigger 旁支断言，改为绑定 RuntimeInit commonInit/KillApplicationHandler 的默认 fatal 路径。"
-deepseek_cn_review_state: needs-structure-rework
-last_deepseek_cn_review_at: 2026-06-17
 task2b_state: fixed
-task2b_result: fixed
 task6_state: revisiting
 task9_state: reviewed
-auto_finalized: true
-verifier_pass: "2026-06-23T11:26:00+08:00"
-last_task2b_main_at: "2026-06-23T10:52:50+08:00"
 ---
 
 # 异常处理架构设计

@@ -6,17 +6,12 @@ status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [SAF, DocumentFile, ContentResolver, ScopedStorage, IO, performance, file-access]
 related_chapters: ["6.6", "6.7", "24.1", "24.11"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-16"
-gap_source: "AOSP结构+官方文档"
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized
 last_draft_polish_at: "2026-08-03T11:36:11+08:00"
 last_draft_polish_run_id: "20260803-113535-draft-polish-331c7d09"
 last_verified: "2026-08-03"
-reviewed_date: "2026-08-03"
-reviewed_by: "hermes-aiw-review-finalize-apply"
 last_review_finalize_at: "2026-08-03T12:09:07+08:00"
 last_review_finalize_run_id: "20260803-120756-8c57cb22"
 confidence: high

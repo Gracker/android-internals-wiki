@@ -4,19 +4,12 @@ chapter: "18.22"
 section: "18.22"
 section_title: "Android 17 Advanced Professional Video 与专业视频编解码管线"
 status: ready-for-review
-drafted_date: "2026-05-26"
 applicable_versions: "Android 16 (API 36/36.1) - Android 17 (API 37)；当前平台锚点 Android 17 / API 37"
 last_verified: "2026-08-09"
 last_verified_against: "android-17.0.0_r1 (MediaFormat, MediaCodecInfo, MediaRecorder, C2SoftApvEnc, C2SoftApvDec, software codec XML, MPEG4Writer) / Android 16 APV 与 Android 17 CQ 官方文档 2026-07-31 / Writer rendering_pipelines S12 / android17-6.18-2026-06_r6"
 confidence: high
-deep_reviewed_date: "2026-08-09"
-deep_review_run_id: "20260809-203506-deep-review-ecd9cb0e"
 tags: [media, apv, mediacodec, professional-video, android16, android17]
 related_chapters: ["18.21", "14.20", "24.12", "26.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-26"
-gap_source: "官方文档/AOSP结构/素材驱动"
-gap_score: "14/20"
 sources:
   - type: internal-reference
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S12_video_overlay_hwc_type.md"

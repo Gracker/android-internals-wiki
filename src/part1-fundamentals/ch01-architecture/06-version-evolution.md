@@ -86,31 +86,9 @@ related_chapters:
   - "4.6"
   - "5.6"
   - "8.7"
-polish_count: 1
-polish_date: "2026-04-06"
-polish_by: "task2b-polish"
-task2b_fixed_at: "2026-05-08T23:46:33"
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-06-07"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-07T04:33:40+08:00"
-reviewed_date: "2026-06-29"
-reviewed_by: "task2b-lite"
-last_task6_at: "2026-06-29T13:35:00+08:00"
-last_task6_audit: "2026-07-08"
-last_task6_review_log: "logs/review/2026-06-07-04-review.md"
 task6_state: reviewed
-task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: fixed
-task2b_result: fixed-lite
-last_task2b_lite_at: "2026-06-07"
-review_notes: "task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确；2026-04-14 task6 | 2026-06-07 Task9 04: deep-review pass-tech-review。P0/P1 0；Android 17 官方版本差异补充已闭合，AOSP 源码锚点保持 android-16.0.0_r4/更低，自动晋升 finalized。轻量精修：文风、间距、图示占位; 2026-04-19 task6 re-review (revisiting): L1 fix x2 (not-X-Y pattern)；2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。 | 2026-05-09 Task6 02:08：revisiting 写作复审；清理 frontmatter 重复键，修复 L1/L2 文风词与元叙述 8 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：Perfetto 表格提示把 ART Mainline 写成 Android 11+，需改为 Android 12+ 或拆分 8-11/12+；P2 1：GSI 验证术语 CTS-V 应改为 VTS / CTS-on-GSI。"
-last_task9_review_log: "logs/deep-review/2026-06-07-04-deep-review.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: "2026-06-29"
-last_task9_audit: "2026-07-13"
-last_task9_autofix_at: "2026-06-07"
 last_idle_audit_at: "2026-07-13"
 last_consolidated_at: "2026-08-11"
 consolidated_from:

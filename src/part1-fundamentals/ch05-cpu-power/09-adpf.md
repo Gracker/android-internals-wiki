@@ -5,8 +5,6 @@ chapter: '5.9'
 section: '5.9'
 applicable_versions: Android 11 (API 30, Thermal Headroom 基础能力) - Android 17 (API
   37)
-drafted_date: '2026-04-06'
-drafted_by: openclaw-task2a
 tags:
 - adpf
 - thermal
@@ -19,10 +17,6 @@ related_chapters:
 - '5.6'
 - '7.5'
 - '13.14'
-created_by: task2a-knowledge-gap
-created_date: '2026-04-05'
-gap_source: 官方文档+研究素材+AOSP结构
-gap_score: 15/20
 confidence: medium
 last_verified: '2026-08-08'
 consolidated_from:
@@ -51,37 +45,8 @@ pipeline_stage: "ready-to-publish"
 task6_state: reviewed
 task9_state: "reviewed"
 task2b_state: "fixed"
-task2b_result: fixed
-last_task2b_at: '2026-05-27T08:50:00+08:00'
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-27"
-task6_result: "pass-light-edit"
-task9_result: "auto-fixed"
-last_task9_at: "2026-07-03T00:27:00+08:00"
-last_task9_audit: "2026-07-03"
-last_task9_audit_log: "logs/deep-review/2026-07-03-00-audit.md"
 last_idle_audit_at: "2026-08-08T18:35:19+08:00"
 last_idle_audit_run_id: "20260808-183519-idle-audit-87d42442"
-last_idle_audit_log: "logs/audit/2026-08-08-20260808-183519-idle-audit-87d42442-idle-audit.md"
-last_task6_audit: "2026-07-05"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-27"
-last_task9_review_log: "logs/deep-review/2026-05-27-14-deep-review.md"
-last_task6_at: "2026-05-27T14:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-27-14-review.md"
-task6_reviewed_date: "2026-05-27"
-task6_review_notes: "2026-05-27 08:50：已删除原始调研块、素材摘要和过程性说明；API 版本边界、NDK workload hint、协程线程迁移内容已并入正文，等待复审。 | 2026-05-27 09:16 Task6：pass-light-edit。补齐 outline 标记；复核 Task2B 已清理编辑过程痕迹；L1/L2 通过；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。 | 2026-05-27 10:05 Task6：pass-light-edit。复扫 Task9 auto-fix 后的 Unity 支持版本修正；L1/L2 通过；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。 | 2026-05-27 14:05 Task6：pass-light-edit。复审 Task9 auto-fix 后正文主线、术语与 outline 覆盖；L1/L2 通过；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。"
-last_task2b_verifier_at: "2026-05-27T07:50:00+08:00"
-task2b_verifier_result: ready-for-task6
-task6_reviewed_by: "openclaw-task6"
-review_type: "task6-writing-quality-review"
-task9_review_notes: "2026-05-27 13:20 Task9 auto-fix：将 §14.7 Perfetto 高级分析 交叉引用修正为实际存在的 §13.14 Perfetto DataGrid 与 Jank CUJ 标准库，并同步 related_chapters；回到 Task6 复审。 | 2026-05-27 14:20 Task9 deep-review：pass-tech-review。复核 ADPF API level、Headroom 同步 Binder 边界、GameState/RecyclerView ARR 边界与 Perfetto 观测口径；无 P0/P1，queue 无 pending，自动晋升 finalized。 | 2026-07-03 00:27 Task9 idle audit auto-fix：将 PerformanceHintManager 示例锚点升至 android-17.0.0_r1；补充 Java JNI 绑定源码路径 android_os_PerformanceHintManager.cpp；回到 Task6 复审。"
-last_task9_autofix_at: "2026-07-03"
-p0: 0
-p1: 0
-p2: 2
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-05
 ---
 # 5.9 ADPF 自适应性能框架
 

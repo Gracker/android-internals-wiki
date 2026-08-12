@@ -75,47 +75,13 @@ related_chapters:
   - "2.4"
   - "2.5"
   - "5.1"
-drafted_date: "2026-03-31"
-drafted_by: "openclaw-task2"
-reviewed_date: "2026-08-07"
-reviewed_by: "hermes-aiw-review-finalize-apply"
-reviewed_at: "2026-05-26T01:12:00+08:00"
 task6_state: reviewed
-task6_result: pass-light-edit
-task6_reviewed_date: "2026-07-07"
-last_task6_at: "2026-07-07T08:10:16+08:00"
-last_task6_audit: "2026-07-08"
-task6_review_notes: "2026-07-07 08:10 Task6：Task2B lite 修复后重审（版本引用已更新至 android-17.0.0_r1）；L1 小修 4 处（承担→中性动词 ×2、对齐→对照、结构性元叙述 ×1）；无新增 L3/L4 回炉项；转 Task9 复核 P1 版本修复。"
 task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-07-07"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-07T08:21:00+08:00"
-last_task9_audit: "2026-07-05"
-last_task9_audit_at: "2026-07-05T15:20:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-05-15-audit.md"
-last_task9_audit_result: "p1-issue-found"
-task9_review_notes: "2026-07-07 Task9 review: pass-tech-review。复核源码引用准确性、原理链完整性、版本差异覆盖。发现 1 处 P2 建议改进：16KB page size 对 metadata region 影响可补充。写入 suggestions.md。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-task9_audit_notes: "2026-07-05 Task9 idle audit: 发现 P1 版本覆盖不匹配问题。章节声明适用 Android 5.0 - Android 17，但源码引用基于 android-16.0.0_r1，与 Android 17 (android-17.0.0_r1) 存在版本差异。已写入 suggestions.md 建议修正版本覆盖声明。"
 task2b_state: fixed
-task2b_result: fixed-lite
-last_task2b_lite_at: "2026-07-07"
-last_task2b_at: "2026-07-07T07:36:00+08:00"
-review_round: 11
-polish_count: 2
-polish_date: "2026-04-10"
-polish_by: "task2b-polish"
-last_task9_review_log: "logs/deep-review/2026-05-26-01-deep-review.md"
-last_task6_review_log: "logs/review/2026-07-07-08-review.md"
-review_notes: "2026-05-26 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0;Binder ioctl、硬件加速版本边界、MessageQueue 观察点复核通过;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: "2026-07-07"
 last_body_apply_at: "2026-08-06T23:15:01+08:00"
 last_body_apply_run_id: "20260806-231501-982bb83c"
-last_body_apply_source: "queue:freshness:src/part1-fundamentals/ch01-architecture/05-threading-model.md"
 last_review_finalize_at: "2026-08-07T08:18:06+08:00"
 last_review_finalize_run_id: "20260807-081516-9264ee2d"
-review_finalize_notes: "Hermes AIW review/finalize：按 android-17.0.0_r1 / android17-6.18 基线复核主线程 Looper、MessageQueue 实现选择、RenderThread 交接、调度优先级、虚拟线程边界；未发现 P0/P1/P2 阻断项，推进 finalized。"
 ---
 
 # 1.5 线程模型

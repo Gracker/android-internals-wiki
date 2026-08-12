@@ -58,10 +58,6 @@ sources:
     path: "include/uapi/linux/android/binder.h @ android17-6.18-2026-06_r6"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1; ACK android17-6.18-2026-06_r6; Android Developers; source.android.com"
-drafted_date: "2026-05-13"
-drafted_by: "openclaw-task2a"
-reviewed_date: 2026-07-02
-reviewed_by: "openclaw-task6"
 related_chapters:
   - "1.1"
   - "1.3"
@@ -70,37 +66,8 @@ related_chapters:
   - "8.2"
   - "9.1"
 task6_state: reviewed
-last_task2a_at: "2026-05-13T18:20:00+08:00"
-last_task2a_note: "空 draft 章节重建；修正 oneway spam detection/async buffer 语义与 Perfetto android.binder 标准库口径。"
 task9_state: reviewed
-task9_result: auto-fixed
-task9_reviewed_date: "2026-07-02"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-02T00:28:41+08:00"
-last_task9_audit: "2026-06-09"
-last_task9_audit_at: "2026-06-09T01:20:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-09-01-audit.md"
-task6_result: pass-light-edit
-task6_reviewed_date: "2026-07-01"
-last_task6_at: 2026-07-02T01:10:00+08:00
-last_task6_audit: "2026-07-08"
-task6_review_log: "logs/review/2026-07-01-07-review.md"
-auto_promoted_at: "2026-05-13T19:10:00+08:00"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-02
 task2b_state: fixed
-task2b_result: "fixed"
-last_task9_autofix_at: "2026-07-02"
-last_task2b_lite_at: "2026-07-01"
-last_task2b_at: "2026-07-01T06:52:07+08:00"
-last_task2b_note: "主修复: Task6+Task9回炉, 源码锚点迁android-17.0.0_r1, node->async_todo语义修正, 录制/trace片段修正, 禁用词清除, 注入元数据清理"
-p0: 1
-p1: 1
-p2: 0
-task9_review_notes: "2026-07-02 00 Task9 deep-review: auto-fixed。P0 1(auto-fixed) / P1 1(auto-fixed) / P2 0；修正 BINDER_ENABLE_ONEWAY_SPAM_DETECTION 所属 API/源码路径为 ProcessState，并将 frameworks/native 来源标签统一 android-17.0.0_r1，回到 Task6 复审。"
-task6_review_notes: "07-01 07 Task6 revisiting：pass-light-edit。07-02 01 Task6 revisiting：pass-light-edit。"
-last_task9_log: "logs/deep-review/2026-07-02-00-deep-review.md"
-last_task9_review_log: "logs/deep-review/2026-07-02-00-deep-review.md"
 ---
 
 # 1.4 Binder IPC 机制与性能影响

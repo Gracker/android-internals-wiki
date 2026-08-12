@@ -1,6 +1,5 @@
 ---
 status: "finalized"
-last_task2b_at: '2026-05-09T12:43:00+08:00'
 title: EAS 能量感知调度
 chapter: '5.2'
 section: '5.2'
@@ -35,46 +34,10 @@ related_chapters:
 - '5.3'
 - '5.4'
 - '2.5'
-drafted_date: '2026-03-31'
-reviewed_date: "2026-06-19"
-last_task6_audit: '2026-06-20'
-reviewed_by: openclaw-task6
-task6_result: "pass-light-edit"
 task6_state: "reviewed"
 task9_state: reviewed
 pipeline_stage: "ready-to-publish"
-review2_date: '2026-04-06'
-review2_by: openclaw-task6
-polish_count: 1
-polish_date: '2026-04-06'
-polish_by: task2b-polish
 task2b_state: fixed
-task2b_result: fixed
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-19"
-last_task9_at: "2026-07-09T18:20:00+08:00"
-task9_result: auto-fixed
-review_notes: '2026-05-24 task9 idle-audit: needs-rework。P0：android16-6.12 overutilized 仍在 select_task_rq_fair callsite 跳过 find_energy_efficient_cpu，正文写成仍会尝试能量估算。'
-last_task9_audit: "2026-07-09"
-last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
-task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
-last_task6_at: "2026-07-09T20:17:02+08:00"
-last_task6_review_log: "logs/review/2026-06-19-02-review.md"
-task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 auto-fix（fits_capacity 20% margin、load_balance/misfit 与 EAS 分界修正）回流后写作层复审通过；L1/L2 无需小修；无 L3/L4 回炉项，送 Task9 终审。"
-last_task9_review_log: "logs/deep-review/2026-06-19-05-deep-review.md"
-task9_review_notes: "2026-05-24 task9 idle-audit: needs-rework。P0：android16-6.12 overutilized 仍在 select_task_rq_fair callsite 跳过 find_energy_efficient_cpu，正文写成仍会尝试能量估算。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-18 Task9 idle-audit: auto-fixed。P0 1：EAS 示例未体现 fits_capacity 约 20% margin；P1 1：运行时负载均衡误写为 EAS 参与，已改为 CFS load_balance/misfit 路径并由 overutilized 分界。回到 Task6 复审。 | 2026-06-19 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；复核 Linux 6.6/6.12 EAS overutilized、fits_capacity、compute_energy 与 uclamp max/bucket 边界，Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-09 Task9 idle-audit: auto-fixed。P0 2 / P1 1 / P2 0；修正 EAS 阈值表述、Android 17 JNI profile 调用名，并补齐 android17-6.18 同步唤醒 fast path 与 UClamp max/bucket 边界。回到 Task6 复审。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-09
-last_task9_audit_at: "2026-07-09T18:20:00+08:00"
-last_task9_autofix_at: "2026-07-09"
-last_task9_audit_log: "logs/deep-review/2026-07-09-18-audit.md"
-last_task9_audit_result: "auto-fixed"
-updated_by: "openclaw-task9"
-updated_date: "2026-07-09"
-p0: 2
-p1: 1
-p2: 0
-verifier_checked: 2026-07-09
 ---
 
 

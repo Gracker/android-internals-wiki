@@ -5,7 +5,6 @@ title: statsd 与系统级指标采集
 chapter: 14.12
 section: 14.12
 status: finalized
-drafted_date: 2026-05-20
 applicable_versions: Android 11 (API 30) - Android 17 (API 37)
 last_verified: 2026-07-30
 last_verified_against: AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6 / source.android.com Statsd 文档更新于 2026-07-13
@@ -37,21 +36,10 @@ sources:
     path: "https://developer.android.com/tools/adb"
 tags: [statsd, observability, perfetto, tools]
 related_chapters: ["13.8", "13.9", "14.23", "15.3", "26.3"]
-created_by: task2a-knowledge-gap
-created_date: 2026-05-20
-gap_source: AOSP结构/官方文档/已有章节深挖
-task2b_result: fixed-lite
 task2b_state: fixed
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-last_task6_at: 2026-07-10
-last_task6_audit: "2026-07-11"
 task9_state: reviewed
-last_task2b_lite_at: 2026-07-02
-task9_result: auto-fixed
-last_task9_autofix_at: 2026-07-02
-last_task9_at: 2026-07-02
-task9_review_notes: "2026-07-02 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 0；收窄 AOSP 证据锚点到 android-17.0.0_r1，补齐 StatsManagerService 在配置/权限/重注册链路中的角色，修正 DeepResearch 延伸阅读中的 JNI/Android 17 新增权限表述；回到 Task6 复审。详见 logs/deep-review/2026-07-02-07-deep-review.md。"
 ---
 
 # 14.12 statsd 与系统级指标采集

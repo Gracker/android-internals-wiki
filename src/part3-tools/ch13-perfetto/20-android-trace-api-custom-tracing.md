@@ -2,7 +2,6 @@
 title: "android.os.Trace API 深度解析与应用级自定义追踪"
 chapter: "13.20"
 status: ready-for-review
-drafted_date: "2026-07-06"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-06"
 last_verified_against: "android-17.0.0_r1"
@@ -18,19 +17,9 @@ sources:
     path: "developer.android.com/reference/android/os/Trace"
 tags: [trace, systrace, perfetto, tracing, debugging, custom-trace]
 related_chapters: ["13.1", "13.3", "13.9", "13.16", "14.9"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-05"
-drafted_by: "task2a-content-processing"
 task6_state: reviewed
-task6_result: pass-light-edit
-task9_result: pass-tech-review
 task9_state: reviewed
-last_task9_reviewed_at: 2026-07-13
-reviewed_by: openclaw-task6
-reviewed_date: 2026-07-13
 pipeline_stage: ready-to-publish
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-13
 ---
 
 # 13.20 android.os.Trace API 深度解析与应用级自定义追踪

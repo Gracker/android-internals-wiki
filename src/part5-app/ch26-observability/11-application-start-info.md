@@ -3,17 +3,10 @@ title: "ApplicationStartInfo 与启动归因上报"
 chapter: "26.11"
 section: "26.11"
 status: finalized
-drafted_date: "2026-05-18"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-06-05"
 last_verified_against: "Android Developers ApplicationStartInfo / ActivityManager / ProfilingTrigger docs; AOSP android-16.0.0_r1 ApplicationStartInfo / ProfilingManager / ProfilingTrigger"
 confidence: medium
-last_task9_review_log: "logs/deep-review/2026-06-05-12-deep-review.md"
-last_task9_autofix_at: "2026-06-05"
-last_task9_at: "2026-06-05T12:27:00+08:00"
-task9_reviewed_at: "2026-06-05T12:27:00+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_result: auto-fixed
 sources:
   - type: clipping
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 9.md"
@@ -43,33 +36,10 @@ sources:
     path: "packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java"
 tags: [observability, startup, application-start-info, profilingmanager]
 related_chapters: ["8.2", "14.11", "26.8", "26.10"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-18"
-gap_source: "研究素材/官方文档/章节深挖/Clippings结构参考"
-source_refs:
-  - ""
-  - ""
-  - ""
-  - ""
-  - ""
-  - "intake/research-gaps.md#2026-05-17-26-12"
-  - "developer.android.com/reference/android/app/ApplicationStartInfo"
-  - "developer.android.com/about/versions/17/features"
 pipeline_stage: ready-to-publish
-task2a_result: draft-ready-for-review
-last_task2a_at: "2026-05-18T04:14:00+08:00"
-task2b_result: fixed-lite
 task2b_state: fixed
-last_task2b_lite_at: "2026-06-05"
 task6_state: reviewed
 task9_state: reviewed
-task6_result: "pass-light-edit"
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-05
-last_task6_at: "2026-06-05T13:11:00+08:00"
-last_task6_review_log: "logs/review/2026-06-05-13-review.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-27
 ---
 
 # 26.11 ApplicationStartInfo 与启动归因上报

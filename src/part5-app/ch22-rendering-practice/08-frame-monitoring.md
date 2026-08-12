@@ -7,12 +7,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-13"
 last_verified_against: "AOSP android-16.0.0_r1, AndroidX JankStats docs, Android FrameMetrics docs"
 confidence: medium
-drafted_date: "2026-05-13"
-polish_count: 0
-reviewed_date: "2026-06-13"
-reviewed_by: openclaw-task6
-review_type: task6-writing-quality-review
-task6_result: pass-light-edit
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/jankstats"
@@ -44,21 +38,8 @@ tags: [frame-rate, jankstats, choreographer, online-monitoring]
 related_chapters: ["22.1", "22.3", "7.2", "7.9", "19.8", "19.9", "26.3"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-last_task6_at: '2026-06-13'
 task9_state: reviewed
 task2b_state: fixed
-task9_result: auto-fixed
-task9_reviewed_date: '2026-05-19'
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-19T07:31:24+08:00'
-task2b_result: "fixed"
-last_task9_review_log: "logs/deep-review/2026-06-12-20-audit.md"
-last_task6_audit: "2026-06-09"
-task9_review_notes: "2026-05-19 Task9：复核 6 维度无 P0/P1；queue 无 pending，task6_result=pass-light-edit，自动晋升 finalized。既有 P2 建议已在 intake/suggestions.md，不重复写入。 | 2026-06-12 Task9 idle audit AUTO-FIX：将 FrameMetrics.DEADLINE 从“帧截止时间戳”修正为系统给应用生成该帧的时间预算；证据为 Android FrameMetrics API reference through API 37 与 AOSP android-16.0.0_r1 FrameMetrics.java。回到 Task6 复审。"
-last_task9_audit: "2026-06-12"
-last_task9_autofix_at: "2026-06-12"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-13
 consolidated_from:
   - "src/part5-app/ch22-rendering-practice/09-rendering-case-studies.md"
 ---

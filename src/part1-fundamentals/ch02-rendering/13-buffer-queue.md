@@ -21,14 +21,6 @@ related_chapters:
 - '2.9'
 - '2.16'
 - '7.2'
-created_by: task2a-knowledge-gap
-created_date: '2026-04-04'
-gap_source: AOSP结构+官方文档+研究素材
-gap_score: 14/20
-drafted_by: openclaw-task2a
-drafted_date: '2026-04-04'
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-12"
 last_verified: '2026-07-25'
 last_verified_against: 'AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + Android 4.1/11/12 historical tags + Writer rendering_pipelines S01/S02/S05/S06'
 confidence: high
@@ -87,24 +79,6 @@ pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: "fixed"
-task9_result: "auto-fixed"
-task2b_result: "fixed"
-task9_reviewed_date: 2026-05-19
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-11T12:39:21+08:00"
-last_task9_audit: "2026-06-11"
-last_task6_at: "2026-06-12T01:08:00+08:00"
-last_task6_audit: "2026-06-12"
-last_task6_audit_result: l1-light-edit
-last_task6_audit_log: "logs/review/2026-05-21-09-audit.md"
-review_round: 1
-last_task9_review_log: logs/deep-review/2026-06-11-12-audit.md
-task9_review_notes: "2026-06-11 Task9 闲时抽检：AUTO-FIX。修正 Perfetto android.monitor_contention 误用于 native BufferQueueCore::mMutex 的诊断口径；回到 Task6 复审。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-12
-last_task9_autofix_at: "2026-06-11"
-task6_result: "pass-light-edit"
-task6_reviewed_date: "2026-06-12"
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch02-rendering/32-graphic-buffer-memory-pool.md"

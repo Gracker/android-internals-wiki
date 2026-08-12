@@ -9,8 +9,6 @@ tags:
   - 文本渲染
   - Android 17
   - 实践
-author: "AIW Task 2A"
-created: "2026-06-25"
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized
@@ -18,8 +16,6 @@ last_draft_polish_at: "2026-08-08T19:35:29+08:00"
 last_draft_polish_run_id: "20260808-193529-draft-polish-0202a6c7"
 last_verified: "2026-08-08"
 last_verified_against: "Android 17 / API 37 / android-17.0.0_r1; Compose UI 1.11.4 commit 854220f44ea8ea80fee824a6c5a045f39bede289"
-reviewed_date: "2026-08-08"
-reviewed_by: hermes-aiw-review-finalize-apply
 last_review_finalize_at: "2026-08-08T20:05:33+08:00"
 last_review_finalize_run_id: "20260808-200533-f670ad76"
 confidence: medium-high

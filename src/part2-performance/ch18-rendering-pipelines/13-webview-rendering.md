@@ -6,8 +6,6 @@ status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)(WebView provider 可独立更新;SurfaceControl 子 Surface 需 Android 12+ 平台支持,并结合 provider / Chromium milestone 判断)"
 tags: ["WebView", "Chromium", "GL-Functor", "SurfaceControl", "SurfaceTexture", "X5内核", "渲染管线"]
 related_chapters: ["2.5", "2.6", "18.6", "18.7", "18.10", "22.7"]
-created_by: "rendering-pipelines-merge"
-created_date: "2026-04-09"
 sources:
 - type: internal-reference
   path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S09_webview_type.md
@@ -117,43 +115,12 @@ sources:
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-task2b_result: fixed
 pipeline_stage: ready-to-publish
-task6_result: pass-light-edit
-last_task2b_at: "2026-06-01T22:58:00+08:00"
-last_task2b_main_at: "2026-06-01T22:58:00+08:00"
-last_task2b_log: "logs/rework/2026-06-01-22-task2b-main.md"
-last_task2b_lite_at: "2026-06-01"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-21"
-task9_result: auto-fixed
-last_task9_at: "2026-06-21T01:29:00+08:00"
-last_task6_audit: "2026-06-21"
-review_round: 4
-task9_reviewed_date: "2026-06-21"
-task9_reviewed_by: "openclaw-task9"
-last_task9_audit: "2026-06-21"
-task9_review_notes: "2026-06-21 闲时抽检 auto-fix：android-17.0.0_r1 已可访问且 WebViewUpdateServiceImpl2.java 存在；修正 WebViewFactory.getProvider、AwContents::OnDraw/BrowserViewRenderer::OnDrawSoftware、ANativeWindow_Buffer 等源码锚点，回到 Task6 复审。"
-last_task6_at: "2026-06-21T04:11:00+08:00"
-last_task6_review_log: "logs/review/2026-06-21-04-review.md"
-task6_review_notes: "2026-06-21 04:11 Task6 revisiting-review (post-Task9-autofix)：L1/L2 全清（0 禁用词/0 翻译腔/0 硬换行），锚点全覆盖（6+3），Task9 修正源码锚点后写作质量无回退，无 B 类大问题，自动晋升 finalized。"
-task6_l1_l2_fixes: 0
-task6_l3_l4_issues: 0
-task6_new_rework: false
-last_task9_review_log: "logs/deep-review/2026-06-21-01-audit.md"
-last_task9_autofix_at: "2026-06-21"
-last_task2b_verifier_at: "2026-06-02T07:25:00+08:00"
-last_task2b_verifier_log: "logs/rework/2026-06-02-07-task2b-verifier.md"
-task6_reviewed_date: "2026-06-21"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-25
 last_idle_audit_at: "2026-07-27T14:35:45+08:00"
 last_idle_audit_run_id: "20260727-143545-idle-audit-0d80d330"
 last_verified: "2026-07-31"
 last_verified_against: "android-17.0.0_r1 (WebView.java, WebViewFactory.java, WebViewUpdateServiceImpl2.java, WebChromeClient.java, WebViewClient.java, WebViewFunctor.h, WebViewFunctorManager.cpp, TextureView.java, DeferredLayerUpdater.cpp, SurfaceFlinger.cpp) / Chromium 4e18c703f7cd950c890e14105da8eff42192af6a (architecture, DrawFn, AwContents, BrowserViewRenderer, HardwareRenderer, OverlayProcessorWebView, ImageReaderGLOwner) / AndroidX WebKit 1.16.0 docs / android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, sync_file.c)"
 confidence: high
-idle_audit_result: pass-metadata-refresh
-idle_audit_notes: "2026-07-27 idle audit: 未发现未来版本越界、验证占位残留或需降级的问题；补齐 last_verified/confidence 与本轮抽检记录。"
 ---
 
 # 18.13 Android 17 WebView 渲染管线

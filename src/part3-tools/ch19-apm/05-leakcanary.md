@@ -3,8 +3,6 @@ title: "LeakCanary"
 chapter: "19"
 section: "19.05"
 status: finalized
-drafted_date: "2026-04-24"
-drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-07-08"
 last_verified_against: "LeakCanary 2.14 fundamentals, changelog 2.6 ServiceWatcher, recipes, UI tests / leakcanary-android-instrumentation"
@@ -24,29 +22,8 @@ sources:
     path: "https://square.github.io/leakcanary/ui-tests/"
 pipeline_stage: ready-to-publish
 task6_state: "reviewed"
-task6_result: "pass-light-edit"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-25"
-last_task6_audit: "2026-07-16"
 task9_state: reviewed
-task9_result: auto-fixed
-task9_reviewed_date: "2026-04-26"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-26T23:27:38+08:00"
-last_task9_audit: "2026-07-08"
-last_task9_autofix_at: "2026-07-08"
-task9_review_notes: "2026-07-08 Task9 idle audit auto-fix: 补全 LeakCanary UI test 集成依赖口径；官方文档要求 androidTestImplementation 依赖之外，App 侧仍需 debugImplementation leakcanary-android。"
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: "2026-04-25T08:51:01+08:00"
-repaired_date: "2026-04-25"
-repaired_by: "openclaw-task2b"
-review_round: 5
-review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 1 banned word fix (可以看到→直接陈述) in 03-metrics; AI句式 3→1 in 03-metrics. 01-rendering-overview and 05-leakcanary clean. No B-class issues across all 3 chapters."
-deepseek_polish_state: done
-last_deepseek_polish_at: 2026-05-26
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-14
 ---
 
 # LeakCanary

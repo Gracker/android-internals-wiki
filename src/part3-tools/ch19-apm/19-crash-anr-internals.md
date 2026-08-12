@@ -2,18 +2,12 @@
 title: "崩溃与 ANR 捕获机制"
 chapter: "19"
 section: "19.19"
-drafted_date: "2026-04-24"
-drafted_by: "gemini"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
 related_chapters: ["19.0", "19.03", "19.13"]
 task6_state: reviewed
-task6_result: "pass-light-edit"
-reviewed_date: "2026-06-02"
-reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-07-15"
 sources:
 - type: official
   path: https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler
@@ -31,37 +25,10 @@ sources:
   path: https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/debuggerd/proto/tombstone.proto
 - type: aosp
   path: https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/libc/include/signal.h
-last_task2b_at: "2026-05-25T15:18:38+08:00"
-repaired_date: "2026-04-27"
-repaired_by: "openclaw-task2b"
 status: finalized
 pipeline_stage: ready-to-publish
-task9_result: "pass-tech-review"
 task9_state: reviewed
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_lite_at: "2026-06-03T07:35:00+08:00"
-task9_reviewed_date: "2026-06-02"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-15T17:24:15+08:00"
-task9_review_notes: "2026-06-02 Task9 deep-review: auto-fixed。修正 /data/anr 权限口径、ProfilingTrigger 36.1/API37 分层、Crashpad out-of-process handler 描述；回到 Task6 复审。"
-last_task6_audit: "2026-07-15"
-last_task6_at: "2026-07-15T12:06:00+08:00"
-last_task9_audit: 2026-07-15
-last_task9_audit_at: "2026-05-25T13:20:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-05-25-13-audit.md"
-last_task6_review_log: "logs/review/2026-07-15-12-review.md"
-task6_review_notes: "2026-07-15 12:06 Task6 revisiting-review：修复 2 处 L1 形容词+冒号句式（§4.1、§4.2）。Task9 auto-fix 确认无写作质量问题。锚点 7/7+3扩展 覆盖，无 L3/L4 回炉项。满足 auto-promotion 条件，晋升 finalized。"
-task6_l1_l2_fixes: 2
-task6_l3_l4_issues: 0
-task6_new_rework: false
-task6_auto_promoted: true
-last_task9_review_log: "logs/deep-review/2026-06-03-07-deep-review.md"
-last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
-last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
-last_task9_autofix_at: "2026-06-02"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-15
 ---
 
 

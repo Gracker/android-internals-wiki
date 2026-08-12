@@ -3,10 +3,6 @@ title: 线程 CPU 状态分析
 section: '13.5'
 chapter: '13.5'
 status: finalized
-drafted_date: '2026-04-03'
-drafted_by: openclaw-task2a
-reviewed_date: "2026-06-12"
-reviewed_by: openclaw-task6
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-07-31'
 last_verified_against: AOSP android-17.0.0_r1 external/perfetto, android17-6.18-2026-06_r6, perfetto.dev
@@ -56,27 +52,10 @@ related_chapters:
 - '13.2'
 - '13.9'
 - '13.12'
-deepseek_polish_state: done
-last_deepseek_polish_at: "2026-05-26"
 pipeline_stage: ready-to-publish
-task6_result: pass-light-edit
 task6_state: reviewed
 task9_state: "reviewed"
-task9_result: auto-fixed
-task9_reviewed_date: '2026-06-12'
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-06-12T02:24:45+08:00'
-last_task9_audit: '2026-06-12'
-last_task9_autofix_at: '2026-06-12'
-task2b_result: "fixed"
 task2b_state: fixed
-last_task2b_at: '2026-04-28T01:40:00+08:00'
-task9_review_notes: "2026-06-12 Task9 idle audit:auto-fixed state-code outline and blocked_function availability boundary;no queue entry. 2026-05-19 Task9:复核 6 维度无 P0/P1;queue 无 pending,task6_result=pass-light-edit,自动晋升 finalized。既有 P2 建议已在 intake/suggestions.md,不重复写入。"
-last_task9_review_log: "logs/deep-review/2026-06-12-02-audit.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-13
-last_task6_at: "2026-06-12T04:05:00+08:00"
-last_task6_audit: "2026-06-15"
 ---
 
 # 13.5 线程 CPU 状态分析

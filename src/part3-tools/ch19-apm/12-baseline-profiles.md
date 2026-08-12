@@ -3,8 +3,6 @@ title: "Baseline Profiles 与编译优化"
 chapter: "19"
 section: "19.12"
 status: finalized
-drafted_date: "2026-04-24"
-drafted_by: "codex"
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37);Play Cloud Profiles 仅覆盖 Android 9+ / Google Play 场景,非 Play 安装需单独验证"
 last_verified: "2026-06-16"
 last_verified_against: "Android Developers Baseline Profiles docs (last updated 2026-06-09) + AndroidX profileinstaller source + AOSP ART android-16.0.0_r1 profman/dex2oat"
@@ -22,35 +20,8 @@ sources:
     path: "https://github.com/androidx/androidx/blob/androidx-main/profileinstaller/profileinstaller/src/main/AndroidManifest.xml"
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-17"
 task9_state: reviewed
-task9_result: auto-fixed
 task2b_state: fixed
-task9_reviewed_date: "2026-06-16"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-16T14:38:30+08:00"
-task6_result: "pass-light-edit"
-task2b_result: fixed
-last_task2b_at: "2026-04-27T22:40:00+08:00"
-repaired_date: "2026-04-27"
-repaired_by: openclaw-task2b
-review_notes: "2026-05-03 task9 deep-review: pass-tech-review；无 P0/P1；P2 1 写入 suggestions.md；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-auto_promoted: true
-last_task6_audit: "2026-06-21"
-last_task9_audit: "2026-06-16"
-deepseek_polish_state: done
-last_deepseek_polish_at: "2026-05-26T09:40:00+08:00"
-last_task9_audit_at: "2026-06-16T14:38:30+08:00"
-last_task2b_verifier_at: "2026-06-16T23:28:12+08:00"
-task2b_verifier_notes: "2026-06-16 Task2B Verifier: state reconciliation — status finalized→ready-for-review; Task9 idle audit auto-fix 后需 Task6 revisiting 复审，原 finalized 状态阻止 Task6 拾取"
-last_task9_audit_log: "logs/deep-review/2026-06-16-14-audit.md"
-last_task9_autofix_at: "2026-06-16"
-last_task9_review_log: "logs/deep-review/2026-06-16-14-audit.md"
-task9_review_notes: "2026-06-16 Task9 idle audit auto-fixed: 将 AOSP ART profman/dex2oat 源码锚点从 refs/heads/main 固定到 android-16.0.0_r1；android-17.0.0_r1 tag 未发布时不使用 main/master 作为正文结论来源。"
-last_task6_at: "2026-06-17T01:10:00+08:00"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-15
 ---
 
 # Baseline Profiles 与编译优化

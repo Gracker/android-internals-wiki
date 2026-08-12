@@ -3,7 +3,6 @@ title: "TaskSnapshot 捕获、Overview 缩略图与启动窗口"
 chapter: "2.27"
 section: "2.27"
 status: ready-for-review
-drafted_date: "2026-06-24"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1 + Launcher3 android-17.0.0_r1"
@@ -29,10 +28,6 @@ sources:
     path: "packages/apps/Launcher3/quickstep/src/com/android/quickstep/"
 tags: [tasksnapshot, recents, overview, rendering, memory, surfaceflinger]
 related_chapters: ["2.6", "2.12", "2.13", "2.15", "4.1", "8.2"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-24"
-gap_source: "AOSP结构+章节深挖"
-gap_score: 14
 ---
 
 # 2.27 TaskSnapshot 捕获、Overview 缩略图与启动窗口

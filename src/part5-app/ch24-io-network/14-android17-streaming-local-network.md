@@ -3,7 +3,6 @@ title: "Android 17 流媒体网络预算与本地网络权限适配"
 chapter: "24.14"
 section: "24.14"
 status: finalized
-drafted_date: "2026-05-24"
 applicable_versions: "Android 16 (API 36) - Android 17 (API 37)"
 last_verified: "2026-05-24"
 last_verified_against: "Android Developers API reference / Android 17 behavior changes / Local Network Permission docs 2026-05；AOSP android-17 tag 待复核"
@@ -33,33 +32,9 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]"
 tags: [network, android17, streaming, local-network, connectivity]
 related_chapters: ["12.1", "12.2", "16.5", "24.4", "24.9", "24.10", "26.14"]
-created_by: "task2a-knowledge-gap"
-drafted_by: "openclaw-task2a"
-created_date: "2026-05-24"
-gap_source: "研究素材/官方文档/每日信息/Clippings结构参考"
-gap_score: 16
-material_count: 5
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-24"
-last_task6_at: "2026-05-24T19:14:00+08:00"
-last_task6_audit: "2026-07-01"
-last_task6_review_log: "logs/review/2026-05-24-19-review.md"
-task6_l1_l2_fixes: 7
-task6_l3_l4_issues: 0
-task6_new_rework: false
-task9_reviewed_date: "2026-05-24"
-task9_reviewed_by: openclaw-task9
-last_task9_at: 2026-05-24T19:30:00+08:00
-last_task9_review_log: "logs/deep-review/2026-05-24-19-deep-review.md"
-last_task9_audit: "2026-07-07"
-last_task9_audit_log: "logs/deep-review/2026-07-07-10-audit.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-04
 ---
 
 # Android 17 流媒体网络预算与本地网络权限适配

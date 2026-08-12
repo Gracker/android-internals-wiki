@@ -3,8 +3,6 @@ title: "Android 17 Edge-to-Edge 渲染与 WindowInsets 处理性能"
 chapter: "2.24"
 section: "2.24"
 status: ready-for-review
-drafted_date: "2026-06-05"
-drafted_by: openclaw-task2a
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "Android 17 / API 37 / android-17.0.0_r1: PhoneWindow.java, DecorView.java, ViewRootImpl.java, InsetsController.java, View.java, ViewGroup.java, Choreographer.java, ActivityInfo.java, WindowState.java; Android Developers 15/16/17 behavior changes; Perfetto FrameTimeline; Writer rendering_pipelines S02/S06"
@@ -46,9 +44,6 @@ sources:
     path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowState.java"
 tags: [edge-to-edge, windowinsets, rendering, system-bar, transparency, predictive-back, ime-animation, android17]
 related_chapters: ["2.20", "22.13", "22.14"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-04"
-gap_source: "官方文档/AOSP结构"
 ---
 # 2.24 Edge-to-Edge 渲染与 WindowInsets 处理性能
 

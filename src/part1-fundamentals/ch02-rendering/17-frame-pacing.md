@@ -7,8 +7,6 @@ applicable_versions: "Android 4.4 (API 19, Swappy 当前 release minSdk) - Andro
 last_verified: "2026-07-25"
 last_verified_against: "Android 17 / API 37 / android-17.0.0_r1；android17-6.18-2026-06_r6；AGDK frame-pacing release @ f81f888fe11e；Vulkan 1.4.335；Writer rendering_pipelines S01/S08/S12"
 confidence: high
-drafted_date: "2026-04-06"
-drafted_by: "openclaw-task2a"
 sources:
   - type: "aosp"
     path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/libvulkan/driver.cpp"
@@ -44,39 +42,10 @@ sources:
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S12_video_overlay_hwc_type.md"
 tags: ["rendering", "frame-pacing", "swappy", "perfetto", "vulkan"]
 related_chapters: ["2.3", "2.6", "2.13", "2.18", "16.4"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-05"
-gap_source: "官方文档 + 研究素材"
 task6_state: "reviewed"
-task6_result: "pass-light-edit"
-task6_reviewed_date: "2026-06-20"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-20"
-last_task6_at: "2026-06-20T09:06:00+08:00"
-last_task6_audit: "2026-06-20"
-last_task6_review_log: "logs/review/2026-06-20-09-review.md"
 pipeline_stage: "ready-to-publish"
 task9_state: "reviewed"
-task9_result: "auto-fixed"
-task9_task6_reviewed_date: "2026-04-30"
-task9_reviewed_date: "2026-06-20"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-20T08:27:23+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-20-08-deep-review.md"
-last_task9_autofix_at: "2026-06-20"
 task2b_state: "fixed"
-task6_l1_l2_fixes: 0
-task6_l3_l4_issues: 0
-task2b_result: "fixed-lite"
-last_task2b_lite_at: "2026-06-20"
-last_task2b_at: "2026-05-08T04:51:42.168874+08:00"
-review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 DeliQueue targetSdk 37 边界未收紧；P2 present_wait 依赖说明待补。 | 2026-05-08 Task6 05:05：revisiting→reviewed；修复 frontmatter/source YAML 与轻量措辞，无新增 L3/L4 回炉项，待 Task9 复审。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 2；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 Task9 闲时抽检：needs-rework。P0 1 / P1 1 / P2 1；Android 17 tag 下 MessageQueue 路径已拆分，正文旧路径与 mLock 表述错误；frameworks/opt/gamesdk 关键源码锚点仍依赖 main，未证明进入 Android 17，已写入 queue。 | 2026-06-20 Task9 复审：auto-fixed。DeliQueue 路径/targetSdk 37 边界已闭环；Swappy 源码锚点从 main 收紧为 AGDK frame-pacing release branch，并明确不作为 Android 17 platform 源码结论；queue 项已关闭，回到 Task6 复审。 | 2026-06-20 Task6 09:06：revisiting→reviewed，auto-promote finalized。Task9 auto-fixed 后复审：L1 全清（0 禁用词/0 高频词/0 翻译腔动词/0 元叙述/0 中英文间距问题），L2 结构完整（开头/节奏/读者引导全过），25 处 [已验证] 标注、0 处 [待验证]，outline 6 锚点全覆盖。无 L3/L4 回炉项。Task9 auto-fixed + queue 0 pending，满足自动晋升条件。"
-task9_review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 DeliQueue targetSdk 37 边界未收紧；P2 present_wait 依赖说明待补。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 2；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 Task9 闲时抽检：needs-rework。P0 1 / P1 1 / P2 1；Android 17 tag 下 MessageQueue 路径已拆分，正文旧路径与 mLock 表述错误；frameworks/opt/gamesdk 关键源码锚点仍依赖 main，未证明进入 Android 17，已写入 queue。 | 2026-06-20 Task9 复审：auto-fixed。DeliQueue 路径/targetSdk 37 边界已闭环；Swappy 源码锚点从 main 收紧为 AGDK frame-pacing release branch，并明确不作为 Android 17 platform 源码结论；queue 项已关闭，回到 Task6 复审。"
-last_task9_audit: "2026-06-20"
-last_task9_audit_at: "2026-06-20T07:28:47+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-20-07-audit.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-20
 ---
 
 # 2.17 Frame Pacing Library 与帧节奏控制

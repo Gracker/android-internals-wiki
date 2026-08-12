@@ -66,44 +66,16 @@ sources:
 - type: official
   path: https://perfetto.dev/docs/data-sources/frametimeline
   role: App SurfaceFrame、DisplayFrame 与显示端 jank
-created_by: rendering-pipelines-merge
-created_date: '2026-04-09'
 task6_state: "reviewed"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-04-27"
-last_task6_audit: "2026-07-10"
-review_notes: "2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。小修1处（「渲染链路」→「渲染路径」禁用词替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
-task6_result: pass-light-edit
-review_round: 1
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: "2026-05-21T23:22:00+08:00"
-repaired_date: "2026-04-26"
-repaired_by: "openclaw-task2b"
-rework_type: "review回炉修复（Task9 问题单）"
-last_task9_audit: "2026-06-14"
 status: finalized
 pipeline_stage: "ready-to-publish"
 task9_state: reviewed
-task9_result: auto-fixed
-task9_reviewed_date: "2026-06-14"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-14T17:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-14-17-audit.md"
-finalized_by: openclaw-task9-auto-promote
-task9_review_notes: "2026-06-14 Task9 闲时抽检 auto-fix：AOSP android-16.0.0_r1 SyncVk.cpp 复核发现 serverWait() 代码片段仍带 Chromium/main 口径，已改为 Android 16 tag 行号、init(device) 调用，并补回 addGarbage 生命周期处理；回到 Task6 复审。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-14
-last_task9_autofix_at: "2026-06-14"
-last_task2b_verifier_at: "2026-06-14T19:31:17"
-task2b_verifier_result: "status-fix-ready-for-task6"
 last_verified: "2026-07-31"
 last_verified_against: "android-17.0.0_r1 (GraphicsEnvironment.java, Loader.cpp, ANGLE AndroidManifest.xml, CompilerVk.cpp, CodeGen.cpp, ContextVk.cpp, WindowSurfaceVkAndroid.cpp, SurfaceVk.cpp, ProgramExecutableVk.cpp, SyncVk.cpp) / android17-6.18-2026-06_r6 (sync_file.c, dma-fence.c)"
 confidence: high
 last_idle_audit_at: "2026-07-26T14:35:30+08:00"
 last_idle_audit_run_id: "20260726-143530-idle-audit-2c5482aa"
-last_idle_audit_log: "logs/audit/2026-07-26-20260726-143530-idle-audit-2c5482aa-idle-audit.md"
-idle_audit_result: "pass-safe-metadata-and-source-marking-fix"
 ---
 
 # 18.11 Android 17 ANGLE（GLES-over-Vulkan 翻译层）

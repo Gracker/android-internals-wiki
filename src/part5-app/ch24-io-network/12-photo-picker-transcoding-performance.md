@@ -3,7 +3,6 @@ title: "Photo Picker、媒体转码与缓存治理"
 chapter: "24.12"
 section: "24.12"
 status: ready-for-review
-drafted_date: "2026-05-22"
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 last_verified: "2026-05-22"
 last_verified_against: "Android Developers docs 2026-05, AOSP MediaProvider main, source.android.com 2026-04"
@@ -37,9 +36,6 @@ sources:
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
 tags: [photo-picker, mediaprovider, transcoding, storage, io-performance]
 related_chapters: ["25.6", "20.9", "22.6", "22.35", "24.11", "26.13"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-22"
-gap_source: "官方文档/每日信息/素材驱动/AOSP结构"
 ---
 
 # Photo Picker、媒体转码与缓存治理

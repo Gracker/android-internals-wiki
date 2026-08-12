@@ -3,16 +3,11 @@ title: PerfDog、SoloPi 与 Emmagee
 chapter: '19'
 section: '19.16'
 status: finalized
-drafted_date: '2026-04-24'
-drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-08-05'
 last_verified_against: "PerfDog official site/client manual/Service docs/metric mapping/network docs + Android developer performance docs + AOSP android-17.0.0_r1 PowerStats/Thermal/SurfaceFlinger anchors | 2026-08-05 rework: cleared open-verification wording, added inline source markers, expanded frontmatter sources, kept Android 17 boundary"
 last_rework_at: "2026-08-05T13:35:16+08:00"
 last_rework_run_id: "20260805-133516-rework-bdb326bd"
-last_rework_log: "logs/rework/2026-08-05-20260805-133516-rework-bdb326bd-rework.md"
-rework_result: "ready-for-review"
-rework_notes: "2026-08-05 rework：解决开放核验措辞与来源稀疏标记。将正文唯一易触发词改为“需继续验证的假设”；在 PerfDog 定位/设备模式、Jank 口径、Android 17 核验段增加 4 处内联 [来源:] 标记；frontmatter sources 从 2 条扩展到 PerfDog 官方、Android developer 与 AOSP android-17.0.0_r1 锚点。版本边界保持 Android 17，状态回退 ready-for-review 等待 Task6/Task9 复审。"
 confidence: medium
 tags:
 - apm
@@ -61,39 +56,10 @@ sources:
   path: frameworks/native/services/surfaceflinger/Layer.cpp (android-17.0.0_r1)
 pipeline_stage: finalized
 task6_state: reviewed
-reviewed_by: hermes-aiw-review-finalize-apply
-reviewed_date: 2026-08-05
 last_review_finalize_at: "2026-08-05T14:07:37+08:00"
 last_review_finalize_run_id: "20260805-140520-70395a2d"
-review_finalize_result: "finalized"
-review_finalize_notes: "2026-08-05 Hermes Review/Finalize：复核 PerfDog 官方资料、Android developer performance docs 与 AOSP android-17.0.0_r1 PowerStats/Thermal/SurfaceFlinger/Layer 锚点；未发现 P0/P1/P2 技术阻断，章节正文无需改写，推进 finalized。"
-last_task6_audit: '2026-07-03'
-task6_result: pass-light-edit
-task6_review_notes: "2026-07-08 05:06 Task6 复审(revisiting→reviewed):pass-light-edit。Task9 auto-fix 后文稿复查：L1 禁用词/高频词全清；L2 结构/节奏/可读性通过；outline 10/10 覆盖。L3 观察：「一手源码数据源底层实现」段落偏百科参考风格，与全文 engineer-to-engineer 叙述有落差，记入观察不阻断。task9_result=auto-fixed，回 Task9 终审。"
-last_task6_at: "2026-07-08T05:06:00+08:00"
 task9_state: reviewed
 task2b_state: fixed
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-07-08"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-08T05:25:42+08:00"
-last_task9_audit: '2026-07-08'
-last_task9_autofix_at: "2026-07-08"
-last_task9_audit_log: 'logs/deep-review/2026-07-08-03-audit.md'
-task9_review_notes: "2026-07-08 Task9 idle audit auto-fix: 修正 Thermal AIDL 方法、SurfaceFlinger --latency 数据源、Restricted Settings 特殊访问入口；AOSP 锚定 android-17.0.0_r1，回到 Task6 复审。 | 2026-07-08 04 Task9 deep-review AUTO-FIX: 修正 SurfaceFlinger --latency 数据链路与 Android 12 ThermalManagerService 版本表述；证据锚定 AOSP android-17.0.0_r1，回到 Task6 复审。 | 2026-07-08 05 Task9 终审: pass-tech-review。复核上一轮 Thermal AIDL、SurfaceFlinger --latency、Restricted Settings auto-fix 与 Task6 pass-light-edit；AOSP android-17.0.0_r1 源码锚点成立，queue 无 pending，自动晋升 finalized。"
-task2b_result: fixed
-rework_count: 1
-rework_date: "2026-04-27"
-rework_by: "task2b-rework"
-last_task2b_at: "2026-04-27T07:58:00+08:00"
-deepseek_polish_state: done
-last_deepseek_polish_at: 2026-05-26
-last_task2b_verifier_at: "2026-07-08T03:31:42+08:00"
-task2b_verifier_result: "status-corrected-ready-for-task6"
-task2b_verifier_notes: "2026-07-08 Task2B Verifier: status finalized→ready-for-review; auto-fixed by Task9, pipeline=task6_pending, queue clear. Ready for Task6 re-review."
-last_task9_review_log: "logs/deep-review/2026-07-08-05-deep-review.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-09
 ---
 
 

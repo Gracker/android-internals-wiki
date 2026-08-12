@@ -2,15 +2,11 @@
 title: "FD 资源监控与治理"
 chapter: "20.12"
 status: "finalized"
-drafted_date: "2026-05-23"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [stability, fd, resource-exhaustion, observability]
 related_chapters: ["20.5", "20.7", "26.2", "26.5", "14.26"]
 consolidated_from:
   - "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md"
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-23"
-gap_source: "参考书素材 + research-gaps + AOSP/官方文档对照"
 last_verified: "2026-06-13"
 last_verified_against: "AOSP android-16.0.0_r1 / Android Developers API reference"
 confidence: medium
@@ -27,25 +23,9 @@ sources:
     path: "https://developer.android.com/ndk/reference/group/file-descriptor"
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
-last_task2a_at: "2026-05-23T03:09:00+08:00"
 section: "20.12"
 task9_state: "reviewed"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-13"
-task6_result: "pass-light-edit"
-last_task6_at: "2026-06-13T09:09:06+08:00"
-last_task6_review_log: "logs/review/2026-06-13-08-review.md"
-task6_review_notes: "2026-06-13 Task6 re-review pass（状态修复）：上轮 08:07 review 已判定 pass-light-edit，但 task6_state 未从 revisiting 更新为 reviewed，本轮修复。L1/L2/L3/L4 全部通过，无禁用词、无 B 类问题。task9_result=auto-fixed，不满足自动晋升条件，建议 Task9 补确认后晋升。"
-task9_result: "auto-fixed"
-last_task9_at: "2026-06-13T05:21:00+08:00"
 task2b_state: "fixed"
-last_task9_audit: "2026-06-13"
-last_task9_autofix_at: "2026-06-13"
-last_task9_review_log: "logs/deep-review/2026-06-13-05-audit.md"
-task9_review_notes: "2026-06-13 Task9 idle audit: auto-fixed AOSP main anchors to android-16.0.0_r1; Android 17 tag unavailable during audit, no P0/P1 queue item."
-task2b_verifier_note: "2026-06-13 Verifier: auto-promoted to finalized (task6 pass-light-edit + task9 auto-fixed + no queue pending + content sufficient)"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-22
 ---
 
 # FD 资源监控与治理

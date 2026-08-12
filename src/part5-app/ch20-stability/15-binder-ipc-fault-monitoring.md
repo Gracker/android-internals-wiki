@@ -7,15 +7,9 @@ tags: [binder, ipc, exception, transaction-too-large, dead-object, stability, pe
 related_chapters: ["1.4", "1.17", "1.18", "20.4", "26.9"]
 consolidated_from:
   - "src/part5-app/ch20-stability/22-binder-communication-monitoring.md"
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-04"
-drafted_date: "2026-06-04"
 last_verified: "2026-06-04"
 last_verified_against: "AOSP android-17.0.0_r1 / android-16.0.0_r1"
 confidence: medium
-gap_source: "素材驱动+Clippings参考书"
-gap_score: 15
-gap_score_detail: "素材丰富度 4 | 相关性 4 | 读者需求度 4 | 时效性 3"
 sources:
   - type: aosp
     path: "frameworks/native/libs/binder/ProcessState.cpp"

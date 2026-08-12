@@ -3,36 +3,16 @@ title: "StrictMode 性能检查与开发期诊断"
 chapter: "14.13"
 section: "14.13"
 status: finalized
-task2b_result: fixed-lite
 task2b_state: fixed
 task6_state: "reviewed"
-task6_result: pass-light-edit
-task6_reviewed_date: "2026-06-17"
-last_task6_at: "2026-06-17T19:12:00+08:00"
 task9_state: reviewed
 pipeline_stage: ready-to-publish
-last_task2b_lite_at: 2026-06-17
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
 tags: [strictmode, disk-read, disk-write, network, custom-penalty, performance-diagnostics]
 related_chapters: ["15.6", "14.7", "21.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-07"
-drafted_date: "2026-06-08"
 last_verified: "2026-07-30"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
-task9_result: auto-fixed
-last_task9_at: "2026-06-17T14:32:54+08:00"
-task9_reviewed_date: "2026-06-17"
-task9_reviewed_by: openclaw-task9
-last_task9_autofix_at: "2026-06-17"
-last_task9_review_log: "logs/deep-review/2026-06-17-14-deep-review.md"
-task9_review_notes: "2026-06-17 Task9 auto-fix: StrictMode API 归属、VmPolicy bit 口径、Compose/ActivityScenario 边界、DropBox/netd 说明与 AOSP android-17.0.0_r1 源码锚点修正；回到 Task6 复审。"
-last_task6_audit: "2026-07-16"
-last_task6_audit_notes: "L1抽检：链路→路径(大厂黑话)，关键 7→2(高频降频)，frontmatter完整"
-p0: 0
-p1: 0
-p2: 0
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/os/StrictMode.java"
@@ -44,10 +24,6 @@ sources:
     path: "libcore/dalvik/src/main/java/dalvik/system/BlockGuard.java"
   - type: aosp
     path: "libcore/dalvik/src/main/java/dalvik/system/CloseGuard.java"
-gap_source: "AOSP结构/官方文档/章节深挖"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-19
-android17_review_notes: "校正 ThreadPolicy 线程范围、BlockGuard 检查点、penalty 执行、Binder 违规回传、临时放行、CI 安装位置及 Android 17 flagged VmPolicy"
 ---
 
 # 14.13 StrictMode 性能检查与开发期诊断

@@ -2,16 +2,12 @@
 title: "Android 17 ARM MTE 内存标签扩展实战"
 chapter: "4.15"
 status: ready-for-review
-drafted_date: "2026-07-06"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-06"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 tags: [Android 17, MTE, Memory Safety, ARM, Hardware Architecture, Scudo, Bionic]
 related_chapters: ["20.10", "4.5", "14.5", "23.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-06"
-gap_source: "研究素材"
 sources:
   - type: blog
     path: "Cubox/四年之后，重新审视 MTE：从硬件架构到工程落地-2025-12-18.md"

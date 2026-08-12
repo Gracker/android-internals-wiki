@@ -3,35 +3,18 @@ title: "Agent 辅助 Perfetto 分析协议"
 chapter: "13.15"
 section: "13.15"
 status: ready-for-review
-drafted_date: "2026-05-17"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-08-08"
 last_verified_against: "android/skills profilers commit 4328beaf36f00265db107eb316f9add6b8764144; Perfetto official AI skill docs/release notes v57.1-v57.2; Android 17 Perfetto stdlib docs/source (android.frames.*, android.startup.startups, android.binder, slices.with_context, slices.time_in_state, slices.cpu_time, sched.with_context, linux.cpu.frequency, linux.cpu.utilization.process); Perfetto SQL table docs (slice, thread_state, sched, cpu_freq); Android system tracing docs | 2026-08-08 rework: closed pending-verification marker by pinning critical stdlib/source anchors and retaining Android 17 / android-17.0.0_r1 boundary"
 last_rework_at: "2026-08-08T09:36:00+08:00"
 last_rework_run_id: "20260808-093600-rework-39378b94"
-last_rework_log: "logs/rework/2026-08-08-20260808-093600-rework-39378b94-rework.md"
-rework_result: "ready-for-review"
-rework_notes: "2026-08-08 rework：处理待验证标记；将 linux.cpu.utilization 通配口径收窄为已核验的 linux.cpu.utilization.process，并在正文官方资料区补充 Android 17 固定标签下的关键 stdlib/source 路径锚点；未越过 Android 17 / android-17.0.0_r1 基线，章节回流 ready-for-review 等待 Task6/Task9 复审。"
 confidence: medium-high
 tags: [perfetto, trace-analysis, agent-workflow, performance-tools]
 related_chapters: ["13.2", "13.9", "13.14", "15.6", "26.5"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-17"
-gap_source: "研究素材+官方仓库"
 pipeline_stage: ready-for-review
-task2b_result: fixed-lite
 task6_state: pending-review
-reviewed_by: hermes-aiw-review-finalize-apply
-reviewed_date: "2026-08-04"
-task6_result: "rework-applied"
-last_task6_at: "2026-06-19T04:25:46+08:00"
 task9_state: pending-review
-task9_result: rework-applied
 task2b_state: fixed
-last_task2b_lite_at: "2026-05-28"
-last_task9_at: "2026-07-10T01:28:21+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-10"
 sources:
   - type: official
     path: "https://github.com/android/skills/tree/4328beaf36f00265db107eb316f9add6b8764144/profilers"
@@ -63,29 +46,8 @@ sources:
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Skill/android-skills/profilers/perfetto-sql/SKILL.md"
   - type: material
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Skill/android-skills/profilers/perfetto-trace-analysis/SKILL.md"
-task6_reviewed_by: "openclaw-task6"
-task6_reviewed_at: "2026-05-28T08:10:00+08:00"
-task6_l1_l2_fixes: 0
-task6_l3_l4_issues: 0
-last_task9_review_log: "logs/deep-review/2026-07-10-01-audit.md"
-updated_by: openclaw-task9
-updated_date: "2026-07-10"
-last_task9_autofix_at: "2026-07-10"
-task9_review_notes: "2026-05-28 Task9 deep-review: auto-fixed。P0 1：修正 Perfetto SQL 守卫中不可 include 的 stdlib 模块名，回到 Task6 复审。 2026-05-28 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。满足 task6_result=pass-light-edit、queue 无 pending、本轮无 P0/P1，自动晋升 finalized。 2026-06-18 Task9 idle-audit: auto-fixed。P0 1：修正 Perfetto CPU 频率时间区间入口，`cpu_freq` 仅为 CPU/freq 维度表，频率区间应使用 `linux.cpu.frequency` / `cpu_frequency_counters`。 2026-06-19 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。复核源码/官方文档锚点、版本边界、Perfetto stdlib/API 口径，无新增技术问题；满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized。 2026-07-10 Task9 idle-audit: auto-fixed。P0 1：修正 android/skills profilers 失效本地素材路径，并将 GitHub main 源码锚点固定到 commit 4328beaf36f00265db107eb316f9add6b8764144。"
-p0: 0
-p1: 0
-p2: 0
-finalized_by: "hermes-aiw-review-finalize-apply"
-finalized_date: "2026-08-04"
 last_review_finalize_at: "2026-08-04T14:07:05+08:00"
 last_review_finalize_run_id: "20260804-140516-9d7a366c"
-last_task9_audit: "2026-07-10"
-task6_reviewed_date: "2026-06-19"
-task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 idle-audit auto-fix（cpu_freq linux.cpu.frequency cpu_frequency_counters 修正）已确认干净。L1 禁用词/高频词/翻译腔/元叙述 0 命中。L2 可读性通过（两处模板引导语属于代码块用途句，不算元叙述）。outline 8/8 覆盖。L1-L2 小修 0 处，无 B 类问题。task9_result=auto-fixed，待 Task9 最终确认。"
-last_task6_review_log: "logs/review/2026-06-19-04-review.md"
-last_task6_audit: "2026-07-07"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-11
 ---
 
 # 13.15 Agent 辅助 Perfetto 分析协议

@@ -7,9 +7,7 @@ import re
 import sys
 import yaml
 
-REQUIRED_FIELDS = [
-    "title", "chapter", "status", "applicable_versions", "tags"
-]
+from frontmatter_schema import ALLOWED_FIELDS, REQUIRED_FIELDS
 
 OPTIONAL_FIELDS = ["confidence", "sources"]
 SOURCE_GATED_STATUS = {"ready-for-review", "finalized", "verified"}
@@ -139,6 +137,14 @@ def check_file(filepath):
     for field in REQUIRED_FIELDS:
         if field not in meta:
             issues.append(f"缺少字段: {field}")
+
+    obsolete_fields = sorted(
+        str(field) for field in meta if str(field) not in ALLOWED_FIELDS
+    )
+    if obsolete_fields:
+        issues.append(
+            "包含过时或未登记的 frontmatter 字段: " + ", ".join(obsolete_fields)
+        )
 
     if meta.get("status") and meta["status"] not in VALID_STATUS:
         issues.append(f"status 值无效: {meta['status']}")

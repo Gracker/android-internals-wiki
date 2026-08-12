@@ -8,20 +8,6 @@ consolidated_from:
 - "src/part3-tools/ch19-apm/08-argusapm.md"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: "['apm', 'monitoring']"
-drafted_date: "2026-04-24"
-drafted_by: "codex"
-reviewed_date: 2026-06-28
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
-task6_review_notes: "2026-06-28 16:11 Task6 revisiting 复审(Task9 auto-fix后回归): 修复69处半角标点(逗号/冒号/分号→全角)。L1禁用词/高频词/物理动词/元叙述/否定纠正grep全部零命中。L2结构/节奏/开头/读者视角均通过。task9_result=auto-fixed(无遗留P0/P1),queue无pending,自动晋升finalized。"
-last_task6_audit: "2026-07-17"
-last_task2b_lite_at: "2026-06-25"
-task9_result: "auto-fixed"
-task9_reviewed_date: "2026-06-25"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-28T13:30:41+08:00"
-task9_review_date: "2026-06-25"
-task9_reviewer: "openclaw-task9"
 task9_state: reviewed
 confidence: "medium"
 sources:
@@ -73,24 +59,12 @@ sources:
   path: https://github.com/Tencent/matrix/blob/3b8293bd65d47eeea7caf1f32a3a5d4d5eab60e7/matrix/matrix-android/matrix-gradle-plugin/src/main/kotlin/com/tencent/matrix/plugin/trace/MatrixTraceInjection.kt
 - type: official
   path: https://developer.android.com/build/releases/gradle-plugin-api-updates
-tech_score: "3/5"
-last_task9_audit: "2026-06-28"
-task2b_result: fixed-lite
 task2b_state: fixed
 task6_state: reviewed
 pipeline_stage: ready-to-publish
-last_task2b_at: "2026-06-25T00:53:48+08:00"
-repaired_date: 2026-06-25
-repaired_by: openclaw-task2b
 last_verified: 2026-06-25
 last_verified_against: "AOSP android-17.0.0_r1 + Matrix GitHub README + Android Developers docs + Task9 2026-06-25 deep-review items (ANGLE misattributed)"
 verification_scope_note: "版本范围覆盖第三方 APM 工具的 Android 兼容性窗口，非全版本 AOSP 逐版本验证。AOSP 源码仅验证 android-17.0.0_r1；Matrix/AndroidGodEye/Collie/Rabbit 兼容性依据各自项目 README 和发布说明。"
-task2b_notes: "2026-06-25 Task2B main: Matrix plugin artifact ID added; APM version capability table added; ANGLE issue marked as misattributed (belongs to ch2.14). 2026-06-25 Task2B Lite: added verification_scope_note for frontmatter version range clarity; ANGLE body content verified absent (only frontmatter metadata references remain)."
-last_task9_autofix_at: "2026-06-28"
-last_task9_review_log: "logs/deep-review/2026-06-28-13-audit.md"
-task9_review_notes: "2026-06-28 闲时抽检 AUTO-FIX: 修正 Android 14/API 34 误写 ProfilingManager requestProfiling 的版本表；ProfilingManager/requestProfiling 以 API 35 为下限；无遗留 P0/P1。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-13
 ---
 
 # 历史开源 APM：BlockCanary、ArgusAPM、AndroidGodEye、Collie 与 Rabbit

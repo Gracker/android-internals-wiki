@@ -5,10 +5,6 @@ status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [compose, layout, measurement, intrinsic, performance]
 related_chapters: ["22.3", "22.15", "22.16", "7.10", "2.4"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-25"
-gap_source: "章节深挖+AOSP结构"
-drafted_date: "2026-06-25"
 last_verified: "2026-06-25"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high

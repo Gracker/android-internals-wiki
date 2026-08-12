@@ -6,16 +6,11 @@ status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [gpu, profiling, perfetto, gpu-counter, gpu-memory, android17]
 related_chapters: ["2.10", "2.14", "13.9", "14.15"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-06"
-gap_source: "素材驱动/AOSP结构/官方文档"
 task6_state: reworked
 task9_state: ready-for-review
 pipeline_stage: rework_verified
 last_draft_polish_at: "2026-07-27T19:35:27+08:00"
 last_draft_polish_run_id: "20260727-193527-draft-polish-30f4d38e"
-reviewed_date: "2026-07-27"
-reviewed_by: "hermes-aiw-review-finalize-apply"
 last_review_finalize_at: "2026-07-27T20:13:43+08:00"
 last_review_finalize_run_id: "20260727-201343-4b671d13"
 last_rework_at: "2026-07-27T21:36:40+08:00"
@@ -23,8 +18,6 @@ last_rework_run_id: "20260727-213543-rework-30f4d38e"
 last_verified: "2026-07-30"
 last_verified_against: "AOSP android-17.0.0_r1 external/perfetto；Writer rendering_pipelines S01/S02/S03/S04/S05/S11/S12/S13"
 confidence: high
-rework_resolution: "收窄章节标题与正文范围，仅保留 android-17.0.0_r1 可由 external/perfetto 一手 proto、trace processor parser 与 SQL 视图支撑的 Perfetto GPU counter / GPU memory 事件链路；移除未取证的跨厂商阈值、Ray Tracing、NPU/ML、远程调试与 AGI 工作流结论。"
-android17_review_notes: "2026-07-30：复核 GpuCounterDescriptor、GpuCounterEvent、GpuCounterConfig、Trace Processor 回看式采样与 GpuMemTotalEvent；结合 rendering_pipelines 补充标准 HWUI、TextureView、独立 Surface、Camera/Video、Game 与混合出图的信号归属及归因边界。原 task6/task9/OpenClaw 字段完整保留。"
 sources:
 - type: aosp
   path: 'AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/common/gpu_counter_descriptor.proto'

@@ -7,15 +7,6 @@ applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-04-23'
 last_verified_against: AOSP EROFS docs + source.android 16KB page size docs + kernel/common android15-6.6 ext4 journal / f2fs segment,gc,uapi/linux/f2fs.h,include/linux/f2fs_fs.h + developer.android.com
 confidence: medium
-drafted_date: '2026-04-01'
-drafted_by: openclaw-task2a
-polish_count: 1
-polish_date: '2026-04-07'
-polish_by: task2b-polish
-reviewed_date: 2026-06-13
-reviewed_by: openclaw-task6
-review_type: scheduled-review
-review_round: 4
 sources:
 - type: blog
   path: Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md
@@ -31,38 +22,11 @@ tags:
 - linux
 - android
 - research
-task6_result: pass-light-edit
-task2b_result: fixed
-last_task2b_at: "2026-05-22T19:18:14+08:00"
 status: finalized
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: "reviewed"
-task9_result: "auto-fixed"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-22"
-last_task9_at: "2026-06-13T10:30:00+08:00"
-last_task6_audit: 2026-06-13
 task2b_state: "fixed"
-p0: 0
-p1: 0
-p2: 1
-updated_by: "openclaw-task9"
-updated_date: "2026-06-13"
-review_notes: "2026-05-22 task9 idle audit: needs-rework。P0 1 / P1 1 / P2 0。f2fs 前台 GC 源码片段过期，EROFS ZSTD 需补 Android 16/6.12+ 版本边界。 2026-05-22 16:06 Task6 re-review: pass-light-edit。L1/L2 小修 11 处；压掉高频强调词和翻译腔表达；既有 Task9 P0/P1/P2（f2fs curseg_space、EROFS ZSTD、性能数据条件）queue 保留，保持 task2b_pending。 2026-05-22 19:26 Task9 re-review: pass-tech-review，P0/P1=0；P2 EROFS/dm-verity 数据条件已在 suggestions 保留；queue 无 pending，自动晋升 finalized。"
-auto_promoted: true
-last_task9_audit: "2026-06-13"
-last_task9_review_log: "logs/deep-review/2026-06-13-10-30-audit.md"
-task9_review_notes: "2026-06-13 Task9 闲时抽检：AUTO-FIX。补齐 f2fs has_not_enough_free_secs() 源码片段中 lower/upper 阈值叠加 needed + reserved_sections 的两行；回到 Task6 复审。"
-last_task9_autofix_at: "2026-06-13"
-last_task6_at: 2026-06-13T16:18:11+08:00
-last_task6_review_log: "logs/review/2026-06-13-16-review.md"
-finalized_date: "2026-05-22"
-finalized_by: "openclaw-task9-auto-promote"
-auto_promoted_by: openclaw-task6
-auto_promoted_date: 2026-06-13
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-13
 ---
 
 # 6.2 文件系统

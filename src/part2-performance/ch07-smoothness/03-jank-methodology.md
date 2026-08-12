@@ -2,15 +2,6 @@
 title: 卡顿分析方法论
 chapter: '7.3'
 section: '7.3'
-reviewed_date: '2026-06-19'
-last_task2b_at: '2026-05-05T10:47:46.821502'
-reviewed_by: openclaw-task6
-rework_date: '2026-04-04'
-rework_by: openclaw-task2b
-rework_type: review回炉修复（Task9/External 问题单）
-polish_count: 1
-polish_date: '2026-04-05'
-polish_by: task2b-polish
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-03-31'
 last_verified_against: AOSP android-16.0.0_r1, Perfetto 官方文档
@@ -53,27 +44,10 @@ related_chapters:
 - '1.5'
 - '13.3'
 task6_state: reviewed
-task6_result: pass-light-edit
-task2b_result: fixed
-task6_reviewed_date: '2026-06-19'
-review_round: 3
 status: "finalized"
 pipeline_stage: ready-to-publish
-task9_result: 'auto-fixed'
 task9_state: 'reviewed'
 task2b_state: fixed
-task9_reviewed_by: 'openclaw-task9'
-task9_reviewed_date: '2026-06-19'
-last_task9_at: '2026-06-19T11:28:24+08:00'
-last_task9_audit: '2026-06-19'
-task9_review_notes: '2026-05-05 11:20 task9 deep-review: needs-rework；P0 0 / P1 1 / P2 1。 | 2026-05-13 02:51 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-19 11:28 Task9 idle-audit: auto-fixed。P0 2 / P1 0 / P2 0；修正 FrameMetrics 表中 INPUT_HANDLING_DURATION 常量名与 INTENDED_VSYNC_TIMESTAMP API 引入版本，回 Task6 复审。'
-last_task6_at: '2026-06-19T12:09:00+08:00'
-last_task6_audit: '2026-06-18'
-review_notes: '2026-05-05 task6 revisit: L1/L2 小修完成；待 Task9 复审。 | 2026-06-19 Task6 revisit: Task9 auto-fix 修正 FrameMetrics 表常量名与 API 版本后复审；L1 禁用词零命中，L2 通过；修复参考资料区 Binder/FrameTimeline 链接合并错误；无 B 类大问题；自动晋升 finalized。'
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-19
-last_task9_autofix_at: '2026-06-19'
-last_task9_review_log: 'logs/deep-review/2026-06-19-11-audit.md'
 ---
 
 

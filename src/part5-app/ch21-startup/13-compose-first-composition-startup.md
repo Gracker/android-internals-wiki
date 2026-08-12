@@ -7,7 +7,6 @@ applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-27"
 last_verified_against: "Compose BOM 2025.12.00, Kotlin 2.2, AOSP androidx-compose-release"
 confidence: medium-high
-drafted_date: "2026-06-27"
 tags: [compose, startup, first-composition, baseline-profile, cold-start]
 related_chapters: ["21.3", "21.4", "22.3", "22.20", "22.26", "18.23"]
 sources:
@@ -23,9 +22,6 @@ sources:
     path: "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
   - type: local
     path: "src/part5-app/ch21-startup/04-baseline-profile-practice.md"
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-26"
-gap_source: "章节深挖"
 ---
 
 # Compose 首次组合开销与启动性能

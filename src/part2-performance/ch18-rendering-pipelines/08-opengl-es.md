@@ -71,30 +71,10 @@ sources:
 - type: official
   path: https://perfetto.dev/docs/data-sources/frametimeline
   role: SurfaceFrame、DisplayFrame 与 jank 字段
-created_by: rendering-pipelines-merge
-created_date: '2026-04-09'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: 2026-05-25
-task9_result: pass-tech-review
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-25"
-task2b_result: fixed
-last_task2b_at: '2026-05-20T11:12:00+08:00'
-last_task9_at: "2026-05-25T20:22:00+08:00"
-last_task6_audit: 2026-07-14
-last_task6_at: "2026-05-25T20:12:00+08:00"
-last_task6_review_log: "logs/review/2026-05-25-20-review.md"
-last_task9_audit: "2026-07-03"
-last_task9_review_log: "logs/deep-review/2026-05-25-20-deep-review.md"
-task9_review_notes: "2026-05-20 Task9 深度复审：needs-rework。P0 1 / P1 1 / P2 1；P0 为 EGL native fence 示例缺少 flush/flush flag 且混用 wait 与 FD 导出；P1 为 dequeueBuffer/release fence 归因需补 slot/outstanding buffer 边界。 | 2026-05-25 Task9 深度复核：pass-tech-review。P0 0 / P1 0 / P2 0（历史 P2 triple buffering 口径已在 suggestions.md，不重复新增）；Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish。"
-task6_review_notes: "2026-05-25 20:12 Task6：Task2B 修复后写作复审；小修 10 处（否定纠正式、直接称呼、图/代码说明、Buffer 等待措辞）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-05
 last_verified: 2026-07-31
 last_verified_against: android-17.0.0_r1 (GLSurfaceView.java, GraphicsEnvironment.java, egl_platform_entries.cpp, Surface.cpp, BufferQueueCore.cpp, BufferQueueProducer.cpp, BLASTBufferQueue.cpp, FrontEnd, HWComposer.cpp) / android17-6.18-2026-06_r6 (dma-buf.c, sync_file.c, dma-fence.c)
 confidence: high

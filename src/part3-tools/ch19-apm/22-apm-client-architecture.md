@@ -2,12 +2,9 @@
 
 
 status: finalized
-finalized_by: openclaw-task2b-verifier
 title: 千万级 DAU 的 APM 端侧架构
 chapter: '19'
 section: '19.22'
-drafted_date: '2026-05-13'
-drafted_by: openclaw-task2a
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-06-04'
 last_verified_against: 'Android SDK docs + Kotlin kotlinx.coroutines Channel docs + open-source APM/logging projects'
@@ -48,29 +45,7 @@ sources:
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
-reviewed_date: 2026-06-07
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
-last_task6_at: 2026-06-07T16:07:00+08:00
-last_task6_review_log: "logs/review/2026-06-05-06-review.md"
-task6_review_notes_r6: '2026-06-05 Task6 16:08: pass-light-edit(revisit#3). L1/L2 clean on re-check. task9_result=auto-fixed, routes to task9 for confirmation.'
-last_task6_audit: '2026-06-22'
-task6_review_notes_r4: '2026-06-04 Task6 01:08: pass-light-edit(revisit). Task9 auto-fix writing quality OK; fixed AppenderMode typo. No new rework items.'
-task9_result: 'auto-fixed'
-last_task9_at: '2026-06-04T00:20:00+08:00'
-task9_reviewed_by: 'openclaw-task9'
-task9_reviewed_date: '2026-06-04'
-last_task9_review_log: 'logs/deep-review/2026-06-04-00-deep-review.md'
-task9_review_notes: '2026-06-04 Task9 00:20：auto-fixed。修正 Kotlin Channel 溢出语义：DROP_OLDEST 下 trySend 不会暴露满队列失败，示例改为有界 Channel + trySend 失败计数；回到 Task6 复审。'
 task2b_state: 'fixed'
-task2b_result: 'fixed'
-task2b_fixed_date: '2026-06-03'
-task2b_fixed_at: '2026-06-03T10:53:52'
-last_task2b_at: '2026-06-03T10:53:52'
-last_task9_autofix_at: '2026-06-04'
-task6_review_notes_r5: '2026-06-04 Task6 18:15: pass-light-edit(revisit#2). Task9 auto-fix confirmed OK; writing quality clean on re-check. L1/L2 pass. No new rework items. Sending to Task9 for final confirmation.'
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-16
 ---
 
 # 千万级 DAU 的 APM 端侧架构

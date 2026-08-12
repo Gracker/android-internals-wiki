@@ -4,31 +4,14 @@ title: "移动端 LLM 推理的 DVFS 与能效边界"
 chapter: "5.11"
 section: "5.11"
 status: finalized
-drafted_date: "2026-05-16"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-05-16"
 last_verified_against: "AOSP android-16.0.0_r1 + Android 官方文档 + Google AI Edge LLM docs 2026-05-28 + Perfetto docs + arXiv 2507.02135"
 confidence: medium
 tags: [android, dvfs, eas, adpf, llm, on-device-ai, power]
 related_chapters: ["5.2", "5.4", "5.5", "5.9", "5.10", "11.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-16"
-gap_source: "素材驱动/研究素材/官方文档"
-gap_score: 17
 pipeline_stage: "ready-to-publish"
-reviewed_date: "2026-05-16"
-task6_result: pass-light-edit
 task6_state: "reviewed"
-last_task6_at: "2026-05-16T19:11:00+08:00"
-last_task6_audit: "2026-06-06"
-task9_result: auto-fixed
-last_task9_at: "2026-05-16T19:31:25+08:00"
-last_task9_audit: "2026-06-08"
-last_task9_autofix_at: "2026-06-08"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-16"
-last_task9_review_log: "logs/deep-review/2026-06-08-19-audit.md"
-task9_review_notes: "2026-06-08 Task9 idle audit AUTO-FIX：将 AOSP main 锚点改为 android-16.0.0_r1；修正 MediaPipe LLM Inference 的 Android 版本边界，回到 Task6 复审。"
 sources:
   - type: paper
     path: "https://arxiv.org/abs/2507.02135"
@@ -54,12 +37,8 @@ sources:
     path: "hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl"
   - type: aosp
     path: "hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-10
 task9_state: "reviewed"
 task2b_state: fixed
-last_task2b_verifier_at: "2026-06-14T11:25:00+08:00"
-last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
 ---
 
 # 5.11 移动端 LLM 推理的 DVFS 与能效边界

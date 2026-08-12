@@ -4,8 +4,6 @@ title: "KOOM"
 chapter: "19"
 section: "19.03"
 status: finalized
-drafted_date: "2026-04-24"
-drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-13"
 last_verified_against: "KwaiAppTeam/KOOM README.zh-CN and module READMEs, Android ApplicationExitInfo docs, Android 16KB page-size docs"
@@ -29,29 +27,6 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-reviewed_date: 2026-06-13
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
-task2b_result: fixed
-last_task2b_at: "2026-04-25T07:04:06+08:00"
-task9_result: auto-fixed
-task9_reviewed_date: 2026-04-24
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-13T10:20:00+08:00"
-last_task9_audit: "2026-06-13"
-last_task6_audit: 2026-07-08
-last_deepseek_polish_at: 2026-05-25
-deepseek_polish_state: done
-last_task9_autofix_at: "2026-06-13"
-last_task9_review_log: "logs/deep-review/2026-06-13-10-audit.md"
-task9_review_notes: "2026-06-13 闲时抽检 AUTO-FIX: 补 Android 15+/17 16KB page-size 对 KOOM native/thread/fastdump .so 的验证边界；无遗留 P0/P1。"
-p0: 0
-p1: 1
-p2: 0
-finalized_date: "2026-06-13"
-finalized_by: "openclaw-task6-auto-promote"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-17
 ---
 
 # KOOM

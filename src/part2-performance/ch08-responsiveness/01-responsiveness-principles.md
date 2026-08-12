@@ -50,42 +50,10 @@ sources:
   path: https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate
 last_verified: "2026-07-09"
 last_verified_against: "AOSP android-17.0.0_r1; Android Developers MotionPredictor/ARR/Vitals docs; web.dev RAIL"
-drafted_date: "2026-04-01"
-drafted_by: "openclaw-task2a"
-reviewed_date: "2026-07-09"
-reviewed_by: openclaw-task6
-polish_count: 1
-polish_date: "2026-04-05"
-polish_by: "task2b-polish"
 related_chapters: "[\"2.3\", \"2.4\", \"3.1\", \"7.1\", \"8.2\", \"9.1\", \"15.3\", \"15.5\", \"15.9\"]"
 task6_state: "reviewed"
-task6_result: pass-light-edit
 task2b_state: "fixed"
-task2b_result: fixed
-task6_reviewed_date: "2026-07-09"
-task6_spotcheck_date: "2026-05-15"
-task6_spotcheck_result: pass-light-edit
-last_task6_audit: "2026-07-09"
-last_task6_audit_type: "idle-audit"
-review_round: 1
-task9_result: "auto-fixed"
 task9_state: "reviewed"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-09"
-last_task9_at: "2026-07-09T04:33:12+08:00"
-last_task9_autofix_at: "2026-07-09"
-last_task9_audit: "2026-07-08"
-last_task6_at: "2026-07-09T05:07:00+08:00"
-task2b_fixed_date: "2026-06-06"
-finalized_date: "2026-07-09"
-finalized_by: "openclaw-task6-auto-promote"
-last_task9_audit_result: auto-fixed
-last_task9_audit_log: "logs/deep-review/2026-07-08-20-audit.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-09
-last_task2b_verifier_at: "2026-07-09T03:31:26+08:00"
-task2b_verifier_notes: "2026-07-09 Task2B Verifier: task9_state reviewed→pending; Task6 re-reviewed post-auto-fix (pass-light-edit), pipeline task9_pending correct, task9_state was stale reviewed."
-last_task9_review_log: "logs/deep-review/2026-07-09-04-deep-review.md"
 ---
 
 # 8.1 响应速度原理

@@ -4,15 +4,11 @@ chapter: "2.25"
 section: "2.25"
 status: ready-for-review
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
-drafted_date: "2026-06-11"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 tags: ['SurfaceFlinger', 'LocklessQueue', 'TransactionHandler', 'MPSC', '渲染管线']
 related_chapters: ["2.6", "2.22", "2.23"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-11"
-gap_source: "DeepResearch 调研结果（score 17）+ AOSP 源码结构"
 sources:
   - type: aosp
     path: "frameworks/native/libs/gui/include/gui/LocklessQueue.h"

@@ -3,7 +3,6 @@ title: "系统托管 GenAI：AICore、OnDeviceIntelligence 与资源竞争"
 chapter: "5.15"
 section: "5.15"
 status: ready-for-review
-drafted_date: "2026-06-18"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-07-26"
 last_verified_against: "Android 17/API 37 公开文档"
@@ -21,15 +20,11 @@ sources:
     path: "DeepResearch/2026-06-23-android17-ondevice-llm-inference-architecture.md"
 tags: ["GenAI", "AICore", "端侧AI", "性能优化", "NPU", "IPC"]
 related_chapters: ["5.9", "5.10", "5.11", "5.12", "25.11"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-18"
-gap_source: "官方文档/章节深挖"
 task6_state: fixed
 task9_state: reviewed
 pipeline_stage: ready-for-review
 last_rework_at: "2026-07-26T09:35:49+08:00"
 last_rework_run_id: "20260726-093549-rework-4d26677f"
-rework_summary: "修复待核验标记：更正 AICore 进程段落错字，移除未经核验的具体模型内存表，改为 Android 17 基线下的安全观测口径；补充 DeepResearch 来源并明确剩余风险。"
 ---
 
 # 5.15 系统托管 GenAI：AICore、OnDeviceIntelligence 与资源竞争

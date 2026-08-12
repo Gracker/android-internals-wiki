@@ -6,9 +6,6 @@ status: ready-for-review
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 tags: [CameraX, 图像处理, 性能优化, 相机]
 related_chapters: ["14.20", "18.14", "22.29", "24.11"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-16"
-gap_source: "素材驱动/官方文档/章节深挖"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1; AndroidX CameraX public docs/source paths referenced in related chapters"
 confidence: medium
@@ -17,8 +14,6 @@ task9_state: deep-reviewed
 pipeline_stage: ready-for-review
 last_deep_review_at: "2026-07-25T12:35:05+08:00"
 last_deep_review_run_id: "20260725-123505-deep-review-fb8f6d26"
-last_task9_audit_log: "logs/deep-review/2026-07-25-20260725-123505-deep-review-fb8f6d26-deep-review.md"
-deep_review_notes: "2026-07-25 deep-review: 原章节仅有提纲且标题含未验证的 CameraX 3.0 主张；本轮改为 Android 15-17 / CameraX 公共能力边界，补齐 ImageAnalysis 背压、PreviewView/Surface、ImageCapture/ZSL、VideoCapture、Extensions、Perfetto 观测与热管理。未引入 Android 18/API38+ 结论。"
 sources:
 - type: official-doc
   path: https://developer.android.com/media/camera/camerax

@@ -46,36 +46,10 @@ sources:
   path: packages/modules/Profiling
 last_verified: "2026-06-28"
 last_verified_against: "refs/tags/android-17.0.0_r1 (frameworks/base, packages/modules/Profiling, frameworks/proto_logging均已确认存在)"
-drafted_date: "2026-05-17"
-drafted_by: "openclaw-task2a"
-reviewed_date: "2026-06-28"
-reviewed_by: "openclaw-task6"
 related_chapters: ["26.2", "26.5", "14.11", "13.2", "15.5", "20.3", "19.19"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-17"
-gap_source: "研究素材/官方文档/章节深挖"
-gap_score: "18"
 task6_state: reviewed
-last_task6_at: "2026-06-28T22:10:00+08:00"
 task9_state: reviewed
-task6_result: "pass-light-edit"
-task2a_result: "draft-ready-for-review"
-last_task2a_at: "2026-05-17T06:04:00+08:00"
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-06-28"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-28T22:28:19+08:00"
-last_task9_autofix_at: "2026-06-28"
-task2b_result: fixed-lite
 task2b_state: fixed
-last_task2b_lite_at: "2026-06-28"
-last_task2b_at: "2026-06-24T14:53:26+08:00"
-repaired_date: "2026-06-24"
-repaired_by: "openclaw-task2b"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-28
-last_task9_audit: "2026-06-28"
-last_task9_review_log: "logs/deep-review/2026-06-28-22-deep-review.md"
 ---
 
 # 26.10 Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger

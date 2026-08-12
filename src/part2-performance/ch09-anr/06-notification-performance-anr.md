@@ -4,13 +4,8 @@ title: "Notification 性能与 ANR"
 chapter: "9.6"
 section: "9.6"
 status: "finalized"
-drafted_date: "2026-04-09"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 task9_state: reviewed
-last_task9_at: 2026-07-14T06:26:25+08:00
-task9_audit_type: deep-review
-last_task9_review_log: logs/deep-review/2026-07-14-06-deep-review.md
 last_verified: "2026-07-14"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: medium
@@ -59,26 +54,7 @@ tags: [notification, anr, notificationmanagerservice, remoteviews, performance, 
 related_chapters: ["9.2", "9.3", "9.4", "1.4", "9.5"]
 pipeline_stage: ready-to-publish
 task6_state: "reviewed"
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-04
-task6_result: pass-light-edit
-task9_result: pass-tech-review
-task2b_result: "fixed-lite"
 task2b_state: fixed
-task9_reviewed_date: 2026-07-14
-task9_reviewed_by: openclaw-task9-audit
-last_task2b_at: "2026-06-04T05:36:00+08:00"
-last_task2b_lite_at: "2026-07-14"
-last_task6_at: "2026-06-05T09:06:00+08:00"
-last_task6_audit: "2026-07-14"
-last_task6_review_log: "logs/review/2026-05-25-16-review.md"
-task6_review_notes: "2026-06-05 Task6 revisiting-review #3：L1/L2 无新增写作问题，内容清洁。task9_result=auto-fixed，queue 无 pending，自动晋升 finalized。"
-task9_review_notes: "2026-06-04 Task9 deep-review: auto-fixed. P1 原理链：NLS 回调阻塞到 Input ANR 必须补输入事件派发与主线程超时前提，已按 NotificationListenerService main looper 边界修正；P0 0 / P1 1 / P2 0。 | 2026-07-14 06:26 Task9 deep-review：pass-tech-review。P0 0 / P1 0 / P2 0。AOSP 源码路径/原理链/版本差异/交叉引用全部验证通过。保持 finalized。"
-review_notes: "2026-05-06 19:57 Task9：pass-tech-review。P0 0 / P1 0 / P2 2。旧 P0 已闭环；仅余 RemoteViews reapply flag 与 RankingMap 可见性过滤两个 P2，已写 suggestions；自动晋升 finalized。 | 2026-05-25 14:20 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0。Android 17/API 37 已有官方 Notification.MetricStyle 与 Live Update Semantic Coloring API，章节仍写 Android 17 条目暂缓，已写 queue。"
-last_task9_audit: "2026-05-25"
-last_task9_autofix_at: 2026-06-04
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-15
 ---
 
 # 9.6 Notification 性能与 ANR

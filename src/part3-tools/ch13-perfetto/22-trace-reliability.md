@@ -5,10 +5,6 @@ status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: ["Perfetto", "Data Explorer", "v54", "性能分析", "数据可视化", "Trace Processor"]
 related_chapters: ["13.2", "13.4", "13.13", "13.15"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-02"
-gap_source: "素材驱动"
-drafted_date: "2026-07-03"
 last_verified: "2026-07-03"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high

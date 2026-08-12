@@ -3,14 +3,9 @@ title: "Android 17 ECH 与 domainEncryption 网络适配"
 chapter: "24.15"
 section: "24.15"
 status: ready-for-review
-drafted_date: "2026-05-25"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 16 (API 36) - Android 17 (API 37)"
 tags: [network, tls, ech, android17, network-security-config]
 related_chapters: ["12.2", "24.4", "24.5", "24.14"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-25"
-gap_source: "官方文档/每日信息"
 last_verified: "2026-05-25"
 last_verified_against: "Android Developers Android 17 behavior changes / Network Security Config / API reference, RFC 9849 / RFC 9460"
 confidence: medium

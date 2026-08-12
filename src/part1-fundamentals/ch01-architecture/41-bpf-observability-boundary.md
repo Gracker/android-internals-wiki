@@ -3,9 +3,6 @@ title: "Android 17 / ACK 6.18 BPF 可观测性与可编程边界"
 chapter: "1.41"
 section: "1.41"
 status: finalized
-drafted_date: "2026-07-17"
-reviewed_date: "2026-08-06"
-reviewed_by: hermes-aiw-review-finalize-apply
 applicable_versions: "Android 17 (API 37) / AOSP android-17.0.0_r1 / ACK android17-6.18-2026-06_r6"
 last_verified: "2026-08-06"
 last_verified_against: "AOSP android-17.0.0_r1; ACK android17-6.18-2026-06_r6; AIW freshness audit no Android 18/API38+ conclusion"
@@ -33,13 +30,8 @@ sources:
     path: "https://docs.kernel.org/bpf/btf.html"
 tags: [bpf, ebpf, kernel, observability, gki, ack-6.18, android17]
 related_chapters: ["1.48", "2.6", "4.50", "5.4", "14.18", "14.25"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-16"
-drafted_by: "task2a-content-processing"
-gap_source: "研究素材 (daily-info/2026-07-16 RSS 订阅)"
 last_body_apply_at: "2026-08-06T15:15:49+08:00"
 last_body_apply_run_id: "20260806-151549-82978455"
-last_body_apply_source: "metadata/queue.json#freshness-android18-api38-scope-audit"
 task2b_state: "fixed"
 task6_state: "reviewed"
 task9_state: "reviewed"

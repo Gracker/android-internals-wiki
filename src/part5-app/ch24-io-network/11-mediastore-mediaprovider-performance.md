@@ -3,17 +3,12 @@ title: "MediaStore 与 MediaProvider 性能治理"
 chapter: "24.11"
 section: "24.11"
 status: ready-for-review
-drafted_date: "2026-05-21"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-21"
 last_verified_against: "Android Developers docs 2026-03/2026-04, AOSP source.android.com 2026-04, packages/providers/MediaProvider main"
 confidence: medium
 tags: [MediaStore, MediaProvider, scoped-storage, media-transcoding, thumbnails, io-performance]
 related_chapters: ["6.1", "6.4", "22.6", "24.1", "24.6"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-21"
-gap_source: "AOSP结构+官方文档+素材索引去重"
-gap_score: "17/20"
 sources:
   - type: official
     path: "https://developer.android.com/training/data-storage/shared/media"

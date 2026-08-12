@@ -3,21 +3,12 @@ status: finalized
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 chapter: "19"
 confidence: high
-drafted_by: gemini
-drafted_date: "2026-04-24"
-last_task6_at: "2026-07-04T08:05:00+08:00"
-last_task9_at: "2026-07-01T19:26:42+08:00"
 last_verified: "2026-04-25"
-deepseek_polish_state: done
-last_deepseek_polish_at: "2026-05-25"
 last_verified_against: "Android PixelCopy / WebViewRenderProcess APIs, Flutter FrameTiming docs, Flutter 3.32 thread merge (issue #150525 + release-notes-3.32.0)"
 pipeline_stage: ready-to-publish
 related_chapters:
   - "19.0"
   - "19.01"
-review_notes: "2026-04-28 task9 deep-review: needs-rework。P1 2（WebView 可见状态 API 与跨时钟校准）。"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-07-04"
 section: "19.21"
 sources:
 - type: official
@@ -35,33 +26,10 @@ tags:
   - webview
   - flutter
   - hybrid
-task2b_result: fixed
 task2b_state: fixed
-last_task2b_lite_at: "2026-07-01"
-task6_result: pass-light-edit
-task6_review_notes: "2026-07-04 task6 复审：L1 轻修（禁用词\"对齐\"→\"匹配\"）；四层质检通过，task9 已 auto-fixed，queue 无 pending，自动晋升 finalized。"
-task6_reviewed_at: "2026-05-16T08:16:00+08:00"
-task6_reviewed_by: openclaw-task6
 task6_state: reviewed
-task9_result: "auto-fixed"
-task9_review_notes: "2026-05-16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；WebView 可见状态与 Flutter 时钟误差为 P2 建议，已写入 suggestions。自动晋升 finalized。2026-07-01 Task9 闲时抽检: needs-rework。P1 1（Flutter merged UI+Platform 线程模型版本边界缺失）；已写入 queue.json。 2026-07-01 Task2B 回炉修复: Flutter APM 小节线程模型按 3.29+ merged model (Main(UI+Platform)/Raster/IO) 改写，同步更新大纲、section 5 标题与正文；与 2.11、18.12 口径对齐。 2026-07-01 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；Flutter merged UI+Platform 默认合并版本边界应为 Flutter 3.32 stable+，正文与 2.11/18.12 仍写 3.29+；已写入 queue.json。 2026-07-01 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；AUTO-FIX 19.26 残留 3.29+→3.32 stable+；2.11/18.12 仍是 3.29+，交叉引用未闭环；已写入 queue.json。 2026-07-01 Task9 deep-review: auto-fixed。P0 0 / P1 1 / P2 0；修正 Flutter addTimingsCallback release 批量上报约 1s 的时间轴误差边界，回 Task6 复审。"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-01"
 task9_state: reviewed
 title: "混合栈与跨平台 APM (WebView / Flutter)"
-last_task9_review_log: "logs/deep-review/2026-07-01-19-deep-review.md"
-last_task6_review_log: "logs/review/2026-07-04-08-review.md"
-finalized_date: "2026-07-04"
-finalized_by: "openclaw-task6-auto-promote"
-task2b_fix_source: "task9-deep-tech-review"
-task2b_fix_summary: "Flutter merged UI+Platform 线程模型版本边界从 3.29+→3.32 stable+，旧模型边界从 3.28-→3.31-，与 2.11/18.12 交叉引用闭环（依据 Flutter issue #150525 + release-notes-3.32.0）"
-last_task2b_at: "2026-07-01T18:54:04+08:00"
-last_task6_audit: "2026-07-04"
-last_task9_audit: "2026-07-01"
-last_task9_audit_log: "logs/deep-review/2026-07-01-16-audit.md"
-last_task9_autofix_at: "2026-07-01"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-13
 ---
 # 混合栈与跨平台 APM (WebView / Flutter)
 

@@ -10,36 +10,10 @@ confidence: medium
 tags:
 - smoothness
 - jank
-auto_promoted_by: openclaw-task6
-auto_promoted_date: '2026-05-04'
-deepseek_cn_review_state: done
-drafted_by: openclaw-task2a
-last_task2b_at: 2026-06-24T08:57:16+08:00
-last_task6_audit_log: logs/review/2026-06-24-09-review.md
-last_task6_audit_result: pass-light-edit
-last_task9_at: 2026-07-01T12:30:15+08:00
-last_task9_audit_result: auto-fixed
-last_task9_audit: 2026-07-01
-last_task9_autofix_at: 2026-07-01
 pipeline_stage: ready-to-publish
-polish_by: task2b-polish
-polish_count: '1'
-review_round: '3'
-review_type: post-polish-quality-gate
-reviewed_by: openclaw-task6
-task2b_result: fixed-lite
 task2b_state: fixed
-task6_result: pass-light-edit
 task6_state: reviewed
-task9_result: auto-fixed
-task9_reviewed_by: openclaw-task9
 task9_state: reviewed
-last_deepseek_cn_review_at: 2026-07-02
-task6_reviewed_date: "2026-07-02"
-last_task6_at: "2026-07-02T04:05:00+08:00"
-last_task6_review_log: logs/review/2026-07-02-04-review.md
-last_task6_audit: 2026-07-17
-reviewed_date: "2026-07-02"
 sources:
 - type: reference
   path: 朱涛·沉思录:如何优化 Compose 的性能(微信公众号)

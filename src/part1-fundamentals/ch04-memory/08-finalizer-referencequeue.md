@@ -3,8 +3,6 @@ title: "ART FinalizerDaemon、Cleaner 与 ReferenceQueue"
 chapter: "4.8"
 section: "4.8"
 status: finalized
-drafted_date: "2026-05-15"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-09"
 last_verified_against: "AOSP android-16.0.0_r1 libcore + Android Developers API reference (Cleaner/CloseGuard/SystemCleaner) + Oracle Java SE 8 ReferenceQueue API"
@@ -24,37 +22,10 @@ sources:
     path: "https://docs.oracle.com/javase/8/docs/api/java/lang/ref/ReferenceQueue.html"
 tags: ["art", "gc", "memory", "finalizer", "referencequeue", "performance"]
 related_chapters: ["4.3", "4.5", "10.2", "23.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-15"
-gap_source: "素材驱动/章节深挖"
 pipeline_stage: ready-to-publish
 task2b_state: "fixed"
 task6_state: reviewed
-last_task6_at: "2026-06-09"
-reviewed_date: "2026-06-05"
-reviewed_by: "openclaw-task6"
-task6_result: "pass-light-edit"
 task9_state: "reviewed"
-task9_reviewed_date: "2026-06-09"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-09T15:22:00+08:00"
-task9_review_notes: "2026-06-09 Task9 deep-review: auto-fixed。P0: RQD watchdog timeout 常量归属错误、FinalizerReference 源码路径/行号错误、sun.misc.Cleaner/createSystemCleaner 路径归属错误；P2: java.lang.ref.Cleaner API33 待验证标记过期。"
-last_task9_review_log: "logs/deep-review/2026-06-09-15-deep-review.md"
-task9_result: "auto-fixed"
-task9_p0_issues: 3
-task9_p1_issues: 0
-task9_p2_issues: 1
-task6_l1_l2_fixes: 2
-task6_l3_l4_issues: 0
-task6_new_rework: false
-review_type: "task9-deep-tech-review"
-task6_review_notes: "2026-06-09 Task6 revisiting re-review: pass-light-edit。L1 小修 1 处(移除正文内[自动发现]编辑标签);outline 锚点覆盖 6/6+2/2;无新增 B 类大问题。queue 仍有 Task9 P0 pending 条目,需 Task 9 复审后流转。"
-task6_reviewed_date: "2026-06-09"
-task2b_result: "fixed"
-last_task2b_at: "2026-06-09T14:52:28+08:00"
-last_task9_autofix_at: "2026-06-09"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-24
 ---
 
 # 4.8 ART FinalizerDaemon、Cleaner 与 ReferenceQueue

@@ -7,8 +7,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-11"
 last_verified_against: "AOSP android-17.0.0_r1, kotlinx-coroutines 1.9.x, developer.android.com"
 confidence: medium
-drafted_date: "2026-05-11"
-polish_count: 0
 consolidated_from:
   - "src/part5-app/ch20-stability/09-stability-case-studies.md#案例三"
 sources:
@@ -51,34 +49,9 @@ sources:
 tags: [anr, main-thread, binder, lock-contention, watchdog, broadcast, contentprovider]
 related_chapters: ["20.1", "9.1", "9.2", "9.3", "1.4", "1.5"]
 pipeline_stage: ready-to-publish
-task2b_result: fixed
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-reviewed_by: openclaw-task6
-reviewed_date: "2026-07-12"
-task6_result: pass-light-edit
-last_task6_at: "2026-07-12T01:06:00+08:00"
-last_task6_audit: "2026-07-12"
-task6_reviewed_date: "2026-07-12"
-task9_result: auto-fixed
-task9_reviewed_date: "2026-06-02"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-11T20:30:00+08:00"
-last_task6_review_log: "logs/review/2026-07-12-01-review.md"
-task9_review_notes: "2026-07-11 Task9 idle audit auto-fix：按 android-17.0.0_r1 复核 ANR 阈值、Broadcast/Provider/FGS/Freezer/Binder 源码锚点；修正 ContentProvider timeout 常量、BroadcastReceiver 路径、CachedAppOptimizer freezer 锚点，并更新 AOSP sources 为 Android 17 固定链接。"
-last_task9_review_log: "logs/deep-review/2026-07-11-20-audit.md"
-task6_review_notes: "2026-05-23 Task6 08: revisiting 复审；清理 frontmatter 中的禁用词语境；Task9 ANR P0/P1 queue pending，未晋升。 2026-06-22 Task6 revisiting 复审：Task9 idle audit 补充 Android 14+ shortService FGS 计时器后回审；L1/L2 全部通过；applicable_versions 扩展至 Android 17 (API 37)；task9_result 确认 pass-tech-review；queue 无 pending，自动晋升 finalized。 2026-07-12 Task6 revisiting 复审：Task9 idle audit auto-fix（android-17 源码锚点修正）后回审；L1 修复 4 处（禁用词\"链路\"→\"路径\"、冗余副词\"真的\"、标点前空格、多余空行）；L2 全部通过；task9_result=auto-fixed 已接受；queue 无 pending，自动晋升 finalized。"
-task2b_review_notes: "2026-06-02 Task2B fallback 修复 Task9 P0/P1：Dispatchers.IO 继承关系、FGS 晋升超时版本表、SIGQUIT 自进程权限边界；系统负载过滤降为标记/降权。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-12
-last_task9_autofix_at: "2026-07-11"
-last_task9_audit: "2026-07-11"
-last_task9_audit_at: "2026-07-11T20:30:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-11-20-audit.md"
-last_task9_audit_result: "auto-fixed"
-last_task9_audit_notes: "idle audit auto-fix: corrected Android 17 source anchors, ContentProvider timeout constant, BroadcastReceiver path, and cached app freezer source path; returned to Task6 revisiting."
-task2b_verifier_notes: "2026-07-11T23:25 Task2B Verifier: status finalized→ready-for-review (pipeline_stage=task6_pending, task6_state=revisiting but status=finalized blocked Task6 pickup). task9 auto-fix correctly set; chapter ready for Task6 revisiting re-review."
 ---
 
 # ANR 治理策略

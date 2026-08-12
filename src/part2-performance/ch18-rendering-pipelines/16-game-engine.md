@@ -8,31 +8,10 @@ tags: ["Unity", "Unreal", "Game-Engine", "Swappy", "Frame-Pacing", "Vulkan", "GL
 related_chapters: ["2.4", "2.5", "5.9", "18.6", "18.8", "18.9", "18.15", "18.18", "18.20", "18.21"]
 consolidated_from:
   - "src/part2-performance/ch08-responsiveness/09-game-performance.md"
-created_by: "rendering-pipelines-merge"
-created_date: "2026-04-09"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
-task9_result: auto-fixed
 task2b_state: fixed
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-31"
-task6_result: pass-light-edit
-task2b_result: fixed-lite
-task9_reviewed_date: '2026-04-22'
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-04-22T20:50:00+08:00'
-last_task2b_lite_at: "2026-05-31"
-repaired_date: "2026-04-26"
-repaired_by: openclaw-task2b
-last_task9_audit: "2026-06-11"
-last_task6_audit: "2026-06-13"
-last_task6_at: "2026-05-31T08:08:00+08:00"
-last_task6_reviewed_by: openclaw-task6
-last_task9_audit_log: "logs/deep-review/2026-06-11-10-audit.md"
-last_task9_autofix_at: "2026-06-11"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-26
 last_verified: "2026-07-31"
 last_verified_against: "AOSP android-17.0.0_r1 (SurfaceView.java, Surface.java, PerformanceHintManager.java, GameManager.java, GameState.java, TextureView.java, HardwareRenderer.java, TextureLayer.java, DeferredLayerUpdater.cpp, DrawFrameTask.cpp, swapchain.cpp, Surface.cpp, SurfaceFlinger.cpp, HWComposer.cpp, Display.cpp, Output.cpp, OutputLayer.cpp, AidlComposerHal.cpp, Mode.aidl) / AGDK Frame Pacing, Frame Rate, ADPF, Game Mode, Game State, OpenXR 1.1 docs / kernel android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, dma-fence.h, sync_file.c)"
 confidence: medium

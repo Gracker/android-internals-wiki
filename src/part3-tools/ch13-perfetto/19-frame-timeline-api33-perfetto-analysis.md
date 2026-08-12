@@ -5,9 +5,6 @@ status: ready-for-review
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 tags: [Perfetto, FrameTimeline, Jank, Choreographer, 渲染性能分析]
 related_chapters: ["2.4", "2.32", "13.7", "13.9", "13.13", "13.18"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-16"
-drafted_date: "2026-07-16"
 last_verified: "2026-07-16"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high

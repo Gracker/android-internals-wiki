@@ -3,10 +3,6 @@ status: finalized
 title: 文字渲染性能
 chapter: '2.21'
 section: '2.21'
-drafted_date: '2026-04-09'
-reviewed_date: '2026-06-17'
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: ready-to-publish
@@ -71,27 +67,7 @@ related_chapters:
 - '2.5'
 - '7.8'
 - '7.10'
-task9_result: auto-fixed
-repaired_date: '2026-04-23'
-repaired_by: openclaw-task2b
-task2b_result: fixed
 task2b_state: "fixed"
-last_task2b_at: '2026-05-09T17:52:02+08:00'
-task9_reviewed_date: "2026-06-17"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-17T03:26:16+08:00"
-review_round: "3"
-task6_review_notes: "2026-06-17 Task6 revisiting复审：pass-light-edit。L1/L2 扫描通过（2.21 复审无禁用词、高频词、元叙述命中）；task9 auto-fix 已验证写作质量无回归；queue 无 pending；自动晋升 finalized。"
-last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
-task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
-last_task9_review_log: "logs/deep-review/2026-06-17-03-audit.md"
-last_task9_autofix_at: "2026-06-17"
-task9_review_notes: "2026-06-17 Task9 闲时抽检：auto-fixed；AOSP HarfBuzz 路径已纠正为 external/harfbuzz_ng/；回到 Task6 复审。"
-last_task6_at: "2026-06-17T04:06:00+08:00"
-last_task6_review_log: logs/review/2026-06-17-04-review.md
-last_task9_audit: "2026-06-17"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-17
 ---
 
 # 2.21 文字渲染性能

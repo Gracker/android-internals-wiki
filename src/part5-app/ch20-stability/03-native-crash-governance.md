@@ -7,14 +7,9 @@ section_title: "Native Crash 分析与治理"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-12"
-task9_result: auto-fixed
-task9_reviewed_date: "2026-07-12"
-task9_reviewed_by: "openclaw-task9"
 pipeline_stage: ready-to-publish
 last_verified_against: "AOSP android-17.0.0_r1 (debuggerd/crash_dump, tombstoned CrashQueue default 32 tombstone slots, libunwindstack BuildId format, native crash notification chain)"
 confidence: medium
-drafted_date: "2026-05-11"
-polish_count: 0
 consolidated_from:
   - "src/part5-app/ch20-stability/19-android17-signal-handler-debuggerd-migration.md"
   - "src/part5-app/ch20-stability/09-stability-case-studies.md#案例二"
@@ -40,37 +35,8 @@ sources:
 tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
 task6_state: reviewed
-task6_review_notes_final: "2026-07-02 Task6 round3 (post-Task9-autofix): pass-light-edit. L1 clean. L2 pass. Anchors all covered. Auto-promoted: task9=pass, queue=completed."
-task6_review_notes_round4: "2026-07-03 Task6 round4 (re-confirm): pass-light-edit. L1 clean (对齐=技术内存对齐, 非黑话). L2 pass. 限制句式×2 at limit. No new L3/L4 issues. AUTO-PROMOTED: task6=pass-light-edit, task9=auto-fixed(=pass), queue=completed."
-task6_result: pass-light-edit
 task9_state: reviewed
-last_task9_at: "2026-07-12T19:26:24+08:00"
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: "2026-07-02T18:50:00+08:00"
-task2b_notes: "2026-06-01 Task2B fallback: 修复 ApplicationExitInfo tombstone protobuf 边界、Breakpad 源码锚点、JNI native resolve 口径、CFI/Java frame、Crashpad handler 与 mooner 安全边界。2026-07-02 Task2B round2: 补充符号服务器架构设计、Native Crash 排查实战思路与分级排查流程。"
-reviewed_by: openclaw-task6
-reviewed_date: 2026-07-12
-last_task6_at: "2026-07-12T20:19:00+08:00"
-last_task6_audit: "2026-06-09"
-task6_reviewed_by: "openclaw-task6"
-task6_reviewed_at: "2026-05-19T20:25:44+08:00"
-last_task6_review_log: "logs/review/2026-06-21-20-review.md"
-task6_review_notes_round2: "2026-07-02 Task6 revisiting-review round2: pass-light-edit. L1 fix: remove banned word. L2 pass. Anchors all covered. No new L3/L4 issues."
-task6_review_notes: '2026-07-02 18:10 Task6 revisiting-review: needs-rework。L1修复: 链路→流程×3, meta-narrative×1。L3/L4问题已在queue.json(pending)。保持ready-for-review, 送Task2B。 | 2026-06-01 18 Task6 revisiting-review: pass-light-edit。修正 C++ 异常 typo 与英文所有格表达；L1/L2 通过，无新增回炉项，送 Task9 复核。'
-last_task9_review_log: "logs/deep-review/2026-07-12-19-audit.md"
-task9_review_notes: "2026-07-12 Task9 idle audit AUTO-FIX：对照 AOSP android-17.0.0_r1 tombstoned.cpp，修正 tombstone 默认保留数量旧口径：Android 17 由 tombstoned.max_tombstone_count 控制，默认 32 个槽位，并补充 tombstoned.cpp 源码锚点；回到 Task6 复审。"
-last_task9_autofix_at: "2026-07-12"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-12
-last_task9_audit: "2026-07-12"
-last_task2b_verify_at: "2026-06-21T19:30:09+08:00"
-task2b_verifier_notes: "状态修正：Task9 auto-fix 后 status 应为 ready-for-review，原 finalized 已回退。"
-last_task9_audit_at: "2026-07-12T19:26:24+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-12-19-audit.md"
-last_task9_audit_result: "auto-fixed"
-last_task9_audit_notes: "idle audit auto-fix: AOSP android-17.0.0_r1 tombstoned uses tombstoned.max_tombstone_count default 32, not 00-09 ten-slot rotation; added tombstoned.cpp source anchor."
-task6_promotion_notes: "2026-07-12 20H Task6 revisiting review (post-task9-idle-audit): pass-light-edit。L1禁用词扫描零命中（\"对齐\"为技术内存对齐，非黑话）。L2开头/节奏/结构/读者视角全通过。锚点6/6覆盖，扩展2/2覆盖。Task9 idle audit auto-fix（tombstone默认32槽位口径修正）后写作质量未受影响。无新增L3/L4回炉。AUTO-PROMOTED: task6=pass-light-edit, task9=auto-fixed(=pass), queue=clear。"
 ---
 
 # Native Crash 分析与治理

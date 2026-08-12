@@ -35,10 +35,6 @@ related_chapters:
 - '19.2'
 - '19.18'
 - '19.22'
-drafted_date: '2026-06-26'
-created_by: task2a-knowledge-gap
-created_date: '2026-06-26'
-gap_source: 素材驱动/参考书
 ---
 
 # 26.18 编译期字节码插桩与监控自动化

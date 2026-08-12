@@ -3,7 +3,6 @@ title: "App 可观测性架构设计"
 chapter: "26.1"
 section: "26.1"
 status: finalized
-drafted_date: "2026-05-14"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-02"
 last_verified_against: "Android Developers docs + Firebase Performance Monitoring docs + AIW cross references"
@@ -29,29 +28,9 @@ tags: [observability, metrics, logs, traces, architecture]
 related_chapters: ["26.2", "26.3", "19.22", "15.9"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-30
 task9_state: reviewed
-task9_reviewed_date: "2026-07-03"
-task9_reviewed_by: "openclaw-task9"
-task9_result: pass-tech-review
-last_task9_audit: "2026-06-30"
 last_idle_audit_at: "2026-06-30"
-last_task6_audit: "2026-06-26"
 task2b_state: fixed
-task2b_result: fixed
-last_task9_at: "2026-07-03T18:23:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-30-06-audit.md"
-last_task9_autofix_at: "2026-06-30"
-task9_review_notes: "2026-07-03 Task9 deep-review：复核 Android Developers / Firebase 文档与 19.27、15.9、26.2-26.5 交叉引用，未发现 P0/P1；2个 P2 建议已写入 suggestions.md。"
-task6_review_notes_round2: "2026-07-02 Task6 revisiting-review round2: pass-light-edit. L1 fixes: banned word, empty heading. L2 pass. No new L3/L4 issues."
-task2b_verifier_note: "Task2B Verifier corrected state for Task6 flow back (2026-07-03T15:30:00+08:00)"
-last_task6_at: "2026-07-02T19:14:49+08:00"
-last_task9_review_log: "logs/deep-review/2026-07-03-18-deep-review.md"
-task6_review_notes_round3: "2026-07-03 Task6 revisiting-review round3: pass-light-edit. L1 clean (no banned words). L2 pass. No new L3/L4 issues. Auto-promoted: task9=pass-tech-review, queue=no pending."
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-03
 ---
 
 # 26.1 App 可观测性架构设计

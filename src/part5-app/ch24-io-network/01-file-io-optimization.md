@@ -8,8 +8,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-14"
 last_verified_against: "AOSP android-16.0.0_r1 (SharedPreferencesImpl / QueuedWork / ActivityThread / StrictMode / AtomicFile) + Android Developers docs"
 confidence: medium
-drafted_date: "2026-05-14"
-polish_count: 0
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/app/SharedPreferencesImpl.java @ android-16.0.0_r1"
@@ -44,24 +42,7 @@ related_chapters: ["24.2", "6.1", "6.3", "6.5", "9.2"]
 pipeline_stage: ready-to-publish
 task9_state: reviewed
 task2b_state: fixed
-task9_result: auto-fixed
-task9_reviewed_date: "2026-06-08"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-08T08:25:05+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-08-08-audit.md"
-last_task9_audit: "2026-06-08"
-last_task9_autofix_at: "2026-06-08"
-task9_review_notes: "2026-05-14 Task9 06: pass-tech-review。无 P0/P1；P2 2：AOSP master 需 pin tag，24.2 draft 交叉引用需处理。未自动晋升：Task6 尚未通过。 已写入 logs/deep-review/2026-05-14-06-deep-review.md。 | 2026-06-08 Task9 idle audit: auto-fixed。P0 0 / P1 2 / P2 0；将 AOSP master snapshot 源码锚点统一 pin 到 android-16.0.0_r1；将 QueuedWork 生命周期等待口径收窄到 Android 10-16 ActivityThread 路径，现代 App 主要在 onStop 等待，onPause 仅为 pre-Honeycomb 兼容路径。"
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-14"
-last_task6_audit_log: "logs/review/2026-06-06-09-audit.md"
 task6_state: reviewed
-last_task6_at: "2026-06-08T16:14:59+08:00"
-last_task6_review_log: "logs/review/2026-06-08-16-review.md"
-last_task6_audit: "2026-06-08"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-21
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part5-app/ch24-io-network/08-io-network-case-studies.md"

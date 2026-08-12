@@ -4,7 +4,6 @@ title: "HWC Overlay Plane 与合成降级排查"
 chapter: "7.12"
 section: "7.12"
 status: finalized
-drafted_date: "2026-05-23"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-22"
 last_verified_against: "AOSP android-17.0.0_r1 frameworks/native SurfaceFlinger/HWC2/CompositionEngine + hardware/interfaces composer3 AIDL + source.android.com HWC docs + Perfetto FrameTimeline docs"
@@ -28,31 +27,10 @@ sources:
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-hwc-overlay-plane-capability-sf-composition-downgrade.md"
 tags: [hwc, surfaceflinger, overlay-plane, client-composition, jank, perfetto, winscope]
 related_chapters: ["2.6", "2.15", "2.16", "7.4", "7.6", "14.21", "18.15"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-23"
-gap_source: "章节深挖/研究素材/AOSP 结构/官方文档"
-gap_score: 18
-material_count: 4
 pipeline_stage: ready-to-publish
-task2a_state: "processed"
-task2a_result: "ready-for-review"
-last_task2a_at: "2026-05-23T01:04:00+08:00"
 task6_state: reviewed
 task9_state: reviewed
-task6_result: pass-light-edit
-task9_result: auto-fixed
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-23"
-last_task6_at: "2026-06-23T01:10:00+08:00"
-last_task9_at: "2026-06-05T05:28:04+08:00"
-last_task9_audit: "2026-06-22"
-last_task9_autofix_at: "2026-06-22"
 task2b_state: fixed
-deepseek_cn_review_state: done
-finalized_date: "2026-06-23"
-finalized_by: "openclaw-task6-auto-promote"
-last_deepseek_cn_review_at: 2026-06-23
-last_task6_audit: "2026-07-01T02:15:04+08:00"
 ---
 
 # 7.12 HWC Overlay Plane 与合成降级排查
