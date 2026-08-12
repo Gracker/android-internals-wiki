@@ -6,14 +6,14 @@ status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [oom, oom_score_adj, process_state_controller, process_priority, lmkd, freezer, AMS]
 related_chapters: ["4.4", "1.3", "1.8", "5.8", "4.11", "1.18"]
-last_verified: "2026-08-08"
+last_verified: "2026-08-12"
 last_verified_against: "AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6"
 confidence: high
 pipeline_stage: reviewed
 task6_state: reviewed
 task9_state: deep-reviewed
-last_deep_review_at: "2026-08-08"
-last_deep_review_run_id: "20260808-163500-deep-review-0e71bb6d"
+last_deep_review_at: "2026-08-12"
+last_deep_review_run_id: "20260812-123555-deep-review-0e71bb6d"
 sources:
   - type: official
     path: "developer.android.com/guide/components/activities/process-lifecycle"
@@ -306,7 +306,7 @@ API 37 每个 `LMK_PROCS_PRIO` 包最多携带 3 个进程，每个进程有 5 �
 - short FGS timeout、backup、remove task；
 - service Binder call、batch update request。
 
-API 37 没有“每 1 秒无条件全量重算”的 `OOM_ADJ_UPDATE_INTERVAL`。有时效的状态会记录 `followupUpdateUptimeMs`，例如 recently-top FGS、previous app Provider；handler 到时只把相应进程加入 pending set，再做 partial update。
+API 37 没有“每 1 秒无条件全量重算”的 `OOM_ADJ_UPDATE_INTERVAL`。有时效的状态会记录 `followupUpdateUptimeMs`，例如 recently-top FGS、previous app Provider；到期的 handler 先把进程加入 pending set，再做 partial update。调度下一次 follow-up 时还会用 `mFollowUpOomadjUpdateWaitDuration` 合并过近的超时点，所以不要把状态到期时刻理解为必然立刻单独重算。
 
 若更新过程中又产生更新请求，`mOomAdjUpdateOngoing` 阻止递归进入，新目标进入 `mPendingProcessSet`。当前轮结束后统一处理 pending targets；若期间要求 full update，则下一轮直接全量计算。
 
