@@ -6,9 +6,6 @@ status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [input, ime, keyboard, animation, latency, rendering]
 related_chapters: ["3.1", "3.2", "2.4", "7.4"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-05"
-drafted_date: "2026-06-05"
 last_verified: "2026-06-05"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: medium

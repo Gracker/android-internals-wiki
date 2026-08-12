@@ -3,12 +3,10 @@ title: "Android 17（API 37）性能行为变更与适配方法"
 chapter: "16.5"
 section: "16.5"
 status: finalized
-drafted_date: 2026-04-08
 applicable_versions: "Android 17 (API 37)"
 last_verified: 2026-07-30
 last_verified_against: "AOSP android-17.0.0_r1 frameworks/base + art + packages/modules/Profiling; Android Developers Android 17 behavior/features/API references"
 confidence: high
-reviewed_at: "2026-07-12T17:09:59+08:00"
 sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/behavior-changes-17"
@@ -50,45 +48,10 @@ sources:
     path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java"
 tags: "[android17, api37, behavior-changes, performance, deliqueue, generational-gc, profiling-manager, cloud-compilation]"
 related_chapters: '["1.6", "1.13", "4.8", "5.7", "8.2", "19", "16.2", "16.4"]'
-created_by: task2a-knowledge-gap
-created_date: 2026-04-08
-gap_source: 官方文档+研究素材+AOSP结构+读者需求
-gap_score: 20
-task9_result: pass-tech-review
 task9_state: reviewed
-task9_audit_type: deep-review
-last_task9_at: "2026-07-13T22:21:00+08:00"
-last_task9_audit: "2026-07-16"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-07-13
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_lite_at: 2026-07-13
-last_task2b_at: 2026-07-16T08:53:11+08:00
-task9_review_notes: "2026-07-16 Task2B main 回炉修复：P0-1 (ConcurrentMessageQueue 目录) — 清除所有 ConcurrentMessageQueue/ 引用（包括防御性否定提及），全文仅使用 CombinedDeliMessageQueue/ 与 LegacyMessageQueue/ 正名；P0-2 (分代 CMC gating) — 强化 AND 关系说明，解除引用块引用使条件更醒目。fixed。"
-review_type: task9-deep-tech-review
-last_task9_review_log: logs/deep-review/2026-07-13-22-deep-review.md
-task2b_fixed_by: openclaw-task2b-main
-last_task9_autofix_at: 2026-07-12
-last_task2b_verifier_at: "2026-07-16T23:27:16+08:00"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-14
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task6_result: pass-light-edit
-task6_l1_l2_fixes: 9
-task6_l3_l4_issues: 0
-task6_new_rework: false
-last_task6_at: "2026-07-12T20:19:00+08:00"
-last_task6_review_log: logs/review/2026-07-12-17H-review.md
-task6_reviewed_date: 2026-07-12
-task6_reviewed_by: openclaw-task6
-task6_reviewed_at: 2026-07-12T17:10:18+08:00
-reviewed_by: openclaw-task6
-reviewed_date: 2026-07-12
-review_notes: "2026-07-12 17H: Task6 revisiting review #2 (post-task2b-fix, post-task9-autofix): pass-light-edit。修复 1 处重复frontmatter键(status)、1 处bullet结构混乱(三点→三组件+结论段分离)。L1禁用词扫描零命中。无新增L3/L4回炉。Task9已reviewed(auto-fixed)，queue.json无pending，章节待最终定稿。"
-task6_review_notes: "2026-07-12 17H: Task6 revisiting review #2: pass-light-edit; L1/L2 fixes 2 (1 dup fm key, 1 bullet restructure); 0 L3/L4 issues; Task9 already reviewed; queue empty."
-task6_promotion_notes: '2026-07-12 20H Task6 revisiting review #3 (post-task9-idle-audit): pass-light-edit。L1修复: "Soong链路"→"Soong构建流程"（禁用词1处）。L1其余禁用词扫描零命中。L2开头/节奏/结构/读者视角全通过。锚点5/5覆盖，扩展3/3覆盖。Task9 idle audit auto-fix后写作质量未受影响。无新增L3/L4回炉。AUTO-PROMOTED: task6=pass-light-edit, task9=auto-fixed(=pass), queue=completed。'
 ---
 
 # Android 17（API 37）性能行为变更与适配方法

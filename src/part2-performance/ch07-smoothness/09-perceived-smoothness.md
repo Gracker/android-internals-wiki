@@ -2,21 +2,10 @@
 title: "感知流畅性：步幅波动与无掉帧卡顿"
 chapter: "7.9"
 section: "7.9"
-drafted_date: "2026-04-07"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-08-03"
 last_verified_against: "AOSP android-17.0.0_r1 OverScroller / Choreographer / AnimationUtils / InputConsumer / AppJankStats / RelativeFrameTimeHistogram; Android Choreographer/View API docs; Perfetto FrameTimeline docs"
-task6_reviewed_date: "2026-06-16"
-last_task6_audit: "2026-06-16"
-review_type: "task6-writing-quality-review"
 confidence: medium-high
-polish_count: 1
-polish_date: "2026-04-08"
-polish_by: "task2b-polish"
-rework_count: 4
-rework_date: 2026-08-03
-rework_by: aiw-polish-rework
 sources:
   - type: aosp-source
     version: "android-17.0.0_r1"
@@ -41,49 +30,17 @@ sources:
   - type: official-doc
     path: "https://perfetto.dev/docs/data-sources/frametimeline"
 tags: [perceived-smoothness, step-jitter, frametimeline, overscroller, android-performance]
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-07-09"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-09T05:38:15+08:00"
-task9_review_notes: "2026-07-09 Task9 idle audit AUTO-FIX: 以 android-17.0.0_r1 复核 OverScroller / Choreographer / AnimationUtils / InputConsumer / AppJankStats / RelativeFrameTimeHistogram；修正 Choreographer lockAnimationClock 签名、InputConsumer RESAMPLE_LATENCY 源码表达和源码基准，回到 Task6 复审。历史记录见 logs/deep-review/2026-06-16-10-audit.md / 2026-06-16-17-deep-review.md / 2026-06-17-01-deep-review.md。 | 2026-07-09 05:38 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；按 android-17.0.0_r1 复核源码锚点、版本边界和交叉引用；Task6 已 pass-light-edit 且 queue 无 pending，自动晋升 finalized。"
-review_notes: "2026-06-16 Task6：修正 outline 块格式问题，L1/L2 通过，送回 Task9 处理技术项。"
-last_task9_audit: "2026-07-09"
 status: finalized
 pipeline_stage: finalized
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: "fixed"
-task2b_result: "fixed"
-reviewed_by: hermes-aiw-review-finalize-apply
-reviewed_date: 2026-08-03
-task6_result: pass-finalize-review
-last_task6_at: "2026-07-09T04:09:48+08:00"
-last_task2b_verifier_at: "2026-07-09T03:31:26+08:00"
-task2b_verifier_notes: "2026-07-09 Task2B Verifier: status finalized→ready-for-review; Task9 idle audit auto-fixed (P0 1), pipeline task6_pending + task6_state revisiting correct, status was stale finalized."
-last_task6_review_log: logs/review/2026-07-09-04-review.md
-task6_review_notes: "2026-07-09 04:09 Task6 revisiting review: pass-light-edit。修复 21 处 heading 格式问题（标题与正文挤在同一行）。L1/L2 通过，outline 6/6 覆盖。Task9 idle audit auto-fixed (Choreographer lockAnimationClock 签名 + InputConsumer RESAMPLE_LATENCY) 已验证。无 B 类回炉项，送 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-07-09-05-deep-review.md"
-last_task9_audit_at: "2026-07-09T02:31:12+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-09-02-audit.md"
-last_task9_audit_result: "auto-fixed-p0-android17-source-anchor"
-task9_audit_notes: "2026-07-09 Task9 idle audit: auto-fixed Android 17 source baseline. Choreographer lockAnimationClock signature and InputConsumer RESAMPLE_LATENCY source expression corrected to android-17.0.0_r1; sent back to Task6."
-last_task9_autofix_at: "2026-07-09"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-09
-updated_by: "openclaw-task9"
-updated_date: "2026-08-01"
 last_idle_audit_at: "2026-08-01T22:35:12+08:00"
 last_idle_audit_run_id: "20260801-223512-idle-audit-66741ef6"
-last_idle_audit_result: "pass-minor-metadata-fix"
-last_idle_audit_notes: "2026-08-01 idle audit: pass。无 Android 18/API38 越界、无待核验标记残留、所有交叉引用链接有效。修复 frontmatter 卫生：删除起始多余空行；扩充 sources 列表以覆盖正文引用的 4 个 AOSP 源码锚点与 2 个官方 API 链接；更新 last_verified。正文未改动。"
 last_rework_at: "2026-08-03T09:42:34+08:00"
 last_rework_run_id: "20260803-094234-rework-66741ef6"
-last_rework_result: "fixed-quality-markers"
-last_rework_log: "logs/rework/2026-08-03-20260803-094234-rework-66741ef6-rework.md"
-rework_notes: "2026-08-03 aiw-polish-rework: 删除正文前置 outline 加工指引中的阶段性待核验标记，补齐 Choreographer/View 官方 API source，按 rework 流程回流 ready-for-review / task6_pending。"
 last_review_finalize_at: "2026-08-03T10:05:40+08:00"
 last_review_finalize_run_id: "20260803-100522-554de959"
-review_finalize_notes: "2026-08-03 Hermes review/finalize: 复核 Android 17 源码基线、FrameTimeline/AppJankStats 边界、版本表、相关章节链接与正文可读性；未发现 P0/P1/P2 阻断项，在 rework 清理后晋升 finalized。"
 ---
 
 # 7.9 感知流畅性：步幅波动与无掉帧卡顿

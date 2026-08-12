@@ -4,8 +4,6 @@ title: "商业 APM 平台（Sentry、APMPlus、Bugly）"
 chapter: "19"
 section: "19.15"
 status: "finalized"
-drafted_date: "2026-04-24"
-drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-14"
 last_verified_against: "Sentry Android docs 2026-06-14 + Bugly Pro Android SDK docs/change log 2026-06-14 + APMPlus docs/search index 2026-06-14 + Android 16KB page size docs + Android API reference API 37"
@@ -23,37 +21,8 @@ sources:
     path: "https://bugly.tds.qq.com/docs/"
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
-task6_result: pass-light-edit
 task9_state: "reviewed"
 task2b_state: fixed
-task9_result: "auto-fixed"
-last_task9_audit: "2026-05-20"
-last_task9_audit_log: "logs/deep-review/2026-05-20-13-audit.md"
-task9_review_notes: "2026-06-14 Task9 deep review：AUTO-FIX 16KB prebuilt alignment 版本归因与参考资料 API37 过期口径；Sentry profiling、Session Replay、Bugly Pro 16KB/ANR、APMPlus 能力目录经官方资料复核，无新增 P0/P1，回到 Task6 复审。"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-14"
-last_task9_at: "2026-06-14T16:20:00+08:00"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-14"
-
-review_notes: "2026-04-24 task6 review: pass-light-edit. L1 fix x1 (frontmatter YAML line merge). 写作质量良好，商业平台对比清晰，接入建议实用。B类问题已在queue.json由task9录入（私有化责任表/PoC验收表/成本模型/迁移案例），等task2b处理。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
-task2b_result: "fixed"
-last_task2b_at: "2026-06-04T22:53:28+08:00"
-task2b_fixed_by: openclaw-task2b
-review_notes_2: "2026-04-25 task6 re-review (round 2): pass-light-edit after task2b fix. L1: no banned words. L2: good. All 10 anchors covered. No B-class issues. Pending task9 re-review."
-review_notes_3: "2026-06-04 task6 re-review (round 3): pass-light-edit. L1/L2 clean. All 10 anchors covered. task9_result=needs-rework, pipeline routes to task9. Score: structure 4/5, wording 4/5, consistency 4/5, verification 3/5, metadata 4/5."
-review_notes_4: "2026-06-14 task6 re-review (round 4): pass-light-edit after task9 auto-fix. L1: fixed 落地→发布/引入 in research notes (5 instances). L2: clean. All 10 anchors covered. No B-class issues. Score: structure 4/5, wording 4/5, consistency 4/5, verification 3/5, metadata 4/5."
-review_notes_5: "2026-06-14 task6 re-review (round 5): pass-light-edit after task9 auto-fix (16KB alignment + API37 refs). L1: clean (no banned words, no high-freq overflow). L2: clean. All 10 anchors covered. No B-class issues. task9 reviewed (auto-fixed), task2b fixed, queue.json no pending for 19.18. Promoted to finalized."
-last_task6_at: "2026-06-14T17:06:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-14-16-deep-review.md"
-
-last_task6_review_log: "logs/review/2026-06-14-17-review.md"
-last_task9_autofix_at: "2026-06-14"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-14
-last_task2b_verifier_at: "2026-06-14T11:25:00+08:00"
-last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
-last_task6_audit: "2026-06-15"
 ---
 
 # 商业 APM 平台（Sentry、APMPlus、Bugly）

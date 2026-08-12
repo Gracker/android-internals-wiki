@@ -3,21 +3,12 @@ title: "Hybrid/WebView 功耗与原生化取舍"
 chapter: "25.9"
 section: "25.9"
 status: finalized
-drafted_date: "2026-05-15"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-05-15"
 last_verified_against: "AOSP android-16.0.0_r1 WebView loader + Android Developers docs 2026-03"
 confidence: medium
 tags: [webview, hybrid, power, energy, battery, benchmark]
 related_chapters: ["10.3", "11.1", "19.21", "20.9", "22.7", "25.1", "25.2"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-15"
-gap_source: "论文素材 + 官方文档 + 章节覆盖缺口"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-03"
-task6_result: pass-light-edit
-last_task6_at: "2026-06-03T14:05:00+08:00"
-last_task6_audit: "2026-07-15"
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: ready-to-publish
@@ -50,19 +41,7 @@ sources:
     path: "Clippings/Android 性能优化 - 虚拟内存优化（下）：一些“黑科技”优化手段.md"
   - type: clipping-structure
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
-task9_result: auto-fixed
-task6_review_notes: "2026-06-03 Task6 revisiting-review #2：L1/L2 无新增问题。Task9 auto-fixed（P0/P1/P2=0）后写作质量无退化。满足自动晋升三条件（task6 pass + task9 pass + queue 无 pending），晋升 finalized。"
 task2b_state: fixed
-task9_reviewed_date: "2026-06-03"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-03T13:24:44+08:00"
-last_task9_review_log: logs/deep-review/2026-06-03-13-deep-review.md
-task9_review_notes: "2026-06-03 Task9：auto-fixed。P0 0 / P1 0 / P2 0；将 WebView loader.cpp 的 AOSP main/master 锚点替换为已验证的 android-16.0.0_r1 锚点，避免把未落入 Android 17 的 main 资料作为正文证据。回到 Task6 复审。"
-task2b_result: fixed
-task2b_fixed_at: "2026-06-03T08:55:47+08:00"
-last_task9_autofix_at: "2026-06-03"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-08
 ---
 
 # Hybrid/WebView 功耗与原生化取舍

@@ -19,52 +19,15 @@ related_chapters:
   - 18.10
   - 18.15
   - 18.1
-created_by: rendering-pipelines-merge
-created_date: 2026-04-09
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: "fixed"
-task2b_result: "fixed-lite"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-29"
-task6_result: "pass-light-edit"
-last_task6_reviewed: "2026-05-30T12:06:00+08:00"
-task9_result: "auto-fixed"
-task9_reviewed_date: "2026-05-29"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-29T08:20:00+08:00"
-last_task2b_at: "2026-05-26T03:19:12+08:00"
-last_task2b_lite_at: "2026-05-29"
-repaired_date: "2026-04-26"
-repaired_by: openclaw-task2b
-task9_review_notes: "2026-05-29 Task9 auto-fix: 修正 API 29-35 ASurfaceTransaction OnComplete/previous release fence 语义；previous release fence 只能回收被本次 transaction 替换的上一块 buffer，不能回收当前刚提交的 buffer。"
-last_task9_audit: "2026-05-21"
-last_task9_audit_at: "2026-05-21T14:20:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-05-21-14-audit.md"
-last_task9_review_log: "logs/deep-review/2026-05-29-08-deep-review.md"
-last_task6_at: "2026-05-29T08:16:26+08:00"
-last_task6_review_log: "logs/review/2026-05-29-08-review.md"
-task6_review_notes: "2026-05-29 08: Task6 revisiting review: pass-light-edit；L1 禁用词扫描通过；Task2B-lite 已修复 NDK 回调路径，送 Task9 复核；无新增 Task6 回炉。"
-task9_p0_issues: 1
-task9_p1_issues: 0
-task9_p2_issues: 0
-task6_l1_l2_fixes: 0
-task6_l3_l4_issues: 0
-task6_new_rework: false
-review_type: "task6-writing-quality-review"
-task6_reviewed_date: "2026-05-29"
-task6_reviewed_by: "openclaw-task6"
-last_task9_autofix_at: "2026-05-29"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-06
-last_task6_audit: 2026-07-11
 last_verified: 2026-07-31
 last_verified_against: "android-17.0.0_r1 (HardwareBufferRenderer.java, android_graphics_HardwareBufferRenderer.cpp, HardwareRenderer.java, RenderNode.java, RenderProxy.cpp, CanvasContext.cpp, DrawFrameTask.cpp, Surface.java, SurfaceControl.java, android_view_SurfaceControl.cpp, HardwareBuffer.java, SyncFence.java, AHardwareBuffer.cpp, surface_control.h, SurfaceFlinger.cpp, Display.cpp, Output.cpp, BufferUsage.aidl) / Android 17 API 37 HBR, SurfaceControl, SyncFence and HDR docs / android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, dma-fence.h, sync_file.c)"
 confidence: high
 last_idle_audit_at: "2026-07-30T14:36:00+08:00"
 last_idle_audit_run_id: "20260730-143536-idle-audit-5b58c196"
-last_idle_audit_result: "pass-frontmatter-fix"
 sources:
   - type: official
     path: "https://developer.android.com/reference/android/graphics/HardwareBufferRenderer"

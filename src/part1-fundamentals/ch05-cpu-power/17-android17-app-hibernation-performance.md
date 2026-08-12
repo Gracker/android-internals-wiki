@@ -6,9 +6,6 @@ status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [app-hibernation, app-standby, background-limits, power-management, cold-restart]
 related_chapters: ["5.7", "1.20"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-27"
-drafted_date: "2026-06-30"
 last_verified: "2026-06-30"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high

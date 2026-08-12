@@ -2,7 +2,6 @@
 title: "FrameTracer 与 Graphics Frame Event 数据通路"
 chapter: "13.18"
 status: ready-for-review
-drafted_date: "2026-06-27"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-27"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -18,9 +17,6 @@ sources:
     path: "DeepResearch/2026-06-26-android17-frametracer-graphics-frame-event.md"
 tags: [perfetto, frametracer, graphics, buffer-lifecycle, surfaceflinger, gpu]
 related_chapters: ["13.9", "13.13", "13.14", "13.19", "2.6", "18.2"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-27"
-gap_source: "研究素材"
 ---
 
 # 13.18 FrameTracer 与 Graphics Frame Event 数据通路

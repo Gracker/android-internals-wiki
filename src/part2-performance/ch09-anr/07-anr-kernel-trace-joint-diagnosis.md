@@ -6,10 +6,6 @@ status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [anr, ftrace, kernel-trace, atrace, perfetto, diagnosis, system-events]
 related_chapters: ["9.3", "9.5", "13.8", "26.4"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-04"
-drafted_date: "2026-06-05"
-drafted_by: "openclaw-task2a"
 last_verified: "2026-06-05"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: medium

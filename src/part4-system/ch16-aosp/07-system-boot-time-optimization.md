@@ -3,7 +3,6 @@ title: "Android 系统启动耗时优化与 bootanalyze"
 chapter: "16.7"
 section: "16.7"
 status: ready-for-review
-drafted_date: "2026-05-17"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-30"
 last_verified_against: "AOSP android-17.0.0_r1; Android Common Kernel android17-6.18-2026-06_r6; source.android.com boot guidance; Android Developers 16 KB page-size guidance"
@@ -35,11 +34,6 @@ sources:
     path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/base/dd.c"
 tags: [aosp, boot, boot-time, perfetto, performance]
 related_chapters: ["1.2", "8.2", "13.2", "16.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-17"
-gap_source: "官方文档/AOSP结构"
-last_research_at: "2026-06-28"
-last_research_source: "DeepResearch/2026-06-28-android17-bootanalyze-zsygotelazy-sourcepath-correction.md"
 ---
 
 # Android 系统启动耗时优化与 bootanalyze

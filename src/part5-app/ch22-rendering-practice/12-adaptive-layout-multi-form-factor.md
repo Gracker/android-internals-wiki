@@ -5,10 +5,6 @@ status: ready-for-review
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37); Jetpack WindowManager / Compose Material 3 adaptive APIs"
 tags: [adaptive, layout, desktop, foldable, large-screen, window-size-class, performance]
 related_chapters: ["22.1", "22.3", "2.26", "2.28"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-27"
-gap_source: "官方文档/每日信息/AOSP结构"
-drafted_date: "2026-07-01"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1; Android Developers large-screen/adaptive UI docs; Jetpack WindowManager and Compose adaptive docs"
 confidence: medium

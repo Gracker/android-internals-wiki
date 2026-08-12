@@ -7,8 +7,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-28"
 last_verified_against: "AOSP android-17.0.0_r1 + Android Developers power / background work docs + Clippings structure references"
 confidence: medium-high
-drafted_date: "2026-05-14"
-polish_count: 0
 sources:
   - type: official
     path: "https://developer.android.com/training/monitoring-device-state/doze-standby"
@@ -58,28 +56,6 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-task2b_result: fixed-lite
-last_task2b_at: "2026-05-15T07:22:00+08:00"
-last_task2b_lite_at: "2026-06-28"
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-28"
-task6_reviewed_date: "2026-06-28"
-last_task6_at: "2026-06-28T12:09:00+08:00"
-last_task6_audit: "2026-06-28"
-last_task6_review_log: logs/review/2026-05-14-15-review.md
-task6_review_notes: "2026-06-28 复审（Task9 auto-fix 后）：L1 修复 1 处（删多余口水词）；写作质量通过，无回炉项。task9 auto-fixed 全部完成 + queue 无 pending → 自动晋升 finalized。"
-task9_result: auto-fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-28"
-last_task9_at: "2026-06-28T11:50:29+08:00"
-task2b_verified_at: "2026-06-26T07:27:19+08:00"
-task2b_verify_result: "stale-state-fixed: task6_state revisiting→reviewed (already finalized)"
-last_task9_review_log: logs/deep-review/2026-06-28-11-deep-review.md
-task9_review_notes: "2026-06-28 Task9：auto-fixed。P0 2 / P1 1 / P2 1 均为局部修复；修正 UsageStatsManager bucket 常量、Android 16 Job 配额口径、FGS timeout 版本边界，并补 §25.13 交叉引用；回到 Task6 复审。"
-last_task9_autofix_at: "2026-06-28"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-28
 ---
 
 # 后台功耗治理

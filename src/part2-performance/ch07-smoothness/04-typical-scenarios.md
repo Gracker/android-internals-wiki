@@ -1,19 +1,8 @@
 ---
-repaired_date: 2026-05-23
-updated_by: openclaw-task2b
-updated_date: 2026-05-23
 title: 典型场景分析
 chapter: '7.4'
 section: '7.4'
 status: "finalized"
-polish_count: 1
-polish_date: '2026-04-06'
-polish_by: task2b-polish
-drafted_date: '2026-04-01'
-reviewed_date: "2026-07-30"
-reviewed_by: "hermes-aiw-review-finalize-apply"
-rework_date: '2026-04-04'
-rework_by: openclaw-task2b
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-07-30'
 last_verified_against: "AOSP android-17.0.0_r1, AndroidX Fragment 1.8.x (AIW 22.12 source chain), platform OnBackInvokedCallback/OnBackAnimationCallback @ API 33+, Perfetto/Winscope, Android 17 CDD"
@@ -54,20 +43,8 @@ pipeline_stage: "finalized"
 task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: "fixed"
-task2b_result: "fixed"
-task6_result: "pass-light-edit"
-task9_result: "pass-deep-review"
-task9_reviewed_date: "2026-07-30"
-task9_reviewed_by: "hermes-deep-review-aiw-polish"
-last_task9_at: "2026-07-30T08:35:51+08:00"
-last_task2b_at: "2026-04-27T12:54:09+08:00"
-last_task6_audit: "2026-05-21"
 last_deep_review_at: "2026-07-30T08:35:51+08:00"
 last_deep_review_run_id: "20260730-083551-deep-review-0a16d729"
-task9_review_notes: "2026-07-30 deep-review (run 20260730-083551-deep-review-0a16d729): pass-deep-review。上一轮 P0/P1 已修复——Predictive Back 回调接口已拆分 OnBackPressedCallback/OnBackInvokedCallback/OnBackAnimationCallback，移除未核 predictive_back_progress counter；Fragment commit 段补充 enqueueAction/scheduleCommit/Handler post 与 Looper 时序依赖，消除固定顺序表述。详见 logs/deep-review/2026-07-30-20260730-083551-deep-review-0a16d729-deep-review.md。"
-auto_promoted: true
-last_task9_audit: "2026-07-30"
-last_task9_review_log: "logs/deep-review/2026-07-30-20260730-083551-deep-review-0a16d729-deep-review.md"
 last_review_finalize_at: "2026-07-30T10:05:03+08:00"
 last_review_finalize_run_id: "20260730-100503-40fd0f28"
 ---

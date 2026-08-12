@@ -7,8 +7,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-12"
 last_verified_against: "AOSP android-17.0.0_r1, Android Developers docs, Chromium android_webview docs, Clippings 结构参考, AIW 既有章节"
 confidence: medium
-drafted_date: "2026-05-13"
-polish_count: 1
 consolidated_from:
   - "src/part2-performance/ch07-smoothness/11-webview-performance.md"
 sources:
@@ -54,32 +52,6 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-reviewed_by: openclaw-task6
-reviewed_date: "2026-07-12"
-task6_reviewed_date: "2026-06-03"
-task6_result: pass-light-edit
-last_task6_at: "2026-07-12T12:15:00+08:00"
-last_task6_review_log: "logs/review/2026-06-03-07-review.md"
-task6_review_notes: "2026-07-12 Task6 revisiting 复审：pass-light-edit。L1 禁用词/高频词/否定-纠正/元叙述 grep 全部零命中；L2 结构/节奏/读者视角通过；task9 idle audit auto-fixed（P2 源码标签）等效通过；无新增 L3/L4 回炉项。自动晋升 finalized。"
-task9_result: auto-fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-07-12"
-last_task9_at: "2026-07-12T11:24:32+08:00"
-last_task9_review_log: "logs/deep-review/2026-07-12-11-audit.md"
-task9_review_notes: "2026-07-12 Task9 idle audit auto-fix：WebView framework source labels and links updated to android-17.0.0_r1 baseline; no API behavior drift found; Task6 revisiting requested for light review."
-task2b_result: fixed
-last_task2b_at: "2026-06-03T04:50:00+08:00"
-last_task2b_notes: "frontmatter fallback：修复 WebView destroy 线程约束、UA 预热边界、离线包白名单、renderer 退出生命周期 guard 与重试预算。"
-last_task9_autofix_at: "2026-07-12"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-12
-last_task9_audit: "2026-07-12"
-last_task9_audit_log: "logs/deep-review/2026-07-12-11-audit.md"
-last_task9_audit_at: "2026-07-12T11:24:32+08:00"
-last_task9_audit_result: "auto-fixed"
-last_task9_audit_notes: "idle audit auto-fix: AOSP WebView framework evidence labels and source links anchored to android-17.0.0_r1; no queue item needed; returned to Task6 for light review."
-finalized_date: "2026-07-12"
-finalized_by: openclaw-task6-auto-promote
 ---
 
 # WebView 性能优化实战

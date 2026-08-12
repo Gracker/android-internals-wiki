@@ -8,8 +8,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-14"
 last_verified_against: "Android Developers docs 2026-02/2026-03 + AOSP android-16.0.0_r1 source anchors"
 confidence: medium
-drafted_date: "2026-05-14"
-polish_count: 0
 sources:
   - type: official
     path: "https://developer.android.com/guide/app-bundle"
@@ -48,26 +46,7 @@ related_chapters: ["25.6", "25.7"]
 pipeline_stage: "ready-to-publish"
 task6_state: reviewed
 task9_state: reviewed
-last_task9_review_log: "logs/deep-review/2026-06-15-22-audit.md"
-last_task9_at: "2026-06-15T22:23:00+08:00"
-task9_result: auto-fixed
 task2b_state: fixed
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-16"
-task6_result: "pass-light-edit"
-task6_reviewed_at: "2026-05-14T22:10:00+08:00"
-task6_reviewed_by: openclaw-task6
-last_task6_at: "2026-06-16T01:13:48+08:00"
-last_task6_review_log: "logs/review/2026-06-16-01-review.md"
-task6_review_notes: "2026-06-16 01:xx Task6 revisiting review: pass-light-edit。四层质检全部通过，无小修、无回炉项。task9_result=auto-fixed（P0/P1/P2=0），queue 无 pending，自动晋升 finalized。"
-task2b_result: fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-15"
-task9_review_notes: "2026-05-18 12:44 Task9 deep-review: pass-tech-review。P0/P1/P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-15 22:23 Task9 idle audit auto-fix：AOSP 源码锚点从未固定 tag 改为 android-16.0.0_r1，补 `ApkLiteParseUtils.java` 锚点并修复 frontmatter 结束标记；无 P0/P1。"
-last_task9_audit: "2026-06-15"
-last_task9_autofix_at: "2026-06-15"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-16
 ---
 
 # App Bundle 与按需分发

@@ -3,7 +3,6 @@ title: "Bluetooth LE Audio 延迟与功耗性能"
 chapter: "5.16"
 section: "5.16"
 status: ready-for-review
-drafted_date: "2026-06-26"
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 last_verified: "2026-06-26"
 last_verified_against: "Android Core Specification 5.4, AOSP android-17.0.0_r1"
@@ -23,9 +22,6 @@ sources:
     path: "system/media/audio/include/system/audio.h (AUDIO_DEVICE_OUT_BLE_SPEAKER, AUDIO_DEVICE_OUT_BLE_HEADSET)"
 tags: [bluetooth, le-audio, lc3, latency, power, audio, isochronous]
 related_chapters: ["1.16", "5.13", "11.6"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-26"
-gap_source: "官方文档"
 ---
 
 # 5.16 Bluetooth LE Audio 延迟与功耗性能

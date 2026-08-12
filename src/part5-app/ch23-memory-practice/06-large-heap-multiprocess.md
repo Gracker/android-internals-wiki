@@ -8,8 +8,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-08-11"
 last_verified_against: "AOSP android-17.0.0_r1 + Android Developers App Memory Limits / ComponentCallbacks2 / memory docs + Clippings/Android 性能优化"
 confidence: medium
-drafted_date: "2026-05-14"
-polish_count: 0
 sources:
   - type: official
     path: "https://developer.android.com/guide/topics/manifest/application-element#largeHeap"
@@ -48,26 +46,7 @@ related_chapters: ["23.4", "4.4", "1.3", "4.7"]
 pipeline_stage: ready-to-publish
 task9_state: reviewed
 task2b_state: fixed
-reviewed_date: "2026-05-14"
-reviewed_by: "openclaw-task6"
-task6_result: pass-light-edit
-task6_reviewed_date: "2026-05-14"
-task6_review_notes: "2026-05-14 task6 review: L1/L2 轻修 11 处（术语格式、填充表达、维护成本表述）；四层质检通过，无新增 L3/L4 回炉项，送 Task9 技术复审。"
-task9_result: auto-fixed
-last_task9_at: "2026-06-08T10:20:00+08:00"
-task9_reviewed_date: "2026-06-08"
-task9_reviewed_by: "openclaw-task9"
-last_task9_review_log: "logs/deep-review/2026-06-08-10-audit.md"
-last_task9_audit: "2026-06-08"
-last_task9_autofix_at: "2026-06-08"
-task9_review_notes: "2026-06-08 Task9 idle audit：AUTO-FIX，补充 Android 14-16 onTrimMemory 等级边界，回到 Task6 复审。"
-auto_finalized_by_task9: "2026-05-14T04:36:12+08:00"
 task6_state: reviewed
-last_task6_at: "2026-06-08T16:14:59+08:00"
-last_task6_review_log: "logs/review/2026-06-08-16-review.md"
-last_task6_audit: "2026-06-08"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-15
 consolidated_from:
   - "src/part5-app/ch23-memory-practice/09-android17-app-memory-limits.md"
 ---

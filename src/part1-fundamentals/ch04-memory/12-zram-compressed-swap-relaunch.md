@@ -3,7 +3,6 @@ title: "ZRAM 压缩交换与应用重启延迟"
 chapter: "4.12"
 section: "4.12"
 status: ready-for-review
-drafted_date: "2026-05-20"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-05-20"
 last_verified_against: "AOSP main system/memory/lmkd, AOSP main frameworks/base ZramWriteback, Linux zram docs, Perfetto memory docs, Android Developers ApplicationExitInfo / 16KB page size docs, arXiv 2502.12826"
@@ -35,9 +34,6 @@ sources:
     path: "DeepResearch/2026-05-09-mglru-vs-traditional-lru-lock-contention.md"
 tags: [memory, zram, swap, lmkd, relaunch, performance]
 related_chapters: ["4.2", "4.4", "8.2", "10.1", "15.2"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-20"
-gap_source: "研究素材/官方文档/AOSP结构"
 ---
 
 # 4.12 ZRAM 压缩交换与应用重启延迟

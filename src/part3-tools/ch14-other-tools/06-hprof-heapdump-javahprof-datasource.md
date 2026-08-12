@@ -6,23 +6,8 @@ section: 14.6
 status: finalized
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task6_result: pass-light-edit
-last_task6_at: "2026-07-17T12:14:00+08:00"
-last_task6_audit: "2026-06-30"
-last_task6_audit_at: "2026-06-30T06:05:00+08:00"
-last_task6_audit_reason: "idle audit: L1零命中, frontmatter 修复 stray dash + CJK-Latin 空格, outline N/A"
 task9_state: reviewed
-task9_result: pass-tech-review
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: 2026-07-17T14:52:59+08:00
-last_task2b_lite_at: "2026-07-17"
-last_task9_at: "2026-07-17T15:20:00+08:00"
-last_task9_result: "pass-tech-review"
-reviewed_by: openclaw-task6
-reviewed_date: 2026-07-17
-drafted_date: 2026-06-07
-drafted_by: openclaw-task2a
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: 2026-07-30
 last_verified_against: AOSP android-17.0.0_r1 + KOOM 2.2.1 + Perfetto docs
@@ -52,17 +37,6 @@ sources:
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-app_exit_info_tracker_and_koom_fork_hprof.md"
 tags: [hprof, heap-dump, art, perfetto, java_hprof, memory-analysis]
 related_chapters: ["10.1", "10.2", "14.5", "19.3"]
-created_by: task2a-knowledge-gap
-created_date: 2026-06-07
-gap_source: 素材驱动/DeepResearch/AOSP
-
-last_task9_audit: '2026-07-17T11:30:09+08:00'
-last_task9_audit_log: 'logs/deep-review/2026-07-17-11-audit-hprof.md'
-last_task9_autofix_at: "2026-07-17"
-last_task2b_by: task2b-main
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-17
-android17_review_notes: "区分完整 ART HPROF 与 Perfetto 引用图；校正 dumpheap 参数、AMS freezer、ART 双遍历、java_hprof fork 管线、权限与 SQL 表结构"
 ---
 
 # 14.6 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源

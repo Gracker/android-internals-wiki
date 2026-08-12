@@ -6,10 +6,6 @@ status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [anr, content-provider, publish-timeout, call-hang, ams]
 related_chapters: ["1.10", "9.2", "9.4", "9.7"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-07"
-gap_source: "素材驱动/DeepResearch"
-drafted_date: "2026-06-07"
 last_verified: "2026-06-07"
 last_verified_against: "AOSP android-16.0.0_r1 ContentResolver / ContentProviderHelper / ContentProviderClient; 官方 ANR 文档 developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
 confidence: medium

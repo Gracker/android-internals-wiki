@@ -6,8 +6,6 @@ title: "SurfaceFlinger FrontEnd 与 RequestedLayerState"
 chapter: "2.22"
 section: "2.22"
 status: finalized
-finalized_by: openclaw-task2b-verifier
-drafted_date: "2026-05-18"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1 frameworks/native/services/surfaceflinger/FrontEnd + SurfaceFlinger.cpp; rendering_pipelines S01/S03/S05/S06"
@@ -15,9 +13,6 @@ confidence: high
 pipeline_stage: ready-to-publish
 tags: [rendering, surfaceflinger, frontend, requestedlayerstate, transaction]
 related_chapters: ["2.6", "2.12", "2.13", "2.16", "18.10", "13.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-18"
-gap_source: "素材驱动/AOSP结构/官方文档"
 sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/FrontEnd/readme.md"
@@ -39,17 +34,7 @@ sources:
     path: "DeepResearch/2026-05-09-surfaceflinger-frontend-architecture-android15.md"
 task6_state: reviewed
 task9_state: reviewed
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-07
-last_task6_at: 2026-06-07T16:07:00+08:00
-task9_result: auto-fixed
 task2b_state: fixed
-last_task9_autofix_at: "2026-06-05"
-last_task9_at: "2026-06-05T05:28:04+08:00"
-task2b_result: fixed
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-08
 ---
 
 # 2.22 SurfaceFlinger FrontEnd 与 RequestedLayerState

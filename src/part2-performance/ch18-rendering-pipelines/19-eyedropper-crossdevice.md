@@ -5,16 +5,8 @@ section: "18.19"
 section_title: "Android 17 EyeDropper API 与跨设备协作性能"
 status: finalized
 applicable_versions: "Android 17 (API 37)"
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-04-24"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-07-15T09:27:11+08:00"
-last_task9_audit: "2026-07-15"
 tags: [eyedropper, activity-result, color-picking, system-ui, collaboration]
 related_chapters: ["2.6", "8.2", "18.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-10"
-gap_source: "官方文档+新特性"
 last_verified: "2026-07-31"
 last_verified_against: "android-17.0.0_r1 (Intent/current.txt, ScreenCapture, WindowManagerService, packages/apps/EyeDropper) / Android 17 API 37 Intent、Activity Result、Package Visibility 与 Trace 官方文档"
 confidence: high
@@ -85,18 +77,7 @@ sources:
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
-reviewed_by_task9: openclaw-task9
-task9_reviewed_at: "2026-07-15T09:27:11+08:00"
 task2b_state: fixed
-reviewed_by: openclaw-task6
-reviewed_date: 2026-07-15
-last_task6_at: "2026-07-15T08:15:00+08:00"
-task6_result: pass-light-edit
-last_task6_audit: "2026-07-15"
-task2b_result: fixed-lite
-last_task2b_lite_at: "2026-07-15"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-17
 ---
 
 # 18.19 Android 17 EyeDropper API 与跨设备协作性能

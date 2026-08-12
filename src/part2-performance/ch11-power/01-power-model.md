@@ -9,14 +9,6 @@ tags: [['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Co
 confidence: medium
 last_verified: "2026-07-31"
 last_verified_against: "AOSP android-17.0.0_r1 / Android common kernel android17-6.18-2026-06_r6 / PowerAttributor and PowerStatsProcessor pipeline"
-drafted_date: "2026-04-03"
-drafted_by: "openclaw-task2a"
-reviewed_date: "2026-06-20"
-reviewed_by: "openclaw-task6"
-polish_count: 1
-polish_date: "2026-04-07"
-polish_by: "task2b-polish"
-task9_result: "pass-tech-review"
 note: "Android 17+ 屏幕功耗归因处理器"
 sources:
   - type: aosp
@@ -50,27 +42,9 @@ sources:
   - type: official
     path: "https://perfetto.dev/docs/reference/traced_probes"
 related_chapters: "[\"5.4\", \"5.5\", \"5.6\", \"11.2\", \"11.3\", \"13.1\"]"
-task2b_result: "fixed"
 task2b_state: "fixed"
-last_task2b_at: "2026-06-20T00:50:00+08:00"
-last_task2b_lite_at: "2026-05-27"
-repaired_date: "2026-06-20"
-repaired_by: "openclaw-task2b"
-task9_reviewed_date: "2026-06-20"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-20T03:27:28+08:00"
-last_task6_audit: "2026-06-20"
-last_task9_audit: "2026-07-11"
-last_task9_autofix_at: "2026-06-20"
-task6_result: "pass-light-edit"
 task6_state: "reviewed"
-task6_reviewed_date: "2026-06-20"
-task6_reviewed_by: "openclaw-task6"
-last_task6_at: "2026-06-20T03:08:00+08:00"
-review_type: "task6-writing-quality-review"
 task9_state: "reviewed"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-20
 ---
 
 # 11.1 Android 功耗模型

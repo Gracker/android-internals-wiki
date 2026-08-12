@@ -4,10 +4,6 @@ title: 案例集
 chapter: '9.5'
 section: '9.5'
 status: "finalized"
-drafted_date: '2026-04-02'
-drafted_by: openclaw-task2a
-reviewed_date: "2026-05-18"
-reviewed_by: "openclaw-task6"
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: 2026-07-02
 last_verified_against: AOSP android-17.0.0_r1
@@ -50,33 +46,8 @@ consolidated_from:
 - src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
-task6_result: "pass-light-edit"
 task9_state: "reviewed"
 task2b_state: "fixed"
-task2b_result: "fixed"
-last_task2b_at: '2026-05-14T19:19:00+08:00'
-task9_result: "auto-fixed"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-02"
-last_task9_at: "2026-07-02T11:25:19+08:00"
-last_task9_audit: "2026-07-02"
-last_task9_audit_at: "2026-07-02T11:25:19+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-02-11-audit.md"
-last_task9_autofix_at: "2026-07-02"
-review_notes: '2026-05-05 task6 revisiting: pass-light-edit。小修18处（代码块语言、I/O术语统一、口语化表达、填充词）。无新增B类问题；既有Task9技术项已由Task2B完成，待Task9复审。
-  | 2026-05-04 task9 deep-review: needs-rework。本轮 P0/P1 技术问题已写入 queue.json，等待 Task
-  2B 回炉。 | 2026-05-05 task9 deep-review: needs-rework。P0 2，P1 1，P2 0；需回炉校正 InputDispatcher
-  freezer、QueuedWork 等待点、WaitQueue Perfetto 观察口径。'
-task9_review_notes: "2026-07-02 Task9 闲时抽检：auto-fixed。P0 0 / P1 1 / P2 0；将 QueuedWork 与 Binder 线程池两处源码锚点从 android-14.0.0_r1 升级并复核到 android-17.0.0_r1，章节回 Task6 复审。 | 2026-05-14 19:29 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；已写入 queue.json，等待 Task2B 回炉。 | 2026-05-18 Task9：needs-rework。P0 1 / P1 1 / P2 0；Cached Apps Freezer 的 Android 15+ Input 豁免与 am_cached_process_freeze_status 缺 AOSP 证据，Android 11+ 版本边界需修正。 | 2026-05-18 Task9：pass-tech-review。P0 0 / P1 0 / P2 0；QueuedWork、Cached Apps Freezer、WaitQueue、Binder 线程池与 ApplicationExitInfo 口径复核通过，自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-05-18-20-deep-review.md"
-task6_reviewed_at: "2026-05-18T20:16:50+08:00"
-task6_reviewed_by: "openclaw-task6"
-last_task6_at: "2026-05-18T20:16:50+08:00"
-last_task6_audit: "2026-06-08"
-last_task6_review_log: "logs/review/2026-05-18-20-review.md"
-task6_review_notes: "2026-05-14 20:10 Task6：revisiting 写作复审通过；L1/L2 小修 7 处，无新增回炉项；既有 Task9 P0 队列保留，等待 Task2B。 | 2026-05-18 12:26 Task6：revisiting 文稿复审；L1/L2 小修 4 处，承接 Task9 技术边界项 1 个，已在正文标注并并入 queue.json，等待 Task2B/Task9。 | 2026-05-18 20:16 Task6：revisiting 写作复审通过；L1/L2 小修 0 项（未改正文，仅更新 review 元数据）；无新增回炉项，Task9 复审状态继续阻止自动晋升。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-03
 ---
 
 # 9.5 案例集

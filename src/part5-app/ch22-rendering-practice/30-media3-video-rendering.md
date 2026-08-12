@@ -5,9 +5,6 @@ status: finalized
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 tags: [media3, exoplayer, videoplayback, mediacodec, rendering, performance]
 related_chapters: ["22.29", "12.33", "25.17", "25.18"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-17"
-gap_source: "AOSP结构/官方文档"
 last_verified: "2026-07-25"
 confidence: medium-high
 sources:
@@ -17,16 +14,12 @@ sources:
   path: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md
 last_body_apply_at: "2026-07-25T17:15:40+08:00"
 last_body_apply_run_id: "20260725-171540-c68b5cac"
-last_body_apply_source: "source-index:26 DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md"
 task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized
-reviewed_date: "2026-07-25"
-reviewed_by: "hermes-aiw-review-finalize-apply"
 last_review_finalize_at: "2026-07-25T18:06:09+08:00"
 last_review_finalize_run_id: "20260725-180545-04713644"
-review_finalize_note: "2026-07-25 review: 修正 KEY_ALLOW_FRAME_DROP 字段语义与 ExoPlayer 默认行为的证据边界；确认 MediaCodec/BufferQueue/ANGLE 源码锚点均限定在 android-17.0.0_r1，未上升为 Android 18/API38+ 或厂商通用结论。本章可 finalized。"
 ---
 
 # Media3 视频播放渲染管线性能实战

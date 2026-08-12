@@ -1,12 +1,9 @@
 ---
 title: "Android 17 ML Runtime 与 NPU 访问边界"
 chapter: "5.12"
-task6_review_notes: "2026-06-02 Task6 23: pass-light-edit。Task2B 已删除编辑态补充块，Android 17/API 37 边界、NN HAL 分层口径和闭源组件边界均可进入 Task9 待审。"
 section_title: "Android 17 ML Runtime 与 NPU 访问边界"
 section: "5.12"
 status: "finalized"
-drafted_date: "2026-05-16"
-drafted_by: task2a-knowledge-gap
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-06-02"
 last_verified_against: "Android 17 / API 37 PackageManager reference, Android 17 release notes, source.android.com NNAPI Runtime docs, LiteRT Next docs"
@@ -34,50 +31,10 @@ sources:
     path: "DeepResearch/2026-05-26-android-17-npu-aicore-lert-capability-boundary.md"
 tags: [android17, litert, npu, nnapi, on-device-ai, performance]
 related_chapters: ["5.10", "5.11", "16.5", "25.11"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-16"
-gap_source: "素材驱动/官方文档/AOSP结构"
-gap_score: 18
-material_count: 5
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-02"
 task6_state: reviewed
-task6_result: pass-light-edit
-last_task6_at: "2026-06-02T23:05:00+08:00"
-last_task6_review_log: "logs/review/2026-06-02-23-review.md"
 task9_state: "reviewed"
-task9_reviewed_date: "2026-06-03"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-03T01:26:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-03-01-deep-review.md"
-last_task9_audit: "2026-07-12"
-last_task9_audit_log: "logs/deep-review/2026-07-12-03-audit.md"
-last_task9_audit_at: "2026-07-12T03:25:18+08:00"
-last_task9_audit_result: "pass-idle-audit"
-last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）与维度3（版本差异覆盖）检查通过；Android 17/API 37 NPU feature、NN HAL HIDL/AIDL 路径、NNAPI deprecation 与 LiteRT/Play AI Pack 分发口径复核通过；无 Android 18/API 38 内容。"
-task9_result: "pass-tech-review"
 task2b_state: fixed
-task2b_result: fixed
 pipeline_stage: "ready-to-publish"
-last_task2b_lite_at: "2026-06-22"
-last_task2b_at: "2026-06-02T22:50:00+08:00"
-p0: "0"
-p1: "0"
-p2: "0"
-task9_review_notes: "2026-06-03 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-task6_reviewed_date: "2026-06-02"
-last_task6_audit: "2026-07-14"
-last_task6_audit_result: "pass-idle-audit"
-last_task6_audit_notes: "idle audit: L1禁用词扫描通过（对齐为技术术语假阳性）；frontmatter完整性通过；outline 6+2锚点全覆盖；验证标注5已验证/1待验证(16.7%<30%)；无Android 18/API 38内容。"
-task6_l1_l2_fixes: 1
-task6_l3_l4_issues: 0
-task6_new_rework: false
-review_round: 4
-last_task2b_verifier_at: "2026-06-02T23:25:00+08:00"
-task2b_verifier_note: "2026-06-02 23:25 Verifier：queue 无 pending；Task6 已复审通过，清理旧 task9_result=needs-rework，保持 Task9 pending。"
-last_task2b_verifier_log: logs/rework/2026-06-02-23-task2b-verifier.md
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-03
 ---
 
 # 5.12 Android 17 ML Runtime 与 NPU 访问边界

@@ -6,11 +6,6 @@ status: ready-for-review
 applicable_versions: "Android 17 (API 37)"
 tags: [ANR, warning, callback, AnrTypes, observability, IAnrWarningCallback]
 related_chapters: ["9.1", "9.2", "9.3", "9.7", "26.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-02"
-drafted_date: "2026-07-02"
-drafted_by: "openclaw-task2a"
-gap_source: "每日技术文章 intake"
 last_verified: "2026-07-02"
 last_verified_against: "AOSP android-17.0.0_r1（源文件路径级验证有限，部分标注待验证）"
 confidence: medium

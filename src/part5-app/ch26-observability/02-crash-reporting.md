@@ -9,8 +9,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-15"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers docs, Firebase Crashlytics docs, Clippings structure references"
 confidence: medium
-drafted_date: "2026-05-15"
-polish_count: 0
 sources:
   - type: clipping
     path: "Clippings/线上疑难问题该如何排查和跟踪?-Android开发高手课-极客时间 1.md"
@@ -50,26 +48,6 @@ pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: reviewed
 task2b_state: fixed
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-05"
-last_task6_at: "2026-06-05T21:09:00+08:00"
-last_task6_review_log: "logs/review/2026-06-05-11-review.md"
-task6_reviewed_at: "2026-05-15T02:12:00+08:00"
-task6_reviewed_by: openclaw-task6
-task6_review_notes: "2026-06-05 Task6 revisiting re-review: pass-light-edit. task9 auto-fixed(API/源码路径修正)后复检，L1/L2 全部通过(禁用词0/高频词0/元叙述0)。无B类大问题。task9_result=auto-fixed, 不触发自动晋升。pipeline_stage→ready-to-publish。"
-task9_reviewed_date: 2026-06-05
-last_task9_at: "2026-06-05T20:33:28+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-05-20-deep-review.md"
-task9_result: auto-fixed
-task9_review_notes: "2026-06-05 Task9 auto-fixed: corrected ProfilingManager/ProfilingTrigger API, ApplicationExitInfo public API wording, and downgraded unverified Breakpad/Crashpad paths."
-task2b_result: fixed
-last_task2b_lite_at: 2026-06-04
-task2b_recovery_note: "2026-06-05: body recovered from git 49794e89 (initial draft); orphaned YAML lines removed."
-last_task9_autofix_at: 2026-06-05
-task9_reviewed_by: openclaw-task9
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-06
 ---
 
 

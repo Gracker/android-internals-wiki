@@ -3,22 +3,12 @@ title: "移动网络性能优化实战：DNS、连接、传输与容灾"
 chapter: "24.13"
 section: "24.13"
 status: ready-for-review
-drafted_date: "2026-05-22"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-22"
 last_verified_against: "AOSP local sources android-35; Android Developers connectivity/Cronet docs 2026-02/03"
 confidence: medium
 tags: [network, cronet, http3, dns, weak-network, performance]
 related_chapters: ["12.1", "12.2", "24.4", "24.5", "24.9", "26.14"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-22"
-gap_source: "参考书素材/官方文档/AOSP结构"
-material_sources:
-  - "intake/research-gaps.md#2026-05-22-网络性能优化"
-  - "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md"
-  - "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 19.md"
-  - "https://developer.android.com/develop/connectivity/network-ops/network-access-optimization"
-  - "https://developer.android.com/develop/connectivity/cronet"
 sources:
   - type: official
     path: "https://developer.android.com/develop/connectivity/network-ops/network-access-optimization"

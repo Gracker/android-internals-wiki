@@ -7,15 +7,8 @@ applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-08"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: medium
-drafted_date: "2026-06-30"
-last_task6_audit: "2026-07-10"
-last_task6_review_at: "2026-07-03T16:19:00+08:00"
-last_task6_at: 2026-07-08T08:10:41+08:00
 tags: [rendering, frametimeline, gpu-cpu-boundary, android17, surfaceflinger, hwc, perfetto]
 related_chapters: ["2.1", "2.4", "2.6", "2.13"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-29"
-gap_source: "DeepResearch"
 sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.h"
@@ -34,33 +27,9 @@ sources:
   - type: blog
     path: "https://androidperformance.com"
 task2b_state: fixed
-task2b_result: fixed
 task6_state: reviewed
-task6_result: pass-light-edit
-task6_review_notes_round6: "2026-07-10 Task6 revisiting-review round6: pass-light-edit (2 L1 fixes: meta-narration 本章聚焦→下面聚焦, banned word 实际上→实际被)"
-task6_review_notes_round7: "2026-07-10 Task6 revisiting-review round7: pass-light-edit (无新增L1/L2问题，L3问题已标注)"
-task6_review_notes_round9: "2026-07-10 Task6 revisiting-review round9: pass-light-edit (章节已多次审核，技术内容完整，符合writing-guide规范)"
-task6_review_notes_round10: "2026-07-10 Task6 review round10: pass-light-edit, auto-promoted to finalized (task6+task9 passed, queue clean, frontmatter dup cleaned)"
-reviewed_date: "2026-07-10"
-reviewed_by: "openclaw-task6"
 task9_state: reviewed
-task9_result: auto-fixed
-task9_result_prev: needs-rework
 pipeline_stage: ready-to-publish
-last_task9_at: "2026-07-10T14:39:11+08:00"
-last_task9_review_log: "logs/deep-review/2026-07-10-14-deep-review.md"
-last_task2b_lite_at: "2026-07-08"
-last_task2b_at: 2026-07-08T06:56:51+08:00
-task2b_rework_round: "3-heavy"
-task2b_rework_source: "task9-deep-tech-review P95"
-task6_review_notes_round2: "2026-07-03 Task6 revisiting-review round2 (post-Task9-autofix): pass-light-edit"
-task6_review_notes_round3: "2026-07-08 Task6 revisiting-review round3: pass-light-edit"
-task6_review_notes_round4: "2026-07-08 Task6 revisiting-review round4 (post-Task2B-heavy-rework-r3): pass-light-edit (1 L1 fix: banned word 对齐→精确关联)"
-task6_review_notes_round5: "2026-07-08 Task6 revisiting-review round5: pass-light-edit, auto-promoted to finalized (task6+task9 passed, queue clean)"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-18
-last_task9_autofix_at: "2026-07-10"
-task9_review_notes: "2026-07-10 Task9 deep-review: auto-fixed。P0 2 / P1 1 已局部修复：DisplayFrame gpu_composition 源码片段、Perfetto stdlib SQL 表名、trace 配置边界。详见 logs/deep-review/2026-07-10-14-deep-review.md。"
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch02-rendering/2.32-android-17-frametimeline-数据结构.md"

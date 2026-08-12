@@ -10,17 +10,12 @@ last_idle_audit_run_id: "20260805-223530-idle-audit-20677657"
 task9_state: "body-applied"
 pipeline_stage: "ready-for-review"
 confidence: high
-drafted_date: "2026-07-17"
-last_task6_audit: "2026-08-09"
 last_body_apply_at: "2026-08-10T19:15:18+08:00"
 last_body_apply_run_id: "20260810-191518-8c420f19"
 task2b_state: "body-applied"
 task6_state: "pending-verification"
 tags: [rendering, surfaceflinger, refresh-rate, frame-rate-override, display-mode, android17, hwc, vrr]
 related_chapters: ["2.30", "2.6"]
-created_by: "task3-source-research"
-created_date: "2026-07-17"
-gap_source: "DeepResearch 2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md"
 sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp"
@@ -54,25 +49,6 @@ sources:
     path: "frameworks/base/core/java/android/view/Display.java"
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
-source_evidence:
-  - claim: "DisplayMode/FrameRateMode 区分 VSYNC rate、peak fps 与 render fps；VRR peak fps 来自 minFrameIntervalNs。"
-    source: "frameworks/native/services/surfaceflinger/DisplayHardware/DisplayMode.h; frameworks/native/services/surfaceflinger/Scheduler/include/scheduler/FrameRateMode.h"
-    verified_against: "android-17.0.0_r1"
-  - claim: "RefreshRateSelector 按 policy primary/app-request ranges、mode group、resolution/DPI、HDR output type、VRR/MRR divisor 构造候选，并以 mAppRequestFrameRates 参与 layer 评分。"
-    source: "frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp"
-    verified_against: "android-17.0.0_r1"
-  - claim: "LayerHistory 将 Surface/FrameRateCompatibility vote 映射为 ExplicitDefault/Exact/ExactOrMultiple/Gte/Max/Min/Heuristic，并使 Game Mode intervention 优先于应用 setFrameRate 与 game-default。"
-    source: "frameworks/native/services/surfaceflinger/Scheduler/LayerHistory.cpp; frameworks/base/core/java/android/view/Surface.java"
-    verified_against: "android-17.0.0_r1"
-  - claim: "RefreshRateSelector 评分不是单一距离公式；不同 vote 类型、touch/idle/power/follower 信号、seamlessness、primary range、fixed-source threshold 与 tie-break 都会改变排序。"
-    source: "frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp"
-    verified_against: "android-17.0.0_r1"
-  - claim: "DisplayModeController 对 render-rate-only 和物理 mode switch 分流；DisplayCommand 成功分支的 immediate 语义不能外推为面板光学响应时间。"
-    source: "frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp; frameworks/native/services/surfaceflinger/Scheduler/VSyncReactor.cpp"
-    verified_against: "android-17.0.0_r1"
-  - claim: "Surface.setFrameRate/ANativeWindow frame-rate API 的 API level、flagged FrameRateParams TODO 与 content/backdoor frame-rate override 边界均按 Android 17 源码限制。"
-    source: "frameworks/base/core/java/android/view/Surface.java; frameworks/native/libs/nativewindow/include/android/native_window.h; frameworks/native/services/surfaceflinger/Scheduler/FrameRateOverrideMappings.cpp"
-    verified_against: "android-17.0.0_r1"
 ---
 
 # Android 17 显示模式选择与 RefreshRateSelector 评分机制

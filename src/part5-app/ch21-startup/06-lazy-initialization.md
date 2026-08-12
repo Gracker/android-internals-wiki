@@ -7,8 +7,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-29"
 last_verified_against: "AOSP android-17.0.0_r1 LegacyMessageQueue / CombinedDeliMessageQueue, Android Developers launch-time / App Startup / Play Feature Delivery docs"
 confidence: medium
-drafted_date: "2026-05-13"
-polish_count: 0
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java + frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java (android-17.0.0_r1, IdleHandler / next())"
@@ -30,22 +28,6 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-29"
-task6_reviewed_date: "2026-06-29"
-last_task6_audit: "2026-06-29"
-task6_result: pass-light-edit
-task9_result: auto-fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-29"
-last_task9_at: "2026-06-29T21:30:52+08:00"
-last_task9_audit: "2026-06-29"
-task9_review_notes: "2026-06-29 闲时抽检 AUTO-FIX：将 IdleHandler / MessageQueue 源码锚点从 android-15.0.0_r1 更新到 android-17.0.0_r1 LegacyMessageQueue + CombinedDeliMessageQueue，并补 targetSdk 37 DeliQueue 版本边界；回到 Task6 复审。"
-last_task9_review_log: "logs/deep-review/2026-06-29-21-audit.md"
-last_task9_autofix_at: "2026-06-29"
-task2b_result: fixed
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-30
 ---
 
 # 延迟初始化与按需加载

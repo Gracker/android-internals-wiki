@@ -4,7 +4,6 @@ title: ART 分代 GC、Region 碎片与暂停分析
 chapter: '4.7'
 section: '4.7'
 status: ready-for-review
-drafted_date: '2026-04-06'
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 last_verified: '2026-04-12'
 last_verified_against: AOSP android-17.0.0_r1 (art/runtime/gc) + Android 17 release notes + perfetto.dev stdlib/docs + developer.android.com/topic/performance/graphics/manage-memory
@@ -43,33 +42,10 @@ tags:
 - art
 - gc
 - perfetto
-reviewed_date: 2026-07-02
-reviewed_by: openclaw-task6
-review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1/L2无需修改，文章质量良好。无需回炉。'
 pipeline_stage: ready-for-review
 task6_state: pending-verification
-task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
-last_task9_at: "2026-07-02T05:27:44+08:00"
 task2b_state: "fixed"
-task2b_result: "fixed-lite"
-last_task2b_lite_at: "2026-06-11"
-last_task6_audit: "2026-06-09"
-last_task9_audit: "2026-07-02"
-last_task2b_at: "2026-05-19T11:32:33+08:00"
-task9_reviewed_date: "2026-07-02"
-task9_reviewed_by: openclaw-task9
-last_task9_review_log: "logs/deep-review/2026-07-02-05-deep-review.md"
-task9_review_notes: "2026-06-11 Task9 deep review auto-fix：修正 Perfetto FrameTimeline jank_type 过滤大小写、LOS/old-gen 归属和 CMC 晋升阈值口径；回到 Task6 复审。 | 2026-06-11 Task9 deep review auto-fix：修正 Android 15/16/17 Gen-CMC 版本边界、AOSP main 锚点和未验证 pause/开关口径；回到 Task6 复审。 | 2026-06-11 Task9 deep review: pass-tech-review；复核 20:40 auto-fix 与 21:10 Task6 复审后无 P0/P1，自动晋升 finalized。 | 2026-07-02 Task9 idle audit auto-fix：将 ART GC 源码锚点从 android-16.0.0_r1 / master 旧口径刷新到 android-17.0.0_r1，并移除 Android 17 tag 未公开的过期说明；回到 Task6 复审。 | 2026-07-02 05:27 Task9 formal deep-review: pass-tech-review。复核 android-17.0.0_r1 源码锚点与版本边界；P0 0 / P1 0 / P2 0。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-last_task9_autofix_at: "2026-07-02"
-last_task6_at: 2026-07-02T05:06:00+08:00
-last_task6_review_log: "logs/review/2026-06-11-21-review.md"
-task6_review_notes: '2026-06-11 Task6 21:10: pass-light-edit（revisiting re-review after task9 auto-fix round 2）。L1 形容词+冒号起手式修正 1 处（card_table 注释描述）；无其他新增问题，无回炉项。task9_result=auto-fixed 非 pass-tech-review，不满足自动晋升条件，退回 task9 做正式通过。 | 2026-07-02 05:06 Task6 re-review (revisiting after Task9 idle-audit auto-fix): pass-light-edit。L1 修正 4 处：禁用词"链路"×3（引用描述/附录待验证项）、"矩阵"×1（引用描述）、元叙述"本节采用"×1。Task9 idle-audit 源码锚点刷新已正确落地。无 B 类回炉项。Task9 result=auto-fixed，送 Task9 正式通过。'
-last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
-task2b_verifier_result: "ready-for-task6"
-deepseek_cn_review_state: needs-structure-rework
-last_deepseek_cn_review_at: 2026-05-27
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch04-memory/14-art-gc-region-fragmentation-compaction.md"

@@ -6,10 +6,6 @@ status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [display, dms, multi-display, foldable, surfaceflinger, syncroot]
 related_chapters: ["2.3", "2.6", "2.20", "2.23", "2.26", "18.5"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-24"
-gap_source: "DeepResearch素材驱动"
-drafted_date: "2026-06-24"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high

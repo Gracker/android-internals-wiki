@@ -5,9 +5,6 @@ status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [coroutine, leak, structured-concurrency, performance, monitoring]
 related_chapters: ["20.12", "20.19", "8.6"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-17"
-gap_source: "AOSP结构/章节深挖"
 task6_state: reviewed
 task9_state: deep-reviewed
 pipeline_stage: reviewed

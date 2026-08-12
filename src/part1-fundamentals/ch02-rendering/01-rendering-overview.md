@@ -6,10 +6,6 @@ applicable_versions: "Android 3.0 (API 11) - Android 17 (API 37)"  # 版本演�
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1: View/ViewRootImpl/Choreographer/ThreadedRenderer/HardwareRenderer/BaseRecordingCanvas, HWUI RenderNode/DrawFrameTask/CanvasContext/Properties/Skia pipelines, BufferQueue/BLASTBufferQueue, SurfaceFlinger FrontEnd/Scheduler/HWComposer/HWC2/ComposerHal/RenderEngine; kernel android17-6.18-2026-06_r6 boundary; Writer rendering_pipelines S01/S02"
 confidence: high
-drafted_date: "2026-03-30"
-polish_count: 2
-polish_date: "2026-04-09"
-polish_by: "task2b-polish"
 sources:
   - type: official
     path: "https://developer.android.com/guide/topics/graphics/overview"
@@ -83,54 +79,11 @@ sources:
     path: "Writer/rendering_pipelines/S02_aosp_standard_type.md"
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
-review_round: 7
-task9_result: "auto-fixed"
-task9_reviewed_date: "2026-07-11"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-07-11T19:30:22+08:00"
-task2b_fixed_by: openclaw-task2b
-review_notes_4: "2026-04-25 task6 re-review (round 4): pass-light-edit after task2b fix. L1: no banned words. L2: opening/structure/flow all good. 1 minor wording fix (手工→手动). No B-class issues."
-review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 禁用短语修复 1 处；AI句式 3→1 in 03-metrics. 01-rendering-overview and 05-leakcanary clean. No B-class issues across all 3 chapters."
-task9_review_notes: "2026-07-11 Task9 idle audit auto-fix: P0 源码锚点 3 类已修复（BufferItemConsumer 签名、BaseRecordingCanvas 路径/代码、RenderEngine 路径）；无 queue pending，回到 Task6 复审。"
-last_task9_review_log: "logs/deep-review/2026-07-11-19-audit.md"
-
 status: "finalized"
-reviewed_by: "openclaw-task6"
-reviewed_date: 2026-07-11
-task6_result: pass-light-edit
 task6_state: "reviewed"
 task9_state: "reviewed"
 pipeline_stage: "ready-to-publish"
 task2b_state: "fixed"
-last_task6_at: "2026-07-11T20:10:00+08:00"
-last_task6_review_log: "logs/review/2026-07-11-20-review.md"
-task2b_result: "fixed"
-task6_review_notes: "2026-06-20 12:07 Task6 revisiting-review：Task9 idle audit auto-fix（P0: Android 16 Vulkan CDD 版本断言错误，3 处正文修正）写作质量复审通过；L1 禁用词/高频词/结构性元叙述 0 命中；L2 开头/节奏/结构/读者视角全部通过；outline 锚点全覆盖；无新增 L3/L4 回炉项；task9_result=auto-fixed → pass-tech-review，queue.json 无 pending，自动晋升 finalized。"
-task6_review_notes_2: "2026-07-11 20:10 Task6 revisiting-review (round 7)：Task9 idle audit auto-fix（P0: BufferItemConsumer acquireBuffer 签名、BaseRecordingCanvas 录制入口/路径、RenderEngine 源码路径，3 类源码锚点已修正到 android-17.0.0_r1）写作质量复审通过。L1：禁用词/高频词/结构性元叙述 0 命中；中英文间距修复 1 处（一个wrap_content→一个 wrap_content）。L2：开头（Perfetto Trace 场景引入）/节奏（长短句交替自然）/结构（7 阶段管线主线清晰）/读者视角（Trace 观察点贯穿全文）全部通过。outline 锚点 5/5 全覆盖，扩展 3/3 全覆盖。L3/L4 无新增回炉项。task9_result=auto-fixed（P0 已修复）→视为 pass-tech-review，queue.json 中 section 2.1 无 pending 条目，自动晋升 finalized。"
-last_task6_audit: "2026-07-11"
-last_task9_audit: "2026-07-11"
-last_task9_audit_at: "2026-07-11T19:30:22+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-11-19-audit.md"
-last_task9_audit_result: "auto-fixed-p0-source-anchors"
-task9_audit_notes: "2026-07-11 Task9 idle audit auto-fix: 按 android-17.0.0_r1 修正 BufferItemConsumer acquireBuffer 签名、BaseRecordingCanvas 录制入口、RenderEngine 源码路径，并把 SurfaceFlinger/HWUI/BufferQueue 验证锚点更新到 Android 17；回到 Task6 复审。"
-p0: 3
-p1: 0
-p2: 0
-updated_by: "openclaw-task9"
-updated_date: "2026-07-11"
-task2b_fixed_at: "2026-06-01T04:50:00+08:00"
-task2b_fix_notes: "2026-05-31 Task2B main: 修复 Task9 2026-05-26 P1 版本差异；拆开 Android 3.0 早期 HWUI/DisplayList 与 Android 5.0 RenderNode/RenderThread 分工。"
-last_task2b_at: "2026-06-01T04:50:00+08:00"
-task2b_notes: "2026-06-01 Task2B main: 修复 Task9 P95：BufferQueue acquireBuffer 伪代码改为真实签名引用，补充三缓冲显示延迟副作用，复核 Android 3.0 DisplayList 与 Android 5.0 RenderNode/RenderThread 版本边界。"
-task6_l1_l2_fixes: 0
-task6_l3_l4_issues: 0
-task6_new_rework: false
-review_type: "task6-writing-quality-review"
-last_task9_autofix_at: "2026-07-11"
-last_task2b_verifier_at: "2026-06-01T07:30:00+08:00"
-last_task2b_verifier_log: "logs/rework/2026-06-01-07-task2b-verifier.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-11
 ---
 
 # 2.1 Android 渲染架构全景

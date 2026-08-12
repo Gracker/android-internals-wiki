@@ -3,14 +3,10 @@ title: "Bluetooth 扫描与连接功耗分析"
 chapter: "11.6"
 section: "11.6"
 status: finalized
-drafted_date: "2026-05-17"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
 last_verified: "2026-08-02"
 last_verified_against: "AOSP android-17.0.0_r1；Android 17 / API 37 SDK 文档；Android Developers / source.android.com / Perfetto 文档 2026-07；review-finalize 2026-08-02 逐条核验 ScanUtil.kt / AppScanStats.kt / ScanMetricsReporter.kt / ScanThrottler.kt"
 confidence: high
-reviewed_date: "2026-08-02"
-reviewed_by: "hermes-aiw-review-finalize-apply"
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized
@@ -18,9 +14,6 @@ last_review_finalize_at: "2026-08-02T22:05:39+08:00"
 last_review_finalize_run_id: "20260802-220539-df74ad6c"
 tags: [bluetooth, ble, power, batterystats, connectivity, app-standby]
 related_chapters: ["11.1", "11.2", "11.5", "19.20", "25.5"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-17"
-gap_source: "AOSP结构+官方文档+每日信息"
 sources:
   - type: official
     path: "https://developer.android.com/develop/connectivity/bluetooth/ble/find-ble-devices"

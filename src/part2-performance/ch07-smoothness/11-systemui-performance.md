@@ -23,12 +23,6 @@ related_chapters:
 - '7.3'
 - '7.4'
 - '13.3'
-created_by: task2a-knowledge-gap
-created_date: '2026-04-09'
-drafted_date: '2026-04-09'
-drafted_by: openclaw-task2a
-gap_source: AOSP结构+读者需求+素材驱动
-gap_score: 18
 confidence: medium
 last_verified: "2026-04-26"
 last_verified_against: "AOSP android-16.0.0_r1 SystemUI SceneContainerFlag / SceneContainer / SceneTransitionLayout / ContainerReveal；PunchHole.kt 未作为 android-16.0.0_r1 锚点"
@@ -76,40 +70,9 @@ sources:
 - type: official
   path: https://developer.android.com/guide/topics/ui/splash-screen
 pipeline_stage: ready-to-publish
-finalized_date: '2026-04-29'
-finalized_by: openclaw-task2b-verifier
 task6_state: reviewed
 task9_state: reviewed
-task9_result: auto-fixed
 task2b_state: fixed
-task2b_result: fixed
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-07
-last_task6_audit: "2026-06-20"
-task6_result: pass-light-edit
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-05"
-last_task9_at: "2026-06-05T18:32:25+08:00"
-last_task2b_at: "2026-06-05T18:50:00+08:00"
-last_task9_audit: "2026-05-21"
-last_task9_audit_at: "2026-05-21T17:28:40+08:00"
-last_task9_audit_log: "logs/deep-review/2026-05-21-17-audit.md"
-last_task9_review_log: "logs/deep-review/2026-06-05-18-deep-review.md"
-task9_review_notes: "2026-06-05 Task9 深度复审 AUTO-FIX: 将 Flexiglass/SceneContainer 旧主线锚点收敛到 android-16.0.0_r1；移除未量化的默认视觉特效与内存增幅结论；Foldable 多 Display 性能影响改为需设备基线验证。回到 Task6 复审。"
-last_task2b_by: openclaw-task2b-main
-task2b_fix_summary: "2026-06-05 Task2B main: L3 问题单修复 — Foldable 多 Display 核心结论融入 §Android 16 桌面模式段（NavigationBar 多实例/SparseArray、StatusBar 无多实例、DisplayContent 版本敏感性、TaskbarDelegate wallpaper 分控、双 Display 功耗）；原源码调研块转为 §参考附录并添加上下文衔接。L1 禁用词修复 '这意味着' 1 处。"
-last_task6_at: 2026-06-07T16:07:00+08:00
-task6_reviewed_date: 2026-06-04
-task6_reviewed_by: "openclaw-task6"
-task6_l1_l2_fixes: 1
-task6_l3_l4_issues: 0
-task6_review_notes: "2026-06-05 Task6 revisiting复审: pass-light-edit。L1/L2 零命中。前轮 L3 问题（Foldable附录未融入主叙述）已由 Task2B 修复确认。无新问题。无自动晋升（task9_result=auto-fixed 非 pass-tech-review）。"
-last_task9_autofix_at: "2026-06-05"
-p0: 0
-p1: 1
-p2: 3
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-07
 ---
 
 # 7.11 SystemUI 性能分析

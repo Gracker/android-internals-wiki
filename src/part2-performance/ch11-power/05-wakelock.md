@@ -5,11 +5,6 @@ chapter: "11.5"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [wakelock, power, battery, alarmmanager, doze, batterystats, kernel-wakelock]
 related_chapters: ["5.6", "5.8", "11.1", "11.2", "11.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-06"
-drafted_date: "2026-04-07"
-drafted_by: "openclaw-task2a"
-gap_source: "研究素材+AOSP结构+官方文档+读者需求"
 last_verified: "2026-07-31"
 last_verified_against: "AOSP android-17.0.0_r1；Android common kernel android17-6.18-2026-06_r6；Android Developers wake lock / Android vitals / AlarmManager docs 2026-07"
 confidence: high
@@ -48,42 +43,11 @@ sources:
     path: "drivers/base/power/wakeup_stats.c"
   - type: kernel
     path: "kernel/power/suspend.c"
-reviewed_at: "2026-05-11T19:05:00+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-10"
-last_task9_at: "2026-07-10T12:30:03+08:00"
-last_task2b_at: "2026-07-08T08:52:28+08:00"
-repaired_date: "2026-04-27"
-repaired_by: "openclaw-task2b"
-task9_review_notes: "2026-07-10 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Wakelock Android 17 源码路径、SystemSuspend、IPowerStats 与 Alarm OnAlarmListener 口径复核通过；queue 无 pending，自动晋升 finalized。"
-review_notes: "2026-05-05 17:19 Task6：revisiting 写作复审通过；修复 14 处 L1/L2 表达/代码围栏问题，未新增回炉项，转 Task9 复审。 | 2026-07-08 Task6：revisiting 写作复审通过；修复 3 处 L1/L2（代码围栏断裂导致 PMS 内部段渲染为纯文本、HTML 编辑残留、第二段调用链缺失围栏开标记）；锚点 7/7+3/3；无 L3/L4 回炉项，转 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-07-10-12-deep-review.md"
 status: "finalized"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-07-08"
 task6_state: "reviewed"
-task6_result: pass-light-edit
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
 task2b_state: "fixed"
-task2b_result: "fixed-2026-07-08"
 pipeline_stage: "ready-to-publish"
-finalized_date: "2026-07-10"
-last_task6_at: "2026-07-10T12:20:00+08:00"
-last_task6_review_log: "logs/review/2026-07-08-09-review.md"
-task6_l1_l2_fixes: 3
-task6_l3_l4_issues: 0
-task6_review_notes: "2026-07-08 Task6：Task2B 修复回流后写作复审（review round 8）；修复 3 处 L1/L2 问题（代码围栏断裂、HTML 编辑残留、缺失代码围栏）；L1 禁用词扫描全部通过；锚点覆盖 7/7 + 3/3 扩展；无 L3/L4 回炉项，转 Task9 复审。"
-review_round: 8
-last_task9_autofix_at: "2026-07-08"
-last_task9_audit: "2026-07-08"
-finalized_by: "openclaw-task9-auto-promote"
-last_task6_audit: "2026-07-08"
-task9_result_prev: "pass-tech-review"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-10
-updated_by: "openclaw-task9"
-updated_date: "2026-07-10"
 ---
 
 # 11.5 WakeLock 机制与功耗分析

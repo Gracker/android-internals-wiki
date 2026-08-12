@@ -3,7 +3,6 @@ title: "Google Android Bench：AI 编码能力评测方法论"
 chapter: "15.10"
 section: "15.10"
 status: ready-for-review
-drafted_date: "2026-07-17"
 applicable_versions: "Android 工程任务（平台结论最高 Android 17 / API 37；评测框架版本单独固定）"
 last_verified: "2026-07-30"
 last_verified_against: "Android Bench 官方 methodology（Harbor + mini-swe-agent v2）；归档仓库 commit 65a86bf41e45dde517a65d6e65a6dc7cdd2063ea"

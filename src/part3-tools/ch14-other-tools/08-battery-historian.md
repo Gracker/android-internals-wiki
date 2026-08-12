@@ -25,38 +25,10 @@ related_chapters:
 - '11.5'
 - '14.1'
 - '15.5'
-created_by: task2a-knowledge-gap
-created_date: '2026-04-09'
-gap_source: 官方文档+读者需求
-gap_score: 15/20
-drafted_by: openclaw-task2a
-drafted_date: '2026-04-10'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: 2026-07-07
-last_task6_at: 2026-07-07T15:10:00+08:00
-last_task6_review_log: logs/review/2026-07-07-04-review.md
-task6_reviewed_date: '2026-07-07'
-review_notes: '2026-05-08 task6 revisit: pass-light-edit。完成写作层复审；修正虚假引导语/填充词和格式空行；无新增 B 类回炉项；转入 Task9 复审。 | 2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；14.8 PowerMonitor 常量值与 PowerStatsService 源码路径/版本错误，需回炉修正。 | 2026-05-08 Task6 18:20：复审 Task2B P0 修复后的文稿，完成代码围栏语言标注与第一/二人称痕迹小修；无新增 B 类回炉项；转入 Task9 复审。 | 2026-06-19 Task9 audit 18:25：auto-fixed。闲时抽检发现 4 处源码/版本锚点小问题：Android 35 误写为 Android 15、PowerMonitorReadings.getConsumedEnergy 方法归属、NDK performance_hint.h AOSP 根路径、Android 16/17 PowerStatsAggregator 迁移路径；已局部修正并退回 Task6 复审。 | 2026-06-24 Task6 复审：pass-light-edit。Task9 auto-fix 后文稿写作层无新增问题；L1/L2 全部通过。转 Task9 确认。 | 2026-07-06 Task6 复审：pass-light-edit。Task2B lite 修复后文稿复审；L1 修正 3 处禁用词「链路」→「路径」（均在补充段）；无新增 B 类回炉项；转 Task9 复审。 | 2026-07-06 Task6 revisit：pass-light-edit。完成写作层再次复审；小幅优化表达清晰度，无新增 B 类回炉项；转入 Task9 复审。 | 2026-07-07 Task6 复审：pass-light-edit。L1 修正 4 处禁用词（3×链路→路径/衔接缺口, 1×闭环→回路）；修正 frontmatter 孤立字段 last_task2b_main_at 归位；无新增 B 类回炉项；转 Task9 复审。 | 2026-07-07 Task2B Verifier: frontmatter 重建（commit 80759fd88 破坏了 YAML frontmatter，已从 git 历史恢复） | 2026-07-07 Task6 复审：pass-light-edit。修复全文重复（1856→925行）；L1 修正禁用词「对齐」→「同步」（参考链接描述）；无新增 B 类回炉项；转 Task9 复审。'
 task9_state: reviewed
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_rerun_at: '2026-07-07T02:53:56+08:00'
-last_task2b_lite_at: 2026-07-07
-last_task2b_at: '2026-07-07T02:53:56+08:00'
-task9_result: auto-fixed
-last_task9_at: "2026-07-07T12:33:06+08:00"
-last_task9_audit: 2026-07-07
-last_task9_autofix_at: "2026-07-07"
-task9_reviewed_by: openclaw-task9
-task9_review_notes: "2026-07-07 Task9 AUTO-FIX：修正 PowerMonitorReadings Android 17 API 签名（需传入 PowerMonitor / OutcomeReceiver.onResult）、μW·s/ms→mW 公式、PerformanceHintManager.createHintSession 示例、performance_hint.h AOSP 路径；回到 Task6 复审。"
-task9_reviewed_date: '2026-07-07'
-last_task9_review_log: "logs/deep-review/2026-07-07-12-deep-review.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-07
-last_task6_audit: '2026-07-09'
 ---
 # 14.8 Battery Historian 与功耗分析工具
 

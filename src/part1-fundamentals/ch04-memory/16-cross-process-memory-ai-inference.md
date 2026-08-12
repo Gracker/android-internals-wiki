@@ -2,7 +2,6 @@
 title: "跨进程内存共享与端侧推理预算"
 chapter: "4.16"
 status: ready-for-review
-drafted_date: "2026-07-06"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-07-06"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -22,9 +21,6 @@ sources:
     path: "system/sepolicy/ — SELinux policy for isolated processes"
 tags: [ai-agent, memory, sandbox, data-reuse, isolation, ml-runtime, sharedmemory]
 related_chapters: ["4.3", "4.5", "4.13", "5.10", "5.11", "5.15", "16.11", "23.1", "23.10"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-06"
-gap_source: "素材驱动/研究素材"
 ---
 
 # 4.16 跨进程内存共享与端侧推理预算

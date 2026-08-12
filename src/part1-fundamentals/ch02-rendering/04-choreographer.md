@@ -67,69 +67,10 @@ related_chapters:
 - '2.9'
 - '3.1'
 - '8.2'
-drafted_date: '2026-03-30'
-reviewed_date: '2026-04-21'
-reviewed_by: openclaw-task6
-review2_date: '2026-04-02'
-review2_by: openclaw-task6
-rework_date: '2026-04-02'
-rework_by: openclaw-task2b
-review3_date: '2026-04-03'
-review3_by: openclaw-task6
-review4_date: '2026-04-04'
-review4_by: openclaw-task6
-review5_date: '2026-04-10'
-review5_by: openclaw-task6
-review6_date: '2026-04-11'
-review6_by: openclaw-task6
-rework_reason: Task6 review 回炉修复:doFrame伪代码修正+总结重写+Compose节重写+补充3个Type A标准节+厂商优化标注
-rework5_date: '2026-04-10'
-rework5_by: openclaw-task2b
-rework6_date: '2026-04-10'
-rework6_by: openclaw-task2b
-rework6_reason: 'Task9 Deep Tech Review: Compose pausable composition 补充 FrameData
-  deadline 来源和 1.7 前对比; Frame Timeline 补充颜色编码规则和 Track 命名'
-rework7_date: '2026-04-11'
-rework7_by: openclaw-task2b
-rework7_reason: 'Task9 Deep Tech Review: doFrame源码摘录、FrameMetrics API、FrameCallback续订、Perfetto
-  SQL、版本时间线修正'
-rework8_date: '2026-06-26'
-rework8_by: openclaw-task2b
-rework8_reason: 'Task9 Deep Tech Review: 移除 7.1-7.5 节未验证 Android 17 源码内容,替换为标注版变更笔记;修正回调类型术语(四种→五种)'
-polish_count: '1'
-polish_date: '2026-04-04'
-polish_by: task2b-polish
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task6_result: pass-light-edit
-review7_date: '2026-04-19'
-review7_by: openclaw-task6
-review8_date: '2026-06-26'
-review8_by: openclaw-task6
-task9_result: pass-tech-review
 task9_state: reviewed
 task2b_state: fixed
-task2b_result: fixed
-last_task9_at: '2026-06-26T07:20:00+08:00'
-task9_reviewed_date: '2026-06-26'
-task9_reviewed_by: openclaw-task9
-last_task6_at: '2026-06-26T07:07:00+08:00'
-last_task6_audit: '2026-06-26'
-last_task6_audit_result: pass-clean
-last_task6_audit_log: logs/review/2026-06-10-10-audit.md
-last_task9_audit: '2026-06-26'
-last_task9_audit_at: '2026-06-26T07:20:00+08:00'
-last_task9_audit_log: logs/deep-review/2026-06-26-07-choreographer-deep-review.md
-last_task9_review_log: logs/deep-review/2026-05-23-03-deep-review.md
-task9_review_notes: '2026-05-23 Task9 deep review: pass-tech-review。无 P0/P1；P2：回调类型"四种/五类"内部表述需统一，已写入
-  suggestions.md。满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized。
-  | 2026-06-26 Task9 deep review: pass-tech-review。无 P0/P1，2项 P2 建议已写入 suggestions.md，满足晋升条件。'
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: '2026-06-26'
-last_task2b_lite_at: '2026-06-26'
-task2b_verified_at: '2026-06-26T07:27:19+08:00'
-task2b_verify_result: 'promoted-to-finalized: task6 pass-light-edit + task9 pass-tech-review
-  + queue clear'
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch02-rendering/25-choreographer-buffer-stuffing-recovery.md"

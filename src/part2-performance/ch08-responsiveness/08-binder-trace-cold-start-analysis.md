@@ -3,14 +3,9 @@ title: "Binder Trace 驱动的 Activity 冷启动性能分析"
 chapter: "8.8"
 section: "8.8"
 status: "finalized"
-drafted_date: "2026-07-02"
-last_task2b_at: 2026-07-11T04:53:33+08:00
-last_task2b_issues: "P0:dispatch_dur-computed P0:binder_lock-removed P0:TF_UPDATE_TXN_FROZEN-removed P0:ext-fields-removed P1:frozen-reply-multisignal"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-07-11"
-task2b_result: fixed
 task2b_state: "fixed"
-task2b_fixed_at: 2026-07-11T04:53:33+08:00
 last_verified_against: "AOSP android-17.0.0_r1 (frameworks/base + libbinder), AOSP android-17.0.0_r1 external/perfetto (binder_tracker.cc / binder.sql / binder_breakdown.sql), kernel android17-6.18 drivers/android/binder.c + binder_trace.h"
 confidence: high
 sources:
@@ -46,41 +41,9 @@ sources:
     path: "part3-tools/ch13-perfetto/07-input-latency-sql.md (Perfetto SQL input latency deep dive)"
 tags: [Binder, Trace, 冷启动, IPC, 性能分析, Perfetto, oneway, freezer, threadpool]
 related_chapters: ["1.4", "1.18", "1.38", "2.4", "8.2", "9.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-02"
-gap_source: "素材驱动+AOSP结构"
-processed_by: "task2a-content-processing"
-processed_date: "2026-07-02"
 pipeline_stage: "ready-to-publish"
 task6_state: reviewed
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: "2026-07-11"
-last_task6_at: "2026-07-11T13:06:00+08:00"
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
-last_task9_at: "2026-07-11T13:28:01+08:00"
-last_task6_review_notes: "revisiting→reviewed(re-round5): Task9 12:37 auto-fix(IPackageManager/WindowManager/Trace.beginSection/freezer语义)回流后写作层复审通过; L1禁用词零命中/高频词均≤1/物理动词零命中/元叙述零命中; L2开头/节奏/结构/读者引导全部通过; outline 7/7锚点+3/3扩展全覆盖; 否定-纠正0处; task9_result=auto-fixed≠pass-tech-review不满足自动晋升; 无B类大问题, 送Task9终审"
-last_task9_review_notes: "2026-07-11 Task9 deep-review: pass-tech-review。P0/P1 0 / P2 1；复核 Android 17 external/perfetto android.binder、binder_tracker、android17-6.18 binder.c / binder_trace.h、WMS/ContentProvider/线程池源码锚点，Frozen Reply SQL 覆盖边界作为 P2 写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。详见 logs/deep-review/2026-07-11-13-deep-review.md。"
-last_task9_autofix_at: "2026-07-11"
-last_task2b_verifier_at: "2026-07-11T11:34:06+08:00"
-task2b_verifier_notes: "Task6 re-reviewed on 2026-07-11 after Task9 auto-fix (task6_result: pass-light-edit, task6_state: reviewed), but pipeline_stage was not advanced. Corrected to task9_pending for final Task9 tech confirmation."
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-07-11"
-last_task9_review_log: "logs/deep-review/2026-07-11-13-deep-review.md"
-updated_by: openclaw-task9
-updated_date: "2026-07-11"
-p0: 0
-p1: 0
-p2: 1
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-11
-last_task9_audit: "2026-07-11"
-last_task6_audit: "2026-07-16"
-last_task9_audit_at: "2026-07-11T22:29:04+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-11-22-audit.md"
-last_task9_audit_result: "pass-idle-audit"
-last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度3（版本差异覆盖）复核通过；AOSP android-17.0.0_r1 external/perfetto binder.sql/binder_breakdown/binder_tracker 与 kernel android17-6.18 binder.c/binder_trace.h 语义一致；无 P0/P1，记录 P3: IPCThreadState.cpp 中 transact() 在 android-17.0.0_r1 为 L921（正文 L854 行号漂移），不影响技术结论。"
 ---
 
 # 8.8 Binder Trace 驱动的 Activity 冷启动性能分析

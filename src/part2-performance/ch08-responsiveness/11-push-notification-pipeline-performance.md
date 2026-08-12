@@ -3,8 +3,6 @@ title: "推送通知管线性能：FCM 投递延迟与 NotificationManagerServic
 chapter: "8.11"
 section: "8.11"
 status: ready-for-review
-drafted_date: "2026-06-18"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-18"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -22,9 +20,6 @@ sources:
     path: "https://developer.android.com/about/versions/16/features/progress-centric-notifications"
 tags: ["FCM", "通知", "Notification", "推送", "延迟", "NotificationManagerService"]
 related_chapters: ["9.6", "8.2", "25.4", "11.5"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-18"
-gap_source: "官方文档/章节深挖"
 ---
 
 # 8.11 推送通知管线性能：FCM 投递延迟与 NotificationManagerService 渲染

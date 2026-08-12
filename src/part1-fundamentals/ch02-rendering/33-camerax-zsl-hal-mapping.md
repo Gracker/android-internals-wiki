@@ -6,9 +6,6 @@ status: ready-for-review
 applicable_versions: "CameraX 1.2.0 - 1.6.1; Android 6.0 (API 23) - Android 17 (API 37)"
 tags: [camerax, zsl, camera2, camera-pipe, hal3, reprocessing, android-17]
 related_chapters: ["2.32", "13.9"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-25"
-gap_source: "素材驱动"
 last_verified: "2026-07-25"
 last_verified_against: "CameraX 1.6.1 + android-17.0.0_r1 + android17-6.18-2026-06_r6"
 confidence: high

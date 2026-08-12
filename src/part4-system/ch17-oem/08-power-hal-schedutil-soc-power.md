@@ -3,7 +3,6 @@ title: "SoC 功耗控制：Power HAL、schedutil 与厂商差异"
 chapter: "17.8"
 section: "17.8"
 status: ready-for-review
-drafted_date: "2026-07-12"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-08-11"
 last_verified_against: "AOSP android-17.0.0_r1 Power framework/AIDL, android17-6.18-2026-06_r6 schedutil/sched_ext and vendor driver sources"
@@ -33,9 +32,6 @@ sources:
     path: "DeepResearch/2026-07-15-android17-sched-ext-6.18-vendor-hook-cpufreq-loop.md"
 tags: [SoC, power, Qualcomm, MediaTek, Samsung, DCVS, schedutil, PowerHAL, 功耗优化]
 related_chapters: ["17.2", "17.4", "17.9", "5.4", "5.6", "5.9"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-05"
-gap_source: "研究素材/知识盲区"
 consolidated_from:
   - "17.21-android17-soc-vendor-power-hal-schedutil-loop.md"
 ---

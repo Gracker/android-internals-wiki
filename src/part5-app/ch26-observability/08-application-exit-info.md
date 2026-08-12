@@ -3,26 +3,13 @@ title: "ApplicationExitInfo 与进程退出归因"
 chapter: "26.8"
 section: "26.8"
 status: finalized
-drafted_date: "2026-05-15"
 applicable_versions: "Android 5 (API 21) - Android 17 (API 37)"
 last_verified: "2026-07-12"
 last_verified_against: "AOSP android-17.0.0_r1 ApplicationExitInfo.java, ActivityManager.java, AppExitInfoTracker.java, NativeTombstoneManager.java, tombstone.proto + Android Developers docs"
 confidence: medium
-polish_count: 0
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-15"
-gap_source: "素材驱动/官方文档"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-reviewed_by: openclaw-task6
-reviewed_date: "2026-07-12"
-task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: auto-fixed
-task9_reviewed_date: "2026-07-12"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-07-12T20:31:20+08:00"
-last_task9_audit: "2026-07-12"
 task2b_state: fixed
 sources:
   - type: research
@@ -57,18 +44,6 @@ sources:
     path: "https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/debuggerd/proto/tombstone.proto"
 tags: [applicationexitinfo, observability, crash, anr, oom, lmk]
 related_chapters: ["14.26", "19.19", "20.2", "20.3", "20.4", "20.5", "26.2", "26.5"]
-task2b_result: fixed-lite
-last_task2b_lite_at: "2026-06-04"
-last_task6_at: "2026-07-12T21:10:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-07-12-20-audit.md"
-task9_review_notes: "2026-07-12 Task9 idle audit AUTO-FIX: 将 AOSP 源码锚点和 last_verified_against 从 android-16/plain path 更新到 android-17.0.0_r1；复核 ApplicationExitInfo reason 常量、traceInputStream ANR/API31 native tombstone、LMK report support 和 AppExitInfoTracker/NativeTombstoneManager 路径，无 Android 18/API 38 内容。回到 Task6 复审。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-17
-last_task9_audit_at: "2026-07-12T20:31:20+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-12-20-audit.md"
-last_task9_audit_result: auto-fixed
-last_task9_audit_notes: "idle audit auto-fix: source anchors pinned to android-17.0.0_r1; API 30/31+/37 boundaries rechecked; no Android 18/API 38 content."
-last_task9_autofix_at: "2026-07-12"
 ---
 
 # 26.8 ApplicationExitInfo 与进程退出归因

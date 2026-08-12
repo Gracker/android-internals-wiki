@@ -3,7 +3,6 @@ title: "Android 17 ART 去优化：触发、栈重建与性能诊断"
 chapter: "1.35"
 section: "1.35"
 status: ready-for-review
-drafted_date: "2026-06-28"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -47,9 +46,6 @@ sources:
     path: "art/runtime/jit/jit_code_cache.cc (android-17.0.0_r1)"
 tags: [art, deoptimization, deopt, jit, aot, cha, instrumentation, jvmti, perfetto]
 related_chapters: ["1.7", "1.13", "1.22", "8.7", "21.4"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-28"
-gap_source: "AOSP结构/章节深挖"
 ---
 
 # 1.35 Android 17 ART 去优化：触发、栈重建与性能诊断

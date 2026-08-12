@@ -2,7 +2,6 @@
 title: "性能指标体系"
 chapter: "15.3"
 status: finalized
-drafted_date: "2026-04-04"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-07-30"
 last_verified_against: "AOSP android-17.0.0_r1；Android common kernel android17-6.18-2026-06_r6；Android Vitals / Macrobenchmark 1.4.1 文档"
@@ -56,21 +55,7 @@ tags:
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: "reviewed"
-task9_result: "auto-fixed"
-task9_reviewed_date: "2026-04-26"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-14T18:20:00+08:00"
-last_task9_audit: "2026-06-26"
 task2b_state: fixed
-task2b_result: fixed
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-25"
-last_task6_at: "2026-04-25T00:00:00+08:00"
-task6_result: "pass-light-edit"
-last_task6_audit: "2026-07-17T17:20:00+08:00"
-repaired_date: "2026-04-25"
-repaired_by: "openclaw-task2b"
-last_task2b_at: "2026-04-25T08:51:01+08:00"
 section: "15.3"
 related_chapters:
   - "7.1"
@@ -83,20 +68,6 @@ related_chapters:
   - "11.1"
   - "15.5"
   - "15.9"
-review_round: 5
-review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 1 banned-word cleanup in 03-metrics; AI句式 3→1 in 03-metrics. 01-rendering-overview and 05-leakcanary clean. No B-class issues across all 3 chapters."
-last_task9_audit_at: '2026-06-14T18:20:00+08:00'
-last_task9_audit_log: 'logs/deep-review/2026-06-14-18-audit.md'
-deepseek_polish_state: done
-last_deepseek_polish_at: "2026-05-24"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-14
-last_task9_autofix_at: '2026-06-14'
-task9_review_notes: "2026-06-14 Task9 idle audit: auto-fixed FrameMetrics.DEADLINE duration-budget wording and Perfetto Power Rails / Energy Consumer unit semantics; no P0/P1 queue item."
-last_task9_review_log: "logs/deep-review/2026-06-14-18-audit.md"
-last_task2b_verifier_at: "2026-06-14T19:31:17"
-task2b_verifier_result: "status-fix-ready-for-task6"
-android17_review_notes: "2026-07-30：保留全部 task6/task9/OpenClaw 字段与 outline；平台锚点升级到 android-17.0.0_r1，PSI 锚点升级到 android17-6.18-2026-06_r6；重建流畅性、启动、稳定性、内存与功耗指标合同；修正 Play 当前阈值、TTID 起点、FrameMetrics/FrameTimingMetric、PSS/RSS、ApplicationExitInfo、Power Stats 单位与采样聚合边界；删除无来源阈值、固定采样率和虚构数据。"
 ---
 
 # 性能指标体系

@@ -3,7 +3,6 @@ title: "Predictive Back 系统架构与动画管线性能"
 chapter: "3.7"
 section: "3.7"
 status: ready-for-review
-drafted_date: "2026-06-24"
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 last_verified: "2026-06-24"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -27,10 +26,6 @@ sources:
     path: "https://developer.android.com/about/versions/15/changes/predictive-back"
 tags: [predictive-back, input, animation, window-manager, gesture, system-architecture, task-transition]
 related_chapters: ["3.1", "3.2", "3.3", "22.13", "2.12", "8.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-24"
-gap_source: "官方文档+AOSP结构"
-drafted_by: "openclaw-task2a"
 ---
 
 # 3.7 Predictive Back 系统架构与动画管线性能

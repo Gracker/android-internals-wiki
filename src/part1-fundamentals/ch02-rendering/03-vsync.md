@@ -1,11 +1,6 @@
 ---
 title: "VSync 机制"
 chapter: "2.3"
-reviewed_date: "2026-05-10"
-reviewed_by: "openclaw-task6"
-polish_count: 1
-polish_date: "2026-04-04"
-polish_by: "task2b-polish"
 applicable_versions: "Android 4.1 (API 16) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1 VsyncSchedule/VSyncPredictor/VSyncReactor/VSyncDispatchTimerQueue/EventThread/Choreographer；kernel android17-6.18-2026-06_r6 DRM vblank"
@@ -78,30 +73,10 @@ sources:
 tags: "[vsync, dispsync, choreographer, surfaceflinger, phase-offset, arr, rendering, vsyncschedule]"
 related_chapters: "[\"2.1\", \"2.4\", \"2.5\", \"2.6\", \"2.9\", \"8.1\"]"
 task6_state: reviewed
-task6_result: pass-light-edit
-task6_reviewed_date: "2026-05-09"
-review_round: 4
-repaired_date: "2026-05-09"
-repaired_by: "openclaw-task2b"
-last_task2b_at: "2026-05-15T03:17:00+08:00"
 status: "finalized"
 pipeline_stage: ready-to-publish
-task9_result: "auto-fixed"
-task9_reviewed_date: "2026-06-09"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-09T14:20:00+08:00"
 task2b_state: "fixed"
-last_task9_review_log: "logs/deep-review/2026-06-09-14-audit.md"
-task9_review_notes: "2026-06-09 Task9 闲时抽检：auto-fixed。修正 NDK Choreographer API 名 `AChoreographer_vsyncCallback`；AOSP android-17.0.0_r1 header 已复核，Android 17 tag 已在 android.googlesource 公开，章节内容已通过验证。P0 1（已修）/ P1 0 / P2 1（既有 suggestions，不重复）。"
-task2b_result: "fixed"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-07
-last_task6_audit: "2026-07-07"
-last_task6_at: "2026-07-07T05:06:00+08:00"
 task9_state: "reviewed"
-last_task9_audit: "2026-06-09"
-last_task9_audit_log: "logs/deep-review/2026-06-09-14-audit.md"
-last_task9_autofix_at: "2026-06-09"
 ---
 
 # 2.3 VSync 机制

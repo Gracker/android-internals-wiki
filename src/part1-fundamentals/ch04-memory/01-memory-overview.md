@@ -3,18 +3,10 @@ title: Android 内存模型全景
 chapter: '4.1'
 section: '4.1'
 status: finalized
-drafted_date: '2026-03-31'
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-06-12'
 last_verified_against: "AOSP android-16.0.0_r1 / Android Developers bitmap memory & Android 17 app memory limits docs / Perfetto Java heap profiler & OOME docs / 16 KB page size docs / kernel zram docs"
-reviewed_date: '2026-06-12'
-reviewed_by: openclaw-task6
-review_notes: 'task2b-polish: 已做首轮润色；2026-04-14 Task6：L1/L2 小修；2026-05-07 Task2B 验证：Stack；2026-06-12 13:08 Task6 复审（Task9 auto-fix 后）：L1/L2 全部通过，0 处禁用词，0 处需修问题，无 B 类问题。Task9 已 pass（auto-fixed），queue 无 pending，自动晋升 finalized。'
-task6_result: pass-light-edit
 confidence: medium
-polish_count: 1
-polish_date: '2026-04-06'
-polish_by: task2b-polish
 sources:
 - type: official
   path: https://developer.android.com/topic/performance/memory-management
@@ -74,19 +66,7 @@ related_chapters:
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
-task9_result: auto-fixed
 task2b_state: fixed
-task2b_result: fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-06-12'
-last_task9_at: '2026-06-12T12:26:16+08:00'
-last_task9_audit: '2026-06-12'
-last_task9_autofix_at: '2026-06-12'
-last_task9_review_log: 'logs/deep-review/2026-06-12-12-deep-review.md'
-last_task6_audit: '2026-07-12'
-task9_review_notes: '2026-05-07 20:24 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。遗留 `android.process_meminfo` 数据源口径错误，需统一改为 Perfetto `linux.process_stats` / `linux.sys_stats` / `android.java_hprof` 分层说明；补真实 dumpsys/Perfetto 样本。 | 2026-05-12 22:15 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-12 11:20 Task9 idle audit auto-fix: 修正 16 KB page 小对象表述、HPROF 小节 Perfetto Java heap dump 版本边界与旧的 traced Java heap dump 采集命令，改为 Android 11+ `android.java_hprof` / Android 14+ OOME trigger / `adb shell perfetto -c` 配置；回到 Task6 复审。 | 2026-06-12 12:26 Task9 deep-review auto-fix: 修正 `am dumpheap -g` 注释，按 AOSP android-16.0.0_r1 ActivityManagerShellCommand/ActivityThread 口径明确为 dump 前强制 GC；回到 Task6 复审。'
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-12
 ---
 
 # 4.1 Android 内存模型全景

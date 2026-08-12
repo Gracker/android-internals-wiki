@@ -5,9 +5,6 @@ status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [appwidget, remoteviews, glance, ipc, widget-performance]
 related_chapters: ["2.6", "7.11", "13.1", "22.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-19"
-drafted_date: "2026-06-19"
 last_verified: "2026-06-19"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: medium

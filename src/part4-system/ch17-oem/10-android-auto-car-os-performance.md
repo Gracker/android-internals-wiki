@@ -6,9 +6,6 @@ status: finalized
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: [Android Auto, Car OS, 车载, 性能优化]
 related_chapters: ["16.7", "17.5", "25.2"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-16"
-gap_source: "素材驱动/官方文档/章节深挖"
 confidence: medium-high
 last_verified: 2026-08-09
 last_verified_against: "android-17.0.0_r1 / android17-6.18"
@@ -28,8 +25,6 @@ task9_state: reviewed
 pipeline_stage: finalized
 last_deep_review_at: 2026-07-31
 last_deep_review_run_id: 20260731-163600-deep-review-3622aa5f
-reviewed_date: 2026-08-09
-reviewed_by: hermes-aiw-review-finalize-apply
 last_review_finalize_at: 2026-08-09T04:17:59+08:00
 last_review_finalize_run_id: 20260809-041759-36cf131f
 ---

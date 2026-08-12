@@ -48,40 +48,10 @@ sources:
   path: system/extras/simpleperf/scripts/app_profiler.py
 last_verified: "2026-07-11"
 last_verified_against: "Perfetto v53/v54 release notes; Perfetto v54.0 cpu-profiling/other-formats docs; Perfetto v54.0 traceconv/main.cc and trace_enrichment.cc; Android simpleperf public docs snippets"
-drafted_date: "2026-05-15"
-drafted_by: "openclaw-task2a"
-reviewed_date: "2026-05-15"
-reviewed_by: "openclaw-task6"
 related_chapters: "[\"13.2\", \"13.3\", \"13.9\", \"14.2\", \"14.15\"]"
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-15"
-gap_source: "研究素材/官方发布说明"
-deepseek_polish_state: "done"
-last_deepseek_polish_at: "2026-05-26"
 task6_state: "reviewed"
-last_task6_at: "2026-07-11T08:06:00+08:00"
-last_task6_audit: "2026-07-15"
-task6_result: "pass-light-edit"
-task6_review_notes: "2026-07-11 08:06 Task6 revisiting-review (post-Task9 idle-audit auto-fix): Task9 修正 traceconv bundle --proguard-map 参数为 PERFETTO_PROGUARD_MAP + --symbol-paths。L1: 修复 frontmatter 多处双重引号格式问题（title/chapter/section 等 10+ 字段）。L2: clean。锚点 5/5 + 扩展 2/2 覆盖。无 B 类问题。task6_result=pass-light-edit，task9_result=auto-fixed（无P0/P1），queue 无 pending。✅ 自动晋升 finalized。"
 task9_state: "reviewed"
-task9_result: "auto-fixed"
 task2b_state: "fixed"
-task2b_result: fixed
-task9_reviewed_date: "2026-07-11"
-task9_reviewed_by: "\"openclaw-task9\""
-last_task9_at: "2026-07-11T04:28:06+08:00"
-last_task9_audit: "2026-07-11"
-last_task9_autofix_at: "2026-07-11"
-task9_reviewed_at: "2026-07-11T04:28:06+08:00"
-last_task9_review_log: "logs/deep-review/2026-07-11-04-audit.md"
-p0: 1
-p1: 0
-p2: 0
-updated_by: "openclaw-task9"
-updated_date: "2026-07-11"
-task9_review_notes: "2026-07-11 Task9 idle-audit AUTO-FIX: P0 1 / P1 0 / P2 0；修正 Perfetto v54.0 `traceconv bundle` 示例中不存在的 `--proguard-map` CLI 参数，改为 v54 源码支持的 `PERFETTO_PROGUARD_MAP` + `--symbol-paths` 路径，并将外部格式/CPU profiling/traceconv 参考锚定到 v54.0。回到 Task6 复审。详见 logs/deep-review/2026-07-11-04-audit.md。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-17
 ---
 
 # 13.11 Perfetto Profile 导入与 Flamegraph 分析

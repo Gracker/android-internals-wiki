@@ -5,19 +5,13 @@ status: finalized
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 tags: [compose, snapshot, state, recomposition, performance]
 related_chapters: ["22.3", "22.22", "22.25"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-17"
-gap_source: "AOSP结构/章节深挖"
 last_verified: "2026-08-04"
-reviewed_date: "2026-08-04"
-reviewed_by: hermes-aiw-review-finalize-apply
 confidence: high
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized
 last_draft_polish_at: "2026-08-04T15:35:46+08:00"
 last_draft_polish_run_id: "20260804-153527-draft-polish-d6cbbdd4"
-draft_polish_notes: "补齐 draft-polish 元数据；正文已有版本边界、术语校正、源码/文档索引与审查清单，推进 Task6 复查。"
 last_review_finalize_at: "2026-08-04T16:07:50+08:00"
 last_review_finalize_run_id: "20260804-160652-097137f8"
 sources:

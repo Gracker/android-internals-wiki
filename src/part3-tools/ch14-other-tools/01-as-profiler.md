@@ -3,21 +3,10 @@ title: "Android Studio Profiler"
 chapter: "14.1"
 section: "14.1"
 status: finalized
-polish_count: 1
-drafted_date: "2026-04-03"
-reviewed_date: "2026-07-14"
-reviewed_by: "openclaw-task6"
-polish_date: "2026-04-08"
-polish_by: "task2b-polish"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 task9_state: reviewed
-last_task9_at: 2026-07-14T06:26:25+08:00
-task9_audit_type: deep-review
-last_task9_review_log: logs/deep-review/2026-07-14-06-deep-review.md
 last_verified: "2026-05-28"
 last_verified_against: "Android Studio Profiler docs + Power Profiler docs + Android 17 tracing boundary"
-task9_result: pass-tech-review
 confidence: high
 sources:
 - type: reference
@@ -47,31 +36,10 @@ sources:
 - type: official
   path: https://developer.android.com/reference/android/os/ProfilingManager
 tags: 
-last_task2b_lite_at: "2026-05-28"
-last_task2b_main_at: "2026-07-14"
-task6_result: pass-light-edit
 related_chapters: ["5.4", "13.3", "13.5", "13.7", "14.2", "14.8"]
 task2b_state: fixed
-task2b_result: fixed
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_reviewed_date: 2026-07-14
-task9_reviewed_by: openclaw-task9-audit
-last_task9_audit: "2026-07-14"
-last_task6_at: "2026-07-14T05:09:02+08:00"
-last_task6_audit: "2026-07-14"
-task6_review_notes: "2026-05-28 12 Task6 复审：L1/L2 小修 1 处，将绝对化排查建议改为优先级表达；无 L3/L4 回炉项，送 Task9 技术复审。 | 2026-07-14 04 Task6 revisiting-review round2：pass-light-edit。L1 clean (banned-word scan 0 real hits; not...而是×2 at limit)。L2 pass (main body well-structured, clear explanations, proper code examples)。L3/L4 B-class：文末 AIW-源码调研-2026-06-27/07-06 两段原始研究 dump 未融入正文叙述（AI 口吻 + report-style headers + emoji 标题），已写入 queue priority:90 交 Task2B 整合。无自动晋升：task9_result=needs-rework。 | 2026-07-14 05 Task6 revisiting-review round3：pass-light-edit。L1 clean (banned-word scan 0 hits; 不是...而是×2 at limit; redundant-adverb 0)。L2 pass (structure完整, transitions自然, paragraph pacing良好)。Task2B fix确认：AIW-源码调研原始dump已清除（emoji/report-style/AI口吻均已移除），有效信息(Perfetto版本演进)已融入正文。Queue item resolved。无新增L3/L4 B-class。无自动晋升：task9_result=needs-rework，待Task9复审。"
-task9_review_notes: "2026-05-19 12:20 Task9 复审：needs-rework。P0 0 / P1 4 / P2 0；Network Inspector 入口/timeline、profileable Java Method Trace、Power Profiler ODPM app 归因、APP_FULLY_DRAWN 语义仍需回炉。2026-05-28 Task2B Lite 已做局部修复，回流 Task6。 | 2026-05-28 12 Task9 复审：pass-tech-review。P0 0 / P1 0 / P2 0；自动晋升 finalized。 | 2026-07-14 06:26 Task9 deep-review：pass-tech-review。P0 0 / P1 0 / P2 1（onBindViewHolder 数据溯源）。前轮 P1 四项（Network Inspector/profileable Method Trace/ODPM 归因/APP_FULLY_DRAWN 语义）已修复确认。✅ 自动晋升 finalized。"
-last_task6_review_log: "logs/review/2026-07-14-05-review.md"
-task6_l1_l2_fixes: 0
-task6_l3_l4_issues: 1
-p0: 0
-p1: 0
-p2: 1
-updated_date: "2026-05-28"
-updated_by: openclaw-task9
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-11
 ---
 
 # 14.1 Android Studio Profiler

@@ -52,30 +52,10 @@ sources:
   path: system/dns-resolver
 last_verified: "2026-06-03"
 last_verified_against: "Android Developers docs 2026-05-14 + OkHttp 5.x docs + AOSP android-17.0.0_r1 SDK sources"
-drafted_date: "2026-05-14"
-reviewed_date: "2026-06-03"
-reviewed_by: "openclaw-task6"
-polish_count: "2"
-task6_result: "pass-light-edit"
 task6_state: "reviewed"
 task9_state: "reviewed"
-task9_result: "auto-fixed"
-task2b_result: "fixed-lite"
 task2b_state: "fixed"
 related_chapters: ["24.5", "12.1", "12.2"]
-last_task6_at: "2026-07-08T08:10:41+08:00"
-last_task6_audit: "2026-07-08"
-last_task2b_lite_at: "2026-07-08"
-last_task2a_at: "2026-05-14T09:21:00+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-03"
-last_task9_at: "2026-06-03T09:20:00+08:00"
-last_task9_autofix_at: "\"2026-06-03\""
-task2b_verified_at: "2026-06-26T07:27:19+08:00"
-task2b_verify_result: "stale-state-fixed: task6_state revisiting→reviewed (already finalized)"
-task6_review_notes_round2: "2026-07-08 Task6 revisiting-review round2: pass-light-edit (3 L1 fixes: frontmatter引号清理, Android 35→android-17.0.0_r1, path字段修正)"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-08
 last_consolidated_at: "2026-08-11"
 consolidated_from:
 - "src/part5-app/ch24-io-network/08-io-network-case-studies.md"

@@ -7,11 +7,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-10"
 last_verified_against: "AOSP android-17.0.0_r1 ViewPropertyAnimator/RenderEffect/View/TransitionManager/Choreographer; Lottie upstream API names spot-checked"
 confidence: medium
-drafted_date: "2026-05-13"
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: "2026-07-10"
-polish_count: 1
 sources:
   - type: clippings
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
@@ -41,33 +36,6 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-task2b_result: fixed-lite
-task9_result: auto-fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-07-10"
-last_task9_at: "2026-07-10T07:28:29+08:00"
-last_task9_review_log: "logs/deep-review/2026-07-10-07-audit.md"
-task9_review_notes: "2026-07-10 Task9 idle-audit AUTO-FIX: P0 0 / P1 1 / P2 0；将 AOSP 验证锚点从 android-16.0.0_r1 升级并固定到 android-17.0.0_r1；复核 ViewPropertyAnimator/RenderEffect/View/TransitionManager/Choreographer 关键行为未变，回到 Task6 复审。详见 logs/deep-review/2026-07-10-07-audit.md。 | 2026-05-14 Task9：needs-rework。P0 0 / P1 1 / P2 2；scaleX 替代宽高动画示例缺少初始/目标状态，帧动画内存估算和 FrameTimeline 版本边界需补。 | 2026-05-28 10 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 1；Task2B 已补齐上轮 scaleX 初始状态、帧动画内存口径、FrameTimeline 版本边界；本轮复核未发现 P0/P1。 自动晋升 finalized。"
-last_task2b_lite_at: "2026-05-28"
-last_task6_at: "2026-07-10T08:12:38+08:00"
-last_task6_audit: "2026-07-06"
-last_task6_review_log: "logs/review/2026-05-28-10-review.md"
-task6_l1_l2_fixes: 0
-task6_l3_l4_issues: 0
-task6_review_notes: "2026-07-10 Task6 revisiting-review: pass-light-edit;L1 banned word fix (对齐/链路);outline covered;无 L3/L4 回炉项。Task9 auto-fixed 已确认。"
-task6_reviewed_by: openclaw-task6
-task6_reviewed_at: "2026-07-10T08:12:38+08:00"
-finalized_by: openclaw-task9-auto-promote
-finalized_date: "2026-07-10"
-p0: 0
-p1: 0
-p2: 0
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-10
-last_task9_audit: "2026-07-10"
-updated_by: openclaw-task9
-updated_date: "2026-07-10"
-last_task9_autofix_at: "2026-07-10"
 consolidated_from:
   - "src/part5-app/ch22-rendering-practice/11-animated-vector-drawable-performance.md"
 ---

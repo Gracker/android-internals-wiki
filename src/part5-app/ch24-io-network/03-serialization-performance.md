@@ -7,11 +7,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-30"
 last_verified_against: "AOSP android-17.0.0_r1 + Android Developers docs + upstream library docs"
 confidence: medium
-drafted_date: "2026-05-14"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-14"
-task6_result: pass-light-edit
-polish_count: 1
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/os/Parcel.java"
@@ -47,21 +42,8 @@ tags: [serialization, json, protobuf, parcelable, flatbuffers]
 related_chapters: ["24.4", "1.4", "21.1"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-last_task6_audit: "2026-07-06"
 task9_state: reviewed
-last_task2a_at: "2026-05-14T08:20:00+08:00"
-task9_result: auto-fixed
 task2b_state: fixed
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-30"
-last_task9_at: "2026-06-30T21:20:00+08:00"
-last_task9_audit: "2026-06-30"
-last_task9_audit_log: "logs/deep-review/2026-06-30-21-audit.md"
-last_task9_review_log: "logs/deep-review/2026-06-30-21-audit.md"
-last_task9_autofix_at: "2026-06-30"
-task9_review_notes: "2026-06-30 Task9 idle audit auto-fix: 将 Parcel.java / TransactionTooLargeException.java 的 AOSP 验证口径从 master snapshot 固定到 android-17.0.0_r1；源码行为与 Android 17 tag 一致。无待入 queue P0/P1。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-01
 ---
 
 # 序列化性能对比与选型

@@ -1,20 +1,10 @@
 ---
 status: ready-for-review
-task9_reviewed_date: "2026-06-07"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-06T01:20:00+08:00"
 title: Linux 内核内存管理
 chapter: '4.2'
 section: '4.2'
-drafted_date: '2026-03-30'
-polish_count: 1
-polish_date: '2026-04-06'
-polish_by: task2b-polish
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-03-31'
-reviewed_date: "2026-06-07"
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
 last_verified_against: Linux kernel 6.6 (android14-6.6-lts)
 confidence: medium
 sources:
@@ -54,23 +44,8 @@ related_chapters:
 - '2.6'
 pipeline_stage: ready-for-review
 task6_state: pending-verification
-task6_reviewed_date: 2026-06-04
 task9_state: reviewed
-task9_result: auto-fixed
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_rework_at: "2026-05-21T11:13:00+08:00"
-review_notes: "2026-05-21 task9 deep-review: needs-rework。P1 1，Android 17 ART→MADV_COLD 实现链缺少 AOSP 源码锚点，已写入 queue/research-gaps。"
-last_task9_review_log: "logs/deep-review/2026-06-06-01-deep-review.md"
-last_task6_at: "2026-06-07T17:05:00+08:00"
-last_task6_review_log: logs/review/2026-06-06-02-review.md
-task6_review_notes: "2026-06-07 17:05 Task6 revisiting #3: pass-light-edit. L1/L2 clean (禁用词0/高频词0/元叙述0/物理动词0). task9_result=auto-fixed, queue无pending, 自动晋升finalized."
-task9_review_notes: "2026-06-06 Task9 deep review: auto-fixed。AOSP tag 检查仅到 android-16.0.0_r1，修正 MADV_COLD/ANON_VMA_LAZY 段落的 Android 17 公开源码边界；无 P0/P1 pending，回 Task6 复审。"
-last_task2b_at: 2026-06-05T20:51:54
-last_task9_autofix_at: "2026-06-06"
-task6_reviewed_by: openclaw-task6
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-09
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md"

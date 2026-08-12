@@ -51,33 +51,10 @@ related_chapters:
   - '5.2'
   - '8.3'
   - '8.7'
-drafted_date: '2026-04-06'
-drafted_by: openclaw-task2a
-reviewed_by: openclaw-task6
-reviewed_date: '2026-05-19'
 task6_state: reviewed
-task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
 task2b_state: fixed
-task2b_result: fixed
 pipeline_stage: ready-to-publish
-deepseek_cn_review_state: done
-task9_reviewed_date: "2026-06-12"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-07-14T17:26:54+08:00"
-finalized_date: "2026-05-19"
-finalized_by: openclaw-task9-auto-promote
-last_task2b_at: "2026-05-19T15:20:11+08:00"
-task6_review_notes_round5: "2026-07-14 Task6 revisiting-review round5 (post-Task9 autofix): pass-light-edit. L1 小修 2 处（形容词+冒号「思路很简单」→「思路」；冗余副词「真正」×1 删除）。L2: 结构完整，outline 5/5 锚点 + 2/2 扩展覆盖。无新增 L3/L4 回炉项。task9_result=auto-fixed（非 pass-tech-review），送 Task9 正式复审。"
-last_task6_audit: "2026-06-08"
-last_task9_audit: "2026-06-12"
-last_task9_autofix_at: "2026-06-12"
-last_task6_at: "2026-07-14T13:14:05+08:00"
-last_task6_review_log: "logs/review/2026-05-19-16-review.md"
-last_task9_review_log: logs/deep-review/2026-07-14-17-deep-review.md
-task9_review_notes: "2026-06-12 Task9 idle audit: auto-fixed android15-6.6 branch HEAD benchmark drift and Android17/module roadmap boundary; no queue entry; return to Task6. | 2026-05-19 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；AutoFDO kernel profile 命令链、GKI 分支路径、android15/android16 数据口径复核通过；模块化 AutoFDO Android17 段落仅作为 P3 roadmap 口径收紧建议记录。"
-last_deepseek_cn_review_at: 2026-07-15
 ---
 
 # 1.12 AutoFDO 反馈导向编译优化

@@ -3,15 +3,10 @@ title: "sched_ext 与 OEM 调度实践"
 chapter: "17.4"
 section: "17.4"
 status: finalized
-drafted_date: "2026-05-15"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 16 (GKI 6.12) - Android 17 (API 37); OEM backport depends on vendor kernel"
 last_verified: "2026-08-11"
 last_verified_against: "Android 17 kernel 6.18 sched_ext, OSDI '26 MUSCHED paper, Android 17 Binder driver, third-party hmbird_sched proc source"
 confidence: medium
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-15"
-gap_source: "素材驱动/AOSP结构"
 sources:
   - type: research
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-04-sched-ext-oplus-impl.md"
@@ -47,38 +42,10 @@ tags: ["sched-ext", "bpf", "oem", "scheduler", "MUSCHED", "VIP", "Binder"]
 related_chapters: ["5.1", "5.2", "5.3", "5.7", "14.23", "17.2", "17.5"]
 consolidated_from:
   - "08-musched-vip-scheduling-practice.md"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-29"
 task6_state: reviewed
-task6_result: pass-light-edit
-task6_reviewed_date: "2026-05-29"
 task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-29"
-task9_reviewed_by: openclaw-task9
 task2b_state: fixed
 pipeline_stage: ready-to-publish
-task2b_result: fixed
-last_task9_at: "2026-05-29T07:21:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-29-07-deep-review.md"
-task9_review_notes: "2026-05-29 Task9 deep-review: pass-tech-review。复核 2026-05-20 P0/P1 已修复；Android common 6.12 sched_ext、DSQ、partial switch、scx_bpf_cpuperf_set 与 hmbird_sched proc 控制面口径一致；无新增 P0/P1。queue 无 pending，Task6 已通过，自动晋升 finalized。"
-last_task6_at: "2026-05-29T07:07:00+08:00"
-last_task6_review_log: "logs/review/2026-05-29-07-review.md"
-last_task6_audit: "2026-07-13T23:05:00+08:00"
-task6_review_notes: "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；L1/L2 通过；Task2B 已修复后送 Task9 复审；无新增 L3/L4 回炉项。"
-last_task2b_at: "2026-05-29T06:50:00+08:00"
-task2b_fixed_by: openclaw-task2b-main
-task6_reviewed_by: openclaw-task6
-task6_reviewed_at: "2026-05-29T07:07:00+08:00"
-task6_l1_l2_fixes: 0
-task6_l3_l4_issues: 0
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-09
-last_task9_audit: "2026-07-13"
-last_task9_audit_at: "2026-07-13T07:00:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-13-07-audit.md"
-last_task9_audit_result: "pass-idle-audit"
-last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度3（版本差异覆盖）检查通过；Android common android16-6.12 sched_ext paths/constants/sysfs 和 OPPO hmbird proc 控制面口径一致；无 P0/P1 问题，符合 Android 17 版本边界要求。"
 ---
 
 # sched_ext 与 OEM 调度实践

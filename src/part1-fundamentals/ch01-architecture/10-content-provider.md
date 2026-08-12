@@ -64,50 +64,10 @@ related_chapters:
   - '1.14'
   - '8.3'
   - '9.1'
-drafted_date: '2026-04-05'
-drafted_by: openclaw-task2a
-reviewed_by: openclaw-task6
-reviewed_date: '2026-07-02'
 task6_state: reviewed
-task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
 task2b_state: fixed
-task2b_result: fixed-lite
 pipeline_stage: ready-to-publish
-deepseek_cn_review_state: done
-finalized_by: "openclaw-task6-auto-promote"
-finalized_date: "2026-07-14"
-last_task9_review_log: "logs/deep-review/2026-07-02-05-deep-review.md"
-last_task9_at: "2026-07-02T05:27:44+08:00"
-last_task2b_at: '2026-05-27T13:35:00+08:00'
-last_task2b_lite_at: '2026-05-27'
-review_round: 8
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-07-02"
-task9_review_notes: "2026-04-27 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 2。;2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。;2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。 | 2026-05-27 14:20 Task9 auto-fix：修正 Provider 进程冷启动序列，明确 `attachBaseContext()` / provider install / publish / `Application.onCreate()` 的先后关系；回到 Task6 复审。 | 2026-05-27 15:22 Task9 auto-fix：修正 ContentProvider publish/ready/getType 超时口径，并把 Binder 线程池默认值统一为 ProcessState DEFAULT_MAX_BINDER_THREADS=15；回到 Task6 复审。 | 2026-05-27 16:21 Task9 deep-review: pass-tech-review；P0 0 / P1 0 / P2 0 新增；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-01 10:28 Task9 idle-audit AUTO-FIX: 修正 ContentProviderTimeout / contentProviderTimeout 非 AOSP android-17.0.0_r1 稳定日志关键字，改为 ContentProviderHelper 的 publish/ready/not-responding 实际路径；同步 source anchor 到 android-17.0.0_r1。回到 Task6 复审。详见 logs/deep-review/2026-07-01-10-audit.md。 | 2026-07-02 05:27 Task9 formal deep-review: pass-tech-review。复核 android-17.0.0_r1 源码锚点与版本边界；P0 0 / P1 0 / P2 0。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-review_notes: '2026-04-28 task6 re-review-2 (revisiting→reviewed): pass-light-edit。Frontmatter去重整理。无新增L1/L2问题。无B类大问题。评分:
-  结构5/5·措辞5/5·一致性5/5·验证4/5·元数据4/5。'
-repaired_date: '2026-04-27'
-repaired_by: openclaw-task2b
-task6_review_notes: "2026-07-14 Task6 revisiting-final: pass-light-edit. L1 小修 2 处（形容词+冒号起手式 ×2：「设计初衷很简单」→「解决的核心问题」、「优化策略很直接」→「优化重点是」）。无新增 L3/L4 回炉项。Task9 pass-tech-review，queue 无 pending，自动晋升 finalized。 | 2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 11 处；未新增 L3/L4 回炉项；保留既有 Task9 needs-rework。 | 2026-05-27 14:05 Task6：pass-light-edit。修复 outline 标记、结构元叙述、占位省略号和代码引导句等 6 处；复核 Task2B Lite 修正后的 remote provider 语义；无新增 L3/L4 回炉项，保留既有 Task9 needs-rework。 | 2026-05-27 15:08 Task6：复审 Task9 auto-fix 后内容；统一中英文混排周边标点与少量第一人称引导，未新增 L3/L4 回炉项；Task9 result 为 auto-fixed，未满足 pass-tech-review 自动晋升条件，送 Task9 复审。 | 2026-05-27 16:08 Task6：复审 Task9 auto-fix 后内容；统一正文半角标点、括号和少量发布稿格式；无新增 L3/L4 回炉项，Task9 result 为 auto-fixed，继续送 Task9 复审。 | 2026-07-02 05:06 Task6 re-review (revisiting after Task9 idle-audit auto-fix): pass-light-edit. Task9 idle-audit 修正 ContentProviderTimeout 日志关键字路径已平滑落地，正文无新增 L1/L2 问题；无 B 类回炉项。Task9 result=auto-fixed，送 Task9 正式通过。"
-task6_reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-05-27"
-last_task6_at: 2026-07-14T13:14:05+08:00
-last_task6_audit: "2026-07-13"
-last_task6_review_log: "logs/review/2026-05-27-16-review.md"
-review_type: "task6-writing-quality-review"
-p0: 0
-p1: 0
-p2: 0
-last_task9_autofix_at: "2026-07-01"
-task6_l1_l2_fixes: 54
-task6_l3_l4_issues: 0
-last_task2b_verifier_at: "2026-05-27T15:34:00+08:00"
-task2b_verifier_result: ready-for-task6
-last_deepseek_cn_review_at: 2026-07-14
-last_task9_audit: "2026-07-16 00:20:31"
-last_task9_idle_audit_log: "logs/deep-review/2026-07-16-00-audit.md"
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch01-architecture/1.11-android17-contentprovider-optimization.md"

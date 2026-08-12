@@ -4,12 +4,9 @@ chapter: "14.4"
 section: "14.4"
 status: finalized
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
-drafted_date: "2026-07-16"
 last_verified: "2026-08-04"
 last_verified_against: "AOSP android-17.0.0_r1 simpleperf；Android common kernel android17-6.18-2026-06_r6 perf security；Arm Telemetry Solution main@6d4f550d053c"
 confidence: high
-reviewed_date: "2026-08-04"
-reviewed_by: hermes-aiw-review-finalize-apply
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized
@@ -36,12 +33,6 @@ sources:
   path: Yasin, A. "A Top-Down Method for Performance Analysis and Counters Architecture", ISPASS 2014
 tags: ['arm-topdown', 'microarchitecture', 'perf', 'simpleperf', 'performance-analysis', 'pmu']
 related_chapters: ['5.4', '14.3']
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-16"
-gap_source: "研究素材 + 每日信息"
-gap_score: "15/20"
-processed_by: "task2a-draft"
-android17_review_notes: "2026-08-04：deep-review 复核 simpleperf stat/list/record、Arm SPE、Perfetto sample filter、raw event 生成规则和 Neoverse V1 r1p2 公式边界；保留 Android 17 / android-17.0.0_r1 锚点，不引入后续平台主线结论。"
 ---
 # 14.4 ARM Topdown 微架构性能分析方法论与 Android 实践
 

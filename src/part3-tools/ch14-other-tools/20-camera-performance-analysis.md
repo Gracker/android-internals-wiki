@@ -4,11 +4,6 @@ title: Android Camera 性能与 Perfetto 分析
 chapter: '14.20'
 section: '14.20'
 status: "finalized"
-drafted_date: '2026-04-06'
-drafted_by: openclaw-task2a
-reviewed_by: "openclaw-task6"
-last_task2b_at: "2026-07-13T14:52:36+08:00"
-reviewed_date: "2026-07-13"
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-04-06'
 last_verified_against: AOSP android-17.0.0_r1
@@ -33,41 +28,10 @@ related_chapters:
 - '13.9'
 - '11.2'
 - '4.3'
-task6_result: "pass-light-edit"
-review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: fixed 2x 链路→路径, removed 虚假引导语. L2: good. All outline anchors covered. task9_result=needs-rework, not eligible for auto-promotion. | ⚡ 2026-05-01 task6 re-confirm (revisiting→reviewed): content clean, no new L1/L2 issues. task9 issues previously fixed in queue. task9 re-review needed for auto-promotion. | ✅ 2026-07-13 task6 review: pass-light-edit. Fixed 8x L1/L2 issues (spacing, code purpose statements, long sentences). All outline anchors covered. No L3/L4 issues.'
 task2b_state: "fixed"
-task2b_result: "fixed"
-last_task9_at: "2026-07-13T15:41:13+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-05-28
-repaired_date: '2026-04-26'
-repaired_by: openclaw-task2b
-last_task9_review_log: "logs/deep-review/2026-05-28-18-deep-review.md"
-task9_review_notes: "2026-05-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。复核 TextureView/SurfaceTexture、HAL buffer management、CameraMetadataNative 与 Perfetto SQL/Python 示例；未发现阻断问题，自动晋升 finalized。"
-task2b_rework_date: '2026-05-19'
-last_task6_at: "2026-07-13T15:17:00+08:00"
-task6_reviewed_at: "2026-07-13T15:17:00+08:00"
-task6_reviewed_by: "openclaw-task6"
-last_task6_review_log: "logs/review/2026-05-28-18-review.md"
-last_task6_audit: "2026-07-09"
-task6_review_notes: "2026-05-28 18 Task6 revisiting-review: pass-light-edit；修复启动拆解表格被 blockquote 截断、Python SDK 示例 config 省略占位；L1/L2 通过；outline 15/15 覆盖；无 L3/L4 回炉项。task9_result=needs-rework，未自动晋升。"
-p0: 0
-p1: 0
-p2: 0
-task6_l1_l2_fixes: 8
-task6_l3_l4_issues: 0
-finalized_date: "2026-07-13"
-finalized_by: openclaw-task9
-last_task9_audit: "2026-07-13"
-last_task9_audit_log: "logs/deep-review/2026-07-13-08-audit.md"
-task9_result: pass-tech-review
 task9_state: reviewed
 task6_state: reviewed
 pipeline_stage: ready-to-publish
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-13
-task2b_lite_notes_2026_07_13: "frontmatter 去重修复: 清理 6 组 duplicate keys (pipeline_stage/task6_state/task9_state/task9_result/last_task9_audit/path-under-sources 误删已恢复); status finalized→ready-for-review (task9_result=needs-rework)"
-last_task2b_lite_at: "2026-07-13"
 ---
 
 

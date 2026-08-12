@@ -7,8 +7,6 @@ applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-31"
 last_verified_against: "AOSP android-17.0.0_r1, Android common kernel android17-6.18-2026-06_r6, Perfetto current docs"
 confidence: high
-drafted_date: "2026-06-07"
-drafted_by: "openclaw-task2a"
 sources:
   - type: aosp
     path: "hardware/interfaces/memtrack/aidl/android/hardware/memtrack/IMemtrack.aidl"
@@ -50,9 +48,6 @@ sources:
     path: "DeepResearch/2026-07-11-android17-gpu-memory-tracking-pool-defrag.md"
 tags: [gpu-memory, dmabuf, gralloc, perfetto, memory-tracking, graphics, memtrack]
 related_chapters: ["2.15", "4.2", "10.1", "14.15", "22.17", "23.2"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-07"
-gap_source: "AOSP结构/章节深挖/官方文档"
 last_consolidated_at: "2026-08-11"
 ---
 

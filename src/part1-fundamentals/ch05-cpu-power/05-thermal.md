@@ -19,42 +19,10 @@ sources:
     path: "developer.android.com/reference/android/os/PowerManager"
 tags: ["thermal", "power", "adpf", "perfetto", "cpu"]
 related_chapters: ["5.1", "5.2", "5.3", "5.4", "5.6", "5.9", "7.3"]
-drafted_date: "2026-04-01"
-drafted_by: "openclaw-task2"
-polish_count: 2
-polish_date: "2026-04-08"
-polish_by: "task2b-polish"
-reviewed_date: 2026-06-23
-reviewed_by: "openclaw-task6"
 task6_state: reviewed
-task6_result: pass-light-edit
-task6_reviewed_date: 2026-06-23
-last_task6_at: 2026-06-23T08:15:43+08:00
-last_task6_audit: "2026-07-17"
-last_task6_audit_log: "logs/review/2026-07-17-16-audit.md"
-last_task6_review_log: "logs/review/2026-06-23-08-review.md"
-task6_review_notes: "2026-06-23 Task6 复审(Task9 auto-fix 后回归):pass-light-edit。无禁用词/高频词命中。不是X而是Y 句式在限制内。无物理动作动词命中。L1/L2 全部通过,无 B 类问题。queue.json 无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,送回 Task9 确认。"
 task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_date: 2026-06-23
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-23T08:34:43+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-23-08-deep-review.md"
 task2b_state: fixed
-task2b_result: fixed
 pipeline_stage: ready-to-publish
-repaired_date: "2026-04-24"
-repaired_by: "openclaw-task2b"
-last_task2b_at: '2026-05-08T05:42:56+08:00'
-review_notes: "2026-05-02 task9 deep-review: needs-rework。本轮 P0 1，P1 1，P2 1；问题已写入 queue/suggestions/research-gaps。；2026-05-04 task6 re-review (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。 | 2026-05-05 Task9 21:00：needs-rework。复核旧 P1：16KB/MMU 功耗→延迟 thermal throttling 仍缺设备/SoC/trace 数据证据；getThermalHeadroom >1.0 边界已有 suggestions，不新增 queue。 | 2026-05-08 Task6 05:05：发现 AIW 16KB thermal 残留确定性断言与已降级研究假设口径冲突，已标注并写入 Task2B queue；同步完成 L1/L2 小修。 | 2026-05-08 Task9 05:27：needs-rework。P0 1 / P1 1；AIW 16KB thermal 残留段仍包含不存在的 `thermal_monitor_notify()` / `update_libcache_stats()` 与无证据 Android 16/17 thermal 预测断言，已合并 queue。 | 2026-05-08 Task6 06:05：回炉复审通过。L1/L2 无新增问题，16KB thermal 段已保持研究假设口径；切回 Task9 复审。 | 2026-05-08 Task9 06:20：pass-tech-review。P0/P1 0，P2 1，P3 1；自动晋升 finalized。 | 2026-05-26 Task6 06:09：闲时抽检。L1 小修 2 处：删去冗余强调词，改写否定纠正式句式；frontmatter 完整，锚点覆盖完整。 | 2026-06-06 Task9 闲时抽检：auto-fixed。P1 1；补齐 Android 15/API 35 `PowerManager#getThermalHeadroomThresholds()` 版本差异，更新 Thermal API 与版本演进表，回到 Task6 复审。 | 2026-06-06 Task6 08:07：revisiting→reviewed。pass-light-edit。L1 小修 2 处：'需要注意几点'→'这个 API 有几条使用边界'，'下面按层拆解'→'逐层来看'。无 L3/L4 大问题。送回 Task9 确认 auto-fix。 | 2026-06-23 Task9 闲时抽检：auto-fixed。P0 1；补齐 Android 17 `ThermalManagerService` 源码路径迁移说明，回到 Task6 复审。"
-task9_review_notes: "2026-05-08 Task9 05:27：needs-rework。P0 1 / P1 1；AIW 16KB thermal 残留段仍包含不存在的 `thermal_monitor_notify()` / `update_libcache_stats()` 与无证据 Android 16/17 thermal 预测断言，已合并 queue。 | 2026-05-08 Task9 06:20：pass-tech-review。P0/P1 0，P2 1，P3 1；自动晋升 finalized。 | 2026-06-06 Task9 闲时抽检：auto-fixed。P1 1；补齐 Android 15/API 35 `PowerManager#getThermalHeadroomThresholds()` 版本差异，更新 Thermal API 与版本演进表，回到 Task6 复审。 | 2026-06-06 10:21 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-23 Task9 闲时抽检：auto-fixed。P0 1；补齐 Android 17 `ThermalManagerService` 源码路径迁移说明，回到 Task6 复审。 | 2026-06-23 08:34 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Android 17 ThermalManagerService 路径迁移已按 android-17.0.0_r1 复核，Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-23
-last_task9_autofix_at: "2026-06-23"
-last_task9_audit: "2026-06-23"
-last_task9_audit_log: "logs/deep-review/2026-06-23-04-audit.md"
-finalized_date: "2026-06-23"
-finalized_by: "openclaw-task9-auto-promote"
 ---
 # 5.5 Thermal 管控
 

@@ -7,8 +7,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-13"
 last_verified_against: "Android Developers docs, Google Play Android Vitals, Clippings structure refs"
 confidence: medium
-drafted_date: "2026-05-13"
-polish_count: 0
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/vitals/launch-time"
@@ -35,26 +33,7 @@ related_chapters: ["21.1", "26.3", "15.3", "15.5"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-03"
-last_task9_at: "2026-06-03T05:27:37+08:00"
-last_task9_audit: "2026-07-02"
-last_task9_review_log: "logs/deep-review/2026-06-03-05-deep-review.md"
-task2b_result: fixed-lite
 task2b_state: fixed
-last_task2b_lite_at: "2026-06-02"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-03"
-task6_reviewed_date: "2026-06-03"
-task6_result: pass-light-edit
-last_task6_at: "2026-06-03T03:06:00+08:00"
-last_task6_audit: "2026-07-14T23:06:00+08:00"
-last_task6_review_log: "logs/review/2026-06-03-03-review.md"
-task6_review_notes: "2026-06-03 Task6 复审：pass-light-edit。L1/L2 复审通过；禁用词扫描仅有 `线上分位值` 假阳性；锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。"
-task9_review_notes: "2026-06-03 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 0；ApplicationStartInfo、reportFullyDrawn 与 Android Vitals 启动阈值口径复核通过，自动晋升 finalized。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-17
 consolidated_from:
   - "src/part5-app/ch21-startup/17-startup-insights-api-observability.md"
   - "src/part5-app/ch21-startup/09-startup-case-studies.md#一份可直接使用的复盘模板"

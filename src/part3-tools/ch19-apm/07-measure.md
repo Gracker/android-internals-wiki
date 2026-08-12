@@ -4,8 +4,6 @@ title: Measure
 chapter: '19'
 section: '19.07'
 status: "finalized"
-drafted_date: '2026-04-24'
-drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-05-31'
 last_verified_against: measure-sh docs/README.md + sdk-integration-guide + docs/api/sdk/README.md event/span schema + feature-anr-reporting + feature-crash-reporting + docs/api/dashboard/README.md retention endpoint
@@ -64,36 +62,9 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1
 task2b_state: "fixed"
-task2b_result: "fixed-lite"
-task2b_reopened_at: "2026-05-21T08:06:00+08:00"
-task2b_fixed_at: "2026-05-31T20:52:00+08:00"
-last_task2b_at: "2026-05-31T20:52:00+08:00"
-last_task2b_lite_at: "2026-06-03T07:35:00+08:00"
-task9_result: auto-fixed
-task9_reviewed_date: "2026-05-31"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-03T07:20:00+08:00"
-last_task9_autofix_at: "2026-05-31"
-last_task9_audit: "2026-05-20"
-last_task9_audit_log: "logs/deep-review/2026-05-20-15-audit.md"
-task9_review_notes: "2026-05-31 Task9 deep review: AUTO-FIX Measure 许可证与自托管依赖口径，回到 Task6 复审。"
-last_task9_review_log: "logs/deep-review/2026-06-03-07-deep-review.md"
-last_task2b_rework_log: "Task2B 2026-05-31: 按 2026-05-20/21 Task9 fallback 问题修正 Measure SDK schema、ANR/native 边界与 retention 来源。"
-last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
-last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-04"
-task6_reviewed_date: "2026-06-01"
-last_task6_at: "2026-06-04T05:07:00+08:00"
-last_task6_audit: "2026-06-12"
-last_task6_review_log: "logs/review/2026-06-01-02-review.md"
-task6_result: "pass-light-edit"
 task6_state: "reviewed"
 task9_state: "reviewed"
 pipeline_stage: "ready-to-publish"
-task6_review_notes: "2026-06-04 Task6 revisiting-review: L1/L2 无新增问题，章节整洁。自动晋升 finalized。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-23
 ---
 # Measure
 

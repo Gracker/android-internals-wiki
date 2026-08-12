@@ -2,7 +2,6 @@
 title: "案例集"
 chapter: "10.5"
 section: "10.5"
-drafted_date: "2026-04-02"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-07-31"
 last_verified_against: "AOSP android-17.0.0_r1（ComponentCallbacks2.java、RenderProperties.h、RenderNode.cpp、ProfilingTrigger.java、lmkd.cpp）; Android Common Kernel android17-6.18-2026-06_r6（mm/vmscan.c、include/trace/events/vmscan.h）; Android Developers ProfilingManager/ProfilingTrigger 与 heapprofd 文档"
@@ -39,50 +38,12 @@ sources:
   - type: kernel
     path: "include/trace/events/vmscan.h@android17-6.18-2026-06_r6"
 tags: ['case-study', 'memory-leak', 'native-memory', 'low-memory', 'oom', 'cache', 'gc']
-polish_count: 1
-polish_date: "2026-04-09"
-polish_by: "task2b-polish"
 related_chapters: ["10.1", "10.2", "10.3", "10.4", "10.6"]
-last_task6_audit: "2026-06-08"
-review_notes: "2026-04-30 task6 revisiting review: pass-light-edit。修复1处禁用词(意味着)。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。 | 2026-05-07 Task9 01:20：pass-tech-review。无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized。P2：ProfilingTrigger API37 版本边界、案例效果量化占位仍建议补。"
-task9_reviewed_date: "2026-07-10"
 task2b_state: fixed
-task2b_result: fixed
-rework_fixed_at: "2026-05-06T21:43:37+08:00"
-task2b_rework_date: "2026-04-30"
-task2b_fixed_at: "2026-04-30T01:40:00+08:00"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-07-10T00:27:54+08:00"
-task9_result: "pass-tech-review"
-last_task9_audit: "2026-07-09"
-last_task9_audit_at: "2026-07-09T15:27:48+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-09-15-audit.md"
-last_task9_audit_result: "auto-fixed"
-last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
-task2b_verifier_result: "ready-for-task6"
-last_task9_review_log: "logs/deep-review/2026-07-10-00-deep-review.md"
-last_task9_autofix_at: "2026-07-09"
-task9_review_notes: "2026-05-27 Task9 05:28：auto-fixed。修正案例四 ProfilingManager / ProfilingTrigger API 35/36/36.1/37 版本边界：API35 为 app-driven requestProfiling，API36 起提供 trigger 注册，API37 OOM trigger 是事后 Java heap dump，不能替代业务侧内存突增阈值探针。回到 Task6 复审。 | 2026-05-27 07:24 Task9 deep-review：pass-tech-review。复核 lmkd/PSI、ComponentCallbacks2、HWUI alpha layer、ProfilingManager/ProfilingTrigger 版本边界，无 P0/P1；既有效果量化占位保留为 P2，Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-09 Task9 idle-audit AUTO-FIX：P0 1 / P1 0 / P2 0。将 ComponentCallbacks2、HWUI alpha 自动建层、ProfilingTrigger 的源码锚点从 android-16.0.0_r1 收敛到 android-17.0.0_r1；View.java 参考改为直接锚定 RenderProperties.h；回到 Task6 复审。详见 logs/deep-review/2026-07-09-15-audit.md。 | 2026-07-09 21:30 Task9 deep-review AUTO-FIX：按 AOSP android-17.0.0_r1 的 RenderProperties::promotedToLayer / RenderNode::pushLayerUpdate 修正源码参考句，避免把 alpha 自动建层误写成纯 Shader 级处理；回到 Task6 复审。 | 2026-07-10 00:27 Task9 deep-review：pass-tech-review。复核 ComponentCallbacks2 API34+ trim level、HWUI alpha 自动建层、ProfilingTrigger API37 触发器与 lmkd/PSI 口径，无新增 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 status: "finalized"
 pipeline_stage: "ready-to-publish"
-reviewed_by: openclaw-task6
-reviewed_date: 2026-07-09
-task6_result: pass-light-edit
 task6_state: reviewed
-task6_reviewed_date: 2026-07-09
-task6_reviewed_by: openclaw-task6
-last_task6_at: 2026-07-09T23:13:00+08:00
-last_task6_review_log: "logs/review/2026-05-27-07-review.md"
-review_type: "task6-writing-quality-review"
 task9_state: "reviewed"
-task6_review_notes: "2026-05-27 Task6 05:14：pass-light-edit。L1/L2 小修 6 处（去第一人称、删除虚假引导语）。无新增 L3/L4 回炉；既有效果量化占位按待补充/P2 保留。Task9 未重新通过，未自动晋升 finalized。 | 2026-05-27 07:11 Task6：pass-light-edit。Task9 修正 ProfilingManager / ProfilingTrigger 版本边界后复审通过；L1/L2 未发现新增问题；既有效果量化占位按待补充/P2 保留。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-07-09 23:13 Task6 revisiting review: pass-light-edit。Task9 auto-fix (RenderProperties::promotedToLayer / RenderNode::pushLayerUpdate 源码锚点修正) 写作质量复审通过。L1/L2 无新增问题（对齐×2 为技术术语 page alignment 非禁用词）。既有效果量化占位 [待补充] 按待补充/P2 保留。task9_result=auto-fixed 未满足自动晋升条件，送 Task9 复审。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-10
-updated_by: "openclaw-task9"
-updated_date: "2026-07-10"
-verifier_checked: 2026-07-09
-auto_promoted_by: "openclaw-task9"
-auto_promoted_date: "2026-07-10"
 ---
 # 10.5 案例集
 

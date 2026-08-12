@@ -3,7 +3,6 @@ title: "AOHP：将 Android 改造为 Agent 原生 OS"
 chapter: "16.11"
 section: "16.11"
 status: ready-for-review
-drafted_date: "2026-07-13"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-08-11"
 last_verified_against: "arXiv 2606.23449 (AOHP paper) + AOSP android-17.0.0_r1 framework 参照"
@@ -21,9 +20,6 @@ sources:
     note: "参照对比方向"
 tags: [agent-os, aohp, ai-agent, android-architecture, information-flow-security, virtual-display]
 related_chapters: ["1.30", "5.15", "4.16"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-13"
-gap_source: "素材驱动"
 ---
 
 # AOHP：将 Android 改造为 Agent 原生 OS

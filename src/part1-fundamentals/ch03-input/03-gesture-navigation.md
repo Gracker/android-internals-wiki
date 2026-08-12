@@ -1,25 +1,8 @@
 ---
-last_task9_at: "2026-07-02T06:28:00+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-02"
 title: "手势导航与系统交互"
 section: "3.3"
 chapter: "3.3"
 status: "finalized"
-polish_count: 1
-polish_date: "2026-04-06"
-polish_by: "task2b-polish"
-review_type: "post-polish-quality-gate"
-review_round: 3
-drafted_date: "2026-03-31"
-drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-29"
-last_task6_audit: "2026-07-08"
-last_task9_audit: "2026-07-02"
-last_task9_audit_log: "logs/deep-review/2026-07-02-06-audit.md"
-last_task9_autofix_at: "2026-07-02"
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-02"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -66,12 +49,7 @@ related_chapters: ["3.1", "3.2", "2.3", "2.4", "1.5"]
 pipeline_stage: "ready-to-publish"
 task6_state: reviewed
 task9_state: "reviewed"
-task9_result: "auto-fixed"
 task2b_state: fixed
-task2b_result: fixed
-task9_review_notes: "2026-07-02 Task9 idle audit auto-fix: 用 AOSP android-17.0.0_r1 复核 EdgeBackGestureHandler / InputDispatcher / DisplayContent / OnBackInvokedDispatcher，将主线源码锚点从 android-16.0.0_r1 更新到 android-17.0.0_r1，并补充 API 36 FlaggedApi / API 37 observer 限制边界；回到 Task6 复审。 | 2026-04-30 16:20 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；queue 无 pending，已自动晋升 finalized / ready-to-publish。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-02
 ---
 
 # 3.3 手势导航与系统交互

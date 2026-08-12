@@ -63,38 +63,10 @@ related_chapters:
 - '2.10'
 - '2.17'
 - '14.15'
-drafted_date: '2026-04-05'
-drafted_by: openclaw-task2a
-last_task2b_lite_at: '2026-06-25'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-reviewed_by: openclaw-task6
-reviewed_date: '2026-06-24'
-task6_result: pass-light-edit
-task9_result: pass-tech-review
-task9_reviewed_date: '2026-06-24'
-task2b_result: fixed
-last_task2b_at: '2026-06-25T04:52:10+08:00'
-task2b_repair_notes: '2026-06-25 Task2B main: P85 task9-deep-review 修复 — 版本边界细化、[待验证]标记消除。task6=pass-light-edit,
-  task9=pass-tech-review, queue无pending → 自动晋升finalized。'
-last_task9_at: '2026-06-25T07:20:00+08:00'
-last_task9_audit: '2026-06-25'
-task9_reviewed_by: openclaw-task9
-task9_review_notes: 2026-05-28 Task9 00:33：pass-tech-review。无 P0/P1；P2 1 处已写入 suggestions。Task6
-  仍需回炉，未自动晋升。
-review_type: task6-writing-quality-review
-review_notes: '2026-05-28 task6 review: pass-light-edit。L1/L2 小修 8 处；Task9 pass-tech-review
-  且 queue 无 pending，自动晋升 finalized。'
-last_task9_review_log: logs/deep-review/2026-05-28-00-deep-review.md
-last_task2b_verifier_at: '2026-05-27T23:28:16+08:00'
-task2b_verifier_note: queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。
-last_task6_at: '2026-06-24T20:13:00+08:00'
-task6_review_notes: 'task6_review_notes: "2026-06-24 Task6 revisiting复审: Task2B修复后回归审。禁用词零命中,高频词达标,翻译腔零检出,结构元叙述零命中。task9_result已pass-tech-review,queue无pending,自动晋升finalized。"'
-last_task6_review_log: logs/review/2026-06-24-20-review.md
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: '2026-06-25'
 ---
 
 # 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）

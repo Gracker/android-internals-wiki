@@ -5,9 +5,6 @@ status: ready-for-review
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: [Jetpack, Compose, 性能优化, 导航]
 related_chapters: ["22.13", "22.15", "24.4"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-16"
-gap_source: "素材驱动/官方文档/章节深挖"
 last_verified: "2026-08-01"
 confidence: medium
 sources:
@@ -52,13 +49,8 @@ task9_state: reviewed
 pipeline_stage: rework-verified
 last_deep_review_at: "2026-07-25T12:27:08+08:00"
 last_deep_review_run_id: "20260725-122708-deep-review-8250c5dd"
-last_task9_audit_at: "2026-07-25T12:27:08+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-25-20260725-122708-deep-review-8250c5dd-deep-review.md"
-last_task9_audit_result: "pass-with-bounded-rewrite"
 last_rework_at: "2026-08-01T21:35:02+08:00"
 last_rework_run_id: "20260801-213502-rework-8250c5dd"
-last_rework_reason: "cleared pending-verification-marker; expanded frontmatter sources to match Section 15 provenance table"
-task9_review_notes: "Deep-review 将原占位大纲改写为有来源边界的工程审计稿：收窄到 Android 14-17 与 AndroidX Navigation Compose，不引入 Android 18/API 38+ 结论；补充路线建模、状态读取、返回栈、动画、深链、LazyList、监控清单。页面级数值仍需项目 Macrobenchmark/Perfetto 实测；rework 2026-08-01 清除 pending-verification-marker 启发式触发词并扩充 frontmatter sources。"
 ---
 
 # Navigation Compose 性能优化

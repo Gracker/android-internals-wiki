@@ -4,21 +4,7 @@ chapter: "11.2"
 status: finalized
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task6_result: "pass-light-edit"
-task6_reviewed_by: openclaw-task6
-task6_reviewed_date: "2026-06-29"
-task6_reviewed_at: "2026-06-29T21:07:00+08:00"
-last_task6_at: "2026-06-29T21:07:00+08:00"
-task6_review_notes: "2026-06-29 Task6 revisiting review: pass-light-edit；修复 L1/L2 问题，L3/L4 无新增；自动晋升 finalized。"
 section: "11.2"
-drafted_date: "2026-04-03"
-drafted_by: "openclaw-task2a"
-polish_count: 1
-polish_date: "2026-04-07"
-polish_by: "task2b-polish"
-rework_count: 5
-rework_date: "2026-05-08"
-rework_by: "task2b-rework"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-07-31"
 last_verified_against: "AOSP android-17.0.0_r1, android17-6.18-2026-06_r6, Android Developers Android 16 JobScheduler quota / Android 17 background audio / exact alarm / foreground service / WorkManager docs"
@@ -84,28 +70,8 @@ sources:
     path: "Obsidian Cubox - 抖音功耗优化实践"
 tags: ['wakelock', 'jobscheduler', 'workmanager', 'doze', 'location', 'alarm', 'power', 'fgs', 'foreground-service', 'fcm', 'alarmmanager', 'geofencing', 'battery-historian', 'camera']
 related_chapters: ["11.1", "11.3", "5.6", "5.4", "5.10", "11.5"]
-task2b_result: fixed
 task2b_state: fixed
 task9_state: reviewed
-last_task2b_lite_at: "2026-06-06"
-last_task2b_at: "2026-05-04T01:40:00+08:00"
-task9_result: auto-fixed
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-06"
-repaired_date: "2026-04-26"
-repaired_by: "openclaw-task2b"
-review_round: 5
-task9_reviewed_date: "2026-06-06"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-06T19:20:00+08:00"
-last_task9_autofix_at: "2026-06-29"
-deepseek_polish_state: done
-last_deepseek_polish_at: 2026-05-27
-last_task6_audit: "2026-06-27"
-last_task9_audit: "2026-06-29"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-30
-review_notes: "2026-05-08 10:28 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。；2026-06-06 17:20 task9 idle-audit: needs-rework；P1 Android 16 JobScheduler quota 与 Android 17 background audio hardening 版本差异回炉。；2026-06-06 19:20 task9 deep-review: pass-tech-review；复核 Android 16 JobScheduler quota 与 Android 17 background audio hardening 已补齐；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。；2026-06-29 12:29 task9 idle-audit: auto-fixed；AOSP 源码锚点升级到 android-17.0.0_r1，修正 Android 17 Audio 覆盖说明，回到 Task6 复审。"
 ---
 
 

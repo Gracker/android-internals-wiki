@@ -54,64 +54,10 @@ tags:
 - perf-measurement
 - mainline-modules
 related_chapters: ["14.11", "20.12", "20.17"]
-created_by: codex
-created_date: '2026-04-21'
-drafted_by: codex
-drafted_date: '2026-04-21'
-gap_source: AOSP结构+官方文档+研究素材
-last_task2b_at: '2026-06-24'
-last_task9_at: 2026-07-16T02:23:22+0800
-last_task9_audit: 2026-07-16
 pipeline_stage: ready-to-publish
-polish_by: task2b-polish
-polish_count: '1'
-polish_date: '2026-04-22'
-task2b_changes_summary: P95+P90综合回炉：删除未来发展节替换为Android 14-17实际变化；重写xHook节补充PLT/GOT原理；Matrix节前移TraceCanary实现细节；删除案例1/2/4；新增Perfetto表现节；扩充Trampoline
-  ARM64约束说明；扩充限制与注意事项（SELinux安全边界、Mainline模块影响、性能测量方法论）
-task2b_changes_summary_2026-06-24: 'P95 Task9深度复审回炉: 更新last_verified_against为android-17.0.0_r1;
-  Mainline模块节补充ProfilingManager路径版本说明(packages/modules/Profiling/)'
-task2b_changes_summary_2026-06-24_r5: 'P95 Task9深度复审回炉: AOSP路径全部更新为android-17.0.0_r1;
-  新增多进程场景Hook差异、64-bit vs 32-bit架构差异、ART vs Dalvik差异三节; 增强16KB Page Size对齐计算与mixed-page-size;
-  新增ART Mainline路径适配案例'
-task2b_result: fixed-lite
-task2b_rework_round: '2026-06-24'
 task2b_state: fixed
-last_task2b_lite_at: 2026-07-15
-task6_result: pass-light-edit
-task6_review_notes_2026_06_24: revisiting 复审：发现 B 类问题 5 处（代码示例 Java/C 混用、try/catch
-  C++ 语法标为 C、未来发展章节填充内容、JIT 优化建议不当、多处伪代码未标注），已修 2 处 L1 代码块标签，B 类写入 queue+ suggestions
-  送 Task2B。
-task6_review_notes_2026_06_24_r2: 第二轮复审：L1 修 2 处（首段伪代码标注、「篡改」改「替换」），文本禁用词/AI套话/翻译腔全部清洁。B
-  类 5 处（未来发展纯填充[复发]、xHook/Matrix 节过薄、案例1/2/4泛化、缺Perfetto表现节），写入 queue priority:90
-  送 Task2B。
-task6_review_notes_2026_06_24_r3: '第三轮复审：Task2B P95+P90 回炉后质量显著提升。L1 修 2 处（重复 task9_result
-  frontmatter、socket 代码块缺概念示意图标注）。禁用词/AI套话/翻译腔全清洁。不是X而是Y=2（限额内）。L3 观察项 2 条（案例1 Matrix
-  与第3节 TraceCanary 实现细节重叠、应用场景三小节偏薄），写入 suggestions 作建议参考，不阻断。task6_result: pass-light-edit，待
-  Task9 技术复审。'
-task6_review_notes_2026_06_24_r4: '第四轮复审（Task2B P95 Task9回炉后）：L1 修 1 处（Mainline 段落重复，新增
-  ### Mainline 模块的影响 标题，合并去重）。禁用词/AI套话/翻译腔全清洁。不是X而是Y=2（限额内）。L3 观察 1 条（Matrix 实现细节与案例1重叠，前轮已标注，持续性建议）。task6_result:
-  pass-light-edit，待 Task9 技术复审。'
-task6_review_notes_2026_06_24_r5: 第五轮复审：L1 修复完成（删除'这意味着'禁用词、修复英文词间距、改善开头结构）。L2 可读性优化完成。L3/L4
-  问题写入 queue priority:90 送 Task2B。
-task6_review_notes_2026_06_24_r6: '第六轮复审（Task2B P95 Task9回炉后）：L1 修 2 处（代码注释中英文间距 Thumb）。禁用词/AI套话/翻译腔全清洁。不是X而是Y=1（限额内）。高频词全清洁。L3
-  观察 1 条（PLT vs Inline 对比表中 IFUNC 绕过方式与正文描述矛盾），写入 queue+suggestions 送 Task2B/Task9。新增多进程/64-32bit/ART-Dalvik/16KB增强节质量良好。task6_result:
-  pass-light-edit，待 Task9 技术复审。'
-task6_review_notes_2026_06_24_r7: '第七轮复审（Task2B IFUNC表格修正后回炉复审）：L1 修 20 处路径格式（AOSP/GitHub 源码路径中多余空格，涉及验证标注和正文）。禁用词/AI套话/翻译腔全清洁（body text）。不是X而是Y=2（限额内）。高频词全清洁。IFUNC 对比表 P90 修正已验证正确。L3 观察 1 条：art/runtime/entrypoints/entrypoint_utils.h 路径可能在 android-17.0.0_r1 中不存在（Task9 P95 queue 标记 completed 但路径未更新），交 Task9 复核。无 B 类阻断问题。task6_result: pass-light-edit，待 Task9 技术复审。'
-task6_review_notes_2026_07_01_r8: '第八轮复审（revisiting 回炉后）：L1 修 3 处（frontmatter title 残留---、禁用词链路→跳转回路、错误处理代码块缺概念示意图标注）。禁用词/AI套话/翻译腔全清洁。不是X而是Y=1（限额内）。高频词全清洁（核心6次均作形容词修饰，关键7次均作形容词修饰，非汇报腔用法）。L3 观察 1 条（应用场景三小节持续偏薄，前轮已标注，持续性建议不阻断）。无 B 类阻断问题。task9_result: pass-tech-review + queue.json 无 pending → 自动晋升 finalized。'
-task2b_lite_note_2026-07-15: 'P95 Task9 issue 确认误报: art/runtime/entrypoints/entrypoint_utils.h 经 android.googlesource.com android-17.0.0_r1 验证确实存在，正文引用正确，frontmatter last_verified_against 补充该路径'
-task6_review_notes_2026_07_16_r9: '第九轮复审（Task9 auto-fixed 后 revisiting 回炉）：L1 修 2 处（16KB section"两个直接影响"数量不一致→改为"三个"、backcompat 代码块缺语言标签→添加 bash）。禁用词/AI套话/翻译腔全清洁。"对齐"22次均作技术术语（page/ELF/指令对齐）非汇报腔用法。不是X而是Y=1（限额内）。高频词全清洁（真正0/实际上0/其实0）。验证标注29处[已验证]全部有源、[待验证]0。无 B 类阻断问题。task9_result: auto-fixed + queue.json 无 pending → 自动晋升 finalized。'
-task6_reviewed_by: openclaw-task6
-task6_reviewed_date: '2026-07-16'
 task6_state: reviewed
-last_task6_at: '2026-07-16'
-last_task6_audit: '2026-07-16'
-task9_result: auto-fixed
-task9_review_date: '2026-06-24'
-task9_reviewer: openclaw-task9
 task9_state: reviewed
-tech_score: 3/5
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-16
 ---
 # 14.26 Hook 基础设施与性能工具实现原理
 

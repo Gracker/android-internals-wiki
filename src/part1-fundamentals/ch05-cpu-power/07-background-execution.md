@@ -7,8 +7,6 @@ title: 后台执行限制与优化
 chapter: '5.7'
 section: '5.7'
 applicable_versions: Android 6.0 (API 23) - Android 17 (API 37)
-drafted_date: '2026-04-05'
-drafted_by: openclaw-task2a
 last_verified: "2026-06-21"
 last_verified_against: "Android Developers Android 17 bg-audio docs + JobScheduler/IBinder API reference + source.android cached apps freezer docs"
 confidence: high
@@ -79,30 +77,8 @@ related_chapters:
 - '8.4'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task6_reviewed_date: 2026-05-18
-task6_reviewed_by: openclaw-task6
-task9_reviewed_date: "2026-06-21"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-21T19:26:37+08:00"
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: 2026-06-04T02:57:11+08:00
 task9_state: reviewed
-task9_result: auto-fixed
-last_task9_review_log: "logs/deep-review/2026-06-21-19-audit.md"
-queue_entry: task9-20260518-5.8-freezer-gc-version-boundary
-task9_review_notes: "2026-06-04 task9 deep-review: auto-fixed。修正 Android 16 Binder freezer 源码行号，补 Android 17 JobScheduler reason stats 版本边界。 | 2026-06-05 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 0；Doze/App Standby、FGS 超时、Android 17 后台音频硬化、JobScheduler pending reason stats 与 Binder freezer 版本边界复核通过，满足自动晋升 finalized 条件。 | 2026-06-21 Task9 闲时抽检：auto-fixed。修正 Android 17 background audio hardening 的 WIU / exact alarm + USAGE_ALARM 边界；把 cached apps freezer 约 10 秒冻结窗口从 Android 16 修正为 Android 14+；回到 Task6 复审。"
-last_task6_at: "2026-06-21T20:07:00+08:00"
-last_task6_review_log: "logs/review/2026-06-21-20-review.md"
-task6_review_notes: "2026-06-21 20:07 Task6 revisiting-review (post-Task9-auto-fix): pass-light-edit。Task9 修正 Android 17 background audio WIU/USAGE_ALARM 边界及 freezer 冻结窗口版本(Android 14+)。L1/L2 复扫通过，无新增小修，无新增回炉项。自动晋升 finalized。"
-last_task9_autofix_at: "2026-06-21"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-21
-last_task9_audit: "2026-06-21"
-last_task2b_verify_at: "2026-06-21T19:30:09+08:00"
-task2b_verifier_notes: "状态修正：Task9 auto-fix 后 status 应为 ready-for-review，原 finalized 已回退。"
-task6_result: pass-light-edit
-reviewed_date: 2026-06-21
 ---
 
 

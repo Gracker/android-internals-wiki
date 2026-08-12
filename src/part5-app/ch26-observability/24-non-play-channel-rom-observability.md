@@ -6,9 +6,6 @@ status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [non-play, domestic, ROM, observability, monitoring, OEM, channel]
 related_chapters: ["25.25", "26.3", "26.15"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-16"
-gap_source: "研究素材+每日信息+章节深挖"
 task6_state: deep-reviewed
 task9_state: ready-for-audit
 pipeline_stage: deep_review_passed

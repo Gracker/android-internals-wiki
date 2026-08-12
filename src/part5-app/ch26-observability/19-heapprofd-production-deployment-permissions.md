@@ -6,9 +6,6 @@ status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [heapprofd, heap-profiling, memory, production, perfetto, permissions, native-leak]
 related_chapters: ["4.3", "4.9", "8.39", "10.7", "13.22", "14.1", "14.5", "23.1", "23.3", "26.13"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-06"
-drafted_date: "2026-07-12"
 last_verified: "2026-07-12"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high

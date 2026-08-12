@@ -1,15 +1,8 @@
 ---
 title: "线上性能监控"
 chapter: "15.5"
-last_task6_review_log: "logs/review/2026-05-28-19-review.md"
-last_task6_at: "2026-05-28T19:05:00+08:00"
-reviewed_date: "2026-05-28"
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
 section: "15.5"
 status: finalized
-drafted_date: "2026-04-04"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
 last_verified: "2026-07-30"
 last_verified_against: "AOSP android-17.0.0_r1; Android 17 / API 37 ApplicationStartInfo, ApplicationExitInfo.AnrInfo, AnrWarningResult, ProfilingManager and ProfilingTrigger; current Android Vitals, JankStats and Perfetto SDK documentation"
@@ -56,26 +49,9 @@ sources:
 tags: [monitoring, APM, FrameMetrics, JankStats, ANR, startup, production]
 related_chapters: ["7.1", "7.3", "8.1", "9.3", "14.1", "14.9", "14.10", "15.3", "15.4", "15.9"]
 pipeline_stage: ready-to-publish
-task2b_result: fixed
 task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed
-last_task9_at: "2026-05-28T19:20:00+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-28"
-task9_result: pass-tech-review
-repaired_date: "2026-04-25"
-repaired_by: "openclaw-task2b"
-last_task2b_at: "2026-05-28T18:50:00+08:00"
-last_task9_audit: "2026-07-06"
-last_task9_audit_at: "2026-07-06T11:23:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-06-11-audit.md"
-last_task9_review_log: "logs/deep-review/2026-05-28-19-deep-review.md"
-review_notes: "2026-05-21 Task9 deep review: needs-rework。P0：FrameMetrics 指标表使用不存在的公开常量名；P1：GPU_DURATION/API31 版本边界与 ANR 触发口径需补。"
-task9_review_notes: "2026-05-28 Task9 deep review: pass-tech-review; no P0/P1; P2 suggestions written to intake/suggestions.md; auto-promoted finalized."
-last_task6_audit: "2026-06-10"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-03
 ---
 # 线上性能监控
 

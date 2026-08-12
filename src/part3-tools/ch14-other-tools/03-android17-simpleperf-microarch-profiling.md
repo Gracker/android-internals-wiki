@@ -6,9 +6,6 @@ status: ready-for-review
 applicable_versions: "Android 17 (API 37)"
 tags: [simpleperf, ARM-SPE, TRBE, profiling, microarchitecture, AutoFDO]
 related_chapters: ["14.2", "14.23", "14.24"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-02"
-drafted_date: "2026-07-02"
 last_verified: "2026-07-30"
 last_verified_against: "AOSP android-17.0.0_r1 + android17-6.18-2026-06_r6"
 confidence: high
@@ -35,7 +32,6 @@ sources:
     path: "Obsidian/技术文章/Android/Android-17系统层面新特性/20-simpleperf-ARM-SPE-硬件采样.md"
   - type: blog
     path: "Obsidian/技术文章/Android/Android-17系统层面新特性/21-simpleperf-TRBE-Trace-Buffer-Extension.md"
-android17_review_notes: "按 android-17.0.0_r1 与 android17-6.18-2026-06_r6 重写；区分硬件能力、内核驱动和 Simpleperf 解码能力，并核对 Android 16 到 Android 17 的版本差异"
 ---
 
 # 14.3 Android 17 simpleperf 微架构级性能采样与工作流增强

@@ -3,8 +3,6 @@ title: "Android 17 Input ANR 与 pre-ANR 实现"
 chapter: "9.10"
 section: "9.10"
 status: ready-for-review
-drafted_date: "2026-07-03"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-07-03"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -24,10 +22,6 @@ sources:
     path: "DeepResearch/2026-06-15-anr-detection-inputdispatcher-ams-anrhelper-source.md"
 tags: [ANR, InputDispatcher, pre-ANR, Android17, TimeoutRecord, AnrTimer]
 related_chapters: ["9.1", "9.2", "9.9", "3.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-03"
-gap_source: "研究素材+AOSP验证"
-gap_score: 18
 ---
 
 # 9.10 Android 17 Input ANR 与 pre-ANR 实现

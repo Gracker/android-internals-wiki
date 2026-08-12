@@ -3,7 +3,6 @@ title: "Binder 线程池管理与 IPC 线程饥饿性能边界"
 chapter: "1.38"
 section: "1.38"
 status: ready-for-review
-drafted_date: "2026-06-28"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -29,9 +28,6 @@ sources:
     path: "DeepResearch/2026-06-27-android17-binder-async-frozen-batch-pipeline.md"
 tags: [binder, thread-pool, starvation, ANR, IPC, system_server]
 related_chapters: ["1.4", "1.8", "1.25", "1.29", "1.34", "9.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-28"
-gap_source: "AOSP结构+章节深挖"
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch01-architecture/1.48-android17-binder-priority-inheritance.md"

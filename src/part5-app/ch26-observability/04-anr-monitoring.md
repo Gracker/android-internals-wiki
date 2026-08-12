@@ -8,8 +8,6 @@ applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-08-04"
 last_verified_against: "AOSP android-17.0.0_r1 + Android Developers ANR / Android vitals docs + Clippings structure references"
 confidence: medium-high
-drafted_date: "2026-05-15"
-polish_count: 0
 sources:
 - type: aosp
   path: frameworks/base/core/java/android/app/ApplicationExitInfo.java
@@ -23,26 +21,8 @@ consolidated_from:
 - src/part2-performance/ch09-anr/9.11-enterprise-anr-monitoring-platform-design.md
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
-task6_review_notes: "2026-07-01 Task6 revisiting re-review (idle-audit auto-fix 后): pass-light-edit。L1/L2 无新增问题；Task9 idle-audit source version anchoring 后写作复审通过。自动晋升 finalized。"
-last_task6_at: "2026-07-01T09:07:00+08:00"
-task6_result: pass-light-edit
-reviewed_date: "2026-07-01"
-reviewed_by: openclaw-task6
 task9_state: "reviewed"
 task2b_state: "fixed"
-task9_result: "auto-fixed"
-task9_reviewed_date: "2026-07-01"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-08T17:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-08-17-deep-review.md"
-last_task6_audit: "2026-07-01"
-task9_review_notes: "2026-06-08 Task9 复审：pass-tech-review，P0/P1 0；P2 1（ApplicationExitInfo trace 保留细节已写入 suggestions）。自动晋升 finalized。 | 2026-06-30 Task9 闲时抽检 auto-fix：将 AOSP 源码验证锚点从 android-16.0.0_r1 重锚到 android-17.0.0_r1；AnrHelper / ProcessErrorStateRecord / StackTracesDumpHelper / ApplicationExitInfo 在 Android 17 tag 复核通过。章节回到 Task6 复审。"
-task2b_result: "fixed"
-last_task9_audit: "2026-06-30"
-last_task9_audit_log: "logs/deep-review/2026-06-30-18-audit.md"
-last_task9_autofix_at: "2026-06-30"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-03
 ---
 # 26.4 ANR 监控体系
 

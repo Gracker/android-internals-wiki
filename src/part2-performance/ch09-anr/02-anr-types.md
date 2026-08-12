@@ -3,8 +3,6 @@ title: "ANR 类型与触发条件"
 section: "9.2"
 chapter: "9.2"
 status: finalized
-drafted_date: "2026-04-02"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-07-09"
 last_verified_against: "AOSP android-17.0.0_r1, Android Developers ANR vitals / JobService / foreground service docs"
@@ -36,49 +34,10 @@ sources:
     path: "intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md"
 tags: [anr, input-dispatching, broadcast, service, contentprovider, timeout]
 related_chapters: ["9.1", "9.3", "9.4", "1.4", "1.5", "1.10"]
-reviewed_date: "2026-05-06"
-review_v2_date: "2026-04-09"
-review_v2_by: "openclaw-task6"
-review_type: "post-polish-quality-gate"
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
-task6_review_v2_date: "2026-05-03"
-task6_review_date: "2026-04-16"
-polish_count: 1
-polish_date: "2026-04-07"
-polish_by: "task2b-polish"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
-task9_result: pass-tech-review
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: "2026-05-06T07:51:16+08:00"
-task9_reviewed_date: "2026-07-09"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-07-09T21:30:58+08:00"
-last_task9_autofix_at: "2026-07-09"
-task2b_fixed_at: "2026-04-26T13:40:00+08:00"
-rework_by: openclaw-task2b
-rework_type: "Task9 Deep Tech Review 回炉修复（4项源码/版本/命令错误）"
-task9_review_notes: "2026-05-24 07:40 Task9 deep-review: pass-tech-review。无 P0/P1；P2 2 项已写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-09 Task9 闲时抽检：auto-fixed。修正 Android 17 源码锚点、Broadcast ANR 路径、Input ANR logcat 口径与源码映射行号，回到 Task6 复审。 | 2026-07-09 21:30 Task9 deep-review：pass-tech-review。复核 Android 17 InputDispatcher、BroadcastQueueImpl/BroadcastAnrTimer、ActiveServices、ContentResolver Provider timeout、JobServiceContext 等源码锚点，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-last_task6_at: 2026-07-09T21:10:00+08:00
-last_task6_audit: 2026-07-09
-auto_promoted: true
-task6_review_notes: "2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理重复 DeepResearch 注入块与引用元信息；Task9 复审已通过且 queue 无 pending，自动晋升 finalized。"
-last_task9_audit: "2026-07-09"
-last_task9_audit_log: "logs/deep-review/2026-07-09-06-audit.md"
-last_task9_review_log: "logs/deep-review/2026-07-09-21-deep-review.md"
-p0: 0
-p1: 0
-p2: 2
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-10
-verifier_checked: 2026-07-09
-task6_reviewed_date: 2026-07-09
-auto_promoted_date: "2026-07-09"
-updated_by: "openclaw-task9"
-updated_date: "2026-07-09"
 ---
 # 9.2 ANR 类型与触发条件
 

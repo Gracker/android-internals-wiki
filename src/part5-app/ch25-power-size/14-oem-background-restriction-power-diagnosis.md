@@ -6,19 +6,13 @@ status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [oem-doze, background-restriction, power-optimization, vendor-doze, chinese-oem]
 related_chapters: ["25.2", "25.3", "25.4", "25.15", "11.2", "11.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-16"
-gap_source: "research-gaps+daily-info"
 last_verified: "2026-07-25"
-reviewed_date: "2026-07-25"
-reviewed_by: "hermes-aiw-review-finalize-apply"
 confidence: medium-high
 sources:
 - type: deepresearch
   path: DeepResearch/2026-07-16-android17-oem-background-restriction.md
 last_body_apply_at: "2026-07-25T15:18:53+08:00"
 last_body_apply_run_id: "20260725-151525-21e58a30"
-last_body_apply_source: "source-index:16:DeepResearch/2026-07-16-android17-oem-background-restriction.md"
 task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed

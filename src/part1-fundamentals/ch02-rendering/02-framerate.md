@@ -3,14 +3,6 @@ title: 帧率与刷新率
 chapter: '2.2'
 section: '2.2'
 status: finalized
-reviewed_date: "2026-04-30"
-reviewed_by: openclaw-task6
-review_note: Task 6 三审(2026-04-30):移除 AIW 编辑注释 3 处、frontmatter 去重 1 处;task9 仍 needs-rework
-rework_date: '2026-04-02'
-rework_by: openclaw-task2b
-polish_count: 1
-polish_date: '2026-04-06'
-polish_by: task2b-polish
 applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
 last_verified: 2026-07-25
 last_verified_against: "AOSP android-17.0.0_r1: Choreographer/Display/View/ViewGroup/Window/Surface/SurfaceControl/FrameMetrics, SurfaceFlinger RefreshRateSelector/LayerHistory/Scheduler/FrameTimeline; Composer3 ARR AIDL; kernel android17-6.18-2026-06_r6 DRM vblank boundary; Writer rendering_pipelines S01/S02/S13"
@@ -107,33 +99,10 @@ related_chapters:
 - '2.6'
 - '2.9'
 - '7.1'
-re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检
 pipeline_stage: ready-to-publish
-task6_result: pass-light-edit
 task6_state: reviewed
 task9_state: reviewed
-task9_result: auto-fixed
-task9_reviewed_date: 2026-06-15
-task2b_result: fixed
 task2b_state: fixed
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-15T00:20:00+08:00"
-last_task9_audit: 2026-06-15
-last_task9_audit_log: "logs/deep-review/2026-06-15-00-audit.md"
-task9_review_notes: "2026-06-15 idle audit auto-fixed: corrected SurfaceControl.Transaction.setFrameTimeline(long) public SDK boundary from Android 16 to Android 15/API 35. P0 1 auto-fixed / P1 0 / P2 1 log-only; returned to Task6 revisit."
-task2b_rework_note: "2026-05-22 2B修复: getSnapshot→summarize+chooseRefreshRateForContent; LayerVoteType 7→9种(补ExplicitGte/ExplicitCategory); ExplicitExact条件化(supportsAppFrameRateOverrideByContent). 前轮: Frame Time口径拆分; setFrameTimeline版本边界拆分"
-last_task6_audit: "2026-06-12"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-15
-last_task9_autofix_at: 2026-06-15
-last_task6_at: "2026-06-15T04:09:51+08:00"
-last_task6_review_log: logs/review/2026-06-15-04-review.md
-task6_reviewed_date: 2026-06-15
-task6_reviewed_by: openclaw-task6
-finalized_date: 2026-06-15
-finalized_by: openclaw-task6
-auto_promoted_date: 2026-06-15
-auto_promoted_by: openclaw-task6
 ---
 
 # 2.2 帧率与刷新率

@@ -32,38 +32,8 @@ tags: [architecture, 分层架构, HAL, HIDL, AIDL, Binder, SystemServer, Zygote
 related_chapters: ["1.2", "1.3", "1.4", "1.11", "2.1", "3.1", "4.1", "5.1", "7.1"]
 pipeline_stage: "ready-to-publish"
 task6_state: reviewed
-task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
 task2b_state: fixed
-task2b_result: fixed
-review_notes: "2026-07-25 Android 17/API 37 全文复审：以 android-17.0.0_r1 与 android17-6.18-2026-06_r6 重建源码锚点；删除未实测的 Binder/JNI/SELinux/Zygote/VNDK 数值、固定线程池经验、设备形态推断、内部调研记录和私有路径；修正 JNI 不是进程切换、Perfetto 数据源不与架构层一一对应、SystemServer Android 17 还调用 startApexServices 等表述。"
-reviewed_date: "2026-07-14"
-reviewed_by: "openclaw-task6"
-polish_count: 1
-polish_date: "2026-04-05"
-polish_by: "task2b-polish"
-task9_reviewed_date: 2026-07-14
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-07-14T17:26:54+08:00"
-task9_review_notes: "2026-07-14 Task9 round-3 复审（post-Task2B fix）: pass-tech-review。P0=0 / P1=0。复核 SurfaceFlinger 切片表 android-17 行已添加、16KB Page Size 三层边界（AOSP 构建 / 设备配置 / Google Play）声明清晰、last_verified_against 锚定 android-17.0.0_r1 等修复全部到位。P2 3 处已写入 suggestions.md（USAP 量化、ProcessState.cpp 行号、binder.c spawn 守门行号待验证），P3 3 处仅日志记录。满足自动晋升条件 → ✅ finalized。"
-last_task6_at: "2026-07-14T21:09:00+08:00"
-last_task6_audit: "2026-07-06"
-last_task6_review_log: "logs/review/2026-07-14-21-review.md"
-last_task6_audit_log: "logs/review/2026-06-25-10-audit.md"
-task6_review_notes: "07-14 21 Task6 re-review (post-Task2B fix): pass-light-edit。L2 小修 1 处（outline 锚点 Android 16→15-17 与正文标题对齐）；frontmatter 去重 last_task6_review_log；outline 5/5 覆盖、2/3 扩展；L1 禁用词扫描全清。Task9 needs-rework P1:2 已由 Task2B 修复（SF切片表缺android-17行+版本锚点），待 Task9 复审。"
-last_task9_audit: "2026-07-08"
-task9_review_log: logs/deep-review/2026-07-14-21-deep-review.md
-reviewed_at: "2026-05-18T08:31:45+08:00"
-task6_reviewed_date: "2026-07-14"
-finalized_date: "2026-07-14"
-finalized_by: "openclaw-task9-auto-promote"
-last_task9_review_log: logs/deep-review/2026-07-14-17-deep-review.md
-last_task2b_at: 2026-07-14T20:51:00+08:00
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-15
-last_task9_autofix_at: "2026-07-08"
-last_task9_audit_log: "logs/deep-review/2026-07-08-18-audit.md"
 ---
 
 # 1.1 Android 分层架构

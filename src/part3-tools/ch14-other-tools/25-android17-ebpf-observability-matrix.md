@@ -3,7 +3,6 @@ title: "Android 17 eBPF 性能可观测性程序矩阵扩展"
 chapter: "14.25"
 section: "14.25"
 status: ready-for-review
-drafted_date: "2026-07-02"
 applicable_versions: "Android 17 (API 37)"
 last_verified: "2026-07-30"
 last_verified_against: "AOSP android-17.0.0_r1 + android17-6.18-2026-06_r6"
@@ -37,10 +36,6 @@ sources:
     path: "source.android.com/docs/core/architecture/kernel/bpf"
 tags: [eBPF, observability, CPU-cycle, DMA-BUF, wakelock, lock-contention, Rust, Android17]
 related_chapters: ["14.23", "14.24", "5.1", "5.4"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-02"
-gap_source: "每日技术文章 intake"
-android17_review_notes: "合并源码调研附录；按 Android 17 tag 核对构建架构、加载开关、attach 类型、map 字段、用户态读取方式和能力边界"
 ---
 
 # 14.25 Android 17 eBPF 性能可观测性程序矩阵扩展

@@ -2,8 +2,6 @@
 title: Jetpack Benchmark（Microbenchmark + Macrobenchmark）
 chapter: '19'
 section: '19.11'
-drafted_date: '2026-04-24'
-drafted_by: codex
 applicable_versions: Microbenchmark：Android 4.0+（API 14+）；Macrobenchmark：Android 6.0+（API 23+）；Baseline Profile 生成需 API 33+ 或 rooted API 28+；Baseline Profile 验证需 API 24+；书中样例以 Android 8 (API 26) - Android 17 (API 37) 为主
 last_verified: '2026-04-27'
 last_verified_against: AndroidX BlackHole / BenchmarkState / BaselineProfileRule / CompilationMode source and Android Developers Benchmark docs
@@ -25,36 +23,11 @@ sources:
   path: https://developer.android.com/reference/kotlin/androidx/benchmark/macro/junit4/BaselineProfileRule
 - type: official
   path: https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile
-last_task2b_at: '2026-04-27T06:57:48+08:00'
-repaired_date: '2026-04-27'
-repaired_by: openclaw-task2b
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-05-24"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-24T01:38:24+08:00"
-last_task9_audit: "2026-07-08"
-last_task9_audit_at: "2026-07-08T01:34:15+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-08-01-audit.md"
-last_task9_review_log: "logs/deep-review/2026-05-24-01-deep-review.md"
-task9_review_notes: "2026-05-24 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；Baseline Profile API floor / CompilationMode / BlackHole 已复核；自动晋升 finalized；详见 logs/deep-review/2026-05-24-01-deep-review.md。"
 status: "finalized"
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: "fixed"
-task2b_result: "fixed"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-24"
-task6_result: "pass-light-edit"
-last_task6_at: "2026-05-24T01:08:00+08:00"
-last_task6_review_log: "logs/review/2026-05-24-01-review.md"
-last_task6_audit: "2026-06-18"
-task6_review_notes: "2026-05-24 Task6 revisiting review: pass-light-edit。L1/L2 小修 1 处（清理 frontmatter duplicate task2b_result）。无新增 Task6 回炉；Baseline Profile API floor 已由 Task2B 修复，等待 Task9 复审。"
-deepseek_polish_state: done
-last_deepseek_polish_at: 2026-05-26
-last_task9_audit_result: "pass-source-version-audit"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-16
 ---
 # Jetpack Benchmark（Microbenchmark + Macrobenchmark）
 

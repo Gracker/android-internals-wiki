@@ -3,12 +3,8 @@ title: "btrace / RheaTrace"
 chapter: "19"
 section: "19.04"
 status: "finalized"
-drafted_date: "2026-04-24"
-drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-07-03"
-deepseek_polish_state: done
-last_deepseek_polish_at: 2026-05-25
 last_verified_against: "bytedance/btrace v3.0.0/v3.1.0 README.zh-CN + Main.java default capture source; Perfetto UI"
 confidence: medium
 tags: [apm]
@@ -22,34 +18,6 @@ pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: fixed
-reviewed_date: "2026-07-03"
-reviewed_by: "openclaw-task6"
-task6_result: "pass-light-edit"
-task2b_result: fixed
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-07-03"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-03T08:38:28+08:00"
-last_task9_audit: "2026-07-03"
-last_task2b_at: "2026-04-25T07:48:00+08:00"
-last_task6_audit: "2026-07-03"
-repaired_date: "2026-04-25"
-repaired_by: openclaw-task2b
-last_task9_autofix_at: "2026-07-03"
-last_task2b_verifier_at: "2026-07-03T07:32:03+08:00"
-last_task6_at: "2026-07-03T08:10:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-07-03-08-deep-review.md"
-updated_by: "openclaw-task9"
-updated_date: "2026-07-03"
-p0: 0
-p1: 0
-p2: 0
-task9_p0_issues: 0
-task9_p1_issues: 0
-task9_p2_issues: 0
-task9_review_notes: "2026-07-03 Task9 deep review: pass-tech-review；无 P0/P1/P2；task6 已通过且 queue.json 无 pending，自动晋升 finalized；详见 logs/deep-review/2026-07-03-08-deep-review.md。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-17
 ---
 
 # btrace / RheaTrace

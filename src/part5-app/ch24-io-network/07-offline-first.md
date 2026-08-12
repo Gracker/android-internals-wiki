@@ -7,8 +7,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-14"
 last_verified_against: "Android Developers docs 2026-05-14 + AndroidX Room/WorkManager/Paging docs + Clippings 结构参考"
 confidence: medium
-drafted_date: "2026-05-14"
-polish_count: 1
 sources:
   - type: official
     path: "https://developer.android.com/topic/architecture/data-layer/offline-first"
@@ -30,28 +28,8 @@ tags: [offline-first, sync, conflict-resolution, optimistic-update, room, workma
 related_chapters: ["24.6", "24.2", "25.4"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-14"
-task6_reviewed_date: "2026-05-14"
-task6_reviewed_by: openclaw-task6
 task9_state: reviewed
 task2b_state: fixed
-last_task2a_at: "2026-05-14T12:17:00+08:00"
-task9_result: pass-tech-review
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: 2026-05-14
-last_task9_at: "2026-05-14T12:37:27+08:00"
-last_task6_at: "2026-05-14T13:06:00+08:00"
-last_task6_audit: "2026-06-06"
-last_task6_review_log: logs/review/2026-05-14-13-review.md
-task6_review_notes: "2026-05-14 Task6：四层质检通过；吸收 Task9 P2 的示例代码接入边界，轻修术语和无数据基线的批量窗口表述。满足 Task6/Task9 通过且 queue 无 pending，自动晋升 finalized。"
-last_task9_audit: "2026-07-10"
-last_task9_audit_log: "logs/deep-review/2026-07-10-22-audit.md"
-last_task9_audit_result: "pass-idle-audit"
-last_task9_audit_notes: "idle audit: 维度1（官方来源/示例 API）和维度3（Android 10-17 版本边界）快速复核通过；offline-first、Room、WorkManager、Paging RemoteMediator 口径仍与 Android Developers 文档一致；无 Android 18/API 38+ 内容，无 P0/P1。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-14
 ---
 
 # 离线优先架构

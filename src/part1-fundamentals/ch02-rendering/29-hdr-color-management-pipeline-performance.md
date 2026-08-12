@@ -3,7 +3,6 @@ title: "HDR 显示管线与色彩管理性能"
 chapter: "2.29"
 section: "2.29"
 status: ready-for-review
-drafted_date: "2026-06-29"
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -33,9 +32,6 @@ sources:
     path: "source.android.com/docs/core/display/tone-mapping"
 tags: [HDR, color-management, display-pipeline, wide-color-gamut, surfaceflinger, tone-mapping]
 related_chapters: ["2.1", "2.6", "2.10", "2.22", "2.23"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-28"
-gap_source: "AOSP结构+官方文档"
 ---
 
 # 2.29 HDR 显示管线与色彩管理性能

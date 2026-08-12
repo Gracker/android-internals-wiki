@@ -93,51 +93,10 @@ related_chapters:
 - '13.3'
 - '2.1'
 - '7.1'
-drafted_date: '2026-04-03'
-drafted_by: openclaw-task2a
-reviewed_date: '2026-06-29'
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit-v2
-polish_count: '2'
-polish_date: '2026-04-10'
-polish_by: task2b-polish
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
-task9_result: auto-fixed
 task2b_state: fixed
-task2b_result: fixed
-task2b_rework_date: '2026-05-28T06:50:00+08:00'
-last_task2b_lite_at: '2026-06-29'
-task9_reviewed_date: '2026-06-29'
-task9_reviewed_by: openclaw-task9
-review_notes: '''2026-04-24 task6 re-review (revisiting): pass-light-edit. L1 fix:
-  2处否定纠正式句型已改为直接陈述；1处口水过渡词已删除。'
-last_task9_at: '2026-06-29T11:34:21+08:00'
-task9_review_notes: '2026-06-29 Task9 deep-review: auto-fixed。P0/P1 本轮无未闭环项；已修正 Perfetto
-  Android 9/10/11 版本边界、perfetto.rc 源码路径和 FrameTimeline 时间线，回到 Task6 复审。'
-last_task6_at: '2026-06-29T13:16:34+08:00'
-last_task6_audit: '2026-07-09'
-task6_reviewed_date: '2026-05-25'
-last_task9_review_log: logs/deep-review/2026-06-29-11-deep-review.md
-last_task9_audit: '2026-06-20'
-last_task9_audit_log: logs/deep-review/2026-06-20-02-audit.md
-last_task6_review_log: logs/review/2026-06-29-13-review.md
-task6_review_notes: '2026-06-29 Task6 复审(revisiting→reviewed)：Task9 auto-fix 后写作质检通过。L1
-  fix: frontmatter 4 处重复 YAML key 已清理。无 L3/L4 回炉项。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。task9_result=auto-fixed
-  + queue 无 pending，自动晋升 finalized。'
-p0: '0'
-p1: '0'
-p2: '0'
-updated_by: openclaw-task9
-updated_date: '2026-06-29'
-task6_l3_l4_issues: '0'
-task6_l1_l2_fixes: '6'
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: '2026-06-14'
-rework_date: '2026-06-29'
-rework_by: openclaw-task2b
-last_task9_autofix_at: '2026-06-29'
 ---
 
 # 13.1 Perfetto 简介与演进
