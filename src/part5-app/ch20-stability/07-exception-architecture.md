@@ -2,24 +2,28 @@
 title: "异常处理架构设计"
 chapter: "20.7"
 section: "20.7"
-status: "ready-for-review"
-pipeline_stage: ready-for-review
+status: "finalized"
+pipeline_stage: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [exception-handling, safemode, hotfix, graceful-degradation]
-confidence: medium
+confidence: high
 consolidated_from:
   - "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md"
 sources:
-- type: reference
-  path: kotlinx-coroutines-android/src/AndroidExceptionPreHandler.kt
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityManager.java
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/res/res/values/config.xml
 - type: official
   path: https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail)
+- type: official
+  path: https://developer.android.com/reference/android/webkit/RenderProcessGoneDetail
 - type: reference
   path: https://support.google.com/googleplay/android-developer/answer/16559646
 - type: aosp
@@ -40,12 +44,16 @@ sources:
   path: https://developer.android.com/reference/android/app/ActivityManager#setProcessStateSummary(byte%5B%5D)
 - type: reference
   path: https://github.com/Kotlin/kotlinx.coroutines/tree/1.11.0/ui/kotlinx-coroutines-android
-last_verified: "2026-08-09"
-last_verified_against: "AOSP android-17.0.0_r1, Android Developers docs, Kotlin docs, Clippings structure references"
+- type: reference
+  path: https://man7.org/linux/man-pages/man7/signal-safety.7.html
+last_verified: "2026-08-12"
+last_verified_against: "AOSP android-17.0.0_r1 (RuntimeInit, ActivityManager, ApplicationExitInfo, AppExitInfoTracker, config.xml, AtomicFile, DropBoxManagerService, ActivityManagerService), Android Developers API docs, Kotlin/kotlinx.coroutines 1.11.0 docs/source, Google Play policy, POSIX signal-safety reference"
 related_chapters: ["20.2", "20.3", "26.2"]
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
+last_review_finalize_at: "2026-08-12T12:15:49+08:00"
+last_review_finalize_run_id: "20260812-120606-8a70453e"
 ---
 
 # 异常处理架构设计
@@ -149,7 +157,7 @@ API 37 的 `ApplicationExitInfo.getAnrInfo()` 只在 `reason == REASON_ANR` 时�
 
 ### 历史记录有容量和持久化边界
 
-AOSP Android 17 的 [`AppExitInfoTracker.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java)有两个实现细节：
+AOSP Android 17 的 [`AppExitInfoTracker.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java)和系统资源默认值 [`config.xml`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/res/res/values/config.xml)给出两个实现细节：
 
 - `APP_EXIT_INFO_PERSIST_INTERVAL` 为 30 分钟；
 - `config_app_exit_info_history_list_size` 的 AOSP 默认值为每包 16 条。
@@ -506,14 +514,18 @@ kotlinx.coroutines 1.11.0 的 [JVM `CoroutineExceptionHandlerImpl.kt`](https://g
 ## 参考资料
 
 - [Android 17 `RuntimeInit.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java)
+- [Android 17 `ActivityManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityManager.java)
 - [Android 17 `ApplicationExitInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java)
 - [Android 17 `AppExitInfoTracker.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java)
+- [Android 17 `config.xml` 默认资源](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/res/res/values/config.xml)
 - [Android 17 `AtomicFile.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/util/AtomicFile.java)
 - [Android 17 `DropBoxManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/DropBoxManagerService.java)
 - [Android 17 `ActivityManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)
 - [`ApplicationExitInfo` API](https://developer.android.com/reference/android/app/ApplicationExitInfo)
 - [`ActivityManager.setProcessStateSummary()` API](https://developer.android.com/reference/android/app/ActivityManager#setProcessStateSummary(byte%5B%5D))
 - [`WebViewClient.onRenderProcessGone()` API](https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail))
+- [`RenderProcessGoneDetail` API](https://developer.android.com/reference/android/webkit/RenderProcessGoneDetail)
 - [Kotlin 协程异常处理](https://kotlinlang.org/docs/exception-handling.html)
 - [kotlinx.coroutines 1.11.0 Android 模块](https://github.com/Kotlin/kotlinx.coroutines/tree/1.11.0/ui/kotlinx-coroutines-android)
 - [Google Play Device and Network Abuse 政策](https://support.google.com/googleplay/android-developer/answer/16559646)
+- [signal-safety(7)：async-signal-safe 函数边界](https://man7.org/linux/man-pages/man7/signal-safety.7.html)
