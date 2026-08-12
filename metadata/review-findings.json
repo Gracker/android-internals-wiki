@@ -1904,6 +1904,26 @@
       "summary": "last source verification 2026-04-20 older than 90 days",
       "type": "stale-source-verification",
       "updated_at": "2026-08-12T02:00:32.165961+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/34-oomadjuster-process-priority-performance.md",
+      "close_note": "Section 7 now states that due follow-up targets enter pending updates and that mFollowUpOomadjUpdateWaitDuration coalesces close timeout points before scheduling.",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260812-123555-deep-review-0e71bb6d",
+      "created_at": "2026-08-12T12:54:17.223150+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260812-123555-deep-review-0e71bb6d",
+      "details": "Section 7 described follow-up expiry as handler-to-pending-to-partial update but did not mention scheduleFollowUpOomAdjusterUpdateLocked coalesces close expiries through mFollowUpOomadjUpdateWaitDuration, which could make readers expect an exact immediate per-process recalculation.",
+      "id": "AIW-1.34-FOLLOWUP-COALESCING-20260812",
+      "log_path": "logs/deep-review/2026-08-12-20260812-123555-deep-review-0e71bb6d-deep-review.md",
+      "severity": "P3",
+      "source_paths": [
+        "frameworks/base/services/core/java/com/android/server/am/psc/OomAdjuster.java lines 1139-1170, 2907-2922 (android-17.0.0_r1)"
+      ],
+      "status": "fixed",
+      "summary": "follow-up OOM adj timing omitted minimum-delay coalescing",
+      "type": "precision",
+      "updated_at": "2026-08-12T12:54:17.276319+08:00"
     }
   ],
   "schema_version": 1
