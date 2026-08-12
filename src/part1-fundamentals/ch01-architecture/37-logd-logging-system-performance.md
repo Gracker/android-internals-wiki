@@ -4,14 +4,16 @@ chapter: "1.37"
 section: "1.37"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-07-25"
+last_verified: "2026-08-12"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: medium
-task6_state: fixed
+task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: ready-for-review
 last_rework_at: "2026-07-25T17:35:42+08:00"
 last_rework_run_id: "20260725-173542-rework-6030a13a"
+last_deep_review_at: "2026-08-12T20:51:36+08:00"
+last_deep_review_run_id: "20260812-203556-deep-review-6030a13a"
 sources:
   - type: aosp
     path: "system/logging/logd/ (android-17.0.0_r1)"
@@ -21,6 +23,10 @@ sources:
     path: "frameworks/base/core/jni/android_util_Log.cpp"
   - type: official
     path: "developer.android.com/ndk/reference/group/logging"
+  - type: official
+    path: "developer.android.com/topic/performance/app-optimization/additional-rule-types"
+  - type: official
+    path: "developer.android.com/privacy-and-security/risks/log-info-disclosure"
 tags: [logd, logging, performance, rust, kernel, logcat, buffer]
 related_chapters: ["1.4", "1.5", "1.34", "26.16"]
 ---
@@ -213,7 +219,7 @@ adb logcat -b main --pid="$(adb shell pidof -s com.example.app)" \
 
 ### 5.1 消除无效的参数求值
 
-下面这段代码即使最终被 liblog 级别过滤，参数仍已在 Java/Kotlin 层构造：
+这段代码即使最终被 liblog 级别过滤，参数仍已在 Java/Kotlin 层构造：
 
 ```kotlin
 Log.d(TAG, "user=${user.name}, payload=${encodeLargePayload(data)}")
@@ -312,7 +318,7 @@ AOSP 自带 `system/logging/liblog/tests/liblog_benchmark.cpp`，其中有轻载
 
 ## 8. 源码核查清单
 
-复核或移植上述结论时，可从下面这些文件开始：
+复核或移植这些结论时，可从这些文件开始：
 
 - Java/JNI：`frameworks/base/core/java/android/util/Log.java`、`frameworks/base/core/jni/android_util_Log.cpp`
 - liblog 写端：`system/logging/liblog/logger_write.cpp`、`logd_writer.cpp`、`README.protocol.md`
