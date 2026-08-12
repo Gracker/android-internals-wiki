@@ -2,12 +2,13 @@
 title: "AMS 双锁架构与 system_server 锁竞争优化"
 chapter: "1.25"
 section: "1.25"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [lock-contention, system-server, ams, process-record, dual-lock, LOSP, LSP, OomAdjuster, performance]
 related_chapters: ["1.14", "1.3", "1.8", "5.8"]
-last_verified: "2026-07-25"
-last_verified_against: "AOSP android-17.0.0_r1 frameworks/base/services/core/java/com/android/server/am/"
+last_verified: "2026-08-12"
+last_source_verified_at: "2026-08-12"
+last_verified_against: "AOSP android-17.0.0_r1 frameworks/base ActivityManagerService/ActivityManagerProcLock/ActivityManagerGlobalLock/ProcessList/CachedAppOptimizer/OomAdjuster/ThreadPriorityBooster/PerfettoCategories/LoadedApk/IApplicationThread; Perfetto android.monitor_contention stdlib docs"
 confidence: high
 sources:
   - type: research
@@ -17,7 +18,11 @@ sources:
   - type: aosp
     path: "platform/frameworks/base/services/core/java/com/android/server/am/ActivityManagerProcLock.java (android-17.0.0_r1)"
   - type: aosp
+    path: "platform/frameworks/base/services/core/java/com/android/server/am/ActivityManagerGlobalLock.java (android-17.0.0_r1)"
+  - type: aosp
     path: "platform/frameworks/base/services/core/java/com/android/server/am/ProcessList.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "platform/frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java (android-17.0.0_r1)"
   - type: aosp
     path: "platform/frameworks/base/services/core/java/com/android/server/am/psc/OomAdjuster.java (android-17.0.0_r1)"
   - type: aosp
@@ -26,6 +31,8 @@ sources:
     path: "platform/frameworks/base/core/java/android/os/PerfettoCategories.java (android-17.0.0_r1)"
   - type: aosp
     path: "platform/frameworks/base/core/java/android/app/LoadedApk.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "platform/frameworks/base/core/java/android/app/IApplicationThread.aidl (android-17.0.0_r1)"
   - type: official-docs
     path: "https://perfetto.dev/docs/analysis/stdlib-docs#android-monitor_contention"
 ---
