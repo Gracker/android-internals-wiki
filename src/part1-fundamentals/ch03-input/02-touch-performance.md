@@ -8,9 +8,9 @@ status: ready-for-review
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-03-31"
-last_verified_against: "AOSP android-17.0.0_r1"
-confidence: medium
+last_verified: "2026-08-12"
+last_verified_against: "AOSP android-17.0.0_r1 InputFlinger/InputTransport/ViewRootImpl/Choreographer/MotionPredictor/MotionEvent/InputEventAssigner sources; external/perfetto android.input inputevent config and android.input stdlib docs; source.android.com Input/Winscope adb trace docs; AndroidX Input/Graphics low-latency docs | 2026-08-12 rework cleared stale-source-verification finding AIW-FRESH-bfb7868d39d57e84"
+confidence: medium-high
 polish_count: 2
 polish_date: "2026-05-08"
 polish_by: "task2b-rework"
@@ -24,6 +24,8 @@ sources:
   - type: official
     path: "source.android.com/docs/core/interaction/input"
   - type: official
+    path: "source.android.com/docs/core/graphics/winscope/capture/adb"
+  - type: official
     path: "developer.android.com/reference/android/view/MotionEvent"
   - type: official
     path: "developer.android.com/reference/android/view/MotionPredictor"
@@ -34,7 +36,7 @@ sources:
   - type: official
     path: "developer.android.com/jetpack/androidx/releases/graphics"
   - type: official
-    path: "perfetto.dev/docs/analysis/sql-tables/android-input"
+    path: "perfetto.dev/docs/analysis/stdlib-docs#android-input"
   - type: research
     path: "DeepResearch/2026-05-11-hci-perception-input-latency-analysis.md"
   - type: research
@@ -45,7 +47,7 @@ task2b_rework_date: "2026-05-08"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-07-12"
 last_task9_at: "2026-07-12T12:28:57+08:00"
-task9_result: auto-fixed
+task9_result: rework-applied
 
 reviewed_date: "2026-07-12"
 reviewed_by: openclaw-task6
@@ -53,9 +55,9 @@ task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-07-12"
 task2b_lite_note: "版本锚点从 android-16.0.0_r1 更新到 android-17.0.0_r1（6 处正文 + frontmatter）；依据同目录 §3.9、§3.13 已验证 android-17.0.0_r1 路径一致性"
-task6_state: "pending-verification"
-task6_result: pass-light-edit
-task9_state: reviewed
+task6_state: pending-review
+task6_result: rework-applied
+task9_state: pending-review
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-07-12T12:15:00+08:00"
 last_task6_audit: "2026-07-12"
@@ -70,6 +72,11 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-12
 last_task9_autofix_at: "2026-07-12"
 last_task9_audit: "2026-06-06"
+last_rework_at: "2026-08-12T09:45:30+08:00"
+last_rework_run_id: "20260812-093533-rework-855a7839"
+last_rework_log: "logs/rework/2026-08-12-20260812-093533-rework-855a7839-rework.md"
+rework_result: "ready-for-review"
+rework_notes: "2026-08-12 rework：处理 AIW-FRESH-bfb7868d39d57e84 stale-source-verification；按 Android 17 / android-17.0.0_r1 复核 InputReader/InputDispatcher/InputChannel/InputConsumer/ViewRootImpl/Choreographer/MotionPredictor/MotionEvent/InputEventAssigner 与 external/perfetto android.input 证据，刷新 last_verified 与 last_verified_against，章节回流 ready-for-review 等待 Task6/Task9 复审。"
 pipeline_stage: ready-for-review
 last_consolidated_at: "2026-08-11"
 consolidated_from:
