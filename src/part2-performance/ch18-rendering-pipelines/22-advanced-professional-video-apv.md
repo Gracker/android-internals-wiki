@@ -5,9 +5,14 @@ section: "18.22"
 section_title: "Android 17 Advanced Professional Video 与专业视频编解码管线"
 status: ready-for-review
 applicable_versions: "Android 16 (API 36/36.1) - Android 17 (API 37)；当前平台锚点 Android 17 / API 37"
-last_verified: "2026-08-09"
-last_verified_against: "android-17.0.0_r1 (MediaFormat, MediaCodecInfo, MediaRecorder, C2SoftApvEnc, C2SoftApvDec, software codec XML, MPEG4Writer) / Android 16 APV 与 Android 17 CQ 官方文档 2026-07-31 / Writer rendering_pipelines S12 / android17-6.18-2026-06_r6"
+last_verified: "2026-08-12"
+last_verified_against: "android-17.0.0_r1 (MediaFormat, MediaCodecInfo, MediaRecorder, C2SoftApvEnc, C2SoftApvDec, software codec XML, MPEG4Writer) / Android 16 APV 与 Android 17 CQ 官方文档复核 2026-08-12 / Writer rendering_pipelines S12 / android17-6.18-2026-06_r6"
 confidence: high
+pipeline_stage: reviewed
+task6_state: reviewed
+task9_state: deep-reviewed
+last_deep_review_at: "2026-08-12T16:35:26+08:00"
+last_deep_review_run_id: "20260812-163526-deep-review-627bfda7"
 tags: [media, apv, mediacodec, professional-video, android16, android17]
 related_chapters: ["18.21", "14.20", "24.12", "26.3"]
 sources:
@@ -286,7 +291,7 @@ AOSP 软编码器默认接受 implementation-defined 和 `YCBCR_420_888`，并�
 1. Camera → codec 的 Surface 链路可能避免应用 CPU 拷贝，但不能据此断定 codec 内部零转换。
 2. Camera 能建立 10-bit/HDR session，也不等于它能以 P210 直接供给 APV encoder；Camera stream combination 和 codec 输入能力要分别查询。
 
-AOSP 软解码器优先选择请求且受支持的输出格式；不能使用 P210 时，会尝试 P010、RGBA1010102 或 YV12。P010 是 4:2:0 10-bit，YV12 通常是 4:2:0 8-bit。剪辑或调色 App 如果需要保住 4:2:2 和 10-bit，必须核对 decoder 的 `colorFormats`、configure 后的 output format，以及收到的 `Image` / `HardwareBuffer` 格式。只看 APV bitstream profile 会漏掉输出阶段的降采样或位深损失。
+`C2SoftApvDec.cpp` 的输出像素格式参数默认是 `HAL_PIXEL_FORMAT_YCBCR_420_888`，平台支持时会把 P010、P210、RGBA1010102 和 implementation-defined 加入候选。实际取 buffer 时，默认 `YCBCR_420_888` 路径会落到 YV12；显式请求 P210、P010、RGBA1010102 等平台支持的格式时，代码先按请求值取 buffer；请求 implementation-defined 或请求值不可用时，才按 P210、P010、RGBA1010102、YV12 的顺序回退。P010 是 4:2:0 10-bit，YV12 通常是 4:2:0 8-bit。剪辑或调色 App 如果需要保住 4:2:2 和 10-bit，必须核对 decoder 的 `colorFormats`、configure 后的 output format，以及收到的 `Image` / `HardwareBuffer` 格式。只看 APV bitstream profile 会漏掉输出阶段的降采样或位深损失。
 
 ## 码率、内存带宽和存储要用同一组规格计算
 
