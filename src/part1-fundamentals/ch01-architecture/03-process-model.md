@@ -2,8 +2,6 @@
 title: "进程模型与生命周期管理"
 chapter: "1.3"
 section: "1.3"
-drafted_date: "2026-05-13"
-drafted_by: openclaw-task2a
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1; ACK android17-6.18-2026-06_r6; Android Developers; source.android.com"
@@ -76,28 +74,10 @@ related_chapters:
   - "5.1"
   - "5.8"
 task2b_state: fixed
-task2b_result: fixed
 task6_state: "reviewed"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-13"
-task6_result: "pass-light-edit"
-task6_reviewed_date: "2026-06-07"
-review_round: 2
-task6_review_notes: "2026-05-13 task6 review: L1/L2 通过；本轮仅补齐 review 元数据，无新增 L3/L4 回炉项。 | 2026-06-07 task6 revisiting review: L1/L2 通过（代码块标签、禁用词、高频词均合规）；无 B 类大问题；自动晋升 finalized（task9 pass + queue 无 pending）。"
 status: "finalized"
 pipeline_stage: "ready-to-publish"
 task9_state: reviewed
-task9_result: auto-fixed
-task9_reviewed_date: "2026-06-07"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-07T08:20:00+08:00"
-last_task9_autofix_at: "2026-06-07"
-last_task9_audit: "2026-06-07"
-last_task6_audit: "2026-07-08"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-07
-task6_reviewed_by: "openclaw-task6"
-last_task6_at: "2026-06-07T12:12:00+08:00"
 ---
 
 # 1.3 进程模型与生命周期管理

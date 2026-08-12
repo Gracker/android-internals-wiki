@@ -3,21 +3,10 @@ title: "案例集"
 chapter: "8.5"
 section: "8.5"
 status: "finalized"
-drafted_date: "2026-04-02"
-reviewed_date: "2026-05-05"
-last_task6_at: 2026-06-16T21:11:00+08:00
-rework_date: "2026-05-03"
-rework_by: "task2b-rework"
-reviewed_by: "openclaw-task6"
-review_cycle: 4
-re_review_date: "2026-04-09"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-16"
 last_verified_against: "Android multidex docs, Android 16KB page size docs, android.os.ProfilingManager / ProfilingTrigger / ProfilingResult docs, AOSP / Perfetto context"
 confidence: medium
-polish_count: 1
-polish_date: "2026-04-06"
-polish_by: "task2b-polish"
 sources:
   - type: blog
     path: "性能优化日报/2026-03-31-性能优化日报.md (Reddit R8 full mode)"
@@ -37,30 +26,8 @@ tags: ['case-study', 'cold-start', 'response-optimization', 'baseline-profile', 
 related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
-task6_result: "pass-light-edit"
-last_task6_audit: "2026-07-05"
 task9_state: "reviewed"
 task2b_state: "fixed"
-task2b_result: "fixed"
-task9_result: "pass-tech-review"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-16"
-last_task9_at: "2026-06-16T21:32:37+08:00"
-repaired_date: "2026-05-23"
-repaired_by: "openclaw-task2b"
-last_task2b_at: "2026-04-27T19:10:48+08:00"
-updated_by: "openclaw-task2b"
-updated_date: "2026-05-23"
-review_notes: "2026-04-28 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 3 写入 suggestions。；2026-05-03 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。；2026-05-05 task6 re-review (finalized revisiting): pass-light-edit；L1/L2 轻修并确认 finalized / ready-to-publish。；2026-05-23 task9 re-review: pass-tech-review。AutoFDO 官方指标修复复核通过；无 P0/P1；queue 无 pending（清理 stale pending 1 条），自动晋升 finalized。"
-last_task9_audit: "2026-07-09"
-last_task9_review_log: "logs/deep-review/2026-06-16-21-deep-review.md"
-last_task9_audit_log: "logs/deep-review/2026-07-09-08-audit.md"
-task9_review_notes: "2026-05-23 Task9 re-review：pass-tech-review。已复核 16 点抽检 P0（AutoFDO Cold App Launch/Boot/Binder-rpc/Hwbinder 指标）修复；本轮无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-16 13 Task9 idle audit auto-fix：修正 ProfilingManager 触发来源判定 API，`getTag()` 改为 `getTriggerType()` / 文件名 `trigger-type-x`，并补充 `TRIGGER_TYPE_OOM` 返回 Java heap dump 的产物边界；同步 applicable_versions 到 Android 17 / API 37。证据：Android Developers ProfilingTrigger / ProfilingResult / ProfilingManager docs。已回到 Task6 复审。 | 2026-06-16 21 Task9 deep-review：pass-tech-review。ProfilingManager / 16KB / R8 关键 API 复核无 P0/P1；Reddit 绝对耗时与收益拆分作为 P2 数据支撑建议写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-deepseek_polish_state: done
-last_deepseek_polish_at: 2026-06-16
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-16
-last_task9_autofix_at: "2026-06-16"
 ---
 
 # 8.5 案例集

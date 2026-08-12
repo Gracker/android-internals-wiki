@@ -3,24 +3,11 @@ status: "ready-for-review"
 title: Input 事件分发：队列、反压与丢弃
 chapter: '3.1'
 section: '3.1'
-last_task6_at: "2026-06-20T20:11:02+08:00"
-last_task2b_lite_at: "2026-06-07"
-task2b_lite_notes: "2026-06-07 删除重复 H1+outline+intro 块(L55-102);代码块语言标记待后续修复"
-last_task6_review_log: "logs/review/2026-06-07-11-review.md"
-task6_review_notes: "2026-05-30 01: Task6 revisiting review: needs-rework;L1/L2 小修 6 处;参考资料后仍有未融合源码调研素材块，新增 queue 回炉。 | 2026-06-07 11:06:B类问题-文件存在重复的H1+outline+intro块(第55-102行),需Task2B删除第一个不完整实例;L1/L2无新增小修项。 | 2026-06-07 12:12:task6 revisiting review(第3轮):修复 13 处代码块语言标记(```text→```cpp/```java + 闭合标签规范化);L1/L2 通过;无 B 类大问题;queue 中 3.1 的 pending 条目为 task2b 已修复的陈旧条目，建议清理。"
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-08-07'
 last_verified_against: "AOSP android-17.0.0_r1; kernel android17-6.18-2026-06_r6"
 version_note: Android 12/13 使用 InputClassifier，Android 14-17 使用 InputProcessor；正文行为以 Android 17 为准
 confidence: high
-reviewed_date: "2026-06-07"
-reviewed_by: "openclaw-task6"
-rework2_date: '2026-04-15'
-rework2_by: openclaw-task2b
-rework2_reason: 'Task9 Deep Tech Review: 修正 DEFAULT_INPUT_DISPATCHING_TIMEOUT 常量源码路径(frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp)'
-polish_count: 1
-polish_date: '2026-04-05'
-polish_by: task2b-polish
 sources:
   - type: aosp
     path: frameworks/native/services/inputflinger/InputManager.cpp
@@ -46,40 +33,12 @@ sources:
     path: common/drivers/input/evdev.c
 tags: [InputReader, InputDispatcher, EventHub, InputChannel, InputTransport, ViewRootImpl, backpressure, stale-event, ANR, Perfetto]
 related_chapters: ["3.2", "3.4", "3.7", "3.8", "9.1", "9.2", "13.8"]
-task6_result: "pass-light-edit"
 task6_state: "pending-verification"
 pipeline_stage: "ready-for-review"
-task6_reviewed_date: "2026-06-20"
 task9_state: "reviewed"
-task9_result: "auto-fixed"
 task2b_state: "fixed"
-task2b_result: "fixed-lite"
-task2b_notes: "修复 Task6 2026-05-30 回炉问题:移除未进入 Android 17 的 DeliQueue 推测内容，清理参考资料后未融合的源码调研素材块。2026-06-07 Task2B 主修复：修正 HwTimeoutMultiplier() 版本表入口（Android 13 已存在）；修复 frontmatter 重复 pipeline_stage 键。"
-task2b_fixed_by: openclaw-task2b
-task2b_fixed_at: "2026-06-07T10:50:00+08:00"
-task9_reviewed_date: "2026-06-20"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-20T18:29:16+08:00"
-review_notes: "2026-06-07 Task9 深度技术审计通过：无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 Task9 闲时抽检 auto-fix: 修正 Android 17 源码边界、EventHub 示例、InputChannel 创建链路和窗口信息回调版本限定;回到 Task6 复审。"
-last_task2b_at: "2026-05-30T00:50:00+08:00"
-repaired_date: '2026-04-27'
-repaired_by: openclaw-task2b
-last_task9_review_log: "logs/deep-review/2026-06-20-18-audit.md"
-task6_reviewed_by: "openclaw-task6"
-task6_l1_l2_fixes: 19
-task6_l3_l4_issues: 1
-task6_new_rework: true
-review_type: "task6-writing-quality-review"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-21
-last_task9_autofix_at: "2026-06-20"
-last_task9_audit: "2026-08-07"
-task2b_verifier_notes: "2026-06-20 Task2B Verifier: status finalized→ready-for-review (Task9 auto-fix 回流，pipeline_stage=task6_pending 但 status 未同步); 2026-06-20T19:27:21+08:00"
-last_task6_audit: "2026-06-20"
 last_idle_audit_at: "2026-08-07T14:35:13+08:00"
 last_idle_audit_run_id: "20260807-143513-idle-audit-d0114de0"
-last_idle_audit_log: "logs/audit/2026-08-07-20260807-143513-idle-audit-d0114de0-idle-audit.md"
-last_idle_audit_notes: "2026-08-07 闲时抽检通过：未发现 Android 18/API38 越界、待验证残留、frontmatter 缺项或 P0/P1 技术错误；quality_flags pending-verification-marker 与 thin-source-marking 经核查仍不适用；仅更新审计元数据。"
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"

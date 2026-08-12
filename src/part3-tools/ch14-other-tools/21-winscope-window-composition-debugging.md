@@ -4,7 +4,6 @@ title: Winscope 与窗口/合成状态可视化调试
 chapter: 14.21
 section: 14.21
 status: ready-for-review
-drafted_date: 2026-05-19
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: 2026-07-30
 last_verified_against: android-17.0.0_r1 / Android 17 Winscope Perfetto data sources / AOSP Winscope docs updated 2026-06-17
@@ -30,9 +29,6 @@ sources:
     path: "intake/daily-info/2026-05-19.md"
 tags: [winscope, surfaceflinger, windowmanager, perfetto, tracing, rendering, input]
 related_chapters: ["2.6", "2.12", "2.13", "2.16", "3.1", "13.3", "13.9", "14.7"]
-created_by: task2a-knowledge-gap
-created_date: 2026-05-19
-gap_source: 官方文档/每日信息/AOSP工具文档
 ---
 
 # 14.21 Winscope 与窗口/合成状态可视化调试

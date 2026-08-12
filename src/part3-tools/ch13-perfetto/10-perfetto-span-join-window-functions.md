@@ -4,8 +4,6 @@ chapter: "13.10"
 section: "13.10"
 section_title: "Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数"
 status: finalized
-drafted_date: "2026-05-15"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-05-15"
 last_verified_against: "Perfetto Trace Processor docs + google/perfetto source master, external/perfetto mirror"
@@ -27,37 +25,10 @@ sources:
     path: "external/perfetto/src/trace_processor/perfetto_sql/stdlib/sched/thread_executing_span_with_slice.sql"
 tags: ["perfetto", "sql", "span-join", "trace-processor", "frame-analysis"]
 related_chapters: ["13.9", "13.5", "14.23"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-15"
-gap_source: "素材驱动/研究素材"
 task6_state: reviewed
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-16"
-task6_reviewed_date: "2026-06-16"
-last_task6_at: "2026-06-16T03:07:00+08:00"
-task6_review_notes: "2026-06-16 Task6 复审:pass-light-edit。无禁用词/高频词/AI套话命中。frontmatter 格式清理(删除空行)。L1/L2 全部通过,无B类问题。Task9 needs-rework 状态保持,不可自动晋升。"
 pipeline_stage: ready-to-publish
 task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-16"
-last_task9_at: "2026-06-16T03:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-16-03-deep-review.md"
-task9_review_notes: "2026-06-16 Task9 复审:pass-tech-review。frame/cpufreq 边界裁剪与 GC pause window 运行最大结束时间合并算法已通过复核；queue 无 pending，Task6 已通过，自动晋升 finalized。"
-last_task9_audit: "2026-07-13"
-last_task9_audit_at: "2026-07-13T00:26:22+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-13-00-audit.md"
-last_task9_audit_result: "pass-idle-audit"
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_main_at: 2026-06-16T02:50:00+08:00
-updated_by: "openclaw-task6"
-updated_date: "2026-06-30"
-last_task6_audit: "2026-06-30"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-12
-last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度3（版本差异覆盖）检查通过；AOSP android-17.0.0_r1 external/perfetto 的 SPAN_JOIN、sched.cpu/ucpu、cpu_frequency_counters 与 flattened slice 路径复核通过；无 P0/P1/P2。"
 ---
 
 # 13.10 Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数

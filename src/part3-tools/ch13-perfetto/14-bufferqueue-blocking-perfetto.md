@@ -4,20 +4,12 @@ title: "BufferQueue 阻塞的 Perfetto 识别"
 chapter: "13.14"
 section: "13.14"
 status: finalized
-drafted_date: "2026-05-17"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-10"
 last_verified_against: "Perfetto FrameTimeline docs; AOSP android-17.0.0_r1 BufferQueueProducer/Consumer/Core; android-15/16 release comparison for BUFFER_RELEASE_CHANNEL boundary"
-last_task2b_lite_at: "2026-05-30"
 confidence: medium
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-reviewed_by: openclaw-task6
-reviewed_date: "2026-07-10"
-finalized_by: "openclaw-task6-auto-promote"
-finalized_date: "2026-07-10"
-task6_result: pass-light-edit
 task9_state: reviewed
 sources:
 - type: material
@@ -52,44 +44,7 @@ sources:
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
 tags: [perfetto, bufferqueue, frametimeline, jank, surfaceflinger, rendering]
 related_chapters: ["2.13", "2.16", "7.4", "18.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-16"
-gap_source: "素材驱动/章节深挖"
-gap_score: 19
-material_count: 4
-source_refs: 
- - OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-jank-perfetto.md
- - OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-mechanism-detail.md
- - https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/libs/gui/BufferQueueProducer.cpp
- - https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/libs/gui/BufferQueueConsumer.cpp
- - https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/libs/gui/BufferQueueCore.cpp
- - https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/libs/gui/include/gui/BufferQueueCore.h
-task9_result: auto-fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_at: "2026-07-10T06:37:44+08:00"
-last_task9_review_log: "logs/deep-review/2026-07-10-06-audit.md"
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: "2026-05-28T08:50:00+08:00"
-rework_date: "2026-05-28"
-rework_by: openclaw-task2b
-review_notes: "2026-05-28 task2b: corrected BUFFER_RELEASE_CHANNEL version boundary; 2026-07-10 Task9 verified Android 16 flag path and Android 17 release notify path."
-last_task6_at: "2026-07-10T08:12:38+08:00"
-last_task6_review_log: "logs/review/2026-05-28-09-review.md"
-last_task6_audit: "2026-06-22"
-task6_l1_l2_fixes: 9
-task6_l3_l4_issues: 0
-task6_review_notes: "2026-07-10 Task6 revisiting-review: pass-light-edit;L1 banned word fix (对齐/链路);outline covered;无 L3/L4 回炉项。Task9 auto-fixed 已确认。"
-task6_reviewed_by: openclaw-task6
-task6_reviewed_at: "2026-07-10T08:12:38+08:00"
-updated_by: openclaw-task9
-updated_date: "2026-07-10"
-last_task9_at: "2026-07-10T06:36:58+08:00"
-task9_review_notes: "2026-07-10 Task9 idle-audit AUTO-FIX: P0 0 / P1 1 / P2 0;修正 BufferQueue release notify 版本边界与源码锚点到 android-17.0.0_r1: Android 16 为 BUFFER_RELEASE_CHANNEL flag 形态,Android 17 保留 waitForBufferRelease/notifyBufferReleased 路径且最终 notify_all;回到 Task6 复审。详见 logs/deep-review/2026-07-10-06-audit.md。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
-last_task9_audit: "2026-07-10"
-last_task9_autofix_at: "2026-07-10"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-16
 ---
 
 # 13.14 BufferQueue 阻塞的 Perfetto 识别

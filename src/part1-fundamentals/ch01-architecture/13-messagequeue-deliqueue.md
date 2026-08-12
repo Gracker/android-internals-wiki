@@ -53,46 +53,10 @@ related_chapters:
   - '2.4'
   - '2.5'
   - '7.1'
-drafted_date: '2026-04-04'
-reviewed_date: '2026-07-25'
-reviewed_by: Codex
 task6_state: reviewed
-task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
 task2b_state: fixed
-task2b_result: fixed
 pipeline_stage: ready-to-publish
-deepseek_cn_review_state: done
-last_task6_review_log: "logs/review/2026-07-14-22-review.md"
-last_task9_review_log: "logs/deep-review/2026-07-02-02-deep-review.md"
-last_task9_at: "2026-07-14T22:20:00+08:00"
-last_task9_review_notes: "2026-07-14 Task9 deep-review: pass-tech-review。P0 0 / P1 1 / P2 1。已修复单指针 CAS ABA 表述；Android 17 源码锚点完整，性能数据引用口径准确。"
-last_task9_autofix_at: "2026-07-14"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-02"
-last_task2b_at: "2026-05-27T12:50:00+08:00"
-last_task2b_lite_at: "2026-07-14"
-task2b_main_at: "2026-07-02T00:57:10.552430+08:00"
-task9_review_notes: "2026-05-27 13:20 Task9：pass-tech-review。复核 Android 16 Combined/Concurrent/Legacy MessageQueue 路径、Android 17 行为变更页、DeliQueue 官方性能数据；未发现 P0/P1，自动晋升 finalized。 | 2026-06-14 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 0；复核 Android 16 Combined/Concurrent/Legacy MessageQueue 源码路径、Android 17 MessageQueue 行为变更页、官方 DeliQueue 性能数据与内部交叉引用；无阻断问题，Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-22 16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 0；复核 AOSP android-16.0.0_r1 Combined/Concurrent/Legacy MessageQueue、Android 17 MessageQueue 行为变更页与官方性能数据；Android 17/API 37 边界清楚，无 P0/P1。 | 2026-07-01 20 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；正文仍以 Android 16 ConcurrentMessageQueue/ConcurrentSkipListSet 作为 Android 17 新 MessageQueue 的主要源码说明，缺少 android-17.0.0_r1 CombinedDeliMessageQueue/MessageStack/MessageHeap 主线锚点，已写入 Task2B queue。"
-task6_reviewed_date: "2026-07-14"
-last_task6_at: 2026-07-14T22:18:30+08:00
-task6_review_notes: 06-14 08 Task6 revisiting：pass-light-edit。L1 小修 3 处（3.3.9 形容词+冒号起手式 ×3）；outline 5/5 覆盖。07-01 22 Task6 revisiting：pass-light-edit。L1 小修 2 处（3.3.9 形容词+冒号 ×2：分工很清晰→按固定顺序执行、区分很关键→在trace里直接体现）；outline 5/5 覆盖；Task9 needs-rework P1:1（android-17 源码锚点缺失），待 Task2B 修复。07-02 01 Task6 revisiting：pass-light-edit。L1 小修 4 处（禁用词"落地"×4 → 实现/发布）；Task2B 已补充 android-17.0.0_r1 源码锚点（MessageStack/MessageHeap/CombinedDeliMessageQueue）；outline 5/5 覆盖、2/2 扩展；待 Task9 确认 Task2B 修复后可晋升。 07-14 18 Task6 revisiting：pass-light-edit。L1 无新增问题（禁用词扫描全清）；outline 5/5 覆盖、2/2 扩展；Task9 2026-07-14 needs-rework（P1:3），待 Task9 修复后重新复审。 07-14 22 Task6 revisiting：pass-light-edit。L1 小修 1 处（AI 清嗓词"需要明确的是"→直接陈述）；outline 5/5 覆盖、2/2 扩展；Task2B 已修复 Task9 P1 问题（fixed-lite），待 Task9 复审确认。
-last_task9_audit: "2026-07-08"
-last_task9_audit_log: "logs/deep-review/2026-07-08-22-audit.md"
-task9_audit_notes: "2026-06-14 Task9 idle audit: auto-fixed。P0 1：将不可定位的 `ConcurrentMessageQueue.java` 文件名修正为 AOSP android-16.0.0_r1 实际路径 `ConcurrentMessageQueue/MessageQueue.java`。 | 2026-07-08 Task9 idle audit: pass-tech-review。P0 0 / P1 0 / P2 0；复核 android-17.0.0_r1 CombinedDeliMessageQueue/MessageStack/MessageHeap/Message 与 android-16.0.0_r1 rollout 边界；未发现 Android 18/API38+ 或主线源码漂移。"
-p0: 0
-p1: 0
-p2: 0
-finalized_by: "openclaw-task9-auto-promote"
-finalized_date: "2026-07-02"
-updated_by: "openclaw-task9"
-updated_date: "2026-07-02"
-last_deepseek_cn_review_at: 2026-07-14
-last_task6_audit: "2026-06-20"
-last_task9_issues: "P0:0 P1:0 P2:0; post-Task6 confirmation pass"
-last_task2b_verifier_at: "2026-07-14T23:27:08+08:00"
-task2b_verifier_notes: "2026-07-14 23:25 Task2B Verifier: auto-promote to finalized. task6_result=pass-light-edit, task9_result=pass-tech-review, queue clear, body 208 lines. pipeline_stage was stuck at task9_pending."
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch01-architecture/01.26-messagqueue-deliqueue-optimization.md"

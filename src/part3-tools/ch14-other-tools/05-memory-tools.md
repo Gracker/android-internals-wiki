@@ -3,10 +3,6 @@ title: 内存分析工具
 chapter: '14.5'
 section: '14.5'
 status: "finalized"
-reviewed_date: "2026-05-30"
-reviewed_by: "openclaw-task6"
-drafted_date: '2026-04-03'
-drafted_by: openclaw-task2a
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-07-30'
 last_verified_against: Android Studio Quail 2 + LeakCanary 2.14 + AOSP android-17.0.0_r1 (system/memory/libmeminfo + bionic libc/memory malloc_debug/malloc_hooks) + Perfetto native-heap-profiler docs
@@ -24,40 +20,8 @@ tags:
 related_chapters: 
 pipeline_stage: "ready-to-publish"
 task6_state: reviewed
-task6_result: "pass-light-edit"
 task9_state: reviewed
 task2b_state: fixed
-task2b_result: fixed-lite
-task9_result: auto-fixed
-task2b_rework_date: '2026-05-01'
-task2b_fixed_at: '2026-05-28'
-task2b_lite_fixed_at: '2026-05-28T15:38:00+08:00'
-last_task2b_verifier_at: '2026-05-28T15:47:00+08:00'
-task9_reviewed_date: "2026-06-20"
-task9_reviewed_by: openclaw-task9
-last_task9_at: 2026-06-20T16:26:46+08:00
-last_task9_audit: "2026-06-20"
-last_task9_audit_log: logs/deep-review/2026-06-20-16-audit.md
-task9_review_notes: "2026-06-20 Task9 idle audit AUTO-FIX: 修正 Android 17 bionic malloc_debug/malloc_hooks 源码锚点；无新增 queue pending，回到 Task6 复审。"
-last_task2b_lite_at: '2026-07-09'
-last_task6_at: "2026-06-20T20:11:02+08:00"
-last_task6_audit: "2026-07-06"
-task6_reviewed_date: "2026-06-20"
-task6_reviewed_by: "openclaw-task6"
-last_task6_review_log: logs/review/2026-05-30-01-review.md
-task6_review_notes: "2026-05-30 01: Task6 revisiting review: pass-light-edit；outline 5/5 覆盖；无新增 L1/L2 小修，无新增 L3/L4 回炉项，送 Task9 复审。"
-last_task9_autofix_at: "2026-06-20"
-last_task9_review_log: logs/deep-review/2026-06-20-16-audit.md
-reviewed_at: "2026-05-30T01:05:00+08:00"
-task9_reviewed_at: "2026-06-20T16:26:46+08:00"
-updated_by: "openclaw-task9"
-updated_date: "2026-06-20"
-task6_l1_l2_fixes: 0
-task6_l3_l4_issues: 0
-task6_new_rework: false
-review_type: "task6-writing-quality-review"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-20
 ---
 
 # 14.5 内存分析工具

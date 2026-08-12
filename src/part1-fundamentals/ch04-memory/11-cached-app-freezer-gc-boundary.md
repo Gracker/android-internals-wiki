@@ -6,8 +6,6 @@ title: "Cached App Freezer、外部页回收与 GC 边界"
 chapter: "4.11"
 section: "4.11"
 status: ready-for-review
-finalized_by: openclaw-task2b-verifier
-drafted_date: "2026-05-19"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37); 16KB Page Size 从 Android 15 起覆盖设备侧兼容"
 last_verified: "2026-08-03"
 last_verified_against: "AOSP android-17.0.0_r1 frameworks/base services/core/java/com/android/server/am/psc/Constants.java, psc/OomAdjuster.java, ActivityManagerConstants.java, ActivityManagerService.java, CachedAppOptimizer.java, AppProfiler.java; frameworks/base/core/java/android/app/ActivityThread.java; ART art/runtime/gc/heap.cc; Android official docs 2026-08"
@@ -15,9 +13,6 @@ confidence: medium-high
 pipeline_stage: ready-for-review
 tags: [cached-app-freezer, gc, lmkd, oom-adj, binder-freezer, memory]
 related_chapters: ["1.18", "4.2", "4.3", "4.4", "4.7", "5.8", "20.5", "26.8"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-19"
-gap_source: "每日信息/DeepResearch/AOSP结构/官方文档"
 sources:
   - type: official
     path: "https://source.android.com/docs/core/perf/cached-apps-freezer"
@@ -51,21 +46,9 @@ sources:
     path: "DeepResearch/2026-05-19-android-cached-app-freezer-gc-trigger.md"
 task6_state: ready-for-review
 task9_state: ready-for-review
-task6_result: rework-applied
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-07
-last_task6_at: 2026-06-07T16:07:00+08:00
-task9_result: pending-review
 task2b_state: fixed
-last_task9_autofix_at: "2026-06-05"
-last_task9_at: "2026-06-05T05:28:04+08:00"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-07
-task2b_result: fixed
 last_rework_at: "2026-08-03T21:35:04+08:00"
 last_rework_run_id: "20260803-213504-rework-1a73105a"
-rework_by: aiw-polish-rework
-rework_result: fixed-pending-review
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch04-memory/04.20-android17-memory-compaction-freezer-performance-impact.md"

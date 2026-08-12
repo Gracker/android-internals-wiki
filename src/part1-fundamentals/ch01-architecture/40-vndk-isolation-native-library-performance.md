@@ -6,17 +6,11 @@ status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [vndk, linker, native-library, dlopen, namespace, performance, self-contained-hal]
 related_chapters: ["1.1", "1.50"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-09"
-gap_source: "DeepResearch + research-gaps"
 last_verified: "2026-08-06"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 last_body_apply_at: "2026-08-06T13:15:32+08:00"
 last_body_apply_run_id: "20260806-131532-f1fcd970"
-last_body_apply_source: "metadata/queue.json#13 freshness audit"
-reviewed_date: "2026-08-06"
-reviewed_by: hermes-aiw-review-finalize-apply
 task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed

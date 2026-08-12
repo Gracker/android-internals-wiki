@@ -50,45 +50,10 @@ related_chapters:
   - '2.10'
   - '8.2'
   - '16.2'
-drafted_date: "2026-05-16"
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-16"
-gap_source: "素材驱动/AOSP结构"
-material_paths:
-  - "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-07-zygote-preloadappprocesshals-preloadgraphicsdriver.md"
-  - "cs.android.com frameworks/base/core/java/com/android/internal/os/ZygoteInit.java"
-  - "cs.android.com frameworks/base/core/jni/com_android_internal_os_ZygoteInit.cpp"
-  - "cs.android.com frameworks/base/core/java/android/os/GraphicsEnvironment.java"
-task6_reviewed_date: "2026-05-27"
-reviewed_date: 2026-07-02
-reviewed_by: openclaw-task6
-review_round: 2
 task6_state: reviewed
-task6_result: pass-light-edit
 task9_state: reviewed
 pipeline_stage: ready-to-publish
-task6_review_notes: 2026-05-27 Task6：回炉复审通过。07-01 22 Task6 revisiting：pass-light-edit。Task9 auto-fixed P1:1 已确认（版本锚点迁移至 android-17.0.0_r1，口径闭合）；禁用词零命中；outline 7/7 覆盖；无新增 L1/L2/L3/L4 问题。待 Task9 最终确认 auto-fixed → pass-tech-review 后可自动晋升。07-02 01 Task6 revisiting：pass-light-edit。L1 零命中；L2 开头、节奏、结构均通过；outline 7/7 覆盖。Task9 auto-fixed（P0:0 P1:1-auto-fixed），queue.json 无 pending，自动晋升 finalized。
-last_task6_at: 2026-07-02T01:10:00+08:00
-last_task6_review_log: "logs/review/2026-05-27-19-review.md"
-task6_l1_l2_fixes: 0
-task6_l3_l4_issues: 0
-task9_result: auto-fixed
-task2b_result: "fixed-lite"
 task2b_state: fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-07-02"
-last_task9_at: "2026-07-02T00:28:41+08:00"
-last_task9_review_log: "logs/deep-review/2026-07-02-00-deep-review.md"
-task9_review_notes: "2026-05-27 Task9：pass-tech-review。复核 ZygoteInit preload 顺序、GraphicBufferMapper preloadHal、zygote_preload_graphics Android 13-16 分支、GraphicsEnvironment chooseDriverInternal；18 点 AUTO-FIX 后口径正确。 P0 0 / P1 0 / P2 0；Task6 已通过且 queue.json 无 pending，自动晋升 finalized。 | 2026-07-01 20 Task9 deep-review: auto-fixed。P0 0 / P1 1(auto-fixed) / P2 0；将主线验证锚点从 Android 16 + AOSP main 迁到 AOSP android-17.0.0_r1，Graphics mapper / Zygote preload / GraphicsEnvironment 口径已闭合，回到 Task6 复审。 | 2026-07-02 00 Task9 deep-review: auto-fixed。P0 0 / P1 1(auto-fixed) / P2 0；修正正文残留 Android 16 主线标签为 Android 17，源码锚点与 android-17.0.0_r1 闭合，回到 Task6 复审。"
-last_task2b_lite_at: "2026-05-27"
-last_task9_autofix_at: "2026-07-02"
-last_task9_audit: "2026-06-14"
-last_task6_audit: "2026-06-15"
-p0: 0
-p1: 1
-p2: 0
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-03
 ---
 
 # 1.19 Zygote 图形栈预加载与首帧冷路径

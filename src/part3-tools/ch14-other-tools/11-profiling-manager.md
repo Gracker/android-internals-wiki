@@ -4,12 +4,6 @@ chapter: "14.11"
 section: "14.11"
 section_title: "ProfilingManager"
 status: finalized
-updated_by: "hermes-aiw-review-finalize-apply"
-updated_date: "2026-07-31"
-task6_result: pass-light-edit
-task6_reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-05-30"
-last_task6_at: "2026-05-30T00:00:00+08:00"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)(system-triggered 触发器覆盖 Android 16 / version 36.1 / Android 17)"
 sources:
   - type: official
@@ -40,26 +34,8 @@ related_chapters:
   - "8.2"
 pipeline_stage: finalized
 task9_state: reviewed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-30"
-
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: 2026-07-07T04:52:50+08:00
-reviewed_by: hermes-aiw-review-finalize-apply
-reviewed_date: "2026-07-31"
-last_task9_at: 2026-07-07T04:29:44
-task9_review_notes: "2026-05-18 13:20 Task9 闲时抽检:needs-rework。P0 1 / P1 0;显式 requestProfiling 示例把 ProfilingResult 归到 AndroidX 包,官方签名实际为 android.os.ProfilingResult。;2026-05-18 15:25 Task9 deep-review: Task2B 已修正 ProfilingResult 包名口径;本轮 P0 0 / P1 0,queue 无 pending,自动晋升 finalized。;2026-06-30 20:32 Task9 deep-review auto-fixed: P0 0 / P1 0 / P2 3; 修正 JavaHeapDumpRequestBuilder 参数、AOSP android-17.0.0_r1 源码锚点、§8.10 交叉引用; 回到 Task6 复审。"
-last_task9_review_log: "logs/deep-review/2026-06-30-20-deep-review.md"
-deepseek_polish_state: done
-last_deepseek_polish_at: "2026-05-24"
 task6_state: reviewed
-task9_result: auto-fixed
-last_task9_autofix_at: "2026-06-30"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: "2026-07-01"
-last_task6_audit: "2026-07-06"
-last_task6_audit_result: "l1-minor-fixes-closed-loop-action-verb"
 last_verified: "2026-07-31"
 last_verified_against: "AOSP android-17.0.0_r1 (ProfilingManager.java, ProfilingResult.java, ProfilingTrigger.java) + developer.android.com AndroidX Profiling docs + SDK_INT_FULL / VERSION_CODES_FULL.BAKLAVA_1 for 36.1"
 confidence: medium

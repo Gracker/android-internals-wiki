@@ -3,10 +3,6 @@ title: "AOSP 性能优化的分层方法"
 section: "16.1"
 chapter: "16.1"
 status: finalized
-drafted_date: "2026-04-10"
-drafted_by: "openclaw-task2a"
-reviewed_date: "2026-07-13"
-reviewed_by: "openclaw-task6"
 applicable_versions: "Android 4.1 (API 16) - Android 17 (API 37)"
 last_verified: "2026-08-11"
 last_verified_against: "AOSP android-17.0.0_r1 + android17-6.18-2026-06_r6 + Android performance and platform documentation"
@@ -15,9 +11,7 @@ tags: [android, performance, aosp, methodology]
 related_chapters: ["15.2", "15.3", "15.6", "15.7", "16.2", "16.3", "16.4", "16.5"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
 consolidated_from:
   - "16.1 Google 官方的性能优化思路中的平台方法、工具选择与设备验证边界"
 sources:

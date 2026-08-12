@@ -5,8 +5,6 @@ title: 设备 Benchmark（CPU、GPU、Web 与存储）
 chapter: '19'
 section: '19.17'
 status: finalized
-drafted_date: '2026-04-24'
-drafted_by: codex
 applicable_versions: Geekbench 6：官方当前要求 Android 10 (API 29) - Android 17 (API 37) / 4 GB RAM；Vellamo：历史工具，仅用于旧报告；其他 Benchmark
   按工具版本逐项核验
 last_verified: '2026-06-07'
@@ -42,30 +40,8 @@ sources:
   path: https://www.antutu.com/en/doc/129591.htm
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-07
-last_task6_audit: '2026-06-19'
-task6_result: pass-light-edit
 task9_state: 'reviewed'
 task2b_state: 'fixed'
-task9_result: 'auto-fixed'
-task9_reviewed_date: '2026-05-13'
-task9_reviewed_by: 'openclaw-task9'
-last_task9_at: '2026-06-07T10:20:00+08:00'
-task2b_result: fixed
-last_task2b_at: '2026-04-25T02:49:32+08:00'
-repaired_date: '2026-04-25'
-repaired_by: openclaw-task2b
-last_task9_review_log: 'logs/deep-review/2026-06-07-10-audit.md'
-auto_promoted: true
-task9_review_notes: '2026-06-07 idle audit: auto-fixed Geekbench 6 Android requirement drift（官方当前要求 Android 10+ / 4 GB RAM），回到 Task6 复审。'
-last_task9_audit: '2026-06-07'
-last_task9_autofix_at: '2026-06-07'
-last_deepseek_polish_at: 2026-05-25
-deepseek_polish_state: done
-last_task6_at: 2026-06-07T13:06:00+08:00
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-18
 ---
 
 

@@ -3,17 +3,10 @@ title: "Hardware Layer"
 chapter: "2.7"
 section: "2.7"
 status: "finalized"
-drafted_date: "2026-03-30"
 applicable_versions: "Android 3.0 (API 11) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1 View.java, ViewPropertyAnimator.java, RenderNode.java, RenderProperties.h, RenderNode.cpp, CanvasContext.cpp, LayerUpdateQueue.cpp, SkiaPipeline.cpp, SkiaGpuPipeline.cpp, Properties.cpp; androidx.compose.ui:ui:1.11.4 GraphicsLayerModifier.kt/GraphicsLayerScope.kt"
 confidence: medium
-reviewed_date: "2026-05-08"
-review_notes: "2026-05-07 16:08 task6 review (Task2B 修复后复审): pass-light-edit。轻修 4 处（16KB 分配粒度/数据描述/Compose offscreen 用词）；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 5 处（开头读者指向、第一人称、操作原则句），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
-reviewed_by: openclaw-task6
-polish_count: 2
-polish_date: "2026-04-28"
-polish_by: "task2b-polish"
 sources:
   - type: blog
     path: "https://www.androidperformance.com/2019/07/27/Android-Hardware-Layer/ (高爷原创)"
@@ -64,28 +57,9 @@ sources:
 tags: [hardware-layer, LAYER_TYPE_HARDWARE, LAYER_TYPE_SOFTWARE, animation, RenderNode, compositing-layer, buildLayer, graphicsLayer, GPU-纹理缓存]
 related_chapters: ["2.4", "2.5", "2.6", "7.1", "7.5"]
 pipeline_stage: "ready-to-publish"
-task6_result: "pass-light-edit"
 task6_state: "reviewed"
 task9_state: "reviewed"
-task9_result: "auto-fixed"
 task2b_state: "fixed"
-task2b_result: "fixed"
-last_task2b_at: "2026-05-08T20:44:59+08:00"
-task9_reviewed_date: "2026-05-08"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-07-09T10:27:24+08:00"
-last_task9_audit: "2026-07-09"
-last_task6_at: "2026-07-09T20:17:02+08:00"
-last_task6_audit: "2026-06-23"
-last_task6_review_log: "logs/review/2026-05-08-21-review.md"
-task6_review_notes: "2026-05-07 Task6 16:08：Task2B 修复后写作复审；清理 L1/L2 用词 4 处，L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 5 处（开头读者指向、第一人称、操作原则句），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-07-09-10-audit.md"
-task9_review_notes: "2026-05-08 Task9 21:32：pass-tech-review。无 P0/P1；P2 4 处记录在 deep-review/suggestions，不阻塞发布；自动晋升 finalized / ready-to-publish。 | 2026-07-09 10 Task9 idle-audit auto-fix：将 View/RenderNode/RenderProperties 源码锚点升级到 AOSP android-17.0.0_r1；源码行为与既有结论一致，回到 Task6 复审。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-09
-last_task9_audit_log: "logs/deep-review/2026-07-09-10-audit.md"
-last_task9_autofix_at: "2026-07-09"
-verifier_checked: 2026-07-09
 ---
 
 # 2.7 Hardware Layer

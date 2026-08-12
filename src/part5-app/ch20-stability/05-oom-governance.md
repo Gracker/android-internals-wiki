@@ -8,8 +8,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-12"
 last_verified_against: "AOSP android-17.0.0_r1: ART heap/thread/JNI/jdk_internal_misc_Unsafe, hwui Bitmap, libutils Looper, ComponentCallbacks2, AndroidRuntime heap properties, ActivityThread largeHeap handling"
 confidence: medium
-drafted_date: "2026-05-12"
-polish_count: 0
 sources:
   - type: aosp
     path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc"
@@ -29,35 +27,10 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - 实现 FD 监控：文件描述符（FD）超限怎么办？.md"
 tags: [oom, memory, thread-limit, fd-leak, virtual-memory]
 related_chapters: ["20.1", "23.1", "23.3", "23.4", "23.6", "4.3", "4.4"]
-review_count: 4
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: fixed
-created_by: "task2a"
-reviewed_date: "2026-07-12"
-reviewed_by: "openclaw-task6"
-task6_result: "pass-light-edit"
-last_task6_at: "2026-07-12T07:10:35+08:00"
-last_task6_review_log: "logs/review/2026-07-12-07-review.md"
-task6_review_notes: "2026-07-12 07:10 Task6 re-review (post-Task9-auto-fix #2): pass-light-edit。L1/L2 全通过，禁用词扫描零命中，\"不是X而是Y\" 仅 1 处（FD FORTIFY 说明，事实性叙述），\"真正/确实/其实\" 零命中，无物理动作动词。4 个 outline 锚点全部覆盖，正文 174 行有效内容，[待验证] 比例 0%。task9_result=auto-fixed，不满足自动晋升条件（需 pass-tech-review），设 task9_state=pending 路由回 Task9 做最终确认。"
-task9_result: "pass-tech-review"
-task2b_result: "fixed-lite"
-last_task2b_at: '2026-05-13T19:33:05+08:00'
-last_task2b_lite_at: "2026-06-01"
-last_task9_at: "2026-07-12T07:24:49+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-07-12"
-last_task9_review_log: "logs/deep-review/2026-07-12-07-deep-review.md"
-task9_review_notes: "2026-07-12 Task9 deep review final confirmation: pass-tech-review。按 AOSP android-17.0.0_r1 复核 ART OOME 投递、Heap OOM、JNI/Unsafe native OOM、Bitmap native 分配、Thread::CreateNativeThread、Looper FD 与 ComponentCallbacks2 API 34+ 边界；未发现新增 P0/P1/P2。Task6 已 pass-light-edit 且 queue.json 无 20.5 pending，自动晋升 finalized。"
-last_task9_autofix_at: "2026-07-12"
-last_task9_audit: "2026-07-12"
-last_task9_audit_at: "2026-07-12T00:25:03+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-12-00-audit.md"
-last_task9_audit_result: "auto-fixed-idle-audit"
-last_task9_audit_notes: "idle audit: 维度1源码引用通过；维度3发现 Android 14/API 34+ ComponentCallbacks2 trim level 行为差异并已 auto-fix，章节回到 Task6 复审。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-12
 ---
 
 

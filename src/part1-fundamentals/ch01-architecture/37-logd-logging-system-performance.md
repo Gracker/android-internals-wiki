@@ -3,7 +3,6 @@ title: "Android logd 日志系统性能与开销"
 chapter: "1.37"
 section: "1.37"
 status: ready-for-review
-drafted_date: "2026-06-28"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -13,7 +12,6 @@ task9_state: reviewed
 pipeline_stage: ready-for-review
 last_rework_at: "2026-07-25T17:35:42+08:00"
 last_rework_run_id: "20260725-173542-rework-6030a13a"
-rework_summary: "resolve pending-verification markers; fix liblog vs libcutils path, socket syscall claim, diagram conflation, Rust sourcing integrity, redaction artifact"
 sources:
   - type: aosp
     path: "system/logging/logd/ (android-17.0.0_r1)"
@@ -25,9 +23,6 @@ sources:
     path: "developer.android.com/ndk/reference/group/logging"
 tags: [logd, logging, performance, rust, kernel, logcat, buffer]
 related_chapters: ["1.4", "1.5", "1.34", "26.16"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-28"
-gap_source: "AOSP结构+官方文档"
 ---
 
 # 1.37 Android logd 日志系统性能与开销

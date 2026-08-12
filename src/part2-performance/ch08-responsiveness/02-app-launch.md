@@ -46,37 +46,10 @@ related_chapters:
 - '2.5'
 - '7.1'
 section: '8.2'
-drafted_date: '2026-04-01'
-drafted_by: openclaw-task2a
-reviewed_date: "2026-05-24"
-reviewed_by: "openclaw-task6"
-polish_count: 1
-polish_date: '2026-04-06'
-polish_by: task2b-polish
 pipeline_stage: "ready-to-publish"
-task6_result: "pass-light-edit"
 task9_state: "reviewed"
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: "2026-06-04T10:50:00+08:00"
-task9_reviewed_date: "2026-06-05"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-05T18:32:25+08:00"
-task9_review_notes: "2026-06-05 Task9 深度复审: pass-tech-review。P0 0 / P1 0 / P2 0；ApplicationStartInfo 常量、16KB page size 数据、Perfetto/TTID 口径核对通过；无 queue pending。"
-last_task9_review_log: "logs/deep-review/2026-06-05-18-deep-review.md"
-p0: 0
-p1: 0
-p2: 0
-last_task6_at: "2026-05-24T13:10:00+08:00"
-last_task6_review_log: "logs/review/2026-05-24-13-review.md"
-task6_review_notes: "2026-05-24 13:10 Task6 复审：pass-light-edit。L1/L2 小修 18 处；既有 Task9 P1/P2 pending 队列继续由 Task2B 处理，Task6 未新增回炉。"
-last_task9_audit: "2026-05-24"
-last_task9_audit_log: "logs/deep-review/2026-05-24-02-audit.md"
-task6_reviewed_date: "2026-05-24"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-05
 task6_state: "reviewed"
-last_task6_audit: "2026-06-23"
 ---
 
 

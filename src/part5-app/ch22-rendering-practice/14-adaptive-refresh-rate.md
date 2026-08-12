@@ -2,7 +2,6 @@
 title: "Adaptive Refresh Rate 与帧率策略实战"
 chapter: "22.14"
 status: ready-for-review
-drafted_date: "2026-05-26"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-05-26"
 last_verified_against: "Android Developers 2026-05, AOSP docs 2026-04"
@@ -26,10 +25,6 @@ sources:
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
 tags: [adaptive-refresh-rate, frame-rate, jank, power, android16]
 related_chapters: ["2.18", "2.19", "7.8", "22.2", "25.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-26"
-gap_source: "官方文档/章节深挖/素材驱动"
-gap_score: "18/20"
 ---
 
 # Adaptive Refresh Rate 与帧率策略实战

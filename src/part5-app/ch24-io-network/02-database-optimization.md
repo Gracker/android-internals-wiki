@@ -6,10 +6,7 @@ status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-08-11"
 last_verified_against: "AOSP android-17.0.0_r1 + Android Developers SQLite/Room docs + AndroidX Room 2.8.4 source"
-last_verified_android17: "2026-06-30"
 confidence: medium
-drafted_date: "2026-05-14"
-polish_count: 0
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/database/sqlite/SQLiteDatabase.java"
@@ -64,27 +61,7 @@ related_chapters: ["24.1", "9.3", "6.3", "14.1"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
-task9_result: auto-fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-06-30
-last_task9_at: 2026-06-30T14:25:47+08:00
-last_task9_audit: "2026-06-30"
-last_task9_autofix_at: "2026-06-30"
-last_task9_audit_log: "logs/deep-review/2026-06-30-14-audit.md"
-task9_review_notes: "2026-06-30 idle audit auto-fixed: AOSP SQLite/Room source baseline pinned to android-17.0.0_r1; WAL checkpoint sentence narrowed to actual SQLite DB page_size / PRAGMA page_size; Task6 revisiting required after localized technical edits."
 task2b_state: fixed
-task2b_result: auto-fixed
-last_task2a_at: "2026-05-14T07:12:00+08:00"
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-14"
-task6_reviewed_date: "2026-05-14"
-last_task6_at: "2026-05-14T08:11:00+08:00"
-last_task6_audit: "2026-06-06"
-last_task6_review_log: logs/review/2026-05-14-08-review.md
-task6_review_notes: "2026-05-14 Task6：四层质检通过；L1/L2 无需正文改动。满足 task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending，自动晋升 finalized。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-15
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md"

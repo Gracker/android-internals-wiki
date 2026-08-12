@@ -5,15 +5,10 @@ title: "触摸延迟、预测与低延迟渲染"
 chapter: "3.2"
 section: "3.2"
 status: ready-for-review
-drafted_date: "2026-03-30"
-drafted_by: "openclaw-task2"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-08-12"
 last_verified_against: "AOSP android-17.0.0_r1 InputFlinger/InputTransport/ViewRootImpl/Choreographer/MotionPredictor/MotionEvent/InputEventAssigner sources; external/perfetto android.input inputevent config and android.input stdlib docs; source.android.com Input/Winscope adb trace docs; AndroidX Input/Graphics low-latency docs | 2026-08-12 rework cleared stale-source-verification finding AIW-FRESH-bfb7868d39d57e84"
 confidence: medium-high
-polish_count: 2
-polish_date: "2026-05-08"
-polish_by: "task2b-rework"
 sources:
   - type: blog
     path: "Personal-Knowlodge/source/Android-Systrace-Input.md"
@@ -43,40 +38,11 @@ sources:
     path: "intake/research-feeds/2026-04-05-15-motionprediction-low-latency-graphics.md"
 tags: [touch, input-latency, HCI, InputReader, InputDispatcher, sampling-rate, batching, resampling, MotionPredictor, front-buffer, Choreographer, responsiveness]
 related_chapters: ["3.1", "2.3", "2.4", "2.5", "2.18", "2.19", "7.9", "8.1", "13.8", "15.3"]
-task2b_rework_date: "2026-05-08"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-07-12"
-last_task9_at: "2026-07-12T12:28:57+08:00"
-task9_result: rework-applied
-
-reviewed_date: "2026-07-12"
-reviewed_by: openclaw-task6
 task2b_state: fixed
-task2b_result: fixed-lite
-last_task2b_lite_at: "2026-07-12"
-task2b_lite_note: "版本锚点从 android-16.0.0_r1 更新到 android-17.0.0_r1（6 处正文 + frontmatter）；依据同目录 §3.9、§3.13 已验证 android-17.0.0_r1 路径一致性"
 task6_state: pending-review
-task6_result: rework-applied
 task9_state: pending-review
-task6_reviewed_date: "2026-05-08"
-last_task6_at: "2026-07-12T12:15:00+08:00"
-last_task6_audit: "2026-07-12"
-last_task6_review_log: "logs/review/2026-05-08-15-review.md"
-review_notes: "2026-05-08 10:28 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；InputReader.loopOnce 源码片段与 InputDispatcher 队列观测口径需修正。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。 | 2026-05-08 Task6 15:05：自动晋升 finalized。条件满足：task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending 条目；本轮未做重复正文 review。"
-last_task9_review_log: "logs/deep-review/2026-07-12-12-deep-review.md"
-task9_review_notes: "2026-05-08 Task9 14:32：needs-rework。P0 1 / P1 0 / P2 1；正文写 WaitQueue 条目要等 `doDispatchCycleFinishedLockedInterruptible` 收到 ACK 后移走；android-16.0.0_r1 的实际路径是 `handleReceiveCallback()` 读取 Finished signal，`finishDispatchCycleLocked()` post command，随后 `doDispatchCycleFinishedCommand()` 从 `connection->waitQueue` erase 对应 `seq`。Task2B 随后修正 ACK 回路方法名，queue 项已 completed，task9_result 更新为 pass-tech-review。 | 2026-06-06 Task9 15:45 闲时抽检：auto-fixed。P0 版本/源码锚点 1 组；16KB page size 起点从 Android 16+ 修正为 Android 15+ AOSP 支持，并把 Resampler.cpp 锚点从 AOSP mainline 改为 android-16.0.0_r1；本轮未使用 Android 18/API 38+ 或 main/master 资料作为正文结论。 | 2026-07-12 Task9 12:28：auto-fixed。P0 1 / P1 0 / P2 0 / P3 1；移除 16KB 页面段落中的 “socketpair mmap” 错误机制（android-17.0.0_r1 `InputChannel::sendMessage()` / `receiveMessage()` 为 Unix socket `send` / `recv`），并把 InputReader Perfetto 观察点从固定 Slice 修正为 inputevent tracing / 线程活动观察。本轮未使用 Android 18/API 38+ 或 main/master 资料作为正文结论。"
-finalized_date: "2026-07-12"
-finalized_by: openclaw-task6-auto-promote
-task6_review_notes: "2026-07-12 Task6 revisiting 复审：pass-light-edit。L1 禁用词/高频词/否定-纠正/元叙述 grep 全部零命中；L2 结构/节奏/读者视角通过；task9 idle audit auto-fixed（P2 版本锚点）等效通过；无新增 L3/L4 回炉项。自动晋升 finalized。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-12
-last_task9_autofix_at: "2026-07-12"
-last_task9_audit: "2026-06-06"
 last_rework_at: "2026-08-12T09:45:30+08:00"
 last_rework_run_id: "20260812-093533-rework-855a7839"
-last_rework_log: "logs/rework/2026-08-12-20260812-093533-rework-855a7839-rework.md"
-rework_result: "ready-for-review"
-rework_notes: "2026-08-12 rework：处理 AIW-FRESH-bfb7868d39d57e84 stale-source-verification；按 Android 17 / android-17.0.0_r1 复核 InputReader/InputDispatcher/InputChannel/InputConsumer/ViewRootImpl/Choreographer/MotionPredictor/MotionEvent/InputEventAssigner 与 external/perfetto android.input 证据，刷新 last_verified 与 last_verified_against，章节回流 ready-for-review 等待 Task6/Task9 复审。"
 pipeline_stage: ready-for-review
 last_consolidated_at: "2026-08-11"
 consolidated_from:

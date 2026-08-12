@@ -2,7 +2,6 @@
 title: "16KB Page Size 兼容性与 Native 崩溃治理"
 chapter: "20.11"
 status: finalized
-drafted_date: "2026-05-18"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-05-18"
 last_verified_against: "Android Developers page-size guide; AOSP 16KB page-size docs; NDK issue #2026"
@@ -26,19 +25,6 @@ sources:
     path: "https://github.com/android/ndk/issues/2026"
 tags: [stability, native-crash, 16kb-page-size, ndk, elf]
 related_chapters: ["4.7", "20.3", "20.13", "23.3", "25.6"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-18"
-gap_source: "素材驱动/官方文档/AOSP结构/Clippings结构参考"
-source_refs:
-  - "[结构参考: Clippings/Android 应用稳定性剖析与优化 - ELF 文件与 readelf & objdump ：了解 ELF 格式与解析工具.md]"
-  - "[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md]"
-  - "[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Hook 全解析：Native 闯关入门秘籍.md]"
-  - "OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-30-android-16kb-page-size-hook-library-compatibility.md"
-  - "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-android-16kb-page-size-ndk-compatibility.md"
-  - "DeepResearch/2026-05-08-16kb-page-size-third-party-library-impact.md"
-  - "https://developer.android.com/guide/practices/page-sizes"
-  - "https://source.android.com/docs/core/architecture/16kb-page-size/16kb"
-  - "https://source.android.com/docs/core/architecture/16kb-page-size/16kb-backcompat-option"
 ---
 
 # 16KB Page Size 兼容性与 Native 崩溃治理

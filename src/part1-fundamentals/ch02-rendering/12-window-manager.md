@@ -3,8 +3,6 @@ title: "Window Manager Service 与窗口管理"
 chapter: "2.12"
 section: "2.12"
 status: finalized
-drafted_date: "2026-04-05"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + Android 17 official windowing/configuration documentation + rendering_pipelines S06"
@@ -54,32 +52,10 @@ sources:
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S06_multi_window_type.md"
 tags: [WMS, WindowManagerService, Surface, Window, StartingWindow, Window动画, 多窗口, SurfaceControl, WindowInsets, Desktop Windowing]
 related_chapters: ["2.1", "2.6", "3.1", "8.2", "8.4"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-04"
-gap_source: "AOSP结构+官方文档+读者需求"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-task2b_result: fixed
-reviewed_by: openclaw-task6
-reviewed_date: 2026-07-02
-task6_reviewed_date: 2026-07-02
-task6_result: pass-light-edit
-task9_result: pass-tech-review
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-05-04
-last_task9_at: "2026-05-04T12:41:40+08:00"
-last_task9_audit: "2026-07-02"
-last_task2b_at: "2026-05-04T07:45:27.214044+08:00"
-review_notes: "2026-04-27 task2b: fixed Task9 P95 issues for StartingWindow Shell boundary, modern transition path, and Predictive Back version line."
-review_log: "logs/review/2026-04-11-11-review.md"
-task9_review_notes: "2026-05-04 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 Task6 pass 与 queue 无 pending 条目，自动晋升 finalized。 2026-06-13 Task9 idle audit: pass-tech-audit。P0 0 / P1 0 / P2 3（仅日志：InputDispatcher WindowInfo 快照表述、源码参考 master 链接、recreateOnConfigChanges 版本归因）。未改正文。 2026-07-02 Task9 idle audit auto-fix: anchored AOSP source references and verification labels to android-17.0.0_r1; returned to Task6 revisiting."
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-01
-last_task9_audit_log: "logs/deep-review/2026-07-02-04-audit.md"
-last_task9_autofix_at: "2026-07-02"
-last_task6_audit: "2026-07-14"
 ---
 # 2.12 Window Manager Service 与窗口管理
 

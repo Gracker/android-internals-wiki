@@ -8,11 +8,6 @@ status: "finalized"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-07-10"
 last_verified_against: "AOSP android-17.0.0_r1"
-reviewed_date: "2026-07-10"
-reviewed_by: "openclaw-task6"
-polish_count: 1
-polish_date: "2026-04-08"
-polish_by: "task2b-polish"
 confidence: high
 sources:
   - type: blog
@@ -40,36 +35,8 @@ tags:
 related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "1.13", "1.14", "3.1", "4.3"]
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
-task6_result: "pass-light-edit"
 task9_state: "reviewed"
 task2b_state: "fixed"
-task2b_result: fixed
-task2b_rework_date: "2026-05-06T02:43:45+08:00"
-task9_result: "pass-tech-review"
-last_task9_at: "2026-07-10T04:30:34+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-10"
-task9_review_notes: "2026-07-10 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；复核 FrameTimeline jank_type/present_type、HWC3 DISPLAY_DECORATION、DeliQueue targetSdk 37 与 HWC DEVICE/CLIENT 边界；Task6 已通过且 queue 无 pending，自动晋升 finalized。详见 logs/deep-review/2026-07-10-04-deep-review.md。 | 2026-05-06 03 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；FrameTimeline 证据字段写成 present_offset/refresh_period/hwc_layer_name 不符合 Perfetto SQL 表，需改为 actual_frame_timeline_slice/expected_frame_timeline_slice 的 jank_type、present_type、layer_name，并用 dumpsys 或 layer snapshot 复核 HWC DEVICE/CLIENT。 | 2026-05-24 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；DeliQueue android-17-beta3 源码 tag 与 HWC3 Composition/Overlay plane 数据支撑仅作为 P2 留给后续小修；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-19 Task9 idle-audit: auto-fixed。P0 1：补齐 Android 17 HWC3 Composition.aidl 的 DISPLAY_DECORATION=6，并修正源码索引中 HWC3 Composition 枚举归属；无 P1/P2，回到 Task6 复审。 | 2026-06-19 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；复核 Android 17 DeliQueue targetSdk 37 生效边界、HWC3 Composition DISPLAY_DECORATION=6 与 FrameTimeline 分析入口，Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-10 Task9 idle-audit: auto-fixed。P0 1：将 FrameTimeline `jank_type` 示例对齐为 Android 17 Perfetto 的 `SurfaceFlinger CPU/GPU Deadline Missed`，把 `Late Present` 归回 `present_type`，并将源码验证基准从 android-15.0.0_r1 更新为 android-17.0.0_r1；无 P1/P2，回到 Task6 复审。"
-last_task6_at: "2026-07-10T04:12:20+08:00"
-last_task6_audit: "2026-07-12"
-task6_reviewed_date: "2026-05-24"
-review_notes: "2026-05-06 task6 re-review: pass-light-edit。L1/L2 小修 11 处；无新增 B 类回炉问题，等待 Task 9 复审。 | Task2B Verifier (2026-07-10T03:34:07+08:00): 状态修正 — status: finalized → ready-for-review, task9_state: reviewed → pending。Task9 auto-fix 后 status 未从 finalized 重置为 ready-for-review，导致 Task6 无法拾取；已修正。"
-last_task9_audit: "2026-07-10"
-last_task9_audit_log: "logs/deep-review/2026-07-10-02-audit.md"
-last_task2b_at: 2026-05-24T19:29:26+08:00
-reviewed_at: "2026-05-24T20:14:35+08:00"
-review_round: 2
-last_task6_review_log: "logs/review/2026-07-10-04-review.md"
-task6_review_notes: "2026-07-10 Task6 revisiting-review (round 3): pass-light-edit。Task9 auto-fix(FrameTimeline jank_type对齐Android 17 Perfetto SurfaceFlinger CPU/GPU Deadline Missed, Late Present归回present_type, 源码基准升级android-17.0.0_r1)回流后写作层复审通过；L1 禁用词/高频词/物理动词/元叙述零命中；L2 开头/节奏/结构/读者引导全部通过；outline 6/6 锚点全覆盖；否定-纠正结构0处；无 L1/L2 问题，无 L3/L4 回炉项。送 Task9 终审确认。"
-last_task9_review_log: "logs/deep-review/2026-07-10-04-deep-review.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-10
-last_task9_autofix_at: "2026-07-10"
-updated_by: "openclaw-task9"
-updated_date: "2026-07-10"
-p0: 0
-p1: 0
-p2: 0
 ---
 
 # 7.2 卡顿原因体系

@@ -7,9 +7,6 @@ status: ready-for-review
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: [vulkan, hwui, rendering, gpu, multi-queue, frame-boundary, android17]
 related_chapters: ["2.10", "2.14", "18.9", "18.11"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-27"
-drafted_date: "2026-06-27"
 last_verified: "2026-07-31"
 last_verified_against: "AOSP android-17.0.0_r1 / android-14.0.0_r1 至 android-16.0.0_r1 历史标签 / Writer rendering_pipelines S01、S02 / Vulkan 规范 / android17-6.18-2026-06_r6"
 confidence: high
@@ -83,13 +80,6 @@ sources:
   - type: kernel
     path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c"
     role: "RenderThread 与上传线程的 CPU 调度基线；不定义 Vulkan queue 的 GPU 执行顺序"
-gap_source: "研究素材/AOSP结构"
-gap_score:
-  素材丰富度: 5
-  与全书目标相关性: 5
-  读者需求度: 4
-  时效性: 5
-  total: 19
 ---
 
 # 18.24 Android 17 HWUI Vulkan 多队列并行渲染与帧边界管理

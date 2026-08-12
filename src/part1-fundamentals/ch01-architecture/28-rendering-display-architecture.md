@@ -5,7 +5,6 @@ section: "1.28"
 status: "ready-for-review"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [architecture, rendering, performance]
-drafted_date: "2026-06-23"
 last_verified: "2026-06-23"
 last_verified_against: "AOSP general knowledge"
 confidence: medium

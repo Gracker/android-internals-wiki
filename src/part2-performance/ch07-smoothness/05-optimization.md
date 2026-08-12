@@ -5,10 +5,6 @@ title: "优化策略"
 section: "7.5"
 chapter: "7.5"
 status: finalized
-drafted_by: "openclaw-task2a"
-reviewed_date: "2026-05-24"
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-20"
 last_verified_against: "AOSP android-16.0.0_r1, Android 官方文档, AndroidX RecyclerView release notes"
@@ -45,37 +41,10 @@ tags:
   - recyclerview
   - compose-performance
   - layout-optimization
-polish_count: 1
-polish_date: "2026-04-09"
-polish_by: "task2b-polish"
-rework_count: 3
-rework_date: "2026-04-30"
-rework_by: "task2b-rework"
 pipeline_stage: ready-to-publish
 task6_state: "reviewed"
-last_task6_audit: "2026-06-19"
 task9_state: reviewed
-task9_result: auto-fixed
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: "2026-06-04T10:50:00+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-05"
-last_task9_at: "2026-06-05T18:32:25+08:00"
-task9_review_notes: "2026-06-05 Task9 深度复审 AUTO-FIX: 修复 2.x/1.4 跨章 Markdown 链接；RenderThread PRIORITY_DISPLAY 锚点改为 AOSP android-16.0.0_r1 frameworks/base/libs/hwui/renderthread/RenderThread.cpp:394-396。回到 Task6 复审。"
-last_task9_audit: "2026-05-23"
-last_task9_audit_log: "logs/deep-review/2026-05-23-06-audit.md"
-last_task9_review_log: "logs/deep-review/2026-06-05-18-deep-review.md"
-last_task6_at: "2026-05-24T13:10:00+08:00"
-task6_reviewed_date: "2026-05-24"
-last_task6_review_log: "logs/review/2026-05-24-13-review.md"
-task6_review_notes: "2026-05-24 13:10 Task6 复审：pass-light-edit。L1/L2 小修 9 处，清理夸张标题/网络化表达并将参考资料移至末尾；既有 Task9 P0/P1/P2 pending 队列继续由 Task2B 处理，Task6 未新增回炉。"
-p0: 1
-p1: 0
-p2: 4
-last_task9_autofix_at: "2026-06-05"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-05
 ---
 
 # 7.5 优化策略

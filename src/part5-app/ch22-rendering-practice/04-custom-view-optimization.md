@@ -7,8 +7,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-12"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
-drafted_date: "2026-05-12"
-polish_count: 0
 sources:
   - type: official
     path: "developer.android.com/topic/performance/rendering/optimizing-view"
@@ -24,31 +22,6 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: "reviewed"
 task2b_state: "fixed"
-task2b_result: fixed-lite
-last_task2b_lite_at: "2026-05-27"
-reviewed_by: openclaw-task6
-reviewed_date: '2026-06-17'
-task6_result: pass-light-edit
-task9_result: "auto-fixed"
-last_task2b_at: "2026-05-13T23:35:47+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-27"
-last_task9_at: "2026-06-17T02:36:15+08:00"
-task6_reviewed_date: "2026-05-27"
-task6_review_notes: "2026-06-17 Task6 revisiting复审：pass-light-edit。L1/L2 扫描通过（22.4 复审无禁用词、高频词、元叙述命中）；task9 auto-fix 已验证写作质量无回归；queue 无 pending；自动晋升 finalized。"
-last_task6_review_log: logs/review/2026-06-17-04-review.md
-last_task6_at: "2026-06-17T04:06:00+08:00"
-task9_review_notes: "2026-05-27 task9 deep-review: auto-fixed。修正 GC 观测归因、硬件加速 Canvas API 版本边界、debug.hwui.profile/Perfetto 观测口径与 onDraw invalidate 表述；回到 Task6 复审。 | 2026-05-27 14:20 Task9 deep-review：pass-tech-review。复核硬件加速 Canvas API 支持表、`invalidate(Rect)` API 21+ 脏区口径、RenderNode API 29 与 Perfetto/GC 观测口径；无 P0/P1，queue 无 pending，自动晋升 finalized。 | 2026-06-17 Task9 idle-audit auto-fix：修正 invalidate 脏区/整树重绘口径、onLayout 触发条件和 postInvalidateOnAnimation 跨线程 attach 边界；回到 Task6 复审。"
-last_task2b_verifier_at: "2026-05-27T11:44:00+08:00"
-task2b_verifier_result: ready-for-task6
-last_task9_autofix_at: "2026-06-17"
-last_task9_review_log: "logs/deep-review/2026-06-17-02-audit.md"
-p0: 2
-p1: 0
-p2: 0
-last_task9_audit: "2026-06-17"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-16
 ---
 # 自定义 View 性能优化
 

@@ -136,51 +136,16 @@ related_chapters:
 - '18.7'
 - '18.18'
 - '18.21'
-created_by: rendering-pipelines-merge
-created_date: '2026-04-09'
-task9_result: "auto-fixed"
-last_task2b_lite_at: "2026-05-31"
-last_task2b_rework_at: "2026-06-01T06:52:00+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-02"
-repaired_date: "2026-04-26"
-repaired_by: "openclaw-task2b"
-last_task9_at: "2026-06-21T02:28:32+08:00"
-last_task9_audit: "2026-06-21"
-last_task9_autofix_at: "2026-06-21"
-review_notes: '2026-05-21 task9 idle audit: needs-rework。P1:HWC SKIP_VALIDATE 版本边界与 SurfaceFlinger canSkipValidate 条件需修正。'
-last_task9_review_log: "logs/deep-review/2026-06-21-02-audit.md"
-task9_review_notes: "2026-06-21 Task9 idle audit auto-fix: 修正 SKIP_VALIDATE Android 14-17 版本边界、composition type API 命名与 skip validate 所属协商路径；回到 Task6 复审。"
-task2b_result: "fixed"
-last_task2b_at: "2026-06-01T06:52:00+08:00"
-last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
-last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
 section: '18.15'
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-21"
-task6_reviewed_date: "2026-06-21"
-last_task6_at: "2026-06-21T04:11:00+08:00"
-last_task6_review_log: "logs/review/2026-06-21-04-review.md"
-task6_result: "pass-light-edit"
 task6_state: reviewed
 task2b_state: fixed
 pipeline_stage: ready-to-publish
-task6_review_notes: "2026-06-21 04:11 Task6 revisiting-review (post-Task9-autofix)：L1/L2 全清（0 禁用词/0 翻译腔/0 硬换行），锚点 5+3 全覆盖，Task9 修正版本边界后写作质量无回退，无 B 类大问题，自动晋升 finalized。"
-task6_l1_l2_fixes: 0
-task6_l3_l4_issues: 0
-task6_new_rework: false
-review_type: "task6-writing-quality-review"
 task9_state: reviewed
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-26
-last_task6_audit: "2026-07-02"
 last_verified: "2026-07-31"
 last_verified_against: "android-17.0.0_r1 (MediaCodec.java, MediaCodecInfo.java, MediaFormat.java, HardwareBuffer.java, TextureView.java, DeferredLayerUpdater.cpp, CCodec.cpp, CCodecBufferChannel.cpp, ACodec.cpp, BufferQueueProducer.cpp, BufferQueueConsumer.cpp, HWComposer.cpp, Display.cpp, Output.cpp, Layer.cpp, Composition.aidl, Capability.aidl, BufferUsage.aidl) / Android 17 API 37 media and HWC docs / android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, dma-fence.h, sync_file.c)"
 confidence: high
 last_idle_audit_at: "2026-07-25T22:35:51+08:00"
 last_idle_audit_run_id: "20260725-223518-idle-audit-9529cd15"
-last_idle_audit_log: "logs/audit/2026-07-25-20260725-223518-idle-audit-9529cd15-idle-audit.md"
-idle_audit_result: "pass-metadata-only"
 ---
 
 # 18.15 Android 17 视频叠加与 HWC

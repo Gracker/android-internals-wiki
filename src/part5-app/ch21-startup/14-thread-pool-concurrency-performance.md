@@ -3,7 +3,6 @@ title: "线程池与并发调度性能实战"
 chapter: "21.14"
 section: "21.14"
 status: ready-for-review
-drafted_date: "2026-07-01"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-01"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -19,9 +18,6 @@ sources:
     path: "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/"
 tags: [thread-pool, concurrency, cpu-scheduling, startup, coroutines]
 related_chapters: ["1.5", "5.1", "8.6", "20.19"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-26"
-gap_source: "素材驱动/参考书"
 ---
 
 # 线程池与并发调度性能实战

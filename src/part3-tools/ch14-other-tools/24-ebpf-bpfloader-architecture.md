@@ -6,9 +6,6 @@ status: ready-for-review
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: [ebpf, bpfloader, rust, bpf, system-architecture, timeInState]
 related_chapters: ["13.8", "14.23", "17.4", "26.9"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-07"
-drafted_date: "2026-06-07"
 last_verified: "2026-07-30"
 last_verified_against: "Android 17 / API 37 / android-17.0.0_r1；Android common kernel android17-6.18-2026-06_r6"
 confidence: high
@@ -49,13 +46,6 @@ sources:
     path: "common/include/trace/events/{sched,power,gpu_mem}.h"
   - type: official
     path: "source.android.com/docs/core/architecture/kernel/bpf"
-gap_source: "素材驱动/DeepResearch/AOSP结构"
-android17_review_notes:
-  - "启动链按 netbpfload → platform bpfloader → netbpfload done 的源码顺序重写"
-  - "区分 libbpf-rs 的加载/钉住、auto_attach 与消费者显式附着"
-  - "timeInState map 数量由 13 修正为 15，补齐三个程序及 libtimeinstate 消费链"
-  - "gpuMem 修正为 Android 17 Rust 路径加载，Perfetto 数据源修正为 android.gpu.memory"
-  - "删除无来源的触发频率、功耗数字、dumpsys bpf 与直接 cat map 等错误说明"
 ---
 
 # 14.24 eBPF 系统架构：bpfloader Rust 化与 BPF 程序组织

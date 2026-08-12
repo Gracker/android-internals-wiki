@@ -58,31 +58,10 @@ sources:
   path: frameworks/base/config/preloaded-classes
 last_verified: "2026-07-09"
 last_verified_against: "AOSP android-17.0.0_r1 CachedAppOptimizer/Freezer/Process/ZygoteConfig/ZygoteServer"
-drafted_date: "2026-04-04"
-drafted_by: "openclaw-task2a"
-reviewed_date: "2026-07-10"
-reviewed_by: openclaw-task6
 related_chapters: "[\"5.1\", \"5.5\", \"5.6\", \"4.4\", \"8.3\", \"17.2\"]"
-task9_result: "auto-fixed"
-task9_reviewed_date: "2026-07-09"
 task2b_state: "fixed"
 task6_state: "reviewed"
-task6_result: pass-light-edit
 task9_state: "reviewed"
-task6_reviewed_date: "2026-07-10"
-last_task6_at: "2026-07-10T01:09:00+08:00"
-last_task6_audit: "2026-07-10"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-09T11:31:00+08:00"
-last_task9_audit: "2026-07-09"
-last_task9_audit_log: "logs/deep-review/2026-07-09-11-audit.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-10
-last_task9_autofix_at: "2026-07-09"
-p0: 0
-p1: 0
-p2: 2
-task9_review_notes: "2026-07-09 Task9 idle-audit: auto-fixed。修正 cgroup freezer API 归属：Android 17 中由 CachedAppOptimizer.enableFreezer 管理开关/策略，Freezer.setProcessFrozen 包装 android.os.Process.setProcessFrozen；同步修正 USAP 默认值锚点为 ZygoteConfig.USAP_POOL_ENABLED_DEFAULT=false，并移除 usapReceive 稳定 slice 说法。证据：AOSP android-17.0.0_r1 CachedAppOptimizer.java/Freezer.java/Process.java/ZygoteConfig.java/ZygoteServer.java；回到 Task6 复审。"
 ---
 
 # OEM 性能优化的通用思路

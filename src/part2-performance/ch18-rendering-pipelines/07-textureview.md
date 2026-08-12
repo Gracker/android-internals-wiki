@@ -55,45 +55,15 @@ sources:
   - type: official
     path: "https://perfetto.dev/docs/data-sources/frametimeline"
     role: "宿主 SurfaceFrame、DisplayFrame 与 jank 字段"
-created_by: "rendering-pipelines-merge"
-created_date: "2026-04-09"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: "reviewed"
 task2b_state: fixed
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-02
-task6_reviewed_date: "2026-06-03"
-task6_result: pass-light-edit
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-02"
-task2b_result: fixed-lite
-task2b_rework_date: "2026-04-20"
-last_task2b_lite_at: "2026-05-31"
-last_task9_at: "2026-06-03T07:20:00+08:00"
-last_task6_audit: 2026-07-15
-last_task9_audit: 2026-05-20
-last_task6_at: "2026-06-03T09:15:06+08:00"
-last_task6_review_log: "logs/review/2026-06-03-09-09-review.md"
-task6_review_notes: "2026-06-03 09:11 Task6 revisiting-review：无新增 L1/L2 问题。Task9 auto-fix（TextureView 成本口径修正）已确认无写作质量问题。满足 auto-promotion 条件，晋升 finalized。"
-task6_l1_l2_fixes: 0
-task6_l3_l4_issues: 0
-task6_new_rework: false
-task6_auto_promoted: true
-task9_result: auto-fixed
-last_task9_review_log: "logs/deep-review/2026-06-03-07-deep-review.md"
-last_task9_autofix_at: "2026-06-02"
-task9_review_notes: "2026-06-02 Task9 auto-fix：将 TextureView 成本口径从额外拷贝/固定 2 倍内存修正为额外纹理采样、宿主窗口再承载合成结果；回到 Task6 复审。"
-last_task2b_verifier_at: "2026-06-03T07:31:00+08:00"
-last_task2b_verifier_log: "logs/rework/2026-06-03-07-task2b-verifier.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-25
 last_verified: 2026-07-31
 last_verified_against: "android-17.0.0_r1 (TextureView.java, SurfaceTexture.java, TextureLayer.java, DeferredLayerUpdater.cpp, DrawFrameTask.cpp, BufferQueueProducer.cpp, BufferQueueConsumer.cpp, BLASTBufferQueue.cpp, HWComposer.cpp, sync_file.c, dma-fence.c)"
 confidence: high
 last_idle_audit_at: "2026-07-30T18:35:00+08:00"
 last_idle_audit_run_id: "20260730-183504-idle-audit-4a0df448"
-last_idle_audit_result: "pass-frontmatter-fix"
 ---
 
 # 18.7 Android 17 TextureView 宿主合成链路

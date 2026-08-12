@@ -3,7 +3,6 @@ title: "BiometricPrompt 与 Credential Manager 登录链路性能"
 chapter: "8.10"
 section: "8.10"
 status: ready-for-review
-drafted_date: "2026-05-26"
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37); Credential Manager single tap Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-05-26"
 last_verified_against: "Android Developers identity docs, AOSP android-16.0.0_r1 frameworks/base"
@@ -31,9 +30,6 @@ sources:
     path: "frameworks/base/services/credentials/java/com/android/server/credentials/CredentialManagerService.java"
 tags: [responsiveness, biometric, credential-manager, passkeys, keystore]
 related_chapters: ["8.9", "20.14", "26.10", "26.12"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-26"
-gap_source: "AOSP结构/官方文档/素材驱动"
 ---
 
 # 8.10 BiometricPrompt 与 Credential Manager 登录链路性能

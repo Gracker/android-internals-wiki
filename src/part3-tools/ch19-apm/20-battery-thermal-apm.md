@@ -5,9 +5,6 @@ title: 耗电与发热监控 (Battery & Thermal)
 chapter: '19'
 section: '19.20'
 status: finalized
-finalized_by: openclaw-task2b-verifier
-drafted_date: '2026-04-24'
-drafted_by: gemini
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-04-25'
 last_verified_against: AOSP PowerManager / PowerManagerService / BatteryStats references,
@@ -22,13 +19,8 @@ related_chapters:
 - '19.0'
 - '19.16'
 pipeline_stage: ready-to-publish
-task2b_result: fixed
 task2b_state: fixed
 task6_state: reviewed
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-07
-last_task6_audit: 2026-07-16
-task6_result: pass-light-edit
 task9_state: reviewed
 sources:
 - type: official
@@ -37,19 +29,6 @@ sources:
   path: https://source.android.com/docs/core/power/thermal-mitigation
 - type: official
   path: https://developer.android.com/topic/performance/power/setup-battery-historian
-task9_result: auto-fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-06-07
-last_task9_at: "2026-06-07T14:20:00+08:00"
-task9_review_notes: "2026-06-07 Task9 idle audit: auto-fixed exact alarm OnAlarmListener exception and Android 13/14-17 pregrant wording; routed to Task6 revisit."
-last_task9_review_log: logs/deep-review/2026-06-07-14-audit.md
-deepseek_polish_state: done
-last_deepseek_polish_at: 2026-05-26
-last_task9_audit: 2026-06-07
-last_task9_audit_log: logs/deep-review/2026-06-07-14-audit.md
-last_task9_autofix_at: 2026-06-07
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-17
 ---
 
 

@@ -6,9 +6,6 @@ tags: [thread, leak, monitoring, stability, ThreadGroup, pthread]
 related_chapters: ["20.1", "20.5", "20.12", "20.18", "20.21"]
 consolidated_from:
   - "src/part5-app/ch20-stability/09-stability-case-studies.md#案例一"
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-16"
-gap_source: "素材驱动+章节深挖"
 last_verified: "2026-07-31"
 confidence: high
 sources:
@@ -63,8 +60,6 @@ sources:
 last_draft_polish_at: "2026-07-31T19:35:24+08:00"
 last_draft_polish_run_id: "20260731-193524-draft-polish-a7da59d3"
 status: finalized
-reviewed_date: "2026-07-31"
-reviewed_by: "hermes-aiw-review-finalize-apply"
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized

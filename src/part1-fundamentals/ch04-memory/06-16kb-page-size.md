@@ -4,12 +4,6 @@ title: "16 KB Page Size 与 Android 性能"
 chapter: "4.6"
 section: "4.6"
 status: finalized
-drafted_date: "2026-04-06"
-reviewed_date: "2026-06-28"
-reviewed_by: "openclaw-task6"
-polish_count: 1
-polish_date: "2026-04-08"
-polish_by: "task2b-polish"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-06-28"
 last_verified_against: "developer.android.com page size docs, source.android.com 16KB architecture docs, AOSP android-17.0.0_r1 bionic/linker + libc/private/WriteProtected.h, ARM Architecture Reference Manual"
@@ -46,30 +40,8 @@ tags:
   - research
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task6_reviewed_date: "2026-06-28"
 task9_state: reviewed
-task2b_result: fixed-lite
 task2b_state: fixed
-task6_result: "pass-light-edit"
-task9_result: auto-fixed
-task9_reviewed_date: "2026-06-28"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-28T12:33:34+08:00"
-last_task2b_lite_at: 2026-06-03
-task9_review_notes: "2026-06-28 Task9 闲时抽检 auto-fix：将 16KB Page Size 章节源码锚点重定到 android-17.0.0_r1；修正 source.android / Android Developers Blog 无效路径；按 Android 17 Bionic 修正 ElfReader compat 分支、RELRO 保护路径和 WriteProtected.h 当前实现。P0 3 / P1 2，均已小范围修复，回到 Task6 复审。 | 2026-06-03 Task9 14:20 auto-fixed：将 Bionic 16KB compat 源码锚点从 AOSP main 改为已核验的 android-16.0.0_r1；补 Android 17 backcompat fatal 验证开关；补 Pixel 9a 测试入口并扩展 applicable_versions 到 Android 17/API 37。P0 0 / P1 0 / AUTO-FIX 3；回到 Task6 复审。 | 2026-05-08 04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 仅建议；无 queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-05-08-04-deep-review.md。 | 2026-05-08 03:44 Task2B rework: P0 contpte 16KB 覆盖粒度改为 2MB (CONT_PTES=128)；P0 kCompatPageSize 源码锚点改为 linker_phdr.h / ElfReader::LoadSegments()；P1 NDK r27 linker flags 补 common-page-size | 2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 2 / P2 0；第三方 SDK 迁移建议中的 llvm-objcopy 修复路径缺少官方依据且可能误导；frontmatter 覆盖 Android 17 但当前无 AOSP 17 release tag，同时遗漏 Android 16 PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE / elf_alignment_test 版本边界。"
-repaired_date: "2026-04-27"
-repaired_by: "openclaw-task2b"
-rework_type: "review回炉修复（Task9/External 问题单）"
-review_notes: "2026-05-06 task9 deep-review: needs-rework。P1 2 / P2 1；THP/mTHP/contpte 与 compat RELRO 边界仍需回炉。"
-last_task6_at: "2026-06-28T16:11:12+08:00"
-review_log: "logs/review/2026-05-08-04-review.md"
-task6_review_notes: "2026-06-28 16:11 Task6 revisiting 复审(Task9 auto-fix后回归): 修复1处英文句首Starting in→从…开始。L1禁用词/高频词/物理动词/元叙述/翻译腔grep全部零命中。L2结构/节奏/开头/读者视角均通过。task9_result=auto-fixed(无遗留P0/P1),queue无pending,自动晋升finalized。"
-last_task9_audit: "2026-06-28"
-last_task9_audit_log: "logs/deep-review/2026-06-28-12-audit.md"
-last_task9_autofix_at: "2026-06-28"
-last_task9_review_log: "logs/deep-review/2026-06-28-12-audit.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-28
 ---
 
 # 4.6 16 KB Page Size 与 Android 性能

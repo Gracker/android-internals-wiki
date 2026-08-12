@@ -2,22 +2,9 @@
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 chapter: 14.9
 confidence: medium
-drafted_date: 2026-04-04
-last_task2b_at: "2026-05-22T07:21:00+08:00"
-last_task6_at: "2026-06-04T05:07:00+08:00"
-last_task6_audit: 2026-07-17
-last_task6_review_log: logs/review/2026-05-22-08-review.md
-last_task9_at: "2026-05-22T07:43:01+08:00"
-last_task9_audit: 2026-05-22
-last_task9_review_log: logs/deep-review/2026-05-22-07-deep-review.md
 last_verified: 2026-07-30
 last_verified_against: "AndroidX Benchmark 1.4.1 stable + Android test docs + Android 17 / API 37 + android-17.0.0_r1"
 related_chapters: ["8.7", "13.9", "15.3", "15.6"]
-repaired_by: openclaw-task2b
-repaired_date: 2026-04-26
-review_round: 4
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-04"
 section: 14.9
 sources:
 - type: official
@@ -40,23 +27,11 @@ tags:
   - microbenchmark
   - ci-cd
   - performance-testing
-task2b_result: fixed
 task2b_state: fixed
-task6_result: "pass-light-edit"
-task6_reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-06-04"
 task6_state: "reviewed"
-task6_review_notes: "2026-06-04 Task6 revisiting-review: L1 小修 3 处（元叙述路线图、形容词+冒号起手式、减少不是...而是）；无 B 类问题。自动晋升 finalized。"
-task9_result: "auto-fixed"
 task9_state: "reviewed"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-05-30
 pipeline_stage: "ready-to-publish"
 title: 自动化性能测试与回归门禁
-updated_by: openclaw-task2b
-updated_date: 2026-04-26
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-10
 ---
 
 # 14.9 自动化性能测试与回归门禁

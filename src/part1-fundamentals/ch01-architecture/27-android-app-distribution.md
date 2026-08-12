@@ -6,10 +6,6 @@ status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 tags: [packageinstaller, shortcutservice, chooseractivity, app-bundle, distribution]
 related_chapters: ["1.9", "8.11", "24.18"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-25"
-gap_source: "素材驱动"
-drafted_date: "2026-06-25"
 last_verified: "2026-08-09"
 last_verified_against: "AOSP android-17.0.0_r1 / API 37"
 confidence: high

@@ -5,14 +5,8 @@ status: finalized
 title: JobScheduler/WorkManager 调度与后台任务性能
 chapter: '5.8'
 section: '5.8'
-drafted_date: '2026-04-06'
-polish_count: 1
-polish_date: '2026-04-09'
-polish_by: task2b-polish
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-08-11'
-reviewed_date: 2026-06-07
-reviewed_by: openclaw-task6
 last_verified_against: AOSP android-17.0.0_r1, AOSP android-13.0.0_r1 / android-14.0.0_r1 historical TARE implementation and removal commit 4a98dd235a70, developer.android.com reference, perfetto.dev stdlib docs, Android Vitals docs
 confidence: medium
 consolidated_from:
@@ -73,27 +67,6 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-task2b_result: "fixed"
-task9_result: auto-fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-06-04'
-last_task9_at: "2026-06-04T18:15:00+08:00"
-task9_review_notes: "2026-06-04 Task9 18: auto-fixed。P0 1:PENDING_JOB_REASON_DEVICE_STATE 版本线由 API 37 修正为 API 34 常量/API 37 stats 方法;P2 1:TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 产物口径从 Method Trace/Heapprofd 改为 running system trace snapshot/call stack sample 边界。回到 Task6 复审。"
-last_task2b_at: '2026-06-04T12:57:00+08:00'
-repaired_date: '2026-04-27'
-repaired_by: openclaw-task2b
-rework_type: review回炉修复(Task9 问题单)
-task6_result: pass-light-edit
-last_task6_at: 2026-06-07T17:05:00+08:00
-last_task6_review_log: "logs/review/2026-05-17-11-review.md"
-task6_review_notes: "2026-06-07 17:05 Task6 revisiting #2: pass-light-edit. 禁用词0/高频词0/物理动词0. 否定-纠正2处均为功能性技术对比. 无B类大问题. task9_result=auto-fixed, queue无pending, 自动晋升finalized."
-last_task9_review_log: "logs/deep-review/2026-06-04-18-deep-review.md"
-p0: 1
-p1: 0
-p2: 1
-last_task9_autofix_at: "2026-06-04"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-07
 ---
 
 

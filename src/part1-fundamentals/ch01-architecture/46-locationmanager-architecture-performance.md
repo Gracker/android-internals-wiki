@@ -3,7 +3,6 @@ title: "Android 17 LocationManager 架构与性能优化"
 chapter: "1.46"
 section: "1.46"
 status: ready-for-review
-drafted_date: "2026-07-17"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -63,9 +62,6 @@ sources:
     path: "developer.android.com/develop/sensors-and-location/location/background"
 tags: [location, gps, gnss, system-service, geofence, hal, performance, power]
 related_chapters: ["1.38", "1.43", "1.47", "5.7", "8.4"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-17"
-gap_source: "AOSP结构"
 ---
 
 # 1.46 Android 17 LocationManager 架构与性能优化

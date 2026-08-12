@@ -6,20 +6,8 @@ applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-08"
 last_verified_against: "Compose BOM 2025.12.00 (Compose 1.10), Kotlin 2.2, AndroidX androidx-main"
 confidence: medium-high
-drafted_date: "2026-06-08"
 tags: [compose, lazylist, lazygrid, jank, recomposition, performance, scrolling, recycling]
 related_chapters: ["22.3", "22.2", "22.15", "7.9", "18.12"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-08"
-gap_source: "参考书结构/章节深挖/官方文档/社区热点"
-gap_score:
-  素材丰富度: 4
-  与全书目标相关性: 5
-  读者需求度: 5
-  时效性: 4
-  total: 18
-material_count: 5
-queue_priority: 80
 sources:
   - type: androidx
     path: "platform/frameworks/support/+/androidx-main/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/LazyList.kt"

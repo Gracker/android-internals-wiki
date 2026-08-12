@@ -5,13 +5,9 @@ status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [compose, modifier-node, performance, architecture-migration, recomposition]
 related_chapters: ["22.3", "22.15", "22.16", "22.19", "22.22", "7.7"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-16"
-drafted_date: "2026-07-16"
 last_verified: "2026-07-16"
 last_verified_against: "Compose BOM 2025.12.00 (Compose 1.10), Kotlin 2.2, AOSP android-17.0.0_r1"
 confidence: high
-gap_source: "AOSP结构+官方文档"
 sources:
   - type: official
     path: "https://developer.android.com/develop/ui/compose/custom-modifiers"

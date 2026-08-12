@@ -4,15 +4,9 @@ title: Baseline Profiles 与编译优化实践
 chapter: '8.7'
 section: '8.7'
 status: "finalized"
-drafted_date: '2026-04-06'
-drafted_by: openclaw-task2a
 applicable_versions: Android 7 (API 24) - Android 17 (API 37)
 last_verified: "2026-06-20"
 last_verified_against: "Android Developers Baseline/Startup/ProfileVerifier/Profileable docs (2026-06) + AOSP platform/art android-17.0.0_r1 ART Service"
-reviewed_date: "2026-05-27"
-reviewed_by: "openclaw-task6"
-task6_result: "pass-light-edit"
-task9_result: "auto-fixed"
 confidence: medium
 sources:
 - type: official
@@ -39,32 +33,8 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: "reviewed"
 task2b_state: "fixed"
-task2b_result: fixed
-review_round: 6
-task9_reviewed_date: "2026-07-10"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-10T16:36:38+08:00"
-last_task6_audit: '2026-06-11'
-last_task2b_at: '2026-04-24T19:36:54+08:00'
-review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b 修复后内容无新L1/L2问题。版本边界清晰，编译流程拆分完整，验证路径实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
-task9_review_notes: "2026-06-20 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 3；Android Developers Baseline/Startup/ProfileVerifier/Profileable 文档与 AOSP android-17.0.0_r1 ART Service 源码锚点复核通过；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-10 16:35 Task9 idle audit auto-fix：将 Android 17 源码锚点统一为 AOSP android-17.0.0_r1；版本边界复核通过，回到 Task6 复审。"
-last_task9_audit: "2026-07-10"
-last_task2b_verifier_at: "2026-06-20T03:32:38+08:00"
-task2b_verifier_result: "ready-for-task6"
-last_task6_at: "2026-06-20T01:07:00+08:00"
-last_task6_review_log: "logs/review/2026-06-20-01-review.md"
-task6_review_notes: "2026-05-27 Task6 04:06：pass-light-edit。L1/L2 小修 5 处；无新增 L3/L4 回炉。Task9 仍为 needs-rework/pending，未自动晋升 finalized。 | 2026-06-20 01:07 Task6 revisiting re-review：pass-light-edit。Task2B 修复 + Task9 auto-fix 后内容无新增 L1/L2 问题；无 L3/L4 回炉项。Task9 为 auto-fixed（非 pass-tech-review），未满足自动晋升条件。"
-last_task9_review_log: "logs/deep-review/2026-07-10-16-audit.md"
-last_task9_audit_log: "logs/deep-review/2026-07-10-16-audit.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-10
-last_task9_autofix_at: "2026-07-10"
 last_idle_audit_at: "2026-08-02T18:35:07+08:00"
 last_idle_audit_run_id: "20260802-183507-idle-audit-e1ac46d2"
-last_idle_audit_log: "logs/audit/2026-08-02-20260802-183507-idle-audit-e1ac46d2-idle-audit.md"
-auto_promoted: true
-finalized_date: "2026-06-20"
-finalized_by: "openclaw-task9-auto-promote"
 ---
 # 8.7 Baseline Profiles 与编译优化实践
 

@@ -6,13 +6,9 @@ status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [accessibility, jank, layout, a11y, performance, rendering]
 related_chapters: ["7.2", "7.3", "2.5", "9.2", "3.4"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-05"
-drafted_date: "2026-06-05"
 last_verified: "2026-06-05"
 last_verified_against: "AOSP android-16.0.0_r1 + Android 17 官方行为变更文档"
 confidence: medium-high
-gap_source: "AOSP结构+章节深挖"
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/view/accessibility/AccessibilityManager.java"

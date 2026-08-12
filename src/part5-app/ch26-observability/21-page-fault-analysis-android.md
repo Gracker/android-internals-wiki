@@ -4,7 +4,6 @@ chapter: "26.21"
 section: "26.21"
 status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-drafted_date: "2026-07-16"
 last_verified: "2026-07-16"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
@@ -15,9 +14,6 @@ sources:
     path: "frameworks/base/core/jni/android_os_Debug.cpp"
   - type: official
     path: "developer.android.com/topic/performance/memory"
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-16"
-gap_source: "参考书驱动（Clippings/线上疑难问题 46.md）"
 ---
 
 # 26.21 Page Fault 类型分析与 Android 实践

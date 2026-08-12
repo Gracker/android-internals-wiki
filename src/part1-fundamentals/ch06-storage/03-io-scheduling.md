@@ -23,23 +23,7 @@ tags:
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: reviewed
-task9_result: auto-fixed
 task2b_state: fixed
-task2b_result: fixed-lite
-last_task2b_lite_at: "2026-06-04"
-last_task9_at: "2026-06-05T20:33:28+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-06-05
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-05"
-task6_result: pass-light-edit
-task9_review_notes: "2026-06-05 Task9 auto-fixed: Android 16/17 I/O acceleration claims downgraded to pending-verification boundaries until AOSP/device anchors exist."
-last_task6_at: "2026-06-05T21:09:00+08:00"
-task6_review_notes: "2026-06-05 Task6 revisiting re-review: pass-light-edit. task9 auto-fixed 后复检，L1/L2 全部通过(禁用词0/高频词0/元叙述0)。无B类大问题。task9_result=auto-fixed, 不等于 pass-tech-review, 不触发自动晋升。pipeline_stage→ready-to-publish, status 保持 ready-for-review。"
-last_task9_autofix_at: 2026-06-05
-last_task9_review_log: "logs/deep-review/2026-06-05-20-deep-review.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-26
 ---
 # 6.3 I/O 调度与性能
 

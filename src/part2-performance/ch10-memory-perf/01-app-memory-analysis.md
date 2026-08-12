@@ -1,18 +1,9 @@
 ---
 title: "App 内存分析"
 chapter: "10.1"
-drafted_date: "2026-04-02"
-drafted_by: "openclaw-task2"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-07-31"
-reviewed_date: "2026-04-15"
-reviewed_by: "openclaw-task6"
 last_verified_against: "AOSP android-17.0.0_r1 / kernel android17-6.18-2026-06_r6"
-polish_count: 1
-polish_date: "2026-04-07"
-polish_by: "task2b-polish"
-review_type: post-polish-quality-gate
-review_round: 2
 confidence: high
 sources:
   - type: aosp
@@ -42,23 +33,10 @@ sources:
 tags: [memory, pss, rss, mat, heapprofd, memtrack, memory-analysis]
 related_chapters: ["4.1", "4.3", "4.5", "13.1", "14.5"]
 task6_state: "reviewed"
-task6_result: pass-light-edit
-last_task6_audit: "2026-06-14"
-last_task6_at: "2026-06-14T17:11:00+08:00"
 section: "10.1"
 status: finalized
 pipeline_stage: "ready-to-publish"
-task9_result: fixed
 task2b_state: fixed
-task2b_result: fixed
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-19"
-last_task9_at: "2026-05-19T20:58:49+08:00"
-last_task2b_at: "2026-04-27T15:52:00+08:00"
-last_task9_audit: "2026-05-19"
-last_task9_review_log: "logs/deep-review/2026-05-19-20-deep-review.md"
-review_notes: "2026-05-19 task9 idle audit: needs-rework。P0 1(malloc debug 命令/选项无效),P1 2(ASan API 版本;PSS/largeHeap 指标口径),P2 1(Bitmap API10 历史口径);已写入 queue/suggestions,等待 Task2B 回炉。"
-task9_review_notes: "2026-05-19 20 Task9 复核: needs-rework。P0 1: malloc debug 仍把 package 写入 libc.debug.malloc.program；P1 1: PSS 仍与 memoryClass/largeHeap 预算混用且单位口径错误；P2 2: Bitmap 历史分段、Native OOM 表述需补正。"
 task9_state: "reviewed"
 ---
 

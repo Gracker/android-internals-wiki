@@ -3,18 +3,10 @@ title: "刷新率切换与帧率适配性能"
 chapter: "2.19"
 section: "2.19"
 status: finalized
-drafted_date: "2026-04-07"
-reviewed_date: "2026-06-06"
-reviewed_by: "openclaw-task6"
-task6_result: "pass-light-edit"
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-task2b_result: fixed
 pipeline_stage: "ready-to-publish"
-last_task2b_at: 2026-06-06T02:57:42+08:00
-last_task2b_lite_at: 2026-06-06
-task2b_notes: "2026-06-06 Task2B main 回炉 #3：P1 ARR版本表重写（拆分MRR/ARR边界 Android 15-QPR1+），ARR原理和场景描述修正，厂商功耗/延迟/百分比声明全部去量化为定性描述，移除60-80%切换减少和无法回溯的设备条件声明。"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: AOSP android-17.0.0_r1, Composer3 AIDL, Perfetto android-17.0.0_r1, kernel android17-6.18-2026-06_r6, Android MRR / frame-rate / ARR 官方文档, Writer rendering_pipelines S01 / S08 / S12
@@ -56,28 +48,6 @@ sources:
   path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S12_video_overlay_hwc_type.md
 tags: [refresh-rate, frame-rate, SurfaceFlinger, VSync, setFrameRate, jank, rendering, display-mode, ARR]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
-task9_reviewed_date: "2026-06-06"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-06T04:21:00+08:00"
-last_task6_at: "2026-06-06T05:12:48+08:00"
-last_task6_audit: "2026-07-17T07:08:00+08:00"
-task6_review_notes: "2026-06-06 Task6 revisiting-review #5: L1/L2 clean (禁用词0/高频词:真正1+确实2均功能性/否定纠正2/元叙述0/物理动词0). L3/L4 pass (ARR/MRR版本边界清晰/厂商差异定性合理/Trace观察点实用/误区分析到位). No B-class issues. task6=pass-light-edit + task9=auto-fixed + queue empty → promote finalized."
-last_task6_review_log: "logs/review/2026-06-06-05-review.md"
-task6_reviewed_date: 2026-06-04
-task6_reviewed_by: openclaw-task6
-task6_l1_l2_fixes: 6
-task6_l3_l4_issues: 3
-task6_new_rework: true
-review_type: "task6-writing-quality-review"
-last_task2b_verifier_at: "2026-06-02T15:25:00+08:00"
-last_task2b_verifier_log: "logs/rework/2026-06-02-15-task2b-verifier.md"
-last_task9_review_log: logs/deep-review/2026-06-06-04-deep-review.md
-task9_review_notes: "2026-06-06 Task9 04 auto-fix: 修正 ARR/MRR 版本边界、ARR 工作模型、HWC 前提、Surface.setFrameRate(0) 清空偏好、普通游戏误用 FIXED_SOURCE，以及未证统一 fallback / 渐进切换表述；回到 Task6 复审。"
-task9_result: auto-fixed
-last_task2b_by: openclaw-task2b-main
-last_task9_autofix_at: 2026-06-06
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-17
 ---
 
 # 2.19 刷新率切换与帧率适配性能

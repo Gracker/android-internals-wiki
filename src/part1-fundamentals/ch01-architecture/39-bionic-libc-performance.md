@@ -3,7 +3,6 @@ title: "Bionic libc 性能演进与系统级影响"
 chapter: "1.39"
 section: "1.39"
 status: ready-for-review
-drafted_date: "2026-06-29"
 applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -35,10 +34,6 @@ sources:
     path: "source.android.com/docs/security/test/memory-safety/arm-mte"
 tags: [bionic, libc, malloc, scudo, mte, 16kb-page, pthread, ndk, arm64]
 related_chapters: ["4.7", "4.16", "23.3", "20.10", "20.11"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-28"
-drafted_by: "task2a-content-processing"
-gap_source: "AOSP结构"
 ---
 
 # 1.39 Bionic libc 性能演进与系统级影响

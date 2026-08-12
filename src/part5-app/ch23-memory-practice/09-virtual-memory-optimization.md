@@ -3,7 +3,6 @@ title: "应用虚拟内存优化实战"
 chapter: "23.9"
 section: "23.9"
 status: ready-for-review
-drafted_date: "2026-07-03"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-03"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -29,11 +28,6 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]"
 tags: [virtual-memory, VSS, thread-stack, maps-analysis, oom-prevention, memory-optimization, webview-reservation]
 related_chapters: ["20.5", "4.3", "4.4", "23.6", "23.3", "5.14"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-03"
-gap_source: "Clippings结构参考/AOSP结构"
-gap_score: 16
-material_count: 4
 consolidated_from:
   - "src/part5-app/ch23-memory-practice/13-virtual-memory-optimization.md"
 ---

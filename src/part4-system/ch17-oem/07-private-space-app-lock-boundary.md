@@ -3,13 +3,10 @@ title: "Private Space 与应用锁的兼容性边界"
 chapter: "17.7"
 section: "17.7"
 status: finalized
-drafted_date: "2026-05-25"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37) QPR2；手持设备通用逐应用锁无公开 SDK，AAOS App Lock 另行说明"
 last_verified: "2026-08-04"
 last_verified_against: "AOSP android-17.0.0_r1 framework sources; Android Developers Android 15/17 documentation; AOSP Android 16 QPR2 release notes; AAOS App Lock documentation"
 confidence: medium-high
-reviewed_date: "2026-08-04"
-reviewed_by: "hermes-aiw-review-finalize-apply"
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized
@@ -42,9 +39,6 @@ sources:
     path: "intake/daily-info/2026-05-25.md"
 tags: [private-space, app-lock, user-profile, launcher, notification, media-access]
 related_chapters: ["1.3", "1.9", "12.1", "17.1", "20.7", "24.12", "26.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-25"
-gap_source: "官方文档/每日信息/素材驱动"
 ---
 
 # Private Space 与应用锁的兼容性边界

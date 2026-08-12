@@ -5,8 +5,6 @@ section: 14.17
 status: ready-for-review
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags: [工具使用, 系统分析, 性能诊断]
-author: AIW
-created: 2026-06-23
 last_verified: "2026-07-30"
 last_verified_against: "Android Performance Analyzer 官方文档更新至 2026-07-15 / android-17.0.0_r1 / android17-6.18-2026-06_r6"
 confidence: high
@@ -15,10 +13,8 @@ task9_state: rework-fixed
 pipeline_stage: ready-for-review
 last_deep_review_at: "2026-07-26T20:36:00+08:00"
 last_deep_review_run_id: "20260726-203519-deep-review-009e010e"
-deep_review_result: needs-source-material
 last_rework_at: "2026-07-26T21:35:26+08:00"
 last_rework_run_id: "20260726-213526-rework-009e010e"
-rework_summary: "未恢复无来源 APA 工具叙述；将章节改为 Android 17 基线下的 APA 名称风险处置与系统性能分析路由说明，移除伪命令/量化开销/内核版本/OEM 生态结论，明确应回落到 Perfetto、simpleperf、Android Studio Profiler、Battery Historian、dumpsys/statsd 等已知工具。"
 sources:
   - type: official
     path: "https://developer.android.com/android-performance-analyzer"
@@ -56,8 +52,6 @@ sources:
     path: "src/part3-tools/ch14-other-tools/07-dumpsys.md"
   - type: internal
     path: "src/part3-tools/ch14-other-tools/08-battery-historian.md"
-review_notes: "2026-07-26 deep-review：原稿宣称 APA 是 Android 17 正式平台工具但缺少来源。本次 rework 不把 APA 当作已证实工具，而是保留章节编号并改写为风险边界和工具路由页；后续若取得 AOSP/官方文档证据，再另行扩写 APA 细节。"
-android17_review_notes: "2026-07-30：Android Developers 已发布 APA 首页、下载、Quickstart、Record/View/Analyze 文档；正文据官方资料重建。明确 APA 是独立发布的 open-beta 桌面工具，设备最低 Android 12，并以 android-17.0.0_r1 和 android17-6.18-2026-06_r6 解释 Perfetto/ftrace 数据边界。旧 rework/task 字段保留供 Hermes 追踪。"
 ---
 # 14.17 Android Performance Analyzer 与系统性能分析
 

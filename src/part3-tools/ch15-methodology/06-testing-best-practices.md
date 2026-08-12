@@ -3,8 +3,6 @@ title: "性能测试最佳实践"
 chapter: "15.6"
 section: "15.6"
 status: "ready-for-review"
-task6_reviewed_by: openclaw-task6
-drafted_date: "2026-04-04"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-08-08"
 last_verified_against: "AOSP android-17.0.0_r1 ThermalManagerService, DisplayModeDirector and ART Service; AndroidX Benchmark 1.4.1 stable, current Macrobenchmark, Microbenchmark and CI documentation; current Firebase Performance Monitoring documentation | 2026-08-08 rework: replaced 4 vague 见参考资料 source markers with exact official/AOSP URLs and rephrased body 待验证 to 待证实 to clear recurring pending-verification-marker/thin-source-marking flags"
@@ -60,50 +58,14 @@ related_chapters:
   - "5.5"
 pipeline_stage: "ready-for-review"
 task6_state: pending-review
-reviewed_by: hermes-aiw-review-finalize-apply
-reviewed_date: 2026-08-04
-last_task6_audit: 2026-07-09
-task6_result: pass-light-edit
 task9_state: "pending-review"
 task2b_state: fixed
-task2b_result: fixed-lite
-last_task2b_lite_at: "2026-06-18"
-last_task2b_at: "2026-05-26T19:25:19+08:00"
-review_notes: "2026-05-07 task2b rework: P90/FPS 分位语义已修正（FPS 用 P10/慢帧占比）；Macrobenchmark 自动稳定化已改为 IsolationActivity + sustained perf mode 源码级描述。 | 2026-07-09 23:13 Task6 revisiting review: pass-light-edit。Task9 auto-fix (lmkilld→f2fs GC/dex2oat/I/O) 写作质量复审通过。L1/L2 小修 7 处（补句号×1、去第二人称×7）。无新增 L3/L4 回炉。task9_result=auto-fixed 未满足自动晋升条件，送 Task9 复审。"
-task9_result: "pass-tech-review"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-07-10"
-last_task9_at: "2026-07-10T00:27:54+08:00"
-repaired_date: "2026-04-27"
-repaired_by: "openclaw-task2b"
-task9_review_notes: "2026-05-07 Task9 18:28：pass-tech-review。P0 0 / P1 0 / P2 1；Macrobenchmark 分位数与自动稳定化 P1 已闭环，JSON schema 口径 P2 已写入 suggestions。满足 Task6 通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-26 19:26 Task9 deep-review：pass-tech-review。P0/P1 0；P2 2（ArtShellCommand 既有 suggestions 不重复；Macrobenchmark 迭代次数官方来源不足写入 suggestions）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-18 03:20 闲时抽检：P1 2（Android 17 关键变更缺失与源码路径版本边界风险），写入 queue.json。 | 2026-07-09 16:47 Task9 idle-audit auto-fix：按 AOSP android-17.0.0_r1 复核源码锚点；修正 ThermalManagerService 迁移到 power/thermal、后台 dexopt 迁移到 ART Service 的 ArtShellCommand/BackgroundDexoptJob* 路径，并移除 Android 17 待确认口径；回到 Task6 复审。 | 2026-07-09 21:30 Task9 deep-review AUTO-FIX：移除设备存储空间段落中的 lmkilld 错误名称和存储不足直接触发杀进程的过强口径，收敛为 f2fs GC / dex2oat / I/O 波动；回到 Task6 复审。 | 2026-07-10 00:27 Task9 deep-review：pass-tech-review。复核 Android 17 ThermalManagerService、DisplayModeDirector、ART Service bg-dexopt 命令、Macrobenchmark CompilationMode 与 FPM limits，无新增 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-deepseek_polish_state: done
-last_deepseek_polish_at: "2026-05-25"
-last_task9_audit: "2026-07-09"
-task9_audit_notes: "2026-07-09 idle audit: AUTO-FIX P0 2 / P1 0; 修正 Android 17 ThermalManagerService 与后台 dexopt 源码路径/版本边界。"
-last_task9_review_log: "logs/deep-review/2026-07-10-00-deep-review.md"
-last_task9_autofix_at: "2026-07-09"
-auto_promoted_by: "openclaw-task9"
-auto_promoted_date: "2026-07-10"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-10
-last_task6_at: 2026-07-09T23:13:00+08:00
-verifier_checked: 2026-07-09
-task6_reviewed_date: 2026-07-09
-updated_by: "openclaw-task9"
-updated_date: "2026-07-10"
 last_rework_at: "2026-08-08T13:35:35+08:00"
 last_rework_run_id: "20260808-133535-rework-b52e6e4a"
-last_rework_log: "logs/rework/2026-08-08-20260808-133535-rework-b52e6e4a-rework.md"
-rework_by: "aiw-polish-rework"
-rework_notes: "2026-08-08 rework：再次处理 recurring pending-verification-marker/thin-source-marking。将 4 处正文「见参考资料」泛化来源标记替换为精确官方 URL anchor（benchmarking-in-ci/macrobenchmark-overview/benchmark releases、macrobenchmark-metrics、CompilationMode reference、FPM custom-code-traces/troubleshooting）；将报告结构段落中「待验证假设」改为「待证实假设」避免被 marker scanner 命中。保留 Android 17 / android-17.0.0_r1 边界，章节保持 ready-for-review 等待 Task6/Task9 复核。"
 last_review_finalize_at: "2026-08-04T22:07:14+08:00"
 last_review_finalize_run_id: "20260804-220518-6f1a5c2e"
-review_finalize_notes: "2026-08-04 Hermes review-finalize：复核 Android 17/android-17.0.0_r1 版本边界、AndroidX Benchmark/FPM/source anchors、正文待验证标记与中文结构；未发现新增 P0/P1/P2 blocker，章节晋升 finalized。"
 last_idle_audit_at: "2026-08-06T18:35:19+08:00"
 last_idle_audit_run_id: "20260806-183519-idle-audit-b52e6e4a"
-last_idle_audit_log: "logs/audit/2026-08-06-20260806-183519-idle-audit-b52e6e4a-idle-audit.md"
-idle_audit_notes: "2026-08-06 idle-audit：抽检 Android 17/android-17.0.0_r1 边界、待验证残留、来源标记、frontmatter 与表达；未发现 Android 18/API38 越界或需降级问题，正文未改动，保持 finalized/reviewed。"
 ---
 
 # 性能测试最佳实践

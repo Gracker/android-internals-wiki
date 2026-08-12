@@ -8,16 +8,11 @@ last_verified_against: "AOSP android-17.0.0_r1; Compose UI 1.11.4 (854220f44ea8e
 confidence: high
 tags: [compose, canvas, custom-drawing, drawbehind, drawwithcontent, graphicslayer, rendernode]
 related_chapters: ["2.1", "2.3", "7.7", "22.3", "22.19", "22.25"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-17"
-gap_source: "章节深挖 + 官方文档"
 pipeline_stage: finalized
 task6_state: reviewed
 task9_state: reviewed
 last_draft_polish_at: "2026-07-31T23:42:23+08:00"
 last_draft_polish_run_id: "20260731-234223-draft-polish-a8e2ab9f"
-reviewed_date: "2026-08-01"
-reviewed_by: "hermes-aiw-review-finalize-apply"
 last_review_finalize_at: "2026-08-01T08:12:43+08:00"
 last_review_finalize_run_id: "20260801-081243-625aae95"
 last_idle_audit_at: "2026-08-09T04:49:28+08:00"

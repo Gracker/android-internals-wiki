@@ -11,8 +11,6 @@ consolidated_from:
   - "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
   - "src/part5-app/ch25-power-size/19-android-vitals-wakelock-governance.md"
   - "src/part5-app/ch25-power-size/20-android17-allow-while-idle-listener-alarm.md"
-drafted_date: "2026-05-14"
-polish_count: 0
 sources:
   - type: official
     path: "https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/set"
@@ -45,24 +43,7 @@ related_chapters: ["25.2", "11.5", "5.6", "25.4"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
-last_task9_review_log: "logs/deep-review/2026-06-30-12-audit.md"
-last_task9_at: "2026-06-30T12:30:53+08:00"
-last_task9_audit: "2026-06-30"
-last_task9_audit_log: "logs/deep-review/2026-06-30-12-audit.md"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-30"
-task9_result: auto-fixed
 task2b_state: fixed
-task2b_result: fixed
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-14"
-task6_result: pass-light-edit
-last_task6_review_log: logs/review/2026-05-14-16-review.md
-last_task6_audit: "2026-07-08"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-30
-last_task9_autofix_at: "2026-06-30"
-task9_review_notes: "2026-06-30 Task9 idle audit auto-fix: 将 WakeLock 类型段落中的 AOSP PowerManager.java 验证标签从 android-16.0.0_r1 重锚到 android-17.0.0_r1；复核 AlarmManager.java / AlarmManagerService.java exact alarm 权限和 *alarm* WakeLock 路径，未发现新增 P0/P1。因 auto-fix 回到 Task6 复审。"
 ---
 
 # WakeLock 与 Alarm 管理

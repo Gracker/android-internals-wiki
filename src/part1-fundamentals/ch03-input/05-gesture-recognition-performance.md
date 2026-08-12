@@ -4,12 +4,10 @@ title: 手势识别算法与性能优化
 chapter: '3.5'
 section: '3.5'
 status: finalized
-task2b_result: fixed
 task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: ready-to-publish
-drafted_by: openclaw-task
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 version_notes: "DEFAULT_STRATEGY_BY_AXIS 仅 Android 14+ (API 34+) 可用"
 confidence: medium
@@ -44,25 +42,6 @@ related_chapters:
 - '3.3'
 - '2.4'
 
-task9_result: auto-fixed
-task9_reviewed_date: 2026-06-06
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-06T09:20:00+08:00"
-reviewed_date: "2026-04-20"
-reviewed_by: "openclaw-task6"
-last_task6_audit: "2026-07-05"
-task6_result: "pass-light-edit"
-review_notes: '2026-04-12 task6 review: needs-rework。小修 8 处（frontmatter 标签、禁用词替换、段落拆分、代码注释格式统一）。回炉
-  4 项（VelocityTracker 版本演进、双击回调语义、Perfetto 证据、扩展素材与来源）。评分: 结构 4/5·措辞 4/5·一致性 3/5·验证
-  3/5·元数据 4/5。'
-last_task9_audit: "2026-06-12"
-last_task2b_lite_at: "2026-06-06"
-last_task2b_at: "2026-06-03T21:33:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-06-09-deep-review.md"
-last_task9_autofix_at: "2026-06-12"
-task9_review_notes: "2026-06-06 09:20 Task9 deep-review: pass-tech-review。VelocityTracker Android 10-16 策略演进与 View/GestureDetector/ViewConfiguration 源码锚点复核通过；仅写入 P2 数据支撑建议。Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-12 13:20 Task9 idle audit: auto-fixed。修正 VelocityTracker.getXVelocity() 源码片段与 Compose MotionEventAdapter/PointerInputEvent 命名；Android 17 tag 未公开，未扩展为 Android 17 已验证结论。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-22
 ---
 
 # 3.5 手势识别算法与性能优化

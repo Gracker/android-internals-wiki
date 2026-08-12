@@ -3,8 +3,6 @@ title: "端侧高可用日志与诊断命令通道"
 chapter: "26.16"
 section: "26.16"
 status: finalized
-drafted_date: "2026-05-26"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-05-26"
 last_verified_against: "Android Developers ProfilingManager docs, AOSP android-16.0.0_r1 logging docs, Android privacy/security docs"
@@ -30,34 +28,10 @@ sources:
     path: "https://developer.android.com/training/permissions/usage-notes"
 tags: [observability, logging, diagnostics, remote-debugging, profiling]
 related_chapters: ["13.17", "14.11", "15.9", "19.22", "26.3", "26.5", "26.10"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-26"
-gap_source: "参考书结构/章节深挖/官方文档"
 pipeline_stage: ready-to-publish
-task2a_result: "draft-ready-for-review"
-last_task2a_at: "2026-05-26T02:04:00+08:00"
-task2b_result: fixed-lite
 task2b_state: fixed
-last_task2b_lite_at: "2026-06-05"
 task6_state: reviewed
 task9_state: reviewed
-task6_result: "pass-light-edit"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-05"
-last_task6_at: "2026-06-05T11:24:00+08:00"
-last_task6_review_log: "logs/review/2026-06-05-11-review.md"
-task9_result: pass-tech-review
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_at: "2026-06-05T12:27:00+08:00"
-last_task9_at: "2026-06-05T12:27:00+08:00"
-last_task9_audit_at: "2026-07-12T22:25:07+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-12-22-audit.md"
-last_task9_audit_result: "pass-idle-audit"
-last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度3（版本差异覆盖）检查通过；android-17.0.0_r1 packages/modules/Profiling 中 ProfilingManager / ProfilingResult / ProfilingTrigger 源码锚点可用；未发现 Android 18/API 38+ 结论。"
-last_task9_audit: "2026-07-12"
-last_task9_review_log: "logs/deep-review/2026-06-05-12-deep-review.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-19
 ---
 
 # 26.16 端侧高可用日志与诊断命令通道

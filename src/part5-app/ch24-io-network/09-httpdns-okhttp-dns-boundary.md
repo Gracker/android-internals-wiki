@@ -44,32 +44,10 @@ sources:
   path: system/dns-resolver
 last_verified: "2026-06-09"
 last_verified_against: "OkHttp 5.x docs + OkHttp source 728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab + DeepResearch 2026-05-14 + Clippings 结构参考"
-drafted_date: "2026-05-16"
-reviewed_date: "2026-05-16"
-reviewed_by: "openclaw-task6"
 related_chapters: ["12.1", "12.3", "24.4", "24.5", "26.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-16"
-gap_source: "章节深挖/研究素材"
-last_task2a_at: "2026-05-16T16:04:00+08:00"
 task6_state: "reviewed"
-task6_result: "pass-light-edit"
 task9_state: "reviewed"
-task9_result: "auto-fixed"
 task2b_state: "fixed"
-task2b_result: "fixed"
-last_task6_at: "2026-06-25T21:17:30+08:00"
-last_task6_audit: "2026-06-25"
-task6_l1_l2_fixes: "18"
-task6_l3_l4_issues: "0"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-16"
-last_task9_at: "2026-05-16T16:30:00+08:00"
-last_task9_audit: "2026-06-09"
-last_task9_autofix_at: "2026-06-09"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-11
-verifier_promoted: "2026-06-25T19:28 Task2B Verifier: both Task6(pass-light-edit) + Task9(auto-fixed) complete, queue clear, promoted to finalized"
 ---
 
 # HTTPDNS 与 OkHttp Dns 执行边界

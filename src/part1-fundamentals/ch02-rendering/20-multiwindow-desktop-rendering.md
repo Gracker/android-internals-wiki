@@ -79,48 +79,10 @@ related_chapters:
 - '2.13'
 - '7.4'
 - '3.3'
-drafted_date: '2026-04-08'
-drafted_by: openclaw-task2a
 pipeline_stage: ready-to-publish
 task6_state: "reviewed"
 task9_state: reviewed
-task9_result: pass-tech-review
 task2b_state: "fixed"
-reviewed_date: '2026-07-07'
-finalized_date: "2026-07-08"
-finalized_by: openclaw-task9-auto-promote
-auto_promoted_date: "2026-07-08"
-auto_promoted_by: openclaw-task9
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
-task2b_result: fixed-lite
-task9_reviewed_date: "2026-07-08"
-last_task9_at: "2026-07-08T00:31:29+08:00"
-last_task2b_at: '2026-05-09T17:20:00+08:00'
-task9_reviewed_by: openclaw-task9
-last_task9_audit: "2026-07-07"
-last_task9_audit_at: "2026-07-07T16:36:08+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-07-16-audit.md"
-last_task2b_lite_at: '2026-05-31'
-last_task6_at: '2026-06-14T16:05:00+08:00'
-last_task6_review_log: logs/review/2026-06-14-16-review.md
-task6_review_notes: >-
-  2026-07-07 Task6 revisiting review: pass-light-edit；Task9 auto-fix recreateOnConfigChanges 已验证正确；L1 修 1 处禁用词(落地→生效)；锚点 5/5 覆盖；无 L3/L4 回炉项。task9_result=auto-fixed 非 pass-tech-review，未自动晋升。
-  修 1 处空标题（Android 16 桌面模式公开边界段落归位）。锚点 5/5 覆盖。无 L3/L4 回炉项。task9_result=auto-fixed
-  非 pass-tech-review，未自动晋升。
-last_task9_review_log: "logs/deep-review/2026-07-08-00-deep-review.md"
-last_task9_autofix_at: "2026-07-07"
-task9_review_notes: "2026-07-07 Task9 idle audit auto-fix: AOSP android-17.0.0_r1 attrs_manifest.xml 与 Android R.attr 文档确认 recreateOnConfigChanges 不包含 uiMode/desk mode；已删除 4 处错误边界，回到 Task6 复审。"
-p0: 0
-p1: 0
-p2: 0
-last_task2b_verifier_at: '2026-06-14T19:31:17'
-task2b_verifier_result: task9-state-reset-ready-for-task9
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-08
-task9_p0_issues: 0
-task9_p1_issues: 0
-task9_p2_issues: 0
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch02-rendering/2.29-Android-17-桌面模式窗口管理性能.md"

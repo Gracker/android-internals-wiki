@@ -3,16 +3,12 @@ title: "Facebook Profilo 框架线上 ATrace 收集方案"
 chapter: "26.23"
 section: "26.23"
 status: ready-for-review
-drafted_date: "2026-07-16"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-07-16"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 tags: [Profilo, atrace, trace-marker, PLT-Hook, observability, Facebook, online-trace]
 related_chapters: ["26.18", "26.22", "20.15", "20.18"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-16"
-gap_source: "参考书驱动（Clippings/线上疑难问题 46.md）"
 sources:
   - type: aosp
     path: "frameworks/native/cmds/atrace/atrace.cpp (android-17.0.0_r1)"

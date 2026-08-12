@@ -3,17 +3,10 @@ title: "内存泄漏"
 chapter: "10.2"
 section: "10.2"
 status: "finalized"
-drafted_date: "2026-04-02"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-07-31"
 last_verified_against: "AOSP android-17.0.0_r1; Profiling Mainline module android-17.0.0_r1; LeakCanary 2.14 docs"
 confidence: high
-reviewed_date: "2026-05-08"
-reviewed_by: "openclaw-task6"
-polish_count: 1
-polish_date: "2026-04-08"
-polish_by: "task2b-polish"
 sources:
   - type: blog
     path: "Personal-Knowlodge/source/2026-03-07_wechat_为什么各大厂自研的内存泄漏检测框架都要参考_LeakCanary_因为它是真强啊.md"
@@ -38,32 +31,9 @@ sources:
 tags: ['memory-leak', 'leakcanary', 'mat', 'heapprofd', 'heap-dump', 'gc-root', 'native-memory']
 related_chapters: ["4.1", "4.3", "4.5", "10.1", "10.6"]
 pipeline_stage: "ready-to-publish"
-task2b_result: fixed
 task2b_state: "fixed"
 task6_state: reviewed
-task6_reviewed_date: "2026-06-20"
-task6_result: "pass-light-edit"
-review_log: "logs/review/2026-05-08-04-review.md"
 task9_state: "reviewed"
-task9_reviewed_date: "2026-06-20"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-20T17:27:45+08:00"
-last_task9_audit: "2026-06-20"
-task9_review_notes: "2026-06-20 17 Task9 idle-audit AUTO-FIX: 修正 source.android.com native-memory 官方文档路径；补齐 heapprofd Java allocation sampling Android 12+ 版本边界；无 queue pending，回到 Task6 复审。 | 2026-05-08 04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 仅建议；无 queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-05-08-04-deep-review.md。 | 2026-05-08 03:44 Task2B rework: P0 ProfilingManager requestProfiling API 签名已修正（补 tag/CancellationSignal/Consumer<ProfilingResult>，说明 global listener 路径） | 2026-05-03 04 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。 | 2026-05-08 01:40 Task2B rework: P0 ASan/HWASan 重新定位为内存安全检测器并修正版本；P1 dumpsys meminfo 改为受控复现口径；P2 ProfilingManager 补充限流和约束 | 2026-05-08 02 Task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。ProfilingManager requestProfiling API 签名错误，需 Task2B 回炉。"
-task9_result: "auto-fixed"
-last_task6_at: "2026-06-20T20:11:02+08:00"
-last_task6_audit: "2026-06-20"
-task6_review_notes: "2026-05-07 23:13 task6 revisiting-review: pass-light-edit。修复禁用词、无语言代码块、比喻化开头与少量措辞问题；Task9 历史技术项仍待复审，未自动晋升。 | 2026-05-08 02:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 7 处 L1/L2 表达与格式问题；Task9 仍为 pending，未自动晋升。 | 2026-05-08 04:05 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 frontmatter YAML 与流程元数据；正文无新增 L1/L2 问题；无新增回炉项，送 Task9 复审。"
-last_task9_audit_result: "auto-fixed"
-last_task9_audit_log: "logs/deep-review/2026-06-20-17-audit.md"
-last_task9_autofix_at: "2026-06-20"
-last_task9_review_log: "logs/deep-review/2026-06-20-17-audit.md"
-task9_reviewed_at: "2026-06-20T17:27:45+08:00"
-updated_by: "openclaw-task9"
-updated_date: "2026-06-20"
-task2b_verifier_notes: "2026-06-20 Task2B Verifier: status finalized→ready-for-review (Task9 auto-fix 回流，pipeline_stage=task6_pending 但 status 未同步); 2026-06-20T19:27:21+08:00"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-13
 ---
 
 # 10.2 内存泄漏

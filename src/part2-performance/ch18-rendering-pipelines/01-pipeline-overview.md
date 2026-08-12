@@ -10,8 +10,6 @@ tags: ["rendering-pipeline", "BLAST", "SurfaceFlinger", "HWUI", "SurfaceView", "
 related_chapters: ["2.5", "2.6", "2.13", "2.16", "13.9", "13.14", "13.19", "14.21", "15.1", "18.2", "18.3", "18.4", "18.5", "18.6", "18.7", "18.8", "18.9", "18.10"]
 consolidated_from:
   - "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md"
-created_by: "rendering-pipelines-merge"
-created_date: "2026-04-09"
 sources:
   - type: internal-reference
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S01_rendering_types_overview.md"
@@ -43,37 +41,11 @@ sources:
   - type: kernel
     path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6"
     role: "dma-buf、dma-fence、sync_file 与 DRM/KMS 的统一 kernel 锚点"
-task2b_result: fixed-lite
-last_task2b_lite_at: "2026-06-18"
-last_task2b_at: "2026-05-05T04:53:00+08:00"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-07-10"
-task6_result: pass-light-edit
-task6_reviewed_date: "2026-07-10"
-last_task6_at: "2026-07-10T01:09:00+08:00"
-last_task6_audit: "2026-07-10"
-last_task9_audit: "2026-07-09"
-last_task9_audit_log: "logs/deep-review/2026-07-09-09-audit.md"
-auto_promoted: true
 last_verified: "2026-07-31"
-task9_result: "auto-fixed"
 task9_state: "reviewed"
 task2b_state: "fixed"
 task6_state: "reviewed"
 pipeline_stage: "ready-to-publish"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-09"
-last_task9_at: "2026-07-09T16:30:36+08:00"
-last_task9_autofix_at: "2026-07-09"
-last_task9_review_log: "logs/deep-review/2026-07-09-16-deep-review.md"
-updated_by: "openclaw-task9"
-updated_date: "2026-07-09"
-p0: 0
-p1: 0
-p2: 1
-task9_review_notes: "2026-05-24 07:40 Task9 deep-review: pass-tech-review。无 P0/P1；P2 2 项已写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-17 Task9 闲时抽检 AUTO-FIX：P0 1 / P1 0 / P2 2；修正 Android 14-16 SurfaceFlinger 源码锚点，`BufferStateLayer.cpp` 限定为 Android 11-13，回到 Task6 复审。 | 2026-06-19 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；源码与版本边界复核通过，Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-06-19-01-deep-review.md。 | 2026-07-09 Task9 闲时抽检 AUTO-FIX：P0 0 / P1 1 / P2 0；将 Android 16 锚点提升到 android-17.0.0_r1，补齐 Android 17 表格与 Layer.cpp/ViewRootImpl/HardwareBufferRenderer 证据，回到 Task6 复审。 | 2026-07-09 16 Task9 deep-review AUTO-FIX：P0 0 / P1 0 / P2 1；补齐 HWC/BufferQueueProducer 验证行的 android-17.0.0_r1 锚点；回 Task6 复审。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-15
 ---
 
 # 18.1 渲染管线分类、选型与分析方法

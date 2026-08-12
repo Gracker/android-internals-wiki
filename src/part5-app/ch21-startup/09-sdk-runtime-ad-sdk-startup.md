@@ -3,7 +3,6 @@ title: "Privacy Sandbox 退场与广告 SDK 启动治理"
 chapter: "21.9"
 section: "21.9"
 status: ready-for-review
-drafted_date: "2026-05-19"
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 last_verified: "2026-08-11"
 last_verified_against: "AOSP android-17.0.0_r1 AdServices and SDK sandbox APIs + Android Developers / Privacy Sandbox phaseout status"
@@ -46,16 +45,6 @@ related_chapters: ["8.2", "21.1", "21.2", "21.6", "25.10", "26.3"]
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part2-performance/ch12-apk-network/07-privacy-sandbox-performance.md"
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-19"
-gap_source: "官方文档/AOSP结构/每日信息"
-gap_score: 16
-material_count: 4
-source_refs:
-  - "https://developer.android.com/design-for-safety/privacy-sandbox/guides/sdk-runtime"
-  - "https://developer.android.com/design-for-safety/privacy-sandbox/reference/sdksandbox/SdkSandboxManager"
-  - "https://developer.android.com/jetpack/androidx/releases/privacysandbox-sdkruntime"
-  - "intake/daily-info/2026-05-19.md"
 ---
 
 # Privacy Sandbox 退场与广告 SDK 启动治理

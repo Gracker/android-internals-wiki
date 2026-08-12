@@ -4,8 +4,6 @@ chapter: "13.4"
 section: "13.4"
 section_title: "命令行打开超大 Trace"
 status: finalized
-drafted_date: "2026-04-03"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-07-31"
 last_verified_against: "AOSP android-17.0.0_r1 external/perfetto ece66975738007dd0978b911d8a2077e49b8f31e（trace_processor shell/query/query-output/server/export + traceconv）+ 2026-07-31 Perfetto 官方 C++/Python/Batch/large-trace 文档"
@@ -59,30 +57,9 @@ sources:
 tags: [perfetto, trace_processor, sql, python, cli, large-traces]
 related_chapters: ["13.1", "13.2", "13.3", "13.9", "13.22"]
 task9_state: reviewed
-task9_result: auto-fixed
 task2b_state: fixed
-task2b_result: fixed
 task6_state: reviewed
-task6_result: pass-light-edit
-reviewed_date: 2026-06-30
-reviewed_by: openclaw-task6
 pipeline_stage: ready-to-publish
-task9_reviewed_date: "2026-06-30"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-30T07:25:03+08:00"
-last_task2b_at: "2026-04-27T12:54:09+08:00"
-task9_review_notes: "2026-04-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2。 | 2026-06-30 Task9 idle audit auto-fix: Android 17 trace_processor HTTP 参数口径更新；trace_processor SQLite export 命令、traceconv 文档链接与 profile --output-dir 命令修正。无待入 queue P0/P1。"
-last_task6_audit: "2026-06-27"
-last_task9_audit: "2026-06-30"
-last_task9_audit_log: "logs/deep-review/2026-06-30-07-audit.md"
-last_task9_review_log: "logs/deep-review/2026-06-30-07-audit.md"
-last_task9_autofix_at: "2026-06-30"
-deepseek_polish_state: done
-last_deepseek_polish_at: 2026-05-27
-task2b_verifier_note: "status finalized→ready-for-review for Task6 pickup (2026-06-30T07:29:40+08:00)"
-last_task6_at: 2026-06-30T09:06:00+08:00
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-04
 ---
 
 # 13.4 命令行打开超大 Trace

@@ -15,21 +15,9 @@ confidence: high
 sources:
 - type: deepresearch
   path: AOSP android-17.0.0_r1 source paths listed in source_repos; Android Developers Android 17 features, JobScheduler API, foreground-service timeout, Doze/App Standby, and background-location documentation; Android common kernel android17-6.18-2026-06_r6; DeepResearch/2026-06-17-battery-saver-location-power-policy-aosp-deep-dive.md; DeepResearch/2026-06-20-job-scheduler-throttling-mechanism.md; DeepResearch/2026-06-18-jobscheduler-source-verification.md; DeepResearch/2026-06-18-radio-power-state-machine-source-analysis.md; DeepResearch/2026-06-18-adaptive-battery-app-standby-coordination.md
-task2b_result: fixed
 task2b_state: fixed
 task9_state: pass-tech-review
-task9_result: auto-fixed
-task6_result: "pass-light-edit"
 task6_state: reviewed
-last_task2b_fix_at: "2026-07-02T08:58:38.308091+08:00"
-last_task6_at: "2026-06-23T20:08:00+08:00"
-last_task9_autofix_at: "2026-07-02"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-02
-last_task9_at: "2026-07-02T09:31:35+08:00"
-last_task6_audit: "2026-07-03"
-last_task6_review_at: "2026-07-03T16:19:00+08:00"
-last_task9_audit: "2026-07-02"
 last_idle_audit_at: "2026-07-25T18:35:47+08:00"
 last_idle_audit_run_id: "20260725-183547-idle-audit-692dae4f"
 ---

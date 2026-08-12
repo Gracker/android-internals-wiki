@@ -4,8 +4,6 @@ title: "竞品分析方法"
 chapter: "15.4"
 section: "15.4"
 status: finalized
-drafted_date: "2026-04-04"
-drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-07-30"
 last_verified_against: "AOSP android-17.0.0_r1 ActivityManagerShellCommand / WaitResult / ActivityTaskSupervisor / ActivityMetricsLogger / ActivityRecord / FrameMetrics / FrameTimeline; Android Developers current official documentation"
@@ -37,30 +35,6 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-16
-task6_result: pass-light-edit
-last_task6_audit: "2026-07-02T14:05:00+08:00"
-task9_result: auto-fixed
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-28"
-last_task9_at: "2026-04-28T07:40:26+08:00"
-task2b_result: fixed
-last_task2b_at: "2026-04-27T21:44:26+08:00"
-repaired_date: "2026-04-27"
-repaired_by: "openclaw-task2b"
-task9_review_notes: "2026-04-28 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 3 写入 suggestions。"
-last_task9_audit: "2026-06-16"
-last_task9_audit_log: "logs/deep-review/2026-06-16-18-audit.md"
-task9_audit_notes: '2026-05-23 Task9 idle audit: 无 P0/P1。源码路径与 Android 16 FrameMetrics/ActivityTaskManager 链路复核通过；仅记录 P2：Benchmarking overview 官方 URL 已迁移。 | 2026-06-16 Task9 idle audit auto-fixed: P0 1（Battery Historian bugreport 导出命令修正为 adb bugreport bugreport.zip）/ P1 0 / P2 1（官方文档 URL 迁移修正）；回到 Task6 复审。'
-deepseek_polish_state: done
-last_deepseek_polish_at: "2026-05-25"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-17
-last_task9_autofix_at: "2026-06-16"
-updated_by: "openclaw-task9"
-updated_date: "2026-06-16"
-last_task6_at: 2026-06-16T20:10:00+08:00
 ---
 
 # 竞品分析方法

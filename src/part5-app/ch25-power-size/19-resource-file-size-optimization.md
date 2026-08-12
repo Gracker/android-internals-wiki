@@ -6,10 +6,6 @@ status: finalized
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [包体积, 资源优化, 图片压缩, ARSC, AAPT2]
 related_chapters: ["25.6", "25.7", "25.8", "25.17", "25.18"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-17"
-gap_source: "Clippings性能优化参考书（资源文件体积优化实战章）"
-gap_score: 15
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized
@@ -17,8 +13,6 @@ last_draft_polish_at: "2026-08-03T23:36:03+08:00"
 last_draft_polish_run_id: "20260803-233603-draft-polish-b4f706b1"
 last_verified: "2026-08-03"
 confidence: medium-high
-reviewed_date: "2026-08-04"
-reviewed_by: "hermes-aiw-review-finalize-apply"
 last_review_finalize_at: "2026-08-04T08:11:26+08:00"
 last_review_finalize_run_id: "20260804-081101-aa9c89f4"
 sources:

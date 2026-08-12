@@ -4,22 +4,11 @@ chapter: "18.23"
 section: "18.23"
 section_title: "Android 17 Jetpack Compose 渲染管线架构"
 status: finalized
-task2b_result: fixed
 task2b_state: fixed
 task6_state: reviewed
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-29"
-last_task6_at: "2026-06-29T06:10:04+08:00"
-last_task6_audit: "2026-06-29"
-task9_result: auto-fixed
 task9_state: reviewed
 pipeline_stage: ready-to-publish
-last_task2b_at: "2026-06-29T04:50:00+08:00"
-last_task2b_by: task2b-lite
-last_task2b_lite_at: "2026-06-29"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-drafted_date: "2026-06-26"
 last_verified: "2026-07-31"
 last_verified_against: "Compose BOM 2026.06.01 / Runtime、UI、Foundation 1.11.4 at AndroidX commit 854220f44ea8ea80fee824a6c5a045f39bede289 / android-17.0.0_r1 / Writer rendering_pipelines S01、S02、S05 / android17-6.18-2026-06_r6"
 confidence: high
@@ -137,15 +126,6 @@ sources:
     role: "dma-fence 经文件描述符传递的同步基础"
 tags: [compose, rendering, rendernode, choreographer, pausable-composition, display-list]
 related_chapters: ["2.4", "2.5", "2.6", "22.3", "22.20", "22.25", "22.26"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-26"
-gap_source: "AOSP结构+章节深挖"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-29
-last_task9_audit: "2026-06-29"
-last_task9_at: "2026-06-29T05:24:42.380077+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-29-05-deep-review.md"
-last_task9_autofix_at: "2026-06-29"
 ---
 
 # 18.23 Android 17 Jetpack Compose 渲染管线架构

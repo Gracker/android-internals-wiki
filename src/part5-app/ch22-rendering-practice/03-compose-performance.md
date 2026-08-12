@@ -7,8 +7,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-02"
 last_verified_against: "Compose BOM 2025.12.00, Kotlin 2.2"
 confidence: high
-drafted_date: "2026-05-12"
-polish_count: 0
 sources:
   - type: androidx
     path: "platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/PausableComposition.kt"
@@ -17,38 +15,9 @@ sources:
 tags: [compose, recomposition, stability, derivedStateOf, pausable-composition, strong-skipping]
 related_chapters: ["7.7", "2.4", "22.1"]
 pipeline_stage: ready-to-publish
-task2b_result: fixed
 task2b_state: fixed
 task6_state: reviewed
-last_task6_at: "2026-06-22T02:07:00+08:00"
 task9_state: reviewed
-last_task2b_at: "2026-06-02T12:54:00+08:00"
-last_task2b_lite_at: "2026-05-31T15:35:00+08:00"
-task6_result: pass-light-edit
-task9_result: pass-tech-review
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-22"
-last_task9_at: "2026-06-21T22:30:33+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-21-22-audit.md"
-task9_review_notes: "2026-06-02 Task9 deep-review: pass-tech-review。复核 Strong Skipping、Pausable Composition、LazyLayoutCacheWindow 与 Android 17/Compose 工具链边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 2026-06-21 Task9 idle audit auto-fix: 修正 produceState Snapshot 写入链路中不存在的 registerMutableSnapshot/notifyReaders/scheduleRevalidation 方法名，收窄 Strong Skipping 报告检查与 produceState key 重载边界；P0/P1=1/0，回到 Task6 复审。"
-last_task6_review_log: "logs/review/2026-06-22-02-review.md"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-22"
-review_notes: "2026-06-02 13:05 Task6 复审：L1 小修 10 处；修正 AndroidX 源码锚点格式与中英文混排，未发现新增回炉项。 2026-06-22 Task6 revisiting 复审：Task9 idle audit 修复 produceState 方法名后回审；L1/L2 全部通过，无新增问题；task9_result 确认 pass-tech-review；task6 无 B 类问题且 queue 无 pending，自动晋升 finalized。"
-task2b_notes: "2026-06-02 Task2B：删除发布正文中的调研补遗块，统一 Pausable Composition 为 Compose/Foundation 工具链能力，移出未闭合的 AOSP master/androidx-main 正文结论。"
-last_task2b_verifier_at: "2026-06-02T19:27:00+08:00"
-last_task2b_verifier_log: "logs/rework/2026-06-02-19-task2b-verifier.md"
-last_task9_autofix_at: "2026-06-21"
-task9_p0_issues: 1
-task9_p1_issues: 0
-task9_p2_issues: 2
-last_task9_audit: "2026-07-12"
-last_task9_audit_at: "2026-07-12T02:29:38+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-12-02-audit.md"
-last_task9_audit_result: "pass-idle-audit"
-last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度3（版本差异覆盖）复核通过；AndroidX androidx-compose-release 中 PausableComposition/ProduceState/SnapshotState/LazyLayoutCacheWindow 路径可核，官方 Strong Skipping 与 Compose Foundation 1.10.0-alpha05/1.10.6 release notes 口径一致，AOSP android-17.0.0_r1 ART generational GC 锚点可核；未发现 Android 18/API 38+ 或 P0/P1。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-26
 consolidated_from:
   - "src/part5-app/ch22-rendering-practice/20-compose-performance-blind-spots.md"
 ---

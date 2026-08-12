@@ -2,16 +2,12 @@
 title: "内存规整与直接回收性能边界"
 chapter: "4.10"
 status: ready-for-review
-drafted_date: "2026-05-19"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-08-11"
 last_verified_against: "Android Common Kernel android17-6.18-2026-06_r6 mm/{page_alloc,compaction,vmstat}.c, include/trace/events/{compaction,vmscan}.h; AOSP android-17.0.0_r1 lmkd/CachedAppOptimizer/mmd; Linux VM sysctl and THP documentation"
 confidence: medium
 tags: [memory, linux-kernel, compaction, direct-reclaim, lmkd]
 related_chapters: ["4.2", "4.4", "10.4", "13.6"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-19"
-gap_source: "素材驱动/AOSP结构/官方文档"
 sources:
   - type: article
     path: "Cubox/不懂 内存规整，别说你会 Linux 内存调优-2026-05-13.md"

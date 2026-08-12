@@ -2,7 +2,6 @@
 title: "端侧大模型推理的内存管理"
 chapter: "23.10"
 status: ready-for-review
-drafted_date: "2026-06-25"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-06-25"
 last_verified_against: "AIW 5.11 / 23.6 / 23.7 / 4.15 已验证数据；Memory Advice API deprecated beta (developer.android.com 2026-02)"
@@ -24,10 +23,6 @@ sources:
     path: "Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md"
 tags: [端侧AI, 大模型, 内存管理, 推理优化, MemoryAdvice, KVCache, 量化]
 related_chapters: ["5.11", "5.12", "23.6", "23.7", "23.9", "4.3", "4.15", "10.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-24"
-gap_source: "章节深挖"
-drafted_by: "openclaw-task2a"
 consolidated_from:
   - "src/part5-app/ch23-memory-practice/22.09-ondevice-llm-memory-management.md"
   - "src/part5-app/ch23-memory-practice/23.24-android-17-ai-推理加速与-neuralnetworks-hal-优化.md"

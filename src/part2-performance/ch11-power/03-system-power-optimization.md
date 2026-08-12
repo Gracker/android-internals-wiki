@@ -3,17 +3,9 @@ title: 系统级功耗优化
 chapter: '11.3'
 status: finalized
 section: '11.3'
-drafted_date: '2026-04-03'
-drafted_by: openclaw-task2a
 applicable_versions: Android 6.0 (API 23) - Android 17 (API 37)
 last_verified: '2026-07-31'
 last_verified_against: AOSP android-17.0.0_r1, android17-6.18-2026-06_r6, Android Developers Doze / App Standby / Battery Saver / background limits / Android 17 JobScheduler and AlarmManager docs
-polish_count: 1
-polish_date: '2026-04-05'
-polish_by: task2b-polish
-rework_count: 3
-rework_date: '2026-05-07'
-rework_by: task2b-rework
 confidence: medium-high
 sources:
 - type: official
@@ -104,35 +96,10 @@ related_chapters:
 - '11.2'
 - '1.3'
 - '4.4'
-task2b_result: fixed
-reviewed_by: openclaw-task6
-reviewed_date: '2026-06-07'
-task6_result: pass-light-edit
 task6_state: reviewed
-last_task2b_at: '2026-04-26T10:41:09+08:00'
-repaired_date: '2026-04-26'
-repaired_by: openclaw-task2b
-last_task6_at: '2026-06-07T21:12:57+08:00'
-last_task6_review_log: logs/review/2026-06-07-21-review.md
-last_task6_audit: '2026-07-11'
-review_notes: '2026-05-13 task9 deep-review: pass-tech-review。P0 0，P1 0，P2 1；厂商功耗策略数据建议写入 suggestions，不阻塞发布；自动晋升 finalized。'
-review_round: 5
 pipeline_stage: ready-to-publish
 task9_state: reviewed
-task9_result: auto-fixed
 task2b_state: fixed
-task9_reviewed_date: '2026-06-07'
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-06-07T20:33:00+08:00'
-last_task9_review_log: logs/deep-review/2026-06-07-20-audit.md
-deepseek_polish_state: done
-last_deepseek_polish_at: 2026-05-27
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-08
-last_task9_audit: '2026-06-07'
-last_task9_audit_log: logs/deep-review/2026-06-07-20-audit.md
-last_task9_autofix_at: '2026-06-07'
-task9_review_notes: '2026-06-07 Task9 idle audit: auto-fixed broken App Archiving source URL and added JobScheduler API source anchor; routed to Task6 revisit.'
 ---
 
 

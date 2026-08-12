@@ -6,11 +6,6 @@ status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [lock-contention, system-server, ams, process-record, dual-lock, LOSP, LSP, OomAdjuster, performance]
 related_chapters: ["1.14", "1.3", "1.8", "5.8"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-11"
-gap_source: "研究素材/DeepResearch"
-drafted_date: "2026-06-11"
-drafted_by: "openclaw-task2a"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1 frameworks/base/services/core/java/com/android/server/am/"
 confidence: high

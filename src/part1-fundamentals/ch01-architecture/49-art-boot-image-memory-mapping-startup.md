@@ -3,7 +3,6 @@ title: "ART Boot Image 内存映射与启动性能"
 chapter: "1.49"
 section: "1.49"
 status: "ready-for-review"
-drafted_date: "2026-07-15"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -35,9 +34,6 @@ sources:
     path: "https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations"
 tags: [ART, boot-image, boot.art, boot.oat, 内存映射, Zygote, 启动优化, mmap, dex2oat, ImageSpace]
 related_chapters: ["1.7", "1.11", "1.12", "4.3", "8.2"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-15"
-gap_source: "章节深挖"
 ---
 
 # 1.49 ART Boot Image 内存映射与启动性能

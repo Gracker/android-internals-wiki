@@ -2,31 +2,14 @@
 title: "AOSP 源码编译与调试环境"
 chapter: "16.3"
 status: finalized
-drafted_date: "2026-04-04"
-drafted_by: "openclaw-task2a"
-reviewed_date: '2026-07-07'
-reviewed_by: "openclaw-task6"
-task6_result: pass-light-edit
-task6_review_notes: "2026-07-07 Task6 revisiting review: pass-light-edit；Task9 auto-fix 已验证；L1 修 1 处物理动作动词(收紧→受限)；章节无 outline 块(历史遗留)；无 L3/L4 回炉项。task9_result=auto-fixed 非 pass-tech-review，未自动晋升。"
-last_task6_at: "2026-07-07T20:11:24+08:00"
 task6_state: reviewed
-last_task6_audit: "2026-06-22"
 task9_state: reviewed
-task9_result: pass-tech-review
-last_task9_autofix_at: "2026-07-07"
-last_task9_at: "2026-07-08T00:31:29+08:00"
-task9_reviewed_date: "2026-07-08"
-task9_reviewed_by: openclaw-task9
 task2b_state: fixed
-task2b_result: fixed
 pipeline_stage: ready-to-publish
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-07-30"
 last_verified_against: "AOSP android-17.0.0_r1 + android17-6.18-2026-06_r6 + source.android.com"
 confidence: high
-last_task9_audit: "2026-07-07"
-last_task9_audit_at: "2026-07-07T11:27:49+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-07-11-audit.md"
 sources:
   - type: official
     path: "https://source.android.com/docs/setup/start/requirements"
@@ -57,14 +40,6 @@ sources:
 section: "16.3"
 tags: ['aosp', 'build', 'soong', 'ninja', 'emulator', 'cuttlefish', 'debug']
 related_chapters: ["16.1", "16.2", "15.7", "14.11"]
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-08
-last_task2b_verifier_at: "2026-07-07T23:28:23+08:00"
-last_task9_review_log: "logs/deep-review/2026-07-08-00-deep-review.md"
-finalized_date: "2026-07-08"
-finalized_by: openclaw-task9-auto-promote
-auto_promoted_date: "2026-07-08"
-auto_promoted_by: openclaw-task9
 ---
 
 # AOSP 源码编译与调试环境

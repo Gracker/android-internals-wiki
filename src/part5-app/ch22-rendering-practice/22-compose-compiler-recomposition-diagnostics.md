@@ -6,13 +6,8 @@ applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-01"
 last_verified_against: "Compose BOM 2026.06.00, Kotlin 2.2, Compose Compiler Gradle Plugin"
 confidence: high
-drafted_date: "2026-07-01"
 tags: [compose, compiler, recomposition, diagnostics, stability, perfetto, ci]
 related_chapters: ["22.3", "7.7"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-27"
-gap_source: "章节深挖+官方文档"
-gap_score: 17
 sources:
   - type: official
     path: "developer.android.com/develop/ui/compose/performance/stability/diagnose"

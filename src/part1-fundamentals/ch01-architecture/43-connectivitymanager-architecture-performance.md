@@ -3,7 +3,6 @@ title: "Android 17 ConnectivityManager：架构、网络选择与性能"
 chapter: "1.43"
 section: "1.43"
 status: ready-for-review
-drafted_date: "2026-07-17"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-08-11"
 last_verified_against: "AOSP android-17.0.0_r1 + ACK android17-6.18-2026-06_r6"
@@ -55,9 +54,6 @@ last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
   - "src/part2-performance/ch12-apk-network/08-networkagent-lifecycle-scoring.md"
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-17"
-gap_source: "AOSP结构"
 ---
 
 # 1.43 Android 17 ConnectivityManager：架构、网络选择与性能

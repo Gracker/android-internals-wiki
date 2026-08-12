@@ -7,12 +7,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-30"
 last_verified_against: "AOSP android-17.0.0_r1 ActivityThread.java / ZygoteProcess.java / Context.java / SharedPreferences.java; Android Developers docs; Clippings structure refs"
 confidence: medium
-drafted_date: "2026-05-13"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-30"
-review_notes: "2026-05-16 task6 review: pass-light-edit。Task2B 回炉后复审通过；正文锚点覆盖完整，无新增 L3/L4 回炉。Task9 已 pass-tech-review 且 queue.json 无 pending，自动晋升 finalized。"
-task6_result: pass-light-edit
-polish_count: 0
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/app/ActivityThread.java (handleBindApplication, installContentProviders, callApplicationOnCreate)"
@@ -37,25 +31,7 @@ related_chapters: ["21.1", "1.3", "5.8"]
 task2b_state: fixed
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-last_task6_at: "2026-06-30T04:06:00+08:00"
-last_task6_audit: "2026-06-08"
-last_task6_review_log: logs/review/2026-06-30-04-review.md
-task6_review_notes: "2026-06-30 Task6 04:06 revisiting pass-light-edit. Task9 auto-fix (android-17.0.0_r1 锚点升级) 后写作复审；L1/L2 零命中，无 B 类问题；queue 无 pending，自动晋升 finalized。"
 task9_state: reviewed
-task9_result: auto-fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-30"
-last_task9_at: "2026-06-30T03:25:00+08:00"
-last_task9_audit: "2026-06-30"
-last_task9_review_log: logs/deep-review/2026-06-30-03-audit.md
-task9_review_notes: "2026-05-14 task9 deep-review: pass-tech-review。P2 1：MODE_MULTI_PROCESS 引用口径已由 Task2B 修正；无阻塞发布问题。 | 2026-06-30 Task9 闲时抽检 auto-fix: AOSP 验证锚点由 android16-release 重锚到 android-17.0.0_r1；复核 ActivityThread.handleBindApplication/installContentProviders/callApplicationOnCreate、ZygoteProcess.startViaZygote、Context.MODE_MULTI_PROCESS 与 SharedPreferences 多进程边界。未发现遗留 P0/P1，回 Task6 轻复审。"
-last_task9_audit_log: "logs/deep-review/2026-06-30-03-audit.md"
-last_task9_autofix_at: "2026-06-30"
-task9_p0_issues: 0
-task9_p1_issues: 0
-task9_p2_issues: 0
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-06
 ---
 
 # 多进程启动优化

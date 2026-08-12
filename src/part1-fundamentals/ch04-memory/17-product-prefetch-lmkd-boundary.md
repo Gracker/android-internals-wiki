@@ -5,8 +5,6 @@ status: ready-for-review
 applicable_versions: "Android 16 (API 35) - Android 17 (API 37)"
 tags: ['LMKD', 'AppFlow', '内存管理', '兼容性', '冷启动']
 related_chapters: ['4.4', '4.13', '4.16']
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-01"
 last_verified: "2026-07-01"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high

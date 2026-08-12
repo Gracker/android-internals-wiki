@@ -3,7 +3,6 @@ title: "线上存储、I/O 与 SQLite 可观测性"
 chapter: "26.13"
 section: "26.13"
 status: ready-for-review
-drafted_date: "2026-05-21"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-05-21"
 last_verified_against: "AOSP master / Android Developers docs / SQLite docs"
@@ -33,9 +32,6 @@ sources:
     path: "libcore/dalvik/src/main/java/dalvik/system/CloseGuard.java"
 tags: [observability, storage, io, sqlite, matrix]
 related_chapters: ["24.1", "24.2", "24.11", "26.3", "26.5"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-21"
-gap_source: "Clippings参考书/研究盲区/官方文档/AOSP结构"
 ---
 
 # 26.13 线上存储、I/O 与 SQLite 可观测性

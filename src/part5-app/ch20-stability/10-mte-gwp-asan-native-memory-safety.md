@@ -3,7 +3,6 @@ title: "MTE 与 GWP-ASan Native 内存安全检测"
 chapter: "20.10"
 section: "20.10"
 status: finalized
-drafted_date: "2026-05-16"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-05-16"
 last_verified_against: "AOSP android-17.0.0_r1 / Android Developers MTE and GWP-ASan docs / source.android.com memory-safety docs"
@@ -12,9 +11,6 @@ tags: ["mte", "gwp-asan", "memtag", "native-crash", "stability", "security"]
 related_chapters: ["4.5", "10.5", "14.5", "20.3", "23.3"]
 consolidated_from:
   - "src/part5-app/ch20-stability/23-gwp-asan-probabilistic-memory-safety-android17.md"
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-15"
-gap_source: "素材驱动/官方文档"
 sources:
   - type: official
     path: "https://source.android.com/docs/security/test/memory-safety/arm-mte"
@@ -40,22 +36,8 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md"
 pipeline_stage: "ready-to-publish"
 task6_state: reviewed
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-16"
-task6_result: pass-light-edit
 task9_state: "reviewed"
-task9_result: "auto-fixed"
 task2b_state: "fixed"
-task9_reviewed_date: "2026-05-16"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-16T01:26:00+08:00"
-finalized_date: "2026-05-16"
-finalized_by: openclaw-task9
-last_task6_audit: "2026-07-05"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: "2026-06-01"
-last_task9_audit: "2026-06-30"
-last_task9_autofix_at: "2026-06-30"
 ---
 
 # MTE 与 GWP-ASan Native 内存安全检测

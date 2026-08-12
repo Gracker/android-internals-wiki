@@ -50,31 +50,9 @@ related_chapters:
   - '16.5'
   - '26.7'
 pipeline_stage: ready-to-publish
-task6_review_notes: "2026-06-17 Task6 revisiting复审：pass-light-edit。L1/L2 扫描通过（1.21 复审无禁用词、高频词、元叙述命中）；task9 auto-fix 已验证写作质量无回归；queue 无 pending；自动晋升 finalized。"
-last_task6_review_log: "logs/review/2026-06-17-04-review.md"
 task6_state: reviewed
 task9_state: "reviewed"
-drafted_date: "2026-05-20"
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-20"
-gap_source: "官方文档/每日信息/AOSP结构"
-task9_result: "auto-fixed"
 task2b_state: "fixed"
-last_task9_at: "2026-06-17T00:29:18+08:00"
-task9_reviewed_date: "2026-06-17"
-task9_reviewed_by: "openclaw-task9"
-task9_review_notes: "2026-06-17 Task9 deep-review: AUTO-FIX P1 1; separated ADV enforcement scope (Android 7+ certified devices via Play services) from PackageInstaller 36.1 reason-code API surface; no queue item."
-last_task9_review_log: "logs/deep-review/2026-06-17-00-deep-review.md"
-last_task9_autofix_at: "2026-06-17"
-task6_result: pass-light-edit
-last_task2b_lite_at: "2026-06-30"
-task2b_lite_note: "2026-06-30 Task2B Lite: 修复 last_task6_review_log 字段被 title 污染的机械错误。"
-reviewed_by: openclaw-task6
-reviewed_date: '2026-06-17'
-last_task6_at: "2026-06-17T04:06:00+08:00"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-17
-last_task6_audit: "2026-06-27"
 ---
 
 # 1.21 Android Developer Verification 与安装链路边界

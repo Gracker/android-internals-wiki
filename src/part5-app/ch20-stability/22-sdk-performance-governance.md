@@ -5,15 +5,10 @@ status: finalized
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [SDK治理, 第三方库, 性能评估, 启动阻塞, 稳定性]
 related_chapters: ["21.3", "20.1", "23.1", "24.4"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-17"
-gap_source: "Clippings参考书+日常痛点+AOSP SDK Runtime"
 last_verified: "2026-08-08"
 last_draft_polish_at: "2026-08-08T11:35:18+08:00"
 last_draft_polish_run_id: "20260808-113518-draft-polish-76608468"
 confidence: high
-reviewed_date: "2026-08-08"
-reviewed_by: "hermes-aiw-review-finalize-apply"
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized

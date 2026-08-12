@@ -64,55 +64,11 @@ related_chapters:
 - '18.7'
 - '18.8'
 - '18.9'
-created_by: rendering-pipelines-merge
-created_date: '2026-04-09'
 task2b_state: fixed
-task9_result: auto-fixed
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-20T06:24:54+08:00"
-last_task9_audit: "2026-06-20"
-task9_reviewed_date: "2026-06-20"
-task2b_result: fixed-lite
-task2b_rework_date: '2026-04-20'
-task2b_fixed_at: '2026-04-26T13:40:00+08:00'
-last_task2b_at: "2026-05-24T11:16:52+08:00"
-last_task2b_lite_at: "2026-05-28"
-rework_by: openclaw-task2b
-rework_type: review回炉修复（External 问题单）
 status: finalized
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task6_result: pass-light-edit
 task9_state: reviewed
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-29"
-task6_reviewed_date: "2026-06-20"
-last_task6_at: "2026-06-20T08:08:00+08:00"
-last_task6_audit: '2026-07-13'
-last_task6_audit_log: 'logs/review/2026-05-24-07-audit.md'
-last_task6_audit_notes: '2026-05-24 闲时抽检：L1 禁用词/高频词 0 命中，锚点 8/8；补齐 frontmatter 来源与验证字段；发现 Task9 needs-rework 状态流转不一致及 SurfaceView BLAST 版本边界残留，已写入 queue P90。'
-review_notes: '2026-04-28 task9 deep-review: needs-rework。P1 1：现代 SurfaceView SurfaceControl/BLAST
-  创建路径缺失且 WMS 表述需标版本边界；P2 4 写入 suggestions。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理
-  L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：needs-rework。Android
-  16 低延迟输入 API 断言未在 AOSP Window/ViewRootImpl 找到，现代 SurfaceView 首帧/WMS 路径仍有旧模型残留；已写入
-  queue P95，交 Task2B 回炉。 | 2026-05-06T01:46:24+08:00 Task2B：P0 删除不存在的 setPreferLowLatencyInput
-  API，改为四段输入延迟分析；P1 首帧延迟按 Android 10-/11+ 版本拆开；P1 Producer Thread Choreographer 按视频/Camera/游戏三类限定。
-  | 2026-05-06 Task6 02:06：Task2B 修复后写作复审；按技术写作词库统一术语为“路径”，清理夸张/填充表达 4 处；无新增 L3/L4
-  回炉项，送 Task9 复审。'
-task9_review_notes: "2026-06-20 Task9 idle audit: auto-fixed。去除 master 源码锚点，改为 android-17.0.0_r1；修正 HWComposer.cpp 不存在的 validateLayerCompositionTypes 方法名；无 queue P0/P1。"
-last_task9_review_log: "logs/deep-review/2026-06-20-06-audit.md"
-p0: 0
-p1: 0
-p2: 0
-last_task6_review_log: "logs/review/2026-06-20-08-review.md"
-task6_review_notes: "2026-06-20 08:08 Task6 revisiting review: pass-light-edit；L1 禁用词 0 命中，L2 可读性通过；Task9 auto-fixed（源码锚点 android-17.0.0_r1 + HWComposer 方法名修正）后正文质量未回退；task6+task9 双通过且 queue 无 pending，自动晋升 finalized。"
-task6_l1_l2_fixes: 1
-task6_l3_l4_issues: 0
-task6_reviewed_by: openclaw-task6
-task6_reviewed_at: "2026-06-20T08:08:00+08:00"
-last_task9_autofix_at: "2026-06-20"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-05
 ---
 
 # 18.6 Android 17 SurfaceView 独立 Surface 路径

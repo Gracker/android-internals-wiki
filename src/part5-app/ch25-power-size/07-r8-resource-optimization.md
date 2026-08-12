@@ -8,8 +8,6 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-14"
 last_verified_against: "Android Developers docs 2026-03/2026-05, R8 full mode docs, AOSP ResourceTypes.h"
 confidence: medium
-drafted_date: "2026-05-14"
-polish_count: 0
 sources:
   - type: official
     path: "https://developer.android.com/build/shrink-code"
@@ -40,30 +38,7 @@ related_chapters: ["25.6", "25.8"]
 pipeline_stage: ready-to-publish
 task6_state: "reviewed"
 task9_state: reviewed
-last_task9_autofix_at: "2026-06-06"
 task2b_state: fixed
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-06"
-task6_result: "pass-light-edit"
-task6_reviewed_at: "2026-05-14T20:10:00+08:00"
-task6_reviewed_by: openclaw-task6
-last_task6_at: "2026-06-06T10:12:00+08:00"
-last_task6_review_log: "logs/review/2026-06-06-10-review.md"
-task6_review_notes: "2026-06-06 Task6 revisit-review #5: L1/L2 无新增写作问题。Task 9 auto-fix 已验证（allowobfuscation 误用已修正，keep 规则语义正确）。task9_result=auto-fixed 仍不满足自动晋升条件 ②（需 pass-tech-review），回 Task 9 复确认。"
-
-task2b_result: fixed
-last_task2b_at: "2026-06-03T14:54:49+08:00"
-task2b_fixed_by: "openclaw-task2b"
-task2b_fixed_date: "2026-06-03"
-task9_result: pass-tech-review
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-06"
-last_task9_at: "2026-06-06T10:21:00+08:00"
-last_task9_audit: "2026-06-23"
-last_task9_review_log: "logs/deep-review/2026-06-06-10-deep-review.md"
-task9_review_notes: "2026-06-06 09:20 Task9 deep-review: auto-fixed。修正 JSON 字段 keep-rule 示例中的 allowobfuscation 误用；证据为 Android Developers R8 full-mode / keep rules 文档。回 Task6 复审。 | 2026-06-06 10:21 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-10
 ---
 
 # R8 与资源优化

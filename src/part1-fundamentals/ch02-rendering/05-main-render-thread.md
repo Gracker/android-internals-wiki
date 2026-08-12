@@ -3,25 +3,10 @@ title: "MainThread 与 RenderThread 协作"
 chapter: "2.5"
 status: finalized
 section: "2.5"
-drafted_date: "2026-03-30"
-drafted_by: "openclaw-task2a"
-polish_count: 2
-polish_date: "2026-04-08"
-polish_by: "task2b-polish"
-review_round: 4
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1 frameworks/base HWUI/View; frameworks/native BufferQueue/BLAST; android17-6.18-2026-06_r6 kernel scheduler; historical tags only for version evolution"
 confidence: high
-reviewed_by: openclaw-task6
-last_task6_audit: "2026-06-08"
-review_note: "Task 6 复审:按 writing-guide / STYLE / content-quality-gate 完成 10 处 L1/L2 小修,未新增回炉项,转入 Task 9"
-last_task9_at: "2026-07-01T14:28:36+08:00"
-last_task9_audit: "2026-07-01"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-01"
-last_task9_review_log: "logs/deep-review/2026-07-01-14-audit.md"
-task9_review_notes: "2026-06-03 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-01 Task9 闲时抽检 auto-fix：将 MainThread/RenderThread 主线源码锚点重锚到 android-17.0.0_r1；修正 Bitmap.java 源码路径为 frameworks/base/graphics/java/android/graphics/Bitmap.java；按 Android 17 复核 RenderThread / ThreadedRenderer / CanvasContext 关键节选。P0/P1 均已局部修复，回到 Task6 复审。详见 logs/deep-review/2026-07-01-14-audit.md。"
 sources:
   - type: aosp
     path: "platform/frameworks/base/libs/hwui/renderthread/RenderThread.cpp"
@@ -64,35 +49,9 @@ sources:
 tags: ['renderthread', 'mainthread', 'displaylist', 'rendernode', 'syncframestate', 'hwui', '渲染流水线', 'GPU绘制']
 related_chapters: ["2.3", "2.4", "2.6", "2.15", "2.16", "3.1"]
 pipeline_stage: ready-to-publish
-task6_result: pass-light-edit
 task6_state: reviewed
-task6_reviewed_date: "2026-07-02"
-reviewed_date: "2026-06-02"
-task9_result: "auto-fixed"
 task9_state: "reviewed"
 task2b_state: "fixed"
-task2b_result: fixed
-last_task2b_at: "2026-06-01T04:50:00+08:00"
-task2b_notes: "2026-06-01 Task2B main：修复 Task9 P95：复核 syncFrameState 阻塞语义，区分 Android 14+ ADPF hint session 与 Android 16 headroom API，并清理源码调研补注中与正文冲突的同步描述。"
-last_task6_at: "2026-07-02T04:05:00+08:00"
-last_task6_review_log: logs/review/2026-07-02-04-review.md
-task6_review_notes: "2026-06-02 02:05 Task6 revisiting-review：L1/L2 小修 2 处（禁用词形态、否定纠正式句式），锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复核。"
-task6_l1_l2_fixes: 2
-task6_l3_l4_issues: 0
-task6_new_rework: false
-review_type: "task6-writing-quality-review"
-last_task9_autofix_at: "2026-07-01"
-p0: "0"
-p1: "0"
-p2: "0"
-last_task2b_verifier_at: "2026-06-01T07:30:00+08:00"
-last_task2b_verifier_log: "logs/rework/2026-06-01-07-task2b-verifier.md"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-02
-last_task9_audit_log: "logs/deep-review/2026-07-01-14-audit.md"
-task9_p0_issues: 0
-task9_p1_issues: 0
-task9_p2_issues: 0
 ---
 
 # 2.5 MainThread 与 RenderThread 协作

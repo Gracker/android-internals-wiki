@@ -3,7 +3,6 @@ title: "Android 17 NotificationManager 架构与性能优化"
 chapter: "1.44"
 section: "1.44"
 status: ready-for-review
-drafted_date: "2026-07-17"
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -63,9 +62,6 @@ sources:
     path: "developer.android.com/develop/background-work/services/fgs/timeout"
 tags: [notification, system-service, binder, notification-channel, ranking, systemui, performance]
 related_chapters: ["1.8", "1.38", "1.45", "4.11", "8.11", "9.6"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-17"
-gap_source: "AOSP结构"
 ---
 
 # 1.44 Android 17 NotificationManager 架构与性能优化

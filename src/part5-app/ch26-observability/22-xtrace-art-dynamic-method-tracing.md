@@ -6,10 +6,6 @@ status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 tags: [ART, tracing, instrumentation, XTrace, dynamic-tracing, production, Ghost-Bug, bytedance]
 related_chapters: ["1.7", "13.1", "26.18"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-30"
-drafted_date: "2026-07-03"
-gap_source: "论文驱动"
 last_verified: "2026-07-03"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high

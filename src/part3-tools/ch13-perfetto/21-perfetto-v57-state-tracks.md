@@ -5,9 +5,6 @@ status: ready-for-review
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: ["Perfetto", "TrackEvent", "状态追踪", "版本边界"]
 related_chapters: ["13.1", "13.9", "13.15", "13.16", "13.20"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-07-06"
-drafted_date: "2026-07-12"
 last_verified: "2026-07-12"
 last_verified_against: "Perfetto v57.1 release (2026-07-02)"
 confidence: high
