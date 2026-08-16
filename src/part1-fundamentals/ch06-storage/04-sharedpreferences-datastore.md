@@ -44,20 +44,20 @@ consolidated_from:
 
 ## `apply()` 返回后的写盘与主线程关系
 
-SharedPreferences（下文简称 SP）适合少量、低频、单进程配置。它的问题不只在 XML 读写速度，还在 API 语义：
+SharedPreferences（下文简称 SP）适合少量、低频、单进程配置。它引发 I/O 与 ANR（Application Not Responding，应用无响应）风险的原因，不只在于 XML 读写速度，还涉及 API 语义：
 
 - 首次加载由后台线程执行，但调用方第一次读取可能在 `awaitLoadedLocked()` 等待。
 - `apply()` 先更新内存并返回，磁盘结果无法反馈给调用方。
 - Android 框架会在部分组件收尾点清空 `QueuedWork`，主线程可能执行尚未开始的写盘，也可能等待已经开始的写盘。
-- 每次有效修改都要序列化当前整份 map，SP 不支持按 key 增量更新文件。
+- 每次有效修改都要序列化当前整份 map（键值映射），SP 不支持按 key 增量更新文件。
 - 平台接口不支持可靠的跨进程一致性。
 
-Android 17 的 `SharedPreferences` 接口文档已经明确建议：新的小型数据存储需求优先考虑 Jetpack DataStore，关系型数据和较大数据集使用 Room。
+Android 17 的 `SharedPreferences` 接口文档已经明确建议：新的小型数据存储需求优先考虑 Jetpack DataStore，关系型数据和较大数据集则使用 Room。
 
 源码基线分为两个版本维度：
 
 - 平台实现：Android 17 / API 37 / `android-17.0.0_r1`
-- Jetpack 实现：DataStore 不属于 Android 17 平台源码；这里以 AndroidX DataStore 1.2.1 为准
+- Jetpack 实现：DataStore 不属于 Android 17 平台源码；这里以 AndroidX（Jetpack 库集合）DataStore 1.2.1 为准
 
 手机升级到 Android 17 不会替 App 自动升级 DataStore，最终行为由应用依赖的 AndroidX 版本决定。
 
@@ -67,7 +67,7 @@ Android 17 的 `SharedPreferences` 接口文档已经明确建议：新的小型
 
 `ContextImpl` 使用静态的 `sSharedPrefsCache`，先按包名，再按文件路径缓存 `SharedPreferencesImpl`。同一进程中重复调用相同 Context/文件名，通常拿到同一个对象，不会为每次 `getSharedPreferences()` 重新创建加载任务。
 
-这个缓存只解决进程内对象复用。不同进程有各自的内存 map，也没有一套由 SP 提供的可靠变更通知协议。`MODE_MULTI_PROCESS` 已废弃，Android 17 仍保留的代码只是根据文件变化尝试重新加载，不能提供事务和一致性保证。
+这个缓存只解决进程内对象复用。不同进程有各自的内存 map，也没有一套由 SP 提供的可靠变更通知协议。`MODE_MULTI_PROCESS` 已废弃，Android 17 仍保留的代码只是根据文件变化尝试重新加载，无法提供事务和一致性保证。
 
 ### `startLoadFromDisk()` 异步，`getXxx()` 仍可能同步等待
 
@@ -92,7 +92,7 @@ private static final class SharedPreferencesThreadFactory implements ThreadFacto
 
 `corePoolSize=0`、`maximumPoolSize=1` 表示同一进程的 SP 加载任务会在单个工作线程上依次执行。Android 17 的稳定观察点是名为 `SharedPreferences` 的线程；旧版本或厂商修改版仍应以现场线程和调用栈为准。
 
-对象构造后，`startLoadFromDisk()` 把 `loadFromDisk()` 交给该执行器。加载线程会处理 `.bak` 恢复、文件 `stat`、XML 解析，然后设置 `mLoaded` 并唤醒等待者。
+对象构造后，`startLoadFromDisk()` 把 `loadFromDisk()` 交给该执行器。加载线程会处理 `.bak` 备份恢复、文件 `stat`（读取文件元数据）和 XML 解析，然后设置 `mLoaded` 并唤醒等待者。
 
 下面的等待循环解释了为什么“后台读盘”仍会卡住主线程：
 
@@ -114,23 +114,23 @@ private void awaitLoadedLocked() {
 }
 ```
 
-`getString()`、`getInt()`、`contains()`、`getAll()`，甚至 `edit()` 都会先走这里。后台线程可能正在读盘，主线程则在 `mLock.wait()`。代码还会主动报告一次调用线程的 StrictMode 磁盘读取，即使文件 I/O 发生在另一条线程上。
+`getString()`、`getInt()`、`contains()`、`getAll()`，甚至 `edit()` 都会先走这里。后台线程可能正在读盘，主线程则在 `mLock.wait()`。代码还会主动报告一次调用线程的 StrictMode（线程违规检测工具）磁盘读取，即使文件 I/O 发生在另一条线程上。
 
 首次等待通常被以下因素放大：
 
-- XML 文件较大或包含大量 key。
+- XML 文件较大或包含大量 key（键）。
 - 同一进程同时首次打开多份 SP，而加载执行器只有一个工作线程。
-- 冷启动阶段还有 dex、资源、数据库等 I/O 竞争。
-- `/data` 正在 writeback、F2FS GC 或块设备延迟抖动。
+- 冷启动阶段还有 DEX（Android 字节码）、资源和数据库等 I/O 竞争。
+- `/data` 正在 writeback（脏页回写）、F2FS GC（垃圾回收）或块设备延迟抖动。
 - XML 解析或备份恢复失败，异常最终回到调用方。
 
-“在 `Application` 中提前调用 `getSharedPreferences()`”只能提前创建对象并安排加载。若紧接着读取 key，仍可能进入等待。要降低首帧风险，需要把首次使用安排在有余量的阶段，并通过 Trace 验证加载是否在关键路径前完成。
+“在 `Application` 中提前调用 `getSharedPreferences()`”只能提前创建对象并安排加载。若紧接着读取 key，仍可能进入等待。要降低首帧风险，需要把首次使用安排在有余量的阶段，并通过 Trace（性能跟踪）验证加载是否在关键路径前完成。
 
 ## 从 `edit()` 到 `fsync()`：SP 写入的完整路径
 
 ### 第一步：`commitToMemory()` 修改内存状态
 
-`apply()` 和 `commit()` 都先调用 `commitToMemory()`。它在锁内把 Editor 的修改合入 `mMap`，递增内存状态代数，记录受影响的 key 和监听器，并增加 `mDiskWritesInFlight`。
+`apply()` 和 `commit()` 都先调用 `commitToMemory()`。它在锁内把 Editor（编辑器对象）的修改合入 `mMap`，递增内存状态版本号，记录受影响的 key 和监听器，并增加在途写入计数 `mDiskWritesInFlight`。
 
 如果已有写盘正在使用旧 map，代码会复制一份 map 后再修改，避免在写盘序列化期间改变同一个对象。这里的“提交”只表示进程内状态已经变化，不等于文件已经持久化。
 
@@ -159,13 +159,13 @@ public void apply() {
 }
 ```
 
-调用方看到的顺序是：内存已更新、写盘任务已安排、监听器收到内存变更，然后 `apply()` 返回。`awaitCommit` 留在 `QueuedWork.sFinishers` 中，直到写盘结束后由 `postWriteRunnable` 移除，或者被框架收尾逻辑取出执行。
+调用方看到的顺序是：内存已更新、写盘任务已安排、监听器收到内存变更，然后 `apply()` 返回。`awaitCommit` 作为 finisher（收尾任务）留在 `QueuedWork.sFinishers` 中，直到写盘结束后由 `postWriteRunnable` 移除，或者被框架收尾逻辑取出执行。
 
-`apply()` 没有返回值，调用方无法知道序列化、`fsync()` 或重命名是否失败。适用于重要安全状态或必须确认持久化的业务时，不能只凭“内存已经读到新值”判断写入成功。
+`apply()` 没有返回值，调用方无法知道序列化、`fsync()` 或重命名是否失败。写入重要安全状态，或业务必须确认数据已经持久化时，不能只凭“内存已经读到新值”判断写入成功。
 
 ### 第三步：`enqueueDiskWrite()` 决定在哪条线程写
 
-`enqueueDiskWrite()` 把文件写入封装成 `writeToDiskRunnable`。Runnable 使用 `mWritingToDiskLock` 串行执行 `writeToFile()`，结束后递减 `mDiskWritesInFlight`，再运行 `postWriteRunnable`。
+`enqueueDiskWrite()` 把文件写入封装成 `writeToDiskRunnable`。这个 Runnable（可执行任务）使用 `mWritingToDiskLock` 串行执行 `writeToFile()`，结束后递减 `mDiskWritesInFlight`，再运行 `postWriteRunnable`。
 
 `commit()` 与 `apply()` 的关键差异如下：
 
@@ -173,11 +173,11 @@ public void apply() {
 | --- | --- | --- |
 | 返回 | 立即返回 `void` | 等待对应写盘结束，返回 `boolean` |
 | 内存可见 | `commitToMemory()` 后立即可见 | 同样先更新内存 |
-| 常规写盘安排 | 进入 `QueuedWork`，默认可延迟 100ms | 若当前写是唯一在途写，可由调用线程直接执行 |
-| 已有写盘时 | 排队 | 同样排队，随后调用线程等待 latch |
+| 常规写盘安排 | 进入 `QueuedWork`，默认可延迟 100 ms | 若当前写是唯一在途写，可由调用线程直接执行 |
+| 已有写盘时 | 排队 | 同样排队，随后调用线程等待 latch（同步闩锁） |
 | 监听器 | 写盘完成前即可通知 | 等待本次写盘后通知 |
 | 错误信息 | 无磁盘结果 | 只有布尔结果，没有详细失败原因 |
-| 生命周期收尾 | pending work/finisher 可能被框架等待 | 调用点已经同步等待 |
+| 生命周期收尾 | pending work（待处理任务）/finisher（收尾任务）可能被框架等待 | 调用点已经同步等待 |
 
 因此，“`commit()` 总在当前线程写”和“`apply()` 总在 `queued-work-looper` 写”都不严谨。`commit()` 可能排队再等待；`apply()` 的任务也可能被随后调用 `waitToFinish()` 的线程取走执行。
 
@@ -185,7 +185,7 @@ public void apply() {
 
 一次有效写入大致经过以下步骤：
 
-1. 检查内存代数与磁盘代数，确认是否需要写。
+1. 检查内存状态版本号与磁盘版本号，确认是否需要写。
 2. 若原文件存在且没有备份，把原文件重命名为 `.bak`。
 3. 创建新的 XML 文件，把 `mapToWriteToDisk` 整体序列化。
 4. 对文件描述符执行同步刷新。
@@ -201,10 +201,10 @@ SP 没有按 key 更新磁盘文件的能力。只修改一个布尔值，也可
 
 Android 17 保留两个内部阈值：
 
-- `SharedPreferencesImpl.MAX_FSYNC_DURATION_MILLIS = 256`：单次 `fsync` 超过 256ms 时输出累计直方图；每 1024 次同步也会输出。
-- `QueuedWork.MAX_WAIT_TIME_MILLIS = 512`：`waitToFinish()` 超过 512ms 时输出等待直方图；每 1024 次等待也会输出。
+- `SharedPreferencesImpl.MAX_FSYNC_DURATION_MILLIS = 256`：单次 `fsync` 超过 256 ms 时输出累计直方图；每 1024 次同步也会输出。
+- `QueuedWork.MAX_WAIT_TIME_MILLIS = 512`：`waitToFinish()` 超过 512 ms 时输出等待直方图；每 1024 次等待也会输出。
 
-这些阈值不会取消写盘，也不会阻止 ANR。它们没有面向普通 App 的 public 调参接口，不能把 256ms 或 512ms 当作系统超时线。
+这些阈值不会取消写盘，也不会阻止 ANR。它们没有面向普通 App 的公开调参接口，不能把 256 ms 或 512 ms 当作系统超时线。
 
 ## `apply()` 如何进入组件收尾路径
 
@@ -241,7 +241,7 @@ public static void waitToFinish() {
 }
 ```
 
-`processPendingWork()` 先取走 `sWork` 并在当前调用线程逐个运行。若主线程调用 `waitToFinish()`，尚未开始的 SP 写盘就可能直接在主线程执行。随后它再运行 finisher；如果写盘已由后台线程取得，finisher 会在 `writtenToDiskLatch.await()` 等待。
+`processPendingWork()` 先取走 `sWork` 中的待处理任务，并在当前调用线程逐个运行。若主线程调用 `waitToFinish()`，尚未开始的 SP 写盘就可能直接在主线程执行。随后它再运行 finisher；如果写盘已由后台线程取得，finisher 会在 `writtenToDiskLatch.await()` 等待。
 
 `StrictMode.allowThreadDiskWrites()` 会临时放宽这一段的磁盘写策略，所以仅依赖 StrictMode 可能漏掉生命周期收尾阶段由主线程执行的写盘。
 
@@ -250,15 +250,15 @@ public static void waitToFinish() {
 `android-17.0.0_r1` 中需要区分四类路径：
 
 - **现代 Activity**：`handleStopActivity()` 在 Activity 停止时调用 `QueuedWork.waitToFinish()`。
-- **pre-Honeycomb Activity**：兼容路径仍在 `handlePauseActivity()` 调用；现代 App 不应把主路径写成 `onPause()`。
+- **pre-Honeycomb Activity**：面向 Android 3.0（API 11）之前行为的兼容路径仍在 `handlePauseActivity()` 调用；现代 App 不应把主路径写成 `onPause()`。
 - **Service**：`handleServiceArgs()` 在命令处理后等待，`handleStopService()` 在销毁清理后等待。
-- **BroadcastReceiver**：`PendingResult.finish()` 不直接调用 `waitToFinish()`。若发现 `QueuedWork` 仍有任务，它把 `sendFinished()` 排在队尾，AMS 收到完成回执的时间随之推迟。
+- **BroadcastReceiver**：`PendingResult.finish()` 不直接调用 `waitToFinish()`。若发现 `QueuedWork` 仍有任务，它把 `sendFinished()` 排在队尾，AMS（ActivityManagerService，系统的 Activity 管理服务）收到完成回执的时间随之推迟。
 
-BroadcastReceiver 的 Java `onReceive()` 返回，不代表系统已经收到完成回执。队列前面的 SP 写盘过慢，仍会提高 broadcast 超时风险。
+BroadcastReceiver 的 Java `onReceive()` 返回，不代表系统已经收到完成回执。队列前面的 SP 写盘过慢，仍会提高广播超时风险。
 
 组件的 ANR 窗口受组件类型、前后台状态和系统版本影响，不能用统一的“超过 5 秒必定 ANR”概括。框架等待点会把原本延后的持久化成本重新带回组件时限。
 
-## 用 traces 与 Perfetto 定位 SP
+## 用 ANR traces 与 Perfetto 定位 SP
 
 ### 先从 ANR 栈判断阻塞类型
 
@@ -283,28 +283,28 @@ android.app.QueuedWork.processPendingWork
 android.app.QueuedWork.waitToFinish
 ```
 
-A 类要关联 `SharedPreferences` 加载线程与 XML 解析；B 类要找后台写盘线程及 latch 持有时段；C 类的文件 I/O 已在主线程。混用这三类优化手段，容易只移动耗时而没有消除等待。
+A 类要关联 `SharedPreferences` 加载线程与 XML 解析；B 类要找后台写盘线程，以及 `writtenToDiskLatch` 尚未释放的时段；C 类的文件 I/O 已在主线程。不区分这三类阻塞便直接优化，容易只移动耗时而没有消除等待。
 
 Service 栈可能以 `handleServiceArgs()` 或 `handleStopService()` 结尾。BroadcastReceiver 常见的是完成回执延后，未必出现主线程停在 `waitToFinish()` 的相同栈形态。
 
 ### Perfetto 中看什么
 
-Perfetto 默认不会自动给每个 Java 方法生成名为 `QueuedWork` 的 slice。采集配置若没有 Java 调用栈或应用自定义 Trace，只搜索方法名可能一无所获。建议组合以下证据：
+Perfetto 默认不会自动给每个 Java 方法生成名为 `QueuedWork` 的 slice（时间区间）。采集配置若没有 Java 调用栈或应用自定义 Trace，只搜索方法名可能一无所获。建议组合以下证据：
 
-1. 主线程在组件收尾区间的 Running、Runnable、Sleeping 状态。
+1. 主线程在组件收尾区间处于 Running（运行中）、Runnable（可运行）还是 Sleeping（睡眠）状态。
 2. `SharedPreferences` 与 `queued-work-looper` 线程的调度和 CPU 活动。
-3. ART/Java 调用栈采样中是否出现 `awaitLoadedLocked()`、`writeToFile()`、`processPendingWork()`。
+3. ART（Android Runtime，Android 运行时）/Java 调用栈采样中是否出现 `awaitLoadedLocked()`、`writeToFile()`、`processPendingWork()`。
 4. 文件系统与块 I/O 事件是否和等待区间重合。
-5. logcat 中 `SharedPreferencesImpl` 的慢 `fsync` 直方图、`QueuedWork` 的慢等待直方图。
+5. logcat 日志中 `SharedPreferencesImpl` 的慢 `fsync` 直方图、`QueuedWork` 的慢等待直方图。
 6. App 自己记录的 SP 文件名、key 数、文件字节数、在途写次数和调用场景；不要记录敏感值。
 
-只看到主线程处于 futex wait 还不够。Java monitor、`CountDownLatch`、Binder 和许多其他同步原语都可能落到 futex，需要调用栈确定等待对象。
+只看到主线程处于 futex（快速用户态互斥锁）等待还不够。Java monitor（对象监视器）、`CountDownLatch`、Binder 和许多其他同步原语都可能落到 futex，需要通过调用栈确定等待对象。
 
 ## DataStore 的异步模型
 
 ### 非阻塞不等于写入立刻完成
 
-DataStore 的 `data` 是 `Flow<T>`，`edit()`/`updateData()` 是挂起 API。默认工厂作用域使用 `Dispatchers.IO + SupervisorJob()`，磁盘 I/O 和更新任务在该作用域中执行。调用方线程不会像 SP `commit()` 那样同步做文件 I/O，但调用方协程会挂起，直到更新完成或抛出异常。
+DataStore 的 `data` 是 `Flow<T>`（异步数据流），`edit()`/`updateData()` 是挂起 API。默认工厂的协程作用域使用 `Dispatchers.IO + SupervisorJob()`，把磁盘 I/O 与更新任务放到 I/O 调度器中，并隔离子任务失败。调用方线程不会像 SP `commit()` 那样同步执行文件 I/O，但调用方协程会挂起；挂起期间不占用当前线程，直到更新完成或异常抛出。
 
 下面的代码用于展示 Preferences DataStore 的基本读写语义：
 
@@ -323,23 +323,23 @@ suspend fun setNightMode(enabled: Boolean) {
 }
 ```
 
-`setNightMode()` 返回时，这次更新已经经过 DataStore 的串行更新与持久化路径。若写入失败，异常会回到挂起调用方。调用者需要决定重试、提示用户或保留旧状态，不能在 `launch` 后立即把业务操作标记为永久成功。
+`setNightMode()` 返回时，这次更新已经经过 DataStore 的串行更新与持久化路径。若写入失败，异常会回到挂起调用方。调用者需要决定重试、提示用户或保留旧状态，不能在 `launch` 启动协程后立即把业务操作标记为永久成功。
 
 官方 API 对 DataStore 的承诺包括线程安全、非阻塞和事务化更新。读取不会被写入锁长期阻塞，但第一次收集仍需要完成初始化、迁移和首次读盘；初始化失败会通过 Flow 或更新调用传播。
 
 ### DataStore 仍然全量序列化当前对象
 
-DataStore 不支持字段级磁盘更新。官方 API 文档明确说明：任意字段改变后，整个对象都会被序列化并持久化。Preferences DataStore 把键值集合编码为 protobuf；Proto DataStore 使用应用定义的 protobuf schema。两者都不适合不断增长的大数据集。
+DataStore 不支持字段级磁盘更新。官方 API 文档明确说明：任意字段改变后，整个对象都会被序列化并持久化。Preferences DataStore 把键值集合编码为 protobuf（Protocol Buffers 二进制格式）；Proto DataStore 使用应用定义的 protobuf schema（数据结构定义）。两者都不适合不断增长的大数据集。
 
 AndroidX DataStore 1.2.1 的 `FileStorage` 写入路径是：
 
 1. 在更新序列中获得当前数据。
-2. 执行 transform，得到不可变的新值。
-3. 在 `writeScope` 中递增协调器版本。
+2. 执行 transform（更新函数），得到不可变的新值。
+3. 在 `writeScope`（受协调锁保护的写入作用域）中递增协调器版本。
 4. 将新值完整序列化到 `<file>.tmp`。
 5. 对临时文件执行 `FileDescriptor.sync()`。
 6. `writeScope` 的写入代码结束后，`FileStorage` 把临时文件原子移动到目标路径。
-7. 整个 `writeScope` 成功返回后，写入 actor 才唤醒等待该更新的调用方。
+7. 整个 `writeScope` 成功返回后，写入 actor（串行处理更新的内部任务）才唤醒等待该更新的调用方。
 
 源码仍留有“同步父目录”的待办注释，因此不应把这一实现描述成所有掉电窗口下都不会回退。DataStore 提供的 API 一致性和错误传播显著强于 SP，但存储硬件与文件系统的持久性边界仍存在。
 
@@ -356,11 +356,11 @@ Proto DataStore 的 schema 更利于审查和演进，但 protobuf 不能自动�
 
 ### 单例是文件级约束
 
-同一进程、同一路径同时存在多个活跃 DataStore 实例会破坏功能，并在读写时触发 `IllegalStateException`。顶层 `by preferencesDataStore` 属性是一种方便的单例组织方式，但创建多个指向同一文件的 delegate 仍然错误。
+同一进程、同一路径同时存在多个活跃 DataStore 实例会破坏功能，并在读写时触发 `IllegalStateException`。顶层 `by preferencesDataStore` 属性是一种方便的单例组织方式，但创建多个指向同一文件的 delegate（属性委托）仍然错误。
 
-自建 `DataStoreFactory` 时，scope 应与应用级数据拥有者同寿命。不要在 Activity、Fragment 或一次请求中重复创建实例，也不要让 `produceFile` 每次返回不同路径。
+自建 `DataStoreFactory` 时，scope（协程作用域）应与应用级数据拥有者同寿命。不要在 Activity、Fragment 或一次请求中重复创建实例，也不要让 `produceFile` 每次返回不同路径。
 
-多进程场景中的“每个进程一个实例”仍然指向同一个 canonical file。所有进程必须使用 `MultiProcessDataStoreFactory`，不能把单进程和多进程工厂混用于同一文件；transform 返回的数据对象也必须保持不可变，否则进程内缓存的 hash 校验会失去意义。
+多进程场景中的“每个进程一个实例”仍然要指向规范化后的同一文件路径。所有进程必须使用 `MultiProcessDataStoreFactory`，不能把单进程和多进程工厂混用于同一文件；transform 返回的数据对象也必须保持不可变，否则进程内缓存的 hash（哈希）校验会失去意义。
 
 ### 错误与损坏要分开处理
 
@@ -402,11 +402,11 @@ val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(
 )
 ```
 
-迁移任务在 DataStore 首次可访问之前执行。成功持久化新数据后，cleanup 会从旧 SP 删除已迁移 key；使用 Context/文件名构造器且旧 SP 已空时，还会尝试删除旧文件。若迁移或持久化失败，后续访问可能再次执行相关步骤，所以迁移函数必须幂等。
+迁移任务在 DataStore 首次可访问之前执行。成功持久化新数据后，cleanup（清理步骤）会从旧 SP 删除已迁移 key；使用 Context/文件名构造器且旧 SP 已空时，还会尝试删除旧文件。若迁移或持久化失败，后续访问可能再次执行相关步骤，所以迁移函数必须幂等，也就是重复执行仍得到一致结果。
 
 还要注意以下边界：
 
-- 内置 Preferences 迁移只支持 SP 的 boolean、float、int、long、string 和 string set。
+- 内置 Preferences 迁移只支持 SP 的 boolean、float、int、long、string 和 string set（字符串集合）。
 - 指定 `keysToMigrate` 后只能访问这些 key；省略时迁移全部受支持 key。
 - DataStore 中已经存在的同名 Preferences key 不会被旧 SP 反复覆盖。
 - 迁移尚未完成时，`data.first()` 和更新调用都会等待初始化。
@@ -421,7 +421,7 @@ val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(
 3. **迁移并观测**：先迁高风险写入和大文件；记录迁移失败、初始化耗时、DataStore 文件大小和更新延迟。
 4. **删除旧路径**：确认活跃版本和独立进程都切换后，移除旧读写。需要支持版本回退时，要提前定义旧版本如何处理已删除的 SP key。
 
-没有通用的“SP 超过 50KB 就必须迁移”阈值。文件大小只是一个维度，还要看 key 数、启动位置、写频率、设备分布和等待分位数。以线上 Trace 与 ANR 聚类确定优先级更可靠。
+没有通用的“SP 超过 50 KB 就必须迁移”阈值。文件大小只是一个维度，还要看 key 数、启动位置、写频率、设备分布和等待分位数。以线上 Trace 与 ANR 聚类（按相似调用栈归组）确定优先级更可靠。
 
 ## MultiProcess DataStore 的实现边界
 
@@ -429,14 +429,14 @@ val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(
 
 从 DataStore 1.1.0 起，`MultiProcessDataStoreFactory` 提供正式的多进程支持。若 App 进程和独立 Service 进程共享一个文件，两边都应使用多进程工厂，并指向完全相同的路径。单进程 DataStore 与多进程 DataStore 混用同一文件不受支持。
 
-每个进程仍应只保留一个指向该文件的活跃实例。配置对象必须不可变，迁移也必须幂等。
+每个进程仍应只保留一个指向该文件的活跃实例。配置对象必须不可变，迁移也必须能够安全地重复执行。
 
 ### 1.2.1 的三类协调机制
 
 AndroidX DataStore 1.2.1 的 Android 实现包含：
 
-- `<file>.lock`：使用 `FileChannel` 文件锁协调跨进程读写；进程内还有协程 `Mutex`，避免同进程锁冲突。
-- `<file>.version`：JNI 将共享计数器映射到多个进程，用原子整数记录版本。
+- `<file>.lock`：使用 `FileChannel` 文件锁协调跨进程读写；进程内还有协程 `Mutex`（互斥锁），避免同进程锁冲突。
+- `<file>.version`：JNI（Java Native Interface，Java 本地接口）将共享计数器映射到多个进程，用原子整数记录版本。
 - `FileObserver(MOVED_TO)`：观察目标文件被临时文件替换的事件，提醒其他进程检查版本并刷新。
 
 下面的精简片段用于展示三个锚点：
@@ -458,9 +458,9 @@ override suspend fun incrementAndGetVersion(): Int =
     withLazyCounter { it.incrementAndGetValue() }
 ```
 
-生产源码还包含文件锁死锁错误的退避重试与共享读锁兼容处理，不能用上面的精简代码替换库实现。
+实际源码还会在文件锁报告死锁错误后退避重试，也包含共享读锁的兼容处理，不能用上面的精简代码替换库实现。这里的退避是指失败后先暂缓，再重新尝试获取锁。
 
-读路径拿不到进程内 mutex 或共享文件锁时，仍可读取当前正式文件，但不会把这次无锁结果作为稳定缓存提交。后续由共享版本和文件通知重新校准。这个设计让读取不必等待正在生成的 `.tmp` 文件，同时保证缓存只有在稳定快照上更新。
+读路径拿不到进程内 mutex 或共享文件锁时，仍可读取当前正式文件，但不会把这次无锁结果作为稳定缓存提交。后续再通过共享版本和文件通知校准缓存。这样，读取不必等待正在生成的 `.tmp` 文件，缓存也只会在稳定快照上更新。
 
 ### 写入顺序要按源码理解
 
@@ -470,23 +470,23 @@ override suspend fun incrementAndGetVersion(): Int =
 
 `updateData()` 的 transform 位于跨进程独占锁范围内。它应保持短小、确定且无副作用；网络请求、长计算或另一把业务锁会延长所有进程的写等待。DataStore 的事务边界覆盖一个完整对象，不提供多文件原子提交、字段级更新或历史版本回滚。
 
-`FileObserver(MOVED_TO)` 只在目标进程存在活跃 `data` Flow collector 时用于唤醒刷新；collector 数量回到零后，观察任务会停止。下一次读取仍会比较共享版本，因此通知不是不可丢失的事件日志。
+`FileObserver(MOVED_TO)` 只在目标进程存在活跃的 `data` Flow collector（数据流收集者）时用于唤醒刷新；collector 数量回到零后，观察任务会停止。下一次读取仍会比较共享版本，因此这种通知只负责唤醒刷新，不能当作必达的事件日志。
 
 不要直接修改 `.preferences_pb`、`.lock`、`.version` 或 `.tmp`。文件锁属于协作式协议，绕过 DataStore 的直接文件写入会破坏版本和通知关系。
 
-### native library 与测试边界
+### 本地库与测试边界
 
-1.2.1 的 `datastore-core-android` AAR 为 arm64-v8a、armeabi-v7a、x86 和 x86_64 打包 `libdatastore_shared_counter.so`。Android 运行时加载失败会抛错；非 Dalvik 的主机测试可使用进程内 shadow counter，但它不能验证跨进程 `mmap` 语义。
+1.2.1 的 `datastore-core-android` AAR（Android 库归档）为 arm64-v8a、armeabi-v7a、x86 和 x86_64 打包了 `libdatastore_shared_counter.so`。Android 运行时加载失败会抛错；不在 Android 运行时环境中执行的主机测试可以使用进程内 shadow counter（替代计数器），但它无法验证跨进程 `mmap`（内存映射）语义。
 
-因此，多进程路径应至少在 emulator 或真机 instrumentation test 中覆盖：
+因此，多进程路径至少要在 emulator（模拟器）或真机 instrumentation test（设备端插桩测试）中覆盖以下场景：
 
 - 两个进程并发更新同一个 key。
 - 写入进程在不同阶段被终止。
 - 读取进程长期存活时能否看到新值。
-- APK/AAB 经 R8 与 ABI 拆分后是否仍包含 native library。
+- APK/AAB 经 R8（代码压缩与优化工具）处理和 ABI（应用二进制接口）拆分后，是否仍包含这一本地库。
 - Direct Boot 与凭据解锁前后的文件位置是否符合预期。
 
-DataStore 1.2.0 起增加了 Direct Boot 支持 API。只有确需解锁前读取的数据才应放入 device-protected storage，且其中不应包含依赖用户凭据保护的敏感内容。
+DataStore 1.2.0 起增加了 Direct Boot 支持 API。Direct Boot 允许部分组件在用户解锁前访问特定存储；只有确需在这一阶段读取的数据才应放入 device-protected storage（设备保护存储区），其中也不应包含依赖用户凭据保护的敏感内容。
 
 ## 仍需保留 SP 时的规则
 
@@ -508,20 +508,20 @@ DataStore 1.2.0 起增加了 Direct Boot 支持 API。只有确需解锁前读�
 | 场景 | 优先评估 | 需要额外验证 |
 | --- | --- | --- |
 | 官方 Jetpack、协程、少量单进程配置 | DataStore | 首次初始化、全量序列化、错误处理 |
-| 少量多进程配置 | MultiProcess DataStore | 文件锁竞争、native packaging、进程终止 |
-| 高频 KV，已有 MMKV 基础设施 | MMKV | 持久性、多进程、升级兼容、备份与安全 |
-| 复杂查询、局部更新、事务、大集合 | Room | schema、索引、WAL、迁移 |
-| 跨进程统一数据服务 | Room + ContentProvider 或专用 Binder 服务 | IPC 权限、并发、进程生命周期 |
+| 少量多进程配置 | MultiProcess DataStore | 文件锁竞争、本地库打包、进程终止 |
+| 高频 KV（键值）读写，已有 MMKV 基础设施 | MMKV | 持久性、多进程、升级兼容、备份与安全 |
+| 复杂查询、局部更新、事务、大集合 | Room | schema、索引、WAL（Write-Ahead Logging，预写式日志）、迁移 |
+| 跨进程统一数据服务 | Room + ContentProvider 或专用 Binder 服务 | IPC（进程间通信）权限、并发、进程生命周期 |
 
-MMKV 使用 `mmap` 与自定义编码路径，部分高频 KV workload 下可能优于 XML SP。`mmap` 仍会发生 page fault、脏页回写和持久化操作，性能优势与掉电语义需要在目标设备上测试。它是第三方依赖，选型时还要评估格式演进、加密配置、崩溃恢复和维护成本。
+MMKV 是使用 `mmap` 与自定义编码格式的第三方键值存储库，在部分高频 KV workload（工作负载）下可能优于 XML SP。`mmap` 路径仍会发生 page fault（缺页）、脏页回写和持久化操作，性能优势与掉电语义需要在目标设备上测试。选型时还要评估格式演进、加密配置、崩溃恢复和维护成本。
 
 用 ContentProvider 包一层 SP 只能增加统一入口，不能改变 SP 整体 XML 写入和 `QueuedWork` 语义。若已经需要复杂跨进程访问，底层数据模型也应一起调整。
 
 ## 给挂起写入添加正确的 Trace
 
-同步 `Trace.beginSection()`/`endSection()` 要求在同一线程配对。协程可能在挂起后切换线程，不能把普通同步 section 跨在 `DataStore.edit()` 两侧。
+同步 `Trace.beginSection()`/`endSection()` 要求在同一线程配对。协程可能在挂起后切换线程，不能让普通同步 section（跟踪区间）跨越 `DataStore.edit()` 调用。
 
-下面的代码使用 async section 记录一次可跨线程的 DataStore 更新：
+下面的代码使用 async section（异步跟踪区间）记录一次可跨线程的 DataStore 更新：
 
 ```kotlin
 private val nextTraceCookie = AtomicInteger()
@@ -540,9 +540,9 @@ suspend fun updateNightMode(enabled: Boolean) {
 }
 ```
 
-这里的 `Trace` 可使用 `androidx.tracing.Trace`，并保证并发请求使用不同 cookie。支持挂起版 `traceAsync` 的 tracing 版本也可以直接包装调用。Trace 名称不要包含用户值或其他敏感信息。
+这里的 `Trace` 可以使用 `androidx.tracing.Trace`，并保证并发请求使用不同 cookie（配对异步区间的整数标识）。如果当前 `androidx.tracing` 版本支持挂起函数 `traceAsync`，也可以直接用它包装调用。Trace 名称不要包含用户值或其他敏感信息。
 
-除了时长，建议记录成功、异常类型和调用场景计数。单次 DataStore 更新慢可能来自首次迁移、transform 太重、文件同步、跨进程锁竞争或设备 I/O，只有一个总 slice 还不能定位原因。
+除了时长，建议记录成功、异常类型和调用场景计数。单次 DataStore 更新慢可能来自首次迁移、transform 执行过久、文件同步、跨进程锁竞争或设备 I/O，只有一个总 slice 还不能定位原因。
 
 ## 常见误区
 
@@ -560,7 +560,7 @@ DataStore 不支持部分更新。它会完整序列化当前对象到临时文�
 
 ### “调用 `edit()` 后可以立即忽略结果”
 
-DataStore `edit()` 是挂起函数。它成功返回表示更新完成；异常需要调用方处理。把它放进无人管理的 scope 会失去失败信号，也可能在 scope 取消时丢掉尚未完成的任务。
+DataStore `edit()` 是挂起函数。它成功返回表示更新完成；异常需要调用方处理。把它放进无人管理的协程作用域会失去失败信号，也可能在作用域取消时丢掉尚未完成的任务。
 
 ### “多进程 DataStore 只靠文件锁”
 

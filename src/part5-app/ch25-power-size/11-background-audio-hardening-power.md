@@ -4,8 +4,9 @@ chapter: "25.11"
 section: "25.11"
 status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-07-02"
-last_verified_against: "Android Developers background audio hardening / Media3 / audio focus docs 2026-05；AOSP android-17.0.0_r1 AudioManagerShellCommand/AudioManager/AudioService/HardeningEnforcer/AudioFlinger Tracks.cpp"
+last_verified: "2026-08-15"
+last_source_verified_at: "2026-08-15"
+last_verified_against: "Android Developers background audio hardening docs updated 2026-08-13 + current Media3/audio focus/battery docs retrieved 2026-08-15；AOSP android-17.0.0_r1 AudioManagerShellCommand/AudioManager/AudioService/HardeningEnforcer/AudioFlinger Tracks.cpp/LeAudioService/codec_manager"
 confidence: medium
 sources:
 - type: official
@@ -40,31 +41,35 @@ task9_state: reviewed
 task2b_state: fixed
 task6_state: reviewed
 pipeline_stage: ready-to-publish
+last_draft_polish_at: "2026-08-15T15:46:55+08:00"
+last_draft_polish_run_id: "20260815-154655-gracker-writing-452"
+last_review_finalize_at: "2026-08-15T15:46:55+08:00"
+last_review_finalize_run_id: "20260815-154655-gracker-writing-452"
 ---
 
 # Android 17 后台音频硬化与播放功耗治理
 
 ## 后台音频的治理范围
 
-Android 17 同时限制后台音频播放、音频焦点请求、音量与铃声模式修改。应用不满足生命周期条件时，播放器仍可能报告“正在播放”，但用户听不到声音；与此同时，下载、解码、WakeLock 和前台服务还可能继续运行。播放器状态因此不能单独证明播放有效。
+这里的“硬化”（hardening）指平台强制执行后台音频的生命周期条件，与音质或编码处理无关。Android 17 同时限制后台音频播放、音频焦点（系统在多个应用之间协调播放、暂停和降低音量）请求、音量与铃声模式修改。应用不满足生命周期条件时，播放器仍可能报告“正在播放”，但用户听不到声音；与此同时，下载、解码、WakeLock（阻止设备休眠的唤醒锁）和前台服务还可能继续运行。播放器状态因此不能单独证明声音已经输出。
 
 排查时要回答两组问题：
 
-- 系统是否允许这次音频交互：页面是否可见、前台服务是否存在、服务有没有 while-in-use（WIU）能力、音频用途是否符合豁免条件。
-- 播放失效后是否仍消耗资源：网络请求、解码线程、WakeLock、MediaSession 和前台服务是否按停止原因释放。
+- 系统是否允许这次音频交互：页面是否可见、前台服务（foreground service，FGS）是否存在、服务有没有 while-in-use（WIU，通常在应用可见或明确用户操作触发服务时授予）能力、音频用途是否符合豁免条件。
+- 播放失效后是否仍消耗资源：网络请求、解码线程、WakeLock、MediaSession（向系统发布播放状态和控制入口的媒体会话）和前台服务是否按停止原因释放。
 
-平台源码基线为 Android 17 / API 37 / `android-17.0.0_r1`。AudioFlinger、AAudio 和音频线程调度参见 1.16；后台执行规则参见 5.8 与 25.15；Media3、Codec2 和多媒体管线参见 18.21。
+源码判断以 Android 17 / API 37 / `android-17.0.0_r1` 为版本依据。AudioFlinger（原生音频混音与输出服务）、AAudio（原生低延迟音频 API）和音频线程调度参见 1.16；后台执行规则参见 5.8 与 25.15；Media3（Jetpack 媒体库）、Codec2（Android 多媒体编解码框架）和多媒体管线参见 18.21。
 
-## 两级限制：先看 FGS，再看 WIU
+## 两级限制：FGS 基础门槛与 WIU 附加门槛
 
-Android 17 的规则需要分两级理解。把两级条件合成一句“target 37 才限制后台音频”，会漏掉旧 target 应用也要满足的基础门槛。
+Android 17 的规则需要分两级理解。文章用 target 简称 `targetSdkVersion`，即应用声明的目标 API 版本。把两级条件合成一句“target 37 才限制后台音频”，会漏掉旧 target 应用也要满足的基础门槛。
 
 ### 所有应用都要满足的基础门槛
 
 任何运行在 Android 17 上的应用，只要在后台播放、申请音频焦点或修改音量，就必须满足以下任一条件：
 
 - Activity 对用户可见；画中画（PiP）也属于可见场景。
-- 应用正在运行一个类型不是 `shortService` 的前台服务。
+- 应用正在运行一个类型不是 `shortService`（短时任务前台服务类型）的前台服务。
 
 这条规则与 `targetSdkVersion` 无关。没有可见 Activity，也没有合格前台服务时，target 35、36 和 37 都会受到限制。
 
@@ -72,13 +77,13 @@ Android 17 的规则需要分两级理解。把两级条件合成一句“target
 
 当应用以 API 37 为 target 且位于后台时，前台服务还要具有 WIU 能力。常见的获得方式是：在应用可见时启动服务，或由通知点击、桌面小组件、媒体按键等明确的用户操作触发后台启动。
 
-WIU 不是应用可以自行声明的布尔值。ActivityManager 根据前台状态、前台服务的启动来源和系统授予的例外条件维护能力状态，音频服务通过 AppOps 结果消费这个状态。`HardeningEnforcer` 并不解析应用的 `startForeground()` 调用栈，也不自行检查 `PendingIntent` 创建者或某个固定的“最近交互窗口”。
+WIU 不是应用可以自行声明的布尔值。ActivityManager（系统的进程和应用生命周期管理服务）根据前台状态、前台服务的启动来源和系统授予的例外条件维护能力状态，音频服务再读取 AppOps（系统按操作检查调用方是否获准的机制）结果。`HardeningEnforcer` 不解析应用的 `startForeground()` 调用栈，也不自行检查 `PendingIntent`（可由其他组件代为触发的延迟操作）的创建者或某个固定的“最近交互窗口”。
 
-### exact alarm 只豁免第二级
+### 精确闹钟只豁免第二级
 
-API 37 应用同时满足下面两个条件时，可以免除 WIU 要求：
+API 37 应用同时满足两个条件时，可以免除 WIU 要求：
 
-- 已获准使用 exact alarm，即持有 `USE_EXACT_ALARM`，或拥有 `SCHEDULE_EXACT_ALARM` 特殊访问。
+- 已获准使用 exact alarm（精确闹钟），即持有 `USE_EXACT_ALARM`，或拥有 `SCHEDULE_EXACT_ALARM` 特殊访问。
 - 本次音频使用 `AudioAttributes.USAGE_ALARM`。
 
 该豁免不取消第一级要求。后台闹钟仍需要可见 Activity 或非 `shortService` 前台服务。普通媒体内容也不能借用 `USAGE_ALARM` 规避限制；用途声明应与用户可感知的功能一致。
@@ -99,7 +104,7 @@ API 37 应用同时满足下面两个条件时，可以免除 WIU 要求：
 
 后台音频硬化刻意让多数失败保持静默，避免不合规应用通过异常改变系统行为。应用必须把返回值、系统日志和播放状态放在一起判断。
 
-| 交互 | 默认限制模式 | `throw` 测试模式 |
+| 交互 | 默认限制模式 | `throw`（显式失败）测试模式 |
 | --- | --- | --- |
 | 音频播放 | 输出被静音；播放 API 不提供对应异常或失败消息 | 有显式写入的接口持续返回错误；没有显式写入点的播放模式可能导致进程崩溃 |
 | `requestAudioFocus()` | 返回 `AUDIOFOCUS_REQUEST_FAILED`，且不会获得焦点 | 抛出 `IllegalStateException` |
@@ -109,7 +114,7 @@ API 37 应用同时满足下面两个条件时，可以免除 WIU 要求：
 
 ## FGS 和 MediaSession 的正确职责
 
-Android 17 的最低条件是“非 `shortService` 前台服务”，但媒体应用不应随意选择一个无关类型。持续音乐、播客和锁屏视频音频应使用 `mediaPlayback` 类型，并通过 MediaSession 对接系统媒体控件。
+Android 17 的最低条件是“非 `shortService` 前台服务”，但媒体应用不应随意选择一个无关类型。持续音乐、播客和锁屏视频音频应使用 `mediaPlayback`（媒体播放）类型，并通过 MediaSession 对接系统媒体控件。
 
 使用 Media3 时，`MediaSessionService` 负责把 `Player` 与 `MediaSession` 放进服务生命周期，提供媒体通知以及外部控制入口。清单至少要声明对应的前台服务权限和服务类型。
 
@@ -168,19 +173,19 @@ Android 17 的最低条件是“非 `shortService` 前台服务”，但媒体�
 - 系统 API level、`targetSdkVersion`、应用版本和设备型号。
 - 用户入口、Activity 可见性、FGS 类型、FGS 启动时间和启动结果。
 - MediaSession 标识与状态、音频 `usage`、焦点请求结果和播放器错误。
-- 当前音频路由、蓝牙设备类别、网络状态、停止原因和资源释放结果。
+- 当前音频路由（声音实际输出到扬声器、耳机等设备的路径）、蓝牙设备类别、网络状态、停止原因和资源释放结果。
 
 同一台 Android 17 设备上的 target 36 与 target 37 行为不同。数据分析至少按 `(API level, targetSdkVersion)` 分组，不能只看系统版本。
 
 ## Android 17 r1 的源码执行路径
 
-`android-17.0.0_r1` 把三类交互放在不同位置检查。它们共享同一个 hardening override，但不是每个 API 都由 Java 和 C++ 重复判断。
+`android-17.0.0_r1` 把三类交互放在不同位置检查。它们共享同一个 hardening override（后台音频限制的测试覆盖状态），但不是每个 API 都由 Java 和 C++ 重复判断。
 
 | 交互 | 主要实现位置 | 判断内容 |
 | --- | --- | --- |
 | 音频焦点 | `AudioService` 调用 `HardeningEnforcer.blockFocusMethod()` | `OP_TAKE_AUDIO_FOCUS`、`OP_CONTROL_AUDIO`、target、闹钟及权限豁免 |
 | 音量与铃声模式 | `AudioService` 调用 `HardeningEnforcer.blockVolumeMethod()` | `OP_CONTROL_AUDIO_PARTIAL`、`OP_CONTROL_AUDIO`、target 和权限豁免 |
-| 播放 | AudioFlinger `Tracks.cpp` 的 `getHardeningDecision()` 与 `AfPlaybackCommon` | Track 创建时确定限制级别，并持续观察两级 AppOps |
+| 播放 | AudioFlinger `Tracks.cpp` 的 `getHardeningDecision()` 与 `AfPlaybackCommon` | 播放 Track（音频播放轨道）创建时确定限制级别，并持续观察两级 AppOps |
 
 音频焦点请求先经过 `HardeningEnforcer`，通过后才进入 `MediaFocusControl` 的焦点仲裁。后台硬化返回 `AUDIOFOCUS_REQUEST_FAILED` 时，请求没有进入常规焦点竞争；这与“另一应用占用了焦点”是两种原因。
 
@@ -188,8 +193,8 @@ Android 17 的最低条件是“非 `shortService` 前台服务”，但媒体�
 
 AudioFlinger 为播放 Track 观察 `OP_CONTROL_AUDIO_PARTIAL` 和 `OP_CONTROL_AUDIO`：
 
-- partial 级别对应所有应用都要满足的基础生命周期条件，典型失败原因是没有合格 FGS。
-- full 级别增加 API 37 的 WIU 条件，典型失败原因是已有 FGS，但服务没有 WIU。
+- partial（基础级）对应所有应用都要满足的生命周期条件，典型失败原因是没有合格 FGS。
+- full（完整级）增加 API 37 的 WIU 条件，典型失败原因是已有 FGS，但服务没有 WIU。
 
 这也解释了官方日志：
 
@@ -198,19 +203,19 @@ AudioFlinger 为播放 Track 观察 `OP_CONTROL_AUDIO_PARTIAL` 和 `OP_CONTROL_A
 
 限制级别还会受平台兼容条件影响。r1 的 C++ 决策在严格模式下，对 target 小于 37 的应用、符合条件的闹钟以及持有 `BLUETOOTH_CONNECT` 的调用者采用 partial 级别；系统音频用途和具有路由或电话特权的调用者可以豁免。应用不应依赖内部兼容分支代替公开的后台播放模型。
 
-### Offload 和 MMap 没有绕过硬化
+### Offload 和 MMap 没有绕过限制
 
-`AfPlaybackCommon` 在 Track 创建时注册两条异步 AppOps 会话。对于 Offload 或 MMap Track，源码使用 40 ms 的 `asyncBroadcast` 延迟，让 partial 与 full 两个权限回调都有机会在音频线程唤醒前到达。该延迟是权限状态传播的实现细节，不是应用可调的播放缓冲参数。
+`AfPlaybackCommon` 在 Track 创建时注册两条异步 AppOps 会话。Offload 指把音频处理交给专用音频处理器，MMap 指使用内存映射的低延迟音频路径。对于这两类 Track，源码使用 40 ms 的 `asyncBroadcast` 异步唤醒延迟，让 partial 与 full 两个权限回调都有机会在音频线程唤醒前到达。该延迟是权限状态传播的实现细节，不是应用可调的播放缓冲参数。
 
-每条 Track 只记录一次对应的 playback hardening 事件，避免同一 Track 反复上报。新的 Track 会重新计算决策，因此重新创建播放器并不能修复不合规生命周期，只会生成新的受限 Track。
+每条 Track 只记录一次对应的后台播放限制事件，避免同一 Track 反复上报。新的 Track 会重新计算决策，因此重新创建播放器并不能修复不合规生命周期，只会生成新的受限 Track。
 
-### Java 与 native 权限判断不能拼成“矛盾结果”
+### Java 与原生层的权限判断不能拼成“矛盾结果”
 
 Java 的焦点和音量入口使用 AppOps，AudioFlinger 的播放路径既根据权限与 target 选择限制级别，也通过异步 AppOps 判断当前是否允许输出。不能根据 `PermissionEnum` 的静态权限检查推导出“音量被禁，但 Track 一定有声”；是否静音还取决于 Track 的 AppOps 状态、限制级别和豁免结果。
 
 ## 调试命令存在版本差异
 
-Android 17 官方页面在 2026-07-14 更新后使用 `set-enable-hardening`，而 `android-17.0.0_r1` 的 `AudioManagerShellCommand` 使用 `set-hardening` 与 `clear-hardening`。因此不要把某个命令名视为所有 Android 17 镜像都相同。
+Android 17 官方页面在 2026-08-13 的当前版本中使用 `set-enable-hardening`，而 `android-17.0.0_r1` 的 `AudioManagerShellCommand` 使用 `set-hardening` 与 `clear-hardening`。因此不能把某个命令名视为所有 Android 17 系统镜像都相同。
 
 这组命令先读取设备自己的帮助，再按匹配分支启用测试模式：
 
@@ -229,13 +234,13 @@ adb shell cmd audio set-enable-hardening throw
 adb shell cmd audio set-enable-hardening disable
 ```
 
-r1 的 `clear-hardening` 恢复平台默认行为；`set-hardening disable` 是强制关闭限制，并不等同于恢复默认。新命令中的 `disable` 也表示关闭全部限制。r1 的 override 同步写入 system_server 与 audioserver 的运行时状态，但没有持久化；没有 `clear` 或 `default` 子命令的镜像应按设备帮助确认恢复方式，必要时重启专用测试设备。测试报告还要记录命令和构建号。
+r1 的 `clear-hardening` 与 `set-hardening default` 都恢复平台默认行为；`set-hardening disable` 是强制关闭限制，并不等同于恢复默认。新命令中的 `disable` 也表示关闭全部限制。r1 的测试覆盖状态会同步写入 `system_server`（承载多数 Java 系统服务的进程）与 `audioserver`（承载原生音频服务的进程），但不会持久化。只提供新命令、没有 `clear` 或 `default` 子命令的系统镜像，应按设备帮助确认恢复方式，必要时重启专用测试设备。测试报告还要记录命令和构建号。
 
 `enable` 会把完整限制应用到所有应用，并取消 target 与闹钟豁免，适合寻找潜在问题；它不能替代默认行为下的 target 36/37 对照测试。`throw` 还会把静默失败改成异常、持续写入错误或崩溃，只能用于开发与回归环境。
 
 ## 取证：把许可状态和功耗放在一条时间线上
 
-下面的命令用于保存复现现场。`batterystats --reset` 会清除设备上已有的电量统计，只应在专用测试设备上执行。
+这些命令用于保存复现现场。`dumpsys` 导出系统服务状态，`logcat` 导出系统日志。`batterystats --reset` 会清除设备上已有的电量统计，只应在专用测试设备上执行。
 
 ```bash
 # 音频策略、焦点、音量和 hardening 事件
@@ -253,9 +258,9 @@ adb shell dumpsys batterystats --reset
 adb shell dumpsys batterystats > batterystats.txt
 ```
 
-这批文件要用统一的会话标识和时间戳对齐。`dumpsys audio` 说明平台为何限制交互，`media_session` 和服务记录说明应用宣告了什么状态，`batterystats` 说明播放停止后是否仍有 WakeLock、网络和后台活动。
+这批文件要使用统一的会话标识，并按同一时钟关联事件。`dumpsys audio` 说明平台为何限制交互，`media_session` 和服务记录说明应用宣告了什么状态，`batterystats` 说明播放停止后是否仍有 WakeLock、网络和后台活动。
 
-Perfetto 采集应覆盖音频、调度、CPU 频率、电源、Binder 和 ActivityManager 相关轨迹。阅读顺序可以固定为：用户操作、FGS 启动、MediaSession 激活、焦点结果、Track 创建、页面退后台或锁屏、网络或路由变化、播放停止、资源释放。若声音消失后 CPU、网络或 WakeLock 仍活跃，说明停止态清理不足。
+Perfetto 是 Android 的系统级跟踪工具，采集应覆盖音频、调度、CPU 频率、电源、Binder（Android 跨进程调用机制）和 ActivityManager 相关轨迹。阅读顺序可以固定为：用户操作、FGS 启动、MediaSession 激活、焦点结果、Track 创建、页面退后台或锁屏、网络或路由变化、播放停止、资源释放。若声音消失后 CPU、网络或 WakeLock 仍活跃，说明声音停止后的资源清理不足。
 
 ## 长时播放的功耗检查
 
@@ -264,17 +269,17 @@ Perfetto 采集应覆盖音频、调度、CPU 频率、电源、Binder 和 Activ
 | 资源 | 观察信号 | 处理方向 |
 | --- | --- | --- |
 | 解码 | 播放线程 CPU 时间、Media3 offload 事件、设备与格式支持情况 | 长音频可评估 audio offload；音效、倍速等功能不兼容时保留普通解码 |
-| 缓冲 | underrun、加载频率、内存占用和恢复耗时 | 按内容与网络条件配置，不复制视频的缓冲参数 |
-| 网络 | 失败码、重试间隔、重复下载字节、播放停止后的流量 | 使用有上限的退避；不可恢复时停止预取 |
-| WakeLock | tag、持有时长、播放结束后的残留 | 为持有设置超时，并在每个终止路径释放 |
+| 缓冲 | underrun（缓冲数据未能及时供给播放端）、加载频率、内存占用和恢复耗时 | 按内容与网络条件配置，不复制视频的缓冲参数 |
+| 网络 | 失败码、重试间隔、重复下载字节、播放停止后的流量 | 使用有上限的重试退避（连续失败时逐步延长间隔）；不可恢复时停止预取 |
+| WakeLock | tag（用于识别持有者的标签）、持有时长、播放结束后的残留 | 为持有设置超时，并在每个终止路径释放 |
 | 非播放任务 | 歌词、封面、推荐、埋点线程的 CPU 时间与唤醒 | 降低非必要任务频率，避免与解码和输出线程竞争 |
 | 蓝牙 | 路由变更、断连重连、设备类别、控制器活动 | 把路由故障和播放器故障分开统计 |
 
-Audio offload 改变解码与输出所使用的计算资源，后台硬化检查的是应用生命周期。两者相互独立：offload Track 仍受 hardening 控制；未匹配 ADSP 的 LC3 配置也不等于应用会因处于后台而被静音。
+Audio offload 改变解码与输出所使用的计算资源，后台硬化检查的是应用生命周期。两者相互独立：offload Track 仍受 hardening 控制；未匹配 ADSP（Audio Digital Signal Processor，音频数字信号处理器）的 LC3（Low Complexity Communication Codec，低复杂度通信编解码器）配置，也不等于应用会因处于后台而被静音。
 
-`codec_manager.cc` 的 `IsLc3ConfigMatched()` 比较采样率、帧时长、每条 ISO 流的通道数和每帧字节数，用于判断 LC3 配置是否匹配。匹配失败影响编解码执行路径，不直接决定 FGS 或 WIU。`target_latency` 参与 LE Audio 配置选择，但仅凭“低延迟”无法推算设备能耗，仍需在具体控制器、耳机和媒体参数上测量。
+`codec_manager.cc` 的 `IsLc3ConfigMatched()` 比较采样率、帧时长、每条 ISO（Isochronous，等时）流的通道数和每帧字节数，用于判断 LC3 配置是否匹配。匹配失败影响编解码执行路径，不直接决定 FGS 或 WIU。`target_latency` 表示 Bluetooth LE Audio（低功耗蓝牙音频）配置期望的时延等级，它参与配置选择，但仅凭“低延迟”无法推算设备能耗，仍需在具体控制器、耳机和媒体参数上测量。
 
-Android 17 r1 的 `LeAudioService.setSystemSuspended()` 会在系统挂起时停止后台扫描，并在恢复且确有扫描需求时重新启动。这是平台蓝牙服务的省电行为，不是第三方播放器可调用的控制接口。应用侧应记录路由和连接事件，不要用持续扫描或高频重连掩盖系统状态变化。
+Android 17 r1 的 `LeAudioService.setSystemSuspended()` 会在系统进入 suspend（低功耗挂起）状态时停止后台扫描，并在恢复且确有扫描需求时重新启动。这是平台蓝牙服务的省电行为，不是第三方播放器可调用的控制接口。应用侧应记录路由和连接事件，不要用持续扫描或高频重连掩盖系统状态变化。
 
 ## 验证场景与线上指标
 
@@ -293,18 +298,18 @@ Android 17 r1 的 `LeAudioService.setSystemSuspended()` 会在系统挂起时停
 | 蓝牙与 LE Audio 切换 | 连接、断开并改变输出设备 | 状态和路由一致；不把路由断开统计为 hardening |
 | hardening `enable` / `throw` | 对相同场景分别执行 | 静默失败和显式失败路径都有可解释记录 |
 
-线上指标应同时覆盖“用户想听却没有声音”和“用户不再听但资源仍运行”：
+线上指标应同时覆盖“用户想听却没有声音”和“用户不再听但资源仍运行”。P90、P99 表示 90% 和 99% 的样本不超过对应数值，用于观察平均值容易掩盖的高耗电会话：
 
 | 指标 | 主要维度 |
 | --- | --- |
-| 后台播放中断率 | API level、target、入口、FGS 状态、ROM |
-| 音频焦点失败率 | usage、焦点类型、页面可见性、FGS 与 WIU |
-| `AudioHardening` 命中 | partial/full、包名、入口、是否测试 override |
+| 后台播放中断率 | API level、target、入口、FGS 状态、ROM（厂商系统版本） |
+| 音频焦点失败率 | `AudioAttributes.usage`（音频用途）、焦点类型、页面可见性、FGS 与 WIU |
+| `AudioHardening` 命中 | partial/full、包名、入口、是否设置测试覆盖状态 |
 | MediaSession 异常结束 | Player 状态、Session 状态、停止原因、网络 |
 | 后台耗电 P90/P99 | 会话时长、网络、路由、offload、设备 |
 | 用户手动恢复播放比例 | 页面、通知、媒体键、蓝牙设备 |
 
-灰度时应同时比较 target 36 与 37。若中断率上升，要先按 partial/full 区分缺 FGS 与缺 WIU；若声音已经停止但耗电上升，则检查资源释放与重试状态机。两类问题需要分开定责。
+小流量发布时应同时比较 target 36 与 37。若中断率上升，要按 partial/full 区分缺 FGS 与缺 WIU；若声音已经停止但耗电上升，则检查资源释放与重试状态机。两类问题需要分别定位原因。
 
 ## 小结
 

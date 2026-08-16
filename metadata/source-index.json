@@ -2911,6 +2911,490 @@
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7639311759746383882",
+      "title": "[掘金Android] Toast 多弹了一次：从 LiveData 粘性事件讲到 SharedFlow/StateFlow 的正确分工",
+      "summary": "LiveData 是状态容器不是事件总线，旋转屏幕后再次观察 LiveData 会重发旧 errorMessage 导致 Toast 重复弹出。EventWrapper 通过 hasBeenHandled 解决重复消费但样板代码多；SharedFlow replay=0 天然不重放是事件流最贴合的写法；StateFlow 负责 UI 状态、SharedFlow 负责事件。",
+      "chapter": "ch16",
+      "processed_at": "2026-08-13T06:20:07.000392+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7636947240796373011",
+      "title": "[掘金Android] MVI vs MVVM 在 Compose 场景下的真实取舍",
+      "summary": "MVI 单一不可变 State + sealed Intent + Reducer 函数。MVI 在 Compose 场景下过度设计：单一 State 会让 Screen 级重组无法被 Compose 精细跳过，a 变化时 ComposableB 也会触发重组；MVVM 独立 StateFlow 与 Compose 响应式模型对齐，Compose 含 CMP 场景下 MVVM 是更务实的选择。",
+      "chapter": "ch16",
+      "processed_at": "2026-08-13T06:20:07.000392+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7644476634998538249",
+      "title": "[掘金Android] AndroidX EmbeddedPhotoPicker：嵌入式照片选择器",
+      "summary": "AndroidX 把照片选择器从独立 Activity 改成可嵌入 Compose 的组件，避免跳出应用。核心 API rememberEmbeddedPhotoPickerState + EmbeddedPhotoPicker；集成要求 Android 14 + SDK Extensions 15；FeatureInfo 可限制选择数/定制主色/MIME 过滤；BottomSheetScaffold 通过 SideEffect 同步展开状态。当前 1.0.0-alpha01。",
+      "chapter": "ch16",
+      "processed_at": "2026-08-13T06:20:07.000392+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7628874305070563337",
+      "title": "[掘金Android] Android 官方 Skills 仓库：6 大技能覆盖迁移/优化/适配",
+      "summary": "android/skills 仓库含 6 个 Skill：AGP 9 升级、XML 转 Compose 迁移、Navigation 3、R8 规则分析、Play Billing Library 升级、Edge-to-Edge 全屏适配。每个 Skill 都给出明确执行步骤与验证手段，通过 .skills/ 或 .agent/skills/ 加载。",
+      "chapter": "ch16",
+      "processed_at": "2026-08-13T06:20:07.000392+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7630834546863751219",
+      "title": "[掘金Android] Android CLI 预览版：把 Agent 工作流搬进终端",
+      "summary": "android CLI 命令：create/sdkinstall/emulator/run/init/skills/docs/screen capture + resolve（截图打标签解析坐标）/layout --diff（导出布局树变化）。android docs + android skills 让 Agent 拿到的不是训练记忆而是最新官方推荐。官方实验数据：LLM token 下降 70%+，任务速度提升约 3 倍。",
+      "chapter": "ch16",
+      "processed_at": "2026-08-13T06:20:07.000392+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7631081134169309210",
+      "title": "[掘金Android] Android Studio Quail 1 Canary：LeakCanary 进 Profiler + AI Agent 接管崩溃分析",
+      "summary": "Quail 1 Canary 1（2026-04-16）关键更新：AQI 接入 AI Agent 可直接生成代码变更；Compose Preview Screenshot Testing 自动截图对比；LeakCanary 集成 Profiler，从设备搬到开发机可 Jump to Source；Layout Inspector 新增 Recomposition state reads + Explain with AI（需 compose.ui 1.10.0/BOM 2025.12.01）。",
+      "chapter": "ch16",
+      "processed_at": "2026-08-13T06:20:07.000392+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-13-76288743-Android-官方Skills仓库-6大技能覆盖迁移优化适配.md",
+      "title": "[技术文章] 解放双手！Android 发布官方 6 大技能，一键搞定迁移、优化、适配近日，Google 在 GitHub 上开源了",
+      "summary": "> 发布时间: 2026-04-16T00:50:23.000Z > 原文链接: https://juejin.cn/post/7628874305070563337 2026-04-16 2,922 阅读5分钟 > 本文首发于微信公众号“Android技术圈”，未经许可禁止转载 近日，Google 在 GitHub 上开源了 android/skills 仓库，目前里面...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-13T06:20:07.000392+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-13-76308345-Android-CLI预览版-终端一键建项目控模拟器.md",
+      "title": "[技术文章] Android CLI 来了！终端一键建项目、控模拟器、给 Agent 喂官方规范Android 团队刚发布了 Andr",
+      "summary": "> 发布时间: 2026-04-21T00:49:58.000Z > 原文链接: https://juejin.cn/post/7630834546863751219 2026-04-21 1,312 阅读5分钟 > 本文首发于公众号“Android技术圈” Android 团队刚发布了 **Android CLI（预览版）**：你可以在终端里完成 Android 开发的...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-13T06:20:07.000392+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-13-76310811-Android-Studio-Quail-1-LeakCanary集成Profiler.md",
+      "title": "[技术文章] 重磅！Android Studio Quail 1 来了，IDE直接内置 LeakCanary2026 年 4 月 16",
+      "summary": "> 发布时间: 2026-04-22T00:47:41.000Z > 原文链接: https://juejin.cn/post/7631081134169309210 2026-04-22 2,145 阅读3分钟 2026 年 4 月 16 日，Google 放出了 Android Studio Quail 1 的首个 Canary 版本。 这意味着 Android St...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-13T06:20:07.000392+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-13-76369472-MVI-vs-MVVM-Compose场景下的真实取舍.md",
+      "title": "[技术文章] 能告诉我：你为什么用 MVI 吗？反正我不理解！我对 MVI 一直不理解，所以和 Claude Code 有了以下对话，",
+      "summary": "> 发布时间: 2026-05-07T07:19:34.000Z > 原文链接: https://juejin.cn/post/7636947240796373011 2026-05-07 1,341 阅读10分钟 我对 MVI 一直不理解，所以和 Claude Code 有了以下对话，不纠结是黑是白，只加深两种模式之间的理解。 我想知道在 Android 开发中：MVV...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-13T06:20:07.000392+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-13-76393117-Toast多弹了一次-SharedFlow与StateFlow的正确打开方式.md",
+      "title": "[技术文章] 我为什么让 Toast 多弹了一次有一类 Bug 很容易让人怀疑人生：代码看起来没问题，业务逻辑也没问题，甚至第一次运行",
+      "summary": "> 发布时间: 2026-05-14T02:17:51.000Z > 原文链接: https://juejin.cn/post/7639311759746383882 2026-05-14 1,671 阅读9分钟 Kotlin Learning 我之前在这篇故事里说到，实习生阿泽在经历项目锻炼后写了一篇文章-《我为什么让 Toast 多弹了一次》，对，就是这篇！ 现在，让...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-13T06:20:07.000392+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-13-76444766-AndroidX-EmbeddedPhotoPicker嵌入式照片选择器.md",
+      "title": "[技术文章] 学吧！Android 全新的嵌入式照片选择器AndroidX 推出了全新的嵌入式照片选择器（EmbeddedPhotoP",
+      "summary": "> 发布时间: 2026-05-28T00:39:32.000Z > 原文链接: https://juejin.cn/post/7644476634998538249 2026-05-28 1,216 阅读5分钟 2022 年，Android 团队推出了照片选择器，让用户能更隐私地分享媒体文件。用户可以通过可浏览的界面按日期从新到旧查看媒体库，并且只授予应用访问所选文件的...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-13T06:20:07.000392+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-12-evening-Agent执行外围三道门-研究材料/references/03-hermes-browser-docs.md",
+      "title": "[DeepResearch] 03-hermes-browser-docs",
+      "summary": "--- source: https://hermes-agent.nousresearch.com/docs/user-guide/features/browser title: Browser Automation | Hermes Agent fetched: 2026-08-12T13:13:08Z research_topic: Agent执行外围三道门 sub_question: docs --- 文档要点：多 backend",
+      "chapter": "ch16",
+      "processed_at": "2026-08-13T06:20:07.000392+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Build Artifacts and ART Runtime Deep Dive_ Memory Quantification, Version Facts, and ART Service Internals.md",
+      "title": "[DeepResearch] Android 编译产物与 ART 运行时深度补充调研（第二轮）",
+      "summary": "# Android 编译产物与 ART 运行时深度补充调研（第二轮） ## TL;DR - **关键量化常数已锁定**：arm64 上 `sizeof(ArtMethod)=32 字节`（源码确认，纠正了”约 24 字节”的假设——24 是 32-bit 值），`sizeof(ArtField)=16 字节`，DexCache method hash 数组默认 1024 槽、每槽 8 字节，且 ArtMethod/ArtField/vt",
+      "chapter": "ch16",
+      "processed_at": "2026-08-13T06:20:07.000392+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-12-morning-推理痕迹控制权-研究材料/02-dump-tool-schema-side-channel.md",
+      "title": "[DeepResearch] Dump 02 tool schema 与 reasoning 旁路",
+      "summary": "--- phase: 1 sub_question: tool schema 与 reasoning 旁路 --- # Dump 02 tool schema 与 reasoning 旁路 ## 执行摘要 - 产出文件：`/Users/chris/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-12-morning-推",
+      "chapter": "ch05",
+      "processed_at": "2026-08-13T06:20:07.000392+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-12-morning-推理痕迹控制权-研究材料/references/04-hermes-docs-browser-context.md",
+      "title": "[DeepResearch] Hermes Agent Documentation",
+      "summary": "--- source: https://hermes-agent.nousresearch.com/docs/ title: Hermes Agent Documentation fetched: 2026-08-12T09:05:00+08:00 research_topic: 推理痕迹控制权与 Agent session 安全 sub_question: Hermes 工具与运行时背景 --- # Hermes Agent Docu",
+      "chapter": "ch16",
+      "processed_at": "2026-08-13T06:20:07.000392+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://tschatzl.github.io/2026/08/10/jdk27-g1-serial-parallel-gc-changes.html",
+      "title": "[RSS订阅] 今日精选",
+      "summary": "xoreaxeaxeax 在 AMD Family 16h（最后一个公开 datasheet 的代次）上演示了 DRAM 控制器 translation register 改写 + unscrambling 让 PSP / SMM / C6 carveout 落到用户可访问页面上。文章把 `*p` 从 VA 到 DRAM 的整条管线画成 ASCII 全景图，并对每一层标注 spec 锁死 vs 灰色地带。Android 平台相关性：TrustZone / TEE 物理隔离假设、BootROM/Verified Boot 链、kernel 直接读不到但应当不能读的 secure carveout，三者都依赖 DRAM controller 的地址翻译不可被软件改写；这个 PoC 提示设备 OEM 在选 DRAM controller IP、SE policy 时需要把\"scrambling key 暴露在 PCI config space 且无锁\"这类边界当成硬件威胁建模的一部分。ARM/RISC-V 上的等价路径文中也提到了。",
+      "chapter": "ch16",
+      "processed_at": "2026-08-14T06:20:49.863291+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7633624917233319936",
+      "title": "[掘金Android] 今日精选",
+      "summary": "Quail 1 Canary 2026-04-16 发布，四件实打实的新功能：① AQI Insights -> See more / Fix with AI，Agent 直接读源码 + 崩溃数据生成 patch；② Compose Preview Screenshot Testing 基于 @Preview 自动截图 + HTML 对比，省掉 Espresso 截图测试；③ LeakCanary 集成进 Profiler，泄漏分析从设备端搬到开发机，Jump to Source + 复制给 Gemini 进一步分析；④ Layout Inspector 新增 Recomposition state reads，点击重组次数可看是哪个 state 触发重组；Material Symbols 在 Vector Asset Studio 内直接调 weight/grade/optical size。",
+      "chapter": "ch16",
+      "processed_at": "2026-08-14T06:20:49.863291+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-14-76308345-AndroidCLI.md",
+      "title": "[技术文章] Android CLI 来了！终端一键建项目、控模拟器、给 Agent 喂官方规范Android 团队刚发布了 Andr",
+      "summary": "> 发布时间: 2026-04-21T00:49:58.000Z > 原文链接: https://juejin.cn/post/7630834546863751219 2026-04-21 1,303 阅读5分钟 > 本文首发于公众号“Android技术圈” Android 团队刚发布了 **Android CLI（预览版）**：你可以在终端里完成 Android 开发的...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-14T06:20:49.863291+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-14-76310811-StudioQuail.md",
+      "title": "[技术文章] 重磅！Android Studio Quail 1 来了，IDE直接内置 LeakCanary2026 年 4 月 16",
+      "summary": "> 发布时间: 2026-04-22T00:47:41.000Z > 原文链接: https://juejin.cn/post/7631081134169309210 2026-04-22 2,158 阅读3分钟 2026 年 4 月 16 日，Google 放出了 Android Studio Quail 1 的首个 Canary 版本。 这意味着 Android St...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-14T06:20:49.863291+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-14-76336249-AndroidAPM最强.md",
+      "title": "[技术文章] 原文 7633624917233319936",
+      "summary": "> 来源: https://juejin.cn/post/7633624917233319936 Android App 最强APM来袭 说明：花了4个小时用AI(GLM5.1)写的，后续用codex优化了，整体达到或者超越主流水平 github.com/XZQ/Android… Android APM 是一个全维度 Android 性能监控框架，当前代码覆盖 ，从内存泄...",
+      "chapter": "ch04",
+      "processed_at": "2026-08-14T06:20:49.863291+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-14-76393117-Toast多弹一次.md",
+      "title": "[技术文章] 原文 7639311759746383882",
+      "summary": "> 来源: https://juejin.cn/post/7639311759746383882 我为什么让 Toast 多弹了一次 里说到，实习生阿泽在经历项目锻炼后写了一篇文章-《我为什么让 Toast 多弹了一次》，对，就是这篇！ 现在，让阿泽来当主人公，主动讲述那 “Toast 多弹了一次” 背后的故事。 从 Toast 多弹一次说起 有一类 Bug 很容易让人怀...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-14T06:20:49.863291+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-14-76444766-嵌入式照片选择器.md",
+      "title": "[技术文章] 原文 7644476634998538249",
+      "summary": "> 来源: https://juejin.cn/post/7644476634998538249 学吧！Android 全新的嵌入式照片选择器 2022 年，Android 团队推出了照片选择器，让用户能更隐私地分享媒体文件。用户可以通过可浏览的界面按日期从新到旧查看媒体库，并且只授予应用访问所选文件的权限，而非整个媒体库。 不过，最初的照片选择器是一个独立的系统 ，会打...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-14T06:20:49.863291+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://developer.android.com/blog/posts/boosting-android-performance-introducing-autofdo-for-the-kernel",
+      "title": "[RSS订阅] 今日精选",
+      "summary": "Android 在 Pixel 上用 ETE+TRBE 抓真实分支历史，再用 simpleperf 转成 AutoFDO profile 重新编译内核，当前已在 android16-6.12、android15-6.6 落地，下一步推到 android17-6.18 和 GKI/DDK 模块。",
+      "chapter": "ch16",
+      "processed_at": "2026-08-15T06:20:11.089814+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part4-system/ch16-aosp/04-android17-kernel618-performance.md",
+      "route_confidence": 33,
+      "route_terms": [
+        "pixel",
+        "autofdo",
+        "profile",
+        "android16-6.12",
+        "android15-6.6",
+        "android17-6.18",
+        "gki",
+        "developers"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "https://juejin.cn/post/7643280009974071305",
+      "title": "[掘金Android] 今日精选",
+      "summary": "项目根目录放 50-80 行 AGENTS.md，被 Cursor/Claude Code 等工具常驻上下文，替代每次 prompt 重复叮嘱。模板五章：技术栈声明、目录结构、硬性约定、Never 规则（禁 Activity 业务逻辑/!! 强解/硬编码 Color/XML 与 Compose 混用，最高解释权）、Git 规范；维护走「踩坑→追加 Never 规则→免疫」闭环。效果数据为作者自采样（遵循率 55%→92%、Review 10 分钟→1.5 分钟），参考量级即可。",
+      "chapter": "ch16",
+      "processed_at": "2026-08-15T06:20:11.089814+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-15-76374124-ClaudeCode写80%的Android样板代码.md",
+      "title": "[技术文章] 原文 7637412411973812224",
+      "summary": "> 来源: https://juejin.cn/post/7637412411973812224 > 发布时间: 2026-05-09T02:02:19.000Z > 原文链接: https://juejin.cn/post/7637412411973812224 2026-05-09 2,067 阅读7分钟 回想一下，你最近一周写的代码里，有多少是**真正需要思考**的...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-15T06:20:11.089814+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-15-76388970-为什么Android不用接口做Activity通信.md",
+      "title": "[技术文章] 原文 7638897090145075246",
+      "summary": "> 来源: https://juejin.cn/post/7638897090145075246 > 发布时间: 2026-05-13T00:03:47.000Z > 原文链接: https://juejin.cn/post/7638897090145075246 2026-05-13 4,897 阅读4分钟 上周，一个刚从 iOS 转过来的同事问我： > “Androi...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-15T06:20:11.089814+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-14-evening-Agent限流状态机-MobileHarness-研究材料/02-dump-mobile-harness-eval.md",
+      "title": "[DeepResearch] Dump B · Mobile Harness / 真机控制面候选评估",
+      "summary": "--- phase: 1 sub_question: B title: Mobile Harness 候选评估 --- # Dump B · Mobile Harness / 真机控制面候选评估 ## 研究问题 8/13 `@iluciddreaming` 传播「Mobile Harness」真机控制。是否值得进 Android 实验室工具架？与 adb/UIAutomator/Appium 关系？权限与 root？ ## 材料 - X",
+      "chapter": "ch16",
+      "processed_at": "2026-08-15T06:20:11.089814+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-14-evening-Agent限流状态机-MobileHarness-研究材料/references/04-droidrun-mobile-harness-readme.md",
+      "title": "[DeepResearch] droidrun/mobile-harness",
+      "summary": "--- source: https://github.com/droidrun/mobile-harness title: droidrun/mobile-harness README fetched: 2026-08-14T13:10:00Z research_topic: Mobile Harness 候选评估 sub_question: B-mobile claim_level: repo_readme stars_snapsho",
+      "chapter": "ch16",
+      "processed_at": "2026-08-15T06:20:11.089814+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-14-evening-Agent限流状态机-MobileHarness-研究材料/references/01-deepseek-pricing-offpeak.md",
+      "title": "[DeepResearch] DeepSeek API pricing update",
+      "summary": "--- source: https://x.com/i/status/2087864589895798968 title: DeepSeek API pricing peak/off-peak fetched: 2026-08-14T13:10:00Z research_topic: Agent限流状态机 sub_question: A-quota claim_level: official_release --- # DeepSeek",
+      "chapter": "ch05",
+      "processed_at": "2026-08-15T06:20:11.089814+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-14-evening-Agent限流状态机-MobileHarness-研究材料/raw/mobai-mobile-harness-README.md",
+      "title": "[DeepResearch] mobile-harness",
+      "summary": "# mobile-harness [![tests](https://github.com/MobAI-App/mobile-harness/actions/workflows/test.yml/badge.svg)](https://github.com/MobAI-App/mobile-harness/actions/workflows/test.yml) [![python](https://img.shields.io/badg",
+      "chapter": "ch16",
+      "processed_at": "2026-08-15T06:20:11.089814+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-14-evening-Agent限流状态机-MobileHarness-研究材料/raw/droidrun-mobile-harness-README.md",
+      "title": "[DeepResearch] droidrun-mobile-harness-README",
+      "summary": "<p align=\"center\"> <img src=\"assets/mobile-harness-logo.png\" alt=\"Mobile Harness\" width=\"900\" /> </p> > Portable operating instructions for AI agents controlling Android and iOS devices—locally or in the cloud. Mobile Ha",
+      "chapter": "ch16",
+      "processed_at": "2026-08-15T06:20:11.089814+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-14-morning-Harness插件-路由diff-ComputerHistory-研究材料/references/03-openai-computer-history-official.md",
+      "title": "[DeepResearch] 03-openai-computer-history-official",
+      "summary": "--- source: https://x.com/i/status/2087996496088297746 title: OpenAI Computer History fetched: 2026-08-14T09:10:00+08:00 research_topic: Computer History 权限与 Memory 分界 --- ## 执行摘要 - ChatGPT desktop 可记住电脑上跨 app 与网站的活动。 -",
+      "chapter": "ch16",
+      "processed_at": "2026-08-15T06:20:11.089814+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-14-morning-Harness插件-路由diff-ComputerHistory-研究材料/master-research.md",
+      "title": "[DeepResearch] Master Research · Harness 插件面 / 路由 diff / Computer History",
+      "summary": "--- phase: master-research date: 2026-08-14 tags: [llm-agent, ai-tooling, model-routing, agent-memory] --- ## 执行摘要 - 本文件：`/Users/chris/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-1",
+      "chapter": "ch16",
+      "processed_at": "2026-08-15T06:20:11.089814+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7650074080125599790",
+      "title": "[掘金Android] 今日精选",
+      "summary": "从工程视角复盘 Java 转 Kotlin 的五个思维转变：协程以顺序认知模型替代 RxJava 操作符链、扩展函数替代工具类体系、空安全把 NPE 从运行时提前到编译期、sealed class 携带上下文的状态建模替代 int 状态位加 if-else、Flow 替代 LiveData。同时列出槽点：增量编译慢、老库 interop、学习曲线；迁移路径为从新功能起逐个用 Kotlin 写，不整体重写。",
+      "chapter": "ch16",
+      "processed_at": "2026-08-16T06:20:30.753469+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-16-76357025-多平台商品详情页一键跳转APP.md",
+      "title": "[技术文章] 安卓黑科技：实现多平台商品详情页一键跳转APP安卓黑科技：实现多平台商品详情页一键跳转APP 一、开篇引入 在如今的移动",
+      "summary": "> 发布时间: 2026-05-04T14:16:37.000Z > 原文链接: https://juejin.cn/post/7635702552887115827 2026-05-04 1,242 阅读26分钟 在如今的移动互联网时代，电商购物和短视频娱乐已成为我们生活中不可或缺的一部分。你是否有过这样的体验：在浏览网页或者使用某些应用时，看到一款心仪的商品，比如在抖...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-16T06:20:30.753469+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-16-76370364-Tauri-Vue3-ADB桌面工具.md",
+      "title": "[技术文章] 🔥🔥🔥 我用AI基于 Tauri + Vue 3 写了个 ADB 桌面工具，把命令行的脏活全干了我用AI基于 Ta",
+      "summary": "> 发布时间: 2026-05-07T11:13:58.000Z > 原文链接: https://juejin.cn/post/7637036421360074767 2026-05-07 1,138 阅读6分钟 GitHub 仓库：github.com/jaaksi/adbt… （欢迎 Star ⭐） 如果你是 Android 开发者，下面这些命令你一定不陌生： adb...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-16T06:20:30.753469+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-16-76373536-Android做桌面而三星DeX早把路趟完.md",
+      "title": "[技术文章] Android 终于做桌面了，而三星 DeX 早已把路趟完今年3月，Google 在 Android Developer",
+      "summary": "> 发布时间: 2026-05-09T00:53:04.000Z > 原文链接: https://juejin.cn/post/7637353693052600366 2026-05-09 1,286 阅读4分钟 > 本文首发于公众号”Android技术圈“ 今年3月，Google 在 Android Developers 博客里正式把 connected display...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-16T06:20:30.753469+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-16-76382973-Kotlin官网不再强调协程是轻量级线程.md",
+      "title": "[技术文章] Kotlin 官网为什么不再强调“协程是轻量级线程”了？一、早期的说法：协程 = 轻量级线程 Kotlin 1.1 刚推",
+      "summary": "> 发布时间: 2026-05-10T23:53:40.000Z > 原文链接: https://juejin.cn/post/7638297326452441134 2026-05-11 4,968 阅读3分钟 > **你还在说\"协程是轻量级线程\"吗？Kotlin 官方已经不这么定义了。** Kotlin 1.1 刚推出协程时，官方文档里直接写着： > \"Corouti...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-16T06:20:30.753469+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-16-76399466-Androguard30款App隐私合规扫描.md",
+      "title": "[技术文章] Android应用隐私合规自动化审计：基于Androguard的30款App扫描方案前言 2021年《个人信息保护法》正",
+      "summary": "> 发布时间: 2026-05-17T02:53:49.000Z > 原文链接: https://juejin.cn/post/7639946632475262985 用户322247812248 2026-05-17 295 阅读10分钟 > 手把手构建一个APK权限合规扫描工具，30款主流App横评排名，附完整Python脚本 2021年《个人信息保护法》正式实施后，...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-16T06:20:30.753469+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-16-76429816-Glide该换了Coil图片加载库.md",
+      "title": "[技术文章] Glide 该换了？Coil：Kotlin 时代的图片加载库Glide 该换了？Coil：Kotlin 时代的图片加载库",
+      "summary": "> 发布时间: 2026-05-24T01:21:26.000Z > 原文链接: https://juejin.cn/post/7642981665958789129 2026-05-24 809 阅读10分钟 Kotlin 从入门到实战：Android老兵的学习笔记 如果你现在还在用 Glide 加载图片，我建议你有空了解一下 Coil。 不是 Glide 不好，而是...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-16T06:20:30.753469+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-16-76500740-现代Android官方为何推荐Repository暴露suspend.md",
+      "title": "[技术文章] 现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch",
+      "summary": "> 发布时间: 2026-06-11T22:41:13.000Z > 原文链接: https://juejin.cn/post/7650074080125599790 2026-06-12 2,924 阅读12分钟 写这篇文章，其实是因为最近看到有些公众号在介绍 Kotlin 协程时，都推荐在 Repository 中这样写： fun load() { repositor...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-16T06:20:30.753469+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-16-juejin-android.md",
+      "title": "[技术文章] 掘金 Android 日报 · 2026-08-16",
+      "summary": "抓取掘金 Android 分类推荐流 20 篇（接口窗口较昨日无新增，最新文章仍为 06-16），对未归档候选正文级抓取 8 篇。与 08-13 / 08-14 / 08-15 日报去重后（AGENTS.md、Activity 通信、Quail 1、Android CLI、嵌入式照片选择器、MessageQueue 等已入选过，已剔除），今日入选 3 篇：Reposito...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-16T06:20:30.753469+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-15-morning-Cursor交割-GLM53-Qwen38-研究材料/master-research.md",
+      "title": "[DeepResearch] Master Research",
+      "summary": "--- phase: master date: 2026-08-15 topic: Cursor-GLM53-Qwen38 --- # Master Research compiled: 2026-08-15 09:11 CST --- phase: 0 topic: Cursor-SpaceXAI 交割观察 / GLM-5.3 域路由 / Qwen3.8-27B 本地候选 date: 2026-08-15 slot: morning",
+      "chapter": "ch16",
+      "processed_at": "2026-08-16T06:20:30.753469+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-15-morning-Cursor交割-GLM53-Qwen38-研究材料/03-dump-qwen38-27b-smoke.md",
+      "title": "[DeepResearch] Research Dump - Qwen3.8-27B",
+      "summary": "--- phase: 1 sub_question: Qwen3.8-27B 本地多模态 coding 冒烟清单 date: 2026-08-15 --- # Research Dump - Qwen3.8-27B ## 一手：Hugging Face - Model id: Qwen/Qwen3.8-27B - API 2026-08-15: likes 约 8998，pipeline=image-text-to-text，licen",
+      "chapter": "ch16",
+      "processed_at": "2026-08-16T06:20:30.753469+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-15-morning-Cursor交割-GLM53-Qwen38-研究材料/raw/qwen38_readme.md",
+      "title": "[DeepResearch] Qwen3.8-27B",
+      "summary": "--- library_name: transformers license: apache-2.0 pipeline_tag: image-text-to-text --- # Qwen3.8-27B > [!Note] > This repository contains model weights and configuration files for the post-trained model in the Hugging F",
+      "chapter": "ch16",
+      "processed_at": "2026-08-16T06:20:30.753469+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "target_path": "src/part4-system/ch16-aosp/06-profile-dm-sdm-install-compilation.md",
+      "route_confidence": 30,
+      "route_terms": [
+        "pipeline",
+        "tag",
+        "model",
+        "and",
+        "configuration",
+        "files",
+        "for",
+        "the"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "schema_version": "2.1",

@@ -6,27 +6,48 @@ status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [oem-doze, background-restriction, power-optimization, vendor-doze, chinese-oem]
 related_chapters: ["25.2", "25.3", "25.4", "25.15", "11.2", "11.3"]
-last_verified: "2026-07-25"
+last_verified: "2026-08-15"
+last_source_verified_at: "2026-08-15"
+last_verified_against: "Current Android Developers background optimization / App Standby / ActivityManager / ApplicationExitInfo docs retrieved 2026-08-15; AOSP android-17.0.0_r1 AppRestrictionController / AppBatteryExemptionTracker / ActivityManagerShellCommand / ActivityManager / SystemConfig"
 confidence: medium-high
 sources:
 - type: deepresearch
   path: DeepResearch/2026-07-16-android17-oem-background-restriction.md
-last_body_apply_at: "2026-07-25T15:18:53+08:00"
-last_body_apply_run_id: "20260725-151525-21e58a30"
+  status: legacy-reference-preserved
+- type: official
+  path: https://developer.android.com/topic/performance/background-optimization
+- type: official
+  path: https://developer.android.com/topic/performance/appstandby
+- type: official
+  path: https://developer.android.com/reference/android/app/ApplicationExitInfo
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppRestrictionController.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppBatteryExemptionTracker.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/SystemConfig.java
+last_body_apply_at: "2026-08-15T16:27:29+08:00"
+last_body_apply_run_id: "20260815-162729-gracker-writing-455"
 task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: finalized
-last_review_finalize_at: "2026-07-25T16:05:49+08:00"
-last_review_finalize_run_id: "20260725-160531-5200f347"
+pipeline_stage: ready-to-publish
+last_draft_polish_at: "2026-08-15T16:27:29+08:00"
+last_draft_polish_run_id: "20260815-162729-gracker-writing-455"
+last_review_finalize_at: "2026-08-15T16:27:29+08:00"
+last_review_finalize_run_id: "20260815-162729-gracker-writing-455"
 ---
 
 # OEM 厂商差异化后台限制与功耗诊断实战
 
-平台基线为 Android 17（API 37，`android-17.0.0_r1`）。排查 OEM 后台问题时，不从“某厂商会杀应用”的传闻出发，而是先回答三个有证据可查的问题：
+本文以 Android 17（API 37，`android-17.0.0_r1`）为平台基线。排查 OEM（Original Equipment Manufacturer，设备厂商）后台问题时，不从“某厂商会杀应用”的传闻出发，先回答三个有证据可查的问题：
 
-1. AOSP 当前如何评价这个 package/UID：限制等级、待机分组和豁免原因是什么？
-2. Job、Alarm、前台服务、网络或进程生命周期中的哪一层没有按预期推进？
+1. AOSP（Android Open Source Project，Android 开源平台）当前如何评价这个 package（应用包名）/UID（系统分配的 Linux 用户标识，用来区分应用身份）：限制等级、待机分组和豁免原因是什么？
+2. Job（由 JobScheduler 调度的后台任务）、Alarm（由 AlarmManager 管理的定时事件）、前台服务、网络或进程生命周期中的哪一层没有按预期推进？
 3. 两台设备的 AOSP 状态相同时，厂商侧又增加了什么设置、服务、冻结或清理动作？
 
 先校正两个容易误导排查的细节。Android 17 的命令是 `cmd activity get-bg-restriction-level`，没有 `background get-restriction-level` 这一层子命令；`AppRestrictionController` 的 XML 位于每用户的 `/data/system_de/<userId>/apprestriction/settings.xml`，不是 `/data/system/apprestriction/settings.xml`。正文中的命令和路径均按源码校正后的形式给出。
@@ -37,18 +58,18 @@ last_review_finalize_run_id: "20260725-160531-5200f347"
 
 | 层次 | 典型状态 | 主要影响 |
 | --- | --- | --- |
-| App Standby | active、working set、frequent、rare、restricted | Job、Alarm、网络等后台资源配额 |
-| Background restriction | 用户或系统记录的后台限制状态 | 更严格的后台执行、Job、Alarm 和前台服务行为 |
-| Doze / Battery Saver | 设备空闲、低电模式、临时白名单 | 全设备范围的网络、Alarm、Job 推迟 |
-| FGS 与后台启动规则 | FGS 类型、启动豁免、运行时限 | Service 能否启动、晋升并持续运行 |
-| 进程管理 | cached freezer、LMKD、force-stop、厂商清理 | 进程是否存在、何时可再次启动 |
-| 任务自身 | WorkManager 约束、Job 配额、Alarm 类型 | 某项具体任务能否获得执行机会 |
+| App Standby（应用待机） | active（活跃）、working set（常用）、frequent（频繁）、rare（很少使用）、restricted（受限）等 bucket（分组） | 根据使用频率限制 Job、Alarm、网络等后台资源 |
+| Background restriction | 控制器汇总用户状态、待机分组和系统策略得到的后台限制等级 | 更严格的后台执行、Job、Alarm 和前台服务行为 |
+| Doze / Battery Saver | 设备空闲模式、节电模式、临时允许名单 | 全设备范围的网络、Alarm、Job 推迟 |
+| FGS 与后台启动规则 | FGS（Foreground Service，前台服务）类型、启动豁免、运行时限 | Service 能否启动、进入前台并持续运行 |
+| 进程管理 | cached freezer（缓存进程冻结器）、LMKD（低内存终止守护进程）、force-stop、厂商清理 | 进程是否存在、何时可再次启动 |
+| 任务自身 | WorkManager 约束、Job 配额（系统分配的运行额度）、Alarm 类型 | 某项具体任务能否获得执行机会 |
 
 这些状态可能同时出现，也可能只有一项变化。只看进程消失、`dumpsys deviceidle` 或设置页中的“允许后台活动”，都不足以确定原因。
 
 ## `AppRestrictionController` 怎样形成限制等级
 
-Android 17 的入口位于 `frameworks/base/services/core/java/com/android/server/am/AppRestrictionController.java`。它维护持久化的 package/UID 限制设置，监听用户限制、App Standby、角色、DeviceConfig 和系统豁免，并汇总多个 `BaseAppStateTracker` 的建议。
+Android 17 的入口位于 `frameworks/base/services/core/java/com/android/server/am/AppRestrictionController.java`。它维护持久化的 package/UID 限制设置，监听用户限制、App Standby、角色、DeviceConfig 和系统豁免，并汇总多个 `BaseAppStateTracker`（记录某类应用状态并给出限制建议的组件）。
 
 下面是 Android 17 初始化 tracker 的源码骨架：
 
@@ -69,9 +90,9 @@ void initAppStateTrackers(AppRestrictionController controller) {
 }
 ```
 
-这七个 tracker 的职责并不相同。`AppBatteryTracker` 可以依据后台耗电提出限制等级；FGS、媒体会话、权限、广播和绑定服务 tracker 记录相应活动；`AppBatteryExemptionTracker` 用于核算应从后台耗电中排除的部分。不能把“在 tracker 列表中”直接解释为“每个 tracker 都会单独限制应用”。
+这七个 tracker（状态跟踪组件）的职责并不相同。`AppBatteryTracker` 可以依据后台耗电提出限制等级；FGS、媒体会话、权限、广播和绑定服务 tracker 记录相应活动；`AppBatteryExemptionTracker` 用于核算应从后台耗电中排除的部分。不能把“在 tracker 列表中”直接解释为“每个 tracker 都会单独限制应用”。
 
-当多个 policy 提出候选等级时，控制器选择数值更大的等级，并保留对应 tracker 信息：
+当多个 policy（各 tracker 的规则对象）提出候选等级时，控制器选择数值更大的等级，并保留对应 tracker 信息：
 
 ```java
 for (int i = mAppStateTrackers.size() - 1; i >= 0; i--) {
@@ -85,7 +106,7 @@ for (int i = mAppStateTrackers.size() - 1; i >= 0; i--) {
 }
 ```
 
-这是 tracker 汇总阶段的规则，不是完整决策。控制器还会先处理休眠、force-stop、系统豁免、用户后台限制和当前 standby bucket；其中 `BACKGROUND_RESTRICTED` 不能仅凭 tracker 自动进入，源码明确要求用户同意该级别。
+这是 tracker 汇总阶段的规则，不是完整决策。控制器还会先处理休眠、force-stop（用户或系统把应用标成已强制停止）、系统豁免、用户后台限制和当前 standby bucket；其中 `BACKGROUND_RESTRICTED` 不能仅凭 tracker 自动进入，源码明确要求用户同意该级别。
 
 ### 限制等级要看名称和来源
 
@@ -103,13 +124,13 @@ Android 17 定义的主要等级如下：
 | 70 | `USER_LAUNCH_ONLY` | 只有用户启动后才能恢复的更严格状态 |
 | 90 | `CUSTOM` | 为定制限制保留的等级 |
 
-数值可以帮助阅读源码的 `Math.max()`，诊断报告仍要记录名称、变更时间以及能够取得的 reason、subReason 和 source。`FORCE_STOPPED` 是生命周期状态，不能简单归因为耗电超限；`EXEMPTED` 也不是 CPU、网络和前台服务规则的通行证。
+数值可以帮助阅读源码的 `Math.max()`，诊断报告仍要记录名称、变更时间，以及能够取得的 reason（主原因）、subReason（细分原因）和 source（来源）。表中名称是源码常量名；`get-bg-restriction-level` 使用另一组输出字符串，例如 `FORCE_STOPPED` 输出 `stopped`，`USER_LAUNCH_ONLY` 输出 `user_only`。`FORCE_STOPPED` 是生命周期状态，不能简单归因为耗电超限；`EXEMPTED` 也不是 CPU、网络和前台服务规则的通行证。
 
 ## OEM 可以改变哪些 AOSP 输入
 
 ### 静态 SystemConfig 豁免
 
-`SystemConfig` 会从允许覆盖应用限制的系统分区配置中解析 `bg-restriction-exemption`。配置项的形式如下：
+`SystemConfig` 是汇总系统分区 XML 配置的框架组件，它会从允许覆盖应用限制的分区中解析 `bg-restriction-exemption`。配置项的形式如下：
 
 ```xml
 <permissions>
@@ -121,18 +142,18 @@ Android 17 定义的主要等级如下：
 
 ### DeviceConfig 与其他豁免来源
 
-`activity_manager` 命名空间中的 `bg_restriction_exempted_packages` 提供运行时包名集合。除此之外，控制器还会检查 UID 和 package 级原因，包括：
+DeviceConfig 是系统服务读取运行时配置的机制；其 `activity_manager` 命名空间中的 `bg_restriction_exempted_packages` 提供可动态更新的包名集合。除此之外，控制器还会检查 UID 和 package 级原因，包括：
 
-- core UID、系统 Device Idle allowlist 和演示模式；
+- core UID（系统核心身份）、系统 Device Idle allowlist（设备空闲模式允许名单）和演示模式；
 - 系统模块、运营商特权应用；
-- DPC 保护应用、活动设备管理员；
-- `OP_SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS`；
-- VPN 相关 AppOp、拨号和紧急角色；
-- 用户 Device Idle allowlist、关联的 Companion Device 应用。
+- DPC（Device Policy Controller，设备策略控制器）保护应用、活动设备管理员；
+- `OP_SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS` 这一 AppOp（按应用身份记录的操作授权）；
+- VPN（虚拟专用网络）相关 AppOp、拨号和紧急角色；
+- 用户 Device Idle allowlist、关联的 Companion Device（配套设备）应用。
 
 这是后台限制控制器的豁免判断，不代表这些应用在 JobScheduler、AlarmManager、FGS 或网络子系统中处处免检。排查时应分别确认每套 allowlist 的适用范围。
 
-下面的只读命令分别查看静态豁免、DeviceConfig 包集合和 Device Idle 白名单：
+下面的 ADB（Android Debug Bridge，Android 调试桥）只读命令分别查看静态豁免、DeviceConfig 包集合和 Device Idle 允许名单：
 
 ```bash
 adb shell cmd activity list-bg-exemptions-config
@@ -145,7 +166,7 @@ adb shell dumpsys deviceidle whitelist
 
 ## `AppBatteryExemptionTracker` 记录的是耗电扣除区间
 
-这个类按 UID 维护各 package 当前活跃的状态位。当同一 UID 中第一个 package 进入某类可豁免状态时，它为 UID 增加开始事件；同 UID 的 package 全部离开该状态时增加结束事件。
+这个类按 UID 维护各 package 当前活跃的状态位。多个 package 可以通过 `sharedUserId` 等历史机制共享 UID；当同一 UID 中第一个 package 进入某类可豁免状态时，tracker 为 UID 增加开始事件，同 UID 的 package 全部离开该状态时再增加结束事件。
 
 下面的源码片段展示了按 UID 合并状态的关键判断：
 
@@ -166,9 +187,9 @@ if (start) {
 }
 ```
 
-这样可以避免共享 UID 的两个 package 让同一段状态被重复计时。事件还记录开始和结束时的 UID 电量快照；`getUidBatteryExemptedUsageSince()` 计算这些区间内的用量，`AppBatteryTracker` 再从总后台用量中扣除它。
+这样可以避免共享 UID 的两个 package 让同一段状态被重复计时。事件还记录开始和结束时的 UID 电量快照，也就是系统到该时刻为止累计的 UID 耗电估算；`getUidBatteryExemptedUsageSince()` 计算这些区间内的用量，`AppBatteryTracker` 再从总后台用量中扣除它。
 
-这里的 “exemption” 是耗电归因豁免，不是给 UID 一个固定时长的后台执行许可。源码没有“16 ms 生效延迟”或统一“豁免窗口长度”的公共契约，诊断文档不应据此给出时间保证。
+这里的 exemption 是耗电归因豁免，不是给 UID 一个固定时长的后台执行许可。源码没有“16 ms 生效延迟”或统一“豁免窗口长度”的公共契约，诊断文档不应据此给出时间保证。
 
 ## 一轮可复现的诊断
 
@@ -176,13 +197,13 @@ if (start) {
 
 每次采样都记录以下信息：
 
-- build fingerprint、增量版本、安全补丁和厂商系统版本；
-- 应用 versionCode、targetSdk、安装来源、用户 ID 与 UID；
+- build fingerprint（系统构建的唯一标识）、增量版本、安全补丁和厂商系统版本；
+- 应用 versionCode（内部版本号）、targetSdk（适配目标 API 级别）、安装来源、用户 ID 与 UID；
 - 电量、充电状态、Battery Saver、Doze、网络和屏幕状态；
 - 厂商设置页中与自启动、后台活动、电池优化、锁屏清理相关的选项；
 - 测试动作、进入后台时间、预期执行时间和观测窗口。
 
-同一 APK 在两台设备上对比时，账号、网络、充电、屏幕、用户设置和测试时间线必须一致。否则差异可能来自输入条件，而不是 ROM。
+同一 APK（Android 安装包）在两台设备上对比时，账号、网络、充电、屏幕、用户设置和测试时间线必须一致。否则差异可能来自输入条件，而不是 ROM（设备上的 Android 系统镜像）。
 
 ### 读取 AOSP 限制状态
 
@@ -201,7 +222,7 @@ adb shell device_config get \
 adb shell dumpsys deviceidle whitelist
 ```
 
-`get-bg-restriction-level` 输出的是 `exempted`、`adaptive_bucket`、`restricted_bucket` 等名称。它和 App Standby bucket 相关但不相同；报告中应保留两项原始输出。
+`get-bg-restriction-level` 输出的是 `exempted`、`adaptive_bucket`、`restricted_bucket`、`stopped` 等名称。它和 App Standby bucket 相关但不相同；报告中应保留两项原始输出。
 
 应用自身也可以记录公开 API 可见的两个状态：
 
@@ -220,9 +241,9 @@ Log.i(
 
 ### 保存控制器与子系统快照
 
-Android 17 没有 `dumpsys activity bg-restriction exemption-reason`、`dumpsys activity restriction <package>` 或 `restriction trackers` 这些文本子命令。`AppRestrictionController.dump()` 会在完整 `dumpsys activity -a` 的末尾输出 `APP BACKGROUND RESTRICTIONS`，其中包含设置、policy 配置和各 tracker。
+`dumpsys` 是导出系统服务内部状态的诊断命令。Android 17 没有 `dumpsys activity bg-restriction exemption-reason`、`dumpsys activity restriction <package>` 或 `restriction trackers` 这些文本子命令。`AppRestrictionController.dump()` 会在完整 `dumpsys activity -a` 的末尾输出 `APP BACKGROUND RESTRICTIONS`，其中包含设置、policy 配置和各 tracker。
 
-下面的命令保存 AMS、进程退出、Job、Alarm 和 Device Idle 证据：
+下面的命令保存 AMS（ActivityManagerService，活动与进程管理系统服务）、进程退出、Job、Alarm 和 Device Idle 证据：
 
 ```bash
 PACKAGE=com.example.app
@@ -239,7 +260,7 @@ adb shell dumpsys package "$PACKAGE" > package.txt
 
 ### 确认进程为何退出
 
-应用可通过 `ApplicationExitInfo` 记录近期进程退出原因：
+应用可通过 `ApplicationExitInfo`（系统保存的应用进程退出记录）查询近期进程退出原因：
 
 ```kotlin
 val activityManager = getSystemService(ActivityManager::class.java)
@@ -265,13 +286,13 @@ for (exit in exits) {
 
 | 观察结果 | 下一步 |
 | --- | --- |
-| restriction level 已是 `background_restricted` 或 `force_stopped` | 核对用户设置、reason/source、设置变更时间，不先分析 Worker 代码 |
+| restriction level 已是 `background_restricted` 或 `stopped` | 核对用户设置、reason/source、设置变更时间，不先分析 Worker（WorkManager 的执行单元）代码 |
 | 两台设备 restriction level 不同 | 对比 standby bucket、SystemConfig、DeviceConfig、Device Idle allowlist、DPC/角色和 AppOp |
 | restriction level 相同，Job 状态不同 | 对比 `dumpsys jobscheduler` 的约束、配额、停止原因和 standby 信息 |
 | Job 已启动但业务无结果 | 检查 Worker/Service 日志、超时、网络绑定、幂等和外部服务响应 |
 | Alarm 未进入交付 | 对比 Alarm 类型、精确闹钟权限、Doze、配额与应用待机分组 |
-| 进程退出但限制状态相同 | 查看 `ApplicationExitInfo`、LMKD、force-stop、ANR、crash、冻结和厂商进程管理日志 |
-| AOSP 输出一致，厂商机仍稳定复现差异 | 再进入 bugreport 中的 vendor 服务、私有设置、属性和事件日志 |
+| 进程退出但限制状态相同 | 查看 `ApplicationExitInfo`、LMKD、force-stop、ANR（应用无响应）、crash（崩溃）、冻结和厂商进程管理日志 |
+| AOSP 输出一致，厂商机仍稳定复现差异 | 再检查 bugreport（完整系统诊断报告）中的 vendor（厂商）服务、私有设置、属性和事件日志 |
 
 “AOSP 输出一致”不等于“AOSP 没有影响”。JobScheduler、Alarm、网络和 FGS 都有自己的状态，需要在相同时间窗内一起对比。反过来，发现厂商服务包名也不能直接证明它执行了清理；需要对应的调用、事件或状态变化。
 
@@ -283,16 +304,16 @@ for (exit in exits) {
 /data/system_de/<userId>/apprestriction/settings.xml
 ```
 
-XML 保存 package、UID、当前限制等级、变更时间、组合后的 reason 以及通知时间等状态。普通 user build 通常不能直接读取该文件；root/userdebug 设备可以在复现前后比较，但不要修改它来模拟用户操作。控制器使用 `AtomicFile` 写入，绕过服务直接改文件还会与内存状态不一致。
+XML 保存 package、UID、当前限制等级、变更时间、组合后的 reason 以及通知时间等状态。普通 user build（面向用户发布的系统构建）通常不能直接读取该文件；取得 root 权限的设备或 userdebug（带调试能力的系统构建）可以在复现前后比较，但不要修改它来模拟用户操作。控制器使用 `AtomicFile`（通过临时文件与替换降低写入中断风险）写入，绕过服务直接改文件还会与内存状态不一致。
 
 ## 应用侧怎样降低厂商差异
 
-- 可延迟、需要持久化的工作使用 WorkManager，并把每次执行设计为幂等、可重入。
+- 可延迟、需要持久化的工作使用 WorkManager，并把每次执行设计为幂等（重复执行不会产生额外副作用）、可重入（中断后可以安全地重新开始）。
 - 需要持续向用户提供能力时使用合法类型的前台服务，按 Android 17 的后台启动、权限和运行时限处理失败。
 - 推送只用于提示应用有新工作，业务状态保存在服务端；不能假定每条消息都会在相同时间到达。
 - 重要本地状态在产生时持久化，不依赖进程退出回调。
-- 对外部副作用使用业务幂等键和检查点，进程被停止后可以从已确认位置继续。
-- 只有核心功能确受影响时，才向用户解释具体系统设置；不要默认引导所有用户关闭电池优化，也不要跳转未经文档保证的厂商私有 Activity。
+- 对外部副作用使用业务幂等键和检查点（已成功完成的位置记录），进程被停止后可以从已确认位置继续。
+- 只有核心功能确受影响时，才向用户解释具体系统设置；不要默认引导所有用户关闭电池优化，也不要跳转未经文档保证的厂商私有 Activity（设置页面组件）。
 
 厂商限制无法由应用代码完全消除。可维护的目标是：在 AOSP 允许的执行窗口内完成尽量少的工作，任何中断都能恢复，并让诊断日志说明任务停在哪一层。
 

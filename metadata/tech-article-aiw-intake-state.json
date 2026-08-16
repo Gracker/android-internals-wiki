@@ -607,6 +607,101 @@
       "status": "appended",
       "title": "可视化性能关键依赖链"
     },
+    "source/hacker-news-rss/2026-08-14-andros-html-over-websockets.md": {
+      "chapter": "待分类",
+      "entry_id": "a2ca4853b47ae8b4",
+      "last_appended": "2026-08-14T05:25:41.844423+08:00",
+      "last_seen": "2026-08-14T05:25:41.844423+08:00",
+      "mtime": 1786648052.3448296,
+      "score": 9,
+      "sha256": "16ec2fb95657bd630d57ad9bec8eb318a61ad6dc65e0213a5d71da2b56190c89",
+      "size": 15168,
+      "status": "appended",
+      "title": "HTML over WebSockets: real-time SPAs with barely any JavaScript"
+    },
+    "source/hacker-news-rss/2026-08-14-deepseek-harness-developer-preview.md": {
+      "chapter": "待分类",
+      "entry_id": "eeba404125246f4c",
+      "last_appended": "2026-08-14T05:25:41.844423+08:00",
+      "last_seen": "2026-08-14T05:25:41.844423+08:00",
+      "mtime": 1786648052.3453877,
+      "score": 14,
+      "sha256": "b948b4908d7f2fe06735c7a63fb9cb22a1e8aff37a398d97ed8230087b8f9315",
+      "size": 7083,
+      "status": "appended",
+      "title": "DeepSeek Harness developer preview: Everything is a plugin"
+    },
+    "source/hacker-news-rss/2026-08-14-florianherrengt-ai-removing-middle-class-swe.md": {
+      "last_seen": "2026-08-14T05:25:41.844423+08:00",
+      "mtime": 1786648052.3442206,
+      "sha256": "5708aab9d05a08d23d6518f635672705a1b805aa5801b2444399e3dd8c2528b5",
+      "size": 21060,
+      "status": "skipped-low-score"
+    },
+    "source/hacker-news-rss/2026-08-14-google-introducing-gemini-3-7-flash.md": {
+      "chapter": "待分类",
+      "entry_id": "0888e81f8f5a9b8e",
+      "last_appended": "2026-08-14T05:25:41.844423+08:00",
+      "last_seen": "2026-08-14T05:25:41.844423+08:00",
+      "mtime": 1786648052.3450127,
+      "score": 9,
+      "sha256": "e8fe4f10f8857e7fe9cbeb2410a2e459fd3a298d1a46f078cc1045716b8dfd82",
+      "size": 13296,
+      "status": "appended",
+      "title": "Introducing Gemini 3.7 Flash"
+    },
+    "source/hacker-news-rss/2026-08-14-ngrok-compression-is-prediction.md": {
+      "last_seen": "2026-08-14T05:25:41.844423+08:00",
+      "mtime": 1786648052.3440106,
+      "sha256": "7f010369fd29ed5aeedc7530dac7e2f7b065f5e4f6e9b801ed1c2a693b7e38e5",
+      "size": 28464,
+      "status": "skipped-low-score"
+    },
+    "source/hacker-news-rss/2026-08-14-oxide-kubernetes-on-oxide.md": {
+      "last_seen": "2026-08-14T05:25:41.844423+08:00",
+      "mtime": 1786648052.3451946,
+      "sha256": "4894d7ff7a81398044139011a7b56bacc09b579a6562c6d53783249e2562ed4a",
+      "size": 23699,
+      "status": "skipped-low-score"
+    },
+    "source/hacker-news-rss/2026-08-14-tailscale-sqlite-wal-reset-bug.md": {
+      "last_seen": "2026-08-14T05:25:41.844423+08:00",
+      "mtime": 1786648052.3435476,
+      "sha256": "26a34bf2adcd74063f410b89d2b422e1b00604827fd7ca57f12a438c8bcc3fcf",
+      "size": 25340,
+      "status": "skipped-low-score"
+    },
+    "source/hacker-news-rss/2026-08-14-tschatzl-jdk27-g1-serial-parallel-gc.md": {
+      "last_seen": "2026-08-14T05:25:41.844423+08:00",
+      "mtime": 1786648052.344626,
+      "sha256": "9dff3f705a9a561b59229b9d2e04bc99f9aad5110b9ba90761c3c79ee93b8320",
+      "size": 7117,
+      "status": "skipped-low-score"
+    },
+    "source/hacker-news-rss/2026-08-14-xoreaxeaxeax-skitter-creek-bath-salts.md": {
+      "chapter": "ch05-cpu-power",
+      "entry_id": "255c8b4ba1181053",
+      "last_appended": "2026-08-14T05:25:41.844423+08:00",
+      "last_seen": "2026-08-14T05:25:41.844423+08:00",
+      "mtime": 1786648052.3438091,
+      "score": 17,
+      "sha256": "2a0fd525b54c318648ff4e74d6dc77d83bfc14b98851bb40b11682b987a80e2b",
+      "size": 37849,
+      "status": "appended",
+      "title": "xoreaxeaxeax/skitter-creek-bath-salts: Unlocking _everything_ on the CPU with DRAM scrambling"
+    },
+    "source/hacker-news-rss/2026-08-14-zed-introducing-delta.md": {
+      "chapter": "待分类",
+      "entry_id": "f57de141ab02c126",
+      "last_appended": "2026-08-14T05:25:41.844423+08:00",
+      "last_seen": "2026-08-14T05:25:41.844423+08:00",
+      "mtime": 1786648052.3444197,
+      "score": 7,
+      "sha256": "b7d60164d387c541f84e1018a64fb6f2cdce2c8d8e9ce6866d0534ed4d36b7e7",
+      "size": 9525,
+      "status": "appended",
+      "title": "Introducing Delta"
+    },
     "source/juejin-android/2026-07-04-76184335-你可能还不知道ComposePager有.md": {
       "chapter": "待分类",
       "entry_id": "970f43ab2800be1d",
@@ -2145,6 +2240,272 @@
       "size": 5730,
       "status": "appended",
       "title": "掘金 Android 技术文章抓取 · 2026-08-12"
+    },
+    "source/juejin-android/2026-08-13-76288743-Android-官方Skills仓库-6大技能覆盖迁移优化适配.md": {
+      "chapter": "待分类",
+      "entry_id": "b5429cd9b7465e6a",
+      "last_appended": "2026-08-13T05:25:01.164689+08:00",
+      "last_seen": "2026-08-13T05:25:01.164689+08:00",
+      "mtime": 1786565655.3645875,
+      "score": 9,
+      "sha256": "944ac0244d356bc64dbad4cfc57c5f955b2014f68a5768ce1c26ec36bbd5c0cc",
+      "size": 8634,
+      "status": "appended",
+      "title": "解放双手！Android 发布官方 6 大技能，一键搞定迁移、优化、适配近日，Google 在 GitHub 上开源了"
+    },
+    "source/juejin-android/2026-08-13-76308345-Android-CLI预览版-终端一键建项目控模拟器.md": {
+      "chapter": "待分类",
+      "entry_id": "b97ca112a1bf7ba9",
+      "last_appended": "2026-08-13T05:25:01.164689+08:00",
+      "last_seen": "2026-08-13T05:25:01.164689+08:00",
+      "mtime": 1786565655.3650496,
+      "score": 8,
+      "sha256": "f830ed312ed39b4143775ed14543e5d445fe1413d6e94024c1de1e55a14288a4",
+      "size": 8479,
+      "status": "appended",
+      "title": "Android CLI 来了！终端一键建项目、控模拟器、给 Agent 喂官方规范Android 团队刚发布了 Andr"
+    },
+    "source/juejin-android/2026-08-13-76310811-Android-Studio-Quail-1-LeakCanary集成Profiler.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "877ff6a19b37e883",
+      "last_appended": "2026-08-13T05:25:01.164689+08:00",
+      "last_seen": "2026-08-13T05:25:01.164689+08:00",
+      "mtime": 1786565655.3648057,
+      "score": 13,
+      "sha256": "76c32c651b6fe143d5e13756bea7b02bb8b8546d29937fab37af24311f261f0d",
+      "size": 6274,
+      "status": "appended",
+      "title": "重磅！Android Studio Quail 1 来了，IDE直接内置 LeakCanary2026 年 4 月 16"
+    },
+    "source/juejin-android/2026-08-13-76369472-MVI-vs-MVVM-Compose场景下的真实取舍.md": {
+      "chapter": "待分类",
+      "entry_id": "7831f10a3560804f",
+      "last_appended": "2026-08-13T05:25:01.164689+08:00",
+      "last_seen": "2026-08-13T05:25:01.164689+08:00",
+      "mtime": 1786565655.364073,
+      "score": 10,
+      "sha256": "450f0ba712e9a6e51c247f6604502b192a2e8bdc767c5f8982ad511be9f2fc40",
+      "size": 15205,
+      "status": "appended",
+      "title": "能告诉我：你为什么用 MVI 吗？反正我不理解！我对 MVI 一直不理解，所以和 Claude Code 有了以下对话，"
+    },
+    "source/juejin-android/2026-08-13-76393117-Toast多弹了一次-SharedFlow与StateFlow的正确打开方式.md": {
+      "chapter": "待分类",
+      "entry_id": "41ed9e571de6b02e",
+      "last_appended": "2026-08-13T05:25:01.164689+08:00",
+      "last_seen": "2026-08-13T05:25:01.164689+08:00",
+      "mtime": 1786565655.3637662,
+      "score": 8,
+      "sha256": "52c9bd5dd47537cf17bb2c19f137c7cf47f2285aca91ba3886665f7f0d7e68c1",
+      "size": 17779,
+      "status": "appended",
+      "title": "我为什么让 Toast 多弹了一次有一类 Bug 很容易让人怀疑人生：代码看起来没问题，业务逻辑也没问题，甚至第一次运行"
+    },
+    "source/juejin-android/2026-08-13-76444766-AndroidX-EmbeddedPhotoPicker嵌入式照片选择器.md": {
+      "chapter": "待分类",
+      "entry_id": "fdd06de9261ab679",
+      "last_appended": "2026-08-13T05:25:01.164689+08:00",
+      "last_seen": "2026-08-13T05:25:01.164689+08:00",
+      "mtime": 1786565655.3643568,
+      "score": 9,
+      "sha256": "c6fbb01294df235c07e6b933983dc986ba3fc57c054a5071fc3f80f5658b7bb3",
+      "size": 13596,
+      "status": "appended",
+      "title": "学吧！Android 全新的嵌入式照片选择器AndroidX 推出了全新的嵌入式照片选择器（EmbeddedPhotoP"
+    },
+    "source/juejin-android/2026-08-14-76308345-AndroidCLI.md": {
+      "chapter": "待分类",
+      "entry_id": "292e3faa8aa85671",
+      "last_appended": "2026-08-14T05:25:41.844423+08:00",
+      "last_seen": "2026-08-14T05:25:41.844423+08:00",
+      "mtime": 1786652003.4072347,
+      "score": 8,
+      "sha256": "d035f140c70298e24224bbe59a34434287717aab990a94e81dbd813b47d5af63",
+      "size": 8054,
+      "status": "appended",
+      "title": "Android CLI 来了！终端一键建项目、控模拟器、给 Agent 喂官方规范Android 团队刚发布了 Andr"
+    },
+    "source/juejin-android/2026-08-14-76310811-StudioQuail.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "8d73f15770e48392",
+      "last_appended": "2026-08-14T05:25:41.844423+08:00",
+      "last_seen": "2026-08-14T05:25:41.844423+08:00",
+      "mtime": 1786652003.4074054,
+      "score": 13,
+      "sha256": "7b016f66d229ac74408475b761ac1d9a2bcfeb2d64189fd123ef21860d47522e",
+      "size": 6274,
+      "status": "appended",
+      "title": "重磅！Android Studio Quail 1 来了，IDE直接内置 LeakCanary2026 年 4 月 16"
+    },
+    "source/juejin-android/2026-08-14-76336249-AndroidAPM最强.md": {
+      "chapter": "ch04-memory",
+      "entry_id": "04db3949aee1fc31",
+      "last_appended": "2026-08-14T05:25:41.844423+08:00",
+      "last_seen": "2026-08-14T05:25:41.844423+08:00",
+      "mtime": 1786652003.4059255,
+      "score": 15,
+      "sha256": "83f239fcf997f62753b146dc7425dbece6e3b9a1a5ace0d3ac10f4f6a27dc5f5",
+      "size": 12532,
+      "status": "appended",
+      "title": "原文 7633624917233319936"
+    },
+    "source/juejin-android/2026-08-14-76393117-Toast多弹一次.md": {
+      "chapter": "待分类",
+      "entry_id": "2b3dbc31cb3a1de3",
+      "last_appended": "2026-08-14T05:25:41.844423+08:00",
+      "last_seen": "2026-08-14T05:25:41.844423+08:00",
+      "mtime": 1786652003.406491,
+      "score": 8,
+      "sha256": "c856316309b5230b40418ec0b760ca98357efc74992b6cad4e11bef6e91cf6cb",
+      "size": 12439,
+      "status": "appended",
+      "title": "原文 7639311759746383882"
+    },
+    "source/juejin-android/2026-08-14-76444766-嵌入式照片选择器.md": {
+      "chapter": "待分类",
+      "entry_id": "d515cfcceeeea5df",
+      "last_appended": "2026-08-14T05:25:41.844423+08:00",
+      "last_seen": "2026-08-14T05:25:41.844423+08:00",
+      "mtime": 1786652003.4068742,
+      "score": 9,
+      "sha256": "950a5ecd780b802307d0719b403c129a9b017d46031868b517d6af0cdabb5910",
+      "size": 10955,
+      "status": "appended",
+      "title": "原文 7644476634998538249"
+    },
+    "source/juejin-android/2026-08-15-76374124-ClaudeCode写80%的Android样板代码.md": {
+      "chapter": "待分类",
+      "entry_id": "e8b29c8829636c7f",
+      "last_appended": "2026-08-15T05:25:02.240058+08:00",
+      "last_seen": "2026-08-15T05:25:02.240058+08:00",
+      "mtime": 1786741909.6318915,
+      "score": 9,
+      "sha256": "65d2209d42b573d406c3104a79326a586202777482803891e48865a5f60a8c53",
+      "size": 11232,
+      "status": "appended",
+      "title": "原文 7637412411973812224"
+    },
+    "source/juejin-android/2026-08-15-76388970-为什么Android不用接口做Activity通信.md": {
+      "chapter": "待分类",
+      "entry_id": "fd29feba7b49f377",
+      "last_appended": "2026-08-15T05:25:02.240058+08:00",
+      "last_seen": "2026-08-15T05:25:02.240058+08:00",
+      "mtime": 1786741909.63165,
+      "score": 13,
+      "sha256": "c34a7320a1c7a6444a6517604704223ad7502bfea3e24a30630b65217e08a849",
+      "size": 6484,
+      "status": "appended",
+      "title": "原文 7638897090145075246"
+    },
+    "source/juejin-android/2026-08-15-76514375-AGENTS-md让AndroidAI代码规范率飙升.md": {
+      "last_seen": "2026-08-15T05:25:02.240058+08:00",
+      "mtime": 1786741909.632123,
+      "sha256": "9b2dd12b3a4c124c5b8f2dc8e976b5d6bac6b4194d20f665d9512facd59c93ca",
+      "size": 11047,
+      "status": "skipped-low-score"
+    },
+    "source/juejin-android/2026-08-16-76357025-多平台商品详情页一键跳转APP.md": {
+      "chapter": "待分类",
+      "entry_id": "0a6b4fccdbb7532a",
+      "last_appended": "2026-08-16T05:25:22.186985+08:00",
+      "last_seen": "2026-08-16T05:25:22.186985+08:00",
+      "mtime": 1786826104.703792,
+      "score": 13,
+      "sha256": "612d21baf35df1ea58976fe50234c03f7e98b9cff8e03d670e1b62ceda54dcf8",
+      "size": 37153,
+      "status": "appended",
+      "title": "安卓黑科技：实现多平台商品详情页一键跳转APP安卓黑科技：实现多平台商品详情页一键跳转APP 一、开篇引入 在如今的移动"
+    },
+    "source/juejin-android/2026-08-16-76370364-Tauri-Vue3-ADB桌面工具.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "530400065a0cfc1c",
+      "last_appended": "2026-08-16T05:25:22.186985+08:00",
+      "last_seen": "2026-08-16T05:25:22.186985+08:00",
+      "mtime": 1786826104.7035768,
+      "score": 9,
+      "sha256": "62973cfe5d4d1f75a70eabad1e2a787eedbc2c2249fffcda5661909f1538a8ec",
+      "size": 10872,
+      "status": "appended",
+      "title": "🔥🔥🔥 我用AI基于 Tauri + Vue 3 写了个 ADB 桌面工具，把命令行的脏活全干了我用AI基于 Ta"
+    },
+    "source/juejin-android/2026-08-16-76373536-Android做桌面而三星DeX早把路趟完.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "80ec56bfa07e5ac0",
+      "last_appended": "2026-08-16T05:25:22.186985+08:00",
+      "last_seen": "2026-08-16T05:25:22.186985+08:00",
+      "mtime": 1786826104.7030065,
+      "score": 7,
+      "sha256": "958af97a3ad7f235b289da4d179fdf1457f9575830ec75de33cb7a3538dd8aa0",
+      "size": 6777,
+      "status": "appended",
+      "title": "Android 终于做桌面了，而三星 DeX 早已把路趟完今年3月，Google 在 Android Developer"
+    },
+    "source/juejin-android/2026-08-16-76382973-Kotlin官网不再强调协程是轻量级线程.md": {
+      "chapter": "待分类",
+      "entry_id": "23af8a3c31d11a20",
+      "last_appended": "2026-08-16T05:25:22.186985+08:00",
+      "last_seen": "2026-08-16T05:25:22.186985+08:00",
+      "mtime": 1786826104.7023191,
+      "score": 8,
+      "sha256": "5e040683e39094c9b9d8e6386141dc5f1a604810477bcc902a0316066e5f2b93",
+      "size": 6551,
+      "status": "appended",
+      "title": "Kotlin 官网为什么不再强调“协程是轻量级线程”了？一、早期的说法：协程 = 轻量级线程 Kotlin 1.1 刚推"
+    },
+    "source/juejin-android/2026-08-16-76399466-Androguard30款App隐私合规扫描.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "44eaa57054217ede",
+      "last_appended": "2026-08-16T05:25:22.186985+08:00",
+      "last_seen": "2026-08-16T05:25:22.186985+08:00",
+      "mtime": 1786826104.7033248,
+      "score": 10,
+      "sha256": "7ebceea2a9cc8647b96e0494527a18e81cfa1ff6fff8d9ed12e06950e0f4817a",
+      "size": 13231,
+      "status": "appended",
+      "title": "Android应用隐私合规自动化审计：基于Androguard的30款App扫描方案前言 2021年《个人信息保护法》正"
+    },
+    "source/juejin-android/2026-08-16-76412297-Android开发者再不转Kotlin来不及了.md": {
+      "last_seen": "2026-08-16T05:25:22.186985+08:00",
+      "mtime": 1786826104.702584,
+      "sha256": "f6b4b9a1b9e19832171cdae810df779487da51322489372e66e5bc4dfa2748fd",
+      "size": 11332,
+      "status": "skipped-low-score"
+    },
+    "source/juejin-android/2026-08-16-76429816-Glide该换了Coil图片加载库.md": {
+      "chapter": "待分类",
+      "entry_id": "e83488d133c1a378",
+      "last_appended": "2026-08-16T05:25:22.186985+08:00",
+      "last_seen": "2026-08-16T05:25:22.186985+08:00",
+      "mtime": 1786826104.7027912,
+      "score": 10,
+      "sha256": "9f427629499731837b6245311829346e45ab79c7d0d6f66d90c2dba02caa8a73",
+      "size": 23760,
+      "status": "appended",
+      "title": "Glide 该换了？Coil：Kotlin 时代的图片加载库Glide 该换了？Coil：Kotlin 时代的图片加载库"
+    },
+    "source/juejin-android/2026-08-16-76500740-现代Android官方为何推荐Repository暴露suspend.md": {
+      "chapter": "待分类",
+      "entry_id": "bfadf829684088fb",
+      "last_appended": "2026-08-16T05:25:22.186985+08:00",
+      "last_seen": "2026-08-16T05:25:22.186985+08:00",
+      "mtime": 1786826104.702058,
+      "score": 11,
+      "sha256": "8c0ac52e75403fc94ea7fca7b10be4b4b27a7e3cd421140c4fbf730356cdd6aa",
+      "size": 18617,
+      "status": "appended",
+      "title": "现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch"
+    },
+    "source/juejin-android/2026-08-16-juejin-android.md": {
+      "chapter": "待分类",
+      "entry_id": "3c5bde1bf086dff2",
+      "last_appended": "2026-08-16T05:25:22.186985+08:00",
+      "last_seen": "2026-08-16T05:25:22.186985+08:00",
+      "mtime": 1786826151.8280628,
+      "score": 11,
+      "sha256": "49b20f43e608ab2e4ead58d78cfc329ebaffc910d682994deb33e5cfc1638fce",
+      "size": 4348,
+      "status": "appended",
+      "title": "掘金 Android 日报 · 2026-08-16"
     },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
@@ -3953,24 +4314,24 @@
     }
   },
   "last_report": {
-    "appended": 5,
-    "considered": 5,
-    "cutoff": "2026-08-11T05:20:41.679254+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-12.md",
+    "appended": 8,
+    "considered": 9,
+    "cutoff": "2026-08-15T05:20:02.240058+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-16.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1777,
+    "scanned": 1811,
     "skipped": {
       "existing_link": 0,
-      "low_score": 0,
+      "low_score": 1,
       "max_files": 0,
       "old_unseen": 1403,
-      "path": 28,
-      "unchanged": 341
+      "path": 29,
+      "unchanged": 370
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-08-12T05:25:00.305863+08:00",
+  "last_run_at": "2026-08-16T05:25:22.186985+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

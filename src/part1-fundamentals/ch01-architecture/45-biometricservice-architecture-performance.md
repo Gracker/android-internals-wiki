@@ -64,13 +64,15 @@ related_chapters: ["1.38", "1.44", "8.9", "8.10", "20.14"]
 
 # 1.45 Android 17 BiometricService 架构与性能优化
 
-版本范围是 Android 17 / API 37 / AOSP `android-17.0.0_r1`。这里讨论应用通过 `BiometricPrompt` 发起的认证；锁屏直接调用 `FingerprintManager`、录入流程和厂商私有解锁通道属于其他路径。
+版本范围是 Android 17 / API 37 / AOSP `android-17.0.0_r1`。这里讨论应用通过系统认证面板 `BiometricPrompt` 发起的认证；锁屏直接调用 `FingerprintManager`、录入流程和厂商私有解锁通道属于其他路径。
 
 `BiometricService` 是一次 BiometricPrompt 会话的仲裁者，但它并非应用直接访问的第一个 Binder 服务，也不执行图像采集和模板匹配。应用入口、系统策略、会话状态、传感器队列、认证 UI 与安全执行环境分属不同组件。定位“生物识别慢”时，需要判断时间消耗落在哪一段。
 
 ## Android 17 的真实调用链
 
 ### 进程与接口边界
+
+下文保留几组与源码一一对应的术语。provider 管理一种模态的一组传感器，`BiometricScheduler` 为单个传感器串行调度任务。client 表示一次认证、录入或枚举任务，operation 表示 client 发给 HAL 的具体操作，session 是 framework 与 HAL 为当前用户复用的会话接口。HAL（硬件抽象层）连接 Android framework 与厂商实现；AIDL 用于当前稳定接口，HIDL 是旧版接口技术，Android 17 仍保留兼容适配。HAT（`HardwareAuthToken`）是安全环境生成、可供 Keystore 验证的认证令牌。
 
 进程图展示了 SDK、`system_server`、SystemUI、HAL 与安全环境各自负责的部分：
 
@@ -113,7 +115,7 @@ system_server ── IStatusBarService ──► SystemUI process
 1. `BiometricPrompt.Builder.build()` 从 `Context.AUTH_SERVICE` 取得 `IAuthService`。普通应用不直接持有 `IBiometricService`。
 2. `AuthService` 与 `BiometricService` 都在 `system_server`，前者是 SDK 入口与访问控制层，后者是内部仲裁层。
 3. `AuthController` 运行在独立的 SystemUI 进程，不属于 `system_server`。
-4. HAL 运行在 vendor 侧进程；采集、模板与匹配的安全要求落在安全隔离环境及厂商实现上，不能把 HAL 进程本身称为 TEE。
+4. HAL 运行在 vendor 侧进程；采集、模板与匹配的安全要求由安全隔离环境及厂商实现满足。TEE 是 Trusted Execution Environment（可信执行环境），不能把 HAL 进程本身称为 TEE。
 
 对应源码入口：
 
@@ -124,7 +126,7 @@ system_server ── IStatusBarService ──► SystemUI process
 
 ### `authenticate()` 如何进入系统
 
-`BiometricPrompt.authenticate()` 在应用进程完成参数检查，保存调用方提供的 `Executor` 和 `AuthenticationCallback`，然后调用：
+`BiometricPrompt.authenticate()` 在应用进程完成参数检查，保存调用方提供的 `Executor`（决定回调在哪个线程执行）和 `AuthenticationCallback`，然后调用：
 
 ```java
 final long authId = mService.authenticate(
@@ -138,7 +140,7 @@ final long authId = mService.authenticate(
 
 这段代码用于确认两个事实：
 
-- CryptoObject 存在时，`operationId` 来自加密操作；没有 CryptoObject 时为 `0`。
+- `CryptoObject` 存在时，`operationId` 来自关联的加密操作；没有 `CryptoObject` 时为 `0`。
 - 内部返回值是请求 ID，用于后续取消和回调关联。公开的 `authenticate()` 仍以异步回调向应用报告结果。
 
 `AuthService.authenticate()` 随后检查：
@@ -149,7 +151,7 @@ final long authId = mService.authenticate(
 - 调用 UID/PID 是否位于前台；
 - 非公开、测试或高级 prompt 选项所需的额外权限。
 
-通过检查后，`AuthService` 清除来访 Binder identity，再把请求交给内部 `BiometricService`。`BiometricServiceWrapper.authenticate()` 只做内部权限、参数和 authenticator 配置检查，然后把后续工作投递到专用 Handler。它不会在应用 Binder 调用栈中等待传感器完成。
+通过检查后，`AuthService` 清除来访 Binder identity，避免后续系统内部调用继续沿用应用身份，再把请求交给内部 `BiometricService`。`BiometricServiceWrapper.authenticate()` 只做内部权限、参数和认证器配置检查，然后把后续工作投递到专用 Handler 所在线程。它不会在应用 Binder 调用栈中等待传感器完成。
 
 因此，`authenticate()` 调用返回快，只能说明请求已被系统接受，不能说明认证器已经开始采集。
 
@@ -159,7 +161,7 @@ Android 17 的 `BiometricService` 只有一个 `mAuthSession`。创建新会话�
 
 这与“所有 App 认证请求都在 BiometricService 排队”不同。队列存在于每个传感器的 `BiometricScheduler`；BiometricPrompt 层的新会话会替换旧会话。公开 API 文档也明确指出：已有认证进行时再次调用 `authenticate()`，旧客户端会收到取消。
 
-应用不应在配置变化、重复点击或状态重组时快速执行“取消—重建—认证”。这种写法会产生界面重建、HAL 取消确认以及 scheduler 清理开销，还会让一次用户操作产生多份互相覆盖的回调。
+应用不应在配置变化、重复点击或状态重组时快速执行“取消—重建—认证”。这种写法会产生界面重建、HAL 取消确认以及 scheduler 队列清理开销，还会让一次用户操作产生多份互相覆盖的回调。
 
 ## 预认证：`PreAuthInfo` 决定谁有资格参与
 
@@ -169,19 +171,19 @@ Android 17 的 `BiometricService` 只有一个 `mAuthSession`。创建新会话�
 - `ineligibleSensors`：传感器及其不可用原因；
 - `credentialRequested` / `credentialAvailable`；
 - 是否需要确认；
-- 生物识别强度和 Identity Check 相关状态。
+- 生物识别强度和 Identity Check（在受保护场景要求强生物识别的系统能力）相关状态。
 
 ### 资格判断项
 
 | 检查项 | Android 17 的判断依据 | 常见结果 |
 | --- | --- | --- |
-| 请求强度 | `BIOMETRIC_STRONG`、`BIOMETRIC_WEAK` 等 bit field | 传感器强度不足 |
+| 请求强度 | `BIOMETRIC_STRONG`、`BIOMETRIC_WEAK` 等位掩码（bit field） | 传感器强度不足 |
 | 运行时强度 | OEM 声明强度与 `BiometricStrengthController` 更新值 | 安全更新前需降级 |
 | 硬件状态 | `isHardwareDetected()` | 硬件不可用 |
 | 录入状态 | `hasEnrolledTemplates()` | 尚未录入 |
-| 锁定状态 | `getLockoutModeForUser()` | timed/permanent lockout |
+| 锁定状态 | `getLockoutModeForUser()` | 限时或永久锁定（timed/permanent lockout） |
 | 用户设置 | 是否允许应用使用该模态 | 对 App 禁用 |
-| 设备策略 | DPM 是否禁用指纹、人脸或虹膜 | 被管理策略禁用 |
+| 设备策略 | DPM（Device Policy Manager，设备策略管理器）是否禁用指纹、人脸或虹膜 | 被管理策略禁用 |
 | 人脸相机 | 相机可用性和相机隐私开关 | 相机不可用或隐私限制 |
 | 设备凭据 | `TrustManager.isDeviceSecure()` | PIN/图案/密码不可用 |
 | 显示环境 | 外接或受控虚拟显示相关策略 | 当前显示不允许认证 |
@@ -196,7 +198,7 @@ Android 17 的 `BiometricService` 只有一个 `mAuthSession`。创建新会话�
 
 ### 强度由安全等级决定
 
-指纹、人脸是模态；Class 3、Class 2、Class 1 是安全等级。二维相机不自动等于 Class 2，深度相机也不自动等于 Class 3。设备实现必须按 CDD 的架构安全与抗欺骗要求声明并通过测试。
+指纹、人脸是认证模态；Class 3、Class 2、Class 1 是安全等级。二维相机不自动等于 Class 2，深度相机也不自动等于 Class 3。设备实现必须按 CDD（Compatibility Definition Document，兼容性定义文档）的架构安全与抗欺骗要求声明并通过测试。
 
 Android API 的能力边界是：
 
@@ -207,7 +209,7 @@ Android API 的能力边界是：
 | Class 1 / Convenience | 不进入公开 BiometricPrompt API | 不支持 | 不支持 |
 | `DEVICE_CREDENTIAL` | 支持 | 支持 | 支持 |
 
-`BiometricSensor.getCurrentStrength()` 将 OEM 声明值与运行时更新值按 bit field 合并，结果不会比 OEM 初始声明更强。安全更新导致的降级会直接影响 `PreAuthInfo` 的资格判断。
+`BiometricSensor.getCurrentStrength()` 将 OEM 声明值与运行时更新值按位掩码合并，结果不会比 OEM 初始声明更强。安全更新导致的降级会直接影响 `PreAuthInfo` 的资格判断。
 
 API 37 增加了受角色和权限限制的 `BiometricManager.getBiometricSensorStrengths()`。调用方必须位于前台，同时持有 `USE_BIOMETRIC` 和角色授予的 `ACCESS_BIOMETRIC_SENSOR_STRENGTHS`；当前合格角色是钱包或设备策略管理。返回结果把每种模态映射到 `BIOMETRIC_STRONG` 或 `LESS_THAN_STRONG`，不会向调用方暴露 Class 3 以下的细分等级。普通应用仍应使用 `canAuthenticate()`。
 
@@ -231,7 +233,7 @@ AuthService.onStart()
 
 `BiometricService` 用 `CopyOnWriteArrayList<BiometricSensor> mSensors` 保存注册结果。源码中没有 `SensorListState`。
 
-Android 17 优先支持稳定 AIDL HAL，同时仍有 HIDL 配置和 `HidlToAidlSessionAdapter` 等兼容路径。分析具体设备时，应查看 provider 类型和 HAL instance，不能仅凭系统版本断定设备必走 AIDL。
+Android 17 优先支持稳定 AIDL HAL，同时仍有 HIDL 配置和 `HidlToAidlSessionAdapter` 等兼容路径。分析具体设备时，应查看 provider 类型和 HAL instance（已注册的 HAL 服务实例），不能仅凭系统版本断定设备必走 AIDL。
 
 ### `BiometricSensor` 保存什么
 
@@ -241,9 +243,9 @@ Android 17 优先支持稳定 AIDL HAL，同时仍有 HIDL 配置和 `HidlToAidl
 - OEM 声明强度和运行时强度；
 - `IBiometricAuthenticator impl`；
 - 当前 sensor state；
-- cookie、最近错误。
+- 用于关联准备请求与回调的 cookie，以及最近错误。
 
-它不持有模板内容，也没有 `lockoutState` 字段。锁定状态通过对应 sensor service/provider 查询，并由 sensor 侧 tracker 与 `AuthSessionCoordinator` 协调。
+它不持有模板内容，也没有 `lockoutState` 字段。锁定状态通过对应 sensor service/provider 查询，并由 sensor 侧 tracker（状态跟踪器）与 `AuthSessionCoordinator` 协调。
 
 ### AIDL session 并非每次认证都重建
 
@@ -263,7 +265,7 @@ interface IFace {
 }
 ```
 
-所以，不能把 `createSession()` 固定计入每次 BiometricPrompt 延迟。若 trace 中出现用户切换、HAL 重连或 start-user client，应单独标记为冷路径。
+所以，不能把 `createSession()` 固定计入每次 BiometricPrompt 延迟。若 trace 中出现用户切换、HAL 重连或 start-user client（为新用户建立 HAL 会话的任务），应单独标记为冷路径。
 
 ## 两层状态机：Prompt 会话与单个传感器
 
@@ -301,7 +303,7 @@ UNKNOWN
   → STOPPED
 ```
 
-cookie 把三层动作关联起来：
+cookie 是一次准备请求的关联值，用来把以下三层动作对应起来：
 
 1. `AuthSession` 为每个 eligible sensor 生成非零 cookie。
 2. `BiometricSensor.goToStateWaitingForCookie()` 调用 `prepareForAuthentication()`。
@@ -309,7 +311,7 @@ cookie 把三层动作关联起来：
 4. client 到达队首且可以开始时，scheduler 通过 `onReadyForAuthentication(requestId, cookie)` 通知 `BiometricService`。
 5. 所有 cookie 返回后，`AuthSession` 再调用 `startPreparedClient(cookie)`。
 
-这套握手避免 Prompt 仲裁层在 sensor operation 尚未到达队首时提前启动 HAL。
+这套“准备—就绪—启动”握手避免 Prompt 仲裁层在 sensor operation 尚未到达队首时提前启动 HAL。
 
 ### 启动顺序经过 UI 协调
 
@@ -329,7 +331,7 @@ goToInitialState()
             → SystemUI 稍后调用 onStartFingerprintNow()
 ```
 
-源码注释说明了延后指纹的原因：避免指纹 affordance 在 BiometricPrompt UI 完成入场前出现。人脸可以先运行；指纹是否随入场动画结束启动，由 SystemUI 根据当前 UI 和模态策略决定。
+源码注释说明了延后指纹的原因：避免指纹交互提示（affordance）在 BiometricPrompt UI 完成入场前出现。人脸可以先运行；指纹是否随入场动画结束启动，由 SystemUI 根据当前 UI 和模态策略决定。
 
 重试时 UI 已存在，`AuthSession` 重新准备可重试传感器，cookie 就绪后直接恢复相应传感器，不再创建第二个对话框。
 
@@ -348,7 +350,7 @@ goToInitialState()
 
 `BiometricHandlerProvider` 为 `BiometricsCallbackHandler` 创建独立 `HandlerThread`，优先级为 `THREAD_PRIORITY_DISPLAY`；Face 和 Fingerprint handler 也是独立线程，优先级为 `THREAD_PRIORITY_DEFAULT`。
 
-Sensor HAL 回调与 SystemUI 回调到达 Binder stub 后，`BiometricService` 都会再次 `post()` 到 callback handler。这样，`mAuthSession` 的状态转换集中在一个串行执行上下文中，避免由多个 Binder 线程直接并发修改。
+Sensor HAL 回调与 SystemUI 回调到达 Binder stub（接收端接口实现）后，`BiometricService` 都会再次 `post()` 到 callback handler。这样，`mAuthSession` 的状态转换集中在一个串行执行上下文中，避免由多个 Binder 线程直接并发修改。
 
 ### 应用回调线程
 
@@ -364,14 +366,14 @@ mExecutor.execute(() -> {
 
 ## `BiometricScheduler`：每个传感器串行调度操作
 
-### scheduler 的队列语义
+### scheduler 怎样排队
 
 每个 AIDL sensor 持有一个 `BiometricScheduler`，包含：
 
-- 一个 `Deque<BiometricSchedulerOperation> mPendingOperations`；
+- 一个保存待执行任务的 `Deque<BiometricSchedulerOperation> mPendingOperations`；
 - 一个 `mCurrentOperation`；
 - 当前用户 session；
-- 最近 operation 记录和统计信息。
+- 最近的 operation 记录和统计信息。
 
 队首 operation 分两类：
 
@@ -380,17 +382,17 @@ mExecutor.execute(() -> {
 
 新 client 声明 `interruptsPrecedingClients()` 时，scheduler 会：
 
-1. 把可取消的 pending operation 标为 canceling；
+1. 把可取消的 pending operation（待执行任务）标为 canceling；
 2. 当前 operation 已开始且可中断时，请求取消；
-3. 等当前 operation 的完成 callback 执行后，再推进队列。
+3. 等当前 operation 的完成 callback 执行后，再启动队列中的下一项。
 
 因此，“录入一定比认证优先”或“认证一定能抢占录入”都不成立。是否中断取决于具体 client 的属性、当前 operation 是否已经开始以及它是否可取消。
 
 ### Fingerprint 与 Face HAL 的终止条件不同
 
-Fingerprint AIDL 把方法分为 non-interrupting operation 和 interrupting operation。一个 session 同时只能执行一个 non-interrupting operation；`authenticate()`、`enroll()`、`detectInteraction()` 属于可取消的 non-interrupting operation。取消后，HAL 必须用 `Error::CANCELED` 结束该 operation。
+Fingerprint AIDL 把方法分为 non-interrupting operation（同一 session 中排他执行的主要操作）和 interrupting operation（可在主要操作期间调用的交互方法）。一个 session 同时只能执行一个 non-interrupting operation；`authenticate()`、`enroll()`、`detectInteraction()` 属于可取消的 non-interrupting operation。取消后，HAL 必须用 `Error::CANCELED` 结束该 operation。这里的 interrupting 是 HAL 接口分类，不表示 scheduler 会抢占前一个 client。
 
-Face AIDL 没有这组 interrupting operation 分类，接口约束是一个 session 同时只能执行一个 operation。Face 的 `onAuthenticationFailed()` 是终止回调；Fingerprint 的同名 reject 回调不是终止回调，指纹 operation 可以继续等待下一次触摸。framework 的 scheduler 会等当前 operation 的终止回调完成，再启动下一个排队操作。
+Face AIDL 没有这组 interrupting operation 分类，接口约束是一个 session 同时只能执行一个 operation。Face 的 `onAuthenticationFailed()` 是终止回调；Fingerprint 的同名拒绝匹配回调不是终止回调，指纹 operation 可以继续等待下一次触摸。framework 的 scheduler 会等当前 operation 的终止回调完成，再启动下一个排队操作。
 
 指纹 AIDL 的主要方法是：
 
@@ -406,9 +408,9 @@ void resetLockout(HardwareAuthToken hat);
 void close();
 ```
 
-UDFPS 的 `onPointerDown*()`、`onPointerUp*()`、`onUiReady()` 等属于可在采集 operation 运行时调用的交互方法，不应和第二个 authenticate operation 混为一谈。
+UDFPS（Under-Display Fingerprint Sensor，屏下指纹传感器）的 `onPointerDown*()`、`onPointerUp*()`、`onUiReady()` 等属于可在采集 operation 运行时调用的交互方法，不应和第二个 authenticate operation 混为一谈。
 
-Face AIDL 也使用 `authenticate()` 和 `detectInteraction()`，没有 `detectInteractive()`。Android 17 还提供带 `OperationContext` 的变体，HAL 可以利用显示、AOD 等上下文优化执行，也可以忽略额外上下文并按基础方法处理。
+Face AIDL 也使用 `authenticate()` 和 `detectInteraction()`，没有 `detectInteractive()`。Android 17 还提供带 `OperationContext` 的变体，HAL 可以利用显示、AOD（Always-On Display，息屏显示）等上下文优化执行，也可以忽略额外上下文并按基础方法处理。
 
 ### 不要虚构统一超时
 
@@ -422,7 +424,7 @@ Android 17 的 `AuthSession` 没有“所有认证 30～60 秒强制结束”的
 
 `BiometricScheduler.startWatchdog()` 中虽有 10 秒清理定时器，但在当前标签的 framework Java 源码中没有直接生产调用点，不能把它描述成每次 authenticate 自动启用的超时。
 
-排查超时时，应记录实际 error、modality、vendorCode 和当前 operation，不要套用固定秒数。
+排查超时时，应记录实际 error、modality（指纹、人脸等认证模态）、`vendorCode` 和当前 operation，不要套用固定秒数。
 
 ## 指纹、UDFPS 与人脸的性能边界
 
@@ -446,13 +448,13 @@ provider 在自己的 handler 上构造 client。client 启动 HAL operation 后
 - operation 在 scheduler 队列中的等待；
 - 当前用户 AIDL session 的启动或重建；
 - Prompt 入场完成前的指纹延后；
-- UDFPS overlay、触摸命中、显示模式与刷新率协调；
-- HAL 采集和 secure matcher；
+- UDFPS overlay（屏幕上的指纹交互层）、触摸命中、显示模式与刷新率协调；
+- HAL 采集和 secure matcher（安全环境中的匹配器）；
 - 成功动画、对话框关闭与 App Executor 调度。
 
 ### UDFPS 是 UI、显示和 HAL 的协作
 
-SystemUI 的 `AuthController` 根据 sensor properties 创建 `UdfpsController`，维护 sensor bounds 和 display scale，并向 framework 注册 UDFPS overlay controller。指纹 authentication client 收到 `PointerContext` 后调用 HAL 的 `onPointerDownWithContext()` 或兼容方法。
+SystemUI 的 `AuthController` 根据 sensor properties（传感器属性）创建 `UdfpsController`，维护 sensor bounds（传感器在屏幕上的区域）和 display scale（显示缩放比例），并向 framework 注册 UDFPS overlay controller。指纹 authentication client 收到 `PointerContext` 后调用 HAL 的 `onPointerDownWithContext()` 或兼容方法。
 
 一次 UDFPS 卡顿可能发生在：
 
@@ -460,7 +462,7 @@ SystemUI 的 `AuthController` 根据 sensor properties 创建 `UdfpsController`�
 2. overlay 尚未就绪；
 3. 触摸未命中 sensor bounds；
 4. 显示模式或高刷新率请求尚未完成；
-5. HAL 尚未回报 acquired；
+5. HAL 尚未回报 acquired（样本采集状态）；
 6. 采集质量不足，多次 acquired 后才匹配；
 7. 匹配完成，但成功 UI 仍在收尾。
 
@@ -479,7 +481,7 @@ FaceService.prepareForAuthentication()
   → authentication frame / acquired / success / failure / error
 ```
 
-人脸 client 可以接收 `FaceAuthenticationFrame`，把 acquired 信息和帮助文案交给 UI。一次 reject 会结束当前 face authentication client；在 BiometricPrompt 中，`AuthSession` 可进入暂停状态，由用户点击重试后重新 prepare。
+人脸 client 可以接收 `FaceAuthenticationFrame`，把 acquired 信息和帮助文案交给 UI。一次拒绝匹配（reject）会结束当前 face authentication client；在 BiometricPrompt 中，`AuthSession` 可进入暂停状态，由用户点击重试后重新 prepare。
 
 是否需要显式确认由三项共同决定：
 
@@ -491,13 +493,13 @@ FaceService.prepareForAuthentication()
 
 ### 多模态不是融合算法
 
-当人脸和指纹都 eligible 时，`AuthSession` 可以准备多个 sensor，但 Android 17 的通用 framework 代码不执行厂商级特征融合。它协调各 sensor 的启动、UI、成功、失败和取消：
+当人脸和指纹都符合本次请求条件（eligible）时，`AuthSession` 可以准备多个 sensor，但 Android 17 的通用 framework 代码不执行厂商级特征融合。它协调各 sensor 的启动、UI、成功、失败和取消：
 
-- 非指纹 sensor 在所有关联值返回后先启动；
+- 非指纹 sensor 在所有 cookie 返回后先启动；
 - 指纹等待 UI 信号；
 - 任一 sensor 成功后，session 记录 `mAuthenticatedSensorId`；
 - 无需确认时取消其他 sensor；
-- 需要确认时保留特定侧边指纹场景，其余 sensor 取消；
+- 需要确认时，源码会为特定侧边指纹场景保留传感器，其余 sensor 取消；
 - 后到的成功或错误回调会按当前 session/requestId 状态过滤。
 
 因此，双模态设备的总延迟不能简单写成 `max(face, fingerprint)`。两个模态的启动时刻不同，失败后的 UI 策略也不同。
@@ -508,7 +510,7 @@ FaceService.prepareForAuthentication()
 
 Android 对 Class 2 和 Class 3 生物识别要求采集、录入和识别位于安全隔离环境中。原始生物数据和模板不得暴露给 Android framework，持久化数据需要设备专属密钥保护。
 
-framework 能看到的是：
+framework 能看到的只有：
 
 - sensor metadata；
 - acquired、success、failure、error 等事件；
@@ -516,7 +518,7 @@ framework 能看到的是：
 - Strong 认证成功时返回的 HardwareAuthToken；
 - 用于会话协调的 requestId、cookie ID。
 
-具体使用 TEE、Secure Element、StrongBox 或其他受支持安全硬件，由设备实现决定。StrongBox 主要是隔离的 KeyMint 实现和安全存储能力；它可能保存某些用户相关数据，但不能作为所有 biometric matcher 所在位置的统称。
+具体使用 TEE、Secure Element（安全元件）、StrongBox 或其他受支持安全硬件，由设备实现决定。StrongBox 主要是隔离的 KeyMint 实现和安全存储能力；它可能保存某些用户相关数据，但不能作为所有 biometric matcher 所在位置的统称。
 
 ### `HardwareAuthToken` 的字段
 
@@ -533,16 +535,16 @@ mac                // HMAC-SHA256
 
 HAT 有两类用途：
 
-- enrollment/reset lockout：HAL 验证由设备凭据等安全认证产生的 HAT；
-- Strong biometric success：HAL 用传入的 `operationId` 填入 challenge，生成 HAT，授权对应的 auth-per-use key operation。
+- 录入或解除锁定（enrollment/reset lockout）：HAL 验证由设备凭据等安全认证产生的 HAT；
+- Strong 生物识别成功：HAL 用传入的 `operationId` 填入 challenge，生成 HAT，授权对应的 auth-per-use key operation（每次使用都要求认证的密钥操作）。
 
-只有 Strong sensor 可以在成功回调中返回可供 Keystore 使用的 HAT。Android 17 的 `AuthSession.onAuthenticationSucceeded()` 会丢弃 token。
+只有 Strong sensor 可以在成功回调中返回可供 Keystore 使用的 HAT。非 Strong sensor 即使回传 token，Android 17 的 `AuthSession.onAuthenticationSucceeded()` 也会将其丢弃。
 
 ### 成功回调为何晚于 HAL success
 
 Strong sensor 成功后，`AuthSession` 暂存 token，并通知 SystemUI 播放成功或确认 UI。SystemUI dismiss 后：
 
-1. `AuthSession.onDialogDismissed()` 把生物识别 HAT 或设备凭据 attestation 交给 `KeyStoreAuthorization.addAuthToken()`；
+1. `AuthSession.onDialogDismissed()` 把生物识别 HAT 或设备凭据 attestation（凭据验证证明）交给 `KeyStoreAuthorization.addAuthToken()`；
 2. 再调用应用侧 `onAuthenticationSucceeded()`；
 3. 清理其他 sensor 和当前 session。
 
@@ -558,22 +560,22 @@ Gatekeeper 负责 PIN、图案和密码等设备凭据验证；设备的安全�
 | --- | --- | --- |
 | `onAuthenticationFailed()` | 采集有效但未匹配 | App 收到 failed；Face operation 结束并进入可重试暂停，Fingerprint operation 通常继续等待 |
 | `BIOMETRIC_ERROR_TIMEOUT` | 当前 sensor operation 超时 | SystemUI 以软错误处理，session 可停在可重试状态 |
-| hard error | HAL 不可用、不可恢复错误等 | 暂存错误，等待 UI 展示后结束 |
+| hard error（不可恢复错误） | HAL 不可用、不可恢复错误等 | 暂存错误，等待 UI 展示后结束 |
 | App cancel | 调用方取消当前 requestId | sensor 进入 `CANCELING`，等待取消完成或强制收尾 |
-| client death | App Binder 死亡 | 取消运行中 sensor，关闭 UI |
-| lockout | HAL/sensor tracker 报告限流状态 | 有凭据 fallback 时转到 credential UI，否则结束 |
+| client death（客户端死亡） | App Binder 死亡 | 取消运行中 sensor，关闭 UI |
+| lockout（认证锁定） | HAL/sensor tracker 报告限流状态 | 允许回退到设备凭据时转到 credential UI，否则结束 |
 
 `CancellationSignal.cancel()` 发出取消请求，不保证所有层在同一时刻停止。旧 HAL 回调仍可能到达，因此 Android 17 每次回调都用 requestId、cookie 和当前 session 过滤。
 
 ### 锁定由 sensor 侧报告并协调
 
-`PreAuthInfo` 调用每个 authenticator 的 `getLockoutModeForUser()`。AIDL HAL 可通过：
+`PreAuthInfo` 调用每个认证器的 `getLockoutModeForUser()`。AIDL HAL 可通过：
 
 - `onLockoutTimed(durationMillis)`；
 - `onLockoutPermanent()`；
 - `onLockoutCleared()`
 
-报告状态。framework 的 `AuthSessionCoordinator` 和 `MultiBiometricLockoutState` 在不同 strength、sensor 与用户之间协调结果。
+报告状态。framework 的 `AuthSessionCoordinator` 和 `MultiBiometricLockoutState` 在不同认证强度、sensor 与用户之间协调结果。
 
 不要把“失败 5 次锁 30 秒”写成所有设备的 framework 实现。精确要求来自当前 Android CDD，执行细节还受 sensor strength、HAL 与设备策略影响。诊断时以实际 error、duration、sensorId 和设备 CDD 版本为准。
 
@@ -587,8 +589,8 @@ Gatekeeper 负责 PIN、图案和密码等设备凭据验证；设备的安全�
 
 - 创建并持有 `AuthContainerView`；
 - 根据 sensor properties 管理指纹、人脸、UDFPS 和凭据 UI；
-- 检查 owner App 是否退到后台；
-- 把入场完成、立即启动指纹、重试、切换凭据和 dismiss 事件回传给 `AuthSession`；
+- 检查发起认证的 App 是否退到后台；
+- 把入场完成、立即启动指纹、重试、切换凭据和 dismiss（关闭对话框）事件回传给 `AuthSession`；
 - 把 acquired、success 和 error 映射为用户可见状态。
 
 它不会调用 biometric HAL。`UdfpsController` 管理 overlay 和触摸交互，实际 authenticate operation 仍由 fingerprint provider/client 驱动。
@@ -625,7 +627,7 @@ Gatekeeper 负责 PIN、图案和密码等设备凭据验证；设备的安全�
 | `U_dismiss` | SystemUI dismiss 完成回调 | `onDialogDismissed()` |
 | `A_callback` | App callback 开始执行 | 调用方 Executor |
 
-跨进程计算必须使用同一单调时钟，例如 Perfetto 的 trace clock；不能直接相减各进程的 wall clock 日志。公开 `authenticate()` 也不会把内部 requestId 返回给 App，因此 App 与 `system_server` 的事件关联需要受控的单请求测试或自有系统埋点。并发场景下不能用“时间上最近的一条 biometric 日志”代替关联 ID。
+跨进程计算必须使用同一单调时钟，例如 Perfetto 的 trace clock（跟踪时钟）；不能直接相减各进程记录的 wall clock（日期时间）日志。公开 `authenticate()` 也不会把内部 requestId 返回给 App，因此 App 与 `system_server` 的事件关联需要受控的单请求测试或自有系统埋点。并发场景下不能用“时间上最近的一条 biometric 日志”代替关联 ID。
 
 这些标记允许在同一份 trace 中分别计算：
 
@@ -653,7 +655,7 @@ adb shell dumpsys fingerprint
 adb shell dumpsys face
 ```
 
-`dumpsys biometric` 的文本输出包含 sensor 列表和 `CurrentSession`。Fingerprint/Face dump 可看到 provider、当前 client、pending queue 和最近 operation。量产设备可能限制部分 dump 内容，userdebug/eng 构建更适合深入分析。
+`dumpsys biometric` 的文本输出包含 sensor 列表和 `CurrentSession`。Fingerprint/Face dump 可看到 provider、当前 client、pending queue（待执行队列）和最近 operation。量产设备可能限制部分 dump 内容，userdebug/eng 构建更适合深入分析。
 
 以下命令用于抓取 framework 与 SystemUI 事件：
 
@@ -671,7 +673,7 @@ Perfetto 建议至少覆盖：
 - Binder driver；
 - `system_server` 与 SystemUI；
 - gfx/view/window 相关轨道；
-- 相机与 vendor biometric/TEE 自定义 data source。
+- 相机与 vendor biometric/TEE 自定义 data source（跟踪数据源）。
 
 Android 17 的 `BiometricService`、`AuthSession` 和 `AuthController` 主路径没有稳定的专用 `Trace.traceBegin()` slice 可作为跨设备契约。不要把厂商 trace 名称写成 AOSP 保证；需要时在自有系统构建中给上述 App、UI 和 sensor 边界增加成对 trace。
 
@@ -679,13 +681,13 @@ Android 17 的 `BiometricService`、`AuthSession` 和 `AuthController` 主路径
 
 | 症状 | 先看什么 | 常见原因 |
 | --- | --- | --- |
-| 点击后迟迟不弹窗 | `A_request`～`U_show`、foreground/AppOps、PreAuthInfo | 主线程阻塞、策略检查失败、旧会话取消、SystemUI 忙 |
-| 弹窗出现后指纹才慢慢亮 | `S_ready`～`S_start`、`U_show`～`U_animated`、UDFPS overlay/display mode | UI 协调或显示准备，不一定是 matcher |
+| 点击后迟迟不弹窗 | `A_request`～`U_show`、前台状态/AppOps、PreAuthInfo | 主线程阻塞、策略检查失败、旧会话取消、SystemUI 忙 |
+| 弹窗出现后指纹才慢慢亮 | `S_ready`～`S_start`、`U_show`～`U_animated`、UDFPS overlay/显示模式 | UI 协调或显示准备，不一定是 matcher |
 | 有提示但迟迟不成功 | acquired/reject 序列、`S_start`～`S_end` | 样本质量、环境、HAL 或 secure matcher |
 | 已显示成功，业务页面仍未继续 | 成功 sensor 的 `S_end`～`A_callback` | 成功动画、HAT 注入、App Executor 排队 |
-| 第二次认证特别慢 | 旧 requestId、cancel 完成、scheduler current op | 快速重启导致清理与新请求竞争 |
-| 偶发立即转 PIN | lockout error、credentialAllowed | timed/permanent lockout 或 sensor policy |
-| 人脸不可用但指纹正常 | camera privacy、eligibleSensors | 相机隐私、相机占用、模态单独禁用 |
+| 第二次认证特别慢 | 旧 requestId、cancel 完成、scheduler 当前任务 | 快速重启导致清理与新请求竞争 |
+| 偶发立即转 PIN | lockout error、credentialAllowed | 限时/永久锁定或传感器策略 |
+| 人脸不可用但指纹正常 | 相机隐私开关、eligibleSensors | 相机隐私、相机占用、模态单独禁用 |
 
 ## App 侧写法
 
@@ -752,7 +754,7 @@ class LoginActivity : ComponentActivity() {
 - `onAuthenticationFailed()` 通常不是终止回调，不要在这里立即创建新的 Prompt；
 - 终止后由 success 或 error 清理本地进行中状态；
 - 是否在 `onDestroy()` 取消要结合页面保留策略；配置变化时反复销毁重建会造成不必要的取消；
-- CryptoObject 的 authenticator 要和密钥生成时的授权配置一致。
+- `CryptoObject` 使用的认证器要和密钥生成时的授权配置一致。
 
 ## 版本边界
 
@@ -762,7 +764,7 @@ class LoginActivity : ComponentActivity() {
 | Android 11 / API 30 | 公开 `BiometricManager.Authenticators`，可组合 biometric 与 device credential |
 | Android 12 / API 31 | AOSP 文档明确纳入 UDFPS 支持；适用范围从该版本开始 |
 | Android 13 起 | 新设备实现逐步迁移到稳定 AIDL biometric HAL |
-| Android 17 / API 37 | 当前源码锚点；包含 Identity Check 资格处理、受限 sensor strength 查询和现代 AIDL session context 能力 |
+| Android 17 / API 37 | 当前源码锚点；包含 Identity Check 资格处理、受限 sensor strength 查询和现代 AIDL session context（会话上下文）能力 |
 
 Android 17 仍保留旧设备 HAL 兼容适配。版本号只能说明 framework 能力上限，不能替代目标设备的 provider、HAL interface version、sensor properties 和 vendor 实现核查。
 

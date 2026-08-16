@@ -7,8 +7,8 @@ chapter: "13.7"
 section: "13.7"
 status: "finalized"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-06-04"
-last_verified_against: "Perfetto stdlib docs android.input + android/input.sql + FrameTimeline trace config docs"
+last_verified: "2026-08-13"
+last_verified_against: "Android 17 / android-17.0.0_r1 Perfetto ece66975738007dd0978b911d8a2077e49b8f31e + frameworks/native ae266dcb706d083868578cfedce381ef44488a07; Perfetto v57.2-da1d152cf stdlib docs; android17-6.18-2026-06_r6"
 confidence: high
 sources:
   - type: official
@@ -27,15 +27,15 @@ task9_state: reviewed
 
 # 13.7 Perfetto 输入延迟 SQL 深度分析
 
-## 分析边界与源码锚点
+## 分析边界与源码基线
 
-输入延迟排障常遇到三类问题：慢事件藏在大量正常样本中、ANR 发生前的队列状态不清楚、一次输入究竟关联了哪一帧。时间线界面适合观察单个现场，SQL 更适合筛选异常样本、计算分位数和复用判定逻辑。
+输入延迟排障常遇到三类问题：慢事件藏在大量正常样本中、ANR（Application Not Responding，应用无响应）发生前的队列状态不清楚、一次输入究竟关联了哪一帧。时间线界面适合观察单个现场，SQL 更适合筛选异常样本、计算分位数和复用判定逻辑。分位数描述样本排序后的位置，例如 P50 是中位数，P95 表示约 95% 的样本不高于该值。
 
-平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`。Perfetto 对应源码提交为 `ece66975738007dd0978b911d8a2077e49b8f31e`，`frameworks/native` 对应提交为 `ae266dcb706d083868578cfedce381ef44488a07`。调度事件的内核语义以 `android17-6.18-2026-06_r6` 为准。Perfetto 标准库还能由较新的 `Trace Processor` 提供，因此分析报告需要同时记录系统版本、采集配置和 `Trace Processor` 版本。
+本文核对的平台源码基线是 Android 17 / API 37 / `android-17.0.0_r1`。Perfetto 对应提交为 `ece66975738007dd0978b911d8a2077e49b8f31e`，`frameworks/native` 对应提交为 `ae266dcb706d083868578cfedce381ef44488a07`。调度事件的内核语义以 `android17-6.18-2026-06_r6` 为准。Perfetto 标准库还可以由较新的 Trace Processor 提供，因此分析报告需要同时记录系统版本、采集配置和 Trace Processor 版本。
 
-分析需要区分三段时间：
+`InputReader` 从 Linux 输入设备读取并解释事件，`InputDispatcher` 决定事件要投递给哪些窗口，应用处理完后通过输入通道返回 `FINISHED` 确认。SurfaceFlinger 是 Android 的显示合成服务，FrameTimeline 记录应用帧与合成帧的预期和实际时间。分析需要区分三段时间：
 
-- 输入事件的语义时间戳到 `InputReader` 读取；
+- 输入事件的语义时间戳到 `InputReader` 读取；语义时间戳表示事件自身携带的发生时刻，不等同于 Trace 记录写入时刻；
 - `InputDispatcher` 发出消息到应用完成并返回 `FINISHED`；
 - `InputReader` 读取到关联帧在 `SurfaceFlinger FrameTimeline` 中结束。
 
@@ -45,14 +45,14 @@ task9_state: reviewed
 
 ### 生命周期与帧关联
 
-`android_input_events` 由 `ATrace` 切片和 `FrameTimeline` 派生。Android 17 的 `android/input.sql` 会解析下列信息：
+`android_input_events` 由 ATrace（Android 代码埋点形成的时间片）和 FrameTimeline 派生。Android 17 的 `android/input.sql` 会解析下列信息：
 
 - `sendMessage(...)` 与 `receiveMessage(...)`：建立 `InputDispatcher`、应用接收、应用发送确认、系统收到确认四个节点；
 - `UnwantedInteractionBlocker::notifyMotion(...)`：取得 `input_event_id`、`event_time` 和 `read_time`；
 - `deliverInputEvent src=...` 与 `Choreographer#doFrame`：建立输入与应用帧的关联；
 - `actual_frame_timeline_slice`：把应用帧映射到 `SurfaceFlinger` 帧，并取得呈现时间。
 
-这条链路不依赖 `android.input.inputevent` 调试数据源。常规 `user` 构建也可以采集所需的 `ATrace` 与 `FrameTimeline`，但采集配置必须包含 `input`、`view`、`gfx` 类别、目标应用和 `FrameTimeline` 数据源。
+这条链路不依赖 `android.input.inputevent` 调试数据源。常规 `user` 量产构建也可以采集所需的 ATrace 与 FrameTimeline，但采集配置必须包含 `input`、`view`、`gfx` 类别、目标应用和 FrameTimeline 数据源。
 
 下面这条查询用于确认标准库对象能够加载，并快速观察当前跟踪的覆盖率：
 
@@ -68,13 +68,13 @@ SELECT
 FROM android_input_events;
 ```
 
-结果全为零时，应先检查采集配置和场景是否产生输入，不能据此判断输入很快。`with_frame` 明显少于 `event_count` 时，需要核对 `FrameTimeline`、应用 `ATrace` 和场景结束位置是否完整。
+这里的覆盖率指有多少输入行同时具备读取时间、帧关联或端到端延迟。结果全为零时，应先检查采集配置和场景是否产生输入，不能据此判断输入很快。`NULL` 表示字段缺失，不代表耗时为零；`with_frame` 明显少于 `event_count` 时，需要核对 FrameTimeline、应用 ATrace 和场景结束位置是否完整。
 
 ### 调试级原始事件
 
-`android_motion_events`、`android_key_events` 与 `android_input_event_dispatch` 来自 `android.input.inputevent`。Android 17 的配置协议明确限制该数据源只能用于 `userdebug` 或 `eng` 构建。它记录 `InputDispatcher` 处理的原始事件字段和窗口分发决策，适合回答事件来源、动作、设备、窗口及隐私规则是否生效等问题。
+`android_motion_events`、`android_key_events` 与 `android_input_event_dispatch` 来自 `android.input.inputevent`。Android 17 的配置协议明确限制该数据源只能用于 `userdebug` 或 `eng` 调试构建，不能在普通 `user` 量产构建上启用。它记录 `InputDispatcher` 处理的原始事件字段和窗口分发决策，适合回答事件来源、动作、设备、窗口及隐私规则是否生效等问题。
 
-两条链路不能当作同一张表拆分后的结果。原始视图使用数值型 `event_id`；生命周期表的 `input_event_id` 来自 ATrace 名称，通常带十六进制文本格式。标准库没有公开、稳定的桥接视图。原始事件与窗口分发可以用同为数值型的 `event_id` 关联，跨到 `android_input_events` 时应回到同一事件的时间线和源码格式核验，不应直接 `CAST` 后等值连接。
+两条链路不能当作同一张表拆分后的结果。原始视图使用数值型 `event_id`；生命周期表的 `input_event_id` 来自 ATrace 名称，通常是带 `0x` 等表示方式的十六进制文本。标准库没有公开、稳定的桥接视图。原始事件与窗口分发可以用同为数值型的 `event_id` 关联，跨到 `android_input_events` 时应回到同一事件的时间线和源码格式核验；直接用 `CAST` 转换类型后做等值连接，可能把格式差异或 ID 碰撞误当成同一事件。
 
 这条查询展示原始动作事件、内核事件时间和窗口分发的一对多关系：
 
@@ -99,7 +99,7 @@ ORDER BY event.ts, dispatch.window_id
 LIMIT 200;
 ```
 
-同一事件可能投递给前台窗口、监视窗口或其他目标，因此结果出现多行并非重复数据。解析器会把协议消息中单调时钟域的 `event_time_nanos` 转为跟踪时间域，并以 `kernel_time` 参数写入 `args`；原始表的 `ts` 则是系统处理该跟踪数据包的时间。
+`EXTRACT_ARG` 从 `arg_set_id` 对应的键值参数集中读取 `kernel_time`。同一事件可能投递给前台窗口、监视窗口或其他目标，因此结果出现多行并非重复数据。解析器会把协议消息中单调时钟域的 `event_time_nanos` 转为 Trace 时间域；单调时钟只持续向前，不受墙上时间校准影响。转换后的值以 `kernel_time` 写入 `args`，原始表的 `ts` 则是系统处理该 Trace 数据包的时间。
 
 ## 公共表结构与延迟公式
 
@@ -122,6 +122,8 @@ LIMIT 200;
 | 接收切片 | `receive_track_id`, `receive_ts`, `receive_dur` | 应用接收侧切片 |
 | 帧关联 | `frame_id`, `is_speculative_frame` | 关联帧的 Vsync ID 与是否为推测关联 |
 
+`tid` 和 `pid` 是操作系统线程号与进程号，`upid` 是 Perfetto 在当前 Trace 内分配的进程唯一标识，可区分 PID 被系统复用后的不同实例。Vsync ID 是一次垂直同步周期的标识。`normalized_event_channel` 会按 Android 17 标准库规则去掉部分对象前缀、冒号后缀或末尾数字，便于分组；它不是跨版本稳定的连接 ID。
+
 四段消息节点的计算关系如下：
 
 | 指标 | 计算式 |
@@ -131,11 +133,11 @@ LIMIT 200;
 | `ack_latency_dur` | `finish_ack.ts - finish.ts` |
 | `total_latency_dur` | `finish_ack.ts - dispatch.ts` |
 
-输入传输使用输入通道。`ack_latency_dur` 不是 Binder 往返耗时；将它归因于 Binder 拥塞会把排查方向带偏。应用收到事件后，`handling_latency_dur` 也可能覆盖输入批处理和框架分发开销，不能直接等同于某个业务回调的执行时间。
+输入传输使用基于 socket 的输入通道，ACK 是 acknowledgment（确认消息）的缩写。`ack_latency_dur` 不是 Binder（Android 进程间通信机制）往返耗时；将它归因于 Binder 拥塞会把排查方向带偏。应用收到事件后，`handling_latency_dur` 也可能覆盖输入批处理和框架分发开销，不能直接等同于某个业务回调的执行时间。
 
 ### 三张原始视图
 
-原始视图的公开列在 Android 17 中保持紧凑，复杂 proto 字段通过 `arg_set_id` 查询：
+原始视图的公开列在 Android 17 中保持紧凑，复杂 protobuf 消息字段通过 `arg_set_id` 对应的参数集查询：
 
 | 视图 | 公开列 | 用途 |
 |---|---|---|
@@ -143,7 +145,7 @@ LIMIT 200;
 | `android_key_events` | 上述字段加 `key_code` | KeyEvent 元信息及按键码 |
 | `android_input_event_dispatch` | `id`, `event_id`, `arg_set_id`, `vsync_id`, `window_id` | 事件到窗口的分发决策 |
 
-坐标、指针轴、策略标志、`down_time` 和 `kernel_time` 等字段保存在 `args`。字段是否存在还受脱敏等级影响，查询必须允许 `NULL`。
+坐标、指针轴、策略标志、`down_time` 和 `kernel_time` 等字段保存在 `args`。字段是否存在还受脱敏等级影响；脱敏会省略敏感字段，因此查询必须允许 `NULL`。
 
 ## 输入往返延迟
 
@@ -179,7 +181,7 @@ LIMIT 100;
 
 ### 建立同场景分布
 
-这条查询为四个分段计算 P50、P95、P99、最大值和样本量：
+这条查询为四个分段计算 P50、P95、P99、最大值和样本量。P95、P99 用来观察最慢的 5% 和 1% 尾部样本，必须与 `sample_count` 一起解读：
 
 ```sql
 INCLUDE PERFETTO MODULE android.input;
@@ -219,7 +221,7 @@ ORDER BY CASE stage
 END;
 ```
 
-输入延迟没有脱离设备、刷新率、手势类型和负载的通用毫秒阈值。可靠的回归判定应固定设备、构建、跟踪配置、交互脚本、温度区间和样本量，再比较分位数及尾部样本。最大值对单次调度抖动很敏感，不适合单独作为门禁。
+输入延迟没有脱离设备、刷新率、手势类型和负载的通用毫秒阈值。可靠的性能回退判定应固定设备、构建、Trace 配置、交互脚本、温度区间和样本量，再比较分位数及尾部样本。最大值对单次调度抖动很敏感，不适合单独作为门禁；门禁是持续集成中自动决定构建是否通过的规则。
 
 ## 从事件发生到帧呈现
 
@@ -250,11 +252,11 @@ ORDER BY event_to_present_ms DESC
 LIMIT 100;
 ```
 
-这里的 `event_time` 是输入事件携带并由 `InputReader` 的 `ATrace` 输出的事件时间，不是一次原始 evdev 跟踪点。它比 `dispatch_ts` 更靠近设备事件，但仍要避免把该值描述成触摸控制器中断时间。`FrameTimeline` 的呈现时间是 `SurfaceFlinger` 帧区间的结束，不代表面板光子出现的物理时刻。
+这里的 `event_time` 是输入事件携带并由 `InputReader` 的 ATrace 输出的事件时间，不是原始 evdev（Linux 输入设备事件接口）上的 Tracepoint（内核预定义事件记录点）。它比 `dispatch_ts` 更靠近设备事件，但仍不能描述成触摸控制器中断时间。FrameTimeline 的呈现时间是 SurfaceFlinger 帧区间的结束，不代表屏幕像素实际发光的物理时刻。
 
 ### 输入与 `doFrame` 的关联规则
 
-标准库会在同一应用线程上查找与 `deliverInputEvent` 区间相交的 `Choreographer#doFrame`。找到交集时标记为精确关联；没有交集时，选择该线程上紧随其后的帧并标记 `is_speculative_frame = 1`。映射到 SurfaceFlinger 后，它还会选择不早于关联应用帧的首个未丢弃帧。
+标准库会在同一应用线程上查找与 `deliverInputEvent` 区间相交的 `Choreographer#doFrame`。找到交集时标记为精确关联；没有交集时，选择该线程上紧随其后的帧并标记 `is_speculative_frame = 1`。这里的“精确”只表示两个区间按规则相交，不自动证明业务因果。映射到 SurfaceFlinger 后，标准库还会选择不早于关联应用帧的首个未丢弃帧。
 
 这些规则带来三个限制：
 
@@ -262,7 +264,7 @@ LIMIT 100;
 - 被丢弃的应用帧可能使 `frame_id` 指向后续未丢弃帧；
 - 一个帧可合并多个 MOVE 事件，输入行与帧不是一一关系。
 
-Android 17 的 `_input_read_time` 只匹配 motion 事件的 `UnwantedInteractionBlocker::notifyMotion*` 切片，按键事件可以有完整往返时间，却没有 `read_time`、`event_time` 或呈现延迟。该版本选择未丢弃帧的内部标量查询也没有显式增加 `upid` 条件；多应用同时绘制时，应把 `frame_id` 当作候选锚点，并用目标进程再次校验。
+Android 17 的 `_input_read_time` 只匹配 motion 事件的 `UnwantedInteractionBlocker::notifyMotion*` Slice，按键事件可以有完整往返时间，却没有 `read_time`、`event_time` 或呈现延迟。以下划线开头表示标准库内部对象，外部查询不应依赖它。该版本选择未丢弃帧的内部标量查询（预期返回单个值的子查询）也没有显式增加 `upid` 条件；多应用同时绘制时，应把 `frame_id` 当作候选锚点，并用目标进程再次校验。
 
 下面的查询把输入结果连接到 `android_frames`，同时保留关联质量：
 
@@ -290,7 +292,7 @@ ORDER BY event.dispatch_ts
 LIMIT 200;
 ```
 
-同时使用 `frame_id` 和 `upid` 可以避开不同进程复用 Vsync ID 造成的误连接。帧持续时间长不等于输入处理慢，仍需展开 `doFrame`、`RenderThread`、`SurfaceFlinger` 和调度上下文。
+同时使用 `frame_id` 和 `upid` 可以避开不同进程复用 Vsync ID 造成的误连接。帧持续时间长不等于输入处理慢，仍需展开 `doFrame`、负责渲染提交的 `RenderThread`、SurfaceFlinger 和调度上下文。
 
 ### 展开 `doFrame` 的全部后代切片
 
@@ -318,17 +320,17 @@ JOIN slice
 ORDER BY slice.ts, slice.depth;
 ```
 
-修改参数行后，这条查询会返回 `doFrame` 下的所有后代切片。具体回调名称受系统版本、应用埋点和采集类别影响，应先查看完整结果，再筛选当前跟踪中存在的名称。
+`descendant_slice()` 是递归遍历 Slice 父子关系的表函数。修改参数行后，查询会返回 `doFrame` 下所有层级的后代 Slice；具体回调名称受系统版本、应用埋点和采集类别影响，应先查看完整结果，再筛选当前 Trace 中存在的名称。
 
 ## `InputDispatcher` 的 `iq`、`oq` 与 `wq`
 
-Android 17 的 `InputDispatcher.cpp` 直接用 `ATrace` 计数器记录三类队列：
+`InputDispatcher` 运行在承载 Android 核心系统服务的 `system_server` 进程中。Android 17 的 `InputDispatcher.cpp` 直接用 ATrace 计数器记录三类队列：
 
-- `iq`：全局入站队列；
-- `oq:<channel>`：每条连接的出站队列；
-- `wq:<channel>`：每条连接已经发布、仍等待应用完成确认的等待队列。
+- `iq`（inbound queue）：`InputDispatcher` 尚未处理的全局入站队列；
+- `oq:<channel>`（outbound queue）：每条连接上等待写入应用输入通道的出站队列；
+- `wq:<channel>`（wait queue）：已经写给应用、仍等待 `FINISHED` 确认的队列。
 
-源码中的计数器名称缓冲区长度为 40 字节，过长的通道名可能被截断。查询应使用 `oq:`、`wq:` 前缀，并在需要时结合目标时间和进程现场定位连接。
+这里的 channel 是 InputDispatcher 与一个输入目标之间的连接。源码中的计数器名称缓冲区长度为 40 字节，过长的通道名可能被截断。查询应使用 `oq:`、`wq:` 前缀，并在需要时结合目标时间和进程现场定位连接。
 
 这条查询用于确认当前跟踪中存在的 `InputDispatcher` 计数器：
 
@@ -355,9 +357,9 @@ ORDER BY counter.ts, track.name
 LIMIT 500;
 ```
 
-如果没有结果，检查 `linux.ftrace` 是否启用了 `ATrace` 的 `input` 类别。旧文档中常见的 `InputDispatcher inbound queue` 等名称并不是 Android 17 源码写出的计数器名称。
+`GLOB 'oq:*'` 和 `GLOB 'wq:*'` 使用通配符匹配对应前缀。如果没有结果，检查 `linux.ftrace` 是否启用了 ATrace 的 `input` 类别。旧文档中常见的 `InputDispatcher inbound queue` 等名称并不是 Android 17 源码写出的计数器名称。
 
-`counter` 只在值变化时记录采样点，没有 `dur`。下面的查询用下一次采样或跟踪结束时间补出每段持续时间，并列出非零区间：
+`counter` 只在值变化时记录采样点，没有 `dur`；一个值会持续到同轨道的下一次采样。下面的查询用下一次采样或 Trace 结束时间补出每段持续时间，并列出非零区间：
 
 ```sql
 INCLUDE PERFETTO MODULE time.conversion;
@@ -395,13 +397,13 @@ ORDER BY queue_length DESC, dur_ms DESC
 LIMIT 200;
 ```
 
-瞬间出现非零值是正常流转的一部分。持续的 `iq` 表明 `InputDispatcher` 尚未消费完入站事件；持续的 `oq` 表明连接上仍有待发布事件；持续的 `wq` 表明已发布事件还在等待完成确认。队列堆积能缩小范围，但不能单独证明应用主线程、套接字写入或 `system_server` 调度中的哪一项是根因。
+`LEAD()` 取得同一轨道的下一条采样时间，最后一条没有后继时，`COALESCE()` 改用 `trace_end()`。瞬间出现非零值是正常流转的一部分。持续的 `iq` 表明 InputDispatcher 尚未消费完入站事件；持续的 `oq` 表明连接上仍有待写入事件；持续的 `wq` 表明已写入事件还在等待完成确认。队列堆积能缩小范围，但不能单独证明应用主线程、socket 写入或 `system_server` 调度中的哪一项是根因。
 
 ## ANR 前的输入状态
 
 ### 以 `android_anrs` 为时间锚点
 
-通过名称通配符在 `slice` 中搜索 `ANR` 容易命中日志、应用自定义切片或无关文本。`android.anrs` 模块会解析 `system_server` 的 `ErrorId`、主题字段和 ANR 计时器，并给出标准化的 `anr_type`。
+这里的时间锚点是用于界定查询窗口的可信事件时刻。通过名称通配符在 `slice` 中搜索 `ANR` 容易命中日志、应用自定义 Slice 或无关文本。`android.anrs` 模块会解析 `system_server` 的 `ErrorId`（平台为一次 ANR 生成的唯一标识）、subject（主题文本）和 ANR 计时器，并给出标准化的 `anr_type`。
 
 这条查询列出输入分发类 ANR，以及跟踪中解析到的超时长度：
 
@@ -427,7 +429,7 @@ WHERE anr_type IN (
 ORDER BY ts;
 ```
 
-`InputDispatcher` 的超时时长并非固定五秒。Android 17 会优先读取目标窗口的分发超时时长，找不到窗口时才使用经过硬件超时倍率修正的默认值。Perfetto 的 `anr_dur_ms` 优先来自平台计时器；`default_anr_dur_ms` 只是 AOSP/Pixel 默认参考，厂商可以修改。
+`InputDispatcher` 的超时时长并非固定五秒。Android 17 会优先读取目标窗口的分发超时时长，找不到窗口时才使用默认值，并可能按平台的硬件超时倍率放大。Perfetto 的 `anr_dur_ms` 优先来自平台计时器；`default_anr_dur_ms` 只是 AOSP / Pixel 的参考默认值，OEM 厂商可以修改。
 
 ### 查看 ANR 窗口内已完成的输入
 
@@ -488,7 +490,7 @@ WHERE recency <= 50
 ORDER BY anr_ts, recency;
 ```
 
-`android_input_events` 只包含四个消息节点都匹配成功的投递。卡住并触发 ANR 的事件可能没有 `finish_ack`，因此不会出现在结果里。ANR 附近没有行并不等于没有输入；此时应查看 `wq:` 计数器、目标主线程调度状态和 ANR 主题字段。
+`android_input_events` 只包含四个消息节点都匹配成功的投递。卡住并触发 ANR 的事件可能没有 `finish_ack`（系统收到完成确认的节点），因此不会出现在结果里。ANR 附近没有行并不等于没有输入；此时应查看 `wq:` 计数器、目标主线程调度状态和 ANR 主题字段。
 
 下面的查询把 ANR 窗口与非零队列采样放在同一结果中：
 
@@ -582,7 +584,7 @@ WHERE event.total_latency_dur >= baseline.p95_total
 ORDER BY event.total_latency_dur DESC;
 ```
 
-该模板用当前区间的 P95 选出尾部样本，不给出脱离场景的固定阈值。把异常时间带回 UI 后，依次检查接收线程状态、`doFrame`、Binder 切片、GC、锁等待和 CPU 频率。
+该模板把当前区间本身作为 baseline（比较基准），用其中的 P95 选出尾部样本，不给出脱离场景的固定阈值。把异常时间带回 UI 后，依次检查接收线程状态、`doFrame`、Binder Slice、GC（Garbage Collection，垃圾回收）、锁等待和 CPU 频率。
 
 ### 输入 ANR：标准化 ANR 加队列
 
@@ -596,7 +598,7 @@ ORDER BY event.total_latency_dur DESC;
 
 ### 冷启动：第一个目标进程输入
 
-“点击桌面图标到应用首帧”不属于 `android_input_events` 对目标应用的直接测量，因为启动手势先由 `Launcher` 接收。下面的查询回答一个更窄的问题：每次启动开始后，目标进程何时收到第一条可完整匹配的输入投递。
+“点击桌面图标到应用首帧”不属于 `android_input_events` 对目标应用的直接测量，因为启动手势先由 Launcher（桌面应用）接收。下面的查询回答一个更窄的问题：每次启动开始后，目标进程何时收到第一条可完整匹配的输入投递。
 
 ```sql
 INCLUDE PERFETTO MODULE android.input;
@@ -652,7 +654,7 @@ WHERE input_order = 1
 ORDER BY startup_ts;
 ```
 
-第一条目标输入可能发生在启动结束很久之后，`first_input_after_start_ms` 因而不能直接当作可交互时间。若目标是启动手势到首帧，应结合 `android_startups`、启动方输入事件、`flow` 或自定义场景标记，并对跨进程因果关系单独建模。
+第一条目标输入可能发生在启动结束很久之后，`first_input_after_start_ms` 因而不能直接当作可交互时间。若目标是启动手势到首帧，应结合 `android_startups`、启动方输入事件、Flow（Trace 事件之间的因果连线）或自定义场景标记，并对跨进程因果关系单独建模。
 
 ## SQL 与 Perfetto UI 的分工
 
@@ -670,13 +672,13 @@ SQL 适合重复执行的筛选和统计：
 - Binder、锁、GC、I/O、频率与 `SurfaceFlinger` 是否同时异常；
 - SQL 的进程、通道和帧关联是否符合现场。
 
-实用流程是用 SQL 产出时间戳、事件 ID、进程、通道、帧 ID 和异常分段，再到 UI 展开该点，修复后用相同 SQL 与相同采集条件复测。§13.9 提供通用查询框架，这里进一步给出输入流水线的可重复量化入口。
+实用流程是用 SQL 产出时间戳、事件 ID、进程、通道、帧 ID 和异常分段，再到 UI 展开该点；修复后用相同 SQL 与相同采集条件复测。§13.9 提供通用查询框架，这里进一步给出输入处理链路的可重复量化入口。
 
 ## `TraceConfig`：按问题选择采集面
 
 ### 常规输入往返与帧关联
 
-下面是一份 Android 17 文本配置示例。它采集输入 `ATrace`、应用视图与图形切片、`FrameTimeline` 以及调度上下文：
+TraceConfig 是声明缓冲区、采集时长和数据源的 protobuf 配置。下面是一份 Android 17 的文本格式示例，它采集输入 ATrace、应用视图与图形 Slice、FrameTimeline 以及调度上下文：
 
 ```protobuf
 buffers {
@@ -709,11 +711,11 @@ data_sources {
 }
 ```
 
-修改 `atrace_apps` 和采集时长后即可用于目标场景。`input` 类别提供 `InputDispatcher` 与队列计数器，应用侧切片需要目标应用进入 `ATrace` 采集范围，`FrameTimeline` 用于 `frame_id` 和 `end_to_end_latency_dur`。缓冲区大小要按设备事件量和场景时长实测，不能把示例值视为固定配置。
+`RING_BUFFER` 表示缓冲区写满后覆盖最早的数据。修改 `atrace_apps` 和采集时长后即可用于目标场景；`input` 类别提供 InputDispatcher 与队列计数器，应用侧 Slice 需要目标应用进入 ATrace 采集范围，FrameTimeline 用于 `frame_id` 和 `end_to_end_latency_dur`。缓冲区大小要按设备事件量和场景时长实测，不能把示例值视为固定配置。
 
 ### 原始输入与窗口分发
 
-需要原始 `MotionEvent`、`KeyEvent` 或窗口分发决策时，可以在 `userdebug` 或 `eng` 设备上追加下面的数据源：
+需要原始 `MotionEvent`、`KeyEvent` 或窗口分发决策时，可以在 `userdebug` 或 `eng` 调试设备上追加下面的数据源。示例使用 `TRACE_MODE_USE_RULES`，表示逐条按规则决定记录等级：
 
 ```protobuf
 data_sources {
@@ -731,9 +733,9 @@ data_sources {
 }
 ```
 
-没有匹配条件的规则会匹配所有事件；规则按声明顺序处理，首个匹配项决定记录等级。`TRACE_LEVEL_REDACTED` 会省略指针坐标以及按键码和扫描码。没有匹配规则时，默认等级为 `TRACE_LEVEL_NONE`。
+没有匹配条件的规则会匹配所有事件；规则按声明顺序处理，首个匹配项决定记录等级。`TRACE_LEVEL_REDACTED` 是脱敏记录等级，会省略指针坐标、按键码和硬件扫描码。事件没有匹配任何规则时，默认使用 `TRACE_LEVEL_NONE`，即不记录。
 
-`TRACE_MODE_TRACE_ALL` 会绕过隐私措施并记录系统处理的全部输入，只适合本地受控设备和测试，禁止用于线上采集。即使按包名写规则，也要考虑同一事件常被发送给多个应用和监视窗口；`match_any_packages` 或 `match_all_packages` 的结果可能比直觉覆盖更多内容。坐标、按键、IME 状态和安全窗口均属于敏感信息。
+`TRACE_MODE_TRACE_ALL` 会绕过隐私措施并记录系统处理的全部输入，只适合本地受控设备和测试，禁止用于线上采集。包名规则检查一次事件的所有目标：`match_any_packages` 在任一目标包命中列表时成立，`match_all_packages` 要求所有目标包都位于列表中。同一事件常被发送给前台应用、监视窗口等多个目标，因此两种规则的覆盖面可能与直觉不同。坐标、按键、IME（Input Method Editor，输入法）连接状态和安全窗口均属于敏感信息。
 
 原始事件数据源不会替代常规配置中的 ATrace 和 FrameTimeline。只打开它可以得到三张原始视图，却不保证 `android_input_events` 的消息往返与帧关联完整。
 
@@ -746,7 +748,7 @@ data_sources {
 - `TraceConfig`、`Trace Processor` 或 `perfetto` Python 包版本；
 - 样本筛选条件、进程名、样本量和异常样本处理规则。
 
-Perfetto 的 `Batch Trace Processor` 可以让每份跟踪使用同一条 SQL。下面的脚本读取 `traces` 目录中的文件，逐份生成分位数、帧关联率和推测关联率：
+Perfetto 的 Batch Trace Processor 会为每份 Trace 启动独立解析实例，并对它们执行同一条 SQL。下面的脚本读取 `traces` 目录中的文件，逐份生成分位数、帧关联率和推测关联率，再用 Pandas（Python 表格分析库）合并结果：
 
 ```python
 from glob import glob
@@ -800,13 +802,13 @@ summary.to_csv("input-latency-summary.csv", index=False)
 print(summary.to_string(index=False))
 ```
 
-修改查询参数行中的目标进程后，脚本会显式用文件路径标识每份结果，避免依赖解析器自动添加列的具体命名。`event_count`、帧匹配率和推测关联率必须与延迟分位数一起看；覆盖率变化会让两组分位数失去可比性。大量跟踪会常驻内存，输入规模较大时需要分批处理。
+`pd.concat()` 把每份 Trace 的 DataFrame（带列名的内存表格）纵向合并。修改查询参数行中的目标进程后，脚本会显式用文件路径标识每份结果，避免依赖地址解析器自动添加列的具体命名。`event_count`、帧匹配率和推测关联率必须与延迟分位数一起看；覆盖率变化意味着两组统计来自不同完整程度的样本，分位数可能失去可比性。每份 Trace 的解析结果都会常驻内存，输入规模较大时需要分批处理。
 
 ## 版本边界与核对清单
 
 提交分析结论前，逐项确认：
 
-- 设备平台不高于 Android 17，平台源码锚点记录为 `android-17.0.0_r1`；
+- 设备平台高于 Android 17 时重新核验本文结论；当前平台源码基线记录为 `android-17.0.0_r1`；
 - 涉及调度语义时，内核锚点记录为 `android17-6.18-2026-06_r6`；
 - `Trace Processor` 版本支持当前查询中的公开列；
 - 没有依赖以下划线开头的标准库内部对象；

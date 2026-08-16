@@ -36,21 +36,23 @@ consolidation_note: "完整审阅原 65 篇正文后收敛为 50 篇：合并 De
 
 # 第 1 章：系统架构全景
 
-这一章为后续性能、稳定性和工具篇建立同一套系统坐标。面对一次慢启动、ANR、安装失败或 native 崩溃，工程师需要先确定代码运行在哪个进程、跨过哪些 IPC/ABI 边界、由谁调度，以及状态保存在用户态还是内核。
+这一章统一说明后续性能、稳定性和工具篇会涉及的系统层次。面对慢启动、ANR、安装失败或原生代码崩溃，工程师需要先确定代码运行在哪个进程、跨过哪些进程间通信（IPC）或应用二进制接口（ABI）边界、由谁调度，以及相关状态由用户态进程还是内核维护。
 
-当前平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。涉及 Binder、调度、cgroup 和 BPF 的内核正文统一锚定 `android17-6.18-2026-06_r6`。Android 17 设备仍可能使用官方支持的较早 GKI 分支，因此书中的 6.18 结论用于源码核读，不代表每台升级设备都运行 6.18。
+全章核对平台机制时使用 Android 17（API 37）的固定源码标签 `android-17.0.0_r1`。涉及 Binder、调度、cgroup 进程资源分组和 BPF 内核可编程机制的内容，统一按 `android17-6.18-2026-06_r6` 核对。Android 17 设备仍可能使用通用内核镜像（Generic Kernel Image，GKI）的较早受支持分支，因此书中的 6.18 结论用于核对公共内核源码，不代表每台升级设备都运行 6.18。
 
 ## 用五层视角定位问题
 
 | 层次 | 常见载体 | 主要职责 | 排查时要问 |
 |---|---|---|---|
-| App 与 ART | UI 线程、业务线程、Binder caller、GC/编译线程 | 组件生命周期、业务执行、字节码执行与编译 | 主线程在运行、等锁、等 IPC，还是未获调度 |
-| Framework | `system_server` 内的 AMS、WMS、PMS 等 | 系统策略、组件调度、权限与全局状态 | 请求在哪个服务排队，服务端持有什么锁 |
-| Native 服务 | SurfaceFlinger、AudioFlinger、installd、apexd 等 | 图形、音频、安装和底层系统能力 | 数据如何跨 JNI/Binder/共享内存，服务线程在做什么 |
-| HAL 与 vendor | AIDL/HIDL HAL、vendor daemon、驱动用户态接口 | 稳定硬件接口与厂商实现 | ABI、VINTF、linker namespace 和 SELinux 是否允许这条路径 |
-| Kernel | Binder、scheduler、memory、filesystem、driver | 线程调度、内存、IPC 传输、设备访问 | 线程为何睡眠或 runnable，buffer/队列/设备是否成为限制 |
+| App 与 ART（Android 运行时） | UI 线程、业务线程、Binder 调用线程、垃圾回收（GC）/编译线程 | 组件生命周期、业务执行、字节码执行与编译 | 主线程在运行、等锁、等 IPC，还是未获调度 |
+| 应用框架（Framework） | `system_server`（承载多数 Java 系统服务的进程）内的 ActivityManagerService（AMS）、WindowManagerService（WMS）、PackageManagerService（PMS）等 | 系统策略、组件调度、权限与全局状态 | 请求在哪个服务排队，服务端持有什么锁 |
+| 原生服务 | SurfaceFlinger、AudioFlinger、installd、apexd 等 | 图形、音频、安装和底层系统能力 | 数据如何跨 Java 原生接口（JNI）、Binder 或共享内存，服务线程在做什么 |
+| 硬件抽象层（HAL）与厂商实现 | AIDL/HIDL HAL、厂商守护进程、驱动的用户态接口 | 稳定硬件接口与厂商实现 | ABI 是否兼容，VINTF 清单是否匹配，动态链接器命名空间和 SELinux 策略是否允许这条路径 |
+| Linux 内核 | Binder、调度器、内存、文件系统、驱动 | 线程调度、内存、IPC 传输、设备访问 | 线程为何睡眠或处于可运行状态（runnable，即已经就绪但还未获得 CPU），缓冲区、队列或设备是否成为限制 |
 
-性能现象通常跨越两层以上。比如主线程卡在 `BinderProxy.transactNative()` 只给出调用方等待点；还要沿 transaction 找到服务端线程，再检查它是在执行业务、等锁、等 I/O，还是尚未从目标进程队列取出。
+表中的 AIDL 和 HIDL 都用于定义 Android 组件之间的接口，HIDL 主要见于存量 HAL；VINTF 清单记录系统与厂商组件的兼容要求；SELinux 策略控制进程能够访问哪些服务和设备节点。
+
+性能现象通常跨越两层以上。比如主线程卡在 `BinderProxy.transactNative()` 只给出调用方等待点；还要沿这次 Binder 事务（transaction）找到服务端线程，再检查它是在执行业务、等锁、等输入输出（I/O），还是尚未从目标进程队列取出。
 
 ## 内容索引
 
@@ -120,20 +122,20 @@ consolidation_note: "完整审阅原 65 篇正文后收敛为 50 篇：合并 De
 
 - 启动慢：`1.2 → 1.11 → 1.7 → 1.19 → 1.36 → 1.49`。
 - 主线程卡顿或 ANR：`1.4 → 1.14 → 1.29 → 1.31 → 1.38`，并到服务端章节核对调用链。
-- 安装、OTA 或 staged session：`1.9 → 1.20 → 1.21 → 1.23 → 1.27`。
+- 安装、系统升级（OTA）或分阶段安装会话（staged session）：`1.9 → 1.20 → 1.21 → 1.23 → 1.27`。
 - 配置变化导致重建：`1.24 → 1.47`。
-- native 库加载失败或启动开销：`1.15 → 1.39 → 1.40 → 1.50`。
+- 原生库加载失败或启动开销：`1.15 → 1.39 → 1.40 → 1.50`。
 - system_server 调度与进程优先级：`1.8 → 1.25 → 1.33 → 1.34 → 1.48`。
 
 ## 读源码时保留三条边界
 
-同一 Android 版本不保证同一运行行为。target SDK、compat change、aconfig flag、Mainline 模块版本、厂商分支与设备内核都可能改变结果。正文中出现“Android 17 默认启用”时，应继续检查启用条件。
+同一 Android 版本不保证同一运行行为。应用面向的 SDK 版本（target SDK）、兼容性开关（compat change）、`aconfig` 功能开关、可独立更新的 Mainline 模块版本、厂商分支与设备内核都可能改变结果。正文中出现“Android 17 默认启用”时，应继续检查启用条件。
 
-源码常量不等于性能承诺。Binder buffer、线程数、超时或队列阈值只能解释实现边界，收益与风险仍要在目标设备、相同 workload 和相同构建上测量。
+源码常量不等于性能承诺。Binder 缓冲区、线程数、超时或队列阈值只能解释实现范围，收益与风险仍要在目标设备、相同测试负载和相同构建上测量。
 
-历史版本有助于解释设计迁移，但 Android 17 结论必须回到 `android-17.0.0_r1` 与相应内核锚点。预览文档、旧 tag 和 OEM 私有实现都不能替代当前源码。
+历史版本有助于解释设计变化，但 Android 17 结论必须回到 `android-17.0.0_r1` 与相应的固定内核版本。预览文档、旧源码标签和设备厂商（OEM）的私有实现都不能替代当前源码。
 
-## 源码锚点
+## 固定源码版本
 
 - [AOSP android-17.0.0_r1](https://android.googlesource.com/platform/manifest/+/android-17.0.0_r1)
 - [Android common kernel android17-6.18-2026-06_r6](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6)

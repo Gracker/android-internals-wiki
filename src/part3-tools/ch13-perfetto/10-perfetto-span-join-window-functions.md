@@ -5,8 +5,8 @@ section: "13.10"
 section_title: "Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数"
 status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-05-15"
-last_verified_against: "Perfetto Trace Processor docs + google/perfetto source master, external/perfetto mirror"
+last_verified: "2026-08-13"
+last_verified_against: "AOSP android-17.0.0_r1, android17-6.18-2026-06_r6, Perfetto Trace Processor v57.2 and official docs (2026-08-13)"
 confidence: high
 sources:
   - type: research
@@ -33,13 +33,13 @@ task2b_state: fixed
 
 # 13.10 Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数
 
-区间关联最容易出现“SQL 能运行，数字却多算或少算”的问题。帧、线程调度状态和锁等待已经带有 `ts + dur`；CPU 频率、内存等计数器只有采样时刻，要先补出有效区间。输入区间一旦重叠、分区键选错或末端边界没有定义，`SPAN_JOIN` 不会替查询者修正语义。
+区间关联最容易出现“SQL 能运行，数字却多算或少算”的问题。帧、线程调度状态和锁等待已经用 `ts` 与 `dur` 定义区间，结束时间才写成 `ts + dur`；CPU 频率、内存等计数器只有采样时刻，要先补出有效区间。输入区间一旦重叠、分区键选错或末端边界没有定义，`SPAN_JOIN` 不会替查询者修正语义。
 
-平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，调度事件对应的内核锚点为 `android17-6.18-2026-06_r6`。示例使用 Android 17 Perfetto SQL 标准库和该版本的 `span_join_operator` 约束；历史版本可以保留各自字段差异，但分析结果不得套用高于 Android 17 的平台假设。
+平台源码基线为 Android 17 / API 37 / `android-17.0.0_r1`，调度事件对应的内核基线为 `android17-6.18-2026-06_r6`。示例使用 Android 17 PerfettoSQL 标准库和该版本的 `span_join_operator` 约束，主机侧文档口径复核到 Trace Processor v57.2。分析历史版本时，应按对应的字段差异调整查询；分析结果不得套用高于目标版本的平台假设。
 
 ## `SPAN_JOIN` 处理区间交集
 
-Perfetto 把含 `ts` 和 `dur` 的一行称为时间段（`span`）。区间采用半开形式 `[ts, ts + dur)`；相邻区间在同一个端点接触时，交集长度为零。`slice`、`sched` 和 `thread_state` 已经是时间段，`counter` 表中仍是离散采样点。
+Perfetto 把含 `ts` 和 `dur` 的一行称为时间段（`span`）。区间采用半开形式 `[ts, ts + dur)`，即包含起点、不包含终点；相邻区间在同一个端点接触时，交集长度为零。`slice`、`sched` 和 `thread_state` 已经是时间段，`counter` 表中仍是离散采样点。
 
 普通 SQL 也能计算交集。两段时间相交的条件为 `a.ts < b.end_ts AND b.ts < a.end_ts`，交集起点取两个起点的较大值，终点取两个终点的较小值。下面用固定数据验证这套公式，便于观察边界。
 
@@ -72,7 +72,7 @@ ORDER BY a_id, b_id;
 
 第一段交集是 `[15, 20)`，时长为 5。`table_a` 的第二段结束于 40，`table_b` 的第二段从 40 开始，两者只接触端点，因此不会输出一行。对小表或可能嵌套的事件，普通区间条件通常更容易保留事件身份。
 
-`SPAN_JOIN` 把交集计算实现为虚拟表算子。它会将两侧区间按时间切开，并把两侧除 `ts`、`dur` 和分区键以外的列带到结果中。下面的合成数据演示按整数分区关联。
+`SPAN_JOIN` 把交集计算实现为虚拟表算子：查询时由 Trace Processor 动态生成行，不在数据库中保存一份实体表。它会将两侧区间按时间切开，并把两侧除 `ts`、`dur` 和分区键以外的列带到结果中。下面的合成数据演示按整数分区关联。
 
 ```sql
 CREATE PERFETTO TABLE demo_left (
@@ -122,21 +122,21 @@ ORDER BY part_id, ts;
 
 ### 算子不会检查同分区重叠
 
-Android 17 的实现会按分区和 `ts` 推进两侧游标。为了保持这一算法的成本可控，算子要求同一输入表、同一分区内的时间段互不重叠。源码和官方文档都明确说明：违反约束时可能静默产生错误行，算子不会主动报错。
+Android 17 的实现会按分区和 `ts` 推进两侧游标；游标是逐行读取查询结果的位置。为了保持这一算法的成本可控，算子要求同一输入表、同一分区内的时间段互不重叠。源码和官方文档都明确说明：违反约束时可能静默产生错误行，算子不会主动报错。
 
 输入还要满足以下条件：
 
-- 两侧都必须有 `ts`，且至少一侧必须有 `dur`。点事件本身不定义覆盖范围，区间分析会为两侧都显式提供 `dur`。
+- 底层算子要求两侧都有 `ts`，且至少一侧有 `dur`。缺少 `dur` 的一侧只按采样时刻参与匹配，不会自动延续到下一条记录；区间分析应为两侧都显式提供 `dur`。
 - `dur` 应大于零；`dur = -1` 的开放区间要先裁到查询窗口或 `trace_end()`。
 - 分区列必须是整数。两侧都分区时，列名必须相同。
 - 分区键必须表达同一种实体，例如 `ucpu` 对 `ucpu`、`utid` 对 `utid`。
 - 只给一侧分区也受支持，未分区表会分别与每个分区求交。
 
-字符串可以用 `HASH()` 转成整数，但哈希只解决列类型。两个字符串字段的业务含义不同，转成整数后依旧不具备关联关系；自动化查询还应评估哈希碰撞是否可接受。
+字符串可以用 `HASH()` 转成整数，但哈希只解决列类型。两个字符串字段的业务含义不同，转成整数后依旧不具备关联关系；自动化查询还应评估哈希碰撞，也就是不同字符串得到同一整数的风险是否可接受。
 
 ## 用窗口函数把计数器点变成时间段
 
-计数器在 `ts` 处记录“数值从此刻开始变为 value”。前向有效区间通常为 `[当前 ts, 下一条 ts)`，同一轨道的末条记录延续到明确的窗口末端。`LEAD()` 必须按 `track_id` 分区，否则一个 CPU 的频率点会被另一个 CPU 的采样时刻截断。
+计数器在 `ts` 处记录“数值从此刻开始变为 `value`”。所谓前向有效区间，是把这个值视为从当前 `ts` 持续到下一条记录，即 `[当前 ts, 下一条 ts)`；同一轨道的末条记录延续到明确的窗口末端。窗口函数 `LEAD()` 读取排序后的下一行，必须按 `track_id` 分组计算，否则一个 CPU 的频率点会被另一个 CPU 的采样时刻截断。
 
 手工把 `cpufreq` 计数器转成前向区间，并通过 `cpu` 表取得跨机器 Trace 也唯一的 `ucpu`，可以核对标准库的输入语义。
 
@@ -189,13 +189,13 @@ WHERE dur > 0
 ORDER BY ucpu, ts;
 ```
 
-频率表为空时，应检查 `power/cpu_frequency` ftrace 事件或 `linux.sys_stats` 的 CPU 频率轮询是否启用。事件驱动采集可能在 Trace 开头缺少初始频率；`SPAN_JOIN` 会保留这个数据缺口，不会猜测频率。
+频率表为空时，应检查 `power/cpu_frequency` ftrace 内核追踪事件或 `linux.sys_stats` 的 CPU 频率定时读取是否启用。事件驱动采集可能在 Trace 开头缺少初始频率；`SPAN_JOIN` 会保留这个数据缺口，不会猜测频率。
 
 ## `PARTITIONED` 前先验证输入
 
 `sched` 按 `ucpu` 分区时天然互斥，因为同一个 CPU 同一时刻只运行一个线程。`thread_state` 按 `utid` 分区也应形成互斥状态区间。普通线程 `slice` 带有父子嵌套，直接按 `utid` 交给 `SPAN_JOIN` 会重复计算父层和子层。
 
-下面的检查使用“前序最大结束时间”寻找同一 `utid` 中的重叠。相比只看 `LAG(ts + dur)`，运行最大值可以识别 `[1, 10)`、`[2, 3)`、`[9, 12)` 这类嵌套后再次相交的序列。
+下面的检查使用“前序最大结束时间”寻找同一 `utid` 中的重叠。`LAG()` 只能读取排序后的上一行，运行最大值则保留截至当前行之前出现过的最晚结束时间，因此还能识别 `[1, 10)`、`[2, 3)`、`[9, 12)` 这类嵌套后再次相交的序列。
 
 ```sql
 WITH
@@ -236,7 +236,7 @@ ORDER BY utid, ts;
 
 有输出就说明候选表违反互斥约束。处理方式取决于分析目标：限定具体层级或事件名可以保留事件身份；只关心覆盖时长时，可以先合并区间；需要保留多重重叠身份时，应使用普通区间关联或 `intervals.intersect`。
 
-`intervals.overlap` 提供 `interval_merge_overlapping_partitioned!`，可以按多个分区列生成最小的不重叠覆盖集。下面把目标进程的 `doFrame` 区间按 `upid`、`utid` 合并，适合在只统计覆盖时长时清理输入。
+`intervals.overlap` 提供 `interval_merge_overlapping_partitioned!` 宏，可以按多个分区列把相交区间合成最小的不重叠覆盖集。下面把目标进程的 `doFrame` 区间按 `upid`、`utid` 合并，适合在只统计覆盖时长时清理输入。
 
 ```sql
 INCLUDE PERFETTO MODULE intervals.overlap;
@@ -269,9 +269,9 @@ ORDER BY upid, utid, ts;
 
 ## 案例：每帧运行时间与 CPU 频率
 
-`Choreographer#doFrame` 的墙上时间同时包含运行、等待 CPU 和睡眠。分析频率时只应关联 `sched` 中的 `Running` 区间。Android 17 的 `android.frames.timeline` 已经给出帧与 `doFrame` 的对应关系，避免手工按名称和行号生成不稳定的帧 id。
+`Choreographer#doFrame` 的墙上时间，也就是从开始到结束实际经过的时间，同时包含运行、等待 CPU 和睡眠。分析频率时只应关联 `sched` 中的 `Running` 区间。Android 17 的 `android.frames.timeline` 已经整理 FrameTimeline 的期望 / 实际帧事件，并给出帧与 `doFrame` 的对应关系，避免手工按名称和行号生成不稳定的 `frame_id`。
 
-异构 SoC 上，不同 CPU 簇的频率范围与每 MHz 性能不同。把所有 CPU 的 kHz 混成一个平均值没有可比性。查询输出每帧、每个 `ucpu`、每个频点的运行驻留时间；解释性能时再结合 CPU capacity、簇信息和同设备基线。
+异构 SoC（System on a Chip，集成多类 CPU 核心的系统级芯片）上，不同 CPU 簇的频率范围与每 MHz 性能不同。把所有 CPU 的 kHz 混成一个平均值没有可比性。查询输出每帧、每个 `ucpu`、每个频点的运行驻留时间，也就是线程在该频点累计运行了多久；解释性能时再结合 CPU capacity（核心的相对计算能力）、簇信息和同设备基线。
 
 下面的完整脚本先关联调度与频率，再按 `utid` 将结果裁进 `doFrame`。两个 `SPAN_JOIN` 的输入在各自分区内均为互斥区间。
 
@@ -363,11 +363,11 @@ ORDER BY upid, frame_id, ucpu, freq;
 
 `known_frequency_running_ms` 只累计同时具有 `sched` 和频率数据的运行时间。它小于该帧的主线程总运行时间时，可能存在频率采集缺口。`frame_running_share_pct` 的分母也是已知频率运行时间，不能当作 `doFrame` 的 CPU 占用比例。
 
-频率低不自动等于调频故障。线程可能运行在能效核，短任务也可能在升频前完成；温控、ADPF、线程优先级、CPU affinity 和厂商调度策略都可能影响选择。判断应比较同一设备、同一场景和同一采集配置，并将 `ucpu` 映射到 CPU capacity 或簇。
+频率低不自动等于调频故障。线程可能运行在能效核，短任务也可能在升频前完成；温控、ADPF（Android Dynamic Performance Framework，应用向系统提交性能提示的框架）、线程优先级、CPU affinity（限定线程可以在哪些 CPU 上运行）和厂商调度策略都可能影响选择。判断应比较同一设备、同一场景和同一采集配置，并将 `ucpu` 映射到 CPU capacity 或簇。
 
 ## 帧 × Binder / 锁 / GC 的交叉分析
 
-`SPAN_JOIN` 适合互斥区间流。Binder 事务可能出现嵌套调用，普通 `slice` 也有父子层级；此时直接按 `utid` 送入算子会违反约束。Android 17 标准库已经提供 Binder、monitor 锁竞争和 GC 事件的语义表，可以先按 `doFrame` 裁剪，再按事件类型合并覆盖区间。
+`SPAN_JOIN` 适合互斥区间流。Binder（Android 进程间通信）事务可能出现嵌套调用，普通 `slice` 也有父子层级；此时直接按 `utid` 送入算子会违反约束。Android 17 标准库已经提供 Binder、monitor（Java `synchronized` 使用的对象锁）竞争和 GC（垃圾回收）事件的语义表，可以先按 `doFrame` 裁剪，再按事件类型合并覆盖区间。
 
 这条查询分别计算 UI 线程 Binder 客户端区间、UI 线程 monitor 锁等待和进程 GC 活动与 `doFrame` 的重叠。`interval_merge_overlapping_partitioned!` 会在每个帧和事件类型内合并重叠，避免同类嵌套事件重复累计。
 
@@ -481,9 +481,9 @@ GROUP BY upid, frame_id, event_kind
 ORDER BY upid, frame_id, covered_ms DESC;
 ```
 
-三类覆盖时间不能相加为“总阻塞时间”，因为 Binder、锁和 GC 活动可能彼此重叠。同步 Binder 的客户端区间包含等待回复；异步事务的客户端区间只描述发送。monitor 锁竞争直接说明 UI 线程等锁。`gc_activity` 覆盖整个标准库 GC 事件，包含并发工作与等待，不能等同于 stop-the-world 暂停。
+三类覆盖时间不能相加为“总阻塞时间”，因为 Binder、锁和 GC 活动可能彼此重叠。同步 Binder 的客户端区间包含等待回复；异步事务的客户端区间只描述发送。monitor 锁竞争直接说明 UI 线程等锁。`gc_activity` 覆盖整个标准库 GC 事件，包含并发工作与等待，不能等同于 stop-the-world（暂停应用受管线程执行）阶段。
 
-确定因果关系还要检查 `thread_state` 和事件层级。帧内出现 GC 活动，只能证明时间相关；主线程在同一时段是否停顿，需要查看主线程状态和 ART 暂停事件。合并后的表也不再保留原始事务或 GC id，追踪单个事件时应回查标准库源表。
+确定因果关系还要检查 `thread_state` 和事件层级。帧内出现 GC 活动，只能证明时间相关；主线程在同一时段是否停顿，需要查看主线程状态和 ART（Android Runtime）暂停事件。合并后的表也不再保留原始事务或 GC `id`，追踪单个事件时应回查标准库源表。
 
 ## 与 Trace Processor 标准库配合
 
@@ -507,7 +507,7 @@ ORDER BY upid, frame_id, covered_ms DESC;
 
 ## `SPAN_LEFT_JOIN` 与 `SPAN_OUTER_JOIN`
 
-`SPAN_JOIN` 只输出两侧真实区间的交集。`SPAN_LEFT_JOIN` 会用影子时间段（`shadow span`）补足左侧未匹配的时间，`SPAN_OUTER_JOIN` 会补足两侧未匹配时间。结果中的另一侧业务列为空，可以区分“有覆盖”和“没有覆盖”。
+`SPAN_JOIN` 只输出两侧真实区间的交集。`SPAN_LEFT_JOIN` 会用影子时间段（`shadow span`）补足左侧未匹配的时间，`SPAN_OUTER_JOIN` 会补足两侧未匹配时间。影子时间段是算子生成的占位区间，不是 Trace 中实际采集的事件；结果中的另一侧业务列为空，可以区分“有覆盖”和“没有覆盖”。
 
 下面的固定数据演示左连接如何保留左侧空档。
 
@@ -554,27 +554,27 @@ ORDER BY ts;
 
 结果会把左侧 `[10, 30)` 切成 `[10, 15)`、`[15, 20)`、`[20, 30)`；中间一段带有 `right_name`，两侧空档的该列为 `NULL`。这类输出适合计算“帧内没有 Binder 覆盖的时间”，前提是左表本身满足互斥约束。
 
-分区表为空时有一个已记录的特殊行为：空分区表参加 `outer join`，或作为 `left join` 的右表时，即便另一侧非空，也可能不输出时间段。官方文档将其归因于分区影子区间的定义。依赖未匹配区间的自动化查询要加入空表测试，不能直接套用普通 SQL 外连接的直觉。
+分区表为空时有一个已记录的特殊行为：空分区表参加 `SPAN_OUTER_JOIN`，或作为 `SPAN_LEFT_JOIN` 的右表时，即便另一侧非空，也不会输出时间段。官方文档将其归因于分区影子区间的定义。依赖未匹配区间的自动化查询要加入空表测试，不能直接套用普通 SQL 外连接的直觉。
 
 ## 查询成本与索引策略
 
-`SPAN_JOIN` 不构造完整笛卡尔积。Android 17 的 `CreateSqlQuery()` 会为子查询生成按分区和 `ts` 排序的读取，游标再按较早结束的一侧向前移动。总体成本仍由输入构造、排序和输出交集数量决定。
+`SPAN_JOIN` 不构造完整笛卡尔积，也就是不会先组合两表中的每一对行。Android 17 的 `CreateSqlQuery()` 会为子查询生成按分区和 `ts` 排序的读取，游标再按较早结束的一侧向前移动。总体成本仍由输入构造、排序和输出交集数量决定。
 
 大 Trace 查询按以下顺序控制成本：
 
 1. 按 `upid`、`utid`、`ucpu` 和明确时间窗过滤原始表。
-2. 用 `CREATE PERFETTO TABLE` 物化会重复使用的窗口函数结果。
-3. 只带入后续需要的列，避免把大字符串和完整 `args` 放进虚拟表。
+2. 用 `CREATE PERFETTO TABLE` 先计算并保存会重复使用的窗口函数结果，也就是把结果物化。
+3. 只带入后续需要的列，避免把大字符串和完整 `args` 键值参数放进虚拟表。
 4. 在每个分区检查重叠和非正 `dur`，防止错误输入扩大输出。
-5. 用 `EXPLAIN QUERY PLAN` 检查普通筛选与关联，再决定是否创建索引。
+5. 用 `EXPLAIN QUERY PLAN` 查看查询计划，也就是 Trace Processor 准备按什么顺序扫描和关联数据，再决定是否创建索引。
 
-Perfetto 原生表的 id 查询已有专门优化。需要为物化表加索引时使用 `CREATE PERFETTO INDEX`，并评估内存成本。索引可以帮助筛选和等值关联，但不能消除 `SPAN_JOIN` 为时间顺序读取所需的排序，也不能修复重叠输入。
+Perfetto 原生表的 `id` 查询已有专门优化。需要为物化表加索引时使用 `CREATE PERFETTO INDEX`，并评估内存成本。索引建立从键值到数据行的快速定位结构，可以帮助筛选和等值关联，但不能消除 `SPAN_JOIN` 为时间顺序读取所需的排序，也不能修复重叠输入。
 
 ## 在 CI 中复用复杂 Perfetto SQL
 
-CI 查询要固定采集配置、Trace Processor 版本、输出列与比较方法。设备型号、构建、刷新率、温控前置条件和场景步骤也要随结果保存。缺少 `sched_switch` 或 `cpufreq` 时，查询应显式报告覆盖不足，不能把空值当成零。
+CI（Continuous Integration，持续集成）查询要固定采集配置、Trace Processor 版本、输出列与比较方法。设备型号、构建、刷新率、温控前置条件和场景步骤也要随结果保存。缺少 `sched_switch` 或 `cpufreq` 时，查询应显式报告覆盖不足，不能把空值当成零。
 
-在独立 Trace Processor 进程中执行 SQL 文件并把结果写到 CSV，可以让流水线同时保留查询脚本和原始输出。
+在独立 Trace Processor 进程中执行 SQL 文件并把结果写到 CSV（逗号分隔文本），可以让流水线同时保留查询脚本和原始输出。
 
 ```bash
 trace_processor_shell \
@@ -583,7 +583,7 @@ trace_processor_shell \
   > frame_cpu_frequency.csv
 ```
 
-每次启动独立进程也能避免前一次查询创建的临时表污染当前运行。回归判断应比较同设备、同场景的基线分布，并在仓库中记录阈值来源；16.67 ms、某个固定 kHz 或任意百分比都不具备跨设备通用性。
+每次启动独立进程也能避免前一次查询创建的临时表污染当前运行。判断性能是否相对基线变差，应比较同设备、同场景的分布，并在仓库中记录阈值来源；16.67 ms、某个固定 kHz 或任意百分比都不具备跨设备通用性。
 
 ## 排查清单
 

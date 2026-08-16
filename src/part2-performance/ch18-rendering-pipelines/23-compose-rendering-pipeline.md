@@ -130,51 +130,51 @@ related_chapters: ["2.4", "2.5", "2.6", "22.3", "22.20", "22.25", "22.26"]
 
 # 18.23 Android 17 Jetpack Compose 渲染管线架构
 
-Compose 改写了 UI 的描述、状态追踪和节点更新方式，却没有绕过 Android 的 App Window 渲染管线。对一个开启硬件加速、没有额外独立 Surface 的普通 Compose 页面，像素仍经由 `ViewRootImpl`、HWUI、RenderThread、App Window 的 BLAST BufferQueue、SurfaceFlinger 和 HWC 到达屏幕。
+Compose 改变了 UI 的声明方式、状态追踪和节点更新，却仍使用 Android 的 App Window 渲染管线。App Window 指应用主窗口及其图形 buffer。对于开启硬件加速且没有额外独立 Surface 的普通 Compose 页面，像素仍依次经过 `ViewRootImpl`、HWUI、RenderThread、BLAST BufferQueue（协调窗口 buffer 与 SurfaceControl transaction 提交的队列机制）、SurfaceFlinger 和 HWC（Hardware Composer，硬件合成器）到达屏幕。
 
-这条边界是分析 Compose 卡顿的起点：Composition、Layout 和 Drawing 属于 Compose；窗口 buffer 的生产、合成与 present 属于 Android 图形栈。只盯着重组次数，解释不了 RenderThread、GPU 或 SurfaceFlinger 造成的慢帧。
+分析 Compose 卡顿时要先分清两层职责。Composition 根据 composable 调用生成和更新 UI 结构，Layout 负责测量与放置，Drawing 负责记录绘制内容；这三阶段属于 Compose。窗口 buffer 的生产、系统合成与 present（提交到显示设备）属于 Android 图形栈。只看 recomposition 次数，无法解释 RenderThread、GPU 或 SurfaceFlinger 导致的慢帧。
 
 ## 复核基线与阅读边界
 
-复核日期为 2026-07-31，采用以下基线。平台、Jetpack 与内核必须分别记录，不能用 Android 版本替代 Compose 版本。
+本文复核日期为 2026-07-31，采用以下基线。Android 平台、Jetpack Compose 与内核版本需要分别记录；Android 版本不能代替 Compose 依赖版本。
 
 | 层级 | 基线 | 说明 |
 | --- | --- | --- |
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | `Choreographer`、`ViewRootImpl`、`ThreadedRenderer`、`HardwareRenderer`、HWUI、SurfaceFlinger |
 | Jetpack Compose | Compose BOM `2026.06.01`，Runtime/UI/Foundation `1.11.4` | Compose 独立发布，不属于 `android-17.0.0_r1` 源码标签 |
-| Android 内核 | `android17-6.18-2026-06_r6` | 调度、cpuset、cpufreq、dma-buf 与 fence 等机制；内核没有 Composition 或 LayoutNode |
+| Android 内核 | `android17-6.18-2026-06_r6` | 调度、cpuset、cpufreq、dma-buf 与 fence 等机制；内核不包含 Composition 或 LayoutNode |
 
-讨论范围限定为 Android 12 至 Android 17 上的硬件加速 App Window。软件 Canvas、截图/离屏捕获、Preview，以及 `SurfaceView`、`TextureView`、视频或相机等独立 Producer 会改变局部路径，不能套用“单一窗口 buffer”的结论。
+讨论范围限定为 Android 12 至 Android 17 上采用硬件加速的 App Window。软件 Canvas、截图或离屏捕获、Preview，以及 `SurfaceView`、`TextureView`、视频或相机等独立 Producer（buffer 生产方）都会改变局部路径，不能沿用单一窗口 buffer 的结论。
 
 ## Compose 改了什么，复用了什么
 
 Compose 主要提供四组机制：
 
-- `Snapshot` 追踪状态读写，并把变更送到相关观察者；
-- `Recomposer` 对失效的 restart scope 执行 recomposition 和 `applyChanges`；
-- `LayoutNode` 树执行 Compose 自己的测量、放置、绘制和语义处理；
-- `OwnedLayer` / `GraphicsLayer` 保存可复用的绘制内容与图层属性。
+- `Snapshot` 为状态读写提供版本化视图，并通知读取过相应状态的观察者；
+- `Recomposer` 对失效的 restart scope（编译器标出的可单独重新执行范围）执行 recomposition，再通过 `applyChanges` 把结果写入现有 UI 结构；
+- `LayoutNode` 树承载 Compose UI 节点，执行测量、放置、绘制和语义处理；
+- `OwnedLayer` / `GraphicsLayer` 保存可复用的绘制内容与 layer 属性。
 
 窗口侧仍由 Android 平台负责：
 
 - `AndroidComposeView` 作为 `ViewGroup` 接入 View 树；
-- `ViewRootImpl` 安排 traversal 与 draw；
-- UI 线程把 View/Compose 绘制操作录入 RenderNode display list；
-- RenderThread 同步 RenderNode 树，通过 Skia 生成并提交 GPU 工作；
-- App Window Producer 把 buffer 排入队列；
-- SurfaceFlinger latch buffer、构建合成状态，并交给 HWC 或 RenderEngine；
-- 显示系统在选定的 frame timeline 上 present。
+- `ViewRootImpl` 安排 traversal，即窗口的 measure、layout、draw 遍历；
+- UI 线程把 View/Compose 的绘制操作录入 RenderNode display list，即可复用的绘制指令列表；
+- RenderThread 同步 RenderNode 树，通过 Skia 构建并提交 GPU 工作；
+- App Window Producer 把绘制完成的 buffer 排入队列；
+- SurfaceFlinger latch buffer，即选定本轮合成要使用的 buffer，再把合成状态交给 HWC 或 RenderEngine；
+- 显示系统按照选定的 frame timeline，即该帧的目标显示时序，完成 present。
 
-因此，“Compose 有独立渲染引擎”这个说法过于宽泛。Compose 有独立的 UI runtime 和节点系统；在 Android 的常规硬件加速窗口里，它使用 HWUI 图形后端。
+“Compose 有独立渲染引擎”容易把职责说得过宽。Compose 拥有自己的 UI runtime 和节点系统；在 Android 的常规硬件加速窗口中，实际图形后端仍是 HWUI。
 
 ## 两条帧驱动在同一主线程会合
 
-Compose 与 View traversal 都使用 Choreographer，但工作不同：
+Compose 与 View traversal 都使用 `Choreographer`，即主线程上的帧回调调度器，但两类回调承担不同工作：
 
-1. `AndroidUiFrameClock` 为等待 `withFrameNanos` 的协程注册一次性 `Choreographer.FrameCallback`。`Recomposer` 用它对齐动画、重组和变更应用。
-2. `ViewRootImpl` 的 traversal callback 驱动窗口的 measure、layout、draw 与 HWUI 提交。
+1. `AndroidUiFrameClock` 为等待 `withFrameNanos` 的协程注册一次性 `Choreographer.FrameCallback`。`Recomposer` 通过这套 frame clock 让动画、recomposition 和变更应用对齐帧时序。
+2. `ViewRootImpl` 的 traversal callback 驱动窗口 measure、layout、draw 与 HWUI 提交。
 
-下面的时序图用于区分这两类回调。
+下面的时序图标出两类回调的调用边界：
 
 ```mermaid
 sequenceDiagram
@@ -198,9 +198,9 @@ sequenceDiagram
     H->>T: "syncAndDrawFrame"
 ```
 
-图中两个 Choreographer 回调可能落在同一帧，却不能合并成“Compose 在自己的 `doFrame` 中完成布局和提交”。重组应用状态变化；窗口 traversal 决定何时调用 `onMeasure`、`onLayout` 和 draw。
+图中的两个 Choreographer 回调可能落在同一帧，但职责仍然分开。Recomposition 计算并应用 UI 结构变化；窗口 traversal 决定何时调用 `onMeasure`、`onLayout` 与 draw。因而不能把整条路径概括成 Compose 在自己的 `doFrame` 中完成布局和提交。
 
-Compose 1.11.4 的 `AndroidUiFrameClock` 采用一次性回调。下面的缩写代码只展示注册和取消语义。
+Compose 1.11.4 的 `AndroidUiFrameClock` 使用一次性回调。下面的缩写代码只展示回调注册和协程取消时的移除逻辑：
 
 ```kotlin
 override suspend fun <R> withFrameNanos(onFrame: (Long) -> R): R =
@@ -215,27 +215,27 @@ override suspend fun <R> withFrameNanos(onFrame: (Long) -> R): R =
     }
 ```
 
-这个回调不会在 `doFrame` 内再次注册自己。后续是否申请帧取决于新的 `withFrameNanos` 等待者和待处理工作；把它写成永久自循环会误导功耗与调度分析。
+这段代码在 `doFrame` 内不会自行再次注册。后续是否申请新帧，取决于是否出现新的 `withFrameNanos` 等待者或待处理工作。若把它描述成永久自循环，会错误估计空闲时的回调与功耗。
 
-## AndroidComposeView：Compose 与 ViewRoot 的接缝
+## AndroidComposeView：Compose 与 ViewRoot 的连接点
 
-`ComposeView` / `AbstractComposeView` 负责创建 composition；具体承载 Compose 节点树的是内部 `AndroidComposeView`。后者继承 `ViewGroup`，但普通 Compose 子节点不是 Android `View`。
+`ComposeView` / `AbstractComposeView` 负责创建 composition，即一棵 composable 内容的运行实例；真正承载 Compose 节点树的是内部 `AndroidComposeView`。后者继承 `ViewGroup`，普通 Compose 子节点却不会各自变成 Android `View`。
 
 Compose 1.11.4 的三个入口各有明确职责：
 
 | Android 入口 | Compose 工作 | 需要注意的边界 |
 | --- | --- | --- |
-| `onMeasure()` | 把 `MeasureSpec` 转成 Compose `Constraints`，更新 root constraints 并执行所需测量 | 仍受父 View 的测量契约约束 |
+| `onMeasure()` | 把 View 的 `MeasureSpec` 转成 Compose `Constraints`，更新根节点约束并执行所需测量 | 仍受父 View 的测量契约约束 |
 | `onLayout()` | 调用 `MeasureAndLayoutDelegate.measureAndLayout()`，完成待处理测量/放置并更新根边界 | Layout 不在 `AndroidUiFrameClock` 回调里直接完成 |
-| `dispatchDraw()` | 再做一次 `measureAndLayout()` 兜底，调用 `root.draw()`，更新 dirty `OwnedLayer` | 兜底路径允许 draw 前清理新产生的布局请求 |
+| `dispatchDraw()` | 再执行一次 `measureAndLayout()` 检查，调用 `root.draw()`，更新标记为 dirty、等待重录的 `OwnedLayer` | draw 前仍可完成刚产生的布局请求 |
 
-硬件加速 draw 的调用顺序也应说清楚。Android 17 的 `ViewRootImpl.performDraw()` 进入 `ThreadedRenderer.draw()`；`ThreadedRenderer` 先通过 `updateRootDisplayList()` 更新 View 树的 display list，期间会调用 `AndroidComposeView.dispatchDraw()`，随后才执行 `syncAndDrawFrame()`。
+硬件加速 draw 的调用顺序如下：Android 17 的 `ViewRootImpl.performDraw()` 进入 `ThreadedRenderer.draw()`；`ThreadedRenderer` 先通过 `updateRootDisplayList()` 更新 View 树的 display list，期间调用 `AndroidComposeView.dispatchDraw()`，随后执行 `syncAndDrawFrame()`。
 
-UI 线程负责 RenderNode display list 的录制。RenderThread 接手已经录好的渲染节点树及其属性，执行 tree sync、buffer 获取、Skia/GPU 工作提交和 buffer 入队。把 RenderThread 描述为“录 Compose display list”会混淆两种记录过程。
+UI 线程负责录制 RenderNode display list。RenderThread 接收已录制的渲染节点树及其属性，执行 tree sync（把 UI 线程准备的节点状态同步到渲染线程）、获取 buffer、提交 Skia/GPU 工作并将 buffer 入队。因此，RenderThread 并不负责录制 Compose display list。
 
 ## Composition、Layout、Drawing 可以分别失效
 
-Composable 函数不会简单地“一次执行，依次完成三阶段”。状态在哪个阶段被读取，决定变更从哪个 restart scope 开始传播。
+Composable 函数的一次执行不会直接包办 Composition、Layout、Drawing 三阶段。状态在哪个阶段被读取，会决定状态变化后从哪个观察范围开始失效，以及需要重做哪些工作。
 
 | 状态读取位置 | 变更后的主要工作 | 可能跳过的阶段 |
 | --- | --- | --- |
@@ -245,7 +245,7 @@ Composable 函数不会简单地“一次执行，依次完成三阶段”。状
 | draw lambda | 重录所属 layer 的绘制内容 | 可跳过 Recomposition 和 Layout |
 | `graphicsLayer {}` 属性 lambda | 更新 layer 属性 | 内容未变时可复用 display list |
 
-下面的例子用于展示“延后读取”如何把高频位置变化限制在 Layout 或 layer 属性阶段。
+下面的例子把状态读取放进布局和 layer 属性 lambda，使高频位置变化不必从 composable 函数体重新开始：
 
 ```kotlin
 @Composable
@@ -260,69 +260,69 @@ fun MovingBadge(offsetPx: State<Int>) {
 }
 ```
 
-`offset {}` 在布局阶段读取状态，`graphicsLayer {}` 在 layer 属性更新时读取状态。是否值得这样做要以 trace 为准：同一个状态被两个阶段读取，也会建立两组观察关系；这段代码只是说明作用域边界。
+`offset {}` 在布局阶段读取状态，`graphicsLayer {}` 在 layer 属性更新时读取状态。同一个状态被两个阶段读取，会建立两组观察关系，因此这种写法是否更快仍要由 trace 验证。示例只用于说明状态读取位置与失效范围的关系。
 
 ### Recomposition 不等于重绘
 
-Recomposition 负责重新执行失效的 composable scope 并生成变更。若参数未变且满足跳过条件，scope 可以被跳过；若变更只影响副作用或语义，也不一定产生新的绘制内容。
+Recomposition 会重新执行失效的 composable scope，并生成对现有 UI 结构的变更。参数未变且满足跳过条件时，scope 可以跳过；变更若只影响副作用或无障碍语义，也可能不产生新的绘制内容。
 
-反过来，Drawing 也可以在没有 Recomposition 的情况下发生。例如 `Canvas`、`drawWithContent` 或 layer 属性 lambda 在绘制相关 scope 读取状态，状态变化可直接使相应绘制范围失效。
+Drawing 也可以在没有 Recomposition 的情况下发生。例如，`Canvas`、`drawWithContent` 或 layer 属性 lambda 在绘制相关 scope 读取状态后，状态变化可以直接使对应绘制范围失效。
 
-Strong Skipping 属于 Compose Compiler / Kotlin 工具链能力。它从 Kotlin 2.0.20 起默认启用，不能写成 Android 17 的平台特性。稳定参数通常按 `equals` 比较，不稳定参数通常按实例比较；跳过仍受 restartable、参数变化以及编译器推断结果约束。
+Strong Skipping 是 Compose Compiler 决定 composable 调用能否跳过的一套规则，属于 Kotlin 工具链。从 Kotlin 2.0.20 起它默认启用，与 Android 17 平台版本无关。稳定参数通常按 `equals` 比较，不稳定参数通常按实例比较；最终能否跳过仍取决于函数是否 restartable、参数是否变化以及编译器推断结果。
 
 ## LayoutNode 的测量与放置
 
-`LayoutNode` 是 Compose UI 树的核心节点。父节点通过 `Constraints(minWidth, maxWidth, minHeight, maxHeight)` 测量子节点，子节点返回 `Placeable`，父节点在 `MeasureResult` 的 placement block 中确定位置。
+`LayoutNode` 是 Compose UI 树的布局节点。父节点通过 `Constraints(minWidth, maxWidth, minHeight, maxHeight)` 给出允许的尺寸范围，子节点测量后返回 `Placeable`（带测量尺寸、可被放置的结果），父节点再在 `MeasureResult` 的 placement block 中确定它的位置。
 
-Compose 的常规布局协议要求一个 child 在一次 measure pass 中只测量一次，这有助于限制自定义布局的歧义。它不代表整棵树每帧只遍历一遍，也不代表 Compose 永远没有额外测量：
+Compose 的常规布局协议要求一个 child 在单次 measure pass（一次测量过程）中只测量一次，以限制自定义布局产生歧义。这项约束不代表整棵树每帧只遍历一遍，也不排除额外测量：
 
-- Intrinsic measurement 会先查询固有尺寸；
-- `SubcomposeLayout` 可在测量时按约束生成内容；
-- Lazy 容器会按视口、缓存窗口与预取策略组合/测量项目；
-- Lookahead 会维护预测布局信息；
+- Intrinsic measurement 会先查询内容在给定条件下需要的最小或最大固有尺寸；
+- `SubcomposeLayout` 可以在测量过程中根据约束再生成需要测量的内容；
+- Lazy 容器会根据可见视口、缓存窗口与预取策略组合和测量 item；
+- Lookahead 会保存目标布局的预测结果，为后续动画或位置变化提供参考；
 - 约束、内容或依赖状态在 traversal 中变化时，可能产生新的测量请求；
 - `dispatchDraw()` 仍会处理尚未完成的 measure/layout 请求。
 
-所以，“Compose 比 View 快，因为只测量一次”不是可复用的结论。应在 Perfetto 中找出哪个节点、哪种布局策略和哪次状态变化扩大了测量范围。
+因此，单凭“每个 child 在一次 measure pass 中只测量一次”，无法得出 Compose 一定比 View 更快。应在 Perfetto 中找出具体节点、布局策略和状态变化如何扩大测量范围。
 
 ## Drawing、GraphicsLayer 与 RenderNode
 
-### 普通 LayoutNode 不等于一个 RenderNode
+### LayoutNode 与 RenderNode 不是一一对应
 
-大多数 `Text`、`Row`、`Column` 不会各自持有独立 Android `RenderNode`。没有 layer 边界的节点会把绘制操作录入最近的所属 layer，根节点也有自己的绘制承载范围。
+大多数 `Text`、`Row`、`Column` 不会各自持有独立的 Android `RenderNode`。没有 layer 边界时，节点的绘制操作会录入最近的所属 layer；Compose 根节点也有自己的绘制承载范围。
 
-这也修正了一个常见表述：Compose 不是“只重录失效 LayoutNode 的 display list”。display list 的复用单位是 `OwnedLayer` / `GraphicsLayer` 等绘制边界。一个普通 LayoutNode 的 draw 内容发生变化，可能需要重录包含它的最近所属 layer。
+因此，不能把绘制失效概括成只重录某个 `LayoutNode` 的 display list。display list 的复用单位是 `OwnedLayer` / `GraphicsLayer` 等绘制边界；普通 LayoutNode 的 draw 内容变化时，可能要重录包含它的最近所属 layer。
 
 ### Android 17 上的 graphicsLayer 主路径
 
-在 Android 12 至 Android 17 的范围内，Compose 1.11.4 的 `AndroidComposeView.createLayer()` 主路径创建 `GraphicsLayerOwnerLayer`。Android 17 对应的图形实现是 `GraphicsLayerV29`，内部使用公开的 `android.graphics.RenderNode`：
+在 Android 12 至 Android 17 上，Compose 1.11.4 的 `AndroidComposeView.createLayer()` 主路径会创建 `GraphicsLayerOwnerLayer`。Android 17 使用的图形实现是 `GraphicsLayerV29`，其内部调用公开的 `android.graphics.RenderNode`：
 
 - `GraphicsLayerOwnerLayer.updateDisplayList()` 只在 dirty 时调用 `graphicsLayer.record(...)`；
 - `GraphicsLayerV29` 通过 `RenderNode.beginRecording()` / `endRecording()` 保存绘制操作；
 - 绘制时通过 `Canvas.drawRenderNode()` 引用该节点；
-- translation、scale、rotation、alpha 等 layer 属性可以在内容不变时更新，避免重录内部 draw commands。
+- translation、scale、rotation、alpha 等 layer 属性可以在绘制内容不变时单独更新，避免重录内部 draw commands。
 
-`RenderNodeLayer` 仍存在于兼容代码中，但不应作为 Android 17 + Compose 1.11.4 的主路径来讲。
+`RenderNodeLayer` 仍保留在兼容代码中，但 Android 17 + Compose 1.11.4 的主路径不是它。
 
-### layer 边界不等于离屏 buffer
+### layer 边界不一定产生离屏 buffer
 
-`Modifier.graphicsLayer` 会建立图形 layer 隔离边界，但是否先渲染到 offscreen buffer 由合成策略和效果决定。
+`Modifier.graphicsLayer` 会建立图形 layer 隔离边界。offscreen buffer 是先把内容画进中间纹理、再参与最终合成的缓冲区；是否需要它由合成策略和效果共同决定。
 
 | 条件 | RenderNode / layer 边界 | offscreen buffer |
 | --- | --- | --- |
 | 普通 LayoutNode，无显式 layer | 通常并入最近所属 layer | 无额外 offscreen |
 | `graphicsLayer` + 平移/缩放/旋转 | 有 | 通常不需要 |
-| `CompositingStrategy.Auto` + `alpha < 1` 且内容可能重叠 | 有 | 为保证整体 alpha 语义，可自动启用 |
+| `CompositingStrategy.Auto` + `alpha < 1` 且内容可能重叠 | 有 | 为保证整层 alpha 语义，可以自动启用 |
 | `RenderEffect` | 有 | 需要中间结果 |
-| 非 `SrcOver` 的 `BlendMode` 或非空 `ColorFilter` | 有 | Compose 1.11.4 强制按 Offscreen 处理 |
+| 非默认 `SrcOver` 的 `BlendMode` 或非空 `ColorFilter` | 有 | Compose 1.11.4 强制按 Offscreen 处理 |
 | `CompositingStrategy.Offscreen` | 有 | 始终启用 |
-| `CompositingStrategy.ModulateAlpha` | 有 | alpha 场景可避免，但重叠内容的视觉结果可能不同 |
+| `CompositingStrategy.ModulateAlpha` | 有 | 把 alpha 分别作用于绘制指令，可以避开离屏 buffer；内容重叠时视觉结果可能不同 |
 
-离屏渲染会增加中间纹理、填充、带宽与 GPU 内存压力。`ModulateAlpha` 也不是无条件优化：只有内容不重叠、逐绘制指令调制 alpha 能满足视觉要求时才适用。
+离屏渲染会增加中间纹理、像素填充、内存带宽与 GPU 内存压力。`ModulateAlpha` 只适用于内容不重叠、逐绘制指令调制 alpha 仍满足视觉要求的场景。
 
 ## 从状态写入到 present
 
-下面的流程图把 Compose、HWUI、窗口队列和 SurfaceFlinger 放在一条证据链上。
+下面的流程图把 Compose、HWUI、窗口队列和 SurfaceFlinger 串成一条可按时间核对的证据链：
 
 ```mermaid
 flowchart TD
@@ -346,7 +346,7 @@ flowchart TD
     O --> P["present fence / 屏幕显示"]
 ```
 
-这条链路里，`queueBuffer` 只说明 Producer 交付了一个带 fence 的 buffer，不说明 SurfaceFlinger 已 latch，更不说明屏幕已经显示。定位“用户看到的这一帧”时，要继续对齐 BufferTX、FrameTimeline、latch、合成和 present 证据。
+在这条链路中，`queueBuffer` 只说明 Producer 已把 buffer 交给队列。随 buffer 提交的 producer completion fence 会在 Consumer（buffer 消费方）侧作为 acquire fence，用来表示生产工作何时完成；它不代表 SurfaceFlinger 已经 latch，更不代表屏幕已经显示。定位用户实际看到的帧时，还要继续对齐 BufferTX（SurfaceFlinger 中的 buffer transaction 事件）、FrameTimeline、latch、合成与 present 证据。
 
 ### UI 线程与 RenderThread 的分工
 
@@ -354,40 +354,40 @@ UI 线程主要完成：
 
 - Snapshot 通知、recomposition 与 `applyChanges`；
 - Compose 测量和放置；
-- View/Compose display list 的录制；
+- 录制 View/Compose display list；
 - 调用 `syncAndDrawFrame()` 并参与 HWUI 同步。
 
 RenderThread 主要完成：
 
 - 同步 RenderNode tree 和渲染属性；
-- `dequeueBuffer` 取得可写的窗口 buffer，必要时等待消费者返回的 release fence；
+- `dequeueBuffer` 取得可写的窗口 buffer，必要时等待 Consumer 返回的 release fence；该 fence 表示上一次消费已经结束，buffer 可以复用；
 - 让 Skia 构建/提交 GLES 或 Vulkan GPU 工作；
-- 完成 swap/queue，把 producer completion fence 随 buffer 提交；Consumer 侧把它作为 acquire fence。
+- 完成 swap/queue，并把 producer completion fence 随 buffer 提交。
 
-RenderThread trace slice 的长度不等于 GPU 执行时长。GPU 可能在 RenderThread 提交返回后继续工作；需要 GPU completion、fence 或 GPU counter 才能判断设备执行时间。类似地，`syncAndDrawFrame()` 返回通常也不能当成 present 完成。
+RenderThread trace slice 的长度不能直接当作 GPU 执行时长。GPU 可能在 RenderThread 提交返回后继续工作，需要 GPU completion、fence 或 GPU counter 才能判断设备侧执行时间。`syncAndDrawFrame()` 返回通常也早于 present 完成；显示结果要结合 present fence 或 FrameTimeline 判断。
 
 ## Snapshot 与 Recomposer 的并发边界
 
-Snapshot 让状态读写拥有版本化视图，并用 read/write observer 建立失效关系。它不是“所有状态操作都无锁”的承诺，也不会让同一个 composition 自动并行重组。
+Snapshot 为状态读写提供版本化视图，并通过 read/write observer 记录谁读取了状态、哪些写入需要触发失效。它没有承诺所有状态操作都无锁，也不会让同一个 composition 自动并行 recomposition。
 
-对 Android UI 性能分析，保留以下边界就够了：
+Android UI 性能分析可以依赖以下边界：
 
-- 同一个 composition 不会被 Recomposer 同时重组两次；
-- Runtime 1.11.0-alpha01 已移除曾经的实验性 concurrent recomposition API，不能再依据旧字段推断当前存在并发组合；
-- 多个 `ComposeView` 各有 composition root，但可以共享 window Recomposer、parent composition context，也可以显式共享同一份 state；
-- 后台线程可以借助 Snapshot API组织状态更新；涉及多项状态的一致更新时，使用明确的 mutable snapshot 或应用自己的同步策略；
+- 同一个 composition 不会被 Recomposer 同时执行两次 recomposition；
+- Runtime 1.11.0-alpha01 已移除曾经的实验性 concurrent recomposition API，旧版本的字段不能证明当前版本仍支持并发 composition；
+- 多个 `ComposeView` 各有 composition root（各自的组合根），但可以共享 window Recomposer、parent composition context，也可以显式共享同一份 state；
+- 后台线程可以借助 Snapshot API 组织状态更新；多项状态需要原子地一起生效时，应使用明确的 mutable snapshot（可变快照事务）或应用自己的同步策略；
 - `apply()` 可能遇到并发修改冲突，业务代码不应把 Snapshot 当作任意跨线程数据结构的替代品；
-- Android `View`、`AndroidComposeView`、绘制对象与副作用仍受各自线程约束，state 能跨线程写不代表 UI 对象能跨线程访问。
+- Android `View`、`AndroidComposeView`、绘制对象与副作用仍受各自线程约束。state 可以跨线程更新，不表示 UI 对象可以跨线程访问。
 
-这比分析 Runtime 内部锁的行号更稳定。锁实现和字段会随 Compose 版本调整，而 composition 单实例串行、状态冲突处理和 Android UI 线程边界才是应用需要依赖的契约。
+Runtime 内部的锁与字段会随 Compose 版本调整；应用应依赖 composition 单实例串行、状态冲突处理和 Android UI 线程约束这些公开边界，而非某一版本的锁实现行号。
 
 ## PausableComposition 与 Lazy 预取
 
-### 它解决的是哪段工作
+### 它分段处理哪类工作
 
-`PausableComposition` 支持把一个尚未投入使用的子 composition 分段推进。典型场景是 Lazy 容器预先准备可能进入视口的 item：空闲预算不足时请求暂停，后续继续 `resume()`；只有 `isComplete` 为真并完成 `apply()` 后，结果才可加入布局树使用。
+`PausableComposition` 可以分段执行尚未投入使用的子 composition。典型场景是 Lazy 容器预先准备可能进入视口的 item：当前空闲时间不足时请求暂停，后续再调用 `resume()` 继续。只有 `isComplete` 为真并完成 `apply()` 后，结果才能加入布局树。
 
-它不负责把当前可见页面的常规 recomposition 随意切成多帧，也不直接减少 draw、GPU 或 SurfaceFlinger 工作。它改变的是预取 composition 在多帧之间的安排，工作总量仍由内容决定。
+它不用于把当前可见页面的常规 recomposition 任意切成多帧，也不会直接减少 draw、GPU 或 SurfaceFlinger 工作。它只改变预取 composition 在不同帧空闲区间中的执行安排，工作总量仍由内容决定。
 
 ### API 与暂停语义
 
@@ -395,65 +395,65 @@ Compose 1.11.4 的关键 API 是：
 
 - `PausableComposition.setPausableContent()` / `setPausableContentWithReuse()` 返回 `PausedComposition`；
 - 调用方反复执行 `resume(shouldPause)`；
-- `shouldPause` 返回 `true` 只是暂停请求，并不保证任意函数边界都能立即停下；
-- `resume()` 完成后还必须检查 `isComplete`，随后同步调用 `apply()`；
-- 暂停期间读过的 state 若发生变化，已完成状态可能重新变为需要继续推进；
-- 放弃这项预取工作时调用 `cancel()`，并按 API 契约丢弃不确定状态的 composition。
+- `shouldPause` 返回 `true` 表示请求暂停，执行并不保证在任意函数边界立即停止；
+- `resume()` 返回后仍要检查 `isComplete`，完成时再同步调用 `apply()`；
+- 暂停期间读过的 state 若发生变化，原本已完成的结果可能再次需要处理；
+- 放弃预取时调用 `cancel()`，并按 API 契约丢弃状态不再确定的 composition。
 
 ### 1.11.4 的默认预取路径
 
-PausableComposition 最初在 Runtime `1.8.0-alpha02` 加入，不是 Compose 1.7 的稳定特性。Foundation 的 Lazy 预取开关经历过调整：
+PausableComposition 最初在 Runtime `1.8.0-alpha02` 加入，并非 Compose 1.7 的稳定特性。Foundation 的 Lazy 预取开关后来经历过调整：
 
 - Foundation 1.10.6 因稳定性考虑把 `isPausableCompositionInPrefetchEnabled` 设为 `false`；
 - Foundation 1.11.4 源码中的该 flag 为 `true`；
-- `LazyLayoutPrefetchState` 在 flag 开启时调用 paused precomposition，分别记录 resume、pause、apply 和 measure 的历史耗时。
+- `LazyLayoutPrefetchState` 在 flag 开启时调用 paused precomposition，并分别记录 resume、pause、apply 与 measure 的历史耗时。
 
-默认 Android 预取调度器以 `View.display.refreshRate` 估算 `frameIntervalNs`，用“预计下一帧时间减去当前时间”计算 `availableTimeNanos()`。如果距离上次 draw 已超过两个帧间隔，它会把当前阶段视为 idle，允许更积极地执行预取。
+默认 Android 预取调度器根据 `View.display.refreshRate` 估算 `frameIntervalNs`，再用预计下一帧时间减去当前时间，计算 `availableTimeNanos()`。如果距离上次 draw 已超过两个帧间隔，调度器会把当前阶段视为 idle（近期没有持续绘制），允许执行更多预取工作。
 
-这套调度没有直接读取 `Choreographer.FrameData.getPreferredFrameTimeline().getDeadlineNanos()`。因此不要把 `availableTimeNanos()` 写成 Android 12+ 精确 frame deadline；它是 Compose Foundation 当前实现的预算估算。
+这套调度没有直接读取 `Choreographer.FrameData.getPreferredFrameTimeline().getDeadlineNanos()`。因此，`availableTimeNanos()` 只是 Compose Foundation 当前实现对剩余时间的估算，不能当作 Android 12+ 提供的精确 frame deadline。
 
 ## 互操作：按 Surface 拓扑分类
 
-`AndroidView` 或 `ComposeView` 只说明 UI 框架嵌套关系。图形管线要继续问四个问题：谁是 Producer、谁消费 buffer、是否新建 Surface、SurfaceFlinger 中是否出现独立 Layer。
+`AndroidView` 或 `ComposeView` 只能说明 UI 框架如何嵌套，不能直接确定图形管线。还要确认四件事：谁生产 buffer、谁消费 buffer、是否新建 Surface，以及 SurfaceFlinger 中是否出现独立 layer。
 
 | 场景 | 常见 Producer / Surface | 管线判断 |
 | --- | --- | --- |
 | Compose 中嵌普通 `TextView`、`ImageView` | 仍由 App Window HWUI Producer 生成窗口 buffer | 单一标准 App Window 路径 |
 | View 树中嵌普通 `ComposeView` | 仍由 App Window HWUI Producer 生成窗口 buffer | 单一标准 App Window 路径 |
-| `AndroidView` 内含 `SurfaceView` | 子内容通常有独立 BufferQueue / SurfaceControl layer | 混合多 Surface 路径 |
+| `AndroidView` 内含 `SurfaceView` | 子内容通常有独立 BufferQueue / SurfaceControl layer | 多 Surface 混合路径 |
 | `AndroidView` 内含 `TextureView` | 独立 Producer 先写 SurfaceTexture，再作为纹理进入 App Window | Producer 独立，但常回到 App Window 合成 |
 | 视频、相机、WebView 或厂商组件 | 取决于内部采用 SurfaceView、TextureView、SurfaceTexture 或软件绘制 | 必须用 dumpsys/trace 验证 |
 
 ### AndroidView 的边界
 
-`AndroidViewHolder` 把 Compose `Constraints` 转成 View `MeasureSpec`，代理传统 View 的 measure/layout，并把 View invalidation 传播回 Compose 所属 layer。普通 AndroidView 没有天然的“额外 Surface 开销”，性能取决于被包装 View 的工作量、嵌套深度、失效频率和内部是否创建独立 Producer。
+`AndroidViewHolder` 把 Compose `Constraints` 转成 View `MeasureSpec`，调用传统 View 的 measure/layout，并把 View invalidation（内容需要重绘的通知）传播到 Compose 所属 layer。普通 AndroidView 不会天然增加一个 Surface；性能取决于被包装 View 的工作量、嵌套深度、失效频率，以及内部是否创建独立 Producer。
 
 ### ComposeView 的边界
 
-每个 `ComposeView` 有自己的 composition root 与 `AndroidComposeView` 宿主，但“状态互不共享”不是框架保证。多个 ComposeView 可以持有同一个 state，也可能通过 View tree composition context 共享 window Recomposer。拆成多个 ComposeView 会增加宿主和 composition 生命周期管理，应依据模块边界、生命周期和 trace 结果决定。
+每个 `ComposeView` 都有自己的 composition root 与 `AndroidComposeView` 宿主，但框架没有保证多个根之间的状态互相隔离。多个 ComposeView 可以持有同一个 state，也可能通过 View tree composition context 共享 window Recomposer。拆成多个 ComposeView 会增加宿主对象和 composition 生命周期管理，应根据模块边界、生命周期与 trace 结果决定是否采用。
 
 ### 混合动画不自动同步
 
-Compose 与普通 View 往往共享主线程 Choreographer 和窗口 traversal，这只能保证它们受同一窗口调度。若内部存在 SurfaceView、视频解码器或其他独立 Producer，各 Producer 的 dequeue、render、queue、fence 和 SurfaceFlinger latch 时序仍可能不同。需要逐对象对齐 frame timeline，不能仅凭“同一个 Choreographer”认定画面同步。
+Compose 与普通 View 往往共享主线程 Choreographer 和窗口 traversal，这只代表二者受同一窗口调度。内部若存在 SurfaceView、视频解码器或其他独立 Producer，各 Producer 的 dequeue、render、queue、fence 与 SurfaceFlinger latch 时序仍可能不同。必须逐个对象对齐 frame timeline，不能仅凭共用 Choreographer 就认定画面同步。
 
-FrameTimeline 的宿主 `SurfaceFrame` 适合判断 App Window 是否按时交付，不能代替独立 Surface 或 SurfaceTexture 输入流的时间线。混合页面应从异常 `DisplayFrame` 的 present 反向确认：宿主使用了哪次 BufferTX，独立 layer 使用了新 buffer 还是旧 buffer，Texture 输入又是否赶上宿主 RenderThread 的采样。
+FrameTimeline 中，`SurfaceFrame` 描述某个 Surface 交付帧的时序，适合判断 App Window 是否按时提交；它不能代替独立 Surface 或 SurfaceTexture 输入流的时间线。`DisplayFrame` 描述本轮显示合成与 present。分析混合页面时，应从异常 `DisplayFrame` 反向确认宿主采用了哪次 BufferTX、独立 layer 使用了新 buffer 还是旧 buffer，以及 Texture 输入是否赶上宿主 RenderThread 的采样。
 
 ## 用 Perfetto 定位慢帧
 
 ### 先确认看到的是哪一帧
 
-从 FrameTimeline 的 expected/actual slice 或目标 jank 帧出发，记录 token、时间区间和刷新率。60 Hz 的名义间隔约 16.67 ms，120 Hz 约 8.33 ms，但应用得到的可用预算还会受回调相位、deadline、buffer 压力和系统调度影响，不能把名义帧间隔机械拆成固定的 “composition 5 ms、layout 8 ms、draw 3 ms”。
+从 FrameTimeline 的 expected/actual slice（期望帧与实际帧时间片）或目标 jank 帧出发，记录 frame token（关联同一帧的标识）、时间区间和刷新率。60 Hz 的名义间隔约为 16.67 ms，120 Hz 约为 8.33 ms，但应用实际可用的预算还受回调相位、deadline、buffer 压力与系统调度影响。不能把名义帧间隔机械分配成固定的 composition 5 ms、layout 8 ms、draw 3 ms。
 
 ### 再沿线程和队列取证
 
 建议按下面顺序检查：
 
-1. **Main thread**：目标 `Choreographer#doFrame` 内是否有 composition、snapshot apply、measure/layout、display-list recording、GC、Binder 或业务代码。
-2. **Compose scope**：若 trace 没有 composition 细节，确认构建是否按当前官方说明启用了 Compose composition tracing；“没看到 slice”不等于“没有重组”。
-3. **RenderThread**：检查 `DrawFrame`、tree sync、`dequeueBuffer` 等等待，以及 CPU 调度空洞。不要把整段都记成 GPU 时间。
-4. **GPU / fences**：有 GPU counters、GPU completion 或 fence 时，判断复杂 path、过度离屏、像素填充、纹理上传或频率限制。
+1. **Main thread**：检查目标 `Choreographer#doFrame` 内是否出现 composition、snapshot apply、measure/layout、display-list recording、GC、Binder 或业务代码。
+2. **Compose scope**：trace 若没有 composition 细节，先确认构建是否按当前官方说明启用 Compose composition tracing。缺少 slice 只能说明没有采到对应事件，不能直接证明没有发生 recomposition。
+3. **RenderThread**：检查 `DrawFrame`、tree sync、`dequeueBuffer` 等等待，以及线程处于 runnable 却未获得 CPU 的调度空档。整段 RenderThread slice 不能都记为 GPU 时间。
+4. **GPU / fences**：有 GPU counters、GPU completion 或 fence 时，再判断复杂绘制 path、过度离屏、像素填充、纹理上传或频率限制。
 5. **BufferQueue / SurfaceFlinger**：对齐 queue、BufferTX、latch、composition 和 present，确认 App Window 是否错过目标 timeline。
-6. **HWC**：检查 layer 集合与 DEVICE/CLIENT 选择。独立 Surface 过多、效果或格式限制可能把部分合成压到 RenderEngine。
+6. **HWC**：检查 layer 集合与 DEVICE/CLIENT 选择。DEVICE 表示 HWC 直接处理该 layer，CLIENT 表示先由 RenderEngine 合成。独立 Surface 过多、效果或格式限制都可能增加 CLIENT 合成。
 7. **内核**：在 `android17-6.18-2026-06_r6` 边界内查看 sched、cpuset、cpufreq、dma-buf 与 fence 等机制；这里能解释线程为何没运行或 fence 为何没到，不能解释哪个 composable 被重组。
 
 ### 按阶段选择优化手段
@@ -462,13 +462,13 @@ FrameTimeline 的宿主 `SurfaceFrame` 适合判断 App Window 是否按时交�
 | --- | --- | --- |
 | Recomposition 范围大 | 状态读取位置、参数稳定性、无效派生状态 | 缩小 state reader scope；只在输出变化频率低于输入时使用 `derivedStateOf` |
 | 高频状态把 Composition 拉进来 | 动画/滚动值在函数体读取 | 能满足语义时，把读取移到 placement、draw 或 layer property lambda |
-| Measure/Layout 重 | Intrinsics、Subcompose、Lazy 嵌套、自定义 MeasurePolicy | 减少重复 intrinsic 查询；压缩布局层级；稳定 constraints；用 benchmark 验证 |
+| Measure/Layout 重 | Intrinsics、Subcompose、Lazy 嵌套、自定义 MeasurePolicy | 减少重复 intrinsic 查询；降低布局层级；让 constraints 稳定；用 benchmark 验证 |
 | Display-list recording 重 | 大范围 draw invalidation、复杂 path/text、所属 layer 过大 | 缩小绘制失效范围；缓存可复用计算；选择合适 layer 边界 |
-| GPU 重 | Offscreen、blur、blend、overdraw、大纹理 | 降低中间 buffer 面积；减少高成本 effect；核对色彩/格式和纹理上传 |
+| GPU 重 | Offscreen、blur、blend、overdraw（同一像素被重复绘制）、大纹理 | 降低中间 buffer 面积；减少高成本 effect；核对色彩/格式和纹理上传 |
 | dequeue / queue 阻塞 | buffer 压力、消费者落后、独立 Producer 时序 | 沿 BufferQueue 和 fence 找等待方，避免只改 Compose 代码 |
 | SurfaceFlinger / HWC 重 | Layer 数量、CLIENT 合成、显示侧 deadline | 调整 Surface 拓扑或效果；与设备合成能力一起验证 |
 
-`derivedStateOf` 有自己的观察和计算成本。它适合“输入频繁变化，派生结果较少变化”的场景，例如滚动位置映射成“是否显示返回顶部按钮”；它不会降低源 state 的写入频率，也不是所有性能问题的默认答案。
+`derivedStateOf` 会观察输入并缓存派生结果，本身也有观察与计算成本。它适合输入频繁变化、派生结果很少变化的场景，例如把连续滚动位置映射成是否显示返回顶部按钮。它不会降低源 state 的写入频率，也不应作为所有性能问题的默认改法。
 
 ## 版本演进：平台与 Compose 分开记
 
@@ -478,45 +478,45 @@ FrameTimeline 的宿主 `SurfaceFrame` 适合判断 App Window 是否按时交�
 | Runtime 1.8.0-alpha02（2024-09） | 加入实验性 PausableComposition，供可暂停的子 composition 使用 |
 | Kotlin 2.0.20 | Strong Skipping 默认启用；这是编译器边界 |
 | Foundation 1.10.6 | Lazy 预取的 PausableComposition flag 因稳定性问题暂时默认关闭 |
-| Runtime 1.11.0 | 新 SlotTable/link-buffer 实现仍是实验能力且默认关闭；旧实验性 concurrent recomposition API 已移除 |
+| Runtime 1.11.0 | 用于保存 composition group 与节点关联的新 SlotTable/link-buffer 内部实现仍处于实验阶段且默认关闭；旧实验性 concurrent recomposition API 已移除 |
 | Compose 1.11.4 / BOM 2026.06.01 | Jetpack 基线；Foundation 源码中 Lazy PausableComposition 预取 flag 为 `true` |
 | Android 17 / API 37 | 平台上限；标准 App Window 仍走 ViewRoot/HWUI/RenderThread/SurfaceFlinger |
 
-不要把“Android 17 同期可用的 Compose 版本”写成系统内置版本。应用依赖决定 Compose Runtime/UI/Foundation 版本，同一台 Android 17 设备可以运行不同 Compose 版本构建的应用。
+Android 17 同期可用的 Compose 版本不是系统内置版本。Compose Runtime/UI/Foundation 由应用依赖决定，同一台 Android 17 设备可以运行由不同 Compose 版本构建的应用。
 
 ## 常见误区
 
 ### “每个 Composable 都对应一个 RenderNode”
 
-Composable 是函数调用与 group 结构，LayoutNode 是 UI 节点，RenderNode/GraphicsLayer 是绘制复用边界，三者不是一一对应关系。普通 LayoutNode 往往录入最近所属 layer。
+Composable 对应函数调用与 composition group，LayoutNode 是 UI 节点，RenderNode/GraphicsLayer 是绘制复用边界，三者没有一一对应关系。普通 LayoutNode 的绘制内容通常录入最近的所属 layer。
 
 ### “Compose 的 FrameCallback 会直接 measure、layout、draw”
 
-`AndroidUiFrameClock` 负责恢复等待帧的协程。窗口 traversal 通过 `AndroidComposeView.onMeasure()`、`onLayout()` 和 `dispatchDraw()` 执行布局与绘制，并由 `ThreadedRenderer.draw()` 提交 HWUI 帧。
+`AndroidUiFrameClock` 负责恢复等待帧的协程。窗口 traversal 才会通过 `AndroidComposeView.onMeasure()`、`onLayout()` 和 `dispatchDraw()` 执行布局与绘制，随后由 `ThreadedRenderer.draw()` 提交 HWUI 帧。
 
 ### “graphicsLayer 一定创建离屏纹理”
 
-graphicsLayer 建立 layer 边界；平移、缩放、旋转等属性通常可由 RenderNode 处理。Offscreen、特定 alpha 语义、RenderEffect、BlendMode 或 ColorFilter 才可能需要中间 buffer。
+graphicsLayer 建立 layer 边界。平移、缩放、旋转等属性通常可以由 RenderNode 处理；Offscreen 策略、特定 alpha 语义、RenderEffect、BlendMode 或 ColorFilter 才可能需要中间 buffer。
 
 ### “RenderThread slice 就是 GPU 时长”
 
-RenderThread 负责准备和提交 GPU 工作，也可能等待 buffer 或 fence。GPU 可以异步执行，必须结合 GPU 与 fence 证据。
+RenderThread 负责准备和提交 GPU 工作，也可能等待 buffer 或 fence。GPU 可以异步执行，实际执行时长必须结合 GPU completion、counter 或 fence 判断。
 
 ### “queueBuffer 代表已经上屏”
 
-queue 之后仍有 SurfaceFlinger latch、合成决策、HWC/RenderEngine 工作和 present。看到 queue 只能证明 Producer 交付。
+queue 之后仍有 SurfaceFlinger latch、合成决策、HWC/RenderEngine 工作与 present。看到 queue 只能证明 Producer 已交付 buffer。
 
 ### “多个 ComposeView 的状态天然隔离”
 
-composition root 分开不妨碍显式共享 state，也不保证拥有不同 Recomposer。需要查看 parent composition context、window Recomposer 和业务状态所有权。
+不同 composition root 仍可显式共享 state，也可能使用同一个 Recomposer。判断隔离边界时，需要查看 parent composition context、window Recomposer 和业务状态所有权。
 
 ### “PausableComposition 会降低 GPU 工作量”
 
-它主要安排 Lazy 预取子 composition 的推进时机。draw 和 GPU 工作是否减少，取决于进入屏幕的内容与绘制方式。
+它主要安排 Lazy 预取子 composition 的执行时机。draw 和 GPU 工作是否减少，取决于最终进入屏幕的内容与绘制方式。
 
 ## 源码核对索引
 
-关键结论来自以下固定基线：
+下表列出关键结论及其固定版本源码：
 
 | 结论 | 基线源码 |
 | --- | --- |
@@ -531,14 +531,14 @@ composition root 分开不妨碍显式共享 state，也不保证拥有不同 Re
 | SurfaceFlinger 与 HWC | AOSP Android 17 [SurfaceFlinger FrontEnd](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/) 与 [`HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp) |
 | 内核机制边界 | ACK `android17-6.18-2026-06_r6` [`sched/core.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c)、[`dma-buf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c) 与 [`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c) |
 
-Compose 版本可在 Android Developers 的 [Compose BOM 页面](https://developer.android.com/develop/ui/compose/bom)、[BOM 映射表](https://developer.android.com/develop/ui/compose/bom/bom-mapping) 与 [Compose Runtime release notes](https://developer.android.com/jetpack/androidx/releases/compose-runtime) 交叉核对。平台源码以 `android-17.0.0_r1` 固定标签为准，不用 moving branch 代替。
+Compose 版本可在 Android Developers 的 [Compose BOM 页面](https://developer.android.com/develop/ui/compose/bom)、[BOM 映射表](https://developer.android.com/develop/ui/compose/bom/bom-mapping) 与 [Compose Runtime release notes](https://developer.android.com/jetpack/androidx/releases/compose-runtime) 交叉核对。平台源码以 `android-17.0.0_r1` 固定标签为准，不使用持续变化的开发分支代替。
 
 ## 总结
 
-Compose 渲染性能可以按三层排查：
+Compose 渲染性能可以分三层排查：
 
 1. **Compose 层**：Snapshot 失效范围、Recomposition、Layout、Drawing、GraphicsLayer 与 Lazy 预取；
 2. **App Window 层**：ViewRoot traversal、UI display-list recording、RenderThread、Skia/GPU 与 BLAST BufferQueue；
 3. **系统合成层**：SurfaceFlinger latch、LayerSnapshot、HWC/RenderEngine 和 present。
 
-普通 Compose 页面仍是标准 App Window Producer。Compose 只决定窗口内容如何生成；独立 Surface、GPU fence、SurfaceFlinger 合成与显示时序仍需按 Android 图形栈的方法取证。把阶段、线程、buffer 和 present timeline 对齐后，才能判断一帧慢在重组、布局、录制、GPU、队列，还是显示合成。
+普通 Compose 页面仍通过标准 App Window 生产 buffer。Compose 决定窗口内容如何生成；独立 Surface、GPU fence、SurfaceFlinger 合成与显示时序则要沿 Android 图形栈取证。只有把阶段、线程、buffer 和 present timeline 放在同一时间轴上，才能判断慢帧发生在 recomposition、布局、display-list recording、GPU、队列还是系统合成。
