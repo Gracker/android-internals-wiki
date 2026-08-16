@@ -2,12 +2,17 @@
 title: "Android 17 Binder Transaction Buffer：内核分配、异步预算与 RPC 上限"
 chapter: "1.30"
 section: "1.30"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 tags: [binder, ipc, transaction-buffer, performance, android17, rpc-binder]
 related_chapters: ["1.4", "1.10", "1.17", "1.29", "1.38"]
-last_verified: "2026-07-25"
-last_verified_against: "AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6"
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
+last_verified: "2026-08-16"
+last_verified_against: "AOSP android-17.0.0_r1 / external/perfetto android-17.0.0_r1 / android17-6.18-2026-06_r6"
+last_review_finalize_at: "2026-08-16"
+last_review_finalize_run_id: "20260816-140530-1396d202"
 confidence: high
 sources:
   - type: aosp
@@ -15,25 +20,29 @@ sources:
   - type: aosp
     path: "frameworks/native/libs/binder/Constants.h (android-16.0.0_r1)"
   - type: aosp
-    path: "frameworks/native/libs/binder/Constants.h"
+    path: "frameworks/native/libs/binder/Constants.h (android-17.0.0_r1)"
   - type: aosp
-    path: "frameworks/native/libs/binder/ProcessState.cpp"
+    path: "frameworks/native/libs/binder/ProcessState.cpp (android-17.0.0_r1)"
   - type: aosp
-    path: "frameworks/native/libs/binder/RpcState.cpp"
+    path: "frameworks/native/libs/binder/RpcState.cpp (android-17.0.0_r1)"
   - type: aosp
-    path: "frameworks/native/libs/binder/RpcTransportUtils.h"
+    path: "frameworks/native/libs/binder/RpcTransportUtils.h (android-17.0.0_r1)"
   - type: aosp
-    path: "frameworks/native/libs/binder/BpBinder.cpp"
+    path: "frameworks/native/libs/binder/BpBinder.cpp (android-17.0.0_r1)"
   - type: aosp
-    path: "frameworks/native/libs/binder/Binder.cpp"
+    path: "frameworks/native/libs/binder/Binder.cpp (android-17.0.0_r1)"
   - type: aosp
-    path: "frameworks/native/libs/binder/IPCThreadState.cpp"
+    path: "frameworks/native/libs/binder/IPCThreadState.cpp (android-17.0.0_r1)"
   - type: aosp
-    path: "frameworks/native/libs/binder/Parcel.cpp"
+    path: "frameworks/native/libs/binder/Parcel.cpp (android-17.0.0_r1)"
+  - type: aosp
+    path: "external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql (android-17.0.0_r1)"
   - type: kernel
     path: "common/drivers/android/binder.c (android17-6.18-2026-06_r6)"
   - type: kernel
     path: "common/drivers/android/binder_alloc.c (android17-6.18-2026-06_r6)"
+  - type: kernel
+    path: "common/drivers/android/binder_trace.h (android17-6.18-2026-06_r6)"
   - type: kernel
     path: "common/include/uapi/linux/android/binder.h (android17-6.18-2026-06_r6)"
   - type: official
