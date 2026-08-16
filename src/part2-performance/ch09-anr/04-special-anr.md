@@ -3,28 +3,76 @@ title: "特殊与跨边界 ANR"
 chapter: "9.4"
 section: "9.4"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-27"
-last_verified_against: "AOSP android-15.0.0_r1 ART heap/gc_cause anchors, SQLite WAL docs, Android 14-17 FGS timeout research"
-confidence: medium
+last_verified: "2026-08-16"
+last_verified_against: "AOSP android-17.0.0_r1 ActivityThread/QueuedWork/Broadcast/ActiveServices/ContentProvider/Binder/ART anchors; Android Common Kernel android17-6.18-2026-06_r6 sched/PSI/cgroup freezer docs; Android Developers ANR/FGS/App Startup/DataStore/16 KB docs; SQLite WAL/locking docs"
+confidence: medium-high
 sources:
 - type: aosp
   path: frameworks/base/core/java/android/app/ActivityThread.java
 - type: aosp
   path: frameworks/base/core/java/android/app/SharedPreferencesImpl.java
 - type: aosp
+  path: frameworks/base/core/java/android/app/QueuedWork.java
+- type: aosp
+  path: frameworks/base/core/java/android/content/BroadcastReceiver.java
+- type: aosp
+  path: frameworks/base/core/java/android/content/ContentProviderClient.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java
+- type: aosp
   path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
 - type: aosp
-  path: frameworks/base/core/java/android/app/IActivityManager.aidl
+  path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/ActiveServices.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/BroadcastConstants.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/BroadcastProcessQueue.java
+- type: aosp
+  path: frameworks/native/libs/binder/ProcessState.cpp
+- type: aosp
+  path: art/runtime/gc/heap.cc
+- type: aosp
+  path: art/runtime/gc/gc_cause.h
+- type: kernel
+  path: include/linux/sched.h
+- type: kernel
+  path: Documentation/accounting/psi.rst
+- type: kernel
+  path: Documentation/admin-guide/cgroup-v2.rst
+- type: official
+  path: https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs
+- type: official
+  path: https://developer.android.com/develop/background-work/services/fgs/troubleshooting
+- type: official
+  path: https://developer.android.com/develop/background-work/services/fgs/timeout
+- type: official
+  path: https://developer.android.com/topic/libraries/app-startup
+- type: official
+  path: https://developer.android.com/topic/libraries/architecture/datastore
+- type: official
+  path: https://developer.android.com/guide/practices/page-sizes
+- type: official
+  path: https://source.android.com/docs/core/runtime/gc-debug
+- type: official
+  path: https://www.sqlite.org/wal.html
+- type: official
+  path: https://www.sqlite.org/lockingv3.html
 - type: web
   note: 高爷原创 ANR 分析系列
   path: https://androidperformance.com/
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
-task6_state: "reviewed"
-status: "finalized"
-pipeline_stage: "ready-to-publish"
-task9_state: "reviewed"
+task6_state: "pending-review"
+status: "ready-for-review"
+pipeline_stage: "ready-for-review"
+task9_state: "pending-review"
 task2b_state: fixed
+last_rework_at: "2026-08-16T17:35:57+08:00"
+last_rework_run_id: "20260816-173557-rework-00c7195b"
 ---
 # 9.4 特殊与跨边界 ANR
 
@@ -45,7 +93,7 @@ ANR 仍由 Input、Broadcast、Service、ContentProvider、Job 等 detector 按�
 
 分析时不要用“系统问题”或“应用问题”提前结束调查。每个结论都应写清 detector、等待者、资源拥有者、时间区间和可实施的修复点。
 
-本章的平台实现以 AOSP `android-17.0.0_r1` 为核对版本，内核语义以 `android17-6.18-2026-06_r6` 为准。
+本章的平台实现以 AOSP `android-17.0.0_r1` 为核对版本，内核语义以 `android17-6.18-2026-06_r6` 为准。核对范围覆盖组件调度、`QueuedWork`、广播队列、前台服务、Binder 线程池、ART GC、内核调度/PSI/freezer 和 SQLite WAL；超出这些入口的厂商改动应以目标设备源码、DeviceConfig 与 trace 为准。
 
 ## CPU 饥饿、I/O 等待与 freezer
 
@@ -56,7 +104,7 @@ ANR 仍由 Input、Broadcast、Service、ContentProvider、Job 等 detector 按�
 Perfetto 中要按唤醒事件拆分：
 
 1. 主线程何时从睡眠或等待变为 Runnable；
-2. wakeup-to-run（从被唤醒到真正获得 CPU）延迟多长；
+2. wakeup-to-run（从被唤醒到获得 CPU）延迟多长；
 3. 延迟期间，同一个 CPU、同一 cpuset 上运行了哪些线程；
 4. 目标线程的 nice（普通调度优先级）、调度组、uclamp（CPU 性能需求上下限）与 CPU affinity（可运行 CPU 范围）是否符合预期；
 5. CPU frequency（频率）、idle（空闲状态）和 thermal throttling（温控降频）是否降低了可用算力。
@@ -221,7 +269,7 @@ Android 17 的调用点需要逐条区分：
 - queued-work-looper 的 `writeToFile()`、`fsync()` 与调度状态；
 - I/O 延迟、I/O PSI、reclaim 和存储错误在同一窗口内的变化。
 
-只看到 `apply()` 调用不足以归因，因为被后续修改合并的中间 generation 可能没有真正写盘。只看到 `waitToFinish()` 也不足以归因，`QueuedWork` 还可能承载其他框架任务。
+只看到 `apply()` 调用不足以归因，因为被后续修改合并的中间 generation 可能没有落盘。只看到 `waitToFinish()` 也不足以归因，`QueuedWork` 还可能承载其他框架任务。
 
 ### 修复
 
@@ -245,7 +293,7 @@ Android 17 的调用点需要逐条区分：
 3. A 的回调处理需要锁 L，或必须同步切到正等待 B 的主线程；
 4. A 等 B，B 等 A 的回调，回调又等 L 或主线程。
 
-另一种常见循环来自线程池：A 的 Binder workers（工作线程）全在等待 B，B 回调 A 时找不到可服务的线程；B 的 workers 又逐步被这些调用占满。此时没有 Java monitor（对象锁）循环，真正互相等待的是两端有限的线程槽位。
+另一种常见循环来自线程池：A 的 Binder workers（工作线程）全在等待 B，B 回调 A 时找不到可服务的线程；B 的 workers 又逐步被这些调用占满。此时没有 Java monitor（对象锁）循环，互相等待的资源是两端有限的线程槽位。
 
 ### “默认 15”不是进程线程总数
 
@@ -336,7 +384,7 @@ Rollback journal（回滚日志）使用的 `UNLOCKED/SHARED/RESERVED/PENDING/EX
 - checkpoint 可以与 reader 并行，但不能越过仍被 reader 使用的 end mark；
 - 长 reader 会让 checkpoint 无法推进到末尾，WAL 可能继续增长。
 
-Android framework 还通过 `SQLiteConnectionPool` 管理数据库连接。主线程可能等待可用连接、唯一 writer 或应用 Java 锁，也可能进入 `fsync()`、checkpoint 或文件系统等待。把所有栈都归为“文件锁”会遗漏真正的修复位置。
+Android framework 还通过 `SQLiteConnectionPool` 管理数据库连接。主线程可能等待可用连接、唯一 writer 或应用 Java 锁，也可能进入 `fsync()`、checkpoint 或文件系统等待。把所有栈都归为“文件锁”会遗漏具体修复位置。
 
 ### 多进程场景
 
@@ -422,8 +470,12 @@ Android 17 平台源码：
 - [SharedPreferencesImpl：apply 与写盘](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java)
 - [QueuedWork：pending work 与 finisher](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java)
 - [BroadcastReceiver：PendingResult.finish](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/BroadcastReceiver.java)
+- [ContentProviderHelper：Provider publish guard 与 Provider ANR](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderHelper.java)
+- [ContentProviderClient：setDetectNotResponding](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ContentProviderClient.java)
+- [BroadcastConstants：广播并发、active 数量与超时配置](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastConstants.java)
 - [BroadcastQueueImpl](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastQueueImpl.java)
 - [BroadcastProcessQueue](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastProcessQueue.java)
+- [ActivityManagerConstants：FGS timeout 与 DeviceConfig 默认值](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java)
 - [ActiveServices：execute-service 与 FGS timeout](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java)
 - [ProcessState：Binder thread-pool 配置](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/ProcessState.cpp)
 - [ART Heap](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc)
