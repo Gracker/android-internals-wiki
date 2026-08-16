@@ -134,7 +134,7 @@ Android XR 覆盖多种运行形态。手机或大屏应用可以作为 compatib
 | Jetpack Compose Glimmer | `1.0.0-alpha16` | 2026-07-29 更新；透明 display glasses UI 仍是 alpha |
 | Android XR SDK 总体 | Developer Preview 4 | 官方仍将整组 SDK 标为开发中 |
 
-Compose for XR 从 `1.0.0-alpha14` 起将 `compileSdk` 更新到 API 37，并要求至少 AGP 9.2.0。alpha16 把库的 `minSdk` 降到 24，但官方同时说明 Jetpack XR API 运行时仍要求 API 34。这里要分别理解三项条件：`compileSdk 37` 决定编译时可见 API，manifest minSdk 决定安装兼容范围，XR runtime 条件决定功能能否真正运行。使用 alpha16 时应按对应 release notes 配置构建环境。本文只采用当前文档仍存在的概念，不用早期 alpha 类名推断长期 API。
+Compose for XR 从 `1.0.0-alpha14` 起将 `compileSdk` 更新到 API 37，并要求至少 AGP 9.2.0。alpha16 把库的 `minSdk` 降到 24，但官方同时说明 Jetpack XR API 运行时仍要求 API 34。这三项条件要分开理解：`compileSdk 37` 决定编译时可见 API，manifest minSdk 决定安装兼容范围，XR runtime 条件决定功能能否运行。使用 alpha16 时应按对应 release notes 配置构建环境。本文只采用当前文档仍存在的概念，不用早期 alpha 类名推断长期 API。
 
 公开 AOSP tag 可以验证 Android 的 HWUI、Surface、BufferQueue、fence 和调度公共层，但不能据此补写未公开的 XR compositor 内部调用链。本文对 XR runtime 的描述只覆盖 Jetpack、Unity/OpenXR 与质量文档公开的协议和责任边界。
 
@@ -198,7 +198,7 @@ Jetpack XR SDK 是一组覆盖 UI、scene、感知和 projected device 的库，
 
 ## 空间环境资产的成本构成
 
-`SpatialEnvironment` 管理应用的空间环境偏好。按 SceneCore beta01 的当前模型，`SpatialEnvironmentPreference` 接收一个 `ImageBasedLightingAsset` 和一个 glTF geometry。用户直接看到的 skybox texture（包围场景的远景纹理）放在 geometry 资产中，独立 IBL ZIP 用于 lighting、reflection 与 specular（镜面反射高光）计算。每次偏好最多提供一份 lighting asset 和一份 geometry。环境只在 Full Space 可见；passthrough 是相机画面构成的现实世界视图，达到 full opacity 时会完全遮住 geometry。
+`SpatialEnvironment` 管理应用的空间环境偏好。按 SceneCore beta01 的当前模型，`SpatialEnvironmentPreference` 接收一个 `ImageBasedLightingAsset` 和一个 glTF geometry。用户直接看到的 skybox texture（包围场景的远景纹理）放在 geometry 资产中，独立 IBL ZIP 用于 lighting、reflection 与 specular（镜面反射高光）计算。每份偏好最多提供一份 lighting asset 和一份 geometry。环境只在 Full Space 可见；passthrough 是相机画面构成的现实世界视图，达到 full opacity 时会完全遮住 geometry。
 
 从 Jetpack XR alpha04 起，官方建议把可见环境与 IBL 数据拆开：
 
@@ -229,7 +229,7 @@ Jetpack XR 的内容规范支持 glTF 2.0，作者工具常输出 `.gltf` 或 `.
 
 压缩后的 `.glb` 或 KTX2 文件大小不等于 GPU resident size（解压、转码后实际常驻 GPU 内存的大小）。运行时转码格式、mip chain、每眼目标、材质数量和 runtime 缓存都会改变内存占用。官方建议环境 glb 使用 mipmaps 与 KTX2，主要收益涉及纹理采样、远近层级、内存带宽和包体；仍需在目标 GPU 上确认最终格式与常驻量。
 
-大模型宜异步预取，但一次性尽早加载全部资源会把启动、峰值内存与热压力前移。工程上应按可见优先级加载：
+大模型宜异步预取，但在启动初期一次性加载全部资源，会把启动、峰值内存与热压力前移。工程上应按可见优先级加载：
 
 1. 首个可交互面板与必要模型；
 2. 用户视野内近期会出现的纹理和动画；
@@ -251,7 +251,7 @@ XR 需要同时观察四条时间线：
 
 应用完成一帧，不代表用户已经看到与该姿态对应的画面。spacewarp/reprojection 可能基于上一张 App 图像和更新后的运动信息生成中间显示帧，因此显示可以继续刷新，而 App 无须为每个 display refresh 生产全新 render frame。引擎 FPS、App FrameTimeline、runtime synthesized cadence 与 display refresh rate 需要分开记录。
 
-ARCore for Jetpack XR 的 `ArDevice` 提供设备 pose，`RenderViewpoint.left/right/mono` 的 state 提供 viewpoint 的 `pose`、`localPose` 与 `fieldOfView`（视场角）。`pose` 与 `localPose` 属于不同参考空间下的位姿表达，应用需要按 API 契约选择。它们为渲染提供输入，却不说明 runtime 何时 latch（锁定并采用）这份 pose，也不提供最终 motion-to-photon（头部运动到对应光子进入眼睛）的延迟。读取频率、坐标空间和使用该 pose 的 render frame 必须在应用侧对齐；没有公开时间戳时，不能声称得到了精确的跨层 pose age。
+ARCore for Jetpack XR 的 `ArDevice` 提供设备 pose，`RenderViewpoint.left/right/mono` 的 state 提供 viewpoint 的 `pose`、`localPose` 与 `fieldOfView`（视场角）。`pose` 与 `localPose` 是不同参考空间中的位姿表达，应用需要按 API 契约选择。它们为渲染提供输入，却不说明 runtime 何时 latch（锁定并采用）这份 pose，也不提供最终 motion-to-photon（头部运动到对应光子进入眼睛）的延迟。读取频率、坐标空间和使用该 pose 的 render frame 必须在应用侧对齐；没有公开时间戳时，不能声称得到了精确的跨层 pose age。
 
 Unity Android XR Extensions 提供三类不同优化：
 
@@ -329,7 +329,7 @@ Projected 场景要同时记录 host 与 glasses 两端：
 | --- | --- |
 | Activity 生命周期、Compose、CPU/GPU、相机/编解码、网络、thermal | display on/off、输入、camera/sensor、连接、显示 cadence、设备功耗 |
 
-host 上按时生成帧，不能证明传输和 glasses present 也按时；眼镜发热也不能直接归因于 host GPU。两端时钟若没有经过同步，应使用可关联的 event id 与往返测量，避免直接相减不同设备的原始 timestamp。
+host 上按时生成帧，不能证明传输和 glasses present 也按时；眼镜发热也不能直接归因于 host GPU。两端时钟若没有经过同步，应使用可关联的 event id 与往返测量，避免直接拿不同设备的原始 timestamp 相减。
 
 ## 复核清单
 
