@@ -2,9 +2,9 @@
 title: "Android 17 Kernel 6.18 性能机制与验证"
 section: "16.4"
 chapter: "16.4"
-status: ready-for-review
-task9_state: pending-review
-pipeline_stage: ready-for-review
+status: finalized
+task9_state: reviewed
+pipeline_stage: ready-to-publish
 applicable_versions: "Android 17 (API 37)"
 tags:
   - android
@@ -19,6 +19,10 @@ sources:
     path: "https://source.android.com/docs/core/architecture/kernel/gki-android17-6_18-release-builds"
   - type: docs
     path: "https://source.android.com/docs/core/perf/lmkd"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/external/liburing/+/refs/tags/android-17.0.0_r1/Android.bp"
   - type: kernel
     path: "https://android.googlesource.com/kernel/common/+/refs/heads/android15-6.6"
   - type: kernel
@@ -26,13 +30,13 @@ sources:
   - type: kernel
     path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6"
 task2b_state: "fixed"
-task6_state: pending-review
+task6_state: reviewed
 last_body_apply_at: "2026-08-16T11:18:13+08:00"
 last_body_apply_run_id: "20260816-111514-396831f0"
 last_idle_audit_at: "2026-07-27T10:35:11+08:00"
 last_idle_audit_run_id: "20260727-103511-idle-audit-5f410a75"
-last_verified: "2026-08-14"
-last_verified_against: "Android 17 GKI 6.18 release matrix through android17-6.18-2026-06_r38 + fixed r6 source snapshot (Linux 6.18.21) + android-17.0.0_r1"
+last_verified: "2026-08-16"
+last_verified_against: "Android 17 GKI 6.18 release matrix through android17-6.18-2026-06_r38 + fixed r6 source snapshot (Linux 6.18.21) + android-17.0.0_r1 lmkd/external liburing source"
 confidence: high
 consolidated_from:
   - "16.4 中重复的 ART generational CMC 与 DeliQueue 内容移至 16.5"
@@ -142,7 +146,7 @@ AOSP 的 `external/liburing` 提供 native 静态库构建规则，但这不能�
 
 ### dm-verity multi-buffer hashing：r6 未合入
 
-逐行核对 r6 的 `drivers/md/dm-verity-target.c`，当前实现是 `verity_hash()` 配合 `crypto_shash_finup()` 等单请求接口。该文件没有 `verity_hash_mb()`，r6 源码树也没有这条路径使用的 `crypto_shash_finup_mb()`。
+逐行核对 r6 的 `drivers/md/dm-verity-target.c`，当前实现是 `verity_hash()` 配合 `crypto_shash_finup()` 等单请求接口。该文件没有 `verity_hash_mb()`，也没有调用这条补丁路径使用的 `crypto_shash_finup_mb()`。
 
 2025 年发布到邮件列表的 v8 补丁曾报告 ARM64 与 x86_64 cold-cache dm-verity read 吞吐约提升 35%；cold cache 表示数据尚未进入内存缓存。作者同时说明指标波动较大。它是补丁环境的测试结果，不能写入 `android17-6.18-2026-06_r6` 的收益表，更不能改写为 Android 17 安装、冷启动或 OTA 固定提升。
 
@@ -293,12 +297,14 @@ lmkd 仍按 Android 的压力与进程优先级策略决策。MGLRU 位于页面
 - [sched_ext 内核文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-ext.rst)
 - [r6 sched_ext 源码](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/ext.c)
 - [F2FS 内核文档：`checkpoint_merge`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/f2fs.rst)
+- [r6 F2FS `fsync()` 判定路径](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/file.c)
 - [r6 F2FS checkpoint 实现](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/checkpoint.c)
 - [r6 io_uring 源码目录](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/io_uring/)
 - [dm-verity r6 实现](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/md/dm-verity-target.c)
 - [dm-verity multi-buffer hashing v8 patch 与测试口径（未合入 r6）](https://lists.infradead.org/pipermail/linux-arm-kernel/2025-February/1000047.html)
 - [MGLRU 内核文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/mm/multigen_lru.rst)
 - [Android lmkd：内存压力信号与回收策略](https://source.android.com/docs/core/perf/lmkd)
+- [AOSP `lmkd.cpp` Android 17 tag](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp)
 - [r6 AutoFDO profile README](https://android.googlesource.com/kernel/common/+show/refs/tags/android17-6.18-2026-06_r6/gki/aarch64/afdo/README.md)
 - [Android Developers Blog：Kernel AutoFDO 投放与采集流程](https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html)
-- [AOSP `external/liburing` Android 17 tag](https://android.googlesource.com/platform/external/liburing/+/refs/tags/android-17.0.0_r1)
+- [AOSP `external/liburing` Android 17 `Android.bp`](https://android.googlesource.com/platform/external/liburing/+/refs/tags/android-17.0.0_r1/Android.bp)
