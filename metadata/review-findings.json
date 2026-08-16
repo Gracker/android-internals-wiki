@@ -2049,6 +2049,26 @@
       "summary": "PowerStats noise/storage source files referenced in body were missing from frontmatter sources",
       "type": "missing-source-evidence",
       "updated_at": "2026-08-16T14:42:44.206561+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/34-oomadjuster-process-priority-performance.md",
+      "close_note": "正文已把 lmkd 触发源收窄为内存 PSI 事件，并把版本边界改为 Android 13/14 到 Android 17 范围与后续主线，不再出现 Android 18/API 38 字样。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260816-163551-deep-review-0e71bb6d",
+      "created_at": "2026-08-16T16:44:39.946878+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260816-163551-deep-review-0e71bb6d",
+      "details": "原文把 PSI 先概括为压力停顿信息，再说明 CPU/内存/I/O，容易让读者把 lmkd 回收触发误读为 CPU/IO PSI 直接驱动；版本边界段使用 Android 13/14 以后和 Android 18/API 38 字样，边界表达可改为 Android 13/14 到 Android 17 范围与后续主线。",
+      "id": "AIW-1.34-20260816-P2-psi-version-boundary",
+      "log_path": "logs/deep-review/2026-08-16-20260816-163551-deep-review-0e71bb6d-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "system/memory/lmkd/lmkd.cpp@android-17.0.0_r1; frameworks/base/services/core/java/com/android/server/am/psc/OomAdjuster.java@android-17.0.0_r1"
+      ],
+      "status": "fixed",
+      "summary": "OOM/lmkd 章节的 PSI 与版本边界表述需收窄到 Android 17 基线",
+      "type": "source-boundary",
+      "updated_at": "2026-08-16T16:44:39.995846+08:00"
     }
   ],
   "schema_version": 1

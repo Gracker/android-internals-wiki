@@ -6,14 +6,14 @@ status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [oom, oom_score_adj, process_state_controller, process_priority, lmkd, freezer, AMS]
 related_chapters: ["4.4", "1.3", "1.8", "5.8", "4.11", "1.18"]
-last_verified: "2026-08-12"
+last_verified: "2026-08-16"
 last_verified_against: "AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6"
 confidence: high
 pipeline_stage: reviewed
 task6_state: reviewed
 task9_state: deep-reviewed
-last_deep_review_at: "2026-08-12"
-last_deep_review_run_id: "20260812-123555-deep-review-0e71bb6d"
+last_deep_review_at: "2026-08-16"
+last_deep_review_run_id: "20260816-163551-deep-review-0e71bb6d"
 sources:
   - type: official
     path: "developer.android.com/guide/components/activities/process-lifecycle"
@@ -53,7 +53,7 @@ Android 不允许应用直接决定自己的进程寿命。`system_server` 根�
 
 API 37 的实现已经迁入 `com.android.server.am.psc` 包。继续以 `com.android.server.am.OomAdjuster.java` 为源码入口，会遗漏 Android 17 的 `ProcessStateController`、批处理会话、能力传播和新的跟踪字段。
 
-以下结论限定于 `android-17.0.0_r1` Android framework / lmkd 和 `android17-6.18-2026-06_r6` 内核跟踪点。ProcessStateController（下文简称 PSC）、应用冻结机制（freezer）、LMKD socket（套接字）和 Perfetto 行为均以该基线为准，不外推到 Android 18 / API 38+ 主线或厂商私有实现。
+以下结论限定于 `android-17.0.0_r1` Android framework / lmkd 和 `android17-6.18-2026-06_r6` 内核跟踪点。ProcessStateController（下文简称 PSC）、应用冻结机制（freezer）、LMKD socket（套接字）和 Perfetto 行为均以该基线为准，不外推到后续主线或厂商私有实现。
 
 ## 一、进程优先级不是一个数字
 
@@ -272,7 +272,7 @@ OomAdjuster 只计算资格并回调 `onProcessFreezabilityChanged()`。`CachedA
 
 OomAdjuster 把 `curAdj` 应用到 `ProcessList.setOomAdj()`。该方法通过 lmkd 控制套接字发送 `LMK_PROCPRIO`；lmkd 校验进程 ID（PID）、用户 ID（UID）和值域，更新内部进程表，并在 `for_lmkd_only` 为 `false` 时写入内核的 `/proc/<pid>/oom_score_adj`。`for_lmkd_only` 表示只更新 lmkd 内部信息，不同步写这个内核分数文件。
 
-lmkd 使用压力停顿信息（PSI）、swap、thrashing 和设备属性判断何时需要回收。PSI 衡量任务因 CPU、内存或 I/O 资源不足而停顿的时间；相关事件由 lmkd 直接订阅，通常不会先回调 AMS，再要求 OomAdjuster“加快 cached 进程老化”。API 37 的 OomAdjuster 中也没有通过 `PSI_SOME` / `PSI_FULL` 分支修改 cached adj。
+lmkd 使用内存 PSI 事件、swap、thrashing 和设备属性判断何时需要回收。PSI 框架本身可衡量任务因 CPU、内存或 I/O 资源不足而停顿的时间；在 lmkd 的回收触发路径中，内存压力事件由 lmkd 直接订阅，通常不会先回调 AMS，再要求 OomAdjuster“加快 cached 进程老化”。API 37 的 OomAdjuster 中也没有通过 `PSI_SOME` / `PSI_FULL` 分支修改 cached adj。
 
 这两个环节要分开理解：
 
@@ -393,7 +393,7 @@ ORDER BY s.ts, a.key;
 
 ## 十、版本边界与源码锚点
 
-Android 13 以后，cached 进程可能获得很少或零 CPU 时间；Android 14 以后，cached-app freezer 与延迟动态广播等策略进一步减少无效解冻。Android 17 的源码变化包括 PSC 包迁移、ProcessStateController 入口、基于能力位的 freezer 决策和结构化进程状态跟踪。这里没有使用 Android 18 / API 38 之后的主线实现反推 Android 17 行为。
+在 Android 13 到 Android 17 的范围内，cached 进程可能获得很少或零 CPU 时间；Android 14 到 Android 17 的范围内，cached-app freezer 与延迟动态广播等策略进一步减少无效解冻。Android 17 的源码变化包括 PSC 包迁移、ProcessStateController 入口、基于能力位的 freezer 决策和结构化进程状态跟踪。这里没有使用后续主线实现反推 Android 17 行为。
 
 源码定位：
 
