@@ -6,13 +6,13 @@ section_title: "Android 17 Advanced Professional Video 与专业视频编解码�
 status: ready-for-review
 applicable_versions: "Android 16 (API 36/36.1) - Android 17 (API 37)；当前平台锚点 Android 17 / API 37"
 last_verified: "2026-08-16"
-last_verified_against: "android-17.0.0_r1 (MediaFormat, MediaCodecInfo, MediaRecorder, C2SoftApvEnc, C2SoftApvDec, software codec XML, MPEG4Writer) / Android 16 APV 与 Android 17 CQ 官方文档复核 2026-08-16；Android 16 APV 文档仅作为本章适用范围下限来源，不外推到 Android 17 之后 / Writer rendering_pipelines S12 / android17-6.18-2026-06_r6"
+last_verified_against: "android-17.0.0_r1 (MediaFormat, MediaCodecInfo, MediaRecorder, C2SoftApvEnc, C2SoftApvDec, software codec XML, MPEG4Writer) / Android 16 APV 与 Android 17 CQ 官方文档复核 2026-08-16；Android 16 APV 文档仅作为本章适用范围下限来源，不外推到 Android 17 之后 / Writer rendering_pipelines S12 / android17-6.18-2026-06_r6 / OpenAPV README profile 边界复核 2026-08-16"
 confidence: high
 pipeline_stage: ready-for-review
 task6_state: pending-review
 task9_state: pending-review
-last_deep_review_at: "2026-08-12T16:35:26+08:00"
-last_deep_review_run_id: "20260812-163526-deep-review-627bfda7"
+last_deep_review_at: "2026-08-16T20:44:57+08:00"
+last_deep_review_run_id: "20260816-204012-deep-review-627bfda7"
 last_rework_at: "2026-08-16T13:36:13+08:00"
 last_rework_run_id: "20260816-133613-rework-627bfda7"
 tags: [media, apv, mediacodec, professional-video, android16, android17]
@@ -406,7 +406,7 @@ Perfetto 调查可按症状选择证据：
 
 ## OpenAPV 的用途与平台边界
 
-[OpenAPV](https://github.com/AcademySoftwareFoundation/openapv) 是 APV 的开源参考实现。其当前 README 列出的完整 profile 包括 422-10、422-12、444-10、444-12、4444-10、4444-12 和 400-10。实现还提供 ARM NEON 与 x86 SSE/AVX SIMD 指令优化、tile 多线程、HDR/用户元数据，以及 CQP 和 ABR 码率控制。这里 CQP 是 Constant Quantization Parameter，即固定量化参数；ABR 是 Average Bitrate，即平均码率控制，不是播放器领域的 Adaptive Bitrate。
+[OpenAPV](https://github.com/AcademySoftwareFoundation/openapv) 是 APV 的开源参考实现。在 Android 侧设计中，它仅作为码流与工具链参考；README 中的能力清单属于 OpenAPV 项目，不进入 Android 平台契约。README 的基础兼容性清单列出 422-10、422-12、444-10、444-12、4444-10、4444-12 和 400-10；同一 README 还列出 OpenAPV 项目扩展 profile（如 444-16C12、4444-16C12 和 UNCONST），用于项目自己的扩展场景。实现还提供 ARM NEON 与 x86 SSE/AVX SIMD 指令优化、tile 多线程、HDR/用户元数据，以及 CQP 和 ABR 码率控制。这里 CQP 是 Constant Quantization Parameter，即固定量化参数；ABR 是 Average Bitrate，即平均码率控制，不是播放器领域的 Adaptive Bitrate。
 
 它适合用来：
 
@@ -415,7 +415,7 @@ Perfetto 调查可按症状选择证据：
 - 验证桌面或服务端工具；
 - 对 vendor codec 做码流与画质交叉校验。
 
-OpenAPV 支持的 profile 集合大于 Android 17 平台公开的 APV 422-10 集合。将 OpenAPV 编入应用，只能证明应用带有一套软件实现，不能证明设备存在 APV 硬件 codec、Camera 可以输出目标规格、MediaCodec 会选择这套实现，或 HWC 会用 overlay 显示解码结果。
+OpenAPV 的基础与扩展 profile 集合大于 Android 17 平台公开的 APV 422-10 集合。将 OpenAPV 编入应用，只能证明应用带有一套软件实现，不能证明设备存在 APV 硬件 codec、Camera 可以输出目标规格、MediaCodec 会选择这套实现，或 HWC 会用 overlay 显示解码结果。
 
 ## 线上分组统计与启用指标
 

@@ -2093,6 +2093,27 @@
       "summary": "Android 17 外接显示屏边缘返回边界缺少说明",
       "type": "version-boundary",
       "updated_at": "2026-08-16T18:41:36.004509+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch18-rendering-pipelines/22-advanced-professional-video-apv.md",
+      "close_note": "Rewrote the OpenAPV paragraph to label README entries as OpenAPV base/extension profile lists and kept Android 17 platform contract bounded to public APV 422-10 profiles.",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260816-204012-deep-review-627bfda7",
+      "created_at": "2026-08-16T20:46:05.681673+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260816-204012-deep-review-627bfda7",
+      "details": "OpenAPV README main lines 10 and 18 list base profiles plus project extension profiles such as 444-16C12, 4444-16C12 and UNCONST, while android-17.0.0_r1 MediaCodecInfo.java exposes APVProfile422_10, APVProfile422_10HDR10 and APVProfile422_10HDR10Plus only. The body should not let OpenAPV README scope read as an Android 17 platform codec contract.",
+      "id": "AIW-18.22-APV-OPENAPV-PROFILE-SCOPE-20260816",
+      "log_path": "logs/deep-review/2026-08-16-20260816-204012-deep-review-627bfda7-deep-review.md",
+      "severity": "P3",
+      "source_paths": [
+        "https://raw.githubusercontent.com/AcademySoftwareFoundation/openapv/main/README.md lines 10-18",
+        "frameworks/base/media/java/android/media/MediaCodecInfo.java@android-17.0.0_r1 lines 5802-5822"
+      ],
+      "status": "fixed",
+      "summary": "OpenAPV README profile 清单被写成完整集合，需区分基础清单、项目扩展与 Android 17 平台 profile 契约",
+      "type": "source-boundary",
+      "updated_at": "2026-08-16T20:46:05.730893+08:00"
     }
   ],
   "schema_version": 1
