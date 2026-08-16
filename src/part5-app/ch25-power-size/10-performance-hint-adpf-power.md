@@ -1,8 +1,8 @@
 ---
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-08-15"
-last_source_verified_at: "2026-08-15"
-last_verified_against: "Android Developers API reference and ADPF/NDK docs retrieved 2026-08-15 + AOSP android-17.0.0_r1（PowerStatsService/StatsPullAtomCallbackImpl/IPowerStats.aidl/Power HAL AIDL）"
+last_verified: "2026-08-16"
+last_source_verified_at: "2026-08-16"
+last_verified_against: "Android Developers API reference and ADPF/NDK docs retrieved 2026-08-16 + AOSP android-17.0.0_r1（PerformanceHintManager/HintManagerService/PowerStatsService/StatsPullAtomCallbackImpl/IntervalRandomNoiseGenerator/PowerStatsDataStorage/PowerStatsLogger/IPowerStats.aidl/Power HAL AIDL）"
 confidence: medium-high
 sources:
   - type: official
@@ -35,6 +35,10 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/powerstats/StatsPullAtomCallbackImpl.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/powerstats/PowerStatsLogger.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/powerstats/IntervalRandomNoiseGenerator.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/powerstats/PowerStatsDataStorage.java"
   - type: aosp
     path: "hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl"
   - type: aosp
@@ -74,8 +78,8 @@ pipeline_stage: finalized
 task6_state: reviewed
 task9_state: "reviewed"
 task2b_state: "fixed"
-last_idle_audit_at: "2026-08-08T10:35:09+08:00"
-last_idle_audit_run_id: "20260808-103509-idle-audit-13a21d51"
+last_idle_audit_at: "2026-08-16T14:35:34+08:00"
+last_idle_audit_run_id: "20260816-143534-idle-audit-3ae38f95"
 last_rework_at: "2026-08-02T09:36:04+08:00"
 last_rework_run_id: "20260802-093547-rework-13a21d51"
 last_draft_polish_at: "2026-08-15T15:29:10+08:00"
