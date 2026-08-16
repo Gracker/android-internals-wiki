@@ -5,14 +5,16 @@ section: "18.22"
 section_title: "Android 17 Advanced Professional Video 与专业视频编解码管线"
 status: ready-for-review
 applicable_versions: "Android 16 (API 36/36.1) - Android 17 (API 37)；当前平台锚点 Android 17 / API 37"
-last_verified: "2026-08-12"
-last_verified_against: "android-17.0.0_r1 (MediaFormat, MediaCodecInfo, MediaRecorder, C2SoftApvEnc, C2SoftApvDec, software codec XML, MPEG4Writer) / Android 16 APV 与 Android 17 CQ 官方文档复核 2026-08-12 / Writer rendering_pipelines S12 / android17-6.18-2026-06_r6"
+last_verified: "2026-08-16"
+last_verified_against: "android-17.0.0_r1 (MediaFormat, MediaCodecInfo, MediaRecorder, C2SoftApvEnc, C2SoftApvDec, software codec XML, MPEG4Writer) / Android 16 APV 与 Android 17 CQ 官方文档复核 2026-08-16；Android 16 APV 文档仅作为本章适用范围下限来源，不外推到 Android 17 之后 / Writer rendering_pipelines S12 / android17-6.18-2026-06_r6"
 confidence: high
-pipeline_stage: reviewed
-task6_state: reviewed
-task9_state: deep-reviewed
+pipeline_stage: ready-for-review
+task6_state: pending-review
+task9_state: pending-review
 last_deep_review_at: "2026-08-12T16:35:26+08:00"
 last_deep_review_run_id: "20260812-163526-deep-review-627bfda7"
+last_rework_at: "2026-08-16T13:36:13+08:00"
+last_rework_run_id: "20260816-133613-rework-627bfda7"
 tags: [media, apv, mediacodec, professional-video, android16, android17]
 related_chapters: ["18.21", "14.20", "24.12", "26.3"]
 sources:
@@ -431,7 +433,9 @@ APV 上线时应分别记录静态能力与每次运行结果，并按这些字�
 
 ## Android 17 源码与文档依据
 
-- [Android 16 APV 功能说明](https://developer.android.com/about/versions/16/features#apv)：APV 定位、标准特征与 Android 422-10 实现范围。
+下列依据限于 Android 16 到 Android 17 的公开文档、`android-17.0.0_r1` 平台源码和 `android17-6.18-2026-06_r6` kernel。OpenAPV 只作为 APV 标准与参考实现材料，不能外推为 Android 17 之后的平台能力。
+
+- [Android 16（本章适用范围下限）APV 功能说明](https://developer.android.com/about/versions/16/features#apv)：APV 定位、标准特征与 Android 422-10 实现范围。
 - [Android 17 CQ 功能说明](https://developer.android.com/about/versions/17/release-notes#audio-video)与 [`MediaRecorder` API](https://developer.android.com/reference/android/media/MediaRecorder#setVideoEncodingQuality(int))：CQ 入口、适用条件与质量值边界。
 - [`CodecCapabilities.isFormatSupported()`](https://developer.android.com/reference/android/media/MediaCodecInfo.CodecCapabilities#isFormatSupported(android.media.MediaFormat))：format keys 的检查范围，以及指定 level 不约束其他参数的文档边界。
 - [Android 17 `MediaFormat.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaFormat.java)：`MIMETYPE_VIDEO_APV` 与 format keys。
