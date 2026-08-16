@@ -2,11 +2,11 @@
 title: "Android 17 AVF 架构与 pKVM 隔离性能边界"
 chapter: "1.32"
 section: "1.32"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 tags: [avf, virtualization, pkvm, crosvm, microdroid, vm-lifecycle, isolation-overhead]
 related_chapters: ["1.3", "1.4", "4.1", "4.2"]
-last_verified: "2026-07-25"
+last_verified: "2026-08-16"
 last_verified_against: "AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6"
 confidence: high
 sources:
@@ -20,6 +20,8 @@ sources:
     path: "source.android.com/docs/core/virtualization/microdroid"
   - type: official
     path: "source.android.com/docs/core/virtualization/security"
+  - type: official
+    path: "source.android.com/docs/core/virtualization/usecases"
   - type: aosp
     path: "packages/modules/Virtualization/android/virtualizationservice/src/main.rs"
   - type: aosp
@@ -55,7 +57,7 @@ Host app / system component
 framework-virtualization Java library
         │  spawn + RpcBinder over Unix-domain socket
         ▼
-virtmgr child process (Rust）
+virtmgr child process (Rust)
         │  one crosvm child process for each running VM
         ├─────────────────────────────┐
         ▼                             ▼
@@ -84,7 +86,7 @@ VirtualizationServiceInternal     crosvm
 | pvmfw | pVM 首段固件 | 验证初始镜像、维护实例身份、派生每台 VM 的机密 | 提供 Android framework API |
 | Microdroid | 客户机 OS | 验证启动、SELinux、Bionic、原生 payload、Binder RPC | 完整 Android UI 和应用框架 |
 
-Microdroid 是 AVF 提供的一种轻量客户机 OS，但不是 AVF 唯一支持的客户机。API 37 还允许自定义 VM 配置；Android 的 Linux 开发环境也是基于 AVF 的 non-protected VM（非受保护虚拟机）用例。
+Microdroid 是 AVF 提供的一种轻量客户机 OS，但不是 AVF 唯一支持的客户机。API 37 还允许自定义 VM 配置；在支持该功能的部分设备上，Android 的 Linux 开发环境也是基于 AVF 的 non-protected VM（非受保护虚拟机）用例。
 
 ## 二、Microdroid 不是“小号完整 Android”
 
@@ -382,5 +384,6 @@ AVF 也没有完全替代 TrustZone。可信执行环境（TEE）仍承载 KeyMi
   - [VirtualizationService](https://source.android.com/docs/core/virtualization/virtualization-service)
   - [Microdroid](https://source.android.com/docs/core/virtualization/microdroid)
   - [AVF security](https://source.android.com/docs/core/virtualization/security)
+  - [AVF use cases](https://source.android.com/docs/core/virtualization/usecases)
 
 从 Android 13 到 Android 17，AVF 的 API 与客户机能力持续增加；性能结论仍必须绑定设备、内核、客户机、调试级别和具体负载。缺少这些条件的固定启动时间、微秒延迟或百分比开销，不应写成平台事实。
