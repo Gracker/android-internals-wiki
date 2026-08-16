@@ -4,9 +4,10 @@ chapter: "25.2"
 section: "25.2"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-06-28"
-last_verified_against: "AOSP android-17.0.0_r1 + Android Developers power / background work docs + Clippings structure references"
-confidence: medium-high
+last_verified: "2026-08-15"
+last_source_verified_at: "2026-08-15"
+last_verified_against: "Android Developers App Standby, Android 16/17 behavior, FGS and location docs retrieved 2026-08-15 + AOSP android-17.0.0_r1"
+confidence: high
 sources:
   - type: official
     path: "https://developer.android.com/training/monitoring-device-state/doze-standby"
@@ -16,6 +17,8 @@ sources:
     path: "https://developer.android.com/topic/performance/power/power-details"
   - type: official
     path: "https://developer.android.com/about/versions/16/behavior-changes-all"
+  - type: official
+    path: "https://developer.android.com/about/versions/17/behavior-changes-all"
   - type: official
     path: "https://developer.android.com/develop/background-work/background-tasks/optimize-battery"
   - type: official
@@ -30,6 +33,8 @@ sources:
     path: "https://developer.android.com/about/versions/oreo/background-location-limits"
   - type: official
     path: "https://developer.android.com/develop/sensors-and-location/location/battery/scenarios"
+  - type: official
+    path: "https://developers.google.com/android/reference/com/google/android/gms/location/Priority"
   - type: aosp
     path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java"
   - type: aosp
@@ -52,33 +57,37 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [background-power, doze, app-standby, bucket, workmanager, jobscheduler, foreground-service, location-power]
 related_chapters: ["25.1", "25.3", "25.4", "25.5", "25.15", "5.8", "11.2"]
-pipeline_stage: ready-to-publish
+pipeline_stage: finalized
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
+last_draft_polish_at: "2026-08-15T14:15:48+08:00"
+last_draft_polish_run_id: "20260815-141548-gracker-writing-443"
+last_review_finalize_at: "2026-08-15T14:15:48+08:00"
+last_review_finalize_run_id: "20260815-141548-gracker-writing-443"
 ---
 
 # 后台功耗治理
 
 ## 治理范围
 
-这里讨论应用如何控制后台耗电。Doze、App Standby 和 Job 配额的系统实现见 §5.8；WakeLock、Alarm、定位与 FCM 的横向策略见 §11.2；诊断流程见 §25.1；FGS 超时和 Android 16 Job 配额的专题分析见 §25.15。
+后台功耗治理关注应用如何控制不可见阶段的资源消耗。Doze（设备空闲低功耗模式）、App Standby（应用待机）和 Job（由系统调度的后台任务）配额的系统实现见 §5.8；WakeLock（唤醒锁）、Alarm（定时任务）、定位与 FCM（Firebase Cloud Messaging，Firebase 云消息）的横向策略见 §11.2；诊断流程见 §25.1；前台服务（Foreground Service，FGS）超时和 Android 16 Job 配额的专题分析见 §25.15。
 
-后台工作应具备四项性质：允许延后的工作交给系统调度，同一目的的工作可以合并，业务条件失效后可以取消，运行与停止原因可以观测。系统负责限制 CPU、网络、Job、Alarm 和位置访问，却不了解某次同步是否仍有业务价值，也不知道某段轨迹何时可以降低采样频率。应用必须自己定义任务有效期、停止条件和资源预算。
+后台工作应具备四项性质：允许延后的工作交给系统调度，同一目的的工作可以合并，业务条件失效后可以取消，运行与停止原因可以观测。系统负责限制 CPU（中央处理器）、网络、Job、Alarm 和位置访问，却不了解某次同步是否仍有业务价值，也不知道某段轨迹何时可以降低采样频率。应用必须自己定义任务有效期、停止条件和资源预算。
 
-理解后台功耗时，不能把“进程还在”视为“任务可以持续执行”。进程存活、组件生命周期、后台启动资格、Job 配额和资源访问权限是不同条件。某项工作即使已经进入进程，也可能因约束变化、配额用完或服务超时而停止。
+进程仍然存活并不表示任务可以持续执行。进程存活、组件生命周期、后台启动资格、Job 配额和资源访问权限是不同条件。某项工作即使已经进入进程，也可能因约束变化、配额用完或服务超时而停止。
 
-## Android 后台执行限制演进（Doze / App Standby / Bucket）
+## Android 后台执行限制演进（Doze / App Standby / 待机分组）
 
 后台工作能否执行，至少受三组条件共同影响：
 
 - **设备状态**：设备未充电、静止且屏幕关闭一段时间后，可能进入 Doze。系统会暂停后台网络，忽略普通 WakeLock，并延后普通 Job、同步和 Alarm，直到维护窗口或退出 Doze。
-- **应用使用状态**：App Standby Buckets 根据用户近期与应用的交互情况，对 Job、Alarm 和网络施加不同限制。
-- **任务接口与权限**：WorkManager、JobScheduler、AlarmManager 和前台服务各有调度语义、配额、启动资格及权限要求。
+- **应用使用状态**：App Standby Buckets（应用待机分组）根据用户近期与应用的交互情况，对 Job、Alarm 和网络施加不同限制。
+- **任务接口与权限**：WorkManager（Jetpack 的持久后台工作调度库）、JobScheduler（Android 系统任务调度器）、AlarmManager 和前台服务各有调度语义、配额、启动资格及权限要求。
 
 [Doze 与 App Standby 官方说明](https://developer.android.com/training/monitoring-device-state/doze-standby)将前两组条件分开定义。Doze 关注整台设备是否空闲；App Standby 关注某个应用近期是否被使用。两者可以同时影响同一个 WorkManager 任务，因为应用不可见时，WorkManager 的持久化工作会由 JobScheduler 调度。
 
-| 版本阶段 | 后台规则变化 | App 侧治理动作 |
+| 版本阶段 | 后台规则变化 | 应用侧治理动作 |
 |----------|--------------|----------------|
 | Android 6.0 | 引入 Doze 与 App Standby | 可延后工作迁到 JobScheduler 或 WorkManager；消息到达使用 FCM，避免轮询 |
 | Android 8.0 | 限制后台服务和后台定位频率 | 长时间后台服务改为调度任务；区域触发使用地理围栏，机会式位置使用被动请求 |
@@ -89,11 +98,11 @@ task2b_state: fixed
 | Android 16 | Job 运行配额覆盖更多情形，包括应用离开前台后继续执行的 Job，以及与 FGS 并行的 Job | 记录停止原因和待执行原因历史；不要用 FGS 规避 Job 配额 |
 | Android 17 | 后台音频播放、音频焦点和音量操作受到更严格的生命周期检查 | 媒体任务按 Android 17 的音频资格要求审查，参见 §25.11 |
 
-`restricted` 是限制最严的待机分组，但不能描述为“完全没有执行机会”。Android 13 及以上的官方规则是：不属于豁免范围的应用每天可在一次十分钟批处理时段内运行 Job，可用的 expedited Job 更少，并且每天只能触发一次 Alarm；充电时这些限制仍然存在，在“充电、设备空闲、非计费网络”同时满足时会放宽。OEM 可以调整分组算法，应用不应尝试诱导系统将自己放入某个分组。参见 [App Standby Buckets](https://developer.android.com/topic/performance/appstandby)。
+`restricted` 是限制最严的待机分组，但仍保留受限的执行机会。Android 13 及以上的官方规则是：不属于豁免范围的应用每天可在一次十分钟批处理时段内运行 Job，可用的 expedited Job（加急任务）更少，并且每天只能触发一次 Alarm。充电时这些限制仍然存在；设备同时处于充电、空闲和非计费网络时，限制会放宽。OEM（设备厂商）可以调整分组算法，应用不应尝试诱导系统将自己放入某个分组。参见 [App Standby Buckets](https://developer.android.com/topic/performance/appstandby)。
 
 ### Android 17 源码中的职责边界
 
-下面的关系图用于定位平台源码。它表达的是控制关系，不代表一次后台任务必然依次经过所有组件。
+关系图用于定位平台源码，表达组件之间的控制关系；一次后台任务不一定依次经过所有组件。
 
 ```mermaid
 flowchart LR
@@ -107,9 +116,9 @@ flowchart LR
     I["内核 suspend 与 wakeup source"] --> B
 ```
 
-`DeviceIdleController` 管理设备空闲与维护窗口，`AppStandbyController` 管理待机分组，`QuotaController` 参与 Job 配额计算。内核负责系统休眠和 wakeup source 生命周期，并不知道 `STANDBY_BUCKET_RARE` 之类的框架层概念。分析一次唤醒时，需要将框架调度信息、应用任务日志和内核唤醒证据按时间对齐。
+`DeviceIdleController` 管理设备空闲与维护窗口，`AppStandbyController` 管理待机分组，`QuotaController` 参与 Job 配额计算。内核负责系统挂起（suspend）和唤醒源（wakeup source）的生命周期，并不知道 `STANDBY_BUCKET_RARE` 之类的框架层概念。分析一次唤醒时，需要将框架调度信息、应用任务日志和内核唤醒证据按时间对齐。
 
-Android 17 / API 37 的平台源码入口如下：
+Android 17 / API 37 的平台源码可从这些入口开始核对：
 
 - [`DeviceIdleController.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java)：Doze 状态机、白名单和维护过程。
 - [`AppStandbyController.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java)：待机分组的框架实现与事件处理。
@@ -128,7 +137,7 @@ Android 17 / API 37 的平台源码入口如下：
 - 网络、充电、空闲、电量等条件中，哪些是业务要求？
 - 重复触发时应保留旧工作、替换旧工作，还是追加新工作？
 - 页面关闭、退出账号、权限撤销或数据已被删除时，谁负责取消任务？
-- 任务被系统停止后，哪些进度可以安全恢复，哪些步骤必须保证幂等？
+- 任务被系统停止后，哪些进度可以安全恢复，哪些步骤必须保证幂等，也就是重复执行不会产生额外副作用？
 
 ## 后台任务最佳实践
 
@@ -142,7 +151,7 @@ Android 17 / API 37 的平台源码入口如下：
 | 缓存清理、日志压缩、索引构建 | WorkManager / JobScheduler 空闲与充电约束 | 只在空闲、充电、非低电量时运行；任务可中断 | 应用启动后立刻扫描全部文件 |
 | 即时消息 | FCM | 只有会展示通知的消息使用高优先级，消息负载包含展示所需信息 | 收到推送后再发起多轮网络请求 |
 
-下面的 WorkManager 示例用于“批量收件箱同步”。这个场景允许等待非计费网络和较高电量，重试间隔由业务策略传入，避免在公共组件中写死某个业务的退避时间。
+这个 WorkManager 示例调度批量收件箱同步。场景允许等待非计费网络和较高电量，重试间隔由业务策略传入，避免在公共组件中写死某个业务的退避时间；退避指失败后逐步延长重试间隔。
 
 ```kotlin
 fun enqueueBulkInboxSync(
@@ -177,7 +186,7 @@ fun enqueueBulkInboxSync(
 }
 ```
 
-示例假定已导入 `java.util.concurrent.TimeUnit`。`UNMETERED` 和 `BatteryNotLow` 会减少高成本网络与低电量阶段的执行，但也会增加等待时间，只适合允许延迟的批量同步。`KEEP` 表示同名工作尚未结束时忽略新请求；如果新请求代表更新后的用户意图，应重新评估 `REPLACE` 或 `APPEND_OR_REPLACE`。退避只处理 Worker 返回 `Result.retry()` 的情况，不能代替网络请求自身的超时和幂等设计。
+示例假定已导入 `java.util.concurrent.TimeUnit`。`UNMETERED` 表示非计费网络约束，`BatteryNotLow` 表示电量不能过低；两者会减少高成本网络与低电量阶段的执行，但也会增加等待时间，只适合允许延迟的批量同步。`KEEP` 表示同名工作尚未结束时忽略新请求；如果新请求代表更新后的用户意图，应重新评估 `REPLACE` 或 `APPEND_OR_REPLACE`。退避只处理 Worker（WorkManager 的任务执行单元）返回 `Result.retry()` 的情况，不能代替网络请求自身的超时和幂等设计。
 
 任务开始时间不能视为承诺时间。Doze、待机分组、约束和系统负载都可能推迟执行。运行后也可能因约束变化、配额或应用取消而停止。WorkManager 可读取 `WorkInfo.getStopReason()`；直接使用 JobScheduler 时，可读取 `JobParameters.getStopReason()`。Android 14 及以上，如果 Job 频繁超时，系统可能将应用放入 `restricted` 分组。
 
@@ -185,12 +194,12 @@ Android 16 进一步扩大了 Job 运行配额的适用范围：
 
 - 应用在前台启动的 Job，如果应用离开可见状态后仍继续运行，会受配额约束。
 - 与前台服务同时运行的 Job 也受配额约束。
-- 这些变化会影响直接使用 JobScheduler 的任务，也会影响基于它实现的 WorkManager 和 DownloadManager。
+- 这些变化会影响直接使用 JobScheduler 的任务，也会影响基于它实现的 WorkManager 和 DownloadManager（系统下载管理器）。
 - `ACTIVE` 分组拥有较宽裕的运行配额，不等于无限运行。
 
 这些规则来自 [Android 16 后台任务行为变更](https://developer.android.com/about/versions/16/behavior-changes-all)，在 Android 17 上继续生效。
 
-任务观测至少记录以下字段：
+任务观测至少记录这些字段：
 
 | 字段 | 用途 |
 |------|------|
@@ -209,15 +218,15 @@ Android 16 进一步扩大了 Job 运行配额的适用范围：
 
 前台服务适用于用户明确知道且希望持续进行的工作，例如导航、通话、媒体播放或运动记录。它不是进程保活接口。持续通知只说明服务正在工作，也不会取消 Doze、Job 配额和后台启动限制。
 
-评审 FGS 时，要分别验证以下条件：
+评审 FGS 时，要分别验证五项条件：
 
 1. **业务是否适合 FGS**：工作必须对用户可感知，并有清晰的开始与停止条件。
 2. **能否从当前位置启动**：目标版本 31 及以上从后台启动 FGS 受到限制，只有[官方列出的豁免场景](https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start)可以启动。
 3. **服务类型与权限是否匹配**：目标版本 34 及以上必须在清单中声明类型及对应 `FOREGROUND_SERVICE_*` 权限。
-4. **受保护资源能否访问**：位置、相机、麦克风和身体传感器的使用中权限有自己的可见性要求。
+4. **受保护资源能否访问**：位置、相机、麦克风和身体传感器的使用中权限（while-in-use permission，一般只在应用可见或满足对应前台服务条件时可用）有自己的可见性要求。
 5. **运行时限是否满足**：部分 FGS 类型有系统时限，应用仍需设置更早的业务超时与取消入口。
 
-下面的清单片段只展示位置型前台服务的基础声明，用于核对服务类型与权限是否一致。
+这个清单片段只展示位置型前台服务的基础声明，用于核对服务类型与权限是否一致。
 
 ```xml
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -246,14 +255,14 @@ Android 16 进一步扩大了 Job 运行配额的适用范围：
 ### 时限与 Android 17 变化
 
 - `shortService` 的系统时限约为三分钟。它适合短暂完成工作，不适合用来延长普通后台任务。
-- 目标版本 35 及以上时，`dataSync` 和 `mediaProcessing` 各自在滚动的 24 小时窗口中共享六小时后台运行额度；同一应用内相同类型的所有服务共同消耗对应额度。收到 `Service.onTimeout(int, int)` 后，应保存可恢复进度并在数秒内调用 `stopSelf()`。参见 [Foreground service timeouts](https://developer.android.com/develop/background-work/services/fgs/timeout)。
-- Android 17 会检查后台音频播放、音频焦点请求和音量操作是否来自有效生命周期。目标版本 37 及以上的应用要求更严：相关 FGS 需要具备使用中能力；持有精确 Alarm 权限并操作 `USAGE_ALARM` 音频流是文档列出的例外。参见 [Android 17 后台音频变化](https://developer.android.com/about/versions/17/behavior-changes-all)与 §25.11。
+- 目标版本 35 及以上时，`dataSync` 和 `mediaProcessing` 各自在滚动的 24 小时窗口中共享六小时后台运行额度；同一应用内相同类型的所有服务共同消耗对应额度。用户将应用带回前台时，计时器会重置。收到 `Service.onTimeout(int, int)` 后，应保存可恢复进度并在数秒内调用 `stopSelf()`。参见 [Foreground service timeouts](https://developer.android.com/develop/background-work/services/fgs/timeout)。
+- Android 17 会检查后台音频播放、音频焦点请求和音量操作是否来自有效生命周期。生命周期无效时，播放与音量操作会静默失败，音频焦点请求返回 `AUDIOFOCUS_REQUEST_FAILED`。目标版本 37 及以上的应用要求更严：相关 FGS 需要具备 while-in-use（使用中）能力；持有精确 Alarm 权限并操作 `USAGE_ALARM` 音频流是文档列出的例外。参见 [Android 17 后台音频变化](https://developer.android.com/about/versions/17/behavior-changes-all)与 §25.11。
 
-FGS 通知应说明具体工作及停止方式，例如“正在导航”或“正在上传所选文件”。服务在任务完成、用户取消、权限撤销、退出账号或业务时限到达时都应停止。服务内部启动的 Worker 或 Job 仍受 Job 配额约束。
+FGS 通知应说明具体工作及停止方式，例如写明正在导航或正在上传所选文件。服务在任务完成、用户取消、权限撤销、退出账号或业务时限到达时都应停止。服务内部启动的 Worker 或 Job 仍受 Job 配额约束。
 
 ## 后台定位与传感器管控
 
-Android 8.0 及以上会限制后台应用接收位置更新的频率，官方只承诺“每小时少数几次”这一量级，不承诺固定次数。业务若依赖精确到达时间，不应从这个描述推导服务等级。区域进入或离开可使用 Geofencing API；允许延迟的轨迹可使用批量位置；只希望复用其他客户端已经计算的位置时，可使用被动请求。参见[后台位置限制](https://developer.android.com/about/versions/oreo/background-location-limits)和[位置功耗场景指南](https://developer.android.com/develop/sensors-and-location/location/battery/scenarios)。
+Android 8.0 及以上会限制后台应用接收位置更新的频率，官方只给出每小时少数几次这一量级，不承诺固定次数。业务若依赖精确到达时间，不应从这个描述推导服务等级。区域进入或离开可使用 Geofencing API（地理围栏接口）；允许延迟的轨迹可使用批量位置；只希望复用其他客户端已经计算的位置时，可使用被动请求。参见[后台位置限制](https://developer.android.com/about/versions/oreo/background-location-limits)和[位置功耗场景指南](https://developer.android.com/develop/sensors-and-location/location/battery/scenarios)。
 
 | 场景 | 推荐策略 | 功耗边界 |
 |------|----------|----------|
@@ -263,7 +272,7 @@ Android 8.0 及以上会限制后台应用接收位置更新的频率，官方�
 | 允许延迟上传的轨迹 | 批量位置 | 接受批量回调延迟，避免持续高精度上传 |
 | 仅为刷新首页内容 | 前台按需获取或使用仍符合时效的最近位置 | 不在后台持续订阅位置 |
 
-下面的函数构造被动位置请求。所有时间都由业务根据数据时效传入，函数只检查参数关系。
+这个函数构造被动位置请求。所有时间都由业务根据数据时效传入，函数只检查参数关系。
 
 ```kotlin
 fun buildPassiveLocationRequest(
@@ -300,13 +309,13 @@ fun buildPassiveLocationRequest(
 - 每个业务声明采样目的、前后台状态、精度、最短间隔、最长持续时间。
 - 页面不可见后降级采样；任务结束、权限撤销、账号退出时释放监听。
 - 多业务复用一个位置源，避免首页、推荐、风控、埋点各自启动一套请求。
-- 在同一时间范围内关联 GNSS、传感器、CPU 和网络数据，再用 §25.1 的 BatteryStats 与 Perfetto 分析归因。
+- 在同一时间范围内关联 GNSS（全球卫星导航系统）、传感器、CPU 和网络数据，再用 §25.1 的 BatteryStats 与 Perfetto（Android 系统追踪工具）分析归因。
 
 ## 后台任务回归守门
 
-后台功耗回归需要同时覆盖调度结果和资源消耗。单看“任务成功”会漏掉重复执行和过度重试；单看总耗电又难以定位责任业务。测试至少记录后台唤醒、排队与运行时长、停止原因、CPU 时间、网络流量、位置请求和 FGS 持续时间。
+后台功耗回归需要同时覆盖调度结果和资源消耗。只检查任务是否成功，会漏掉重复执行和过度重试；只检查总耗电，又难以定位责任业务。测试至少记录后台唤醒、排队与运行时长、停止原因、CPU 时间、网络流量、位置请求和 FGS 持续时间。
 
-下面的命令用于测试机上强制进入 Doze，并检查 `restricted` 分组下的行为。将示例包名替换为待测应用；不要在日常使用的设备上保留这些测试状态。
+这些命令用于测试机上强制进入 Doze，并检查 `restricted` 分组下的行为。将示例包名替换为待测应用；不要在日常使用的设备上保留这些测试状态。
 
 ```bash
 adb shell dumpsys battery unplug
@@ -324,12 +333,12 @@ adb shell dumpsys battery reset
 
 `force-idle` 用于验证 Doze 中任务是否被延后以及退出后能否恢复；`set-standby-bucket` 用于复现待机分组限制；末尾两条命令将待机分组和电池服务恢复到测试前的常用状态。待机分组算法允许 OEM 调整，强制分组只能验证应用在该条件下的行为，不能预测每台设备何时自动进入该分组。
 
-回归场景不要照抄固定的息屏时长或推送条数。测试周期应覆盖本业务完整的调度、超时和重试窗口，事件数量来自线上基线或明确的容量目标。可按以下顺序组织：
+回归场景不要照抄固定的息屏时长或推送条数。测试周期应覆盖本业务完整的调度、超时和重试窗口，事件数量来自线上基线或明确的容量目标。测试分五步进行：
 
 1. 记录开始时间，清理测试任务并重置 BatteryStats。
 2. 执行业务场景，覆盖网络变化、任务重复触发、退出账号、权限撤销和进程重启。
 3. 分别在正常状态、Doze 和目标待机分组下运行。
-4. 导出 bugreport、Perfetto 轨迹、WorkManager 或 JobScheduler 原因，以及应用任务日志。
+4. 导出 bugreport（Android 系统诊断报告）、Perfetto 轨迹、WorkManager 或 JobScheduler 原因，以及应用任务日志。
 5. 按时间关联每次唤醒、任务状态变化和资源用量，与稳定版本的分布比较。
 
 不要将多种资源压成一个总分。CPU 下降可能伴随位置请求增加，网络流量减少也可能伴随 FGS 时间增长。每类资源应有独立预算，每个超限项都要能定位到任务名和责任业务。

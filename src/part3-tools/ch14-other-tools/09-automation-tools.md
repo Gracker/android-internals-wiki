@@ -1,9 +1,9 @@
 ---
-applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+applicable_versions: Android 6.0 (API 23) – Android 17 (API 37)
 chapter: 14.9
 confidence: medium
-last_verified: 2026-07-30
-last_verified_against: "AndroidX Benchmark 1.4.1 stable + Android test docs + Android 17 / API 37 + android-17.0.0_r1"
+last_verified: 2026-08-13
+last_verified_against: "AndroidX Benchmark 1.4.1 stable + UI Automator 2.4.0 stable + Android test docs + Android 17 / API 37 + android-17.0.0_r1"
 related_chapters: ["8.7", "13.9", "15.3", "15.6"]
 section: 14.9
 sources:
@@ -38,44 +38,48 @@ title: 自动化性能测试与回归门禁
 
 ## 为什么要用自动化工具做性能测试
 
-Perfetto、Android Studio Profiler 适合回答“时间花在哪里”，自动化基准测试负责回答“从哪次改动开始变慢”。一次手工 Trace 可以定位问题，却很难在每次提交后按相同条件重放启动、滚动或热点函数。
+Perfetto、Android Studio Profiler 适合回答“时间花在哪里”，自动化基准测试负责回答“从哪次改动开始变慢”。Trace 是带时间戳的性能事件记录。一次手工 Trace 可以定位问题，却很难在每次提交后按相同条件重放启动、滚动或热点函数。
 
-Jetpack Benchmark 把场景、编译状态、重复次数和产物格式写进测试代码。持续集成系统因此可以保存每次运行的 JSON 与 Perfetto Trace，并把本次数据与同一设备上的历史数据比较。自动执行只解决了重复性；构建类型、设备温度、系统版本、编译模式和操作边界仍要固定，否则得到的是设备噪声。
+Jetpack Benchmark 把场景、编译状态、重复次数和产物格式写进测试代码。持续集成（CI）系统因此可以保存每次运行的 JSON 结构化结果与 Perfetto Trace，并把本次数据与同一设备上的历史数据比较。自动执行只解决了重复性；构建类型、设备温度、系统版本、编译模式和操作边界仍要固定，否则得到的主要是设备波动。
 
 ## Macrobenchmark 与 Microbenchmark：两种层次，两种用途
 
 两套库的区别集中在进程边界和测量对象：
+
+APK 是 Android 应用或测试程序的安装包。AOT（Ahead-of-Time）在运行前将字节码编译为机器码，JIT（Just-in-Time）则在运行期间编译热点代码。
 
 | 维度 | Macrobenchmark | Microbenchmark |
 |---|---|---|
 | 测量范围 | 启动、滚动、动画等完整用户场景 | 可直接调用的函数、算法或一小段 UI 代码 |
 | 运行位置 | 测试 APK 在目标应用进程之外驱动场景 | 被测代码在基准测试进程内循环执行 |
 | 编译控制 | 可选择 `DEFAULT`、`Full`、`Partial`、`None`、`Ignore` | AndroidX Benchmark Gradle 插件可对基准测试 APK 做全量 AOT |
-| 主要产物 | 指标 JSON；每个测量迭代一份系统 Trace | 指标 JSON；每个 `measureRepeated` 默认一份方法/系统 Trace |
+| 主要产物 | 指标 JSON；每个测量迭代一份系统 Trace | 指标 JSON 与最小系统 Trace；采集条件允许时默认再生成方法 Trace |
 | 适合回答 | 一次交互整体是否回归，慢在哪个系统阶段 | 某个热点实现是否更快，分配是否减少 |
 
 ### Macrobenchmark：端到端的用户体验测量
 
-Macrobenchmark 从目标应用外部启动 Activity、注入手势并采集系统 Trace，适合测量启动、滚动和动画等完整交互。测试代码必须放在独立的 `com.android.test` 模块中；目标 APK 应使用接近 release 的非 debuggable、可混淆构建，并通过 `<profileable>` 允许低干扰 Trace 采集。
+Macrobenchmark 从目标应用外部启动 Activity、注入手势并采集系统 Trace，适合测量启动、滚动和动画等完整交互。测试代码必须放在独立的 `com.android.test` 模块中。目标 APK 应使用接近 release 的非 debuggable 构建，并保留 R8 代码压缩和优化。Manifest 中的 `<profileable>` 让 shell 可以对非 debuggable 应用进行低干扰 Trace 采集。
 
-入口是 `MacrobenchmarkRule.measureRepeated()`。`setupBlock` 把应用放到一致的初始状态，`measureBlock` 定义计入测量的操作。一次 `measureRepeated()` 会执行多个迭代，并为每个测量迭代保存一份系统 Trace。`StartupTimingMetric` 的汇总值是 min、median、max；`FrameTimingMetric` 输出 P50、P90、P95、P99。不能把它们概括成“重复 N 次取平均值”。
+入口是 `MacrobenchmarkRule.measureRepeated()`。`setupBlock` 把应用放到一致的初始状态，`measureBlock` 定义计入测量的操作。iteration 是同一次测试启动中的一次重复测量；一次 `measureRepeated()` 会执行多个 iteration，并为每个测量 iteration 保存一份系统 Trace。
+
+`StartupTimingMetric` 的汇总值是 min、median、max；`FrameTimingMetric` 输出 P50、P90、P95、P99。P90 表示 90% 的样本不超过该值，其余分位数同理。不能把这些结果概括成“重复 N 次取平均值”。
 
 常用指标及其边界如下：
 
 | 指标 | 版本边界 | 读法 |
 |---|---|---|
-| `StartupTimingMetric` | Macrobenchmark 支持 API 23+；`timeToFullDisplayMs` 在 API 29 及以下可能不可用 | TTID 对应首帧；TTFD 依赖应用在主要内容就绪后调用 `reportFullyDrawn()` |
-| `FrameTimingMetric` | `frameOverrunMs` 仅 API 31+ | 正值表示越过该帧 deadline；`frameDurationCpuMs` 表示 UI 线程与 RenderThread 生成一帧所用的 CPU 时间 |
-| `TraceSectionMetric` | 实验 API；依赖 Trace 中存在同名 section | 默认只查目标包，并选取测量区间内首次匹配；适合测量明确标记的初始化或绑定阶段 |
-| `PowerMetric` | 实验 API，最低 API 29 | 高精度 power/energy 数据是系统总量，依赖设备 power rails；官方文档限定 Pixel 6、Pixel 6 Pro 及更新机型 |
+| `StartupTimingMetric` | Macrobenchmark 支持 API 23+；`timeToFullDisplayMs` 在 API 29 及以下可能不可用 | TTID（Time to Initial Display）对应首帧；TTFD（Time to Full Display）依赖应用在主要内容就绪后调用 `reportFullyDrawn()` |
+| `FrameTimingMetric` | `frameOverrunMs` 仅 API 31+ | 正值表示超过该帧 deadline（应完成时间）；`frameDurationCpuMs` 表示 UI 线程与 RenderThread 生成一帧所用的 CPU 时间 |
+| `TraceSectionMetric` | 实验 API；依赖 Trace 中存在同名 section | section 是应用写入 Trace 的命名时间片；默认只查目标包，并选取测量区间内首次匹配 |
+| `PowerMetric` | 实验 API，最低 API 29 | 高精度 power/energy 是系统总量，依赖设备 power rail（硬件供电通路）；官方限定 Pixel 6、Pixel 6 Pro 及更新机型 |
 
 `PowerMetric` 还提供电池电量差值类型，精度低于 power rail。无论选择哪一种，功耗结果都不能直接归因于单个应用。测试进程、系统服务、屏幕和网络活动都会进入系统总量。[AndroidX 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-main/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/Metric.kt) 对 `PowerMetric` 标注了 `@RequiresApi(29)`，并提供 `deviceSupportsHighPrecisionTracking()` 检查设备能力。
 
 ### Microbenchmark：代码级热点分析
 
-Microbenchmark 直接循环调用被测代码，适合 JSON 解析、数据转换、布局 inflate、`RecyclerView` item 绑定等高频 CPU 路径。循环会形成预热缓存和稳定代码路径，因此结果接近热点代码的最佳情况；磁盘首次读取、只运行一次的初始化、跨进程交互通常不适合用它单独判断。
+Microbenchmark 直接循环调用被测代码，适合 JSON 解析、数据转换、布局 inflate（从 XML 创建 View）、`RecyclerView` item 绑定等高频 CPU 路径。循环会形成预热缓存和稳定代码路径，因此结果接近热点代码的最佳情况。磁盘首次读取、只运行一次的初始化、跨进程交互通常不适合用它单独判断。
 
-下面的测试演示如何测量解析函数，并用 `BlackHole.consume()` 防止 Kotlin 编译器或 R8 删除未使用的计算结果：
+下面的测试演示如何测量解析函数，并用 `BlackHole.consume()` 防止死代码删除，即避免 Kotlin 编译器或 R8 把没有外部用途的计算整段删掉。
 
 ```kotlin
 // 省略 import；类位于 microbenchmark 模块的 androidTest 源集。
@@ -92,7 +96,9 @@ class JsonBenchmark {
 }
 ```
 
-`measureRepeated` 负责预热、循环次数和计时，报告执行时间与分配次数。Benchmark 1.3.0-beta01+ 配合 AGP 8.4.0+ 时，`androidx.benchmark` 插件默认对 Microbenchmark APK 做全量 AOT；需要观察 JIT 行为时，可在 `gradle.properties` 中设置 `androidx.benchmark.forceaotcompilation=false`。准备输入数据或重置容器时，应把不计时的部分放进 `runWithTimingDisabled {}`。
+`measureRepeated` 负责预热、循环次数和计时，报告执行时间与分配次数。AGP 是 Android Gradle Plugin。Benchmark 1.3.0-beta01+ 配合 AGP 8.4.0+ 时，`androidx.benchmark` 插件默认对 Microbenchmark APK 做全量 AOT。需要观察 JIT 行为时，可在 `gradle.properties` 中设置 `androidx.benchmark.forceaotcompilation=false`。
+
+准备输入数据或重置容器时，应把不参与测量的部分放进 `runWithMeasurementDisabled {}`。旧名 `runWithTimingDisabled {}` 在 Benchmark 1.4.0 已弃用，因为该方法暂停的不只是计时。
 
 ### 什么时候用哪个？
 
@@ -109,7 +115,7 @@ class JsonBenchmark {
 
 ### 测量启动时间
 
-这段测试测量 Baseline Profile 可用时的冷启动，代码主体省略了 import：
+Baseline Profile 是应用交给 ART 的预编译方法与类列表。这段测试测量 Baseline Profile 可用时的冷启动，代码主体省略了 import：
 
 ```kotlin
 // 省略 import；替换为被测应用的真实包名。
@@ -135,9 +141,9 @@ class StartupBenchmark {
 }
 ```
 
-`StartupMode.COLD` 会在 `setupBlock` 与 `measureBlock` 之间终止目标进程，测试无需自行执行 `force-stop`。`pressHome()` 固定启动前的可见界面，`startActivityAndWait()` 发出启动 Intent 并等待 Activity 首帧。`iterations = 10` 只是该场景的采样配置；应根据本机噪声和 CI 时长调整，不能把 10 次当成通用门槛。
+`StartupMode.COLD` 会在 `setupBlock` 与 `measureBlock` 之间终止目标进程，测试无需自行执行 `force-stop`。`pressHome()` 固定启动前的可见界面，`startActivityAndWait()` 发出启动 Intent 并等待 Activity 首帧。`iterations = 10` 只是该场景的采样配置；应根据本机测量波动和 CI 时长调整，不能把 10 次当成通用门槛。
 
-`StartupTimingMetric` 输出 `timeToInitialDisplayMs` 和 `timeToFullDisplayMs`。前者从系统收到启动 Intent 计到目标 Activity 首帧；后者计到应用调用 `reportFullyDrawn()` 后的首个完整帧。应用未调用该 API 时没有可解释的 TTFD，API 29 及以下还可能无法提供该字段。报告比较以 median 为主，同时保留 min、max 和单次 Trace。
+`StartupTimingMetric` 输出 `timeToInitialDisplayMs` 和 `timeToFullDisplayMs`。前者从系统收到启动 Intent 计到目标 Activity 首帧；后者计到应用调用 `reportFullyDrawn()` 后的首个完整帧。应用未调用该 API 时没有可解释的 TTFD，API 29 及以下还可能无法提供该字段。报告比较以 median（中位数）为主，同时保留 min、max 和单次 Trace。
 
 `StartupMode` 提供 `COLD`、`WARM`、`HOT`。三种模式改变启动前的进程和 Activity 状态，不能混在一条趋势曲线中。测试名称、JSON 基线和告警规则都应带上启动模式。
 
@@ -173,7 +179,7 @@ fun scrollList() = benchmarkRule.measureRepeated(
 
 `killProcess()` 与重新启动发生在测量区间之外，用来让每次迭代都从列表初始位置开始。`check` 让页面未准备好时直接失败，避免“没有找到列表但测试仍通过”。`setGestureMargin()` 避开系统返回手势区域，`fling()` 产生可重复的滚动输入。若业务场景要求固定距离，可改用 `swipe()`，并把方向、速度、距离和列表初始位置写成稳定条件。
 
-`FrameTimingMetric` 报告 P50、P90、P95、P99。API 31+ 的 `frameOverrunMs` 使用系统为每一帧计算的 deadline，适用于 60 Hz、高刷新率和可变刷新率设备；正值表示超期，负值表示仍有余量。`frameDurationCpuMs` 只描述 UI 线程与 RenderThread 生成帧的 CPU 时间，GPU 等待和合成问题仍要回到 FrameTimeline 与系统 Trace 判断。
+`FrameTimingMetric` 报告 P50、P90、P95、P99。API 31+ 的 `frameOverrunMs` 使用系统为每一帧计算的 deadline，适用于 60 Hz、高刷新率和可变刷新率设备；正值表示超期，负值表示仍有余量。`frameDurationCpuMs` 只描述 UI 线程与 RenderThread 生成帧的 CPU 时间。GPU 等待和合成问题仍要回到 FrameTimeline（系统记录的预期帧与实际帧时序）与系统 Trace 判断。
 
 ### CompilationMode：量化编译优化效果
 
@@ -201,7 +207,9 @@ CompilationMode.Full()
 CompilationMode.Ignore()
 ```
 
-`DEFAULT` 在 API 24+ 尝试安装 APK 中的 Baseline Profile；API 23 按系统默认行为做全量编译。`Partial()` 用于观察 profile 覆盖后的状态，`None()` 用于观察无预编译的状态，`Full()` 适合研究全量 AOT 上限。`Ignore()` 不修改已有状态，适合由外部脚本精确控制 ART 编译的场景；当前 API 带有 `ExperimentalMacrobenchmarkApi` 标记，调用处需要按所用 Benchmark 版本处理 opt-in。
+`DEFAULT` 在 API 24+ 尝试安装 APK 中的 Baseline Profile；API 23 按系统默认行为做全量编译。`Partial()` 用于观察 profile 覆盖后的状态，`None()` 用于观察无预编译的状态，`Full()` 适合研究全量 AOT 上限。
+
+`Ignore()` 不修改已有状态，适合由外部脚本精确控制 ART 编译的场景。当前 `Ignore()` 带有 `ExperimentalMacrobenchmarkApi` 标记，调用处需用 opt-in 显式确认实验 API。
 
 Android 14（API 34）起，Macrobenchmark 可以在重置编译状态时保留应用数据；更低版本常需要重装 APK。测试必须保留登录态或预置数据时，优先使用 API 34—37 的固定设备；旧设备可由外部脚本管理编译，再选 `CompilationMode.Ignore()`。
 
@@ -209,13 +217,13 @@ Baseline Profile 收益应由同一 APK、同一设备、同一启动模式下�
 
 ## adb shell am instrument：性能测试的命令行入口
 
-Gradle、Android Studio 和云设备平台最终都要启动 instrumentation。ADB 下最直接的入口是 `am instrument`，基本语法如下：
+Gradle、Android Studio 和云设备平台最终都要启动 instrumentation。instrumentation 是 Android 的系统测试机制：系统启动测试 APK 中的 runner，并为它建立测试连接。ADB（Android Debug Bridge）下最直接的入口是 `am instrument`，基本语法如下：
 
 ```bash
 adb shell am instrument -w <test_package>/<runner_class>
 ```
 
-`<test_package>/<runner_class>` 是测试 APK Manifest 中注册的 instrumentation 组件；`-w` 让客户端等待测试结束并打印状态。Macrobenchmark 使用常规 `AndroidJUnitRunner`，下面只执行一个测试方法：
+`<test_package>/<runner_class>` 是测试 APK Manifest（应用组件声明文件）中注册的 instrumentation 组件。runner 是发现并执行测试的入口类，`-w` 让 ADB 客户端等待测试结束并打印状态。Macrobenchmark 使用常规 `AndroidJUnitRunner`，下面只执行一个测试方法：
 
 ```bash
 adb shell am instrument -w \
@@ -223,7 +231,7 @@ adb shell am instrument -w \
   com.example.macrobenchmark/androidx.test.runner.AndroidJUnitRunner
 ```
 
-`-e class` 进入 instrumentation 的参数 `Bundle`，由 `AndroidJUnitRunner` 解释为测试过滤条件。Microbenchmark 的组件 runner 则是 `androidx.benchmark.junit4.AndroidBenchmarkRunner`，两者不能照抄。
+`-e class` 会写入 instrumentation 的参数 `Bundle`，即一组键值对，由 `AndroidJUnitRunner` 解释为测试过滤条件。Microbenchmark 的组件 runner 则是 `androidx.benchmark.junit4.AndroidBenchmarkRunner`，两者不能照抄。
 
 本地运行整个 Macrobenchmark 模块或单个方法，可让 Gradle 负责构建、安装、执行和拉取产物：
 
@@ -235,45 +243,49 @@ adb shell am instrument -w \
 com.example.macrobenchmark.StartupBenchmark#coldStartup
 ```
 
-`connectedCheck` 会自动把 JSON 与 Trace 拉到主机。CI 拆分构建和设备执行时，才需要显式安装两个 APK 并调用 `am instrument`。
+`connectedCheck` 是 Gradle 的连机测试任务，会负责构建、安装和执行，再把 JSON 与 Trace 拉到主机。CI 拆分构建和设备执行时，才需要显式安装两个 APK 并调用 `am instrument`。
 
 Benchmark 常用参数由测试库解释，不属于 `am` 内建选项：
 
 - `-e class 包名.类名#方法名`：由 runner 过滤测试。
-- `-e androidx.benchmark.dryRunMode.enable true`：把基准缩成一次循环，用于验证脚本和配置，结果不能进入性能趋势。
-- `-e androidx.benchmark.iterations N`：覆盖 Microbenchmark 的迭代数；Macrobenchmark 的迭代数由测试代码中的 `measureRepeated` 参数定义。
+- `-e androidx.benchmark.dryRunMode.enable true`：把基准缩成一次循环，不预热、不保存测量或 Trace，只用于验证脚本和配置。
+- `-e androidx.benchmark.iterations N`：覆盖 Microbenchmark 的 measurement 数，每次 measurement 内部仍可根据预热时长运行多个循环；Macrobenchmark 的 iteration 数由测试代码中的 `measureRepeated` 参数定义。
 - `-e androidx.benchmark.suppressErrors 错误名`：把指定配置错误降为警告。带错误前缀的结果只适合诊断，不能进入基线。
 - `-e additionalTestOutputDir 路径`：为直接 ADB 或云设备运行指定可写的产物目录。
 
 Benchmark 1.1.0 之前需要用 `androidx.benchmark.output.enable=true` 手动开启 JSON；当前版本默认输出，无需继续携带这个历史参数。
 
-Android 17 源码中，[`Instrument`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/cmds/am/src/com/android/commands/am/Instrument.java) 解析 `-w`、`-e`、用户、ABI 等参数，随后调用 `IActivityManager.startInstrumentation()`；[`ActivityManagerShellCommand`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java) 的帮助文本也明确区分了 `am instrument` 入口。这一层只负责启动和传递参数，指标含义由 AndroidX Benchmark 决定。
+Android 17 源码中，[`Instrument`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/cmds/am/src/com/android/commands/am/Instrument.java) 解析 `-w`、`-e`、用户、ABI 等参数。ABI（Application Binary Interface）指 APK 中 native 代码面向的 CPU 架构与二进制接口。解析后，`Instrument` 调用 Binder 接口 `IActivityManager.startInstrumentation()`。
+
+[`ActivityManagerShellCommand`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java) 的帮助文本也明确区分了 `am instrument` 入口。平台这一层只负责启动和传递参数，指标含义由 AndroidX Benchmark 决定。
 
 ## UI Automator 与 Espresso：在性能测试中的角色
 
-UI Automator 负责从应用进程外驱动完整场景；Espresso 负责在应用 instrumentation 环境中做稳定的功能断言。两者的同步方式和测量边界不同。
+UI Automator 负责从应用进程外驱动完整场景；Espresso 负责在应用 instrumentation 环境中做功能断言。前者视角更接近用户，后者可访问目标应用内部的 View 和同步状态。它们的同步方式和测量边界不同。
 
 ### UI Automator：Macrobenchmark 的底层驱动
 
-UI Automator 可以检查用户应用和系统应用的可访问性节点、注入输入并跨窗口操作。它不要求目标应用链接测试代码，因而可以驱动混淆后的 release-like APK，也能处理权限弹窗、桌面和系统设置。
+UI Automator 可以检查用户应用和系统应用的 accessibility node（无障碍服务看到的 UI 结构节点）、注入输入并跨窗口操作。它不要求目标应用链接测试代码，因而可以驱动保留 release 优化的 APK，也能处理权限弹窗、桌面和系统设置。
 
 Android 17 的 [`UiAutomation`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/UiAutomation.java) 被平台定义为一种特殊的 `AccessibilityService` 客户端；`am instrument` 创建 `UiAutomationConnection` 并把它交给 instrumentation。这里没有要求用户安装或常驻启用一个普通无障碍服务。UI Automator 在测试进程中通过这条系统连接读取节点和注入手势。
 
-测试进程与目标应用进程分离，可以避免把驱动代码计入目标进程的堆和调用栈。它们仍共享 CPU、内存带宽、Binder 服务和内核调度资源，节点查询与输入注入也有 IPC 成本。降低扰动的方法是把页面查找、登录和数据准备放入 `setupBlock`，在 `measureBlock` 中只保留固定输入和必要等待。
+测试进程与目标应用进程分离，可以避免把驱动代码计入目标进程的堆和调用栈。它们仍共享 CPU、内存带宽、Binder 服务和内核调度资源。节点查询与输入注入也会产生 IPC（跨进程通信）开销。降低扰动的方法是把页面查找、登录和数据准备放入 `setupBlock`，在 `measureBlock` 中只保留固定输入和必要等待。
 
-UI Automator 2.4 引入了 `uiAutomator {}`、`onElement {}`、`waitForAppToBeVisible()` 等 Kotlin DSL。官方文档把 2.4 API 标为仍在开发，同时推荐新测试采用它；已有 Macrobenchmark 使用 `UiDevice`、`By`、`Until` 的代码仍可维护，不必为了语法变化改写已经稳定的场景。
+UI Automator 2.4.0 已于 2026 年 7 月 1 日稳定发布。它引入了 `uiAutomator {}`、`onElement {}`、`waitForAppToBeVisible()` 等 Kotlin DSL（针对测试场景设计的 Kotlin 调用语法），并加入内置等待、应用状态管理和截图能力。
 
-### Espresso：白盒验证，不是性能测量工具
+已有 Macrobenchmark 使用 `UiDevice`、`By`、`Until` 的代码仍可维护，不必为了语法变化改写已经稳定的场景。
 
-Espresso 与目标应用的 instrumentation 紧密配合。每次 `onView()` 操作前，它会等待需要处理的消息队列、`AsyncTask` 和已注册 `IdlingResource` 进入空闲状态。这个同步模型适合验证点击后的 View 状态，也适合确认性能优化没有破坏功能。
+### Espresso：用于白盒验证，不用于性能测量
 
-同步等待会改变输入时序，测试代码及 matcher 还可能进入目标进程的 CPU、内存和调度数据。用 Espresso 包围一段操作再读取墙钟时间，测到的会同时包含框架同步、断言和应用工作，不能替代 Macrobenchmark 指标。
+Espresso 是白盒测试工具，即测试可以访问目标应用内部的 View 和同步状态。每次 `onView()` 操作前，它会等待需要处理的消息队列、`AsyncTask` 和已注册 `IdlingResource` 进入空闲状态。`IdlingResource` 是业务或组件向 Espresso 报告“已空闲”的同步接口。这个模型适合验证点击后的 View 状态，也适合确认性能优化没有破坏功能。
+
+同步等待会改变输入时序，matcher（判定 View 是否符合条件的匹配器）与其他测试代码还会进入目标进程的 CPU、内存和调度数据。用 Espresso 包围一段操作再读取墙钟时间（真实经过时间），测到的会同时包含框架同步、断言和应用工作，不能替代 Macrobenchmark 指标。
 
 工程上可把 Espresso 用例放在提交验证阶段，把 Macrobenchmark 放在固定设备阶段：前者验证页面可用，后者测量完整交互。失败证据也不同，Espresso 看断言与截图，Macrobenchmark 看 JSON 与 Trace。
 
 ### 不能混用的地方
 
-Macrobenchmark 模块的 instrumentation 目标是测试 APK，无法把 Espresso 的 `onView()` 当作目标应用内 matcher 使用。跨应用操作、权限弹窗和系统界面统一交给 UI Automator。目标应用内部必须暴露“主要内容已就绪”这类语义时，可调用 `reportFullyDrawn()` 或写自定义 Trace section，再由 Macrobenchmark 从 Trace 读取；不要把 Espresso 驱动塞进 `measureBlock`。
+Macrobenchmark 的自 instrumentation 测试 APK 运行在目标应用进程之外，无法把 Espresso 的 `onView()` 当作目标应用内 matcher 使用。跨应用操作、权限弹窗和系统界面统一交给 UI Automator。目标应用内部必须暴露“主要内容已就绪”这类语义时，可调用 `reportFullyDrawn()` 或写自定义 Trace section，再由 Macrobenchmark 从 Trace 读取。Espresso 驱动不应放进 `measureBlock`。
 
 ## Monkey、SoloPi 与 Appium：自动化工具的另一类用途
 
@@ -281,7 +293,7 @@ Macrobenchmark 模块的 instrumentation 目标是测试 APK，无法把 Espress
 
 ### Monkey：低成本压力测试
 
-`Monkey` 在设备端生成伪随机点击、滑动、按键和系统事件，适合在夜间任务中发现崩溃与 ANR。它能用固定 seed 重放相同事件序列，但页面数据、网络响应和系统弹窗仍可能让后续路径分叉。
+`Monkey` 在设备端生成伪随机点击、滑动、按键和系统事件，适合在夜间任务中发现崩溃与 ANR（Application Not Responding，应用无响应）。seed 是伪随机数生成器的初始值；固定 seed 可以重放相同事件序列，但页面数据、网络响应和系统弹窗仍可能让后续路径分叉。
 
 这条命令把事件限制在单个包中，固定 seed，并监控 native crash：
 
@@ -294,25 +306,27 @@ adb shell monkey -p com.example.app \
   -v 10000
 ```
 
-`10000` 是事件数，`--throttle 200` 在事件之间加入 200 ms 间隔。保留命令、seed、应用版本、系统版本、logcat、bugreport 与 tombstone，才能复查故障现场。Monkey 没有固定业务边界，也不控制编译和设备状态，因此不能用于启动耗时或帧时间回归判定。
+`10000` 是事件数，`--throttle 200` 在事件之间加入 200 ms 间隔。`--monitor-native-crashes` 额外监视 C/C++ 等 native 代码崩溃。复查现场时应保留命令、seed、应用与系统版本、logcat 日志、bugreport 诊断包与 tombstone（native 崩溃报告）。Monkey 没有固定业务边界，也不控制编译和设备状态，因此不能用于启动耗时或帧时间回归判定。
 
 ### SoloPi：专项性能脚本和视觉拆帧
 
-SoloPi 提供录制回放、CPU / 内存 / FPS 等性能面板和启动耗时辅助工具，适合线下走查与测试同学复现长流程。它的开源仓库构建说明仍以 Target API 29、较旧 Gradle 与 NDK 为基准；接入 Android 17 设备前要单独验证权限、无线调试、无障碍节点和厂商系统兼容性。SoloPi 的面板数据可用于发现异常区间，发布门禁仍应使用可追溯的 Benchmark JSON 与 Trace。
+SoloPi 提供录制回放、CPU / 内存 / FPS（每秒帧数）性能面板和启动耗时辅助工具，适合线下走查与测试同学复现长流程。它的开源仓库构建说明仍以 Target API 29、Gradle 6.1.1 与 NDK 16 为基准。NDK 是 Android 的 C/C++ 开发工具集。接入 Android 17 设备前要单独验证权限、无线调试、无障碍节点和厂商系统兼容性。SoloPi 的面板数据可用于发现异常区间，发布门禁仍应使用可追溯的 Benchmark JSON 与 Trace。
 
 ### Appium：跨端自动化，不负责指标可信度
 
-Appium 3 是基于 W3C WebDriver 的模块化自动化框架，Android 能力由独立 driver 提供。它适合统一 Android、iOS、WebView 和桌面端的业务脚本。WebDriver 服务、driver、设备自动化后端和显式/隐式等待都会影响输入时序，所以 Appium 负责场景编排时，性能指标仍应由设备侧 Macrobenchmark、Perfetto 或明确的系统 counter 采集。
+Appium 3 是基于 W3C WebDriver 的模块化自动化框架。W3C WebDriver 定义查找元素、点击和创建会话等标准命令，driver 则把这些命令转换为 Android、iOS 等平台的操作。这套架构适合统一 Android、iOS、WebView 和桌面端的业务脚本。
+
+WebDriver 服务、driver、设备自动化后端和显式/隐式等待都会影响输入时序。Appium 负责场景编排时，性能指标仍应由设备侧 Macrobenchmark、Perfetto 或明确的系统 counter（计数器读数）采集。
 
 ## 性能自动化测试的 CI/CD 集成方案
 
-可靠的性能 CI 要同时保存代码版本、APK、测试 APK、设备指纹、Benchmark JSON 和 Trace。缺少其中任一项，回归曲线都很难复查。
+CI/CD 分别指持续集成与持续交付/部署。可靠的性能 CI 要同时保存代码版本、APK、测试 APK、设备指纹、Benchmark JSON 和 Trace。缺少其中任一项，回归曲线都很难复查。
 
 ### 基本架构
 
 一条可维护的流水线分为构建、设备准备、执行、产物收集和回归判定五个阶段。
 
-**构建阶段**需要生成目标 APK 与测试 APK。目标应用采用 release-like 的 `benchmark` 变体：关闭 debuggable，保留 R8/资源压缩配置，只把签名换成 CI 可用的密钥。下面是应用模块的基础配置：
+**构建阶段**需要生成目标 APK 与测试 APK。build variant（构建变体）是 build type 与可选 product flavor 的一种组合。目标应用采用接近 release 的 `benchmark` 变体：关闭 debuggable，保留 R8 与资源压缩配置，只把签名换成 CI 可用的密钥。下面是应用模块的基础配置：
 
 ```kotlin
 // app/build.gradle.kts
@@ -334,25 +348,25 @@ buildTypes {
 }
 ```
 
-`matchingFallbacks` 主要解决多模块工程的变体匹配；单模块项目不一定需要。目标 APK 还要包含 `<profileable>`，并按当前 Macrobenchmark 文档接入 ProfileInstaller 1.3 或更新版本。
+`matchingFallbacks` 在依赖模块没有同名 `benchmark` 变体时，允许 Gradle 回退选择 `release`；单模块项目不一定需要。目标 APK 还要包含 `<profileable>`，并按当前 Macrobenchmark 文档接入 ProfileInstaller 1.3 或更新版本。ProfileInstaller 可帮助测试环境把 APK 携带的 Baseline Profile 安装到设备上。
 
-**设备准备阶段**固定型号、Android build fingerprint、电量区间、充电方式、网络、屏幕亮度、刷新率、账号与后台应用。AndroidX Benchmark 会检查低电量、模拟器、debuggable 等错误，也会在 Microbenchmark 中检测热降频并暂停等待冷却。rooted Microbenchmark 设备可用 `lockClocks`；Macrobenchmark 不使用这项锁频方案。
+**设备准备阶段**固定型号、Android build fingerprint（唯一标识系统构建的字符串）、电量区间、充电方式、网络、屏幕亮度、刷新率、账号与后台应用。AndroidX Benchmark 会检查低电量、模拟器、debuggable 等配置错误，也会在 Microbenchmark 中检测热降频并暂停等待冷却。已获取 root 管理员权限的 Microbenchmark 设备可用 `lockClocks` 锁定 CPU 频率；面向用户体验的 Macrobenchmark 不使用这项方案。
 
 **执行阶段**按用途分层：
 
-- PR 冒烟：`dryRunMode` 或只运行少量场景，目标是发现构建、安装、权限和元素定位错误。
+- PR 冒烟：PR 是 Pull Request，冒烟测试是用最小成本确认主流程能运行。使用 `dryRunMode` 或只运行少量场景，目标是发现构建、安装、权限和元素定位错误。
 - 夜间趋势：固定少量物理设备，运行完整迭代并保存全部产物。
 - 发布候选：在固定趋势设备之外增加一组机型，用于发现厂商系统或屏幕配置相关问题。
 
 模拟器适合 PR 阶段验证脚本能否执行。Benchmark 会把模拟器判为配置错误；即使通过 `suppressErrors` 继续运行，产物也只能用于诊断，不能写入物理设备的性能基线。
 
-**产物收集阶段**保存 JSON 与 `.perfetto-trace`，并把 Git commit、目标 APK 哈希、测试 APK 哈希和设备指纹写入同一次运行记录。Macrobenchmark 每个测量迭代一份 Trace；Microbenchmark 每个 `measureRepeated` 一份 Trace。
+**产物收集阶段**保存 JSON 与 `.perfetto-trace`，并把 Git commit、目标 APK 哈希、测试 APK 哈希和设备指纹写入同一次运行记录。哈希是由文件内容计算的固定长度摘要，用来确认实际测量的 APK。Macrobenchmark 每个测量 iteration 一份系统 Trace。Microbenchmark 默认生成最小系统 Trace；是否额外生成方法 Trace，还取决于 profiling 配置，以及当前系统能否在不影响后续测量的情况下采集。
 
-**回归判定阶段**比较同名测试、同名指标、同一启动/编译模式和同类设备。启动看 median，帧指标看 P50 与尾部分位，功耗看设备是否支持对应数据源。阈值应从该设备的历史方差与业务预算推导，不能给所有项目套一个固定百分比。
+**回归判定阶段**比较同名测试、同名指标、同一启动/编译模式和同类设备。启动看 median，帧指标看 P50 与尾部分位，功耗看设备是否支持对应数据源。阈值应从该设备的历史方差（数据波动幅度）与业务预算推导，不能给所有项目套一个固定百分比。
 
 ### Firebase Test Lab 与 GitHub Actions
 
-Firebase Test Lab 可以运行 instrumentation APK，并把指定目录拉到 Cloud Storage。设备目录会变化，提交测试前先查当前型号与系统组合：
+Firebase Test Lab（FTL）是 Google Cloud 的设备测试服务，可以运行 instrumentation APK，并把指定目录收集到 Cloud Storage 对象存储。可用设备与系统组合会变化，提交测试前先查当前目录：
 
 ```bash
 gcloud firebase test android models list
@@ -360,7 +374,7 @@ gcloud firebase test android models describe <MODEL_ID>
 gcloud firebase test android versions list
 ```
 
-命令输出会标明型号、可用 OS、ABI 以及物理/虚拟类型。性能趋势应固定物理型号和 OS；云端每次可能分配不同设备实例，因此要保留设备上下文，并用多次运行估计噪声。
+命令输出会标明型号、可用 OS、ABI 以及物理/虚拟类型。性能趋势应固定物理型号和 OS。云端每次可能分配同型号的不同设备实例，因此要保留设备上下文，并用多次运行估计波动。
 
 下面的 GitHub Actions 片段省略了项目专属的权限与路径过滤，只展示构建和 FTL 提交方式：
 
@@ -408,31 +422,41 @@ jobs:
             --timeout 30m
 ```
 
-APK 文件名会随 flavor、AGP 和项目配置变化，`APP_APK`、`TEST_APK` 必须按构建产物调整。`additionalTestOutputDir` 配合 `--directories-to-pull` 让 FTL 把 JSON 与 Trace 放入结果 bucket；`androidx.benchmark.enabledRules=Macrobenchmark` 避免同一模块中的 Baseline Profile 规则混入本轮。
+APK 文件名会随 product flavor、AGP 和项目配置变化，`APP_APK`、`TEST_APK` 必须按构建产物调整。`additionalTestOutputDir` 把产物写到 `/sdcard/Download`，`--directories-to-pull` 再让 FTL 把该目录收集到结果 bucket（Cloud Storage 存储桶）。
 
-Google 的 [performance-samples FTL workflow](https://github.com/android/performance-samples/blob/main/.github/workflows/firebase_test_lab.yml) 可作为完整参考。不要用 `bucket/latest/*.json` 猜测结果路径；应读取本次 gcloud 返回的 matrix 信息，或由 Cloud Storage 事件处理本次结果目录。
+`androidx.benchmark.enabledRules=Macrobenchmark` 只启用 Macrobenchmark 规则，避免同一模块中的 Baseline Profile 规则混入本轮。`no-isolated-storage=true` 临时让 instrumentation 测试跳出 Android 10+ 的默认存储沙箱，以便写入全局目录。
+
+该参数会改变整场测试的存储行为，所以这次运行不能同时用来验证 scoped storage 兼容性。
+
+Google 的 [performance-samples FTL workflow](https://github.com/android/performance-samples/blob/main/.github/workflows/firebase_test_lab.yml) 可作为完整参考。不要用 `bucket/latest/*.json` 猜测结果路径。应读取本次 gcloud 返回的 test matrix（这次测试的设备与配置组合）信息，或由 Cloud Storage 事件处理对应结果目录。
 
 ### 结果持久化与趋势追踪
 
-JSON 的 `context` 包含设备型号、build fingerprint 和 CPU 等信息。入库时把上下文与测试名、参数、指标数组一起保存，不能只取一个 median 数字。设备重刷系统、Benchmark 库升级、编译模式变化或基线 profile 更新时，应建立新基线，避免把环境迁移显示成代码回归。
+JSON 的 `context` 包含设备型号、build fingerprint 和 CPU 等运行上下文。写入趋势数据库时，要把这些上下文与测试名、参数、指标数组一起保存，不能只取一个 median 数字。设备重刷系统、Benchmark 库升级、编译模式变化或 Baseline Profile 更新时，应建立新基线，避免把环境迁移显示成代码回归。
 
-告警可采用“相对近期稳定窗口 + 绝对体验预算”双条件。相对窗口发现小幅持续退化，绝对预算防止历史基线本身已经过慢。命中告警后查看对应迭代 Trace；只靠百分比无法区分应用回归、温度变化、系统任务和云设备实例差异。
+告警可同时使用“相对近期稳定窗口”与“绝对体验预算”。前者比较近期多次稳定运行，用来发现小幅持续退化；后者是业务能接受的最大耗时或功耗，可防止历史基线本身已经过慢。命中告警后查看对应 iteration 的 Trace；只靠百分比无法区分应用回归、温度变化、系统任务和云设备实例差异。
 
-Android 17 的平台分析锚点是 `android-17.0.0_r1`，内核侧是 [`android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)。量产设备通常还包含厂商内核提交、调频策略和 thermal 配置，所以同为 API 37 也不能直接合并结果。趋势库必须以设备 build fingerprint 分组。
+Android 17 的平台分析锚点是 `android-17.0.0_r1`，通用内核源码可对照 [`android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)。量产设备通常还包含厂商内核提交、调频策略和 thermal（温控）配置，所以同为 API 37 也不能直接合并结果。趋势库必须以设备 build fingerprint 分组。
 
-### 门禁统计与噪声处理
+### 门禁统计与测量波动
 
-不同指标使用不同摘要：启动以 median 为主并保留每次迭代值；帧指标查看 `frameOverrunMs` 的 p90/p95/p99 并保存慢帧 trace；自定义 section 明确 count、sum 或 first；功耗只做同机、稳定窗口的系统级 A/B。一次 benchmark invocation 内的多个 iteration 共享温度、缓存和后台状态，不能当作多个独立设备样本。
+不同指标使用不同摘要：启动以 median 为主并保留每次 iteration 值；帧指标查看 `frameOverrunMs` 的 p90/p95/p99 并保留慢帧 Trace；自定义 section 要明确取出现次数（count）、总时长（sum）还是首次匹配（first）；功耗只做同机、稳定窗口的系统级 A/B。
 
-AndroidX JSON schema 会随库版本扩展。门禁前先把原始结果转换为内部稳定结构，并校验 benchmark、metric、unit、device/build fingerprint、compilation mode、iteration 数、APK hash 和实验区组。字段缺失时中止比较，不把缺失值当成 0。
+benchmark invocation 是一次完整的基准测试调用或进程启动。同一 invocation 内的多个 iteration 共享温度、缓存和后台状态，它们有相关性，不能当作多个独立设备样本。
 
-稳定门禁采用配对设计：同一设备和环境区组内分别运行 baseline 与 candidate，交替或随机安排顺序，每次 invocation 先形成一个摘要，再把多轮独立摘要组成 pairs。预算同时包含业务定义的绝对增量和相对增量；样本不足直接拒绝比较，置信区间跨越门槛时标为 inconclusive，待设备冷却后补充独立配对。不能重复抽样同一次 invocation 的 iteration 来凑独立样本。
+AndroidX JSON schema（字段与类型约定）会随库版本扩展。门禁前先把原始结果转换为内部稳定结构，并校验 benchmark 名、metric 名、unit、device/build fingerprint、compilation mode、iteration 数、APK hash 和实验区组。实验区组是把同一设备、系统与环境条件下的运行归为一组。字段缺失时中止比较，不把缺失值当成 0。
 
-噪声控制至少记录电量与充电状态、thermal、CPU frequency/idle、刷新率、后台账号与每轮时间。若后半段随温度单调变慢，应停止并冷却设备。网络使用固定离线数据、测试服务器或录制响应，账号、缓存、AB flag 和列表内容都要固定。
+稳定门禁可采用配对设计：在同一设备和环境区组内，分别运行 baseline（参考构建）与 candidate（候选构建），交替或随机安排顺序。每次 invocation 先形成一个摘要，再将环境接近的 baseline/candidate 摘要组成一对。
 
-`StartupMode.COLD` 会停止目标进程，默认配置还可能清理 shader cache 并请求系统清理 page cache；这不等于设备重启后的所有缓存都为空。DNS、GPU 驱动、系统服务和业务数据缓存各有生命周期。page cache 清理影响整机，同一性能设备上不要并行运行其它任务，也不要在外层脚本重复清理。
+预算同时包含业务定义的绝对增量和相对增量。样本不足时拒绝比较；若置信区间（根据样本估计的效果可能范围）跨越门槛，则标为 inconclusive（证据不足），待设备冷却后补充独立配对。重复抽样同一 invocation 的 iteration 不会产生新的独立样本。
 
-指标退化后，找到 candidate 的异常迭代及同设备 baseline，按相同 journey 边界比较 trace：启动检查 process start、Binder、class load、GC、I/O 和首帧；帧问题检查 FrameTimeline、UI thread、RenderThread、GPU 与 SurfaceFlinger；最后用版本化 Trace Processor SQL 量化同一时间窗。门禁负责发现回归，trace 负责解释原因。
+波动控制至少记录电量与充电状态、thermal、CPU frequency/idle（频率/空闲状态）、刷新率、后台账号与每轮时间。若后半段随温度单调变慢，应停止并冷却设备。网络使用固定离线数据、测试服务器或录制响应，账号、缓存、A/B flag（分组实验开关）和列表内容都要固定。
+
+`StartupMode.COLD` 会停止目标进程，默认配置还可能清理 shader cache（GPU 着色器编译缓存），并请求系统清理 page cache（内核的文件页缓存）。这不代表设备重启后的所有缓存状态。DNS 域名解析、GPU 驱动、系统服务和业务数据缓存各有生命周期。page cache 清理影响整机，同一性能设备上不要并行运行其他任务，也不要在外层脚本重复清理。
+
+指标退化后，找到 candidate 的异常 iteration 及同设备 baseline，按相同 journey（完整用户操作路径）边界比较 Trace。启动检查 process start、Binder、class load（类加载）、GC（垃圾回收）、I/O（输入/输出）和首帧。帧问题检查 FrameTimeline、UI thread、RenderThread、GPU 与 SurfaceFlinger（系统显示合成服务）。
+
+最后用版本固定的 Trace Processor SQL 查询量化同一时间窗。门禁负责发现回归，Trace 负责解释原因。
 
 ## 在 Perfetto 中的表现
 
@@ -442,16 +466,16 @@ Gradle 执行成功后，JSON 与 Trace 会被拉到模块构建目录。下面�
 project_root/module/build/outputs/connected_android_test_additional_output/debugAndroidTest/connected/device_id/
 ```
 
-`module` 是 Macrobenchmark 或 Microbenchmark 模块名，`device_id` 由 Gradle 按设备生成。Macrobenchmark 目录中每个测量迭代各有一份 `.perfetto-trace`，文件名包含测试、参数与迭代编号。
+`module` 是 Macrobenchmark 或 Microbenchmark 模块名，`device_id` 由 Gradle 按设备生成。Macrobenchmark 目录中每个测量 iteration 各有一份 `.perfetto-trace`，文件名包含测试、参数与 iteration 编号。
 
 启动 Trace 的阅读顺序可以固定为：
 
-1. 在 App Startups 或启动相关 slice 中确认 launch、TTID、TTFD 边界。
+1. 在 App Startups 或启动相关 slice（Trace 中带起止时间的事件片段）中确认 launch、TTID、TTFD 边界。
 2. 沿目标进程主线程查看 `ActivityThread`、`bindApplication`、`Activity` 生命周期和首帧 `Choreographer#doFrame`。
-3. 查看 RenderThread、GPU queue 与 FrameTimeline，区分 UI 线程、RenderThread、GPU 和 SurfaceFlinger 侧等待。
+3. 查看 RenderThread、GPU queue（提交给 GPU 的工作队列）与 FrameTimeline，区分 UI 线程、RenderThread、GPU 和 SurfaceFlinger 侧等待。
 4. 用 Binder、线程调度和 CPU frequency 轨道解释空洞或抢占，避免把所有墙钟时间都归给应用函数。
 
-滚动 Trace 应以 FrameTimeline 的 expected/actual slice 和 jank 标记为主，再回到主线程 `doFrame`、RenderThread 与 GPU 轨道。单看 `doFrame` 是否超过固定 16.67 ms 会误判高刷新率、可变刷新率以及 GPU / 合成侧超期。
+滚动 Trace 应以 FrameTimeline 的 expected/actual slice 为主，它们分别表示系统预期的帧时序与实际执行时序。jank 标记表示帧未按预期时序完成。然后再回到主线程 `doFrame`、RenderThread 与 GPU 轨道定位原因。单看 `doFrame` 是否超过固定 16.67 ms 会误判高刷新率、可变刷新率以及 GPU / 合成侧超期。
 
 ## 常见问题与误区
 
@@ -463,7 +487,7 @@ project_root/module/build/outputs/connected_android_test_additional_output/debug
 
 **迭代次数是否固定为 10？** 没有统一数字。短而稳定的热点可能需要更多样本，长启动场景受 CI 时长限制。先在固定设备上观察分布与热状态，再选择能稳定区分目标回归幅度的迭代数；报告保留 median、尾部分位和原始样本。
 
-**设备温度与调度噪声能否全部消除？** 不能。固定设备状态、等待冷却、减少账号和后台任务可以压低噪声，仍会受到 DVFS、thermal 和内核调度影响。测试记录应绑定 Android build fingerprint；分析 Android 17 通用内核行为时再对照 `android17-6.18-2026-06_r6`，不能用通用内核标签替代量产机证据。
+**设备温度与调度波动能否全部消除？** 不能。固定设备状态、等待冷却、减少账号和后台任务可以压低波动，仍会受到 DVFS（动态电压频率调整）、thermal 和内核调度影响。测试记录应绑定 Android build fingerprint；分析 Android 17 通用内核行为时再对照 `android17-6.18-2026-06_r6`，不能用通用内核标签替代量产机证据。
 
 **Espresso 能否驱动 Macrobenchmark？** Macrobenchmark 使用外部测试 APK，Espresso 的 View matcher 与同步机制面向目标应用 instrumentation 环境。完整性能场景使用 UI Automator；Espresso 保留在功能回归测试中。
 

@@ -3,8 +3,8 @@ title: "ARM Topdown 微架构性能分析方法论与 Android 实践"
 chapter: "14.4"
 section: "14.4"
 status: finalized
-applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
-last_verified: "2026-08-04"
+applicable_versions: "Android 14 (API 34) – Android 17 (API 37)"
+last_verified: "2026-08-13"
 last_verified_against: "AOSP android-17.0.0_r1 simpleperf；Android common kernel android17-6.18-2026-06_r6 perf security；Arm Telemetry Solution main@6d4f550d053c"
 confidence: high
 task6_state: reviewed
@@ -43,19 +43,19 @@ related_chapters: ['5.4', '14.3']
 - 处理器把可用的执行机会消耗在了哪里；
 - 哪段代码、哪条指令或哪类数据访问造成了这些消耗。
 
-Topdown 处理前一个问题。它把处理器流水线的执行机会归入少量类别，帮助工程师决定下一轮该查取指、分支、数据访问，还是执行单元。函数热点、调用栈、指令地址和内存地址仍要交给采样工具定位。
+Topdown（自顶向下微架构分析）处理前一个问题。处理器流水线会重叠执行取指、解码、发射和退休等阶段，其中“退休”表示把指令结果正式提交为程序可见状态；Topdown 把这些阶段可用的执行机会归入少量类别，帮助工程师决定下一轮该查取指、分支、数据访问，还是执行单元。函数热点、调用栈、指令地址和内存地址仍要交给采样工具定位。
 
 因此，Topdown 是诊断顺序，不是优化处方。看到 Backend Bound 偏高后直接加预取，或者看到 Frontend Bound 偏高后直接改链接布局，都缺少中间的归因证据。
 
-平台锚点是 Android 17 / API 37 与 AOSP `android-17.0.0_r1` 中的 simpleperf。Arm Telemetry Solution 的示例公式来自它支持的具体 CPU 数据库；这些公式不能自动套到任意 Android SoC。
+平台锚点是 Android 17 / API 37 与 AOSP `android-17.0.0_r1` 中的 simpleperf。Arm Telemetry Solution 的示例公式来自它支持的具体 CPU 数据库；这些公式不能自动套到任意 Android SoC（System on Chip，片上系统）。
 
-结论范围限于参考资料列出的版本：AOSP simpleperf、Android common kernel 的 perf 权限说明，以及 Arm 对 Topdown/Telemetry Solution 的公开文档。厂商内核补丁、后续平台版本的 simpleperf 变化、SoC 私有 PMU 扩展和商业性能工具链不在范围内。
+结论范围限于参考资料列出的版本：AOSP simpleperf、Android common kernel 的 perf 权限说明，以及 Arm 对 Topdown/Telemetry Solution 的公开文档。厂商内核补丁、后续平台版本的 simpleperf 变化、SoC 私有 PMU（Performance Monitoring Unit，硬件性能监控单元）扩展和商业性能工具链不在范围内。
 
 ## 14.4.2 Intel TMAM 与 Arm Topdown 的关系
 
-Ahmad Yasin 在 2014 年 ISPASS 论文中提出了面向 Intel 乱序处理器的 Top-Down 分析方法。论文用 pipeline slot 统计 Retiring、Bad Speculation、Frontend Bound 和 Backend Bound。后来 Intel 将这套体系扩展为多级 TMAM。
+Ahmad Yasin 在 2014 年 ISPASS 论文中提出了面向 Intel 乱序处理器的 Top-Down 分析方法。乱序处理器会在保持程序可见结果不变的前提下调整内部操作的执行顺序。论文用 pipeline slot（流水线执行机会）统计 Retiring、Bad Speculation、Frontend Bound 和 Backend Bound；后来 Intel 将这套体系扩展为多级 TMAM（Top-Down Microarchitecture Analysis Method）。
 
-Arm 当前也有官方 Topdown Methodology，并由 Arm Telemetry Solution 提供事件定义、CPU 数据库和 `topdown-tool`。Arm 官方的跨平台说明保留了相同的四个一级名称，同时明确指出 Arm 与 Intel 使用不同的 PMU 事件、计算公式和工具。
+Arm 当前也有官方 Topdown Methodology，并由 Arm Telemetry Solution 提供事件定义、CPU 数据库和 `topdown-tool`。这里的 telemetry specification 是某款 CPU 对 PMU 事件、指标公式和分析分组的定义。Arm 官方的跨平台说明保留了相同的四个一级名称，同时明确指出 Arm 与 Intel 使用不同的 PMU 事件、计算公式和工具。
 
 | 项目 | Intel TMAM | Arm Topdown |
 | --- | --- | --- |
@@ -69,9 +69,9 @@ Arm 当前也有官方 Topdown Methodology，并由 Arm Telemetry Solution 提�
 
 ### Slot 不是 CPU cycle
 
-Slot 表示一个周期内处理器理论上可以接收或处理的一次操作机会。超标量处理器每周期有多个 slot。某个公式若采用 8 slots/cycle，分母就可能写成 `8 × CPU_CYCLES`。
+Slot 表示一个周期内处理器理论上可以接收或处理的一次操作机会。超标量处理器能在同一周期处理多个操作，因此每周期有多个 slot。某个公式若采用 8 slots/cycle，分母就可能写成 `8 × CPU_CYCLES`。
 
-这个 8 属于具体 CPU 定义。它不能根据 Armv8、Armv9 或 Android API 级别推导，也不能从 IPC 值反推。IPC 统计每周期退休的架构指令；Retiring 指标统计公式定义下的退休 slot 占比，两者不是同一个量。
+这个 8 属于具体 CPU 定义。它不能根据 Armv8、Armv9 或 Android API 级别推导，也不能从 IPC（Instructions Per Cycle，每周期退休指令数）反推。Retiring 指标统计公式定义下的退休 slot 占比，两者不是同一个量。
 
 ### 四个一级类别
 
@@ -81,6 +81,8 @@ Slot 表示一个周期内处理器理论上可以接收或处理的一次操作
 | Backend Bound | 后端资源约束导致无法发射操作所损失的 slot | 数据 cache、D-TLB、内存延迟、依赖链、执行端口 | 一律归因于 DRAM |
 | Bad Speculation | 已推测执行但未退休的操作，以及公式计入的流水线恢复开销 | 错误分支、机器清空、输入相关的分支行为 | 等同于 `branch-misses` 计数 |
 | Retiring | 公式认定为已退休操作的 slot | 指令组合、向量化、冗余工作、算法成本 | 数值越高，代码就一定没有优化空间 |
+
+I-cache 与 D-cache 分别保存指令和数据，I-TLB 与 D-TLB 分别缓存两类地址转换；DRAM 指主内存。表中的“发射”表示把操作送往后端执行资源，“执行端口”则是操作进入具体执行单元的通道。
 
 同一次、同一 CPU 上取得的有效计数代入匹配公式后，四类通常应接近 100%。出现负值、明显超过 100% 或各类相加大幅偏离 100% 时，应先检查 CPU 公式、事件支持、计数复用、线程迁移和采集时段。
 
@@ -97,14 +99,14 @@ Arm Telemetry Solution 把公式放在每款 CPU 的 telemetry 数据中。以�
 
 表里的 8 和 4 都来自 Neoverse V1 定义。复制这些公式到 Cortex、C1、Kryo、Oryon、Tensor 自研核或其他厂商核，没有充分依据。即使两个 CPU 都能计数 `STALL_SLOT_FRONTEND`，它们的公式也可能不同。
 
-AOSP Android 17 的 `simpleperf/event_table.json` 收录了 Arm64 通用原始事件名，也为若干已知 CPU 型号维护了事件支持表。simpleperf 会结合 MIDR 与实际 `perf_event_open()` 探测结果过滤事件。这个数据库说明工具认识某个事件，不能替代 CPU 的 telemetry specification。
+AOSP Android 17 的 `simpleperf/event_table.json` 收录了 Arm64 架构事件定义，也为若干已知 CPU 型号维护了事件支持表。生成器会把 `STALL_SLOT_BACKEND` 这类名称转换成 `raw-stall-slot-backend`。simpleperf 再结合 MIDR（Main ID Register，处理器型号与版本标识）和实际 `perf_event_open()` 探测结果过滤事件。这个数据库说明工具认识某个事件，不能替代 CPU 的 telemetry specification。
 
 分析前要通过四道门：
 
 1. 精确识别采集落在哪种 CPU 核上；
 2. 目标核暴露了公式需要的全部事件；
 3. 手里有这款核对应的官方或厂商公式；
-4. 这些事件在一致的 workload 时段内得到可信计数。
+4. 这些事件在一致的 workload（可重复执行的测试负载）时段内得到可信计数。
 
 任何一道门没有通过，都应把结果降级为普通 PMU 线索，不能标成完整的 Arm Topdown 百分比。
 
@@ -121,42 +123,42 @@ AOSP Android 17 的 `simpleperf/event_table.json` 收录了 Arm64 通用原始�
 - `--cpu`：选择在哪些 CPU 上监控后续事件；
 - `--csv`：输出便于脚本解析的结果。
 
-`--cpu` 只限制监控 CPU，不会设置目标线程的 affinity。需要固定线程时，应在测试程序中调用 `sched_setaffinity()`，或对独立 native benchmark 使用 `taskset`。给线上 App 强行绑核会改变调度行为，测试结果只代表该实验条件。
+`--cpu` 只限制监控 CPU，不会设置目标线程的 affinity（CPU 亲和性，即允许运行的 CPU 集合）。需要固定线程时，应在测试程序中调用 `sched_setaffinity()`，或对独立 native benchmark 使用 `taskset`。给线上 App 强行绑核会改变调度行为，测试结果只代表该实验条件。
 
 ### simpleperf record/report：采样归因
 
-`record` 周期性记录样本，`report` 按 DSO、函数、线程或调用栈聚合。它们适合回答“热点在哪”。事件计数与样本数不能混用：
+`record` 周期性记录样本，`report` 按 DSO、函数、线程或调用栈聚合。DSO（Dynamic Shared Object）是 Simpleperf 对被分析二进制的对象抽象，也用于表示内核和内核模块。它们适合回答“热点在哪”。事件计数与样本数不能混用：
 
 - `stat` 输出某段时间内累计发生多少次事件；
-- `record` 输出抽样位置，样本还会受采样周期、skid 和调用栈质量影响。
+- `record` 输出抽样位置，样本还会受采样周期、skid（采样地址相对真实触发指令的偏移）和调用栈质量影响。
 
-`record` 和 `report --print-sample-period` 不能直接读取 Topdown 四类占比；这条路径在 `android-17.0.0_r1` 中不存在。
+`record` 配合 `report --raw-period` 可以让聚合结果显示各样本 `period` 字段的累计值，而非 period percentage，仍不能直接得到 Topdown 四类占比。`android-17.0.0_r1` 没有 `report --print-sample-period` 这个选项。
 
 ### Arm topdown-tool：Linux perf 上的公式引擎
 
-Arm 官方 `topdown-tool` 自动选择 CPU telemetry 数据，调用 Linux perf 采集事件，再计算指标。它支持按 metric 或 group 组织采集，也能在事件过多时按配置拆分采集。
+Arm 官方 `topdown-tool` 自动选择 CPU telemetry 数据，调用 Linux perf 采集事件，再计算指标。metric 是由若干事件计算出的指标，group 是一组相关指标。工具可按两者组织采集；使用 `--max-events` 限制同时采集的事件数后，超出的部分会通过多次运行 workload 完成，因此仍要考虑各轮负载差异。
 
 官方安装与用法面向 Arm Linux 系统，采集后端是 Linux `perf`。当前文档没有承诺它能读取 simpleperf 的 `perf.data`，也没有 simpleperf `.data` 转 Streamline `.apc` 的标准步骤。要在 Android 上复用该工具，需要单独验证 Python 运行环境、perf 兼容性、CPU 数据库、权限和采集接口。
 
 ### Perfetto：系统时序上下文
 
-Perfetto 擅长记录调度、CPU 频率、idle、热状态、线程状态和应用 trace marker。它能解释某个计数窗口是否发生迁核、降频或长时间阻塞。
+Perfetto 擅长记录调度、CPU 频率、idle（CPU 空闲状态）、热状态、线程状态和应用 trace marker（业务代码写入的时间标记）。它能解释某个计数窗口是否发生迁核、降频或长时间阻塞。
 
-simpleperf 不会自动产出 `.perfetto-trace`，Topdown 百分比也不会自动变成 Perfetto counter track。常用做法是并行采集、用同一 workload marker 对齐窗口，再分别读取 PMU 结果与系统时序。若项目需要把派生指标写入 Perfetto，应显式实现 counter track 生产端，并记录公式、CPU 型号和采集窗口。
+simpleperf 不会自动产出 `.perfetto-trace`，Topdown 百分比也不会自动变成 Perfetto counter track（随时间展示数值的计数器轨道）。常用做法是并行采集、用同一 workload marker 对齐窗口，再分别读取 PMU 结果与系统时序。若项目需要把派生指标写入 Perfetto，应显式实现 counter track 生产端，并记录公式、CPU 型号和采集窗口。
 
-Android 17 simpleperf 还提供 `sample_filter_for_perfetto_trace.py`。脚本读取一份单独采集的 Perfetto trace，按 slice 正则提取时间范围，再生成 simpleperf `--filter-file` 可用的样本过滤文件。它用于对齐分析窗口，不会把 `perf.data` 转成 Perfetto trace，也不计算 Topdown 指标。
+Android 17 simpleperf 还提供 `sample_filter_for_perfetto_trace.py`。脚本读取一份单独采集的 Perfetto trace，按 slice（带开始和结束时间的区间事件）名称正则提取时间范围，再生成 simpleperf `--filter-file` 可用的样本过滤文件。它用于对齐分析窗口，不会把 `perf.data` 转成 Perfetto trace，也不计算 Topdown 指标。
 
 ### Arm SPE：可选的归因来源
 
-Android 17 simpleperf 源码包含 `SPERecorder` 与 `SPEDecoder`，`simpleperf list arm_spe` 会检查内核是否暴露 SPE PMU。SPE 可给内存操作、延迟或数据源归因提供更细的样本，前提是 SoC、内核、权限、profileable/debuggable 策略和 simpleperf 解码路径都支持。
+Android 17 simpleperf 源码包含 `SPERecorder` 与 `SPEDecoder`，`simpleperf list arm_spe` 会检查内核是否暴露 SPE（Statistical Profiling Extension，统计分析扩展）PMU。该版本解码器会输出采样指令虚拟地址、数据虚拟地址、线程 ID 和事件位，却不会输出 operation type（操作类型）、`PERF_SAMPLE_DATA_SRC`、latency weight（延迟权重）或可用于逐样本对齐的时间戳。因此，它能按事件位定位热点指令或地址，无法直接给出读写类型、逐级数据来源或访问延迟。
 
-SPE 不是一级 Topdown 公式的替代品。它更适合在 Backend Bound 已由计数确认后，帮助定位延迟落在哪些指令或地址。Android 17 该版本源码中没有名为 `brbe` 的 simpleperf 后端，不能把 BRBE 写成通用可用的采集选项。
+SPE 不是一级 Topdown 公式的替代品。它更适合在 Backend Bound 已由计数确认后，帮助定位延迟落在哪些指令或地址。Android 17 该版本源码中没有名为 `brbe` 的 simpleperf 后端，不能把 BRBE（Branch Record Buffer Extension，分支记录扩展）写成通用可用的采集选项。
 
 ## 14.4.5 一套可复现的 Android 工作流
 
 ### 步骤一：固定问题和 workload
 
-先写清测试对象：
+先写清 workload，也就是可重复执行的测试负载：
 
 - 业务阶段，例如图片解码的第 20 至 120 帧；
 - 目标进程与线程；
@@ -193,7 +195,7 @@ adb shell simpleperf stat \
   --csv
 ```
 
-这组数据可以计算 IPC、分支错误的相对变化和 cache miss 的相对变化，但不能生成 Arm Topdown 四类。非 root 设备上的 App 通常需要是 debuggable 或允许 shell profiling；系统范围 `-a` 采集通常需要 root。
+这组数据可以计算 IPC、分支错误的相对变化和 cache miss 的相对变化，但不能生成 Arm Topdown 四类。Android 17 会为 `--app` 优先使用设备内置 `simpleperf_app_runner`；非 root 设备上的 App 通常需要声明 `debuggable`，或通过 `<profileable android:shell="true">` 允许 shell profiling。系统范围 `-a` 采集通常需要 root。
 
 基线至少回答这些问题：
 
@@ -216,7 +218,7 @@ adb shell simpleperf stat \
   --csv
 ```
 
-group 所需的计数器超过硬件能力时，内核可能拒绝调度，或者普通非 group 采集会发生 multiplexing。simpleperf 文档明确提醒：复用时各事件只在部分时间内计数，彼此甚至可能不在相同时段运行。不能忽略警告后照常计算比例。
+group 所需的计数器超过硬件能力时，内核可能拒绝调度；普通非 group 采集则可能发生 multiplexing（分时复用）。simpleperf 文档明确提醒：复用时各事件只在部分时间内计数，彼此甚至可能不在相同时段运行。不能忽略警告后照常计算比例。
 
 若完整 group 放不下，应按 CPU 公式所需事件拆分：
 
@@ -227,7 +229,7 @@ group 所需的计数器超过硬件能力时，内核可能拒绝调度，或�
 | Retiring | `CPU_CYCLES`、`STALL_SLOT`、`OP_RETIRED`、`OP_SPEC` |
 | Bad Speculation | `CPU_CYCLES`、`STALL_SLOT`、`OP_RETIRED`、`OP_SPEC`、`BR_MIS_PRED` |
 
-每组要在可重复的 workload 上独立运行，且每组内部同时计数。跨轮拼接会引入输入、调度、温度和 DVFS 差异；应报告重复次数与离散程度。Arm `topdown-tool` 的 `--max-events` 与按 metric 采集也是在处理这一约束，不能把拆分带来的误差藏起来。
+每组要在可重复的 workload 上独立运行，且每组内部同时计数。跨轮拼接会引入输入、调度、温度和 DVFS 差异；应报告重复次数与离散程度。Arm `topdown-tool` 的 `--max-events` 与按 metric 采集也会为事件拆分而重复运行 workload，不能把跨轮误差藏起来。
 
 ### 步骤五：用 CPU 专属定义计算
 
@@ -236,7 +238,7 @@ group 所需的计数器超过硬件能力时，内核可能拒绝调度，或�
 - SoC、CPU MIDR、CPU 编号与簇；
 - Android build 与内核版本；
 - 事件名、原始编码和用户态/内核态修饰符；
-- enabled time、running time 与是否 multiplex；
+- enabled time、running time 与是否 multiplex；前者是事件启用的总时长，后者是事件实际占用 PMU 计数器的时长；
 - 公式来源及版本；
 - workload 标记和持续时间；
 - 原始计数、派生值与重复轮次。
@@ -245,7 +247,7 @@ group 所需的计数器超过硬件能力时，内核可能拒绝调度，或�
 
 ### 步骤六：按方向做二级归因
 
-Topdown 只给调查方向。下一轮要选择能区分原因的证据：
+Topdown 只给调查方向。下一轮要选择能区分原因的证据。表中的 LL cache 是 last-level cache（末级缓存），refill 表示发生未命中后从下一层取回内容，TLB walk 表示遍历页表完成地址转换；依赖链则表示后一个操作必须等待前一个操作的结果：
 
 | 一级结果 | 可继续采集的证据 | 要验证的假设 |
 | --- | --- | --- |
@@ -254,7 +256,7 @@ Topdown 只给调查方向。下一轮要选择能区分原因的证据：
 | Bad Speculation 高 | branch miss、分支地址样本、输入分布、机器清空相关事件 | 哪类分支和哪组输入造成浪费 |
 | Retiring 高但耗时仍长 | 指令数、操作混合、向量化报告、算法工作量 | 是否退休了过多但可省掉的工作 |
 
-下面的 simpleperf 采样示例用 CPU cycles 定位热点函数。它用于归因，不参与一级百分比计算。
+下面的 simpleperf 采样示例用 CPU cycles 定位热点函数。它用于归因，不参与一级百分比计算。示例假设 shell 已有附加到该 PID 的权限；受限发布包应改用 `--app` 对应的受控入口或主机端 `app_profiler.py`。
 
 ```bash
 app_id=com.example.app
@@ -273,7 +275,7 @@ adb shell simpleperf report \
   --sort dso,symbol
 ```
 
-调用栈质量取决于 unwind 信息、帧指针和运行时。硬件事件采样还可能发生 skid：记录到的 PC 会落在触发事件的指令之后。需要精确定位内存延迟时，可在设备支持的前提下评估 SPE；需要源码行时，应保留未剥离符号与匹配 build id。
+调用栈质量取决于 unwind（栈展开）信息、帧指针和运行时。硬件事件采样还可能发生 skid，也就是记录到的 PC 落在真正触发事件的指令之后。Android 17 这版 Simpleperf 的 SPE 解码器可辅助定位带特定事件位的指令或数据虚拟地址，但不输出延迟字段；需要源码行时，应保留未剥离符号与匹配 build ID。
 
 ### 步骤七：用 Perfetto 解释运行环境
 
@@ -288,6 +290,8 @@ adb shell simpleperf report \
 
 ## 14.4.6 从指标到修改：保持假设可证伪
 
+“可证伪”要求修改前先写出可观察预测，例如“若主要原因是 I-cache miss，调整布局后耗时与 L1I refill 应同时下降”。结果不符合预测时，应放弃或修改原假设。
+
 ### Frontend Bound
 
 调查顺序可采用：
@@ -297,13 +301,13 @@ adb shell simpleperf report \
 3. 查看函数布局、内联膨胀、异常冷路径和间接分支；
 4. 只改一个变量，再复测耗时、一级指标与二级事件。
 
-PGO、函数重排和 BOLT 可能改善代码局部性，但 Android NDK 默认工作流不等于已经集成 BOLT。`-fno-jump-tables`、强制函数对齐或扩大内联也可能增加指令数与代码体积，不应作为固定模板。
+PGO（Profile-Guided Optimization，基于运行 profile 的编译优化）、函数重排和 BOLT（二进制级代码布局优化工具）可能改善代码局部性，但 Android NDK 默认工作流不等于已经集成 BOLT。`-fno-jump-tables`、强制函数对齐或扩大内联也可能增加指令数与代码体积，不应作为固定模板。
 
 ### Backend Bound
 
-Backend Bound 要继续拆成 memory-bound 与 core-bound。cache miss 偏高仍不足以证明 DRAM 是限制项，还要看 miss 层级、每千指令 miss、TLB、内存延迟和并行未决请求。
+Backend Bound 要继续区分 memory-bound（受内存层级限制）与 core-bound（受执行单元或依赖限制）。cache miss 偏高仍不足以证明 DRAM 是限制项，还要看 miss 层级、每千指令 miss、TLB、内存延迟和并行未决请求。
 
-SoA、预取、对齐、`restrict`、向量化和软件流水都有适用条件。固定 64 字节对齐可能浪费空间，错误预取会抢带宽和 cache，`restrict` 用错会触发未定义行为。修改前应有事件或指令级证据，修改后应同时检查耗时与副作用。
+SoA（Structure of Arrays，把同类字段连续存放）、预取、对齐、`restrict`、向量化和软件流水都有适用条件。`restrict` 是 C 中关于指针不别名的承诺，C++ 通常使用编译器提供的扩展写法；违反这项承诺会触发未定义行为。固定 64 字节对齐可能浪费空间，错误预取也会抢带宽和 cache。修改前应有事件或指令级证据，修改后应同时检查耗时与副作用。
 
 ### Bad Speculation
 
@@ -317,7 +321,7 @@ Retiring 占比高说明流水线大部分可计量 slot 在退休操作，不�
 
 ### 异构 CPU 聚合
 
-Android SoC 常有多种 CPU 核。不同簇的事件支持、流水线宽度和公式可能不同。按 SoC 汇总 raw count 后套一个公式，会把不同物理含义的计数混在一起。使用 `--per-core` 保存原始结果，并按同构簇分别解释。
+Android SoC 常有多种 CPU 核。不同簇的事件支持、流水线宽度和公式可能不同。按 SoC 汇总原始计数（raw count）后套一个公式，会把不同物理含义的计数混在一起。使用 `--per-core` 保存原始结果，并按同构簇分别解释。
 
 ### 计数器复用
 
@@ -325,7 +329,7 @@ Android SoC 常有多种 CPU 核。不同簇的事件支持、流水线宽度和
 
 ### 调度、DVFS 与热状态
 
-线程迁核会更换 PMU 语义；频率变化会改变周期分母；热节流会改变 workload 进度。Perfetto 的调度与频率轨道应和 PMU 结果一起归档。
+DVFS（Dynamic Voltage and Frequency Scaling）是动态调整电压与频率的机制。线程迁核会更换 PMU 语义；频率变化会改变周期分母；热节流会改变 workload 进度。Perfetto 的调度与频率轨道应和 PMU 结果一起归档。
 
 ### 统计口径
 
@@ -333,7 +337,7 @@ Android SoC 常有多种 CPU 核。不同簇的事件支持、流水线宽度和
 
 ### 样本与计数混淆
 
-一个函数占 30% 的 samples，不表示它制造了 30% 的全部 cache miss，更不表示它占 30% 的 Backend Bound。采样周期、事件精度、skid、调用栈丢失和符号解析都会影响归因。
+一个函数占 30% 的采样样本（samples），不表示它制造了 30% 的全部 cache miss，更不表示它占 30% 的 Backend Bound。采样周期、事件精度、skid、调用栈丢失和符号解析都会影响归因。
 
 ### 只看百分比
 
@@ -352,7 +356,7 @@ Android 17 上可执行的可靠路径是：
 
 缺少 CPU 专属公式时，保留“前端 stall 事件升高”“分支错误增加”这类可核验描述，比生成看似完整的四个百分比更可靠。
 
-依据包括 AOSP `android-17.0.0_r1`、Android common kernel `android17-6.18-2026-06_r6`、Arm Topdown/Telemetry Solution 文档与 Neoverse V1 r1p2 示例定义。把该方法落到具体手机 SoC 时，还要补入对应 CPU 的 telemetry specification、设备 `simpleperf list raw` 输出和同窗口计数原始记录；在这些证据缺失前，不应把示例公式升级为通用 Android 结论。
+依据包括 AOSP `android-17.0.0_r1`、Android common kernel `android17-6.18-2026-06_r6`、Arm Topdown/Telemetry Solution 文档与 Neoverse V1 r1p2 示例定义。把该方法应用到具体手机 SoC 时，还要补入对应 CPU 的 telemetry specification、设备 `simpleperf list raw` 输出和同窗口计数原始记录；这些证据缺失时，只能把示例公式视为示范，不能写成通用 Android 结论。
 
 ## 参考资料
 

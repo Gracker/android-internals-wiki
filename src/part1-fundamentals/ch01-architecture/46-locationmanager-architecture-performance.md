@@ -66,13 +66,13 @@ related_chapters: ["1.38", "1.43", "1.47", "5.7", "8.4"]
 
 # 1.46 Android 17 LocationManager 架构与性能优化
 
-`LocationManager` 是 Android 平台位置 API 的客户端入口。应用选定 provider，描述更新间隔、质量、批处理延迟等需求，再通过 Binder 把请求交给 `system_server`。服务端负责权限检查、前后台限制、请求合并、Provider 调度、结果裁剪和回调投递。
+`LocationManager` 是 Android 平台位置 API 的客户端入口。应用选定 provider，描述更新间隔、质量、批处理延迟等需求，再通过 Binder 把请求交给 `system_server`。这里保留 API 中的 provider 一词，它表示按名称选择的位置提供者或数据源。服务端负责权限检查、前后台限制、请求合并、Provider 调度、结果裁剪和回调投递。
 
 范围限定在 Android 平台 API 与 AOSP 服务端。Google Play services 的 `FusedLocationProviderClient`、`LocationCallback` 和 Geofencing API 是另一套客户端 API；它们可能使用系统的 `fused` provider，也可能在自己的服务中增加策略，但不能用来解释 `LocationManager` 的公开调用链。
 
-平台基线是 Android 17 / API 37 / `android-17.0.0_r1`，GNSS HAL 接口以同一平台标签下的 `hardware/interfaces` 为准。Linux kernel 实现不在讨论范围内，厂商 GNSS 驱动行为不能推断为 `LocationManagerService` 的固定语义。
+平台基线是 Android 17 / API 37 / `android-17.0.0_r1`，GNSS（全球卫星导航系统）HAL 接口以同一平台标签下的 `hardware/interfaces` 为准。GPS 是 GNSS 中的一套卫星系统，Android 的 `gps` provider 名称不表示底层只能使用 GPS 星座。Linux kernel 实现不在讨论范围内，厂商 GNSS 驱动行为不能推断为 `LocationManagerService` 的固定语义。
 
-## 1. 系统边界：应用提出需求，Provider 生产位置
+## 1. 系统边界：应用提出需求，Provider 提供位置
 
 Android 17 的主链路如下：
 
@@ -106,7 +106,7 @@ system_server
 | `fused` | `ProxyLocationProvider` | 是 | 系统要求存在可直接启动的系统实现；它不等同于 Play services 客户端类 |
 | `passive` | `PassiveLocationProvider` | 否 | 只接收其他 Provider 已产生的位置，不独立启动定位硬件 |
 
-在纯 AOSP、GMS 设备和 OEM 设备上，network/fused 背后的包可能不同。framework 能验证的是绑定条件、Binder 协议和 Provider 输出，无法据此断言外部服务采用 Wi-Fi 指纹、卡尔曼滤波或某个私有数据库。设备若配置 GNSS Provider override，`gps` 会绑定代理实现，进程内 HAL 路径则可注册为受 `LOCATION_HARDWARE` 权限保护的 `gps_hardware` provider。
+在纯 AOSP、GMS（Google Mobile Services）设备和 OEM 设备上，network/fused 背后的包可能不同。framework 能验证的是绑定条件、Binder 协议和 Provider 输出，无法据此断言外部服务采用 Wi-Fi 指纹、卡尔曼滤波或某个私有数据库。设备若配置 GNSS Provider override（替代实现），`gps` 会绑定代理实现，进程内 HAL 路径则可注册为受 `LOCATION_HARDWARE` 权限保护的 `gps_hardware` provider。
 
 ### 1.2 `FUSED_PROVIDER` 与 Play services API
 
@@ -146,11 +146,11 @@ locationManager.requestLocationUpdates(
 | `quality` | 质量/功耗提示；数值越小表示要求越高，`100` 比 `104` 更强 |
 | `minUpdateIntervalMillis` | 对单个注册的投递限速 |
 | `minUpdateDistanceMeters` | 对单个注册按位移过滤 |
-| `maxUpdateDelayMillis` | 允许批量延迟；达到条件时 Provider 才可能 batching |
+| `maxUpdateDelayMillis` | 允许批量延迟；达到条件时 Provider 才可能 batching（先缓存多条位置，再成批交付） |
 | `durationMillis` | 注册有效时间 |
 | `maxUpdates` | 成功投递达到次数后移除注册 |
 | `lowPower` | 传给 Provider 的低功耗提示，是否支持由实现决定 |
-| `WorkSource` | 供有权限的调用者指定能耗归因；普通应用不能随意伪造 |
+| `WorkSource` | 供有权限的调用者指定这项工作应归因给谁；普通应用不能随意伪造 |
 
 公开的 Builder 形式自 API 31 起可用。`maxUpdates` 和 `durationMillis` 也不是 Android 14 才出现的字段。
 
@@ -174,7 +174,7 @@ locationManager.requestLocationUpdates(
         listener);
 ```
 
-`LocationRequest.Builder(long)` 的参数是间隔，不是 priority。示例中的 `10_000 / 2 >= 5_000` 满足 framework 接受 batching 参数的基本比例，但设备还要具备 batching 扩展，Provider 也要接受该请求；因此这段代码不构成硬件批处理保证。
+`LocationRequest.Builder(long)` 的参数是更新间隔，不是 priority（优先级）。示例中的 `10_000 / 2 >= 5_000` 满足 framework 接受 batching 参数的基本比例，但设备还要具备 batching 扩展，Provider 也要接受该请求；因此这段代码不构成硬件批处理保证。
 
 [源码依据：`LocationManager.java`、`LocationRequest.java`、`LocationManagerService.validateLocationRequest()`，`android-17.0.0_r1`]
 
@@ -182,9 +182,9 @@ locationManager.requestLocationUpdates(
 
 ### 3.1 最近位置：只读缓存
 
-`getLastKnownLocation(provider)` 通过 `ILocationManager.getLastLocation()` 读取指定 Provider 的服务端缓存。它不会为了这次调用启动 Provider，返回值可以为 `null`，也可能已经过时。业务必须结合 `Location.getElapsedRealtimeAgeMillis()`、accuracy 和数据完整性判断能否使用。
+`getLastKnownLocation(provider)` 通过 `ILocationManager.getLastLocation()` 读取指定 Provider 的服务端缓存。它不会为了这次调用启动 Provider，返回值可以为 `null`，也可能已经过时。业务必须结合 `Location.getElapsedRealtimeAgeMillis()`、accuracy（估计精度半径）和数据完整性判断能否使用。
 
-墙上时钟可能被修改，不能用 `System.currentTimeMillis() - location.getTime()` 作为唯一新鲜度依据。比较位置年龄应优先使用单调时钟对应的 elapsed realtime。
+系统日期时间可能被修改，不能用 `System.currentTimeMillis() - location.getTime()` 作为唯一新鲜度依据。比较位置年龄应优先使用单调递增、不受改时钟影响的 elapsed realtime。
 
 ### 3.2 单次位置：先尝试缓存，再等待新结果
 
@@ -243,15 +243,15 @@ LocationManager.requestLocationUpdates()
 `LocationManagerService` 从 Binder 调用构造 `CallerIdentity`，读取 fine/coarse 权限级别，并检查 provider 是否存在。`validateLocationRequest()` 会处理：
 
 - 普通调用者无权指定的 `WorkSource`；
-- `lowPower`、忽略位置设置、ADAS GNSS bypass 等受限字段；
+- `lowPower`、忽略位置设置、ADAS（高级驾驶辅助系统）GNSS bypass（绕过部分常规限制）等受限字段；
 - 包名、attribution tag 与调用 UID 的一致性；
-- 对特权 bypass 的权限及 allowlist 限制。
+- 对特权 bypass 的权限及 allowlist（允许名单）限制。
 
 所以，客户端对象中的隐藏字段不等于服务端会照单执行。调试系统应用时，要同时打印“客户端构造的请求”和 `dumpsys location` 中“服务端接受后的请求”。
 
 ### 4.2 注册能否生效，由动态状态共同决定
 
-`LocationProviderManager` 会持续重算注册是否 active，条件包括：
+`LocationProviderManager` 会持续重算注册是否 active（当前能够参与请求合并并接收位置），条件包括：
 
 - 调用者是否仍有相应位置权限；
 - 用户是否可见、Provider 对该用户是否启用；
@@ -265,10 +265,10 @@ Binder 注册成功不代表 Provider 马上运行，也不代表每个位置都
 
 ### 4.3 coarse 权限会改请求，也会改结果
 
-Android 12 起，用户可以在应用同时请求 fine+coarse 时选择 approximate location。Android 17 服务端对只有 coarse 权限的注册至少做两层处理：
+Android 12 起，用户可以在应用同时请求 fine（精确）和 coarse（粗略）权限时选择 approximate location（大致位置）。Android 17 服务端对只有 coarse 权限的注册至少做两层处理：
 
 1. `LocationProviderManager` 把 quality 改为 `QUALITY_LOW_POWER`，并把 interval 与 min interval 提高到内部的 10 分钟下限；
-2. 位置结果经过 `LocationFudger`，通过随时间变化的偏移和网格化生成 coarse 位置。
+2. 位置结果经过 `LocationFudger`（模糊位置生成器），通过随时间变化的偏移和网格化生成 coarse 位置。
 
 “10 分钟”是 `android-17.0.0_r1` 的 framework 内部调度下限，不是公开 API 对所有设备、所有版本的回调承诺。coarse 也不是简单地截断经纬度小数位。应用不应依赖固定的模糊半径或固定小数位数。
 
@@ -308,11 +308,11 @@ lowPower=false
 
 这个结果只配置一次 `gps` Provider。A、B 各自是否收到某个位置，仍要经过各自注册的 min interval、min distance、权限、AppOps、duration 和 max updates 过滤。B 不会因为底层以 5 秒工作就必然每 5 秒收到回调。
 
-### 5.2 一条高频请求会抬高该 Provider 的公共成本
+### 5.2 一条高频请求会抬高该 Provider 的共同成本
 
-同一 Provider 的活动请求共享底层工作。一条 1 秒 GPS 请求可能使 GNSS 持续工作；其他低频 GPS 注册虽然被单独限速，底层成本已经由最激进的请求决定。优化时应找出参与合并的最短 interval 和最强 quality，而不能只看某个业务模块自己的配置。
+同一 Provider 的活动请求共享底层工作。一条 1 秒 GPS 请求可能使 GNSS 持续工作；其他低频 GPS 注册虽然被单独限速，底层工作强度已经由频率最高、质量要求最强的请求决定。优化时应找出参与合并的最短 interval 和最强 quality，而不能只看某个业务模块自己的配置。
 
-`dumpsys location` 会列出 Provider 请求和注册，是定位“谁把 GPS 拉到高频”的首选证据。WorkSource/BatteryStats 用于能耗归因，但合并后的归因集合不能表示各应用的实际能耗占比。
+`dumpsys location` 会列出 Provider 请求和注册，是定位“哪条请求让 GPS 高频工作”的首选证据。WorkSource/BatteryStats 用于能耗归因，但合并后的归因集合不能表示各应用的实际能耗占比。
 
 ## 6. 位置上报与回调投递
 
@@ -340,19 +340,21 @@ Provider.reportLocation()
 
 ### 6.1 Executor 堵塞为什么也会带来系统成本
 
-对非 passive 的连续更新，服务端在交付前获取一个 partial wakelock，超时为 30 秒。应用侧 `LocationListenerTransport` 在指定 Executor 上完成回调后，通过 `IRemoteCallback` 通知服务端释放它。
+对非 passive 的连续更新，服务端在交付前获取一个 partial wakelock（允许屏幕关闭但暂时阻止 CPU 休眠的锁），超时为 30 秒。应用侧 `LocationListenerTransport` 在指定 Executor 上完成回调后，通过 `IRemoteCallback` 通知服务端释放它。
 
 这带来三点工程约束：
 
-1. oneway Binder 只表示发送方不等待同步返回，不表示应用回调没有背压；
-2. Executor 队列长时间拥塞，会延后 completion callback，服务端 wakelock 只能等回调或 30 秒超时；
+1. oneway Binder（异步单向调用）只表示发送方不等待同步返回，不表示应用回调没有背压；这里的背压是接收端处理不过来后产生的队列压力；
+2. Executor 队列长时间拥塞，会延后 completion callback（处理完成通知），服务端 wakelock 只能等回调或 30 秒超时；
 3. 回调中如果需要比这更长的后台工作，应用应自行采用符合系统约束的执行与保活机制，不能把 framework 的交付 wakelock 当作业务 wakelock。
 
-不要假设 Perfetto 中存在稳定的 `LocationManagerService` 或 `GnssLocationProvider` 自定义 track。`android-17.0.0_r1` 的这些 Java 路径没有提供可依赖的统一 slice 名称。可用 Binder、线程调度、CPU frequency/idle、wakelock 和应用自定义 trace 组合还原延迟。
+不要假设 Perfetto 中存在稳定的 `LocationManagerService` 或 `GnssLocationProvider` 自定义 track（时间轨道）。`android-17.0.0_r1` 的这些 Java 路径没有提供可依赖的统一 slice（带起止时间的区间事件）名称。可结合 Binder、线程调度、CPU frequency/idle、wakelock 和应用自定义 trace 分析延迟。
 
 [源码依据：`ILocationListener.aidl`、`LocationManager.LocationListenerTransport`、`LocationProviderManager.Registration.acceptLocationChange()`，`android-17.0.0_r1`]
 
 ## 7. GNSS 从 framework 到 HAL
+
+这里的 AIDL 是当前稳定的 HAL 接口技术，HIDL 是旧版接口技术；JNI 是 Java 与本地 C++ 代码之间的调用桥梁。
 
 Android 17 的 GNSS 主路径是：
 
@@ -366,11 +368,11 @@ LocationProviderManager[gps]
             → vendor GNSS service / chipset
 ```
 
-`GnssLocationProvider` 运行在 `system_server`，主要任务是把合并后的 `ProviderRequest` 转换成 GNSS 引擎配置，管理启动、停止、framework scheduling、batching、辅助数据和指标。`GnssNative` 汇集 Java/JNI 回调。射频跟踪、基带算法和大部分硬件电源状态位于厂商实现。
+`GnssLocationProvider` 运行在 `system_server`，主要任务是把合并后的 `ProviderRequest` 转换成 GNSS 引擎配置，管理启动、停止、framework 调度、batching、辅助数据和指标。`GnssNative` 汇集 Java/JNI 回调。射频跟踪、基带算法和大部分硬件电源状态位于厂商实现。
 
 ### 7.1 Android 17 仍保留 AIDL/HIDL 兼容路径
 
-JNI `GnssHal` 先等待 VINTF 声明的 AIDL 服务。AIDL interface version 大于等于 2 时，构造过程直接结束；否则还会依次探测 HIDL 2.1、2.0、1.1、1.0。Android 17 仍带着多版本兼容代码，不能预设设备只走 AIDL。分析单机问题时，要从 `dumpsys` 和 `GnssJni` 日志确认连接到的接口版本。
+JNI `GnssHal` 先等待 VINTF（Vendor Interface，系统与 vendor 组件的接口声明）中列出的 AIDL 服务。AIDL interface version 大于等于 2 时，构造过程直接结束；否则还会依次探测 HIDL 2.1、2.0、1.1、1.0。Android 17 仍带着多版本兼容代码，不能预设设备只走 AIDL。分析单机问题时，要从 `dumpsys` 和 `GnssJni` 日志确认连接到的接口版本。
 
 AIDL `IGnss` 的主生命周期接口是：
 
@@ -378,8 +380,8 @@ AIDL `IGnss` 的主生命周期接口是：
 - `start()` / `stop()`；
 - `close()`；
 - `setPositionMode()`；
-- 时间、位置和 aiding data 注入；
-- 获取 measurement、PSDS、batching、geofence、power indication 等扩展。
+- 时间、位置和 aiding data（辅助定位数据）注入；
+- 获取 measurement（原始卫星测量）、PSDS、batching、geofence、power indication（功耗报告）等扩展。
 
 `IGnss` 没有 `open()`。各扩展通常使用自己的 `setCallback()` 或 `init()` 建立回调。
 
@@ -387,7 +389,7 @@ AIDL `IGnss` 的主生命周期接口是：
 
 HAL 会上报 scheduling、measurement、geofence、low-power mode 等能力。framework 据此启用对应路径。例如，没有调度能力时，`GnssLocationProvider` 可以通过 alarm 在低频请求之间休眠和唤醒；具备调度能力时，可把周期直接交给 HAL。
 
-能力位不能推导出固定精度、TTFF 或电流值。天线、天空可视度、频段、热状态、厂商固件、辅助数据、移动速度和测量环境都会改变结果。通用章节不应给出“GPS 恒定 3–10 米”或“batching 恒定 1–5 mA”一类设备无关结论。
+能力位不能推导出固定精度、TTFF（Time to First Fix，首次定位时间）或电流值。天线、天空可视度、频段、热状态、厂商固件、辅助数据、移动速度和测量环境都会改变结果。通用章节不应给出“GPS 恒定 3–10 米”或“batching 恒定 1–5 mA”一类设备无关结论。
 
 ## 8. GNSS 调度、batching 与 full tracking
 
@@ -412,17 +414,17 @@ Android 17 framework 至少检查：
 3. `batchLength = min(maxUpdateDelay, framework 上限)`；
 4. `batchLength / 2 >= max(interval, framework 最小 batch interval)`。
 
-满足这些条件后，`GnssNative.startBatch()` 才会进入 `IGnssBatching.start()`。如果请求的 batch 长度小于硬件缓冲区容量对应的时长，framework 还会设置精确 alarm，按 batch 长度调用 `flushBatch()`。
+满足这些条件后，`GnssNative.startBatch()` 才会进入 `IGnssBatching.start()`。如果请求的 batch 长度小于硬件缓冲区容量对应的时长，framework 还会设置精确定时器（alarm），按 batch 长度调用 `flushBatch()`。
 
-batching 的收益来自减少 AP 唤醒和 Binder/Java 交付次数，但 GNSS 接收机仍可能按设定周期采样。它不能自动把射频跟踪成本降为零。评估收益要同时比较 AP idle 时间、唤醒次数、GNSS power stats 和厂商电源轨数据。
+batching 的收益来自减少 AP（Application Processor，应用处理器）唤醒和 Binder/Java 交付次数，但 GNSS 接收机仍可能按设定周期采样。它不能自动把射频跟踪成本降为零。评估收益要同时比较 AP idle（空闲）时间、唤醒次数、GNSS power stats（功耗统计）和厂商电源轨数据。
 
 ### 8.3 GNSS measurement 的 full tracking 是另一条请求
 
-`GnssMeasurementRequest.Builder.setFullTracking(true)` 自 API 31 起用于原始 GNSS measurements。它要求关闭 duty cycling，以连续跟踪更多 GNSS 信号，通常会增加功耗。多个 measurement listener 合并时，只要任一 active 请求要求 full tracking，合并结果就启用 full tracking；最短 measurement interval 也会胜出。
+`GnssMeasurementRequest.Builder.setFullTracking(true)` 自 API 31 起用于原始 GNSS measurements。它要求关闭 duty cycling（周期性停机以省电），以连续跟踪更多 GNSS 信号，通常会增加功耗。多个 measurement listener 合并时，只要任一 active 请求要求 full tracking（全程跟踪），合并结果就启用 full tracking；measurement interval 也取最短值。
 
 API 34 增加了 `GnssMeasurementsEvent.isFullTracking()`，调用者可以在 HAL 支持相应信息时判断事件是否处于 full-tracking 模式。
 
-普通 `LocationRequest` 的 `QUALITY_HIGH_ACCURACY + 短 interval` 不等价于显式 `GnssMeasurementRequest.setFullTracking(true)`。`IGnssPowerIndication` 也不是 full-tracking 开关：它只提供 `setCallback()` 和 `requestGnssPowerStats()`，用途是报告 GNSS power capabilities/statistics。
+普通 `LocationRequest` 的 `QUALITY_HIGH_ACCURACY + 短 interval` 不等价于显式 `GnssMeasurementRequest.setFullTracking(true)`。`IGnssPowerIndication` 也不是 full-tracking 开关：它只提供 `setCallback()` 和 `requestGnssPowerStats()`，用途是报告 GNSS power capabilities/statistics（功耗能力与统计）。
 
 [源码依据：`GnssLocationProvider.updateRequirements()`、`GnssMeasurementsProvider.mergeRegistrations()`、`IGnssBatching.aidl`、`IGnssPowerIndication.aidl`，`android-17.0.0_r1`]
 
@@ -430,7 +432,7 @@ API 34 增加了 `GnssMeasurementsEvent.isFullTracking()`，调用者可以在 H
 
 ### 9.1 PSDS 数据路径
 
-HAL 通过 PSDS callback 请求 framework 下载数据。Android 17 的路径是：
+PSDS（Predicted Satellite Data Service，预测卫星数据服务）向 GNSS 提供辅助数据。HAL 通过 PSDS callback 请求 framework 下载数据，Android 17 的路径是：
 
 ```text
 vendor GNSS HAL
@@ -442,9 +444,9 @@ vendor GNSS HAL
             → IGnssPsds.injectPsdsData()
 ```
 
-framework 把 PSDS 内容视为不透明字节，不解析成“星历表字段”。`GnssPsdsDownloader` 对单次内容设置 1 MB 上限，连接超时 30 秒、读取超时 60 秒；服务器地址来自设备配置。下载失败会按 framework 策略重试，但设备是否支持某类 PSDS、数据含义及有效期由 HAL/服务配置决定。
+framework 把 PSDS 内容视为 opaque bytes（不解析内部格式的不透明字节），不会自行拆成“星历表字段”。`GnssPsdsDownloader` 对单次内容设置 1 MB 上限，连接超时 30 秒、读取超时 60 秒；服务器地址来自设备配置。下载失败会按 framework 策略重试，但设备是否支持某类 PSDS、数据含义及有效期由 HAL/服务配置决定。
 
-PSDS 有助于缩短部分启动场景的捕获时间，却不是 TTFF 的唯一变量。时间/位置注入、SUPL、网络状态、aiding data、天线、天空遮挡、干扰、频段和厂商算法都可能影响首次定位。
+PSDS 有助于缩短部分启动场景的捕获时间，却不是 TTFF 的唯一变量。时间/位置注入、SUPL（Secure User Plane Location，一种通过数据网络提供定位辅助信息的协议）、网络状态、aiding data、天线、天空遮挡、干扰、频段和厂商算法都可能影响首次定位。
 
 ### 9.2 framework 如何记录 TTFF
 
@@ -458,11 +460,11 @@ TTFF = first valid fix elapsed realtime - mFixRequestTime
 
 做可重复测试时，至少记录：
 
-- 设备、build fingerprint、GNSS HAL 接口版本；
+- 设备、build fingerprint（精确标识系统构建的字符串）、GNSS HAL 接口版本；
 - 是否删除 aiding data，是否重启 GNSS；
 - 网络、SUPL/PSDS 状态；
 - 室外天空条件、静止/运动状态；
-- 请求开始的 elapsed realtime 与首个有效 fix；
+- 请求开始的 elapsed realtime 与首个有效定位（fix）；
 - 多轮分布，而非只报一次最小值。
 
 ## 10. 地理围栏：公开 proximity alert 与硬件围栏是两条路径
@@ -481,7 +483,7 @@ LocationManager.addProximityAlert()
             → PendingIntent
 ```
 
-`GeofenceManager` 要求 fine location 权限。它为所有 active 围栏合并一个位置请求，根据“当前位置到最近围栏边界的距离 / 假定最大速度”估算下次更新间隔，并受后台 proximity alert 节流值约束，最长不超过 2 小时。缓存位置超过 5 分钟就不用于这个估算。
+`GeofenceManager` 要求 fine location 权限。proximity alert（邻近提醒）由中心点、半径和 `PendingIntent` 定义。它为所有 active 围栏合并一个位置请求，根据“当前位置到最近围栏边界的距离 / 假定最大速度”估算下次更新间隔，并受后台 proximity alert 节流值约束，最长不超过 2 小时。缓存位置超过 5 分钟就不用于这个估算。
 
 收到位置后，它计算中心距离，并用：
 
@@ -490,7 +492,7 @@ effectiveRadius = max(geofenceRadius, locationAccuracy)
 inside = distanceToCenter <= effectiveRadius
 ```
 
-从 `UNKNOWN`/`OUTSIDE` 进入 `INSIDE` 时发送 entering；只有先处于 `INSIDE`，之后转为 `OUTSIDE`，才发送 exiting。该实现没有网格空间索引、loitering delay 或通用 hysteresis margin。
+从 `UNKNOWN`/`OUTSIDE` 进入 `INSIDE` 时发送 entering；只有先处于 `INSIDE`，之后转为 `OUTSIDE`，才发送 exiting。该实现没有网格空间索引、loitering delay（进入后停留多久才触发）或通用 hysteresis margin（防止边界抖动的迟滞余量）。
 
 ### 10.2 硬件 GNSS geofence 路径
 
@@ -507,17 +509,17 @@ Android 17 还存在独立的硬件围栏基础设施：
 
 `GnssGeofenceProxy` 支持 add/remove/pause/resume，并缓存已接受的条目，以便 HAL 重启后恢复。`GeofenceProxy` 是否创建取决于设备 overlay 与可解析的系统服务。
 
-不能由此得出 `addProximityAlert()` 会自动把同一个围栏切换到 GNSS 硬件。前者在 `GeofenceManager` 中以位置更新做软件判断；后者服务于配置的硬件 geofence provider。Google Play geofence provider。Google Play services API 也不属于这条公开平台调用链。
+不能由此得出 `addProximityAlert()` 会自动把同一个围栏切换到 GNSS 硬件。前者在 `GeofenceManager` 中以位置更新做软件判断；后者服务于设备配置的硬件 geofence provider。Google Play services Geofencing API 也不属于这条公开平台调用链。
 
 [源码依据：`GeofenceManager.java`、`GeofenceProxy.java`、`GnssGeofenceProxy.java`、`IGnssGeofence.aidl`，`android-17.0.0_r1`]
 
 ## 11. 性能问题的证据链
 
-位置问题常同时跨越应用、`system_server`、Provider 服务和 vendor HAL。只看一条回调耗时，很难区分请求未激活、Provider 没有 fix、结果被过滤或 Executor 堵塞。
+位置问题常同时跨越应用、`system_server`、Provider 服务和 vendor HAL。只看一条回调耗时，很难区分请求未激活、Provider 没有产生有效定位（fix）、结果被过滤或 Executor 堵塞。
 
 ### 11.1 先用 `dumpsys location` 建立状态快照
 
-以下命令分别查看常规状态、详细状态和 GNSS metrics：
+以下命令分别查看常规状态、详细状态和 GNSS 指标：
 
 ```bash
 adb shell dumpsys location
@@ -527,18 +529,18 @@ adb shell dumpsys location --gnssmetrics
 
 应重点核对：
 
-- provider 是否存在、是否 enabled；
-- 每个 Provider 的 active request 与注册调用者；
+- provider 是否存在、是否启用；
+- 每个 Provider 的 active request（当前生效的合并请求）与注册调用者；
 - interval、quality、max delay 是否已被服务端改写；
-- last location 的年龄；
-- GNSS started/batching/capabilities 与 TTFF 指标；
+- last location（最近缓存位置）的年龄；
+- GNSS 是否启动、是否处于 batching，以及 capabilities 与 TTFF 指标；
 - framework proximity alerts 和硬件 geofence 状态。
 
-命令输出会随 build 类型和厂商扩展变化。调试 user build 时，部分身份或 HAL 细节可能被裁剪。
+命令输出会随 build 类型和厂商扩展变化。调试量产使用的 user build 时，部分身份或 HAL 细节可能被裁剪。
 
-### 11.2 分清应用打点与系统观测点
+### 11.2 分清应用记录与系统观测点
 
-普通应用只能稳定记录自己的请求和回调，不能直接给 `system_server` 的注册激活或 Provider 上报打点。应用侧应使用单调时钟，例如 `SystemClock.elapsedRealtimeNanos()`，记录这三个事件：
+普通应用只能稳定记录自己的请求和回调，不能直接在 `system_server` 的注册激活或 Provider 上报处增加时间点。应用侧应使用单调时钟，例如 `SystemClock.elapsedRealtimeNanos()`，记录这三个事件：
 
 ```text
 A_request   调用 LocationManager API
@@ -548,7 +550,7 @@ A_done      应用完成轻量回调处理
 
 这组数据能直接计算应用看到的端到端等待时间 `A_callback - A_request`，以及回调工作时间 `A_done - A_callback`。前者包含服务端策略、Provider 产出、Binder 投递和 Executor 排队，不能仅凭应用日志继续归因。
 
-要继续分段，需要在 userdebug/eng 构建、定制 framework/Provider 或设备已经提供对应 Perfetto 数据源时，增加系统侧观测点：
+要继续分段，需要在用于调试的 userdebug/eng 构建、定制 framework/Provider 或设备已经提供对应 Perfetto 数据源时，增加系统侧观测点：
 
 | 观测点 | 所在层 | 可用于解释的阶段 |
 | --- | --- | --- |
@@ -565,17 +567,17 @@ A_done      应用完成轻量回调处理
 
 并发请求下，不能用“时间上最近的一条 location”猜测跨进程事件属于同一个注册。应使用定制关联 ID，或把实验限制为单应用、单 provider、单注册，再结合调用者身份、请求参数和 `Location.getElapsedRealtimeNanos()` 交叉核对。
 
-Perfetto 可组合 `sched`、`binder_driver`、CPU frequency/idle、wakelock/power、network，以及设备提供的厂商 vendor GNSS data source。没有明确的 framework/HAL 事件或自定义时间戳时，不能凭模糊的 “Gnss” 字符串把某段 slice 当成 TTFF。
+Perfetto 可组合 `sched`、`binder_driver`、CPU frequency/idle、wakelock/power、network，以及设备提供的 vendor GNSS data source（跟踪数据源）。没有明确的 framework/HAL 事件或自定义时间戳时，不能凭模糊的 `Gnss` 字符串把某段 slice 当成 TTFF。
 
 ### 11.3 常见症状与核查点
 
 | 症状 | 第一批证据 | 高概率方向 |
 | --- | --- | --- |
-| 注册成功但无回调 | active 状态、provider enabled、AppOps | 权限/后台/省电限制，或 Provider 没有结果 |
+| 注册成功但无回调 | active 状态、provider 是否启用、AppOps | 权限/后台/省电限制，或 Provider 没有结果 |
 | 回调频率低于请求 | 服务端改写后的 interval、单注册过滤 | coarse/后台节流、min interval、min distance、batching |
 | GPS 长时间保持 active | `gps` 的合并请求和调用者 | 另一条更短 interval 请求、未取消注册 |
 | TTFF 变长 | 多轮 TTFF、PSDS/SUPL/网络、天空条件 | 辅助数据、射频环境、HAL/固件变化 |
-| 回调后系统仍持有 wakelock | App Executor 与 completion 时间 | Executor 拥塞或回调耗时 |
+| 回调后系统仍持有 wakelock | App Executor 与处理完成通知的时间 | Executor 拥塞或回调耗时 |
 | 围栏漏报 | 使用的平台/GMS API、位置 accuracy、软件/硬件路径 | 路径判断错误、权限/后台限制、位置本身不稳定 |
 
 ## 12. 设计与检查清单
@@ -588,16 +590,16 @@ Perfetto 可组合 `sched`、`binder_driver`、CPU frequency/idle、wakelock/pow
 - 单次请求处理 `null`、取消与 30 秒服务端上限；
 - 连续请求绑定清晰生命周期，停止时用同一 Listener 或 PendingIntent 取消；
 - 回调只做轻量工作，避免堵塞指定 Executor；
-- 需要 approximate location 时按能力降级，不假设固定模糊半径；
-- 后台定位同时检查 background permission、前台服务类型和系统节流。
+- 需要 approximate location（大致位置）时按能力降级，不假设固定模糊半径；
+- 后台定位同时检查后台位置权限、前台服务类型和系统节流。
 
 系统与厂商侧：
 
 - 以 `dumpsys location` 中的服务端请求为准，不只看客户端对象；
 - 分 Provider 查最短 interval、最强 quality 和最小 max delay；
-- 确认 GNSS 使用 AIDL 还是 HIDL，以及 capabilities 是否匹配预期；
+- 确认 GNSS 使用 AIDL 还是 HIDL，以及能力位（capabilities）是否匹配预期；
 - 对 batching 同时验证 HAL 支持、batch size、请求比例和实际 flush；
-- 把 measurement full tracking 与普通 LocationRequest、power indication 分开；
+- 把 measurement full tracking 与普通 `LocationRequest`、power indication 分开；
 - TTFF、精度和电流只报告指定设备与测试条件下的统计分布；
 - 区分 `GeofenceManager` 软件 proximity alert 与硬件 geofence provider。
 

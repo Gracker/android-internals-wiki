@@ -1,27 +1,74 @@
 ---
 title: "Compose 布局、SubcomposeLayout 与测量性能"
 chapter: "22.19"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [compose, layout, measurement, intrinsic, performance]
 related_chapters: ["22.3", "22.15", "22.16", "7.10", "2.4"]
-last_verified: "2026-06-25"
-last_verified_against: "AOSP android-17.0.0_r1"
+last_verified: "2026-08-15"
+last_verified_against: "AOSP android-17.0.0_r1；Compose UI、Runtime 与 Foundation 1.12.0 源码（发行范围终点 963bf914f78b389bdddef0da7f36bee19d897274）"
 confidence: high
 sources:
-  - type: aosp
-    path: "frameworks/base/core/java/androidx/compose/ui/layout/LayoutNode.kt"
+  - type: androidx-source
+    path: "frameworks/support/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt"
   - type: official
     path: "https://developer.android.com/jetpack/compose/layout"
+    note: "历史地址；2026-08-15 返回 404，现行入口见下一项"
+  - type: official
+    path: "https://developer.android.com/develop/ui/compose/layouts"
+  - type: official
+    path: "https://developer.android.com/jetpack/androidx/releases/compose-ui#1.11.4"
+  - type: official
+    path: "https://developer.android.com/jetpack/androidx/releases/compose-foundation#1.11.4"
+  - type: official
+    path: "https://developer.android.com/jetpack/androidx/releases/compose-ui#1.12.0"
+  - type: official
+    path: "https://developer.android.com/jetpack/androidx/releases/compose-foundation#1.12.0"
+  - type: official
+    path: "https://developer.android.com/develop/ui/compose/phases"
+  - type: official
+    path: "https://developer.android.com/develop/ui/compose/tooling/tracing"
+  - type: androidx-source
+    path: "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt"
+  - type: androidx-source
+    path: "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/MeasurePassDelegate.kt"
+  - type: androidx-source
+    path: "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/MeasureAndLayoutDelegate.kt"
+  - type: androidx-source
+    path: "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/NodeChain.kt"
+  - type: androidx-source
+    path: "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/SubcomposeLayout.kt"
+  - type: androidx-source
+    path: "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/LookaheadScope.kt"
+  - type: androidx-source
+    path: "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/RemeasurementModifier.kt"
+  - type: androidx-source
+    path: "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt"
+  - type: androidx-source
+    path: "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/tooling/ComposeToolingFlags.kt"
+  - type: androidx-source
+    path: "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutMeasureScope.kt"
+previous_sources:
+  - "https://developer.android.com/jetpack/androidx/releases/compose-ui"
+  - "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt"
+  - "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/MeasurePassDelegate.kt"
+  - "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/MeasureAndLayoutDelegate.kt"
+  - "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/NodeChain.kt"
+  - "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/SubcomposeLayout.kt"
+  - "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/LookaheadScope.kt"
+  - "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/RemeasurementModifier.kt"
+  - "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt"
+  - "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/tooling/ComposeToolingFlags.kt"
+  - "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutMeasureScope.kt"
 consolidated_from:
   - "src/part5-app/ch22-rendering-practice/34-compose-subcompose-layout-performance.md"
 ---
 
 # Compose 布局、SubcomposeLayout 与测量性能
 
-Compose 布局性能要回答三个问题：哪个状态读取触发了布局、哪些节点进入了测量或放置、这些工作是否让目标帧错过截止时间。重组次数只能解释组合阶段，无法代替布局证据。
+Compose 布局性能要回答三个问题：哪个状态读取触发了布局、哪些节点重新测量或放置、这些工作是否让目标帧错过显示截止时间。重组是 Compose 因状态变化而重新执行部分可组合函数的过程；重组次数只能解释组合阶段，不能代替布局证据。
 
-平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`；Compose UI 独立发布，源码锚点是当前稳定版 1.11.4 及其发布提交 `854220f44ea8ea80fee824a6c5a045f39bede289`。Android 12 到 Android 17 决定宿主 View、HWUI、FrameTimeline 和显示路径，Compose 依赖版本决定 `LayoutNode`、Modifier 节点、lookahead 与 trace 标记。分析报告必须同时记录平台版本、Compose BOM、Kotlin 和 Compose Compiler 插件。
+平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`。Compose UI、Compose Runtime 与 Compose Foundation 独立发布，本文固定到当前稳定版 1.12.0，并以该发行提交范围的终点 `963bf914f78b389bdddef0da7f36bee19d897274` 读取源码。Android 版本决定宿主 View 与系统显示路径，Compose 依赖版本决定 `LayoutNode`、Modifier 节点、前瞻布局（lookahead）和跟踪事件。分析报告还要记录 Compose BOM（统一声明 Compose 库版本的物料清单）、Kotlin 版本和 Compose Compiler 插件。
 
 这里不采用固定的布局耗时、优化百分比或重组阈值。帧预算随刷新率变化，布局成本还受节点数量、文本、约束、设备性能、编译状态和业务数据影响。所有收益都要在目标场景中测量。
 
@@ -31,13 +78,13 @@ Compose 布局性能要回答三个问题：哪个状态读取触发了布局、
 
 Compose 官方文档把一次 UI 更新分成三个阶段：
 
-1. **组合（Composition）**：执行需要运行的 Composable，创建或更新 UI 树。
+1. **组合（Composition）**：执行需要运行的 Composable；Composable 是由 `@Composable` 标记、用来描述界面的函数。组合会创建或更新 UI 树。
 2. **布局（Layout）**：测量节点尺寸，再放置节点位置。测量和放置各有自己的重启作用域。
 3. **绘制（Drawing）**：让需要重绘的节点向 Canvas 发出绘制操作。
 
-这三个阶段描述状态依赖和可跳过工作，不表示每个显示帧都会完整执行三遍。某个状态只在绘制代码中读取时，变化可以只触发绘制；状态在放置代码中读取时，局部节点可以只重新放置；组合结果和约束都没变时，测量可以复用已有结果。
+重启作用域是状态变化后可以单独重新执行的一段代码。这三个阶段描述状态依赖和可跳过工作，不表示每个显示帧都会完整执行三遍。某个状态只在绘制代码中读取时，变化可以只触发绘制；状态在放置代码中读取时，局部节点可以只重新放置；组合结果和尺寸约束都没变时，测量可以复用已有结果。
 
-这张图把 Compose 阶段与 Android 17 标准 App Window 路径放在同一条线上。
+这张图把 Compose 阶段与 Android 17 标准应用窗口路径放在同一条时间线上。图中的 Snapshot 是 Compose 的状态快照系统，它负责在一致的状态视图中记录读取并通知变化。
 
 ```mermaid
 flowchart LR
@@ -62,18 +109,20 @@ flowchart LR
     D --> ACV --> HWUI --> RT --> BQ --> SF
 ```
 
-`ComposeView` 和 `AndroidComposeView` 仍在 `ViewRootImpl` 管理的 View 树中。Compose 生成的绘制内容通过当前 App Window 的 HWUI surface 提交；RenderThread 之后继续经过 BLAST、SurfaceFlinger、HWC 和 present。Compose 布局变慢属于 App 侧原因，`queueBuffer()` 之后的等待仍要按标准渲染路径分析。
+`ComposeView` 和 `AndroidComposeView` 仍在 `ViewRootImpl` 管理的 View 树中。HWUI 是 Android 的硬件加速二维渲染库，`RenderThread` 是执行其部分渲染工作的线程；二者把应用窗口内容写入图形缓冲区。缓冲区随后经过 BLAST BufferQueue（窗口缓冲区与事务协调队列）、SurfaceFlinger（系统合成服务）和 HWC（Hardware Composer，硬件合成接口）进入显示流程。
+
+Compose 布局变慢属于应用侧原因。`queueBuffer()` 表示应用提交图形缓冲区；其后的排队、合成和显示等待仍要按标准渲染路径分析，不能归入 Compose 测量耗时。
 
 ### 2. Android 宿主如何调用 Compose 布局
 
-Compose UI 1.11.4 的 `AndroidComposeView` 提供了几处明确入口：
+Compose UI 1.12.0 的 `AndroidComposeView` 提供了几处明确入口：
 
-- `onMeasure()` 把 View `MeasureSpec` 转成 Compose `Constraints`，更新根约束并调用 `measureOnly()`。
+- `onMeasure()` 会在根节点尚未挂载时先完成挂载，再把 View 的 `MeasureSpec`（父 View 传入的测量要求）转成 Compose `Constraints`（宽高最小值与最大值），更新根约束并调用 `measureOnly()`。
 - `onLayout()` 调用 `measureAndLayout()`，完成仍待处理的测量与放置。
 - `dispatchDraw()` 在绘制前再次处理待完成的 `measureAndLayout()`，随后调用根 `LayoutNode.draw()`。
 - `onRequestMeasure()` 和 `onRequestRelayout()` 把节点失效交给 `MeasureAndLayoutDelegate`，再决定调用 View `requestLayout()` 还是 `invalidate()`。
 
-Android 17 的 `ViewRootImpl` 仍通过 traversal 组织宿主 View 的 measure、layout 和 draw，再由 `ThreadedRenderer` 进入 HWUI。Compose 自己的三个阶段和平台 traversal 相关，但两者不是同一套 API 名称。Perfetto 中要同时观察 Compose trace、`AndroidOwner:*`、`performTraversals()` 和 `syncAndDrawFrame()`。
+Android 17 的 `ViewRootImpl` 仍通过一次视图树遍历组织宿主 View 的测量、布局和绘制，再由 `ThreadedRenderer` 进入 HWUI。Compose 自己的三个阶段嵌在这次平台遍历中，但两者使用不同的 API 名称。Perfetto 中要同时观察 Compose 跟踪事件、`AndroidOwner:*`、`performTraversals()` 和 `syncAndDrawFrame()`。
 
 ## 二、测量与放置是两个重启作用域
 
@@ -86,9 +135,9 @@ Android 17 的 `ViewRootImpl` 仍通过 traversal 组织宿主 View 的 measure�
 | `layout {}`、`Modifier.offset {}` | 重新执行放置 | 位置变化后绘制更新；局部测量可跳过 |
 | `drawBehind`、`drawWithContent`、`Canvas` | 重新绘制 | 组合和布局可以跳过 |
 
-“把状态放进 `rememberSaveable`”不会改变读取阶段。保存位置只影响状态存活方式，失效范围由读取 `value` 的代码位置决定。
+这张表按状态的读取位置判断直接失效范围；同一个状态对象在不同阶段读取，触发的工作可能不同。`rememberSaveable` 只改变状态在 Activity 重建或已保存状态恢复时的存活方式，不会改变读取阶段；失效范围仍由读取 `value` 的代码位置决定。
 
-这段代码把高频位移状态推迟到放置 lambda 中读取，省略的只有 import。
+这段代码把高频位移状态推迟到放置用的匿名函数中读取，省略的只有导入语句。
 
 ```kotlin
 @Composable
@@ -106,13 +155,13 @@ fun PlacementOffset(
 }
 ```
 
-调用方把 `LazyListState` 或动画状态包装成 `offsetYPx`。该值变化时，读取发生在放置步骤，当前节点不需要因为这次读取重新执行组合和测量。父子坐标依赖、对齐线或其他状态仍可能让相邻节点进入布局，结论要以 trace 为准。
+调用方把 `LazyListState` 或动画状态包装成 `offsetYPx`。该值变化时，读取发生在放置步骤，当前节点不需要因为这次读取重新执行组合和测量。父子坐标依赖、对齐线或其他状态仍可能让相邻节点进入布局，结论要以系统跟踪为准。
 
 ### 2. 单次布局过程限制子节点测量次数
 
-普通 Compose 布局遵守单遍测量规则：父节点给子节点一组 `Constraints`，每个 `Measurable` 在当前布局过程只能调用一次 `measure()`。父节点根据子节点返回的 `Placeable` 决定自身尺寸，再在 `layout(width, height) {}` 中放置子节点。对同一个子节点用两组约束连续测量会触发运行时错误。
+普通 Compose 布局遵守单遍测量规则：父节点给子节点一组 `Constraints`，每个 `Measurable`（尚未测量的子节点接口）在当前布局过程只能调用一次 `measure()`。调用返回 `Placeable`，它保存测得的宽高并可在放置阶段使用。父节点据此决定自身尺寸，再在 `layout(width, height) {}` 中放置子节点；对同一个子节点用两组约束连续测量会触发运行时错误。
 
-以下自定义列布局展示一遍测量和一遍放置的完整结构，代码省略 import。
+以下自定义列布局展示一遍测量和一遍放置的完整结构，代码省略导入语句。
 
 ```kotlin
 @Composable
@@ -149,38 +198,38 @@ fun OnePassColumn(
 }
 ```
 
-测量代码必须保存 `Placeable`，以便放置阶段使用；为此创建一个列表属于该实现的明确成本。热路径优化应从测量次数、节点数量和昂贵计算入手，不能以“零对象”为目标删除必要状态。
+测量代码必须保存 `Placeable`，以便放置阶段使用；为此创建一个列表属于该实现的明确成本。频繁执行的布局代码应先减少重复测量、无用节点和昂贵计算，不能为了追求“零对象”而删除必要状态。
 
 ### 3. 对齐线可能把读取带回布局
 
-`FirstBaseline` 等 `AlignmentLine` 允许父节点根据子节点内部位置做布局。对齐线在父测量或放置阶段被读取时，Compose 会记录依赖；子节点的对齐线变化后，对应父节点需要重新测量或放置。
+`FirstBaseline` 等 `AlignmentLine`（对齐线）让子节点向父节点报告基线一类内部参考坐标。父节点在测量或放置阶段读取对齐线时，Compose 会记录依赖；子节点的对齐线变化后，对应父节点需要重新测量或放置。
 
-文本基线、复杂表格和自定义对齐布局经常出现这种依赖。看到父节点重新布局时，应检查是否读取了 alignment line，而不是只检查传入约束。
+文本基线、复杂表格和自定义对齐布局经常出现这种依赖。看到父节点重新布局时，应检查是否读取了对齐线，不能只检查传入约束。
 
 ## 三、测量结果如何复用
 
 ### 1. 复用条件由约束和失效标记共同决定
 
-Compose UI 1.11.4 的 `MeasurePassDelegate.remeasure()` 直接给出复用条件：
+Compose UI 1.12.0 的 `MeasurePassDelegate` 是处理常规测量的内部委托类，其 `remeasure()` 直接给出复用条件：
 
 - `layoutNode.measurePending == true`：执行 `performMeasure()`；
 - 本次 `Constraints` 与 `measurementConstraints` 不同：执行 `performMeasure()`；
 - 两者都不成立：当前节点复用已有尺寸，同时检查子树中是否还有待测量节点。
 
-`performMeasure()` 会清除当前节点的 `measurePending`，并通过 Snapshot observer 记录测量代码读取了哪些状态。测量完成后通常会把放置标记为待处理。
+`performMeasure()` 会清除当前节点的 `measurePending`，并通过 Snapshot 观察器记录测量代码读取了哪些状态。测量完成后通常会把放置标记为待处理。
 
 这套机制跨帧保存上次约束和结果，不限于“同一帧缓存一个 `MeasureResult`”。约束相同也不能保证整棵子树没有工作：子节点可能因自己的状态读取失效，`forceMeasureTheSubtree()` 会处理这些待测量节点。
 
 ### 2. 测量与放置使用不同标记
 
-`LayoutNode` 通过 delegate 维护两组主要状态：
+`LayoutNode` 通过内部委托对象维护两组主要状态：
 
 - `measurePending`：节点尺寸需要重新计算；
 - `layoutPending`：节点或子节点位置需要重新计算。
 
-`MeasureAndLayoutDelegate` 把待处理节点放进按深度排序的集合。父节点已经处于测量待处理状态时，子节点通常不用再作为独立根重复登记；子节点测量后尺寸发生变化，依赖它尺寸的父节点会继续更新。未放置或停用的节点会保留脏状态，但不会无条件触发一轮全树 traversal。
+`MeasureAndLayoutDelegate` 把待处理节点放进按树深排序的集合。父节点已经处于测量待处理状态时，子节点通常不用再作为独立根重复登记；子节点测量后尺寸发生变化，依赖它尺寸的父节点会继续更新。未放置或停用的节点会保留待处理标记，但不会无条件触发一轮完整树遍历。
 
-因此，“失效总是一路上传到某个可吸收祖先”过于粗糙。传播还取决于节点是否被放置、父节点上次在测量还是放置代码中使用子节点、尺寸是否变化、是否存在 lookahead 和 alignment line 依赖。
+失效传播没有固定的逐级父节点路径。它还取决于节点是否被放置、父节点上次在测量还是放置代码中使用子节点、尺寸是否变化，以及是否存在前瞻布局或对齐线依赖。
 
 ### 3. `@Stable` 不控制布局缓存
 
@@ -188,23 +237,23 @@ Compose UI 1.11.4 的 `MeasurePassDelegate.remeasure()` 直接给出复用条件
 
 排查时要分开看：
 
-- Compose Compiler 报告和 Layout Inspector 回答“哪些 Composable 运行或跳过”；
-- Compose layout trace 和源码标记回答“哪些节点测量或放置”；
-- FrameTimeline 回答“这些工作是否影响目标帧”。
+- Compose Compiler 报告（编译期生成的稳定性与可跳过性信息）和 Layout Inspector（Android Studio 的布局检查器）回答“哪些 Composable 运行或跳过”；
+- Compose 布局跟踪事件和源码标记回答“哪些节点测量或放置”；
+- FrameTimeline（把应用帧与显示截止时间对应起来的 Perfetto 数据源）回答“这些工作是否影响目标帧”。
 
-## 四、Intrinsic（固有尺寸）查询的准确含义
+## 四、固有尺寸（Intrinsic）查询的准确含义
 
-### 1. Intrinsic 查询发生在正式测量之前
+### 1. 固有尺寸查询发生在正式测量之前
 
-`minIntrinsicWidth()`、`maxIntrinsicWidth()`、`minIntrinsicHeight()` 和 `maxIntrinsicHeight()` 用于在最终约束尚未确定时询问内容需要的尺寸。官方文档明确说明：intrinsic 查询不会把同一个子节点正式测量两次。父节点先查询 intrinsic，再根据结果生成最终约束，随后执行一次正式 `measure()`。
+`minIntrinsicWidth()`、`maxIntrinsicWidth()`、`minIntrinsicHeight()` 和 `maxIntrinsicHeight()` 用于在最终约束尚未确定时询问内容所需尺寸。官方文档明确说明：固有尺寸查询不会把同一个子节点正式测量两次。父节点先查询固有尺寸，再根据结果生成最终约束，随后执行一次正式 `measure()`。
 
-查询仍然需要计算。`IntrinsicSize.Min` 会递归询问相关子树，文本 intrinsic 可能运行段落宽高计算，自定义 `MeasurePolicy` 的默认实现还会复用 `measure` 逻辑做近似。成本取决于布局实现、查询方向、节点数量和内容，不能统一写成固定的 O(depth)、指数增长或“一次完整子树测量”。
+查询仍然需要计算。`IntrinsicSize.Min` 会递归询问相关子树，文本固有尺寸可能运行段落宽高计算，自定义 `MeasurePolicy` 的默认实现还会复用测量逻辑做近似。成本取决于布局实现、查询方向、节点数量和内容，不能统一写成随树深线性增长的 `O(depth)`、指数增长或“一次完整子树测量”。
 
-### 2. 默认 intrinsic 只是近似
+### 2. 默认固有尺寸只是近似
 
-自定义 `Layout` 没有覆写 intrinsic 方法时，`MeasurePolicy` 提供尽力而为的默认实现。它对部分布局足够，对具有特殊约束协商的布局可能返回不合适的结果。
+自定义 `Layout` 没有覆写固有尺寸方法时，`MeasurePolicy` 会提供近似的默认实现。它对部分布局足够，对具有特殊约束协商的布局可能返回不合适的结果。
 
-需要精确 intrinsic 语义时，应只覆写会被父节点查询的方法，并保证：
+需要精确的固有尺寸语义时，应只覆写会被父节点查询的方法，并保证：
 
 - 与正式测量的尺寸语义一致；
 - 同一输入返回稳定结果；
@@ -212,28 +261,30 @@ Compose UI 1.11.4 的 `MeasurePassDelegate.remeasure()` 直接给出复用条件
 - 文本、密度和字体缩放变化后不会复用旧值；
 - 基准测试覆盖真实内容长度和字体配置。
 
-把 intrinsic 结果缓存在业务层也有失效风险。字体、locale、`Density`、`fontScale`、布局方向、文本内容和约束输入都可能改变结果。
+把固有尺寸结果缓存在业务层也有失效风险。字体、区域设置、`Density`、`fontScale`、布局方向、文本内容和约束输入都可能改变结果。
 
-### 3. Subcompose 布局不支持 intrinsic
+### 3. Subcompose 布局不支持固有尺寸查询
 
-Compose UI 1.11.4 的 `SubcomposeLayout` 使用 `NoIntrinsicsMeasurePolicy`。错误消息明确列出 lazy list、`BoxWithConstraints`、`TabRow` 等基于 Subcompose 的组件：这些组件在测量时才决定要组合哪些内容，父节点无法在组合之前得到可靠 intrinsic。
+Compose UI 1.12.0 的 `SubcomposeLayout` 使用 `NoIntrinsicsMeasurePolicy`。错误消息明确列出 Lazy 列表、`BoxWithConstraints`、`TabRow` 等基于 Subcompose 的组件：这些组件在测量时才决定要组合哪些内容，父节点无法在组合之前得到可靠的固有尺寸。
 
-需要“与父尺寸匹配”时，可以让外层自定义布局控制测量顺序，或给 Subcompose 组件明确尺寸约束。对 `LazyColumn` 调用 `height(IntrinsicSize.Min)` 不会得到一个廉价的列表总高度查询。
+需要“与父尺寸匹配”时，可以让外层自定义布局控制测量顺序，或给 Subcompose 组件明确尺寸约束。对 `LazyColumn` 调用 `height(IntrinsicSize.Min)` 不会得到低成本的列表总高度查询。
 
 ## 五、Modifier 链不会为每一项创建 `LayoutNode`
 
 ### 1. `LayoutNode` 与 `Modifier.Node` 是两层结构
 
-Compose UI 的 `LayoutNode` 持有一条 `NodeChain`。Modifier 元素会创建或更新对应的 `Modifier.Node`；实现 `LayoutModifierNode` 的节点还会获得 `LayoutModifierNodeCoordinator`，在被包装内容的外层参与约束转换、测量和放置。
+`Modifier` 是 Compose 为界面元素附加布局、绘制、输入和语义行为的有序链。`LayoutNode` 持有对应的 `NodeChain`；Modifier 元素会创建或更新 `Modifier.Node`。实现 `LayoutModifierNode` 的节点还会获得 `LayoutModifierNodeCoordinator`，由这个协调对象在被包装内容的外层参与约束转换、测量和放置。
 
 所以，`padding + background + clickable` 不等于三个额外 `LayoutNode`：
 
 - `padding` 属于布局 Modifier，会参与约束和尺寸计算；
 - `background` 属于绘制 Modifier，参与绘制；
 - `clickable` 涉及输入、交互状态和语义；
-- 多能力 Modifier 节点还可以通过 delegation 同时提供多种行为。
+- 多能力 Modifier 节点还可以通过委托同时提供多种行为。
 
 长链仍会增加节点更新、遍历和对应能力的工作，但要按节点类型分析，不能把每个 Modifier 都计成一层布局树。
+
+Compose UI 1.12.0 把 Modifier 元素差异比较所用的临时列表改为 `MutableObjectList`，并从根 `NodeChain` 统一复用缓冲区和遍历栈；这里的栈是暂存待展开 Modifier 的后进先出列表。这是减少临时集合分配的实现调整，不会合并 Modifier 节点，也不会改变链的顺序语义。
 
 ### 2. 顺序决定语义，没有通用的“size 放最前”
 
@@ -241,40 +292,40 @@ Modifier 从外到内包装内容。`padding(16.dp).size(40.dp)` 与 `size(40.dp
 
 调整顺序属于 UI 行为变更，需要先确认设计语义，再测性能。`Modifier.then()` 只连接两段 Modifier，不会自动合并相邻节点，也不能作为减少节点数量的优化接口。
 
-### 3. 自定义布局 Modifier 的热路径约束
+### 3. 自定义布局 Modifier 的频繁执行路径
 
-`Modifier.layout { measurable, constraints -> ... }` 的测量 lambda 运行在布局阶段。适合放入：
+`Modifier.layout { measurable, constraints -> ... }` 的测量匿名函数运行在布局阶段。这里适合执行：
 
 - 约束变换；
 - 一次子节点测量；
 - 基于 `Placeable` 尺寸的整数计算；
 - 返回稳定的放置块。
 
-业务取数、排序、字符串解析、图片解码和日志格式化应在布局前完成。`LayoutCoordinates` 用于查询坐标关系，不是测量缓存，也不能代替 `measure()`。
+业务取数、排序、字符串解析、图片解码和日志格式化应在布局前完成。`LayoutCoordinates` 表示节点在布局树中的坐标关系，不保存测量结果，也不能代替 `measure()`。
 
 ## 六、Subcompose 与 Lookahead 的额外工作
 
 ### 1. Subcompose 把部分组合推迟到测量
 
-`SubcomposeLayout` 允许测量 lambda 根据当前约束或可见范围调用 `subcompose(slotId, content)`。Lazy 布局、`BoxWithConstraints` 和部分 Material 组件依赖这一能力。它们会复用槽位（slot）和节点，不能概括为“每次测量都重建全部内容”。
+`SubcomposeLayout` 允许测量匿名函数根据当前约束或可见范围调用 `subcompose(slotId, content)`，把部分组合推迟到测量阶段。Lazy 布局、`BoxWithConstraints` 和部分 Material 组件依赖这一能力。它们会复用槽位（用于标识一份子组合内容）和节点，不能概括为“每次测量都重建全部内容”。
 
 成本来自当前这轮需要新增、复用、重新组合、测量和处置的槽位。以下变化常让工作增加：
 
 - 约束变化导致可见项目或布局分支变化；
 - 槽位键不稳定，旧内容无法复用；
 - 单个可见项目组合或测量很重；
-- 预取、lookahead 和正式布局在同一交互中叠加；
+- 预取、前瞻布局和正式布局在同一交互中叠加；
 - 组件嵌套让一个外层约束变化影响多个 Subcompose 区域。
 
-普通 `Layout` 适合子节点集合在组合阶段已经确定的场景。单纯换成 `ComposableLambda` 不会提供测量期按约束组合的能力。Subcompose 的节点复用、预取和测量细节在下文集中说明。
+普通 `Layout` 适合子节点集合在组合阶段已经确定的场景。单纯把内容参数改成可组合匿名函数，不会得到“测量时按约束选择组合内容”的能力。第七节继续说明 Subcompose 的槽位身份、复用和测量成本。
 
-### 2. Compose 1.11.4 使用 `LookaheadScope`
+### 2. Compose 1.12.0 使用 `LookaheadScope`
 
-当前公开模型以 `LookaheadScope` 和 `approachLayout` 为主。`LookaheadScope` 会让范围内布局先计算目标尺寸与位置，再运行接近阶段（approach pass）逐步接近目标。它创建虚拟 lookahead 根节点，不会给 `content` 额外插入一个普通 `Layout`。
+当前公开模型以 `LookaheadScope` 和 `approachLayout` 为主。`LookaheadScope` 会让范围内布局先计算目标尺寸与位置，再运行接近阶段，逐步接近目标。源码会创建一个只用于组织前瞻坐标的虚拟根节点，不会给 `content` 额外插入普通 `Layout`。
 
-Lookahead 也不能简化成“每帧固定两次测量，耗时翻倍”。源码分别维护 `lookaheadMeasurePending`、`lookaheadLayoutPending`、`measurePending` 和 `layoutPending`。`isMeasurementApproachInProgress()` 与 `isPlacementApproachInProgress()` 都返回 false 后，系统可以跳过不再需要的接近阶段。
+Lookahead 也不能简化成“每帧固定两次测量，耗时翻倍”。源码分别维护 `lookaheadMeasurePending`、`lookaheadLayoutPending`、`measurePending` 和 `layoutPending`。`isMeasurementApproachInProgress()` 与 `isPlacementApproachInProgress()` 都返回 `false` 后，系统可以跳过不再需要的接近阶段。
 
-适合 Lookahead 的场景包括共享元素、布局尺寸过渡和需要提前知道目标坐标的动画。静态页面没有目标布局过渡时，不要为了预计算而扩大 Lookahead 范围。评估时分别统计：
+适合 Lookahead 的场景包括共享元素转场、布局尺寸过渡和需要提前知道目标坐标的动画。静态页面没有目标布局过渡时，不要为了预计算而扩大 Lookahead 范围。评估时分别统计：
 
 - `Compose:lookaheadMeasure`；
 - `Compose:lookaheadLayout`；
@@ -282,23 +333,25 @@ Lookahead 也不能简化成“每帧固定两次测量，耗时翻倍”。源�
 - `Compose:layout`；
 - 动画期间创建、复用和绘制的节点数。
 
-## 七、SubcomposeLayout：slot 身份、复用与实际成本
+## 七、SubcomposeLayout：槽位身份、复用与实际成本
 
-普通 `Layout` 在 measure 前已经拿到确定的 `Measurable`；`SubcomposeLayout` 则允许 measure 根据约束或兄弟尺寸调用 `subcompose(slotId, content)`。它适合 Lazy layout、`BoxWithConstraints`、先测主体再决定覆盖层等真实依赖，不应只因组件“复杂”就使用。
+普通 `Layout` 在测量前已经拿到确定的 `Measurable`；`SubcomposeLayout` 则允许测量代码根据约束或兄弟尺寸调用 `subcompose(slotId, content)`。它适合 Lazy 布局、`BoxWithConstraints`、先测主体再决定覆盖层等确有测量依赖的场景，不应只因组件“复杂”就使用。
 
-slotId 是子 Composition 的身份边界，同一逻辑 slot 在相邻 pass 中必须稳定，在一次 pass 内必须唯一。无参 `SubcomposeLayoutState()` 默认不保留离场 slot；自定义复用策略还要分别定义保留哪些 id、两个 id 是否兼容。LazyLayout 在此之上用 key 维护业务身份、用 `contentType` 判断结构兼容，并缓存当前 measure pass 已请求的 item；这些都不是跨版本可依赖的固定池容量契约。
+`slotId` 是子组合的身份边界；子组合指 `SubcomposeLayout` 独立创建并管理的一组内容。同一逻辑槽位的 ID 在相邻测量中必须稳定，在一次测量中必须唯一。无参 `SubcomposeLayoutState()` 使用 `NoOpSubcomposeSlotReusePolicy`，默认不保留已经离场的槽位；自定义复用策略还要分别定义保留哪些 ID、两个 ID 是否兼容。
 
-一次 measure 的成本来自实际请求的 slot 数、content 是否失效、产生的节点数量和子树测量，而不是固定“两趟”或随嵌套层数指数增长。父约束变化会重新执行 measure policy；若结构只在少数断点变化，可在页面上层先归约为 compact/expanded 模式，避免每个 item 各自套 `BoxWithConstraints`。
+Foundation 1.12.0 的 LazyLayout 在这套机制之上用业务键（`key`）维护身份，用 `contentType` 判断内容结构，并在同一次测量中缓存已经组合的 `Measurable`。这些是当前源码实现，不构成跨版本固定的复用池容量契约。
 
-SubcomposeLayout 使用 `NoIntrinsicsMeasurePolicy`。父级通过 `IntrinsicSize.Min/Max` 查询到它时会直接失败，不会先完整 intrinsic 组合再正式测量。要实现 match-parent 类依赖，应重写父布局的测量顺序；组件尺寸能由外层约束表达时，直接传入约束。当前 Compose UI 也没有公开的 `@IntrinsicMeasurer` 注解可绕过这项限制。
+一次测量的成本来自实际请求的槽位数、内容是否失效、产生的节点数量和子树测量，不是固定“两趟”，也不会仅因嵌套层数就必然指数增长。父约束变化会重新执行测量策略；若结构只在少数尺寸断点变化，可先归纳为紧凑或展开模式（compact / expanded），避免每个列表项各自套一层 `BoxWithConstraints`。
 
-Lookahead 负责先得到目标 geometry，approach pass 再接近目标；它与“测量时才决定组合哪些内容”是两种能力。嵌套两者时分别观察 lookahead、正式 measure、subcompose 和 draw，不能把额外布局 pass 误写成额外 GPU render。工具侧 Compiler Metrics 只能解释 slot content 的可跳过性，Layout Inspector 只给组合线索；实际 subcompose/measure 次数需要 Perfetto、自定义稳定计数或最小对照实验。
+`SubcomposeLayout` 使用 `NoIntrinsicsMeasurePolicy`。父级通过 `IntrinsicSize.Min/Max` 查询到它时会直接失败，不会先完成固有尺寸组合再正式测量。要实现匹配父尺寸一类依赖，应重写父布局的测量顺序；组件尺寸能由外层约束表达时，直接传入约束。Compose UI 1.12.0 也没有公开的 `@IntrinsicMeasurer` 注解可绕过这项限制。
+
+Lookahead 先得到目标尺寸和坐标，接近阶段再逐步到达目标；它与“测量时才决定组合哪些内容”是两种能力。嵌套两者时要分别观察前瞻布局、正式测量、子组合和绘制，不能把额外一轮布局误写成额外的 GPU 渲染。Compose Compiler 报告只能解释槽位内容能否跳过，Layout Inspector 只提供组合线索；实际的子组合与测量次数需要 Perfetto、自定义稳定计数或最小对照实验。
 
 ## 八、`Remeasurement.forceRemeasure()` 的边界
 
-公开的 `Remeasurement` 关联一个布局节点，`forceRemeasure()` 会同步标记并执行该节点的测量/布局。官方 API 把它限定在少数复杂布局，例如滚动过程中必须同步消费偏移并重新测量子节点。
+公开的 `Remeasurement` 关联一个布局节点。`forceRemeasure()` 会在不另行安排下一轮布局的情况下请求重测量，并立即调用宿主的 `measureAndLayout()`；节点会同步重测量，待处理的放置工作也可能随这次调用执行。官方 API 只建议把它用于少数复杂布局，例如滚动过程中必须同步消费偏移并重新测量子节点。
 
-常规业务状态更新应依赖 Snapshot 失效。强制重测量会绕过“只有输入变化才测量”的常规节奏，也会把同步工作放到调用线程。项目中出现 `RemeasurementModifier` 时，要确认调用频率、线程、约束和帧内位置；不存在公开的 `Modifier.remeasure` 快捷 API。
+常规业务状态更新应依赖 Snapshot 失效。强制重测量会把同步工作放到调用线程，即使节点此前没有标记为需要重测量也会执行。`RemeasurementModifier` 是把关联节点的 `Remeasurement` 对象交给调用方的公开接口；项目中出现它时，要确认调用频率、线程、约束和帧内位置。Compose UI 1.12.0 没有公开的 `Modifier.remeasure` 便捷扩展。
 
 高频动画还可以按需求选择更晚的读取阶段：
 
@@ -311,18 +364,20 @@ Lookahead 负责先得到目标 geometry，approach pass 再接近目标；它�
 
 ## 九、怎样测量 Compose 布局成本
 
-### 1. Trace 名称有语义，颜色没有
+### 1. 跟踪事件名称有语义，颜色没有
 
-Compose UI 1.11.4 源码包含以下布局 trace 名称：
+Compose UI 1.12.0 的 `AndroidComposeView` 会写入 `AndroidOwner:onMeasure`、`AndroidOwner:onLayout` 和 `AndroidOwner:measureAndLayout`。更细的 `Compose:*` 布局事件受 `ComposeToolingFlags.isVerboseTracingEnabled` 控制；该开关默认是 `false`，因为详细跟踪会增加运行开销。
 
-- `AndroidOwner:onMeasure`、`AndroidOwner:onLayout`、`AndroidOwner:measureAndLayout`；
-- `Compose:measure`、`Compose:layout`；
-- `Compose:lookaheadMeasure`、`Compose:lookaheadLayout`；
-- 局部处理还可能出现 `Compose:remeasure`、`Compose:lookaheadRemeasure`。
+需要这些详细事件时，应在专用诊断构建中选择加入 `ComposeToolingApi`，并在 Compose 库代码加载前把 `ComposeToolingFlags.isVerboseTracingEnabled` 设为 `true`。比较性能数据时，基线与实验组必须使用相同开关状态。观察时应区分两层事件：
 
-Perfetto UI 给 slice 分配的颜色不表示“测量”“警告”或“超预算”。不能用橙色、红色判断阶段。名称、线程、开始时间、持续时间和调用上下文才是证据。
+- 宿主入口：`AndroidOwner:onMeasure`、`AndroidOwner:onLayout`、`AndroidOwner:measureAndLayout`；
+- 开启详细跟踪后：`Compose:measure`、`Compose:layout`；
+- 开启详细跟踪后：`Compose:lookaheadMeasure`、`Compose:lookaheadLayout`；
+- 开启详细跟踪后，局部处理还可能出现 `Compose:remeasure`、`Compose:lookaheadRemeasure`。
 
-下面的 PerfettoSQL 用于汇总 Compose UI 1.11.4 的布局 slice，并保留进程与线程维度。
+Perfetto UI 会给时间片（一段带开始时间和持续时间的跟踪事件）分配颜色，颜色不表示“测量”“警告”或“超预算”。名称、线程、开始时间、持续时间和调用上下文才是证据。
+
+下面的 PerfettoSQL（Perfetto Trace Processor 使用的 SQL 方言）用于汇总 Compose UI 1.12.0 的布局时间片，并保留进程与线程维度。未开启详细跟踪时，查询仍可返回 `AndroidOwner:*`，但不会出现受开关控制的 `Compose:*` 结果。
 
 ```sql
 SELECT
@@ -356,24 +411,26 @@ ORDER BY total_ms DESC;
 
 ### 2. Layout Inspector 与 Compose Compiler 报告只覆盖组合线索
 
-Layout Inspector 可以显示 Composable 的组合次数和跳过次数。Compose Compiler report 描述 restartable、skippable 和参数稳定性。两者都不会直接给出节点测量次数或布局耗时。
+Layout Inspector 可以显示 Composable 的组合次数和跳过次数。Compose Compiler 报告中的 `restartable`、`skippable` 分别表示函数可因状态变化重新执行、可在输入稳定时跳过；报告还会列出参数稳定性。两类工具都不会直接给出节点测量次数或布局耗时。
 
 使用顺序可以按证据分层：
 
-1. Macrobenchmark 的 `FrameTimingMetric` 记录目标交互的 `frameOverrunMs` 和 `frameDurationCpuMs` 分布，并保存每次迭代 trace。
+1. Macrobenchmark（从应用进程外启动并测量完整场景的基准测试库）的 `FrameTimingMetric` 记录目标交互的 `frameOverrunMs`（相对显示截止时间的超前或逾期）和 `frameDurationCpuMs`（应用界面线程与 RenderThread 生成一帧的 CPU 时间）分布，并输出跟踪文件。
 2. FrameTimeline 找到错过截止时间的应用帧，区分 UI 线程、RenderThread 和显示侧问题。
-3. UI 线程变长时查看 `AndroidOwner:*`、`Compose:*` 与业务自定义 trace。
-4. 组合 slice 变长再看 Layout Inspector、组合跟踪和 Compose Compiler 报告。
-5. 布局 slice 变长再检查约束变化、状态读取阶段、intrinsic、Subcompose、Lookahead 和 Modifier 类型。
+3. UI 线程变长时查看 `AndroidOwner:*`、已开启的 `Compose:*` 与业务自定义跟踪事件。
+4. 组合时间片变长再看 Layout Inspector、组合跟踪和 Compose Compiler 报告。
+5. 布局时间片变长再检查约束变化、状态读取阶段、固有尺寸、Subcompose、Lookahead 和 Modifier 类型。
 6. App 侧按时提交后，继续沿 RenderThread、BLAST、SurfaceFlinger 与 HWC 查找等待。
 
-调试构建、热重载和 Layout Inspector 连接都会改变性能。发布判断要使用 profileable、non-debuggable、接近发布版的构建，并固定设备、刷新率、数据、滚动手势和编译模式。
+调试构建、热重载和 Layout Inspector 连接都会改变性能。用于性能判断的应用应设为 `profileable`（允许性能分析工具附加）且 `non-debuggable`（关闭调试运行时开销），并尽量接近发布版；设备、刷新率、数据、滚动手势和编译模式也要固定。
 
-### 3. Composition tracing 的覆盖边界
+### 3. 组合跟踪（Composition tracing）的覆盖边界
 
-系统 trace 默认不会列出每个 Composable。需要函数级组合事件时，按官方文档加入与 BOM 对齐的 `androidx.compose.runtime:runtime-tracing`，并保证 Perfetto 配置包含 `track_event`。这个依赖增加 trace 字符串和一定体积，测试报告应记录是否启用。
+系统跟踪默认不会列出每个 Composable。需要函数级组合事件时，按官方文档加入由 BOM 管理版本的 `androidx.compose.runtime:runtime-tracing`，并保证 Perfetto 配置包含 `track_event` 数据源。这个依赖会保留跟踪字符串并增加一定安装包体积，测试报告应记录是否启用。
 
-即使启用了组合跟踪，布局节点归因仍可能需要自定义 `Trace.beginSection()`、最小复现或基准变体。不要把某个 Composable 的组合 slice 当作它全部测量与绘制成本。
+`runtime-tracing` 负责显示可组合函数，不会替应用开启 `ComposeToolingFlags.isVerboseTracingEnabled`；函数级组合事件和详细布局事件是两套独立配置。
+
+即使启用了组合跟踪，布局节点归因仍可能需要自定义 `Trace.beginSection()`、最小复现或基准变体。某个 Composable 的组合时间片只包含组合工作，不能代表它的全部测量与绘制成本。
 
 ## 十、排查案例的判断顺序
 
@@ -382,16 +439,16 @@ Layout Inspector 可以显示 Composable 的组合次数和跳过次数。Compos
 1. 用 FrameTimeline 选中具体的卡顿帧。
 2. 确认 UI 线程是否卡在 `AndroidOwner:measureAndLayout` 或 `Compose:measure`。
 3. 对比本帧与正常帧的约束、可见项目数、Subcompose 槽位和图片/文本数据。
-4. 检查高频状态是否在测量 lambda 中读取。
-5. UI 线程没超时则转向 RenderThread、缓冲区反压和显示侧。
+4. 检查高频状态是否在测量匿名函数中读取。
+5. UI 线程没超时则转向 RenderThread、缓冲区反压和显示侧；反压表示生产缓冲区的速度超过后续消费速度，队列开始积压。
 
 “重组次数正常”只能排除一部分组合工作，不能排除局部重测量、放置、绘制或系统后段等待。
 
 ### 场景 B：父布局频繁重新测量
 
 1. 确认子节点尺寸是否变化。
-2. 检查父节点是否在测量 lambda 中使用该子节点，或读取了 intrinsic、对齐线。
-3. 检查窗口尺寸、Insets、字体缩放和约束是否变化。
+2. 检查父节点是否在测量匿名函数中使用该子节点，或读取了固有尺寸、对齐线。
+3. 检查窗口尺寸、`Insets`（状态栏、导航栏或输入法占用的边缘区域）、字体缩放和约束是否变化。
 4. 检查 Modifier 顺序是否改变了约束语义。
 5. 对 Subcompose 组件确认槽位键和布局分支是否稳定。
 
@@ -399,36 +456,39 @@ Layout Inspector 可以显示 Composable 的组合次数和跳过次数。Compos
 
 ### 场景 C：布局动画启用后成本增加
 
-1. 分开统计 lookahead 和正式 measure/layout slice。
+1. 分开统计前瞻布局与正式测量、放置的时间片。
 2. 缩小 `LookaheadScope` 到需要目标坐标的子树。
-3. 检查 approach 完成条件能否按时返回 false。
+3. 检查接近阶段的完成条件能否按时返回 `false`。
 4. 区分尺寸动画和纯图层变换，确认点击区域与语义要求。
-5. 用相同动画进度、帧数和节点数据比较前后 trace。
+5. 用相同动画进度、帧数和节点数据比较前后的系统跟踪。
 
-只比较平均帧率会掩盖少数长帧。FrameTimingMetric 的分位数和对应 trace 能保留异常帧位置。
+只比较平均帧率会掩盖少数长帧。`FrameTimingMetric` 的分位数和对应跟踪文件能保留异常帧位置。
 
 ## 十一、提交前检查清单
 
 - [ ] 记录 Android 版本、Compose BOM、Compose UI、Kotlin 与 Compose Compiler 插件
 - [ ] 用 FrameTimeline 确认目标帧已经错过截止时间
 - [ ] 区分组合、测量、放置、绘制和 RenderThread
-- [ ] 不使用 Perfetto slice 颜色判断阶段
+- [ ] 不使用 Perfetto 时间片颜色判断阶段
+- [ ] 需要 `Compose:*` 布局事件时，在专用诊断构建中尽早开启详细跟踪，并让对照组使用相同配置
 - [ ] 高频状态读取位于满足 UI 语义的最晚阶段
 - [ ] 自定义 Layout 对每个子节点只调用一次 `measure()`
-- [ ] 测量 lambda 不做业务 IO、解码、排序或日志格式化
-- [ ] intrinsic 查询有明确的尺寸语义和真实成本测量
-- [ ] 不对 Subcompose 组件请求不受支持的 intrinsic
+- [ ] 测量匿名函数不做业务 I/O（磁盘或网络读写）、解码、排序或日志格式化
+- [ ] 固有尺寸查询有明确的尺寸语义和真实成本测量
+- [ ] 不对 Subcompose 组件请求不受支持的固有尺寸
 - [ ] Modifier 调整顺序前确认布局、绘制、输入和语义变化
 - [ ] 不把每个 Modifier 节点算成独立 `LayoutNode`
 - [ ] Subcompose 槽位键稳定，并限制测量期新增内容
 - [ ] Lookahead 范围只包含需要目标布局的节点
 - [ ] 常规业务不调用 `forceRemeasure()`
 - [ ] Macrobenchmark 使用接近发布版的可分析构建
-- [ ] App 侧按时提交后继续检查 HWUI、BLAST、SF 与 HWC
+- [ ] 应用侧按时提交后继续检查 HWUI、BLAST、SurfaceFlinger 与 HWC
 
 ## 参考资料
 
-- [Compose UI 1.11.4 发布说明](https://developer.android.com/jetpack/androidx/releases/compose-ui)
+- [Compose UI 1.12.0 发布说明](https://developer.android.com/jetpack/androidx/releases/compose-ui#1.12.0)
+- [Compose Foundation 1.12.0 发布说明](https://developer.android.com/jetpack/androidx/releases/compose-foundation#1.12.0)
+- [Compose 布局](https://developer.android.com/develop/ui/compose/layouts)
 - [Jetpack Compose phases](https://developer.android.com/develop/ui/compose/phases)
 - [Compose phases and performance](https://developer.android.com/develop/ui/compose/performance/phases)
 - [Custom layouts](https://developer.android.com/develop/ui/compose/layouts/custom)
@@ -439,6 +499,28 @@ Layout Inspector 可以显示 Composable 的组合次数和跳过次数。Compos
 - [Debug your Compose UI](https://developer.android.com/develop/ui/compose/tooling/debug)
 - [Composition tracing](https://developer.android.com/develop/ui/compose/tooling/tracing)
 - [Macrobenchmark metrics](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics)
+- [`LayoutNode.kt`（Compose UI 1.12.0）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt)
+- [`MeasurePassDelegate.kt`（Compose UI 1.12.0）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/MeasurePassDelegate.kt)
+- [`MeasureAndLayoutDelegate.kt`（Compose UI 1.12.0）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/MeasureAndLayoutDelegate.kt)
+- [`NodeChain.kt`（Compose UI 1.12.0）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/NodeChain.kt)
+- [`SubcomposeLayout.kt`（Compose UI 1.12.0）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/SubcomposeLayout.kt)
+- [`LookaheadScope.kt`（Compose UI 1.12.0）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/LookaheadScope.kt)
+- [`RemeasurementModifier.kt`（Compose UI 1.12.0）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/RemeasurementModifier.kt)
+- [`AndroidComposeView.android.kt`（Compose UI 1.12.0）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt)
+- [`ComposeToolingFlags.kt`（Compose Runtime 1.12.0）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/tooling/ComposeToolingFlags.kt)
+- [`LazyLayoutMeasureScope.kt`（Compose Foundation 1.12.0）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutMeasureScope.kt)
+- [`ViewRootImpl.java`（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)
+- [`Choreographer.java`（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java)
+- [FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
+- [标准渲染管线](../../part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md)
+
+本文的 Compose 内部实现固定到 1.12.0 的发行范围终点。升级 Compose 后，应重新核对测量复用条件、Subcompose 默认复用策略、LazyLayout 单次测量缓存、Lookahead 完成条件、强制重测量实现，以及详细布局跟踪的开关和事件名。
+
+### 旧版本参考锚点
+
+以下链接保留用于核对 Compose 1.11.4（含 BOM 2026.06.00）到 1.12.0 的实现差异；正文版本边界仍以文中说明为准。
+
+- [Compose UI 1.11.4 发布说明](https://developer.android.com/jetpack/androidx/releases/compose-ui)
 - [`LayoutNode.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt)
 - [`MeasurePassDelegate.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/MeasurePassDelegate.kt)
 - [`MeasureAndLayoutDelegate.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/MeasureAndLayoutDelegate.kt)
@@ -446,7 +528,3 @@ Layout Inspector 可以显示 Composable 的组合次数和跳过次数。Compos
 - [`SubcomposeLayout.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/SubcomposeLayout.kt)
 - [`LookaheadScope.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/LookaheadScope.kt)
 - [`AndroidComposeView.android.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt)
-- [`ViewRootImpl.java`（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)
-- [`Choreographer.java`（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java)
-- [FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
-- [标准渲染管线](../../part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md)

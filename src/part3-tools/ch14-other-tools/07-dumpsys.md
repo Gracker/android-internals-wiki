@@ -5,8 +5,8 @@ chapter: '14.7'
 section: '14.7'
 task2b_state: "fixed"
 pipeline_stage: ready-to-publish
-applicable_versions: Android 6.0 (API 23) - Android 17 (API 37)
-last_verified: "2026-07-09"
+applicable_versions: Android 6.0 (API 23) – Android 17 (API 37)
+last_verified: "2026-08-13"
 last_verified_against: AOSP android-17.0.0_r1
 confidence: medium
 sources:
@@ -36,7 +36,9 @@ task9_state: reviewed
 
 ## 为什么需要 dumpsys
 
-`dumpsys` 读取某个 Binder 服务在采集时刻愿意公开的内部状态。它适合回答“当前焦点在哪个窗口”“进程现在处于哪个 OOM 调整级别”“最近保留了哪些 HWUI 帧”等问题。Perfetto、Winscope 和 bugreport 负责补足时间顺序；一份文本快照无法证明事件先后。
+`dumpsys` 读取某个 Binder 服务在采集时刻愿意公开的内部状态。Binder 是 Android 的进程间调用机制，ServiceManager 是系统服务注册表；`dumpsys` 会找到目标服务并调用它的 dump 接口，不会直接扫描服务进程的内存。
+
+它适合回答“当前焦点在哪个窗口”“进程现在处于哪个 OOM 调整级别”“最近保留了哪些 HWUI 帧”等问题。Perfetto、Winscope 和 bugreport 负责补足时间顺序；一份文本快照无法证明事件先后。
 
 Android 17 的 [`dumpsys.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/dumpsys/dumpsys.cpp) 会从 ServiceManager 取得服务列表，用 `checkService()` 找到目标 Binder，再调用 `IBinder::dump()`。全量模式按服务名排序后逐项执行，单个服务的默认超时为 10 秒。超时只表示 `dumpsys` 不再等待该输出，不能据此认定服务已经停止内部采集。
 
@@ -56,15 +58,15 @@ adb shell dumpsys --pid SurfaceFlinger
 adb shell dumpsys --priority CRITICAL
 ```
 
-`-t` 的单位是秒，`-T` 的单位是毫秒；二者属于 `dumpsys` 的全局参数，应写在服务名之前。`--proto` 只筛选并请求声明支持 proto dump 的服务，不能把任意文本输出自动变成稳定 schema。
+`-t` 的单位是秒，`-T` 的单位是毫秒；二者属于 `dumpsys` 的全局参数，应写在服务名之前。全量模式下，全局 `--proto` 会筛选注册时声明 `DUMP_FLAG_PROTO` 的服务，并向这些服务传入 proto 参数。指定单个服务时，要遵循该服务自己的参数顺序，例如 `dumpsys activity --proto`。proto 只表示 Protocol Buffers 编码，不能把任意文本输出自动转换成字段稳定的 schema（结构定义）。
 
-从 `adb shell` 发起的命令通常具备平台 `DUMP` 权限。普通应用 UID、受限 user build、厂商服务的额外权限检查和 SELinux 策略仍可能裁剪或拒绝输出。脚本应保存 build fingerprint、命令行和采集时间，字段名称也不能视作 SDK 兼容承诺。
+从 `adb shell` 发起的命令通常具备平台 `DUMP` 权限。UID 是 Linux 用来区分调用身份的数字；user build 是面向用户发布的系统构建；SELinux 再按进程域限制可访问的服务和文件。普通应用 UID、受限 user build、厂商服务的额外权限检查和 SELinux 策略仍可能裁剪或拒绝输出。脚本应保存 build fingerprint（唯一标识这版系统构建的字符串）、命令行和采集时间，字段名称也不能视作 SDK 兼容承诺。
 
-平台实现固定到 `android-17.0.0_r1`。涉及 `/proc` 记账的说明固定到 `android17-6.18-2026-06_r6`；厂商内核、HWC 与服务扩展要以设备对应分支复核。
+平台实现固定到 `android-17.0.0_r1`。涉及 `/proc` 记账的说明固定到 `android17-6.18-2026-06_r6`；`/proc` 是内核向用户空间暴露进程和系统状态的伪文件系统。HWC（Hardware Composer，硬件合成器接口）和厂商服务扩展要以设备对应分支复核。
 
 ## dumpsys activity：Activity 栈、进程与 ANR 信息
 
-`activity` 服务横跨 ActivityTaskManager、进程管理、服务与退出记录。一次排障应只请求相关子项，避免在庞大的默认输出中丢失现场。
+`activity` 服务横跨 ActivityTaskManager（负责 Activity 与 Task 生命周期和层级）、进程管理、Service 与退出记录。ANR 是 Application Not Responding，表示应用在规定时间内没有响应系统请求。一次排障应只请求相关子项，避免在庞大的默认输出中丢失现场。
 
 下面的命令分别采集任务栈、进程 OOM 状态和退出历史。
 
@@ -81,13 +83,13 @@ adb shell dumpsys activity exit-info com.example.app
 adb shell dumpsys activity lastanr
 ```
 
-`activities` 输出按 display、TaskDisplayArea、root task 和 Task 组织。排查生命周期时关注 `ActivityRecord` 的 `state`、`visible`、`finishing`、所属 `taskId`，并记录目标 display。`Resumed:` 或 `topDisplayFocusedRootTask` 描述 ActivityTaskManager 的任务状态；它们不等同于窗口焦点，也不保证 InputDispatcher 正向该 Activity 投递输入。
+`activities` 输出按 display、TaskDisplayArea、root task 和 Task 组织。display 是物理屏、虚拟屏等显示目标；TaskDisplayArea 是容纳任务的显示区域；root task 是其下 Task 的根容器。排查生命周期时关注 `ActivityRecord` 的 `state`、`visible`、`finishing`、所属 `taskId`，并记录目标 display。`Resumed:` 或 `topDisplayFocusedRootTask` 描述 ActivityTaskManager 的任务状态；它们不等同于窗口焦点，也不保证 InputDispatcher 正向该 Activity 投递输入。
 
 反复执行该命令可以观察状态是否长期卡住，却不适合作为启动耗时计时器。两次 shell 调用之间已经跨过 Binder 调度、格式化和传输开销；启动阶段的毫秒级时序应交给 Perfetto、event log 或 launch metrics。
 
 ### 读懂 OOM 调整值
 
-Android 17 的 [`psc/Constants.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/psc/Constants.java) 定义了几个基准值：`FOREGROUND_APP_ADJ=0`、`VISIBLE_APP_ADJ=100`、`PERCEPTIBLE_APP_ADJ=200`，cached 区间从 900 开始。数值越大，内存压力下通常越早进入回收候选；负值留给 system、persistent 等高保护级别进程。
+OOM adjustment（简称 OOM adj）是系统交给 lmkd 的进程保护分数，不表示进程已经发生 OOM。Android 17 的 [`psc/Constants.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/psc/Constants.java) 定义了几个基准值：`FOREGROUND_APP_ADJ=0`、`VISIBLE_APP_ADJ=100`、`PERCEPTIBLE_APP_ADJ=200`，cached 区间从 900 开始。数值越大，内存压力下通常越早进入回收候选；负值留给 system、persistent 等高保护级别进程。
 
 `processes` 详细记录中的字段要分开读：
 
@@ -99,17 +101,17 @@ Android 17 的 [`psc/Constants.java`](https://android.googlesource.com/platform/
 | `set` | 已提交给进程/LMKD 路径的 adj |
 | `adjType`、`adjSource`、`adjTarget` | 哪个组件关系抬高或降低了进程保护级别 |
 
-可见进程还可能受 laddering 和设备配置影响而落在基准值之间。发现 `set` 与界面状态不符时，应连同 `adjType`、绑定服务、provider、前台服务和显示器可见性一起核对，不能只用一个数字判定 OOM 计算错误。LMK 归因还要对照 PSI、lmkd 日志和退出原因。
+可见进程还可能受 laddering 影响：系统按可见层级等信息把多个进程分配到 100—199 之间的细分值，具体行为也受设备配置控制。发现 `set` 与界面状态不符时，应连同 `adjType`、绑定服务、ContentProvider、前台服务和显示器可见性一起核对，不能只用一个数字判定 OOM 计算错误。LMK 归因还要对照 PSI（Pressure Stall Information，内存压力导致任务停顿的内核指标）、lmkd 日志和退出原因。
 
 ### ANR 与退出历史
 
-Android 11 起的 `exit-info` 来自 `ApplicationExitInfo` 历史。它可区分 ANR、Java/native crash、low-memory kill、用户请求和初始化失败等原因，并保留多个进程实例。Android 17 的 [`ActivityManagerService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java) 把该子命令分发给 `AppExitInfoTracker`。
+Android 11 起的 `exit-info` 来自 `ApplicationExitInfo` 历史；每条记录描述一次进程退出，不表示当前进程状态。它可区分 ANR、Java/native crash、low-memory kill、用户请求和初始化失败等原因，并保留多个进程实例。Android 17 的 [`ActivityManagerService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java) 把该子命令分发给 `AppExitInfoTracker`。
 
-`lastanr` 是 ActivityTaskManager 保存的最近 ANR 状态，容量和生命周期都有限。`exit-info` 用于确定退出类型与进程实例，ANR trace、tombstone、bugreport 和 Perfetto 用于解释线程阻塞位置。设备重启、历史裁剪或厂商策略都可能让旧记录消失，线上采集应尽早完成。
+`lastanr` 是 ActivityTaskManager 保存的最近 ANR 状态，容量和生命周期都有限。`exit-info` 用于确定退出类型与进程实例，ANR trace、tombstone（native crash 的原生崩溃报告）、bugreport 和 Perfetto 用于解释线程阻塞位置。设备重启、历史裁剪或厂商策略都可能让旧记录消失，线上采集应尽早完成。
 
 ## dumpsys meminfo：系统和进程内存全景
 
-`meminfo` 服务由 ActivityManagerService 注册。Android 17 的 [`MemBinder`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java) 会检查 `DUMP` 与 usage stats 权限，再进入 `dumpApplicationMemoryUsage()`。
+`meminfo` 服务由 ActivityManagerService 注册。Android 17 的 [`MemBinder`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java) 会检查 `DUMP` 与 usage stats（应用使用情况访问）权限，再进入 `dumpApplicationMemoryUsage()`。
 
 下面的命令覆盖全局、单进程和多进程包三个采集范围。
 
@@ -134,23 +136,23 @@ Android 17 支持 `-a/-d/-c/-s/-S/-p/--unreachable/--oom/--local/--package/--che
 | RSS | 当前驻留在物理内存中的页，shared page 会在每个映射进程重复计算 | 进程驻留规模、LMKD 相关现场 |
 | PSS | shared page 按映射者数量比例分摊 | 跨进程归属和版本内对比 |
 | USS | private clean 与 private dirty 的合计 | 进程退出后较可能直接释放的私有页 |
-| Private Dirty | 进程私有且已修改的页 | 私有匿名内存、COW 后的变化 |
-| SwapPss | 换出页按共享关系分摊 | zRAM/swap 参与后的进程归属 |
+| Private Dirty | 进程私有且已修改的页 | 私有匿名内存、COW（Copy-on-Write，写时复制）后的变化 |
+| SwapPss | 换出页按共享关系分摊 | zRAM（在内存中压缩的交换设备）或其他 swap 参与后的进程归属 |
 
-PSS 是归属模型，不是硬件计量值。Android 17 的 `Debug.MemoryInfo.getTotalPss()` 在内核提供 SwapPss 时会把 proportional swapped-out pages 纳入 total；解析脚本不能再把单独的 SwapPss 列重复加到 `TOTAL PSS`。内核的 smaps/PSS 生成路径可从固定 kernel tag 的 [`fs/proc/task_mmu.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/task_mmu.c) 核对。
+PSS 是共享页的归属模型，不是硬件直接计量的数值。Android 17 的 `Debug.MemoryInfo.getTotalPss()` 在内核提供 SwapPss 时，会把按共享关系分摊的换出页纳入 total；解析脚本不能再把单独的 SwapPss 列重复加到 `TOTAL PSS`。内核的 smaps/PSS 生成路径可从固定 kernel tag 的 [`fs/proc/task_mmu.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/task_mmu.c) 核对。
 
 ### 分类行只负责定位方向
 
 - `Dalvik Heap` / ART 相关行增长，可能来自存活对象、缓存、尚未执行的 GC 或分配抖动。HPROF、LeakCanary 和 allocation profiling 才能区分对象持有与短命分配。
-- `Native Heap` 主要对应 allocator 管理的 native allocation。大型独立 `mmap`、allocator arena 与碎片会让它和 heapprofd live bytes 存在差异。
-- `Graphics` 依赖 graphics driver 通过 libmemtrack 上报 smaps 未覆盖的归属。GraphicBuffer、dma-buf 和跨进程共享可能分散在 `Graphics`、`GL`、设备映射及其他类别，某一行下降缓慢不能单独证明纹理泄漏。
-- `Code`、`Stack`、`.so mmap` 等文件映射和线程相关分类要结合进程数、ABI、动态模块与线程数量解释。
+- `Native Heap` 主要对应 allocator 管理的 native allocation。大型独立 `mmap`（内存映射）、allocator arena（分配器管理的一组内存区）与碎片，会让它和 heapprofd 记录的存活分配字节存在差异。
+- `Graphics` 依赖 graphics driver 通过 libmemtrack 上报 smaps 未覆盖的归属。GraphicBuffer 是图形缓冲对象，dma-buf 是让驱动和进程共享缓冲区的内核机制；相关内存可能分散在 `Graphics`、`GL`、设备映射及其他类别，某一行下降缓慢不能单独证明纹理泄漏。
+- `Code`、`Stack`、`.so mmap` 等文件映射和线程相关分类要结合进程数、ABI（应用二进制接口）、动态模块与线程数量解释。
 
 完整的对象图、native 分配栈和 dma-buf 归因流程见 §14.5 [内存分析工具](05-memory-tools.md)。
 
 ### 采样趋势
 
-下面的主机端循环用于保存同一 workload 下的摘要趋势。
+workload 指一套可重复的操作负载。下面的主机端循环用于保存同一 workload 下的摘要趋势。
 
 ```bash
 for round in $(seq 1 10); do
@@ -164,7 +166,7 @@ done
 
 ## dumpsys gfxinfo：帧渲染统计与 Jank 定位
 
-`gfxinfo` Binder 由 ActivityManagerService 注册。服务找到目标包的运行进程后，经 `IApplicationThread.dumpGfxInfo()` 进入应用进程，再由 `ThreadedRenderer` 和各 Window 的 renderer 输出 HWUI 统计。应用卡死时，该跨进程链路也可能超时。
+`gfxinfo` Binder 由 ActivityManagerService 注册。HWUI 是 Android 的硬件加速 UI 渲染管线，`ThreadedRenderer` 负责把 View 绘制工作交给 RenderThread。服务找到目标包的运行进程后，经 `IApplicationThread.dumpGfxInfo()` 进入应用进程，再由 `ThreadedRenderer` 和各 Window 的 renderer 输出 HWUI 统计。应用卡死时，该跨进程链路也可能超时。
 
 下面的三条命令用于划定一段可重复的 HWUI 测试窗口。
 
@@ -183,7 +185,7 @@ Android 17 的 [`ThreadedRenderer.dumpArgsToFlags()`](https://android.googlesour
 
 ### 聚合统计如何生成
 
-Android 17 同时打印 deadline-aware 与 legacy 统计。当前 [`JankTracker::finishFrame()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/JankTracker.cpp) 以 `GpuCompleted` 是否越过调整后的 `FrameDeadline` 记录 `Janky frames`；legacy 路径使用旧的固定间隔、swap deadline 与 triple-buffering 修正规则。VRR/ARR 场景优先读当前 deadline 口径，再用 legacy 行观察兼容指标。
+Android 17 同时打印 deadline-aware 与 legacy 统计：前者使用每帧 deadline，后者保留旧版固定刷新间隔模型。当前 [`JankTracker::finishFrame()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/JankTracker.cpp) 以 `GpuCompleted` 是否越过调整后的 `FrameDeadline` 记录 `Janky frames`；legacy 路径使用旧的固定间隔、swap deadline 与 triple-buffering（三缓冲队列）修正规则。VRR/ARR（可变/自适应刷新率）场景优先读当前 deadline 口径，再用 legacy 行观察兼容指标。
 
 [`ProfileData.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/ProfileData.cpp) 在 Android 17 输出以下分类：
 
@@ -197,13 +199,13 @@ Android 17 同时打印 deadline-aware 与 legacy 统计。当前 [`JankTracker:
 | `Number Slow issue draw commands` | `IssueDrawCommandsStart → FrameCompleted` 超过 75% | RenderThread 后半段偏长，不直接区分 CPU、GPU、queue 或 fence wait |
 | `Number Frame deadline missed` | 当前 deadline miss 计数 | 与 `Janky frames` 的当前口径对应 |
 
-源码没有名为 `Number Slow RenderThread` 的固定输出。分位值来自 `IntendedVsync → FrameCompleted` 的时长直方图；99th percentile 为 50 ms，表示该统计窗口内约 1% 的已记录帧落在 50 ms 或更慢的 bucket，不能换算成“连续丢三帧”。
+源码没有名为 `Number Slow RenderThread` 的固定输出。分位值来自 `IntendedVsync → FrameCompleted` 的时长直方图；bucket 是直方图中的时间区间。99th percentile 为 50 ms，表示该统计窗口内约 1% 的已记录帧落在 50 ms 或更慢的 bucket，不能换算成“连续丢三帧”。
 
 没有跨应用通用的 5% 合格线。基线应来自相同设备、刷新率、温控状态和 workload，并配合 FrameTimeline 的 jank type、用户可见场景和业务目标判断。
 
 ### `framestats` 的列
 
-Android 17 的 [`FrameInfo.h`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/FrameInfo.h) 包含 `IntendedVsync`、`Vsync`、`InputEventId`、`HandleInputStart`、`AnimationStart`、`PerformTraversalsStart`、`DrawStart`、`FrameDeadline`、`FrameStartTime`、`FrameInterval`、`WorkloadTarget`、`SyncQueued`、`SyncStart`、`IssueDrawCommandsStart`、`SwapBuffers`、`FrameCompleted`、`GpuCompleted` 等字段。`JankTracker` 使用 120 项环形缓冲区，所以这里只保留近期帧，不代表整段测试。
+Android 17 的 [`FrameInfo.h`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/FrameInfo.h) 包含 `IntendedVsync`、`Vsync`、`InputEventId`、`HandleInputStart`、`AnimationStart`、`PerformTraversalsStart`、`DrawStart`、`FrameDeadline`、`FrameStartTime`、`FrameInterval`、`WorkloadTarget`、`SyncQueued`、`SyncStart`、`IssueDrawCommandsStart`、`SwapBuffers`、`FrameCompleted`、`GpuCompleted` 等字段。`JankTracker` 使用固定容量为 120 项的环形缓冲区，写满后会覆盖最早记录，所以这里只保留近期帧。
 
 解析时读取 `---PROFILEDATA---` 后的 header，按列名建索引。不同 Android 版本会增加字段；按固定列号解析会把后续时间戳整体错位。未填充字段还可能使用 0、负值或最大整数哨兵，计算差值前要过滤。
 
@@ -216,7 +218,7 @@ Android 17 的 [`FrameInfo.h`](https://android.googlesource.com/platform/framewo
 - `IssueDrawCommandsStart → FrameCompleted` 覆盖 RenderThread 发出绘制命令后的剩余工作。
 - `GpuCompleted` 是 GPU 完成边界可用时的时间点，和 `FrameCompleted` 口径不同。
 
-这些列能标出异常区间，方法级归因仍应回到 Perfetto 的 UI Thread、RenderThread、GPU、FrameTimeline、BufferQueue 和 fence 证据。App/HWUI、BLAST、SurfaceFlinger FrontEnd、CompositionEngine 与 HWC 要分层观察，单个 HWUI 行无法覆盖显示后半段。
+这些列能标出异常区间，方法级归因仍应回到 Perfetto 的 UI Thread、RenderThread、GPU、FrameTimeline、BufferQueue 和 fence 证据。BufferQueue 连接画面生产者与消费者；fence 是表示 GPU 或显示工作何时完成的同步对象；BLAST 用来协调 buffer 与 SurfaceControl transaction。App/HWUI、BLAST、SurfaceFlinger FrontEnd、CompositionEngine 与 HWC 要分层观察，单个 HWUI 行无法覆盖显示后半段。
 
 ## dumpsys cpuinfo：CPU 占用快速排查
 
@@ -240,6 +242,8 @@ Android 17 的 [`AppProfiler.CpuBinder`](https://android.googlesource.com/platfo
 - `minor` / `major faults` 是采样窗口内的进程 fault 增量。
 - 多线程进程能并行占用多个 CPU，进程百分比可能超过 100%。
 
+page fault（缺页异常）表示进程访问的虚拟页尚未准备好：minor fault 通常可直接从内存建立映射，major fault 通常需要等待存储读取。fault 次数本身不等于故障或崩溃。
+
 没有适用于所有后台进程的固定 5% 告警线。同步、媒体、定位、编译和空闲进程的合理基线差异很大。连续异常应由 `top` 或 Perfetto `sched` 轨道确认运行时间，再用 Simpleperf 定位函数；`TOTAL` 中 iowait/irq 异常则转向 block I/O、irq/softirq 与设备驱动证据。
 
 跨设备比较 fault 次数时要记录页大小。Android 15 至 Android 17 可运行在 16 KB page-size 设备上，同样的访问范围可能产生更少的 fault。下面的命令用于保存该实验条件。
@@ -252,7 +256,7 @@ adb shell getconf PAGESIZE
 
 ## dumpsys window：窗口层级与焦点
 
-窗口问题至少有三个观察者：ActivityTaskManager 管 Activity/Task，WindowManager 管 WindowState 与 display，InputDispatcher 管输入目标。三个焦点字段相同只是一种常见稳定状态。
+窗口问题至少有三个观察者：ActivityTaskManager 管 Activity/Task，WindowManager 管 WindowState 与 display，InputDispatcher 负责选择输入事件的接收窗口。三个焦点字段相同只是一种常见稳定状态。
 
 下面的命令按显示器保存 WMS 与 InputDispatcher 两份现场。
 
@@ -270,15 +274,15 @@ adb shell dumpsys input \
   | grep -E 'FocusedApplication|FocusedWindow'
 ```
 
-`DisplayContent.mCurrentFocus` 指向 WMS 当前聚焦的 `WindowState`；`mFocusedApp` 指向该 display 上被选中的 Activity token。通知栏、IME、系统对话框、多窗口切换和 transition 期间，两者可能来自不同组件。多屏设备还要保留 `displayId`，只 grep 一条全局结果会混淆主屏、副屏与虚拟显示。
+`DisplayContent.mCurrentFocus` 指向 WMS 当前聚焦的 `WindowState`；`mFocusedApp` 指向该 display 上被选中的 Activity token（系统用来标识 Activity 的 Binder 句柄）。通知栏、IME（输入法窗口）、系统对话框、多窗口切换和 transition（窗口状态过渡）期间，两者可能来自不同组件。多屏设备还要保留 `displayId`，只 grep 一条全局结果会混淆主屏、副屏与虚拟显示。
 
-“窗口有焦点但触摸无响应”要继续检查 InputDispatcher 的 focused window/application、对应 InputChannel、touchable region、`FLAG_NOT_TOUCHABLE`、窗口可见性和上层 overlay。WMS 中的 Z-order 与 InputDispatcher 的命中顺序也有不同过滤条件，不能仅凭一个 WindowState 排在前面就断言它会收到触摸。
+“窗口有焦点但触摸无响应”要继续检查 InputDispatcher 的 focused window/application、对应 InputChannel（事件传输通道）、touchable region（可接收触摸的区域）、`FLAG_NOT_TOUCHABLE`、窗口可见性和上层 overlay。WMS 中的 Z-order（窗口前后层级）与 InputDispatcher 的命中顺序也有不同过滤条件，不能仅凭一个 WindowState 排在前面就断言它会收到触摸。
 
-Android 17 的 dump 入口位于 [`WindowManagerService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowManagerService.java)，每个显示器的焦点状态位于 [`DisplayContent`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/DisplayContent.java)。需要跨帧分析窗口层级、transition、insets 和输入区域时，用 Winscope 录制代替反复 grep 文本快照。
+Android 17 的 dump 入口位于 [`WindowManagerService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowManagerService.java)，每个显示器的焦点状态位于 [`DisplayContent`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/DisplayContent.java)。insets 是状态栏、导航栏和 IME 等占用或覆盖的屏幕区域。需要跨帧分析窗口层级、transition、insets 和输入区域时，用 Winscope 录制代替反复 grep 文本快照。
 
 ## dumpsys batterystats：电池使用与功耗分析
 
-`batterystats` 记录 UID、组件和系统事件在一段统计窗口内的活动及估算归属。部分值来自计时器，部分值来自 power profile 或设备 power stats；它不是外接功率计读数。
+`batterystats` 记录 UID、组件和系统事件在一段统计窗口内的活动及估算归属。power profile 是设备预置的功耗系数表，power stats 是平台提供的子系统能量或活动统计；两者都可能参与估算。输出不是外接功率计的直接读数。
 
 下面的命令用于建立测试窗口、保存历史并恢复详细 history 开关。
 
@@ -310,13 +314,13 @@ Android 17 的 [`BatteryStatsService`](https://android.googlesource.com/platform
 
 ### Wakelock 与功耗归因
 
-`All partial wake locks` 给出 UID/名称维度的持有时长和次数。多个 wakelock 可以重叠，持有时长也不等于 CPU 全程运行时长；还要对齐 Battery Historian 的 `wake_lock`、`running`、JobScheduler、alarm、network、GNSS 和 screen 状态。异常名称负责定位调用方，功耗影响要由 suspend 机会、CPU 工作、radio tail 和测得能量共同确认。
+partial wakelock 会阻止设备进入 CPU suspend，但不会强制 CPU 持续忙碌。`All partial wake locks` 给出 UID/名称维度的持有时长和次数。多个 wakelock 可以重叠，持有时长也不等于 CPU 全程运行时长；还要对齐 Battery Historian 的 `wake_lock`、`running`、JobScheduler、alarm、network、GNSS（卫星定位）和 screen 状态。异常名称负责定位调用方，功耗影响要由 suspend 机会、CPU 工作、radio tail（网络传输结束后无线模块继续处于高功耗态的时间）和测得能量共同确认。
 
-[Battery Historian](https://developer.android.com/topic/performance/power/battery-historian) 已不再积极维护，适合查看 bugreport 中的系统级历史。官方当前建议优先考虑 system tracing、Macrobenchmark power metric 或 [Power Profiler](https://developer.android.com/studio/profile/power-profiler)。Power Profiler 的 ODPM power rails 是设备级数据，支持范围受机型限制，也不能自动归因到单个 App。
+[Battery Historian](https://developer.android.com/topic/performance/power/battery-historian) 已不再积极维护，适合查看 bugreport 中的系统级历史。官方当前建议优先考虑 system tracing、Macrobenchmark power metric 或 [Power Profiler](https://developer.android.com/studio/profile/power-profiler)。ODPM（On Device Power Measurement）把设备功耗按 power rail（硬件子系统供电轨）展示，不能自动归因到单个 App。官方当前列出的 Power Profiler ODPM 范围是 Android 10 及以上的 Pixel 6 和后续 Pixel 设备，具体 rail 仍随机型变化。
 
 ## dumpsys SurfaceFlinger：Layer 信息与合成状态
 
-SurfaceFlinger 的文本 dump 同时包含 FrontEnd、display、scheduler、CompositionEngine/HWC 和统计模块的信息。先选择视角，再保存原始输出。
+SurfaceFlinger 是 Android 的系统合成器，负责把多个 Layer 组合成显示输出。Layer 是应用或系统提交的一层画面；FrontEnd 计算 Layer 的状态和层级；CompositionEngine/HWC 决定并执行合成。它的文本 dump 同时包含 FrontEnd、display、scheduler 和统计模块的信息。先选择视角，再保存原始输出。
 
 下面的命令覆盖 Android 17 排查 Layer 与 present 时间的常用入口。
 
@@ -341,11 +345,11 @@ adb shell dumpsys SurfaceFlinger --frametimeline
 adb shell dumpsys SurfaceFlinger --scheduler
 ```
 
-Android 17 的 [`SurfaceFlinger::doDump()`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) 注册了这些参数。目标不存在时，`--latency` 仍可能只输出一行 pacesetter VSync period；脚本要验证后续三列是否存在。
+Android 17 的 [`SurfaceFlinger::doDump()`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) 注册了这些参数。pacesetter display 是 SurfaceFlinger 选作调度基准的显示器，VSync period 是其垂直同步周期。目标不存在时，`--latency` 仍可能只输出这一行周期；脚本要验证后续三列是否存在。
 
 ### Layer 列表与合成方式
 
-`dumpsys SurfaceFlinger` 在 Android 15 至 Android 17 上不能按早期资料理解成“默认展开每个旧 Layer 对象的全部属性”。Android 17 的默认路径调用 `dumpVisibleFrontEnd()` 生成可见的 `Composition list` 与 `Input list`，综合 dump 还会追加 display、HWC 和其他模块状态。`--frontend` 调用 `dumpFrontEnd()`，会输出全部 snapshot、主 hierarchy 与 offscreen hierarchy。
+`dumpsys SurfaceFlinger` 在 Android 15 至 Android 17 上不能按早期资料理解成“默认展开每个旧 Layer 对象的全部属性”。Android 17 的默认路径调用 `dumpVisibleFrontEnd()` 生成可见的 `Composition list` 与 `Input list`，综合 dump 还会追加 display、HWC 和其他模块状态。snapshot 是 FrontEnd 根据请求状态计算出的当前消费快照；hierarchy 是 Layer 的父子与前后层级。`--frontend` 调用 `dumpFrontEnd()`，会输出全部 snapshot、主 hierarchy 与 offscreen hierarchy。
 
 读 Layer 时先分清三个视角：
 
@@ -353,11 +357,11 @@ Android 17 的 [`SurfaceFlinger::doDump()`](https://android.googlesource.com/pla
 |------|-------------|----------------|
 | 名称列表 | `dumpsys SurfaceFlinger --list` | 当前有哪些 Layer，`--latency` 应该传哪个 layer name |
 | FrontEnd 快照 | `--frontend` 或默认输出中的 `Composition list` / `Input list` | 当前 snapshot 的可见性、层级、几何、buffer 与输入状态 |
-| HWC minidump | `--hwclayers` | 采集时刻 HWC/CompositionEngine 暴露的 layer 合成状态 |
+| HWC minidump | `--hwclayers` | 采集时刻 HWC/CompositionEngine 暴露的精简 layer 合成状态 |
 
-`RequestedLayerState` 保存客户端 transaction 合入后的请求状态，`LayerSnapshot` 是 FrontEnd 为当前状态计算出的消费快照。显示缺失时检查 Composition list、可见性、bounds、transform、crop、alpha、buffer 和 display/layer stack；输入缺失时切到 Input list 与 WindowManager/InputDispatcher。两个列表用途不同。
+SurfaceControl transaction 是一批原子提交的 Layer 状态变化。`RequestedLayerState` 保存客户端 transaction 合入后的请求状态，`LayerSnapshot` 是 FrontEnd 为当前状态计算出的消费快照。显示缺失时检查 Composition list、可见性、bounds、transform、crop、alpha、buffer 和 display/layer stack；输入缺失时切到 Input list 与 WindowManager/InputDispatcher。两个列表用途不同。
 
-HWC minidump 中的 CLIENT/DEVICE 等合成选择只代表该次采集附近的状态。overlay 资源、圆角、混合、颜色空间、受保护内容、缩放旋转、带宽和厂商策略都可能改变选择。一次 CLIENT composition 不能证明某个 App layer 长期由 GPU 合成；跨帧结论应使用 Perfetto、Winscope、HWC trace 或稳定复现实验。
+HWC minidump 中，CLIENT 通常表示 SurfaceFlinger 通过 GPU/RenderEngine 合成，DEVICE 表示交给 HWC 硬件路径处理。这些选择只代表该次采集附近的状态。overlay 资源、圆角、混合、颜色空间、受保护内容、缩放旋转、带宽和厂商策略都可能改变选择。一次 CLIENT composition 不能证明某个 App layer 长期由 GPU 合成；跨帧结论应使用 Perfetto、Winscope、HWC trace 或稳定复现实验。
 
 ### Android 15+ 的输出变化
 
@@ -379,6 +383,8 @@ FrontEnd dump 中的对象来自一条明确的数据转换链：
 | `LayerHierarchyBuilder` | [`LayerHierarchy.h`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/LayerHierarchy.h) | 建立 z-order hierarchy，并表示 mirror 等共享关系 |
 | `LayerSnapshotBuilder` | [`LayerSnapshotBuilder.h`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/LayerSnapshotBuilder.h) | 根据 hierarchy、display 与全局状态生成 snapshot |
 
+这里的 handle 是外部持有 Layer 的标识；readiness 过滤会暂缓条件未满足的 transaction；flush 会取出本轮已经可以应用的 transaction。mirror 表示一个 Layer 层级复用另一处内容。
+
 `LayerHierarchyBuilder` 的类定义就在 `LayerHierarchy.h`，源码树中没有 `LayerHierarchyBuilder.h`。写源码索引时应使用当前 tag 中存在的文件名。
 
 下面的节选用于说明 `updateLayerSnapshots()` 的锁边界，省略了 tracing、display mirror、legacy layer 与 feature-flag 分支。
@@ -398,7 +404,7 @@ applyAndCommitDisplayTransactionStatesLocked(update.transactions);
 mLayerSnapshotBuilder.update(args);
 ```
 
-事务收集、requested state 应用和 hierarchy 更新位于 `mStateLock` 之前；display transaction 提交与 `LayerSnapshotBuilder.update()` 仍在锁内。因而“FrontEnd 整条 snapshot 路径无锁”与 Android 17 实现不符。完整顺序见 [`SurfaceFlinger::updateLayerSnapshots()`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)。
+`mStateLock` 是保护 SurfaceFlinger 核心状态的互斥锁。事务收集、requested state 应用和 hierarchy 更新位于该锁之前；display transaction 提交与 `LayerSnapshotBuilder.update()` 仍在锁内。因此，“FrontEnd 整条 snapshot 路径无锁”与 Android 17 实现不符。完整顺序见 [`SurfaceFlinger::updateLayerSnapshots()`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)。
 
 `RequestedLayerState::Changes` 在该 tag 中有 22 个 bit。下面的源码形状用于核对 dump/trace 中的变化类型。
 
@@ -482,13 +488,13 @@ adb shell dumpsys alarm
 adb shell dumpsys jobscheduler
 ```
 
-- `package` 可核对安装用户、权限授予、组件、intent filter、版本和 package state。manifest 声明存在不代表组件此刻正在运行。
-- `alarm` 可核对已注册 alarm、batch、wakeup 与目标 UID。一次快照中的 alarm 数量不等于一段时间内的实际唤醒频率。
-- `jobscheduler` 可核对 pending/running job、约束和调度原因。执行耗时与历史完整度由该版本输出决定，功耗结论还要对照 batterystats 与 trace。
+- `package` 可核对安装用户、权限授予、组件、intent filter（组件接受哪些 action、data 和 category）、版本和 package state。Manifest 声明存在不表示组件此刻正在运行。
+- `alarm` 可核对已注册 alarm、batch（系统合并执行的一组 alarm）、wakeup 类型与目标 UID。一次快照中的 alarm 数量不等于一段时间内的实际唤醒频率。
+- `jobscheduler` 可核对 pending/running job、约束和调度原因。约束包括充电、网络、空闲等执行前提；执行耗时与历史完整度由该版本输出决定，功耗结论还要对照 batterystats 与 trace。
 
 ### 自定义 Service 的 dump 接口
 
-普通应用 Service 不会自动注册成 ServiceManager 顶层服务，不能直接假设存在 `dumpsys <service_name>`。应用可重写 `Service.dump()`，由 ActivityManager 的 client dump 路径调用；平台 Binder 服务则在有权限注册到 ServiceManager 后直接响应 `dumpsys`。
+普通应用 Service 是由 ActivityManager 管理的应用组件，不会自动成为 ServiceManager 中可按名字直接查询的顶层 Binder 服务，因此不能假设存在 `dumpsys <service_name>`。应用可重写 `Service.dump()`，由 ActivityManager 的 client dump 路径调用；平台 Binder 服务在有权限注册到 ServiceManager 后，可以直接响应 `dumpsys`。
 
 下面的 Java 示例用于给一个已经运行的应用 Service 暴露有限状态。
 
@@ -509,7 +515,7 @@ public final class SyncService extends Service {
 }
 ```
 
-下面的命令中，`-c` 必须写在 `service` 子项之前，它让 ActivityManager 进入应用进程调用 `Service.dump()`。
+下面命令中的 `-c` 表示同时请求 client dump。它必须写在 `service` 子项之前，让 ActivityManager 进入应用进程调用 `Service.dump()`。
 
 ```bash
 adb shell dumpsys activity -c service \
@@ -518,7 +524,7 @@ adb shell dumpsys activity -c service \
 
 Android 17 的 [`ActiveServices.ServiceDumper.dumpWithClient()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java) 通过 `IApplicationThread.dumpService()` 把请求送到应用主线程，`ActivityThread` 再调用 Service 实例。Service 未运行、主线程阻塞或组件过滤不匹配时，客户端内容不会出现。
 
-dump 实现应先复制少量状态，再释放业务锁并格式化输出。不要在回调中等待网络、扫描大目录、打印 token/帐号/用户内容，或持有核心锁执行长时间 I/O。面向自动化的字段要有版本号、明确单位和稳定键名；平台服务可按 `PriorityDumper` 或 proto 提供机器读取入口。
+dump 实现应先复制少量状态，再释放业务锁并格式化输出。不要在回调中等待网络、扫描大目录、打印认证 token、帐号或用户内容，也不要持有核心锁执行长时间 I/O。面向自动化的字段要有版本号、明确单位和稳定键名；平台服务可用 `PriorityDumper` 按 CRITICAL/HIGH/NORMAL 拆分输出，或用 proto 提供机器读取入口。
 
 ## 取证时常犯的错误
 

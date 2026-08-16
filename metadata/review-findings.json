@@ -1754,6 +1754,9 @@
     },
     {
       "chapter": "src/part1-fundamentals/ch04-memory/07-art-generational-gc.md",
+      "close_note": "Rework refreshed source verification date to 2026-08-12 after rechecking Android 17 / android-17.0.0_r1 ART GC, GKI UFFD, official Android/ART docs, Perfetto GC/heap docs, and graphics memory docs; chapter returned to ready-for-review with Task6/Task9 pending review.",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20260812-133503-rework-3aeaea29",
       "created_at": "2026-08-12T02:00:32.165961+08:00",
       "created_by": "hermes-aiw-weekly-source-audit",
       "created_run_id": "freshness-2026-08-12",
@@ -1764,13 +1767,16 @@
       "source_paths": [
         "src/part1-fundamentals/ch04-memory/07-art-generational-gc.md"
       ],
-      "status": "open",
+      "status": "verified",
       "summary": "last source verification 2026-04-12 older than 90 days",
       "type": "stale-source-verification",
-      "updated_at": "2026-08-12T02:00:32.165961+08:00"
+      "updated_at": "2026-08-12T13:45:04.217032+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
+      "close_note": "Rework refreshed stale source verification for 5.3 against Android 17 / API 37 android-17.0.0_r1, Android common kernel android17-6.18-2026-06_r6 scheduler docs/source, AOSP task_profiles, Perfetto CPU scheduling/frequency docs/source, and retained Arm docs only as background; frontmatter returned to ready-for-review for Task6/Task9.",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20260812-173533-rework-5b334e2d",
       "created_at": "2026-08-12T02:00:32.165961+08:00",
       "created_by": "hermes-aiw-weekly-source-audit",
       "created_run_id": "freshness-2026-08-12",
@@ -1781,10 +1787,10 @@
       "source_paths": [
         "src/part1-fundamentals/ch05-cpu-power/03-big-little.md"
       ],
-      "status": "open",
+      "status": "verified",
       "summary": "last source verification 2026-04-29 older than 90 days",
       "type": "stale-source-verification",
-      "updated_at": "2026-08-12T02:00:32.165961+08:00"
+      "updated_at": "2026-08-12T17:43:08.926259+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
@@ -1904,6 +1910,101 @@
       "summary": "last source verification 2026-04-20 older than 90 days",
       "type": "stale-source-verification",
       "updated_at": "2026-08-12T02:00:32.165961+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/34-oomadjuster-process-priority-performance.md",
+      "close_note": "Section 7 now states that due follow-up targets enter pending updates and that mFollowUpOomadjUpdateWaitDuration coalesces close timeout points before scheduling.",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260812-123555-deep-review-0e71bb6d",
+      "created_at": "2026-08-12T12:54:17.223150+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260812-123555-deep-review-0e71bb6d",
+      "details": "Section 7 described follow-up expiry as handler-to-pending-to-partial update but did not mention scheduleFollowUpOomAdjusterUpdateLocked coalesces close expiries through mFollowUpOomadjUpdateWaitDuration, which could make readers expect an exact immediate per-process recalculation.",
+      "id": "AIW-1.34-FOLLOWUP-COALESCING-20260812",
+      "log_path": "logs/deep-review/2026-08-12-20260812-123555-deep-review-0e71bb6d-deep-review.md",
+      "severity": "P3",
+      "source_paths": [
+        "frameworks/base/services/core/java/com/android/server/am/psc/OomAdjuster.java lines 1139-1170, 2907-2922 (android-17.0.0_r1)"
+      ],
+      "status": "fixed",
+      "summary": "follow-up OOM adj timing omitted minimum-delay coalescing",
+      "type": "precision",
+      "updated_at": "2026-08-12T12:54:17.276319+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch18-rendering-pipelines/22-advanced-professional-video-apv.md",
+      "close_note": "Decoder output paragraph now distinguishes the default YCBCR_420_888/YV12 path, explicit supported P210/P010/RGBA1010102 requests, and the implementation-defined or unavailable-format fallback ladder tied to C2SoftApvDec.cpp.",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260812-163526-deep-review-627bfda7",
+      "created_at": "2026-08-12T16:57:58.546208+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260812-163526-deep-review-627bfda7",
+      "details": "The chapter said the AOSP APV software decoder prefers requested output and falls back from P210 to P010/RGBA1010102/YV12, but android-17.0.0_r1 C2SoftApvDec.cpp keeps the default HAL_PIXEL_FORMAT_YCBCR_420_888 buffer path at YV12 and only enters the P210/P010/RGBA1010102 fallback ladder for non-420_888 requested formats such as implementation-defined Surface output.",
+      "id": "AIW-18.22-APV-DECODER-OUTPUT-FALLBACK-20260812",
+      "log_path": "logs/deep-review/2026-08-12-20260812-163526-deep-review-627bfda7-deep-review.md",
+      "severity": "P3",
+      "source_paths": [
+        "frameworks/av/media/codec2/components/apv/C2SoftApvDec.cpp lines 282-303, 1295-1314, 1385-1454 (android-17.0.0_r1)"
+      ],
+      "status": "fixed",
+      "summary": "APV soft decoder output fallback omitted default YV12 buffer path",
+      "type": "precision",
+      "updated_at": "2026-08-12T16:58:49.261213+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/37-logd-logging-system-performance.md",
+      "close_note": "Frontmatter sources now include both cited official documents; body already preserved their warning/version boundaries.",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260812-203556-deep-review-6030a13a",
+      "created_at": "2026-08-12T21:02:10.094767+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260812-203556-deep-review-6030a13a",
+      "details": "Section 5.2 cites R8 Additional rule types for -maximumremovedandroidloglevel and assumption warnings; section 5.4 cites Log Info Disclosure for READ_LOGS and production log removal guidance. Frontmatter sources only listed AOSP/liblog/JNI plus NDK logging, so source coverage metadata did not include all reader-visible official sources.",
+      "id": "AIW-1.37-LOGD-OFFICIAL-SOURCE-METADATA-20260812",
+      "log_path": "logs/deep-review/2026-08-12-20260812-203556-deep-review-6030a13a-deep-review.md",
+      "severity": "P3",
+      "source_paths": [
+        "developer.android.com/topic/performance/app-optimization/additional-rule-types",
+        "developer.android.com/privacy-and-security/risks/log-info-disclosure"
+      ],
+      "status": "fixed",
+      "summary": "logd chapter frontmatter sources omitted official R8 and Log Info Disclosure docs cited in reader-visible prose",
+      "type": "source-metadata",
+      "updated_at": "2026-08-12T21:02:10.142715+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch09-anr/04-special-anr.md",
+      "created_at": "2026-08-14T02:00:14.023322+08:00",
+      "created_by": "hermes-aiw-weekly-source-audit",
+      "created_run_id": "freshness-2026-08-14",
+      "details": "last source verification 2026-04-27 older than 90 days\nEvidence: 2026-04-27",
+      "id": "AIW-FRESH-19c4d3320e9ab657",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-08-14-时效性巡检.md",
+      "severity": "P2",
+      "source_paths": [
+        "src/part2-performance/ch09-anr/04-special-anr.md"
+      ],
+      "status": "open",
+      "summary": "last source verification 2026-04-27 older than 90 days",
+      "type": "stale-source-verification",
+      "updated_at": "2026-08-14T02:00:14.023322+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch18-rendering-pipelines/22-advanced-professional-video-apv.md",
+      "created_at": "2026-08-14T02:00:14.023322+08:00",
+      "created_by": "hermes-aiw-weekly-source-audit",
+      "created_run_id": "freshness-2026-08-14",
+      "details": "affirmative higher-than-Android-17 out-of-scope claim\nEvidence: 能说明](https://developer.android.com/about/versions/16/features#apv)：APV 定位、标准特征与 Android 422-10 实现范围。",
+      "id": "AIW-FRESH-ecc5e6cbeab1e705",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-08-14-时效性巡检.md",
+      "severity": "P1",
+      "source_paths": [
+        "src/part2-performance/ch18-rendering-pipelines/22-advanced-professional-video-apv.md"
+      ],
+      "status": "open",
+      "summary": "affirmative higher-than-Android-17 out-of-scope claim",
+      "type": "above-android17-affirmative-claim",
+      "updated_at": "2026-08-14T02:00:14.023322+08:00"
     }
   ],
   "schema_version": 1

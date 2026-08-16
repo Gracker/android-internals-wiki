@@ -5,8 +5,8 @@ section: "13.3"
 section_title: "Perfetto View 解读"
 status: finalized
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
-last_verified: "2026-07-31"
-last_verified_against: "AOSP android-17.0.0_r1（external/perfetto ece66975738007dd0978b911d8a2077e49b8f31e、frameworks/native ae266dcb706d083868578cfedce381ef44488a07）+ android17-6.18-2026-06_r6 + 2026-07-31 Perfetto/Android 官方文档"
+last_verified: "2026-08-13"
+last_verified_against: "AOSP android-17.0.0_r1（external/perfetto ece66975738007dd0978b911d8a2077e49b8f31e、frameworks/native ae266dcb706d083868578cfedce381ef44488a07）+ android17-6.18-2026-06_r6 + Perfetto UI/Trace Processor v57.2 + 2026-08-13 Perfetto/Android 官方文档"
 confidence: high
 sources:
   - type: internal-reference
@@ -53,7 +53,7 @@ sources:
     role: "Android Studio System Trace 的系统级视图"
   - type: upstream
     path: "https://github.com/google/perfetto/blob/main/ui/src/components/colorizer.ts"
-    role: "2026-07-31 当前 UI 的线程状态配色实现"
+    role: "上游 UI 配色实现入口；具体颜色不作为稳定分析接口"
   - type: aosp
     path: "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/types/task_state.cc"
     role: "Android 17 Trace Processor 的内核 task state 解码"
@@ -98,18 +98,18 @@ task2b_state: fixed
 
 ## 读图顺序比轨道数量更重要
 
-Perfetto UI 把多个数据源放在同一时间轴上。它不会为缺失的调度事件、FrameTimeline、Binder 或应用标记补数据，也不会替分析者决定因果关系。读图时要把“轨道上发生了什么”和“为什么发生”分开。
+Perfetto UI 把多个 data source 的事件放在同一时间轴上；data source 是产生某类 trace 数据的采集组件。UI 无法补回缺失的调度事件、FrameTimeline、Binder 或应用标记，也不会自动给出因果关系。读图时要把“轨道上发生了什么”和“为什么发生”分开。
 
 一轮可靠分析按下面的顺序推进：
 
-1. 在 Info / Stats 中确认 trace 时间范围、目标进程和数据完整性。
-2. 圈出复现动作对应的时间窗，不在整份 trace 里漫游。
-3. 用 FrameTimeline、启动标记、ANR、输入事件或业务 Slice 锁定异常事件。
+1. 在 Info/Stats 中确认 trace 时间范围、目标进程和数据完整性；Stats 会列出解析错误和丢包等诊断信息。
+2. 用 Area Selection 圈出复现动作对应的时间窗，避免在整份 trace 里无目标地浏览。
+3. 用 FrameTimeline、启动标记、ANR、输入事件或业务 Slice 确定异常事件。
 4. 回到相关线程，区分 Running、Runnable、Sleeping 和 Uninterruptible Sleep。
 5. 沿 Binder、Flow、waker 或帧 token 检查跨线程、跨进程和显示下游。
 6. 需要批量比较时，把 UI 观察写成 PerfettoSQL。
 
-平台结论固定到 Android 17 / API 37 / `android-17.0.0_r1`，内核状态固定到 `android17-6.18-2026-06_r6`。`ui.perfetto.dev` 和主机 Trace Processor 独立更新，界面文字、命令和轨道布局以 2026-07-31 的官方文档为准。
+平台结论固定到 Android 17 / API 37 / `android-17.0.0_r1`，内核状态固定到 `android17-6.18-2026-06_r6`。`ui.perfetto.dev` 和主机 Trace Processor 独立更新；本文的界面文字、命令和轨道布局按 2026-08-13 的稳定版 v57.2 与官方文档复核。
 
 ## 打开并整理 Trace
 
@@ -117,7 +117,7 @@ Perfetto UI 把多个数据源放在同一时间轴上。它不会为缺失的�
 
 [Perfetto UI](https://ui.perfetto.dev/) 可以通过侧边栏的 “Open trace file” 或拖放加载本地 trace。一次选择多个文件时，当前 UI 会进入合并配置流程，把它们放到共享时间轴；合并前要确认各文件的时钟来源和对齐依据。
 
-浏览器能否顺利处理大文件取决于 trace 内容、主机内存、浏览器限制和查询复杂度，不能用一个固定体积判断。加载或交互开始受限时，使用本机 `trace_processor server http <trace>` 作为 UI 后端，或直接用 `trace_processor_shell` 查询，具体流程见 §13.4。把二进制 trace 全量转成文本通常会扩大体积，也会失去 UI 的索引优势，不适合作为大文件的默认方案。
+浏览器能否顺利处理大文件取决于 trace 内容、主机内存、浏览器限制和查询复杂度，不能用一个固定体积判断。加载或交互开始受限时，可以运行 `./trace_processor server http <trace>`，让本机原生 Trace Processor 作为 UI 后端；也可以直接用 `trace_processor_shell` 查询，具体流程见 §13.4。把二进制 trace 全量转成文本通常会扩大体积，也会失去 UI 的索引优势，不适合作为大文件的默认方案。
 
 ### 时间轴、选择与详情抽屉
 
@@ -128,35 +128,35 @@ Perfetto UI 把多个数据源放在同一时间轴上。它不会为缺失的�
 | 缩放与平移 | `W` / `S`、`A` / `D`；也可用 `Ctrl` + 滚轮和 `Shift` + 拖动 | 改变可见时间窗 |
 | 聚焦事件 | 选中事件后按 `F`；再按一次 `F` | 居中，再把事件适配到视口 |
 | 相邻事件 | `,` / `.` | 在同一轨道切换前一个或后一个事件 |
-| 时间选区 | 在时间轴或轨道区域拖动 | 创建带起止时间和轨道集合的 Area Selection |
+| 时间选区 | 在时间轴或轨道区域拖动 | 创建 Area Selection，其中包含起止时间和被选轨道集合 |
 | 事件转选区 | 选中事件后按 `R` | 用事件边界创建 Area Selection |
-| 详情抽屉 | `Q` | 显示或隐藏 Tab Drawer |
+| 详情抽屉 | `Q` | 显示或隐藏 Tab Drawer（选中事件、查询结果等详情所在的底部面板） |
 | 命令面板 | `Ctrl+Shift+P`；macOS 用 `Cmd+Shift+P` | 搜索并执行 UI 命令 |
 | 当前快捷键 | `?` | 查看该 UI 构建实际注册的快捷键 |
 
-Area Selection 不只有起止时间，还包含所选轨道。修改轨道外壳上的勾选项会改变统计范围；分享截图或结论时，应把选区边界和轨道集合一起说明。
+Area Selection 不只有起止时间，还包含所选轨道。修改 track shell（轨道左侧的名称和控制区域）上的勾选项会改变统计范围；分享截图或结论时，应把选区边界和轨道集合一起说明。
 
 ### 找轨道、过滤和 Pin
 
 长 trace 的效率来自减少同时可见的轨道：
 
-- Track Finder 按名称查找轨道。
+- Track Finder 按名称模糊查找轨道。
 - Timeline 工具栏的过滤器可按轨道名、进程或线程缩小显示范围；清除过滤后数据仍在。
 - 轨道外壳的 Pin 按钮把轨道移到工作区顶部。
 
 分析一帧时，常用组合是 App 主线程、RenderThread、FrameTimeline、`surfaceflinger` 主线程和相关 CPU。分析同步 Binder 时，把客户端线程与服务端 Binder 线程一起 Pin。Pin 只改变显示位置，不改变数据或时间对齐。
 
-Omnibox 输入 `:` 可以进入 SQL 模式。查询结果包含 `ts` 与 `dur` 时，可以生成 Debug Slice Track；包含 `ts` 与 `value` 时，可以生成 Debug Counter Track。复杂查询留到 §13.9，这里只把它当作“把筛选结果放回时间轴”的入口。
+Omnibox 是页面顶部的统一搜索和命令输入框，输入 `:` 可以进入 SQL 模式。结果能否生成 Debug Track 取决于列的语义：Slice Track 至少要选择名称、非空时间戳和 duration 列，Counter Track 至少要选择时间戳和数值列；列名可以在创建界面中映射，不必固定写成 `name`、`ts`、`dur` 或 `value`。复杂查询留到 §13.9，这里把它作为“将查询结果放回时间轴”的入口。
 
 ## 轨道描述的是哪一层
 
 ### CPU Scheduling、Frequency 与 Idle
 
-CPU Scheduling 轨道来自内核调度事件。每个 Slice 表示某个线程在一颗 CPU 上运行的区间；详情中的 `priority`、`end_state` 和线程身份可以解释这次运行如何结束。它回答“哪条线程在何时占用哪颗 CPU”，不回答线程执行了哪一行代码。代码热点还需要应用 Slice、采样调用栈或方法跟踪。
+CPU Scheduling 轨道来自内核调度事件。每个 Slice 表示某个线程在一颗 CPU 上运行的区间；详情中的 `priority`、线程身份和 `end_state` 可以帮助解释这次运行如何结束，其中 `end_state` 是线程被切出 CPU 后进入的调度状态。该轨道回答“哪条线程在何时占用哪颗 CPU”，不回答线程执行了哪一行代码。代码热点还需要应用 Slice、采样调用栈或方法跟踪。
 
-CPU Frequency 轨道来自设备提供的频率事件。它能显示记录到的频率变化，但频率值不能单独证明某段代码变慢：CPU 微架构、容量、热限制、空闲状态、调度放置和内存等待都会影响完成时间。判断迁核是否有害也要结合 Runnable 延迟、各 CPU 的并发负载和设备拓扑，不能要求主线程一直固定在某颗“大核”。
+CPU Frequency 轨道来自设备提供的频率事件。它能显示记录到的频率变化，但频率值不能单独证明某段代码变慢：CPU 微架构、单核处理能力、热限制、空闲状态、调度放置和内存等待都会影响完成时间。判断线程迁移到另一颗 CPU 是否有害，还要结合 Runnable 延迟、各 CPU 的并发负载和设备拓扑，不能要求主线程始终固定在某颗“大核”。
 
-CPU Idle 轨道描述 CPU 的空闲状态。线程处于 Sleeping 或 D 状态时，本来就没有资格运行；此时看到部分 CPU idle 并不构成调度异常。只有线程已 Runnable、满足 affinity/cpuset 等约束，却长期没有进入 Running，才需要继续检查优先级、CPU 可用集合、系统负载和调度策略。
+CPU Idle 轨道描述 CPU 的空闲状态。线程处于 Sleeping 或 D 状态时，本来就没有资格运行；此时看到部分 CPU idle 并不构成调度异常。只有线程已 Runnable，并且在 affinity（线程允许运行的 CPU 集合）和 cpuset（系统为一组任务限定的 CPU 集合）等约束下有可用 CPU，却长期没有进入 Running，才需要继续检查优先级、系统负载和调度策略。
 
 ### 进程、线程、Slice 与线程状态
 
@@ -165,13 +165,13 @@ CPU Idle 轨道描述 CPU 的空闲状态。线程处于 Sleeping 或 D 状态�
 - **Slice**：应用或平台标记的命名区间，例如 `Choreographer#doFrame`、`performTraversals`、`DrawFrame`。Slice 说明某个逻辑区间尚未结束，不保证线程全程占用 CPU。
 - **Thread State**：Trace Processor 根据 `sched_switch`、`sched_waking` 等事件重建的调度状态。它说明线程在 CPU 上运行、等待 CPU，或等待某个唤醒条件。
 
-App 主线程负责 Looper 消息、输入分发、生命周期和 View/Compose 工作；`Choreographer#doFrame` 是传统 View/HWUI 帧的重要入口。RenderThread 负责 HWUI 渲染工作的记录、准备与图形提交，其中可能包含 CPU 执行、GPU 工作排队和 fence 等待。名称相同的 Slice 在不同 Android 版本、渲染后端和厂商实现中可能覆盖不同子阶段，要结合子 Slice 与源码核对。
+App 主线程负责 Looper 消息、输入分发、生命周期和 View/Compose 工作；`Choreographer#doFrame` 是传统 View/HWUI 帧的重要入口。RenderThread 负责 HWUI 渲染工作的记录、准备与图形提交，其中可能包含 CPU 执行、GPU 工作排队和 fence（表示前序图形工作何时完成的同步对象）等待。名称相同的 Slice 在不同 Android 版本、渲染后端和厂商实现中可能覆盖不同子阶段，要结合子 Slice 与源码核对。
 
 Binder 线程名能帮助定位服务端执行线程，但 Binder transaction 本身不保证包含 Java 方法名。方法名是否可见取决于平台或业务是否在服务端路径添加了 ATrace / Track Event 标记。
 
 ### Counter Track
 
-Counter 表示某个数值随时间变化，例如频率、RSS、堆大小、BufferQueue 积压量或自定义队列深度。Counter 的来源和单位由数据源决定，图形上升不自动等于泄漏或性能退化。
+Counter 由一组“时间戳 + 数值”样本组成，例如频率、RSS（进程驻留在物理内存中的页量）、堆大小、BufferQueue 积压量或自定义队列深度。UI 会把离散样本画成折线或阶梯图；Counter 的来源、单位和采样间隔由数据源决定，图形上升不能直接证明泄漏或性能退化。
 
 内存 Counter 持续上升时，要区分采样区间、GC、缓存上限、映射文件、共享内存和进程生命周期。GPU Counter 是否存在、含义是什么，也受 GPU 数据源和厂商支持限制。报告中应记录 Counter 名称、单位、数据源和比较窗口。
 
@@ -183,9 +183,9 @@ Counter 表示某个数值随时间变化，例如频率、RSS、堆大小、Buf
 
 ### Thread Duration / CPU 时间
 
-`slice.thread_dur` 是 Slice 消耗的线程时间，只有 Track Event 开启线程时间采集时才会填充。Android ATrace 产生的普通 Slice 往往没有这个字段。UI 未显示 Thread Duration 时，不能把缺失值当作 0。
+`slice.thread_dur` 是 Slice 消耗的线程时间，只有 Track Event 开启线程时间采集时才会填充。Android ATrace 产生的普通 Slice 往往没有这个字段。UI 未显示 Thread Duration 时，缺失值表示没有这份数据，不能按 0 处理。
 
-需要计算某个线程 Slice 内的 on-CPU 时间时，应将该 Slice 的 `[ts, ts + dur)` 与 `thread_state.state = 'Running'` 求交。只有调度数据覆盖完整时，墙上时间才能按 Running、Runnable、Sleeping、D 等互斥状态分解；trace 边界、丢包和未知区间必须单列。
+需要计算某个线程 Slice 内的 on-CPU 时间时，应将该 Slice 的半开区间 `[ts, ts + dur)` 与 `thread_state.state = 'Running'` 求交；半开表示包含起点、不包含终点。只有调度数据覆盖完整时，墙上时间才能按 Running、Runnable、Sleeping、D 等互斥状态分解；trace 边界、丢包和未知区间必须单列。
 
 ### Self Duration
 
@@ -222,10 +222,10 @@ Android 17 Trace Processor 按内核 `prev_state` 解码调度状态；`android1
 | `Running` | 线程正在某颗 CPU 上运行 | 该区间获得了 CPU | 执行哪段代码、是否受缓存或内存延迟影响 |
 | `R` / Runnable | 已具备运行资格，等待调度 | 该区间没有获得 CPU | 是负载、优先级、affinity、cpuset 还是调度策略 |
 | `R+` | Runnable，并由抢占结束上一段运行 | 线程被抢占后等待 | 抢占者、优先级和 CPU 负载 |
-| `S` / Sleeping | 可中断睡眠，等待显式唤醒 | 线程不在运行队列 | Binder、futex、条件变量、定时器或其他等待对象 |
+| `S` / Sleeping | 可中断睡眠，等待显式唤醒 | 线程不在运行队列 | Binder、futex（用户态锁进入内核等待时使用的机制）、条件变量、定时器或其他等待对象 |
 | `D` / Uninterruptible Sleep | 不可中断睡眠 | 线程等待内核条件 | 是否为 I/O、具体 `blocked_function`、设备驱动或内存回收 |
 
-2026-07-31 的 Perfetto UI `colorForState()` 用深绿表示 Running、亮绿表示 Runnable。Sleeping / Idle 使用透明白，会随亮色或暗色背景呈现为低对比度色块；一般 D 状态使用橙色，能够识别为 non-I/O 的 D 状态使用低饱和红色。配色不能替代详情字段。FrameTimeline 的绿、浅绿、红、黄、蓝属于另一套帧结果编码，也不能套用到线程状态。
+当前稳定版 UI 通常用不同深浅的绿色区分 Running 与 Runnable，Sleeping/Idle 显示为低对比度色块，D 状态则使用暖色。具体色值会随主题和 UI 实现变化，不属于稳定的数据接口。FrameTimeline 的绿、浅绿、红、黄、蓝是另一套帧结果编码，也不能套用到线程状态。分析结论应记录状态值和详情字段。
 
 ### D 状态不等于磁盘 I/O
 
@@ -235,7 +235,7 @@ Android 17 Trace Processor 按内核 `prev_state` 解码调度状态；`android1
 
 ### 红色锁竞争标记不是调度状态
 
-`Lock contention on a monitor lock` 等红色 Slice 来自 ART / 平台锁竞争埋点。等待线程的内核状态在同一时间窗内通常是 Sleeping，也可能随实现变化。红色表示已得到更具体的锁证据，不是 Linux `thread_state` 新增了一个 Blocked 状态。
+`Lock contention on a monitor lock` 等红色 Slice 来自 ART/平台锁竞争埋点；monitor lock 是 Java 对象监视器对应的互斥锁。等待线程的内核状态在同一时间窗内通常是 Sleeping，也可能随实现变化。红色表示 trace 提供了更具体的锁证据，不是 Linux `thread_state` 新增了一个 Blocked 状态。
 
 详情面板若提供 owner、blocking thread 或关联跳转，应切到持锁线程检查：
 
@@ -244,26 +244,26 @@ Android 17 Trace Processor 按内核 `prev_state` 解码调度状态；`android1
 3. 锁持有区间是否覆盖昂贵操作。
 4. 这段等待是否位于当前帧、启动或 ANR 的时间窗内。
 
-红色 Slice 本身不能证明优先级反转。优先级反转还需要等待者、持锁者、抢占者及其优先级和调度状态形成闭合证据。
+红色 Slice 本身不能证明优先级反转。优先级反转是高优先级线程等待低优先级持锁线程，而持锁线程又被其他工作延迟的情况；还要同时确认等待者、持锁者、抢占者及其优先级和调度状态。
 
 ### Waker 的使用边界
 
-采集 `sched_waking` 或相关 wakeup 事件后，线程状态详情可以关联 waker。waker 说明哪个线程触发了状态转换，不保证它是业务事件源，也不保证被唤醒线程立刻获得 CPU。wakeup 到 Running 之间的区间才是调度等待。
+采集 `sched_waking` 或相关 wakeup 事件后，线程状态详情可以关联 waker，也就是发起本次唤醒的线程。waker 不一定是最初的业务事件源，被唤醒线程也不会因此立刻获得 CPU。从 wakeup 到 Running 的区间才是本次唤醒后的调度等待时间。
 
-跨 CPU 唤醒时，`sched_waking` 记录在发起唤醒的一侧，`sched_wakeup` 的记录位置受唤醒路径影响。普通延迟分析优先保证 `sched_waking` 存在；要区分 IPI 和调度器唤醒路径的各段耗时时，再同时检查更底层事件。
+跨 CPU 唤醒时，`sched_waking` 记录在发起唤醒的一侧，`sched_wakeup` 的记录位置受唤醒路径影响。普通延迟分析优先保证 `sched_waking` 存在；若要区分 IPI（Inter-Processor Interrupt，CPU 核之间发送的中断）和调度器唤醒路径的各段耗时，再同时检查更底层事件。
 
 ## Flow Events 与跨进程关联
 
-Flow 把不同轨道上的相关事件连接起来。选中带 Flow 的事件后，UI 会突出相关箭头；未选中时可能为了可读性减少显示。箭头表达“trace 数据声明两者相关”，不自动证明同步阻塞或单一因果。
+Flow 是 trace 显式记录的跨 track 关联关系，用箭头连接不同轨道上的相关事件。选中带 Flow 的事件后，UI 会突出相关箭头；未选中时可能为了可读性减少显示。箭头只表达“trace 数据声明两者相关”，不能自动证明同步阻塞或单一因果。
 
 ### Binder transaction
 
-Binder 分析依赖相应的驱动 tracepoint 和 Trace Processor 解析。同步调用通常可以关联客户端 transaction、服务端 transaction 和 reply；oneway 调用没有同步 reply，客户端也不等待服务端完成。嵌套 Binder、回调和线程池排队会让路径分叉，不能把第一条箭头当成完整调用树。
+Binder 分析依赖相应的驱动 tracepoint 和 Trace Processor 解析。同步调用通常可以关联客户端 transaction、服务端 transaction 和 reply；oneway 是单向异步调用，没有同步 reply，客户端也不等待服务端完成。嵌套 Binder、回调和线程池排队会让路径分叉，第一条箭头不能代表完整调用树。
 
 读一个同步 Binder 调用时，依次检查：
 
 1. 客户端 transaction Slice 的墙上时长和线程状态。
-2. 服务端 Binder 线程何时开始处理，开始前是否存在排队空窗。
+2. 服务端 Binder 线程何时开始处理，transaction 到开始执行之间是否存在排队时间。
 3. 服务端 Slice 内是 Running、锁等待、D 状态还是再次发起 Binder。
 4. reply 何时返回，客户端从唤醒到 Running 又等了多久。
 
@@ -271,21 +271,21 @@ Android 17 的 `stdlib/android/binder.sql` 会把 Binder transaction 与 reply�
 
 ### FrameTimeline Flow
 
-选中 App 的 Actual Timeline Slice 时，Perfetto 可以通过 surface frame token 关联对应的 SurfaceFlinger display frame；选中 display frame 时，也可以显示这次合成包含的多个应用 frame。这个 Flow 表达帧的消费关系，比仅按时间重叠匹配可靠。
+选中 App 的 Actual Timeline Slice 时，Perfetto 可以通过 surface frame token（标识应用提交帧的关联键）找到对应的 SurfaceFlinger display frame；选中 display frame 时，也可以显示这次合成包含的多个应用 frame。这个 Flow 表达帧的消费关系，比只按时间重叠匹配更可靠。
 
-Flow 不等于 BufferQueue frame number，也不替代 acquire、present 和 release fence。SurfaceView 等独立 Surface 路径还受 FrameTimeline 覆盖范围限制，具体边界见 §13.19 和 §15。
+Flow 与 BufferQueue frame number 是不同的标识，也不能替代 acquire、present 和 release fence 提供的同步证据。SurfaceView 等独立 Surface 路径还受 FrameTimeline 覆盖范围限制，具体边界见 §13.19 和 §15。
 
 ## FrameTimeline：从异常帧进入
 
 FrameTimeline 从 Android 12 / API 31 起可用。Android 9-11 没有 Expected / Actual 主轨道，应从 `Choreographer#doFrame`、RenderThread、调度事件和 SurfaceFlinger 时间窗建立关联。
 
-Expected Timeline 表示调度器给这一帧的预计窗口。App Actual Timeline 从 `Choreographer#doFrame` 或 NDK Choreographer 回调开始，结束点取 GPU 完成与 post 到 SurfaceFlinger 两者中较晚者。SurfaceFlinger Actual Timeline 覆盖合成到屏幕更新的结果。Actual Slice 的 `dur` 不是主线程 CPU 时间，也不是所有显示路径的端到端延迟。
+Expected Timeline 表示调度器为这一帧安排的预计时间窗。App Actual Timeline 从 `Choreographer#doFrame` 或 NDK Choreographer 回调开始，结束点取 GPU 完成时间与帧提交给 SurfaceFlinger 的 post time 两者中较晚者。SurfaceFlinger Actual Timeline 覆盖合成到屏幕更新的结果。Actual Slice 的 `dur` 是这套 FrameTimeline 定义下的墙上区间，不代表主线程 CPU 时间，也不能概括所有显示路径的端到端延迟。
 
 选中 Actual Slice 后，按下面的字段读：
 
 - `Present Type`：Early、On-time 或 Late。
-- `On time finish`：生产者是否按预计 deadline 完成工作。
-- `Jank Type`：平台分类，可包含 App、SurfaceFlinger、Display HAL、预测和调度原因。
+- `On time finish`：生产者是否在预计 deadline 前完成工作。
+- `Jank Type`：平台分类，可包含 App、SurfaceFlinger、Display HAL（显示硬件抽象接口）、预测和调度原因。
 - `Prediction Type`：预测是否有效或已经过期。
 - `GPU Composition`：该帧是否使用 GPU 合成。
 - `Layer Name`：区分同一进程更新的不同 Surface。
@@ -303,13 +303,13 @@ Expected Timeline 表示调度器给这一帧的预计窗口。App Actual Timeli
 | 黄色 | App 帧发生 jank，但归因在 SurfaceFlinger |
 | 蓝色 | Dropped frame |
 
-颜色负责找候选帧，报告应记录 `present_type`、`on_time_finish`、`jank_type`、layer 和 token。Android 17 `FrameTimeline.cpp` 把 `BufferStuffing`、`SurfaceFlingerStuffing` 等状态与 deadline jank 分开计算，不能把所有非绿色帧合并成“App Deadline Missed”。
+颜色用于寻找候选帧，报告应记录 `present_type`、`on_time_finish`、`jank_type`、layer 和 token。`BufferStuffing` 表示应用在旧 buffer 尚未呈现时持续提交新 buffer，导致队列积压并增加延迟。Android 17 `FrameTimeline.cpp` 把它、`SurfaceFlingerStuffing` 等状态与 deadline jank 分开计算，不能把所有非绿色帧合并成“App Deadline Missed”。
 
 官方文档仍提示 SurfaceView 不在 FrameTimeline 的完整支持范围内。Camera、视频、游戏和跨进程嵌入常有独立 Producer / Surface / layer，宿主窗口的帧 token 不能代替这些路径的逐帧证据。
 
 ## Android 17 SurfaceFlinger 轨道
 
-Android 17 的主循环由 `Scheduler::onFrameSignal()` 组织。`Scheduler.cpp` 在同一帧信号中调用 `compositor.commit()`，满足合成条件后调用 `compositor.composite()`；对应实现落在 `SurfaceFlinger::commit()` 和 `SurfaceFlinger::composite()`。显示输出阶段继续进入 CompositionEngine `Output::present()` 与 `presentFrameAndReleaseLayers()`。
+Android 17 的主循环由 `Scheduler::onFrameSignal()` 组织。`Scheduler.cpp` 在同一帧信号中调用 `compositor.commit()` 处理事务、layer 状态和本帧准备工作；满足合成条件后，再调用 `compositor.composite()` 组织合成。对应实现位于 `SurfaceFlinger::commit()` 和 `SurfaceFlinger::composite()`。显示输出阶段继续进入 CompositionEngine 的 `Output::present()` 与 `presentFrameAndReleaseLayers()`。
 
 版本演进要保留，因为旧 trace 的 Slice 名称不同：
 
@@ -320,13 +320,13 @@ Android 17 的主循环由 `Scheduler::onFrameSignal()` 组织。`Scheduler.cpp`
 
 Slice 名称受埋点和版本影响，不能要求每份 Android 17 trace 都出现一条字面为 `presentFrameAndReleaseLayers` 的 Slice。源码调用关系用于解释已出现的阶段，不用于虚构 trace 中没有的数据。
 
-`composite` 变长也不能直接归为 GPU Client Composition。要同时找到 RenderEngine / `drawLayers` 等 GPU 合成证据、HWC composition type、layer 特征和 fence 时间。事务处理变重、latch 等待、HWC validate/present 或显示提交都可能拉长 SurfaceFlinger 一帧。
+`composite` 变长也不能直接归为 GPU Client Composition。要同时找到 RenderEngine/`drawLayers` 等 GPU 合成证据、HWC（Hardware Composer，硬件显示合成器）的 composition type、layer 特征和 fence 时间。事务处理变重、latch（选定本轮要合成的 buffer）等待、HWC validate/present 或显示提交都可能拉长 SurfaceFlinger 一帧。
 
 ## 日志与原始事件
 
 只有采集配置包含 Android log 数据源时，UI 才能显示抓取窗口内的日志。只有保留相应 ftrace event 时，原始事件表才有对应记录。看不到 Android Logs 或 Ftrace Events 时，应回查配置与数据完整性，不能把“UI 没有轨道”解释为“系统没有发生事件”。
 
-日志适合定位业务阶段和错误点，时间线负责验证线程、调度与依赖关系。日志时间戳、trace 时钟和跨文件合并存在偏差时，要先确认时钟转换，再做毫秒级因果判断。
+日志适合标记业务阶段和错误点，时间线用于验证线程、调度与依赖关系。日志时间戳、trace 时钟和跨文件合并可能使用不同时间基准；要先确认时钟转换和对齐误差，再做毫秒级因果判断。
 
 ## 与 Android Studio Profiler 的关系
 
@@ -336,7 +336,7 @@ Android Studio 的 System Trace 也是系统级视图，能够展示 CPU 核心�
 | --- | --- |
 | Android Studio System Trace | 在 IDE 内录制、围绕目标 App 查看线程和显示问题、结合工程工作流 |
 | Perfetto UI | 打开多种 trace、完整时间轴导航、PerfettoSQL、Debug Track、宏和跨进程系统分析 |
-| Android Studio Method / Function Trace | 查看方法或函数调用树、Flame Chart、Top Down / Bottom Up |
+| Android Studio Method / Function Trace | 查看方法或函数调用树、按调用栈随时间展开的 Flame Chart，以及从调用者或被调用者方向聚合的 Top Down/Bottom Up 视图 |
 | Simpleperf / `linux.perf` | 调用栈采样、热点和 CPU profile |
 
 Android Studio 的 System Trace 与 Java Method Trace 是不同录制类型，不能用统一的 `.trace` 口径描述。复杂系统问题可以从 Android Studio 导出 System Trace，再放到 Perfetto UI 做 SQL 与跨进程分析。
@@ -354,7 +354,7 @@ Android Studio 的 System Trace 与 Java Method Trace 是不同录制类型，�
 7. Binder 或锁跨进程时，把客户端、服务端、持锁线程和 reply 放进同一选区。
 8. 用 SQL 复核同类帧是否重复出现，避免用一个案例代表整段运行。
 
-这套流程给出的是“证据落在哪一层”。修复动作要回到对应代码、配置和设备复现验证；FrameTimeline 的分类也不能替代源码与 fence 证据。
+这套流程用于判断现有证据指向应用、调度、跨进程调用、合成还是显示末端。修复后仍要回到对应代码、配置和设备复现验证；FrameTimeline 的分类也不能替代源码与 fence 证据。
 
 ## 常见误区
 
@@ -368,7 +368,7 @@ Android Studio 的 System Trace 与 Java Method Trace 是不同录制类型，�
 
 **红色都代表同一种问题。** Thread State、锁竞争 Slice 和 FrameTimeline 各有自己的颜色语义。结论应写轨道类型和字段值。
 
-**Android Studio System Trace 只看 App。** 当前 System Trace 能展示系统级活动。Perfetto UI 的优势集中在开放时间轴、SQL、扩展和跨进程分析，不是“有没有系统数据”的二分。
+**Android Studio System Trace 只看 App。** 当前 System Trace 能展示系统级活动。Perfetto UI 的差异主要在开放时间轴、SQL、扩展和跨进程分析能力，不能用“有没有系统数据”简单二分。
 
 ## Android 17 源码核对点
 
@@ -386,7 +386,7 @@ Android Studio 的 System Trace 与 Java Method Trace 是不同录制类型，�
 
 ## 参考资料
 
-- [Perfetto UI](https://perfetto.dev/docs/visualization/perfetto-ui)、[Commands and Macros](https://perfetto.dev/docs/visualization/ui-automation)、[Debug Tracks](https://perfetto.dev/docs/analysis/debug-tracks) 与当前 [`colorForState()`](https://github.com/google/perfetto/blob/main/ui/src/components/colorizer.ts)：加载、导航、Area Selection、Pin、命令面板、SQL 轨道和线程状态配色。
+- [Perfetto UI](https://perfetto.dev/docs/visualization/perfetto-ui)、[Commands and Macros](https://perfetto.dev/docs/visualization/ui-automation)、[Debug Tracks](https://perfetto.dev/docs/analysis/debug-tracks) 与上游 [`colorForState()`](https://github.com/google/perfetto/blob/main/ui/src/components/colorizer.ts)：加载、导航、Area Selection、Pin、命令面板、SQL 轨道和配色实现边界。
 - [CPU Scheduling events](https://perfetto.dev/docs/data-sources/cpu-scheduling)、[PerfettoSQL tables](https://perfetto.dev/docs/analysis/sql-tables) 与 [Android trace cookbook](https://perfetto.dev/docs/analysis/common-queries)：调度状态、waker、`thread_state`、D 状态和 `blocked_function`。
 - [Android Jank detection with FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline) 与 [Track Event flows](https://perfetto.dev/docs/instrumentation/track-events)：Expected / Actual、帧字段、颜色和 Flow 语义。
 - [PerfettoSQL standard library](https://perfetto.dev/docs/analysis/stdlib-docs)：`slices.self_dur`、Binder 和 Android 分析模块。

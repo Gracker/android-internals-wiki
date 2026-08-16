@@ -1,8 +1,8 @@
 # 第 11 章：功耗
 
-功耗问题通常跨越较长时间窗口，并与卡顿、启动、后台执行和设备温度相互影响。
+严格区分时，功耗描述能量消耗速率，耗电量描述一段时间内累计消耗的能量；本章同时讨论两者。相关问题通常跨越较长时间窗口，并与卡顿、启动、后台执行和设备温度相互影响。
 
-用户可感知的现象包括前台耗电、后台掉电和发热后的性能下降。分析时需要同时记录工作量、调度、thermal、后台限制、WakeLock、网络行为与设备状态。
+用户可感知的现象包括前台耗电、后台掉电和发热后的性能下降。分析时需要同时记录 workload（实际执行的业务工作量）、调度、thermal（温控状态）、后台限制、WakeLock（阻止设备进入部分休眠状态的锁）、网络行为与设备状态。
 
 应用侧优化与系统侧策略需要分别取证，不能只用电量百分比归因。
 
@@ -20,4 +20,4 @@
 
 - App 侧耗电：先读 11.1 和 11.2，再进入对应专项。
 - 系统或整机分析：结合 11.3、11.4 与 CPU/thermal 章节。
-- 后台任务配额与 TARE 的版本边界：读 [5.8 JobScheduler/WorkManager 调度与后台任务性能](../../part1-fundamentals/ch05-cpu-power/08-jobscheduler-workmanager-performance.md)。
+- 后台任务配额与 TARE（The Android Resource Economy，Android 资源经济系统）的版本边界：读 [5.8 JobScheduler/WorkManager 调度与后台任务性能](../../part1-fundamentals/ch05-cpu-power/08-jobscheduler-workmanager-performance.md)。
