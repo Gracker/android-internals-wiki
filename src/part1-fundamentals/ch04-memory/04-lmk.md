@@ -3,15 +3,47 @@ status: ready-for-review
 title: 系统内存压力与 lmkd
 section: 4.4
 chapter: 4.4
-task6_state: "pending-verification"
-task9_state: "reviewed"
+task6_state: "pending-review"
+task9_state: "pending-review"
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: 2026-05-09
-last_verified_against: "AOSP android-4.0.1_r1 init.rc/ProcessList.java, android-8.1"
+last_verified: "2026-08-16"
+last_verified_against: "AOSP android-17.0.0_r1 ProcessList.java, psc/Constants.java, ActivityThread.java, CachedAppOptimizer.java, MemoryLimiter.java/JNI; system/memory/lmkd lmkd.cpp, include/lmkd.h, reaper.cpp; external/perfetto android.memory.lmk stdlib; Android common kernel android17-6.18-2026-06_r6 PSI and cgroup v2 docs; official lmkd, Android 17 app memory limits, app memory and Perfetto docs"
+last_rework_at: "2026-08-16T21:39:17+08:00"
+last_rework_run_id: "20260816-213533-rework-c9119032"
 confidence: medium-high
 sources:
 - type: aosp
-  path: AOSP ProcessList.java, lmkd.cpp, reaper.cpp, OomAdjuster.java, CachedAppOptimizer.java; source.android.com/docs/core/perf/lmkd; developer.android.com/about/versions/17/behavior-changes-all
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ProcessList.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/psc/Constants.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/jni/com_android_server_am_MemoryLimiter.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/include/lmkd.h
+- type: aosp
+  path: https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/reaper.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/memory/lmk.sql
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/accounting/psi.rst
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst
+- type: official
+  path: https://source.android.com/docs/core/perf/lmkd
+- type: official
+  path: https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits
+- type: official
+  path: https://developer.android.com/topic/performance/memory
+- type: official
+  path: https://perfetto.dev/docs/analysis/stdlib-docs
 tags: "LMK, lmkd, OOM, oom_score_adj, PSI, memory-pressure, process-priority, CachedAppOptimizer, Android-17"
 related_chapters: "4.1, 4.3, 1.3, 10.4"
 task2b_state: fixed
