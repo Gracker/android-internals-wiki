@@ -10,9 +10,11 @@ pipeline_stage: ready-to-publish
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
 tags: [strictmode, disk-read, disk-write, network, custom-penalty, performance-diagnostics]
 related_chapters: ["15.6", "14.7", "21.3"]
-last_verified: "2026-08-13"
-last_verified_against: "AOSP android-17.0.0_r1 + current developer.android.com StrictMode API reference"
+last_verified: "2026-08-16"
+last_verified_against: "AOSP android-17.0.0_r1 StrictMode.java/Parcel.java/ActivityThread.java; libcore BlockGuard/CloseGuard; Android Developers StrictMode API reference (API 37 boundary)"
 confidence: high
+last_idle_audit_at: "2026-08-16T10:35:02+08:00"
+last_idle_audit_run_id: "20260816-103502-idle-audit-56592085"
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/os/StrictMode.java"
@@ -173,7 +175,7 @@ Android 17 的 `VmPolicy.Builder` 还包含：
 | `detectBlockedBackgroundActivityLaunch()` | 应用发起的后台 Activity 或 PendingIntent 启动被系统阻止 | API 36；`@FlaggedApi(FLAG_BAL_STRICT_MODE_RO)`，设备 flag 与客户端策略都要满足 |
 | `detectImplicitUriPermissionGrant()` | Intent 未携带显式 grant flag，系统仍向应用授予 URI 访问权限 | API 37；受 security flag 与 compat change 控制 |
 
-当前官方 API 文档还指出，隐式 URI 权限授予将在 Android 18（API 38）停止；这个 detector 用来提前找出未显式添加 `FLAG_GRANT_READ_URI_PERMISSION` 或 `FLAG_GRANT_WRITE_URI_PERMISSION`、升级后可能失效的路径。
+在 Android 17 基线内，这个 detector 可复核的作用是暴露“未显式携带授权 flag 却获得 URI 权限”的路径。若团队把它用于跨版本迁移排查，应在目标平台上重新核对当期兼容变更、feature flag 和官方 API 文档。
 
 `detectAll()` 会根据 target SDK 和设备开关决定是否加入这些检测。面向多版本设备的测试若依赖某个明确 violation，应显式启用并先判断 API/flag 可用性。
 
