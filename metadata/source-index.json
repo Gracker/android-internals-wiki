@@ -3148,7 +3148,7 @@
       "summary": "Android 在 Pixel 上用 ETE+TRBE 抓真实分支历史，再用 simpleperf 转成 AutoFDO profile 重新编译内核，当前已在 android16-6.12、android15-6.6 落地，下一步推到 android17-6.18 和 GKI/DDK 模块。",
       "chapter": "ch16",
       "processed_at": "2026-08-15T06:20:11.089814+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
       "score": 19,
       "target_path": "src/part4-system/ch16-aosp/04-android17-kernel618-performance.md",
       "route_confidence": 33,
@@ -3162,7 +3162,11 @@
         "gki",
         "developers"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "status": "applied",
+      "applied_at": "2026-08-16T11:18:13+08:00",
+      "applied_run_id": "20260816-111514-396831f0",
+      "previous_action": "indexed-only-chapter-freeze"
     },
     {
       "path": "https://juejin.cn/post/7643280009974071305",

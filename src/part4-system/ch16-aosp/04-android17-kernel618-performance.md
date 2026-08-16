@@ -2,9 +2,9 @@
 title: "Android 17 Kernel 6.18 性能机制与验证"
 section: "16.4"
 chapter: "16.4"
-status: finalized
-task9_state: reviewed
-pipeline_stage: ready-to-publish
+status: ready-for-review
+task9_state: pending-review
+pipeline_stage: ready-for-review
 applicable_versions: "Android 17 (API 37)"
 tags:
   - android
@@ -13,6 +13,8 @@ tags:
 sources:
   - type: blog
     path: "https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html"
+  - type: blog
+    path: "https://developer.android.com/blog/posts/boosting-android-performance-introducing-autofdo-for-the-kernel"
   - type: docs
     path: "https://source.android.com/docs/core/architecture/kernel/gki-android17-6_18-release-builds"
   - type: docs
@@ -24,7 +26,9 @@ sources:
   - type: kernel
     path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6"
 task2b_state: "fixed"
-task6_state: reviewed
+task6_state: pending-review
+last_body_apply_at: "2026-08-16T11:18:13+08:00"
+last_body_apply_run_id: "20260816-111514-396831f0"
 last_idle_audit_at: "2026-07-27T10:35:11+08:00"
 last_idle_audit_run_id: "20260727-103511-idle-audit-5f410a75"
 last_verified: "2026-08-14"
@@ -154,11 +158,13 @@ Perfetto 是 Android 系统性能追踪工具，可采集 `block_rq_issue` / `bl
 
 ## AutoFDO Profile-Guided Optimization 的内核应用
 
-AutoFDO 是 Automatic Feedback-Directed Optimization，即基于采样反馈的编译优化。它用执行 profile 中的热点信息指导 Clang 编译器做内联、分支概率和代码布局决策。Android 17 GKI `gki_defconfig` 设置 `CONFIG_AUTOFDO_CLANG=y`，r6 tag 的 `gki/aarch64/afdo/` 同时包含 README 与 `kernel.afdo`。
+AutoFDO 是 Automatic Feedback-Directed Optimization，即基于采样反馈的编译优化。它用执行 profile 中的真实执行路径、热点/冷点函数和分支历史指导 Clang 编译器做内联、分支概率和代码布局决策；它影响编译器启发式，不改写内核源代码逻辑。[来源: https://developer.android.com/blog/posts/boosting-android-performance-introducing-autofdo-for-the-kernel]
+
+Android 17 GKI `gki_defconfig` 设置 `CONFIG_AUTOFDO_CLANG=y`，r6 tag 的 `gki/aarch64/afdo/` 同时包含 README 与 `kernel.afdo`，README 把该 profile 绑定到 kernel 6.18.21、SHA `3ad9926a5d177675fe818af93dcb3451532c3165` 和 build server ID `15434288`。[已验证: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig; https://android.googlesource.com/kernel/common/+show/refs/tags/android17-6.18-2026-06_r6/gki/aarch64/afdo/README.md]
 
 ### r6 tag 中可引用的数据
 
-README 说明 profile 采自 kernel 6.18.21，测试设备是 Pixel 8。结果被标记为 preliminary（初步结果），因为该设备当时还没有针对这版内核完成电源管理、CPU frequency scaling 和调度调优。
+README 说明 profile 采自 kernel 6.18.21，测试设备是 Pixel 8。结果被标记为 preliminary（初步结果），因为该设备当时还没有针对这版内核完成电源管理、CPU frequency scaling 和调度调优。[已验证: https://android.googlesource.com/kernel/common/+show/refs/tags/android17-6.18-2026-06_r6/gki/aarch64/afdo/README.md]
 
 | Benchmark | README 报告的 improvement | 限定 |
 |---|---:|---|
@@ -168,21 +174,22 @@ README 说明 profile 采自 kernel 6.18.21，测试设备是 Pixel 8。结果�
 | Binder-addints | 23% | 多轮中的最佳结果 |
 | Hwbinder | 23% | 多轮中的最佳结果 |
 
-Binder 三项使用最佳单轮结果，不能与 boot、launch 或统计分位数按同一置信度解读。README 也没有给出跨 SoC、跨产品或功耗收益。
+Binder 三项使用多轮中的最佳结果，不能与 boot、launch 或统计分位数按同一置信度解读。README 也没有给出跨 SoC、跨产品或功耗收益。[已验证: https://android.googlesource.com/kernel/common/+show/refs/tags/android17-6.18-2026-06_r6/gki/aarch64/afdo/README.md]
 
-2026 年 3 月的 Android Developers Blog 当时只描述 6.6 与 6.12 的投放，并把 6.18 写为后续计划；6 月 r6 tag 中的 profile 证明计划已经进入这个 release build。引用时应使用 r6 tag 证据，不再沿用博客发布时的未来时态。
+2026 年 3 月的 Android Developers Blog 当时只描述 `android16-6.12` 与 `android15-6.6` 的投放，并把 `android17-6.18` 写为后续计划；它还把 GKI module 与基于 DDK 的 vendor module 支持列为后续扩展方向，而不是已落地的 Android 17 设备结论。6 月 r6 tag 中的 profile 证明计划已经进入这个 release build。引用时应使用 r6 tag 证据，不再沿用博客发布时的未来时态。[来源: https://developer.android.com/blog/posts/boosting-android-performance-introducing-autofdo-for-the-kernel; 已验证: https://android.googlesource.com/kernel/common/+show/refs/tags/android17-6.18-2026-06_r6/gki/aarch64/afdo/README.md]
 
 ### profile 从采集到构建
 
-r6 README 给出的流程是：
+r6 README 与 Android Developers Blog 合起来给出的采集和复现边界是：
 
-1. 在 Pixel 设备运行热门应用的 launch 与 crawler workload；crawler 是自动遍历 App 界面的测试工具；
-2. 使用 CoreSight ETM 或 ARM ETE 硬件追踪能力记录内核指令流；
-3. 合并样本并转换为 LLVM AutoFDO profile；
-4. 构建时用 `kernel.afdo` 指导 `vmlinux` 优化；`vmlinux` 是未压缩的 ELF 内核映像；
-5. 用目标 benchmark 检查性能与回退。
+1. Android Developers Blog 描述的是 GKI 的受控实验室采集：在 Pixel 设备刷入最新 kernel image，用 `simpleperf` 采集 instruction execution stream，硬件侧依赖 ARM Embedded Trace Extension（ETE）与 ARM Trace Buffer Extension（TRBE）记录分支历史；workload 覆盖 C-Suite 中前 100 个热门应用、App Launching、AI-Driven App Crawling 和系统级后台工作，官方称该合成 workload 与内部 fleet 采集到的执行模式有 85% similarity。[来源: https://developer.android.com/blog/posts/boosting-android-performance-introducing-autofdo-for-the-kernel]
+2. r6 README 给出的可复现步骤是：在 Pixel 设备上围绕 Google Play Store 前 100 个应用运行 app crawling 与 app launching；crawler 是自动遍历 App 界面的测试工具；每个应用 crawler 运行 3 分钟并重复两次，launch 运行 3 秒并重复 15 次，且每次后杀进程并清缓存以覆盖 cold app startup。[已验证: https://android.googlesource.com/kernel/common/+show/refs/tags/android17-6.18-2026-06_r6/gki/aarch64/afdo/README.md]
+3. r6 README 记录的 profile 生成路径是采集 kernel ETM 数据、合并并转换为一个 AutoFDO profile；构建时用 `kernel.afdo` 指导 `vmlinux` 优化，`vmlinux` 是未压缩的 ELF 内核映像。[已验证: https://android.googlesource.com/kernel/common/+show/refs/tags/android17-6.18-2026-06_r6/gki/aarch64/afdo/README.md]
+4. 部署前的核查应比较新旧 profile 的 hot functions、sample counts、profile size，并用 profile 构建新 kernel image 后检查 text section 变化和目标 benchmark；这是官方博客给出的稳定性核查口径，不等于对任意厂商内核的自动保证。[来源: https://developer.android.com/blog/posts/boosting-android-performance-introducing-autofdo-for-the-kernel]
 
-它优化的是 GKI 内核编译产物。ART AOT（Ahead-of-Time，预先编译）、用于标记 App 热路径的 Baseline Profile 和 cloud compilation 属于用户态编译链。它们可以和内核 AutoFDO 同时影响一次冷启动，却没有一个可直接相加的收益模型。
+它优化的是 GKI 内核编译产物，当前可引用的 r6 profile 目标是主内核二进制 `vmlinux`；GKI module 与 vendor module AutoFDO 在官方博客中仍是扩展方向，不能记为 r6 的模块收益。[来源: https://developer.android.com/blog/posts/boosting-android-performance-introducing-autofdo-for-the-kernel; 已验证: https://android.googlesource.com/kernel/common/+show/refs/tags/android17-6.18-2026-06_r6/gki/aarch64/afdo/README.md]
+
+ART AOT（Ahead-of-Time，预先编译）、用于标记 App 热路径的 Baseline Profile 和 cloud compilation 属于用户态编译链。它们可以和内核 AutoFDO 同时影响一次冷启动，却没有一个可直接相加的收益模型。
 
 确认设备收益时，要先证明设备内核由对应 profile 构建。只看到源码目录中的 `kernel.afdo` 还不够；还需关联 GKI release artifact、build config 与设备运行的 kernel build ID。这里的严格 A/B 是单变量对照：保持源码、配置、工具链和设备一致，只改变是否应用 profile。
 
