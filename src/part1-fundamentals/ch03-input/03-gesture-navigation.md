@@ -4,9 +4,10 @@ section: "3.3"
 chapter: "3.3"
 status: "finalized"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-07-02"
-last_verified_against: "AOSP android-17.0.0_r1"
-confidence: medium
+last_verified: "2026-08-16"
+last_source_verified_at: "2026-08-16"
+last_verified_against: "AOSP android-17.0.0_r1（SystemUI gestural、WM Shell back、InputDispatcher、ViewRootImpl/WMS exclusion、WindowInsets/OnBack APIs）+ Android Developers gesture navigation / predictive back / API references + Perfetto official docs checked 2026-08-16"
+confidence: medium-high
 sources:
   - type: blog
     path: "TechMerger - 深入理解 Android 系统 Back Gesture 的实现 (微信)"
@@ -15,25 +16,43 @@ sources:
   - type: aosp
     path: "frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java"
   - type: aosp
+    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/DisplayBackGestureHandler.kt"
+  - type: aosp
     path: "frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanelController.kt"
+  - type: aosp
+    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanel.kt"
   - type: aosp
     path: "frameworks/base/packages/SystemUI/shared/src/com/android/systemui/shared/system/InputMonitorCompat.java"
   - type: aosp
+    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/util/concurrency/SysUIConcurrencyModule.kt"
+  - type: aosp
+    path: "frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/back/BackAnimationController.java"
+  - type: aosp
     path: "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp"
+  - type: aosp
+    path: "frameworks/base/core/java/android/view/ViewRootImpl.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/WindowManagerConstants.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/view/WindowInsets.java"
   - type: aosp
     path: "frameworks/base/core/java/android/window/OnBackInvokedCallback.java"
   - type: aosp
     path: "frameworks/base/core/java/android/window/OnBackAnimationCallback.java"
   - type: aosp
     path: "frameworks/base/core/java/android/window/OnBackInvokedDispatcher.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/window/WindowOnBackInvokedDispatcher.java"
+  - type: aosp
+    path: "frameworks/native/services/inputflinger/include/InputTracingPerfettoBackend.h"
   - type: official
-    path: "https://perfetto.dev/docs/quickstart/android-tracing"
+    path: "https://developer.android.com/develop/ui/views/touch-and-input/gestures/gesturenav"
   - type: official
-    path: "https://perfetto.dev/docs/data-sources/frametimeline"
+    path: "https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture"
   - type: official
-    path: "https://developer.android.com/training/gestures/gesturenav"
-  - type: official
-    path: "https://developer.android.com/about/versions/13/features/predictive-back-gesture"
+    path: "https://developer.android.com/about/versions/16/behavior-changes-16"
   - type: official
     path: "https://developer.android.com/reference/android/window/OnBackInvokedDispatcher"
   - type: official
@@ -44,12 +63,18 @@ sources:
     path: "https://developer.android.com/reference/android/view/WindowInsets"
   - type: official
     path: "https://developer.android.com/reference/androidx/activity/OnBackPressedCallback"
+  - type: official
+    path: "https://perfetto.dev/docs/quickstart/android-tracing"
+  - type: official
+    path: "https://perfetto.dev/docs/data-sources/frametimeline"
 tags: [gesture-navigation, input-monitor, back-gesture, predictive-back, edge-swipe, systemui, windowinsets]
 related_chapters: ["3.1", "3.2", "2.3", "2.4", "1.5"]
 pipeline_stage: "ready-to-publish"
 task6_state: reviewed
 task9_state: "reviewed"
 task2b_state: fixed
+last_idle_audit_at: "2026-08-16T18:38:45+08:00"
+last_idle_audit_run_id: "20260816-183504-idle-audit-0b309356"
 ---
 
 # 3.3 手势导航与系统交互
@@ -76,7 +101,7 @@ Android 17 的入口仍是 SystemUI 中的 `EdgeBackGestureHandler`，但职责�
 - `BackPanelController` 和 `BackPanel.kt` 负责边缘箭头和面板动画；它们使用不可触摸的 `TYPE_NAVIGATION_BAR_PANEL` 受信任叠加层（trusted overlay），不靠这个窗口接收触摸。
 - `BackAnimationController` 位于 WM Shell，负责 `startBackNavigation()`、目标解析、指针抢占、进度回调以及提交后的系统动画。
 
-`updateIsEnabledInner()` 会注册主屏的 `ISystemGestureExclusionListener`，然后遍历当前显示屏创建 `DisplayBackGestureHandlerImpl`。旧版的 `InputMonitorResource`、`resetEdgeBackPlugin()` 和 `NavigationBarEdgePanel` 不属于 Android 17 的主路径。
+`updateIsEnabledInner()` 会注册主屏的 `ISystemGestureExclusionListener`，然后遍历当前显示屏创建 `DisplayBackGestureHandlerImpl`。Android 17 仍把边缘返回识别限定在主显示屏：`isWithinTouchRegion()` 对 `ev.getDisplayId() != mMainDisplayId` 返回 `false`，源码旁保留了 `TODO(b/382130680)`，因此不能把外接显示屏上的监视器生命周期当作返回手势可用性的证据。旧版的 `InputMonitorResource`、`resetEdgeBackPlugin()` 和 `NavigationBarEdgePanel` 不属于 Android 17 的主路径。
 
 ### 从并行观察到指针抢占
 
