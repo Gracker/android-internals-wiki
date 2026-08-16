@@ -44,7 +44,7 @@ HDR（High Dynamic Range，高动态范围）问题经常被压缩成一句“�
 - **亮度语义**：SDR（Standard Dynamic Range，标准动态范围）白点、内容峰值、显示峰值和 HDR 与 SDR 的亮度比决定画面能使用多少 headroom（高光余量）；
 - **合成位置**：Producer（内容生产者）、RenderEngine（SurfaceFlinger 的 GPU 合成组件）、HWC（Hardware Composer，硬件合成器）、DPU（Display Processing Unit，显示处理单元）以及面板各自只处理其中一部分。
 
-性能分析必须先确认这五件事，再讨论 GPU 时间、内存带宽和功耗。只看“屏幕支持 HDR”或“Layer 是 `BT2020_PQ`”，无法推出这一帧使用了硬件 plane（合成平面），也无法推出 tone mapping 没有成本。
+性能分析必须先确认这五件事，再讨论 GPU 时间、内存带宽和功耗。只看“屏幕支持 HDR”或“Layer 是 `BT2020_PQ`”，既无法推出这一帧使用了硬件 plane（合成平面），也无法推出 tone mapping 没有成本。
 
 本文的平台源码锚点为 `android-17.0.0_r1`。内核只负责 dma-buf 的内存共享与 dma-fence 的同步，不决定 dataspace（像素颜色语义标签）、tone mapping curve（色调映射曲线）或 HWC plane allocation（硬件平面分配）；涉及内核边界时，以 `android17-6.18-2026-06_r6` 为准。Buffer 与 fence 的细节分别见 2.15、2.16。
 
@@ -75,7 +75,9 @@ Dataspace = Standard | Transfer | Range
 
 ### 1.2 metadata 与像素沿两条通路移动
 
-HWUI（Android 硬件加速 UI 管线）、MediaCodec、GL 或 Vulkan 都可能成为 Producer。BufferQueue 传递 buffer，同时携带 dataspace 等描述信息；`SurfaceControl.Transaction` 也能更新 Layer 的 dataspace 和 HDR 相关状态。SurfaceFlinger latch（接收并采用）新状态后，把每个 Layer 的 buffer、dataspace、变换、裁剪、亮度和 HDR metadata 交给 CompositionEngine。
+HWUI（Android 硬件加速 UI 管线）、MediaCodec、GL 或 Vulkan 都可能成为 Producer。BufferQueue 传递 buffer，同时携带 dataspace 等描述信息；`SurfaceControl.Transaction` 也能更新 Layer 的 dataspace 和 HDR 相关状态。
+
+SurfaceFlinger latch（接收并采用）新状态后，把每个 Layer 的 buffer、dataspace、变换、裁剪、亮度和 HDR metadata 交给 CompositionEngine。
 
 下面的图只画出与色彩有关的主路径：
 
@@ -98,7 +100,7 @@ flowchart LR
 
 ### 1.3 未知 dataspace 不是安全的万能值
 
-Android 17 的 `Layer::translateDataspace()` 会兼容一部分旧 dataspace，并把未知值按兼容规则处理。这个行为服务于历史应用，不能当作生产端省略标记的理由。缺少或错误的 dataspace 可能造成：
+Android 17 的 `Layer::translateDataspace()` 会兼容一部分旧 dataspace，并把未知值按兼容规则处理。这个行为服务于历史应用，不能当作生产代码省略 dataspace 标记的理由。缺少或错误的 dataspace 可能造成：
 
 - P3 内容按 sRGB 解释，颜色偏差；
 - HDR 传递函数按 SDR 处理，高光被压坏；
@@ -131,7 +133,7 @@ Android 17 的 `DisplayColorProfile` 从 HWC 能力构造以下信息：
 - Display P3 内容可以把 SDR 输出提升到 Display P3；
 - scRGB、BT.2020 等内容可以选择 Display BT.2020；
 - PQ 或 HLG Layer 会记录 HDR 候选 dataspace；
-- 同时存在 PQ 与 HLG 时，Android 17 的实现通常选择 PQ；若 PQ 只有 legacy support，或被判定为需要 RenderEngine 合成，则可能退到 Display P3。
+- 同时存在 PQ 与 HLG 时，Android 17 的实现通常选择 PQ；若 PQ 只有 legacy support（旧版兼容支持），或被判定为需要 RenderEngine 合成，则可能退到 Display P3。
 
 这一行为有 `OutputTest` 覆盖，不能照搬 `getBestDataspace()` 内一处仍写着“混合时使用 HLG”的旧注释。随后 `pickColorProfile()` 根据 HDR 支持、是否强制 client composition（客户端合成）、用户与系统色彩设置和 HWC 能力，得到显示的 `ColorMode`、输出 dataspace 与 `RenderIntent`。
 
@@ -139,9 +141,9 @@ Android 17 的 `DisplayColorProfile` 从 HWC 能力构造以下信息：
 
 ### 2.3 色彩差异会让 GPU 工作变贵，但不必然触发回退
 
-Android 17 的 `Output::composeSurfaces()` 在准备 client composition 时，会把“存在 Layer 的 source dataspace 与 output dataspace 不同”标为 expensive rendering expected（预计渲染开销较高）。源码注释说明这类转换或复杂 shader 可能需要提高 GPU 频率，结束后再撤销提示。
+Android 17 的 `Output::composeSurfaces()` 在准备 client composition 时，会把“存在 Layer 的 source dataspace 与 output dataspace 不同”标为 expensive rendering expected（预计渲染开销较高）。源码注释说明这类转换或复杂 shader 可能需要提高 GPU 频率，合成结束后再撤销该提示。
 
-这段逻辑说明色彩转换是 GPU 合成路径上的实际成本，但不能反向推导：
+色彩转换是 GPU 合成路径上的实际成本，但不能由此反向推导：
 
 - dataspace 不同，不代表 HWC 一定拒绝 `DEVICE`；
 - dataspace 相同，不代表一定没有 GPU 合成；
@@ -186,7 +188,7 @@ Android 17 源码中没有名为 `LinearTube` 的组件，实际类型是 `shade
 
 `SkiaRenderEngine::needsToneMapping()` 主要比较源与目标的 transfer。PQ、HLG、sRGB 与 linear（线性传递函数）之间需要不同处理；代码对不支持的 transfer 按 sRGB 处理。需要 tone mapping、Layer color transform（颜色变换）、线性域 dimming（调暗）或特定 gamma（伽马）修正时，`requiresLinearEffect` 才成立。
 
-这解释了两个容易混淆的现象：
+有两个容易混淆的现象：
 
 - “在线性域处理”是 shader 的颜色计算方式，不等于系统为每帧额外分配一个 FP16 中间 buffer；
 - client target 的实际格式由 SurfaceFlinger 与 HWC 配置决定，不能从 `LinearEffect` 这个名字推断内存一定翻倍。
@@ -645,7 +647,9 @@ Android 17 源码中可直接对应的 trace 名称包括：
 
 ### 12.4 截图与屏幕观感不同
 
-截图是独立的 RenderEngine 输出，不等于面板最终光学结果。Ultra HDR 截图还可能生成 SDR rendition 与 gain map；普通 SDR 截图需要 tone map HDR Layer。Android 17 的 local tone mapper 主要用于这类非高频输出，结果也不要求逐像素复刻厂商 DPU 的屏幕曲线。
+截图是独立的 RenderEngine 输出，不等于面板最终光学结果。Ultra HDR 截图还可能生成 SDR rendition 与 gain map；普通 SDR 截图需要 tone map HDR Layer。
+
+Android 17 的 local tone mapper 主要用于这类非高频输出，结果也不要求逐像素复刻厂商 DPU 的屏幕曲线。
 
 ---
 
