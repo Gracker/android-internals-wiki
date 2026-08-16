@@ -3384,9 +3384,9 @@
       "summary": "--- library_name: transformers license: apache-2.0 pipeline_tag: image-text-to-text --- # Qwen3.8-27B > [!Note] > This repository contains model weights and configuration files for the post-trained model in the Hugging F",
       "chapter": "ch16",
       "processed_at": "2026-08-16T06:20:30.753469+08:00",
-      "action": "indexed-only-chapter-freeze",
-      "score": 15,
-      "target_path": "src/part4-system/ch16-aosp/06-profile-dm-sdm-install-compilation.md",
+      "action": "quarantined-misroute",
+      "score": 0,
+      "target_path": null,
       "route_confidence": 30,
       "route_terms": [
         "pipeline",
@@ -3398,7 +3398,14 @@
         "for",
         "the"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "quarantined-misroute-by-apply",
+      "quarantined_at": "2026-08-16T15:17:13+08:00",
+      "quarantined_run_id": "20260816-151541-3824e263",
+      "quarantine_reason": "Body-apply fail-closed: material is a Qwen3.8-27B Hugging Face/model README (model weights, inference frameworks, benchmarks, API usage, long-context and video preprocessing settings), while target chapter is Android 17 ART Profile/DM/SDM install compilation. Route terms are generic metadata words and provide no Android ART/PackageInstaller/SDM topical overlap. No chapter body change made; no Android platform claim incorporated.",
+      "previous_action": "indexed-only-chapter-freeze",
+      "previous_route_status": "existing-chapter-routed",
+      "previous_target_path": "src/part4-system/ch16-aosp/06-profile-dm-sdm-install-compilation.md",
+      "routing_finding_id": "AIW-BODY-APPLY-20260816-P1-misroute-qwen38-16-6"
     }
   ],
   "schema_version": "2.1",
