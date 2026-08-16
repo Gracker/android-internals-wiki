@@ -2,9 +2,9 @@
 title: "Android 17 BroadcastQueue 进程级调度与广播性能边界"
 chapter: "1.33"
 section: "1.33"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-07-25"
+last_verified: "2026-08-16"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 consolidated_from:
@@ -42,6 +42,11 @@ sources:
     path: "frameworks/base/core/java/android/os/PerfettoCategories.java"
 tags: [broadcast, broadcastqueue, scheduler, AMS, ANR, broadcast-process-queue]
 related_chapters: ["1.8", "9.2", "5.8", "1.34", "5.17"]
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: ready-to-publish
+last_review_finalize_at: "2026-08-16T23:03:53+08:00"
+last_review_finalize_run_id: "20260816-224852-07ce8fb9"
 ---
 
 # 1.33 Android 17 BroadcastQueue 进程级调度与广播性能边界
@@ -226,6 +231,8 @@ API 34 加入的 `BroadcastOptions` 提供两组不同能力：
 - `setDeferralPolicy(DEFERRAL_POLICY_UNTIL_ACTIVE)`：允许把符合条件的运行时接收者延后到进程 active；它不适用于有序、闹钟、交互型广播和清单接收者；
 - `setDeliveryGroupPolicy(DELIVERY_GROUP_POLICY_MOST_RECENT)`：同一 delivery group（投递组）只保留最近一条，旧的待投递项被跳过。
 
+对带 completion callback 的无序广播，`DEFERRAL_POLICY_UNTIL_ACTIVE` 还有一个容易误读的边界：处于 inactive / cached 进程状态的接收者不计入回调完成前必须接收的 eligible 集合，因此完成回调不能被当成“所有 cached 接收者都已经执行”的确认。
+
 延后策略解决何时投递，delivery group 解决积压项是否都要投递。没有显式 delivery group 策略时，系统不会因为接收者在同一进程就自动合并任意广播。
 
 `FLAG_RECEIVER_REPLACE_PENDING` 也只替换同时满足发送 UID、用户、Intent 匹配、接收者和其他条件的待处理项。它不会对整个 `action` 或整个进程执行无条件去重。
@@ -271,6 +278,8 @@ API 37 另有受功能开关（feature flag）控制的发送方广播延迟：�
 ### 7.2 `RECEIVER_NOT_EXPORTED` 是安全边界，不是本地广播优化开关
 
 面向 Android 14 的应用注册非纯系统广播接收者时，需要显式选择 `RECEIVER_EXPORTED` 或 `RECEIVER_NOT_EXPORTED`。`RECEIVER_NOT_EXPORTED` 限制可向该接收者发送广播的外部身份，但它仍在 `system_server` 中注册并通过广播分发路径执行。
+
+如果接收者需要接收来自框架中高权限但不以 system UID 运行的组件（例如 Bluetooth、telephony）发送的系统广播，官方文档建议使用 `RECEIVER_EXPORTED`；选择导出时又必须配套私有 action、权限或发送方校验，因为其他应用也可能向导出接收者发送未保护广播。
 
 它不会把广播自动变成进程内函数调用，也不能据此声称省去了 PackageManager 查询或 Binder IPC。若事件只在一个进程内使用，直接回调、`Flow` 或应用自己的事件模型更简单。
 
@@ -331,7 +340,7 @@ API 37 定义了 `broadcasts` Perfetto SDK 分类。启用相关 v3 跟踪功能
 - `dispatch_delay_ms = scheduledTime - enqueueTime`：包含队列等待及冷启动影响；
 - `finish_delay_ms = terminalTime - scheduledTime`：包含应用侧执行与完成回执。
 
-不要复制依赖不存在字段或别名的 SQL。应先在目标轨迹中确认是否有 `broadcast_delivered`，再通过 `slice` / `args` 表查看该版本导出的参数名。没有启用 SDK 分类时，仍可结合 `am_proc_start`、应用主线程时间片、`sched` 调度事件和 Binder 轨道还原延迟。
+不要复制依赖不存在字段或别名的 SQL。应先在目标轨迹中确认是否有 `broadcast_delivered`，再通过 `slice` / `args` 表查看该版本导出的参数名。没有启用 SDK 分类时，仍可结合传统 ActivityManager trace 中的 `BroadcastQueue` 方法片段（如 `enqueueBroadcast`、`updateRunningList`、`scheduleReceiverWarmLocked`、`finishReceiver`）、`BroadcastQueue.mRunning[N]` 进程队列片段、应用主线程时间片、`sched` 调度事件和 Binder 轨道还原延迟。
 
 ### 8.3 一次可靠的广播性能实验
 
