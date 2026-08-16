@@ -1,6 +1,6 @@
 # 第 18 章：渲染管线专题
 
-Android 渲染不是一条固定流水线。分析前先确认 Producer、输出 Surface、layer 拓扑和最终合成位置，再进入对应专项；框架名、控件名或单个长 slice 都不能代替对象证据。
+Android 渲染没有一条适用于所有场景的固定流水线。分析前，先确认由谁生产 buffer（Producer）、数据写入哪个 Surface、layer（合成图层）如何组织，以及合成发生在应用内部、SurfaceFlinger 的 GPU 路径还是 HWC 硬件路径，再进入对应专项。框架名、控件名或某个很长的 trace slice（追踪时间区间），都不能代替对实际对象和调用路径的确认。
 
 ## 内容索引
 
@@ -35,6 +35,6 @@ Android 渲染不是一条固定流水线。分析前先确认 Producer、输出
 - 普通 View 或 Compose：先读 [18.1](01-pipeline-overview.md)，再按 [18.2](02-android-view-standard.md) → [18.23](23-compose-rendering-pipeline.md) 进入具体框架。
 - Surface、图形 API 与多 layer：按 [18.4](04-android-view-mixed.md) → [18.6](06-surfaceview.md) / [18.7](07-textureview.md) → [18.8](08-opengl-es.md) / [18.9](09-vulkan-native.md) → [18.10](10-surface-control-api.md) 阅读。
 - 视频、Camera 与游戏：分别从 [18.14](14-camera-pipeline.md)、[18.15](15-video-overlay-hwc.md)、[18.16](16-game-engine.md) 切入，再补 [18.18](18-variable-refresh-rate.md) 和 [18.21](21-media-codec2-tunneled-media3-abr.md)。
-- 任一性能问题都回到 [18.1 的统一分析方法](01-pipeline-overview.md#统一分析方法)，把 Producer、BufferQueue、fence、SurfaceFlinger、HWC 与 present 放回同一帧。
+- 任一性能问题都回到 [18.1 的统一分析方法](01-pipeline-overview.md#统一分析方法)，沿同一帧的时间线核对 Producer、BufferQueue（缓冲区队列）、fence（表示操作完成或资源可用的同步信号）、SurfaceFlinger、HWC（硬件合成器）与 present（帧呈现）事件。
 
 原独立 PiP/Freeform 正文已并入 18.5，原独立分析方法正文已并入 18.1；其余专项保持一篇一主题。

@@ -4,9 +4,9 @@ title: JankStats 与 FrameMetrics
 chapter: '19'
 section: '19.09'
 status: "finalized"
-applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
-last_verified: '2026-05-31'
-last_verified_against: AndroidX metrics-performance 1.0.0 JankStatsApi16/24/26/31 implementation + PerformanceMetricsState + AOSP FrameMetrics Android 11/12 DEADLINE boundary
+applicable_versions: Android 6 (API 23) - Android 17 (API 37); source-only fallback retains API 16-22 code
+last_verified: '2026-08-14'
+last_verified_against: AndroidX metrics-performance 1.0.0 artifacts and JankStatsApi16/24/26/31 implementation + PerformanceMetricsState + JankStats guide updated 2026-08-12 + AOSP android-17.0.0_r1 FrameMetrics/FrameMetricsObserver/SurfaceControl
 confidence: medium
 tags:
 - apm
@@ -19,6 +19,20 @@ sources:
   path: https://developer.android.com/reference/androidx/metrics/performance/JankStats
 - type: official
   path: https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/maven-metadata.xml
+- type: official
+  path: https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0.aar
+- type: official
+  path: https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar
+- type: official
+  path: https://developer.android.com/topic/performance/jankstats
+- type: source
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java
+- type: source
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetricsObserver.java
+- type: source
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/FrameMetricsObserver.h
+- type: source
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceControl.java
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: "reviewed"
@@ -30,11 +44,11 @@ task2b_state: "fixed"
 
 ## JankStats 是官方帧级卡顿入口
 
-JankStats 属于 `androidx.metrics:metrics-performance`，用于按帧收集 UI jank 信息。Google Maven metadata 当前稳定版本为 `1.0.0`。这里复核的 AAR SHA-256 是 `efe2e0d92c7cb2f40c77d337052623fdb631d684ba145881e5a52a664d5614a0`，sources JAR SHA-256 是 `55c5478b4fde6e1cded38d647e9d995a6d9d08e3b8abd28268b5d5a5c3e700a2`。
+JankStats 属于 `androidx.metrics:metrics-performance`，用于按帧收集 UI jank 信息。这里的 jank 指界面帧没有按预期渲染节奏完成，用户可能感到滚动或动画顿挫。2026-08-14 复核 Google Maven metadata（版本索引文件）时，当前稳定版本仍为 `1.0.0`。Android Library 发布包（AAR）的 SHA-256 是 `efe2e0d92c7cb2f40c77d337052623fdb631d684ba145881e5a52a664d5614a0`，对应源码包（sources JAR）的 SHA-256 是 `55c5478b4fde6e1cded38d647e9d995a6d9d08e3b8abd28268b5d5a5c3e700a2`。SHA-256 是文件内容指纹，用来确认复核对象没有变化。
 
-它会把每帧耗时、是否被库判为 jank、当时的 UI 状态回调给应用，但不会自动上传数据。它适合作为线上流畅性监控的第一层信号源，不负责生成 trace、抓取堆栈或提供看板。它擅长回答“哪些页面、交互和版本的异常帧更多”，不能独立回答“哪段代码让这一帧超时”。
+它会把每帧耗时、是否被库判为 jank、当时的 UI 状态回调给应用，但不会自动上传数据。它适合作为线上流畅性监控的第一层信号源，不负责生成系统跟踪（trace）、抓取调用堆栈或提供数据看板。它擅长回答“哪些页面、交互和版本的异常帧更多”，不能独立回答“哪段代码让这一帧超时”。
 
-版本下限要区分源码和发布物。1.0.0 sources 保留 `JankStatsApi16Impl`，类注释也描述了 API 16+ 的 fallback；当前 1.0.0 AAR manifest 却明确声明 `minSdkVersion=23`。正常依赖解析应按发布物执行，因此新接入的最低系统是 Android 6（API 23），不应再把稳定 AAR 写成 API 16+。不建议用 manifest override 强行绕过这个限制。
+版本下限要区分源码和发布物。1.0.0 sources 保留 `JankStatsApi16Impl`，类注释也描述了 API 16+ 的 fallback（平台能力不足时采用的兼容实现）；当前 1.0.0 AAR 内的 `AndroidManifest.xml` 却明确声明 `minSdkVersion=23`。正常依赖解析应按发布物执行，因此新接入的最低系统是 Android 6（API 23），不应再把稳定 AAR 写成 API 16+。不建议用 manifest override（在应用清单中强行覆盖依赖要求）绕过这个限制。
 
 ## 它输出什么
 
@@ -42,17 +56,17 @@ JankStats 属于 `androidx.metrics:metrics-performance`，用于按帧收集 UI 
 
 | 运行时类型 | 系统路径 | 可读字段 |
 |---|---|---|
-| `FrameData` | API 23 的 pre-draw fallback | `frameStartNanos`、`frameDurationUiNanos`、`isJank`、`states` |
+| `FrameData` | API 23 的绘制前回调（pre-draw fallback） | `frameStartNanos`、`frameDurationUiNanos`、`isJank`、`states` |
 | `FrameDataApi24` | API 24-30 的 `FrameMetrics` 路径 | 再增加 `frameDurationCpuNanos` |
-| `FrameDataApi31` | API 31-37 的 deadline 路径 | 再增加 `frameDurationTotalNanos`、`frameOverrunNanos` |
+| `FrameDataApi31` | API 31-37 的帧截止时间（deadline）路径 | 再增加 `frameDurationTotalNanos`、`frameOverrunNanos` |
 
-`frameDurationUiNanos` 是 UI 相关阶段的合计，不包含完整 RenderThread 和 GPU 时间。API 24-30 的 `frameDurationCpuNanos` 在 1.0.0 源码中直接取自 `FrameMetrics.TOTAL_DURATION`；API 31+ 才使用 `TOTAL_DURATION - GPU_DURATION + SWAP_BUFFERS_DURATION` 计算非 GPU 部分。跨版本聚合时必须携带 API level，不能假定同名字段在所有分支上来自同一套平台数据。
+`frameDurationUiNanos` 是 UI 相关阶段的合计，不包含完整 RenderThread 和 GPU 时间。RenderThread 是把 UI 绘制命令交给图形系统的专用渲染线程。API 24-30 的 `frameDurationCpuNanos` 在 1.0.0 源码中直接取自 `FrameMetrics.TOTAL_DURATION`；API 31+ 才使用 `TOTAL_DURATION - GPU_DURATION + SWAP_BUFFERS_DURATION` 计算非 GPU 部分。跨版本聚合时必须携带 API level（系统 API 级别），不能假定同名字段在所有分支上来自同一套平台数据。
 
-`frameOverrunNanos` 只在 API 31+ 提供，计算式是 `TOTAL_DURATION - DEADLINE`。正数表示总渲染时间越过 deadline，负数表示仍有余量。它与 `isJank` 不是同一个布尔口径，后文会解释两者为何可能不一致。
+`frameOverrunNanos` 只在 API 31+ 提供，计算式是 `TOTAL_DURATION - DEADLINE`。deadline 是系统为应用产出这一帧分配的时间预算；正数表示总渲染时间越过预算，负数表示仍有余量。它与 `isJank` 不是同一个布尔口径，后文会解释两者为何可能不一致。
 
-UI context 是 JankStats 相比直接使用 `Choreographer.FrameCallback` 更有价值的部分。只知道“异常帧发生了”还不够，线上还要知道它发生在哪个页面和交互阶段。
+UI context（帧发生时的界面上下文）是 JankStats 相比直接使用 `Choreographer.FrameCallback` 更有价值的部分。只知道“异常帧发生了”还不够，线上还要知道它发生在哪个页面和交互阶段。
 
-下面的 View 示例先创建 JankStats，再获取非空的 `PerformanceMetricsState`。这个顺序不能颠倒，因为 holder 的 `state` 由 JankStats 初始化：
+下面的 View 示例先创建 JankStats，再获取非空的 `PerformanceMetricsState`。这个顺序不能颠倒，因为 holder（与 View hierarchy，即 View 层级树绑定的状态容器）中的 `state` 由 JankStats 初始化：
 
 ```kotlin
 class HomeActivity : AppCompatActivity() {
@@ -111,17 +125,17 @@ data class JankFrameSample(
 )
 ```
 
-这段代码还保留了正常帧。只上报 `isJank=true` 的帧会丢失分母，服务端无法计算 jank rate。示例中的 `frameAccumulator.record()` 应只更新内存计数器和有界直方图；`associate` 是为了展示字段，流量较大时应改为按所需 key 读取，避免每帧创建 Map。
+这段代码还保留了正常帧。只上报 `isJank=true` 的帧会丢失分母，服务端无法计算异常帧占比（jank rate）。示例中的 `frameAccumulator.record()` 应只更新内存计数器和有界直方图；“有界”表示桶数或容量预先受限，不会随帧数无限增长。`associate` 是为了展示字段，流量较大时应改为按所需 key 读取，避免每帧创建 Map。
 
-`createAndTrack()` 要求 `Window.peekDecorView()` 非空，因此应先通过 `setContentView()` 或其他方式建立 DecorView。条件不满足时，1.0.0 源码会直接抛出 `IllegalStateException`。
+`createAndTrack()` 要求 `Window.peekDecorView()` 非空，因此应先通过 `setContentView()` 或其他方式建立 Window 的根视图 DecorView。条件不满足时，1.0.0 源码会直接抛出 `IllegalStateException`。
 
-`OnFrameListener` 回调里的 `FrameData` 只适合做当前帧内的轻量处理。要把事件交给后台线程、批量聚合或异步上报时，先复制 `isJank`、`frameDurationUiNanos` 和 `states` 到自己的 DTO。不要把 `FrameData` 对象本身跨线程保存，也不要在回调里做同步 I/O 或复杂序列化。
+`OnFrameListener` 回调里的 `FrameData` 只适合做当前帧内的轻量处理。要把事件交给后台线程、批量聚合或异步上报时，先复制 `isJank`、`frameDurationUiNanos` 和 `states` 到自己的数据传输对象（DTO，Data Transfer Object）。不要把 `FrameData` 对象本身跨线程保存，也不要在回调里做同步 I/O 或复杂序列化。
 
 如果希望保留完整的版本化字段，也可以在回调内调用 `frameData.copy()`；各子类会复制成对应的 `FrameDataApi24` 或 `FrameDataApi31`。这仍会产生每帧分配，不能无条件写入无界队列。
 
-回调线程也有版本差异。API 23 的 `OnPreDrawListener` 运行在 UI 线程；API 24+ 的实现把 `FrameMetrics` listener 放在名为 `FrameMetricsAggregator` 的共享 `HandlerThread`。客户端不应依赖某条分支的线程身份，跨线程交接仍要使用有界结构。
+回调线程也有版本差异。API 23 的 `OnPreDrawListener` 运行在 UI 线程；API 24+ 的实现把 `FrameMetrics` listener 放在名为 `FrameMetricsAggregator` 的共享 `HandlerThread`，即自带消息循环的后台线程。客户端不应依赖某条分支的线程身份，跨线程交接仍要使用有界结构。
 
-状态关联依赖一条时间线。`PerformanceMetricsState.putState()` / `removeState()` 用 `System.nanoTime()` 记录每个 `StateInfo` 的添加和移除时间；JankStats 在生成 `FrameData` 时，用帧的 `[frameStart, frameEnd]` 区间调用 `getIntervalStates()` 做区间交集判断。`screen=Home`、`interaction=scroll` 等标签对应帧覆盖的状态区间，不只是回调发生瞬间的当前值。
+状态关联依赖一条时间线。`PerformanceMetricsState.putState()` / `removeState()` 用 `System.nanoTime()` 记录每个 `StateInfo` 的添加和移除时间；JankStats 在生成 `FrameData` 时，用帧的 `[frameStart, frameEnd]` 区间调用 `getIntervalStates()` 做区间交集判断，也就是找出与这一帧时间范围有重叠的状态。`screen=Home`、`interaction=scroll` 等标签对应帧覆盖的状态区间，不只是回调发生瞬间的当前值。
 
 ## API 版本差异
 
@@ -132,33 +146,33 @@ JankStats 1.0.0 只有 API 16、24、26、31 四个实现类。当前 AAR 的 `m
 | API 23 | `JankStatsApi16Impl` | 用 `OnPreDrawListener` 估算帧时间，并反射 `Choreographer.mLastFrameTimeNanos`；精度低于平台 `FrameMetrics` |
 | API 24-25 | `JankStatsApi24Impl` | 使用 `Window.addOnFrameMetricsAvailableListener()`；帧起点仍来自低版本 fallback，CPU 字段取 `TOTAL_DURATION` |
 | API 26-30 | `JankStatsApi26Impl` | 沿用 `FrameMetrics`，帧起点改用 API 26 新增的 `INTENDED_VSYNC_TIMESTAMP` |
-| API 31-37 | `JankStatsApi31Impl` | 用 `DEADLINE` 作为 expected duration，并增加 total、CPU 与 overrun 字段 |
+| API 31-37 | `JankStatsApi31Impl` | 用 `DEADLINE` 作为 expected duration（预期帧预算），并增加 total、CPU 与 overrun 字段 |
 
-sources 中的 `JankStatsApi16Impl` 仍描述 API 16-23，但发布物的 manifest 会阻止 API 16-22 工程正常依赖。历史 alpha 或自行构建源码可能有不同下限，生产文档必须写出确切 artifact 版本，不能只看实现类名称。
+sources 中的 `JankStatsApi16Impl` 仍描述 API 16-23，但发布物的 manifest 会阻止 API 16-22 工程正常依赖。历史 alpha 或自行构建源码可能有不同下限，生产文档必须写出确切 artifact（发布依赖）版本，不能只看实现类名称。
 
 `FrameMetrics.DEADLINE` 从 API 31 才可用。AOSP android-11.0.0_r1 的 `FrameMetrics` 没有这个字段；android-12.0.0_r1 加入 `DEADLINE = 13`。因此 API 24-30 上只能依赖 duration 类指标和 AndroidX 的 expected duration 估算，API 31+ 才能把 deadline overrun 写进同一套分析口径。
 
 ### Android 17 仍走 API 31 实现
 
-平台源码统一以 AOSP `android-17.0.0_r1` 为锚点。Android 16（API 36）已经给 `FrameMetrics` 增加 `FRAME_TIMELINE_VSYNC_ID`，并提供 `SurfaceControl.OnJankDataListener` / `SurfaceControl.JankData`，可以用 vsync id 关联 HWUI frame 与 compositor 给出的 jank classification。
+平台源码统一以 AOSP `android-17.0.0_r1` 为锚点。Android 16（API 36）已经给 `FrameMetrics` 增加 `FRAME_TIMELINE_VSYNC_ID`，并提供 `SurfaceControl.OnJankDataListener` / `SurfaceControl.JankData`。`FRAME_TIMELINE_VSYNC_ID` 是帧时间线中的垂直同步序号，可用来关联 HWUI 帧与系统合成器给出的 jank classification（卡顿归类）。公开分类包括应用 `JANK_APPLICATION`、合成器 `JANK_COMPOSER`、其他系统组件 `JANK_OTHER` 和无卡顿 `JANK_NONE`。
 
 JankStats 1.0.0 没有 API 36 或 API 37 实现类。在 Android 17（API 37）上，它仍选择 `JankStatsApi31Impl`，也没有把 `FRAME_TIMELINE_VSYNC_ID` 或 `SurfaceControl.JankData` 暴露到 `FrameDataApi31`。因此：
 
 - JankStats 仍适合按 Window、页面状态和交互状态统计异常帧。
-- `frameOverrunNanos` 不能替代 SurfaceFlinger/compositor 的 jank classification。
-- 需要判断 App deadline miss、SurfaceFlinger scheduling、buffer stuffing 等类型时，要直接接 API 36+ 的 jank data 或使用 Perfetto。
+- `frameOverrunNanos` 不能替代系统合成器 SurfaceFlinger 的 jank classification。
+- 需要区分应用、合成器或其他系统组件错过 deadline 时，要直接接 API 36+ 的 jank data；更细的 BufferQueue 或调度原因仍要用 Perfetto 分析。
 
 ## jank 阈值不是固定 16ms
 
-JankStats 通过 `jankHeuristicMultiplier` 控制 `isJank`，默认值是 `2.0f`：
+JankStats 通过 `jankHeuristicMultiplier` 控制 `isJank`，这个 multiplier 是预期帧预算的倍率，默认值是 `2.0f`：
 
 - API 23-30 首次需要阈值时根据 `Display.refreshRate` 估算帧周期，再乘 multiplier。
 - API 31-37 读取 `FrameMetrics.DEADLINE`，再乘 multiplier。
 - 两条路径都以 `frameDurationUiNanos > expectedDuration * multiplier` 判定 `isJank`。
 
-60 Hz 下，一帧周期约 16.67 ms，默认 `isJank` 阈值接近 33.3 ms；120 Hz 下则接近 16.67 ms。把 `isJank` 理解为“超过 16 ms”是错误的。
+60 Hz（每秒刷新 60 次）下，一帧周期约 16.67 ms，默认 `isJank` 阈值接近 33.3 ms；120 Hz 下则接近 16.67 ms。把 `isJank` 理解为“超过 16 ms”是错误的。
 
-1.0.0 的 API 23-30 实现会把首次算出的帧周期保存在进程级 `JankStatsBaseImpl.frameDuration` 中，显示模式切换不会自动触发重算。给 `jankHeuristicMultiplier` 赋值会清除此缓存；这不适合作为刷新率变化通知机制。动态刷新率设备应单独记录显示模式，并避免把低版本 JankStats 阈值描述成逐帧 deadline。
+1.0.0 的 API 23-30 实现会把首次算出的帧周期保存在进程内共享的 `JankStatsBaseImpl.frameDuration` 中，显示模式切换不会自动触发重算。给 `jankHeuristicMultiplier` 赋值会清除此缓存；这不适合作为刷新率变化通知机制。动态刷新率设备应单独记录显示模式，并避免把低版本 JankStats 阈值描述成逐帧 deadline。
 
 API 31+ 还会计算 `frameOverrunNanos = frameDurationTotalNanos - DEADLINE`。由于 overrun 比较 total duration 与一次 deadline，而 `isJank` 比较 UI duration 与默认两倍 deadline，一帧可能出现 `frameOverrunNanos > 0` 但 `isJank == false`。服务端应把这两个字段分开统计。
 
@@ -169,11 +183,11 @@ API 31+ 还会计算 `frameOverrunNanos = frameDurationTotalNanos - DEADLINE`。
 - Frozen frame rate：选定 duration 超过 700 ms 的 frame 数 / 总 frame 数，并写明使用 UI 还是 total duration。
 - 页面慢帧率：按 screen 或 route 聚合。
 - 交互慢帧率：按滚动、点击、转场等状态聚合。
-- 分位耗时：分别记录 UI、CPU、total 与 overrun 的 P50、P90、P95、P99。
+- 分位耗时：分别记录 UI、CPU、total 与 overrun 的 P50、P90、P95、P99；P95 表示 95% 的观测值不超过该数值，其余分位同理。
 
 Firebase Performance 的 slow rendering frame 使用固定 16 ms，frozen frame 使用 700 ms，而且官方文档明确说明 slow frame 假定 60 Hz。这套口径可以作为 Firebase 兼容指标，但不能与 JankStats 默认 `isJank` 混用。
 
-平均 FPS 不适合作为唯一指标。某个短窗口先长时间停顿、随后连续出帧，平均值可能尚可，但用户已经感受到停顿。
+平均帧率（FPS，frames per second）不适合作为唯一指标。某个短窗口先长时间停顿、随后连续出帧，平均值可能尚可，但用户已经感受到停顿。
 
 ## 帧性能工具分工
 
@@ -187,23 +201,23 @@ FrameMetrics 的部分阶段可能并行，`TOTAL_DURATION` 也不等于各字�
 
 ### FrameMetrics 的数据边界
 
-Android 17 的 UI 线程和 RenderThread 共同填写 `FrameInfo` 时间戳数组，`FrameMetrics` 再按固定起止索引计算公开指标。公开 listener 会复用同一个 `FrameMetrics` 对象，并且 `FrameMetricsObserver` 不等待 display present time。因此收到回调只表示 HWUI 帧统计已经可用，不表示 SurfaceFlinger 已采纳该 buffer 或屏幕已经呈现。
+Android 17 的 UI 线程和 RenderThread 共同填写 `FrameInfo` 时间戳数组，`FrameMetrics` 再按固定起止索引计算公开指标。HWUI 是 Android 的硬件加速 UI 渲染层，`FrameInfo` 保存一帧各阶段的时间点。公开 Window listener 会复用同一个 `FrameMetrics` 对象；它创建 `FrameMetricsObserver` 时传入 `waitForPresentTime=false`，不会等待 display present time（画面真正出现在屏幕上的时间）。因此收到回调只表示 HWUI 帧统计已经可用，不表示 SurfaceFlinger 已采纳该 buffer 或屏幕已经呈现。
 
 | 指标 | API | Android 17 时间区间或取值 | 排查入口 |
 |---|---:|---|---|
-| `UNKNOWN_DELAY_DURATION` | 24+ | `INTENDED_VSYNC → HANDLE_INPUT_START` | 前序消息、调度、Binder 或锁使 UI 线程晚启动 |
+| `UNKNOWN_DELAY_DURATION` | 24+ | `INTENDED_VSYNC → HANDLE_INPUT_START` | 前序消息、调度、Binder 进程间通信或锁使 UI 线程晚启动 |
 | `INPUT_HANDLING_DURATION` | 24+ | `HANDLE_INPUT_START → ANIMATION_START` | 输入处理 |
 | `ANIMATION_DURATION` | 24+ | `ANIMATION_START → PERFORM_TRAVERSALS_START` | animation callback 与状态更新 |
 | `LAYOUT_MEASURE_DURATION` | 24+ | `PERFORM_TRAVERSALS_START → DRAW_START` | measure/layout 与 `requestLayout()` 扩散 |
-| `DRAW_DURATION` | 24+ | `DRAW_START → SYNC_QUEUED` | display-list 记录和自定义绘制 |
-| `SYNC_DURATION` | 24+ | `SYNC_START → ISSUE_DRAW_COMMANDS_START` | RenderNode 状态同步、RenderThread 压力 |
-| `COMMAND_ISSUE_DURATION` | 24+ | `ISSUE_DRAW_COMMANDS_START → SWAP_BUFFERS` | RenderThread CPU 与 driver submission |
-| `SWAP_BUFFERS_DURATION` | 24+ | API 31+ 为 `SWAP_BUFFERS → SWAP_BUFFERS_COMPLETED` | BufferQueue 背压、swap 或消费等待 |
+| `DRAW_DURATION` | 24+ | `DRAW_START → SYNC_QUEUED` | 显示列表（display list）记录和自定义绘制 |
+| `SYNC_DURATION` | 24+ | `SYNC_START → ISSUE_DRAW_COMMANDS_START` | 保存渲染属性的 RenderNode 状态同步、RenderThread 压力 |
+| `COMMAND_ISSUE_DURATION` | 24+ | `ISSUE_DRAW_COMMANDS_START → SWAP_BUFFERS` | RenderThread CPU 与向图形驱动提交命令（driver submission） |
+| `SWAP_BUFFERS_DURATION` | 24+ | API 31+ 为 `SWAP_BUFFERS → SWAP_BUFFERS_COMPLETED` | 缓冲队列（BufferQueue）背压、swap 或消费等待；背压表示消费者跟不上时生产方被迫等待 |
 | `TOTAL_DURATION` | 24+ | `INTENDED_VSYNC → FRAME_COMPLETED` | HWUI 生产并提交帧的总区间，不是 present duration |
 | `FIRST_DRAW_FRAME` | 24+ | window visibility-change flag | 新 Window 首次 draw，需与稳态帧分开 |
-| `GPU_DURATION` | 31+ | API 33+ 为 submission complete 到 GPU complete | GPU workload 或 contention 线索 |
+| `GPU_DURATION` | 31+ | API 33+ 为 submission complete 到 GPU complete | GPU 工作量或资源争用（contention）线索 |
 | `DEADLINE` | 31+ | `INTENDED_VSYNC → FRAME_DEADLINE` | 应用生产本帧的预算 |
-| `FRAME_TIMELINE_VSYNC_ID` | 36+ | FrameTimeline Vsync id | 与 compositor jank data 关联的 join key |
+| `FRAME_TIMELINE_VSYNC_ID` | 36+ | FrameTimeline Vsync id | 与 compositor jank data 关联的关联键（join key） |
 
 指标不可用时 `getMetric()` 返回 `-1`，不能用零补齐。各阶段还可能并行，`SYNC_QUEUED → SYNC_START` 等间隙没有独立公开字段，GPU completion 也不保证被 total 完整包含，所以 `TOTAL_DURATION - sum(stages)` 不能命名为“其他耗时”后直接归因。
 
@@ -215,17 +229,17 @@ GPU 与 swap 的定义必须按 API 分桶：API 24—30 的 swap 结束于 `FRA
 |---|---|---|
 | 普通 View / 标准 Compose | 宿主 Window 的 UI、RenderThread 与 swap | 具体 View/Composable 调用栈、SurfaceFlinger 和 present |
 | TextureView | 外部 buffer 被 HWUI 采样并混合后的宿主成本 | 外部 Producer 自身的生产、第一套 BufferQueue 与输入 fence |
-| SurfaceView | 宿主 UI、hole-punch、几何和控制层帧 | 独立内容 Surface 的 Producer、BufferQueue 与 layer 帧 |
+| SurfaceView | 宿主 UI、为独立 Surface 预留区域的 hole-punch、几何和控制层帧 | 独立内容 Surface 的 Producer、BufferQueue 与 layer 帧 |
 | Dialog、PopupWindow、多窗口 | 每个已注册 Window 各自的帧 | 未注册 Window，且不同 Window 不会自动合并 |
 | 软件渲染 Window | 无硬件渲染帧统计 | 软件 Canvas 完整耗时 |
 
-视频、相机、游戏或 SurfaceView 主体内容慢时，宿主 FrameMetrics 正常不能排除问题。需要按内容 layer 继续查 producer queue、acquire/release fence、SurfaceFlinger latch、HWC 与 present timing。
+视频、相机、游戏或 SurfaceView 主体内容慢时，宿主 FrameMetrics 正常不能排除问题。需要按内容 layer 继续查 producer queue（内容生产方的缓冲队列）、acquire/release fence（生产者与消费者之间的同步信号）、SurfaceFlinger latch（合成器接收新 buffer 的时点）、HWC（硬件合成器）与 present timing。
 
 ### 直接监听 FrameMetrics
 
 只在 API 24+、硬件加速且 DecorView 已建立的 Window 注册。listener 所在 Handler 应是专用线程，回调返回前只复制需要的数值并更新有界聚合；文件、JSON 与网络不能进入逐帧路径。停止采集时先移除 listener，再退出线程。`droppedReportsSinceLastCallback` 表示观测器来不及消费，不等于显示系统丢了相同数量的帧，但它意味着统计分母已有缺口，必须单列数据质量。
 
-页面状态不能在延迟回调到达时直接读取“当前 route”。API 26+ 使用 `INTENDED_VSYNC_TIMESTAMP` 与应用维护的状态区间做交集；API 24—25 只做 Window session 级聚合，或在路由切换时明确结束旧窗口。Vsync id 是逐帧高基数，只保存在有限异常样本或短期 join cache 中。
+页面状态不能在延迟回调到达时直接读取“当前 route”。API 26+ 使用 `INTENDED_VSYNC_TIMESTAMP` 与应用维护的状态区间做交集；API 24—25 只做 Window session（一次连续监控时段）级聚合，或在路由切换时明确结束旧窗口。Vsync id 几乎每帧都不同，属于高基数字段，只保存在有限异常样本或短期 join cache（临时关联缓存）中。
 
 JankStats 在 API 24+ 内部已经注册 FrameMetrics listener。若应用再直接注册一条 listener，必须量化重复回调、聚合和对象分配成本。常规线上分布优先用 JankStats；只有需要 layout/draw/sync/command/swap/GPU 分段或 API 36+ compositor join 时，才对受控样本开启直接 FrameMetrics。
 
@@ -237,7 +251,7 @@ JankStats 在 API 24+ 内部已经注册 FrameMetrics listener。若应用再直
 |---|---|---|---|
 | JankStats 1.0.0 | API 23+，应用内逐帧回调 | 哪个 Window、页面状态或交互的 jank / overrun 上升 | 不上传、不抓 trace；API 37 仍走 Api31Impl |
 | FrameMetrics | API 24+，应用内逐帧回调 | UI、draw、sync、swap 等平台阶段提供了什么时间线索 | 没有业务状态；阶段值不能直接证明代码根因 |
-| SurfaceControl jank data | API 36+，compositor 批量回调 | App、SurfaceFlinger 或调度侧属于哪类 jank | 要自行和 FrameMetrics、页面状态关联 |
+| SurfaceControl jank data | API 36+，compositor 批量回调 | 应用、合成器或其他系统组件属于哪类 jank | 要自行和 FrameMetrics、页面状态关联；更细根因仍需 trace |
 | Perfetto | Android 9+ 可用平台 on-device 工具；旧系统另走 host 工具 | 线程调度、Binder、锁、CPU、RenderThread 与 SurfaceFlinger 如何交互 | trace 成本较高，适合实验室或按需采集 |
 | Macrobenchmark | 当前 AndroidX 以 API 23+ 为基础，测试设备运行 | 一段可复现交互在变更前后是否退化 | 反映受控测试，不代表线上设备分布 |
 | Firebase Performance | SDK 自动 screen rendering trace | 页面实例的 fixed-16-ms slow 与 700-ms frozen 趋势 | slow 指标假定 60 Hz，无法增加自定义 screen metrics / attributes |
@@ -259,13 +273,13 @@ JankStats 上线前要先定义指标协议：
 - 明确 `ui_duration`、`cpu_duration`、`total_duration`、`overrun` 与 `is_jank` 的字段名、单位和 API 可用范围。
 - `jankHeuristicMultiplier` 固定为配置的一部分。调整 multiplier 后要带新配置版本，不能把两种阈值的事件直接合并。
 - 对同一统计窗口保留全部帧计数。不能只采样 jank frame，否则分母与分位数都会失真。
-- 若需降低成本，按稳定哈希选择 session / device，或在端上先聚合整个窗口；不要对正常帧和 jank 帧使用不同的随机采样率。
+- 若需降低成本，按稳定哈希选择 session / device，也就是对匿名标识做确定性哈希，让同一对象稳定地进入或退出样本；也可以在端上先聚合整个窗口。不要对正常帧和 jank 帧使用不同的随机采样率。
 - 以 Activity 可交互或 Window 可见策略启停 `isTrackingEnabled`，并记录策略，避免后台与多窗口数据含义不清。
 - 回调内只更新预分配计数器、直方图或有界队列。文件写入、压缩和上传放在后台。
 
 ## UI context 的设计
 
-JankStats 的数据能不能用于线上治理，关键不在 `isJank`，而在 UI context。没有 context，慢帧只能按 Activity 聚合；有 context，才能知道是首页列表、详情页转场、播放器拖动还是搜索结果页滚动。
+JankStats 的数据能否帮助定位并改进线上问题，很大程度取决于 UI context。没有 context，慢帧只能按 Activity 聚合；有 context，才能知道是首页列表、详情页转场、播放器拖动还是搜索结果页滚动。
 
 推荐字段要少而稳定：
 
@@ -277,13 +291,13 @@ JankStats 的数据能不能用于线上治理，关键不在 `isJank`，而在 
 | `first_screen` | `true` / `false` | 首屏阶段要单独看 |
 | `list_size_bucket` | `0-20`、`20-100`、`100+` | 避免上传真实列表大小 |
 
-不建议把商品 id、帖子 id、搜索词、完整 URL 放进 context。JankStats context 会跟随帧事件上报，高基数字段会让平台聚合失效。
+不建议把商品 id、帖子 id、搜索词、完整 URL 放进 context。JankStats context 会跟随帧事件上报；这类取值数量接近事件数量的高基数字段，会让分组数量急剧增长，使平台聚合失效。
 
-同一 View hierarchy 只有一个 `PerformanceMetricsState`，相同 key 的新值会替换旧值。页面容器、列表组件和基础库如果都写 `state`、`screen` 这类通用 key，很容易互相覆盖。团队应明确 key 的 owner：
+同一 View hierarchy 只有一个 `PerformanceMetricsState`，相同 key 的新值会替换旧值。页面容器、列表组件和基础库如果都写 `state`、`screen` 这类通用 key，很容易互相覆盖。团队应明确 key 的 owner，也就是负责写入和清理这个 key 的层级：
 
 - 页面容器独占 `screen`，进入时写入，退出时删除。
 - 当前交互独占 `interaction`，滚动、转场和刷新结束后恢复为 `idle` 或删除。
-- 可复用组件使用带命名空间的 key，例如 `feed.list_state`，并在 detach 时清理。
+- 可复用组件使用带命名空间的 key，例如 `feed.list_state`，用前缀避免组件间重名，并在 View 脱离层级（detach）时清理。
 - 只需要标记下一帧的短事件使用 `putSingleFrameState()`，避免忘记调用 `removeState()`。
 
 ## Compose 场景的状态标记
@@ -322,13 +336,13 @@ fun HomeScreen(isScrolling: Boolean) {
 }
 ```
 
-`LaunchedEffect` 在 `isScrolling` 变化时更新状态，`DisposableEffect` 在该页面离开 composition 时统一清理。若 Navigation 转场期间两个页面短暂共存，两个页面不能同时拥有同一个 `screen` key；应由 NavHost 或 Activity 级 owner 写入当前 route。
+`LaunchedEffect` 在 `isScrolling` 变化时更新状态，`DisposableEffect` 在该页面离开 composition（Compose 组合树）时统一清理。若 Navigation 转场期间两个页面短暂共存，两个页面不能同时拥有同一个 `screen` key；应由 NavHost 或 Activity 这一层统一写入当前 route。
 
 ## 批量聚合方式
 
 JankStats 每帧回调一次，逐帧上传会放大序列化、存储和网络成本，还可能反过来干扰被测页面。端侧更适合按“页面 + 交互 + API 桶 + 固定时间窗口”维护计数器和有界直方图，到窗口结束时只上报聚合结果。
 
-下面是一份 API 31-37 窗口的协议示例；字段名应在客户端和服务端共同版本化：
+下面是一份 API 31-37 窗口的协议示例；这里的 API 桶表示字段语义相同的一组系统版本，`schema_version` 用来标记整份数据结构的版本。字段名应在客户端和服务端共同版本化：
 
 ```json
 {
@@ -364,7 +378,7 @@ JankStats 每帧回调一次，逐帧上传会放大序列化、存储和网络�
 
 `jank_frames` 只累计 `isJank`，`deadline_miss_frames` 只累计 `frameOverrunNanos > 0`，两者不能互相推算。这里把 frozen 定义为 API 31+ 的 `frameDurationTotalNanos > 700 ms`；若平台选择 UI duration，字段名和 schema version 也要随之变化。API 23-30 没有 total/overrun 字段，应将对应直方图和 `deadline_eligible_frames` 留空或置零，不能拿 UI duration 填充后伪装成同一口径。
 
-`FrameData` 没有公开 refresh rate 字段。API 31+ 可以按帧用 `frameDurationTotalNanos - frameOverrunNanos` 还原本帧 deadline；API 23-30 若另行采集 `Display` 刷新率，要把数据来源和采样时刻写进协议。设备可能在窗口内切换显示模式，而且 JankStats 1.0.0 的低版本路径会缓存首次估算值，所以比起只记录一个 `refresh_rate=120`，按 expected-duration 或观测到的 display-mode 桶拆窗口更稳妥。
+`FrameData` 没有公开 refresh rate 字段。API 31+ 可以按帧用 `frameDurationTotalNanos - frameOverrunNanos` 还原本帧 deadline；API 23-30 若另行采集 `Display` 刷新率，要把数据来源和采样时刻写进协议。设备可能在窗口内切换显示模式，而且 JankStats 1.0.0 的低版本路径会缓存首次估算值，所以比起只记录一个 `refresh_rate=120`，按 expected duration 或观测到的 display mode 分组更稳妥。
 
 端侧聚合用于版本趋势、页面排名和设备分层。若仍需保留单帧样本，应按 session 稳定采样并设置数量上限，不能只保留异常帧后再用样本计算比例。
 
@@ -380,7 +394,7 @@ JankStats 每帧回调一次，逐帧上传会放大序列化、存储和网络�
 
 首屏还需要单独设计边界。JankStats 的 `FrameData` 不公开 `FrameMetrics.FIRST_DRAW_FRAME`，客户端可以在首屏开始和内容稳定之间写入 `first_screen=true`；API 24+ 若要识别平台标记的首个 draw，则需要直接读取 `FrameMetrics.FIRST_DRAW_FRAME`。这两个定义分别代表业务首屏区间和平台首次绘制，不能用同一个字段代替。
 
-聚合数据升高而实验室单次 trace 看不出长帧，并不矛盾。线上比例可能集中在某个 SoC、刷新率、温控状态或特定内容桶，单台高性能测试机没有复现对应条件。处理顺序是先按版本、设备、API、expected duration 和 UI context 缩小范围，再构造 Macrobenchmark 或按需 Perfetto 场景；不能从“一条 trace 正常”推导“线上聚合误报”。
+聚合数据升高而实验室单次 trace 看不出长帧，并不矛盾。线上比例可能集中在某个 SoC（System on Chip，片上系统）、刷新率、温控状态或特定内容分组，单台高性能测试机没有复现对应条件。处理顺序是先按版本、设备、API、expected duration 和 UI context 缩小范围，再构造 Macrobenchmark 或按需 Perfetto 场景；不能从“一条 trace 正常”推导“线上聚合误报”。
 
 ## 常见误判
 
@@ -415,6 +429,8 @@ JankStats 是线上定位入口，不是根因分析器。它把范围收敛到�
 - [FrameMetrics API reference](https://developer.android.com/reference/android/view/FrameMetrics)
 - [SurfaceControl.JankData API reference](https://developer.android.com/reference/android/view/SurfaceControl.JankData)
 - [AOSP android-17.0.0_r1：FrameMetrics.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java)
+- [AOSP android-17.0.0_r1：FrameMetricsObserver.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetricsObserver.java)
+- [AOSP android-17.0.0_r1：FrameMetricsObserver.h](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/FrameMetricsObserver.h)
 - [AOSP android-17.0.0_r1：SurfaceControl.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceControl.java)
 - [Firebase Performance：screen rendering traces](https://firebase.google.com/docs/perf-mon/screen-traces?platform=android)
 - [Android Vitals：slow rendering](https://developer.android.com/topic/performance/vitals/render)

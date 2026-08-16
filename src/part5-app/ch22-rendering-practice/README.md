@@ -1,8 +1,8 @@
 # 第 22 章：渲染优化实战
 
-渲染优化需要把布局、绘制、动画、图片、列表和页面切换放进同一帧预算中分析，并通过 Trace 与线上帧率数据验证改动。
+渲染优化需要把布局、绘制、动画、图片、列表和页面切换放进同一帧预算中分析。帧预算是当前刷新周期留给一帧按时完成的时间：60 Hz 下约为 16.7 ms，120 Hz 下约为 8.3 ms；设备采用动态刷新率时，应以实际帧时间线为准。改动要用 Perfetto 或 System Trace（记录线程、渲染和系统事件的时间线）以及线上卡顿率验证。
 
-第 2 章和第 18 章分析系统渲染管线，第 7 章讨论卡顿定位；这里聚焦 View、Jetpack Compose、WebView、Flutter、视频播放和 CameraX 等 App 侧场景。
+[第 2 章](../../part1-fundamentals/ch02-rendering/README.md)和[第 18 章](../../part2-performance/ch18-rendering-pipelines/README.md)分析系统渲染管线，[第 7 章](../../part2-performance/ch07-smoothness/README.md)讨论卡顿定位；这里聚焦 View、Jetpack Compose、WebView、Flutter、视频播放和 CameraX 等 App 侧场景。
 
 ## 内容索引
 
@@ -40,7 +40,7 @@
 
 ## 阅读建议
 
-- 按 UI 技术栈或卡顿场景选择条目，无须按编号顺序阅读。
+- 按使用的 UI 框架或卡顿场景选择条目，无须按编号顺序阅读。
 - View 项目可先读 22.1、22.2、22.4 和 22.8；Compose 项目可从 22.3、22.16 和 22.22 开始。
-- 改动前后都应保留 Trace、帧率和设备配置，避免只凭主观体验判断效果。
-- 相机预览、分析、拍照和录像的应用侧配置见 22.31；HAL3 request/result、BufferQueue 与 fence 的系统链路继续回到 18.14。
+- 改动前后都应保留 Trace、卡顿率、帧时间分布和设备配置，避免只凭主观体验判断效果。
+- 相机预览、分析、拍照和录像的应用侧配置见 22.31；HAL3 request/result（应用提交给相机硬件抽象层的请求及其返回元数据）、BufferQueue（生产者与消费者传递图形缓冲区的队列）和 fence（表示异步读写何时完成的同步信号）等系统链路继续阅读 [18.14 Android 17 Camera 渲染管线](../../part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md)。

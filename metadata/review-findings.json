@@ -1971,6 +1971,40 @@
       "summary": "logd chapter frontmatter sources omitted official R8 and Log Info Disclosure docs cited in reader-visible prose",
       "type": "source-metadata",
       "updated_at": "2026-08-12T21:02:10.142715+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch09-anr/04-special-anr.md",
+      "created_at": "2026-08-14T02:00:14.023322+08:00",
+      "created_by": "hermes-aiw-weekly-source-audit",
+      "created_run_id": "freshness-2026-08-14",
+      "details": "last source verification 2026-04-27 older than 90 days\nEvidence: 2026-04-27",
+      "id": "AIW-FRESH-19c4d3320e9ab657",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-08-14-时效性巡检.md",
+      "severity": "P2",
+      "source_paths": [
+        "src/part2-performance/ch09-anr/04-special-anr.md"
+      ],
+      "status": "open",
+      "summary": "last source verification 2026-04-27 older than 90 days",
+      "type": "stale-source-verification",
+      "updated_at": "2026-08-14T02:00:14.023322+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch18-rendering-pipelines/22-advanced-professional-video-apv.md",
+      "created_at": "2026-08-14T02:00:14.023322+08:00",
+      "created_by": "hermes-aiw-weekly-source-audit",
+      "created_run_id": "freshness-2026-08-14",
+      "details": "affirmative higher-than-Android-17 out-of-scope claim\nEvidence: 能说明](https://developer.android.com/about/versions/16/features#apv)：APV 定位、标准特征与 Android 422-10 实现范围。",
+      "id": "AIW-FRESH-ecc5e6cbeab1e705",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-08-14-时效性巡检.md",
+      "severity": "P1",
+      "source_paths": [
+        "src/part2-performance/ch18-rendering-pipelines/22-advanced-professional-video-apv.md"
+      ],
+      "status": "open",
+      "summary": "affirmative higher-than-Android-17 out-of-scope claim",
+      "type": "above-android17-affirmative-claim",
+      "updated_at": "2026-08-14T02:00:14.023322+08:00"
     }
   ],
   "schema_version": 1

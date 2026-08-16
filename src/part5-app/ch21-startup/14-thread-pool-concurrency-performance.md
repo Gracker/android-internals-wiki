@@ -4,8 +4,8 @@ chapter: "21.14"
 section: "21.14"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-07-01"
-last_verified_against: "AOSP android-17.0.0_r1"
+last_verified: "2026-08-14"
+last_verified_against: "AOSP android-17.0.0_r1, kotlinx.coroutines 1.11.0, WorkManager 2.11.2"
 confidence: high
 sources:
   - type: official
@@ -14,40 +14,42 @@ sources:
     path: "libcore/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java"
   - type: aosp
     path: "art/runtime/thread.cc (FixStackSize, CreateNativeThread)"
-  - type: blog
+  - type: official
     path: "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/"
+  - type: official
+    path: "https://developer.android.com/jetpack/androidx/releases/work"
 tags: [thread-pool, concurrency, cpu-scheduling, startup, coroutines]
 related_chapters: ["1.5", "5.1", "8.6", "20.19"]
 ---
 
 # 线程池与并发调度性能实战
 
-启动优化经常把“移到后台线程”和“缩短启动”写成同一件事。任务离开主线程后，仍会竞争 CPU、存储、Binder、内存带宽和锁；主线程若等待它的结果，排队时间也会进入启动关键路径。线程数增加只能扩大并发机会，无法消除依赖和资源上限。
+启动优化经常把“移到后台线程”和“缩短启动”写成同一件事。任务离开主线程后，仍会竞争 CPU、存储、Binder（Android 的进程间调用机制）、内存带宽（单位时间内存可传输的数据量）和锁；主线程若等待它的结果，排队时间也会进入启动关键路径。线程数增加只能扩大并发机会，无法消除依赖和资源上限。
 
-平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点是 `android17-6.18-2026-06_r6`。每个调度结论都要回答任务契约、执行器、并行度和等待位置，并由队列指标与 Perfetto 支撑。
+平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点是 `android17-6.18-2026-06_r6`。每个调度结论都要回答四个问题：任务契约是什么，也就是它是否必须完成、能否丢弃或重试；使用哪个执行器；允许多少任务同时运行；调用方在哪里等待。结论还要有队列指标与 Perfetto 系统 trace 支撑。
 
 线程、锁与协程的基础机制分别见 [§1.5 线程模型](../../part1-fundamentals/ch01-architecture/05-threading-model.md) 和 [§8.6 协程性能](../../part2-performance/ch08-responsiveness/06-coroutine-performance.md)。以下只讨论启动场景中的任务编排和资源竞争。
 
 ## 1. 并发优化先看启动关键路径
 
-启动任务可以画成一张有向无环图。节点是工作，边表示依赖；从进程创建走到首帧或 fully drawn 的最长依赖路径，就是当前指标下的关键路径。
+启动任务可以画成一张有向无环图（DAG）：节点代表工作，单向边代表依赖，并且图中没有循环。从进程创建走到首帧或 fully drawn 的最长依赖路径，就是当前指标下的关键路径。首帧对应 TTID（Time to Initial Display），fully drawn 表示应用声明主要内容已经可用，对应 TTFD（Time to Full Display）。
 
 一项后台任务对启动时间的贡献可以拆成四段：
 
 `完成时间 = 提交时刻 + 队列等待 + 获得 CPU 后的执行 + 依赖或资源等待`
 
-只统计任务函数自身的运行时间，会漏掉线程池排队、处于 Runnable 却没获得 CPU、锁竞争、同步 Binder 和主线程等待。并发调优必须把这几段分开。
+只统计任务函数自身的运行时间，会漏掉线程池排队、处于 Runnable（已可运行但仍在等 CPU）状态的时间、锁竞争、同步 Binder 和主线程等待。并发调优必须把这几段分开。
 
 启动任务按契约分类，比按代码所在模块分类更可靠：
 
 | 任务类型 | 例子 | 主要约束 | 常见执行位置 |
 |---|---|---|---|
-| 首帧必需、主线程亲和 | View 创建、资源主题应用、窗口操作 | Android UI 线程规则 | 主线程，缩短同步工作 |
+| 首帧必需、主线程亲和 | View 创建、资源主题应用、窗口操作 | Android UI 线程规则；“主线程亲和”表示只能或应当在主线程执行 | 主线程，缩短同步工作 |
 | 首帧必需、CPU 计算 | 小规模配置解析、状态归并 | CPU 容量、热状态、依赖顺序 | 有界计算调度器 |
 | 首帧必需、阻塞调用 | 磁盘读取、同步数据库、同步 Binder | 外部服务与设备延迟 | 有界阻塞调度器，并评估能否取消依赖 |
 | 首帧后可做 | 缓存预热、非当前页 SDK、统计准备 | 生命周期、功耗、与首帧竞争 | 首帧后由应用作用域调度 |
-| 需要跨进程存活 | 可重试上传、持久同步 | 系统配额、约束、重试语义 | WorkManager |
-| 回调式异步 API | OkHttp enqueue、异步数据库或系统回调 | API 自有线程与并发限制 | 保留原调度器，用挂起桥接等待结果 |
+| 需要跨进程存活 | 可重试上传、持久同步 | 系统配额、约束、重试语义 | WorkManager，由系统协助持久调度 |
+| 回调式异步 API | OkHttp `enqueue()`、异步数据库或系统回调 | API 自有线程与并发限制 | 保留原调度器，把回调安全转换成可挂起调用 |
 
 “I/O 任务不消耗 CPU”不成立。网络和文件路径仍可能做协议处理、内存复制、校验、解压、反序列化、加密和 Binder 调用。分类依据应是阻塞行为与资源占用，而非函数名中有没有 `read` 或 `load`。
 
@@ -57,7 +59,7 @@ related_chapters: ["1.5", "5.1", "8.6", "20.19"]
 
 ### 2.1 `execute()` 的三段决策
 
-Android 17 的 `ThreadPoolExecutor` 来自 libcore OpenJDK 实现。下面的伪代码用于呈现 `execute()` 的决策顺序，省略了运行状态重检和并发控制细节。
+`ThreadPoolExecutor` 是 JDK 提供的通用线程池执行器；Android 17 使用 libcore 中的 OpenJDK 实现。它由核心线程数、最大线程数、任务队列和拒绝策略共同决定何时建线程、何时排队。下面的伪代码呈现 `execute()` 的决策顺序，省略运行状态重检和并发控制细节。
 
 ```text
 if workerCount < corePoolSize:
@@ -70,48 +72,48 @@ else:
     reject(task)
 ```
 
-这段顺序解释了一个常见现象：核心线程都忙时，执行器先调用 `workQueue.offer()`；只有入队失败，才尝试创建非核心线程。使用无界 `LinkedBlockingQueue` 时，运行中的执行器几乎不会因为积压而走到 `maximumPoolSize`，所以调大 `maximumPoolSize` 往往没有效果。
+这段顺序解释了一个常见现象：核心线程都忙时，执行器先调用 `workQueue.offer()`；只有入队失败，才尝试创建非核心线程。使用不限制容量的 `LinkedBlockingQueue` 时，运行中的执行器几乎不会因为积压而走到 `maximumPoolSize`，所以调大 `maximumPoolSize` 往往没有效果。
 
 ### 2.2 队列是延迟和过载策略
 
 | 队列 | 行为 | 适用边界 | 主要风险 |
 |---|---|---|---|
-| 无界队列 | 核心线程忙后持续排队 | 生产速率受控、任务必须保留、已有外部背压 | 延迟与内存占用缺少上界，`maximumPoolSize` 很少参与 |
+| 无界队列 | 核心线程忙后持续排队 | 生产速率受控、任务必须保留、已有外部背压（下游忙时能让上游减慢提交） | 延迟与内存占用缺少上界，`maximumPoolSize` 很少参与 |
 | 有界队列 | 队列满后扩到最大线程数，再拒绝 | 需要给排队和内存设上限 | 容量过小会频繁拒绝，过大又会隐藏过载 |
-| `SynchronousQueue` | 提交者必须把任务直接交给空闲或新线程 | 极短突发、线程上限和拒绝语义清楚 | 阻塞任务容易迅速打满线程上限 |
-| 优先级队列 | 由业务优先级选择任务 | 任务可稳定排序且能处理饥饿 | 默认通常无界，旧任务可能长期等不到执行 |
+| `SynchronousQueue` | 不保存任务，提交者必须把任务直接交给空闲或新线程 | 极短突发、线程上限和拒绝语义清楚 | 阻塞任务容易迅速打满线程上限 |
+| 优先级队列 | 由业务优先级选择任务 | 任务可稳定排序且能处理饥饿 | 默认通常无界；“饥饿”指低优先级旧任务长期等不到执行 |
 
-队列容量不应来自“64 看起来够用”这样的经验值。可从压测中记录到达速率、服务时间和允许排队时长，再按突发流量预留余量。Little 定律 `L = λW` 可以估算稳定区间的平均在途任务数，其中 `λ` 是每秒到达任务数，`W` 是任务从进入系统到离开的平均秒数；它不能替代突发测试，也不能给启动阶段直接生成一个通用常量。
+队列容量不应来自“64 看起来够用”这样的经验值。可从压测中记录到达速率、服务时间和允许排队时长，再按突发流量预留余量。Little 定律 `L = λW` 描述稳定系统中“平均在途任务数 = 平均到达速率 × 平均停留时间”：`L` 是正在排队或执行的平均任务数，`λ` 是每秒到达任务数，`W` 是任务从进入系统到离开的平均秒数。它不能替代突发测试，也不能给启动阶段直接生成一个通用常量。
 
 ### 2.3 拒绝策略属于正确性设计
 
 执行器饱和时，拒绝策略决定数据是否丢失、调用线程是否被阻塞，以及错误能否被发现：
 
 - `AbortPolicy` 抛出 `RejectedExecutionException`，适合不能静默丢失且调用方能够降级或重试的任务。
-- `CallerRunsPolicy` 在提交线程执行任务，能够减慢生产者；若提交者是主线程，它会把后台工作搬回启动关键路径。
+- `CallerRunsPolicy` 在提交线程执行任务，借此减慢生产者；若提交者是主线程，它会把后台工作搬回启动关键路径。
 - `DiscardPolicy` 和 `DiscardOldestPolicy` 只适合允许丢弃、合并或由新状态覆盖旧状态的任务，还要记录丢弃原因。
 - 自定义策略必须定义关闭期间与过载期间的差异，避免把 executor 已关闭误判成瞬时拥塞。
 
-拒绝次数不能统一设成“只要大于零就报警”。主动丢弃的遥测任务和必须执行的配置加载，对拒绝的容忍度完全不同。监控规则要绑定任务契约。
+拒绝次数不能统一设成“只要大于零就报警”。主动丢弃的遥测任务，也就是只用于统计观测的事件，与必须执行的配置加载，对拒绝的容忍度完全不同。监控规则要绑定任务契约。
 
 ### 2.4 同池等待会造成饥饿
 
-一个容易漏掉的故障是：池中的每个工作线程都提交子任务到同一个有界池，然后同步等待子任务。所有 worker 被父任务占住后，子任务只能在队列里等待，系统可能永久停住。
+一个容易漏掉的故障是：池中的每个工作线程都提交子任务到同一个有界池，然后同步等待子任务。所有 worker（线程池中实际取任务执行的工作线程）被父任务占住后，子任务只能在队列里等待，系统可能永久停住。
 
-修复方向包括取消同步等待、使用结构化并发让父任务挂起、把依赖关系交给调度器，或为有明确隔离需求的资源使用独立执行器。单纯扩大池只能推迟故障出现，无法修正循环等待关系。
+修复方向包括取消同步等待、使用结构化并发让父任务挂起、把依赖关系交给调度器，或为有明确隔离需求的资源使用独立执行器。结构化并发要求父任务管理子任务的生命周期、取消和异常。单纯扩大池只能推迟故障出现，无法修正循环等待关系。
 
 ## 3. 并行度由任务和设备共同决定
 
 ### 3.1 CPU 密集任务
 
-`Runtime.getRuntime().availableProcessors()` 只能提供当前运行时可见的处理器数量。它没有表达大小核能力差异、当前 cpuset、前后台状态、系统负载、温度限制和其他进程竞争。
+`Runtime.getRuntime().availableProcessors()` 只能提供当前运行时可见的处理器数量。它没有表达大小核的性能差异、当前 cpuset（调度器允许该任务使用的 CPU 集合）、前后台状态、系统负载、温度限制和其他进程竞争。
 
 CPU 密集池可以从“接近可用处理器数量”的候选区间开始做实验，但不能把核数直接固化成所有设备的答案。启动阶段还要给主线程、RenderThread、Binder 和 GC 留出运行机会。较可靠的流程是：
 
-1. 用低端、中端和高端代表设备固定 release APK、数据集与启动模式；
+1. 用低端、中端和高端代表设备固定 release APK（启用正式优化的非调试安装包）、数据集与启动模式；
 2. 分别测试几个小范围并行度；
 3. 同时比较 TTID/TTFD、任务队列等待、Runnable 时间、温升与功耗；
-4. 选择尾延迟稳定、且不会压缩 UI 调度空间的最小并行度。
+4. 选择尾延迟稳定、且不会压缩 UI 调度空间的最小并行度。尾延迟指 P90、P95、P99 等较慢样本，而非平均值。
 
 任务粒度也会改变结果。几十微秒的小任务若每次都入队，调度、对象分配和同步成本可能超过计算本身；过大的任务又会长时间占用 worker。应从 trace 中确认任务切分后有没有减少关键路径，而非只看 CPU 利用率。
 
@@ -132,20 +134,20 @@ CPU 密集池可以从“接近可用处理器数量”的候选区间开始做�
 - 第三方 SDK 无法遵守应用的取消和优先级规则；
 - 安全边界要求任务不能和普通业务共用执行上下文。
 
-其余场景可以复用少量受管理的执行器，再用有界队列、`limitedParallelism`、`Semaphore` 或业务级合并控制单类任务的并发。
+其余场景可以复用少量受管理的执行器，再用有界队列、`limitedParallelism`（限制某个协程调度器视图的并行片段数）、`Semaphore`（凭许可数限制同时在途的任务）或业务级合并控制单类任务的并发。
 
 ## 4. Android 17 上的优先级和 CPU 选择
 
 ### 4.1 `Process` 优先级对应 Linux nice
 
-Android 的 `android.os.Process` 常量与 Java 的 `Thread.MIN_PRIORITY` 到 `MAX_PRIORITY` 不是同一套数值。Android 17 源码中：
+Android 的 `android.os.Process` 常量使用 Linux nice 值，数值越小，普通调度中的相对权重通常越高。它与 Java 的 `Thread.MIN_PRIORITY` 到 `MAX_PRIORITY` 不是同一套数值。Android 17 源码中：
 
 - `THREAD_PRIORITY_DEFAULT = 0`；
 - `THREAD_PRIORITY_BACKGROUND = 10`，正数代表较低的调度权重；
 - `THREAD_PRIORITY_FOREGROUND = -2`；
 - display、video、audio 等负值常量服务于特定系统场景，普通应用不应借它们抢占 UI 或媒体线程。
 
-新线程会继承创建线程的优先级和调度分组。工作线程应在自己的入口处设置 Android nice 值，避免从创建者继承一个不符合任务用途的状态。下面的 `ThreadFactory` 用于给受管理的 worker 统一命名并设置优先级。
+新线程创建时会继承创建线程的初始优先级和内核调度分组。工作线程应在自己的入口处设置 Android nice 值，避免保留一个不符合任务用途的继承状态。下面的 `ThreadFactory` 用于给受管理的 worker 统一命名并设置优先级。
 
 ```kotlin
 import android.os.Process
@@ -175,15 +177,15 @@ class AndroidThreadFactory(
 
 ### 4.2 内核调度不只看 nice
 
-在 `android17-6.18-2026-06_r6` 中，普通线程进入 fair 调度类，`fair.c` 通过 EEVDF 路径选择可运行实体。nice 会改变调度权重，但不会承诺某个线程在指定毫秒内获得 CPU。
+在 `android17-6.18-2026-06_r6` 中，普通线程进入 fair 调度类，也就是 Linux 为普通任务提供的公平调度路径。`fair.c` 使用 EEVDF（Earliest Eligible Virtual Deadline First）：先筛选应该获得运行时间的任务，再从中选择虚拟截止时间最早的任务。nice 会改变调度权重，但不会承诺某个线程在指定毫秒内获得 CPU。
 
-Android 还用 cgroup 与 task profile 管理进程和线程所属的调度组。CPU 选择会受 cpuset、利用率钳制（uclamp）、CPU 容量、当前负载、能耗模型和热限制影响，设备厂商也可以调整配置。应用层的一个 nice 数值无法覆盖这些条件。
+Android 还用 cgroup（control group，内核资源分组）与 task profile（系统预设的一组线程资源策略）管理进程和线程所属的调度组。CPU 选择会受 cpuset、uclamp（给任务利用率估计设置上下界）、CPU 容量、当前负载、能耗模型和热限制影响，设备厂商也可以调整配置。应用层的一个 nice 数值无法覆盖这些条件。
 
-因此，优先级适合表达“这类工作相对更能等待”，不适合表达截止时间。首帧依赖仍要缩短工作量、取消非必需依赖，并在代表设备上检查尾延迟。
+因此，优先级适合表达“这类工作相对更能等待”，不适合表达必须完成的时间点。首帧依赖仍要缩短工作量、取消非必需依赖，并在代表设备上检查尾延迟。
 
 ### 4.3 不把业务线程固定到大核
 
-通过 JNI 调用 `sched_setaffinity()` 把工作线程绑到所谓大核，会绕过调度器对负载、能耗、温度和前后台状态的动态判断。不同 SoC 的 CPU 拓扑与在线状态也不一致；后台后仍保留错误亲和性，还可能增加功耗或让线程无核可用。
+通过 JNI（Java 与 native C/C++ 代码的调用接口）调用 `sched_setaffinity()`，把工作线程固定到所谓大核，会绕过调度器对负载、能耗、温度和前后台状态的动态判断。不同 SoC（片上系统）的 CPU 拓扑与在线状态也不一致；应用退到后台后若仍保留错误亲和性，还可能增加功耗或让线程无核可用。
 
 CPU 亲和性可以用于实验室归因，例如判断某段计算是否受核容量影响。生产应用不应把硬绑核作为通用启动优化。若 trace 显示关键线程长期在不合适的 CPU 上等待，应同时检查任务优先级、进程状态、Runnable 竞争、设备温度与厂商调度配置。
 
@@ -191,46 +193,46 @@ CPU 亲和性可以用于实验室归因，例如判断某段计算是否受核�
 
 ### 5.1 ART 不采用“每线程固定 1 MB”的模型
 
-Android 17 的 `art/runtime/thread.cc` 在 `Thread::CreateNativeThread()` 中调用 `FixStackSize()`。这段源码会：
+ART（Android Runtime）在创建 Java 线程时还要准备 native stack，也就是运行 C/C++、JNI 和部分运行时代码所需的调用栈。Android 17 的 `art/runtime/thread.cc` 在 `Thread::CreateNativeThread()` 中调用 `FixStackSize()`。这段源码会：
 
 1. 在调用者传入零时使用运行时默认栈大小；
-2. 为兼容依赖较大 native stack 的旧应用再增加 1 MB；
-3. 加入栈溢出保护区；
+2. 无条件增加 1 MB，源码注释说明这是为了兼容依赖旧 Dalvik/bionic 较大 native stack 的应用；
+3. 加入栈溢出保护区与运行时保留区；
 4. 满足 `PTHREAD_STACK_MIN`，并向系统页大小取整。
 
-所以，不能用 `new Thread(..., stackSize)` 的参数推导线程最终栈映射大小。栈地址空间的保留量、已提交页和 RSS 还要分开看；一个较大的虚拟地址区间不代表同样大小的物理内存已常驻。
+所以，不能用 `new Thread(..., stackSize)` 的参数推导线程最终栈映射大小。栈地址空间的保留量、已提交页和 RSS（Resident Set Size，当前常驻物理内存）还要分开看；一个较大的虚拟地址区间不代表同样大小的物理内存已常驻。
 
-不要通过 PLT hook 统一改写 `pthread_attr_setstacksize()`。Java、JNI、解释器和 sanitizer 构建的栈需求不同，过小的栈会把偶发深调用变成难复现的崩溃。线程数量过多时，先减少无所有者线程、重复线程池和空闲 worker，再评估少数明确的 native 线程是否需要调整。
+不要通过 PLT hook（拦截动态链接函数调用）统一改写 `pthread_attr_setstacksize()`。Java、JNI、解释器和 sanitizer（内存、线程等错误检测插桩）构建的栈需求不同，过小的栈会把偶发深调用变成难复现的崩溃。线程数量过多时，先减少无所有者线程、重复线程池和空闲 worker，再评估少数明确的 native 线程是否需要调整。
 
 ### 5.2 所有者负责关闭和取消
 
-每个自建执行器都要有所有者、创建时机和关闭时机。常驻进程级执行器可以由 application scope 管理；页面级任务应随 `ViewModel` 或 Lifecycle 取消；测试和动态功能卸载还要显式 `shutdown()`，避免 class loader、Activity 或大对象被任务闭包长期引用。
+每个自建执行器都要有所有者、创建时机和关闭时机。常驻进程级执行器可以由 application scope（与应用进程同寿命的作用域）管理；页面级任务应随 `ViewModel` 或 Lifecycle 取消；测试和动态功能卸载还要显式 `shutdown()`，避免 ClassLoader、Activity 或大对象被任务闭包长期引用。闭包是任务代码连同其捕获变量形成的对象。
 
 线程“泄漏”常见的表现包括：
 
 - 周期任务使用固定频率调度，页面销毁后仍继续提交；
 - executor 没有关闭，核心线程长期等待队列；
-- 阻塞调用忽略 interrupt，取消请求无法结束；
+- 阻塞调用忽略 interrupt（Java 线程的协作式中断信号），取消请求无法结束；
 - 任务闭包持有 Activity、View 或大缓存；
 - 第三方 SDK 多次初始化，每次创建一组线程。
 
-`Thread.getAllStackTraces()` 会遍历并抓取大量 Java 栈，生产环境高频调用会制造额外开销，而且无法完整覆盖 native-only 线程。它适合受控诊断。日常盘点可以结合 Perfetto、bugreport、`/proc/self/task` 和库配置完成。
+`Thread.getAllStackTraces()` 会遍历并抓取大量 Java 栈，生产环境高频调用会制造额外开销，而且无法完整覆盖只运行 native 代码、没有对应 Java `Thread` 对象的线程。它适合受控诊断。日常盘点可以结合 Perfetto、bugreport（系统诊断报告）、`/proc/self/task`（当前进程的内核线程目录）和库配置完成。
 
 ## 6. 协程仍运行在线程调度器上
 
 ### 6.1 `Dispatchers.Default` 与 `Dispatchers.IO`
 
-在 JVM/Android 目标上，`Dispatchers.Default` 面向 CPU 计算，`Dispatchers.IO` 面向阻塞 I/O。协程挂起可以释放承载线程，普通阻塞调用仍会占住 worker。
+本文按 kotlinx.coroutines 1.11.0 的公开契约讨论。在 JVM/Android 目标上，`Dispatchers.Default` 面向 CPU 计算，`Dispatchers.IO` 面向阻塞 I/O。协程挂起会保存当前执行位置，并释放当时承载它的实际工作线程；普通阻塞调用仍会占住 worker。
 
-`Dispatchers.IO` 的默认阻塞并行度是 64 与处理器数量两者中的较大值，也可以由 `kotlinx.coroutines.io.parallelism` 调整。这是 kotlinx.coroutines 的默认实现边界，不是应用应该追求的线程数。`IO` 与 `Default` 共享线程和调度资源；从 `Default` 切到 `IO` 时，实现还可能在同一个 worker 上继续执行。
+`Dispatchers.IO` 的默认阻塞并行度是 64 与处理器数量两者中的较大值，也可以由 `kotlinx.coroutines.io.parallelism` 调整。这个值限制同时执行阻塞任务的数量，不等于进程中严格存活的线程总数，更不是应用应该追求的线程数。`IO` 与 `Default` 共享线程和调度资源；从 `Default` 切到 `IO` 时，实现还可能在同一个 worker 上继续执行。
 
-`Dispatchers.IO.limitedParallelism(n)` 的视图具有弹性，各个视图的并行度总和不受 `Dispatchers.IO` 默认 64 限制。为多个 SDK 分别创建很大的 view，峰值时仍可能出现大量阻塞 worker。
+`Dispatchers.IO.limitedParallelism(n)` 的视图具有弹性，各个视图的并行度总和不受 `Dispatchers.IO` 默认 64 限制。为多个 SDK 分别创建很大的 view，峰值时仍可能出现大量阻塞 worker；这些视图共享底层线程与调度资源，没有获得彼此隔离的私有线程池。
 
 ### 6.2 `limitedParallelism` 控制执行片段
 
-`limitedParallelism(n)` 返回底层 dispatcher 的一个视图，没有私有线程集合，也不保证稳定线程身份。它限制同时执行的协程片段数量；协程挂起后，其他协程可以进入同一个 view。
+`limitedParallelism(n)` 返回底层 dispatcher 的一个轻量视图，没有私有线程集合，不需要关闭，也不保证稳定线程身份。它限制同时执行的协程片段数量；协程挂起后，其他协程可以进入同一个 view。
 
-这使它适合约束 CPU 工作或实现“挂起点之间串行执行”。如果要限制数据库连接、socket 请求或解码器实例等资源的在途数量，应使用 `Semaphore`；需要保护共享可变状态时使用 `Mutex`。这些资源约束不能由 dispatcher 名称推断。
+这使它适合约束 CPU 工作或实现“挂起点之间串行执行”。`limitedParallelism(1)` 会为这些执行片段建立顺序关系，但它不是覆盖整个挂起函数的互斥锁：一个协程挂起后，另一个协程可以进入同一视图。如果要限制数据库连接、socket 请求或解码器实例等资源的在途数量，应使用 `Semaphore`；需要保护共享可变状态时使用 `Mutex`（协程可挂起的互斥锁）。这些资源约束不能由 dispatcher 名称推断。
 
 ### 6.3 用结构化并发表达依赖
 
@@ -254,23 +256,23 @@ suspend fun <A, B> loadStartupInputs(
 
 这段代码只表达依赖和取消关系，不承诺两个任务一定在不同线程上运行。若 `loadA` 或 `loadB` 调用不可中断的阻塞 API，协程取消也无法立刻释放底层线程，仍需为该 API 配置超时或使用可取消接口。
 
-`GlobalScope` 不适合启动任务。它把任务寿命与调用页面、启动会话和测试分离，错误与取消也难以回收到所有者。应用级工作应注入明确的 `CoroutineScope`，页面工作使用 `viewModelScope` 或合适的 Lifecycle scope。
+`GlobalScope` 不适合启动任务。它创建的协程不隶属于调用页面或启动会话，测试、错误传播和取消都难以交回所有者。应用级工作应注入明确的 `CoroutineScope`，页面工作使用 `viewModelScope` 或合适的 Lifecycle scope。
 
 ## 7. App Startup 和 WorkManager 解决不同问题
 
 ### 7.1 App Startup 负责发现和依赖顺序
 
-Jetpack App Startup 用一个 `InitializationProvider` 发现 initializer，并按 `dependencies()` 先初始化依赖。自动初始化发生在 provider 启动路径，`AppInitializer` 同步调用 initializer 的 `create()`；它不会把依赖图自动并行，也不会自动把工作移出主线程。
+当前官方配置使用 App Startup 1.2.0。它用一个 `InitializationProvider`（专门负责启动发现的 ContentProvider）读取 manifest 中的 initializer 元数据，并按 `dependencies()` 先初始化依赖。自动初始化发生在 provider 启动路径，通常位于主线程；`AppInitializer` 会同步调用 initializer 的 `create()`。它只负责发现和依赖顺序，不会自动并行依赖图，也不会自动把工作移出主线程。
 
 因此，合并多个 provider 能减少组件发现成本，却不代表 initializer 中的阻塞工作已经离开启动关键路径。非首帧必需组件应移除自动初始化元数据，在明确的业务时机手动初始化；首帧必需组件则要让 `create()` 保持短小，并把后续可异步部分交给有所有者的调度器。Provider 约束详见 [§21.3 ContentProvider 启动优化](./03-contentprovider-optimization.md)。
 
 ### 7.2 WorkManager 用于需要持久执行的工作
 
-WorkManager 面向应用离开可见状态后仍需执行、需要约束或重试的任务。它受 JobScheduler、系统配额、进程状态和设备条件管理，不能用来保证某个启动任务立刻完成。
+WorkManager 面向应用离开可见状态后仍需执行、需要约束或重试的任务。它受 JobScheduler（系统持久作业调度服务）、系统配额、进程状态和设备条件管理，不能用来保证某个启动任务立刻完成。
 
-`Worker`、`CoroutineWorker` 和 WorkManager 内部任务也不是一个固定“最多 16 个线程”的池。自定义 `Configuration` 可以设置 worker executor 和 task executor；`CoroutineWorker.doWork()` 默认使用 `Dispatchers.Default`。WorkManager 2.10.0 起还可以用 `setWorkerCoroutineContext()` 配置 worker 协程上下文，方法内部使用 `withContext()` 也能针对阻塞调用切换 dispatcher。
+当前稳定版 WorkManager 2.11.2 也不是一个固定“最多 16 个线程”的池。`Worker.doWork()` 使用 `Configuration.Builder.setExecutor()` 指定的 executor；task executor 则处理 WorkManager 自身的记账与调度，不应和业务 worker 混为一谈。`CoroutineWorker.doWork()` 默认使用 `Dispatchers.Default`，WorkManager 2.10.0 起可以用 `setWorkerCoroutineContext()` 配置其协程上下文。按当前 `Configuration.Builder` 契约，如果没有设置 worker coroutine context，`setExecutor()` 提供的 executor 也会转换成 dispatcher 供 `CoroutineWorker` 使用。方法内部仍可用 `withContext()` 为某一段阻塞调用选择更合适的 dispatcher。
 
-若应用只想让 WorkManager 自身不占用启动路径，可以关闭默认 initializer，再按官方的按需初始化方式配置。这个动作只移动 WorkManager 初始化时机，不会让已入队的持久任务变成应用内启动任务。
+若应用只想把 WorkManager 自身移出启动路径，可以移除默认 initializer，让 `Application` 实现 `Configuration.Provider`，并在首次需要时调用 `WorkManager.getInstance(Context)`。这个动作只移动 WorkManager 初始化时机，不会把已入队的持久任务改成应用进程内的即时启动任务。
 
 ## 8. 线程治理从“谁创建、谁负责”开始
 
@@ -280,17 +282,17 @@ WorkManager 面向应用离开可见状态后仍需执行、需要约束或重�
 
 | 字段 | 用途 |
 |---|---|
-| owner | 谁创建、谁关闭、异常交给谁 |
-| task contract | CPU、阻塞、串行、持久或主线程亲和 |
+| owner | 所有者：谁创建、谁关闭、异常交给谁 |
+| task contract | 任务契约：CPU、阻塞、串行、持久或主线程亲和 |
 | pool/dispatcher | 具体执行资源及共享关系 |
-| concurrency limit | 限制来源：CPU、连接池、数据库或业务顺序 |
+| concurrency limit | 并发上限及来源：CPU、连接池、数据库或业务顺序 |
 | queue/rejection | 队列上限、过载时丢弃或降级方式 |
 | priority | Android nice 值及依据 |
-| observability | 线程名前缀、trace 名、指标标签 |
+| observability | 可观测信息：线程名前缀、trace 名、指标标签 |
 
-盘点时应覆盖直接 `Thread`、`Executors`、`HandlerThread`、Rx scheduler、自建 coroutine dispatcher、JNI `pthread_create`，以及 SDK 内部执行器。线程名应稳定、低基数并包含 owner，例如 `image-decode-2`，这样 Perfetto、ANR trace 和 tombstone 才能对应到组件。
+盘点时应覆盖直接 `Thread`、`Executors`、`HandlerThread`、Rx scheduler、自建 coroutine dispatcher、JNI `pthread_create`，以及 SDK 内部执行器。线程名应稳定、低基数并包含 owner，例如 `image-decode-2`；“低基数”表示名称模板有限，不把用户 ID、URL 等高变化值塞进线程名。这样 Perfetto、ANR trace（无响应时保存的线程栈）和 tombstone（native 崩溃诊断文件）才能对应到组件。
 
-字节码插桩可以用于发现匿名线程、补命名或记录创建堆栈。不要把所有 `Executors.new*` 调用静默重定向到一个全局池：原池的顺序、拒绝、线程局部变量和关闭语义可能不同，强行替换会引入饥饿或死锁。
+字节码插桩可以在构建时改写已编译代码，用于发现匿名线程、补命名或记录创建堆栈。不要把所有 `Executors.new*` 调用静默重定向到一个全局池：原池的顺序、拒绝、ThreadLocal（每个线程独立保存的变量）和关闭语义可能不同，强行替换会引入饥饿或死锁。
 
 ### 8.2 指标覆盖排队、执行和取消
 
@@ -304,36 +306,36 @@ WorkManager 面向应用离开可见状态后仍需执行、需要约束或重�
 - 任务异常类型，以及 executor shutdown 后的提交；
 - 启动窗口内 worker 的 Running、Runnable、Sleeping 和 blocked 分布。
 
-固定的“线程数大于 200”或“队列超过 80%”无法跨应用复用。阈值应来自进程基线、设备档位、任务 SLO 和队列语义；一次版本变化若同时推高线程数、RSS、Runnable 时间与 TTID 尾延迟，才形成较强的回归证据。
+固定的“线程数大于 200”或“队列超过 80%”无法跨应用复用。阈值应来自进程基线、设备档位、任务 SLO（Service Level Objective，可接受的延迟或成功率目标）和队列语义；一次版本变化若同时推高线程数、RSS、Runnable 时间与 TTID 尾延迟，才形成较强的回归证据。
 
 ## 9. 用 Perfetto 区分排队和 CPU 竞争
 
 启动并发问题适合按以下顺序分析：
 
 1. 在 Android App Startups 轨道选择 TTID 或 TTFD 区间，固定分析窗口；
-2. 查看主线程是否 Running、Runnable、Sleeping，或在锁/Binder 上阻塞；
-3. 找到启动 worker，区分“线程池队列中尚无对应 slice”和“线程已经 Runnable 但没获得 CPU”；
-4. 对齐 RenderThread、Binder、GC、磁盘与 CPU frequency，判断后台任务是否挤压首帧；
-5. 用低基数业务 trace 标记任务提交、开始和结束，计算 queue wait、run time 与 end-to-end；
+2. 查看主线程是 Running（正在 CPU 上执行）、Runnable（可运行但在等待 CPU）、Sleeping（等待定时器或事件），还是阻塞在锁/Binder 上；
+3. 找到启动 worker，区分“线程池队列中尚无对应 slice（带起止时间的 trace 片段）”和“线程已经 Runnable 但没获得 CPU”；
+4. 对齐 RenderThread、Binder、GC（垃圾回收）、磁盘与 CPU frequency（处理器当时的运行频率），判断后台任务是否挤压首帧；
+5. 用低基数业务 trace 标记任务提交、开始和结束，计算 queue wait（排队时间）、run time（执行时间）与 end-to-end（从提交到完成的总时间）；
 6. 在相同 APK、设备状态和数据集下改变一个并行度参数，比较多轮分布。
 
 线程总 CPU 时间下降，不一定让启动更快；任务可能只是等待得更久。CPU 利用率升高也不等于优化成功；如果 TTID 尾延迟、功耗或首帧掉帧变差，新增并发没有服务当前目标。
 
-线上持续采样应控制成本。任务计数、直方图和低频线程数量比周期性抓取所有 Java 栈更适合常驻；完整栈、Perfetto 和 `/proc` 明细留给诊断构建、触发式采样或用户授权的问题复现。
+线上持续采样应控制成本。任务计数、直方图（把数值按区间汇总的分布统计）和低频线程数量比周期性抓取所有 Java 栈更适合常驻；完整栈、Perfetto 和 `/proc` 明细留给诊断构建、触发式采样或用户授权的问题复现。
 
 ## 10. Android 17 的两个版本边界
 
 ### 10.1 `AsyncTask` 只做遗留迁移
 
-`AsyncTask` 自 API 30 起废弃。Android 17 源码中的默认 executor 仍是 `SERIAL_EXECUTOR`；显式 `THREAD_POOL_EXECUTOR` 使用 `corePoolSize = 1`、`maximumPoolSize = 20`、`SynchronousQueue`，拒绝后再交给 5 线程、无界队列的 backup executor。`doInBackground()` 入口还会把当前线程设为 `THREAD_PRIORITY_BACKGROUND`。
+`AsyncTask` 自 API 30 起废弃。Android 17 源码中的默认 executor 仍是 `SERIAL_EXECUTOR`；显式 `THREAD_POOL_EXECUTOR` 使用 `corePoolSize = 1`、`maximumPoolSize = 20`、`SynchronousQueue`，拒绝后再交给 5 线程、无界队列的 backup executor（兜底执行器）。`doInBackground()` 入口还会把当前线程设为 `THREAD_PRIORITY_BACKGROUND`。
 
 这些数字属于 framework 遗留实现，不能当成应用线程池模板。维护旧代码时应确认 `execute()` 与 `executeOnExecutor()` 的顺序差异，随后迁移到有生命周期和取消语义的协程，或迁移到任务契约明确的 executor。
 
 ### 10.2 虚拟线程尚不能作为 Android 17 基线
 
-`android-17.0.0_r1` 的 libcore 已引入 OpenJDK 21 风格的 `Thread.Builder`、`ofVirtual()` 和 `startVirtualThread()` 源码，并包含 Android 自己的 `VirtualThreadContext` 路径。不过，`api/current.txt` 把这些入口标成 `@FlaggedApi(com.android.libcore.virtual_thread_api_v1)`，运行实现还检查 ART 的 `virtual_thread_impl_v1` flag。
+`android-17.0.0_r1` 的 libcore 已引入 OpenJDK 21 风格的 `Thread.Builder`、`ofVirtual()` 和 `startVirtualThread()` 源码，并包含 Android 自己的 `VirtualThreadContext` 路径。不过，`api/current.txt` 把这些入口标成 `@FlaggedApi(com.android.libcore.virtual_thread_api_v1)`；`FlaggedApi` 表示 API 受平台功能开关控制，不能直接视作所有 Android 17 设备都可用的 SDK 契约。运行实现还检查 ART 的 `virtual_thread_impl_v1` flag。
 
-同一时期的 Android 公共参考文档没有列出 `ofVirtual()` 与 `startVirtualThread()`，`Thread.isVirtual()` 的文档仍写明 Android 尚未实现虚拟线程并返回 `false`。源码、flag 和公开契约没有形成可供普通应用依赖的一致边界，因此 Android 17 应用不应把虚拟线程用于生产启动路径，也不应通过反射探测内部实现。
+截至本轮核对，Android 公共参考文档仍没有列出 `ofVirtual()` 与 `startVirtualThread()`；`Thread.isVirtual()` 的文档也仍写明 Android 尚未实现虚拟线程并返回 `false`。源码、flag 和公开契约没有形成可供普通应用依赖的一致边界，因此 Android 17 应用不应把虚拟线程用于生产启动路径，也不应通过反射绕过 SDK 边界探测内部实现。
 
 即使后续版本提供稳定虚拟线程，它们主要降低大量阻塞任务占用平台线程的成本，不会提高 CPU 密集任务的可用算力。资源并发、超时、取消和启动关键路径仍要单独设计。
 
@@ -362,6 +364,7 @@ WorkManager 面向应用离开可见状态后仍需执行、需要约束或重�
 - [AOSP Android 17 `AsyncTask`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/AsyncTask.java)
 - [AOSP Android 17 `Thread`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java)
 - [AOSP Android 17 libcore public API surface](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/api/current.txt)
+- [Android `Thread` 公共 API](https://developer.android.com/reference/java/lang/Thread)
 - [Android 17 kernel `fair.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/fair.c)
 - [Android cgroup and task profile](https://source.android.com/docs/core/perf/cgroups)
 - [Android process and thread overview](https://developer.android.com/guide/components/processes-and-threads)
@@ -372,6 +375,8 @@ WorkManager 面向应用离开可见状态后仍需执行、需要约束或重�
 - [WorkManager persistent work](https://developer.android.com/develop/background-work/background-tasks/persistent)
 - [WorkManager `CoroutineWorker` threading](https://developer.android.com/develop/background-work/background-tasks/persistent/threading/coroutineworker)
 - [WorkManager `Configuration.Builder`](https://developer.android.com/reference/androidx/work/Configuration.Builder)
+- [WorkManager releases](https://developer.android.com/jetpack/androidx/releases/work)
+- [WorkManager 按需初始化](https://developer.android.com/develop/background-work/background-tasks/persistent/configuration/custom-configuration)
 - [Android system tracing overview](https://developer.android.com/topic/performance/tracing)
 - [Android startup analysis and optimization](https://developer.android.com/topic/performance/appstartup/analysis-optimization)
 - [§21.2 启动任务编排](./02-startup-framework.md)
