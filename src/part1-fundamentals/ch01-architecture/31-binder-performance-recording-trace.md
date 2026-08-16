@@ -2,14 +2,18 @@
 title: "Android 17 Binder 可观测性：Perfetto、AIDL Trace、内核快照与事务录制"
 chapter: "1.31"
 section: "1.31"
-status: ready-for-review
-applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
-last_verified: "2026-07-25"
+status: finalized
+applicable_versions: "Android 17 (API 37)"
+last_verified: "2026-08-16"
 last_verified_against: "AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6"
 confidence: high
 sources:
   - type: aosp
     path: "frameworks/native/libs/binder/Binder.cpp"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/Binder.java"
+  - type: aosp
+    path: "frameworks/base/core/jni/android_util_Binder.cpp"
   - type: aosp
     path: "frameworks/native/libs/binder/IPCThreadState.cpp"
   - type: aosp
@@ -22,6 +26,8 @@ sources:
     path: "frameworks/native/libs/binder/include/binder/Trace.h"
   - type: aosp
     path: "system/tools/aidl/generate_cpp.cpp"
+  - type: aosp
+    path: "system/tools/aidl/generate_java_binder.cpp"
   - type: aosp
     path: "external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql"
   - type: kernel
@@ -403,10 +409,12 @@ End
 
 - AOSP `android-17.0.0_r1`
   - `frameworks/native/libs/binder/Binder.cpp`：AIDL 服务端轨迹、录制权限与写入位置
+  - `frameworks/base/core/java/android/os/Binder.java`、`frameworks/base/core/jni/android_util_Binder.cpp`：Java Binder 的事务码命名回调与 `UNKNOWN_CODE_<n>` 回退
   - `frameworks/native/libs/binder/IPCThreadState.cpp`：冻结 ioctl、扩展错误、oneway 告警、冻结通知
   - `frameworks/native/libs/binder/ProcessState.cpp`：binderfs 功能探测与默认 oneway 嫌疑检测
   - `frameworks/native/libs/binder/RecordedTransaction.cpp`、`include/binder/RecordedTransaction.h`：数据块格式与不稳定性声明
   - `system/tools/aidl/generate_cpp.cpp`：C++ 客户端 / 服务端 AIDL 轨迹生成
+  - `system/tools/aidl/generate_java_binder.cpp`：Java AIDL 生成的 `getTransactionName()` 映射
   - `external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql`：`android_binder_txns` 字段定义
 - 内核 `android17-6.18-2026-06_r6`
   - `include/uapi/linux/android/binder.h`：冻结状态位与 ioctl UAPI
