@@ -2117,6 +2117,27 @@
       "summary": "OpenAPV README profile 清单被写成完整集合，需区分基础清单、项目扩展与 Android 17 平台 profile 契约",
       "type": "source-boundary",
       "updated_at": "2026-08-16T20:46:05.730893+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/37-logd-logging-system-performance.md",
+      "close_note": "Section 2.2 now states the exact Android 17 property override gate and separates it from logcat -G runtime resizing.",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260817-163540-deep-review-6030a13a",
+      "created_at": "2026-08-17T16:42:43.719544+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260817-163540-deep-review-6030a13a",
+      "details": "Section 2.2 said Android 17 property overrides depend on device type and debuggable state, but did not spell out the actual android-17.0.0_r1 gate: LogSize.cpp only reads persist.logd.size*/ro.logd.size* when ro.debuggable=true and the device is automotive or ro.hardware=android-desktop; non-debuggable low-RAM devices use the 64 KiB minimum. This could make readers expect property overrides on ordinary debuggable devices.",
+      "id": "AIW-1.37-LOGD-BUFFER-OVERRIDE-GATE-20260817",
+      "log_path": "logs/deep-review/2026-08-17-20260817-163540-deep-review-6030a13a-deep-review.md",
+      "severity": "P3",
+      "source_paths": [
+        "system/logging/logd/LogSize.cpp lines 65-94 (android-17.0.0_r1)",
+        "system/logging/logd/LogSize.h lines 23-34 (android-17.0.0_r1)"
+      ],
+      "status": "fixed",
+      "summary": "logd buffer size property override gate was too broad",
+      "type": "precision",
+      "updated_at": "2026-08-17T16:42:43.781262+08:00"
     }
   ],
   "schema_version": 1
