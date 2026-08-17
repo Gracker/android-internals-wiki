@@ -2,18 +2,20 @@
 title: "Android 17 ProcessStateController、OomAdjuster 与进程优先级"
 chapter: "1.34"
 section: "1.34"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [oom, oom_score_adj, process_state_controller, process_priority, lmkd, freezer, AMS]
 related_chapters: ["4.4", "1.3", "1.8", "5.8", "4.11", "1.18"]
-last_verified: "2026-08-16"
+last_verified: "2026-08-17"
 last_verified_against: "AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6"
 confidence: high
-pipeline_stage: reviewed
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: deep-reviewed
+task9_state: reviewed
 last_deep_review_at: "2026-08-16"
 last_deep_review_run_id: "20260816-163551-deep-review-0e71bb6d"
+last_review_finalize_at: "2026-08-17T16:12:41+08:00"
+last_review_finalize_run_id: "20260817-160535-73cfe799"
 sources:
   - type: official
     path: "developer.android.com/guide/components/activities/process-lifecycle"
