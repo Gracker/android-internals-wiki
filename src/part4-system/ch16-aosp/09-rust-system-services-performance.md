@@ -97,7 +97,7 @@ Google 在 2021 年发布 Rust 支持时提到，内存不安全问题长期约�
 FFI、Binder 与生成代码都是这种演进方式的组成部分。
 
 Rust 的安全保证也包含运行时工作。所有权、生命周期与大部分借用规则在编译期检查；数组边界、整数溢出以及某些状态约束可能在运行期检查。
-Android 17 Soong 对设备端 Rust 显式开启 `-C overflow-checks=on`，所以“安全检查全部在编译期完成”不符合 r1 构建配置。
+Android 17 Soong 对设备端 Rust 显式开启 `-C overflow-checks=on`，所以“安全检查全部在编译期完成”的说法与 r1 构建配置不符。
 
 ### 1.2 r1 中可核对的代表组件
 
@@ -113,7 +113,7 @@ Android 17 Soong 对设备端 Rust 显式开启 `-C overflow-checks=on`，所以
 比如 DnsResolver 根目录仍有 `DnsResolverService.cpp`、`ResolverController.cpp`、`res_send.cpp` 等大量 C++；Bluetooth 的 Rust 库也作为现有 stack 的静态 FFI 组件构建。
 
 r1 的 UWB 仓库位于 `packages/modules/Uwb`，Bluetooth Rust 代码位于 `packages/modules/Bluetooth/system/rust`。
-`system/uwb`、`system/bt/gd/rust`、Rust 主体的 DnsResolver、Rust HTTP engine 与 Rust bpfloader 无法由相应源码路径支撑，不能计入“已完成重写”。
+`system/uwb`、`system/bt/gd/rust`、Rust 主体的 DnsResolver、Rust HTTP engine 与 Rust bpfloader 在 r1 源码树中找不到对应路径，不能计入“已完成重写”。
 
 ### 1.3 Keystore2 没有额外的 C++ AIDL 跳板
 
@@ -204,7 +204,7 @@ JNI 成本应拆成：
 - Rust 函数自身的工作。
 
 大 payload 可以评估 direct `ByteBuffer`（Java 与 native 共享的直接缓冲区）、共享内存、文件描述符或批量接口。
-纯 JNI 接口要限制对象生存期、单次延迟和取消粒度；数据还会继续跨 Binder 时，才需要额外考虑 Binder transaction 大小上限。
+纯 JNI 接口要限制对象生存期、单次延迟和取消粒度；数据还要继续跨 Binder 传输时，才需要额外考虑 Binder transaction 大小上限。
 
 Keystore2 不是“Rust JNI 服务”的例子。它的公开系统服务入口是 Binder。把所有 Java→Rust 交互都画成 JNI，会把 IPC 成本和语言转换成本混为一项。
 
@@ -271,7 +271,7 @@ Rust 和 C++ 共用 native allocator 时，malloc 热点可以用 heapprofd 统�
 
 ### 4.2 边界检查与溢出检查
 
-Rust slice 索引可能生成 bounds check（越界检查），Android device build 还开启整数 overflow check（溢出检查）。LLVM 能在循环范围清楚时消除部分检查，但结果依赖代码形态。优化方向包括：
+Rust slice 索引可能生成 bounds check（越界检查），Android device build 还开启整数 overflow check（溢出检查）。LLVM 能在循环边界清晰时消除部分检查，但结果依赖代码形态。优化方向包括：
 
 - 使用 iterator 或一次验证后的 slice 分段；
 - 避免循环体内重复计算长度；
@@ -300,6 +300,7 @@ safe Rust 的类型规则可以阻止数据 race（多个线程无同步地读�
 ### 4.4 代码体积与 i-cache
 
 泛型单态化（为每个具体类型生成一份代码）、内联、async state machine、格式化和错误上下文都可能扩大 ELF 的 `.text` 代码段。
+
 动态链接可以共享代码页；静态 rlib（Rust 静态依赖格式）则让 ThinLTO 删除未使用代码并跨 crate 优化。
 两种策略的文件体积、PSS（按比例分摊共享页的进程内存指标）、启动 relocation（动态重定位）和 i-cache（指令缓存）行为需要分别测量。
 
@@ -336,7 +337,7 @@ r1 的几个全局编译选项可从 `build/soong/rust/config/global.go` 直接�
 `rust_ffi_static` 并不直接产出通用 Rust `staticlib`。
 r1 的 `library.go` 实际把它注册到 `RustLibraryRlibFactory`，注释也写明该 rlib 会留到最终 C/C++ 静态链接步骤处理。这是 Soong 的实现约定。
 
-`rust_dylib` 不是 r1 注册的 Soong 模块类型。需要固定 Rust dylib variant 时可使用 `rust_library_dylib`；一般 Rust 依赖优先写入 `rustlibs`，由构建系统选择兼容的 linkage（静态或动态链接方式）。
+`rust_dylib` 不是 r1 注册的 Soong 模块类型。需要强制使用 Rust dylib variant 时可使用 `rust_library_dylib`；一般 Rust 依赖优先写入 `rustlibs`，由构建系统选择兼容的 linkage（静态或动态链接方式）。
 
 ### 5.2 ThinLTO 语法与默认值
 
@@ -351,7 +352,6 @@ Android 17 的 crates.io 导入集中在 `external/rust/android-crates-io` 仓�
 
 仓库根目录的 `crate_tool` 是入口脚本：它通过 AOSP 预置 Cargo 调用 `development/tools/external_crates` 中的 Rust CLI。
 该工具的 `import`/`regenerate` 子命令负责 vendor crate（把依赖源码固定复制进受管仓库）、按顺序应用补丁、检查许可证，并调用 `cargo_embargo` 生成或更新 `Android.bp`。
-这样写能区分入口脚本和实际实现。
 
 这套流程不使用 `external/upstream` 与 `development/tools/regex_gen_cargo2android.py`。
 平台开发不能把 `cargo build` 的依赖解析结果直接带入系统镜像；crate 版本、license、patch、Soong rule、APEX 可用性和测试都要进入 AOSP 管理。
@@ -383,7 +383,9 @@ Android 17 的 crates.io 导入集中在 `external/rust/android-crates-io` 仓�
 - 多种 payload 大小。
 
 统计每次调用的 cycles（CPU 周期）、instructions、branch misses（分支预测失败）、allocation count 和复制字节。
-空调用用于估计固定项，业务 payload 用于判断固定项在总耗时中的占比。两侧产物要使用相同优化级别，不能让一侧保留断言或日志、另一侧关闭。
+空调用用于估计每次调用的固定开销，业务 payload 用于判断固定开销在总耗时中的占比。
+
+两侧产物要使用相同优化级别，不能让一侧保留断言或日志、另一侧关闭。
 
 ### 6.3 Binder 端到端
 
@@ -430,12 +432,14 @@ adb shell showmap "$keystore_pid"
 ```
 
 `llvm-size` 反映 ELF section（代码、数据等分段）大小，`llvm-readelf` 可确认 Rust std 与其他库采用何种 linkage，`showmap` 反映运行时映射。
+
 三者不能互相替代：磁盘文件更大不等同于私有 RSS 更大，动态库页也可能在多个进程间共享。PSS（Proportional Set Size）会按比例分摊共享页，更适合与 RSS 一起报告。
 读取系统服务映射可能需要 userdebug/eng、root 或额外调试权限。
 
 ### 6.6 native heap
 
 heapprofd 能观察经过 malloc/free 的 Rust 分配。配置采样时要记录 interval（每次采样覆盖的分配字节间隔）、持续时间、进程启动阶段和符号版本，并确认目标没有使用自定义 allocator。
+
 对高频小对象可同时加入源码计数器或 allocator benchmark，避免采样误差掩盖短命分配。
 
 ## 7. 优化顺序
