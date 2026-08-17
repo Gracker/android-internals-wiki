@@ -3556,6 +3556,126 @@
       "action": "indexed-only-chapter-freeze",
       "score": 15,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-18-76734130-JetpackCompose8月版正式发布核心模块112.md",
+      "title": "[技术文章] Jetpack Compose 8 月版正式发布，核心模块 1.12这次的版本没有什么特别大的架构变动，基本属于那种 “",
+      "summary": "> 发布时间: 2026-08-14T00:36:53.000Z > 原文链接: https://juejin.cn/post/7673413097325559843 2026-08-14 863 阅读8分钟 这次的版本没有什么特别大的架构变动，基本属于那种 “Compose 开始补齐 UI Framework 能力” 的版本，比如：图形管线、富文本编辑、程序化文本选择、...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-18T06:20:52.159557+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-18-76740784-Android系统启动机制一init到底是什么.md",
+      "title": "[技术文章] Android 系统启动机制（一）：init 到底是什么？为什么它不是普通 Native Service？从 PID 1",
+      "summary": "> 发布时间: 2026-08-16T01:33:49.000Z > 原文链接: https://juejin.cn/post/7674078470029295656 2026-08-16 79 阅读9分钟 Android 16 系统源码与运行机制 很多资料把 Android init 解释成“系统启动入口”。这句话方向没错，却隐藏了两个问题： 它只是一个 main()，...",
+      "chapter": "ch08",
+      "processed_at": "2026-08-18T06:20:52.159557+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-18-76741236-破坏性更新解读JetpackCompose112.md",
+      "title": "[技术文章] 破坏性更新 - 解读 Jetpack Compose 1.12Jetpack Compose 2026 年 8 月版本现",
+      "summary": "> 发布时间: 2026-08-16T15:06:56.000Z > 原文链接: https://juejin.cn/post/7674123634786484260 2026-08-16 254 阅读10分钟 Jetpack Compose 2026 年 8 月版本现已稳定发布。 这次核心 Compose 模块都来到了 1.12: androidx.compose.ru...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-18T06:20:52.159557+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-18-76743724-ANR到底怎么定位从触发原理到日志判断.md",
+      "title": "[技术文章] Android ANR 到底怎么定位？从触发原理到日志判断的完整方法系统已经判定 ANR，Trace 里的主线程为什么还",
+      "summary": "> 发布时间: 2026-08-16T10:10:22.000Z > 原文链接: https://juejin.cn/post/7674372498363842570 2026-08-16 73 阅读13分钟 线上分析 ANR 时，经常会遇到一份看起来互相矛盾的日志：系统明确记录了 Input dispatching timed out，但 Trace 里的主线程却停在...",
+      "chapter": "ch09",
+      "processed_at": "2026-08-18T06:20:52.159557+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-18-76744618-千万别误用AndroidSkills.md",
+      "title": "[技术文章] 千万别误用Android Skills解析谷歌最新发布的Android Skills，真正理解谷歌全新智能体系统背后的反",
+      "summary": "> 发布时间: 2026-08-16T03:41:51.000Z > 原文链接: https://juejin.cn/post/7674461849685966858 2026-08-16 235 阅读5分钟 Android开发专家秘籍 > 本文译自「Android Skills — What Google Just Released and Why Most Devel...",
+      "chapter": "ch05",
+      "processed_at": "2026-08-18T06:20:52.159557+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-18-76748189-Android版MCP正式登场AppFunctions.md",
+      "title": "[技术文章] Android 版 MCP 正式登场：AppFunctions前言 今日，Google 在 Android Develo",
+      "summary": "> 发布时间: 2026-08-17T07:04:13.000Z > 原文链接: https://juejin.cn/post/7674818950488932398 Carson带你学Android 2026-08-17 66 阅读9分钟 今日，Google 在 Android Developers 上正式发布了 **AppFunctions**。 即**Android...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-18T06:20:52.159557+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-18-76748277-Kotlin协程修仙录元婴境初阶冷流初啼Flow基础.md",
+      "title": "[技术文章] 【Kotlin 协程修仙录 · 元婴境 · 初阶】 | 冷流初啼：Flow 的基础与响应式编程的入门Flow冷流的初啼：",
+      "summary": "> 发布时间: 2026-08-17T09:15:14.000Z > 原文链接: https://juejin.cn/post/7674827790673559586 2026-08-17 28 阅读11分钟 Kotlin系统化精讲系列文章 金丹已凝，你对协程的并发、调度、异常处理已驾轻就熟。你能用 async 并发请求多个接口，能用 supervisorScope 隔离...",
+      "chapter": "ch05",
+      "processed_at": "2026-08-18T06:20:52.159557+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-18-76748703-ComposeLazyColumn性能优化key稳定性重组治理.md",
+      "title": "[技术文章] [Android 从零到一] Compose LazyColumn 性能优化：key、稳定性与重组治理本文深入剖析 La",
+      "summary": "> 发布时间: 2026-08-17T10:02:55.000Z > 原文链接: https://juejin.cn/post/7674870309703090191 hunterandroid 2026-08-17 40 阅读5分钟 LazyColumn 是 Compose 中处理长列表的核心组件，但很多项目在列表数据更新时会出现闪烁、滚动卡顿或不必要的重组，根本原因往...",
+      "chapter": "ch07",
+      "processed_at": "2026-08-18T06:20:52.159557+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-18-juejin-android.md",
+      "title": "[技术文章] 掘金 Android 技术文章抓取 · 2026-08-18",
+      "summary": "任务：juejin-android 单任务版（fetch + 评分 + 落盘 + 投递） 抓取范围：掘金 Android 分类推荐流（3 页）+ 最新流（2 页），共 96 条候选 入选门槛：score > 7.0，正文全文抓取归档后评分 归档：本目录同日 2026-08-18-*.md 共 9 篇（5 篇入选 + 4 篇评估未达标留证） 标题：Android 版 MCP...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-18T06:20:52.159557+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-17-evening-会话经济学-handoff与credits-研究材料/02-dump-ops-table.md",
+      "title": "[DeepResearch] Dump 操作对照与社区增量",
+      "summary": "--- phase: 1 sub_question: B-ops-table --- # Dump 操作对照与社区增量 ## 张力 | 立场 | 代表 | 要点 | level | |------|------|------|-------| | 官方 | Anthropic | 六技巧+cache | official_docs | | handoff实践 | HN superasn via brief | 短交接文档+next st",
+      "chapter": "ch16",
+      "processed_at": "2026-08-18T06:20:52.159557+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-17-morning-上下文三层-goal拆假设-DSHMemory-研究材料/03-dump-DSH-Memory权限.md",
+      "title": "[DeepResearch] Dump · DSH Obsidian Memory / TUI",
+      "summary": "--- phase: 1 sub_question: DSH Obsidian Memory 插件权限 diff + TUI 旁证 date: 2026-08-17 --- # Dump · DSH Obsidian Memory / TUI ## 研究问题 在已有「插件安全三问」上，专篇 diff `detongz/dsh-client-ui-obsidian-memory`：读范围、网络、密钥、与 Hermes vault 策略对照",
+      "chapter": "ch16",
+      "processed_at": "2026-08-18T06:20:52.159557+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-17-morning-上下文三层-goal拆假设-DSHMemory-研究材料/references/03-deepseek-pricing-extract.md",
+      "title": "[DeepResearch] 03-deepseek-pricing-extract",
+      "summary": "--- source: https://api-docs.deepseek.com/quick_start/pricing title: DeepSeek Models & Pricing extract fetched: 2026-08-17T09:05:36.591882 research_topic: 2026-08-17 morning --- Models &amp; Pricing | DeepSeek API Docs S",
+      "chapter": "ch16",
+      "processed_at": "2026-08-18T06:20:52.159557+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "schema_version": "2.1",
