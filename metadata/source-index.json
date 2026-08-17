@@ -3406,6 +3406,156 @@
       "previous_route_status": "existing-chapter-routed",
       "previous_target_path": "src/part4-system/ch16-aosp/06-profile-dm-sdm-install-compilation.md",
       "routing_finding_id": "AIW-BODY-APPLY-20260816-P1-misroute-qwen38-16-6"
+    },
+    {
+      "path": "https://juejin.cn/post/7674372498363842570",
+      "title": "[掘金Android] 今日精选",
+      "summary": "Compose 2026.08.00（1.12.0）要点：compileSdk 升到 API 37、最低 AGP 9.1.1、onFirstVisible 弃用改 onVisibilityChanged；实验性 Styles API 不承诺二进制兼容，旧库升级后编译能过但运行时可能崩。新能力：带 key 的 SideEffect（比 LaunchedEffect 快 90%）、MeshGradientPainter、P3/HDR 渲染链路、TextFieldBuffer 富文本、SelectionState 编程选区、Credential Manager 集成（API 34+）、Grid 命名区域；基准测试中首帧时间已与 View 相当。",
+      "chapter": "ch02",
+      "processed_at": "2026-08-17T06:20:58.278974+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/hacker-news-rss/2026-08-17-sankalp-autoresearch-codex.md",
+      "title": "[技术文章] Auto-research with codex: How I achieved a 232x Faster Kernel over baseline with Codex in GPU Mode's qr_v2 problem",
+      "summary": "> 发布时间: 2026-07-08T14:35Z > 原文链接: https://sankalp.bearblog.dev/autoresearch/ _08 Jul, 2026_ Contest in short Problem intro Why this problem is auto-research-able Learning Enough to Ask Be...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-17T06:20:58.278974+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-17-76740784-init是什么PID1与三阶段启动.md",
+      "title": "[技术文章] Android 系统启动机制（一）：init 到底是什么？为什么它不是普通 Native Service？从 PID 1",
+      "summary": "> 发布时间: 2026-08-16T01:33:49.000Z > 原文链接: https://juejin.cn/post/7674078470029295656 2026-08-16 48 阅读9分钟 Android 16 系统源码与运行机制 很多资料把 Android init 解释成“系统启动入口”。这句话方向没错，却隐藏了两个问题： 它只是一个 main()，...",
+      "chapter": "ch08",
+      "processed_at": "2026-08-17T06:20:58.278974+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-17-76741236-Compose1.12破坏性更新解读.md",
+      "title": "[技术文章] 破坏性更新 - 解读 Jetpack Compose 1.12Jetpack Compose 2026 年 8 月版本现",
+      "summary": "> 发布时间: 2026-08-16T15:06:56.000Z > 原文链接: https://juejin.cn/post/7674123634786484260 2026-08-16 25 阅读10分钟 Jetpack Compose 2026 年 8 月版本现已稳定发布。 这次核心 Compose 模块都来到了 1.12: androidx.compose.run...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-17T06:20:58.278974+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-17-76743724-ANR定位从触发原理到日志判断.md",
+      "title": "[技术文章] Android ANR 到底怎么定位？从触发原理到日志判断的完整方法系统已经判定 ANR，Trace 里的主线程为什么还",
+      "summary": "> 发布时间: 2026-08-16T10:10:22.000Z > 原文链接: https://juejin.cn/post/7674372498363842570 2026-08-16 38 阅读13分钟 线上分析 ANR 时，经常会遇到一份看起来互相矛盾的日志：系统明确记录了 Input dispatching timed out，但 Trace 里的主线程却停在...",
+      "chapter": "ch09",
+      "processed_at": "2026-08-17T06:20:58.278974+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-17-76744618-千万别误用AndroidSkills.md",
+      "title": "[技术文章] 千万别误用Android Skills解析谷歌最新发布的Android Skills，真正理解谷歌全新智能体系统背后的反",
+      "summary": "> 发布时间: 2026-08-16T03:41:51.000Z > 原文链接: https://juejin.cn/post/7674461849685966858 2026-08-16 70 阅读5分钟 Android开发专家秘籍 > 本文译自「Android Skills — What Google Just Released and Why Most Develo...",
+      "chapter": "ch05",
+      "processed_at": "2026-08-17T06:20:58.278974+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-17-juejin-android.md",
+      "title": "[技术文章] 掘金 Android 日报 · 2026-08-17",
+      "summary": "抓取掘金 Android 分类推荐流 20 篇（热榜窗口与近三日高度重叠，8 月中旬旧文已由 08-13~08-16 日报收割），改用最新排序补抓当日新文，对 8 篇做了正文级抓取。去重后今日入选 4 篇：Compose 1.12 破坏性更新解读、ANR 定位方法论、Android init 源码解析（Android 16 QPR2 基线）、Android Skills...",
+      "chapter": "ch09",
+      "processed_at": "2026-08-17T06:20:58.278974+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-16-evening-调度控制面-Rubin能效-研究材料/references/02-coreweave-rubin-deep-dive.md",
+      "title": "[DeepResearch] 02-coreweave-rubin-deep-dive.md",
+      "summary": "--- source: https://www.coreweave.com/blog/a-deep-dive-on-coreweave-innovations-for-nvidia-vera-rubin-nvl72 title: 02-coreweave-rubin-deep-dive.md fetched: 2026-08-16T21:10:00+08:00 research_topic: evening Rubin tok/MW +",
+      "chapter": "ch16",
+      "processed_at": "2026-08-17T06:20:58.278974+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-16-evening-调度控制面-Rubin能效-研究材料/references/03-coreweave-token-pricing-illusion.md",
+      "title": "[DeepResearch] 03-coreweave-token-pricing-illusion.md",
+      "summary": "--- source: https://www.coreweave.com/blog/the-token-pricing-illusion-understanding-ai-inference-economics title: 03-coreweave-token-pricing-illusion.md fetched: 2026-08-16T21:10:00+08:00 research_topic: evening Rubin to",
+      "chapter": "ch16",
+      "processed_at": "2026-08-17T06:20:58.278974+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-16-evening-调度控制面-Rubin能效-研究材料/references/04-coreweave-product-vera-rubin.md",
+      "title": "[DeepResearch] Product Vera Rubin",
+      "summary": "--- source: https://www.coreweave.com/products/nvidia-vera-rubin title: Product Vera Rubin fetched: 2026-08-16T21:05:00+08:00 research_topic: evening 调度控制面 + Rubin tok/MW --- # Product Vera Rubin URL: https://www.corewea",
+      "chapter": "ch05",
+      "processed_at": "2026-08-17T06:20:58.278974+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-16-evening-调度控制面-Rubin能效-研究材料/references/05-deepseek-pricing.md",
+      "title": "[DeepResearch] DeepSeek pricing",
+      "summary": "--- source: https://api-docs.deepseek.com/quick_start/pricing title: DeepSeek pricing fetched: 2026-08-16T21:05:00+08:00 research_topic: evening 调度控制面 + Rubin tok/MW --- # DeepSeek pricing URL: https://api-docs.deepseek.",
+      "chapter": "ch05",
+      "processed_at": "2026-08-17T06:20:58.278974+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-16-morning-V4Pro0813-Harness-Codex容量-DSH插件-研究材料/references/06-aa-tweet.md",
+      "title": "[DeepResearch] 06-aa-tweet",
+      "summary": "--- source: https://x.com/i/status/2088440350734201149 title: AA V4 Pro 0813 tweet fetched: 2026-08-16T09:09:58+08:00 research_topic: 2026-08-16-morning sub_question: V4Pro --- DeepSeek V4 Pro 0813 scores 53 on the Artif",
+      "chapter": "ch16",
+      "processed_at": "2026-08-17T06:20:58.278974+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-16-morning-V4Pro0813-Harness-Codex容量-DSH插件-研究材料/references/01-deepseek-pricing.md",
+      "title": "[DeepResearch] 01-deepseek-pricing",
+      "summary": "--- source: https://api-docs.deepseek.com/quick_start/pricing title: DeepSeek API Models Pricing fetched: 2026-08-16T09:09:58+08:00 research_topic: 2026-08-16-morning sub_question: V4Pro --- Models &amp; Pricing | DeepSe",
+      "chapter": "ch16",
+      "processed_at": "2026-08-17T06:20:58.278974+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-16-morning-V4Pro0813-Harness-Codex容量-DSH插件-研究材料/01-dump-V4Pro0813-路由卡.md",
+      "title": "[DeepResearch] Dump 01 · V4 Pro 0813 路由卡",
+      "summary": "--- phase: 1 sub_question: DeepSeek V4 Pro 0813 路由卡（价/分/Token） date: 2026-08-16 claim_levels: [official_docs, official_weights, third_party_bench, social_thread] --- # Dump 01 · V4 Pro 0813 路由卡 ## 研究问题 0813 作为开源旗舰/API 一阶",
+      "chapter": "ch16",
+      "processed_at": "2026-08-17T06:20:58.278974+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-16-morning-V4Pro0813-Harness-Codex容量-DSH插件-研究材料/raw/openbiliclaw_readme.md",
+      "title": "[DeepResearch] 🦀 OpenBiliClaw",
+      "summary": "<div align=\"center\"> # 🦀 OpenBiliClaw **通用个性化内容推荐 Agent——本地运行、跨平台理解你、只为你一个人构建** *A general-purpose personalized content discovery Agent — runs on your machine, understands only you* [![License: MIT](https://img.shields.i",
+      "chapter": "ch16",
+      "processed_at": "2026-08-17T06:20:58.278974+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "schema_version": "2.1",

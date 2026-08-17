@@ -1,5 +1,5 @@
 {
-  "last_check": "2026-08-14T02:00:14.023322+08:00",
+  "last_check": "2026-08-17T02:19:04.325399+08:00",
   "check_id": "freshness-2026-07-17-02-00",
   "cron_id": "220c1be3-a8db-4dfe-982e-5e275cef4b54",
   "summary": {
@@ -132,28 +132,9 @@
     "part4-system/ch16-aosp/04-android17-kernel612-performance.md",
     "part4-system/ch16-aosp/09-android17-sdm-install-performance.md"
   ],
-  "last_run_at": "2026-08-14T02:00:14.023322+08:00",
+  "last_run_at": "2026-08-17T02:19:04.325399+08:00",
   "scanned": 80,
-  "risks": [
-    {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch09-anr/04-special-anr.md",
-      "target_path": "src/part2-performance/ch09-anr/04-special-anr.md",
-      "severity": "medium",
-      "rule_id": "stale-source-verification",
-      "evidence": "2026-04-27",
-      "reason": "last source verification 2026-04-27 older than 90 days",
-      "action": "重新核验至 Android 17"
-    },
-    {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch18-rendering-pipelines/22-advanced-professional-video-apv.md",
-      "target_path": "src/part2-performance/ch18-rendering-pipelines/22-advanced-professional-video-apv.md",
-      "severity": "high",
-      "rule_id": "above-android17-affirmative-claim",
-      "evidence": "能说明](https://developer.android.com/about/versions/16/features#apv)：APV 定位、标准特征与 Android 422-10 实现范围。",
-      "reason": "affirmative higher-than-Android-17 out-of-scope claim",
-      "action": "标注超出 AIW 范围或移除正文结论"
-    }
-  ],
+  "risks": [],
   "queued": 0,
   "runs": [
     {
@@ -632,8 +613,18 @@
       "findings_added": 2,
       "legacy_queue_migrated": 0,
       "queued": 0
+    },
+    {
+      "last_run_at": "2026-08-17T02:19:04.325399+08:00",
+      "scanned": 80,
+      "cursor_start": 240,
+      "cursor_next": 320,
+      "risks": [],
+      "findings_added": 0,
+      "legacy_queue_migrated": 0,
+      "queued": 0
     }
   ],
-  "findings_added": 2,
+  "findings_added": 0,
   "legacy_queue_migrated": 0
 }

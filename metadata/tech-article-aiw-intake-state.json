@@ -702,6 +702,70 @@
       "status": "appended",
       "title": "Introducing Delta"
     },
+    "source/hacker-news-rss/2026-08-17-allen-bargi-ai-leadership.md": {
+      "last_seen": "2026-08-17T05:25:49.265237+08:00",
+      "mtime": 1786907073.8150716,
+      "sha256": "a28d70e2c97ba82561debc7ea6a0eb97eb7f3019d7762f73a460d25a3d2eb6db",
+      "size": 2449,
+      "status": "skipped-low-score"
+    },
+    "source/hacker-news-rss/2026-08-17-conic-sean-byrne.md": {
+      "last_seen": "2026-08-17T05:25:49.265237+08:00",
+      "mtime": 1786907073.8149223,
+      "sha256": "bed7289c8ad808936098decc3c70acb3c26ff1da3309d26e0166487307aaa6c7",
+      "size": 14037,
+      "status": "skipped-low-score"
+    },
+    "source/hacker-news-rss/2026-08-17-heckj-fundamentals-matter.md": {
+      "chapter": "待分类",
+      "entry_id": "57e4d711ca056550",
+      "last_appended": "2026-08-17T05:25:49.265237+08:00",
+      "last_seen": "2026-08-17T05:25:49.265237+08:00",
+      "mtime": 1786907073.8152835,
+      "score": 8,
+      "sha256": "c6b5200b8026169b8669e75c67c06b7725767c4e267d4ffeaae8c7c64139edce",
+      "size": 9172,
+      "status": "appended",
+      "title": "Software Engineering fundamentals matter more than ever"
+    },
+    "source/hacker-news-rss/2026-08-17-littlelearner-paper.md": {
+      "last_seen": "2026-08-17T05:25:49.265237+08:00",
+      "mtime": 1786907073.8154542,
+      "sha256": "040cb7735c7a40f0d86e1acbb6966660b2585a8ffa9b830ac2558c6095efe808",
+      "size": 6285,
+      "status": "skipped-low-score"
+    },
+    "source/hacker-news-rss/2026-08-17-mgreen-everything-go-dark.md": {
+      "chapter": "待分类",
+      "entry_id": "41f6f1961dc6a1bc",
+      "last_appended": "2026-08-17T05:25:49.265237+08:00",
+      "last_seen": "2026-08-17T05:25:49.265237+08:00",
+      "mtime": 1786907073.8146338,
+      "score": 7,
+      "sha256": "3beabe1a5c921858baacfb17d9e936cb6b8a3b27b42c56c716c82c540ac9b446",
+      "size": 11468,
+      "status": "appended",
+      "title": "Everything is about to “go dark”"
+    },
+    "source/hacker-news-rss/2026-08-17-piffer-ai-math-outremembering.md": {
+      "last_seen": "2026-08-17T05:25:49.265237+08:00",
+      "mtime": 1786907073.814383,
+      "sha256": "28ce323343ee65de13487bd6a11e9c5bef2576aa02aad14744203e20b297aa81",
+      "size": 25115,
+      "status": "skipped-low-score"
+    },
+    "source/hacker-news-rss/2026-08-17-sankalp-autoresearch-codex.md": {
+      "chapter": "ch02-rendering",
+      "entry_id": "769d841e0443fc0d",
+      "last_appended": "2026-08-17T05:25:49.265237+08:00",
+      "last_seen": "2026-08-17T05:25:49.265237+08:00",
+      "mtime": 1786907073.8156464,
+      "score": 13,
+      "sha256": "038a54bdf78ebf23f01bc0ad2261478839decefd02ab131aab5a08462b764335",
+      "size": 38435,
+      "status": "appended",
+      "title": "Auto-research with codex: How I achieved a 232x Faster Kernel over baseline with Codex in GPU Mode's qr_v2 problem"
+    },
     "source/juejin-android/2026-07-04-76184335-你可能还不知道ComposePager有.md": {
       "chapter": "待分类",
       "entry_id": "970f43ab2800be1d",
@@ -2506,6 +2570,66 @@
       "size": 4348,
       "status": "appended",
       "title": "掘金 Android 日报 · 2026-08-16"
+    },
+    "source/juejin-android/2026-08-17-76740784-init是什么PID1与三阶段启动.md": {
+      "chapter": "ch08-responsiveness",
+      "entry_id": "7060e25b9fea3842",
+      "last_appended": "2026-08-17T05:25:49.265237+08:00",
+      "last_seen": "2026-08-17T05:25:49.265237+08:00",
+      "mtime": 1786911489.1638303,
+      "score": 24,
+      "sha256": "0996285cbf82624813c49dd4e9e2b9c5cc8a27d00996d3f207399ec013bf6d69",
+      "size": 18493,
+      "status": "appended",
+      "title": "Android 系统启动机制（一）：init 到底是什么？为什么它不是普通 Native Service？从 PID 1"
+    },
+    "source/juejin-android/2026-08-17-76741236-Compose1.12破坏性更新解读.md": {
+      "chapter": "待分类",
+      "entry_id": "dff8ec5a062c0ac6",
+      "last_appended": "2026-08-17T05:25:49.265237+08:00",
+      "last_seen": "2026-08-17T05:25:49.265237+08:00",
+      "mtime": 1786911489.1633337,
+      "score": 14,
+      "sha256": "0f6402b5babf3228e11717579c2bab1c643ecc0952cd11cb76b3f92b5e3ada91",
+      "size": 17045,
+      "status": "appended",
+      "title": "破坏性更新 - 解读 Jetpack Compose 1.12Jetpack Compose 2026 年 8 月版本现"
+    },
+    "source/juejin-android/2026-08-17-76743724-ANR定位从触发原理到日志判断.md": {
+      "chapter": "ch13-perfetto",
+      "entry_id": "22c7b0cac4bed7be",
+      "last_appended": "2026-08-17T05:25:49.265237+08:00",
+      "last_seen": "2026-08-17T05:25:49.265237+08:00",
+      "mtime": 1786911489.1636055,
+      "score": 25,
+      "sha256": "b11d36c499fcc41a643937061b10ca4f563500d4acdf399a75e5364b26adc864",
+      "size": 18529,
+      "status": "appended",
+      "title": "Android ANR 到底怎么定位？从触发原理到日志判断的完整方法系统已经判定 ANR，Trace 里的主线程为什么还"
+    },
+    "source/juejin-android/2026-08-17-76744618-千万别误用AndroidSkills.md": {
+      "chapter": "待分类",
+      "entry_id": "a4badb482b129d63",
+      "last_appended": "2026-08-17T05:25:49.265237+08:00",
+      "last_seen": "2026-08-17T05:25:49.265237+08:00",
+      "mtime": 1786911489.1640694,
+      "score": 9,
+      "sha256": "c578e14a35a8d8d6582f05123a84cb6f82fdf0aa9edf751bf88a0c8768b7df86",
+      "size": 12233,
+      "status": "appended",
+      "title": "千万别误用Android Skills解析谷歌最新发布的Android Skills，真正理解谷歌全新智能体系统背后的反"
+    },
+    "source/juejin-android/2026-08-17-juejin-android.md": {
+      "chapter": "ch09-anr",
+      "entry_id": "e62ca36dd2929542",
+      "last_appended": "2026-08-17T05:25:49.265237+08:00",
+      "last_seen": "2026-08-17T05:25:49.265237+08:00",
+      "mtime": 1786911547.125545,
+      "score": 22,
+      "sha256": "bb8aaccfd0a9d7170c1f3bc5b1ccbddbe768af75c743028cc5b0141576867cb7",
+      "size": 5830,
+      "status": "appended",
+      "title": "掘金 Android 日报 · 2026-08-17"
     },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
@@ -4315,23 +4439,23 @@
   },
   "last_report": {
     "appended": 8,
-    "considered": 9,
-    "cutoff": "2026-08-15T05:20:02.240058+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-16.md",
+    "considered": 12,
+    "cutoff": "2026-08-16T05:20:22.186985+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-17.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1811,
+    "scanned": 1823,
     "skipped": {
       "existing_link": 0,
-      "low_score": 1,
+      "low_score": 4,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 370
+      "unchanged": 379
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-08-16T05:25:22.186985+08:00",
+  "last_run_at": "2026-08-17T05:25:49.265237+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
