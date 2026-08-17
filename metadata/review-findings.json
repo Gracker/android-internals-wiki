@@ -2158,6 +2158,28 @@
       "summary": "23.6 finalized frontmatter lacked canonical source verification metadata for current Android 17 audit evidence",
       "type": "source-traceability",
       "updated_at": "2026-08-17T18:43:09.285740+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch09-anr/09-android17-anr-warning-callback.md",
+      "close_note": "Corrected section 2.1 to include BroadcastQueueImpl/BroadcastAnrTimer as a warning producer, removed BroadcastQueue from the non-producer list, fixed source paths, and added BroadcastQueueImpl references.",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260817-204603-deep-review-73d8fbf6",
+      "created_at": "2026-08-17T20:54:55.744848+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260817-204603-deep-review-73d8fbf6",
+      "details": "Section 2.1 excluded BroadcastQueue from warning producers, but android-17.0.0_r1 BroadcastQueueImpl creates BroadcastAnrTimer with anrWarning(enableAnrWarningCallback) and calls notifyAnrWarning with ANR_TYPE_BROADCAST_OF_INTENT. The same pass also found frontmatter AOSP paths under android/anr instead of android/app.",
+      "id": "AIW-9.9-ANR-BROADCAST-WARNING-PRODUCER-20260817",
+      "log_path": "logs/deep-review/2026-08-17-20260817-204603-deep-review-73d8fbf6-deep-review.md",
+      "severity": "P1",
+      "source_paths": [
+        "frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java",
+        "frameworks/base/services/core/java/com/android/server/utils/AnrTimer.java",
+        "frameworks/base/core/java/android/app/AnrTypes.java"
+      ],
+      "status": "fixed",
+      "summary": "Android 17 broadcast warning producer was omitted from ANR warning coverage",
+      "type": "incorrect-coverage",
+      "updated_at": "2026-08-17T20:54:55.796075+08:00"
     }
   ],
   "schema_version": 1
