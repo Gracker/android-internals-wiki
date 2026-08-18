@@ -4,26 +4,52 @@ title: Linux 内核内存管理
 chapter: '4.2'
 section: '4.2'
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-03-31'
-last_verified_against: Linux kernel 6.6 (android14-6.6-lts)
-confidence: medium
+last_verified: "2026-08-18"
+last_verified_against: "AOSP android-17.0.0_r1 ART and external/perfetto; Android common kernel android17-6.18-2026-06_r6 page_alloc/vmscan/compaction/madvise/arm64 fault/GKI defconfig/mmzone and memory/DMA-BUF docs; Android Developers 16KB page-size docs; source.android.com DMA-BUF Heaps historical migration doc"
+last_rework_at: "2026-08-18T14:16:46+08:00"
+last_rework_run_id: "20260818-141550-rework-a2a666e1"
+confidence: medium-high
 sources:
-- type: blog
-  path: Cubox/五万字 - 深入理解Linux内存管理-2022-08-05.md
-- type: blog
-  path: Cubox/为什么 Linux 需要虚拟内存 - 面向信仰编程-2024-06-25.md
-- type: blog
-  path: Cubox/OPPO内存反碎片优化原理-2022-10-26.md
-- type: blog
-  path: Cubox/Android 系统 内存不足时，kswapd 导致的性能问题之冷热文件回收方案-2025-05-31.md
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/page_alloc.c
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/mmzone.h
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/compaction.c
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/madvise.c
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/mm/fault.c
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/mm/physical_memory.rst
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/mm/multigen_lru.rst
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/driver-api/dma-buf.rst
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/userspace-api/dma-buf-heaps.rst
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/ABI/testing/sysfs-kernel-dmabuf-buffers
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/process_stats/process_stats_config.proto
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/perf_event_config.proto
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/common/perf_events.proto
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartbase/base/mem_map.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/runtime.cc
+- type: official
+  path: https://developer.android.com/guide/practices/page-sizes
+- type: official
+  path: https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps
 - type: paper
   path: Cubox/Silk-安卓GC与内核内存管理的进一步融合-2025-10-20.md (TACO '25)
-- type: blog
-  path: Cubox/荣耀在MGLRU内存回收上的发力或恰到好处-2026-02-25.md
-- type: official
-  path: developer.android.com - 16KB page size
-- type: blog
-  path: Cubox/LPC2025-Android MC主题-2026-01-10.md
 tags:
 - kernel
 - memory
@@ -43,8 +69,8 @@ related_chapters:
 - '4.4'
 - '2.6'
 pipeline_stage: ready-for-review
-task6_state: pending-verification
-task9_state: reviewed
+task6_state: pending-review
+task9_state: pending-review
 task2b_state: fixed
 last_consolidated_at: "2026-08-11"
 consolidated_from:
@@ -308,7 +334,7 @@ flowchart LR
 
 旧的 ION 共享缓冲区分配器和 DMA-BUF Heaps 都可以作为 dma-buf 导出方（exporter）。历史 ION 通过 `/dev/ion`、内存堆掩码（heap mask）和私有标志选择分配器；DMA-BUF Heaps 为不同内存堆暴露独立字符设备 `/dev/dma_heap/<heap_name>`，便于稳定 UAPI、测试和 SELinux 强制访问控制。
 
-Android 12 的 GKI 2.0 以 DMA-BUF Heaps 替换 ION；`android12-5.10` 通用内核已关闭 `CONFIG_ION`。升级设备仍可能通过 `libdmabufheap` 的兼容映射访问旧 ION 内存堆，因此历史代码和旧内核仍能看到 `/dev/ion`。
+Android 12 的 GKI 2.0 以 DMA-BUF Heaps 替换 ION；AOSP 迁移页属于 5.4/GKI 2.0 过渡期文档，页面标注为 deprecated，因此 Android 17 分析还要以当前内核文档和设备节点为准。`android12-5.10` 通用内核已关闭 `CONFIG_ION`。升级设备仍可能通过 `libdmabufheap` 的兼容映射访问旧 ION 内存堆，因此历史代码和旧内核仍能看到 `/dev/ion`。
 
 Android 17 新设备应从 DMA-BUF Heaps 视角分析，同时确认厂商提供的内存堆：
 
@@ -475,7 +501,7 @@ Android 17 的版本边界也应明确：arm64 GKI 配置默认启用 MGLRU；DM
 - [Linux 6.18 Multi-Gen LRU](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/mm/multigen_lru.rst)
 - [Linux 6.18 DMA-BUF](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/driver-api/dma-buf.rst)
 - [Linux 6.18 DMA-BUF Heaps](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/userspace-api/dma-buf-heaps.rst)
-- [AOSP：ION 迁移到 DMA-BUF Heaps](https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps)
+- [AOSP：ION 迁移到 DMA-BUF Heaps（5.4/GKI 2.0 过渡期文档，页面标注 deprecated）](https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps)
 - [Android：支持 16 KiB page size](https://developer.android.com/guide/practices/page-sizes)
 - [Perfetto `ProcessStatsConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/process_stats/process_stats_config.proto)
 - [Perfetto `PerfEventConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/perf_event_config.proto)
