@@ -1720,6 +1720,9 @@
     },
     {
       "chapter": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
+      "close_note": "Rework refreshed source verification to 2026-08-18 after rechecking Android 17 / android-17.0.0_r1 ART and Perfetto anchors, android17-6.18-2026-06_r6 page allocation, vmscan, compaction, MGLRU, THP, KASAN/MTE, DMA-BUF and 16KB page-size documentation; preserved source.android.com DMA-BUF Heaps deprecation/historical-migration boundary in the chapter.",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20260818-141550-rework-a2a666e1",
       "created_at": "2026-08-12T02:00:32.165961+08:00",
       "created_by": "hermes-aiw-weekly-source-audit",
       "created_run_id": "freshness-2026-08-12",
@@ -1730,10 +1733,10 @@
       "source_paths": [
         "src/part1-fundamentals/ch04-memory/02-linux-memory.md"
       ],
-      "status": "open",
+      "status": "verified",
       "summary": "last source verification 2026-03-31 older than 90 days",
       "type": "stale-source-verification",
-      "updated_at": "2026-08-12T02:00:32.165961+08:00"
+      "updated_at": "2026-08-18T14:39:09.750687+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch04-memory/04-lmk.md",
