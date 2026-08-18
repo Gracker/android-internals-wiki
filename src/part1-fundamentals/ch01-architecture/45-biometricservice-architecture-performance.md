@@ -2,9 +2,9 @@
 title: "Android 17 BiometricService 架构与性能优化"
 chapter: "1.45"
 section: "1.45"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-07-25"
+last_verified: "2026-08-18"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 sources:
@@ -14,6 +14,8 @@ sources:
     path: "frameworks/base/core/java/android/hardware/biometrics/BiometricManager.java"
   - type: aosp
     path: "frameworks/base/core/java/android/hardware/biometrics/IAuthService.aidl"
+  - type: aosp
+    path: "frameworks/base/core/res/AndroidManifest.xml"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/biometrics/AuthService.java"
   - type: aosp
@@ -31,15 +33,29 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/biometrics/sensors/AuthSessionCoordinator.java"
   - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/biometrics/sensors/fingerprint/FingerprintService.java"
+  - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/biometrics/sensors/fingerprint/aidl/FingerprintProvider.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/biometrics/sensors/fingerprint/aidl/Sensor.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/biometrics/sensors/fingerprint/aidl/FingerprintStartUserClient.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/biometrics/sensors/fingerprint/aidl/FingerprintAuthenticationClient.java"
   - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/biometrics/sensors/face/FaceService.java"
+  - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/biometrics/sensors/face/aidl/FaceProvider.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/biometrics/sensors/face/aidl/Sensor.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/biometrics/sensors/face/aidl/FaceStartUserClient.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/biometrics/sensors/face/aidl/FaceAuthenticationClient.java"
   - type: aosp
     path: "frameworks/base/packages/SystemUI/src/com/android/systemui/biometrics/AuthController.java"
+  - type: aosp
+    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/biometrics/UdfpsController.java"
   - type: aosp
     path: "hardware/interfaces/biometrics/fingerprint/aidl/android/hardware/biometrics/fingerprint/IFingerprint.aidl"
   - type: aosp
@@ -181,7 +197,7 @@ Android 17 的 `BiometricService` 只有一个 `mAuthSession`。创建新会话�
 | 运行时强度 | OEM 声明强度与 `BiometricStrengthController` 更新值 | 安全更新前需降级 |
 | 硬件状态 | `isHardwareDetected()` | 硬件不可用 |
 | 录入状态 | `hasEnrolledTemplates()` | 尚未录入 |
-| 锁定状态 | `getLockoutModeForUser()` | 限时或永久锁定（timed/permanent lockout） |
+| 锁定状态 | `getLockoutModeForUser()`；预认证分支显式挡下限时锁定 | 限时锁定；永久锁定还可能通过后续 sensor error/lockout 回调进入会话处理 |
 | 用户设置 | 是否允许应用使用该模态 | 对 App 禁用 |
 | 设备策略 | DPM（Device Policy Manager，设备策略管理器）是否禁用指纹、人脸或虹膜 | 被管理策略禁用 |
 | 人脸相机 | 相机可用性和相机隐私开关 | 相机不可用或隐私限制 |
@@ -211,7 +227,7 @@ Android API 的能力边界是：
 
 `BiometricSensor.getCurrentStrength()` 将 OEM 声明值与运行时更新值按位掩码合并，结果不会比 OEM 初始声明更强。安全更新导致的降级会直接影响 `PreAuthInfo` 的资格判断。
 
-API 37 增加了受角色和权限限制的 `BiometricManager.getBiometricSensorStrengths()`。调用方必须位于前台，同时持有 `USE_BIOMETRIC` 和角色授予的 `ACCESS_BIOMETRIC_SENSOR_STRENGTHS`；当前合格角色是钱包或设备策略管理。返回结果把每种模态映射到 `BIOMETRIC_STRONG` 或 `LESS_THAN_STRONG`，不会向调用方暴露 Class 3 以下的细分等级。普通应用仍应使用 `canAuthenticate()`。
+API 37 增加了受角色和权限限制的 `BiometricManager.getBiometricSensorStrengths()`。调用方必须位于前台，同时持有 `USE_BIOMETRIC` 和角色授予的 `ACCESS_BIOMETRIC_SENSOR_STRENGTHS`；框架权限注释列出的授予范围是钱包、设备策略管理，以及便于测试的 system shell。返回结果把每种模态映射到 `BIOMETRIC_STRONG` 或 `LESS_THAN_STRONG`，不会向调用方暴露 Class 3 以下的细分等级。普通应用仍应使用 `canAuthenticate()`。
 
 ## 传感器发现、注册与会话复用
 
@@ -249,7 +265,7 @@ Android 17 优先支持稳定 AIDL HAL，同时仍有 HIDL 配置和 `HidlToAidl
 
 ### AIDL session 并非每次认证都重建
 
-Fingerprint 和 Face AIDL provider 都为当前用户维护 `mCurrentSession`。用户匹配且 session 健康时，认证 client 复用它；切换用户、HAL 死亡或 session 关闭时才创建或替换。
+Fingerprint 和 Face AIDL 的每个 sensor 都维护 `mCurrentSession`，provider 通过这些 sensor 与 scheduler 驱动当前用户的 HAL 会话。用户匹配且 session 健康时，认证 client 复用它；切换用户、HAL 死亡或 session 关闭时才创建或替换。
 
 创建路径的接口形态是：
 
@@ -422,7 +438,7 @@ Android 17 的 `AuthSession` 没有“所有认证 30～60 秒强制结束”的
 - scheduler watchdog 的显式调用；
 - OEM HAL 或安全环境。
 
-`BiometricScheduler.startWatchdog()` 中虽有 10 秒清理定时器，但在当前标签的 framework Java 源码中没有直接生产调用点，不能把它描述成每次 authenticate 自动启用的超时。
+`BiometricScheduler.startWatchdog()` 中有 10 秒清理定时器，Fingerprint/Face service 也暴露了受 `USE_BIOMETRIC_INTERNAL` 保护的 `scheduleWatchdog()` 内部入口，provider 会把它转为对应 scheduler 的 `startWatchdog()`。这仍不是 BiometricPrompt 每次 `authenticate()` 自动启用的用户认证超时，不能把它描述成所有认证 10 秒或 30～60 秒强制结束。
 
 排查超时时，应记录实际 error、modality（指纹、人脸等认证模态）、`vendorCode` 和当前 operation，不要套用固定秒数。
 
