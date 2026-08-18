@@ -4,16 +4,26 @@ section: "9.2"
 chapter: "9.2"
 status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-07-09"
-last_verified_against: "AOSP android-17.0.0_r1, Android Developers ANR vitals / JobService / foreground service docs"
+last_verified: "2026-08-17"
+last_verified_against: "AOSP android-17.0.0_r1, Android Developers ANR diagnose / JobService / foreground service docs"
 confidence: high
 sources:
+  - type: aosp
+    path: "frameworks/native/libs/input/android/os/IInputConstants.aidl"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActiveServices.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/AnrTypes.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/content/ContentResolver.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/content/ContentProviderClient.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/BroadcastConstants.java"
   - type: aosp
@@ -23,9 +33,17 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/utils/AnrTimer.java"
   - type: aosp
+    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java"
+  - type: aosp
+    path: "frameworks/base/core/java/com/android/internal/os/TimeoutRecord.java"
+  - type: aosp
     path: "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp"
   - type: official
     path: "https://developer.android.com/topic/performance/vitals/anr"
+  - type: official
+    path: "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
+  - type: official
+    path: "https://developer.android.com/develop/background-work/services/fgs/timeout"
   - type: official
     path: "https://developer.android.com/reference/android/app/job/JobService"
   - type: official
@@ -38,6 +56,8 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
+last_idle_audit_at: "2026-08-17T22:39:27+08:00"
+last_idle_audit_run_id: "20260817-223927-idle-audit-b22f4aa7"
 ---
 # 9.2 ANR 类型与触发条件
 
@@ -402,7 +422,7 @@ Perfetto 用来回答“超时窗口内线程和 CPU 在做什么”，单靠一
 源码锚点均为 AOSP `android-17.0.0_r1`：
 
 - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`
-- `frameworks/base/core/java/android/os/IInputConstants.aidl`
+- `frameworks/native/libs/input/android/os/IInputConstants.aidl`
 - `frameworks/base/core/java/android/app/AnrTypes.java`
 - `frameworks/base/core/java/android/content/ContentResolver.java`
 - `frameworks/base/core/java/android/content/ContentProviderClient.java`
@@ -411,7 +431,7 @@ Perfetto 用来回答“超时窗口内线程和 CPU 在做什么”，单靠一
 - `frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java`
 - `frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java`
 - `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java`
-- `frameworks/base/services/core/java/com/android/server/am/TimeoutRecord.java`
+- `frameworks/base/core/java/com/android/internal/os/TimeoutRecord.java`
 
 官方资料：
 
