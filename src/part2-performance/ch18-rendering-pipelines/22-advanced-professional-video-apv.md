@@ -5,14 +5,14 @@ section: "18.22"
 section_title: "Android 17 Advanced Professional Video 与专业视频编解码管线"
 status: ready-for-review
 applicable_versions: "Android 16 (API 36/36.1) - Android 17 (API 37)；当前平台锚点 Android 17 / API 37"
-last_verified: "2026-08-16"
-last_verified_against: "android-17.0.0_r1 (MediaFormat, MediaCodecInfo, MediaRecorder, C2SoftApvEnc, C2SoftApvDec, software codec XML, MPEG4Writer) / Android 16 APV 与 Android 17 CQ 官方文档复核 2026-08-16；Android 16 APV 文档仅作为本章适用范围下限来源，不外推到 Android 17 之后 / Writer rendering_pipelines S12 / android17-6.18-2026-06_r6 / OpenAPV README profile 边界复核 2026-08-16"
+last_verified: "2026-08-18"
+last_verified_against: "android-17.0.0_r1 (MediaFormat, MediaCodecInfo, MediaRecorder, C2SoftApvEnc, C2SoftApvDec, software codec XML, MPEG4Writer) / Android 16 APV 与 Android 17 CQ 官方文档复核 2026-08-18；Android 16 APV 文档仅作为本章适用范围下限来源，不外推到 Android 17 之后 / Writer rendering_pipelines S12 / android17-6.18-2026-06_r6 / OpenAPV README profile 边界复核 2026-08-16 / 位率、容量与带宽十进制换算复核 2026-08-18"
 confidence: high
 pipeline_stage: ready-for-review
 task6_state: pending-review
 task9_state: pending-review
-last_deep_review_at: "2026-08-16T20:44:57+08:00"
-last_deep_review_run_id: "20260816-204012-deep-review-627bfda7"
+last_deep_review_at: "2026-08-18T13:30:01+08:00"
+last_deep_review_run_id: "20260818-133001-deep-review-627bfda7"
 last_rework_at: "2026-08-16T13:36:13+08:00"
 last_rework_run_id: "20260816-133613-rework-627bfda7"
 tags: [media, apv, mediacodec, professional-video, android16, android17]
@@ -301,11 +301,11 @@ P010 是 4:2:0 10-bit 半平面 YUV，P210 是 4:2:2 10-bit，YV12 通常是 4:2
 
 ## 码率、内存带宽和存储要用同一组规格计算
 
-2 Gbps 等于 250 MB/s。按固定码率估算，录制 4 分钟会写入约 60 GB 编码视频数据，其中还没有计入音频、容器与文件系统开销。即使降到 1 Gbps，也要持续写入约 125 MB/s。
+以下容量和带宽按十进制单位估算：2 Gbps 等于 250 MB/s。按固定码率录制 4 分钟会写入约 60 GB 编码视频数据，其中还没有计入音频、容器与文件系统开销。即使降到 1 Gbps，也要持续写入约 125 MB/s。
 
 Camera 到 encoder 的输入同样不可忽略。P210 分配 32 bit/pixel，3840 × 2160、60 fps 的一遍线性读流量约为：
 
-`3840 × 2160 × 4 byte × 60 ≈ 1.99 GB/s`
+`3840 × 2160 × 4 byte × 60 ≈ 1.99 GB/s（十进制）`
 
 这只是按有效画面尺寸计算的一遍读取，没有计入 stride（每行像素在内存中的实际跨度）、对齐填充、Camera 写入、codec 内部转换、缓存维护、预览、输出和其他消费者。该估算不能替代 SoC 带宽计数器，却足以说明 250 MB/s 的编码输出并不能代表整条管线的内存流量。
 
