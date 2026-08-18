@@ -6,31 +6,58 @@ status: ready-for-review
 applicable_versions: "Android 17 (API 37)"
 tags: [ANR, warning, callback, AnrTypes, observability, IAnrWarningCallback]
 related_chapters: ["9.1", "9.2", "9.3", "9.7", "26.1"]
-last_verified: "2026-07-02"
-last_verified_against: "AOSP android-17.0.0_r1（源文件路径级验证有限，部分标注待验证）"
+last_verified: "2026-08-17"
+last_verified_against: "AOSP android-17.0.0_r1（公开 API、warning producer 与 ProfilingManager 路径复核）"
 confidence: medium
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: ready-for-review
+last_deep_review_at: "2026-08-17T20:53:44+08:00"
+last_deep_review_run_id: "20260817-204603-deep-review-73d8fbf6"
 sources:
   - type: blog
     path: "技术文章/Android/Android-17系统层面新特性/39-ANR-类型和预警回调.md"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/ActivityManager#registerAnrWarningListener(java.util.concurrent.Executor,%20java.util.function.Consumer)"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/AnrWarningResult"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/AnrTypes"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/ApplicationExitInfo#getAnrInfo()"
   - type: aosp
-    path: "frameworks/base/core/java/android/anr/AnrTypes.java"
+    path: "frameworks/base/core/java/android/app/ActivityManager.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/anr/AnrWarningResult.java"
+    path: "frameworks/base/core/java/android/app/AnrTypes.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/anr/IAnrWarningCallback.aidl"
+    path: "frameworks/base/core/java/android/app/AnrWarningResult.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/IAnrWarningCallback.aidl"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/AnrWarningController.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/ActiveServices.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/AnrHelper.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/utils/AnrTimer.java"
+  - type: aosp
+    path: "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/AnrController.java"
+  - type: aosp
+    path: "packages/modules/Profiling/framework/java/android/os/ProfilingManager.java"
   - type: research
     path: "DeepResearch/2026-06-15-anr-detection-inputdispatcher-ams-anrhelper-source.md"
 ---
 
 # 9.9 Android 17 ANR 预警回调与类型枚举
 
-Android 17 / API 37 增加了公开的 ANR warning（预警）API。应用可以向 `ActivityManager` 注册 listener（监听器），在部分 ANR 计时器接近 deadline（完成期限）时收到 `AnrWarningResult`。
+Android 17 / API 37 增加了公开的 ANR warning（预警）API。应用可以向 `ActivityManager` 注册 listener（监听器），在部分 ANR 检测路径接近 deadline（完成期限）时收到 `AnrWarningResult`。
 
 这个信号有三个边界：
 
@@ -84,11 +111,12 @@ Android 17 的相关类型位于 `android.app`：
 | warning producer | `AnrTypes` | 预警点 |
 |---|---|---|
 | InputDispatcher 等待 focused window | `INPUT_DISPATCH_NO_FOCUSED_WINDOW` | 剩余窗口取 timeout 一半与平台默认 pre-ANR window（预警窗口）中的较长者 |
+| Broadcast delivery timer | `BROADCAST_OF_INTENT` | `BroadcastAnrTimer` 运行到 50% split point |
 | Service execution timer | `EXECUTE_SERVICE` | `AnrTimer` 运行到 50% split point（计时分割点） |
 | short FGS timer | `FOREGROUND_SHORT_SERVICE_TIMEOUT` | `AnrTimer` 运行到 50% split point |
 | start-foreground timer | `START_FOREGROUND_SERVICE` | `AnrTimer` 运行到 50% split point |
 
-InputDispatcher 的 `processPreAnrsLocked()` 在该 tag（源码版本）中只调用 `processNoFocusedWindowPreAnrLocked()`。普通 input connection timeout（输入连接超时）没有沿这段代码发送 warning。BroadcastQueue、ContentProvider call detector、JobService 和 app-triggered ANR 也不能因为存在对应常量，就推断系统已经投递 warning。
+InputDispatcher 的 `processPreAnrsLocked()` 在该 tag（源码版本）中只调用 `processNoFocusedWindowPreAnrLocked()`。普通 input connection timeout（输入连接超时）没有沿这段代码发送 warning。ContentProvider call detector、JobService、application start 和 app-triggered ANR 也不能因为存在对应常量，就推断系统已经投递 warning。
 
 warning 覆盖还受 feature flag（功能开关）与计时器实现影响。生产统计应同时保留“最终 ANR 无 warning”和“warning 后恢复”两类记录，不能把 listener 收到的数量当作全量 ANR 分母。
 
@@ -298,7 +326,7 @@ Android 16（API 36）的 `ProfilingTrigger.TRIGGER_TYPE_ANR` 会在系统识别
 注册的 listener 会写入一个短 trace section（自定义 trace 区间）：
 
 ```text
-ANR Warning ANR-Id: <id> consumedMs=<value> timeoutMs=<value>
+ANR Warning ANR-Id: <id> consumedMs= <value> timeoutMs=<value>
 ```
 
 这段标记提供 warning 时间戳与 ANR id，并帮助 trace redactor（trace 脱敏裁剪器）保留相关 slice（带起止时间的事件片段）。应用使用 `ProfilingManager` 的 ANR trigger 时，不需要为了这条内部标记再注册第二个 warning listener。
@@ -402,6 +430,7 @@ Android 17 / API 37 把 ANR 类型、预警载荷和 listener 注册做成公开
 - [AOSP android-17.0.0_r1：AnrWarningController](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AnrWarningController.java)
 - [AOSP android-17.0.0_r1：AnrTimer](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/utils/AnrTimer.java)
 - [AOSP android-17.0.0_r1：ActiveServices warning producers](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java)
+- [AOSP android-17.0.0_r1：BroadcastQueueImpl warning producer](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastQueueImpl.java)
 - [AOSP android-17.0.0_r1：InputDispatcher pre-ANR](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
 - [AOSP android-17.0.0_r1：WindowManager AnrController](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/AnrController.java)
 - [AOSP android-17.0.0_r1：ProfilingManager](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java)
