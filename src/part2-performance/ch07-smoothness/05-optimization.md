@@ -4,16 +4,18 @@
 title: "优化策略"
 section: "7.5"
 chapter: "7.5"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
-last_verified: "2026-04-20"
-last_verified_against: "AOSP android-16.0.0_r1, Android 官方文档, AndroidX RecyclerView release notes"
+last_verified: "2026-08-17"
+last_verified_against: "AOSP android-17.0.0_r1, android17-6.18-2026-06_r6, Android 官方文档, AndroidX RecyclerView release notes"
 confidence: high
 sources:
   - type: blog
     path: "obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md"
   - type: official
-    path: "developer.android.com/topic/performance/recycler-view"
+    path: "https://developer.android.com/develop/ui/views/layout/recyclerview"
+  - type: official
+    path: "https://developer.android.com/topic/performance/vitals/render"
   - type: official
     path: "developer.android.com/develop/ui/compose/performance"
   - type: official
@@ -33,7 +35,13 @@ sources:
   - type: aosp
     path: "frameworks/base/core/java/android/view/ViewStub.java"
   - type: aosp
+    path: "frameworks/base/core/java/android/view/LayoutInflater.java"
+  - type: aosp
     path: "frameworks/base/core/java/android/view/View.java (LAYER_TYPE_HARDWARE)"
+  - type: aosp
+    path: "frameworks/base/libs/hwui/renderthread/RenderThread.cpp"
+  - type: aosp-kernel
+    path: "common kernel android17-6.18-2026-06_r6 include/trace/events/sched.h, drivers/dma-buf/dma-fence.c"
 tags:
   - android
   - smoothness
@@ -41,10 +49,12 @@ tags:
   - recyclerview
   - compose-performance
   - layout-optimization
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
-task9_state: reviewed
+pipeline_stage: ready-for-review
+task6_state: pending-review
+task9_state: pending-review
 task2b_state: fixed
+last_rework_at: "2026-08-17T21:35:29+08:00"
+last_rework_run_id: "20260817-213529-rework-df9c12ef"
 ---
 
 # 7.5 优化策略
@@ -328,7 +338,7 @@ Compose 编译器根据类型稳定性和参数比较结果，决定某个调用
 
 `derivedStateOf` 适合“输入变化频率高于 UI 判断变化频率”的场景，例如滚动位置每帧变化，而按钮只在越过阈值时切换可见性。它自身有观察和计算成本；对字符串拼接或与输入同频变化的简单结果，普通表达式或 `remember` 往往更直接。
 
-如果能把高频状态读取延后到 layout/draw lambda（布局/绘制回调），就可以减少 composition 的失效范围。例如，位移只影响布局或绘制时，可以优先选择接收 lambda 的 modifier/API（修饰符或接口），再用 trace 验证工作是否确实转移到了预期阶段。
+如果能把高频状态读取延后到 layout/draw lambda（布局/绘制回调），就可以减少 composition 的失效范围。例如，位移只影响布局或绘制时，可以优先选择接收 lambda 的 modifier/API（修饰符或接口），再用 trace 验证工作是否转移到了预期阶段。
 
 ### Lazy 列表
 
@@ -413,11 +423,14 @@ Android 17 AOSP（Android 开源项目）的 RenderThread 会设置显示相关�
 - [Optimizing view hierarchies](https://developer.android.com/topic/performance/rendering/optimizing-view-hierarchies)
 - [ConstraintLayout](https://developer.android.com/develop/ui/views/layout/constraint-layout)
 - [ViewStub API](https://developer.android.com/reference/android/view/ViewStub)
-- [RecyclerView performance](https://developer.android.com/topic/performance/vitals/render)
+- [AOSP Android 17 LayoutInflater](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/LayoutInflater.java)
+- [RecyclerView](https://developer.android.com/develop/ui/views/layout/recyclerview)
+- [Android vitals: Slow rendering](https://developer.android.com/topic/performance/vitals/render)
 - [DiffUtil API](https://developer.android.com/reference/androidx/recyclerview/widget/DiffUtil)
 - [ListAdapter API](https://developer.android.com/reference/androidx/recyclerview/widget/ListAdapter)
 - [RecyclerView release notes](https://developer.android.com/jetpack/androidx/releases/recyclerview)
 - [Hardware layers](https://developer.android.com/reference/android/view/View#LAYER_TYPE_HARDWARE)
+- [View.setFrameContentVelocity API](https://developer.android.com/reference/android/view/View#setFrameContentVelocity%28float%29)
 - [RenderEffect API](https://developer.android.com/reference/android/graphics/RenderEffect)
 - [Compose performance best practices](https://developer.android.com/develop/ui/compose/performance/bestpractices)
 - [Compose stability fixes](https://developer.android.com/develop/ui/compose/performance/stability/fix)
