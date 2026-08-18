@@ -1,30 +1,72 @@
 ---
-
-status: finalized
+status: ready-for-review
 title: App 启动全流程
 chapter: '8.2'
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-04-20'
-last_verified_against: AOSP android-15.0.0_r1, AndroidX Activity release notes, Perfetto
-  atrace docs, Android Developers baseline profiles docs
-confidence: medium
+last_verified: '2026-08-18'
+last_verified_against: AOSP android-17.0.0_r1 Framework app-start/window/process sources; Android Developers startup/vitals/measurement/Macrobenchmark/Baseline Profile/Startup Profile/App Startup/16 KB page-size docs; Perfetto atrace and android.startup stdlib docs; AndroidX Activity release notes
+confidence: medium-high
 sources:
-- type: blog
-  path: Cubox/启动优化 ·  基础论 ·  浅析Android启动优化-2022-12-31.md
-- type: blog
-  path: Cubox/FullyDrawnReporter-一个官方冷启动耗时统计小工具 - 掘金-2023-12-24.md
-- type: blog
-  path: Cubox/Activity 启动速度分析方法(启动流程分析) - Light.Moon-2022-04-11.md
-- type: blog
-  path: Cubox/Android 强推的 Baseline Profiles 国内能用吗?我找 Google 工程师求证了! - 掘金-2022-07-17.md
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityTaskSupervisor.java
+  role: process reuse, startProcessAsync, and launch transaction server path
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ProcessList.java
+  role: Process.start entry point for ActivityThread
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityThread.java
+  role: ActivityThread.main, bindApplication, provider install, Application and Activity lifecycle
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/servertransaction/LaunchActivityItem.java
+  role: app-side launch transaction execution
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java
+  role: scheduleTraversals, performTraversals, and app window first frame path
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityRecord.java
+  role: onWindowsDrawn callback into ActivityMetricsLogger
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityMetricsLogger.java
+  role: TTID, TTFD, windowsDrawn, fullyDrawn, and ApplicationStartInfo timestamps
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationStartInfo.java
+  role: API 35 startup state, type, reason, component, and timestamp constants
 - type: official
-  path: developer.android.com/topic/performance/vitals/launch-time
+  path: https://developer.android.com/topic/performance/vitals/launch-time
+  role: TTID, TTFD, startup types, Android Vitals excessive-start thresholds, reportFullyDrawn guidance
+- type: official
+  path: https://developer.android.com/topic/performance/measuring-performance
+  role: current startup latency goals and percentile guidance
+- type: official
+  path: https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview
+  role: Macrobenchmark startupMode and compilationMode boundaries
+- type: official
+  path: https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics
+  role: StartupTimingMetric timeToInitialDisplayMs and timeToFullDisplayMs definitions
+- type: official
+  path: https://developer.android.com/reference/android/app/ApplicationStartInfo
+  role: public ApplicationStartInfo API availability and timestamp definitions
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/activity
+  role: FullyDrawnReporter and Compose ReportDrawn APIs
+- type: official
+  path: https://developer.android.com/topic/performance/baselineprofiles/overview
+  role: Baseline Profile behavior, ProfileInstaller, Cloud Profile boundary, and 30 percent guidance
+- type: official
+  path: https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations
+  role: Startup Profile and DEX layout optimization boundary
+- type: official
+  path: https://developer.android.com/topic/libraries/app-startup
+  role: AndroidX App Startup InitializationProvider and Initializer behavior
+- type: official
+  path: https://developer.android.com/guide/practices/page-sizes
+  role: Android 15 plus 16 KB page-size compatibility and startup measurement note
 - type: official
   path: https://perfetto.dev/docs/getting-started/atrace
+  role: Perfetto atrace_categories and atrace_apps configuration
 - type: official
-  path: https://developer.android.com/topic/performance/baselineprofiles
+  path: https://perfetto.dev/docs/analysis/stdlib-docs#android-startup-startups
+  role: PerfettoSQL android.startup.startups and time_to_display tables
 tags:
 - cold-start
 - warm-start
@@ -46,10 +88,12 @@ related_chapters:
 - '2.5'
 - '7.1'
 section: '8.2'
-pipeline_stage: "ready-to-publish"
-task9_state: "reviewed"
+pipeline_stage: ready-for-review
+task9_state: pending-review
 task2b_state: fixed
-task6_state: "reviewed"
+task6_state: pending-review
+last_rework_at: '2026-08-18T21:35:20+08:00'
+last_rework_run_id: 20260818-213520-rework-18314122
 ---
 
 
