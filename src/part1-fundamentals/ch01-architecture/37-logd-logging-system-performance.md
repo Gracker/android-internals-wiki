@@ -2,18 +2,20 @@
 title: "Android logd 日志系统性能与开销"
 chapter: "1.37"
 section: "1.37"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-08-17"
-last_verified_against: "AOSP android-17.0.0_r1"
-confidence: medium
+last_verified: "2026-08-18"
+last_verified_against: "AOSP android-17.0.0_r1 (system/logging/logd, system/logging/liblog, frameworks/base Log.java/android_util_Log.cpp, packages/modules/StatsD libstatssocket) plus Android Developers NDK logging/R8/Log Info Disclosure docs checked 2026-08-18"
+confidence: high
 task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: ready-for-review
+pipeline_stage: finalized
 last_rework_at: "2026-07-25T17:35:42+08:00"
 last_rework_run_id: "20260725-173542-rework-6030a13a"
 last_deep_review_at: "2026-08-17T16:42:12+08:00"
 last_deep_review_run_id: "20260817-163540-deep-review-6030a13a"
+last_review_finalize_at: "2026-08-18T10:16:08+08:00"
+last_review_finalize_run_id: "20260818-100528-26c6e739"
 sources:
   - type: aosp
     path: "system/logging/logd/ (android-17.0.0_r1)"
