@@ -161,7 +161,7 @@ class LoginActivity : FragmentActivity() {
 
 ### 认证类型不等于传感器形态
 
-`AuthenticationResult.getAuthenticationType()` 能区分 biometric（生物识别）、device credential（设备 PIN、图案或密码）和部分旧版本上的 unknown。它不公开本次使用了指纹、人脸、虹膜或哪一个传感器。普通应用也没有可靠 API 读取本次生物认证的 modality（传感器形态）。
+`AuthenticationResult.getAuthenticationType()` 能区分 biometric（生物识别）、device credential（设备 PIN、图案或密码）和部分旧版本上的 unknown。它不公开本次使用的是指纹、人脸还是虹膜，也不公开具体是哪一个传感器。普通应用也没有可靠 API 读取本次生物认证的 modality（传感器形态）。
 
 实验室设备清单可以标注 UDFPS（屏下指纹传感器）、侧边指纹、后置指纹、2D face 或 3D face，用来解释设备组差异；线上事件不能声称记录到了本次使用的 sensor 类型。设备同时支持多种 modality 时，按机型猜测尤其容易失真。
 
@@ -193,7 +193,7 @@ AndroidX [`prepareGetCredential()`](https://developer.android.com/reference/kotl
 - 页面退出、账号切换或请求失效时能够取消或丢弃旧 handle；
 - 完成阶段使用 Activity context，使系统 UI 依附于当前页面所在的任务栈。
 
-Kotlin 挂起版 `getCredential()` 会随 coroutine scope（协程作用域）取消。需要让请求跨旋转继续时，可以使用 `viewModelScope` 等生命周期覆盖配置变更的作用域；页面已结束或账号已切换时，应主动使请求失效。回调版则通过 `CancellationSignal` 传递取消信号。
+Kotlin 挂起版 `getCredential()` 会随 coroutine scope（协程作用域）取消。需要让请求跨旋转继续时，可以使用 `viewModelScope` 等生命周期跨越配置变更的作用域；页面已结束或账号已切换时，应主动使请求失效。回调版则通过 `CancellationSignal` 传递取消信号。
 
 预取事件可以记录 `prepare_start`、`prepare_result`、`resume_start` 和 `get_result`，从而比较准备阶段与完成阶段的耗时。即使使用预取，依赖方应用仍然拿不到 prompt 出现时间或各 provider 的独立查询时间。
 
@@ -205,7 +205,7 @@ Android 15（API 35）加入 Credential Manager single tap（单击登录）：�
 
 provider 集成时有四条硬约束：
 
-1. 显式设置 `allowedAuthenticators`。当前 single tap 指南的创建段与 [`BiometricPromptData` API 参考](https://developer.android.com/reference/androidx/credentials/provider/BiometricPromptData) 对默认值的文字不一致，代码不应依赖默认值。
+1. 显式设置 `allowedAuthenticators`。当前 single tap 指南的创建部分与 [`BiometricPromptData` API 参考](https://developer.android.com/reference/androidx/credentials/provider/BiometricPromptData) 对默认值的描述不一致，代码不应依赖默认值。
 2. `cryptoObject` 非空时，`allowedAuthenticators` 必须精确设置为 `BIOMETRIC_STRONG`；若传入组合值，会触发 `IllegalArgumentException`。
 3. 设备配置要求使用 PIN、图案或密码时，系统采用标准 Credential Manager 流程，provider 收到的 `biometricPromptResult` 为 `null`。
 4. provider 必须处理 result 为成功、错误和 `null` 三种情况；`null` 表示这次没有走 provider 内嵌的生物认证结果，不能记成生物认证失败。
@@ -290,7 +290,7 @@ stateDiagram-v2
 | `server_verify_end` | 服务端响应 | `duration_ms`、`network_class`、`http_family`、`decision_family` |
 | `login_ready` | 目标页面首帧 | `final_method`、`fallback_reason`、`total_ms` |
 
-依赖方应用不应上报 `candidate_count`、`provider_query_ms`、`prompt_shown_ms` 或 biometric modality，除非它确实获得了相应的直接信号。设备型号可以在满足合规要求的前提下映射为受控设备分组，避免自由文本产生大量不同取值，也就是高基数字段。
+依赖方应用不应上报 `candidate_count`、`provider_query_ms`、`prompt_shown_ms` 或 biometric modality，除非它获得了相应的直接信号。设备型号可以在满足合规要求的前提下映射为受控设备分组，避免自由文本产生大量不同取值，也就是高基数字段。
 
 认证数据的采集边界更严格。不要上传生物样本、PIN、图案、密码、passkey assertion 原文、challenge、credential ID、AAGUID（认证器型号标识）原值、RP ID（依赖方域名标识）或明文账号。关联排查使用短期 `flow_id`、凭据类型、错误家族和账号匿名分组。任何能够长期识别账号或凭据的摘要都需要安全与隐私评审；哈希处理后的值仍可能被关联，不能自动视为匿名数据。
 
