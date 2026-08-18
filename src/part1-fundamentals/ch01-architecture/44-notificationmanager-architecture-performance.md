@@ -2,10 +2,10 @@
 title: "Android 17 NotificationManager 架构与性能优化"
 chapter: "1.44"
 section: "1.44"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
-last_verified: "2026-07-25"
-last_verified_against: "AOSP android-17.0.0_r1"
+last_verified: "2026-08-18"
+last_verified_against: "AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6 / Android Developers notification docs checked 2026-08-18"
 confidence: high
 sources:
   - type: aosp
@@ -41,9 +41,17 @@ sources:
   - type: aosp
     path: "frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/collection/NotifCollection.java"
   - type: aosp
+    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/collection/inflation/NotificationRowBinderImpl.java"
+  - type: aosp
     path: "frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/row/NotificationRowContentBinderImpl.kt"
+  - type: aosp
+    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/row/NotificationCustomContentMemoryVerifier.kt"
+  - type: aosp
+    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/row/NotificationCustomContentCompat.java"
   - type: official
     path: "developer.android.com/develop/ui/views/notifications"
+  - type: official
+    path: "developer.android.com/about/versions/12/behavior-changes-12"
   - type: official
     path: "developer.android.com/develop/ui/views/notifications/live-update"
   - type: official
@@ -430,9 +438,9 @@ PendingIntent contentIntent = PendingIntent.getActivity(
 4. 目标进程按当前状态复用、解冻或启动；
 5. Activity 执行生命周期并提交首帧。
 
-冷启动或 cached app（缓存进程）解冻没有可跨设备使用的固定毫秒数。它取决于存储、代码和资源量、设备负载、进程状态与首帧工作。诊断时应记录点击业务 ID，在 Activity 的 `onCreate()`、`onNewIntent()` 和首帧处添加 trace，再结合 `am_proc_start`、Binder 和调度事件定位。
+冷启动或 cached app（缓存进程）解冻没有可跨设备使用的固定毫秒数。它取决于存储、代码和资源量、设备负载、进程状态与首帧工作。诊断时应记录点击业务 ID，在 Activity 的 `onCreate()`、`onNewIntent()` 和首帧处添加 trace，再结合 ActivityManager / ActivityTaskManager 日志、`am_*` 事件、Binder 和调度事件定位。
 
-通知点击应直接使用指向 Activity 的 PendingIntent。Android 12 起，应用不能依赖 notification trampoline（通知跳板），即“点击先启动 broadcast receiver/service，再由它启动 Activity”。直接目标也减少一次组件调度和一次应用内转交。
+通知点击应直接使用指向 Activity 的 PendingIntent。面向 Android 12 及以上的应用不能依赖 notification trampoline（通知跳板），即“点击先启动 broadcast receiver/service，再由它启动 Activity”；官方文档即使提到 `SYSTEM_ALERT_WINDOW` 的例外，也要求避免这种交互模式并改用直接 `PendingIntent`。直接目标还减少一次组件调度和一次应用内转交。
 
 ## 通知分组机制
 
@@ -657,8 +665,8 @@ Android 17 针对 target API 37 的 custom notification view 增加了展开后�
 | 版本 | 直接相关的变化 |
 | --- | --- |
 | Android 13 / API 33 | `POST_NOTIFICATIONS` 运行时权限；Task Manager 展示运行中的 FGS 应用 |
-| Android 14 / API 34 | 多数 ongoing / FGS 通知允许用户单条划走，少数 call、media、DPC（设备策略控制器）等场景例外 |
-| Android 15 / API 35 | 部分 FGS 类型增加时长限制，通知存在不能替代 FGS 合规 |
+| Android 14 / API 34 | 解锁后多数 ongoing / FGS 通知允许用户单条划走；锁屏、Clear all 以及 call、media、DPC（设备策略控制器）等例外仍不可直接套用 |
+| Android 15 / API 35 | 面向 API 35+ 的应用在后台运行部分 FGS 类型时受时长限制，通知存在不能替代 FGS 合规 |
 | Android 16 / API 36 | `ProgressStyle` 与 promoted ongoing / Live Update 能力 |
 | Android 17 / API 37 | `MetricStyle`、semantic style、Live Update 扩展；custom notification view 内存检查加强 |
 
