@@ -7,8 +7,8 @@ title: App 内存优化与诊断
 section: '4.5'
 chapter: '4.5'
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-06-24'
-last_verified_against: AOSP android-16.0.0_r1
+last_verified: '2026-08-18'
+last_verified_against: "AOSP android-17.0.0_r1; external/perfetto heapprofd data source"
 confidence: medium
 sources:
 - type: official
@@ -27,6 +27,10 @@ sources:
   path: https://android-developers.googleblog.com/2024/10/16kb-page-size-android-15.html
 - type: official
   path: https://perfetto.dev/docs/data-sources/native-heap-profiler
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/data_source_config.proto
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/profiling/memory/heapprofd_producer.cc
 - type: official
   path: https://developer.android.com/ndk/guides/debug-gdb
 tags:
@@ -47,9 +51,11 @@ related_chapters:
 - '7.2'
 - '7.3'
 pipeline_stage: ready-for-review
-task6_state: pending-verification
+task6_state: reviewed
 task2b_state: fixed
 task9_state: reviewed
+last_deep_review_at: "2026-08-18T20:44:21+08:00"
+last_deep_review_run_id: "20260818-204421-deep-review-74f9bce1"
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch04-memory/4.35-android17-cpu-cache-locality-pss-accounting.md"
@@ -409,12 +415,12 @@ tools/heap_profile android \
 
 默认采样间隔为 4096 字节。增大间隔会降低开销，也会降低小分配的可见性。采集结果要同时看尚未释放的采样大小（outstanding size）、分配次数和调用栈，不能只按累计分配量排序。
 
-需要把采样结果放进系统性能轨迹时，可配置 `linux.heapprofd` 数据源：
+需要把采样结果放进系统性能轨迹时，可配置 `android.heapprofd` 数据源：
 
 ```textproto
 data_sources {
   config {
-    name: "linux.heapprofd"
+    name: "android.heapprofd"
     heapprofd_config {
       process_cmdline: "com.example.app"
       sampling_interval_bytes: 16384
@@ -685,6 +691,7 @@ Android 14+ 只保留 `UI_HIDDEN` 和 `BACKGROUND` 两个公开投递级别，�
 - `frameworks/base/core/java/android/content/ComponentCallbacks2.java`：内存整理级别的公共契约
 - `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java`：冻结前的后台 trim
 - `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`、`ProfilingTrigger.java`：系统性能剖析与 API 37 触发器
+- `external/perfetto/protos/perfetto/config/data_source_config.proto`、`external/perfetto/src/profiling/memory/heapprofd_producer.cc`：`android.heapprofd` 数据源名称与生产者常量
 
 以上源码均以 `android-17.0.0_r1` 为核查锚点。
 
