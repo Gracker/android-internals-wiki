@@ -4,8 +4,9 @@ chapter: "23.6"
 section: "23.6"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-08-15"
-last_verified_against: "Android 17 / API 37 / AOSP android-17.0.0_r1；App Memory Limits、ComponentCallbacks2、Binder、WebView、Android 内存管理与 Google Play 64 位官方文档"
+last_verified: "2026-08-17"
+last_source_verified_at: "2026-08-17"
+last_verified_against: "Android 17 / API 37 官方 App memory limits、Manage memory、ComponentCallbacks2、Binder、WebView 与 Google Play 64 位文档；AOSP android-17.0.0_r1 ActivityThread、ActivityManager、ComponentCallbacks2、TransactionTooLargeException、MemoryLimiter、ActivityManagerShellCommand、ActivityManagerService、ART thread.cc"
 last_review_finalize_at: "2026-08-15T08:05:42+08:00"
 last_review_finalize_run_id: "20260815-080542-gracker-writing-review"
 confidence: high
@@ -19,9 +20,17 @@ sources:
   - type: official
     path: "https://developer.android.com/topic/performance/memory-management"
   - type: official
+    path: "https://developer.android.com/topic/performance/memory"
+  - type: official
     path: "https://developer.android.com/reference/android/content/ComponentCallbacks2"
   - type: official
     path: "https://developer.android.com/google/play/requirements/64-bit"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/TransactionTooLargeException"
+  - type: official
+    path: "https://developer.android.com/reference/android/webkit/WebView#getWebViewRenderProcess()"
+  - type: official
+    path: "https://developer.android.com/guide/components/activities/process-lifecycle"
   - type: aosp
     path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityThread.java"
   - type: aosp
@@ -36,6 +45,8 @@ sources:
     path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java"
   - type: aosp
     path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java"
   - type: aosp
     path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/jni/com_android_server_am_MemoryLimiter.cpp"
   - type: aosp
@@ -53,6 +64,8 @@ related_chapters: ["23.4", "4.4", "1.3", "4.7"]
 pipeline_stage: finalized
 last_draft_polish_at: "2026-08-15T08:05:42+08:00"
 last_draft_polish_run_id: "20260815-080542-gracker-writing"
+last_idle_audit_at: "2026-08-17T18:40:06+08:00"
+last_idle_audit_run_id: "20260817-183500-idle-audit-6907b226"
 task9_state: reviewed
 task2b_state: fixed
 task6_state: reviewed
