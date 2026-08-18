@@ -2,9 +2,9 @@
 title: "Android 17 LocationManager 架构与性能优化"
 chapter: "1.46"
 section: "1.46"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-07-25"
+last_verified: "2026-08-18"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 sources:
@@ -15,9 +15,17 @@ sources:
   - type: aosp
     path: "frameworks/base/location/java/android/location/GnssMeasurementRequest.java"
   - type: aosp
+    path: "frameworks/base/location/java/android/location/GnssMeasurementsEvent.java"
+  - type: aosp
+    path: "frameworks/base/location/java/android/location/GnssStatus.java"
+  - type: aosp
     path: "frameworks/base/location/java/android/location/ILocationManager.aidl"
   - type: aosp
+    path: "frameworks/base/location/java/android/location/ILocationListener.aidl"
+  - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/location/LocationManagerService.java"
+  - type: aosp
+    path: "frameworks/base/services/java/com/android/server/SystemServer.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/location/provider/AbstractLocationProvider.java"
   - type: aosp
@@ -28,6 +36,8 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/location/fudger/LocationFudger.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/location/gnss/GnssLocationProvider.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/location/gnss/GnssPsdsDownloader.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/location/gnss/GnssMeasurementsProvider.java"
   - type: aosp
@@ -95,7 +105,7 @@ system_server
          └─ fused   → ProxyLocationProvider → 外部系统 Provider 服务
 ```
 
-`LocationManagerService` 在 `SystemServer` 中启动。它先发布 `location` Binder 服务并创建 `passive` provider；到 `PHASE_THIRD_PARTY_APPS_CAN_START`，再初始化 network、fused、GNSS 以及相关代理服务。GNSS 放在这些 Provider 之后初始化，避免早期 GNSS 回调依赖尚未就绪的系统组件。
+`LocationManagerService` 在 `SystemServer` 中启动。`Lifecycle` 构造服务实例时先创建 `passive` provider，`onStart()` 发布 `location` Binder 服务；到 `PHASE_THIRD_PARTY_APPS_CAN_START`，再初始化 network、fused、GNSS 以及相关代理服务。GNSS 放在这些 Provider 之后初始化，避免早期 GNSS 回调依赖尚未就绪的系统组件。
 
 ### 1.1 四个常见 Provider 的含义
 
