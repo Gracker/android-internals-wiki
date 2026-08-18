@@ -4,7 +4,7 @@ chapter: "1.37"
 section: "1.37"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-08-12"
+last_verified: "2026-08-17"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: medium
 task6_state: reviewed
@@ -12,8 +12,8 @@ task9_state: reviewed
 pipeline_stage: ready-for-review
 last_rework_at: "2026-07-25T17:35:42+08:00"
 last_rework_run_id: "20260725-173542-rework-6030a13a"
-last_deep_review_at: "2026-08-12T20:51:36+08:00"
-last_deep_review_run_id: "20260812-203556-deep-review-6030a13a"
+last_deep_review_at: "2026-08-17T16:42:12+08:00"
+last_deep_review_run_id: "20260817-163540-deep-review-6030a13a"
 sources:
   - type: aosp
     path: "system/logging/logd/ (android-17.0.0_r1)"
@@ -128,7 +128,7 @@ Android 17 定义了八个 log ID；每个 ID 对应一类独立的日志缓冲�
 | `security` | 受权限控制的安全事件 |
 | `kernel` | logd 收集的内核日志 |
 
-`LogSize.h` 给出的通用默认值是每个 buffer 256 KiB，最小值 64 KiB，最大值 256 MiB。不可调试的低内存（low-RAM）设备会选择 64 KiB。产品配置和运行时设置可以改变结果；Android 17 能否用属性覆盖容量，还受设备类型与 `debuggable` 条件约束，不能用一张固定容量表代表所有设备。
+`system/logging/logd/LogSize.h` 给出的通用默认值是每个 buffer 256 KiB，最小值 64 KiB，最大值 256 MiB。在 `LogSize.cpp` 中，启动时读取 `persist.logd.size*` / `ro.logd.size*` 覆盖值只发生在 `ro.debuggable=true` 且设备类型为 automotive 或 `ro.hardware=android-desktop` 的设备上；不可调试的低内存（low-RAM）设备会选择 64 KiB。产品配置和 `logcat -G` 运行时设置仍可改变实际大小，不能用一张固定容量表代表所有设备。
 
 应直接查询目标设备：
 
@@ -323,7 +323,7 @@ AOSP 自带 `system/logging/liblog/tests/liblog_benchmark.cpp`，其中有轻载
 - Java/JNI：`frameworks/base/core/java/android/util/Log.java`、`frameworks/base/core/jni/android_util_Log.cpp`
 - liblog 写端：`system/logging/liblog/logger_write.cpp`、`logd_writer.cpp`、`README.protocol.md`
 - logd 接收：`system/logging/logd/LogListener.cpp`、`flags/logd_flags.aconfig`
-- buffer：`LogSize.cpp`、`SerializedLogBuffer.cpp`、`SerializedLogChunk.cpp`、`CompressionEngine.cpp`
+- buffer：`system/logging/logd/LogSize.h`、`LogSize.cpp`、`SerializedLogBuffer.cpp`、`SerializedLogChunk.cpp`、`CompressionEngine.cpp`
 - reader：`LogReader.cpp`、`LogReaderThread.cpp`
 - logcat 客户端过滤：`system/logging/logcat/logcat.cpp`
 - 历史 Chatty 边界：`system/logging/logd/README.compression.md`
