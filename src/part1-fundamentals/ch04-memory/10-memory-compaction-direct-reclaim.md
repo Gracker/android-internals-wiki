@@ -3,42 +3,58 @@ title: "内存规整与直接回收性能边界"
 chapter: "4.10"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-08-11"
-last_verified_against: "Android Common Kernel android17-6.18-2026-06_r6 mm/{page_alloc,compaction,vmstat}.c, include/trace/events/{compaction,vmscan}.h; AOSP android-17.0.0_r1 lmkd/CachedAppOptimizer/mmd; Linux VM sysctl and THP documentation"
+last_verified: "2026-08-18"
+last_verified_against: "Android Common Kernel android17-6.18-2026-06_r6 mm/{page_alloc,compaction,vmscan,vmstat}.c, include/trace/events/{compaction,vmscan}.h, Documentation/admin-guide/{sysctl/vm,mm/transhuge}.rst; AOSP android-17.0.0_r1 lmkd and CachedAppOptimizer Java/JNI; Android Source lmkd/mmd docs; Android Developers memory documentation"
 confidence: medium
 tags: [memory, linux-kernel, compaction, direct-reclaim, lmkd]
 related_chapters: ["4.2", "4.4", "10.4", "13.6"]
+pipeline_stage: ready-for-review
+task6_state: reviewed
+task9_state: pending-review
+last_deep_review_at: "2026-08-18T16:46:45+08:00"
+last_deep_review_run_id: "20260818-163530-deep-review-90bb83ac"
 sources:
   - type: article
     path: "Cubox/不懂 内存规整，别说你会 Linux 内存调优-2026-05-13.md"
   - type: official
     path: "https://source.android.com/docs/core/perf/lmkd"
   - type: official
-    path: "https://developer.android.com/topic/performance/memory-management"
-  - type: aosp
-    path: "kernel/common.git refs/heads/android-mainline mm/compaction.c"
-  - type: aosp
-    path: "kernel/common.git refs/heads/android-mainline mm/page_alloc.c"
-  - type: aosp
-    path: "platform/system/memory/lmkd refs/heads/main lmkd.cpp"
-  - type: aosp
-    path: "kernel/common.git refs/heads/android-mainline include/trace/events/{compaction.h,vmscan.h}"
+    path: "https://source.android.com/docs/core/perf/mmd"
+  - type: official
+    path: "https://developer.android.com/topic/performance/memory"
   - type: kernel
-    path: "Android Common Kernel android17-6.18-2026-06_r6 mm/{page_alloc,compaction,vmstat}.c"
-  - type: official
-    path: "https://docs.kernel.org/admin-guide/sysctl/vm.html"
-  - type: official
-    path: "https://docs.kernel.org/admin-guide/mm/transhuge.html"
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/page_alloc.c"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/compaction.c"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmstat.c"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/compaction.h"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/vmscan.h"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/jni/com_android_server_am_CachedAppOptimizer.cpp"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/sysctl/vm.rst"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/mm/transhuge.rst"
 ---
 
 # 4.10 内存规整与直接回收性能边界
 
 一次应用卡顿可能同时伴随内核回收线程 `kswapd` 活跃、内存 PSI 上升、ZRAM 写入和 `lmkd` 终止进程。它们在时间上相邻，不代表由同一段代码执行，也不代表处理的是同一个问题。
 
-分析以 Android 17 的两组源码为准：
+版本边界固定在 Android 17 和对应官方文档：
 
 - Android Common Kernel `android17-6.18-2026-06_r6`，提交 `bcbd6575c301ef871ea15e7ac0fc83909e17ef56`；
-- AOSP `android-17.0.0_r1` 的 `lmkd`、`CachedAppOptimizer` 和 JNI 实现。
+- AOSP `android-17.0.0_r1` 的 `lmkd`、`CachedAppOptimizer.java` 和 JNI 实现；
+- Android Source 的 `lmkd`、`mmd` 文档，以及 Android Developers 的应用内存文档。
 
 Linux 物理页规整、页面回收、ZRAM 压缩、Android 缓存应用回收（cached app compaction）是四种不同操作。诊断时要先确认事件属于哪一层，再讨论性能影响。
 
