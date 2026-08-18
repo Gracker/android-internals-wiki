@@ -1,14 +1,12 @@
 ---
-
-
-status: finalized
+status: ready-for-review
 title: I/O 调度与性能
 chapter: '6.3'
 section: '6.3'
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-05-09'
-last_verified_against: Linux 6.12 + Android 16 GKI + Android 17 Baklava preview
-confidence: medium
+last_verified: '2026-08-18'
+last_verified_against: AOSP android-17.0.0_r1, Android Common Kernel android17-6.18-2026-06_r6, Linux/Android/Perfetto official docs
+confidence: medium-high
 sources:
 - type: material
   path: Cubox/IO调度器详解-2024-03-08.md
@@ -16,14 +14,44 @@ sources:
   path: Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md
 - type: material
   path: Personal-Knowlodge/source/2026-03-07_wechat_性能优化基础_深入理解Linux文件系统.md
+- type: aosp-kernel
+  path: 'kernel/common block/Kconfig.iosched, block/mq-deadline.c, block/kyber-iosched.c, block/blk-ioprio.c @ android17-6.18-2026-06_r6'
+- type: aosp-kernel
+  path: 'kernel/common arch/arm64/configs/gki_defconfig, Documentation/admin-guide/cgroup-v2.rst, Documentation/admin-guide/sysctl/vm.rst, include/uapi/linux/stat.h @ android17-6.18-2026-06_r6'
+- type: aosp
+  path: 'system/core/libprocessgroup/profiles/cgroups.json, task_profiles.json; rootdir/init.rc @ android-17.0.0_r1'
+- type: aosp
+  path: 'system/core/init/service_parser.cpp, init/service_utils.cpp, libcutils/iosched_policy.cpp @ android-17.0.0_r1'
+- type: aosp
+  path: 'external/perfetto/src/trace_processor/perfetto_sql/stdlib/linux/block_io.sql @ android-17.0.0_r1'
+- type: aosp
+  path: 'external/sqlite/dist/Android.bp, dist/sqlite-autoconf-3500600/sqlite3.c @ android-17.0.0_r1'
+- type: official
+  path: 'https://source.android.com/docs/core/perf/cgroups'
+- type: official
+  path: 'https://docs.kernel.org/block/ioprio.html'
+- type: official
+  path: 'https://docs.kernel.org/block/deadline-iosched.html'
+- type: official
+  path: 'https://docs.kernel.org/block/bfq-iosched.html'
+- type: official
+  path: 'https://docs.kernel.org/admin-guide/cgroup-v2.html'
+- type: official
+  path: 'https://docs.kernel.org/admin-guide/sysctl/vm.html'
+- type: official
+  path: 'https://perfetto.dev/docs/analysis/stdlib-docs'
+- type: official
+  path: 'https://perfetto.dev/docs/data-sources/cpu-scheduling'
 tags:
 - linux
 - android
 - research
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
-task9_state: reviewed
+pipeline_stage: ready-for-review
+task6_state: pending-review
+task9_state: pending-review
 task2b_state: fixed
+last_rework_at: '2026-08-18T17:35:40+08:00'
+last_rework_run_id: '20260818-173540-rework-07bf55ca'
 ---
 # 6.3 I/O 调度与性能
 
