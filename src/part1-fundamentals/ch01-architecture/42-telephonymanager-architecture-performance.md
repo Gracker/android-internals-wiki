@@ -2,28 +2,64 @@
 title: "Android 17 TelephonyManager 架构、状态传播与性能边界"
 chapter: "1.42"
 section: "1.42"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37); 主锚点 android-17.0.0_r1"
-last_verified: "2026-07-25"
-last_verified_against: "AOSP android-17.0.0_r1"
+last_verified: "2026-08-18"
+last_verified_against: "AOSP android-17.0.0_r1; Android Developers telephony API references"
 confidence: high
 sources:
   - type: aosp
     path: "frameworks/base/telephony/java/android/telephony/TelephonyManager.java (android-17.0.0_r1)"
   - type: aosp
+    path: "frameworks/base/telephony/java/android/telephony/CellInfo.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "frameworks/base/telephony/java/android/telephony/SmsManager.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "frameworks/base/telephony/java/android/telephony/SubscriptionInfo.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "frameworks/base/telephony/java/android/telephony/SubscriptionManager.java (android-17.0.0_r1)"
+  - type: aosp
     path: "frameworks/base/core/java/android/telephony/TelephonyCallback.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "frameworks/base/core/java/android/telephony/TelephonyRegistryManager.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "frameworks/base/core/java/com/android/internal/telephony/IPhoneStateListener.aidl (android-17.0.0_r1)"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/TelephonyRegistry.java (android-17.0.0_r1)"
   - type: aosp
+    path: "frameworks/opt/telephony/src/java/com/android/internal/telephony/PhoneFactory.java (android-17.0.0_r1)"
+  - type: aosp
     path: "frameworks/opt/telephony/src/java/com/android/internal/telephony/RIL.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "frameworks/opt/telephony/src/java/com/android/internal/telephony/NetworkIndication.java (android-17.0.0_r1)"
   - type: aosp
     path: "frameworks/opt/telephony/src/java/com/android/internal/telephony/SignalStrengthController.java (android-17.0.0_r1)"
   - type: aosp
+    path: "frameworks/opt/telephony/src/java/com/android/internal/telephony/DefaultPhoneNotifier.java (android-17.0.0_r1)"
+  - type: aosp
     path: "frameworks/opt/telephony/src/java/com/android/internal/telephony/data/DataNetwork.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "frameworks/opt/telephony/src/java/com/android/internal/telephony/data/DataNetworkController.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "frameworks/opt/telephony/src/java/com/android/internal/telephony/data/PhoneSwitcher.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "frameworks/opt/telephony/src/java/com/android/internal/telephony/data/AccessNetworksManager.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "frameworks/opt/telephony/src/java/com/android/internal/telephony/data/TelephonyNetworkAgent.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "frameworks/opt/telephony/src/java/com/android/internal/telephony/SmsController.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "frameworks/opt/telephony/src/java/com/android/internal/telephony/IccSmsInterfaceManager.java (android-17.0.0_r1)"
   - type: aosp
     path: "frameworks/opt/telephony/src/java/com/android/internal/telephony/SmsDispatchersController.java (android-17.0.0_r1)"
   - type: aosp
     path: "frameworks/opt/telephony/src/java/com/android/internal/telephony/subscription/SubscriptionManagerService.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "packages/services/Telephony/AndroidManifest.xml (android-17.0.0_r1)"
+  - type: aosp
+    path: "packages/services/Telephony/src/com/android/phone/PhoneApp.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "packages/services/Telephony/src/com/android/phone/PhoneGlobals.java (android-17.0.0_r1)"
   - type: aosp
     path: "packages/services/Telephony/src/com/android/phone/PhoneInterfaceManager.java (android-17.0.0_r1)"
   - type: aosp
@@ -32,8 +68,16 @@ sources:
     path: "https://developer.android.com/reference/android/telephony/TelephonyManager"
   - type: official
     path: "https://developer.android.com/reference/android/telephony/TelephonyCallback"
+  - type: official
+    path: "https://developer.android.com/reference/android/telephony/SubscriptionInfo"
 tags: [telephony, architecture, system-service, binder, radio-hal, callback, multi-sim]
 related_chapters: ["1.8", "1.38", "1.43", "24.10"]
+task2b_state: reviewed
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: ready-to-publish
+last_review_finalize_at: "2026-08-18"
+last_review_finalize_run_id: "20260818-124458-491e1683"
 ---
 
 # 1.42 Android 17 TelephonyManager 架构、状态传播与性能边界
