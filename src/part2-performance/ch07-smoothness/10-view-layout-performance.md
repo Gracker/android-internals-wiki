@@ -2,29 +2,55 @@
 title: "View 体系性能优化：布局层级、inflate 与 measure/layout 开销"
 chapter: "7.10"
 section: "7.10"
-status: "finalized"
+status: "ready-for-review"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
-last_verified: "2026-04-25"
-last_verified_against: "AOSP android-16.0.0_r1 ViewRootImpl / ViewDebug / ViewHierarchyEncoder"
+last_verified: "2026-08-18"
+last_verified_against: "AOSP android-17.0.0_r1 LayoutInflater / PhoneLayoutInflater / View / ViewGroup / ViewRootImpl / Choreographer / ViewStub / RelativeLayout / LinearLayout；AndroidX AsyncLayoutInflater 1.1.0；Android Developers view hierarchy/layout resource/LayoutInflater/Layout Inspector docs；Perfetto FrameTimeline docs"
+last_rework_at: "2026-08-18T09:37:36+08:00"
+last_rework_run_id: "20260818-093523-rework-bd658b27"
 confidence: high
 sources:
   - type: official
     path: "https://android-developers.googleblog.com/2017/08/understanding-performance-benefits-of.html"
   - type: official
     path: "https://developer.android.com/topic/performance/rendering/optimizing-view-hierarchies"
+  - type: official
+    path: "https://developer.android.com/guide/topics/resources/layout-resource"
+  - type: official
+    path: "https://developer.android.com/reference/android/view/LayoutInflater"
+  - type: official
+    path: "https://developer.android.com/studio/debug/layout-inspector"
+  - type: official
+    path: "https://developer.android.com/jetpack/androidx/releases/asynclayoutinflater"
+  - type: official
+    path: "https://perfetto.dev/docs/data-sources/frametimeline"
   - type: aosp
-    path: "frameworks/base/core/java/android/view/LayoutInflater.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/LayoutInflater.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/view/View.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/policy/PhoneLayoutInflater.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/view/ViewRootImpl.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/view/Choreographer.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewStub.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/widget/RelativeLayout.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/widget/LinearLayout.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/support/+/androidx-asynclayoutinflater-release/asynclayoutinflater/asynclayoutinflater/src/main/java/androidx/asynclayoutinflater/view/AsyncLayoutInflater.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/support/+/androidx-asynclayoutinflater-release/asynclayoutinflater/asynclayoutinflater-appcompat/src/main/java/androidx/asynclayoutinflater/appcompat/AsyncAppCompatFactory.java"
 tags: [view, layout, inflate, measure, draw, constraintlayout, viewstub, async-inflate, jank]
 related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.5", "8.3"]
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
-task9_state: reviewed
+pipeline_stage: "ready-for-review"
+task6_state: "pending-review"
+task9_state: "pending-review"
 task2b_state: fixed
 ---
 
@@ -223,7 +249,7 @@ Android 17 的 `View.requestLayout()` 会清空该 View 的测量缓存，处理
 | 添加、删除、显示或隐藏子 View | 由 ViewGroup/API 触发布局 | 影响范围、动画、列表复用 |
 | 自定义 View 内部数据变化 | 根据尺寸是否变化选择 | setter 不要无条件同时调用两者 |
 
-`RecyclerView.Adapter.onBindViewHolder()` 中出现 `requestLayout()` 也不能直接判错：内容长度变化可能确实需要重新测量。应检查同一 item 是否在尺寸不变时重复请求、是否破坏稳定尺寸假设，以及滚动 trace 中 layout 是否越过 deadline。RecyclerView 的专项策略见 [7.8 RecyclerView 性能](08-recyclerview-performance.md)。
+`RecyclerView.Adapter.onBindViewHolder()` 中出现 `requestLayout()` 也不能直接判错：内容长度变化可能需要重新测量。应检查同一 item 是否在尺寸不变时重复请求、是否破坏稳定尺寸假设，以及滚动 trace 中 layout 是否越过 deadline。RecyclerView 的专项策略见 [7.8 RecyclerView 性能](08-recyclerview-performance.md)。
 
 ## 5. 布局组件的选择边界
 
