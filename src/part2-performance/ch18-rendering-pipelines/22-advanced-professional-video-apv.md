@@ -5,14 +5,14 @@ section: "18.22"
 section_title: "Android 17 Advanced Professional Video 与专业视频编解码管线"
 status: ready-for-review
 applicable_versions: "Android 16 (API 36/36.1) - Android 17 (API 37)；当前平台锚点 Android 17 / API 37"
-last_verified: "2026-08-18"
-last_verified_against: "android-17.0.0_r1 (MediaFormat, MediaCodecInfo, MediaRecorder, C2SoftApvEnc, C2SoftApvDec, software codec XML, MPEG4Writer) / Android 16 APV 与 Android 17 CQ 官方文档复核 2026-08-18；Android 16 APV 文档仅作为本章适用范围下限来源，不外推到 Android 17 之后 / Writer rendering_pipelines S12 / android17-6.18-2026-06_r6 / OpenAPV README profile 边界复核 2026-08-16 / 位率、容量与带宽十进制换算复核 2026-08-18"
+last_verified: "2026-08-20"
+last_verified_against: "android-17.0.0_r1 (MediaFormat, MediaCodecInfo, MediaRecorder, C2SoftApvEnc, C2SoftApvDec, software codec XML, MPEG4Writer) / Android 16 APV 与 Android 17 CQ 官方文档复核 2026-08-20；Android 16 APV 文档仅作为适用范围下限来源，不外推到 Android 17 之后 / Writer rendering_pipelines S12 / android17-6.18-2026-06_r6 / OpenAPV README profile 边界复核 2026-08-16 / 位率、容量与带宽十进制换算复核 2026-08-18"
 confidence: high
 pipeline_stage: ready-for-review
 task6_state: pending-review
 task9_state: pending-review
-last_deep_review_at: "2026-08-18T13:30:01+08:00"
-last_deep_review_run_id: "20260818-133001-deep-review-627bfda7"
+last_deep_review_at: "2026-08-20T09:44:55+08:00"
+last_deep_review_run_id: "20260820-094455-deep-review-627bfda7"
 last_rework_at: "2026-08-16T13:36:13+08:00"
 last_rework_run_id: "20260816-133613-rework-627bfda7"
 tags: [media, apv, mediacodec, professional-video, android16, android17]
@@ -91,7 +91,7 @@ sources:
 
 # 18.22 Android 17 Advanced Professional Video 与专业视频编解码管线
 
-本文以 Android 17 / API 37 的 `android-17.0.0_r1` 为平台源码基线，以 `android17-6.18-2026-06_r6` 为 kernel 基线。APV 在 Android 16 引入；Android 16.1（完整 SDK 版本 36.1）增加 `MediaRecorder.VideoEncoder.APV`，Android 17 再增加录制质量参数。版本演进依据公开 API，源码结论均以 Android 17 tag 为准。
+平台源码基线固定为 Android 17 / API 37 的 `android-17.0.0_r1`，kernel 基线固定为 `android17-6.18-2026-06_r6`。APV 在 Android 16 引入；Android 16.1（完整 SDK 版本 36.1）增加 `MediaRecorder.VideoEncoder.APV`，Android 17 再增加录制质量参数。版本演进依据公开 API，源码结论均以 Android 17 tag 为准。
 
 ## APV 解决的是专业素材问题
 
@@ -136,11 +136,11 @@ P210 是 4:2:2、10-bit 的半平面 YUV 内存格式：Y 单独成平面，Cb/C
 
 `MediaRecorder.VideoEncoder.APV = 9` 在 API 文档中标为 36.1。需要兼容 Android 16.0 与 16.1 时，应使用 `Build.VERSION.SDK_INT_FULL` 和 `Build.VERSION_CODES_FULL.BAKLAVA_1` 区分次版本；只查 `SDK_INT == 36` 无法判断高层录制入口是否可用。Android 17 的 `VERSION_CODES.CINNAMON_BUN` 为 37，已经包含该入口。
 
-Android 17 新增 `MediaRecorder.setVideoEncodingQuality(int)`。它只在选中的编码器支持 `EncoderCapabilities.BITRATE_MODE_CQ` 时生效；CQ（Constant Quality）让编码器以目标质量为主，码率随内容变化。可用范围来自该编码器的 `getQualityRange()`。同一次配置不要同时设置 encoding quality 和 video bitrate，API 文档将这种组合定义为行为未指定。质量值也没有跨 codec 的统一刻度，vendor A 的 `80` 与 vendor B 的 `80` 不能直接比较。
+Android 17 新增 `MediaRecorder.setVideoEncodingQuality(int)`。它必须在 `prepare()` 前调用，只在选中的编码器支持 `EncoderCapabilities.BITRATE_MODE_CQ` 时生效；`prepare()` 仍可能检查质量值是否适用于当前编码器。CQ（Constant Quality）让编码器以目标质量为主，码率随内容变化。可用范围来自该编码器的 `getQualityRange()`。同一次配置不要同时设置 encoding quality 和 video bitrate，API 文档将这种组合定义为行为未指定。质量值也没有跨 codec 的统一刻度，vendor A 的 `80` 与 vendor B 的 `80` 不能直接比较。
 
 ## 能力探测要检查完整 MediaFormat
 
-只列出 `video/apv` codec，再调用 `areSizeAndRateSupported()`，会漏掉 profile、码率、输入色彩格式和编码模式。下面的代码探测 APV 编码器，分别检查 Surface 输入与 P210 buffer 输入。它还保留 performance point 的未知状态；performance point 是 codec 对某组分辨率和帧率给出的性能保证。
+只列出 `video/apv` codec，再调用 `areSizeAndRateSupported()`，会漏掉 profile、码率、输入色彩格式和编码模式。示例代码探测 APV 编码器，分别检查 Surface 输入与 P210 buffer 输入。它还保留 performance point 的未知状态；performance point 是 codec 对某组分辨率和帧率给出的性能保证。
 
 ```kotlin
 @RequiresApi(36)
@@ -284,7 +284,7 @@ fun findApvEncoders(
 | encoder C2 接口尺寸 | 代码允许到 `4096x4096`，但产品能力仍受更严格的 XML 与运行时查询约束 |
 | 默认状态 | 组件条目关闭，并受 flag 与 `!slow-cpu` variant 约束 |
 
-XML 为软编码器声明 VBR（Variable Bitrate，可变码率）、CQ 和 `quality=0..100`。编码器代码只有在另一个固定只读 flag `android.media.swcodec.flags.apv_software_codec_cq` 开启时，才加入 CQ 对应的 C2 `bitrate-mode` 参数。静态 XML 与运行时代码的声明可能不同，应用应以 `EncoderCapabilities` 查询和一次真实 `configure()` 的结果为准。
+XML 为软编码器声明 VBR（Variable Bitrate，可变码率）、CQ 和 `quality=0..100`。编码器代码只有在另一个固定只读 flag `android.media.swcodec.flags.apv_software_codec_cq` 开启时，才加入 CQ 对应的 C2 `bitrate-mode` 参数。静态 XML 的 `bitrate-modes` 不能单独作为 `MediaRecorder.setVideoEncodingQuality()` 可用的证据；应用应以 `EncoderCapabilities.isBitrateModeSupported(BITRATE_MODE_CQ)`、`getQualityRange()` 和一次真实 `configure()` 的结果为准。
 
 2 Gbps、4K 和 8K 需要具备相应能力的 vendor 实现，AOSP 软件 codec 无法作为高规格后备方案。`MediaCodecInfo.java` 映射了 APV level/band 的理论采样率与码率；高等级码率超过 Java `int` 的表达范围时，内部上限会限制为 `Integer.MAX_VALUE`。应用的 `KEY_BIT_RATE` 同样是 `int`，2,000,000,000 bit/s 虽然仍能表示，但已接近上界。
 
@@ -320,7 +320,7 @@ Camera 到 encoder 的输入同样不可忽略。P210 分配 32 bit/pixel，3840
 
 ## 专业视频 App 应拆开录制、预览、代理和导出
 
-下面的图标出取景、录制、校验、代理处理与导出的责任边界：
+流程图标出取景、录制、校验、代理处理与导出的责任边界：
 
 ```mermaid
 flowchart LR
@@ -435,7 +435,7 @@ APV 上线时应分别记录静态能力与每次运行结果，并按这些字�
 
 下列依据限于 Android 16 到 Android 17 的公开文档、`android-17.0.0_r1` 平台源码和 `android17-6.18-2026-06_r6` kernel。OpenAPV 只作为 APV 标准与参考实现材料，不能外推为 Android 17 之后的平台能力。
 
-- [Android 16（本章适用范围下限）APV 功能说明](https://developer.android.com/about/versions/16/features#apv)：APV 定位、标准特征与 Android 422-10 实现范围。
+- [Android 16（适用范围下限）APV 功能说明](https://developer.android.com/about/versions/16/features#apv)：APV 定位、标准特征与 Android 422-10 实现范围。
 - [Android 17 CQ 功能说明](https://developer.android.com/about/versions/17/release-notes#audio-video)与 [`MediaRecorder` API](https://developer.android.com/reference/android/media/MediaRecorder#setVideoEncodingQuality(int))：CQ 入口、适用条件与质量值边界。
 - [`CodecCapabilities.isFormatSupported()`](https://developer.android.com/reference/android/media/MediaCodecInfo.CodecCapabilities#isFormatSupported(android.media.MediaFormat))：format keys 的检查范围，以及指定 level 不约束其他参数的文档边界。
 - [Android 17 `MediaFormat.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaFormat.java)：`MIMETYPE_VIDEO_APV` 与 format keys。
@@ -448,8 +448,8 @@ APV 上线时应分别记录静态能力与每次运行结果，并按这些字�
 - [Android 17 `MPEG4Writer.cpp`](https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/libstagefright/MPEG4Writer.cpp)：`apv1` sample entry 与 `apvC` box。
 - Kernel common `android17-6.18-2026-06_r6`：[dma-buf](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)、[sync_file](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)、[scheduler](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c)、[block layer](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/block/blk-core.c) 与 [thermal framework](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/thermal/thermal_core.c)。
 
-## 小结
+## 工程结论
 
 APV 为 Android 提供专业录制与后期素材能力。Android 17 已公开 MIME、422-10 profile、P210、MediaRecorder、MediaMuxer 和录制质量接口，这些 API 定义了共同契约。应用仍要核对 codec、Camera、像素格式、存储与温控，并通过完整录制、重新打开和抽样解码证明目标规格可用。
 
-实现专业视频功能时，要分别验证三件事：平台规格上限是否由当前设备实现，422-10 码流在处理链中是否始终保留 P210，codec 可用后显示层是否真的采用 hardware overlay。能力探测、项目数据和线上指标都应记录这些结果，APV 才适合作为可靠的母版格式选项。
+实现专业视频功能时，要分别验证三件事：平台规格上限是否由当前设备实现，422-10 码流在处理链中是否保留 4:2:2、10-bit 与预期输出格式，codec 可用后显示层是否真的采用 hardware overlay。能力探测、项目数据和线上指标都应记录这些结果，APV 才适合作为可靠的母版格式选项。
