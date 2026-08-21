@@ -69,7 +69,7 @@ AOHP（Android Open Harness Project）是一套基于 AOSP fork 的研究原型�
 
 本文沿用 agent 这个术语，指能观察环境、调用工具并连续执行多步任务的 AI agent（智能体）。
 AOHP 为它提供 OS-level harness，也就是由系统服务、接口和策略组成的运行支架。
-它把能力调用、策略检查和审计放进系统控制面；这里的控制面负责决定“谁能调用什么、数据可流向哪里”。
+AOHP 把能力调用、策略检查和审计放进系统控制面；这里的控制面负责决定“谁能调用什么、数据可流向哪里”。
 
 论文与开源仓库都把 AOHP 标为早期研究项目，不适合生产环境或高安全场景。
 
@@ -168,7 +168,7 @@ vault token 是对敏感明文的间接引用，后文会说明当前实现的�
 这套 memory 是论文中的 OS 管理状态，不等于 LLM context window。context window 是一次模型请求可容纳的输入范围，也不等于跨任务持久存储。
 
 它也不等于 Android 17 的 `OnDeviceIntelligenceManager`。
-标准 AOSP 17 的后者是受权限管理的 `@SystemApi` 推理服务接口，部分能力还受 feature flag（功能开关）约束。
+后者在标准 AOSP 17 中是受权限管理的 `@SystemApi` 推理服务接口，部分能力还受 feature flag（功能开关）约束。
 API 37 公开文档没有 `FoundationModelManager` 这一平台类，`OnDeviceIntelligenceManager` 也没有定义 AOHP 的跨应用记忆协议。
 
 ## 3. 高效 agent 接口的实现边界
@@ -408,7 +408,7 @@ o.put("reason", "file_read_policy_not_implemented");
 | AOHP | 129 | 18.93 min | 3,441,759 | 143 |
 | 降幅 | 44.64% | 44.21% | 51.55% | 47.62% |
 
-其中 input token 降低 51.50%，output token 降低 57.48%。这说明结构化观察与较短操作路径减少了该子集的上下文和往返。
+其中 input token 降低 51.50%，output token 降低 57.48%。结构化观察与较短操作路径减少了该子集的上下文和往返。
 
 论文表格给出的是这 11 个任务的汇总值，仍缺少以下实验信息，复现时应补齐：
 
