@@ -38,7 +38,9 @@ related_chapters: ["6.1", "8.2", "8.3", "20.2", "26.3"]
 
 # 8.9 Keystore/KeyMint 调用延迟与登录链路性能
 
-登录流程中的一次签名或解密，可能依次经过 App、`keystore2`、KeyMint HAL（硬件抽象层），最后进入 TEE（Trusted Execution Environment，可信执行环境）或 StrongBox 安全硬件。若密钥绑定了用户认证，链路中还会出现系统认证 UI、传感器、Gatekeeper 或 biometric TA（运行在安全环境中的可信应用），以及用于证明认证结果的 Hardware Auth Token。若把这些阶段统称为“Keystore 很慢”，既无法定位瓶颈，也可能让性能改动破坏原有安全约束。
+登录流程中的一次签名或解密，可能依次经过 App、`keystore2`、KeyMint HAL（硬件抽象层），随后进入 TEE（Trusted Execution Environment，可信执行环境）或 StrongBox 安全硬件。若密钥绑定了用户认证，链路中还会出现系统认证 UI、传感器、Gatekeeper 或 biometric TA（运行在安全环境中的可信应用），以及用于证明认证结果的 Hardware Auth Token。
+
+若把这些阶段统称为“Keystore 很慢”，既无法定位瓶颈，也可能让性能改动破坏原有安全约束。
 
 平台源码锚点为 Android 17 / API 37 的 `android-17.0.0_r1`，kernel 侧固定到 `android17-6.18-2026-06_r6`。应用 API 以 Android Developers 文档为准，服务行为与 operation 生命周期则回到 Android 17 的 framework 和 `system/security` 源码核查。这里的 operation 是一次有状态的密码操作会话，从初始化到完成或中止都占用后端资源。
 
@@ -46,7 +48,7 @@ related_chapters: ["6.1", "8.2", "8.3", "20.2", "26.3"]
 
 Android Keystore 以 JCA/JCE Provider 的形式接入 Java 密码 API。JCA/JCE 是 Java 的密码体系，Provider 负责实现具体算法和密钥访问。`KeyStore`、`KeyGenerator`、`KeyPairGenerator`、`Cipher`、`Signature` 和 `Mac` 对象在 App 进程中创建；需要使用受保护密钥时，调用才通过 Binder 进入 `keystore2`。
 
-下面的图同时展示密码操作和用户认证两条路径，目的是说明认证结果怎样参与密钥授权；它们并不共享完全相同的执行阶段。
+下面的图同时展示密码操作和用户认证两条路径，说明认证结果怎样参与密钥授权；它们并不共享完全相同的执行阶段。
 
 ```mermaid
 flowchart LR
@@ -282,7 +284,7 @@ suspend fun signChallenge(alias: String, challenge: ByteArray): ByteArray =
     }
 ```
 
-示例适用于本次使用不需要通过 `CryptoObject` 单独授权的密钥。per-use 密钥应先在后台初始化 `Signature`，再回到主线程将它交给 BiometricPrompt；认证成功后，把回调返回的同一对象转移到后台完成签名。整个过程中不能并发使用该对象。若 Dispatcher 隶属于有明确生命周期的组件，应在组件销毁时关闭它，避免线程泄漏。
+示例适用于无需通过 `CryptoObject` 单独授权的密钥。per-use 密钥应先在后台初始化 `Signature`，再回到主线程将它交给 BiometricPrompt；认证成功后，把回调返回的同一对象转移到后台完成签名。整个过程中不能并发使用该对象。若 Dispatcher 隶属于有明确生命周期的组件，应在组件销毁时关闭它，避免线程泄漏。
 
 ### 超时与取消
 
