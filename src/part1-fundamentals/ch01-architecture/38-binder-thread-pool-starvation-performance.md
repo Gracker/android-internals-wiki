@@ -2,10 +2,10 @@
 title: "Binder 线程池管理与 IPC 线程饥饿性能边界"
 chapter: "1.38"
 section: "1.38"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-07-25"
-last_verified_against: "AOSP android-17.0.0_r1"
+last_verified: "2026-08-19"
+last_verified_against: "AOSP android-17.0.0_r1 / kernel android17-6.18-2026-06_r6"
 confidence: high
 sources:
   - type: aosp
@@ -238,7 +238,7 @@ libbinder 对前者返回 `FROZEN_OBJECT` 或兼容的 `FAILED_TRANSACTION`，�
 
 ## 6. 线程选择与优先级继承
 
-`binder_select_thread_ilocked()` 从 `waiting_threads` 链表头取出一个等待线程，因此空闲 worker 按先进先出（FIFO）顺序选择。这个事实不代表事务执行时“所有 worker 优先级完全相同”。
+`binder_select_thread_ilocked()` 从 `waiting_threads` 链表头取出一个等待线程；而 Android 17 的等待路径用 `list_add()` 把新等待者插到链表头。因此当前实现更接近“最近进入等待队列的 worker 先被唤醒”，不能把它解释成先进先出（FIFO）调度。这个事实也不代表事务执行时“所有 worker 优先级完全相同”。
 
 选中线程后，驱动调用 `binder_transaction_priority()`。它会综合事务携带的优先级、Binder node 允许的最低优先级与 `inherit_rt` 配置，临时调整服务线程的调度属性；事务结束后再恢复此前保存的优先级。实时调度策略是否能够继承，还受 node 配置和驱动限制。
 
@@ -248,7 +248,7 @@ libbinder 对前者返回 `FROZEN_OBJECT` 或兼容的 `FAILED_TRANSACTION`，�
 
 需要分开理解：
 
-- 选择哪一个空闲 worker：当前实现从等待链表头选择；
+- 选择哪一个空闲 worker：当前实现由 `list_add()` 与链表头选择共同决定，更接近后进先出；
 - 工作线程以什么优先级执行：由 Binder 优先级继承和 node 策略决定；
 - 线程何时拿到 CPU：由内核调度器、cpuset（允许线程运行的 CPU 集合）、uclamp（调度利用率上下限）等共同决定。
 
@@ -263,7 +263,7 @@ Android 17 的行为描述仅适用于当前实现。Binder 优先级继承早�
 | 输入分发 | 通常 5 秒 | UI 主线程等待同步 reply，不能处理输入 |
 | 前台 Service 执行 | 通常 20 秒 | 主线程在 service 回调前后被慢 IPC 阻塞 |
 | 后台 Service 执行 | 通常 200 秒 | 同上，但默认窗口更长 |
-| Broadcast | Android 14+ 会在进程长期缺少 CPU 时间（CPU-starved）时扩展窗口 | 广播线程或主线程等待 IPC，system_server 也可能无法及时调度 |
+| Broadcast | Android 13 及以下：前台优先级约 10 秒、后台优先级约 60 秒；Android 14+：前台约 10–20 秒、后台约 60–120 秒，是否 CPU-starved 会影响窗口 | 广播线程或主线程等待 IPC，system_server 也可能无法及时调度 |
 
 这些是 AOSP/Pixel 默认值，OEM 可修改。`startForegroundService()` 后 5 秒内调用 `startForeground()` 属于另一类超时，不能与前台 Service 的 20 秒执行窗口混写。
 
