@@ -162,7 +162,9 @@ flowchart TD
 
 ### 3.2 同步捕获会进入 transition 关键路径
 
-`ScreenCaptureInternal.captureLayers()` 在这条路径中调用 native synchronous capture（原生层同步捕获），并等待 `ScreenshotHardwareBuffer` 结果。SurfaceFlinger 的 `captureLayersSync()` 最终经过 `captureScreenCommon()` 与 screenshot render（截图渲染）。
+`ScreenCaptureInternal.captureLayers()` 在这条路径中调用 native synchronous capture（原生层同步捕获），并等待 `ScreenshotHardwareBuffer` 结果。
+
+SurfaceFlinger 的 `captureLayersSync()` 最终经过 `captureScreenCommon()` 与 screenshot render（截图渲染）。
 
 高分辨率、复杂 layer 树、GPU 繁忙或 buffer 分配压力可能延长 WMS 与 transition 的准备时间。不能只看 App `doFrame()` 判断进入 Overview 的卡顿。
 
@@ -220,7 +222,9 @@ Android 17 还包含 `onlyCacheLowResTaskSnapshot` feature flag（功能开关�
 width × height × bytesPerPixel
 ```
 
-这个公式只计算紧密排列的可见像素。以 1080×2400 的 RGBA_8888 为例，可见像素约占 9.9 MiB。实际分配还受 row stride（每行实际字节跨度）、gralloc（图形缓冲区分配器）对齐和附加元数据影响；同时存在高低分辨率版本、Binder 引用、Launcher hardware `Bitmap` 或 starting window 引用时，总占用会进一步变化。
+这个公式只计算紧密排列的可见像素。以 1080×2400 的 RGBA_8888 为例，可见像素约占 9.9 MiB。
+
+实际分配还受 row stride（每行实际字节跨度）、gralloc（图形缓冲区分配器）对齐和附加元数据影响；同时存在高低分辨率版本、Binder 引用、Launcher hardware `Bitmap` 或 starting window 引用时，总占用会进一步变化。
 
 默认情况下，real snapshot 使用 RGBA_8888。设备 overlay 开启 `config_use16BitTaskSnapshotPixelFormat` 后，满足 fills-parent（内容填满父容器），且不会因透明窗口与壁纸丢失 alpha（透明度）的 Task，可以使用 RGB_565。
 
@@ -290,9 +294,13 @@ TaskThumbnailCache
 
 这条路径先查询 system_server 内存缓存，必要时再从磁盘恢复。收到 `TaskSnapshot` 后，`ThumbnailData.fromSnapshot()` 调用 `wrapToBitmap()`，把 HardwareBuffer 包装为 hardware `Bitmap`，同时保存 rotation、Insets、scale、windowing mode 等信息。
 
-Android 17 Launcher3 的 `TaskThumbnailView` 是 Launcher View hierarchy（View 树）中的 `FrameLayout`。静态 snapshot 最终设置到 `FixedSizeImageView`，由 Launcher 的 View 与 HWUI（Android 硬件加速 UI 渲染管线）绘制进 Launcher App Window buffer。
+Android 17 Launcher3 的 `TaskThumbnailView` 是 Launcher View hierarchy（View 树）中的 `FrameLayout`。
 
-SurfaceFlinger 看到的主体通常是 Launcher 窗口 layer，而不是“每张最近任务卡片各有一个独立 `BufferStateLayer`”。HWC 仍会按整屏 layer 集合选择 `DEVICE` composition（由 HWC 合成）或 `CLIENT` composition（由 RenderEngine 合成）；hardware `Bitmap` 不保证卡片获得独立 overlay（硬件叠加平面）。
+静态 snapshot 最终设置到 `FixedSizeImageView`，由 Launcher 的 View 与 HWUI（Android 硬件加速 UI 渲染管线）绘制进 Launcher App Window buffer。
+
+SurfaceFlinger 看到的主体通常是 Launcher 窗口 layer，而不是“每张最近任务卡片各有一个独立 `BufferStateLayer`”。
+
+HWC 仍会按整屏 layer 集合选择 `DEVICE` composition（由 HWC 合成）或 `CLIENT` composition（由 RenderEngine 合成）；hardware `Bitmap` 不保证卡片获得独立 overlay（硬件叠加平面）。
 
 ### 5.2 Launcher 还有自己的缓存和预加载
 
