@@ -4,8 +4,8 @@ chapter: "6.5"
 section: "6.5"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-24"
-last_verified_against: "Android Developers shared media docs; AOSP storage scoped/fuse-passthrough/sdcardfs-deprecate docs; AOSP android-16.0.0_r1 system/vold + packages/providers/MediaProvider"
+last_verified: "2026-08-19"
+last_verified_against: "Android Developers shared media docs; AOSP storage scoped/fuse-passthrough/sdcardfs-deprecate docs; AOSP android-17.0.0_r1 system/vold + packages/providers/MediaProvider; Android common kernel android17-6.18-2026-06_r6 FUSE sources; local ch24.11/ch24.12 frontmatter"
 confidence: medium
 sources:
   - type: official
@@ -19,6 +19,10 @@ sources:
   - type: aosp
     path: "system/vold/model/EmulatedVolume.cpp"
   - type: aosp
+    path: "packages/providers/MediaProvider/src/com/android/providers/media/fuse/ExternalStorageServiceImpl.java"
+  - type: aosp
+    path: "packages/providers/MediaProvider/src/com/android/providers/media/fuse/FuseDaemon.java"
+  - type: aosp
     path: "packages/providers/MediaProvider/jni/FuseDaemon.cpp"
   - type: aosp
     path: "packages/providers/MediaProvider/src/com/android/providers/media/MediaProvider.java"
@@ -29,7 +33,10 @@ sources:
 tags: [storage, fuse, scoped-storage, vold, io]
 related_chapters: ["6.1", "6.2", "6.3", "6.4", "24.11", "24.12"]
 pipeline_stage: ready-for-review
-task6_state: pending-verification
+task6_state: reviewed
+task9_state: reviewed
+last_deep_review_at: "2026-08-19T12:48:55+08:00"
+last_deep_review_run_id: "20260819-124855-deep-review-7363eb12"
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch06-storage/07-fuse-bpf-scoped-storage-io-performance.md"
@@ -375,5 +382,5 @@ App 侧应让数据归属与 API 匹配：媒体列表使用 MediaStore，文档
 - §6.2「文件系统」
 - §6.3「I/O 调度与性能」
 - §6.4「SharedPreferences 与 DataStore」
-- §24.12「MediaStore 与 MediaProvider 性能治理」
-- §24.13「Photo Picker、媒体转码与缓存治理」
+- §24.11「MediaStore 与 MediaProvider 性能治理」
+- §24.12「Photo Picker、媒体转码与缓存治理」
