@@ -2,10 +2,10 @@
 title: "Android 17 ConnectivityManager：架构、网络选择与性能"
 chapter: "1.43"
 section: "1.43"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
-last_verified: "2026-08-11"
-last_verified_against: "AOSP android-17.0.0_r1 + ACK android17-6.18-2026-06_r6"
+last_verified: "2026-08-20"
+last_verified_against: "AOSP android-17.0.0_r1 (Connectivity, NetworkStack, frameworks/base) + ACK android17-6.18-2026-06_r6; Android Developers API 37 local-network permission/ECH docs checked 2026-08-20"
 confidence: high
 sources:
   - type: aosp
@@ -50,6 +50,12 @@ sources:
     path: "developer.android.com/about/versions/17/behavior-changes-17"
 tags: [connectivity, network, system-service, mainline, network-monitor, netstats, vpn]
 related_chapters: ["1.42", "1.44", "5.7", "12.1", "12.3", "24.17"]
+task6_state: reviewed
+task9_state: reviewed
+task2b_state: fixed
+pipeline_stage: finalized
+last_review_finalize_at: "2026-08-20T09:26:58+08:00"
+last_review_finalize_run_id: "20260820-091252-c2bdcda8"
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
