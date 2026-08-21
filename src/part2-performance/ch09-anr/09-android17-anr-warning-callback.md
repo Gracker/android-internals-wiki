@@ -6,14 +6,14 @@ status: ready-for-review
 applicable_versions: "Android 17 (API 37)"
 tags: [ANR, warning, callback, AnrTypes, observability, IAnrWarningCallback]
 related_chapters: ["9.1", "9.2", "9.3", "9.7", "26.1"]
-last_verified: "2026-08-17"
-last_verified_against: "AOSP android-17.0.0_r1（公开 API、warning producer 与 ProfilingManager 路径复核）"
+last_verified: "2026-08-20"
+last_verified_against: "AOSP android-17.0.0_r1（公开 API、warning producer、source flag 与 ProfilingManager all-trigger 顺序复核）"
 confidence: medium
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: ready-for-review
-last_deep_review_at: "2026-08-17T20:53:44+08:00"
-last_deep_review_run_id: "20260817-204603-deep-review-73d8fbf6"
+last_deep_review_at: "2026-08-20T13:28:29+08:00"
+last_deep_review_run_id: "20260820-132829-deep-review-73d8fbf6"
 sources:
   - type: blog
     path: "技术文章/Android/Android-17系统层面新特性/39-ANR-类型和预警回调.md"
@@ -34,6 +34,8 @@ sources:
   - type: aosp
     path: "frameworks/base/core/java/android/app/IAnrWarningCallback.aidl"
   - type: aosp
+    path: "frameworks/base/core/java/android/app/ApplicationExitInfo.java"
+  - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/AnrWarningController.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActiveServices.java"
@@ -51,6 +53,8 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/wm/AnrController.java"
   - type: aosp
     path: "packages/modules/Profiling/framework/java/android/os/ProfilingManager.java"
+  - type: aosp
+    path: "packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java"
   - type: research
     path: "DeepResearch/2026-06-15-anr-detection-inputdispatcher-ams-anrhelper-source.md"
 ---
@@ -82,7 +86,7 @@ Android 17 的相关类型位于 `android.app`：
 
 `IAnrWarningCallback.aidl` 是 ActivityManager 与 AMS（ActivityManagerService）之间的 hidden（隐藏）Binder 接口，应用不需要直接实现它。`ActivityManager` 会在当前进程注册第一个 listener 时创建一个 Binder stub（接收系统跨进程调用的入口）；同一进程后续注册的 listener 会复用这条系统回调。
 
-这些 API 都在 API 37 加入。公开文档没有要求 `targetSdkVersion >= 37`；应用需要使用 API 37 SDK 编译，并在运行时检查设备版本。
+这些 API 都在 API 37 加入。公开文档没有要求 `targetSdkVersion >= 37`；应用需要使用 API 37 SDK 编译，并在运行时检查设备版本。`android-17.0.0_r1` 源码还保留 `@FlaggedApi` 注解：`AnrTypes` 与 `ApplicationExitInfo.AnrInfo` 对应 `Flags.FLAG_INCLUDE_ANR_INFO`，warning callback 相关类与注册方法对应 `Flags.FLAG_ENABLE_ANR_WARNING_CALLBACK`。在 AOSP 派生或厂商调试 build 上，应把源码 flag 状态和运行平台版本一起纳入兼容性验证。
 
 ## 2. `AnrTypes` 的完整枚举
 
@@ -204,13 +208,12 @@ class AnrWarningRecorder(
 
 ### 5.2 system_server 内
 
-`AnrWarningController` 按 calling UID（注册方的应用身份）保存 callback 列表，并为每个 Binder callback 注册 death recipient（进程死亡通知）。producer 调用 `ActivityManagerService.notifyAnrWarning()` 后，controller 会执行以下步骤：
+`AnrWarningController` 按 calling UID（注册方的应用身份）保存 callback 列表，并为每个 Binder callback 注册 death recipient（进程死亡通知）。producer 调用 `ActivityManagerService.notifyAnrWarning()` 时，AMS 先用 `anrId` 获取或创建 error id，再交给 controller。controller 会执行以下步骤：
 
-1. 为 `anrId` 取得 error id（系统内部错误标识）；
-2. 若该 UID 有 callback，发出 `debug.anr` category 的 `AnrWarningDetected` Perfetto instant（瞬时事件）；
-3. 构造 `AnrWarningResult`；
-4. 通过 oneway AIDL（无需等待接收方返回的异步 Binder 调用）通知该 UID 下的每个已注册进程；
-5. 记录 ANR warning API 的统计事件。
+1. 若该 UID 有 callback，发出 `debug.anr` category 的 `AnrWarningDetected` Perfetto instant（瞬时事件）；
+2. 构造 `AnrWarningResult`；
+3. 通过 oneway AIDL（无需等待接收方返回的异步 Binder 调用）通知该 UID 下的每个已注册进程；
+4. 记录 ANR warning API 的统计事件。
 
 注册范围由 calling UID 决定。应用不能监听其他 UID 的 warning。
 
@@ -322,6 +325,8 @@ Android 16（API 36）的 `ProfilingTrigger.TRIGGER_TYPE_ANR` 会在系统识别
 
 - 通过 `registerForAllProfilingResults()` 提供的 executor；
 - 已注册 `TRIGGER_TYPE_ANR` 或 all triggers（所有触发类型）。
+
+`android-17.0.0_r1` 中，内部注册由 `registerAnrWarningListenerIfNeeded()` 完成；它会在 `registerForAllProfilingResults()` 和 `addProfilingTriggers()` 路径后检查上述条件。`addAllProfilingTriggers()` 会记录 all triggers 状态，但该方法自身没有立即调用这个 helper。若只依赖 all triggers 来获得内部 warning trace 标记，保守顺序是先设置 all triggers，再注册全局 profiling result listener；或者直接通过 `addProfilingTriggers()` 注册 `TRIGGER_TYPE_ANR`。
 
 注册的 listener 会写入一个短 trace section（自定义 trace 区间）：
 
