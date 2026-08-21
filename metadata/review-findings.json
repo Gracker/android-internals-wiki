@@ -2711,6 +2711,28 @@
       "summary": "Perfetto ART heap dump native_size boundary was incomplete",
       "type": "source-boundary",
       "updated_at": "2026-08-21T20:47:13.798265+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch20-stability/05-oom-governance.md",
+      "close_note": "Patched src/part5-app/ch20-stability/05-oom-governance.md to mark ApplicationExitInfo and ActivityManager historical exit APIs as Android 11/API 30+ and to describe Android 10/API 29 fallback evidence.",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20260821-223502-idle-audit-67768f8d",
+      "created_at": "2026-08-21T22:38:57.775352+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20260821-223502-idle-audit-67768f8d",
+      "details": "The finalized chapter covered Android 10/API 29 through Android 17/API 37 but presented ApplicationExitInfo/ActivityManager low-memory exit diagnostics without the API 30 availability boundary. This run added the API 30+ boundary and Android 10/API 29 fallback evidence path.",
+      "id": "finding-d261524365e0",
+      "log_path": "logs/audit/2026-08-21-20260821-223502-idle-audit-67768f8d-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+        "https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,%20int,%20int)",
+        "https://developer.android.com/reference/android/app/ActivityManager#isLowMemoryKillReportSupported()"
+      ],
+      "status": "fixed",
+      "summary": "ApplicationExitInfo API 30 availability missing from OOM diagnostics",
+      "type": "version-boundary",
+      "updated_at": "2026-08-21T22:38:57.861407+08:00"
     }
   ],
   "schema_version": 1
