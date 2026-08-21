@@ -146,7 +146,7 @@ flowchart TD
 
 该机制通过 display blanking（暂时关闭显示输出）遮住 resize 过程中可能出现的错误尺寸。500 ms 是框架状态转换的兜底上限，不代表屏幕一定黑场 500 ms，也不代表折叠动画时长。
 
-原始正文中“固定丢 1～3 帧”“第一帧高 30%～50%”之类数值没有 AOSP 保证。设备的面板时序、power sequence（面板上电与下电顺序）、Shell transition、应用重绘和 HWC 能力都会改变观测结果。
+“固定丢 1～3 帧”“第一帧高 30%～50%”之类数值没有 AOSP 保证。设备的面板时序、power sequence（面板上电与下电顺序）、Shell transition、应用重绘和 HWC 能力都会改变观测结果。
 
 ### 2.4 layout 应用与 SurfaceFlinger 的边界
 
@@ -176,7 +176,9 @@ RootWindowContainer
           WindowToken / WindowState
 ```
 
-这棵树表达 WMS 的窗口与任务管理关系，不会与 SurfaceFlinger layer tree 一一对应。Shell transition 可以创建 leash（转场期间使用的临时父 Surface），把 Task 或窗口 Surface 临时 reparent（更换父节点）到 leash，再对 leash 设置 matrix（变换矩阵）、crop（裁剪）、corner radius（圆角）和 position。
+这棵树表达 WMS 的窗口与任务管理关系，不会与 SurfaceFlinger layer tree 一一对应。
+
+Shell transition 可以创建 leash（转场期间使用的临时父 Surface），把 Task 或窗口 Surface 临时 reparent（更换父节点）到 leash，再对 leash 设置 matrix（变换矩阵）、crop（裁剪）、corner radius（圆角）和 position。
 
 折叠动画期间看到 task leash 缩放，不能据此判断 App 在每次 progress（进度回调）时都重新提交了一张完整 buffer。
 
@@ -184,7 +186,9 @@ RootWindowContainer
 
 平台资源 `config_unfoldTransitionEnabled` 与 `config_unfoldTransitionHingeAngle` 决定设备是否启用相应能力。启用角度进度时，SystemUI 的 `HingeSensorAngleProvider` 获取 `TYPE_HINGE_ANGLE`，并通过后台 Handler（消息处理器）以 `SENSOR_DELAY_FASTEST` 接收事件。
 
-`PhysicsBasedUnfoldTransitionProgressProvider` 把 hinge angle 映射到 0～1 的 progress，并用 spring animation（弹簧动画）平滑更新。WM Shell 的 `UnfoldTransitionHandler` 在进度回调中创建 `SurfaceControl.Transaction`，让 task animator（任务动画器）更新 leash。
+`PhysicsBasedUnfoldTransitionProgressProvider` 把 hinge angle 映射到 0～1 的 progress，并用 spring animation（弹簧动画）平滑更新。
+
+WM Shell 的 `UnfoldTransitionHandler` 在进度回调中创建 `SurfaceControl.Transaction`，让 task animator（任务动画器）更新 leash。
 
 以 fullscreen task 为例，AOSP 的 animator 主要更新：
 
@@ -341,7 +345,9 @@ android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
 
 ### 6.3 Compose 的成本取决于依赖范围
 
-Compose 中 window size 或 posture state 改变后，读取该 state 的 composable（可组合函数）会失效，随后可能发生 recomposition（重组）、remeasure（重新测量）和 redraw（重绘）。成本取决于依赖范围与布局结构，没有“`BoxWithConstraints` 必然慢”或“Crossfade 在 RenderThread 上所以更快”的通用结论。
+Compose 中 window size 或 posture state 改变后，读取该 state 的 composable（可组合函数）会失效，随后可能发生 recomposition（重组）、remeasure（重新测量）和 redraw（重绘）。
+
+成本取决于依赖范围与布局结构，没有“`BoxWithConstraints` 必然慢”或“Crossfade 在 RenderThread 上所以更快”的通用结论。
 
 建议：
 
@@ -473,7 +479,9 @@ adb shell cmd device_state state <STATE_ID>
 adb shell cmd device_state state reset
 ```
 
-输出中的 `print-states` 用于查询可用状态，`state` 用于设置或重置模拟状态。`state <STATE_ID>` 请求的是 emulated device state（模拟设备状态），shell 帮助明确说明它不会改变设备的物理状态。它可以覆盖 DMS、WMS、SF 的状态切换测试，却跳过真实 hall 与 hinge 运动、面板机械过程以及部分 power timing（电源时序）。
+输出中的 `print-states` 用于查询可用状态，`state` 用于设置或重置模拟状态。`state <STATE_ID>` 请求的是 emulated device state（模拟设备状态），shell 帮助明确说明它不会改变设备的物理状态。
+
+它可以覆盖 DMS、WMS、SF 的状态切换测试，却跳过真实 hall 与 hinge 运动、面板机械过程以及部分 power timing（电源时序）。
 
 `STATE_ID` 来自当前设备配置，应先用 `print-states` 查询，测试结束后执行重置。
 
@@ -537,7 +545,9 @@ adb shell dumpsys SurfaceFlinger --display
 
 ### 9.5 双屏模式只有一侧更新
 
-确认设备是否处于支持 concurrent internal displays（并发内建显示）的 state，两个 logical Display 是否 enabled，目标内容是 extended（扩展）、mirrored（镜像），还是 rear display 或 dual-display session（后屏或双屏会话）。随后分别检查每个 Display 的 layer stack、Output 和 present。
+确认设备是否处于支持 concurrent internal displays（并发内建显示）的 state，两个 logical Display 是否 enabled，目标内容是 extended（扩展）、mirrored（镜像），还是 rear display 或 dual-display session（后屏或双屏会话）。
+
+随后分别检查每个 Display 的 layer stack、Output 和 present。
 
 ## 10. 版本演进
 
