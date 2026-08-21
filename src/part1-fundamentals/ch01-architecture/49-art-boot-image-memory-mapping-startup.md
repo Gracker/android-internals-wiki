@@ -4,7 +4,7 @@ chapter: "1.49"
 section: "1.49"
 status: "ready-for-review"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-07-25"
+last_verified: "2026-08-19"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 sources:
@@ -34,6 +34,11 @@ sources:
     path: "https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations"
 tags: [ART, boot-image, boot.art, boot.oat, 内存映射, Zygote, 启动优化, mmap, dex2oat, ImageSpace]
 related_chapters: ["1.7", "1.11", "1.12", "4.3", "8.2"]
+pipeline_stage: "ready-for-review"
+task6_state: "reviewed"
+task9_state: "reviewed"
+last_deep_review_at: "2026-08-19T09:31:37+08:00"
+last_deep_review_run_id: "20260819-093137-deep-review-cc59c22c"
 ---
 
 # 1.49 ART Boot Image 内存映射与启动性能
@@ -193,7 +198,7 @@ MemMap::MapFileAtAddress(
 
 这段源码说明 image object 区以 `MAP_PRIVATE` 私有文件映射装入，初始权限 `PROT_READ | PROT_WRITE` 表示可读写。Android 17 的 `ImageSpace` 加载代码没有在 Zygote `fork` 前统一通过 `mprotect(PROT_READ)` 把整段镜像改成只读；把“fork 前统一转为只读”写成固定步骤会误导排查。
 
-压缩镜像需要建立匿名读写映射，再从只读文件映射解压进去。运行时即时编译到 `memfd`（只存在于内存中的匿名文件描述符）的扩展也可能复制进匿名映射。此时物理页共享特征与直接文件映射不同，诊断时要以 `/proc/<pid>/maps`、`smaps` 中的实际映射为准。
+压缩镜像需要建立匿名读写映射，再从只读文件映射解压进去；运行期生成到 `memfd`（只存在于内存中的匿名文件描述符）的 Boot Image Extension 也会禁用直接映射，并复制到匿名映射。此时物理页共享特征与直接文件映射不同，诊断时要以 `/proc/<pid>/maps`、`smaps` 中的实际映射为准。
 
 记录镜像对象位置的 Image bitmap 单独以 `PROT_READ | MAP_PRIVATE` 映射。OAT 则由 `OatFile::Open()` 按文件段及是否允许执行建立映射，不能用一句“整个 `boot.oat` 都是 `PROT_READ|PROT_EXEC`”概括。
 
