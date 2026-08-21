@@ -1800,6 +1800,9 @@
     },
     {
       "chapter": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
+      "close_note": "Rechecked Android 17 / android-17.0.0_r1 SQLite anchors, Android common kernel android17-6.18-2026-06_r6 ext4/F2FS/EROFS/GKI anchors, and current official storage/EROFS/16KB/Virtual A/B/SharedPreferences/kernel docs; refreshed chapter metadata and source list.",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20260819-173532-rework-557ad9a6",
       "created_at": "2026-08-12T02:00:32.165961+08:00",
       "created_by": "hermes-aiw-weekly-source-audit",
       "created_run_id": "freshness-2026-08-12",
@@ -1810,10 +1813,10 @@
       "source_paths": [
         "src/part1-fundamentals/ch06-storage/02-filesystem.md"
       ],
-      "status": "open",
+      "status": "verified",
       "summary": "last source verification 2026-04-23 older than 90 days",
       "type": "stale-source-verification",
-      "updated_at": "2026-08-12T02:00:32.165961+08:00"
+      "updated_at": "2026-08-19T17:45:57.438390+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch06-storage/03-io-scheduling.md",
@@ -1837,6 +1840,9 @@
     },
     {
       "chapter": "src/part2-performance/ch07-smoothness/03-jank-methodology.md",
+      "close_note": "Rework refreshed source verification for 7.3 to 2026-08-19 against AOSP android-17.0.0_r1 FrameMetrics/FrameTimeline/Perfetto stdlib, android17-6.18 Binder tracepoints, and current Perfetto/Android Developers docs; chapter returned to ready-for-review.",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20260819-094608-rework-b29354cb",
       "created_at": "2026-08-12T02:00:32.165961+08:00",
       "created_by": "hermes-aiw-weekly-source-audit",
       "created_run_id": "freshness-2026-08-12",
@@ -1847,10 +1853,10 @@
       "source_paths": [
         "src/part2-performance/ch07-smoothness/03-jank-methodology.md"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "last source verification 2026-03-31 older than 90 days",
       "type": "stale-source-verification",
-      "updated_at": "2026-08-12T02:00:32.165961+08:00"
+      "updated_at": "2026-08-19T09:51:21.158107+08:00"
     },
     {
       "chapter": "src/part2-performance/ch07-smoothness/05-optimization.md",
@@ -1894,6 +1900,9 @@
     },
     {
       "chapter": "src/part2-performance/ch07-smoothness/11-systemui-performance.md",
+      "close_note": "2026-08-19 rework refreshed last_verified to 2026-08-19, replaced stale android-16/NotificationContentInflater.java metadata with Android 17/AOSP android-17.0.0_r1 SystemUI, WM Shell, Launcher3 and official docs evidence, and returned the chapter to ready-for-review.",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20260819-135121-rework-68502f5f",
       "created_at": "2026-08-12T02:00:32.165961+08:00",
       "created_by": "hermes-aiw-weekly-source-audit",
       "created_run_id": "freshness-2026-08-12",
@@ -1904,10 +1913,10 @@
       "source_paths": [
         "src/part2-performance/ch07-smoothness/11-systemui-performance.md"
       ],
-      "status": "open",
+      "status": "verified",
       "summary": "last source verification 2026-04-26 older than 90 days",
       "type": "stale-source-verification",
-      "updated_at": "2026-08-12T02:00:32.165961+08:00"
+      "updated_at": "2026-08-19T14:14:11.730220+08:00"
     },
     {
       "chapter": "src/part2-performance/ch08-responsiveness/02-app-launch.md",
@@ -2280,6 +2289,367 @@
       "summary": "heapprofd Perfetto data source was mislabeled as linux.heapprofd",
       "type": "source-boundary",
       "updated_at": "2026-08-18T20:48:38.979151+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/49-art-boot-image-memory-mapping-startup.md",
+      "close_note": "Reworded the memfd extension sentence to say a Boot Image Extension generated to memfd disables direct mapping and is copied to an anonymous mapping; removed the confusing “即时编译” wording.",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260819-093137-deep-review-cc59c22c",
+      "created_at": "2026-08-19T09:36:35.491107+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260819-093137-deep-review-cc59c22c",
+      "details": "The chapter described extensions compiled to memfd as “运行时即时编译”, which collides with the JIT term defined earlier. Android 17 image_space.cc describes boot image extensions compiled to a memfd with direct mapping disabled and copied into anonymous mappings, not ordinary JIT method compilation.",
+      "id": "AIW-1.49-20260819-P3-memfd-extension-jit-wording",
+      "log_path": "logs/deep-review/2026-08-19-20260819-093137-deep-review-cc59c22c-deep-review.md",
+      "severity": "P3",
+      "source_paths": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/space/image_space.cc#1482",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/dex2oat/dex2oat.cc#629"
+      ],
+      "status": "fixed",
+      "summary": "memfd Boot Image Extension wording could be read as JIT compilation",
+      "type": "source-boundary",
+      "updated_at": "2026-08-19T09:36:35.558170+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch06-storage/05-vold-mediaprovider-fuse.md",
+      "close_note": "Updated §6.5 verification metadata to Android 17 source anchors, added MediaProvider FUSE Java sources, and corrected the visible §24.11/§24.12 related-reference numbers.",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260819-124855-deep-review-7363eb12",
+      "created_at": "2026-08-19T12:55:12.090351+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260819-124855-deep-review-7363eb12",
+      "details": "Frontmatter last_verified_against still named android-16.0.0_r1 although the chapter body and sources are Android 17/android17-6.18 anchored; the visible references numbered MediaStore as §24.12 and Photo Picker as §24.13, while local chapter frontmatter identifies them as §24.11 and §24.12. Fixed the metadata/source list and the two visible reference numbers.",
+      "id": "AIW-6.5-20260819-P3-storage-related-chapter-anchor",
+      "log_path": "logs/deep-review/2026-08-19-20260819-124855-deep-review-7363eb12-deep-review.md",
+      "severity": "P3",
+      "source_paths": [
+        "src/part1-fundamentals/ch06-storage/05-vold-mediaprovider-fuse.md",
+        "src/part5-app/ch24-io-network/11-mediastore-mediaprovider-performance.md",
+        "src/part5-app/ch24-io-network/12-photo-picker-transcoding-performance.md",
+        "system/vold/model/EmulatedVolume.cpp@android-17.0.0_r1",
+        "packages/providers/MediaProvider/src/com/android/providers/media/fuse/ExternalStorageServiceImpl.java@android-17.0.0_r1",
+        "packages/providers/MediaProvider/src/com/android/providers/media/fuse/FuseDaemon.java@android-17.0.0_r1",
+        "packages/providers/MediaProvider/jni/FuseDaemon.cpp@android-17.0.0_r1"
+      ],
+      "status": "fixed",
+      "summary": "§6.5 verification metadata and reference list used stale anchors for Android 17 source review and related ch24 numbers",
+      "type": "wrong-crossref-source-boundary",
+      "updated_at": "2026-08-19T12:55:12.141871+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch22-rendering-practice/07-webview-optimization.md",
+      "close_note": "正文和 frontmatter 已更新到 2026-08-19 source boundary：AndroidX WebKit 1.17.0 当前稳定版、1.16.0 startup API 稳定化、推测加载实验注解。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20260819-143836-idle-audit-140098bc",
+      "created_at": "2026-08-19T14:43:09.732349+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20260819-143836-idle-audit-140098bc",
+      "details": "原文仍称 2026-08-14 当前稳定版为 AndroidX WebKit 1.16.0，未说明 Profile preconnect / URL prefetch 的实验 opt-in；官方发布记录显示 1.17.0 已于 2026-08-12 发布，API reference 标注 ExperimentalPreconnect / ExperimentalUrlPrefetch。",
+      "id": "AIW-22.7-WEBVIEW-ANDROIDX-WEBKIT-VERSION-20260819",
+      "log_path": "logs/audit/2026-08-19-20260819-143836-idle-audit-140098bc-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/jetpack/androidx/releases/webkit; https://developer.android.com/reference/androidx/webkit/Profile"
+      ],
+      "status": "fixed",
+      "summary": "AndroidX WebKit 稳定版与推测加载实验注解需要按 2026-08-19 官方文档校正",
+      "type": "source-version-drift",
+      "updated_at": "2026-08-19T14:43:09.779715+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch08-responsiveness/11-push-notification-pipeline-performance.md",
+      "close_note": "正文已将单条 message_trace_id、BigQuery 导出和 Aggregate Delivery Data 的聚合/延迟口径分开，并补充 FCM 响应 message ID 与分组维度说明。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260819-163522-deep-review-1ce61161",
+      "created_at": "2026-08-19T16:45:33.868447+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260819-163522-deep-review-1ce61161",
+      "details": "原文把 message_trace_id 同时用于连接服务端、FCM 聚合数据和设备事件，容易让读者误以为 Aggregate Delivery Data 可以按单条消息反查端侧链路；Firebase 文档将 Aggregate Delivery Data 定义为聚合指标，BigQuery MESSAGE_DELIVERED 也只表示交给设备 FCM SDK，不等于通知显示。",
+      "id": "AIW-8.11-20260819-P2-FCM-AGGREGATE-TRACE-BOUNDARY",
+      "log_path": "logs/deep-review/2026-08-19-20260819-163522-deep-review-1ce61161-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://firebase.google.com/docs/cloud-messaging/understand-delivery",
+        "https://firebase.google.com/docs/cloud-messaging/android-message-priority"
+      ],
+      "status": "fixed",
+      "summary": "FCM 聚合交付数据与单条 message_trace_id 的观测边界需要拆开",
+      "type": "source-boundary",
+      "updated_at": "2026-08-19T16:45:33.917642+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/02-eas.md",
+      "close_note": "Reworded the EAS chapter to treat sync as an Android common kernel 6.12/6.18 fast path rather than an Android 17-only addition, and clarified that sync wakeup enters find_energy_efficient_cpu before any early return.",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20260819-183541-idle-audit-58ee0272",
+      "created_at": "2026-08-19T18:45:22.051305+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20260819-183541-idle-audit-58ee0272",
+      "details": "android16-6.12-2026-06_r6 and android17-6.18-2026-06_r6 both define find_energy_efficient_cpu(p, prev_cpu, sync) and contain the same sync wakeup fast path; the chapter should not describe the sync parameter as an Android 17-only addition.",
+      "id": "AIW-5.2-EAS-SYNC-PATH-20260819",
+      "log_path": "logs/audit/2026-08-19-20260819-183541-idle-audit-58ee0272-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android16-6.12-2026-06_r6/kernel/sched/fair.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/fair.c"
+      ],
+      "status": "fixed",
+      "summary": "Android 17 EAS table implied sync wakeup support was newly added in Android 17",
+      "type": "source-version-drift",
+      "updated_at": "2026-08-19T18:45:22.101668+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/17-android17-app-hibernation-performance.md",
+      "close_note": "修正 frontmatter AOSP 路径，正文补充实际状态/proto/磁盘存储文件边界，并在参考资料中补齐对应源码锚点。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260819-210430-deep-review-e3001659",
+      "created_at": "2026-08-19T21:10:04.558356+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260819-210430-deep-review-e3001659",
+      "details": "android-17.0.0_r1 中 AppHibernationManager 位于 frameworks/base/core/java/android/apphibernation；apphibernation 服务目录没有 HibernationState.java，状态与持久化分散在 UserLevelState.java、GlobalLevelState.java、UserLevelHibernationProto.java、GlobalLevelHibernationProto.java 和 HibernationStateDiskStore.java。",
+      "id": "AIW-5.17-20260819-P2-SOURCE-PATHS",
+      "log_path": "logs/deep-review/2026-08-19-20260819-210430-deep-review-e3001659-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "AOSP android-17.0.0_r1 frameworks/base services/core/java/com/android/server/apphibernation directory and core/java/android/apphibernation/AppHibernationManager.java"
+      ],
+      "status": "fixed",
+      "summary": "App Hibernation 章节 frontmatter 引用了错误或不存在的 Android 17 AOSP 状态源码路径",
+      "type": "source-boundary",
+      "updated_at": "2026-08-19T21:10:04.616004+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/17-android17-app-hibernation-performance.md",
+      "close_note": "将复现实验改为保存 hibernation_enabled、unused threshold、check frequency，并用 cleanup/trap 与 null->delete 恢复原状态。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260819-210430-deep-review-e3001659",
+      "created_at": "2026-08-19T21:10:04.667030+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260819-210430-deep-review-e3001659",
+      "details": "原片段只恢复 auto_revoke_unused_threshold_millis2，设置 app_hibernation_enabled true 后没有恢复；若 device_config get 返回 null，直接 put 还可能留下非原始状态。",
+      "id": "AIW-5.17-20260819-P2-DEVICECONFIG-RESTORE",
+      "log_path": "logs/deep-review/2026-08-19-20260819-210430-deep-review-e3001659-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "Android app hibernation 官方测试路径与 DeviceConfig shell get/put/delete 行为；章节同段落已要求避免遗留测试配置。"
+      ],
+      "status": "fixed",
+      "summary": "PermissionController 策略复现实验片段未完整恢复 DeviceConfig 配置",
+      "type": "reproducibility",
+      "updated_at": "2026-08-19T21:10:04.715082+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch25-power-size/10-performance-hint-adpf-power.md",
+      "close_note": "The API table now includes the API 36 workload notification boundary, the API 36 deprecation of APerformanceHint_getPreferredUpdateRateNanos, and the APerformanceHint_isFeatureSupported replacement guidance.",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20260820-011345-idle-audit-3ae38f95",
+      "created_at": "2026-08-20T01:31:45.181846+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20260820-011345-idle-audit-3ae38f95",
+      "details": "The API table covered API 36 config, feature probing, graphics pipeline and Java session borrowing, but omitted API 36 workload notification functions and the NDK header/API reference warning that APerformanceHint_getPreferredUpdateRateNanos is deprecated in API 36.",
+      "id": "AIW-25.10-ADPF-NDK36-WORKLOAD-DEPRECATED-20260820",
+      "log_path": "logs/audit/2026-08-20-20260820-011345-idle-audit-3ae38f95-idle-audit.md",
+      "severity": "P3",
+      "source_paths": [
+        "frameworks/native/include/android/performance_hint.h@android-17.0.0_r1",
+        "https://developer.android.com/ndk/reference/group/a-performance-hint"
+      ],
+      "status": "fixed",
+      "summary": "NDK API 36 performance hint additions and deprecated update rate API needed an explicit boundary",
+      "type": "source-boundary",
+      "updated_at": "2026-08-20T01:31:45.230354+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch18-rendering-pipelines/22-advanced-professional-video-apv.md",
+      "close_note": "补充 setVideoEncodingQuality() 的 prepare 前调用与 prepare 检查边界，并明确静态 XML 的 bitrate-modes 不能单独作为 MediaRecorder CQ 可用证据。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260820-094455-deep-review-627bfda7",
+      "created_at": "2026-08-20T09:52:10.342785+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260820-094455-deep-review-627bfda7",
+      "details": "MediaRecorder.setVideoEncodingQuality() 必须在 prepare() 前调用，prepare() 仍可能检查质量值；AOSP 软件 codec XML 声明 CQ/quality，但 C2SoftApvEnc 只有在 apv_software_codec_cq flag 开启时才加入 CQ bitrate-mode。正文需要防止读者仅凭静态 XML 判断 CQ 可用。",
+      "id": "finding-apv-cq-runtime-boundary",
+      "log_path": "logs/deep-review/2026-08-20-20260820-094455-deep-review-627bfda7-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/media/MediaRecorder#setVideoEncodingQuality(int)",
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/libstagefright/data/media_codecs_google_c2_video.xml",
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/components/apv/C2SoftApvEnc.cpp"
+      ],
+      "status": "fixed",
+      "summary": "APV CQ quality 入口需要补足 prepare 与运行时能力边界",
+      "type": "source-boundary",
+      "updated_at": "2026-08-20T09:52:10.394786+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch09-anr/09-android17-anr-warning-callback.md",
+      "close_note": "Chapter now records the @FlaggedApi source boundary, corrects AMS/controller error-id handoff wording, and documents ProfilingManager addAllProfilingTriggers() sequencing for android-17.0.0_r1.",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260820-132829-deep-review-73d8fbf6",
+      "created_at": "2026-08-20T13:36:55.044793+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260820-132829-deep-review-73d8fbf6",
+      "details": "Deep review found that the article did not surface @FlaggedApi boundaries for AnrTypes/ApplicationExitInfo.AnrInfo and warning callback APIs, and treated ProfilingManager all triggers as equivalent without noting that addAllProfilingTriggers() does not immediately call registerAnrWarningListenerIfNeeded() in android-17.0.0_r1.",
+      "id": "AIW-9.9-20260820-P2-profilingmanager-flag-boundary",
+      "log_path": "logs/deep-review/2026-08-20-20260820-132829-deep-review-73d8fbf6-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/core/java/android/app/ActivityManager.java@android-17.0.0_r1",
+        "frameworks/base/core/java/android/app/AnrTypes.java@android-17.0.0_r1",
+        "frameworks/base/core/java/android/app/ApplicationExitInfo.java@android-17.0.0_r1",
+        "packages/modules/Profiling/framework/java/android/os/ProfilingManager.java@android-17.0.0_r1"
+      ],
+      "status": "fixed",
+      "summary": "ANR warning API source flags and ProfilingManager all-trigger registration order need explicit Android 17 boundaries",
+      "type": "source-boundary",
+      "updated_at": "2026-08-20T13:36:55.093588+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/10-memory-compaction-direct-reclaim.md",
+      "close_note": "Added psi.rst and gki_defconfig to chapter sources/verification boundary, named gki_defconfig in the mTHP paragraph, and clarified compact_fail as the exposed vmstat counter.",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260820-163512-deep-review-90bb83ac",
+      "created_at": "2026-08-20T16:45:27.173129+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260820-163512-deep-review-90bb83ac",
+      "details": "The article used PSI semantics and the Android 17 arm64 GKI THP configuration, but the frontmatter source boundary omitted Documentation/accounting/psi.rst and arch/arm64/configs/gki_defconfig, and the mTHP paragraph did not name the config file. Add those sources and clarify compact_fail as the exposed vmstat counter.",
+      "id": "finding-4-10-psi-gki-source-boundary",
+      "log_path": "logs/deep-review/2026-08-20-20260820-163512-deep-review-90bb83ac-deep-review.md",
+      "severity": "P3",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/accounting/psi.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmstat.c"
+      ],
+      "status": "fixed",
+      "summary": "PSI and arm64 GKI configuration claims needed explicit source coverage",
+      "type": "source-boundary",
+      "updated_at": "2026-08-20T16:45:27.221953+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch14-other-tools/16-gpu-performance-profiling-advanced.md",
+      "close_note": "正文已补充 GpuCounterSpec reserved tag 4 / deprecated MeasureUnit unit 边界，并更新 last_verified 与 idle-audit 元数据。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20260820-183531-idle-audit-6c1cc491",
+      "created_at": "2026-08-20T18:38:31.538119+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20260820-183531-idle-audit-6c1cc491",
+      "details": "AOSP android-17.0.0_r1 gpu_counter_descriptor.proto 在 GpuCounterSpec 中保留 tag 4 并标注 MeasureUnit unit deprecated；正文原字段清单未显式保留该弃用边界，容易误读单位字段。已补充 reserved tag 4 与 Trace Processor 仅按 numerator_units/denominator_units 生成单位字符串的说明。",
+      "id": "finding-576c53f9b855",
+      "log_path": "logs/audit/2026-08-20-20260820-183531-idle-audit-6c1cc491-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/common/gpu_counter_descriptor.proto",
+        "AOSP android-17.0.0_r1: external/perfetto/src/trace_processor/importers/proto/gpu_event_parser.cc"
+      ],
+      "status": "fixed",
+      "summary": "GpuCounterSpec 字段边界遗漏 reserved tag 4 / deprecated unit 说明",
+      "type": "deprecated-notice",
+      "updated_at": "2026-08-20T18:38:36.385281+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+      "close_note": "已更新正文截止日期与 Google Play 适用边界，替换 frontmatter 16 KB 官方来源并删除 404 blog 来源。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260820-204533-deep-review-74f9bce1",
+      "created_at": "2026-08-20T20:49:05.704749+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260820-204533-deep-review-74f9bce1",
+      "details": "章节仍写 2025-11-01 Google Play 16 KB 页大小要求，并在 frontmatter 引用已 404 的 developer.android.com/build/apps/16kb-page-size 与 googleblog 旧路径；2026-08-20 复核 Android Developers 当前页面显示要求为面向 Android 15/API35+ 的 Google Play 应用必须支持 16 KB 页大小，2027-02-01 起不满足要求的更新不能发布。",
+      "id": "AIW-4.5-P2-16kb-play-deadline",
+      "log_path": "logs/deep-review/2026-08-20-20260820-204533-deep-review-74f9bce1-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/guide/practices/page-sizes",
+        "https://developer.android.com/build/apps/16kb-page-size (HTTP 404 on 2026-08-20)",
+        "https://android-developers.googleblog.com/2024/10/16kb-page-size-android-15.html (HTTP 404 on 2026-08-20)"
+      ],
+      "status": "fixed",
+      "summary": "16 KB 页大小 Google Play 截止日期与 frontmatter 来源过期",
+      "type": "stale-source-boundary",
+      "updated_at": "2026-08-20T20:49:05.753944+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+      "close_note": "Replaced the frontmatter NDK debug source with the current Android Developers debug guide path.",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260820-204533-deep-review-74f9bce1",
+      "created_at": "2026-08-20T20:50:46.918549+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260820-204533-deep-review-74f9bce1",
+      "details": "Frontmatter used developer.android.com/ndk/guides/debug-gdb. On 2026-08-20 that path returned HTTP 404; the current Android Developers NDK debug guide is developer.android.com/ndk/guides/debug, which the article reference list already used.",
+      "id": "AIW-4.5-P2-ndk-debug-source-404",
+      "log_path": "logs/deep-review/2026-08-20-20260820-204533-deep-review-74f9bce1-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/ndk/guides/debug-gdb (HTTP 404 on 2026-08-20)",
+        "https://developer.android.com/ndk/guides/debug"
+      ],
+      "status": "fixed",
+      "summary": "frontmatter NDK debug source path returned 404",
+      "type": "source-404",
+      "updated_at": "2026-08-20T20:50:46.966679+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch25-power-size/10-performance-hint-adpf-power.md",
+      "created_at": "2026-08-21T02:00:43.709933+08:00",
+      "created_by": "hermes-aiw-weekly-source-audit",
+      "created_run_id": "freshness-2026-08-21",
+      "details": "affirmative higher-than-Android-17 out-of-scope claim\nEvidence: > **版本限定**：源码锚点统一使用 `android-17.0.0_r1`。main/master（持续开发的主分支）或 Android 18/API 38 及以上的内容不在讨论范围内；公开 API 只核对到 Android 17/API 37。",
+      "id": "AIW-FRESH-86fd15836f5d35ca",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-08-21-时效性巡检.md",
+      "severity": "P1",
+      "source_paths": [
+        "src/part5-app/ch25-power-size/10-performance-hint-adpf-power.md"
+      ],
+      "status": "open",
+      "summary": "affirmative higher-than-Android-17 out-of-scope claim",
+      "type": "above-android17-affirmative-claim",
+      "updated_at": "2026-08-21T02:00:43.709933+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
+      "close_note": "Added the official View.requestUnbufferedDispatch warning, touch DOWN/MOVE attached-View applicability, ACTION_UP sequence boundary, and resampling trade-off to the reader-facing chapter.",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260821-090405-deep-review-855a7839",
+      "created_at": "2026-08-21T09:16:26.492870+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260821-090405-deep-review-855a7839",
+      "details": "正文将 View.requestUnbufferedDispatch(event) 作为笔迹/绘图低延迟建议时，缺少 Android 17 View.java 官方注释中的 warning：该 API 不适合多数应用，随意请求不会改善多数 MotionEvent 流，还可能增加延迟、造成滚动抖动并失去系统重采样。",
+      "id": "AIW-3.2-P2-unbuffered-dispatch-warning",
+      "log_path": "logs/deep-review/2026-08-21-20260821-090405-deep-review-855a7839-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/core/java/android/view/View.java@android-17.0.0_r1#requestUnbufferedDispatch"
+      ],
+      "status": "fixed",
+      "summary": "无缓冲分发段落未保留官方 warning 边界",
+      "type": "source-boundary",
+      "updated_at": "2026-08-21T09:16:26.543409+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+      "close_note": "已在 3.2 补充按 listener 构造连接推导 Android 17 事件流顺序，并补齐本文使用的关键源码入口。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260821-124250-deep-review-d0114de0",
+      "created_at": "2026-08-21T12:48:29.910989+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260821-124250-deep-review-d0114de0",
+      "details": "3.2 已列出 Android 17 监听链，但缺少对 InputManager 反向构造 listener 连接的说明；读者只看文件头部流程注释时可能误判 InputFilter 与 PointerChoreographer/InputProcessor 的相对位置。已补充构造顺序说明，并把 InputProcessor、AnrTracker、InputEventReceiver 纳入 sources。",
+      "id": "finding-0868dfca298e",
+      "log_path": "logs/deep-review/2026-08-21-20260821-124250-deep-review-d0114de0-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/native/services/inputflinger/InputManager.cpp",
+        "frameworks/native/services/inputflinger/InputProcessor.cpp",
+        "frameworks/native/services/inputflinger/dispatcher/AnrTracker.cpp",
+        "frameworks/base/core/jni/android_view_InputEventReceiver.cpp"
+      ],
+      "status": "fixed",
+      "summary": "InputManager 监听链顺序需要补充构造代码边界",
+      "type": "source-boundary",
+      "updated_at": "2026-08-21T12:48:35.699437+08:00"
     }
   ],
   "schema_version": 1

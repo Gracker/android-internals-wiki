@@ -1,5 +1,5 @@
 {
-  "last_check": "2026-08-17T02:19:04.325399+08:00",
+  "last_check": "2026-08-21T02:00:43.709933+08:00",
   "check_id": "freshness-2026-07-17-02-00",
   "cron_id": "220c1be3-a8db-4dfe-982e-5e275cef4b54",
   "summary": {
@@ -132,9 +132,19 @@
     "part4-system/ch16-aosp/04-android17-kernel612-performance.md",
     "part4-system/ch16-aosp/09-android17-sdm-install-performance.md"
   ],
-  "last_run_at": "2026-08-17T02:19:04.325399+08:00",
+  "last_run_at": "2026-08-21T02:00:43.709933+08:00",
   "scanned": 80,
-  "risks": [],
+  "risks": [
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part5-app/ch25-power-size/10-performance-hint-adpf-power.md",
+      "target_path": "src/part5-app/ch25-power-size/10-performance-hint-adpf-power.md",
+      "severity": "high",
+      "rule_id": "above-android17-affirmative-claim",
+      "evidence": "> **版本限定**：源码锚点统一使用 `android-17.0.0_r1`。main/master（持续开发的主分支）或 Android 18/API 38 及以上的内容不在讨论范围内；公开 API 只核对到 Android 17/API 37。",
+      "reason": "affirmative higher-than-Android-17 out-of-scope claim",
+      "action": "标注超出 AIW 范围或移除正文结论"
+    }
+  ],
   "queued": 0,
   "runs": [
     {
@@ -623,8 +633,38 @@
       "findings_added": 0,
       "legacy_queue_migrated": 0,
       "queued": 0
+    },
+    {
+      "last_run_at": "2026-08-19T02:09:44.226760+08:00",
+      "scanned": 80,
+      "cursor_start": 320,
+      "cursor_next": 400,
+      "risks": [],
+      "findings_added": 0,
+      "legacy_queue_migrated": 0,
+      "queued": 0
+    },
+    {
+      "last_run_at": "2026-08-21T02:00:43.709933+08:00",
+      "scanned": 80,
+      "cursor_start": 400,
+      "cursor_next": 26,
+      "risks": [
+        {
+          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part5-app/ch25-power-size/10-performance-hint-adpf-power.md",
+          "target_path": "src/part5-app/ch25-power-size/10-performance-hint-adpf-power.md",
+          "severity": "high",
+          "rule_id": "above-android17-affirmative-claim",
+          "evidence": "> **版本限定**：源码锚点统一使用 `android-17.0.0_r1`。main/master（持续开发的主分支）或 Android 18/API 38 及以上的内容不在讨论范围内；公开 API 只核对到 Android 17/API 37。",
+          "reason": "affirmative higher-than-Android-17 out-of-scope claim",
+          "action": "标注超出 AIW 范围或移除正文结论"
+        }
+      ],
+      "findings_added": 1,
+      "legacy_queue_migrated": 0,
+      "queued": 0
     }
   ],
-  "findings_added": 0,
+  "findings_added": 1,
   "legacy_queue_migrated": 0
 }

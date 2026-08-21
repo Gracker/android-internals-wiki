@@ -3676,6 +3676,345 @@
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://pixelcluster.dev/VRAM-Overcommit/",
+      "title": "[RSS订阅] Gracker 的 RSS 订阅 · 今日精选（gracker-rss 来源）",
+      "summary": "Natalie Vock 把 SteamOS 一年多的 VRAM overcommit 优化合并到 Linux 7.3 upstream。核心改动：(1) TTM 接 drm_exec 解决 abba deadlock（之前 -EDEADLCK 直接 evict 失败）；(2) dmem cgroup 保护避免 game 间互相踩 VRAM；(3) 把 VK_EXT_pageable_device_local_memory / D3D12 MakeResident / SetResidencyPriority 提示接进 amdgpu LRU 排序；(4) hard-throttle + soft-throttle 二阶段调度避免 ping-pong。实测：8GiB 显存跑 9GiB 游戏（Indiana Jones: TGC）frametime 19.6ms 可玩，超过 2GiB overcommit 后 frametime 抖动到 30ms+。D3D12 端 vkd3d-proton 已转发，Vulkan 端 idTech 还没观察到原生采用——这是 Android GPU driver（adreno/mali 共享 Linux kernel DRM 路径）值得追踪的同源改动。",
+      "chapter": "ch05",
+      "processed_at": "2026-08-19T06:20:44.395345+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-19-76748783-Flutter3.47首坑analysis_options连环回归.md",
+      "title": "[技术文章] Flutter 3.47 首坑，analysis_options 问题连环回归Flutter 3.47 刚发布出现 #1",
+      "summary": "> 发布时间: 2026-08-18T00:55:37.000Z > 原文链接: https://juejin.cn/post/7674878323555385387 2026-08-18 305 阅读5分钟 Flutter House Flutter 3.47 刚发布出现 #191056 和 #191131 这两个卧龙凤雏的问题，刚好这个问题还和 Alex 在上海 Go...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-19T06:20:44.395345+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-19-76748811-Android系统启动机制二init.rc不是普通脚本.md",
+      "title": "[技术文章] Android 系统启动机制（二）：init.rc 不是普通脚本，service、action 和 property 怎样驱动启动？",
+      "summary": "> 发布时间: 2026-08-17T12:11:12.000Z > 原文链接: https://juejin.cn/post/7674881198007271459 2026-08-17 85 阅读11分钟 Android 16 系统源码与运行机制 看到下面这段配置时，很多人会自然地把它理解成 shell 脚本： on zygote-start start zygote...",
+      "chapter": "ch08",
+      "processed_at": "2026-08-19T06:20:44.395345+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-19-juejin-android.md",
+      "title": "[技术文章] 掘金 Android 日报 · 2026-08-19",
+      "summary": "抓取掘金 Android 分类最新流两页 40 条与热门推荐流 20 条交叉核对。上次运行（08-18 03:00）之后新发布的文章 1 篇（Flutter 3.47 首坑），另补上 08-17 晚发布、此前仅入选系列第一篇的 init.rc 深文第二篇；本轮对 7 篇候选做了正文级抓取，其中 Compose 1.12、ANR 定位、AppFunctions、Androi...",
+      "chapter": "ch09",
+      "processed_at": "2026-08-19T06:20:44.395345+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-18-evening-会话产品化-BotMode-手写loop-研究材料/references/01-cumora-readme.md",
+      "title": "[DeepResearch] Cumora",
+      "summary": "# Cumora > Where agent teams gather. [**cumora.ai**](https://cumora.ai) · [Web app](https://app.cumora.ai) · [Latest release](https://github.com/yetone/cumora-releases/releases/latest) Cumora is cross-platform team chat",
+      "chapter": "ch05",
+      "processed_at": "2026-08-19T06:20:44.395345+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-18-evening-会话产品化-BotMode-手写loop-研究材料/raw/cumora-coordination-part2.md",
+      "title": "[DeepResearch] cumora-coordination-part2",
+      "summary": "### 3b. AdaptivePacer — burst absorber for sustained throttling (daemon) `server/src/agents/computer/daemon.ts` `AdaptivePacer` (replaces the older fixed-interval `SpawnPacer`). Behavior: when any agent's engine call ret",
+      "chapter": "ch16",
+      "processed_at": "2026-08-19T06:20:44.395345+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-18-evening-会话产品化-BotMode-手写loop-研究材料/raw/cumora-readme.md",
+      "title": "[DeepResearch] Cumora",
+      "summary": "# Cumora > Where agent teams gather. [**cumora.ai**](https://cumora.ai) · [Web app](https://app.cumora.ai) · [Latest release](https://github.com/yetone/cumora-releases/releases/latest) Cumora is cross-platform team chat",
+      "chapter": "ch05",
+      "processed_at": "2026-08-19T06:20:44.395345+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-18-morning-Origin托管-404书链-AndroidMCP-研究材料/claim-ledger.md",
+      "title": "[DeepResearch] Claim Ledger 2026-08-18 morning",
+      "summary": "# Claim Ledger 2026-08-18 morning | id | claim | level | source | |----|-------|-------|--------| | C1 | Origin early beta live Aug 17 2026 on paid plans | official | cursor changelog + cursor_ai | | C2 | GitHub-synced r",
+      "chapter": "ch16",
+      "processed_at": "2026-08-19T06:20:44.395345+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-18-morning-Origin托管-404书链-AndroidMCP-研究材料/references/03-android-mcp-readme.md",
+      "title": "[DeepResearch] 03-android-mcp-readme",
+      "summary": "--- source: https://github.com/danielealbano/android-remote-control-mcp title: Android Remote Control MCP fetched: 2026-08-18 --- On-device MCP 57 tools. Bearer/OAuth. Default 127.0.0.1. Tunnels CF/ngrok. Per-tool disabl",
+      "chapter": "ch16",
+      "processed_at": "2026-08-19T06:20:44.395345+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-18-morning-Origin托管-404书链-AndroidMCP-研究材料/01-dump-origin.md",
+      "title": "[DeepResearch] Research Dump 01 · Cursor Origin",
+      "summary": "--- phase: 1 sub_question: Cursor Origin 代码托管层边界 claim_level_policy: official_release > changelog > secondary_blog --- # Research Dump 01 · Cursor Origin ## 研究问题 Agent 高频提交场景下，Origin 相对 GitHub 的产品边界是什么？哪些是 early beta 已交付",
+      "chapter": "ch05",
+      "processed_at": "2026-08-19T06:20:44.395345+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-18-morning-Origin托管-404书链-AndroidMCP-研究材料/03-dump-android-mcp.md",
+      "title": "[DeepResearch] Research Dump 03 · Android Remote Control MCP",
+      "summary": "--- phase: 1 sub_question: Android Remote Control MCP 控制面与安全边界 safety: 只做防御式接入评估，不写利用步骤 --- # Research Dump 03 · Android Remote Control MCP ## 研究问题 手机端 MCP computer-use 控制面与桌面 ADB 桥差在哪？接入前最小安全清单是什么？ ## 项目身份（一手 README） -",
+      "chapter": "ch16",
+      "processed_at": "2026-08-19T06:20:44.395345+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-18-morning-Origin托管-404书链-AndroidMCP-研究材料/raw/mcp_tools.md",
+      "title": "[DeepResearch] MCP Tools Reference",
+      "summary": "# MCP Tools Reference This document provides a comprehensive reference for all MCP tools available in the Android Remote Control MCP application. Each tool includes its schema, usage examples, and error handling informat",
+      "chapter": "ch16",
+      "processed_at": "2026-08-19T06:20:44.395345+08:00",
+      "action": "quarantined-misroute",
+      "score": 0,
+      "target_path": null,
+      "route_confidence": 31,
+      "route_terms": [
+        "tools",
+        "reference",
+        "document",
+        "for",
+        "all",
+        "available",
+        "control",
+        "tool"
+      ],
+      "route_status": "quarantined-misroute-by-apply",
+      "quarantined_at": "2026-08-19T07:20:33+08:00",
+      "quarantined_run_id": "20260819-071556-61aefd06",
+      "quarantine_reason": "Body-apply fail-closed: material is an Android Remote Control MCP tool reference (JSON-RPC /mcp transport, bearer-token authentication, tool naming, screen/system/touch/node/text/file/app/camera/intent/notification/location/sharing tool schemas). The selected target chapter is Android frame-rate monitoring and online jank governance. Route terms are generic documentation/tool words and provide no frame monitoring, JankStats, FrameMetrics, Choreographer, SurfaceFlinger, Perfetto FrameTimeline, or Android 17 rendering-pipeline evidence. No chapter body change made; no Android platform claim incorporated.",
+      "previous_action": "indexed-only-chapter-freeze",
+      "previous_route_status": "existing-chapter-routed",
+      "previous_target_path": "src/part5-app/ch22-rendering-practice/08-frame-monitoring.md",
+      "routing_finding_id": "AIW-BODY-APPLY-20260819-P1-misroute-mcp-tools-22-8"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-18-morning-Origin托管-404书链-AndroidMCP-研究材料/raw/android_mcp_readme.md",
+      "title": "[DeepResearch] Android Remote Control MCP",
+      "summary": "# Android Remote Control MCP [![CI](https://github.com/danielealbano/android-remote-control-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/danielealbano/android-remote-control-mcp/actions/workflows/ci.yml) [",
+      "chapter": "ch16",
+      "processed_at": "2026-08-19T06:20:44.395345+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-20-76333281-为什么你写的Compose性能不好.md",
+      "title": "[技术文章] 为什么你写的 Compose 性能不好？在 Compose 中，每当组合函数读取的状态发生变化时，该函数就有可能被重新执",
+      "summary": "> 发布时间: 2026-04-28T01:01:22.000Z > 原文链接: https://juejin.cn/post/7633328194579300362 2026-04-28 1,655 阅读17分钟 各位 Compose 刘德华，早上好！ 去年我曾写过一篇关于 Compose 性能优化的文章，那篇文章更多是从宏观的重组范围、具体场景（如 LazyColum...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-20T06:20:33.497269+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-20-76366645-Flutter屏幕适配底层玩法.md",
+      "title": "[技术文章] 彻底告别 .w/.h/.sp！Flutter 屏幕适配的底层玩法，一次接入全局生效你是不是也被这些坑折磨过？ 做 F",
+      "summary": "> 发布时间: 2026-05-07T01:29:18.000Z > 原文链接: https://juejin.cn/post/7636664584355250222 用户9542157333485 2026-05-07 1,344 阅读7分钟 做 Flutter 的同学，屏幕适配这道坎几乎人人都绕不过去。 设计师只给一套 375×667 的稿子，产品说\"要和设计稿一模一...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-20T06:20:33.497269+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-20-76444766-Android嵌入式照片选择器.md",
+      "title": "[技术文章] 学吧！Android 全新的嵌入式照片选择器AndroidX 推出了全新的嵌入式照片选择器（EmbeddedPhotoP",
+      "summary": "> 发布时间: 2026-05-28T00:39:32.000Z > 原文链接: https://juejin.cn/post/7644476634998538249 2026-05-28 1,302 阅读5分钟 2022 年，Android 团队推出了照片选择器，让用户能更隐私地分享媒体文件。用户可以通过可浏览的界面按日期从新到旧查看媒体库，并且只授予应用访问所选文件的...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-20T06:20:33.497269+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-20-76500740-Repository暴露suspendfun.md",
+      "title": "[技术文章] 现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch",
+      "summary": "> 发布时间: 2026-06-11T22:41:13.000Z > 原文链接: https://juejin.cn/post/7650074080125599790 2026-06-12 3,053 阅读12分钟 写这篇文章，其实是因为最近看到有些公众号在介绍 Kotlin 协程时，都推荐在 Repository 中这样写： fun load() { repositor...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-20T06:20:33.497269+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-19-evening-origin-git-wal-aa-search/02-dump-aa-search-index.md",
+      "title": "[DeepResearch] Research Dump · AA Search Index（晚间旁支）",
+      "summary": "--- phase: 1 sub_question: AA Search Index method and launch numbers claim_level: market_view sources: - https://x.com/ArtificialAnlys/status/2089755262915936661 site_pages: multiple guessed paths 404; tweet is source of",
+      "chapter": "ch16",
+      "processed_at": "2026-08-20T06:20:33.497269+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-19-morning-training-gate-origin-aa-research/02-dump-origin-git-wal.md",
+      "title": "[DeepResearch] Research Dump · Origin Git 存储",
+      "summary": "--- phase: 1 sub_question: Origin Continuity Git storage as database source: https://cursor.com/blog/git-at-any-scale author: Vicent Marti http: 200 fetched: 2026-08-19 --- # Research Dump · Origin Git 存储 ## 官方定位 - 2026-",
+      "chapter": "ch06",
+      "processed_at": "2026-08-20T06:20:33.497269+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7638897090145075246",
+      "title": "[掘金Android] 为什么 Android 不用接口做 Activity 通信？",
+      "summary": "接口回调是共享对象引用模型，要求调用方存活；而 Activity 生杀权在 AMS，A 被杀后 B 的 callback 语义失效。Intent/Binder/Bundle 全是消息非引用，onActivityResult 是系统分发的生命周期事件。iOS 导航栈保证 B 在则 A 在所以 delegate 安全，跨进程场景同样放弃引用模型。",
+      "chapter": "ch16",
+      "processed_at": "2026-08-21T06:20:24.538854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7638297326452441134",
+      "title": "[掘金Android] Kotlin 官网为什么不再强调协程是轻量级线程了？",
+      "summary": "Kotlin 官方定义从 light-weight threads 改为 suspendable computation。协程底层是 Continuation 加状态机，suspend 即存状态后 return、按 label 恢复，无需线程栈。官方现强调结构化并发、协作式取消、suspend 语义与 Flow 生态，首要价值是异步可读性。",
+      "chapter": "ch16",
+      "processed_at": "2026-08-21T06:20:24.538854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7634068771351805979",
+      "title": "[掘金Android] 我想让同事知道我很懂 Compose 怎么办？",
+      "summary": "三个重组优化技巧：快速变化状态用 derivedStateOf 纯派生或 snapshotFlow 接管线；动画值/滚动偏移从组合阶段降级到布局阶段（offset lambda）与绘制阶段（graphicsLayer）读取，省掉重组开销；传 lambda 代替传值把状态读取下放到子组件缩小重组作用域。低频状态仍推荐直接传值。",
+      "chapter": "ch16",
+      "processed_at": "2026-08-21T06:20:24.538854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7646958530656387082",
+      "title": "[掘金Android] AI 写 Android 代码老翻车？我把移动端的 Harness 系统开源了",
+      "summary": "移动端 AI 编程约束几乎全是项目特定的（ARouter/Navigation 选型、BaseResponse 字段名、Adapter 基类），不在模型训练数据里。开源 CLI ai_scaffold 两阶段：扫特征文件生成规则骨架，AI 读源码填充定制内容。引 Terminal Bench 数据：模型不动只加 Harness 从 52.8% 到 66.5%。",
+      "chapter": "ch16",
+      "processed_at": "2026-08-21T06:20:24.538854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-21-76336249-AndroidApp最强APM来袭.md",
+      "title": "[技术文章] Android App 最强APM来袭 简介 Android APM 是一个全维度 Android 性能监控框架，当",
+      "summary": "> 发布时间: 2026-04-28T07:14:20.000Z > 原文链接: https://juejin.cn/post/7633624917233319936 2026-04-28 3,282 阅读7分钟 说明：花了4个小时用AI(GLM5.1)写的，后续用codex优化了，整体达到或者超越主流水平 github.com/XZQ/Android… [](https...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-21T06:20:24.538854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-21-76340687-我想让同事知道我很懂Compose怎么办.md",
+      "title": "[技术文章] 我想让同事知道我很懂 Compose 怎么办？我的好同事彭于晏读完我前面几篇关于 Compose 的文章后，准备在组内好",
+      "summary": "> 发布时间: 2026-04-30T01:01:40.000Z > 原文链接: https://juejin.cn/post/7634068771351805979 2026-04-30 1,761 阅读6分钟 前几天，我的好同事彭于晏读完我前面几篇关于 Compose 的文章后，准备在组内好好推广一下，做一次分享（毕竟也有 KPI）。 他问了我一个很真实的问题：有没有...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-21T06:20:24.538854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-21-76370364-Tauri+Vue3写的ADB桌面工具.md",
+      "title": "[技术文章] 🔥🔥🔥 我用AI基于 Tauri + Vue 3 写了个 ADB 桌面工具，把命令行的脏活全干了我用AI基于 Ta",
+      "summary": "> 发布时间: 2026-05-07T11:13:58.000Z > 原文链接: https://juejin.cn/post/7637036421360074767 2026-05-07 1,182 阅读6分钟 GitHub 仓库：github.com/jaaksi/adbt… （欢迎 Star ⭐） 如果你是 Android 开发者，下面这些命令你一定不陌生： adb...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-21T06:20:24.538854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-21-76382973-Kotlin官网为什么不再强调协程是轻量级线程.md",
+      "title": "[技术文章] Kotlin 官网为什么不再强调“协程是轻量级线程”了？一、早期的说法：协程 = 轻量级线程 Kotlin 1.1 刚推",
+      "summary": "> 发布时间: 2026-05-10T23:53:40.000Z > 原文链接: https://juejin.cn/post/7638297326452441134 2026-05-11 5,132 阅读3分钟 > **你还在说\"协程是轻量级线程\"吗？Kotlin 官方已经不这么定义了。** Kotlin 1.1 刚推出协程时，官方文档里直接写着： > \"Corouti...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-21T06:20:24.538854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-21-76388970-为什么Android不用接口做Activity通信.md",
+      "title": "[技术文章] 为什么 Android 不用接口做 Activity 通信？一、一个 iOS 开发者，把我问住了 上周，一个刚从 iO",
+      "summary": "> 发布时间: 2026-05-13T00:03:47.000Z > 原文链接: https://juejin.cn/post/7638897090145075246 2026-05-13 5,056 阅读4分钟 上周，一个刚从 iOS 转过来的同事问我： > “Android 为啥不喜欢用接口回调传结果？ iOS 那边 delegate、closure 不就挺好吗？”...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-21T06:20:24.538854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-21-76396188-面了50位Kotlin候选人这36个语法坑.md",
+      "title": "[技术文章] 13. Android 面了50位Kotlin候选人，这36个语法坑90%的人答不全Q1：Kotlin 中 var 和",
+      "summary": "> 发布时间: 2026-05-15T00:30:04.000Z > 原文链接: https://juejin.cn/post/7639618879435194368 2026-05-15 2,466 阅读4分钟 1. var：**可变变量**，生成getter+setter，对应Java普通成员变量 2. val：**只读变量**（并非不可变），仅生成getter，无s...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-21T06:20:24.538854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-21-76469585-AI写Android代码老翻车我把移动端Harness系统开源了.md",
+      "title": "[技术文章] AI 写 Android 代码老翻车？我把移动端的 Harness 系统开源了AI 写 Android 代码老翻车？我把",
+      "summary": "> 发布时间: 2026-06-04T04:52:40.000Z > 原文链接: https://juejin.cn/post/7646958530656387082 2026-06-04 1,672 阅读8分钟 AICoding的探索之路 Harness Engineering · 移动端 AI 编程 · 开源工具 AI 帮我写的第一个 RecyclerView Ada...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-21T06:20:24.538854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Dean and Ghemawat's Performance Hints (2025)_ Deep Reading, Methodology Lineage, and Android Adaptation.md",
+      "title": "[DeepResearch] 精读与解读：Jeff Dean & Sanjay Ghemawat《Performance Hints》(2025) + 性能工程方法论谱系与 Android 落地",
+      "summary": "# 精读与解读：Jeff Dean & Sanjay Ghemawat《Performance Hints》(2025) + 性能工程方法论谱系与 Android 落地 > 一手来源：Jeffrey Dean & Sanjay Ghemawat, *Performance Hints*, <https://abseil.io/fast/hints.html（\"Original> version: 2023/07/27, last upd",
+      "chapter": "ch16",
+      "processed_at": "2026-08-21T06:20:24.538854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-20-morning-GLM53-posttrain-Ornith-ManagedAgents/01-dump-glm53.md",
+      "title": "[DeepResearch] Dump A GLM-5.3",
+      "summary": "--- phase: 1 sub: glm53-posttrain fetched: 2026-08-20T01:08:23Z --- # Dump A GLM-5.3 ## jietang 2089941544581403107 likes~4508 - Parameter count only meaningful with data, where compute is spent, who runs the model. - Mo",
+      "chapter": "ch16",
+      "processed_at": "2026-08-21T06:20:24.538854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "schema_version": "2.1",

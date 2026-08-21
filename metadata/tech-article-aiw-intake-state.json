@@ -607,6 +607,27 @@
       "status": "appended",
       "title": "可视化性能关键依赖链"
     },
+    "source/gracker-rss/2026-08-20-marcus-openai-unraveling-BREAKING- OpenAI's u.md": {
+      "last_seen": "2026-08-20T05:25:24.229229+08:00",
+      "mtime": 1787166224.3864007,
+      "sha256": "6985588717fc48692adb1408bf31532f5506ad782b55123559ea4d5cb0a23e3e",
+      "size": 10996,
+      "status": "skipped-low-score"
+    },
+    "source/gracker-rss/2026-08-20-pluralistic-ordinariness-of-evil-Pluralistic- The ord.md": {
+      "last_seen": "2026-08-20T05:25:24.229229+08:00",
+      "mtime": 1787166224.3861337,
+      "sha256": "a10d16738c15cfd68cf8d863aa01e59fe9d371756389ce96381d78c7d7798e99",
+      "size": 27698,
+      "status": "skipped-low-score"
+    },
+    "source/gracker-rss/2026-08-20-ronacher-what-is-reasoning-What Is Reasoning.md": {
+      "last_seen": "2026-08-20T05:25:24.229229+08:00",
+      "mtime": 1787166224.3866208,
+      "sha256": "de06116e43d48b14206abf645871f8c86172507cef7044d8b3039e84425a115c",
+      "size": 4757,
+      "status": "skipped-low-score"
+    },
     "source/hacker-news-rss/2026-08-14-andros-html-over-websockets.md": {
       "chapter": "待分类",
       "entry_id": "a2ca4853b47ae8b4",
@@ -882,6 +903,84 @@
       "mtime": 1786993419.0582528,
       "sha256": "300f4407020c620348efad47a778045b317c01d7adf7574fbc0976d0fd486ba7",
       "size": 6042,
+      "status": "skipped-low-score"
+    },
+    "source/hacker-news-rss/2026-08-19-aidr-ai-didnt-read.md": {
+      "last_seen": "2026-08-19T05:25:35.051314+08:00",
+      "mtime": 1787079938.154266,
+      "sha256": "dbadc6677e459c42ff210d64aa81a3382adc312c4d9e73ab5dd3d58cbc1d7be0",
+      "size": 6365,
+      "status": "skipped-low-score"
+    },
+    "source/hacker-news-rss/2026-08-19-bluesky-logo-screenshot-trick.md": {
+      "last_seen": "2026-08-19T05:25:35.051314+08:00",
+      "mtime": 1787079938.1550553,
+      "sha256": "06e80b480dc00a6cb720187e1ea9a8eda5e587b99cefab4daadce08e40a52990",
+      "size": 3864,
+      "status": "skipped-low-score"
+    },
+    "source/hacker-news-rss/2026-08-19-google-buys-spirit-airline-data.md": {
+      "chapter": "待分类",
+      "entry_id": "e35a61d7e96f843b",
+      "last_appended": "2026-08-19T05:25:35.051314+08:00",
+      "last_seen": "2026-08-19T05:25:35.051314+08:00",
+      "mtime": 1787079938.155649,
+      "score": 7,
+      "sha256": "d6662827b6a2e1cf7c2a93c96c5773b87cf5d62aa7505ec101d992e9ef3439a4",
+      "size": 31643,
+      "status": "appended",
+      "title": "Google buys crashed airline Spirit’s data at auction, because AI"
+    },
+    "source/hacker-news-rss/2026-08-19-hanover-institute-fake-think-tank.md": {
+      "chapter": "待分类",
+      "entry_id": "c0a9268e384b1445",
+      "last_appended": "2026-08-19T05:25:35.051314+08:00",
+      "last_seen": "2026-08-19T05:25:35.051314+08:00",
+      "mtime": 1787079938.1545029,
+      "score": 8,
+      "sha256": "8e346fb326e47c0d000a0678989e5f16d202ef7e0ba5e6ea073daf19da83ebc3",
+      "size": 8528,
+      "status": "appended",
+      "title": "Israel creates fake think tank in likely attempt to dupe AI chatbots"
+    },
+    "source/hacker-news-rss/2026-08-19-linux-7-3-vram-overcommit.md": {
+      "chapter": "待分类",
+      "entry_id": "a220b47d4527d7e0",
+      "last_appended": "2026-08-19T05:25:35.051314+08:00",
+      "last_seen": "2026-08-19T05:25:35.051314+08:00",
+      "mtime": 1787079938.1559918,
+      "score": 19,
+      "sha256": "a8c6bf88446c3615b0dc3c9bf1270921e8da2baa182df392198cda889086f9bf",
+      "size": 33649,
+      "status": "appended",
+      "title": "VRAM Management Part 2: Beyond the Limits of Physical VRAM"
+    },
+    "source/hacker-news-rss/2026-08-19-openrouter-gpt-5-6-sol-pricing.md": {
+      "last_seen": "2026-08-19T05:25:35.051314+08:00",
+      "mtime": 1787079938.155302,
+      "sha256": "60b37400ce1ecd35df81031650d597d27982cabe7ed554ddd24e8afa8b7d0234",
+      "size": 69908,
+      "status": "skipped-low-score"
+    },
+    "source/hacker-news-rss/2026-08-19-quake-shareware-cd-1996.md": {
+      "last_seen": "2026-08-19T05:25:35.051314+08:00",
+      "mtime": 1787079938.1558053,
+      "sha256": "8b8b20756d01f5abee4ed4e376a8429e3ef9ff7c9498b175fb68715eb88a865a",
+      "size": 16480,
+      "status": "skipped-low-score"
+    },
+    "source/hacker-news-rss/2026-08-19-seth-godin-amazon-tax.md": {
+      "last_seen": "2026-08-19T05:25:35.051314+08:00",
+      "mtime": 1787079938.1554682,
+      "sha256": "52bd939fdac04aaa201cbe9456346a8b01be263d56da40aeff21b3c39e87dff1",
+      "size": 4705,
+      "status": "skipped-low-score"
+    },
+    "source/hacker-news-rss/2026-08-19-yale-universal-health-coverage-study.md": {
+      "last_seen": "2026-08-19T05:25:35.051314+08:00",
+      "mtime": 1787079938.1548789,
+      "sha256": "673bb940ce7b1afe095568e1d0c1abc71f5e708c27e7ca42c982f370717cfe13",
+      "size": 6161,
       "status": "skipped-low-score"
     },
     "source/juejin-android/2026-07-04-76184335-你可能还不知道ComposePager有.md": {
@@ -2864,6 +2963,181 @@
       "status": "appended",
       "title": "掘金 Android 技术文章抓取 · 2026-08-18"
     },
+    "source/juejin-android/2026-08-19-76748783-Flutter3.47首坑analysis_options连环回归.md": {
+      "chapter": "待分类",
+      "entry_id": "5eac92dc74256176",
+      "last_appended": "2026-08-19T05:25:35.051314+08:00",
+      "last_seen": "2026-08-19T05:25:35.051314+08:00",
+      "mtime": 1787086562.8949137,
+      "score": 13,
+      "sha256": "4c001e15d45a82f5c9cb50369f8b467d786513f0236bc1f2d46d5a7528746a71",
+      "size": 8266,
+      "status": "appended",
+      "title": "Flutter 3.47 首坑，analysis_options 问题连环回归Flutter 3.47 刚发布出现 #1"
+    },
+    "source/juejin-android/2026-08-19-76748811-Android系统启动机制二init.rc不是普通脚本.md": {
+      "chapter": "ch08-responsiveness",
+      "entry_id": "cdbaab85c1c4a532",
+      "last_appended": "2026-08-19T05:25:35.051314+08:00",
+      "last_seen": "2026-08-19T05:25:35.051314+08:00",
+      "mtime": 1787086562.894517,
+      "score": 23,
+      "sha256": "3ea71664e7aaf670cc79d831bb523a90edec2848468b0f8db642dfdb7fc1fdc6",
+      "size": 21985,
+      "status": "appended",
+      "title": "Android 系统启动机制（二）：init.rc 不是普通脚本，service、action 和 property 怎样驱动启动？"
+    },
+    "source/juejin-android/2026-08-19-juejin-android.md": {
+      "chapter": "ch09-anr",
+      "entry_id": "d398a72bc07aaada",
+      "last_appended": "2026-08-19T05:25:35.051314+08:00",
+      "last_seen": "2026-08-19T05:25:35.051314+08:00",
+      "mtime": 1787086562.8971298,
+      "score": 20,
+      "sha256": "3df6c9f3fa6d3460683130d45d860f25ea6aec762ad637a22d5e01bb18d6d646",
+      "size": 3606,
+      "status": "appended",
+      "title": "掘金 Android 日报 · 2026-08-19"
+    },
+    "source/juejin-android/2026-08-20-76333281-为什么你写的Compose性能不好.md": {
+      "chapter": "待分类",
+      "entry_id": "c321d74b5b56a1a2",
+      "last_appended": "2026-08-20T05:25:24.229229+08:00",
+      "last_seen": "2026-08-20T05:25:24.229229+08:00",
+      "mtime": 1787172511.4676735,
+      "score": 16,
+      "sha256": "c39fd137071bed049c2943227823b3ad29b787f4a63f70ccba5e548dc2104fcc",
+      "size": 24239,
+      "status": "appended",
+      "title": "为什么你写的 Compose 性能不好？在 Compose 中，每当组合函数读取的状态发生变化时，该函数就有可能被重新执"
+    },
+    "source/juejin-android/2026-08-20-76366645-Flutter屏幕适配底层玩法.md": {
+      "chapter": "待分类",
+      "entry_id": "c5ba8f5a6eed6f3e",
+      "last_appended": "2026-08-20T05:25:24.229229+08:00",
+      "last_seen": "2026-08-20T05:25:24.229229+08:00",
+      "mtime": 1787172511.46903,
+      "score": 13,
+      "sha256": "a8c797d864e991a5849b75cea48452fedc556212f6864e114108bce7d678ea4f",
+      "size": 13643,
+      "status": "appended",
+      "title": "彻底告别 .w/.h/.sp！Flutter 屏幕适配的底层玩法，一次接入全局生效你是不是也被这些坑折磨过？ 做 F"
+    },
+    "source/juejin-android/2026-08-20-76444766-Android嵌入式照片选择器.md": {
+      "chapter": "待分类",
+      "entry_id": "6f79cbe774beb45a",
+      "last_appended": "2026-08-20T05:25:24.229229+08:00",
+      "last_seen": "2026-08-20T05:25:24.229229+08:00",
+      "mtime": 1787172511.46859,
+      "score": 9,
+      "sha256": "7519eb58af0d4afd37303d34dfb3414d01edaa6bc5550e4c39edf5581d8d28f8",
+      "size": 13512,
+      "status": "appended",
+      "title": "学吧！Android 全新的嵌入式照片选择器AndroidX 推出了全新的嵌入式照片选择器（EmbeddedPhotoP"
+    },
+    "source/juejin-android/2026-08-20-76500740-Repository暴露suspendfun.md": {
+      "chapter": "待分类",
+      "entry_id": "6a566143391bcf0f",
+      "last_appended": "2026-08-20T05:25:24.229229+08:00",
+      "last_seen": "2026-08-20T05:25:24.229229+08:00",
+      "mtime": 1787172511.4681215,
+      "score": 11,
+      "sha256": "8b5cc8ced24372f05fe5d60529d49c0174740bb539be64963ce8eb51be7cf97e",
+      "size": 18616,
+      "status": "appended",
+      "title": "现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch"
+    },
+    "source/juejin-android/2026-08-21-76336249-AndroidApp最强APM来袭.md": {
+      "chapter": "待分类",
+      "entry_id": "0d371fca5c53e2b7",
+      "last_appended": "2026-08-21T05:25:16.796174+08:00",
+      "last_seen": "2026-08-21T05:25:16.796174+08:00",
+      "mtime": 1787257047.001276,
+      "score": 17,
+      "sha256": "0c507fffd8a0cc1bc81971a3e0efcde323f7b013e847bf1f72b9ed2d372edd30",
+      "size": 25706,
+      "status": "appended",
+      "title": "Android App 最强APM来袭 简介 Android APM 是一个全维度 Android 性能监控框架，当"
+    },
+    "source/juejin-android/2026-08-21-76340687-我想让同事知道我很懂Compose怎么办.md": {
+      "chapter": "待分类",
+      "entry_id": "26e9f38c425c3a2c",
+      "last_appended": "2026-08-21T05:25:16.796174+08:00",
+      "last_seen": "2026-08-21T05:25:16.796174+08:00",
+      "mtime": 1787257044.4312801,
+      "score": 14,
+      "sha256": "866ff92db5119ccab352a6154d678551b1b30e4974cb6d07a451a72ca70efa42",
+      "size": 11075,
+      "status": "appended",
+      "title": "我想让同事知道我很懂 Compose 怎么办？我的好同事彭于晏读完我前面几篇关于 Compose 的文章后，准备在组内好"
+    },
+    "source/juejin-android/2026-08-21-76370364-Tauri+Vue3写的ADB桌面工具.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "4bcdc5737225f29f",
+      "last_appended": "2026-08-21T05:25:16.796174+08:00",
+      "last_seen": "2026-08-21T05:25:16.796174+08:00",
+      "mtime": 1787257049.3080258,
+      "score": 9,
+      "sha256": "58229e92a2e478b0b3935d037464bfc4ed017ef395703832b3b477a6d20698a4",
+      "size": 10872,
+      "status": "appended",
+      "title": "🔥🔥🔥 我用AI基于 Tauri + Vue 3 写了个 ADB 桌面工具，把命令行的脏活全干了我用AI基于 Ta"
+    },
+    "source/juejin-android/2026-08-21-76382973-Kotlin官网为什么不再强调协程是轻量级线程.md": {
+      "chapter": "待分类",
+      "entry_id": "036dc4e06d3c1878",
+      "last_appended": "2026-08-21T05:25:16.796174+08:00",
+      "last_seen": "2026-08-21T05:25:16.796174+08:00",
+      "mtime": 1787257031.5628865,
+      "score": 8,
+      "sha256": "bacbc426713670c9d58b688244e38c740ca7a6189a3914032907822523014855",
+      "size": 6549,
+      "status": "appended",
+      "title": "Kotlin 官网为什么不再强调“协程是轻量级线程”了？一、早期的说法：协程 = 轻量级线程 Kotlin 1.1 刚推"
+    },
+    "source/juejin-android/2026-08-21-76388970-为什么Android不用接口做Activity通信.md": {
+      "chapter": "待分类",
+      "entry_id": "7fb8b801e03e993b",
+      "last_appended": "2026-08-21T05:25:16.796174+08:00",
+      "last_seen": "2026-08-21T05:25:16.796174+08:00",
+      "mtime": 1787257029.0865066,
+      "score": 13,
+      "sha256": "1b2e77875047708c4be7bbf057c5804d27b17793f8d1533347ce764dd139813f",
+      "size": 6400,
+      "status": "appended",
+      "title": "为什么 Android 不用接口做 Activity 通信？一、一个 iOS 开发者，把我问住了 上周，一个刚从 iO"
+    },
+    "source/juejin-android/2026-08-21-76396188-面了50位Kotlin候选人这36个语法坑.md": {
+      "chapter": "待分类",
+      "entry_id": "64414d021526d783",
+      "last_appended": "2026-08-21T05:25:16.796174+08:00",
+      "last_seen": "2026-08-21T05:25:16.796174+08:00",
+      "mtime": 1787257034.5593374,
+      "score": 14,
+      "sha256": "48248ff702354592fd38a995e74bc0491d0f13ee4d45234c117a50d605b158d3",
+      "size": 14281,
+      "status": "appended",
+      "title": "13. Android 面了50位Kotlin候选人，这36个语法坑90%的人答不全Q1：Kotlin 中 var 和"
+    },
+    "source/juejin-android/2026-08-21-76469585-AI写Android代码老翻车我把移动端Harness系统开源了.md": {
+      "chapter": "ch07-smoothness",
+      "entry_id": "6ed26f77c06d5a83",
+      "last_appended": "2026-08-21T05:25:16.796174+08:00",
+      "last_seen": "2026-08-21T05:25:16.796174+08:00",
+      "mtime": 1787257039.3867404,
+      "score": 14,
+      "sha256": "784d3cd7ca4aa043d7e9381e56753a9da36bdbb8c1289bd2b2d5d4941c9efc14",
+      "size": 10861,
+      "status": "appended",
+      "title": "AI 写 Android 代码老翻车？我把移动端的 Harness 系统开源了AI 写 Android 代码老翻车？我把"
+    },
+    "source/juejin-android/2026-08-21-76514375-一份AGENTS.md让AndroidAI代码规范率飙升.md": {
+      "last_seen": "2026-08-21T05:25:16.796174+08:00",
+      "mtime": 1787257041.7844381,
+      "sha256": "ca39d22e93df0ae20051947254c3caacb0333fdd06ce0e2c7f603f9d62bbb74b",
+      "size": 10959,
+      "status": "skipped-low-score"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -4671,24 +4945,24 @@
     }
   },
   "last_report": {
-    "appended": 13,
-    "considered": 24,
-    "cutoff": "2026-08-17T05:20:49.265237+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-18.md",
+    "appended": 7,
+    "considered": 8,
+    "cutoff": "2026-08-20T05:20:24.229229+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-21.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1847,
+    "scanned": 1874,
     "skipped": {
       "existing_link": 0,
-      "low_score": 11,
+      "low_score": 1,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 391
+      "unchanged": 434
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-08-18T05:25:43.115596+08:00",
+  "last_run_at": "2026-08-21T05:25:16.796174+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
