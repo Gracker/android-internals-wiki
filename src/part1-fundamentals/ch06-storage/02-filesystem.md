@@ -4,9 +4,9 @@ title: 文件系统
 chapter: '6.2'
 section: '6.2'
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-04-23'
-last_verified_against: AOSP EROFS docs + source.android 16KB page size docs + kernel/common android15-6.6 ext4 journal / f2fs segment,gc,uapi/linux/f2fs.h,include/linux/f2fs_fs.h + developer.android.com
-confidence: medium
+last_verified: '2026-08-19'
+last_verified_against: AOSP android-17.0.0_r1 external/sqlite batch atomic write anchors + Android Common Kernel android17-6.18-2026-06_r6 ext4/F2FS/EROFS/GKI anchors + source.android EROFS/16KB page size/Virtual A/B docs + Android Developers SharedPreferences docs + Linux kernel ext4/F2FS/EROFS/VFS docs
+confidence: medium-high
 sources:
 - type: blog
   path: Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md
@@ -18,15 +18,37 @@ sources:
   path: source.android.com/docs/core/storage
 - type: official
   path: developer.android.com/training/data-storage
+- type: official
+  path: android.googlesource.com/platform/external/sqlite/+/refs/tags/android-17.0.0_r1/
+- type: official
+  path: android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/
+- type: official
+  path: source.android.com/docs/core/architecture/kernel/erofs
+- type: official
+  path: source.android.com/docs/core/architecture/16kb-page-size/16kb
+- type: official
+  path: source.android.com/docs/core/ota/virtual_ab
+- type: official
+  path: developer.android.com/reference/android/content/SharedPreferences.Editor
+- type: official
+  path: www.kernel.org/doc/html/latest/filesystems/f2fs.html
+- type: official
+  path: www.kernel.org/doc/html/latest/filesystems/ext4/index.html
+- type: official
+  path: www.kernel.org/doc/html/latest/filesystems/erofs.html
+- type: official
+  path: www.kernel.org/doc/html/latest/filesystems/vfs.html
 tags:
 - linux
 - android
 - research
-status: finalized
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: "reviewed"
+status: ready-for-review
+pipeline_stage: ready-for-review
+task6_state: pending-review
+task9_state: pending-review
 task2b_state: "fixed"
+last_rework_at: '2026-08-19T17:45:17+08:00'
+last_rework_run_id: 20260819-173532-rework-557ad9a6
 ---
 
 # 6.2 文件系统
@@ -195,7 +217,7 @@ F2FS 和 ext4 都可以承载 Android 所需的配额、大小写无关目录与
 
 EROFS（Enhanced Read-Only File System）没有运行时写入、journal 和空闲块分配路径，适合 `system`、`vendor`、`product`、`system_ext` 等在构建期生成、启动后只读的镜像。`/data` 需要创建和修改文件，因此不能使用 EROFS。
 
-AOSP 的 EROFS 文档给出了 BoardConfig、fstab、压缩和 Virtual A/B 配置。文档中的示例允许为 `/system` 同时保留 EROFS 与只读 ext4 的 fstab 条目，以便测试 ext4 GSI（Generic System Image，通用系统镜像）。这说明 Android 为两者提供了完整支持，具体分区采用哪一种格式仍由产品配置决定。
+AOSP 的 EROFS 文档给出了 BoardConfig、fstab、压缩和 Virtual A/B 配置。文档中的示例允许为 `/system` 同时保留 EROFS 与只读 ext4 的 fstab 条目，以便测试 ext4 GSI（Generic System Image，通用系统镜像）。这类配置表明 Android 为两者提供了完整支持，具体分区采用哪一种格式仍由产品配置决定。
 
 EROFS 的核心能力包括：
 
