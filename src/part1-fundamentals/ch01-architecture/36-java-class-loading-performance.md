@@ -2,10 +2,11 @@
 title: "Android Java 类加载链路与启动期类加载性能"
 chapter: "1.36"
 section: "1.36"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-07-25"
-last_verified_against: "AOSP android-17.0.0_r1"
+last_verified: "2026-08-19"
+last_source_verified_at: "2026-08-19"
+last_verified_against: "AOSP android-17.0.0_r1 / Android Developers Baseline Profiles docs last updated 2026-05-19"
 confidence: high
 sources:
   - type: aosp
@@ -19,7 +20,11 @@ sources:
   - type: aosp
     path: "libcore/ojluni/src/main/java/java/lang/ClassLoader.java"
   - type: aosp
+    path: "libcore/ojluni/src/main/java/java/lang/Class.java"
+  - type: aosp
     path: "art/runtime/class_linker.cc"
+  - type: aosp
+    path: "art/runtime/class_loader_utils.h"
   - type: aosp
     path: "art/runtime/class_status.h"
   - type: aosp
@@ -28,6 +33,8 @@ sources:
     path: "art/runtime/oat/oat_file.cc"
   - type: aosp
     path: "art/libdexfile/dex/type_lookup_table.h"
+  - type: aosp
+    path: "art/libdexfile/dex/dex_file.cc"
   - type: aosp
     path: "art/runtime/verifier/class_verifier.cc"
   - type: aosp
@@ -46,6 +53,12 @@ sources:
     path: "https://developer.android.com/topic/performance/baselineprofiles/difference-baseline-startup"
 tags: [classloader, class-loading, dexpathlist, startup, verification, art]
 related_chapters: ["1.7", "1.9", "1.11", "1.22", "8.2", "21.1", "21.4"]
+pipeline_stage: ready-to-publish
+task2b_state: fixed
+task6_state: reviewed
+task9_state: reviewed
+last_review_finalize_at: "2026-08-19T12:21:55+08:00"
+last_review_finalize_run_id: "20260819-122155-d78393c0"
 ---
 
 # 1.36 Android Java 类加载链路与启动期类加载性能
@@ -88,13 +101,13 @@ ClassLoader.loadClass(name, resolve)
 
 ### API 37 的 ART 快速路径
 
-ART 自己解析类型引用时，不一定重新递归调用上述 Java 方法。`ClassLinker::FindClass()` 会识别以下标准加载器及其继承关系：
+ART 自己解析类型引用时，不一定重新递归调用上述 Java 方法。`ClassLinker::FindClass()` 会先看已加载类表；未命中时，只对下列标准加载器的精确类型以及由这些标准加载器组成的 parent 链使用快速路径：
 
 - `PathClassLoader` / `DexClassLoader`
 - `InMemoryDexClassLoader`
 - `DelegateLastClassLoader`
 
-对可识别的链，`FindClassInBaseDexClassLoader()` 在 ART 原生层按相同策略查找，减少 Java 与原生层之间的多次调用切换。遇到自定义且无法识别的 `ClassLoader` 时，ART 才需要回到该加载器定义的 Java 行为。原生快速路径仍遵循 Java 侧对应的委托顺序。
+对可识别的链，`FindClassInBaseDexClassLoader()` 在 ART 原生层按对应委托顺序查找，减少 Java 与原生层之间的多次调用切换。API 37 的识别谓词比较的是这些 well-known class 的精确类型；自定义 `ClassLoader`，以及即使继承自标准加载器但不等于这些精确类型的加载器，都可能让 ART 回到该加载器定义的 Java `loadClass()` 行为。原生快速路径仍遵循 Java 侧对应的委托顺序。
 
 ### `DelegateLastClassLoader` 的准确顺序
 
@@ -132,7 +145,7 @@ ART 自己解析类型引用时，不一定重新递归调用上述 Java 方法�
 
 Startup Profile 是构建期输入。D8/R8 用它调整 DEX 布局，优先把启动类和方法放入主 `classes.dex`；空间不足时会放到后续 DEX。Baseline Profile 则随 APK/AAB 提供给 ART，用于设备侧的 Profile 引导编译（profile-guided compilation）：ART 会优先处理 Profile 覆盖的类和方法。两者可以来自同一套生成流程，但作用阶段不同。
 
-不要用“首 DEX 命中率必须达到某个百分比”代替测量。可在 Android Studio 的 APK Analyzer 中检查 DEX 分布；AGP 8.8 及以上还可检查 AAB 内 R8 元数据的 `dexFiles[].startup` 标记。
+不要用“首 DEX 命中率必须达到某个百分比”代替测量。可在 Android Studio 的 APK Analyzer 或同等解包工具中检查 DEX 分布；如果构建链路还输出 R8/Startup Profile 元数据，也应把它当成布局辅助证据，并最终回到 release 产物和启动 trace 验证。
 
 ## `ClassLinker::DefineClass()` 做了什么
 
