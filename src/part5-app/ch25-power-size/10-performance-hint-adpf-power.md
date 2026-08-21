@@ -1,8 +1,8 @@
 ---
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-08-16"
-last_source_verified_at: "2026-08-16"
-last_verified_against: "Android Developers API reference and ADPF/NDK docs retrieved 2026-08-16 + AOSP android-17.0.0_r1（PerformanceHintManager/HintManagerService/PowerStatsService/StatsPullAtomCallbackImpl/IntervalRandomNoiseGenerator/PowerStatsDataStorage/PowerStatsLogger/IPowerStats.aidl/Power HAL AIDL）"
+last_verified: "2026-08-20"
+last_source_verified_at: "2026-08-20"
+last_verified_against: "Android Developers API reference and ADPF/NDK docs retrieved 2026-08-20 + AOSP android-17.0.0_r1（PerformanceHintManager/frameworks/native performance_hint.h/HintManagerService/PowerStatsService/StatsPullAtomCallbackImpl/IntervalRandomNoiseGenerator/PowerStatsDataStorage/PowerStatsLogger/IPowerStats.aidl/Power HAL AIDL）"
 confidence: medium-high
 sources:
   - type: official
@@ -23,6 +23,8 @@ sources:
     path: "https://perfetto.dev/docs/data-sources/battery-counters"
   - type: aosp
     path: "frameworks/base/core/java/android/os/PerformanceHintManager.java"
+  - type: aosp
+    path: "frameworks/native/include/android/performance_hint.h"
   - type: aosp
     path: "frameworks/base/core/java/android/os/health/SystemHealthManager.java"
   - type: aosp
@@ -78,8 +80,8 @@ pipeline_stage: finalized
 task6_state: reviewed
 task9_state: "reviewed"
 task2b_state: "fixed"
-last_idle_audit_at: "2026-08-16T14:35:34+08:00"
-last_idle_audit_run_id: "20260816-143534-idle-audit-3ae38f95"
+last_idle_audit_at: "2026-08-20T01:13:45+08:00"
+last_idle_audit_run_id: "20260820-011345-idle-audit-3ae38f95"
 last_rework_at: "2026-08-02T09:36:04+08:00"
 last_rework_run_id: "20260802-093547-rework-13a21d51"
 last_draft_polish_at: "2026-08-15T15:29:10+08:00"
@@ -99,8 +101,10 @@ last_review_finalize_run_id: "20260815-152910-gracker-writing-451"
 | 33 | 延续基础能力 | 基础 manager/session API |
 | 34 | `setThreads()` | `APerformanceHint_setThreads()` |
 | 35 | `setPreferPowerEfficiency()`、`WorkDuration` | 能效模式与分项时长 |
-| 36 | 无对应新增 Java Session 方法 | 创建配置、能力探测、图形管线、借用 Java Session |
+| 36 | 无对应新增 Java Session 方法 | 创建配置、能力探测、图形管线、借用 Java Session、一次性负载通知 |
 | 37 | 延续现有公开能力 | `android-17.0.0_r1` 未新增 API 37 函数 |
+
+NDK 在 API 36 还加入 `APerformanceHint_notifyWorkloadIncrease()`、`APerformanceHint_notifyWorkloadReset()` 和 `APerformanceHint_notifyWorkloadSpike()`，用于提示阶段性负载变化或一次高开销周期，不能替代固定周期的 `reportActualWorkDuration()`。同一头文件把 `APerformanceHint_getPreferredUpdateRateNanos()` 标记为 API 36 起废弃；若只是探测设备是否支持某类 hint，应改用 `APerformanceHint_isFeatureSupported()`。
 
 Java 调用依次经过 Android framework（系统框架层）的 JNI（Java Native Interface，Java 与原生代码的接口）、原生客户端、`HintManagerService` 和 Power HAL（电源硬件抽象层）。高频目标耗时/实际耗时更新在设备支持时可走 FMQ（Fast Message Queue，共享内存消息队列）；FMQ 失败或没有建立通道时回退到 Binder 跨进程调用，因此不能笼统写成“每帧必定一次 Binder”。系统还会根据 UID（Linux 用户 ID，通常按应用分配）的进程状态暂停或恢复 Session；应用调用成功不代表 HAL 一定采用每条数据。
 
@@ -566,6 +570,7 @@ ADPF Power Efficiency Mode 把长期周期任务的 deadline 余量告诉系统�
 - [Android Developers: PowerMonitor](https://developer.android.com/reference/android/os/PowerMonitor)
 - [Android Developers: PowerMonitorReadings](https://developer.android.com/reference/android/os/PowerMonitorReadings)
 - [Android NDK: Performance Hint Manager](https://developer.android.com/ndk/reference/group/a-performance-hint)
+- [AOSP Android 17 r1: performance_hint.h](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/include/android/performance_hint.h)
 - [Perfetto: Power data sources](https://perfetto.dev/docs/data-sources/battery-counters)
 - [AOSP Android 17 r1: PerformanceHintManager.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java)
 - [AOSP Android 17 r1: HintManagerService.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/hint/HintManagerService.java)
