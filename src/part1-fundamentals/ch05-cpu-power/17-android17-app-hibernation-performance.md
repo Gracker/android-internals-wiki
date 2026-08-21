@@ -6,22 +6,46 @@ status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [app-hibernation, app-standby, background-limits, power-management, cold-restart]
 related_chapters: ["5.7", "1.20"]
-last_verified: "2026-06-30"
+last_verified: "2026-08-19"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/apphibernation/AppHibernationService.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/app/AppHibernationManager.java"
+    path: "frameworks/base/core/java/android/apphibernation/AppHibernationManager.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/apphibernation/HibernationState.java"
+    path: "frameworks/base/services/core/java/com/android/server/apphibernation/UserLevelState.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/apphibernation/GlobalLevelState.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/apphibernation/UserLevelHibernationProto.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/apphibernation/GlobalLevelHibernationProto.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/apphibernation/HibernationStateDiskStore.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/apphibernation/AppHibernationShellCommand.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java"
+  - type: aosp
+    path: "packages/modules/Permission/PermissionController/src/com/android/permissioncontroller/hibernation/HibernationPolicy.kt"
+  - type: aosp
+    path: "packages/modules/Permission/PermissionController/src/com/android/permissioncontroller/hibernation/v31/HibernationController.kt"
+  - type: aosp
+    path: "packages/modules/Permission/PermissionController/src/com/android/permissioncontroller/permission/service/AutoRevokePermissions.kt"
   - type: official
     path: "https://developer.android.com/topic/performance/app-hibernation"
   - type: official
     path: "https://developer.android.com/about/versions/12/behavior-changes-12#app-hibernation"
   - type: official
-    path: "https://developer.android.com/about/versions/15/behavior-changes-15#app-hibernation"
+    path: "https://developer.android.com/about/versions/15/behavior-changes-all#stopped-state"
+  - type: official
+    path: "https://developer.android.com/about/versions/15/features#app-archiving"
+pipeline_stage: ready-for-review
+task9_state: reviewed
+last_deep_review_at: "2026-08-19T21:04:30+08:00"
+last_deep_review_run_id: "20260819-210430-deep-review-e3001659"
 ---
 
 # 5.17 Android 17 App Hibernation 状态机与冷启动恢复性能
@@ -150,6 +174,8 @@ Android 17 使用 protobuf（Protocol Buffers）列表文件持久化状态，�
 | 全局 | `/data/system/hibernation/states` | package name、hibernated、saved bytes |
 | 用户级 | `/data/system_ce/<userId>/hibernation/states` | package name、hibernated |
 
+对应的 Android 17 源码文件是 `UserLevelState.java`、`GlobalLevelState.java`、`UserLevelHibernationProto.java` 和 `GlobalLevelHibernationProto.java`；`HibernationStateDiskStore.java` 负责读写这些列表文件。源码没有单一的 `HibernationState.java` 汇总类，检索或引用时应按用户级、全局级和 proto 读写文件分别定位。
+
 `HibernationStateDiskStore` 通过 `AtomicFile` 写入，以降低写入中断造成文件损坏的风险，并延迟一分钟合并连续更新。`UserLevelState` / `GlobalLevelState` 的内存对象还有 saved bytes、last-unhibernated 等字段，但不能把 `dumpsys` 展示的内存字段等同于全部持久字段。
 
 ## 进入休眠后发生什么
@@ -267,7 +293,26 @@ adb shell cmd app_hibernation set-state --global PACKAGE_NAME true
 下面的命令用于暂时缩短 unused threshold，并强制运行 Android 17 的策略 Job：
 
 ```bash
-old_threshold="$(adb shell device_config get permissions auto_revoke_unused_threshold_millis2)"
+read_dc() { adb shell device_config get "$1" "$2" | tr -d '\r'; }
+restore_dc() {
+  namespace="$1"; key="$2"; value="$3"
+  if [ "$value" = "null" ]; then
+    adb shell device_config delete "$namespace" "$key"
+  else
+    adb shell device_config put "$namespace" "$key" "$value"
+  fi
+}
+
+old_hibernation_enabled="$(read_dc app_hibernation app_hibernation_enabled)"
+old_threshold="$(read_dc permissions auto_revoke_unused_threshold_millis2)"
+old_check_frequency="$(read_dc permissions auto_revoke_check_frequency_millis)"
+
+cleanup() {
+  restore_dc app_hibernation app_hibernation_enabled "$old_hibernation_enabled"
+  restore_dc permissions auto_revoke_unused_threshold_millis2 "$old_threshold"
+  restore_dc permissions auto_revoke_check_frequency_millis "$old_check_frequency"
+}
+trap cleanup EXIT
 
 adb shell device_config put app_hibernation app_hibernation_enabled true
 adb shell device_config put permissions auto_revoke_unused_threshold_millis2 1000
@@ -275,10 +320,12 @@ adb shell am wait-for-broadcast-idle
 adb shell cmd jobscheduler run -u 0 -f com.android.permissioncontroller 2
 
 adb shell cmd app_hibernation get-state --user 0 PACKAGE_NAME
-adb shell device_config put permissions auto_revoke_unused_threshold_millis2 "$old_threshold"
+
+trap - EXIT
+cleanup
 ```
 
-这条路径会同时经过 usage、豁免、进程重要性、target SDK 和权限自动重置等策略，因此更接近用户设备上的自动休眠。Google 系统镜像若使用 `com.google.android.permissioncontroller`，需要替换命令中的包名。测试脚本还应保存原来的 hibernation 开关和 check frequency（检查周期），并在异常退出时恢复，避免把测试配置遗留在设备上。
+这条路径会同时经过 usage、豁免、进程重要性、target SDK 和权限自动重置等策略，因此更接近用户设备上的自动休眠。Google 系统镜像若使用 `com.google.android.permissioncontroller`，需要替换命令中的包名。片段用 `delete` 处理原值为 `null` 的 DeviceConfig key，并在异常退出时恢复 hibernation 开关、unused threshold 和 check frequency（检查周期），避免把测试配置遗留在设备上。
 
 ### dumpsys 与 trace
 
@@ -389,6 +436,8 @@ future.addListener(
 - [Android 15 package stopped state changes](https://developer.android.com/about/versions/15/behavior-changes-all#stopped-state)：PendingIntent、widget、用户解除 stopped 与 `wasForceStopped()`。
 - [Android 15 app archiving](https://developer.android.com/about/versions/15/features#app-archiving)：平台级 archive/unarchive 的 API 与恢复模型。
 - [AppHibernationService.java（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/apphibernation/AppHibernationService.java)：用户级/全局级状态、Force stop、缓存、dexopt 和恢复广播。
+- [AppHibernationManager.java（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/apphibernation/AppHibernationManager.java)：System API 与 `MANAGE_APP_HIBERNATION` 权限边界。
+- [UserLevelState.java / GlobalLevelState.java / HibernationStateDiskStore.java（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/apphibernation/UserLevelState.java)：状态对象、protobuf 字段和 AtomicFile 写入。
 - [HibernationPolicy.kt（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:packages/modules/Permission/PermissionController/src/com/android/permissioncontroller/hibernation/HibernationPolicy.kt)：默认阈值、检查周期、usage 计算和豁免。
 - [HibernationController.kt（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:packages/modules/Permission/PermissionController/src/com/android/permissioncontroller/hibernation/v31/HibernationController.kt)：用户级与全局级状态设置条件。
 - [AutoRevokePermissions.kt（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:packages/modules/Permission/PermissionController/src/com/android/permissioncontroller/permission/service/AutoRevokePermissions.kt)：权限组筛选与 auto-revoked flags。
