@@ -2,9 +2,9 @@
 title: "Android 17 ART 去优化：触发、栈重建与性能诊断"
 chapter: "1.35"
 section: "1.35"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-07-25"
+last_verified: "2026-08-19"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 sources:
@@ -36,6 +36,8 @@ sources:
     path: "art/compiler/optimizing/instruction_builder.cc (android-17.0.0_r1)"
   - type: aosp
     path: "art/compiler/jit/jit_compiler.cc (android-17.0.0_r1)"
+  - type: aosp
+    path: "art/runtime/jit/jit.cc (android-17.0.0_r1)"
   - type: aosp
     path: "art/openjdkjvmti/events.cc (android-17.0.0_r1)"
   - type: aosp
@@ -398,6 +400,7 @@ API 37 的主要入口如下：
 - JVMTI 事件作用域：`openjdkjvmti/events.cc`
 - 调试器 / JVMTI 协调：`openjdkjvmti/deopt_manager.cc`
 - 类重定义：`openjdkjvmti/ti_redefine.cc`
+- JIT 编译调度 / 去优化时跳过编译：`runtime/jit/jit.cc`
 - JIT 失效 / 回收：`runtime/jit/jit_code_cache.cc`
 
 排查时可以沿一条固定链路收集证据：哪个假设或 Instrumentation 请求触发了 deopt，作用域覆盖哪些方法 / 线程，活动帧在哪个边界恢复成 ShadowFrame，后续调用使用解释器还是重新获得编译代码。四个问题都有证据后，才能把一次卡顿归因到 ART 去优化。
