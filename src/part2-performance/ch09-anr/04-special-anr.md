@@ -140,7 +140,9 @@ Android 17 的 Broadcast 路径对 freezer 有明确处理：
 
 ### Android 17 按进程组织广播队列
 
-`BroadcastQueueImpl` 为每个目标进程维护一个 `BroadcastProcessQueue`，再按优先级、可运行时间和全局并行度选择要执行的队列。普通广播默认可同时运行的进程队列数，在低内存设备上为 2、其他设备上为 4，DeviceConfig（系统可动态调整的配置）可以改写该值。系统还限制单个 running process queue 连续投递的 active broadcast（当前活跃广播）数量，以便其他进程获得调度机会。
+`BroadcastQueueImpl` 为每个目标进程维护一个 `BroadcastProcessQueue`，再按优先级、可运行时间和全局并行度选择要执行的队列。
+
+普通广播默认可同时运行的进程队列数，在低内存设备上为 2、其他设备上为 4，DeviceConfig（系统可动态调整的配置）可以改写该值。系统还限制单个 running process queue 连续投递的 active broadcast（当前活跃广播）数量，以便其他进程获得调度机会。
 
 这个模型没有取消以下约束：
 
@@ -188,7 +190,9 @@ receiver ANR timer 在 `dispatchReceivers()` 准备向 warm process 调度回调
 
 ### Provider 早于 `Application.onCreate()`
 
-Android 17 的 `ActivityThread.handleBindApplication()` 先创建 `Application` 对象，再调用 `installContentProviders()` 安装清单中声明的 Provider，之后才通过 `Instrumentation.callApplicationOnCreate()` 执行 `Application.onCreate()`。Provider 的 `attachInfo()` 会进入其 `onCreate()`，所以清单注册的 Provider 会在应用冷启动的主线程早期完成初始化。
+Android 17 的 `ActivityThread.handleBindApplication()` 先创建 `Application` 对象，再调用 `installContentProviders()` 安装清单中声明的 Provider，之后才通过 `Instrumentation.callApplicationOnCreate()` 执行 `Application.onCreate()`。
+
+Provider 的 `attachInfo()` 会进入其 `onCreate()`，所以清单注册的 Provider 会在应用冷启动的主线程早期完成初始化。
 
 这段时间可能从三个出口表现出来：
 
@@ -196,7 +200,9 @@ Android 17 的 `ActivityThread.handleBindApplication()` 先创建 `Application` 
 2. **Broadcast/execute-service ANR**：系统已经把 receiver 或 Service transaction（组件调度事务）排在 `bindApplication` 之后，应用初始化占用了组件的完成期限。
 3. **调用方派生 ANR**：另一个应用在主线程同步获取或调用该 Provider，等待目标进程发布 Provider 并回复，最终耗尽调用方自己的输入期限。
 
-Android 17 的 10 秒 Provider publish guard（发布保护计时器）属于进程初始化保护。超时后，系统以 `REASON_INITIALIZATION_FAILURE`（初始化失败）移除 Provider 进程，这类退出不记为 Provider ANR。远程调用是否需要监视，要由调用方显式配置 `ContentResolver.setDetectNotResponding()`；监视到期后才进入 `ContentProvider not responding` ANR。三条路径的 reason（系统记录的原因字段）和被归责进程不同，详见 [§9.2 的 Provider 边界](02-anr-types.md#contentprovider发布保护与调用-anr-要分开)。
+Android 17 的 10 秒 Provider publish guard（发布保护计时器）属于进程初始化保护。超时后，系统以 `REASON_INITIALIZATION_FAILURE`（初始化失败）移除 Provider 进程，这类退出不记为 Provider ANR。
+
+远程调用是否受监视，取决于调用方是否显式配置 `ContentResolver.setDetectNotResponding()`；监视到期后才进入 `ContentProvider not responding` ANR。三条路径的 reason（系统记录的原因字段）和被归责进程不同，详见 [§9.2 的 Provider 边界](02-anr-types.md#contentprovider发布保护与调用-anr-要分开)。
 
 ### 诊断 Provider 冷启动
 
@@ -257,7 +263,9 @@ Android 17 的调用点需要逐条区分：
 - **Service start/stop**：`handleServiceArgs()` 与 `handleStopService()` 在向 AMS（ActivityManagerService）报告执行完成前调用 `waitToFinish()`。
 - **Manifest receiver**：`PendingResult.finish()` 发现仍有 pending work（待处理任务）时，把 `sendFinished()` 排到 `QueuedWork` 队尾，避免阻塞当前线程；Broadcast ANR timer 会继续等待完成回执。
 
-`QueuedWork.waitToFinish()` 会在调用线程执行 `processPendingWork()`，随后逐个运行 finisher。因此，Activity/Service 主线程既可能亲自执行尚未开始的写盘 runnable，也可能等待另一个线程已经开始的写盘任务。Broadcast 路径中，主线程可能已经回到 `nativePollOnce`，但完成回执仍排在慢写盘任务之后。
+`QueuedWork.waitToFinish()` 会在调用线程执行 `processPendingWork()`，随后逐个运行 finisher。因此，Activity/Service 主线程既可能亲自执行尚未开始的写盘 runnable，也可能等待另一个线程已经开始的写盘任务。
+
+Broadcast 路径中，主线程可能已经回到 `nativePollOnce`，但完成回执仍排在慢写盘任务之后。
 
 ### 如何确认
 
@@ -344,7 +352,9 @@ Android 17 的 `Heap::GrowForUtilization()` 会依据回收后存活字节、tar
 
 ### 系统内存压力是另一条链
 
-可用内存不足时，系统可能启动 kswapd（后台内存回收线程）、direct reclaim（由申请内存的线程直接回收）、compaction（内存规整）、zram/swap I/O（压缩内存或交换区读写）和 major fault。这些活动会增加 CPU 与 I/O 压力，使 GC 和应用分配变慢。LMKD（Low Memory Killer Daemon，低内存终止守护进程）会根据压力与进程优先级选择终止进程，通常通过结束后台进程缓解压力；不能据此认定存活进程随后一定会发生磁盘缺页。
+可用内存不足时，系统可能启动 kswapd（后台内存回收线程）、direct reclaim（由申请内存的线程直接回收）、compaction（内存规整）、zram/swap I/O（压缩内存或交换区读写）和 major fault。这些活动会增加 CPU 与 I/O 压力，使 GC 和应用分配变慢。
+
+LMKD（Low Memory Killer Daemon，低内存终止守护进程）会根据压力与进程优先级选择终止进程，通常通过结束后台进程缓解压力；不能据此认定存活进程随后一定会发生磁盘缺页。
 
 归因需要同时观察：
 
