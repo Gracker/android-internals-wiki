@@ -4,8 +4,8 @@ title: EAS 能量感知调度
 chapter: '5.2'
 section: '5.2'
 applicable_versions: Android 9 (API 28) - Android 17 (API 37)
-last_verified: '2026-07-09'
-last_verified_against: Android 17 android-17.0.0_r1 platform source, Android common kernel android17-6.18, Linux 6.6/6.12 scheduler docs
+last_verified: '2026-08-19'
+last_verified_against: "Android 17 android-17.0.0_r1 platform source, Android common kernel android17-6.18-2026-06_r6 and android16-6.12-2026-06_r6 scheduler source, Linux scheduler/energy-model/UClamp docs, Perfetto stdlib docs"
 confidence: high
 consolidated_from:
   - "src/part1-fundamentals/ch05-cpu-power/5.28-android17-pelt-boost-revert-amu-pmu-microarch-frequency-limiting.md"
@@ -19,7 +19,25 @@ sources:
 - type: official
   path: https://docs.kernel.org/power/energy-model.html
 - type: official
+  path: https://docs.kernel.org/scheduler/sched-util-clamp.html
+- type: official
+  path: https://docs.kernel.org/admin-guide/pm/cpuidle.html
+- type: official
+  path: https://docs.kernel.org/power/opp.html
+- type: official
   path: https://perfetto.dev/docs/data-sources/cpu-scheduling
+- type: official
+  path: https://perfetto.dev/docs/analysis/stdlib-docs
+- type: aosp
+  path: https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libprocessgroup/profiles/task_profiles.json
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_util_Process.cpp
+- type: android-common-kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/fair.c
+- type: android-common-kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android16-6.12-2026-06_r6/kernel/sched/fair.c
+- type: android-common-kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/power/energy_model.c
 tags:
 - EAS
 - energy-aware-scheduling
@@ -38,6 +56,8 @@ task6_state: "reviewed"
 task9_state: reviewed
 pipeline_stage: "ready-to-publish"
 task2b_state: fixed
+last_idle_audit_at: "2026-08-19T18:35:41+08:00"
+last_idle_audit_run_id: "20260819-183541-idle-audit-58ee0272"
 ---
 
 
@@ -62,7 +82,7 @@ EAS（Energy Aware Scheduling，能量感知调度）在 Linux 5.0 合入主线�
 
 不使用 EAS 时，fair 类任务的唤醒选核主要依据负载、空闲（idle）状态与缓存局部性（cache locality）选择 CPU。在异构系统里，只比较空闲程度，可能会把轻任务送到 capacity 较高、功耗成本也较高的性能域。
 
-EAS 接管 fair 类任务的部分唤醒负载均衡。Linux 6.18 的 `select_task_rq_fair()` 仅在带有普通任务唤醒标志 `WF_TTWU`、且根调度域（root domain）未标记为过载（overutilized）时调用 `find_energy_efficient_cpu()`；fork/exec、同步唤醒快速路径（fast path）、无可用 EM 等情况还会走其他路径。EM 用来比较数个可接受候选的能量影响，目标是在尽量降低能耗的同时，减少对吞吐的影响。
+EAS 接管 fair 类任务的部分唤醒负载均衡。Linux 6.18 的 `select_task_rq_fair()` 仅在带有普通任务唤醒标志 `WF_TTWU`、且根调度域（root domain）未标记为过载（overutilized）时调用 `find_energy_efficient_cpu()`；fork/exec、无可用 EM 等情况会走其他路径。同步唤醒仍会进入该函数，但满足快速路径条件时可在 EM 估算前直接返回当前 CPU。EM 用来比较数个可接受候选的能量影响，目标是在尽量降低能耗的同时，减少对吞吐的影响。
 
 例如，一个利用率（util）为 120 的轻量级任务需要被唤醒，系统中有两种核心：
 
@@ -203,8 +223,8 @@ EAS 与基于负载的均衡以 root domain 的 **overutilized 标志** 为分�
 overutilized 对 EAS 的影响随内核版本有差异：
 
 - **Linux 6.6 及更早版本**：`find_energy_efficient_cpu()` 在入口处检查 `rd->overutilized`。系统已过载时，它直接跳过能量估算，回到传统选核路径。
-- **`android16-6.12` 公共内核分支**：overutilized 的短路检查从 `find_energy_efficient_cpu()` 函数入口移到调用点 `select_task_rq_fair()`。行为不变：系统过载时，唤醒路径跳过能量估算，重新使用基于负载的选择与均衡。
-- **Android 17 / `android17-6.18-2026-06_r6`**：调用点仍通过 `is_rd_overutilized(this_rq()->rd)` 保护 `find_energy_efficient_cpu()`；该函数还接收 `sync` 参数，并包含同步唤醒快速路径。
+- **`android16-6.12` 公共内核分支**：overutilized 的短路检查从 `find_energy_efficient_cpu()` 函数入口移到调用点 `select_task_rq_fair()`。行为不变：系统过载时，唤醒路径跳过能量估算，重新使用基于负载的选择与均衡。该分支的 `find_energy_efficient_cpu()` 已接收 `sync` 参数，并在同步唤醒快速路径满足条件时直接返回当前 CPU。
+- **Android 17 / `android17-6.18-2026-06_r6`**：调用点仍通过 `is_rd_overutilized(this_rq()->rd)` 保护 `find_energy_efficient_cpu()`；该函数沿用 `sync` 参数与同步唤醒快速路径。
 
 因此，无论 Linux 6.6、`android16-6.12` 还是 Linux 6.18，root domain 过载时都不会执行 EAS 能量估算。此时不能再用“EM 选择了这个 CPU”解释 Trace。
 
@@ -394,7 +414,7 @@ EAS 的目标是降低完成单位工作所需的能量（energy per work），�
 | AOSP 用户空间 | Android 11 | 使用 `cpu.uclamp.min/max` 命名，默认配置仍保留 `schedtune` 分组 | 同时核对 `schedtune` 与 `cpu.uclamp.*` |
 | AOSP 用户空间 | Android 12+ | 默认的 `HighEnergySaving` / `HighPerformance` / `MaxPerformance` 直接进入 `cpu/{background,foreground,top-app}`，cpuset 继续控制可运行 CPU 集合 | 检查 top-app、foreground 和 background 的默认提示路径 |
 | Android 公共内核 | `android16-6.12` 分支 | overutilized 短路位置从 `find_energy_efficient_cpu()` 内部移到 `select_task_rq_fair()` 调用点；行为不变 | Linux 6.6 和 6.12 的检查位置不同，短路行为一致 |
-| Android 公共内核 | Android 17 / `android17-6.18-2026-06_r6` | `find_energy_efficient_cpu()` 增加 `sync` 参数；同步唤醒且当前 CPU 只有当前任务运行、任务 CPU 掩码允许并通过 `task_fits_cpu()` 时，可直接返回当前 CPU | 排查 Android 17 的唤醒选核时，还要检查同步唤醒快速路径 |
+| Android 公共内核 | Android 17 / `android17-6.18-2026-06_r6` | `find_energy_efficient_cpu()` 沿用 `sync` 参数；同步唤醒且当前 CPU 只有当前任务运行、任务 CPU 掩码允许并通过 `task_fits_cpu()` 时，可直接返回当前 CPU | 排查 Android 16/17 公共内核的唤醒选核时，还要检查同步唤醒快速路径 |
 | Android 公共内核 | Android 17 / `android17-6.18-2026-06_r6` | UClamp 请求仍按 max/bucket 聚合，PELT 运行队列利用率仍按任务贡献累计 | 不要把 UClamp 最大值聚合误写成“CPU 总利用率取最大单任务值” |
 | 设备实现 | 厂商分支 | WALT、Power HAL 性能增强和额外迁核策略随 SoC 与内核代码树变化 | Trace 结论必须结合具体设备 |
 
@@ -409,7 +429,7 @@ EAS 的目标是降低完成单位工作所需的能量（energy per work），�
 - Perfetto 官方文档：[Perfetto stdlib docs](https://perfetto.dev/docs/analysis/stdlib-docs)
 - AOSP 源码：`platform/system/core/libprocessgroup/profiles/task_profiles.json`（`android-17.0.0_r1`；历史对比：android10/11/12-release）
 - AOSP 源码：`frameworks/base/core/jni/android_util_Process.cpp`（`android-17.0.0_r1`，`SetTaskProfiles()` / `SetProcessProfilesCached()` 调用链）
-- Android common kernel：`kernel/sched/fair.c`（`android17-6.18-2026-06_r6`，`find_energy_efficient_cpu()` / overutilized）
+- Android common kernel：`kernel/sched/fair.c`（`android16-6.12-2026-06_r6` 与 `android17-6.18-2026-06_r6`，`find_energy_efficient_cpu()` / overutilized / 同步唤醒快速路径）
 - Android common kernel：`kernel/power/energy_model.c`（`android17-6.18-2026-06_r6`，EM 框架）
 - [高爷 - Android Perfetto 系列 9:CPU 信息解读](https://www.androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/)
 - ARM 社区：[EAS 设计与实现](https://www.linuxplumbersconf.org/event/2/contributions/133/)
