@@ -2,9 +2,9 @@
 title: "SurfaceFlinger 事务队列：无锁入口、分桶与就绪过滤"
 chapter: "2.25"
 section: "2.25"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
-last_verified: "2026-07-25"
+last_verified: "2026-08-20"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 tags: ['SurfaceFlinger', 'LocklessQueue', 'TransactionHandler', 'MPSC', '渲染管线']
@@ -181,7 +181,7 @@ timeline 过滤器综合检查：
 - origin UID（事务来源进程身份）对应的 VSync cadence（垂直同步节奏）；
 - `FrameTimelineInfo.vsyncId`（关联目标帧的 VSync 标识）是否说明这帧仍然过早。
 
-如果 desired present time 晚于本轮 expected present time，且差值不超过一秒，事务会返回 `NotReady`。超过一秒的未来时间会被忽略，避免异常 timestamp 长期卡住队列。
+如果 desired present time 不早于本轮 expected present time，且差值小于一秒，事务会返回 `NotReady`。更远的未来时间会被忽略，避免异常 timestamp 长期卡住队列。
 
 带有效 VSync ID 的事务已按该 ID 对应的帧节奏被 Choreographer 节流，SF 不会再按 origin UID 的 cadence 重复节流。使用自动 timestamp 的事务还会通过 `frameIsEarly()` 判断是否过早。
 
