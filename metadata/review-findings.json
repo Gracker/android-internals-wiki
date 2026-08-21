@@ -2650,6 +2650,26 @@
       "summary": "InputManager 监听链顺序需要补充构造代码边界",
       "type": "source-boundary",
       "updated_at": "2026-08-21T12:48:35.699437+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/15-android17-memory-tagging-extension-mte.md",
+      "close_note": "正文已改为完整列出 memchr/strchr/strchrnul/strlen/strrchr/wcslen/wmemchr 的 HWCAP2_MTE ifunc 分支，并补充 portable-simd MTE 构建的页边界预读约束与调用者条件边界。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260821-163504-deep-review-4c57381a",
+      "created_at": "2026-08-21T16:42:56.819966+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260821-163504-deep-review-4c57381a",
+      "details": "正文原先只写 wcslen/wmemchr。AOSP android-17.0.0_r1 bionic/libc/arch-arm64/ifuncs.cpp 在 memchr、strchr、strchrnul、strlen、strrchr、wcslen、wmemchr 中均检查 HWCAP2_MTE 并选择 MTE 分支；正文需要列出完整函数范围，避免读者误判 libc 只有宽字符扫描走 MTE-safe 分支。",
+      "id": "AIW-4.15-20260821-P2-bionic-ifunc-mte-coverage",
+      "log_path": "logs/deep-review/2026-08-21-20260821-163504-deep-review-4c57381a-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "bionic/libc/arch-arm64/ifuncs.cpp@android-17.0.0_r1#55-190"
+      ],
+      "status": "fixed",
+      "summary": "Android 17 libc ifunc MTE 覆盖范围漏列 memchr/strchr/strchrnul/strlen/strrchr",
+      "type": "source-boundary",
+      "updated_at": "2026-08-21T16:43:03.538987+08:00"
     }
   ],
   "schema_version": 1
