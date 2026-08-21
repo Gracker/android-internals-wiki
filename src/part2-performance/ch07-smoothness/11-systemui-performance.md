@@ -6,7 +6,7 @@
 title: SystemUI 性能分析
 chapter: '7.11'
 section: '7.11'
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags:
 - systemui
@@ -23,12 +23,22 @@ related_chapters:
 - '7.3'
 - '7.4'
 - '13.3'
-confidence: medium
-last_verified: "2026-04-26"
-last_verified_against: "AOSP android-16.0.0_r1 SystemUI SceneContainerFlag / SceneContainer / SceneTransitionLayout / ContainerReveal；PunchHole.kt 未作为 android-16.0.0_r1 锚点"
+confidence: medium-high
+last_verified: "2026-08-19"
+last_verified_against: "AOSP android-17.0.0_r1 SystemUI/WM Shell/Launcher3 anchors: systemui.aconfig; super_notification_shade.xml / scene_window_root.xml; ShadeViewProviderModule / ShadeWindowLayoutParams / NotificationShadeWindowView; SceneContainerFlag / SceneContainerFrameworkModule / SceneWindowRootViewBinder; NotificationStackScrollLayout / NotificationRowContentBinderImpl / BigPictureIconManager / notification icon binder; StatusBarWindowControllerImpl / NavigationBar / NavigationBarView / DisplayBackGestureHandler / EdgeBackGestureHandler / SysUIConcurrencyModule / DisplayContent; Transitions / StartingWindowController / RecentsView; Android notification, SplashScreen and aconfig official docs checked 2026-08-19."
+last_rework_at: "2026-08-19T13:51:21+08:00"
+last_rework_run_id: "20260819-135121-rework-68502f5f"
 sources:
 - type: aosp
+  path: frameworks/base/packages/SystemUI/aconfig/systemui.aconfig
+- type: aosp
   path: frameworks/base/packages/SystemUI/res/layout/super_notification_shade.xml
+- type: aosp
+  path: frameworks/base/packages/SystemUI/res/layout/scene_window_root.xml
+- type: aosp
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/shade/ShadeViewProviderModule.kt
+- type: aosp
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/shade/ShadeWindowLayoutParams.kt
 - type: aosp
   path: frameworks/base/packages/SystemUI/src/com/android/systemui/shade/NotificationShadeWindowView.java
 - type: aosp
@@ -38,9 +48,9 @@ sources:
 - type: aosp
   path: frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/collection/inflation/NotificationRowBinderImpl.java
 - type: aosp
-  path: frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/row/NotificationContentInflater.java
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/row/NotificationRowContentBinderImpl.kt
 - type: aosp
-  path: frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/phone/StatusBarNotificationPresenter.java
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/row/BigPictureIconManager.kt
 - type: aosp
   path: frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/icon/ui/viewmodel/NotificationIconContainerStatusBarViewModel.kt
 - type: aosp
@@ -48,11 +58,23 @@ sources:
 - type: aosp
   path: frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/phone/ui/StatusBarIconControllerImpl.java
 - type: aosp
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/window/StatusBarWindowControllerImpl.java
+- type: aosp
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/views/NavigationBar.java
+- type: aosp
   path: frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/views/NavigationBarView.java
+- type: aosp
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/DisplayBackGestureHandler.kt
 - type: aosp
   path: frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java
 - type: aosp
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/util/concurrency/SysUIConcurrencyModule.kt
+- type: aosp
   path: frameworks/base/packages/SystemUI/src/com/android/systemui/scene/shared/flag/SceneContainerFlag.kt
+- type: aosp
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/scene/SceneContainerFrameworkModule.kt
+- type: aosp
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/scene/ui/view/SceneWindowRootViewBinder.kt
 - type: aosp
   path: frameworks/base/packages/SystemUI/compose/features/src/com/android/systemui/scene/ui/composable/SceneContainer.kt
 - type: aosp
@@ -60,18 +82,22 @@ sources:
 - type: aosp
   path: frameworks/base/packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/reveal/ContainerReveal.kt
 - type: aosp
+  path: frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java
+- type: aosp
   path: frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingWindowController.java
 - type: aosp
   path: frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java
 - type: aosp
   path: packages/apps/Launcher3/quickstep/src/com/android/quickstep/views/RecentsView.java
 - type: official
+  path: https://source.android.com/docs/setup/build/feature-flagging/flip-a-flag
+- type: official
   path: https://developer.android.com/develop/ui/views/notifications
 - type: official
-  path: https://developer.android.com/guide/topics/ui/splash-screen
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+  path: https://developer.android.com/develop/ui/views/launch/splash-screen
+pipeline_stage: ready-for-review
+task6_state: pending-review
+task9_state: pending-review
 task2b_state: fixed
 ---
 
@@ -221,11 +247,11 @@ Android 12—14 的资料常从 presenter/controller 追踪左侧通知图标。
 
 - `NotificationIconContainerStatusBarViewModel.icons` 从 `iconsInteractor.statusBarNotifs` 生成 `NotificationIconsViewData`，在后台 context（协程执行上下文）中执行 map（数据转换），随后通过 `conflate()`（来不及处理时只保留最新值）与 `distinctUntilChanged()`（相邻结果相同时不再发送）控制更新。
 - `NotificationIconContainerStatusBarViewBinder.bindWhileAttached()` 按 `displayId` 选择图标 View store，再绑定到 `NotificationIconContainer`。
-- 默认屏复用通知 pipeline 保存的 status bar icon；辅助屏使用 `ConnectedDisplaysStatusBarNotificationIconViewStore`，按通知 key 缓存为目标 display context 创建的 `StatusBarIconView`。
+- 默认屏复用通知处理流程保存的 status bar icon；辅助屏使用 `ConnectedDisplaysStatusBarNotificationIconViewStore`，按通知 key 缓存为目标 display context 创建的 `StatusBarIconView`。
 
 `NICStatusBar#bindWhileAttached` 只覆盖绑定关系建立的过程。每次通知变化产生的帧耗时，仍要从 Flow（异步数据流）更新、View 容器变化、ViewRoot traversal 与 FrameTimeline 中观察。
 
-右侧网络、电池、时钟和其他系统状态图标，仍由 status icon pipeline（状态图标处理流程）与 `StatusBarIconControllerImpl` 等组件管理。Android 17 还有 `status_bar_system_status_icons_in_compose` 开关，目标产品可能把部分区域迁到 Compose。排查大量通知同时到达的场景时，应把两类输入分开：
+右侧网络、电池、时钟和其他系统状态图标，仍由状态图标处理流程与 `StatusBarIconControllerImpl` 等组件管理。Android 17 还有 `status_bar_system_status_icons_in_compose` 开关，目标产品可能把部分区域迁到 Compose。排查大量通知同时到达的场景时，应把两类输入分开：
 
 - 左侧压力来自通知集合和图标 View 增删；
 - 右侧压力来自网络、电话、热点、隐私指示、OEM 扩展等状态变化；
