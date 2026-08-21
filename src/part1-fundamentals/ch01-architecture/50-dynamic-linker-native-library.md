@@ -2,14 +2,14 @@
 title: "Android Dynamic Linker (linker64) 架构与 Native 库加载性能边界"
 chapter: "1.50"
 section: "1.50"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [linker64, dynamic-linker, ELF, dlopen, namespace, RELRO, native-library, bionic]
 related_chapters: ["1.15", "1.40", "4.6", "8.2"]
 consolidated_from:
   - "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
-last_verified: "2026-07-25"
-last_verified_against: "AOSP android-17.0.0_r1"
+last_verified: "2026-08-19"
+last_verified_against: "AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6 / Android Developers page-size docs and Android source VNDK linker namespace docs (checked 2026-08-19)"
 confidence: high
 sources:
   - type: aosp
