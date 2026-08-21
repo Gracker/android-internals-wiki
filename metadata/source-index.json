@@ -4015,6 +4015,86 @@
       "action": "indexed-only-chapter-freeze",
       "score": 15,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "[掘金Android] 现代 Android 官方为什么更推荐 Repository 暴露 suspend fun",
+      "title": "[掘金Android] 现代 Android 官方为什么更推荐 Repository 暴露 suspend fun",
+      "summary": "Data/Domain 层暴露 suspend fun 和 Flow，由调用方控制协程创建、取消与生命周期。区分 withContext（切线程不改任务归属）与 launch（创建新 Job），并给出四条代码评审判断规则与团队约定，可直接当协程架构评审 checklist 用。",
+      "chapter": "ch16",
+      "processed_at": "2026-08-22T06:20:18.498212+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "[掘金Android] 我想让同事知道我很懂 Compose 怎么办？",
+      "title": "[掘金Android] 我想让同事知道我很懂 Compose 怎么办？",
+      "summary": "derivedStateOf/snapshotFlow 控制高频派生状态粒度；offset{}/graphicsLayer{} Lambda 修饰符把状态读取从组合阶段降到布局/绘制阶段；传 Lambda 代替传值缩小重组作用域。深入到快照系统 readObserver 记录读取者的源码机制，同时提醒低频状态直接传值仍是最佳实践。",
+      "chapter": "ch16",
+      "processed_at": "2026-08-22T06:20:18.498212+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "[掘金Android] AI 写 Android 代码老翻车？我把移动端的 Harness 系统开源了",
+      "title": "[掘金Android] AI 写 Android 代码老翻车？我把移动端的 Harness 系统开源了",
+      "summary": "- 摘要: 开源 CLI 工具 ai_scaffold 把移动端项目约束（ARouter 路由、JNI 引用管理、viewLifecycleOwner 等）工程化为 AI 编码必经检查点，对齐 Harness Engineering 思路。CLI 扫特征文件识别平台并生成规则骨架，AI 读源码填充定制内容；文末坦陈工具短板与 Harness 约束随模型升级可能失效的边界。",
+      "chapter": "ch16",
+      "processed_at": "2026-08-22T06:20:18.498212+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-22-76340687-我想让同事知道我很懂Compose怎么办.md",
+      "title": "[技术文章] 我想让同事知道我很懂 Compose 怎么办？我的好同事彭于晏读完我前面几篇关于 Compose 的文章后，准备在组内好",
+      "summary": "> 发布时间: 2026-04-30T01:01:40.000Z > 原文链接: https://juejin.cn/post/7634068771351805979 2026-04-30 1,772 阅读6分钟 前几天，我的好同事彭于晏读完我前面几篇关于 Compose 的文章后，准备在组内好好推广一下，做一次分享（毕竟也有 KPI）。 他问了我一个很真实的问题：有没有...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-22T06:20:18.498212+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-22-76469585-AI写Android代码老翻车我把移动端Harness系统开源了.md",
+      "title": "[技术文章] AI 写 Android 代码老翻车？我把移动端的 Harness 系统开源了AI 写 Android 代码老翻车？我把",
+      "summary": "> 发布时间: 2026-06-04T04:52:40.000Z > 原文链接: https://juejin.cn/post/7646958530656387082 2026-06-04 1,705 阅读8分钟 AICoding的探索之路 Harness Engineering · 移动端 AI 编程 · 开源工具 AI 帮我写的第一个 RecyclerView Ada...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-22T06:20:18.498212+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-22-76500740-现代Android官方为什么更推荐Repository暴露suspend-fun.md",
+      "title": "[技术文章] 现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch",
+      "summary": "> 发布时间: 2026-06-11T22:41:13.000Z > 原文链接: https://juejin.cn/post/7650074080125599790 2026-06-12 3,116 阅读12分钟 写这篇文章，其实是因为最近看到有些公众号在介绍 Kotlin 协程时，都推荐在 Repository 中这样写： fun load() { repositor...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-22T06:20:18.498212+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-21-evening-Codex-harness-host-four-controls/03-side-signals-dump.md",
+      "title": "[DeepResearch] 子问题 C: 边栏证据（Exa / shared threads / Sites / 0.149）",
+      "summary": "--- source: research sub_question: 同日配套与 0.149 如何只服务四控证据，不另开论题？ researcher: evening-main phase: 1b date: 2026-08-21 --- # 子问题 C: 边栏证据（Exa / shared threads / Sites / 0.149） ## 核心发现 1. Exa 插件 @OpenAIDevs 209048048410714149",
+      "chapter": "ch16",
+      "processed_at": "2026-08-22T06:20:18.498212+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-21-morning-ComputerUse-four-tables-Codex-DSpark/01-computer-use-four-tables-dump.md",
+      "title": "[DeepResearch] 子问题: Computer Use GA 四表审计",
+      "summary": "--- source: research sub_question: Claude Platform Computer Use / Browser / Skills / Files GA 后，接入前要审哪四张表？ researcher: researcher-1 phase: 1b date: 2026-08-21 --- # 子问题: Computer Use GA 四表审计 ## 核心发现 1. 官方 GA 包四块: Compute",
+      "chapter": "ch16",
+      "processed_at": "2026-08-22T06:20:18.498212+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "schema_version": "2.1",
