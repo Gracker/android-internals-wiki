@@ -4,22 +4,49 @@ chapter: "8.11"
 section: "8.11"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-06-18"
-last_verified_against: "AOSP android-16.0.0_r1"
-confidence: medium
+last_verified: "2026-08-19"
+last_verified_against: "AOSP android-17.0.0_r1 frameworks/base NotificationManagerService / NotificationManager / Notification / RemoteViews / SystemUI notification row; Android common kernel android17-6.18-2026-06_r6 binder.c; Firebase Cloud Messaging receive / priority / delivery docs; Android notification, FGS and Live Update docs checked 2026-08-19"
+confidence: medium-high
 sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/notification/NotificationManagerService.java"
   - type: aosp
     path: "frameworks/base/core/java/android/app/NotificationManager.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/Notification.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/service/notification/RateEstimator.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/notification/TimeToLiveHelper.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/widget/RemoteViews.java"
+  - type: aosp
+    path: "packages/SystemUI/src/com/android/systemui/statusbar/notification/row/NotificationRowContentBinderImpl.kt"
+  - type: kernel
+    path: "drivers/android/binder.c"
   - type: official
-    path: "https://developer.android.com/develop/ui/views/notifications"
+    path: "https://firebase.google.com/docs/cloud-messaging/android/receive-messages"
   - type: official
-    path: "https://firebase.google.com/docs/cloud-messaging"
+    path: "https://firebase.google.com/docs/cloud-messaging/android-message-priority"
   - type: official
-    path: "https://developer.android.com/about/versions/16/features/progress-centric-notifications"
+    path: "https://firebase.google.com/docs/cloud-messaging/understand-delivery"
+  - type: official
+    path: "https://developer.android.com/develop/ui/views/notifications/channels"
+  - type: official
+    path: "https://developer.android.com/develop/ui/views/notifications/notification-permission"
+  - type: official
+    path: "https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start"
+  - type: official
+    path: "https://developer.android.com/develop/ui/views/notifications/metric-style"
+  - type: official
+    path: "https://developer.android.com/develop/ui/views/notifications/live-update"
 tags: ["FCM", "通知", "Notification", "推送", "延迟", "NotificationManagerService"]
 related_chapters: ["9.6", "8.2", "25.4", "11.5"]
+pipeline_stage: ready-for-review
+task6_state: pending-review
+task9_state: reviewed
+last_deep_review_at: "2026-08-19T16:43:11+08:00"
+last_deep_review_run_id: "20260819-163522-deep-review-1ce61161"
 ---
 
 # 8.11 推送通知管线性能：FCM 投递延迟与 NotificationManagerService 渲染
@@ -233,18 +260,18 @@ Android 13（API 33）起，普通通知需要 `POST_NOTIFICATIONS` 运行时权
 
 ## 端到端观测：每段使用自己的时钟
 
-建议用同一个 `message_trace_id`（单条消息的关联 ID）连接服务端、FCM 聚合数据和设备事件，但不要上传 registration token（设备注册令牌）、完整 payload 或用户消息正文。
+建议用同一个 `message_trace_id`（单条消息的关联 ID）连接服务端和设备事件，但不要上传 registration token（设备注册令牌）、完整 payload 或用户消息正文。发送 FCM 请求时，可额外设置不含个人信息的 analytics label 或服务端批次字段，用来和 BigQuery 导出或 Aggregate Delivery Data（聚合交付数据）的分组维度对齐。聚合交付数据不能按单条 `message_trace_id` 反查设备链路。
 
 | 阶段 | 推荐字段 | 时钟说明 |
 |---|---|---|
-| 服务端发送 | `fcm_request_start/end`、priority、TTL、collapse key、analytics label | 服务端单调时钟计算请求耗时，墙钟用于跨系统粗略关联 |
-| FCM 传输 | accepted、delivered、pending、dropped、delay reason、proxy / deprioritized ratio | 使用 FCM Data API 或 BigQuery export（导出数据） |
+| 服务端发送 | `fcm_request_start/end`、priority、TTL、collapse key、analytics label、FCM 响应 message ID | 服务端单调时钟计算请求耗时，墙钟用于跨系统粗略关联 |
+| FCM 传输 | delivered、pending、dropped、delay reason、proxy / deprioritized ratio；启用 BigQuery 导出时的消息事件 | FCM 侧数据使用 Firebase / Google Play services 口径；聚合数据按批次或维度对齐，不是单条端侧 trace |
 | SDK callback | `RemoteMessage.sentTime`、original / delivered priority、callback wall time | 只覆盖会进入 callback 的消息 |
 | App 发布 | build、notify duration、process state bucket、permission / channel state | 设备内阶段使用 `elapsedRealtime` 单调时钟 |
 | SystemUI | apply / reapply、row inflation、主线程和 inflation executor 状态 | 需要 Perfetto、平台日志或 userdebug 调试版本能力 |
 | 用户行为 | impression、tap、dismiss | 必须说明事件来源和适用消息形态 |
 
-FCM BigQuery 中的 `MESSAGE_DELIVERED` 表示消息已交给设备上的 FCM SDK，不能证明通知已经显示。Aggregate Delivery Data 经过抽样和聚合，并且延迟提供，也无法替代单设备 trace。代理 notification 在普通 FCM / GA 指标中可能形成缺口，应结合 Proxy Notification Insights 查看。
+FCM BigQuery 中的 `MESSAGE_DELIVERED` 表示消息已交给设备上的 FCM SDK，不能证明通知已经显示。Aggregate Delivery Data 经过抽样和聚合，并且延迟提供，只适合观察比例和趋势，不能替代单设备 trace。代理 notification 在普通 FCM / GA 指标中可能形成缺口，应结合 Proxy Notification Insights 查看。
 
 后台 notification message 不进入业务 `onMessageReceived()`，因此应用无法在消息到达时写入自定义 callback 埋点。若产品必须取得应用处理和自定义展示的证据，可以选择 data message，但应用也要自行满足进程生命周期与后台执行约束。这项选择会同时影响可靠性、功耗和用户体验。
 
