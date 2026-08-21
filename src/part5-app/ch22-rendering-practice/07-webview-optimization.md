@@ -4,8 +4,8 @@ chapter: "22.7"
 section: "22.7"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-08-14"
-last_verified_against: "AOSP android-17.0.0_r1; AndroidX WebKit 1.16.0; Android Developers docs; Chromium android_webview docs"
+last_verified: "2026-08-19"
+last_verified_against: "AOSP android-17.0.0_r1; AndroidX WebKit 1.17.0 release notes and 1.16.0 startup APIs; Android Developers docs; Chromium android_webview docs"
 confidence: high
 consolidated_from:
   - "src/part2-performance/ch07-smoothness/11-webview-performance.md"
@@ -44,6 +44,16 @@ sources:
     path: "https://developer.android.com/reference/android/webkit/WebSettings"
   - type: official
     path: "https://developer.android.com/jetpack/androidx/releases/webkit"
+  - type: official
+    path: "https://developer.android.com/develop/ui/views/layout/webapps/optimize-webview-startup"
+  - type: official
+    path: "https://developer.android.com/develop/ui/views/layout/webapps/load-local-content"
+  - type: official
+    path: "https://developer.android.com/develop/ui/views/layout/webapps/speculative-loading"
+  - type: official
+    path: "https://developer.android.com/reference/androidx/webkit/Profile"
+  - type: official
+    path: "https://developer.android.com/reference/androidx/webkit/WebViewCompat"
   - type: research-note
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-webview-render-process-recovery.md"
   - type: research-note
@@ -54,6 +64,8 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
+last_idle_audit_at: "2026-08-19T14:38:36+08:00"
+last_idle_audit_run_id: "20260819-143836-idle-audit-140098bc"
 ---
 
 # WebView 性能优化实战
@@ -151,9 +163,9 @@ class H5OpenTiming(
 
 Perfetto（Android 系统跟踪工具）中看到 `CrRendererMain`、raster worker（光栅化工作线程）或 GPU service（GPU 服务）线程出现，只能证明对应执行域已经活动。线程名会随 provider 改版变化，诊断时还要结合进程关系、slice（时间片）、调用栈与 SurfaceFlinger layer（合成图层）。
 
-### AndroidX WebKit 1.16.0+ 的异步启动初始化
+### AndroidX WebKit 1.16.0 起稳定的异步启动初始化
 
-截至 2026-08-14，AndroidX WebKit 当前稳定版是 1.16.0。该版本提供稳定版 `WebViewCompat.startUpWebView()`：允许后台执行的启动工作交给指定 executor（任务执行器），必须留在 UI 线程的工作则分段执行。WebView 启动初始化每个进程只发生一次；回调到达前访问其他 `android.webkit` 或 `androidx.webkit` API，UI 线程仍可能等待尚未完成的部分。
+截至 2026-08-19，AndroidX WebKit 最新稳定版是 1.17.0。异步启动 API 在 1.16.0 进入稳定状态；该版本把 `androidx.webkit:webkit` 的最低支持 SDK 提升到 24。`WebViewCompat.startUpWebView()` 允许后台执行的启动工作交给指定 executor（任务执行器），必须留在 UI 线程的工作则分段执行。WebView 启动初始化每个进程只发生一次；回调到达前访问其他 `android.webkit` 或 `androidx.webkit` API，UI 线程仍可能等待尚未完成的部分。
 
 下面的代码用于在可控时机启动 WebView，并记录启动初始化是否曾阻塞 UI 线程。
 
@@ -362,13 +374,15 @@ HTML、JS 与 CSS 必须来自同一兼容集合。只更新主文档或只更�
 
 ### 预连接、预取与预渲染
 
-AndroidX WebKit 1.16.0 与匹配的 provider 能力允许三类推测加载：
+AndroidX WebKit 的当前文档把推测加载拆成三类；具体能否使用取决于项目引入的 AndroidX WebKit 版本、API 注解和设备 provider 的 `WebViewFeature` 能力：
 
 - `Profile.preconnect()` 按 origin 提前完成 DNS（域名解析）、TCP 连接与 TLS 安全握手等准备，资源成本最低，必须从 UI 线程发起；
 - `Profile.prefetchUrlAsync()` 按 HTTPS URL 获取主 HTML 并写入 profile 的网络缓存，不会一并执行 JS 或拉取 CSS，可以从任意线程发起；
 - `WebViewCompat.prerenderUrlAsync()` 绑定具体 WebView，后台创建可激活页面，CPU、内存与网络成本最高。
 
 `prerenderUrlAsync()` 必须从 UI 线程发起。三类 API 都要以项目采用的 AndroidX WebKit 版本和 `WebViewFeature` 能力检查为准。预取的后台请求会跳过 `shouldInterceptRequest()`；用户导航时，主 HTML 才进入拦截回调。如果此时返回自定义 `WebResourceResponse`，provider 会采用拦截结果并绕过预取缓存。离线包与 provider 预取同时启用时，必须设计清楚谁拥有主文档。
+
+截至 2026-08-19 的 API reference 中，`Profile.preconnect()` 仍标记为 `Profile.ExperimentalPreconnect`，URL prefetch 相关能力仍标记为 `Profile.ExperimentalUrlPrefetch`；带参数的 prerender 配置也要核对对应 API 注解。上线前应把 opt-in、provider 版本、灰度开关和回退路径写入同一套策略。
 
 触发阈值不应写成固定点击率或固定字节数。策略需要由页面转化率、网络类型、未命中流量、服务端 QPS（每秒请求数）、取消率、过期率、内存压力和用户隐私共同决定，并通过远程配置与 A/B 实验调整。预渲染只适合用户高度可能进入且副作用受控的页面；带登录写操作、支付、音视频或敏感权限的页面要单独评估。
 
@@ -664,7 +678,7 @@ WebView 优化适合按证据逐步推进：
 ### WebView provider、Jetpack 与 Linux 内核
 
 - [Chromium Android WebView architecture](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/android_webview/docs/architecture.md)：provider 的 browser、renderer 与 service 架构；排障时切换到设备 provider 对应 revision。
-- [AndroidX WebKit 发布记录](https://developer.android.com/jetpack/androidx/releases/webkit)：本文使用的稳定版、最低 API 级别与变更记录。
+- [AndroidX WebKit 发布记录](https://developer.android.com/jetpack/androidx/releases/webkit)：本文核对的 1.17.0 稳定版、1.16.0 startup 稳定化记录、最低 API 级别与变更记录。
 - [WebView startup 优化](https://developer.android.com/develop/ui/views/layout/webapps/optimize-webview-startup) 与 [`WebViewCompat.startUpWebView()`](https://developer.android.com/reference/androidx/webkit/WebViewCompat#startUpWebView(android.content.Context,androidx.webkit.WebViewStartUpConfig,androidx.webkit.WebViewOutcomeReceiver))：稳定版异步启动初始化的时序与错误处理。
 - [`WebViewClient`](https://developer.android.com/reference/android/webkit/WebViewClient)、[本地内容](https://developer.android.com/develop/ui/views/layout/webapps/load-local-content) 与 [speculative loading](https://developer.android.com/develop/ui/views/layout/webapps/speculative-loading)：回调边界、`WebViewAssetLoader`、preconnect、prefetch 与 prerender。
 - [`WebViewCompat.addWebMessageListener()`](https://developer.android.com/reference/androidx/webkit/WebViewCompat#addWebMessageListener(android.webkit.WebView,java.lang.String,java.util.Set%3Cjava.lang.String%3E,androidx.webkit.WebViewCompat.WebMessageListener))：可校验消息来源的 Bridge。
