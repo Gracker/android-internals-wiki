@@ -3,8 +3,8 @@ title: 卡顿分析方法论
 chapter: '7.3'
 section: '7.3'
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-03-31'
-last_verified_against: AOSP android-16.0.0_r1, Perfetto 官方文档
+last_verified: '2026-08-19'
+last_verified_against: AOSP android-17.0.0_r1 FrameMetrics/FrameTimeline/Perfetto stdlib, android17-6.18-2026-06_r6 Binder tracepoints, Perfetto/Android Developers 官方文档
 confidence: high
 consolidated_from:
 - src/part2-performance/ch07-smoothness/15-scenario-playbooks.md
@@ -22,9 +22,31 @@ sources:
 - type: blog
   path: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android卡顿监测的方方面面.md
 - type: official
-  path: https://perfetto.dev/docs/analysis/trace-probe-checks
+  path: https://perfetto.dev/docs/data-sources/frametimeline
+- type: official
+  path: https://perfetto.dev/docs/data-sources/cpu-scheduling
+- type: official
+  path: https://perfetto.dev/docs/concepts/config
+- type: official
+  path: https://perfetto.dev/docs/analysis/stdlib-docs
+- type: official
+  path: https://perfetto.dev/docs/analysis/trace-processor
+- type: official
+  path: https://perfetto.dev/docs/instrumentation/tracing-sdk
 - type: official
   path: https://developer.android.com/reference/android/view/FrameMetrics
+- type: official
+  path: https://developer.android.com/topic/performance/jankstats
+- type: official
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/FrameMetrics.java
+- type: official
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp
+- type: official
+  path: https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/frames/timeline.sql
+- type: official
+  path: https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/binder.sql
+- type: official
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_trace.h
 tags:
 - jank
 - methodology
@@ -43,11 +65,13 @@ related_chapters:
 - '2.18'
 - '1.5'
 - '13.3'
-task6_state: reviewed
-status: "finalized"
-pipeline_stage: ready-to-publish
-task9_state: 'reviewed'
+task6_state: pending-review
+status: ready-for-review
+pipeline_stage: ready-for-review
+task9_state: pending-review
 task2b_state: fixed
+last_rework_at: '2026-08-19T09:49:30+08:00'
+last_rework_run_id: 20260819-094608-rework-b29354cb
 ---
 
 
