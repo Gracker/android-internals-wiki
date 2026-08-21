@@ -31,7 +31,7 @@ sources:
 
 # 4.9 ART HeapTask 调度、启动维护与冻结边界
 
-`HeapTask` 是 ART 进程内的延时任务抽象。它把“何时执行”和“执行什么”分开：`TaskProcessor` 按目标时间维护任务队列，Java 层的 `HeapTaskDaemon` 串行执行到期任务。GC 请求、堆裁剪、启动期清理、低开销方法追踪停止等工作都可以使用这套机制。任务到期只表示获得执行机会，是否真正执行 GC 或清理，还取决于各任务自己的检查条件。
+`HeapTask` 是 ART 进程内的延时任务抽象。它把“何时执行”和“执行什么”分开：`TaskProcessor` 按目标时间维护任务队列，Java 层的 `HeapTaskDaemon` 串行执行到期任务。GC 请求、堆裁剪、启动期清理、低开销方法追踪停止等工作都可以使用这套机制。任务到期只表示获得执行机会，是否执行 GC 或清理，还取决于各任务自己的检查条件。
 
 它有两个边界：
 
@@ -92,7 +92,7 @@ std::multiset<HeapTask*, CompareByTargetRunTime> tasks_;
 
 比较器只读取 `HeapTask::target_run_time_`，单位为纳秒。`GetTask()` 每次检查 `tasks_.begin()`，也就是目标时间最早的任务：
 
-- 队列为空且处理器仍在运行时，等待条件变量；条件变量用于让线程睡眠，直到队列状态变化。
+- 队列为空且处理器仍在运行时，线程在条件变量上睡眠，直到队列状态变化。
 - 最早任务已经到期时，将它移出队列并返回。
 - 最早任务尚未到期时，通过 `TimedWait()` 等待剩余时间。
 - 新任务加入后会触发 `Signal()`，使等待线程重新检查队首。
@@ -109,7 +109,7 @@ std::multiset<HeapTask*, CompareByTargetRunTime> tasks_;
 4. 重新插入；
 5. 如果它成为新队首，唤醒等待线程。
 
-Android 17 中的 `CollectorTransitionTask` 和 `TimeBasedGcThresholdCheckTask` 会使用这种更新时间的能力。理解这一点有助于排查“为什么更新了延时，任务仍按旧顺序运行”一类自定义 ART 问题。
+Android 17 中的 `CollectorTransitionTask` 和 `TimeBasedGcThresholdCheckTask` 会利用这种改期机制。理解这一点有助于排查“为什么更新了延时，任务仍按旧顺序运行”一类自定义 ART 问题。
 
 ### Stop 的含义是排空，而非丢弃
 
@@ -121,7 +121,7 @@ Android 17 中的 `CollectorTransitionTask` 和 `TimeBasedGcThresholdCheckTask` 
 - 原定未来执行的任务可能在停止阶段提前运行；
 - 析构时若仍有未处理任务，处理器会记录警告并调用它们的 `Finalize()`。
 
-这个语义与 Java 源码中“运行到停止且没有待处理任务”为止的注释一致。
+这个语义与 Java 源码中的注释一致：运行到停止，且没有待处理任务。
 
 ## 4.9.3 Android 17 中到底有多少种 HeapTask
 
@@ -209,12 +209,14 @@ static constexpr bool kAsyncReferenceQueueAdd = false;
 
 函数开头先递增 `gcs_completed_`，使从 Zygote 继承或过早排入队列的 GC 请求因序号过期而失效。随后：
 
-- 把下一次 GC 类型设为覆盖范围更大的非 sticky 类型；sticky 是源码中的回收范围分类；
+- 把下一次 GC 类型设为覆盖范围更大的非 sticky 类型（sticky 是源码中的回收范围分类）；
 - 把理想堆占用目标（footprint）暂时提高到 `growth_limit_`；
 - 按该目标设置并发 GC 启动阈值；
 - 若启用了 time-based GC，清空相应阈值和积分状态。
 
-`target_footprint_` 控制 ART 何时认为堆需要收集或增长。`growth_limit_` 才约束堆能够增长到的上界。把前者暂时提高到后者，是为了减少启动阶段因目标过紧而触发 GC 的机会；它不会扩大清单中 `largeHeap` 对应的堆等级，也不会修改 `lmkd` 的 `oom_score_adj`、PSI 或内存控制组（memcg）状态。
+`target_footprint_` 控制 ART 何时认为堆需要收集或增长，`growth_limit_` 才约束堆能够增长到的上界。把前者暂时提高到后者，是为了减少启动阶段因目标过紧而触发 GC 的机会。
+
+它不会扩大清单中 `largeHeap` 对应的堆等级，也不会修改 `lmkd` 的 `oom_score_adj`、PSI 或内存控制组（memcg）状态。
 
 ### 第二步：按堆配置安排 0、1 或 2 次目标降低
 
@@ -226,7 +228,7 @@ static constexpr bool kAsyncReferenceQueueAdd = false;
 | `initial_heap_size_ < growth_limit_`，且等于第一次目标 | 派生后 2 秒 | 无 |
 | `initial_heap_size_ < max(growth_limit_/4, initial_heap_size_)` | 派生后 2 秒 | 派生后 10 秒 |
 
-第一次目标是 `max(growth_limit_ / 4, initial_heap_size_)`，第二次目标是 `initial_heap_size_`。`ReduceTargetFootprintTask` 只有在“从安排任务后尚未发生 GC，且当前没有收集器运行”时才尝试降低目标，并重新计算并发 GC 启动点。若期间已经发生 GC，收集完成逻辑已经更新目标，这个任务无需再做相同工作。
+第一次目标是 `max(growth_limit_ / 4, initial_heap_size_)`，第二次目标是 `initial_heap_size_`。`ReduceTargetFootprintTask` 只有在“自安排任务以来尚未发生 GC，且当前没有收集器运行”时才尝试降低目标，并重新计算并发 GC 启动点。若期间已经发生 GC，收集完成逻辑已经更新目标，这个任务无需再做相同工作。
 
 降低 `target_footprint_` 本身不会马上执行 GC。只有后续分配跨过调整后的阈值时，才更可能触发收集。
 
@@ -252,7 +254,7 @@ static constexpr bool kAsyncReferenceQueueAdd = false;
 
 ### StartupCompletedTask 有显式通知和超时兜底
 
-非 Zygote 应用进程完成派生后设置时，会安排一个 5 秒后的 `StartupCompletedTask`，防止上层没有调用 `VMRuntime.notifyStartupCompleted()`。显式通知发生时，原生方法还会提交一个目标时间为当前时刻的任务。
+非 Zygote 应用进程完成派生后的设置时，会安排一个 5 秒后的 `StartupCompletedTask`，防止上层没有调用 `VMRuntime.notifyStartupCompleted()`。显式通知发生时，原生方法还会提交一个目标时间为当前时刻的任务。
 
 `StartupCompletedTask::Run()` 会先调用 `Runtime::NotifyStartupCompleted()`。若这是首次成功完成通知，它会：
 
@@ -264,11 +266,11 @@ static constexpr bool kAsyncReferenceQueueAdd = false;
 
 ### TraceStopTask 负责到期结束低开销方法追踪
 
-`TraceProfiler::Start()` 对长耗时方法追踪计算结束时间，并提交 `TraceStopTask`。任务到期后调用 `TraceProfiler::TraceTimeElapsed()`。若同类追踪延长，源码可能加入新的停止任务；停止逻辑会根据当前追踪状态和结束时间决定是否应结束，不能仅凭队列中存在多个任务判断发生了重复停止。
+`TraceProfiler::Start()` 为长耗时的方法追踪计算结束时间，并提交 `TraceStopTask`。任务到期后调用 `TraceProfiler::TraceTimeElapsed()`。若同类追踪延长，源码可能加入新的停止任务；停止逻辑会根据当前追踪状态和结束时间决定是否应结束，不能仅凭队列中存在多个任务判断发生了重复停止。
 
 ### MapBootImageMethodsTask 会轮询 JIT 条件
 
-JIT 在进程派生后的阶段满足配置条件时，会安排一个 10 秒后的任务。若任务发现 Zygote 方法映射的编译通知尚未到达，就再安排一个延后 10 秒的同类任务；条件满足后，它会暂停 Java 线程并调用 `MapBootImageMethods()`。
+JIT 在进程派生后的阶段，若满足配置条件，会安排一个 10 秒后的任务。若任务发现 Zygote 方法映射的编译通知尚未到达，就再安排一个延后 10 秒的同类任务；条件满足后，它会暂停 Java 线程并调用 `MapBootImageMethods()`。
 
 它展示了 `HeapTask` 的另一个用途：队列不只服务 GC，还可承载需要在 ART 专用守护线程上延后检查的运行时工作。
 
@@ -285,7 +287,7 @@ JIT 在进程派生后的阶段满足配置条件时，会安排一个 10 秒后
 
 ## 4.9.8 如何在 Perfetto 中验证
 
-`TaskProcessor::RunAllTasks()` 没有给每个 `HeapTask` 自动包一层通用性能轨迹，因此不能假定 Perfetto 必然出现与 C++ 类名相同的持续区间（slice）。可依次查这些可靠信号：
+`TaskProcessor::RunAllTasks()` 没有给每个 `HeapTask` 自动包一层通用性能轨迹，因此不能假定 Perfetto 必然出现与 C++ 类名相同的持续区间（slice）。可以依次核对这些可靠信号：
 
 1. 在线程列表定位 `HeapTaskDaemon`，确认任务执行所在的线程。
 2. GC 收集器用 `"<cause> <collector> GC"` 生成持续区间，具体名字取决于 GC 触发原因和收集器。
