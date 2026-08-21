@@ -168,7 +168,9 @@ codec 名称仍是线上诊断的关键字段。API level 只能说明框架能�
 
 ### 低延迟、HDR 与动态元数据属于组合能力
 
-Android 11 / API 30 起，应用可在 codec 声明 `FEATURE_LowLatency` 后设置 `MediaFormat.KEY_LOW_LATENCY`。这项能力要求 decoder 避免额外持有超过编码标准需要的数据，但编码结构所需的 B-frame 重排、网络 jitter buffer（吸收网络抖动的缓冲）、Surface 排队和显示 VSync 仍可能贡献延迟；运行时还可通过 `PARAMETER_KEY_LOW_LATENCY` 调整。验收要同时记录 codec name、profile/level、首帧、稳态掉帧、功耗和热状态，不能从 API 可用性推导固定延迟。
+Android 11 / API 30 起，应用可在 codec 声明 `FEATURE_LowLatency` 后设置 `MediaFormat.KEY_LOW_LATENCY`。这项能力要求 decoder 避免额外持有超过编码标准需要的数据，但编码结构所需的 B-frame 重排、网络 jitter buffer（吸收网络抖动的缓冲）、Surface 排队和显示 VSync 仍可能贡献延迟；运行时还可通过 `PARAMETER_KEY_LOW_LATENCY` 调整。
+
+验收要同时记录 codec name、profile/level、首帧、稳态掉帧、功耗和热状态，不能从 API 可用性推导固定延迟。
 
 HDR、Dolby Vision、secure、high-frame-rate、low-latency 与 tunnel 要按实际组合查询和测试。显示支持、decoder profile、extractor metadata、secure Surface、HWC plane 和 tone mapping 任一环节都可能改变结果。Android 17 还增加 Eclipsa video 的平台播放与采集能力；这只说明 framework 能传递相应动态元数据，不能保证所有 SoC、显示或 codec 组合都采用硬件低成本路径。
 
@@ -249,7 +251,9 @@ Tunnel 的首帧控制很容易被误读。Android 17 提供：
 - `MediaCodec.OnFirstTunnelFrameReadyListener`：报告首帧已经解码并具备进入 render 流程的条件；
 - `MediaCodec.OnFrameRenderedListener`：报告 codec/HAL 给出的 frame rendered 事件，该事件仍属于 codec 侧反馈。
 
-当 peek 关闭时，首帧可以完成解码并触发 first-tunnel-frame-ready，但显示仍保持上一幅画面或黑屏；AudioTrack 开始播放或应用开启 peek 后，held frame 才进入后续显示过程。因此，`OnFirstTunnelFrameReadyListener` 不能充当首帧已上屏指标，`OnFrameRenderedListener` 也不等同于 panel scanout 完成的 present fence。应用若要定义“可见首帧”，还需结合显示侧或用户可见边界的证据。
+当 peek 关闭时，首帧可以完成解码并触发 first-tunnel-frame-ready，但显示仍保持上一幅画面或黑屏；AudioTrack 开始播放或应用开启 peek 后，held frame 才进入后续显示过程。
+
+因此，`OnFirstTunnelFrameReadyListener` 不能充当首帧已上屏指标，`OnFrameRenderedListener` 也不等同于 panel scanout 完成的 present fence。应用若要定义“可见首帧”，还需结合显示侧或用户可见边界的证据。
 
 Codec2 的对应路径为：
 
@@ -259,7 +263,7 @@ Codec2 的对应路径为：
 - `MediaCodec` 收到 ready 事件且 peek 已开启时发出内部 `android._trigger-tunnel-peek`，`CCodecConfig` 再把它映射到 `C2_PARAMKEY_TUNNEL_START_RENDER`；
 - component 通过 `C2PortTunnelSystemTime` 上报 `CLOCK_MONOTONIC` 纳秒时间，CCodec 再触发 frame-rendered callback。
 
-这里存在一处需要同时阅读公开文档和兼容实现的边界。`MediaCodec.java` 的 API 注释写着 peek 默认开启；Android 17 的 native `MediaCodec.cpp` 在应用未显式设置时仍保留 `kLegacyMode`，`start` 后把 `android._tunnel-peek-set-legacy=1` 传给 component。`CCodecConfig` 将其映射为 `UNSPECIFIED_PEEK`，decoder 可以忽略 hold/start-render 协议。官方设备实现文档也说明，应用未设置 `PARAMETER_KEY_TUNNEL_PEEK` 时，行为由 OEM 决定。
+peek 的默认行为需要同时对照公开文档与兼容实现。`MediaCodec.java` 的 API 注释写着 peek 默认开启；Android 17 的 native `MediaCodec.cpp` 在应用未显式设置时仍保留 `kLegacyMode`，`start` 后把 `android._tunnel-peek-set-legacy=1` 传给 component。`CCodecConfig` 将其映射为 `UNSPECIFIED_PEEK`，decoder 可以忽略 hold/start-render 协议。官方设备实现文档也说明，应用未设置 `PARAMETER_KEY_TUNNEL_PEEK` 时，行为由 OEM 决定。
 
 依赖 seek 预览或暂停态首帧的应用应在 codec 第一次 `start` 后、提交第一块有效视频输入前显式设置 `PARAMETER_KEY_TUNNEL_PEEK` 为 0 或 1。Android 17 会在 `flush` 或 `stop/start` 时保留已经显式设置的 enable bit，并把状态重置为“尚无首帧”；如果要改变策略，应在这个重置边界之后、下一块有效输入之前设置新值。重建 codec 实例时仍要重新显式设置，避免回到 legacy unspecified 模式。
 
@@ -305,7 +309,9 @@ Media3 1.10.1 的 `AdaptiveTrackSelection` 默认值为：
 
 `allocatableBandwidth = cautiousBandwidth × max(chunkDuration / playbackSpeed - TTFB, 0) / chunkDuration`
 
-1.10.1 的 `DefaultBandwidthMeter` 没有覆盖 `BandwidthMeter.getTimeToFirstByteEstimateUs()`，因此使用接口默认值 `TIME_UNSET`；`ExperimentalBandwidthMeter` 则通过 `TimeToFirstByteEstimator` 提供估计。多条 adaptive selection 共用带宽时，factory 生成的 adaptation checkpoints（把总带宽映射到各自可分配带宽的检查点）还会参与预算分配。因此，`track bitrate < 0.7 × bandwidth estimate` 只覆盖最简单的一种近似，会漏掉直播、倍速、可选 TTFB 和并行选择影响。
+1.10.1 的 `DefaultBandwidthMeter` 没有覆盖 `BandwidthMeter.getTimeToFirstByteEstimateUs()`，因此使用接口默认值 `TIME_UNSET`；`ExperimentalBandwidthMeter` 则通过 `TimeToFirstByteEstimator` 提供估计。
+
+多条 adaptive selection 共用带宽时，factory 生成的 adaptation checkpoints（把总带宽映射到各自可分配带宽的检查点）还会参与预算分配。因此，`track bitrate < 0.7 × bandwidth estimate` 只覆盖最简单的一种近似，会漏掉直播、倍速、可选 TTFB 和并行选择影响。
 
 `updateSelectedTrack()` 先根据当前带宽预算求出理想档位，再用 buffer 健康度抑制过快切换：
 
@@ -318,7 +324,7 @@ Media3 1.10.1 的 `AdaptiveTrackSelection` 默认值为：
 
 Media3 1.10.1 的默认 ABR 源码中没有 `AdaptivePlaybackCache` 或 `StreamSharingCache`，官方源码也没有二者协同预测并把 ABR 决策压缩到亚 100 ms 的流程。
 
-源码确实提供 experimental bandwidth estimator，但其类和配置与上述名称无关，也不属于 `DefaultBandwidthMeter` 的默认逻辑。引用实验组件时必须写清构造方式、启用条件和版本，不能把它们描述为所有 Media3 播放都会经过的主路径。
+源码提供 experimental bandwidth estimator，但其类和配置与上述名称无关，也不属于 `DefaultBandwidthMeter` 的默认逻辑。引用实验组件时必须写清构造方式、启用条件和版本，不能把它们描述为所有 Media3 播放都会经过的主路径。
 
 ## ABR、解码和显示瓶颈怎样区分
 
