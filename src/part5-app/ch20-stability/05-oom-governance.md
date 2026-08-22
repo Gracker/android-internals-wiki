@@ -5,8 +5,8 @@ chapter: "20.5"
 section: "20.5"
 status: "finalized"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-08-14"
-last_verified_against: "AOSP android-17.0.0_r1 ART, Bionic, HWUI and ActivityThread; android17-6.18-2026-06_r6 kernel; Android Developers API 37 OOM profiling, memory, Bitmap, ComponentCallbacks2 and ApplicationExitInfo docs"
+last_verified: "2026-08-21"
+last_verified_against: "AOSP android-17.0.0_r1 ART, Bionic, HWUI and ActivityThread; android17-6.18-2026-06_r6 kernel; Android Developers API 30 ApplicationExitInfo/ActivityManager low-memory kill report docs; API 37 OOM profiling, memory, Bitmap and ComponentCallbacks2 docs"
 confidence: medium-high
 sources:
   - type: aosp
@@ -65,6 +65,8 @@ pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: fixed
+last_idle_audit_at: "2026-08-21T22:35:02+08:00"
+last_idle_audit_run_id: "20260821-223502-idle-audit-67768f8d"
 ---
 
 
@@ -86,7 +88,7 @@ Java heap 达到 ART 的 growth limit、由 native 层提供存储的 Java API �
 | 由 native 层提供存储的 Java API 分配失败 | `native alloc`、Bitmap OOM、特定 JNI 错误 | Java 栈、native allocation 栈、PSS/RSS | 由 API 决定 |
 | Java platform thread（传统 Java 线程）创建失败 | `Could not allocate JNI Env` 或 `pthread_create (...) failed` | OOME 错误文本、线程数、线程栈、VmSize、进程限制 | ART 会抛出 OOME |
 | 普通 native（C/C++ 层）分配失败 | `malloc/calloc/mmap` 返回空指针或 `ENOMEM`，也可能被调用方转换为异常或 `abort()` | native 栈、heapprofd、maps/smaps、errno（系统错误编号） | 不一定 |
-| 低内存结束进程 | 进程被系统终止，重启后看到 `ApplicationExitInfo.REASON_LOW_MEMORY` | `ApplicationExitInfo`、LMKD/系统日志、内存压力 | 否 |
+| 低内存结束进程 | 进程被系统终止；Android 11 / API 30+ 的支持设备可记录 `ApplicationExitInfo.REASON_LOW_MEMORY` | `ApplicationExitInfo`（API 30+）、LMKD/系统日志、内存压力 | 否 |
 | FD 耗尽或高编号 FD 误用 | `EMFILE`、创建 socket/pipe/Looper 失败，或 FORTIFY abort | `/proc/self/fd`、rlimit、FD 创建与关闭记录 | 通常否 |
 | 虚拟地址空间或 VMA（virtual memory area，虚拟内存区域）耗尽 | `mmap` 返回 `ENOMEM`，后续表现取决于调用方 | `/proc/self/maps`、VmSize、映射数、失败栈 | 不一定 |
 
@@ -224,7 +226,7 @@ Android 17 中有明确的转换点：
 
 ### 诊断顺序
 
-1. 用 [`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)（系统保存的历史进程退出记录）区分 OOME crash、native crash 和 `REASON_LOW_MEMORY`。先调用 `ActivityManager.isLowMemoryKillReportSupported()` 判断设备是否支持低内存退出原因；不支持时，低内存终止可能记录为 `REASON_SIGNALED` 与 `SIGKILL`，缺少 `REASON_LOW_MEMORY` 不能排除系统内存压力。系统直接终止进程时没有可依赖的未捕获异常回调。
+1. Android 11 / API 30 及以上，用 [`ActivityManager.getHistoricalProcessExitReasons()`](https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,%20int,%20int)) 读取 [`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)（系统保存的历史进程退出记录），区分 OOME crash、native crash 和 `REASON_LOW_MEMORY`；Android 10 / API 29 没有这组历史退出 API，只能依赖 LMKD/系统日志、崩溃记录和重启前的轻量本地标记。API 30+ 还要先调用 `ActivityManager.isLowMemoryKillReportSupported()` 判断设备是否支持低内存退出原因；不支持时，低内存终止可能记录为 `REASON_SIGNALED` 与 `SIGKILL`，缺少 `REASON_LOW_MEMORY` 不能排除系统内存压力。系统直接终止进程时没有可依赖的未捕获异常回调。
 2. 对比同场景的 PSS/RSS、Java heap、native malloc、图形内存、线程和映射数，先确定哪一类内存在增长。
 3. `malloc` 分配使用 [heapprofd 或 Android Studio native allocation profiler](https://developer.android.com/studio/profile/record-native-allocations)，保留分配与释放栈；接入条件受构建类型、`profileable`（允许性能分析工具连接）配置、设备和系统策略影响。
 4. `mmap()` 映射解析 `/proc/self/maps` 与 `smaps`（进程的虚拟内存区间及逐区间统计），按文件路径、匿名映射名称和权限汇总。
