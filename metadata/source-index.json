@@ -16,7 +16,7 @@
       "chapter": "ch01",
       "section": "1.11",
       "processed_at": "2026-07-16T06:14:00.474672",
-      "action": "injected",
+      "action": "body-applied",
       "previous_route_status": null,
       "target_path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
       "route_confidence": 14,
@@ -26,7 +26,11 @@
         "aosp"
       ],
       "route_status": "existing-chapter-routed",
-      "routed_at": "2026-08-22T17:04:15.219907+08:00"
+      "routed_at": "2026-08-22T17:04:15.219907+08:00",
+      "previous_action": "injected",
+      "status": "body-applied",
+      "applied_at": "2026-08-22T17:27:05+08:00",
+      "applied_run_id": "20260822-172641-c689fa74"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-gpu-power-advisor-gpu-decomposition-frame-producer-aidl.md",
