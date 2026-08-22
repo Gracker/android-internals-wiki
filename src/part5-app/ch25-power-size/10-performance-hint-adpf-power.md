@@ -1,8 +1,8 @@
 ---
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-08-20"
-last_source_verified_at: "2026-08-20"
-last_verified_against: "Android Developers API reference and ADPF/NDK docs retrieved 2026-08-20 + AOSP android-17.0.0_r1（PerformanceHintManager/frameworks/native performance_hint.h/HintManagerService/PowerStatsService/StatsPullAtomCallbackImpl/IntervalRandomNoiseGenerator/PowerStatsDataStorage/PowerStatsLogger/IPowerStats.aidl/Power HAL AIDL）"
+last_verified: "2026-08-22"
+last_source_verified_at: "2026-08-22"
+last_verified_against: "Android Developers API reference and ADPF/NDK docs retrieved 2026-08-20 + AOSP android-17.0.0_r1（PerformanceHintManager/frameworks/native performance_hint.h/HintManagerService/PowerStatsService/StatsPullAtomCallbackImpl/IntervalRandomNoiseGenerator/PowerStatsDataStorage/PowerStatsLogger/IPowerStats.aidl/Power HAL AIDL）；版本范围语句按 ADPF Java/NDK/HintManagerService/SessionMode 源码锚点复核 2026-08-22"
 confidence: medium-high
 sources:
   - type: official
@@ -75,15 +75,15 @@ consolidated_from:
 title: "PerformanceHintManager 与 ADPF 能效验证"
 chapter: "25.10"
 section: "25.10"
-status: finalized
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: "reviewed"
+status: ready-for-review
+pipeline_stage: ready-for-review
+task6_state: pending-review
+task9_state: "pending-review"
 task2b_state: "fixed"
 last_idle_audit_at: "2026-08-20T01:13:45+08:00"
 last_idle_audit_run_id: "20260820-011345-idle-audit-3ae38f95"
-last_rework_at: "2026-08-02T09:36:04+08:00"
-last_rework_run_id: "20260802-093547-rework-13a21d51"
+last_rework_at: "2026-08-22T09:37:17+08:00"
+last_rework_run_id: "20260822-093550-rework-3ae38f95"
 last_draft_polish_at: "2026-08-15T15:29:10+08:00"
 last_draft_polish_run_id: "20260815-152910-gracker-writing-451"
 last_review_finalize_at: "2026-08-15T15:29:10+08:00"
@@ -414,7 +414,7 @@ Perfetto 文档说明，电池计数器在 USB 插电时会反映充电电流，
 
 ADPF 的完整效果同时取决于应用上报、系统服务和 Power HAL。AOSP `android-17.0.0_r1` 展示了公开 API 进入系统后的实现边界。
 
-> **版本限定**：源码锚点统一使用 `android-17.0.0_r1`。main/master（持续开发的主分支）或 Android 18/API 38 及以上的内容不在讨论范围内；公开 API 只核对到 Android 17/API 37。
+> **版本限定**：源码锚点统一使用 `android-17.0.0_r1`；公开 API 只核对到 Android 17/API 37。后续主开发分支的变更不作为本文结论。
 
 ### Power HAL `ML_ACC` Boost
 
