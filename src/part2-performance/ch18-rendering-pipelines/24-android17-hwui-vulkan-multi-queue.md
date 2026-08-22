@@ -201,7 +201,7 @@ mGetDeviceQueue(mDevice, mGraphicsQueueIndex, 1, &mAHBUploadQueue);
 - `kRenderThread` → `mGraphicsQueue`；
 - `kUploadThread` → `mAHBUploadQueue`。
 
-直接效果是分开主机侧提交顺序：硬件位图上传不会进入 RenderThread 所用 queue 的同一顺序链。实际性能收益仍取决于驱动和硬件：
+直接效果是把主机侧提交顺序分开：硬件位图上传不会进入 RenderThread 所用 queue 的顺序链。实际性能收益仍取决于驱动和硬件：
 
 - GPU 有可重叠的 copy/graphics 执行资源时，上传可能与窗口绘制部分重叠；
 - 两条 queue 争用内存带宽、cache 或同一图形引擎时，驱动可能交错甚至串行；
@@ -307,7 +307,7 @@ GPU 工具把 draw call 归到某帧，只能回答这些 GPU 命令属于哪组
 2. 创建 `VkSemaphore`；
 3. 以 `VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT` 和 `VK_SEMAPHORE_IMPORT_TEMPORARY_BIT` 把 fd 临时导入 semaphore；
 4. 让 Skia surface 的后续 GPU 工作等待该 semaphore；
-5. 立即调用 `FlushAndSubmit()`，确保 wait 真正进入 GPU submission。
+5. 立即调用 `FlushAndSubmit()`，确保 wait 进入 GPU submission。
 
 导入或创建失败时，源码改由 CPU 调用 `sync_wait()`。这条 fence 的方向是 Consumer/HWC 把旧 buffer 释放给 App Producer 复用，并非 SurfaceFlinger 作为 Producer 通知 App 新内容已经准备好。
 
@@ -317,7 +317,7 @@ queue 0 的窗口绘制工作准备提交时，`finishFrame()` 创建可导出�
 
 这个 fd 在 BufferQueue 消费侧成为当前 buffer 的 acquire fence。SurfaceFlinger 可以先接收 buffer 元数据，但读取像素前必须等待 fence signal，确认 GPU 已经写完。`presentCurrentBuffer()` 的函数名容易误导；这里执行的是 queue buffer，还没有完成屏幕 present。
 
-创建可导出 semaphore 失败、导致 `sharedSemaphore` 为空时，`finishFrame()` 会调用 `mQueueWaitIdle(mGraphicsQueue)`，保守地等待 queue 0 空闲。若 GPU 已成功提交，只有后续 `vkGetSemaphoreFdKHR()` 导出 fd 失败，Android 17 源码只记录错误并返回无效 fd。这两类失败不能合并成同一条 fallback。正常路径无需 RenderThread 在 CPU 上等待整帧 GPU 完成。
+创建可导出 semaphore 失败、导致 `sharedSemaphore` 为空时，`finishFrame()` 会调用 `mQueueWaitIdle(mGraphicsQueue)`，保守地等待 queue 0 空闲。若 GPU 已成功提交，但后续 `vkGetSemaphoreFdKHR()` 导出 fd 失败，Android 17 源码只记录错误并返回无效 fd。这两类失败不能合并成同一条 fallback。正常路径无需 RenderThread 在 CPU 上等待整帧 GPU 完成。
 
 下面的时序图按 buffer 所有权变化标出 fence 方向：
 
@@ -343,7 +343,7 @@ sequenceDiagram
 
 ## Buffer age 与 partial update
 
-当 `Properties::enablePartialUpdates` 和 `Properties::useBufferAge` 同时开启时，`VulkanManager` 使用 `SwapBehavior::BufferAge`。buffer age 表示一块 buffer 距离上次成功入队经历了多少次窗口提交。`VulkanSurface` 根据本进程的 present count 与该 buffer 上次成功 queue 的 count 计算 age；新 buffer、内容无效或 transform 改变时返回 0。
+当 `Properties::enablePartialUpdates` 和 `Properties::useBufferAge` 同时开启时，`VulkanManager` 使用 `SwapBehavior::BufferAge`。buffer age 表示一块 buffer 距离上次成功入队经历了多少次窗口提交。`VulkanSurface` 根据本进程的 present count 与该 buffer 上次成功入队时的 count 计算 age；新 buffer、内容无效或 transform 改变时返回 0。
 
 HWUI 会结合 buffer age 与 swap history，计算本次需要恢复的 damage（发生变化、需要更新的区域），再通过 `native_window_set_surface_damage()` 把窗口 damage 交给 ANativeWindow。这里有三个限制：
 
@@ -363,7 +363,7 @@ HWUI 会结合 buffer age 与 swap history，计算本次需要恢复的 damage�
 
 一种常见误解是 SkiaGL 只有一个 context，因此 hardware bitmap 上传必然与 RenderThread 串行。Android 17 的 `HardwareBitmapUploader` 在 GL 路径同样使用独立的 `EGLUploader`、`GrallocUploadThread` 与 EGL context，并通过 EGL fence 等待上传完成。
 
-两种后端的可观察差异应这样描述：
+两种后端的可观察差异如下：
 
 | 维度 | SkiaVulkan | SkiaGL |
 | --- | --- | --- |
