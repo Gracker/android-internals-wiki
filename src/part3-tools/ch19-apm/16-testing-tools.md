@@ -4,8 +4,8 @@ chapter: '19'
 section: '19.16'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-14'
-last_verified_against: "PerfDog current official site plus client, Service, metric and network docs; SoloPi v0.12.0 release and pinned source; Emmagee V2.5.1 release and pinned source; Android performance docs; AOSP android-17.0.0_r1 PowerStats, Thermal and SurfaceFlinger anchors"
+last_verified: '2026-08-21'
+last_verified_against: "PerfDog current official site plus client, Service, metric and network docs; SoloPi v1.0.2 release and pinned source; Emmagee V2.5.1 release and pinned source; Android performance docs; AOSP android-17.0.0_r1 PowerStats, Thermal and SurfaceFlinger anchors"
 last_rework_at: "2026-08-05T13:35:16+08:00"
 last_rework_run_id: "20260805-133516-rework-bdb326bd"
 confidence: medium
@@ -41,9 +41,9 @@ sources:
 - type: official
   path: https://developer.android.com/studio/profile/jank-detection
 - type: official
-  path: https://github.com/alipay/SoloPi/releases/tag/v0.12.0
+  path: https://github.com/alipay/SoloPi/releases/tag/v1.0.2
 - type: official
-  path: https://github.com/alipay/SoloPi/tree/35a4a3e3fe02deeb89df35c82dc3ba03a33f4f13
+  path: https://github.com/alipay/SoloPi/tree/c83276286183f43d99f35cd52a6e2432bd11c7af
 - type: official
   path: https://github.com/NetEase/Emmagee/releases/tag/V2.5.1
 - type: official
@@ -68,6 +68,8 @@ last_review_finalize_at: "2026-08-05T14:07:37+08:00"
 last_review_finalize_run_id: "20260805-140520-70395a2d"
 task9_state: reviewed
 task2b_state: fixed
+last_idle_audit_at: "2026-08-21T18:42:54+08:00"
+last_idle_audit_run_id: "20260821-183524-idle-audit-d188495e"
 ---
 
 
@@ -276,7 +278,7 @@ PerfDog Service 的公开 gRPC（跨进程远程调用框架）接口覆盖设�
 
 场景文件可采用下面的命名方式：
 
-`<app>-<version>-<device>-<android>-<scene>-<mode>-<round>-<timestamp>`
+`<app>-<version>-<device>-<android>-<scene>-<mode>-<iteration>-<timestamp>`
 
 例如：`demo-6.2.0-pixel8-android17-feed-scroll-wifi-r03-20260725T143000+0800`。名称用于定位文件，完整条件仍写入报告，避免文件名过长。
 
@@ -292,7 +294,7 @@ PerfDog Service 的公开 gRPC（跨进程远程调用框架）接口覆盖设�
 - 设备：<品牌与完整型号> / <SoC> / <RAM>
 - 系统：Android <version> / API <level> / <build> / <security patch>
 - PerfDog：<client/service version> / <USB|Wi-Fi> / <enabled metrics>
-- 场景：<scene name> / <script version> / <duration> / <round count>
+- 场景：<scene name> / <script version> / <duration> / <轮次数>
 - 显示：<resolution> / <refresh rate> / <brightness> / <performance mode>
 - 网络：<type> / <server region> / <weak-network profile>
 - 电源：<start-end battery> / <charging state> / <external meter>
@@ -395,9 +397,9 @@ Android 没有向普通工具保证一套跨厂商一致的 GPU 利用率、频�
 
 ## SoloPi：复现工具，不能当作指标的权威来源
 
-SoloPi 的开源部分提供录制回放、设备侧操作、悬浮窗采样和视觉响应分析，适合 QA 固定复现路径；一机多控（用一套操作同步控制多台设备）的实现并未完整开源。GitHub 最新发布仍是 `v0.12.0`（2022 年 5 月 9 日），当前 `master` 的最后提交日期为 2024 年 4 月 16 日。该源码基线仍声明 `appVersionName=0.12.0`，使用 AGP（Android Gradle Plugin）4.0.2、compile/targetSdk 29 和 NDK 16（native 开发工具链）；上游没有 Android 17 兼容报告。
+SoloPi 的开源部分提供录制回放、设备侧操作、悬浮窗采样和视觉响应分析，适合 QA 固定复现路径；一机多控（用一套操作同步控制多台设备）的实现并未完整开源。截至 2026 年 8 月 21 日，GitHub 最新发布为 `v1.0.2`（2026 年 8 月 19 日），对应 `master` 提交 `c83276286183f43d99f35cd52a6e2432bd11c7af`；发布说明只声明悬浮窗授权流程修复。当前源码基线声明 `appVersionName=1.0.2`，仍使用 AGP（Android Gradle Plugin）4.0.2、compile/targetSdk 29 和 NDK 21.1.6352462（native 开发工具链）。它可以作为较新的 APK 基线重新验收，但不能替代 Android 17 / targetSdk 37 下的权限、存储、前台服务、录屏和 16 KB 兼容检查。
 
-讨论兼容时要分开两个问题：旧 target 29 APK 能否在某台 API 37 设备运行，以及源码升级到 targetSdk 37 后能否满足现代规则。前者只证明一组 APK、系统镜像与厂商策略共同可用，不能替代后者的构建、权限、前台服务、存储和 16 KB 验收。
+讨论兼容时要分开两个问题：当前 target 29 APK 能否在某台 API 37 设备运行，以及源码升级到 targetSdk 37 后能否满足现代规则。前者只证明一组 APK、系统镜像与厂商策略共同可用，不能替代后者的构建、权限、前台服务、存储和 16 KB 验收。
 
 ### Android 17 准入项
 
@@ -476,8 +478,8 @@ Emmagee `V2.5.1` 发布于 2017 年 8 月 25 日，上游 `master` 最后提交�
 - [Android Thermal mitigation](https://source.android.com/docs/core/power/thermal-mitigation)
 - [Android slow rendering 与 FrameTimeline](https://developer.android.com/topic/performance/vitals/render)
 - [Android Studio UI jank detection](https://developer.android.com/studio/profile/jank-detection)
-- [SoloPi `v0.12.0` release](https://github.com/alipay/SoloPi/releases/tag/v0.12.0)
-- [SoloPi 固定源码](https://github.com/alipay/SoloPi/tree/35a4a3e3fe02deeb89df35c82dc3ba03a33f4f13)
+- [SoloPi `v1.0.2` release](https://github.com/alipay/SoloPi/releases/tag/v1.0.2)
+- [SoloPi 固定源码](https://github.com/alipay/SoloPi/tree/c83276286183f43d99f35cd52a6e2432bd11c7af)
 - [SoloPi 性能工具 Wiki](https://github.com/alipay/SoloPi/wiki/Performance)
 - [Emmagee `V2.5.1` release](https://github.com/NetEase/Emmagee/releases/tag/V2.5.1)
 - [Emmagee 固定源码](https://github.com/NetEase/Emmagee/tree/6a382dffe74b5be6d2de78cb0c640cc67e9ce650)
