@@ -109,7 +109,9 @@ AndroidGodEye 的 `3.4.3` tag 指向表中的固定 commit，CI（Continuous Int
 
 ## BlockCanary：保留 Looper 长消息原理
 
-BlockCanary 1.5.0 使用公开的 `Looper.setMessageLogging()` 安装 `Printer` 回调。Looper 是 Android 线程的消息循环；这里获取的是主线程每次 `Message` dispatch（消息开始执行到执行结束）的边界，再由后台线程采样主线程 Java 栈。它测到的是一次 dispatch 的 wall time（实际经过时间），不包含 delivery delay（消息已入队、尚未开始执行的等待时间），也不覆盖从输入处理、RenderThread 渲染线程、GPU 执行到画面 present（提交显示）的完整帧流水线。
+BlockCanary 1.5.0 使用公开的 `Looper.setMessageLogging()` 安装 `Printer` 回调。Looper 是 Android 线程的消息循环；这里拿到的是主线程每次 `Message` dispatch（消息开始执行到执行结束）的起止时刻，再由后台线程采样主线程 Java 栈。
+
+它测到的是一次 dispatch 的 wall time（实际经过时间），不包含 delivery delay（消息已入队、尚未开始执行的等待时间），也不覆盖从输入处理、RenderThread 渲染线程、GPU 执行到画面 present（提交显示）的完整帧流水线。
 
 上游 1.5.0 停在 2017 年，仍使用 AGP 2.2.2、`compileSdk 23` 和 `targetSdk 22`。analyzer 的 manifest（组件与权限声明文件）涉及旧式组件导出、通知、`PendingIntent`、外部存储、IMEI 与权限处理，不能直接满足现代平台要求。因此 Android 17 项目只借鉴原理，不直接依赖旧 AAR（Android Archive，Android 库归档）。
 
@@ -122,7 +124,9 @@ BlockCanary 1.5.0 使用公开的 `Looper.setMessageLogging()` 安装 `Printer` 
 3. dispatch 结束时按 wall time 判断是否超阈值，再异步组装报告并停止 sampler。
 4. 若时间窗内没有栈样本，原实现不会生成 `BlockInfo`。
 
-例如，把阈值设为 1000 ms、采样间隔自定义为 300 ms 时，一次持续 1200 ms 的 dispatch 只会在约 800 ms 和 1100 ms 计划采样，前 200 ms 的真正热点可能完全错过。采样栈只说明取样瞬间主线程所在的位置：wall time 很长、thread CPU time（该线程实际占用 CPU 的时间）很短时，仍要用 Perfetto（Android 系统 trace 分析工具）区分 Runnable 饥饿（线程可运行却长期抢不到 CPU）、Binder 跨进程调用、锁等待或 I/O；两者都长才更接近持续占用 CPU。
+例如，把阈值设为 1000 ms、采样间隔自定义为 300 ms 时，一次持续 1200 ms 的 dispatch 只会在约 800 ms 和 1100 ms 两个时间点安排采样，前 200 ms 中真正的热点可能完全错过。
+
+采样栈只说明取样瞬间主线程所在的位置：wall time 很长、thread CPU time（该线程实际占用 CPU 的时间）很短时，仍要用 Perfetto（Android 系统 trace 分析工具）区分 Runnable 饥饿（线程可运行却长期抢不到 CPU）、Binder 跨进程调用、锁等待或 I/O；两者都长才更接近持续占用 CPU。
 
 `Looper` 只有一个 message logger 槽位，后安装的 SDK 会覆盖先安装者，BlockCanary 停止时又会将它设为 `null`。自研方案若由应用控制所有观察者，可以安装一个统一分发器（hub）转发回调；它仍无法阻止另一个 SDK 后续覆盖。Android 17 虽然还有隐藏的 `Looper.Observer` 和 slow-log 阈值，但隐藏 API 不属于普通应用的稳定契约，不应通过反射把它们当成长期替代方案。
 
@@ -136,7 +140,7 @@ BlockCanary 1.5.0 使用公开的 `Looper.setMessageLogging()` 安装 `Printer` 
 
 ## ArgusAPM：完整架构样本与迁移对象
 
-ArgusAPM 是 360 在 2018 年开源的客户端 APM。它把编译期织入、运行时 task（采集任务）、`ContentProvider`（可在应用启动早期创建、也能承接多进程访问的 Android 组件）、SQLite 批量缓存、云控接口（服务端远程下发采集规则）和上传接口放在一个仓库里，适合学习模块边界；公开代码末次提交在 2019 年，Bintray 发布渠道和免费服务均已退出，新项目不应把它作为生产依赖。
+ArgusAPM 是 360 在 2018 年开源的客户端 APM。它把编译期织入、运行时 task（采集任务）、`ContentProvider`（可在应用启动早期创建、也能承接多进程访问的 Android 组件）、SQLite 批量缓存、云控接口（服务端远程下发采集规则）和上传接口放在一个仓库里，适合学习模块边界。公开代码末次提交在 2019 年，Bintray 发布渠道和免费服务均已退出，新项目不应把它作为生产依赖。
 
 其采集链可概括为：Gradle 插件通过 AspectJ AOP（面向切面编程）或 ASM 字节码修改插入采集逻辑，运行时 task 生成事件，未对其他应用导出的 `ContentProvider` 汇总多进程写入，`DbCache` 按 15 秒或 100 条批量入库，宿主实现 `IRuleRequest` 与 `IUpload` 对接远程规则和服务端。
 
@@ -156,7 +160,13 @@ ArgusAPM 是 360 在 2018 年开源的客户端 APM。它把编译期织入、�
 
 多进程通过 Provider 汇总写入的思路仍可借鉴，但每个进程必须有明确模块表，只有一个进程负责清理、远程规则和上传。原 `DataHelper.readAll()` 对不足 1000 条的末批数据没有检查 `onRead()` 返回值，回调失败后仍可能删除数据。迁移时应采用 at-least-once delivery（未收到成功确认便保留并重试）、服务端按 `event_id` 幂等去重，以及显式 ACK（服务端确认已接收）。
 
-存量项目按下面顺序退出：先冻结旧事件、开关、表、看板和 R8 规则；移除构建插件；在上传适配层补 schema（事件字段契约）、event（单条事件）、session（一次连续使用会话）、trace（一次调用链）、process ID 与单调时钟；按模块同时写入旧采集器和新 collector（采集器）做对照；连续两个发布周期稳定后再删除旧 AAR、Provider、权限、数据库和服务端 schema。
+存量项目按下面顺序退出：
+
+1. 冻结旧事件、开关、表、看板和 R8 规则。
+2. 移除构建插件。
+3. 在上传适配层补 schema（事件字段契约）、event（单条事件）、session（一次连续使用会话）、trace（一次调用链）、process ID 与单调时钟。
+4. 按模块同时写入旧采集器和新 collector（采集器）做对照。
+5. 连续两个发布周期稳定后再删除旧 AAR、Provider、权限、数据库和服务端 schema。
 
 这里的兼容性判断不等于“所有运行时模块在 Android 17 都会崩溃”。它只表示上游没有提供 `targetSdk 37`、API 37 与当前 AGP 的完整验证，因此不能把旧版本 README 当成生产准入报告。
 
@@ -164,7 +174,7 @@ ArgusAPM 是 360 在 2018 年开源的客户端 APM。它把编译期织入、�
 
 AndroidGodEye 把系统拆成 Core、Debug Monitor 和 Toolbox 三层。Core 生成性能数据，Debug Monitor 在浏览器展示，Toolbox 提供 LeakCanary、xCrash、OkHttp 等组合入口。其 README 列出的范围很广，包括 CPU、Battery、FPS、PSS、Heap（堆内存）、RAM（物理内存）、流量、卡顿、启动、线程 dump、页面耗时、Java/native Crash、ANR、方法耗时、APK（应用安装包）体积、图片与 View 检查。
 
-这套设计最值得借的是“采集能力与查看方式分离”：
+这套设计里值得借鉴的，是“采集能力与查看方式分离”：
 
 - Debug 调试包可以保留高密度实时曲线、线程列表与网络正文。
 - Release 生产包只保留经过预算和脱敏的事件，不携带浏览器面板或调试入口。
@@ -185,13 +195,15 @@ Collie 的代码量不大，很适合学习“一个轻量监控库如何拼出�
 - 一个 Looper 只有一个 message logging Printer。多个监控 SDK 都想接管它时，安装顺序和恢复逻辑会影响数据，甚至导致某一方失去回调。
 - 一次主线程 message 很慢可以解释部分卡顿，却不等于一帧的完整 CPU/GPU 时长，也不等于系统已经判定 ANR。
 
-Collie 在 dispatch 开始时安排一个 5 秒延迟任务，dispatch 结束时把任务标记为失效。因此它报告的是“单次主线程 dispatch 超过 5 秒”的预警。系统 ANR 还有 input dispatch、BroadcastReceiver、Service、ContentProvider、无焦点窗口等多种类型，超时也不是统一的 5 秒常量。该信号可以用于提前抓 Java 栈，事件名应写成 `main_dispatch_stall`，不应直接写成 `system_anr`。
+Collie 在 dispatch 开始时安排一个 5 秒延迟任务，dispatch 结束时把任务标记为失效。因此它报告的是“单次主线程 dispatch 超过 5 秒”的预警。
+
+系统 ANR 还有 input dispatch、BroadcastReceiver、Service、ContentProvider、无焦点窗口等多种类型，超时也不是统一的 5 秒常量。该信号可以用于提前抓 Java 栈，事件名应写成 `main_dispatch_stall`，不应直接写成 `system_anr`。
 
 ### FPS 计算默认了 60 Hz
 
 `FpsTracker` 把一次 dispatch 的耗时按 16 ms 分桶，并用 `cost / 16 - 1` 推算掉帧数，平均 FPS 还被限制在 60。Hz 表示屏幕每秒刷新次数；这个模型在 60 Hz 设备上已经是近似值，在 90/120 Hz 和动态刷新率设备上会出现系统性误差。
 
-源码还反射 `Choreographer.mLock`、`mCallbackQueues` 与 `addCallbackLocked()`，试图判断 dispatch 是否处于 input（输入）、animation（动画）或 traversal（测量、布局、绘制）阶段；代码明确在 Android P 之后停用这条路径。因此，在 Android 8 到 Android 17 的覆盖范围内，同一个字段在不同系统版本上的含义并不一致。
+源码还反射 `Choreographer.mLock`、`mCallbackQueues` 与 `addCallbackLocked()`，试图判断 dispatch 是否处于 input（输入）、animation（动画）或 traversal（测量、布局、绘制）阶段；代码明确在 Android P 之后停用这条路径。因此，在 Android 8 到 Android 17 的覆盖范围内，这些私有字段在不同系统版本上的含义并不一致。
 
 现代实现应优先使用 `JankStats`。API 24+ 时它以系统 `FrameMetrics` 帧时序为基础，低版本使用 `OnPreDrawListener`；业务侧补充页面和交互状态即可。必须自行接 `FrameMetrics` 时，要在回调内复制对象，并把后续聚合移到后台线程，因为系统会复用该对象，消费过慢还会丢报告。
 
@@ -416,7 +428,7 @@ Collie 的无界队列提醒我们：把工作移出主线程只解决了调用�
 
 配置要有只增不减的版本号、签名或可信传输、TTL（配置有效期）和本地默认值。客户端事件必须携带生效的 `config_version` 与 `sample_rate`，否则服务端无法解释版本之间的数量变化。
 
-对 Crash 和 Android 17 的 ANR warning，不应在回调到来后再读取复杂远程配置。关键阈值和脱敏规则要提前形成内存快照，也就是已经解析好的只读配置；异常路径只读这份快照。
+对 Crash 和 Android 17 的 ANR warning，不应在回调到来后再读取复杂远程配置。关键阈值和脱敏规则要提前解析成内存快照（只读配置）；异常路径只读这份快照。
 
 ## AndroidGodEye、Collie、Rabbit 各自更适合借什么
 
