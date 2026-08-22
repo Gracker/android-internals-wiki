@@ -4,14 +4,33 @@ chapter: "4.12"
 section: "4.12"
 status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-05-20"
-last_verified_against: "AOSP main system/memory/lmkd, AOSP main frameworks/base ZramWriteback, Linux zram docs, Perfetto memory docs, Android Developers ApplicationExitInfo / 16KB page size docs, arXiv 2502.12826"
+last_verified: "2026-08-22"
+last_verified_against: "AOSP android-17.0.0_r1 system/memory/lmkd + frameworks/base MMD/ZramMaintenance/CachedAppOptimizer/OomAdjuster；Android common kernel android17-6.18-2026-06_r6 zram；Android MMD/LMKD docs；Linux zram docs；Perfetto memory docs；ApplicationExitInfo/ActivityManager API reference；Android 16 KB page size docs；arXiv 2502.12826"
 confidence: medium
 sources:
   - type: aosp
+    tag: "android-17.0.0_r1"
     path: "system/memory/lmkd/lmkd.cpp"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/ZramWriteback.java"
+    tag: "android-17.0.0_r1"
+    path: "frameworks/base/services/core/java/com/android/server/memory/ZramMaintenance.java"
+  - type: aosp
+    tag: "android-17.0.0_r1"
+    path: "frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java"
+  - type: aosp
+    tag: "android-17.0.0_r1"
+    path: "frameworks/base/services/core/java/com/android/server/am/psc/OomAdjuster.java"
+  - type: kernel
+    tag: "android17-6.18-2026-06_r6"
+    path: "drivers/block/zram/zram_drv.c"
+  - type: kernel
+    tag: "android17-6.18-2026-06_r6"
+    path: "drivers/block/zram/zram_ioctl.c"
+  - type: kernel
+    tag: "android17-6.18-2026-06_r6"
+    path: "include/uapi/linux/zram_ioctl.h"
+  - type: official
+    path: "https://source.android.com/docs/core/perf/mmd"
   - type: official
     path: "https://source.android.com/docs/core/perf/lmkd"
   - type: official
@@ -22,6 +41,8 @@ sources:
     path: "https://perfetto.dev/docs/data-sources/memory-counters"
   - type: official
     path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/ActivityManager"
   - type: official
     path: "https://developer.android.com/topic/performance/vitals/lmk"
   - type: official
@@ -34,6 +55,11 @@ sources:
     path: "DeepResearch/2026-05-09-mglru-vs-traditional-lru-lock-contention.md"
 tags: [memory, zram, swap, lmkd, relaunch, performance]
 related_chapters: ["4.2", "4.4", "8.2", "10.1", "15.2"]
+last_deep_review_at: "2026-08-22T17:05:18+08:00"
+last_deep_review_run_id: "20260822-170518-deep-review-544265d1"
+pipeline_stage: ready-for-review
+task6_state: reviewed
+task9_state: pending-review
 ---
 
 # 4.12 ZRAM 压缩交换与应用重启延迟
@@ -49,7 +75,7 @@ related_chapters: ["4.2", "4.4", "8.2", "10.1", "15.2"]
 
 Android 的冷启动、温启动和热启动是 Activity 启动分类；论文和系统优化语境中的“重新拉起”（relaunch）范围更宽，可能包含从后台任务恢复、Activity 重建或进程重建。本文用“换入恢复”表示 PID 不变、但需要重新访问已换出页面；用“冷启动”表示原进程已经终止。
 
-用户感觉“像冷启动”只描述了体验，不能证明进程发生过重建。应先记录 PID、`ApplicationExitInfo` 与 Activity 启动类型，再分析交换空间。
+用户感觉“像冷启动”只描述了体验，不能证明进程发生过重建。应先记录 PID 与 Activity 启动类型；在 Android 11（API 30）及以上再结合 `ApplicationExitInfo`，低版本需要依赖日志、`dumpsys activity` 或自有启动埋点。
 
 平台基线是 Android 17 / API 37 / `android-17.0.0_r1`，内核基线是 `android17-6.18-2026-06_r6`。
 
@@ -417,13 +443,13 @@ adb shell cat /sys/kernel/tracing/available_events \
 
 ### 退出原因
 
-`ActivityManager.getHistoricalProcessExitReasons()` 可以读取 `ApplicationExitInfo`：
+Android 11（API 30）及以上，`ActivityManager.getHistoricalProcessExitReasons()` 可以读取 `ApplicationExitInfo`。Android 13（API 33）及以上可以把冻结器导致的退出单独上报为 `REASON_FREEZER`；Android 11 和 Android 12 不提供这个 reason 常量。常见字段包括：
 
 - `REASON_LOW_MEMORY`：系统因低内存终止进程；
-- `REASON_FREEZER`：冻结期间的 Binder 等异常导致退出；
+- `REASON_FREEZER`（API 33+）：冻结期间的 Binder 等异常导致退出；
 - `REASON_SIGNALED` 与 `SIGKILL`：某些设备无法准确报告低内存终止原因时，可能只记录这两个值。
 
-应用可以用 `ActivityManager.isLowMemoryKillReportSupported()` 判断设备能否可靠报告低内存终止原因。历史 `getPss()` / `getRss()` 是进程退出前后的快照，不等于峰值，也不能证明哪些页面曾存放在 ZRAM 中。
+Android 11 及以上，应用可以用 `ActivityManager.isLowMemoryKillReportSupported()` 判断设备能否可靠报告低内存终止原因。历史 `getPss()` / `getRss()` 是进程退出前后的快照，不等于峰值，也不能证明哪些页面曾存放在 ZRAM 中。
 
 ## 应用能做什么
 
