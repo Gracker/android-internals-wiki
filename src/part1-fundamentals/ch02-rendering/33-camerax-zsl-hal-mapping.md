@@ -79,7 +79,7 @@ CameraX 的零快门延迟（Zero Shutter Lag，ZSL）模式会持续保留最�
   → 应用写文件
 ```
 
-这张时序只用于划分时间段。普通拍照的源帧通常产生于按键之后，因此曝光以及自动对焦、自动曝光、自动白平衡这三项状态的收敛，都可能增加用户感知到的延迟。
+这张时序图只用于划分时间段。普通拍照的源帧通常产生于按键之后，因此曝光以及自动对焦、自动曝光、自动白平衡这三项状态的收敛，都可能增加用户感知到的延迟。
 
 CameraX ZSL 的成功路径是：
 
@@ -251,7 +251,7 @@ CameraX 1.6.1 源码中出现了三个含义不同的缓冲区数量：
 
 `ZslRingBuffer` 继承自 `ArrayRingBuffer`。新帧通过 `addFirst()` 加入，`dequeue()` 通过 `removeLast()` 取出；容量已满时，会先移除并关闭队尾最旧的帧。
 
-由此得到 CameraX 1.6.1 的准确行为：
+按这段实现，CameraX 1.6.1 的行为是：
 
 1. 监听器每次通过 `acquireLatestImage()` 取得当时最新的已匹配图像；
 2. 图像先经过 AF、AE、AWB 过滤；
@@ -351,7 +351,7 @@ CameraX InputRequest
   → HAL reprocessing
 ```
 
-HAL 内部重新经过 ISP 的哪些处理模块、是否使用专用硬件、怎样执行降噪或 JPEG 编码，都属于设备实现。公共接口只约束输入缓冲区、元数据、输出缓冲区、栅栏、结果和错误行为，不能根据接口名称推断厂商算法阶段。
+重处理在 HAL 内部会再次经过 ISP 的哪些处理模块、是否使用专用硬件、怎样执行降噪或 JPEG 编码，都属于设备实现。公共接口只约束输入缓冲区、元数据、输出缓冲区、栅栏、结果和错误行为，不能根据接口名称推断厂商算法阶段。
 
 ## 8. 缓冲区、同步栅栏与背压
 
@@ -372,7 +372,7 @@ HAL 内部重新经过 ISP 的哪些处理模块、是否使用专用硬件、�
 
 调用 `ImageWriter.queueInputImage()` 后，输入 `Surface` 的消费方变为 CameraService 与 HAL 路径。HAL 读取前要等待 acquire fence，完成访问后再通过捕获结果和 release fence 归还缓冲区。在 release fence 发出信号前，客户端不能安全地复用该缓冲区。
 
-内核的 `dma-fence` 和 `sync_file` 只提供同步原语；CameraX 的三帧策略、AF、AE、AWB 过滤、降级条件和重处理元数据都位于用户空间。分析 ZSL 失败时，不应先把业务策略归因于内核。
+内核的 `dma-fence` 和 `sync_file` 只提供同步原语；CameraX 的三帧策略、AF、AE、AWB 过滤、降级条件和重处理元数据都位于用户空间。分析 ZSL 失败时，不应先把上层策略归因于内核。
 
 ### 8.3 重处理请求不读取传感器
 
@@ -416,7 +416,7 @@ CameraX 1.6.1 源码中可直接定位的诊断文本包括：
 - `Queuing image ... for reprocessing to ImageWriter`；
 - `Failed to create a ReprocessingCaptureRequest.Builder`。
 
-前三项用于说明能力或会话配置，`No such element` 表示拍照时环形队列中没有帧；最后两项才接近单次重处理请求的提交阶段。
+前三项用于说明能力或会话配置，`No such element` 表示拍照时环形队列中没有帧；末尾两项才接近单次重处理请求的提交阶段。
 
 ### 9.3 用 `dumpsys media.camera` 查看输入流
 
