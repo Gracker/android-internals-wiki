@@ -3,16 +3,16 @@ title: "内存规整与直接回收性能边界"
 chapter: "4.10"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-08-18"
-last_verified_against: "Android Common Kernel android17-6.18-2026-06_r6 mm/{page_alloc,compaction,vmscan,vmstat}.c, include/trace/events/{compaction,vmscan}.h, Documentation/admin-guide/{sysctl/vm,mm/transhuge}.rst; AOSP android-17.0.0_r1 lmkd and CachedAppOptimizer Java/JNI; Android Source lmkd/mmd docs; Android Developers memory documentation"
+last_verified: "2026-08-20"
+last_verified_against: "Android Common Kernel android17-6.18-2026-06_r6 mm/{page_alloc,compaction,vmscan,vmstat}.c, include/trace/events/{compaction,vmscan}.h, Documentation/admin-guide/{sysctl/vm,mm/transhuge}.rst, Documentation/accounting/psi.rst, arch/arm64/configs/gki_defconfig; AOSP android-17.0.0_r1 lmkd and CachedAppOptimizer Java/JNI; Android Source lmkd/mmd docs; Android Developers memory documentation"
 confidence: medium
 tags: [memory, linux-kernel, compaction, direct-reclaim, lmkd]
 related_chapters: ["4.2", "4.4", "10.4", "13.6"]
 pipeline_stage: ready-for-review
 task6_state: reviewed
 task9_state: pending-review
-last_deep_review_at: "2026-08-18T16:46:45+08:00"
-last_deep_review_run_id: "20260818-163530-deep-review-90bb83ac"
+last_deep_review_at: "2026-08-20T16:35:12+08:00"
+last_deep_review_run_id: "20260820-163512-deep-review-90bb83ac"
 sources:
   - type: article
     path: "Cubox/不懂 内存规整，别说你会 Linux 内存调优-2026-05-13.md"
@@ -34,6 +34,8 @@ sources:
     path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/compaction.h"
   - type: kernel
     path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/vmscan.h"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/accounting/psi.rst"
   - type: aosp
     path: "https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp"
   - type: aosp
@@ -44,6 +46,8 @@ sources:
     path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/sysctl/vm.rst"
   - type: kernel
     path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/mm/transhuge.rst"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig"
 ---
 
 # 4.10 内存规整与直接回收性能边界
@@ -332,7 +336,7 @@ Android 10 起，PSI 成为 `lmkd` 的默认压力监控方式。Android 17 的 
 
 Android 17 源码可以通过内存事件监听器识别直接回收和 `kswapd` 活动；该能力不可用时，再根据 `/proc/vmstat` 中 `pgscan_direct`、`pgscan_kswapd` 等计数的变化判断。
 
-终止原因包括 `DIRECT_RECL_AND_THRASHING`、`DIRECT_RECL_STUCK`、`LOW_MEM_AND_SWAP`、`LOW_MEM_AND_THRASHING` 等条件。代码没有把 `COMPACTFAIL` 作为直接终止进程的触发器。
+终止原因包括 `DIRECT_RECL_AND_THRASHING`、`DIRECT_RECL_STUCK`、`LOW_MEM_AND_SWAP`、`LOW_MEM_AND_THRASHING` 等条件。代码没有把 `/proc/vmstat` 的 `compact_fail`（内核枚举 `COMPACTFAIL`）作为直接终止进程的触发器。
 
 这给出清晰边界：
 
@@ -565,7 +569,7 @@ Android 14 起不再投递其他旧版 `onTrimMemory` 级别，相关常量在 A
 
 多尺寸透明大页（multi-size THP，mTHP）允许匿名内存使用大于基础页、又小于传统 PMD 尺寸 THP 的 2 的幂倍页面。它仍由页表项（PTE）映射，可以减少部分缺页和 TLB 压力，也会引入更高阶的物理页需求。
 
-Android 17 通用内核的 arm64 GKI 启用了 `CONFIG_TRANSPARENT_HUGEPAGE=y` 与 `CONFIG_TRANSPARENT_HUGEPAGE_MADVISE=y`，不代表具体产品启用了所有 mTHP 尺寸。设备会按实际字节数暴露 `hugepages-*kB` 目录；4 KiB 基础页上的 order-2 是 16 KiB，16 KiB 基础页上则是 64 KiB。报告应同时记录基础页、实际大页尺寸、分配与回退计数和规整事件，不能只写 order。
+Android 17 通用内核的 arm64 GKI 配置（`arch/arm64/configs/gki_defconfig`）启用了 `CONFIG_TRANSPARENT_HUGEPAGE=y` 与 `CONFIG_TRANSPARENT_HUGEPAGE_MADVISE=y`，不代表具体产品启用了所有 mTHP 尺寸。设备会按实际字节数暴露 `hugepages-*kB` 目录；4 KiB 基础页上的 order-2 是 16 KiB，16 KiB 基础页上则是 64 KiB。报告应同时记录基础页、实际大页尺寸、分配与回退计数和规整事件，不能只写 order。
 
 ## 12. 低内存设备与厂商差异
 
@@ -645,6 +649,7 @@ Android 17 的物理页分配慢路径会在特定高阶条件下先尝试直接
   - `mm/vmstat.c`
   - `include/trace/events/compaction.h`
   - `include/trace/events/vmscan.h`
+  - `arch/arm64/configs/gki_defconfig`
   - `Documentation/admin-guide/sysctl/vm.rst`
   - `Documentation/accounting/psi.rst`
 - AOSP `android-17.0.0_r1`
