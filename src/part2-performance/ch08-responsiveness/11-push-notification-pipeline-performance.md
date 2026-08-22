@@ -74,7 +74,7 @@ flowchart LR
     J --> K["通知抽屉 / 锁屏 / heads-up"]
 ```
 
-图中的“FCM 自动展示路径”表示应用无需在业务 `onMessageReceived()` 中构造通知，但不代表所有设备实现都会绕过应用进程。高优先级 notification message 还可能由 Google Play services 代理展示。仅凭应用进程当时是否存在，无法反推出消息类型或实际展示路径。
+图中的“FCM 自动展示路径”表示应用无需在业务 `onMessageReceived()` 中构造通知，但不代表所有设备实现都会绕过应用进程。高优先级 notification message 还可能由 Google Play services 代理展示。仅凭应用进程当时是否存在，无法推断消息类型或实际展示路径。
 
 工程指标应使用不同名称：
 
@@ -99,9 +99,11 @@ flowchart LR
 | notification + data，后台 | FCM SDK 处理 notification，data 放入启动 Activity 的 Intent extras（附加参数） | 用户点击后读取 data |
 | notification + data，前台 | 两部分都交给 `onMessageReceived()` | 由应用决定 UI 和数据处理 |
 
-不能把“后台 notification message 更快”当作固定结论。这种消息不执行应用的业务 callback，但展示仍要经过 FCM 设备端组件、NMS 和 SystemUI；代理展示、权限和设备状态也会改变实际路径。data message 让应用自行控制处理和展示，同时也可能把进程启动、`Application.onCreate()` 与通知构造时间带入用户等待。
+不能把“后台 notification message 更快”当作固定结论。这种消息不执行应用的业务 callback，但展示仍要经过 FCM 设备端组件、NMS 和 SystemUI；代理展示、权限和设备状态也会改变实际路径。data message 让应用自行控制处理和展示，同时也可能把进程启动、`Application.onCreate()` 与通知构造的耗时计入用户等待时间。
 
-如果应用进程不存在，Android 会先创建进程并执行 `Application.onCreate()`，然后才能创建 `FirebaseMessagingService`。若进程处于 cached/frozen（缓存或冻结）状态，系统可能先将它解冻再继续工作。Android 没有为这些状态规定固定延迟，因此线上分析不能套用“缓存进程固定增加 100 ms”一类常量；应比较同一设备组在不同进程状态下的回调时间分布。
+如果应用进程不存在，Android 会先创建进程并执行 `Application.onCreate()`，然后才能创建 `FirebaseMessagingService`。若进程处于 cached/frozen（缓存或冻结）状态，系统可能先将它解冻再继续工作。
+
+Android 没有为这些状态规定固定延迟，因此线上分析不能套用“缓存进程固定增加 100 ms”一类常量；应比较同一设备组在不同进程状态下的回调时间分布。
 
 ## high priority 是传输提示，不构成交付承诺
 
@@ -131,7 +133,7 @@ FCM 的 Android 下行消息分为 normal（普通）和 high（高）两种优�
 
 ## `onMessageReceived()` 的时间预算
 
-Firebase 文档说明，`onMessageReceived()` 在独立工作线程调用，而且只提供数秒级的处理窗口；high 通常比 normal 稍长，但没有承诺固定秒数。回调内适合校验少量字段、构造通知并立即发布。若在其中执行额外网络请求、图片下载或长事务，回调结束后进程可能不再拥有继续运行的保障，结果可能是通知延迟或未发布。
+Firebase 文档说明，`onMessageReceived()` 在独立工作线程调用，而且只提供数秒级的处理窗口；high 通常比 normal 稍长，但没有承诺固定秒数。回调内适合校验少量字段、构造通知并立即发布。若在其中执行额外网络请求、图片下载或长事务，回调结束后，系统可能不再保证进程继续运行，结果可能是通知延迟或未发布。
 
 后续工作按交付优先级安排：
 
@@ -242,7 +244,9 @@ SystemUI 的 [`NotificationRowContentBinderImpl.kt`](https://android.googlesourc
 
 Android 16（API 36）的 `Notification.ProgressStyle` 和 Android 17（API 37）的 [`Notification.MetricStyle`](https://developer.android.com/develop/ui/views/notifications/metric-style) 都是系统模板。`MetricStyle` 最多展示三个 metric（数值指标），适合健身、计时和出行；模板只负责内容表达与渲染，应用仍要调用 `notify()` 更新数值，NMS 限速也继续适用。
 
-Live Update 是一种获得系统突出展示的资格，并不等同于某个 notification style。当前 [Live Update 文档](https://developer.android.com/develop/ui/views/notifications/live-update) 要求通知使用标准 style、`BigTextStyle`、`CallStyle`、`ProgressStyle` 或 `MetricStyle`，声明 `POST_PROMOTED_NOTIFICATIONS`，请求 promoted ongoing（提升展示的持续通知），并满足 ongoing、content title、channel 等通用条件。自定义 `customContentView`、group summary（通知组摘要）和 `IMPORTANCE_MIN` 不符合资格；用户和 OEM 还可以将其降级或附加条件。
+Live Update 是一种获得系统突出展示的资格，并不等同于某个 notification style。当前 [Live Update 文档](https://developer.android.com/develop/ui/views/notifications/live-update) 要求通知使用标准 style、`BigTextStyle`、`CallStyle`、`ProgressStyle` 或 `MetricStyle`，声明 `POST_PROMOTED_NOTIFICATIONS`，请求 promoted ongoing（提升展示的持续通知），并满足 ongoing、content title、channel 等通用条件。
+
+自定义 `customContentView`、group summary（通知组摘要）和 `IMPORTANCE_MIN` 不符合资格；用户和 OEM 还可以将其降级或设置额外条件。
 
 `MetricStyle` 文档还说明了 promoted 状态下的 title fallback（标题缺失时的后备展示），其文字与通用清单并不完全一致。在 API 37 上，应同时调用 `Notification.hasPromotableCharacteristics()` 和 `NotificationManager.canPostPromotedNotifications()`，根据运行时结果判断资格，不能只凭 style 推测。
 
@@ -260,7 +264,9 @@ Android 13（API 33）起，普通通知需要 `POST_NOTIFICATIONS` 运行时权
 
 ## 端到端观测：每段使用自己的时钟
 
-建议用同一个 `message_trace_id`（单条消息的关联 ID）连接服务端和设备事件，但不要上传 registration token（设备注册令牌）、完整 payload 或用户消息正文。发送 FCM 请求时，可额外设置不含个人信息的 analytics label 或服务端批次字段，用来和 BigQuery 导出或 Aggregate Delivery Data（聚合交付数据）的分组维度对齐。聚合交付数据不能按单条 `message_trace_id` 反查设备链路。
+建议用同一个 `message_trace_id`（单条消息的关联 ID）连接服务端和设备事件，但不要上传 registration token（设备注册令牌）、完整 payload 或用户消息正文。发送 FCM 请求时，可额外设置不含个人信息的 analytics label 或服务端批次字段，用来和 BigQuery 导出或 Aggregate Delivery Data（聚合交付数据）的分组维度对齐。
+
+聚合交付数据不能按单条 `message_trace_id` 反查设备链路。
 
 | 阶段 | 推荐字段 | 时钟说明 |
 |---|---|---|
