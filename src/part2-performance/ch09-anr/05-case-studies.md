@@ -60,7 +60,7 @@ task2b_state: "fixed"
 
 | 等级 | 判定条件 | 文中措辞 |
 |---|---|---|
-| 已确认 | 日志、trace、源码语义和复现或 A/B 验证能够组成因果链；A/B 验证指只改变一个条件，对比问题是否随之出现或消失 | 根因已确认 |
+| 已确认 | 日志、trace、源码语义，加上复现或 A/B 验证，能够组成因果链；A/B 验证指只改变一个条件，对比问题是否随之出现或消失 | 根因已确认 |
 | 强推断 | 多项证据指向同一方向，仍缺少一段直接证据 | 高概率相关因素 |
 | 未闭合 | 只找到相关日志、异常负载或静态堆栈，时间或对象无法对齐，因果链仍有缺口 | 保留线索，继续取证 |
 
@@ -192,7 +192,7 @@ ANR 报告覆盖 `15:01:27.683` 至 `15:01:37.233` 的 CPU 窗口，`system_serv
 
 ### 根因结论
 
-**结论强度：未闭合。** 可以确认 `[Gesture Monitor] swipe-up` 输入连接没有及时完成事件，也可以确认 `system_server` 在 ANR 窗口内占用较高。现有 Notifier 日志和 trace 都落在约 52 秒前，不能用它们解释本次超时。
+**结论强度：未闭合。** 可以确认 `[Gesture Monitor] swipe-up` 输入连接没有及时完成事件，也可以确认 `system_server` 在 ANR 窗口内 CPU 占用较高。现有 Notifier 日志和 trace 都落在约 52 秒前，不能用它们解释本次超时。
 
 下一轮取证应完成四项对齐：
 
@@ -245,7 +245,7 @@ ANR 报告覆盖 `15:01:27.683` 至 `15:01:37.233` 的 CPU 窗口，`system_serv
 
 ### 根因结论
 
-**结论强度：已确认到等待点。** 该样本的主线程已经进入 `QueuedWork.waitToFinish()` 并停在那里。若 trace 或 I/O 数据还能证明等待队列中的任务来自 `SharedPreferencesImpl.apply()`，便可把根因确定为 SharedPreferences 写盘；只有当前两帧时，仍要排除其他 `QueuedWork` 使用者。
+**结论强度：已确认到等待点。** 该样本的主线程已经进入 `QueuedWork.waitToFinish()` 并停在那里。若 trace 或 I/O 数据还能证明等待队列中的任务来自 `SharedPreferencesImpl.apply()`，便可把根因确定为 SharedPreferences 写盘；若只有样本里的这两帧栈，仍要排除其他 `QueuedWork` 使用者。
 
 `apply()` 保证内存更新立即可见，但不保证调用后完全避开同步等待。把 `apply()` 换成 `commit()` 会更早地同步阻塞调用线程，不能解决生命周期阶段的卡顿。
 
@@ -295,7 +295,7 @@ Cached Apps Freezer 是 Android 冻结缓存进程、减少其资源消耗的机
 
 **结论强度：已确认。** 该设备的软件分支在 Gesture Monitor 仍有未完成输入事件时冻结了 `com.android.systemui:screenshot`，消费者无法运行，InputDispatcher 因等待完成回执超时。
 
-这说明该 Android 14 OEM（设备厂商）系统在集成 freezer 与输入 monitor 时存在生命周期协同缺陷，不能外推为所有 Android 版本都具备同一问题。Cached Apps Freezer 的启用条件、豁免规则和厂商修改都会改变行为。
+该 Android 14 OEM（设备厂商）系统在集成 freezer 与输入 monitor 时存在生命周期协同缺陷，不能外推为所有 Android 版本都具备同一问题。Cached Apps Freezer 的启用条件、豁免规则和厂商修改都会改变行为。
 
 在 Android 17 源码里，event log tag 仍明确记录 `am_freeze` 和 `am_unfreeze`，字段是 PID 与进程名。复核新平台时，还应同时记录 freeze/unfreeze reason（冻结或解冻原因）、目标 cgroup（控制组）状态、输入连接身份和 event ID，防止 PID 复用或旧事件干扰判断。
 
@@ -343,7 +343,7 @@ Cached Apps Freezer 是 Android 冻结缓存进程、减少其资源消耗的机
   [0,2758,com.android.launcher,... Application does not have a focused window]
 ```
 
-系统在 `12:15:25` 创建 Dialer 进程并让焦点离开 Launcher。约 10 秒后，Dialer 因 process start timeout 被杀；14 秒后，Launcher 所在显示区域仍没有恢复出可接收输入的焦点窗口。
+系统在 `12:15:25` 创建 Dialer 进程并让焦点离开 Launcher。约 10 秒后，Dialer 因 process start timeout 被杀；又过了 14 秒，Launcher 所在显示区域仍没有恢复出可接收输入的焦点窗口。
 
 ### Android 17 源码怎样定义 start timeout
 
@@ -430,7 +430,7 @@ public synchronized Cursor query(String table, String selection) {
 }
 ```
 
-`buildCursor()` 需要 `DataManager` 锁，于是两条路径分别按 A→B、B→A 获取锁。
+`buildCursor()` 需要 `DataManager` 锁，于是两条路径以相反顺序获取同一对锁：`DataManager`→`DatabaseHelper` 与 `DatabaseHelper`→`DataManager`。
 
 ### 根因与修复
 
