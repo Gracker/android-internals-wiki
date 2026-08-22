@@ -41,7 +41,7 @@ CPU cache（高速缓存，下文保留 cache）优化应先证明当前负载�
 - 访问逐渐落到共享 cache 和 DRAM 时，延迟和能耗会上升；
 - 连续、可预测的访问更容易利用 cache line（缓存行，即硬件成块传输和维护的一段连续数据）和硬件预取；
 - 频繁写入共享 cache line 会增加硬件一致性协议的通信量；
-- 工作集，即某段时间内反复访问的数据集合，大于有效 cache 容量时，命中率会下降。
+- 当工作集（某段时间内反复访问的数据集合）大于有效 cache 容量时，命中率会下降。
 
 ### 64 字节的适用范围
 
@@ -164,7 +164,7 @@ struct Particle {
 std::vector<Particle> particles;
 ```
 
-这个结构每个元素为 40 字节（忽略额外对齐）。若循环只读 `x/y/z`，有用数据约占对象流量的 12/40，即 30%，并非固定的 18.75%。cache line 还可能跨越两个对象，边界与数组起始地址有关。
+这个结构每个元素为 40 字节（忽略额外对齐）。若循环只读 `x/y/z`，有用数据约占对象流量的 12/40，即 30%，并非固定的 18.75%（12/64）。cache line 还可能跨越两个对象，边界与数组起始地址有关。
 
 Structure of Arrays（SoA，分字段数组）把同类字段拆成连续数组：
 
@@ -268,7 +268,7 @@ Startup Profile 让启动关键类和方法更集中，并尽量放入首个 `cl
 - release 构建需要开启 R8、minification 和完整优化；
 - startup journey（启动场景的基准测试流程）通过 `includeInStartupProfile = true` 进入 Startup Profile。
 
-现稿中的 `dexOptions.reorderClassesWithProfiling` 不是对应的公开 AGP 配置，不应出现在示例中。
+`dexOptions.reorderClassesWithProfiling` 不是对应的公开 AGP 配置，不应出现在示例中。
 
 ### 生成、验证、A/B 测量
 
