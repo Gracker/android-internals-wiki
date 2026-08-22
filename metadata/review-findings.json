@@ -2800,6 +2800,26 @@
       "summary": "ApplicationExitInfo API-level caveat missing in Android 8-17 chapter",
       "type": "version-boundary",
       "updated_at": "2026-08-22T17:11:36.285595+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/11-mobile-llm-dvfs-energy.md",
+      "close_note": "已更正文中的默认 governor 与固定 GPU 848 MHz 能耗顺序，并刷新 Android 17 / source evidence 元数据。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20260822-183518-idle-audit-1772199f",
+      "created_at": "2026-08-22T18:40:00.067542+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20260822-183518-idle-audit-1772199f",
+      "details": "正文将 TinyLlama GPU 默认 governor 与固定 848 MHz 后的能耗顺序写反；arXiv 2507.02135 表述为默认 governor 215.1 ms / 402.7 mJ，固定 848 MHz 126.9 ms / 396.5 mJ。",
+      "id": "aiw-5.11-fuse-energy-order",
+      "log_path": "logs/audit/2026-08-22-20260822-183518-idle-audit-1772199f-idle-audit.md",
+      "severity": "P1",
+      "source_paths": [
+        "https://arxiv.org/html/2507.02135"
+      ],
+      "status": "fixed",
+      "summary": "FUSE TinyLlama GPU 案例的单 token 能耗方向与论文相反",
+      "type": "source-mismatch",
+      "updated_at": "2026-08-22T18:40:00.116688+08:00"
     }
   ],
   "schema_version": 1
