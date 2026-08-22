@@ -2,12 +2,12 @@
 title: "折叠屏显示切换、窗口连续性与渲染性能"
 chapter: "2.26"
 section: "2.26"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [foldable, display, rendering, jetpack-windowmanager, hinge, large-screen]
 related_chapters: ["2.6", "2.12", "2.18", "2.20", "3.2", "7.10", "22.14"]
-last_verified: "2026-07-25"
-last_verified_against: "AOSP android-17.0.0_r1 + Android Developers 2026-07"
+last_verified: "2026-08-22"
+last_verified_against: "AOSP android-17.0.0_r1 + Android Developers 2026-08"
 confidence: high
 sources:
   - type: official
@@ -18,6 +18,10 @@ sources:
     path: "https://developer.android.com/about/versions/17/changes/ff-restrictions-ignored"
   - type: official
     path: "https://developer.android.com/studio/test/espresso-api"
+  - type: official
+    path: "https://developer.android.com/guide/topics/large-screens/configuration-and-continuity"
+  - type: official
+    path: "https://source.android.com/docs/core/interaction/sensors/sensor-types#hinge_angle"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/policy/DeviceStateProviderImpl.java"
   - type: aosp
@@ -26,6 +30,12 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/display/LogicalDisplayMapper.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/display/DeviceStateToLayoutMap.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/display/layout/Layout.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/display/DisplayManagerService.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/devicestate/DeviceStateManagerShellCommand.java"
   - type: aosp
     path: "frameworks/base/packages/SystemUI/unfold/"
 ---
@@ -361,7 +371,7 @@ Compose 中 window size 或 posture state 改变后，读取该 state 的 compos
 
 Android 16 对 target 36 的应用引入大屏方向、宽高比与 resizability 限制忽略行为，并提供临时退出项。
 
-Android 17 对 target SDK 37 应用移除该 opt-out（临时退出项）。官方文档将适用范围写为 smallest width（最小宽度）大于 600 dp 的 Display；在这类环境中，以下限制不再能作为布局前提：
+Android 17 对 target SDK 37 应用移除该 opt-out（临时退出项）。官方文档将适用范围写为 smallest width（最小宽度）至少 600 dp（sw600dp 及以上）的 Display；在这类环境中，以下限制不再能作为布局前提：
 
 - 固定方向的 `screenOrientation` 值；
 - 对应的 `setRequestedOrientation()` 和 `getRequestedOrientation()`；
@@ -560,7 +570,7 @@ adb shell dumpsys SurfaceFlinger --display
 | Android 14（API 34） | 公开 `SurfaceSyncGroup`（协调多个 Surface 同步提交）；部分设备提供 rear 或 dual display mode | 同步 API 与 fold posture API 职责不同；特殊 display mode 需查询设备能力 |
 | Android 15（API 35） | WindowManager Extensions 6 可查询 supported postures（支持的姿态集合） | supported posture 是能力信息，不给出连续 hinge angle |
 | Android 16（API 36） | target SDK 36 大屏方向、比例、resizability 限制忽略，保留临时 opt-out | 应用要覆盖更多 resize、rotation 与展开态 |
-| Android 17（API 37） | 移除上述 opt-out；当前平台源码锚点 | smallest width 大于 600 dp 时不能依赖固定方向与不可缩放声明 |
+| Android 17（API 37） | 移除上述 opt-out；当前平台源码锚点 | smallest width 至少 600 dp（sw600dp 及以上）时不能依赖固定方向与不可缩放声明 |
 
 ## 11. 源码与官方文档入口
 
