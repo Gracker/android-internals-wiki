@@ -5,8 +5,8 @@ chapter: "5.11"
 section: "5.11"
 status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-05-16"
-last_verified_against: "AOSP android-16.0.0_r1 + Android 官方文档 + Google AI Edge LLM docs 2026-05-28 + Perfetto docs + arXiv 2507.02135"
+last_verified: "2026-08-22"
+last_verified_against: "AOSP android-17.0.0_r1 + android17-6.18-2026-06_r6 + Android/Perfetto/Google AI Edge docs checked 2026-08-22 + arXiv 2507.02135"
 confidence: medium
 tags: [android, dvfs, eas, adpf, llm, on-device-ai, power]
 related_chapters: ["5.2", "5.4", "5.5", "5.9", "5.10", "11.3"]
@@ -28,6 +28,8 @@ sources:
   - type: official
     path: "https://github.com/google-ai-edge/mediapipe-samples/blob/main/examples/llm_inference/android/README.md"
   - type: official
+    path: "https://github.com/google-ai-edge/LiteRT-LM"
+  - type: official
     path: "https://perfetto.dev/docs/data-sources/cpu-freq"
   - type: official
     path: "https://perfetto.dev/docs/data-sources/battery-counters"
@@ -39,6 +41,8 @@ sources:
     path: "hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl"
 task9_state: "reviewed"
 task2b_state: fixed
+last_idle_audit_at: "2026-08-22T18:35:18+08:00"
+last_idle_audit_run_id: "20260822-183518-idle-audit-1772199f"
 ---
 
 # 5.11 移动端 LLM 推理的 DVFS 与能效边界
@@ -188,7 +192,7 @@ Android 17 的 Android 接口定义语言（Android Interface Definition Languag
 | TinyLlama decode / CPU | 约 1130.8 MHz | 2252 MHz | 降低 13.2% |
 | StableLM decode / CPU | 约 1038.8 MHz | 2401 MHz | 降低 13.4% |
 
-TinyLlama 的 GPU 案例中，论文给出的 TPOT 从 215.1 ms 降到 126.9 ms，单 token 能耗从 396.5 mJ 变为 402.7 mJ；mJ 表示毫焦耳。该数据说明，在这台设备与这一请求上，缩短执行时间抵消了大部分瞬时功率增加。它不能支持“GPU 总应保持高频”这一普遍结论。
+TinyLlama 的 GPU 案例中，论文给出的默认 governor TPOT 为 215.1 ms、单 token 能耗为 402.7 mJ；固定 GPU 848 MHz 后，TPOT 为 126.9 ms、单 token 能耗为 396.5 mJ；mJ 表示毫焦耳。该数据说明，在这台设备与这一请求上，提高 GPU 频率缩短了执行时间，单 token 能耗仍与默认 governor 接近。它不能支持“GPU 总应保持高频”这一普遍结论。
 
 FUSE 联合搜索 CPU、GPU 与内存频率组合，再按请求特征选择配置。论文在其工作负载上报告：单 token 能耗相同时，TTFT 平均改善 7.0%～16.9%，TPOT 平均改善 25.4%～36.8%。
 
