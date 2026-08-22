@@ -5,8 +5,8 @@ title: Adaptive Refresh Rate 与动态帧率控制
 chapter: '2.18'
 section: '2.18'
 applicable_versions: ARR 主体：Android 15-QPR1 - Android 17 (API 37)；背景：Android 11-14 多刷新率支持
-last_verified: '2026-07-25'
-last_verified_against: "Android 17 / API 37 / android-17.0.0_r1；android17-6.18-2026-06_r6；Composer3 v3+；Android ARR 与 Perfetto 官方文档；Writer rendering_pipelines S01/S08/S12"
+last_verified: '2026-08-21'
+last_verified_against: "Android 17 / API 37 / android-17.0.0_r1；android17-6.18-2026-06_r6；Composer3 v3+；Android ARR、Android API 与 Perfetto 官方文档（2026-08-21 抽检）；Writer rendering_pipelines S01/S08/S12"
 confidence: high
 sources:
 - type: official
@@ -34,7 +34,15 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Display.java
 - type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/DisplayInfo.java
+- type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Window.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/display/DisplayManagerService.java
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/display/mode/DisplayModeDirector.java
 - type: aosp
@@ -51,6 +59,12 @@ sources:
   path: https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/VrrConfig.aidl
 - type: aosp
   path: https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/IComposerClient.aidl
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/metrics/sql/android/jank/frames.sql
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/gpu/drm/drm_vblank.c
 - type: material
@@ -80,6 +94,8 @@ task2b_state: "fixed"
 status: "finalized"
 pipeline_stage: "ready-to-publish"
 task9_state: "reviewed"
+last_idle_audit_at: "2026-08-21T14:35:45+08:00"
+last_idle_audit_run_id: "20260821-143545-idle-audit-0212962f"
 ---
 
 
@@ -483,6 +499,9 @@ Android 17 的 ARR 分为四层：应用通过 View、Compose 或 Surface 表达
 - [Android 17 Composer3 `DisplayConfiguration.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayConfiguration.aidl)
 - [Android 17 Composer3 `VrrConfig.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/VrrConfig.aidl)
 - [Android 17 Composer3 `IComposerClient.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/IComposerClient.aidl)
+- [Android common kernel 17 6.18 `dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)
+- [Android common kernel 17 6.18 `sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)
+- [Android common kernel 17 6.18 `drm_vblank.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/gpu/drm/drm_vblank.c)
 - [Perfetto：FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
 - [Perfetto Android 17 metric：`frames.sql`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/metrics/sql/android/jank/frames.sql)
 - [Android Frame Pacing Library](https://developer.android.com/games/sdk/frame-pacing)
