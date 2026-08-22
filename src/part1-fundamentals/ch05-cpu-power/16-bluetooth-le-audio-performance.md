@@ -4,9 +4,10 @@ chapter: "5.16"
 section: "5.16"
 status: ready-for-review
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
-last_verified: "2026-06-26"
+last_verified: "2026-08-22"
+last_source_verified_at: "2026-08-22"
 last_verified_against: "Android Core Specification 5.4, AOSP android-17.0.0_r1"
-confidence: medium
+confidence: medium-high
 consolidated_from:
   - "src/part1-fundamentals/ch05-cpu-power/5.23-android17-background-audio-hardening-leaudio-power-source.md"
 sources:
@@ -19,9 +20,18 @@ sources:
   - type: aosp
     path: "packages/modules/Bluetooth/android/app/src/com/android/bluetooth/le_audio/"
   - type: aosp
-    path: "system/media/audio/include/system/audio.h (AUDIO_DEVICE_OUT_BLE_SPEAKER, AUDIO_DEVICE_OUT_BLE_HEADSET)"
+    path: "packages/modules/Bluetooth/system/bta/le_audio/codec_manager.cc"
+  - type: aosp
+    path: "hardware/interfaces/bluetooth/audio/aidl/android/hardware/bluetooth/audio/SessionType.aidl"
+  - type: aosp
+    path: "system/media/audio/include/system/audio-base-utils.h (AUDIO_DEVICE_OUT_BLE_HEADSET, AUDIO_DEVICE_OUT_BLE_SPEAKER, AUDIO_DEVICE_OUT_BLE_BROADCAST, AUDIO_DEVICE_OUT_BLE_HEARING_AID, AUDIO_DEVICE_OUT_BLE_CENTRAL)"
 tags: [bluetooth, le-audio, lc3, latency, power, audio, isochronous]
 related_chapters: ["1.16", "5.13", "11.6"]
+pipeline_stage: ready-for-review
+task6_state: reviewed
+task9_state: pending-review
+last_deep_review_at: "2026-08-22T15:48:00+08:00"
+last_deep_review_run_id: "20260822-154453-deep-review-fc34580b"
 ---
 
 # 5.16 Bluetooth LE Audio 延迟与功耗性能
@@ -169,13 +179,13 @@ Android 17 的 `SessionType.aidl` 明确区分了：
 
 ### 音频设备类型
 
-Android 17 `system/media/audio/include/system/audio-base-utils.h` 中可以确认三个不同的输出设备类型：
+Android 17 `system/media/audio/include/system/audio-base-utils.h` 中，与本章媒体播放、耳机和广播路由直接相关的输出设备类型包括：
 
 - `AUDIO_DEVICE_OUT_BLE_HEADSET`；
 - `AUDIO_DEVICE_OUT_BLE_SPEAKER`；
 - `AUDIO_DEVICE_OUT_BLE_BROADCAST`。
 
-广播设备不是 `AUDIO_DEVICE_OUT_DEFAULT`。应用公开 API 侧可用 `AudioDeviceInfo.TYPE_BLE_HEADSET` 等类型识别设备，实际路由仍由 Audio Policy 和用户选择决定。
+同一枚举还包含 `AUDIO_DEVICE_OUT_BLE_HEARING_AID` 与 `AUDIO_DEVICE_OUT_BLE_CENTRAL` 等 BLE 相关类型；排查时应按具体路由类型和 Profile 状态归类，不要把所有 BLE 输出合并成 headset、speaker 或 default。广播设备不是 `AUDIO_DEVICE_OUT_DEFAULT`。应用公开 API 侧可用 `AudioDeviceInfo.TYPE_BLE_HEADSET` 等类型识别设备，实际路由仍由 Audio Policy 和用户选择决定。
 
 ### 普通应用能控制到哪一层
 
@@ -412,5 +422,5 @@ Perfetto 适合检查 AudioFlinger 线程、Binder、调度、CPU idle/frequency
 - [LeAudioService.java（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:packages/modules/Bluetooth/android/app/src/com/android/bluetooth/le_audio/LeAudioService.java)：组、活跃设备、广播/单播状态与 dump。
 - [LE Audio Native stack（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:packages/modules/Bluetooth/system/bta/le_audio/)：Codec、ASE、CIG/CIS、广播与状态机实现。
 - [SessionType.aidl（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:hardware/interfaces/bluetooth/audio/aidl/android/hardware/bluetooth/audio/SessionType.aidl)：单播、广播、软件与 offload 数据路径。
-- [audio-base-utils.h（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:system/media/audio/include/system/audio-base-utils.h)：BLE headset、speaker 和 broadcast 设备类型。
+- [audio-base-utils.h（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:system/media/audio/include/system/audio-base-utils.h)：BLE headset、speaker、broadcast、hearing aid 与 central 设备类型。
 - [Audio Managed SCO rearchitecture](https://source.android.com/docs/core/audio/sco-audio-mgmt)：Android 17 的 SCO/HFP 边界，用于避免把 SCO 改动误写成 LE Audio 改动。
