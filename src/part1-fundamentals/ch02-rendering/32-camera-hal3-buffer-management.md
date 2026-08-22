@@ -2,11 +2,11 @@
 title: "Camera HAL3 Buffer 管理与 BufferQueue 协作的内存模型"
 chapter: "2.32"
 section: "2.32"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [camera, hal3, buffer, bufferqueue, memory, performance]
 related_chapters: ["2.13", "2.15", "2.16", "13.9", "18.14"]
-last_verified: "2026-07-25"
+last_verified: "2026-08-20"
 last_verified_against: "android-17.0.0_r1 + android17-6.18-2026-06_r6"
 confidence: high
 sources:
@@ -25,6 +25,10 @@ sources:
   - type: aosp
     path: "hardware/interfaces/camera/device/aidl/android/hardware/camera/device/ICameraDeviceCallback.aidl"
   - type: aosp
+    path: "hardware/interfaces/camera/device/aidl/android/hardware/camera/device/ICameraDeviceSession.aidl"
+  - type: aosp
+    path: "hardware/interfaces/camera/metadata/aidl/android/hardware/camera/metadata/InfoSupportedBufferManagementVersion.aidl"
+  - type: aosp
     path: "frameworks/native/libs/gui/BufferQueueProducer.cpp"
   - type: aosp
     path: "frameworks/native/libs/gui/BufferQueueConsumer.cpp"
@@ -40,6 +44,12 @@ sources:
     path: "https://source.android.com/docs/core/architecture/16kb-page-size/16kb"
   - type: official
     path: "https://source.android.com/docs/whatsnew/android-17-release"
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
+task2b_state: fixed
+last_review_finalize_at: "2026-08-20"
+last_review_finalize_run_id: "20260820-201032-20263da8"
 ---
 
 # 2.32 Camera HAL3 Buffer 管理与 BufferQueue 协作的内存模型
@@ -103,15 +113,15 @@ CameraService 会把宽高、格式、色彩数据空间（dataspace）、旋转
 
 ### 2.1 `maxBuffers` 与队列总量
 
-Android 17 的 `Camera3OutputStream::configureConsumerQueueLocked()` 会先查询消费方要求保留、不能由生产方取走的最小缓冲区数（minimum undequeued buffer count），再计算：
+Android 17 的 `Camera3OutputStream::configureConsumerQueueLocked()` 会先通过 `NATIVE_WINDOW_MIN_UNDEQUEUED_BUFFERS` 查询消费方要求保留、不能由生产方取走的最小缓冲区数（源码变量 `maxConsumerBuffers`），再计算基础队列容量：
 
 ```text
 mTotalBufferCount =
-    NATIVE_WINDOW_MIN_UNDEQUEUED_BUFFERS
+    maxConsumerBuffers
     + camera_stream::max_buffers
 ```
 
-这个值描述该输出 `Surface` 的基础队列容量。消费方必须保留自己仍在读取或显示的缓冲区，HAL 也必须有空间推进处理流水线（pipeline）。`Camera3Stream::getBuffer()` 还会检查 HAL 已取走的缓冲区数量；达到 `max_buffers` 时，它会等待缓冲区返回，并把等待时间记录到 `wait on max_buffers` 延迟直方图中。
+这个值描述该输出 `Surface` 的基础队列容量；预览显示同步或 `PreviewFrameSpacer` 路径还可能在此基础上追加额外缓冲或 framework 缓存。消费方必须保留自己仍在读取或显示的缓冲区，HAL 也必须有空间推进处理流水线（pipeline）。`Camera3Stream::getBuffer()` 还会检查 HAL 已取走的缓冲区数量；达到 `max_buffers` 时，它会等待缓冲区返回，并把等待时间记录到 `wait on max_buffers` 延迟直方图中。
 
 不能直接增大 `maxBuffers` 来掩盖消费方处理缓慢的问题。增加它可能让处理流水线暂时不阻塞，但也会增加该流中可同时驻留的图像内存。这个字段由 HAL 根据流水线需求声明，错误的数值还可能破坏系统框架与 HAL 的流量控制约定。
 
