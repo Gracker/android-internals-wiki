@@ -7,8 +7,8 @@ title: App 内存优化与诊断
 section: '4.5'
 chapter: '4.5'
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-18'
-last_verified_against: "AOSP android-17.0.0_r1; external/perfetto heapprofd data source"
+last_verified: '2026-08-20'
+last_verified_against: "AOSP android-17.0.0_r1; external/perfetto heapprofd data source; Android Developers 16 KB page-size guidance"
 confidence: medium
 sources:
 - type: official
@@ -16,15 +16,13 @@ sources:
 - type: official
   path: https://developer.android.com/topic/performance/graphics/manage-memory
 - type: official
-  path: https://developer.android.com/build/apps/16kb-page-size
+  path: https://developer.android.com/guide/practices/page-sizes
 - type: aosp
   path: frameworks/base/core/java/android/app/ActivityManager.java
 - type: aosp
   path: frameworks/base/core/java/android/content/ComponentCallbacks2.java
 - type: aosp
   path: frameworks/base/graphics/java/android/graphics/Bitmap.java
-- type: blog
-  path: https://android-developers.googleblog.com/2024/10/16kb-page-size-android-15.html
 - type: official
   path: https://perfetto.dev/docs/data-sources/native-heap-profiler
 - type: aosp
@@ -32,7 +30,7 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/profiling/memory/heapprofd_producer.cc
 - type: official
-  path: https://developer.android.com/ndk/guides/debug-gdb
+  path: https://developer.android.com/ndk/guides/debug
 tags:
 - memory-optimization
 - bitmap
@@ -54,8 +52,8 @@ pipeline_stage: ready-for-review
 task6_state: reviewed
 task2b_state: fixed
 task9_state: reviewed
-last_deep_review_at: "2026-08-18T20:44:21+08:00"
-last_deep_review_run_id: "20260818-204421-deep-review-74f9bce1"
+last_deep_review_at: "2026-08-20T20:45:33+08:00"
+last_deep_review_run_id: "20260820-204533-deep-review-74f9bce1"
 last_consolidated_at: "2026-08-11"
 consolidated_from:
   - "src/part1-fundamentals/ch04-memory/4.35-android17-cpu-cache-locality-pss-accounting.md"
@@ -488,7 +486,7 @@ override fun onTrimMemory(level: Int) {
 
 ## 16 KB 页大小
 
-Android 15 起，AOSP 支持 16 KB 页大小。自 2025 年 11 月 1 日起，Google Play 要求面向 Android 15 / API 35+ 设备的新应用和更新在 64 位设备上支持 16 KB 页大小。
+Android 15 起，AOSP 支持 16 KB 页大小。Google Play 当前要求，所有在 Google Play 上面向 Android 15 / API 35 及更高版本的应用，都必须在 64 位设备上支持 16 KB 页大小；自 2027 年 2 月 1 日起，不满足该要求的更新将无法发布。
 
 纯 Java/Kotlin 应用只有在所有依赖都不包含原生代码时，通常才无需修改源码；即便如此，仍应在 16 KiB 环境测试。包含 `.so` 的应用需要同时检查：
 
