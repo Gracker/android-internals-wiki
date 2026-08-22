@@ -105,7 +105,9 @@ task2b_state: fixed
 
 普通 App 卡顿时，受影响的画面往往局限在一个任务内。SystemUI 负责的状态栏、通知抽屉、锁屏和导航区域覆盖面更大；同一段阻塞还可能与 Launcher（桌面与最近任务组件）、WM Shell（窗口管理的交互与动画组件）和目标 App 的动画重叠。只查看 `com.android.systemui` 的主线程，很容易混淆窗口由谁创建、工作在哪个线程执行，以及最终画面何时呈现。
 
-Android 12—16 的演进用于说明版本差异，现行结论统一以 Android 17 / API 37 / `android-17.0.0_r1` 为平台版本。涉及输入、调度和显示栅栏时，内核版本采用 `android17-6.18-2026-06_r6`。Android 17 同时保留 legacy shade（传统通知面板）与 SceneContainer（基于场景切换的新容器）路径，并加入状态栏、通知抽屉、返回手势专用 UI 线程等开关。分析前需要记录目标构建的 flag（功能开关）、窗口和线程，不能只凭系统版本推断实际执行路径。
+Android 12—16 的演进用于说明版本差异，现行结论统一以 Android 17 / API 37 / `android-17.0.0_r1` 为平台版本。涉及输入、调度和显示栅栏时，内核版本采用 `android17-6.18-2026-06_r6`。
+
+Android 17 同时保留 legacy shade（传统通知面板）与 SceneContainer（基于场景切换的新容器）路径，并加入状态栏、通知抽屉、返回手势专用 UI 线程等开关。分析前需要记录目标构建的 flag（功能开关）、窗口和线程，不能只凭系统版本推断实际执行路径。
 
 ## 版本、flag、窗口和线程
 
@@ -135,7 +137,7 @@ adb shell dumpsys window windows | grep -E 'NotificationShade|StatusBar|Navigati
 | 窗口转场与起始窗口 | WM Shell `Transitions`、`StartingWindowController` | Shell main/animation/splashscreen executor（主逻辑/动画/启动画面执行器）所在线程及宿主进程 |
 | 最终合成与显示 | SurfaceFlinger、HWC（Hardware Composer，硬件合成器）、显示驱动 | SurfaceFlinger、FrameTimeline（逐帧时间线）、fence（同步栅栏）与显示时序 |
 
-WM Shell 表示一组组件，并不固定对应一个独立进程。目标产品可以把 Shell 组件装入 SystemUI 宿主，也可以改变宿主方式。Perfetto 中应根据进程的 `cmdline`（命令行标识）和线程名定位，不能预设总有一个固定的“WM Shell 进程”。
+WM Shell 指的是一组组件，并不固定对应一个独立进程。目标产品可以把 Shell 组件装入 SystemUI 宿主，也可以改变宿主方式。Perfetto 中应根据进程的 `cmdline`（命令行标识）和线程名定位，不能预设总有一个固定的“WM Shell 进程”。
 
 ## Android 17 的窗口拓扑
 
@@ -161,7 +163,7 @@ Android 17 的三个窗口入口可以直接从 `WindowManager.LayoutParams` 对
 - `SharedNotificationContainer`；
 - bouncer（锁屏认证界面）、light reveal（亮屏揭示动画）等兼容内容。
 
-`NotificationShadeWindowView` 会为 `onMeasure()` 写入 `NotificationShadeWindowView#onMeasure` slice（时间区间），并在 `requestLayout()` 时写入 instant event（瞬时事件）。它的类注释也说明了边界：该 View 可以担任主 SystemUI 窗口根节点，但调用者不能假定它始终处于根节点位置。
+`NotificationShadeWindowView` 会在 `onMeasure()` 中写入 `NotificationShadeWindowView#onMeasure` slice（时间区间），并在 `requestLayout()` 时写入 instant event（瞬时事件）。它的类注释也说明了边界：该 View 可以担任主 SystemUI 窗口根节点，但调用者不能假定它始终处于根节点位置。
 
 ### Scene shade 是 Compose 与 View 的混合树
 
@@ -200,7 +202,7 @@ Compose 路径的 PSS（按比例分摊的进程内存）也没有固定增幅�
 3. `NotificationRowContentBinderImpl` 创建 `AsyncInflationTask`，在 `@NotifInflation Executor`（通知创建工作线程执行器）上构建通知内容、加载所需图片并等待预加载任务。
 4. `RemoteViews`（可跨进程描述界面内容的对象）新建视图时走 `applyAsync()`，复用现有视图时走 `reapplyAsync()`。
 5. 异步 apply 失败时，`OnViewAppliedListener.onError()` 会在 UI 回调路径尝试同步 `apply()` 或 `reapply()`，以区分异步框架异常与通知内容本身无法 inflate。
-6. 所需内容全部完成后，row 更新进入 View 树，引起后续的测量、布局、动画和绘制。
+6. 所需内容全部完成后，更新后的 row 进入 View 树，引起后续的测量、布局、动画和绘制。
 
 Android 17 已没有旧路径中的 `NotificationContentInflater.java`。实现类迁移为 Kotlin 的 `NotificationRowContentBinderImpl.kt`，但 `doInBackground()` 仍保留历史 trace 名 `NotificationContentInflater.AsyncInflationTask#doInBackground`。搜索 trace 时要区分“为了兼容保留的 slice 名称”和“当前源码中是否仍存在同名类”。
 
@@ -226,7 +228,7 @@ Android 17 已没有旧路径中的 `NotificationContentInflater.java`。实现�
 - OEM 增加的包装层和装饰 View；
 - 配置变化、字体缩放、屏幕形态切换触发的重新测量。
 
-NSSL 在 legacy 路径中通过 pre-draw listener（绘制前监听器）调用 `updateChildren()`；Scene 路径则会在绘制前的 `onJustBeforeDraw()` 处理待更新状态。两条路径都保留 `NSSL#updateChildren` slice。这个方法会运行 stack algorithm（通知堆叠布局算法）、应用当前状态或启动状态动画，并处理通知之间的重叠。
+NSSL 在 legacy 路径中通过 pre-draw listener（绘制前监听器）调用 `updateChildren()`；Scene 路径则会在绘制前的 `onJustBeforeDraw()` 处理待更新状态。两条路径都保留 `NSSL#updateChildren` slice。这个方法会运行 stack algorithm（通知堆叠布局算法）、应用当前状态，或启动状态动画，并处理通知之间的重叠。
 
 ### 普通模板、自定义 RemoteViews 与大图
 
@@ -269,9 +271,11 @@ Android 12—14 的资料常从 presenter/controller 追踪左侧通知图标。
 
 ### 边缘返回手势
 
-Android 17 把 per-display（每块显示屏独立）的资源放到 `DisplayBackGestureHandlerImpl`。它为每个 display 创建 `InputMonitorCompat("edge-swipe", displayId)`，使用 `UiThreadContext` 的 looper（消息循环）与 Choreographer 建立 input receiver（输入接收器），并注册 system gesture exclusion listener（系统手势排除区域监听器）。`EdgeBackGestureHandler` 保存多个 `DisplayBackGestureHandler`，处理跨 display 的共享状态和回调。
+Android 17 把 per-display（每块显示屏独立）的资源放到 `DisplayBackGestureHandlerImpl`。它为每个 display 创建 `InputMonitorCompat("edge-swipe", displayId)`，使用 `UiThreadContext` 的 looper（消息循环）与 Choreographer 建立 input receiver（输入接收器），并注册 system gesture exclusion listener（系统手势排除区域监听器）。
 
-`edge_back_gesture_handler_thread` 开启时，`SysUIConcurrencyModule` 创建具有显示相关优先级的 `BackPanelUiThread`；关闭时，同一个 `UiThreadContext` 改用 SystemUI 主线程。由此得到两个诊断分支：
+`EdgeBackGestureHandler` 保存多个 `DisplayBackGestureHandler`，处理跨 display 的共享状态和回调。
+
+`edge_back_gesture_handler_thread` 开启时，`SysUIConcurrencyModule` 创建具有显示相关优先级的 `BackPanelUiThread`；关闭时，同一个 `UiThreadContext` 改用 SystemUI 主线程。由此得到两个诊断分支，外加一条后续检查：
 
 - trace 中有 `BackPanelUiThread`：检查 input receiver、手势判定、Back Panel 绘制与该线程的 Choreographer；
 - trace 没有该线程：检查 aconfig 值，并在 SystemUI 主线程寻找同一路径；
@@ -305,7 +309,9 @@ Android 17 已具备 per-display status bar（每块显示屏独立状态栏）�
 6. SystemUI 更新状态栏、导航栏、锁屏或 Shade 的相关状态。
 7. SurfaceFlinger 合成 Launcher、starting window、目标 App 与系统栏，并交给 HWC 和显示设备呈现。
 
-`Transitions.java` 在 Android 17 中保留 `dispatchRequest: <type>`、`playTransition: <type>` 与 `<Handler>#startAnimation animated <type>` 等 WM trace。`StartingWindowController` 同时使用 Shell main executor 和 splashscreen executor，因此不能把起始窗口工作全部算到 Shell main。Overview 的 `RecentsView.applyLoadPlan()` 会增删、复用并绑定任务卡片，但该方法名本身不是稳定的 trace slice；源码中的方法与设备上实际出现的 trace 证据应分开说明。
+`Transitions.java` 在 Android 17 中保留 `dispatchRequest: <type>`、`playTransition: <type>` 与 `<Handler>#startAnimation animated <type>` 等 WM trace。`StartingWindowController` 同时使用 Shell main executor 和 splashscreen executor，因此不能把起始窗口工作全部算到 Shell main。
+
+Overview 的 `RecentsView.applyLoadPlan()` 会增删、复用并绑定任务卡片，但该方法名本身不是稳定的 trace slice；源码中的方法与设备上实际出现的 trace 证据应分开说明。
 
 Launcher 的包名和进程名受产品实现影响。AOSP 的参考实现是 Launcher3 Quickstep，Pixel 或 OEM 构建可能使用不同包名。应通过默认 HOME activity、进程 `cmdline` 和窗口 owner（所有者）找到当前宿主，不能只搜索固定的 `com.android.launcher3`。
 
@@ -327,7 +333,7 @@ SystemUI 的特殊之处在于窗口数量多、状态来源多，并且可以�
 
 | 步骤 | 要回答的问题 | 主要轨道或证据 |
 | --- | --- | --- |
-| 确认呈现异常 | 哪个 display frame missed（错过截止时间），是 deadline 还是 present 异常 | FrameTimeline `DisplayFrame`、VSYNC、HWC |
+| 确认呈现异常 | 哪个 display frame missed（错过截止时间），异常在 deadline 还是 present 环节 | FrameTimeline `DisplayFrame`、VSYNC、HWC |
 | 找到受影响 Surface | 是 NotificationShade、StatusBar、NavigationBar、Launcher 还是目标 App | `SurfaceFrame`、SurfaceFlinger Layers、窗口 owner |
 | 确认生产者线程 | 哪个进程和 ViewRoot 产生该 buffer | 目标进程 UI 线程、RenderThread、BLAST |
 | 细分应用或系统 UI 工作 | 输入、动画、绑定、measure/layout、绘制记录中哪段变长 | slice、sched（调度）、binder、CPU frequency（频率） |
