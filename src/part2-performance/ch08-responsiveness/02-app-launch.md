@@ -166,7 +166,7 @@ Launcher 通过 Activity API 发起启动，Binder 请求随后进入 `ActivityT
 
 ### 进程选择与 Zygote fork
 
-Android 17 的 `ActivityTaskSupervisor.startSpecificActivity()` 会先检查目标进程是否存在，并且是否已经注册了可用的应用线程：
+Android 17 的 `ActivityTaskSupervisor.startSpecificActivity()` 会先检查目标进程是否存在、是否已经注册了可用的应用线程：
 
 - `WindowProcessController.hasThread()` 为真时，系统可进入 `realStartActivityLocked()`；
 - 进程不可用时，系统走 `startProcessAsync()`。
@@ -228,7 +228,7 @@ Logcat 中的 `Displayed` 行和 Android Vitals 的启动时间以 TTID 为主�
 - 温启动达到 2 秒；
 - 热启动达到 1.5 秒。
 
-这些数值是 Google Play 判定启动过长的告警边界，并非优秀体验的目标。当前 Android 性能度量指南给出的建议更严格：冷启动低于 500 ms、温启动低于 200 ms、热启动低于 150 ms。产品仍应结合设备档位和业务入口，设定 P50、P90、P95、P99 以及超过目标的样本占比。
+这些数值是 Google Play 判定启动过长的告警边界，不能当作优秀体验的目标。当前 Android 性能度量指南给出的建议更严格：冷启动低于 500 ms、温启动低于 200 ms、热启动低于 150 ms。产品仍应结合设备档位和业务入口，设定 P50、P90、P95、P99 以及超过目标的样本占比。
 
 首帧可能只包含 Splash 之后的页面外壳、骨架屏或空列表，因此 TTID 变短不代表页面内容已经可用。
 
@@ -272,7 +272,7 @@ Android 15（API 35）引入了 `ApplicationStartInfo`，用于描述进程为�
 | `getStartType()` | `COLD`、`WARM`、`HOT` 或 `UNSET` | `FIRST_FRAME_DRAWN` 状态才保证已设置 |
 | `getStartComponent()` | 触发进程的组件类型 | 不要把 Service start 当成 Activity TTID |
 | `getReason()` | Launcher、Job、Provider、Service 等具体原因 | 用于拆分入口 |
-| `getStartupTimestamps()` | 各阶段的 monotonic 纳秒时间戳 | 不同状态和启动类型拥有不同 key |
+| `getStartupTimestamps()` | 各阶段的 monotonic 纳秒时间戳 | 不同状态和启动类型对应不同的 key |
 
 API 只保证部分状态下必定存在对应时间戳，读取时应按以下边界处理：
 
@@ -341,7 +341,7 @@ adb shell am start -S -W \
 
 ### Logcat
 
-`Displayed package/.Activity: +...` 对应 Framework 记录的 TTID，调用 `reportFullyDrawn()` 后则会出现 `Fully drawn ...`。有些 `Displayed` 行还带有 `total` 字段，可以覆盖在当前 Activity 之前已经启动但尚未显示的 Activity；分析跳板页时应保留这段信息。
+`Displayed package/.Activity: +...` 对应 Framework 记录的 TTID，调用 `reportFullyDrawn()` 后则会出现 `Fully drawn ...`。有些 `Displayed` 行还带有 `total` 字段，其统计范围包含在当前 Activity 之前已经启动但尚未显示的 Activity；分析跳板页时应保留这段信息。
 
 Logcat 时间可以帮助定位样本，但记录日志本身会产生一定扰动，而且缺少线程调度、Binder、I/O 和渲染细节。
 
@@ -372,7 +372,7 @@ fun coldStartup() = benchmarkRule.measureRepeated(
 
 ### Perfetto
 
-Perfetto 用于解释启动时间花在了哪个阶段。界面中的 Android App Startups derived metric（派生指标）会给出启动区间和类型，随后可以展开检查：
+Perfetto 用于定位启动时间花在了哪个阶段。界面中的 Android App Startups derived metric（派生指标）会给出启动区间和类型，随后可以展开检查：
 
 - `system_server` 的 `launchingActivity#...`、进程创建和 Binder；
 - 应用主线程的 `BindApplication`、`activityStart`、class loading、ContentProvider 和自定义 trace；
