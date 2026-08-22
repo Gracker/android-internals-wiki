@@ -3,11 +3,16 @@ title: "Android 17 ARM MTE 内存标签扩展实战"
 chapter: "4.15"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-07-06"
-last_verified_against: "AOSP android-17.0.0_r1"
+last_verified: "2026-08-21"
+last_verified_against: "AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6; bionic ifuncs.cpp MTE dispatch checked 2026-08-21"
 confidence: high
 tags: [Android 17, MTE, Memory Safety, ARM, Hardware Architecture, Scudo, Bionic]
 related_chapters: ["20.10", "4.5", "14.5", "23.3"]
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: ready-for-review
+last_deep_review_at: "2026-08-21T16:35:04+08:00"
+last_deep_review_run_id: "20260821-163504-deep-review-4c57381a"
 sources:
   - type: blog
     path: "Cubox/四年之后，重新审视 MTE：从硬件架构到工程落地-2025-12-18.md"
@@ -21,6 +26,8 @@ sources:
     path: "frameworks/base/core/java/android/content/pm/ApplicationInfo.java"
   - type: aosp
     path: "frameworks/base/core/java/com/android/internal/os/Zygote.java"
+  - type: aosp
+    path: "bionic/libc/arch-arm64/ifuncs.cpp"
   - type: official
     path: "https://source.android.com/docs/security/test/memory-safety/arm-mte"
   - type: official
@@ -315,18 +322,19 @@ DT_AARCH64_MEMTAG_GLOBALSSZ
 
 ### Android 17 中支持 MTE 的 libc ifunc
 
-ifunc（indirect function，间接函数）允许 libc 根据运行时硬件能力选择具体实现。`android-17.0.0_r1` 的 arm64 `ifuncs.cpp` 为 `wcslen` 和 `wmemchr` 增加了基于 `HWCAP2_MTE` 的选择：
+ifunc（indirect function，间接函数）允许 libc 根据运行时硬件能力选择具体实现。`android-17.0.0_r1` 的 arm64 `ifuncs.cpp` 中，下面这些函数会检查 `HWCAP2_MTE` 并在支持时选择 MTE 分支：
 
-```cpp
-DEFINE_IFUNC_FOR(wcslen) {
-  if (arg->_hwcap2 & HWCAP2_MTE) {
-    RETURN_FUNC(wcslen_func_t, portable_simd_wcslen_neon_mte);
-  }
-  RETURN_FUNC(wcslen_func_t, portable_simd_wcslen_neon);
-}
-```
+| libc 函数 | MTE 分支 |
+| --- | --- |
+| `memchr` | `__memchr_aarch64_mte` |
+| `strchr` | `__strchr_aarch64_mte` |
+| `strchrnul` | `__strchrnul_aarch64_mte` |
+| `strlen` | `__strlen_aarch64_mte` |
+| `strrchr` | `__strrchr_aarch64_mte` |
+| `wcslen` | `portable_simd_wcslen_neon_mte` |
+| `wmemchr` | `portable_simd_wmemchr_neon_mte` |
 
-`wmemchr` 使用相同判断选择 `_neon_mte` 版本。portable-simd 的 MTE 构建把 `kReadAheadToPageBoundaryIsOK` 设为 `false`，避免采用普通实现所允许的页边界预读。这个 ifunc 选择不会自动为调用者的内存开启 MTE。
+宽字符路径使用 portable-simd 的 `_neon_mte` 版本；对应 MTE 构建会把 `kReadAheadToPageBoundaryIsOK` 设为 `false`，避免采用普通实现所允许的页边界预读。这个 ifunc 选择只改变 libc 内部扫描实现，不会自动为调用者的内存开启 MTE；调用者仍要满足映射、线程模式和标签设置条件。
 
 ## 应用启用、验证与排错
 
@@ -394,7 +402,7 @@ Linux 核心转储（core dump）会把两个 4 位标签压成一个字节，�
 
 攻击者若猜中 4 位标签，或错误访问仍落在同一标签粒度内，MTE 就可能不报告。AOSP 的释放后使用调优策略采用独立随机标签时，给出的均匀检测概率约为 93%，对应 `15/16` 的标签不匹配概率；相邻标签策略则优先让常见线性越界跨过内存块后遇到不同标签。
 
-TIKTAG 等研究展示了利用推测执行与高速缓存侧信道（cache side channel）推断 MTE 标签的可能性。这说明安全评估不能把标签当作密码学秘密。某台 Android 17 设备是否受影响，仍取决于具体微架构、内核与缓解配置；仅凭 CPU 声称支持 FEAT_MTE4，无法判定设备已经免疫。
+TIKTAG 等研究展示了利用推测执行与高速缓存侧信道（cache side channel）推断 MTE 标签的可能性。安全评估不能把标签当作密码学秘密。某台 Android 17 设备是否受影响，仍取决于具体微架构、内核与缓解配置；仅凭 CPU 声称支持 FEAT_MTE4，无法判定设备已经免疫。
 
 ### 工程上的防护组合
 
