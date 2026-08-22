@@ -4,8 +4,8 @@ chapter: "3.2"
 section: "3.2"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-08-12"
-last_verified_against: "AOSP android-17.0.0_r1 InputFlinger/InputTransport/ViewRootImpl/Choreographer/MotionPredictor/MotionEvent/InputEventAssigner sources; external/perfetto android.input inputevent config and android.input stdlib docs; source.android.com Input/Winscope adb trace docs; AndroidX Input/Graphics low-latency docs | 2026-08-12 rework cleared stale-source-verification finding AIW-FRESH-bfb7868d39d57e84"
+last_verified: "2026-08-21"
+last_verified_against: "AOSP android-17.0.0_r1 InputFlinger/InputTransport/ViewRootImpl/Choreographer/MotionPredictor/MotionEvent/InputEventAssigner/View.requestUnbufferedDispatch sources; external/perfetto android.input inputevent config and android.input stdlib docs; source.android.com Input/Winscope adb trace docs; AndroidX Input/Graphics low-latency docs | 2026-08-21 deep review added official unbuffered-dispatch warning boundary"
 confidence: medium-high
 sources:
   - type: blog
@@ -20,6 +20,8 @@ sources:
     path: "source.android.com/docs/core/graphics/winscope/capture/adb"
   - type: official
     path: "developer.android.com/reference/android/view/MotionEvent"
+  - type: official
+    path: "developer.android.com/reference/android/view/View#requestUnbufferedDispatch(android.view.MotionEvent)"
   - type: official
     path: "developer.android.com/reference/android/view/MotionPredictor"
   - type: official
@@ -37,8 +39,10 @@ sources:
 tags: [touch, input-latency, HCI, InputReader, InputDispatcher, sampling-rate, batching, resampling, MotionPredictor, front-buffer, Choreographer, responsiveness]
 related_chapters: ["3.1", "2.3", "2.4", "2.5", "2.18", "2.19", "7.9", "8.1", "13.8", "15.3"]
 task2b_state: fixed
-task6_state: pending-review
-task9_state: pending-review
+task6_state: reviewed
+task9_state: reviewed
+last_deep_review_at: "2026-08-21T09:15:41+08:00"
+last_deep_review_run_id: "20260821-090405-deep-review-855a7839"
 last_rework_at: "2026-08-12T09:45:30+08:00"
 last_rework_run_id: "20260812-093533-rework-855a7839"
 pipeline_stage: ready-for-review
@@ -272,7 +276,7 @@ for (int h = 0; h < event.getHistorySize(); h++) {
 
 连续 `MOVE` 事件默认使用缓冲路径。`ViewRootImpl.WindowInputEventReceiver#onBatchedInputEventPending()` 会检查 `mUnbufferedInputDispatch` 和 `mUnbufferedInputSource`：当前序列请求无缓冲分发时，直接调用 `consumeBatchedInputEvents(-1)`；否则调用 `scheduleConsumeBatchedInput()`，让事件在接近下一帧输入阶段时被消费。
 
-这条分支决定 `MOVE` 是立即送达，还是接近下一帧时由输入回调消费。普通滚动使用缓冲路径，可以减少 Looper 唤醒和 View 分发次数；笔迹、绘图、签名场景可以在确认命中目标后调用 `View.requestUnbufferedDispatch(event)`。它只影响当前手势序列，应用仍要逐个处理交付的事件，CPU 调度和回调压力也会增加。
+这条分支决定 `MOVE` 是立即送达，还是接近下一帧时由输入回调消费。普通滚动应保留缓冲路径，因为它可以减少 Looper 唤醒和 View 分发次数，并保留系统重采样机会。`View.requestUnbufferedDispatch(event)` 的官方文档也提示它不适合多数应用；随意启用可能增加延迟、造成滚动抖动，并失去系统重采样收益。笔迹、绘图、签名场景如果已经确认目标 View 和手势归属，可以在已 attach 的 View 上针对触摸 `ACTION_DOWN` 或 `ACTION_MOVE` 请求无缓冲分发；该请求只影响到对应 `ACTION_UP` 之前的当前序列。即便事件更早交付，应用仍要逐个处理事件，CPU 调度和回调压力也会增加。
 
 ### 批处理与等待队列在 Perfetto 中的表现
 
@@ -628,6 +632,7 @@ evdev → EventHub → InputReader → TouchInputMapper → InputDispatcher
   - `frameworks/base/core/jni/android_view_InputEventReceiver.cpp`
   - `frameworks/base/core/jni/android_view_MotionPredictor.cpp`
   - `frameworks/base/core/java/android/view/ViewRootImpl.java`
+  - `frameworks/base/core/java/android/view/View.java`
   - `frameworks/base/core/java/android/view/Choreographer.java`
   - `frameworks/base/core/java/android/view/InputEventAssigner.java`
   - `frameworks/base/core/java/android/view/MotionEvent.java`
