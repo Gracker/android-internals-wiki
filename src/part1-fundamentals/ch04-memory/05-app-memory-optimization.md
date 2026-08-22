@@ -250,7 +250,7 @@ Android 17 的 `Bitmap` 仍实现 `Parcelable`，源码包含硬件 Bitmap 的 P
 
 Android 17 的 `Bitmap.recycle()` 会立即释放像素资源。调用它的前提是调用方能证明 Bitmap 此后不会被 View、Drawable、Canvas、图片库、后台任务或其他线程使用，否则后续访问会失败。
 
-官方 Bitmap 内存指南把手动 `recycle()` 的重点放在 Android 2.3.3 / API 10 及更早版本。现代应用通常应让清晰的所有权、GC 和图片库管理生命周期。图片变换产生的中间 Bitmap若由当前函数独占，并且下游已经取得新结果，可以考虑及时回收；由 Glide 等库管理的 Bitmap 不应由业务代码手动回收。
+官方 Bitmap 内存指南把手动 `recycle()` 的重点放在 Android 2.3.3 / API 10 及更早版本。现代应用通常应让清晰的所有权、GC 和图片库管理生命周期。图片变换产生的中间 Bitmap 若由当前函数独占，并且下游已经取得新结果，可以考虑及时回收；由 Glide 等库管理的 Bitmap 不应由业务代码手动回收。
 
 ### Glide、Coil 与 Fresco 的差异
 
@@ -274,7 +274,7 @@ Android 17 的 `Bitmap.recycle()` 会立即释放像素资源。调用它的前�
 - ViewModel 不保存 Activity、Fragment、View 或其 Drawable；
 - 进程级工作只保存完成工作所需的数据，不保存页面对象。
 
-`WeakReference<Activity>` 可以去掉一条强引用，但后台工作仍会继续，竞态条件也仍然存在。线程读出弱引用后，Activity 仍可能马上进入销毁流程。生命周期取消和主线程状态检查更可靠。
+`WeakReference<Activity>` 可以去掉一条强引用，但后台工作仍会继续，竞态条件仍然存在。线程读出弱引用后，Activity 仍可能马上进入销毁流程。生命周期取消和主线程状态检查更可靠。
 
 ### Handler 与延迟回调
 
@@ -347,7 +347,7 @@ LeakCanary 适合在 debug 构建中自动观察已销毁组件和保留对象�
 3. 判断它属于未取消任务、未注销注册、无界缓存，还是错误所有权；
 4. 修复后重复同一路径，比较实例数和保留大小（retained size）。保留大小表示某对象不可达后可连带释放的内存估算值。
 
-强制 GC 可用于测试工具确认“对象是否仍可达”，但不能进入业务修复方案。
+强制 GC 可以帮测试工具确认“对象是否仍可达”，但不能进入业务修复方案。
 
 ## 原生内存：用所有权和调用栈定位
 
@@ -360,7 +360,7 @@ LeakCanary 适合在 debug 构建中自动观察已销毁组件和保留对象�
 - `DirectByteBuffer` 的 Java 包装对象与底层内存所有权不明确；
 - 跨线程回调在所有者销毁后仍使用原生指针。
 
-C++ 代码优先使用 RAII（Resource Acquisition Is Initialization，资源获取即初始化）：让对象析构自动释放资源，从而覆盖异常和提前返回。`std::unique_ptr`、容器、带自定义删除器（deleter）的智能指针和作用域封装都遵循这一思路。JNI 封装还要明确线程附着方式、局部引用容量和全局引用的所有者。
+C++ 代码优先使用 RAII（Resource Acquisition Is Initialization，资源获取即初始化）：让对象析构自动释放资源，即使走异常或提前返回的路径，资源也会被释放。`std::unique_ptr`、容器、带自定义删除器（deleter）的智能指针和作用域封装都遵循这一思路。JNI 封装还要明确线程附着方式、局部引用容量和全局引用的所有者。
 
 ### malloc debug
 
@@ -379,7 +379,7 @@ adb shell monkey -p com.example.app 1
 adb shell dumpsys meminfo --unreachable "$(adb shell pidof com.example.app)"
 ```
 
-启用调用栈记录（backtrace）后，报告能提供更多分配来源。malloc debug 有显著开销，不适合作为长期线上开关；普通第三方应用在非 root 设备上应使用可调试构建的 `wrap.sh`、内存错误检测器（Sanitizer）或 heapprofd。完成测试后应清除 `wrap.<APP>` 属性并重启进程。
+启用调用栈记录（backtrace）后，`dumpsys meminfo` 的报告能提供更多分配来源。malloc debug 有显著开销，不适合作为长期线上开关；普通第三方应用在非 root 设备上应使用可调试构建的 `wrap.sh`、内存错误检测器（Sanitizer）或 heapprofd。完成测试后应清除 `wrap.<APP>` 属性并重启进程。
 
 ### HWASan、ASan 与 GWP-ASan
 
@@ -488,7 +488,7 @@ override fun onTrimMemory(level: Int) {
 
 Android 15 起，AOSP 支持 16 KB 页大小。Google Play 当前要求，所有在 Google Play 上面向 Android 15 / API 35 及更高版本的应用，都必须在 64 位设备上支持 16 KB 页大小；自 2027 年 2 月 1 日起，不满足该要求的更新将无法发布。
 
-纯 Java/Kotlin 应用只有在所有依赖都不包含原生代码时，通常才无需修改源码；即便如此，仍应在 16 KiB 环境测试。包含 `.so` 的应用需要同时检查：
+纯 Java/Kotlin 应用在所有依赖都不包含原生代码时，通常无需修改源码；即便如此，仍应在 16 KiB 环境测试。包含 `.so` 的应用需要同时检查：
 
 - 自有原生库；
 - AAR、SDK、游戏引擎和预编译库中的 `.so`；
@@ -519,7 +519,7 @@ adb shell getconf PAGE_SIZE
 zipalign -c -P 16 -v 4 app-release.apk
 ```
 
-16 KiB 页可能减少 TLB 未命中和部分启动开销。TLB 是 CPU 缓存虚拟地址到物理地址转换结果的结构；页更大时，同样数量的条目可以覆盖更多内存。另一方面，更大的页也可能增加小映射或页内碎片造成的内存消耗。收益取决于工作负载，不能推断所有应用都会更快。Bitmap、GraphicBuffer 和内存分配器的变化应通过同一设备上的 4 KiB/16 KiB 对照实验测量。
+16 KiB 页可能减少 TLB 未命中和部分启动开销。TLB 是 CPU 中缓存虚拟地址到物理地址转换结果的结构；页更大时，同样数量的条目可以覆盖更多内存。另一方面，更大的页也可能增加小映射或页内碎片造成的内存消耗。收益取决于工作负载，不能推断所有应用都会更快。Bitmap、GraphicBuffer 和内存分配器的变化应通过同一设备上的 4 KiB/16 KiB 对照实验测量。
 
 ## Jetpack Compose 的内存边界
 
@@ -530,7 +530,7 @@ Compose 改变了 UI 对象的组织方式，但生命周期和所有权原则�
 - `DisposableEffect` 适合成对注册和注销监听器、观察者及其他外部资源；
 - Flow 和生命周期数据应使用生命周期感知的收集方式；
 - Lazy 列表应提供稳定键，避免项目位置变化后丢失状态，或把状态错误地用于其他项目；
-- 排序、解析和大集合转换移出高频重组路径，必要时使用 `derivedStateOf` 等工具，但先测量重组与分配。
+- 排序、解析和大集合转换应移出高频重组路径，必要时使用 `derivedStateOf` 等工具，但先测量重组与分配。
 
 `remember` 不是通用缓存。把 Activity Context、大 Bitmap 或播放器长期保存在高层组合节点，会使它们跟随该节点存活。资源已有 ViewModel、图片库或进程级所有者时，可组合函数只应保存轻量句柄和展示状态。
 
@@ -552,7 +552,7 @@ Compose 改变了 UI 对象的组织方式，但生命周期和所有权原则�
 
 ### 正确理解堆等级
 
-`ActivityManager.getMemoryClass()` 返回普通应用近似的受管理堆等级，`getLargeMemoryClass()` 对应声明 `largeHeap` 后的等级。它们不是进程总 PSS 上限，也不包含所有原生、图形和共享内存。
+`ActivityManager.getMemoryClass()` 返回普通应用的近似受管理堆等级，`getLargeMemoryClass()` 对应声明 `largeHeap` 后的等级。它们不是进程总 PSS 上限，也不包含所有原生、图形和共享内存。
 
 下面的计算只能估算 Java 堆当前已用量与可增长余量：
 
@@ -635,7 +635,7 @@ Perfetto 中常用的四个内存数据源回答不同问题：
 4. 保存完整 Perfetto 配置、采样间隔、目标 PID、是否允许性能剖析（profileable），以及分析器自身的 CPU 和内存开销。
 5. 用相同工作量比较优化前后；开启分析器和关闭分析器的两组数据受工具开销影响，不能直接当作产品收益。
 
-最后要把“释放”分成四个时刻：业务断开引用、GC 或内存分配器把空间标为空闲、运行时或分配器把页面归还内核、内核更新统计后 RSS/PSS 下降。对象不可达后 PSS 没有立刻下降，不足以证明发生泄漏；PSS 暂时下降也不能证明所有权问题已经修复。
+收尾时，还要把“释放”分成四个时刻：业务断开引用、GC 或内存分配器把空间标为空闲、运行时或分配器把页面归还内核、内核更新统计后 RSS/PSS 下降。对象不可达后 PSS 没有立刻下降，不足以证明发生泄漏；PSS 暂时下降也不能证明所有权问题已经修复。
 
 ## 常见误区
 
