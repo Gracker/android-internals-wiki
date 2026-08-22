@@ -5,10 +5,12 @@ chapter: '4.7'
 section: '4.7'
 status: ready-for-review
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
-last_verified: '2026-08-12'
-last_verified_against: AOSP android-17.0.0_r1 ART runtime/gc source set (runtime.cc, heap.*, mark_compact.*, region_space.*, write_barrier-inl.h, card_table.h) + Android 17 release notes + ART GC debug/improvements docs + Perfetto android.garbage_collection/heap profiling docs + developer.android.com graphics memory docs; rework refresh for AIW-FRESH-704a10ad8e3f94fc
+last_verified: '2026-08-21'
+last_verified_against: AOSP android-17.0.0_r1 ART runtime/gc source set (runtime.cc, heap.*, mark_compact.*, region_space.*, write_barrier-inl.h, card_table.h) + Android 17 release notes + ART GC debug/improvements docs + Perfetto android.garbage_collection/heap profiling/ART heap dump docs + developer.android.com graphics memory docs
 last_rework_at: '2026-08-12T13:43:41+08:00'
 last_rework_run_id: '20260812-133503-rework-3aeaea29'
+last_deep_review_at: '2026-08-21T20:46:26+08:00'
+last_deep_review_run_id: '20260821-204236-deep-review-3aeaea29'
 confidence: medium-high
 sources:
 - type: official
@@ -53,8 +55,8 @@ tags:
 - gc
 - perfetto
 pipeline_stage: ready-for-review
-task6_state: pending-review
-task9_state: pending-review
+task6_state: reviewed
+task9_state: reviewed
 task2b_state: "fixed"
 last_consolidated_at: "2026-08-11"
 consolidated_from:
@@ -380,7 +382,7 @@ tools/heap_profile -p <PID> --heaps com.android.art
 
 Perfetto ART 堆转储需要 Android 11 及以后。它记录完整的 Java 对象引用图和保留关系，不记录分配调用栈，也不包含普通 HPROF 中的对象内容。
 
-Android 13 及以后，某些通过 `NativeAllocationRegistry` 关联的原生内存大小会以额外节点显示。这个数字只覆盖已注册且能关联的原生分配，不能代表进程的全部原生堆。
+Android 13 及以后，某些通过 `NativeAllocationRegistry` 关联的原生内存大小会以额外节点显示；SQL 中对应 `native_size`，且不计入对象的 `self_size`。这个数字只覆盖已注册且能关联的原生分配，不能代表进程的全部原生堆，也不能和 Java `self_size` 简单相加。
 
 选择工具时可用一个简单问题区分：
 
