@@ -151,7 +151,11 @@
         "#Pager",
         "#UI开发"
       ],
-      "scored_at": "2026-07-17T05:50:13.916971"
+      "scored_at": "2026-07-17T05:50:13.916971",
+      "previous_route_status": null,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "action": "quarantined-non-aiw",
+      "routed_at": "2026-08-23T06:20:13.639295+08:00"
     },
     {
       "title": "Android 要变天：桌面端这次真的来了！",
@@ -167,7 +171,11 @@
         "#UX设计",
         "#多窗口"
       ],
-      "scored_at": "2026-07-17T05:50:13.916972"
+      "scored_at": "2026-07-17T05:50:13.916972",
+      "previous_route_status": null,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "action": "quarantined-non-aiw",
+      "routed_at": "2026-08-23T06:20:13.639295+08:00"
     },
     {
       "title": "我见过的最反直觉的 Android 架构问题：UseCase 越多，项目越烂",
@@ -4109,6 +4117,26 @@
       "summary": "--- source: research sub_question: Claude Platform Computer Use / Browser / Skills / Files GA 后，接入前要审哪四张表？ researcher: researcher-1 phase: 1b date: 2026-08-21 --- # 子问题: Computer Use GA 四表审计 ## 核心发现 1. 官方 GA 包四块: Compute",
       "chapter": "ch16",
       "processed_at": "2026-08-22T06:20:18.498212+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-23-76228855-Google 藏大招！AndroidX .md",
+      "title": "[技术文章] Google 藏大招！AndroidX 悄悄上线 Remote Compose：服务端直接下发原生 UI，再也不用发版了",
+      "summary": "> 发布时间: 2026-03-31T00:44:43.000Z > 原文链接: https://juejin.cn/post/7622885592716328969 2026-03-31 2,164 阅读6分钟 > 本文同步自微信公众号 “Android技术圈” > Google 新出了个 androidx.compose.remote，服务端直接下发原生 UI 到客户...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-23T06:20:13.422984+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-23-76336249-Android App 最强APM来袭.md",
+      "title": "[技术文章] Android App 最强APM来袭 简介 Android APM 是一个全维度 Android 性能监控框架，当",
+      "summary": "> 发布时间: 2026-04-28T07:14:20.000Z > 原文链接: https://juejin.cn/post/7633624917233319936 2026-04-28 3,309 阅读7分钟 说明：花了4个小时用AI(GLM5.1)写的，后续用codex优化了，整体达到或者超越主流水平 github.com/XZQ/Android… [](https...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-23T06:20:13.422984+08:00",
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
