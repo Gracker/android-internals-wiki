@@ -2733,6 +2733,29 @@
       "summary": "ApplicationExitInfo API 30 availability missing from OOM diagnostics",
       "type": "version-boundary",
       "updated_at": "2026-08-21T22:38:57.861407+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch09-anr/10-android17-input-anr-prewarning.md",
+      "close_note": "正文 §4 补充 producer/API/AnrInfo 三层 flag 边界，§14 普通 App 接入建议同步增加 API/flag 不可用分支，frontmatter 与参考资料补齐相关 AOSP 源。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260822-085818-deep-review-4857aac2",
+      "created_at": "2026-08-22T09:06:51.855208+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260822-085818-deep-review-4857aac2",
+      "details": "Deep review found section 4 explained the InputDispatcher producer flag but did not explicitly preserve the Java public API @FlaggedApi boundary for registerAnrWarningListener/AnrWarningResult or the FLAG_INCLUDE_ANR_INFO boundary for AnrTypes/ApplicationExitInfo.AnrInfo. AOSP android-17.0.0_r1 shows these are separate availability gates;正文已补充并扩展 source/ref.",
+      "id": "AIW-9.10-20260822-P2-public-api-flag-boundary",
+      "log_path": "logs/deep-review/2026-08-22-20260822-085818-deep-review-4857aac2-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/core/java/android/app/ActivityManager.java@android-17.0.0_r1",
+        "frameworks/base/core/java/android/app/AnrWarningResult.java@android-17.0.0_r1",
+        "frameworks/base/core/java/android/app/AnrTypes.java@android-17.0.0_r1",
+        "frameworks/base/core/java/android/app/ApplicationExitInfo.java@android-17.0.0_r1"
+      ],
+      "status": "fixed",
+      "summary": "ANR warning 公开 API 与 AnrInfo/AnrTypes flag 边界需要在正文中显式保留",
+      "type": "source-boundary",
+      "updated_at": "2026-08-22T09:06:51.916575+08:00"
     }
   ],
   "schema_version": 1
