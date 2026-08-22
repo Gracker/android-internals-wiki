@@ -2,10 +2,10 @@
 title: "Android 17 Edge-to-Edge 渲染与 WindowInsets 处理性能"
 chapter: "2.24"
 section: "2.24"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
-last_verified: "2026-07-25"
-last_verified_against: "Android 17 / API 37 / android-17.0.0_r1: PhoneWindow.java, DecorView.java, ViewRootImpl.java, InsetsController.java, View.java, ViewGroup.java, Choreographer.java, ActivityInfo.java, WindowState.java; Android Developers 15/16/17 behavior changes; Perfetto FrameTimeline; Writer rendering_pipelines S02/S06"
+last_verified: "2026-08-22"
+last_verified_against: "Android 17 / API 37 / android-17.0.0_r1: PhoneWindow.java, DecorView.java, ViewRootImpl.java, InsetsController.java, ViewRootInsetsControllerHost.java, View.java, ViewGroup.java, Choreographer.java, ActivityInfo.java, WindowState.java, WindowRelayoutResult.java, WindowManagerService.java; Android Developers 15/16/17 behavior changes; Android edge-to-edge / software keyboard / WindowInsets docs; Perfetto FrameTimeline"
 confidence: high
 sources:
   - type: official
@@ -16,6 +16,8 @@ sources:
     path: "https://developer.android.com/about/versions/17/behavior-changes-all"
   - type: official
     path: "https://developer.android.com/develop/ui/views/layout/edge-to-edge"
+  - type: official
+    path: "https://developer.android.com/develop/ui/compose/system/insets"
   - type: official
     path: "https://developer.android.com/develop/ui/views/layout/sw-keyboard"
   - type: official
@@ -37,11 +39,21 @@ sources:
   - type: source
     path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/InsetsController.java"
   - type: source
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootInsetsControllerHost.java"
+  - type: source
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java"
+  - type: source
     path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java"
+  - type: source
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java"
   - type: source
     path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/ActivityInfo.java"
   - type: source
     path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowState.java"
+  - type: source
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/WindowRelayoutResult.java"
+  - type: source
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowManagerService.java"
 tags: [edge-to-edge, windowinsets, rendering, system-bar, transparency, predictive-back, ime-animation, android17]
 related_chapters: ["2.20", "22.13", "22.14"]
 ---
@@ -470,7 +482,7 @@ LIMIT 40;
 - [`InsetsController.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/InsetsController.java) 和 [`ViewRootInsetsControllerHost.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootInsetsControllerHost.java)：动画 runner（执行器）、`CALLBACK_INSETS_ANIMATION`、progress 分发；
 - [`View.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java) 和 [`ViewGroup.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java)：listener 与 override、消费和新旧兄弟分发语义；
 - [`Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)：Input、Animation、Insets Animation、Traversal、Commit 的帧内顺序；
-- [`ActivityInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/ActivityInfo.java) 和 [`WindowState.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowState.java)：同步 Insets 动画 compat change 与窗口资格计算。
+- [`ActivityInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/ActivityInfo.java)、[`WindowState.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowState.java)、[`WindowRelayoutResult.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/WindowRelayoutResult.java) 和 [`WindowManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowManagerService.java)：同步 Insets 动画 compat change、窗口资格计算，以及 add/relayout result 如何把 `usesSyncedInsetsAnimation` 传给 `ViewRootImpl`。
 
 这章不涉及新的 kernel（内核）算法。CPU 调度、频率或 fence 分析如需深入内核，kernel 版本仍固定为 `android17-6.18-2026-06_r6`，不能用旧 kernel tag（版本标签）推断 Android 17 设备行为。
 
