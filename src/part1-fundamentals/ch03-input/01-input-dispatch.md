@@ -4,8 +4,8 @@ title: Input 事件分发：队列、反压与丢弃
 chapter: '3.1'
 section: '3.1'
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-08-07'
-last_verified_against: "AOSP android-17.0.0_r1; kernel android17-6.18-2026-06_r6"
+last_verified: '2026-08-21'
+last_verified_against: "AOSP android-17.0.0_r1 InputManager/InputThread/EventHub/InputReader/InputProcessor/InputDispatcher/AnrTracker/InputTransport/InputEventReceiver/ViewRootImpl/ViewGroup; kernel android17-6.18-2026-06_r6 evdev.c"
 version_note: Android 12/13 使用 InputClassifier，Android 14-17 使用 InputProcessor；正文行为以 Android 17 为准
 confidence: high
 sources:
@@ -16,7 +16,11 @@ sources:
   - type: aosp
     path: frameworks/native/services/inputflinger/reader/InputReader.cpp
   - type: aosp
+    path: frameworks/native/services/inputflinger/InputProcessor.cpp
+  - type: aosp
     path: frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
+  - type: aosp
+    path: frameworks/native/services/inputflinger/dispatcher/AnrTracker.cpp
   - type: aosp
     path: frameworks/native/services/inputflinger/dispatcher/include/InputDispatcherPolicyInterface.h
   - type: aosp
@@ -29,13 +33,17 @@ sources:
     path: frameworks/base/core/java/android/view/ViewRootImpl.java
   - type: aosp
     path: frameworks/base/core/java/android/view/ViewGroup.java
+  - type: aosp
+    path: frameworks/base/core/jni/android_view_InputEventReceiver.cpp
   - type: kernel
     path: common/drivers/input/evdev.c
 tags: [InputReader, InputDispatcher, EventHub, InputChannel, InputTransport, ViewRootImpl, backpressure, stale-event, ANR, Perfetto]
 related_chapters: ["3.2", "3.4", "3.7", "3.8", "9.1", "9.2", "13.8"]
-task6_state: "pending-verification"
+task6_state: "reviewed"
 pipeline_stage: "ready-for-review"
 task9_state: "reviewed"
+last_deep_review_at: "2026-08-21T12:46:33+08:00"
+last_deep_review_run_id: "20260821-124250-deep-review-d0114de0"
 task2b_state: "fixed"
 last_idle_audit_at: "2026-08-07T14:35:13+08:00"
 last_idle_audit_run_id: "20260807-143513-idle-audit-d0114de0"
@@ -184,6 +192,8 @@ InputReader
   → InteractionReporter（设备能力条件）
   → InputDispatcher
 ```
+
+这个顺序按构造代码中的 listener 连接判断：`InputManager` 先创建 `InputDispatcher`，再逐层包上 `InteractionReporter`、`InputFilter`、指标收集器、`InputProcessor`、`PointerChoreographer` 和 `UnwantedInteractionBlocker`，最后把最外层 listener 交给 `InputReader`。阅读源码时要沿每个阶段构造函数收到的下游 listener 反向推导事件转发方向。
 
 其中部分阶段可能只负责透传，也可能是可选组件，或受功能开关和服务能力控制：
 
