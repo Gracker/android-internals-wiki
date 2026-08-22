@@ -15,8 +15,10 @@ last_review_finalize_at: "2026-07-27T20:13:43+08:00"
 last_review_finalize_run_id: "20260727-201343-4b671d13"
 last_rework_at: "2026-07-27T21:36:40+08:00"
 last_rework_run_id: "20260727-213543-rework-30f4d38e"
-last_verified: "2026-08-13"
-last_verified_against: "AOSP android-17.0.0_r1 external/perfetto 的 9 个固定源码文件；Writer rendering_pipelines S01/S02/S03/S04/S05/S11/S12/S13"
+last_verified: "2026-08-20"
+last_verified_against: "AOSP android-17.0.0_r1 external/perfetto 的 9 个固定源码文件（含 GpuCounterSpec reserved tag 4 / deprecated unit 边界）；Writer rendering_pipelines S01/S02/S03/S04/S05/S11/S12/S13"
+last_idle_audit_at: "2026-08-20T18:37:07+08:00"
+last_idle_audit_run_id: "20260820-183531-idle-audit-6c1cc491"
 confidence: high
 sources:
 - type: aosp
@@ -103,6 +105,7 @@ RAY_TRACING  = 7
 counter_id
 name
 description
+reserved 4  // deprecated MeasureUnit unit 的旧 tag，本版本不再作为可写字段
 oneof peak_value {
   int_peak_value
   double_peak_value
@@ -113,7 +116,7 @@ select_by_default
 groups
 ```
 
-`oneof peak_value` 表示整数峰值与浮点峰值最多选择一种。本版本标签（tag）的 `GpuCounterSpec` 不含 `value_direction` 字段，因此不能把 Perfetto 上游后续设计或其他分支字段写成 Android 17 已有协议字段。Trace Processor 的 `gpu_event_parser.cc` 把 GPU counter 视为回看式采样：收到时间戳 `t(n)` 的事件时，先在 `t(n)` 插入值为 0 的占位行，再把事件携带的 value 写入上一条 counter row。区间时长不在这一步回填，而由后面的 SQL span 视图计算。
+`reserved 4` 对应早期已弃用的 `MeasureUnit unit` tag；Android 17 的 Trace Processor 只按 `numerator_units` 与 `denominator_units` 生成单位字符串。`oneof peak_value` 表示整数峰值与浮点峰值最多选择一种。本版本标签（tag）的 `GpuCounterSpec` 不含 `value_direction` 字段，因此不能把 Perfetto 上游后续设计或其他分支字段写成 Android 17 已有协议字段。Trace Processor 的 `gpu_event_parser.cc` 把 GPU counter 视为回看式采样：收到时间戳 `t(n)` 的事件时，先在 `t(n)` 插入值为 0 的占位行，再把事件携带的 value 写入上一条 counter row。区间时长不在这一步回填，而由后面的 SQL span 视图计算。
 
 ### Counter block 容量约束
 
