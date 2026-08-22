@@ -2,14 +2,16 @@
 title: "ART Boot Image 内存映射与启动性能"
 chapter: "1.49"
 section: "1.49"
-status: "ready-for-review"
+status: "finalized"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-08-19"
+last_verified: "2026-08-22"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 sources:
   - type: aosp
     path: "art/runtime/oat/image.h, art/runtime/oat/image.cc @ android-17.0.0_r1"
+  - type: aosp
+    path: "art/runtime/oat/oat_file.cc, art/runtime/oat/elf_file.cc @ android-17.0.0_r1"
   - type: aosp
     path: "art/runtime/gc/space/image_space.h, art/runtime/gc/space/image_space.cc @ android-17.0.0_r1"
   - type: aosp
@@ -34,9 +36,10 @@ sources:
     path: "https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations"
 tags: [ART, boot-image, boot.art, boot.oat, 内存映射, Zygote, 启动优化, mmap, dex2oat, ImageSpace]
 related_chapters: ["1.7", "1.11", "1.12", "4.3", "8.2"]
-pipeline_stage: "ready-for-review"
+pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: "reviewed"
+task2b_state: "fixed"
 last_deep_review_at: "2026-08-19T09:31:37+08:00"
 last_deep_review_run_id: "20260819-093137-deep-review-cc59c22c"
 ---
@@ -235,7 +238,7 @@ Boot Image 提供构建期生成的对象与元数据；Zygote preload 提供本
 | 应用 Baseline Profile | 应用或库的方法与类 | 安装、更新及 ART dexopt | 不修改平台 Boot Image |
 | 应用 Startup Profile | 应用启动路径中的类和方法 | R8/D8 构建应用时优化 DEX 布局 | 不修改平台 Boot Image |
 
-应用 Startup Profile 是 Baseline Profile 的启动子集，用来影响 APK/AAB 内 DEX 的排列，让启动代码更集中。它不会生成 `/system/etc/preloaded-classes`，也不会选择平台 `boot.art` 中的类。
+应用 Startup Profile 是 Baseline Profile 的启动子集，用来影响最终安装 APK 中 DEX 的排列，让启动代码更集中。官方构建链路把这项优化限定在应用构建期：需要启用 R8（release build 的 minify）和 AGP 8.1+ 的 DEX layout optimization，AGP 8.3 起默认启用；Startup Profile 不能由库单独贡献，必须由应用启动测试生成。它不会生成 `/system/etc/preloaded-classes`，也不会选择平台 `boot.art` 中的类。
 
 Boot Image Profile 与 `preloaded-classes` 可以来自同一批代表性使用场景采样。`profman --generate-boot-image-profile` 也能同时输出 Boot Image Profile 和预加载类清单，但两个输出文件的用途不同。
 
@@ -326,6 +329,7 @@ OEM 可以调整 Boot Class Path、Boot Image Profile、`preloaded-classes` 和 
 ## 源码阅读入口
 
 - `art/runtime/oat/image.h`、`image.cc`：格式版本、`ImageHeader`、section 和压缩块。
+- `art/runtime/oat/oat_file.cc`、`elf_file.cc`：OAT 文件打开路径与 ELF segment 权限映射。
 - `art/runtime/gc/space/image_space.h`、`image_space.cc`：image location 解析、预留、映射、校验、扩展加载和重定位。
 - `art/libartbase/base/file_utils.cc`：Android 17 默认 Boot Image location 与 `/system`、`/data` 选择。
 - `art/dex2oat/dex2oat.cc`、`dex2oat/linker/image_writer.cc`：主镜像/扩展识别、profile、对象选择与布局。
