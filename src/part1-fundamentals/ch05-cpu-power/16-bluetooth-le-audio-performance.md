@@ -130,7 +130,7 @@ flowchart LR
 
 ### Android 没有公开的“一键 7.5 ms 游戏模式”
 
-Android 17 的 LE Audio transport 确实提供了 `SetLatencyMode()`：它接收 `FREE`、`LOW_LATENCY`、动态空间音频软件和硬件等枚举，并映射到内部 `DsaMode`。源码没有把其中某个枚举直接映射成 7.5 ms LC3 配置，也没有承诺端到端延迟低于某个固定值。
+Android 17 的 LE Audio transport 提供了 `SetLatencyMode()`：它接收 `FREE`、`LOW_LATENCY`、动态空间音频软件和硬件等枚举，并映射到内部 `DsaMode`。源码没有把其中某个枚举直接映射成 7.5 ms LC3 配置，也没有承诺端到端延迟低于某个固定值。
 
 普通应用设置 `AudioAttributes` 或游戏 `usage` 后，Audio Policy、Bluetooth 栈和设备能力仍会共同决定路由与配置。耳机厂商提供的 Gaming Mode 也可能改变私有缓冲、Codec 配置或射频策略。测试报告应记录最终协商参数，避免把产品模式名称当成协议参数。
 
@@ -181,7 +181,9 @@ Android 17 `system/media/audio/include/system/audio-base-utils.h` 中可以确�
 
 媒体应用通常继续使用 `AudioTrack`、Media3 或其他媒体 API 播放。通信应用使用 `AudioManager.setCommunicationDevice()` 选择系统已提供的通信设备，并在结束后调用 `clearCommunicationDevice()`。应用不应通过已弃用的 SCO 开关控制 LE Audio 路由；SCO 属于 HFP/Classic 语音路径。
 
-`BluetoothLeAudio` 是 Bluetooth Profile proxy（访问系统 Profile 服务的代理对象）。Android 17 SDK 中的公开接口包括查询已连接设备、连接状态、组 ID 和已连接组的 lead device（组内代表设备）；`getActiveDevices()`、`connect()`、`disconnect()`、Codec 偏好和许多组控制接口则带有 `@Hide`、`@SystemApi` 或 `BLUETOOTH_PRIVILEGED` 限制。旧接口列表中的 `setConnectionState()` 与 `getAudioGroupOutType()` 并不是 Android 17 的公开方法。
+`BluetoothLeAudio` 是 Bluetooth Profile proxy（访问系统 Profile 服务的代理对象）。Android 17 SDK 中的公开接口包括查询已连接设备、连接状态、组 ID 和已连接组的 lead device（组内代表设备）；`getActiveDevices()`、`connect()`、`disconnect()`、Codec 偏好和许多组控制接口则带有 `@Hide`、`@SystemApi` 或 `BLUETOOTH_PRIVILEGED` 限制。
+
+旧接口列表中的 `setConnectionState()` 与 `getAudioGroupOutType()` 并不是 Android 17 的公开方法。
 
 下面的示例用于在应用侧判断手机是否声明 LE Audio 与广播源能力：
 
@@ -240,7 +242,9 @@ Controller 具备独立的定时与射频调度能力，不要求 AP 在每个 C
 
 Controller 重传主要消耗 Controller 和射频资源。它也可能通过数据短缺、状态事件或 Host 路径间接改变 AP 负载，但不能笼统写成“与 CPU DVFS 完全无关”。CPU 频率只反映其中一部分成本。
 
-Android 17 的 Bluetooth 栈还会在 suspend 场景管理 LE background scan（后台扫描），并根据 Controller/offload 能力决定哪些扫描任务可以留在硬件执行。看到扫描在灭屏后减少，不能直接归因于 LE Audio Codec；还要核对扫描发起方（scan client）、硬件 offload filter（卸载过滤器）、设备 idle 状态与 active audio group。HFP active-device handover 属于 Classic 通话路径，不应和 LE Audio route 切换合并成一条时延结论。
+Android 17 的 Bluetooth 栈还会在 suspend 场景管理 LE background scan（后台扫描），并根据 Controller/offload 能力决定哪些扫描任务可以留在硬件执行。看到扫描在灭屏后减少，不能直接归因于 LE Audio Codec；还要核对扫描发起方（scan client）、硬件 offload filter（卸载过滤器）、设备 idle 状态与 active audio group。
+
+HFP active-device handover 属于 Classic 通话路径，不应和 LE Audio route 切换合并成一条时延结论。
 
 ### 如何做可比较的功耗实验
 
