@@ -2779,6 +2779,27 @@
       "summary": "BLE audio device type source anchor and scope needed tightening",
       "type": "source-boundary",
       "updated_at": "2026-08-22T15:48:59.269236+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/12-zram-compressed-swap-relaunch.md",
+      "close_note": "Added API 30/33 boundaries for ApplicationExitInfo, getHistoricalProcessExitReasons, isLowMemoryKillReportSupported, and REASON_FREEZER in the chapter body; refreshed frontmatter source baseline to android-17.0.0_r1/android17-6.18 evidence.",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260822-170518-deep-review-544265d1",
+      "created_at": "2026-08-22T17:11:00.723116+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260822-170518-deep-review-544265d1",
+      "details": "The body tells readers to record ApplicationExitInfo and lists ActivityManager.getHistoricalProcessExitReasons()/REASON_FREEZER without noting that getHistoricalProcessExitReasons and isLowMemoryKillReportSupported are API 30+ and REASON_FREEZER is API 33+. Add explicit version boundaries for Android 8-10 and Android 11-12 readers.",
+      "id": "finding-7cefba7f28d9",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/app/ActivityManager",
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo"
+      ],
+      "status": "fixed",
+      "summary": "ApplicationExitInfo API-level caveat missing in Android 8-17 chapter",
+      "type": "version-boundary",
+      "updated_at": "2026-08-22T17:11:36.285595+08:00"
     }
   ],
   "schema_version": 1

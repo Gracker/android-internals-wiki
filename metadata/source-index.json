@@ -16,7 +16,17 @@
       "chapter": "ch01",
       "section": "1.11",
       "processed_at": "2026-07-16T06:14:00.474672",
-      "action": "injected"
+      "action": "injected",
+      "previous_route_status": null,
+      "target_path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+      "route_confidence": 14,
+      "route_terms": [
+        "zygote",
+        "preload",
+        "aosp"
+      ],
+      "route_status": "existing-chapter-routed",
+      "routed_at": "2026-08-22T17:04:15.219907+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-gpu-power-advisor-gpu-decomposition-frame-producer-aidl.md",
@@ -25,7 +35,10 @@
       "chapter": "ch02",
       "section": "2.17",
       "processed_at": "2026-07-16T06:14:00.474672",
-      "action": "injected"
+      "action": "quarantined-non-aiw",
+      "previous_route_status": null,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-08-22T17:04:15.219907+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-android17-sched-ext-6.18-vendor-hook-cpufreq-loop.md",
