@@ -32,7 +32,7 @@ related_chapters: ["4.4", "4.5", "4.11", "4.14"]
 
 # 4.13 Android 17 MemoryLimiter：memcg 限制与超限诊断
 
-> 源码以 AOSP `android-17.0.0_r1` 与内核 `android17-6.18-2026-06_r6` 为基准。本文沿源码调用链说明启用条件、memcg 写入、从事件监听到轮询的切换、联合超限后的延迟终止流程，以及现场监控口径。
+> 源码以 AOSP `android-17.0.0_r1` 与内核 `android17-6.18-2026-06_r6` 为基准。内容沿源码调用链展开：启用条件、memcg 写入、从事件监听到轮询的切换、联合超限后的延迟终止流程，以及现场监控口径。
 
 ## 先确认实现边界
 
@@ -101,7 +101,9 @@ MemoryLimiter 是 `system_server` 内按进程配置和监控内存控制组（m
 
 运行时关闭限制后，`getStateLimit()` 返回 `max/max`，但这组值要等进程下一次状态变化才会下发。开关发生变化时，系统不会立即遍历并改写所有受控进程。
 
-启用控制器时还会初始化豁免列表：`initializeExemptList()` 读取 framework 资源 `config_defaultOnDeviceSandboxedInferenceService`，解析出默认的设备端沙箱推理服务包名，再加入 `mExemptList`。因此，排查“处于同一进程状态，为什么某些进程没有收到限制”时，除了功能开关、vendor XML 和 UID 忽略状态，还要核对目标包是否属于默认豁免项。仅凭进程状态映射表，无法断定系统一定会写入 cgroup。
+启用控制器时还会初始化豁免列表：`initializeExemptList()` 读取 framework 资源 `config_defaultOnDeviceSandboxedInferenceService`，解析出默认的设备端沙箱推理服务包名，再加入 `mExemptList`。
+
+因此，排查“处于同一进程状态，为什么某些进程没有收到限制”时，除了功能开关、vendor XML 和 UID 忽略状态，还要核对目标包是否属于默认豁免项。仅凭进程状态映射表，无法断定系统一定会写入 cgroup。
 
 ## 从进程状态到内存限制的映射
 
@@ -147,7 +149,7 @@ Java 字段 `swapHigh` 只是遗留名称。排查设备行为时，应以 JNI �
 
 ## 事件监听如何切换到红区轮询
 
-本文把进程触发 `memory.high`、但尚未确认联合超限的阶段称为红区（red zone）。进入红区后，监控方式会从事件监听切换为定时轮询。
+进程触发 `memory.high`、但尚未确认联合超限的阶段，称为红区（red zone）。进入红区后，监控方式会从事件监听切换为定时轮询。
 
 ### 第一步：只监听 `memory.events`
 
@@ -209,7 +211,9 @@ anonSwapLimit  = configured memHigh + configured swapMax
 | `kHot` | 联合指标大于 `anonSwapLimit` | 置位联合超限并回调 Java |
 | `kTriggered` | 联合超限已经置位 | 内部终态标记；该进程已不再满足 `isRed()` |
 
-这些枚举是单次轮询的判定结果，不要求按 `kCold → kOkay → kHot → kTriggered` 的顺序逐级迁移。一个进程可以在第一次红区轮询时直接得到 `kHot`。10 MiB 是上下阈值之间的滞回量，也就是为状态切换预留的缓冲区间，用于减少临界点附近的反复切换。
+这些枚举是单次轮询的判定结果，不要求按 `kCold → kOkay → kHot → kTriggered` 的顺序逐级迁移。一个进程可以在第一次红区轮询时直接得到 `kHot`。
+
+10 MiB 是上下阈值之间的滞回量，也就是为状态切换预留的缓冲区间，用于减少临界点附近的反复切换。
 
 ## 联合超限之后发生什么
 
