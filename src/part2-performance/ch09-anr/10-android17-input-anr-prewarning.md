@@ -4,16 +4,39 @@ chapter: "9.10"
 section: "9.10"
 status: ready-for-review
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
-last_verified: "2026-07-03"
+last_verified: "2026-08-22"
+last_source_verified_at: "2026-08-22"
 last_verified_against: "AOSP android-17.0.0_r1"
-confidence: medium
+confidence: medium-high
 sources:
   - type: aosp
     path: "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp"
   - type: aosp
+    path: "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.h"
+  - type: aosp
+    path: "frameworks/native/services/inputflinger/dispatcher/include/InputDispatcherPolicyInterface.h"
+  - type: aosp
+    path: "frameworks/base/services/core/jni/com_android_server_input_InputManagerService.cpp"
+  - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/input/InputManagerService.java"
   - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/InputManagerCallback.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/AnrController.java"
+  - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/ActivityManager.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/AnrWarningResult.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/AnrTypes.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/ApplicationExitInfo.java"
+  - type: aosp
+    path: "frameworks/base/core/java/com/android/internal/os/TimeoutRecord.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/utils/LongMethodTracer.java"
   - type: aosp
     path: "frameworks/native/libs/input/android/os/IInputConstants.aidl"
   - type: research
@@ -22,6 +45,11 @@ sources:
     path: "DeepResearch/2026-06-15-anr-detection-inputdispatcher-ams-anrhelper-source.md"
 tags: [ANR, InputDispatcher, pre-ANR, Android17, TimeoutRecord, AnrTimer]
 related_chapters: ["9.1", "9.2", "9.9", "3.1"]
+pipeline_stage: ready-for-review
+task6_state: reviewed
+task9_state: pending-review
+last_deep_review_at: "2026-08-22T09:03:44+08:00"
+last_deep_review_run_id: "20260822-085818-deep-review-4857aac2"
 ---
 
 # 9.10 Android 17 Input ANR 与 pre-ANR 实现
@@ -141,6 +169,10 @@ flowchart TD
     WMS --> AMS --> Controller --> App
 ```
 
+这里要区分两个 flag 边界。Native producer 由 `enable_anr_warning_callback_input_dispatcher` 控制；Java 公开接入也带 `@FlaggedApi(Flags.FLAG_ENABLE_ANR_WARNING_CALLBACK)`，覆盖 `ActivityManager.registerAnrWarningListener()`、`unregisterAnrWarningListener()` 和 `AnrWarningResult`。因此，平台集成时要分别确认 InputDispatcher producer 与 framework API 暴露状态；App 端即使用 API 37 编译，也要把 API/flag 不可用、无 warning 投递作为正常分支。
+
+`AnrTypes` 和 `ApplicationExitInfo.AnrInfo` 又由 `FLAG_INCLUDE_ANR_INFO` 标注。Android 17 `AnrTypes` 共 11 个取值（含 `ANR_TYPE_OTHER`），但本章这条 no-focused-window producer 只发送 `ANR_TYPE_INPUT_DISPATCH_NO_FOCUSED_WINDOW`。
+
 `AnrController.notifyPreAppUnresponsive()` 先解析 `InputApplicationHandle` 对应的 Activity。Activity 不存在、已经 stopped（停止）或没有进程时，部分动作会被跳过。存在进程时，AMS warning 使用以下数据：
 
 - UID：候选 Activity 所属应用的身份编号；
@@ -152,7 +184,7 @@ flowchart TD
 
 `AnrWarningController` 再向该 UID 下已经注册 listener（监听器）的进程投递。warning payload（载荷）没有 PID 或 Activity token（系统识别 Activity 的句柄）；多进程应用应按 `(type, id, boot/session)` 去重，其中 boot/session 表示本次开机或应用会话。
 
-公开 API、11 个类型和载荷字段见 [9.9 Android 17 ANR 预警回调](09-android17-anr-warning-callback.md)。
+公开 API、类型清单和载荷字段见 [9.9 Android 17 ANR 预警回调](09-android17-anr-warning-callback.md)。
 
 ## 5. warning 时可选的 Long Method Trace
 
@@ -204,7 +236,7 @@ warning callback 与 Long Method Trace 是相互独立的动作。应用收到 c
 
 ## 8. `TimeoutRecord` 与 `ExpiredTimer` 的准确关系
 
-Android 17 在 `includeAnrInfo` flag 开启时，对两条正式输入 ANR路径执行：
+Android 17 在 `includeAnrInfo` flag 开启时，对两条正式输入 ANR 路径执行：
 
 ```java
 AnrTimer.ExpiredTimer expiredTimer =
@@ -322,7 +354,7 @@ Perfetto 不会自动生成固定的 `/data/anr` 产物。需要预先配置持�
 
 ### 普通 App
 
-- 用 API 37 SDK 编译，并用 `SDK_INT >= 37` 保护 warning listener；
+- 用 API 37 SDK 编译，用 `SDK_INT >= 37` 保护 warning listener，并把 API/flag 不可用当成正常分支；
 - listener 使用独立 executor，只复制小型内存快照；
 - 用 `(type, id, boot/session)` 去重多进程回调；
 - 记录 callback 到达时间，不能把它当作 Native warning 精确时刻；
@@ -378,11 +410,15 @@ Android 17 为 no-focused-window 输入 ANR 增加了一次 deadline 前的观�
 - [AOSP `InputDispatcher.h`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.h)
 - [AOSP `InputDispatcherPolicyInterface.h`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/include/InputDispatcherPolicyInterface.h)
 - [AOSP `IInputConstants.aidl`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/input/android/os/IInputConstants.aidl)
+- [AOSP `ActivityManager.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java)
+- [AOSP `AnrWarningResult.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/AnrWarningResult.java)
+- [AOSP `AnrTypes.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/AnrTypes.java)
 - [AOSP NativeInputManager JNI（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/jni/com_android_server_input_InputManagerService.cpp)
 - [AOSP `InputManagerService.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/input/InputManagerService.java)
 - [AOSP WMS `InputManagerCallback.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/InputManagerCallback.java)
 - [AOSP WMS `AnrController.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/AnrController.java)
 - [AOSP `ActivityManagerService.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)
+- [AOSP `ApplicationExitInfo.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java)
 - [AOSP `TimeoutRecord.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/TimeoutRecord.java)
 - [AOSP `LongMethodTracer.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/utils/LongMethodTracer.java)
 - [Android Developers：`ActivityManager.registerAnrWarningListener()`](<https://developer.android.com/reference/android/app/ActivityManager#registerAnrWarningListener(java.util.concurrent.Executor,java.util.function.Consumer)>)
