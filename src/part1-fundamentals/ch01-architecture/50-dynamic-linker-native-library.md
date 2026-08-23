@@ -53,7 +53,7 @@ linker64 有两条主要入口：
 
 linker64 不是常驻系统服务，也没有跨进程共享的“已解析符号缓存”。每个进程维护自己的 `soinfo` 依赖图、namespace、符号查找范围和引用计数。文件页可以经内核页缓存（page cache）在进程间复用，地址空间和重定位结果仍属于各进程。
 
-`bionic/linker/Android.bp` 将 linker 配置为 `static_executable: true`。这里的“静态”表示它不能依赖另一个动态链接器替自己完成普通启动；源码注释进一步说明，linker 自身按共享对象布局链接，并使用静态库组成。“它是普通静态程序”的说法遗漏了自举重定位，也就是 linker 先修正自身地址、再去装载其他 ELF 的过程。
+`bionic/linker/Android.bp` 将 linker 配置为 `static_executable: true`。这里的“静态”表示它不能依赖另一个动态链接器替自己完成普通启动；源码注释进一步说明，linker 自身按共享对象布局链接，并由静态库构成。“它是普通静态程序”的说法遗漏了自举重定位，也就是 linker 先修正自身地址、再去装载其他 ELF 的过程。
 
 ## 一次 `dlopen()` 的执行顺序
 
@@ -72,7 +72,7 @@ linker64 不是常驻系统服务，也没有跨进程共享的“已解析符�
 
 `do_dlopen()` 先用调用地址查找所属 `soinfo`，再由 `get_caller_namespace()` 得到起始 namespace。若调用的是 `android_dlopen_ext()`，并且 `android_dlextinfo` 带有 `ANDROID_DLEXT_USE_NAMESPACE`，显式 namespace 可以覆盖这一步的结果。
 
-这解释了为什么同一个绝对路径或 SONAME，在 shell 测试程序里能加载，在应用进程里却可能失败：搜索起点和可见边界并不相同。
+因此，同一个绝对路径或 SONAME 在 shell 测试程序里能加载、在应用进程里却可能失败：两者的搜索起点和可见边界并不相同。
 
 ### 阶段二：按广度优先顺序扩展 `DT_NEEDED`
 
@@ -207,7 +207,7 @@ Android 上没有“默认 lazy、加 Full RELRO（让可保护的重定位区�
 - weak symbol、符号优先查找（symbolic lookup）、跨 namespace 边界等规则；
 - 符号与 hash 表所在页面是否已经驻留。
 
-GNU hash 的 Bloom filter（布隆过滤器，一种快速排除“不可能命中”结果的数据结构）可以快速排除不匹配库，但不能保证总成本固定为 O(1)。linker 的慢路径带有单符号查找缓存，但它不是面向整个进程、长期保存任意查询结果的通用缓存。
+GNU hash 的 Bloom filter（布隆过滤器，一种快速排除“不可能命中”结果的数据结构）可以迅速筛掉不匹配库，但不能保证总成本固定为 O(1)。linker 的慢路径带有单符号查找缓存，但它不是面向整个进程、长期保存任意查询结果的通用缓存。
 
 ## GNU RELRO：重定位完成后把页面设为只读
 
@@ -235,7 +235,7 @@ llvm-readelf -rW libfoo.so
 
 共享库中的 `DT_PREINIT_ARRAY` 会被忽略并产生警告；preinit 只用于主程序。卸载时顺序相反：逆序执行 `DT_FINI_ARRAY`，再执行 `DT_FINI`。
 
-ELF constructor（构造函数）由 linker 在库装入时自动调用，其 ABI 没有返回值。linker 也没有 `DL_ERR_CONSTRUCTOR_FAILED` 供应用捕获。构造函数若触发 `SIGSEGV`、`SIGABRT` 或未处理异常，进程通常直接终止；它不会把错误转成 `dlerror()` 后恢复到 `dlopen()` 调用者。
+ELF constructor（构造函数）由 linker 在库装入时自动调用，其 ABI 没有返回值。linker 也没有 `DL_ERR_CONSTRUCTOR_FAILED` 供应用捕获。构造函数若触发 `SIGSEGV`、`SIGABRT` 或未处理异常，进程通常直接终止；它不会把错误转成 `dlerror()`，再让 `dlopen()` 调用者继续执行。
 
 工程上应把构造函数限制为必要、可预测且不阻塞的初始化：
 
@@ -420,7 +420,7 @@ llvm-readelf -lW libfoo.so
 
 Android 17 的 `do_dlopen()` 写入 `dlopen: <name>` 与 `dlopen: <name> - loading and linking` trace，`call_constructors()` 还写入 `calling constructors: <realpath>`。`loading and linking` 在 `find_library()` 返回后结束，外层 `dlopen` slice 则继续覆盖 constructor，因此两者的差值可以帮助定位构造阶段。
 
-锁等待不在这两条 bionic slice 内：`dlfcn.cpp` 的 `dlopen_ext()` 获取 `g_dl_mutex` 后才调用 `do_dlopen()`。测 loader-lock wait，需要在调用侧给整个 `System.loadLibrary()` 或 `dlopen()` 加 trace，并结合线程调度、futex（内核提供的用户态互斥量等待机制）状态及同时持锁线程的 bionic slice；调用侧 slice 开始到 `dlopen:` slice 出现前的区间，才可能包含等锁时间。
+锁等待不在这两条 bionic slice 内：`dlfcn.cpp` 的 `dlopen_ext()` 获取 `g_dl_mutex` 后才调用 `do_dlopen()`。测 loader-lock wait 时，需要在调用侧给整个 `System.loadLibrary()` 或 `dlopen()` 加 trace，并结合线程调度、futex（内核提供的用户态互斥量等待机制）状态及同时持锁线程的 bionic slice 一起看。调用侧 slice 开始到 `dlopen:` slice 出现前的区间，才可能包含等锁时间。
 
 若 Java 调用仍比 bionic slice 长，再检查 ART 的 native library load 与 `JNI_OnLoad`。
 
@@ -439,7 +439,7 @@ linker 会检查进程是否为 dumpable，也就是系统安全策略是否允�
 adb shell setprop debug.ld.app.com.example.app ''
 ```
 
-对于 shell 启动的测试程序，`LD_DEBUG` 还支持 `calls`、`dynamic`、`lookup`、`props`、`reloc`、`statistics`、`timing` 等选项。应用孵化路径可能过滤环境变量，不应把 shell 中的结果直接等同于生产应用。
+对于 shell 启动的测试程序，`LD_DEBUG` 还支持 `calls`、`dynamic`、`lookup`、`props`、`reloc`、`statistics`、`timing` 等选项。应用孵化路径可能过滤环境变量，不应把 shell 环境下的结果直接当成生产应用的行为。
 
 ### 4. 对照运行时映射
 
