@@ -2820,6 +2820,21 @@
       "summary": "FUSE TinyLlama GPU 案例的单 token 能耗方向与论文相反",
       "type": "source-mismatch",
       "updated_at": "2026-08-22T18:40:00.116688+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch08-responsiveness/09-keystore-keymint-latency.md",
+      "created_at": "2026-08-23T09:21:24.726402+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "",
+      "details": "",
+      "id": "finding-5b4d1cd3bcd9",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [],
+      "status": "open",
+      "summary": "operation slot 节将 KeyMint 并发上限写成 '至少 16 / Keystore2 用 15 / 1 个保留给 vold'，与 android-17.0.0_r1 的 IKeyMintDevice.aidl 不一致：AIDL 自 Android 12 起就要求 'implementations must support 32 concurrent operations'；source.android.com 的 implementer-ref 文档页仍保留 16 旧值。需以 AIDL 为准更新正文。",
+      "type": "source-boundary",
+      "updated_at": "2026-08-23T09:21:24.726402+08:00"
     }
   ],
   "schema_version": 1
