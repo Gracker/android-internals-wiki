@@ -4,7 +4,7 @@ chapter: "2.27"
 section: "2.27"
 status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-07-25"
+last_verified: "2026-08-23"
 last_verified_against: "AOSP android-17.0.0_r1 + Launcher3 android-17.0.0_r1"
 confidence: high
 sources:
@@ -212,7 +212,7 @@ ArrayMap<Integer, CacheEntry> mRunningCache
 
 进程死亡时，system_server 的运行时 cache entry 会删除；已经持久化的磁盘文件可以继续用于后续 Overview 或启动恢复。Launcher 进程还维护独立的缩略图缓存。
 
-Android 17 还包含 `onlyCacheLowResTaskSnapshot` feature flag（功能开关）路径：高分辨率 snapshot 可在转换完成后由低分辨率版本替换，旧 high-res buffer 最多短暂保留 5 秒以服务并发请求。这属于 flag 控制的内存策略，不应写成所有 Android 17 设备都固定启用。
+Android 17 还包含 `onlyCacheLowResTaskSnapshot` feature flag（功能开关）路径：开启时，`TaskSnapshotController.getRecordSnapshotSupplier()` 在持久化完成后把 `updateLowResToCacheFunction(task, snapshotId)` 回调 post 到 `mHandler`。回调里会重新进入全局锁，校验 task 仍 attached 且缓存里的 snapshot id 仍是同一份、且仍是高分辨率版本，才把 low-res 写回 `mCache`；任一条件不满足就调用 `supplier.abort()`，旧 high-res buffer 立即释放。因此旧 high-res 的保留时长取决于 low-res 生成 + handler post + 后续校验的耗时，没有固定秒级上限，属于 flag 控制的内存策略，不应写成所有 Android 17 设备都固定启用。
 
 ### 4.2 内存估算要带上 scale、format 与 stride
 
