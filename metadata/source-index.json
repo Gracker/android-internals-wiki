@@ -191,7 +191,11 @@
         "#CleanArchitecture",
         "#UseCase"
       ],
-      "scored_at": "2026-07-17T05:50:13.916973"
+      "scored_at": "2026-07-17T05:50:13.916973",
+      "previous_route_status": null,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "action": "quarantined-non-aiw",
+      "routed_at": "2026-08-24T06:20:05.872078+08:00"
     },
     {
       "title": "Android CLI 来了！终端一键建项目、控模拟器、给 Agent 喂官方规范",
@@ -207,7 +211,11 @@
         "#开发工具",
         "#Agent"
       ],
-      "scored_at": "2026-07-17T05:50:13.916975"
+      "scored_at": "2026-07-17T05:50:13.916975",
+      "previous_route_status": null,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "action": "quarantined-non-aiw",
+      "routed_at": "2026-08-24T06:20:05.872078+08:00"
     },
     {
       "title": "现代 Android 官方为什么更推荐 Repository 暴露 `suspend fun`，而不是在内部 `launch`",
@@ -4137,6 +4145,34 @@
       "summary": "> 发布时间: 2026-04-28T07:14:20.000Z > 原文链接: https://juejin.cn/post/7633624917233319936 2026-04-28 3,309 阅读7分钟 说明：花了4个小时用AI(GLM5.1)写的，后续用codex优化了，整体达到或者超越主流水平 github.com/XZQ/Android… [](https...",
       "chapter": "ch16",
       "processed_at": "2026-08-23T06:20:13.422984+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-24-76343650-配置变更后弹窗为什么飞到了最左边.md",
+      "title": "[技术文章] 配置变更后，弹窗为什么飞到了最左边？从一次配置变更后弹窗错位的真实 Bug 出发，追溯源码，完整还原 View 布局的异",
+      "summary": "> 发布时间: 2026-04-30T07:20:43.000Z > 原文链接: https://juejin.cn/post/7634365058739109898 超大分虾滑鱿鱼酸辣冬阴功拉面 2026-04-30 279 阅读5分钟 **1.1 问题描述** 配置变更（如屏幕旋转）后，Fragment 重建，弹窗出现在屏幕最左侧。 正常点击 ：和Title 中轴对齐...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-24T06:20:05.645875+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part5-app/ch26-observability/25-jvmti-agent-art-runtime-dynamic-monitoring.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "bug",
+        "view",
+        "t07",
+        "title"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-24-76444766-学吧Android全新的嵌入式照片选择器.md",
+      "title": "[技术文章] 学吧！Android 全新的嵌入式照片选择器AndroidX 推出了全新的嵌入式照片选择器（EmbeddedPhotoP",
+      "summary": "> 发布时间: 2026-05-28T00:39:32.000Z > 原文链接: https://juejin.cn/post/7644476634998538249 2026-05-28 1,332 阅读5分钟 2022 年，Android 团队推出了照片选择器，让用户能更隐私地分享媒体文件。用户可以通过可浏览的界面按日期从新到旧查看媒体库，并且只授予应用访问所选文件的...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-24T06:20:05.645875+08:00",
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
