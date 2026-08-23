@@ -4,8 +4,8 @@ chapter: "5.13"
 section: "5.13"
 status: finalized
 applicable_versions: "Android 4.4 (API 19) - Android 17 (API 37)"
-last_verified: "2026-06-09"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Source sensors docs"
+last_verified: "2026-08-23"
+last_verified_against: "AOSP android-17.0.0_r1 + Android Source sensors docs"
 confidence: medium-high
 sources:
   - type: official
