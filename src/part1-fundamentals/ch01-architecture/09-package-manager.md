@@ -276,7 +276,7 @@ IncFS 允许应用在 APK 的全部数据块下载完之前开始安装或运行
 
 Android 构建可以通过 `pm.dexopt.<reason>` 配置不同编译原因对应的编译过滤器（compiler filter），它决定 ART 采用的优化级别。ART Service 文档给出的标准配置中，`bg-dexopt` 通常使用 `speed-profile`，多个开机相关原因使用 `verify`；产品配置可以覆盖这些值。
 
-即使请求了 `speed-profile`，没有可用 Profile 时也不能假定系统一定进行完整 AOT。ART 会综合 Profile、磁盘空间、温度、现有产物和其他约束，选择实际可用的编译方式。分析设备行为时，应读取设备配置并检查实际产物，不能把某个默认值写成所有 Android 17 设备的保证。
+即使请求了 `speed-profile`，没有可用 Profile 时也不能假定系统一定进行完整 AOT。ART 会综合 Profile、磁盘空间、温度、现有产物和其他约束，选择实际可用的编译方式。分析设备行为时，应读取设备配置并检查实际产物，不能把某个默认值当成所有 Android 17 设备的保证。
 
 ### Baseline Profile、运行时 Profile 与 Startup Profile
 
@@ -366,7 +366,7 @@ ART Service 的 `PrimaryDexopter` 会尝试为各 ABI（如 arm64）创建 `.sdc
 3. 一旦实际 dexopt 已完成，临时 `.sdm` / `.sdc` 可以被提前删除；
 4. 删除 dexopt 编译产物时，ART Service 会把 ODEX、VDEX、ART、SDM 和 SDC 一并纳入管理。
 
-这说明 `.sdm` / `.sdc` 是受签名与版本约束的可选优化输入，不是 Android 17 所有应用都必须经历的安装阶段。源码类名使用 `SecureDexMetadata` 相关命名，但没有必要自行扩展一个未经源码或官方文档定义的全称。
+`.sdm` / `.sdc` 是受签名与版本约束的可选优化输入，不是 Android 17 所有应用都必须经历的安装阶段。源码类名使用 `SecureDexMetadata` 相关命名，但没有必要自行扩展一个未经源码或官方文档定义的全称。
 
 ---
 
@@ -422,7 +422,7 @@ Android 17 的权限状态由 `AccessCheckingService` 及其权限与访问策�
 - 跨用户、可见性和签名关系计算；
 - 首次构造或失效后的缓存重建。
 
-把所有权限工作都归到 `PackageManagerService.mLock` 会遗漏当前架构边界。
+如果把所有权限工作都归到 `PackageManagerService.mLock`，会遗漏当前架构边界。
 
 ### 拆分包（Split）、UID 与更新冲突
 
