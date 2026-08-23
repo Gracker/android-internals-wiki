@@ -3246,6 +3246,42 @@
       "status": "appended",
       "title": "AI 写 Android 代码老翻车？我把移动端的 Harness 系统开源了AI 写 Android 代码老翻车？我把"
     },
+    "source/juejin-android/2026-08-24-76049644-用AI写Android需求少踩坑的实战心得.md": {
+      "chapter": "待分类",
+      "entry_id": "bc06880e40fa8d97",
+      "last_appended": "2026-08-24T05:25:56.370433+08:00",
+      "last_seen": "2026-08-24T05:25:56.370433+08:00",
+      "mtime": 1787518484.4385018,
+      "score": 9,
+      "sha256": "e9a8f7166296cd08e301aa187acbfc41c1f1cfd8e566e46fe707c7e8676bb599",
+      "size": 12906,
+      "status": "appended",
+      "title": "用 AI 写 Android 需求：少踩坑的实战心得先说结论 用 AI 写 Android 代码这事，我折腾了一段时间，"
+    },
+    "source/juejin-android/2026-08-24-76343650-配置变更后弹窗为什么飞到了最左边.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "685ec16cc3a67ccd",
+      "last_appended": "2026-08-24T05:25:56.370433+08:00",
+      "last_seen": "2026-08-24T05:25:56.370433+08:00",
+      "mtime": 1787518484.436391,
+      "score": 14,
+      "sha256": "fed5da73272a0089e0cf469c3d33b3cc09bb1eebecb5b239ad07de025c2a7be7",
+      "size": 12627,
+      "status": "appended",
+      "title": "配置变更后，弹窗为什么飞到了最左边？从一次配置变更后弹窗错位的真实 Bug 出发，追溯源码，完整还原 View 布局的异"
+    },
+    "source/juejin-android/2026-08-24-76444766-学吧Android全新的嵌入式照片选择器.md": {
+      "chapter": "待分类",
+      "entry_id": "00a4feb98d076154",
+      "last_appended": "2026-08-24T05:25:56.370433+08:00",
+      "last_seen": "2026-08-24T05:25:56.370433+08:00",
+      "mtime": 1787518484.4375608,
+      "score": 9,
+      "sha256": "3a80bf0ada8e0abd534030c72aa1ef71b33e3ea5b99f12b5e50148adc5ae7885",
+      "size": 11977,
+      "status": "appended",
+      "title": "学吧！Android 全新的嵌入式照片选择器AndroidX 推出了全新的嵌入式照片选择器（EmbeddedPhotoP"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -5053,24 +5089,24 @@
     }
   },
   "last_report": {
-    "appended": 6,
-    "considered": 6,
-    "cutoff": "2026-08-22T05:20:08.867122+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-23.md",
+    "appended": 3,
+    "considered": 3,
+    "cutoff": "2026-08-23T05:20:03.748340+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-24.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1883,
+    "scanned": 1886,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 445
+      "unchanged": 451
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-08-23T05:25:03.748340+08:00",
+  "last_run_at": "2026-08-24T05:25:56.370433+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
