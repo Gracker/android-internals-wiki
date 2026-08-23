@@ -4,8 +4,8 @@ chapter: "8.9"
 section: "8.9"
 status: ready-for-review
 applicable_versions: "Android 6 (API 23) - Android 17 (API 37)"
-last_verified: "2026-05-22"
-last_verified_against: "AOSP android-16.0.0_r1, Android Developers Keystore/BiometricPrompt docs, AOSP KeyMint docs"
+last_verified: "2026-08-23"
+last_verified_against: "AOSP android-17.0.0_r1, Android Developers Keystore/BiometricPrompt docs, AOSP KeyMint docs"
 confidence: medium
 sources:
   - type: official
@@ -224,16 +224,18 @@ Android 12 / API 31 及以上可通过 `KeyInfo.getSecurityLevel()` 读取：
 
 ## operation slot：没有稳定的等待队列
 
-AOSP KeyMint implementer contract（实现方约定）要求后端至少支持 16 个并发 operation。Keystore 最多使用其中 15 个，为 `vold` 保留一个；`vold` 是 Android 的卷管理守护进程，需要使用 KeyMint 支持存储加密。
+AOSP KeyMint AIDL 自 Android 12 / API 31 起就把 `IKeyMintDevice.begin()` 的最低并发上限写成 32，注释原文为 "IKeyMintDevice implementations must support 32 concurrent operations"。`source.android.com/docs/security/features/keystore/implementer-ref` 上仍写着 16，那是 API 31 之前 KeyMaster 与早期 KeyMint 文档的历史遗留值，不要再当作当前合同。Android 17 的 keystore2 代码本身没有固定配额常量，而是把上限交给 KeyMint HAL 的 AIDL 合同。
 
-“15+1”描述的是最低实现约定，无法据此认定第 16 个 App 请求会进入 FIFO（先进先出）队列等待。Android 17 的处理过程如下：
+`vold` 是 Android 的卷管理守护进程，会使用 KeyMint 支撑存储加密。Keystore2 不在源码里写死为 `vold` 保留一个 slot；如果想给 `vold` 留出余量，应该在自测时直接观察 prune/返回错误，而不是套用旧文档里的“15+1”分配。
+
+不能据 AIDL 合同认定第 32 个 App 请求会进入 FIFO（先进先出）队列等待。Android 17 的处理过程如下：
 
 1. `IKeyMintDevice.begin()` 返回 `TOO_MANY_OPERATIONS`。
 2. Keystore2 调用 `OperationDb::prune()`，尝试选中并释放一项已有 operation。
-3. 当前算法综合 owner（所属客户端）的 sibling operation（同一 owner 的其他 operation）数量和最近使用时间选择候选。
+3. `prune()` 用 malus（修剪分）选候选：`malus = 1 + sibling_count + floor(log6(age_in_seconds + 1))`，其中 sibling 指同一 owner（所属客户端 UID）下的其他 operation；分值高者优先被选作修剪目标，老的、最近没动过的 sibling 最容易被回收。
 4. 没有合适候选时可能返回 `BACKEND_BUSY`；被 prune 的旧 operation 再次使用时会收到 invalid handle（句柄已失效）类错误。
 
-因此，应用侧应限制并发、缩短 operation 生命周期，并按请求记录 busy、pruned 和 invalid-handle 类错误。旧资料常将策略概括为“中止全局最久未使用的 operation”，这个说法没有包含 Android 17 对 owner 和 sibling operation 数量的考虑。
+因此，应用侧应限制并发、缩短 operation 生命周期，并按请求记录 busy、pruned 和 invalid-handle 类错误。旧资料常将策略概括为“中止全局最久未使用的 operation”，这个说法没有包含 Android 17 对 owner 和 sibling operation 数量的考虑；KeyMint AIDL 的 32 是针对整个 HAL 的下限，不等于 App 一次能开多少并发 operation。
 
 ### 容易耗尽 slot 的写法
 
