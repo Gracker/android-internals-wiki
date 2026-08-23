@@ -69,7 +69,7 @@ Android 显示调度包含两类彼此独立的问题：
 - **VSync rate**：面板时间事件或 TE 所在的节拍。
 - **Peak refresh rate**：当前模式允许的最高刷新速率。
 
-二者在固定刷新率模式中通常一致，在 ARR（Adaptive Refresh Rate，自适应刷新率）或 VRR 模式中可能分离。`DisplayMode::getVsyncRate()`、`getPeakFps()` 和 `VSyncPredictor::minFramePeriod()` 用于表达这种差异。仅看到 120 Hz，不能推断每个 TE 都必须产生一帧。
+二者在固定刷新率模式中通常一致，在 ARR（Adaptive Refresh Rate，自适应刷新率）或 VRR 模式中可能分离。`DisplayMode::getVsyncRate()`、`getPeakFps()` 和 `VSyncPredictor::minFramePeriod()` 用于表达这种差异。仅看到 120 Hz 模式，不能推断每个 TE 都必须对应一帧。
 
 调度时间线上还要区分：
 
@@ -129,7 +129,7 @@ Android 17 源码中有几个容易被混用的常量：
 
 ## 三、VSyncPredictor 如何建立时间模型
 
-`VsyncSchedule::createTracker()` 在默认路径创建一个历史容量为 20、至少积累 6 个样本才开始拟合的 `VSyncPredictor`，离群比例为 20%。Android 17 还有一条条件严格的单样本路径：只有启用 `use_last_vsync_predict` flag（功能开关）、使用 VRR config（可变刷新率配置），且 present fence 功能可用时，历史容量和最少样本数才会都改为 1。
+`VsyncSchedule::createTracker()` 在默认路径创建 `VSyncPredictor`：历史容量为 20，至少积累 6 个样本才开始拟合，丢弃离群样本的比例为 20%。Android 17 还有一条条件严格的单样本路径：只有启用 `use_last_vsync_predict` flag（功能开关）、使用 VRR config（可变刷新率配置），且 present fence 功能可用时，历史容量和最少样本数才会都改为 1。
 
 因此，Android 17 并非总是使用末次 VSync 预测。调试具体设备前，应在 `dumpsys SurfaceFlinger` 诊断输出、日志和对应产品 flag 中确认它使用默认模型还是单样本模型。
 
@@ -376,7 +376,7 @@ Android 17 的 Scheduler 为每个 display 保存独立的 selector（刷新率�
 - SF 是否及时 latch、compose 并提交 HWC；
 - present fence 是否晚于 expected present。
 
-Android 17 `TokenManager` 使用容量为 500 的环形存储保存 prediction（预测记录）。源码中没有按时间戳执行的固定 120 ms TTL；不能用“token 超过 120 ms 必然过期”解释关联失败。
+Android 17 `TokenManager` 使用容量为 500 的环形存储保存 prediction（预测记录）。源码中没有基于时间戳的固定 120 ms TTL；不能用“token 超过 120 ms 必然过期”解释关联失败。
 
 ### 11.2 Jank 类型要按责任域解释
 
@@ -416,7 +416,7 @@ App 按时而 `SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMiss
 
 **第四步：检查预测与模式过渡。**
 
-出现 `PredictionError`、`AppResyncedJitter` 或 interval 突变时，核对 VSyncReactor 是否正在重新采样、Predictor 使用 20 个历史样本与 6 个最低样本，还是单样本模型，以及是否发生 render-rate timeline 切换。
+出现 `PredictionError`、`AppResyncedJitter` 或 interval 突变时，核对 VSyncReactor 是否正在重新采样，Predictor 是默认模型（历史容量 20、最低 6 个样本）还是单样本模型，以及是否发生 render-rate timeline 切换。
 
 **第五步：审查 frame-rate vote。**
 
@@ -467,4 +467,4 @@ Android 17 的显示调度可以按两条主线理解：
 - 时间线：真实 VSync 与 present 样本进入 Reactor 和 Predictor，Dispatch 再按 work duration 与 ready duration 唤醒 App 和 SF；
 - 策略线：layer 的 frame-rate 请求进入 snapshot 与 LayerHistory，RefreshRateSelector 综合 policy、候选模式和全局信号做选择。
 
-排障时先确认 display 与 pacesetter，再用 FrameTimeline 关联同一帧，接着按 App、SF、HWC、预测与切换四个责任域缩小范围。这样得到的是有时间戳、frame token 和源码分支支撑的结论，不会把一个 API hint（提示）、一个 VSync slice（时间片）或一个常量孤立地解释成根因。
+排障时先确认 display 与 pacesetter，再用 FrameTimeline 关联同一帧，接着按 App、SF、HWC、预测与切换四个责任域缩小范围。这样得出的结论以时间戳、frame token 和源码分支为依据，不会把一个 API hint（提示）、一个 VSync slice（时间片）或一个常量孤立地解释成根因。
