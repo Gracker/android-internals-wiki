@@ -2,11 +2,11 @@
 title: "Android 17 cgroup v1/v2 混合层级与进程资源隔离机制"
 chapter: "1.48"
 section: "1.48"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [cgroup, cgroup-v2, 资源限制, 进程隔离, CPU, 内存, 后台限制, libprocessgroup, task-profiles]
 related_chapters: ["1.3", "1.18", "5.1", "5.2", "5.7"]
-last_verified: "2026-07-25"
+last_verified: "2026-08-23"
 last_verified_against: "AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6"
 confidence: high
 sources:
@@ -300,10 +300,12 @@ Android 17 的 `task_profiles.json` 为 memory controller 定义了：
 - `MemEvents` → `memory.events`；
 - `MemStats` → `memory.stat`；
 - `MemHigh` → `memory.high`；
-- `MemLimit` → v2 的 `memory.max`；
-- `MemSoftLimit` → v2 的 `memory.low`；
+- `MemLimit` → v1 的 `memory.limit_in_bytes` 或 v2 的 `memory.max`；
+- `MemSoftLimit` → v1 的 `memory.soft_limit_in_bytes` 或 v2 的 `memory.low`；
 - `SwapMax` → `memory.swap.max`；
 - `MemUsage` 等兼容 attribute。
+
+`MemLimit`、`MemSoftLimit` 在 JSON 中同时声明 `File` 与 `FileV2`：当前 memory controller 处于 v2 时使用 v2 文件，处于 v1 时回退到 v1 文件。`MemHigh`、`MemEvents`、`MemStats`、`SwapMax` 仅声明 v2 文件名，cgroup v1 拓扑下这些 action 不会成功执行。
 
 memory controller 在默认 `cgroups.json` 中标为 optional。设备不支持、没有启用或被 vendor 改为其他布局时，不能假定相应配置动作会沿 AOSP 路径成功执行。
 
