@@ -1,0 +1,497 @@
+version: 2
+reviewed_at: "2026-08-24"
+scope: "src/part*/ch*/*.md（排除章节 README）"
+current_chapter_articles: 454
+target_chapter_articles: 285
+fixed_preface_and_appendix_articles: 13
+target_book_articles: 298
+principles:
+  - "同一责任链中的总览、机制、版本增量、观测方法和案例合并为一篇。"
+  - "跨章节只改引用，不把基础机制与应用实战混成一篇。"
+  - "合并正文保留全部来源、独有证据、版本边界、命令、代码与排障步骤。"
+  - "未列入 merges 的正文经复核后独立保留；迁移时按现有阅读顺序连续编号。"
+
+chapters:
+  src/part1-fundamentals/ch01-architecture:
+    target_count: 28
+    merges:
+      - title: "Android 分层架构、进程模型与线程协作"
+        slug: android-architecture-process-threading
+        members: [01-layered-architecture.md, 03-process-model.md, 05-threading-model.md]
+      - title: "系统启动、Zygote 与图形栈预加载"
+        slug: boot-zygote-graphics-preload
+        members: [02-boot-process.md, 11-zygote-startup.md, 19-zygote-graphics-driver-preload.md]
+      - title: "Android IPC 全景与 Binder 性能"
+        slug: ipc-binder-performance
+        members: [04-binder.md, 17-ipc-panorama.md]
+      - title: "Binder Freezer、异步事务与线程池调度"
+        slug: binder-scheduling-freezer-threadpool
+        members: [18-binder-freezer-cached-process.md, 29-binder-async-transaction-queue.md, 38-binder-thread-pool-starvation-performance.md]
+      - title: "Binder 事务缓冲区与可观测性"
+        slug: binder-buffer-observability
+        members: [30-binder-transaction-buffer-performance.md, 31-binder-performance-recording-trace.md]
+      - title: "ART 编译、优化与去优化机制"
+        slug: art-compilation-optimization-deoptimization
+        members: [07-art-compilation.md, 12-autofdo-optimization.md, 22-art-verifier-quickening-dexopt-filters.md, 35-art-deoptimization-performance.md]
+      - title: "Java 类加载与 ART Boot Image"
+        slug: class-loading-art-boot-image
+        members: [36-java-class-loading-performance.md, 49-art-boot-image-memory-mapping-startup.md]
+      - title: "ActivityManager 进程状态、锁与优先级管理"
+        slug: activitymanager-process-lock-priority
+        members: [08-activity-manager.md, 25-ams-dual-lock-system-server-contention.md, 34-oomadjuster-process-priority-performance.md]
+      - title: "应用分发、安装验证与 PackageManager 性能"
+        slug: package-distribution-install-verification
+        members: [09-package-manager.md, 21-developer-verification-install-boundary.md, 23-staged-install-performance.md, 27-android-app-distribution.md]
+      - title: "MessageQueue、DeliQueue 与锁竞争"
+        slug: messagequeue-lock-contention
+        members: [13-messagequeue-deliqueue.md, 14-lock-contention.md]
+      - title: "JNI、NDK 与 Bionic 原生运行时性能"
+        slug: jni-ndk-bionic-performance
+        primary: 39-bionic-libc-performance.md
+        members: [15-jni-ndk-performance.md, 39-bionic-libc-performance.md]
+      - title: "Dynamic Linker、VNDK 与 Native 库隔离"
+        slug: dynamic-linker-vndk-isolation
+        members: [40-vndk-isolation-native-library-performance.md, 50-dynamic-linker-native-library.md]
+      - title: "Android 显示架构与 WindowManager"
+        slug: display-windowmanager-architecture
+        members: [28-rendering-display-architecture.md, 47-windowmanager-architecture-performance.md]
+      - title: "Telephony 与 Connectivity 系统服务架构"
+        slug: telephony-connectivity-services
+        members: [42-telephonymanager-architecture-performance.md, 43-connectivitymanager-architecture-performance.md]
+
+  src/part1-fundamentals/ch02-rendering:
+    target_count: 21
+    merges:
+      - title: "Android 渲染架构与版本演进"
+        slug: rendering-architecture-evolution
+        members: [01-rendering-overview.md, 09-rendering-evolution.md]
+      - title: "帧率、刷新率与显示模式选择"
+        slug: framerate-refresh-display-mode
+        members: [02-framerate.md, 18-adaptive-refresh-rate.md, 19-refresh-rate-switching.md, 34-display-mode-refresh-rate-selection.md]
+      - title: "VSync、Choreographer 与 SurfaceFlinger 调度"
+        slug: vsync-choreographer-sf-scheduling
+        members: [03-vsync.md, 04-choreographer.md, 23-vsync-scheduler-displayframerate.md]
+      - title: "MainThread、RenderThread 与 Hardware Layer"
+        slug: main-render-thread-hardware-layer
+        members: [05-main-render-thread.md, 07-hardware-layer.md]
+      - title: "SurfaceFlinger 合成、FrontEnd 与事务队列"
+        slug: surfaceflinger-frontend-transaction
+        members: [06-surfaceflinger.md, 22-surfaceflinger-frontend-requestedlayerstate.md, 25-sf-transaction-queue-lockless.md]
+      - title: "GPU 渲染与图形 API 选型"
+        slug: gpu-rendering-graphics-api
+        members: [10-gpu-rendering.md, 14-graphics-api-evolution.md]
+      - title: "BufferQueue、Gralloc 与 Sync Fence"
+        slug: bufferqueue-gralloc-sync-fence
+        members: [13-buffer-queue.md, 15-dmabuf-gralloc.md, 16-sync-fence.md]
+      - title: "Camera HAL3 Buffer 管理与 CameraX ZSL"
+        slug: camera-hal3-buffer-camerax-zsl
+        members: [32-camera-hal3-buffer-management.md, 33-camerax-zsl-hal-mapping.md]
+
+  src/part1-fundamentals/ch03-input:
+    target_count: 6
+    merges:
+      - title: "Input 分发、拦截与安全边界"
+        slug: input-dispatch-interception-security
+        members: [01-input-dispatch.md, 04-input-interception-security.md]
+      - title: "系统手势导航与 Predictive Back"
+        slug: gesture-navigation-predictive-back
+        primary: 07-predictive-back-system-architecture.md
+        members: [03-gesture-navigation.md, 07-predictive-back-system-architecture.md]
+
+  src/part1-fundamentals/ch04-memory:
+    target_count: 10
+    merges:
+      - title: "Android 与 Linux 内存管理全景"
+        slug: android-linux-memory-overview
+        members: [01-memory-overview.md, 02-linux-memory.md]
+      - title: "ART Heap、GC 与后台维护调度"
+        slug: art-heap-gc-maintenance
+        members: [03-art-memory.md, 07-art-generational-gc.md, 09-art-heaptask-scheduling-pipeline.md, 14-ontrimmemory-art-heap-trim.md]
+      - title: "lmkd、Cached App Freezer 与内存压力治理"
+        slug: lmkd-freezer-memory-pressure
+        members: [04-lmk.md, 11-cached-app-freezer-gc-boundary.md, 13-android17-memorylimiter.md, 17-product-prefetch-lmkd-boundary.md]
+
+  src/part1-fundamentals/ch05-cpu-power:
+    target_count: 9
+    merges:
+      - title: "Linux 调度、EAS 与大小核架构"
+        slug: linux-eas-big-little-scheduling
+        members: [01-linux-scheduling.md, 02-eas.md, 03-big-little.md]
+      - title: "DVFS、Thermal 与 Android 功耗管理"
+        slug: dvfs-thermal-android-power
+        members: [04-dvfs.md, 05-thermal.md, 06-android-power.md]
+      - title: "后台执行、任务调度与 App Hibernation"
+        slug: background-jobs-hibernation
+        members: [07-background-execution.md, 08-jobscheduler-workmanager-performance.md, 17-android17-app-hibernation-performance.md]
+      - title: "Android 端侧 AI Runtime 与 NPU 性能边界"
+        slug: ondevice-ai-runtime-npu
+        members: [10-ondevice-ml-inference-performance.md, 12-android17-ml-runtime-npu-boundary.md, 15-genai-app-integration-performance.md]
+
+  src/part1-fundamentals/ch06-storage:
+    target_count: 4
+    merges:
+      - title: "文件系统与 I/O 调度"
+        slug: filesystem-io-scheduling
+        members: [02-filesystem.md, 03-io-scheduling.md]
+
+  src/part2-performance/ch07-smoothness:
+    target_count: 9
+    merges:
+      - title: "卡顿定义、分类与原因体系"
+        slug: jank-definition-causes
+        members: [01-jank-definition.md, 02-jank-causes.md]
+      - title: "卡顿分析方法、典型场景与案例"
+        slug: jank-methodology-scenarios-cases
+        members: [03-jank-methodology.md, 04-typical-scenarios.md, 06-case-studies.md]
+      - title: "View 布局与通用渲染优化"
+        slug: view-layout-rendering-optimization
+        members: [05-optimization.md, 10-view-layout-performance.md]
+      - title: "Accessibility、ContentCapture 与 Autofill 性能"
+        slug: accessibility-contentcapture-autofill
+        members: [13-accessibility-manager-performance.md, 14-contentcapture-autofill-performance.md]
+
+  src/part2-performance/ch08-responsiveness:
+    target_count: 8
+    merges:
+      - title: "响应速度原理、场景与案例"
+        slug: responsiveness-principles-scenarios-cases
+        members: [01-responsiveness-principles.md, 04-other-scenarios.md, 05-case-studies.md]
+      - title: "App 冷启动链路与 Binder Trace 分析"
+        slug: app-cold-start-binder-trace
+        members: [02-app-launch.md, 08-binder-trace-cold-start-analysis.md]
+      - title: "Keystore、Biometric 与 Credential 登录性能"
+        slug: keystore-biometric-credential-login
+        members: [09-keystore-keymint-latency.md, 10-biometric-credential-login-performance.md]
+
+  src/part2-performance/ch09-anr:
+    target_count: 7
+    merges:
+      - title: "ANR 机制、类型与触发条件"
+        slug: anr-mechanism-types-triggers
+        members: [01-anr-design.md, 02-anr-types.md]
+      - title: "ANR 与 Kernel Trace 联合诊断"
+        slug: anr-kernel-trace-diagnosis
+        members: [03-anr-analysis.md, 07-anr-kernel-trace-joint-diagnosis.md]
+      - title: "Android 17 ANR 预警与 Input pre-ANR"
+        slug: android17-anr-prewarning
+        members: [09-android17-anr-warning-callback.md, 10-android17-input-anr-prewarning.md]
+
+  src/part2-performance/ch10-memory-perf:
+    target_count: 5
+    merges:
+      - title: "App 内存分析与案例"
+        slug: app-memory-analysis-cases
+        members: [01-app-memory-analysis.md, 05-case-studies.md]
+      - title: "内存泄漏与持续增长"
+        slug: memory-leak-growth
+        members: [02-memory-leak.md, 03-memory-growth.md]
+
+  src/part2-performance/ch11-power:
+    target_count: 5
+    merges:
+      - title: "Android 功耗模型与系统级优化"
+        slug: android-power-model-system-optimization
+        members: [01-power-model.md, 03-system-power-optimization.md]
+      - title: "App 耗电优化与案例"
+        slug: app-power-optimization-cases
+        members: [02-app-power-optimization.md, 04-case-studies.md]
+
+  src/part2-performance/ch12-apk-network:
+    target_count: 2
+    merges:
+      - title: "Android 网络与 TLS 性能优化"
+        slug: android-network-tls-performance
+        members: [01-network-performance.md, 02-network-security-tls-performance.md]
+
+  src/part3-tools/ch13-perfetto:
+    target_count: 13
+    merges:
+      - title: "Perfetto 入门、Trace 抓取与可靠性"
+        slug: perfetto-intro-capture-reliability
+        members: [01-perfetto-intro.md, 02-trace-capture.md, 04-large-traces.md, 22-trace-reliability.md]
+      - title: "Perfetto UI、状态轨道与版本边界"
+        slug: perfetto-ui-state-tracks
+        members: [03-perfetto-view.md, 21-perfetto-v57-state-tracks.md]
+      - title: "Perfetto 指标自动化与分析平台"
+        slug: perfetto-metrics-automation-platform
+        members: [06-advanced-usage.md, 17-smartperfetto-trace-analysis-platform.md]
+      - title: "Perfetto SQL、SPAN_JOIN 与 Jank CUJ"
+        slug: perfetto-sql-span-join-jank-cuj
+        members: [09-perfetto-sql-cookbook.md, 10-perfetto-span-join-window-functions.md, 13-perfetto-data-explorer-jank-cuj.md]
+      - title: "Android Tracing 基础设施与自定义 Trace"
+        slug: android-tracing-infrastructure-custom-trace
+        members: [08-tracing-infrastructure.md, 20-android-trace-api-custom-tracing.md]
+      - title: "FrameTracer 与 Frame Timeline 分析"
+        slug: frametracer-frame-timeline
+        members: [18-frametracer-graphics-frame-event.md, 19-frame-timeline-api33-perfetto-analysis.md]
+
+  src/part3-tools/ch14-other-tools:
+    target_count: 17
+    merges:
+      - title: "Simpleperf 与 ARM Topdown 微架构分析"
+        slug: simpleperf-arm-topdown
+        members: [02-simpleperf.md, 03-android17-simpleperf-microarch-profiling.md, 04-arm-topdown-microarch-performance-analysis.md]
+      - title: "内存分析、HPROF 与 Heap Dump 工具"
+        slug: memory-hprof-heapdump-tools
+        members: [05-memory-tools.md, 06-hprof-heapdump-javahprof-datasource.md]
+      - title: "自动化性能测试与 CLI Agent 工作流"
+        slug: automation-cli-agent-workflow
+        members: [09-automation-tools.md, 14-android-cli-agent-performance-workflow.md]
+      - title: "Android Performance Analyzer 与 GAPS 动态分析"
+        slug: performance-analyzer-gaps
+        members: [17-android-performance-analyzer.md, 28-gaps-dynamic-analysis.md]
+      - title: "GPU 调试与 AGI 单帧分析"
+        slug: gpu-debug-agi-frame-analysis
+        members: [15-gpu-debug-tools.md, 18-android17-agi-frame-profiler-gapii-spy.md]
+      - title: "GPU Counter、Memory 与 GpuService 可观测性"
+        slug: gpu-counter-memory-observability
+        members: [16-gpu-performance-profiling-advanced.md, 19-android17-gpuservice-gpu-memory-observability.md]
+      - title: "Android eBPF 架构与性能观测"
+        slug: android-ebpf-architecture-observability
+        members: [23-ebpf-performance-analysis.md, 24-ebpf-bpfloader-architecture.md, 25-android17-ebpf-observability-matrix.md]
+      - title: "Winscope、Layout Inspector 与 UI 状态调试"
+        slug: winscope-layout-inspector-ui-debugging
+        members: [21-winscope-window-composition-debugging.md, 22-layout-inspector-viewdebug.md]
+      - title: "三方性能库、Hook 与可观测性基础设施"
+        slug: third-party-hook-observability
+        members: [10-third-party-libs-observability.md, 26-hook-infrastructure.md]
+
+  src/part3-tools/ch15-methodology:
+    target_count: 7
+    merges:
+      - title: "Android 性能优化原则、实证与治理"
+        slug: performance-principles-evidence-governance
+        members: [01-philosophy.md, 08-empirical-performance-issues.md, 09-performance-governance.md]
+      - title: "性能指标体系与线上监控"
+        slug: performance-metrics-online-monitoring
+        members: [03-metrics.md, 05-online-monitoring.md]
+
+  src/part4-system/ch16-aosp:
+    target_count: 8
+    merges:
+      - title: "AOSP 性能优化与 Android 版本变更"
+        slug: aosp-performance-version-changes
+        members: [01-google-optimization.md, 02-version-changes.md, 05-android17-api37-performance-changes.md]
+      - title: "Android 17 Kernel 6.18 与 ARM64 安全开销"
+        slug: android17-kernel-arm64-security
+        members: [04-android17-kernel618-performance.md, 10-arm64-kernel-security-mitigation-performance.md]
+
+  src/part4-system/ch17-oem:
+    target_count: 7
+    merges:
+      - title: "OEM 性能优化与应用协作"
+        slug: oem-performance-app-collaboration
+        members: [01-oem-overview.md, 03-industry-cases.md]
+      - title: "OEM 调度、游戏模式与输入优先级"
+        slug: oem-scheduling-game-input
+        members: [04-sched-ext-oem-bpf-scheduler.md, 05-oem-game-mode-input-priority.md]
+      - title: "Power HAL、schedutil 与 Power Stats"
+        slug: power-hal-schedutil-power-stats
+        members: [08-power-hal-schedutil-soc-power.md, 09-power-stats-hal-oem-implementation.md]
+
+  src/part2-performance/ch18-rendering-pipelines:
+    target_count: 16
+    merges:
+      - title: "Android View 渲染管线与分析方法"
+        slug: android-view-pipeline-analysis
+        members: [01-pipeline-overview.md, 02-android-view-standard.md]
+      - title: "Android 软件、离屏与混合渲染路径"
+        slug: android-software-offscreen-mixed-rendering
+        members: [03-android-view-software.md, 04-android-view-mixed.md]
+      - title: "SurfaceView 与 TextureView 渲染管线"
+        slug: surfaceview-textureview-pipelines
+        members: [06-surfaceview.md, 07-textureview.md]
+      - title: "OpenGL ES、EGL 与 ANGLE"
+        slug: opengl-egl-angle
+        members: [08-opengl-es.md, 11-angle-gles-vulkan.md]
+      - title: "SurfaceControl 与 HardwareBufferRenderer"
+        slug: surfacecontrol-hardwarebuffer-renderer
+        members: [10-surface-control-api.md, 17-hardware-buffer-renderer.md]
+      - title: "Flutter 与 Jetpack Compose 渲染管线"
+        slug: flutter-compose-rendering-pipelines
+        members: [12-flutter-rendering.md, 23-compose-rendering-pipeline.md]
+      - title: "视频 Overlay、Media3 与专业编解码管线"
+        slug: video-overlay-media3-codec-pipeline
+        members: [15-video-overlay-hwc.md, 21-media-codec2-tunneled-media3-abr.md, 22-advanced-professional-video-apv.md]
+      - title: "Vulkan 原生管线与 HWUI 多队列"
+        slug: vulkan-hwui-multi-queue
+        members: [09-vulkan-native.md, 24-android17-hwui-vulkan-multi-queue.md]
+
+  src/part3-tools/ch19-apm:
+    target_count: 14
+    merges:
+      - title: "APM 全景、Firebase 与商业平台选型"
+        slug: apm-landscape-firebase-commercial
+        members: [01-apm-landscape.md, 14-firebase-performance.md, 15-commercial-apm.md]
+      - title: "Matrix、btrace 与 Tracing SDK"
+        slug: matrix-btrace-tracing-sdk
+        members: [02-tencent-matrix.md, 04-btrace.md, 10-tracing-sdk.md]
+      - title: "KOOM 与 LeakCanary 内存诊断"
+        slug: koom-leakcanary-memory-diagnostics
+        members: [03-koom.md, 05-leakcanary.md]
+      - title: "DoKit 与 Measure 开发期性能工具"
+        slug: dokit-measure-dev-tools
+        members: [06-dokit.md, 07-measure.md]
+      - title: "Jetpack Benchmark 与 Baseline Profiles"
+        slug: jetpack-benchmark-baseline-profiles
+        members: [11-jetpack-benchmark.md, 12-baseline-profiles.md]
+      - title: "实验室测试工具与设备 Benchmark"
+        slug: lab-tools-device-benchmarks
+        members: [16-testing-tools.md, 17-device-benchmarks.md]
+
+  src/part5-app/ch20-stability:
+    target_count: 14
+    merges:
+      - title: "应用稳定性度量、聚合与归因"
+        slug: stability-metrics-aggregation-attribution
+        members: [01-stability-overview.md, 06-stability-metrics.md, 08-crash-aggregation.md]
+      - title: "Java Crash、异常架构与线程堆栈分析"
+        slug: java-crash-exception-stack-analysis
+        members: [02-java-crash-governance.md, 07-exception-architecture.md, 18-crash-java-stack-lock-wait-analysis.md]
+      - title: "Native Crash、堆栈回溯与符号化"
+        slug: native-crash-unwinding-symbolication
+        members: [03-native-crash-governance.md, 16-native-stack-unwinding-symbolication.md]
+      - title: "OOM 治理与 WebView Renderer 恢复"
+        slug: oom-webview-renderer-recovery
+        members: [05-oom-governance.md, 09-webview-renderer-oom-recovery.md]
+      - title: "16 KB Page Size 与 Native 动态库兼容"
+        slug: 16kb-native-library-compatibility
+        members: [11-16kb-page-size-native-compatibility.md, 13-android17-native-dcl-stability.md]
+      - title: "线程与协程泄漏治理"
+        slug: thread-coroutine-leak-governance
+        members: [19-thread-leak-anonymous-thread-monitoring.md, 21-coroutine-leak-diagnosis-structured-concurrency-performance.md]
+
+  src/part5-app/ch21-startup:
+    target_count: 11
+    merges:
+      - title: "App 启动路径、监控与度量"
+        slug: app-startup-path-monitoring
+        members: [01-startup-analysis.md, 08-startup-monitoring.md]
+      - title: "启动任务编排、延迟初始化与并发调度"
+        slug: startup-task-lazy-concurrency
+        members: [02-startup-framework.md, 06-lazy-initialization.md, 14-thread-pool-concurrency-performance.md]
+      - title: "ContentProvider 与多进程启动治理"
+        slug: contentprovider-multiprocess-startup
+        members: [03-contentprovider-optimization.md, 07-multiprocess-startup.md]
+      - title: "Baseline、Startup 与 Cloud Profile 编译优化"
+        slug: baseline-startup-cloud-profile
+        members: [04-baseline-profile-practice.md, 10-cloud-profile-dm-install-compile.md]
+
+  src/part5-app/ch22-rendering-practice:
+    target_count: 18
+    merges:
+      - title: "View 布局与自定义绘制优化"
+        slug: view-layout-custom-drawing
+        members: [01-layout-optimization.md, 04-custom-view-optimization.md]
+      - title: "RecyclerView 与 Compose LazyList 性能"
+        slug: recyclerview-compose-lazylist
+        members: [02-recyclerview-practice.md, 16-compose-lazylist-performance.md]
+      - title: "Compose 性能、Compiler 与 Modifier.Node 诊断"
+        slug: compose-compiler-modifier-diagnostics
+        members: [03-compose-performance.md, 22-compose-compiler-recomposition-diagnostics.md, 25-compose-modifier-node.md]
+      - title: "View、Compose 动画与共享元素性能"
+        slug: view-compose-animation-shared-transition
+        members: [05-animation-performance.md, 15-compose-animation-performance.md, 27-compose-shared-transition.md]
+      - title: "图片加载、Bitmap 解码与 RenderNode"
+        slug: image-bitmap-rendernode
+        members: [06-image-loading.md, 26-bitmap-decode-imagedecoder.md]
+      - title: "Fragment、Predictive Back 与 Navigation Compose 页面切换"
+        slug: fragment-predictive-back-navigation
+        members: [10-fragment-transaction-performance.md, 11-predictive-back-performance.md, 17-navigation-compose-performance.md]
+      - title: "Compose 布局、测量与文字渲染"
+        slug: compose-layout-text-rendering
+        members: [19-compose-layout-measurement.md, 20-compose-text-performance.md]
+      - title: "Vulkan 管线与 Impeller 着色器编译"
+        slug: vulkan-impeller-shader-compilation
+        members: [23-vulkan-pipeline-compilation.md, 24-flutter-impeller-shader-compilation.md]
+      - title: "Media3 与 CameraX 实时媒体渲染"
+        slug: media3-camerax-rendering
+        members: [30-media3-video-rendering.md, 31-camerax-performance.md]
+      - title: "Runtime 图形效果与 Compose Canvas"
+        slug: runtime-effects-compose-canvas
+        members: [09-runtime-graphics-effects.md, 28-compose-canvas-custom-drawing.md]
+
+  src/part5-app/ch23-memory-practice:
+    target_count: 7
+    merges:
+      - title: "Native 与虚拟内存管理优化"
+        slug: native-virtual-memory-optimization
+        members: [03-native-memory-management.md, 09-virtual-memory-optimization.md]
+      - title: "Java Heap、GC 与 Compose 内存分配"
+        slug: java-heap-gc-compose-allocation
+        members: [04-java-heap-optimization.md, 05-memory-churn-gc.md, 08-compose-memory-allocation-gc.md]
+
+  src/part5-app/ch24-io-network:
+    target_count: 12
+    merges:
+      - title: "文件 I/O、SAF 与 ContentResolver 性能"
+        slug: file-io-saf-contentresolver
+        members: [01-file-io-optimization.md, 18-saf-documentfile-contentresolver-performance.md]
+      - title: "数据库与序列化性能"
+        slug: database-serialization-performance
+        members: [02-database-optimization.md, 03-serialization-performance.md]
+      - title: "数据缓存与离线优先架构"
+        slug: data-cache-offline-first
+        members: [06-data-caching.md, 07-offline-first.md]
+      - title: "移动网络架构、连接与容灾"
+        slug: mobile-network-connection-resilience
+        members: [04-network-architecture.md, 13-network-performance-baseline.md]
+      - title: "HTTP/2、HTTP/3、gRPC 与 ECH"
+        slug: http2-http3-grpc-ech
+        members: [05-protocol-optimization.md, 15-android17-ech-domain-encryption.md]
+      - title: "MediaStore、Photo Picker 与媒体转码"
+        slug: mediastore-photo-picker-transcoding
+        members: [11-mediastore-mediaprovider-performance.md, 12-photo-picker-transcoding-performance.md]
+      - title: "低带宽、流媒体与本地网络适配"
+        slug: low-bandwidth-streaming-local-network
+        members: [10-satellite-low-bandwidth-network.md, 14-android17-streaming-local-network.md]
+
+  src/part5-app/ch25-power-size:
+    target_count: 12
+    merges:
+      - title: "功耗诊断与 OEM 后台限制"
+        slug: power-diagnosis-oem-background
+        members: [01-power-diagnosis.md, 14-oem-background-restriction-power-diagnosis.md]
+      - title: "后台功耗与前台服务执行边界"
+        slug: background-power-foreground-service
+        members: [02-background-power.md, 15-foreground-service-execution-model.md]
+      - title: "WakeLock、Alarm 与 WorkManager 调度"
+        slug: wakelock-alarm-workmanager
+        members: [03-wakelock-alarm.md, 04-workmanager-practice.md]
+      - title: "APK 分析、R8 与资源优化"
+        slug: apk-r8-resource-optimization
+        members: [06-apk-analysis.md, 07-r8-resource-optimization.md]
+      - title: "DEX、Native SO 与资源文件体积优化"
+        slug: dex-native-resource-size
+        members: [17-dex-size-optimization.md, 18-native-so-size-optimization.md, 19-resource-file-size-optimization.md]
+      - title: "后台音频、AudioTrack 与 Offload 功耗"
+        slug: background-audio-audiotrack-offload
+        members: [11-background-audio-hardening-power.md, 12-audio-offload-audiotrack-power.md]
+
+  src/part5-app/ch26-observability:
+    target_count: 15
+    merges:
+      - title: "App 可观测性架构与性能数据采集"
+        slug: app-observability-performance-collection
+        members: [01-observability-architecture.md, 03-performance-collection.md]
+      - title: "性能评分与发版质量门禁"
+        slug: performance-score-release-gate
+        members: [07-release-quality-gate.md, 15-app-performance-score.md]
+      - title: "Crash 与 ANR 监控体系"
+        slug: crash-anr-monitoring
+        members: [02-crash-reporting.md, 04-anr-monitoring.md]
+      - title: "ApplicationExitInfo 与版本化线上诊断"
+        slug: application-exit-versioned-diagnostics
+        members: [08-application-exit-info.md, 10-versioned-diagnostics.md]
+      - title: "线上排障、诊断通道与非 Play ROM 适配"
+        slug: online-troubleshooting-diagnostic-rom
+        members: [05-online-troubleshooting.md, 16-client-log-diagnostic-command-channel.md, 24-non-play-channel-rom-observability.md]
+      - title: "eBPF、ATrace 与线上系统追踪"
+        slug: ebpf-atrace-online-tracing
+        members: [09-ebpf-online-tracing-binder-semantics.md, 23-profilo-atrace-online-collection.md]
+      - title: "heapprofd、procfs CPU 与 Page Fault 分析"
+        slug: heapprofd-procfs-page-fault
+        members: [19-heapprofd-production-deployment-permissions.md, 20-proc-filesystem-cpu-monitoring.md, 21-page-fault-analysis-android.md]
+      - title: "ART 动态方法追踪与 JVMTI 边界"
+        slug: art-dynamic-tracing-jvmti
+        members: [22-xtrace-art-dynamic-method-tracing.md, 25-jvmti-agent-art-runtime-dynamic-monitoring.md]
