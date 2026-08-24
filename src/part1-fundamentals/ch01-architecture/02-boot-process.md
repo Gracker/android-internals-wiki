@@ -4,7 +4,7 @@ chapter: "1.2"
 section: "1.2"
 status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-08-06"
+last_verified: "2026-08-24"
 last_verified_against: "AOSP android-17.0.0_r1: system/core init/rootdir/bootstat/init.zygote*, frameworks/base Zygote/ZygoteConnection/ZygoteProcess/SystemServer/UserController, external/perfetto perfetto.rc; Android Common Kernel android17-6.18-2026-06_r6: init/main.c and boot-critical kernel paths"
 confidence: high
 sources:
@@ -46,6 +46,8 @@ last_body_apply_at: "2026-08-22T17:27:05+08:00"
 last_body_apply_run_id: "20260822-172641-c689fa74"
 last_review_finalize_at: "2026-08-07T18:06:14+08:00"
 last_review_finalize_run_id: "20260807-180545-ebe6c50b"
+last_deep_review_at: "2026-08-24T09:45:08+08:00"
+last_deep_review_run_id: "20260824-094508-deep-review-b1486972"
 ---
 
 # 1.2 系统启动全流程
@@ -244,12 +246,13 @@ adb shell dmesg
 
 ```bash
 adb push boottrace.pbtxt /data/misc/perfetto-configs/boottrace.pbtxt
+adb shell setprop persist.traced.enable 1
 adb shell setprop persist.debug.perfetto.boottrace 1
 adb reboot
 adb pull /data/misc/perfetto-traces/boottrace.perfetto-trace
 ```
 
-这些命令需要允许写入 `/data/misc/perfetto-configs` 并设置调试系统属性，通常用于 `userdebug`/`eng` 构建或具备等价权限的实验环境；量产用户版本可能拒绝操作。
+这些命令需要允许写入 `/data/misc/perfetto-configs` 并设置调试系统属性，通常用于 `userdebug`/`eng` 构建或具备等价权限的实验环境；量产用户版本可能拒绝操作。`external/perfetto/perfetto.rc` 的启动条件同时检查 `persist.debug.perfetto.boottrace=1`、`persist.traced.enable=1` 和 `sys.trace.traced_started=1`，缺少 `persist.traced.enable=1` 时，`perfetto_trace_on_boot` 不会被 init 触发。
 
 对应的 init 服务会读取文本配置并把结果写到固定跟踪文件。这个服务要等 `/data` 已挂载、持久属性已加载且 `traced` 跟踪守护进程已就绪后启动，所以它能覆盖较晚的用户空间启动，通常可以分析 Zygote、SystemServer 和 Launcher，但看不到 Boot ROM、Bootloader、完整内核和第一阶段 init。需要更早证据时，应组合 bootstat、`dmesg`、串口、bootconfig/ftrace 与厂商工具。
 
