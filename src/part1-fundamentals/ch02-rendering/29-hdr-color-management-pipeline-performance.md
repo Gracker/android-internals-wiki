@@ -2,10 +2,10 @@
 title: "HDR 显示管线与色彩管理性能"
 chapter: "2.29"
 section: "2.29"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
-last_verified: "2026-07-25"
-last_verified_against: "AOSP android-17.0.0_r1"
+last_verified: "2026-08-24"
+last_verified_against: "AOSP android-17.0.0_r1 + Android Developers display/HDR/Compose API documentation"
 confidence: high
 sources:
   - type: aosp
@@ -27,9 +27,22 @@ sources:
   - type: official
     path: "developer.android.com/media/grow/ultra-hdr/display"
   - type: official
+    path: "developer.android.com/media/grow/hdr-playback"
+  - type: official
+    path: "developer.android.com/reference/kotlin/androidx/compose/ui/graphics/Color"
+  - type: official
+    path: "developer.android.com/reference/kotlin/androidx/compose/ui/graphics/colorspace/ColorSpaces"
+  - type: official
+    path: "developer.android.com/reference/kotlin/androidx/compose/ui/graphics/colorspace/package-summary"
+  - type: official
     path: "source.android.com/docs/core/display/color-mgmt"
   - type: official
     path: "source.android.com/docs/core/display/tone-mapping"
+pipeline_stage: finalized
+task6_state: reviewed
+task9_state: reviewed
+last_review_finalize_at: "2026-08-24T10:05:43+08:00"
+last_review_finalize_run_id: "20260824-100543-f48eb0ca"
 tags: [HDR, color-management, display-pipeline, wide-color-gamut, surfaceflinger, tone-mapping]
 related_chapters: ["2.1", "2.6", "2.10", "2.22", "2.23"]
 ---
@@ -458,9 +471,9 @@ API 34 的 `HdrConversionMode` 定义四种状态：
 
 ## 九、Compose 中的色彩空间
 
-Compose `Color` 从 1.0 起就能携带 `ColorSpace`，构造函数的 `colorSpace` 参数默认是 sRGB。`androidx.compose.ui.graphics.colorspace.ColorSpaces` 提供 Display P3、BT.2020、BT.2100 HLG 等空间；connector 转换接口从 Compose 1.6 起提供。
+Compose `Color`（`androidx.compose.ui:ui-graphics`）从 1.0.0 起就是带 `ColorSpace` 的颜色值，构造函数的 `colorSpace` 参数默认是 `ColorSpaces.Srgb`。`androidx.compose.ui.graphics.colorspace.ColorSpaces` 提供 `DisplayP3`、`Bt2020`、`Bt2020Hlg`、`Bt2020Pq` 等空间；这些只描述 Compose 颜色对象的语义，不会自动把承载它的 Window 切到 WCG 或 HDR。
 
-示例中先构造 P3 颜色，再显式转换到 sRGB：
+下面的示例使用 Compose UI 1.2.0 起提供的 `Color.convert(ColorSpace)`，先构造 P3 颜色，再显式转换到 sRGB。若要使用更底层的 `ColorSpace.connect(..., RenderIntent)` extension，应注意官方 API 将该 extension 标为 Compose UI 1.10.0 起；面向旧 Compose 版本时，要按项目锁定的库版本确认可用接口。
 
 ```kotlin
 val p3 = Color(
@@ -694,6 +707,9 @@ Android 17 的 local tone mapper 主要用于这类非高频输出，结果也�
 - [AOSP tone mapping 与 libtonemap/LUT](https://source.android.com/docs/core/display/tone-mapping)
 - [Window desired HDR headroom](https://developer.android.com/reference/android/view/Window#setDesiredHdrHeadroom(float))
 - [Display.HdrCapabilities](https://developer.android.com/reference/android/view/Display.HdrCapabilities)
+- [Compose Color API](https://developer.android.com/reference/kotlin/androidx/compose/ui/graphics/Color)
+- [Compose ColorSpaces API](https://developer.android.com/reference/kotlin/androidx/compose/ui/graphics/colorspace/ColorSpaces)
+- [Compose ColorSpace conversion API](https://developer.android.com/reference/kotlin/androidx/compose/ui/graphics/colorspace/package-summary)
 
 ---
 
