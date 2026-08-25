@@ -418,7 +418,7 @@ ACK 表示应用已返回事件处理结果。帧请求、VSync 等待、渲染�
 
 骨架屏只改变用户看到的中间状态，不会自动降低 TTID 或 TTFD。如果骨架布局复杂、动画持续运行，或真实内容到达后发生大范围重排，还可能增加渲染开销。
 
-### 源码与官方资料
+### Android 17 输入链的核对入口
 
 #### Android 17 源码
 
@@ -442,12 +442,6 @@ ACK 表示应用已返回事件处理结果。帧请求、VSync 等待、渲染�
 - [`MotionPredictor` API](https://developer.android.com/reference/android/view/MotionPredictor)
 - [Adaptive refresh rate](https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate)
 - [RAIL performance model](https://web.dev/articles/rail)
-
-### 结论
-
-响应速度对应一条从输入样本到帧呈现的时间路径。分析时先确定交互完成的含义和测量端点，再沿 `InputReader`、`InputDispatcher`、应用 Looper、UI Thread、RenderThread、GPU、SurfaceFlinger 和 HWC 逐段归因。
-
-RAIL 可以提供用户等待感的参考，Android 帧诊断仍应以设备 deadline、FrameTimeline 和 input-to-present 证据为准。Android Vitals 展示真实用户设备上的分布和质量告警，Perfetto 解释单次慢交互发生在哪个阶段。把两类证据放在一起，才能验证优化是否同时改善了现场指标和具体执行路径。
 
 ## 页面、输入、网络与后台唤醒场景
 
@@ -869,8 +863,6 @@ Android 17 还引入了 generational Concurrent Mark-Compact GC，也就是按�
 
 本文核对的平台上限为 Android 17 / API 37，源码基线是 `android-17.0.0_r1`。涉及调度、Binder 或 I/O 归因时，内核基线为 `android17-6.18-2026-06_r6`。这些生产案例形成于不同年份，保留历史数据是为了分析优化方法；平台版本事实仍以 Android 17 为边界。
 
----
-
 #### 案例一：Reddit 用分屏 CUJ 改善冷启动与页面切换
 
 ##### 优化前数据
@@ -931,8 +923,6 @@ Reddit 工程师披露，一个功能团队制作一条 CUJ Profile 通常只需
 
 首页包含多个入口时，不应只录制“启动到首页”。列表到详情、Tab 切换、搜索结果和深链入口可以分别建立 CUJ，再记录各自的 TTID、TTFD、页面 TTI 和帧指标。Profile 覆盖的操作应代表稳定、高频的真实用户路径；纳入大量低频分支会增加编译成本，也会降低热点集合的集中度。
 
----
-
 #### 案例二：Gmail Wear OS 用 Perfetto 找到 CPU 争用
 
 ##### 优化前数据
@@ -976,8 +966,6 @@ Gmail Wear OS 团队公开了诊断步骤和相对收益，但没有披露优化
 团队没有披露工期。从公开信息看，UI 修改和构建配置涉及的代码范围较小；但采集可比较的 trace、维护 Wear OS 设备组合、执行 A/B 测试和验证视觉状态仍需要工程投入。
 
 这个案例的产出还包括一套诊断证据：它排除了“主线程执行的方法太多”这一单一解释，并将后续工作指向 DEX、Binder、调度和 JIT 四条可验证路径。资源有限的团队可以借此减少没有证据支持的重构。
-
----
 
 #### 案例三：Disney+ 清理旧 R8 默认规则
 
@@ -1027,8 +1015,6 @@ R8 会删除、重命名、移动或合并程序元素。测试只覆盖应用�
 官方没有披露 Disney+ 的工期和人力，无法计算数值化 ROI（投资回报率）。配置改动看起来很小，发布风险却取决于代码库中的反射、JNI 和历史 keep rules。大型应用可能需要投入较多时间清理规则并补齐测试。
 
 评估这类工作时，成本应包括规则检查、自动化测试、灰度发布、崩溃反混淆和回滚准备；产出应同时记录启动耗时和 ANR，不能只看包体积。完成配置迁移后，依赖升级时还要检查新增的 consumer rules（库随包提供的消费者规则）。
-
----
 
 #### 案例四：Duolingo 缩短点击后的可见等待
 
@@ -1081,8 +1067,6 @@ Duolingo 没有公开这项改动投入的人天。案例确认感知等待下�
 
 点击后存在无法避免的耗时任务时，应先找出用户能够看到的最早可信反馈。常见选择包括按钮状态变化、操作已接收提示、本地结果预览或可取消的进行中状态。反馈必须符合当前业务事实，并且有机会在下一帧绘制；`onClick` 中的同步 I/O、锁等待或大量计算仍应移出主线程。
 
----
-
 #### 四个案例放在一起怎么看
 
 | 案例 | 覆盖场景 | 主要证据 | 改动位置 | 结果边界 |
@@ -1123,8 +1107,6 @@ Macrobenchmark 适合建立可重复的启动和交互基准，[官方概览](ht
 
 同一项收益不能重复计入。例如，启动变快可能同时改善转化率，两者可以并列展示，但在没有经济模型时不能相加成一个虚构金额。案例只提供相对变化时，本地团队仍需根据自己的样本量和用户价值判断是否值得投入。
 
----
-
 #### Android 17 锚点下的归因边界
 
 四个案例主要涉及应用代码和构建工具，不依赖某个 Android 17 新 API。将方法迁移到当前平台时，仍要使用统一基线解释 trace：
@@ -1137,8 +1119,6 @@ Macrobenchmark 适合建立可重复的启动和交互基准，[官方概览](ht
 - I/O 或缺页占主要时间时，要区分冷缓存、设备存储和内核版本，避免把一台设备上的收益外推到全部用户。
 
 Android 17 framework 或 6.18 内核可能改变某些 slice 的耗时，案例中的历史百分比不能当成平台承诺。迁移时可以复用诊断步骤，但必须在当前基线上重新采集数据。
-
----
 
 #### 常见误读
 
@@ -1166,9 +1146,7 @@ minify 开关、默认规则文件、full mode 属性和 keep rules 会共同影
 
 生产版本上线后，启动和 ANR 指标同向改善，可以支持“这次发布有效”，但不足以证明某个方法内联或类合并直接减少了某类 ANR。要证明具体机制，还需要 trace、消融实验，或更细的错误分类；消融实验是指只移除或保留某一项改动，观察结果如何变化。
 
----
-
-### 结论
+## 小结
 
 分析响应速度时，需要把输入、线程调度、业务执行和反馈帧分别计时。Activity、Fragment、ViewPager2、点击、搜索、Deep Link 和 Widget 的入口各不相同，但都不能让主线程执行没有时长边界的工作；后台任务也要限制 CPU、I/O，并正确处理取消和结果提交。
 
@@ -1183,6 +1161,8 @@ Android 17 的平台源码基线是 `android-17.0.0_r1`，输入驱动和调度�
 - Android 17（API 37）是本文核对的平台上限。API 37 没有统一的 Android INP / UIL Vitals 指标，厂商私有的输入预测或显示 trace 也不能当作 AOSP 通用接口。
 
 ## 参考资料
+
+### 场景与平台资料
 
 - [AOSP Android 17：Activity.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Activity.java)
 - [AOSP Android 17：Instrumentation.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Instrumentation.java)
@@ -1210,6 +1190,8 @@ Android 17 的平台源码基线是 `android-17.0.0_r1`，输入驱动和调度�
 - [Perfetto：FrameTimeline data source](https://perfetto.dev/docs/data-sources/frametimeline)
 - [Android Developers：Macrobenchmark overview](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)
 
+### 案例资料
+
 - [Reddit：Baseline Profiles、R8 与 Compose 的生产案例](https://android-developers.googleblog.com/2024/12/reddit-improved-app-startup-speed-using-baseline-profiles-r8.html)
 - [Reddit：R8、Baseline Profiles 与 Startup Profiles 的后续基准](https://developer.android.com/blog/posts/how-reddit-used-the-r8-optimizer-for-high-impact-performance-improvements?hl=en)
 - [Gmail Wear OS：用 Perfetto 分析启动并改善 50%](https://developer.android.com/topic/performance/appstartup/case-study-gmail-wear)
@@ -1218,5 +1200,4 @@ Android 17 的平台源码基线是 `android-17.0.0_r1`，输入驱动和调度�
 - [Baseline Profiles 官方概览](https://developer.android.com/topic/performance/baselineprofiles/overview)
 - [R8 full mode 官方说明](https://developer.android.com/topic/performance/app-optimization/full-mode?hl=en)
 - [启用 App 优化的官方指南](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization)
-- [Macrobenchmark 官方概览](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)
 - [Android App 性能度量概览](https://developer.android.com/topic/performance/measuring-performance)

@@ -117,7 +117,7 @@
   - [8.3 启动优化策略](part2-performance/ch08-responsiveness/03-launch-optimization.md)
   - [8.4 Kotlin Coroutine、Flow 与线程调度实践](part2-performance/ch08-responsiveness/04-coroutine-performance.md)
   - [8.5 Keystore、Biometric 与 Credential 登录性能](part2-performance/ch08-responsiveness/05-keystore-biometric-credential-login.md)
-  - [8.6 推送通知管线性能：FCM 投递延迟与 NotificationManagerService 渲染](part2-performance/ch08-responsiveness/06-push-notification-pipeline-performance.md)
+  - [8.6 推送通知管线性能：FCM 投递、NMS 入队与 SystemUI 渲染](part2-performance/ch08-responsiveness/06-push-notification-pipeline-performance.md)
   - [8.7 Play Integrity API 性能与集成延迟](part2-performance/ch08-responsiveness/07-play-integrity-api-performance.md)
 
 - [第 9 章：ANR](part2-performance/ch09-anr/README.md)

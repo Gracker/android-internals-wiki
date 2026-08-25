@@ -796,7 +796,7 @@ adb logcat | grep AudioHardening
 
 表格的判断重点是任务语义，而非哪种 API 看起来更“强”。方案选择应从用户可感知性、是否允许延期、失败后能否恢复、所需资源和平台配额出发。把所有后台任务包进 FGS 会增加通知干扰、功耗、超时和商店审核风险。
 
-推送触发细节参见 [8.6 推送通知管线性能：FCM 投递延迟与 NotificationManagerService 渲染](../../part2-performance/ch08-responsiveness/06-push-notification-pipeline-performance.md)。OEM 额外后台策略的取证方法参见 [25.1 功耗诊断与 OEM 后台限制](01-power-diagnosis-oem-background.md)。
+推送触发细节参见 [8.6 推送通知管线性能：FCM 投递、NMS 入队与 SystemUI 渲染](../../part2-performance/ch08-responsiveness/06-push-notification-pipeline-performance.md)。OEM 额外后台策略的取证方法参见 [25.1 功耗诊断与 OEM 后台限制](01-power-diagnosis-oem-background.md)。
 
 ### 10. 可观测性与故障注入
 

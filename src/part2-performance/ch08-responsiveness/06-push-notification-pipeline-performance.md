@@ -1,8 +1,8 @@
 ---
-title: 推送通知管线性能：FCM 投递延迟与 NotificationManagerService 渲染
+title: 推送通知管线性能：FCM 投递、NMS 入队与 SystemUI 渲染
 chapter: '8.6'
 section: '8.6'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-08-19'
 last_verified_against: AOSP android-17.0.0_r1 frameworks/base NotificationManagerService / NotificationManager / Notification / RemoteViews / SystemUI notification row; Android common kernel android17-6.18-2026-06_r6 binder.c; Firebase Cloud Messaging receive / priority / delivery docs; Android notification, FGS and Live Update docs checked 2026-08-19
@@ -52,14 +52,14 @@ related_chapters:
 - '8.2'
 - '25.3'
 - '11.3'
-pipeline_stage: ready-for-review
-task6_state: pending-review
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 last_deep_review_at: '2026-08-19T16:43:11+08:00'
 last_deep_review_run_id: 20260819-163522-deep-review-1ce61161
 ---
 
-# 推送通知管线性能：FCM 投递延迟与 NotificationManagerService 渲染
+# 推送通知管线性能：FCM 投递、NMS 入队与 SystemUI 渲染
 
 “推送慢”至少可能指五件事：业务服务端发出请求晚、FCM 传输晚、设备收到回调晚、应用发布通知晚，或 SystemUI 显示晚。FCM（Firebase Cloud Messaging）是消息传输服务，SystemUI 则负责通知抽屉、锁屏通知等系统界面。这条链路跨越云端、Google Play services、应用进程、`system_server` 和 SystemUI，没有一个公开 API 能用同一时钟记录全部阶段。
 
@@ -352,6 +352,12 @@ common kernel 的 Binder 代码只能解释 App、NMS 与 SystemUI 之间的 IPC
 
 FCM SDK、Google Play services 和 Android 平台版本要分别记录。即使设备都运行 Android 17，其 Firebase Messaging SDK 与 Play services 版本仍可能不同，不能只用 `api_level` 代表三者。
 
+## 小结
+
+推送性能要按责任边界分析。FCM 负责在云端接受消息并向设备传输；应用在 data message 或前台路径中处理 callback；NMS 同步完成校验和入队前工作；SystemUI 随后异步创建或复用通知内容。`notify()` 返回、FCM 记录 `MESSAGE_DELIVERED` 和用户看到通知，是三个不同事件。
+
+Android 17 的 NMS 使用可配置的 EWMA 限制更新速率，SystemUI 支持异步 apply / reapply `RemoteViews`，`MetricStyle` 与 Live Update 则增加了系统模板和突出展示资格。要让推送稳定及时，需要发送用户可见内容、合理设置 priority、缩短 callback、合并高频更新，并按阶段保留证据；固定毫秒常量和未公开的 Play services 内部行为都不能作为可靠依据。
+
 ## 交叉引用
 
 - [§9.5 Notification 性能与 ANR](../ch09-anr/05-notification-performance-anr.md)：`notify()` 同步边界、NLS 回调和通知 ANR。
@@ -370,9 +376,3 @@ FCM SDK、Google Play services 和 Android 平台版本要分别记录。即使�
 - [Android 通知运行时权限](https://developer.android.com/develop/ui/views/notifications/notification-permission)
 - [Android 17 MetricStyle](https://developer.android.com/develop/ui/views/notifications/metric-style)
 - [Live Update 通知](https://developer.android.com/develop/ui/views/notifications/live-update)
-
-## 小结
-
-推送性能要按责任边界分析。FCM 负责在云端接受消息并向设备传输；应用在 data message 或前台路径中处理 callback；NMS 同步完成校验和入队前工作；SystemUI 随后异步创建或复用通知内容。`notify()` 返回、FCM 记录 `MESSAGE_DELIVERED` 和用户看到通知，是三个不同事件。
-
-Android 17 的 NMS 使用可配置的 EWMA 限制更新速率，SystemUI 支持异步 apply / reapply `RemoteViews`，`MetricStyle` 与 Live Update 则增加了系统模板和突出展示资格。要让推送稳定及时，需要发送用户可见内容、合理设置 priority、缩短 callback、合并高频更新，并按阶段保留证据；固定毫秒常量和未公开的 Play services 内部行为都不能作为可靠依据。

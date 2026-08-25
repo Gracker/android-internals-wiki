@@ -2,7 +2,7 @@
 title: Keystore、Biometric 与 Credential 登录性能
 chapter: '8.5'
 section: '8.5'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 6 (API 23) - Android 17 (API 37)
 last_verified: '2026-08-23'
 last_verified_against: AOSP android-17.0.0_r1, Android Developers Keystore/BiometricPrompt docs, AOSP KeyMint docs
@@ -64,12 +64,14 @@ related_chapters:
 - '6.1'
 - '8.2'
 - '8.3'
-- '20.2'
 - '26.1'
 - '20.9'
 - '26.6'
 - '26.9'
-pipeline_stage: ready-for-review
+- '8.7'
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch08-responsiveness/09-keystore-keymint-latency.md
@@ -445,20 +447,6 @@ Android 17 可从以下固定源码继续追踪：
 
 App 到 `keystore2`，以及 `keystore2` 到 Binderized KeyMint HAL（通过 Binder 暴露的 KeyMint 服务）都经过 Binder。kernel `android17-6.18-2026-06_r6` 可固定查看 [`drivers/android/binder.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)。TEE/StrongBox 的 transport（通信通道）和 driver 多由设备厂商实现，不在 common kernel 中；没有设备内核与 HAL 源码时，应明确说明这部分无法继续归因。
 
-### 与其他章节的关系
-
-- [8.2 App 冷启动链路与 Binder Trace 分析](02-app-cold-start-binder-trace.md)：首帧、TTID/TTFD 与初始化时机。
-- [8.3 启动优化策略](03-launch-optimization.md)：延迟初始化、线程调度和回归。
-- [§8.5 BiometricPrompt 与 Credential Manager](05-keystore-biometric-credential-login.md)：认证 UI、凭据选择与登录流程。
-- [§20.9 Keystore 配额与登录稳定性](../../part5-app/ch20-stability/09-keystore-quota-login-stability.md)：alias 增长、配额和账号生命周期。
-- [§26.1 性能指标采集](../../part5-app/ch26-observability/01-app-observability-performance-collection.md)：端侧指标、采样与上报。
-
-### 结论
-
-Keystore 延迟要按密钥查找、生成、operation 初始化、update/finish、认证 UI 等待、attestation 和网络验证分段。`Cipher.init()` 已经可能占用 KeyMint slot；per-use 密钥必须把同一个 `CryptoObject` 交给认证流程；time-based 密钥在认证成功后创建新的 operation。
-
-StrongBox 是安全策略选择，不以高性能为目标，失败时也不会自动回退。应用应采用有并发上限的后台执行器、短生命周期 operation、小 payload 和分阶段指标；遇到超时、prune、密钥失效或设备差异时，登录流程仍要提供明确且安全的恢复路径，并保持服务端认可的安全级别。
-
 ## 生物认证、凭据选择与登录完成
 
 密钥可用后，认证 UI 和凭据提供方还会引入 Binder、硬件和用户交互等待。最终登录完成时间应与密钥阶段分开归因。
@@ -762,7 +750,9 @@ SystemUI 和 Framework API 为应用提供一致接口，但 sensor HAL、屏幕
 
 [§26.6 版本化诊断](../../part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md) 负责系统 trace、`ApplicationExitInfo`、`ProfilingManager` 与诊断权限。[§26.9 Android Vitals 与 Play Console](../../part5-app/ch26-observability/09-android-vitals-play-console-quality.md) 负责 ANR、Crash、LMK、启动和功耗等外部质量口径。Vitals 没有“生物识别登录慢”专用指标，内部 `flow_id`、版本与页面信息要能和发布批次对应。
 
-### 结论
+## 小结
+
+Keystore 延迟要按密钥查找、生成、operation 初始化、update/finish、认证 UI 等待、attestation 和网络验证分段。`Cipher.init()` 已经可能占用 KeyMint slot；per-use 密钥必须把同一个 `CryptoObject` 交给认证流程；time-based 密钥在认证成功后创建新的 operation。StrongBox 是安全策略选择，不能为了性能静默回退到较低安全级别。
 
 Credential Manager 登录和 `BiometricPrompt` 重新授权是两条不同的调用路径。依赖方应用可以稳定观测请求、回调、异常、加密操作、服务端响应和页面就绪；prompt 出现时间、provider 查询时间、候选总数和具体 biometric modality 则需要额外权限或 provider 侧信号。
 

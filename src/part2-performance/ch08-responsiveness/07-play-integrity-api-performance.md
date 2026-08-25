@@ -2,7 +2,7 @@
 title: Play Integrity API 性能与集成延迟
 chapter: '8.7'
 section: '8.7'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-06-19'
 last_verified_against: Android Developers Play Integrity documentation, Play Integrity API reference, Google Play developer guides
@@ -31,6 +31,9 @@ related_chapters:
 - '8.5'
 - '8.6'
 - '12.1'
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
 ---
 
 # Play Integrity API 性能与集成延迟
@@ -436,6 +439,12 @@ async slice 可以跨线程覆盖 `Task` 的整个等待区间。它显示从应
 - 客户端、业务服务端、Google decode 是否拥有可关联的分段耗时？
 - 结论是否限制在公开文档和可观察数据范围内，没有猜测闭源 Play 组件的缓存时长或内部调用次数？
 
+## 交叉引用
+
+- [8.5 Keystore、Biometric 与 Credential 登录性能](05-keystore-biometric-credential-login.md)：设备密钥、Key Attestation、登录 UI 与服务端认证的责任边界。
+- [8.6 推送通知管线性能](06-push-notification-pipeline-performance.md)：跨进程与服务端路径的分段观测方法。
+- [12.1 Android 网络与 TLS 性能优化](../ch12-apk-network/01-android-network-tls-performance.md)：移动网络、连接复用、业务上行与 TLS 尾延迟。
+
 ## 参考资料
 
 - [Play Integrity API 概览](https://developer.android.com/google/play/integrity/overview)
@@ -446,11 +455,3 @@ async slice 可以跨线程覆盖 `Task` 的整个等待区间。它显示从应
 - [错误码与重试建议](https://developer.android.com/google/play/integrity/error-codes)
 - [修复对话框](https://developer.android.com/google/play/integrity/remediation)
 - [SafetyNet API 弃用说明](https://developer.android.com/privacy-and-security/safetynet)
-
-## 交叉引用
-
-- **8.5 Keystore / KeyMint 调用延迟**：设备密钥与 Key Attestation 的耗时和信任边界
-- **8.5 BiometricPrompt 与 Credential Manager 登录链路**：登录 UI、凭据获取与服务端认证的阶段划分
-- **8.6 推送通知管线性能**：跨进程与服务端路径的分段观测方法
-- **12.1 网络性能优化**：移动网络、连接复用与尾延迟
-- **12.1 Android 网络安全与 TLS 性能**：业务上行与服务端出站连接的安全和性能边界

@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: finalized
 title: App 冷启动链路与 Binder Trace 分析
 chapter: '8.2'
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
@@ -130,10 +130,10 @@ related_chapters:
 - '1.12'
 - '9.1'
 section: '8.2'
-pipeline_stage: ready-for-review
-task9_state: pending-review
+pipeline_stage: ready-to-publish
+task9_state: reviewed
 task2b_state: fixed
-task6_state: pending-review
+task6_state: reviewed
 last_rework_at: '2026-08-18T21:35:20+08:00'
 last_rework_run_id: 20260818-213520-rework-18314122
 last_consolidated_at: '2026-08-24'
@@ -574,7 +574,7 @@ Google 的初始测试显示，在系统存在内存压力时，样本中的应�
 - [`ActivityMetricsLogger.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityMetricsLogger.java)：TTID、TTFD 与 ApplicationStartInfo 时间戳。
 - [`ApplicationStartInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationStartInfo.java)：启动类型、状态、原因与 timestamp key。
 
-### 官方资料
+### 启动链路的官方核对入口
 
 - [App startup time: TTID, TTFD and startup types](https://developer.android.com/topic/performance/vitals/launch-time)
 - [App startup analysis and optimization](https://developer.android.com/topic/performance/appstartup/analysis-optimization)
@@ -1161,9 +1161,7 @@ Macrobenchmark 是 AndroidX 提供的应用级基准测试工具，A/B 表示只
 ### 与相关章节的边界
 
 - [**1.3 Binder IPC**](../../part1-fundamentals/ch01-architecture/03-ipc-binder-performance.md)：驱动、libbinder、同步与 oneway 语义。
-- [**1.12 Binder Freezer**](../../part1-fundamentals/ch01-architecture/12-binder-scheduling-freezer-threadpool.md)：cached process 冻结与事务边界。
-- [**1.12 Binder 线程池饥饿**](../../part1-fundamentals/ch01-architecture/12-binder-scheduling-freezer-threadpool.md)：线程池容量、嵌套调用与系统级排查。
-- [**8.2 应用启动**](02-app-cold-start-binder-trace.md)：冷、温、热启动阶段和启动指标。
+- [**1.12 Binder 调度、Freezer 与线程池**](../../part1-fundamentals/ch01-architecture/12-binder-scheduling-freezer-threadpool.md)：cached process 冻结、线程池容量、嵌套调用与系统级排查。
 - [**13.7 Perfetto SQL 手册**](../../part3-tools/ch13-perfetto/07-perfetto-sql-span-join-jank-cuj.md)：通用 SQL、时间窗口和表关联。
 
 

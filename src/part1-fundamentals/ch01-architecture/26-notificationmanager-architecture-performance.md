@@ -704,5 +704,5 @@ Android 17 针对 target API 37 的 custom notification view 增加了展开后�
 - **§1.12 Binder 线程池与优先级继承**：解释同步 `notify()` 中的 Binder 调度和等待。
 - **§1.6 ActivityManagerService**：NMS 使用的 user、进程状态、FGS 与 PendingIntent 能力。
 - **§4.3 Cached App Freezer**：通知点击目标进程的解冻边界。
-- **§8.6 推送通知管线性能**：从消息到达到通知提交的应用侧路径。
+- **§8.6 推送通知管线性能：FCM 投递、NMS 入队与 SystemUI 渲染**：从消息到达到通知展示的端到端路径。
 - **§9.5 Notification 性能与 ANR**：图片、RemoteViews、NLS 回调与 Perfetto 案例。
