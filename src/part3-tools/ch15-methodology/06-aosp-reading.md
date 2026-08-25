@@ -38,7 +38,7 @@ related_chapters:
 - '2.3'
 - '2.4'
 - '13.1'
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed

@@ -3,6 +3,9 @@ title: Google Android Bench：AI 编码能力评测方法论
 chapter: '15.7'
 section: '15.7'
 status: finalized
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
 applicable_versions: Android 工程任务（平台结论最高 Android 17 / API 37；评测框架版本单独固定）
 last_verified: '2026-08-14'
 last_verified_against: 2026-08-14 Android Bench 官方 methodology（Harbor + mini-swe-agent v2）与 Harbor Hub latest 数据集（2026-07-08）；归档仓库 commit 65a86bf41e45dde517a65d6e65a6dc7cdd2063ea 的指南、技术报告及评分源码

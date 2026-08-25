@@ -405,7 +405,7 @@ AOSP（Android Open Source Project，Android 开源项目）在 Android 11 tag�
 
 每次调查至少留下问题场景、设备与构建、原始数据、查询或时间窗、源码 tag、候选假设、干预结果、副作用、适用边界和回退条件。截图可以辅助沟通，但不能替代可重跑的查询和妥善保存的原始文件。
 
-机制文档与操作手册分开维护：前者解释源码、数据语义和版本边界，后者记录环境、命令、预期输出、失败处理与清理步骤。机制变化时不必重写每份操作记录，工具入口变化时也不应改写历史结论。最终把问题、证据、修改、复测和未确认项关联到同一个版本化记录，再交给 §15.1 的团队治理流程持续验收。
+机制文档与操作手册分开维护：前者解释源码、数据语义和版本边界，后者记录环境、命令、预期输出、失败处理与清理步骤。机制变化时不必重写每份操作记录，工具入口变化时也不应改写历史结论。最终把问题、证据、修改、复测和未确认项关联到同一个版本化记录，再交给后文的团队治理流程持续验收。
 
 ### 交付前检查表
 
@@ -1080,8 +1080,7 @@ PR 模板可以要求作者填写：
 
 - §7、§8、§9 解释流畅性、启动和 ANR 的平台机制。
 - §14.6 说明 Macrobenchmark 的用法与回归门禁边界。
-- §15.3 定义性能指标契约。
-- §15.3 讨论线上监控和保护开关。
+- §15.3 定义性能指标契约、SLO、线上监控和保护开关。
 - §15.5 讨论测试设计与统计可靠性。
 - 本节把这些能力连接到采集、归因、工单、发布和验收流程，不再重复各工具的 API 教程。
 
@@ -1117,6 +1116,8 @@ PR 模板可以要求作者填写：
 
 ## 参考资料
 
+### 性能方法、工具与平台证据
+
 - [Android Developers：App performance](https://developer.android.com/topic/performance)
 - [Android Developers：Benchmark your app](https://developer.android.com/topic/performance/benchmarking/benchmarking-overview)
 - [Android Developers：AndroidX Benchmark releases](https://developer.android.com/jetpack/androidx/releases/benchmark)
@@ -1141,11 +1142,11 @@ PR 模板可以要求作者填写：
 - [Perfetto：Callstack-based Allocation Profiling](https://perfetto.dev/docs/data-sources/native-heap-profiler)
 - [Jeff Dean、Sanjay Ghemawat：Performance Hints](https://abseil.io/fast/hints.html)
 - Brendan Gregg, *Systems Performance: Enterprise and the Cloud*, 2nd Edition, Addison-Wesley, 2020
-- [Liao et al.：Automatically Analyzing Performance Issues in Android Apps: How Far Are We?](https://arxiv.org/abs/2407.05090)
+
+### 实证研究与运行时模式
 
 - [Liao et al., *A Comparative Study of Android Performance Issues in Real-world Applications and Literature*, arXiv:2407.05090v3](https://arxiv.org/pdf/2407.05090v3)
 - [论文复现资料：Android-Performance-Analysis](https://github.com/Dianshu-Liao/Android-Performance-Analysis)
-- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
 - [Android 官方：Diagnose and fix ANRs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
 - [Android 官方：Performance measurement examples](https://developer.android.com/topic/performance/performance-measurement-examples)
 - [Android 官方：Memory management overview](https://developer.android.com/topic/performance/memory-overview)
@@ -1156,14 +1157,10 @@ PR 模板可以要求作者填写：
 - [Android 17 `IPCThreadState.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/IPCThreadState.cpp)
 - [Android 17 `CachedAppOptimizer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java)
 - [Android common kernel `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6)
-- 相关章节：§22.1（View 布局与自定义绘制优化）、§9.1（ANR 设计思想）、§10.1（App 内存分析）、§14.4（`dumpsys gfxinfo`）、§15.3（性能指标体系）
 
-- [Android 官方：Benchmark overview](https://developer.android.com/topic/performance/benchmarking/benchmarking-overview)
-- [Android 官方：Write a Macrobenchmark](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)
+### 治理、基准与发布
+
 - [Android 官方：Benchmark in CI](https://developer.android.com/topic/performance/benchmarking/benchmarking-in-ci)
-- [Android 官方：Android Vitals](https://developer.android.com/topic/performance/vitals)
-- [Android 官方：Baseline Profiles overview](https://developer.android.com/topic/performance/baselineprofiles/overview)
 - [Android 官方：Create Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile)
-- [Android 官方：Debug Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles)
 - [Android 官方：Startup Profiles](https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations)
 - [AOSP `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1)

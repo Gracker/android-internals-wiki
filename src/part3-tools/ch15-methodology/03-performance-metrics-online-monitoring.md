@@ -843,7 +843,7 @@ SLO 把团队承诺维持的性能要求写成可检查的数值。可执行的�
 3. 最小数据量：满足统计条件的用户、会话或帧达到统计要求；
 4. 数据健康：覆盖率、延迟、schema 分布和丢弃率正常。
 
-多窗口 burn-rate（错误预算消耗速度）会同时观察短窗口和长窗口，既发现短时间急剧恶化，也发现持续缓慢恶化。新版本报警还应关联 rollout（发布覆盖）比例，避免样本量增长造成告警抖动。固定阈值应来自 §15.3 的指标合同、Google Play 当前 bad behavior threshold（不良行为阈值）或团队 SLO，不另设通用 P0/P1 数字。
+多窗口 burn-rate（错误预算消耗速度）会同时观察短窗口和长窗口，既发现短时间急剧恶化，也发现持续缓慢恶化。新版本报警还应关联 rollout（发布覆盖）比例，避免样本量增长造成告警抖动。固定阈值应来自前文的指标合同、Google Play 当前 bad behavior threshold（不良行为阈值）或团队 SLO，不另设通用 P0/P1 数字。
 
 报警事件应附带：
 
@@ -914,7 +914,7 @@ Android Vitals 从允许自动分享使用情况与诊断数据的用户设备�
 - 游戏的 Slow Sessions；
 - crash、LMK（Low Memory Kill，系统在内存压力下结束进程）和部分电量指标。
 
-当前 Play 的 user-perceived ANR（用户感知 ANR）只计入 `Input dispatching timed out`，分母按日活用户定义。这个口径可能演进，应在数据字典中保存外部文档版本。bad behavior threshold（不良行为阈值）统一在 §15.3 维护，避免多章复制后出现不一致。
+当前 Play 的 user-perceived ANR（用户感知 ANR）只计入 `Input dispatching timed out`，分母按日活用户定义。这个口径可能演进，应在数据字典中保存外部文档版本。bad behavior threshold（不良行为阈值）统一在前文的指标合同中维护，避免多处复制后出现不一致。
 
 Vitals 的 UI Toolkit 渲染统计不覆盖直接 OpenGL/Vulkan 主画面；游戏应看由 SurfaceFlinger 数据计算的 Slow Sessions。数据按日更新且可能晚到，发布当天的早期结论需要结合覆盖率。
 
@@ -972,7 +972,6 @@ Vitals 的 UI Toolkit 渲染统计不覆盖直接 OpenGL/Vulkan 主画面；游�
 - §7.2 提供卡顿归因步骤。
 - §9.2 解释系统 ANR 类型、超时与 trace 分析。
 - §14.6 说明自动化测试与 Macrobenchmark 回归门禁。
-- §15.3 定义指标合同、SLO 与 Google Play 外部口径。
 - §15.4 讨论跨应用测量时的可比性。
 - §15.1 将监控、实验、修复、团队责任和发布验收组织成持续流程。
 
@@ -1015,6 +1014,8 @@ Vitals 的 UI Toolkit 渲染统计不覆盖直接 OpenGL/Vulkan 主画面；游�
 
 ## 参考资料
 
+### 指标与平台计量
+
 - [Android Developers：Android vitals](https://developer.android.com/topic/performance/vitals)
 - [Play Console Help：Monitor your app's technical quality](https://support.google.com/googleplay/android-developer/answer/9844486)
 - [Android Developers：Slow rendering](https://developer.android.com/topic/performance/vitals/render)
@@ -1034,33 +1035,27 @@ Vitals 的 UI Toolkit 渲染统计不覆盖直接 OpenGL/Vulkan 主画面；游�
 - [Android Developers：Manage your app's memory](https://developer.android.com/topic/performance/memory)
 - [Android Developers：Battery Historian](https://developer.android.com/topic/performance/power/battery-historian)
 
-### AOSP android-17.0.0_r1
+### Android 17 源码索引
 
 - `frameworks/base/core/java/android/view/Choreographer.java`
-- `frameworks/base/core/java/android/view/FrameMetrics.java`
 - `frameworks/base/core/java/android/view/Window.java`
-- `frameworks/base/core/java/android/app/ApplicationExitInfo.java`
 - `frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java`
 - `frameworks/base/services/core/java/com/android/server/am/StackTracesDumpHelper.java`
 - `art/runtime/signal_catcher.cc`
 - `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`
 - `packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java`
 
-#### 官方文档
+### 线上监控 API 与工具
 
 - [FrameMetrics API](https://developer.android.com/reference/android/view/FrameMetrics)
 - [JankStats Library](https://developer.android.com/topic/performance/jankstats)
 - [ApplicationStartInfo](https://developer.android.com/reference/android/app/ApplicationStartInfo)
 - [ActivityManager](https://developer.android.com/reference/android/app/ActivityManager)
-- [ApplicationExitInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo)
 - [ApplicationExitInfo.AnrInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo.AnrInfo)
 - [AnrWarningResult](https://developer.android.com/reference/android/app/AnrWarningResult)
 - [ProfilingManager](https://developer.android.com/reference/android/os/ProfilingManager)
 - [ProfilingTrigger](https://developer.android.com/reference/android/os/ProfilingTrigger)
-- [App startup time](https://developer.android.com/topic/performance/vitals/launch-time)
 - [Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup)
 - [ANRs](https://developer.android.com/topic/performance/vitals/anr)
-- [Slow rendering](https://developer.android.com/topic/performance/vitals/render)
 - [Slow Sessions](https://developer.android.com/topic/performance/vitals/slow-session)
-- [Android Vitals data definitions](https://support.google.com/googleplay/android-developer/answer/9844486)
 - [Perfetto Tracing SDK](https://perfetto.dev/docs/instrumentation/tracing-sdk)
