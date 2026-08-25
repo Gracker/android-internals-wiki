@@ -2,7 +2,7 @@
 title: MTE 与 GWP-ASan Native 内存安全检测
 chapter: '20.11'
 section: '20.11'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1 framework, Bionic, linker, debuggerd, and android17-6.18-2026-06_r6 kernel sources; current Android Developers and AOSP memory-safety docs through 2026-08-13
@@ -57,10 +57,19 @@ sources:
   path: https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp
 - type: aosp-kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/kernel/mte.c
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md
+  role: Android 17 GWP-ASan defaults, malloc dispatch, recoverable debuggerd path
+- type: aosp
+  path: https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/malloc_common_dynamic.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/private/bionic_globals.h
+pipeline_stage: ready-for-review
+task6_state: needs-review
+task9_state: needs-review
 task2b_state: fixed
+last_body_apply_at: '2026-08-26T07:15:59+08:00'
+last_body_apply_run_id: 20260826-071559-6e58db7c
 note: 'Consolidated-source availability: source page not present in the current vault as of 2026-08-14; its retained content is consolidated here'
 ---
 
@@ -338,6 +347,8 @@ MTE 用硬件标签检查受保护内存映射的访问。GWP-ASan（名称来�
 
 GWP-ASan 先决定某次进程启动是否启用，再从该进程的内存分配中抽样。`always` 模式把第一层命中率设为 100%，其他模式由平台策略决定。只有同时通过两层选择的对象才进入 guarded slot（受保护池中的对象槽位），因此“应用启用了 GWP-ASan”不代表所有 `malloc` 都受保护，也不能用固定的 `1/N` 推导某个缺陷的准确发现率。
 
+在 Android 17 的 Bionic 适配层中，默认 `Recoverable=true`，`SampleRate=25000` 表示被选中进程内的分配级抽样分母，`MaxSimultaneousAllocations=32` 表示同一进程同时可占用的保护槽上限；`SYSTEM_PROCESS_OR_SYSTEM_APP` 与 `APP_MANIFEST_DEFAULT` 分支默认 `process_sample_rate=128`，所以默认覆盖还要先经过进程启动级抽样。进程被选中后，每个分配入口先调用 `GuardedAlloc.shouldSample()`；未命中或 guarded pool 已满时，再委派给下一层原生分配器。[来源: DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md; AOSP android-17.0.0_r1 bionic/libc/bionic/gwp_asan_wrappers.cpp]
+
 GWP-ASan 可用于 `targetSdkVersion >= 30`（面向 Android 11 / API 30 或更高版本）的应用。`android:gwpAsanMode` 支持三种请求：
 
 | 值 | 语义 | 适用范围 |
@@ -348,7 +359,9 @@ GWP-ASan 可用于 `targetSdkVersion >= 30`（面向 Android 11 / API 30 或更�
 
 进程级配置可以覆盖 application 级配置。最终合并后的 manifest 才是检查对象；`always` 只取消进程启动这一层抽样，不会让每次内存分配都进入受保护池。
 
-Android 17 的大致路径是：Zygote 根据应用配置和平台策略选择模式，Bionic 在分配器初始化阶段做进程抽样；命中后，GWP-ASan 接管 `malloc` 分派表，再由受保护池管理被抽中的槽位。它不会逐个修改 ELF 的导入跳转项。应用若安装自己的 `malloc` 拦截器，能否与 GWP-ASan 共存取决于安装顺序和 Bionic 分派链，不能只看 manifest 配置。
+Android 17 的大致路径是：Zygote/AndroidRuntime 从应用配置和平台策略得到 GWP-ASan mode，每个 fork 出来的子进程在分配器初始化阶段调用 Bionic 的 `MaybeInitGwpAsan()`；Zygote 自身的 `app_process` 初始化会被显式跳过，避免一次采样影响所有子进程。命中进程抽样后，Bionic 把 `gwp_asan_dispatch` 放到 malloc dispatch chain 的第一站，`prev_dispatch` 指向下一层原生分配器；它不会逐个修改 ELF 的导入跳转项。应用若安装自己的 `malloc` 拦截器，能否与 GWP-ASan 共存取决于安装顺序和 Bionic 分派链，不能只看 manifest 配置。[来源: DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md; AOSP android-17.0.0_r1 bionic/libc/bionic/gwp_asan_wrappers.cpp; AOSP android-17.0.0_r1 bionic/libc/bionic/malloc_common_dynamic.cpp]
+
+若本次启动已经由 `malloc_debug`、`malloc_hooks` 或 heapprofd 占用 default dispatch，Android 17 的 `MaybeInitGwpAsan()` 会直接返回未启用；因此泄漏画像和 GWP-ASan 越界 / 释放后访问诊断通常要分开实验，并在报告中记录 allocator hook 状态。[来源: DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md; AOSP android-17.0.0_r1 bionic/libc/bionic/gwp_asan_wrappers.cpp]
 
 ### 受保护槽位怎样暴露错误
 
@@ -366,13 +379,17 @@ Android 17 的大致路径是：Zygote 根据应用配置和平台策略选择�
 
 ### Recoverable 模式仍是高优先级故障
 
-Android 14 / API 34 及以上，当 manifest 未填写 `android:gwpAsanMode` 或使用 `default` 时，普通应用采用 Recoverable GWP-ASan：约 1% 的进程启动会启用它。发生受保护池错误后，debuggerd 先生成报告，再由 GWP-ASan 根据自身元数据撤销相应保护，让进程继续运行；每次进程启动最多生成一份此类报告，随后 GWP-ASan 会被关闭。应用自定义的 `SIGSEGV` 处理函数不会收到这种可恢复错误，也不应复制平台的恢复判断。
+Android 14 / API 34 及以上，当 manifest 未填写 `android:gwpAsanMode` 或使用 `default` 时，普通应用采用 Recoverable GWP-ASan：约 1% 的进程启动会启用它。Android 17 的 Bionic 默认把 GWP-ASan 设为 `Recoverable=true`。发生受保护池错误后，debuggerd 会先调用 Bionic 注入的 pre-crash hook，生成首份完整报告，再在 handler 出口调用 post-crash hook，让分配器处理对应故障槽并允许进程继续运行。`debuggerd_handle_gwp_asan_signal()` 还用 `first_crash_mutex` 和 `static bool first_crash` 限制同一进程只有第一次 GWP-ASan 错误走完整 tombstone / DropBoxManager 流程；后续 GWP-ASan 错误只执行 pre/post hook，不再重复触发完整 reporter 输出。应用自定义的 `SIGSEGV` 处理函数不会收到这种可恢复错误，也不应复制平台的恢复判断。[来源: DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md; AOSP android-17.0.0_r1 system/core/debuggerd/handler/debuggerd_handler.cpp; AOSP android-17.0.0_r1 bionic/libc/bionic/gwp_asan_wrappers.cpp]
 
 “进程没有立刻退出”不代表状态安全。发生释放后访问或越界后，官方将后续行为定义为不确定；Recoverable GWP-ASan 事件仍应进入稳定性指标、去重、告警和高优先级修复队列。支付、写入等有副作用的操作不能因为进程继续运行就自动重试。
+
+Recoverable GWP-ASan 与 Permissive MTE 最终都会把 `process_info.recoverable_crash` 设为 true 来避免按普通 fatal signal 终止进程，但入口条件不同：Permissive MTE 看 `SEGV_MTESERR` / `SEGV_MTEAERR` 与 `is_permissive_mte()`，GWP-ASan 则要求 `SIGSEGV` 带有 fault address，且 Bionic 注入的 `NeedsGwpAsanRecovery(si_addr)` 确认地址属于 guarded pool。APM 分类要把两条路径分开，不能把所有可恢复 `SIGSEGV` 都归为 MTE 或都归为 GWP-ASan。[来源: DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md; AOSP android-17.0.0_r1 system/core/debuggerd/handler/debuggerd_handler.cpp]
 
 ### 报告、聚合与修复
 
 GWP-ASan 报告优先读取错误类型、错误地址与槽位边界、分配 / 释放栈、访问线程、模块 Build ID 和 relative PC。它依靠 frame pointer（栈帧指针）低成本记录分配与释放栈；64 位应用不应使用 `-fomit-frame-pointer`，而 32 位报告通常缺少这两类调用栈。采样、元数据生命周期、栈回溯或符号缺失也会让字段不完整；缺失值要原样记录，不能补猜。
+
+Android 17 还会把 `gwp_asan_state` 与 `gwp_asan_metadata` 指针放进 `libc_shared_globals`，debuggerd 通过发送给 `crash_dump` 的结构偏移读取这些信息。若报告缺少 GWP-ASan metadata，排查顺序应先确认本进程是否被抽样、是否安装了 GWP-ASan dispatch、以及 tombstone / 符号收集是否完整，而不是把缺失字段补猜成“非 GWP-ASan”。[来源: DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md; AOSP android-17.0.0_r1 bionic/libc/private/bionic_globals.h; AOSP android-17.0.0_r1 system/core/debuggerd/handler/debuggerd_handler.cpp]
 
 聚合键可以使用：
 
@@ -419,6 +436,8 @@ Android 14+ 的正式版本通常保留 `default`，用分阶段发布观察命�
 - [AOSP：调试 Native 内存使用](https://source.android.com/docs/core/tests/debug/native-memory)
 - [`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)
 - [Android 17 Bionic GWP-ASan allocator](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/gwp_asan_wrappers.cpp)
+- [Android 17 Bionic malloc 初始化](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/malloc_common_dynamic.cpp)
+- [Android 17 Bionic `libc_shared_globals`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/private/bionic_globals.h)
 
 ## 小结
 
