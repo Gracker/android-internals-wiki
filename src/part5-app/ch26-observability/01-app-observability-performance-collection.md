@@ -948,7 +948,7 @@ API 37 在 `ActivityManager.MemoryInfo` 新增 `freeMem`，表示未使用 RAM�
 
 ---
 
-### 延伸阅读
+### 性能采集部分的延伸阅读
 
 - [Android Performance Vitals](https://developer.android.com/topic/performance/vitals) — Google 官方性能指标定义与最佳实践
 - [ActivityManager](https://developer.android.com/reference/android/app/ActivityManager) — `getProcessMemoryInfo()` 的 UID 与频率限制
@@ -972,7 +972,7 @@ API 37 在 `ActivityManager.MemoryInfo` 新增 `freeMem`，表示未使用 RAM�
 - [StatsD atoms.proto](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/proto_logging/stats/atoms.proto) — android-17.0.0_r1 中完整原子定义
 
 
-## 结论
+## 性能采集小结
 
 Android 14–17 的性能监控由多组权限和用途不同的 API 组成，可以按三层理解：
 
@@ -981,6 +981,10 @@ Android 14–17 的性能监控由多组权限和用途不同的 API 组成，�
 3. **App 层**：电池感知采样率、网络指标聚合、上报策略和缓存管理由 App 自行实现或通过 Firebase Performance 等 SDK 接入。
 
 Android 17 增加了 MemoryLimiter 的设备可选能力和 `ActivityManager.MemoryInfo.freeMem` 字段。Compaction 与 Freezer 在更早版本已经存在；`libmeminfo` / `libmemevents` 仍是系统侧能力，没有为普通 App 增加对象跟踪接口。线上系统应保存一致分母、策略版本、纳入概率和缺失原因，并按前台、后台、冻结、恢复与内存压力状态降级；详细 trace、heap dump 与逐帧数据只在成本和授权条件允许时采集。
+
+## 全文小结
+
+App 可观测性的核心不是尽可能多地采集，而是让指标、日志与追踪共享可解释的事件模型、时钟、采样概率和版本上下文。端侧应以低开销入口、有界缓冲、分级存储和受约束上传保存证据，再由服务端完成聚合、告警、样本查询与修复验证；StatsD、JankStats、内存快照和 `ProfilingManager` 等能力则按权限和成本嵌入这条主链，不能被当作一个无边界的统一采集接口。
 
 
 ## 参考资料

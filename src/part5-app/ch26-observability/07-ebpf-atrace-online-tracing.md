@@ -655,8 +655,10 @@ API 35 及更高版本的 [ProfilingManager](https://developer.android.com/refer
 Profilo 的 provider 组织方式、触发控制、固定容量缓冲区与异步文件处理仍可作为架构参考。Android 17 项目若继续使用其源码，应把 `libcutils` 私有变量、特定 PLT relocation 和旧 ART 布局视为需要逐版本验证的兼容层。
 
 
-## 结论
+## 全文小结
 
 eBPF 能在具备系统权限的设备上补充系统调用与 Binder 边界证据，但不会自动带来完整事件、稳定的方法语义或普通应用权限。Android 17 的设计应同时核对 AOSP BPF loader、6.18 Binder UAPI / tracepoint、目标系统镜像权限和实际丢失计数。WOOTdroid 数据只适合作为 Android 16 研究原型的参考。
 
-普通应用的线上诊断以公开 API 和应用自有观测为主。只有 OEM、userdebug 或授权研究环境需要更深的内核证据时，才启用版本绑定的 BPF / Binder 方案，并默认停在元数据层。
+ATrace 与 Profilo 代表应用进程内的另一条采集路径：前者提供公共事件协议，后者的会话、触发和环形缓冲架构仍可参考，但其上游实现已经归档，并依赖私有符号、PLT hook 和旧 ART 布局。新项目应优先选择公共 ATrace、Perfetto、AndroidX Tracing 或 `ProfilingManager`，继续维护 Profilo fork 时则必须把事件子集、安装失败和缓冲区覆盖写进能力协议。
+
+普通应用的线上诊断以公开 API 和应用自有观测为主。只有 OEM、userdebug 或授权研究环境需要更深的内核证据时，才启用版本绑定的 BPF / Binder 方案，并默认停在元数据层；无论选择哪条路径，都要分别记录权限、丢失、采集成本与隐私边界。

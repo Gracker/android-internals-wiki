@@ -236,26 +236,9 @@ Firebase Remote Config 实验会在变体中修改参数；官方文档说明实
 
 ## 系统进程死亡证据：ApplicationExitInfo
 
-Android 11 / API 30 起，App 可以用 `ActivityManager.getHistoricalProcessExitReasons()` 查询自己的近期进程退出记录。它补充了 App 可能来不及上报的 Crash、ANR、低内存和其他系统终止证据，但历史缓冲区有容量限制，字段也可能缺失，因此不能作为完整审计日志。
+Android 11 / API 30 起，App 可以用 `ActivityManager.getHistoricalProcessExitReasons()` 查询自己的近期进程退出记录，补充客户端可能来不及上报的 Crash、ANR、低内存与其他系统终止证据。历史列表有界、字段可能缺失，PID 也会复用；实验报表应保留 `processName`、`timestamp`、`reason`、`status`、`importance` 和可用的 `processStateSummary`，把 PSS/RSS 为 0、trace 为空等情况显式标为不可用。
 
-三个查询参数要按公开 API 语义使用：
-
-- `packageName == null` 匹配调用者 UID（Linux 用户标识）下的包；跨 UID 查询需要平台级 `DUMP` 权限，普通第三方 App 不能依赖这条路径。
-- `pid == 0` 表示不按 PID（进程标识）过滤。PID 会复用，不应成为跨启动事件的唯一 ID。
-- `maxNum == 0` 表示返回系统当前仍保存的全部匹配记录，不表示无限历史。结果按时间从新到旧排序。
-
-`ApplicationExitInfo` 中适合进入实验报表的字段包括 `processName`（进程名）、`reason`（退出原因）、`status`（状态码或信号）、`importance`（进程重要性）、`timestamp`（退出时间）、`description`（说明文本），以及可用时的 PSS、RSS、`processStateSummary`（进程状态摘要）、ANR 信息和 trace。边界如下：
-
-- PSS 是按共享内存比例折算后的进程内存，RSS 是进程驻留在物理内存中的页总量。两者都是系统最近一次采样值，可能为 0，也不是进程死亡瞬间的精确内存。
-- `description` 只供人阅读，格式不保证跨设备和版本稳定；聚合必须使用 `reason`、`status` 和结构化字段。
-- `getTraceInputStream()` 可能返回 `null`。ANR 恢复后进程因其他原因退出，ANR trace 也可能附在后一次记录上；API 31 起原生崩溃（Native crash）会返回 Protocol Buffers 格式的 tombstone（原生崩溃转储）。trace 位于独立的系统级环形缓冲区，可能被包括其他应用在内的新记录覆盖。
-- `ActivityManager.setProcessStateSummary()` 最多接收 128 字节，系统还可能对高频调用限流。这里适合保存无敏感信息的实验 ID、变体 ID、配置版本和场景码，不适合塞入完整参数或用于恢复 UI。
-
-Android 17 / API 37 增加 `ApplicationExitInfo.getAnrInfo()`：当 `reason == REASON_ANR` 时，`AnrInfo` 可以提供 ANR ID、ANR 类型、系统等待时限和 `isUserPerceptible()`。它能减少从不稳定的 `description` 文本猜测 ANR 类型的做法。
-
-公开 API 只承诺近期记录保存在环形缓冲区（ring buffer）。AOSP `android-17.0.0_r1` 的 `config_app_exit_info_history_list_size` 默认值为每包 16 条，但它是设备厂商可覆盖的框架资源，不是 SDK 合约。Android 17 的 `AppExitInfoContainer` 使用 `ArrayList<ApplicationExitInfo>` 并按时间淘汰最旧记录，同一 PID 可以保留多条历史；旧文中“`SparseArray` 以 PID 为键、同 PID 必然覆盖”的结论不再适用。框架会持久化退出历史并在系统服务就绪后加载，但应用仍不能把跨重启保留和固定条数当作产品保证。
-
-Android 17 的 `AppExitInfoTracker.preventExitInfoUpdate()` 会保护已有的 ANR、Java 崩溃和原生崩溃记录，后续显式终止信息不会覆盖这些记录，而是新增记录。这能减少同一进程相邻终止动作互相改写的情况，但应用仍应保留 API 返回的实际 `reason`，不要根据“某版本以后”把 `REASON_USER_REQUESTED` 自动改写成 Crash。
+Android 17 / API 37 的 `ApplicationExitInfo.getAnrInfo()` 可在 `REASON_ANR` 记录中提供结构化的 ANR ID、类型、系统等待时限和用户可感知标记。`description` 仍只适合人工阅读，`getTraceInputStream()` 也可能为空或附带较早的 ANR 现场，不能用非空 trace 覆盖实际退出原因。查询参数、历史容量、Native tombstone、去重和版本回退的完整边界见 26.6；本节只保留实验归属所需字段。
 
 接入 A/B 平台时可这样处理：
 
@@ -268,7 +251,7 @@ Android 17 的 `AppExitInfoTracker.preventExitInfoUpdate()` 会保护已有的 A
 
 `ApplicationExitInfo` 能补足 App 上报中断后的部分进程退出信息，却不能证明某个变体导致退出。有效归因仍需检查实验分配是否随机、各组退出记录的缺失机制是否一致，并结合对照组、代码变更、复现或 Trace。系统证据提高的是事件分类质量，不会自动把相关性变成因果结论。
 
-## 小结
+## 全文小结
 
 性能 A/B Test 要从随机化单元、暴露漏斗和估计目标开始设计。重复会话不能冒充独立样本，分位值不能按分群线性相加，SRM 与缺失数据要先于收益判断。CI 使用接近发布版的目标包和物理设备建立可复现基线，生产环境实验再覆盖真实设备与长尾分布。告警系统输出的是带证据强度的候选，因果结论仍需对照、复现或回滚验证。
 

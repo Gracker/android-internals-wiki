@@ -1,5 +1,5 @@
 ---
-title: 线上网络质量监控与接入层协同
+title: 线上网络质量监控与接入层对账
 chapter: '26.11'
 section: '26.11'
 status: finalized
@@ -75,7 +75,7 @@ last_rework_at: '2026-08-15T21:22:20+08:00'
 last_rework_run_id: 20260815-212220-gracker-writing-475
 ---
 
-# 线上网络质量监控与接入层协同
+# 线上网络质量监控与接入层对账
 
 网络质量监控回答三个问题：时间花在哪个阶段，哪些用户受到影响，客户端和接入层记录的是否为同一次请求。这里的接入层是面向公网接收请求的 CDN、边缘节点或 API 网关。只存接口总耗时会把队列、域名系统（DNS）解析、路由尝试、传输层安全协议（TLS）握手、请求发送、首个响应头、响应体读取、重定向与重试混在一个数值里。
 
@@ -238,6 +238,6 @@ Wi-Fi 不能被默认标记为“不计费”或“比蜂窝快”，应分别�
 
 Android 官方的 [Read network state](https://developer.android.com/develop/connectivity/network-ops/reading-network-state) 说明了 `Network` 生命周期、多种承载类型、`VALIDATED`、回调顺序和 `onLost()` 边界；平台实现可对照 `android-17.0.0_r1` 的 [`ConnectivityManager.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java) 与 [`NetworkCapabilities.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/NetworkCapabilities.java)。
 
-## 小结
+## 全文小结
 
 一套可用的网络质量系统不会只保留一个平均耗时。客户端保存逻辑调用、attempt、exchange、阶段可用性和请求所用网络的快照；接入层保存已经到达入口的事实；遥测通道报告自身的延迟与缺口。三侧记录用 `trace_id`/`request_id`/`attempt_id` 对账，再结合协议、网络分组和库版本解释差异。这样得到的结论既能指出时间花在哪一段，也会明确哪些阶段没有观测到、哪些请求从未到达服务器。

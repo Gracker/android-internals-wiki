@@ -1,5 +1,5 @@
 ---
-title: Battery Historian 与性能指标集成
+title: Battery Historian 与功耗指标集成
 chapter: '26.12'
 section: '26.12'
 status: finalized
@@ -80,7 +80,7 @@ last_rework_at: '2026-08-15T22:11:00+08:00'
 last_rework_run_id: 20260815-221100-gracker-writing-478
 ---
 
-# Battery Historian 与性能指标集成
+# Battery Historian 与功耗指标集成
 
 Battery Historian 是把 bugreport（Android 系统诊断包）中的 Batterystats 等电源记录转换成可交互时间线的离线工具，适合分析一次受控实验。它能帮助回答“电量下降时，屏幕、CPU、Job（系统调度任务）、网络、定位和 WakeLock（请求系统暂时保持硬件工作的唤醒锁）处于什么状态”，却不能直接证明某个事件消耗了多少能量。
 
@@ -364,5 +364,7 @@ SoC（片上系统）的制程、核心数量、DVFS、显示面板、radio、�
 - A/B 实验控制设备、温度、亮度、网络、编译状态、后台负载与功能输出。
 - APM 字段保留来源、单位、`scope`、`timebase`、支持状态和采集版本。
 - bugreport、电源轨名称与设备健康数据经过隐私评估、访问控制和保留期管理。
+
+## 全文小结
 
 这套集成把线上信号、可重复实验和 Android 17 平台证据放进同一套证据体系。Battery Historian 仍可解释历史时间线；新的功耗结论应由受控场景、公开 API、system trace 和设备级能量测量共同支持。

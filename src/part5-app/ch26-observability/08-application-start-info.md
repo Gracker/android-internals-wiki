@@ -342,6 +342,12 @@ Android 15 以下继续使用 Application/Activity 生命周期、首帧、`repo
 
 ProfilingManager 的四类主动采集、结果字段、限流和 trigger 全表放在 26.6；启动流程与 TTID/TTFD 机制放在 8.2；退出原因细节也放在 26.6。这里引用这些能力，只为说明一次启动样本如何进入线上证据体系。
 
+## 全文小结
+
+`ApplicationStartInfo` 的价值是为启动样本补上系统归因，而不是代替业务 ready、TTID/TTFD 或 trace。接入时要先检查启动记录是否完成，再按 component、reason 与 cold/warm/hot 分桶；时间戳只在同一条记录、字段都存在且时钟口径一致时相减。
+
+线上应长期保存轻量的启动 envelope，把 Android 17 cold-start profiling 作为低频附件，并用带置信度的关联边连接前一次 `ApplicationExitInfo`。CI、灰度和线上可以共享指标名称，但要各自保留实验条件、分布与原始证据，避免把系统字段缺失或产品流程变化误判为性能改善。
+
 ## 源码与官方文档锚点
 
 - [ApplicationStartInfo.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationStartInfo.java)

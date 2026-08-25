@@ -213,11 +213,13 @@ consolidated_from:
 
 # heapprofd、procfs CPU 与 Page Fault 分析
 
-本文讨论 Android 17 user build 上的 native heap 采集。user build 是面向量产设备的系统构建类型，许多只供调试使用的权限会在其中关闭。
+本文把三类低层资源证据放在一条排障链上：heapprofd 用采样调用栈回答 native 分配来自哪里，procfs 累计计数回答进程或线程在窗口内用了多少 CPU，Page Fault 计数与时间线则解释页面何时需要建立映射、读入或重试。三者观察对象、权限和分母不同，不能互相替代，但可以共同解释“内存上升、CPU 异常或关键路径等待”这类线上症状。
 
-native heap 是 App 通过 `malloc`、C++ `new` 等接口，在 ART（Android Runtime）管理的 Java/Kotlin 对象堆之外维护的内存。要让采集在量产环境中可用，需要同时处理目标进程、会话发起者、公开入口、开销限制和结果解释。
+user build 是面向量产设备的系统构建类型，许多只供调试使用的权限会在其中关闭。普通应用只能稳定读取自身 CPU 与 fault 计数；系统级 native heap profile、全机 CPU 和内核事件还受 `ProfilingManager`、profileable、SELinux、Perfetto 会话身份或平台权限约束。
 
-平台源码以 `android-17.0.0_r1` 为锚点；这些实现没有依赖本文需要单独核对的内核接口，因此不引用 kernel tag。
+native heap 是 App 通过 `malloc`、C++ `new` 等接口，在 ART（Android Runtime）管理的 Java/Kotlin 对象堆之外维护的内存。Page Fault 则发生在 CPU 访问虚拟地址、页表或权限不能直接满足访问时。本文先建立 native 分配采样的权限与开销边界，再说明 CPU 计数口径，最后用缺页来源把两类资源变化放回虚拟内存时间线。
+
+平台源码以 `android-17.0.0_r1` 为锚点；procfs、CPU 记账与 Page Fault 实现另以 Android Common Kernel `android17-6.18-2026-06_r39` 复核。
 
 heapprofd 随 Android 10 引入。Android 12 增加 named heap（由分配器注册名称、可单独选择的一类堆）、`all_heaps` 和 installer 过滤等配置。
 
@@ -1389,6 +1391,12 @@ ART 先通过 `UFFDIO_API` 查询可用 feature，这一步称为 feature negoti
 3. major 是页面读入或 retry 的线索。只有它与关键线程存储等待同时出现，才支持 I/O 影响关键路径的判断。
 4. 设备页大小在运行时可能是 4 KB 或 16 KB；fault 数仍不能换算对象分配字节。
 5. 文件冷页、匿名页/COW 与 swap-in 需要分别验证，预取、布局或初始化改动都要用同场景对照评估。
+
+## 全文小结
+
+heapprofd、procfs CPU 与 Page Fault 分别提供分配调用栈、累计运行时间和虚拟内存映射修复计数。排障时应先用低成本的自身计数确认异常窗口，再按问题选择 heapprofd、Simpleperf 或 Perfetto；任何百分比、增长量和 fault 次数都必须保留采样分母、进程实例、权限与缺失状态。
+
+三类证据的联合价值在于缩小原因范围，而不是从单个数字直接推断根因。native 存活分配要与 RSS/PSS 和映射类别对照，CPU 时间要与调度等待分开，major fault 也只有在关键线程同期等待存储时才支持 I/O 归因。量产接入还要把 profileable、系统限流、采集器开销、符号文件与原始 trace 的访问控制纳入同一协议。
 
 
 ## 参考资料

@@ -2,7 +2,7 @@
 title: ART 动态方法追踪与 JVMTI 边界
 chapter: '26.15'
 section: '26.15'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 tags:
 - ART
@@ -93,9 +93,9 @@ sources:
   path: https://developer.android.com/studio/profile/record-java-kotlin-allocations
 - type: official
   path: https://perfetto.dev/docs/data-sources/native-heap-profiler
-pipeline_stage: ready-for-review
-task6_state: pending-review
-task9_state: pending-review
+pipeline_stage: finalized
+task6_state: reviewed
+task9_state: reviewed
 last_rework_at: '2026-08-25T09:36:49+08:00'
 last_rework_run_id: 20260825-093527-rework-bf95039c
 last_consolidated_at: '2026-08-24'
@@ -622,7 +622,7 @@ JVMTI 开销无法概括为“一次额外回调”，任意 agent 也不会自�
 
 JIT 是 just-in-time compilation，指在应用运行时编译热点代码。stub 是连接编译代码、解释器或运行时服务的一小段入口代码。
 
-入口替换、解释器 stub 与 JIT 的关系见 [1.5 ART 编译、优化与去优化机制](../../part1-fundamentals/ch01-architecture/05-art-compilation-verification-deoptimization.md)。Instrumentation listener 的回调位置见 [26.15 ART 动态方法追踪与 JVMTI 边界](15-art-dynamic-tracing-jvmti.md)。
+入口替换、解释器 stub 与 JIT 的关系见 [1.5 ART 编译、优化与去优化机制](../../part1-fundamentals/ch01-architecture/05-art-compilation-verification-deoptimization.md)。Instrumentation listener 的回调位置与 XTrace 的选择性入口方案见本文前半篇。
 
 ### 类重定义要分清标准入口与 ART 扩展
 
@@ -681,7 +681,7 @@ Binder 是 Android 的进程间通信机制，ANR 是 Application Not Responding
 | Native 分配 | heapprofd / Android Studio Memory Profiler |
 | API 35 及以上的应用 profile 请求 | [ProfilingManager](https://developer.android.com/reference/android/os/ProfilingManager)，接受限流和不保证执行的契约 |
 | Java 崩溃、ANR、进程退出 | 应用稳定性采集与 `ApplicationExitInfo` |
-| ART 私有 hook 实验 | 仅在固定版本和受控设备验证，边界见 [26.15 ART 动态方法追踪与 JVMTI 边界](15-art-dynamic-tracing-jvmti.md) |
+| ART 私有 hook 实验 | 仅在固定版本和受控设备验证，边界见本文前半篇 |
 
 JVMTI 与 [26.13 编译期字节码插桩与监控自动化](13-bytecode-instrumentation-monitoring-automation.md) 的编译期插桩适用范围不同。编译期插桩能进入发布构建，但只能观察构建时选定的点；JVMTI 能在运行中选择事件和类，却要求 debuggable，并可能改变 ART 执行形态。
 
@@ -708,7 +708,7 @@ commit 是源码版本标识，NDK 是 Native Development Kit，即 Android 的 
 遇到 attach 失败时，依次检查 debuggable、ABI、库可读性、SELinux、导出符号、capability 和事件 phase。每一步都有公开状态或错误码可记录，优先级高于扫描 ART 私有内存。
 
 
-## 结论
+## 全文小结
 
 XTrace 的主要贡献是把“只选择少量目标方法”和“尽量保留原编译执行路径”结合到 ART 方法事件机制上。论文的生产案例与大规模 A/B 数据表明，这条技术路线在作者的基础设施中获得了可用结果。
 
@@ -721,6 +721,8 @@ Android 17 源码给出了五条使用边界：
 - Perfetto、调用栈采样、`ProfilingManager` 和编译期插桩各有可覆盖的生产场景。
 
 XTrace 目前是一份尚无法独立复现的系统设计研究。目标注入、自适应入口和生产控制流程可为诊断设施设计提供参考；源码、设备覆盖和失败恢复验证齐备后，才具备进入线上进程的工程前提。
+
+JVMTI/ART TI 提供标准的运行时实验入口，可以验证方法事件、GC、对象 tag 和类重定义，但 attach 只对 `debuggable` 应用开放，事件启用还可能触发有限、线程级或全量去优化。它适合 IDE、实验室与专用调试构建，不是把 XTrace 生产能力公开化的替代品；线上应用仍应优先选择 `ProfilingManager`、Perfetto、调用栈采样或编译期插桩。
 
 
 ## 参考资料

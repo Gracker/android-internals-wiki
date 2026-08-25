@@ -389,7 +389,7 @@ Crash 附件可能包含 URL、请求参数、用户输入、文件路径、设�
 
 `ProfilingManager` 支持系统追踪（`PROFILING_TYPE_SYSTEM_TRACE`）、Java 堆转储（`PROFILING_TYPE_JAVA_HEAP_DUMP`）、堆性能剖析（`PROFILING_TYPE_HEAP_PROFILE`）和调用栈采样（`PROFILING_TYPE_STACK_SAMPLING`）等类型。`ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN` 对应应用调用 `reportFullyDrawn()`，表示应用认为界面已经完整绘制，并不等同于“首帧完成”。Android 17 的 `TRIGGER_TYPE_OOM` 还明确要求自定义 `Thread.UncaughtExceptionHandler` 继续调用默认处理器，否则系统无法使用该触发器。因此，自定义 Java 处理器仍须调用默认处理链。这些 API 适合收集性能诊断资料，不能代替 Java 未捕获异常处理器、Native 崩溃机制或退出历史查询。
 
-### 结论
+### Crash 部分小结
 
 可靠的 Crash 上报系统依赖三条边界：
 
@@ -583,9 +583,13 @@ WebView renderer（渲染进程）是单独边界：应用不能在该进程内�
 
 协程项目的 ANR 快照至少保留主线程栈，并在可观测时补充调度线程栈与自定义 dispatcher（协程调度器）/ executor（任务执行器）的队列摘要。Kotlin 公共 API 不保证应用可以在发布构建中安全枚举全部活跃协程；没有稳定观测接口时，应保留线程栈和业务任务标识，避免把调试探针设为生产环境必选项。`Dispatchers.IO` 或 `Default` 中的任务饱和不会直接触发系统 ANR；主线程等待任务结果或回调无法及时执行时，才形成与 ANR 相关的现场。Java 崩溃与协程异常处理详见 20.2 节，ANR 治理策略详见 20.4 节。
 
-### 结论
+### ANR 部分小结
 
 ANR 监控要把系统确认、端侧预警和现场快照分层处理。Android vitals 提供发布质量阈值，`ApplicationExitInfo` 补充系统 ANR trace，主线程监控保存发生前后的现场信息。端侧只把“疑似 ANR”当预警，分析仍要回到系统原因、主线程状态、等待对端和发布维度分组。
+
+## 全文小结
+
+Crash 与 ANR 可以共享事件信封、构建标识、附件存储、符号化和告警平台，但不能共享同一套现场假设：Crash 路径只在受约束的退出窗口保存最小证据，ANR 路径则要区分运行期疑似卡顿、系统预警与正式确认。最终事件始终保留证据来源，再通过 `ApplicationExitInfo`、R8/Native 符号产物和发布维度完成去重、归因与门禁。
 
 ## 参考资料
 
@@ -612,10 +616,8 @@ ANR 监控要把系统确认、端侧预警和现场快照分层处理。Android
 
 - [ANR：Android vitals](https://developer.android.com/topic/performance/vitals/anr)
 - [诊断并修复 ANR](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
-- [`ApplicationExitInfo` API](https://developer.android.com/reference/android/app/ApplicationExitInfo)
 - [`ApplicationExitInfo.AnrInfo` API](https://developer.android.com/reference/android/app/ApplicationExitInfo.AnrInfo)
 - [`AnrWarningResult` API](https://developer.android.com/reference/android/app/AnrWarningResult)
-- [`ProfilingTrigger` API](https://developer.android.com/reference/android/os/ProfilingTrigger)
 - [`WebViewRenderProcessClient` API](https://developer.android.com/reference/android/webkit/WebViewRenderProcessClient)
 - [Google Play 技术质量说明](https://support.google.com/googleplay/android-developer/answer/9844486)
 - [AOSP Android 17：`AnrHelper`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AnrHelper.java)

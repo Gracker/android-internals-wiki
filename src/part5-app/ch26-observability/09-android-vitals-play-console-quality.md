@@ -273,6 +273,12 @@ Crash 和 ANR 的新出现问题（emerging issues）还有一条独立时效：
 
 Android Vitals 提供一套由 Play 定义、会影响分发结果的外部证据，不能当作版本质量印章。内部系统越早发现同一趋势，团队越有机会在 28 天窗口和商店风险扩大前完成修复。
 
+## 全文小结
+
+Android Vitals 适合判断 Play 覆盖用户的影响面和商店政策风险，内部 APM 则负责更快地定位版本、设备、场景和调用路径。两者没有共同的事件级主键，指标分母、时间窗口、渠道范围也不同；正确做法是分别保留原始口径，再按版本、时间、设备和错误特征建立候选关联。
+
+发布门禁应早于官方阈值响应内部回归，同时把 Play 的 core vital 阈值、机型风险和数据 freshness 作为外部约束。Reporting API 数据入仓时要保存 metric set、维度、时区、样本单位与查询条件，避免把缺数当成零问题，或对已经聚合、加权的数据再次错误汇总。
+
 ## 参考资料
 
 - [Android Vitals 总览与 2026 core vital 阈值](https://developer.android.com/topic/performance/vitals)
