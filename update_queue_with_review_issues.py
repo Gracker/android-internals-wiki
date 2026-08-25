@@ -18,7 +18,7 @@ def add_review_issues_to_queue():
     
     # Review issues found for each chapter
     review_issues = {
-        "src/part3-tools/ch19-apm/18-network-apm-internals.md": [
+        "src/part3-tools/ch17-apm/08-network-apm-internals.md": [
             {
                 "type": "L4",
                 "location": "活人感",
@@ -26,7 +26,7 @@ def add_review_issues_to_queue():
                 "suggestion": "建议重写相关段落，使用更自然的表达方式"
             }
         ],
-        "src/part3-tools/ch19-apm/21-hybrid-apm.md": [
+        "src/part3-tools/ch17-apm/11-hybrid-apm.md": [
             {
                 "type": "L3", 
                 "location": "内容深度",
@@ -34,7 +34,7 @@ def add_review_issues_to_queue():
                 "suggestion": "建议补充具体的算法实现和边界条件处理"
             }
         ],
-        "src/part2-performance/ch08-responsiveness/08-media-pipeline.md": [
+        "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md": [
             {
                 "type": "L3",
                 "location": "内容深度", 
@@ -90,8 +90,8 @@ def extract_section_from_path(chapter_path):
     """Extract section identifier from file path."""
     # Extract chapter and section from path
     parts = chapter_path.split('/')
-    chapter_part = parts[-2]  # e.g., "ch19-apm"
-    file_part = parts[-1]  # e.g., "23-network-apm-internals.md"
+    chapter_part = parts[-2]  # e.g., "ch17-apm"
+    file_part = parts[-1]  # e.g., "08-network-apm-internals.md"
     
     # Extract section number from filename
     section_match = file_part.split('-')[0]

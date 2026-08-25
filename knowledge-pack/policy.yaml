@@ -18,13 +18,13 @@ distribution:
       - src/part2-performance/ch10-memory-perf/**
       - src/part2-performance/ch11-power/**
       - src/part2-performance/ch12-apk-network/**
-      - src/part2-performance/ch18-rendering-pipelines/**
-      - src/part3-tools/ch13-perfetto/**
-      - src/part3-tools/ch14-other-tools/**
-      - src/part3-tools/ch15-methodology/**
-      - src/part3-tools/ch19-apm/**
-      - src/part4-system/ch16-aosp/**
-      - src/part4-system/ch17-oem/**
+      - src/part2-performance/ch13-rendering-pipelines/**
+      - src/part3-tools/ch14-perfetto/**
+      - src/part3-tools/ch15-other-tools/**
+      - src/part3-tools/ch16-methodology/**
+      - src/part3-tools/ch17-apm/**
+      - src/part4-system/ch18-aosp/**
+      - src/part4-system/ch19-oem/**
       - src/part5-app/ch20-stability/**
       - src/part5-app/ch21-startup/**
       - src/part5-app/ch22-rendering-practice/**

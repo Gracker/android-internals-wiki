@@ -78,7 +78,7 @@ related_chapters:
 - '5.4'
 - '11.2'
 - '25.1'
-- '25.11'
+- '25.9'
 consolidated_from:
 - src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md
 - src/part5-app/ch25-power-size/21-performance-hint-manager-practice.md

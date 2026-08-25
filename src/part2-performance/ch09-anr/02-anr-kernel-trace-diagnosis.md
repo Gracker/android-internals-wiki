@@ -61,10 +61,10 @@ related_chapters:
 - '9.1'
 - '9.3'
 - '9.4'
-- '1.3'
+- '1.9'
 - '2.3'
-- '26.14'
-- '13.6'
+- '26.13'
+- '14.6'
 - '26.2'
 consolidated_from:
 - src/part2-performance/ch09-anr/13-anr-log-cpu-analysis-methodology.md
@@ -1276,8 +1276,8 @@ Android 17 还会收集 parent、`system_server`、persistent（常驻系统进�
 - [9.1 ANR 机制、类型与触发条件](01-anr-mechanism-types-triggers.md)：监视器、deadline 与报告路径。
 - [9.3 特殊与跨边界 ANR](03-special-anr.md)：冻结、焦点和厂商场景。
 - [9.4 ANR 诊断案例集](04-case-studies.md)：把证据流程用于完整案例。
-- [1.3 Android IPC 全景与 Binder 性能](../../part1-fundamentals/ch01-architecture/03-ipc-binder-performance.md)：同步事务、线程池与调用链。
-- [13.6 Android Tracing 基础设施与自定义 Trace](../../part3-tools/ch13-perfetto/06-android-tracing-infrastructure-custom-trace.md)：ftrace、atrace 与 trace_marker。
+- [1.9 Android IPC 全景与 Binder 性能](../../part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md)：同步事务、线程池与调用链。
+- [14.6 Android Tracing 基础设施与自定义 Trace](../../part3-tools/ch14-perfetto/06-android-tracing-infrastructure-custom-trace.md)：ftrace、atrace 与 trace_marker。
 - [26.2 崩溃与 ANR 监控](../../part5-app/ch26-observability/02-crash-anr-monitoring.md)：线上聚合与监控体系。
 
 ## 参考资料

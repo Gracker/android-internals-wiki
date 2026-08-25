@@ -17,7 +17,7 @@ related_chapters:
 - '2.4'
 - '7.1'
 - '7.2'
-- '13.2'
+- '14.2'
 confidence: medium-high
 last_verified: '2026-08-19'
 last_verified_against: 'AOSP android-17.0.0_r1 SystemUI/WM Shell/Launcher3 anchors: systemui.aconfig; super_notification_shade.xml / scene_window_root.xml; ShadeViewProviderModule / ShadeWindowLayoutParams / NotificationShadeWindowView; SceneContainerFlag / SceneContainerFrameworkModule / SceneWindowRootViewBinder; NotificationStackScrollLayout / NotificationRowContentBinderImpl / BigPictureIconManager / notification icon binder; StatusBarWindowControllerImpl / NavigationBar / NavigationBarView / DisplayBackGestureHandler / EdgeBackGestureHandler / SysUIConcurrencyModule / DisplayContent; Transitions / StartingWindowController / RecentsView; Android notification, SplashScreen and aconfig official docs checked 2026-08-19.'
@@ -435,7 +435,7 @@ ORDER BY s.ts;
 - **§2.4 MainThread 与 RenderThread 协作**：介绍标准 HWUI、BLAST 与 SurfaceFlinger 的分工；SystemUI 还需检查专用 UI 线程。
 - **§7.1 卡顿的定义与分类**：SystemUI 仍需从 FrameTimeline 的用户可见帧开始判断责任。
 - **§7.2 典型卡顿场景**：Shade、导航、启动和 Overview 的现象，需要结合这里的窗口与组件边界进一步分析。
-- **§13.2 Perfetto View 解读**：线程、FrameTimeline、Layer 和 SQL 操作可参考该章。
+- **§14.2 Perfetto View 解读**：线程、FrameTimeline、Layer 和 SQL 操作可参考该章。
 
 ## Android 17 源码与官方资料
 

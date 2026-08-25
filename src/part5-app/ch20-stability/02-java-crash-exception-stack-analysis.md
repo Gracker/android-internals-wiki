@@ -106,7 +106,7 @@ related_chapters:
 - '20.3'
 - '26.2'
 - '20.9'
-- '26.7'
+- '26.14'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md
@@ -1096,7 +1096,7 @@ wait-for graph（等待关系图）以线程为节点，以“等待者正在等
 - Native 锁：结合 Native 调用栈、futex wait 和应用或平台记录的锁事件。
 - 主线程长任务：结合 Looper/atrace slice、帧时间线和多次主线程栈。
 
-Perfetto 没记录到锁竞争事件，仍可能存在竞争；trace 配置、采样窗口、设备实现和数据裁剪都会影响可见性。系统化的锁诊断见 [锁竞争与同步性能分析](../../part1-fundamentals/ch01-architecture/09-messagequeue-lock-contention.md)。
+Perfetto 没记录到锁竞争事件，仍可能存在竞争；trace 配置、采样窗口、设备实现和数据裁剪都会影响可见性。系统化的锁诊断见 [锁竞争与同步性能分析](../../part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md)。
 
 ### 6. 推荐的端侧采集分层
 

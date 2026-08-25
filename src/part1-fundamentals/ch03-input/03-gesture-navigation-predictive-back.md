@@ -103,8 +103,8 @@ related_chapters:
 - '3.2'
 - '2.3'
 - '1.1'
-- '22.11'
-- '1.16'
+- '22.6'
+- '1.19'
 - '8.1'
 pipeline_stage: finalized
 last_consolidated_at: '2026-08-24'
@@ -392,7 +392,7 @@ Perfetto 的查询引擎 Trace Processor 在 `android.input` 模块中提供 `an
 - WM Shell 在系统目标可预测且产品提供对应动画执行器时，对关闭对话框（dialog）、跨 Activity（cross-activity）、跨任务（cross-task）和返回主屏（back-to-home）执行系统动画；
 - 条件不足时回退到应用回调，极端情况下再回退到 `KEYCODE_BACK`。
 
-源码基线为 Android 17、API 37、`android-17.0.0_r1`。SystemUI、WM Shell、`system_server`、应用和 SurfaceFlinger 各自承担不同职责。应用侧接入方法见 22.9，边缘手势识别见本节前文。
+源码基线为 Android 17、API 37、`android-17.0.0_r1`。SystemUI、WM Shell、`system_server`、应用和 SurfaceFlinger 各自承担不同职责。应用侧接入方法见 22.11，边缘手势识别见本节前文。
 
 ### 1. 先建立正确的阶段模型
 

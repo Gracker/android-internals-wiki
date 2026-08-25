@@ -12,8 +12,8 @@ tags:
 related_chapters:
 - '21.3'
 - '20.1'
-- '23.1'
-- '24.3'
+- '23.2'
+- '24.5'
 last_verified: '2026-08-14'
 last_verified_against: android-17.0.0_r1 / Android 17 (API 37); android17-6.18-2026-06_r6; Android Developers, Google Play, and Privacy Sandbox phaseout/API deprecation docs checked 2026-08-14; no Android 18/API 38+ conclusions
 last_draft_polish_at: '2026-08-08T11:35:18+08:00'
@@ -261,7 +261,7 @@ Android 17 的内核接口定义可核对 [`Documentation/filesystems/proc.rst`]
 
 若 SDK 自带有语义的缓存/队列计数器，也应纳入同一时间线。供应商指标可以帮助解释，但不能代替系统级内存差值。
 
-SDK 使用独立进程时，可以分别观测宿主和子进程，却仍要报告两者的合计用户成本。关于 Java 泄漏的 retained path 分析见 [内存泄漏治理](../ch23-memory-practice/01-memory-leak-governance.md)，native 分配归因见 [Native 内存泄漏的线上分层监控](06-native-memory-leak-online-monitoring.md)。
+SDK 使用独立进程时，可以分别观测宿主和子进程，却仍要报告两者的合计用户成本。关于 Java 泄漏的 retained path 分析见 [内存泄漏治理](../ch23-memory-practice/02-memory-leak-governance.md)，native 分配归因见 [Native 内存泄漏的线上分层监控](06-native-memory-leak-online-monitoring.md)。
 
 ### 5.3 Android 17 内存上限
 
@@ -308,7 +308,7 @@ Android 17 的 [所有应用行为变更](https://developer.android.com/about/ve
 - 对照关闭 SDK、关闭某功能或更换版本后的场景差值；
 - 将上传负载、协议开销、失败重试和长连接心跳分开统计。
 
-网络请求的端到端分层方法见 [网络架构与连接管理](../ch24-io-network/03-mobile-network-connection-resilience.md)。
+网络请求的端到端分层方法见 [网络架构与连接管理](../ch24-io-network/05-mobile-network-connection-resilience.md)。
 
 ### 6.4 功耗看场景，不看请求次数
 

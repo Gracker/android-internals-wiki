@@ -105,12 +105,12 @@ tags:
 related_chapters:
 - '2.3'
 - '2.4'
-- '2.5'
+- '2.9'
 - '2.1'
 - '3.2'
-- '14.3'
-- '2.9'
-- '14.11'
+- '15.3'
+- '2.11'
+- '15.11'
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
@@ -359,7 +359,7 @@ GPU 慢帧常被分为 vertex/geometry bound、fragment/fill bound 和 bandwidth
 
 fillrate（单位时间内生成并写出像素或片元结果的能力）问题与 samples、shader、blend、overdraw 和 render-target 格式有关。降低 native game Surface 的 render scale（内部渲染分辨率比例），如果 GPU 时间随像素数明显下降，说明 fragment 或带宽压力值得继续查；标准 View 页面没有通用的独立 render-scale 开关。
 
-Debug GPU Overdraw（开发者选项中的“调试 GPU 过度绘制”）只能定位 HWUI App Window 的逻辑重复绘制。它会额外重放一遍内容，不能在开启时测性能，也不能覆盖独立 `SurfaceView` 或最终 HWC composition。颜色含义与完整流程见 [2.6 过度绘制](06-overdraw.md)。
+Debug GPU Overdraw（开发者选项中的“调试 GPU 过度绘制”）只能定位 HWUI App Window 的逻辑重复绘制。它会额外重放一遍内容，不能在开启时测性能，也不能覆盖独立 `SurfaceView` 或最终 HWC composition。颜色含义与完整流程见 [2.5 过度绘制](05-overdraw.md)。
 
 优化方向包括：
 

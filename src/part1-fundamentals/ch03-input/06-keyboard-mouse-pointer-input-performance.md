@@ -53,8 +53,8 @@ related_chapters:
 - '3.1'
 - '3.2'
 - '3.5'
-- '2.10'
-- '22.12'
+- '2.14'
+- '22.13'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 last_consolidated_at: '2026-08-11'

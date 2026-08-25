@@ -83,9 +83,9 @@ related_chapters:
 - '22.1'
 - '2.3'
 - '22.3'
-- '22.4'
+- '22.7'
 - '7.3'
-- '18.6'
+- '13.6'
 pipeline_stage: finalized
 task6_state: reviewed
 task9_state: reviewed
@@ -381,7 +381,7 @@ RecyclerView 的复用单位是 ViewHolder，LazyList 的复用单位与 composi
 
 惰性布局（Lazy layout）把数据集总量与同时参与组合的列表项数量分开，但不会自动消除单项耗时过长、身份错误、重复测量、同步输入输出或 GPU 过载。本文以 Compose BOM 2026.08.00 对应的 Foundation 1.12.0 为库版本基线，以 Android 17、API 37 的 `android-17.0.0_r1` 为平台基线。Compose Foundation 独立发布，`targetSdk=37` 不会改变 LazyList 的键、复用或预取语义。
 
-普通 `LazyColumn` 和惰性网格仍通过宿主应用窗口的标准 HWUI 路径生成画面。主线程上的组合（Composition）、测量（measure）、放置（placement）和 `DisplayList` 更新只是前半程，后续还有 `RenderThread`、GPU、图形缓冲区提交、`SurfaceFlinger`、硬件合成器（HWC）与送显。显示边界见 [18.8 Jetpack Compose 渲染管线：Composition、Layout 与 RenderNode](../../part2-performance/ch18-rendering-pipelines/08-compose-rendering-pipeline.md)，重组基础见 [22.3 Compose 性能、Compiler 与 Modifier.Node 诊断](03-compose-compiler-modifier-diagnostics.md)，列表动画的阶段判断见 [22.4 View、Compose 动画与共享元素性能](04-view-compose-animation-shared-transition.md)。
+普通 `LazyColumn` 和惰性网格仍通过宿主应用窗口的标准 HWUI 路径生成画面。主线程上的组合（Composition）、测量（measure）、放置（placement）和 `DisplayList` 更新只是前半程，后续还有 `RenderThread`、GPU、图形缓冲区提交、`SurfaceFlinger`、硬件合成器（HWC）与送显。显示边界见 [13.8 Jetpack Compose 渲染管线：Composition、Layout 与 RenderNode](../../part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md)，重组基础见 [22.3 Compose 性能、Compiler 与 Modifier.Node 诊断](03-compose-compiler-modifier-diagnostics.md)，列表动画的阶段判断见 [22.7 View、Compose 动画与共享元素性能](07-view-compose-animation-shared-transition.md)。
 
 ### 1. LazyLayout 每次滚动会做什么
 

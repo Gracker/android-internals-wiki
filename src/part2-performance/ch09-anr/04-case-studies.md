@@ -39,7 +39,7 @@ related_chapters:
 - '9.1'
 - '9.2'
 - '9.3'
-- '1.3'
+- '1.9'
 consolidated_from:
 - src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md
 pipeline_stage: ready-to-publish

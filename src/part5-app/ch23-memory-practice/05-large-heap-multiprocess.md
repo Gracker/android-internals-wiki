@@ -65,7 +65,7 @@ tags:
 - memory-budget
 - 64bit
 related_chapters:
-- '23.4'
+- '23.1'
 - '23.3'
 - '4.3'
 - '1.1'
@@ -96,7 +96,7 @@ consolidated_from:
 
 `android:largeHeap`、多进程和 64 位迁移改变的边界各不相同。`largeHeap` 提高应用进程的 ART 堆增长上限；多进程让组件使用独立的地址空间和运行时，也会重复支付进程级内存成本；64 位迁移扩大可用虚拟地址范围，同时可能增加指针及部分原生数据结构的大小。这三种手段都不会自动降低按比例分摊集（PSS，共享页按参与进程数分摊后的物理内存统计），也不会消除泄漏。
 
-选择方案前应按失败类型定位。Java 堆 OOM（内存不足异常）可参阅 [23.4 Java Heap、GC 与 Compose 内存分配](04-java-heap-gc-compose-allocation.md)；低内存终止进程可参阅 [4.3 系统内存压力与 lmkd](../../part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md)，其中 lmkd 是 Android 根据系统内存压力终止低优先级进程的守护进程。`pthread_create`、`mmap` 或动态链接器报错时，还要检查线程数、映射布局、应用二进制接口（ABI，规定指令集、调用约定和二进制布局）及资源限制。WebView、图形内存或原生内存增长，则要继续定位实际分配者。
+选择方案前应按失败类型定位。Java 堆 OOM（内存不足异常）可参阅 [23.1 Java Heap、GC 与 Compose 内存分配](01-java-heap-gc-compose-allocation.md)；低内存终止进程可参阅 [4.3 系统内存压力与 lmkd](../../part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md)，其中 lmkd 是 Android 根据系统内存压力终止低优先级进程的守护进程。`pthread_create`、`mmap` 或动态链接器报错时，还要检查线程数、映射布局、应用二进制接口（ABI，规定指令集、调用约定和二进制布局）及资源限制。WebView、图形内存或原生内存增长，则要继续定位实际分配者。
 
 Android 17 在部分设备上启用了按设备总 RAM 制定的应用内存限制，用于约束极端泄漏和异常占用。它适用于所有运行在 Android 17 上的应用，不受 `targetSdkVersion` 影响；设备是否启用、当前限制是多少，都要现场查询。`largeHeap` 和拆分进程不会绕过这套限制，退出识别与诊断方法见“Android 17 应用内存限制”。
 
@@ -144,7 +144,7 @@ fun readHeapPolicyInputs(context: Context): HeapPolicyInputs {
 
 `largeHeap` 的代价主要有四类：
 
-- GC 成本可能增加：`largeHeap` 本身不会创建对象；应用若用新增空间保留更多对象，垃圾收集器需要处理的存活对象集合随之增大，标记、复制或压缩的工作量也会增加。相关机制见 [23.4 Java Heap、GC 与 Compose 内存分配](04-java-heap-gc-compose-allocation.md) 和 [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)。
+- GC 成本可能增加：`largeHeap` 本身不会创建对象；应用若用新增空间保留更多对象，垃圾收集器需要处理的存活对象集合随之增大，标记、复制或压缩的工作量也会增加。相关机制见 [23.1 Java Heap、GC 与 Compose 内存分配](01-java-heap-gc-compose-allocation.md) 和 [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)。
 - 系统回收压力增加：PSS 上升后，lmkd 在系统内存紧张时更容易终止缓存进程或其他低优先级进程。进程优先级与终止条件见 [4.3 lmkd、Cached App Freezer 与内存压力治理](../../part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md)。
 - 问题被延后暴露：泄漏、无界缓存和错误的批处理大小可能从“快速 OOM”变成“运行更久后卡顿或被杀”。
 - 多进程统计更复杂：该属性作用于应用创建的所有进程；共享 UID 或同一进程载入多个应用时，还要满足前述一致性要求，不能只查看单个组件。
@@ -289,7 +289,7 @@ r1 的 Java 控制逻辑与命令解析见 [`MemoryLimiter.java`](https://androi
 
 | 现象 | 优先判断 | 推荐动作 | 不建议动作 |
 | --- | --- | --- | --- |
-| Java 堆 OOM，GC 后仍无法分配对象 | `java.lang.OutOfMemoryError`、堆转储、`getMemoryClass()` | 按 [23.4 Java Heap、GC 与 Compose 内存分配](04-java-heap-gc-compose-allocation.md) 检查对象和缓存；短时峰值可评估 `largeHeap` | 直接拆进程却不修改对象生命周期 |
+| Java 堆 OOM，GC 后仍无法分配对象 | `java.lang.OutOfMemoryError`、堆转储、`getMemoryClass()` | 按 [23.1 Java Heap、GC 与 Compose 内存分配](01-java-heap-gc-compose-allocation.md) 检查对象和缓存；短时峰值可评估 `largeHeap` | 直接拆进程却不修改对象生命周期 |
 | `pthread_create` 失败或 `maps` 显示虚拟地址碎片严重 | 线程数、`/proc/<pid>/maps`、32 / 64 位状态 | 限制线程池和常驻线程，迁移到 64 位 | 未经压力测试便统一缩小线程栈 |
 | WebView / 图片编辑使主进程峰值过高 | 宿主进程、渲染进程、原生/图形内存、任务生命周期 | 数据边界清楚时拆进程；停止已完成任务的组件并关闭资源 | 把 `largeHeap` 当作 WebView 或图形内存方案 |
 | 后台发生低内存终止 | Android Vitals、进程重要性、PSS、后台任务和缓存 | 响应状态回调，减少可重建缓存与后台并发，缩短组件活跃时间 | 提高 Java 堆上限或用常驻组件延长进程寿命 |

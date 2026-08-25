@@ -1,10 +1,11 @@
 # 第 26 章：应用可观测性
 
-第 19 章解释 APM（Application Performance Monitoring，应用性能监控）工具和监控 SDK（Software Development Kit，软件开发工具包）的实现原理，第 15 章讨论性能分析方法与指标体系。
+第 17 章解释 APM（Application Performance Monitoring，应用性能监控）工具和监控 SDK（Software Development Kit，软件开发工具包）的实现原理，第 16 章讨论性能分析方法与指标体系。
 
 本章从应用团队视角组织崩溃（Crash）上报、性能采集、线上排查和发布质量门禁（Release Quality Gate），覆盖问题发现、证据采集、影响归因、修复验证与回归防护。
 
 ## 内容索引
+
 
 - [26.1 App 可观测性架构与性能数据采集](01-app-observability-performance-collection.md)
 - [26.2 Crash 与 ANR 监控体系](02-crash-anr-monitoring.md)
@@ -12,14 +13,14 @@
 - [26.4 A/B Test 与性能回归防护](04-ab-testing-regression.md)
 - [26.5 性能评分与发版质量门禁](05-performance-score-release-gate.md)
 - [26.6 ApplicationExitInfo 与版本化线上诊断](06-application-exit-versioned-diagnostics.md)
-- [26.7 eBPF、ATrace 与线上系统追踪](07-ebpf-atrace-online-tracing.md)
-- [26.8 ApplicationStartInfo 与启动归因上报](08-application-start-info.md)
-- [26.9 Android Vitals 与 Play Console 质量指标归因](09-android-vitals-play-console-quality.md)
-- [26.10 线上存储、I/O 与 SQLite 可观测性](10-online-storage-io-sqlite-observability.md)
-- [26.11 线上网络质量监控与接入层协同](11-online-network-quality-observability.md)
-- [26.12 Battery Historian 与性能指标集成](12-battery-historian-performance-metrics-integration.md)
-- [26.13 编译期字节码插桩与监控自动化](13-bytecode-instrumentation-monitoring-automation.md)
-- [26.14 heapprofd、procfs CPU 与 Page Fault 分析](14-heapprofd-procfs-page-fault.md)
+- [26.7 ApplicationStartInfo 与启动归因上报](07-application-start-info.md)
+- [26.8 Android Vitals 与 Play Console 质量指标归因](08-android-vitals-play-console-quality.md)
+- [26.9 线上存储、I/O 与 SQLite 可观测性](09-online-storage-io-sqlite-observability.md)
+- [26.10 线上网络质量监控与接入层对账](10-online-network-quality-observability.md)
+- [26.11 Battery Historian 与功耗指标集成](11-battery-historian-performance-metrics-integration.md)
+- [26.12 编译期字节码插桩与监控自动化](12-bytecode-instrumentation-monitoring-automation.md)
+- [26.13 heapprofd、procfs CPU 与 Page Fault 分析](13-heapprofd-procfs-page-fault.md)
+- [26.14 eBPF、ATrace 与线上系统追踪](14-ebpf-atrace-online-tracing.md)
 - [26.15 ART 动态方法追踪与 JVMTI 边界](15-art-dynamic-tracing-jvmti.md)
 
 ## 术语提示
@@ -38,7 +39,7 @@
 ## 阅读建议
 
 - 搭建体系时先读 26.1，再按稳定性、线上排障和发布流程进入 26.2—26.5。
-- 已知线上症状时可从 26.3 选择排查入口；进程退出、启动、Play 质量、存储和网络问题分别对应 26.6、26.8—26.11。
-- 发布评估可结合 26.4、26.5、26.9 和 26.12，统一实验口径、门禁阈值与外部质量指标。
-- 26.7、26.14 和 26.15 涉及系统权限或实验方案。采用其中机制前，应确认目标 Android 版本、构建类型、权限和上游维护状态。
+- 已知线上症状时可从 26.3 选择排查入口；进程退出、启动、Play 质量、存储和网络问题分别对应 26.6、26.7—26.10。
+- 发布评估可结合 26.4、26.5、26.8 和 26.11，统一实验口径、门禁阈值与外部质量指标。
+- 26.14、26.13 和 26.15 涉及系统权限或实验方案。采用其中机制前，应确认目标 Android 版本、构建类型、权限和上游维护状态。
 - 非 Play 分发与厂商系统差异见 26.3；涉及 OEM 数据时，应保留设备型号、系统构建指纹、渠道和采集权限。

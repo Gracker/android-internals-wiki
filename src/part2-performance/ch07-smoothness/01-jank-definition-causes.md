@@ -69,9 +69,9 @@ related_chapters:
 - '7.2'
 - '8.1'
 - '9.1'
-- '1.3'
-- '1.1'
 - '1.9'
+- '1.1'
+- '1.8'
 - '3.1'
 - '4.2'
 last_consolidated_at: '2026-08-24'
@@ -311,7 +311,7 @@ buffer 路径会把上游慢帧传播到后续帧。以下等待含义不同：
 | SF latch 使用旧 buffer | 新 buffer 不满足本轮选择条件 | layer snapshot（图层快照）、desired present（期望呈现时间）、fence 与 latch |
 | `BufferStuffing` | 前一 buffer 占用了当前期望呈现周期，延迟向后传播 | 相邻 SurfaceFrame、DisplayFrame 与队列深度 |
 
-在标准 BLAST App Window 中，BLASTBufferQueue 位于应用进程，buffer update 再通过 SurfaceControl transaction 送到 SurfaceFlinger。因此，`dequeueBuffer` / `queueBuffer` 变长不能直接写成“SurfaceFlinger 主线程正在合成”；它可能在等待 slot、fence、producer/consumer IPC 或 transaction 条件。详见 [BufferQueue 阻塞的 Perfetto 分析](../../part3-tools/ch13-perfetto/10-bufferqueue-blocking-perfetto.md)。
+在标准 BLAST App Window 中，BLASTBufferQueue 位于应用进程，buffer update 再通过 SurfaceControl transaction 送到 SurfaceFlinger。因此，`dequeueBuffer` / `queueBuffer` 变长不能直接写成“SurfaceFlinger 主线程正在合成”；它可能在等待 slot、fence、producer/consumer IPC 或 transaction 条件。详见 [BufferQueue 阻塞的 Perfetto 分析](../../part3-tools/ch14-perfetto/10-bufferqueue-blocking-perfetto.md)。
 
 ### SurfaceFlinger、HWC 与显示末端
 
@@ -361,7 +361,7 @@ ADPF（Android Dynamic Performance Framework，Android 动态性能框架）的 
 
 WebView 同时涉及宿主主线程、Chromium renderer（渲染进程）/compositor（合成组件）、GPU process（GPU 进程）和 Android Surface。页面脚本、布局、栅格化、纹理上传或宿主 View traversal 都可能延迟。分析时应先识别 WebView 对应的 layer 和进程，再沿 buffer 与 fence 判断像素由谁生产；只看宿主 `onDraw()` 会漏掉 Chromium 侧的工作。
 
-多窗口和分屏会增加可见 layer、transaction、分辨率变化与多个应用的 CPU/GPU 工作负载，但不一定会触发 CLIENT composition。应比较进入多窗口前后的 HWC 决策、DisplayFrame、GPU queue，以及每个可见应用的 SurfaceFrame。独立路径详见 [Android View 多窗口渲染](../../part1-fundamentals/ch02-rendering/10-multiwindow-desktop-rendering.md)。
+多窗口和分屏会增加可见 layer、transaction、分辨率变化与多个应用的 CPU/GPU 工作负载，但不一定会触发 CLIENT composition。应比较进入多窗口前后的 HWC 决策、DisplayFrame、GPU queue，以及每个可见应用的 SurfaceFrame。独立路径详见 [Android View 多窗口渲染](../../part1-fundamentals/ch02-rendering/14-multiwindow-desktop-rendering.md)。
 
 跟手滑动、手写和手势导航还要检查 input-to-display latency（输入到显示延迟）。只有串起 InputDispatcher（系统输入分发器）送达、应用消费、状态更新、目标 layer 变化与 present，才能得到端到端结论。`doFrame` 时长呈锯齿状，只能描述 App slice 的波动，不足以解释输入链路或显示末端。
 
@@ -416,15 +416,15 @@ flowchart TD
 
 - [7.2 卡顿分析方法、典型场景与案例](02-jank-methodology-scenarios-cases.md)：trace 配置、窗口约束与 SQL 分析。
 - [2.1 Android 渲染架构与版本演进](../../part1-fundamentals/ch02-rendering/01-rendering-architecture-evolution.md)：应用生产、SurfaceFlinger 合成与显示提交。
-- [Android 17 FrameTimeline、FrameTracer 与合成边界](../../part1-fundamentals/ch02-rendering/17-android17-frametimeline-composition-boundary.md)：FrameTimeline、FrameTracer、TimeStats 与 JankTracker 的职责边界。
+- [Android 17 FrameTimeline、FrameTracer 与合成边界](../../part1-fundamentals/ch02-rendering/12-android17-frametimeline-composition-boundary.md)：FrameTimeline、FrameTracer、TimeStats 与 JankTracker 的职责边界。
 - [2.4 MainThread、RenderThread 与 Hardware Layer](../../part1-fundamentals/ch02-rendering/04-main-render-thread-hardware-layer.md)：HWUI 两条线程的同步边界。
-- [1.3 Android IPC 全景与 Binder 性能](../../part1-fundamentals/ch01-architecture/03-ipc-binder-performance.md)：同步事务、线程池与优先级传播。
-- [1.9 MessageQueue 与锁竞争：从 DeliQueue 到系统等待链](../../part1-fundamentals/ch01-architecture/09-messagequeue-lock-contention.md)：数据结构、启用条件与 A/B 方法。
+- [1.9 Android IPC 全景与 Binder 性能](../../part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md)：同步事务、线程池与优先级传播。
+- [1.8 MessageQueue 与锁竞争：从 DeliQueue 到系统等待链](../../part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md)：数据结构、启用条件与 A/B 方法。
 - [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)：GC 类型、pause 与堆行为。
 - [5.2 DVFS、Thermal 与 Android 功耗管理](../../part1-fundamentals/ch05-cpu-power/02-dvfs-thermal-android-power.md) 与 [5.4 ADPF 自适应性能框架](../../part1-fundamentals/ch05-cpu-power/04-adpf.md)：thermal 与 performance hint 的适用边界。
 - [3.1 Input 分发、拦截与安全边界](../../part1-fundamentals/ch03-input/01-input-dispatch-interception-security.md)：输入到应用消费的证据。
-- [渲染管线总览](../ch18-rendering-pipelines/01-android-view-pipeline-analysis.md)：按 Producer、Surface、layer 与合成路径识别出图类型。
-- [FrameTimeline Perfetto 分析](../../part3-tools/ch13-perfetto/13-frametracer-frame-timeline.md)：trace 配置与 SQL 查询。
+- [渲染管线总览](../ch13-rendering-pipelines/01-android-view-pipeline-analysis.md)：按 Producer、Surface、layer 与合成路径识别出图类型。
+- [FrameTimeline Perfetto 分析](../../part3-tools/ch14-perfetto/13-frametracer-frame-timeline.md)：trace 配置与 SQL 查询。
 
 
 ## 版本与实现边界

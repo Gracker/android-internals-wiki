@@ -14,7 +14,7 @@ related_chapters:
 - '20.8'
 - '26.2'
 - '26.3'
-- '14.7'
+- '15.10'
 consolidated_from:
 - src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md
 last_verified: '2026-08-14'

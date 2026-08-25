@@ -17,7 +17,7 @@ related_chapters:
 - '21.2'
 - '21.3'
 - '8.2'
-- '1.7'
+- '1.16'
 last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1 ActivityThread; Dagger/Hilt 2.60.1 source and current docs; Koin 4.2/4.2.2 docs and source; Android Developers Hilt and KSP docs updated through 2026-08-13
 confidence: high
@@ -213,7 +213,7 @@ scope 的首要目标是对象身份和生命周期正确性，也就是规定�
 - `@ActivityScoped`、`@FragmentScoped` 对每个组件实例各有一份，不是全局共享；
 - Koin 自定义 scope 必须在 owner（拥有该生命周期的对象）销毁时关闭；动态 module unload 会移除映射并丢弃 Koin 管理的缓存实例，却无法释放仍被业务对象持有的引用。需要关闭文件、线程或连接的对象还应配置 `onClose` 或显式生命周期清理。
 
-过度 scope 会扩大 live set（GC 时仍能访问到的对象集合），也会给 provider 增加缓存与同步路径。取消 scope 后又可能反复创建昂贵对象。选择应由身份语义、构造成本和内存保留共同决定；内存侧的验证见 [23.4 Java Heap、GC 与 Compose 内存分配](../ch23-memory-practice/04-java-heap-gc-compose-allocation.md)。
+过度 scope 会扩大 live set（GC 时仍能访问到的对象集合），也会给 provider 增加缓存与同步路径。取消 scope 后又可能反复创建昂贵对象。选择应由身份语义、构造成本和内存保留共同决定；内存侧的验证见 [23.1 Java Heap、GC 与 Compose 内存分配](../ch23-memory-practice/01-java-heap-gc-compose-allocation.md)。
 
 ## 怎样测量 DI 启动成本
 

@@ -132,6 +132,7 @@ Adaptive Refresh Rate（自适应刷新率，ARR）位于显示时序和刷新�
 
 ## 4. 内容索引
 
+
 - [3.1 Input 分发、拦截与安全边界](01-input-dispatch-interception-security.md)
 - [3.2 触摸延迟、预测与低延迟渲染](02-touch-performance.md)
 - [3.3 系统手势导航与 Predictive Back](03-gesture-navigation-predictive-back.md)

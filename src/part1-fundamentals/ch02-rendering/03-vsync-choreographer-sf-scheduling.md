@@ -145,13 +145,13 @@ tags:
 related_chapters:
 - '2.1'
 - '2.4'
-- '2.5'
+- '2.9'
 - '3.1'
 - '8.1'
 - '8.2'
 - '2.2'
-- '18.12'
-- '13.10'
+- '13.12'
+- '14.10'
 task6_state: reviewed
 status: finalized
 pipeline_stage: ready-to-publish

@@ -75,9 +75,9 @@ tags:
 related_chapters:
 - '2.3'
 - '22.1'
-- '22.4'
+- '22.7'
 - '22.2'
-- '22.14'
+- '22.4'
 pipeline_stage: ready-for-review
 task2b_state: fixed
 task6_state: reviewed
@@ -103,7 +103,7 @@ Compose 性能优化要回答两个问题：哪一段工作错过了本帧 deadl
 - 当前依赖基线为 Compose BOM `2026.08.00`，其 POM 把 Runtime、Foundation 和 UI 约束到 `1.12.0`。文中另保留 BOM `2025.12.00` / Compose `1.10.0` 与 Foundation `1.10.6`，用于说明 Pausable Composition 的历史变化和复现实验。
 - Compose Compiler 随 Kotlin `2.4.10` Gradle plugin 使用。Strong Skipping 属于编译器行为，Lazy 预取属于 Foundation 行为，两者都不能从 Android platform 源码标签推断。
 
-普通 `ComposeView` 不会单独创建 Surface。内容仍由当前应用窗口的 HWUI（Android 硬件加速 UI 渲染器）路径输出：UI 线程完成 Composition（根据状态生成或更新 UI 树）、Layout（测量与摆放）和 Drawing（记录绘制命令），经 `HardwareRenderer.syncAndDrawFrame()` 交给 RenderThread（执行渲染命令的专用线程），再通过 BLAST BufferQueue 提交图形缓冲区，由 SurfaceFlinger 合成，并交给 HWC（Hardware Composer，硬件合成器），最终显示到屏幕。页面嵌入 `SurfaceView`、`TextureView`、WebView 或视频组件后，还要跟踪这些组件自己的图像生产者（producer）和 Surface layer（合成图层）。完整管线可结合 [Compose 渲染管线架构](../../part2-performance/ch18-rendering-pipelines/08-compose-rendering-pipeline.md) 阅读。
+普通 `ComposeView` 不会单独创建 Surface。内容仍由当前应用窗口的 HWUI（Android 硬件加速 UI 渲染器）路径输出：UI 线程完成 Composition（根据状态生成或更新 UI 树）、Layout（测量与摆放）和 Drawing（记录绘制命令），经 `HardwareRenderer.syncAndDrawFrame()` 交给 RenderThread（执行渲染命令的专用线程），再通过 BLAST BufferQueue 提交图形缓冲区，由 SurfaceFlinger 合成，并交给 HWC（Hardware Composer，硬件合成器），最终显示到屏幕。页面嵌入 `SurfaceView`、`TextureView`、WebView 或视频组件后，还要跟踪这些组件自己的图像生产者（producer）和 Surface layer（合成图层）。完整管线可结合 [Compose 渲染管线架构](../../part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md) 阅读。
 
 这条窗口链路与 Compose Runtime 的内部结构是两层概念。`SlotTable` 保存 composition 的 group、key、`remember` 值和调用结构，它不是 UI 节点树；`LayoutNode` 才承载 Compose 的测量、摆放与绘制节点。recomposition 只重新执行失效的 restart scope，不等于重建整个页面；大多数普通 `LayoutNode` 也不会各自创建一个 Android `RenderNode`，绘制通常记录到最近的图层边界。
 
@@ -357,7 +357,7 @@ implementation("androidx.compose.runtime:runtime-tracing")
 
 ### Compose 与 View 互操作
 
-这里只保留互操作对重组和诊断边界的影响；容器所有权、生命周期、状态与复用协议见 [22.11 Compose / View 互操作](11-compose-view-interop.md)。
+这里只保留互操作对重组和诊断边界的影响；容器所有权、生命周期、状态与复用协议见 [22.6 Compose / View 互操作](06-compose-view-interop.md)。
 
 #### RecyclerView 中的 `ComposeView`
 
@@ -1178,7 +1178,7 @@ Kotlin 2.0 起，Compose 编译器随 Kotlin 一同发布，项目应应用与 K
 - [Android 17 `ViewRootImpl.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/view/ViewRootImpl.java)
 - [Android 17 `FrameTimeline.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/graphics/FrameTimeline.java)
 - [Android common kernel `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)
-- [本知识库：Android 17 FrameTimeline](../../part1-fundamentals/ch02-rendering/17-android17-frametimeline-composition-boundary.md)
+- [本知识库：Android 17 FrameTimeline](../../part1-fundamentals/ch02-rendering/12-android17-frametimeline-composition-boundary.md)
 
 当前工具链与运行时结论核查于 2026-08-15。编译器报告样例来自 Kotlin 2.3.20 对最小源码的实测输出，2.4.10 源码核对用于确认 CSV 与模块 JSON 结构仍一致；升级 Kotlin 或 Compose 后，仍应重新生成报告并复核字段、功能开关与跟踪名称。
 

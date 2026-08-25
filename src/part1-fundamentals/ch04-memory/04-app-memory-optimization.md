@@ -712,4 +712,4 @@ Android 14+ 只保留 `UI_HIDDEN` 和 `BACKGROUND` 两个公开投递级别，�
 - [4.2 ART Heap、GC 与后台维护调度](02-art-heap-gc-maintenance.md)：分配、收集器与后台维护。
 - [4.3 lmkd、Cached App Freezer 与内存压力治理](03-lmkd-freezer-memory-pressure.md)：压力检测、优先级与进程终止。
 - [4.5 16 KB Page Size 与 Android 性能](05-16kb-page-size.md)：构建、加载与兼容性细节。
-- 7.1、7.2、13.1：卡顿分类、归因方法与 Perfetto 分析。
+- 7.1、7.2、14.1：卡顿分类、归因方法与 Perfetto 分析。

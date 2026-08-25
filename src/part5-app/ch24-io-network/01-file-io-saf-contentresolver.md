@@ -79,7 +79,7 @@ related_chapters:
 - '6.2'
 - '6.4'
 - '9.1'
-- '24.9'
+- '24.4'
 pipeline_stage: finalized
 last_review_finalize_at: '2026-08-15T09:21:12+08:00'
 last_review_finalize_run_id: 20260815-092112-gracker-writing-review
@@ -643,7 +643,7 @@ Photo Picker 的范围比 SAF 窄：
 
 需要修改其他应用拥有的 MediaStore 项目时，可以用 `createWriteRequest()` 请求用户成组授权。该写权限与发起请求的 `Activity` 生命周期绑定，不支持持久化授权或 URI 前缀授权。后台服务或作业需要继续使用时，要按 API 文档通过带授权标志的 `ClipData` 或 `Intent` 传递 URI。长时间后台读取 Photo Picker 结果属于另一种场景，应持久化用户所选项目的逐项读取权限。
 
-24.9 节给出了媒体查询、分页、缩略图和世代号同步的完整实现。
+24.4 节给出了媒体查询、分页、缩略图和世代号同步的完整实现。
 
 ### Scoped Storage、FUSE 与 BPF
 

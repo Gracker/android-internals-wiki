@@ -107,12 +107,12 @@ related_chapters:
 - '26.1'
 - '20.2'
 - '20.3'
-- '19.8'
+- '17.8'
 - '20.1'
 - '20.4'
 - '9.2'
 - '9.7'
-- '19.11'
+- '17.11'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -132,7 +132,7 @@ consolidated_from:
 
 # Crash 与 ANR 监控体系
 
-崩溃（Crash）上报体系需要在进程退出前尽量保存定位证据，并在后续可用的执行窗口把证据送到分析系统。Java Crash 指未处理的 Java/Kotlin 异常，Native Crash 指 C/C++ 等原生代码触发的致命信号；捕获机制见 20.2、20.3 和 19.9。本节关注本地留存、多进程归集、符号化、告警和发布门禁。符号化是把混淆名或二进制地址还原成可读函数、文件和行号的过程。
+崩溃（Crash）上报体系需要在进程退出前尽量保存定位证据，并在后续可用的执行窗口把证据送到分析系统。Java Crash 指未处理的 Java/Kotlin 异常，Native Crash 指 C/C++ 等原生代码触发的致命信号；捕获机制见 20.2、20.3 和 17.9。本节关注本地留存、多进程归集、符号化、告警和发布门禁。符号化是把混淆名或二进制地址还原成可读函数、文件和行号的过程。
 
 平台源码上界为 Android 17 / API 37 / `android-17.0.0_r1`。崩溃主路径位于 Android 框架、bionic C 库与 debuggerd 等用户空间组件，不依赖 Android 17 的某项内核专有实现，因此不附加内核源码标签。
 
@@ -405,7 +405,7 @@ Crash 在进程终止路径中采集，ANR 可能在进程仍存活时持续。�
 
 ANR（Application Not Responding，应用无响应）监控解决两个问题：用户遇到无响应时能否被统计，研发拿到记录后能否还原现场。只看系统弹窗或 Play Console，通常只能知道“发生过 ANR”；只做主线程卡顿监控，又容易把长卡顿误判成系统 ANR。
 
-ANR 监控可以分成四层：系统 ANR 记录、Google Play Android vitals 指标、端侧卡顿预警、现场快照。系统记录确认事件，端侧快照补足现场信息，Android vitals 提供发布质量阈值。ANR 根因分析流程详见 9.2 节，治理策略详见 20.4 节，Crash / ANR 捕获实现详见 19.9 节。
+ANR 监控可以分成四层：系统 ANR 记录、Google Play Android vitals 指标、端侧卡顿预警、现场快照。系统记录确认事件，端侧快照补足现场信息，Android vitals 提供发布质量阈值。ANR 根因分析流程详见 9.2 节，治理策略详见 20.4 节，Crash / ANR 捕获实现详见 17.9 节。
 
 平台源码上界为 Android 17 / API 37 / `android-17.0.0_r1`。ANR 的判定、队列和 trace（线程转储）生成位于 Android 框架、ART（Android Runtime，Android 运行时）与 debuggerd（系统崩溃和线程转储服务）等用户空间组件，不依赖 Android 17 内核的专有实现，因此这些结论不绑定内核版本标签。
 

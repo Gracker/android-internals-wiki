@@ -67,7 +67,7 @@ related_chapters:
 - '26.1'
 - '20.10'
 - '26.6'
-- '26.9'
+- '26.8'
 - '8.7'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
@@ -748,7 +748,7 @@ SystemUI 和 Framework API 为应用提供一致接口，但 sensor HAL、屏幕
 
 [§20.10 Keystore 配额与登录稳定性](../../part5-app/ch20-stability/10-keystore-quota-login-stability.md) 负责密钥生命周期、配额、失效与恢复。这里仅将这些结果视为登录阶段的一类终态。
 
-[§26.6 版本化诊断](../../part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md) 负责系统 trace、`ApplicationExitInfo`、`ProfilingManager` 与诊断权限。[§26.9 Android Vitals 与 Play Console](../../part5-app/ch26-observability/09-android-vitals-play-console-quality.md) 负责 ANR、Crash、LMK、启动和功耗等外部质量口径。Vitals 没有“生物识别登录慢”专用指标，内部 `flow_id`、版本与页面信息要能和发布批次对应。
+[§26.6 版本化诊断](../../part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md) 负责系统 trace、`ApplicationExitInfo`、`ProfilingManager` 与诊断权限。[§26.8 Android Vitals 与 Play Console](../../part5-app/ch26-observability/08-android-vitals-play-console-quality.md) 负责 ANR、Crash、LMK、启动和功耗等外部质量口径。Vitals 没有“生物识别登录慢”专用指标，内部 `flow_id`、版本与页面信息要能和发布批次对应。
 
 ## 小结
 

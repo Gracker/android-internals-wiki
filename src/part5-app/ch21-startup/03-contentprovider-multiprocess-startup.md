@@ -57,7 +57,7 @@ tags:
 related_chapters:
 - '21.1'
 - '21.2'
-- '1.8'
+- '1.15'
 - '1.1'
 - '5.3'
 pipeline_stage: finalized

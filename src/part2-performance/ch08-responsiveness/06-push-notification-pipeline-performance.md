@@ -365,7 +365,7 @@ Android 17 的 NMS 使用可配置的 EWMA 限制更新速率，SystemUI 支持�
 - [§25.3 WorkManager 实战](../../part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md)：regular / expedited work 与后台调度。
 - [§25.2 前台服务类型执行模型](../../part5-app/ch25-power-size/02-background-power-foreground-service.md)：FGS 类型、超时、Job 配额与恢复。
 - [§4.3 Cached App Freezer](../../part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md)：缓存冻结与解冻边界。
-- [§1.3 Binder IPC](../../part1-fundamentals/ch01-architecture/03-ipc-binder-performance.md)：同步 Binder 与线程等待。
+- [§1.9 Binder IPC](../../part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md)：同步 Binder 与线程等待。
 
 ## 参考资料
 

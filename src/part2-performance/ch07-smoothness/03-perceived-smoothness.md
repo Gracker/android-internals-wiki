@@ -211,7 +211,7 @@ RecyclerView 1.4.0 的 `ViewFlinger` 使用 `OverScroller`。应用没有公开 
 
 ### 呈现节奏异常时修显示链
 
-App 模型平稳而 present 不稳时，继续调整插值器没有帮助。应检查 expected/actual FrameTimeline、buffer backpressure（缓冲区反压，即生产速度超过消费速度）、RenderThread/GPU、SurfaceFlinger、刷新率选择和 present fence。完整过程参见[可变刷新率与帧率选择](../../part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md)与[标准 View/HWUI 渲染管线](../ch18-rendering-pipelines/01-android-view-pipeline-analysis.md)。
+App 模型平稳而 present 不稳时，继续调整插值器没有帮助。应检查 expected/actual FrameTimeline、buffer backpressure（缓冲区反压，即生产速度超过消费速度）、RenderThread/GPU、SurfaceFlinger、刷新率选择和 present fence。完整过程参见[可变刷新率与帧率选择](../../part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md)与[标准 View/HWUI 渲染管线](../ch13-rendering-pipelines/01-android-view-pipeline-analysis.md)。
 
 ## 输入重采样的边界
 
@@ -294,7 +294,7 @@ RecyclerView 1.4.0 会在 `OverScroller` 滚动时调用 API 35 的 `View.setFra
 - [RecyclerView 列表滑动性能](../../part5-app/ch22-rendering-practice/02-recyclerview-compose-lazylist.md)
 - [3.2 触摸延迟、预测与低延迟渲染](../../part1-fundamentals/ch03-input/02-touch-performance.md)
 - [可变刷新率与帧率选择](../../part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md)
-- [标准 View/HWUI 渲染管线](../ch18-rendering-pipelines/01-android-view-pipeline-analysis.md)
+- [标准 View/HWUI 渲染管线](../ch13-rendering-pipelines/01-android-view-pipeline-analysis.md)
 
 ## 参考资料
 

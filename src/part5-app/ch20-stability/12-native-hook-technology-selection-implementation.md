@@ -14,7 +14,7 @@ tags:
 related_chapters:
 - '20.7'
 - '20.3'
-- '14.7'
+- '15.10'
 confidence: medium-high
 last_verified: '2026-08-14'
 sources:

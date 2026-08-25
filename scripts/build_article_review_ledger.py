@@ -139,7 +139,7 @@ def generic_boundary(left: dict[str, object], right: dict[str, object]) -> str:
     right_chapter_dir = str(Path(right_path).parent)
 
     if left_chapter_dir == right_chapter_dir:
-        if "ch18-rendering-pipelines" in left_chapter_dir:
+        if "ch13-rendering-pipelines" in left_chapter_dir:
             return (
                 "same rendering endpoint but different producer, carrier, backend or layer topology; "
                 "keep one pipeline per independently diagnosable object path"

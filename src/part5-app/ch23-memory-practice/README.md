@@ -16,18 +16,19 @@
 
 ## 内容索引
 
-- [23.1 内存泄漏检测与治理](01-memory-leak-governance.md)
-- [23.2 Bitmap 与图片内存优化](02-bitmap-optimization.md)
+
+- [23.1 Java Heap、GC 与 Compose 内存分配](01-java-heap-gc-compose-allocation.md)
+- [23.2 内存泄漏检测与治理](02-memory-leak-governance.md)
 - [23.3 Native 与虚拟内存管理优化](03-native-virtual-memory-optimization.md)
-- [23.4 Java Heap、GC 与 Compose 内存分配](04-java-heap-gc-compose-allocation.md)
+- [23.4 Bitmap 与图片内存优化](04-bitmap-optimization.md)
 - [23.5 大内存与多进程策略](05-large-heap-multiprocess.md)
-- [23.6 内存监控与线上治理](06-memory-monitoring.md)
-- [23.7 端侧大模型推理的内存管理](07-ondevice-llm-memory-management.md)
+- [23.6 端侧大模型推理的内存管理](06-ondevice-llm-memory-management.md)
+- [23.7 内存监控与线上治理](07-memory-monitoring.md)
 
 ## 阅读建议
 
-- 泄漏问题可从 23.1、23.3 和 23.6 开始；分配抖动与 Compose 场景进入 23.4。
+- 泄漏问题可从 23.2、23.3 和 23.7 开始；分配抖动与 Compose 场景进入 23.1。
 - Native 场景应同时检查内存分配器（allocator）、线程栈、`mmap` 虚拟地址映射和图形缓冲区，不能只看 Java Heap。
 - 大内存、多进程与 Android 17 MemoryLimiter 见 23.5。MemoryLimiter 是系统按设备总 RAM 设置的应用内存上限，目前只在部分设备启用；退出识别需要结合记录进程退出原因的 `ApplicationExitInfo`。
-- 端侧模型的权重、`KV Cache`（键值缓存）和推理后端工作缓冲区预算见 23.7。`KV Cache` 保存 Transformer 模型已经计算出的注意力 key/value（键/值），通常随输入序列长度和并发请求增长。
+- 端侧模型的权重、`KV Cache`（键值缓存）和推理后端工作缓冲区预算见 23.6。`KV Cache` 保存 Transformer 模型已经计算出的注意力 key/value（键/值），通常随输入序列长度和并发请求增长。
 - 线上数据应记录设备总 RAM、`ActivityManager.getMemoryClass()`（普通应用的近似 Java Heap 上限等级）、进程重要性和系统内存压力，用来区分应用自身增长与系统回收。

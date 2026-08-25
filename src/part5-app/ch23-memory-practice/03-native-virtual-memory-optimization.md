@@ -78,10 +78,10 @@ tags:
 - memory-optimization
 - webview-reservation
 related_chapters:
-- '23.2'
+- '23.4'
 - '4.1'
 - '10.1'
-- '14.3'
+- '15.3'
 - '20.5'
 - '4.2'
 - '4.3'
@@ -116,7 +116,7 @@ Native 内存治理先找到分配器、对象所有者和释放路径，再进�
 
 Java 堆没有持续增长，不代表进程的内存占用稳定。使用 JNI、音视频 SDK、地图 SDK、游戏引擎、图片库或加密库的应用，原生堆（Native Heap）、匿名 `mmap`、共享库映射和图形缓冲都可能让 PSS 上升。后果可能是后台进程更早被系统回收、前台出现内存压力或原生崩溃。
 
-应用侧要先确认增长属于哪一种系统统计，再按问题类型选择 heapprofd、`libmemunreachable`、`malloc_debug`、ASan、HWASan、GWP-ASan 或 MTE。容量问题与非法访问需要不同证据：前者关注分配栈和存活量，后者关注越界、释放后访问等错误现场。内存模型见 [4.1 Android 与 Linux 内存管理全景](../../part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md)，工具使用见 [14.3 内存分析、HPROF 与 Heap Dump 工具](../../part3-tools/ch14-other-tools/03-memory-hprof-heapdump-tools.md)，应用进程统计见 [10.1 App 内存分析与案例](../../part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md)。
+应用侧要先确认增长属于哪一种系统统计，再按问题类型选择 heapprofd、`libmemunreachable`、`malloc_debug`、ASan、HWASan、GWP-ASan 或 MTE。容量问题与非法访问需要不同证据：前者关注分配栈和存活量，后者关注越界、释放后访问等错误现场。内存模型见 [4.1 Android 与 Linux 内存管理全景](../../part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md)，工具使用见 [15.3 内存分析、HPROF 与 Heap Dump 工具](../../part3-tools/ch15-other-tools/03-memory-hprof-heapdump-tools.md)，应用进程统计见 [10.1 App 内存分析与案例](../../part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md)。
 
 文中术语含义如下：
 
@@ -145,7 +145,7 @@ Java 堆没有持续增长，不代表进程的内存占用稳定。使用 JNI�
 - **原生堆**：C/C++ 代码通过 `malloc`、`calloc`、`realloc`、`new` 申请的堆内存，常见来源是 JNI 层业务代码、第三方 `.so`、音视频编解码、图片库和加密库。
 - **匿名 `mmap` 区域**：代码直接用 `mmap` 申请的私有匿名映射，或者分配器向内核申请的大块 arena。`/proc/<pid>/smaps` 中可能显示为 `[anon:libc_malloc]`、`[anon:scudo:*]` 或业务自定义名称。
 - **`.so` / ELF 映射**：`.so` 文件被动态链接器映射到进程地址空间后，会产生代码段、只读数据、可写数据和重定位相关页面。共享只读页面通常按 PSS 分摊，可写脏页计入当前进程。
-- **图形与硬件缓冲**：Bitmap 像素、OpenGL/Vulkan 纹理、Surface buffer（界面缓冲）、`dma-buf` 等资源可能出现在原生堆、Graphics、GL 或 memtrack 统计中。统计位置受分配方式、驱动和厂商实现影响，不能只根据一个 VMA 名称判断资源类型。图片内存见 [23.2 Bitmap 与图片内存优化](02-bitmap-optimization.md)。
+- **图形与硬件缓冲**：Bitmap 像素、OpenGL/Vulkan 纹理、Surface buffer（界面缓冲）、`dma-buf` 等资源可能出现在原生堆、Graphics、GL 或 memtrack 统计中。统计位置受分配方式、驱动和厂商实现影响，不能只根据一个 VMA 名称判断资源类型。图片内存见 [23.4 Bitmap 与图片内存优化](04-bitmap-optimization.md)。
 
 Android 17 中，`android_os_Debug.cpp` 的 `android_os_Debug_getDirtyPagesPid()` 调用 libmeminfo 的 `ExtractAndroidHeapStats()` 取得按 VMA 分类的统计，再把 memtrack 返回的图形数据计入相应字段。VMA 分类规则位于 `androidprocheaps.cpp`：`[heap]`、`[anon:libc_malloc]`、`[anon:scudo:]` 和 `[anon:GWP-ASan]` 等名称归入原生堆，`.so` 归入共享库，`.jar`、`.apk` 等归入对应的代码分类。Graphics 数值还可能来自 memtrack，不能推断所有 `dma-buf` 都由 `androidprocheaps.cpp` 按名称归类。
 
@@ -298,7 +298,7 @@ HWASan 适合测试构建，ASan 只在 HWASan 不可用时作为兼容方案。
 
 生产监控不应照搬本地分析工具。用户设备上的目标是发现趋势、定位版本和场景，不能长期记录完整调用栈。
 
-本节只定义 Native Heap、映射和内存安全错误的原生侧信号；跨 Java、Native、图形与系统回收的统一监控闭环见 [23.6 内存监控与线上治理](06-memory-monitoring.md)。
+本节只定义 Native Heap、映射和内存安全错误的原生侧信号；跨 Java、Native、图形与系统回收的统一监控闭环见 [23.7 内存监控与线上治理](07-memory-monitoring.md)。
 
 一套可控方案可以分三层：
 
@@ -364,7 +364,7 @@ Android 15 起支持 16 KiB 页面设备。按 2026-08-15 的 Google Play 规则
 
 对象释放解决逻辑所有权，虚拟内存分析继续检查地址空间、文件映射、匿名页和 page fault。已 free 的内存也可能暂时留在进程 RSS。
 
-虚拟内存问题经常与 Java heap OOM（ART 托管对象堆耗尽）、native heap（C/C++ 分配使用的堆）和线程资源耗尽混在一起。VMA（virtual memory area，虚拟内存区域）是内核记录的一段连续地址范围；同一 VMA 具有一致的权限和映射来源。排查时要先确认失败来自地址空间、物理内存、VMA 数量还是线程资源。只看一个很大的 VSS 数字，容易把正常的地址空间预留误判成泄漏。对象持有关系可参阅 [23.1 内存泄漏检测与治理](01-memory-leak-governance.md)，Native Heap 的分配与所有权则见本文前一部分。
+虚拟内存问题经常与 Java heap OOM（ART 托管对象堆耗尽）、native heap（C/C++ 分配使用的堆）和线程资源耗尽混在一起。VMA（virtual memory area，虚拟内存区域）是内核记录的一段连续地址范围；同一 VMA 具有一致的权限和映射来源。排查时要先确认失败来自地址空间、物理内存、VMA 数量还是线程资源。只看一个很大的 VSS 数字，容易把正常的地址空间预留误判成泄漏。对象持有关系可参阅 [23.2 内存泄漏检测与治理](02-memory-leak-governance.md)，Native Heap 的分配与所有权则见本文前一部分。
 
 平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`；涉及内核 `/proc` 与 VMA 语义时，以 `android17-6.18-2026-06_r6` 为内核锚点。Android 10—16 的历史行为只用于解释存量设备，实际诊断仍以目标设备为准。
 

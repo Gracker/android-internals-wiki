@@ -48,9 +48,9 @@ tags:
 - ndk
 - elf
 related_chapters:
-- '1.10'
+- '1.6'
 - '20.13'
-- '25.5'
+- '25.10'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed

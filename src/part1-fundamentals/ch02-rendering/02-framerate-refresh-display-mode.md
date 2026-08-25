@@ -209,11 +209,11 @@ tags:
 related_chapters:
 - '2.1'
 - '2.3'
-- '2.5'
+- '2.9'
 - '7.1'
 - '2.8'
-- '2.17'
-- '22.12'
+- '2.12'
+- '22.13'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -224,7 +224,7 @@ consolidated_from:
 - src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md
 - src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md
 - src/part1-fundamentals/ch02-rendering/34-display-mode-refresh-rate-selection.md
-- src/part2-performance/ch18-rendering-pipelines/13-variable-refresh-rate.md
+- src/part2-performance/ch13-rendering-pipelines/13-variable-refresh-rate.md
 ---
 
 # 帧率、刷新率与显示模式选择
@@ -1182,7 +1182,7 @@ videoSurface.clearFrameRate(); // API 34+
 
 `setFrameRate()` 只影响 SurfaceFlinger 对显示帧率的选择，不会限制 Producer（buffer 生产者）的产帧速度。它可能间接改变 Choreographer 回调时间和 buffer 释放间隔，但不能代替 frame pacing。引擎仍需控制 `eglSwapBuffers()`、`vkQueuePresentKHR()` 或播放器提交时间戳，否则高频生产会让 queue 填满，增加输入延迟。
 
-Android 17（API 37）的 `Surface.setProducerThrottlingEnabled()` 调整 EGL/Vulkan Producer 在 queue 阶段承受的 CPU backpressure（下游忙时对上游形成的反压），属于队列节拍控制，不是刷新率投票。该 API 的细节见 2.9；排查 ARR 时应分别检查 `setFrameRate()` 的投票和 producer 限速。
+Android 17（API 37）的 `Surface.setProducerThrottlingEnabled()` 调整 EGL/Vulkan Producer 在 queue 阶段承受的 CPU backpressure（下游忙时对上游形成的反压），属于队列节拍控制，不是刷新率投票。该 API 的细节见 2.11；排查 ARR 时应分别检查 `setFrameRate()` 的投票和 producer 限速。
 
 ### 5. Display 与 Choreographer 能查到什么
 
@@ -2155,7 +2155,7 @@ Perfetto 中至少关联这些证据：
 - 显示帧的实际送显时间使用 HWC 和送显栅栏反馈，其中仍包含厂商显示路径；
 - 模式切换期间要同时查看 VSYNC 周期切换、请求待处理状态、完成状态和 FrameTimeline，不能假定切换会在固定的几十毫秒内完成。
 
-FrameTimeline 的令牌、预期与实际 `SurfaceFrame`、`DisplayFrame` 和栅栏边界，见 [2.17 Android 17 FrameTimeline、FrameTracer 与合成边界](17-android17-frametimeline-composition-boundary.md)。
+FrameTimeline 的令牌、预期与实际 `SurfaceFrame`、`DisplayFrame` 和栅栏边界，见 [2.12 Android 17 FrameTimeline、FrameTracer 与合成边界](12-android17-frametimeline-composition-boundary.md)。
 
 ### 13. 版本演进边界
 

@@ -54,8 +54,8 @@ last_verified_against: AOSP android-17.0.0_r1 and Android API 37 DnsResolver, Ne
 related_chapters:
 - '12.1'
 - '12.2'
-- '24.3'
-- '24.4'
+- '24.5'
+- '24.6'
 - '26.1'
 task6_state: reviewed
 task9_state: reviewed
@@ -74,7 +74,7 @@ OkHttp 要在建立连接前把主机名转换成一组 `InetAddress`，也就�
 
 平台基准是 Android 17 / API 37 / `android-17.0.0_r1`，OkHttp 源码基准是 5.4.0 的 `parent-5.4.0` 标签。OkHttp 4.x 的旧实现使用 `StreamAllocation` 等类；5.x 应按 `RealRoutePlanner`、`RouteSelector` 和 `FastFallbackExchangeFinder` 分析路由规划、地址选择与并发连接，不能套用旧调用路径。
 
-[24.3 移动网络架构、连接生命周期与容灾策略](03-mobile-network-connection-resilience.md)讨论网络架构，[24.4 HTTP/2、HTTP/3、gRPC 与 ECH](04-http2-http3-grpc-ech.md)讨论 HTTP 与传输协议。理解 HTTPDNS 的执行边界，需要区分四件事：
+[24.5 移动网络架构、连接生命周期与容灾策略](05-mobile-network-connection-resilience.md)讨论网络架构，[24.6 HTTP/2、HTTP/3、gRPC 与 ECH](06-http2-http3-grpc-ech.md)讨论 HTTP 与传输协议。理解 HTTPDNS 的执行边界，需要区分四件事：
 
 - `Dns.lookup()` 何时执行，哪些请求不会执行它；
 - HTTPDNS 查询、缓存和系统解析各自应处于哪条路径；

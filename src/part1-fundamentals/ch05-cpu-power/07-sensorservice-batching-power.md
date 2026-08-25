@@ -36,7 +36,7 @@ related_chapters:
 - '5.2'
 - '11.2'
 - '25.4'
-- '14.5'
+- '15.5'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed

@@ -151,7 +151,7 @@ consolidated_from:
 | Android 14 | 目标版本 34 及以上必须声明 FGS 类型和对应权限；需要使用中权限的服务在创建时接受检查 | 清单声明、启动来源和运行时权限一起验证 |
 | Android 15 | 目标版本 35 及以上的 `dataSync`、`mediaProcessing` FGS 获得后台运行时限 | 实现 `Service.onTimeout(int, int)`，主动保存进度并停止服务 |
 | Android 16 | Job 运行配额覆盖更多情形，包括应用离开前台后继续执行的 Job，以及与 FGS 并行的 Job | 记录停止原因和待执行原因历史；不要用 FGS 规避 Job 配额 |
-| Android 17 | 后台音频播放、音频焦点和音量操作受到更严格的生命周期检查 | 媒体任务按 Android 17 的音频资格要求审查，参见 §25.9 |
+| Android 17 | 后台音频播放、音频焦点和音量操作受到更严格的生命周期检查 | 媒体任务按 Android 17 的音频资格要求审查，参见 §25.5 |
 
 `restricted` 是限制最严的待机分组，但仍保留受限的执行机会。Android 13 及以上的官方规则是：不属于豁免范围的应用每天可在一次十分钟批处理时段内运行 Job，可用的 expedited Job（加急任务）更少，并且每天只能触发一次 Alarm。充电时这些限制仍然存在；设备同时处于充电、空闲和非计费网络时，限制会放宽。OEM（设备厂商）可以调整分组算法，应用不应尝试诱导系统将自己放入某个分组。参见 [App Standby Buckets](https://developer.android.com/topic/performance/appstandby)。
 
@@ -741,7 +741,7 @@ adb logcat | grep AudioHardening
 
 测试结束后可用 `set-enable-hardening disable` 恢复默认测试设置。这里的 hardening 指平台新增的后台音频访问限制。`AudioHardening` 记录中的 `partial` 表示缺少 FGS，`full` 表示存在 FGS 但缺少 WIU 能力。
 
-相关的音频功耗与生命周期设计参见 [25.9 后台音频、AudioTrack 与 Offload 功耗](09-background-audio-audiotrack-offload.md)。
+相关的音频功耗与生命周期设计参见 [25.5 后台音频、AudioTrack 与 Offload 功耗](05-background-audio-audiotrack-offload.md)。
 
 ### 9. 选择 FGS、Job 或 WorkManager
 

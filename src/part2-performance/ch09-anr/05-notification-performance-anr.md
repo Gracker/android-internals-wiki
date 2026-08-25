@@ -61,7 +61,7 @@ related_chapters:
 - '9.1'
 - '9.2'
 - '9.3'
-- '1.3'
+- '1.9'
 - '9.4'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
@@ -510,10 +510,10 @@ adb logcat -b system -d | grep -E \
 ## 与其他机制的关系
 
 - **§9.1 Service ANR 与超时**：区分 Service 执行 ANR 和前台转换异常。
-- **§1.3 Binder IPC 与性能**：`notify()` 的同步返回、listener 的 oneway 回调和 Binder 背压属于不同事务。
+- **§1.9 Binder IPC 与性能**：`notify()` 的同步返回、listener 的 oneway 回调和 Binder 背压属于不同事务。
 - **§6.3 SharedPreferences/DataStore**：NLS 主线程中的 `commit()` 或加载等待会直接延长回调。
-- **§1.8 ContentProvider**：URI 图标和 NLS 查询都可能触发 Provider 访问与冷启动。
-- **§13.5 Perfetto SQL**：用 Binder、slice 与 thread_state 还原跨进程时间线。
+- **§1.15 ContentProvider**：URI 图标和 NLS 查询都可能触发 Provider 访问与冷启动。
+- **§14.5 Perfetto SQL**：用 Binder、slice 与 thread_state 还原跨进程时间线。
 
 ## 常见问题与误区
 

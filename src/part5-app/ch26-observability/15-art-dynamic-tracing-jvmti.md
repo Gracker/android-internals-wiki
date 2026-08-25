@@ -20,11 +20,11 @@ tags:
 - method-tracing
 related_chapters:
 - '1.5'
-- '13.1'
-- '14.8'
-- '26.13'
-- '26.7'
 - '14.1'
+- '15.7'
+- '26.12'
+- '26.14'
+- '15.1'
 last_verified: '2026-08-25'
 last_source_verified_at: '2026-08-15'
 last_verified_against: arXiv:2512.21555v1, still the only public version and without venue metadata as of 2026-08-15; AOSP android-17.0.0_r1 ART sources; current Android Developers, AOSP ART TI, Android 17 features, and Perfetto documentation retrieved 2026-08-15
@@ -683,7 +683,7 @@ Binder 是 Android 的进程间通信机制，ANR 是 Application Not Responding
 | Java 崩溃、ANR、进程退出 | 应用稳定性采集与 `ApplicationExitInfo` |
 | ART 私有 hook 实验 | 仅在固定版本和受控设备验证，边界见本文前半篇 |
 
-JVMTI 与 [26.13 编译期字节码插桩与监控自动化](13-bytecode-instrumentation-monitoring-automation.md) 的编译期插桩适用范围不同。编译期插桩能进入发布构建，但只能观察构建时选定的点；JVMTI 能在运行中选择事件和类，却要求 debuggable，并可能改变 ART 执行形态。
+JVMTI 与 [26.12 编译期字节码插桩与监控自动化](12-bytecode-instrumentation-monitoring-automation.md) 的编译期插桩适用范围不同。编译期插桩能进入发布构建，但只能观察构建时选定的点；JVMTI 能在运行中选择事件和类，却要求 debuggable，并可能改变 ART 执行形态。
 
 ### 一次可复现的 JVMTI 实验
 
@@ -736,4 +736,4 @@ JVMTI/ART TI 提供标准的运行时实验入口，可以验证方法事件、G
 7. Android Developers：[Android 17 新增 ProfilingManager 触发器](https://developer.android.com/about/versions/17/features#profiling-manager)。
 8. AOSP 文档：[ART TI](https://source.android.com/docs/core/runtime/art-ti)。
 9. Perfetto：[Tracing documentation](https://perfetto.dev/docs/)。
-10. [26.13 编译期字节码插桩与监控自动化](13-bytecode-instrumentation-monitoring-automation.md)。
+10. [26.12 编译期字节码插桩与监控自动化](12-bytecode-instrumentation-monitoring-automation.md)。

@@ -30,11 +30,11 @@ related_chapters:
 - '2.1'
 - '2.3'
 - '2.4'
-- '2.5'
+- '2.9'
 - '7.1'
 - '4.1'
 - '4.2'
-- '1.3'
+- '1.9'
 last_verified: '2026-07-25'
 last_verified_against: AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + Android 4.1/11/12 historical tags + Writer rendering_pipelines S01/S02/S05/S06
 confidence: high
@@ -1329,7 +1329,7 @@ Fence 让等待过程变得可见。GPU 工作慢、HWC 持有、display 迟到�
   - [Graphics architecture](https://source.android.com/docs/core/graphics/architecture)
   - [Unsignaled buffer latching](https://source.android.com/docs/core/graphics/unsignaled-buffer-latch)
   - [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
-- 交叉阅读：§2.1、§2.3、§2.4、§2.5、§2.8、§7.1。
+- 交叉阅读：§2.1、§2.3、§2.4、§2.9、§2.8、§7.1。
 
 - [Android Graphics architecture](https://source.android.com/docs/core/graphics/architecture)
 - [Reduce graphics memory consumption](https://source.android.com/docs/core/graphics/reduce-consumption)

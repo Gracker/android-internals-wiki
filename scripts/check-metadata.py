@@ -27,12 +27,12 @@ CANONICAL_PARTS = {
     "part2-performance": {
         "ch07-smoothness", "ch08-responsiveness", "ch09-anr",
         "ch10-memory-perf", "ch11-power", "ch12-apk-network",
-        "ch18-rendering-pipelines",
+        "ch13-rendering-pipelines",
     },
     "part3-tools": {
-        "ch13-perfetto", "ch14-other-tools", "ch15-methodology", "ch19-apm",
+        "ch14-perfetto", "ch15-other-tools", "ch16-methodology", "ch17-apm",
     },
-    "part4-system": {"ch16-aosp", "ch17-oem"},
+    "part4-system": {"ch18-aosp", "ch19-oem"},
     "part5-app": {
         "ch20-stability", "ch21-startup", "ch22-rendering-practice",
         "ch23-memory-practice", "ch24-io-network", "ch25-power-size",

@@ -78,7 +78,7 @@ PowerStats 与 BatteryStats 都记录功耗相关信息：前者面向设备电�
 | 问题族 | 现象定义 | 主证据 | 常见混淆项 | 推荐入口 |
 |---|---|---|---|---|
 | 启动 | 冷、温、热启动下的 TTID 与 TTFD 分布 | Macrobenchmark、启动 trace、`reportFullyDrawn()` | 把首帧当作内容全部可交互；混用不同编译状态 | [启动分析](../part5-app/ch21-startup/01-app-startup-path-monitoring.md)、[Baseline Profile 实践](../part5-app/ch21-startup/04-baseline-startup-cloud-profile.md) |
-| 卡顿 | 特定交互中的慢帧比例、帧时长分布 | FrameTimeline、主线程与 RenderThread slice、SurfaceFlinger timeline | 只按主线程耗时归因；忽略刷新率与 deadline | [卡顿定义](../part2-performance/ch07-smoothness/01-jank-definition-causes.md)、[FrameTimeline 分析](../part3-tools/ch13-perfetto/13-frametracer-frame-timeline.md) |
+| 卡顿 | 特定交互中的慢帧比例、帧时长分布 | FrameTimeline、主线程与 RenderThread slice、SurfaceFlinger timeline | 只按主线程耗时归因；忽略刷新率与 deadline | [卡顿定义](../part2-performance/ch07-smoothness/01-jank-definition-causes.md)、[FrameTimeline 分析](../part3-tools/ch14-perfetto/13-frametracer-frame-timeline.md) |
 | ANR | ANR 类型、触发时间、目标进程与系统负载 | 系统 ANR 记录、线程栈、Perfetto、Binder 状态 | 把事后主线程栈当成触发瞬间；只看应用进程 | [ANR 设计](../part2-performance/ch09-anr/01-anr-mechanism-types-triggers.md) |
 | 内存 | PSS/RSS、Java heap、native heap、GPU/共享内存或资源数量的异常增长 | heap dump、heapprofd、smaps、meminfo、对象/FD/线程计数 | 把 PSS 增长全部归入 Java 泄漏；忽略缓存与共享页 | [内存基础](../part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md) |
 | 功耗与发热 | 固定工作量下的能量、功率、温度、频率和完成时间 | PowerStats/BatteryStats、CPU/GPU 频率、thermal 事件、工作量计数 | 用电量百分比比较短实验；忽略屏幕、信号和温控阶段 | [Android 功耗](../part1-fundamentals/ch05-cpu-power/02-dvfs-thermal-android-power.md) |
@@ -101,9 +101,9 @@ Perfetto 的价值在于把应用 slice、线程调度、频率、Binder、内�
 
 线程处于 Running 时正在 CPU 上执行；Runnable 表示具备运行条件但仍可能排队；Sleeping 表示等待定时器、锁或其他事件。不可中断等待通常显示为 `D` 状态，需要结合内核调用栈判断等待对象。
 
-1. 阅读 [Perfetto 概览](../part3-tools/ch13-perfetto/01-perfetto-intro-capture-reliability.md) 和 [trace 采集](../part3-tools/ch13-perfetto/01-perfetto-intro-capture-reliability.md)，保存采集配置。
-2. 阅读 [线程 CPU 状态](../part3-tools/ch13-perfetto/03-thread-cpu-states.md)，区分 Running、Runnable、Sleeping 和不可中断等待。
-3. 阅读 [Perfetto SQL 手册](../part3-tools/ch13-perfetto/07-perfetto-sql-span-join-jank-cuj.md)，把界面上的判断转换成查询。
+1. 阅读 [Perfetto 概览](../part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md) 和 [trace 采集](../part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md)，保存采集配置。
+2. 阅读 [线程 CPU 状态](../part3-tools/ch14-perfetto/03-thread-cpu-states.md)，区分 Running、Runnable、Sleeping 和不可中断等待。
+3. 阅读 [Perfetto SQL 手册](../part3-tools/ch14-perfetto/07-perfetto-sql-span-join-jank-cuj.md)，把界面上的判断转换成查询。
 
 ### 三个起步实验
 
@@ -174,11 +174,11 @@ CFS 和 EEVDF 是 Linux CPU 调度机制，sched_ext 允许通过 BPF 程序扩�
 | 进程与组件启动 | `ActivityThread`、`LoadedApk`、`ContentProvider`、`ZygoteInit` | `frameworks/base/cmds/app_process`、ART 运行时 | [启动分析](../part5-app/ch21-startup/01-app-startup-path-monitoring.md) |
 | 消息与帧调度 | `Looper`、`MessageQueue`、`Handler`、`Choreographer`、`ViewRootImpl` | `android_os_MessageQueue.cpp`、epoll | [Choreographer](../part1-fundamentals/ch02-rendering/03-vsync-choreographer-sf-scheduling.md) |
 | View 渲染 | `ViewRootImpl`、`ThreadedRenderer`、HWUI RenderThread | Skia、`libhwui`、sync fence | [渲染总览](../part1-fundamentals/ch02-rendering/01-rendering-architecture-evolution.md)、[主线程与 RenderThread](../part1-fundamentals/ch02-rendering/04-main-render-thread-hardware-layer.md) |
-| 合成与显示 | WindowManager、DisplayManager | SurfaceFlinger、HWC、BufferQueue、gralloc、dma-buf | [SurfaceFlinger](../part1-fundamentals/ch02-rendering/05-surfaceflinger-frontend-transaction.md)、[BufferQueue](../part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md)、[dma-buf/gralloc](../part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md) |
+| 合成与显示 | WindowManager、DisplayManager | SurfaceFlinger、HWC、BufferQueue、gralloc、dma-buf | [SurfaceFlinger](../part1-fundamentals/ch02-rendering/09-surfaceflinger-frontend-transaction.md)、[BufferQueue](../part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md)、[dma-buf/gralloc](../part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md) |
 | 输入与 ANR | InputManagerService、ActivityManagerService、WindowManagerService | `InputReader`、`InputDispatcher`、evdev | [ANR 设计](../part2-performance/ch09-anr/01-anr-mechanism-types-triggers.md) |
-| Binder | Java Binder、system service、service manager | `frameworks/native/libs/binder`、`drivers/android/binder.c` | [Binder 基础](../part1-fundamentals/ch01-architecture/03-ipc-binder-performance.md) |
+| Binder | Java Binder、system service、service manager | `frameworks/native/libs/binder`、`drivers/android/binder.c` | [Binder 基础](../part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md) |
 | 内存与进程优先级 | ActivityManagerService、OomAdjuster、cached-app freezer | ART、lmkd、cgroup、reclaim、zram | [内存基础](../part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md) |
-| 调度、功耗、热 | PowerManagerService、Power HAL、Thermal HAL | CFS/EEVDF、uclamp、cpuset、thermal、sched_ext | [Android 功耗](../part1-fundamentals/ch05-cpu-power/02-dvfs-thermal-android-power.md)、[sched_ext](../part4-system/ch17-oem/03-oem-scheduling-game-input.md) |
+| 调度、功耗、热 | PowerManagerService、Power HAL、Thermal HAL | CFS/EEVDF、uclamp、cpuset、thermal、sched_ext | [Android 功耗](../part1-fundamentals/ch05-cpu-power/02-dvfs-thermal-android-power.md)、[sched_ext](../part4-system/ch19-oem/03-oem-scheduling-game-input.md) |
 
 类名只是入口，不能替代调用点。每次源码练习都要记录 tag、仓库、相对路径、方法名以及对应的 trace 事件。平台代码用 `android-17.0.0_r1`；进入 Binder 驱动、调度器、reclaim 或文件系统后切换到 `android17-6.18-2026-06_r39`。
 
@@ -207,13 +207,13 @@ Macrobenchmark 的被测应用通常要使用 profileable、non-debuggable 的�
 
 | 主题 | 学习入口 | 实验目标 | 边界条件 |
 |---|---|---|---|
-| Macrobenchmark | [Jetpack Benchmark](../part3-tools/ch19-apm/06-jetpack-benchmark-baseline-profiles.md) | 固定启动模式、CompilationMode、迭代次数和设备状态，输出原始样本及分位数 | 被测应用需满足 profileable/non-debuggable 要求 |
+| Macrobenchmark | [Jetpack Benchmark](../part3-tools/ch17-apm/06-jetpack-benchmark-baseline-profiles.md) | 固定启动模式、CompilationMode、迭代次数和设备状态，输出原始样本及分位数 | 被测应用需满足 profileable/non-debuggable 要求 |
 | Baseline Profile | [Baseline Profile 实践](../part5-app/ch21-startup/04-baseline-startup-cloud-profile.md) | 用 `BaselineProfileRule` 生成关键用户路径，比较无 profile、首次安装和 profile 已编译状态 | 每个发布版本都要重新生成并验证；收益依赖代码路径和设备 |
 | Startup Profile / DEX layout | [Baseline Profile 与 Startup Profile 实战](../part5-app/ch21-startup/04-baseline-startup-cloud-profile.md) | 检查生成文件、R8/D8 消费结果和主 dex 布局，再用启动 trace 验证类加载变化 | 文件存在不能证明已进入最终产物 |
 | App Startup | [启动分析](../part5-app/ch21-startup/01-app-startup-path-monitoring.md) | 把无依赖的首帧前初始化移后，检查功能正确性与启动分布 | 延迟初始化可能把耗时转移到首次交互 |
 | 16 KB page size | [16 KB page size](../part1-fundamentals/ch04-memory/05-16kb-page-size.md) | 检查 APK/AAB 中 ELF LOAD segment 对齐、打包对齐和目标设备加载 | 纯 Java/Kotlin 应用与包含预编译原生库的检查范围不同 |
 | ADPF（Android Dynamic Performance Framework） | [PerformanceHintManager](../part1-fundamentals/ch05-cpu-power/04-adpf.md) | 创建 `PerformanceHintSession`，稳定报告工作时长和 target duration（目标时长），观察性能及能耗 | hint（提示）是应用与系统的协作信号，不承诺固定频率或调度结果 |
-| ProfilingManager | [ProfilingManager](../part3-tools/ch14-other-tools/08-profiling-manager.md) | 在 API 35+ 请求 system trace、heap dump、heap profile 或 stack sampling，记录回调与失败 | 多数场景优先使用 AndroidX 高层封装；请求受限流且可能被拒绝 |
+| ProfilingManager | [ProfilingManager](../part3-tools/ch15-other-tools/07-profiling-manager.md) | 在 API 35+ 请求 system trace、heap dump、heap profile 或 stack sampling，记录回调与失败 | 多数场景优先使用 AndroidX 高层封装；请求受限流且可能被拒绝 |
 
 ### 基准实验记录模板
 

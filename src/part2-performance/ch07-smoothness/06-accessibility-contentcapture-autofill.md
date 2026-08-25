@@ -21,7 +21,7 @@ related_chapters:
 - '9.1'
 - '3.1'
 - '22.1'
-- '1.3'
+- '1.9'
 last_verified: '2026-08-02'
 last_verified_against: AOSP android-17.0.0_r1；Android 17 / API 37 官方行为变更与 API 文档
 confidence: medium-high
@@ -521,7 +521,7 @@ Autofill Session 需要新响应时，会通过 `ActivityTaskManager.requestAuto
 
 这组协作会增加 `system_server`、提供方、IME 和渲染服务之间的 IPC 与等待，也可能与键盘显示动画重叠。不过，IME 不需要为此独立创建第二份 `AssistStructure`。Android 17 的主、次提供方路径也可以复用已有的 `FillContext`，所以提供方数量不能直接换算成应用 View 树的遍历次数。
 
-IME 自身的启动、`InputConnection` 和窗口动画问题见 [3.5 InputMethodManager 与软键盘性能](../../part1-fundamentals/ch03-input/05-input-method-manager-performance.md)。Binder 等待和异步事务容量可结合 [1.3 Android IPC 全景与 Binder 性能](../../part1-fundamentals/ch01-architecture/03-ipc-binder-performance.md) 继续分析。
+IME 自身的启动、`InputConnection` 和窗口动画问题见 [3.5 InputMethodManager 与软键盘性能](../../part1-fundamentals/ch03-input/05-input-method-manager-performance.md)。Binder 等待和异步事务容量可结合 [1.9 Android IPC 全景与 Binder 性能](../../part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md) 继续分析。
 
 ### 把成本按线程和进程拆开
 

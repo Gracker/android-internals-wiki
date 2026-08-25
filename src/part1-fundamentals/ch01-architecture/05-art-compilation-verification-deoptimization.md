@@ -124,15 +124,15 @@ sources:
 last_verified: '2026-08-19'
 last_verified_against: AOSP android-17.0.0_r1; Android Developers; source.android.com; 2026-08-07 body-apply freshness pass
 related_chapters:
-- '1.4'
+- '1.2'
 - '4.2'
 - '8.2'
 - '8.3'
-- '16.1'
-- '1.7'
-- '16.5'
+- '18.1'
+- '1.16'
+- '18.5'
 - '21.4'
-- '1.9'
+- '1.8'
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
@@ -1171,8 +1171,8 @@ API 37 的主要入口如下：
 相关机制可继续阅读：
 
 - 本节前文：ART 解释器、JIT、AOT 与 profile 的完整流程。
-- 1.7：PackageManager 安装会话与 `dexopt` 调用位置。
-- 16.4：Cloud Profile 的生成、传递与覆盖边界。
+- 1.16：PackageManager 安装会话与 `dexopt` 调用位置。
+- 18.4：Cloud Profile 的生成、传递与覆盖边界。
 - 21.4：Baseline、Startup、Cloud Profile 与安装后编译验证。
 
 

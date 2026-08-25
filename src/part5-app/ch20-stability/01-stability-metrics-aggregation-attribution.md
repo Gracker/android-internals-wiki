@@ -86,11 +86,11 @@ related_chapters:
 - '20.2'
 - '20.4'
 - '20.5'
-- '15.3'
+- '16.3'
 - '9.1'
 - '26.1'
 - '26.2'
-- '19.1'
+- '17.1'
 status: finalized
 task6_state: reviewed
 task9_state: reviewed
@@ -313,7 +313,7 @@ Android vitals 与 SDK 看板出现不同结果很常见。这里的 session 指
 | `ApplicationExitInfo` | API 30+ 的历史退出原因与部分 trace | 能补上 LMK、ANR、信号退出等进程外证据 | 只能在后续进程读取；记录和 trace 可能缺失 |
 | `ProfilingManager` | API 35+ 的按请求采集；API 36+ 的系统事件触发采集 | 系统管理速率、存储与结果交付 | 请求与触发都不保证产生结果；必须做版本与能力检测 |
 
-Android 17 / API 37 增加 `ProfilingTrigger.TRIGGER_TYPE_OOM`：发生 Java `OutOfMemoryError` 时，系统可以返回 Java 堆转储。应用需用 `addProfilingTriggers()` 注册触发器，并用 `registerForAllProfilingResults()` 注册结果监听器。若应用安装了自定义 `Thread.UncaughtExceptionHandler`，它必须继续调用默认处理器，否则该 OOM 触发器无法工作。应用设置的触发间隔和系统限流会同时生效，结果不保证交付。API 演进与接入方式见 [14.8 ProfilingManager](../../part3-tools/ch14-other-tools/08-profiling-manager.md)。
+Android 17 / API 37 增加 `ProfilingTrigger.TRIGGER_TYPE_OOM`：发生 Java `OutOfMemoryError` 时，系统可以返回 Java 堆转储。应用需用 `addProfilingTriggers()` 注册触发器，并用 `registerForAllProfilingResults()` 注册结果监听器。若应用安装了自定义 `Thread.UncaughtExceptionHandler`，它必须继续调用默认处理器，否则该 OOM 触发器无法工作。应用设置的触发间隔和系统限流会同时生效，结果不保证交付。API 演进与接入方式见 [15.7 ProfilingManager](../../part3-tools/ch15-other-tools/07-profiling-manager.md)。
 
 是否建设自研采集，不应只看 DAU。更有用的判断标准是：现有平台缺少的证据是否反复导致问题无法定位，团队能否长期维护 Android 版本兼容、隐私治理、符号服务、去重和成本控制。
 

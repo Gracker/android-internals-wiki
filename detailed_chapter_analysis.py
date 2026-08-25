@@ -159,9 +159,9 @@ def should_auto_promote(frontmatter, total_issues, has_major_L1):
 
 def main():
     chapters = [
-        'src/part3-tools/ch19-apm/18-network-apm-internals.md',
-        'src/part3-tools/ch19-apm/21-hybrid-apm.md',
-        'src/part2-performance/ch08-responsiveness/08-media-pipeline.md'
+        'src/part3-tools/ch17-apm/08-network-apm-internals.md',
+        'src/part3-tools/ch17-apm/11-hybrid-apm.md',
+        'src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md'
     ]
     
     print("=== Detailed Chapter Analysis ===\n")

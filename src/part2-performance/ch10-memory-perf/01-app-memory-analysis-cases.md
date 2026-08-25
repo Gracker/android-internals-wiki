@@ -83,8 +83,8 @@ related_chapters:
 - '4.1'
 - '4.2'
 - '4.4'
-- '13.1'
-- '14.3'
+- '14.1'
+- '15.3'
 - '10.2'
 - '10.3'
 task6_state: reviewed
@@ -378,7 +378,7 @@ Android 15 起支持使用 16 KB page size（内存页大小）的设备。页�
 | --- | --- | --- |
 | 业务 live set（仍在使用的数据集合） | 关闭页面、清空数据集或结束会话 | 对象类型、条目数、字节预算与业务容量是否同步变化 |
 | 无上限缓存或队列积压 | 执行缓存裁剪、消费完队列或取消任务 | 缓存 owner、队列长度、命中收益和积压产生速度 |
-| Java/Kotlin 对象泄漏 | 结束对象的业务生命周期并等待异步清理 | heap dump 中稳定存在的 GC Root 强引用路径，详见 23.1 |
+| Java/Kotlin 对象泄漏 | 结束对象的业务生命周期并等待异步清理 | heap dump 中稳定存在的 GC Root 强引用路径，详见 23.2 |
 | Native 未释放分配 | 关闭会话或执行配对释放 | heapprofd 的 live allocation 差分与符号化调用栈 |
 | allocator 保留 | 确认 live allocation 已下降 | allocator 统计、`smaps` 与匿名驻留页；RSS 不立即回落不能单独命名为泄漏 |
 | 直接 `mmap`、文件页或线程栈 | 关闭映射、结束线程并再次采样 | mapping 名称、创建者、线程数量和退出条件 |
@@ -513,7 +513,7 @@ activityManager.setProcessStateSummary(state)
 - **23.1 内存泄漏检测与治理**
 - **10.3 内存抖动**
 - **10.4 GPU 与图形内存统计、归因与诊断**
-- **13.1 Perfetto 内存数据源**
+- **14.1 Perfetto 内存数据源**
 
 
 ## 从异常曲线到分配责任

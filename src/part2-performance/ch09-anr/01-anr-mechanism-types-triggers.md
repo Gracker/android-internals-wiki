@@ -84,10 +84,10 @@ related_chapters:
 - '1.1'
 - '7.1'
 - '8.1'
-- '15.3'
+- '16.3'
 - '9.3'
-- '1.3'
-- '1.8'
+- '1.9'
+- '1.15'
 status: finalized
 pipeline_stage: ready-to-publish
 task9_state: reviewed
@@ -265,7 +265,7 @@ mAnrRecords.add(new AnrRecord(
 
 两次 ANR 若间隔不足 2 分钟，`AnrHelper` 会安排 Binder heavy-hitter（高频 Binder 调用方）自动采样，为报告补充调用热点线索。这个 2 分钟常量只控制采样调度；系统不会因此把两次 ANR 合成一条，也不会忽略后一次 ANR。
 
-Android 17 在单条 ANR 处理结束后还可以发送 `ProfilingTrigger.TRIGGER_TYPE_ANR`。应用若事先注册了系统触发式 profiling（性能剖析），可能获得覆盖一段时间的额外产物；注册方式与数据边界见 [14.8 ProfilingManager](../../part3-tools/ch14-other-tools/08-profiling-manager.md)。这类产物是补充证据，不能替代 ANR trace。
+Android 17 在单条 ANR 处理结束后还可以发送 `ProfilingTrigger.TRIGGER_TYPE_ANR`。应用若事先注册了系统触发式 profiling（性能剖析），可能获得覆盖一段时间的额外产物；注册方式与数据边界见 [15.7 ProfilingManager](../../part3-tools/ch15-other-tools/07-profiling-manager.md)。这类产物是补充证据，不能替代 ANR trace。
 
 ### AMS 主路径：`ProcessErrorStateRecord`
 

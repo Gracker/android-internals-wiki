@@ -111,7 +111,7 @@ related_chapters:
 - '4.3'
 - '4.4'
 - '4.5'
-- '2.5'
+- '2.9'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed

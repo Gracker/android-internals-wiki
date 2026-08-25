@@ -100,14 +100,14 @@ tags:
 - recovery
 related_chapters:
 - '20.1'
-- '23.1'
+- '23.2'
 - '23.3'
-- '23.4'
+- '23.1'
 - '23.5'
 - '4.2'
 - '4.3'
-- '18.8'
-- '22.6'
+- '13.8'
+- '22.16'
 - '26.2'
 pipeline_stage: ready-to-publish
 task6_state: reviewed

@@ -17,9 +17,9 @@ related_chapters:
 - '21.3'
 - '21.4'
 - '22.3'
-- '22.14'
-- '22.5'
-- '18.8'
+- '22.4'
+- '22.9'
+- '13.8'
 sources:
 - type: androidx
   path: platform/frameworks/support/+/androidx-compose-release/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt
@@ -351,6 +351,6 @@ Compose 首次组合只是启动首帧中的一个阶段：业务 composable 建
 - [21.4 Baseline、Startup 与 Cloud Profile 编译优化](04-baseline-startup-cloud-profile.md)
 - [§21.1 启动性能监控](01-app-startup-path-monitoring.md)
 - [22.3 Compose 性能、Compiler 与 Modifier.Node 诊断](../ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md)
-- [§22.11 View/Compose 混合迁移](../ch22-rendering-practice/11-compose-view-interop.md)
+- [§22.6 View/Compose 混合迁移](../ch22-rendering-practice/06-compose-view-interop.md)
 - [§22.2 Compose LazyList 性能](../ch22-rendering-practice/02-recyclerview-compose-lazylist.md)
-- [§18.8 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/08-compose-rendering-pipeline.md)
+- [§13.8 Compose 渲染管线](../../part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md)

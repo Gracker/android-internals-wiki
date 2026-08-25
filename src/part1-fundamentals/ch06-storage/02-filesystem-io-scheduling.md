@@ -90,7 +90,7 @@ related_chapters:
 - '6.1'
 - '6.3'
 - '6.4'
-- '13.10'
+- '14.10'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch06-storage/02-filesystem.md

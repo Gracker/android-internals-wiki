@@ -15,8 +15,8 @@ tags:
 related_chapters:
 - '4.1'
 - '4.3'
-- '23.1'
-- '13.4'
+- '23.2'
+- '14.4'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed

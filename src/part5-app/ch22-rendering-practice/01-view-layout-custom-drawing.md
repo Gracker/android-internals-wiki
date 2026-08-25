@@ -269,7 +269,7 @@ View/Compose 混合场景要同时核对两套边界：`ComposeView` 放进 View
 
 平台源码固定到 Android 17 / API 37 / `android-17.0.0_r1`，Linux 内核固定到 `android17-6.18-2026-06_r6`。普通自定义 View 没有独立 Surface，走应用窗口的标准 HWUI（Android 硬件加速 UI 渲染器）路径：`Choreographer#doFrame` 驱动 traversal（一次 View 树遍历），UI 线程更新 RenderNode（保存 View 绘制记录和变换属性的渲染节点）及其 DisplayList，`HardwareRenderer.syncAndDrawFrame()` 再把树状态交给专用渲染线程 RenderThread。
 
-随后，BLAST BufferQueue 提交图形缓冲区，SurfaceFlinger（系统合成服务）完成合成，HWC（Hardware Composer，硬件合成器）参与显示，最终得到实际显示时间。显示后段可结合 [Android View 标准渲染链路](../../part2-performance/ch18-rendering-pipelines/01-android-view-pipeline-analysis.md) 阅读。
+随后，BLAST BufferQueue 提交图形缓冲区，SurfaceFlinger（系统合成服务）完成合成，HWC（Hardware Composer，硬件合成器）参与显示，最终得到实际显示时间。显示后段可结合 [Android View 标准渲染链路](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md) 阅读。
 
 ### 测量、摆放、绘制：按触发条件判断成本
 

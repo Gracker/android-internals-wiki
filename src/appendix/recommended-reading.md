@@ -14,7 +14,7 @@ Trace（性能追踪数据）按时间记录线程调度、系统事件和应用
 
 ## Ch01 Android 系统架构
 
-`SystemServer` 是启动系统 Java 服务的入口类，运行在 `system_server` 进程中；`Binder` 是 Android 进程间调用的主要机制，具体调用模型可查 [AOSP Binder 概览](https://source.android.com/docs/core/architecture/ipc/binder-overview)。建议先读 [1.1 Android 分层架构、进程模型与线程协作](../part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md) 和 [1.3 Android IPC 全景与 Binder 性能](../part1-fundamentals/ch01-architecture/03-ipc-binder-performance.md)，再用这里的 Trace 案例观察服务启动、跨进程调用和线程等待。
+`SystemServer` 是启动系统 Java 服务的入口类，运行在 `system_server` 进程中；`Binder` 是 Android 进程间调用的主要机制，具体调用模型可查 [AOSP Binder 概览](https://source.android.com/docs/core/architecture/ipc/binder-overview)。建议先读 [1.1 Android 分层架构、进程模型与线程协作](../part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md) 和 [1.9 Android IPC 全景与 Binder 性能](../part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md)，再用这里的 Trace 案例观察服务启动、跨进程调用和线程等待。
 
 | 系列 | 文章 | 链接 |
 |------|------|------|
@@ -124,7 +124,7 @@ ANR 是 Application Not Responding 的缩写，表示系统判定应用在特定
 
 ## Ch13 Perfetto
 
-Perfetto 是 Android 当前使用的系统追踪与分析平台，可把内核调度、系统服务、应用埋点等数据记录到同一个 Trace，再通过时间线或 SQL 查询，采集方式可查 [Perfetto 系统追踪文档](https://perfetto.dev/docs/getting-started/system-tracing)。Systrace 文章保留了早期工具的分析视角；实际采集可参照 [13.1 Trace 抓取](../part3-tools/ch13-perfetto/01-perfetto-intro-capture-reliability.md)，界面阅读可参照 [13.2 Perfetto View 解读](../part3-tools/ch13-perfetto/02-perfetto-ui-state-tracks.md)。
+Perfetto 是 Android 当前使用的系统追踪与分析平台，可把内核调度、系统服务、应用埋点等数据记录到同一个 Trace，再通过时间线或 SQL 查询，采集方式可查 [Perfetto 系统追踪文档](https://perfetto.dev/docs/getting-started/system-tracing)。Systrace 文章保留了早期工具的分析视角；实际采集可参照 [14.1 Trace 抓取](../part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md)，界面阅读可参照 [14.2 Perfetto View 解读](../part3-tools/ch14-perfetto/02-perfetto-ui-state-tracks.md)。
 
 | 系列 | 文章 | 链接 |
 |------|------|------|
@@ -144,4 +144,4 @@ Perfetto 是 Android 当前使用的系统追踪与分析平台，可把内核�
 
 入门时先读“Android Perfetto 101”和三篇基础文章，再按数据规模决定是否阅读“大 Trace”。专题文章可按等待链选择：CPU 用于确认线程有没有获得执行时间，Binder 用于追踪跨进程调用，MainThread/RenderThread、Choreographer 和 Vsync 用于定位一帧在应用与显示管线中的延迟。
 
-如果采集后缺少预期轨道，先检查数据源、缓冲区和设备能力。`TraceConfig` 是声明 Perfetto 数据源、缓冲区和采集时长的配置，参照 [13.1 Perfetto 入门、Trace 抓取与可靠性](../part3-tools/ch13-perfetto/01-perfetto-intro-capture-reliability.md) 与 [附录 C：TraceConfig 模板](perfetto-templates.md) 排查。遇到旧文章的菜单、轨道名或系统行为与设备不一致时，可查 [附录 A：Android 版本性能变更](version-changelog.md)。
+如果采集后缺少预期轨道，先检查数据源、缓冲区和设备能力。`TraceConfig` 是声明 Perfetto 数据源、缓冲区和采集时长的配置，参照 [14.1 Perfetto 入门、Trace 抓取与可靠性](../part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md) 与 [附录 C：TraceConfig 模板](perfetto-templates.md) 排查。遇到旧文章的菜单、轨道名或系统行为与设备不一致时，可查 [附录 A：Android 版本性能变更](version-changelog.md)。

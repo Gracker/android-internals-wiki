@@ -6,17 +6,18 @@
 
 ## 内容索引
 
+
 - [25.1 功耗诊断与 OEM 后台限制](01-power-diagnosis-oem-background.md)
 - [25.2 后台功耗与前台服务执行边界](02-background-power-foreground-service.md)
 - [25.3 WakeLock、Alarm 与 WorkManager 调度](03-wakelock-alarm-workmanager.md)
 - [25.4 定位与传感器功耗优化](04-location-sensor.md)
-- [25.5 应用体积分析与优化：DEX、Native SO 与资源](05-apk-r8-resource-optimization.md)
-- [25.6 App Bundle 与按需分发](06-app-bundle-delivery.md)
-- [25.7 Hybrid/WebView 功耗与原生化取舍](07-hybrid-webview-power.md)
+- [25.5 后台音频、AudioTrack 与 Offload 功耗](05-background-audio-audiotrack-offload.md)
+- [25.6 Hybrid/WebView 功耗与原生化取舍](06-hybrid-webview-power.md)
+- [25.7 应用层 CPU 优化实战指南](07-application-cpu-optimization.md)
 - [25.8 PerformanceHintManager 与 ADPF 能效验证](08-performance-hint-adpf-power.md)
-- [25.9 后台音频、AudioTrack 与 Offload 功耗](09-background-audio-audiotrack-offload.md)
-- [25.10 应用层 CPU 优化实战指南](10-application-cpu-optimization.md)
-- [25.11 热节流适配与性能退化治理](11-thermal-throttling-performance.md)
+- [25.9 热节流适配与性能退化治理](09-thermal-throttling-performance.md)
+- [25.10 应用体积分析与优化：DEX、Native SO 与资源](10-apk-r8-resource-optimization.md)
+- [25.11 App Bundle 与按需分发](11-app-bundle-delivery.md)
 
 ## 术语提示
 
@@ -30,8 +31,8 @@
 
 ## 阅读建议
 
-- 后台耗电可从 25.2 和 25.3 开始；音频、定位与传感器问题分别进入 25.9 和 25.4。
+- 后台耗电可从 25.2 和 25.3 开始；音频、定位与传感器问题分别进入 25.5 和 25.4。
 - 功耗测试应固定设备、温度、网络和使用时长，并保留系统将耗电量分摊到应用和组件的统计数据。
 - 包体积优化可按 DEX、Native SO、资源和分发四个方向拆分验证。
 - 早期独立案例已并入对应主题：`BatteryUsageStats`（系统电量归因统计）见 25.1；Android vitals（Google Play Console 中的应用质量指标）和 listener alarm（通过监听器回调交付的定时任务）见 25.3；`JobDebugInfo`（Android 后台任务调度器的调试信息）见 25.3；定位服务见 25.4。
-- ADPF 相关案例并入 25.8；Excessive CPU（CPU 使用过量）与固定频率任务并入 25.10；前台服务（Foreground Service，FGS）超时和 `JobScheduler` 任务配额（系统授予后台调度任务的执行预算）分别见 25.2 与 25.3。
+- ADPF 相关案例并入 25.8；Excessive CPU（CPU 使用过量）与固定频率任务并入 25.7；前台服务（Foreground Service，FGS）超时和 `JobScheduler` 任务配额（系统授予后台调度任务的执行预算）分别见 25.2 与 25.3。

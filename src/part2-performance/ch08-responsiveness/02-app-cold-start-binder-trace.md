@@ -96,7 +96,7 @@ sources:
 - type: chapter
   path: part2-performance/ch08-responsiveness/02-app-launch.md (App launch stages, see 8.2)
 - type: chapter
-  path: part3-tools/ch13-perfetto/07-input-latency-sql.md (Perfetto SQL input latency deep dive)
+  path: part3-tools/ch14-perfetto/07-input-latency-sql.md (Perfetto SQL input latency deep dive)
 tags:
 - cold-start
 - warm-start
@@ -121,13 +121,13 @@ tags:
 - threadpool
 related_chapters:
 - '8.1'
-- '1.2'
-- '1.8'
+- '1.3'
+- '1.15'
 - '2.3'
 - '2.4'
 - '7.1'
-- '1.3'
-- '1.12'
+- '1.9'
+- '1.10'
 - '9.1'
 section: '8.2'
 pipeline_stage: ready-to-publish
@@ -593,7 +593,7 @@ Google 的初始测试显示，在系统存在内存压力时，样本中的应�
 
 启动阶段表给出时间边界，Binder Trace 用于解释 system_server、PackageManager、WindowManager 或其他服务为何延迟返回。
 
-Binder Trace 用来定位冷启动路径上的 IPC（Inter-Process Communication，进程间通信）瓶颈。借助 Perfetto 的 `android.binder` 标准库，可以分辨一笔事务在客户端等待、服务端处理和返回调度上分别花了多久，也能检查 Binder 线程池是否饱和，以及目标进程被冻结后返回的错误是否干扰启动。Binder 机制原理见 §1.3 和 §1.12，冷启动阶段划分见 §8.2。
+Binder Trace 用来定位冷启动路径上的 IPC（Inter-Process Communication，进程间通信）瓶颈。借助 Perfetto 的 `android.binder` 标准库，可以分辨一笔事务在客户端等待、服务端处理和返回调度上分别花了多久，也能检查 Binder 线程池是否饱和，以及目标进程被冻结后返回的错误是否干扰启动。Binder 机制原理见 §1.9 和 §1.10，冷启动阶段划分见 §8.2。
 
 平台与源码基线为 AOSP `android-17.0.0_r1`、`frameworks/native`、`external/perfetto`，以及 kernel `android17-6.18-2026-06_r6`。
 
@@ -1160,9 +1160,9 @@ Macrobenchmark 是 AndroidX 提供的应用级基准测试工具，A/B 表示只
 
 ### 与相关章节的边界
 
-- [**1.3 Binder IPC**](../../part1-fundamentals/ch01-architecture/03-ipc-binder-performance.md)：驱动、libbinder、同步与 oneway 语义。
-- [**1.12 Binder 调度、Freezer 与线程池**](../../part1-fundamentals/ch01-architecture/12-binder-scheduling-freezer-threadpool.md)：cached process 冻结、线程池容量、嵌套调用与系统级排查。
-- [**13.7 Perfetto SQL 手册**](../../part3-tools/ch13-perfetto/07-perfetto-sql-span-join-jank-cuj.md)：通用 SQL、时间窗口和表关联。
+- [**1.9 Binder IPC**](../../part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md)：驱动、libbinder、同步与 oneway 语义。
+- [**1.10 Binder 调度、Freezer 与线程池**](../../part1-fundamentals/ch01-architecture/10-binder-scheduling-freezer-threadpool.md)：cached process 冻结、线程池容量、嵌套调用与系统级排查。
+- [**14.7 Perfetto SQL 手册**](../../part3-tools/ch14-perfetto/07-perfetto-sql-span-join-jank-cuj.md)：通用 SQL、时间窗口和表关联。
 
 
 ## 版本与实现边界

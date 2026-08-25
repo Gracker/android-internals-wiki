@@ -24,7 +24,7 @@ related_chapters:
 - '11.2'
 - '11.3'
 - '5.9'
-- '25.9'
+- '25.5'
 sources:
 - type: official
   path: https://developer.android.com/develop/connectivity/bluetooth/ble/find-ble-devices

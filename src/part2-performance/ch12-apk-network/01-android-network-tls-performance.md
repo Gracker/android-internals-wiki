@@ -110,11 +110,11 @@ tags:
 - cleartext
 related_chapters:
 - '12.2'
-- '1.25'
-- '24.3'
-- '24.4'
+- '1.22'
+- '24.5'
+- '24.6'
 - '8.1'
-- '1.4'
+- '1.2'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch12-apk-network/03-network-performance-deep.md
@@ -128,7 +128,7 @@ consolidated_from:
 
 移动网络持续变化，客户端仍然可以控制请求时机、复用、总期限、缓存、重试和内容降级。优化工作的起点是统一计时口径，然后按协议、请求组织和网络状态选择策略。
 
-基准版本为 Android 17 / API 37、AOSP `android-17.0.0_r1`、OkHttp 5.3.0 和 Play services Cronet 18.0.1。`netd`（Android 网络管理守护进程）与 DNS Resolver（解析器）的内部细节见 12.2，系统选网与 `NetworkAgent` 见 1.25。
+基准版本为 Android 17 / API 37、AOSP `android-17.0.0_r1`、OkHttp 5.3.0 和 Play services Cronet 18.0.1。`netd`（Android 网络管理守护进程）与 DNS Resolver（解析器）的内部细节见 12.2，系统选网与 `NetworkAgent` 见 1.22。
 
 一次安全网络请求包含 DNS、连接建立、拥塞控制、TLS 握手、请求传输和应用解析。性能优化要先确认慢在哪一段，再考虑连接复用、协议升级或密码套件调整。
 
@@ -235,7 +235,7 @@ dependencies {
 
 构造 `CronetEngine` 前要调用 `CronetProviderInstaller.installProvider(Context)`，并处理 Play services 缺失、需要更新或安装失败。官方 `cronet-fallback` 是能力较弱的 Java fallback（备用实现），不能预设它与 native Cronet 具有相同的 HTTP/3、性能和连接迁移表现。
 
-一个进程通常只创建一个 `CronetEngine`。多个 engine 不能并发使用同一个 storage directory（存储目录）。若应用打包 native Cronet provider，还要按 [25.5 应用体积分析与优化：DEX、Native SO 与资源](../../part5-app/ch25-power-size/05-apk-r8-resource-optimization.md) 验证 ABI（应用二进制接口）、符号和 16 KB page size（内存页大小）兼容性；页大小变化对初始化耗时没有通用收益比例。
+一个进程通常只创建一个 `CronetEngine`。多个 engine 不能并发使用同一个 storage directory（存储目录）。若应用打包 native Cronet provider，还要按 [25.10 应用体积分析与优化：DEX、Native SO 与资源](../../part5-app/ch25-power-size/10-apk-r8-resource-optimization.md) 验证 ABI（应用二进制接口）、符号和 16 KB page size（内存页大小）兼容性；页大小变化对初始化耗时没有通用收益比例。
 
 #### 协议选择要看线上分组
 
@@ -518,13 +518,13 @@ Perfetto 不会自动把 OkHttp `Call` 展成 DNS、TLS 和 TTFB。可以用 And
 
 #### NetworkCallback 只描述平台网络状态
 
-`NetworkCallback` 不能测量业务 host（目标主机）的 DNS、TLS 或响应延迟。`INTERNET` 是网络能力声明，`VALIDATED` 是系统公网探测结果，业务请求成功仍取决于目标域名、路由、证书、CDN 和服务端。应用只需把 capability（网络能力）、metered、blocked（是否被系统阻止）、VPN 与网络切换作为请求策略输入；回调顺序、每 UID 100 个共享 request/callback 配额、注册生命周期、FullScore（系统内部用于选网的完整评分）和 linger（旧网络短暂保留期）统一见 [1.25 Connectivity 服务、网络选择与回调](../../part1-fundamentals/ch01-architecture/25-connectivity-service.md)。
+`NetworkCallback` 不能测量业务 host（目标主机）的 DNS、TLS 或响应延迟。`INTERNET` 是网络能力声明，`VALIDATED` 是系统公网探测结果，业务请求成功仍取决于目标域名、路由、证书、CDN 和服务端。应用只需把 capability（网络能力）、metered、blocked（是否被系统阻止）、VPN 与网络切换作为请求策略输入；回调顺序、每 UID 100 个共享 request/callback 配额、注册生命周期、FullScore（系统内部用于选网的完整评分）和 linger（旧网络短暂保留期）统一见 [1.22 Connectivity 服务、网络选择与回调](../../part1-fundamentals/ch01-architecture/22-connectivity-service.md)。
 
 后台任务若只关心“有网”或“非计费网络”，优先使用 WorkManager/JobScheduler constraint（约束条件）。网络切换后也不要统一清空连接池或立即重放全部失败请求，应让网络库先处理连接状态，再由业务幂等和退避策略决定恢复。
 
 ### Android 17 的平台策略输入
 
-`SubscriptionInfo.getStreamingAppMaxDownlinkKbps()` / `getStreamingAppMaxUplinkKbps()` 表示运营商为流媒体应用分配的速率上限，未知时返回 `BITRATE_UNKNOWN`；它不是链路测速。targetSdk 37 的局域网功能还需适配 `ACCESS_LOCAL_NETWORK` 或系统 picker（由系统展示的设备选择器），权限拒绝不能归类成普通弱网。完整的权限、NetworkCallback、FullScore、网络切换和系统源码边界见 [1.25 Connectivity 服务、网络选择与回调](../../part1-fundamentals/ch01-architecture/25-connectivity-service.md)。
+`SubscriptionInfo.getStreamingAppMaxDownlinkKbps()` / `getStreamingAppMaxUplinkKbps()` 表示运营商为流媒体应用分配的速率上限，未知时返回 `BITRATE_UNKNOWN`；它不是链路测速。targetSdk 37 的局域网功能还需适配 `ACCESS_LOCAL_NETWORK` 或系统 picker（由系统展示的设备选择器），权限拒绝不能归类成普通弱网。完整的权限、NetworkCallback、FullScore、网络切换和系统源码边界见 [1.22 Connectivity 服务、网络选择与回调](../../part1-fundamentals/ch01-architecture/22-connectivity-service.md)。
 
 ### 排查清单
 
@@ -760,7 +760,7 @@ Perfetto 不会自动生成通用的 OkHttp 握手时间轨道。若要把网络
 
 - **§12.1 网络性能优化**：连接池、缓存、HTTP/2、HTTP/3 与 OkHttp 事件决定新连接出现的频率并提供分段指标。
 - **§12.2 netd 与 DnsResolver**：系统 DNS、Private DNS、HTTPS 资源记录与每网络解析状态。
-- **§1.4 版本演进**：适合核对 targetSdk 与运行系统共同改变行为的案例。
+- **§1.2 版本演进**：适合核对 targetSdk 与运行系统共同改变行为的案例。
 
 
 ## 版本与实现边界

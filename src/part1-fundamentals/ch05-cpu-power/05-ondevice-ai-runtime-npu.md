@@ -72,12 +72,12 @@ tags:
 related_chapters:
 - '5.2'
 - '5.4'
-- '1.10'
+- '1.6'
 - '4.2'
-- '14.1'
+- '15.1'
 - '5.6'
-- '16.1'
-- '25.9'
+- '18.1'
+- '25.5'
 last_consolidated_at: '2026-08-24'
 ---
 
@@ -1223,7 +1223,7 @@ Perfetto 中的时间重叠只能说明两个事件相关。要证明某种资�
 - [5.8 CPU Cache 友好代码与数据布局优化](08-cpu-cache-friendly-code-data-layout.md)：Cache 与内存统计的层级边界。
 - [4.3 lmkd、Cached App Freezer 与内存压力治理](../ch04-memory/03-lmkd-freezer-memory-pressure.md)：lmkd、PSI 与进程状态。
 - [2.4 MainThread、RenderThread 与 Hardware Layer](../ch02-rendering/04-main-render-thread-hardware-layer.md)：流式结果更新与帧时间。
-- [14.1 Android Studio Profiler](../../part3-tools/ch14-other-tools/01-as-profiler.md)：应用侧 CPU 和内存分析。
+- [15.1 Android Studio Profiler](../../part3-tools/ch15-other-tools/01-as-profiler.md)：应用侧 CPU 和内存分析。
 
 
 ## 常见误区

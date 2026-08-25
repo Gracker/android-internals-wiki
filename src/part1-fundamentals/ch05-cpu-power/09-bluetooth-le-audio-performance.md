@@ -34,7 +34,7 @@ tags:
 - audio
 - isochronous
 related_chapters:
-- '1.11'
+- '1.20'
 - '5.7'
 - '11.4'
 pipeline_stage: ready-to-publish

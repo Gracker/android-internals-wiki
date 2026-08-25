@@ -49,9 +49,9 @@ def check_content_sufficiency(file_path):
 def main():
     # The 3 selected chapters
     chapters = [
-        'src/part3-tools/ch19-apm/18-network-apm-internals.md',
-        'src/part3-tools/ch19-apm/21-hybrid-apm.md',
-        'src/part2-performance/ch08-responsiveness/08-media-pipeline.md'
+        'src/part3-tools/ch17-apm/08-network-apm-internals.md',
+        'src/part3-tools/ch17-apm/11-hybrid-apm.md',
+        'src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md'
     ]
     
     print("=== Content Sufficiency Check ===\n")

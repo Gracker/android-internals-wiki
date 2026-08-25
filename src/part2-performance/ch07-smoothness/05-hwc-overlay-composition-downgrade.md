@@ -33,11 +33,11 @@ tags:
 - perfetto
 - winscope
 related_chapters:
-- '2.5'
+- '2.9'
 - '2.8'
 - '7.2'
-- '14.15'
-- '18.10'
+- '15.15'
+- '13.10'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -86,7 +86,7 @@ composition type 的变化本身不是故障。只有它与 DisplayFrame 迟到�
 
 受保护内容也不能直接等同于普通 overlay。设备可能使用安全 plane，也可能使用受保护图形上下文支持的安全合成。出现黑屏、外接屏失败或截图不可见时，应核对 DRM（数字版权管理）、secure decoder（安全解码器）、buffer usage（缓冲区用途标记）、HDCP（数字内容传输保护）与 Composer capability，不能只根据 `DEVICE` 一个字段下结论。
 
-视频从 codec 提交到 Surface 后仍要经历 queue、latch、合成与 present。完整的视频时序和 SurfaceView / TextureView 差异见 [18.11 视频 Overlay、Media3 与专业编解码管线](../ch18-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md)。
+视频从 codec 提交到 Surface 后仍要经历 queue、latch、合成与 present。完整的视频时序和 SurfaceView / TextureView 差异见 [13.11 视频 Overlay、Media3 与专业编解码管线](../ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md)。
 
 ## Android 17 的 Composition 类型
 

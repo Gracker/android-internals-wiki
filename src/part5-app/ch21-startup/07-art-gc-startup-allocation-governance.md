@@ -16,7 +16,7 @@ related_chapters:
 - '4.6'
 - '21.1'
 - '21.2'
-- '23.4'
+- '23.1'
 - '4.5'
 last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1 heap.cc, TaskProcessor, StartupCompletedTask, VMRuntime/Daemons/ActivityThread; current Android Developers memory and allocation-recording docs; current Perfetto tracing docs
@@ -48,7 +48,7 @@ Android Runtime（ART）负责执行 Android 字节码和管理 Java heap（存�
 
 Android 17 会从 Zygote（预先加载公共 framework 代码的系统进程）fork 出 App 进程，并在 fork 后暂时放宽 Java heap 的启动期阈值。首帧前仍可能因为分配接近 growth limit（该进程 Java heap 允许增长的上限）、显式 GC 请求、已登记到 ART 的 native allocation（原生内存分配）压力或进程状态变化而回收。排查时应找到具体的分配点和 GC cause（触发原因），阻塞 `HeapTaskDaemon` 只会破坏运行时调度。
 
-以下内部行为以 `android-17.0.0_r1` 为准。对象分配与 GC 治理见 [23.4 Java Heap、GC 与 Compose 内存分配](../ch23-memory-practice/04-java-heap-gc-compose-allocation.md)，启动任务治理见 [21.2 启动任务编排、延迟初始化与并发调度](02-startup-task-lazy-concurrency.md)。
+以下内部行为以 `android-17.0.0_r1` 为准。对象分配与 GC 治理见 [23.1 Java Heap、GC 与 Compose 内存分配](../ch23-memory-practice/01-java-heap-gc-compose-allocation.md)，启动任务治理见 [21.2 启动任务编排、延迟初始化与并发调度](02-startup-task-lazy-concurrency.md)。
 
 ## GC 对启动性能的影响路径
 

@@ -149,8 +149,8 @@ tags:
 - workmanager
 - thread-priority
 related_chapters:
-- '1.2'
 - '1.3'
+- '1.9'
 - '2.1'
 - '3.1'
 - '4.1'
@@ -158,7 +158,7 @@ related_chapters:
 - '7.1'
 - '4.3'
 - '5.3'
-- '1.9'
+- '1.8'
 - '2.3'
 - '2.4'
 pipeline_stage: ready-to-publish
@@ -405,7 +405,7 @@ Binder 流向关联只说明事务关系。调用方时间片的持续时间、�
 
 ## 应用进程的创建、状态与回收
 
-分层描述解决组件归属问题，运行时故障还要落实到具体进程。应用进程从 Zygote 创建后，AMS、OomAdjuster、lmkd 与 Freezer 共同改变它的状态和可运行性。本节只建立进程生命周期的总览；组件调度、adj 计算和 system_server 锁模型由 [1.6](06-activitymanager-process-lock-priority.md) 展开，具体 cgroup 落点由 [1.29](29-cgroup-v1-v2-process-isolation.md) 展开，Binder Freezer 的事务语义由 [1.12](12-binder-scheduling-freezer-threadpool.md) 展开。
+分层描述解决组件归属问题，运行时故障还要落实到具体进程。应用进程从 Zygote 创建后，AMS、OomAdjuster、lmkd 与 Freezer 共同改变它的状态和可运行性。本节只建立进程生命周期的总览；组件调度、adj 计算和 system_server 锁模型由 [1.12](12-activitymanager-process-lock-priority.md) 展开，具体 cgroup 落点由 [1.13](13-cgroup-v1-v2-process-isolation.md) 展开，Binder Freezer 的事务语义由 [1.10](10-binder-scheduling-freezer-threadpool.md) 展开。
 
 Android 应用可以创建线程，却不能自行决定进程能活多久。系统根据进程中正在运行的组件、组件与其他进程的依赖关系、用户能否感知这些工作以及整机内存压力，持续计算进程重要性。内存紧张时，重要性较低的进程先成为回收候选。
 
@@ -764,7 +764,7 @@ Android 17 有两层选择：
 
 因此，源树中存在多个同名源码文件，不代表它们会作为三个公开类同时装入应用进程。最终 Java API 仍然是 `android.os.MessageQueue`。
 
-Android 17 对以 API 37 为目标版本的应用启用新的无锁 `MessageQueue` 实现。依赖 `mMessages` 等私有字段的反射代码可能失效。测试代码应使用公开或测试框架提供的同步机制，例如用于告知测试框架何时空闲的 `IdlingResource`；不要通过遍历私有链表判断“队列已空”。具体数据结构和无锁队列 `DeliQueue` 见 §1.9。
+Android 17 对以 API 37 为目标版本的应用启用新的无锁 `MessageQueue` 实现。依赖 `mMessages` 等私有字段的反射代码可能失效。测试代码应使用公开或测试框架提供的同步机制，例如用于告知测试框架何时空闲的 `IdlingResource`；不要通过遍历私有链表判断“队列已空”。具体数据结构和无锁队列 `DeliQueue` 见 §1.8。
 
 #### Looper 空闲时为什么不消耗 CPU
 

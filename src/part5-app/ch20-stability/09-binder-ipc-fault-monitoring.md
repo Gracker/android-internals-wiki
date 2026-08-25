@@ -13,10 +13,10 @@ tags:
 - stability
 - performance
 related_chapters:
-- '1.3'
-- '1.12'
+- '1.9'
+- '1.10'
 - '20.4'
-- '26.7'
+- '26.14'
 consolidated_from:
 - src/part5-app/ch20-stability/22-binder-communication-monitoring.md
 last_verified: '2026-08-14'
@@ -404,10 +404,10 @@ APM（Application Performance Monitoring，应用性能监控）的拦截代码�
 
 ## 12. 与相邻章节的边界
 
-- 1.3 负责 Binder 驱动、对象引用、一次 transaction 的基础链路，以及不同 IPC 机制的选型。
+- 1.9 负责 Binder 驱动、对象引用、一次 transaction 的基础链路，以及不同 IPC 机制的选型。
 - 4.3 负责缓存应用冻结机制（cached apps freezer）与进程生命周期。
 - 20.4 负责 ANR 证据和超时类型，这里提供 Binder 侧等待链。
-- 26.7 负责 Perfetto/eBPF 等观测工具，这里只说明 IPC 需要哪些证据。
+- 26.14 负责 Perfetto/eBPF 等观测工具，这里只说明 IPC 需要哪些证据。
 
 ## 小结
 

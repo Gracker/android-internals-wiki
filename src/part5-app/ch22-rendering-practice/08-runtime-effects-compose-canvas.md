@@ -23,12 +23,12 @@ tags:
 related_chapters:
 - '2.4'
 - '2.7'
-- '18.1'
-- '22.4'
+- '13.1'
+- '22.7'
 - '2.1'
 - '2.3'
 - '22.3'
-- '22.14'
+- '22.4'
 pipeline_stage: finalized
 task6_state: reviewed
 task9_state: reviewed
@@ -131,7 +131,7 @@ last_consolidated_at: '2026-08-24'
 
 `RenderEffect` 让 HWUI 在 View 或 RenderNode 已经画完后，再由 GPU 处理这些像素，例如模糊、颜色滤镜、混合和偏移。Android 13（API 33）又加入了基于 Android Graphics Shading Language（AGSL，Android 图形着色语言）的自定义效果。遇到需要先画入离屏缓冲区、再读取纹理的效果，RenderThread 的提交工作、GPU 的逐像素计算、纹理读写带宽和图形内存都会增加。
 
-应用侧要回答三个问题：哪些效果值得实时做，什么时候降级，以及怎样用性能 trace（按时间记录系统事件的轨迹）和 GPU 工具验证。平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。标准 View 或 Compose 内容仍沿 UI 线程 → RenderThread → BLAST / BufferQueue（把图形缓冲区交给系统）→ SurfaceFlinger（系统合成服务）→ HWC / RenderEngine（硬件合成器或系统 GPU 合成器）→ present（送往显示设备）前进。`RenderEffect` 改变的是 HWUI 的绘制工作，不会绕开这条显示路径。RenderNode 与 Hardware Layer（硬件图层）见 2.4，完整渲染管线见 18.1，GPU 瓶颈分类见 2.7。
+应用侧要回答三个问题：哪些效果值得实时做，什么时候降级，以及怎样用性能 trace（按时间记录系统事件的轨迹）和 GPU 工具验证。平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。标准 View 或 Compose 内容仍沿 UI 线程 → RenderThread → BLAST / BufferQueue（把图形缓冲区交给系统）→ SurfaceFlinger（系统合成服务）→ HWC / RenderEngine（硬件合成器或系统 GPU 合成器）→ present（送往显示设备）前进。`RenderEffect` 改变的是 HWUI 的绘制工作，不会绕开这条显示路径。RenderNode 与 Hardware Layer（硬件图层）见 2.4，完整渲染管线见 13.1，GPU 瓶颈分类见 2.7。
 
 RenderEffect 和 RuntimeShader 在渲染管线中增加图像处理或 AGSL 计算，Compose Canvas 提供自定义绘制入口。效果复杂度、离屏缓冲区、shader 编译和重绘范围共同决定帧成本。
 
@@ -180,7 +180,7 @@ fun View.applyBlurEffectIfSupported(
 }
 ```
 
-这段代码的边界是：API 31 以下直接返回；API 31+ 才允许清空或设置效果。动画性能里的 RenderEffect 降级封装详见 22.4 节。
+这段代码的边界是：API 31 以下直接返回；API 31+ 才允许清空或设置效果。动画性能里的 RenderEffect 降级封装详见 22.7 节。
 
 ### HWUI 管线中的成本来源
 
@@ -318,7 +318,7 @@ AGI 适合在开发和预发布阶段分析 GPU。Frame Profiler 可以直接捕
 
 Compose 的 `graphicsLayer` 可以通过 Compose `RenderEffect` 把效果应用到图层。只要设置 `RenderEffect`，内容就会先进入离屏缓冲区，不受 `CompositingStrategy` 取值影响。默认 `Auto` 策略下，`alpha < 1f` 也会离屏；`ModulateAlpha` 可以省去仅由透明度引起的离屏缓冲区，但图层内有重叠内容时，合成结果可能不同。裁剪或阴影本身不等于必然新增缓冲区，判断时要看完整的 `graphicsLayer` 参数。效果应挂到能覆盖目标视觉区域的最小 Composable 节点。Compose RenderEffect 在 Android 11（API 30）及以下会被忽略，可以用 `RenderEffect.isSupported()` 做能力判断。
 
-Compose 与 View 在 RenderThread 之后共用标准管线，详见 18.1 节。排查 Compose 页面时，在 `MainThread` 轨道观察重组（recomposition）和布局（layout）；RenderThread 和 GPU 侧仍按上述 `RenderEffect` 方法做对照。
+Compose 与 View 在 RenderThread 之后共用标准管线，详见 13.1 节。排查 Compose 页面时，在 `MainThread` 轨道观察重组（recomposition）和布局（layout）；RenderThread 和 GPU 侧仍按上述 `RenderEffect` 方法做对照。
 
 #### 厂商 GPU 对模糊效果的差异
 
@@ -757,7 +757,7 @@ Hardware Bitmap 不保证任何场景都零拷贝。缩放、颜色空间转换�
 
 #### 8.3 `drawImage` 仍要控制解码与目标尺寸
 
-Canvas 不负责替应用选择合适的解码尺寸。大图缩到很小仍会占用解码内存和采样带宽。图片加载应在解码阶段设置目标尺寸、颜色空间和 allocator（像素存储分配方式），详见 22.5。
+Canvas 不负责替应用选择合适的解码尺寸。大图缩到很小仍会占用解码内存和采样带宽。图片加载应在解码阶段设置目标尺寸、颜色空间和 allocator（像素存储分配方式），详见 22.9。
 
 ### 9. 常见自定义绘制场景
 

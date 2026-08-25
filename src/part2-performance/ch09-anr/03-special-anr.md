@@ -75,7 +75,7 @@ tags:
 related_chapters:
 - '9.1'
 - '9.2'
-- '1.3'
+- '1.9'
 - '4.2'
 - '4.3'
 - '6.2'
@@ -479,8 +479,8 @@ sqlite3 app.db 'PRAGMA synchronous;'
 
 ## 与其他章节的关系
 
-- [§1.3 Binder IPC](../../part1-fundamentals/ch01-architecture/03-ipc-binder-performance.md)：同步事务、重入与线程池。
-- [§1.8 ContentProvider](../../part1-fundamentals/ch01-architecture/08-content-provider.md)：安装、发布和跨进程调用。
+- [§1.9 Binder IPC](../../part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md)：同步事务、重入与线程池。
+- [§1.15 ContentProvider](../../part1-fundamentals/ch01-architecture/15-content-provider.md)：安装、发布和跨进程调用。
 - [§4.2 ART 内存](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)：GC、堆增长与分配路径。
 - [§4.3 LMK](../../part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md)：内存压力与进程牺牲策略。
 - [§6.2 I/O 调度](../../part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md)：block I/O 与存储延迟。

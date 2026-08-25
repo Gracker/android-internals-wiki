@@ -10,6 +10,7 @@
 
 ## 内容索引
 
+
 - [10.1 App 内存分析与案例](01-app-memory-analysis-cases.md)
 - [10.2 低内存对系统性能的影响](02-low-memory-impact.md)
 - [10.3 内存抖动与频繁 GC](03-memory-churn.md)
@@ -20,7 +21,7 @@
 | 现场现象 | 建议入口 |
 | --- | --- |
 | 不清楚 Java、Native、PSS、RSS、SwapPss、Graphics 的区别 | [10.1 App 内存分析与案例](01-app-memory-analysis-cases.md) |
-| 页面退出后 Activity、View、callback 或资源仍被持有 | [23.1 内存泄漏检测与治理](../../part5-app/ch23-memory-practice/01-memory-leak-governance.md) |
+| 页面退出后 Activity、View、callback 或资源仍被持有 | [23.2 内存泄漏检测与治理](../../part5-app/ch23-memory-practice/02-memory-leak-governance.md) |
 | 多轮业务操作后内存持续增长 | [10.1 App 内存分析与案例](01-app-memory-analysis-cases.md) |
 | PSI、换页、lmkd、后台重启或整机卡顿 | [10.2 低内存对系统性能的影响](02-low-memory-impact.md) |
 | 需要查看从症状到证据的完整案例 | [10.1 App 内存分析与案例](01-app-memory-analysis-cases.md) |

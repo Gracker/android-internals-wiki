@@ -110,7 +110,7 @@ tags:
 - GPU-纹理缓存
 related_chapters:
 - '2.3'
-- '2.5'
+- '2.9'
 - '2.8'
 - '3.1'
 - '7.1'
@@ -1202,7 +1202,7 @@ Compose 的 `graphicsLayer`、`CompositingStrategy` 与 `rememberGraphicsLayer()
 #### 相关章节
 
 - [2.3 VSync、Choreographer 与 SurfaceFlinger 调度](03-vsync-choreographer-sf-scheduling.md)
-- [2.5 SurfaceFlinger 合成、FrontEnd 与事务队列](05-surfaceflinger-frontend-transaction.md)
+- [2.9 SurfaceFlinger 合成、FrontEnd 与事务队列](09-surfaceflinger-frontend-transaction.md)
 - [2.8 BufferQueue、Gralloc 与 Sync Fence](08-bufferqueue-gralloc-sync-fence.md)
 
 

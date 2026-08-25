@@ -89,11 +89,11 @@ tags:
 related_chapters:
 - '26.4'
 - '26.1'
-- '15.1'
-- '15.3'
-- '15.5'
-- '22.7'
-- '26.9'
+- '16.1'
+- '16.3'
+- '16.5'
+- '22.10'
+- '26.8'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -132,12 +132,12 @@ consolidated_from:
 | 检查域 | 证据与口径 | 不通过动作 | 关联章节 |
 | --- | --- | --- | --- |
 | 启动 | 按启动类型、入口和设备群比较首次显示时间（TTID）；仅在正确调用 `reportFullyDrawn()` 的场景使用完全显示时间（TTFD） | 阻断候选包，结合 Perfetto Trace（系统跟踪文件）检查启动路径 | 21.1、26.1 |
-| 渲染 | 核心交互的 `FrameTimingMetric` 分布、生产环境慢帧或冻帧指标，并按刷新率和页面分组（分群） | 阻断或缩小发布范围 | 22.7、26.1 |
-| 内存 | Java 堆、原生堆、PSS（按比例分摊共享页后的物理内存）、RSS（包含共享页的驻留物理内存）、内存不足（OOM）与低内存退出；同时记录进程状态和设备内存档位 | 阻断高风险设备群，补充堆转储、Perfetto 或退出记录 | 23.6、26.2、26.6 |
+| 渲染 | 核心交互的 `FrameTimingMetric` 分布、生产环境慢帧或冻帧指标，并按刷新率和页面分组（分群） | 阻断或缩小发布范围 | 22.10、26.1 |
+| 内存 | Java 堆、原生堆、PSS（按比例分摊共享页后的物理内存）、RSS（包含共享页的驻留物理内存）、内存不足（OOM）与低内存退出；同时记录进程状态和设备内存档位 | 阻断高风险设备群，补充堆转储、Perfetto 或退出记录 | 23.7、26.2、26.6 |
 | 稳定性 | 崩溃、应用无响应（ANR）、原生崩溃、启动失败和 `ApplicationExitInfo` 退出原因，按受影响用户数与事件数分别呈现 | 停止扩量，进入回滚评估 | 20.1–20.4、26.2、26.6 |
-| 功耗 | 固定场景的实验室能耗与生产环境异常唤醒、后台任务证据；声明测量是否覆盖整台设备 | 对耗电路径限流或关闭配置 | 25.1–25.3、26.12 |
+| 功耗 | 固定场景的实验室能耗与生产环境异常唤醒、后台任务证据；声明测量是否覆盖整台设备 | 对耗电路径限流或关闭配置 | 25.1–25.3、26.11 |
 | 数据健康度 | 实验分组（assignment）、采样配置、事件生成、落盘、上传和查询延迟 | 将业务指标标为不可判定，暂停扩量 | 26.1、26.4 |
-| 包体与配置 | AAB/APK 与动态特性大小、资源变化、远程参数和实验快照 | 回退配置或重新生成候选包 | 25.5–25.6、26.4 |
+| 包体与配置 | AAB/APK 与动态特性大小、资源变化、远程参数和实验快照 | 回退配置或重新生成候选包 | 25.5–25.11、26.4 |
 
 每个检查域都要在发布单中留下证据链接和判定结果；任一项失败时，直接执行表中动作并记录审批人。
 
@@ -264,7 +264,7 @@ Google Play 也允许暂停已全量发布的版本，但内部测试轨道除�
 
 分数只表示评估表中还有多少改进空间，无法概括线上用户体验。团队仍需维护自己的 KPI（关键绩效指标，用于持续衡量业务或质量目标）。评分项可转换成配置修正、自动化路径、trace 分析和发布验证四类任务；trace 是按时间记录线程、调度、I/O 等事件的性能跟踪文件，Android 17 平台指标可作为环境旁证。
 
-26.1 介绍端侧性能采集，26.4 介绍实验统计，26.9 说明 Android Vitals 与 Play 的线上口径。这里讨论评分到行动的映射，不重复这些章节的采集实现。
+26.1 介绍端侧性能采集，26.4 介绍实验统计，26.8 说明 Android Vitals 与 Play 的线上口径。这里讨论评分到行动的映射，不重复这些章节的采集实现。
 
 ### App Performance Score 的定位
 
@@ -275,7 +275,7 @@ App Performance Score 适合研发阶段的快速评估。官方页面给出 0�
 | 工具或系统 | 回答的问题 | 适合阶段 | 不适合做的事 |
 |---|---|---|---|
 | App Performance Score | 工程配置和受测路径是否存在评分表覆盖的缺口 | 研发评估、专项立项、版本验收前 | 不能直接给出根因，也不能替代线上监控 |
-| Android Vitals / Play Console | Play 用户最近窗口内是否出现坏行为，是否影响商店可见性 | 线上质量裁决、版本趋势复核 | 数据有窗口延迟，不能替代实时报警；详见 26.9 节 |
+| Android Vitals / Play Console | Play 用户最近窗口内是否出现坏行为，是否影响商店可见性 | 线上质量裁决、版本趋势复核 | 数据有窗口延迟，不能替代实时报警；详见 26.8 节 |
 | Macrobenchmark | 某条启动、滚动或页面路径在受控设备上的耗时与 trace 证据 | CI、专项回归、性能预算 | 不能覆盖所有真实用户路径；脚本质量决定结论质量 |
 | Perfetto / Android Studio Profiler | 某次慢启动、慢帧或线程调度异常的时间线证据 | 根因定位、案例复盘、前后 trace 对比 | 单次 trace 不能代表用户总体分布 |
 | 自建应用性能监控（APM） | 版本、设备、渠道、用户路径上的长期指标和报警 | 灰度、发布、线上治理 | 指标口径容易漂移，需要记录定义和版本 |
@@ -316,7 +316,7 @@ profile 生成构建与发布构建的配置不同：生成 profile 的 variant�
 | 动态类别 | 官方评估口径 | 工程侧补充字段 | 关联章节 |
 |---|---|---|---|
 | Application startup | 从启动到 App 可交互的持续时间，口径指向 TTFD | 启动模式、入口来源、首屏 Activity、进程与编译状态、设备档位 | 21.1、26.1 |
-| Rendering performance | 滚动、动画和全屏渲染中的 slow frames / frozen frames 占比 | 页面、刷新率、列表数据量、图片数量、是否 Compose、是否 SurfaceView / TextureView | 22.7、26.1 |
+| Rendering performance | 滚动、动画和全屏渲染中的 slow frames / frozen frames 占比 | 页面、刷新率、列表数据量、图片数量、是否 Compose、是否 SurfaceView / TextureView | 22.10、26.1 |
 
 动态评分要分三档投入。
 
@@ -361,7 +361,7 @@ Android Vitals 反映 Play 用户的线上质量，App Performance Score 反映�
 
 [Android Vitals 官方说明](https://developer.android.com/topic/performance/vitals)覆盖稳定性、性能、电池和权限等问题。2026 年面向一般应用的核心指标（core vitals）包括用户感知崩溃率、用户感知 ANR 率，以及 excessive partial wake lock；Wear OS 表盘应用还包含 excessive battery usage（过度耗电）。
 
-partial wake lock 会让 CPU 在屏幕关闭后继续运行，持续时间过长会造成额外耗电。部分阈值会影响 Google Play 可见性，具体阈值、设备类型和执行日期见 26.9；App Performance Score 不提供这些线上阈值。
+partial wake lock 会让 CPU 在屏幕关闭后继续运行，持续时间过长会造成额外耗电。部分阈值会影响 Google Play 可见性，具体阈值、设备类型和执行日期见 26.8；App Performance Score 不提供这些线上阈值。
 
 发版前用 App Performance Score 与 benchmark 查出可预防问题，例如 release 未启用 R8、profile 未进入产物、受控设备上的启动或渲染回归；上线后用 Vitals 与自建 APM 判断用户是否受影响。实验室结果良好而线上指标恶化时，应按版本、设备、入口和用户路径比较 Play 分组、内部 APM、benchmark trace 与变更记录，不能用实验室分数否定线上数据。
 
@@ -385,7 +385,7 @@ App Performance Score 接入门禁时，不能只保存总分。门禁需要保�
 
 业务指标仍需单独监控。一个应用分数高，但支付页点击后等待很久、搜索首屏空白、消息通知进入会话慢，用户仍会觉得差。业务路径的可用时间、成功率和取消率要由 APM 与业务埋点记录。
 
-动态评分只能指出受测路径偏慢，根因仍要由 trace 验证。Perfetto 或 Android Studio Profiler 可以检查线程运行、Runnable 排队、I/O、Binder、锁等待、GPU、SurfaceFlinger 和资源加载。长 slice（trace 时间线中带起止时间的任务片段）可能包含睡眠或等待，需结合 `thread_state` 判断 CPU 是否持续执行；详见 13.1、15.3 和 26.1。
+动态评分只能指出受测路径偏慢，根因仍要由 trace 验证。Perfetto 或 Android Studio Profiler 可以检查线程运行、Runnable 排队、I/O、Binder、锁等待、GPU、SurfaceFlinger 和资源加载。长 slice（trace 时间线中带起止时间的任务片段）可能包含睡眠或等待，需结合 `thread_state` 判断 CPU 是否持续执行；详见 14.1、16.3 和 26.1。
 
 设备分层也要单独设计。官方建议选择代表用户群体的设备，并提示低端设备能放大问题。只用一台旗舰机测量，会遗漏低速存储、低内存、高温和 OEM 调度差异。弱网属于业务路径的额外测试条件，当前 App Performance Score 动态评分没有把它列为独立类别。
 

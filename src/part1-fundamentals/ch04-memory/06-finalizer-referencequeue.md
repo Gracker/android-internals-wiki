@@ -30,7 +30,7 @@ tags:
 related_chapters:
 - '4.2'
 - '4.4'
-- '23.1'
+- '23.2'
 pipeline_stage: ready-to-publish
 task2b_state: fixed
 task6_state: reviewed

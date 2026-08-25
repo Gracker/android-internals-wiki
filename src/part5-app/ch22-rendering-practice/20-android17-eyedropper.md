@@ -12,11 +12,11 @@ tags:
 - system-ui
 - collaboration
 related_chapters:
-- '1.16'
-- '2.5'
+- '1.19'
+- '2.9'
 - '22.1'
 - '22.8'
-- '22.10'
+- '22.12'
 last_verified: '2026-07-31'
 last_verified_against: android-17.0.0_r1 (Intent/current.txt, ScreenCapture, WindowManagerService, packages/apps/EyeDropper) / Android 17 API 37 Intent、Activity Result、Package Visibility 与 Trace 官方文档
 confidence: high

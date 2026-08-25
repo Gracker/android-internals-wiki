@@ -68,7 +68,7 @@ related_chapters:
 - '8.3'
 - '1.1'
 - '21.3'
-- '1.9'
+- '1.8'
 - '5.1'
 - '8.4'
 - '20.8'
@@ -843,7 +843,7 @@ Android 17 的 [`CombinedDeliMessageQueue/MessageQueue.java`](https://android.go
 | legacy | 队列为空或头消息尚未到期 | 在 `synchronized(this)` 对象锁内复制列表 |
 | DeliQueue | `looperCheckIsIdle()` 检查可投递消息 | `mIdleHandlersLock` 下复制列表 |
 
-官方把 DeliQueue 称为无锁 MessageQueue，指的是核心消息数据结构；源码仍用 `mIdleHandlersLock` 保护 IdleHandler 列表，不能推导出类内每项操作都无锁。IdleHandler 回调仍在 Looper 线程执行，回调期间到达的新消息要等它返回。旧实现可对照 [`LegacyMessageQueue/MessageQueue.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/LegacyMessageQueue/MessageQueue.java)，更多结构见 [MessageQueue 与 DeliQueue](../../part1-fundamentals/ch01-architecture/09-messagequeue-lock-contention.md)。
+官方把 DeliQueue 称为无锁 MessageQueue，指的是核心消息数据结构；源码仍用 `mIdleHandlersLock` 保护 IdleHandler 列表，不能推导出类内每项操作都无锁。IdleHandler 回调仍在 Looper 线程执行，回调期间到达的新消息要等它返回。旧实现可对照 [`LegacyMessageQueue/MessageQueue.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/LegacyMessageQueue/MessageQueue.java)，更多结构见 [MessageQueue 与 DeliQueue](../../part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md)。
 
 不要用反射读取 `MessageQueue` 私有字段。DeliQueue 为兼容二进制仍保留 `mMessages`，但该字段固定为 `null`，旧式队列探测会失效。Android 17 官方指南当前要求相关测试环境至少升级到 Espresso 3.7.0 或 Robolectric 4.17，并把 Robolectric 的 `LEGACY` Looper 模式迁到 `PAUSED`。
 

@@ -11,7 +11,7 @@ tags:
 - call-hang
 - ams
 related_chapters:
-- '1.8'
+- '1.15'
 - '9.1'
 - '9.3'
 - '9.2'
@@ -45,7 +45,7 @@ ContentProvider 相关卡死至少涉及四个计时器，其中只有一条路�
 
 “Publish 超时”和“ContentProvider not responding”在日志中都带 ContentProvider 字样，但处理对象、计时起点和退出原因不同。诊断时应先确认触发入口，再看 Provider 的 `onCreate()`、Binder 线程或数据库栈。
 
-本章的平台实现以 `android-17.0.0_r1` 为核对版本。ContentProvider 的发布、引用计数和 Binder Transport 结构见 [§1.8 ContentProvider 性能与优化](../../part1-fundamentals/ch01-architecture/08-content-provider.md)；通用 ANR 证据流程见 [§9.2 ANR 分析方法](02-anr-kernel-trace-diagnosis.md)。
+本章的平台实现以 `android-17.0.0_r1` 为核对版本。ContentProvider 的发布、引用计数和 Binder Transport 结构见 [§1.15 ContentProvider 性能与优化](../../part1-fundamentals/ch01-architecture/15-content-provider.md)；通用 ANR 证据流程见 [§9.2 ANR 分析方法](02-anr-kernel-trace-diagnosis.md)。
 
 ## 1. 四个常量，四种语义
 

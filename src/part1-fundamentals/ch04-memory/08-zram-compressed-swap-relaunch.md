@@ -65,7 +65,7 @@ related_chapters:
 - '4.3'
 - '8.2'
 - '10.1'
-- '15.2'
+- '16.2'
 last_deep_review_at: '2026-08-22T17:05:18+08:00'
 last_deep_review_run_id: 20260822-170518-deep-review-544265d1
 pipeline_stage: ready-to-publish

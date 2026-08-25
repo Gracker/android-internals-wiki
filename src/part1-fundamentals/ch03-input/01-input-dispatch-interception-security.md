@@ -65,7 +65,7 @@ related_chapters:
 - '3.3'
 - '3.6'
 - '9.1'
-- '13.6'
+- '14.6'
 task6_state: reviewed
 pipeline_stage: ready-to-publish
 task9_state: reviewed

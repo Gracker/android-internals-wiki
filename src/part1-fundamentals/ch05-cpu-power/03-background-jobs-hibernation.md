@@ -151,8 +151,8 @@ related_chapters:
 - '11.2'
 - '8.1'
 - '1.1'
-- '15.3'
-- '1.13'
+- '16.3'
+- '1.17'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task2b_state: fixed
@@ -289,7 +289,7 @@ Battery Historian 已不再积极维护，适合读取已有 bugreport 中系统
 
 使用 `bugreport` 与 `dumpsys` 也能取得等价证据，不必等 trace 中恰好出现 `device_idle` 轨道。
 
-第一组证据用于观察 Doze 状态切换。设备灭屏、静止、未充电后，`dumpsys deviceidle` 显示的状态会从 `active` 进入 `idle` / `idle maintenance`。在对应的 Battery Historian 时间线上，`screen` 熄灭后，`cpu_running` 会从连续活跃变为稀疏脉冲，`job`、`alarm`、`network` 条带集中出现在短暂窗口内；这与官方 Doze 文档描述的 maintenance window 行为一致。14.5《Battery Historian 与功耗分析工具》已经分别说明 `cpu_running`、`wake_lock`、`job`、`alarm` 这些行的含义，可以直接对照阅读。
+第一组证据用于观察 Doze 状态切换。设备灭屏、静止、未充电后，`dumpsys deviceidle` 显示的状态会从 `active` 进入 `idle` / `idle maintenance`。在对应的 Battery Historian 时间线上，`screen` 熄灭后，`cpu_running` 会从连续活跃变为稀疏脉冲，`job`、`alarm`、`network` 条带集中出现在短暂窗口内；这与官方 Doze 文档描述的 maintenance window 行为一致。15.5《Battery Historian 与功耗分析工具》已经分别说明 `cpu_running`、`wake_lock`、`job`、`alarm` 这些行的含义，可以直接对照阅读。
 
 第二组证据用于观察后台任务被延后。把目标包切到 `Rare` 或 `Restricted` 桶后，先用 `dumpsys jobscheduler <package>` 查看 pending reason、配额（quota）和约束，再看 Battery Historian 的 `job` 行，或 Perfetto 中短时间密集出现的 CPU / network 活动（burst）。正常情况下，任务不会消失，执行时间会被移到配额允许或 Doze 维护窗口到来之后。11.2《App 功耗优化与案例》中的 AlarmManager 滥用案例显示每 60 秒出现一次 `alarm` 唤醒条带，JobScheduler 生命周期错误案例则显示持续 30 分钟的 `WakeLock` 条带。两组样本的问题类型不同，但都能作为可复核的对照，用于区分系统主动延后与任务异常持续运行。
 

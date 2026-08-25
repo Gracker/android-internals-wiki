@@ -199,7 +199,7 @@ related_chapters:
 - '2.2'
 - '2.3'
 - '2.4'
-- '2.5'
+- '2.9'
 - '2.7'
 status: finalized
 task6_state: reviewed

@@ -39,7 +39,7 @@ tags:
 related_chapters:
 - '5.1'
 - '21.4'
-- '16.5'
+- '18.5'
 last_consolidated_at: '2026-08-25'
 consolidated_from:
 - src/part5-app/ch21-startup/10-cache-optimization-cpu-locality.md

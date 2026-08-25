@@ -17,7 +17,7 @@ related_chapters:
 - '20.11'
 - '20.12'
 - '23.3'
-- '26.14'
+- '26.13'
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized
@@ -317,7 +317,7 @@ heapprofd 能提供：
 
 生产环境更适合在异常趋势、MemoryLimiter anomaly（内存限制异常触发）或灰度命中后开启短窗口采样。持续高频 profiling（性能剖析）会增加 CPU、内存、trace 存储和隐私成本。
 
-Android 15 / API 35 起，普通应用可通过 `ProfilingManager` 请求受系统管理的 heap profile（堆剖析）。Android 10—14 中，能否采集取决于应用是否声明 `profileable`、是否为 `debuggable` 调试构建，以及请求是否由 shell 发起；完整配置见 [26.14 heapprofd、procfs CPU 与 Page Fault 分析](../ch26-observability/14-heapprofd-procfs-page-fault.md)。实施时应复用该章已经验证的权限模型、guardrail（平台为控制开销设置的采样护栏）和符号化流程，不要再维护一套私有规则。
+Android 15 / API 35 起，普通应用可通过 `ProfilingManager` 请求受系统管理的 heap profile（堆剖析）。Android 10—14 中，能否采集取决于应用是否声明 `profileable`、是否为 `debuggable` 调试构建，以及请求是否由 shell 发起；完整配置见 [26.13 heapprofd、procfs CPU 与 Page Fault 分析](../ch26-observability/13-heapprofd-procfs-page-fault.md)。实施时应复用该章已经验证的权限模型、guardrail（平台为控制开销设置的采样护栏）和符号化流程，不要再维护一套私有规则。
 
 ## 7. Scudo、GWP-ASan、HWASan、MTE 各自查什么
 
@@ -399,7 +399,7 @@ Android 8 以后，Bitmap pixel data（像素数据）通常由 Native 内存承
 - 页面退出、请求取消、进程后台后的回落；
 - 硬件 Bitmap、GraphicBuffer 与普通软件 Bitmap 的差异。
 
-“Native Bitmap 增长”不能直接写成“Skia 对象未释放”。先查 Java owner、缓存预算与解码生命周期；若 Java owner 已消失而 Native 内存仍增长，再用 heapprofd、图形内存统计和平台 trace 缩小范围。更多版本差异见 [23.2 Bitmap 与图片内存优化](../ch23-memory-practice/02-bitmap-optimization.md)。
+“Native Bitmap 增长”不能直接写成“Skia 对象未释放”。先查 Java owner、缓存预算与解码生命周期；若 Java owner 已消失而 Native 内存仍增长，再用 heapprofd、图形内存统计和平台 trace 缩小范围。更多版本差异见 [23.4 Bitmap 与图片内存优化](../ch23-memory-practice/04-bitmap-optimization.md)。
 
 ### 10.2 第三方 SDK
 

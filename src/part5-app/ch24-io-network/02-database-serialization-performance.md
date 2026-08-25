@@ -131,9 +131,9 @@ related_chapters:
 - '24.1'
 - '9.2'
 - '6.2'
-- '14.1'
-- '24.3'
-- '1.3'
+- '15.1'
+- '24.5'
+- '1.9'
 - '21.1'
 pipeline_stage: finalized
 last_review_finalize_at: '2026-08-15T09:33:20+08:00'
@@ -681,7 +681,7 @@ WAL 允许读写并发，但不提供并行写入；Android 17 的 Compatibility
 - Android 组件参数、瞬时状态和跨进程调用使用 `Parcelable`、`Bundle` 或 AIDL（Android Interface Definition Language，Android 接口定义语言）支持的类型。
 - 大型二进制内容应通过文件描述符、Content URI（由 ContentProvider 授权访问的数据地址）或分页接口传递，不应内嵌进一个 Binder 事务。
 
-Binder 机制见 [1.3 Android IPC 全景与 Binder 性能](../../part1-fundamentals/ch01-architecture/03-ipc-binder-performance.md)，启动观测见 [21.1 App 启动路径、监控与度量](../ch21-startup/01-app-startup-path-monitoring.md)，网络协议设计见 [24.3 移动网络架构、连接与容灾](03-mobile-network-connection-resilience.md)。
+Binder 机制见 [1.9 Android IPC 全景与 Binder 性能](../../part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md)，启动观测见 [21.1 App 启动路径、监控与度量](../ch21-startup/01-app-startup-path-monitoring.md)，网络协议设计见 [24.5 移动网络架构、连接与容灾](05-mobile-network-connection-resilience.md)。
 
 ### JSON（Gson / Moshi / kotlinx.serialization）性能对比
 

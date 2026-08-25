@@ -58,7 +58,7 @@ tags:
 related_chapters:
 - '21.1'
 - '1.5'
-- '22.7'
+- '22.10'
 - '8.2'
 consolidated_from:
 - src/part5-app/ch21-startup/12-startup-profile-dex-layout.md
@@ -66,7 +66,7 @@ consolidated_from:
 - src/part5-app/ch21-startup/04-baseline-profile-practice.md
 - src/part5-app/ch21-startup/10-cloud-profile-dm-install-compile.md
 - src/part2-performance/ch08-responsiveness/05-baseline-profiles.md
-- src/part3-tools/ch19-apm/07-jetpack-benchmark-baseline-profiles.md#profile-generation
+- src/part3-tools/ch17-apm/07-jetpack-benchmark-baseline-profiles.md#profile-generation
 pipeline_stage: finalized
 task6_state: reviewed
 task9_state: reviewed
@@ -86,7 +86,7 @@ Baseline Profile 解决的是代码在用户设备上“何时以什么编译状
 
 平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。截至 2026-08-14，官方列出的最低推荐稳定组合是 AGP 8.0.0、Macrobenchmark 1.4.1 和 ProfileInstaller 1.4.1；Android Studio 的 Baseline Profile Generator 模板和 Startup Profile 建议使用 AGP 8.2 以上。AGP、Macrobenchmark、ProfileInstaller 和 Google Play 各自演进，项目仍需固定一组经过验证的版本并写入实验记录。
 
-这里还要划清两条相邻但不同的优化链路。Baseline/Startup Profile 只处理由 ART 管理的 DEX 代码；[AutoFDO](../../part4-system/ch16-aosp/04-autofdo-feedback-directed-optimization.md) 用采样或硬件分支轨迹指导 LLVM/Clang 优化 native 可执行文件和共享库。OEM dexpreopt 则发生在系统镜像构建阶段，处理 boot classpath、`system_server`、系统组件和预装 APK。预装应用可能同时受三者影响，但输入数据、消费者、产物位置和验证工具不能互换。
+这里还要划清两条相邻但不同的优化链路。Baseline/Startup Profile 只处理由 ART 管理的 DEX 代码；[AutoFDO](../../part4-system/ch18-aosp/04-autofdo-feedback-directed-optimization.md) 用采样或硬件分支轨迹指导 LLVM/Clang 优化 native 可执行文件和共享库。OEM dexpreopt 则发生在系统镜像构建阶段，处理 boot classpath、`system_server`、系统组件和预装 APK。预装应用可能同时受三者影响，但输入数据、消费者、产物位置和验证工具不能互换。
 
 ### 1. Baseline Profile 是编译提示
 

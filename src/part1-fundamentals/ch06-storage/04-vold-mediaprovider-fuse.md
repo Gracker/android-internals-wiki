@@ -40,7 +40,7 @@ related_chapters:
 - '6.1'
 - '6.2'
 - '6.3'
-- '24.9'
+- '24.4'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -392,4 +392,4 @@ App 侧应让数据归属与 API 匹配：媒体列表使用 MediaStore，文档
 - §6.1「Android 存储架构」
 - §6.2「文件系统与 I/O 调度」
 - §6.3「SharedPreferences 与 DataStore」
-- §24.9「MediaStore、Photo Picker 与媒体转码」
+- §24.4「MediaStore、Photo Picker 与媒体转码」

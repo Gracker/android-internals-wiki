@@ -30,7 +30,7 @@ tags:
 - window-background
 - splashscreen-compat
 related_chapters:
-- '1.16'
+- '1.19'
 - '8.3'
 - '21.1'
 last_verified: '2026-08-14'
@@ -45,13 +45,13 @@ pipeline_stage: finalized
 
 用户点击图标后，App 自己的首帧通常还没有准备好。Starting Window（起始窗口）是系统在这段空档显示的临时画面；Android 12 引入的 SplashScreen API 统一了它的样式与交接方式，AndroidX 兼容库再把主要接入方式带到 API 21。首帧之后还可以用骨架屏（按内容结构预留的占位界面）和退出动画减少视觉跳变。本文说明这些工具的用法、版本边界和 Perfetto 分析方法。
 
-系统侧由 `ActivityTaskManagerService`（活动与任务管理服务，简称 ATMS）判断是否需要 Starting Window，再由 WM Shell（WindowManager Shell，负责起始表面和窗口过渡等工作的系统组件）创建具体画面。TaskSnapshot 则是系统保存的任务界面快照。完整机制详见 1.16 节，这里聚焦 App 侧的配置、适配和感知优化。
+系统侧由 `ActivityTaskManagerService`（活动与任务管理服务，简称 ATMS）判断是否需要 Starting Window，再由 WM Shell（WindowManager Shell，负责起始表面和窗口过渡等工作的系统组件）创建具体画面。TaskSnapshot 则是系统保存的任务界面快照。完整机制详见 1.19 节，这里聚焦 App 侧的配置、适配和感知优化。
 
 ## 范围
 
 这里的“感知启动速度”指用户从点击到看见稳定反馈、再到内容可用的主观等待。Splash Screen 可以提前给出连续的视觉反馈，却不会缩短进程创建、主线程初始化、I/O 或首屏布局本身；把启动画面多留几秒，也不会改善这些执行时间。
 
-平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，App 侧兼容实现以 AndroidX `core-splashscreen:1.2.0` 为参考。系统侧 Starting Window 的完整机制见 [WindowManager](../../part1-fundamentals/ch01-architecture/16-display-windowmanager-architecture.md)，以下重点说明应用如何配置、迁移、交接内容和验证效果。
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，App 侧兼容实现以 AndroidX `core-splashscreen:1.2.0` 为参考。系统侧 Starting Window 的完整机制见 [WindowManager](../../part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md)，以下重点说明应用如何配置、迁移、交接内容和验证效果。
 
 ## 1. 先区分三种画面
 

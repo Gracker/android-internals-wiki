@@ -98,10 +98,10 @@ related_chapters:
 - '7.1'
 - '2.3'
 - '2.4'
-- '2.5'
+- '2.9'
 - '2.2'
 - '1.1'
-- '13.2'
+- '14.2'
 - '4.3'
 task6_state: reviewed
 status: finalized
@@ -205,7 +205,7 @@ Android 12 / API 31 起，FrameTimeline（逐帧时间线）是标准入口。�
 
 颜色只用于导航。红色、黄色或浅绿色不能代替字段；`JankType` 是位标志，同一帧可能有多个原因。分析 `BufferStuffing`、Dropped、PredictionError 和显示模式切换时，还要读取相邻帧。
 
-SurfaceView、视频 overlay（硬件叠加层）、Camera 和某些引擎路径可能没有完整的 App FrameTimeline。此时应从目标 layer、buffer update、acquire fence（等待生产完成的同步栅栏）、SF latch（锁定本帧 buffer）、composition type（合成类型）、present fence（显示完成栅栏）与 release fence（buffer 可复用栅栏）组织证据。出图类型识别参见 [渲染管线总览](../ch18-rendering-pipelines/01-android-view-pipeline-analysis.md)。
+SurfaceView、视频 overlay（硬件叠加层）、Camera 和某些引擎路径可能没有完整的 App FrameTimeline。此时应从目标 layer、buffer update、acquire fence（等待生产完成的同步栅栏）、SF latch（锁定本帧 buffer）、composition type（合成类型）、present fence（显示完成栅栏）与 release fence（buffer 可复用栅栏）组织证据。出图类型识别参见 [渲染管线总览](../ch13-rendering-pipelines/01-android-view-pipeline-analysis.md)。
 
 ### 从帧回到线程与系统
 
@@ -537,7 +537,7 @@ AndroidX Fragment 的 `commit()` 会把事务加入 FragmentManager 队列：它
 - `setReorderingAllowed(true)` 允许 FragmentManager 优化同一批操作的状态变化，并改善 transition/lifecycle（转场/生命周期）语义。它不能消除布局、业务初始化或 GPU 工作。
 - `commitAllowingStateLoss()` 改变的是保存状态后的提交约束，用它规避卡顿会引入状态丢失风险。
 
-取证时可以分别标记“发起 commit”“pending actions 开始/结束”“目标 Fragment 首次可见”和“第一帧 present”。若卡点在 `onCreateView()`、`onViewCreated()` 或首个 layout，应处理页面构建；若 App buffer 已经按时提交，则继续检查 transition transaction 和 display frame。更完整的源码链路见 [22.9 Fragment、Predictive Back 与 Navigation Compose 页面切换](../../part5-app/ch22-rendering-practice/09-fragment-predictive-back-navigation.md)。
+取证时可以分别标记“发起 commit”“pending actions 开始/结束”“目标 Fragment 首次可见”和“第一帧 present”。若卡点在 `onCreateView()`、`onViewCreated()` 或首个 layout，应处理页面构建；若 App buffer 已经按时提交，则继续检查 transition transaction 和 display frame。更完整的源码链路见 [22.11 Fragment、Predictive Back 与 Navigation Compose 页面切换](../../part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md)。
 
 #### Shared element
 
@@ -665,7 +665,7 @@ Task snapshot 通过 `TaskSnapshot` 携带 HardwareBuffer（硬件图形缓冲�
 
 应记录媒体 presentation timestamp（PTS，呈现时间戳）、解码输入/输出、目标 Surface 的 frame number、queue/acquire/release（入队/获取/释放）、display present 和音频时钟。UI 的 App FrameTimeline 正常，不能证明独立视频 layer 连续更新；反过来，视频连续也不能证明控制栏动画流畅。
 
-HWC overlay 能减少 GPU 合成压力，但是否可用取决于格式、缩放、旋转、HDR（高动态范围）、受保护内容、其他 layers 与硬件资源。应检查目标 layer 的实际 composition type，不要依据 SurfaceView 或 MediaCodec 名称推断 overlay。详见[视频 Overlay、Media3 与专业编解码管线](../ch18-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md)。
+HWC overlay 能减少 GPU 合成压力，但是否可用取决于格式、缩放、旋转、HDR（高动态范围）、受保护内容、其他 layers 与硬件资源。应检查目标 layer 的实际 composition type，不要依据 SurfaceView 或 MediaCodec 名称推断 overlay。详见[视频 Overlay、Media3 与专业编解码管线](../ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md)。
 
 ### 地图与 WebView：先确认承载方式
 
@@ -681,7 +681,7 @@ HWC overlay 能减少 GPU 合成压力，但是否可用取决于格式、缩放
 - shader/pipeline（着色器/图形管线）创建、纹理上传和 GPU 执行是否与异常帧对齐；
 - 独立 layer 与宿主控件的更新是否落在同一 display frame。
 
-SurfaceView 与 TextureView 的差别参见[SurfaceView 与 TextureView 渲染管线](../ch18-rendering-pipelines/03-surfaceview-textureview-pipelines.md)。
+SurfaceView 与 TextureView 的差别参见[SurfaceView 与 TextureView 渲染管线](../ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md)。
 
 #### WebView
 
@@ -697,7 +697,7 @@ WebView 是可以独立更新的组件。平台源码可以锚定 `android-17.0.
 | 视频晚而页面滚动正常 | 独立媒体 layer、codec（编解码器）、fence、HWC |
 | host buffer（宿主缓冲区）已提交但屏幕晚 | SurfaceFlinger/HWC、DisplayFrame |
 
-Renderer 退出应结合进程生命周期、LMK（低内存终止）/OOM（内存不足）证据与 `WebViewClient.onRenderProcessGone()` 判断。除非应用自行插桩，不要预设 trace 中存在名为 `render_process_gone` 的 slice。完整结构见 [WebView 渲染管线](../ch18-rendering-pipelines/09-webview-rendering.md) 和 [WebView 性能优化实战](../../part5-app/ch22-rendering-practice/06-webview-optimization.md)。
+Renderer 退出应结合进程生命周期、LMK（低内存终止）/OOM（内存不足）证据与 `WebViewClient.onRenderProcessGone()` 判断。除非应用自行插桩，不要预设 trace 中存在名为 `render_process_gone` 的 slice。完整结构见 [WebView 渲染管线](../ch13-rendering-pipelines/09-webview-rendering.md) 和 [WebView 性能优化实战](../../part5-app/ch22-rendering-practice/16-webview-optimization.md)。
 
 ### 从症状到证据的速查表
 
@@ -1036,16 +1036,16 @@ Android 17 / API 37 继续提供 Thermal API、ADPF 与 CPU/GPU headroom 相关�
 
 - [卡顿原因](01-jank-definition-causes.md)
 - [MainThread、RenderThread 与 Hardware Layer](../../part1-fundamentals/ch02-rendering/04-main-render-thread-hardware-layer.md)
-- [FrameTimeline Perfetto 分析](../../part3-tools/ch13-perfetto/13-frametracer-frame-timeline.md)
-- [Perfetto SQL Cookbook](../../part3-tools/ch13-perfetto/07-perfetto-sql-span-join-jank-cuj.md)
-- [BufferQueue 阻塞分析](../../part3-tools/ch13-perfetto/10-bufferqueue-blocking-perfetto.md)
-- [多窗口渲染](../../part1-fundamentals/ch02-rendering/10-multiwindow-desktop-rendering.md)
+- [FrameTimeline Perfetto 分析](../../part3-tools/ch14-perfetto/13-frametracer-frame-timeline.md)
+- [Perfetto SQL Cookbook](../../part3-tools/ch14-perfetto/07-perfetto-sql-span-join-jank-cuj.md)
+- [BufferQueue 阻塞分析](../../part3-tools/ch14-perfetto/10-bufferqueue-blocking-perfetto.md)
+- [多窗口渲染](../../part1-fundamentals/ch02-rendering/14-multiwindow-desktop-rendering.md)
 - [优化策略](../../part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md)
-- [热节流适配与性能降级治理](../../part5-app/ch25-power-size/11-thermal-throttling-performance.md)
+- [热节流适配与性能降级治理](../../part5-app/ch25-power-size/09-thermal-throttling-performance.md)
 - [系统内存压力与 lmkd](../../part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md)
 - [Android Thermal](../../part1-fundamentals/ch05-cpu-power/02-dvfs-thermal-android-power.md)
 - [ADPF](../../part1-fundamentals/ch05-cpu-power/04-adpf.md)
-- [视频 Overlay 与 HWC](../ch18-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md)
+- [视频 Overlay 与 HWC](../ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md)
 
 ## 参考资料
 

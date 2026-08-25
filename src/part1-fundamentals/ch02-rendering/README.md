@@ -36,7 +36,7 @@ Android 的掉帧、首帧延迟、SurfaceView 错位、视频抖动和刷新率
 
 `VSync 调度 → Choreographer → ViewRootImpl/HWUI → RenderThread/GPU → BLAST → SurfaceFlinger → HWC → Display`
 
-这条主线提供分析基准，不代表所有内容都由 HWUI 生产。SurfaceView、TextureView、Camera、视频、Flutter、OpenGL ES、Vulkan 与游戏引擎会改变 Producer、Surface 数量、layer 拓扑或合成位置。遇到这些类型，应配合 [第 18 章：渲染链路全景](../../part2-performance/ch18-rendering-pipelines/README.md)按实际路径分类。
+这条主线提供分析基准，不代表所有内容都由 HWUI 生产。SurfaceView、TextureView、Camera、视频、Flutter、OpenGL ES、Vulkan 与游戏引擎会改变 Producer、Surface 数量、layer 拓扑或合成位置。遇到这些类型，应配合 [第 13 章：渲染管线专题](../../part2-performance/ch13-rendering-pipelines/README.md)按实际路径分类。
 
 分析一帧时要分开四组时间点：
 
@@ -49,45 +49,46 @@ Android 的掉帧、首帧延迟、SurfaceView 错位、视频抖动和刷新率
 
 ## 内容索引
 
+
 - [2.1 Android 渲染架构与版本演进](01-rendering-architecture-evolution.md)
 - [2.2 帧率、刷新率与显示模式选择](02-framerate-refresh-display-mode.md)
 - [2.3 VSync、Choreographer 与 SurfaceFlinger 调度](03-vsync-choreographer-sf-scheduling.md)
 - [2.4 MainThread、RenderThread 与 Hardware Layer](04-main-render-thread-hardware-layer.md)
-- [2.5 SurfaceFlinger 合成、FrontEnd 与事务队列](05-surfaceflinger-frontend-transaction.md)
-- [2.6 过度绘制](06-overdraw.md)
+- [2.5 过度绘制](05-overdraw.md)
+- [2.6 文字渲染性能](06-text-rendering-performance.md)
 - [2.7 GPU 渲染与图形 API 选型](07-gpu-rendering-graphics-api.md)
 - [2.8 BufferQueue、Gralloc 与 Sync Fence](08-bufferqueue-gralloc-sync-fence.md)
-- [2.9 Frame Pacing Library 与帧节奏控制](09-frame-pacing.md)
-- [2.10 多窗口与桌面模式渲染性能](10-multiwindow-desktop-rendering.md)
-- [2.11 文字渲染性能](11-text-rendering-performance.md)
-- [2.12 Android 17 Edge-to-Edge 渲染与 WindowInsets 处理性能](12-edge-to-edge-inset-rendering-performance.md)
-- [2.13 折叠屏显示切换、窗口连续性与渲染性能](13-foldable-display-pipeline-performance.md)
-- [2.14 TaskSnapshot 捕获、Overview 缩略图与启动窗口](14-tasksnapshot-recents-rendering.md)
-- [2.15 DisplayManagerService：显示器发现、拓扑、功耗与渲染交接](15-displaymanager-service-lifecycle.md)
-- [2.16 HDR 显示管线与色彩管理性能](16-hdr-color-management-pipeline-performance.md)
-- [2.17 Android 17 FrameTimeline、FrameTracer 与合成边界](17-android17-frametimeline-composition-boundary.md)
+- [2.9 SurfaceFlinger 合成、FrontEnd 与事务队列](09-surfaceflinger-frontend-transaction.md)
+- [2.10 HDR 显示管线与色彩管理性能](10-hdr-color-management-pipeline-performance.md)
+- [2.11 Frame Pacing Library 与帧节奏控制](11-frame-pacing.md)
+- [2.12 Android 17 FrameTimeline、FrameTracer 与合成边界](12-android17-frametimeline-composition-boundary.md)
+- [2.13 DisplayManagerService：显示器发现、拓扑、功耗与渲染交接](13-displaymanager-service-lifecycle.md)
+- [2.14 多窗口、PiP 与桌面模式渲染管线](14-multiwindow-desktop-rendering.md)
+- [2.15 Android 17 Edge-to-Edge 渲染与 WindowInsets 处理性能](15-edge-to-edge-inset-rendering-performance.md)
+- [2.16 折叠屏显示切换、窗口连续性与渲染性能](16-foldable-display-pipeline-performance.md)
+- [2.17 TaskSnapshot 捕获、Overview 缩略图与启动窗口](17-tasksnapshot-recents-rendering.md)
 
-## 与第 18 章怎样配合
+## 与第 13 章怎样配合
 
-| 当前场景 | 第 2 章基础 | 第 18 章路径分析 |
+| 当前场景 | 第 2 章基础 | 第 13 章路径分析 |
 |---|---|---|
-| 普通 View / Compose | [2.1 Android 渲染架构与版本演进](01-rendering-architecture-evolution.md) → [2.3](03-vsync-choreographer-sf-scheduling.md) → [2.4](04-main-render-thread-hardware-layer.md) | [标准 View](../../part2-performance/ch18-rendering-pipelines/01-android-view-pipeline-analysis.md)、[Compose](../../part2-performance/ch18-rendering-pipelines/08-compose-rendering-pipeline.md) |
-| SurfaceView / TextureView | [2.8](08-bufferqueue-gralloc-sync-fence.md) → [2.5](05-surfaceflinger-frontend-transaction.md) | [SurfaceView](../../part2-performance/ch18-rendering-pipelines/03-surfaceview-textureview-pipelines.md)、[TextureView](../../part2-performance/ch18-rendering-pipelines/03-surfaceview-textureview-pipelines.md) |
-| Flutter | [2.8](08-bufferqueue-gralloc-sync-fence.md) → [2.5](05-surfaceflinger-frontend-transaction.md) | [Flutter](../../part2-performance/ch18-rendering-pipelines/07-flutter-rendering-pipeline.md) |
-| Camera / 视频 | [2.8](08-bufferqueue-gralloc-sync-fence.md) → [2.5](05-surfaceflinger-frontend-transaction.md) | [Camera](../../part2-performance/ch18-rendering-pipelines/10-camera-pipeline.md)、[Video/HWC](../../part2-performance/ch18-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md) |
-| OpenGL ES / Vulkan / 游戏 | [2.7](07-gpu-rendering-graphics-api.md) → [2.9](09-frame-pacing.md) | [OpenGL ES](../../part2-performance/ch18-rendering-pipelines/04-opengl-egl-angle.md)、[Vulkan](../../part2-performance/ch18-rendering-pipelines/05-vulkan-hwui-multi-queue.md)、[游戏](../../part2-performance/ch18-rendering-pipelines/12-game-engine.md) |
-| 多窗口 / 折叠屏 / 桌面 | [1.16](../ch01-architecture/16-display-windowmanager-architecture.md) → [2.15](15-displaymanager-service-lifecycle.md) → [2.10](10-multiwindow-desktop-rendering.md) → [2.13](13-foldable-display-pipeline-performance.md) | 按窗口中的 View、Compose、SurfaceView 或其他 Producer 选择对应 18.x 路径 |
+| 普通 View / Compose | [2.1 Android 渲染架构与版本演进](01-rendering-architecture-evolution.md) → [2.3](03-vsync-choreographer-sf-scheduling.md) → [2.4](04-main-render-thread-hardware-layer.md) | [标准 View](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md)、[Compose](../../part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md) |
+| SurfaceView / TextureView | [2.8](08-bufferqueue-gralloc-sync-fence.md) → [2.9](09-surfaceflinger-frontend-transaction.md) | [SurfaceView](../../part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md)、[TextureView](../../part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md) |
+| Flutter | [2.8](08-bufferqueue-gralloc-sync-fence.md) → [2.9](09-surfaceflinger-frontend-transaction.md) | [Flutter](../../part2-performance/ch13-rendering-pipelines/07-flutter-rendering-pipeline.md) |
+| Camera / 视频 | [2.8](08-bufferqueue-gralloc-sync-fence.md) → [2.9](09-surfaceflinger-frontend-transaction.md) | [Camera](../../part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md)、[Video/HWC](../../part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md) |
+| OpenGL ES / Vulkan / 游戏 | [2.7](07-gpu-rendering-graphics-api.md) → [2.11](11-frame-pacing.md) | [OpenGL ES](../../part2-performance/ch13-rendering-pipelines/04-opengl-egl-angle.md)、[Vulkan](../../part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md)、[游戏](../../part2-performance/ch13-rendering-pipelines/12-game-engine.md) |
+| 多窗口 / 折叠屏 / 桌面 | [1.19](../ch01-architecture/19-display-windowmanager-architecture.md) → [2.13](13-displaymanager-service-lifecycle.md) → [2.14](14-multiwindow-desktop-rendering.md) → [2.16](16-foldable-display-pipeline-performance.md) | 按窗口中的 View、Compose、SurfaceView 或其他 Producer 选择对应 13.x 路径 |
 
-若路径尚未确定，先从 [渲染管线分类、选型与分析方法](../../part2-performance/ch18-rendering-pipelines/01-android-view-pipeline-analysis.md)建立 Producer、Surface、layer 与合成位置的对应关系。
+若路径尚未确定，先从 [渲染管线分类、选型与分析方法](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md)建立 Producer、Surface、layer 与合成位置的对应关系。
 
 ## 按现象选择阅读顺序
 
-- 主线程掉帧：`2.1 → 2.3 → 2.4 → 2.17`。
-- `dequeueBuffer()` 长时间取不到可用缓冲区，或 release fence 迟迟未完成：`2.8 → 2.5`。
-- GPU 时间偏高：`2.7 → 2.6 → 2.17`。
-- `DEVICE` / `CLIENT` composition 切换：`2.5 → 2.16 → 2.17`。
-- 60/90/120 Hz 或视频呈现节奏异常：`2.2 → 2.3 → 2.9`。
-- resize、折叠或桌面窗口错帧：`1.16 → 2.10 → 2.12 → 2.13 → 2.15`。
-- Camera 预览或 ZSL 回压：`2.8 → 18.10`。
+- 主线程掉帧：`2.1 → 2.3 → 2.4 → 2.12`。
+- `dequeueBuffer()` 长时间取不到可用缓冲区，或 release fence 迟迟未完成：`2.8 → 2.9`。
+- GPU 时间偏高：`2.7 → 2.5 → 2.12`。
+- `DEVICE` / `CLIENT` composition 切换：`2.9 → 2.10 → 2.12`。
+- 60/90/120 Hz 或视频呈现节奏异常：`2.2 → 2.3 → 2.11`。
+- resize、折叠或桌面窗口错帧：`1.19 → 2.14 → 2.15 → 2.16 → 2.13`。
+- Camera 预览或 ZSL 回压：`2.8 → 13.10`。
 
 阅读任何一条路径时，都应记录平台/框架版本、Display、Window、Surface、layer、Producer，以及 acquire fence（Consumer 何时可以开始读）、release fence（Producer 何时可以再次使用缓冲区）、present fence（本次合成何时越过 Android 可观察的显示边界）和 present 时间。缺少这些对象时，“应用慢”“GPU 慢”或“系统合成慢”都只是待验证假设。

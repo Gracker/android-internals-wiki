@@ -99,8 +99,8 @@ tags:
 - android-17
 related_chapters:
 - '26.2'
-- '19.11'
-- '15.1'
+- '17.11'
+- '16.1'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -272,11 +272,11 @@ graph TD
 
 - 采集层：接入 Crash、ANR、启动、卡顿、内存、网络、耗电、业务场景等信号。采集代码只记录时间戳、场景 ID、错误码和摘要字段，不能同步写文件或发网络请求。
 - 缓冲层：使用有界队列或 `RingBuffer`（环形缓冲区）处理高频事件。队列满时按事件等级丢弃，丢弃数进入 SDK 自监控字段。
-- 存储层：普通性能样本进入小块分片文件；Crash、ANR、HPROF（Java 堆转储文件）、Perfetto trace 等大文件使用独立目录和配额。详见 19.12 节的端侧 APM（Application Performance Monitoring，应用性能监控）存储设计。
+- 存储层：普通性能样本进入小块分片文件；Crash、ANR、HPROF（Java 堆转储文件）、Perfetto trace 等大文件使用独立目录和配额。详见 17.12 节的端侧 APM（Application Performance Monitoring，应用性能监控）存储设计。
 - 上传层：按事件优先级、网络类型、前后台状态和服务端限流批量上传。弱网下优先上传摘要，延后上传大文件；Worker 指负责这项后台工作的调度单元。
 - 控制层：服务端下发采样率、事件开关、远程诊断命令和熔断规则。熔断是在异常或成本超限时自动关闭高成本采集；每条配置都要带签名、版本号、过期时间、作用范围和回滚策略。
 
-这个分层还要遵守两个执行约束。主线程只提交原始事件；分析和聚合通常放到服务端，端侧只做必要的聚合、压缩、脱敏和失败恢复。`mmap`（内存映射）也会产生首次缺页、文件扩容、同步和存储压力，不能据此假定主线程写入没有开销。19.12 节说明了 APM SDK 的持久化、编码协议、网络投递和自监控实现。
+这个分层还要遵守两个执行约束。主线程只提交原始事件；分析和聚合通常放到服务端，端侧只做必要的聚合、压缩、脱敏和失败恢复。`mmap`（内存映射）也会产生首次缺页、文件扩容、同步和存储压力，不能据此假定主线程写入没有开销。17.12 节说明了 APM SDK 的持久化、编码协议、网络投递和自监控实现。
 
 Crash 还需要一条不依赖普通异步队列的最小保全路径。进程异常退出时，后台线程可能来不及消费队列；Java 未捕获异常（uncaught exception）与原生信号（native signal）能安全执行的操作也不同。实现应预分配必要结构，避免在原生信号处理器中调用不具备异步信号安全性（async-signal-safe）的操作，并在下次启动时校验和补传未完成记录。具体边界见 26.2。
 
@@ -298,7 +298,7 @@ Android 官方启动优化文档区分 TTID 和 TTFD：TTID 表示首帧出现�
 
 渲染也要区分指标和现场。Android 官方文档分别定义慢帧（slow frames）、冻帧（frozen frames）和 ANR；Perfetto FrameTimeline（帧时间线）可用于追踪慢帧或冻帧原因。线上指标负责指出哪些版本、页面和机型发生回归，设备实验或受控线上性能剖析负责解释具体样本。[Slow rendering](https://developer.android.com/topic/performance/vitals/render)
 
-服务端分析层要保留几类关联键：`event_id`、`session_id`、`trace_id`、`span_id`、`scene_id`、`build_version`、`device_model`、`android_version` 和 `network_type`。这些字段让 Crash、ANR、性能指标、用户日志和发布记录能够互相查询。`session_id` 应是短期、可重置且用途受限的标识，不能用永久设备 ID 代替。详见 15.1 节的采集到治理过程设计。
+服务端分析层要保留几类关联键：`event_id`、`session_id`、`trace_id`、`span_id`、`scene_id`、`build_version`、`device_model`、`android_version` 和 `network_type`。这些字段让 Crash、ANR、性能指标、用户日志和发布记录能够互相查询。`session_id` 应是短期、可重置且用途受限的标识，不能用永久设备 ID 代替。详见 16.1 节的采集到治理过程设计。
 
 ### 采样策略与数据量控制
 

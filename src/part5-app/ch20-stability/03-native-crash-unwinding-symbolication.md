@@ -89,12 +89,12 @@ tags:
 related_chapters:
 - '20.1'
 - '20.2'
-- '1.10'
+- '1.6'
 - '20.11'
 - '20.13'
 - '4.5'
-- '14.2'
-- '14.7'
+- '15.2'
+- '15.10'
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
@@ -406,7 +406,7 @@ JNI 诊断至少覆盖：
 - `GetPrimitiveArrayCritical`、字符串指针和直接缓冲区（direct buffer）地址是否遵守持有期限；
 - C++ 异常是否在 JNI 导出函数边界内转换成 Java 异常或错误结果，不能穿越 C ABI/JNI 边界。
 
-`PushLocalFrame`/`PopLocalFrame` 和 `DeleteLocalRef` 用于约束循环中的局部引用；调试构建开启 CheckJNI 能更早暴露错误。相关基础见 [1.10 JNI、NDK 与 Bionic 原生运行时性能](../../part1-fundamentals/ch01-architecture/10-jni-ndk-bionic-performance.md)。
+`PushLocalFrame`/`PopLocalFrame` 和 `DeleteLocalRef` 用于约束循环中的局部引用；调试构建开启 CheckJNI 能更早暴露错误。相关基础见 [1.6 JNI、NDK 与 Bionic 原生运行时性能](../../part1-fundamentals/ch01-architecture/06-jni-ndk-bionic-performance.md)。
 
 ### 用内存工具验证地址假设
 
@@ -1049,8 +1049,8 @@ MTE（Memory Tagging Extension，内存标签扩展）用指针标签和内存�
 - 20.11：MTE/GWP-ASan 的检测机制、报告和灰度策略。
 - 4.5：16 KB 页下的 ELF、打包和运行时代码兼容。
 - 20.13：运行时发布 Native 库的只读装载、可信来源和回滚。
-- 14.2：Simpleperf 的采样、调用链和数据分析。
-- 14.7：Hook 基础设施的实现与风险；本篇只讨论崩溃采集中的安全边界。
+- 15.2：Simpleperf 的采样、调用链和数据分析。
+- 15.10：Hook 基础设施的实现与风险；本篇只讨论崩溃采集中的安全边界。
 
 ### 第二部分的核查入口
 

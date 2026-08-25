@@ -78,7 +78,7 @@ related_chapters:
 - '20.1'
 - '9.1'
 - '9.2'
-- '1.3'
+- '1.9'
 - '1.1'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
