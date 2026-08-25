@@ -489,7 +489,6 @@ Android 17 的 HWC 主链路仍要区分 SF 侧的 `presentOrValidate()`、`vali
 相关章节：
 
 - [18.3 SurfaceView 与 TextureView 渲染管线](03-surfaceview-textureview-pipelines.md)
-- [18.3 SurfaceView 与 TextureView 渲染管线](03-surfaceview-textureview-pipelines.md)
 - [18.5 Vulkan 原生管线与 HWUI 多队列](05-vulkan-hwui-multi-queue.md)
 - [2.8 BufferQueue、Gralloc 与 Sync Fence](../../part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md)
 - [2.7 GPU 渲染与图形 API 选型](../../part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md)
@@ -950,12 +949,15 @@ Android 17 增加 manifest 请求 `com.android.graphics.driver.prefer_angle`。�
 - [`SyncVk.cpp`](https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/src/libANGLE/renderer/vulkan/SyncVk.cpp)：native fence、client wait 和 server wait。
 - 内核 [`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c) 与 [`dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)：sync fd、signal、callback 和 wait。
 
----
+## 小结
 
-> **交叉引用**
->
-> - 原生 GLES 与 EGL 路径详见 [18.4 OpenGL ES、EGL 与 ANGLE](04-opengl-egl-angle.md)
-> - Android Vulkan WSI 详见 [18.5 Vulkan 原生管线与 HWUI 多队列](05-vulkan-hwui-multi-queue.md)
-> - SurfaceControl 与 fence 所有权详见 [18.6 SurfaceControl 与 HardwareBufferRenderer](06-surfacecontrol-hardwarebuffer-renderer.md)
-> - 游戏 render loop 与 frame pacing 详见 [18.12 Android 17 游戏引擎渲染链路](12-game-engine.md)
-> - 图形 API 选择详见 [2.7 图形 API 演进与选择策略](../../part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md)
+原生 GLES 与 ANGLE 共享 EGL/ANativeWindow → BufferQueue → SurfaceFlinger/HWC 的显示后半段；差异集中在图形前端和驱动实现：前者进入厂商 GLES，后者把 GLES 状态与 shader 翻译成 Vulkan 工作。`eglSwapBuffers()` 或 `vkQueuePresentKHR()` 返回，都不能证明 GPU 已完成或画面已经上屏。
+
+诊断时应沿应用调用、厂商驱动或 ANGLE 状态处理、GPU submit/fence、队列、latch 与 display present 逐段对齐。归因给 ANGLE 前还要先确认实际 backend，不能仅凭某个 Vulkan slice 下结论。
+
+相关章节：
+
+- [18.5 Vulkan 原生管线与 HWUI 多队列](05-vulkan-hwui-multi-queue.md)
+- [18.6 SurfaceControl 与 HardwareBufferRenderer](06-surfacecontrol-hardwarebuffer-renderer.md)
+- [18.12 Android 17 游戏引擎渲染链路](12-game-engine.md)
+- [2.7 GPU 渲染与图形 API 选型](../../part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md)

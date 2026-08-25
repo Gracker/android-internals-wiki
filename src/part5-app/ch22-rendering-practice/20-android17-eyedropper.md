@@ -1,8 +1,8 @@
 ---
-title: Android 17 EyeDropper API 与跨设备协作性能
-chapter: '18.13'
-section: '18.13'
-section_title: Android 17 EyeDropper API 与跨设备协作性能
+title: Android 17 EyeDropper：系统取色、截图边界与跨设备同步
+chapter: '22.20'
+section: '22.20'
+section_title: Android 17 EyeDropper：系统取色、截图边界与跨设备同步
 status: finalized
 applicable_versions: Android 17 (API 37)
 tags:
@@ -12,9 +12,11 @@ tags:
 - system-ui
 - collaboration
 related_chapters:
+- '1.16'
 - '2.5'
-- '8.2'
-- '18.1'
+- '22.1'
+- '22.8'
+- '22.10'
 last_verified: '2026-07-31'
 last_verified_against: android-17.0.0_r1 (Intent/current.txt, ScreenCapture, WindowManagerService, packages/apps/EyeDropper) / Android 17 API 37 Intent、Activity Result、Package Visibility 与 Trace 官方文档
 confidence: high
@@ -88,7 +90,7 @@ task9_state: reviewed
 task2b_state: fixed
 ---
 
-# Android 17 EyeDropper API 与跨设备协作性能
+# Android 17 EyeDropper：系统取色、截图边界与跨设备同步
 
 EyeDropper 的公开契约、Android 17 AOSP 实现和厂商跨设备能力不是同一层承诺。接入前应先限定可用设备、颜色返回语义和取消路径，再评估截图、合成、IPC 或远端协作带来的成本。
 

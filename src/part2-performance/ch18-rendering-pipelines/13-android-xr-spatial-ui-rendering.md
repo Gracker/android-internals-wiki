@@ -1,9 +1,9 @@
 ---
 title: Android 17 / Android XR 空间 UI 与环境资产渲染性能
-chapter: '18.14'
-section: '18.14'
+chapter: '18.13'
+section: '18.13'
 section_title: Android 17 / Android XR 空间 UI 与环境资产渲染性能
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: Android XR / Jetpack XR SDK Developer Preview 4；Android 17 (API 37)
 last_verified: '2026-07-31'
 last_verified_against: Android 17 / API 37 与 android-17.0.0_r1 公共图形栈 / Android XR Developer Preview 4 / XR Compose 1.0.0-alpha16 / XR Runtime、SceneCore、ARCore 1.0.0-beta01 / XR Projected 1.0.0-alpha10 / Compose Glimmer 1.0.0-alpha16 / Unity Android XR Extensions / OpenXR 1.1 / android17-6.18-2026-06_r6
@@ -20,9 +20,13 @@ related_chapters:
 - '2.7'
 - '18.1'
 - '18.4'
-- '18.7'
+- '18.5'
+- '18.6'
+- '18.12'
 - '22.3'
 - '25.1'
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 sources:
 - type: internal-reference
   path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S01_rendering_types_overview.md
@@ -360,6 +364,10 @@ host 上按时生成帧，不能证明传输和 glasses present 也按时；眼�
 - [ ] `RenderViewpoint` 数据没有被误写成 runtime pose latch 保证；
 - [ ] emulator 数据没有替代真机 GPU、thermal、tracking 或光学延迟；
 - [ ] host phone 与 projected glasses 的性能和功耗分开记录。
+
+## 小结
+
+Android XR 不是传统 View 管线末端再增加一个显示设备，而是把 2D panel、空间内容、姿态预测、runtime 合成和头显或眼镜显示组织成多条责任不同的路径。分析前必须先确定内容形态、swapchain 或 Surface 的所有者以及最终 present 的责任方，再分别测量资源准备、应用渲染、runtime cadence、tracking 和设备端显示。只有这些边界明确后，资产预算、spacewarp、帧率与功耗数据才具备可比性。
 
 ## 参考资料
 

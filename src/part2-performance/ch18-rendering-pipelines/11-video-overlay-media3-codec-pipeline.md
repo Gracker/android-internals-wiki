@@ -1,7 +1,7 @@
 ---
 title: 视频 Overlay、Media3 与专业编解码管线
 chapter: '18.11'
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 tags:
 - HWC
@@ -306,7 +306,7 @@ related_chapters:
 section: '18.11'
 task6_state: reviewed
 task2b_state: fixed
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 task9_state: reviewed
 last_verified: '2026-08-20'
 last_verified_against: android-17.0.0_r1 (MediaCodec.java, MediaCodecInfo.java, MediaFormat.java, HardwareBuffer.java, TextureView.java, DeferredLayerUpdater.cpp, CCodec.cpp, CCodecBufferChannel.cpp, ACodec.cpp, BufferQueueProducer.cpp, BufferQueueConsumer.cpp, HWComposer.cpp, Display.cpp, Output.cpp, Layer.cpp, Composition.aidl, Capability.aidl, BufferUsage.aidl) / Android 17 API 37 media and HWC docs / android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, dma-fence.h, sync_file.c)
@@ -491,7 +491,7 @@ HWC 的可用能力由 SoC 显示模块、Composer HAL、显示模式和当前 L
 
 ### Tunneled playback 与 SIDEBAND
 
-Tunneled playback 把逐帧选择和 A/V 同步交给 codec、音频或 tuner 时钟以及设备显示链。sideband handle 是 framework 传给 HWC 的不透明流句柄，由设备侧机制更新内容并维持同步；因此，sideband layer 不一定出现普通 Surface 视频那样密集的 `queueBuffer` 和 latch 事件。本节只界定它与 HWC composition type 的关系：确认 codec capability、sideband 状态、`SIDEBAND` composition 和设备时钟后，才能把缺少逐帧图形事件判断为正常路径。Codec2 配置、Media3 ABR、音视频同步和完整排障统一见 [18.11 视频 Overlay、Media3 与专业编解码管线](11-video-overlay-media3-codec-pipeline.md)。
+Tunneled playback 把逐帧选择和 A/V 同步交给 codec、音频或 tuner 时钟以及设备显示链。sideband handle 是 framework 传给 HWC 的不透明流句柄，由设备侧机制更新内容并维持同步；因此，sideband layer 不一定出现普通 Surface 视频那样密集的 `queueBuffer` 和 latch 事件。本节只界定它与 HWC composition type 的关系：确认 codec capability、sideband 状态、`SIDEBAND` composition 和设备时钟后，才能把缺少逐帧图形事件判断为正常路径。Codec2 配置、Media3 ABR、音视频同步和完整排障由本文后文统一展开。
 
 ### DRM、Secure Video 与 Overlay
 
@@ -614,9 +614,8 @@ AIDL Composer3 改变的是 framework 与 Composer HAL 之间的接口形式，�
 
 - [2.5 SurfaceFlinger 合成、FrontEnd 与事务队列](../../part1-fundamentals/ch02-rendering/05-surfaceflinger-frontend-transaction.md)：Layer、CompositionEngine 与显示提交的系统路径。
 - [2.7 GPU 渲染与图形 API 选型](../../part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md)：RenderEngine/client composition 的 GPU 侧成本。
-- [18.3 SurfaceView 与 TextureView 渲染管线](03-surfaceview-textureview-pipelines.md)：独立 Surface、窗口层级和生命周期。
-- [18.3 SurfaceView 与 TextureView 渲染管线](03-surfaceview-textureview-pipelines.md)：`SurfaceTexture` 采样与 App Window 合成。
-- [18.11 视频 Overlay、Media3 与专业编解码管线](11-video-overlay-media3-codec-pipeline.md)：解封装、Codec2、tunneled playback 和播放策略。
+- [18.3 SurfaceView 与 TextureView 渲染管线](03-surfaceview-textureview-pipelines.md)：独立 Surface、窗口层级、生命周期以及 `SurfaceTexture` 采样。
+- [22.18 Media3 视频播放：解码、帧时序与渲染](../../part5-app/ch22-rendering-practice/18-media3-video-rendering.md)：播放器侧的 Surface 生命周期、prewarming、effects、HDR/DRM 与首帧观测。
 
 ### 源码核对清单
 
@@ -728,7 +727,7 @@ Android 11 / API 30 起，应用可在 codec 声明 `FEATURE_LowLatency` 后设�
 
 HDR、Dolby Vision、secure、high-frame-rate、low-latency 与 tunnel 要按实际组合查询和测试。显示支持、decoder profile、extractor metadata、secure Surface、HWC plane 和 tone mapping 任一环节都可能改变结果。Android 17 还增加 Eclipsa video 的平台播放与采集能力；这只说明 framework 能传递相应动态元数据，不能保证所有 SoC、显示或 codec 组合都采用硬件低成本路径。
 
-完整音频输出、AAudio/MMAP 与回调预算由 [1.11 音频链路（Audio Pipeline）延迟与性能](../../part1-fundamentals/ch01-architecture/11-audio-pipeline-performance.md) 承载；Camera 到 encoder 的 Surface 管线见 [18.10 Android Camera 平台管线：HAL3、Buffer、ZSL 与显示](10-camera-pipeline.md)；Media3 的 Surface 生命周期、prewarming、effects、HDR/DRM、首帧与播放器侧观测见 [22.19 CameraX：UseCase、Camera2 映射与性能](../../part5-app/ch22-rendering-practice/19-camerax-rendering.md)。本节只保留播放控制面、Codec2/OMX、tunnel 与 ABR 的共同边界。
+完整音频输出、AAudio/MMAP 与回调预算由 [1.11 音频链路（Audio Pipeline）延迟与性能](../../part1-fundamentals/ch01-architecture/11-audio-pipeline-performance.md) 承载；Camera 到 encoder 的 Surface 管线见 [18.10 Android Camera 平台管线：HAL3、Buffer、ZSL 与显示](10-camera-pipeline.md)；Media3 的 Surface 生命周期、prewarming、effects、HDR/DRM、首帧与播放器侧观测见 [22.18 Media3 视频播放：解码、帧时序与渲染](../../part5-app/ch22-rendering-practice/18-media3-video-rendering.md)。本节只保留播放控制面、Codec2/OMX、tunnel 与 ABR 的共同边界。
 
 ### 三种视频承载路径不能混为一谈
 

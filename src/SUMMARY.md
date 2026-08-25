@@ -159,9 +159,8 @@
   - [18.10 Android Camera 平台管线：HAL3、Buffer、ZSL 与显示](part2-performance/ch18-rendering-pipelines/10-camera-pipeline.md)
   - [18.11 视频 Overlay、Media3 与专业编解码管线](part2-performance/ch18-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md)
   - [18.12 Android 17 游戏引擎渲染链路](part2-performance/ch18-rendering-pipelines/12-game-engine.md)
-  - [18.13 Android 17 EyeDropper API 与跨设备协作性能](part2-performance/ch18-rendering-pipelines/13-eyedropper-crossdevice.md)
-  - [18.14 Android 17 / Android XR 空间 UI 与环境资产渲染性能](part2-performance/ch18-rendering-pipelines/14-android-xr-spatial-ui-rendering.md)
-  - [18.15 Android 17 Jetpack WebGPU 渲染与计算管线](part2-performance/ch18-rendering-pipelines/15-webgpu-android-pipeline.md)
+  - [18.13 Android 17 / Android XR 空间 UI 与环境资产渲染性能](part2-performance/ch18-rendering-pipelines/13-android-xr-spatial-ui-rendering.md)
+  - [18.14 Android 17 Jetpack WebGPU 渲染与计算管线](part2-performance/ch18-rendering-pipelines/14-webgpu-android-pipeline.md)
 
 ---
 
@@ -301,6 +300,7 @@
   - [22.17 SurfaceView 与 TextureView：渲染路径、选型与排障](part5-app/ch22-rendering-practice/17-surfaceview-textureview.md)
   - [22.18 Media3 视频播放：解码、帧时序与渲染](part5-app/ch22-rendering-practice/18-media3-video-rendering.md)
   - [22.19 CameraX：UseCase、Camera2 映射与性能](part5-app/ch22-rendering-practice/19-camerax-rendering.md)
+  - [22.20 Android 17 EyeDropper：系统取色、截图边界与跨设备同步](part5-app/ch22-rendering-practice/20-android17-eyedropper.md)
 
 - [第 23 章：内存实践](part5-app/ch23-memory-practice/README.md)
   - [23.1 内存泄漏检测与治理](part5-app/ch23-memory-practice/01-memory-leak-governance.md)

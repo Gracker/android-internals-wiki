@@ -2,7 +2,7 @@
 title: Android 17 游戏引擎渲染链路
 chapter: '18.12'
 section: '18.12'
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 tags:
 - Unity
@@ -22,12 +22,11 @@ related_chapters:
 - '18.5'
 - '18.11'
 - '2.2'
-- '18.13'
 consolidated_from:
 - src/part2-performance/ch08-responsiveness/09-game-performance.md
-pipeline_stage: ready-for-review
-task6_state: pending
-task9_state: pending
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
 task2b_state: fixed
 last_verified: '2026-08-25'
 last_verified_against: AOSP android-17.0.0_r1 (SurfaceView.java, Surface.java, PerformanceHintManager.java, GameManager.java, GameState.java, TextureView.java, HardwareRenderer.java, TextureLayer.java, DeferredLayerUpdater.cpp, DrawFrameTask.cpp, BufferQueueCore.cpp, BufferQueueProducer.cpp, swapchain.cpp, Surface.cpp, SurfaceFlinger.cpp, HWComposer.cpp, Display.cpp, Output.cpp, OutputLayer.cpp, AidlComposerHal.cpp, Mode.aidl) / AGDK Frame Pacing, Frame Rate, ADPF, Game Mode, Game State, OpenXR 1.1 docs / kernel android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, dma-fence.h, sync_file.c)
@@ -628,7 +627,7 @@ Display bound 指游戏 buffer 已 ready，SurfaceFlinger 却错过目标 latch�
 
 这些场景只能在本地 game loop 与显示阶段复用本节方法，端到端责任边界各不相同：小游戏还要区分 JS/runtime、bridge（脚本运行时与原生宿主之间的调用层）及宿主 `SurfaceView`/`TextureView`；云游戏要把云端排队、渲染、编码和网络遥测关联到本地解码与 present；手机 AR 要统一 Camera、IMU/pose、render target 与 present 的时钟；头显 XR 由 OpenXR runtime/compositor 负责 predicted display（预测显示时间）、reprojection（依据最新姿态修正已渲染画面）与最终显示交接，不保证经过普通 App `queueBuffer()`。
 
-本节不展开四套独立教程。TextureView 的消费语义见 [18.3 SurfaceView 与 TextureView 渲染管线](03-surfaceview-textureview-pipelines.md)，云游戏本地视频与 sideband 见 [18.11 视频 Overlay、Media3 与专业编解码管线](11-video-overlay-media3-codec-pipeline.md)，XR runtime/compositor 见 [18.14 Android 17 / Android XR 空间 UI 与环境资产渲染性能](14-android-xr-spatial-ui-rendering.md)。进入对应专题前，应先确认最终 buffer Producer、输出 carrier（承载方式）、时钟域和 present 责任方。
+本节不展开四套独立教程。TextureView 的消费语义见 [18.3 SurfaceView 与 TextureView 渲染管线](03-surfaceview-textureview-pipelines.md)，云游戏本地视频与 sideband 见 [18.11 视频 Overlay、Media3 与专业编解码管线](11-video-overlay-media3-codec-pipeline.md)，XR runtime/compositor 见 [18.13 Android 17 / Android XR 空间 UI 与环境资产渲染性能](13-android-xr-spatial-ui-rendering.md)。进入对应专题前，应先确认最终 buffer Producer、输出 carrier（承载方式）、时钟域和 present 责任方。
 
 ## 内核和驱动侧
 
@@ -685,8 +684,7 @@ OEM 策略、画质、thermal、frame-rate vote 与引擎上限都可能限制�
 - [18.5 Vulkan 原生管线与 HWUI 多队列](05-vulkan-hwui-multi-queue.md)：Android Vulkan swapchain 与显式同步。
 - [18.11 视频 Overlay、Media3 与专业编解码管线](11-video-overlay-media3-codec-pipeline.md)：云游戏视频 carrier、CLIENT / DEVICE 与 tunneled sideband。
 - [2.2 帧率、刷新率与显示模式选择](../../part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md)：frame-rate vote、ARR 和 display mode。
-- [18.14 Android 17 / Android XR 空间 UI 与环境资产渲染性能](14-android-xr-spatial-ui-rendering.md)：OpenXR runtime、compositor 与显示边界。
-- [18.11 视频 Overlay、Media3 与专业编解码管线](11-video-overlay-media3-codec-pipeline.md)：云游戏本地视频解码和 sideband 证据。
+- [18.13 Android 17 / Android XR 空间 UI 与环境资产渲染性能](13-android-xr-spatial-ui-rendering.md)：OpenXR runtime、compositor 与显示边界。
 
 ## Android 17 源码核对清单
 

@@ -25,10 +25,11 @@
 - [22.17 SurfaceView 与 TextureView：渲染路径、选型与排障](17-surfaceview-textureview.md)
 - [22.18 Media3 视频播放：解码、帧时序与渲染](18-media3-video-rendering.md)
 - [22.19 CameraX：UseCase、Camera2 映射与性能](19-camerax-rendering.md)
+- [22.20 Android 17 EyeDropper：系统取色、截图边界与跨设备同步](20-android17-eyedropper.md)
 
 ## 阅读建议
 
 - 按使用的 UI 框架或卡顿场景选择条目，无须按编号顺序阅读。
 - View 项目可先读 22.1、22.2 和 22.7；Compose 项目可从 22.3、22.2、22.14 和 22.15 开始。
 - 改动前后都应保留 Trace、卡顿率、帧时间分布和设备配置，避免只凭主观体验判断效果。
-- 相机预览、分析、拍照和录像的应用侧配置见 22.18；HAL3 request/result（应用提交给相机硬件抽象层的请求及其返回元数据）、BufferQueue（生产者与消费者传递图形缓冲区的队列）和 fence（表示异步读写何时完成的同步信号）等系统链路继续阅读 [18.10 Android Camera 平台管线：HAL3、Buffer、ZSL 与显示](../../part2-performance/ch18-rendering-pipelines/10-camera-pipeline.md)。
+- 相机预览、分析、拍照和录像的应用侧配置见 22.19；HAL3 request/result（应用提交给相机硬件抽象层的请求及其返回元数据）、BufferQueue（生产者与消费者传递图形缓冲区的队列）和 fence（表示异步读写何时完成的同步信号）等系统链路继续阅读 [18.10 Android Camera 平台管线：HAL3、Buffer、ZSL 与显示](../../part2-performance/ch18-rendering-pipelines/10-camera-pipeline.md)。

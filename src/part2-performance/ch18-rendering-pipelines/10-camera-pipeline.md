@@ -930,12 +930,12 @@ Android 17 AOSP 发布说明要求删除厂商代码中的 ION 调用。Android 
 
 ## 与其他章节的关系
 
-- **§2.8 DMA-BUF、Gralloc 与跨进程图形内存共享**：Camera buffer handle 与 fence 的内存模型；
-- **§14.14 Android Camera 性能与 Perfetto 分析**：Camera trace 配置、SQL 与案例；
-- **§18.4 SurfaceView 与 TextureView**：预览 carrier 的窗口与显示路径；
-- **§18.7 SurfaceControl API 深入**：SurfaceView preview layer 的 transaction 与 fence；
-- **§18.12 Video Overlay / HWC**：录像与预览 layer 进入 HWC 后的 composition 决策。
-- **§22.19 CameraX：UseCase、Camera2 映射与性能**：CameraX 1.6.1 的 ZSL ring、CameraPipe 重处理、ImageCapture 与用例组合。
+- [2.8 BufferQueue、Gralloc 与 Sync Fence](../../part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md)：Camera buffer handle 与 fence 的内存模型；
+- [14.14 Camera 性能分析工具：Perfetto、SQL 与 GFXReconstruct](../../part3-tools/ch14-other-tools/14-camera-performance-analysis.md)：Camera trace 配置、SQL 与案例；
+- [18.3 SurfaceView 与 TextureView 渲染管线](03-surfaceview-textureview-pipelines.md)：预览 carrier 的窗口与显示路径；
+- [18.6 SurfaceControl 与 HardwareBufferRenderer](06-surfacecontrol-hardwarebuffer-renderer.md)：SurfaceView preview layer 的 transaction 与 fence；
+- [18.11 视频 Overlay、Media3 与专业编解码管线](11-video-overlay-media3-codec-pipeline.md)：录像与预览 layer 进入 HWC 后的 composition 决策；
+- [22.19 CameraX：UseCase、Camera2 映射与性能](../../part5-app/ch22-rendering-practice/19-camerax-rendering.md)：CameraX 1.6.1 的 ZSL ring、CameraPipe 重处理、ImageCapture 与用例组合。
 
 ## 小结
 

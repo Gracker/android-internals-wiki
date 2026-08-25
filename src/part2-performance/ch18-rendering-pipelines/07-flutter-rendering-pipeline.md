@@ -642,32 +642,13 @@ Android 与 Flutter 的变化应分开记录。Android 决定 View、Surface、H
 | Android 12 / API 31 | BLAST 与 FrameTimeline 已形成现代分析基线；仍不能用 OS 版本推断 Flutter renderer |
 | Android 13 / API 33 | Image fence API 可供较新的 ImageReader Consumer 使用；是否采用仍由 App 携带的 Flutter engine 决定 |
 | Android 14 / API 34 | 提供 HCPP 需要的 transaction synchronization 平台条件；不会自动启用 HCPP |
-| Android 15 / API 35 | 16 KB page size 设备要求 Flutter engine 与 native plugin 满足 ELF/APK 对齐；Flutter 3.27 同期默认启用 Impeller 属于 Flutter 发布决策 |
+| Android 15 / API 35 | 16 KB page size 设备要求 Flutter engine 与 native plugin 满足 ELF/APK 对齐，完整检查统一见 [4.5 16 KB Page Size 与 Android 性能](../../part1-fundamentals/ch04-memory/05-16kb-page-size.md)；Flutter 3.27 同期默认启用 Impeller 属于 Flutter 发布决策 |
 | Android 16 / API 36 | 旧 Flutter App 仍可保留旧线程/renderer；GPU syscall filtering 场景要测试定制 engine 和旧 native plugin |
 | Android 17 / API 37 | 平台锚点；按 `android-17.0.0_r1` 的 TextureView、SurfaceView、SurfaceFlinger 与 AIDL Composer 解释显示端 |
 | Flutter 3.27 | Android API 29+ 默认启用 Impeller；Android/iOS 合并线程能力进入 release notes |
 | Flutter 3.29—3.31 | 官方架构文档把 3.29 写为合并起点；对这段版本核对 engine revision 与 opt-out |
 | Flutter 3.32 stable | issue #150525 明确写为 Android/iOS 默认合并且可 opt-out；作为保守分析基线 |
 | Flutter 3.44 | HCPP 作为 API 34+、Impeller Vulkan 条件下的实验性 opt-in 能力 |
-
-### 16 KB Page Size 与 Flutter 插件
-
-Android 15 起支持 16 KB page-size（内存页大小）设备。Flutter App 中的 engine、AOT native library（Dart 提前编译生成的原生库）、FFI library 和含 `.so` 的插件都要同时满足：
-
-- APK 中未压缩 `.so` 的 ZIP 对齐；
-- ELF load segment（可执行文件的装载段）的 `p_align` 对齐要求；
-- native 代码不能假定 `PAGE_SIZE == 4096`；
-- `mmap`（内存映射）、shared memory 与自定义 allocator 按运行时 page size 工作。
-
-工程检查可按下面执行：
-
-- 使用支持 16 KB 打包对齐的 AGP（Android Gradle Plugin）；Android 官方建议 AGP 8.5.1+；
-- 使用 NDK r28+ 让新构建的 shared library 默认适配 16 KB；
-- 旧 NDK 明确配置 linker（链接器）的 page-size 选项，并用 ELF 工具复核；
-- 检查所有预编译 plugin `.so` 与 `libc++_shared.so`；
-- 在 16 KB emulator/真机运行启动、PlatformView、camera/video、FFI 和后台恢复测试。
-
-`packagingOptions` 只能影响 APK 打包方式，不能修复 ELF `p_align` 或 native 代码中的 4 KB 常量。Android 17 平台锚点也不会替未重新编译的插件修复这些问题。
 
 ## 固定源码入口
 
@@ -692,9 +673,9 @@ Android 15 起支持 16 KB page-size（内存页大小）设备。Flutter App �
 
 ## 与其他章节的关系
 
-- [18.7 Flutter 渲染管线：Engine、Impeller 与 Surface](07-flutter-rendering-pipeline.md)：framework/engine 原理与性能视角；
-- [18.3 SurfaceView 与 TextureView 渲染管线](03-surfaceview-textureview-pipelines.md) 与 [18.3 SurfaceView 与 TextureView 渲染管线](03-surfaceview-textureview-pipelines.md)：Android 容器的源码细节；
+- [18.3 SurfaceView 与 TextureView 渲染管线](03-surfaceview-textureview-pipelines.md)：Android 容器的源码细节；
 - [18.9 Android 17 WebView 渲染管线](09-webview-rendering.md)：WebView 作为 PlatformView 时的 Chromium 与 Android 显示路径。
+- [4.5 16 KB Page Size 与 Android 性能](../../part1-fundamentals/ch04-memory/05-16kb-page-size.md)：Flutter engine、AOT 与 native plugin 的 16 KB 兼容检查。
 
 ## 小结
 

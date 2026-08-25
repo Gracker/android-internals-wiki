@@ -16,15 +16,15 @@ Android 渲染没有一条适用于所有场景的固定流水线。分析前，
 - [18.10 Android Camera 平台管线：HAL3、Buffer、ZSL 与显示](10-camera-pipeline.md)
 - [18.11 视频 Overlay、Media3 与专业编解码管线](11-video-overlay-media3-codec-pipeline.md)
 - [18.12 Android 17 游戏引擎渲染链路](12-game-engine.md)
-- [18.13 Android 17 EyeDropper API 与跨设备协作性能](13-eyedropper-crossdevice.md)
-- [18.14 Android 17 / Android XR 空间 UI 与环境资产渲染性能](14-android-xr-spatial-ui-rendering.md)
-- [18.15 Android 17 Jetpack WebGPU 渲染与计算管线](15-webgpu-android-pipeline.md)
+- [18.13 Android 17 / Android XR 空间 UI 与环境资产渲染性能](13-android-xr-spatial-ui-rendering.md)
+- [18.14 Android 17 Jetpack WebGPU 渲染与计算管线](14-webgpu-android-pipeline.md)
 
 ## 阅读建议
 
-- 普通 View 先读 [18.1 Android View 渲染管线与分析方法](01-android-view-pipeline-analysis.md)；Flutter 或 Compose 再进入 [18.7](07-flutter-rendering-pipeline.md)。
+- 普通 View 先读 [18.1 Android View 渲染管线与分析方法](01-android-view-pipeline-analysis.md)；Flutter 进入 [18.7](07-flutter-rendering-pipeline.md)，Compose 进入 [18.8](08-compose-rendering-pipeline.md)。
 - Surface、图形 API 与多 layer：按 [18.2](02-android-software-offscreen-mixed-rendering.md) → [18.3](03-surfaceview-textureview-pipelines.md) → [18.4](04-opengl-egl-angle.md) / [18.5](05-vulkan-hwui-multi-queue.md) → [18.6](06-surfacecontrol-hardwarebuffer-renderer.md) 阅读。
 - 视频、Camera 与游戏：分别从 [18.10 Android Camera 平台管线：HAL3、Buffer、ZSL 与显示](10-camera-pipeline.md)、[18.11 视频 Overlay、Media3 与专业编解码管线](11-video-overlay-media3-codec-pipeline.md)、[18.12 Android 17 游戏引擎渲染链路](12-game-engine.md) 切入；刷新率联动问题再补 [2.2 帧率、刷新率与显示模式选择](../../part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md)。
+- 空间 UI 先用 [18.13](13-android-xr-spatial-ui-rendering.md) 划清应用与 XR runtime 的显示责任；评估 Kotlin 现代 GPU API 时再读 [18.14](14-webgpu-android-pipeline.md)，并分别核对 AndroidX 与 WebView 的运行时边界。
 - 任一性能问题都回到 [18.1 Android View 渲染管线与分析方法](01-android-view-pipeline-analysis.md#统一分析方法)，沿同一帧的时间线核对 Producer、BufferQueue（缓冲区队列）、fence（表示操作完成或资源可用的同步信号）、SurfaceFlinger、HWC（硬件合成器）与 present（帧呈现）事件。
 
 原独立 PiP/Freeform 与多窗口管线正文已并入 2.10，原独立分析方法正文已并入 18.1；其余专项保持一篇一主题。

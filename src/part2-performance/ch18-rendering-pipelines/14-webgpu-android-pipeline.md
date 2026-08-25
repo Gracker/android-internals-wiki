@@ -1,9 +1,9 @@
 ---
 title: Android 17 Jetpack WebGPU 渲染与计算管线
-chapter: '18.15'
-section: '18.15'
+chapter: '18.14'
+section: '18.14'
 section_title: Android 17 Jetpack WebGPU 渲染与计算管线
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
 tags:
 - webgpu
@@ -17,8 +17,13 @@ tags:
 related_chapters:
 - '2.7'
 - '14.11'
+- '18.3'
 - '18.4'
 - '18.5'
+- '18.6'
+- '18.9'
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 last_verified: '2026-08-13'
 last_verified_against: androidx.webgpu 1.0.0-alpha05 / AndroidX c48b772dd76241af6af60bee13d3cad0e4520306 / Dawn 9d41fdf36977cca92361c6ae2769129bbaaafd9b / android-17.0.0_r1 / Writer rendering_pipelines S01、S03、S04 / android17-6.18-2026-06_r6
 confidence: medium
@@ -549,6 +554,10 @@ Jetpack WebGPU 在应用进程中加载 AndroidX AAR 内的 Dawn。WebView 页�
 | WebView 支持 WebGPU 就等于原生库可用 | 两者由不同依赖、进程和能力检测控制 |
 | WebGPU 固定达到 Vulkan 90%—95% | 没有跨设备、跨 workload 的官方固定比例 |
 | alpha05 的 Dawn commit 无法追踪 | AAR 的 `dawn_build_metadata.json` 给出精确 SHA |
+
+## 小结
+
+Jetpack WebGPU 的价值是用统一对象模型组织渲染与计算，同时保留对 adapter、feature、limit 和后端的显式查询；它并不绕过 Dawn、驱动、Android Surface 或系统显示链路。落地时应把 API 稳定性、AAR 体积、资源生命周期和设备覆盖纳入选型，并用同设备、同画质、同同步点的 trace 与 GPU counter 验证性能。WebView WebGPU 是另一条由 Chromium 管理的运行时路径，不能与 AndroidX WebGPU 共享能力或生命周期假设。
 
 ## 源码与文档入口
 

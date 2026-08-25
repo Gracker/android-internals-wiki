@@ -177,7 +177,7 @@ Android 9 到 Android 17 的图形栈不能只用“Legacy”与“BLAST”二�
 
 | 模式 | 主要 Producer | Surface/layer 形态 | 主要合成位置 | 容易误判的点 | 章节 |
 |---|---|---|---|---|---|
-| 标准 Android View | MainThread 准备状态，HWUI RenderThread/GPU 产出 | 宿主 App Window | SF 选择 DEVICE 或 CLIENT | MainThread `draw()` 结束不等于 buffer 已提交 | [18.1 Android View 渲染管线与分析方法](01-android-view-pipeline-analysis.md) |
+| 标准 Android View | MainThread 准备状态，HWUI RenderThread/GPU 产出 | 宿主 App Window | SF 选择 DEVICE 或 CLIENT | MainThread `draw()` 结束不等于 buffer 已提交 | 本篇 |
 | Software / 离屏 | `lockCanvas()` 线程、CPU raster（CPU 光栅化）或离屏 GPU | 可见 Surface 或离屏 buffer | 可见目标进入 SF/HWC；离屏目标由下游消费 | “软件绘制”不等于没有 BufferQueue；离屏完成 fence 也不是 present fence | [18.2 Android 软件、离屏与混合渲染路径](02-android-software-offscreen-mixed-rendering.md)、[18.6 SurfaceControl 与 HardwareBufferRenderer](06-surfacecontrol-hardwarebuffer-renderer.md) |
 | 混合渲染 | 宿主 HWUI + 一个或多个独立 Producer | App Window 与 child layer 并存 | SF/HWC 合成多个 layer | 不能用宿主窗口一条 FrameTimeline 代表所有独立 Surface | [18.2 Android 软件、离屏与混合渲染路径](02-android-software-offscreen-mixed-rendering.md) |
 | 多窗口 | 每个 Window 各有 ViewRoot/Surface；线程可能同进程共享，也可能跨进程 | 多个 Window layer | 每个 display 分别组织输出 | “多窗口必定同一主线程串行”只适用于部分同进程场景 | [2.10 多窗口、PiP 与桌面模式渲染管线](../../part1-fundamentals/ch02-rendering/10-multiwindow-desktop-rendering.md) |
@@ -186,14 +186,14 @@ Android 9 到 Android 17 的图形栈不能只用“Legacy”与“BLAST”二�
 | OpenGL ES | GL thread / engine thread | EGL window surface（EGL 的可显示窗口目标）对应 BufferQueue | SF/HWC | `eglSwapBuffers()` 返回不代表 GPU 写完或已经 present | [18.4 OpenGL ES、EGL 与 ANGLE](04-opengl-egl-angle.md) |
 | Vulkan | engine/render thread | `VkSwapchainKHR` 对接 ANativeWindow | SF/HWC | 显式 API 可以降低部分 driver 开销，但 CPU 成本取决于引擎、同步和驱动 | [18.5 Vulkan 原生管线与 HWUI 多队列](05-vulkan-hwui-multi-queue.md) |
 | WebView | Chromium renderer/compositor、Viz（Chromium 的显示合成服务）与宿主进程协作 | Chromium surface 与宿主窗口组合，具体拓扑依实现而定 | Chromium 合成后进入 Android 显示链 | 只看 App MainThread 会漏掉 renderer/GPU 进程 | [18.9 Android 17 WebView 渲染管线](09-webview-rendering.md) |
-| Flutter | UI/raster/platform thread 与 Impeller/Skia 渲染后端 | 宿主可用 SurfaceView 或 TextureView；Platform View 再增加分支 | 宿主 layer 与 Platform View 共同进入 SF/HWC | 框架名不能确定宿主 render mode（渲染承载方式） | [18.8 Jetpack Compose 渲染管线：Composition、Layout 与 RenderNode](08-compose-rendering-pipeline.md) |
+| Flutter | UI/raster/platform thread 与 Impeller/Skia 渲染后端 | 宿主可用 SurfaceView 或 TextureView；Platform View 再增加分支 | 宿主 layer 与 Platform View 共同进入 SF/HWC | 框架名不能确定宿主 render mode（渲染承载方式） | [18.7 Flutter 渲染管线：Engine、Impeller 与 Surface](07-flutter-rendering-pipeline.md) |
 | Camera | Camera HAL、ISP（图像信号处理器）与应用/系统消费者 | 预览 Surface、ImageReader、编码器等多消费者 | 预览常通过独立 layer 参与合成 | request/result 完成不等于预览已 present | [18.10 Android Camera 平台管线：HAL3、Buffer、ZSL 与显示](10-camera-pipeline.md) |
-| Video / HWC | MediaCodec、解码器、播放器 | SurfaceView buffer queue 或 tunneled/sideband 路径 | HWC overlay、专用媒体路径或 CLIENT fallback | 解码完成、releaseOutputBuffer 与上屏时间不是同一边界 | [18.11 视频 Overlay、Media3 与专业编解码管线](11-video-overlay-media3-codec-pipeline.md)、[18.11 视频 Overlay、Media3 与专业编解码管线](11-video-overlay-media3-codec-pipeline.md) |
+| Video / HWC | MediaCodec、解码器、播放器 | SurfaceView buffer queue 或 tunneled/sideband 路径 | HWC overlay、专用媒体路径或 CLIENT fallback | 解码完成、releaseOutputBuffer 与上屏时间不是同一边界 | [18.11 视频 Overlay、Media3 与专业编解码管线](11-video-overlay-media3-codec-pipeline.md) |
 | 游戏引擎 | game/render thread、GL/Vulkan queue | ANativeWindow swapchain，可能叠加独立 UI/video layer | SF/HWC | 平均 FPS 会掩盖 frame pacing（帧输出节奏）、queue depth（排队帧数）与 present 抖动 | [18.12 Android 17 游戏引擎渲染链路](12-game-engine.md) |
 | Compose | Compose runtime 与 UI thread 生成状态，HWUI RenderThread/GPU 产出 | 默认仍是宿主 App Window | SF/HWC | recomposition（重组）、layout、draw 与 GPU 提交属于不同阶段 | [18.8 Jetpack Compose 渲染管线：Composition、Layout 与 RenderNode](08-compose-rendering-pipeline.md) |
 | React Native | JS、Fabric（新架构 UI 渲染系统）、HWUI；第三方原生组件可另建 Surface | 标准 View 树或 SurfaceView/TextureView 分支 | 取决于宿主与原生组件拓扑 | JS thread 只是 Producer 路径的一段，不能代表 present | 这里只给分型基线 |
 
-[18.6 SurfaceControl 与 HardwareBufferRenderer](06-surfacecontrol-hardwarebuffer-renderer.md) 与 [18.4 OpenGL ES、EGL 与 ANGLE](04-opengl-egl-angle.md) 分别解释 layer 控制和 GLES→Vulkan 翻译。[2.10 多窗口、PiP 与桌面模式渲染管线](../../part1-fundamentals/ch02-rendering/10-multiwindow-desktop-rendering.md)、[2.2 帧率、刷新率与显示模式选择](../../part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md)、[18.14 Android 17 / Android XR 空间 UI 与环境资产渲染性能](14-android-xr-spatial-ui-rendering.md) 继续分析 window/display 分支。本节后半给出所有路径共用的证据收集步骤。
+[18.6 SurfaceControl 与 HardwareBufferRenderer](06-surfacecontrol-hardwarebuffer-renderer.md) 与 [18.4 OpenGL ES、EGL 与 ANGLE](04-opengl-egl-angle.md) 分别解释 layer 控制和 GLES→Vulkan 翻译。[2.10 多窗口、PiP 与桌面模式渲染管线](../../part1-fundamentals/ch02-rendering/10-multiwindow-desktop-rendering.md)、[2.2 帧率、刷新率与显示模式选择](../../part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md)、[18.13 Android 17 / Android XR 空间 UI 与环境资产渲染性能](13-android-xr-spatial-ui-rendering.md) 继续分析 window/display 分支。本节后半给出所有路径共用的证据收集步骤。
 
 #### 快速识别当前管线
 
@@ -208,7 +208,7 @@ Android 9 到 Android 17 的图形栈不能只用“Legacy”与“BLAST”二�
 
 ### 阅读路径
 
-App 滑动卡顿从 [18.1 Android View 渲染管线与分析方法](01-android-view-pipeline-analysis.md) 开始；有视频、地图或相机预览时，再读 [18.2 Android 软件、离屏与混合渲染路径](02-android-software-offscreen-mixed-rendering.md) 和 [18.3 SurfaceView 与 TextureView 渲染管线](03-surfaceview-textureview-pipelines.md)。
+App 滑动卡顿从本篇开始；有视频、地图或相机预览时，再读 [18.2 Android 软件、离屏与混合渲染路径](02-android-software-offscreen-mixed-rendering.md) 和 [18.3 SurfaceView 与 TextureView 渲染管线](03-surfaceview-textureview-pipelines.md)。
 
 音视频开发者可以按 [18.11 视频 Overlay、Media3 与专业编解码管线](11-video-overlay-media3-codec-pipeline.md) → [2.2 帧率、刷新率与显示模式选择](../../part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md) 阅读。播放器卡顿不能只查刷新率，还要对齐解码输出、buffer timestamp（内容时间戳）、acquire fence、latch 和 present。
 
@@ -222,7 +222,7 @@ Framework 工程师可先读前面的公共主线，再看 [18.6 SurfaceControl 
 
 `vsync-app → doFrame → syncAndDrawFrame → dequeueBuffer → GPU submit → queueBuffer → BLAST transaction → SF snapshot/latch → HWC strategy → 可选 CLIENT composition → present → present feedback`
 
-这是一张跨路径坐标表，不表示所有动作会同步、依次执行，也不要求特殊 Producer 具备完整的 HWUI slice。标准 View 的逐调用链解释由 [18.1 Android View 渲染管线与分析方法](01-android-view-pipeline-analysis.md) 维护；这里仅保留比较不同 Producer 所需的公共边界。
+这是一张跨路径坐标表，不表示所有动作会同步、依次执行，也不要求特殊 Producer 具备完整的 HWUI slice。标准 View 的逐调用链解释由后文维护；这里仅保留比较不同 Producer 所需的公共边界。
 
 | 检查点 | 先回答的问题 | 不能据此断言 |
 | --- | --- | --- |

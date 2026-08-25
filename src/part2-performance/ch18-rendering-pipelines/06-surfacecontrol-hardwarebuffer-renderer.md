@@ -757,17 +757,14 @@ Perfetto 配置应包含应用 atrace、线程调度、Binder、gfx/view、Surfa
 - [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) 与 [`FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp)：transaction 应用、帧调度和展示结果。
 - [`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c) 与 [`dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)：内核 fence fd、signal、callback 和 wait 语义。
 
----
+相关章节：
 
-> **交叉引用**
->
-> - BLAST Buffer 生命周期详见 [18.1 Android View 标准路径（BLAST 深入）](01-android-view-pipeline-analysis.md)
-> - SurfaceView 的 Layer 结构详见 [18.3 SurfaceView 与 TextureView 渲染管线](03-surfaceview-textureview-pipelines.md)
-> - Vulkan WSI 与 BufferQueue 详见 [18.5 Vulkan 原生管线与 HWUI 多队列](05-vulkan-hwui-multi-queue.md)
-> - WebView 的宿主 functor 与媒体 overlay 详见 [18.9 Android 17 WebView 渲染管线](09-webview-rendering.md)
-> - BufferQueue 对象边界详见 [2.8 图形缓冲区管理（BufferQueue）](../../part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md)
-> - SurfaceFlinger 合成策略详见 [2.5 SurfaceFlinger 与合成](../../part1-fundamentals/ch02-rendering/05-surfaceflinger-frontend-transaction.md)
-> - fence 所有权详见 [2.8 Sync Fence 框架与帧同步机制](../../part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md)
+- [18.1 Android View 渲染管线与分析方法](01-android-view-pipeline-analysis.md)
+- [18.3 SurfaceView 与 TextureView 渲染管线](03-surfaceview-textureview-pipelines.md)
+- [18.5 Vulkan 原生管线与 HWUI 多队列](05-vulkan-hwui-multi-queue.md)
+- [18.9 Android 17 WebView 渲染管线](09-webview-rendering.md)
+- [2.8 BufferQueue、Gralloc 与 Sync Fence](../../part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md)
+- [2.5 SurfaceFlinger 合成、FrontEnd 与事务队列](../../part1-fundamentals/ch02-rendering/05-surfaceflinger-frontend-transaction.md)
 
 
 ## HardwareBuffer 渲染与提交
@@ -1157,6 +1154,8 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
 
 ## 结论
 
+- SurfaceControl 负责 Layer 树、buffer 状态和 transaction，HardwareBufferRenderer 负责把 RenderNode 内容写入调用方持有的 HardwareBuffer；二者通过 production/presentation fence 与 release fence 组成完整交接。
+- Transaction 的原子应用、commit、complete 和 display present 是不同边界。直接提交 buffer 的应用还必须自行维护池、回收回调、FrameTimeline 与对象生命周期。
 - HBR 把 RenderNode 场景树写入调用方拥有的 `HardwareBuffer`；若目标是现成 `Surface`，应同时比较 `lockHardwareCanvas()` 和 `HardwareRenderer`。
 - Android 17 的 HBR 仍共享应用 RenderThread 和 GPU context，离屏任务会与普通 UI 渲染争用资源。
 - `RenderResult` 的 presentation fence 约束 consumer 读取，SurfaceControl release fence 约束 producer 复用，两类 fence 的方向不能互换。

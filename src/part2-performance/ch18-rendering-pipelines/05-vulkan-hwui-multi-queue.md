@@ -162,11 +162,11 @@ sources:
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c
   role: RenderThread 与上传线程的 CPU 调度基线；不定义 Vulkan queue 的 GPU 执行顺序
-status: ready-for-review
+status: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md
@@ -990,6 +990,8 @@ AGI 适合解释单帧 GPU 命令做了什么，但不能替代系统 trace。Fr
 
 
 ## 结论
+
+原生 Vulkan 与 HWUI Vulkan 的显示后半段最终都收束到 Android buffer/fence、SurfaceFlinger 与 Display present。原生路径由应用管理 swapchain、submit、barrier 和 pacing；HWUI 路径则由 framework 管理窗口 buffer、Skia context 与内部队列。两者都不能把 API 返回、GPU frame boundary 或 `queueBuffer()` 当成已经上屏。
 
 Android 17 HWUI Vulkan 的双 queue 架构可以概括为四点：
 

@@ -120,7 +120,7 @@ sources:
   path: DeepResearch/2026-06-28-android17-memorylimiter-procstate-polling-statsd.md
 last_verified: '2026-08-21'
 last_verified_against: AOSP android-17.0.0_r1 (主线) / android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 (版本演进对比) + Android Developers Blog (Android 16 QPR2)
-task6_state: pending-verification
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 last_consolidated_at: '2026-08-24'

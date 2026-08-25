@@ -560,7 +560,6 @@ SurfaceView 改变的是内容生产和合成拓扑，不会绕过 InputDispatch
 
 相关章节：
 
-- [18.3 SurfaceView 与 TextureView 渲染管线](03-surfaceview-textureview-pipelines.md)
 - [18.4 OpenGL ES、EGL 与 ANGLE](04-opengl-egl-angle.md)
 - [18.5 Vulkan 原生管线与 HWUI 多队列](05-vulkan-hwui-multi-queue.md)
 - [2.8 BufferQueue、Gralloc 与 Sync Fence](../../part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md)
@@ -1007,7 +1006,12 @@ TextureView 部分沿用同一组平台与内核版本锚点，重点查阅以�
 
 相关章节：
 
-- [18.3 SurfaceView 与 TextureView 渲染管线](03-surfaceview-textureview-pipelines.md)
 - [18.4 OpenGL ES、EGL 与 ANGLE](04-opengl-egl-angle.md)
 - [2.8 BufferQueue、Gralloc 与 Sync Fence](../../part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md)
 - [2.5 SurfaceFlinger 合成、FrontEnd 与事务队列](../../part1-fundamentals/ch02-rendering/05-surfaceflinger-frontend-transaction.md)
+
+## 小结
+
+SurfaceView 让主体内容保留独立 BufferQueue 和 SurfaceFlinger layer，TextureView 则让外部内容先经 SurfaceTexture 被宿主 HWUI 采样。前者的主要边界是内容 buffer、container 几何与 hole-punch 的同步，后者的主要边界是输入队列、宿主帧与第二次 buffer 提交。
+
+选型时先确认 protected/secure、View 级变换、独立节奏和目标设备 HWC 能力；诊断时分别对齐 Producer、两套队列、acquire/release fence、宿主或独立 layer 与 display present，不能用组件名直接推断 Overlay、固定延迟或性能高低。

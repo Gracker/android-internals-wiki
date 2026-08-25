@@ -31,8 +31,10 @@
 | 第 13 章：Perfetto | 13 | 13 | 已完成 | 逐篇确认采集、UI/状态、SQL/自动化、埋点与专项诊断的责任边界。清理 13.1 自引用、旧稿分隔和重复资料；为 6 篇合并稿补齐全文收束；区分 13.6/13.7/13.13 分段资料责任；标题统一为 FrameTimeline。13 篇状态统一为可发布。 |
 | 第 14 章：其他分析工具 | 17 | 17 | 已完成 | 逐篇确认 IDE、命令行、量产采集、系统指标、Hook、GPU/UI/Camera、eBPF 与构建分析工具的责任边界。清理合并稿自引用、旧分隔线和重复资料；重命名 14.12、14.13；补齐 14.13、14.16 全文收束。章内目标顺序把平台内建采集放在第三方 Hook 之前，随全书统一重编号一次落地。 |
 | 第 15 章：方法论 | 7 | 7 | 已完成 | 逐篇确认原则/实证/治理、责任归因、指标监控、测试、竞品、源码阅读与 AI 评测的层级。清理 15.1/15.3 合并稿自指、重复关系与资料；补齐 15.6/15.7 发布状态。目标顺序让通用测试先于竞品测试，随全书统一重编号落地。 |
+| 第 18 章：渲染管线专题 | 14 | 14 | 已完成 | 顺序保持为通用方法 → 软件/载体/API/layer → 框架路径 → WebView/Camera/视频/游戏 → XR/WebGPU。逐篇清理自指、重复关系与旧编号，补齐 5 篇全文收束和发布阶段；EyeDropper 不属于渲染管线，移至 22.20，余下 14 篇连续编号。 |
 | 第 19 章：APM 工具与性能监控生态 | 12 | 12 | 已完成 | 顺序保持为全景选型 → 当前工具 → 历史方案 → Benchmark/实验室 → 专项采集 → 端侧架构。修正 19.4 对 Measure 的标题与导语误判、README 的 14.10 错误选型入口及 19.7 发布阶段。 |
-| 其余 10 章 | 120 | 0 | 待审 | 按章节逐篇推进。累计完成 156/276。全书章节号存在 `1–12 → 18 → 13–15 → 19 → 16–17 → 20–26` 的确定性顺序错误，待内容合并完成后统一重编号；已确认的章内顺序也在该次重编号中一次性调整。 |
+| 第 22 章：渲染性能实践 | 20 | 1 | 进行中 | 已完整审查并接收 22.20 EyeDropper；其余 19 篇待本章轮次逐篇复核。 |
+| 其余 8 章 | 86 | 0 | 待审 | 按章节逐篇推进。累计完成 171/276，剩余 105 篇（含第 22 章未审 19 篇）。全书章节号存在 `1–12 → 18 → 13–15 → 19 → 16–17 → 20–26` 的确定性顺序错误，待内容合并完成后统一重编号；已确认的章内顺序也在该次重编号中一次性调整。 |
 
 ## 第 1 章逐篇结论
 
@@ -256,6 +258,31 @@
 | 15.5 性能测试最佳实践 | 从测试合同和环境标准化进入干扰控制、采样、异常值、基线、报告、CI 和线上数据边界。 | 负责所有受控性能实验的通用协议；14.6 负责工具编排，15.4 负责竞品场景。 | 保留；把 Macrobenchmark CI 从“扩展”改为核心段落，合并重复的 15.3 关系说明；目标位置前移到竞品分析之前。 |
 | 15.6 AOSP 代码阅读 | 从版本/项目/路径坐标进入在线搜索、关键目录、日志/trace 反查、四个入口、跨边界调用链和版本历史。 | 负责从运行证据到当前 tag 源码的阅读方法，不重复各机制章的具体实现。 | 保留；通读确认“证据 → 定位 → 构建归属 → 运行验证 → 版本”闭环，状态转为可发布。 |
 | 15.7 Google Android Bench：AI 编码能力评测方法论 | 从数据集、执行框架和 verifier 进入版本差异、pass@1、污染、排行榜与私有评测设计。 | 负责 AI Android 编码评测；15.5 提供一般实验与统计原则。 | 保留；补齐审查与发布状态，确认 Android 平台版本与评测框架版本明确分离。 |
+
+## 第 18 章逐篇结论
+
+| 文章 | 标题契约与推进线 | 章节边界 | 处理结果 |
+| --- | --- | --- | --- |
+| 18.1 Android View 渲染管线与分析方法 | 先建立 Producer、Surface、layer 与 present 的统一模型，再展开 View/HWUI 主链和跨路径取证方法。 | 负责全章共同坐标与标准 View 路径；各专项文章只展开自己的 Producer 和载体。 | 保留合并；删除当前文章自指、Flutter 错链和重复视频入口。 |
+| 18.2 Android 软件、离屏与混合渲染路径 | 从 CPU Raster 与 bitmap/offscreen 进入软件层上传、多 layer 和 CPU/GPU 混合成本。 | 负责非标准全硬件路径；18.3 负责 Surface 载体，18.4/18.5 负责图形 API。 | 保留合并；删除重复关联并补齐全文小结。 |
+| 18.3 SurfaceView 与 TextureView 渲染管线 | 按独立 layer 与宿主纹理两种消费模型比较生命周期、同步、合成和选型。 | 负责输出载体；不重复上游 GLES/Vulkan 命令或下游 SF/HWC 机制。 | 保留合并；清理自指并补齐全文小结。 |
+| 18.4 OpenGL ES、EGL 与 ANGLE | 从 EGL context/surface 与 GLES 提交进入驱动路径，再比较 ANGLE 的 GLES→Vulkan 翻译和证据。 | 负责 GLES/EGL/ANGLE；18.5 负责应用直接 Vulkan 与 HWUI Vulkan。 | 保留合并；删除重复关系和旧编号，重写全文收束。 |
+| 18.5 Vulkan 原生管线与 HWUI 多队列 | 先追应用管理的 swapchain/queue，再对照框架管理的 HWUI Vulkan 与多队列同步。 | 负责两种 Vulkan 所有权模型；18.4 负责 GLES/ANGLE，18.6 负责 layer/buffer 交接。 | 保留合并；扩充全文结论以覆盖原生与 HWUI 两条主线。 |
+| 18.6 SurfaceControl 与 HardwareBufferRenderer | 从 SurfaceControl transaction/layer 进入 HardwareBufferRenderer 的离屏生产、同步和消费边界。 | 负责 layer 控制与可共享 buffer；18.3 负责控件载体，2.8 负责 BufferQueue 通用机制。 | 保留合并；删除中途旧入口并补齐覆盖两段的全文结论。 |
+| 18.7 Flutter 渲染管线：Engine、Impeller 与 Surface | 从 Dart/Engine/UI-Raster 线程进入 Impeller、Surface 提交和 Android 系统显示链路。 | 负责 Flutter 专有运行时；16 KB 插件兼容交给 4.5。 | 保留；删除偏离主题的详细 16 KB 插件教程，改为专项入口。 |
+| 18.8 Jetpack Compose 渲染管线：Composition、Layout 与 RenderNode | 按重组、布局、绘制、RenderNode/HWUI 与帧诊断推进。 | 负责 Compose 到 Android 图形栈的边界；18.1 负责 View/HWUI 公共坐标。 | 保留；通读确认标题和结构一致。 |
+| 18.9 Android 17 WebView 渲染管线 | 从 Chromium 多进程和 renderer/GPU process 进入 Surface、合成、首屏与诊断。 | 负责 WebView 内核渲染；应用优化实践交给 22.6，WebGPU 运行时差异由 18.14 收束。 | 保留；修复失效编号和错误跨章链接。 |
+| 18.10 Android Camera 平台管线：HAL3、Buffer、ZSL 与显示 | 从 Camera2/HAL3 request 与 stream 进入 buffer、ZSL、预览显示和取证。 | 负责 Camera 平台数据面；18.11 负责视频播放/编解码，22.19 负责 CameraX 应用实践。 | 保留；修复相关章节编号，Camera buffer 特有的 16 KB/DMA-BUF 边界继续保留。 |
+| 18.11 视频 Overlay、Media3 与专业编解码管线 | 依次解释显示 overlay、Media3/Codec2 播放链和专业编解码/APV，按显示到媒体栈再到 codec 能力推进。 | 负责视频与 codec 数据面；Camera 和 CameraX 分别交给 18.10、22.19。 | 保留三段合并；删除自指与重复关系，修正 Media3 误链到 CameraX。 |
+| 18.12 Android 17 游戏引擎渲染链路 | 从引擎 game/render loop 与交换链进入 frame pacing、ADPF、显示提交，再划清小游戏、云游戏、AR/XR。 | 负责游戏 Producer 与显示节奏；XR runtime 深入交给 18.13。 | 保留；清理重复关系和误放的 EyeDropper 关联。 |
+| 18.13 Android 17 / Android XR 空间 UI 与环境资产渲染性能 | 先区分 2D panel、空间内容、OpenXR 和 Projected，再进入资产、视点、runtime cadence、工具与功耗。 | 负责应用与 XR runtime/compositor 的责任边界；不把普通 SurfaceFrame 当最终头显 present。 | 原 18.14 前移；补齐全文小结、关联章节和发布状态。 |
+| 18.14 Android 17 Jetpack WebGPU 渲染与计算管线 | 从 Dawn/AndroidX 架构进入能力查询、可见渲染、compute、线程、性能、调试和 WebView 边界。 | 负责 Jetpack WebGPU；GLES/Vulkan/Surface 基础分别由 18.3—18.6 负责，WebView runtime 由 18.9 负责。 | 原 18.15 前移；补齐全文小结、关联章节和发布状态。 |
+
+## 第 22 章已审条目
+
+| 文章 | 标题契约与推进线 | 章节边界 | 处理结果 |
+| --- | --- | --- | --- |
+| 22.20 Android 17 EyeDropper：系统取色、截图边界与跨设备同步 | 从公开 Intent 契约进入 AOSP 特权实现、截图与安全边界，再讲接入、trace 和应用自建跨设备协议。 | 负责系统能力的应用接入与性能实践；不属于第 18 章的持续渲染 Producer 管线。 | 从原 18.13 移入本章；重命名并更新章节关系、README 与 SUMMARY。 |
 
 ## 第 19 章逐篇结论
 

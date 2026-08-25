@@ -592,11 +592,11 @@ Chromium 是可更新组件。这里以上游 revision `4e18c703f7cd950c890e1410
 
 ## 与其他章节的关系
 
-- **§22.6 WebView 性能优化实战**：从页面、宿主和业务指标处理 WebView 性能；
-- **§18.4 SurfaceView 与 TextureView**：全屏 custom view 或第三方 SDK 返回具体 View 类型后，回到对应管线；
-- **§18.7 SurfaceControl API 深入**：overlay transaction、layer tree 和 fence；
-- **§2.4 MainThread 与 RenderThread 协作**：宿主 View traversal 与 HWUI 提交；
-- **§2.5 SurfaceFlinger 合成流程**：host layer 与可选 overlay 的系统显示后半段。
+- [22.6 WebView 性能优化实战](../../part5-app/ch22-rendering-practice/06-webview-optimization.md)：从页面、宿主和业务指标处理 WebView 性能；
+- [18.3 SurfaceView 与 TextureView 渲染管线](03-surfaceview-textureview-pipelines.md)：全屏 custom view 或第三方 SDK 返回具体 View 类型后，回到对应管线；
+- [18.6 SurfaceControl 与 HardwareBufferRenderer](06-surfacecontrol-hardwarebuffer-renderer.md)：overlay transaction、layer tree 和 fence；
+- [2.4 MainThread、RenderThread 与 Hardware Layer](../../part1-fundamentals/ch02-rendering/04-main-render-thread-hardware-layer.md)：宿主 View traversal 与 HWUI 提交；
+- [2.5 SurfaceFlinger 合成、FrontEnd 与事务队列](../../part1-fundamentals/ch02-rendering/05-surfaceflinger-frontend-transaction.md)：host layer 与可选 overlay 的系统显示后半段。
 
 ## 小结
 
