@@ -2,7 +2,7 @@
 title: ART 动态方法追踪与 JVMTI 边界
 chapter: '26.15'
 section: '26.15'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 tags:
 - ART
@@ -25,7 +25,7 @@ related_chapters:
 - '26.13'
 - '26.7'
 - '14.1'
-last_verified: '2026-08-16'
+last_verified: '2026-08-25'
 last_source_verified_at: '2026-08-15'
 last_verified_against: arXiv:2512.21555v1, still the only public version and without venue metadata as of 2026-08-15; AOSP android-17.0.0_r1 ART sources; current Android Developers, AOSP ART TI, Android 17 features, and Perfetto documentation retrieved 2026-08-15
 confidence: medium
@@ -93,7 +93,11 @@ sources:
   path: https://developer.android.com/studio/profile/record-java-kotlin-allocations
 - type: official
   path: https://perfetto.dev/docs/data-sources/native-heap-profiler
-pipeline_stage: finalized
+pipeline_stage: ready-for-review
+task6_state: pending-review
+task9_state: pending-review
+last_rework_at: '2026-08-25T09:36:49+08:00'
+last_rework_run_id: 20260825-093527-rework-bf95039c
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part5-app/ch26-observability/22-xtrace-art-dynamic-method-tracing.md
@@ -652,7 +656,7 @@ Android 17 的 [`ti_heap.cc`](https://android.googlesource.com/platform/art/+/re
 
 `ObjectFree` 还需要 `can_generate_object_free_events`，并且只通知带非零 tag 的已回收对象。它不能自动报告所有对象释放。回调只给出已释放对象的 tag，原对象引用已经不可用。
 
-`jlong` 是有符号 64 位整数，tag 的业务含义完全由 agent 约定。设计 tag 时要处理数值复用、溢出、多个 `jvmtiEnv` 之间的隔离和上传隐私。对整个堆做遍历或引用追踪可能明显扰动目标进程，没有基线对照时不能把结果视为原始运行状态。
+`jlong` 是有符号 64 位整数，tag 的业务含义属于 agent 自身协议。tag 设计要处理数值复用、溢出、多个 `jvmtiEnv` 之间的隔离和上传隐私。对整个堆做遍历或引用追踪可能明显扰动目标进程，没有基线对照时不能把结果视为原始运行状态。
 
 allocation 指为对象或 Native 缓冲区申请内存。[heapprofd](https://perfetto.dev/docs/data-sources/native-heap-profiler) 是 Perfetto 的 Native 堆采样器，会按采样规则记录分配调用栈。观察 Native 内存分配时，它更贴近问题。
 
