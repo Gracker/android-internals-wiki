@@ -8,19 +8,26 @@
 
 本章的平台实现以 Android 17 / API 37 / `android-17.0.0_r1` 为核对版本。涉及 PSI（资源压力导致任务停顿的时间）、cgroup v2（控制组机制）、回收与内核内存统计时，以 `android17-6.18-2026-06_r6` 为内核核对版本。旧版本差异会保留在对应专题中，结论范围不超过 Android 17。
 
+## 内容索引
+
+- [10.1 App 内存分析与案例](01-app-memory-analysis-cases.md)
+- [10.2 低内存对系统性能的影响](02-low-memory-impact.md)
+- [10.3 内存抖动与频繁 GC](03-memory-churn.md)
+- [10.4 GPU 与图形内存统计](04-gpu-graphics-memory-tracking.md)
+
 ## 按现象选择入口
 
 | 现场现象 | 建议入口 |
 | --- | --- |
-| 不清楚 Java、Native、PSS、RSS、SwapPss、Graphics 的区别 | [10.1 App 内存分析](01-app-memory-analysis.md) |
-| 页面退出后 Activity、View、callback 或资源仍被持有 | [10.2 内存泄漏](02-memory-leak.md) |
-| 多轮业务操作后内存持续增长 | [10.3 内存持续增长](03-memory-growth.md) |
-| PSI、换页、lmkd、后台重启或整机卡顿 | [10.4 低内存对系统性能的影响](04-low-memory-impact.md) |
-| 需要查看从症状到证据的完整案例 | [10.5 案例集](05-case-studies.md) |
-| live set（仍存活的对象集合）稳定，但短命分配和 GC 很频繁 | [10.6 内存抖动](06-memory-churn.md) |
-| Graphics、DMA-BUF（跨设备共享的缓冲区）或 GPU private memory（GPU 私有内存）增长 | [10.7 GPU 与图形内存统计](07-gpu-graphics-memory-tracking.md) |
-| SQLite/Room 查询、CursorWindow 或分页造成峰值 | [24.2 数据库性能优化](../../part5-app/ch24-io-network/02-database-optimization.md) |
-| ART region、CMC（并发标记压缩）、LOS（大对象空间）或 compaction（内存压缩整理）引起疑问 | [4.7 ART 分代 GC、Region 碎片与暂停分析](../../part1-fundamentals/ch04-memory/07-art-generational-gc.md) |
+| 不清楚 Java、Native、PSS、RSS、SwapPss、Graphics 的区别 | [10.1 App 内存分析与案例](01-app-memory-analysis-cases.md) |
+| 页面退出后 Activity、View、callback 或资源仍被持有 | [23.1 内存泄漏检测与治理](../../part5-app/ch23-memory-practice/01-memory-leak-governance.md) |
+| 多轮业务操作后内存持续增长 | [10.1 App 内存分析与案例](01-app-memory-analysis-cases.md) |
+| PSI、换页、lmkd、后台重启或整机卡顿 | [10.2 低内存对系统性能的影响](02-low-memory-impact.md) |
+| 需要查看从症状到证据的完整案例 | [10.1 App 内存分析与案例](01-app-memory-analysis-cases.md) |
+| live set（仍存活的对象集合）稳定，但短命分配和 GC 很频繁 | [10.3 内存抖动与频繁 GC](03-memory-churn.md) |
+| Graphics、DMA-BUF（跨设备共享的缓冲区）或 GPU private memory（GPU 私有内存）增长 | [10.4 GPU 与图形内存统计](04-gpu-graphics-memory-tracking.md) |
+| SQLite/Room 查询、CursorWindow 或分页造成峰值 | [24.2 数据库与序列化性能](../../part5-app/ch24-io-network/02-database-serialization-performance.md) |
+| ART region、CMC（并发标记压缩）、LOS（大对象空间）或 compaction（内存压缩整理）引起疑问 | [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md) |
 
 ## 分析顺序
 
@@ -62,7 +69,7 @@ GC 只能处理 managed heap 中已经不可达的对象。Native owner（native
 
 - App 侧排障从 10.1 开始，再按内存域进入对应小节。
 - OOM、GC 抖动和前后台恢复问题，建议与第 4 章的 ART、lmkd、MemoryLimiter、内核回收章节对照。
-- 图形与渲染问题要把第 10.7 章和渲染专题放在同一时间线分析，避免只看 Java heap。
+- 图形与渲染问题要把 10.5 和渲染专题放在同一时间线分析，避免只看 Java heap。
 - 平台或 OEM（设备厂商）调试还应保存 cgroup、PSI、lmkd（低内存终止守护进程）、MemoryLimiter 与 ART 配置，不能用 API level 代替设备实际状态。
 
 ## 证据边界

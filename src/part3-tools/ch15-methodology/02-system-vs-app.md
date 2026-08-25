@@ -1,68 +1,69 @@
 ---
-title: "如何区分系统问题和 App 问题"
-chapter: "15.2"
-section: "15.2"
-status: "finalized"
-pipeline_stage: "ready-to-publish"
+title: 如何区分系统问题和 App 问题
+chapter: '15.2'
+section: '15.2'
+status: finalized
+pipeline_stage: ready-to-publish
 task2b_state: fixed
-task6_state: "reviewed"
-applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-08-14"
-last_verified_against: "AOSP android-17.0.0_r1；Android common kernel android17-6.18-2026-06_r6；Perfetto thread_state、FrameTimeline、memory counters 文档"
+task6_state: reviewed
+applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
+last_verified: '2026-08-14'
+last_verified_against: AOSP android-17.0.0_r1；Android common kernel android17-6.18-2026-06_r6；Perfetto thread_state、FrameTimeline、memory counters 文档
 confidence: high
 sources:
-  - type: aosp
-    tag: "android-17.0.0_r1"
-    path: "frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
-  - type: aosp
-    tag: "android-17.0.0_r1"
-    path: "system/memory/lmkd/lmkd.cpp"
-  - type: aosp
-    tag: "android-17.0.0_r1"
-    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java"
-  - type: aosp
-    tag: "android-17.0.0_r1"
-    path: "frameworks/base/services/core/java/com/android/server/am/ActiveServices.java"
-  - type: aosp
-    tag: "android-17.0.0_r1"
-    path: "frameworks/base/services/core/java/com/android/server/am/BroadcastConstants.java"
-  - type: kernel
-    tag: "android17-6.18-2026-06_r6"
-    path: "include/trace/events/sched.h"
-  - type: kernel
-    tag: "android17-6.18-2026-06_r6"
-    path: "mm/vmscan.c"
-  - type: official
-    path: "perfetto.dev/docs/data-sources/cpu-scheduling"
-  - type: official
-    path: "perfetto.dev/docs/data-sources/frametimeline"
-  - type: official
-    path: "perfetto.dev/docs/data-sources/memory-counters"
-  - type: official
-    path: "source.android.com/docs/core/perf/lmkd"
-  - type: official
-    path: "developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
-  - type: blog
-    path: "androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/"
-  - type: blog
-    path: "androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/"
+- type: aosp
+  tag: android-17.0.0_r1
+  path: frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
+- type: aosp
+  tag: android-17.0.0_r1
+  path: system/memory/lmkd/lmkd.cpp
+- type: aosp
+  tag: android-17.0.0_r1
+  path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java
+- type: aosp
+  tag: android-17.0.0_r1
+  path: frameworks/base/services/core/java/com/android/server/am/ActiveServices.java
+- type: aosp
+  tag: android-17.0.0_r1
+  path: frameworks/base/services/core/java/com/android/server/am/BroadcastConstants.java
+- type: kernel
+  tag: android17-6.18-2026-06_r6
+  path: include/trace/events/sched.h
+- type: kernel
+  tag: android17-6.18-2026-06_r6
+  path: mm/vmscan.c
+- type: official
+  path: perfetto.dev/docs/data-sources/cpu-scheduling
+- type: official
+  path: perfetto.dev/docs/data-sources/frametimeline
+- type: official
+  path: perfetto.dev/docs/data-sources/memory-counters
+- type: official
+  path: source.android.com/docs/core/perf/lmkd
+- type: official
+  path: developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs
+- type: blog
+  path: androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/
+- type: blog
+  path: androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/
 tags:
-  - methodology
-  - system-vs-app
-  - trace-analysis
-  - attribution
+- methodology
+- system-vs-app
+- trace-analysis
+- attribution
 related_chapters:
-  - "5.1"
-  - "7.1"
-  - "7.2"
-  - "7.3"
-  - "13.3"
-  - "13.6"
-  - "15.1"
-task9_state: "reviewed"
+- '5.1'
+- '7.1'
+- '7.2'
+- '13.2'
+- '13.4'
+- '15.1'
+task9_state: reviewed
 ---
 
 # 如何区分系统问题和 App 问题
+
+“系统问题”与“App 问题”不是互斥标签：应用可能触发系统等待，系统压力也可能放大应用关键路径。归因应从同一延迟窗口出发，用线程状态、Binder、内存回收和显示证据确定控制权与可修复边界。
 
 ## 归因不能停在“系统”或“App”
 

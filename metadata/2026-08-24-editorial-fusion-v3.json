@@ -1,0 +1,2075 @@
+{
+  "schema_version": 1,
+  "objective": "Replace stitched source wrappers with reviewed mechanism-oriented outlines, consolidate repeated tails, and add transitions without losing unique evidence.",
+  "targets": {
+    "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md": {
+      "status": "ready",
+      "intro_bridge": "定位架构问题时，先确认调用跨越了哪些系统层，再沿进程生命周期和线程调度寻找等待、抢占或回收发生的位置。三条线共同决定一次系统行为最终落在哪个进程、哪条线程以及哪个资源边界。",
+      "sections": [
+        {
+          "from": "Android 分层架构",
+          "title": "系统分层、进程边界与跨层接口"
+        },
+        {
+          "from": "进程模型与生命周期管理",
+          "title": "应用进程的创建、状态与回收",
+          "bridge": "分层描述解决组件归属问题，运行时故障还要落实到具体进程。应用进程从 Zygote 创建后，AMS、OomAdjuster、lmkd 与 Freezer 共同改变它的状态和可运行性。"
+        },
+        {
+          "from": "线程模型",
+          "title": "线程协作、调度与性能诊断",
+          "bridge": "进程状态确定资源和调度的大边界，实际执行延迟最终体现在线程上。主线程、RenderThread、Binder 线程与后台执行器需要按依赖关系分析。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch01-architecture/02-boot-zygote-graphics-preload.md": {
+      "status": "ready",
+      "intro_bridge": "启动耗时可以按系统启动、进程孵化和应用首帧三段归因。前一段准备内核与系统服务，Zygote 负责共享预加载结果并创建进程，应用进程仍需完成图形环境和首帧资源初始化。",
+      "sections": [
+        {
+          "from": "系统启动全流程",
+          "title": "从 Boot ROM 到 SystemServer"
+        },
+        {
+          "from": "Zygote 机制与启动性能优化",
+          "title": "Zygote 预加载、fork 与进程特化",
+          "bridge": "SystemServer 和桌面可运行后，应用启动进入 Zygote 管理的进程创建阶段。预加载、普通 fork 与 USAP 分别影响共享内存、创建延迟和特化成本。"
+        },
+        {
+          "from": "Zygote 图形栈预加载与首帧冷路径",
+          "title": "图形栈预加载与应用首帧边界",
+          "bridge": "Zygote 只提前承担一部分公共图形初始化。GraphicsEnvironment、RenderThread、着色器和首批资源仍在应用进程执行，需要与系统预加载收益分开测量。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch01-architecture/03-ipc-binder-performance.md": {
+      "status": "ready",
+      "intro_bridge": "IPC 选型先看数据形态、方向、频率、生命周期和权限边界。Binder 适合控制面和结构化调用；共享内存、socket、FMQ 与 DMA-BUF 处理的吞吐、时延和所有权模型不同。",
+      "sections": [
+        {
+          "from": "进程间通信（IPC）全景：机制对比与性能选型",
+          "title": "IPC 机制、数据形态与选型"
+        },
+        {
+          "from": "Binder IPC 机制与性能影响",
+          "title": "Binder 事务、线程池与性能分析",
+          "bridge": "确定控制面使用 Binder 后，性能分析要进入事务、缓冲区、线程池和优先级传播。同步与 oneway 只改变等待方式，不会消除服务端排队和锁依赖。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch01-architecture/06-activitymanager-process-lock-priority.md": {
+      "status": "ready",
+      "intro_bridge": "AMS 既维护组件和进程状态，也参与启动、回收、ANR 与调度组更新。分析 system_server 延迟时，需要把业务状态变化、锁等待和 OomAdjuster 计算放在同一条因果线上。",
+      "sections": [
+        {
+          "from": "Activity Manager Service 与性能分析",
+          "title": "进程管理的主路径"
+        },
+        {
+          "from": "AMS 双锁架构与 system_server 锁竞争优化",
+          "title": "system_server 锁模型与竞争",
+          "bridge": "AMS 的状态变化会触发多组共享结构更新。调用落到 system_server 后，应先确认持锁范围、锁顺序和 Binder 回调是否把局部操作放大为全局等待。"
+        },
+        {
+          "from": "Android 17 ProcessStateController、OomAdjuster 与进程优先级",
+          "title": "进程状态、OomAdjuster 与优先级",
+          "bridge": "锁竞争解释了状态更新为什么变慢，ProcessStateController 和 OomAdjuster 则决定更新结果如何作用到 oom_adj、proc state、调度组与回收顺序。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch01-architecture/07-package-distribution-install-verification.md": {
+      "status": "ready",
+      "intro_bridge": "应用交付从制品生成开始，经过安装来源验证、PackageInstaller 会话、PMS 扫描与 dexopt，最后形成可启动的软件包状态。AAB、Sharesheet 和 Staged Install 位于这条路径的不同边界，不能用同一个成功信号代替整条链路的完成。",
+      "sections": [
+        {
+          "from": "Package Manager Service 与应用安装性能",
+          "title": "PMS 扫描、解析与安装主路径"
+        },
+        {
+          "from": "Android Developer Verification 与安装链路边界",
+          "title": "安装来源验证与权限边界",
+          "bridge": "安装会话进入 PMS 之前，平台可能先检查来源、安装者身份和用户授权。验证结果只回答当前来源是否允许继续，不替代签名、会话提交和包扫描。"
+        },
+        {
+          "from": "Android Staged Install 与安装原子性性能",
+          "title": "Staged Install 的提交、重启与恢复",
+          "bridge": "普通 APK 安装完成于当前系统会话，Staged Install 还要跨越重启验证和回滚状态机。它用更长的提交周期换取系统组件更新的原子性。"
+        },
+        {
+          "from": "Android 应用分发与内容共享：PackageInstaller、AAB 和 Sharesheet 的系统边界",
+          "title": "AAB、PackageInstaller 与内容分发",
+          "bridge": "安装机制之外还要区分制品分发和运行时内容分享。AAB 决定交付拆分，PackageInstaller 承担设备侧安装，Sharesheet 处理应用间内容选择。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch01-architecture/09-messagequeue-lock-contention.md": {
+      "status": "ready",
+      "intro_bridge": "消息队列延迟既可能来自队列中的长任务，也可能来自入队、唤醒和共享状态上的锁竞争。分析时先区分消息没有得到执行，还是执行线程已经运行但等待某把锁。",
+      "sections": [
+        {
+          "from": "MessageQueue 机制与 DeliQueue 无锁优化",
+          "title": "Looper 队列、唤醒与 DeliQueue"
+        },
+        {
+          "from": "锁竞争与同步性能分析",
+          "title": "锁竞争的识别与治理",
+          "bridge": "队列结构可以降低生产者竞争，但不能消除消息处理过程中的业务锁。锁持有者、等待者和调度状态需要在同一时间窗口内还原。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch01-architecture/10-jni-ndk-bionic-performance.md": {
+      "status": "ready",
+      "intro_bridge": "Native 性能问题通常跨过 Java/Native 调用边界、动态链接器和 libc 实现。JNI 决定参数转换与线程附着成本，Bionic 决定常用系统接口、分配器和同步原语在 Android 上的具体行为。",
+      "sections": [
+        {
+          "from": "JNI/NDK 性能优化",
+          "title": "JNI 边界与 Native 调用成本"
+        },
+        {
+          "from": "Bionic libc 性能演进与系统级影响",
+          "title": "Bionic libc 的实现与系统影响",
+          "bridge": "跨过 JNI 后，代码进入 Bionic 和内核提供的运行环境。函数实现、FORTIFY、malloc、线程局部存储与系统调用封装会改变 Native 热路径的实际成本。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch01-architecture/12-binder-scheduling-freezer-threadpool.md": {
+      "status": "ready",
+      "intro_bridge": "Binder 延迟由服务端线程供给、事务排队方式和目标进程状态共同决定。线程池饥饿会阻塞同步调用，异步队列会积累 oneway 事务，Freezer 则改变缓存进程何时能够消费这些事务。",
+      "sections": [
+        {
+          "from": "Binder 线程池管理与 IPC 线程饥饿性能边界",
+          "title": "Binder 线程池、嵌套调用与饥饿"
+        },
+        {
+          "from": "Android 17 Binder 异步事务与排队机制",
+          "title": "异步事务队列与反压",
+          "bridge": "线程池决定服务端能同时处理多少工作，oneway 队列决定调用者不等待时压力积累在哪里。异步不等于没有排队。"
+        },
+        {
+          "from": "Binder Freezer 与缓存进程冻结",
+          "title": "缓存进程冻结期间的 Binder 行为",
+          "bridge": "目标进程被冻结后，事务队列还要处理投递、积压、唤醒和失败语义。Freezer 的收益与风险取决于这些事务是否允许延迟。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch01-architecture/16-display-windowmanager-architecture.md": {
+      "status": "ready",
+      "intro_bridge": "窗口管理负责窗口身份、层级、布局和 Surface 生命周期，渲染系统负责产生和合成缓冲区。定位显示问题时，需要先把 WMS 的窗口状态变化与 SurfaceFlinger 的图层和事务对应起来。",
+      "sections": [
+        {
+          "from": "Android 显示与渲染架构总览",
+          "title": "从应用窗口到显示设备"
+        },
+        {
+          "from": "Android 17 WindowManager 架构与性能优化",
+          "title": "WindowManager 的窗口、Surface 与事务",
+          "bridge": "建立显示主路径后，WMS 分析要落到 WindowToken、WindowState、SurfaceControl 和同步事务。布局循环与跨窗口同步是 system_server 侧常见的延迟来源。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch01-architecture/17-binder-buffer-observability.md": {
+      "status": "ready",
+      "intro_bridge": "Binder 故障既要看事务是否进入驱动，也要看目标进程的缓冲区和异步预算是否允许继续分配。内核分配状态、AIDL Trace 与 Perfetto 事务切片提供的是同一问题的不同观察面。",
+      "sections": [
+        {
+          "from": "Android 17 Binder Transaction Buffer：内核分配、异步预算与 RPC 上限",
+          "title": "事务缓冲区、分配器与大小限制"
+        },
+        {
+          "from": "Android 17 Binder 可观测性：Perfetto、AIDL Trace、内核快照与事务录制",
+          "title": "从 AIDL Trace 到内核事务快照",
+          "bridge": "缓冲区模型给出失败条件，可观测信号用于确认是哪一个进程、哪类事务和哪个时间窗口触发了限制。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch01-architecture/20-class-loading-art-boot-image.md": {
+      "status": "ready",
+      "intro_bridge": "类加载性能取决于查找路径、DEX 元数据、验证与初始化；Boot Image 把一部分核心类和运行时状态提前生成并跨进程共享。两者共同影响启动期缺页、映射和类链接成本。",
+      "sections": [
+        {
+          "from": "Android Java 类加载链路与启动期类加载性能",
+          "title": "类加载委派、查找与启动成本"
+        },
+        {
+          "from": "ART Boot Image 内存映射与启动性能",
+          "title": "Boot Image 的映射、共享与失效",
+          "bridge": "普通类加载沿 ClassLoader 和 DEX 路径查找，Boot Image 则把常用类放进预生成映像。映像是否命中、是否重定位以及页面如何共享，会直接改变前一阶段的成本。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch01-architecture/22-dynamic-linker-vndk-isolation.md": {
+      "status": "ready",
+      "intro_bridge": "Native 库加载先由 linker64 解析依赖、命名空间和重定位，再受分区隔离与稳定 ABI 规则约束。启动慢、找不到库和符号不匹配需要沿同一装载路径定位。",
+      "sections": [
+        {
+          "from": "Android Dynamic Linker (linker64) 架构与 Native 库加载性能边界",
+          "title": "linker64 装载、重定位与命名空间"
+        },
+        {
+          "from": "Android 17 VNDK 隔离与 native 库加载性能影响",
+          "title": "VNDK 隔离与跨分区 Native 依赖",
+          "bridge": "linker namespace 决定进程能看到哪些库，VNDK 和分区规则进一步限定 vendor、system 与应用之间可依赖的 ABI。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch02-rendering/01-rendering-architecture-evolution.md": {
+      "status": "ready",
+      "intro_bridge": "一帧从应用获得 VSync 开始，经过 UI 线程、RenderThread、GPU、BufferQueue 和 SurfaceFlinger，最后由 HWC 提交显示。版本变化主要改变调度、缓冲区和合成接口，分析时仍要回到 Producer、Consumer、layer 与 fence。",
+      "sections": [
+        {
+          "from": "Android 渲染架构全景",
+          "title": "帧生产、缓冲与系统合成"
+        },
+        {
+          "from": "渲染机制的版本演进",
+          "title": "版本演进改变了哪些责任边界",
+          "bridge": "主路径稳定后，版本差异要落到具体接口和线程。Project Butter、RenderThread、Treble、BLAST 和 FrameTimeline 分别改变了帧调度、绘制和观测方式。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md": {
+      "status": "ready",
+      "intro_bridge": "应用帧率、显示刷新率和物理显示模式是三个不同变量。系统先收集内容需求和设备约束，再选择模式并安排切换；掉帧、抖动与功耗问题需要分别检查帧生产、模式评分和切换时序。",
+      "sections": [
+        {
+          "from": "帧率与刷新率",
+          "title": "帧率、刷新率与截止时间"
+        },
+        {
+          "from": "Adaptive Refresh Rate 与动态帧率控制",
+          "title": "自适应刷新率的输入与约束",
+          "bridge": "固定刷新率只需要判断应用是否按期产帧，自适应刷新还要结合触摸、动画、视频节奏、功耗和面板能力动态调整。"
+        },
+        {
+          "from": "刷新率切换与帧率适配性能",
+          "title": "模式切换、应用适配与抖动",
+          "bridge": "策略选出目标刷新率后，显示链路还要完成 mode switch。应用请求、SurfaceFlinger 调度与硬件切换不同步时，会出现短时卡顿或节奏波动。"
+        },
+        {
+          "from": "Android 17 显示模式选择与 RefreshRateSelector 评分机制",
+          "title": "RefreshRateSelector 的候选模式与评分",
+          "bridge": "Android 17 把多类投票转成候选模式分数。复现模式选择时，需要同时保存 layer vote、触摸状态、idle timer、设备配置和最终得分。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch02-rendering/03-vsync-choreographer-sf-scheduling.md": {
+      "status": "ready",
+      "intro_bridge": "VSync 提供显示时间基准，Choreographer 把应用工作安排到帧窗口，SurfaceFlinger Scheduler 决定合成节奏和显示帧率。三者使用相关但不相同的时间点，不能只看一个 doFrame 判断整帧是否按期显示。",
+      "sections": [
+        {
+          "from": "VSync 机制",
+          "title": "VSync 来源、时间线与分发"
+        },
+        {
+          "from": "Choreographer 与渲染流水线",
+          "title": "应用侧帧回调与绘制调度",
+          "bridge": "VSync 到达应用后，Choreographer 按 input、animation、traversal 和 commit 阶段执行回调。回调开始时间和 deadline 决定应用是否错过当前帧。"
+        },
+        {
+          "from": "SurfaceFlinger VSync Scheduler 与 DisplayFrameRate 策略",
+          "title": "系统合成节奏与显示帧率策略",
+          "bridge": "应用提交 buffer 后，SurfaceFlinger 仍要选择合成时刻、latch 内容并协调显示模式。App deadline 与 SF deadline 应分别核对。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch02-rendering/04-main-render-thread-hardware-layer.md": {
+      "status": "ready",
+      "intro_bridge": "主线程负责视图状态、布局和 DisplayList 录制，RenderThread 负责 HWUI 渲染与 GPU 提交。Hardware Layer 可以复用离屏结果，但也会增加显存、更新和合成成本。",
+      "sections": [
+        {
+          "from": "MainThread 与 RenderThread 协作",
+          "title": "主线程、RenderThread 与 GPU 提交"
+        },
+        {
+          "from": "Hardware Layer",
+          "title": "Hardware Layer 的录制、缓存与失效",
+          "bridge": "线程分工解释了一帧如何产生，Hardware Layer 进一步改变 DisplayList 和纹理是否复用。收益取决于内容稳定性、更新范围和显存压力。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch02-rendering/05-surfaceflinger-frontend-transaction.md": {
+      "status": "ready",
+      "intro_bridge": "SurfaceFlinger 接收 buffer 与 SurfaceControl transaction，生成 layer 快照，再交给 CompositionEngine 和 HWC。FrontEnd 状态、事务就绪条件和 latch 时刻共同决定一次窗口更新何时进入当前合成周期。",
+      "sections": [
+        {
+          "from": "SurfaceFlinger 与合成",
+          "title": "Layer、合成策略与 present"
+        },
+        {
+          "from": "SurfaceFlinger FrontEnd 与 RequestedLayerState",
+          "title": "FrontEnd 状态与 Layer 快照",
+          "bridge": "合成阶段消费的是 FrontEnd 处理后的 layer 状态。RequestedLayerState、生命周期和 snapshot 更新决定本轮合成能看到什么。"
+        },
+        {
+          "from": "SurfaceFlinger 事务队列：无锁入口、分桶与就绪过滤",
+          "title": "事务入队、分桶与就绪过滤",
+          "bridge": "状态进入 FrontEnd 之前先经过事务队列。无锁入口只减少提交端竞争，apply token、时间戳和同步条件仍会影响事务何时可用。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md": {
+      "status": "ready",
+      "intro_bridge": "GPU 性能取决于工作负载、提交方式、同步和带宽，图形 API 只决定应用怎样表达这些工作。选型前先确认渲染内容、设备覆盖和工具能力，再比较 OpenGL ES、Vulkan 与 ANGLE 的工程成本。",
+      "sections": [
+        {
+          "from": "GPU 渲染、调试与性能分析",
+          "title": "GPU 管线、瓶颈与测量"
+        },
+        {
+          "from": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
+          "title": "OpenGL ES、Vulkan 与 ANGLE 选型",
+          "bridge": "确认瓶颈位于 CPU 提交、GPU 执行还是内存带宽后，API 选型才有意义。低层控制能力需要与驱动差异、着色器管线和维护成本一起评估。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md": {
+      "status": "ready",
+      "intro_bridge": "BufferQueue 管理 Producer 与 Consumer 之间的缓冲区所有权，Gralloc 和 DMA-BUF 提供实际内存，fence 表示读写何时完成。三个层次共同决定是否阻塞、能否复用以及跨进程共享是否安全。",
+      "sections": [
+        {
+          "from": "图形缓冲区管理（BufferQueue）",
+          "title": "BufferQueue 的槽位、所有权与反压"
+        },
+        {
+          "from": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+          "title": "Gralloc 分配与 DMA-BUF 共享",
+          "bridge": "BufferQueue 只管理槽位和状态，GraphicBuffer 背后的物理页、格式和映射由 Gralloc 与 DMA-BUF 决定。"
+        },
+        {
+          "from": "Sync Fence 框架与帧同步机制",
+          "title": "Acquire、Release 与 Present Fence",
+          "bridge": "缓冲区跨 CPU、GPU、HWC 和显示设备流转时，所有权变化还需要 fence 约束访问顺序。等待错误会表现为卡顿、撕裂或复用过早。"
+        }
+      ]
+    },
+    "src/part2-performance/ch18-rendering-pipelines/11-camera-pipeline.md": {
+      "status": "ready",
+      "intro_bridge": "Camera3 request 把输出 Surface、buffer 和结果元数据组织成一条流水线。CameraX ZSL 在此基础上维护可回溯帧并发起 reprocessing，缓存深度和 HAL 能力决定零快门延迟能否成立。",
+      "sections": [
+        {
+          "from": "Camera HAL3 Buffer 管理与 BufferQueue 协作的内存模型",
+          "title": "Camera3 Request、Buffer 与 Stream"
+        },
+        {
+          "from": "CameraX ZSL 与 HAL Reprocessing Request 的映射关系",
+          "title": "ZSL 缓存与 Reprocessing",
+          "bridge": "理解 HAL3 的 stream 和 buffer 生命周期后，ZSL 可以还原为历史帧缓存、输入流选择和 reprocessing request。失败时应区分框架回退与 HAL 能力限制。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch03-input/01-input-dispatch-interception-security.md": {
+      "status": "ready",
+      "intro_bridge": "输入事件从内核进入 InputReader，再由 InputDispatcher 选择窗口并等待消费确认。拦截、监控和注入能力位于这条路径的不同位置，权限和超时语义也不同。",
+      "sections": [
+        {
+          "from": "Input 事件分发：队列、反压与丢弃",
+          "title": "事件入队、目标选择与反压"
+        },
+        {
+          "from": "输入事件拦截与安全机制",
+          "title": "拦截、监控、注入与权限边界",
+          "bridge": "分发主路径确定事件送往哪个窗口，拦截机制决定哪些组件可以提前观察、修改或阻断事件。安全判断必须与具体入口对应。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch03-input/03-gesture-navigation-predictive-back.md": {
+      "status": "ready",
+      "intro_bridge": "系统手势先经过边缘区域和导航策略识别，再转成窗口或应用回调。Predictive Back 把返回提交拆成开始、进度、取消和完成，使系统动画能与应用状态变化同步。",
+      "sections": [
+        {
+          "from": "手势导航与系统交互",
+          "title": "系统手势识别与窗口路由"
+        },
+        {
+          "from": "Predictive Back 系统架构与动画管线性能",
+          "title": "Predictive Back 生命周期与动画同步",
+          "bridge": "普通手势识别给出最终动作，预测式返回还要连续传递进度并允许取消。应用导航栈和系统窗口动画必须遵守同一提交边界。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md": {
+      "status": "ready",
+      "intro_bridge": "Android 进程看到 Java Heap、Native Heap、图形内存和文件映射，内核最终以页、匿名内存、文件页和 swap 管理这些占用。分析 PSS、RSS、回收和 OOM 时，需要把应用视角与内核视角对应起来。",
+      "sections": [
+        {
+          "from": "Android 内存模型全景",
+          "title": "进程内存域与统计口径"
+        },
+        {
+          "from": "Linux 内核内存管理",
+          "title": "页分配、回收、缓存与 Swap",
+          "bridge": "进程指标只描述内存归属，压力处理发生在内核页管理层。缺页、reclaim、compaction 和 swap 会改变同一份进程内存的可用性和访问成本。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md": {
+      "status": "ready",
+      "intro_bridge": "ART Heap 的性能由对象分配、存活集、GC 算法和后台维护共同决定。分代 GC 缩小常规回收范围，HeapTask 和 trim 调整维护时机，但都受前后台状态、Freezer 与内存压力约束。",
+      "sections": [
+        {
+          "from": "ART 虚拟机内存管理",
+          "title": "对象分配、Heap 与 GC 基线"
+        },
+        {
+          "from": "ART 分代 GC、Region 碎片与暂停分析",
+          "title": "分代回收、Region 与暂停来源",
+          "bridge": "建立分配和回收主路径后，分代策略需要结合晋升、Remembered Set、Region 碎片和并发阶段判断收益。"
+        },
+        {
+          "from": "ART HeapTask 调度、启动维护与冻结边界",
+          "title": "HeapTask 与后台维护调度",
+          "bridge": "GC 算法决定一次回收做什么，HeapTask 决定维护工作何时执行。启动、后台和冻结状态会改变任务能否及时运行。"
+        },
+        {
+          "from": "onTrimMemory 回调与 ART Heap Trim",
+          "title": "内存压力回调与 Heap Trim",
+          "bridge": "系统内存压力到达应用后，onTrimMemory 只提供状态信号；ART 是否收缩 Heap、应用释放哪些缓存仍由各自策略决定。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md": {
+      "status": "ready",
+      "intro_bridge": "系统内存压力会触发回收、压缩、冻结、memcg 限制和进程终止。lmkd 负责选择牺牲进程，Freezer 降低缓存进程活动，MemoryLimiter 与产品预取则改变局部压力和工作集。",
+      "sections": [
+        {
+          "from": "系统内存压力与 lmkd",
+          "title": "压力信号、回收与 lmkd 决策"
+        },
+        {
+          "from": "Cached App Freezer、外部页回收与 GC 边界",
+          "title": "缓存进程冻结与外部页回收",
+          "bridge": "lmkd 决定何时终止进程，Freezer 尝试先降低缓存进程的 CPU 和后台活动。冻结期间的 GC、Binder 和文件页仍需单独分析。"
+        },
+        {
+          "from": "Android 17 MemoryLimiter：memcg 限制与超限诊断",
+          "title": "MemoryLimiter 与 memcg 超限",
+          "bridge": "全局压力之外，memcg 可以把限制施加到局部进程组。MemoryLimiter 的超限、回收和事件统计不能直接等同于整机低内存。"
+        },
+        {
+          "from": "产品侧内存预取与 lmkd 边界",
+          "title": "预取收益、工作集与回收代价",
+          "bridge": "预取用更多当前内存换取后续启动命中，收益取决于工作集稳定性。它同时可能提高回收和 lmkd 压力，需要做整机对照。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch05-cpu-power/01-linux-eas-big-little-scheduling.md": {
+      "status": "ready",
+      "intro_bridge": "异构 CPU 先提供不同容量和能效的核心，Linux 调度器负责选择可运行任务与目标 CPU，EAS 再把性能需求和能耗模型纳入放置决策。频率、温度和厂商策略会继续改变最终结果。",
+      "sections": [
+        {
+          "from": "大小核架构",
+          "title": "异构 CPU 的容量、拓扑与能效"
+        },
+        {
+          "from": "Linux 进程调度基础",
+          "title": "运行队列、优先级与任务选择",
+          "bridge": "硬件拓扑给出可选核心，调度器根据任务状态、优先级、负载和亲和性决定谁在何处运行。"
+        },
+        {
+          "from": "EAS 能量感知调度",
+          "title": "EAS 的能量模型与任务放置",
+          "bridge": "基础调度保证公平和实时约束，EAS 在候选 CPU 之间估算能耗。容量、利用率和能量模型不准确时，放置结果也会偏离预期。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch05-cpu-power/02-dvfs-thermal-android-power.md": {
+      "status": "ready",
+      "intro_bridge": "调度器决定任务在哪个 CPU 上运行，DVFS 决定运行频率和电压，Thermal 在温度超限时收紧可用能力，Android Power HAL 则把交互、场景和厂商提示传入控制环。",
+      "sections": [
+        {
+          "from": "DVFS 与功耗管理",
+          "title": "频率、电压与调频控制环"
+        },
+        {
+          "from": "Thermal 管控",
+          "title": "温度预算与降频约束",
+          "bridge": "DVFS 按负载调整频率，Thermal 根据温度和设备策略限制频率、功率或功能。持续负载下要同时观察请求频率与实际可用频率。"
+        },
+        {
+          "from": "Android 功耗管理",
+          "title": "Power HAL、系统状态与应用约束",
+          "bridge": "内核控制频率和温度，Android Framework 还通过 Power HAL、Doze、后台限制和电量统计影响工作何时发生。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch05-cpu-power/03-background-jobs-hibernation.md": {
+      "status": "ready",
+      "intro_bridge": "后台工作先受进程状态、待机桶和省电策略约束，再由 JobScheduler 或 WorkManager 选择执行窗口。长期未使用的应用进入 Hibernation 后，还会经历权限、缓存和恢复成本。",
+      "sections": [
+        {
+          "from": "后台执行限制与优化",
+          "title": "进程状态、待机桶与后台限制"
+        },
+        {
+          "from": "JobScheduler/WorkManager 调度与后台任务性能",
+          "title": "任务约束、批处理与执行窗口",
+          "bridge": "平台允许后台执行后，任务调度器还要综合网络、充电、空闲和配额。WorkManager 的可靠语义最终落到这些系统调度能力。"
+        },
+        {
+          "from": "Android 17 App Hibernation 状态机与冷启动恢复性能",
+          "title": "Hibernation 状态与恢复成本",
+          "bridge": "普通后台限制控制任务何时运行，Hibernation 面向长期未使用应用并改变权限、缓存和包状态。恢复时需要重新测量启动与数据准备。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch05-cpu-power/05-ondevice-ai-runtime-npu.md": {
+      "status": "ready",
+      "intro_bridge": "端侧推理性能由模型、张量布局、运行时、加速器和内存传输共同决定。应用自管 LiteRT 管线、平台提供的 ML Runtime 以及系统托管 GenAI 服务拥有不同的设备访问和资源隔离边界。",
+      "sections": [
+        {
+          "from": "端侧 AI 推理性能：NPU/GPU 加速与 LiteRT 管线",
+          "title": "模型执行、委托与数据搬运"
+        },
+        {
+          "from": "Android 17 ML Runtime 与 NPU 访问边界",
+          "title": "ML Runtime、驱动与 NPU 能力",
+          "bridge": "应用层 delegate 只有通过运行时和驱动才能使用 NPU。算子支持、内存共享、编译缓存和回退路径决定加速是否生效。"
+        },
+        {
+          "from": "系统托管 GenAI：AICore、OnDeviceIntelligence 与资源竞争",
+          "title": "系统托管 GenAI 与资源竞争",
+          "bridge": "系统托管模型进一步把下载、调度和隔离交给平台服务。应用需要按公开能力和配额设计降级，不能假设独占 NPU、内存或温度预算。"
+        }
+      ]
+    },
+    "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md": {
+      "status": "ready",
+      "intro_bridge": "应用 I/O 从系统调用进入 VFS、页缓存和具体文件系统，再由块层和设备队列提交存储。文件系统解释数据怎样组织和持久化，I/O 调度解释多个请求如何排序、合并与限流。",
+      "sections": [
+        {
+          "from": "文件系统",
+          "title": "VFS、页缓存与文件系统语义"
+        },
+        {
+          "from": "I/O 调度与性能",
+          "title": "块层队列、调度与延迟分析",
+          "bridge": "文件系统生成读写请求后，块层还要处理合并、优先级和设备队列。吞吐和尾延迟应结合请求大小、同步方式和存储介质判断。"
+        }
+      ]
+    },
+    "src/part2-performance/ch07-smoothness/01-jank-definition-causes.md": {
+      "status": "ready",
+      "intro_bridge": "卡顿需要相对具体刷新周期和帧截止时间定义。确认哪一帧晚到后，再沿主线程、RenderThread、GPU、SurfaceFlinger 和显示链路定位责任阶段。",
+      "sections": [
+        {
+          "from": "卡顿的定义与分类",
+          "title": "帧截止时间、卡顿类型与统计口径"
+        },
+        {
+          "from": "卡顿原因体系",
+          "title": "从应用工作到系统显示的原因树",
+          "bridge": "分类给出异常现象，原因分析还要落实到帧生产、调度、缓冲区和合成。相同帧时长可能来自不同责任阶段。"
+        }
+      ]
+    },
+    "src/part2-performance/ch07-smoothness/02-jank-methodology-scenarios-cases.md": {
+      "status": "ready",
+      "intro_bridge": "卡顿分析从可复现的场景和问题窗口开始，用 FrameTimeline 锁定异常帧，再结合线程状态、调度、GPU 和系统合成证据建立因果关系。案例只用于展示证据如何收敛，不能替代现场数据。",
+      "sections": [
+        {
+          "from": "卡顿分析方法论",
+          "title": "从异常帧到责任阶段"
+        },
+        {
+          "from": "典型场景分析",
+          "title": "滚动、动画、启动与交互场景",
+          "bridge": "通用流程确定后，不同场景需要选择不同起止点和关键轨道。滚动、动画、启动与页面切换的帧生产方式并不相同。"
+        },
+        {
+          "from": "案例集",
+          "title": "案例中的证据链与修复判断",
+          "bridge": "场景模板用于提出假设，案例要继续说明哪条证据排除了其他原因，以及修复后哪项指标发生变化。"
+        }
+      ]
+    },
+    "src/part2-performance/ch07-smoothness/03-view-layout-rendering-optimization.md": {
+      "status": "ready",
+      "intro_bridge": "View 优化先减少每帧必须执行的工作，再处理布局层级、inflate、measure、layout 和 draw 的具体成本。跳过测量或缓存绘制只有在状态和尺寸约束稳定时才安全。",
+      "sections": [
+        {
+          "from": "优化策略",
+          "title": "减少工作量、缩短关键路径与控制频率"
+        },
+        {
+          "from": "View 体系性能优化：布局层级、inflate 与 measure/layout 开销",
+          "title": "View 创建、测量、布局与绘制",
+          "bridge": "通用策略落到 View 体系后，要分别观察对象创建、布局遍历、无效区域和绘制提交。优化点必须与具体阶段对应。"
+        }
+      ]
+    },
+    "src/part2-performance/ch07-smoothness/09-accessibility-contentcapture-autofill.md": {
+      "status": "ready",
+      "intro_bridge": "Accessibility、ContentCapture 和 Autofill 都会读取或描述界面状态，但触发条件、数据范围和服务端组件不同。性能问题通常来自频繁事件、视图树遍历、跨进程调用或第三方服务处理。",
+      "sections": [
+        {
+          "from": "AccessibilityManagerService 与无障碍服务性能影响",
+          "title": "无障碍事件、节点查询与服务开销"
+        },
+        {
+          "from": "ContentCaptureService 与 Autofill 性能影响",
+          "title": "内容捕获、自动填充与视图结构传输",
+          "bridge": "无障碍服务面向交互辅助，ContentCapture 和 Autofill 面向内容理解与字段填充。三者都可能遍历视图结构，但不能共用同一开关或归因。"
+        }
+      ]
+    },
+    "src/part2-performance/ch08-responsiveness/01-responsiveness-principles-scenarios-cases.md": {
+      "status": "ready",
+      "intro_bridge": "响应速度从用户动作开始，到可感知反馈出现为止。指标必须先定义起点、终点和线程边界，再判断延迟来自主线程工作、异步依赖、IPC、I/O 还是调度。",
+      "sections": [
+        {
+          "from": "响应速度原理",
+          "title": "交互起止点、等待类型与感知阈值"
+        },
+        {
+          "from": "其他响应速度场景",
+          "title": "页面、输入、网络与后台唤醒场景",
+          "bridge": "通用等待模型需要映射到具体交互。页面打开、搜索、输入、登录和后台唤醒拥有不同的完成信号。"
+        },
+        {
+          "from": "案例集",
+          "title": "案例中的时间线与优化取舍",
+          "bridge": "案例分析应保留原始时间线、关键依赖和对照结果，避免只记录修改动作。"
+        }
+      ]
+    },
+    "src/part2-performance/ch08-responsiveness/02-app-cold-start-binder-trace.md": {
+      "status": "ready",
+      "intro_bridge": "冷启动跨越 Launcher、system_server、Zygote 和应用进程。总时长拆成进程创建、绑定应用、组件启动和首帧后，再用 Binder 事务把跨进程等待接回具体服务端线程。",
+      "sections": [
+        {
+          "from": "App 启动全流程",
+          "title": "从启动请求到首帧"
+        },
+        {
+          "from": "Binder Trace 驱动的 Activity 冷启动性能分析",
+          "title": "用 Binder Trace 还原跨进程等待",
+          "bridge": "启动阶段表给出时间边界，Binder Trace 用于解释 system_server、PackageManager、WindowManager 或其他服务为何延迟返回。"
+        }
+      ]
+    },
+    "src/part2-performance/ch08-responsiveness/06-keystore-biometric-credential-login.md": {
+      "status": "ready",
+      "intro_bridge": "登录链路可能同时访问 Keystore/KeyMint、BiometricPrompt 和 Credential Manager。密钥操作、硬件认证、系统 UI 与网络请求应分段计时，避免把安全等待统一归为接口慢。",
+      "sections": [
+        {
+          "from": "Keystore/KeyMint 调用延迟与登录链路性能",
+          "title": "密钥生成、访问与 KeyMint 延迟"
+        },
+        {
+          "from": "BiometricPrompt 与 Credential Manager 登录链路性能",
+          "title": "生物认证、凭据选择与登录完成",
+          "bridge": "密钥可用后，认证 UI 和凭据提供方还会引入 Binder、硬件和用户交互等待。最终登录完成时间应与密钥阶段分开归因。"
+        }
+      ]
+    },
+    "src/part2-performance/ch09-anr/01-anr-mechanism-types-triggers.md": {
+      "status": "ready",
+      "intro_bridge": "ANR 是系统针对特定组件和交互设置的超时判定。分析前先确认责任组件、计时起点、截止时间和处理线程，再判断是工作过长、锁等待、IPC、I/O 还是调度导致超时。",
+      "sections": [
+        {
+          "from": "ANR 设计思想",
+          "title": "超时责任、计时窗口与处置流程"
+        },
+        {
+          "from": "ANR 类型与触发条件",
+          "title": "Input、Broadcast、Service 与 Provider 超时",
+          "bridge": "统一处置流程之下，各类 ANR 的计时入口和责任线程不同。错误使用另一类型的阈值会直接带偏分析。"
+        }
+      ]
+    },
+    "src/part2-performance/ch09-anr/02-anr-kernel-trace-diagnosis.md": {
+      "status": "ready",
+      "intro_bridge": "ANR traces 记录超时附近的线程栈，Kernel Trace 补充 CPU 调度、锁、I/O 和内存压力。两类证据必须在同一时间窗口对齐，才能区分线程主动执行、可运行未调度和不可中断等待。",
+      "sections": [
+        {
+          "from": "ANR 分析方法",
+          "title": "现场保护、线程栈与责任链"
+        },
+        {
+          "from": "ANR 与 Kernel Trace 联合诊断",
+          "title": "调度、锁、I/O 与内核等待",
+          "bridge": "Java 或 Native 栈给出线程停留位置，内核轨迹解释它为什么长时间没有推进。两者结合后再判断修复位置。"
+        }
+      ]
+    },
+    "src/part2-performance/ch09-anr/07-android17-anr-prewarning.md": {
+      "status": "ready",
+      "intro_bridge": "Android 17 在正式 ANR 之前增加了可选 warning 信号。公开回调描述应用可见的结果，Input pre-ANR 路径描述 InputDispatcher、WMS 和 AMS 如何产生并转发预警。",
+      "sections": [
+        {
+          "from": "Android 17 ANR 预警回调与类型枚举",
+          "title": "公开回调、类型与交付约束"
+        },
+        {
+          "from": "Android 17 Input ANR 与 pre-ANR 实现",
+          "title": "InputDispatcher 到 AMS 的预警路径",
+          "bridge": "应用接入方式明确后，还要沿 native producer、WMS 和 AMS 调用关系确认预警何时产生，以及它与正式 ANR deadline 的区别。"
+        }
+      ]
+    },
+    "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md": {
+      "status": "ready",
+      "intro_bridge": "应用内存分析先建立 Java、Native、图形、文件映射和共享页基线，再观察场景前后的增长、峰值与回落。案例用于展示如何从指标进入对象、调用栈或系统分配证据。",
+      "sections": [
+        {
+          "from": "App 内存分析",
+          "title": "内存域、基线与增长分类"
+        },
+        {
+          "from": "案例集",
+          "title": "从异常曲线到分配责任",
+          "bridge": "基线模型用于提出假设，案例需要继续证明增长来自泄漏、缓存、抖动、图形资源还是系统共享内存。"
+        }
+      ]
+    },
+    "src/part2-performance/ch10-memory-perf/02-memory-leak-growth.md": {
+      "status": "ready",
+      "intro_bridge": "内存泄漏是对象或资源失去业务用途后仍被引用，持续增长还可能来自合法缓存、任务积压、映射扩张或场景工作集。判断前要验证增长是否可回落以及引用或资源所有者是谁。",
+      "sections": [
+        {
+          "from": "内存泄漏",
+          "title": "引用链、资源所有权与泄漏确认"
+        },
+        {
+          "from": "内存持续增长",
+          "title": "缓存、积压与非泄漏增长",
+          "bridge": "泄漏分析寻找无法释放的引用，增长分析还要检查缓存上限、队列长度、线程和 Native 映射。两者使用的证据和修复方式不同。"
+        }
+      ]
+    },
+    "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md": {
+      "status": "ready",
+      "intro_bridge": "功耗由 CPU、GPU、屏幕、网络、定位和传感器等组件在时间窗口内的活动共同产生。系统优化通过调度、休眠、批处理和硬件状态控制缩短高功率驻留时间。",
+      "sections": [
+        {
+          "from": "Android 功耗模型",
+          "title": "组件功率、驻留时间与归因口径"
+        },
+        {
+          "from": "系统级功耗优化",
+          "title": "调度、休眠与硬件状态控制",
+          "bridge": "功耗模型指出能量花在哪里，系统策略决定工作何时执行、能否批处理以及设备能否进入低功耗状态。"
+        }
+      ]
+    },
+    "src/part2-performance/ch11-power/02-app-power-optimization-cases.md": {
+      "status": "ready",
+      "intro_bridge": "应用耗电治理从场景、时间窗口和组件活动开始，继续检查 WakeLock、Alarm、网络、定位、动画和后台任务。修复结果需要在相同设备状态和业务负载下复测。",
+      "sections": [
+        {
+          "from": "App 耗电优化",
+          "title": "组件活动、唤醒与后台工作"
+        },
+        {
+          "from": "案例集",
+          "title": "案例中的能量归因与复测",
+          "bridge": "通用检查项用于缩小范围，案例应保留功耗基线、异常组件、修改变量和复测窗口。"
+        }
+      ]
+    },
+    "src/part2-performance/ch12-apk-network/01-android-network-tls-performance.md": {
+      "status": "ready",
+      "intro_bridge": "一次安全网络请求包含 DNS、连接建立、拥塞控制、TLS 握手、请求传输和应用解析。性能优化要先确认慢在哪一段，再考虑连接复用、协议升级或密码套件调整。",
+      "sections": [
+        {
+          "from": "网络性能优化",
+          "title": "DNS、连接、传输与应用处理"
+        },
+        {
+          "from": "Android 网络安全与 TLS 性能优化",
+          "title": "TLS 握手、证书与安全边界",
+          "bridge": "基础网络路径可用后，TLS 增加密钥协商、证书验证和会话恢复。安全配置不能为了降低握手耗时而绕过验证。"
+        }
+      ]
+    },
+    "src/part2-performance/ch18-rendering-pipelines/01-android-view-pipeline-analysis.md": {
+      "status": "ready",
+      "intro_bridge": "渲染问题先确定 Producer、Surface、layer 和合成位置，再沿具体线程与 fence 分析。标准 View 管线只是分类基线，SurfaceView、TextureView、Flutter、Camera 和视频会改变其中若干节点。",
+      "sections": [
+        {
+          "from": "渲染管线分类、选型与分析方法",
+          "title": "按 Producer、Surface 与合成位置分类"
+        },
+        {
+          "from": "Android View 标准管线（BLAST 深入）",
+          "title": "View、HWUI 与 BLAST 标准路径",
+          "bridge": "分类确定内容属于普通 App Window 后，可以沿 ViewRootImpl、RenderThread、BLAST 和 SurfaceFlinger 还原一帧。"
+        }
+      ]
+    },
+    "src/part2-performance/ch18-rendering-pipelines/02-android-software-offscreen-mixed-rendering.md": {
+      "status": "ready",
+      "intro_bridge": "软件渲染由 CPU 写入 buffer，离屏渲染先生成中间结果，混合渲染则让 CPU、GPU 或多个 Surface 共同参与。三种路径的同步点、内存流量和合成成本不同。",
+      "sections": [
+        {
+          "from": "Android 17 软件与离屏渲染路径",
+          "title": "CPU 光栅化与离屏缓冲区"
+        },
+        {
+          "from": "Android 17 混合渲染链路",
+          "title": "CPU、GPU 与多 Surface 混合",
+          "bridge": "离屏结果进入最终窗口后，可能与 HWUI、SurfaceView 或 GPU 内容共同合成。分析时要明确每块内容的生产者和同步信号。"
+        }
+      ]
+    },
+    "src/part2-performance/ch18-rendering-pipelines/04-surfaceview-textureview-pipelines.md": {
+      "status": "ready",
+      "intro_bridge": "SurfaceView 拥有独立 Surface 和 layer，TextureView 把外部纹理合入宿主 View。前者利于独立合成，后者便于 View 变换；代价分别落在窗口同步和宿主 GPU 合成。",
+      "sections": [
+        {
+          "from": "Android 17 SurfaceView 独立 Surface 路径",
+          "title": "SurfaceView 的独立 Layer 与同步"
+        },
+        {
+          "from": "Android 17 TextureView 宿主合成链路",
+          "title": "TextureView 的 SurfaceTexture 与宿主合成",
+          "bridge": "SurfaceView 的 buffer 直接形成独立 layer，TextureView 的 buffer 先成为纹理再进入宿主 DisplayList。选择时要比较变换需求、延迟和合成方式。"
+        }
+      ]
+    },
+    "src/part2-performance/ch18-rendering-pipelines/05-opengl-egl-angle.md": {
+      "status": "ready",
+      "intro_bridge": "EGL 负责显示连接、上下文和 Surface，OpenGL ES 提交图形命令；ANGLE 在兼容入口下把 GLES 翻译为 Vulkan。两条路径共享应用 API 的一部分，但驱动、同步和着色器处理不同。",
+      "sections": [
+        {
+          "from": "Android 17 EGL / OpenGL ES 渲染链路",
+          "title": "EGL 上下文、Swap 与 GLES 提交"
+        },
+        {
+          "from": "Android 17 ANGLE（GLES-over-Vulkan 翻译层）",
+          "title": "ANGLE 选择、翻译与同步",
+          "bridge": "GLES 直接驱动路径明确后，ANGLE 可以理解为另一套实现后端。启用条件、特性覆盖和同步转换决定兼容性与性能。"
+        }
+      ]
+    },
+    "src/part2-performance/ch18-rendering-pipelines/06-vulkan-hwui-multi-queue.md": {
+      "status": "ready",
+      "intro_bridge": "Vulkan 应用自行管理实例、设备、交换链、命令缓冲区和同步；HWUI 的 Vulkan 后端则由 framework 组织这些对象。Android 17 多队列优化改变提交并行度，但不改变最终 buffer 和 fence 边界。",
+      "sections": [
+        {
+          "from": "Android 17 Vulkan 原生渲染管线",
+          "title": "交换链、命令提交与呈现"
+        },
+        {
+          "from": "Android 17 HWUI Vulkan 多队列并行渲染与帧边界管理",
+          "title": "HWUI Vulkan 多队列与帧边界",
+          "bridge": "原生 Vulkan 由应用显式管理队列，HWUI 多队列由框架在渲染任务之间分配并行度。诊断时要区分应用队列和 HWUI 内部队列。"
+        }
+      ]
+    },
+    "src/part2-performance/ch18-rendering-pipelines/07-surfacecontrol-hardwarebuffer-renderer.md": {
+      "status": "ready",
+      "intro_bridge": "SurfaceControl NDK API 让应用直接创建和提交 layer transaction，HardwareBufferRenderer 则把渲染结果写入 HardwareBuffer。组合使用时要管理 buffer 生命周期、fence 和 transaction 提交。",
+      "sections": [
+        {
+          "from": "Android 17 SurfaceControl NDK API",
+          "title": "Layer 创建与 SurfaceControl Transaction"
+        },
+        {
+          "from": "Android 17 HardwareBufferRenderer",
+          "title": "HardwareBuffer 渲染与提交",
+          "bridge": "SurfaceControl 管理 layer 状态，HardwareBufferRenderer 负责生成可提交内容。两者之间通过 HardwareBuffer 和同步 fence 交接。"
+        }
+      ]
+    },
+    "src/part2-performance/ch18-rendering-pipelines/12-video-overlay-media3-codec-pipeline.md": {
+      "status": "ready",
+      "intro_bridge": "视频播放从容器和 ABR 选择进入解码器，经 Surface、BufferQueue 和 HWC 显示。是否使用 tunneled playback 或 overlay 会改变 buffer 流向、音视频同步和功耗；专业视频还增加格式、色深和编解码能力约束。",
+      "sections": [
+        {
+          "from": "Android 17 视频叠加与 HWC",
+          "title": "视频 Layer、Overlay 与 HWC 决策"
+        },
+        {
+          "from": "Android 17 多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR",
+          "title": "Media3、Codec2 与 Tunneled Playback",
+          "bridge": "HWC 只处理到达显示端的 layer，播放前半段还包括 ABR、缓冲、解码和音视频时钟。每个队列都可能形成独立反压。"
+        },
+        {
+          "from": "Android 17 Advanced Professional Video 与专业视频编解码管线",
+          "title": "专业视频格式、能力协商与回退",
+          "bridge": "普通播放路径建立后，APV 和专业格式需要继续核对编解码器、色彩、位深和设备能力。能力不匹配时应显式回退。"
+        }
+      ]
+    },
+    "src/part3-tools/ch13-perfetto/01-perfetto-intro-capture-reliability.md": {
+      "status": "ready",
+      "intro_bridge": "Perfetto 把内核、系统服务、应用埋点和性能计数器写入统一时间线。可靠分析先定义问题窗口和数据源，再选择抓取方式；超大 Trace 的处理与采集可靠性属于同一证据链。",
+      "sections": [
+        {
+          "from": "Perfetto 简介与演进",
+          "title": "数据源、Tracing Service 与 Trace Processor"
+        },
+        {
+          "from": "Trace 抓取",
+          "title": "配置、触发与设备侧采集",
+          "bridge": "理解生产者、缓冲区和 consumer 后，抓取配置才能对应到具体信号。配置过宽会放大开销，配置过窄会丢失因果关系。"
+        },
+        {
+          "from": "命令行打开超大 Trace",
+          "title": "超大 Trace 的存储、裁剪与查询",
+          "bridge": "Trace 超出浏览器和内存承载能力时，应在采集端控制窗口，并用 trace_processor_shell 或本地后端查询，避免把加载失败误判成数据损坏。"
+        },
+        {
+          "from": "Trace 采集可靠性与可复现诊断",
+          "title": "丢包、时钟、开销与可复现性",
+          "bridge": "能够打开 Trace 只证明文件格式有效。还要检查 buffer 丢包、数据源启停、时钟域和采集开销，确认这份证据可以支撑结论。"
+        }
+      ]
+    },
+    "src/part3-tools/ch13-perfetto/02-perfetto-ui-state-tracks.md": {
+      "status": "ready",
+      "intro_bridge": "Perfetto UI 用 track、slice、counter 和 flow 展示时间关系；状态轨道把线程、进程或系统组件在某段时间内的离散状态直接呈现。版本变化会调整轨道命名和数据源，不能只凭颜色判断。",
+      "sections": [
+        {
+          "from": "Perfetto View 解读",
+          "title": "轨道、切片、计数器与因果连接"
+        },
+        {
+          "from": "Perfetto v57 状态轨道与版本边界",
+          "title": "状态轨道的语义与版本差异",
+          "bridge": "掌握通用 UI 对象后，状态轨道要继续核对状态枚举、生成数据源和 Perfetto 版本。相同视觉样式不保证语义相同。"
+        }
+      ]
+    },
+    "src/part3-tools/ch13-perfetto/04-perfetto-metrics-automation-platform.md": {
+      "status": "ready",
+      "intro_bridge": "自动化分析把 Trace Processor SQL、metric 和设备批处理组合成可复查流程。平台价值取决于查询版本、输入质量、结果证据和回归基线，而不是只生成一个分数。",
+      "sections": [
+        {
+          "from": "Perfetto 指标、自动化与高级用法",
+          "title": "SQL Metric、批处理与回归比较"
+        },
+        {
+          "from": "SmartPerfetto 与可复用 Trace 分析平台",
+          "title": "分析平台的任务、证据与版本治理",
+          "bridge": "单个 metric 可回答固定问题，分析平台还要管理 Trace 输入、查询版本、任务编排和证据链接，保证结果能够回到原始时间线。"
+        }
+      ]
+    },
+    "src/part3-tools/ch13-perfetto/06-android-tracing-infrastructure-custom-trace.md": {
+      "status": "ready",
+      "intro_bridge": "Android tracing 从内核 ftrace、atrace 分类和 Perfetto 数据源汇入统一会话。应用的 android.os.Trace 标记最终进入这套基础设施，因此类别启用、进程权限和缓冲区配置会影响可见结果。",
+      "sections": [
+        {
+          "from": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
+          "title": "ftrace、atrace 与 Perfetto 采集路径"
+        },
+        {
+          "from": "android.os.Trace API 深度解析与应用级自定义追踪",
+          "title": "应用 Trace API、异步事件与计数器",
+          "bridge": "系统采集路径明确后，应用埋点要选择同步 slice、异步 slice 或 counter，并保证名称、cookie 和生命周期可以在 Trace 中配对。"
+        }
+      ]
+    },
+    "src/part3-tools/ch13-perfetto/07-perfetto-sql-span-join-jank-cuj.md": {
+      "status": "ready",
+      "intro_bridge": "Perfetto SQL 先用表和视图筛出问题窗口，再通过时间跨度关联把线程、帧、调度和业务事件放到同一窗口。Jank CUJ 标准库提供现成语义，DataGrid 负责交互查询和结果检查。",
+      "sections": [
+        {
+          "from": "Perfetto SQL 性能分析实战手册",
+          "title": "数据模型、窗口选择与基础查询"
+        },
+        {
+          "from": "Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数",
+          "title": "时间跨度关联与窗口函数",
+          "bridge": "基础查询定位对象后，SPAN_JOIN 用重叠区间回答多个轨道在同一时刻发生了什么；窗口函数用于排序、累计和相邻事件计算。"
+        },
+        {
+          "from": "Perfetto DataGrid 与 Jank CUJ 标准库",
+          "title": "Jank CUJ 标准库与交互验证",
+          "bridge": "自定义 SQL 提供灵活性，标准库统一常见 CUJ 语义。DataGrid 可用于检查中间结果，但最终结论仍要保留 SQL 和 Trace 位置。"
+        }
+      ]
+    },
+    "src/part3-tools/ch13-perfetto/13-frametracer-frame-timeline.md": {
+      "status": "ready",
+      "intro_bridge": "FrameTracer 在系统侧记录图形帧事件，Frame Timeline 用 token 把应用预期、实际提交和显示结果关联起来。Expected 与 Actual timeline 的差值只有结合 layer 和线程上下文才能解释卡顿责任。",
+      "sections": [
+        {
+          "from": "FrameTracer 与 Graphics Frame Event 数据通路",
+          "title": "FrameTracer 事件生成与 token 关联"
+        },
+        {
+          "from": "Frame Timeline API 33 Perfetto 深度分析：Expected vs Actual Timeline",
+          "title": "Expected、Actual 与 Jank 分类",
+          "bridge": "事件生产路径明确后，Frame Timeline 可以按 token 连接 App 和 SurfaceFlinger。deadline miss、prediction error 和 composition 结果需要分别读取。"
+        }
+      ]
+    },
+    "src/part3-tools/ch14-other-tools/02-simpleperf-arm-topdown.md": {
+      "status": "ready",
+      "intro_bridge": "simpleperf 提供 Android 上的采样、硬件计数器和调用图；微架构分析继续把事件映射到前端、后端、错误推测和退休槽位。Topdown 结论必须建立在设备 PMU 支持和可复现负载上。",
+      "sections": [
+        {
+          "from": "Simpleperf",
+          "title": "采样、调用图与硬件事件基础"
+        },
+        {
+          "from": "Android 17 simpleperf 微架构级性能采样与工作流增强",
+          "title": "Android 17 采集能力与微架构工作流",
+          "bridge": "基础采样回答热点在哪里，Android 17 的事件支持和工作流用于进一步确认缓存、分支和流水线瓶颈。"
+        },
+        {
+          "from": "ARM Topdown 微架构性能分析方法论与 Android 实践",
+          "title": "ARM Topdown 分类与反证",
+          "bridge": "硬件事件采集完成后，Topdown 将 pipeline slot 分类。事件可用性、复用比例和 SoC 定义必须随结果一起记录。"
+        }
+      ]
+    },
+    "src/part3-tools/ch14-other-tools/03-memory-hprof-heapdump-tools.md": {
+      "status": "ready",
+      "intro_bridge": "内存工具按问题域选择：Heap Dump 观察 Java 对象和引用，heapprofd 采样 Native 分配，smaps 与 meminfo 描述映射和系统统计。HPROF 与 Perfetto java_hprof 使用相关数据，但采集和分析路径不同。",
+      "sections": [
+        {
+          "from": "内存分析工具",
+          "title": "按 Java、Native、图形与映射选择工具"
+        },
+        {
+          "from": "HPROF Heap Dump 管线与 Perfetto java_hprof 数据源",
+          "title": "HPROF 生成、传输与引用图",
+          "bridge": "工具选型确定需要 Java 对象证据后，再检查 dump 触发、停顿、文件传输和解析。Perfetto java_hprof 适合与时间线协同，但不等同于任意完整 HPROF。"
+        }
+      ]
+    },
+    "src/part3-tools/ch14-other-tools/06-automation-cli-agent-workflow.md": {
+      "status": "ready",
+      "intro_bridge": "自动化性能测试需要固定设备状态、场景、采集配置、统计口径和失败证据。CLI 与 Agent 可以编排这些步骤，但每个判断仍应返回命令、Trace、日志或测试结果。",
+      "sections": [
+        {
+          "from": "自动化性能测试与回归门禁",
+          "title": "场景、基线、重复测量与回归门禁"
+        },
+        {
+          "from": "Android CLI 与 Agent 化性能调试工作流",
+          "title": "CLI 编排、Agent 任务与证据回传",
+          "bridge": "测试协议稳定后，CLI 和 Agent 用于执行重复步骤、收集产物和生成候选结论。无法回到原始证据的自动结论不能进入门禁。"
+        }
+      ]
+    },
+    "src/part3-tools/ch14-other-tools/07-third-party-hook-observability.md": {
+      "status": "ready",
+      "intro_bridge": "三方性能库通常通过公开回调、字节码插桩、PLT/GOT、inline hook 或系统 Trace 获取信号。选型要同时检查覆盖范围、版本兼容、开销、隐私和失败降级。",
+      "sections": [
+        {
+          "from": "三方性能库与可观测性选型",
+          "title": "信号覆盖、运行开销与选型边界"
+        },
+        {
+          "from": "Hook 基础设施与性能工具实现原理",
+          "title": "插桩与 Native Hook 的实现约束",
+          "bridge": "确定需要补充的信号后，Hook 才是候选实现手段。链接器、指令重定位、线程安全和平台防护决定方案能否长期运行。"
+        }
+      ]
+    },
+    "src/part3-tools/ch14-other-tools/11-gpu-debug-agi-frame-analysis.md": {
+      "status": "ready",
+      "intro_bridge": "GPU 调试工具分为 API 调用捕获、单帧重放、计数器分析和系统时间线。AGI Frame Profiler 通过 gapii Spy 捕获图形调用并重建帧，适合定位资源和命令问题，但需要控制捕获开销和兼容性。",
+      "sections": [
+        {
+          "from": "GPU 图形调试与分析工具",
+          "title": "API 捕获、计数器与系统 Trace 选型"
+        },
+        {
+          "from": "Android 17 AGI Frame Profiler gapii Spy 架构与单帧 GPU 捕获机制",
+          "title": "AGI 捕获、重放与单帧分析",
+          "bridge": "工具类型确定后，AGI 的捕获链要继续检查注入、调用序列、资源快照和重放设备。捕获成功不保证性能时间完全无扰动。"
+        }
+      ]
+    },
+    "src/part3-tools/ch14-other-tools/12-gpu-counter-memory-observability.md": {
+      "status": "ready",
+      "intro_bridge": "GPU 可观测信号分为执行计数器、频率/利用率、内存当前量和分配时间线。Perfetto、GpuService、eBPF 与 statsd 覆盖的对象和时间粒度不同，查询前要先确定需要回答的问题。",
+      "sections": [
+        {
+          "from": "Perfetto GPU Counter 与 GPU Memory 事件分析",
+          "title": "GPU Counter、频率与内存事件"
+        },
+        {
+          "from": "GpuService GPU 内存可观测性：GpuMem/eBPF 当前总量、GpuMemTracer/Perfetto 时间线与 GpuStats/statsd 驱动统计",
+          "title": "GpuService 数据源、时间线与驱动统计",
+          "bridge": "通用计数器描述负载趋势，GpuService 进一步提供进程或驱动侧内存信号。当前量、事件时间线和累计统计不能混用。"
+        }
+      ]
+    },
+    "src/part3-tools/ch14-other-tools/13-performance-analyzer-gaps.md": {
+      "status": "ready",
+      "intro_bridge": "动态分析工具先建立进程、线程、调用和系统事件的观察面，再决定能否到达目标代码或状态。Performance Analyzer 偏向统一性能检查，GAPS 关注动态分析目标的可达路径重建。",
+      "sections": [
+        {
+          "from": "Android Performance Analyzer 与系统性能分析",
+          "title": "统一性能检查与系统证据"
+        },
+        {
+          "from": "GAPS：Android 动态分析目标可达性路径重建",
+          "title": "动态目标可达性与路径重建",
+          "bridge": "系统性能检查定位异常区域后，GAPS 类方法用于回答目标函数或状态怎样被实际执行路径触达。静态存在不等于运行时可达。"
+        }
+      ]
+    },
+    "src/part3-tools/ch14-other-tools/15-winscope-layout-inspector-ui-debugging.md": {
+      "status": "ready",
+      "intro_bridge": "Winscope 观察 WindowManager、SurfaceFlinger 和输入状态随时间变化，Layout Inspector 观察应用当前 View 或 Compose 结构。前者适合窗口与合成时序，后者适合布局层级和属性。",
+      "sections": [
+        {
+          "from": "Winscope 与窗口/合成状态可视化调试",
+          "title": "窗口、Layer 与输入状态时间线"
+        },
+        {
+          "from": "Layout Inspector 与 ViewDebug 布局调试",
+          "title": "View、Compose 结构与属性检查",
+          "bridge": "系统窗口状态确认后，应用内部布局问题再进入 Layout Inspector 或 ViewDebug。两类工具的时间维度和权限范围不同。"
+        }
+      ]
+    },
+    "src/part3-tools/ch14-other-tools/16-android-ebpf-architecture-observability.md": {
+      "status": "ready",
+      "intro_bridge": "Android eBPF 程序在内核事件处采集低开销信号，由 bpfloader 按平台规则加载、固定和授权。Android 17 增加的程序需要结合 hook 点、map、消费端和设备内核能力逐项确认。",
+      "sections": [
+        {
+          "from": "eBPF/BPF 在 Android 性能分析中的应用",
+          "title": "Hook 点、Map 与性能观测场景"
+        },
+        {
+          "from": "eBPF 系统架构：bpfloader Rust 化与 BPF 程序组织",
+          "title": "bpfloader、对象组织与权限",
+          "bridge": "观测场景决定需要哪些内核事件，平台架构决定程序怎样加载、固定到 bpffs 并向用户空间开放 map。"
+        },
+        {
+          "from": "Android 17 新增 eBPF 性能观测程序矩阵",
+          "title": "Android 17 程序、事件与消费端",
+          "bridge": "加载框架明确后，新程序应按 hook、输出 map、消费者和版本条件核对，不能只根据对象文件名推断可用指标。"
+        }
+      ]
+    },
+    "src/part3-tools/ch15-methodology/01-performance-principles-evidence-governance.md": {
+      "status": "ready",
+      "intro_bridge": "性能工作从用户场景和可测指标开始，经过证据采集、责任定位、单变量修改和回归验证，最后进入长期门禁。经验模式可以帮助提出假设，但结论必须回到当前版本和设备数据。",
+      "sections": [
+        {
+          "from": "性能优化的术、道、器",
+          "title": "目标、指标、工具与实验设计"
+        },
+        {
+          "from": "Android 性能问题实证：真实世界的分类与代码模式",
+          "title": "真实问题模式与证据要求",
+          "bridge": "工作流程建立后，常见问题模式用于缩小候选范围。代码模式只能提示风险，仍需运行证据确认是否构成瓶颈。"
+        },
+        {
+          "from": "性能反馈回路与治理工程化",
+          "title": "基线、归因、门禁与长期治理",
+          "bridge": "单次优化结束后，指标口径、责任人、回归阈值和证据保留决定问题会不会再次出现。"
+        }
+      ]
+    },
+    "src/part3-tools/ch15-methodology/03-performance-metrics-online-monitoring.md": {
+      "status": "ready",
+      "intro_bridge": "性能指标先定义对象、起止点、单位、分母和统计窗口，再进入线上采集。监控系统还要处理采样、设备分层、版本归因、隐私和告警噪声。",
+      "sections": [
+        {
+          "from": "性能指标体系",
+          "title": "指标定义、分位数与场景基线"
+        },
+        {
+          "from": "线上性能监控",
+          "title": "采样、聚合、告警与版本归因",
+          "bridge": "指标定义稳定后，线上系统才能决定采什么、采多少以及如何比较版本。不同人群和窗口的数字不能直接横向比较。"
+        }
+      ]
+    },
+    "src/part3-tools/ch19-apm/01-apm-landscape-firebase-commercial.md": {
+      "status": "ready",
+      "intro_bridge": "APM 客户端采集启动、帧、网络、资源、Crash 和 ANR 等应用可见信号，再由服务端聚合和归因。Firebase 与商业平台的差异主要落在信号覆盖、数据模型、部署成本和生态集成。",
+      "sections": [
+        {
+          "from": "APM 全景图与分类体系",
+          "title": "客户端信号、采集架构与选型维度"
+        },
+        {
+          "from": "Firebase Performance",
+          "title": "Firebase Performance 的自动与自定义 Trace",
+          "bridge": "明确 APM 通用能力后，可以按 Firebase 的自动启动、网络和屏幕信号检查其覆盖与限制。"
+        },
+        {
+          "from": "商业 APM 平台（Sentry、APMPlus、Bugly）",
+          "title": "商业平台的信号覆盖与工程取舍",
+          "bridge": "商业平台通常增加崩溃、会话、服务端链路或厂商生态能力。选型时需要用同一场景验证字段、采样、符号化和数据保留。"
+        }
+      ]
+    },
+    "src/part3-tools/ch19-apm/02-matrix-btrace-tracing-sdk.md": {
+      "status": "ready",
+      "intro_bridge": "androidx.tracing 提供应用埋点入口，btrace/RheaTrace 通过插桩和运行时记录扩大方法覆盖，Matrix 再把 Trace、资源和稳定性能力组织成客户端框架。三者处在不同抽象层。",
+      "sections": [
+        {
+          "from": "androidx.tracing（Tracing SDK）",
+          "title": "应用 Trace API 与埋点边界"
+        },
+        {
+          "from": "btrace / RheaTrace",
+          "title": "字节码插桩与方法 Trace",
+          "bridge": "显式埋点适合关键业务区间，需要更广方法覆盖时才引入插桩。采样、过滤和方法 ID 映射决定运行开销。"
+        },
+        {
+          "from": "Tencent Matrix",
+          "title": "Matrix 的插件架构与诊断能力",
+          "bridge": "底层追踪信号确定后，Matrix 将卡顿、资源、IO 和稳定性插件组合到统一客户端生命周期中。"
+        }
+      ]
+    },
+    "src/part3-tools/ch19-apm/03-koom-leakcanary-memory-diagnostics.md": {
+      "status": "ready",
+      "intro_bridge": "LeakCanary 通过对象可达性和 Heap Dump 定位开发期 Java 泄漏，KOOM 面向线上或大规模设备补充低内存开销的泄漏、OOM 和线程监控。两者的触发、上传和隐私边界不同。",
+      "sections": [
+        {
+          "from": "LeakCanary",
+          "title": "对象监视、Heap Dump 与引用链"
+        },
+        {
+          "from": "KOOM",
+          "title": "线上泄漏、OOM 与资源监控",
+          "bridge": "开发期确认引用模式后，线上方案还要控制触发频率、dump 开销、文件大小和数据上传。KOOM 的各模块应按问题域独立评估。"
+        }
+      ]
+    },
+    "src/part3-tools/ch19-apm/04-dokit-measure-dev-tools.md": {
+      "status": "ready",
+      "intro_bridge": "DoKit 提供应用内调试面板和多类检查插件，Measure 更接近轻量方法耗时与代码区间测量。开发期工具应按目标信号选择，避免把调试开销带入发布版本。",
+      "sections": [
+        {
+          "from": "DoraemonKit / DoKit",
+          "title": "应用内调试面板与性能插件"
+        },
+        {
+          "from": "Measure",
+          "title": "轻量耗时测量与使用边界",
+          "bridge": "DoKit 适合集中展示多种诊断能力，Measure 用于局部代码计时。两者都需要明确 debug/release 开关和测量扰动。"
+        }
+      ]
+    },
+    "src/part3-tools/ch19-apm/07-jetpack-benchmark-baseline-profiles.md": {
+      "status": "ready",
+      "intro_bridge": "Microbenchmark 测量局部代码，Macrobenchmark 测量应用启动和交互；Baseline Profile 记录应优先编译的热路径。基准测试负责证明收益，Profile 负责把收益带到用户安装环境。",
+      "sections": [
+        {
+          "from": "Jetpack Benchmark（Microbenchmark + Macrobenchmark）",
+          "title": "Microbenchmark、Macrobenchmark 与测量协议"
+        },
+        {
+          "from": "Baseline Profiles 与编译优化",
+          "title": "Profile 生成、打包与设备验证",
+          "bridge": "基准场景稳定后，可以用 Macrobenchmark 收集 Baseline Profile，并在安装和编译状态可控的设备上验证。"
+        }
+      ]
+    },
+    "src/part3-tools/ch19-apm/08-lab-tools-device-benchmarks.md": {
+      "status": "ready",
+      "intro_bridge": "PerfDog、SoloPi 和 Emmagee 采集应用场景中的帧率、CPU、内存和功耗近似信号；设备 Benchmark 测量 CPU、GPU、Web 和存储能力。前者偏场景回归，后者偏设备基线。",
+      "sections": [
+        {
+          "from": "PerfDog、SoloPi 与 Emmagee",
+          "title": "场景测试、指标采集与自动化"
+        },
+        {
+          "from": "设备 Benchmark（CPU、GPU、Web 与存储）",
+          "title": "设备能力基线与跨设备比较",
+          "bridge": "场景工具发现应用回归后，设备 Benchmark 可解释硬件能力差异。不同版本、温度和系统策略下的分数不能直接比较。"
+        }
+      ]
+    },
+    "src/part4-system/ch16-aosp/01-aosp-performance-version-changes.md": {
+      "status": "ready",
+      "intro_bridge": "AOSP 性能优化要先确定问题属于应用、framework、runtime、native 服务还是内核，再固定源码标签和设备实现。版本追踪用于识别责任边界变化，Android 17 适配则落到具体 API、flag 和行为验证。",
+      "sections": [
+        {
+          "from": "AOSP 性能优化的分层方法",
+          "title": "从现象到源码层级和责任模块"
+        },
+        {
+          "from": "各 Android 版本性能变更追踪",
+          "title": "版本演进与行为迁移",
+          "bridge": "层级定位明确后，版本差异应按模块和用户可见行为记录，避免把发布说明直接当成设备结论。"
+        },
+        {
+          "from": "Android 17（API 37）性能行为变更与适配方法",
+          "title": "Android 17 行为、开关与适配验证",
+          "bridge": "Android 17 的变化需要在 API 级别、AOSP tag、feature flag 和 OEM 实现四个层面核对。"
+        }
+      ]
+    },
+    "src/part4-system/ch16-aosp/03-android17-kernel-arm64-security.md": {
+      "status": "ready",
+      "intro_bridge": "Android 17 GKI 6.18 改变调度、内存、BPF 和驱动基础，ARM64 安全缓解机制又会影响间接分支、系统调用和上下文切换。性能比较必须保持内核配置和缓解状态一致。",
+      "sections": [
+        {
+          "from": "Android 17 Kernel 6.18 性能机制与验证",
+          "title": "GKI 6.18 调度、内存与观测变化"
+        },
+        {
+          "from": "Android 17 ARM64 内核安全缓解机制性能开销与调优",
+          "title": "ARM64 缓解机制、开销与验证",
+          "bridge": "内核版本基线确定后，安全特性需要按 CPU 能力、内核配置和实际启用状态测量。不能用关闭安全机制的结果代表量产配置。"
+        }
+      ]
+    },
+    "src/part4-system/ch17-oem/01-oem-performance-app-collaboration.md": {
+      "status": "ready",
+      "intro_bridge": "OEM 在调度、内存、功耗、温控和后台策略上拥有设备实现空间，应用只能通过公开 API、性能 hint 和可复现证据协作。优化案例要区分平台公共能力与厂商私有策略。",
+      "sections": [
+        {
+          "from": "OEM 性能优化的通用思路",
+          "title": "设备约束、厂商策略与公共接口"
+        },
+        {
+          "from": "OEM 与大型应用协作案例",
+          "title": "应用协作、实验设计与案例边界",
+          "bridge": "厂商策略明确后，应用协作应通过场景、指标、版本和对照实验表达需求，避免依赖不可维护的私有白名单。"
+        }
+      ]
+    },
+    "src/part4-system/ch17-oem/03-oem-scheduling-game-input.md": {
+      "status": "ready",
+      "intro_bridge": "sched_ext 允许厂商在受控接口上实现调度策略，游戏模式和输入优先级则把场景信号传给调度、频率和显示系统。收益取决于任务识别、CPU 预算和温度约束。",
+      "sections": [
+        {
+          "from": "sched_ext 与 OEM 调度实践",
+          "title": "sched_ext 接口、策略与回退"
+        },
+        {
+          "from": "OEM 游戏模式输入优先级与触控调度",
+          "title": "游戏线程识别、输入优先级与帧预算",
+          "bridge": "通用调度扩展提供策略执行位置，游戏模式提供场景和线程信号。输入加速必须与渲染截止时间、频率和温控共同验证。"
+        }
+      ]
+    },
+    "src/part4-system/ch17-oem/06-power-hal-schedutil-power-stats.md": {
+      "status": "ready",
+      "intro_bridge": "Power HAL 把场景提示传给厂商电源策略，schedutil 根据利用率调节 CPU 频率，Power Stats HAL 汇报设备能量实体和状态驻留。控制与统计是两条相关但独立的路径。",
+      "sections": [
+        {
+          "from": "SoC 功耗控制：Power HAL、schedutil 与厂商差异",
+          "title": "Power Hint、schedutil 与 SoC 控制环"
+        },
+        {
+          "from": "Android 17 Power Stats HAL 的 OEM 实现差异",
+          "title": "Power Stats 能量实体、驻留与归因",
+          "bridge": "控制环决定硬件状态，Power Stats 用于观察能量和驻留结果。统计覆盖、单位和更新频率由 OEM 实现，不能假设所有设备一致。"
+        }
+      ]
+    },
+    "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md": {
+      "status": "ready",
+      "intro_bridge": "稳定性治理先定义 Crash、ANR、OOM、进程退出和功能不可用等结果，再统一用户、会话、设备和版本分母。客户端聚合负责去重与补充上下文，服务端归因负责把问题分配到版本、模块和责任变更。",
+      "sections": [
+        {
+          "from": "应用稳定性全景",
+          "title": "故障类型、恢复能力与治理范围"
+        },
+        {
+          "from": "稳定性度量与指标体系",
+          "title": "分母、窗口、分位与版本口径",
+          "bridge": "故障分类明确后，每个指标必须固定事件定义和分母。Crash 次数、受影响用户和无崩溃会话回答的问题不同。"
+        },
+        {
+          "from": "崩溃聚合与归因分析",
+          "title": "指纹、聚合、变更与责任归因",
+          "bridge": "指标发现回归后，需要用堆栈、信号、设备和版本字段聚合事件，并结合发布变更定位责任范围。"
+        }
+      ]
+    },
+    "src/part5-app/ch20-stability/02-java-crash-exception-stack-analysis.md": {
+      "status": "ready",
+      "intro_bridge": "Java 异常先在调用栈中传播，未被处理时进入 UncaughtExceptionHandler 并触发进程终止。治理既要设计异常边界，也要在 Crash 状态下可靠记录当前线程、其他线程和锁等待。",
+      "sections": [
+        {
+          "from": "异常处理架构设计",
+          "title": "异常传播、领域边界与恢复策略"
+        },
+        {
+          "from": "Java Crash 治理",
+          "title": "未捕获异常、现场记录与退出",
+          "bridge": "异常边界决定哪些错误可以局部处理，剩余未捕获异常进入 Crash 路径。现场采集必须避免递归异常、死锁和长时间阻塞。"
+        },
+        {
+          "from": "Crash 状态下 Java 线程堆栈获取与锁等待分析",
+          "title": "线程快照、锁等待与采集风险",
+          "bridge": "主异常堆栈说明触发点，其他线程和锁关系用于判断并发背景。Crash 状态下运行时可能已经受损，采集策略需要限时并允许降级。"
+        }
+      ]
+    },
+    "src/part5-app/ch20-stability/03-native-crash-unwinding-symbolication.md": {
+      "status": "ready",
+      "intro_bridge": "Native Crash 从信号、寄存器、内存映射和 tombstone 开始，随后按栈展开规则恢复调用帧，再用匹配构建的符号和 Build ID 还原函数位置。任何一步版本不匹配都会产生错误堆栈。",
+      "sections": [
+        {
+          "from": "Native Crash 分析与治理",
+          "title": "信号、tombstone 与故障现场"
+        },
+        {
+          "from": "Native 堆栈回溯与符号化机制",
+          "title": "栈展开、Build ID 与符号解析",
+          "bridge": "现场记录提供 PC、SP、寄存器和映射，unwinder 再依赖 CFI 或 frame pointer 恢复调用链。符号库必须对应同一二进制。"
+        }
+      ]
+    },
+    "src/part5-app/ch20-stability/05-oom-webview-renderer-recovery.md": {
+      "status": "ready",
+      "intro_bridge": "OOM 可能来自 Java Heap、Native、图形内存、地址空间或系统低内存终止。WebView Renderer 位于独立进程，它的退出既可能表现为页面白屏，也可能由应用通过回调重建。",
+      "sections": [
+        {
+          "from": "OOM 治理",
+          "title": "OOM 类型、现场证据与恢复边界"
+        },
+        {
+          "from": "WebView Renderer OOM 与白屏恢复",
+          "title": "Renderer 退出、回调与页面重建",
+          "bridge": "应用进程 OOM 与 WebView Renderer 退出需要分开归因。Renderer 被终止后，WebView 状态、业务导航和资源释放决定能否安全恢复。"
+        }
+      ]
+    },
+    "src/part5-app/ch20-stability/07-16kb-native-library-compatibility.md": {
+      "status": "ready",
+      "intro_bridge": "16 KB page size 改变 ELF segment 对齐、mmap 和打包检查，Native 库发布还要满足只读装载、完整性和动态加载限制。兼容验证应覆盖构建产物、APK 安装和真实设备加载。",
+      "sections": [
+        {
+          "from": "16 KB Page Size 兼容检查与 Native 崩溃排查",
+          "title": "ELF 对齐、打包与 16 KB 设备验证"
+        },
+        {
+          "from": "Android 17 原生动态库的只读加载与安全发布",
+          "title": "Native 库装载、只读约束与安全发布",
+          "bridge": "页大小兼容保证 ELF 能被正确映射，发布安全继续约束库文件来源、权限和装载方式。两组检查都应在安装产物上执行。"
+        }
+      ]
+    },
+    "src/part5-app/ch20-stability/12-thread-coroutine-leak-governance.md": {
+      "status": "ready",
+      "intro_bridge": "线程泄漏表现为线程生命周期超出业务需要，协程泄漏表现为 Job、Scope 或挂起任务失去明确所有者。两者都会保留对象、占用调度资源并放大退出和后台成本。",
+      "sections": [
+        {
+          "from": "线程泄漏与匿名线程监控实战",
+          "title": "线程创建、所有者与退出监控"
+        },
+        {
+          "from": "Kotlin 协程泄漏诊断与结构化并发性能监控",
+          "title": "Scope、Job 与结构化并发",
+          "bridge": "线程监控关注 OS 线程是否结束，协程监控还要沿父子 Job、取消传播和 Dispatcher 找到任务所有者。协程泄漏不一定增加线程数。"
+        }
+      ]
+    },
+    "src/part5-app/ch21-startup/01-app-startup-path-monitoring.md": {
+      "status": "ready",
+      "intro_bridge": "应用启动从用户或系统请求开始，经过进程创建、bindApplication、组件生命周期和首帧显示。监控需要同时记录启动类型、起止点、关键阶段和设备状态，避免只上报一个总时长。",
+      "sections": [
+        {
+          "from": "启动完整路径分析（App 视角）",
+          "title": "进程创建、初始化与首帧阶段"
+        },
+        {
+          "from": "启动监控与度量",
+          "title": "启动类型、时间点与线上指标",
+          "bridge": "启动路径给出可测阶段，监控系统负责稳定采集并按冷、温、热启动和版本分层。TTID 与 TTFD 也要分开。"
+        }
+      ]
+    },
+    "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md": {
+      "status": "ready",
+      "intro_bridge": "启动任务应按首帧依赖、线程要求和可延迟性组成有向无环图。延迟初始化减少首帧前工作，并发调度缩短无依赖任务的墙钟时间，但线程池竞争和错误依赖会抵消收益。",
+      "sections": [
+        {
+          "from": "启动框架设计与任务编排",
+          "title": "任务依赖、关键路径与失败策略"
+        },
+        {
+          "from": "延迟初始化与按需加载",
+          "title": "首帧边界、懒加载与触发时机",
+          "bridge": "任务图确定后，可以把非首帧必需工作移出关键路径。延迟任务仍需明确首次使用时的线程和失败处理。"
+        },
+        {
+          "from": "线程池与并发调度性能实战",
+          "title": "线程池容量、并发度与调度开销",
+          "bridge": "剩余独立任务可以并发执行，但并发度要受 CPU 核心、I/O、锁和其他启动线程限制。更多线程不保证更短启动。"
+        }
+      ]
+    },
+    "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md": {
+      "status": "ready",
+      "intro_bridge": "ContentProvider 会在 Application.onCreate 之前安装，多进程组件又可能在每个进程重复执行初始化。启动治理需要明确 Provider 权限和依赖，并为每个进程建立独立初始化清单。",
+      "sections": [
+        {
+          "from": "ContentProvider 启动治理",
+          "title": "Provider 安装顺序、依赖与延迟方案"
+        },
+        {
+          "from": "多进程启动优化",
+          "title": "进程拓扑、重复初始化与共享边界",
+          "bridge": "主进程的 Provider 优化完成后，还要检查远程 Service、WebView 或独立业务进程是否重复加载 SDK、线程池和缓存。"
+        }
+      ]
+    },
+    "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md": {
+      "status": "ready",
+      "intro_bridge": "Baseline Profile 和 Startup Profile 由应用构建流程提供热路径，Cloud Profile 由分发侧根据真实使用生成，DM 文件把 Profile 随安装包交付给 ART。最终收益取决于安装后编译状态和代码版本匹配。",
+      "sections": [
+        {
+          "from": "Baseline Profile 与 Startup Profile 实战",
+          "title": "本地 Profile 生成、打包与基准验证"
+        },
+        {
+          "from": "云端 Profile、DM 文件与安装后编译优化",
+          "title": "Cloud Profile、DM 交付与 dexopt",
+          "bridge": "应用自带 Profile 建立可控基线，云端 Profile 补充真实用户热路径。两者都要通过 DM、安装场景和 compiler filter 进入 ART。"
+        }
+      ]
+    },
+    "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md": {
+      "status": "ready",
+      "intro_bridge": "View 性能从减少层级、无效遍历和过度绘制开始，自定义 View 还要控制对象分配、Path/Bitmap 复用、invalidate 范围和绘制算法。布局与绘制应在同一帧时间线中验证。",
+      "sections": [
+        {
+          "from": "布局优化策略",
+          "title": "层级、inflate、测量与布局失效"
+        },
+        {
+          "from": "自定义 View 性能优化",
+          "title": "绘制分配、缓存与局部刷新",
+          "bridge": "布局成本稳定后，自定义绘制继续检查 onDraw 中的分配、离屏层、复杂路径和无效区域。缓存只适合内容变化较少的部分。"
+        }
+      ]
+    },
+    "src/part5-app/ch22-rendering-practice/02-recyclerview-compose-lazylist.md": {
+      "status": "ready",
+      "intro_bridge": "RecyclerView 通过 ViewHolder 复用和预取控制滚动成本，Compose LazyList 通过组合、测量和 slot 复用管理可见项。两者都要稳定 item 身份、减少绑定工作并限制预取压力。",
+      "sections": [
+        {
+          "from": "RecyclerView 最佳实践",
+          "title": "ViewHolder 复用、绑定与 GapWorker 预取"
+        },
+        {
+          "from": "Compose LazyList 与预取调度性能",
+          "title": "LazyList 组合、测量与预取",
+          "bridge": "RecyclerView 的复用单位是 ViewHolder，LazyList 的复用单位与 composition 和 key 相关。迁移时不能照搬缓存数量或预取参数。"
+        }
+      ]
+    },
+    "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md": {
+      "status": "ready",
+      "intro_bridge": "Compose 性能先从状态读取、重组范围、测量和绘制判断责任阶段，再用 Compiler 报告和 Runtime Tracing 解释可跳过性与实际重组。Modifier.Node 改变修饰符节点的生命周期和更新成本。",
+      "sections": [
+        {
+          "from": "Jetpack Compose 性能优化实战",
+          "title": "状态、重组、布局与绘制基线"
+        },
+        {
+          "from": "Compose Compiler、Runtime Tracing 与重组诊断",
+          "title": "Compiler 稳定性与运行时重组证据",
+          "bridge": "基线分析发现重组异常后，Compiler 报告说明静态稳定性，Runtime Tracing 说明实际执行次数和时间。两类证据不能互相替代。"
+        },
+        {
+          "from": "Compose Modifier.Node 架构与性能迁移",
+          "title": "Modifier.Node 生命周期与迁移成本",
+          "bridge": "状态和重组稳定后，Modifier 链仍可能产生节点创建和更新开销。Node API 通过复用节点改变这部分成本，但要求正确实现 update 和 invalidate。"
+        }
+      ]
+    },
+    "src/part5-app/ch22-rendering-practice/04-view-compose-animation-shared-transition.md": {
+      "status": "ready",
+      "intro_bridge": "动画性能取决于每帧更新发生在哪个线程、是否触发布局以及中间图层如何合成。Compose 动画延续相同原则，SharedTransition 还要在两个内容状态之间匹配元素和同步边界。",
+      "sections": [
+        {
+          "from": "动画性能优化",
+          "title": "属性更新、布局触发与 RenderThread"
+        },
+        {
+          "from": "Jetpack Compose 动画性能实战",
+          "title": "Compose 状态驱动动画与重组范围",
+          "bridge": "View 动画按属性和线程判断成本，Compose 动画还要检查状态读取是否扩大重组和测量范围。"
+        },
+        {
+          "from": "Compose SharedTransitionLayout：共享元素的渲染与性能",
+          "title": "SharedTransition 元素匹配、绘制与同步",
+          "bridge": "单个动画稳定后，共享元素过渡需要同时维护起止内容、overlay 绘制和布局坐标。元素匹配失败或重复测量会直接影响连续性。"
+        }
+      ]
+    },
+    "src/part5-app/ch22-rendering-practice/05-image-bitmap-rendernode.md": {
+      "status": "ready",
+      "intro_bridge": "图片显示跨越网络或磁盘读取、解码、缩放、Bitmap 存储、纹理上传和最终绘制。Hardware Bitmap 与 RenderNode 可以减少部分复制或录制成本，但受可变性、内存和生命周期限制。",
+      "sections": [
+        {
+          "from": "图片加载与显示优化",
+          "title": "请求、缓存、尺寸与显示生命周期"
+        },
+        {
+          "from": "Bitmap 解码、Hardware Bitmap 与 RenderNode",
+          "title": "解码、像素存储与绘制提交",
+          "bridge": "加载框架控制请求和缓存，解码与绘制阶段决定像素格式、内存位置和 GPU 上传。目标尺寸应在两层保持一致。"
+        }
+      ]
+    },
+    "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md": {
+      "status": "ready",
+      "intro_bridge": "RenderEffect 和 RuntimeShader 在渲染管线中增加图像处理或 AGSL 计算，Compose Canvas 提供自定义绘制入口。效果复杂度、离屏缓冲区、shader 编译和重绘范围共同决定帧成本。",
+      "sections": [
+        {
+          "from": "RenderEffect 与 Runtime 图形 API 性能实践",
+          "title": "RenderEffect、RuntimeShader 与离屏成本"
+        },
+        {
+          "from": "Compose Canvas：自定义绘制与性能",
+          "title": "Canvas 状态、DrawScope 与重绘控制",
+          "bridge": "图形效果确定后，Compose Canvas 还要管理绘制状态、对象复用和 invalidate 范围。Runtime effect 应只覆盖需要处理的内容。"
+        }
+      ]
+    },
+    "src/part5-app/ch22-rendering-practice/09-fragment-predictive-back-navigation.md": {
+      "status": "ready",
+      "intro_bridge": "页面切换从 Fragment 或 Navigation 提交开始，经过生命周期、视图创建、动画和首帧。Predictive Back 增加可取消的进度阶段，要求导航状态和系统返回动画在提交前保持一致。",
+      "sections": [
+        {
+          "from": "FragmentTransaction 提交链路与页面切换性能",
+          "title": "Fragment 提交、生命周期与首帧"
+        },
+        {
+          "from": "预测式返回动画与页面切换性能",
+          "title": "Predictive Back 进度、取消与提交",
+          "bridge": "普通事务完成一次性导航，预测式返回在用户手势期间持续更新并可能取消。提前销毁页面会破坏回退语义。"
+        },
+        {
+          "from": "Navigation Compose 2.x 性能优化",
+          "title": "Navigation Compose 状态、过渡与保留",
+          "bridge": "Compose 导航把目的地状态和过渡放进 composition。需要控制 back stack、saveable state 和动画期间的重组范围。"
+        }
+      ]
+    },
+    "src/part5-app/ch22-rendering-practice/14-compose-layout-text-rendering.md": {
+      "status": "ready",
+      "intro_bridge": "Compose 布局由约束、测量和放置组成，SubcomposeLayout 在测量阶段引入额外组合；文字渲染还包含字体解析、整形、换行、布局和绘制。文本频繁变化会同时影响两条路径。",
+      "sections": [
+        {
+          "from": "Compose 布局、SubcomposeLayout 与测量性能",
+          "title": "约束、测量、放置与 Subcompose"
+        },
+        {
+          "from": "Compose Text 性能深度优化",
+          "title": "字体整形、文本布局与绘制缓存",
+          "bridge": "通用布局确定可用尺寸后，文本组件才能整形和换行。缓存键必须包含字体、样式、宽度和文本内容。"
+        }
+      ]
+    },
+    "src/part5-app/ch22-rendering-practice/16-vulkan-impeller-shader-compilation.md": {
+      "status": "ready",
+      "intro_bridge": "Vulkan pipeline 和 shader 编译会在首次使用或状态组合变化时产生 CPU 和驱动开销。Impeller 预编译一部分 shader，但设备后端和 Pipeline State Object 仍可能在运行时建立。",
+      "sections": [
+        {
+          "from": "Android 17 Vulkan 管线编译与调度策略",
+          "title": "Pipeline Cache、编译与提交时机"
+        },
+        {
+          "from": "Impeller 着色器编译性能与 Flutter 渲染稳定性",
+          "title": "Impeller Shader、PSO 与预热",
+          "bridge": "原生 Vulkan 的 pipeline 机制同样约束 Impeller 后端。预编译、缓存命中和设备驱动差异决定首帧是否仍出现编译抖动。"
+        }
+      ]
+    },
+    "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md": {
+      "status": "ready",
+      "intro_bridge": "Native 内存治理先找到分配器、对象所有者和释放路径，再进入虚拟地址映射、页驻留、缺页和回收。malloc 数字、RSS 和 PSS 分别描述不同层面，不能互相替代。",
+      "sections": [
+        {
+          "from": "Native 内存管理与优化",
+          "title": "分配器、所有权与资源生命周期"
+        },
+        {
+          "from": "应用虚拟内存优化实战",
+          "title": "mmap、页驻留、缺页与回收",
+          "bridge": "对象释放解决逻辑所有权，虚拟内存分析继续检查地址空间、文件映射、匿名页和 page fault。已 free 的内存也可能暂时留在进程 RSS。"
+        }
+      ]
+    },
+    "src/part5-app/ch23-memory-practice/04-java-heap-gc-compose-allocation.md": {
+      "status": "ready",
+      "intro_bridge": "Java Heap 优化先控制对象生命周期和存活集，再处理高频分配造成的 GC 抖动。Compose 会在重组、布局和绘制阶段创建临时对象，需要结合状态稳定性和分配调用栈定位。",
+      "sections": [
+        {
+          "from": "Java Heap 优化策略",
+          "title": "对象生命周期、存活集与缓存边界"
+        },
+        {
+          "from": "内存抖动与 GC 治理",
+          "title": "高频分配、晋升与 GC 抖动",
+          "bridge": "存活对象决定 Heap 基线，短命对象的创建速率决定回收频率。优化时要分别观察分配量、存活量和暂停。"
+        },
+        {
+          "from": "Jetpack Compose 内存分配与 GC 影响",
+          "title": "Compose 重组、布局与分配热点",
+          "bridge": "通用分配模型进入 Compose 后，要沿 composition、measure 和 draw 确认对象来源。remember 只能延长明确可复用对象的生命周期。"
+        }
+      ]
+    },
+    "src/part5-app/ch24-io-network/01-file-io-saf-contentresolver.md": {
+      "status": "ready",
+      "intro_bridge": "文件 I/O 成本来自系统调用、缓冲、页缓存、同步写和存储设备；SAF 又增加 URI 授权、ContentResolver、Provider 与 Binder。路径选择应同时满足权限模型和性能需求。",
+      "sections": [
+        {
+          "from": "文件 I/O 优化",
+          "title": "读写粒度、缓冲、同步与线程"
+        },
+        {
+          "from": "SAF 文件访问性能：DocumentFile、ContentResolver 与路径选择",
+          "title": "URI、Provider、文件描述符与 SAF 开销",
+          "bridge": "直接文件路径优化完成后，SAF 场景还要计算 Provider 查询和 Binder 往返。能取得 ParcelFileDescriptor 时，可把后续流式 I/O 与元数据查询分开。"
+        }
+      ]
+    },
+    "src/part5-app/ch24-io-network/02-database-serialization-performance.md": {
+      "status": "ready",
+      "intro_bridge": "数据持久化包含对象序列化、数据库事务、索引查询和结果反序列化。数据库慢不一定来自 SQL，格式转换、对象分配和主线程等待也可能占据主要时间。",
+      "sections": [
+        {
+          "from": "数据库性能优化（SQLite/Room）",
+          "title": "事务、索引、查询计划与并发"
+        },
+        {
+          "from": "序列化性能对比与选型",
+          "title": "编码格式、对象分配与兼容性",
+          "bridge": "数据库访问确定行和列后，序列化负责把数据转换为内存或网络格式。选择时要同时比较体积、CPU、分配和 schema 演进。"
+        }
+      ]
+    },
+    "src/part5-app/ch24-io-network/03-mobile-network-connection-resilience.md": {
+      "status": "ready",
+      "intro_bridge": "移动网络会在 Wi-Fi、蜂窝、VPN 和受限网络之间变化。应用先通过 ConnectivityManager 获得 Network 与能力，再把 DNS、连接池、重试和幂等策略绑定到正确网络生命周期。",
+      "sections": [
+        {
+          "from": "网络架构与连接管理",
+          "title": "Network、能力变化与 Socket 绑定"
+        },
+        {
+          "from": "移动网络性能优化实战：DNS、连接、传输与容灾",
+          "title": "DNS、连接复用、重试与容灾",
+          "bridge": "系统网络状态确定后，应用传输层还要处理域名解析、连接建立、协议回退和网络切换。重试必须受幂等性和总 deadline 约束。"
+        }
+      ]
+    },
+    "src/part5-app/ch24-io-network/04-http2-http3-grpc-ech.md": {
+      "status": "ready",
+      "intro_bridge": "HTTP/2 在 TCP 上复用流，HTTP/3 在 QUIC 上处理传输和拥塞，gRPC 在 HTTP/2 或 HTTP/3 上定义 RPC 语义。ECH 保护 ClientHello 中的目标信息，但依赖 DNS HTTPS 记录和服务端部署。",
+      "sections": [
+        {
+          "from": "网络协议优化（HTTP/2、HTTP/3、gRPC）",
+          "title": "多路复用、QUIC 与 RPC 流控制"
+        },
+        {
+          "from": "Android 17 ECH 与 domainEncryption 网络适配",
+          "title": "ECH、DNS HTTPS 记录与回退",
+          "bridge": "传输协议确定后，ECH 作用于 TLS ClientHello 隐私。客户端支持、DNS 结果和服务端配置必须同时满足，失败路径要保留可控回退。"
+        }
+      ]
+    },
+    "src/part5-app/ch24-io-network/05-data-cache-offline-first.md": {
+      "status": "ready",
+      "intro_bridge": "缓存减少重复计算和网络访问，离线优先进一步把本地数据源变成界面读取基线，并在后台同步远端状态。TTL、容量、版本和冲突策略共同决定数据是否可靠。",
+      "sections": [
+        {
+          "from": "数据压缩与缓存策略",
+          "title": "缓存层级、压缩、淘汰与一致性"
+        },
+        {
+          "from": "离线优先架构",
+          "title": "本地真源、同步队列与冲突处理",
+          "bridge": "单次缓存命中解决访问成本，离线优先还要管理本地写入、待同步操作、服务端确认和冲突。用户可见状态必须反映同步结果。"
+        }
+      ]
+    },
+    "src/part5-app/ch24-io-network/08-low-bandwidth-streaming-local-network.md": {
+      "status": "ready",
+      "intro_bridge": "低带宽和卫星网络要求应用缩小请求、延长容错窗口并允许离线；流媒体还要根据吞吐预算调整码率。Android 17 本地网络权限影响局域网发现和连接，是另一项必须显式处理的网络能力。",
+      "sections": [
+        {
+          "from": "卫星与低带宽网络适配",
+          "title": "连接预算、请求压缩与离线降级"
+        },
+        {
+          "from": "Android 17 流媒体网络预算与本地网络权限适配",
+          "title": "流媒体码率预算与本地网络授权",
+          "bridge": "通用低带宽策略确定后，流媒体按播放缓冲和码率控制流量；局域网功能则要在权限未授予时停止发现或提供替代入口。"
+        }
+      ]
+    },
+    "src/part5-app/ch24-io-network/09-mediastore-photo-picker-transcoding.md": {
+      "status": "ready",
+      "intro_bridge": "MediaStore 和 MediaProvider 管理共享媒体索引、权限与文件访问，Photo Picker 提供受控选择入口，系统转码可能在交付 URI 内容时改变格式和延迟。缓存必须跟随 URI 授权和媒体版本。",
+      "sections": [
+        {
+          "from": "MediaStore 与 MediaProvider 性能治理",
+          "title": "媒体索引、查询、写入与 Provider 路径"
+        },
+        {
+          "from": "Photo Picker、媒体转码与缓存治理",
+          "title": "选择授权、转码与缓存生命周期",
+          "bridge": "媒体索引确定可访问对象后，Photo Picker 只授予选中内容。读取阶段仍可能触发转码，调用方要处理耗时、格式变化和授权失效。"
+        }
+      ]
+    },
+    "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md": {
+      "status": "ready",
+      "intro_bridge": "功耗诊断先固定场景和电量窗口，再用 Battery Historian、batterystats、Perfetto 与设备电源数据定位组件活动。OEM 后台策略会改变任务、网络和进程存活，需要与 AOSP 行为分开记录。",
+      "sections": [
+        {
+          "from": "功耗诊断与分析方法",
+          "title": "场景基线、组件活动与能量证据"
+        },
+        {
+          "from": "OEM 厂商差异化后台限制与功耗诊断实战",
+          "title": "后台限制、豁免与厂商差异",
+          "bridge": "公共证据链建立后，厂商后台限制需要通过设置、系统日志和跨设备对照确认。应用不能依赖无法公开验证的私有保活策略。"
+        }
+      ]
+    },
+    "src/part5-app/ch25-power-size/02-background-power-foreground-service.md": {
+      "status": "ready",
+      "intro_bridge": "后台功耗来自唤醒、网络、定位、传感器和持续计算。Foreground Service 只为用户可感知的持续任务提供执行边界，还受类型、启动时机、通知和超时约束。",
+      "sections": [
+        {
+          "from": "后台功耗治理",
+          "title": "后台唤醒、网络与任务预算"
+        },
+        {
+          "from": "Android 17 前台服务类型执行模型与后台启动性能边界",
+          "title": "前台服务类型、启动与停止语义",
+          "bridge": "后台任务需要持续运行时，先判断是否符合前台服务场景。类型声明不能消除后台启动限制，也不能代替及时停止和资源释放。"
+        }
+      ]
+    },
+    "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md": {
+      "status": "ready",
+      "intro_bridge": "WakeLock 阻止设备进入部分休眠状态，Alarm 决定未来唤醒时刻，WorkManager 在系统约束下安排可延迟工作。三者组合错误会产生频繁唤醒、锁未释放和任务积压。",
+      "sections": [
+        {
+          "from": "WakeLock 与 Alarm 管理",
+          "title": "唤醒锁、定时器与系统休眠"
+        },
+        {
+          "from": "WorkManager 实战与后台任务调度",
+          "title": "约束任务、重试与执行窗口",
+          "bridge": "必须精确定时的事件才使用 Alarm，可延迟工作交给 WorkManager。Worker 内部仍要控制 WakeLock、网络和重试总量。"
+        }
+      ]
+    },
+    "src/part5-app/ch25-power-size/05-apk-r8-resource-optimization.md": {
+      "status": "ready",
+      "intro_bridge": "包体积治理先用 APK Analyzer 和构建产物拆分 DEX、资源、Native 库和压缩开销，再用 R8、resource shrinker、拆分交付和资源处理减少真实下载与安装体积。",
+      "sections": [
+        {
+          "from": "APK 体积分析与瘦身",
+          "title": "制品组成、下载体积与安装体积"
+        },
+        {
+          "from": "R8 与资源优化",
+          "title": "代码收缩、混淆与资源裁剪",
+          "bridge": "体积构成明确后，R8 和资源裁剪才能针对真实占比。规则过宽会损失收益，规则过窄会引入反射或序列化兼容问题。"
+        }
+      ]
+    },
+    "src/part5-app/ch25-power-size/09-background-audio-audiotrack-offload.md": {
+      "status": "ready",
+      "intro_bridge": "后台音频需要同时满足媒体会话、前台服务和音频焦点规则；播放管线再决定使用 AudioTrack、低延迟路径或硬件 Offload。稳定性、时延和功耗目标不能用同一配置同时最大化。",
+      "sections": [
+        {
+          "from": "Android 17 后台音频硬化与播放功耗治理",
+          "title": "后台播放资格、生命周期与功耗"
+        },
+        {
+          "from": "音频 Offload 与 AudioTrack 精确控制功耗实践",
+          "title": "AudioTrack 缓冲、Offload 与设备能力",
+          "bridge": "后台执行资格确定后，音频路径按格式、效果、延迟和硬件支持选择 Offload。回退到混音路径时要重新评估 CPU 和 WakeLock。"
+        }
+      ]
+    },
+    "src/part5-app/ch25-power-size/12-dex-native-resource-size.md": {
+      "status": "ready",
+      "intro_bridge": "应用体积主要由 DEX、Native SO 和资源文件组成。三类内容使用不同的分析工具和裁剪手段，最终都要同时检查下载、安装、运行时映射和功能兼容。",
+      "sections": [
+        {
+          "from": "DEX 体积优化实战",
+          "title": "字节码、依赖与 Profile 交付"
+        },
+        {
+          "from": "Native SO 体积优化实战",
+          "title": "ABI、符号、链接与 ELF 段",
+          "bridge": "DEX 优化处理 Java/Kotlin 代码和依赖，Native 库还要按 ABI、调试符号、链接方式和页对齐分析。"
+        },
+        {
+          "from": "资源文件体积优化实战",
+          "title": "图片、语言、表和压缩格式",
+          "bridge": "代码体积稳定后，资源侧继续检查密度、语言、重复文件、resources.arsc 和压缩策略。资源删除必须经过运行时引用验证。"
+        }
+      ]
+    },
+    "src/part5-app/ch26-observability/01-app-observability-performance-collection.md": {
+      "status": "ready",
+      "intro_bridge": "应用可观测性从统一事件模型开始，把性能、稳定性、资源和业务上下文关联到会话、设备和版本。客户端采集还要控制线程、序列化、存储、网络和隐私开销。",
+      "sections": [
+        {
+          "from": "App 可观测性架构设计",
+          "title": "信号模型、上下文与端云职责"
+        },
+        {
+          "from": "性能指标采集与上报",
+          "title": "采样、缓冲、序列化与上传",
+          "bridge": "数据模型确定后，客户端需要按信号价值分配采样和缓冲预算，并在离线、弱网和进程退出时保证可控降级。"
+        }
+      ]
+    },
+    "src/part5-app/ch26-observability/02-crash-anr-monitoring.md": {
+      "status": "ready",
+      "intro_bridge": "Crash 监控依赖异常或信号处置路径，ANR 监控依赖主线程、系统超时或退出记录。两者可以共享事件模型、设备信息和上传通道，但现场采集时机与可靠性不同。",
+      "sections": [
+        {
+          "from": "Crash 上报体系搭建",
+          "title": "Java、Native Crash 现场与上报"
+        },
+        {
+          "from": "ANR 监控体系",
+          "title": "主线程监控、系统 ANR 与退出记录",
+          "bridge": "Crash 在进程终止路径中采集，ANR 可能在进程仍存活时持续。监控方案要区分预警、正式 ANR 和历史 ApplicationExitInfo。"
+        }
+      ]
+    },
+    "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md": {
+      "status": "ready",
+      "intro_bridge": "线上排障先用指标和版本缩小影响面，再通过受控日志、Trace 或诊断命令获取增量证据。非 Play 渠道和国内 ROM 缺少部分标准平台能力，需要提前设计替代分发、权限和回传路径。",
+      "sections": [
+        {
+          "from": "线上问题排查方法论",
+          "title": "影响面、假设、证据与止损"
+        },
+        {
+          "from": "端侧高可用日志与诊断命令通道",
+          "title": "日志缓冲、命令授权与结果回传",
+          "bridge": "问题范围确定后，诊断通道只执行白名单、限时和可审计的采集动作。高开销 Trace 与敏感字段必须受配置控制。"
+        },
+        {
+          "from": "非 Play 渠道性能监控与国内厂商 ROM 适配可观测性",
+          "title": "渠道差异、ROM 能力与替代方案",
+          "bridge": "标准通道不可用时，需要按应用商店、系统权限、后台限制和厂商服务逐项降级。替代方案仍要保持相同事件口径。"
+        }
+      ]
+    },
+    "src/part5-app/ch26-observability/05-performance-score-release-gate.md": {
+      "status": "ready",
+      "intro_bridge": "发版门禁用少量稳定指标阻止明确回归，Performance Score 用加权模型汇总多个性能维度。评分前必须固定场景、人群、设备层级和缺失数据处理，否则总分会掩盖局部恶化。",
+      "sections": [
+        {
+          "from": "发版质量门禁",
+          "title": "基线、阈值、置信度与阻断规则"
+        },
+        {
+          "from": "App Performance Score 与性能质量评分归因",
+          "title": "指标归一化、权重与分数归因",
+          "bridge": "单指标门禁明确后，综合评分用于排序和趋势观察。总分变化必须能够展开到原始指标、设备和版本。"
+        }
+      ]
+    },
+    "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md": {
+      "status": "ready",
+      "intro_bridge": "ApplicationExitInfo 提供历史进程退出原因、状态和部分诊断数据；ProfilingManager 与 ProfilingTrigger 在较新版本提供受控性能采集。能力随 API、flag、系统实现和用户设置变化。",
+      "sections": [
+        {
+          "from": "ApplicationExitInfo 与进程退出归因",
+          "title": "退出原因、状态、Trace 与访问范围"
+        },
+        {
+          "from": "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger",
+          "title": "版本化采集能力与回退矩阵",
+          "bridge": "退出记录建立被动诊断基线，Profiling API 增加主动或触发式采集。客户端要先探测能力，再按版本和结果交付状态回退。"
+        }
+      ]
+    },
+    "src/part5-app/ch26-observability/07-ebpf-atrace-online-tracing.md": {
+      "status": "ready",
+      "intro_bridge": "线上系统追踪需要在信号价值、权限、开销和隐私之间取舍。eBPF 可在内核侧重建调度或 Binder 事件，Profilo 通过 ATrace 等数据源在端侧组织短窗口 Trace。",
+      "sections": [
+        {
+          "from": "eBPF 在线追踪与 Binder 语义重建",
+          "title": "内核 Hook、Binder 关联与事件预算"
+        },
+        {
+          "from": "Facebook Profilo 框架线上 ATrace 收集方案",
+          "title": "Profilo 数据源、触发与文件管理",
+          "bridge": "内核事件解决底层语义，Profilo 类框架负责会话、触发、缓冲区和上传。两者组合时要统一时钟和事件 ID。"
+        }
+      ]
+    },
+    "src/part5-app/ch26-observability/14-heapprofd-procfs-page-fault.md": {
+      "status": "ready",
+      "intro_bridge": "线上低层资源诊断可以分别观察 Native 分配、进程 CPU 统计和 page fault。heapprofd 提供采样调用栈，procfs 提供累计 CPU 数据，缺页分析解释页面为何需要分配或读入。",
+      "sections": [
+        {
+          "from": "heapprofd 生产级部署与权限模型",
+          "title": "Native 分配采样、权限与开销"
+        },
+        {
+          "from": "ProcessCpuTracker 与 /proc 伪文件系统 CPU 数据采集",
+          "title": "procfs CPU 计数器与采样窗口",
+          "bridge": "内存分配采样回答谁在申请内存，procfs CPU 统计回答进程和线程在窗口内消耗多少 CPU。累计值必须通过相邻样本求差。"
+        },
+        {
+          "from": "Page Fault 类型分析与 Android 实践",
+          "title": "Minor、Major Fault 与页面来源",
+          "bridge": "CPU 或启动异常伴随缺页时，需要继续区分匿名页、文件页、首次映射和存储读取。fault 次数本身不等于阻塞时间。"
+        }
+      ]
+    },
+    "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md": {
+      "status": "ready",
+      "intro_bridge": "ART 动态方法追踪可以通过运行时插桩或 JVMTI 事件获得方法级信号。XTrace 关注生产环境中的低开销动态选择，JVMTI Agent 提供标准实验入口，但受 profileable、debuggable 和去优化范围限制。",
+      "sections": [
+        {
+          "from": "生产级 ART 动态方法追踪：XTrace 论文机制与 Android 17 边界",
+          "title": "动态选择、插桩与生产开销"
+        },
+        {
+          "from": "JVMTI Agent — ART 运行时动态监控的实验入口与证据边界",
+          "title": "JVMTI 事件、Attach 与去优化边界",
+          "bridge": "生产方案的目标和开销明确后，JVMTI 可用于验证方法事件、类重定义和线程状态。量产可用性取决于应用属性和系统授权。"
+        }
+      ]
+    }
+  },
+  "splits": [
+    {
+      "source_target": "src/part1-fundamentals/ch01-architecture/05-art-compilation-optimization-deoptimization.md",
+      "reason": "AutoFDO optimizes compiler or kernel binaries from sampled profiles; it does not belong to the ART DEX execution, verifier and deoptimization responsibility chain.",
+      "outputs": [
+        "src/part1-fundamentals/ch01-architecture/05-art-compilation-verification-deoptimization.md",
+        "src/part4-system/ch16-aosp/04-autofdo-feedback-directed-optimization.md"
+      ]
+    },
+    {
+      "source_target": "src/part1-fundamentals/ch01-architecture/24-telephony-connectivity-services.md",
+      "reason": "Telephony state and radio services are distinct from ConnectivityService network selection, validation and callback semantics.",
+      "outputs": [
+        "src/part1-fundamentals/ch01-architecture/24-telephony-service.md",
+        "src/part1-fundamentals/ch01-architecture/25-connectivity-service.md"
+      ]
+    },
+    {
+      "source_target": "src/part2-performance/ch18-rendering-pipelines/08-flutter-compose-rendering-pipelines.md",
+      "reason": "Flutter Engine and Impeller own a separate producer pipeline; Compose renders through Android View, HWUI and RenderNode.",
+      "outputs": [
+        "src/part2-performance/ch18-rendering-pipelines/08-flutter-rendering-pipeline.md",
+        "src/part2-performance/ch18-rendering-pipelines/09-compose-rendering-pipeline.md"
+      ]
+    },
+    {
+      "source_target": "src/part5-app/ch22-rendering-practice/18-media3-camerax-rendering.md",
+      "reason": "Media3 playback and CameraX capture have different producers, lifecycle, buffer flow and diagnostic signals.",
+      "outputs": [
+        "src/part5-app/ch22-rendering-practice/18-media3-video-rendering.md",
+        "src/part5-app/ch22-rendering-practice/19-camerax-rendering.md"
+      ]
+    }
+  ]
+}

@@ -5,7 +5,7 @@ section: "3.0"
 status: "ready-for-review"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-08-11"
-last_verified_against: "AOSP android-17.0.0_r1; kernel android17-6.18-2026-06_r6; consolidated ch03 structure 3.1-3.8"
+last_verified_against: "AOSP android-17.0.0_r1; kernel android17-6.18-2026-06_r6; consolidated ch03 structure 3.1-3.6"
 confidence: "high"
 tags:
   - input
@@ -21,8 +21,6 @@ related_chapters:
   - "3.4"
   - "3.5"
   - "3.6"
-  - "3.7"
-  - "3.8"
 pipeline_stage: "ready-for-review"
 task6_state: "pending-verification"
 task9_state: reviewed
@@ -43,8 +41,8 @@ last_review_finalize_run_id: "20260720-150534-9a0187cb"
 review_finalize_notes: "2026-07-20 Hermes AIW review/finalize: 按 android-17.0.0_r1 与已 finalized 的 ch03 子章节复核总览;收窄 InputFlinger Rust、Predictive Back、DeliQueue 和 MotionPredictor 表述后晋升 finalized。"
 reviewed_by: hermes-aiw-review-finalize-apply
 reviewed_date: "2026-07-20"
-last_consolidated_at: "2026-08-11"
-consolidation_note: "完整审阅原 14 篇正文后收敛为 8 篇：InputDispatcher 分发/反压/stale 合并，触摸延迟/预测/HCI/低延迟渲染合并，Rust 键盘 filter 归入外设输入，ARR 回归触摸与第 2 章显示边界，删除重复参考索引页。"
+last_consolidated_at: '2026-08-24'
+consolidation_note: 第二轮逐篇审阅后收敛为 6 篇，合并同一责任链中的总览、机制、版本增量、观测与案例，并统一连续编号。
 ---
 
 # 第 3 章：输入系统
@@ -134,36 +132,26 @@ Adaptive Refresh Rate（自适应刷新率，ARR）位于显示时序和刷新�
 
 ## 4. 内容索引
 
-### 4.1 分发与端到端延迟
-
-- [3.1 Input 事件分发：队列、反压与丢弃](01-input-dispatch.md)：从内核 evdev 接口到应用窗口，并统一说明 `InputDispatcher` 队列、通道反压、ANR、事件过期和丢弃原因。
-- [3.2 触摸延迟、预测与低延迟渲染](02-touch-performance.md)：采样、批处理与重采样、四种测量口径、人机交互（HCI）阈值、`MotionPredictor`、前缓冲渲染与 ARR 的交互边界。
-
-### 4.2 手势与返回
-
-- [3.3 手势导航与系统交互](03-gesture-navigation.md)：系统边缘手势、手势排除区域（exclusion rect）、指针接管（pointer pilfer）与导航策略。
-- [3.5 手势识别算法与性能优化](05-gesture-recognition-performance.md)：`GestureDetector`、`VelocityTracker`、View 与 Compose 的事件消费、嵌套滚动与算法成本。
-- [3.7 Predictive Back 系统架构](07-predictive-back-system-architecture.md)：返回回调、WindowManager、WM Shell、SystemUI 动画和 SurfaceControl 的协作。
-
-### 4.3 安全、IME 与桌面输入
-
-- [3.4 输入事件拦截与安全](04-input-interception-security.md)：`InputFilter`、`InputMonitor`、无障碍服务、事件注入权限与安全策略。
-- [3.6 InputMethodManager 与软键盘性能](06-input-method-manager-performance.md)：输入法客户端与会话、焦点、显示与隐藏请求、Insets 和键盘显示性能。
-- [3.8 键盘、鼠标与指针输入](08-keyboard-mouse-pointer-input-performance.md)：Rust 防重复按键、慢速键、粘滞键，以及悬停、滚轮、指针捕获、焦点、拖放与多显示器输入。
+- [3.1 Input 分发、拦截与安全边界](01-input-dispatch-interception-security.md)
+- [3.2 触摸延迟、预测与低延迟渲染](02-touch-performance.md)
+- [3.3 系统手势导航与 Predictive Back](03-gesture-navigation-predictive-back.md)
+- [3.4 手势识别算法与性能优化](04-gesture-recognition-performance.md)
+- [3.5 InputMethodManager 与软键盘性能](05-input-method-manager-performance.md)
+- [3.6 键盘、鼠标与指针输入性能 — 桌面模式交互管线](06-keyboard-mouse-pointer-input-performance.md)
 
 ## 5. 按现象选择阅读路径
 
 | 现象 | 阅读顺序 | 先确认的证据 |
 |---|---|---|
-| 点击无响应 | 3.1 → 3.4 | 设备事件、目标窗口、连接、丢弃或超时、拦截或注入策略 |
-| 滑动不跟手 | 3.2 → 3.5 | 采样、批处理与重采样、识别与消费、应用帧、呈现时间 |
+| 点击无响应 | 3.1 | 设备事件、目标窗口、连接、丢弃或超时、拦截或注入策略 |
+| 滑动不跟手 | 3.2 → 3.4 | 采样、批处理与重采样、识别与消费、应用帧、呈现时间 |
 | 输入 ANR、事件过期或丢弃 | 3.1 | 输入、输出和等待队列，完成信号，ANR 或丢弃原因 |
-| 返回动画晚或错位 | 3.3 → 3.7 → 第 2 章渲染 | 返回回调、转场、SurfaceControl 事务、呈现时间 |
-| IME 弹出慢 | 3.6 → 3.4 → 第 2 章 WindowInsets | IME 目标、会话、显示请求、Insets 动画、呈现时间 |
+| 返回动画晚或错位 | 3.3 → 第 2 章渲染 | 返回回调、转场、SurfaceControl 事务、呈现时间 |
+| IME 弹出慢 | 3.5 → 3.1 → 第 2 章 WindowInsets | IME 目标、会话、显示请求、Insets 动画、呈现时间 |
 | 高刷新率下触控节奏不稳 | 3.2 → 第 2 章 ARR | 输入节奏、交互升频、VSYNC 周期、活动模式、帧生成与呈现 |
-| 鼠标悬停、键盘过滤或焦点异常 | 3.8 → 3.4 → 3.1 | 设备与来源、Rust 过滤器、显示器、焦点、指针捕获、目标窗口 |
+| 鼠标悬停、键盘过滤或焦点异常 | 3.6 → 3.1 | 设备与来源、Rust 过滤器、显示器、焦点、指针捕获、目标窗口 |
 
-渲染与显示阶段可对照 [第 2 章 VSync](../ch02-rendering/03-vsync.md)、[Choreographer](../ch02-rendering/04-choreographer.md)、[Sync Fence](../ch02-rendering/16-sync-fence.md) 和 [Adaptive Refresh Rate](../ch02-rendering/18-adaptive-refresh-rate.md)。
+渲染与显示阶段可对照 [第 2 章 VSync](../ch02-rendering/03-vsync-choreographer-sf-scheduling.md)、[Choreographer](../ch02-rendering/03-vsync-choreographer-sf-scheduling.md)、[Sync Fence](../ch02-rendering/08-bufferqueue-gralloc-sync-fence.md) 和 [Adaptive Refresh Rate](../ch02-rendering/02-framerate-refresh-display-mode.md)。
 
 ## 6. Perfetto 与现场信息
 

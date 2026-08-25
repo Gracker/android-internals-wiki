@@ -56,42 +56,29 @@ PSS 与 CPU 缓存局部性属于不同层级。缓存行（cache line）是 CPU
 
 ## 4. 内容索引
 
-本章按“内存模型 → 运行时管理 → 系统压力 → 产品边界”展开。每个主题只保留一个主入口，版本事实核查、观测方法和原先分散的小节已经合并到对应主文。
-
-| 编号 | 主题 | 解决的问题 |
-|---|---|---|
-| [4.1](01-memory-overview.md) | Android 内存模型全景 | 统一解释地址空间、RSS/PSS/USS、共享页、图形内存、zram 与系统压力。 |
-| [4.2](02-linux-memory.md) | Linux 内核内存管理 | 内存页、内存区域（zone）、伙伴分配器（Buddy）、内核小对象分配器（SLUB）、页面回收、交换、内存规整、DMA-BUF，以及尚未合入的 `ANON_VMA_LAZY`。 |
-| [4.3](03-art-memory.md) | ART 虚拟机内存管理 | 堆空间、分配器、线程局部分配缓冲区（TLAB）、GC、原生内存记账、即时编译（JIT）与性能配置文件。 |
-| [4.4](04-lmk.md) | 系统内存压力与 lmkd | PSI、`oom_score_adj`、控制协议、批量优先级、频繁换页（thrashing）、终止原因与看门狗。 |
-| [4.5](05-app-memory-optimization.md) | App 内存优化与诊断 | 对象滞留、Bitmap、原生堆、PSS、缓存局部性、Perfetto 与线上分层诊断。 |
-| [4.6](06-16kb-page-size.md) | 16 KB 页大小与 Android 性能 | ELF/APK 对齐、动态链接器兼容、`mmap` 假设、迁移验证与性能测量。 |
-| [4.7](07-art-generational-gc.md) | ART 分代 GC、Region 碎片与暂停分析 | 年轻代/全堆回收、Region 碎片、并发复制/并发标记规整（CC/CMC），以及暂停归因。 |
-| [4.8](08-finalizer-referencequeue.md) | ART FinalizerDaemon、Cleaner 与 ReferenceQueue | 引用处理、串行终结、Cleaner 所有权与队列积压。 |
-| [4.9](09-art-heaptask-scheduling-pipeline.md) | ART HeapTask 调度、启动维护与冻结边界 | GC、收集器切换、堆裁剪、启动维护任务与冻结状态下的调度。 |
-| [4.10](10-memory-compaction-direct-reclaim.md) | 内存规整与直接回收性能边界 | 高阶分配、直接回收、内存规整、PSI 与卡顿取证。 |
-| [4.11](11-cached-app-freezer-gc-boundary.md) | Cached App Freezer、外部页回收与 GC 边界 | 进程冻结/解冻、应用内存规整、内存控制组（memcg）页面回收，以及 Binder 与 ART GC 的责任边界。 |
-| [4.12](12-zram-compressed-swap-relaunch.md) | ZRAM 压缩交换与应用重启延迟 | 匿名页换出、内存管理守护进程（MMD）、回写/预取、换入缺页与恢复长尾。 |
-| [4.13](13-android17-memorylimiter.md) | Android 17 MemoryLimiter | memcg 限制、`memory.high`、`memory.swap.max`、红区阈值（red zone）轮询与超限诊断。 |
-| [4.14](14-ontrimmemory-art-heap-trim.md) | onTrimMemory 回调与 ART Heap Trim | Framework 回调分发、应用释放策略与 ART 异步裁剪之间的边界。 |
-| [4.15](15-android17-memory-tagging-extension-mte.md) | Android 17 ARM 内存标签扩展（MTE） | 内存标签模式、同步/异步故障（fault）、Scudo/Bionic 集成、启用条件与诊断。 |
-| [4.16](16-cross-process-memory-ai-inference.md) | 跨进程内存共享与端侧推理预算 | SharedMemory/HardwareBuffer、PSS 记账、进程隔离与模型推理峰值。 |
-| [4.17](17-product-prefetch-lmkd-boundary.md) | 产品侧内存预取与 lmkd 边界 | 外部预取模块的权限、预算、状态机、降级策略与 lmkd/MemoryLimiter 边界。 |
-
-不能只凭“Android 17”四个字，就把 `MemoryLimiter`、批量 lmkd 命令或厂商内存压力策略视为所有设备的默认能力。文章中的功能开关（feature flag）、构建目标、可加载到内核执行的 BPF 程序与运行时状态必须逐项确认。跨应用共享也必须使用带权限和生命周期约束的进程间通信（IPC）、ContentProvider、Service、共享内存或持久化机制；Android 17 没有名为“AI Agent Memory Sandbox”或“LMKD v2”的通用平台子系统。
+- [4.1 Android 与 Linux 内存管理全景](01-android-linux-memory-overview.md)
+- [4.2 ART Heap、GC 与后台维护调度](02-art-heap-gc-maintenance.md)
+- [4.3 lmkd、Cached App Freezer 与内存压力治理](03-lmkd-freezer-memory-pressure.md)
+- [4.4 App 内存优化与诊断](04-app-memory-optimization.md)
+- [4.5 16 KB Page Size 与 Android 性能](05-16kb-page-size.md)
+- [4.6 ART FinalizerDaemon、Cleaner 与 ReferenceQueue](06-finalizer-referencequeue.md)
+- [4.7 内存规整与直接回收性能边界](07-memory-compaction-direct-reclaim.md)
+- [4.8 ZRAM 压缩交换与应用重启延迟](08-zram-compressed-swap-relaunch.md)
+- [4.9 Android 17 ARM MTE 内存标签扩展实战](09-android17-memory-tagging-extension-mte.md)
+- [4.10 跨进程内存共享与端侧推理预算](10-cross-process-memory-ai-inference.md)
 
 ## 5. 按现象选择阅读顺序
 
 | 现象 | 阅读顺序 | 优先证据 |
 |---|---|---|
-| Java 堆持续增长 | 4.1 → 4.3 → 4.5 → 4.7/4.8 | 分配分析、堆转储、GC、引用/终结队列 |
-| 原生内存或 PSS 增长 | 4.1 → 4.2 → 4.5 → 4.15 | `smaps`、原生堆、`mmap`、共享映射、MTE 故障 |
-| 分配时偶发长卡顿 | 4.3 → 4.7 → 4.9 → 4.10 | GC 暂停、HeapTask、直接回收、内存规整、TLAB 补充 |
-| 后台恢复慢 | 4.11 → 4.12 → 4.4 | 进程冻结器、换入缺页、PSI、lmkd 终止记录与进程启动 |
-| 低内存设备频繁终止进程 | 4.4 → 4.10 → 4.12 → 4.13 | PSI、`vmstat`、lmkd 决策、zram、memcg 与终止原因 |
+| Java 堆持续增长 | 4.1 → 4.4 → 4.2/4.6 | 分配分析、堆转储、GC、引用/终结队列 |
+| 原生内存或 PSS 增长 | 4.1 → 4.4 → 4.9 | `smaps`、原生堆、`mmap`、共享映射、MTE 故障 |
+| 分配时偶发长卡顿 | 4.2 → 4.7 | GC 暂停、HeapTask、直接回收、内存规整、TLAB 补充 |
+| 后台恢复慢 | 4.3 → 4.8 | 进程冻结器、换入缺页、PSI、lmkd 终止记录与进程启动 |
+| 低内存设备频繁终止进程 | 4.3 → 4.7 → 4.8 | PSI、`vmstat`、lmkd 决策、zram、memcg 与终止原因 |
 | 图形内存偏高 | 4.1 → 第 2 章 DMA-BUF/Gralloc | dma-buf、Gralloc、缓冲区数量、生产者/消费者、GPU/厂商计数器 |
-| 16 KB 兼容或 MTE 故障 | 4.6 / 4.15 | ELF 对齐、内存映射、标签模式、故障地址与调用栈 |
-| 多进程推理峰值或预取反噬 | 4.16 → 4.17 → 4.13 → 4.4 | 进程/用户 ID（PID/UID）、PSS、文件描述符（fd）、阶段峰值、memcg、lmkd 决策 |
+| 16 KB 兼容或 MTE 故障 | 4.5 / 4.9 | ELF 对齐、内存映射、标签模式、故障地址与调用栈 |
+| 多进程推理峰值或预取反噬 | 4.10 → 4.3 | 进程/用户 ID（PID/UID）、PSS、文件描述符（fd）、阶段峰值、memcg、lmkd 决策 |
 
 采集内存问题时，应记录构建版本、进程状态、前后台状态、总内存、swap/zram、PSI、刷新率、温度和复现场景。单张 `dumpsys meminfo` 快照只能说明采样时刻；趋势和因果关系要靠时间序列、分配调用点与系统跟踪。
 

@@ -1,0 +1,125 @@
+{
+  "version": 8,
+  "operation": "distributed_editorial_fusion",
+  "removed_path": "src/part2-performance/ch08-responsiveness/05-baseline-profiles.md",
+  "target_path": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+  "merged_paths": [
+    {
+      "source": "src/part2-performance/ch08-responsiveness/05-baseline-profiles.md",
+      "target": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "role": "application_profile_owner"
+    },
+    {
+      "source": "src/part2-performance/ch08-responsiveness/05-baseline-profiles.md#release-like-profiling",
+      "target": "src/part3-tools/ch19-apm/07-jetpack-benchmark-baseline-profiles.md",
+      "role": "benchmark_measurement_owner"
+    },
+    {
+      "source": "src/part2-performance/ch08-responsiveness/05-baseline-profiles.md#oem-dexpreopt",
+      "target": "src/part4-system/ch16-aosp/05-profile-dm-sdm-install-compilation.md",
+      "role": "platform_install_compilation_owner"
+    }
+  ],
+  "rewritten_paths": [
+    "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+    "src/part3-tools/ch19-apm/07-jetpack-benchmark-baseline-profiles.md",
+    "src/part4-system/ch16-aosp/05-profile-dm-sdm-install-compilation.md"
+  ],
+  "reindexed_paths": [
+    {
+      "from": "src/part2-performance/ch08-responsiveness/06-keystore-biometric-credential-login.md",
+      "to": "src/part2-performance/ch08-responsiveness/05-keystore-biometric-credential-login.md"
+    },
+    {
+      "from": "src/part2-performance/ch08-responsiveness/07-push-notification-pipeline-performance.md",
+      "to": "src/part2-performance/ch08-responsiveness/06-push-notification-pipeline-performance.md"
+    },
+    {
+      "from": "src/part2-performance/ch08-responsiveness/08-play-integrity-api-performance.md",
+      "to": "src/part2-performance/ch08-responsiveness/07-play-integrity-api-performance.md"
+    }
+  ],
+  "source_bytes": {
+    "src/part2-performance/ch08-responsiveness/05-baseline-profiles.md": 29734,
+    "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md": 54085,
+    "src/part3-tools/ch19-apm/07-jetpack-benchmark-baseline-profiles.md": 75340,
+    "src/part4-system/ch16-aosp/05-profile-dm-sdm-install-compilation.md": 36141,
+    "src/part2-performance/ch08-responsiveness/06-keystore-biometric-credential-login.md": 62505,
+    "src/part2-performance/ch08-responsiveness/07-push-notification-pipeline-performance.md": 31688,
+    "src/part2-performance/ch08-responsiveness/08-play-integrity-api-performance.md": 30105
+  },
+  "result_bytes": {
+    "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md": 55318,
+    "src/part3-tools/ch19-apm/07-jetpack-benchmark-baseline-profiles.md": 41415,
+    "src/part4-system/ch16-aosp/05-profile-dm-sdm-install-compilation.md": 37069
+  },
+  "source_sha256": {
+    "src/part2-performance/ch08-responsiveness/05-baseline-profiles.md": "9e64fdfad879eb805e8f7bd014c0c6d9257288fb54e1a3a9936d53c05e6e91a6",
+    "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md": "cff506ff53b83d1bed347f479f0c10182ac3049376b0bc2598c3d691e2407c70",
+    "src/part3-tools/ch19-apm/07-jetpack-benchmark-baseline-profiles.md": "7baa1a31f8913de023dc969dd6f78390a5631481c75da9c40f91784dca003c1c",
+    "src/part4-system/ch16-aosp/05-profile-dm-sdm-install-compilation.md": "a0f3ae093bffc8ac4c47d02f8a5e6b4da2ef33a8ca5844b4670ed493636481e8",
+    "src/part2-performance/ch08-responsiveness/06-keystore-biometric-credential-login.md": "9116928d62f99293f4502a3a484ee3cda2958d961d4248424740ca30dbf713e7",
+    "src/part2-performance/ch08-responsiveness/07-push-notification-pipeline-performance.md": "f3213f9e00026a97f6f9c8ed0dd8193317719986d31bb03592276543be272ab2",
+    "src/part2-performance/ch08-responsiveness/08-play-integrity-api-performance.md": "26c6bb55b5aa3bab84e5b076fb216065ca883a3d3119b58834f9a3922bda139b"
+  },
+  "result_sha256": {
+    "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md": "bd20d885c0687611c83c53bed6ca79b5e9ecd62a7aef57f7e1110d53edee2043",
+    "src/part3-tools/ch19-apm/07-jetpack-benchmark-baseline-profiles.md": "beb6da17bcfb529ea83f5594da3cc3b2aa71e1c9a13a299b482e2cee3e03dda2",
+    "src/part4-system/ch16-aosp/05-profile-dm-sdm-install-compilation.md": "5cecc36dd357d0bc620c390bf2005c6380b6c31db9daf735d0e816b831a55cc8"
+  },
+  "content_routes": [
+    {
+      "source": "8.5 Profile mechanism, generation, Startup Profile and validation",
+      "destination": "21.4 application build and device delivery sections",
+      "treatment": "deduplicated_into_deeper_owner"
+    },
+    {
+      "source": "8.5 Android 7/9 history and AutoFDO boundary",
+      "destination": "21.4 scope and profile taxonomy",
+      "treatment": "rewritten_and_embedded"
+    },
+    {
+      "source": "8.5 release-like profileable measurement",
+      "destination": "19.7 existing benchmark build structure",
+      "treatment": "already_subsumed_and_verified"
+    },
+    {
+      "source": "8.5 OEM dexpreopt",
+      "destination": "16.5 distribution and application responsibilities",
+      "treatment": "rewritten_and_embedded"
+    },
+    {
+      "source": "19.7 duplicated Profile generation tutorial",
+      "destination": "21.4 producer/consumer/library, generator stability and validation sections",
+      "treatment": "unique_points_embedded_then_duplicate_removed"
+    },
+    {
+      "source": "21.4 duplicated Cloud Profile overview",
+      "destination": "21.4 distribution/device-side H2 and gray-release section",
+      "treatment": "fused_within_article"
+    }
+  ],
+  "updated_reference_files": [
+    "src/SUMMARY.md",
+    "src/part1-fundamentals/ch01-architecture/04-version-evolution.md",
+    "src/part1-fundamentals/ch01-architecture/05-art-compilation-verification-deoptimization.md",
+    "src/part1-fundamentals/ch01-architecture/07-package-distribution-install-verification.md",
+    "src/part1-fundamentals/ch01-architecture/26-notificationmanager-architecture-performance.md",
+    "src/part1-fundamentals/ch01-architecture/27-biometricservice-architecture-performance.md",
+    "src/part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md",
+    "src/part1-fundamentals/ch05-cpu-power/08-cpu-cache-friendly-code-data-layout.md",
+    "src/part2-performance/ch08-responsiveness/03-launch-optimization.md",
+    "src/part2-performance/ch08-responsiveness/05-keystore-biometric-credential-login.md",
+    "src/part2-performance/ch08-responsiveness/06-push-notification-pipeline-performance.md",
+    "src/part2-performance/ch08-responsiveness/07-play-integrity-api-performance.md",
+    "src/part2-performance/ch08-responsiveness/README.md",
+    "src/part3-tools/ch14-other-tools/06-automation-cli-agent-workflow.md",
+    "src/part3-tools/ch14-other-tools/08-profiling-manager.md",
+    "src/part4-system/ch16-aosp/04-autofdo-feedback-directed-optimization.md",
+    "src/part4-system/ch16-aosp/07-appflow-large-app-cold-launch-memory-scheduling.md",
+    "src/part5-app/ch20-stability/09-keystore-quota-login-stability.md",
+    "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+    "src/preface/reading-paths.md"
+  ],
+  "applied": true
+}

@@ -8,7 +8,7 @@ applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-08-14"
 confidence: medium
 tags: [apm, monitoring, benchmark, observability, matrix, koom, btrace]
-related_chapters: ["14.10", "14.26", "15.5", "15.9"]
+related_chapters: ["14.7", "15.3", "15.1"]
 sources:
   - type: official
     path: https://developer.android.com/topic/performance
@@ -70,6 +70,8 @@ last_task9_at: "2026-05-08T21:35:11+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-08-21-deep-review.md"
 review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 Tracing SDK / tracing-perfetto 版本线仍写错；P2 Benchmark 目录与实际章节标题仍不一致。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 2 处（19.22 目录标题与阅读建议），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 task9_review_notes: "2026-05-08 Task9 21:32：pass-tech-review。无 P0/P1；P2 2 处记录在 deep-review/suggestions，不阻塞发布；自动晋升 finalized / ready-to-publish。"
+last_consolidated_at: '2026-08-24'
+consolidation_note: 第二轮逐篇审阅后收敛为 14 篇，合并同一责任链中的总览、机制、版本增量、观测与案例，并统一连续编号。
 ---
 
 # 第 19 章：APM 工具与性能监控生态
@@ -148,39 +150,27 @@ Vellamo、AndroBench、A1 SD Bench、Emmagee 不再作为现代 Android 的推�
 ## 与其他章节的关系
 
 - **第 13 章（Perfetto）**：Perfetto 是线下 trace 分析工具。btrace/RheaTrace 可以把方法调用写成可导入 Perfetto 的 trace 数据；`Trace.beginSection` / `androidx.tracing.trace {}` 把 slice 写入系统 trace 缓冲区，Tracing 2.0 还提供应用进程控制的记录方式。JankStats 不生成 Perfetto trace 文件，它通过 `OnFrameListener` / `FrameData` 输出帧级 jank（异常卡顿帧）和 UI state（当时的界面状态），适合与 Perfetto、FrameTimeline（系统记录的帧时间线）和 Tracing SDK 一起定位原因。
-- **第 14 章**：14.10 统一说明第三方性能库和 APM 可观测性（通过指标、日志和 trace 了解运行状态）选型，14.26 说明 Hook（拦截或替换调用）基础设施；第 19 章分别展开具体工具。
-- **第 15 章（方法论）**：15.5 和 15.9 说明线上监控，以及问题交接、负责人、修复和回归检查流程；第 19 章说明各工具的能力与边界。
+- **第 14 章**：14.7 统一说明第三方性能库、APM 可观测性（通过指标、日志和 trace 了解运行状态）选型与 Hook（拦截或替换调用）基础设施；第 19 章分别展开具体工具。
+- **第 15 章（方法论）**：15.3 和 15.1 说明线上监控，以及问题交接、负责人、修复和回归检查流程；第 19 章说明各工具的能力与边界。
 
 ## 内容索引
 
-下列标题中的 DAU（Daily Active Users）指日活跃用户数。
-
-- [19.1 APM 全景图与分类体系](01-apm-landscape.md)
-- [19.2 Tencent Matrix](02-tencent-matrix.md)
-- [19.3 KOOM](03-koom.md)
-- [19.4 btrace / RheaTrace](04-btrace.md)
-- [19.5 LeakCanary](05-leakcanary.md)
-- [19.6 DoraemonKit / DoKit](06-dokit.md)
-- [19.7 Measure](07-measure.md)
-- [19.8 历史开源 APM：BlockCanary、ArgusAPM、AndroidGodEye、Collie 与 Rabbit](08-open-source-apm-history.md)
-- [19.9 JankStats 与 FrameMetrics](09-jankstats-framemetrics.md)
-- [19.10 androidx.tracing（Tracing SDK）](10-tracing-sdk.md)
-- [19.11 Jetpack Benchmark（Microbenchmark + Macrobenchmark）](11-jetpack-benchmark.md)
-- [19.12 Baseline Profiles 与编译优化](12-baseline-profiles.md)
-- [19.13 ProfilingManager](13-profiling-manager.md)
-- [19.14 Firebase Performance](14-firebase-performance.md)
-- [19.15 商业 APM 平台（Sentry、APMPlus、Bugly）](15-commercial-apm.md)
-- [19.16 PerfDog、SoloPi 与 Emmagee](16-testing-tools.md)
-- [19.17 设备 Benchmark（CPU、GPU、Web 与存储）](17-device-benchmarks.md)
-- [19.18 网络 APM 底层捕获原理](18-network-apm-internals.md)
-- [19.19 崩溃与 ANR 捕获机制](19-crash-anr-internals.md)
-- [19.20 耗电与发热监控 (Battery & Thermal)](20-battery-thermal-apm.md)
-- [19.21 混合栈与跨平台 APM (WebView / Flutter)](21-hybrid-apm.md)
-- [19.22 千万级 DAU 的 APM 端侧架构](22-apm-client-architecture.md)
+- [19.1 APM 全景、Firebase 与商业平台选型](01-apm-landscape-firebase-commercial.md)
+- [19.2 Matrix、btrace 与 Tracing SDK](02-matrix-btrace-tracing-sdk.md)
+- [19.3 KOOM 与 LeakCanary 内存诊断](03-koom-leakcanary-memory-diagnostics.md)
+- [19.4 DoKit 与 Measure 开发期性能工具](04-dokit-measure-dev-tools.md)
+- [19.5 历史开源 APM：BlockCanary、ArgusAPM、AndroidGodEye、Collie 与 Rabbit](05-open-source-apm-history.md)
+- [19.6 Jetpack Benchmark：Microbenchmark、Macrobenchmark 与测量协议](06-jetpack-benchmark-baseline-profiles.md)
+- [19.7 实验室测试工具与设备 Benchmark](07-lab-tools-device-benchmarks.md)
+- [19.8 网络 APM 底层捕获原理](08-network-apm-internals.md)
+- [19.9 崩溃与 ANR 捕获机制](09-crash-anr-internals.md)
+- [19.10 耗电与发热监控 (Battery & Thermal)](10-battery-thermal-apm.md)
+- [19.11 混合栈与跨平台 APM (WebView / Flutter)](11-hybrid-apm.md)
+- [19.12 千万级 DAU 的 APM 端侧架构](12-apm-client-architecture.md)
 
 ## 阅读建议
 
 - 初次搭建线上 APM：先读 19.1，再按当前问题选择 2—3 个工具。
 - 已在使用某个工具：直接进入对应条目核对实现与边界。
 - 需要选型：结合 14.10 的框架和各工具的详细分析。
-- 关注实验室与 Benchmark：19.16 负责操作复现和外部观测，19.17 统一 CPU、GPU、Web、存储测试，并按设备性能档位分组。
+- 关注回归与实验室测试：19.6 负责 Jetpack Benchmark 测量协议，19.7 负责操作复现、设备 Benchmark 与性能档位分组。

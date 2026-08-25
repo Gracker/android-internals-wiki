@@ -8,22 +8,17 @@
 
 ## 内容索引
 
-- [8.1 响应速度原理](01-responsiveness-principles.md)
-- [8.2 App 启动全流程](02-app-launch.md)
+- [8.1 响应速度原理、场景与案例](01-responsiveness-principles-scenarios-cases.md)
+- [8.2 App 冷启动链路与 Binder Trace 分析](02-app-cold-start-binder-trace.md)
 - [8.3 启动优化策略](03-launch-optimization.md)
-- [8.4 其他响应速度场景](04-other-scenarios.md)
-- [8.5 案例集](05-case-studies.md)
-- [8.6 Kotlin Coroutine、Flow 与线程调度实践](06-coroutine-performance.md)
-- [8.7 Baseline Profiles 与编译优化实践](07-baseline-profiles.md)
-- [8.8 Binder Trace 驱动的 Activity 冷启动性能分析](08-binder-trace-cold-start-analysis.md)
-- [8.9 Keystore/KeyMint 调用延迟与登录链路性能](09-keystore-keymint-latency.md)
-- [8.10 BiometricPrompt 与 Credential Manager 登录链路性能](10-biometric-credential-login-performance.md)
-- [8.11 推送通知管线性能](11-push-notification-pipeline-performance.md)
-- [8.12 Play Integrity API 性能与集成延迟](12-play-integrity-api-performance.md)
+- [8.4 Kotlin Coroutine、Flow 与线程调度实践](04-coroutine-performance.md)
+- [8.5 Keystore、Biometric 与 Credential 登录性能](05-keystore-biometric-credential-login.md)
+- [8.6 推送通知管线性能：FCM 投递延迟与 NotificationManagerService 渲染](06-push-notification-pipeline-performance.md)
+- [8.7 Play Integrity API 性能与集成延迟](07-play-integrity-api-performance.md)
 
 ## 阅读建议
 
-- 启动体验：优先阅读 `8.1`、`8.2`、`8.3`；需要逐次检查 IPC（跨进程调用）时再读 `8.8`。
-- “点了没反应”“切页慢”“首屏空白久”：从 `8.1` 和 `8.4` 开始。
-- 并发、Flow 和线程调度从 `8.6` 开始；登录与可信校验相关内容见 `8.9`、`8.10`、`8.12`。
-- 多媒体和游戏的端到端分析分别见 `18.21` 与 `18.16`；ProfilingManager、JNI、动态链接和 Broadcast 分别见 `14.11`、`1.15`、`1.58`、`1.33`。
+- 启动体验：优先阅读 `8.1 → 8.2 → 8.3`；需要逐次检查 IPC（跨进程调用）时重点读 `8.2`。
+- “点了没反应”“切页慢”“首屏空白久”：从 `8.1` 开始，再按现场进入启动、并发或登录专项。
+- 并发、Flow 和线程调度从 `8.4` 开始；登录与可信校验相关内容见 `8.5` 和 `8.7`。
+- 多媒体和游戏的端到端分析分别见 `18.11` 与 `18.12`；ProfilingManager、JNI、动态链接和 Broadcast 分别见 `14.8`、`1.10`、`1.22`、`1.19`。

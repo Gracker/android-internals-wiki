@@ -3282,6 +3282,18 @@
       "status": "appended",
       "title": "学吧！Android 全新的嵌入式照片选择器AndroidX 推出了全新的嵌入式照片选择器（EmbeddedPhotoP"
     },
+    "source/juejin-android/2026-08-25-76756264-三星安卓系统BUG排查记录大量App长期闪退根因分析.md": {
+      "chapter": "待分类",
+      "entry_id": "0536c15b4228c3e4",
+      "last_appended": "2026-08-25T05:25:50.285040+08:00",
+      "last_seen": "2026-08-25T05:25:50.285040+08:00",
+      "mtime": 1787604553.20473,
+      "score": 24,
+      "sha256": "5c9eb1e12d97c754594c956c2d9856d49fb5e14aaef11d4d003ecf7265419c4d",
+      "size": 38447,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -5089,24 +5101,24 @@
     }
   },
   "last_report": {
-    "appended": 3,
-    "considered": 3,
-    "cutoff": "2026-08-23T05:20:03.748340+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-24.md",
+    "appended": 1,
+    "considered": 1,
+    "cutoff": "2026-08-24T05:20:56.370433+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-25.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1886,
+    "scanned": 1887,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 451
+      "unchanged": 454
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-08-24T05:25:56.370433+08:00",
+  "last_run_at": "2026-08-25T05:25:50.285040+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

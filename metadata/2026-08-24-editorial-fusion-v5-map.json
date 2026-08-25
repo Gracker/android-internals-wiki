@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-08-24",
+  "before_count": 287,
+  "after_count": 286,
+  "merged_paths": [
+    {
+      "source": "src/part1-fundamentals/ch02-rendering/08-window-manager.md",
+      "target": "src/part1-fundamentals/ch01-architecture/16-display-windowmanager-architecture.md",
+      "recoverable_from_git": true
+    }
+  ],
+  "renamed_paths": [
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/09-bufferqueue-gralloc-sync-fence.md",
+      "after": "src/part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md",
+      "chapter": "2.8"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/10-frame-pacing.md",
+      "after": "src/part1-fundamentals/ch02-rendering/09-frame-pacing.md",
+      "chapter": "2.9"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/11-multiwindow-desktop-rendering.md",
+      "after": "src/part1-fundamentals/ch02-rendering/10-multiwindow-desktop-rendering.md",
+      "chapter": "2.10"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/12-text-rendering-performance.md",
+      "after": "src/part1-fundamentals/ch02-rendering/11-text-rendering-performance.md",
+      "chapter": "2.11"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/13-edge-to-edge-inset-rendering-performance.md",
+      "after": "src/part1-fundamentals/ch02-rendering/12-edge-to-edge-inset-rendering-performance.md",
+      "chapter": "2.12"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/14-foldable-display-pipeline-performance.md",
+      "after": "src/part1-fundamentals/ch02-rendering/13-foldable-display-pipeline-performance.md",
+      "chapter": "2.13"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/15-tasksnapshot-recents-rendering.md",
+      "after": "src/part1-fundamentals/ch02-rendering/14-tasksnapshot-recents-rendering.md",
+      "chapter": "2.14"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/16-displaymanager-service-lifecycle.md",
+      "after": "src/part1-fundamentals/ch02-rendering/15-displaymanager-service-lifecycle.md",
+      "chapter": "2.15"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/17-hdr-color-management-pipeline-performance.md",
+      "after": "src/part1-fundamentals/ch02-rendering/16-hdr-color-management-pipeline-performance.md",
+      "chapter": "2.16"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/18-android17-frametimeline-composition-boundary.md",
+      "after": "src/part1-fundamentals/ch02-rendering/17-android17-frametimeline-composition-boundary.md",
+      "chapter": "2.17"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/19-compose-pausable-composition-guide.md",
+      "after": "src/part1-fundamentals/ch02-rendering/18-compose-pausable-composition-guide.md",
+      "chapter": "2.18"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/20-camera-hal3-buffer-camerax-zsl.md",
+      "after": "src/part1-fundamentals/ch02-rendering/19-camera-hal3-buffer-camerax-zsl.md",
+      "chapter": "2.19"
+    }
+  ],
+  "chapter_id_moves": {
+    "2.8": "1.16",
+    "2.9": "2.8",
+    "2.10": "2.9",
+    "2.11": "2.10",
+    "2.12": "2.11",
+    "2.13": "2.12",
+    "2.14": "2.13",
+    "2.15": "2.14",
+    "2.16": "2.15",
+    "2.17": "2.16",
+    "2.18": "2.17",
+    "2.19": "2.18",
+    "2.20": "2.19"
+  }
+}

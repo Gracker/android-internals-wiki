@@ -1,0 +1,77 @@
+{
+  "version": 7,
+  "operation": "editorial_fusion",
+  "removed_path": "src/part5-app/ch25-power-size/12-dex-native-resource-size.md",
+  "target_path": "src/part5-app/ch25-power-size/05-apk-r8-resource-optimization.md",
+  "target_title": "应用体积分析与优化：DEX、Native SO 与资源",
+  "merged_paths": [
+    {
+      "source": "src/part5-app/ch25-power-size/12-dex-native-resource-size.md",
+      "target": "src/part5-app/ch25-power-size/05-apk-r8-resource-optimization.md",
+      "role": "application_size_owner"
+    }
+  ],
+  "source_bytes": {
+    "src/part5-app/ch25-power-size/05-apk-r8-resource-optimization.md": 42127,
+    "src/part5-app/ch25-power-size/12-dex-native-resource-size.md": 118330
+  },
+  "result_bytes": 124977,
+  "source_sha256": {
+    "src/part5-app/ch25-power-size/05-apk-r8-resource-optimization.md": "641bd58a63859e9392902d5fdabd0b50a839cedc5fb95a2f4dfbcdaeb5b9e639",
+    "src/part5-app/ch25-power-size/12-dex-native-resource-size.md": "0c799bed7087b2ac6331e0f75af57cde3426aac61ec8c22b4ef7d1b5cb252fae"
+  },
+  "result_sha256": "04232e643f8f6ce2a0a434b1b2628c8e2aa8ccdfc06887b7f12eb63026abc61c",
+  "content_routes": [
+    {
+      "source": "25.5 制品组成、下载体积与安装体积",
+      "destination": "25.5 先统一制品与体积口径",
+      "treatment": "rewritten_and_embedded",
+      "preserved_unique_points": [
+        "APK signing and ZIP semantics",
+        "upload/download/install/runtime measurement boundary",
+        "APK Analyzer Raw File Size versus Download Size",
+        "whole-package attribution before specialist analysis"
+      ]
+    },
+    {
+      "source": "25.5 代码收缩、混淆与资源裁剪",
+      "destination": "25.5 字节码、依赖与 Profile 交付 / 图片、语言、表和压缩格式",
+      "treatment": "deduplicated_into_deeper_existing_sections",
+      "preserved_unique_points": [
+        "AOSP Soong versus application AGP boundary",
+        "AGP 9.3 and R8 Full Mode evidence already present"
+      ]
+    },
+    {
+      "source": "25.5 Android 17 安装期如何选择 ABI",
+      "destination": "25.5 ABI、符号、链接与 ELF 段 / ABI 构建集合",
+      "treatment": "rewritten_and_embedded",
+      "preserved_unique_points": [
+        "PackageAbiHelperImpl branches",
+        "extractNativeLibs boundary",
+        "multi-arch selection"
+      ]
+    },
+    {
+      "source": "25.12 three specialist chapters",
+      "destination": "25.5 canonical article",
+      "treatment": "retained_as_primary_body",
+      "preserved_unique_points": [
+        "DEX and R8 internals",
+        "ELF, ABI, symbols and 16 KB alignment",
+        "AAPT2, resources, images, fonts and delivery"
+      ]
+    }
+  ],
+  "updated_reference_files": [
+    "metadata/queue.json",
+    "src/SUMMARY.md",
+    "src/part2-performance/ch12-apk-network/01-android-network-tls-performance.md",
+    "src/part2-performance/ch12-apk-network/README.md",
+    "src/part3-tools/ch14-other-tools/17-r8-configuration-analyzer.md",
+    "src/part5-app/ch22-rendering-practice/18-media3-video-rendering.md",
+    "src/part5-app/ch25-power-size/README.md",
+    "src/preface/reading-paths.md"
+  ],
+  "applied": true
+}

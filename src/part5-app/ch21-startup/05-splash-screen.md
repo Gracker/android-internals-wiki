@@ -1,47 +1,57 @@
 ---
-title: "Splash Screen 与感知启动速度"
-chapter: "21.5"
-section: "21.5"
+title: Splash Screen 与感知启动速度
+chapter: '21.5'
+section: '21.5'
 status: finalized
-applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
+applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 confidence: high
 sources:
-  - type: aosp
-    path: "frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/wm/SplashScreenStartingData.java"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/wm/StartingSurfaceController.java"
-  - type: official
-    path: "developer.android.com/develop/ui/views/launch/splash-screen"
-  - type: official
-    path: "developer.android.com/jetpack/androidx/releases/core#core-splashscreen_1.2.0"
-  - type: official
-    path: "dl.google.com/dl/android/maven2/androidx/core/core-splashscreen/1.2.0/"
-  - type: blog
-    path: "obsidian/Personal-Knowlodge/source/2026-03-12_wechat_SplashScreen_优化启动体验_开发者说_DTalk.md"
-  - type: clippings
-    path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
-tags: [splash-screen, perceived-performance, skeleton-screen, starting-window, window-background, splashscreen-compat]
-related_chapters: ["2.12", "8.3", "21.1"]
-last_verified: "2026-08-14"
-last_verified_against: "AOSP android-17.0.0_r1; AndroidX core-splashscreen 1.2.0; Android Developers 2026-06-24"
-task9_state: "reviewed"
-task2b_state: "fixed"
-task6_state: "reviewed"
-pipeline_stage: "finalized"
+- type: aosp
+  path: frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/wm/SplashScreenStartingData.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/wm/StartingSurfaceController.java
+- type: official
+  path: developer.android.com/develop/ui/views/launch/splash-screen
+- type: official
+  path: developer.android.com/jetpack/androidx/releases/core#core-splashscreen_1.2.0
+- type: official
+  path: dl.google.com/dl/android/maven2/androidx/core/core-splashscreen/1.2.0/
+- type: blog
+  path: obsidian/Personal-Knowlodge/source/2026-03-12_wechat_SplashScreen_优化启动体验_开发者说_DTalk.md
+- type: clippings
+  path: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md
+tags:
+- splash-screen
+- perceived-performance
+- skeleton-screen
+- starting-window
+- window-background
+- splashscreen-compat
+related_chapters:
+- '1.16'
+- '8.3'
+- '21.1'
+last_verified: '2026-08-14'
+last_verified_against: AOSP android-17.0.0_r1; AndroidX core-splashscreen 1.2.0; Android Developers 2026-06-24
+task9_state: reviewed
+task2b_state: fixed
+task6_state: reviewed
+pipeline_stage: finalized
 ---
+
 # Splash Screen 与感知启动速度
 
 用户点击图标后，App 自己的首帧通常还没有准备好。Starting Window（起始窗口）是系统在这段空档显示的临时画面；Android 12 引入的 SplashScreen API 统一了它的样式与交接方式，AndroidX 兼容库再把主要接入方式带到 API 21。首帧之后还可以用骨架屏（按内容结构预留的占位界面）和退出动画减少视觉跳变。本文说明这些工具的用法、版本边界和 Perfetto 分析方法。
 
-系统侧由 `ActivityTaskManagerService`（活动与任务管理服务，简称 ATMS）判断是否需要 Starting Window，再由 WM Shell（WindowManager Shell，负责起始表面和窗口过渡等工作的系统组件）创建具体画面。TaskSnapshot 则是系统保存的任务界面快照。完整机制详见 2.12 节，这里聚焦 App 侧的配置、适配和感知优化。
+系统侧由 `ActivityTaskManagerService`（活动与任务管理服务，简称 ATMS）判断是否需要 Starting Window，再由 WM Shell（WindowManager Shell，负责起始表面和窗口过渡等工作的系统组件）创建具体画面。TaskSnapshot 则是系统保存的任务界面快照。完整机制详见 1.16 节，这里聚焦 App 侧的配置、适配和感知优化。
 
 ## 范围
 
 这里的“感知启动速度”指用户从点击到看见稳定反馈、再到内容可用的主观等待。Splash Screen 可以提前给出连续的视觉反馈，却不会缩短进程创建、主线程初始化、I/O 或首屏布局本身；把启动画面多留几秒，也不会改善这些执行时间。
 
-平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，App 侧兼容实现以 AndroidX `core-splashscreen:1.2.0` 为参考。系统侧 Starting Window 的完整机制见 [WindowManager](../../part1-fundamentals/ch02-rendering/12-window-manager.md)，以下重点说明应用如何配置、迁移、交接内容和验证效果。
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，App 侧兼容实现以 AndroidX `core-splashscreen:1.2.0` 为参考。系统侧 Starting Window 的完整机制见 [WindowManager](../../part1-fundamentals/ch01-architecture/16-display-windowmanager-architecture.md)，以下重点说明应用如何配置、迁移、交接内容和验证效果。
 
 ## 1. 先区分三种画面
 
@@ -343,10 +353,10 @@ App 第一帧至少应具备：
 
 Splash 不解决 JIT（Just-In-Time，运行时即时编译）预热、第三方 SDK 初始化或启动任务依赖。对应方法见：
 
-- [Baseline Profile 实战](./04-baseline-profile-practice.md)；
-- [启动任务编排](./02-startup-framework.md)；
-- [延迟初始化](./06-lazy-initialization.md)；
-- [启动完整路径分析](./01-startup-analysis.md)。
+- [Baseline Profile 实战](04-baseline-startup-cloud-profile.md)；
+- [启动任务编排](02-startup-task-lazy-concurrency.md)；
+- [延迟初始化](02-startup-task-lazy-concurrency.md)；
+- [启动完整路径分析](01-app-startup-path-monitoring.md)。
 
 不要给 Baseline Profile 写固定“提升 10%～30%”之类承诺。收益取决于规则覆盖、代码路径、编译状态和瓶颈类型，必须用目标产物与设备测量。
 

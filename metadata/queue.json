@@ -1,6 +1,6 @@
 [
   {
-    "section": "13.2",
+    "section": "13.1",
     "section_title": "Perfetto Trace 采集",
     "priority": 95,
     "reason": "[Deep Tech Review - Idle Audit] Missing critical Android 17 features and outdated references",
@@ -29,7 +29,7 @@
     "original_section": "15.12",
     "original_target_path": "src/part3-tools/ch15-methodology/15.12-android-performance-research-methodology.md",
     "resolution": "原 15.12 已在方法论收敛中删除；Perfetto 缓冲区、heapprofd 资格和采集边界由 13.2 统一承载。",
-    "target_path": "src/part3-tools/ch13-perfetto/02-trace-capture.md"
+    "target_path": "src/part3-tools/ch13-perfetto/01-perfetto-intro-capture-reliability.md"
   },
   {
     "chapter": "22.3",
@@ -39,49 +39,49 @@
     "path": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
     "original_chapter": "22.44",
     "original_path": "src/part5-app/ch22-rendering-practice/44-compose-state-subscription-recomposition-control.md",
-    "mapped_to": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+    "mapped_to": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
     "resolved_at": "2026-08-06T10:05:34+08:00",
     "resolution": "Standalone gap-mined chapter was removed; the topic is covered by the canonical Compose performance blind-spots chapter.",
-    "target_path": "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+    "target_path": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md"
   },
   {
-    "chapter": "22.16",
+    "chapter": "22.2",
     "title": "Compose LazyList 与预取调度性能",
     "priority": 80,
     "status": "rejected",
     "path": "src/part5-app/ch22-rendering-practice/16-compose-lazylist-performance.md",
     "original_chapter": "22.45",
     "original_path": "src/part5-app/ch22-rendering-practice/45-compose-lazygrid-performance.md",
-    "mapped_to": "src/part5-app/ch22-rendering-practice/16-compose-lazylist-performance.md",
+    "mapped_to": "src/part5-app/ch22-rendering-practice/02-recyclerview-compose-lazylist.md",
     "resolved_at": "2026-08-06T10:05:34+08:00",
     "resolution": "Standalone gap-mined chapter was removed; LazyGrid belongs in the canonical Compose lazy layout performance chapter.",
-    "target_path": "src/part5-app/ch22-rendering-practice/16-compose-lazylist-performance.md"
+    "target_path": "src/part5-app/ch22-rendering-practice/02-recyclerview-compose-lazylist.md"
   },
   {
-    "chapter": "20.18",
+    "chapter": "20.2",
     "title": "Crash 报告 SDK 架构选型与 tombstone 解析实战",
     "priority": 80,
     "status": "rejected",
     "path": "src/part5-app/ch20-stability/16-native-stack-unwinding-symbolication.md",
     "original_chapter": "20.29",
     "original_path": "src/part5-app/ch20-stability/29-crash-sdk-architecture-tombstone-parsing.md",
-    "mapped_to": "src/part5-app/ch20-stability/16-native-stack-unwinding-symbolication.md",
+    "mapped_to": "src/part5-app/ch20-stability/03-native-crash-unwinding-symbolication.md",
     "resolved_at": "2026-08-06T10:05:34+08:00",
     "resolution": "Standalone gap-mined chapter was removed; tombstone parsing maps to the canonical native stack unwinding and symbolication chapter.",
-    "target_path": "src/part5-app/ch20-stability/16-native-stack-unwinding-symbolication.md"
+    "target_path": "src/part5-app/ch20-stability/03-native-crash-unwinding-symbolication.md"
   },
   {
-    "chapter": "24.4",
+    "chapter": "24.3",
     "title": "OkHttp 5.0 / Cronet / Ktor 网络引擎选型与性能实战",
     "priority": 80,
     "status": "rejected",
     "path": "src/part5-app/ch24-io-network/04-network-architecture.md",
     "original_chapter": "24.22",
     "original_path": "src/part5-app/ch24-io-network/22-okhttp-cronet-ktor-engine-comparison.md",
-    "mapped_to": "src/part5-app/ch24-io-network/04-network-architecture.md",
+    "mapped_to": "src/part5-app/ch24-io-network/03-mobile-network-connection-resilience.md",
     "resolved_at": "2026-08-06T10:05:34+08:00",
     "resolution": "Standalone gap-mined chapter was removed; network engine selection maps to the canonical network architecture and request-governance chapter.",
-    "target_path": "src/part5-app/ch24-io-network/04-network-architecture.md"
+    "target_path": "src/part5-app/ch24-io-network/03-mobile-network-connection-resilience.md"
   },
   {
     "chapter": "22.3",
@@ -91,10 +91,10 @@
     "path": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
     "original_chapter": "22.46",
     "original_path": "src/part5-app/ch22-rendering-practice/46-compose-textfield-ime-performance.md",
-    "mapped_to": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+    "mapped_to": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
     "resolved_at": "2026-08-06T10:05:34+08:00",
     "resolution": "Standalone gap-mined chapter was removed; Compose TextField and IME performance belong in the canonical Compose performance chapter.",
-    "target_path": "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+    "target_path": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md"
   },
   {
     "chapter": "3.3",
@@ -104,13 +104,13 @@
     "path": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md",
     "original_chapter": "22.47",
     "original_path": "src/part5-app/ch22-rendering-practice/47-compose-nested-scroll-gesture-performance.md",
-    "mapped_to": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md",
+    "mapped_to": "src/part1-fundamentals/ch03-input/03-gesture-navigation-predictive-back.md",
     "resolved_at": "2026-08-06T10:05:34+08:00",
     "resolution": "Standalone gap-mined chapter was removed; nested scrolling and gesture routing map to the canonical gesture navigation chapter.",
-    "target_path": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md"
+    "target_path": "src/part1-fundamentals/ch03-input/03-gesture-navigation-predictive-back.md"
   },
   {
-    "section": "2.34",
+    "section": "2.2",
     "section_title": "Android 17 Display Mode 选择与 RefreshRateSelector 评分机制",
     "priority": 85,
     "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
@@ -128,10 +128,11 @@
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-07-18T10:33:02.169990",
     "status": "body-applied",
-    "target_path": "src/part1-fundamentals/ch02-rendering/34-display-mode-refresh-rate-selection.md",
+    "target_path": "src/part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md",
     "action": "body-applied",
     "applied_at": "2026-08-09T09:17:01+08:00",
-    "applied_run_id": "20260809-091529-696a441f"
+    "applied_run_id": "20260809-091529-696a441f",
+    "title": "帧率、刷新率与显示模式选择"
   },
   {
     "chapter": "25.29",
@@ -141,10 +142,10 @@
     "path": "src/part5-app/ch25-power-size/17-dex-size-optimization.md",
     "original_chapter": "25.32",
     "original_path": "src/part5-app/ch25-power-size/32-plugin-dynamic-loading-size-optimization.md",
-    "mapped_to": "src/part5-app/ch25-power-size/17-dex-size-optimization.md",
+    "mapped_to": "src/part5-app/ch25-power-size/05-apk-r8-resource-optimization.md",
     "resolved_at": "2026-08-06T10:05:34+08:00",
     "resolution": "Standalone gap-mined chapter was removed; plugin and dynamic-loading size trade-offs map to the canonical DEX size optimization chapter.",
-    "target_path": "src/part5-app/ch25-power-size/17-dex-size-optimization.md"
+    "target_path": "src/part5-app/ch25-power-size/05-apk-r8-resource-optimization.md"
   },
   {
     "section": "freshness",
@@ -165,10 +166,11 @@
     "added_by": "hermes-aiw-weekly-source-audit",
     "added_at": "2026-07-24T02:00:43.454598+08:00",
     "status": "body-applied",
-    "target_path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+    "target_path": "src/part1-fundamentals/ch01-architecture/02-boot-zygote-graphics-preload.md",
     "action": "body-applied",
     "applied_at": "2026-08-06T21:16:07+08:00",
-    "applied_run_id": "20260806-211543-32849a70"
+    "applied_run_id": "20260806-211543-32849a70",
+    "title": "系统启动、Zygote 与图形栈预加载"
   },
   {
     "section": "freshness",
@@ -189,10 +191,11 @@
     "added_by": "hermes-aiw-weekly-source-audit",
     "added_at": "2026-07-24T02:00:43.454598+08:00",
     "status": "body-applied",
-    "target_path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+    "target_path": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
     "action": "body-applied",
     "applied_at": "2026-08-06T23:15:01+08:00",
-    "applied_run_id": "20260806-231501-982bb83c"
+    "applied_run_id": "20260806-231501-982bb83c",
+    "title": "Android 分层架构、进程模型与线程协作"
   },
   {
     "section": "freshness",
@@ -213,10 +216,11 @@
     "added_by": "hermes-aiw-weekly-source-audit",
     "added_at": "2026-07-24T02:00:43.454598+08:00",
     "status": "body-applied",
-    "target_path": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+    "target_path": "src/part1-fundamentals/ch01-architecture/05-art-compilation-optimization-deoptimization.md",
     "action": "body-applied",
     "applied_at": "2026-08-07T07:15:26+08:00",
-    "applied_run_id": "20260807-071512-04a03874"
+    "applied_run_id": "20260807-071512-04a03874",
+    "title": "ART 编译、优化与去优化机制"
   },
   {
     "section": "freshness",
@@ -237,10 +241,11 @@
     "added_by": "hermes-aiw-weekly-source-audit",
     "added_at": "2026-08-05T02:00:49.077158+08:00",
     "status": "body-applied",
-    "target_path": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+    "target_path": "src/part1-fundamentals/ch01-architecture/07-package-distribution-install-verification.md",
     "action": "body-applied",
     "applied_at": "2026-08-06T11:15:29+08:00",
-    "applied_run_id": "20260806-111529-1f9a01ff"
+    "applied_run_id": "20260806-111529-1f9a01ff",
+    "title": "应用分发、安装验证与 PackageManager 性能"
   },
   {
     "section": "freshness",
@@ -261,10 +266,11 @@
     "added_by": "hermes-aiw-weekly-source-audit",
     "added_at": "2026-08-05T02:00:49.077158+08:00",
     "status": "body-applied",
-    "target_path": "src/part1-fundamentals/ch01-architecture/40-vndk-isolation-native-library-performance.md",
+    "target_path": "src/part1-fundamentals/ch01-architecture/22-dynamic-linker-vndk-isolation.md",
     "action": "body-applied",
     "applied_at": "2026-08-06T13:15:32+08:00",
-    "applied_run_id": "20260806-131532-f1fcd970"
+    "applied_run_id": "20260806-131532-f1fcd970",
+    "title": "Dynamic Linker、VNDK 与 Native 库隔离"
   },
   {
     "section": "freshness",
@@ -285,10 +291,11 @@
     "added_by": "hermes-aiw-weekly-source-audit",
     "added_at": "2026-07-24T02:00:43.454598+08:00",
     "status": "body-applied",
-    "target_path": "src/part1-fundamentals/ch01-architecture/41-bpf-observability-boundary.md",
+    "target_path": "src/part1-fundamentals/ch01-architecture/23-bpf-observability-boundary.md",
     "action": "body-applied",
     "applied_at": "2026-08-06T15:15:49+08:00",
-    "applied_run_id": "20260806-151549-82978455"
+    "applied_run_id": "20260806-151549-82978455",
+    "title": "Android 17 / ACK 6.18 BPF 可观测性与可编程边界"
   },
   {
     "section": "freshness",
@@ -309,10 +316,11 @@
     "added_by": "hermes-aiw-weekly-source-audit",
     "added_at": "2026-07-31T02:00:01.244131+08:00",
     "status": "body-applied",
-    "target_path": "src/part1-fundamentals/ch01-architecture/47-windowmanager-architecture-performance.md",
+    "target_path": "src/part1-fundamentals/ch01-architecture/16-display-windowmanager-architecture.md",
     "action": "body-applied",
     "applied_at": "2026-08-06T17:15:31+08:00",
-    "applied_run_id": "20260806-171506-e38f1c04"
+    "applied_run_id": "20260806-171506-e38f1c04",
+    "title": "Android 显示架构与 WindowManager"
   },
   {
     "section": "freshness",
@@ -360,11 +368,12 @@
     "added_by": "hermes-aiw-weekly-source-audit",
     "added_at": "2026-08-07T02:00:25.321023+08:00",
     "status": "review-finalized",
-    "target_path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+    "target_path": "src/part1-fundamentals/ch01-architecture/02-boot-zygote-graphics-preload.md",
     "action": "review-finalized",
     "review_finalized_at": "2026-08-07T18:06:14+08:00",
     "review_finalized_run_id": "20260807-180545-ebe6c50b",
-    "resolution": "Reviewed and finalized; later-platform version keyword mention removed from selected chapter text/frontmatter notes boundary."
+    "resolution": "Reviewed and finalized; later-platform version keyword mention removed from selected chapter text/frontmatter notes boundary.",
+    "title": "系统启动、Zygote 与图形栈预加载"
   },
   {
     "section": "freshness",

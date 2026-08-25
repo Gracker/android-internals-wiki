@@ -1,73 +1,85 @@
 ---
-title: "ANR 治理策略"
-chapter: "20.4"
-section: "20.4"
+title: ANR 治理策略
+chapter: '20.4'
+section: '20.4'
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-08-14"
-last_verified_against: "AOSP android-17.0.0_r1; Android Developers ANR, API 37 warning, API 36 profiling, FGS and Android vitals docs; kotlinx.coroutines 1.11.0 current on 2026-08-14"
+applicable_versions: Android 10 (API 29) - Android 17 (API 37)
+last_verified: '2026-08-14'
+last_verified_against: AOSP android-17.0.0_r1; Android Developers ANR, API 37 warning, API 36 profiling, FGS and Android vitals docs; kotlinx.coroutines 1.11.0 current on 2026-08-14
 confidence: medium-high
 consolidated_from:
-  - "src/part5-app/ch20-stability/09-stability-case-studies.md#案例三"
+- src/part5-app/ch20-stability/09-stability-case-studies.md#案例三
 sources:
-  - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastConstants.java"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ContentResolver.java"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/input/android/os/IInputConstants.aidl"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Service.java"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Binder.java"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/BroadcastReceiver.java"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderHelper.java"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/monitor.cc"
-  - type: official
-    path: "https://developer.android.com/topic/performance/vitals/anr"
-  - type: official
-    path: "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
-  - type: official
-    path: "https://developer.android.com/topic/libraries/architecture/workmanager"
-  - type: official
-    path: "https://developer.android.com/reference/android/app/ActivityManager"
-  - type: official
-    path: "https://developer.android.com/reference/android/app/AnrWarningResult"
-  - type: official
-    path: "https://developer.android.com/reference/android/app/ApplicationExitInfo.AnrInfo"
-  - type: official
-    path: "https://developer.android.com/reference/android/os/ProfilingTrigger#TRIGGER_TYPE_ANR"
-  - type: official
-    path: "https://developer.android.com/develop/background-work/services/fgs/timeout"
-  - type: official
-    path: "https://developer.android.com/develop/background-work/services/fgs/service-types"
-  - type: official
-    path: "https://developer.android.com/topic/libraries/app-startup"
-  - type: official
-    path: "https://developer.android.com/reference/android/content/SharedPreferences.Editor"
-  - type: official
-    path: "https://developer.android.com/reference/android/content/BroadcastReceiver"
-  - type: clippings-structure-ref
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md"
-  - type: clippings-structure-ref
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md"
-tags: [anr, main-thread, binder, lock-contention, watchdog, broadcast, contentprovider]
-related_chapters: ["20.1", "9.1", "9.2", "9.3", "1.4", "1.5"]
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastConstants.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ContentResolver.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/input/android/os/IInputConstants.aidl
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Service.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Binder.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/BroadcastReceiver.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderHelper.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/monitor.cc
+- type: official
+  path: https://developer.android.com/topic/performance/vitals/anr
+- type: official
+  path: https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs
+- type: official
+  path: https://developer.android.com/topic/libraries/architecture/workmanager
+- type: official
+  path: https://developer.android.com/reference/android/app/ActivityManager
+- type: official
+  path: https://developer.android.com/reference/android/app/AnrWarningResult
+- type: official
+  path: https://developer.android.com/reference/android/app/ApplicationExitInfo.AnrInfo
+- type: official
+  path: https://developer.android.com/reference/android/os/ProfilingTrigger#TRIGGER_TYPE_ANR
+- type: official
+  path: https://developer.android.com/develop/background-work/services/fgs/timeout
+- type: official
+  path: https://developer.android.com/develop/background-work/services/fgs/service-types
+- type: official
+  path: https://developer.android.com/topic/libraries/app-startup
+- type: official
+  path: https://developer.android.com/reference/android/content/SharedPreferences.Editor
+- type: official
+  path: https://developer.android.com/reference/android/content/BroadcastReceiver
+- type: clippings-structure-ref
+  path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md
+- type: clippings-structure-ref
+  path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md
+tags:
+- anr
+- main-thread
+- binder
+- lock-contention
+- watchdog
+- broadcast
+- contentprovider
+related_chapters:
+- '20.1'
+- '9.1'
+- '9.2'
+- '1.3'
+- '1.1'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -78,7 +90,7 @@ task2b_state: fixed
 
 ANR（Application Not Responding，应用无响应）是系统对应用在特定时限内未完成响应的判定。它可能来自输入分发、组件回调、进程启动、Binder 等待或锁竞争；主线程卡顿是常见成因之一。治理工作要把 ANR 类型、计时起止点和阻塞线程对应起来，再决定移出主线程、缩短临界区、调整进程间协议，还是修复组件生命周期。
 
-[9.1 ANR 设计原理](../../part2-performance/ch09-anr/01-anr-design.md)、[9.2 ANR 类型与判定条件](../../part2-performance/ch09-anr/02-anr-types.md) 和 [9.3 ANR 分析方法](../../part2-performance/ch09-anr/03-anr-analysis.md) 已经说明系统判定与现场分析。平台源码按 Android 17 / API 37 / `android-17.0.0_r1` 核对，这里关注修复动作、预警能力和回归验证。
+[9.1 ANR 机制、类型与触发条件](../../part2-performance/ch09-anr/01-anr-mechanism-types-triggers.md)、[9.1 ANR 机制、类型与触发条件](../../part2-performance/ch09-anr/01-anr-mechanism-types-triggers.md) 和 [9.2 ANR 与 Kernel Trace 联合诊断](../../part2-performance/ch09-anr/02-anr-kernel-trace-diagnosis.md) 已经说明系统判定与现场分析。平台源码按 Android 17 / API 37 / `android-17.0.0_r1` 核对，这里关注修复动作、预警能力和回归验证。
 
 本文中的 ANR traces 指系统在 ANR 现场采集的线程堆栈与诊断信息；后文的 system trace 和 `Trace` section 指性能时间线及其中的标记区间。两类证据用途不同，分析时不能混用。
 

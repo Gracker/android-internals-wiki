@@ -1,30 +1,27 @@
 # 第 12 章：网络性能
 
-本章关注请求从应用代码进入 Android 网络栈后的端到端成本：请求排队、DNS（Domain Name System，域名系统）解析、连接复用、传输协议、TLS（Transport Layer Security，传输层安全）握手，以及 `netd`（Android 网络管理守护进程）和每个网络各自的 DNS 状态。包体积治理已经统一归入第 25 章；系统如何选择网络，以及 `NetworkCallback` 回调的语义，另见 1.62。
+本章关注请求从应用代码进入 Android 网络栈后的端到端成本：请求排队、DNS（Domain Name System，域名系统）解析、连接复用、传输协议、TLS（Transport Layer Security，传输层安全）握手，以及 `netd`（Android 网络管理守护进程）和每个网络各自的 DNS 状态。包体积治理已经统一归入第 25 章；系统如何选择网络，以及 `NetworkCallback` 回调的语义，另见 1.24。
 
 排查时先按阶段分析一次请求，再根据证据进入 TLS 或 DNS 专项。Wi-Fi 图标、系统网络验证、DNS 可用性和目标服务可达性分别代表不同状态，不能合并成一个“网络正常”或“网络异常”的结论。
 
 ## 章节地图
 
-| 章节 | 主题 | 解决的问题 |
-|---|---|---|
-| [12.1 网络性能优化](01-network-performance.md) | DNS、连接池（可复用连接的集合）、协议、请求调度与长连接 | 一次请求的时间花在哪里，怎样减少排队、握手和重复建连 |
-| [12.2 Android 网络安全与 TLS 性能优化](02-network-security-tls-performance.md) | TLS 配置、证书、Network Security Config | 如何在安全边界内分析握手与信任失败 |
-| [12.3 netd 与 DnsResolver](03-netd-dnsresolver-network-diagnostics.md) | per-network DNS（按网络分别维护的 DNS）、Private DNS（加密 DNS）、`netd` | DNS 失败应在哪一层取证 |
+- [12.1 Android 网络与 TLS 性能优化](01-android-network-tls-performance.md)
+- [12.2 netd 与 DnsResolver：DNS 解析性能和故障诊断](02-netd-dnsresolver-network-diagnostics.md)
 
 ## 阅读路径
 
 ### 应用网络性能排查
 
-按 12.1 → 12.2 阅读。先建立请求阶段模型并确认连接是否复用，再处理 TLS 握手、证书链和信任配置；若问题集中在解析、Private DNS 或特定网络，继续阅读 12.3。
+先读 12.1，建立请求阶段模型并确认连接是否复用，再处理 TLS 握手、证书链和信任配置；若问题集中在解析、Private DNS 或特定网络，继续阅读 12.2。
 
 ### 系统网络栈排查
 
-先读 1.62，确定 `NetworkRequest`、`NetworkCallback`、网络排序、rematch（重新匹配网络请求）和 linger（旧网络短暂保留期）的语义，再用 12.3 检查 `netd` 路由与每网络 DNS 状态。Wi-Fi、蜂窝、卫星或 VPN 切换时的业务恢复策略继续参阅第 24 章。
+先读 1.24，确定 `NetworkRequest`、`NetworkCallback`、网络排序、rematch（重新匹配网络请求）和 linger（旧网络短暂保留期）的语义，再用 12.2 检查 `netd` 路由与每网络 DNS 状态。Wi-Fi、蜂窝、卫星或 VPN 切换时的业务恢复策略继续参阅第 24 章。
 
 ### 包体积治理
 
-包结构与总体分析入口已归入 25.6；R8/资源收缩、App Bundle 交付、DEX（Android 字节码文件）、native library（原生库）和资源文件专项分别见 25.7、25.8、25.29、25.30、25.31。分析对象应明确区分 AAB（Android App Bundle）、通用 APK、针对设备生成的 APK、下载体积和安装后占用。
+包结构、DEX、R8、native library（原生库）与资源文件专项统一见 25.5，App Bundle 交付见 25.6。分析对象应明确区分 AAB（Android App Bundle）、通用 APK、针对设备生成的 APK、下载体积和安装后占用。
 
 ## 版本边界
 

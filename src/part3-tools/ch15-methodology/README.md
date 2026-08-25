@@ -6,22 +6,19 @@
 
 ## 内容索引
 
-- [15.1 性能优化的术、道、器](01-philosophy.md)：这里的“道、术、器”分别指性能目标与原则、调查步骤和取证工具。
-- [15.2 如何区分系统问题和 App 问题](02-system-vs-app.md)：沿时间窗口、线程状态和跨进程等待划分责任，避免只凭进程名归因。
-- [15.3 性能指标体系](03-metrics.md)：定义指标口径、分母、聚合方式和线上线下分工。
-- [15.4 竞品分析方法](04-competitive-analysis.md)：控制设备、版本、场景和采样顺序，比较启动、流畅性、包体积与功耗。
-- [15.5 线上性能监控](05-online-monitoring.md)：说明帧、启动和 ANR（应用无响应）信号怎样采集、采样、聚合与报警。
-- [15.6 性能测试最佳实践](06-testing-best-practices.md)：先写测试合同，即明确测量对象、执行条件和回归判定方式；再固定环境，用分布和噪声判断变化是否可信。
-- [15.7 AOSP 代码阅读](07-aosp-reading.md)：从日志或 trace（系统运行时序记录）定位到固定版本的 AOSP（Android Open Source Project，Android 开源项目）源码，再跨 Binder 进程通信、JNI Java/原生代码边界和线程切换追踪调用关系。
-- [15.8 Android 性能问题实证：真实世界的分类与代码模式](08-empirical-performance-issues.md)：区分论文统计口径，并把常见性能后果对应到代码模式。
-- [15.9 性能反馈回路与治理工程化](09-performance-governance.md)：把异常信号、归因、工单、修复和发布验收连成可追踪流程，并明确团队责任。
-- [15.10 Google Android Bench：AI 编码能力评测方法论](10-google-android-bench-ai-coding-evaluation-methodology.md)：解释任务、verifier（自动判分程序）和 `pass@1`（每题只尝试一次时的通过率），以及怎样建立团队自己的评测集。
+- [15.1 Android 性能优化原则、实证与治理](01-performance-principles-evidence-governance.md)
+- [15.2 如何区分系统问题和 App 问题](02-system-vs-app.md)
+- [15.3 性能指标体系与线上监控](03-performance-metrics-online-monitoring.md)
+- [15.4 竞品分析方法](04-competitive-analysis.md)
+- [15.5 性能测试最佳实践](05-testing-best-practices.md)
+- [15.6 AOSP 代码阅读](06-aosp-reading.md)
+- [15.7 Google Android Bench：AI 编码能力评测方法论](07-google-android-bench-ai-coding-evaluation-methodology.md)
 
 ## 阅读建议
 
 - 第一次建立性能分析流程：按 `15.1` → `15.2` → `15.3` 阅读，先统一结论、归因和指标口径。
-- 设计可比较的实验：阅读 `15.4` 和 `15.6`；前者偏竞品对照，后者偏回归测试。
-- 处理线上问题并推动修复：按 `15.5` → `15.9` 阅读，从监控信号跟到发布验收。
-- 从证据继续追源码或研究数据：阅读 `15.7` 和 `15.8`。评估 AI 修改 Android 代码的能力时，再阅读 `15.10`。
+- 设计可比较的实验：阅读 `15.4` 和 `15.5`；前者偏竞品对照，后者偏回归测试。
+- 处理线上问题并推动修复：先用 `15.3` 定义监控信号和指标，再用 `15.1` 的治理方法跟到发布验收。
+- 从证据继续追源码或研究数据：阅读 `15.6` 和 `15.1`。评估 AI 修改 Android 代码的能力时，再阅读 `15.7`。
 
-当前目录有 10 篇正文。合并前共有 12 篇：旧 15.9 与旧 15.10 合并为当前 15.9，保留观测数据的保存周期、工单流转和验收责任；旧 15.11 调整为当前 15.10；旧 15.12 与总论、测试和 Perfetto 专章重复，其中独有的证据等级（结论由哪一层证据支持）、替代假设和复查记录要求并入 15.1。详细映射见 [`metadata/content-consolidation-audit.md`](../../../metadata/content-consolidation-audit.md)。
+第二轮审阅把本章从 10 篇收敛为 7 篇：性能原则、实证方法和治理闭环统一到 15.1，指标体系与线上监控统一到 15.3；竞品、测试、源码阅读和 AI 编码评测继续独立承载。详细映射见 [`metadata/content-consolidation-audit.md`](../../../metadata/content-consolidation-audit.md)。

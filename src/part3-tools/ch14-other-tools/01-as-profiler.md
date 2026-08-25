@@ -1,12 +1,12 @@
 ---
-title: "Android Studio Profiler"
-chapter: "14.1"
-section: "14.1"
+title: Android Studio Profiler
+chapter: '14.1'
+section: '14.1'
 status: finalized
-applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
+applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 task9_state: reviewed
-last_verified: "2026-08-13"
-last_verified_against: "Android Studio Profiler docs (through 2026-07-28) + Power Profiler docs + Android 17 tracing/API references"
+last_verified: '2026-08-13'
+last_verified_against: Android Studio Profiler docs (through 2026-07-28) + Power Profiler docs + Android 17 tracing/API references
 confidence: high
 sources:
 - type: reference
@@ -35,14 +35,27 @@ sources:
   path: https://developer.android.com/studio/profile/power-profiler
 - type: official
   path: https://developer.android.com/reference/android/os/ProfilingManager
-tags: 
-related_chapters: ["5.4", "13.3", "13.5", "13.7", "14.2", "14.8"]
+tags:
+- android-studio
+- profiler
+- cpu
+- memory
+- performance-tools
+related_chapters:
+- '5.2'
+- '13.2'
+- '13.3'
+- '13.5'
+- '14.2'
+- '14.5'
 task2b_state: fixed
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 ---
 
-# 14.1 Android Studio Profiler
+# Android Studio Profiler
+
+Android Studio Profiler 适合从应用视角快速关联 CPU、内存、网络和能耗信号，但不同采集模式的开销与时间精度差异很大。使用前应按问题选择任务入口，并明确何时需要转向系统级 Perfetto 证据。
 
 ## Profiler 解决什么问题
 
@@ -199,7 +212,7 @@ ODPM 把设备级功耗分成若干 rail，可能包括 CPU Big/Mid/Little、GPU
 
 Android Studio Profiler 主要服务于连接设备上的交互式分析。若问题只能在真实用户设备或接近发布的构建中出现，可考虑 `ProfilingManager`。Android 15（API 35）的 `requestProfiling()` 支持由 App 主动申请采集；Android 16（API 36）再加入系统事件触发器。请求会被限流，也不保证执行；返回结果经过脱敏，只包含申请进程的信息。它的结果回调、文件存储和隐私边界都独立于 IDE 任务。
 
-完整的 API 35—37 演进、`requestProfiling()`、后台 system trace、触发器矩阵、结果文件管理，以及系统不支持或拒绝请求时的处理方式，统一见 [14.11 ProfilingManager](11-profiling-manager.md)。本节只保留工具选择边界，避免两处维护同一套 API 细节。
+完整的 API 35—37 演进、`requestProfiling()`、后台 system trace、触发器矩阵、结果文件管理，以及系统不支持或拒绝请求时的处理方式，统一见 [14.8 ProfilingManager](08-profiling-manager.md)。本节只保留工具选择边界，避免两处维护同一套 API 细节。
 
 ## 常见问题与误区
 

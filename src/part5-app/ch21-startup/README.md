@@ -6,22 +6,17 @@
 
 ## 内容索引
 
-- [21.1 启动链路分析（App 视角）](01-startup-analysis.md)
-- [21.2 启动框架设计与任务编排](02-startup-framework.md)
-- [21.3 ContentProvider 启动治理](03-contentprovider-optimization.md)
-- [21.4 Baseline Profile 与 Startup Profile 实战](04-baseline-profile-practice.md)
+- [21.1 App 启动路径、监控与度量](01-app-startup-path-monitoring.md)
+- [21.2 启动任务编排、延迟初始化与并发调度](02-startup-task-lazy-concurrency.md)
+- [21.3 ContentProvider 与多进程启动治理](03-contentprovider-multiprocess-startup.md)
+- [21.4 Baseline、Startup 与 Cloud Profile 编译优化](04-baseline-startup-cloud-profile.md)
 - [21.5 Splash Screen 与感知启动速度](05-splash-screen.md)
-- [21.6 延迟初始化与按需加载](06-lazy-initialization.md)
-- [21.7 多进程启动优化](07-multiprocess-startup.md)
-- [21.8 启动监控与度量](08-startup-monitoring.md)
-- [21.9 Privacy Sandbox 退场与广告 SDK 启动治理](09-sdk-runtime-ad-sdk-startup.md)
-- [21.10 云端 Profile、DM 文件与安装后编译优化](10-cloud-profile-dm-install-compile.md)
-- [21.11 ART GC 抑制与启动性能优化](11-art-gc-suppression-startup-performance.md)
-- [21.12 依赖注入框架性能：Dagger、Hilt、Koin 启动开销与优化](12-di-framework-performance.md)
-- [21.13 Compose 首次组合开销与启动性能](13-compose-first-composition-startup.md)
-- [21.14 线程池与并发调度性能实战](14-thread-pool-concurrency-performance.md)
-- [21.15 缓存优化实战：冷热端分离、重排序与 CPU 缓存命中率提升](15-cache-optimization-cpu-locality.md)
-- [21.16 设备分级性能策略实战](16-device-tier-performance-strategy.md)
+- [21.6 Privacy Sandbox 退场与广告 SDK 启动治理](06-sdk-runtime-ad-sdk-startup.md)
+- [21.7 ART GC 抑制与启动性能优化](07-art-gc-suppression-startup-performance.md)
+- [21.8 依赖注入框架性能：Dagger/Hilt/Koin 启动开销与优化](08-di-framework-performance.md)
+- [21.9 Compose 首次组合开销与启动性能](09-compose-first-composition-startup.md)
+- [21.10 缓存优化实战：冷热端分离、重排序与 CPU 缓存命中率提升](10-cache-optimization-cpu-locality.md)
+- [21.11 设备分级性能策略实战](11-device-tier-performance-strategy.md)
 
 ## 术语提示
 
@@ -34,7 +29,7 @@
 ## 阅读建议
 
 - 排查单个启动阶段时，可直接进入对应条目。
-- 建立启动优化流程时，先读 21.1、21.2 和 21.8。
-- 先用 21.4 掌握 Baseline/Startup Profile 的生成与验证，再用 21.10 追踪 Cloud Profile、DM 交付、设备端编译和 DEX layout。
-- 启动复盘模板与 Android 15+ 的 `ApplicationStartInfo` 系统启动记录都在 21.8。
-- 维护广告 SDK 或旧 Privacy Sandbox 接入时，结合 21.9 核对 Android 17 的退场边界与普通 SDK 回退路径。
+- 建立启动优化流程时，先读 21.1，再用 21.2 组织启动任务与并发边界。
+- Baseline、Startup 与 Cloud Profile 的生成、DM 交付、设备端编译和 DEX layout 统一见 21.4。
+- 启动复盘模板与 Android 15+ 的 `ApplicationStartInfo` 系统启动记录都在 21.1。
+- 维护广告 SDK 或旧 Privacy Sandbox 接入时，结合 21.6 核对 Android 17 的退场边界与普通 SDK 回退路径。

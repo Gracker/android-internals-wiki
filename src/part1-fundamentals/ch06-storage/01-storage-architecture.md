@@ -1,11 +1,11 @@
 ---
-title: "Android 存储架构"
-chapter: "6.1"
-section: "6.1"
+title: Android 存储架构
+chapter: '6.1'
+section: '6.1'
 status: finalized
-applicable_versions: "Android 9 - Android 17 (API 37)"
-last_verified: "2026-07-08"
-last_verified_against: "Android 17 (android-17.0.0_r1), AOSP cgroups/task_profiles/init/vold/MediaProvider source, dynamic partitions / metadata encryption / system-as-root docs, Android 11-12 shared storage docs, SQLite compile & WAL docs"
+applicable_versions: Android 9 - Android 17 (API 37)
+last_verified: '2026-07-08'
+last_verified_against: Android 17 (android-17.0.0_r1), AOSP cgroups/task_profiles/init/vold/MediaProvider source, dynamic partitions / metadata encryption / system-as-root docs, Android 11-12 shared storage docs, SQLite compile & WAL docs
 confidence: medium
 sources:
 - type: reference
@@ -32,15 +32,31 @@ sources:
   path: SQLite Compile-time Options / WAL | sqlite.org
 - type: reference
   path: JEDEC UFS 4.0 Standard (JESD220E)
-tags: ['storage', 'ufs', 'emmc', 'partition', 'scoped-storage', 'mediastore', 'fuse', 'fbe', 'dynamic-partition', 'virtual-ab', 'f2fs']
-related_chapters: ['6.2', '6.3', '4.1', '7.1']
+tags:
+- storage
+- ufs
+- emmc
+- partition
+- scoped-storage
+- mediastore
+- fuse
+- fbe
+- dynamic-partition
+- virtual-ab
+- f2fs
+related_chapters:
+- '6.2'
+- '4.1'
+- '7.1'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 ---
 
-# 6.1 Android 存储架构
+# Android 存储架构
+
+一次应用 I/O 会跨越 API、文件系统、页缓存、块层和存储器件，任何一层都可能把短请求放大成长尾。阅读这条链路的目的，是把“磁盘慢”拆成可观测的缓存命中、回写、排队、同步和介质延迟。
 
 ## 从一个卡顿现象说起
 
@@ -398,7 +414,7 @@ I/O 诊断至少需要覆盖以下五层，避免停在“看起来像 I/O 慢�
 
 按这套顺序，Perfetto 中的“I/O wait”才能继续收敛到同步点、文件系统、块队列、共享存储或器件层面的可验证原因。
 
-第 6.2 节继续分析文件系统的选择与调优，第 6.3 节讨论 I/O 调度的具体策略；存储性能的长期退化还与第 7 章流畅性优化中的“老设备卡顿”现象相关。
+第 6.2 节继续分析文件系统选择、I/O 调度和调优；存储性能的长期退化还与第 7 章流畅性优化中的“老设备卡顿”现象相关。
 
 ## 参考资料
 

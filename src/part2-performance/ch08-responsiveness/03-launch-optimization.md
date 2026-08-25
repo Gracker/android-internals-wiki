@@ -1,50 +1,68 @@
 ---
-title: "启动优化策略"
-chapter: "8.3"
+title: 启动优化策略
+chapter: '8.3'
 status: finalized
-applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-06-06"
-last_verified_against: "Android Developers launch-time/SplashScreen/Baseline Profiles/App Startup docs + Android 17 behavior changes + AOSP android-16.0.0_r1 ActivityThread/ViewStub"
+applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
+last_verified: '2026-06-06'
+last_verified_against: Android Developers launch-time/SplashScreen/Baseline Profiles/App Startup docs + Android 17 behavior changes + AOSP android-16.0.0_r1 ActivityThread/ViewStub
 confidence: medium
 sources:
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-12_wechat_SplashScreen_优化启动体验_开发者说_DTalk.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-06_wechat_性能优化_如何优雅实现_App_秒开.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-06_wechat_淘宝页面首帧优化的经验和心得_1.md"
-  - type: blog
-    path: "Cubox/Activity 启动速度分析方法（启动流程分析） - Light.Moon-2022-04-11.md"
-  - type: blog
-    path: "Cubox/Android 强推的 Baseline Profiles 国内能用吗？我找 Google 工程师求证了！ - 掘金-2022-07-17.md"
-  - type: official
-    path: "developer.android.com/topic/performance/vitals/launch-time"
-  - type: official
-    path: "developer.android.com/guide/topics/ui/splash-screen"
-  - type: official
-    path: "developer.android.com/topic/performance/baselineprofiles"
-  - type: official
-    path: "developer.android.com/topic/libraries/app-startup"
-  - type: official
-    path: "developer.android.com/about/versions/17/behavior-changes-17"
-  - type: aosp
-    path: "android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/app/ActivityThread.java"
-  - type: aosp
-    path: "android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/ViewStub.java"
-tags: ['startup-optimization', 'lazy-init', 'splash-screen', 'baseline-profile', 'app-startup', 'content-provider', 'async-inflate', 'task-scheduler']
-related_chapters: ["8.1", "8.2", "2.4", "2.5", "7.5", "1.10", "1.12", "8.7"]
-section: "8.3"
-task9_state: "reviewed"
-task6_state: "reviewed"
-pipeline_stage: "ready-to-publish"
+- type: blog
+  path: Personal-Knowlodge/source/2026-03-12_wechat_SplashScreen_优化启动体验_开发者说_DTalk.md
+- type: blog
+  path: Personal-Knowlodge/source/2026-03-06_wechat_性能优化_如何优雅实现_App_秒开.md
+- type: blog
+  path: Personal-Knowlodge/source/2026-03-06_wechat_淘宝页面首帧优化的经验和心得_1.md
+- type: blog
+  path: Cubox/Activity 启动速度分析方法（启动流程分析） - Light.Moon-2022-04-11.md
+- type: blog
+  path: Cubox/Android 强推的 Baseline Profiles 国内能用吗？我找 Google 工程师求证了！ - 掘金-2022-07-17.md
+- type: official
+  path: developer.android.com/topic/performance/vitals/launch-time
+- type: official
+  path: developer.android.com/guide/topics/ui/splash-screen
+- type: official
+  path: developer.android.com/topic/performance/baselineprofiles
+- type: official
+  path: developer.android.com/topic/libraries/app-startup
+- type: official
+  path: developer.android.com/about/versions/17/behavior-changes-17
+- type: aosp
+  path: android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/app/ActivityThread.java
+- type: aosp
+  path: android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/ViewStub.java
+tags:
+- startup-optimization
+- lazy-init
+- splash-screen
+- baseline-profile
+- app-startup
+- content-provider
+- async-inflate
+- task-scheduler
+related_chapters:
+- '8.1'
+- '8.2'
+- '2.3'
+- '2.4'
+- '22.1'
+- '1.8'
+- '1.5'
+- '21.4'
+section: '8.3'
+task9_state: reviewed
+task6_state: reviewed
+pipeline_stage: ready-to-publish
 task2b_state: fixed
 ---
 
-# 8.3 启动优化策略
+# 启动优化策略
+
+启动优化应围绕用户可见关键路径安排初始化，而不是简单把任务全部异步化。先固定 TTID、TTFD 和业务可用点，再决定哪些工作必须前置、可以懒加载、适合并发，最后用依赖与资源争用验证收益。
 
 ## 工程决策边界
 
-[8.2 App 启动全流程](02-app-launch.md)解释了 Android 如何创建进程、绑定 `Application`、安装 Provider、创建 Activity 并提交首帧。启动优化要沿着这条时序逐项判断：哪些工作可以删除，哪些可以推迟，哪些适合并发，哪些必须留在主线程，以及怎样验证改动是否有效。
+[8.2 App 冷启动链路与 Binder Trace 分析](02-app-cold-start-binder-trace.md)解释了 Android 如何创建进程、绑定 `Application`、安装 Provider、创建 Activity 并提交首帧。启动优化要沿着这条时序逐项判断：哪些工作可以删除，哪些可以推迟，哪些适合并发，哪些必须留在主线程，以及怎样验证改动是否有效。
 
 本文以 Android 17 / API 37 的 `android-17.0.0_r1` 为平台源码基线。涉及线程调度、缺页和存储 I/O 时，内核基线为 `android17-6.18-2026-06_r6`；历史版本只用于解释 API 和行为演进。启动收益还会受到设备、构建产物、入口、数据状态和编译状态影响，不能给某个 SDK、布局或优化手段套用一个通用毫秒数。
 
@@ -381,7 +399,7 @@ inflater.inflate(R.layout.view_filter_panel, filterContainer) {
 
 Baseline Profile 会随 release 产物发布热点类和方法规则，使 ART 能在用户开始使用前对这些代码执行 profile-guided compilation（基于性能画像的编译）。Startup Profile 面向 DEX 布局，让构建工具把启动期类和方法排列到更便于连续读取的位置。两者作用于不同阶段，可以同时使用。
 
-官方资料中“代码执行从首次启动起约有三成改善”是跨样本的概述，不代表每个应用的 TTID 都会改善三成。如果启动瓶颈来自磁盘读取、锁等待、Binder、布局或网络，编译优化能够覆盖的比例就会较小。完整的生成、打包、分发渠道和设备编译状态见 [8.7 Baseline Profiles 与编译优化实践](07-baseline-profiles.md)。
+官方资料中“代码执行从首次启动起约有三成改善”是跨样本的概述，不代表每个应用的 TTID 都会改善三成。如果启动瓶颈来自磁盘读取、锁等待、Binder、布局或网络，编译优化能够覆盖的比例就会较小。完整的生成、打包、分发渠道和设备编译状态见 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](../../part5-app/ch21-startup/04-baseline-startup-cloud-profile.md)。
 
 ### 用对照实验量化
 

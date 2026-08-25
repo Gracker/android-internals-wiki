@@ -1,0 +1,124 @@
+{
+  "version": 12,
+  "operation": "16kb_page_size_and_native_dcl_owner_split",
+  "count_change": {
+    "before": 278,
+    "after": 278
+  },
+  "merged_paths": [
+    {
+      "source": "src/part5-app/ch20-stability/07-16kb-native-library-compatibility.md",
+      "target": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
+      "role": "canonical_16kb_page_size_build_runtime_and_performance_owner"
+    },
+    {
+      "source": "src/part5-app/ch20-stability/07-16kb-native-library-compatibility.md",
+      "target": "src/part5-app/ch20-stability/07-native-dcl-secure-loading.md",
+      "role": "native_dcl_secure_publish_load_and_rollback_owner"
+    }
+  ],
+  "rewritten_paths": [
+    "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
+    "src/part5-app/ch20-stability/07-native-dcl-secure-loading.md"
+  ],
+  "renamed_paths": [
+    {
+      "from": "src/part5-app/ch20-stability/07-16kb-native-library-compatibility.md",
+      "to": "src/part5-app/ch20-stability/07-native-dcl-secure-loading.md"
+    }
+  ],
+  "reindexed_paths": [
+    {
+      "from": "src/part5-app/ch20-stability/07-16kb-native-library-compatibility.md",
+      "to": "src/part5-app/ch20-stability/07-native-dcl-secure-loading.md"
+    }
+  ],
+  "source_bytes": {
+    "src/part5-app/ch20-stability/07-16kb-native-library-compatibility.md": 53962,
+    "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md": 27913
+  },
+  "result_bytes": {
+    "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md": 30630,
+    "src/part5-app/ch20-stability/07-native-dcl-secure-loading.md": 25778
+  },
+  "source_sha256": {
+    "src/part5-app/ch20-stability/07-16kb-native-library-compatibility.md": "9a0300909c8828a075a1b3656d41d3af4face5a6b934441e307250b786c4786e",
+    "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md": "9d6b31bd242e63071398a236eb8c0746335eea21dd0bded2ecb1ecdd35459a03"
+  },
+  "result_sha256": {
+    "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md": "1a1bc7cc84e013e887f5ce0a47a437b92cfff89ec37a6b2e3fb6d8e2b372f318",
+    "src/part5-app/ch20-stability/07-native-dcl-secure-loading.md": "c0d1192dd0ed8fc3defb9ec45d983c49c76b5ef386ded95954ea865da27b6b32"
+  },
+  "source_h2_inventory": [
+    "ELF 对齐、打包与 16 KB 设备验证",
+    "Native 库装载、只读约束与安全发布",
+    "参考资料"
+  ],
+  "dcl_source_heading_inventory": [
+    "1. 四条加载路径的检查范围",
+    "2. `Runtime.load0()` 的检查顺序",
+    "3. 只读检查不等于来源可信",
+    "4. 用发布状态机隔离未完成文件",
+    "4.1 发布顺序",
+    "4.2 `File.renameTo()` 不是完整的发布事务",
+    "5. ABI、ELF 与动态链接条件",
+    "5.1 不要直接取 `Build.SUPPORTED_ABIS[0]`",
+    "5.2 检查 `DT_NEEDED` 与链接器命名空间",
+    "5.3 16 KB 页面大小要检查 ELF 程序头",
+    "6. 多进程与回滚",
+    "7. 失败分类与处理",
+    "8. 诊断记录",
+    "9. Android 17 分阶段测试表",
+    "10. 与相邻章节的边界",
+    "参考资料"
+  ],
+  "content_routes": [
+    {
+      "source": "20.7 ELF alignment, APK/AAB packaging, runtime page math and compatibility mode",
+      "destination": "4.5 application compatibility and migration sections",
+      "treatment": "duplicate_exposition_deduplicated_against_deeper_owner"
+    },
+    {
+      "source": "official ELF checker, ABI scope, legacy AGP packaging fallback and NDK r27 issue boundary",
+      "destination": "4.5 toolchain and ELF verification sections",
+      "treatment": "source_only_release_details_embedded"
+    },
+    {
+      "source": "pageSizeCompat enum behavior, release artifact evidence and current Play milestone",
+      "destination": "4.5 compatibility mode, release evidence and milestone sections",
+      "treatment": "source_only_manifest_and_policy_details_embedded_and_updated"
+    },
+    {
+      "source": "Android 17 System.load writable-file enforcement and four loading paths",
+      "destination": "20.7 Android 17 Native DCL loading boundary",
+      "treatment": "retained_and_promoted_to_real_owner_section"
+    },
+    {
+      "source": "signed manifest, immutable version path, staged publish protocol and Kotlin example",
+      "destination": "20.7 trusted publish and rollback protocol",
+      "treatment": "retained_without_summary_loss"
+    },
+    {
+      "source": "ABI, DT_NEEDED, multiprocess recovery, failure taxonomy, diagnostics and test matrix",
+      "destination": "20.7 publish protocol and verification sections",
+      "treatment": "retained_and_restructured"
+    },
+    {
+      "source": "cross-chapter references and stale Play policy statements",
+      "destination": "SUMMARY, chapter index, 4.5/20.7 related owners and affected articles",
+      "treatment": "semantic_owner_links_reconciled_and_policy_updated"
+    }
+  ],
+  "updated_reference_files": [
+    "src/SUMMARY.md",
+    "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+    "src/part1-fundamentals/ch01-architecture/04-version-evolution.md",
+    "src/part1-fundamentals/ch01-architecture/10-jni-ndk-bionic-performance.md",
+    "src/part5-app/ch20-stability/03-native-crash-unwinding-symbolication.md",
+    "src/part5-app/ch20-stability/README.md",
+    "src/part5-app/ch21-startup/07-art-gc-suppression-startup-performance.md",
+    "src/part5-app/ch25-power-size/05-apk-r8-resource-optimization.md",
+    "src/part5-app/ch26-observability/14-heapprofd-procfs-page-fault.md"
+  ],
+  "applied": true
+}

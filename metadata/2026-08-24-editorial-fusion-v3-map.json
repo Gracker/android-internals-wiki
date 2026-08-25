@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-08-24",
+  "before_count": 285,
+  "after_count": 289,
+  "renamed_or_split_paths": [
+    {
+      "before": "src/part1-fundamentals/ch01-architecture/05-art-compilation-optimization-deoptimization.md",
+      "after": "src/part1-fundamentals/ch01-architecture/05-art-compilation-verification-deoptimization.md",
+      "chapter": "1.5"
+    },
+    {
+      "before": "src/part1-fundamentals/ch01-architecture/24-telephony-connectivity-services.md",
+      "after": "src/part1-fundamentals/ch01-architecture/24-telephony-service.md",
+      "chapter": "1.24"
+    },
+    {
+      "before": "src/part1-fundamentals/ch01-architecture/24-telephony-connectivity-services.md",
+      "after": "src/part1-fundamentals/ch01-architecture/25-connectivity-service.md",
+      "chapter": "1.25"
+    },
+    {
+      "before": "src/part1-fundamentals/ch01-architecture/25-notificationmanager-architecture-performance.md",
+      "after": "src/part1-fundamentals/ch01-architecture/26-notificationmanager-architecture-performance.md",
+      "chapter": "1.26"
+    },
+    {
+      "before": "src/part1-fundamentals/ch01-architecture/26-biometricservice-architecture-performance.md",
+      "after": "src/part1-fundamentals/ch01-architecture/27-biometricservice-architecture-performance.md",
+      "chapter": "1.27"
+    },
+    {
+      "before": "src/part1-fundamentals/ch01-architecture/27-locationmanager-architecture-performance.md",
+      "after": "src/part1-fundamentals/ch01-architecture/28-locationmanager-architecture-performance.md",
+      "chapter": "1.28"
+    },
+    {
+      "before": "src/part1-fundamentals/ch01-architecture/28-cgroup-v1-v2-process-isolation.md",
+      "after": "src/part1-fundamentals/ch01-architecture/29-cgroup-v1-v2-process-isolation.md",
+      "chapter": "1.29"
+    },
+    {
+      "before": "src/part2-performance/ch18-rendering-pipelines/08-flutter-compose-rendering-pipelines.md",
+      "after": "src/part2-performance/ch18-rendering-pipelines/08-flutter-rendering-pipeline.md",
+      "chapter": "18.8"
+    },
+    {
+      "before": "src/part2-performance/ch18-rendering-pipelines/08-flutter-compose-rendering-pipelines.md",
+      "after": "src/part2-performance/ch18-rendering-pipelines/09-compose-rendering-pipeline.md",
+      "chapter": "18.9"
+    },
+    {
+      "before": "src/part2-performance/ch18-rendering-pipelines/09-webview-rendering.md",
+      "after": "src/part2-performance/ch18-rendering-pipelines/10-webview-rendering.md",
+      "chapter": "18.10"
+    },
+    {
+      "before": "src/part2-performance/ch18-rendering-pipelines/10-camera-pipeline.md",
+      "after": "src/part2-performance/ch18-rendering-pipelines/11-camera-pipeline.md",
+      "chapter": "18.11"
+    },
+    {
+      "before": "src/part2-performance/ch18-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+      "after": "src/part2-performance/ch18-rendering-pipelines/12-video-overlay-media3-codec-pipeline.md",
+      "chapter": "18.12"
+    },
+    {
+      "before": "src/part2-performance/ch18-rendering-pipelines/12-game-engine.md",
+      "after": "src/part2-performance/ch18-rendering-pipelines/13-game-engine.md",
+      "chapter": "18.13"
+    },
+    {
+      "before": "src/part2-performance/ch18-rendering-pipelines/13-variable-refresh-rate.md",
+      "after": "src/part2-performance/ch18-rendering-pipelines/14-variable-refresh-rate.md",
+      "chapter": "18.14"
+    },
+    {
+      "before": "src/part2-performance/ch18-rendering-pipelines/14-eyedropper-crossdevice.md",
+      "after": "src/part2-performance/ch18-rendering-pipelines/15-eyedropper-crossdevice.md",
+      "chapter": "18.15"
+    },
+    {
+      "before": "src/part2-performance/ch18-rendering-pipelines/15-android-xr-spatial-ui-rendering.md",
+      "after": "src/part2-performance/ch18-rendering-pipelines/16-android-xr-spatial-ui-rendering.md",
+      "chapter": "18.16"
+    },
+    {
+      "before": "src/part2-performance/ch18-rendering-pipelines/16-webgpu-android-pipeline.md",
+      "after": "src/part2-performance/ch18-rendering-pipelines/17-webgpu-android-pipeline.md",
+      "chapter": "18.17"
+    },
+    {
+      "before": "src/part1-fundamentals/ch01-architecture/05-art-compilation-optimization-deoptimization.md",
+      "after": "src/part4-system/ch16-aosp/04-autofdo-feedback-directed-optimization.md",
+      "chapter": "16.4"
+    },
+    {
+      "before": "src/part4-system/ch16-aosp/04-profile-dm-sdm-install-compilation.md",
+      "after": "src/part4-system/ch16-aosp/05-profile-dm-sdm-install-compilation.md",
+      "chapter": "16.5"
+    },
+    {
+      "before": "src/part4-system/ch16-aosp/05-system-boot-time-optimization.md",
+      "after": "src/part4-system/ch16-aosp/06-system-boot-time-optimization.md",
+      "chapter": "16.6"
+    },
+    {
+      "before": "src/part4-system/ch16-aosp/06-appflow-large-app-cold-launch-memory-scheduling.md",
+      "after": "src/part4-system/ch16-aosp/07-appflow-large-app-cold-launch-memory-scheduling.md",
+      "chapter": "16.7"
+    },
+    {
+      "before": "src/part4-system/ch16-aosp/07-rust-system-services-performance.md",
+      "after": "src/part4-system/ch16-aosp/08-rust-system-services-performance.md",
+      "chapter": "16.8"
+    },
+    {
+      "before": "src/part4-system/ch16-aosp/08-agent-native-os.md",
+      "after": "src/part4-system/ch16-aosp/09-agent-native-os.md",
+      "chapter": "16.9"
+    },
+    {
+      "before": "src/part5-app/ch22-rendering-practice/18-media3-camerax-rendering.md",
+      "after": "src/part5-app/ch22-rendering-practice/18-media3-video-rendering.md",
+      "chapter": "22.18"
+    },
+    {
+      "before": "src/part5-app/ch22-rendering-practice/18-media3-camerax-rendering.md",
+      "after": "src/part5-app/ch22-rendering-practice/19-camerax-rendering.md",
+      "chapter": "22.19"
+    }
+  ]
+}

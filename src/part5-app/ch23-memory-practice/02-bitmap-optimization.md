@@ -1,60 +1,70 @@
 ---
-title: "Bitmap 与图片内存优化"
-chapter: "23.2"
-section: "23.2"
+title: Bitmap 与图片内存优化
+chapter: '23.2'
+section: '23.2'
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-08-15"
-last_verified_against: "Android 17 / API 37 / AOSP android-17.0.0_r1；Android Bitmap、BitmapFactory.Options、Bitmap.Config 与 ImageDecoder 官方文档"
-last_review_finalize_at: "2026-08-15T07:00:43+08:00"
-last_review_finalize_run_id: "20260815-070043-gracker-writing-review"
+applicable_versions: Android 10 (API 29) - Android 17 (API 37)
+last_verified: '2026-08-15'
+last_verified_against: Android 17 / API 37 / AOSP android-17.0.0_r1；Android Bitmap、BitmapFactory.Options、Bitmap.Config 与 ImageDecoder 官方文档
+last_review_finalize_at: '2026-08-15T07:00:43+08:00'
+last_review_finalize_run_id: 20260815-070043-gracker-writing-review
 confidence: high
 sources:
-  - type: official
-    path: "https://developer.android.com/topic/performance/graphics/manage-memory"
-  - type: official
-    path: "https://developer.android.com/topic/performance/graphics/load-bitmap"
-  - type: official
-    path: "https://developer.android.com/reference/android/graphics/Bitmap"
-  - type: official
-    path: "https://developer.android.com/reference/android/graphics/BitmapFactory.Options"
-  - type: official
-    path: "https://developer.android.com/reference/android/graphics/Bitmap.Config"
-  - type: official
-    path: "https://developer.android.com/reference/android/graphics/ImageDecoder"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/Bitmap.java"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/BitmapFactory.java"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/BaseCanvas.java"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java"
-  - type: blog
-    path: "[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]"
-  - type: blog
-    path: "[结构参考: Clippings/Android 性能优化 - 原理：重新认识内存.md]"
-  - type: clipping
-    path: "货拉拉司机 Android 端内存治理实践（本地归档 Cubox）"
-tags: [bitmap, insamplesize, native-memory, inbitmap, hardware-bitmap]
-related_chapters: ["23.1", "22.6", "22.26", "4.3"]
+- type: official
+  path: https://developer.android.com/topic/performance/graphics/manage-memory
+- type: official
+  path: https://developer.android.com/topic/performance/graphics/load-bitmap
+- type: official
+  path: https://developer.android.com/reference/android/graphics/Bitmap
+- type: official
+  path: https://developer.android.com/reference/android/graphics/BitmapFactory.Options
+- type: official
+  path: https://developer.android.com/reference/android/graphics/Bitmap.Config
+- type: official
+  path: https://developer.android.com/reference/android/graphics/ImageDecoder
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/Bitmap.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/BitmapFactory.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/BaseCanvas.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java
+- type: blog
+  path: '[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]'
+- type: blog
+  path: '[结构参考: Clippings/Android 性能优化 - 原理：重新认识内存.md]'
+- type: clipping
+  path: 货拉拉司机 Android 端内存治理实践（本地归档 Cubox）
+tags:
+- bitmap
+- insamplesize
+- native-memory
+- inbitmap
+- hardware-bitmap
+related_chapters:
+- '23.1'
+- '22.5'
+- '4.2'
 pipeline_stage: finalized
-last_draft_polish_at: "2026-08-15T07:00:43+08:00"
-last_draft_polish_run_id: "20260815-070043-gracker-writing"
+last_draft_polish_at: '2026-08-15T07:00:43+08:00'
+last_draft_polish_run_id: 20260815-070043-gracker-writing
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 consolidated_from:
-  - "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
+- src/part5-app/ch23-memory-practice/08-memory-case-studies.md
 ---
 
 # Bitmap 与图片内存优化
+
+图片内存取决于解码尺寸、像素格式、存储位置、生命周期和缓存策略，文件体积不能直接代表运行时占用。优化顺序应从限制目标尺寸开始，再用大图监控、复用与 Hardware Bitmap 处理不同场景。
 
 ## 图片内存为什么容易超预算
 
 Bitmap（位图）是 Android 表示解码后像素及其描述信息的对象。图片内存问题通常由解码尺寸、缓存复用、页面生命周期和设备内存预算共同造成。一张 4000×3000 的 `ARGB_8888` 图片需要 48,000,000 字节，约 45.8 MiB（1 MiB 为 1,048,576 字节）；200×150 的目标 View 只有 30,000 个像素。若仍按原尺寸解码，分配的像素数是显示目标的 400 倍，随后交给 Canvas 缩小也无法省掉这次像素分配。Android 10 到 Android 17 的普通软件 Bitmap 会增加原生堆（Native Heap）占用，Hardware Bitmap 的像素则位于图形缓冲区。
 
-应用侧要同时控制四件事：解码前按目标尺寸降采样；按像素所在的内存分区选择监控指标；在图片加载入口记录大图和生命周期线索；只在所有权清楚时复用像素存储。ART 堆与 GC 见 [4.3 ART 虚拟机内存管理](../../part1-fundamentals/ch04-memory/03-art-memory.md)，图片请求和缓存见 [22.6 图片加载与显示优化](../ch22-rendering-practice/06-image-loading.md)，解码与绘制实现见 [22.26 Bitmap 解码、Hardware Bitmap 与 RenderNode](../ch22-rendering-practice/26-bitmap-decode-imagedecoder.md)，对象泄漏判断见 [23.1 内存泄漏检测与治理](./01-memory-leak-governance.md)。
+应用侧要同时控制四件事：解码前按目标尺寸降采样；按像素所在的内存分区选择监控指标；在图片加载入口记录大图和生命周期线索；只在所有权清楚时复用像素存储。ART 堆与 GC 见 [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)，图片请求和缓存见 [22.5 图片加载、Bitmap 解码与 RenderNode](../ch22-rendering-practice/05-image-bitmap-rendernode.md)，解码与绘制实现见 [22.5 图片加载、Bitmap 解码与 RenderNode](../ch22-rendering-practice/05-image-bitmap-rendernode.md)，对象泄漏判断见 [23.1 内存泄漏检测与治理](01-memory-leak-governance.md)。
 
 文中几组容易混淆的术语含义如下：
 
@@ -127,7 +137,7 @@ fun calculateInSampleSize(
 
 `inSampleSize = 4` 表示宽高约降到原图的 1/4，像素数约降到 1/16。官方文档说明，非 2 的幂会向下取到最接近的 2 的幂；因此采样率计算不能当作任意比例的精确缩放。解码后的图片仍可能需要再按 View 尺寸缩放，但显示阶段的缩放不能替代解码阶段的像素数控制。
 
-API 28 及以上使用 `ImageDecoder` 时，可在 `OnHeaderDecodedListener` 里调用 `setTargetSampleSize()` 或 `setTargetSize()`，在头信息回调中设定输出尺寸，避免默认按编码图的原始尺寸输出。它与 `BitmapFactory` 的两阶段解码差异见 22.26。
+API 28 及以上使用 `ImageDecoder` 时，可在 `OnHeaderDecodedListener` 里调用 `setTargetSampleSize()` 或 `setTargetSize()`，在头信息回调中设定输出尺寸，避免默认按编码图的原始尺寸输出。它与 `BitmapFactory` 的两阶段解码差异见 22.5。
 
 `inPreferredConfig` 是解码器尽量满足的请求，不保证结果一定采用指定配置；实际结果应读取 `bitmap.config` 和 `allocationByteCount`。照片、透明图和需要高质量缩放的 UI 图通常优先使用 `ARGB_8888`。没有 alpha、质量要求较低的列表缩略图可以评估 `RGB_565`，但要接受色彩精度下降和渐变色带风险。广色域或 HDR 内容还可能使用 `RGBA_F16`，或在 API 33 及以上使用 `RGBA_1010102`；前者为 8 字节/像素，后者与 `ARGB_8888` 一样为 4 字节/像素。`RGB_565` 不能作为所有图片共用的省内存开关。
 
@@ -296,4 +306,4 @@ Bitmap 问题适合按“尺寸 → 生命周期 → 复用 → 配置”四步�
 3. **复用池是否降低分配峰值**：列表和图片流场景观察 Bitmap 分配次数、复用命中率、池容量和淘汰策略。复用池命中低时，先检查尺寸分组是否合理，不能直接扩大容量。
 4. **配置是否符合使用方式**：展示图可评估硬件 Bitmap；需要像素处理、软件 Canvas 或复用池时使用软件 Bitmap；低质量缩略图再评估 `RGB_565`。
 
-这四步仍无法解释原生堆增长时，再进入 [23.3 Native 内存管理与优化](./03-native-memory-management.md)，使用 `malloc_debug`（原生分配调试工具）、heapprofd（Perfetto 原生堆分析器）或图片库内部统计继续归因。
+这四步仍无法解释原生堆增长时，再进入 [23.3 Native 与虚拟内存管理优化](03-native-virtual-memory-optimization.md)，使用 `malloc_debug`（原生分配调试工具）、heapprofd（Perfetto 原生堆分析器）或图片库内部统计继续归因。

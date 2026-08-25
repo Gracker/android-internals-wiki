@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-08-24",
+  "before_count": 289,
+  "after_count": 287,
+  "merged_paths": [
+    {
+      "source": "src/part1-fundamentals/ch02-rendering/08-flutter-rendering.md",
+      "target": "src/part2-performance/ch18-rendering-pipelines/08-flutter-rendering-pipeline.md",
+      "recoverable_from_git": true
+    },
+    {
+      "source": "src/part3-tools/ch19-apm/08-profiling-manager.md",
+      "target": "src/part3-tools/ch14-other-tools/08-profiling-manager.md",
+      "recoverable_from_git": true
+    }
+  ],
+  "renamed_paths": [
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/09-window-manager.md",
+      "after": "src/part1-fundamentals/ch02-rendering/08-window-manager.md",
+      "chapter": "2.8"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/10-bufferqueue-gralloc-sync-fence.md",
+      "after": "src/part1-fundamentals/ch02-rendering/09-bufferqueue-gralloc-sync-fence.md",
+      "chapter": "2.9"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/11-frame-pacing.md",
+      "after": "src/part1-fundamentals/ch02-rendering/10-frame-pacing.md",
+      "chapter": "2.10"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/12-multiwindow-desktop-rendering.md",
+      "after": "src/part1-fundamentals/ch02-rendering/11-multiwindow-desktop-rendering.md",
+      "chapter": "2.11"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/13-text-rendering-performance.md",
+      "after": "src/part1-fundamentals/ch02-rendering/12-text-rendering-performance.md",
+      "chapter": "2.12"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/14-edge-to-edge-inset-rendering-performance.md",
+      "after": "src/part1-fundamentals/ch02-rendering/13-edge-to-edge-inset-rendering-performance.md",
+      "chapter": "2.13"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/15-foldable-display-pipeline-performance.md",
+      "after": "src/part1-fundamentals/ch02-rendering/14-foldable-display-pipeline-performance.md",
+      "chapter": "2.14"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/16-tasksnapshot-recents-rendering.md",
+      "after": "src/part1-fundamentals/ch02-rendering/15-tasksnapshot-recents-rendering.md",
+      "chapter": "2.15"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/17-displaymanager-service-lifecycle.md",
+      "after": "src/part1-fundamentals/ch02-rendering/16-displaymanager-service-lifecycle.md",
+      "chapter": "2.16"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/18-hdr-color-management-pipeline-performance.md",
+      "after": "src/part1-fundamentals/ch02-rendering/17-hdr-color-management-pipeline-performance.md",
+      "chapter": "2.17"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/19-android17-frametimeline-composition-boundary.md",
+      "after": "src/part1-fundamentals/ch02-rendering/18-android17-frametimeline-composition-boundary.md",
+      "chapter": "2.18"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/20-compose-pausable-composition-guide.md",
+      "after": "src/part1-fundamentals/ch02-rendering/19-compose-pausable-composition-guide.md",
+      "chapter": "2.19"
+    },
+    {
+      "before": "src/part1-fundamentals/ch02-rendering/21-camera-hal3-buffer-camerax-zsl.md",
+      "after": "src/part1-fundamentals/ch02-rendering/20-camera-hal3-buffer-camerax-zsl.md",
+      "chapter": "2.20"
+    },
+    {
+      "before": "src/part3-tools/ch19-apm/09-lab-tools-device-benchmarks.md",
+      "after": "src/part3-tools/ch19-apm/08-lab-tools-device-benchmarks.md",
+      "chapter": "19.8"
+    },
+    {
+      "before": "src/part3-tools/ch19-apm/10-network-apm-internals.md",
+      "after": "src/part3-tools/ch19-apm/09-network-apm-internals.md",
+      "chapter": "19.9"
+    },
+    {
+      "before": "src/part3-tools/ch19-apm/11-crash-anr-internals.md",
+      "after": "src/part3-tools/ch19-apm/10-crash-anr-internals.md",
+      "chapter": "19.10"
+    },
+    {
+      "before": "src/part3-tools/ch19-apm/12-battery-thermal-apm.md",
+      "after": "src/part3-tools/ch19-apm/11-battery-thermal-apm.md",
+      "chapter": "19.11"
+    },
+    {
+      "before": "src/part3-tools/ch19-apm/13-hybrid-apm.md",
+      "after": "src/part3-tools/ch19-apm/12-hybrid-apm.md",
+      "chapter": "19.12"
+    },
+    {
+      "before": "src/part3-tools/ch19-apm/14-apm-client-architecture.md",
+      "after": "src/part3-tools/ch19-apm/13-apm-client-architecture.md",
+      "chapter": "19.13"
+    }
+  ],
+  "chapter_id_moves": {
+    "2.8": "18.8",
+    "2.9": "2.8",
+    "2.10": "2.9",
+    "2.11": "2.10",
+    "2.12": "2.11",
+    "2.13": "2.12",
+    "2.14": "2.13",
+    "2.15": "2.14",
+    "2.16": "2.15",
+    "2.17": "2.16",
+    "2.18": "2.17",
+    "2.19": "2.18",
+    "2.20": "2.19",
+    "2.21": "2.20",
+    "19.8": "14.8",
+    "19.9": "19.8",
+    "19.10": "19.9",
+    "19.11": "19.10",
+    "19.12": "19.11",
+    "19.13": "19.12",
+    "19.14": "19.13"
+  }
+}

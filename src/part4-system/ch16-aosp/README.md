@@ -6,17 +6,15 @@ App 侧优化通常只能在现有接口和系统策略内降低自身成本。�
 
 ## 内容索引
 
-- [16.1 AOSP 性能优化的分层方法](01-google-optimization.md)
-- [16.2 各 Android 版本性能变更追踪](02-version-changes.md)
-- [16.3 AOSP 源码编译与调试环境](03-aosp-build.md)
-- [16.4 Android 17 Kernel 6.18 性能机制与验证](04-android17-kernel618-performance.md)
-- [16.5 Android 17（API 37）性能行为变更与适配方法](05-android17-api37-performance-changes.md)
-- [16.6 Profile、DM 与 Secure Dex Metadata 安装编译](06-profile-dm-sdm-install-compilation.md)
-- [16.7 Android 系统启动耗时优化与 bootanalyze](07-system-boot-time-optimization.md)
-- [16.8 AppFlow：GB 级应用冷启动内存联合调度](08-appflow-large-app-cold-launch-memory-scheduling.md)
-- [16.9 Android 17 平台 Rust 性能边界：Binder、CXX 与 Soong](09-rust-system-services-performance.md)
-- [16.10 Android 17 ARM64 内核安全缓解机制性能开销与调优](10-arm64-kernel-security-mitigation-performance.md)
-- [16.11 AOHP：将 Android 改造为 Agent 原生 OS](11-agent-native-os.md)
+- [16.1 AOSP 性能优化与 Android 版本变更](01-aosp-performance-version-changes.md)
+- [16.2 AOSP 源码编译与调试环境](02-aosp-build.md)
+- [16.3 Android 17 Kernel 6.18 与 ARM64 安全开销](03-android17-kernel-arm64-security.md)
+- [16.4 AutoFDO 反馈导向优化与 Android 验证](04-autofdo-feedback-directed-optimization.md)
+- [16.5 Profile、DM 与 Secure Dex Metadata 安装编译](05-profile-dm-sdm-install-compilation.md)
+- [16.6 Android 系统启动耗时优化与 bootanalyze](06-system-boot-time-optimization.md)
+- [16.7 AppFlow：GB 级应用冷启动内存联合调度](07-appflow-large-app-cold-launch-memory-scheduling.md)
+- [16.8 Android 17 平台 Rust 性能边界：Binder、CXX 与 Soong](08-rust-system-services-performance.md)
+- [16.9 AOHP：将 Android 改造为 Agent 原生 OS](09-agent-native-os.md)
 
 ## 阅读建议
 

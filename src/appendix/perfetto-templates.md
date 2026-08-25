@@ -256,10 +256,10 @@ ORDER BY severity, name, idx;
 
 ## 相关章节
 
-- [13.2 Trace 抓取](../part3-tools/ch13-perfetto/02-trace-capture.md)
-- [13.22 Trace 采集可靠性与可复现诊断](../part3-tools/ch13-perfetto/22-trace-reliability.md)
-- [26.21 Page Fault 类型分析与 Android 实践](../part5-app/ch26-observability/21-page-fault-analysis-android.md)
-- [11.1 Android 功耗模型](../part2-performance/ch11-power/01-power-model.md)
+- [13.1 Perfetto 入门、Trace 抓取与可靠性](../part3-tools/ch13-perfetto/01-perfetto-intro-capture-reliability.md)
+- [13.1 Perfetto 入门、Trace 抓取与可靠性](../part3-tools/ch13-perfetto/01-perfetto-intro-capture-reliability.md)
+- [26.14 heapprofd、procfs CPU 与 Page Fault 分析](../part5-app/ch26-observability/14-heapprofd-procfs-page-fault.md)
+- [11.1 Android 功耗模型与系统级优化](../part2-performance/ch11-power/01-android-power-model-system-optimization.md)
 
 ## 参考资料
 

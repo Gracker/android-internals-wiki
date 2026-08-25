@@ -1,36 +1,47 @@
 ---
-
-title: "竞品分析方法"
-chapter: "15.4"
-section: "15.4"
+title: 竞品分析方法
+chapter: '15.4'
+section: '15.4'
 status: finalized
-applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-08-14"
-last_verified_against: "AOSP android-17.0.0_r1 ActivityManagerShellCommand / WaitResult / ActivityTaskSupervisor / ActivityMetricsLogger / ActivityRecord / FrameMetrics / FrameTimeline; Android Developers current official documentation"
+applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
+last_verified: '2026-08-14'
+last_verified_against: AOSP android-17.0.0_r1 ActivityManagerShellCommand / WaitResult / ActivityTaskSupervisor / ActivityMetricsLogger / ActivityRecord / FrameMetrics / FrameTimeline; Android Developers current official documentation
 confidence: high
 sources:
-  - type: official
-    path: "https://developer.android.com/topic/performance/vitals/launch-time"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerShellCommand.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/WaitResult.java"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityMetricsLogger.java"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java"
-  - type: official
-    path: "https://developer.android.com/studio/debug/apk-analyzer"
-  - type: official
-    path: "https://developer.android.com/topic/performance/benchmarking/benchmarking-overview"
-  - type: official
-    path: "https://developer.android.com/reference/android/view/FrameMetrics"
-  - type: aosp
-    path: "frameworks/base/core/java/android/view/FrameMetrics.java"
-  - type: aosp
-    path: "frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp"
-tags: ['competitive-analysis', 'benchmark', 'startup', 'fps', 'apk-size', 'methodology']
-related_chapters: ["7.3", "8.3", "25.6", "13.2", "14.1", "15.3"]
+- type: official
+  path: https://developer.android.com/topic/performance/vitals/launch-time
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerShellCommand.java
+- type: aosp
+  path: frameworks/base/core/java/android/app/WaitResult.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/wm/ActivityMetricsLogger.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java
+- type: official
+  path: https://developer.android.com/studio/debug/apk-analyzer
+- type: official
+  path: https://developer.android.com/topic/performance/benchmarking/benchmarking-overview
+- type: official
+  path: https://developer.android.com/reference/android/view/FrameMetrics
+- type: aosp
+  path: frameworks/base/core/java/android/view/FrameMetrics.java
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp
+tags:
+- competitive-analysis
+- benchmark
+- startup
+- fps
+- apk-size
+- methodology
+related_chapters:
+- '7.2'
+- '8.3'
+- '25.5'
+- '13.1'
+- '14.1'
+- '15.3'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -38,6 +49,8 @@ task2b_state: fixed
 ---
 
 # 竞品分析方法
+
+竞品对比只有在场景、设备状态、版本和指标口径一致时才有解释力。目标不是得出笼统排名，而是找出差异发生在哪个用户阶段，并用可重复实验判断哪些设计可迁移。
 
 ## 为什么要认真做竞品性能分析
 
@@ -366,5 +379,5 @@ AndroidX Macrobenchmark 的实验性 `PowerMetric` 可以读取 CPU、DISPLAY、
 - [`FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp) — Android 17 SurfaceFlinger FrameTimeline
 
 ### 工具与平台
-- [Perfetto](https://perfetto.dev/) — 系统级 Trace 分析平台（§13.2-§13.5 详细介绍）
+- [Perfetto](https://perfetto.dev/) — 系统级 Trace 分析平台（§13.1-§13.3 详细介绍）
 - [Android Studio Profiler](https://developer.android.com/studio/profile) — 集成性能分析工具（§14.1 详细介绍）

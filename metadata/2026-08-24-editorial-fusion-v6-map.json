@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-08-24",
+  "before_count": 286,
+  "after_count": 285,
+  "primary_redirect": {
+    "source": "src/part1-fundamentals/ch02-rendering/19-camera-hal3-buffer-camerax-zsl.md",
+    "target": "src/part2-performance/ch18-rendering-pipelines/11-camera-pipeline.md"
+  },
+  "merged_paths": [
+    {
+      "source": "src/part1-fundamentals/ch02-rendering/19-camera-hal3-buffer-camerax-zsl.md",
+      "target": "src/part2-performance/ch18-rendering-pipelines/11-camera-pipeline.md",
+      "role": "HAL3 stream/buffer/fence, failure recovery and platform ZSL boundary",
+      "recoverable_from_git": true
+    },
+    {
+      "source": "src/part1-fundamentals/ch02-rendering/19-camera-hal3-buffer-camerax-zsl.md",
+      "target": "src/part5-app/ch22-rendering-practice/19-camerax-rendering.md",
+      "role": "CameraX 1.6.1 ring buffer, CameraPipe reprocessing and app diagnostics",
+      "recoverable_from_git": true
+    },
+    {
+      "source": "src/part1-fundamentals/ch02-rendering/19-camera-hal3-buffer-camerax-zsl.md",
+      "target": "src/part3-tools/ch14-other-tools/14-camera-performance-analysis.md",
+      "role": "ZSL source-age and completion-latency measurement",
+      "recoverable_from_git": true
+    }
+  ],
+  "chapter_id_moves": {
+    "2.19": "18.11"
+  }
+}

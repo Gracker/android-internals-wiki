@@ -30,7 +30,7 @@
         "verification": "章节具有实质性内容，结构完整，符合写作规范"
       },
       {
-        "path": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md", 
+        "path": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
         "section": "14.10",
         "title": "eBPF/BPF 在 Android 性能分析中的应用",
         "task6_result": "needs-rework",
@@ -57,7 +57,7 @@
       },
       {
         "path": "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
-        "section": "2.19", 
+        "section": "2.17",
         "title": "刷新率切换与帧率适配性能",
         "task6_result": "needs-rework",
         "review_type": "first-review",

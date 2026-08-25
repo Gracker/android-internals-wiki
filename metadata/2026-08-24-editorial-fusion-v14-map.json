@@ -1,0 +1,141 @@
+{
+  "version": 14,
+  "operation": "variable_refresh_rate_owner_editorial_fusion",
+  "count_change": {
+    "before": 277,
+    "after": 276
+  },
+  "merged_paths": [
+    {
+      "source": "src/part2-performance/ch18-rendering-pipelines/13-variable-refresh-rate.md",
+      "target": "src/part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md",
+      "role": "platform_frame_rate_display_mode_arr_vrr_owner"
+    }
+  ],
+  "retained_independent_owners": [
+    {
+      "path": "src/part5-app/ch22-rendering-practice/12-adaptive-refresh-rate.md",
+      "role": "application_integration_experiment_and_rollback_owner"
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+      "role": "video_timestamp_bufferqueue_and_present_owner"
+    }
+  ],
+  "rewritten_paths": [
+    "src/part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md",
+    "src/part5-app/ch22-rendering-practice/12-adaptive-refresh-rate.md"
+  ],
+  "reindexed_paths": [
+    {
+      "from": "src/part2-performance/ch18-rendering-pipelines/14-eyedropper-crossdevice.md",
+      "to": "src/part2-performance/ch18-rendering-pipelines/13-eyedropper-crossdevice.md"
+    },
+    {
+      "from": "src/part2-performance/ch18-rendering-pipelines/15-android-xr-spatial-ui-rendering.md",
+      "to": "src/part2-performance/ch18-rendering-pipelines/14-android-xr-spatial-ui-rendering.md"
+    },
+    {
+      "from": "src/part2-performance/ch18-rendering-pipelines/16-webgpu-android-pipeline.md",
+      "to": "src/part2-performance/ch18-rendering-pipelines/15-webgpu-android-pipeline.md"
+    }
+  ],
+  "source_bytes": {
+    "src/part2-performance/ch18-rendering-pipelines/13-variable-refresh-rate.md": 35255,
+    "src/part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md": 144259,
+    "src/part5-app/ch22-rendering-practice/12-adaptive-refresh-rate.md": 28785,
+    "src/part2-performance/ch18-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md": 118097,
+    "src/part2-performance/ch18-rendering-pipelines/14-eyedropper-crossdevice.md": 26867,
+    "src/part2-performance/ch18-rendering-pipelines/15-android-xr-spatial-ui-rendering.md": 32541,
+    "src/part2-performance/ch18-rendering-pipelines/16-webgpu-android-pipeline.md": 45515
+  },
+  "result_bytes": {
+    "src/part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md": 145321,
+    "src/part5-app/ch22-rendering-practice/12-adaptive-refresh-rate.md": 28759
+  },
+  "result_delta_bytes": {
+    "src/part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md": 1062,
+    "src/part5-app/ch22-rendering-practice/12-adaptive-refresh-rate.md": -26
+  },
+  "source_sha256": {
+    "src/part2-performance/ch18-rendering-pipelines/13-variable-refresh-rate.md": "0eac6ac65e00ec1e46b56af6af1513d1ff8fd8956299d170a18de28233c13123",
+    "src/part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md": "230122d49712ed668db9fc49bb92cee97c2b887fd4e45c790d979ebf2fd695c2",
+    "src/part5-app/ch22-rendering-practice/12-adaptive-refresh-rate.md": "830575e5b8866947ecde4e9671fa3ff2e4a2a9cbc5bee78c4efc7aeb06742635",
+    "src/part2-performance/ch18-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md": "995113ed6717b3069f4ccb23829f28b34639ac86a0ef3b939f95665d9636d739",
+    "src/part2-performance/ch18-rendering-pipelines/14-eyedropper-crossdevice.md": "308afe8e59b752a177e056a752f746a93530d5b5a50765a57b279c1df24519d4",
+    "src/part2-performance/ch18-rendering-pipelines/15-android-xr-spatial-ui-rendering.md": "671ed8a8f5eb14409402dc59c9ab7590b9b11d17bb1a4f9f7b7206be0f90eb9a",
+    "src/part2-performance/ch18-rendering-pipelines/16-webgpu-android-pipeline.md": "cfa2ad864bdb398bcaa36359ce3749f2bf925ba3fb8b7cdfc69ff794ae0af0ec"
+  },
+  "result_sha256": {
+    "src/part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md": "673c6f6ddef0d64fd21b9753a037de4fcd4dbc1d4e90a809e4c20f754c4d1dcb",
+    "src/part5-app/ch22-rendering-practice/12-adaptive-refresh-rate.md": "070ba3a0aaa1523ebfb1ebb03af047340ba18939b29ba6db3e8ac98c33d0db77"
+  },
+  "source_h2_inventory": [
+    "为什么这一节容易误判",
+    "VRR、多刷新率和 ARR 的边界",
+    "系统如何决定刷新节奏",
+    "App 端 API",
+    "Android 17 的 Scheduler 怎样处理 vote",
+    "渲染过程里的 deadline 没有消失",
+    "在 Perfetto 中分析 VRR / ARR",
+    "版本演进",
+    "与其他章节的关系",
+    "参考资料"
+  ],
+  "content_routes": [
+    {
+      "source": "18.13 why fixed budgets mislead and content/render/display rate taxonomy",
+      "destination": "2.2 frame-rate, refresh-rate and deadline sections",
+      "treatment": "existing_owner_verified; duplicate_exposition_deduplicated"
+    },
+    {
+      "source": "18.13 MRR, VRR and ARR capability boundaries",
+      "destination": "2.2 MRR/ARR/VRR taxonomy and ARR constraint sections",
+      "treatment": "existing_owner_verified; duplicate_table_deduplicated"
+    },
+    {
+      "source": "18.13 app View, Compose, Window, Surface and Display APIs",
+      "destination": "22.12 remains independent for integration; 2.2 retains platform semantics",
+      "treatment": "owner_boundary_rewritten; duplicate_API_tutorial_deduplicated"
+    },
+    {
+      "source": "18.13 numeric View vote aggregation conflict fallback",
+      "destination": "2.2 ordinary UI numeric-vote paragraph",
+      "treatment": "source_only_conflict_flag_and_trace_interpretation_embedded"
+    },
+    {
+      "source": "18.13 selected pacesetter fps feedback through updateAttachedChoreographers",
+      "destination": "2.2 SurfaceFlinger Scheduler control chain",
+      "treatment": "source_only_divisor_and_EventThreadConnection_feedback_embedded"
+    },
+    {
+      "source": "18.13 LayerHistory/RefreshRateSelector votes, ARR/MRR branch and multi-display policy",
+      "destination": "2.2 existing selector, scoring and pacesetter/follower sections",
+      "treatment": "existing_deeper_owner_verified; duplicate_implementation_walkthrough_deduplicated"
+    },
+    {
+      "source": "18.13 video release timestamp, BufferQueue PRESENT_LATER and HWC present",
+      "destination": "18.11 video overlay, Media3 and codec pipeline",
+      "treatment": "existing_video_owner_verified; duplicate_timing_chain_deduplicated"
+    },
+    {
+      "source": "18.13 producer throttling, deadline and FrameTimeline/Perfetto diagnosis",
+      "destination": "2.2 platform diagnosis plus 22.12 application validation",
+      "treatment": "existing_owners_verified; duplicate_SQL_and_checklist_deduplicated"
+    },
+    {
+      "source": "18.13 version evolution, kernel boundary, references and related chapters",
+      "destination": "2.2 metadata/version/source index and reconciled cross-links",
+      "treatment": "evidence_reconciled; duplicate_appendix_deduplicated"
+    }
+  ],
+  "updated_reference_files": [
+    "src/SUMMARY.md",
+    "src/part2-performance/ch07-smoothness/03-perceived-smoothness.md",
+    "src/part2-performance/ch18-rendering-pipelines/01-android-view-pipeline-analysis.md",
+    "src/part2-performance/ch18-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+    "src/part2-performance/ch18-rendering-pipelines/12-game-engine.md",
+    "src/part2-performance/ch18-rendering-pipelines/README.md"
+  ],
+  "applied": true
+}

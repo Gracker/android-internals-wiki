@@ -1,0 +1,122 @@
+{
+  "version": 11,
+  "operation": "memory_leak_growth_distributed_editorial_fusion",
+  "count_change": {
+    "before": 279,
+    "after": 278
+  },
+  "merged_paths": [
+    {
+      "source": "src/part2-performance/ch10-memory-perf/02-memory-leak-growth.md",
+      "target": "src/part5-app/ch23-memory-practice/01-memory-leak-governance.md",
+      "role": "leak_proof_reference_path_and_lifecycle_owner"
+    },
+    {
+      "source": "src/part2-performance/ch10-memory-perf/02-memory-leak-growth.md",
+      "target": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md",
+      "role": "memory_domain_baseline_and_non_leak_growth_owner"
+    }
+  ],
+  "rewritten_paths": [
+    "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md",
+    "src/part5-app/ch23-memory-practice/01-memory-leak-governance.md"
+  ],
+  "reindexed_paths": [
+    {
+      "from": "src/part2-performance/ch10-memory-perf/03-low-memory-impact.md",
+      "to": "src/part2-performance/ch10-memory-perf/02-low-memory-impact.md"
+    },
+    {
+      "from": "src/part2-performance/ch10-memory-perf/04-memory-churn.md",
+      "to": "src/part2-performance/ch10-memory-perf/03-memory-churn.md"
+    },
+    {
+      "from": "src/part2-performance/ch10-memory-perf/05-gpu-graphics-memory-tracking.md",
+      "to": "src/part2-performance/ch10-memory-perf/04-gpu-graphics-memory-tracking.md"
+    }
+  ],
+  "source_bytes": {
+    "src/part2-performance/ch10-memory-perf/02-memory-leak-growth.md": 49262,
+    "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md": 47464,
+    "src/part5-app/ch23-memory-practice/01-memory-leak-governance.md": 33494,
+    "src/part2-performance/ch10-memory-perf/03-low-memory-impact.md": 26942,
+    "src/part2-performance/ch10-memory-perf/04-memory-churn.md": 24627,
+    "src/part2-performance/ch10-memory-perf/05-gpu-graphics-memory-tracking.md": 26206
+  },
+  "result_bytes": {
+    "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md": 50686,
+    "src/part5-app/ch23-memory-practice/01-memory-leak-governance.md": 36969
+  },
+  "source_sha256": {
+    "src/part2-performance/ch10-memory-perf/02-memory-leak-growth.md": "5fa81cc5ecbd7fc99988e80d108e55cb2308a6cd468ed4acd800a81f4d4098a3",
+    "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md": "016a9f2848bc998e30c7c9d5ade306f0a28866707847e1f20fd54b4a3bc4f367",
+    "src/part5-app/ch23-memory-practice/01-memory-leak-governance.md": "67bb8387a1f86d51022aeec0688b6983fbe2faaff10af927ea29891bbccf6993",
+    "src/part2-performance/ch10-memory-perf/03-low-memory-impact.md": "df12b4afde54a04b1de70e0861697346a7c4af5d211243ba7a2ad0e8d383a2a6",
+    "src/part2-performance/ch10-memory-perf/04-memory-churn.md": "ebc3fb732aaae3f33080af82314c2dfa766fed1c26cc8001967a7ae38b19ddfa",
+    "src/part2-performance/ch10-memory-perf/05-gpu-graphics-memory-tracking.md": "fe84714bf301f2be63d98383bfd6834c80f1eac274e517a8bd809a862c175ec8"
+  },
+  "result_sha256": {
+    "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md": "e18091c73789c6168b8747cc6a063f05979b3c3e299df217bc1bf274d258a083",
+    "src/part5-app/ch23-memory-practice/01-memory-leak-governance.md": "d0e9d5810705bce2f491c677a7db320a26209d8541ea87564791730a47bf8e14"
+  },
+  "source_h2_inventory": [
+    "引用链、资源所有权与泄漏确认",
+    "缓存、积压与非泄漏增长",
+    "版本与实现边界",
+    "诊断与验证清单",
+    "参考资料"
+  ],
+  "content_routes": [
+    {
+      "source": "10.2 leak definition, GC roots and retained-object proof",
+      "destination": "23.1 definition and evidence-chain sections",
+      "treatment": "unique_root_taxonomy_embedded; duplicate_definition_deduplicated"
+    },
+    {
+      "source": "10.2 lifecycle mistakes, JNI references and closeable resources",
+      "destination": "23.1 Android leak paths",
+      "treatment": "unique_JNI_and_explicit_resource_ownership_embedded; duplicate_UI_examples_deduplicated"
+    },
+    {
+      "source": "10.2 heap dump and LeakCanary report interpretation",
+      "destination": "23.1 evidence chain and LeakCanary",
+      "treatment": "unique_command_privacy_signature_dominator_and_library_leak_semantics_embedded"
+    },
+    {
+      "source": "10.2 native leak tools and ProfilingManager",
+      "destination": "23.1 existing native boundary and Android 17 capture sections; 20.13 and 23.3 specialist owners",
+      "treatment": "duplicate_overview_deduplicated_against_deeper_existing_owners"
+    },
+    {
+      "source": "10.2 cache, backlog and non-leak growth",
+      "destination": "10.1 baseline and growth classification",
+      "treatment": "unique_recovery_experiment_resource_matrix_and_cache_contract_embedded"
+    },
+    {
+      "source": "10.2 Bitmap, allocator, physical fragmentation, mmap, graphics, WebView and MemoryLimiter detail",
+      "destination": "10.1 routing overview plus existing 23.2, 23.3, 4.7, 10.4, 22.6 and 23.5 specialist owners",
+      "treatment": "duplicate_specialist_exposition_deduplicated; diagnostic_boundaries_retained_in_10.1"
+    },
+    {
+      "source": "10.2 version boundaries, checklists and references",
+      "destination": "10.1 and 23.1 metadata, checklists and evidence lists",
+      "treatment": "evidence_reconciled_and_duplicate_checklists_deduplicated"
+    }
+  ],
+  "updated_reference_files": [
+    "src/SUMMARY.md",
+    "src/part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md",
+    "src/part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md",
+    "src/part1-fundamentals/ch04-memory/06-finalizer-referencequeue.md",
+    "src/part1-fundamentals/ch04-memory/07-memory-compaction-direct-reclaim.md",
+    "src/part2-performance/ch10-memory-perf/README.md",
+    "src/part3-tools/ch14-other-tools/03-memory-hprof-heapdump-tools.md",
+    "src/part3-tools/ch14-other-tools/12-gpu-counter-memory-observability.md",
+    "src/part5-app/ch23-memory-practice/04-java-heap-gc-compose-allocation.md",
+    "src/part5-app/ch23-memory-practice/07-ondevice-llm-memory-management.md",
+    "src/part5-app/ch25-power-size/07-hybrid-webview-power.md",
+    "src/part5-app/ch26-observability/14-heapprofd-procfs-page-fault.md",
+    "src/preface/reading-paths.md"
+  ],
+  "applied": true
+}

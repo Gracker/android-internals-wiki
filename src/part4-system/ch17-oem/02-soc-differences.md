@@ -1,93 +1,111 @@
 ---
-title: "SoC 平台差异"
-chapter: "17.2"
-section: "17.2"
-applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-08-14"
-last_verified_against: "Qualcomm Snapdragon 8 Elite Gen 5 产品页与产品简报，MediaTek Dimensity 9500、Samsung Exynos 2600、Google Tensor G5、Arm Mali-G1 Ultra 官方资料，AOSP android-17.0.0_r1，Android common android17-6.18-2026-06_r6，Perfetto / AGI / NNAPI 官方文档"
+title: SoC 平台差异
+chapter: '17.2'
+section: '17.2'
+applicable_versions: Android 12 (API 31) - Android 17 (API 37)
+last_verified: '2026-08-14'
+last_verified_against: Qualcomm Snapdragon 8 Elite Gen 5 产品页与产品简报，MediaTek Dimensity 9500、Samsung Exynos 2600、Google Tensor G5、Arm Mali-G1 Ultra 官方资料，AOSP android-17.0.0_r1，Android common android17-6.18-2026-06_r6，Perfetto / AGI / NNAPI 官方文档
 confidence: medium
 sources:
-  - type: blog
-    path: "obsidian/Cubox/高通Oryon处理器微架构分析-2025-03-25.md"
-  - type: blog
-    path: "obsidian/Cubox/高通Perflock - yooooooo - 博客园-2024-11-18.md"
-  - type: blog
-    path: "obsidian/Cubox/2023年Arm最新处理器架构分析--X4、A720和A520-2023-08-02.md"
-  - type: official
-    path: "qualcomm.com/products/mobile/snapdragon"
-  - type: official
-    path: "mediatek.com/products/smartphones"
-  - type: official
-    path: "arm.com/products/silicon-ip-cpu"
-  - type: official
-    path: "blog.google/products-and-platforms/devices/pixel/tensor-g5-pixel-10/"
-  - type: official
-    path: "support.google.com/pixelphone/answer/7158570"
-  - type: official
-    path: "developer.arm.com/documentation/102807/0002"
-  - type: web
-    path: "多来源综合(web search 验证)"
-  - type: official
-    path: "https://www.qualcomm.com/smartphones/products/8-series/snapdragon-8-elite-gen-5"
-  - type: official
-    path: "https://www.qualcomm.com/content/dam/qcomm-martech/dm-assets/documents/Snapdragon-8-Elite-Gen-5-product-brief.pdf"
-  - type: official
-    path: "https://www.qualcomm.com/processors/adreno"
-  - type: official
-    path: "https://docs.qualcomm.com/bundle/publicresource/topics/80-78185-2/landing.html?product=1601111740035277"
-  - type: official
-    path: "https://www.mediatek.com/products/smartphones/mediatek-dimensity-9500"
-  - type: official
-    path: "https://semiconductor.samsung.com/processor/mobile-processor/exynos-2600/"
-  - type: official
-    path: "https://semiconductor.samsung.com/technologies/processor/gpu-technology/"
-  - type: official
-    path: "https://blog.google/products-and-platforms/devices/pixel/tensor-g5-pixel-10/"
-  - type: official
-    path: "https://www.arm.com/products/silicon-ip-multimedia/gpu/mali-g1-ultra"
-  - type: official
-    path: "https://www.arm.com/products/cortex-x"
-  - type: official
-    path: "https://newsroom.arm.com/blog/arm-c1-cpu-cluster-on-device-ai-performance"
-  - type: official
-    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/fair.c"
-  - type: official
-    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c"
-  - type: official
-    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/ext.c"
-  - type: official
-    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/Kconfig.preempt"
-  - type: official
-    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-energy.rst"
-  - type: official
-    path: "https://perfetto.dev/docs/data-sources/cpu-scheduling"
-  - type: official
-    path: "https://perfetto.dev/docs/analysis/sql-tables"
-  - type: official
-    path: "https://perfetto.dev/docs/data-sources/gpu"
-  - type: official
-    path: "https://developer.android.com/agi"
-  - type: official
-    path: "https://developer.android.com/agi/start"
-  - type: official
-    path: "https://developer.android.com/android-performance-analyzer"
-  - type: official
-    path: "https://learn.arm.com/install-guides/streamline/"
-  - type: official
-    path: "https://developer.qualcomm.com/software/snapdragon-profiler"
-  - type: official
-    path: "https://developer.android.com/ndk/guides/neuralnetworks/migration-guide"
-  - type: official
-    path: "https://source.android.com/docs/core/interaction/neural-networks"
-tags: [qualcomm, mediatek, samsung, exynos, tensor, adreno, mali, xclipse, soc, cpu, gpu]
-related_chapters: ["5.1", "5.3", "5.4", "2.10", "17.1"]
-pipeline_stage: "ready-to-publish"
+- type: blog
+  path: obsidian/Cubox/高通Oryon处理器微架构分析-2025-03-25.md
+- type: blog
+  path: obsidian/Cubox/高通Perflock - yooooooo - 博客园-2024-11-18.md
+- type: blog
+  path: obsidian/Cubox/2023年Arm最新处理器架构分析--X4、A720和A520-2023-08-02.md
+- type: official
+  path: qualcomm.com/products/mobile/snapdragon
+- type: official
+  path: mediatek.com/products/smartphones
+- type: official
+  path: arm.com/products/silicon-ip-cpu
+- type: official
+  path: blog.google/products-and-platforms/devices/pixel/tensor-g5-pixel-10/
+- type: official
+  path: support.google.com/pixelphone/answer/7158570
+- type: official
+  path: developer.arm.com/documentation/102807/0002
+- type: web
+  path: 多来源综合(web search 验证)
+- type: official
+  path: https://www.qualcomm.com/smartphones/products/8-series/snapdragon-8-elite-gen-5
+- type: official
+  path: https://www.qualcomm.com/content/dam/qcomm-martech/dm-assets/documents/Snapdragon-8-Elite-Gen-5-product-brief.pdf
+- type: official
+  path: https://www.qualcomm.com/processors/adreno
+- type: official
+  path: https://docs.qualcomm.com/bundle/publicresource/topics/80-78185-2/landing.html?product=1601111740035277
+- type: official
+  path: https://www.mediatek.com/products/smartphones/mediatek-dimensity-9500
+- type: official
+  path: https://semiconductor.samsung.com/processor/mobile-processor/exynos-2600/
+- type: official
+  path: https://semiconductor.samsung.com/technologies/processor/gpu-technology/
+- type: official
+  path: https://blog.google/products-and-platforms/devices/pixel/tensor-g5-pixel-10/
+- type: official
+  path: https://www.arm.com/products/silicon-ip-multimedia/gpu/mali-g1-ultra
+- type: official
+  path: https://www.arm.com/products/cortex-x
+- type: official
+  path: https://newsroom.arm.com/blog/arm-c1-cpu-cluster-on-device-ai-performance
+- type: official
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/fair.c
+- type: official
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c
+- type: official
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/ext.c
+- type: official
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/Kconfig.preempt
+- type: official
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-energy.rst
+- type: official
+  path: https://perfetto.dev/docs/data-sources/cpu-scheduling
+- type: official
+  path: https://perfetto.dev/docs/analysis/sql-tables
+- type: official
+  path: https://perfetto.dev/docs/data-sources/gpu
+- type: official
+  path: https://developer.android.com/agi
+- type: official
+  path: https://developer.android.com/agi/start
+- type: official
+  path: https://developer.android.com/android-performance-analyzer
+- type: official
+  path: https://learn.arm.com/install-guides/streamline/
+- type: official
+  path: https://developer.qualcomm.com/software/snapdragon-profiler
+- type: official
+  path: https://developer.android.com/ndk/guides/neuralnetworks/migration-guide
+- type: official
+  path: https://source.android.com/docs/core/interaction/neural-networks
+tags:
+- qualcomm
+- mediatek
+- samsung
+- exynos
+- tensor
+- adreno
+- mali
+- xclipse
+- soc
+- cpu
+- gpu
+related_chapters:
+- '5.1'
+- '5.2'
+- '2.7'
+- '17.1'
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: "reviewed"
+task9_state: reviewed
 status: finalized
 task2b_state: fixed
 ---
+
 # SoC 平台差异
+
+SoC 型号只能提供硬件拓扑的起点，最终性能还受设备散热、内存配置、内核和厂商策略影响。跨平台分析应把 CPU、GPU、加速器、内存与调度证据分别对齐，避免用品牌或核心名称替代实测。
 
 ## SoC 名称不能代替设备证据
 
@@ -376,9 +394,9 @@ CPU 与 GPU 同时变慢只是线索。可靠判断需要 DRAM 或内存互连�
 ## 与相关章节的边界
 
 - §5.1 说明公平调度、唤醒与可运行态等待时延；这里讨论 SoC 拓扑和厂商扩展怎样改变观测条件。
-- §5.3 说明 DynamIQ 与异构核心；设备拓扑必须从目标机核验。
-- §5.4 说明 DVFS；这里补充调频策略域、Power HAL 和整机散热的差异。
-- §2.10 说明 Android GPU 渲染分析；这里补充 GPU IP、驱动与数据生产端的跨平台边界。
+- §5.1 说明 DynamIQ 与异构核心；设备拓扑必须从目标机核验。
+- §5.2 说明 DVFS；这里补充调频策略域、Power HAL 和整机散热的差异。
+- §2.7 说明 Android GPU 渲染分析；这里补充 GPU IP、驱动与数据生产端的跨平台边界。
 - §17.1 说明 OEM 优化的公共框架；这里提供 SoC 侧的证据分层。
 
 ## 参考资料

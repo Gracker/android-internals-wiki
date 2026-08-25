@@ -1,0 +1,210 @@
+{
+  "version": 9,
+  "operation": "framework_owner_editorial_fusion",
+  "count_change": {
+    "before": 283,
+    "after": 280
+  },
+  "merged_paths": [
+    {
+      "source": "src/part2-performance/ch07-smoothness/03-view-layout-rendering-optimization.md",
+      "target": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "role": "view_layout_drawing_owner"
+    },
+    {
+      "source": "src/part2-performance/ch07-smoothness/04-compose-performance.md",
+      "target": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
+      "role": "compose_runtime_compiler_owner"
+    },
+    {
+      "source": "src/part2-performance/ch07-smoothness/05-recyclerview-performance.md",
+      "target": "src/part5-app/ch22-rendering-practice/02-recyclerview-compose-lazylist.md",
+      "role": "recyclerview_lazylist_owner"
+    }
+  ],
+  "rewritten_paths": [
+    "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+    "src/part5-app/ch22-rendering-practice/02-recyclerview-compose-lazylist.md",
+    "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md"
+  ],
+  "reindexed_paths": [
+    {
+      "from": "src/part2-performance/ch07-smoothness/06-perceived-smoothness.md",
+      "to": "src/part2-performance/ch07-smoothness/03-perceived-smoothness.md"
+    },
+    {
+      "from": "src/part2-performance/ch07-smoothness/07-systemui-performance.md",
+      "to": "src/part2-performance/ch07-smoothness/04-systemui-performance.md"
+    },
+    {
+      "from": "src/part2-performance/ch07-smoothness/08-hwc-overlay-composition-downgrade.md",
+      "to": "src/part2-performance/ch07-smoothness/05-hwc-overlay-composition-downgrade.md"
+    },
+    {
+      "from": "src/part2-performance/ch07-smoothness/09-accessibility-contentcapture-autofill.md",
+      "to": "src/part2-performance/ch07-smoothness/06-accessibility-contentcapture-autofill.md"
+    }
+  ],
+  "source_bytes": {
+    "src/part2-performance/ch07-smoothness/03-view-layout-rendering-optimization.md": 72820,
+    "src/part2-performance/ch07-smoothness/04-compose-performance.md": 27834,
+    "src/part2-performance/ch07-smoothness/05-recyclerview-performance.md": 30937,
+    "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md": 45021,
+    "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md": 105588,
+    "src/part5-app/ch22-rendering-practice/02-recyclerview-compose-lazylist.md": 60775,
+    "src/part2-performance/ch07-smoothness/06-perceived-smoothness.md": 25060,
+    "src/part2-performance/ch07-smoothness/07-systemui-performance.md": 41125,
+    "src/part2-performance/ch07-smoothness/08-hwc-overlay-composition-downgrade.md": 30307,
+    "src/part2-performance/ch07-smoothness/09-accessibility-contentcapture-autofill.md": 56436
+  },
+  "result_bytes": {
+    "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md": 48614,
+    "src/part5-app/ch22-rendering-practice/02-recyclerview-compose-lazylist.md": 64594,
+    "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md": 106102
+  },
+  "source_sha256": {
+    "src/part2-performance/ch07-smoothness/03-view-layout-rendering-optimization.md": "c161bc5ebd42a2fe419600a0647d41f58bb401784bf37f77b2961f7bacf7fbe5",
+    "src/part2-performance/ch07-smoothness/04-compose-performance.md": "dbc2ee11d63dacaaf0a70c66d38e5c4418598ad22f50c3676fb524fbd41af921",
+    "src/part2-performance/ch07-smoothness/05-recyclerview-performance.md": "5e2c5e512d178582c2e04603c0d28ec12471ea31bc752790bcf541f9b2bdd658",
+    "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md": "18556dbeb4e47050c922e39d4452cbb36c72634dd2add22536415a24ae34d131",
+    "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md": "7c678d3e400800b97557b2e23cac7fc0115bb38dc29a9f186a4de2ae9b9f380d",
+    "src/part5-app/ch22-rendering-practice/02-recyclerview-compose-lazylist.md": "fdc61cefb3567ac71c95a64d1155747d86794220258c6d394b7f1ea5e7099256",
+    "src/part2-performance/ch07-smoothness/06-perceived-smoothness.md": "6c285db70515577fa8bf0372a9d2bf9abfdb57086166cc4d9ee6e96a45782ea6",
+    "src/part2-performance/ch07-smoothness/07-systemui-performance.md": "aa92a99e27b32a122a004b3e108080c8e0b4c021cfa89db9fda13ce063f48901",
+    "src/part2-performance/ch07-smoothness/08-hwc-overlay-composition-downgrade.md": "0ecadb133997f4253c1d04e6014b700af5e3b04777a4e9c2c534509a3c2e0461",
+    "src/part2-performance/ch07-smoothness/09-accessibility-contentcapture-autofill.md": "f8bf0754e26b70fab6edf0c1ab4039fa3d9c389634618d5b99c19e495d1af920"
+  },
+  "result_sha256": {
+    "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md": "bdbd2d9ce267682611b10f304f7d1cef117d957796088a315b9f645fbc524447",
+    "src/part5-app/ch22-rendering-practice/02-recyclerview-compose-lazylist.md": "483594ac617e1161c1c3e69f7b32d263f843f14fcb4b51d9da5d17aba3c46795",
+    "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md": "071d90ee3caf96892fd22317dd0973282cc43fc3b31b698474f6328333698520"
+  },
+  "source_h2_inventory": {
+    "src/part2-performance/ch07-smoothness/03-view-layout-rendering-optimization.md": [
+      "减少工作量、缩短关键路径与控制频率",
+      "View 创建、测量、布局与绘制",
+      "参考资料"
+    ],
+    "src/part2-performance/ch07-smoothness/04-compose-performance.md": [
+      "先建立完整的帧模型",
+      "Recomposition 的准确含义",
+      "稳定性与 Strong Skipping",
+      "管理状态和计算成本",
+      "Lazy 列表性能",
+      "绘制、图层与动画",
+      "Compose 与 View 互操作",
+      "工具：从慢帧走到代码",
+      "Baseline Profile 的能力边界",
+      "一套可执行的排查顺序",
+      "常见误判",
+      "复核清单",
+      "相关章节",
+      "参考资料"
+    ],
+    "src/part2-performance/ch07-smoothness/05-recyclerview-performance.md": [
+      "RecyclerView 的布局流程",
+      "ViewHolder 回收复用的四级缓存",
+      "GapWorker 预取机制",
+      "DiffUtil 与增量更新",
+      "嵌套滑动的性能影响",
+      "滑动卡顿的根因分析",
+      "RecyclerView 1.4 与 Adaptive Refresh Rate",
+      "在 Perfetto 中分析 RecyclerView 性能",
+      "常见问题与误区",
+      "扩展",
+      "相关章节",
+      "参考资料"
+    ]
+  },
+  "content_routes": [
+    {
+      "source": "7.3 减少工作量、缩短关键路径与控制频率",
+      "destination": "22.1 layout/draw; 22.2 RecyclerView; 22.3 Compose; 22.4/22.8 effects; 7.2/15.1 methodology",
+      "treatment": "distributed_to_existing_deeper_owners"
+    },
+    {
+      "source": "7.3 View 创建、测量、布局与绘制 / LayoutInflater",
+      "destination": "22.1 LayoutInflater：缓存构造器不等于消除创建成本",
+      "treatment": "unique_mechanism_rewritten_and_embedded"
+    },
+    {
+      "source": "7.3 View 创建、测量、布局与绘制 / ViewTreeObserver",
+      "destination": "22.1 ViewTreeObserver：布局回调不是显示完成信号",
+      "treatment": "unique_mechanism_rewritten_and_embedded"
+    },
+    {
+      "source": "7.4 帧模型、Recomposition、Stability、状态与计算",
+      "destination": "22.3 状态、重组、布局与绘制基线 + Compiler 诊断",
+      "treatment": "deduplicated_into_deeper_owner"
+    },
+    {
+      "source": "7.4 SlotTable 不是 UI 树",
+      "destination": "22.3 opening pipeline boundary",
+      "treatment": "unique_boundary_rewritten_and_embedded"
+    },
+    {
+      "source": "7.4 Lazy 列表性能",
+      "destination": "22.2 LazyList 组合、测量与预取 + 22.3 Lazy 列表基线",
+      "treatment": "deduplicated_into_deeper_owners"
+    },
+    {
+      "source": "7.4 绘制、图层、互操作、工具、Baseline Profile、排查清单",
+      "destination": "22.3 drawing/interop/diagnostics; 22.4 effects; 21.4 Baseline Profile",
+      "treatment": "distributed_to_existing_deeper_owners"
+    },
+    {
+      "source": "7.5 RecyclerView 布局流程与 AutoMeasure",
+      "destination": "22.2 RecyclerView 布局与缓存状态机",
+      "treatment": "unique_mechanism_rewritten_and_embedded"
+    },
+    {
+      "source": "7.5 ViewHolder 缓存真实查找顺序",
+      "destination": "22.2 实际查找顺序不是固定四级缓存",
+      "treatment": "unique_mechanism_rewritten_and_embedded"
+    },
+    {
+      "source": "7.5 GapWorker、DiffUtil、嵌套滑动、ARR 与 Perfetto",
+      "destination": "22.2 existing ViewHolder/GapWorker/DiffUtil/nested/ARR/measurement sections",
+      "treatment": "deduplicated_into_deeper_owner"
+    },
+    {
+      "source": "7.3 SnapHelper + 7.5 custom LayoutManager/ItemDecoration/ItemAnimator",
+      "destination": "22.2 extension hot-path boundary",
+      "treatment": "unique_boundaries_rewritten_and_embedded"
+    },
+    {
+      "source": "three predecessor reference sections",
+      "destination": "22.1/22.2/22.3 source metadata and source indexes",
+      "treatment": "evidence_reconciled; stale_internal_sources_removed"
+    }
+  ],
+  "updated_reference_files": [
+    "src/SUMMARY.md",
+    "src/part1-fundamentals/ch01-architecture/05-art-compilation-verification-deoptimization.md",
+    "src/part1-fundamentals/ch02-rendering/04-main-render-thread-hardware-layer.md",
+    "src/part1-fundamentals/ch02-rendering/06-overdraw.md",
+    "src/part1-fundamentals/ch02-rendering/11-text-rendering-performance.md",
+    "src/part1-fundamentals/ch02-rendering/13-foldable-display-pipeline-performance.md",
+    "src/part1-fundamentals/ch03-input/01-input-dispatch-interception-security.md",
+    "src/part1-fundamentals/ch03-input/02-touch-performance.md",
+    "src/part1-fundamentals/ch05-cpu-power/04-adpf.md",
+    "src/part1-fundamentals/ch05-cpu-power/08-cpu-cache-friendly-code-data-layout.md",
+    "src/part2-performance/ch07-smoothness/02-jank-methodology-scenarios-cases.md",
+    "src/part2-performance/ch07-smoothness/README.md",
+    "src/part2-performance/ch08-responsiveness/03-launch-optimization.md",
+    "src/part2-performance/ch08-responsiveness/04-coroutine-performance.md",
+    "src/part2-performance/ch18-rendering-pipelines/08-flutter-rendering-pipeline.md",
+    "src/part3-tools/ch14-other-tools/15-winscope-layout-inspector-ui-debugging.md",
+    "src/part3-tools/ch15-methodology/01-performance-principles-evidence-governance.md",
+    "src/part4-system/ch17-oem/01-oem-performance-app-collaboration.md",
+    "src/part5-app/ch22-rendering-practice/04-view-compose-animation-shared-transition.md",
+    "src/part5-app/ch22-rendering-practice/07-frame-monitoring.md",
+    "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+    "src/part5-app/ch22-rendering-practice/12-adaptive-refresh-rate.md",
+    "src/part5-app/ch22-rendering-practice/13-app-widget-performance.md",
+    "src/part5-app/ch22-rendering-practice/14-compose-layout-text-rendering.md",
+    "src/part5-app/ch23-memory-practice/04-java-heap-gc-compose-allocation.md",
+    "src/preface/reading-paths.md"
+  ],
+  "applied": true
+}

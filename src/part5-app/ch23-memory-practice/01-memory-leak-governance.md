@@ -1,18 +1,24 @@
 ---
-title: "内存泄漏检测与治理"
-chapter: "23.1"
+title: 内存泄漏检测与治理
+chapter: '23.1'
 status: finalized
-applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
-tags: [memory-leak, performance, optimization, governance]
-related_chapters: ["4.1 Android 内存模型全景", "10.1 App 内存分析"]
-last_verified: "2026-08-15"
-last_verified_against: "Android 17 / API 37 / AOSP android-17.0.0_r1；Android ProfilingManager、MemoryLimiter 与 ApplicationExitInfo 官方文档；LeakCanary 文档；KOOM 仓库与 release；Perfetto heapprofd 文档"
-last_review_finalize_at: "2026-08-15T06:44:28+08:00"
-last_review_finalize_run_id: "20260815-064428-gracker-writing-review"
+applicable_versions: Android 8.0 (API 26) - Android 17 (API 37); ProfilingManager-specific sections require API 35/37 as noted
+tags:
+- memory-leak
+- performance
+- optimization
+- governance
+related_chapters:
+- '4.1'
+- '10.1'
+last_verified: '2026-08-15'
+last_verified_against: Android 17 / API 37 / AOSP android-17.0.0_r1；Android ProfilingManager、MemoryLimiter 与 ApplicationExitInfo 官方文档；LeakCanary 2.14 与 Shark 文档；KOOM 仓库与 release；Perfetto heapprofd 文档
+last_review_finalize_at: '2026-08-15T06:44:28+08:00'
+last_review_finalize_run_id: 20260815-064428-gracker-writing-review
 confidence: high
 pipeline_stage: finalized
-last_draft_polish_at: "2026-08-15T06:44:28+08:00"
-last_draft_polish_run_id: "20260815-064428-gracker-writing"
+last_draft_polish_at: '2026-08-15T06:44:28+08:00'
+last_draft_polish_run_id: 20260815-064428-gracker-writing
 sources:
 - type: aosp
   path: https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/
@@ -33,18 +39,24 @@ sources:
 - type: reference
   path: https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/
 - type: reference
+  path: https://square.github.io/leakcanary/fundamentals-fixing-a-memory-leak/
+- type: reference
+  path: https://square.github.io/leakcanary/shark/
+- type: reference
   path: https://github.com/KwaiAppTeam/KOOM
 - type: reference
   path: https://api.github.com/repos/KwaiAppTeam/KOOM/releases/latest
 - type: official
   path: https://perfetto.dev/docs/data-sources/native-heap-profiler
 - type: aosp
-  path: "android-17.0.0_r1: art/runtime/hprof/hprof.cc; art/runtime/signal_catcher.cc; art/perfetto_hprof/perfetto_hprof.cc; external/perfetto/src/profiling/memory/java_hprof_producer.{h,cc}"
+  path: 'android-17.0.0_r1: art/runtime/hprof/hprof.cc; art/runtime/signal_catcher.cc; art/perfetto_hprof/perfetto_hprof.cc; external/perfetto/src/profiling/memory/java_hprof_producer.{h,cc}'
 - type: clipping
-  path: "货拉拉司机 Android 端内存治理实践（本地归档 Cubox）"
+  path: 货拉拉司机 Android 端内存治理实践（本地归档 Cubox）
 consolidated_from:
-  - "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
-  - "src/part5-app/ch23-memory-practice/23.25-android-17-memory-leak-monitoring-framework.md"
+- src/part5-app/ch23-memory-practice/08-memory-case-studies.md
+- src/part5-app/ch23-memory-practice/23.25-android-17-memory-leak-monitoring-framework.md
+- src/part2-performance/ch10-memory-perf/02-memory-leak-growth.md
+- src/part2-performance/ch10-memory-perf/02-memory-leak.md
 ---
 
 # 内存泄漏检测与治理
@@ -78,12 +90,17 @@ Android 17 新增 `ProfilingManager` 的 OOM 与 anomaly trigger（系统事件�
 
 ### 1.1 GC 可达性只回答“能不能回收”
 
-ART 从 GC Root 出发遍历引用图。只要对象仍能通过强引用路径到达，GC 就不能回收它。常见 Root 包括：
+ART 从 GC Root 出发遍历引用图。只要对象仍能通过强引用路径到达，GC 就不能回收它。排查时应按分析器报告的 Root 类型阅读完整路径：
 
-- 活跃线程的栈和 JNI local reference（本次原生方法调用范围内的局部引用）；
-- Java 静态字段；
-- JNI global reference（跨原生方法调用持续存在的全局引用）；
-- 运行时内部持有的对象。
+| Root 类别 | 常见来源 | 排查重点 |
+| --- | --- | --- |
+| 活跃线程栈与 JNI local reference（JNI 局部引用） | 正在执行的方法、原生调用帧 | 长任务、阻塞调用或未结束协程捕获了什么 |
+| 活跃线程与线程局部变量 | `Thread`、`ThreadLocal` | 线程是否应退出，线程局部状态是否清理 |
+| System class / boot class（系统类或启动类） | 已加载类及其静态字段 | 静态集合、单例与 SDK 注册表 |
+| JNI global reference（JNI 全局引用） | `NewGlobalRef()` | 是否存在配对的 `DeleteGlobalRef()` 与明确持有者 |
+| VM internal / monitor（运行时内部结构或监视器） | 虚拟机内部对象、锁相关结构 | 结合 Root 类型、引用边与对象生命周期判断 |
+
+静态字段通常位于“类对象 → static field → 业务对象”的路径上。把每个 static 字段都叫作独立 GC Root，会省略类对象这一层，也容易把合法进程级状态误判成泄漏。
 
 泄漏判断还需要业务语义：
 
@@ -261,7 +278,13 @@ class FeedFragment : Fragment(R.layout.feed) {
 
 这段写法让收集任务随 View 生命周期停止和重启。Fragment 本体仍在 back stack、但 View 已销毁时，不会继续把旧 View 树留在收集回调里。Compose 场景对应使用 `LaunchedEffect`、`DisposableEffect`、`collectAsStateWithLifecycle` 等与组合生命周期绑定的入口。
 
-### 2.8 案例：常驻 Activity 如何保留已关闭弹窗
+### 2.8 JNI 引用与显式关闭资源
+
+原生代码通过 `NewGlobalRef()` 创建的引用会让 Java 对象跨调用持续可达。每条成功创建的 global reference 都要有明确持有者，并在会话结束、模块卸载或原生对象析构时调用 `DeleteGlobalRef()`。local reference 只在当前原生方法调用范围内有效，不能保存到调用结束以后；跨线程或跨调用时要区分 local、global 与 weak global reference（局部、全局与弱全局引用）。
+
+`Cursor`、`ParcelFileDescriptor`、`MediaCodec`、`Image`、`Surface` 等对象还带有显式关闭协议。Java wrapper（包装对象）可能很小，背后却连接着原生分配、图形缓冲区或内核对象。持有者应通过 `use`、try-with-resources 或对应的 `close()` 在业务生命周期终点释放；finalizer 或 Cleaner 只能作为延迟兜底，不能保证资源及时归还。
+
+### 2.9 案例：常驻 Activity 如何保留已关闭弹窗
 
 货拉拉司机端公开复盘中的首页弹窗问题，展示了“业务事件—对象增长—引用链—生命周期缺口”的完整证据链。测试人员每两秒触发一次弹窗，约八分钟、约 240 次展示后观察到内存上涨约 50 MB；线上 OOM 样本中的弹窗展示次数超过 2000 次。这些数字只描述当时版本和测试口径，尚不足以证明泄漏。
 
@@ -311,6 +334,15 @@ retained size 很大不代表当前节点就是缺陷位置。它表示该对象
 
 heap dump 会暂停或扰动被测进程，也会暂时增加内存占用。性能结果不能用 dump 期间的数据代替正常运行数据。
 
+命令行排查 debuggable 进程时，也可以让 ActivityManager 生成完整 HPROF：
+
+```bash
+adb shell am dumpheap com.example.app /data/local/tmp/example.hprof
+adb pull /data/local/tmp/example.hprof
+```
+
+heap dump 会暂停或扰动目标进程，文件还可能包含账号、页面文本与业务对象。采集、保存、上传和删除都要遵守调试数据的访问控制；生产设备不应把全量 HPROF 当作常规定时监控数据。
+
 ### 3.4 原生增长要看分配调用栈
 
 Java heap 稳定而 Native Heap 上升时，继续抓 Java HPROF 往往不会得到答案。Perfetto `heapprofd` 是原生堆分析器，能记录 native allocation/free（分配/释放）与调用栈；ART allocation profiling 则面向 Java/Kotlin 分配。
@@ -326,6 +358,12 @@ LeakCanary 的检测过程可以概括为：
 3. retained object 达到当前配置条件后生成 HPROF；
 4. Shark 分析对象图并计算 leak trace（泄漏引用路径）；
 5. 相同可疑引用路径按 signature（路径特征签名）归组。
+
+阅读一条 LeakCanary 报告时，先确认 `╰→` 指向的对象是否已经越过业务生命周期，再从 GC Root 沿 `↓` 阅读强引用路径。`~~~` 标出的是分析器认为可疑的引用边，修复点仍要回到注册、缓存、任务或 JNI 代码中的实际 owner。
+
+retained size 要和 dominator（支配）关系一起看。它估算某对象不可达后可随之释放的内存，不能单独证明对象已经泄漏。leak signature（泄漏签名）根据可疑路径归组，适合统计同类缺陷；Shark 展示的是便于诊断的一条路径，对象仍可能存在其他到 Root 的路径，修复后必须重新抓取验证。
+
+`Library Leak` 表示路径匹配已知库或 Framework 模式，不等于可以忽略。应核对依赖版本和上游修复，评估发生频率与 retained bytes；应用侧无法消除时，仍要记录受影响版本、规避方案和验收条件。
 
 Activity、Fragment、Fragment view 和 ViewModel 等常见类型可以自动观察。业务自定义对象也可以在确认其生命周期结束后交给 `AppWatcher.objectWatcher.watch()`。
 

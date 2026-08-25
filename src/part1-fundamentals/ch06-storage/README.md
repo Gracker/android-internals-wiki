@@ -16,13 +16,10 @@ eMMC、UFS 和 NVMe 是不同的存储接口，其并发队列能力并不相同
 
 ## 内容索引
 
-- [6.1 Android 存储架构](./01-storage-architecture.md)：分区、挂载、FBE（文件级加密）、vold（存储卷管理守护进程）、应用目录与共享存储边界；
-- [6.2 Android 文件系统](./02-filesystem.md)：ext4、F2FS、EROFS、OverlayFS 及产品选择；
-- [6.3 I/O 调度与性能](./03-io-scheduling.md)：块层、调度器、writeback 与请求延迟；
-- [6.4 SharedPreferences 与 DataStore](./04-sharedpreferences-datastore.md)：首次加载、`QueuedWork`、ANR（应用无响应）、多进程一致性与迁移边界；
-- [6.5 vold、MediaProvider 与 FUSE](./05-vold-mediaprovider-fuse.md)：共享存储控制面、数据面、passthrough、FUSE BPF 与现场取证。
-
-SharedPreferences ANR 与 AndroidX DataStore 多进程一致性已经并入 6.4；passthrough 和 FUSE BPF 已并入 6.5。Linux 物理内存规整不属于存储主题，统一见 [4.10 内存规整与直接回收性能边界](../ch04-memory/10-memory-compaction-direct-reclaim.md)。Photo Picker、媒体转码和应用层缓存治理见 [24.12 Photo Picker、媒体转码与缓存治理](../../part5-app/ch24-io-network/12-photo-picker-transcoding-performance.md)。
+- [6.1 Android 存储架构](01-storage-architecture.md)
+- [6.2 文件系统与 I/O 调度](02-filesystem-io-scheduling.md)
+- [6.3 SharedPreferences 与 DataStore：I/O、ANR 与多进程一致性](03-sharedpreferences-datastore.md)
+- [6.4 vold、MediaProvider 与 FUSE：共享存储 I/O 路径](04-vold-mediaprovider-fuse.md)
 
 ## 阅读建议
 

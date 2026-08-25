@@ -6,20 +6,17 @@ Power HAL 是 Android framework 与厂商电源管理实现之间的硬件抽象
 
 ## 内容索引
 
-- [17.1 OEM 性能优化的通用思路](01-oem-overview.md)
+- [17.1 OEM 性能优化与应用协作](01-oem-performance-app-collaboration.md)
 - [17.2 SoC 平台差异](02-soc-differences.md)
-- [17.3 OEM 与大型应用协作案例](03-industry-cases.md)
-- [17.4 sched_ext 与 OEM 调度实践](04-sched-ext-oem-bpf-scheduler.md)
-- [17.5 OEM 游戏模式输入优先级与触控调度](05-oem-game-mode-input-priority.md)
-- [17.6 Media Performance Class 与设备能力分级](06-media-performance-class-device-capability.md)
-- [17.7 Private Space 与应用锁的兼容性边界](07-private-space-app-lock-boundary.md)
-- [17.8 SoC 功耗控制：Power HAL、schedutil 与厂商差异](08-power-hal-schedutil-soc-power.md)
-- [17.9 Android 17 Power Stats HAL 的 OEM 实现差异](09-power-stats-hal-oem-implementation.md)
-- [17.10 Android Auto 与 Android Automotive OS 性能优化](10-android-auto-car-os-performance.md)
+- [17.3 OEM 调度、游戏模式与输入优先级](03-oem-scheduling-game-input.md)
+- [17.4 Media Performance Class 与设备能力分级](04-media-performance-class-device-capability.md)
+- [17.5 Private Space 与应用锁的兼容性边界](05-private-space-app-lock-boundary.md)
+- [17.6 Power HAL、schedutil 与 Power Stats](06-power-hal-schedutil-power-stats.md)
+- [17.7 Android Auto 与 Android Automotive OS 性能优化](07-android-auto-car-os-performance.md)
 
 ## 阅读建议
 
 - 刚发现机型差异：先读 17.1～17.2，按来源区分 AOSP 接口、厂商实现和目标设备观测，再建立 SoC 事实表。
-- 排查调度、触控或功耗控制问题：分别进入 17.4、17.5 和 17.8，不把产品模式名当成内核机制。
-- 评估设备公开能力或功耗数据可信度：分别使用 17.6 的 Media Performance Class 和 17.9 的 Power Stats 数据能力分级。
+- 排查调度、触控或功耗控制问题：调度与触控进入 17.3，功耗控制进入 17.6，不把产品模式名当成内核机制。
+- 评估设备公开能力或功耗数据可信度：分别使用 17.4 的 Media Performance Class 和 17.6 的 Power Stats 数据能力分级。
 - 每次实验先记录 `Build.FINGERPRINT`（构建指纹）、SoC、内核版本、Power HAL、Thermal HAL 与温控配置、电源模式和测试版本，再区分现象属于单机异常、同一机型共性，还是跨机型规律。

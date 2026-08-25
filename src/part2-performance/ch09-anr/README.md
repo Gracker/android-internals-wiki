@@ -8,20 +8,17 @@ ANR（Application Not Responding，应用无响应）表示系统判定应用没
 
 ## 内容索引
 
-- [9.1 ANR 设计思想](01-anr-design.md)
-- [9.2 ANR 类型与触发条件](02-anr-types.md)
-- [9.3 ANR 分析方法](03-anr-analysis.md)
-- [9.4 特殊与跨边界 ANR](04-special-anr.md)
-- [9.5 案例集](05-case-studies.md)
-- [9.6 Notification 性能与 ANR](06-notification-performance-anr.md)
-- [9.7 ANR 与 Kernel Trace 联合诊断](07-anr-kernel-trace-joint-diagnosis.md)
-- [9.8 ContentProvider 超时与 ANR 四路径](08-contentprovider-timeout-anr.md)
-- [9.9 Android 17 ANR 预警回调与类型枚举](09-android17-anr-warning-callback.md)
-- [9.10 Android 17 Input ANR 与 pre-ANR 实现](10-android17-input-anr-prewarning.md)
+- [9.1 ANR 机制、类型与触发条件](01-anr-mechanism-types-triggers.md)
+- [9.2 ANR 与 Kernel Trace 联合诊断](02-anr-kernel-trace-diagnosis.md)
+- [9.3 特殊与跨边界 ANR](03-special-anr.md)
+- [9.4 案例集](04-case-studies.md)
+- [9.5 Notification 性能与 ANR](05-notification-performance-anr.md)
+- [9.6 ContentProvider 超时与 ANR 四路径](06-contentprovider-timeout-anr.md)
+- [9.7 Android 17 ANR 预警与 Input pre-ANR](07-android17-anr-prewarning.md)
 
 ## 阅读建议
 
-- 系统学习 ANR：按 `9.1 → 9.2 → 9.3` 阅读。
-- 事后堆栈无法解释超时从何处开始：重点查看 `9.1`、`9.3`、`9.7`。
+- 系统学习 ANR：按 `9.1 → 9.2 → 9.3` 阅读，其中 9.2 负责时间线和内核证据，9.3 处理跨边界场景。
+- 事后堆栈无法解释超时从何处开始：重点查看 `9.1`、`9.2`、`9.7`。
 - Notification、前台服务和多进程边界：进入对应专项条目。
-- 线上监控、事件写入本地文件与聚合分析：查看 `26.4`。
+- 线上监控、事件写入本地文件与聚合分析：查看 `26.2`。

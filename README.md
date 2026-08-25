@@ -7,7 +7,7 @@
 
 一本由 AI 辅助持续进化的 Android 技术百科，面向有经验的 Android 开发者和系统工程师。
 
-当前项目处于 **alpha 精修期**。正文已恢复为 5 个部分、26 章、前言和附录的规范架构；当前重点从“目录收敛”转向技术审校、状态统一和发布验证。阅读和维护时请优先参考本文件下面的“当前事实口径”。
+当前项目处于 **alpha 精修期**。正文已经完成两轮逐篇结构审阅，收敛为 5 个部分、26 章、前言和附录；当前重点是技术审校、状态统一和发布验证。阅读和维护时请优先参考本文件下面的“当前事实口径”。
 
 <!-- android-performance-ecosystem:start -->
 ## Android 性能分析生态
@@ -78,13 +78,15 @@ mdbook serve
 
 ## 当前事实口径
 
-截至 2026-08-11，当前活动口径已经统一：
+截至 2026-08-24，当前活动口径已经统一：
 
-- 规范章节正文共 454 篇：`finalized` 312、`ready-for-review` 142。
-- `pipeline_stage=ready-to-publish` 的正文为 263 篇；其余遗留流水线状态按 `metadata/progress.json` 聚合展示。
-- `src/SUMMARY.md` 包含 493 个本地链接，链接目标和重复项检查均通过。
+- 规范章节正文共 285 篇：`finalized` 229、`ready-for-review` 56；加上 6 篇前言和 7 篇附录，全书共 298 篇。
+- `pipeline_stage=ready-to-publish` 的正文为 123 篇；其余遗留流水线状态按 `metadata/progress.json` 聚合展示。
+- `src/SUMMARY.md` 包含 324 个本地链接，链接目标和重复项检查均通过。
 - `metadata/queue.json` 共有 23 条活动/审计记录：9 条 `body-applied`、7 条 `rejected`、5 条 `superseded`、1 条 `review-finalized`、1 条 `completed`。
 - `metadata/inventory.json` 只索引项目外的素材文档，不再把本仓库 `src/` 当作外部输入。
+
+第二轮收敛将 454 篇正文归并为 285 篇，完整方案、逐路径去向和审阅台账分别见 [`metadata/2026-08-24-content-consolidation-v2.yaml`](metadata/2026-08-24-content-consolidation-v2.yaml)、[`metadata/2026-08-24-content-consolidation-v2-map.json`](metadata/2026-08-24-content-consolidation-v2-map.json) 与 [`metadata/content-consolidation-audit.md`](metadata/content-consolidation-audit.md)。
 
 若状态发生短时冲突，优先级是：章节 frontmatter 与正在处理的 queue > 最近 logs > `metadata/progress.json` 聚合 > README 快照。已关闭的 review finding 和历史日志允许保留变更发生时的旧路径。
 
@@ -102,12 +104,12 @@ mdbook serve
 
 ## 项目进度
 
-当前阶段：**alpha**（正文持续批量 review / finalize，目录架构和基础治理口径已经收敛）
+当前阶段：**alpha**（正文结构已收敛，继续批量 review / finalize 和发布验证）
 
 当前优先事项：
 
 1. 消费 `metadata/queue.json` 中仍为 `pending` 的时效性与 DeepResearch 条目。
-2. 把正文中的遗留状态名逐步统一到 `draft`、`ready-for-review`、`finalized` 和 `ready-to-publish`。
+2. 对合并后的 56 篇 `ready-for-review` 正文完成技术复核，并统一遗留流水线状态。
 3. 推进 Part 1-3 发布前审校，并补齐 Part 4-5 的版本边界与证据链。
 4. 在安装 mdBook 与 Mermaid 预处理器的环境中持续验证完整 HTML 构建。
 

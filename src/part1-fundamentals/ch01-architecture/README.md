@@ -5,7 +5,7 @@ section: "1.0"
 status: "finalized"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-08-11"
-last_verified_against: "AOSP android-17.0.0_r1; kernel android17-6.18-2026-06_r6; consolidated ch01 structure 1.1-1.50"
+last_verified_against: "AOSP android-17.0.0_r1; kernel android17-6.18-2026-06_r6; consolidated ch01 structure 1.1-1.28"
 confidence: medium
 sources:
   - type: repo
@@ -15,7 +15,7 @@ sources:
   - type: official
     path: "https://developer.android.com/about/versions/16/release-cycle"
 tags: ['architecture', 'overview', 'chapter-intro']
-related_chapters: ["1.1", "1.10", "1.17", "1.29", "1.42", "1.50"]
+related_chapters: ["1.1", "1.8", "1.3", "1.12", "1.24", "1.22"]
 pipeline_stage: "ready-to-publish"
 task2b_result: fixed
 task2b_state: fixed
@@ -30,8 +30,8 @@ last_task9_at: "2026-05-14T18:30:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-14"
 last_task9_review_log: "logs/deep-review/2026-05-14-18-deep-review.md"
-last_consolidated_at: "2026-08-11"
-consolidation_note: "完整审阅原 65 篇正文后收敛为 50 篇：合并 DeliQueue、ContentProvider、Staged Install、ResourcesManager、AMS/PMS 与 Binder 重复稿，保留显示架构总览，并统一为 1.1-1.50 连续编号。"
+last_consolidated_at: '2026-08-24'
+consolidation_note: 第二轮逐篇审阅后收敛为 28 篇，合并同一责任链中的总览、机制、版本增量、观测与案例，并统一连续编号。
 ---
 
 # 第 1 章：系统架构全景
@@ -56,76 +56,44 @@ consolidation_note: "完整审阅原 65 篇正文后收敛为 50 篇：合并 De
 
 ## 内容索引
 
-### 系统主线（1.1—1.17）
-
-- [1.1 Android 分层架构](01-layered-architecture.md)
-- [1.2 系统启动全流程](02-boot-process.md)
-- [1.3 进程模型与生命周期管理](03-process-model.md)
-- [1.4 Binder IPC 机制与性能影响](04-binder.md)
-- [1.5 线程模型](05-threading-model.md)
-- [1.6 Android 版本演进中的架构变化](06-version-evolution.md)
-- [1.7 ART 编译管线与 dex2oat 优化](07-art-compilation.md)
-- [1.8 Activity Manager Service 与性能分析](08-activity-manager.md)
-- [1.9 Package Manager Service 与应用安装性能](09-package-manager.md)
-- [1.10 ContentProvider 性能与优化](10-content-provider.md)
-- [1.11 Zygote 机制与启动性能优化](11-zygote-startup.md)
-- [1.12 AutoFDO 反馈导向编译优化](12-autofdo-optimization.md)
-- [1.13 MessageQueue 机制与 DeliQueue 无锁优化](13-messagequeue-deliqueue.md)
-- [1.14 锁竞争与同步性能分析](14-lock-contention.md)
-- [1.15 JNI/NDK 性能优化](15-jni-ndk-performance.md)
-- [1.16 Audio Pipeline 延迟与性能](16-audio-pipeline-performance.md)
-- [1.17 IPC 全景与机制选型](17-ipc-panorama.md)
-
-### 平台行为与公共架构（1.18—1.28）
-
-- [1.18 Binder Freezer 与缓存进程冻结](18-binder-freezer-cached-process.md)
-- [1.19 Zygote 图形栈预加载与首帧冷路径](19-zygote-graphics-driver-preload.md)
-- [1.20 App Archiving 机制与恢复性能](20-app-archiving-performance.md)
-- [1.21 Developer Verification 与安装链路](21-developer-verification-install-boundary.md)
-- [1.22 ART Verifier、Quickening 与 dexopt filter](22-art-verifier-quickening-dexopt-filters.md)
-- [1.23 Staged Install 与安装原子性](23-staged-install-performance.md)
-- [1.24 ResourcesManager 与 Configuration](24-resourcesmanager-configuration-performance.md)
-- [1.25 AMS 双锁与 system_server 竞争](25-ams-dual-lock-system-server-contention.md)
-- [1.26 Android AI 手机技术栈](26-android-ai-phone-ecosystem.md)
-- [1.27 应用分发与内容共享](27-android-app-distribution.md)
-- [1.28 Android 显示与渲染架构总览](28-rendering-display-architecture.md)
-
-### Binder、运行时与内核（1.29—1.41）
-
-- [1.29 Binder 异步事务与排队机制](29-binder-async-transaction-queue.md)
-- [1.30 Binder Transaction Buffer 与 RPC 上限](30-binder-transaction-buffer-performance.md)
-- [1.31 Binder 可观测性](31-binder-performance-recording-trace.md)
-- [1.32 AVF 与 pKVM 隔离](32-virtualization-framework-pkvm-performance.md)
-- [1.33 BroadcastQueue 进程级调度](33-broadcastqueue-scheduling-performance.md)
-- [1.34 ProcessStateController、OomAdjuster 与进程优先级](34-oomadjuster-process-priority-performance.md)
-- [1.35 ART 去优化](35-art-deoptimization-performance.md)
-- [1.36 Java 类加载](36-java-class-loading-performance.md)
-- [1.37 logd 日志系统](37-logd-logging-system-performance.md)
-- [1.38 Binder 线程池与饥饿](38-binder-thread-pool-starvation-performance.md)
-- [1.39 Bionic libc](39-bionic-libc-performance.md)
-- [1.40 VNDK 隔离与 linker namespace](40-vndk-isolation-native-library-performance.md)
-- [1.41 BPF 可观测性与可编程边界](41-bpf-observability-boundary.md)
-
-### 系统服务与 native 装载（1.42—1.50）
-
-- [1.42 TelephonyManager](42-telephonymanager-architecture-performance.md)
-- [1.43 ConnectivityManager](43-connectivitymanager-architecture-performance.md)
-- [1.44 NotificationManager](44-notificationmanager-architecture-performance.md)
-- [1.45 BiometricService](45-biometricservice-architecture-performance.md)
-- [1.46 LocationManager](46-locationmanager-architecture-performance.md)
-- [1.47 WindowManager](47-windowmanager-architecture-performance.md)
-- [1.48 cgroup v1/v2 与进程资源隔离](48-cgroup-v1-v2-process-isolation.md)
-- [1.49 ART Boot Image 内存映射](49-art-boot-image-memory-mapping-startup.md)
-- [1.50 Dynamic Linker 与 native 库加载](50-dynamic-linker-native-library.md)
+- [1.1 Android 分层架构、进程模型与线程协作](01-android-architecture-process-threading.md)
+- [1.2 系统启动、Zygote 与图形栈预加载](02-boot-zygote-graphics-preload.md)
+- [1.3 Android IPC 全景与 Binder 性能](03-ipc-binder-performance.md)
+- [1.4 Android 版本演进中的架构变化](04-version-evolution.md)
+- [1.5 ART 编译、验证与去优化机制](05-art-compilation-verification-deoptimization.md)
+- [1.6 ActivityManager 进程状态、锁与优先级管理](06-activitymanager-process-lock-priority.md)
+- [1.7 应用分发、安装验证与 PackageManager 性能](07-package-distribution-install-verification.md)
+- [1.8 ContentProvider 性能与优化](08-content-provider.md)
+- [1.9 MessageQueue、DeliQueue 与锁竞争](09-messagequeue-lock-contention.md)
+- [1.10 JNI、NDK 与 Bionic 原生运行时性能](10-jni-ndk-bionic-performance.md)
+- [1.11 音频链路（Audio Pipeline）延迟与性能](11-audio-pipeline-performance.md)
+- [1.12 Binder Freezer、异步事务与线程池调度](12-binder-scheduling-freezer-threadpool.md)
+- [1.13 应用归档（App Archiving）机制与恢复性能](13-app-archiving-performance.md)
+- [1.14 ResourcesManager 与 Configuration 变更性能](14-resourcesmanager-configuration-performance.md)
+- [1.15 Android AI 手机技术栈：平台接口、端侧推理与协作边界](15-android-ai-phone-ecosystem.md)
+- [1.16 Android 显示架构与 WindowManager](16-display-windowmanager-architecture.md)
+- [1.17 Binder 事务缓冲区与可观测性](17-binder-buffer-observability.md)
+- [1.18 Android 17 AVF 架构与 pKVM 隔离性能边界](18-virtualization-framework-pkvm-performance.md)
+- [1.19 Android 17 BroadcastQueue 进程级调度与广播性能边界](19-broadcastqueue-scheduling-performance.md)
+- [1.20 Java 类加载与 ART Boot Image](20-class-loading-art-boot-image.md)
+- [1.21 Android logd 日志系统性能与开销](21-logd-logging-system-performance.md)
+- [1.22 Dynamic Linker、VNDK 与 Native 库隔离](22-dynamic-linker-vndk-isolation.md)
+- [1.23 Android 17 / ACK 6.18 BPF 可观测性与可编程边界](23-bpf-observability-boundary.md)
+- [1.24 Telephony 服务架构、状态传播与回调](24-telephony-service.md)
+- [1.25 Connectivity 服务、网络选择与回调](25-connectivity-service.md)
+- [1.26 Android 17 NotificationManager 架构与性能优化](26-notificationmanager-architecture-performance.md)
+- [1.27 Android 17 BiometricService 架构与性能优化](27-biometricservice-architecture-performance.md)
+- [1.28 Android 17 LocationManager 架构与性能优化](28-locationmanager-architecture-performance.md)
+- [1.29 Android 17 cgroup v1/v2 混合层级与进程资源隔离机制](29-cgroup-v1-v2-process-isolation.md)
 
 ## 按问题选择阅读路径
 
-- 启动慢：`1.2 → 1.11 → 1.7 → 1.19 → 1.36 → 1.49`。
-- 主线程卡顿或 ANR：`1.4 → 1.14 → 1.29 → 1.31 → 1.38`，并到服务端章节核对调用链。
-- 安装、系统升级（OTA）或分阶段安装会话（staged session）：`1.9 → 1.20 → 1.21 → 1.23 → 1.27`。
-- 配置变化导致重建：`1.24 → 1.47`。
-- 原生库加载失败或启动开销：`1.15 → 1.39 → 1.40 → 1.50`。
-- system_server 调度与进程优先级：`1.8 → 1.25 → 1.33 → 1.34 → 1.48`。
+- 启动慢：`1.2 → 1.5 → 1.20 → 1.22`。
+- 主线程卡顿或 ANR：`1.3 → 1.9 → 1.12 → 1.17`，并到服务端章节核对调用链。
+- 安装、系统升级（OTA）或分阶段安装会话（staged session）：`1.7 → 1.13`。
+- 配置变化导致重建：`1.14 → 1.16`。
+- 原生库加载失败或启动开销：`1.10 → 1.22`。
+- system_server 调度与进程优先级：`1.6 → 1.12 → 1.19 → 1.29`。
 
 ## 读源码时保留三条边界
 

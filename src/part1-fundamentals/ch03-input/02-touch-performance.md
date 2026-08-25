@@ -1,58 +1,80 @@
 ---
-title: "触摸延迟、预测与低延迟渲染"
-chapter: "3.2"
-section: "3.2"
+title: 触摸延迟、预测与低延迟渲染
+chapter: '3.2'
+section: '3.2'
 status: ready-for-review
-applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-08-21"
-last_verified_against: "AOSP android-17.0.0_r1 InputFlinger/InputTransport/ViewRootImpl/Choreographer/MotionPredictor/MotionEvent/InputEventAssigner/View.requestUnbufferedDispatch sources; external/perfetto android.input inputevent config and android.input stdlib docs; source.android.com Input/Winscope adb trace docs; AndroidX Input/Graphics low-latency docs | 2026-08-21 deep review added official unbuffered-dispatch warning boundary"
+applicable_versions: Android 10 (API 29) - Android 17 (API 37)
+last_verified: '2026-08-21'
+last_verified_against: AOSP android-17.0.0_r1 InputFlinger/InputTransport/ViewRootImpl/Choreographer/MotionPredictor/MotionEvent/InputEventAssigner/View.requestUnbufferedDispatch sources; external/perfetto android.input inputevent config and android.input stdlib docs; source.android.com Input/Winscope adb trace docs; AndroidX Input/Graphics low-latency docs | 2026-08-21 deep review added official unbuffered-dispatch warning boundary
 confidence: medium-high
 sources:
-  - type: blog
-    path: "Personal-Knowlodge/source/Android-Systrace-Input.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/android-systrace-Responsiveness-in-action-1.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-06_wechat_从input响应性能差的issue演示perfetto_trace用法.md"
-  - type: official
-    path: "source.android.com/docs/core/interaction/input"
-  - type: official
-    path: "source.android.com/docs/core/graphics/winscope/capture/adb"
-  - type: official
-    path: "developer.android.com/reference/android/view/MotionEvent"
-  - type: official
-    path: "developer.android.com/reference/android/view/View#requestUnbufferedDispatch(android.view.MotionEvent)"
-  - type: official
-    path: "developer.android.com/reference/android/view/MotionPredictor"
-  - type: official
-    path: "developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features"
-  - type: official
-    path: "developer.android.com/jetpack/androidx/releases/input"
-  - type: official
-    path: "developer.android.com/jetpack/androidx/releases/graphics"
-  - type: official
-    path: "perfetto.dev/docs/analysis/stdlib-docs#android-input"
-  - type: research
-    path: "DeepResearch/2026-05-11-hci-perception-input-latency-analysis.md"
-  - type: research
-    path: "intake/research-feeds/2026-04-05-15-motionprediction-low-latency-graphics.md"
-tags: [touch, input-latency, HCI, InputReader, InputDispatcher, sampling-rate, batching, resampling, MotionPredictor, front-buffer, Choreographer, responsiveness]
-related_chapters: ["3.1", "2.3", "2.4", "2.5", "2.18", "2.19", "7.9", "8.1", "13.8", "15.3"]
+- type: blog
+  path: Personal-Knowlodge/source/Android-Systrace-Input.md
+- type: blog
+  path: Personal-Knowlodge/source/android-systrace-Responsiveness-in-action-1.md
+- type: blog
+  path: Personal-Knowlodge/source/2026-03-06_wechat_从input响应性能差的issue演示perfetto_trace用法.md
+- type: official
+  path: source.android.com/docs/core/interaction/input
+- type: official
+  path: source.android.com/docs/core/graphics/winscope/capture/adb
+- type: official
+  path: developer.android.com/reference/android/view/MotionEvent
+- type: official
+  path: developer.android.com/reference/android/view/View#requestUnbufferedDispatch(android.view.MotionEvent)
+- type: official
+  path: developer.android.com/reference/android/view/MotionPredictor
+- type: official
+  path: developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features
+- type: official
+  path: developer.android.com/jetpack/androidx/releases/input
+- type: official
+  path: developer.android.com/jetpack/androidx/releases/graphics
+- type: official
+  path: perfetto.dev/docs/analysis/stdlib-docs#android-input
+- type: research
+  path: DeepResearch/2026-05-11-hci-perception-input-latency-analysis.md
+- type: research
+  path: intake/research-feeds/2026-04-05-15-motionprediction-low-latency-graphics.md
+tags:
+- touch
+- input-latency
+- HCI
+- InputReader
+- InputDispatcher
+- sampling-rate
+- batching
+- resampling
+- MotionPredictor
+- front-buffer
+- Choreographer
+- responsiveness
+related_chapters:
+- '3.1'
+- '2.3'
+- '2.4'
+- '2.2'
+- '22.1'
+- '8.1'
+- '13.6'
+- '15.3'
 task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed
-last_deep_review_at: "2026-08-21T09:15:41+08:00"
-last_deep_review_run_id: "20260821-090405-deep-review-855a7839"
-last_rework_at: "2026-08-12T09:45:30+08:00"
-last_rework_run_id: "20260812-093533-rework-855a7839"
+last_deep_review_at: '2026-08-21T09:15:41+08:00'
+last_deep_review_run_id: 20260821-090405-deep-review-855a7839
+last_rework_at: '2026-08-12T09:45:30+08:00'
+last_rework_run_id: 20260812-093533-rework-855a7839
 pipeline_stage: ready-for-review
-last_consolidated_at: "2026-08-11"
+last_consolidated_at: '2026-08-11'
 consolidated_from:
-  - "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md"
-  - "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md"
+- src/part1-fundamentals/ch03-input/04-input-latency-prediction.md
+- src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md
 ---
 
-# 3.2 触摸延迟、预测与低延迟渲染
+# 触摸延迟、预测与低延迟渲染
+
+触摸体验由采样、事件分发、应用处理、渲染和显示共同决定，单看回调耗时会漏掉前后两端。应先固定 input-to-display 的测量口径，再判断问题来自采样密度、批处理、主线程、帧调度还是显示提交。
 
 ## 为什么需要关注触摸响应
 
@@ -558,7 +580,7 @@ Android 17 中，`InputDispatcher` 会把符合条件的按键、触摸动作和
 
 这个信号只是 `RefreshRateSelector` 的一个排名输入。图层的显式帧率投票、显示策略范围、候选模式、面板与 HAL 能力以及温控状态仍可能改变结果。应用还可以用 `Window.setFrameRateBoostOnTouchEnabled()` 表达是否允许触摸升频，并用 View 或 Window 帧率 API 提交偏好；这些设置都不保证当前帧一定使用最高刷新率。
 
-验证时应同时观察 Power `userActivity`、SurfaceFlinger `TouchState`、`Touch Boost`、`Touch Boost [late]`、图层投票、当前渲染帧率、刷新率与 FrameTimeline。完整的 ARR 选择和显示时序见 2.18 与 2.19，这里只保留与输入延迟直接相关的交互边界。
+验证时应同时观察 Power `userActivity`、SurfaceFlinger `TouchState`、`Touch Boost`、`Touch Boost [late]`、图层投票、当前渲染帧率、刷新率与 FrameTimeline。完整的 ARR 选择和显示时序见 2.2，这里只保留与输入延迟直接相关的交互边界。
 
 ## 与其他章节的关系
 
@@ -566,8 +588,8 @@ Android 17 中，`InputDispatcher` 会把符合条件的按键、触摸动作和
 
 - **3.1 Input 事件分发：队列、反压与丢弃**：输入事件从硬件到应用的完整分发机制；
 - **2.3 VSYNC 机制**：缓冲的 `MOVE` 会接近 `Choreographer` 输入回调时消费，目标帧也由 VSYNC 驱动；无缓冲路径则不等待这一回调。理解 VSYNC 周期、截止时间和实际刷新率，才能解释事件赶上了当前帧还是顺延到下一帧；
-- **2.4 Choreographer 与渲染流水线**：`CALLBACK_INPUT` 优先级、`doFrame()` 执行顺序与批处理实现见 2.4 节；
-- **2.5 MainThread 与 RenderThread 协作**：View 输入分发和遍历位于主线程，部分硬件加速渲染工作交给 `RenderThread` 与 GPU；
+- **2.3 Choreographer 与渲染流水线**：说明 `CALLBACK_INPUT` 优先级、`doFrame()` 执行顺序与批处理实现；
+- **2.4 MainThread 与 RenderThread 协作**：View 输入分发和遍历位于主线程，部分硬件加速渲染工作交给 `RenderThread` 与 GPU；
 - **8.1 响应速度原理**：输入延迟 → 处理延迟 → 输出延迟的通用模型与量化方法。
 
 ## 常见问题与误区

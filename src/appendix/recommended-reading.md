@@ -14,7 +14,7 @@ Trace（性能追踪数据）按时间记录线程调度、系统事件和应用
 
 ## Ch01 Android 系统架构
 
-`SystemServer` 是启动系统 Java 服务的入口类，运行在 `system_server` 进程中；`Binder` 是 Android 进程间调用的主要机制，具体调用模型可查 [AOSP Binder 概览](https://source.android.com/docs/core/architecture/ipc/binder-overview)。建议先读 [1.1 Android 分层架构](../part1-fundamentals/ch01-architecture/01-layered-architecture.md) 和 [1.4 Binder IPC 机制与性能影响](../part1-fundamentals/ch01-architecture/04-binder.md)，再用这里的 Trace 案例观察服务启动、跨进程调用和线程等待。
+`SystemServer` 是启动系统 Java 服务的入口类，运行在 `system_server` 进程中；`Binder` 是 Android 进程间调用的主要机制，具体调用模型可查 [AOSP Binder 概览](https://source.android.com/docs/core/architecture/ipc/binder-overview)。建议先读 [1.1 Android 分层架构、进程模型与线程协作](../part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md) 和 [1.3 Android IPC 全景与 Binder 性能](../part1-fundamentals/ch01-architecture/03-ipc-binder-performance.md)，再用这里的 Trace 案例观察服务启动、跨进程调用和线程等待。
 
 | 系列 | 文章 | 链接 |
 |------|------|------|
@@ -36,11 +36,11 @@ Trace（性能追踪数据）按时间记录线程调度、系统事件和应用
 | 独立文章 | Android 硬件层（Hardware Layer） | [链接](https://www.androidperformance.com/2019/07/27/Android-Hardware-Layer/) |
 | Systrace 系列 | Systrace 系列——Triple Buffer | [链接](https://www.androidperformance.com/2019/12/15/Android-Systrace-Triple-Buffer/) |
 
-推荐按 VSync、Choreographer、MainThread/RenderThread、SurfaceFlinger 的顺序阅读，再根据问题补充 Hardware Layer 或 Triple Buffer。知识库的 [2.1 Android 渲染架构全景](../part1-fundamentals/ch02-rendering/01-rendering-overview.md) 说明组件关系；`BufferQueue` 是图形生产者与消费者交接缓冲区的队列，[2.13 BufferQueue](../part1-fundamentals/ch02-rendering/13-buffer-queue.md) 解释它为什么会等待、排队或回退到较少的可用槽位。
+推荐按 VSync、Choreographer、MainThread/RenderThread、SurfaceFlinger 的顺序阅读，再根据问题补充 Hardware Layer 或 Triple Buffer。知识库的 [2.1 Android 渲染架构与版本演进](../part1-fundamentals/ch02-rendering/01-rendering-architecture-evolution.md) 说明组件关系；`BufferQueue` 是图形生产者与消费者交接缓冲区的队列，[2.8 BufferQueue](../part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md) 解释它为什么会等待、排队或回退到较少的可用槽位。
 
 ## Ch03 输入系统
 
-Input 在这里指从触摸或按键产生，到目标窗口收到并处理事件的整条分发路径。Trace 中的长延迟既可能来自系统分发，也可能来自应用主线程没有及时处理；[3.1 Input 事件分发](../part1-fundamentals/ch03-input/01-input-dispatch.md) 给出了区分两类问题所需的队列与时间点。
+Input 在这里指从触摸或按键产生，到目标窗口收到并处理事件的整条分发路径。Trace 中的长延迟既可能来自系统分发，也可能来自应用主线程没有及时处理；[3.1 Input 分发、拦截与安全边界](../part1-fundamentals/ch03-input/01-input-dispatch-interception-security.md) 给出了区分两类问题所需的队列与时间点。
 
 | 系列 | 文章 | 链接 |
 |------|------|------|
@@ -60,7 +60,7 @@ Input 在这里指从触摸或按键产生，到目标窗口收到并处理事�
 | 独立文章 | Android 后台应用被杀 Debug | [链接](https://www.androidperformance.com/2019/09/17/Android-Kill-Background-App-Debug/) |
 | Memory 系列 | Android 性能优化——内存篇之 Android 资源 | [链接](https://www.androidperformance.com/2015/07/20/Android-Performance-Memory-AndroidResource/) |
 
-这些 Memory 系列文章发表于 2015 年，适合了解问题类型与排查思路；具体阈值、回调行为和系统回收策略要结合目标版本验证。可先读 [4.1 Android 内存模型](../part1-fundamentals/ch04-memory/01-memory-overview.md)，涉及后台进程终止时再读 [4.4 系统内存压力与 lmkd](../part1-fundamentals/ch04-memory/04-lmk.md)。
+这些 Memory 系列文章发表于 2015 年，适合了解问题类型与排查思路；具体阈值、回调行为和系统回收策略要结合目标版本验证。可先读 [4.1 Android 与 Linux 内存管理全景](../part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md)，涉及后台进程终止时再读 [4.3 lmkd、Cached App Freezer 与内存压力治理](../part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md)。
 
 ## Ch05 CPU 与调度
 
@@ -73,7 +73,7 @@ Input 在这里指从触摸或按键产生，到目标窗口收到并处理事�
 | CPU 状态系列 | Systrace CPU 状态——Running | [链接](https://www.androidperformance.com/2022/03/13/android-systrace-cpu-state-running/) |
 | CPU 状态系列 | Systrace CPU 状态——Sleep | [链接](https://www.androidperformance.com/2022/03/13/android-systrace-cpu-state-sleep/) |
 
-先用 [5.1 Linux 进程调度基础](../part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md) 理解就绪队列、抢占和调度延迟，再读三个状态专题。线程长时间 `Runnable` 往往需要检查 CPU 竞争与优先级；长时间 `Sleep` 则要继续找它等待的锁、Binder 回复、I/O 或定时器。
+先用 [5.1 Linux 调度、EAS 与大小核架构](../part1-fundamentals/ch05-cpu-power/01-linux-eas-big-little-scheduling.md) 理解就绪队列、抢占和调度延迟，再读三个状态专题。线程长时间 `Runnable` 往往需要检查 CPU 竞争与优先级；长时间 `Sleep` 则要继续找它等待的锁、Binder 回复、I/O 或定时器。
 
 ## Ch07 卡顿（Jank）
 
@@ -86,11 +86,11 @@ Jank 指帧节奏异常带来的可见卡顿，常见表现包括帧超时、间
 | 独立文章 | Android Jank 调试 | [链接](https://www.androidperformance.com/2019/09/05/Android-Jank-Debug/) |
 | 独立文章 | Android 后台动画优化 | [链接](https://www.androidperformance.com/2019/10/24/Android-Background-Animation/) |
 
-从 [7.1 卡顿的定义与分类](../part2-performance/ch07-smoothness/01-jank-definition.md) 建立帧时间标准，再按 [7.3 卡顿分析步骤](../part2-performance/ch07-smoothness/03-jank-methodology.md) 收集证据。两篇归因案例适合对照阅读：同一种掉帧现象，可能分别由应用工作量和系统资源竞争造成。
+从 [7.1 卡顿定义、分类与原因体系](../part2-performance/ch07-smoothness/01-jank-definition-causes.md) 建立帧时间标准，再按 [7.2 卡顿分析步骤](../part2-performance/ch07-smoothness/02-jank-methodology-scenarios-cases.md) 收集证据。两篇归因案例适合对照阅读：同一种掉帧现象，可能分别由应用工作量和系统资源竞争造成。
 
 ## Ch08 应用启动
 
-“链式唤醒”指一个应用的行为继续触发其他应用或组件启动；Activity 启动模式控制实例与任务栈的复用规则，和启动速度优化是两个问题。先读 [8.2 App 启动全流程](../part2-performance/ch08-responsiveness/02-app-launch.md)，再读 [8.3 启动优化策略](../part2-performance/ch08-responsiveness/03-launch-optimization.md)。
+“链式唤醒”指一个应用的行为继续触发其他应用或组件启动；Activity 启动模式控制实例与任务栈的复用规则，和启动速度优化是两个问题。先读 [8.2 App 冷启动链路与 Binder Trace 分析](../part2-performance/ch08-responsiveness/02-app-cold-start-binder-trace.md)，再读 [8.3 启动优化策略](../part2-performance/ch08-responsiveness/03-launch-optimization.md)。
 
 | 系列 | 文章 | 链接 |
 |------|------|------|
@@ -110,7 +110,7 @@ ANR 是 Application Not Responding 的缩写，表示系统判定应用在特定
 | ANR 系列 | Android ANR 02——如何分析 ANR | [链接](https://www.androidperformance.com/2025/02/08/Android-ANR-02-How-to-analysis-ANR/) |
 | ANR 系列 | Android ANR 03——ANR 案例分享 | [链接](https://www.androidperformance.com/2025/02/08/Android-ANR-03-ANR-Case-Share/) |
 
-按设计、分析、案例的顺序阅读。知识库的 [9.1 ANR 设计思想](../part2-performance/ch09-anr/01-anr-design.md) 说明触发与记录过程，[9.3 ANR 分析](../part2-performance/ch09-anr/03-anr-analysis.md) 说明如何把 ANR 线程堆栈、系统日志和 Trace 证据对齐。
+按设计、分析、案例的顺序阅读。知识库的 [9.1 ANR 机制、类型与触发条件](../part2-performance/ch09-anr/01-anr-mechanism-types-triggers.md) 说明触发与记录过程，[9.2 ANR 分析](../part2-performance/ch09-anr/02-anr-kernel-trace-diagnosis.md) 说明如何把 ANR 线程堆栈、系统日志和 Trace 证据对齐。
 
 ## Ch10 稳定性
 
@@ -120,11 +120,11 @@ ANR 是 Application Not Responding 的缩写，表示系统判定应用在特定
 |------|------|------|
 | 独立文章 | Android 低内存导致的卡顿 | [链接](https://www.androidperformance.com/2019/09/18/Android-Jank-Due-To-Low-Memory/) |
 
-可配合 [10.1 App 内存分析](../part2-performance/ch10-memory-perf/01-app-memory-analysis.md) 检查进程指标，并回到 [4.4 系统内存压力与 lmkd](../part1-fundamentals/ch04-memory/04-lmk.md) 区分回收、压缩交换与进程终止。
+可配合 [10.1 App 内存分析与案例](../part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md) 检查进程指标，并回到 [4.3 lmkd、Cached App Freezer 与内存压力治理](../part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md) 区分回收、压缩交换与进程终止。
 
 ## Ch13 Perfetto
 
-Perfetto 是 Android 当前使用的系统追踪与分析平台，可把内核调度、系统服务、应用埋点等数据记录到同一个 Trace，再通过时间线或 SQL 查询，采集方式可查 [Perfetto 系统追踪文档](https://perfetto.dev/docs/getting-started/system-tracing)。Systrace 文章保留了早期工具的分析视角；实际采集可参照 [13.2 Trace 抓取](../part3-tools/ch13-perfetto/02-trace-capture.md)，界面阅读可参照 [13.3 Perfetto View 解读](../part3-tools/ch13-perfetto/03-perfetto-view.md)。
+Perfetto 是 Android 当前使用的系统追踪与分析平台，可把内核调度、系统服务、应用埋点等数据记录到同一个 Trace，再通过时间线或 SQL 查询，采集方式可查 [Perfetto 系统追踪文档](https://perfetto.dev/docs/getting-started/system-tracing)。Systrace 文章保留了早期工具的分析视角；实际采集可参照 [13.1 Trace 抓取](../part3-tools/ch13-perfetto/01-perfetto-intro-capture-reliability.md)，界面阅读可参照 [13.2 Perfetto View 解读](../part3-tools/ch13-perfetto/02-perfetto-ui-state-tracks.md)。
 
 | 系列 | 文章 | 链接 |
 |------|------|------|
@@ -144,4 +144,4 @@ Perfetto 是 Android 当前使用的系统追踪与分析平台，可把内核�
 
 入门时先读“Android Perfetto 101”和三篇基础文章，再按数据规模决定是否阅读“大 Trace”。专题文章可按等待链选择：CPU 用于确认线程有没有获得执行时间，Binder 用于追踪跨进程调用，MainThread/RenderThread、Choreographer 和 Vsync 用于定位一帧在应用与显示管线中的延迟。
 
-如果采集后缺少预期轨道，先检查数据源、缓冲区和设备能力。`TraceConfig` 是声明 Perfetto 数据源、缓冲区和采集时长的配置，参照 [13.22 Trace 采集可靠性](../part3-tools/ch13-perfetto/22-trace-reliability.md) 与 [附录 C：TraceConfig 模板](perfetto-templates.md) 排查。遇到旧文章的菜单、轨道名或系统行为与设备不一致时，可查 [附录 A：Android 版本性能变更](version-changelog.md)。
+如果采集后缺少预期轨道，先检查数据源、缓冲区和设备能力。`TraceConfig` 是声明 Perfetto 数据源、缓冲区和采集时长的配置，参照 [13.1 Perfetto 入门、Trace 抓取与可靠性](../part3-tools/ch13-perfetto/01-perfetto-intro-capture-reliability.md) 与 [附录 C：TraceConfig 模板](perfetto-templates.md) 排查。遇到旧文章的菜单、轨道名或系统行为与设备不一致时，可查 [附录 A：Android 版本性能变更](version-changelog.md)。

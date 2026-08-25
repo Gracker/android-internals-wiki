@@ -1,0 +1,140 @@
+{
+  "version": 10,
+  "operation": "frame_monitoring_editorial_fusion",
+  "count_change": {
+    "before": 280,
+    "after": 279
+  },
+  "merged_paths": [
+    {
+      "source": "src/part3-tools/ch19-apm/06-jankstats-framemetrics.md",
+      "target": "src/part5-app/ch22-rendering-practice/07-frame-monitoring.md",
+      "role": "frame_monitoring_and_online_jank_owner"
+    }
+  ],
+  "rewritten_paths": [
+    "src/part5-app/ch22-rendering-practice/07-frame-monitoring.md"
+  ],
+  "reindexed_paths": [
+    {
+      "from": "src/part3-tools/ch19-apm/07-jetpack-benchmark-baseline-profiles.md",
+      "to": "src/part3-tools/ch19-apm/06-jetpack-benchmark-baseline-profiles.md"
+    },
+    {
+      "from": "src/part3-tools/ch19-apm/08-lab-tools-device-benchmarks.md",
+      "to": "src/part3-tools/ch19-apm/07-lab-tools-device-benchmarks.md"
+    },
+    {
+      "from": "src/part3-tools/ch19-apm/09-network-apm-internals.md",
+      "to": "src/part3-tools/ch19-apm/08-network-apm-internals.md"
+    },
+    {
+      "from": "src/part3-tools/ch19-apm/10-crash-anr-internals.md",
+      "to": "src/part3-tools/ch19-apm/09-crash-anr-internals.md"
+    },
+    {
+      "from": "src/part3-tools/ch19-apm/11-battery-thermal-apm.md",
+      "to": "src/part3-tools/ch19-apm/10-battery-thermal-apm.md"
+    },
+    {
+      "from": "src/part3-tools/ch19-apm/12-hybrid-apm.md",
+      "to": "src/part3-tools/ch19-apm/11-hybrid-apm.md"
+    },
+    {
+      "from": "src/part3-tools/ch19-apm/13-apm-client-architecture.md",
+      "to": "src/part3-tools/ch19-apm/12-apm-client-architecture.md"
+    }
+  ],
+  "source_bytes": {
+    "src/part3-tools/ch19-apm/06-jankstats-framemetrics.md": 35758,
+    "src/part5-app/ch22-rendering-practice/07-frame-monitoring.md": 36830,
+    "src/part3-tools/ch19-apm/07-jetpack-benchmark-baseline-profiles.md": 41415,
+    "src/part3-tools/ch19-apm/08-lab-tools-device-benchmarks.md": 78428,
+    "src/part3-tools/ch19-apm/09-network-apm-internals.md": 53653,
+    "src/part3-tools/ch19-apm/10-crash-anr-internals.md": 41978,
+    "src/part3-tools/ch19-apm/11-battery-thermal-apm.md": 42609,
+    "src/part3-tools/ch19-apm/12-hybrid-apm.md": 46812,
+    "src/part3-tools/ch19-apm/13-apm-client-architecture.md": 46448
+  },
+  "result_bytes": {
+    "src/part5-app/ch22-rendering-practice/07-frame-monitoring.md": 45162
+  },
+  "source_sha256": {
+    "src/part3-tools/ch19-apm/06-jankstats-framemetrics.md": "f4cce279b9db365f2822b3ce50ed289339fb3f6a88aef5f0f936a36fc800c0f8",
+    "src/part5-app/ch22-rendering-practice/07-frame-monitoring.md": "ba6637ab73af6120a8fd12a69b56bd844f8dca4b7e2c1d1e154ef2fa2131f843",
+    "src/part3-tools/ch19-apm/07-jetpack-benchmark-baseline-profiles.md": "beb6da17bcfb529ea83f5594da3cc3b2aa71e1c9a13a299b482e2cee3e03dda2",
+    "src/part3-tools/ch19-apm/08-lab-tools-device-benchmarks.md": "58be96accf47dd38591a193d4055c435046f3a7f3acd3a2b2acf5bda800afd6a",
+    "src/part3-tools/ch19-apm/09-network-apm-internals.md": "8636dca7fd78ce4a712b64c6d1cf136aad55686d07a6233eabc3317f694fc3a6",
+    "src/part3-tools/ch19-apm/10-crash-anr-internals.md": "ae3832eaae4d0b6c3470a6886531fe5425a6eeef145154a9f927a37091d80ba8",
+    "src/part3-tools/ch19-apm/11-battery-thermal-apm.md": "42229d952832b52a8aed1eabf949c8630592bf168d358f9dd6e1deeabb3494e8",
+    "src/part3-tools/ch19-apm/12-hybrid-apm.md": "ff721ed37825a09eeb938ac0395e151c0ae1e1a467f8459514c03b1f59c401d8",
+    "src/part3-tools/ch19-apm/13-apm-client-architecture.md": "0f9aaa063ab8529009236829dcf59d5ac1ed4f67ba3c0706a00b469798abacff"
+  },
+  "result_sha256": {
+    "src/part5-app/ch22-rendering-practice/07-frame-monitoring.md": "18b5a178f44a35ae72dbdf56f6047196b69fd0c57dcad1d9c0a6e2f9a1028a2d"
+  },
+  "source_h2_inventory": [
+    "JankStats 是官方帧级卡顿入口",
+    "它输出什么",
+    "API 版本差异",
+    "jank 阈值不是固定 16ms",
+    "帧性能工具分工",
+    "使用建议",
+    "UI context 的设计",
+    "Compose 场景的状态标记",
+    "批量聚合方式",
+    "慢帧率的口径",
+    "常见误判",
+    "参考资料"
+  ],
+  "content_routes": [
+    {
+      "source": "19.6 JankStats entry, FrameData output and API-version differences",
+      "destination": "22.7 JankStats / artifact and implementation buckets",
+      "treatment": "unique_version_semantics_rewritten_and_embedded"
+    },
+    {
+      "source": "19.6 jank threshold and slow-frame protocol",
+      "destination": "22.7 isJank, deadline miss and frozen-frame protocol",
+      "treatment": "unique_metric_boundaries_rewritten_and_embedded"
+    },
+    {
+      "source": "19.6 FrameMetrics data boundaries and Window topology",
+      "destination": "22.7 exact metric intervals and independent-content coverage",
+      "treatment": "unique_platform_boundaries_rewritten_and_embedded"
+    },
+    {
+      "source": "19.6 usage advice, UI context and Compose state marking",
+      "destination": "22.7 PerformanceMetricsState timeline/owner + existing integration code",
+      "treatment": "unique_state_semantics_embedded; duplicate_code_deduplicated"
+    },
+    {
+      "source": "19.6 batch aggregation, rate definitions and common mistakes",
+      "destination": "22.7 existing attribution, alert schema, checklist and postmortem sections",
+      "treatment": "deduplicated_into_broader_governance_owner"
+    },
+    {
+      "source": "19.6 references",
+      "destination": "22.7 metadata sources and source index",
+      "treatment": "evidence_reconciled"
+    }
+  ],
+  "updated_reference_files": [
+    "src/SUMMARY.md",
+    "src/appendix/android-performance-learning-path.md",
+    "src/part2-performance/ch11-power/04-bluetooth-scan-connection-power.md",
+    "src/part3-tools/ch14-other-tools/06-automation-cli-agent-workflow.md",
+    "src/part3-tools/ch14-other-tools/08-profiling-manager.md",
+    "src/part3-tools/ch19-apm/01-apm-landscape-firebase-commercial.md",
+    "src/part3-tools/ch19-apm/README.md",
+    "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+    "src/part5-app/ch25-power-size/07-hybrid-webview-power.md",
+    "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+    "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+    "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+    "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+    "src/part5-app/ch26-observability/11-online-network-quality-observability.md",
+    "src/part5-app/ch26-observability/13-bytecode-instrumentation-monitoring-automation.md"
+  ],
+  "applied": true
+}

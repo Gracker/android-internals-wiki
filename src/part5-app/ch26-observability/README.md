@@ -6,31 +6,21 @@
 
 ## 内容索引
 
-- [26.1 App 可观测性架构设计](01-observability-architecture.md)
-- [26.2 Crash 上报体系搭建](02-crash-reporting.md)
-- [26.3 性能指标采集与上报](03-performance-collection.md)
-- [26.4 ANR 监控体系](04-anr-monitoring.md)
-- [26.5 线上问题排查方法论](05-online-troubleshooting.md)
-- [26.6 A/B Test 与性能回归防护](06-ab-testing-regression.md)
-- [26.7 发版质量门禁](07-release-quality-gate.md)
-- [26.8 ApplicationExitInfo 与进程退出归因](08-application-exit-info.md)
-- [26.9 eBPF 在线追踪与 Binder 语义重建](09-ebpf-online-tracing-binder-semantics.md)
-- [26.10 Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger](10-versioned-diagnostics.md)
-- [26.11 ApplicationStartInfo 与启动归因上报](11-application-start-info.md)
-- [26.12 Android Vitals 与 Play Console 质量指标归因](12-android-vitals-play-console-quality.md)
-- [26.13 线上存储、I/O 与 SQLite 可观测性](13-online-storage-io-sqlite-observability.md)
-- [26.14 线上网络质量监控与接入层协同](14-online-network-quality-observability.md)
-- [26.15 App Performance Score 与性能质量评分归因](15-app-performance-score.md)
-- [26.16 端侧高可用日志与诊断命令通道](16-client-log-diagnostic-command-channel.md)
-- [26.17 Battery Historian 与性能指标集成](17-battery-historian-performance-metrics-integration.md)
-- [26.18 编译期字节码插桩与监控自动化](18-bytecode-instrumentation-monitoring-automation.md)
-- [26.19 heapprofd 生产级部署与权限模型](19-heapprofd-production-deployment-permissions.md)
-- [26.20 ProcessCpuTracker 与 /proc 伪文件系统 CPU 数据采集](20-proc-filesystem-cpu-monitoring.md)
-- [26.21 Page Fault 类型分析与 Android 实践](21-page-fault-analysis-android.md)
-- [26.22 生产级 ART 动态方法追踪：XTrace 论文机制与 Android 17 边界](22-xtrace-art-dynamic-method-tracing.md)
-- [26.23 Facebook Profilo 框架线上 ATrace 收集方案](23-profilo-atrace-online-collection.md)
-- [26.24 非 Play 渠道性能监控与国内厂商 ROM 适配可观测性](24-non-play-channel-rom-observability.md)
-- [26.25 JVMTI Agent：ART 运行时动态监控的实验入口与证据边界](25-jvmti-agent-art-runtime-dynamic-monitoring.md)
+- [26.1 App 可观测性架构与性能数据采集](01-app-observability-performance-collection.md)
+- [26.2 Crash 与 ANR 监控体系](02-crash-anr-monitoring.md)
+- [26.3 线上排障、诊断通道与非 Play ROM 适配](03-online-troubleshooting-diagnostic-rom.md)
+- [26.4 A/B Test 与性能回归防护](04-ab-testing-regression.md)
+- [26.5 性能评分与发版质量门禁](05-performance-score-release-gate.md)
+- [26.6 ApplicationExitInfo 与版本化线上诊断](06-application-exit-versioned-diagnostics.md)
+- [26.7 eBPF、ATrace 与线上系统追踪](07-ebpf-atrace-online-tracing.md)
+- [26.8 ApplicationStartInfo 与启动归因上报](08-application-start-info.md)
+- [26.9 Android Vitals 与 Play Console 质量指标归因](09-android-vitals-play-console-quality.md)
+- [26.10 线上存储、I/O 与 SQLite 可观测性](10-online-storage-io-sqlite-observability.md)
+- [26.11 线上网络质量监控与接入层协同](11-online-network-quality-observability.md)
+- [26.12 Battery Historian 与性能指标集成](12-battery-historian-performance-metrics-integration.md)
+- [26.13 编译期字节码插桩与监控自动化](13-bytecode-instrumentation-monitoring-automation.md)
+- [26.14 heapprofd、procfs CPU 与 Page Fault 分析](14-heapprofd-procfs-page-fault.md)
+- [26.15 ART 动态方法追踪与 JVMTI 边界](15-art-dynamic-tracing-jvmti.md)
 
 ## 术语提示
 
@@ -47,8 +37,8 @@
 
 ## 阅读建议
 
-- 搭建体系时先读 26.1，再按稳定性、性能和发布流程进入 26.2—26.7。
-- 已知线上症状时可从 26.5 选择排查入口；进程退出、启动、Play 质量、存储和网络问题分别对应 26.8—26.14。
-- 发布评估可结合 26.6、26.7、26.12、26.15 和 26.17，统一实验口径、门禁阈值与外部质量指标。
-- 26.9、26.19、26.22、26.23 和 26.25 涉及系统权限、实验方案或已归档项目。采用其中机制前，应确认目标 Android 版本、构建类型、权限和上游维护状态。
-- 非 Play 分发与厂商系统差异见 26.24；涉及 OEM 数据时，应保留设备型号、系统构建指纹、渠道和采集权限。
+- 搭建体系时先读 26.1，再按稳定性、线上排障和发布流程进入 26.2—26.5。
+- 已知线上症状时可从 26.3 选择排查入口；进程退出、启动、Play 质量、存储和网络问题分别对应 26.6、26.8—26.11。
+- 发布评估可结合 26.4、26.5、26.9 和 26.12，统一实验口径、门禁阈值与外部质量指标。
+- 26.7、26.14 和 26.15 涉及系统权限或实验方案。采用其中机制前，应确认目标 Android 版本、构建类型、权限和上游维护状态。
+- 非 Play 分发与厂商系统差异见 26.3；涉及 OEM 数据时，应保留设备型号、系统构建指纹、渠道和采集权限。

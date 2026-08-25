@@ -27,11 +27,12 @@
         "aosp"
       ],
       "routed_at": "2026-08-22T17:04:15.219907+08:00",
-      "section": "1.11",
+      "section": "1.2",
       "status": "body-applied",
       "summary": "双阶段 lazy preload 机制重建，修正 preloadDefault 调用点为空的断言，SecureFS 不存在于 AOSP 17",
-      "target_path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
-      "title": "Android 17 Zygote lazyPreload() 端到端触发链路"
+      "target_path": "src/part1-fundamentals/ch01-architecture/02-boot-zygote-graphics-preload.md",
+      "title": "Android 17 Zygote lazyPreload() 端到端触发链路",
+      "canonical_target_chapter": "ch01"
     },
     {
       "action": "quarantined-non-aiw",
@@ -41,7 +42,7 @@
       "processed_at": "2026-07-16T06:14:00.474672",
       "route_status": "quarantined-non-aiw-or-aggregate",
       "routed_at": "2026-08-22T17:04:15.219907+08:00",
-      "section": "2.17",
+      "section": "2.15",
       "summary": "GPU Headroom AIDL + FrameProducer deadline miss 反馈 + PowerAdvisor 内部分解逻辑",
       "title": "Android 17 GPU Headroom API 与 FrameProducer 帧级反馈"
     },
@@ -232,18 +233,31 @@
         "#协程",
         "#Repository"
       ],
-      "title": "现代 Android 官方为什么更推荐 Repository 暴露 `suspend fun`，而不是在内部 `launch`"
+      "title": "现代 Android 官方为什么更推荐 Repository 暴露 `suspend fun`，而不是在内部 `launch`",
+      "previous_route_status": null,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "action": "quarantined-non-aiw",
+      "routed_at": "2026-08-25T06:20:58.257665+08:00"
     },
     {
       "action": "indexed-only-chapter-freeze",
       "chapter": "ch18",
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-game-engine-resolution-memory-allocation.md",
       "processed_at": "2026-07-17T06:14:31.983422",
-      "route_status": "unrouted-existing-chapter-needed",
-      "routed_at": "2026-07-25T13:53:24.486291+08:00",
+      "route_status": "existing-chapter-routed",
+      "routed_at": "2026-08-25T06:20:58.257665+08:00",
       "section": "18.16",
       "summary": "BufferQueue 默认双缓冲（mMaxAcquiredBufferCount=1 + mMaxDequeuedBufferCount=1），游戏引擎三缓冲需显式调 setMaxDequeuedBufferCount(2)。ASTC HDR 为移动端 HDR 纹理主流。低内存降级路径涵盖 PerformanceHintManager、setBufferCount、ANativeWindow_setFrameRate、GameMode BATTERY 四组 API。",
-      "title": "游戏引擎渲染链路 — 多设备分辨率适配与内存分配策略"
+      "title": "游戏引擎渲染链路 — 多设备分辨率适配与内存分配策略",
+      "previous_route_status": "unrouted-existing-chapter-needed",
+      "target_path": "src/part2-performance/ch18-rendering-pipelines/12-game-engine.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "游戏引擎渲染链路",
+        "bufferqueue",
+        "performancehintmanager",
+        "api"
+      ]
     },
     {
       "action": "body-applied",
@@ -524,7 +538,7 @@
       "score": 19,
       "status": "applied",
       "summary": "拆解 DisplayModeController 四态状态机、RefreshRateSelector 三组输入评分（Layer vote + Global Signals + Policy）、getRankedFrameRatesLocked 浮点分曲线、FrameRateOverrideMappings 双路 override 合并、modeset_state_machine flag 双槽/单槽切换。",
-      "target_path": "src/part1-fundamentals/ch02-rendering/34-display-mode-refresh-rate-selection.md",
+      "target_path": "src/part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md",
       "title": "[DeepResearch] SurfaceFlinger DisplayMode 选择与 RefreshRateSelector 评分机制"
     },
     {
@@ -2419,7 +2433,7 @@
       "score": 15,
       "status": "applied",
       "summary": "- Android Developers Blog: Build intelligent Android apps: Cloud and hybrid inference - - - - - - - - - - - - ☰ Android Developers Blog The latest Android and Google Play news for app and game developers. 🔍 Android Devel",
-      "target_path": "src/part4-system/ch17-oem/03-industry-cases.md",
+      "target_path": "src/part4-system/ch17-oem/01-oem-performance-app-collaboration.md",
       "title": "[DeepResearch] 08-jetpacker-hybrid"
     },
     {
@@ -2456,7 +2470,7 @@
       "score": 15,
       "status": "applied",
       "summary": "- Android Developers Blog: Build intelligent Android apps: Introduction to Jetpacker - - - - - - - - - - - - ☰ Android Developers Blog The latest Android and Google Play news for app and game developers. 🔍 Android Develo",
-      "target_path": "src/part4-system/ch17-oem/03-industry-cases.md",
+      "target_path": "src/part4-system/ch17-oem/01-oem-performance-app-collaboration.md",
       "title": "[DeepResearch] 04-jetpacker-intro"
     },
     {
@@ -2558,8 +2572,9 @@
       ],
       "score": 15,
       "summary": "--- phase: 1 sub_question: Black Hat / HF 技术时间线补丁（相对 morning） date: 2026-08-06 slot: evening official_material_status: 已抓 WIRED/Nextgov/Ground Level/HF blog；OpenAI全文postmortem仍待 --- # Research Dump · 消息板与入侵链：08-06 媒体补丁 #",
-      "target_path": "src/part4-system/ch17-oem/03-industry-cases.md",
-      "title": "[DeepResearch] Research Dump · 消息板与入侵链：08-06 媒体补丁"
+      "target_path": "src/part4-system/ch17-oem/01-oem-performance-app-collaboration.md",
+      "title": "[DeepResearch] Research Dump · 消息板与入侵链：08-06 媒体补丁",
+      "canonical_target_chapter": "ch17"
     },
     {
       "action": "indexed-only-chapter-freeze",
@@ -2601,8 +2616,9 @@
       ],
       "score": 19,
       "summary": "--- source: opencli-commands title: 2026-08-06 morning opencli 命令与 resolved URLs fetched: 2026-08-06T09:10:00+08:00 --- # opencli 命令日志（摘要） ```text opencli twitter search 'Discovery Loop OR DiscoLoopAI OR \"Jeff Dean\" expe",
-      "target_path": "src/part4-system/ch17-oem/03-industry-cases.md",
-      "title": "[DeepResearch] opencli 命令日志（摘要）"
+      "target_path": "src/part4-system/ch17-oem/01-oem-performance-app-collaboration.md",
+      "title": "[DeepResearch] opencli 命令日志（摘要）",
+      "canonical_target_chapter": "ch17"
     },
     {
       "action": "indexed-only-chapter-freeze",
@@ -2623,8 +2639,9 @@
       ],
       "score": 19,
       "summary": "--- source: https://www.primeintellect.ai/blog/prime-agent title: Prime Agent: A self-improving RLM agent fetched: 2026-08-06T09:02:00+08:00 research_topic: Prime Agent sub_question: 02-dump-prime-agent resolve_source: c",
-      "target_path": "src/part4-system/ch17-oem/03-industry-cases.md",
-      "title": "[DeepResearch] 摘要归档（全文见抓取时 cwd web-articles/Prime_Agent_A_self/）"
+      "target_path": "src/part4-system/ch17-oem/01-oem-performance-app-collaboration.md",
+      "title": "[DeepResearch] 摘要归档（全文见抓取时 cwd web-articles/Prime_Agent_A_self/）",
+      "canonical_target_chapter": "ch17"
     },
     {
       "action": "indexed-only-chapter-freeze",
@@ -2645,8 +2662,9 @@
       ],
       "score": 19,
       "summary": "--- source: https://www.wired.com/story/jeff-dean-google-discovery-loop-startup/ title: 4 of Google’s Top AI Brains Are Leaving—and Launching Their Own AI Startup author: Steven Levy fetched: 2026-08-06T09:03:00+08:00 re",
-      "target_path": "src/part4-system/ch17-oem/03-industry-cases.md",
-      "title": "[DeepResearch] WIRED 摘要（含直接采访）"
+      "target_path": "src/part4-system/ch17-oem/01-oem-performance-app-collaboration.md",
+      "title": "[DeepResearch] WIRED 摘要（含直接采访）",
+      "canonical_target_chapter": "ch17"
     },
     {
       "action": "indexed-only-chapter-freeze",
@@ -2688,8 +2706,9 @@
       ],
       "score": 19,
       "summary": "--- phase: 1 topic: Agent Plugins 1.0 date: 2026-08-07 sources: [opencli-twitter, opencli-google, opencli-web] --- ## 执行摘要 - 本 dump 聚焦 Agent Plugins 1.0：它是 Skills 与 MCP server 配置的可移植包格式，不是完整 agent runtime 标准。 - 核心来源：Open",
-      "target_path": "src/part4-system/ch17-oem/03-industry-cases.md",
-      "title": "[DeepResearch] Research Dump · Agent Plugins 1.0"
+      "target_path": "src/part4-system/ch17-oem/01-oem-performance-app-collaboration.md",
+      "title": "[DeepResearch] Research Dump · Agent Plugins 1.0",
+      "canonical_target_chapter": "ch17"
     },
     {
       "action": "indexed-only-chapter-freeze",
@@ -3199,8 +3218,9 @@
       "score": 19,
       "status": "applied",
       "summary": "Android 在 Pixel 上用 ETE+TRBE 抓真实分支历史，再用 simpleperf 转成 AutoFDO profile 重新编译内核，当前已在 android16-6.12、android15-6.6 落地，下一步推到 android17-6.18 和 GKI/DDK 模块。",
-      "target_path": "src/part4-system/ch16-aosp/04-android17-kernel618-performance.md",
-      "title": "[RSS订阅] 今日精选"
+      "target_path": "src/part4-system/ch16-aosp/03-android17-kernel-arm64-security.md",
+      "title": "[RSS订阅] 今日精选",
+      "canonical_target_chapter": "ch16"
     },
     {
       "action": "indexed-only-chapter-freeze",
