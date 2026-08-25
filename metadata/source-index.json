@@ -2,12 +2,14 @@
   "architecture_synced_at": "2026-08-06T10:05:34+08:00",
   "files": [
     {
-      "action": "injected",
+      "action": "body-applied",
+      "status": "body-applied",
+      "previous_action": "injected",
       "chapter": "ch19",
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md",
       "processed_at": "2026-07-16T06:14:00.474672",
       "section": "19.24",
-      "summary": "GWP-ASan 重写为 Recoverable 诊断器，SampleRate=25000，SEGV 经 debuggerd 两阶段恢复，与 MTE 路径独立",
+      "summary": "已编入 Android 17 GWP-ASan Recoverable 默认值、SampleRate=25000、MaxSimultaneousAllocations=32、process_sample_rate=128、malloc dispatch 接入、debuggerd 首次完整报告/后续 pre-post 恢复路径，以及与 Permissive MTE 独立但共享 recoverable_crash 出口的边界。",
       "title": "Android 17 GWP-ASan 可恢复机制与配置参数源码分析",
       "previous_route_status": null,
       "target_path": "src/part5-app/ch20-stability/11-mte-gwp-asan-native-memory-safety.md",
@@ -19,7 +21,10 @@
         "mte"
       ],
       "route_status": "existing-chapter-routed",
-      "routed_at": "2026-08-26T06:20:51.196046+08:00"
+      "routed_at": "2026-08-26T06:20:51.196046+08:00",
+      "applied_at": "2026-08-26T07:15:59+08:00",
+      "applied_run_id": "20260826-071559-6e58db7c",
+      "canonical_target_chapter": "ch20"
     },
     {
       "action": "body-applied",
