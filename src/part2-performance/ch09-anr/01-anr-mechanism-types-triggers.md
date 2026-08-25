@@ -830,31 +830,6 @@ Perfetto 用来回答“超时窗口内线程和 CPU 在做什么”，单靠一
 - 线程栈解释采样时刻，Perfetto 补充一段时间范围；还要用日志、调度事件和 Binder 链补齐时间线。
 - 报告阈值时写明“源码默认值”或“设备观测值”，不要把可配置常量当成 SDK 保证。
 
-### 源码与官方资料
-
-源码锚点均为 AOSP `android-17.0.0_r1`：
-
-- `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`
-- `frameworks/native/libs/input/android/os/IInputConstants.aidl`
-- `frameworks/base/core/java/android/app/AnrTypes.java`
-- `frameworks/base/core/java/android/content/ContentResolver.java`
-- `frameworks/base/core/java/android/content/ContentProviderClient.java`
-- `frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java`
-- `frameworks/base/services/core/java/com/android/server/am/ActiveServices.java`
-- `frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java`
-- `frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java`
-- `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java`
-- `frameworks/base/core/java/com/android/internal/os/TimeoutRecord.java`
-
-官方资料：
-
-- [Keep your app responsive：ANR 类型与基础诊断](https://developer.android.com/topic/performance/vitals/anr)
-- [Diagnose and fix ANRs：广播、输入、execute-service 与 Provider 诊断](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
-- [Foreground service timeout behavior](https://developer.android.com/develop/background-work/services/fgs/timeout)
-- [Troubleshoot foreground services](https://developer.android.com/develop/background-work/services/fgs/troubleshooting)
-- [`JobService` API reference](https://developer.android.com/reference/android/app/job/JobService)
-
-
 ## 参考资料
 
 - Android 17 AOSP：
@@ -864,6 +839,8 @@ Perfetto 用来回答“超时窗口内线程和 CPU 在做什么”，单靠一
   - [`StackTracesDumpHelper.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/StackTracesDumpHelper.java)
   - [`BroadcastQueueImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastQueueImpl.java)
   - [`ActiveServices.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java)
+  - [`ContentProviderHelper.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderHelper.java)
+  - [`JobServiceContext.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java)
   - [`AnrController.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/AnrController.java)
   - [`Watchdog.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/Watchdog.java)
   - [`InputDispatcher.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
@@ -871,6 +848,8 @@ Perfetto 用来回答“超时窗口内线程和 CPU 在做什么”，单靠一
 - Android Developers：
   - [ANRs 与 Android vitals](https://developer.android.com/topic/performance/vitals/anr)
   - [Diagnose and fix ANRs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
+  - [Foreground service timeout behavior](https://developer.android.com/develop/background-work/services/fgs/timeout)
+  - [`JobService` API reference](https://developer.android.com/reference/android/app/job/JobService)
   - [`ActivityManager.registerAnrWarningListener()`](https://developer.android.com/reference/android/app/ActivityManager#registerAnrWarningListener(java.util.concurrent.Executor,java.util.function.Consumer%3Candroid.app.AnrWarningResult%3E))
   - [`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)
   - [`ActivityManager.getHistoricalProcessExitReasons()`](https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,int,int))

@@ -1,5 +1,5 @@
 ---
-title: 案例集
+title: ANR 诊断案例集
 chapter: '9.4'
 section: '9.4'
 status: finalized
@@ -48,7 +48,7 @@ task9_state: reviewed
 task2b_state: fixed
 ---
 
-# 案例集
+# ANR 诊断案例集
 
 相关基础定义见 §9.1 ANR 机制、类型与触发条件、§9.2 ANR 与 Kernel Trace 联合诊断，以及 §9.3 特殊与跨边界 ANR。
 
@@ -149,8 +149,6 @@ CPU usage TOTAL: 99% 14% user + 36% kernel + 43% iowait
 
 这个案例留下一个实用提醒：`nativePollOnce` 只是单个采样点的 Java 入口。结合 native 栈、调度历史和系统压力，才能判断采样时主线程正在空闲、退出回调，还是等待资源。
 
----
-
 ## 案例 2：Gesture Monitor 连接超时，但 Notifier 证据时间错位
 
 ### ANR 信息
@@ -205,8 +203,6 @@ ANR 报告覆盖 `15:01:27.683` 至 `15:01:37.233` 的 CPU 窗口，`system_serv
 
 这个案例的价值在于展示一次应当撤回的归因：日志内容很可疑，时间却对不上。ANR 分析里，时钟和对象身份优先于关键词相似度。
 
----
-
 ## 案例 3：SharedPreferences 写入在组件收尾阶段阻塞主线程
 
 ### ANR 信息
@@ -259,8 +255,6 @@ ANR 报告覆盖 `15:01:27.683` 至 `15:01:37.233` 的 CPU 窗口，`system_serv
 
 修复验收不能只看平均写入耗时。应在应用退后台、Service 完成、广播密集和低速存储压力下，确认主线程等待的 P95/P99 与 ANR 数量同时下降。P95/P99 表示 95%/99% 的样本不超过该耗时，用于观察少数慢样本是否改善。
 
----
-
 ## 案例 4：Cached Apps Freezer 冻结了输入连接消费者
 
 ### ANR 信息
@@ -307,8 +301,6 @@ Cached Apps Freezer 是 Android 冻结缓存进程、减少其资源消耗的机
 - 加入回归用例：事件派发后立刻触发进程状态迁移，检查 WaitQueue 能否完成或被有序取消。
 
 应用侧无法稳定规避系统冻结输入消费者的问题。诊断脚本应按时间和 PID 自动关联 `am_freeze`、`am_unfreeze` 与 InputDispatcher reason。
-
----
 
 ## 案例 5：目标进程未完成 attach，焦点恢复也没有完成
 
@@ -365,8 +357,6 @@ Dialer attach 失败时，应检查 zygote fork（由 Zygote 创建应用进程�
 - InputDispatcher 中不存在已经失去对应进程或窗口的 focused application 记录。
 
 排查“Application does not have a focused window”时，Launcher 的静态 trace 常常信息很少。`input_focus`、Activity 启动、进程 attach 和窗口可见性时间线更有辨识度。
-
----
 
 ## 案例 6：两把锁构成的 Service ANR
 
@@ -469,8 +459,6 @@ public Cursor query(String table, String selection) {
 
 Android 17 的 `ProcessState.cpp` 定义 `DEFAULT_MAX_BINDER_THREADS = 15`，并把它作为 Binder driver（内核驱动）可以请求的默认最大线程数。调用线程主动加入线程池、已经启动的线程和 Binder 实现细节，都会影响进程中观察到的线程总数。`15` 不是固定池大小，“再留一个线程”也无法证明系统不会死锁。诊断时应画出事务方向、同步或异步属性、线程状态、锁持有关系，以及 executor（执行器）或线程池的容量。
 
----
-
 ## 案例 7：InputTransport finished signal 的历史平台缺陷
 
 一个公开的旧版 Android 游戏案例记录了 InputDispatcher 等待队列持续堆积：
@@ -493,8 +481,6 @@ AOSP Gerrit 给出了更强的源码证据：
 **结论强度：平台缺陷已确认，具体产品事件为强推断。** AOSP 提交足以确认历史代码缺陷及其机制；产品日志与这一机制吻合，但缺少完整原始现场，不能宣称每个事件都已经与缺陷代码对应。该问题在 Android 17 源码中早已修复，不应重新套用旧补丁。
 
 这个案例提供了一套平台归因方法：先从 reason 确认存在未完成事件，再检查 App 侧是否有足以耗尽期限的长任务；随后用 sequence/finish 动态日志缩小范围，以源码补丁解释队列为何不下降；最后在修补前后的系统镜像上运行同一输入压力测试。完成这些验证后，才能区分“系统把 ANR 记在哪个应用名下”和“问题实际产生在哪一层”。
-
----
 
 ## 如何用 InputDispatcher WaitQueue 分析以上案例
 

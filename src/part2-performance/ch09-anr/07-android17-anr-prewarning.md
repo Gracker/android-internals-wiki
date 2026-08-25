@@ -2,7 +2,7 @@
 title: Android 17 ANR 预警与 Input pre-ANR
 chapter: '9.7'
 section: '9.7'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 17 (API 37)
 tags:
 - ANR
@@ -26,7 +26,7 @@ last_verified_against: AOSP android-17.0.0_r1（公开 API、warning producer、
 confidence: medium
 task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 last_deep_review_at: '2026-08-20T13:28:29+08:00'
 last_deep_review_run_id: 20260820-132829-deep-review-73d8fbf6
 sources:
@@ -459,7 +459,7 @@ AMS 按 UID 分发。同 UID 的多个已注册进程都可能收到同一 warni
 - 对 description 只做原文保留或容错聚类；
 - 在目标 build（系统构建版本）上验证 feature flag、覆盖类型和剩余窗口。
 
-### 版本与实现边界
+### 公开预警 API 的版本与实现边界
 
 Android 17 / API 37 把 ANR 类型、预警载荷和 listener 注册做成公开 API。它在 deadline 前提供 best-effort 信号，也让 warning id 能与事后的 `ApplicationExitInfo.AnrInfo` 对齐。
 
@@ -798,7 +798,7 @@ Perfetto 不会自动生成固定的 `/data/anr` 产物。需要预先配置持�
 - deadline 前 `system_server` 被 CPU 或锁延迟；
 - `ApplicationExitInfo.AnrInfo` 存在与缺失两条分支。
 
-### 版本与实现边界
+### Input pre-ANR 的版本与实现边界
 
 | 平台 | 已核对结论 |
 |---|---|
@@ -819,7 +819,15 @@ Android 17 为 no-focused-window 输入 ANR 增加了一次 deadline 前的观�
 
 这套机制没有覆盖 window-unresponsive pre-warning，也不保证 callback 领先 deadline 固定时长。诊断系统应把 warning、可选 trace、正式责任判断和退出记录视为四份各自可能缺失的证据。
 
+## 相关章节
+
+- [9.1 ANR 机制、类型与触发条件](01-anr-mechanism-types-triggers.md)：各类 detector、deadline 与正式 ANR 处理。
+- [9.2 ANR 与 Kernel Trace 联合诊断](02-anr-kernel-trace-diagnosis.md)：warning、线程转储和 Perfetto 时间线的联合取证。
+- [26.2 崩溃与 ANR 监控](../../part5-app/ch26-observability/02-crash-anr-monitoring.md)：线上聚合、恢复率与最终 ANR 关联。
+
 ## 参考资料
+
+### 公开预警 API
 
 - [Android Developers：ActivityManager.registerAnrWarningListener](https://developer.android.com/reference/android/app/ActivityManager#registerAnrWarningListener(java.util.concurrent.Executor,%20java.util.function.Consumer))
 - [Android Developers：AnrWarningResult](https://developer.android.com/reference/android/app/AnrWarningResult)
@@ -833,20 +841,14 @@ Android 17 为 no-focused-window 输入 ANR 增加了一次 deadline 前的观�
 - [AOSP android-17.0.0_r1：AnrTimer](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/utils/AnrTimer.java)
 - [AOSP android-17.0.0_r1：ActiveServices warning producers](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java)
 - [AOSP android-17.0.0_r1：BroadcastQueueImpl warning producer](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastQueueImpl.java)
-- [AOSP android-17.0.0_r1：InputDispatcher pre-ANR](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
-- [AOSP android-17.0.0_r1：WindowManager AnrController](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/AnrController.java)
 - [AOSP android-17.0.0_r1：ProfilingManager](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java)
-- [9.1 ANR 机制、类型与触发条件](01-anr-mechanism-types-triggers.md)
-- [§9.2 ANR 分析方法](02-anr-kernel-trace-diagnosis.md)
-- [§9.2 ANR 与 Kernel Trace 联合诊断](02-anr-kernel-trace-diagnosis.md)
+
+### Input pre-ANR 路径
 
 - [AOSP `InputDispatcher.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
 - [AOSP `InputDispatcher.h`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.h)
 - [AOSP `InputDispatcherPolicyInterface.h`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/include/InputDispatcherPolicyInterface.h)
 - [AOSP `IInputConstants.aidl`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/input/android/os/IInputConstants.aidl)
-- [AOSP `ActivityManager.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java)
-- [AOSP `AnrWarningResult.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/AnrWarningResult.java)
-- [AOSP `AnrTypes.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/AnrTypes.java)
 - [AOSP NativeInputManager JNI（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/jni/com_android_server_input_InputManagerService.cpp)
 - [AOSP `InputManagerService.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/input/InputManagerService.java)
 - [AOSP WMS `InputManagerCallback.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/InputManagerCallback.java)
@@ -855,4 +857,3 @@ Android 17 为 no-focused-window 输入 ANR 增加了一次 deadline 前的观�
 - [AOSP `ApplicationExitInfo.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java)
 - [AOSP `TimeoutRecord.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/TimeoutRecord.java)
 - [AOSP `LongMethodTracer.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/utils/LongMethodTracer.java)
-- [Android Developers：`ActivityManager.registerAnrWarningListener()`](<https://developer.android.com/reference/android/app/ActivityManager#registerAnrWarningListener(java.util.concurrent.Executor,java.util.function.Consumer)>)

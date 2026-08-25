@@ -79,10 +79,10 @@ related_chapters:
 - '4.2'
 - '4.3'
 - '6.2'
-task6_state: pending-review
-status: ready-for-review
-pipeline_stage: ready-for-review
-task9_state: pending-review
+task6_state: reviewed
+status: finalized
+pipeline_stage: ready-to-publish
+task9_state: reviewed
 task2b_state: fixed
 last_rework_at: '2026-08-16T17:35:57+08:00'
 last_rework_run_id: 20260816-173557-rework-00c7195b

@@ -11,7 +11,7 @@ ANR（Application Not Responding，应用无响应）表示系统判定应用没
 - [9.1 ANR 机制、类型与触发条件](01-anr-mechanism-types-triggers.md)
 - [9.2 ANR 与 Kernel Trace 联合诊断](02-anr-kernel-trace-diagnosis.md)
 - [9.3 特殊与跨边界 ANR](03-special-anr.md)
-- [9.4 案例集](04-case-studies.md)
+- [9.4 ANR 诊断案例集](04-case-studies.md)
 - [9.5 Notification 性能与 ANR](05-notification-performance-anr.md)
 - [9.6 ContentProvider 超时与 ANR 四路径](06-contentprovider-timeout-anr.md)
 - [9.7 Android 17 ANR 预警与 Input pre-ANR](07-android17-anr-prewarning.md)

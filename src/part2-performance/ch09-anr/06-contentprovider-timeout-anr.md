@@ -2,7 +2,7 @@
 title: ContentProvider 超时与 ANR 四路径
 chapter: '9.6'
 section: '9.6'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
 - anr
@@ -16,7 +16,7 @@ related_chapters:
 - '9.3'
 - '9.2'
 last_verified: '2026-06-07'
-last_verified_against: AOSP android-16.0.0_r1 ContentResolver / ContentProviderHelper / ContentProviderClient; 官方 ANR 文档 developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs
+last_verified_against: AOSP android-17.0.0_r1 ContentResolver / ContentProviderHelper / ContentProviderClient；Android Developers ANR 诊断文档
 confidence: medium
 sources:
 - type: aosp
@@ -29,6 +29,9 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
 - type: official
   path: developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
 ---
 
 # ContentProvider 超时与 ANR 四路径

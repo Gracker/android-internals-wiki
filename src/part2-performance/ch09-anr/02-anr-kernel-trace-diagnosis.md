@@ -2,7 +2,7 @@
 title: ANR 与 Kernel Trace 联合诊断
 chapter: '9.2'
 section: '9.2'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-07-16'
 last_verified_against: AOSP android-17.0.0_r1 / Android Common Kernel android17-6.18-2026-06_r6
@@ -73,7 +73,7 @@ consolidated_from:
 task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
 ---
 
@@ -605,16 +605,6 @@ Google Play Android vitals 按 daily active user（每日活跃用户，DAU）�
 - **Android 17（API 37）**：加入通用 `TRIGGER_TYPE_ANOMALY`，用于系统检测到的多类异常；ANR 仍有专用的 `TRIGGER_TYPE_ANR`。
 
 文件名、dump 进程范围和日志格式属于实现细节，应以目标构建源码为准。平台实现锚点固定为 `android-17.0.0_r1`。
-
-### 与其他章节的关系
-
-- [9.1 ANR 机制、类型与触发条件](01-anr-mechanism-types-triggers.md)：监视器、deadline 与报告路径。
-- [§9.1 ANR 类型与触发条件](01-anr-mechanism-types-triggers.md)：各类型的 Android 17 触发边界。
-- [§1.3 Binder IPC](../../part1-fundamentals/ch01-architecture/03-ipc-binder-performance.md)：同步事务、线程池与调用链。
-- [§2.3 Choreographer 与渲染流水线](../../part1-fundamentals/ch02-rendering/03-vsync-choreographer-sf-scheduling.md)：主线程帧调度和渲染期限。
-- [§9.3 特殊与跨边界 ANR](03-special-anr.md)：冻结、焦点和厂商场景。
-- [§9.4 ANR 案例集](04-case-studies.md)：把证据流程用于完整案例。
-
 
 ## 调度、锁、I/O 与内核等待
 
@@ -1281,6 +1271,15 @@ Android 17 还会收集 parent、`system_server`、persistent（常驻系统进�
 线程转储只记录一个采样点，`ApplicationExitInfo` 保存的又只是目标进程的第一段 trace。疑难问题需要结合 Perfetto、系统日志、业务事件和多次同类样本，补齐超时前后的执行过程。
 
 
+## 相关章节
+
+- [9.1 ANR 机制、类型与触发条件](01-anr-mechanism-types-triggers.md)：监视器、deadline 与报告路径。
+- [9.3 特殊与跨边界 ANR](03-special-anr.md)：冻结、焦点和厂商场景。
+- [9.4 ANR 诊断案例集](04-case-studies.md)：把证据流程用于完整案例。
+- [1.3 Android IPC 全景与 Binder 性能](../../part1-fundamentals/ch01-architecture/03-ipc-binder-performance.md)：同步事务、线程池与调用链。
+- [13.6 Android Tracing 基础设施与自定义 Trace](../../part3-tools/ch13-perfetto/06-android-tracing-infrastructure-custom-trace.md)：ftrace、atrace 与 trace_marker。
+- [26.2 崩溃与 ANR 监控](../../part5-app/ch26-observability/02-crash-anr-monitoring.md)：线上聚合与监控体系。
+
 ## 参考资料
 
 - [Android Developers：诊断和修复 ANR](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
@@ -1305,7 +1304,6 @@ Android 17 还会收集 parent、`system_server`、persistent（常驻系统进�
 - [高爷：Android App ANR 系列 2——ANR 分析套路和关键 Log 介绍](https://www.androidperformance.com/2025/02/08/Android-ANR-02-How-to-analysis-ANR/)
 - [高爷：Android App ANR 系列 3——ANR 案例分享](https://www.androidperformance.com/2025/02/08/Android-ANR-03-ANR-Case-Share/)
 
-- [Android Developers：ProfilingManager trigger-based capture](https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture)
 - [Android Developers：ProfilingManager](https://developer.android.com/reference/android/os/ProfilingManager)
 - [AOSP android-17.0.0_r1：PerfettoCategories](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerfettoCategories.java)
 - [AOSP android-17.0.0_r1：atrace categories](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/atrace/atrace.cpp)
@@ -1316,7 +1314,3 @@ Android 17 还会收集 parent、`system_server`、persistent（常驻系统进�
 - [Android Common Kernel android17-6.18-2026-06_r6：sched trace events](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h)
 - [Android Common Kernel android17-6.18-2026-06_r6：Binder trace events](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_trace.h)
 - [Android Common Kernel android17-6.18-2026-06_r6：block trace events](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/block.h)
-- [§9.2 ANR 分析方法](02-anr-kernel-trace-diagnosis.md)
-- [§9.4 ANR 案例集](04-case-studies.md)
-- [§13.6 ftrace / atrace / trace_marker](../../part3-tools/ch13-perfetto/06-android-tracing-infrastructure-custom-trace.md)
-- [§26.2 ANR 监控体系](../../part5-app/ch26-observability/02-crash-anr-monitoring.md)
