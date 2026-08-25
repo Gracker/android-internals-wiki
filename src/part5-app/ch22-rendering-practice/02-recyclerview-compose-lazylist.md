@@ -91,6 +91,7 @@ task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 consolidated_from:
+- src/part1-fundamentals/ch02-rendering/18-compose-pausable-composition-guide.md
 - src/part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md
 - src/part5-app/ch22-rendering-practice/33-compose-pausable-composition-performance.md
 - src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md
@@ -716,6 +717,40 @@ Android 17 平台基线是 `android-17.0.0_r1`。它提供 `Choreographer`、`Fr
 - 已稳定运行的 `RecyclerView` 页面无需只为统一技术栈而迁移；迁移收益要覆盖互操作、功能回归和性能验证成本。
 - `RecyclerView` 项目内大量使用 `ComposeView` 会增加组合生命周期管理；`LazyColumn` 中大量使用 `AndroidView` 也会增加 View 创建、复用和桥接成本。
 - 同一页面的两种实现要在相同数据、图片缓存、编译模式、设备温度和交互脚本下比较。
+
+### 16. 版本升级、同版本 A/B 与回退
+
+Pausable Composition 是 Compose Runtime 与 Foundation 的库能力，不由 Android API 级别开启。排查前要确认最终解析出的 Runtime、Foundation 与 UI 版本，而不是只看 BOM 或 version catalog 中声明的版本；三者被传递依赖分别升级或降级时，源码默认值和运行时行为都可能与预期不同。
+
+```bash
+./gradlew :app:dependencyInsight \
+  --dependency androidx.compose.runtime:runtime \
+  --configuration releaseRuntimeClasspath
+
+./gradlew :app:dependencyInsight \
+  --dependency androidx.compose.foundation:foundation \
+  --configuration releaseRuntimeClasspath
+
+./gradlew :app:dependencyInsight \
+  --dependency androidx.compose.ui:ui \
+  --configuration releaseRuntimeClasspath
+```
+
+`ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled` 是临时的实验性回退入口，默认值曾在 Foundation 补丁版本之间变化。升级时应同时保存解析依赖树、发布说明、当前源码默认值、固定数据与手势的 Macrobenchmark 基线；不能用“某个大版本以后一定开启”替代核对。
+
+出现回归时，优先在**同一 Foundation 版本、同一代码、同一设备**上构建两个独立变体：一个保留默认值，一个在 `Application` 初始化的最早阶段关闭该标志。Compose 代码加载后再改标志属于未定义行为，因此不能在同一进程运行中动态切换；两组都要冷启动独立进程，并保持 R8、Baseline Profile、数据、图片缓存、刷新率和温度条件一致。
+
+```kotlin
+@OptIn(ExperimentalFoundationApi::class)
+class BenchmarkLegacyPrefetchApp : Application() {
+    override fun onCreate() {
+        ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled = false
+        super.onCreate()
+    }
+}
+```
+
+判断顺序保持为：先比较 `frameOverrunMs` 的 p50/p90/p95/p99 与内存峰值，再在 Perfetto 中区分 `compose:lazy:prefetch:compose`、`apply`、`resolve-nested` 和 `measure`。只有同版本对照稳定指向可暂停预取，而且短期没有已修复补丁时，才把关闭标志当成生产回退；长期方案仍是升级修复版本、减轻列表项工作或调整缓存窗口，并在回退后重新测量旧的完整组合路径。
 
 ### 17. 源码与资料索引
 

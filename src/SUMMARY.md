@@ -60,7 +60,6 @@
   - [2.15 DisplayManagerService：显示器发现、拓扑、功耗与渲染交接](part1-fundamentals/ch02-rendering/15-displaymanager-service-lifecycle.md)
   - [2.16 HDR 显示管线与色彩管理性能](part1-fundamentals/ch02-rendering/16-hdr-color-management-pipeline-performance.md)
   - [2.17 Android 17 FrameTimeline、FrameTracer 与合成边界](part1-fundamentals/ch02-rendering/17-android17-frametimeline-composition-boundary.md)
-  - [2.18 Compose Pausable Composition 实战指南](part1-fundamentals/ch02-rendering/18-compose-pausable-composition-guide.md)
 
 - [第 3 章：输入系统](part1-fundamentals/ch03-input/README.md)
   - [3.1 Input 分发、拦截与安全边界](part1-fundamentals/ch03-input/01-input-dispatch-interception-security.md)
@@ -295,7 +294,7 @@
   - [22.13 App Widget 更新性能：RemoteViews IPC 与 Glance 渲染](part5-app/ch22-rendering-practice/13-app-widget-performance.md)
   - [22.14 Compose 布局、测量与文字渲染](part5-app/ch22-rendering-practice/14-compose-layout-text-rendering.md)
   - [22.15 Compose Snapshot、状态一致性与并发](part5-app/ch22-rendering-practice/15-compose-snapshot-state-consistency.md)
-  - [22.16 Vulkan 管线与 Impeller 着色器编译](part5-app/ch22-rendering-practice/16-vulkan-impeller-shader-compilation.md)
+  - [22.16 Vulkan 管线缓存与 Impeller 着色器编译实战](part5-app/ch22-rendering-practice/16-vulkan-impeller-shader-compilation.md)
   - [22.17 SurfaceView 与 TextureView：渲染路径、选型与排障](part5-app/ch22-rendering-practice/17-surfaceview-textureview.md)
   - [22.18 Media3 视频播放：解码、帧时序与渲染](part5-app/ch22-rendering-practice/18-media3-video-rendering.md)
   - [22.19 CameraX：UseCase、Camera2 映射与性能](part5-app/ch22-rendering-practice/19-camerax-rendering.md)

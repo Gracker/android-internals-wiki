@@ -667,7 +667,7 @@ Compose 1.12.0 还把 `softWrap` 显式传入 `ParagraphIntrinsics` 和 `TextLay
 
 高度仍可能影响裁剪和省略。旧段落高于新的最大高度，或旧结果已经超过 `maxLines` 时，缓存会重新计算。列表项宽度在滚动期间保持不变，通常有利于复用；窗口尺寸、折叠状态、Insets（状态栏、导航栏或输入法占用的边缘区域）或父布局反复改变宽度，会让文本重新断行。
 
-更完整的 Compose 测量失效机制见 [22.14 Compose 布局、测量与文字渲染](14-compose-layout-text-rendering.md)。
+更完整的 Compose 测量失效机制见前一部分“约束、测量、放置与 Subcompose”。
 
 #### 3. 创建新对象不等于一定重新排版
 
@@ -989,7 +989,15 @@ Compose Text 仍使用标准应用窗口显示流程。`queueBuffer()` 只表示
 - [ ] UI 线程按时完成时继续检查 RenderThread 和显示端
 
 
+## 全文小结
+
+Compose 布局优化首先要定位状态在哪个阶段被读取，再区分组合、测量、放置和绘制的实际失效范围。约束是否改变、节点是否标记待测量、Subcompose 槽位身份和 Lookahead 范围，决定了布局结果能否复用；重组次数和稳定性注解不能代替布局证据。
+
+文本则在通用布局之上增加字体解析、整形、断行、段落缓存和绘制。内容、字体、宽度及布局样式决定能否复用排版，颜色等纯绘制变化通常不必重排。两部分最终都应从超时帧出发，用 Compose 时间片、宿主 View 遍历和 FrameTimeline 分层归因。
+
 ## 参考资料
+
+### 布局、测量与诊断
 
 - [Compose UI 1.12.0 发布说明](https://developer.android.com/jetpack/androidx/releases/compose-ui#1.12.0)
 - [Compose Foundation 1.12.0 发布说明](https://developer.android.com/jetpack/androidx/releases/compose-foundation#1.12.0)
@@ -1021,18 +1029,7 @@ Compose Text 仍使用标准应用窗口显示流程。`queueBuffer()` 只表示
 
 本文的 Compose 内部实现固定到 1.12.0 的发行范围终点。升级 Compose 后，应重新核对测量复用条件、Subcompose 默认复用策略、LazyLayout 单次测量缓存、Lookahead 完成条件、强制重测量实现，以及详细布局跟踪的开关和事件名。
 
-### 旧版本参考锚点
-
-以下链接保留用于核对 Compose 1.11.4（含 BOM 2026.06.00）到 1.12.0 的实现差异；正文版本边界仍以文中说明为准。
-
-- [Compose UI 1.11.4 发布说明](https://developer.android.com/jetpack/androidx/releases/compose-ui)
-- [`LayoutNode.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt)
-- [`MeasurePassDelegate.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/MeasurePassDelegate.kt)
-- [`MeasureAndLayoutDelegate.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/MeasureAndLayoutDelegate.kt)
-- [`NodeChain.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/NodeChain.kt)
-- [`SubcomposeLayout.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/SubcomposeLayout.kt)
-- [`LookaheadScope.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/LookaheadScope.kt)
-- [`AndroidComposeView.android.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt)
+### 文本渲染与缓存
 
 - [Compose 文本布局配置](https://developer.android.com/develop/ui/compose/text/configure-layout)
 - [Compose 字体](https://developer.android.com/develop/ui/compose/text/fonts)
@@ -1057,6 +1054,18 @@ Compose Text 仍使用标准应用窗口显示流程。`queueBuffer()` 只表示
 
 本文的 Compose 内部实现固定到 1.12.0 的发行范围终点。升级 Compose 后，应重新核对简化文本节点的选择条件、段落缓存复用、自动字号搜索、`TextMeasurer` 缓存键、文本跟踪名称和强跳过默认配置。
 
+### 旧版本参考锚点
+
+以下链接保留用于核对 Compose 1.11.4（含 BOM 2026.06.00）到 1.12.0 的实现差异；正文版本边界仍以文中说明为准。
+
+- [Compose UI 1.11.4 发布说明](https://developer.android.com/jetpack/androidx/releases/compose-ui)
+- [`LayoutNode.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt)
+- [`MeasurePassDelegate.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/MeasurePassDelegate.kt)
+- [`MeasureAndLayoutDelegate.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/MeasureAndLayoutDelegate.kt)
+- [`NodeChain.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/NodeChain.kt)
+- [`SubcomposeLayout.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/SubcomposeLayout.kt)
+- [`LookaheadScope.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/LookaheadScope.kt)
+- [`AndroidComposeView.android.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt)
 
 
 - [`BasicText.kt`（Compose UI 1.11.4）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/BasicText.kt)

@@ -6,7 +6,7 @@ status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37); AndroidX Fragment 1.4 - 1.8 stable; 1.9 RC
 last_verified: '2026-08-15'
 last_verified_against: AndroidX fragment release branch commit f39ca3510efb2347ebfef231e25a3e804922450d FragmentManager/BackStackRecord/FragmentTransaction + AndroidX Fragment 1.8.9/1.9.0-rc01 + Navigation 3 1.1.5 + ComposeView/Compose in Views + AsyncLayoutInflater 1.1.0 + Perfetto FrameTimeline Android 12+ docs
-confidence: medium
+confidence: medium-high
 consolidated_from:
 - src/part2-performance/ch07-smoothness/17-fragmenttransaction-commit-jank.md
 - src/part5-app/ch22-rendering-practice/10-fragment-transaction-performance.md
@@ -479,7 +479,7 @@ Fragment 目标页面无法靠“绕过 FragmentTransaction”优化。应减少
 - [`Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)、[`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java) 与 [`ThreadedRenderer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ThreadedRenderer.java)：核对 Android 17 主线程帧调度、traversal 与 HWUI 入口。
 - [`BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp) 与 [`FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp)：核对 App Window buffer transaction、SurfaceFrame 和 DisplayFrame 的实现边界；字段解释再对照 [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)。
 
-### 结论
+### Fragment 切换小结
 
 Fragment 页面切换有三个主要判断点：`commit()` 只负责排队，事务执行成本出现在 `execPendingActions()`；Fragment 生命周期推进通常发生在普通主线程消息里，可能在 `doFrame` 之前推迟下一帧；`setReorderingAllowed(true)` 通过合并和重排减少冗余操作，但会改变生命周期顺序。
 
@@ -489,7 +489,7 @@ Fragment 页面切换有三个主要判断点：`commit()` 只负责排队，事
 
 普通事务完成一次性导航，预测式返回在用户手势期间持续更新并可能取消。提前销毁页面会破坏回退语义。
 
-预测式返回（Predictive Back）把“返回”从一次离散事件改成一段可以取消、预览并由进度值驱动的交互。页面切换的性能观察点也随之提前：卡顿不再只发生在 `popBackStack()` 或 `finish()` 之后，手指从屏幕边缘滑动的每一帧都可能暴露主线程、布局、动画和合成成本。系统手势入口见 [3.3 系统手势导航与 Predictive Back](../../part1-fundamentals/ch03-input/03-gesture-navigation-predictive-back.md)，View 一帧的执行顺序见 [§18.1 Android View 标准管线](../../part2-performance/ch18-rendering-pipelines/01-android-view-pipeline-analysis.md)，FragmentTransaction 的提交语义见 [§22.9 FragmentTransaction 提交链路](09-fragment-predictive-back-navigation.md)；本节聚焦应用侧的接入、降级和 Perfetto 定位方法。
+预测式返回（Predictive Back）把“返回”从一次离散事件改成一段可以取消、预览并由进度值驱动的交互。页面切换的性能观察点也随之提前：卡顿不再只发生在 `popBackStack()` 或 `finish()` 之后，手指从屏幕边缘滑动的每一帧都可能暴露主线程、布局、动画和合成成本。系统手势入口见 [3.3 系统手势导航与 Predictive Back](../../part1-fundamentals/ch03-input/03-gesture-navigation-predictive-back.md)，View 一帧的执行顺序见 [§18.1 Android View 标准管线](../../part2-performance/ch18-rendering-pipelines/01-android-view-pipeline-analysis.md)，FragmentTransaction 的提交语义已由本文第一节界定；本节聚焦应用侧的接入、降级和 Perfetto 定位方法。
 
 分析时要分别看每帧计算量、状态读写范围、主线程排队和渲染提交。任务调度会改变响应延迟，因此不要把数据加载、页面销毁和事务提交放进手势进度回调。
 
@@ -638,7 +638,7 @@ val callback = object : OnBackPressedCallback(true) {
 }
 ```
 
-`controlDelayedTransition()` 需要 Android 14+，每次动画只能使用一个控制器，自定义 Transition 也要明确支持按进度控制。设备版本过低、同一容器正在捕获另一个 Transition，或者容器尚未完成布局时，该方法可能返回 `null`。这里要重点排查 `showPreviousStateForPreview()`：如果它触发新的 Fragment View 创建、`RecyclerView` 首屏绑定或图片加载，返回手势一开始就会占满主线程预算。Fragment 1.5+ 已自行控制返回栈动画时，不应再手动创建第二个控制器或额外调用 `popBackStack()`；事务执行边界见 [§22.9](09-fragment-predictive-back-navigation.md)。
+`controlDelayedTransition()` 需要 Android 14+，每次动画只能使用一个控制器，自定义 Transition 也要明确支持按进度控制。设备版本过低、同一容器正在捕获另一个 Transition，或者容器尚未完成布局时，该方法可能返回 `null`。这里要重点排查 `showPreviousStateForPreview()`：如果它触发新的 Fragment View 创建、`RecyclerView` 首屏绑定或图片加载，返回手势一开始就会占满主线程预算。Fragment 1.5+ 已自行控制返回栈动画时，不应再手动创建第二个控制器或额外调用 `popBackStack()`；事务执行边界见本文第一节。
 
 ### Compose NavigationEvent：把进度状态限制在动画层
 
@@ -758,7 +758,7 @@ WebView 有自己的 `canGoBack()` / `goBack()` 历史栈。页面里嵌 WebView
 - [AndroidX 版本总表](https://developer.android.com/jetpack/androidx/versions)、[Activity](https://developer.android.com/jetpack/androidx/releases/activity)、[Fragment](https://developer.android.com/jetpack/androidx/releases/fragment)、[Transition](https://developer.android.com/jetpack/androidx/releases/transition) 与 [NavigationEvent](https://developer.android.com/jetpack/androidx/releases/navigationevent) 发布说明：核对各库独立的版本号和预测式返回修复。
 - [Fragment predictive back 动画](https://developer.android.com/guide/fragments/animate)、[NavigationEvent handle-back](https://developer.android.com/guide/navigation/navigation-event/handle-back)、[Navigation 3](https://developer.android.com/guide/navigation/navigation-3)、[WebView Back codelab](https://codelabs.developers.google.com/handling-gesture-back-navigation) 与 [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)：核对受支持的动画类型、Compose 处理器状态、导航责任归属、WebView 回调启用状态与轨迹字段。
 
-### 结论
+### Predictive Back 小结
 
 预测式返回的性能重点是把返回拆成开始、进度、取消和完成四段，并让进度阶段只负责每帧能够完成的动画更新。Fragment、Compose、WebView 和 Activity 混合栈需要同时控制返回优先级、状态恢复和每帧成本。在 Perfetto 中，先按时间戳对应输入、主线程和应用 `SurfaceFrame`，再沿 RenderThread、SurfaceFlinger `DisplayFrame`、目标图层与呈现时间判断慢帧出现在哪个阶段。
 
@@ -960,7 +960,7 @@ Android 14 到 Android 17 的系统返回手势由平台和 Activity 返回事�
 
 这段过程会让前一页提前参与组合和绘制。前一页恢复时若同步重建列表、重新发起请求或恢复昂贵资源，拖动过程就可能出现慢帧。2.9.8 已修复一处预测返回竞态，但应用仍需在 Android 14、15、16、17 的真机上覆盖完成、取消、快速反向与连续返回。
 
-平台手势输入、Activity 返回事件分发器（back dispatcher）、Navigation 动画和 HWUI 画面生成属于不同层。某一层出现修复，不能推导其余层没有问题。预测返回的专项分析见 [22.9 Fragment、Predictive Back 与 Navigation Compose 页面切换](09-fragment-predictive-back-navigation.md)。
+平台手势输入、Activity 返回事件分发器（back dispatcher）、Navigation 动画和 HWUI 画面生成属于不同层。某一层出现修复，不能推导其余层没有问题。预测返回的专项边界已由本文前一节说明。
 
 ### 7. 多返回栈：恢复位置会延长状态寿命
 
@@ -1125,7 +1125,7 @@ Navigation 请求最终仍要生成并显示一帧。Android 17 的普通 Compos
 
 厂商电源 HAL（Vendor Power HAL）、温控策略、私有调频策略和设备刷新率规则不在 GKI（Generic Kernel Image，通用内核映像）文件里。AOSP/GKI 只能说明可观察机制，目标设备的跟踪数据才能说明某次导航为何迟到。
 
-### 15. 固定来源
+### 14. 固定来源
 
 | 范围 | 来源 | 使用点 |
 |---|---|---|
@@ -1160,3 +1160,9 @@ Navigation 请求最终仍要生成并显示一帧。Android 17 的普通 Compos
 - 普通 Compose、`SurfaceView`、`TextureView`、视频和 `WebView` 使用各自的画面生成模型。
 - TestNavHostController 只负责正确性测试，性能结论来自真实窗口和真机。
 - Macrobenchmark、Perfetto、组合跟踪与线上 route 标签可以按时间互相对应。
+
+## 全文小结
+
+无论页面由 Fragment 还是 Navigation Compose 承载，切换成本都不等于 `commit()` 或 `navigate()` 返回所用的时间。事务或返回栈更新之后，还有目标内容创建、转场两端共存、生命周期与状态恢复、布局绘制和窗口显示。Predictive Back 只是把这条链进一步拆成可取消的开始、进度、完成与恢复。
+
+工程上应先固定导航所有者、返回优先级、entry/ViewModel 作用域和转场期间的资源生命周期，再把首帧前工作压到最小可见集合。验收时从点击或返回输入出发，沿主线程消息、Composition/Traversal、RenderThread/GPU、SurfaceFlinger 到 actual present 闭合，并为完成、取消、深链、多栈和进程恢复分别建立用例。

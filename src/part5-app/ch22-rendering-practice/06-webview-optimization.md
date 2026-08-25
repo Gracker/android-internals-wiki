@@ -66,9 +66,9 @@ tags:
 - h5-performance
 related_chapters:
 - '22.1'
-- '18.8'
+- '18.9'
 - '26.2'
-pipeline_stage: ready-to-publish
+pipeline_stage: finalized
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
@@ -674,6 +674,12 @@ WebView 优化适合按证据逐步推进：
 | 显示 | 从渲染进程产帧到 display present（屏幕显示）的分段证据 | 在出现延迟的执行域修复 |
 
 单个 P50（中位数）变快不足以证明方案有效。还要确认 P95 / P99（尾部高分位）、低内存设备、弱网、后台切前台、provider 更新、页面回退与 App 启动都没有出现超出可接受范围的回归。
+
+## 全文小结
+
+WebView 优化不是单个预热开关，而是一条跨越 provider 启动、实例所有权、导航与缓存、页面执行、Bridge 和显示提交的证据链。先用 `navigationId` 与 provider 版本固定现场，再只在已证明的阻塞点上引入异步启动、预创建、离线包或推测加载。
+
+一项方案只有同时定义命中、资源代价、状态隔离、失败恢复和灰度回退才可以发布。页面已发出可用信号也不等于用户已经看到；最后仍要把 renderer、WebView functor、宿主窗口、SurfaceFlinger 与 actual present 放进同一条时间线。
 
 ## Android 17 源码与文档入口
 

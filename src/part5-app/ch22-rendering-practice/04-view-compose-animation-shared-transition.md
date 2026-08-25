@@ -88,7 +88,7 @@ related_chapters:
 - '7.1'
 - '2.4'
 - '22.3'
-- '18.6'
+- '18.8'
 - '2.1'
 pipeline_stage: finalized
 task6_state: reviewed
@@ -627,7 +627,7 @@ Pager 的 `currentPage` 表示最接近吸附位置的页面，会在拖动跨�
 
 同向嵌套的 Pager/惰性容器要明确哪个容器消费嵌套滚动、惯性滚动如何交接，以及子容器到达边界后是否继续滚动父容器。负 `pageSpacing` 产生重叠时，还要验证 `zIndex` 层叠顺序、命中区域、裁剪和无障碍顺序。点击标签页启动的 `animateScrollToPage()` 可能被新手势或新的滚动操作取消；调用返回后，还要根据状态确认目标页是否已经稳定展示。
 
-### 16. 源码与资料索引
+### 15. 源码与资料索引
 
 Compose 行为按 BOM 2026.08.00 与以下 1.12.0 source JAR 复核：
 
@@ -683,6 +683,8 @@ API 用法、性能工具和测量口径参考：
 
 单个动画稳定后，共享元素过渡需要同时维护起止内容、overlay 绘制和布局坐标。元素匹配失败或重复测量会直接影响连续性。
 
+### 1. 先界定实现层级
+
 > **源码锚点**
 >
 > - 平台：Android 17 / API 37 / `android-17.0.0_r1`
@@ -692,7 +694,7 @@ API 用法、性能工具和测量口径参考：
 >
 > `SharedTransitionLayout` 位于 Compose Animation 的 `commonMain`（Kotlin Multiplatform 的公共源码集），元素匹配、Lookahead 布局、图形层和 overlay 都由 AndroidX 实现。Android Framework 与内核没有名为 SharedTransitionLayout 的专用渲染路径；Android 17 只负责内容进入 HWUI（Android 的硬件加速 UI 渲染器）后的窗口绘制、BufferQueue、SurfaceFlinger 与显示流程。
 
-共享元素过渡会把两个页面中代表同一对象的内容匹配起来，在页面切换时连续改变位置和尺寸。这里关注它对组合、布局、绘制和 GPU 的影响。一般 Compose 性能方法见 [22.3 Compose 性能、Compiler 与 Modifier.Node 诊断](03-compose-compiler-modifier-diagnostics.md)，普通动画成本见 [22.4 View、Compose 动画与共享元素性能](04-view-compose-animation-shared-transition.md) 与 [22.4 View、Compose 动画与共享元素性能](04-view-compose-animation-shared-transition.md)。
+共享元素过渡会把两个页面中代表同一对象的内容匹配起来，在页面切换时连续改变位置和尺寸。这里关注它对组合、布局、绘制和 GPU 的影响。一般 Compose 性能方法见 [22.3 Compose 性能、Compiler 与 Modifier.Node 诊断](03-compose-compiler-modifier-diagnostics.md)，普通动画成本已由本文前两节建立基线。
 
 为便于对照 API 和源码，本文保留几个常用英文词：`key` 是两端内容的匹配标识；`bounds` 是包含位置与尺寸的矩形边界；`entry` 是某个 `key` 在源端或目标端的一条注册记录；`overlay` 是 `SharedTransitionScope` 根节点内用于置顶绘制的覆盖区域。这些词都指 Compose 作用域内的匹配、布局或绘制概念。
 
@@ -1053,7 +1055,7 @@ Compose Shared Transition 只在同一个 `SharedTransitionScope` 内匹配。�
 - Perfetto 是否同时查看 UI Thread、RenderThread、FrameTimeline 与 GPU；
 - 是否把 Compose overlay 误判为独立 SurfaceFlinger layer。
 
-### 结论
+### 14. SharedTransition 小结
 
 `SharedTransitionLayout` 的性能成本主要来自额外的 Lookahead/approach 布局、活跃 overlay `entry` 按需使用的 `GraphicsLayer`，以及进入与退出内容可能同时绘制。SurfaceFlinger 通常只处理同一个 App Window，瓶颈更可能出现在应用 UI Thread、RenderThread 和 GPU。
 
@@ -1063,25 +1065,25 @@ Android 17 没有 SharedTransitionLayout 专属管线。排查时可用可视化
 
 ## 常见误区
 
-### 1.1 API 版本由 Compose 依赖决定
+### API 版本由 Compose 依赖决定
 
 Shared Transition API 在 Compose Animation 1.7 以实验 API 形式发布，到 1.10 转为稳定 API。截至 2026 年 8 月 15 日，Google Maven 中最新稳定版是 1.12.0；1.13.0-alpha01 属于预览版。1.12.0 继续提供实验性的共享元素可视化调试能力。
 
 这套 API 没有 Android 15 / API 35 的平台门槛。只要应用使用的 Compose 版本及其 Android 最低版本满足要求，就能使用共享元素。Android 15 起取消了 Predictive Back 开发者开关；应用迁移到受支持的返回 API 后可以获得对应系统动画。这与 `SharedTransitionLayout` 的引入版本无关。
 
-### 1.2 Lookahead pass 不等于第二次 GPU 渲染
+### Lookahead pass 不等于第二次 GPU 渲染
 
 `SharedTransitionScope` 内部使用 `LookaheadScope`。这里的 pass 是布局系统对节点树的一次遍历：Lookahead pass 先计算动画结束时的尺寸和坐标，approach pass 再按当前动画 `bounds` 测量或放置节点。两者都属于布局阶段。
 
 一帧仍按 Compose 的布局结果进入绘制。Lookahead 增加的是目标布局计算；是否多次测量、是否记录额外图形层、是否同时绘制进入端与退出端，要看 `Modifier` 和 resize mode（尺寸适配方式）。把 Lookahead 概括成“两次 GPU 绘制”，会混淆 CPU 布局与 GPU 绘制。
 
-### 1.3 sharedElement 不复用位图
+### sharedElement 不复用位图
 
 Compose 1.12.0 在需要 overlay 绘制时为共享内容创建 `GraphicsLayer`。`GraphicsLayer` 是记录绘制命令并允许复用这些命令的 Compose 图形层；实现会在 draw 阶段通过 `layer.record { drawContent() }` 记录内容，再以 `drawLayer()` 绘制。它不会把源 Composable 截成 Bitmap 后交给目标端复用。
 
 图片内容是否复用同一个解码结果，由 Coil、Glide 等图片加载库或业务缓存决定。共享元素 `key` 只负责过渡匹配，不能代替图片内存缓存的 `key`。
 
-### 1.4 overlay 不会创建独立 SurfaceFlinger layer
+### overlay 不会创建独立 SurfaceFlinger layer
 
 SharedTransition overlay 是 `SharedTransitionScope` 根节点 draw pass 内的绘制区域。共享内容仍进入同一个 App Window buffer（应用窗口提交的像素缓冲区），SurfaceFlinger 这个系统合成器通常只看到宿主窗口的 layer。
 
@@ -1089,7 +1091,7 @@ SharedTransition overlay 是 `SharedTransitionScope` 根节点 draw pass 内的�
 
 按生产者与结果位置来判断，App 内部的 GPU 图形层或离屏中间结果仍由宿主窗口消费。只有通过 `SurfaceControl` 独立提交的 buffer，才会自然对应独立的 SurfaceFlinger layer。BufferQueue 的 slot（可循环使用的缓冲槽位）、GraphicBuffer 复用与生产者/消费者模型见 [2.8 BufferQueue、Gralloc 与 Sync Fence](../../part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md)。
 
-### 1.5 没有“最多五个元素”的平台阈值
+### 没有“最多五个元素”的平台阈值
 
 源码没有 `≤5` 的限制或推荐值。一个简单图标和一个包含大图、模糊、阴影的卡片，成本差距远大于元素数量本身。活跃数量应结合内容复杂度、屏幕覆盖面积、resize mode、设备 GPU 和目标刷新率评估。
 

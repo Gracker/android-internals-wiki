@@ -273,6 +273,8 @@ Strong Skipping 不管理 producer 协程。跳过规则作用于 Composable 调
 
 ### Lazy 列表：身份、类型与预取
 
+本节只说明 Lazy 列表会如何影响重组诊断；RecyclerView / LazyList 的完整复用、预取、缓存窗口与同版本 A/B 流程统一由 [22.2 RecyclerView 与 Compose LazyList 性能](02-recyclerview-compose-lazylist.md) 维护。
+
 #### `key` 保持列表项身份，`contentType` 约束复用兼容性
 
 Lazy 列表未提供业务 key 时按位置维护身份；显式使用 index 基本等同于位置身份。列表头部插入或中间删除后，后续列表项会被视作换了身份，`remember` / `rememberSaveable` 状态和组合复用都可能受到影响。
@@ -354,6 +356,8 @@ implementation("androidx.compose.runtime:runtime-tracing")
 刷新率决定单帧预算，不能把 `16.67 ms` 或任意一条固定毫秒线套到所有设备。Compose 工作片段变短也不等于屏幕更早显示；比较应追到同一帧的 actual present。
 
 ### Compose 与 View 互操作
+
+这里只保留互操作对重组和诊断边界的影响；容器所有权、生命周期、状态与复用协议见 [22.11 Compose / View 互操作](11-compose-view-interop.md)。
 
 #### RecyclerView 中的 `ComposeView`
 
@@ -1121,7 +1125,7 @@ Kotlin 2.0 起，Compose 编译器随 Kotlin 一同发布，项目应应用与 K
 
 若 FrameTimeline 显示应用侧按时完成，排查应转向 RenderThread、GPU、SurfaceFlinger 和同步栅栏。继续修改稳定性通常不会解决合成侧或显示侧瓶颈。
 
-### 十三、核查清单
+### 十二、核查清单
 
 #### 编译配置
 
@@ -1174,7 +1178,6 @@ Kotlin 2.0 起，Compose 编译器随 Kotlin 一同发布，项目应应用与 K
 - [Android 17 `ViewRootImpl.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/view/ViewRootImpl.java)
 - [Android 17 `FrameTimeline.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/graphics/FrameTimeline.java)
 - [Android common kernel `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)
-- [本知识库：Jetpack Compose 性能优化](03-compose-compiler-modifier-diagnostics.md)
 - [本知识库：Android 17 FrameTimeline](../../part1-fundamentals/ch02-rendering/17-android17-frametimeline-composition-boundary.md)
 
 当前工具链与运行时结论核查于 2026-08-15。编译器报告样例来自 Kotlin 2.3.20 对最小源码的实测输出，2.4.10 源码核对用于确认 CSV 与模块 JSON 结构仍一致；升级 Kotlin 或 Compose 后，仍应重新生成报告并复核字段、功能开关与跟踪名称。
@@ -1761,3 +1764,9 @@ Linux 内核锚点 `android17-6.18-2026-06_r6` 不参与 Node 链差分。只有
 - 指针输入通过 `PointerInputChange.consume()` 表达消费；
 - 测量逻辑遵守父约束，没有假设 Node 自带 MeasureResult 缓存；
 - 性能结论来自迁移前后的同条件数据。
+
+## 全文小结
+
+Compose 性能诊断的起点是状态在组合、布局还是绘制阶段被读取，而不是先追求某个“全部可跳过”指标。Compiler 报告解释稳定性、重启组和跳过条件，Layout Inspector 与 Runtime Tracing 说明实际执行范围，FrameTimeline 和 Macrobenchmark 才证明用户可见的帧结果。
+
+`Modifier.Node` 是这条链上的运行时扩展点：Element 表达配置，Node 保留运行状态并参与具体阶段。迁移只有在节点复用、失效范围和热路径分配都得到同条件数据支持时才算完成；若 UI 线程已按时提交，还要继续追到 RenderThread、缓冲区、SurfaceFlinger 和 actual present。

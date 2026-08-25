@@ -558,6 +558,8 @@ Compose 运行时跟踪能提供可组合函数级跟踪信息。它不会自动
 
 ## 七、Compose UI 1.12 相关机制的适用边界
 
+本节只解释这些 Compose 机制会怎样影响互操作边界；编译器诊断、稳定性判定和 Modifier 节点迁移的完整方法由 [Compose 编译器、稳定性与 Modifier.Node 性能诊断](03-compose-compiler-modifier-diagnostics.md) 展开。
+
 ### PausableComposition
 
 `PausableComposition` API 从 `androidx.compose.runtime` 1.8.0 起存在。Foundation 1.12.0 的 `ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled` 默认值为 `true`，Lazy 预取可以把一个列表项的预组合分段执行，避免复杂列表项的全部 Composition 集中在同一个调度片段。
@@ -587,6 +589,8 @@ View 侧仍会收到标准 `MotionEvent`，继续执行 `dispatchTouchEvent`、�
 公开的 `ComposeViewContext` 在 1.12.0 已不再带实验注解。应用若显式使用它做离树预组合，仍应固定 Compose UI 版本，并测试附着、取消预取、宿主切换和始终不附着四条路径；API 稳定不代表资源会自动销毁。
 
 ## 八、SurfaceView、TextureView 与帧率适配
+
+本节只判断内嵌 View 会不会改变出图拓扑，以及宿主与内容的帧率请求是否需要分别表达。SurfaceView/TextureView 的生命周期治理与自适应刷新率策略分别由本章对应专题展开。
 
 ### 三种出图拓扑
 
@@ -756,7 +760,7 @@ Compose 测试规则只会同步它能够观察的 Compose 工作；虚拟测试
 - [ ] Android 17 平台与 Compose 1.12.0 版本线分开记录；
 - [ ] 内核标签只用于解释对应设备的内核机制。
 
-## 结论
+## 全文小结
 
 `AndroidView` 的主要成本来自 View 实例创建、Compose `Constraints` 到 `MeasureSpec` 的转换、View 测量/布局/绘制、输入桥和资源生命周期。`update` 内读取的 Snapshot 状态变化会由承载器的观察器触发执行；普通参数变化则可随宿主重组提供新的函数。是否重新测量或重绘，取决于 View 的属性设置是否发出 `requestLayout()` 或 `invalidate()`。
 
@@ -767,9 +771,9 @@ Compose 测试规则只会同步它能够观察的 Compose 工作；虚拟测试
 ## 相关章节
 
 - [Compose 性能优化实战](03-compose-compiler-modifier-diagnostics.md)
-- [Compose First 与 View/Compose 混合迁移性能边界](11-compose-view-interop.md)
 - [Compose LazyList/LazyGrid 滑动性能深度优化](02-recyclerview-compose-lazylist.md)
-- [Compose Modifier.Node 架构与性能迁移](03-compose-compiler-modifier-diagnostics.md)
+- [自适应刷新率：ARR 与应用帧率治理](12-adaptive-refresh-rate.md)
+- [SurfaceView 与 TextureView：渲染拓扑、生命周期与性能取舍](17-surfaceview-textureview.md)
 
 ## 参考资料
 

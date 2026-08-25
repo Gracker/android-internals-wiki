@@ -2,11 +2,11 @@
 title: 图片加载、Bitmap 解码与 RenderNode
 chapter: '22.5'
 section: '22.5'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-08-15'
 last_verified_against: AOSP android-17.0.0_r1; Glide 5.0.9; Coil 3.5.0; Android Developers docs
-confidence: medium
+confidence: medium-high
 sources:
 - type: clippings-structure-ref
   path: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md
@@ -72,7 +72,7 @@ tags:
 related_chapters:
 - '22.1'
 - '23.2'
-pipeline_stage: ready-for-review
+pipeline_stage: finalized
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
@@ -388,7 +388,7 @@ Android 官方文档说明平台从 Android 12 / API 31 支持 AVIF；Android 10
 >
 > 这里的“Android 17 行为”以这些源码为准。编解码器实现、图形内存分配和内存统计还会受 SoC（片上系统）、厂商图形缓冲分配器 `gralloc` 与驱动影响，因此设备实测仍是性能结论的一部分。
 
-讨论范围是压缩图片数据如何变成可绘制像素，以及这些像素如何进入 Android 17 的 HWUI（Android 硬件加速 UI 渲染器）路径。图片请求、缓存与框架选型见 [22.5 图片加载、Bitmap 解码与 RenderNode](05-image-bitmap-rendernode.md)；本文同时覆盖 Hardware Bitmap 与 RenderNode 的绘制侧行为，Bitmap 内存治理见 [23.2 Bitmap 与图片内存优化](../ch23-memory-practice/02-bitmap-optimization.md)。
+讨论范围是压缩图片数据如何变成可绘制像素，以及这些像素如何进入 Android 17 的 HWUI（Android 硬件加速 UI 渲染器）路径。图片请求、缓存与框架选型已由前一节建立边界；本节继续深入 Hardware Bitmap 与 RenderNode 的绘制侧行为，Bitmap 内存治理见 [23.2 Bitmap 与图片内存优化](../ch23-memory-practice/02-bitmap-optimization.md)。
 
 ### 1. 一次解码包含哪些工作
 
@@ -846,13 +846,19 @@ Android 17 源码中存在受特性开关（feature flag）保护的解码分配
 - 格式性能是否来自同尺寸、同设备、冷热缓存分开的测量；
 - 原生堆、共享内存和图形内存是否用多种观测互相校验。
 
-### 结论
+### 解码与绘制小结
 
 Bitmap 解码优化需要控制输出像素、明确存储需求，并把 I/O、编解码器、分配、上传和绘制分别测量。
 
 `ImageDecoder` 提供同一次同步调用中的头信息配置、四种分配器、静态与动画 Drawable 支持；它不提供现有 Bitmap 复用，也不会自动把工作移到后台。`BitmapFactory` 仍是有效且持续维护的 API，尤其适合需要 `inBitmap` 的成熟管线。
 
 Hardware Bitmap 解决的是最终图形存储与绘制准备问题，不等同于硬件解码。Android 17 的静态图源码显示，CPU 可写像素解码完成后才分配 Hardware Bitmap。这一顺序可以解释“解码变慢但首绘更稳定”或“软件 Bitmap 解码快但首次显示多一次资源准备”等现象。
+
+## 全文小结
+
+图片管线要以同一个请求身份串起获取、各级缓存、目标尺寸、解码、变换、结果交付和首个可见帧。Glide 或 Coil 的名称不能代替这些配置；缓存键、目标像素、并发、取消和显示生命周期必须一起验证。
+
+Bitmap 侧则要区分压缩字节、CPU 可写像素、共享内存、图形缓冲和 RenderNode 引用。最终验收不是“图片库回调成功”，而是在发布构建中用相同资源、目标尺寸和缓存状态，同时证明解码、内存峰值、RenderThread/GPU 资源准备与 actual present 都在预算内。
 
 ## 参考资料
 

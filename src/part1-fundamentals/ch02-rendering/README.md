@@ -5,12 +5,12 @@ section: "2.0"
 status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-08-11"
-last_verified_against: "AOSP android-17.0.0_r1; kernel android17-6.18-2026-06_r6; consolidated ch02 structure 2.1-2.18"
+last_verified_against: "AOSP android-17.0.0_r1; kernel android17-6.18-2026-06_r6; consolidated ch02 structure 2.1-2.17"
 confidence: high
 tags: [rendering, SurfaceFlinger, BufferQueue, BLAST, sync-fence, FrameTimeline, ARR]
 pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
-consolidation_note: 第三轮逐篇审阅后确认当前 18 篇，合并同一责任链中的总览、机制、版本增量、观测与案例；Compose Pausable Composition 留待第 22 章审阅时与应用实践专题统一取舍。
+consolidation_note: 第四轮逐篇审阅后确认当前 17 篇，合并同一责任链中的总览、机制、版本增量、观测与案例；原 2.18 Compose Pausable Composition 应用实践已并入 22.2。
 consolidated_from:
   - "src/part1-fundamentals/ch02-rendering/2.15-android17-gpu-debug-tools.md"
   - "src/part1-fundamentals/ch02-rendering/2.29-Android-17-桌面模式窗口管理性能.md"
@@ -66,7 +66,6 @@ Android 的掉帧、首帧延迟、SurfaceView 错位、视频抖动和刷新率
 - [2.15 DisplayManagerService：显示器发现、拓扑、功耗与渲染交接](15-displaymanager-service-lifecycle.md)
 - [2.16 HDR 显示管线与色彩管理性能](16-hdr-color-management-pipeline-performance.md)
 - [2.17 Android 17 FrameTimeline、FrameTracer 与合成边界](17-android17-frametimeline-composition-boundary.md)
-- [2.18 Compose Pausable Composition 实战指南](18-compose-pausable-composition-guide.md)
 
 ## 与第 18 章怎样配合
 

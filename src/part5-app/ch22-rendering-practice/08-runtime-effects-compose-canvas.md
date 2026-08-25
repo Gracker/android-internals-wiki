@@ -951,13 +951,19 @@ Canvas/RenderNode/HWUI 主路径延续。设备刷新率、frame-rate hint（帧
 - Baseline Profile 是否覆盖目标用户路径，并与 GPU/带宽优化分开；
 - 内核结论是否止于 `android17-6.18-2026-06_r6` 的标准机制，没有推断设备 GPU 驱动策略。
 
-### 结论
+### Canvas 小结
 
 Compose Canvas 在 Android 上沿用 Canvas、RenderNode 和 HWUI 路径。`Canvas` 是一个带 `drawBehind` 的 Spacer；`DrawScope` 提供绘制接口并复用内部 Paint；AndroidComposeView 再把命令送入宿主窗口的 display list。
 
 性能分析要区分三段：UI Thread 的几何计算与录制、RenderThread 的树准备与 Skia 提交、GPU 的像素和离屏工作。`drawWithCache` 处理对象与几何复用，`graphicsLayer` 处理指令隔离和属性变换；它们都不会自动减少复杂 Path、全屏 shader 或多重离屏的像素成本。
 
 Android 17 没有 Compose Canvas 专属显示管线。分析时应固定 Compose 与平台版本，控制状态读取阶段和缓存失效范围，再用 Macrobenchmark 与 Perfetto 沿 FrameTimeline、UI Thread、RenderThread、GPU、SurfaceFlinger 逐段验证。
+
+## 全文小结
+
+Runtime 图形效果和 Compose Canvas 的共同主线是“先界定绘制边界，再计算这块边界每帧变化什么”。`RenderEffect`、RuntimeShader、`graphicsLayer` 和 `saveLayer()` 可以把工作留在 HWUI/GPU 路径，但不会消除离屏目标、采样、像素填充、带宽和图形内存成本；作用面积、内容变化率和效果链长度才是降级与选型的输入。
+
+Compose Canvas 侧要把组合、绘制回调、display list 录制和 GPU 执行分开。`drawWithCache` 只缓存对象与几何，`graphicsLayer` 只隔离命令和属性，两者都不等于上一帧像素被无条件复用。最终验收需同时证明 UI 录制、RenderThread/GPU、图形内存和 actual present 没有被一个局部视觉效果拖过当前帧的 deadline。
 
 ## 参考资料
 

@@ -2,7 +2,7 @@
 
 ## 审查口径
 
-当前正文共有 275 篇，分布在 26 个大章。旧的 `2026-08-24-article-review-ledger.json` 只证明结构扫描和语义相似度筛查完成，不能替代人工逐篇审查。本台账只把已经核对过标题契约、完整正文推进线、章节归属、前后顺序和相邻文章边界的文章记为“通过”。
+当前正文共有 274 篇，分布在 26 个大章。旧的 `2026-08-24-article-review-ledger.json` 只证明结构扫描和语义相似度筛查完成，不能替代人工逐篇审查。本台账只把已经核对过标题契约、完整正文推进线、章节归属、前后顺序和相邻文章边界的文章记为“通过”。
 
 每篇文章按以下问题判断：
 
@@ -17,7 +17,7 @@
 | 大章 | 正文数 | 已审 | 状态 | 结论与处理 |
 | --- | ---: | ---: | --- | --- |
 | 第 1 章：系统架构全景 | 29 | 29 | 已完成 | 逐篇确认基础运行时、IPC/调度、系统服务、隔离与观测的责任边界。删除 1.7 误并的 Sharesheet 教程；重命名 1.6、1.9、1.12；清理 1.3 编号残留、1.9 重复 DeliQueue 段和 1.17/1.22 自指；补齐全章发布阶段。目标顺序随全书统一重编号落地。 |
-| 第 2 章：渲染系统 | 18 | 18 | 已完成 | 逐篇确认从帧调度、App/HWUI、GPU/BufferQueue 到 SurfaceFlinger/HWC/Display 的责任链，修复 2.2/2.3/2.7/2.8 断裂编号、合并稿自指与 TaskSnapshot 内部矛盾；README 改为实际 18 篇并校正阅读路径。2.18 与 22.3 重叠，留待第 22 章审阅时跨章合并；其余 17 篇保留。目标顺序随全书统一重编号落地。 |
+| 第 2 章：渲染系统 | 17 | 17 | 已完成 | 逐篇确认从帧调度、App/HWUI、GPU/BufferQueue 到 SurfaceFlinger/HWC/Display 的责任链，修复 2.2/2.3/2.7/2.8 断裂编号、合并稿自指与 TaskSnapshot 内部矛盾。原 2.18 的 Pausable Composition 实验步骤并入 22.2 后删除；其余 17 篇保留。目标顺序随全书统一重编号落地。 |
 | 第 3 章：输入系统 | 6 | 6 | 已完成 | 顺序保持为分发主链 → 触摸时延 → 系统导航手势 → 应用手势识别 → 输入法 → 桌面输入。修复 3.1 与 3.3 合并后断裂的章节编号；把 3.2 末尾游离的重采样源码段移动到批处理机制之后；4 篇待审状态转为可发布。 |
 | 第 4 章：内存管理 | 10 | 10 | 已完成 | 顺序保持为全景口径 → ART Heap/GC → 系统压力治理 → App 优化 → 16 KB 兼容 → 资源终结 → 内核回收/规整 → ZRAM 恢复 → MTE → 跨进程推理。清理 4.1–4.3 合并稿的中途结论、重复关联和自引用，补齐全文收束；修复 4.3 编号跳跃及 4.4 重复旧标题入口；10 篇状态统一为可发布。 |
 | 第 5 章：CPU 调度与能耗管理 | 9 | 9 | 已完成 | 顺序保持为调度/选核 → DVFS/温控/系统功耗 → 后台政策 → ADPF → 端侧 AI Runtime/NPU → LLM 能效 → 传感器 → Cache → LE Audio。为 5.1–5.3 三篇合并主稿和 5.5 补齐全文小结，清理自引用与重复关联；修复 5.1 温控误指 5.5、5.8 启动测量误指 21.4。第 21 章复审时把重复的通用缓存稿中独有的 SLRU/扫描污染内容并入 5.8。 |
@@ -37,8 +37,8 @@
 | 第 19 章：APM 工具与性能监控生态 | 12 | 12 | 已完成 | 顺序保持为全景选型 → 当前工具 → 历史方案 → Benchmark/实验室 → 专项采集 → 端侧架构。修正 19.4 对 Measure 的标题与导语误判、README 的 14.10 错误选型入口及 19.7 发布阶段。 |
 | 第 20 章：应用稳定性治理 | 14 | 14 | 已完成 | 逐篇确认 14 篇都有单一主问题，不再合并。后半章重排为 Native 内存 → FD → 线程/协程 → Binder → Keystore → MTE → Hook → DCL → SDK；重命名 20.5/20.6，清理死链来源、自指、重复导航与断裂编号，统一补齐全文收束。 |
 | 第 21 章：启动优化 | 9 | 9 | 已完成 | 逐篇确认路径/度量、任务、Provider/多进程、Profile、Splash、广告 SDK、GC、DI 与 Compose 的责任边界。通用缓存稿与 5.8 高度重复，独有 SLRU 内容并回 5.8 后删除；设备分级移入 15.8。修正自指、断裂编号、标题误导和错误关联，补齐全章收束。 |
-| 第 22 章：渲染性能实践 | 20 | 1 | 进行中 | 已完整审查并接收 22.20 EyeDropper；其余 19 篇待本章轮次逐篇复核。 |
-| 其余 4 章 | 45 | 0 | 待审 | 按章节逐篇推进。累计完成 211/275，剩余 64 篇（含第 22 章未审 19 篇）。全书章节号存在 `1–12 → 18 → 13–15 → 19 → 16–17 → 20–26` 的确定性顺序错误，待内容合并完成后统一重编号；已确认的章内顺序也在该次重编号中一次性调整。 |
+| 第 22 章：渲染性能实践 | 20 | 20 | 已完成 | 逐篇确认 View/Compose、动画与图形效果、Surface/媒体/相机和系统能力的应用实践边界。原 2.18 的同版本验证、依赖解析和回退步骤并入 22.2 后删除；修复合并稿自指、编号断层、资料层级和错误关联，补齐 11 篇全文收束；22.16 扩充标题。目标顺序随全书统一重编号落地。 |
+| 其余 4 章 | 45 | 0 | 待审 | 按章节逐篇推进。累计完成 229/274，剩余 45 篇。全书章节号存在 `1–12 → 18 → 13–15 → 19 → 16–17 → 20–26` 的确定性顺序错误，待内容合并完成后统一重编号；已确认的章内顺序也在该次重编号中一次性调整。 |
 
 ## 第 1 章逐篇结论
 
@@ -97,9 +97,9 @@
 | 2.15 DisplayManagerService：显示器发现、拓扑、功耗与渲染交接 | 从服务启动、DisplayDevice/LogicalDisplay 进入锁模型、DeviceState、VSync 边界、mode/power/VirtualDisplay 和交接。 | 负责通用 Display 管理生命周期；2.13 只在折叠场景引用该机制。 | 保留。 |
 | 2.16 HDR 显示管线与色彩管理性能 | 从 ColorSpace/Dataspace/format 进入 SF 输出色彩、HWC/RenderEngine、HDR/SDR 混合、WCG/Ultra HDR/视频与观测。 | 负责色彩语义与合成位置；2.7 负责 GPU 通用执行，2.5 负责 SF 通用合成。 | 保留。 |
 | 2.17 Android 17 FrameTimeline、FrameTracer 与合成边界 | 从覆盖范围、token 模型与帧边界，进入 CLIENT/DEVICE、jank、fence、SQL 和诊断步骤。 | 负责用时间线证据判断责任段；不代替 2.3 调度机制或 2.8 buffer/fence 状态机。 | 保留。 |
-| 2.18 Compose Pausable Composition 实战指南 | 从版本轴、Lazy Layout 代码结构、cache window 进入同版本 A/B、Macrobenchmark、Perfetto 和回退。 | 内容完全属于应用层 Compose 实践，与 22.3 的 Pausable Composition/Lazy 预取部分重叠。 | 转为可发布，但标记为跨章合并候选；审阅第 22 章时对照 1.12.0 基线保留独有实验步骤并删除重复稿。 |
+| 原 2.18 Compose Pausable Composition 实战指南 | 从版本轴、Lazy Layout 代码结构、cache window 进入同版本 A/B、Macrobenchmark、Perfetto 和回退。 | 内容完全属于应用层 Compose 列表实践，与 22.2 的 Lazy 预取和版本验证重叠。 | 把依赖解析、同版本开关 A/B、升级/回退等独有步骤并入 22.2 后删除。 |
 
-章内统一重编号的目标顺序为：架构总览 → 帧率/显示模式 → VSync/调度 → MainThread/RenderThread/Hardware Layer → 过度绘制 → 文字渲染 → GPU/API 选型 → BufferQueue/Gralloc/fence → SurfaceFlinger/FrontEnd/事务 → HDR/色彩 → Frame Pacing → FrameTimeline 诊断 → DisplayManagerService → 多窗口/桌面 → Edge-to-Edge/Insets → 折叠屏 → TaskSnapshot。Compose Pausable Composition 不进入该顺序，等第 22 章审阅后执行跨章合并。
+章内统一重编号的目标顺序为：架构总览 → 帧率/显示模式 → VSync/调度 → MainThread/RenderThread/Hardware Layer → 过度绘制 → 文字渲染 → GPU/API 选型 → BufferQueue/Gralloc/fence → SurfaceFlinger/FrontEnd/事务 → HDR/色彩 → Frame Pacing → FrameTimeline 诊断 → DisplayManagerService → 多窗口/桌面 → Edge-to-Edge/Insets → 折叠屏 → TaskSnapshot。原 Compose Pausable Composition 不进入该顺序，独有实验步骤已并入 22.2 后删除。
 
 ## 第 4 章逐篇结论
 
@@ -309,11 +309,32 @@
 | 18.13 Android 17 / Android XR 空间 UI 与环境资产渲染性能 | 先区分 2D panel、空间内容、OpenXR 和 Projected，再进入资产、视点、runtime cadence、工具与功耗。 | 负责应用与 XR runtime/compositor 的责任边界；不把普通 SurfaceFrame 当最终头显 present。 | 原 18.14 前移；补齐全文小结、关联章节和发布状态。 |
 | 18.14 Android 17 Jetpack WebGPU 渲染与计算管线 | 从 Dawn/AndroidX 架构进入能力查询、可见渲染、compute、线程、性能、调试和 WebView 边界。 | 负责 Jetpack WebGPU；GLES/Vulkan/Surface 基础分别由 18.3—18.6 负责，WebView runtime 由 18.9 负责。 | 原 18.15 前移；补齐全文小结、关联章节和发布状态。 |
 
-## 第 22 章已审条目
+## 第 22 章逐篇结论
 
 | 文章 | 标题契约与推进线 | 章节边界 | 处理结果 |
 | --- | --- | --- | --- |
+| 22.1 View 布局与自定义绘制优化 | 从 measure/layout/draw 基础进入自定义 View、Canvas、缓存与性能验收。 | 负责 View 侧布局绘制实践；Compose 布局与 Canvas 分别由 22.14、22.8 展开。 | 保留。 |
+| 22.2 RecyclerView 与 Compose LazyList 性能 | 先建立两类虚拟列表的成本模型，再进入复用、预取、稳定身份、基准和同版本开关实验。 | 负责列表实践与 Lazy 预取；22.3 负责编译器/Modifier 诊断。 | 接收原 2.18 的依赖解析、同版本 A/B、升级与回退步骤；删除重复稿并补齐断裂编号。 |
+| 22.3 Compose 性能、Compiler 与 Modifier.Node 诊断 | 从状态与阶段基线进入 Compiler 指标、运行时证据和 Modifier.Node 迁移。 | 负责 Compose 通用诊断；列表机制交给 22.2，互操作生命周期交给 22.11。 | 写明相邻专题边界，修正编号和自链，补充全文小结。 |
+| 22.4 View、Compose 动画与共享元素性能 | 按 View 动画 → Compose 动画 → SharedTransition 逐层推进。 | 负责动画 API 与共享元素实践；运行时图形效果交给 22.8。 | 修复两处编号、缺失首节、自链和分段结论标题。 |
+| 22.5 图片加载、Bitmap 解码与 RenderNode | 从请求/缓存/生命周期进入解码、像素存储、上传与绘制缓存。 | 负责图片端到端应用实践；10.4 负责图形内存统计，2.x/18.x 负责系统管线。 | 删除合并段自指，区分局部小结并补充全文收束。 |
+| 22.6 WebView 性能优化实战 | 从初始化与首屏进入网络缓存、JS Bridge、显示、renderer 生命周期与诊断。 | 负责应用接入和优化；18.9 负责 Chromium/WebView 内核渲染管线。 | 修正错误的机制章编号，补充全文小结。 |
+| 22.7 帧率监控与线上卡顿治理 | 从帧信号采集进入堆栈采样、归因、告警、回放与治理闭环。 | 负责线上监控；13.x 负责 Perfetto 工具，15.3 负责通用指标体系。 | 保留；发布阶段转为可发布。 |
+| 22.8 Runtime 图形效果与 Compose Canvas | 先讲 RenderEffect/AGSL，再讲 Canvas 状态读取、缓存、图层和测量。 | 负责应用图形效果与自绘；22.16 负责底层管线创建和缓存。 | 把分段结论改为 Canvas 小结，补充全文收束。 |
+| 22.9 Fragment、Predictive Back 与 Navigation Compose 页面切换 | 按 Fragment 切换 → Predictive Back → Navigation Compose 推进。 | 负责 App 导航与转场实践；3.3 负责系统返回手势路由。 | 修正三段合并后的结论标题、编号和自链，补充全文小结。 |
+| 22.10 自适应布局、桌面窗口与多形态设备性能 | 从窗口尺寸类别与决策入口进入折叠姿态、resize、多窗口、多显示和分层验收。 | 负责应用自适应布局；2.10/2.13/2.15 负责系统窗口与显示机制。 | 清除指向已合并原 2.18 的失效来源，补充全文小结。 |
+| 22.11 Compose First 与 View/Compose 互操作性能实战 | 从 AndroidView/ComposeView 对象模型进入复用、生命周期、滚动、迁移和测试门槛。 | 负责完整互操作生命周期；Compose 编译诊断、刷新率和 Surface 专题只保留边界。 | 写明三类相邻专题边界，删除相关章节中的同篇自链并补齐当前入口。 |
+| 22.12 自适应刷新率与帧率策略实战 | 从内容/应用/显示三种帧率进入 View、Window、Surface 请求、系统选择和跨设备验收。 | 负责应用 ARR 策略；2.2 负责系统模式选择机制。 | 保留；统一全文小结标题。 |
+| 22.13 App Widget 更新性能：RemoteViews IPC 与 Glance 渲染 | 按 provider → system_server → host 三段模型进入更新语义、调度、图像、Glance 和测量。 | 负责桌面 Widget 跨进程渲染；不把 Glance 等同于 Compose UI 管线。 | 补充跨三进程的全文小结并顺延检查清单编号。 |
+| 22.14 Compose 布局、测量与文字渲染 | 先解释约束/测量/放置/Subcompose，再进入字体整形、段落缓存与绘制。 | 负责布局和文本的运行时成本；22.3 负责组合稳定性诊断，22.8 负责 Canvas。 | 删除同篇自链，按布局/文本/旧版本重组资料，并补充覆盖两部分的全文小结。 |
+| 22.15 Compose Snapshot、状态一致性与并发 | 从多版本记录、apply/冲突进入依赖观察、跨线程、Recomposer、成本与测试。 | 负责 Runtime 状态一致性；22.3 负责编译器，22.14 负责布局。 | 补齐关联章节和全文小结，顺延后续编号。 |
+| 22.16 Vulkan 管线缓存与 Impeller 着色器编译实战 | 先区分 HWUI/原生 Vulkan 管线所有权，再把同一模型映射到 Impeller shader、PSO、预热和显示取证。 | 负责应用/引擎的管线键、调度、缓存和降级；18.5/18.7 负责机制架构。 | 扩充标题，修复“十 → 十三”的编号断层，为 Vulkan、Impeller 和全文分别补齐收束。 |
+| 22.17 SurfaceView 与 TextureView：渲染路径、选型与排障 | 用最小拓扑模型进入延迟/功耗/内存、生命周期、场景选型、Compose 包装和反向追帧。 | 负责应用选型与排障；18.3 负责完整源码管线。 | 在开头明确与 18.3 的边界，补齐关联并统一全文小结标题。 |
+| 22.18 Media3 视频播放：解码、帧时序与渲染 | 从 renderer/codec/release timestamp 进入 Surface、效果、HDR/DRM、tunnel、帧率、首帧和 Perfetto。 | 负责 Media3 应用侧播放实践；18.11 负责 Codec2/overlay 数据面。 | 把落在源码列表之后的全文小结移到正文结束、相关章节之前。 |
+| 22.19 CameraX：UseCase、Camera2 映射与性能 | 从版本与会话配置进入 Preview、Analysis、Capture/ZSL、Video、Extensions、热稳定和工具选择。 | 负责 CameraX 应用配置；18.10 负责 HAL3/Buffer/ZSL 平台管线，14.14 负责工具。 | 修正把平台 Camera 误指到 18.9 WebView 的关联，补充全文小结并整理尾部编号。 |
 | 22.20 Android 17 EyeDropper：系统取色、截图边界与跨设备同步 | 从公开 Intent 契约进入 AOSP 特权实现、截图与安全边界，再讲接入、trace 和应用自建跨设备协议。 | 负责系统能力的应用接入与性能实践；不属于第 18 章的持续渲染 Producer 管线。 | 从原 18.13 移入本章；重命名并更新章节关系、README 与 SUMMARY。 |
+
+章内统一重编号的目标顺序为：View 布局/绘制 → RecyclerView/Lazy 列表 → Compose 编译诊断 → Compose 布局/文本 → Snapshot/并发 → View/Compose 互操作 → 动画/共享元素 → Canvas/图形效果 → 图片 → 帧监控 → 导航 → 自适应布局 → 自适应刷新率 → SurfaceView/TextureView → Vulkan/Impeller → WebView → Media3 → CameraX → App Widget → EyeDropper。该顺序随全书统一重编号一次落地。
 
 ## 第 19 章逐篇结论
 

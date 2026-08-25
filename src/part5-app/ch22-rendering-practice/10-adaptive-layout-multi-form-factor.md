@@ -43,8 +43,6 @@ sources:
 - type: official
   path: https://perfetto.dev/docs/data-sources/frametimeline
 - type: local
-  path: src/part1-fundamentals/ch02-rendering/18-compose-pausable-composition-guide.md
-- type: local
   path: src/part1-fundamentals/ch02-rendering/17-android17-frametimeline-composition-boundary.md
 consolidated_from:
 - src/part5-app/ch22-rendering-practice/14-desktop-windowing-large-screen-performance.md
@@ -554,6 +552,12 @@ ORDER BY a.actual_start_ns;
 - [ ] 调整窗口的轨迹区分几何事务、缓冲区提交与显示呈现
 - [ ] 多窗口标出进程、线程、ViewRoot 和图层，多显示设备分别看呈现栅栏
 - [ ] 视觉测试、Macrobenchmark 和 Perfetto 各自回答对应问题
+
+## 全文小结
+
+自适应布局的核心输入是当前窗口、设备姿态、Insets 和输入能力，而不是设备名称或应用启动时记录的一次屏幕宽度。页面入口负责把连续的环境信息收敛成离散布局指令，组件再依据局部约束完成布局；内容状态应当独立持有，避免随布局模式切换而丢失或重复加载。
+
+性能验收也要分层：应用侧区分组合、测量与布局，系统侧区分 WMS/Shell 几何变化、应用 buffer 生产和各显示设备的 present。测试矩阵至少覆盖断点两侧、连续拖拽、多窗口、多实例、多显示设备以及状态恢复。
 
 ## 参考资料
 

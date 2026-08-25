@@ -21,7 +21,7 @@
 - [22.13 App Widget 更新性能：RemoteViews IPC 与 Glance 渲染](13-app-widget-performance.md)
 - [22.14 Compose 布局、测量与文字渲染](14-compose-layout-text-rendering.md)
 - [22.15 Compose Snapshot、状态一致性与并发](15-compose-snapshot-state-consistency.md)
-- [22.16 Vulkan 管线与 Impeller 着色器编译](16-vulkan-impeller-shader-compilation.md)
+- [22.16 Vulkan 管线缓存与 Impeller 着色器编译实战](16-vulkan-impeller-shader-compilation.md)
 - [22.17 SurfaceView 与 TextureView：渲染路径、选型与排障](17-surfaceview-textureview.md)
 - [22.18 Media3 视频播放：解码、帧时序与渲染](18-media3-video-rendering.md)
 - [22.19 CameraX：UseCase、Camera2 映射与性能](19-camerax-rendering.md)

@@ -333,7 +333,7 @@ read -r -p "Record the Perfetto trace, then press Enter to restore settings."
 
 Compose 从 1.9 起提供 `Modifier.preferredFrameRate(Float)` 和 `Modifier.preferredFrameRate(FrameRateCategory)`，本文核验基线为 Compose UI 1.12.0。帧率请求应靠近持续变化的可组合函数。给整屏统一设置 `High` 会扩大高刷新率范围；`LazyList` 应优先使用当前 Compose/AndroidX 自带的滚动支持，再用跟踪数据判断是否还需局部调整。ARR 也不会减少重组（recomposition）、布局（layout）或绘制（draw）本身的工作量。
 
-## 小结
+## 全文小结
 
 ARR 策略从内容对象出发：普通 View 和 Compose 在宿主窗口内提交请求，`TextureView` 的外部内容回到宿主 HWUI，`SurfaceView`、视频和游戏 Surface 可以形成独立图层节奏。应用提交偏好，SurfaceFlinger 结合所有可见图层与系统策略做选择，Composer3 和面板能力决定可用的离散呈现节拍。
 

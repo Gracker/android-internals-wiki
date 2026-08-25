@@ -968,6 +968,14 @@ tunnel 不依赖普通逐帧 `queueBuffer()` 作为主证据。采样重点转�
 - [ ] tunnel 记录 audio session、HW sync 与 sideband；
 - [ ] protected content 记录 secure Surface 与 display route。
 
+## 全文小结
+
+Media3 1.11.0 在 API 31+ 默认采用异步 codec adapter，并由 `MediaCodecVideoRenderer` 根据媒体时钟和 VSync 安排输出。这个异步 adapter、BufferQueue asyncMode 与 EGL swap interval 是三套机制，诊断时必须分开；1.11.0 默认启用的动态调度又是播放器工作循环的第四个维度。
+
+普通帧从 `releaseOutputBuffer(timestampNs)` 到可见画面，还要经过 Surface queue、fence、SurfaceFlinger、HWC 与 display present。renderer first-frame 和 dropped-frame 事件只覆盖播放器侧边界；端到端结论需要平台 trace 与显示证据。
+
+SurfaceView 给视频独立 layer 与 HWC 评估机会，TextureView 把视频采样进宿主窗口，effects 又增加一套输入/输出 Surface 和 GPU 处理。HDR、DRM、tunnel、ANGLE 与 vendor codec 都会改变路径。稳定的优化来自版本固定、责任分层、同一时间轴取证和目标设备组合测试。
+
 ## 相关章节
 
 - [SurfaceView 与 TextureView 渲染性能选型实战](17-surfaceview-textureview.md)
@@ -1023,11 +1031,3 @@ tunnel 不依赖普通逐帧 `queueBuffer()` 作为主证据。采样重点转�
 - [dma-buf](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)
 - [sync_file](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)
 - [dma-fence](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/dma-fence.h)
-
-## 小结
-
-Media3 1.11.0 在 API 31+ 默认采用异步 codec adapter，并由 `MediaCodecVideoRenderer` 根据媒体时钟和 VSync 安排输出。这个异步 adapter、BufferQueue asyncMode 与 EGL swap interval 是三套机制，诊断时必须分开；1.11.0 默认启用的动态调度又是播放器工作循环的第四个维度。
-
-普通帧从 `releaseOutputBuffer(timestampNs)` 到可见画面，还要经过 Surface queue、fence、SurfaceFlinger、HWC 与 display present。renderer first-frame 和 dropped-frame 事件只覆盖播放器侧边界；端到端结论需要平台 trace 与显示证据。
-
-SurfaceView 给视频独立 layer 与 HWC 评估机会，TextureView 把视频采样进宿主窗口，effects 又增加一套输入/输出 Surface 和 GPU 处理。HDR、DRM、tunnel、ANGLE 与 vendor codec 都会改变路径。稳定的优化来自版本固定、责任分层、同一时间轴取证和目标设备组合测试。

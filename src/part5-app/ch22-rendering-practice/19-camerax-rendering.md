@@ -23,7 +23,7 @@ tags:
 - android-17
 related_chapters:
 - '14.14'
-- '18.9'
+- '18.10'
 - '22.17'
 - '24.9'
 - '2.8'
@@ -901,7 +901,13 @@ Interop 选项还可能与 CameraX 自己的 3A、帧率、稳定或特性组配
 
 排查结论要能回答“慢在哪一段、由哪个持有方等待、哪项配置改变了结果”。“CameraX 慢”“设备差”或“HAL 卡住”都不足以指导修复。
 
-## Android 17 / CameraX 1.6.1 源码锚点
+## 14. 全文小结
+
+CameraX 的性能边界由完整 UseCase 组合决定，而不是某个单独参数或“多一层封装”。应先固定平台与库版本，验证会话能否支持，再分别追踪 Preview、ImageAnalysis、ImageCapture 和 VideoCapture 的生产者、消费者、缓冲区持有与最终时间点。
+
+CameraX 1.6 的 CameraPipe 仍运行在 Camera2、相机服务和 HAL 之上。库负责用例协商、生命周期和设备兼容，HAL 负责采集与 ISP，应用还要负责分析、效果、编码、存储和显示消费者。只有当 CameraX 无法表达目标会话，而且同配置对照证明 Camera2 能改变瓶颈时，才值得接管更底层的生命周期与请求控制。
+
+## 15. Android 17 / CameraX 1.6.1 源码锚点
 
 ### CameraX 1.6.1
 
@@ -924,7 +930,7 @@ Interop 选项还可能与 CameraX 自己的 3A、帧率、稳定或特性组配
 - [`dma-buf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)：跨设备共享缓冲区；
 - [`dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)、[`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)：fence 状态、等待、回调与 fd 接口。
 
-## 参考资料
+## 16. 参考资料
 
 - [CameraX 版本说明](https://developer.android.com/jetpack/androidx/releases/camera)
 - [CameraX 架构](https://developer.android.com/media/camera/camerax/architecture)

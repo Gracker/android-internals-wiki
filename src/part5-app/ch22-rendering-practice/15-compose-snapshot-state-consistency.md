@@ -11,6 +11,8 @@ tags:
 - performance
 related_chapters:
 - '22.3'
+- '22.14'
+- '22.11'
 last_verified: '2026-08-15'
 last_verified_against: Android 17 / API 37 / android-17.0.0_r1；Compose Runtime 1.12.0 源码（发行范围终点 963bf914f78b389bdddef0da7f36bee19d897274）
 confidence: high
@@ -636,7 +638,13 @@ Snapshot apply 只改变应用进程内的状态版本。纯 Compose 页面要�
 
 Android 内核 `android17-6.18-2026-06_r6` 调度应用主线程、RenderThread、Binder 与系统服务线程。CPU 集合控制组（cpuset）限制线程可运行在哪些 CPU 上，利用率钳制（uclamp）为调度器的任务利用率估计设置上下限，进而影响选核和频率决策，CPU 频率框架（cpufreq）负责调整处理器频率。内核不识别 StateObject、状态记录链或 RecomposeScope。Snapshot 锁等待要在应用进程内解释，GPU 同步栅栏与呈现延迟则要沿显示管线解释。
 
-## 16. 审查清单
+## 16. 全文小结
+
+Compose Snapshot 提供的是进程内多版本可见性、冲突检测和变更通知，不是数据库级可串行化事务，也不会替业务建立唯一写者。正确性审查应围绕版本视图、状态记录、`apply()`、资源释放和跨对象不变量展开；跨线程使用还要区分“State 可访问”与 View、窗口或线程绑定资源的限制。
+
+性能分析则要把 Snapshot 读写、Composition 依赖匹配、布局绘制和最终显示分层。编译器报告只能解释组合跳过条件，`Compose:applyObservers` 也只覆盖观察器阶段；是否造成可见卡顿，仍需回到目标帧和完整渲染管线判断。
+
+## 17. 审查清单
 
 - [ ] Android 平台、内核与 Compose Runtime 版本分别记录。
 - [ ] 每个手工创建的 Snapshot 都有确定的 apply/dispose 路径。
@@ -652,7 +660,7 @@ Android 内核 `android17-6.18-2026-06_r6` 调度应用主线程、RenderThread�
 - [ ] 实验性 Snapshot 观察器只在受控诊断中启用，结束后 dispose 句柄。
 - [ ] Compose 之后的 HWUI、BLAST、SurfaceFlinger 与呈现时序继续按层检查。
 
-## 17. 源码与文档索引
+## 18. 源码与文档索引
 
 | 主题 | 固定来源 | 核查内容 |
 | --- | --- | --- |

@@ -14,6 +14,7 @@ tags:
 related_chapters:
 - '22.5'
 - '2.1'
+- '18.3'
 - '18.11'
 last_verified: '2026-08-15'
 last_verified_against: AOSP android-17.0.0_r1；Compose BOM 2026.08.00 / UI 与 Foundation 1.12.0（963bf914f78b389bdddef0da7f36bee19d897274）；android17-6.18-2026-06_r6；CameraX PreviewView 与 Media3 Surface 官方文档
@@ -66,6 +67,8 @@ sources:
 - `TextureView` 由应用进程内的 HWUI 消费输入 buffer，再把像素画入宿主应用窗口（App Window）。
 
 这个分界决定了延迟组成、GPU 带宽、HWC 机会、变换能力、生命周期和 trace（性能轨迹）读法。控件名称本身不能保证低延迟、低功耗或硬件叠加；所有性能结论都要回到当前设备的 Producer、BufferQueue、layer、fence 和 display present。
+
+[SurfaceView 与 TextureView 渲染管线](../../part2-performance/ch18-rendering-pipelines/03-surfaceview-textureview-pipelines.md) 负责从源码解释两条端到端管线；本文保留选型所需的最小拓扑模型，重点负责生命周期、场景决策、Compose 包装与 Perfetto 排障步骤。
 
 正文保留源码和 Perfetto 中可检索的英文名，含义统一如下：
 
@@ -716,7 +719,7 @@ Compose Foundation 1.12.0 还提供 `AndroidExternalSurface` 与 `AndroidEmbedde
 - [ ] TextureView 不在 SurfaceFlinger layer tree 里寻找输入 slot；
 - [ ] HWC overlay 结论有 composition type 与 client target 证据。
 
-## 结论
+## 全文小结
 
 SurfaceView 把内容保留在独立 BLAST child，使 Producer 与宿主窗口各自按自己的出帧节奏工作，也让 HWC 能单独评估这块内容。它有机会降低大面积视频、相机和游戏内容的宿主 GPU 采样与功耗，同时增加 Surface 生命周期、几何、hole-punch、独立 fence 和跨 layer 同步工作。
 
