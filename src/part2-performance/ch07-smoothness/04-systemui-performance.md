@@ -2,7 +2,7 @@
 title: SystemUI 性能分析
 chapter: '7.4'
 section: '7.4'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
 - systemui
@@ -90,9 +90,9 @@ sources:
   path: https://developer.android.com/develop/ui/views/notifications
 - type: official
   path: https://developer.android.com/develop/ui/views/launch/splash-screen
-pipeline_stage: ready-for-review
-task6_state: pending-review
-task9_state: pending-review
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
 task2b_state: fixed
 ---
 

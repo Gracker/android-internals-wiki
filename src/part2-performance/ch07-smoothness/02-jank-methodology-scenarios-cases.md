@@ -103,10 +103,10 @@ related_chapters:
 - '1.1'
 - '13.2'
 - '4.3'
-task6_state: pending-review
-status: ready-for-review
-pipeline_stage: ready-for-review
-task9_state: pending-review
+task6_state: reviewed
+status: finalized
+pipeline_stage: ready-to-publish
+task9_state: reviewed
 task2b_state: fixed
 last_rework_at: '2026-08-19T09:49:30+08:00'
 last_rework_run_id: 20260819-094608-rework-b29354cb
@@ -428,15 +428,6 @@ ORDER BY b.client_dur DESC;
 - Kernel（内核）：调度、Binder、blocked reason、dma-fence（设备缓冲同步栅栏）、PSI 与 reclaim（内存回收）以 `android17-6.18-2026-06_r6` 为准。
 - 版本演进：Android 12 前没有 FrameTimeline；API 24 起有 FrameMetrics，API 31 增加 `GPU_DURATION` / `DEADLINE`，API 36 增加 `FRAME_TIMELINE_VSYNC_ID`。历史工具可保留，但 Android 17 分析优先使用现代字段。
 
-### 与其他章节的关系
-
-- [7.1 卡顿的定义与分类](01-jank-definition-causes.md)：JankType、token 与指标边界。
-- [7.1 卡顿定义、分类与原因体系](01-jank-definition-causes.md)：按 App、buffer、SF、display 与系统因素解释根因。
-- [2.4 MainThread、RenderThread 与 Hardware Layer](../../part1-fundamentals/ch02-rendering/04-main-render-thread-hardware-layer.md)：HWUI 线程同步。
-- [FrameTimeline Perfetto 分析](../../part3-tools/ch13-perfetto/13-frametracer-frame-timeline.md)：FrameTimeline 数据与 SQL。
-- [Perfetto SQL Cookbook](../../part3-tools/ch13-perfetto/07-perfetto-sql-span-join-jank-cuj.md)：窗口查询和标准库用法。
-- [BufferQueue 阻塞分析](../../part3-tools/ch13-perfetto/10-bufferqueue-blocking-perfetto.md)：slot、fence 与 backpressure（背压）。
-
 ## 滚动、动画、启动与交互场景
 
 通用流程确定后，不同场景需要选择不同起止点和关键轨道。滚动、动画、启动与页面切换的帧生产方式并不相同。
@@ -468,8 +459,6 @@ ORDER BY b.client_dur DESC;
 | 提交对象 | ViewRoot buffer、SurfaceView child layer（子图层）、TextureView 输入、task snapshot（任务快照） | BufferQueue、Layer、transaction |
 | 帧结果 | expected/actual（预期/实际）、present type（呈现类型）、jank type（卡顿类型）、dropped/duplicated（丢弃/重复） | FrameTimeline、FrameTracer、fence |
 | 责任边界 | 应用、SystemUI、Launcher、system_server、SF/HWC（SurfaceFlinger/Hardware Composer，系统合成服务/硬件合成器）、内核/驱动 | sched（调度）、Binder、GPU/HWC、kernel trace（内核跟踪） |
-
----
 
 ### 列表滑动：先区分拖动与 fling
 
@@ -522,8 +511,6 @@ RenderThread 在某一帧运行于低容量 CPU，只能说明“当时在哪里
 
 应用侧通常无法据此要求线程固定运行在某个大核。系统或厂商团队若要修改调度策略，还需在 `android17-6.18-2026-06_r6` 对应的设备内核和 SoC（片上系统）调度实现上验证；Android common kernel 不规定厂商拓扑、频点或 GPU/HWC tracepoint（跟踪点）的统一形态。
 
----
-
 ### 页面切换：拆开内容准备、窗口事务与显示
 
 #### Activity transition
@@ -565,8 +552,6 @@ AndroidX Fragment 的 `commit()` 会把事务加入 FragmentManager 队列：它
 - alpha（透明度）、圆角、模糊或遮罩改变了合成条件。
 
 应同时记录元素准备回调、目标页首个 traversal、窗口 transition 和对应 layer present。只优化目标 Activity 的 XML，无法覆盖源窗口迟到或显示合成迟到。
-
----
 
 ### 窗口动画：Splash、返回手势与浮层
 
@@ -616,8 +601,6 @@ Dialog 和 PopupWindow 都会向 WindowManager 增加窗口对象，并拥有各
 
 “出现额外 layer”不等于“一定走 GPU client composition（客户端合成）”。HWC 是否使用 overlay（硬件叠加平面）取决于整组 layers 的格式、变换、混合、保护属性、硬件资源和厂商能力。可以把弹出前后的 layer composition type（合成类型）、client target（客户端合成目标）、GPU 时长与 present 结果放在一起比较。深入案例见 [HWC Overlay Plane 与合成降级排查](05-hwc-overlay-composition-downgrade.md)。
 
----
-
 ### Notification 展开与折叠：责任进程在 SystemUI
 
 通知面板的展开、折叠、分组和 Quick Settings（快捷设置）动画，主要由 SystemUI 生成 UI 帧。普通应用在发布或更新通知时通过 Binder 提交 Notification；动画期间如果通知内容没有更新，应用进程可能完全不在关键路径上。
@@ -636,8 +619,6 @@ Dialog 和 PopupWindow 都会向 WindowManager 增加窗口对象，并拥有各
 以 Android 12（API 31）及更高版本为目标的应用，自定义通知会被系统放入标准模板，以保持图标、展开区域和操作的一致性。这个限制并不会消除自定义内容的处理成本：复杂 RemoteViews、图片尺寸、更新频率和分组规模仍会影响 SystemUI。
 
 如果 SystemUI 的 SurfaceFrame 按时而 DisplayFrame 迟到，再检查遮罩、壁纸、状态栏、导航栏、当前 App 和通知面板的合成。应用自己的 App FrameTimeline 不能代表通知面板。
-
----
 
 ### 桌面滑动与多任务切换：以 OEM 现场为准
 
@@ -672,8 +653,6 @@ Task snapshot 通过 `TaskSnapshot` 携带 HardwareBuffer（硬件图形缓冲�
 
 在 Winscope 中，应检查 Shell transition 的参与者、WindowManager 状态、SurfaceFlinger layers 和 transactions；再在 Perfetto 中对齐 Launcher/SystemUI/system_server 的线程、输入、snapshot 相关 Binder、GPU 与 DisplayFrame。若动画卡片移动正常而内容停住，需要辨别当前看到的是 snapshot、旧 buffer 还是 live surface。
 
----
-
 ### 视频：UI 帧与视频帧要分开
 
 视频通常由 MediaCodec 或播放器渲染器向 Surface 输出 buffer。使用 SurfaceView 时，视频通常拥有独立的 child layer（子图层）；使用 TextureView 时，视频 buffer 先进入 SurfaceTexture，再由宿主 HWUI（Android 硬件加速 UI 渲染管线）在 App Window 中采样。两条路径的责任线程、buffer 数量和 FrameTimeline 覆盖范围不同。
@@ -686,9 +665,7 @@ Task snapshot 通过 `TaskSnapshot` 携带 HardwareBuffer（硬件图形缓冲�
 
 应记录媒体 presentation timestamp（PTS，呈现时间戳）、解码输入/输出、目标 Surface 的 frame number、queue/acquire/release（入队/获取/释放）、display present 和音频时钟。UI 的 App FrameTimeline 正常，不能证明独立视频 layer 连续更新；反过来，视频连续也不能证明控制栏动画流畅。
 
-HWC overlay 能减少 GPU 合成压力，但是否可用取决于格式、缩放、旋转、HDR（高动态范围）、受保护内容、其他 layers 与硬件资源。应检查目标 layer 的实际 composition type，不要依据 SurfaceView 或 MediaCodec 名称推断 overlay。详见 [视频 Overlay 与 HWC](../ch18-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md) 和 [MediaCodec2、Tunneled Playback 与 Media3 ABR](../ch18-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md)。
-
----
+HWC overlay 能减少 GPU 合成压力，但是否可用取决于格式、缩放、旋转、HDR（高动态范围）、受保护内容、其他 layers 与硬件资源。应检查目标 layer 的实际 composition type，不要依据 SurfaceView 或 MediaCodec 名称推断 overlay。详见[视频 Overlay、Media3 与专业编解码管线](../ch18-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md)。
 
 ### 地图与 WebView：先确认承载方式
 
@@ -704,7 +681,7 @@ HWC overlay 能减少 GPU 合成压力，但是否可用取决于格式、缩放
 - shader/pipeline（着色器/图形管线）创建、纹理上传和 GPU 执行是否与异常帧对齐；
 - 独立 layer 与宿主控件的更新是否落在同一 display frame。
 
-SurfaceView 与 TextureView 的差别可分别参见 [SurfaceView 渲染管线](../ch18-rendering-pipelines/03-surfaceview-textureview-pipelines.md) 和 [TextureView 渲染管线](../ch18-rendering-pipelines/03-surfaceview-textureview-pipelines.md)。
+SurfaceView 与 TextureView 的差别参见[SurfaceView 与 TextureView 渲染管线](../ch18-rendering-pipelines/03-surfaceview-textureview-pipelines.md)。
 
 #### WebView
 
@@ -722,8 +699,6 @@ WebView 是可以独立更新的组件。平台源码可以锚定 `android-17.0.
 
 Renderer 退出应结合进程生命周期、LMK（低内存终止）/OOM（内存不足）证据与 `WebViewClient.onRenderProcessGone()` 判断。除非应用自行插桩，不要预设 trace 中存在名为 `render_process_gone` 的 slice。完整结构见 [WebView 渲染管线](../ch18-rendering-pipelines/09-webview-rendering.md) 和 [WebView 性能优化实战](../../part5-app/ch22-rendering-practice/06-webview-optimization.md)。
 
----
-
 ### 从症状到证据的速查表
 
 | 场景症状 | 第一组对象 | 继续验证 | 容易误判的结论 |
@@ -740,15 +715,11 @@ Renderer 退出应结合进程生命周期、LMK（低内存终止）/OOM（内�
 | 视频停顿、控件流畅 | codec producer（编解码器生产者）、视频 layer | PTS、fence、HWC/present | “App FrameTimeline 正常就没掉视频帧” |
 | WebView 页面卡 | provider renderer/compositor | host HWUI、媒体 overlay、SF | “只查宿主主线程” |
 
----
-
 ### Android 17 与内核锚点
 
 平台结论以 Android 17 / API 37、AOSP `android-17.0.0_r1` 为上界。RecyclerView、Fragment、WebView provider 和地图 SDK 都可以独立更新，因此复现报告还要记录它们的版本。厂商 Launcher、SystemUI、HWC、GPU 驱动与调度策略也可能偏离 AOSP 参考实现。
 
 内核侧以 `android17-6.18-2026-06_r6` 为锚点。通用证据包括 sched wakeup/switch（调度唤醒/切换）、CPU frequency/idle（频率/空闲状态）、thermal、dma-buf（设备间共享缓冲区）与 dma-fence（设备缓冲同步栅栏）；设备可见的 GPU、display、HWC 和厂商调度事件由 SoC 与构建配置决定。缺少某个厂商 tracepoint 时，应保留“不足以继续归因”的边界，不能用线程名称或 CPU 编号补全结论。
-
----
 
 ### 复盘模板
 
@@ -764,17 +735,6 @@ Renderer 退出应结合进程生命周期、LMK（低内存终止）/OOM（内�
 8. 结论依赖的平台、AndroidX、WebView provider、OEM 和 kernel（内核）版本是什么？
 
 场景归类的作用是减少待检查对象；真正的归因仍要依靠源码、trace 和对照实验。若证据无法跨过 Surface、进程或显示边界，结论就只能停在当前层级。
-
----
-
-### 相关章节
-
-- [卡顿的定义与 FrameTimeline 语义](01-jank-definition-causes.md)
-- [卡顿原因分类](01-jank-definition-causes.md)
-- [可复现的卡顿分析方法](02-jank-methodology-scenarios-cases.md)
-- [渲染管线总览](../ch18-rendering-pipelines/01-android-view-pipeline-analysis.md)
-- [多窗口渲染](../../part1-fundamentals/ch02-rendering/10-multiwindow-desktop-rendering.md)
-- [渲染管线分析方法](../ch18-rendering-pipelines/01-android-view-pipeline-analysis.md#统一分析方法)
 
 ### 案例：从现场证据到修复判断
 
@@ -802,8 +762,6 @@ Renderer 退出应结合进程生命周期、LMK（低内存终止）/OOM（内�
 | 修复 | 改了哪一段工作或资源配置 |
 | 效果 | 同条件下哪些指标发生变化 |
 | 证据缺口 | 缺少原始 trace、样本量、设备覆盖或统计定义中的哪一项 |
-
----
 
 #### 案例一：WeSing 歌房进房的一条主线程消息过重
 
@@ -855,8 +813,6 @@ Renderer 退出应结合进程生命周期、LMK（低内存终止）/OOM（内�
 
 来源：[Android 深入卡顿分析与实践（QQ 音乐技术团队）](https://cloud.tencent.com/developer/article/2372774)。
 
----
-
 #### 案例二：反复进退房后的内存增长与 GC
 
 ##### 现场与公开数据
@@ -907,8 +863,6 @@ Android 14 起，应用不再收到部分旧的 `TRIM_MEMORY_RUNNING_*`（运行
 
 来源：[WeSing 复盘](https://cloud.tencent.com/developer/article/2372774)、[Android 低内存案例](https://www.androidperformance.com/2019/09/18/Android-Jank-Due-To-Low-Memory/)、[ComponentCallbacks2](https://developer.android.com/reference/android/content/ComponentCallbacks2)。
 
----
-
 #### 案例三：SDK 升级增加线程后，主线程获得 CPU 变慢
 
 ##### 现场与关键数据
@@ -953,8 +907,6 @@ WeSing 5.68 的版本对比发现：
 
 来源：[Android 深入卡顿分析与实践](https://cloud.tencent.com/developer/article/2372774)。
 
----
-
 #### 案例四：SurfaceFlinger GPU 合成帧迟到
 
 ##### 公开 trace 观察
@@ -997,8 +949,6 @@ CLIENT composition 只表示 SurfaceFlinger 需要把相关 layers 渲染进 cli
 Android 17 源码锚点是 `SurfaceFlinger.cpp`、CompositionEngine 的 `Output.cpp`、`RenderEngine` 和 `HWComposer.cpp`。详细步骤见 [HWC Overlay Plane 与合成降级排查](05-hwc-overlay-composition-downgrade.md)。
 
 来源：[Android 系统平台性能案例](https://www.androidperformance.com/2019/09/05/Android-Jank-Due-To-System/)、[Hardware Composer HAL](https://source.android.com/docs/core/graphics/implement-hwc)。
-
----
 
 #### 案例五：Netmarble 根据热反馈维持持续帧率
 
@@ -1043,8 +993,6 @@ Android 17 / API 37 继续提供 Thermal API、ADPF 与 CPU/GPU headroom 相关�
 
 来源：[Netmarble ADPF 案例](https://developer.android.com/stories/games/netmarble-got-adpf)、[ADPF Thermal API](https://developer.android.com/games/optimize/adpf/thermal)、[ADPF 最佳实践](https://developer.android.com/games/optimize/adpf/best-practices-adpf)。
 
----
-
 #### 五个案例放在一张责任表里
 
 | 案例 | 用户侧结果 | 最早异常证据 | 责任边界 | 修复类型 |
@@ -1056,8 +1004,6 @@ Android 17 / API 37 继续提供 Thermal API、ADPF 与 CPU/GPU headroom 相关�
 | Netmarble 热限制 | 长会话帧率波动 | thermal headroom 与持续性能 | 应用负载、Power/Thermal HAL（功耗/温控硬件抽象层）、SoC | 动态分辨率与目标帧率 |
 
 表中的“责任边界”不表示团队归属。应用 layer 属性可能增加显示侧成本，系统内存压力也会放大应用 I/O。这个字段表示下一步需要哪类证据和修改权限。
-
----
 
 #### Android 17 复现实验清单
 
@@ -1086,13 +1032,14 @@ Android 17 / API 37 继续提供 Thermal API、ADPF 与 CPU/GPU headroom 相关�
 
 平台源码以 `android-17.0.0_r1` 为上界，内核以 `android17-6.18-2026-06_r6` 为锚点。ART、AndroidX、WebView、游戏引擎、GPU/HWC 与 OEM（设备厂商）策略还要记录各自版本。旧 Systrace 案例可以帮助识别现象，当前结论必须由目标 build 的 Perfetto、Winscope（窗口与图层分析工具）或厂商数据重新验证。
 
----
-
 #### 相关章节
 
 - [卡顿原因](01-jank-definition-causes.md)
-- [分析方法](02-jank-methodology-scenarios-cases.md)
-- [典型场景](02-jank-methodology-scenarios-cases.md)
+- [MainThread、RenderThread 与 Hardware Layer](../../part1-fundamentals/ch02-rendering/04-main-render-thread-hardware-layer.md)
+- [FrameTimeline Perfetto 分析](../../part3-tools/ch13-perfetto/13-frametracer-frame-timeline.md)
+- [Perfetto SQL Cookbook](../../part3-tools/ch13-perfetto/07-perfetto-sql-span-join-jank-cuj.md)
+- [BufferQueue 阻塞分析](../../part3-tools/ch13-perfetto/10-bufferqueue-blocking-perfetto.md)
+- [多窗口渲染](../../part1-fundamentals/ch02-rendering/10-multiwindow-desktop-rendering.md)
 - [优化策略](../../part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md)
 - [热节流适配与性能降级治理](../../part5-app/ch25-power-size/11-thermal-throttling-performance.md)
 - [系统内存压力与 lmkd](../../part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md)
@@ -1101,6 +1048,8 @@ Android 17 / API 37 继续提供 Thermal API、ADPF 与 CPU/GPU headroom 相关�
 - [视频 Overlay 与 HWC](../ch18-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md)
 
 ## 参考资料
+
+### 分析方法
 
 - [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
 - [Perfetto CPU scheduling events](https://perfetto.dev/docs/data-sources/cpu-scheduling)
@@ -1115,6 +1064,8 @@ Android 17 / API 37 继续提供 Thermal API、ADPF 与 CPU/GPU headroom 相关�
 - [AOSP Android 17 frames/timeline.sql](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/frames/timeline.sql)
 - [AOSP Android 17 binder.sql](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/binder.sql)
 - [Android 17 kernel Binder tracepoints](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_trace.h)
+
+### 典型场景
 
 - [Slow rendering：RecyclerView trace labels 与常见处理](https://developer.android.com/topic/performance/vitals/render)
 - [AndroidX Fragment transactions](https://developer.android.com/guide/fragments/transactions)
@@ -1132,6 +1083,8 @@ Android 17 / API 37 继续提供 Thermal API、ADPF 与 CPU/GPU headroom 相关�
 - [AOSP Android 17 TaskSnapshotController](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/TaskSnapshotController.java)
 - [Android common kernel sched tracepoints](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h)
 - [Android common kernel dma-fence](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)
+
+### 案例来源
 
 - [Android 深入卡顿分析与实践](https://cloud.tencent.com/developer/article/2372774)
 - [Android App 自身导致的卡顿案例](https://www.androidperformance.com/2019/09/05/Android-Jank-Due-To-App/)

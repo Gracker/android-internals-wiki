@@ -2,7 +2,7 @@
 title: Accessibility、ContentCapture 与 Autofill 性能
 chapter: '7.6'
 section: '7.6'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
 - accessibility
@@ -23,7 +23,7 @@ related_chapters:
 - '22.1'
 - '1.3'
 last_verified: '2026-08-02'
-last_verified_against: AOSP android-16.0.0_r1 + Android 17 官方行为变更文档
+last_verified_against: AOSP android-17.0.0_r1；Android 17 / API 37 官方行为变更与 API 文档
 confidence: medium-high
 sources:
 - type: aosp
@@ -48,7 +48,9 @@ sources:
   path: frameworks/base/services/autofill/java/com/android/server/autofill/
 - type: official
   path: developer.android.com/identity/autofill/autofill-optimize
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch07-smoothness/13-accessibility-manager-performance.md
@@ -380,7 +382,7 @@ Android 17 的 AOSP dump 没有通用的“Event Dispatch Statistics”或“Int
 
 平台版本无法代替 `AccessibilityService`、TalkBack、Compose、WebView 和厂商 framework 的具体版本。任何以百分比表示的性能结论都应附带设备、服务版本、页面、交互过程和 trace 条件，不能直接套用到其他设备。
 
-### 源码与资料
+### 无障碍源码与资料
 
 - [`AccessibilityManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/accessibility/AccessibilityManager.java) 与 [`IAccessibilityManager.aidl`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/accessibility/IAccessibilityManager.aidl)：客户端状态、相关事件过滤和 `oneway` 上报。
 - [`AccessibilityManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/accessibility/java/com/android/server/accessibility/AccessibilityManagerService.java)：事件安全检查、窗口更新与 bound service 分发。
@@ -684,7 +686,7 @@ adb shell dumpsys autofill
 
 这些路径属于 framework 和应用 / 服务进程，理解它们不需要依赖 `android17-6.18-2026-06_r6` kernel tag。Binder 驱动、线程调度和内存压力会影响时延，但本文讨论的调用关系没有引入 Android 17 内核专属机制。
 
-### 源码与资料
+### ContentCapture 与 Autofill 源码与资料
 
 - [`ContentCaptureManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/contentcapture/ContentCaptureManager.java)、[`MainContentCaptureSession.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/contentcapture/MainContentCaptureSession.java) 与 [`IContentCaptureDirectManager.aidl`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/contentcapture/IContentCaptureDirectManager.aidl)：会话、后台队列、事件合并、flush 和 direct `oneway` Binder。
 - [`View.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java)、[`ViewGroup.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java) 与 [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)：两套 structure 回调、importance、初始报告、动态事件和 AOSP trace slice。

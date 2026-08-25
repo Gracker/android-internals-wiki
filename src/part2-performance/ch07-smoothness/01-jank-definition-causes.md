@@ -231,16 +231,6 @@ AndroidX `JankStats` 用于应用内逐帧监测，可以把页面、交互状�
 
 线上数据适合回答“哪个 UI 状态经常出现异常帧”；Perfetto 适合回答“这一帧在 App、SurfaceFlinger、HWC 或显示末端发生了什么”。常见流程是先用 JankStats 或回归平台定位高风险场景，再采集 trace 完成单帧归因。
 
-### 与其他章节的关系
-
-- [2.1 Android 渲染架构与版本演进](../../part1-fundamentals/ch02-rendering/01-rendering-architecture-evolution.md)：理解应用生产、SurfaceFlinger 合成与显示提交。
-- [Android 17 FrameTimeline、FrameTracer 与合成边界](../../part1-fundamentals/ch02-rendering/17-android17-frametimeline-composition-boundary.md)：查看 FrameTimeline、FrameTracer、TimeStats 与 JankTracker 的职责边界。
-- [渲染管线总览](../ch18-rendering-pipelines/01-android-view-pipeline-analysis.md)：按 Producer、Surface、layer 与合成路径识别出图类型。
-- [7.1 卡顿定义、分类与原因体系](01-jank-definition-causes.md)：从归因类型进入 CPU、GPU、调度、同步与 buffer 根因。
-- [7.2 卡顿分析方法、典型场景与案例](02-jank-methodology-scenarios-cases.md)：把异常帧、线程状态和子系统证据组织成可复现结论。
-- [FrameTimeline Perfetto 分析](../../part3-tools/ch13-perfetto/13-frametracer-frame-timeline.md)：补充 trace 配置与 SQL 查询。
-
-
 ## 从应用工作到系统显示的原因树
 
 分类给出异常现象，原因分析还要落实到帧生产、调度、缓冲区和合成。相同帧时长可能来自不同责任阶段。
@@ -424,8 +414,9 @@ flowchart TD
 
 ### 与其他章节的关系
 
-- [7.1 卡顿定义、分类与原因体系](01-jank-definition-causes.md)：FrameTimeline、JankType 与指标边界。
 - [7.2 卡顿分析方法、典型场景与案例](02-jank-methodology-scenarios-cases.md)：trace 配置、窗口约束与 SQL 分析。
+- [2.1 Android 渲染架构与版本演进](../../part1-fundamentals/ch02-rendering/01-rendering-architecture-evolution.md)：应用生产、SurfaceFlinger 合成与显示提交。
+- [Android 17 FrameTimeline、FrameTracer 与合成边界](../../part1-fundamentals/ch02-rendering/17-android17-frametimeline-composition-boundary.md)：FrameTimeline、FrameTracer、TimeStats 与 JankTracker 的职责边界。
 - [2.4 MainThread、RenderThread 与 Hardware Layer](../../part1-fundamentals/ch02-rendering/04-main-render-thread-hardware-layer.md)：HWUI 两条线程的同步边界。
 - [1.3 Android IPC 全景与 Binder 性能](../../part1-fundamentals/ch01-architecture/03-ipc-binder-performance.md)：同步事务、线程池与优先级传播。
 - [1.9 MessageQueue、DeliQueue 与锁竞争](../../part1-fundamentals/ch01-architecture/09-messagequeue-lock-contention.md)：数据结构、启用条件与 A/B 方法。
@@ -433,6 +424,7 @@ flowchart TD
 - [5.2 DVFS、Thermal 与 Android 功耗管理](../../part1-fundamentals/ch05-cpu-power/02-dvfs-thermal-android-power.md) 与 [5.4 ADPF 自适应性能框架](../../part1-fundamentals/ch05-cpu-power/04-adpf.md)：thermal 与 performance hint 的适用边界。
 - [3.1 Input 分发、拦截与安全边界](../../part1-fundamentals/ch03-input/01-input-dispatch-interception-security.md)：输入到应用消费的证据。
 - [渲染管线总览](../ch18-rendering-pipelines/01-android-view-pipeline-analysis.md)：按 Producer、Surface、layer 与合成路径识别出图类型。
+- [FrameTimeline Perfetto 分析](../../part3-tools/ch13-perfetto/13-frametracer-frame-timeline.md)：trace 配置与 SQL 查询。
 
 
 ## 版本与实现边界
@@ -457,6 +449,8 @@ flowchart TD
 
 ## 参考资料
 
+### 定义与指标
+
 - [Perfetto：Android Jank detection with FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
 - [Android Developers：Slow rendering](https://developer.android.com/topic/performance/vitals/render)
 - [Android Developers：Diagnose and fix ANRs](https://developer.android.com/topic/performance/vitals/anr)
@@ -464,7 +458,8 @@ flowchart TD
 - [AOSP Android 17 JankInfo.h](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/include/gui/JankInfo.h)
 - [AOSP Android 17 FrameTimeline.cpp](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp)
 
-- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
+### 原因与诊断
+
 - [Perfetto CPU scheduling events](https://perfetto.dev/docs/data-sources/cpu-scheduling)
 - [PerfettoSQL android.binder 与 binder_breakdown](https://perfetto.dev/docs/analysis/stdlib-docs)
 - [Android 17 MessageQueue behavior change](https://developer.android.com/about/versions/17/changes/messagequeue)
