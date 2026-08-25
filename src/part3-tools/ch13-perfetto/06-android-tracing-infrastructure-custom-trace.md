@@ -508,7 +508,7 @@ adb pull /data/misc/perfetto-traces/boottrace.perfetto-trace
 
 这套顺序把“事件不存在”“配置没有启用”“采集途中丢失”“解析层没有派生数据”分成四类问题。定位到具体层后，再调整事件、缓冲区或解析逻辑，结论才有源码和采集证据支撑。
 
-### 源码与文档锚点
+### ftrace 与 atrace 部分的源码锚点
 
 - Android 17 平台：[`atrace.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/atrace/atrace.cpp)、[`android_os_Trace.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_os_Trace.cpp)、[`tracing_perfetto.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/tracing_perfetto/tracing_perfetto.cpp)、[`trace-dev.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libcutils/trace-dev.cpp)
 - Android 17 Perfetto：[`tracefs.cc`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traced/probes/ftrace/tracefs.cc)、[`ftrace_controller.cc`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traced/probes/ftrace/ftrace_controller.cc)、[`ftrace_config_muxer.cc`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traced/probes/ftrace/ftrace_config_muxer.cc)、[`perfetto.rc`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/perfetto.rc)
@@ -1041,6 +1041,10 @@ Macrobenchmark 会为每次测量保留 Perfetto trace，应用 section 因此�
 | AIDL server 事务由 tag 控制的 slice 包围 | `frameworks/native/libs/binder/Binder.cpp:479-500` |
 
 行号对应 `android-17.0.0_r1`，后续分支可能移动。评审结论应同时记录源码 tag 和文件路径，避免用持续变化的 `main` 分支行号解释量产系统。
+
+## 小结
+
+Android Trace 的可见性取决于完整数据路径：内核 tracepoint 或用户态埋点先进入各自缓冲区，再由 Perfetto producer 与 service 收集、存储和解析。应用埋点要根据同步区间、跨线程任务或状态值选择 slice、async slice 或 counter，同时控制名称基数、配对生命周期和采集开销。轨道缺失时应沿“事件是否存在 → 配置是否启用 → 采集是否丢失 → 解析是否派生”逐层排查。
 
 
 ## 参考资料

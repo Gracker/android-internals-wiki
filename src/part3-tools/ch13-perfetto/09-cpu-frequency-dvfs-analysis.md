@@ -45,7 +45,7 @@ sources:
   path: Cubox/Perfetto查看CPU 频率部分指导-2026-05-03.md
 - type: obsidian
   path: 论文/Android-2026-05-15-DVFS-LLM-Performance/03-精读.md
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 last_review_finalize_at: '2026-08-08T14:05:39+08:00'
 last_review_finalize_run_id: 20260808-140539-40d25f76
@@ -425,3 +425,7 @@ Android 17 的 `ProfilingManager`（面向应用的系统性能采样 API）syst
 7. 明确区分观测、推断和已验证根因。
 
 “目标线程在已知频率覆盖的 Running 时间中，有多少比例落在某频点”是可复核观测。“governor 导致掉帧”属于因果结论，需要对照实验：固定 workload，控制温度与系统状态，改变一个调频相关变量，并确认帧时序随之稳定变化。这样写，频率轨才会从截图线索变成可验证的性能证据。
+
+## 小结
+
+CPU 频率轨是调频请求或驱动报告的状态信号，不是指令执行量、瞬时硬件有效频率或功耗。分析时要先把频率点还原为区间，再与目标线程的 Running 区间相交，并报告频率覆盖率。因果判断还必须联合 CPU 拓扑、policy limit、idle、迁核、uclamp、thermal 和对照实验；缺少 GPU、DDR 或功耗数据时，结论应明确限定在 CPU 侧观测。

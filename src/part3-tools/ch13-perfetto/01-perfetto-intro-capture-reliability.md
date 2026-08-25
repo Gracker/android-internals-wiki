@@ -251,7 +251,7 @@ related_chapters:
 - '7.1'
 - '13.7'
 - '13.11'
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
@@ -679,9 +679,9 @@ Android 17 的 `traced` / `traced_probes` 仍由 `external/perfetto` 构建为 `
 
 选择入口前，先确认目标是整机时序、单个 App，还是 Linux 主机。这个范围会决定可用命令、权限和结果文件格式。
 
-### 下一步
+### 采集前的固定检查
 
-13.1 节继续讲设备抓取和 TraceConfig，13.2 节进入 Perfetto UI。实操前固定检查三项：采集端与分析端版本、data source 及其权限、`stats` 表中的丢包记录。分析渲染问题前还应理解 §2.1 的线程、BufferQueue 与显示路径；同一组件不保证在每份 trace 中都出现同名 Track。
+下文继续讲设备抓取和 TraceConfig，13.2 节再进入 Perfetto UI。实操前固定检查三项：采集端与分析端版本、data source 及其权限、`stats` 表中的丢包记录。分析渲染问题前还应理解 §2.1 的线程、BufferQueue 与显示路径；同一组件不保证在每份 trace 中都出现同名 Track。
 
 ### 常见误区
 
@@ -1168,9 +1168,9 @@ ORDER BY severity, name;
 
 每个命中项要回到对应层处理：ftrace 丢包检查内核 buffer 和读取速率；Producer/central buffer 丢包检查 shared memory、buffer 容量与写文件周期；profiling 丢样还要检查 unwinder 和守护进程资源限制。
 
-### 后续阅读
+### 进入分析前的质量门
 
-§13.2 讲 Perfetto UI，§13.1 讲大型 trace，§13.3 讲线程 CPU 状态。拿到 trace 后，先完成上述五项质量检查，再进入具体主题分析。
+下文进入大型 trace 的存储与查询；§13.2 讲 Perfetto UI，§13.3 讲线程 CPU 状态。拿到 trace 后，先完成上述五项质量检查，再进入具体主题分析。
 
 ### 常见误区
 
@@ -1625,8 +1625,6 @@ SQL 解析和执行在原生进程完成，结果传输与 DataFrame 物化仍�
 
 > 平台基线是 Android 17 / API 37 / `android-17.0.0_r1`，工具基线是该平台 `external/perfetto` 中包含的 Perfetto v54.0。CUJ（Critical User Journey）是启动、滚动或页面切换等用户能直接感知的关键操作；界面操作、SQL 节点图与 Jank CUJ 指标口径见 [13.7 Perfetto SQL、SPAN_JOIN 与 Jank CUJ](07-perfetto-sql-span-join-jank-cuj.md)。
 
----
-
 ### 1. 先判断 trace 能不能支撑结论
 
 性能分析常从时间线开始，却可能在采集阶段就失去可信度：内核调度事件被覆盖、producer 的共享内存写满后丢包、结束 flush 失败，或 ring buffer（写满后覆盖最早内容的环形缓冲区）已经冲掉问题发生前的数据。producer 是生成 trace 数据的进程，flush 是要求它提交仍暂存在本地缓冲区中的数据。Trace Processor 能打开文件，只说明文件可解析，不能证明事件完整。
@@ -2053,7 +2051,7 @@ trace 只能解释已经采到的数据。没有设备功率计、fuel gauge（�
 
 脚本应把非零 data-loss/error 统计和 central buffer 覆盖项保存为结构化结果。是否让 CI（持续集成）任务失败，应根据指标依赖的数据源判断；不能静默忽略所有 warning，也不必因无关 buffer 的单个计数丢弃整份数据。
 
-### 13. 源码与文档版本依据
+### 12. 源码与文档版本依据
 
 版本与行为以这些 v54/Android 17 一手资料为准：
 
@@ -2083,28 +2081,36 @@ Android 17 平台源码用于确认设备侧包含的 Perfetto 能力，v54 标�
 | 文件中的 packet 按时间戳全局有序 | 只保证 writer sequence 内顺序，导入器负责跨序列排序 |
 | 一条 trace 足以证明优化有效 | 需要相同条件的重复样本与无 tracing 基线 |
 
+## 小结
+
+可复核的 Perfetto 分析从采集前就开始：先用问题选择 data source、权限和时间窗，再记录设备与工具版本。大文件优先依靠本地 Trace Processor 和受控查询，不靠转换成更大的文本规避浏览器限制。拿到结果后，还必须检查 `stats`、buffer 覆盖、时钟域和观测开销；只有采集完整性与分析边界同时成立，trace 才能支撑因果判断或回归比较。
+
 ## 参考资料
 
+### 架构、版本与可靠性
+
 - [Perfetto documentation](https://perfetto.dev/docs/)：平台定位、组件与跨平台范围。
-- [Service-based model](https://perfetto.dev/docs/concepts/service-model)、[Buffers and dataflow](https://perfetto.dev/docs/concepts/buffers) 与 [Trace configuration](https://perfetto.dev/docs/concepts/config)：Producer/Consumer、三层 buffer、丢包、PBTX/binary 和 long trace。
-- [Advanced System Tracing on Android](https://perfetto.dev/docs/learning-more/android)：Android 9-12 的服务启用、`--txt`、stdin、SELinux 和配置目录。
-- [Trace Processor Architecture](https://perfetto.dev/docs/design-docs/trace-processor-architecture)、[PerfettoSQL Syntax](https://perfetto.dev/docs/analysis/perfetto-sql-syntax) 与 [Visualising large traces](https://perfetto.dev/docs/visualization/large-traces)：解析、排序、列式存储、SQL 方言，以及本机 HTTP 后端的使用边界。
-- [Native/ART allocation profiling](https://perfetto.dev/docs/data-sources/native-heap-profiler)、[ART heap dumps](https://perfetto.dev/docs/data-sources/java-heap-profiler) 与 [Power data sources](https://perfetto.dev/docs/data-sources/battery-counters)：内存和功耗 data source 的版本、权限与硬件边界。
+- [Service-based model](https://perfetto.dev/docs/concepts/service-model) 与 [Buffers and dataflow](https://perfetto.dev/docs/concepts/buffers)：Producer/Consumer、三层 buffer 与丢包边界。
+- [Trace Processor Architecture](https://perfetto.dev/docs/design-docs/trace-processor-architecture) 与 [PerfettoSQL Syntax](https://perfetto.dev/docs/analysis/perfetto-sql-syntax)：解析、排序、列式存储与 SQL 方言。
 - [ProfilingTrigger API](https://developer.android.com/reference/android/os/ProfilingTrigger) 与 [Trigger-based profiling](https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture)：API 36/37 trigger、后台采样、artifact 和限流。
 - Android 17 `external/perfetto` 的 [`CHANGELOG`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/CHANGELOG) 与 [`perfetto.rc`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/perfetto.rc)：平台 Perfetto 基线、进程身份、socket、启停和目录。
 - Android 17 Profiling 模块的 [`ProfilingTrigger.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java) 与 [`apex/Android.bp`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/apex/Android.bp)：trigger 常量、feature flag 与 `com.android.profiling` 组成。
 - Android 17 [`lmkd.cpp`](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp)：PSI、kill instant event、event log 与 stats 数据。
-- common kernel `android17-6.18-2026-06_r6` 的 [`kernel/trace/trace.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/trace/trace.c) 与 [`sched.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h)：tracefs/ftrace 与调度 tracepoint 基线。
+- common kernel `android17-6.18-2026-06_r6` 的 [`kernel/trace/trace.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/trace/trace.c)：tracefs/ftrace 内核基线。
 - [高爷 Systrace 系列导读](https://androidperformance.com/2019/05/28/Android-Systrace-About/) 与 [SmartPerfetto 架构实践](https://androidperformance.com/2026/04/10/SmartPerfetto-Architecture-Deep-Dive/)：中文实践背景与自动化分析思路。
+
+### 采集、配置与数据源
 
 - [Recording system traces with Perfetto](https://perfetto.dev/docs/getting-started/system-tracing) 与 [Advanced System Tracing on Android](https://perfetto.dev/docs/learning-more/android)：设备端 CLI、`record_android_trace`、Android 9-12 输入和服务边界。
 - [Trace configuration](https://perfetto.dev/docs/concepts/config) 与 [TraceConfig reference](https://perfetto.dev/docs/reference/trace-config-proto)：buffer、duration、long trace、heapprofd、JavaHprofConfig 和 PerfEventConfig。
 - [Instrumenting Android apps/platform with atrace](https://perfetto.dev/docs/getting-started/atrace)、[Android `Trace` API](https://developer.android.com/reference/android/os/Trace) 与 [NDK tracing API](https://developer.android.com/ndk/reference/group/tracing)：App 标记、包名、配对、名称长度和 API level。
-- [Native/ART allocation profiling](https://perfetto.dev/docs/data-sources/native-heap-profiler)、[ART heap graph](https://perfetto.dev/docs/data-sources/java-heap-profiler) 与 [`linux.perf` callstack sampling](https://perfetto.dev/docs/quickstart/callstack-sampling)：profiling 数据形态、配置和权限。
-- [Visualising large traces](https://perfetto.dev/docs/visualization/large-traces) 与 [Trace Processor Stats](https://perfetto.dev/docs/analysis/sql-stats)：本机 Trace Processor HTTP 后端，以及 data loss/error 统计项。
+- [Native/ART allocation profiling](https://perfetto.dev/docs/data-sources/native-heap-profiler)、[ART heap graph](https://perfetto.dev/docs/data-sources/java-heap-profiler)、[`linux.perf` callstack sampling](https://perfetto.dev/docs/quickstart/callstack-sampling) 与 [Power data sources](https://perfetto.dev/docs/data-sources/battery-counters)：profiling 与功耗数据源的形态、配置和权限。
+- [Trace Processor Stats](https://perfetto.dev/docs/analysis/sql-stats)：data loss/error 统计项。
 - Android 17 `external/perfetto` 的 [`record_android_trace`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/tools/record_android_trace)、[`trace_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/trace_config.proto)、[`data_source_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/data_source_config.proto)、[`heapprofd_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/heapprofd_config.proto)、[`java_hprof_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/java_hprof_config.proto) 与 [`perf_event_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/perf_event_config.proto)：脚本参数和平台配置协议。
 - Android 17 [`atrace.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/atrace/atrace.cpp)、[`FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp) 与 [`Trace.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java)：category、FrameTimeline 和 App Trace 实现。
 - common kernel `android17-6.18-2026-06_r6` 的 [`sched.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h) 与 [`power.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/power.h)：调度、频率和 idle tracepoint。
+
+### 大文件分析与格式转换
 
 - [Visualising large traces](https://perfetto.dev/docs/visualization/large-traces)
 - [Trace Processor（C++）](https://perfetto.dev/docs/analysis/trace-processor)

@@ -1244,7 +1244,7 @@ SQL 排名适合缩小范围，性能结论仍要经过时间、线程、事件�
 
 一条可复查的结论应写成：“FrameTimeline 将帧 842 标记为 `App Deadline Missed`；该帧 UI 线程有 6.2 ms 的 `R` 状态，其中最长区间由某线程唤醒；同窗口未发现 monitor 锁竞争。”数字必须来自具体 Trace。不能把教程中的示例参数抄成产品阈值，也不能把时间相关性写成因果关系。
 
-### 源码与文档依据
+### 基础查询部分的源码与文档依据
 
 - [PerfettoSQL 入门与 `SPAN_JOIN`](https://perfetto.dev/docs/analysis/perfetto-sql-getting-started)
 - [PerfettoSQL 语法与模块加载](https://perfetto.dev/docs/analysis/perfetto-sql-syntax)
@@ -1839,7 +1839,7 @@ trace_processor_shell \
 
 `SPAN_JOIN` 解决的是互斥区间流的时间交集。把输入约束、采集缺口和分区语义写进查询，结果才具备复查价值。
 
-### 源码与文档依据
+### 区间关联部分的源码与文档依据
 
 - [PerfettoSQL 入门：`SPAN_JOIN` 与窗口函数](https://perfetto.dev/docs/analysis/perfetto-sql-getting-started)
 - [PerfettoSQL 语法与索引](https://perfetto.dev/docs/analysis/perfetto-sql-syntax)
@@ -2200,7 +2200,11 @@ v54.0 增加了 Collapsed Stack 和 Firefox Profiler preprocessed JSON 导入：
 
 DataGrid 和 Data Explorer 负责提高浏览效率。提交审阅的结论应能由保存的 SQL 在相同 Trace Processor 上复现，并能回到 Android 17 或 v54.0 的明确源码位置解释字段含义。
 
-### 参考源码
+## 小结
+
+可复用的 Perfetto SQL 应先固定问题窗口和稳定身份，再选择基础表、标准库或 `SPAN_JOIN`。点状 counter 必须先还原为区间，区间相交必须使用交集时长，父子 slice 和一对多关联则要防止重复计数。Jank CUJ 标准库能统一系统交互语义，但第三方 App、缺失轨道和版本差异仍需显式降级；最终报告应保留 SQL、单位、行数、采集缺口与源码语义。
+
+### Jank CUJ 部分的参考源码
 
 - [Perfetto v54.0 release](https://github.com/google/perfetto/releases/tag/v54.0)
 - [Android 17 DataExplorer plugin](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/ui/src/plugins/dev.perfetto.DataExplorer/index.ts)

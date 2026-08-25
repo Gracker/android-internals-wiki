@@ -62,7 +62,7 @@ Perfetto 把 Android 各层性能事件放到同一条时间轴上。渲染、�
 - [13.10 BufferQueue 阻塞的 Perfetto 识别](10-bufferqueue-blocking-perfetto.md)
 - [13.11 Agent 辅助 Perfetto 分析协议](11-agent-perfetto-analysis-protocol.md)
 - [13.12 Perfetto SDK 与应用内 Trace 数据源](12-perfetto-sdk-in-app-tracing.md)
-- [13.13 FrameTracer 与 Frame Timeline 分析](13-frametracer-frame-timeline.md)
+- [13.13 FrameTracer 与 FrameTimeline 分析](13-frametracer-frame-timeline.md)
 
 ## 按任务选择阅读路径
 

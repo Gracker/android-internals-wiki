@@ -180,7 +180,7 @@
   - [13.10 BufferQueue 阻塞的 Perfetto 识别](part3-tools/ch13-perfetto/10-bufferqueue-blocking-perfetto.md)
   - [13.11 Agent 辅助 Perfetto 分析协议](part3-tools/ch13-perfetto/11-agent-perfetto-analysis-protocol.md)
   - [13.12 Perfetto SDK 与应用内 Trace 数据源](part3-tools/ch13-perfetto/12-perfetto-sdk-in-app-tracing.md)
-  - [13.13 FrameTracer 与 Frame Timeline 分析](part3-tools/ch13-perfetto/13-frametracer-frame-timeline.md)
+  - [13.13 FrameTracer 与 FrameTimeline 分析](part3-tools/ch13-perfetto/13-frametracer-frame-timeline.md)
 
 - [第 14 章：其他性能工具](part3-tools/ch14-other-tools/README.md)
   - [14.1 Android Studio Profiler](part3-tools/ch14-other-tools/01-as-profiler.md)

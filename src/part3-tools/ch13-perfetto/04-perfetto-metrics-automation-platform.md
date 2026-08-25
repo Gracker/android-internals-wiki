@@ -986,6 +986,10 @@ printf 'cutover_confirmed=%s\n' "${SMARTPERFETTO_ENTERPRISE_CUTOVER_CONFIRMED:-<
 
 四项中任何一项无法回答，都应把结论留在待验证状态。SmartPerfetto 可以减少重复查询和报告整理，却不会替代 Android 机制判断、Perfetto UI 人工核验或可重复的实验设计。
 
+## 小结
+
+Perfetto 自动化要从一条可复用 SQL 开始，再逐步扩展到 Trace Summary、批处理、CI 回归和团队分析平台。扩展过程中，每个数值都要保留 trace 身份、查询、单位、样本数和工具版本；Agent、provider 或企业存储只是执行与治理层，不能改变 trace 缺字段、缺因果链时的证据上限。
+
 
 ## 参考资料
 

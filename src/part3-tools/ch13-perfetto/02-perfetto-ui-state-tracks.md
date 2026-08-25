@@ -105,7 +105,7 @@ related_chapters:
 - '13.11'
 - '13.12'
 - '13.6'
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
@@ -658,6 +658,10 @@ backend 是 SDK 写入 trace 的目标。in-process backend 在本进程内管�
 **红色都代表同一种问题。** Thread State、锁竞争 Slice 和 FrameTimeline 各有自己的颜色语义。结论应写轨道类型和字段值。
 
 **Android Studio System Trace 只看 App。** 当前 System Trace 能展示系统级活动。Perfetto UI 的差异主要在开放时间轴、SQL、扩展和跨进程分析能力，不能用“有没有系统数据”简单二分。
+
+## 小结
+
+读 Perfetto UI 时先确认轨道对象、时间范围和数据源，再读 slice、counter、thread state 与 flow。颜色只是当前 UI 的视觉提示，墙上时间也不等于 CPU 运行时间；结论应回到详情字段、稳定身份和 SQL。state track 又有独立的 producer、分析器与 UI 版本线，跨版本使用时必须记录实际 schema 和缺失边界。
 
 
 ## 参考资料

@@ -1,5 +1,5 @@
 ---
-title: FrameTracer 与 Frame Timeline 分析
+title: FrameTracer 与 FrameTimeline 分析
 chapter: '13.13'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
@@ -49,14 +49,16 @@ related_chapters:
 - '2.3'
 - '18.9'
 - '13.5'
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part3-tools/ch13-perfetto/18-frametracer-graphics-frame-event.md
 - src/part3-tools/ch13-perfetto/19-frame-timeline-api33-perfetto-analysis.md
 ---
 
-# FrameTracer 与 Frame Timeline 分析
+# FrameTracer 与 FrameTimeline 分析
 
 FrameTimeline 可以判断某个 SurfaceFrame 或 DisplayFrame 是否按预测时间完成。SurfaceFrame 表示某个 layer 提交的一帧，DisplayFrame 表示 SurfaceFlinger 把一个或多个 SurfaceFrame 合成后送去显示的一帧。FrameTracer 则记录 buffer 从 Producer 持有、提交、可供读取、latch（SurfaceFlinger 选中该 buffer 用于合成）到 present（显示系统给出呈现反馈）的时间点。
 
@@ -64,7 +66,7 @@ FrameTimeline 可以判断某个 SurfaceFrame 或 DisplayFrame 是否按预测�
 
 本文核对的平台源码版本是 Android 17 / API 37 / `android-17.0.0_r1`。FrameTracer 实现在 `frameworks/native` 的 SurfaceFlinger 中，只解释它发出的事件时不必依赖内核函数；继续追查 DMA-BUF（跨驱动共享的 buffer）、`sync_file`（把 fence 暴露为文件描述符的内核接口）或 `dma-fence`（内核中的 fence 同步对象）时，对应的内核版本是 `android17-6.18-2026-06_r6`。SQL 以 SmartPerfetto v1.3.0 固定的 Perfetto v57.2 `trace_processor_shell` 为查询环境，并与该版本 importer 的 diff test（固定输入与期望输出的回归测试）对照。
 
-FrameTracer 在系统侧记录图形帧事件，Frame Timeline 用 token 把应用预期、实际提交和显示结果关联起来。Expected 与 Actual timeline 的差值只有结合 layer 和线程上下文才能解释卡顿责任。
+FrameTracer 在系统侧记录图形帧事件，FrameTimeline 用 token 把应用预期、实际提交和显示结果关联起来。Expected 与 Actual timeline 的差值只有结合 layer 和线程上下文才能解释卡顿责任。
 
 ## FrameTracer 事件生成与 token 关联
 
@@ -346,7 +348,7 @@ FrameTracer 提供的是一组参考时间点和 importer 生成的阶段，不�
 
 遵守这些条件后，FrameTimeline 用来选择“哪一帧值得查”，FrameTracer 用来判断“buffer 路径哪一段出现等待”，线程、GPU、HWC 和 display 证据再负责解释等待来源。
 
-### 参考源码与验证材料
+### FrameTracer 部分的参考源码与验证材料
 
 - [Android 17 `FrameTracer.h`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrameTracer/FrameTracer.h) 与 [`FrameTracer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrameTracer/FrameTracer.cpp)
 - [Android 17 `Layer.cpp` 的六类 emit 调用](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Layer.cpp)
@@ -361,7 +363,7 @@ FrameTracer 提供的是一组参考时间点和 importer 生成的阶段，不�
 
 ## Expected、Actual 与 Jank 分类
 
-事件生产路径明确后，Frame Timeline 可以按 token 连接 App 和 SurfaceFlinger。deadline miss、prediction error 和 composition 结果需要分别读取。
+事件生产路径明确后，FrameTimeline 可以按 token 连接 App 和 SurfaceFlinger。deadline miss、prediction error 和 composition 结果需要分别读取。
 
 FrameTimeline 使用一组可关联的帧 ID 记录调度预测、应用出帧、SurfaceFlinger 合成和显示提交，适合回答三个问题：哪一帧偏离了预测，偏差发生在应用侧还是显示合成侧，下一步应查看哪条线程或 buffer 路径。
 
@@ -718,7 +720,11 @@ FrameTimeline trace 的最低平台是 Android 12，API 33 只限定应用代码
 
 在这些条件下，FrameTimeline 用于选择问题帧并判断原因归在 App 侧还是 SF 侧，线程、GPU、FrameTracer、HWC 与 display 数据再用于解释等待发生在哪里。
 
-### 参考源码与验证材料
+## 小结
+
+FrameTimeline 负责用 expected/actual 时间和 frame token 选出异常帧、区分 App 与 SurfaceFlinger 侧原因；FrameTracer 负责用 BufferQueue frame number 和 Graphics Frame Event 补充 queue、acquire、latch、composition 与 present 阶段。两套 ID 不能直接互换，各阶段时长也不等于端到端可见延迟。先用 FrameTimeline 定帧，再用 FrameTracer、线程状态、GPU/HWC 和 fence 证据解释等待，才能避免把颜色或单个时间点直接写成根因。
+
+### FrameTimeline 部分的参考源码与验证材料
 
 - [Android 17 `Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java)
 - [API 33 `Choreographer.FrameData`](https://developer.android.com/reference/android/view/Choreographer.FrameData)、[`FrameTimeline`](https://developer.android.com/reference/android/view/Choreographer.FrameTimeline) 与 [`VsyncCallback`](https://developer.android.com/reference/android/view/Choreographer.VsyncCallback)
@@ -728,4 +734,3 @@ FrameTimeline trace 的最低平台是 Android 12，API 33 只限定应用代码
 - [Perfetto FrameTimeline 官方文档](https://perfetto.dev/docs/data-sources/frametimeline)
 - [Perfetto v57.2 FrameTimeline importer](https://github.com/google/perfetto/blob/v57.2/src/trace_processor/importers/proto/frame_timeline_event_parser.cc)
 - [Perfetto v57.2 `android.frames.timeline` 标准库](https://github.com/google/perfetto/blob/v57.2/src/trace_processor/perfetto_sql/stdlib/android/frames/timeline.sql)
-- §13.13 FrameTracer：buffer event、fence 与 frame identity 的对应关系和使用限制
