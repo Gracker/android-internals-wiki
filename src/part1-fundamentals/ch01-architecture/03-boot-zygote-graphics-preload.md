@@ -2,7 +2,7 @@
 title: 系统启动、Zygote 与图形栈预加载
 chapter: '1.3'
 section: '1.3'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-08-25'
 last_verified_against: 'AOSP android-17.0.0_r1: system/core init/rootdir/bootstat/init.zygote*, frameworks/base Zygote/ZygoteConnection/ZygoteProcess/SystemServer/UserController/EventLogTags/GraphicsEnvironment/HWUI, external/perfetto perfetto.rc; Android Common Kernel android17-6.18-2026-06_r6: init/main.c and boot-critical kernel paths'
@@ -148,13 +148,13 @@ related_chapters:
 - '2.7'
 - '18.1'
 pipeline_stage: ready-to-publish
-task6_state: revisiting
+task6_state: reviewed
 task2b_state: fixed
-task9_state: pending
+task9_state: reviewed
 last_body_apply_at: '2026-08-22T17:27:05+08:00'
 last_body_apply_run_id: 20260822-172641-c689fa74
-last_review_finalize_at: '2026-08-07T18:06:14+08:00'
-last_review_finalize_run_id: 20260807-180545-ebe6c50b
+last_review_finalize_at: '2026-08-25T14:28:10+08:00'
+last_review_finalize_run_id: 20260825-141916-ded13465
 last_deep_review_at: '2026-08-25T08:46:46+08:00'
 last_deep_review_run_id: 20260825-084646-deep-review-f4ad8c61
 last_consolidated_at: '2026-08-24'
