@@ -4,22 +4,30 @@ chapter: '8.7'
 section: '8.7'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-06-19'
-last_verified_against: Android Developers Play Integrity documentation, Play Integrity API reference, Google Play developer guides
+last_verified: '2026-08-25'
+last_verified_against: Android Developers Play Integrity overview, Standard/Classic request docs, verdicts/setup/error/remediation docs, SafetyNet deprecation notice, Play Integrity Android reference
 confidence: medium
 sources:
 - type: official
   path: https://developer.android.com/google/play/integrity/overview
 - type: official
-  path: https://developer.android.com/google/play/integrity/standard-requests
+  path: https://developer.android.com/google/play/integrity/standard
 - type: official
-  path: https://developer.android.com/google/play/integrity/classic-requests
+  path: https://developer.android.com/google/play/integrity/classic
 - type: official
-  path: https://developer.android.com/google/play/integrity/cross-protection
+  path: https://developer.android.com/google/play/integrity/verdicts
 - type: official
-  path: https://developer.android.com/reference/com/google/android/play/core/integrity/model/IntegrityTokenRequest
+  path: https://developer.android.com/google/play/integrity/setup
 - type: official
-  path: https://developers.google.com/google-play/integrity/reference
+  path: https://developer.android.com/google/play/integrity/error-codes
+- type: official
+  path: https://developer.android.com/google/play/integrity/remediation
+- type: official
+  path: https://developer.android.com/privacy-and-security/safetynet
+- type: official
+  path: https://developer.android.com/google/play/integrity/reference/com/google/android/play/core/integrity/StandardIntegrityManager
+- type: official
+  path: https://developer.android.com/google/play/integrity/reference/com/google/android/play/core/integrity/IntegrityTokenRequest
 tags:
 - play-integrity
 - safetynet
@@ -34,6 +42,8 @@ related_chapters:
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
+last_idle_audit_at: '2026-08-25T22:35:51+08:00'
+last_idle_audit_run_id: 20260825-223551-idle-audit-7fa603ef
 ---
 
 # Play Integrity API 性能与集成延迟
@@ -196,7 +206,7 @@ class IntegrityTokenSource(
 
 ### 3.2 `requestHash` 要绑定当前动作
 
-`requestHash` 是业务请求内容的摘要，用来让服务端确认 token 确实对应当前处理的那次动作。建议流程如下：
+`requestHash` 是业务请求内容的摘要，用来让服务端确认 token 对应当前处理的那次动作。建议流程如下：
 
 1. 定义稳定的请求规范化格式，使相同业务数据总能产生相同字节序列；明确字段顺序、空值、字符编码、金额单位和版本号。
 2. 纳入所有会改变安全决定的字段，例如账号 ID、服务端下发的 action ID、订单 ID、金额、币种和动作类型。
@@ -358,7 +368,7 @@ Classic 的 nonce 既要防止业务字段被篡改，也要防止旧请求被�
 
 ### 6.3 给用户可修复的出口
 
-Play Integrity 提供 `GET_INTEGRITY`、`GET_STRONG_INTEGRITY`、`GET_LICENSED` 等 remediation dialog（修复对话框），可处理 Play 服务缺失或过旧、网络连接、应用未授权等部分问题。服务端先解析 verdict，再指示客户端展示对应类型的对话框；修复流程完成后，客户端重新申请 token。
+Play Integrity 提供 `GET_INTEGRITY`、`GET_STRONG_INTEGRITY`、`GET_LICENSED` 等 remediation dialog（修复对话框），可处理 Play 服务缺失或过旧、网络连接、应用未授权等部分问题。`GET_INTEGRITY` 和 `GET_STRONG_INTEGRITY` 需要 Play Integrity Android 库 1.5.0 或更高版本，`GET_LICENSED` 等 integrity dialogs 需要 1.3.0 或更高版本。服务端先解析 verdict，再指示客户端展示对应类型的对话框；修复流程完成后，客户端重新申请 token。
 
 没有官方 Play Store 或 Play 服务的设备无法完成这套 Google Play 判定。产品要明确各分发渠道支持哪些能力，并为相应用户设计独立的账号和风险策略。Key Attestation 可以提供密钥属性证据，但不能生成 Play 授权或应用识别字段。
 
