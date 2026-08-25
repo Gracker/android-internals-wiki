@@ -86,7 +86,7 @@ last_draft_polish_run_id: 20260815-111104-gracker-writing
 
 平台源码锚点是 Android 17（API 37）/ `android-17.0.0_r1`。应用看到默认网络可用之前，系统至少完成两类决策：Wi-Fi 模块在可连接的 AP（access point，无线接入点）中选择网络，Connectivity 模块在 Wi-Fi、蜂窝、以太网、VPN 等并存网络中，为应用或系统提出的网络请求选择满足条件的网络。两类决策使用不同输入，不能合并成一个“网络分数”。
 
-Wi-Fi 图标、RSSI（received signal strength indicator，接收信号强度）、`NET_CAPABILITY_VALIDATED` 和业务接口成功，分别描述无线关联、无线信号、系统探测到公网可达，以及目标服务可用。四者可能给出不同结果。排查连接切换时，要分别记录系统选择事件、HTTP 请求过程和业务恢复时刻。连接池、TLS 与 HTTP 协议细节见 12.1、24.3 和 24.4。
+Wi-Fi 图标、RSSI（received signal strength indicator，接收信号强度）、`NET_CAPABILITY_VALIDATED` 和业务接口成功，分别描述无线关联、无线信号、系统探测到公网可达，以及目标服务可用。四者可能给出不同结果。排查连接切换时，要分别记录系统选择事件、HTTP 请求过程和业务恢复时刻。连接池、TLS 与 HTTP 协议细节见 [12.1 网络请求](../../part2-performance/ch12-apk-network/01-android-network-tls-performance.md)、[24.3 移动网络架构、连接生命周期与容灾策略](03-mobile-network-connection-resilience.md) 和 [24.4 HTTP/2、HTTP/3、gRPC 与 ECH](04-http2-http3-grpc-ech.md)。
 
 ## 系统怎样选出默认网络
 
@@ -178,7 +178,7 @@ Android 17 的 `WifiCandidates.Candidate` 和 `ThroughputScorer` 可确认以下
 
 OkHttp 的事件序列不能压成“每种事件只留一个时间戳”。重试、重定向和认证会在同一个 `Call` 中产生多组 DNS、连接、请求和响应事件；复用既有连接时没有 DNS 与 `connect` 事件；双工请求的收发事件还可能交错。
 
-这段监听器按 OkHttp 5.3.0 的接口签名编写，并保留原始单调时钟时间线。单调时钟只随设备运行时间前进，不受用户改时间或系统校时影响。`defaultGeneration` 是本文为每次默认网络变化分配的递增序号，只用于关联一次切网期间的事件：
+这段监听器按 OkHttp 5.4.0 的接口签名编写，并保留原始单调时钟时间线。单调时钟只随设备运行时间前进，不受用户改时间或系统校时影响。`defaultGeneration` 是本文为每次默认网络变化分配的递增序号，只用于关联一次切网期间的事件：
 
 ```kotlin
 data class CallMark(
@@ -212,9 +212,11 @@ class TimelineEventListener(
         mark("callStart")
     }
 
-    override fun dispatcherQueueStart(call: Call) = mark("dispatcherQueueStart")
+    override fun dispatcherQueueStart(call: Call, dispatcher: Dispatcher) =
+        mark("dispatcherQueueStart")
 
-    override fun dispatcherQueueEnd(call: Call) = mark("dispatcherQueueEnd")
+    override fun dispatcherQueueEnd(call: Call, dispatcher: Dispatcher) =
+        mark("dispatcherQueueEnd")
 
     override fun dnsStart(call: Call, domainName: String) {
         mark("dnsStart")
@@ -290,7 +292,7 @@ class TimelineEventListener(
 }
 ```
 
-截至 2026-08-15，OkHttp 最新稳定版本为 5.4.0。该版本把两个排队回调改为 `dispatcherQueueStart(call, dispatcher)` 和 `dispatcherQueueEnd(call, dispatcher)`，多传入一个 `Dispatcher` 参数；升级示例时需调整方法签名，事件记录方法不变。
+截至 2026-08-15，OkHttp 最新稳定版本为 5.4.0。示例使用该版本的 `dispatcherQueueStart(call, dispatcher)` 和 `dispatcherQueueEnd(call, dispatcher)` 签名；升级依赖后仍应以对应版本的 `EventListener` 源码为准。
 
 监听器应由 `EventListener.Factory` 为每个 `Call` 单独创建。一次 `Call` 可能因重试或重定向包含多次 HTTP 交换，也就是多轮请求与响应；分析端要按完整事件序列分组，不能把末次 `dnsEnd` 与第一次 `dnsStart` 相减。`defaultGenerationAtStart` 也不能证明连接使用了该网络：复用连接可能建立在更早的默认网络上，显式绑定的客户端还可能使用其他 `Network`。若要确认套接字经过哪条网络，还要结合绑定配置、系统追踪数据或网络数据包捕获结果。
 
@@ -532,7 +534,7 @@ Perfetto 是 Android 的系统追踪工具，适合判断网络回调之后是�
 
 应用事件、系统追踪与服务端日志至少要共享请求编号，并记录单调时钟与墙上时钟的对应关系。缺少这种关联时，只能知道“切网和超时发生在相近时间”，不能确认两者有因果关系。
 
-## 扩展
+## OEM 差异与 HTTP/3 切网边界
 
 ### OEM Wi-Fi 评分为何不同
 
@@ -560,7 +562,7 @@ AOSP 的 Connectivity 选择逻辑位于 Mainline 模块，也就是可独立于
 
 ### HTTP/3、QUIC 与网络切换
 
-示例中的 `EventListener` 代码按 OkHttp 5.3.0 编写，正文同时核对了 5.4.0。OkHttp 自带传输实现支持 HTTP/1.1 与 HTTP/2，不直接提供 HTTP/3。HTTP/3 运行在 QUIC 传输协议之上；需要它时，应评估 Android `HttpEngine`（平台网络引擎 API）、Cronet（Chromium 网络栈的 Android 库），或官方提供的 Cronet Transport for OkHttp 集成。
+示例中的 `EventListener` 代码与正文统一以 OkHttp 5.4.0 为锚点。OkHttp 自带传输实现支持 HTTP/1.1 与 HTTP/2，不直接提供 HTTP/3。HTTP/3 运行在 QUIC 传输协议之上；需要它时，应评估 Android `HttpEngine`（平台网络引擎 API）、Cronet（Chromium 网络栈的 Android 库），或官方提供的 Cronet Transport for OkHttp 集成。
 
 QUIC 用连接 ID 标识一条逻辑连接，不把连接身份完全绑定在原来的 IP 地址和端口上，因此具备连接迁移的协议基础。迁移仍不会因使用 HTTP/3 自动发生。`HttpEngine` 和 Cronet 都提供连接迁移选项；只有启用默认网络迁移、请求使用 QUIC 且服务端支持迁移时，活动连接才有机会在网络变化后继续。允许迁往非默认网络还可能使用按量计费的流量。
 
@@ -572,7 +574,7 @@ QUIC 用连接 ID 标识一条逻辑连接，不把连接身份完全绑定在�
 - 切网前后的长连接恢复；
 - 非默认计费网络的使用情况。
 
-支付、下单和上传仍需幂等与恢复协议。连接迁移只能改变传输连续性，不能提供业务一致性。协议细节见 24.4。
+支付、下单和上传仍需幂等与恢复协议。连接迁移只能改变传输连续性，不能提供业务一致性。协议细节见 [24.4 HTTP/2、HTTP/3、gRPC 与 ECH](04-http2-http3-grpc-ech.md)。
 
 ## 工程检查清单
 
@@ -585,7 +587,13 @@ QUIC 用连接 ID 标识一条逻辑连接，不把连接身份完全绑定在�
 - DNS、连接、TLS 与业务重试都保留失败分类和幂等边界。
 - VPN、OEM 配置、MLO、双 STA 与 HTTP/3 结论都有对应设备证据。
 
-## 参考与验证
+## 全文小结
+
+Wi-Fi 模块负责在候选 AP 与 BSSID 中做无线侧选择，Connectivity 模块再依据 `NetworkRequest`、能力与系统策略选择默认 `Network`。RSSI、Wi-Fi 图标、`VALIDATED` 和业务可用性分属不同层，应用不应试图用一个自定义分数复刻系统决策。
+
+工程观测要把默认网络世代、`NetworkCapabilities`、OkHttp 完整事件序列、系统证据和服务端请求编号关联起来。OEM 评分、双 STA、MLO 与 HTTP/3 连接迁移都必须用目标设备证据验证；传输连续性也不能替代业务幂等和恢复协议。
+
+## 参考资料
 
 - [AOSP android-17.0.0_r1 · WifiNetworkSelector.java](https://android.googlesource.com/platform/packages/modules/Wifi/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/wifi/WifiNetworkSelector.java)
 - [AOSP android-17.0.0_r1 · WifiCandidates.java](https://android.googlesource.com/platform/packages/modules/Wifi/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/wifi/WifiCandidates.java)
@@ -612,4 +620,3 @@ QUIC 用连接 ID 标识一条逻辑连接，不把连接身份完全绑定在�
 - [OkHttp · Connections](https://lysine.dev/okhttp/features/connections/)
 - [OkHttp 5.4.0 · EventListener.kt](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt)
 - [OkHttp · Changelog](https://github.com/lysine-dev/okhttp/blob/main/CHANGELOG.md)
-- [OkHttp 5.3.0 · EventListener.kt](https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt)

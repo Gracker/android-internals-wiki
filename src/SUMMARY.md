@@ -320,7 +320,7 @@
   - [24.8 低带宽、流媒体与本地网络适配](part5-app/ch24-io-network/08-low-bandwidth-streaming-local-network.md)
   - [24.9 MediaStore、Photo Picker 与媒体转码](part5-app/ch24-io-network/09-mediastore-photo-picker-transcoding.md)
   - [24.10 BluetoothSocket read() 断开语义与长连接治理](part5-app/ch24-io-network/10-bluetoothsocket-read-disconnect.md)
-  - [24.11 Android 17 移动数据配额：从 NetworkStatsService 到 NetworkPolicyManagerService](part5-app/ch24-io-network/11-android17-network-quota-management.md)
+  - [24.11 Android 17 移动数据配额与 Data Saver 执行链路](part5-app/ch24-io-network/11-android17-network-quota-management.md)
   - [24.12 Android 17 NFC 性能：标签读取、HCE 与无接触支付](part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md)
 
 - [第 25 章：功耗与包体积](part5-app/ch25-power-size/README.md)

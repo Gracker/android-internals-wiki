@@ -140,13 +140,13 @@ last_draft_polish_run_id: 20260815-100557-gracker-writing
 
 移动网络会在 Wi-Fi、蜂窝、VPN 和受限网络之间变化。应用先通过 ConnectivityManager 获得 Network 与能力，再把 DNS、连接池、重试和幂等策略绑定到正确网络生命周期。
 
-## Network、能力变化与 Socket 绑定
+## 网络架构、连接生命周期与容灾策略
 
 ### 一次网络请求为何会变慢
 
 一次请求显示为“慢”，内部可能经历 Dispatcher（OkHttp 的异步调用调度器）排队、DNS 查询、多条地址竞速、TCP 建连、TLS 握手、服务端等待和响应体读取。只修改某个超时参数，既无法判断时间花在哪个阶段，也可能把局部故障变成更长的等待。
 
-应用架构需要处理四个问题：怎样复用连接，怎样选择解析策略，怎样隔离不同类型的流量，以及怎样在网络变化和请求失败时控制重试。一次调用的分段计时与协议细节见 [12.1 Android 网络与 TLS 性能优化](../../part2-performance/ch12-apk-network/01-android-network-tls-performance.md)，TLS 信任边界见 [12.1 Android 网络与 TLS 性能优化](../../part2-performance/ch12-apk-network/01-android-network-tls-performance.md)。
+应用架构需要处理四个问题：怎样复用连接，怎样选择解析策略，怎样隔离不同类型的流量，以及怎样在网络变化和请求失败时控制重试。一次调用的分段计时、协议细节与 TLS 信任边界见 [12.1 Android 网络与 TLS 性能优化](../../part2-performance/ch12-apk-network/01-android-network-tls-performance.md)。
 
 平台结论以 Android 17 / API 37 / AOSP `android-17.0.0_r1` 为锚点，客户端结论以 2026 年 6 月 8 日发布的 OkHttp 5.4.0 为锚点。OkHttp 独立于 Android 发布；项目升级客户端版本后，还要复核默认参数、拦截器能力和事件定义。
 
@@ -516,7 +516,7 @@ HTTP 语义提供起点，但服务端契约仍需确认：
 
 默认网络为空时，应用可以直接进入离线界面，但切网回调与请求执行仍存在时序差。网络带 `VALIDATED`，业务域名也可能故障；没有 `VALIDATED`，局域网端点仍可能可达。请求结果、端点健康和 `NetworkCapabilities` 应分别记录。
 
-弱网体验还需要数据策略配合：列表可展示有新鲜度标记的缓存，图片可按资源版本选择较小变体，上传可持久化进度并支持断点，非必要模块可以延迟请求。缓存控制和离线写入分别见 [24.5 数据缓存与离线优先架构](05-data-cache-offline-first.md) 与 [24.5 数据缓存与离线优先架构](05-data-cache-offline-first.md)。
+弱网体验还需要数据策略配合：列表可展示有新鲜度标记的缓存，图片可按资源版本选择较小变体，上传可持久化进度并支持断点，非必要模块可以延迟请求。缓存控制与离线写入见 [24.5 数据缓存与离线优先架构](05-data-cache-offline-first.md)。
 
 Android 网络调用不能进入主线程。AOSP `android-17.0.0_r1` 的 `StrictMode` 在启用网络检测和对应终止策略时，由 `onNetwork()` 抛出 `NetworkOnMainThreadException`。UI 线程等待后台 `Future`、锁或 `runBlocking` 不一定触发同一异常，却仍会卡住输入与绘制，排查时要同时检查线程等待关系。
 
@@ -569,15 +569,18 @@ TLS、代理与套接字配置会参与连接资格判断。使用不同的证�
 - 大传输是否根据 `NOT_METERED` 与用户意图决策，而不是只看 Wi-Fi 传输类型。
 - 是否用 `MockWebServer` 等测试工具覆盖断连、慢响应体、TLS 失败、重定向和重试，并在设备上覆盖 VPN、Private DNS、IPv6、切网与登录门户。
 
-### 继续阅读
+### 架构与容灾小结
+
+移动网络架构应把连接、解析、调度和容错拆成独立责任，并让每次逻辑操作统一约束调用数、连接尝试、字节和总截止时间。系统网络能力只提供动态背景；真正的恢复策略仍要结合失败阶段、请求体是否可重放、服务端幂等协议和用户取消状态。
+
+### 相邻专题边界
 
 - [24.4 HTTP/2、HTTP/3、gRPC 与 ECH](04-http2-http3-grpc-ech.md)：HTTP/2、HTTP/3、gRPC 与协议协商。
-- [24.5 数据缓存与离线优先架构](05-data-cache-offline-first.md)：HTTP 缓存、多级缓存与新鲜度。
-- [24.5 数据缓存与离线优先架构](05-data-cache-offline-first.md)：离线队列、同步和冲突处理。
+- [24.5 数据缓存与离线优先架构](05-data-cache-offline-first.md)：HTTP 缓存、多级缓存、新鲜度、离线队列与冲突处理。
 - [24.6 Wi-Fi 评分、网络选择与连接切换性能](06-wifi-connectivity-selection.md)：系统评分、默认网络与切换。
 - [24.8 低带宽、流媒体与本地网络适配](08-low-bandwidth-streaming-local-network.md)：局域网能力与 Android 17 访问边界。
 
-### 源码与规范依据
+### 架构与连接部分的源码依据
 
 #### 当前平台与客户端依据
 
@@ -615,11 +618,11 @@ TLS、代理与套接字配置会参与连接资格判断。使用不同的证�
 - [RFC 7233：Range Requests（旧版范围请求规范锚点）](https://www.rfc-editor.org/rfc/rfc7233.html)
 
 
-## DNS、连接复用、重试与容灾
+## 网络性能基线、故障实验与发布门禁
 
 系统网络状态确定后，应用传输层还要处理域名解析、连接建立、协议回退和网络切换。重试必须受幂等性和总 deadline 约束。
 
-### 范围
+### 基线范围
 
 性能基线是一组可重复测量、可与后续版本比较的数据分布。记录中要写清用户路径、应用与系统版本、网络状态、缓存与连接方式，以及成功和失败的计数规则。缺少这些条件的“平均耗时”无法判断新版本是否退化。
 
@@ -729,7 +732,7 @@ Android 10 / API 29 起公开的 `DnsResolver` 支持异步查询，并可传入
 
 DoH（DNS over HTTPS）把 DNS 查询装入 HTTPS 请求；Android 的 Private DNS 则是用户或管理员配置的平台级加密 DNS。`LinkProperties` 提供某条网络的链路属性快照，包括 DNS 服务器等配置。“冷 DNS”通常指没有可用解析缓存的首次查询，但应用可以清理自己的 HTTPDNS 缓存，却通常不能在普通测试进程里独占或可靠清理系统解析缓存。若无法控制系统缓存，报告应写“新应用客户端、无应用缓存”，不要写成“系统冷解析”。
 
-地址选择要保留候选数量、地址族、每次尝试的顺序、是否并行、失败类型和获胜尝试。OkHttp 5.3.0 默认启用 Fast Fallback：客户端按短间隔并发尝试多个候选地址，任一连接成功后采用该连接；这类算法也称 Happy Eyeballs，用延迟少量额外连接来降低单一地址族不可达造成的等待。只记录最终 IPv4 或 IPv6 会隐藏另一组地址持续失败的问题。线上遥测不保存原始 IP，可使用地址族、匿名化边缘节点编号和服务端返回的区域标记。
+地址选择要保留候选数量、地址族、每次尝试的顺序、是否并行、失败类型和获胜尝试。OkHttp 5.4.0 默认启用 Fast Fallback：客户端按短间隔并发尝试多个候选地址，任一连接成功后采用该连接；这类算法也称 Happy Eyeballs，用延迟少量额外连接来降低单一地址族不可达造成的等待。只记录最终 IPv4 或 IPv6 会隐藏另一组地址持续失败的问题。线上遥测不保存原始 IP，可使用地址族、匿名化边缘节点编号和服务端返回的区域标记。
 
 TTL（Time to Live，生存时间）规定 DNS 记录可以缓存多久。TTL 到期只影响后续解析；已经复用的连接不会随之自动失效，基线也不能用清空连接池来模拟普通 TTL 刷新。HTTPDNS 与 OkHttp 的同步边界继续见 24.7。
 
@@ -756,7 +759,7 @@ TTL（Time to Live，生存时间）规定 DNS 记录可以缓存多久。TTL �
 
 | 网络栈 | 基线必须固定 | 可用观测 | 主要边界 |
 | --- | --- | --- | --- |
-| OkHttp 5.3.0 | 精确版本、拦截器顺序、`Dispatcher`、连接池、DNS、协议列表 | `EventListener`、`Response.protocol`、应用事件 | 标准公开配置没有 HTTP/3；事件可因复用、重试和重定向而缺失或重复 |
+| OkHttp 5.4.0 | 精确版本、拦截器顺序、`Dispatcher`、连接池、DNS、协议列表 | `EventListener`、`Response.protocol`、应用事件 | 标准公开配置没有 HTTP/3；事件可因复用、重试和重定向而缺失或重复 |
 | Cronet 库 | Maven 版本、实际 `CronetProvider`、引擎版本、缓存目录和配置 | `RequestFinishedInfo.Metrics`、`UrlResponseInfo`、网络质量估计、NetLog | Java 回退实现与原生实现不等价；NetLog 只用于受控诊断 |
 | 平台 `HttpEngine` | API/SDK 扩展版本、模块版本、缓存与 QUIC/Brotli 配置 | `UrlResponseInfo` 与公开回调 | 基础 API 属于 API 34 / S Extension 7；详细计时 `FinishedRequestTimings` 到 37.1 / S Extension 23 才加入，`android-17.0.0_r1` 没有该接口 |
 | Mars 或自有长连接 | 仓库提交、协议版本、心跳、连接复用、加密与重连策略 | 团队定义的消息确认、积压、重连和字节指标 | 指标需和 HTTP 请求分开，不能用库名称代替具体实现 |
@@ -921,6 +924,11 @@ TLS 会话恢复与 0-RTT 不能合并成“复用握手”一个字段。0-RTT 
 - Android 17 的 CT、ECH、网络能力和 Mainline 模块状态进入实验记录。
 - 发布阻断规则说明阈值来源，并同时检查成功率、P95/P99、字节、功耗与业务正确性。
 
+## 全文小结
+
+移动网络治理先把一次用户操作拆成业务排队、网络调用、连接尝试和 HTTP 交换，再分别管理连接复用、解析、调度与失败恢复。网络切换、HTTPDNS、超时和重试都不能脱离 `Network` 生命周期、请求幂等性和总截止时间单独调参。
+
+性能基线则要把确定性测试、设备实验室和线上分布分开，允许未发生的阶段为空，并同时报告成功率、尾延迟、调用数、尝试数和字节。协议、网络栈或安全策略变化必须做单变量对照；弱网不变量和发布停止条件应先于平均耗时收益。
 
 ## 参考资料
 
@@ -935,7 +943,7 @@ TLS 会话恢复与 0-RTT 不能合并成“复用握手”一个字段。0-RTT 
 - [Android 17 行为变化](https://developer.android.com/about/versions/17/behavior-changes-17)
 - [Android API：`HttpEngine`](https://developer.android.com/reference/android/net/http/HttpEngine)
 - [Android API：`FinishedRequestTimings`](https://developer.android.com/reference/android/net/http/FinishedRequestTimings)
-- [OkHttp 5.3.0 源码：Fast Fallback](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/OkHttpClient.kt#L750-L766)
+- [OkHttp 5.4.0 源码：Fast Fallback](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/OkHttpClient.kt)
 - [Android DNS Resolver 模块](https://source.android.com/docs/core/ota/modular-system/dns-resolver)
 - [Android 应用性能测量](https://developer.android.com/topic/performance/measuring-performance)
 - [Android Benchmark 概览](https://developer.android.com/topic/performance/benchmarking/benchmarking-overview)

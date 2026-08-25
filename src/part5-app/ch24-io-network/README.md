@@ -16,7 +16,7 @@ I/O（Input/Output，输入/输出）指应用与文件、数据库、设备或�
 - [24.8 低带宽、流媒体与本地网络适配](08-low-bandwidth-streaming-local-network.md)
 - [24.9 MediaStore、Photo Picker 与媒体转码](09-mediastore-photo-picker-transcoding.md)
 - [24.10 BluetoothSocket read() 断开语义与长连接治理](10-bluetoothsocket-read-disconnect.md)
-- [24.11 Android 17 移动数据配额：从 NetworkStatsService 到 NetworkPolicyManagerService](11-android17-network-quota-management.md)
+- [24.11 Android 17 移动数据配额与 Data Saver 执行链路](11-android17-network-quota-management.md)
 - [24.12 Android 17 NFC 性能：标签读取、HCE 与无接触支付](12-nfc-contactless-payment-performance.md)
 
 ## 术语提示
@@ -33,4 +33,4 @@ I/O（Input/Output，输入/输出）指应用与文件、数据库、设备或�
 - 网络测试需要同时记录网络类型、信号质量、DNS、连接复用和重试次数。
 - 文件访问方案应结合存储权限、数据规模、并发模式和跨进程需求选择。
 - Wi-Fi 选择与切换见 24.6，卫星和低带宽网络见 24.8，BluetoothSocket 长连接见 24.10，无接触支付见 24.12。
-- 已有材料的归并位置：SharedPreferences ANR（Application Not Responding，应用无响应）见 24.1，Room 3 见 24.2，网络分阶段监测与大文件传输见 24.3；CameraX 见 [22.18](../ch22-rendering-practice/18-media3-video-rendering.md)。
+- 已有材料的归并位置：SharedPreferences ANR（Application Not Responding，应用无响应）见 24.1，Room 3 见 24.2，网络分阶段监测与大文件传输见 24.3；CameraX 见 [22.19](../ch22-rendering-practice/19-camerax-rendering.md)。

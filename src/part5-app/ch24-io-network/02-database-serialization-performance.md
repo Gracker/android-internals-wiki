@@ -660,7 +660,7 @@ Realm 还存在产品生命周期边界。MongoDB 已在 2025 年 9 月 30 日�
 
 [生命周期资料：[Atlas Device SDKs 弃用说明](https://www.mongodb.com/docs/atlas/device-sdks/deprecation/)、[Realm Kotlin 仓库说明](https://github.com/realm/realm-kotlin)]
 
-### 结论
+### 数据库小结
 
 WAL 允许读写并发，但不提供并行写入；Android 17 的 Compatibility WAL、连接池和 checkpoint 参数应按源码与设备生效值解释。Room 要分清 AndroidX 版本与平台版本，使用异步 DAO，控制事务范围，并观察查询失效与连接等待。索引必须对应查询和数据分布，不能只凭 `EXPLAIN QUERY PLAN` 中的一个词判断。数据库升级要覆盖所有受支持的升级路径，大表转换应让新旧结构分阶段共存并支持中断后继续，同时验证用户数据的迁移、回滚和恢复能力。
 
@@ -921,6 +921,12 @@ Microbenchmark 的预热与完整编译适合比较预热后的函数；Macroben
 - 目标设备覆盖 Android 10 / API 29 与 Android 17 / API 37；包含 16 KiB 页设备时，额外观察 Binder 缓冲区与原生序列化库。
 - 格式错误、体积过大或嵌套层级过深的输入能够受控失败，不把原始用户数据写入性能日志。
 
-### 结论
+### 序列化小结
 
 JSON 库先比较协议语义和发布包稳定性，再比较速度；Gson 存量代码可以渐进迁移，新 Kotlin 模型宜优先评估生成代码。Protocol Buffers 依赖严格的字段编号与兼容测试，FlatBuffers 的直接访问优势只在目标数据形状中成立。Parcelable 服务于 Android 瞬时传输，不能用于持久化；Android 17 的 Binder 容量还是进程共享资源。优化顺序应从减少数据、延迟非必要解析、分页和调整接口开始，换库必须由同一业务路径上的测量结果支持。
+
+## 全文小结
+
+数据库与序列化共同决定一次数据操作的等待、复制和兼容成本。先用事务、查询计划、投影和索引控制数据库实际读取的数据，再用符合协议生命周期的格式完成编码；不要用扩连接池、放大 `CursorWindow` 或单纯更换 JSON 库掩盖数据边界问题。
+
+验收时应把首次打开、迁移、SQL、连接等待、编解码、对象分配和 IPC 分段记录。Room/SQLite 驱动、格式库和协议版本都独立于 Android API 级别，升级必须同时覆盖历史数据、发布包优化、跨版本读写与失败恢复。

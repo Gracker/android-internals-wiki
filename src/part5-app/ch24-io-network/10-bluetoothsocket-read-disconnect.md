@@ -48,7 +48,7 @@ pipeline_stage: finalized
 
 阻塞中的 `BluetoothSocket.read()` 以 EOF、异常或数据返回来表达连接状态，业务层不能把任一结果简单等同于可立即重连。可靠长连接需要把读写线程、关闭顺序、状态机和退避预算放在同一套治理中。
 
-## 适配问题
+## 问题范围与结论边界
 
 `BluetoothSocket` 是 Android 用于蓝牙连接的套接字 API。长连接的一个返回值处理错误，可能同时造成读线程不退出、界面仍显示已连接、旧连接事件覆盖新状态，以及重连反复触发扫描。Android 17 改变了 RFCOMM 输入流结束时的表现，只捕获 `IOException` 的旧代码已经不能覆盖全部退出路径。
 
@@ -324,7 +324,7 @@ Bluetooth 套接字指标应与 HTTP 指标分开，单独保留传输类型与�
 | 读取 | `read_exit_reason`、`bytes_read`、`reader_lifetime_ms` | 发现 EOF 漏处理、异常和未退出线程 |
 | 写入 | `write_bytes`、`write_duration_ms`、`write_result`、`queue_depth` | 观察流量控制、队列压力和失败 |
 | 重连 | `attempt_index`、`backoff_ms`、`retry_stop_reason` | 检查退避与预算是否执行 |
-| 扫描 | `scan_reason`、`scan_duration_ms`、`filter_present` | 与 11.6 的扫描功耗分析关联 |
+| 扫描 | `scan_reason`、`scan_duration_ms`、`filter_present` | 与 11.4 的扫描功耗分析关联 |
 | 系统 | `adapter_state`、`permission_state`、`app_importance`、`battery_saver` | 区分系统状态与传输失败 |
 
 遥测是应用自动采集并上报的运行指标。`connection_id` 应是应用生成的短期随机标识。若必须按设备族聚合，优先上传非唯一的产品型号或固件大版本；需要识别同一设备产生的重复事件时，使用定期更换的密钥生成仅在指定业务范围内有效、且不能还原设备地址的标识。`build_fingerprint_group` 也应是粗粒度构建分组，不能上传完整构建指纹。完整 MAC、设备名、广播负载和业务数据都不应进入遥测。
@@ -376,7 +376,7 @@ Perfetto 是 Android 的系统跟踪工具，BatteryStats 统计设备电量使�
 - Android 17 / API 37 用例覆盖默认分支与兼容性开关对照。
 - 遥测不上传完整 MAC、设备名、广播负载或业务数据。
 
-## 小结
+## 全文小结
 
 Android 17 在 `targetSdkVersion 37` 下让 RFCOMM 输入流在套接字关闭或连接丢失时返回 `-1`，应用仍要保留 `IOException` 路径。`-1` 只能证明输入流结束，不能单独证明远端主动关闭。
 

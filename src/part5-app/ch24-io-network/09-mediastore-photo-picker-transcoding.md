@@ -95,7 +95,7 @@ consolidated_from:
 
 MediaStore 和 MediaProvider 管理共享媒体索引、权限与文件访问，Photo Picker 提供受控选择入口，系统转码可能在交付 URI 内容时改变格式和延迟。缓存必须跟随 URI 授权和媒体版本。
 
-## 媒体索引、查询、写入与 Provider 路径
+## MediaStore 索引、查询、写入与 Provider 路径
 
 ### 媒体库的耗时从哪里来
 
@@ -596,7 +596,7 @@ Android 17 源码中的 `dump()` 输出包含缩略图尺寸、已连接卷、�
 
 发布前应按当前 Google Play 的 [All files access 政策](https://support.google.com/googleplay/android-developer/answer/10467955)重新核对资格。系统提供该权限，不代表应用一定符合商店政策；性能设计也不能以审核一定通过为前提。
 
-### 工程检查清单
+### MediaStore 路径检查清单
 
 - 查询是否按具体卷、必要列和稳定的排序位置分页，并带 `CancellationSignal`。
 - 是否区分完整媒体权限、部分媒体权限、Photo Picker 授权和应用自有媒体。
@@ -611,7 +611,7 @@ Android 17 源码中的 `dump()` 输出包含缩略图尺寸、已连接卷、�
 - Perfetto 区间、`MediaProvider` 的 `dump()` 输出和应用指标能否相互对应。
 - 申请 `MANAGE_EXTERNAL_STORAGE` 前是否验证功能必要性与当前商店政策。
 
-### 参考与验证
+### MediaStore 部分的参考与验证
 
 - [Android Developers：访问共享存储中的媒体](https://developer.android.com/training/data-storage/shared/media)
 - [Android Developers：媒体缩略图](https://developer.android.com/social-and-messaging/guides/media-thumbnails)
@@ -633,7 +633,7 @@ Android 17 源码中的 `dump()` 输出包含缩略图尺寸、已连接卷、�
 - [Android 17 源码：MediaProvider 清单](https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/AndroidManifest.xml)
 
 
-## 选择授权、转码与缓存生命周期
+## Photo Picker 选择授权、转码与缓存生命周期
 
 媒体索引确定可访问对象后，Photo Picker 只授予选中内容。读取阶段仍可能触发转码，调用方要处理耗时、格式变化和授权失效。
 
@@ -649,7 +649,7 @@ Photo Picker（系统照片选择器）把“用户允许应用读取哪些图�
 - 大图采样、视频读取、上传与取消。
 - 应用私有临时文件和失败任务的清理。
 
-本文以 Android 17 / API 37 / `android-17.0.0_r1` 为准，重点讨论选择完成后的应用处理流程。`MediaStore` 索引、FUSE（Filesystem in Userspace，用户态文件系统）、缩略图和兼容媒体转码原理见 24.9；图片解码与 Bitmap（Android 内存中的像素图）缓存见 22.5；文件 I/O（输入/输出）与网络上传见 24.1、24.5。
+本文以 Android 17 / API 37 / `android-17.0.0_r1` 为准，重点讨论选择完成后的应用处理流程。`MediaStore` 索引、FUSE（Filesystem in Userspace，用户态文件系统）、缩略图和兼容媒体转码原理见本文前半部分；图片解码与 Bitmap（Android 内存中的像素图）缓存见 22.5；文件 I/O（输入/输出）与网络上传见 24.1、24.5。
 
 ### Photo Picker 的性能边界
 
@@ -854,7 +854,7 @@ Android 17 延续 Android 12 引入的兼容转码。AOSP 文档规定的标准�
 
 标准实现只处理不超过 1 分钟的视频。平台还限制连续转码会话和累计运行时间；AOSP 文档给出的限制是连续 10 个会话、累计 3 分钟，两项都超出后返回原描述符。设备缺少 HDR 插件时也会返回原描述符。多选上传不能假定所有不支持的媒体都会被系统转换。
 
-兼容转码适合把媒体上传到设备外、导出或分享。本机播放直接使用设备解码器；网格预览使用缩略图 API。资源级 `media_capabilities.xml` 会影响应用的多条读取路径，可能让本机播放或缩略图发生非预期转换。播放、上传等功能支持的格式不同时，宜在每次打开媒体时传入对应的 `ApplicationMediaCapabilities`，具体代码见 24.9。
+兼容转码适合把媒体上传到设备外、导出或分享。本机播放直接使用设备解码器；网格预览使用缩略图 API。资源级 `media_capabilities.xml` 会影响应用的多条读取路径，可能让本机播放或缩略图发生非预期转换。播放、上传等功能支持的格式不同时，宜在每次打开媒体时传入对应的 `ApplicationMediaCapabilities`，具体代码见本文前半部分“按调用路径声明媒体能力”。
 
 ### MediaProvider 与缓存清理
 
@@ -1059,7 +1059,7 @@ Perfetto 可采集应用、MediaProvider 和媒体服务的调度、Binder 跨�
 | 标准 Photo Picker | Android 13 / API 33 原生；符合条件的 Android 11 及以上设备通过模块更新获得 | AndroidX Activity 1.7.0 及以上；使用 `isPhotoPickerAvailable(context)` 做能力探测 |
 | Google Play services backport | Android 4.4–10，以及支持 Google Play services 的 Android Go 11/12 | 清单声明模块依赖后可安装；不可用时由 AndroidX 回退 SAF |
 | SAF 回退 | Android 4.4 / API 19 及以上 | `ACTION_OPEN_DOCUMENT` 会忽略多选最大数量；按文档 URI 处理，不能调用 MediaStore 专用打开入口 |
-| Photo Picker HDR→SDR | Android 13 及以上 | AndroidX Activity 1.2.0 及以上；只为业务不支持的 HDR 类型请求转换 |
+| Photo Picker HDR→SDR | Android 13 及以上 | AndroidX Activity 1.11.0 及以上；只为业务不支持的 HDR 类型请求转换 |
 | 嵌入式 Photo Picker | Android 14 及以上且 U Extension 15；平台 API 36 | Jetpack PhotoPicker 1.0.0-alpha02 的 API 仍为实验性；会话失败或能力不足时使用标准 Picker |
 | `MediaStore.open*` Picker helper | API 36，同时在 R Extension 15 提供 | authority 为 `media` 时优先；SAF URI 继续使用 `ContentResolver` |
 | 选择属性约束 | API 37，同时在 U Extension 22 提供 | `PhotoPickerSelectionParams` 可限制 MIME、大小、总批次、分辨率和时长 |
@@ -1093,9 +1093,9 @@ OEM 差异通过 `isPhotoPickerAvailable(context)`、SDK Extension、实际 Inte
 4. 内容可读而准备慢：检查应用复制、解码、编码、摘要和队列等待。
 5. 准备完成而发送慢：进入网络上传与服务端处理范围。
 
-`dumpsys media.transcoding` 查看媒体转码会话；观察 Android 17 AOSP MediaProvider 时使用完整组件名 `com.android.providers.media.module/com.android.providers.media.MediaProvider`。命令、Provider version/generation 与批量媒体操作详见 24.9。
+`dumpsys media.transcoding` 查看媒体转码会话；观察 Android 17 AOSP MediaProvider 时使用完整组件名 `com.android.providers.media.module/com.android.providers.media.MediaProvider`。命令、Provider version/generation 与批量媒体操作详见本文前半部分。
 
-### 实战检查清单
+### Photo Picker 路径检查清单
 
 - 是否使用 AndroidX Activity 合约，并记录平台、系统回退或 SAF 路径。
 - 是否区分收到 URI、描述符返回、首字节和业务准备完成。
@@ -1112,8 +1112,14 @@ OEM 差异通过 `isPhotoPickerAvailable(context)`、SDK Extension、实际 Inte
 - 线上指标是否避开原始 URI、文件名、相册名和账号信息。
 - 标准 Picker 首帧与首张缩略图是否通过实验室自动化测量。
 
+## 全文小结
 
-## 参考资料
+MediaStore 用索引、卷、`version` 与 `generation` 管理共享媒体集合，适合轻量分页和增量同步；打开文件、生成缩略图与兼容转码则是后续独立成本。应用要把查询、游标读取、描述符打开、首字节、解码和转码分别计时，并在权限收窄、卷卸载和删除记录缺失时保留可恢复的同步路径。
+
+Photo Picker 负责逐项选择授权，不负责把云媒体、格式转换和后台任务变成零成本。长时处理要持久化并回收 URI 授权，按业务路径准确声明 HDR/编码能力，以有容量上限的 I/O、CPU、临时存储和上传队列准备内容。系统转码缓存与应用私有副本的所有权必须分开，最终格式和可读性仍由调用方验证。
+
+
+## Photo Picker 部分的参考资料
 
 - [Android Developers：Photo Picker](https://developer.android.com/training/data-storage/shared/photo-picker)
 - [Android Developers：嵌入式 Photo Picker](https://developer.android.com/training/data-storage/shared/photo-picker/embedded)

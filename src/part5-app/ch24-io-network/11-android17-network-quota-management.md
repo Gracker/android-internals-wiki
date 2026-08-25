@@ -1,5 +1,5 @@
 ---
-title: Android 17 移动数据配额：从 NetworkStatsService 到 NetworkPolicyManagerService
+title: Android 17 移动数据配额与 Data Saver 执行链路
 chapter: '24.11'
 section: '24.11'
 status: finalized
@@ -53,7 +53,7 @@ sources:
   path: https://developer.android.com/reference/android/app/job/JobInfo
 ---
 
-# Android 17 移动数据配额：从 NetworkStatsService 到 NetworkPolicyManagerService
+# Android 17 移动数据配额与 Data Saver 执行链路
 
 Android 17 的网络用量控制包含统计、周期策略、告警、阻断和后台访问限制。源码里的配额（quota）表示剩余字节预算，耗尽后拒绝网络报文；它不表示把移动网络调整到某个每秒千比特（Kbit/s）速率。`NetworkStatsService` 负责网络用量统计，`NetworkPolicyManagerService` 负责把套餐周期策略转换为系统规则。本节沿 `android-17.0.0_r1` 追踪调用路径，并说明普通应用能够观察和控制的边界。
 
@@ -324,5 +324,7 @@ adb shell cmd netpolicy set restrict-background false
 4. 强制刷新 `netstats`，比较模板总量、接口总量和 UID 总量，记录 VPN、共享网络与订阅切换。
 5. 在有权限的调试构建上检查 `NetworkManagementService`、`netd` 和 `xt_quota2` 命名计数器，确认余量规则是否安装到预期接口。
 6. 运营商账单与系统统计不一致时，分别检查计费口径、时间区间、零费流量、共享套餐和漫游；Android 统计值不能作为运营商结算值的替代品。
+
+## 全文小结
 
 Android 17 的手机移动数据机制可以概括为：BPF 负责计数和 UID 规则判定，`NetworkStatsService` 保存可查询的历史，`NetworkPolicyManagerService` 用周期策略计算余量，`netd` 与 `xt_quota2` 执行接口总量限制，Telephony 处理移动数据策略开关。把这几层分开，才能判断现象来自统计延迟、提醒、访问控制，还是套餐强制上限；Android TV 的 Data Saver 速率限制需要单独判断。

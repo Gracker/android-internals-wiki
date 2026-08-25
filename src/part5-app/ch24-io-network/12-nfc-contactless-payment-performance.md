@@ -480,6 +480,12 @@ HCE 服务由 `BIND_NFC_SERVICE` 保护，只允许 Android 系统绑定，从�
 - [ ] 日志不含支付敏感数据，缓存策略没有削弱认证和防重放。
 - [ ] 厂商问题按 NFCC、固件、HAL、驱动和内核 `android17-6.18-2026-06_r6` 分层取证。
 
+## 全文小结
+
+NFC 标签分发、Reader Mode、HCE 与 off-host 卡模拟经过不同的路由和进程边界。Android 17 的 Intent 保护、标签离场回调、Observe Mode 和控制器能力变化也分别面向不同入口，应用必须先确认模式、目标 SDK、钱包角色和硬件能力，再讨论性能。
+
+HCE 延迟要拆成射频激活、AID 路由、服务绑定、应用处理、响应回传和外部支付协议；只有应用处理阶段能直接由 `HostApduService` 优化。可靠测量需要外部读卡器与 Android Trace 关联，且不能用缓存、日志或异步执行削弱密钥、令牌、重放防护和交易生命周期边界。
+
 ## 参考资料
 
 - [Android 17 / API 37 android.nfc API diff](https://developer.android.com/sdk/api_diff/37/changes/pkg_android.nfc)

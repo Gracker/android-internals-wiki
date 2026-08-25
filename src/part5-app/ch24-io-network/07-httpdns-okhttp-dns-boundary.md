@@ -36,9 +36,9 @@ sources:
 - type: official
   path: https://developer.android.com/reference/android/net/ConnectivityManager
 - type: example
-  path: https://api.example.com/`
+  path: https://api.example.com/
 - type: example
-  path: https://203.0.113.10/`
+  path: https://203.0.113.10/
 - type: reference
   path: https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/InetAddressOrder.kt
 - type: reference
@@ -74,7 +74,7 @@ OkHttp 要在建立连接前把主机名转换成一组 `InetAddress`，也就�
 
 平台基准是 Android 17 / API 37 / `android-17.0.0_r1`，OkHttp 源码基准是 5.4.0 的 `parent-5.4.0` 标签。OkHttp 4.x 的旧实现使用 `StreamAllocation` 等类；5.x 应按 `RealRoutePlanner`、`RouteSelector` 和 `FastFallbackExchangeFinder` 分析路由规划、地址选择与并发连接，不能套用旧调用路径。
 
-24.3 讨论网络架构，24.4 讨论 HTTP 与传输协议。理解 HTTPDNS 的执行边界，需要区分四件事：
+[24.3 移动网络架构、连接生命周期与容灾策略](03-mobile-network-connection-resilience.md)讨论网络架构，[24.4 HTTP/2、HTTP/3、gRPC 与 ECH](04-http2-http3-grpc-ech.md)讨论 HTTP 与传输协议。理解 HTTPDNS 的执行边界，需要区分四件事：
 
 - `Dns.lookup()` 何时执行，哪些请求不会执行它；
 - HTTPDNS 查询、缓存和系统解析各自应处于哪条路径；
@@ -350,7 +350,7 @@ HTTPDNS 响应也属于不可信网络输入。应用至少要校验 HTTPS 端�
 
 HTTPDNS 只返回一个“最优 IP”会移除连接层的备用路线。只要服务约定允许，结果应保留经过验证的多个候选，以及可用的 IPv6、IPv4 地址。候选顺序表达服务端偏好，但 OkHttp 5 启用 Fast Fallback 后不会严格串行等待每个地址超时。
 
-OkHttp 5.4.0 默认启用 `fastFallback`。[`RouteSelector`](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/InetAddressOrder.kt) 所用的地址排序逻辑位于链接目标 `InetAddressOrder.kt`，它在双栈结果中交替排列 IPv6 与 IPv4，并保持每个地址族内部的相对顺序。[`FastFallbackExchangeFinder`](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/FastFallbackExchangeFinder.kt) 每隔 250 ms 启动一个新的 TCP 尝试。某个 TCP 连接成功后，它会取消其他竞速连接，再由胜出路线完成代理隧道、TLS 等步骤；若 TLS 阶段失败，路由规划仍可尝试后续方案。
+OkHttp 5.4.0 默认启用 `fastFallback`。[`InetAddressOrder`](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/InetAddressOrder.kt) 在双栈结果中交替排列 IPv6 与 IPv4，并保持每个地址族内部的相对顺序。[`FastFallbackExchangeFinder`](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/FastFallbackExchangeFinder.kt) 每隔 250 ms 启动一个新的 TCP 尝试。某个 TCP 连接成功后，它会取消其他竞速连接，再由胜出路线完成代理隧道、TLS 等步骤；若 TLS 阶段失败，路由规划仍可尝试后续方案。
 
 Fast Fallback 能缩短坏地址带来的连接等待，却无法缩短 `Dns.lookup()` 本身。地址列表要在竞速开始前完整返回。HTTPDNS 若只返回 IPv4，也会让 OkHttp 失去双栈选择空间。
 
@@ -424,7 +424,13 @@ OkHttp [`EventListener`](https://lysine.dev/okhttp/features/events/) 提供 DNS�
 - 指标是否区分连接复用、解析来源、网络代次和地址族；
 - 故障演练是否证明 HTTPDNS 失效时业务仍能改用系统解析。
 
-## 参考与验证
+## 全文小结
+
+OkHttp 的 `Dns.lookup()` 位于新连接的同步路由规划路径，适合读取已经发布的内存快照，不适合现场发起 HTTPDNS 或等待异步查询。可靠实现应把查询、校验和缓存发布放到独立后台路径，并以主机名和实际出站 `Network` 共同隔离结果；缓存不可用时回到对应网络的系统解析。
+
+HTTPDNS 只改变候选连接地址，不能改写原始 HTTPS URL，也不能绕开主机名、证书、Private DNS、VPN 和企业分域解析的安全边界。TTL、多地址、Fast Fallback、失败地址隔离与连接池要分别治理，并通过网络切换和解析服务完全失效的实验验证兼容路径。
+
+## 参考资料
 
 - [Android 17 `InetAddress`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/net/InetAddress.java)
 - [Android DNS Resolver 模块](https://source.android.com/docs/core/ota/modular-system/dns-resolver)

@@ -141,7 +141,7 @@ HTTP/2 在 TCP 上复用流，HTTP/3 在 QUIC 上处理传输和拥塞，gRPC �
 - HTTP/3 在 QUIC 传输协议上提供 HTTP 语义。QUIC 的每条逻辑流独立排序，可避免 TCP 丢包让同一连接所有流一起等待的传输层队头阻塞，并支持连接迁移。
 - gRPC 是远程过程调用（Remote Procedure Call，RPC）框架和接口契约；Android 常用实现仍通过 HTTP/2 传输，它不等于 HTTP/3。
 
-平台锚点为 Android 17 / API 37 / AOSP `android-17.0.0_r1`，客户端与协议依据为 OkHttp 5.4.0、RFC 9113、RFC 9000、RFC 9001、RFC 9114 和当前 gRPC 官方文档。连接池、DNS、超时和重试边界见 [24.3 移动网络架构、连接与容灾](03-mobile-network-connection-resilience.md)，分段性能与 TLS 见 [12.1 Android 网络与 TLS 性能优化](../../part2-performance/ch12-apk-network/01-android-network-tls-performance.md) 和 [12.1 Android 网络与 TLS 性能优化](../../part2-performance/ch12-apk-network/01-android-network-tls-performance.md)。
+平台锚点为 Android 17 / API 37 / AOSP `android-17.0.0_r1`，客户端与协议依据为 OkHttp 5.4.0、RFC 9113、RFC 9000、RFC 9001、RFC 9114 和当前 gRPC 官方文档。连接池、DNS、超时和重试边界见 [24.3 移动网络架构、连接与容灾](03-mobile-network-connection-resilience.md)，分段性能与 TLS 见 [12.1 Android 网络与 TLS 性能优化](../../part2-performance/ch12-apk-network/01-android-network-tls-performance.md)。
 
 ### 协议能力来自不同组件
 
@@ -416,6 +416,10 @@ gRPC 到 REST 属于两套接口契约，不是协议自动回退。只有业务
 - 流式 RPC 是否具备流量控制、断线恢复、前后台和电量策略。
 - 分批协议实验是否保持服务端业务、缓存和接口语义稳定。
 
+### 协议与 RPC 小结
+
+HTTP/2、HTTP/3 和 gRPC 分别改变连接复用、传输恢复和调用契约，不能只凭协议名称判断收益。选型要固定客户端实现、最终协商协议、缓存与连接状态，并同时验证流量控制、截止时间、幂等重试、切网和后台生命周期。
+
 ### 源码与规范依据
 
 #### 当前平台与客户端依据
@@ -665,8 +669,14 @@ dig HTTPS api.example.com +short
 
 公网域名的 TLS 握手失败应检查 DNS HTTPS 记录、ECH、CT、证书与协议回退。RFC 1918 私有 IPv4 地址、仅在当前网段有效的地址、`.local`、组播 DNS（mDNS）、简单服务发现协议（SSDP）和本地 HTTP 服务失败时，应先检查本地网络权限。工单中记录目标地址类别和失败阶段，可以避免把权限拒绝误报为 TLS 问题。
 
-### 小结
+### ECH 小结
 
 Android 17 提供了 ECH 所需的平台接口，并为 `targetSdkVersion 37` 的应用把 `domainEncryption` 默认设为 `enabled`。生效仍取决于网络库接入和服务端支持。正式 XML 只接受 `enabled` 与 `disabled`；公开 API 中的 `opportunistic` 常量不能直接写入 XML。
 
 验收时要沿着策略、HTTPS DNS、TLS 配置、服务端协商和重试逐段取证。没有 ECH 配置时发送的是 GREASE，不能计为 ECH 成功；配置失配时必须验证公开名称后再使用重试配置。CT、HTTP/3 和本地网络权限各有独立触发条件，不能因它们都表现为连接失败就归入 ECH。
+
+## 全文小结
+
+协议优化先决定请求与流的语义，再选择能够稳定提供相应能力的客户端、服务端和网络路径。HTTP/2 多路复用、HTTP/3/QUIC、gRPC 流与 ECH 都需要以实际协商、错误阶段和业务完成结果验收，配置存在不等于能力生效。
+
+ECH 位于 DNS HTTPS 记录、网络安全策略和 TLS 握手的交界处，不能替代加密 DNS、证书验证或业务容灾。协议升级与 ECH 发布都应按主机和场景分批，保留 TCP/普通 TLS 的安全回退，并避免把多项网络栈变化放进同一次实验。
