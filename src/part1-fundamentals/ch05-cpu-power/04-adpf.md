@@ -384,10 +384,9 @@ Android 17 的稳定公共约定止于 framework 的 `IHintManager` 与 `android
 
 ## 与其他章节的关系
 
-- **§5.2 DVFS、Thermal 与 Android 功耗管理**：同时解释应用侧 Thermal API、Thermal HAL、系统服务和内核温控。
-- **§5.2 Android 功耗管理**：EAS、DVFS 与功耗约束决定设备怎样响应性能请求。
-- **§7.2 卡顿分析方法**：动态画质、帧率和负载分级是使用 ADPF 信号的应用策略。
-- **§13.7 Perfetto SQL、SPAN_JOIN 与 Jank CUJ**：其中 CUJ 指关键用户操作流程（Critical User Journey），可用于查询帧、调度与 counter 数据。
+- [5.2 DVFS、Thermal 与 Android 功耗管理](02-dvfs-thermal-android-power.md)：解释 EAS/DVFS、应用侧 Thermal API、Thermal HAL 与系统功耗约束怎样共同影响性能请求。
+- [7.2 卡顿分析方法、典型场景与案例](../../part2-performance/ch07-smoothness/02-jank-methodology-scenarios-cases.md)：动态画质、帧率和负载分级的验证方法。
+- [13.7 Perfetto SQL、SPAN_JOIN 与 Jank CUJ](../../part3-tools/ch13-perfetto/07-perfetto-sql-span-join-jank-cuj.md)：用关键用户操作流程（Critical User Journey，CUJ）查询帧、调度与 counter 数据。
 
 ## 参考资料
 

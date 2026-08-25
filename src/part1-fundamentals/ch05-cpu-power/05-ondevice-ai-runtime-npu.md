@@ -2,8 +2,8 @@
 title: Android 端侧 AI Runtime 与 NPU 性能边界
 chapter: '5.5'
 section: '5.5'
-status: ready-for-review
-pipeline_stage: ready-for-review
+status: finalized
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
@@ -515,15 +515,6 @@ LiteRT 是独立演进的 Google AI Edge 项目。API、artifact 和 delegate �
 - [LiteRT performance measurement](https://developers.google.com/edge/litert/models/measurement)
 - [Gemini Nano and AICore](https://developer.android.com/ai/gemini-nano)
 
-### 与其他章节的关联
-
-- **§2.4 MainThread 与 RenderThread**：推理、GPU 渲染和帧调度之间的竞争；
-- **§4.3 Low Memory Killer（低内存终止机制）**：模型、tensor 和服务进程内存对整机压力的影响；
-- **§5.4 ADPF**：持续工作负载、性能提示与热策略；
-- **§1.10 JNI / NDK 性能**：原生运行时（native runtime）的调用、缓冲区与线程边界；
-- **§14.1 Android Studio Profiler**：应用侧 CPU 和内存分析。
-
-
 ## ML Runtime、驱动与 NPU 能力
 
 应用层 delegate 只有通过运行时和驱动才能使用 NPU。算子支持、内存共享、编译缓存和回退路径决定加速是否生效。
@@ -532,7 +523,7 @@ Android 17 为神经网络处理器（Neural Processing Unit，NPU）访问增�
 
 应用仍需选择 LiteRT、厂商软件开发套件（Software Development Kit，SDK）、系统托管服务或旧版神经网络 API（Neural Networks API，NNAPI）路径。每条路径都有自己的模型格式、运行时、硬件覆盖和分发方式。本文按照 Android 17 / API 37 / `android-17.0.0_r1` 核对平台行为，讨论直接访问限制，以及 LiteRT `CompiledModel`、提前 / 即时编译（AOT / JIT）、Neural Networks HAL 和厂商后端如何衔接。
 
-端侧推理的通用性能分析见 5.5 节；LLM 的 TTFT、TPOT、DVFS 与能效测量见 5.6 节。
+端侧推理的通用性能分析见前文；LLM 的 TTFT、TPOT、DVFS 与能效测量见 5.6 节。
 
 ### `android.hardware.npu`：声明、安装过滤与能力检测
 
@@ -1227,13 +1218,12 @@ Perfetto 中的时间重叠只能说明两个事件相关。要证明某种资�
 
 ### 与其他章节的关联
 
-- **§5.5 端侧 AI 推理性能**：LiteRT、模型优化和设备后端的基础。
-- **§5.6 移动端 LLM 推理的 DVFS 与能效边界**：prefill、decode 与持续负载测量。
-- **§5.5 Android 17 ML Runtime 与 NPU 访问边界**：平台与厂商加速器边界。
-- **§5.4 ADPF 自适应性能框架**：本进程工作线程的 hint session 用法。
-- **§5.8 CPU Cache 友好代码与数据布局**：Cache 与内存统计的层级边界。
-- **§4.3 Low Memory Killer**：lmkd、PSI 与进程状态。
-- **§2.4 MainThread 与 RenderThread**：流式结果更新与帧时间。
+- [5.6 移动端 LLM 推理的 DVFS 与能效边界](06-mobile-llm-dvfs-energy.md)：prefill、decode 与持续负载测量。
+- [5.4 ADPF 自适应性能框架](04-adpf.md)：本进程工作线程的 HintSession 用法。
+- [5.8 CPU Cache 友好代码与数据布局优化](08-cpu-cache-friendly-code-data-layout.md)：Cache 与内存统计的层级边界。
+- [4.3 lmkd、Cached App Freezer 与内存压力治理](../ch04-memory/03-lmkd-freezer-memory-pressure.md)：lmkd、PSI 与进程状态。
+- [2.4 MainThread、RenderThread 与 Hardware Layer](../ch02-rendering/04-main-render-thread-hardware-layer.md)：流式结果更新与帧时间。
+- [14.1 Android Studio Profiler](../../part3-tools/ch14-other-tools/01-as-profiler.md)：应用侧 CPU 和内存分析。
 
 
 ## 常见误区
@@ -1248,6 +1238,13 @@ Perfetto 中的时间重叠只能说明两个事件相关。要证明某种资�
 | ADPF 可以调 AICore/NPU 频率 | App 的 hint session 只包含本进程线程 |
 | 前台服务可以继续生成 | 当前 ML Kit GenAI 要求 App 是 top foreground |
 | AppFunctions 由 AICore 提供推理 | AppFunctions 提供工具注册与调用协议，不规定模型运行时 |
+
+## 小结
+
+- 先确认模型执行发生在应用内运行时、厂商后端还是系统托管服务，再分别测量模型准备、编译、数据搬运、硬件执行、回退和结果消费。
+- Android 17 的 NPU feature 与调度接口控制直接访问资格和优先级，不提供一个能执行任意模型的通用 Framework 推理 API；设备支持仍取决于运行时、驱动、模型和产品配置。
+- 系统托管 GenAI 还包含模型下载、服务排队、前台限制、配额和跨进程内存。调用端 PSS 或端到端墙钟时间不能直接命名为 NPU 时间。
+- 性能优化要以冷/热路径、后端覆盖、复制次数、内存压力、帧时间和温控的同机对照为依据，不能根据“NPU”或“AICore”标签推断收益。
 
 
 ## 参考资料

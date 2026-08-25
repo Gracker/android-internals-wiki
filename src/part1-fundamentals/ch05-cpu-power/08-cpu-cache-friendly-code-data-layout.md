@@ -2,7 +2,8 @@
 title: CPU Cache 友好代码与数据布局优化
 chapter: '5.8'
 section: '5.8'
-status: ready-for-review
+status: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-06-05'
 last_verified_against: ARM Cortex-A spec, Linux kernel 6.12, AOSP android-17.0.0_r1, Simpleperf docs
@@ -41,7 +42,7 @@ related_chapters:
 
 CPU cache（高速缓存，下文保留 cache）优化应先证明当前负载受内存层级限制，再让数据布局匹配访问模式，不能停留在“顺序数组比链表快”这类经验判断。这里的内存层级包括各级 cache、地址转换缓存和 DRAM。不同移动 SoC（系统级芯片）的 CPU 核心、频率、cache 容量、共享层级和 PMU（Performance Monitoring Unit，性能监控单元）事件均有差异；没有测量支撑的 padding（填充）、prefetch（预取）或对象池，很容易增加内存占用，却没有改善延迟。
 
-平台与内核基线分别为 Android 17 / API 37 / `android-17.0.0_r1` 和 `android17-6.18-2026-06_r6`。分析范围包括 Kotlin/Java、NDK C/C++、DEX 布局和系统源码中的局部性设计。调度、EAS 与大小核见 5.1，Baseline Profile 见 21.4，启动测量见 21.4。
+平台与内核基线分别为 Android 17 / API 37 / `android-17.0.0_r1` 和 `android17-6.18-2026-06_r6`。分析范围包括 Kotlin/Java、NDK C/C++、DEX 布局和系统源码中的局部性设计。调度、EAS 与大小核见 5.1，Baseline Profile 见 21.4，启动测量见 21.1。
 
 ## 先建立准确的 cache 模型
 
@@ -475,7 +476,7 @@ Cache 友好代码要让“经常一起使用的数据”在时间和地址上�
 - `kernel/Documentation/kernel-hacking/false-sharing.rst`
   - 检测条件、`perf c2c` 与缓解原则。
 
-## References
+## 参考资料
 
 - [Android Simpleperf documentation](https://developer.android.com/ndk/guides/simpleperf)
 - [AOSP Simpleperf command reference](https://android.googlesource.com/platform/system/extras/+/android-17.0.0_r1/simpleperf/doc/executable_commands_reference.md)

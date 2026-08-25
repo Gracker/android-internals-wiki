@@ -1255,6 +1255,13 @@ cpuidle 是单 CPU 的运行时空闲，system suspend 是全系统状态转换�
 
 Batterystats 包含记账和模型估算。硬件电源轨、采样周期和归因能力因设备而异；给出精确能量结论时，需要说明测量来源。
 
+## 小结
+
+- schedutil、CPUFreq 驱动与固件共同把调度利用率转换为性能状态；请求频率、`scaling_cur_freq` 和硬件实频是不同口径。
+- Thermal 框架通过温度传感器、严重级别和 cooling device 约束可用性能。频率降低只是缓解方式之一，Thermal Status/Headroom 也不能当作绝对温度。
+- Power HAL 表达系统场景，CPUIdle 管理无任务时的核心空闲，系统 suspend、WakeLock、Doze、Standby 与后台任务政策又各自有独立边界。
+- 排障时先确定线程是算力不足、Runnable 等待还是阻塞，再对齐频率请求/反馈、温控上限、空闲/挂起和长期能量证据。
+
 ## 版本与实现边界
 
 | Android 版本 | 主要变化 | 说明 |

@@ -2,8 +2,8 @@
 title: Linux 调度、EAS 与大小核架构
 chapter: '5.1'
 section: '5.1'
-status: ready-for-review
-pipeline_stage: ready-for-review
+status: finalized
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
@@ -950,7 +950,7 @@ SurfaceFlinger、AudioFlinger 或 HAL 线程的策略，应根据目标设备的
 
 上一节介绍了公平调度器（fair scheduler）怎样通过虚拟运行时间（vruntime）、滞后量（lag）和虚拟截止时间（virtual deadline）分配 CPU 时间。移动设备还要处理另一个目标：在不明显损害吞吐和响应的前提下降低能耗。
 
-现代手机 SoC（System on Chip，片上系统）普遍采用大小核架构，详见 5.1 节。一个四小核加四大核的八核处理器，在安排任务时要判断任务应放在小核还是大核。小核更省电，但性能可能不足；大核性能更高，功耗也更高。如果调度器只看当前空闲程度，轻任务就可能被放到大核上，抬高频率和电压，并在前台交互阶段产生更多功耗与热量。
+现代手机 SoC（System on Chip，片上系统）普遍采用前文介绍的异构 CPU 架构。一个四小核加四大核的八核处理器，在安排任务时要判断任务应放在小核还是大核。小核更省电，但性能可能不足；大核性能更高，功耗也更高。如果调度器只看当前空闲程度，轻任务就可能被放到大核上，抬高频率和电压，并在前台交互阶段产生更多功耗与热量。
 
 EAS（Energy Aware Scheduling，能量感知调度）在 Linux 5.0 合入主线。任务唤醒时，它先在每个性能域（performance domain）中找出有代表性的候选 CPU，再借助能量模型（Energy Model，EM）估算放置前后的活跃态能量差值。最终选择还要满足 CPU 亲和性（affinity）、cpuset、调度容量（capacity）和利用率钳制（Utilization Clamping，UClamp）等约束。
 
@@ -1242,7 +1242,7 @@ ORDER BY cpu, idle;
 
 ### 与其他机制的关系
 
-#### EAS 与 fair 调度器（5.1 节）
+#### EAS 与 fair 调度器
 
 EAS 只处理 fair 类任务的部分唤醒选核；Linux 6.18 仍由 EEVDF（Earliest Eligible Virtual Deadline First，最早合格虚拟截止时间优先）决定 CPU 运行队列中接下来执行哪个任务。root domain 处于 overutilized 状态时，`select_task_rq_fair()` 会跳过能量估算；同步唤醒还可能进入 `find_energy_efficient_cpu()` 内部的快速路径。一份 Trace 中可以同时看到 EAS 唤醒选核、EEVDF 运行队列竞争和后续负载均衡的结果。
 
@@ -1254,7 +1254,7 @@ EAS 的收益取决于 capacity 的不对称程度和各性能域的 EM 成本�
 
 EAS 的能耗预测依赖 schedutil governor 的 DVFS（Dynamic Voltage and Frequency Scaling，动态电压与频率调节）行为。5.2 节会详细介绍 DVFS 机制，以及 Power HAL 的场景策略如何影响 CPU 频率；这些因素会直接影响 EAS 的预测准确性。
 
-#### EAS 与温控管理（5.5 节）
+#### EAS 与温控管理（5.2 节）
 
 温控可以通过 cpufreq cooling（以限制 CPU 频率进行散热）等机制降低频率上限，并以 thermal pressure 扣减可用 capacity。Linux 6.18 的 EAS 候选筛选与能量环境会读取实际 capacity，因此温控既可能改变频率，也可能改变任务是否适合某个 CPU 以及最终放置位置。
 
@@ -1281,6 +1281,13 @@ EAS 的目标是降低完成单位工作所需的能量（energy per work），�
 #### “厂商的定制调度器比原版 EAS 好”
 
 厂商定制可能加入 WALT、游戏或启动性能提示（hint）、vendor hook 和额外迁移策略。效果必须通过目标设备的延迟、能耗与热稳态数据判断。分析 Perfetto 前，应先确认内核代码树、Power HAL 和任务配置，避免把公共内核行为直接套用到厂商分支。
+
+## 小结
+
+- CPU capacity、调度拓扑与能量模型比“大核/小核”产品名称更适合描述异构处理器；CPU 编号和最高频率都不能替代实机能力测量。
+- 线程从唤醒到运行要同时经过调度类、优先级、EEVDF 资格、亲和性/cpuset、UClamp 与 CPU 放置。Runnable 等待和已经 Running 但执行慢是两类问题。
+- EAS 只在满足条件的候选 CPU 间比较任务放置的能量影响，DVFS 决定性能域频率，温控再改变频率上限和可用 capacity；三者必须在同一时间线上解释。
+- 调度优化应以目标线程的期限、系统吞吐、能耗和热稳态共同验收，不能用迁移次数、单次选核或绑核实验代替因果证据。
 
 ## 版本与实现边界
 

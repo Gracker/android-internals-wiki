@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: finalized
 title: 后台执行、任务调度与 App Hibernation
 chapter: '5.3'
 section: '5.3'
@@ -153,7 +153,7 @@ related_chapters:
 - '1.1'
 - '15.3'
 - '1.13'
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task2b_state: fixed
 task9_state: reviewed
@@ -591,7 +591,7 @@ JobScheduler 让应用声明“做什么、需要哪些条件、最晚可以延�
 2. 任务迟迟不运行时，怎样区分约束、配额、设备状态和应用自身问题；
 3. WorkManager、加急任务（Expedited Job）、用户发起的数据传输任务（User-Initiated Data Transfer，UIDT）、前台服务（Foreground Service）和精确闹钟分别适合什么场景。
 
-设备休眠（Doze）、应用待机（App Standby）与后台执行限制的策略背景见 5.2 和 5.3 节。本文引用的平台源码以 `android-17.0.0_r1` 为基准。
+设备休眠（Doze）的系统功耗背景见 5.2 节；应用待机（App Standby）与后台执行限制的策略入口已在前文说明。本文引用的平台源码以 `android-17.0.0_r1` 为基准。
 
 ### JobScheduler 的调度模型
 
@@ -613,7 +613,7 @@ val result = context.getSystemService(JobScheduler::class.java).schedule(job)
 
 这段代码只负责构建并提交任务。生产代码还要检查 `schedule()` 的返回值：`RESULT_SUCCESS` 只表示系统接受了任务，不表示任务已经启动；参数无效、达到调度限制或 Expedited Job 没有可用配额时，都可能返回 `RESULT_FAILURE`，也可能在构建阶段抛出异常。
 
-AlarmManager 仍适用于闹钟、日历提醒等面向用户的精确时间事件。其精确闹钟访问权限、Doze 行为和不同重载的生命周期边界见 5.3 节。普通同步和维护任务应优先交给 JobScheduler 或 WorkManager，为系统保留合并任务和唤醒的空间。
+AlarmManager 仍适用于闹钟、日历提醒等面向用户的精确时间事件。其精确闹钟访问权限、Doze 行为和不同重载的生命周期边界见前文。普通同步和维护任务应优先交给 JobScheduler 或 WorkManager，为系统保留合并任务和唤醒的空间。
 
 #### Android 17 源码中的核心组件
 
@@ -845,7 +845,7 @@ Android 16 起，long-running worker 会消耗应用的 JobScheduler 运行时�
 - 用户持续可见、类型符合且需要长时间运行的非纯传输工作：评估直接 Foreground Service；
 - 可分片、可延期的维护任务：拆成可恢复的普通 WorkRequest。
 
-将 Worker 提升到前台不会获得无限运行额度。Foreground Service 本身还受启动限制、服务类型（service type）、权限和分类型时长规则约束，详见 5.3 节。
+将 Worker 提升到前台不会获得无限运行额度。Foreground Service 本身还受启动限制、服务类型（service type）、权限和分类型时长规则约束，详见前文的前台服务小节。
 
 ### 后台任务选型
 
@@ -1445,6 +1445,12 @@ future.addListener(
 | Android 17 / API 37 | 策略仍由 PermissionController 驱动，system_server 维护用户级/全局级状态 |
 
 “Android 15 不再把通知交互算使用”“Android 17 只接受 `MOVE_TO_FOREGROUND`”均没有对应源码，并与 Android 17 的 `USER_INTERACTION`、`ACTIVITY_RESUMED`、`APP_COMPONENT_USED` 监听和官方文档冲突。
+
+## 小结
+
+- 进程状态、Standby Bucket、Doze、后台限制、前台服务与缓存进程冻结分别约束不同资源；它们共同影响后台执行，却不是一条固定状态机。
+- WorkManager、JobScheduler 和 AlarmManager 的核心是声明约束、持久化与执行机会，不是预订精确时刻。延迟要从 pending reason、配额、约束、进程状态和系统时间线逐层解释。
+- App Hibernation 与 Standby Bucket、应用归档相邻但不相同。休眠可能带来 Force stop、缓存/dexopt 回收和权限自动重置，恢复逻辑必须幂等并允许后台计划重建。
 
 ## 参考资料
 

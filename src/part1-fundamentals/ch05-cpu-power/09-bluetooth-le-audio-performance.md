@@ -2,7 +2,7 @@
 title: Bluetooth LE Audio 延迟与功耗性能
 chapter: '5.9'
 section: '5.9'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 13 (API 33) - Android 17 (API 37)
 last_verified: '2026-08-22'
 last_source_verified_at: '2026-08-22'
@@ -37,9 +37,9 @@ related_chapters:
 - '1.11'
 - '5.7'
 - '11.4'
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending-review
+task9_state: reviewed
 last_deep_review_at: '2026-08-22T15:48:00+08:00'
 last_deep_review_run_id: 20260822-154453-deep-review-fc34580b
 ---
