@@ -4,8 +4,8 @@ chapter: '5.2'
 section: '5.2'
 status: finalized
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
-last_verified: '2026-06-29'
-last_verified_against: AOSP android-17.0.0_r1 (frameworks/base, hardware/interfaces/power), Linux kernel 6.6 (android15-6.6), Linux kernel 6.12 (android16-6.12)
+last_verified: '2026-08-25'
+last_verified_against: 'AOSP android-17.0.0_r1 (frameworks/base, hardware/interfaces/{power,thermal}, external/perfetto), Linux kernel android17-6.18-2026-06_r6'
 confidence: medium
 consolidated_from:
 - src/part1-fundamentals/ch05-cpu-power/5.21-android17-battery-optimization-soc-architecture.md
@@ -28,7 +28,7 @@ sources:
 - type: official
   path: developer.android.com/games/optimize/adpf
 - type: official
-  path: source.android.com/docs/core/thermal
+  path: source.android.com/docs/core/power/thermal-mitigation
 - type: official
   path: developer.android.com/reference/android/os/PowerManager
 - type: official
@@ -74,6 +74,8 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 last_consolidated_at: '2026-08-24'
+last_idle_audit_at: '2026-08-25T14:46:47+08:00'
+last_idle_audit_run_id: '20260825-143835-idle-audit-d3b85a7c'
 ---
 
 # DVFS、Thermal 与 Android 功耗管理
@@ -240,7 +242,7 @@ I/O wait boost 用来响应刚从 I/O 等待中唤醒的任务。在这一内核
 
 建议把下列证据放在同一时间窗口：
 
-- 应用主线程、Android 渲染线程（RenderThread）或工作线程何时进入 runnable、何时真正运行（running）；
+- 应用主线程、Android 渲染线程（RenderThread）或工作线程何时进入 runnable、何时开始运行（running）；
 - 运行 CPU 与该 CPU 所属 policy；
 - CPU 频率事件、CPU 空闲（idle）状态和调度切片；
 - 帧截止时间（deadline）、关键切片（slice）和锁或 I/O 等待；
@@ -322,7 +324,7 @@ GROUP BY cpu, freq
 ORDER BY cpu, freq;
 ```
 
-查询结果回答“内核报告在某频点停留多久”。下一步应把目标时间窗与 `sched_slice`、应用切片和帧时间相交，确认关键线程在低频区间内确实处于 running 状态。只统计整段 Trace 的平均频率，结果容易被空闲时间稀释。
+查询结果回答“内核报告在某频点停留多久”。下一步应把目标时间窗与 `sched_slice`、应用切片和帧时间相交，确认关键线程在低频区间内处于 running 状态。只统计整段 Trace 的平均频率，结果容易被空闲时间稀释。
 
 #### CPU idle 的值要按设备解释
 
@@ -1294,9 +1296,9 @@ Batterystats 包含记账和模型估算。硬件电源轨、采样周期和归�
 - Linux 内核 `android17-6.18-2026-06_r6`：`drivers/thermal/gov_step_wise.c`、`drivers/thermal/cpufreq_cooling.c`
 - Linux 内核：`Documentation/driver-api/thermal/sysfs-api.rst`
 - Perfetto `android-17.0.0_r1`：`protos/perfetto/config/sys_stats/sys_stats_config.proto`
-- [Android Thermal mitigation](https://source.android.com/docs/core/thermal)
+- [Android Thermal mitigation](https://source.android.com/docs/core/power/thermal-mitigation)
 - [PowerManager Thermal API](https://developer.android.com/reference/android/os/PowerManager)
-- [Optimize games for thermal conditions](https://developer.android.com/games/optimize/thermal)
+- [Thermal API](https://developer.android.com/games/optimize/adpf/thermal)
 
 - AOSP `android-17.0.0_r1`：上述 Framework、SystemSuspend 与 Power HAL 源码
 - Linux 内核 `android17-6.18-2026-06_r6`：系统休眠文档与 power 跟踪点（tracepoints）
