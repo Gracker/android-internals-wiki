@@ -80,8 +80,6 @@ sources:
 - type: official
   path: https://developer.android.com/games/optimize/adpf/gamemode/gamemode-api
 - type: official
-  path: https://developer.android.com/topic/performance/adpf
-- type: official
   path: https://developer.android.com/games/optimize/adpf
 - type: official
   path: https://developer.android.com/games/optimize/adpf/gamemode/gamestate-api
@@ -109,8 +107,6 @@ sources:
   path: Cubox/抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea-2022-01-13.md
 - type: repository
   path: https://github.com/bytedance/btrace
-- type: official
-  path: https://android-developers.googleblog.com/2026/07/build-intelligent-android-apps-cloud-and-hybrid-inference.html
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/window
 - type: source
@@ -468,7 +464,7 @@ adb shell dumpsys package com.example.app
 
 版本演进可以保留历史语境，排查当前设备时仍要回到 Android 17 的源码和目标系统版本。旧版属性名、私有 sysfs 节点和早期厂商方案不能直接套用到 API 37。
 
-### 源码与官方资料
+### 第一部分的核查入口
 
 #### Android 17 / API 37 源码
 
@@ -795,7 +791,7 @@ Jetpack WindowManager 提供 `FoldingFeature`（折叠区域及其姿态信息�
 - §2.2 与 §2.7 解释帧率、刷新率和 GPU；这里关注厂商干预、折叠和多窗口实验。
 - §8.2、§8.3 解释启动路径；这里补充 TikTok、抖音与 ContentProvider 的公开案例。
 - §13 解释 Perfetto；案例应附采集配置、原始 trace 和统计脚本。
-- §17.1、§17.2 解释 OEM 与 SoC 差异；这里把差异限制在具体设备证据中。
+- 本篇前半部分与 §17.2 解释 OEM 与 SoC 差异；这里把差异限制在具体设备证据中。
 
 ### 常见误区
 
@@ -823,6 +819,10 @@ Performance Hint 传递目标时长与实际时长。它不承诺绑核、固定
 
 TikTok 的 45% 启动改善属于该项目。自己的基线、设备分布和瓶颈不同，收益需要本地实验给出。
 
+## 小结
+
+OEM 性能工作应先把平台公共机制、厂商产品策略和目标设备观测分开，再把可移植的应用协作落到公开 API、受控实验和可回退配置。Freezer、预加载、游戏模式、ADPF、折叠屏与行业案例都只是这条证据链上的具体场景，不能用品牌名或单次百分比替代目标设备验证。
+
 ## 参考资料
 
 ### OEM 与行业案例
@@ -833,7 +833,6 @@ TikTok 的 45% 启动改善属于该项目。自己的基线、设备分布和�
 - 本库归档：`Cubox/抖音 Android 性能优化系列：启动优化实践-2022-03-25.md`
 - 本库归档：`Cubox/抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea-2022-01-14.md`
 - [ByteDance btrace](https://github.com/bytedance/btrace)
-- [Android Developers Blog: Build intelligent Android apps: Cloud and hybrid inference](https://android-developers.googleblog.com/2026/07/build-intelligent-android-apps-cloud-and-hybrid-inference.html)（不作为本篇案例证据；截至 2026-08-14 返回 404）
 
 #### Android API 与指南
 
@@ -843,7 +842,6 @@ TikTok 的 45% 启动改善属于该项目。自己的基线、设备分布和�
 - [FPS throttling](https://developer.android.com/games/optimize/adpf/gamemode/fps-throttling)
 - [Game State API](https://developer.android.com/games/optimize/adpf/gamemode/gamestate-api)
 - [ADPF 总览](https://developer.android.com/games/optimize/adpf)
-- [ADPF 平台说明的旧路径](https://developer.android.com/topic/performance/adpf)（截至 2026-08-14 返回 404；请使用上一条 ADPF 总览）
 - [PowerManager thermal API](https://developer.android.com/reference/android/os/PowerManager)
 - [PerformanceHintManager API](https://developer.android.com/reference/android/os/PerformanceHintManager)
 - [PerformanceHintManager.Session API](https://developer.android.com/reference/android/os/PerformanceHintManager.Session)

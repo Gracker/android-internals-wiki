@@ -1,12 +1,14 @@
 ---
 title: Power HAL、schedutil 与 Power Stats
-chapter: '17.6'
-section: '17.6'
-status: ready-for-review
+chapter: '17.4'
+section: '17.4'
+status: finalized
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1 Power framework and frozen Power AIDL v7/PowerStats AIDL v2; Android public APIs current on 2026-08-14; android17-6.18-2026-06_r6 schedutil, sched_ext and vendor driver sources
 confidence: medium
+task6_state: reviewed
+task9_state: reviewed
 sources:
 - type: research
   path: DeepResearch/2026-07-06-android17-soc-vendor-power-hal-schedutil-loop.md
@@ -157,7 +159,7 @@ consolidated_from:
 - 17.21-android17-soc-vendor-power-hal-schedutil-loop.md
 - src/part4-system/ch17-oem/08-power-hal-schedutil-soc-power.md
 - src/part4-system/ch17-oem/09-power-stats-hal-oem-implementation.md
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
 ---
 
@@ -443,7 +445,7 @@ Android 17 的 sched_ext 状态来自两组 sysfs 节点：顶层节点描述全
 3. 检查调频更新是否受其他 CPU 发起的更新、速率限制或未变化的目标影响，再检查 policy 的最低/最高频率、温控约束与驱动频率表。
 4. 把驱动请求、实际频率、任务完成时间、帧性能、温度和能量放到同一时间轴。
 
-一次可复查的跟踪记录至少要覆盖 Framework 场景与业务标记、`sched_switch` / `sched_wakeup`、任务调度策略与所在 CPU、SCX 和产品自定义事件、cpufreq 频率上下限与当前频率、温控事件及 uclamp。`setMode()` 是 `oneway` AIDL 调用，调用方发送后不会同步等待 HAL 处理结果；没有 HAL 标记时，应做启用/取消对照并观察约束变化，不能只靠时间相邻建立因果。PowerStats 的 rail 或 residency 用来观察结果，不参与 `schedutil` 选频，具体能力差异见 17.6。
+一次可复查的跟踪记录至少要覆盖 Framework 场景与业务标记、`sched_switch` / `sched_wakeup`、任务调度策略与所在 CPU、SCX 和产品自定义事件、cpufreq 频率上下限与当前频率、温控事件及 uclamp。`setMode()` 是 `oneway` AIDL 调用，调用方发送后不会同步等待 HAL 处理结果；没有 HAL 标记时，应做启用/取消对照并观察约束变化，不能只靠时间相邻建立因果。PowerStats 的 rail 或 residency 用来观察结果，不参与 `schedutil` 选频，具体能力差异见本篇后半部分。
 
 ### 一套可复现的实验流程
 
@@ -692,6 +694,10 @@ PowerStats 能力：L1/L2/L3/L4
 - AOSP 官方文档把 StatsD、Perfetto 与 Batterystats 列为 PowerStats 客户端，但这不等于 Battery Historian 会直接解析 `dumpsys powerstats --proto` 的三类文件。内部工具需要单独验证输入 schema 与消费路径。
 - 公开 Power Monitor 从 API 35 开始提供，只公开 Channel/EnergyConsumer 累计值，不公开 PowerEntity 状态驻留或 EnergyConsumer 的 UID 分摊数组。
 
+## 小结
+
+Power HAL 与 schedutil 负责把场景、利用率和约束转成设备侧控制，Power Stats 负责报告能量与状态驻留结果；统计数据不会反向参与选频。跨设备比较时必须分别核对控制入口、调度/频率响应、PowerStats 对象覆盖和外部仪器校验，不能把同名 rail、SoC 品牌或服务存在当作等价测量口径。
+
 ## 参考资料
 
 ### Android 17 / AOSP
@@ -726,7 +732,7 @@ PowerStats 能力：L1/L2/L3/L4
 
 - §17.2 SoC 平台差异：CPU/GPU 硬件架构
 - §17.3 sched_ext 与 OEM 调度实践
-- §17.6 Android 17 Power Stats HAL 的 OEM 实现差异
+- 本篇后半部分：Android 17 Power Stats HAL 的 OEM 实现差异
 - §5.2 DVFS 与功耗管理
 - §5.2 Android 功耗管理
 - §5.4 ADPF 自适应性能框架

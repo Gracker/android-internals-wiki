@@ -1,7 +1,7 @@
 ---
 title: Private Space 与应用锁的兼容性边界
-chapter: '17.5'
-section: '17.5'
+chapter: '17.6'
+section: '17.6'
 status: finalized
 applicable_versions: Android 15 (API 35) - Android 17 (API 37)；文件转移能力从 Android 16 QPR2 起提供；手持设备通用逐应用锁无公开 SDK，AAOS App Lock 另行说明
 last_verified: '2026-08-14'

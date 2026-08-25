@@ -242,9 +242,9 @@
   - [17.1 OEM 性能优化与应用协作](part4-system/ch17-oem/01-oem-performance-app-collaboration.md)
   - [17.2 SoC 平台差异](part4-system/ch17-oem/02-soc-differences.md)
   - [17.3 OEM 调度、游戏模式与输入优先级](part4-system/ch17-oem/03-oem-scheduling-game-input.md)
-  - [17.4 Media Performance Class 与设备能力分级](part4-system/ch17-oem/04-media-performance-class-device-capability.md)
-  - [17.5 Private Space 与应用锁的兼容性边界](part4-system/ch17-oem/05-private-space-app-lock-boundary.md)
-  - [17.6 Power HAL、schedutil 与 Power Stats](part4-system/ch17-oem/06-power-hal-schedutil-power-stats.md)
+  - [17.4 Power HAL、schedutil 与 Power Stats](part4-system/ch17-oem/04-power-hal-schedutil-power-stats.md)
+  - [17.5 Media Performance Class 与设备能力分级](part4-system/ch17-oem/05-media-performance-class-device-capability.md)
+  - [17.6 Private Space 与应用锁的兼容性边界](part4-system/ch17-oem/06-private-space-app-lock-boundary.md)
   - [17.7 Android Auto 与 Android Automotive OS 性能优化](part4-system/ch17-oem/07-android-auto-car-os-performance.md)
 
 ---

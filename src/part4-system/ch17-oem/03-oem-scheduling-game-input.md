@@ -2,7 +2,7 @@
 title: OEM 调度、游戏模式与输入优先级
 chapter: '17.3'
 section: '17.3'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 16 (GKI 6.12) - Android 17 (API 37); OEM backport 取决于设备内核
 last_verified: '2026-08-14'
 last_verified_against: Android 17 kernel tag android17-6.18-2026-06_r6, OSDI '26 MUSCHED paper, Android 17 Binder driver, third-party hmbird_sched proc source
@@ -12,10 +12,6 @@ sources:
   path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-04-sched-ext-oplus-impl.md
 - type: official
   path: https://raw.githubusercontent.com/torvalds/linux/master/Documentation/scheduler/sched-ext.rst
-- type: upstream-linux
-  path: https://raw.githubusercontent.com/torvalds/linux/master/kernel/sched/ext.c
-- type: upstream-linux
-  path: https://raw.githubusercontent.com/torvalds/linux/master/kernel/sched/ext.h
 - type: upstream-linux
   path: https://raw.githubusercontent.com/torvalds/linux/master/include/linux/sched/ext.h
 - type: upstream-linux
@@ -130,7 +126,7 @@ related_chapters:
 - '17.2'
 - '3.2'
 - '3.1'
-- '18.11'
+- '18.12'
 consolidated_from:
 - 08-musched-vip-scheduling-practice.md
 - src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md
@@ -138,13 +134,15 @@ consolidated_from:
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
 ---
 
 # OEM 调度、游戏模式与输入优先级
 
 sched_ext 允许厂商在受控接口上实现调度策略，游戏模式和输入优先级则把场景信号传给调度、频率和显示系统。收益取决于任务识别、CPU 预算和温度约束。
+
+前半篇说明 sched_ext、MUSCHED 和 Binder 依赖传播怎样影响关键线程获得 CPU 的机会；后半篇沿触控到显示链路核对 Game Mode、InputDispatcher、刷新率与 OEM 私有增强的边界。两部分共同回答“体验变快发生在哪一层”，不把调度提速误写成输入路由优先级。
 
 ## sched_ext 接口、策略与回退
 
@@ -858,6 +856,10 @@ ORDER BY event_time;
 - 手感改善要按触控前端、输入交付、应用处理、渲染和画面呈现分段归因。
 
 
+## 小结
+
+sched_ext 为 OEM 调度策略提供执行位置，MUSCHED 展示了语义标注、预算和依赖传播的一种量产组合；Game Mode、Power HAL、输入路由和显示刷新率则属于不同控制层。排查“游戏更跟手”时，应先确认调度器接管范围，再用分段 trace 证明延迟缩短发生在输入交付、线程运行、渲染还是呈现阶段。
+
 ## 参考资料
 
 ### Android 17 固定版本与案例证据
@@ -883,8 +885,6 @@ ORDER BY event_time;
 以下链接保留原有来源。上游 `master` 会继续变化，Android 16 分支用于版本对照；Android 17 的固定结论以前一组 tag 链接为准。
 
 - [上游 sched_ext 文档（master）](https://raw.githubusercontent.com/torvalds/linux/master/Documentation/scheduler/sched-ext.rst)
-- [上游 sched_ext core 的原有 raw 路径（master）](https://raw.githubusercontent.com/torvalds/linux/master/kernel/sched/ext.c)（截至 2026-08-14 返回 404）
-- [上游 sched_ext internal header 的原有 raw 路径（master）](https://raw.githubusercontent.com/torvalds/linux/master/kernel/sched/ext.h)（截至 2026-08-14 返回 404）
 - [上游 sched_ext public header（master）](https://raw.githubusercontent.com/torvalds/linux/master/include/linux/sched/ext.h)
 - [上游 `scx_simple` 示例（master）](https://raw.githubusercontent.com/torvalds/linux/master/tools/sched_ext/scx_simple.bpf.c)
 - [Android 16 / 6.12 common kernel 分支](https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12)
