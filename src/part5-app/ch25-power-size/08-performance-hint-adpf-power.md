@@ -1,8 +1,8 @@
 ---
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-08-22'
-last_source_verified_at: '2026-08-22'
-last_verified_against: Android Developers API reference and ADPF/NDK docs retrieved 2026-08-20 + AOSP android-17.0.0_r1（PerformanceHintManager/frameworks/native performance_hint.h/HintManagerService/PowerStatsService/StatsPullAtomCallbackImpl/IntervalRandomNoiseGenerator/PowerStatsDataStorage/PowerStatsLogger/IPowerStats.aidl/Power HAL AIDL）；版本范围语句按 ADPF Java/NDK/HintManagerService/SessionMode 源码锚点复核 2026-08-22
+last_verified: '2026-08-25'
+last_source_verified_at: '2026-08-25'
+last_verified_against: Android Developers API reference and ADPF/NDK docs + AOSP android-17.0.0_r1（PerformanceHintManager.java/performance_hint.h/HintManagerService/PowerStatsService/StatsPullAtomCallbackImpl/IntervalRandomNoiseGenerator/PowerStatsDataStorage/PowerStatsLogger/IPowerStats.aidl/Power HAL AIDL）；版本范围、PowerMonitor 缓存/扰动和 PowerStats 存储路径按源码锚点复核 2026-08-25
 confidence: medium-high
 sources:
 - type: official
@@ -85,10 +85,10 @@ consolidated_from:
 title: PerformanceHintManager 与 ADPF 能效验证
 chapter: '25.8'
 section: '25.8'
-status: ready-for-review
-pipeline_stage: ready-for-review
-task6_state: pending-review
-task9_state: pending-review
+status: finalized
+pipeline_stage: finalized
+task6_state: verified
+task9_state: verified
 task2b_state: fixed
 last_idle_audit_at: '2026-08-20T01:13:45+08:00'
 last_idle_audit_run_id: 20260820-011345-idle-audit-3ae38f95
@@ -96,8 +96,8 @@ last_rework_at: '2026-08-22T09:37:17+08:00'
 last_rework_run_id: 20260822-093550-rework-3ae38f95
 last_draft_polish_at: '2026-08-15T15:29:10+08:00'
 last_draft_polish_run_id: 20260815-152910-gracker-writing-451
-last_review_finalize_at: '2026-08-15T15:29:10+08:00'
-last_review_finalize_run_id: 20260815-152910-gracker-writing-451
+last_review_finalize_at: '2026-08-25T20:23:39+08:00'
+last_review_finalize_run_id: 20260825-200812-6e763501
 ---
 
 # PerformanceHintManager 与 ADPF 能效验证
@@ -534,7 +534,7 @@ Android 17 r1 为普通读数和精细读数维护两组 `PowerMonitorState`。�
 
 回调通过 `ConcurrentUtils.DIRECT_EXECUTOR` 执行，再等待 Handler 侧的异步结果，超时上限为 `2_000 ms`。异常、超时或空结果返回 `PULL_SKIP`。`ON_DEVICE_POWER_MEASUREMENT` 只接收 `durationMs == timestampMs` 的样本，表示能量累计区间从开机开始；不能把这个判断缩写成“两个字段为 0”。
 
-`PowerStatsLogger` 使用三个 Handler 消息分别采集直接测量值（meter）、建模值（model）和状态驻留时间（residency），并存入 `/data/system/powerstats/`。日志前缀是 `log.powerstats.meter.0`、`log.powerstats.model.0` 与 `log.powerstats.residency.0`。`PowerStatsDataStorage` 通过 `FileRotator` 每 4 小时轮转并保留 48 小时，不会固定写成六个 `.pb` 文件。`meterCache`、`modelCache`、`residencyCache` 保存用于识别 HAL 元信息是否变化的哈希；元信息改变时，对应旧日志会被删除。这些缓存由 `AtomicFile` 更新，不能把临时文件名当作稳定存储格式。
+`PowerStatsLogger` 使用三个 Handler 消息分别采集直接测量值（meter）、建模值（model）和状态驻留时间（residency），并存入 `/data/system/powerstats/`。日志前缀是 `log.powerstats.meter.0`、`log.powerstats.model.0` 与 `log.powerstats.residency.0`。`PowerStatsDataStorage` 通过 `FileRotator` 每 4 小时轮转并保留 48 小时，不会固定写成六个 `.pb` 文件。`meterCache`、`modelCache`、`residencyCache` 保存的是 HAL 元信息的序列化快照（例如 Channel、EnergyConsumer、PowerEntity 的 proto bytes），用于识别元信息是否变化；元信息改变时，对应旧日志会被删除。这些缓存由 `AtomicFile` 更新，不能把临时文件名当作稳定存储格式。
 
 写入前，`adjustTimeSinceBootToEpoch()` 使用服务启动时记录的墙钟时间基准，把 HAL 的开机时间戳换算到墙钟时间线，便于事件报告排序。累计能量仍不能跨重启直接相减；HAL 的能量和状态驻留时间都以本次开机为起点。
 
