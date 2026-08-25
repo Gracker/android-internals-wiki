@@ -459,7 +459,7 @@ Android 13 起，`AutoSingleLayer` 允许 SurfaceFlinger 在严格条件下先 l
 
 ### 三类 fence 的方向
 
-这里讨论 BufferQueue 交接，§2.8 继续解释 sync_file 与 dma-fence。排障时至少要标明以下三类对象：
+这里讨论 BufferQueue 交接，后文继续解释 sync_file 与 dma-fence。排障时至少要标明以下三类对象：
 
 | 名称 | 粒度 | 产生方与流向 | 能证明什么 |
 |---|---|---|---|
@@ -926,7 +926,7 @@ fd 数量上涨只是线索。若 imported handle 被释放但进程还保留 mm
 
 应把分配事件、dma-buf inode、BufferQueue slot/layer、API 对象和释放时点放在同一时间范围内。只有确定“哪个引用超过预期寿命”，才能修正实际持有方。
 
-### 12. Android 17 源码入口
+### 10. Android 17 源码入口
 
 | 目标 | 源码 |
 |---|---|
@@ -1243,7 +1243,7 @@ data_sources {
 
 测试代码使用 `sw_sync` 时，仍需保证依赖图会向前推进。由用户空间任意决定 signal 的 fence 进入内核资源回收或设备依赖后，容易形成内核无法观察完整因果关系的死锁。
 
-### 14. Android 17 源码入口
+### 12. Android 17 源码入口
 
 | 目标 | 源码 |
 |---|---|

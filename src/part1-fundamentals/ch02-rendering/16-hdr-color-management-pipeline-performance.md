@@ -38,7 +38,7 @@ sources:
   path: source.android.com/docs/core/display/color-mgmt
 - type: official
   path: source.android.com/docs/core/display/tone-mapping
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 last_review_finalize_at: '2026-08-24T10:05:43+08:00'

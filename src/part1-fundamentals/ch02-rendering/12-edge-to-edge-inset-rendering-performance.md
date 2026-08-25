@@ -65,6 +65,7 @@ tags:
 - android17
 related_chapters:
 - '2.10'
+- '22.9'
 - '22.11'
 - '22.12'
 ---

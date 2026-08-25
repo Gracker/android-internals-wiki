@@ -641,7 +641,7 @@ kernel 行为以 `android17-6.18-2026-06_r6` 为准。通用内核的 `drivers/g
 
 ---
 
-### 十三、排查清单
+### 十二、排查清单
 
 遇到“VSync 异常”时，先把宽泛描述拆成可验证问题：
 
@@ -1280,7 +1280,7 @@ Android 17 / API 37 的 platform tag 不能确定 App 使用的 Compose runtime�
 
 ---
 
-### 十五、Framework 与 kernel 的排查边界
+### 十三、Framework 与 kernel 的排查边界
 
 Choreographer 位于用户态 framework，不直接决定线程何时获得 CPU。`FrameDisplayEventReceiver` 已投递异步消息后，目标线程仍可能处于：
 
@@ -1294,7 +1294,7 @@ Perfetto 中看到 wakeup 到运行的长间隔时，再检查优先级、CFS/fa
 
 ---
 
-### 十六、排查清单
+### 十四、排查清单
 
 遇到 Choreographer 相关卡顿时，按下面顺序核对：
 
@@ -1754,7 +1754,7 @@ App 按时而 `SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMiss
 
 显示模式“不按应用请求切换”时，查看可见 layer vote、focused 与 weight、seamlessness、全局 touch 与 idle 信号、policy 范围和多显示约束。只检查应用传入的 FPS，不足以解释 selector 的结果。
 
-### 十三、源码阅读路线
+### 十二、源码阅读路线
 
 可按以下顺序阅读 Android 17 源码：
 

@@ -2,7 +2,7 @@
 title: TaskSnapshot 捕获、Overview 缩略图与启动窗口
 chapter: '2.14'
 section: '2.14'
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-08-23'
 last_verified_against: AOSP android-17.0.0_r1 + Launcher3 android-17.0.0_r1
@@ -593,7 +593,7 @@ adb shell dumpsys meminfo <launcher-package>
 分别统计：
 
 - system_server running snapshot cache；
-- 功能 flag 控制的 5 秒 high-res defer cache（高分辨率快照延迟释放缓存）；
+- 功能 flag 控制的 high-res 延迟释放缓存；
 - persist queue 尚未写完的 HardwareBuffer；
 - Launcher thumbnail cache；
 - 屏幕上的 starting window，以及 Launcher 和 App Window 的 buffer；

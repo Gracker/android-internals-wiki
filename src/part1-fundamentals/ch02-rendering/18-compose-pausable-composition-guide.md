@@ -2,7 +2,7 @@
 title: Compose Pausable Composition 实战指南
 chapter: '2.18'
 section: '2.18'
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: Compose Runtime 1.8.0 - 1.11.4; Android 6.0 (API 23) - Android 17 (API 37)
 last_verified: '2026-07-25'
 last_verified_against: Compose Runtime/Foundation/UI 1.11.4 + Android 17 / API 37

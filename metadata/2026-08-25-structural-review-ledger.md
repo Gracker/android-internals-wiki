@@ -17,6 +17,7 @@
 | 大章 | 正文数 | 已审 | 状态 | 结论与处理 |
 | --- | ---: | ---: | --- | --- |
 | 第 1 章：系统架构全景 | 29 | 29 | 已完成 | 逐篇确认基础运行时、IPC/调度、系统服务、隔离与观测的责任边界。删除 1.7 误并的 Sharesheet 教程；重命名 1.6、1.9、1.12；清理 1.3 编号残留、1.9 重复 DeliQueue 段和 1.17/1.22 自指；补齐全章发布阶段。目标顺序随全书统一重编号落地。 |
+| 第 2 章：渲染系统 | 18 | 18 | 已完成 | 逐篇确认从帧调度、App/HWUI、GPU/BufferQueue 到 SurfaceFlinger/HWC/Display 的责任链，修复 2.2/2.3/2.7/2.8 断裂编号、合并稿自指与 TaskSnapshot 内部矛盾；README 改为实际 18 篇并校正阅读路径。2.18 与 22.3 重叠，留待第 22 章审阅时跨章合并；其余 17 篇保留。目标顺序随全书统一重编号落地。 |
 | 第 3 章：输入系统 | 6 | 6 | 已完成 | 顺序保持为分发主链 → 触摸时延 → 系统导航手势 → 应用手势识别 → 输入法 → 桌面输入。修复 3.1 与 3.3 合并后断裂的章节编号；把 3.2 末尾游离的重采样源码段移动到批处理机制之后；4 篇待审状态转为可发布。 |
 | 第 4 章：内存管理 | 10 | 10 | 已完成 | 顺序保持为全景口径 → ART Heap/GC → 系统压力治理 → App 优化 → 16 KB 兼容 → 资源终结 → 内核回收/规整 → ZRAM 恢复 → MTE → 跨进程推理。清理 4.1–4.3 合并稿的中途结论、重复关联和自引用，补齐全文收束；修复 4.3 编号跳跃及 4.4 重复旧标题入口；10 篇状态统一为可发布。 |
 | 第 5 章：CPU 调度与能耗管理 | 9 | 9 | 已完成 | 顺序保持为调度/选核 → DVFS/温控/系统功耗 → 后台政策 → ADPF → 端侧 AI Runtime/NPU → LLM 能效 → 传感器 → Cache → LE Audio。为 5.1–5.3 三篇合并主稿和 5.5 补齐全文小结，清理自引用与重复关联；修复 5.1 温控误指 5.5、5.8 启动测量误指 21.4；9 篇状态统一为可发布。 |
@@ -31,7 +32,7 @@
 | 第 14 章：其他分析工具 | 17 | 17 | 已完成 | 逐篇确认 IDE、命令行、量产采集、系统指标、Hook、GPU/UI/Camera、eBPF 与构建分析工具的责任边界。清理合并稿自引用、旧分隔线和重复资料；重命名 14.12、14.13；补齐 14.13、14.16 全文收束。章内目标顺序把平台内建采集放在第三方 Hook 之前，随全书统一重编号一次落地。 |
 | 第 15 章：方法论 | 7 | 7 | 已完成 | 逐篇确认原则/实证/治理、责任归因、指标监控、测试、竞品、源码阅读与 AI 评测的层级。清理 15.1/15.3 合并稿自指、重复关系与资料；补齐 15.6/15.7 发布状态。目标顺序让通用测试先于竞品测试，随全书统一重编号落地。 |
 | 第 19 章：APM 工具与性能监控生态 | 12 | 12 | 已完成 | 顺序保持为全景选型 → 当前工具 → 历史方案 → Benchmark/实验室 → 专项采集 → 端侧架构。修正 19.4 对 Measure 的标题与导语误判、README 的 14.10 错误选型入口及 19.7 发布阶段。 |
-| 其余 11 章 | 138 | 0 | 待审 | 按章节逐篇推进。累计完成 138/276。全书章节号存在 `1–12 → 18 → 13–15 → 19 → 16–17 → 20–26` 的确定性顺序错误，待内容合并完成后统一重编号；已确认的章内顺序也在该次重编号中一次性调整。 |
+| 其余 10 章 | 120 | 0 | 待审 | 按章节逐篇推进。累计完成 156/276。全书章节号存在 `1–12 → 18 → 13–15 → 19 → 16–17 → 20–26` 的确定性顺序错误，待内容合并完成后统一重编号；已确认的章内顺序也在该次重编号中一次性调整。 |
 
 ## 第 1 章逐篇结论
 
@@ -68,6 +69,31 @@
 | 1.29 Android 17 cgroup v1/v2 混合层级与进程资源隔离机制 | 从默认拓扑、init/libprocessgroup、task profile 进入 OomAdjuster、CPU/memory/freezer 与 OEM 审计。 | 负责 framework 策略怎样落到内核控制器；1.6 负责策略计算，1.12 负责 Binder Freezer。 | 保留；发布阶段补为可发布，目标位置紧跟 ActivityManager 进程策略。 |
 
 章内统一重编号的目标顺序为：架构总览 → 版本变量 → 启动/Zygote → 类加载/Boot Image → ART 编译 → JNI/Bionic → linker/VNDK → MessageQueue → IPC/Binder 总览 → Binder 线程池/异步/Freezer → Binder 缓冲区/观测 → ActivityManager → cgroup → BroadcastQueue → ContentProvider → Package/安装 → App Archiving → ResourcesManager → 显示/WMS → Audio → Telephony → Connectivity → Notification → Biometric → Location → AVF → logd → BPF → AI 生态。该顺序与全书大章编号修复在同一次重命名中执行，避免产生两轮文件名、章节号和交叉引用迁移。
+
+## 第 2 章逐篇结论
+
+| 文章 | 标题契约与推进线 | 章节边界 | 处理结果 |
+| --- | --- | --- | --- |
+| 2.1 Android 渲染架构与版本演进 | 先建立当前出图主线，再回溯 Android 3–17 的架构变量，承担全章总览。 | 只建立对象和责任地图；后续文章分别下钻调度、BufferQueue、SF 与显示场景。 | 保留合并。 |
+| 2.2 帧率、刷新率与显示模式选择 | 按口径与截止时间 → ARR 约束 → 模式切换 → RefreshRateSelector 评分推进。 | 负责频率与模式决策；2.3 负责 VSync 调度，2.9 负责生产者帧节奏。 | 修复三段合并稿的编号断层、同篇自链和过度偏 ARR 的全文结论；转为可发布。 |
+| 2.3 VSync、Choreographer 与 SurfaceFlinger 调度 | 从 VSync 源与预测，进入 App Choreographer，再到 SF 调度与显示策略。 | 负责“何时开始并以何节拍执行”；2.2 决定频率，2.17 解释实际帧是否超期。 | 修复三段稿件各自的中文编号跳号。 |
+| 2.4 MainThread、RenderThread 与 Hardware Layer | 先拆开 UI/RT/GPU 提交边界，再讲 Hardware Layer 的录制、缓存、失效与寿命周期。 | 负责 App Window 内 HWUI 执行与离屏层；不把 View layer 与 SF layer 混为一物。 | 保留合并；删除关联章节中的同篇自链。 |
+| 2.5 SurfaceFlinger 合成、FrontEnd 与事务队列 | 按 layer/合成/present → FrontEnd state/snapshot → transaction 入口与 readiness 推进。 | 负责 SF 中的状态、事务和合成；2.8 负责 buffer slot 与 fence 寿命周期。 | 合并重复的 2.8 入口，转为可发布。 |
+| 2.6 过度绘制 | 从边界与颜色标记进入成本、工具、Surface 拓扑、View/Compose 修复与验收。 | 负责重复像素工作；2.7 负责更广的 GPU pipeline 与 API 选型。 | 保留。 |
+| 2.7 GPU 渲染与图形 API 选型 | 先讲 GPU pipeline、瓶颈与测量，再比较 GLES、Vulkan 与 ANGLE。 | 负责 GPU 执行和 API 选型；2.4 负责 HWUI 线程边界，2.5 负责 SF 合成。 | 修复后半篇“9 → 11”的编号跳号。 |
+| 2.8 BufferQueue、Gralloc 与 Sync Fence | 按 slot/所有权/反压 → buffer 分配共享 → acquire/present/release fence 推进。 | 负责 Producer–Consumer 交接和同步；2.5 负责 SF 如何消费它们。 | 修复两段合并稿源码节的跳号和对当前章节的错误自指。 |
+| 2.9 Frame Pacing Library 与帧节奏控制 | 从控制量与 trace 征兆进入 Swappy、fallback、自动模式、集成和验证。 | 负责游戏/原生 Producer 的提交节奏；2.2/2.3 负责显示选择和 VSync 时序。 | 保留。 |
+| 2.10 多窗口、PiP 与桌面模式渲染管线 | 从 session/display 模型进入 window/thread/surface 拓扑、Shell 几何、SF Output 和场景诊断。 | 负责窗口化出图拓扑；2.15 负责 Display 生命周期，2.13 负责折叠切换。 | 保留；转为可发布。 |
+| 2.11 文字渲染性能 | 按线程与产物、Layout 选择、Minikin cache、Span/Emoji、优化与证据推进。 | 负责 HWUI/Compose 中的文字专项；不扩展到整个 GPU/SF 管线。 | 保留。 |
+| 2.12 Android 17 Edge-to-Edge 渲染与 WindowInsets 处理性能 | 从版本边界和 App Window 拓扑进入 Insets 分发、动画、静态处理和多窗口诊断。 | 负责 Edge-to-Edge/Insets 对布局与合成的影响；Predictive Back 实践交给 22.9。 | 保留；补齐 22.9 关联章节。 |
+| 2.13 折叠屏显示切换、窗口连续性与渲染性能 | 按 DeviceState → DMS layout → WMS/Shell → App continuity → SF/HWC 的五层链路推进。 | 负责折叠这一复合场景；2.15 提供通用 DMS 机制。 | 保留。 |
+| 2.14 TaskSnapshot 捕获、Overview 缩略图与启动窗口 | 先分清 snapshot、静态卡片、live tile 与 starting window，再追踪捕获、缓存、展示和故障。 | 负责任务画面捕获与三类消费对象；不把 TaskSnapshot 与 SF LayerSnapshot 混同。 | 删除与前文“无固定秒数”相矛盾的 5 秒缓存表述，转为可发布。 |
+| 2.15 DisplayManagerService：显示器发现、拓扑、功耗与渲染交接 | 从服务启动、DisplayDevice/LogicalDisplay 进入锁模型、DeviceState、VSync 边界、mode/power/VirtualDisplay 和交接。 | 负责通用 Display 管理生命周期；2.13 只在折叠场景引用该机制。 | 保留。 |
+| 2.16 HDR 显示管线与色彩管理性能 | 从 ColorSpace/Dataspace/format 进入 SF 输出色彩、HWC/RenderEngine、HDR/SDR 混合、WCG/Ultra HDR/视频与观测。 | 负责色彩语义与合成位置；2.7 负责 GPU 通用执行，2.5 负责 SF 通用合成。 | 保留。 |
+| 2.17 Android 17 FrameTimeline、FrameTracer 与合成边界 | 从覆盖范围、token 模型与帧边界，进入 CLIENT/DEVICE、jank、fence、SQL 和诊断步骤。 | 负责用时间线证据判断责任段；不代替 2.3 调度机制或 2.8 buffer/fence 状态机。 | 保留。 |
+| 2.18 Compose Pausable Composition 实战指南 | 从版本轴、Lazy Layout 代码结构、cache window 进入同版本 A/B、Macrobenchmark、Perfetto 和回退。 | 内容完全属于应用层 Compose 实践，与 22.3 的 Pausable Composition/Lazy 预取部分重叠。 | 转为可发布，但标记为跨章合并候选；审阅第 22 章时对照 1.12.0 基线保留独有实验步骤并删除重复稿。 |
+
+章内统一重编号的目标顺序为：架构总览 → 帧率/显示模式 → VSync/调度 → MainThread/RenderThread/Hardware Layer → 过度绘制 → 文字渲染 → GPU/API 选型 → BufferQueue/Gralloc/fence → SurfaceFlinger/FrontEnd/事务 → HDR/色彩 → Frame Pacing → FrameTimeline 诊断 → DisplayManagerService → 多窗口/桌面 → Edge-to-Edge/Insets → 折叠屏 → TaskSnapshot。Compose Pausable Composition 不进入该顺序，等第 22 章审阅后执行跨章合并。
 
 ## 第 4 章逐篇结论
 

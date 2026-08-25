@@ -214,7 +214,7 @@ related_chapters:
 - '2.8'
 - '2.17'
 - '22.12'
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
@@ -844,9 +844,9 @@ ORDER BY a.ts;
 
 只看到刷新率轨道变化，不能说明是哪一个 Layer 请求，也不能说明它导致了当前 jank。
 
-### 11. Game Mode 与 120 Hz 功耗
+### 10. Game Mode 与 120 Hz 功耗
 
-#### 11.1 Game Mode 是协作接口
+#### 10.1 Game Mode 是协作接口
 
 Game Mode API 在部分 Android 12 设备提供，Android 13 及以上设备支持更完整。`PERFORMANCE` 与 `BATTERY` 让游戏针对低延迟/帧率或续航调整自身策略。
 
@@ -859,7 +859,7 @@ Game Mode API 在部分 Android 12 设备提供，Android 13 及以上设备支�
 
 游戏应在 `onResume()` 查询当前模式，并根据自身能力选择分辨率、画质、目标 FPS 和 pacing。测试时还要记录 OEM intervention 是否生效。
 
-#### 11.2 高刷新率功耗不能套固定百分比
+#### 10.2 高刷新率功耗不能套固定百分比
 
 从 60 Hz 提升到 120 Hz 可能增加：
 
@@ -871,7 +871,7 @@ Game Mode API 在部分 Android 12 设备提供，Android 13 及以上设备支�
 
 增长幅度受面板、亮度、内容、合成方式、SoC 和应用是否真的提高帧率影响。没有目标设备测量时，不应给出固定百分比。
 
-#### 11.3 选择稳定目标比追逐峰值更重要
+#### 10.3 选择稳定目标比追逐峰值更重要
 
 一个游戏若只能在 120 FPS 与 80 FPS 之间持续波动，稳定 90 FPS 或 60 FPS 可能提供更均匀的 cadence、更低的队列压力和更好的持续性能。判断目标值时同时看：
 
@@ -884,7 +884,7 @@ Game Mode API 在部分 Android 12 设备提供，Android 13 及以上设备支�
 
 Swappy 或引擎 pacing 应根据这些数据选择 swap interval，而不是每帧都临时追随瞬时耗时。
 
-### 12. Kernel 与 vendor 显示边界
+### 11. Kernel 与 vendor 显示边界
 
 Framework 的 RefreshRateSelector 负责投票与 policy，Composer HAL 把所选配置或 present 时机交给设备实现。再往下可能涉及 vendor display driver、面板 TE、DRM/KMS、VBlank、时钟和电源管理。DRM/KMS 是 Linux 内核的显示设备与模式设置框架，VBlank 是一次扫描结束到下一次扫描开始之间的垂直消隐事件。
 
@@ -904,7 +904,7 @@ Framework 的 RefreshRateSelector 负责投票与 policy，Composer HAL 把所�
 - present fence；
 - 面板或外接显示器的硬件测量。
 
-### 13. 版本演进到 Android 17
+### 12. 版本演进到 Android 17
 
 | 版本 | 帧率与刷新率边界 |
 | --- | --- |
@@ -918,7 +918,7 @@ Framework 的 RefreshRateSelector 负责投票与 policy，Composer HAL 把所�
 
 当前源码能证明 Android 17 的实现状态，不能自动证明某段逻辑是 Android 17 首次加入。涉及“从某版本开始”的结论，应同时检查 API level、旧 tag 或官方版本说明。
 
-### 14. Android 17 源码索引
+### 13. Android 17 源码索引
 
 #### 应用 API 与帧时序
 
@@ -1754,7 +1754,7 @@ Android 17 平台锚点 `android-17.0.0_r1` 能确认：
 
 AOSP 给出契约与上层状态机，内核和厂商实现决定具体硬件时序。
 
-### 11. 排查清单
+### 9. 排查清单
 
 1. 记录设备支持模式、当前模式、`configGroup` 和系统刷新率设置。
 2. 明确应用设置帧率的 Surface、准确值、compatibility 和 change strategy。
@@ -1799,7 +1799,7 @@ Android 17 把多类投票转成候选模式分数。复现模式选择时，需
 
 本章主要核对三组源码：`DisplayModeController` 判断目标模式无需处理、只需更新渲染节拍、可以合并到待处理请求，还是必须切换物理模式；SurfaceFlinger 的帧调度器 Scheduler 通过 `RefreshRateSelector` 同时接收图层投票、全局信号与 DisplayManager 策略；`FrameRateOverrideMappings` 维护按 UID 生效的帧率覆盖，其中内部接口直接写入的覆盖值优先于根据内容计算的覆盖值。[来源: DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md; 已验证: frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp, Scheduler/RefreshRateSelector.cpp, Scheduler/FrameRateOverrideMappings.cpp @ android-17.0.0_r1]
 
-### 2. Android 17 的选择链路
+### 1. Android 17 的选择链路
 
 Android 17 的决策路径可以压缩为以下顺序：
 
@@ -1814,7 +1814,7 @@ Android 17 的决策路径可以压缩为以下顺序：
 
 排障时可以按照“策略边界 → 图层需求 → 评分排名 → 执行动作”拆分日志：策略只决定候选集合，`LayerHistory` 决定每个可见图层的投票，`getRankedFrameRatesLocked()` 再把投票、触摸、空闲、点亮等全局信号和并列裁决规则（tie-break）合成排序结果。最终是否调用 HWC（硬件合成器）设置物理模式，还要看 `DisplayModeController::setDesiredMode()` 返回的动作。[来源: DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md; 已验证: frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp, Display/DisplayModeController.cpp @ android-17.0.0_r1]
 
-#### 2.1 策略包含两层范围
+#### 1.1 策略包含两层范围
 
 `RefreshRateSelector::Policy`（选择策略）的两个主要字段是 `primaryRanges` 与 `appRequestRanges`：
 
@@ -1825,9 +1825,9 @@ Android 17 的决策路径可以压缩为以下顺序：
 
 每个范围又分为 `physical` 与 `render`。前者约束物理模式的峰值刷新率 `DisplayMode::getPeakFps()`，后者约束渲染节拍 `FrameRateMode::fps`。“允许选择 120 Hz 物理模式”不等于“应用一定会以 120 fps 收到回调”。
 
-### 3. 候选不等于一张简单的模式表
+### 2. 候选不等于一张简单的模式表
 
-#### 3.1 `DisplayMode` 保存什么
+#### 2.1 `DisplayMode` 保存什么
 
 Android 17 的 `DisplayMode` 保存模式 ID、HWC 配置 ID、分辨率、DPI（像素密度）、模式组、VSYNC 频率、可选的 VRR 配置和 HDR 输出类型。`getPeakFps()` 的定义如下：
 
@@ -1836,7 +1836,7 @@ Android 17 的 `DisplayMode` 保存模式 ID、HWC 配置 ID、分辨率、DPI�
 
 因此，在 ARR（Android 自适应刷新率）或 VRR 设备上，`getVsyncRate()`、`getPeakFps()` 和当前 `FrameRateMode::fps` 代表不同层次，不能互相替代。
 
-#### 3.2 构造候选时的过滤
+#### 2.2 构造候选时的过滤
 
 `constructAvailableRefreshRates()` 以策略中的默认模式为基准，过滤条件包括：
 
@@ -1849,7 +1849,7 @@ Android 17 的 `DisplayMode` 保存模式 ID、HWC 配置 ID、分辨率、DPI�
 
 选择器分别构造 `mPrimaryFrameRates`、`mAppRequestFrameRates` 和 `mAllFrameRates`。实际参与图层评分的主要集合是 `mAppRequestFrameRates`，并非设备公布的所有模式。
 
-#### 3.3 MRR 与 VRR 生成渲染帧率候选的方式不同
+#### 2.3 MRR 与 VRR 生成渲染帧率候选的方式不同
 
 MRR 指通过多个固定刷新率模式进行切换的传统方式，VRR 则允许显示器在可变范围内调整刷新节拍。`createFrameRateModes()` 会为每个通过过滤的 `DisplayMode` 生成一个或多个渲染帧率，源码用 divisor（除数）表示“物理频率每经过多少个周期产生一次渲染节拍”：
 
@@ -1860,9 +1860,9 @@ MRR 指通过多个固定刷新率模式进行切换的传统方式，VRR 则允
 
 这里的 VRR 候选不表示面板能在 1 Hz 到 120 Hz 之间任意连续取值。它是 SurfaceFlinger 为调度和帧率覆盖建立的一组离散 `FrameRateMode`，仍然受 HWC 能力与设备策略约束。
 
-### 4. 图层投票从哪里来
+### 3. 图层投票从哪里来
 
-#### 4.1 公共兼容性参数与内部投票使用不同枚举
+#### 3.1 公共兼容性参数与内部投票使用不同枚举
 
 `FrameRateCompatibility.h` 描述图层提交帧率时声明的兼容方式；评分阶段使用的是内部枚举 `RefreshRateSelector::LayerVoteType`。Android 17 中后者包含：
 
@@ -1884,7 +1884,7 @@ MRR 指通过多个固定刷新率模式进行切换的传统方式，VRR 则允
 
 Java 公共常量 `FRAME_RATE_COMPATIBILITY_AT_LEAST` 进入原生图层后，对应这里的 `Gte` 语义。应用层名称与选择器内部枚举不同，读取系统跟踪或状态转储时要按照这张表转换。
 
-#### 4.2 游戏模式干预的优先级
+#### 3.2 游戏模式干预的优先级
 
 游戏模式的两个值保存在 `LayerHistory::mGameFrameRateOverride`，每个 UID 对应一个系统干预帧率和一个游戏默认帧率。活动图层按以下优先级选择帧率意见：
 
@@ -1896,13 +1896,13 @@ Java 公共常量 `FRAME_RATE_COMPATIBILITY_AT_LEAST` 进入原生图层后，�
 
 这可以解释游戏请求 90 fps、系统却稳定给出 60 fps 的情况。若设备配置了 FPS 限速干预，平台侧意见会优先于应用投票。排障时应同时检查游戏模式、应用请求和当前渲染帧率。
 
-### 5. 排名不是一个通用公式
+### 4. 排名不是一个通用公式
 
 旧资料常把 `RefreshRateSelector` 简化为“计算目标值与候选值的距离，再累加所有图层的分数”。Android 17 会按照投票类型进入不同分支，距离分只适用于其中一部分。
 
 阅读源码时，不能把连续数值评分理解成唯一公式。Android 17 确实在多个分支使用距离或比例分数，但 `ExplicitCategory`、`ExplicitExact`、`ExplicitDefault`、触摸后的延迟升频、空闲状态的提前返回，以及分数相同后的高低帧率偏好，都会改变最终顺序。因此，一次异常只能结合具体投票类型和当时的全局信号解释，不能只用“目标帧率越近，得分越高”概括。[来源: DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md; 已验证: frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp @ android-17.0.0_r1]
 
-#### 5.1 距离分的含义
+#### 4.1 距离分的含义
 
 `calculateDistanceScoreLocked(reference, refresh)` 会先用两个帧率中的较小值除以较大值，再对比值求平方：
 
@@ -1910,7 +1910,7 @@ Java 公共常量 `FRAME_RATE_COMPATIBILITY_AT_LEAST` 进入原生图层后，�
 
 结果位于 0 到 1 之间。两个帧率相等时结果为 1，偏离越大，分数越低。这个函数用于 `Max`、`ExplicitGte` 未达到下限时，以及部分类别的边界匹配；它不能代表所有投票的评分方式。
 
-#### 5.2 各类投票的评分规则
+#### 4.2 各类投票的评分规则
 
 | 投票类型 | Android 17 的主要行为 |
 |---|---|
@@ -1932,7 +1932,7 @@ Java 公共常量 `FRAME_RATE_COMPATIBILITY_AT_LEAST` 进入原生图层后，�
 - 存在 `Max` 投票时，平分候选按高帧率优先；
 - 没有图层得到有效分数时，选择器还会尝试保留当前配置，或回到主范围。
 
-#### 5.3 评分前后的全局信号
+#### 4.3 评分前后的全局信号
 
 `getRankedFrameRatesLocked()` 有多条早返回和后处理分支：
 
@@ -1948,7 +1948,7 @@ Java 公共常量 `FRAME_RATE_COMPATIBILITY_AT_LEAST` 进入原生图层后，�
 
 “触摸一律 120 Hz”或“空闲一律最低 Hz”都不符合源码。两种信号还要经过策略、模式组、显式投票、显示器类型和候选集合的约束。
 
-### 6. 多显示器与节奏基准显示器
+### 5. 多显示器与节奏基准显示器
 
 Scheduler 会为多个物理显示器生成选择结果。节奏基准显示器（pacesetter）提供全局调度参照；跟随显示器能否独立选择，取决于 `follower_arbitrary_refresh_rate_selection_combined` 等平台配置。
 
@@ -1961,9 +1961,9 @@ Scheduler 会为多个物理显示器生成选择结果。节奏基准显示器�
 
 不要用默认屏的一条 VSYNC 或送显栅栏解释外接屏。
 
-### 7. `DisplayModeController` 怎样执行选择结果
+### 6. `DisplayModeController` 怎样执行选择结果
 
-#### 7.1 `DesiredModeAction` 表示本次调用要执行的动作
+#### 6.1 `DesiredModeAction` 表示本次调用要执行的动作
 
 `DisplayModeController::setDesiredMode()` 返回四种动作：
 
@@ -1980,7 +1980,7 @@ Scheduler 会为多个物理显示器生成选择结果。节奏基准显示器�
 
 `setDesiredMode()` 依次进行三项判断：先检查是否已有可合并且尚未处理的 `desiredModeOpt`；若目标模式 ID 已经处于活动状态，再判断是否只需切换渲染帧率；其余情况才创建物理显示模式请求。启用 `modeset_state_machine()` 后，`pendingModeOpt` 与 `desiredModeOpt` 分开保存，避免已经交给 HWC 的请求被后续请求覆盖。
 
-#### 7.2 两条 Composer 与 HWC 路径
+#### 6.2 两条 Composer 与 HWC 路径
 
 `initiateModeChange()` 会根据 Composer（SurfaceFlinger 到 HWC 的合成接口）能力选择以下路径：
 
@@ -1991,7 +1991,7 @@ Scheduler 会为多个物理显示器生成选择结果。节奏基准显示器�
 
 取证时应分开记录两条 Composer 路径：`setActiveModeWithConstraints()` 的时间线来自 HAL 返回值；DisplayCommand 的 `setDisplayMode(seamlessRequired)` 成功后，SurfaceFlinger 在该分支把 `refreshRequired` 设为 `false`，并把 `newVsyncAppliedTimeNanos` 设为 `systemTime()`。后者只表示系统框架完成了这一步状态更新，不代表面板像素的光学响应已经完成。
 
-#### 7.3 完成模式切换的边界
+#### 6.3 完成模式切换的边界
 
 新的待处理模式通过检查后，`finalizeModeChange()` 会完成以下状态更新：
 
@@ -2004,7 +2004,7 @@ Scheduler 会为多个物理显示器生成选择结果。节奏基准显示器�
 
 分辨率切换还需要 DisplayManager 配合提交显示尺寸事务。`setDesiredMode()` 已经执行，并不代表分辨率事务、VSYNC 模型更新和应用事件通知都已完成。
 
-### 8. UID 帧率覆盖与游戏模式使用不同的数据通路
+### 7. UID 帧率覆盖与游戏模式使用不同的数据通路
 
 `FrameRateOverrideMappings` 有两个映射表：
 
@@ -2019,7 +2019,7 @@ Scheduler 会为多个物理显示器生成选择结果。节奏基准显示器�
 
 如果正在排查“应用请求了 60 fps，但 UID 覆盖值不是 60”的问题，应先区分两个映射表：直接写入表按 UID 设置并优先返回，内容表则由选择器根据当前内容需求整体刷新。游戏模式干预不会直接写入这两个映射，而是先改变 `LayerHistory` 的投票，再间接影响模式选择与覆盖值生成。[来源: DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md; 已验证: frameworks/native/services/surfaceflinger/Scheduler/FrameRateOverrideMappings.cpp, Scheduler/LayerHistory.cpp @ android-17.0.0_r1]
 
-### 9. 内核空闲计时器的平台边界
+### 8. 内核空闲计时器的平台边界
 
 内核空闲计时器用于在显示长时间没有更新时触发更低的刷新节奏；具体能否降频以及降到哪里由设备实现。`DisplayModeController` 支持两种配置通道：
 
@@ -2038,9 +2038,9 @@ Scheduler 会为多个物理显示器生成选择结果。节奏基准显示器�
 
 状态转储或系统跟踪中的内核空闲计时器状态变化，只能说明 SurfaceFlinger 已按照 `RefreshRateSelector::getIdleTimerAction()` 选择 HWC API 或系统属性通道。若活动模式带有 VRR 配置，`VSyncReactor::onDisplayModeChanged()` 还会把内核空闲计时器排除在周期切换之外。设备是否已经实际降频，仍需结合厂商 HAL、面板驱动或实测的送显与功耗数据判断。
 
-### 10. 应用怎样表达需求
+### 9. 应用怎样表达需求
 
-#### 10.1 Java `Surface.setFrameRate()`
+#### 9.1 Java `Surface.setFrameRate()`
 
 下面的游戏或普通 UI 示例表示：“这个 `Surface` 偏好 60 fps，并且能够适应系统选择的其他帧率。”
 
@@ -2066,7 +2066,7 @@ surface.setFrameRate(
 
 Android 17 还提供受功能开关控制的 `Surface.FrameRateParams`。源码中的 TODO 明确说明当前传递链路尚未完成：实现会在固定源帧率与最小、最大范围之间选择一种表达，不能仅根据 API 的字段形态推断完整区间语义已在所有设备上可用。生产代码使用它之前，应确认设备功能开关、SDK 暴露情况，以及 CTS 和厂商实现行为。
 
-#### 10.2 NDK `ANativeWindow`
+#### 9.2 NDK `ANativeWindow`
 
 原生图形缓冲区生产者可以用下面的 API 提交同类帧率提示：
 
@@ -2080,9 +2080,9 @@ ANativeWindow_setFrameRateWithChangeStrategy(
 
 `ANativeWindow_setFrameRate()` 从 API 30 开始提供；带有切换策略的 `ANativeWindow_setFrameRateWithChangeStrategy()` 从 API 31 开始提供。传入 0 可以清除请求。NDK 注释同样说明：系统可能不采用目标值，这个调用也不会自动限制应用提交缓冲区的速率。
 
-### 11. 24 fps、游戏和混合场景怎么读
+### 10. 24 fps、游戏和混合场景怎么读
 
-#### 11.1 24 fps 视频
+#### 10.1 24 fps 视频
 
 24 fps 视频在 120 Hz 上可以让每个视频帧连续显示 5 个刷新周期，也就是采用 5:5 节拍，无须切换到 24 Hz。选择器还要同时考虑 UI 叠加层、字幕、触摸、功耗策略、模式组切换和其他可见图层。`setFrameRate(24, FIXED_SOURCE, ...)` 调用成功只表示请求已被记录，不表示下一帧已经完成模式切换。
 
@@ -2096,17 +2096,17 @@ ANativeWindow_setFrameRateWithChangeStrategy(
 
 排查时要把请求帧率、活动模式、渲染帧率、缓冲区时间戳、SurfaceFlinger 锁存和送显时间放到同一条时间线上。
 
-#### 11.2 游戏
+#### 10.2 游戏
 
 游戏需要同时查看目标 FPS、游戏模式干预、引擎帧节奏、BufferQueue 深度、GPU 完成时间和温控状态。开始运行时能够达到 120 fps，不代表长时间运行后仍能维持；CPU、GPU 降频、内存带宽限制和厂商功耗策略都会改变应用生成帧的能力。
 
 只有游戏缓冲区已经在截止时间前就绪，但仍在锁存、合成或送显阶段变晚时，才应把排查重点放到显示侧。若 acquire fence 已经晚到，高刷新率模式只能提供更多显示机会，无法补回生产端错过的截止时间。
 
-#### 11.3 UI + 视频 + 叠加层
+#### 10.3 UI + 视频 + 叠加层
 
 混合场景中不存在“主图层独占刷新率”。视频图层的固定源投票、宿主 UI 的类别、浮层动画和触摸都会进入同一轮排名。焦点、可见性、图层权重、无缝切换要求和模式组共同决定每个候选是否得分。排障时必须确认当时有哪些图层可见，不能只看播放器的调用参数。
 
-### 12. Perfetto 与状态转储取证
+### 11. Perfetto 与状态转储取证
 
 下面的命令用于建立设备能力、当前策略和 SurfaceFlinger 内部状态的快照：
 
@@ -2144,7 +2144,7 @@ Perfetto 中至少关联这些证据：
 
 这套顺序可以区分五类问题：候选选择不符合预期、请求没有在评分中胜出、切换尚未完成、生产端交付过晚，以及显示链路后段耗时过长。
 
-### 13. 与 FrameTimeline 的关系
+### 12. 与 FrameTimeline 的关系
 
 刷新率选择会改变候选渲染节拍、VSYNC 预测、回调间隔和可能采用的物理模式；FrameTimeline 则依据当前预测时间判断应用帧与显示帧是否按期。
 
@@ -2157,7 +2157,7 @@ Perfetto 中至少关联这些证据：
 
 FrameTimeline 的令牌、预期与实际 `SurfaceFrame`、`DisplayFrame` 和栅栏边界，见 [2.17 Android 17 FrameTimeline、FrameTracer 与合成边界](17-android17-frametimeline-composition-boundary.md)。
 
-### 14. 版本演进边界
+### 13. 版本演进边界
 
 | Android 版本 | 可确认的公开节点 |
 |---|---|
@@ -2171,11 +2171,11 @@ FrameTimeline 的令牌、预期与实际 `SurfaceFrame`、`DisplayFrame` 和栅
 
 延伸阅读：
 
-- [Adaptive Refresh Rate](02-framerate-refresh-display-mode.md)：ARR 的 Composer3、预期送显时间与能力边界。
-- [刷新率切换机制](02-framerate-refresh-display-mode.md)：从策略到 HWC 模式切换的基础路径。
+- [Adaptive Refresh Rate](#自适应刷新率的输入与约束)：ARR 的 Composer3、预期送显时间与能力边界。
+- [刷新率切换机制](#模式切换应用适配与抖动)：从策略到 HWC 模式切换的基础路径。
 - [VSYNC、Scheduler 与 DisplayFrameRate](03-vsync-choreographer-sf-scheduling.md)：物理刷新率、渲染帧率和应用回调的关系。
 
-### 15. 源码核查清单
+### 14. 源码核查清单
 
 平台源码统一为 `android-17.0.0_r1`：
 
@@ -2234,7 +2234,7 @@ FrameTimeline 的令牌、预期与实际 `SurfaceFrame`、`DisplayFrame` 和栅
 
 ## 结论
 
-Android 17 的 ARR 分为四层：应用通过 View、Compose 或 Surface 表达内容需求；DisplayModeDirector 汇总系统约束并给出允许范围；SurfaceFlinger Scheduler 根据可见 Layer 的更新节奏选择 render rate/mode；Composer3 把 `frameIntervalNs` 和必要的 `notifyExpectedPresent` 提示交给支持 ARR 的显示硬件。
+Android 17 的帧率协作分为四层：应用通过 View、Compose 或 Surface 表达内容需求；DisplayModeDirector 汇总系统约束并给出允许范围；SurfaceFlinger Scheduler 根据可见 Layer 的更新节奏选择 render rate/mode；DisplayModeController 在 MRR 路径上执行物理模式切换，Composer3 则在 ARR 路径上把 `frameIntervalNs` 和必要的 `notifyExpectedPresent` 提示交给显示硬件。
 
 诊断时先区分 MRR 与 ARR，再分别观察应用产帧、刷新率选择和最终展示。`setFrameRate()` 用于投票，ARR 调整显示 cadence，Swappy 或引擎 pacing 控制提交时机。区分这三层后，才能判断问题来自应用、SurfaceFlinger、HWC 还是设备显示驱动。
 

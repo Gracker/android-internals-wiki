@@ -5,12 +5,12 @@ section: "2.0"
 status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-08-11"
-last_verified_against: "AOSP android-17.0.0_r1; kernel android17-6.18-2026-06_r6; consolidated ch02 structure 2.1-2.21"
+last_verified_against: "AOSP android-17.0.0_r1; kernel android17-6.18-2026-06_r6; consolidated ch02 structure 2.1-2.18"
 confidence: high
 tags: [rendering, SurfaceFlinger, BufferQueue, BLAST, sync-fence, FrameTimeline, ARR]
 pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
-consolidation_note: 第二轮逐篇审阅后收敛为 21 篇，合并同一责任链中的总览、机制、版本增量、观测与案例，并统一连续编号。
+consolidation_note: 第三轮逐篇审阅后确认当前 18 篇，合并同一责任链中的总览、机制、版本增量、观测与案例；Compose Pausable Composition 留待第 22 章审阅时与应用实践专题统一取舍。
 consolidated_from:
   - "src/part1-fundamentals/ch02-rendering/2.15-android17-gpu-debug-tools.md"
   - "src/part1-fundamentals/ch02-rendering/2.29-Android-17-桌面模式窗口管理性能.md"
@@ -74,10 +74,10 @@ Android 的掉帧、首帧延迟、SurfaceView 错位、视频抖动和刷新率
 |---|---|---|
 | 普通 View / Compose | [2.1 Android 渲染架构与版本演进](01-rendering-architecture-evolution.md) → [2.3](03-vsync-choreographer-sf-scheduling.md) → [2.4](04-main-render-thread-hardware-layer.md) | [标准 View](../../part2-performance/ch18-rendering-pipelines/01-android-view-pipeline-analysis.md)、[Compose](../../part2-performance/ch18-rendering-pipelines/08-compose-rendering-pipeline.md) |
 | SurfaceView / TextureView | [2.8](08-bufferqueue-gralloc-sync-fence.md) → [2.5](05-surfaceflinger-frontend-transaction.md) | [SurfaceView](../../part2-performance/ch18-rendering-pipelines/03-surfaceview-textureview-pipelines.md)、[TextureView](../../part2-performance/ch18-rendering-pipelines/03-surfaceview-textureview-pipelines.md) |
-| Flutter | [18.7](../../part2-performance/ch18-rendering-pipelines/07-flutter-rendering-pipeline.md) → [2.8](08-bufferqueue-gralloc-sync-fence.md) | [Flutter](../../part2-performance/ch18-rendering-pipelines/07-flutter-rendering-pipeline.md) |
-| Camera / 视频 | [2.8](08-bufferqueue-gralloc-sync-fence.md) → [18.10](../../part2-performance/ch18-rendering-pipelines/10-camera-pipeline.md) | [Camera](../../part2-performance/ch18-rendering-pipelines/10-camera-pipeline.md)、[Video/HWC](../../part2-performance/ch18-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md) |
+| Flutter | [2.8](08-bufferqueue-gralloc-sync-fence.md) → [2.5](05-surfaceflinger-frontend-transaction.md) | [Flutter](../../part2-performance/ch18-rendering-pipelines/07-flutter-rendering-pipeline.md) |
+| Camera / 视频 | [2.8](08-bufferqueue-gralloc-sync-fence.md) → [2.5](05-surfaceflinger-frontend-transaction.md) | [Camera](../../part2-performance/ch18-rendering-pipelines/10-camera-pipeline.md)、[Video/HWC](../../part2-performance/ch18-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md) |
 | OpenGL ES / Vulkan / 游戏 | [2.7](07-gpu-rendering-graphics-api.md) → [2.9](09-frame-pacing.md) | [OpenGL ES](../../part2-performance/ch18-rendering-pipelines/04-opengl-egl-angle.md)、[Vulkan](../../part2-performance/ch18-rendering-pipelines/05-vulkan-hwui-multi-queue.md)、[游戏](../../part2-performance/ch18-rendering-pipelines/12-game-engine.md) |
-| 多窗口 / 折叠屏 / 桌面 | [1.16](../ch01-architecture/16-display-windowmanager-architecture.md) → [2.10](10-multiwindow-desktop-rendering.md) → [2.15](15-displaymanager-service-lifecycle.md) | [多窗口、PiP 与 Freeform](10-multiwindow-desktop-rendering.md) |
+| 多窗口 / 折叠屏 / 桌面 | [1.16](../ch01-architecture/16-display-windowmanager-architecture.md) → [2.15](15-displaymanager-service-lifecycle.md) → [2.10](10-multiwindow-desktop-rendering.md) → [2.13](13-foldable-display-pipeline-performance.md) | 按窗口中的 View、Compose、SurfaceView 或其他 Producer 选择对应 18.x 路径 |
 
 若路径尚未确定，先从 [渲染管线分类、选型与分析方法](../../part2-performance/ch18-rendering-pipelines/01-android-view-pipeline-analysis.md)建立 Producer、Surface、layer 与合成位置的对应关系。
 
@@ -89,6 +89,6 @@ Android 的掉帧、首帧延迟、SurfaceView 错位、视频抖动和刷新率
 - `DEVICE` / `CLIENT` composition 切换：`2.5 → 2.16 → 2.17`。
 - 60/90/120 Hz 或视频呈现节奏异常：`2.2 → 2.3 → 2.9`。
 - resize、折叠或桌面窗口错帧：`1.16 → 2.10 → 2.12 → 2.13 → 2.15`。
-- Camera 预览或 ZSL 回压：`2.8 → 18.11`。
+- Camera 预览或 ZSL 回压：`2.8 → 18.10`。
 
 阅读任何一条路径时，都应记录平台/框架版本、Display、Window、Surface、layer、Producer，以及 acquire fence（Consumer 何时可以开始读）、release fence（Producer 何时可以再次使用缓冲区）、present fence（本次合成何时越过 Android 可观察的显示边界）和 present 时间。缺少这些对象时，“应用慢”“GPU 慢”或“系统合成慢”都只是待验证假设。

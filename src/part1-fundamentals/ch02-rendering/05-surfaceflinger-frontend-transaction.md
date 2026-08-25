@@ -3,7 +3,7 @@ title: SurfaceFlinger 合成、FrontEnd 与事务队列
 chapter: '2.5'
 section: '2.5'
 status: finalized
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: Android 12 (API S) - Android 17 (API 37)
 last_verified: '2026-08-20'
 last_verified_against: AOSP android-17.0.0_r1 frameworks/native SurfaceFlinger/FrontEnd/CompositionEngine/HWComposer, hardware/interfaces Composer3; android17-6.18-2026-06_r6 dma-buf/dma-fence; Android 11-16 tags only for version evolution
@@ -503,7 +503,7 @@ SurfaceFlinger/HWC 长时间持有 Layer buffer 或 release callback 积压时�
 5. BLAST 何时 release BufferItem；
 6. Producer 的 `dequeueBuffer()` 等待是否随之结束。
 
-RenderThread `dequeueBuffer()` 长不能单独证明 SurfaceFlinger 慢。max dequeued/acquired、async mode、shared buffer mode、buffer allocation、surface resize 和 Producer 自己持有 slot 也会影响结果。详细状态机见 [2.8 BufferQueue、Gralloc 与 Sync Fence](08-bufferqueue-gralloc-sync-fence.md)，fence 见 [2.8 BufferQueue、Gralloc 与 Sync Fence](08-bufferqueue-gralloc-sync-fence.md)。
+RenderThread `dequeueBuffer()` 长不能单独证明 SurfaceFlinger 慢。max dequeued/acquired、async mode、shared buffer mode、buffer allocation、surface resize 和 Producer 自己持有 slot 也会影响结果。详细的状态机与 fence 生命周期见 [2.8 BufferQueue、Gralloc 与 Sync Fence](08-bufferqueue-gralloc-sync-fence.md)。
 
 ### Perfetto：从 App SurfaceFrame 追到 DisplayFrame
 
