@@ -132,18 +132,8 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/pm/InstallingSession.java
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/pm/verify/developer/DeveloperVerifierController.java
-- type: aosp
-  path: frameworks/base/core/java/com/android/internal/app/ChooserActivity.java
-- type: aosp
-  path: frameworks/base/core/java/com/android/internal/app/ResolverListController.java
-- type: aosp
-  path: frameworks/base/services/core/java/com/android/server/pm/ShortcutService.java
 - type: official
   path: https://developer.android.com/guide/app-bundle/app-bundle-format
-- type: official
-  path: https://developer.android.com/training/sharing/send
-- type: official
-  path: https://developer.android.com/training/sharing/direct-share-targets
 - type: official
   path: https://developer.android.com/sdk/api_diff/37/changes/android.content.pm.PackageInstaller
 - type: official
@@ -186,7 +176,7 @@ related_chapters:
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 last_body_apply_at: '2026-08-06T11:15:29+08:00'
 last_body_apply_run_id: 20260806-111529-1f9a01ff
 last_review_finalize_at: '2026-08-06T12:07:15+08:00'
@@ -211,7 +201,7 @@ consolidated_from:
 
 ---
 
-应用交付从制品生成开始，经过安装来源验证、PackageInstaller 会话、PMS 扫描与 dexopt，最后形成可启动的软件包状态。AAB、Sharesheet 和 Staged Install 位于这条路径的不同边界，不能用同一个成功信号代替整条链路的完成。
+应用交付从制品生成开始，经过安装来源验证、PackageInstaller 会话、PMS 扫描与 dexopt，最后形成可启动的软件包状态。AAB、普通安装与 Staged Install 位于这条路径的不同边界，不能用同一个成功信号代替整条链路的完成。
 
 ## PMS 扫描、解析与安装主路径
 
@@ -1562,17 +1552,14 @@ adb shell pm install-abandon <session-id>
 
 回看任何旧版本问题时，都要同时锁定 Android 框架、ART 和 `apexd` 的版本。只把框架文件换成 Android 17，却继续引用旧 `installd` 的 `dexopt` 流程或旧 `apexd` 状态机，会得到跨版本混用的结论。
 
-## AAB、PackageInstaller 与内容分发
+## AAB 与 PackageInstaller 内容分发
 
-安装机制之外还要区分制品分发和运行时内容分享。AAB 决定交付拆分，PackageInstaller 承担设备侧安装，Sharesheet 处理应用间内容选择。
-
-应用安装和应用间分享都会用到 `PackageManager`、`Intent` 等平台能力，但两者没有共同的“分发流水线”。安装处理的是可执行软件包及其身份；分享处理的是一次跨应用的数据传递。先把这条边界划清，后面的性能与安全问题才不会相互混淆。
+AAB 决定商店侧如何生成和选择 APK 集合，PackageInstaller 承担设备侧安装。两者属于同一软件交付链的不同责任边界：商店负责制品选择、下载和重试，平台从安装会话开始负责校验、确认与提交。
 
 | 场景 | 平台接收的输入 | 主要系统组件 | 平台负责什么 |
 | --- | --- | --- | --- |
 | 应用安装或更新 | 一个单体 APK，或一组基础 APK / split APK | `PackageInstallerService`、`PackageInstallerSession`、Package Manager | 暂存、解析、签名和策略校验、用户确认、安装提交 |
 | App Bundle 发布 | `.aab` | 应用商店或 `bundletool`，不由设备端 Package Manager 直接处理 | 生成适合目标设备的 APK 集合 |
-| 内容分享 | `ACTION_SEND` / `ACTION_SEND_MULTIPLE` Intent、文本或 `content://` URI | `ChooserActivity`、Intent Resolver、`ShortcutService` | 匹配、排序并启动接收目标，授予必要的临时 URI 权限 |
 
 ### 一、从商店到设备：责任在什么地方切换
 
@@ -1780,66 +1767,9 @@ APK 签名回答“这个更新是否延续了允许的签名身份”，开发�
 
 如果需要比较单体 APK 与 split APK，应固定设备、包版本、数据状态和安装方式，分别报告下载字节数、安装会话写入字节数、提交耗时和最终占用。AAB 能减少多少下载量取决于资源、ABI、语言和模块拆分，不能给出适用于所有应用的区间。
 
-### 五、内容分享走的是另一条路径
+内容分享虽然也会使用 PackageManager 做目标解析，但它属于 `ACTION_SEND`、Sharesheet 与 URI 授权主题，不属于软件包安装流水线，本文不再展开。
 
-#### 1. ACTION_SEND 如何到达 ChooserActivity
-
-发送方构造 `ACTION_SEND` 或 `ACTION_SEND_MULTIPLE` Intent，并通过 `Intent.createChooser()` 打开 Android 系统分享面板（Sharesheet）。普通应用目标由解析器（Resolver）通过 Package Manager 的 `queryIntentActivitiesAsUser()` 查询，再按权限、用户资料、`IntentFilter` 和系统策略过滤。
-
-这里的匹配遵循 Android `IntentFilter` 规则，不会通过正则表达式扫描。已安装应用数量会影响候选规模，但候选查询、排序和界面填充不能简单归结为“在界面线程线性遍历全部应用”。Android 17 的实现分布在 `ResolverListController`、`ResolverActivity` 和 `ChooserActivity` 中。
-
-发送文本的最小写法如下：
-
-```kotlin
-fun shareText(context: Context, text: String) {
-    val send = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, text)
-    }
-    context.startActivity(Intent.createChooser(send, null))
-}
-```
-
-明确的 `text/plain` 能让系统排除不支持文本的目标。MIME 类型用于描述分享内容的媒体格式；除非确实无法给出更准确的类型，否则不要使用 `*/*` 扩大候选范围。
-
-#### 2. 文件分享依赖 `content://` URI 和临时授权
-
-跨应用分享文件时应提供 `content://` URI，例如由 `FileProvider` 生成，并同时携带临时读取权限。接收方可能从 `EXTRA_STREAM` 或 `ClipData` 读取 URI，因此发送方应保证两处信息一致。
-
-```kotlin
-fun shareDocument(context: Context, uri: Uri, mimeType: String) {
-    val send = Intent(Intent.ACTION_SEND).apply {
-        type = mimeType
-        putExtra(Intent.EXTRA_STREAM, uri)
-        clipData = ClipData.newUri(context.contentResolver, "shared document", uri)
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    }
-    context.startActivity(Intent.createChooser(send, null))
-}
-```
-
-权限只覆盖这次 Intent 授予的 URI。不要传递应用私有文件路径或 `file://` URI，也不要为了分享一个文件而开放整个目录。接收方读取大文件时，`ContentProvider.openFile()` 应避免在主线程执行耗时的内容生成工作。
-
-#### 3. Direct Share 来自分享快捷方式
-
-Direct Share（直接分享）一行展示联系人、会话等具体目标。应用需要在快捷方式 XML 中声明 `<share-target>`，再发布与类别匹配的动态快捷方式。Android 17 的 `ChooserActivity.queryDirectShareTargets()` 优先使用可用的 `AppPredictor` 预测服务，否则调用 `ShortcutManager.getShareTargets()`；`ShortcutService` 根据 `IntentFilter` 匹配已发布的分享快捷方式。
-
-这条路径不存在 `queryShortcuts()` 的“增量查询开关”，也没有 `ShortcutInfo` 按使用频率自动预加载的公开契约。应用负责维护有效快捷方式、报告使用情况并删除过期对象，系统负责匹配和排序。通信应用尤其要避免发布长期不活跃或已失效的会话。
-
-#### 4. 发送方能怎样改善 Sharesheet 性能
-
-应用能直接改进以下几处：
-
-- 使用准确的 MIME 类型和必要的附加字段；
-- 缩略图保持小而可快速读取，不把原图当预览；
-- `ContentProvider` 快速返回文件描述符，耗时准备提前完成；
-- Direct Share 快捷方式保持少而有效，ID 不复用于不同对象；
-- 使用系统 Sharesheet，不先查询所有接收应用再自建一套列表；
-- 分享完成统计与安装下载指标分开记录。
-
-如果 Sharesheet 首屏慢，应同时采集发送 Intent 的内容、候选应用数量、URI 内容提供方的响应、Direct Share 查询和系统轨迹。没有这些证据时，缓存所有候选应用容易引入权限错误、用户资料隔离错误，以及应用变化后的过期数据。
-
-### 六、源码核对入口
+### 五、源码核对入口
 
 基于 `android-17.0.0_r1` 排查时，可以从以下位置开始：
 
@@ -1850,10 +1780,8 @@ Direct Share（直接分享）一行展示联系人、会话等具体目标。�
 | 基础 APK / split APK 一致性与签名 | `PackageInstallerSession.validateApkInstallLocked()` |
 | 用户确认和 Android 17 开发者验证 | `PackageInstallerSession.handleInstall()`、`DeveloperVerifierController` |
 | 包验证服务与安装提交 | `PackageSessionVerifier.verify()`、`InstallingSession.installStage()` |
-| 普通分享目标查询 | `ResolverListController.getResolversForIntentAsUser()` |
-| Direct Share 查询 | `ChooserActivity.queryDirectShareTargets()`、`ShortcutService.getShareTargets()` |
 
-调试时先标明问题属于下载、安装会话写入、平台验证、安装提交、Intent 解析还是 URI 读取。按这些类别记录，才能得到可复现的结论。
+调试时先标明问题属于下载、安装会话写入、平台验证还是安装提交。按这些类别记录，才能得到可复现的结论。
 
 ## 常见误区
 

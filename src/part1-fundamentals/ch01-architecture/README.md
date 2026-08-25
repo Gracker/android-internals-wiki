@@ -5,7 +5,7 @@ section: "1.0"
 status: "finalized"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-08-11"
-last_verified_against: "AOSP android-17.0.0_r1; kernel android17-6.18-2026-06_r6; consolidated ch01 structure 1.1-1.28"
+last_verified_against: "AOSP android-17.0.0_r1; kernel android17-6.18-2026-06_r6; reviewed ch01 structure 1.1-1.29"
 confidence: medium
 sources:
   - type: repo
@@ -31,7 +31,7 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-14"
 last_task9_review_log: "logs/deep-review/2026-05-14-18-deep-review.md"
 last_consolidated_at: '2026-08-24'
-consolidation_note: 第二轮逐篇审阅后收敛为 28 篇，合并同一责任链中的总览、机制、版本增量、观测与案例，并统一连续编号。
+consolidation_note: 本轮逐篇审阅确认共 29 篇；合并稿按责任链保留，修正误并主题、标题契约与相邻文章边界，章内目标顺序待全书统一重编号时一次落地。
 ---
 
 # 第 1 章：系统架构全景
@@ -61,13 +61,13 @@ consolidation_note: 第二轮逐篇审阅后收敛为 28 篇，合并同一责�
 - [1.3 Android IPC 全景与 Binder 性能](03-ipc-binder-performance.md)
 - [1.4 Android 版本演进中的架构变化](04-version-evolution.md)
 - [1.5 ART 编译、验证与去优化机制](05-art-compilation-verification-deoptimization.md)
-- [1.6 ActivityManager 进程状态、锁与优先级管理](06-activitymanager-process-lock-priority.md)
+- [1.6 ActivityManager 组件调度、进程优先级与锁模型](06-activitymanager-process-lock-priority.md)
 - [1.7 应用分发、安装验证与 PackageManager 性能](07-package-distribution-install-verification.md)
 - [1.8 ContentProvider 性能与优化](08-content-provider.md)
-- [1.9 MessageQueue、DeliQueue 与锁竞争](09-messagequeue-lock-contention.md)
+- [1.9 MessageQueue 与锁竞争：从 DeliQueue 到系统等待链](09-messagequeue-lock-contention.md)
 - [1.10 JNI、NDK 与 Bionic 原生运行时性能](10-jni-ndk-bionic-performance.md)
 - [1.11 音频链路（Audio Pipeline）延迟与性能](11-audio-pipeline-performance.md)
-- [1.12 Binder Freezer、异步事务与线程池调度](12-binder-scheduling-freezer-threadpool.md)
+- [1.12 Binder 线程池、异步事务与 Freezer](12-binder-scheduling-freezer-threadpool.md)
 - [1.13 应用归档（App Archiving）机制与恢复性能](13-app-archiving-performance.md)
 - [1.14 ResourcesManager 与 Configuration 变更性能](14-resourcesmanager-configuration-performance.md)
 - [1.15 Android AI 手机技术栈：平台接口、端侧推理与协作边界](15-android-ai-phone-ecosystem.md)

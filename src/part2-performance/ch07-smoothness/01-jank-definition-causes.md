@@ -419,7 +419,7 @@ flowchart TD
 - [Android 17 FrameTimeline、FrameTracer 与合成边界](../../part1-fundamentals/ch02-rendering/17-android17-frametimeline-composition-boundary.md)：FrameTimeline、FrameTracer、TimeStats 与 JankTracker 的职责边界。
 - [2.4 MainThread、RenderThread 与 Hardware Layer](../../part1-fundamentals/ch02-rendering/04-main-render-thread-hardware-layer.md)：HWUI 两条线程的同步边界。
 - [1.3 Android IPC 全景与 Binder 性能](../../part1-fundamentals/ch01-architecture/03-ipc-binder-performance.md)：同步事务、线程池与优先级传播。
-- [1.9 MessageQueue、DeliQueue 与锁竞争](../../part1-fundamentals/ch01-architecture/09-messagequeue-lock-contention.md)：数据结构、启用条件与 A/B 方法。
+- [1.9 MessageQueue 与锁竞争：从 DeliQueue 到系统等待链](../../part1-fundamentals/ch01-architecture/09-messagequeue-lock-contention.md)：数据结构、启用条件与 A/B 方法。
 - [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)：GC 类型、pause 与堆行为。
 - [5.2 DVFS、Thermal 与 Android 功耗管理](../../part1-fundamentals/ch05-cpu-power/02-dvfs-thermal-android-power.md) 与 [5.4 ADPF 自适应性能框架](../../part1-fundamentals/ch05-cpu-power/04-adpf.md)：thermal 与 performance hint 的适用边界。
 - [3.1 Input 分发、拦截与安全边界](../../part1-fundamentals/ch03-input/01-input-dispatch-interception-security.md)：输入到应用消费的证据。

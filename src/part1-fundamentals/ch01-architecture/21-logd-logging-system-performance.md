@@ -9,7 +9,7 @@ last_verified_against: AOSP android-17.0.0_r1 (system/logging/logd, system/loggi
 confidence: high
 task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 last_rework_at: '2026-07-25T17:35:42+08:00'
 last_rework_run_id: 20260725-173542-rework-6030a13a
 last_deep_review_at: '2026-08-17T16:42:12+08:00'

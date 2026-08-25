@@ -147,7 +147,7 @@ related_chapters:
 - '1.8'
 - '2.7'
 - '16.1'
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 task6_state: revisiting
 task2b_state: fixed
 task9_state: pending

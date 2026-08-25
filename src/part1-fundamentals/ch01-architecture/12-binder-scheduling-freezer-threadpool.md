@@ -1,5 +1,5 @@
 ---
-title: Binder Freezer、异步事务与线程池调度
+title: Binder 线程池、异步事务与 Freezer
 chapter: '1.12'
 section: '1.12'
 status: finalized
@@ -96,7 +96,7 @@ related_chapters:
 - '1.9'
 - '1.6'
 - '9.1'
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
@@ -110,7 +110,7 @@ consolidated_from:
 - src/part1-fundamentals/ch01-architecture/38-binder-thread-pool-starvation-performance.md
 ---
 
-# Binder Freezer、异步事务与线程池调度
+# Binder 线程池、异步事务与 Freezer
 
 Binder 线程池饥饿是指一个进程暂时没有可用的 Binder 服务线程。调用方仍能把事务交给驱动，但事务可能在目标进程的待办队列中等待；同步调用方要一直等到服务端处理并回复。这个问题常与锁竞争、磁盘 I/O、嵌套 IPC 和异步 `oneway` 事务积压一起出现，单看线程数量容易误判。
 
@@ -618,6 +618,8 @@ if (!(t->flags & TF_ONE_WAY) && binder_supported_policy(current->policy)) {
 `FLAT_BINDER_FLAG_INHERIT_RT` 仅允许同步事务继承实时策略。驱动 UAPI 支持为 node 编码 `SCHED_NORMAL`、`SCHED_FIFO`、`SCHED_RR` 和 `SCHED_BATCH`，但应用不能因为某条调用重要就随意启用实时调度；权限、CPU 占用和优先级反转风险都要在目标设备上验证。
 
 ### 3. 事务缓冲区与异步配额
+
+这里仅保留解释 `oneway` 反压所需的缓冲区与异步预算语义；映射区、分配器、RPC 上限和错误观测的完整细节见 [1.17 Binder 事务缓冲区与可观测性](17-binder-buffer-observability.md)。
 
 #### 3.1 约 1 MB 来自用户态请求，4 MB 是内核上限
 
@@ -1375,7 +1377,7 @@ Perfetto 没有采集 ActivityManager 或线程调度数据时，“没看到事
 
 不要用无限循环耗尽 Binder 缓冲区作为默认验证手段。需要验证溢出时，应在隔离设备上设置明确上限，并保存系统轨迹、事件日志和退出信息。
 
-### 14. 复核清单
+### 12. 复核清单
 
 1. 确认设备的 `use_freezer`、内核支持和 cgroup v2 布局。
 2. 同时记录进程状态、`oom_adj`、`CPU_TIME` 执行资格与冻结阈值。

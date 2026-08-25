@@ -3,7 +3,7 @@ title: ART 编译、验证与去优化机制
 chapter: '1.5'
 section: '1.5'
 status: finalized
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
 confidence: high
 tags:

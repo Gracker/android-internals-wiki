@@ -88,7 +88,7 @@ related_chapters:
 - '20.6'
 - '4.5'
 - '20.7'
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch08-responsiveness/20-jni-overhead-native-interop-performance.md
@@ -569,6 +569,8 @@ simpleperf report-sample \
 Android 17 源码中的 `benchmark/jni-perf` 可作为实验设计参考：它比较空 JNI 入口和 ART 内部路径，但依赖平台构建与内部头文件，不能直接复制到普通 APK，也不提供跨设备通用常数。应用侧应使用 AndroidX Microbenchmark，分别测试普通入口、Fast、Critical、`Region`、`Elements` 和批处理接口。测试代码还要实际使用返回值，避免编译器删除没有可见效果的工作。
 
 ### 10. 16KB 内存页：Android 17 上必须验证的原生代码边界
+
+这一节站在 JNI/NDK 发布验收视角，只回答“最终 App 产物要检查什么”；后文 Bionic 部分再解释运行时页大小、linker 兼容装载和 libc 内部实现。两处使用同一主题，但责任分别是产物验收与运行时机制。
 
 Android 15 起支持使用 16KB 内存页的设备。内存页是操作系统管理内存映射的基本单位。只要 APK 或 SDK 包含 `.so`，就要同时检查 ELF 文件、APK 打包布局，以及代码对运行时页大小所作的假设。ELF 是 Android 原生共享库 `.so` 使用的二进制格式。
 
@@ -1079,6 +1081,8 @@ Native Heap 与 Scudo 的进一步分析见 **23.3 Native 内存管理与优化*
 
 ## 结论
 
+这篇文章覆盖两个连续层次：JNI 决定托管代码怎样跨入 Native，Bionic 决定进入 Native 后常用分配、线程、同步、TLS、MTE、页大小和 libc 接口怎样实现。优化时先判断成本位于边界转换还是原生运行时，避免把 Native 内部的锁、分配或装载问题误归为 JNI 开销。
+
 JNI 优化按这个顺序做：
 
 1. 先减少跨边界次数和数据转换量，把零碎调用合并成批量接口。
@@ -1088,7 +1092,7 @@ JNI 优化按这个顺序做：
 5. 只有短、可预测、不阻塞且调用频率极高的方法，才考虑 `@FastNative` / `@CriticalNative`。
 6. C/C++ 产物必须在 16KB 设备上验证 ELF 对齐、APK 打包布局和运行时行为。
 
-完成这些基础工作后，再讨论单次 JNI 跨界的纳秒级优化才有意义。
+完成这些基础工作后，再讨论单次 JNI 跨界的纳秒级优化才有意义。Bionic 侧则应以目标设备的分配热点、锁等待、线程数量、MTE 模式和实际页大小为证据，不从 libc 名称或 16 KB 兼容模式直接推断性能收益。
 
 
 ## 参考资料

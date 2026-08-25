@@ -161,7 +161,7 @@ related_chapters:
 - '1.9'
 - '2.3'
 - '2.4'
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
@@ -405,7 +405,7 @@ Binder 流向关联只说明事务关系。调用方时间片的持续时间、�
 
 ## 应用进程的创建、状态与回收
 
-分层描述解决组件归属问题，运行时故障还要落实到具体进程。应用进程从 Zygote 创建后，AMS、OomAdjuster、lmkd 与 Freezer 共同改变它的状态和可运行性。
+分层描述解决组件归属问题，运行时故障还要落实到具体进程。应用进程从 Zygote 创建后，AMS、OomAdjuster、lmkd 与 Freezer 共同改变它的状态和可运行性。本节只建立进程生命周期的总览；组件调度、adj 计算和 system_server 锁模型由 [1.6](06-activitymanager-process-lock-priority.md) 展开，具体 cgroup 落点由 [1.29](29-cgroup-v1-v2-process-isolation.md) 展开，Binder Freezer 的事务语义由 [1.12](12-binder-scheduling-freezer-threadpool.md) 展开。
 
 Android 应用可以创建线程，却不能自行决定进程能活多久。系统根据进程中正在运行的组件、组件与其他进程的依赖关系、用户能否感知这些工作以及整机内存压力，持续计算进程重要性。内存紧张时，重要性较低的进程先成为回收候选。
 

@@ -3,6 +3,7 @@ title: Android 17 AVF 架构与 pKVM 隔离性能边界
 chapter: '1.18'
 section: '1.18'
 status: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: Android 13 (API 33) - Android 17 (API 37)
 tags:
 - avf

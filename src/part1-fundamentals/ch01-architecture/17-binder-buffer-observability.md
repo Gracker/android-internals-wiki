@@ -21,7 +21,7 @@ related_chapters:
 - '1.8'
 - '1.12'
 - '13.3'
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 last_verified: '2026-08-16'
@@ -109,7 +109,7 @@ consolidated_from:
 
 Binder Transaction Buffer（事务缓冲区）没有适用于所有调用的“单笔 1 MiB 上限”。走 `/dev/binder` 驱动的内核 Binder 会为每个进程建立接收事务的映射区，多笔在途请求、`oneway`（单向）事务、回复和 Binder 对象会共同占用这块空间。RPC Binder 使用另一套传输机制和协议上限。“Binder 上限是 1 MiB”这种说法缺少并发、方向、异步预算和协议头等必要条件。
 
-以下分析以 `android-17.0.0_r1` 和 `android17-6.18-2026-06_r6` 为准，覆盖映射区大小、驱动分配与回收、单向事务压力，以及 Android 17 中 600 KiB RPC 上限对应的路径。事务时序观测见 [1.17 Binder 事务缓冲区与可观测性](17-binder-buffer-observability.md)，`oneway` 排队见 [1.12 Binder Freezer、异步事务与线程池调度](12-binder-scheduling-freezer-threadpool.md)。
+以下分析以 `android-17.0.0_r1` 和 `android17-6.18-2026-06_r6` 为准，覆盖映射区大小、驱动分配与回收、单向事务压力，以及 Android 17 中 600 KiB RPC 上限对应的路径。事务时序观测见本文后半部分，`oneway` 排队见 [1.12 Binder 线程池、异步事务与 Freezer](12-binder-scheduling-freezer-threadpool.md)。
 
 Binder 故障既要看事务是否进入驱动，也要看目标进程的缓冲区和异步预算是否允许继续分配。内核分配状态、AIDL Trace 与 Perfetto 事务切片提供的是同一问题的不同观察面。
 
@@ -213,7 +213,7 @@ allocated = align(data_size, pointer_size)
 
 如果找不到合适的空闲 buffer，`binder_alloc_new_buf_locked()` 返回 `-ENOSPC`。异步预算不足也返回 `-ENOSPC`。这条路径不会阻塞等待旧 buffer 释放，也不会借 `BR_SPAWN_LOOPER` 扩大线程池。
 
-`BR_SPAWN_LOOPER` 处理的是服务进程缺少可用 Binder 线程，与接收缓冲区分配失败属于不同问题。native 调用通常看到 `FAILED_TRANSACTION`；Java 层如何映射为 `TransactionTooLargeException` 或其他异常，取决于 JNI 的启发式规则，详见 [1.17](17-binder-buffer-observability.md)。
+`BR_SPAWN_LOOPER` 处理的是服务进程缺少可用 Binder 线程，与接收缓冲区分配失败属于不同问题。native 调用通常看到 `FAILED_TRANSACTION`；Java 层如何映射为 `TransactionTooLargeException` 或其他异常，取决于 JNI 的启发式规则，本文后文会继续说明。
 
 #### 4. buffer 何时归还
 
@@ -571,7 +571,7 @@ struct binder_extended_error {
 
 内核把错误保存在当前 `binder_thread` 中。`BINDER_GET_EXTENDED_ERROR` 复制结果后立即把该线程的记录重置为 `BR_OK`。它不是进程级错误历史，也不适合跨线程延后查询。
 
-Android 17 的 `logExtendedError()` 只为 `ENOSPC` 增加一段解释：Binder 缓冲区已满，事务过多或过大。其他 errno 仍使用通用错误字符串。`ENOSPC` 也不能单独证明“这一条 Parcel 超过固定 1 MiB”；同一接收进程的并发同步 / 异步分配都会消耗 Binder 映射与异步预算，详见 [1.17 Android 17 Binder Transaction Buffer](17-binder-buffer-observability.md)。
+Android 17 的 `logExtendedError()` 只为 `ENOSPC` 增加一段解释：Binder 缓冲区已满，事务过多或过大。其他 errno 仍使用通用错误字符串。`ENOSPC` 也不能单独证明“这一条 Parcel 超过固定 1 MiB”；同一接收进程的并发同步 / 异步分配都会消耗 Binder 映射与异步预算，需结合前文的分配器与异步预算一起判断。
 
 ### 五、`oneway` 嫌疑告警发生在发送端
 

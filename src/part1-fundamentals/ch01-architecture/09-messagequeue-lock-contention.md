@@ -1,5 +1,5 @@
 ---
-title: MessageQueue、DeliQueue 与锁竞争
+title: MessageQueue 与锁竞争：从 DeliQueue 到系统等待链
 chapter: '1.9'
 section: '1.9'
 status: finalized
@@ -95,7 +95,7 @@ consolidated_from:
 - src/part1-fundamentals/ch01-architecture/14-lock-contention.md
 ---
 
-# MessageQueue、DeliQueue 与锁竞争
+# MessageQueue 与锁竞争：从 DeliQueue 到系统等待链
 
 Android 17 没有改变 `Handler`、`Looper` 和同步屏障对应用呈现的基本语义，改变的是 `MessageQueue` 内部的并发结构。对于运行在 Android 17 且 `targetSdkVersion >= 37` 的应用，平台默认启用 DeliQueue：生产者不再与 Looper 争用同一个 Java 监视器锁（monitor），而是先把消息压入无锁栈，再由 Looper 整理到自己独占的最小堆。最小堆是一种能快速取出最早到期消息的树形数据结构。
 
@@ -107,7 +107,7 @@ Android 17 没有改变 `Handler`、`Looper` 和同步屏障对应用呈现的�
 
 DeliQueue 直接优化前两段的队列管理。第三段如果耗时，仍然要沿业务调用栈继续排查。
 
-消息队列延迟既可能来自队列中的长任务，也可能来自入队、唤醒和共享状态上的锁竞争。分析时先区分消息没有得到执行，还是执行线程已经运行但等待某把锁。
+本文先用 DeliQueue 解释 MessageQueue 如何减少生产者与 Looper 的结构性争锁，再把视角扩展到 Java Monitor、futex、Binder 与 system_server 锁。两部分共享同一个诊断问题：等待链中究竟哪个节点无法推进。分析时先区分消息尚未得到执行，还是执行线程已经运行但正在等待其他资源。
 
 ## Looper 队列、唤醒与 DeliQueue
 
@@ -775,22 +775,11 @@ void updateOomAdjLocked(@OomAdjReason int oomAdjReason) {
 
 这些源码能证明哪些状态由哪些锁保护，以及锁的获取顺序，却不能单独证明某个固定的性能提升比例。锁持有时间必须来自具体设备的性能轨迹；没有可定位的一手基准时，不应写“从 25ms 降到 8ms”或“吞吐提升 3 倍”。
 
-### 7. MessageQueue：Android 17 的一个针对性去锁案例
+### 7. 把 DeliQueue 放回等待链中
 
-旧 MessageQueue 使用同一个 `synchronized (this)` 保护有序链表，生产者入队、Looper 取消息和移除操作都会竞争这把监视器锁。
+前半篇已经完整解释 DeliQueue 的旧锁、新栈与双堆实现；这里不重复数据结构，只提炼诊断意义。若 Android 17 / target API 37 上的证据表明生产者入队争锁明显下降，但消息仍然迟到，就应继续检查 Looper 前序任务、执行线程调度、业务锁、Binder 与 I/O。反过来，在旧实现或兼容开关未启用时，MessageQueue 自身的 monitor contention 仍可能是等待链中的关键节点。
 
-对于运行在 Android 17 且 `targetSdkVersion >= 37` 的应用，DeliQueue 默认启用。它让生产者通过比较并交换（CAS）把消息提交到 Treiber 无锁栈，再由 Looper 独占两个最小堆，分别对同步和异步消息排序。核心消息路径不再依赖旧的单一全局监视器锁，但 IdleHandler 和文件描述符记录仍有各自的小锁。
-
-Google 公布的内部测试轨迹中，应用主线程花在锁竞争上的时间下降 15%。这个数字只描述其样本中的 MessageQueue 改造效果，不能外推到 AMS、Binder、原生互斥锁或业务锁。
-
-DeliQueue 展示了一种有边界的无锁设计：
-
-- 多个生产者共享的提交路径无锁；
-- 排序工作由作为唯一消费者的 Looper 完成；
-- 取消消息时先做逻辑删除标记，实际结构清理由 Looper 完成；
-- 同步屏障、异步消息和原生轮询的语义继续保留。
-
-它不适合作为“把所有锁换成 CAS”的通用模板。无锁结构仍会产生 CAS 重试、多个 CPU 核反复争用同一缓存行、内存分配和延迟清理等成本。
+DeliQueue 因此是一个有边界的去锁案例，而不是“无锁一定更快”的证明。Google 公布的 15% 锁竞争时间下降只描述其内部样本；CAS 重试、缓存行争用、内存分配和延迟清理仍需在目标负载中测量。
 
 ### 8. Perfetto：先找证据，再解释原因
 

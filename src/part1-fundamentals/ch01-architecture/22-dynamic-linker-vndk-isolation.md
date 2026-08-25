@@ -30,7 +30,7 @@ last_body_apply_run_id: 20260806-131532-f1fcd970
 task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 last_review_finalize_at: '2026-08-06T14:07:19+08:00'
 last_review_finalize_run_id: 20260806-140539-50b252ca
 sources:
@@ -73,7 +73,7 @@ consolidated_from:
 
 Android 进程执行原生代码之前，要把 ELF（Executable and Linkable Format，可执行与可链接格式）文件映射进地址空间，找到依赖库，解析动态符号，写入重定位结果，再调整页面权限并运行初始化函数。64 位进程中的这些工作由 bionic 自带的 dynamic linker（动态链接器）完成，常见解释器路径是 `/system/bin/linker64`，下文简称 linker64。
 
-平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为准；涉及 `mmap()`、文件缺页和写时复制（Copy-on-Write，COW）的内核行为以 `android17-6.18-2026-06_r6` 为准。VNDK（Vendor Native Development Kit，厂商原生开发套件）可见性规则见 [1.22 Dynamic Linker、VNDK 与 Native 库隔离](22-dynamic-linker-vndk-isolation.md)；以下内容聚焦 linker64 的执行顺序及各阶段对启动时间、内存和故障定位的影响。
+平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为准；涉及 `mmap()`、文件缺页和写时复制（Copy-on-Write，COW）的内核行为以 `android17-6.18-2026-06_r6` 为准。VNDK（Vendor Native Development Kit，厂商原生开发套件）的可见性规则在本文后半部分展开；以下先聚焦 linker64 的执行顺序及各阶段对启动时间、内存和故障定位的影响。
 
 后文保留 linker 源码中的常用名称：DSO（Dynamic Shared Object）指 `.so` 动态共享对象；SONAME 是 ELF 内用于依赖匹配的逻辑库名；linker namespace（链接器命名空间）负责约束库的搜索路径和可见范围。RELRO 是“重定位完成后只读”的内存区域，TLS 是每个线程独立保存的数据区，PLT/GOT 是动态函数调用和地址重定位所用的表，ABI 则是二进制接口约定。
 

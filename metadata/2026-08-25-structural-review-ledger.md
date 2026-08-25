@@ -16,6 +16,7 @@
 
 | 大章 | 正文数 | 已审 | 状态 | 结论与处理 |
 | --- | ---: | ---: | --- | --- |
+| 第 1 章：系统架构全景 | 29 | 29 | 已完成 | 逐篇确认基础运行时、IPC/调度、系统服务、隔离与观测的责任边界。删除 1.7 误并的 Sharesheet 教程；重命名 1.6、1.9、1.12；清理 1.3 编号残留、1.9 重复 DeliQueue 段和 1.17/1.22 自指；补齐全章发布阶段。目标顺序随全书统一重编号落地。 |
 | 第 3 章：输入系统 | 6 | 6 | 已完成 | 顺序保持为分发主链 → 触摸时延 → 系统导航手势 → 应用手势识别 → 输入法 → 桌面输入。修复 3.1 与 3.3 合并后断裂的章节编号；把 3.2 末尾游离的重采样源码段移动到批处理机制之后；4 篇待审状态转为可发布。 |
 | 第 4 章：内存管理 | 10 | 10 | 已完成 | 顺序保持为全景口径 → ART Heap/GC → 系统压力治理 → App 优化 → 16 KB 兼容 → 资源终结 → 内核回收/规整 → ZRAM 恢复 → MTE → 跨进程推理。清理 4.1–4.3 合并稿的中途结论、重复关联和自引用，补齐全文收束；修复 4.3 编号跳跃及 4.4 重复旧标题入口；10 篇状态统一为可发布。 |
 | 第 5 章：CPU 调度与能耗管理 | 9 | 9 | 已完成 | 顺序保持为调度/选核 → DVFS/温控/系统功耗 → 后台政策 → ADPF → 端侧 AI Runtime/NPU → LLM 能效 → 传感器 → Cache → LE Audio。为 5.1–5.3 三篇合并主稿和 5.5 补齐全文小结，清理自引用与重复关联；修复 5.1 温控误指 5.5、5.8 启动测量误指 21.4；9 篇状态统一为可发布。 |
@@ -30,7 +31,43 @@
 | 第 14 章：其他分析工具 | 17 | 17 | 已完成 | 逐篇确认 IDE、命令行、量产采集、系统指标、Hook、GPU/UI/Camera、eBPF 与构建分析工具的责任边界。清理合并稿自引用、旧分隔线和重复资料；重命名 14.12、14.13；补齐 14.13、14.16 全文收束。章内目标顺序把平台内建采集放在第三方 Hook 之前，随全书统一重编号一次落地。 |
 | 第 15 章：方法论 | 7 | 7 | 已完成 | 逐篇确认原则/实证/治理、责任归因、指标监控、测试、竞品、源码阅读与 AI 评测的层级。清理 15.1/15.3 合并稿自指、重复关系与资料；补齐 15.6/15.7 发布状态。目标顺序让通用测试先于竞品测试，随全书统一重编号落地。 |
 | 第 19 章：APM 工具与性能监控生态 | 12 | 12 | 已完成 | 顺序保持为全景选型 → 当前工具 → 历史方案 → Benchmark/实验室 → 专项采集 → 端侧架构。修正 19.4 对 Measure 的标题与导语误判、README 的 14.10 错误选型入口及 19.7 发布阶段。 |
-| 其余 12 章 | 167 | 0 | 待审 | 按章节逐篇推进。累计完成 109/276。全书章节号存在 `1–12 → 18 → 13–15 → 19 → 16–17 → 20–26` 的确定性顺序错误，待内容合并完成后统一重编号；已确认的章内顺序也在该次重编号中一次性调整。 |
+| 其余 11 章 | 138 | 0 | 待审 | 按章节逐篇推进。累计完成 138/276。全书章节号存在 `1–12 → 18 → 13–15 → 19 → 16–17 → 20–26` 的确定性顺序错误，待内容合并完成后统一重编号；已确认的章内顺序也在该次重编号中一次性调整。 |
+
+## 第 1 章逐篇结论
+
+| 文章 | 标题契约与推进线 | 章节边界 | 处理结果 |
+| --- | --- | --- | --- |
+| 1.1 Android 分层架构、进程模型与线程协作 | 从系统层次进入进程创建/回收，再落到线程协作与诊断，承担全章总览。 | 只建立进程生命周期模型；1.6 展开组件/adj/锁，1.29 展开 cgroup，1.12 展开 Binder Freezer。 | 保留合并；补写三篇下钻入口，发布阶段转为可发布。 |
+| 1.2 系统启动、Zygote 与图形栈预加载 | 按 Boot ROM/init/SystemServer → Zygote/预加载 → App 图形首帧推进，主线完整。 | 负责系统与应用冷启动前置机制；1.20/1.5 负责类加载和编译，2.x/18.x 负责图形细节。 | 保留；发布阶段转为可发布。 |
+| 1.3 Android IPC 全景与 Binder 性能 | 先按控制面/数据面选择 IPC，再把 Binder 组织成慢调用的事务与等待链。 | 负责 IPC 选型和 Binder 通用模型；1.12 专讲线程池/oneway/Freezer，1.17 专讲缓冲区和证据。 | 保留合并；把第二大段改为诊断视角，清除“16.x”旧稿编号。 |
+| 1.4 Android 版本演进中的架构变化 | 以 Treble/GKI/Mainline/ART 和 Android 15—17 变量建立版本地图。 | 负责解释后续机制为何受 targetSdk、模块、vendor 和内核版本影响。 | 保留；目标位置移动到全章总览之后。 |
+| 1.5 ART 编译、验证与去优化机制 | 按 AOT/JIT/Profile → Verifier/VDEX/ODEX/dexopt → deopt 推进。 | 负责方法执行与编译状态；1.20 负责类解析、类加载和 Boot Image。 | 保留；发布阶段转为可发布。 |
+| 1.6 ActivityManager 组件调度、进程优先级与锁模型 | 以组件事件 → 进程责任 → OomAdjuster → system_server 锁契约形成完整因果链。 | 广播只保留 AMS 入口，完整队列模型交给 1.19；cgroup 实际落点交给 1.29。 | 扩充标题与全文结论，补写 1.19 边界，发布阶段转为可发布。 |
+| 1.7 应用分发、安装验证与 PackageManager 性能 | 从 PMS/安装主路进入开发者验证、Staged Install、AAB 与 PackageInstaller。 | 负责软件制品交付；运行时 `ACTION_SEND`/Sharesheet 不属于安装流水线。 | 删除误并的 Sharesheet 教程及其源码/资料，只留责任边界；发布阶段转为可发布。 |
+| 1.8 ContentProvider 性能与优化 | 从进程启动、跨进程 Cursor、客户端稳定性、超时和线程池进入诊断与优化。 | 负责 Provider 生命周期与 RPC；Binder 通用机制回到 1.3/1.12。 | 保留。 |
+| 1.9 MessageQueue 与锁竞争：从 DeliQueue 到系统等待链 | 先以 DeliQueue 解释队列去锁，再扩展到 Monitor/futex/Binder/system_server 等待链。 | 负责进程内消息队列和通用锁归因，不重复 1.12 的 Binder 队列容量。 | 扩充标题与导语；把后半篇重复 DeliQueue 实现改为等待链中的诊断回扣。 |
+| 1.10 JNI、NDK 与 Bionic 原生运行时性能 | 从托管/Native 边界进入 Bionic 分配、线程、同步、MTE、页大小和 libc。 | 16 KB 前段负责 App 产物验收，后段负责 linker/Bionic 运行时机制；1.22 继续展开动态链接。 | 保留合并；明确两处 16 KB 的不同责任，重写全文结论并转为可发布。 |
+| 1.11 音频链路（Audio Pipeline）延迟与性能 | 从 AudioTrack/AudioFlinger/Audio HAL 到 fast path、offload、时钟和诊断闭环。 | 负责音频数据面和延迟，不重复通用 Binder、调度或功耗机制。 | 保留。 |
+| 1.12 Binder 线程池、异步事务与 Freezer | 按线程供给 → oneway 队列/反压 → 缓存进程 Freezer 的因果顺序展开。 | 缓冲区只保留解释异步预算所需语义，完整分配器/观测交给 1.17；cgroup 细节交给 1.29。 | 按正文顺序重命名，修复“14 → 12”编号并补边界，发布阶段转为可发布。 |
+| 1.13 应用归档（App Archiving）机制与恢复性能 | 从归档状态、特殊卸载、Launcher 恢复请求进入回调、性能和安全边界。 | 负责已安装 App 的归档/恢复；1.7 负责一般安装与分发。 | 保留。 |
+| 1.14 ResourcesManager 与 Configuration 变更性能 | 从资源管理和配置传播进入 Activity 重建、View/Compose 和性能诊断。 | 负责配置变化；1.16 负责窗口与显示系统。 | 保留。 |
+| 1.15 Android AI 手机技术栈：平台接口、端侧推理与协作边界 | 按交付方分层，比较 NNAPI/HAL、AICore/ML Kit、LiteRT、AppFunctions 和性能/热边界。 | 负责 AI 生态选型全景；5.5/5.6 负责 Runtime/NPU/LLM 性能专题。 | 保留；发布阶段补为可发布，作为平台服务之后的生态收束。 |
+| 1.16 Android 显示架构与 WindowManager | 从 App 窗口到 SurfaceFlinger/HWC/显示设备，再下钻 WMS 窗口、Surface 和事务。 | 负责系统显示与窗口全景；第 18 章负责各种渲染管线，后续审查时再校正重复深度。 | 保留合并；发布阶段转为可发布。 |
+| 1.17 Binder 事务缓冲区与可观测性 | 先讲映射/分配/大小边界，再讲 AIDL Trace、Perfetto、binderfs/debugfs 和错误快照。 | 负责空间与证据；1.12 负责线程池、oneway 消费与冻结语义。 | 修复三处当前文章自指并更新 1.12 标题，发布阶段转为可发布。 |
+| 1.18 Android 17 AVF 架构与 pKVM 隔离性能边界 | 从宿主组件、Microdroid/pKVM 内存隔离进入 CPU、I/O、生命周期与测量。 | 负责虚拟化隔离；Binder RPC 只引用 1.3，不扩展普通 Binder 实现。 | 保留；发布阶段补为可发布。 |
+| 1.19 Android 17 BroadcastQueue 进程级调度与广播性能边界 | 从按进程队列、可运行选择和冷启动槽位进入优先级、超时与证据链。 | 负责广播专项；1.6 只保留组件调度入口和进程重要性背景。 | 保留；与 1.6 的边界已写回正文。 |
+| 1.20 Java 类加载与 ART Boot Image | 从 ClassLoader/委派、类解析和初始化进入 Boot Image、共享页与启动诊断。 | 负责类身份与加载；1.5 负责编译/验证/deopt，1.22 负责 Native 动态链接。 | 保留。 |
+| 1.21 Android logd 日志系统性能与开销 | 按写入 → socket/daemon 缓冲 → reader/权限 → 性能和观测推进。 | 负责 Android 日志数据路径，不把日志文本当成完整时间线。 | 保留；发布阶段转为可发布。 |
+| 1.22 Dynamic Linker、VNDK 与 Native 库隔离 | 从 linker64 装载顺序进入 namespace、VNDK/vendor 隔离、16 KB 和诊断。 | 负责 Native 库解析与隔离；1.10 负责 JNI/Bionic 通用运行时。 | 把同篇 VNDK 自指改为“后文”，发布阶段转为可发布。 |
+| 1.23 Android 17 / ACK 6.18 BPF 可观测性与可编程边界 | 从 Hook/Map/加载与权限进入可观测场景、限制和工具边界。 | 负责平台能力与内核边界；14.16 负责具体 eBPF 观测工作流。 | 保留；发布阶段转为可发布。 |
+| 1.24 Telephony 服务架构、状态传播与回调 | 从 Telephony framework/RIL/HAL 进入数据、通话、短信、SIM 与回调性能。 | 负责蜂窝系统服务；Connectivity 选网与网络验证交给 1.25。 | 保留。 |
+| 1.25 Connectivity 服务、网络选择与回调 | 从 ConnectivityService/NetworkAgent 进入验证、评分选择、callback、策略、VPN 与版本边界。 | 负责系统网络编排；12.x/24.x 负责请求、DNS/TLS 和 App 网络实践。 | 保留；发布阶段转为可发布。 |
+| 1.26 Android 17 NotificationManager 架构与性能优化 | 按 App 构建/同步提交 → NMS 入队排序 → listener → SystemUI → 观测和新 API 推进。 | 负责通知系统完整控制链；8.6/9.5 负责推送和 ANR 场景。 | 保留；发布阶段补为可发布。 |
+| 1.27 Android 17 BiometricService 架构与性能优化 | 按 AuthService/预认证 → AuthSession → sensor scheduler/HAL → 安全令牌/UI → 分段诊断推进。 | 负责 BiometricPrompt 系统仲裁；8.5/20.9 负责登录与密钥治理。 | 保留；发布阶段补为可发布。 |
+| 1.28 Android 17 LocationManager 架构与性能优化 | 从请求/权限进入 Provider 合并与回调，再下钻 GNSS HAL、batching、PSDS、围栏和证据链。 | 负责平台 LocationManager；Play services Fused/Geofencing 明确排除在外。 | 保留；发布阶段补为可发布。 |
+| 1.29 Android 17 cgroup v1/v2 混合层级与进程资源隔离机制 | 从默认拓扑、init/libprocessgroup、task profile 进入 OomAdjuster、CPU/memory/freezer 与 OEM 审计。 | 负责 framework 策略怎样落到内核控制器；1.6 负责策略计算，1.12 负责 Binder Freezer。 | 保留；发布阶段补为可发布，目标位置紧跟 ActivityManager 进程策略。 |
+
+章内统一重编号的目标顺序为：架构总览 → 版本变量 → 启动/Zygote → 类加载/Boot Image → ART 编译 → JNI/Bionic → linker/VNDK → MessageQueue → IPC/Binder 总览 → Binder 线程池/异步/Freezer → Binder 缓冲区/观测 → ActivityManager → cgroup → BroadcastQueue → ContentProvider → Package/安装 → App Archiving → ResourcesManager → 显示/WMS → Audio → Telephony → Connectivity → Notification → Biometric → Location → AVF → logd → BPF → AI 生态。该顺序与全书大章编号修复在同一次重命名中执行，避免产生两轮文件名、章节号和交叉引用迁移。
 
 ## 第 4 章逐篇结论
 

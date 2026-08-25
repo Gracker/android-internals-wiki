@@ -3,6 +3,7 @@ title: Android 17 NotificationManager 架构与性能优化
 chapter: '1.26'
 section: '1.26'
 status: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: Android 13 (API 33) - Android 17 (API 37)
 last_verified: '2026-08-18'
 last_verified_against: AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6 / Android Developers notification docs checked 2026-08-18

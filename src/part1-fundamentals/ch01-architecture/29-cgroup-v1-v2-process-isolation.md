@@ -3,6 +3,7 @@ title: Android 17 cgroup v1/v2 混合层级与进程资源隔离机制
 chapter: '1.29'
 section: '1.29'
 status: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
 - cgroup

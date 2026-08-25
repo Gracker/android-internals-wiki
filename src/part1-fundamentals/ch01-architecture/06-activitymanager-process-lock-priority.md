@@ -1,5 +1,5 @@
 ---
-title: ActivityManager 进程状态、锁与优先级管理
+title: ActivityManager 组件调度、进程优先级与锁模型
 chapter: '1.6'
 section: '1.6'
 status: finalized
@@ -173,7 +173,7 @@ related_chapters:
 - '8.2'
 - '1.9'
 - '1.12'
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
@@ -185,7 +185,7 @@ consolidated_from:
 - src/part1-fundamentals/ch01-architecture/34-oomadjuster-process-priority-performance.md
 ---
 
-# ActivityManager 进程状态、锁与优先级管理
+# ActivityManager 组件调度、进程优先级与锁模型
 
 活动管理服务（ActivityManagerService，AMS）负责在系统侧协调应用组件与进程生命周期。它不渲染界面，也不直接执行应用代码；它记录“哪个进程承载哪些组件、当前有多重要、某次组件调用是否按时完成”，并协调相应模块创建进程、调度组件和记录异常。
 
@@ -631,6 +631,8 @@ LIMIT 20;
 ---
 
 ### Android 17 的广播调度
+
+这里仅说明广播怎样进入 AMS 的组件调度与进程状态链。队列选择、冷启动槽位、优先级传播、超时与可观测性的完整模型见 [1.19 BroadcastQueue 进程级调度与广播性能边界](19-broadcastqueue-scheduling-performance.md)。
 
 #### 按进程组织的队列
 
@@ -1468,9 +1470,9 @@ FGS 提高进程重要性，但不提供绝对存活保证。它还受启动权�
 
 ## 结论
 
-AMS 双锁的核心是明确状态所有权，并给读写操作建立可检查的锁契约：部分组合数据允许持任一把锁读取，写入必须同时持有两把锁；需要嵌套时固定按全局锁到进程锁的顺序获取。
+ActivityManager 的主线不是某一个数值或某一把锁，而是“组件事件改变进程责任，进程责任触发优先级计算，共享状态更新又受到 system_server 锁契约约束”。Activity、Service、Broadcast 和 ContentProvider 的调度入口不同，但都要回到目标进程、计时边界、`procState`、`oom_score_adj` 与 `schedGroup` 解释结果。
 
-双锁没有消除 AMS 的大临界区。Android 17 的 OOM adj 和 LRU 写入仍会同时持有两把锁，冻结与部分通知路径才可能只使用 `mProcLock`。性能分析要分别测量等待时间和持锁时间，再检查持锁线程在做什么。这样才能从“看到 `futex` 等待”继续追到可验证的源码结论。
+Android 17 的双锁模型没有消除大临界区。OOM adj 和 LRU 写入仍会同时持有全局锁与进程锁，冻结与部分通知路径才可能只使用 `mProcLock`。诊断时应把组件调用链、OomAdjuster 结果、锁等待和持锁者工作连成同一条时间线，不能只凭一次 `futex` 等待或一个 adj 数值下结论。
 
 
 ## 参考资料
