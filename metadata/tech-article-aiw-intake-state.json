@@ -628,6 +628,58 @@
       "size": 4757,
       "status": "skipped-low-score"
     },
+    "source/gracker-rss/2026-08-26-ai-haters-manifesto-The-AI-Haters-Manife.md": {
+      "chapter": "待分类",
+      "entry_id": "7e2bc5f054e5917e",
+      "last_appended": "2026-08-26T05:25:42.683590+08:00",
+      "last_seen": "2026-08-26T05:25:42.683590+08:00",
+      "mtime": 1787684834.5229273,
+      "score": 8,
+      "sha256": "7a3e827758b1f0547bd130a6229ecb532a6a6257fefa256d5ac9d3f0903a9112",
+      "size": 90662,
+      "status": "appended",
+      "title": "The AI Hater's Manifesto"
+    },
+    "source/gracker-rss/2026-08-26-ai-slop-shame-Why-shaming-people-a.md": {
+      "last_seen": "2026-08-26T05:25:42.683590+08:00",
+      "mtime": 1787684834.5242093,
+      "sha256": "2826cf1b85515b388ef0fc394ff73f2559e87ea99f9dbdfe9547d5ca2c934a31",
+      "size": 11055,
+      "status": "skipped-low-score"
+    },
+    "source/gracker-rss/2026-08-26-fast-and-hard-code-Fast-and-Hard-Code.md": {
+      "chapter": "待分类",
+      "entry_id": "d28f5950ae95d851",
+      "last_appended": "2026-08-26T05:25:42.683590+08:00",
+      "last_seen": "2026-08-26T05:25:42.683590+08:00",
+      "mtime": 1787684834.5235689,
+      "score": 8,
+      "sha256": "5d0a326dda8ccd898d6362615afdaee4b7a8a500a32c2f589b5788aef27aabcd",
+      "size": 3534,
+      "status": "appended",
+      "title": "Fast and Hard Code"
+    },
+    "source/gracker-rss/2026-08-26-hardening-the-override-flag-Hardening-the-Overri.md": {
+      "last_seen": "2026-08-26T05:25:42.683590+08:00",
+      "mtime": 1787684834.5224183,
+      "sha256": "3a060bc9a00736c86cce12c2c2bf855244eb845db41e1d131e597b2a0f2d120c",
+      "size": 15150,
+      "status": "skipped-low-score"
+    },
+    "source/gracker-rss/2026-08-26-summer-of-open-weights-The-summer-of-open-w.md": {
+      "last_seen": "2026-08-26T05:25:42.683590+08:00",
+      "mtime": 1787684834.52207,
+      "sha256": "5a6a28d898a1abc912f2b051808d05ae6f7035a7b51d29e4be43c4ee4ef7d263",
+      "size": 7940,
+      "status": "skipped-low-score"
+    },
+    "source/gracker-rss/2026-08-26-you-should-never-be-angry-at-work-You-should-never-be.md": {
+      "last_seen": "2026-08-26T05:25:42.683590+08:00",
+      "mtime": 1787684834.523376,
+      "sha256": "6ac987498f6013efa5e34fc0108a1f3b25078c754d7e2fe4d473ec9acdba0f94",
+      "size": 13801,
+      "status": "skipped-low-score"
+    },
     "source/hacker-news-rss/2026-08-14-andros-html-over-websockets.md": {
       "chapter": "待分类",
       "entry_id": "a2ca4853b47ae8b4",
@@ -3294,6 +3346,42 @@
       "status": "appended",
       "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
     },
+    "source/juejin-android/2026-08-26-76760926-超好用R8ConfigurationAnalyzer优化App大小和内存.md": {
+      "chapter": "ch04-memory",
+      "entry_id": "9c0d08ffac1c5112",
+      "last_appended": "2026-08-26T05:25:42.683590+08:00",
+      "last_seen": "2026-08-26T05:25:42.683590+08:00",
+      "mtime": 1787690439.6122124,
+      "score": 8,
+      "sha256": "b5d473e6b7fd1c5ae1bc5a4b479440a194b869c5d1f854114f890fd79bcdfc2b",
+      "size": 11120,
+      "status": "appended",
+      "title": "超好用 R8 Configuration Analyzer， 优化你的 App 大小和内存相信大家最近应该都知道，目前"
+    },
+    "source/juejin-android/2026-08-26-76772546-AndroidPSI详解libpsi源码解析116行架起lmkd与内核的桥.md": {
+      "chapter": "ch04-memory",
+      "entry_id": "1ed251e26d33578c",
+      "last_appended": "2026-08-26T05:25:42.683590+08:00",
+      "last_seen": "2026-08-26T05:25:42.683590+08:00",
+      "mtime": 1787690439.611568,
+      "score": 20,
+      "sha256": "ea2fbc7dcfc175ca8c39c73530b3db7584137e748b5087b3d62437bf16e5b3a3",
+      "size": 20326,
+      "status": "appended",
+      "title": "Android-PSI 详解：libpsi 源码解析——116 行代码架起 lmkd 与内核之间的桥Android PS"
+    },
+    "source/juejin-android/2026-08-26-76772546-Android高版本LMKD源码解析PSI内存压力监控与查杀全流程.md": {
+      "chapter": "ch04-memory",
+      "entry_id": "f932abd739059563",
+      "last_appended": "2026-08-26T05:25:42.683590+08:00",
+      "last_seen": "2026-08-26T05:25:42.683590+08:00",
+      "mtime": 1787690439.6112728,
+      "score": 22,
+      "sha256": "e33d80844681245bc96e45a1a82461eea6afe52a93a22e6b8d88b40532e8b66f",
+      "size": 71300,
+      "status": "appended",
+      "title": "Android-高版本 LMKD 源码解析：基于 PSI 的内存压力监控与查杀全流程Android 高版本 LMKD 源"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -5101,24 +5189,24 @@
     }
   },
   "last_report": {
-    "appended": 1,
-    "considered": 1,
-    "cutoff": "2026-08-24T05:20:56.370433+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-25.md",
+    "appended": 5,
+    "considered": 9,
+    "cutoff": "2026-08-25T05:20:50.285040+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-26.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1887,
+    "scanned": 1896,
     "skipped": {
       "existing_link": 0,
-      "low_score": 0,
+      "low_score": 4,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 454
+      "unchanged": 455
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-08-25T05:25:50.285040+08:00",
+  "last_run_at": "2026-08-26T05:25:42.683590+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

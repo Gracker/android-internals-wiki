@@ -1,5 +1,5 @@
 {
-  "last_check": "2026-08-24T02:33:13.809587+08:00",
+  "last_check": "2026-08-26T02:00:14.546639+08:00",
   "check_id": "freshness-2026-07-17-02-00",
   "cron_id": "220c1be3-a8db-4dfe-982e-5e275cef4b54",
   "summary": {
@@ -132,7 +132,7 @@
     "part4-system/ch16-aosp/04-android17-kernel612-performance.md",
     "part4-system/ch16-aosp/09-android17-sdm-install-performance.md"
   ],
-  "last_run_at": "2026-08-24T02:33:13.809587+08:00",
+  "last_run_at": "2026-08-26T02:00:14.546639+08:00",
   "scanned": 80,
   "risks": [],
   "queued": 0,
@@ -659,6 +659,16 @@
       "scanned": 80,
       "cursor_start": 26,
       "cursor_next": 106,
+      "risks": [],
+      "findings_added": 0,
+      "legacy_queue_migrated": 0,
+      "queued": 0
+    },
+    {
+      "last_run_at": "2026-08-26T02:00:14.546639+08:00",
+      "scanned": 80,
+      "cursor_start": 106,
+      "cursor_next": 186,
       "risks": [],
       "findings_added": 0,
       "legacy_queue_migrated": 0,
