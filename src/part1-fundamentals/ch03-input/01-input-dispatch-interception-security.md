@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: finalized
 title: Input 分发、拦截与安全边界
 chapter: '3.1'
 section: '3.1'
@@ -67,7 +67,7 @@ related_chapters:
 - '9.1'
 - '13.6'
 task6_state: reviewed
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 task9_state: reviewed
 last_deep_review_at: '2026-08-21T12:46:33+08:00'
 last_deep_review_run_id: 20260821-124250-deep-review-d0114de0
@@ -705,7 +705,7 @@ android.input.inputevent
 
 ---
 
-### 十三、源码阅读入口
+### 十一、源码阅读入口
 
 - `common/drivers/input/evdev.c`：evdev 客户端缓冲区、读取与轮询、用户空间 ABI
 - `frameworks/native/services/inputflinger/reader/EventHub.cpp`：epoll、inotify、RawEvent 时间戳
@@ -720,26 +720,26 @@ android.input.inputevent
 - `frameworks/base/core/java/android/view/ViewRootImpl.java`：待处理队列、批处理、`InputStage` 与系统跟踪
 - `frameworks/base/core/java/android/view/ViewGroup.java`：子 View 命中、拦截、事件拆分与 `CANCEL`
 
-### 交叉引用
+### 十二、交叉引用
 
 - **3.2 触摸延迟、预测与低延迟渲染**：采样、重采样、预测与输入到显示时间
 - **3.3 Predictive Back**：返回手势、窗口回调与动画
 - **3.6 键盘、鼠标与指针输入**：外接设备、焦点与桌面模式
 - **9.1 ANR**：AMS、WMS 侧 `TimeoutRecord`、系统跟踪与责任判断
 
-### 常见误区
+### 十三、常见误区
 
-#### 11.1 `MotionEvent` 与 Compose `PointerEvent`
+#### 13.1 `MotionEvent` 与 Compose `PointerEvent`
 
 `InputDispatcher` 发布原生按键或动作消息，应用框架构造 `android.view.MotionEvent`。Compose 在 Android 平台上从宿主 View 收到 `MotionEvent`，再转换为 Compose 指针数据，并进行多轮（pass）分发。
 
 两者共享前半段系统链路，但应用内部的处理阶段不同。Compose 的消费标记、协程手势识别和命中路径可能产生额外耗时，因此二者在 Perfetto 中不会完全一致。
 
-#### 11.2 返回键与预测性返回
+#### 13.2 返回键与预测性返回
 
 物理 `KEYCODE_BACK` 可以按焦点窗口进行按键分发。预测性返回手势还涉及系统手势识别、`BackNavigationController`、窗口返回回调与动画协议，不能简化为普通 `KeyEvent` 一定进入 `Activity.dispatchKeyEvent()`。完整边界见 3.3。
 
-#### 11.3 `finishInputEvent()` 与画面完成
+#### 13.3 `finishInputEvent()` 与画面完成
 
 `finishInputEvent()` 表示应用对该输入消息的处理阶段结束，并把是否已处理的状态返回给 `InputDispatcher`。它不保证：
 
@@ -752,7 +752,7 @@ android.input.inputevent
 
 输入到显示延迟必须继续跟踪关联帧。
 
-#### 11.4 显示触点不能替代输入系统跟踪
+#### 13.4 显示触点不能替代输入系统跟踪
 
 系统触点可视化与应用窗口渲染使用不同的 `Surface` 和路径。它可以帮助判断系统是否感知到手势，但圆点移动不表示目标应用已经收到、消费事件或显示业务结果。
 

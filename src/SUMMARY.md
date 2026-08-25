@@ -133,7 +133,7 @@
   - [10.1 App 内存分析与案例](part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md)
   - [10.2 低内存对系统性能的影响](part2-performance/ch10-memory-perf/02-low-memory-impact.md)
   - [10.3 内存抖动与频繁 GC](part2-performance/ch10-memory-perf/03-memory-churn.md)
-  - [10.4 GPU 与图形内存统计](part2-performance/ch10-memory-perf/04-gpu-graphics-memory-tracking.md)
+  - [10.4 GPU 与图形内存统计、归因与诊断](part2-performance/ch10-memory-perf/04-gpu-graphics-memory-tracking.md)
 
 - [第 11 章：功耗](part2-performance/ch11-power/README.md)
   - [11.1 Android 功耗模型与系统级优化](part2-performance/ch11-power/01-android-power-model-system-optimization.md)

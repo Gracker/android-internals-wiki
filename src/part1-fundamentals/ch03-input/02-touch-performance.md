@@ -2,7 +2,7 @@
 title: 触摸延迟、预测与低延迟渲染
 chapter: '3.2'
 section: '3.2'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-08-21'
 last_verified_against: AOSP android-17.0.0_r1 InputFlinger/InputTransport/ViewRootImpl/Choreographer/MotionPredictor/MotionEvent/InputEventAssigner/View.requestUnbufferedDispatch sources; external/perfetto android.input inputevent config and android.input stdlib docs; source.android.com Input/Winscope adb trace docs; AndroidX Input/Graphics low-latency docs | 2026-08-21 deep review added official unbuffered-dispatch warning boundary
@@ -65,7 +65,7 @@ last_deep_review_at: '2026-08-21T09:15:41+08:00'
 last_deep_review_run_id: 20260821-090405-deep-review-855a7839
 last_rework_at: '2026-08-12T09:45:30+08:00'
 last_rework_run_id: 20260812-093533-rework-855a7839
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-11'
 consolidated_from:
 - src/part1-fundamentals/ch03-input/04-input-latency-prediction.md
@@ -320,6 +320,36 @@ for (int h = 0; h < event.getHistorySize(); h++) {
 5. 将事件 ID 与 FrameTimeline 和应用帧关联，确认输入更新进入哪一帧，以及该帧何时呈现。
 
 两条证据链要分别解读：`InputDispatcher` 的 `wq:*` 用于判断分发与完成确认的背压；`historySize` 和 `MotionEvent` 历史样本才是批处理的直接证据。`Choreographer` 的输入回调通常显示为 `input` 阶段，具体界面名称会随 Perfetto 版本和采集配置变化。
+
+## 输入重采样的源码边界
+
+`android-17.0.0_r1` 同时保留两套相关代码：
+
+- `libs/input/InputConsumer.cpp`：当前 `android_view_InputEventReceiver.cpp` 的 `NativeInputEventReceiver` 直接构造并使用这套 `InputConsumer`，重采样逻辑仍在该文件内。
+- `libs/input/InputConsumerNoResampling.cpp` 与 `libs/input/Resampler.cpp`：把批处理与传输和 `LegacyResampler`、`FilteredLegacyResampler` 分开，Android 17 源树已经编译并测试这些实现，但常规 `ViewRootImpl` JNI 代码尚未改用它。
+
+分析 Android 17 应用行为时，应以第一条实际调用链为准；阅读第二套代码可以理解重构方向，不能把它描述成所有应用已经切换的生产路径。两套旧算法的常量和核心边界一致：
+
+- 目标时间为 `sampleTime = frameTime - 5 ms`；
+- 若一批事件中还有目标时间之后的未来样本，则在当前样本与未来样本之间线性插值；两点间隔至少为 2 ms；
+- 没有未来样本时，使用最近两个点外推；两点间隔必须在 2 ms 到 20 ms 之间；
+- 外推最远到 `currentTime + min(delta / 2, 8 ms)`；
+- 支持 `FINGER`、`MOUSE`、`STYLUS`、`UNKNOWN` 工具类型，并要求触点 ID、工具类型和显示器等条件一致；
+- 只对指针来源的 `ACTION_MOVE` 执行；厂商可以通过只读属性 `ro.input.resampling=0` 关闭。
+
+Android 17 的实际系统与应用调用边界可概括为：
+
+```text
+evdev → EventHub → InputReader → TouchInputMapper → InputDispatcher
+    → InputChannel/Unix SOCK_SEQPACKET
+    → app NativeInputEventReceiver
+    → InputConsumer.consume(..., frameTimeNanos)
+    → InputConsumer::consumeBatch()
+    → InputConsumer::resampleTouchState()
+    → WindowInputEventReceiver → ViewRootImpl InputStage → View
+```
+
+重采样发生在目标应用进程中，不在 `InputReader` 或 `InputDispatcher` 中。它通过插值或受限外推，让 `MOVE` 坐标更接近帧时序，但急转弯、速度突变和稀疏样本仍可能产生偏差。评估时要同时比较真实样本、重采样标记与最终笔迹，不要只看坐标是否更接近帧时间。
 
 ## 触摸场景的性能分析方法
 
@@ -605,38 +635,6 @@ Android 17 中，`InputDispatcher` 会把符合条件的按键、触摸动作和
 ### 误区：输入 ANR 等于应用卡死
 
 连接型输入 ANR 检查等待队列条目的 `timeoutTime`。Android 17 默认分发超时尚未乘系数时的基值为 5000 ms，运行时还会应用 `HwTimeoutMultiplier()`，窗口或应用可以覆盖此值。超时表示系统没有按期收到相应的完成确认；原因可能是主线程长任务、Runnable 饥饿、锁等待、Binder 或 I/O、异步 `InputStage` 或进程异常。完成确认也不表示画面已经呈现，因此 ANR 指标不能替代跟手性测量。
-
-## 输入重采样（Motion Resampling）机制
-
-### 源码级细节
-
-`android-17.0.0_r1` 同时保留两套相关代码：
-
-- `libs/input/InputConsumer.cpp`：当前 `android_view_InputEventReceiver.cpp` 的 `NativeInputEventReceiver` 直接构造并使用这套 `InputConsumer`，重采样逻辑仍在该文件内。
-- `libs/input/InputConsumerNoResampling.cpp` 与 `libs/input/Resampler.cpp`：把批处理与传输和 `LegacyResampler`、`FilteredLegacyResampler` 分开，Android 17 源树已经编译并测试这些实现，但常规 `ViewRootImpl` JNI 代码尚未改用它。
-
-分析 Android 17 应用行为时，应以第一条实际调用链为准；阅读第二套代码可以理解重构方向，不能把它描述成所有应用已经切换的生产路径。两套旧算法的常量和核心边界一致：
-
-- 目标时间为 `sampleTime = frameTime - 5 ms`；
-- 若一批事件中还有目标时间之后的未来样本，则在当前样本与未来样本之间线性插值；两点间隔至少为 2 ms；
-- 没有未来样本时，使用最近两个点外推；两点间隔必须在 2 ms 到 20 ms 之间；
-- 外推最远到 `currentTime + min(delta / 2, 8 ms)`；
-- 支持 `FINGER`、`MOUSE`、`STYLUS`、`UNKNOWN` 工具类型，并要求触点 ID、工具类型和显示器等条件一致；
-- 只对指针来源的 `ACTION_MOVE` 执行；厂商可以通过只读属性 `ro.input.resampling=0` 关闭。
-
-Android 17 的实际系统与应用调用边界可概括为：
-
-```text
-evdev → EventHub → InputReader → TouchInputMapper → InputDispatcher
-    → InputChannel/Unix SOCK_SEQPACKET
-    → app NativeInputEventReceiver
-    → InputConsumer.consume(..., frameTimeNanos)
-    → InputConsumer::consumeBatch()
-    → InputConsumer::resampleTouchState()
-    → WindowInputEventReceiver → ViewRootImpl InputStage → View
-```
-
-重采样发生在目标应用进程中，不在 `InputReader` 或 `InputDispatcher` 中。它通过插值或受限外推，让 `MOVE` 坐标更接近帧时序，但急转弯、速度突变和稀疏样本仍可能产生偏差。评估时要同时比较真实样本、重采样标记与最终笔迹，不要只看坐标是否更接近帧时间。
 
 ## 参考资料
 

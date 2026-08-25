@@ -2,7 +2,7 @@
 title: 键盘、鼠标与指针输入性能 — 桌面模式交互管线
 chapter: '3.6'
 section: '3.6'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 13 (API 33) - Android 17 (API 37)
 last_verified: '2026-06-27'
 last_verified_against: AOSP android-17.0.0_r1
@@ -55,8 +55,8 @@ related_chapters:
 - '3.5'
 - '2.10'
 - '22.12'
-pipeline_stage: ready-for-review
-task6_state: pending-verification
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 last_consolidated_at: '2026-08-11'
 consolidated_from:
 - src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md

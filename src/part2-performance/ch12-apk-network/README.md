@@ -1,6 +1,6 @@
 # 第 12 章：网络性能
 
-本章关注请求从应用代码进入 Android 网络栈后的端到端成本：请求排队、DNS（Domain Name System，域名系统）解析、连接复用、传输协议、TLS（Transport Layer Security，传输层安全）握手，以及 `netd`（Android 网络管理守护进程）和每个网络各自的 DNS 状态。包体积治理已经统一归入第 25 章；系统如何选择网络，以及 `NetworkCallback` 回调的语义，另见 1.24。
+本章关注请求从应用代码进入 Android 网络栈后的端到端成本：请求排队、DNS（Domain Name System，域名系统）解析、连接复用、传输协议、TLS（Transport Layer Security，传输层安全）握手，以及 `netd`（Android 网络管理守护进程）和每个网络各自的 DNS 状态。系统如何选择网络，以及 `NetworkCallback` 回调的语义，另见 1.25。
 
 排查时先按阶段分析一次请求，再根据证据进入 TLS 或 DNS 专项。Wi-Fi 图标、系统网络验证、DNS 可用性和目标服务可达性分别代表不同状态，不能合并成一个“网络正常”或“网络异常”的结论。
 
@@ -17,11 +17,7 @@
 
 ### 系统网络栈排查
 
-先读 1.24，确定 `NetworkRequest`、`NetworkCallback`、网络排序、rematch（重新匹配网络请求）和 linger（旧网络短暂保留期）的语义，再用 12.2 检查 `netd` 路由与每网络 DNS 状态。Wi-Fi、蜂窝、卫星或 VPN 切换时的业务恢复策略继续参阅第 24 章。
-
-### 包体积治理
-
-包结构、DEX、R8、native library（原生库）与资源文件专项统一见 25.5，App Bundle 交付见 25.6。分析对象应明确区分 AAB（Android App Bundle）、通用 APK、针对设备生成的 APK、下载体积和安装后占用。
+先读 1.25，确定 `NetworkRequest`、`NetworkCallback`、网络排序、rematch（重新匹配网络请求）和 linger（旧网络短暂保留期）的语义，再用 12.2 检查 `netd` 路由与每网络 DNS 状态。Wi-Fi、蜂窝、卫星或 VPN 切换时的业务恢复策略继续参阅第 24 章。
 
 ## 版本边界
 

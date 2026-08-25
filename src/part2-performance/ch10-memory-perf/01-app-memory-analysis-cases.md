@@ -103,15 +103,9 @@ consolidated_from:
 
 # App 内存分析与案例
 
-[适用版本：Android 8.0（API 26）至 Android 17（API 37）]
-
 一条内存曲线只能说明某个统计口径发生了变化。Java heap（ART 管理的 Java/Kotlin 对象堆）、native allocator（C/C++ 默认内存分配器）、RSS、PSS、SwapPss、DMA-BUF（设备间共享缓冲区）和 GPU private memory（GPU 私有分配）分别观察不同对象；数值来自不同采样时刻时，连加都可能失真。
 
 本文按 Android 17 / API 37 的 `android-17.0.0_r1` 核对平台行为，涉及 PSI 的内核实现以 `android17-6.18-2026-06_r6` 为准。分析顺序是先确定指标，再定位内存域，随后用对应工具寻找 owner（内存持有者或归属方）和生命周期。
-
----
-
-应用内存分析先建立 Java、Native、图形、文件映射和共享页基线，再观察场景前后的增长、峰值与回落。案例用于展示如何从指标进入对象、调用栈或系统分配证据。
 
 ## 内存域、基线与增长分类
 
@@ -376,7 +370,7 @@ Android 15 起支持使用 16 KB page size（内存页大小）的设备。页�
 
 来源：[16 KB page size 支持指南](https://developer.android.com/guide/practices/page-sizes)
 
-### 6.2 用回落条件区分缓存、积压与泄漏
+#### 6.2 用回落条件区分缓存、积压与泄漏
 
 持续增长实验要比普通峰值测试多两个采样点：执行业务释放动作后的状态，以及主动收缩可重建资源后的状态。随后用同一输入再跑一轮，观察波峰、波谷和增长斜率是否重复。只在峰值抓一次 `dumpsys meminfo`，无法区分工作集扩大、缓存保留和生命周期错误。
 
@@ -518,7 +512,7 @@ activityManager.setProcessStateSummary(state)
 - **4.3 Low Memory Killer 与进程优先级**
 - **23.1 内存泄漏检测与治理**
 - **10.3 内存抖动**
-- **10.4 GPU 与图形内存统计**
+- **10.4 GPU 与图形内存统计、归因与诊断**
 - **13.1 Perfetto 内存数据源**
 
 
@@ -722,7 +716,7 @@ Java 引用泄漏、短命对象洪峰、malloc 堆积、GPU pool、文件映射
 - **23.1 内存泄漏检测与治理**：引用所有权、GC Root 与生命周期修复。
 - **10.2 低内存对系统性能的影响**：回收、PSI、`lmkd`、ZRAM 与前台性能。
 - **10.3 内存抖动与频繁 GC**：分配速率、GC 停顿和短命对象。
-- **10.4 GPU 与图形内存统计**：DMA-BUF、GPU 映射与图形缓冲区。
+- **10.4 GPU 与图形内存统计、归因与诊断**：DMA-BUF、GPU 映射与图形缓冲区。
 - **4.3 Low Memory Killer**：Android 17 userspace `lmkd` 路径。
 - **7.2 典型场景分析**：从线程状态和关键路径解释卡顿。
 

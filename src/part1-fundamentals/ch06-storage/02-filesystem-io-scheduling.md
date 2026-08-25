@@ -72,17 +72,25 @@ sources:
 - type: official
   path: https://perfetto.dev/docs/data-sources/cpu-scheduling
 tags:
-- linux
-- android
-- research
-status: ready-for-review
-pipeline_stage: ready-for-review
-task6_state: pending-review
-task9_state: pending-review
+- storage
+- filesystem
+- ext4
+- f2fs
+- erofs
+- io-scheduling
+- perfetto
+status: finalized
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
 task2b_state: fixed
 last_rework_at: '2026-08-19T17:45:17+08:00'
 last_rework_run_id: 20260819-173532-rework-557ad9a6
-related_chapters: []
+related_chapters:
+- '6.1'
+- '6.3'
+- '6.4'
+- '13.10'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch06-storage/02-filesystem.md
@@ -381,7 +389,7 @@ F2FS 的更新会产生旧的无效块，GC 随后搬移 victim 中仍然有效�
 
 这条时间线描述的是 AOSP 能力，不代表每台上市设备在相同版本都采用同一种格式。版本分析还要结合设备属于 launch 还是 upgrade 路径，以及 vendor kernel 和产品配置。
 
-### 参考资料与源码锚点
+### 文件系统源码锚点
 
 #### Android 17 / kernel 6.18 源码
 
@@ -408,7 +416,7 @@ F2FS 的更新会产生旧的无效块，GC 随后搬移 victim 中仍然有效�
 - [Linux VFS documentation](https://www.kernel.org/doc/html/latest/filesystems/vfs.html)
 - [SQLite Atomic Commit](https://www.sqlite.org/atomiccommit.html)
 
-### 结论
+### 文件系统选型的判断边界
 
 遇到同步写卡顿时，可以依次回答四个问题：
 
@@ -738,7 +746,7 @@ Android 17 的 AOSP SQLite 编译了 F2FS batch atomic write 支持，运行时�
 | 系统是否普遍被 I/O 阻塞？ | `/proc/pressure/io` 或 cgroup `io.pressure` |
 | 延迟在文件系统还是设备？ | `*_sync_file_*`、checkpoint/GC、`block_rq_*`、UFS trace |
 
-### 参考资料与源码锚点
+### 块层与调度源码锚点
 
 #### Android 17 / kernel 6.18 源码
 
@@ -765,7 +773,7 @@ Android 17 的 AOSP SQLite 编译了 F2FS batch atomic write 支持，运行时�
 - [PerfettoSQL standard library](https://perfetto.dev/docs/analysis/stdlib-docs)
 - [Perfetto CPU scheduling events](https://perfetto.dev/docs/data-sources/cpu-scheduling)
 
-### 结论
+### 块层诊断的四个问题
 
 排查 Android I/O 卡顿时，可以按顺序回答四个问题：
 

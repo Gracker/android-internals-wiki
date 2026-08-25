@@ -110,7 +110,7 @@ tags:
 - cleartext
 related_chapters:
 - '12.2'
-- '1.24'
+- '1.25'
 - '24.3'
 - '24.4'
 - '8.1'
@@ -128,7 +128,7 @@ consolidated_from:
 
 移动网络持续变化，客户端仍然可以控制请求时机、复用、总期限、缓存、重试和内容降级。优化工作的起点是统一计时口径，然后按协议、请求组织和网络状态选择策略。
 
-基准版本为 Android 17 / API 37、AOSP `android-17.0.0_r1`、OkHttp 5.3.0 和 Play services Cronet 18.0.1。`netd`（Android 网络管理守护进程）与 DNS Resolver（解析器）的内部细节见 12.2，系统选网与 `NetworkAgent` 见 1.24。
+基准版本为 Android 17 / API 37、AOSP `android-17.0.0_r1`、OkHttp 5.3.0 和 Play services Cronet 18.0.1。`netd`（Android 网络管理守护进程）与 DNS Resolver（解析器）的内部细节见 12.2，系统选网与 `NetworkAgent` 见 1.25。
 
 一次安全网络请求包含 DNS、连接建立、拥塞控制、TLS 握手、请求传输和应用解析。性能优化要先确认慢在哪一段，再考虑连接复用、协议升级或密码套件调整。
 

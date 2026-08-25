@@ -2,7 +2,7 @@
 title: vold、MediaProvider 与 FUSE：共享存储 I/O 路径
 chapter: '6.4'
 section: '6.4'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-08-19'
 last_verified_against: Android Developers shared media docs; AOSP storage scoped/fuse-passthrough/sdcardfs-deprecate docs; AOSP android-17.0.0_r1 system/vold + packages/providers/MediaProvider; Android common kernel android17-6.18-2026-06_r6 FUSE sources; local ch24.9/ch24.12 frontmatter
@@ -41,7 +41,7 @@ related_chapters:
 - '6.2'
 - '6.3'
 - '24.9'
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 last_deep_review_at: '2026-08-19T12:48:55+08:00'
@@ -390,8 +390,6 @@ App 侧应让数据归属与 API 匹配：媒体列表使用 MediaStore，文档
 - Android common kernel `fs/fuse/backing.c`、`passthrough.c`、`iomode.c`、`fuse_bpf_backing.c`（`android17-6.18-2026-06_r6`）
 - Android common kernel `include/uapi/linux/fuse.h`、`include/uapi/linux/android_fuse.h`（`android17-6.18-2026-06_r6`）
 - §6.1「Android 存储架构」
-- §6.2「文件系统」
-- §6.2「I/O 调度与性能」
+- §6.2「文件系统与 I/O 调度」
 - §6.3「SharedPreferences 与 DataStore」
-- §24.9「MediaStore 与 MediaProvider 性能治理」
-- §24.9「Photo Picker、媒体转码与缓存治理」
+- §24.9「MediaStore、Photo Picker 与媒体转码」

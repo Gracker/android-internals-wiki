@@ -2,7 +2,7 @@
 title: InputMethodManager 与软键盘性能
 chapter: '3.5'
 section: '3.5'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
 - input

@@ -1,8 +1,9 @@
 ---
-title: GPU 与图形内存统计
+title: GPU 与图形内存统计、归因与诊断
 chapter: '10.4'
 section: '10.4'
-status: ready-for-review
+status: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-07-31'
 last_verified_against: AOSP android-17.0.0_r1, Android common kernel android17-6.18-2026-06_r6, Perfetto current docs
@@ -59,12 +60,13 @@ related_chapters:
 - '4.1'
 - '10.1'
 - '14.11'
-- '22.9'
+- '22.5'
+- '22.17'
 - '23.2'
 last_consolidated_at: '2026-08-11'
 ---
 
-# GPU 与图形内存统计
+# GPU 与图形内存统计、归因与诊断
 
 Android 没有一个能够回答全部图形内存问题的数字。`dumpsys meminfo` 以进程 PSS（按引用者比例分摊共享页）和 memtrack（厂商图形内存记账接口）分类为中心，`dumpsys gpu --gpumem` 读取驱动上报的 GPU 地址空间总量，DMA-BUF 接口描述设备间共享 buffer，Vulkan tracker 记录 API 级分配事件。它们可能覆盖同一块资源，也可能各自遗漏一部分。
 

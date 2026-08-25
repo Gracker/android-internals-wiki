@@ -707,7 +707,7 @@ FrameTimeline 的帧异常类型只描述帧结果。判断开销来自布局、
 - AndroidX 回调启用与禁用；
 - 目标 SDK 35 与 36+ 的兼容边界。
 
-### 13. 源码索引
+### 12. 源码索引
 
 - [`EdgeBackGestureHandler.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java)
 - [`DisplayBackGestureHandler.kt`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/DisplayBackGestureHandler.kt)

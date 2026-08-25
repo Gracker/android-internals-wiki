@@ -272,7 +272,7 @@ data_sources {
 
 Android 17 的 `atrace.cpp` 明确定义了 `memreclaim` category（轨迹类别），它启用 direct reclaim、kswapd 和可选 lowmemorykiller 事件组。配置同时显式列出 vmscan 事件，便于在设备裁剪类别时核对。录制前应查看 tracefs（内核跟踪文件系统）中的事件是否存在；缺少可选事件时按设备能力删减。
 
-### 7.1 阅读顺序
+### 7.2 阅读顺序
 
 1. 在卡顿、启动或 kill 附近划定时间窗。
 2. 看 PSI some/full 与 vmstat 差分，确认是否有系统级停顿。
@@ -397,8 +397,7 @@ Android Go Edition 是一组面向低内存设备的产品配置与系统应用�
 
 ## 与其他章节的关系
 
-- [4.1 Android 与 Linux 内存管理全景](../../part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md)：进程内存与系统物理页口径。
-- [§4.1 Linux 内核内存管理](../../part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md)：watermark、reclaim、swap 与 compaction。
+- [4.1 Android 与 Linux 内存管理全景](../../part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md)：进程内存口径，以及 watermark、reclaim、swap 与 compaction 等系统物理页机制。
 - [§4.3 Low Memory Killer](../../part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md)：lmkd 选择策略与进程优先级。
 - [§4.4 App 内存优化](../../part1-fundamentals/ch04-memory/04-app-memory-optimization.md)：App hard budget、trim 与资源生命周期。
 - [10.1 App 内存分析与案例](01-app-memory-analysis-cases.md)：PSS、RSS、Graphics、heap 与退出信息。
