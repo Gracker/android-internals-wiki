@@ -1,5 +1,5 @@
 ---
-title: DoKit 与 Measure 开发期性能工具
+title: DoKit 调试工具与 Measure APM 平台
 chapter: '19.4'
 section: '19.4'
 status: finalized
@@ -104,9 +104,9 @@ consolidated_from:
 - src/part3-tools/ch19-apm/07-measure.md
 ---
 
-# DoKit 与 Measure 开发期性能工具
+# DoKit 调试工具与 Measure APM 平台
 
-DoKit 提供应用内调试面板和多类检查插件，Measure 更接近轻量方法耗时与代码区间测量。开发期工具应按目标信号选择，避免把调试开销带入发布版本。
+DoKit 提供应用内调试面板和多类检查插件，适合 Debug / QA 现场复现；Measure 是覆盖端侧采集、会话时间线、查询告警与自托管服务的生产 APM 平台。两者都能提供性能线索，但接入阶段、数据责任和发布边界完全不同。本文分别核对它们的采集能力、工程代价与适用范围，避免把调试工具带入 Release，也避免把完整 APM 平台误解成局部计时库。
 
 ## 应用内调试面板与性能插件
 
@@ -441,9 +441,9 @@ DoKit 的优势是把调试入口和测试条件带到设备现场。它可以�
 
 可执行的接入方式是：Debug / QA 变体按需启用，默认关闭上传，只在安全接口上构造网络条件；DoKit 找到复现路径后，再用 Perfetto、Profiler、JankStats、FrameMetrics 或 Macrobenchmark 验证。Release 是否隔离成功，要以最终 APK/AAB 不含 DoKit 实现、入口、权限、数据和出站行为为准。
 
-## 轻量耗时测量与使用边界
+## Measure APM 的端侧采集与平台边界
 
-DoKit 适合集中展示多种诊断能力，Measure 用于局部代码计时。两者都需要明确 debug/release 开关和测量扰动。
+DoKit 负责研发现场的调试入口，Measure 则在 Release 中持续采集崩溃、ANR、启动、网络、资源和业务 span，并把事件送入可查询的平台。后者同样需要控制采样与测量扰动，但还要承担数据治理、服务端运维、告警和恢复责任。
 
 ### 产品定位与版本边界
 

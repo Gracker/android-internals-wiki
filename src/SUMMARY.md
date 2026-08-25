@@ -214,7 +214,7 @@
   - [19.1 APM 全景、Firebase 与商业平台选型](part3-tools/ch19-apm/01-apm-landscape-firebase-commercial.md)
   - [19.2 Matrix、btrace 与 Tracing SDK](part3-tools/ch19-apm/02-matrix-btrace-tracing-sdk.md)
   - [19.3 KOOM 与 LeakCanary 内存诊断](part3-tools/ch19-apm/03-koom-leakcanary-memory-diagnostics.md)
-  - [19.4 DoKit 与 Measure 开发期性能工具](part3-tools/ch19-apm/04-dokit-measure-dev-tools.md)
+  - [19.4 DoKit 调试工具与 Measure APM 平台](part3-tools/ch19-apm/04-dokit-measure-dev-tools.md)
   - [19.5 历史开源 APM：BlockCanary、ArgusAPM、AndroidGodEye、Collie 与 Rabbit](part3-tools/ch19-apm/05-open-source-apm-history.md)
   - [19.6 Jetpack Benchmark：Microbenchmark、Macrobenchmark 与测量协议](part3-tools/ch19-apm/06-jetpack-benchmark-baseline-profiles.md)
   - [19.7 实验室测试工具与设备 Benchmark](part3-tools/ch19-apm/07-lab-tools-device-benchmarks.md)

@@ -102,7 +102,7 @@ sources:
   path: https://antutu.com/download.htm
 - type: official
   path: https://developer.android.com/topic/performance/performance-class
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 last_review_finalize_at: '2026-08-05T14:07:37+08:00'
 last_review_finalize_run_id: 20260805-140520-70395a2d

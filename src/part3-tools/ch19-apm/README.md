@@ -158,7 +158,7 @@ Vellamo、AndroBench、A1 SD Bench、Emmagee 不再作为现代 Android 的推�
 - [19.1 APM 全景、Firebase 与商业平台选型](01-apm-landscape-firebase-commercial.md)
 - [19.2 Matrix、btrace 与 Tracing SDK](02-matrix-btrace-tracing-sdk.md)
 - [19.3 KOOM 与 LeakCanary 内存诊断](03-koom-leakcanary-memory-diagnostics.md)
-- [19.4 DoKit 与 Measure 开发期性能工具](04-dokit-measure-dev-tools.md)
+- [19.4 DoKit 调试工具与 Measure APM 平台](04-dokit-measure-dev-tools.md)
 - [19.5 历史开源 APM：BlockCanary、ArgusAPM、AndroidGodEye、Collie 与 Rabbit](05-open-source-apm-history.md)
 - [19.6 Jetpack Benchmark：Microbenchmark、Macrobenchmark 与测量协议](06-jetpack-benchmark-baseline-profiles.md)
 - [19.7 实验室测试工具与设备 Benchmark](07-lab-tools-device-benchmarks.md)
@@ -172,5 +172,5 @@ Vellamo、AndroBench、A1 SD Bench、Emmagee 不再作为现代 Android 的推�
 
 - 初次搭建线上 APM：先读 19.1，再按当前问题选择 2—3 个工具。
 - 已在使用某个工具：直接进入对应条目核对实现与边界。
-- 需要选型：结合 14.10 的框架和各工具的详细分析。
+- 需要选型：结合 14.7 的框架和各工具的详细分析。
 - 关注回归与实验室测试：19.6 负责 Jetpack Benchmark 测量协议，19.7 负责操作复现、设备 Benchmark 与性能档位分组。
