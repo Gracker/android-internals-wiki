@@ -1,10 +1,10 @@
 ---
-status: ready-for-review
+status: finalized
 title: lmkd、Cached App Freezer 与内存压力治理
 section: '4.3'
 chapter: '4.3'
-task6_state: pending-review
-task9_state: pending-review
+task6_state: reviewed
+task9_state: reviewed
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-08-16'
 last_verified_against: AOSP android-17.0.0_r1 ProcessList.java, psc/Constants.java, ActivityThread.java, CachedAppOptimizer.java, MemoryLimiter.java/JNI; system/memory/lmkd lmkd.cpp, include/lmkd.h, reaper.cpp; external/perfetto android.memory.lmk stdlib; Android common kernel android17-6.18-2026-06_r6 PSI and cgroup v2 docs; official lmkd, Android 17 app memory limits, app memory and Perfetto docs
@@ -128,7 +128,7 @@ related_chapters:
 - '4.4'
 - '4.10'
 task2b_state: fixed
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch04-memory/15-psi-lowmemdetector-lmkd-architecture.md
@@ -724,7 +724,7 @@ Android 17 源码中值得单独记住的边界包括：
 - [Manage your app's memory](https://developer.android.com/topic/performance/memory)
 - [Perfetto memory counters and LMK events](https://perfetto.dev/docs/data-sources/memory-counters)
 
-### 结论
+### lmkd 诊断的四条证据线
 
 理解 Android 17 LMK，可以抓住四条线：
 
@@ -1127,7 +1127,7 @@ ORDER BY ts;
 - 对比设备时记录 Android 源码标签、内核源码标签、页大小和冻结器/MMD 配置。
 - 结论中写明事件顺序和证据来源，避免用“回前台慢”反推单一原因。
 
-### 结论
+### 冻结与内存回收的判断边界
 
 Android 17 的缓存应用冻结器可以概括为一条清晰的状态转换：
 
@@ -1440,12 +1440,6 @@ Android 17 中还有若干命名与实现不一致之处，例如 Java 的 `swap
 - [memory-limiter-config.xsd @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/xsd/memory-limiter-config/memory-limiter-config.xsd)
 - [cgroup v2 文档 @ android17-6.18-2026-06_r6](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst)
 
-### 延伸阅读
-
-- §4.3 系统内存压力与 lmkd：包括 PSI、反复换入换出与进程终止决策
-- §4.3 Cached App Freezer、外部页回收与 GC 边界
-- §4.4 `onTrimMemory()` 回调：MemoryLimiter 不向目标应用发送专用内存整理回调
-
 ## 预取收益、工作集与回收代价
 
 预取用更多当前内存换取后续启动命中，收益取决于工作集稳定性。它同时可能提高回收和 lmkd 压力，需要做整机对照。
@@ -1669,7 +1663,7 @@ Perfetto 中先定位启动区间，再对齐：
 
 只看到目标应用启动变快还不够。如果同一时间窗口内有更多缓存应用被终止、PSI 上升，或后续温启动命中率下降，说明方案只是把成本转移到了系统其他部分。
 
-### 11. 源码索引
+### 10. 源码索引
 
 #### Android 17 / API 37：`android-17.0.0_r1`
 
@@ -1689,9 +1683,7 @@ Perfetto 中先定位启动区间，再对齐：
 - `mm/vmscan.c`
 - `mm/workingset.c`
 
-LMKD 的 PSI、thrashing、批量 `adj` 数据包与进程终止决策见 [4.3 lmkd、Cached App Freezer 与内存压力治理](03-lmkd-freezer-memory-pressure.md)，MemoryLimiter 见 [4.3 lmkd、Cached App Freezer 与内存压力治理](03-lmkd-freezer-memory-pressure.md)。
-
-## 诊断与验证清单
+## 预取方案的诊断与验证清单
 
 - [ ] 是否明确 AppFlow 是产品/厂商模块，未伪装成 AOSP 类？
 - [ ] 是否由 OomAdjuster 作为进程状态与 `adj` 的唯一权威来源？
@@ -1700,6 +1692,14 @@ LMKD 的 PSI、thrashing、批量 `adj` 数据包与进程终止决策见 [4.3 l
 - [ ] 是否在进程进入缓存/冻结状态、压力升高和启动失败时释放资源？
 - [ ] 是否与 MemoryLimiter 使用一致的进程状态和配置边界？
 - [ ] 是否同时评估启动收益、系统级进程终止、PSI 和后台留存代价？
+
+全文中的进程内存口径见 [4.1 Android 与 Linux 内存管理全景](01-android-linux-memory-overview.md)，应用缓存释放与 `onTrimMemory()` 实践见 [4.4 App 内存优化与诊断](04-app-memory-optimization.md)，ZRAM 换入与重启延迟见 [4.8 ZRAM 压缩交换与应用重启延迟](08-zram-compressed-swap-relaunch.md)。
+
+## 小结
+
+系统内存压力不是一条固定流水线：内核回收与交换负责恢复可用页，AMS 计算进程重要性，lmkd 结合 PSI、水位、交换空间与缓存抖动选择牺牲进程；Cached App Freezer 只暂停缓存进程执行，并不直接释放其业务对象。
+
+MemoryLimiter 通过 memcg 对部分设备上的单进程施加局部限制，不能与整机低内存或 lmkd 终止混为一谈。产品预取会主动扩大工作集，只有同时验证启动收益、PSI、回收、后台留存和进程终止代价，才能证明它没有把性能成本转移给系统其他部分。
 
 ## 参考资料
 

@@ -2,7 +2,7 @@
 title: Android 与 Linux 内存管理全景
 chapter: '4.1'
 section: '4.1'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-08-18'
 last_verified_against: AOSP android-16.0.0_r1 / Android Developers bitmap memory & Android 17 app memory limits docs / Perfetto Java heap profiler & OOME docs / 16 KB page size docs / kernel zram docs
@@ -112,7 +112,7 @@ related_chapters:
 - '4.4'
 - '4.5'
 - '2.5'
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
@@ -545,7 +545,7 @@ ZRAM 是匿名页回收策略的一部分。风险来自持续换入换出、回
 
 两者的开销都受设备、构建和负载影响。引用固定比例前必须有同设备、同场景、同配置的测量数据。
 
-### 源码与文档锚点
+### 进程内存域的源码与文档锚点
 
 - [AOSP Android 17 `Debug.MemoryInfo`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Debug.java)
 - [AOSP Android 17 `ActivityManagerShellCommand`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java)
@@ -563,7 +563,7 @@ ZRAM 是匿名页回收策略的一部分。风险来自持续换入换出、回
 - [Perfetto `SysStatsConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/sys_stats/sys_stats_config.proto)
 - [Perfetto `JavaHprofConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/java_hprof_config.proto)
 
-### 结论
+### 从指标进入根因的判断顺序
 
 Android 内存分析要先区分三件事：
 
@@ -976,7 +976,7 @@ D 状态表示不可中断睡眠，来源很多。直接回收还可能在 CPU �
 
 持有 fd 或 VMA 表示进程引用该缓冲区。共享者、导出方、驻留状态和设备映射仍需核对，跨进程求和会重复。
 
-### 源码与文档锚点
+### 页分配与回收的源码与文档锚点
 
 - [Android 17 kernel `mm/page_alloc.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/page_alloc.c)
 - [Android 17 kernel `mm/vmscan.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c)
@@ -993,7 +993,9 @@ D 状态表示不可中断睡眠，来源很多。直接回收还可能在 CPU �
 - [Perfetto `PerfEventConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/perf_event_config.proto)
 - [AOSP Android 17 ART `mem_map.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartbase/base/mem_map.cc)
 
-### 结论
+## 小结
+
+先区分地址空间、驻留页、共享归因和私有页，再把 Java、原生、代码、线程栈、图形与内核资源放回各自的内存域。确认增长发生在哪一域后，还要继续沿内核页管理回答以下问题：
 
 Linux 内存性能问题可以分成四个问题来问：
 

@@ -1,7 +1,7 @@
 ---
 title: Android 17 ARM MTE 内存标签扩展实战
 chapter: '4.9'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-08-21'
 last_verified_against: AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6; bionic ifuncs.cpp MTE dispatch checked 2026-08-21
@@ -21,7 +21,7 @@ related_chapters:
 - '23.3'
 task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 last_deep_review_at: '2026-08-21T16:35:04+08:00'
 last_deep_review_run_id: 20260821-163504-deep-review-4c57381a
 sources:

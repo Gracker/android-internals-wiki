@@ -2,7 +2,7 @@
 title: ZRAM 压缩交换与应用重启延迟
 chapter: '4.8'
 section: '4.8'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-08-22'
 last_verified_against: AOSP android-17.0.0_r1 system/memory/lmkd + frameworks/base MMD/ZramMaintenance/CachedAppOptimizer/OomAdjuster；Android common kernel android17-6.18-2026-06_r6 zram；Android MMD/LMKD docs；Linux zram docs；Perfetto memory docs；ApplicationExitInfo/ActivityManager API reference；Android 16 KB page size docs；arXiv 2502.12826
@@ -68,9 +68,9 @@ related_chapters:
 - '15.2'
 last_deep_review_at: '2026-08-22T17:05:18+08:00'
 last_deep_review_run_id: 20260822-170518-deep-review-544265d1
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending-review
+task9_state: reviewed
 ---
 
 # ZRAM 压缩交换与应用重启延迟

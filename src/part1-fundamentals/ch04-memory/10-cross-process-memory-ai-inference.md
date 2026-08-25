@@ -1,7 +1,8 @@
 ---
 title: 跨进程内存共享与端侧推理预算
 chapter: '4.10'
-status: ready-for-review
+status: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 last_verified: '2026-07-06'
 last_verified_against: AOSP android-17.0.0_r1

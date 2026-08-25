@@ -2,8 +2,8 @@
 title: ART Heap、GC 与后台维护调度
 chapter: '4.2'
 section: '4.2'
-status: ready-for-review
-pipeline_stage: ready-for-review
+status: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 tags:
 - memory
@@ -668,17 +668,6 @@ adb shell kill -s QUIT <pid>
 6. 对比优化前后的分配率、存活对象集合、GC CPU 时间、等待长尾和丢帧，不只比较 GC 次数。
 
 定位分配热点时，Android Studio 分配记录适合开发期观察对象类型与调用点；Android 12 及以上版本的 Perfetto ART 分配分析可以按 `com.android.art` 堆采样调用栈。两者都会扰动分配路径，应先用开销较低的 GC 时间片、等待事件和堆计数缩小时间窗，再开启定向分析。
-
-### 与其他章节的关系
-
-- [4.1 Android 与 Linux 内存管理全景](01-android-linux-memory-overview.md)：把 ART 堆放回 RSS/PSS、原生内存、图形和内核统计中。
-- [4.1 Android 与 Linux 内存管理全景](01-android-linux-memory-overview.md)：解释 ART 的 `mmap`、缺页、回收和页大小如何由内核承载。
-- [4.3 lmkd、Cached App Freezer 与内存压力治理](03-lmkd-freezer-memory-pressure.md)：lmkd 依据系统压力与进程重要性终止进程，和 Java OOM 是两套机制。
-- [4.5 16 KB Page Size 与 Android 性能](05-16kb-page-size.md)：解释页大小对映射、对齐和 ART 内存的影响。
-- [4.2 ART Heap、GC 与后台维护调度](02-art-heap-gc-maintenance.md)：继续分析年轻代/全堆选择、Region 碎片与移动回收。
-- [4.6 ART FinalizerDaemon、Cleaner 与 ReferenceQueue](06-finalizer-referencequeue.md)：展开引用队列、守护线程和资源释放。
-- [4.2 ART Heap、GC 与后台维护调度](02-art-heap-gc-maintenance.md)：展开 GC、收集器切换与堆裁剪的异步调度。
-
 
 ## 分代回收、Region 与暂停来源
 
@@ -1745,16 +1734,15 @@ DirectByteBuffer 的原生后备内存位于 Java 堆外，Java 包装对象可�
 更大的堆增长上限可以推迟部分 GC，也会容纳更大的存活对象集合，增加扫描、内存带宽和系统 PSS 压力。`ActivityManager.getMemoryClass()` 返回设备对普通应用的近似堆等级；厂商、进程类型和 `largeHeap` 会改变结果，没有通用的 128–512 MiB 固定范围。
 
 
-## 结论
+## 小结
 
-- `HeapTaskDaemon` 是 Java 执行线程，`TaskProcessor` 是原生层的时间队列和调度循环。
-- 队列按 `target_run_time_` 排序；改期必须移除后重插，停止时会提前排空剩余任务。
-- Android 17 ART 运行时的生产源码共有 10 个 `HeapTask` 派生类，`heap.cc` 中有 6 个。
-- `ClearedReferenceTask` 在该源码标签下默认由 GC 调用方执行，不能算作正常入队的异步任务。
-- 进程派生后会暂时放宽 GC 目标，再按配置逐步降低；兜底 GC 的目标时间范围是 8～37.999 秒，并受先前 GC 序号保护。
-- `target_footprint_` 是 ART GC/增长目标，不是硬堆上限，也不参与 lmkd 评分。
-- Perfetto 排查应使用 `HeapTaskDaemon`、GC 触发原因、收集器和源码明确声明的持续区间，不能自行假设每个任务类都有同名事件。
-- 普通应用没有受支持的 HeapTask 控制接口。绕过 ART 内部调度会同时破坏多类运行时工作。
+- 先用分配空间、收集器、GC 类型和触发原因解释堆行为，再判断应用线程是被暂停、等待 GC，还是只与并发 GC 时间重合。
+- 分代回收降低短命对象的平均处理成本，但晋升、Remembered Set、Region 碎片和全堆回收仍可能形成长尾；结论必须与分配率、存活集和线程调度证据对齐。
+- `HeapTaskDaemon` 是 Java 执行线程，`TaskProcessor` 是原生层的时间队列和调度循环。后台任务会处理 GC、堆裁剪和启动期维护，但普通应用没有受支持的队列控制接口。
+- `onTrimMemory()` 是 Framework 发给应用的异步状态信号，ART Heap Trim 是运行时内部维护；它们与内核回收、lmkd 和 MemoryLimiter 都不是同一条动作链。
+- `target_footprint_` 是 ART 的 GC/增长目标，不是硬堆上限，也不参与 lmkd 评分。排查 OOM 时要保留完整异常文本，并把 Java 堆放回进程与系统内存全景中判断。
+
+相邻主题分别见 [4.1 Android 与 Linux 内存管理全景](01-android-linux-memory-overview.md)、[4.3 lmkd、Cached App Freezer 与内存压力治理](03-lmkd-freezer-memory-pressure.md)、[4.5 16 KB Page Size 与 Android 性能](05-16kb-page-size.md) 与 [4.6 ART FinalizerDaemon、Cleaner 与 ReferenceQueue](06-finalizer-referencequeue.md)。
 
 
 ## 参考资料
@@ -1776,17 +1764,11 @@ DirectByteBuffer 的原生后备内存位于 Java 堆外，Java 包装对象可�
 
 #### 官方文档
 
-- [Debug ART garbage collection](https://source.android.com/docs/core/runtime/gc-debug)
-- [Android 16 QPR2 is Released](https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html)
-- [Baseline Profiles overview](https://developer.android.com/topic/performance/baselineprofiles/overview)
-- [Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)
-
 - [Android 17 is Here：Generational garbage collection](https://developer.android.com/blog/posts/android-17-is-here)
 - [AOSP：Debug ART garbage collection](https://source.android.com/docs/core/runtime/gc-debug)
 - [AOSP：Android 8.0 ART improvements](https://source.android.com/docs/core/runtime/improvements)
 - [AOSP android-17.0.0_r1：mark_compact.h](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.h)
 - [AOSP android-17.0.0_r1：mark_compact.cc](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.cc)
-- [AOSP android-17.0.0_r1：heap.cc](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc)
 - [AOSP android-17.0.0_r1：write_barrier-inl.h](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/write_barrier-inl.h)
 - [AOSP android-17.0.0_r1：card_table.h](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/accounting/card_table.h)
 - [Android 17 GKI 6.18：arm64 gki_defconfig](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig)

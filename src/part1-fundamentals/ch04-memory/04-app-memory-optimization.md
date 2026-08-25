@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: finalized
 title: App 内存优化与诊断
 section: '4.4'
 chapter: '4.4'
@@ -44,7 +44,7 @@ related_chapters:
 - '4.3'
 - '7.1'
 - '7.2'
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task2b_state: fixed
 task9_state: reviewed
@@ -673,8 +673,6 @@ Android 14+ 只保留 `UI_HIDDEN` 和 `BACKGROUND` 两个公开投递级别，�
 - [ ] 内存预算是否来自设备×场景的 p50/p95/p99 与回落数据？
 - [ ] 线上退出指标是否能关联版本、设备档位和业务场景？
 
----
-
 ## 参考资料
 
 ### AOSP Android 17 源码
@@ -710,9 +708,8 @@ Android 14+ 只保留 `UI_HIDDEN` 和 `BACKGROUND` 两个公开投递级别，�
 
 ### 交叉阅读
 
-- 4.1「Android 内存模型全景」：进程内存口径
-- 4.1「Android 与 Linux 内存全景」：页、回收、内核压力与进程内存口径
-- 4.2「ART Heap 与 GC」：分配、收集器与后台维护
-- 4.3「lmkd、Cached App Freezer 与内存压力治理」：压力检测、优先级与进程终止
-- 4.5「16 KB Page Size」：构建、加载与兼容性细节
-- 7.1、7.2、13.1：卡顿分类、归因方法与 Perfetto 分析
+- [4.1 Android 与 Linux 内存管理全景](01-android-linux-memory-overview.md)：进程内存口径、页、回收与内核压力。
+- [4.2 ART Heap、GC 与后台维护调度](02-art-heap-gc-maintenance.md)：分配、收集器与后台维护。
+- [4.3 lmkd、Cached App Freezer 与内存压力治理](03-lmkd-freezer-memory-pressure.md)：压力检测、优先级与进程终止。
+- [4.5 16 KB Page Size 与 Android 性能](05-16kb-page-size.md)：构建、加载与兼容性细节。
+- 7.1、7.2、13.1：卡顿分类、归因方法与 Perfetto 分析。
