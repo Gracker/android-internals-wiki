@@ -2,10 +2,12 @@
 title: netd 与 DnsResolver：DNS 解析性能和故障诊断
 chapter: '12.2'
 section: '12.2'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-07-31'
+last_verified: '2026-08-25'
 last_verified_against: Android 17 / API 37 / AOSP android-17.0.0_r1
+last_review_finalize_at: '2026-08-25T16:10:03+08:00'
+last_review_finalize_run_id: 20260825-160510-f6037f5c
 confidence: high
 tags:
 - netd
@@ -38,7 +40,19 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/packages/modules/DnsResolver/+/android-17.0.0_r1/DnsResolverService.cpp
 - type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/DnsResolver/+/android-17.0.0_r1/ResolverController.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/DnsResolver/+/android-17.0.0_r1/DnsQueryLog.cpp
+- type: aosp
   path: https://android.googlesource.com/platform/packages/modules/DnsResolver/+/android-17.0.0_r1/PrivateDnsConfiguration.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/service/src/com/android/server/connectivity/NetworkDiagnostics.java
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/DnsResolver/+/android-17.0.0_r1/binder/android/net/IDnsResolver.aidl
+- type: aosp
+  path: https://android.googlesource.com/platform/system/netd/+/android-17.0.0_r1/server/NetdNativeService.cpp
+- type: external
+  path: https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dns.kt
 ---
 
 # netd 与 DnsResolver：DNS 解析性能和故障诊断
