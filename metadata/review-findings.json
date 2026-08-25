@@ -2920,6 +2920,27 @@
       "summary": "Perfetto/EventLog 诊断段使用脱敏 am_* 占位作为可查锚点",
       "type": "source-boundary",
       "updated_at": "2026-08-25T08:52:46.572073+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/02-dvfs-thermal-android-power.md",
+      "close_note": "fixed-thermal-source-urls-and-android17-6.18-verification-boundary",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20260825-143835-idle-audit-d3b85a7c",
+      "created_at": "2026-08-25T14:47:20.092142+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20260825-143835-idle-audit-d3b85a7c",
+      "details": "章节 frontmatter 与参考资料中 source.android.com/docs/core/thermal、developer.android.com/games/optimize/thermal 已返回 404，且 last_verified_against 仍停留在 6.6/6.12，未反映正文采用的 android17-6.18-2026-06_r6 核验边界。",
+      "id": "finding-407790fd2bbf",
+      "log_path": "logs/audit/2026-08-25-20260825-143835-idle-audit-d3b85a7c-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "source.android.com/docs/core/thermal",
+        "developer.android.com/games/optimize/thermal"
+      ],
+      "status": "fixed",
+      "summary": "Thermal 官方来源链接与 Android 17 内核核验边界过期",
+      "type": "stale-source-url",
+      "updated_at": "2026-08-25T14:47:35.939441+08:00"
     }
   ],
   "schema_version": 1
