@@ -4,20 +4,34 @@ chapter: '4.6'
 section: '4.6'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-06-09'
-last_verified_against: AOSP android-16.0.0_r1 libcore + Android Developers API reference (Cleaner/CloseGuard/SystemCleaner) + Oracle Java SE 8 ReferenceQueue API
+last_verified: '2026-08-25'
+last_verified_against: AOSP android-17.0.0_r1 libcore ReferenceQueue/FinalizerReference/Daemons/Cleaner/CleanerImpl/SystemCleaner + Android Developers API reference (Cleaner/SystemCleaner/CloseGuard/StrictMode.VmPolicy.Builder) + Oracle Java SE 8 ReferenceQueue API
 confidence: medium
 sources:
 - type: research
   path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-art-finalizerdaemon-referencequeue-concurrency.md
 - type: aosp
-  path: platform/libcore/android-16.0.0_r1/ojluni/src/main/java/java/lang/ref/ReferenceQueue.java
+  path: https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/ref/ReferenceQueue.java
 - type: aosp
-  path: platform/libcore/android-16.0.0_r1/libart/src/main/java/java/lang/Daemons.java
+  path: https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/luni/src/main/java/java/lang/ref/FinalizerReference.java
+- type: aosp
+  path: https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/libart/src/main/java/java/lang/Daemons.java
+- type: aosp
+  path: https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/ref/Cleaner.java
+- type: aosp
+  path: https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/jdk/internal/ref/CleanerImpl.java
+- type: aosp
+  path: https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/sun/misc/Cleaner.java
+- type: aosp
+  path: https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/luni/src/main/java/android/system/SystemCleaner.java
+- type: official
+  path: https://developer.android.com/reference/java/lang/ref/Cleaner
+- type: official
+  path: https://developer.android.com/reference/android/system/SystemCleaner
 - type: official
   path: https://developer.android.com/reference/android/util/CloseGuard
 - type: official
-  path: https://developer.android.com/reference/android/os/StrictMode
+  path: https://developer.android.com/reference/android/os/StrictMode.VmPolicy.Builder
 - type: official
   path: https://docs.oracle.com/javase/8/docs/api/java/lang/ref/ReferenceQueue.html
 tags:
@@ -31,6 +45,8 @@ related_chapters:
 - '4.2'
 - '4.4'
 - '23.2'
+last_idle_audit_at: '2026-08-25T18:35:27+08:00'
+last_idle_audit_run_id: 20260825-183527-idle-audit-55813ccc
 pipeline_stage: ready-to-publish
 task2b_state: fixed
 task6_state: reviewed
