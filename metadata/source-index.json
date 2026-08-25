@@ -8,7 +8,18 @@
       "processed_at": "2026-07-16T06:14:00.474672",
       "section": "19.24",
       "summary": "GWP-ASan 重写为 Recoverable 诊断器，SampleRate=25000，SEGV 经 debuggerd 两阶段恢复，与 MTE 路径独立",
-      "title": "Android 17 GWP-ASan 可恢复机制与配置参数源码分析"
+      "title": "Android 17 GWP-ASan 可恢复机制与配置参数源码分析",
+      "previous_route_status": null,
+      "target_path": "src/part5-app/ch20-stability/11-mte-gwp-asan-native-memory-safety.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "gwp-asan",
+        "segv",
+        "debuggerd",
+        "mte"
+      ],
+      "route_status": "existing-chapter-routed",
+      "routed_at": "2026-08-26T06:20:51.196046+08:00"
     },
     {
       "action": "body-applied",
@@ -319,7 +330,21 @@
       "processed_at": "2026-07-17T06:14:31.983422",
       "section": "4.15",
       "summary": "ZRAM 从 mm/zram.c 迁移到 drivers/block/zram/ 子目录，支持 CONFIG_ZRAM_MULTI_COMP 多 compressor（最多 4 个）按 slot recompression。PSI 通过 per-CPU state 记账 + epoll 事件通知 lmkd，监听间隔分 10ms（高压力）与 100ms（低压力）。",
-      "title": "Android 17 ZRAM 与 PSI 压力管理机制"
+      "title": "Android 17 ZRAM 与 PSI 压力管理机制",
+      "previous_route_status": null,
+      "target_path": "src/part1-fundamentals/ch04-memory/08-zram-compressed-swap-relaunch.md",
+      "route_confidence": 27,
+      "route_terms": [
+        "zram",
+        "psi",
+        "drivers",
+        "block",
+        "comp",
+        "state",
+        "lmkd"
+      ],
+      "route_status": "existing-chapter-routed",
+      "routed_at": "2026-08-26T06:20:51.196046+08:00"
     },
     {
       "action": "body-applied",
@@ -353,13 +378,16 @@
       "title": "Android 17 Native Hook 三大流派对比与 Inline Hook ARM64 实现"
     },
     {
-      "action": "direct-inject",
+      "action": "quarantined-non-aiw",
       "chapter": "ch01 §1.66",
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-windowmanager-architecture-sourcecode.md",
       "processed_at": "2026-07-18T10:33:46.781497",
       "status": "injected",
       "summary": "WMS 双 Handler 线程模型、addWindow 全链路、WindowSurfacePlacer 6 次循环护栏、BLASTSyncEngine SyncGroup 合批机制",
-      "title": "Android 17 WindowManagerService 架构 — Window 添加 / Surface 分配 / BLAST 链路"
+      "title": "Android 17 WindowManagerService 架构 — Window 添加 / Surface 分配 / BLAST 链路",
+      "previous_route_status": null,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-08-26T06:20:51.196046+08:00"
     },
     {
       "action": "direct-inject",
@@ -4208,6 +4236,126 @@
       "score": 19,
       "summary": "> 发布时间: 2026-05-28T00:39:32.000Z > 原文链接: https://juejin.cn/post/7644476634998538249 2026-05-28 1,332 阅读5分钟 2022 年，Android 团队推出了照片选择器，让用户能更隐私地分享媒体文件。用户可以通过可浏览的界面按日期从新到旧查看媒体库，并且只授予应用访问所选文件的...",
       "title": "[技术文章] 学吧！Android 全新的嵌入式照片选择器AndroidX 推出了全新的嵌入式照片选择器（EmbeddedPhotoP"
+    },
+    {
+      "path": "https://juejin.cn/post/7677254638325694474",
+      "title": "[掘金Android] Android-高版本 LMKD 源码解析：基于 PSI 的内存压力监控与查杀全流程",
+      "summary": "古法安卓对 system/memory/lmkd/lmkd.cpp（Android S/T，约 3800 行）的全流程源码解析：PSI 三级压力与默认阈值（medium some 70ms/1s、critical full 700ms/1s）、每窗口一次事件限制催生的事件+轮询混合架构（高压 10ms/低压 100ms）、mlockall+SCHED_FIFO 启动细节、update_props 属性热更新优先级（device_config 优于 ro.lmk），文末附 /proc/meminfo 逐行解析。",
+      "chapter": "ch04",
+      "processed_at": "2026-08-26T06:20:50.933057+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "target_path": "src/part1-fundamentals/ch04-memory/07-memory-compaction-direct-reclaim.md",
+      "route_confidence": 24,
+      "route_terms": [
+        "lmkd",
+        "psi",
+        "system",
+        "memory",
+        "lmkd.cpp",
+        "medium"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "https://juejin.cn/post/7677254638325727242",
+      "title": "[掘金Android] Android-PSI 详解：libpsi 源码解析——116 行代码架起 lmkd 与内核之间的桥",
+      "summary": "system/memory/libpsi/psi.c 全部 116 行的逐函数解析：init_psi_monitor 以只写方式向 /proc/pressure/memory 注册触发器并直接返回事件 fd、内核窗口 500ms-10s 与单 fd 单触发器约束、register 必须用 EPOLLPRI 而非 EPOLLIN 的经典坑、事件一次性派发与 close 即销毁机制，是 lmkd 与内核 PSI 子系统之间的桥。",
+      "chapter": "ch04",
+      "processed_at": "2026-08-26T06:20:50.933057+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "target_path": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md",
+      "route_confidence": 25,
+      "route_terms": [
+        "lmkd",
+        "system",
+        "memory",
+        "psi.c",
+        "psi",
+        "proc",
+        "pressure"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "https://juejin.cn/post/7676092674902868010",
+      "title": "[掘金Android] 超好用 R8 Configuration Analyzer，优化你的 App 大小和内存",
+      "summary": "Google 新推 R8 Configuration Analyzer：把 keep 规则影响量化为 Shrinking/Optimization/Obfuscation 三项指标，Blast Radius 表给出每条规则命中的类/字段/方法数、约束类型与来源 Maven 坐标，能识别被宽规则覆盖的 subsumed rules，覆盖 AAR consumer rules 的合并分析，配合 android/skills 的 r8-analyzer Skill 可交给 Agent 执行，适合包体积与构建优化。",
+      "chapter": "ch04",
+      "processed_at": "2026-08-26T06:20:50.933057+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "target_path": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "route_confidence": 28,
+      "route_terms": [
+        "configuration",
+        "analyzer",
+        "app",
+        "google",
+        "keep",
+        "shrinking",
+        "optimization",
+        "rules"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-26-76760926-超好用R8ConfigurationAnalyzer优化App大小和内存.md",
+      "title": "[技术文章] 超好用 R8 Configuration Analyzer， 优化你的 App 大小和内存相信大家最近应该都知道，目前",
+      "summary": "> 发布时间: 2026-08-21T00:49:44.000Z > 原文链接: https://juejin.cn/post/7676092674902868010 2026-08-21 833 阅读8分钟 相信大家最近应该都知道，**目前 Google 在整治 keep 滥用行为，建议 App 开启 R8 完整模式，Google 会对 App 进行打分，分数低会有警告...",
+      "chapter": "ch04",
+      "processed_at": "2026-08-26T06:20:50.933057+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "route_confidence": 19,
+      "route_terms": [
+        "configuration",
+        "analyzer",
+        "app",
+        "google",
+        "keep"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-26-76772546-AndroidPSI详解libpsi源码解析116行架起lmkd与内核的桥.md",
+      "title": "[技术文章] Android-PSI 详解：libpsi 源码解析——116 行代码架起 lmkd 与内核之间的桥Android PS",
+      "summary": "> 发布时间: 2026-08-24T08:00:59.000Z > 原文链接: https://juejin.cn/post/7677254638325727242 2026-08-24 36 阅读11分钟 > 系列上一篇《Android 高版本 LMKD 源码解析》里，init_mp_psi() 里两句 init_psi_monitor() / register_ps...",
+      "chapter": "ch04",
+      "processed_at": "2026-08-26T06:20:50.933057+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch04-memory/07-memory-compaction-direct-reclaim.md",
+      "route_confidence": 14,
+      "route_terms": [
+        "lmkd",
+        "psi",
+        "ch04-memory"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-26-76772546-Android高版本LMKD源码解析PSI内存压力监控与查杀全流程.md",
+      "title": "[技术文章] Android-高版本 LMKD 源码解析：基于 PSI 的内存压力监控与查杀全流程Android 高版本 LMKD 源",
+      "summary": "> 发布时间: 2026-08-24T07:56:46.000Z > 原文链接: https://juejin.cn/post/7677254638325694474 2026-08-24 49 阅读39分钟 > 本文基于 system/memory/lmkd/lmkd.cpp（Android S/T 时期版本，约 3800 行），从 init 启动讲到一次完整的查杀流程...",
+      "chapter": "ch04",
+      "processed_at": "2026-08-26T06:20:50.933057+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch04-memory/07-memory-compaction-direct-reclaim.md",
+      "route_confidence": 27,
+      "route_terms": [
+        "lmkd",
+        "psi",
+        "system",
+        "memory",
+        "lmkd.cpp",
+        "ch04-memory",
+        "aosp"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
