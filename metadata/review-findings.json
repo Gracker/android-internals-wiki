@@ -2841,6 +2841,9 @@
     },
     {
       "chapter": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "close_note": "Rework verified source-index #351 material is Fragment/View layout timing and dialog-anchor positioning (configuration change, performTraversals, doOnLayout) with no ART/JVMTI overlap; target chapter remains limited to ART method tracing, JVMTI attach/deoptimization/tagging boundaries. No material from the false route was incorporated; chapter metadata returned to ready-for-review for downstream review.",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20260825-093527-rework-bf95039c",
       "created_at": "2026-08-24T07:16:12.385529+08:00",
       "created_by": "aiw-body-apply",
       "created_run_id": "20260824-071516-a32a6691",
@@ -2852,10 +2855,10 @@
         "metadata/source-index.json#351",
         "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-24-76343650-配置变更后弹窗为什么飞到了最左边.md"
       ],
-      "status": "open",
+      "status": "verified",
       "summary": "body-apply misroute: source-index #351 (View 布局 performTraversals 时序 / Fragment 重建 / doOnLayout 弹窗错位) routed to JVMTI Agent ART 运行时监控章节 26.25; zero topical overlap, quarantined to prevent fabrication.",
       "type": "routing-defect",
-      "updated_at": "2026-08-24T07:16:12.385529+08:00"
+      "updated_at": "2026-08-25T09:37:55.122738+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
