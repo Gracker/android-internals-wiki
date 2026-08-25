@@ -505,6 +505,4 @@ Android 17 的返回循环对两种缓存都调用有界随机化函数。fine �
 - [Android 17 Power Stats HAL AIDL](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl)
 - [Power Stats HAL 官方说明](https://source.android.com/docs/core/power/power-stats-hal)
 
----
-
 **延伸阅读**：[11.1 Android 功耗模型与系统级优化](../../part2-performance/ch11-power/01-android-power-model-system-optimization.md) · [11.2 App 耗电优化与案例](../../part2-performance/ch11-power/02-app-power-optimization-cases.md) · [11.3 WakeLock 机制与功耗分析](../../part2-performance/ch11-power/03-wakelock.md) · [14.1 Android Studio Profiler](01-as-profiler.md) · [15.3 线上性能监控](../ch15-methodology/03-performance-metrics-online-monitoring.md)

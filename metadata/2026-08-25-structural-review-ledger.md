@@ -27,7 +27,8 @@
 | 第 11 章：功耗 | 5 | 5 | 已完成 | 顺序保持为系统功耗模型/策略 → App 通用优化与案例 → WakeLock → Bluetooth 专项 → 用户与业务配置。修复 11.1 编号断层、11.2 两套版本边界的标题歧义、11.4 失效的跨章关联；11.5 改为覆盖全部正文变量的标题。 |
 | 第 12 章：网络性能 | 2 | 2 | 已完成 | 顺序保持为端到端请求/TLS → netd/DNS 系统诊断。修复 Connectivity 旧章节号、TLS 诊断误跳和 README 中已迁出的包体积阅读路径。 |
 | 第 13 章：Perfetto | 13 | 13 | 已完成 | 逐篇确认采集、UI/状态、SQL/自动化、埋点与专项诊断的责任边界。清理 13.1 自引用、旧稿分隔和重复资料；为 6 篇合并稿补齐全文收束；区分 13.6/13.7/13.13 分段资料责任；标题统一为 FrameTimeline。13 篇状态统一为可发布。 |
-| 其余 15 章 | 203 | 0 | 待审 | 按章节逐篇推进。全书章节号存在 `1–12 → 18 → 13–15 → 19 → 16–17 → 20–26` 的确定性顺序错误，待内容合并完成后统一重编号；Perfetto 章内的通用 SQL/自动化与专项文章也在该次重编号中一次性调整。 |
+| 第 14 章：其他分析工具 | 17 | 17 | 已完成 | 逐篇确认 IDE、命令行、量产采集、系统指标、Hook、GPU/UI/Camera、eBPF 与构建分析工具的责任边界。清理合并稿自引用、旧分隔线和重复资料；重命名 14.12、14.13；补齐 14.13、14.16 全文收束。章内目标顺序把平台内建采集放在第三方 Hook 之前，随全书统一重编号一次落地。 |
+| 其余 14 章 | 186 | 0 | 待审 | 按章节逐篇推进。累计完成 90/276。全书章节号存在 `1–12 → 18 → 13–15 → 19 → 16–17 → 20–26` 的确定性顺序错误，待内容合并完成后统一重编号；Perfetto 与本章的章内顺序也在该次重编号中一次性调整。 |
 
 ## 第 4 章逐篇结论
 
@@ -156,3 +157,25 @@
 | 13.11 Agent 辅助 Perfetto 分析协议 | 按输入约束 → scratchpad → schema-first SQL → 候选方向 → 证据输出与补采推进。 | 负责 Agent 调查过程和停止条件；13.4 负责平台化，13.7 负责查询方法。 | 保留；完成待审状态并转为可发布。 |
 | 13.12 Perfetto SDK 与应用内 Trace 数据源 | 按 backend 边界、custom schema/importer、启动采集、构建兼容、隐私与验收推进。 | 负责 SDK 与应用自定义 data source；13.6 负责 ATrace 和系统基础设施。 | 保留。 |
 | 13.13 FrameTracer 与 FrameTimeline 分析 | 先讲 Graphics Frame Event 与 BufferQueue frame number，再讲 Expected/Actual、token 和 Jank 分类。 | 负责两套帧身份和时间语义；13.10 使用它们做 BufferQueue 专项归因。 | 保留合并；区分两组源码资料，删除自引用，补充全文小结，标题统一为 FrameTimeline。 |
+
+## 第 14 章逐篇结论
+
+| 文章 | 标题契约与推进线 | 章节边界 | 处理结果 |
+| --- | --- | --- | --- |
+| 14.1 Android Studio Profiler | 从问题与任务入口进入 CPU 三种模式、内存、采集开销、Perfetto 互补、功耗与量产边界。 | 负责 IDE 内的应用视角分析入口；14.2 下钻 CPU，14.3 下钻内存，14.8 负责量产采集 API。 | 保留；通读确认结构完整、状态保持可发布。 |
+| 14.2 Simpleperf 与 ARM Topdown 微架构分析 | 从采样/调用图/硬件事件基础推进到 Android 17 SPE 工作流，再用 Topdown 分类和反证收束。 | 负责 CPU 热点与微架构证据；13.8 负责 profile 导入，14.16 负责 eBPF 观测。 | 保留合并；删除两处当前文章自指，按 Simpleperf 与 ARM Topdown 重组资料。 |
+| 14.3 内存分析、HPROF 与 Heap Dump 工具 | 先按 Java、Native、图形和映射选择工具，再下钻 HPROF 生成、传输与引用图，最后声明版本边界。 | 负责工具选型和堆产物；4.x/10.x 负责机制与性能影响，23.x 负责应用专项治理。 | 保留合并；按内存工具与 HPROF/ART Heap Graph 重组资料。 |
+| 14.4 dumpsys 系列命令 | 先固定快照证据语义，再依次覆盖 activity、meminfo、gfxinfo、cpuinfo、window、batterystats、SurfaceFlinger 与自定义 dump。 | 负责系统服务当前状态和累计窗口；时间因果交给 Perfetto/Winscope，专项对象图与功耗交给对应工具。 | 保留；通读确认命令顺序、口径和取证清单形成闭环。 |
+| 14.5 Battery Historian 与功耗分析工具 | 从证据类型和工具选择进入 Historian/batterystats、Perfetto rail、Power Profiler、PowerMetric、PowerMonitor 与 A/B 实验。 | 负责功耗工具与计量口径；11.x 负责功耗机制和优化策略。 | 保留；删除旧稿末尾分隔线，状态保持可发布。 |
+| 14.6 自动化性能测试与 CLI Agent 工作流 | 从场景、基线、重复测量和门禁进入 CLI/Agent 编排、证据回传与常见误区。 | 负责测试与工具编排；13.4 负责 Perfetto 分析平台，13.11 负责单次 Agent 调查协议。 | 保留合并；按基准自动化与 CLI/Agent 重组资料，删除重复 Macrobenchmark 链接。 |
+| 14.7 三方性能库、Hook 与可观测性基础设施 | 先比较信号覆盖、运行开销与选型，再进入插桩、Native Hook、回调安全和验证约束。 | 负责第三方能力及其风险；平台内建 ProfilingManager/statsd/StrictMode 应先于本篇出现。 | 保留合并；清除旧稿自引用，章内位置将在统一重编号时移到当前 14.10 之后。 |
+| 14.8 ProfilingManager | 按采集类型选择、API/trigger 版本、请求与回调、文件隐私、失败结果、场景和上线清单推进。 | 负责量产设备受控采集；14.1 负责连接设备上的 IDE 交互分析。 | 保留合并；修复发布阶段，确认显式请求与系统触发两条主线完整。 |
+| 14.9 statsd 与系统级指标采集 | 从 statsd/atom/metric 模型进入本地配置、事件入口、交叉验证、权限、CTS/APM 与厂商扩展。 | 负责系统事件索引与聚合；Perfetto 负责时间线，App APM 负责业务会话。 | 保留；通读确认“模型 → 操作 → 证据边界 → 长期治理”顺序成立。 |
+| 14.10 StrictMode 性能检查与开发期诊断 | 从 ThreadPolicy/VmPolicy 进入 detector、penalty、Binder 传播、自动化、多进程与能力缺口。 | 负责开发期运行时违规信号；精确耗时和系统因果仍交给 Perfetto。 | 保留；通读确认性能、资源与安全 detector 均由“开发期诊断”标题覆盖。 |
+| 14.11 GPU 调试与 AGI 单帧分析 | 先按 API 捕获、counter 和 system trace 选型，再讲 AGI 捕获/重放/单帧分析及误区。 | 负责 GPU 命令与单帧内容；14.12 负责连续 counter、内存和 GpuService 时间线。 | 保留合并；修复发布阶段，全文结论覆盖两段主线。 |
+| 14.12 GPU Counter、内存与 GpuService 可观测性 | 从频率/counter/内存事件进入 GpuService 数据源、时间线和驱动统计。 | 负责连续 GPU 可观测证据；10.4 负责图形内存归因方法，14.11 负责单帧调试。 | 标题由泛化的 observability 扩充为可直接覆盖三类正文对象；修复发布阶段。 |
+| 14.13 Android Performance Analyzer 与 GAPS：性能追踪与目标可达性 | 先讲 APA 的统一性能检查与 system trace，再讲 GAPS 的静态路径重建和动态触达验证。 | 两类工具共享“自动取得现场证据”，但分别证明性能时序和目标方法可达性。 | 扩充标题以消除缩写含义不明；按两类工具分组资料并补充全文小结。 |
+| 14.14 Camera 性能分析工具：Perfetto、SQL 与 GFXReconstruct | 从最小 Buffer 模型与 Perfetto/SQL 进入预览卡顿、功耗、Camera2/CameraX、HAL3 和像素问题。 | 负责 Camera 工具链和证据；2.x 负责通用图形管线，22.x 负责应用 UI/媒体场景。 | 保留；修复发布阶段，通读确认专项工具与问题类型顺序成立。 |
+| 14.15 Winscope、Layout Inspector 与 UI 状态调试 | 先用 Winscope 观察窗口、Layer、transition 与输入时间线，再用 Layout Inspector 检查 View/Compose 当前结构。 | 负责系统窗口状态与应用布局快照的互补；帧耗时交给 Perfetto，GPU/像素交给 AGI。 | 保留合并；删除 Layout Inspector 段落对当前文章的自链接，按两类工具分组资料并补齐审查状态。 |
+| 14.16 Android eBPF 架构与性能观测 | 从 Hook 点/Map/场景进入 bpfloader、对象组织/权限，再落到 Android 17 程序、事件和消费端。 | 负责内核与用户态探针基础设施；14.2 负责 PMU 采样，14.9 负责聚合 atom。 | 保留三段合并；删除旧稿分隔、自引用和中途延伸阅读，区分三组源码资料并补充全文小结。 |
+| 14.17 R8 Configuration Analyzer 与 keep 规则体积归因 | 从报告生成和指标进入规则代价、排查、full mode、CI、APK Analyzer 边界和 Agent 安全边界。 | 负责 keep 规则因果；25.5 负责 APK/AAB、资源与 Native SO 的总体体积优化。 | 保留；补齐审查状态，删除同一 25.5 入口的连续重复引用。 |

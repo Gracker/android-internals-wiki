@@ -415,11 +415,11 @@ Rhea 后续以 `btrace` 开源。旧文章常把 Rhea 1.0、2.0 和“Rhea 3.0�
 
 当前原理与限制见 [btrace README](https://github.com/bytedance/btrace/blob/master/README.MD) 和 [btrace 3.0 Introduction](https://github.com/bytedance/btrace/blob/master/INTRODUCTION.MD)；早期方法插桩路线可对照[抖音 Rhea 文章](https://mp.weixin.qq.com/s/vkBeZ6hmVn_RaXS5Xv_L2g)阅读。
 
-### Hook 能力：本节只讨论选型边界
+### Hook 能力的选型边界
 
 Matrix、KOOM、btrace 等工具会使用 PLT Hook、Inline Hook、ART/JVMTI 或构建期字节码改写。Inline Hook 直接改写目标函数开头的机器指令；JVMTI 是 Java 虚拟机的调试与监控接口。“使用了 Hook”不足以证明兼容性。
 
-选型时至少记录目标符号、拦截位置、ABI、装载时机、链式调用规则、失败降级、4 KB / 16 KB page size、BTI/PAC、CFI（控制流完整性）/unwind 和目标 ROM。具体实现、回调安全与验证矩阵统一放在 [Hook 基础设施与性能工具实现原理](07-third-party-hook-observability.md)，本节不再重复维护两套原理说明。
+选型时至少记录目标符号、拦截位置、ABI、装载时机、链式调用规则、失败降级、4 KB / 16 KB page size、BTI/PAC、CFI（控制流完整性）/unwind 和目标 ROM。这里先固定 Hook 的选型前提；下文再进入具体实现、回调安全与验证矩阵，避免选型与实现各维护一套原理说明。
 
 ### 工具选型指南
 

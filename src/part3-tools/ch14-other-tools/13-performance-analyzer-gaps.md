@@ -1,5 +1,5 @@
 ---
-title: Android Performance Analyzer 与 GAPS 动态分析
+title: Android Performance Analyzer 与 GAPS：性能追踪与目标可达性
 chapter: '14.13'
 section: '14.13'
 status: finalized
@@ -86,7 +86,7 @@ consolidated_from:
 - src/part3-tools/ch14-other-tools/28-gaps-dynamic-analysis.md
 ---
 
-# Android Performance Analyzer 与 GAPS 动态分析
+# Android Performance Analyzer 与 GAPS：性能追踪与目标可达性
 
 Android Performance Analyzer（APA）是 Google 面向 Android App 与游戏提供的性能分析工具。官方提供独立桌面应用；2026 年 5 月的发布文还说明，其 System Trace viewer 已进入 Android Studio Panda 4 Canary 及后续版本。本文聚焦独立版 System Profiler。
 
@@ -606,8 +606,14 @@ GAPS（Graph-based Automated Path Synthesizer，基于图的自动路径合成�
 
 平台集成部分以 Android 17 / API 37 / `android-17.0.0_r1` 为知识库锚点。论文自身的动态实验使用 Android 16 x86-64 模拟器；需要 ARM 架构时使用 Pixel 2 / Android 11。论文没有报告 Android 17 实验，因此文中的 Android 17 + Perfetto 流程属于工程扩展，不能写成论文已验证结论。
 
+## 小结
+
+APA 和 GAPS 的共同点是帮助自动化工作流程取得“实际发生了什么”的证据，但它们的证明责任不同。APA 用 system trace 定位线程、帧、内存和功耗异常；GAPS 用静态路径重建与动态触达验证目标方法是否可达。“已触达方法”不等于“方法造成性能问题”，两类结果必须使用不同字段、版本边界和复现记录。
+
 
 ## 参考资料
+
+### Android Performance Analyzer
 
 - [Android Performance Analyzer](https://developer.android.com/android-performance-analyzer)
 - [APA Quickstart](https://developer.android.com/android-performance-analyzer/quickstart)
@@ -623,6 +629,8 @@ GAPS（Graph-based Automated Path Synthesizer，基于图的自动路径合成�
 - [Android 17 `TraceConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/trace_config.proto)
 - [Android 17 Perfetto tracing service](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traced/service/)
 - [Android 17 common kernel scheduler tracepoints](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h)
+
+### GAPS 与目标可达性
 
 - GAPS 论文 v3：[GAPS: Targeted Execution of Android Apps via Static Path Reconstruction](https://arxiv.org/abs/2511.23213v3)
 - 旧数字对照：[GAPS 论文 v1](https://arxiv.org/abs/2511.23213v1)

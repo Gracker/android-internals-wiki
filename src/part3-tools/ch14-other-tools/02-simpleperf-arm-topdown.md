@@ -67,7 +67,7 @@ tags:
 task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 related_chapters:
 - '14.16'
 - '5.2'
@@ -584,7 +584,7 @@ Simpleperf 记录的是设备当时执行出来的数据。温控降频、任务
 
 基础采样回答热点在哪里，Android 17 的事件支持和工作流用于进一步确认缓存、分支和流水线瓶颈。
 
-§14.2 讲解了 Simpleperf 的常规 PMU（Performance Monitoring Unit，处理器性能监控单元）采样。Android 17 在这套基础上加入 SPE（Statistical Profiling Extension，统计分析扩展）的采集与解码，并改进后台采集、应用进程跟踪和 ETM profile（性能数据）转换。这里的“微架构”指缓存、地址转换和分支预测等处理器内部行为。讨论范围限于已经进入 `android-17.0.0_r1` 的实现；设备能否使用这些能力，仍由 SoC（System on Chip，片上系统）、内核配置和权限共同决定。
+前文讲解了 Simpleperf 的常规 PMU（Performance Monitoring Unit，处理器性能监控单元）采样。Android 17 在这套基础上加入 SPE（Statistical Profiling Extension，统计分析扩展）的采集与解码，并改进后台采集、应用进程跟踪和 ETM profile（性能数据）转换。这里的“微架构”指缓存、地址转换和分支预测等处理器内部行为。讨论范围限于已经进入 `android-17.0.0_r1` 的实现；设备能否使用这些能力，仍由 SoC（System on Chip，片上系统）、内核配置和权限共同决定。
 
 Android 16 与 Android 17 的差异需要分开看：
 
@@ -645,7 +645,7 @@ adb shell su root simpleperf report \
   -i /data/local/tmp/spe.data
 ```
 
-`pidof -s` 只取一个匹配进程的 PID（Process ID，进程编号）。`record` 把原始 SPE packet 写入 perf AUX 数据，`report` 再调用 `SPEDecoder` 生成可聚合的 sample。示例使用 root，是因为量产设备通常不允许 shell 任意分析其他进程；可调试应用还可以按 §14.2 的 `run-as` 流程操作。
+`pidof -s` 只取一个匹配进程的 PID（Process ID，进程编号）。`record` 把原始 SPE packet 写入 perf AUX 数据，`report` 再调用 `SPEDecoder` 生成可聚合的 sample。示例使用 root，是因为量产设备通常不允许 shell 任意分析其他进程；可调试应用还可以按前文的 `run-as` 流程操作。
 
 #### 当前解码器能给出什么
 
@@ -1194,6 +1194,8 @@ Android 17 上可执行的可靠路径是：
 
 ## 参考资料
 
+### Simpleperf 与 Android 采样
+
 - [Simpleperf 总览（AOSP `android-17.0.0_r1`）](https://android.googlesource.com/platform/system/extras/+/android-17.0.0_r1/simpleperf/doc/README.md)
 - [Android 应用采样（AOSP `android-17.0.0_r1`）](https://android.googlesource.com/platform/system/extras/+/android-17.0.0_r1/simpleperf/doc/android_application_profiling.md)
 - [命令参考（AOSP `android-17.0.0_r1`）](https://android.googlesource.com/platform/system/extras/+/android-17.0.0_r1/simpleperf/doc/executable_commands_reference.md)
@@ -1209,6 +1211,8 @@ Android 17 上可执行的可靠路径是：
 - [Perfetto perf 事件枚举（AOSP `android-17.0.0_r1`）](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/common/perf_events.proto)
 - [Linux perf events 核心实现（`android17-6.18-2026-06_r6`）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/events/core.c)
 - [perf_event UAPI（`android17-6.18-2026-06_r6`）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/uapi/linux/perf_event.h)
+
+### ARM Topdown 与微架构
 
 - [A Top-Down Method for Performance Analysis and Counters Architecture（ISPASS 2014）](https://cris.haifa.ac.il/en/publications/a-top-down-method-for-performance-analysis-and-counters-architect/)
 - [AOSP android-17.0.0_r1：simpleperf](https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/simpleperf/)

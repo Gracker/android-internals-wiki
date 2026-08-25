@@ -1,5 +1,5 @@
 ---
-title: GPU Counter、Memory 与 GpuService 可观测性
+title: GPU Counter、内存与 GpuService 可观测性
 chapter: '14.12'
 section: '14.12'
 status: finalized
@@ -28,7 +28,7 @@ related_chapters:
 - '18.9'
 task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 last_draft_polish_at: '2026-07-27T19:35:27+08:00'
 last_draft_polish_run_id: 20260727-193527-draft-polish-30f4d38e
 last_review_finalize_at: '2026-07-27T20:13:43+08:00'
@@ -108,7 +108,7 @@ consolidated_from:
 - src/part3-tools/ch14-other-tools/19-android17-gpuservice-gpu-memory-observability.md
 ---
 
-# GPU Counter、Memory 与 GpuService 可观测性
+# GPU Counter、内存与 GpuService 可观测性
 
 > **版本边界**：本文只讨论 Android 17 / `android-17.0.0_r1` 中可在 AOSP `external/perfetto` 核验的 GPU counter descriptor、GPU counter event、GPU memory event 与 Trace Processor 导入链路。跨厂商性能阈值、Ray Tracing（光线追踪）、NPU（神经网络处理器）/ML（机器学习）协同、远程 GPU 调试与完整 AGI 工作流不在讨论范围内。
 

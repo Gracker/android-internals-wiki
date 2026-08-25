@@ -103,7 +103,7 @@ related_chapters:
 task2b_state: fixed
 task9_state: reviewed
 task6_state: reviewed
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 consolidated_from:
 - src/part1-fundamentals/ch02-rendering/32-camera-hal3-buffer-management.md
 - src/part1-fundamentals/ch02-rendering/33-camerax-zsl-hal-mapping.md

@@ -1124,6 +1124,8 @@ Android 17 的 Perfetto ART Heap Graph 自身也使用 fork。只需要引用图
 
 ## 参考资料
 
+### 内存工具与 Native、图形内存
+
 - [LeakCanary 工作原理](https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/)
 - [LeakCanary 2.14 安装](https://square.github.io/leakcanary/getting_started/)
 - [LeakCanary 手动安装 API](https://square.github.io/leakcanary/api/leakcanary/-app-watcher/manual-install/)
@@ -1148,6 +1150,8 @@ Android 17 的 Perfetto ART Heap Graph 自身也使用 fork。只需要引用图
 - [AOSP MTE 工作模式](https://source.android.com/docs/security/test/memory-safety/arm-mte)
 - [内核 smaps/PSS（`android17-6.18-2026-06_r6`）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/task_mmu.c)
 - [内核 dma-buf（`android17-6.18-2026-06_r6`）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/driver-api/dma-buf.rst)
+
+### HPROF 与 ART Heap Graph
 
 - [ActivityManagerShellCommand.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java)
 - [ActivityManagerService.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)

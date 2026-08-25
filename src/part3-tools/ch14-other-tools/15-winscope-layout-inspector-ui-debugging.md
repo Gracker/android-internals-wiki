@@ -4,6 +4,8 @@ chapter: '14.15'
 section: '14.15'
 status: finalized
 pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-08-14'
 last_verified_against: android-17.0.0_r1 / Android 17 Winscope Perfetto data sources / AOSP Winscope docs updated 2026-06-17
@@ -449,7 +451,7 @@ adb exec-out dumpsys SurfaceFlinger --proto > surfaceflinger_dump.winscope
 
 Layout Inspector 是 Android Studio 中检查运行时 UI 的工具。它查看应用进程内的 View、Compose 或混合 UI：节点是否存在、父子关系如何、bounds（布局边界）与属性是什么、Compose 节点重组或跳过了多少次。它提供的是组件树和当前属性，不能单独解释一帧为何变慢，也不能证明画面最终进入了屏幕。
 
-帧耗时交给 Perfetto（系统 trace 采集与分析工具），窗口与 SurfaceFlinger layer 状态交给 [Winscope](15-winscope-layout-inspector-ui-debugging.md)，GPU 命令和 buffer 像素问题根据图形 API 转到 AGI（Android GPU Inspector）或对应 Producer（画面生产者）工具。
+帧耗时交给 Perfetto（系统 trace 采集与分析工具），窗口与 SurfaceFlinger layer 状态回到前文的 Winscope 时间线，GPU 命令和 buffer 像素问题根据图形 API 转到 AGI（Android GPU Inspector）或对应 Producer（画面生产者）工具。
 
 截至 2026-08-14，验证锚点是 Android Studio Quail 3 | 2026.1.3 Patch 1，以及 Android 17 / API 37 的 `android-17.0.0_r1`。旧版 IDE 的 3D、独立窗口入口和连接方式可能不同，不能照搬本文的界面步骤。
 
@@ -651,6 +653,8 @@ FrameTimeline 把 App 帧和 SurfaceFlinger 帧的 expected/actual 时间（目�
 
 ## 参考资料
 
+### Winscope
+
 - [Winscope overview](https://source.android.com/docs/core/graphics/winscope/overview)
 - [Capture traces with Winscope](https://source.android.com/docs/core/graphics/winscope/capture/winscope)
 - [Capture Winscope traces with adb](https://source.android.com/docs/core/graphics/winscope/capture/adb)
@@ -666,6 +670,8 @@ FrameTimeline 把 App 帧和 SurfaceFlinger 帧的 expected/actual 时间（目�
 - [AOSP SurfaceFlinger FrontEnd, `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/)
 - [Kernel sync file, `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)
 - [AGI Frame Profiler](https://developer.android.com/agi/frame-trace/frame-profiler)
+
+### Layout Inspector
 
 - [Android Studio: Debug your layout with Layout Inspector](https://developer.android.com/studio/debug/layout-inspector)
 - [Layout Inspector for Views](https://developer.android.com/studio/views/layout-inspector-views)

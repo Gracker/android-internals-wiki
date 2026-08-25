@@ -141,7 +141,7 @@ related_chapters:
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part3-tools/ch14-other-tools/23-ebpf-performance-analysis.md
@@ -541,7 +541,7 @@ tracepoint 通常比函数符号稳定，但不属于 Android SDK API。自研�
 
 错误。源码、Kconfig、产品启用和采集时活动状态是四项不同证据。
 
-### 源码与官方文档
+### 观测点部分的源码与官方文档
 
 - [Android 17 bpfloader Rust 入口与平台对象清单](https://android.googlesource.com/platform/system/bpf/+/refs/tags/android-17.0.0_r1/loader/bpfloader.rs)
 - [Android 17 timeInState BPF 程序](https://android.googlesource.com/platform/system/bpfprogs/+/refs/tags/android-17.0.0_r1/timeInState.c)
@@ -561,16 +561,11 @@ tracepoint 通常比函数符号稳定，但不属于 Android SDK API。自研�
 - [Android BPF loader 与平台使用说明](https://source.android.com/docs/core/architecture/kernel/bpf)
 - [Android eBPF traffic monitor](https://source.android.com/docs/core/data/ebpf-traffic-monitor)
 
----
-
-**延伸阅读**：[13.1 Perfetto 入门、Trace 抓取与可靠性](../ch13-perfetto/01-perfetto-intro-capture-reliability.md) · [5.1 Linux 调度、EAS 与大小核架构](../../part1-fundamentals/ch05-cpu-power/01-linux-eas-big-little-scheduling.md) · [15.6 AOSP 源码阅读方法](../ch15-methodology/06-aosp-reading.md)
-
-
 ## bpfloader、对象组织与权限
 
 观测场景决定需要哪些内核事件，平台架构决定程序怎样加载、固定到 bpffs 并向用户空间开放 map。
 
-[§14.16](16-android-ebpf-architecture-observability.md) 介绍如何选择 eBPF 观测点。这里转向系统启动：Android 17 在什么时机装载平台、Mainline 和 vendor BPF 对象，谁负责把已加载的 program 附加到 tracepoint，用户空间又怎样读取 map。
+观测点与权限层明确后，下文转向系统启动：Android 17 在什么时机装载平台、Mainline 和 vendor BPF 对象，谁负责把已加载的 program 附加到 tracepoint，用户空间又怎样读取 map。
 
 Mainline 是可独立于完整系统更新的 Android 模块，vendor 则指设备厂商随产品镜像交付的部分。
 
@@ -869,7 +864,7 @@ adb shell ls /sys/kernel/tracing/events/power/cpu_frequency
 
 排查 verifier 失败时，从日志末尾向前找到第一个被拒绝的 program，再核对它依赖的 helper、context 字段、BTF 与内核版本。helper 是内核向 BPF program 开放的受限函数，context 是触发点传入的参数结构。只看到上层“load failed”不足以定位原因。
 
-### 源码阅读路线
+### 加载架构部分的源码阅读路线
 
 阅读 Android 17 加载链时，建议沿调用方向查看：
 
@@ -887,7 +882,7 @@ adb shell ls /sys/kernel/tracing/events/power/cpu_frequency
 
 加载框架明确后，新程序应按 hook、输出 map、消费者和版本条件核对，不能只根据对象文件名推断可用指标。
 
-[§14.16 Android eBPF 架构与性能观测](16-android-ebpf-architecture-observability.md) 同时介绍性能工具与 Android 17 `bpfloader`。相较 `android-16.0.0_r4`，Android 17 的首个发布 tag `android-17.0.0_r1` 新增了下面四组程序。这里沿着“构建产物 → 启动加载 → attach（连接到内核触发点）→ 输出 → 用户态消费”逐项核对：
+加载框架明确后，再对 Android 17 的新程序做实体核对。相较 `android-16.0.0_r4`，Android 17 的首个发布 tag `android-17.0.0_r1` 新增了下面四组程序。这里沿着“构建产物 → 启动加载 → attach（连接到内核触发点）→ 输出 → 用户态消费”逐项核对：
 
 - `cyclePerUid.bpf`：x86_64 平台的 per-UID（按 Linux UID 汇总）CPU cycle（处理器周期）统计。
 - `dmabufIter.bpf`：DMA-BUF（设备间共享缓冲区）全局快照迭代器。
@@ -1122,7 +1117,7 @@ adb shell su root bpftool map dump pinned \
 
 这套顺序能区分“对象未安装”“启动时未选择”“内核拒绝加载或 attach”“没有匹配事件”“用户态解析错误”等情况，避免看到空数据就直接归因于工作负载。
 
-### 源码索引
+### Android 17 程序部分的源码索引
 
 - [system/bpfprogs/Android.bp：四组 `.bpf` 对象的构建和架构限制](https://android.googlesource.com/platform/system/bpfprogs/+/refs/tags/android-17.0.0_r1/Android.bp)
 - [cyclePerUid.c：sched_switch cycle 归因与五张 map](https://android.googlesource.com/platform/system/bpfprogs/+/refs/tags/android-17.0.0_r1/cyclePerUid.c)
@@ -1141,8 +1136,9 @@ adb shell su root bpftool map dump pinned \
 - [Android 17 kernel lock.h：contention begin/end tracepoint](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/lock.h)
 - [Android BPF 官方文档：加载、权限与调试基础](https://source.android.com/docs/core/architecture/kernel/bpf)
 
-**延伸阅读**：[14.16 Android eBPF 架构与性能观测](16-android-ebpf-architecture-observability.md)
+## 小结
 
+Android eBPF 分析要始终把四层证据分开：源码或对象是否存在、loader 是否选中并加载、program 是否成功 attach、消费端是否正确读取 map 或事件。hook 点决定 context 语义，map 决定聚合与丢数边界，SELinux、Kconfig、BTF、架构和产品 flag 共同决定设备能力。只看 `.bpf` 文件、bpffs 路径或空 map 都不足以得出性能结论；还要与 Perfetto、simpleperf、sysfs 或服务状态做交叉验证。
 
 ## 参考资料
 
@@ -1168,4 +1164,4 @@ adb shell su root bpftool map dump pinned \
 - [Android common kernel 6.18 GPU memory tracepoint](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/gpu_mem.h)
 - [AOSP eBPF architecture documentation](https://source.android.com/docs/core/architecture/kernel/bpf)
 
-**延伸阅读**：[14.16 eBPF/BPF 在 Android 性能分析中的应用](16-android-ebpf-architecture-observability.md) · [5.2 Android 功耗管理](../../part1-fundamentals/ch05-cpu-power/02-dvfs-thermal-android-power.md) · [13.6 Android Tracing 基础设施](../ch13-perfetto/06-android-tracing-infrastructure-custom-trace.md) · [26.7 eBPF 在线追踪与 Binder 语义重建](../../part5-app/ch26-observability/07-ebpf-atrace-online-tracing.md)
+**延伸阅读**：[5.2 DVFS、Thermal 与 Android 功耗管理](../../part1-fundamentals/ch05-cpu-power/02-dvfs-thermal-android-power.md) · [13.6 Android Tracing 基础设施与自定义 Trace](../ch13-perfetto/06-android-tracing-infrastructure-custom-trace.md) · [15.6 AOSP 源码阅读方法](../ch15-methodology/06-aosp-reading.md) · [26.7 eBPF 在线追踪与 Binder 语义重建](../../part5-app/ch26-observability/07-ebpf-atrace-online-tracing.md)

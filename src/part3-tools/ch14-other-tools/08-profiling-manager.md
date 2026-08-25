@@ -62,7 +62,7 @@ related_chapters:
 - '8.2'
 - '22.7'
 - '19.2'
-pipeline_stage: finalized
+pipeline_stage: ready-to-publish
 task9_state: reviewed
 task2b_state: fixed
 task6_state: reviewed

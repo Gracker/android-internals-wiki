@@ -7,6 +7,9 @@ applicable_versions: Android 17 (API 37)；AGP 9.3.0+，或旧 AGP 替换为 R8 
 last_verified: '2026-08-14'
 last_verified_against: R8 Configuration Analyzer 文档（2026-08-01）；Choose libraries wisely（2026-08-13）；r8-analyzer skill（2026-08-06）；keep rule 文档（2026-06-29）；android-17.0.0_r1 / android17-6.18-2026-06_r6
 confidence: high
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
 sources:
 - type: official
   path: https://developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer
@@ -268,7 +271,7 @@ R8 Configuration Analyzer 适合回答：
 - 哪些规则互相覆盖，哪些宽规则可以收窄。
 - full mode 迁移后，哪些临时宽规则仍在限制优化。
 
-两者合用时，先用 APK Analyzer 确认 DEX 体积异常，再用 Analyzer 找规则原因；如果异常在图片、字体或 native 库，R8 报告不会提供直接答案，应回到 [25.5 应用体积分析与优化：DEX、Native SO 与资源](../../part5-app/ch25-power-size/05-apk-r8-resource-optimization.md)和 [25.5 应用体积分析与优化：DEX、Native SO 与资源](../../part5-app/ch25-power-size/05-apk-r8-resource-optimization.md)。
+两者合用时，先用 APK Analyzer 确认 DEX 体积异常，再用 Analyzer 找规则原因；如果异常在图片、字体或 native 库，R8 报告不会提供直接答案，应回到 [25.5 应用体积分析与优化：DEX、Native SO 与资源](../../part5-app/ch25-power-size/05-apk-r8-resource-optimization.md)。
 
 ## 框架规则评审表
 

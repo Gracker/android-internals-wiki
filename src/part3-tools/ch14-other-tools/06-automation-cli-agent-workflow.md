@@ -766,6 +766,8 @@ Android CLI 为 agent 提供项目描述、SDK 与设备管理、UI 状态读取
 
 ## 参考资料
 
+### 基准测试与自动化
+
 - [Android Benchmark 总览](https://developer.android.com/topic/performance/benchmarking/benchmarking-overview)
 - [Macrobenchmark 官方文档](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)
 - [Microbenchmark 官方文档](https://developer.android.com/topic/performance/benchmarking/microbenchmark-overview)
@@ -782,13 +784,14 @@ Android CLI 为 agent 提供项目描述、SDK 与设备管理、UI 状态读取
 - [Android 17 `UiAutomation` 实现](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/UiAutomation.java)
 - [Android 17 common kernel 锚点](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)
 
+### CLI、Agent 与系统证据
+
 - [Android CLI](https://developer.android.com/tools/agents/android-cli)
 - [Android CLI support for Journeys](https://developer.android.com/tools/agents/android-cli/journeys)
 - [Android skills](https://developer.android.com/tools/agents/android-skills)
 - [Android CLI 1.0 announcement](https://android-developers.googleblog.com/2026/05/android-cli-stable-1-0-agent-development.html)
 - [Android Performance Analyzer](https://developer.android.com/android-performance-analyzer)
 - [Android Studio performance profilers](https://developer.android.com/studio/profile)
-- [Write a Macrobenchmark](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)
 - [Set up the Android 17 SDK](https://developer.android.com/about/versions/17/setup-sdk)
 - [Perfetto documentation](https://perfetto.dev/docs/)
 - [Android 17 Perfetto `TraceConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/trace_config.proto)
