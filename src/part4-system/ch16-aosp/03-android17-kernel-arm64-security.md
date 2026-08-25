@@ -2,9 +2,9 @@
 title: Android 17 Kernel 6.18 与 ARM64 安全开销
 section: '16.3'
 chapter: '16.3'
-status: ready-for-review
+status: ready-to-publish
 task9_state: reviewed
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 applicable_versions: Android 17 (API 37)
 tags:
 - android
@@ -86,7 +86,8 @@ related_chapters:
 - '5.1'
 - '5.2'
 - '16.1'
-- '16.8'
+- '16.4'
+- '16.7'
 - '20.6'
 last_consolidated_at: '2026-08-24'
 ---
@@ -215,42 +216,11 @@ Perfetto 是 Android 系统性能追踪工具，可采集 `block_rq_issue` / `bl
 
 ### AutoFDO Profile-Guided Optimization 的内核应用
 
-AutoFDO 是 Automatic Feedback-Directed Optimization，即基于采样反馈的编译优化。它用执行 profile 中的真实执行路径、热点/冷点函数和分支历史指导 Clang 编译器做内联、分支概率和代码布局决策；它影响编译器启发式，不改写内核源代码逻辑。[来源: https://developer.android.com/blog/posts/boosting-android-performance-introducing-autofdo-for-the-kernel]
+AutoFDO 是基于真实执行样本指导 Clang 内联、分支权重和代码布局的构建期优化。Android 17 GKI `gki_defconfig` 设置 `CONFIG_AUTOFDO_CLANG=y`，r6 tag 也包含绑定 Linux 6.18.21 的 `gki/aarch64/afdo/kernel.afdo` 与说明文件；这证明该 release build 已具备内核 Profile 接入，不证明任意设备运行的内核采用了同一 Profile。
 
-Android 17 GKI `gki_defconfig` 设置 `CONFIG_AUTOFDO_CLANG=y`，r6 tag 的 `gki/aarch64/afdo/` 同时包含 README 与 `kernel.afdo`，README 把该 profile 绑定到 kernel 6.18.21、SHA `3ad9926a5d177675fe818af93dcb3451532c3165` 和 build server ID `15434288`。[已验证: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig; https://android.googlesource.com/kernel/common/+show/refs/tags/android17-6.18-2026-06_r6/gki/aarch64/afdo/README.md]
+r6 README 中 Pixel 8 的 boot、cold launch 与 Binder 数据都标为初步结果，其中 Binder 项还采用多轮最佳值，不能外推为跨 SoC 或跨产品保证。设备侧需要把 release artifact、build config、kernel build ID 与 Profile 对齐，再做只改变 Profile 的 A/B。
 
-#### r6 tag 中可引用的数据
-
-README 说明 profile 采自 kernel 6.18.21，测试设备是 Pixel 8。结果被标记为 preliminary（初步结果），因为该设备当时还没有针对这版内核完成电源管理、CPU frequency scaling 和调度调优。[已验证: https://android.googlesource.com/kernel/common/+show/refs/tags/android17-6.18-2026-06_r6/gki/aarch64/afdo/README.md]
-
-| Benchmark | README 报告的 improvement | 限定 |
-|---|---:|---|
-| Boot time | 1.1% | Pixel 8 preliminary result |
-| Cold App launch time | 6.6% | Pixel 8 preliminary result |
-| Binder-rpc | 15% | 多轮中的最佳结果 |
-| Binder-addints | 23% | 多轮中的最佳结果 |
-| Hwbinder | 23% | 多轮中的最佳结果 |
-
-Binder 三项使用多轮中的最佳结果，不能与 boot、launch 或统计分位数按同一置信度解读。README 也没有给出跨 SoC、跨产品或功耗收益。[已验证: https://android.googlesource.com/kernel/common/+show/refs/tags/android17-6.18-2026-06_r6/gki/aarch64/afdo/README.md]
-
-2026 年 3 月的 Android Developers Blog 当时只描述 `android16-6.12` 与 `android15-6.6` 的投放，并把 `android17-6.18` 写为后续计划；它还把 GKI module 与基于 DDK 的 vendor module 支持列为后续扩展方向，而不是已落地的 Android 17 设备结论。6 月 r6 tag 中的 profile 证明计划已经进入这个 release build。引用时应使用 r6 tag 证据，不再沿用博客发布时的未来时态。[来源: https://developer.android.com/blog/posts/boosting-android-performance-introducing-autofdo-for-the-kernel; 已验证: https://android.googlesource.com/kernel/common/+show/refs/tags/android17-6.18-2026-06_r6/gki/aarch64/afdo/README.md]
-
-#### profile 从采集到构建
-
-r6 README 与 Android Developers Blog 合起来给出的采集和复现边界是：
-
-1. Android Developers Blog 描述的是 GKI 的受控实验室采集：在 Pixel 设备刷入最新 kernel image，用 `simpleperf` 采集 instruction execution stream，硬件侧依赖 ARM Embedded Trace Extension（ETE）与 ARM Trace Buffer Extension（TRBE）记录分支历史；workload 覆盖 C-Suite 中前 100 个热门应用、App Launching、AI-Driven App Crawling 和系统级后台工作，官方称该合成 workload 与内部 fleet 采集到的执行模式有 85% similarity。[来源: https://developer.android.com/blog/posts/boosting-android-performance-introducing-autofdo-for-the-kernel]
-2. r6 README 给出的可复现步骤是：在 Pixel 设备上围绕 Google Play Store 前 100 个应用运行 app crawling 与 app launching；crawler 是自动遍历 App 界面的测试工具；每个应用 crawler 运行 3 分钟并重复两次，launch 运行 3 秒并重复 15 次，且每次后杀进程并清缓存以覆盖 cold app startup。[已验证: https://android.googlesource.com/kernel/common/+show/refs/tags/android17-6.18-2026-06_r6/gki/aarch64/afdo/README.md]
-3. r6 README 记录的 profile 生成路径是采集 kernel ETM 数据、合并并转换为一个 AutoFDO profile；构建时用 `kernel.afdo` 指导 `vmlinux` 优化，`vmlinux` 是未压缩的 ELF 内核映像。[已验证: https://android.googlesource.com/kernel/common/+show/refs/tags/android17-6.18-2026-06_r6/gki/aarch64/afdo/README.md]
-4. 部署前的核查应比较新旧 profile 的 hot functions、sample counts、profile size，并用 profile 构建新 kernel image 后检查 text section 变化和目标 benchmark；这是官方博客给出的稳定性核查口径，不等于对任意厂商内核的自动保证。[来源: https://developer.android.com/blog/posts/boosting-android-performance-introducing-autofdo-for-the-kernel]
-
-它优化的是 GKI 内核编译产物，当前可引用的 r6 profile 目标是主内核二进制 `vmlinux`；GKI module 与 vendor module AutoFDO 在官方博客中仍是扩展方向，不能记为 r6 的模块收益。[来源: https://developer.android.com/blog/posts/boosting-android-performance-introducing-autofdo-for-the-kernel; 已验证: https://android.googlesource.com/kernel/common/+show/refs/tags/android17-6.18-2026-06_r6/gki/aarch64/afdo/README.md]
-
-ART AOT（Ahead-of-Time，预先编译）、用于标记 App 热路径的 Baseline Profile 和 cloud compilation 属于用户态编译链。它们可以和内核 AutoFDO 同时影响一次冷启动，却没有一个可直接相加的收益模型。
-
-确认设备收益时，要先证明设备内核由对应 profile 构建。只看到源码目录中的 `kernel.afdo` 还不够；还需关联 GKI release artifact、build config 与设备运行的 kernel build ID。这里的严格 A/B 是单变量对照：保持源码、配置、工具链和设备一致，只改变是否应用 profile。
-
-ART generational CMC 与 DeliQueue 属于平台运行时和 Framework，不是 Kernel 6.18 能力。它们的 gate、源码和测试方法统一由 16.5 承载，本节只在 A/B 设计中把 ART/Framework build 视为必须固定的控制变量。
+Profile 的采集、ETM/ETE/TRBE 数据转换、`vmlinux` 构建接入、质量控制和完整 A/B 方法统一由 [16.4 AutoFDO 反馈导向优化与 Android 验证](04-autofdo-feedback-directed-optimization.md) 展开。本节只保留它在 GKI 6.18 功能集合中的启用证据与设备核查边界。ART AOT、Baseline Profile、generational CMC 和 DeliQueue 属于用户态或 Framework，不能记为 Kernel 6.18 收益。
 
 ### MGLRU 与页面回收优化
 
@@ -343,7 +313,7 @@ lmkd 仍按 Android 的压力与进程优先级策略决策。MGLRU 位于页面
 
 > **版本口径**：平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为准，内核源码以 `android17-6.18-2026-06_r6` 为准。配置、硬件能力和运行时策略共同决定安全机制是否生效。
 >
-> MTE 的应用实践见 [§4.9](../../part1-fundamentals/ch04-memory/09-android17-memory-tagging-extension-mte.md)，Rust 系统组件的边界见 [§16.8](08-rust-system-services-performance.md)。
+> MTE 的应用实践见 [§4.9](../../part1-fundamentals/ch04-memory/09-android17-memory-tagging-extension-mte.md)，Rust 系统组件的边界见 [§16.7](07-rust-system-services-performance.md)。
 
 ### 1. 先确认三个条件
 
@@ -626,7 +596,7 @@ Android NDK 的 Native APIs 文档没有把 `io_uring` 列为 Android 原生 API
 - [ ] 性能数字来自当前设备、当前镜像和可复现测试负载
 - [ ] 关闭缓解的对照实验只在隔离工程设备上执行
 
-### 11. 参考与源码锚点
+### 11. ARM64 核查入口
 
 - [ARM64 Kconfig：KPTI、BHB、PAC、BTI、MTE、GCS 与 KASLR](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/Kconfig)
 - [Android 17 GKI `gki_defconfig`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig)
@@ -642,6 +612,10 @@ Android NDK 的 Native APIs 文档没有把 `io_uring` 列为 Android 原生 API
 - [ARM64 Guarded Control Stack 用户 ABI](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/arch/arm64/gcs.rst)
 - [Android MTE 进程配置](https://source.android.com/docs/security/test/memory-safety/arm-mte)
 - [Android NDK Native APIs](https://developer.android.com/ndk/guides/stable_apis)
+
+## 小结
+
+Android 17 的 GKI 6.18 需要按调度、存储、页面回收和构建优化分别确认配置与运行状态；源码中存在机制不等于设备已经采用。ARM64 安全特性又受最终 `.config`、CPU/固件能力、启动参数和进程启用方式共同约束。性能对照必须保持这些条件一致，并以目标工作负载的调度、I/O、PMU、内存与安全状态证据判断成本，不能用关闭缓解的工程镜像替代量产结论。
 
 ## 参考资料
 

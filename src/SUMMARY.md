@@ -234,9 +234,9 @@
   - [16.4 AutoFDO 反馈导向优化与 Android 验证](part4-system/ch16-aosp/04-autofdo-feedback-directed-optimization.md)
   - [16.5 Profile、DM 与 Secure Dex Metadata 安装编译](part4-system/ch16-aosp/05-profile-dm-sdm-install-compilation.md)
   - [16.6 Android 系统启动耗时优化与 bootanalyze](part4-system/ch16-aosp/06-system-boot-time-optimization.md)
-  - [16.7 AppFlow：GB 级应用冷启动内存联合调度](part4-system/ch16-aosp/07-appflow-large-app-cold-launch-memory-scheduling.md)
-  - [16.8 Android 17 平台 Rust 性能边界：Binder、CXX 与 Soong](part4-system/ch16-aosp/08-rust-system-services-performance.md)
-  - [16.9 AOHP：将 Android 改造为 Agent 原生 OS](part4-system/ch16-aosp/09-agent-native-os.md)
+  - [16.7 Android 17 平台 Rust 性能边界：Binder、CXX 与 Soong](part4-system/ch16-aosp/07-rust-system-services-performance.md)
+  - [16.8 AppFlow 研究原型：GB 级应用冷启动内存联合调度](part4-system/ch16-aosp/08-appflow-large-app-cold-launch-memory-scheduling.md)
+  - [16.9 AOHP 研究原型：将 Android 改造为 Agent 原生 OS](part4-system/ch16-aosp/09-agent-native-os.md)
 
 - [第 17 章：OEM 与设备差异](part4-system/ch17-oem/README.md)
   - [17.1 OEM 性能优化与应用协作](part4-system/ch17-oem/01-oem-performance-app-collaboration.md)

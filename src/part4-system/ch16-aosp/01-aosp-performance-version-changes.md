@@ -140,7 +140,7 @@ last_consolidated_at: '2026-08-24'
 
 # AOSP 性能优化与 Android 版本变更
 
-AOSP（Android Open Source Project，Android 开源平台）的性能改动会改变多个 App 共用的执行路径，收益可能覆盖整台设备，回归也可能让原本正常的兼容性、稳定性、功耗或安全行为退步。本节只讨论怎样界定、验证和交付一项 AOSP 性能改动。Android 版本变化与 Android 17 应用适配都由 16.1 承载；ART（Android Runtime，Android 运行时）、Binder（Android 的进程间通信机制）、图形和内核的具体机制由各专项正文承载。
+AOSP（Android Open Source Project，Android 开源平台）的性能改动会改变多个 App 共用的执行路径，收益可能覆盖整台设备，回归也可能让原本正常的兼容性、稳定性、功耗或安全行为退步。本文先讨论怎样界定、验证和交付一项 AOSP 性能改动，再梳理 Android 12—17 的版本变化与 Android 17 应用适配；ART（Android Runtime，Android 运行时）、Binder（Android 的进程间通信机制）、图形和内核的具体机制由各专项正文承载。
 
 AOSP 性能优化要先确定问题属于应用、framework、runtime、native 服务还是内核，再固定源码标签和设备实现。版本追踪用于识别责任边界变化，Android 17 适配则落到具体 API、flag 和行为验证。
 
@@ -283,9 +283,9 @@ Android Go 可以代表一类低资源配置，不能代表所有低性能或特
 - [ ] 稳定性、资源、正确性、兼容性与安全回归已覆盖。
 - [ ] feature 状态可观察，分批发布和回滚不会遗留不兼容产物。
 
-### 延伸阅读
+### 与后续专题的边界
 
-- 本节：Android 12～17 的版本、target SDK 变化与 Android 17 / API 37 应用适配。
+- 后文继续展开 Android 12～17 的版本、target SDK 变化与 Android 17 / API 37 应用适配。
 - 16.2：固定源码、编译模块、Cuttlefish（AOSP 虚拟设备）/真机验证和实验记录。
 - 16.3：Android 17 GKI 6.18 的调度、存储、AutoFDO（利用采样 profile 指导编译优化）与 MGLRU（Multi-Gen LRU，多代内存页回收算法）。
 - 15.2、15.3、15.5：因果分析、指标、测试和源码阅读的通用方法。
@@ -764,7 +764,7 @@ return GetBoolProperty(
 
 应用不应修改 ART 的 device-config 或假定所有 Android 17 设备使用同一 collector。OEM 配置、ART Mainline（可独立更新的 ART 系统模块）和运行时选项都可能改变选择；Android 17 的 ART 改进还可通过 Google Play 系统更新覆盖 Android 12 及以上版本。
 
-验证时以目标进程的 GC 事件、暂停分布、分配速率和 RSS 为证据。对同一测试负载，对比 young/full collection 次数、GC CPU 时间、mutator stall（应用线程因 GC 停顿的时间）与峰值 RSS，比只查一个属性更可靠。需要展开回收器与暂停分析时，参阅 [[02-art-heap-gc-maintenance|4.2 ART Heap、GC 与后台维护调度]]。
+验证时以目标进程的 GC 事件、暂停分布、分配速率和 RSS 为证据。对同一测试负载，对比 young/full collection 次数、GC CPU 时间、mutator stall（应用线程因 GC 停顿的时间）与峰值 RSS，比只查一个属性更可靠。需要展开回收器与暂停分析时，参阅 [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)。
 
 ### ProfilingManager：系统事件提供采集时机
 
@@ -805,7 +805,7 @@ if (Build.VERSION.SDK_INT >= 37) {
 
 `setRateLimitingPeriodHours(24)` 是应用提出的最短间隔，系统仍可延后或不交付。回调中要先检查 `getErrorCode()`，成功后再读取 `getResultFilePath()`、`getTriggerType()` 与 `getTag()`；系统 trigger 的结果只交给全局 listener。
 
-把 trigger 当作线上证据入口，不要把它写成常驻采样器。产物可能包含堆对象、调用栈和业务标识，上传与保留策略要遵守隐私、权限和数据最小化要求。完整使用方式参阅 [[16-profiling-manager|ProfilingManager]]。
+把 trigger 当作线上证据入口，不要把它写成常驻采样器。产物可能包含堆对象、调用栈和业务标识，上传与保留策略要遵守隐私、权限和数据最小化要求。完整使用方式参阅 [14.8 ProfilingManager](../../part3-tools/ch14-other-tools/08-profiling-manager.md)。
 
 ### JobScheduler pending reason 统计
 
@@ -821,7 +821,7 @@ API 36 已提供当前 pending reasons（任务暂时无法执行的原因）与
 - history 回答约束在何时变化。
 - stats 回答长期占比最高的约束，但不能由各项相加计算 wall time，也就是实际流逝的等待时间。
 
-WorkManager 场景还要建立 `WorkSpec` 与系统 job ID 的映射；`WorkSpec` 是 WorkManager 保存的一条内部任务记录。否则，拿错 job ID 会把调度问题变成数据对齐问题。后台调度机制参阅 [[03-background-jobs-hibernation|5.3 后台执行、任务调度与 App Hibernation]]。
+WorkManager 场景还要建立 `WorkSpec` 与系统 job ID 的映射；`WorkSpec` 是 WorkManager 保存的一条内部任务记录。否则，拿错 job ID 会把调度问题变成数据对齐问题。后台调度机制参阅 [5.3 后台执行、任务调度与 App Hibernation](../../part1-fundamentals/ch05-cpu-power/03-background-jobs-hibernation.md)。
 
 ### target SDK 37 适配项
 
@@ -923,7 +923,7 @@ adb shell getconf PAGE_SIZE
 
 bundle 配置应显示 `PAGE_ALIGNMENT_16K`，`zipalign` 应通过，`readelf` 中每个 `LOAD` segment 的 Align 不得低于 `2**14`，设备命令应返回 `16384`。工具通过后还要在 16KB emulator 或设备上覆盖启动、动态加载、数据库、媒体与 mmap 场景。
 
-Android 17 还能把 16KB backcompat（兼容模式）设为 `fatal`，让不兼容二进制立即终止；这个模式只适合测试，不能代替发布兼容。原理和排查步骤参阅 [[05-16kb-page-size|4.5 16 KB Page Size 与 Android 性能]]。
+Android 17 还能把 16KB backcompat（兼容模式）设为 `fatal`，让不兼容二进制立即终止；这个模式只适合测试，不能代替发布兼容。原理和排查步骤参阅 [4.5 16 KB Page Size 与 Android 性能](../../part1-fundamentals/ch04-memory/05-16kb-page-size.md)。
 
 ### 运行在 Android 17 时还要检查的项目
 
@@ -991,7 +991,7 @@ DeliQueue 处理 Java 消息投递争用，Buffer Stuffing Recovery 处理图形
 - [ ] 将 Java 消息争用、GC、Activity 重建、buffer stuffing 和网络握手放到各自证据轨道。
 - [ ] 回归正确性、功耗、峰值 RSS 与崩溃，避免只看平均帧时间。
 
-系统与内核边界参阅 [[03-android17-kernel-arm64-security|16.3 Android 17 Kernel 6.18 与 ARM64 安全开销]]，其中内核锚点为 `android17-6.18-2026-06_r6`。这是 16.3 为复现实验固定的快照标签，后续发布序列已有更新；API 行为也不能由 kernel tag 单独推导。
+系统与内核边界参阅 [16.3 Android 17 Kernel 6.18 与 ARM64 安全开销](03-android17-kernel-arm64-security.md)，其中内核锚点为 `android17-6.18-2026-06_r6`。这是 16.3 为复现实验固定的快照标签，后续发布序列已有更新；API 行为也不能由 kernel tag 单独推导。
 
 
 ## 常见误区
@@ -1015,6 +1015,10 @@ target 会启用一组兼容性行为。任务不再执行、服务启动异常�
 ### “Android 17 的分代 GC 等于打开 userfaultfd”
 
 userfaultfd 是 Concurrent Mark-Compact 的一条实现路径，分代是对象代际和回收范围策略。两者处在不同维度。
+
+## 小结
+
+AOSP 性能改动必须从公共路径证据出发，把平台、Mainline、kernel、vendor 与 target SDK 分成独立变量，并用统计确认收益、用 trace 和源码解释原因。Android 12—17 的行为变化既包含面向所有应用的系统规则，也包含 target 触发的兼容变化和设备可选能力；迁移与性能回归只有在这些触发条件被分别记录和验证后，才能归因到正确责任层。
 
 
 ## 参考资料

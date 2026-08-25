@@ -1,12 +1,14 @@
 ---
-title: AppFlow：GB 级应用冷启动内存联合调度
-chapter: '16.7'
-section: '16.7'
+title: AppFlow 研究原型：GB 级应用冷启动内存联合调度
+chapter: '16.8'
+section: '16.8'
 status: finalized
 applicable_versions: Android 15 - Android 17（研究原型，非 AOSP 主线）
 last_verified: '2026-08-14'
 last_verified_against: AppFlow arXiv 2603.17259v1; Android Developers startup/ComponentCallbacks2/LMK docs; AOSP android-17.0.0_r1 lmkd/ProcessList/CachedAppOptimizer/UsageStatsManager/ApplicationExitInfo; Android Common Kernel android17-6.18-2026-06_r6 mm/vmscan.c; Linux PSI docs
 confidence: high
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 sources:
 - type: paper
   path: https://arxiv.org/abs/2603.17259
@@ -54,7 +56,7 @@ related_chapters:
 - '21.1'
 ---
 
-# AppFlow：GB 级应用冷启动内存联合调度
+# AppFlow 研究原型：GB 级应用冷启动内存联合调度
 
 GB 级应用冷启动会同时竞争文件页、匿名页、CPU 与进程生存空间，单点预读可能把延迟转移成更强的内存压力。AppFlow 的价值和边界需要从论文证据出发，分别审视预加载、回收和杀进程策略如何协同。
 
@@ -421,11 +423,11 @@ Profile 与 AppFlow 处理不同成本：
 
 ## 与其他章节的边界
 
-- Android 进程优先级、PSI 与 LMKD 机制见 [[03-lmkd-freezer-memory-pressure|4.3 lmkd、Cached App Freezer 与内存压力治理]]。
-- 冷、温、热启动和 TTID/TTFD 见 [[02-app-cold-start-binder-trace|8.2 App 冷启动链路与 Binder Trace 分析]]。
+- Android 进程优先级、PSI 与 LMKD 机制见 [4.3 lmkd、Cached App Freezer 与内存压力治理](../../part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md)。
+- 冷、温、热启动和 TTID/TTFD 见 [8.2 App 冷启动链路与 Binder Trace 分析](../../part2-performance/ch08-responsiveness/02-app-cold-start-binder-trace.md)。
 - Baseline Profile 的采集与验证见 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](../../part5-app/ch21-startup/04-baseline-startup-cloud-profile.md)。
-- 系统启动及 I/O 分阶段分析见 [[05-system-boot-time-optimization|16.5 Android 系统启动耗时优化与 bootanalyze]]。
-- 应用启动诊断流程见 [[01-app-startup-path-monitoring|21.1 App 启动路径、监控与度量]]。
+- 系统启动及 I/O 分阶段分析见 [16.6 Android 系统启动耗时优化与 bootanalyze](06-system-boot-time-optimization.md)。
+- 应用启动诊断流程见 [21.1 App 启动路径、监控与度量](../../part5-app/ch21-startup/01-app-startup-path-monitoring.md)。
 
 ## 参考资料
 

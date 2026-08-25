@@ -50,6 +50,7 @@ related_chapters:
 - '1.5'
 - '5.1'
 - '8.3'
+- '16.3'
 - '21.4'
 task6_state: reviewed
 task9_state: reviewed

@@ -12,14 +12,15 @@ App 侧优化通常只能在现有接口和系统策略内降低自身成本。�
 - [16.4 AutoFDO 反馈导向优化与 Android 验证](04-autofdo-feedback-directed-optimization.md)
 - [16.5 Profile、DM 与 Secure Dex Metadata 安装编译](05-profile-dm-sdm-install-compilation.md)
 - [16.6 Android 系统启动耗时优化与 bootanalyze](06-system-boot-time-optimization.md)
-- [16.7 AppFlow：GB 级应用冷启动内存联合调度](07-appflow-large-app-cold-launch-memory-scheduling.md)
-- [16.8 Android 17 平台 Rust 性能边界：Binder、CXX 与 Soong](08-rust-system-services-performance.md)
-- [16.9 AOHP：将 Android 改造为 Agent 原生 OS](09-agent-native-os.md)
+- [16.7 Android 17 平台 Rust 性能边界：Binder、CXX 与 Soong](07-rust-system-services-performance.md)
+- [16.8 AppFlow 研究原型：GB 级应用冷启动内存联合调度](08-appflow-large-app-cold-launch-memory-scheduling.md)
+- [16.9 AOHP 研究原型：将 Android 改造为 Agent 原生 OS](09-agent-native-os.md)
 
 ## 阅读建议
 
 - 如果负责 App 侧优化，可按当前问题选读系统改动与版本边界条目，先确认应用能够控制的范围。
 - 如果负责系统、ROM 或平台开发，应结合调度、渲染、内存和功耗章节交叉验证，避免只改善单项指标却增加其他系统成本。
+- 先用 16.1—16.7 建立主线平台能力，再把 16.8、16.9 当作尚未进入 AOSP 主线的研究原型阅读；论文结果不能直接当作 Android 17 默认行为。
 
 ## 源码与引用口径
 

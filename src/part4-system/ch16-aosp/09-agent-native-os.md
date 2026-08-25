@@ -1,12 +1,14 @@
 ---
-title: AOHP：将 Android 改造为 Agent 原生 OS
+title: AOHP 研究原型：将 Android 改造为 Agent 原生 OS
 chapter: '16.9'
 section: '16.9'
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: Android 16 (API 36) - Android 17 (API 37)
 last_verified: '2026-08-14'
 last_verified_against: arXiv 2606.23449v1; AOHP aohp b8ab9e98, platform_frameworks_base a2d4a80b, platform_system_core d1fc184b; AOSP android-17.0.0_r1 and API 37 docs
 confidence: medium
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 consolidated_from:
 - src/part1-fundamentals/ch05-cpu-power/5.21-cross-app-agent-system-primitive.md
 sources:
@@ -73,7 +75,7 @@ related_chapters:
 - '13.11'
 ---
 
-# AOHP：将 Android 改造为 Agent 原生 OS
+# AOHP 研究原型：将 Android 改造为 Agent 原生 OS
 
 AOHP（Android Open Harness Project）是一套基于 AOSP fork 的研究原型。fork 是从 AOSP 分出的独立源码分支，不代表这些改动已经进入标准 Android。
 

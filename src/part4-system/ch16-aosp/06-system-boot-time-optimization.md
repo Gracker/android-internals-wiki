@@ -2,7 +2,9 @@
 title: Android 系统启动耗时优化与 bootanalyze
 chapter: '16.6'
 section: '16.6'
-status: ready-for-review
+status: ready-to-publish
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1 (bootanalyze / bootio / init / bootstat / ZygoteInit / SystemServer / ActivityManagerService / DexOptHelper / ArtManagerLocal); Android Common Kernel android17-6.18-2026-06_r6; current source.android.com boot guidance; current Android Developers 16 KB page-size guidance
@@ -520,11 +522,10 @@ KeyMint 管理硬件支持的密钥与密码操作，Gatekeeper 负责锁屏凭�
 
 ## 与其他章节的边界
 
-- 完整启动流程与进程关系见 [[02-boot-zygote-graphics-preload|1.2 系统启动、Zygote 与图形栈预加载]]。
-- Zygote fork、USAP 和 preload 机制见 [[02-boot-zygote-graphics-preload|1.2 系统启动、Zygote 与图形栈预加载]]。
-- ART compiler filter 与 dex2oat 见 [[05-art-compilation-optimization-deoptimization|1.5 ART 编译、优化与去优化机制]]。
-- Perfetto 配置与采集见 [[01-perfetto-intro-capture-reliability|13.1 Perfetto 入门、Trace 抓取与可靠性]]。
-- 16 KB kernel/用户态边界见 [[05-16kb-page-size|4.5 16 KB Page Size 与 Android 性能]]。
+- 完整启动流程、Zygote fork、USAP 与 preload 机制见 [1.2 系统启动、Zygote 与图形栈预加载](../../part1-fundamentals/ch01-architecture/02-boot-zygote-graphics-preload.md)。
+- ART compiler filter 与 dex2oat 见 [1.5 ART 编译、验证与去优化机制](../../part1-fundamentals/ch01-architecture/05-art-compilation-verification-deoptimization.md)。
+- Perfetto 配置与采集见 [13.1 Perfetto 入门、Trace 抓取与可靠性](../../part3-tools/ch13-perfetto/01-perfetto-intro-capture-reliability.md)。
+- 16 KB kernel/用户态边界见 [4.5 16 KB Page Size 与 Android 性能](../../part1-fundamentals/ch04-memory/05-16kb-page-size.md)。
 
 ## 参考资料
 
