@@ -12,7 +12,7 @@
 - [11.2 App 耗电优化与案例](02-app-power-optimization-cases.md)
 - [11.3 WakeLock 机制与功耗分析](03-wakelock.md)
 - [11.4 Bluetooth 扫描与连接功耗分析](04-bluetooth-scan-connection-power.md)
-- [11.5 用户设置对能耗的影响：亮度、刷新率与深色模式](05-user-settings-energy-impact.md)
+- [11.5 用户设置与业务配置对能耗的影响](05-user-settings-energy-impact.md)
 
 ## 阅读建议
 

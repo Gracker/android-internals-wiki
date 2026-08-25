@@ -140,7 +140,7 @@
   - [11.2 App 耗电优化与案例](part2-performance/ch11-power/02-app-power-optimization-cases.md)
   - [11.3 WakeLock 机制与功耗分析](part2-performance/ch11-power/03-wakelock.md)
   - [11.4 Bluetooth 扫描与连接功耗分析](part2-performance/ch11-power/04-bluetooth-scan-connection-power.md)
-  - [11.5 用户设置对能耗的影响：亮度、刷新率与深色模式](part2-performance/ch11-power/05-user-settings-energy-impact.md)
+  - [11.5 用户设置与业务配置对能耗的影响](part2-performance/ch11-power/05-user-settings-energy-impact.md)
 
 - [第 12 章：网络性能](part2-performance/ch12-apk-network/README.md)
   - [12.1 Android 网络与 TLS 性能优化](part2-performance/ch12-apk-network/01-android-network-tls-performance.md)

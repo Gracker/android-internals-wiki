@@ -930,7 +930,7 @@ Android 17 可使用 `getPendingJobReasonStats()` 区分等待主要来自网络
 - [ ] 功耗数字是否附带设备、网络、温度、样本与原始产物？
 - [ ] AOSP 引用是否来自 `android-17.0.0_r1`，内核引用是否来自 `android17-6.18-2026-06_r6`？
 
-#### 版本与实现边界
+#### 案例涉及的版本边界
 
 | 版本 | 与案例有关的变化 |
 |---|---|
@@ -939,7 +939,7 @@ Android 17 可使用 `getPendingJobReasonStats()` 区分等待主要来自网络
 | Android 16 / API 36 | `getPendingJobReasons()` 返回多个等待原因；后台调度 quota 对 WorkManager 使用更需关注 |
 | Android 17 / API 37 | `getPendingJobReasonStats()`；listener 版本 `setExactAndAllowWhileIdle()`；平台源码锚点 `android-17.0.0_r1` |
 
-### 版本与实现边界
+### 全文版本与实现边界
 
 | Android 版本 | 相关变化 |
 | --- | --- |

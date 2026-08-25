@@ -70,7 +70,6 @@ related_chapters:
 - '25.2'
 - '11.3'
 - '5.2'
-- ch25
 pipeline_stage: finalized
 task6_state: reviewed
 task9_state: reviewed

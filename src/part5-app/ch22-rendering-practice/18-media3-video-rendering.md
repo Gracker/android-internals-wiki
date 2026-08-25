@@ -12,7 +12,7 @@ tags:
 - performance
 related_chapters:
 - '22.17'
-- '12.33'
+- '18.11'
 - '25.5'
 last_verified: '2026-08-15'
 last_verified_against: Media3 1.11.0（2bc207851df311340767e913931ca7b28cab1794）；AOSP android-17.0.0_r1；android17-6.18-2026-06_r6；Media3 与 Android 官方文档

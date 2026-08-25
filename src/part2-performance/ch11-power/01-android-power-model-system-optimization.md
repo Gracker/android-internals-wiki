@@ -574,7 +574,7 @@ Linux EAS（Energy-Aware Scheduling，能耗感知调度）使用 Energy Model �
 
 厂商可以在 Power HAL、调度器和固件中实现额外联动。缺少 vendor（厂商）源码和设备 trace 时，只能把这些联动标记为设备特性，不能推广为 Android 17 平台通用机制。
 
-### 13. Android 17 源码阅读入口
+### 11. Android 17 源码阅读入口
 
 | 主题 | 源码入口 |
 |---|---|
@@ -589,7 +589,7 @@ Linux EAS（Energy-Aware Scheduling，能耗感知调度）使用 Energy Model �
 | PowerStats AIDL | `hardware/interfaces/power/stats/aidl/android/hardware/power/stats/` |
 | kernel power_supply | `include/linux/power_supply.h`、`drivers/power/supply/power_supply_core.c`，tag `android17-6.18-2026-06_r6` |
 
-### 14. 复核检查表
+### 12. 复核检查表
 
 - [ ] 区分活动时间、charge、energy、power 和百分比。
 - [ ] 确认 `power_profile.xml` 来自目标设备，未使用 AOSP 默认值。

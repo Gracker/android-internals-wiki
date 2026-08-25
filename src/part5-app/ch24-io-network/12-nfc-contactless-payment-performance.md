@@ -9,7 +9,7 @@ tags:
 - 连接性
 - NFC
 related_chapters:
-- ch05-cpu-power
+- '5.2'
 last_verified: '2026-08-15'
 last_source_verified_at: '2026-08-15'
 last_verified_against: Android 17/API 37 official NFC docs updated through 2026-08-03 and AOSP packages/modules/Nfc android-17.0.0_r1 source anchors
