@@ -2941,6 +2941,29 @@
       "summary": "Thermal 官方来源链接与 Android 17 内核核验边界过期",
       "type": "stale-source-url",
       "updated_at": "2026-08-25T14:47:35.939441+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch08-responsiveness/07-play-integrity-api-performance.md",
+      "close_note": "已替换 frontmatter 中失效官方链接为当前 Play Integrity 文档与 Android reference，并在修复对话框段落补充 1.5.0+/1.3.0+ 版本边界。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20260825-223551-idle-audit-7fa603ef",
+      "created_at": "2026-08-25T22:41:57.194904+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20260825-223551-idle-audit-7fa603ef",
+      "details": "frontmatter 中 standard-requests/classic-requests/cross-protection、旧 IntegrityTokenRequest 路径和 developers.google.com/google-play/integrity/reference 返回 404；remediation 文档要求 GET_INTEGRITY/GET_STRONG_INTEGRITY 使用 Play Integrity Android 库 1.5.0+，GET_LICENSED 等 integrity dialogs 使用 1.3.0+。",
+      "id": "finding-635d7203c2d7",
+      "log_path": "logs/audit/2026-08-25-20260825-223551-idle-audit-7fa603ef-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/google/play/integrity/standard",
+        "https://developer.android.com/google/play/integrity/classic",
+        "https://developer.android.com/google/play/integrity/remediation",
+        "https://developer.android.com/google/play/integrity/setup"
+      ],
+      "status": "fixed",
+      "summary": "Play Integrity 章节官方来源链接失效且修复对话框缺少版本边界",
+      "type": "source-lifecycle",
+      "updated_at": "2026-08-25T22:41:57.290371+08:00"
     }
   ],
   "schema_version": 1
