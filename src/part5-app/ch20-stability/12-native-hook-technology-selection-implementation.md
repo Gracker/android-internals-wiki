@@ -1,6 +1,7 @@
 ---
 title: Native Hook 技术选型与实现
-chapter: '20.11'
+chapter: '20.12'
+section: '20.12'
 status: finalized
 applicable_versions: Android 17 (API 37) - Android 17 (API 37)
 tags:
@@ -11,7 +12,7 @@ tags:
 - bionic linker
 - debuggerd
 related_chapters:
-- '20.8'
+- '20.7'
 - '20.3'
 - '14.7'
 confidence: medium-high
@@ -433,7 +434,7 @@ DECLARED -> RESOLVING -> INSTALLING -> ACTIVE
 
 观察自有或指定第三方 ELF 的 `openat`、`close`、`dup`、`socket` 等导入调用时，PLT/GOT Hook 通常比进程级 Inline Hook 更容易限定影响面。代理函数应保存 `errno`，使用无分配记录路径，并把“未经过导入槽的直接 syscall（系统调用）”写入覆盖盲区。
 
-FD 是 file descriptor（文件描述符）。这类方案适合辅助定位 FD 泄漏，仍需结合 `/proc/self/fd` 快照、资源所有权和调用栈采样。参见 20.8《FD 耗尽监控与故障排查》。
+FD 是 file descriptor（文件描述符）。这类方案适合辅助定位 FD 泄漏，仍需结合 `/proc/self/fd` 快照、资源所有权和调用栈采样。参见 20.7《FD 耗尽监控与故障排查》。
 
 ### 9.2 分配器监控
 
@@ -495,6 +496,10 @@ API level 只适合作为第一层筛选。安装前还要检查：
 - [ ] 关闭功能不立即释放仍可能执行的 proxy 或 trampoline
 - [ ] 崩溃事件可还原目标 Build ID、偏移、原指令或 relocation
 
+## 小结
+
+Native Hook 的选型应从“需要命中哪条调用路径”开始：PLT/GOT 修改特定调用方的导入槽，Inline 改写目标指令，Trap 则依赖完整信号语义。上线前必须把 ABI、Build ID、页大小、RELRO、PAC/BTI/CFI、动态装载、并发发布和多框架共存写成可验证的安装条件；任何条件不匹配时默认停用，不用猜测偏移继续执行。
+
 ## 12. 源码锚点与参考资料
 
 正文的平台实现以 `android-17.0.0_r1` 为准：
@@ -525,5 +530,5 @@ API level 只适合作为第一层筛选。安装前还要检查：
 关联阅读：
 
 - 14.7《三方性能库、Hook 与可观测性基础设施》
-- 20.8《FD 与资源耗尽监控》
+- 20.7《FD 与资源耗尽监控》
 - 20.3《Native Crash、堆栈回溯与符号化》

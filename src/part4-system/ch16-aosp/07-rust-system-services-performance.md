@@ -21,7 +21,7 @@ related_chapters:
 - '1.10'
 - '3.6'
 - '14.2'
-- '20.9'
+- '20.10'
 last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1 (Keystore2 / DnsResolver / UWB / Bluetooth / VirtualizationService / libbinder_rs / Soong Rust / android-crates-io / crate_tool); official Android Rust, AIDL backend, and Scudo documentation
 confidence: high
@@ -561,4 +561,4 @@ heapprofd 能观察经过 malloc/free 的 Rust 分配。配置采样时要记录
 - [3.6 键盘、鼠标与指针输入性能 — 桌面模式交互管线](../../part1-fundamentals/ch03-input/06-keyboard-mouse-pointer-input-performance.md)：其中的 InputFlinger Rust 键盘 filter 是另一个渐进式 Rust 组件案例。
 - [1.10 JNI、NDK 与 Bionic 原生运行时性能](../../part1-fundamentals/ch01-architecture/10-jni-ndk-bionic-performance.md)：补充 libc malloc、动态链接与 Scudo 接口。
 - [14.2 Simpleperf 与 ARM Topdown 微架构分析](../../part3-tools/ch14-other-tools/02-simpleperf-arm-topdown.md)：补充 native CPU 采样和 PMU 事件。
-- [20.9 Android 17 Keystore 密钥配额与登录恢复](../../part5-app/ch20-stability/09-keystore-quota-login-stability.md)：补充 Keystore2 业务与稳定性诊断。
+- [20.10 Android 17 Keystore 密钥配额与登录恢复](../../part5-app/ch20-stability/10-keystore-quota-login-stability.md)：补充 Keystore2 业务与稳定性诊断。

@@ -261,7 +261,7 @@ Android 17 的内核接口定义可核对 [`Documentation/filesystems/proc.rst`]
 
 若 SDK 自带有语义的缓存/队列计数器，也应纳入同一时间线。供应商指标可以帮助解释，但不能代替系统级内存差值。
 
-SDK 使用独立进程时，可以分别观测宿主和子进程，却仍要报告两者的合计用户成本。关于 Java 泄漏的 retained path 分析见 [内存泄漏治理](../ch23-memory-practice/01-memory-leak-governance.md)，native 分配归因见 [Native 内存泄漏线上监控](13-native-memory-leak-online-monitoring.md)。
+SDK 使用独立进程时，可以分别观测宿主和子进程，却仍要报告两者的合计用户成本。关于 Java 泄漏的 retained path 分析见 [内存泄漏治理](../ch23-memory-practice/01-memory-leak-governance.md)，native 分配归因见 [Native 内存泄漏的线上分层监控](06-native-memory-leak-online-monitoring.md)。
 
 ### 5.3 Android 17 内存上限
 
@@ -294,7 +294,7 @@ Android 17 的 [所有应用行为变更](https://developer.android.com/about/ve
 - 宿主回调 SDK、SDK 回调宿主时，顶部帧不代表工作发起者；
 - 混淆、内联和 stripped native library（已剥除调试符号的原生库）会降低栈的可读性。
 
-应用自有适配层应给关键任务增加稳定的 Trace 名称、请求 ID 和来源标签；线程泄漏与匿名线程治理见 [线程泄漏与匿名线程监控](12-thread-coroutine-leak-governance.md)。
+应用自有适配层应给关键任务增加稳定的 Trace 名称、请求 ID 和来源标签；线程与协程泄漏治理见 [20.8 线程与协程泄漏治理](08-thread-coroutine-leak-governance.md)。
 
 ### 6.3 网络字节不能只看 UID
 
@@ -558,6 +558,8 @@ API 符号、旧设计页或系统服务类仍然存在，不能据此判断能�
 - [ ] 定期演练禁用、回退、符号化和供应商响应。
 - [ ] 结合业务价值复查闲置 SDK，移除没有清晰负责人的能力。
 - [ ] 同时跟踪单 SDK 边际成本和应用总体预算。
+
+## 小结
 
 SDK 治理的输出不该是一份静态名单，而应是一组能被重复执行的实验、制品差异和运行时证据。当团队能回答“哪段代码在什么条件下运行、成本如何复现、出错后如何停止”时，SDK 才处于可控状态。
 

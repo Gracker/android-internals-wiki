@@ -105,7 +105,7 @@ related_chapters:
 - '1.5'
 - '20.3'
 - '26.2'
-- '20.10'
+- '20.9'
 - '26.7'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
@@ -119,11 +119,11 @@ consolidated_from:
 
 异常处理架构面对的是一个很苛刻的时刻：线程可能持有锁，堆可能已经耗尽，文件系统可能正在写入，系统也可能马上结束进程。架构目标因此分成三件事：在当前进程保留最小证据，在下次启动限制重复失败，通过分阶段发布、暂停发布和修复版本控制影响范围。
 
-平台锚点是 Android 17（API 37，`android-17.0.0_r1`）。Java Crash、Native Crash、ANR 和 OOM 的系统机制分别见 [20.2 Java Crash、异常架构与线程堆栈分析](02-java-crash-exception-stack-analysis.md)、[20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md)、[20.4 ANR 治理策略](04-anr-governance.md) 和 [20.5 OOM 治理与 WebView Renderer 恢复](05-oom-webview-renderer-recovery.md)；这里讨论它们进入同一套应用侧恢复架构之后，边界应该怎样划分。本文把一次应用启动尝试简称为 launch；SafeMode 指应用在下次启动时主动跳过高风险模块的安全模式。
+平台锚点是 Android 17（API 37，`android-17.0.0_r1`）。本文负责 Java Crash 的异常边界、现场记录和下次启动恢复；Native Crash、ANR 和 OOM 的系统机制分别见 [20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md)、[20.4 ANR 治理策略](04-anr-governance.md) 和 [20.5 OOM、进程资源治理与 WebView Renderer 恢复](05-oom-webview-renderer-recovery.md)。本文把一次应用启动尝试简称为 launch；SafeMode 指应用在下次启动时主动跳过高风险模块的安全模式。
 
 Java 异常先在调用栈中传播，未被处理时进入 UncaughtExceptionHandler 并触发进程终止。治理既要设计异常边界，也要在 Crash 状态下可靠记录当前线程、其他线程和锁等待。
 
-## 异常传播、领域边界与恢复策略
+## Crash 恢复架构、SafeMode 与发布治理
 
 ### 全局异常捕获框架设计
 
@@ -168,7 +168,7 @@ Android 17 的 [`RuntimeInit.java`](https://android.googlesource.com/platform/fr
 
 Native signal handler（信号处理函数）的限制比 Java 处理器更严格。`SIGSEGV`、`SIGABRT` 等信号可能发生在内存分配器、动态链接器或持锁代码里。处理函数只能调用 [async-signal-safe（异步信号安全）函数](https://man7.org/linux/man-pages/man7/signal-safety.7.html)，即 POSIX 明确允许在信号处理期间调用的有限函数集合；日志框架、C++ 容器、JNI、`malloc`、互斥锁和大部分文件封装都不在这个集合里。
 
-生产方案通常使用 Crashpad、Breakpad 或经过验证的 APM（Application Performance Monitoring，应用性能监控）Native SDK，由预先打开的文件描述符、独立 dumper（转储）进程或系统调试守护进程 debuggerd 保留现场。应用自己的信号处理函数还要考虑旧处理函数链、用于取得详细信号信息的 `SA_SIGINFO`、备用信号栈、重入，以及恢复默认 disposition（信号处置动作）。系统链路见 [20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md)，回溯与符号化细节见 [20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md)。
+生产方案通常使用 Crashpad、Breakpad 或经过验证的 APM（Application Performance Monitoring，应用性能监控）Native SDK，由预先打开的文件描述符、独立 dumper（转储）进程或系统调试守护进程 debuggerd 保留现场。应用自己的信号处理函数还要考虑旧处理函数链、用于取得详细信号信息的 `SA_SIGINFO`、备用信号栈、重入，以及恢复默认 disposition（信号处置动作）。系统信号链路、回溯与符号化细节统一见 [20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md)。
 
 #### 协程异常不是新的系统 Crash 类型
 
@@ -444,7 +444,7 @@ override fun onRenderProcessGone(
 
 同一个渲染进程可能服务多个 WebView，系统会为每个受影响实例分别调用回调。代码只清理参数给出的实例，同时确保 Activity、Fragment、适配器和 WebView 注册表不再持有它；不能在第一次回调里假设其他 WebView 仍可用。返回 `false` 时，渲染进程若崩溃会导致应用 Crash，若被系统杀死则应用会被杀。
 
-`didCrash() == false` 表示渲染进程被系统结束，常见背景是内存压力，但不能仅凭该布尔值断言 OOM。恢复策略要限制重建次数；持续内存压力下立即创建同样的 WebView，容易形成反复重建。[20.5 OOM 治理与 WebView Renderer 恢复](05-oom-webview-renderer-recovery.md) 专门讨论 WebView renderer OOM 恢复。
+`didCrash() == false` 表示渲染进程被系统结束，常见背景是内存压力，但不能仅凭该布尔值断言 OOM。恢复策略要限制重建次数；持续内存压力下立即创建同样的 WebView，容易形成反复重建。[20.5 OOM、进程资源治理与 WebView Renderer 恢复](05-oom-webview-renderer-recovery.md) 专门讨论 WebView renderer OOM 恢复。
 
 ### 分阶段发布、版本恢复与热修复
 
@@ -795,7 +795,7 @@ RecyclerView 点击时应重新读取 `bindingAdapterPosition` 并处理表示�
 
 #### `OutOfMemoryError`、`StackOverflowError` 与链接错误
 
-- OOM 要区分 Java 堆、线程创建、Native（原生/C++）或图形内存的间接压力与 LMK（低内存终止），详见 [20.5 OOM 治理与 WebView Renderer 恢复](05-oom-webview-renderer-recovery.md)。
+- OOM 要区分 Java 堆、线程创建、Native（原生/C++）或图形内存的间接压力与 LMK（低内存终止），详见 [20.5 OOM、进程资源治理与 WebView Renderer 恢复](05-oom-webview-renderer-recovery.md)。
 - 栈溢出要从重复栈帧、递归深度、线程栈大小和生成代码入手；捕获后继续在同一深栈执行也有风险。
 - `NoSuchMethodError`、`NoClassDefFoundError` 要按依赖图、R8 保留规则（keep rules）、API 级别、动态模块和类加载器排查，不能归入普通业务异常。
 
@@ -815,7 +815,7 @@ RecyclerView 点击时应重新读取 `bindingAdapterPosition` 并处理表示�
 
 协程行为应以项目锁定的 `kotlinx.coroutines` 版本为准。本文核对的 1.11.0 官方 [`CoroutineExceptionHandler`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-exception-handler/) 文档说明：JVM 的最终处理流程会调用通过 `ServiceLoader`（运行时发现服务实现的标准机制）找到的处理器，以及当前线程的 `Thread.uncaughtExceptionHandler`。旧版 `kotlinx-coroutines-android` 的反射实现不能视为 Android 17 平台的固定机制。
 
-更完整的异常架构见 [20.2 Java Crash、异常架构与线程堆栈分析](02-java-crash-exception-stack-analysis.md)。
+恢复与发布治理应与前半篇的 Crash 架构使用同一套责任边界。
 
 ### 第三方 SDK：线程隔离不等于进程隔离
 
@@ -860,7 +860,7 @@ RecyclerView 点击时应重新读取 `bindingAdapterPosition` 并处理表示�
 
 告警阈值应来自产品自己的历史基线、版本样本和风险等级，不使用来源不明的固定崩溃率。小比例发布的样本较少时，要同时看表示统计不确定范围的置信区间、绝对用户数和故障严重度。
 
-### 源码与官方文档
+### 第二部分的核查入口
 
 - 平台：AOSP [`android-17.0.0_r1`](https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/)
 - Java 未捕获异常接口：[`Thread.UncaughtExceptionHandler`](https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler)
@@ -1009,7 +1009,7 @@ ART 的 `Thread::CreateAnnotatedStackTrace()` 能构造带 `blockedOn`（当前�
 
 时间预算只能阻止采集器继续处理下一条线程，无法中断一次已经进入 `getStackTrace()` 的跨线程挂起。若 fatal 回调必须在极短时间内返回，就不应在这里枚举全部线程。
 
-OOM 路径需要把操作压到最少。`getAllStackTraces()` 会创建 `Map` 和大量对象，完整 JSON、压缩、数据库事务也会继续申请内存。可在正常运行期维护固定容量的记录，让 OOM handler 只写固定字段和已经存在的数据。自定义 handler 的委托结构见 [Java Crash 治理](02-java-crash-exception-stack-analysis.md)。
+OOM 路径需要把操作压到最少。`getAllStackTraces()` 会创建 `Map` 和大量对象，完整 JSON、压缩、数据库事务也会继续申请内存。可在正常运行期维护固定容量的记录，让 OOM handler 只写固定字段和已经存在的数据。自定义 handler 的委托结构使用前半篇定义的同一终止链。
 
 应用不应通过“吞掉未捕获异常”来保留现场。Android 17 的 [`RuntimeInit.KillApplicationHandler`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java) 会先向 `ActivityManager` 报告 Crash，随后在 `finally` 中调用 `Process.killProcess()` 和 `System.exit(10)`。自定义 handler 若截断这条链，部分线程与业务状态会留在未定义的失败后状态。标准应用进程会退出，因此“崩溃线程留下了一把永远不释放的锁”不适用于默认终止流程；强行续命的进程也没有可依赖的一致性。
 
@@ -1027,7 +1027,7 @@ OOM 路径需要把操作压到最少。`getAllStackTraces()` 会创建 `Map` �
 
 Android 8 的 debuggerd handler 会先创建一个与故障进程共享地址空间的辅助线程；该线程再创建子进程，并按进程位数 `exec` [`/system/bin/crash_dump32` 或 `crash_dump64`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-8.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)。`exec` 会用指定程序替换子进程当前执行的程序映像。随后 `crash_dump` 连接 tombstoned（接收并保存系统 tombstone 的守护进程）并生成诊断数据。系统 tombstone 至少包含崩溃线程寄存器、maps（进程虚拟内存映射）和进程内各线程的 Native backtrace。能否识别托管代码帧取决于运行时与回溯器可获得的信息，采集端不应把它当作 ART SIGQUIT 的 Java monitor dump，也不能指望它给出 Java monitor owner。
 
-普通应用应保留 debuggerd 的 signal 链。Android 12 / API 31 起，应用可在下次启动查询 `ApplicationExitInfo.REASON_CRASH_NATIVE`，并从 `getTraceInputStream()` 读取 tombstone protobuf；protobuf 是 Protocol Buffers 的二进制序列化格式，不能按普通文本解析。完整边界见 [Native 栈回溯与符号化](03-native-crash-unwinding-symbolication.md)，系统 signal/debuggerd 链路见 [Native Crash 治理](03-native-crash-unwinding-symbolication.md)。
+普通应用应保留 debuggerd 的 signal 链。Android 12 / API 31 起，应用可在下次启动查询 `ApplicationExitInfo.REASON_CRASH_NATIVE`，并从 `getTraceInputStream()` 读取 tombstone protobuf；protobuf 是 Protocol Buffers 的二进制序列化格式，不能按普通文本解析。Native 栈回溯、符号化与系统 signal/debuggerd 链路统一见 [20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md)。
 
 #### 4.3 ANR：系统 trace 与事前采样互补
 
@@ -1130,7 +1130,7 @@ Perfetto 没记录到锁竞争事件，仍可能存在竞争；trace 配置、�
 - 用 build ID、R8 mapping ID、版本和 ABI 做精确符号化。build ID 是 ELF（Android Native 可执行文件和共享库使用的二进制格式）中的构建标识，R8 mapping ID 对应一次混淆映射，ABI 表示处理器架构与二进制调用约定。
 - 合并预存证据并上传，服务端按证据强度对相似故障分组。
 
-### 8. Android 版本边界
+### 7. Android 版本边界
 
 | 版本 | 相关的公开或系统能力 |
 | --- | --- |
@@ -1141,7 +1141,7 @@ Perfetto 没记录到锁竞争事件，仍可能存在竞争；trace 配置、�
 
 Android 17 的 Java monitor 解释不能直接套到内核。`android17-6.18-2026-06_r6` 的 scheduler/futex 证据用于说明线程为何睡眠或迟迟未运行；`synchronized` 对象、held lock 与 owner 的解释仍以 `android-17.0.0_r1` 的 ART dump 为准。
 
-### 10. 源码与文档入口
+### 8. 源码与文档入口
 
 - Android 17 [`java.lang.Thread`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java)：核对逐线程 `getAllStackTraces()` 与公开栈语义。
 - Android 17 [`dalvik_system_VMStack.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/native/dalvik_system_VMStack.cc)：核对当前线程直接取栈、其他线程 `SuspendThreadByPeer()` 路径。
@@ -1185,6 +1185,10 @@ Android 17 的 Java monitor 解释不能直接套到内核。`android17-6.18-202
 | 单次线程 dump 能证明死锁和等待时长 | 它只是一组时间接近的快照；循环等待与持续时间应由重复样本或 trace 确认 |
 | Crash handler 返回后继续运行能保住用户数据 | 未捕获异常后的共享状态不可依赖，还会截断 Android 的报告与终止链 |
 | `ApplicationExitInfo` 一定带完整 trace | trace 可能缺失或被全局循环存储覆盖，类型也随退出原因不同 |
+
+## 小结
+
+Java Crash 治理要把三段责任连起来：正常运行期用异常边界和有界采样保留证据，fatal 阶段委托 Android 默认终止链并避免高开销采集，下次启动再用 SafeMode、发布门禁和历史退出证据恢复。线程快照、锁等待和 Native tombstone 都是为这条链提供证据，不能取代原始 `Throwable` 和精确构建信息。
 
 ## 参考资料
 

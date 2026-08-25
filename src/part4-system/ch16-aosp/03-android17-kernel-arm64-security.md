@@ -88,7 +88,7 @@ related_chapters:
 - '16.1'
 - '16.4'
 - '16.7'
-- '20.6'
+- '20.11'
 last_consolidated_at: '2026-08-24'
 ---
 
@@ -493,7 +493,7 @@ PSS（Proportional Set Size）把私有页全额计入，并按共享进程数�
 
 [§4.9](../../part1-fundamentals/ch04-memory/09-android17-memory-tagging-extension-mte.md) 讨论 MTE 的进程配置。
 
-[§20.6](../../part5-app/ch20-stability/06-mte-gwp-asan-native-memory-safety.md) 讨论 MTE 崩溃检测与治理。这里仅限定内核能力与性能测量边界。
+[§20.11](../../part5-app/ch20-stability/11-mte-gwp-asan-native-memory-safety.md) 讨论 MTE 崩溃检测与治理。这里仅限定内核能力与性能测量边界。
 
 ### 7. GCS：Android 17 内核提供用户态 ABI
 

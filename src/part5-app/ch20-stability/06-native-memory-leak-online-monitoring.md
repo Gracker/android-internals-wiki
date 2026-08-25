@@ -1,6 +1,7 @@
 ---
-title: Native 内存泄漏线上监控实战：malloc 钩子、Scudo 追踪与 mallinfo 治理
-chapter: '20.13'
+title: Native 内存泄漏的线上分层监控
+chapter: '20.6'
+section: '20.6'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
@@ -13,8 +14,8 @@ tags:
 - online
 related_chapters:
 - '20.3'
-- '20.6'
 - '20.11'
+- '20.12'
 - '23.3'
 - '26.14'
 task6_state: reviewed
@@ -46,7 +47,7 @@ sources:
   path: https://developer.android.com/ndk/guides/memory-debug
 ---
 
-# Native 内存泄漏线上监控实战：malloc 钩子、Scudo 追踪与 mallinfo 治理
+# Native 内存泄漏的线上分层监控
 
 Native（由 C/C++ 等本地代码管理的）内存问题很少能靠一条曲线定性。`malloc` 尚未释放的字节、allocator（内存分配器）向内核映射的页、进程的 RSS（Resident Set Size，当前驻留在物理内存中的页）、按共享比例分摊后的 PSS（Proportional Set Size），以及 GPU 或 dma-buf（让进程与硬件驱动共享缓冲区的内核机制）占用，回答的是不同问题。若把它们都叫作“Native Heap”，也就是由 `malloc`、`new` 等接口管理的本地堆，告警会互相矛盾，定位也容易走偏。
 
@@ -337,7 +338,7 @@ Android 11 起，Scudo 用于大多数 Android Native 分配；低内存设备�
 - MTE 依赖 Arm 硬件标签能力、64 位进程与设备系统配置。它和编译器插桩的 HWASan 是两条路径。
 - ASan 官方已标为被其他工具取代。官方给出的量级约为 CPU +100%、代码 +50%、内存 +100%，不能写成所有应用固定“2—3 倍”。
 
-HWASan 官方给出的典型成本约为 CPU +100%、代码 +50%、内存 +10%—35%，仍应以应用实测为准。GWP-ASan 的生产灰度、MTE 配置与两类报告的差异统一见 [20.6 MTE 与 GWP-ASan Native 内存安全检测](06-mte-gwp-asan-native-memory-safety.md)。
+HWASan 官方给出的典型成本约为 CPU +100%、代码 +50%、内存 +10%—35%，仍应以应用实测为准。GWP-ASan 的生产灰度、MTE 配置与两类报告的差异统一见 [20.11 MTE 与 GWP-ASan Native 内存安全检测](11-mte-gwp-asan-native-memory-safety.md)。
 
 ## 8. Scudo 选项与 `mallopt`：调 allocator，不是修泄漏
 
@@ -510,5 +511,7 @@ L0—L3 表示采集成本和证据深度逐层增加，不表示事故严重等
 - [Android 游戏内存管理](https://developer.android.com/games/optimize/memory-allocation)
 - [Android 游戏：Low memory killers 与诊断工具](https://developer.android.com/games/optimize/vitals/lmk)
 - [Android 应用内存管理](https://developer.android.com/topic/performance/memory-management)
+
+## 小结
 
 这些资料给出的边界是一致的：低成本计数器负责发现异常，带调用栈的采样负责定位增长来源，owner 生命周期用于证明资源是否错过释放时机，内存安全工具负责发现越界和释放后使用。分别保存这四类证据，才能在 Scudo、mmap、图形内存和 Android 17 MemoryLimiter 同时存在时得到可复核的结论。

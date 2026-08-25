@@ -1,7 +1,7 @@
 ---
 title: Native 动态库安全发布、装载与回滚
-chapter: '20.7'
-section: '20.7'
+chapter: '20.13'
+section: '20.13'
 status: finalized
 applicable_versions: Android 14 (API 34) - Android 17 (API 37); System.load writable-file enforcement requires Android 17 with targetSdkVersion 37
 last_verified: '2026-08-24'
@@ -40,7 +40,7 @@ related_chapters:
 - '1.22'
 - '4.5'
 - '20.3'
-- '20.11'
+- '20.12'
 pipeline_stage: finalized
 last_consolidated_at: '2026-08-24'
 consolidated_from:
@@ -301,6 +301,10 @@ ELF 程序头描述运行时如何把文件映射进内存；其中 `PT_LOAD` �
 - 20.3 讨论 signal crash（由 POSIX 信号终止的原生崩溃）、tombstone（Android 生成的原生崩溃报告）、backtrace（调用栈）和符号化。只读拒绝通常表现为 Java `UnsatisfiedLinkError`，此时还没有执行目标库中的原生代码。
 - 4.5 讨论 16 KB 页下的 ELF、APK 和运行时代码兼容，本文只使用独立 `.so` 的 ELF 检查结果。
 - 1.10 讨论 JNI 注册与调用边界。库加载失败后仍调用对应原生方法，才会引出后续 JNI 故障。
+
+## 小结
+
+Native DCL 的安全边界不是“文件能被 linker 打开”，而是一条完整发布事务：签名清单确认来源，摘要、ABI、ELF 和依赖确认内容，唯一版本路径与原子选择记录隔离半成品，加载失败后由新进程回到最近可用版本。Android 17 的只读检查只覆盖其中一个条件，不能取代来源和回滚协议。
 
 
 ## 参考资料

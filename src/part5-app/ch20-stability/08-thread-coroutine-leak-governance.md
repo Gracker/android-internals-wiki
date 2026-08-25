@@ -1,6 +1,7 @@
 ---
 title: 线程与协程泄漏治理
-chapter: '20.12'
+chapter: '20.8'
+section: '20.8'
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags:
 - thread
@@ -15,7 +16,7 @@ tags:
 related_chapters:
 - '20.1'
 - '20.5'
-- '20.8'
+- '20.7'
 - '20.2'
 - '8.4'
 consolidated_from:
@@ -159,7 +160,7 @@ Android 17 的 `ThreadGroup.activeCount()` 文档和实现都说明返回值是�
 
 Android 17 的实现先取得 Java 线程记录，再逐个调用 `getStackTrace()`，会创建 `Map` 和每条线程的栈数组。各条栈采样时间不同，线程还可能在过程中结束。可先用低成本计数发现持续增长，再调用它生成诊断快照；秒级轮询开销过高，也覆盖不到没有 Java peer 的 raw pthread。
 
-Java Crash、ANR 和跨线程栈采集机制见 [20.2 Java Crash、异常架构与线程堆栈分析](02-java-crash-exception-stack-analysis.md)；进程级线程与 FD 常态监控见 [20.8 FD 耗尽监控与故障排查](08-fd-resource-monitoring.md)。
+Java Crash、ANR 和跨线程栈采集机制见 [20.2 Java Crash、异常架构与线程堆栈分析](02-java-crash-exception-stack-analysis.md)；进程级线程与 FD 常态监控见 [20.7 FD 耗尽监控与故障排查](07-fd-resource-monitoring.md)。
 
 #### 3.3 `/proc` 快照必须容忍线程并发退出
 
@@ -312,7 +313,7 @@ Java `Thread` 还会经过 ART 的 `FixStackSize()`：传入 0 时先取运行�
 
 估算不能只做“线程数 × 1 MiB”。应在目标 ABI、页大小、设备内存和相同业务负载上比较 `/proc/self/maps`（进程内存映射列表）、`smaps_rollup`（各映射内存统计的进程级汇总）、RSS 与 task 数的共同变化。
 
-线程也不会天然持有一个 FD。`/proc/self/task/<tid>` 是 procfs（内核导出的进程信息伪文件系统）视图，不表示进程为每条线程常驻打开了文件描述符。线程和 FD 一起增长，通常说明同一模块同时创建 worker 与 socket、pipe、eventfd 或文件；仍需按 owner 和时间线证明关联。FD 的计数、限额与复用规则见 [FD 耗尽监控与故障排查](08-fd-resource-monitoring.md)。
+线程也不会天然持有一个 FD。`/proc/self/task/<tid>` 是 procfs（内核导出的进程信息伪文件系统）视图，不表示进程为每条线程常驻打开了文件描述符。线程和 FD 一起增长，通常说明同一模块同时创建 worker 与 socket、pipe、eventfd 或文件；仍需按 owner 和时间线证明关联。FD 的计数、限额与复用规则见 [FD 耗尽监控与故障排查](07-fd-resource-monitoring.md)。
 
 ### 7. 线程创建失败没有单一“上限”
 
@@ -505,6 +506,26 @@ API 36 已公开 `Thread.isVirtual()` 查询方法，但这不代表普通应用
 
 测试结束后必须退出测试进程，或由明确 owner 释放资源。不要在承载用户数据的线上进程中制造几百条线程、降低资源限制或留下 joinable pthread 来验证告警。
 
+### 16. 评审清单
+
+- [ ] 是否区分 Linux task、Java platform thread、pool worker、协程 Job 与 raw pthread？
+- [ ] 是否用生命周期和 owner 证明泄漏，而非看到 `WAITING` 或匿名名称就下结论？
+- [ ] 常态监控是否只采低成本计数，详细栈是否由增长触发？
+- [ ] 是否把 Java ID、Linux TID、pthread 事件 ID 分开保存并处理复用？
+- [ ] 是否区分仍存活的线程与被业务强引用的已终止 `Thread`，没有假定 ART 会调用 `Thread.exit()` 清字段？
+- [ ] `ThreadGroup.activeCount()` 是否只作为估计，不用于硬限流？
+- [ ] `/proc/self/task` 是否容忍并发退出，并与 Java 快照解释差额？
+- [ ] 自有 pool 是否有稳定 sourceId、容量、队列、拒绝和关闭协议？
+- [ ] 计划任务是否保存 `ScheduledFuture`、正确取消并处理队列保留？
+- [ ] coroutine scope 和 dispatcher 是否都有明确 owner？
+- [ ] native joinable pthread 是否保证一次 join，或创建时设为 detached？
+- [ ] 是否避免把 Java `Thread` 的 ART 栈映射写成固定 1 MiB？
+- [ ] 是否避免把线程数与 FD 数写成一一对应？
+- [ ] 告警是否按进程角色、版本、设备分组、增量和持续时间校准？
+- [ ] 创建失败是否同时保留 errno、task 数、`VmSize`/RSS 与进程限制？
+- [ ] 线程名、调用栈和来源字段是否限长并去除用户信息？
+- [ ] fatal 路径是否只消费预生成的有界摘要？
+
 ### 17. 源码与官方资料
 
 - [AOSP `Thread.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java)：默认命名、`getAllStackTraces()`、Android 未调用 `exit()` 的兼容注释和虚拟线程 API 边界。
@@ -533,27 +554,9 @@ API 36 已公开 `Thread.isVirtual()` 查询方法，但这不代表普通应用
 - [Perfetto：CPU scheduling](https://perfetto.dev/docs/data-sources/cpu-scheduling)：ftrace 调度和 task 生命周期事件。
 - [Perfetto：SQL tables](https://perfetto.dev/docs/analysis/sql-tables)：thread 的 `start_ts`、`end_ts`、TID 与 `utid` 语义。
 
+### 第一部分小结
+
 线程治理的目标是让每个 worker 都能回答“谁创建、为谁工作、何时退出”。进程计数负责发现趋势，组件指标负责说明任务压力，创建事件负责确认来源，heap/FD/内存映射负责判断后果。把这些证据按时间和 owner 对齐，才能区分正常峰值、生命周期错误与临近资源耗尽。
-
-### 检查清单
-
-- [ ] 是否区分 Linux task、Java platform thread、pool worker、协程 Job 与 raw pthread？
-- [ ] 是否用生命周期和 owner 证明泄漏，而非看到 `WAITING` 或匿名名称就下结论？
-- [ ] 常态监控是否只采低成本计数，详细栈是否由增长触发？
-- [ ] 是否把 Java ID、Linux TID、pthread 事件 ID 分开保存并处理复用？
-- [ ] 是否区分仍存活的线程与被业务强引用的已终止 `Thread`，没有假定 ART 会调用 `Thread.exit()` 清字段？
-- [ ] `ThreadGroup.activeCount()` 是否只作为估计，不用于硬限流？
-- [ ] `/proc/self/task` 是否容忍并发退出，并与 Java 快照解释差额？
-- [ ] 自有 pool 是否有稳定 sourceId、容量、队列、拒绝和关闭协议？
-- [ ] 计划任务是否保存 `ScheduledFuture`、正确取消并处理队列保留？
-- [ ] coroutine scope 和 dispatcher 是否都有明确 owner？
-- [ ] native joinable pthread 是否保证一次 join，或创建时设为 detached？
-- [ ] 是否避免把 Java `Thread` 的 ART 栈映射写成固定 1 MiB？
-- [ ] 是否避免把线程数与 FD 数写成一一对应？
-- [ ] 告警是否按进程角色、版本、设备分组、增量和持续时间校准？
-- [ ] 创建失败是否同时保留 errno、task 数、`VmSize`/RSS 与进程限制？
-- [ ] 线程名、调用栈和来源字段是否限长并去除用户信息？
-- [ ] fatal 路径是否只消费预生成的有界摘要？
 
 ## Scope、Job 与结构化并发
 
@@ -575,7 +578,7 @@ Android 17 调度的是 `Handler` 消息、Java 线程和 Linux task。协程的
 
 “Job 已经 completed，但监控表还保存着它”属于监控器自身的对象滞留。“线程池仍有空闲 worker（工作线程）”属于线程资源治理。两者都要修，但不能和未结束的协程混为一类。
 
-协程挂起时不占用专属线程，却仍保留 continuation、`CoroutineContext`（随协程携带的 `Job`、dispatcher、名称等上下文元素）和被 lambda 捕获的对象。它恢复时也可能换到另一个 worker。因此，线程数和协程数没有一一对应关系。线程层的归因与阈值见 [20.12 线程与协程泄漏治理](12-thread-coroutine-leak-governance.md)。
+协程挂起时不占用专属线程，却仍保留 continuation、`CoroutineContext`（随协程携带的 `Job`、dispatcher、名称等上下文元素）和被 lambda 捕获的对象。它恢复时也可能换到另一个 worker。因此，线程数和协程数没有一一对应关系。线程层的归因与阈值使用前半篇建立的 task、pool 和 owner 模型。
 
 #### 1.1 判断泄漏要同时满足“超期”和“仍被持有”
 
@@ -782,7 +785,7 @@ suspend fun fetch(request: Request): Response =
 
 Android 内核调度的是线程。协程恢复到哪个 worker，就临时继承该 worker 的 nice（Linux 线程调度权重）、cgroup（按线程组管理资源的控制组）和调度属性。在线程池协程中调用 `Process.setThreadPriority()` 会修改可复用 worker；后续无关任务也可能继承该值，协程换 worker 后又失去预期。
 
-需要稳定线程属性的组件应使用有界的专用 executor，并在 `ThreadFactory`（创建和配置线程的工厂）中设置线程属性，再把它转成 dispatcher。相关线程必须由 owner 关闭并纳入 [20.12 线程与协程泄漏治理](12-thread-coroutine-leak-governance.md) 的 task/线程池监控。
+需要稳定线程属性的组件应使用有界的专用 executor，并在 `ThreadFactory`（创建和配置线程的工厂）中设置线程属性，再把它转成 dispatcher。相关线程必须由 owner 关闭，并纳入前半篇定义的 task/线程池监控。
 
 ### 5. Android 上不能依赖全局协程枚举
 
@@ -1068,5 +1071,7 @@ WorkManager 可以在 `CoroutineWorker` 内使用协程，但可靠性来自 Wor
 - [Android 17：MessageQueue behavior change](https://developer.android.com/about/versions/17/changes/messagequeue)
 - [Android Studio：Record Java/Kotlin methods](https://developer.android.com/studio/profile/record-java-kotlin-methods)
 - [Android：Background task scheduling](https://developer.android.com/develop/background-work/background-tasks/persistent)
+
+## 小结
 
 协程治理的关键对象始终是 owner、`Job` 和资源释放协议。线程与 Perfetto 帮助解释“代码何时得到 CPU”，Lifecycle 和结构化并发解释“任务何时应该结束”，显式 operation 监控则把这两类证据关联起来。

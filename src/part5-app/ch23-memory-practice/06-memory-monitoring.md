@@ -112,7 +112,7 @@ consolidated_from:
 
 只上报一个“内存占用”无法区分这些问题。PSS、RSS、Java Heap 和 Native Heap（原生堆）的统计对象不同，任何一项都不能单独代表应用的全部内存。多进程应用还要带进程名；把所有进程混成一个分布，会掩盖主进程回归或独立任务进程的峰值。
 
-Java 泄漏引用链见 [23.1 内存泄漏检测与治理](01-memory-leak-governance.md)，原生分配诊断见 [23.3 Native 与虚拟内存管理优化](03-native-virtual-memory-optimization.md)，Java Heap 预算见 [23.4 Java Heap、GC 与 Compose 内存分配](04-java-heap-gc-compose-allocation.md)，OOM（`OutOfMemoryError`，无法满足分配时抛出的内存不足异常）分类见 [20.5 OOM 治理与 WebView Renderer 恢复](../ch20-stability/05-oom-webview-renderer-recovery.md)。本节聚焦生产环境中的指标、判断、降级和证据采集。
+Java 泄漏引用链见 [23.1 内存泄漏检测与治理](01-memory-leak-governance.md)，原生分配诊断见 [23.3 Native 与虚拟内存管理优化](03-native-virtual-memory-optimization.md)，Java Heap 预算见 [23.4 Java Heap、GC 与 Compose 内存分配](04-java-heap-gc-compose-allocation.md)，OOM（`OutOfMemoryError`，无法满足分配时抛出的内存不足异常）分类见 [20.5 OOM、进程资源治理与 WebView Renderer 恢复](../ch20-stability/05-oom-webview-renderer-recovery.md)。本节聚焦生产环境中的指标、判断、降级和证据采集。
 
 ## 内存指标采集：先统一统计定义
 

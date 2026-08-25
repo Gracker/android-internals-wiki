@@ -1,5 +1,5 @@
 ---
-title: OOM 治理与 WebView Renderer 恢复
+title: OOM、进程资源治理与 WebView Renderer 恢复
 chapter: '20.5'
 section: '20.5'
 status: finalized
@@ -58,12 +58,6 @@ sources:
   path: Clippings/Android 应用稳定性剖析与优化 - 初识内存：内存是什么？.md
 - type: blog
   path: Clippings/Android 应用稳定性剖析与优化 - 实现 FD 监控：文件描述符（FD）超限怎么办？.md
-- type: clippings-structure-ref
-  path: Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md
-  availability: not present in the current vault as of 2026-08-14; retained as legacy provenance
-- type: research-note
-  path: OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-05-webview-render-process-oom-recovery-onrendeprocessgone.md
-  availability: not present in the current vault as of 2026-08-14; retained as legacy provenance
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/webkit/WebViewClient.java
 - type: aosp
@@ -127,7 +121,7 @@ consolidated_from:
 - src/part5-app/ch20-stability/09-webview-renderer-oom-recovery.md
 ---
 
-# OOM 治理与 WebView Renderer 恢复
+# OOM、进程资源治理与 WebView Renderer 恢复
 
 OOM（Out of Memory）通常指内存不足。稳定性平台还常把线程、文件描述符和虚拟地址空间耗尽放在同一类资源问题中，本文一并说明。OOME 专指 Java 的 `OutOfMemoryError` 异常，它只是资源失败的一种表现。
 
@@ -405,7 +399,7 @@ FORTIFY: FD_SET: file descriptor >= FD_SETSIZE
 - `mallopt(M_PURGE, 0)` 请求 allocator 归还可清理的空闲物理页，不能自动释放所有保留地址区间，也不能修复映射泄漏。
 - 拆进程会获得独立地址空间，却会复制 Runtime、`.so`、线程和缓存，增加整机内存与 IPC（进程间通信）成本。只有隔离边界和测量数据同时成立时才采用。
 
-### 扩展
+### OOM 前降级、自动取证与资源预算
 
 #### OOM 前的降级与失败处理
 
@@ -880,7 +874,7 @@ API 26 以下没有 `onRenderProcessGone()`。若产品仍支持更低版本，�
 | Android 17 决定 Chromium 行为 | 还要记录设备 provider 包版本与对应的 Chromium 源码版本 |
 | Renderer 准备好一帧就代表恢复可用 | 还需确认宿主能够绘制、收到视觉提交回调并完成业务握手 |
 
-### 小结
+### Renderer 恢复小结
 
 Renderer gone 的恢复原则可以压缩成五句话：
 
@@ -891,6 +885,10 @@ Renderer gone 的恢复原则可以压缩成五句话：
 5. 视觉提交与业务就绪都成功，才能计为用户已恢复。
 
 把 gone 事件、旧实例清理、新实例状态和 provider 版本放在同一条事件记录中，才能区分系统回收、Renderer 崩溃、主动终止和恢复代码自身的缺陷。
+
+## 小结
+
+OOM 治理先要区分 Java Heap、Native Heap、线程、FD、虚拟地址空间和 LMK 等失败边界，在资源趋势接近预算时由明确 owner 降级或释放，而不是在 OOME 已发生后做高开销抢救。WebView Renderer 退出则是另一个进程边界：宿主要销毁旧 WebView、受控重建并用视觉与业务就绪共同验证恢复。
 
 ## 参考资料
 

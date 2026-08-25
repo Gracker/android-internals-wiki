@@ -49,7 +49,7 @@ tags:
 - elf
 related_chapters:
 - '1.10'
-- '20.7'
+- '20.13'
 - '25.5'
 pipeline_stage: ready-to-publish
 task6_state: reviewed

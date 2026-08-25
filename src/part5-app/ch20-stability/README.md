@@ -10,15 +10,15 @@
 - [20.2 Java Crash、异常架构与线程堆栈分析](02-java-crash-exception-stack-analysis.md)
 - [20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md)
 - [20.4 ANR 治理策略](04-anr-governance.md)
-- [20.5 OOM 治理与 WebView Renderer 恢复](05-oom-webview-renderer-recovery.md)
-- [20.6 MTE 与 GWP-ASan Native 内存安全检测](06-mte-gwp-asan-native-memory-safety.md)
-- [20.7 Native 动态库安全发布、装载与回滚](07-native-dcl-secure-loading.md)
-- [20.8 FD 耗尽监控与故障排查](08-fd-resource-monitoring.md)
-- [20.9 Android 17 Keystore 密钥配额与登录恢复](09-keystore-quota-login-stability.md)
-- [20.10 Binder IPC 故障判断与性能诊断](10-binder-ipc-fault-monitoring.md)
-- [20.11 Native Hook 技术选型与实现](11-native-hook-technology-selection-implementation.md)
-- [20.12 线程与协程泄漏治理](12-thread-coroutine-leak-governance.md)
-- [20.13 Native 内存泄漏线上监控实战：malloc 钩子、Scudo 追踪与 mallinfo 治理](13-native-memory-leak-online-monitoring.md)
+- [20.5 OOM、进程资源治理与 WebView Renderer 恢复](05-oom-webview-renderer-recovery.md)
+- [20.6 Native 内存泄漏的线上分层监控](06-native-memory-leak-online-monitoring.md)
+- [20.7 FD 耗尽监控与故障排查](07-fd-resource-monitoring.md)
+- [20.8 线程与协程泄漏治理](08-thread-coroutine-leak-governance.md)
+- [20.9 Binder IPC 故障判断与性能诊断](09-binder-ipc-fault-monitoring.md)
+- [20.10 Android 17 Keystore 密钥配额与登录恢复](10-keystore-quota-login-stability.md)
+- [20.11 MTE 与 GWP-ASan Native 内存安全检测](11-mte-gwp-asan-native-memory-safety.md)
+- [20.12 Native Hook 技术选型与实现](12-native-hook-technology-selection-implementation.md)
+- [20.13 Native 动态库安全发布、装载与回滚](13-native-dcl-secure-loading.md)
 - [20.14 第三方 SDK 性能影响评估与治理实战](14-sdk-performance-governance.md)
 
 ## 索引术语速览
@@ -30,7 +30,7 @@
 | MTE / GWP-ASan | MTE（Memory Tagging Extension，内存标签扩展）用内存标签发现标签不匹配的访问；GWP-ASan 通过抽样保护部分堆分配，捕获释放后访问和越界等问题。两者都用于定位 Native 内存安全缺陷。 |
 | 16 KB Page Size | 系统以 16 KB 作为基础内存页大小。ELF 对齐、打包和运行时假设的统一检查见 [4.5](../../part1-fundamentals/ch04-memory/05-16kb-page-size.md)。 |
 | FD | File Descriptor，文件描述符。进程用这个整数编号引用已打开的文件、网络套接字（socket）、管道（pipe）等内核对象。 |
-| DCL | Dynamic Code Loading，动态代码加载。20.7 关注 Native 动态库的可信发布、Android 17 `System.load()` 只读约束与回滚。 |
+| DCL | Dynamic Code Loading，动态代码加载。20.13 关注 Native 动态库的可信发布、Android 17 `System.load()` 只读约束与回滚。 |
 | Android Keystore | Android 提供的密钥存储服务。应用通常只持有密钥别名，通过系统接口生成、导入或使用密钥。 |
 | Binder IPC | IPC 指进程间通信。一次看似本地的方法调用，可能经过 AIDL（Android 接口定义语言）接口、Binder 驱动和远端进程。 |
 | 堆栈回溯 / 符号化 | 回溯从寄存器和栈中恢复调用帧；符号化再把程序地址转换成函数名、内联调用和源码行。 |
@@ -40,7 +40,7 @@
 
 ## 阅读建议
 
-- 按故障类型选择对应条目，无须按编号顺序阅读。
-- 第一次建立稳定性指标时，先读 20.1；Native 内存安全指标再进入 20.6。
-- 应用发生崩溃循环时，先读 20.2；Native Crash、ANR 和线程问题分别参见 20.3、20.4 和 20.12。
-- Native 内存安全检测先读 20.6；文件描述符、线程/协程和 Native 内存泄漏依次参见 20.8、20.12 和 20.13。
+- 第一次建立稳定性指标时，先读 20.1；Crash、ANR 和 OOM 按需进入 20.2—20.5。
+- OOM 之后按资源层层下钻：20.6 定位 Native 内存增长，20.7 和 20.8 分别治理 FD 与线程/协程生命周期。
+- IPC 与密钥容量问题见 20.9 和 20.10；Native 内存安全、Hook 和动态装载的风险边界依次见 20.11—20.13。
+- 第三方 SDK 的跨类型准入、度量和退出协议收束在 20.14。

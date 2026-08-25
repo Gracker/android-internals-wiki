@@ -88,7 +88,7 @@ related_chapters:
 - '1.12'
 - '1.26'
 - '21.4'
-- '20.9'
+- '20.10'
 ---
 
 # Android 17 BiometricService 架构与性能优化
@@ -826,7 +826,7 @@ Android 17 仍保留旧设备 HAL 兼容适配。版本号只能说明 framework
 | §1.12 Binder 线程池与优先级继承 | Binder 调度和优先级传播 |
 | §8.5 Keystore/KeyMint | 密钥授权、CryptoObject、KeyMint 与 StrongBox |
 | §8.5 BiometricPrompt 登录性能 | 登录业务的端到端指标和线上观测 |
-| §20.9 Keystore 治理 | 密钥生命周期、失效与异常治理 |
+| §20.10 Keystore 治理 | 密钥生命周期、失效与异常治理 |
 
 ## 小结
 

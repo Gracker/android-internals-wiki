@@ -85,9 +85,9 @@ related_chapters:
 - '14.2'
 - '4.10'
 - '23.3'
-- '20.6'
+- '20.11'
 - '4.5'
-- '20.7'
+- '20.13'
 pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
 consolidated_from:
@@ -909,7 +909,7 @@ Android 17 的 Bionic 包含 `note_memtag_heap_async.S` 和 `note_memtag_heap_sy
 
 MTE 的成本与 CPU 实现、访问模式、Scudo 写入内存标签的工作、是否采集分配/释放调用栈以及系统首选模式有关。标签比较由硬件完成，也不表示分配、改标签和报告整条链路都没有成本。应在同一设备、同一温控和同一工作负载下对比 off/async/sync，并同时查看 CPU、功耗、帧延迟和 Native Heap 指标。
 
-更多配置和报告解析见 [AOSP MTE 文档](https://source.android.com/docs/security/test/memory-safety/arm-mte) 以及 **20.6 MTE 与 GWP-ASan Native 内存安全检测**。
+更多配置和报告解析见 [AOSP MTE 文档](https://source.android.com/docs/security/test/memory-safety/arm-mte) 以及 **20.11 MTE 与 GWP-ASan Native 内存安全检测**。
 
 ### 7. 16 KB 页：运行时页大小、ELF 对齐和兼容装载
 
@@ -1034,7 +1034,7 @@ Android 17 中，Bionic 的性能角色可以归纳为四层：
 
 定位问题时，应沿实际调用链逐层确认：当前使用哪个分配器、dispatch 是否被工具替换、锁是否发生竞争、线程包含哪些实际映射、页大小和 ELF 对齐是否匹配、arm64 resolver 选择了哪个实现。基于这些证据得出的结论才能在 Android 17 设备上复现，也能解释版本升级后的行为变化。
 
-Native Heap 与 Scudo 的进一步分析见 **23.3 Native 内存管理与优化**；16 KB 页的系统影响与兼容验收见 **4.5 16 KB Page Size 与 Android 性能**；MTE 检测见 **20.6 MTE 与 GWP-ASan Native 内存安全检测**；运行时下载或释放 `.so` 的发布协议见 **20.7 Native 动态库安全发布、装载与回滚**。
+Native Heap 与 Scudo 的进一步分析见 **23.3 Native 内存管理与优化**；16 KB 页的系统影响与兼容验收见 **4.5 16 KB Page Size 与 Android 性能**；MTE 检测见 **20.11 MTE 与 GWP-ASan Native 内存安全检测**；运行时下载或释放 `.so` 的发布协议见 **20.13 Native 动态库安全发布、装载与回滚**。
 
 
 ## 版本与实现边界

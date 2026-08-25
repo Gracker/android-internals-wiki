@@ -1,7 +1,7 @@
 ---
 title: MTE 与 GWP-ASan Native 内存安全检测
-chapter: '20.6'
-section: '20.6'
+chapter: '20.11'
+section: '20.11'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-08-14'
@@ -57,12 +57,6 @@ sources:
   path: https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp
 - type: aosp-kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/kernel/mte.c
-- type: material
-  path: DeepResearch/2026-05-13-android-mte-memtag-async-asymm-analysis.md
-  availability: not present in the current vault as of 2026-08-14; retained as legacy provenance
-- type: structure
-  path: Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md
-  availability: not present in the current vault as of 2026-08-14; retained as legacy provenance
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed

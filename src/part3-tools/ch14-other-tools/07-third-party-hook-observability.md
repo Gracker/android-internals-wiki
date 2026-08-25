@@ -107,8 +107,8 @@ related_chapters:
 - '15.3'
 - '15.1'
 - '14.8'
-- '20.8'
-- '20.11'
+- '20.7'
+- '20.12'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -477,7 +477,7 @@ Hook 适合补充已有观测手段覆盖不到的调用边界。例如 Perfetto
 
 这里先限定能力边界。普通应用不能凭空进入另一个应用进程。用于线上 SDK（Software Development Kit，供应用集成的软件包）的 Hook 代码仍要随 APK 或 AAB（Android App Bundle）打包，并由目标进程加载；Frida、Xposed 一类外部注入方案依赖调试、root、定制系统或专用运行环境。两类方案的权限模型、风险和发布方式不同，不能混用同一套结论。
 
-平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，讨论范围限于自有应用进程中的性能观测。Android 内核锚点为 `android17-6.18-2026-06_r6`；ELF（Executable and Linkable Format，可执行与链接文件格式）重定位、ART（Android Runtime）和应用域 SELinux 规则位于平台源码侧。需要更深入的三类 native 方案对比时，可继续阅读 [20.11 Native Hook 技术选型与实现](../../part5-app/ch20-stability/11-native-hook-technology-selection-implementation.md)。
+平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，讨论范围限于自有应用进程中的性能观测。Android 内核锚点为 `android17-6.18-2026-06_r6`；ELF（Executable and Linkable Format，可执行与链接文件格式）重定位、ART（Android Runtime）和应用域 SELinux 规则位于平台源码侧。需要更深入的三类 native 方案对比时，可继续阅读 [20.12 Native Hook 技术选型与实现](../../part5-app/ch20-stability/12-native-hook-technology-selection-implementation.md)。
 
 ### 先判断是否需要 Hook
 
@@ -759,7 +759,7 @@ KOOM 的模块不能合并成一条“Hook malloc 解决 OOM”的描述：
 - Native LeakMonitor 使用 xHook 介入 `malloc`、`calloc`、`realloc`、`free` 等分配器函数，记录地址、大小与栈；检测时调用平台私有 `libmemunreachable` 取得不可达内存区间，再与仍未释放的记录交叉匹配；
 - Thread Leak 模块通过 xHook 拦截 `pthread_create`、`pthread_detach`、`pthread_join` 和 `pthread_exit`，跟踪线程创建与退出状态。
 
-`libmemunreachable` 不是 NDK 公共 API；KOOM 源码还注明该路径在 release APK 中会受 `ptrace`（进程检查系统调用）和 dumpable（进程是否允许被转储或跟踪的属性）限制，Native LeakMonitor 的 Java 入口只在 API 24 及以上的 arm64 进程启用。因此，不能把仓库内实验路径直接等同于可向所有线上用户开启的能力。Java HPROF 裁剪路径 Hook `open`/`write` 来缩减 dump 文件，这属于 dump 实现细节，不等同于用 native 分配 Hook 判断 Java 对象泄漏。FD 触发条件可结合 [20.8 FD 耗尽监控与故障排查](../../part5-app/ch20-stability/08-fd-resource-monitoring.md) 理解。
+`libmemunreachable` 不是 NDK 公共 API；KOOM 源码还注明该路径在 release APK 中会受 `ptrace`（进程检查系统调用）和 dumpable（进程是否允许被转储或跟踪的属性）限制，Native LeakMonitor 的 Java 入口只在 API 24 及以上的 arm64 进程启用。因此，不能把仓库内实验路径直接等同于可向所有线上用户开启的能力。Java HPROF 裁剪路径 Hook `open`/`write` 来缩减 dump 文件，这属于 dump 实现细节，不等同于用 native 分配 Hook 判断 Java 对象泄漏。FD 触发条件可结合 [20.7 FD 耗尽监控与故障排查](../../part5-app/ch20-stability/07-fd-resource-monitoring.md) 理解。
 
 截至 2026-08-14，KOOM 最新 release 是 `v2.2.2`（2024-04-16），而 master 已包含 2025/2026 年的 fast-dump 修改；评估时必须区分发布 AAR 与 master 源码。各模块还要分别测暂停时间、峰值内存、CPU、磁盘、误报率和 Android 17、16 KB page size、MTE 的兼容性。
 
@@ -845,7 +845,7 @@ churn 指对象在短时间内大量创建又回收。选择方案时要写清�
 - [KOOM v2.2.2 release](https://github.com/KwaiAppTeam/KOOM/releases/tag/v2.2.2)
 - [KOOM Native Leak 的 `libmemunreachable` 调用](https://github.com/KwaiAppTeam/KOOM/blob/df3b8c33f63ab1f23e814c19792314efb653deaf/koom-native-leak/src/main/jni/src/memory_analyzer.cpp)
 
-**延伸阅读**：[14.8 ProfilingManager](08-profiling-manager.md) · [20.8 FD 资源监控与治理](../../part5-app/ch20-stability/08-fd-resource-monitoring.md) · [20.11 Native Hook 技术选型与实现](../../part5-app/ch20-stability/11-native-hook-technology-selection-implementation.md)
+**延伸阅读**：[14.8 ProfilingManager](08-profiling-manager.md) · [20.7 FD 资源监控与治理](../../part5-app/ch20-stability/07-fd-resource-monitoring.md) · [20.12 Native Hook 技术选型与实现](../../part5-app/ch20-stability/12-native-hook-technology-selection-implementation.md)
 
 
 ## 常见误区

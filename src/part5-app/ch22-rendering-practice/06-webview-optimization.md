@@ -638,7 +638,7 @@ class RecoveringWebViewClient(
 
 重试策略要区分程序崩溃与内存回收，并受页面 URL 模板、前后台状态、Activity 生命周期和次数预算限制。同一页面连续崩溃时自动反复重载会形成 crash loop（崩溃循环），应转到错误页，并上报 provider 版本、页面版本与复现信息。调用 `setRendererPriorityPolicy()` 降低不可见渲染进程的优先级前，必须先具备这条恢复路径。
 
-OOM（out of memory，内存不足）与恢复设计见 [20.5 OOM 治理与 WebView Renderer 恢复](../ch20-stability/05-oom-webview-renderer-recovery.md)。
+OOM（out of memory，内存不足）与恢复设计见 [20.5 OOM、进程资源治理与 WebView Renderer 恢复](../ch20-stability/05-oom-webview-renderer-recovery.md)。
 
 ### 不使用原生层手段释放 WebView 预留地址
 

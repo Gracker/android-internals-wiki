@@ -90,8 +90,8 @@ related_chapters:
 - '20.1'
 - '20.2'
 - '1.10'
-- '20.6'
-- '20.7'
+- '20.11'
+- '20.13'
 - '4.5'
 - '14.2'
 - '14.7'
@@ -121,7 +121,7 @@ Native Crash 是 C/C++ 等本地代码执行期间发生的致命崩溃。分析
 
 Native Crash 从信号、寄存器、内存映射和 tombstone 开始，随后按栈展开规则恢复调用帧，再用匹配构建的符号和 Build ID 还原函数位置。任何一步版本不匹配都会产生错误堆栈。
 
-## 信号、tombstone 与故障现场
+## Native Crash 现场、采集与治理
 
 ### 从致命信号到系统 tombstone
 
@@ -549,7 +549,7 @@ Android 17 使用它们时要重新验证：
 - JNI Crash 同时检查待处理异常、引用生命周期、线程和函数签名；
 - 修复后用同类 sanitizer 或故障注入验证，并观察原问题簇是否迁移为新信号、ANR 或数据损坏。
 
-### 源码与官方文档
+### 第一部分的核查入口
 
 - 平台：AOSP [`android-17.0.0_r1`](https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/)
 - SignalChain：[`art/sigchainlib/sigchain.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/sigchainlib/sigchain.cc) · [`art/runtime/fault_handler.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/fault_handler.cc)
@@ -986,11 +986,11 @@ BTI（Branch Target Identification，分支目标识别）约束间接分支可�
 
 #### 10.3 MTE
 
-MTE（Memory Tagging Extension，内存标签扩展）用指针标签和内存标签不匹配来发现非法访问。Android 17 的 `crash_dump` 同时维护可能带标签的 fault address 和去标签后的地址。同步 MTE 会在出错指令附近报告，异步 MTE 可能延后报告，定位精度不同；上传前不能只保留清除过标签的地址。更完整的 MTE/GWP-ASan 诊断与治理见 20.6。
+MTE（Memory Tagging Extension，内存标签扩展）用指针标签和内存标签不匹配来发现非法访问。Android 17 的 `crash_dump` 同时维护可能带标签的 fault address 和去标签后的地址。同步 MTE 会在出错指令附近报告，异步 MTE 可能延后报告，定位精度不同；上传前不能只保留清除过标签的地址。更完整的 MTE/GWP-ASan 诊断与治理见 20.11。
 
 #### 10.4 16 KB 页
 
-16 KB 页会影响 ELF segment（段）的对齐和 APK 内嵌 `.so` 的打包要求，但不会把符号地址统一放大或缩小四倍。符号化仍以内存映射表、ELF program header（程序装载头）、load bias 和 Build ID 为准。16 KB 页兼容检查见 4.5；运行时发布库的只读装载与回滚见 20.7。
+16 KB 页会影响 ELF segment（段）的对齐和 APK 内嵌 `.so` 的打包要求，但不会把符号地址统一放大或缩小四倍。符号化仍以内存映射表、ELF program header（程序装载头）、load bias 和 Build ID 为准。16 KB 页兼容检查见 4.5；运行时发布库的只读装载与回滚见 20.13。
 
 ### 11. 回溯失败时定位中断位置
 
@@ -1045,14 +1045,14 @@ MTE（Memory Tagging Extension，内存标签扩展）用指针标签和内存�
 
 ### 15. 与相邻章节的分工
 
-- 20.3：Native 崩溃信号类型、采集治理与线上处置。
-- 20.6：MTE/GWP-ASan 的检测机制、报告和灰度策略。
+- 本篇前半部分：Native 崩溃信号类型、采集治理与线上处置。
+- 20.11：MTE/GWP-ASan 的检测机制、报告和灰度策略。
 - 4.5：16 KB 页下的 ELF、打包和运行时代码兼容。
-- 20.7：运行时发布 Native 库的只读装载、可信来源和回滚。
+- 20.13：运行时发布 Native 库的只读装载、可信来源和回滚。
 - 14.2：Simpleperf 的采样、调用链和数据分析。
 - 14.7：Hook 基础设施的实现与风险；本篇只讨论崩溃采集中的安全边界。
 
-### 源码与官方资料
+### 第二部分的核查入口
 
 - [AOSP `crash_dump.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp)
 - [AOSP `debuggerd_handler.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)
@@ -1075,3 +1075,7 @@ MTE（Memory Tagging Extension，内存标签扩展）用指针标签和内存�
 - [Crashpad overview design](https://chromium.googlesource.com/crashpad/crashpad/+/HEAD/doc/overview_design.md)
 
 > 源码核查基线：AOSP `android-17.0.0_r1`。编译器、NDK 和 AGP 行为还应以项目锁定版本及 Release 构建产物为准。
+
+## 小结
+
+Native Crash 的可复核链路是：从 signal、`si_code`、寄存器和 tombstone 保留原始现场，按当前 ABI 和映射恢复调用栈，再用完全匹配的 Build ID 与符号产物还原函数位置，最后才进入聚合、归因和修复验证。信号采集器、回溯器或符号仓库中任何一环缺少版本证据，结果都必须降级为不完整样本。

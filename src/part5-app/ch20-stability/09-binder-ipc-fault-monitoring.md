@@ -1,7 +1,7 @@
 ---
 title: Binder IPC 故障判断与性能诊断
-chapter: '20.10'
-section: '20.10'
+chapter: '20.9'
+section: '20.9'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
@@ -408,6 +408,10 @@ APM（Application Performance Monitoring，应用性能监控）的拦截代码�
 - 4.3 负责缓存应用冻结机制（cached apps freezer）与进程生命周期。
 - 20.4 负责 ANR 证据和超时类型，这里提供 Binder 侧等待链。
 - 26.7 负责 Perfetto/eBPF 等观测工具，这里只说明 IPC 需要哪些证据。
+
+## 小结
+
+Binder 故障不能只按一个 Java 异常名归类。每次调用都要分别回答传输是否完成、服务端是否执行、业务是否提交，再结合 Parcel 预算、连接代次、冻结策略、线程池和 Perfetto 时间线定位。只有协议已提供幂等键或提交状态查询时，结果不确定的写操作才能安全重试。
 
 ## 参考资料
 

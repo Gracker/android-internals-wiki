@@ -71,7 +71,7 @@ related_chapters:
 - '1.9'
 - '5.1'
 - '8.4'
-- '20.12'
+- '20.8'
 consolidated_from:
 - src/part5-app/ch21-startup/20-modular-startup-dependency-graph.md
 - src/part5-app/ch21-startup/09-startup-case-studies.md#案例二

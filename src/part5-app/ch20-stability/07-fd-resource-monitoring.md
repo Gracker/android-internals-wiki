@@ -1,6 +1,6 @@
 ---
 title: FD 耗尽监控与故障排查
-chapter: '20.8'
+chapter: '20.7'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags:
@@ -11,7 +11,7 @@ tags:
 related_chapters:
 - '20.5'
 - '20.2'
-- '20.12'
+- '20.8'
 - '26.2'
 - '26.3'
 - '14.7'
@@ -21,12 +21,6 @@ last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1 bionic, libcore, and ART sources; android17-6.18-2026-06_r6 procfs documentation; current Android Developers API and Android 11 fdsan guidance through 2026-08-13
 confidence: medium-high
 sources:
-- type: blog
-  path: Clippings/Android 应用稳定性剖析与优化 - 实现 FD 监控：文件描述符（FD）超限怎么办？.md
-  availability: not present in the current vault as of 2026-08-14; retained as legacy provenance and not used as current evidence
-- type: blog
-  path: Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md
-  availability: not present in the current vault as of 2026-08-14; retained as legacy provenance and not used as current evidence
 - type: aosp-legacy
   path: https://android.googlesource.com/platform/bionic/+/refs/tags/android-16.0.0_r1/libc/private/bionic_fortify.h
   availability: retained as the original source anchor; current statements are verified against android-17.0.0_r1
@@ -58,7 +52,7 @@ sources:
   path: https://developer.android.com/reference/tools/gradle-api/com/android/build/api/instrumentation/AsmClassVisitorFactory
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-section: '20.8'
+section: '20.7'
 task9_state: reviewed
 task2b_state: fixed
 note: 'Consolidated-source availability: source page not present in the current vault as of 2026-08-14; FD content is retained here and thread-specific guidance is covered by chapter 20.19'
@@ -70,7 +64,7 @@ FD（file descriptor，文件描述符）是进程用来引用内核对象的整
 
 排查时要区分打开数量、FD 编号、对象类型、generation（创建代次）与 owner（负责释放资源的所有者）。`/proc/self/fd` 只能提供某一时刻的近似快照，无法单独回答每个 FD 由谁创建、应由谁关闭。
 
-平台源码固定到 Android 17 / API 37 / `android-17.0.0_r1`；涉及 `/proc`、rlimit 与 FD 分配语义时，内核源码固定到 `android17-6.18-2026-06_r6`。线程与协程见 20.12，Native 内存见 20.13；本文只在它们与 FD 出现在同一故障现场时说明证据关系。
+平台源码固定到 Android 17 / API 37 / `android-17.0.0_r1`；涉及 `/proc`、rlimit 与 FD 分配语义时，内核源码固定到 `android17-6.18-2026-06_r6`。线程与协程见 20.8，Native 内存见 20.6；本文只在它们与 FD 出现在同一故障现场时说明证据关系。
 
 ## FD：数量、编号、对象和所有者要分开
 
@@ -224,7 +218,7 @@ FD 跨越 JNI（Java 与 Native 代码的调用接口）时，`FileDescriptor`�
 
 不要根据 `/proc/self/fd` 中“看起来没用”的编号直接调用 `close()`。符号链接目标无法说明所有者；关闭 Binder（Android 进程间通信）、Looper（线程消息循环）、数据库或其他线程正在使用的 FD，会造成关闭后使用和数据损坏。
 
-线程也不能因为名称陌生就强制 `interrupt`、`stop` 或 `cancel`。线程生命周期的排查与修复见 20.12；两类资源都应回到创建模块和明确的生命周期所有者。
+线程也不能因为名称陌生就强制 `interrupt`、`stop` 或 `cancel`。线程生命周期的排查与修复见 20.8；两类资源都应回到创建模块和明确的生命周期所有者。
 
 ## 与 OOM、ANR 和 Native Crash 的证据关系
 
@@ -331,7 +325,7 @@ hash（散列值）不能自动完成脱敏。低熵文件名、手机号或固�
 
 ## 复核清单
 
-线程、线程池、`pthread` 与协程的专项清单见 20.12。FD 复核只检查以下项目：
+线程、线程池、`pthread` 与协程的专项清单见 20.8。FD 复核只检查以下项目：
 
 - [ ] `FDSize` 是否没有被误当成当前 FD count？
 - [ ] FD 快照是否使用 `/proc/self/fd` 并容忍并发竞态？
@@ -360,11 +354,13 @@ hash（散列值）不能自动完成脱敏。低熵文件名、手机号或固�
 
 ### 旧合并稿中的线程来源
 
-以下链接只保留合并历史。线程监控的当前说明与完整资料表见 20.12。
+以下链接只保留合并历史。线程监控的当前说明与完整资料表见 20.8。
 
 - [AOSP `Thread.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java)：Java 线程 API 的旧稿来源。
 - [AOSP `java_lang_Thread.cc`（android-17.0.0_r1）](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/native/java_lang_Thread.cc)：ART 线程创建入口的旧稿来源。
 - [Android Developers：`Thread` API](https://developer.android.com/reference/java/lang/Thread)：Java 线程 ID API 的旧稿来源。
 - [Android Developers：`AsmClassVisitorFactory`](https://developer.android.com/reference/tools/gradle-api/com/android/build/api/instrumentation/AsmClassVisitorFactory)：AGP 字节码插桩接口的旧稿来源。
+
+## 小结
 
 FD 监控应提前保存少量、可信且能关联所有者的证据。打开数量说明资源压力，快照说明对象构成，创建与关闭事件说明生命周期责任；三类证据分开记录，既能控制监控成本，也能避免在资源紧张时引发新的故障。

@@ -8,9 +8,6 @@ last_verified_against: AOSP android-17.0.0_r1 and android17-6.18-2026-06_r6; And
 confidence: medium-high
 sources:
 - type: official
-  path: https://support.google.com/googleplay/android-developer/answer/9844476
-  note: 保留自旧版元数据；当前 Android vitals 帮助页编号为 9844486。
-- type: official
   path: https://support.google.com/googleplay/android-developer/answer/9844486
 - type: official
   path: https://developer.android.com/reference/android/app/ApplicationExitInfo
@@ -50,9 +47,6 @@ sources:
   path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md
 - type: aosp
   path: frameworks/base/core/java/com/android/internal/os/RuntimeInit.java
-- type: reference
-  path: Clippings/Android 应用稳定性剖析与优化 - Java 堆栈：深入了解 Throwable.md
-  availability: not present in the current vault as of 2026-08-14; retained as legacy provenance
 - type: reference
   path: https://firebase.google.com/docs/crashlytics/troubleshooting
 - type: official
@@ -163,7 +157,7 @@ Android 17 的 Native Crash 不能概括为“debuggerd 守护进程捕获信号
 3. [`crash_dump`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp) 通过 `ptrace`（进程跟踪接口）暂停并读取目标线程，连接 `tombstoned` 取得输出文件描述符，生成文本和 Protocol Buffers（protobuf，结构化二进制格式）形式的 tombstone。
 4. [`tombstoned`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/tombstoned/tombstoned.cpp) 管理 tombstone 的存储与轮转；栈回溯使用的是 Android 的 `libunwindstack`，不应写成泛指的 `libunwind`。
 
-tombstone 的诊断价值来自信号、`si_code`、故障地址、寄存器、线程栈、内存映射、Build ID 和内存标签等信息。线上符号化必须按 ABI（Application Binary Interface，二进制接口约定）、Build ID 和发布版本取回未剥离符号；只按 `.so` 文件名匹配，很容易把地址解析到错误源码。系统信号与 debuggerd 链路见 [20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md)，更深入的栈回溯（unwind）与符号解析见 [20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md)。
+tombstone 的诊断价值来自信号、`si_code`、故障地址、寄存器、线程栈、内存映射、Build ID 和内存标签等信息。线上符号化必须按 ABI（Application Binary Interface，二进制接口约定）、Build ID 和发布版本取回未剥离符号；只按 `.so` 文件名匹配，很容易把地址解析到错误源码。系统信号、debuggerd 链路、栈回溯与符号解析统一见 [20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md)。
 
 ### ANR：系统的超时判定
 
@@ -210,7 +204,7 @@ Native `malloc` 分配失败通常返回 `nullptr` 并设置错误码；调用�
 
 创建线程需要线程控制结构、栈映射和内核任务资源。`pthread_create` 返回 `EAGAIN`（当前资源不足）或其他错误后，Java 层可能抛出带有 `pthread_create` 信息的 `OutOfMemoryError`。这种故障应同时检查线程数量、线程来源、栈大小和进程资源限制。
 
-FD（File Descriptor，文件描述符）耗尽通常表现为 `EMFILE`（进程打开的文件描述符达到上限），随后文件或网络套接字创建失败。它与虚拟地址空间耗尽是两类故障。FD 泄漏还会引发数据库、网络、资源加载或 Binder 相关异常，监控时应单列 FD 数量与类别。[20.8 FD 耗尽监控与故障排查](08-fd-resource-monitoring.md)会展开这类资源故障。
+FD（File Descriptor，文件描述符）耗尽通常表现为 `EMFILE`（进程打开的文件描述符达到上限），随后文件或网络套接字创建失败。它与虚拟地址空间耗尽是两类故障。FD 泄漏还会引发数据库、网络、资源加载或 Binder 相关异常，监控时应单列 FD 数量与类别。[20.7 FD 耗尽监控与故障排查](07-fd-resource-monitoring.md)会展开这类资源故障。
 
 #### LMKD 与内核 OOM
 
@@ -218,7 +212,7 @@ FD（File Descriptor，文件描述符）耗尽通常表现为 `EMFILE`（进程
 
 内核 OOM killer 是系统无法释放足够内存时的更底层终止机制，Android 17 对应实现见 [`android17-6.18-2026-06_r6/mm/oom_kill.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/oom_kill.c)。排查线上 LMK 时，应优先使用 `ApplicationExitInfo`、Android vitals 和设备内存分层数据；每次应用低内存退出不一定都有内核 OOM 日志。
 
-[20.5 OOM 治理与 WebView Renderer 恢复](05-oom-webview-renderer-recovery.md)会继续区分 Java heap、Native heap、线程、映射、图形内存与 LMK。
+[20.5 OOM、进程资源治理与 WebView Renderer 恢复](05-oom-webview-renderer-recovery.md)会继续区分 Java heap、Native heap、线程、映射、图形内存与 LMK。
 
 ### 用 `ApplicationExitInfo` 读取“上一次进程发生了什么”
 
@@ -338,7 +332,7 @@ Android 17 / API 37 增加 `ProfilingTrigger.TRIGGER_TYPE_OOM`：发生 Java `Ou
 #### 预防
 
 - 用 Lint、Detekt 等静态检查工具、编译器检查和自定义规则约束空值、资源关闭、线程创建与主线程 I/O。
-- 在调试或测试构建中启用 StrictMode（在运行时发现主线程磁盘或网络访问等问题）、sanitizer（运行时错误检查工具）、GWP-ASan、MTE 等能力，尽早暴露错误。GWP-ASan 与 MTE 用于发现部分 Native 内存安全问题，设备、构建和性能要求见 [20.6 MTE 与 GWP-ASan Native 内存安全检测](06-mte-gwp-asan-native-memory-safety.md)。
+- 在调试或测试构建中启用 StrictMode（在运行时发现主线程磁盘或网络访问等问题）、sanitizer（运行时错误检查工具）、GWP-ASan、MTE 等能力，尽早暴露错误。GWP-ASan 与 MTE 用于发现部分 Native 内存安全问题，设备、构建和性能要求见 [20.11 MTE 与 GWP-ASan Native 内存安全检测](11-mte-gwp-asan-native-memory-safety.md)。
 - 为主线程任务、Binder 调用、启动阶段、缓存和并发数量制定时间或资源预算。
 - 主动制造低内存、进程重建、网络失败、磁盘满、FD 或线程耗尽、服务端降级等条件，验证故障处理路径。这类测试称为故障注入。
 - 对高风险变更使用可远程关闭的功能开关、限制高风险功能的安全模式、逐步扩大用户比例的灰度发布，以及能够恢复旧值的配置。
@@ -395,16 +389,14 @@ Android 17 / API 37 增加 `ProfilingTrigger.TRIGGER_TYPE_OOM`：发生 Java `Ou
 - 灰度暂停、配置撤回和紧急发版的决策人；
 - 修复验证的结束条件，不能只记录“代码已合入”。
 
-### 后续章节阅读顺序
+### 专题下钻
 
 - [20.2 Java Crash、异常架构与线程堆栈分析](02-java-crash-exception-stack-analysis.md)：异常处理器、反混淆、异步异常与恢复边界。
 - [20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md)：tombstone、符号化和内存安全工具。
 - [20.4 ANR 治理策略](04-anr-governance.md)：不同 ANR 入口的诊断记录与系统链路。
-- [20.5 OOM 治理与 WebView Renderer 恢复](05-oom-webview-renderer-recovery.md)：Java、Native、线程、映射与 LMK。
-- [20.1 应用稳定性度量、聚合与归因](01-stability-metrics-aggregation-attribution.md)：分子、分母、聚类、基线与发版门禁。
-- [20.5 OOM 治理与 WebView Renderer 恢复](05-oom-webview-renderer-recovery.md)：宿主进程与网页渲染进程的故障隔离。
+- [20.5 OOM、进程资源治理与 WebView Renderer 恢复](05-oom-webview-renderer-recovery.md)：Java、Native、线程、映射与 LMK，以及宿主进程与网页渲染进程的故障隔离。
 
-### 源码与官方文档
+### 第一部分的核查入口
 
 - 平台：AOSP [`android-17.0.0_r1`](https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/)
 - Java 致命异常处理：[`RuntimeInit.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java)
@@ -422,7 +414,7 @@ Android 17 / API 37 增加 `ProfilingTrigger.TRIGGER_TYPE_OOM`：发生 Java `Ou
 
 故障分类明确后，每个指标必须固定事件定义和分母。Crash 次数、受影响用户和无崩溃会话回答的问题不同。
 
-[20.1 应用稳定性度量、聚合与归因](01-stability-metrics-aggregation-attribution.md) 说明了 Crash、ANR 与 OOM 的边界。同一批故障数据还要算出可以解释、可以复算、可以指导发布的指标。
+前一部分已经说明 Crash、ANR 与 OOM 的边界。同一批故障数据还要算出可以解释、可以复算、可以指导发布的指标。
 
 平台源码按 Android 17（API 37，`android-17.0.0_r1`）核对。Google Play 和 Firebase 的统计规则独立于 AOSP 版本，文中的阈值与产品统计规则按 2026 年 8 月 14 日的官方文档核对。把这些外部数字写进长期发布判定规则前，还要再次确认服务端文档是否更新。
 
@@ -774,7 +766,7 @@ $$
 
 指标发现回归后，需要用堆栈、信号、设备和版本字段聚合事件，并结合发布变更定位责任范围。
 
-[20.1 应用稳定性度量、聚合与归因](01-stability-metrics-aggregation-attribution.md) 把 Crash 事件、受影响安装实例、会话和启动尝试分成了不同指标。服务端随后要把海量 occurrence（单次原始故障报告）归入可解释的问题组，判断问题集中在哪些版本、设备或使用场景，并把证据交给合适的团队。本文所说的“归因”是寻找这些集中条件和候选责任模块，不表示仅凭相关性证明因果关系。
+前一部分把 Crash 事件、受影响安装实例、会话和启动尝试分成了不同指标。服务端随后要把海量 occurrence（单次原始故障报告）归入可解释的问题组，判断问题集中在哪些版本、设备或使用场景，并把证据交给合适的团队。本文所说的“归因”是寻找这些集中条件和候选责任模块，不表示仅凭相关性证明因果关系。
 
 平台锚点是 Android 17（API 37，`android-17.0.0_r1`）。聚合算法本身不属于 Android API，但输入数据受 `Throwable`、R8、debuggerd tombstone、`ApplicationExitInfo` 和构建产物约束。忽略这些约束，哈希做得再复杂也只会稳定地产生错误分组。
 
@@ -933,7 +925,7 @@ Native exact fingerprint 常用字段包括：
 - signal 与 `si_code`；
 - crash thread 的模块、Build ID、函数和相对 PC；
 - `abort_message` 中经过规则提取的稳定 sanitizer（内存错误检测器）或 allocator（内存分配器）错误码；
-- [MTE、GWP-ASan、HWASan](06-mte-gwp-asan-native-memory-safety.md) 等内存错误检测机制报告的类型；
+- [MTE、GWP-ASan、HWASan](11-mte-gwp-asan-native-memory-safety.md) 等内存错误检测机制报告的类型；
 - fault address（故障地址）的类别，例如 near-null（接近空地址）、tag mismatch（内存标签不匹配）或不可访问映射。
 
 原始 fault address 不适合作为哈希键：ASLR、堆布局和隐私都会使它变化。near-null 也不能只看地址后直接定性为空指针，仍要结合 signal、mapping 与指令。
@@ -944,7 +936,7 @@ Native exact fingerprint 常用字段包括：
 
 ANR fingerprint 可以由 ANR 类型、组件、主线程阻塞帧、锁持有者、Binder 对端和带版本的场景标识组成。Input、Broadcast、Service、Provider 等类型不能混在一个“主线程卡住”的大问题组里。
 
-Java OOME 至少按 ART message 类别、分配点、进程阶段和堆摘要分组。`Failed to allocate`、`pthread_create`、FD（文件描述符）耗尽、Bitmap/native-backed 分配和 LMKD kill 属于不同问题，详见 [20.5 OOM 治理与 WebView Renderer 恢复](05-oom-webview-renderer-recovery.md)。
+Java OOME 至少按 ART message 类别、分配点、进程阶段和堆摘要分组。`Failed to allocate`、`pthread_create`、FD（文件描述符）耗尽、Bitmap/native-backed 分配和 LMKD kill 属于不同问题，详见 [20.5 OOM、进程资源治理与 WebView Renderer 恢复](05-oom-webview-renderer-recovery.md)。
 
 没有堆栈的事件进入带原因的 fallback bucket（信息不足时使用的后备分组），例如 `java_oome:no_stack:startup`。这个分组用于显示数据缺失和影响量，不应自动认定其中所有原始事件有同一根因。
 
@@ -1069,7 +1061,7 @@ breadcrumb（操作轨迹）是故障前最近一小段页面跳转或用户操�
 | variant entropy（变体分布熵）或 variant 数 | 判断事件是否从少数变体均匀扩散到更多变体，即 issue 内部是否正在变杂 |
 | symbolication completeness（符号化完整率） | 判断趋势变化是否来自符号缺失 |
 
-新增 issue、影响扩大、回归和 SLO 错误预算快速消耗都可以触发告警，具体定义见 [20.1 应用稳定性度量、聚合与归因](01-stability-metrics-aggregation-attribution.md)。规则必须带最小分母和持续时间。基线事件很少时，固定“相对上一观察期翻倍”很容易误报；只看固定绝对人数，又会漏掉分阶段发布早期样本少但比例很高的问题。
+新增 issue、影响扩大、回归和 SLO 错误预算快速消耗都可以触发告警，具体定义沿用前一部分的指标口径。规则必须带最小分母和持续时间。基线事件很少时，固定“相对上一观察期翻倍”很容易误报；只看固定绝对人数，又会漏掉分阶段发布早期样本少但比例很高的问题。
 
 可组合四类信号：
 
@@ -1161,6 +1153,10 @@ AI/ML（机器学习）上线前建立按时间切分的标注集，至少覆盖
 12. AI 输入是否脱敏、防注入、按权限检索，输出是否带反证和缺失证据。
 
 崩溃聚合的价值不在于把 issue 数量压得尽可能少。好的系统会保留每次原始事件，谨慎合并有共同根因的报告，并让任何归因、分派和修复结论都能回到构建产物、堆栈与实际使用数据复查。
+
+## 小结
+
+稳定性治理的主链路是：先把 Crash、ANR、OOM 和资源失败归一为可核对的原始事件，再用稳定分母和时间窗口计算指标，随后按构建产物、堆栈与设备上下文聚合成 issue，最后把证据交给责任团队并用可比发布数据验证修复。任何一层缺少版本、分母或采集完整率，最终的告警和归因都只能降级为候选线索。
 
 
 ## 参考资料

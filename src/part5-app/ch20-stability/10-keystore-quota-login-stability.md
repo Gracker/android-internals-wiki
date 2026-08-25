@@ -1,7 +1,7 @@
 ---
 title: Android 17 Keystore 密钥配额与登录恢复
-chapter: '20.9'
-section: '20.9'
+chapter: '20.10'
+section: '20.10'
 status: finalized
 applicable_versions: Android 17 (API 37); diagnostics use APIs from Android 11 (API 30) and API 33
 last_verified: '2026-08-14'
@@ -344,6 +344,10 @@ target SDK 从 36 升到 37 时，系统不会自动清理已有密钥。某个�
 8.5 讨论应用进程、keystore2、KeyMint HAL 与 TEE/StrongBox 之间的延迟、并发操作槽位和线程调度。本章讨论持久密钥条目数量与 alias 生命周期。并发操作槽位限制同一时间能进行多少次密码操作，UID 密钥配额限制能够保存多少个条目，两者应分别统计。
 
 20.2 讨论异常恢复、Crash Loop（应用启动后反复崩溃）与 SafeMode（只启用必要功能的降级启动模式），26.6 讨论 `ApplicationExitInfo`。本章只定义 Keystore 故障分类和恢复状态；进程退出记录只能提供时间与结果证据。
+
+## 小结
+
+Android 17 Keystore 配额治理的核心是把 alias 当作有 owner、状态和回滚期的持久资源。故障时先按调用阶段、异常链和公开错误码区分配额、认证、失效与暂时性问题，再依据生命周期登记表小批量回收。全量清空、无上限重试或降级到明文存储，都会把配额故障扩大成账号和数据安全故障。
 
 ## 参考资料
 

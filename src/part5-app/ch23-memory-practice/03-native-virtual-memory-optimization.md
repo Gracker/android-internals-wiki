@@ -577,7 +577,7 @@ CPU 密集任务的并发度可从 CPU 核数起步，I/O 任务没有通用的�
 
 因此不能把“Android 17 虚拟线程一定不创建 pthread、每个任务都省下 1 MiB”当成通用结论。产品采用前需要确认目标镜像是否开放该 API、运行时是否支持 continuation，以及 pinning（虚拟线程因特定阻塞或同步操作而无法暂时脱离承载线程）的行为、调试工具和关键库兼容性。面向 Android 10—17 的通用实现仍应以协程、有界线程池和结构化取消为主。
 
-更完整的线程泄漏边界参阅 [20.12 线程泄漏与匿名线程监控](../ch20-stability/12-thread-coroutine-leak-governance.md)。
+更完整的线程泄漏边界参阅 [20.8 线程与协程泄漏治理](../ch20-stability/08-thread-coroutine-leak-governance.md)。
 
 ### 4. WebView 地址空间预留：可观测，不手动解除
 

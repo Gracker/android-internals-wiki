@@ -113,7 +113,7 @@ related_chapters:
 - '13.12'
 - '13.6'
 - '14.8'
-- '20.11'
+- '20.12'
 - '26.15'
 pipeline_stage: finalized
 task6_state: reviewed
