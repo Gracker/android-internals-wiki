@@ -4,8 +4,8 @@ chapter: '1.2'
 section: '1.2'
 status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-24'
-last_verified_against: 'AOSP android-17.0.0_r1: system/core init/rootdir/bootstat/init.zygote*, frameworks/base Zygote/ZygoteConnection/ZygoteProcess/SystemServer/UserController, external/perfetto perfetto.rc; Android Common Kernel android17-6.18-2026-06_r6: init/main.c and boot-critical kernel paths'
+last_verified: '2026-08-25'
+last_verified_against: 'AOSP android-17.0.0_r1: system/core init/rootdir/bootstat/init.zygote*, frameworks/base Zygote/ZygoteConnection/ZygoteProcess/SystemServer/UserController/EventLogTags/GraphicsEnvironment/HWUI, external/perfetto perfetto.rc; Android Common Kernel android17-6.18-2026-06_r6: init/main.c and boot-critical kernel paths'
 confidence: high
 sources:
 - type: source
@@ -155,8 +155,8 @@ last_body_apply_at: '2026-08-22T17:27:05+08:00'
 last_body_apply_run_id: 20260822-172641-c689fa74
 last_review_finalize_at: '2026-08-07T18:06:14+08:00'
 last_review_finalize_run_id: 20260807-180545-ebe6c50b
-last_deep_review_at: '2026-08-24T09:45:08+08:00'
-last_deep_review_run_id: 20260824-094508-deep-review-b1486972
+last_deep_review_at: '2026-08-25T08:46:46+08:00'
+last_deep_review_run_id: 20260825-084646-deep-review-f4ad8c61
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/02-boot-process.md
@@ -725,7 +725,7 @@ Android 17 可使用的源码锚点包括：
 - Zygote 进程：`ZygotePreload`、`PreloadClasses`、`CacheNonBootClasspathClassLoaders`、`PreloadResources`、`PreloadAppProcessHALs`、`PreloadGraphicsDriver`；
 - 目标应用：`PostFork`、`ZygoteInit`、`ActivityThreadMain`、`bindApplication`；
 - `system_server`：异步 Trace 区段 `launching: <package>`；
-- EventLog：`am_proc_start`、`am_proc_bound`。
+- EventLog：进程启动/绑定相关事件；AOSP 17 公开 `EventLogTags.logtags` 中部分 tag 名称被脱敏，查询时应以设备 `logcat -b events` 输出和对应构建的 logtags 为准。
 
 只有在性能轨迹启用了 Android 日志并包含 `events` 缓冲区时，才能查询 EventLog。没有查到这些记录，不能证明进程没有启动。
 
@@ -734,7 +734,7 @@ Android 17 可使用的源码锚点包括：
 1. 用 `launching: <package>` 定位一次 Activity 启动；
 2. 确认目标 PID 是否为新进程；
 3. 查设备是否启用 USAP，不要仅凭 `PostFork` 判断；
-4. 比较 `system_server` 发出进程请求、目标进程首次获得调度、`PostFork`、`ActivityThreadMain`、`am_proc_bound` 和 `bindApplication` 的时间；
+4. 比较 `system_server` 发出进程请求、目标进程首次获得调度、`PostFork`、`ActivityThreadMain`、EventLog 里的进程启动/绑定事件和 `bindApplication` 的时间；
 5. 对最长区间展开线程状态、Binder、I/O 和锁等待；
 6. 把 `bindApplication` 之后的问题交给应用初始化和首帧分析。
 
