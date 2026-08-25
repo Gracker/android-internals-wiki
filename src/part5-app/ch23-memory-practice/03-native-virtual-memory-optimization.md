@@ -116,7 +116,7 @@ Native 内存治理先找到分配器、对象所有者和释放路径，再进�
 
 Java 堆没有持续增长，不代表进程的内存占用稳定。使用 JNI、音视频 SDK、地图 SDK、游戏引擎、图片库或加密库的应用，原生堆（Native Heap）、匿名 `mmap`、共享库映射和图形缓冲都可能让 PSS 上升。后果可能是后台进程更早被系统回收、前台出现内存压力或原生崩溃。
 
-应用侧要先确认增长属于哪一种系统统计，再按问题类型选择 heapprofd、`libmemunreachable`、`malloc_debug`、ASan、HWASan、GWP-ASan 或 MTE。容量问题与非法访问需要不同证据：前者关注分配栈和存活量，后者关注越界、释放后访问等错误现场。内存模型见 [4.1 Android 与 Linux 内存管理全景](../../part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md) 和 [4.1 Android 与 Linux 内存管理全景](../../part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md)，工具使用见 [14.3 内存分析、HPROF 与 Heap Dump 工具](../../part3-tools/ch14-other-tools/03-memory-hprof-heapdump-tools.md)，应用进程统计见 [10.1 App 内存分析与案例](../../part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md)。
+应用侧要先确认增长属于哪一种系统统计，再按问题类型选择 heapprofd、`libmemunreachable`、`malloc_debug`、ASan、HWASan、GWP-ASan 或 MTE。容量问题与非法访问需要不同证据：前者关注分配栈和存活量，后者关注越界、释放后访问等错误现场。内存模型见 [4.1 Android 与 Linux 内存管理全景](../../part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md)，工具使用见 [14.3 内存分析、HPROF 与 Heap Dump 工具](../../part3-tools/ch14-other-tools/03-memory-hprof-heapdump-tools.md)，应用进程统计见 [10.1 App 内存分析与案例](../../part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md)。
 
 文中术语含义如下：
 
@@ -298,6 +298,8 @@ HWASan 适合测试构建，ASan 只在 HWASan 不可用时作为兼容方案。
 
 生产监控不应照搬本地分析工具。用户设备上的目标是发现趋势、定位版本和场景，不能长期记录完整调用栈。
 
+本节只定义 Native Heap、映射和内存安全错误的原生侧信号；跨 Java、Native、图形与系统回收的统一监控闭环见 [23.6 内存监控与线上治理](06-memory-monitoring.md)。
+
 一套可控方案可以分三层：
 
 - **基础指标层**：定时采集 PSS、RSS、Native Heap Alloc（原生堆已分配量）、Graphics、GL、线程数、文件描述符（FD）数量，并带上页面、业务场景、前后台状态和设备可用内存分组。采集频率按场景设定，避免常驻高频轮询。
@@ -353,12 +355,16 @@ Android 15 起支持 16 KiB 页面设备。按 2026-08-15 的 Google Play 规则
 - `smaps` 里同一 `.so` 的 `Private Dirty` 是否异常偏高？
 - 生产环境是否只采集聚合指标，避免在用户设备上长期开启高开销调试能力？
 
+### 分配器与原生堆小结
+
+原生内存调查应先用系统分类确认增长属于分配器、映射、代码还是图形缓冲，再用 heapprofd 或本地检测工具取得对应证据。容量增长、内存安全错误和 `free` 后 RSS 暂未下降是三类不同问题，不能共用一个“泄漏”结论。
+
 
 ## mmap、页驻留、缺页与回收
 
 对象释放解决逻辑所有权，虚拟内存分析继续检查地址空间、文件映射、匿名页和 page fault。已 free 的内存也可能暂时留在进程 RSS。
 
-虚拟内存问题经常与 Java heap OOM（ART 托管对象堆耗尽）、native heap（C/C++ 分配使用的堆）和线程资源耗尽混在一起。VMA（virtual memory area，虚拟内存区域）是内核记录的一段连续地址范围；同一 VMA 具有一致的权限和映射来源。排查时要先确认失败来自地址空间、物理内存、VMA 数量还是线程资源。只看一个很大的 VSS 数字，容易把正常的地址空间预留误判成泄漏。对象和 native 内存的持有关系可分别参阅 [23.1 内存泄漏检测与治理](01-memory-leak-governance.md) 与 [23.3 Native 与虚拟内存管理优化](03-native-virtual-memory-optimization.md)。
+虚拟内存问题经常与 Java heap OOM（ART 托管对象堆耗尽）、native heap（C/C++ 分配使用的堆）和线程资源耗尽混在一起。VMA（virtual memory area，虚拟内存区域）是内核记录的一段连续地址范围；同一 VMA 具有一致的权限和映射来源。排查时要先确认失败来自地址空间、物理内存、VMA 数量还是线程资源。只看一个很大的 VSS 数字，容易把正常的地址空间预留误判成泄漏。对象持有关系可参阅 [23.1 内存泄漏检测与治理](01-memory-leak-governance.md)，Native Heap 的分配与所有权则见本文前一部分。
 
 平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`；涉及内核 `/proc` 与 VMA 语义时，以 `android17-6.18-2026-06_r6` 为内核锚点。Android 10—16 的历史行为只用于解释存量设备，实际诊断仍以目标设备为准。
 
@@ -731,7 +737,7 @@ HSC（Homogeneous Space Compact，同构空间压缩）把主分配空间中的�
 
 虚拟内存优化要让每段地址空间都能对应到创建来源和生命周期。32 位进程优先检查连续空洞、线程栈和 VMA 数量；64 位进程优先区分地址空间预留与物理页，并把 PSS/RSS、线程和失败信号放在同一份报告中。如果只有主进程 VSS 下降，而总 PSS 和故障数据没有改善，就不能把改动记为有效优化。
 
-### 参考源码与内核文档
+### 10. 虚拟内存源码锚点
 
 - [`art/runtime/thread.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc)
 - [`art/runtime/native/java_lang_Thread.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/native/java_lang_Thread.cc)
@@ -747,6 +753,10 @@ HSC（Homogeneous Space Compact，同构空间压缩）把主分配空间中的�
 - [Linux 6.18 `/proc` 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst)
 - [Linux 6.18 Multi-Gen LRU](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/mm/multigen_lru.rst)
 - [Android 17 common kernel tag `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6)
+
+## 全文小结
+
+Native 与虚拟内存优化要把逻辑对象、分配器记录、VMA 和驻留页分开观察。先按故障类型和系统内存分区选择证据，再修复所有权、线程或映射来源；不要用固定 VSS 阈值，也不要通过手动解除系统预留或 ART 空间来制造“下降”。最终效果应同时体现在 PSS/RSS、失败信号和业务场景稳定性上。
 
 
 ## 参考资料

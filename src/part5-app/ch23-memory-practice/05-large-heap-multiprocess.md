@@ -66,6 +66,7 @@ tags:
 - 64bit
 related_chapters:
 - '23.4'
+- '23.3'
 - '4.3'
 - '1.1'
 - '4.2'
@@ -173,6 +174,24 @@ Android 默认让同一应用的组件运行在一个 Linux 进程和主线程�
 
 WebView 需要单独统计。从 Android 8.0（API 26）起，WebView 可在多进程模式下使用与应用进程隔离的沙箱渲染进程。同一应用进程中的多个 WebView 可能共享渲染进程，该渲染进程不会与其他应用进程共享。把承载 WebView 的 `Activity` 放入应用自定义进程，只会再增加一个应用进程，不会合并或替代 WebView 渲染进程。`WebView.getWebViewRenderProcess()` 从 API 29 起可返回关联渲染进程的句柄；测量时应区分主进程、WebView 宿主进程、渲染进程和 GPU 使用量。
 
+## 64 位迁移与内存空间扩展
+
+多进程改变内存分配的进程归属，64 位迁移扩大单个进程可用的虚拟地址范围，两者解决的问题不同。
+
+Google Play 的 64 位要求适用于包含原生代码的应用。若继续分发某个 32 位 ABI，应为对应架构提供可工作的 64 位版本，例如 `armeabi-v7a` 对应 `arm64-v8a`、`x86` 对应 `x86_64`；在设备兼容性与分发策略允许时，也可以只提供 64 位 ABI。完全由 Java / Kotlin 编写、依赖中也没有原生库的应用，无需为了在 64 位设备上运行而添加原生库。
+
+线程栈、`.so`、`.dex` / `.oat`、WebView、图形资源和原生缓冲区都会占用虚拟地址。32 位进程即使还有可用物理内存，也可能因为虚拟地址耗尽或找不到足够大的连续区间，导致 `mmap`、动态链接器或 `pthread_create` 失败。64 位进程提供了大得多的地址范围，但不会增加设备物理 RAM，也不会改变系统施加的应用内存限制。
+
+64 位指针会增加部分原生对象、表结构和容器节点的体积；二进制大小、冷启动 I/O、指令缓存命中率和内存访问局部性也可能变化。JNI 代码不能把指针存入 `int` 或 `jint`，应使用 `uintptr_t`、`intptr_t` 或其他与指针宽度匹配的字段。ABI 迁移还要覆盖第三方 SDK、插件、热修复、动态加载路径、符号文件和原生崩溃调用栈解析。
+
+迁移检查按这条顺序做：
+
+- 安装包检查：用 APK Analyzer 或解包结果核对 ABI；每个受支持的 64 位环境都不能依赖只有 32 位版本的 `.so`。
+- 运行时检查：用 `Process.is64Bit()` 确认当前进程位数；`Build.SUPPORTED_ABIS` 只表示设备支持 ABI 的优先顺序，不能证明当前进程已经以 64 位运行。
+- 代码检查：排查指针截断、结构体布局、序列化格式、汇编、编译参数和按 ABI 选择资源的逻辑。
+- 性能检查：在同一设备上对比启动耗时、PSS、原生堆、图形内存、线程数、缺页异常和崩溃率。
+- 设备检查：至少覆盖 64 位进程、仍受支持的 32 位设备和仅支持 64 位的环境；仅支持 64 位的环境能直接暴露遗漏的 32 位专用依赖。
+
 ## 进程内存预算管理
 
 预算应按“进程 × 内存类型 × 场景”分别记录，不能只为整个应用设一个总数。主进程要控制常驻 PSS 和缓存，WebView 宿主进程要连同沙箱渲染进程测量，图片编辑进程要区分 Bitmap、原生内存和图形内存，播放器进程还要统计解码缓冲与图形表面（`surface`）。
@@ -256,33 +275,15 @@ Android 17 r1 确认 `AnonSwap` 超限后，先把当前进程的 `memory.high` 
 
 ```bash
 target_pid="$(adb shell pidof com.example.app:editor | tr -d '\r')"
-test_limit_mb="${TEST_LIMIT_MB:?export TEST_LIMIT_MB to an integer MB value}"
+test_limit_value="${TEST_LIMIT_MB:?export TEST_LIMIT_MB according to the target build syntax}"
 adb shell am memory-limiter status
-adb shell am memory-limiter manual "$target_pid" "$test_limit_mb"
+adb shell am memory-limiter manual "$target_pid" "$test_limit_value"
 adb shell am memory-limiter manual "$target_pid" none
 ```
 
 在 r1 上，`manual` 的帮助文本为 `manual <PID> <PERCENT|none>`；现行官方文档则是 `manual <pid> <limit>|max|none`，其中 `limit` 的单位为 MB。测试前应查看目标系统构建的命令帮助和限制状态，不能只根据“Android 17”这个版本名推断参数单位。先用 `status` 保存设备是否启用及 `visible` / `not-visible` 配置，每次 `manual` 后再次查询状态，测试结束用 `none` 恢复设备默认限制。`ignore all` 会改变整台设备的限制策略，不能用于掩盖回归测试失败。
 
 r1 的 Java 控制逻辑与命令解析见 [`MemoryLimiter.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java) 和 [`ActivityManagerShellCommand.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java)，cgroup 文件访问与 `AnonSwap` 公式见原生层 [`com_android_server_am_MemoryLimiter.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/jni/com_android_server_am_MemoryLimiter.cpp)。
-
-## 64 位迁移与内存空间扩展
-
-多进程改变内存分配的进程归属，64 位迁移扩大单个进程可用的虚拟地址范围，两者解决的问题不同。
-
-Google Play 的 64 位要求适用于包含原生代码的应用。若继续分发某个 32 位 ABI，应为对应架构提供可工作的 64 位版本，例如 `armeabi-v7a` 对应 `arm64-v8a`、`x86` 对应 `x86_64`；在设备兼容性与分发策略允许时，也可以只提供 64 位 ABI。完全由 Java / Kotlin 编写、依赖中也没有原生库的应用，无需为了在 64 位设备上运行而添加原生库。
-
-线程栈、`.so`、`.dex` / `.oat`、WebView、图形资源和原生缓冲区都会占用虚拟地址。32 位进程即使还有可用物理内存，也可能因为虚拟地址耗尽或找不到足够大的连续区间，导致 `mmap`、动态链接器或 `pthread_create` 失败。64 位进程提供了大得多的地址范围，但不会增加设备物理 RAM，也不会改变系统施加的应用内存限制。
-
-64 位指针会增加部分原生对象、表结构和容器节点的体积；二进制大小、冷启动 I/O、指令缓存命中率和内存访问局部性也可能变化。JNI 代码不能把指针存入 `int` 或 `jint`，应使用 `uintptr_t`、`intptr_t` 或其他与指针宽度匹配的字段。ABI 迁移还要覆盖第三方 SDK、插件、热修复、动态加载路径、符号文件和原生崩溃调用栈解析。
-
-迁移检查按这条顺序做：
-
-- 安装包检查：用 APK Analyzer 或解包结果核对 ABI；每个受支持的 64 位环境都不能依赖只有 32 位版本的 `.so`。
-- 运行时检查：用 `Process.is64Bit()` 确认当前进程位数；`Build.SUPPORTED_ABIS` 只表示设备支持 ABI 的优先顺序，不能证明当前进程已经以 64 位运行。
-- 代码检查：排查指针截断、结构体布局、序列化格式、汇编、编译参数和按 ABI 选择资源的逻辑。
-- 性能检查：在同一设备上对比启动耗时、PSS、原生堆、图形内存、线程数、缺页异常和崩溃率。
-- 设备检查：至少覆盖 64 位进程、仍受支持的 32 位设备和仅支持 64 位的环境；仅支持 64 位的环境能直接暴露遗漏的 32 位专用依赖。
 
 ## 实战决策表
 
@@ -297,7 +298,7 @@ Google Play 的 64 位要求适用于包含原生代码的应用。若继续分�
 
 同一现象可能对应多种限制，决策表的“优先判断”列用于选择第一组证据。确认 Java 堆、虚拟地址、系统内存压力或 `MemoryLimiter` 中的具体一类后，再执行对应动作，避免只因进程退出就统一增加堆上限。
 
-## 小结
+## 全文小结
 
 `largeHeap` 改变 ART Java 堆上限，多进程改变地址空间归属，64 位迁移扩大虚拟地址范围。诊断时要把 Java 堆 OOM、原生或图形内存增长、线程或映射失败、系统低内存终止，以及 Android 17 `MemoryLimiter` 命中分开处理。
 

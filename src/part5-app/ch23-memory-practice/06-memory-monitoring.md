@@ -78,6 +78,9 @@ tags:
 - oom-alert
 related_chapters:
 - '23.1'
+- '23.3'
+- '23.4'
+- '23.5'
 - '20.5'
 - '26.1'
 - '10.1'
@@ -112,7 +115,7 @@ consolidated_from:
 
 只上报一个“内存占用”无法区分这些问题。PSS、RSS、Java Heap 和 Native Heap（原生堆）的统计对象不同，任何一项都不能单独代表应用的全部内存。多进程应用还要带进程名；把所有进程混成一个分布，会掩盖主进程回归或独立任务进程的峰值。
 
-Java 泄漏引用链见 [23.1 内存泄漏检测与治理](01-memory-leak-governance.md)，原生分配诊断见 [23.3 Native 与虚拟内存管理优化](03-native-virtual-memory-optimization.md)，Java Heap 预算见 [23.4 Java Heap、GC 与 Compose 内存分配](04-java-heap-gc-compose-allocation.md)，OOM（`OutOfMemoryError`，无法满足分配时抛出的内存不足异常）分类见 [20.5 OOM、进程资源治理与 WebView Renderer 恢复](../ch20-stability/05-oom-webview-renderer-recovery.md)。本节聚焦生产环境中的指标、判断、降级和证据采集。
+Java 泄漏引用链见 [23.1 内存泄漏检测与治理](01-memory-leak-governance.md)，原生分配诊断见 [23.3 Native 与虚拟内存管理优化](03-native-virtual-memory-optimization.md)，Java Heap 预算见 [23.4 Java Heap、GC 与 Compose 内存分配](04-java-heap-gc-compose-allocation.md)，OOM（`OutOfMemoryError`，无法满足分配时抛出的内存不足异常）分类见 [20.5 OOM、进程资源治理与 WebView Renderer 恢复](../ch20-stability/05-oom-webview-renderer-recovery.md)。本文聚焦生产环境中的指标、判断、降级和证据采集。
 
 ## 内存指标采集：先统一统计定义
 
@@ -318,7 +321,7 @@ fun classifyHeapPressure(
 
 事件里应保存页面类别或业务阶段，不要默认上传完整 URL、搜索词、对象字符串或用户标识。监控维度越细，越需要在客户端先转换成有限枚举并删除不必要字段。
 
-## OOM 预警与主动回收
+## 内存压力预警、资源降级与退出归因
 
 ### 能安全释放的只有业务可控资源
 
@@ -399,7 +402,7 @@ Memory Advice 以 Android Game Development Kit（AGDK）的独立 native 库形�
 
 迁移时可保持四层结构：信号层汇总资源数量、PSS/RSS、生命周期与历史退出；策略层按设备和场景输出低、中、高等资源规格；执行层在指定线程降低规格或释放可重建资源；验证层比较峰值、回落、帧时间与 LMK/Memory Limiter。旧库移除后，资源模块仍可沿用同一套策略接口。
 
-## 内存快照线上采集
+## 线上诊断产物采集
 
 ### 先按问题选择产物
 
@@ -520,7 +523,7 @@ Java heap dump 可能包含对象字符串、用户输入、请求响应、缓�
 
 扩大分批放量范围前，要核对样本数、设备构成和场景覆盖。发现回归时，先缩小到版本、进程、设备与场景，再决定需要 Java heap dump、heap profile 还是 Perfetto system trace。没有证据表明 Java 对象增长时，不要因为“内存高”就批量采集 Hprof。
 
-## 小结
+## 全文小结
 
 线上内存治理从统计定义开始：PSS 表示共享页按比例分摊后的占用，RSS 表示驻留页总量，Java Heap 和 native allocator 只覆盖各自的分配范围，设备 `MemoryInfo` 提供全局背景。所有指标都要带单位、来源、进程、场景和策略版本。
 

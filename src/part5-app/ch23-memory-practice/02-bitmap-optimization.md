@@ -64,7 +64,7 @@ consolidated_from:
 
 Bitmap（位图）是 Android 表示解码后像素及其描述信息的对象。图片内存问题通常由解码尺寸、缓存复用、页面生命周期和设备内存预算共同造成。一张 4000×3000 的 `ARGB_8888` 图片需要 48,000,000 字节，约 45.8 MiB（1 MiB 为 1,048,576 字节）；200×150 的目标 View 只有 30,000 个像素。若仍按原尺寸解码，分配的像素数是显示目标的 400 倍，随后交给 Canvas 缩小也无法省掉这次像素分配。Android 10 到 Android 17 的普通软件 Bitmap 会增加原生堆（Native Heap）占用，Hardware Bitmap 的像素则位于图形缓冲区。
 
-应用侧要同时控制四件事：解码前按目标尺寸降采样；按像素所在的内存分区选择监控指标；在图片加载入口记录大图和生命周期线索；只在所有权清楚时复用像素存储。ART 堆与 GC 见 [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)，图片请求和缓存见 [22.5 图片加载、Bitmap 解码与 RenderNode](../ch22-rendering-practice/05-image-bitmap-rendernode.md)，解码与绘制实现见 [22.5 图片加载、Bitmap 解码与 RenderNode](../ch22-rendering-practice/05-image-bitmap-rendernode.md)，对象泄漏判断见 [23.1 内存泄漏检测与治理](01-memory-leak-governance.md)。
+应用侧要同时控制四件事：解码前按目标尺寸降采样；按像素所在的内存分区选择监控指标；在图片加载入口记录大图和生命周期线索；只在所有权清楚时复用像素存储。ART 堆与 GC 见 [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)，图片请求、缓存、解码与绘制见 [22.5 图片加载、Bitmap 解码与 RenderNode](../ch22-rendering-practice/05-image-bitmap-rendernode.md)，对象泄漏判断见 [23.1 内存泄漏检测与治理](01-memory-leak-governance.md)。
 
 文中几组容易混淆的术语含义如下：
 
@@ -307,3 +307,9 @@ Bitmap 问题适合按“尺寸 → 生命周期 → 复用 → 配置”四步�
 4. **配置是否符合使用方式**：展示图可评估硬件 Bitmap；需要像素处理、软件 Canvas 或复用池时使用软件 Bitmap；低质量缩略图再评估 `RGB_565`。
 
 这四步仍无法解释原生堆增长时，再进入 [23.3 Native 与虚拟内存管理优化](03-native-virtual-memory-optimization.md)，使用 `malloc_debug`（原生分配调试工具）、heapprofd（Perfetto 原生堆分析器）或图片库内部统计继续归因。
+
+## 全文小结
+
+Bitmap 内存优化首先控制第一次像素分配：依据目标尺寸和方向读取边界、降采样，再选择与显示或编辑需求匹配的像素格式。文件体积、Java 包装对象大小和最终 View 尺寸都不能代替 `allocationByteCount` 与实际存储分区。
+
+随后才处理生命周期、缓存和复用。软件 Bitmap、Hardware Bitmap 与 `inBitmap` 有不同的所有权和绘制约束；统一入口应记录尺寸、配置、分配量和场景，并用页面退出后的引用链与原生/图形内存回落共同验收。

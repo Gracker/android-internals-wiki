@@ -65,7 +65,7 @@ last_draft_polish_run_id: 20260815-090459-gracker-writing
 
 端侧大模型的内存风险很少只来自模型文件。权重、KV 缓存（`Key/Value Cache`，保存每层注意力历史键和值的会话缓存）、提示词预填充阶段的临时张量、运行时编译产物、GPU/NPU 缓冲区，以及应用自身的 Java 与 native 内存，会在不同阶段形成不同峰值。模型能够加载，也不等于长上下文生成、并发会话和后台切换能够稳定运行。
 
-平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`；涉及 `/proc` 与页回收语义时，以 `android17-6.18-2026-06_r6` 为内核锚点。LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 都是独立发布的库，能力要按项目锁定的库版本和目标设备验证，不能从 Android API 级别推导。本文复核时，LiteRT `CompiledModel` Kotlin 文档使用 2.1.0，MediaPipe LLM Inference 已进入维护模式。虚拟地址与物理内存指标的区别可参阅 [23.3 应用虚拟内存优化实战](03-native-virtual-memory-optimization.md)。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`；涉及 `/proc` 与页回收语义时，以 `android17-6.18-2026-06_r6` 为内核锚点。LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 都是独立发布的库，能力要按项目锁定的库版本和目标设备验证，不能从 Android API 级别推导。本文复核时，LiteRT `CompiledModel` Kotlin 文档使用 2.1.0，MediaPipe LLM Inference 已进入维护模式。虚拟地址与物理内存指标的区别可参阅 [23.3 Native 与虚拟内存管理优化](03-native-virtual-memory-optimization.md)。
 
 ## 1. 先把内存分项记清楚
 
@@ -356,7 +356,7 @@ Android 17 `Debug.java` 中的 `getGpuTotalUsageKb()` 和 `getGpuPrivateMemoryKb
 - delegate 或运行时自带的 profiler（性能采样器）；
 - SoC 厂商工具，用于只在对应设备上解释驱动内存。
 
-Native heap 统计与 Scudo 分配器边界详见 [Native 内存管理与优化](03-native-virtual-memory-optimization.md)。同一场景应保留完整工具版本和设备 build fingerprint（能够标识系统构建版本的字符串），避免直接横向比较厂商字段。
+Native heap 统计与 Scudo 分配器边界详见 [23.3 Native 与虚拟内存管理优化](03-native-virtual-memory-optimization.md)。同一场景应保留完整工具版本和设备 build fingerprint（能够标识系统构建版本的字符串），避免直接横向比较厂商字段。
 
 ## 7. 内存压力下的动作顺序
 
@@ -430,6 +430,8 @@ Native heap 统计与 Scudo 分配器边界详见 [Native 内存管理与优化]
 - 后台释放后能够恢复，用户输入和已确认结果不丢失；
 - 模型切换的双份窗口已被消除或明确计入预算；
 - 线上能够通过 Android Vitals、`ApplicationExitInfo` 和 Android 17 分析触发器追踪失败。
+
+## 全文小结
 
 全设备通用的安全系数无法覆盖运行时、驱动和模型结构差异。应把权重、KV 缓存、工作区、后端资源和应用基线分别量化，再用阶段化数据限定模型、上下文、会话和后端组合。Android 17 新增 OOM 与 anomaly 分析触发器，但应用仍要自己管理推理资源的所有权和恢复协议。
 

@@ -153,7 +153,7 @@ Java 堆优化处理应用侧对象分配、对象生命周期和缓存预算之
 
 Android 会为每个应用进程设置 Java 堆上限，无法在限制内完成分配时会抛出 `OutOfMemoryError`。Android Studio 的 Memory Profiler（内存分析器）可以观察堆曲线、对象数量和 GC 事件。工程判断不能只看一次 `Runtime.maxMemory()`：还要比较同一场景的分配速度、峰值、退出后的存活对象和 GC 行为。堆曲线回落只说明对象具备被回收的条件，不代表页面已经满足性能目标；曲线没有立即回落，也可能是 ART 保留可复用堆空间，而不是对象仍被引用。
 
-[4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)解释堆空间、分配器和 GC；[4.6 ART FinalizerDaemon、Cleaner 与 ReferenceQueue](../../part1-fundamentals/ch04-memory/06-finalizer-referencequeue.md)解释延迟清理与引用队列；[23.4 Java Heap、GC 与 Compose 内存分配](04-java-heap-gc-compose-allocation.md)讨论高频分配和暂停证据。应用侧的基本动作是减少或推迟分配、按预算缓存，并在生命周期边界释放不再需要的引用。
+[4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)解释堆空间、分配器和 GC；[4.6 ART FinalizerDaemon、Cleaner 与 ReferenceQueue](../../part1-fundamentals/ch04-memory/06-finalizer-referencequeue.md)解释延迟清理与引用队列；本文下一部分讨论高频分配和暂停证据。应用侧的基本动作是减少或推迟分配、按预算缓存，并在生命周期边界释放不再需要的引用。
 
 文中术语含义如下：
 
@@ -336,7 +336,7 @@ class BytePayloadCache(
 
 对象池只适合满足三个条件的对象：创建频繁、初始化成本高、可安全重置。普通 Kotlin `data class`（数据类）、生命周期复杂的对象、持有 `Context`、View 或回调的对象，不建议放进池。池化后的对象一旦忘记清除字段，可能引入泄漏和残留数据。
 
-对象池还要与 ART 分代 GC 分开评估：ART 对短命小对象的分配路径通常开销较低，强行池化会把短命对象变成长命对象，增加老年代压力。只有分配热点造成了可观测的 GC 或 CPU 压力，池化才有继续评估的价值。分代和分配路径见 [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)，卡顿证据见 [23.4 Java Heap、GC 与 Compose 内存分配](04-java-heap-gc-compose-allocation.md)。
+对象池还要与 ART 分代 GC 分开评估：ART 对短命小对象的分配路径通常开销较低，强行池化会把短命对象变成长命对象，增加老年代压力。只有分配热点造成了可观测的 GC 或 CPU 压力，池化才有继续评估的价值。分代和分配路径见 [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)，卡顿证据见本文下一部分。
 
 ### 更适合 GC 的编码实践
 
@@ -408,11 +408,15 @@ Java 堆优化可以按四步推进：
 1. 用 Memory Profiler 录制目标场景，记录对象数量、堆曲线和 GC 事件。
 2. 如果曲线持续上升且页面退出后不回落，转到 [23.1 内存泄漏检测与治理](01-memory-leak-governance.md)。
 3. 如果曲线有尖峰但能回落，检查大对象、集合复制、缓存预算和批处理峰值。
-4. 如果 GC 频率高且伴随卡顿，转到 [23.4 Java Heap、GC 与 Compose 内存分配](04-java-heap-gc-compose-allocation.md)，再根据分配证据减少热点。
+4. 如果 GC 频率高且伴随卡顿，继续按本文下一部分的分配证据减少热点。
 
 Android 17 / API 37 为 `ProfilingTrigger` 增加 `TRIGGER_TYPE_OOM` 和 `TRIGGER_TYPE_ANOMALY`。OOM 触发器会在未捕获的 `OutOfMemoryError` 现场采集 Java 堆转储；应用下次启动并注册结果回调后，可以取得这份诊断结果。自定义 `Thread.UncaughtExceptionHandler` 必须继续调用默认异常处理器，系统才能观察到该事件。anomaly（系统异常行为）触发器覆盖内存用量超限等情况，但诊断产物由异常类型决定：超过 Android 17 内存限制时可返回堆转储，其他异常可能返回不同类型的跟踪或采样数据。触发式采集用于取得难以在本地复现的证据，不能替代堆预算和代码修正。生产监控见 [23.6 内存监控与线上治理](06-memory-monitoring.md)，Android 17 内存限制见 [23.5 大内存与多进程策略](05-large-heap-multiprocess.md)。
 
 一次有效改动至少要回答三件事：分配对象数或字节数是否下降，峰值或稳定占用是否改善，CPU、I/O、网络请求与用户场景指标是否变差。只降低 Java 堆峰值却增加其他资源成本，不能视为完成优化。
+
+### Java 堆与存活集小结
+
+Java 堆优化先判断对象是否仍有业务价值，再处理大对象、集合复制、缓存预算和生命周期。持续增长转向泄漏调查，可回落的尖峰检查加载与复制，只有分配失败路径和存活集证据支持时，才能把问题归为 Java 堆 OOM。
 
 ## 高频分配、晋升与 GC 抖动
 
@@ -424,7 +428,7 @@ Android 17 / API 37 为 `ProfilingTrigger` 增加 `TRIGGER_TYPE_OOM` 和 `TRIGGE
 
 ### 内存抖动需要解决什么
 
-内存抖动指短时间内反复分配对象，对象很快失去引用，又持续增加回收工作的现象。泄漏会让不再需要的对象长期保持可达，抖动对象通常能被回收，两种问题也可能同时出现。[23.4 Java Heap、GC 与 Compose 内存分配](04-java-heap-gc-compose-allocation.md)解释堆预算与缓存控制，[10.3 内存抖动与频繁 GC](../../part2-performance/ch10-memory-perf/03-memory-churn.md)和 [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)给出运行时与工具原理，[7.1 卡顿定义、分类与原因体系](../../part2-performance/ch07-smoothness/01-jank-definition-causes.md)说明慢帧的其他来源。本文聚焦应用侧如何降低启动、首帧、滑动和动画期间的分配峰值。
+内存抖动指短时间内反复分配对象，对象很快失去引用，又持续增加回收工作的现象。泄漏会让不再需要的对象长期保持可达，抖动对象通常能被回收，两种问题也可能同时出现。本文前一部分解释堆预算与缓存控制，[10.3 内存抖动与频繁 GC](../../part2-performance/ch10-memory-perf/03-memory-churn.md)和 [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)给出运行时与工具原理，[7.1 卡顿定义、分类与原因体系](../../part2-performance/ch07-smoothness/01-jank-definition-causes.md)说明慢帧的其他来源。本部分聚焦应用侧如何降低启动、首帧、滑动和动画期间的分配峰值。
 
 ART 的并发收集器缩短了许多暂停，但分配、标记、复制或压缩仍要消耗 CPU 和内存带宽，部分阶段仍需暂停应用线程。应用分配速度超过回收与堆扩展能力时，分配线程还可能等待 GC 完成。GC 时间片与慢帧同时出现只能建立相关性；主线程暂停、分配等待或与 GC 线程竞争 CPU 才能解释具体影响。
 
@@ -665,7 +669,11 @@ suspend fun <T> processInChunks(
 
 把非关键工作延后只能改变时间分布，不能减少总分配。首屏后预取或 fling（惯性滑动）结束后刷新统计，仍可能与下一次输入、图片解码或后台任务竞争 CPU；要根据任务优先级设置取消条件，并在系统跟踪中确认延后后的窗口没有产生新的慢帧。
 
-## Compose 重组、布局与分配热点
+### 分配抖动小结
+
+内存抖动治理要把分配调用栈、GC 事件、线程状态和用户可见帧放进同一时间窗。优先移出高频回调、消除中间态和限制单次处理范围；对象池、延后执行或抑制 GC 都不能替代这条证据链。
+
+## Compose 重组、状态与分配热点
 
 通用分配模型进入 Compose 后，要沿 composition、measure 和 draw 确认对象来源。remember 只能延长明确可复用对象的生命周期。
 
@@ -680,7 +688,7 @@ Composition 是一棵可组合界面在运行时的实例，保存界面结构�
 - 存活对象持续增加：常见于 Composition 没有按宿主生命周期释放、协程或监听器存活过久、状态所有者范围过大、View 与 Compose 互相持有。
 - 短命对象分配速率过高：常见于组合阶段反复排序、映射、格式化，频繁重建输入对象，或在高频状态变化中执行不必要的组合。
 
-allocation 表示创建对象并占用 Java Heap 空间，短命对象被频繁创建又回收时也称为分配抖动（allocation churn）。一次重组不一定创建新对象，也不一定创建新的 `RecomposeScopeImpl`。定位时要分别观察重组次数、对象分配和 GC；泄漏治理可参阅 [23.1 内存泄漏检测与治理](01-memory-leak-governance.md)，分配抖动与 GC 可参阅 [23.4 内存抖动与 GC 治理](04-java-heap-gc-compose-allocation.md)，生产环境指标可参阅 [23.6 内存监控与线上治理](06-memory-monitoring.md)。
+allocation 表示创建对象并占用 Java Heap 空间，短命对象被频繁创建又回收时也称为分配抖动（allocation churn）。一次重组不一定创建新对象，也不一定创建新的 `RecomposeScopeImpl`。定位时要分别观察重组次数、对象分配和 GC；泄漏治理可参阅 [23.1 内存泄漏检测与治理](01-memory-leak-governance.md)，分配抖动与 GC 见本文前一部分，生产环境指标可参阅 [23.6 内存监控与线上治理](06-memory-monitoring.md)。
 
 ### Compose Runtime 会长期保存哪些数据
 
@@ -971,7 +979,7 @@ composeCompiler {
 
 Compose Multiplatform 在不同目标上使用不同运行时与内存管理器。这里的 GC、heap dump 和 Android View 互操作结论只适用于 Android；Desktop/JVM、iOS 或 Wasm 的对象大小与 GC 行为需要按各自平台验证。
 
-### 小结
+### Compose 内存小结
 
 Compose 内存问题要把“对象被长期持有”和“短命对象分配过快”分开。slot storage（槽位存储）、RecomposeScope 和 Snapshot 状态记录是正常运行时结构，类名本身不能证明泄漏。泄漏要沿 dominator 查找生命周期更长的持有者，分配抖动要用 allocation stack（对象分配调用栈）确认创建位置。
 
@@ -994,6 +1002,10 @@ GC 请求反映堆状态和分配行为。AOSP 中，`ShouldConcurrentGCForJava(
 ### “一次堆转储就能定位抖动”
 
 堆转储适合查看某一时刻仍然存活的对象，抖动中的临时对象可能已经被回收。定位抖动需要 Android Studio 分配记录或 Perfetto ART 分配画像，用时间轴上的创建速度和调用栈找到高频来源。
+
+## 全文小结
+
+Java Heap、GC 与 Compose 内存问题可以沿三层判断：存活集决定稳定基线，分配速率决定回收压力，Compose 的状态与宿主生命周期决定哪些运行时对象应继续存在。先区分泄漏、峰值、抖动和正常缓存，再选择堆转储、分配记录或系统跟踪；任何优化都要同时验证占用、GC、帧表现和业务代价。
 
 ## 参考资料
 

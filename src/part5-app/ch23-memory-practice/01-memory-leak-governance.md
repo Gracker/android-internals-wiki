@@ -11,6 +11,8 @@ tags:
 related_chapters:
 - '4.1'
 - '10.1'
+- '23.3'
+- '23.6'
 last_verified: '2026-08-15'
 last_verified_against: Android 17 / API 37 / AOSP android-17.0.0_r1；Android ProfilingManager、MemoryLimiter 与 ApplicationExitInfo 官方文档；LeakCanary 2.14 与 Shark 文档；KOOM 仓库与 release；Perfetto heapprofd 文档
 last_review_finalize_at: '2026-08-15T06:44:28+08:00'
@@ -515,6 +517,8 @@ fun readRecentExits(context: Context): List<ExitSnapshot> {
 
 ## 8. 生产治理：信号、采集与验证分层
 
+本节只说明泄漏问题怎样进入生产治理；跨 Java、Native、Graphics、退出原因和采集产物的统一监控架构由 [内存监控与线上治理](06-memory-monitoring.md) 展开。
+
 ### 8.1 低成本信号
 
 生产环境可以长期保留：
@@ -584,7 +588,7 @@ heap dump、native allocation profile（原生分配分析产物）和长时间 
 - 修复前后是否使用同一复现协议？
 - 线上指标是否按版本、设备和场景分层验证？
 
-## 11. 结论
+## 11. 全文小结
 
 内存泄漏治理的核心证据是“已结束的业务生命周期 + 不必要的强引用路径 + 可重复的保留现象”。OOM、PSS 上涨、retained object 和 `REASON_LOW_MEMORY` 都是线索，单独使用都不足以给出引用泄漏结论。
 
