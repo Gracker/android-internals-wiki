@@ -269,51 +269,11 @@ Android 16 进一步扩大了 Job 运行配额的适用范围：
 
 统一封装的价值在于一致记录调度语义，但不应隐藏所有平台差异。业务仍需明确时效、幂等键、取消条件和数据归属；基础组件负责记录调度接口、系统约束、停止原因和资源用量。只修某个 Worker 的执行逻辑，无法解释它为什么被排队、停止或重复触发。
 
-### 前台服务的正确使用与 Android 14+ 限制
+### 前台服务只解决用户可感知的持续执行
 
-前台服务适用于用户明确知道且希望持续进行的工作，例如导航、通话、媒体播放或运动记录。它不是进程保活接口。持续通知只说明服务正在工作，也不会取消 Doze、Job 配额和后台启动限制。
+前台服务适用于用户明确知道且希望持续进行的工作，例如导航、通话、媒体播放或运动记录。它不是进程保活接口，也不会取消 Doze、Job 配额、后台启动限制或受保护资源的权限检查。
 
-评审 FGS 时，要分别验证五项条件：
-
-1. **业务是否适合 FGS**：工作必须对用户可感知，并有清晰的开始与停止条件。
-2. **能否从当前位置启动**：目标版本 31 及以上从后台启动 FGS 受到限制，只有[官方列出的豁免场景](https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start)可以启动。
-3. **服务类型与权限是否匹配**：目标版本 34 及以上必须在清单中声明类型及对应 `FOREGROUND_SERVICE_*` 权限。
-4. **受保护资源能否访问**：位置、相机、麦克风和身体传感器的使用中权限（while-in-use permission，一般只在应用可见或满足对应前台服务条件时可用）有自己的可见性要求。
-5. **运行时限是否满足**：部分 FGS 类型有系统时限，应用仍需设置更早的业务超时与取消入口。
-
-这个清单片段只展示位置型前台服务的基础声明，用于核对服务类型与权限是否一致。
-
-```xml
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-
-    <application>
-        <service
-            android:name=".TrackingForegroundService"
-            android:exported="false"
-            android:foregroundServiceType="location" />
-    </application>
-</manifest>
-```
-
-清单声明不授予运行时位置权限，也不授予任意时刻从后台启动 FGS 的资格。应用还要请求 `ACCESS_COARSE_LOCATION` 或 `ACCESS_FINE_LOCATION`，并验证系统位置开关。需要在应用处于后台时持续读取位置的场景，还要按版本与业务需要评估 `ACCESS_BACKGROUND_LOCATION`。
-
-这里有两个相互独立的门槛，容易混淆：
-
-- `ACCESS_BACKGROUND_LOCATION` 解决的是应用在后台时能否读取位置。
-- 后台启动 FGS 的限制解决的是应用能否创建服务。
-
-拥有后台位置权限不会自动获得通用的 FGS 后台启动豁免。反过来，即使命中某个启动豁免，如果位置权限或系统位置开关不满足，服务也不能读取位置。Android 14 及以上会在创建需要使用中权限的 FGS 时检查当前资格，失败时可能抛出 `SecurityException`。
-
-#### 时限与 Android 17 变化
-
-- `shortService` 的系统时限约为三分钟。它适合短暂完成工作，不适合用来延长普通后台任务。
-- 目标版本 35 及以上时，`dataSync` 和 `mediaProcessing` 各自在滚动的 24 小时窗口中共享六小时后台运行额度；同一应用内相同类型的所有服务共同消耗对应额度。用户将应用带回前台时，计时器会重置。收到 `Service.onTimeout(int, int)` 后，应保存可恢复进度并在数秒内调用 `stopSelf()`。参见 [Foreground service timeouts](https://developer.android.com/develop/background-work/services/fgs/timeout)。
-- Android 17 会检查后台音频播放、音频焦点请求和音量操作是否来自有效生命周期。生命周期无效时，播放与音量操作会静默失败，音频焦点请求返回 `AUDIOFOCUS_REQUEST_FAILED`。目标版本 37 及以上的应用要求更严：相关 FGS 需要具备 while-in-use（使用中）能力；持有精确 Alarm 权限并操作 `USAGE_ALARM` 音频流是文档列出的例外。参见 [Android 17 后台音频变化](https://developer.android.com/about/versions/17/behavior-changes-all)与 §25.9。
-
-FGS 通知应说明具体工作及停止方式，例如写明正在导航或正在上传所选文件。服务在任务完成、用户取消、权限撤销、退出账号或业务时限到达时都应停止。服务内部启动的 Worker 或 Job 仍受 Job 配额约束。
+评审 FGS 时，应分别确认业务是否对用户可感知、当前能否启动、Manifest 类型与权限是否匹配、while-in-use 资源能否访问，以及类型运行时限是否满足。位置权限和后台启动资格是两道独立门槛，服务内部启动的 Worker 或 Job 也继续受自身配额约束。完整的类型、晋升、WIU、超时与停止语义由下一部分集中展开。
 
 ### 后台定位与传感器管控
 
@@ -398,7 +358,7 @@ adb shell dumpsys battery reset
 
 不要将多种资源压成一个总分。CPU 下降可能伴随位置请求增加，网络流量减少也可能伴随 FGS 时间增长。每类资源应有独立预算，每个超限项都要能定位到任务名和责任业务。
 
-### 小结
+### 后台任务小结
 
 后台功耗治理要回答三个问题：任务为何此时执行，系统为何允许它执行，它何时必须停止。Doze 描述设备空闲，App Standby Buckets 描述应用使用状态，任务接口与权限决定具体执行资格；三者不能互相替代。
 
@@ -880,7 +840,13 @@ adb shell am compat reset FGS_INTRODUCE_TIME_LIMITS com.example.app
 - [ ] 测试修改的 DeviceConfig 与 compat 开关已恢复。
 - [ ] OEM 问题有 AOSP 对照结果，未用机型印象替代系统证据。
 
-### 源码锚点
+## 全文小结
+
+后台功耗治理要先解释任务为何执行、系统为何允许以及何时必须停止。Doze、待机分组、Job/WorkManager 约束和业务任务价值分别建模，任务具备幂等、取消、检查点与资源预算，才能在配额变化或进程重建后可靠恢复。
+
+FGS 只承载用户可感知的持续任务。后台启动许可、Manifest 类型、类型权限、WIU 能力、晋升时限、类型累计额度、BAL 与资源访问是彼此独立的检查；持续通知和进程优先级都不能替代这些条件。发布前必须用明确的启动来源、阶段事件、停止原因和故障注入证明各条失败路径可恢复。
+
+## FGS 源码锚点
 
 - [`ActiveServices.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java)：后台启动判断、类型校验、晋升超时、short FGS 和限时类型。
 - [`ActivityManagerConstants.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java)：30 秒晋升超时、short FGS 和 6 小时额度默认值。

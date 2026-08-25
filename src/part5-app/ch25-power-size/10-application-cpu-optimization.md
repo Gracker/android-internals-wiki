@@ -457,6 +457,10 @@ Perfetto 中同时观察：
 
 CPU 优化的完成标准应落在明确场景中：以更少设备成本达到同等或更好的用户结果，同时不把延迟、内存和可靠性问题转移到其他阶段。某个瞬时百分比变小不足以证明优化完成。
 
+## 全文小结
+
+应用层 CPU 优化的主线是先用线程状态、调用栈和业务阶段解释成本，再减少无效工作、限制并发与积压、修正周期任务和取消边界。线程数、优先级、协程调度器与 ADPF 都只是执行策略，不能代替归因；最终要在同一场景中同时验证用户延迟、CPU 时间、能耗、温度和后台可靠性。
+
 ## 源码与文档索引
 
 - Android 17 [`ThreadPoolExecutor.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java)

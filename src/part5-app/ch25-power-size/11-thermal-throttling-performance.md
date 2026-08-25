@@ -623,6 +623,10 @@ headroom 跟踪缓慢变化的表面温度信号，高频调用会增加开销�
 
 Android 17 普通应用只能读取热状态和 headroom。原始温度、冷却设备和详细动作属于特权接口或系统诊断信息。
 
+## 全文小结
+
+热治理的目标不是维持冷机峰值，而是在设备进入热平衡后保住可持续体验。应用应以 thermal status 判断当前限制等级，以 headroom 观察趋势，再通过带滞回和驻留时间的状态机同步降低渲染、媒体、推理、网络和后台工作；频率、冷却档位与性能时间线则用来证明退化是否真的由热限制造成。所有阈值和恢复策略都必须按设备族与业务场景验证。
+
 ## 版本演进
 
 | 平台 | 与应用热治理有关的变化 |
@@ -637,12 +641,10 @@ Android 17 普通应用只能读取热状态和 headroom。原始温度、冷却
 
 ## 延伸阅读与源码锚点
 
-- [5.2 DVFS、Thermal 与 Android 功耗管理](../../part1-fundamentals/ch05-cpu-power/02-dvfs-thermal-android-power.md)：从内核热区域、HAL 到应用 API 的基础。
-- [5.4 ADPF 自适应性能框架](../../part1-fundamentals/ch05-cpu-power/04-adpf.md)：Performance Hint Session、Game Mode 与 capacity headroom。
 - [5.2 DVFS、Thermal 与 Android 功耗管理](../../part1-fundamentals/ch05-cpu-power/02-dvfs-thermal-android-power.md)：调节器、冷却设备、Thermal HAL、Framework 热状态/headroom 与 Perfetto。
-- [25.1 功耗诊断与 OEM 后台限制](01-power-diagnosis-oem-background.md)：功耗与性能实验方法。
+- [5.4 ADPF 自适应性能框架](../../part1-fundamentals/ch05-cpu-power/04-adpf.md)：Performance Hint Session、Game Mode 与 capacity headroom。
+- [25.1 功耗诊断与 OEM 后台限制](01-power-diagnosis-oem-background.md)：功耗与性能实验方法，以及 BatteryUsageStats、PowerMonitor 与 UID 归因边界。
 - [25.10 应用层 CPU 优化实战指南](10-application-cpu-optimization.md)：持续 CPU 异常、excessive CPU 终止与线上治理。
-- [25.1 功耗诊断与 OEM 后台限制](01-power-diagnosis-oem-background.md)：BatteryUsageStats、PowerMonitor 与 UID 归因边界。
 
 Android 17 源码锚点：
 

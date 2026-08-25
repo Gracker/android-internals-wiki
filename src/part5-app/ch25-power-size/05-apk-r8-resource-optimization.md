@@ -733,7 +733,7 @@ Startup Profile 调整布局，目标是启动局部性。它可能改变各 DEX
 
 按需模块能减少首次交付，用户安装该功能后仍会获得对应代码。基础模块、安装时模块与按需模块三种口径需要分开报告。
 
-### 延伸阅读与源码锚点
+### DEX 部分的延伸阅读与源码锚点
 
 - [25.6 App Bundle 与按需分发](06-app-bundle-delivery.md)：基础模块、动态特性模块与设备专用 APK。
 - [21.4 Baseline、Startup 与 Cloud Profile 编译优化](../ch21-startup/04-baseline-startup-cloud-profile.md)：主 DEX 布局、配置文件生成与启动验证。
@@ -759,7 +759,7 @@ Startup Profile 调整布局，目标是启动局部性。它可能改变各 DEX
 - [`StandardDexFile` @ Android 17](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libdexfile/dex/standard_dex_file.cc)：ART 支持的 DEX 魔数与版本。
 - [`DexFile` @ Android 17](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libdexfile/dex/dex_file.h)：DEX 文件头、容器与数据访问边界。
 
-### 版本与实现边界
+### DEX 版本与实现边界
 
 | 版本 | 与 DEX 体积和布局相关的边界 |
 |---|---|
@@ -1302,12 +1302,11 @@ AAB 是上传制品。用户交付要用代表设备的 APK Set 与 `bundletool 
 
 合并能减少部分 ELF 头部、对齐和装载工作，也可能扩大启动时必载范围、增加重定位和构造函数。结果由 trace（性能轨迹）、PSS 与基准测试决定。
 
-### 延伸阅读与源码锚点
+### Native SO 部分的延伸阅读与源码锚点
 
 - [25.6 App Bundle 与按需分发](06-app-bundle-delivery.md)：ABI 配置 APK 与动态特性模块。
 - [4.5 16 KB Page Size 与 Android 性能](../../part1-fundamentals/ch04-memory/05-16kb-page-size.md)：ELF/ZIP 检查、兼容模式和故障归因。
-- [1.22 Dynamic Linker、VNDK 与 Native 库隔离](../../part1-fundamentals/ch01-architecture/22-dynamic-linker-vndk-isolation.md)：平台 Native 可见性。
-- [1.22 Dynamic Linker、VNDK 与 Native 库隔离](../../part1-fundamentals/ch01-architecture/22-dynamic-linker-vndk-isolation.md)：linker64 加载、重定位、RELRO 与 namespace。
+- [1.22 Dynamic Linker、VNDK 与 Native 库隔离](../../part1-fundamentals/ch01-architecture/22-dynamic-linker-vndk-isolation.md)：平台 Native 可见性，以及 linker64 加载、重定位、RELRO 与 namespace。
 
 一手资料：
 
@@ -1328,7 +1327,7 @@ AAB 是上传制品。用户交付要用代表设备的 APK Set 与 `bundletool 
 - [AOSP `linker.cpp` @ Android 17](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker.cpp)：动态表、依赖图、符号与重定位。
 - [Android Common Kernel `mm/mmap.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/mmap.c)：`android17-6.18-2026-06_r6` 的 VMA 与文件映射锚点。
 
-### 版本与实现边界
+### Native SO 版本与实现边界
 
 | 版本 | 与 Native 体积和交付相关的边界 |
 |---|---|
@@ -1867,7 +1866,7 @@ ZIP 条目发生变化会破坏签名和对齐。所有转换必须进入受支�
 
 资源映射表必须与同一次构建的二进制和资源表绑定。工具版本相同也不能替代原发布 APK/APKS。
 
-### 延伸阅读与源码锚点
+### 资源部分的延伸阅读与源码锚点
 
 - [25.6 App Bundle 与按需分发](06-app-bundle-delivery.md)：配置 APK、Dynamic Feature 与 PAD 的交付边界。
 
@@ -1892,7 +1891,7 @@ ZIP 条目发生变化会破坏签名和对齐。所有转换必须进入受支�
 - [AOSP `AssetManager2.cpp` @ Android 17](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/androidfw/AssetManager2.cpp)：运行时资源表加载与配置选择。
 - [AOSP `ResourceTable.cpp` @ Android 17](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/tools/aapt2/ResourceTable.cpp)：AAPT2 构建期资源模型。
 
-### 版本与实现边界
+### 资源版本与实现边界
 
 | 版本 | 与资源体积相关的边界 |
 |---|---|
@@ -1907,3 +1906,7 @@ ZIP 条目发生变化会破坏签名和对齐。所有转换必须进入受支�
 | Android 17（API 37） | `android-17.0.0_r1` 延续二进制资源表和 `AssetManager2` 配置选择模型，没有应用侧自动缩减资源的 API |
 
 版本表同时包含平台和构建工具，是为了说明资源格式兼容与构建能力的不同边界。不能用 AGP 版本推导设备解码格式，也不能用 Android 版本推导项目是否打开资源缩减。
+
+## 全文小结
+
+应用体积不是一个可以靠单项压缩解释的数字。DEX 要从可达性、保留规则和设备交付集合分析；Native SO 要区分 ELF 文件、符号制品、ABI 与页对齐；资源则要同时检查资源表、文件内容、限定符和拆分策略。三条链路最终都应落到同一套发布基线、代表设备 APK Set 和可追溯的差异报告上，再决定删除、压缩还是延迟交付。

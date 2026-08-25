@@ -96,7 +96,7 @@ WakeLock（唤醒锁）和 Alarm（系统定时通知）解决两个不同问题
 
 它们都不是进程保活接口。WakeLock 不保证进程存活，也不提供后台启动资格；Alarm 回调应只完成短小的分发工作，耗时任务需要另行调度。持锁范围过大，会阻止系统进入低功耗状态；唤醒型 Alarm 过密，会增加设备被唤醒的次数；精确 Alarm 若未满足权限条件，调用时会抛出 `SecurityException`。
 
-系统电源状态机见 §5.2 和 §11.3，后台任务分类见 §25.2，WorkManager（Jetpack 的持久后台任务调度库）实践见 §25.3。这里讨论应用侧的选择、生命周期、权限和诊断。
+系统电源状态机见 §5.2 和 §11.3，后台任务分类见 §25.2，WorkManager（Jetpack 的持久后台任务调度库）实践见本文后半部分。这里讨论应用侧的选择、生命周期、权限和诊断。
 
 #### Android 17 源码中的调用边界
 
@@ -381,7 +381,7 @@ fun scheduleExactReminder(
 - 提醒记录是否持久化，取消、重启、时间变化和权限变化能否得到一致结果。
 - 相邻提醒是否可以合并，接收器是否只做短小工作。
 
-### 扩展：功耗回归守门
+### WakeLock 与 Alarm 功耗回归守门
 
 #### Android Vitals 的 excessive 与 stuck 口径
 
@@ -424,7 +424,7 @@ adb shell dumpsys battery reset
 
 任一守门项失败，都应先修正任务接口、生命周期或权限处理，再重新运行对应场景；不能用扩大超时或放宽阈值绕过。
 
-### 小结
+### WakeLock 与 Alarm 小结
 
 WakeLock 保护一段已经开始的工作，Alarm 安排未来的时间通知。前者的重点是所有权、超时和释放；后者的重点是时间基准、精度、唤醒类型、回调身份与权限。
 
@@ -988,7 +988,13 @@ val request = OneTimeWorkRequestBuilder<ThumbnailRemoteWorker>()
 - 长时工作是否声明正确的前台服务类型，并评估 Android 16–17 的 Job 配额？
 - 多进程是否来自明确的隔离需求，远端 Service、默认进程和数据一致性是否一起验证？
 
-### 参考源码与官方文档
+## 全文小结
+
+WakeLock 保护已经开始的短暂工作，Alarm 安排未来的时间通知，WorkManager 则在系统约束下执行可延迟且需要持久化的任务。三者不能互相代替：持锁要有明确所有权与释放，Alarm 要从时间基准、精度和是否唤醒出发，Worker 要接受执行时机与中断由系统决定。
+
+可靠调度还需要把精确 Alarm 权限、Listener Alarm 的进程边界、Worker 约束、加急/长时配额、重试、唯一工作、任务链和多进程职责分别建模。系统停止只结束本轮执行，不会回滚外部副作用；幂等键、检查点、取消传播和分层诊断才是恢复基础。
+
+## WorkManager 部分的参考资料
 
 - [WorkManager 版本说明（2.11.2）](https://developer.android.com/jetpack/androidx/releases/work)
 - [WorkManager API 与初始化契约](https://developer.android.com/reference/androidx/work/package-summary)

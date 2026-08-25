@@ -221,7 +221,7 @@ PWA（Progressive Web App，可安装并支持离线能力的渐进式 Web 应�
 
 设备样本应包含 Android Go 或低内存设备、仍需支持的 32 位进程环境，以及线上占比较高的 WebView provider 包版本。弱网测试覆盖高 RTT（Round-Trip Time，网络往返时延）、丢包、DNS（域名解析）失败、CDN 边缘节点未命中后访问源站缓慢，以及网络切换。高端设备上的 Wi-Fi 数据不能代表低内存或弱网用户。
 
-## 小结
+## 全文小结
 
 Hybrid/WebView 功耗需要按页面、provider 与设备分组记录。同一内容使用同一脚本比较，才能判断差异来自页面还是容器。论文说明 Chrome Web 版本在其样本中消耗更多能耗、CPU 和内存，但它不构成 WebView 原生化结论。高频、长驻留、富交互页面在本业务测试中出现稳定劣化时，再选择整体或局部原生化；保留 WebView 的页面要持续观察 CPU、内存、网络、renderer 异常和 Android Vitals。
 

@@ -299,7 +299,7 @@ bundletool get-size total \
 
 门禁阈值来自项目基线和实际设备分布，不填写通用百分位或固定数字。制品、`bundletool` 版本、device spec（设备规格 JSON）、签名方式和 module 集合必须随结果归档。
 
-## 小结
+## 全文小结
 
 AAB 决定设备获得哪些 APK，Dynamic Feature 决定功能 module 的交付条件和时机，PAD 决定非代码 asset pack 的交付方式。设备安装的是 APK 或 split APK，而不是 AAB；Android 17 Package Manager 会校验 split 的包名、版本、签名和必需关系。
 

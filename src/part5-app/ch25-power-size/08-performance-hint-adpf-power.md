@@ -402,7 +402,7 @@ Power Efficiency Mode 和 Thermal API 处理的是同一类长期负载问题的
 
 Perfetto 文档说明，电池计数器在 USB 插电时会反映充电电流，实验室功耗测试要隔离充电状态。电源轨计数器位于电池下游，不直接受充放电方向影响，但测试仍要记录 USB、电量、屏幕亮度和温度起点。
 
-## 补充边界
+## 补充验证边界
 
 ### 游戏帧循环与后台计算的策略差异
 
@@ -421,9 +421,9 @@ Perfetto 文档说明，电池计数器在 USB 插电时会反映充电电流，
 `PowerMonitorReadings` 和 Perfetto 电源轨可以在同一实验窗口内互相解释，但不是跨设备等价的数据源。在同一设备、工作负载和温度起点下，同时记录两次 `PowerMonitorReadings` 的时间戳与差值、Perfetto 电源轨差值、CPU 频率、热状态和任务计数。普通应用还要把 r1 的 20 秒缓存与随机扰动计入误差。两类曲线只在趋势上同向时，结论只能写成“同一窗口内趋势一致”，不能宣称完成了电源轨级校准。Pixel 或单一厂商设备上的结论也只适用于对应设备组。
 
 
-## 系统服务与 Power HAL 的协作
+## 源码追踪：系统服务与 Power HAL 的协作
 
-ADPF 的完整效果同时取决于应用上报、系统服务和 Power HAL。AOSP `android-17.0.0_r1` 展示了公开 API 进入系统后的实现边界。
+前文给出了应用侧接入与验证主线；本节继续向下追踪公开 API 进入系统后的路径，用来解释提示为何可能被暂停、读数为何会命中缓存，以及不同设备为何不能承诺相同收益。ADPF 的完整效果同时取决于应用上报、系统服务和 Power HAL。AOSP `android-17.0.0_r1` 展示了这条路径的实现边界。
 
 > **版本限定**：源码锚点统一使用 `android-17.0.0_r1`；公开 API 只核对到 Android 17/API 37。后续主开发分支的变更不作为本文结论。
 
@@ -569,7 +569,7 @@ DeviceConfig（系统动态配置）中的 `battery_stats/power_monitor_api_enab
 3. 利用 Perfetto 验证系统收到 ADPF 提示后的调度行为，不能预设提示一定生效。
 4. 设备厂商可基于 Boost、SessionTag 和 SessionMode 实现芯片级优化，但不同设备的策略不能视为一致。
 
-## 小结
+## 全文小结
 
 ADPF Power Efficiency Mode 把长期周期任务的 deadline 余量告诉系统。`setPreferPowerEfficiency(true)` 表达偏好，`PowerMonitorReadings` 和 Perfetto 电源轨验证能耗，小流量实验检查尾部耗时和失败率。缺少稳定线程、稳定周期或能耗数据时，不能把启用该模式写成优化结论。
 

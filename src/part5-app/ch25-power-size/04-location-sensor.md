@@ -413,13 +413,13 @@ adb shell dumpsys batterystats --charged
 
 回归阈值由业务基线确定。建议分别设置三类门禁：位置计算或请求是否仍存在，应用回调与唤醒是否增加，回调后的 CPU、存储与网络成本是否增加。这样才能区分硬件定位成本、交付策略和应用处理代码造成的变化。
 
-## 小结
+## 全文小结
 
 定位优化从一次性、低精度、低频和延迟容忍度开始；只有用户可见且确有精度需要时才持续使用高精度请求。Geofencing 与被动定位能减少主动计算，但仍受后台权限和交付延迟限制。传感器侧要同时降低采样率与应用处理器唤醒，批处理只解决后者。
 
 Android 17 的平台边界由位置服务、`SystemSensorManager` 和 native `SensorService` 共同执行；Google Play services FLP 还具有独立版本。评审时把两套实现和各自公开契约分开，才能避免用 AOSP 结论代替 FLP 行为。
 
-## 延伸阅读
+## 参考资料
 
 - [About background location and battery life](https://developer.android.com/develop/sensors-and-location/location/battery)
 - [Request location permissions](https://developer.android.com/develop/sensors-and-location/location/permissions)

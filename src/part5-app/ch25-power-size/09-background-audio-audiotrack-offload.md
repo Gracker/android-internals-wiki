@@ -360,7 +360,7 @@ Android 17 r1 的 `LeAudioService.setSystemSuspended()` 会在系统进入 suspe
 
 小流量发布时应同时比较 target 36 与 37。若中断率上升，要按 partial/full 区分缺 FGS 与缺 WIU；若声音已经停止但耗电上升，则检查资源释放与重试状态机。两类问题需要分别定位原因。
 
-### 结论
+### 后台音频小结
 
 Android 17 后台音频硬化有清晰的两级条件：所有应用都需要可见 Activity 或非 `shortService` FGS；target 37 的后台应用还需要带 WIU 的 FGS，真实闹钟可以在满足权限和 `USAGE_ALARM` 时免除 WIU。
 
@@ -376,7 +376,7 @@ Android 17 后台音频硬化有清晰的两级条件：所有应用都需要可
 
 Audio offload（音频卸载）解决的是这类长时间播放的 CPU 参与度问题。平台把音频处理交给专用硬件或 DSP（Digital Signal Processor，数字信号处理器），应用可以一次写入更多数据；硬件 buffer（缓冲区）保存待播放内容后，框架数据管道可以暂停，CPU 因而有机会休眠。低延迟场景不适合这条路径。游戏音效、乐器、语音通话和实时互动仍应关注 AAudio（原生低延迟音频 API）的低延迟模式、MMAP（应用和硬件通过共享内存交换音频数据的路径）、缓冲区大小、callback（数据回调）的稳定性与线程调度，详见 1.11 节。
 
-应用侧需要完成能力探测、接入、验证和小流量发布。AudioFlinger（原生音频混音与输出服务）、AAudio 与 MMAP 的机制详见 1.11 节；MediaCodec（编解码接口）、Media3（Jetpack 媒体库）与播放管线详见 18.12 节；Android 17 后台音频 hardening（生命周期限制）详见 25.9 节。
+应用侧需要完成能力探测、接入、验证和小流量发布。AudioFlinger（原生音频混音与输出服务）、AAudio 与 MMAP 的机制详见 1.11 节；MediaCodec（编解码接口）、Media3（Jetpack 媒体库）与播放管线详见 18.12 节；Android 17 后台音频 hardening（生命周期限制）见本文前半部分。
 
 ### 场景边界：什么时候值得开启 Offload
 
@@ -553,7 +553,7 @@ Android 17 引入 `USAGE_ASSISTANT` 专用音量流，Assistant 的回复音量�
 这件事只解决音量控制归属，不解决后台播放资格，也不证明音频走了 offload。Assistant 音频要分三条线判断：
 
 - 音量线：是否使用 `USAGE_ASSISTANT`，应用是否属于可使用 `MODE_ASSISTANT_CONVERSATION` 的 Assistant 集成。
-- 后台线：退后台或锁屏后是否满足 Android 17 后台音频 hardening、FGS（前台服务）与 while-in-use（WIU，应用可见或明确用户操作触发时授予的能力）规则，详见 25.9 节。
+- 后台线：退后台或锁屏后是否满足 Android 17 后台音频 hardening、FGS（前台服务）与 while-in-use（WIU，应用可见或明确用户操作触发时授予的能力）规则，见本文前半部分。
 - 省电线：长回复或长内容播放是否满足 offload 条件，短回复优先保证延迟和可打断性。
 
 ### 线上监控与远程关闭
@@ -590,11 +590,15 @@ DSP offload 改变音频数据经过的处理路径，但不会取消音量安�
 
 设备清单可按 SoC、Android 构建、音频 HAL、输出路由、格式、DRM（Digital Rights Management，数字版权管理）、蓝牙 codec 和空间音频状态组织。高通、联发科、Tensor 或 OEM（设备厂商）定制路径只是分组维度；结论只适用于已经完成同条件测试的组合。
 
-### 结论
+### Offload 小结
 
 音频 Offload 的目标是降低长时间播放的耗电，低延迟场景应使用相应的实时音频路径。接入时要把请求模式、实际模式、设备能力、播放器功能和用户体验放在同一套指标里：AAudio 用 `AAudioStream_getPerformanceMode(stream)` 确认实际模式；AudioTrack API 37 用 support bitmask、实际 flush 位置和 codec provenance 辅助判断；Media3 用 `AudioOffloadPreferences` 表达偏好，再由平台决定是否满足。
 
 上线前做同机 A/B，线上保留远程关闭能力。CPU 时间、线程唤醒、batterystats 和播放体验同时满足验收阈值后，Offload 才进入可发布状态。
+
+## 全文小结
+
+后台音频先要证明这次播放具备可见页面、合格前台服务和必要的 WIU 条件，再选择普通混音、低延迟或 Offload 路径。前一层决定系统是否允许持续发声，后一层决定如何在时延、功能和功耗之间取舍；任何一层失败，都要同步停止无效的网络、解码、WakeLock 与服务状态。发布验证应把入口、MediaSession、FGS、实际音频路径、路由和单位会话功耗放到同一条时间线上。
 
 ## 参考资料
 

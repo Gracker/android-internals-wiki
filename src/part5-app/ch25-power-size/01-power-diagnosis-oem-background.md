@@ -510,7 +510,7 @@ Android 17 的 [`IPowerStats.aidl`](https://android.googlesource.com/platform/ha
 - 用设备级能量验证整机是否改善，用 UID 与 Perfetto 追踪解释哪些行为发生了变化。
 - 需要发布绝对精度或节电比例时，说明测量仪器、接线方式、样本量、置信区间和误差来源。
 
-### 小结
+### 功耗诊断小结
 
 功耗诊断的起点是可重复场景，单张电量截图无法完成归因。BatteryStats 负责提供 UID 统计，Battery Historian 适合离线回看系统事件，Power Profiler 和 Perfetto 用于对齐电源轨、计数器与执行行为，Macrobenchmark `PowerMetric` 可用于受支持设备上的自动化回归。
 
@@ -793,7 +793,13 @@ XML 保存 package、UID、当前限制等级、变更时间、组合后的 reas
 
 厂商限制无法由应用代码完全消除。可维护的目标是：在 AOSP 允许的执行窗口内完成尽量少的工作，任何中断都能恢复，并让诊断日志说明任务停在哪一层。
 
-### 参考源码与官方文档
+## 全文小结
+
+功耗诊断先把用户感受变成可重复场景，再把设备能量、系统 UID 归因和执行时间线对齐。BatteryStats、ODPM、Perfetto 和应用日志处在不同证据层，只有定位到明确时间窗、资源活动与代码入口，并通过同机对照或消融复核，才足以指导修改。
+
+OEM 后台差异应从 AOSP 的限制等级、待机分组、豁免来源和具体子系统状态开始排查，再比较厂商设置、服务与退出证据。应用无法依赖私有保活策略消除差异，能保证的是任务幂等、状态持久、执行可恢复，并准确记录失败停在哪一层。
+
+## 后台限制部分的参考资料
 
 - [Android 17 `AppRestrictionController`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppRestrictionController.java)
 - [Android 17 `AppBatteryExemptionTracker`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppBatteryExemptionTracker.java)
