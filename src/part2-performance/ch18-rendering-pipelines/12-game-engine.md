@@ -2,7 +2,7 @@
 title: Android 17 游戏引擎渲染链路
 chapter: '18.12'
 section: '18.12'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 tags:
 - Unity
@@ -25,15 +25,17 @@ related_chapters:
 - '18.13'
 consolidated_from:
 - src/part2-performance/ch08-responsiveness/09-game-performance.md
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: ready-for-review
+task6_state: pending
+task9_state: pending
 task2b_state: fixed
-last_verified: '2026-07-31'
-last_verified_against: AOSP android-17.0.0_r1 (SurfaceView.java, Surface.java, PerformanceHintManager.java, GameManager.java, GameState.java, TextureView.java, HardwareRenderer.java, TextureLayer.java, DeferredLayerUpdater.cpp, DrawFrameTask.cpp, swapchain.cpp, Surface.cpp, SurfaceFlinger.cpp, HWComposer.cpp, Display.cpp, Output.cpp, OutputLayer.cpp, AidlComposerHal.cpp, Mode.aidl) / AGDK Frame Pacing, Frame Rate, ADPF, Game Mode, Game State, OpenXR 1.1 docs / kernel android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, dma-fence.h, sync_file.c)
+last_verified: '2026-08-25'
+last_verified_against: AOSP android-17.0.0_r1 (SurfaceView.java, Surface.java, PerformanceHintManager.java, GameManager.java, GameState.java, TextureView.java, HardwareRenderer.java, TextureLayer.java, DeferredLayerUpdater.cpp, DrawFrameTask.cpp, BufferQueueCore.cpp, BufferQueueProducer.cpp, swapchain.cpp, Surface.cpp, SurfaceFlinger.cpp, HWComposer.cpp, Display.cpp, Output.cpp, OutputLayer.cpp, AidlComposerHal.cpp, Mode.aidl) / AGDK Frame Pacing, Frame Rate, ADPF, Game Mode, Game State, OpenXR 1.1 docs / kernel android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, dma-fence.h, sync_file.c)
 confidence: medium
 last_idle_audit_at: '2026-07-27T22:35:52+08:00'
 last_idle_audit_run_id: 20260727-223552-idle-audit-6c95044a
+last_body_apply_at: '2026-08-25T09:24:13+08:00'
+last_body_apply_run_id: 20260825-091525-bb1ff868
 sources:
 - type: internal-reference
   path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S13_game_type.md
@@ -59,6 +61,9 @@ sources:
 - type: internal-reference
   path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S13_game_xr_pipeline/source.md
   role: OpenXR frame loop、runtime swapchain 与 compositor 边界
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-game-engine-resolution-memory-allocation.md
+  role: BufferQueue image count、分辨率切换和低内存降级材料
 - type: official
   path: https://developer.android.com/games/agdk/game-activity
   role: GameActivity 的 SurfaceView 承载与 C/C++ 生命周期
@@ -146,6 +151,12 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp
   role: dequeue/AcquireImageANDROID、QueueSignalReleaseImageANDROID、queueBuffer 与 present timing
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueCore.cpp
+  role: BufferQueue acquired/dequeued 默认计数与 max/min buffer count
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp
+  role: setMaxDequeuedBufferCount 校验、slot 上限与 BAD_VALUE 边界
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/Surface.cpp
   role: ANativeWindow dequeue、queue、frame rate 与 producer throttling
@@ -415,6 +426,14 @@ API 37 新增 `Surface.setProducerThrottlingEnabled(boolean)`。默认开启时�
 
 Android 17 的 API 文档建议 Vulkan 应用关闭这类隐式 throttling，并使用正确的显式同步。关闭后，如果生产速度超过 GPU 或显示消费速度，等待通常会转移到 `vkAcquireNextImageKHR()` / dequeue 一侧。接入现成引擎时，不应绕过引擎直接修改 Surface；应先确认引擎版本已适配该 API，并具备完整的 semaphore、fence、in-flight frame 上限和 frame pacer 设计。
 
+### BufferQueue 计数、分辨率切换与显存预算
+
+`android-17.0.0_r1` 的 `BufferQueueCore` 构造函数把 `mMaxAcquiredBufferCount` 和 `mMaxDequeuedBufferCount` 都初始化为 1，并用 `getMaxBufferCountLocked()` 按 acquired + dequeued + async / non-blocking 额外项计算当前队列上限，再受 `mMaxBufferCount` 限制；构造函数据此把起始 free slot 放入 `mFreeSlots`。这个事实说明新建 BufferQueue 的锁内默认约束，但不是“所有游戏 swapchain 最终固定两张图像”的 API 保证。[来源: DeepResearch/2026-07-17-game-engine-resolution-memory-allocation.md; 已验证: android-17.0.0_r1 `frameworks/native/libs/gui/BufferQueueCore.cpp`:120-149, 238-266]
+
+`Surface::setBufferCount(N)` 会先查询 `NATIVE_WINDOW_MIN_UNDEQUEUED_BUFFERS`，再把参数转换成 `setMaxDequeuedBufferCount(N - minUndequeued)`；`BufferQueueProducer::setMaxDequeuedBufferCount()` 会检查当前已 dequeued 的 buffer 数、最小 slot 数和总上限，不满足时返回 `BAD_VALUE`。因此，resize、折叠/分屏切换或 Surface 重建期间，如果旧 image 仍被 producer / GPU / HWC 使用，直接反复改队列深度可能只是在制造新的拒绝路径和额外重建工作。[来源: DeepResearch/2026-07-17-game-engine-resolution-memory-allocation.md; 已验证: android-17.0.0_r1 `frameworks/native/libs/gui/Surface.cpp`:2601-2624, `frameworks/native/libs/gui/BufferQueueProducer.cpp`:183-271]
+
+分辨率和低内存降级应由引擎的 EGLSurface / Vulkan swapchain 重建流程承接：先停止向旧 window 提交，处理旧 image 的 fence，再按 `VkSurfaceCapabilitiesKHR`、EGL / ANativeWindow 协议和引擎自己的 in-flight frame 上限选择 image count。以 1080p RGBA8 为例，单张 color buffer 的裸像素大小是 8,294,400 bytes（约 7.91 MiB），真实占用还会叠加 gralloc 对齐、metadata、depth / MSAA attachment 和驱动实现；是否减少一张 image，要用 Perfetto 的 `dequeueBuffer` / `queueBuffer`、SurfaceFlinger layer、GPU / release fence 与进程内 allocator 统计闭环验证。[来源: DeepResearch/2026-07-17-game-engine-resolution-memory-allocation.md; 已验证: 1920×1080×4 bytes = 8,294,400 bytes = 7.91 MiB; android-17.0.0_r1 `frameworks/native/libs/gui/Surface.cpp`:2601-2624]
+
 ### 不要手工套用“二缓冲/三缓冲”结论
 
 `BufferQueueDefs::NUM_BUFFER_SLOTS` 或 `mMaxBufferCount=64` 表示 slot 编号空间或配置上限，不能据此推断当前已经分配 64 块 buffer，也不能推断应用默认只能使用两块。实际在途数量由可 dequeue 数量、consumer 最少保留数量、async/shared mode、EGL swap behavior、Vulkan `minImageCount` 和设备实现共同决定。
@@ -677,7 +696,7 @@ OEM 策略、画质、thermal、frame-rate vote 与引擎上限都可能限制�
 - [`PerformanceHintManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java)、[`GameManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/GameManager.java)、[`GameState.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/GameState.java)：Hint Session、Game Mode 与 Game State。
 - [`TextureView.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/TextureView.java)、[`TextureLayer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/TextureLayer.java)、[`HardwareRenderer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/HardwareRenderer.java)：小游戏 TextureView 的 frame available、宿主 invalidation 与 pending layer update。
 - [`DeferredLayerUpdater.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp)、[`DrawFrameTask.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp)：RenderThread 获取最新 SurfaceTexture buffer。
-- [`swapchain.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp)、[`Surface.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/Surface.cpp)：Vulkan WSI 到 ANativeWindow / BufferQueue、present timing 与 producer throttling。
+- [`swapchain.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp)、[`BufferQueueCore.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueCore.cpp)、[`BufferQueueProducer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp)、[`Surface.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/Surface.cpp)：Vulkan WSI 到 ANativeWindow / BufferQueue、buffer count 校验、present timing 与 producer throttling。
 - [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)、[`Display.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Display.cpp)、[`Output.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp)：Layer snapshot、composition strategy、RenderEngine client target 与 present。
 - [`OutputLayer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/OutputLayer.cpp)、[`HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)、[`AidlComposerHal.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/AidlComposerHal.cpp)：Layer buffer、client target、Composer3 validate / present 与 fence。
 - Power HAL [`Mode.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/aidl/android/hardware/power/Mode.aidl)：`GAME` 与 `GAME_LOADING`。
