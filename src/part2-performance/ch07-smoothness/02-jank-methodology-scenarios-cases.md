@@ -234,7 +234,7 @@ RenderThread 的 `DrawFrame` 较长时，要区分 Running（运行中）、Runn
 | Sleeping (`S`) | 可中断等待 | 查找等待对象、Binder flow、锁 owner（持有者）或唤醒源 |
 | Uninterruptible Sleep (`D`) | 内核不可中断等待 | 结合 `io_wait`、`blocked_function` 与内核事件 |
 
-Runnable duration（持续时间）描述等待 CPU 的时间，不是前一段 `sched_slice.dur`。`sched_slice.end_state = R` 或 `R+` 表示线程离开 CPU 时仍可运行，适合解释它为何被切出；该字段不直接给出后续等待时长。测量调度延迟应使用 `thread_state` 的 Runnable 区间，必要时再结合 `sched_waking` 的唤醒关系。
+Runnable duration（持续时间）描述等待 CPU 的时间，不是前一条 `sched_slice` 的 `dur`。`sched_slice.end_state = R` 或 `R+` 表示线程离开 CPU 时仍可运行，适合解释它为何被切出；该字段不直接给出后续等待时长。测量调度延迟应使用 `thread_state` 的 Runnable 区间，必要时再结合 `sched_waking` 的唤醒关系。
 
 `D` 状态也不等同于存储 I/O。fence、驱动、页错误和其他内核 wait queue（等待队列）都可能形成不可中断等待。只有 `blocked_function`、`io_wait` 与相邻事件共同支持时，才能写明具体等待的资源。
 
@@ -434,7 +434,7 @@ ORDER BY b.client_dur DESC;
 
 ### 场景名只负责缩小范围
 
-“列表卡”“转场卡”“通知栏卡”描述的是用户当时看到了什么，还没有说明哪条渲染链路迟到。同一个列表里可以同时出现普通 View、SurfaceView 视频和 TextureView 地图；同一个页面切换又可能包含应用窗口 buffer（图形缓冲区）、Shell transition（系统窗口过渡）的 leash（用于统一控制窗口动画的临时图层）变换、壁纸、IME（输入法窗口）与 SurfaceFlinger 合成。若从场景名称直接跳到某个线程，证据很容易落到错误的对象上。
+“列表卡”“转场卡”“通知栏卡”描述的是用户当时看到了什么，还没有说明哪条渲染链路迟到。同一个列表里可以同时出现普通 View、SurfaceView 视频和 TextureView 地图。同一个页面切换又可能包含应用窗口的 buffer（图形缓冲区）、Shell transition（系统窗口过渡）的 leash（用于统一控制窗口动画的临时图层）变换、壁纸、IME（输入法窗口）与 SurfaceFlinger 合成。若从场景名称直接跳到某个线程，证据很容易落到错误的对象上。
 
 定位顺序如下：
 
@@ -523,11 +523,13 @@ Android 17 的现代窗口过渡需要同时观察三条线：
 - 窗口侧：WindowManager Shell transition、参与者、sync（同步点）、SurfaceControl leash 与几何事务；
 - 显示侧：目标 layers 的 buffer/transaction、SurfaceFlinger composition（合成）和 display present。
 
-源窗口和目标窗口的内容提交与 leash 动画可以来自不同线程、不同进程。应用首帧准备较晚时，Shell 可能继续显示 starting window（启动占位窗口）、snapshot（任务快照）或旧 Surface；应用两侧按时而整屏仍迟到时，应查看 SurfaceFlinger/HWC。Winscope 的 Shell Transitions、Window Manager、SurfaceFlinger Layers 和 Transactions 可以复原窗口关系，Perfetto 更适合比较线程调度、buffer 与帧时间。
+源窗口和目标窗口的内容提交与 leash 动画可以来自不同线程、不同进程。应用首帧准备较晚时，Shell 可能继续显示 starting window（启动占位窗口）、snapshot（任务快照）或旧 Surface；应用侧按时而整屏仍迟到时，应查看 SurfaceFlinger/HWC。Winscope 的 Shell Transitions、Window Manager、SurfaceFlinger Layers 和 Transactions 可以复原窗口关系，Perfetto 更适合比较线程调度、buffer 与帧时间。
 
 #### Fragment transaction
 
-AndroidX Fragment 的 `commit()` 会把事务加入 FragmentManager 队列：它经 `enqueueAction()` / `scheduleCommit()`，通过宿主的 `Handler`（消息处理器）调用 `post`，投递一个 `mExecCommit`，随后由宿主主线程执行 pending actions（待处理操作）。它不承诺与某个 VSync 对齐。`mExecCommit` 与 Choreographer 帧回调共享同一个主 Looper（消息循环），但实际执行顺序取决于主 MessageQueue（消息队列）中已有消息、同步屏障、异步 Choreographer 消息，以及 `commit()` 的发生时刻；不存在“`execPendingActions()` 必定早于或晚于某次 `doFrame`”的固定顺序。使用 `commitNow()` 会把工作放进当前调用栈，改变这一相对位置。一次切换可能把 Fragment 状态推进、View 创建/移除、SpecialEffectsController（转场与动画效果控制器）、measure/layout 和动画准备集中到相邻几帧。
+AndroidX Fragment 的 `commit()` 会把事务加入 FragmentManager 队列：它经 `enqueueAction()` / `scheduleCommit()`，通过宿主的 `Handler`（消息处理器）调用 `post`，投递一个 `mExecCommit`，随后由宿主主线程执行 pending actions（待处理操作）。它不承诺与某个 VSync 对齐。`mExecCommit` 与 Choreographer 帧回调共享同一个主 Looper（消息循环），但实际执行顺序取决于主 MessageQueue（消息队列）中已有消息、同步屏障、异步 Choreographer 消息，以及 `commit()` 的发生时刻；不存在“`execPendingActions()` 必定早于或晚于某次 `doFrame`”的固定顺序。
+
+使用 `commitNow()` 会把工作放进当前调用栈，改变这一相对位置。一次切换可能把 Fragment 状态推进、View 创建/移除、SpecialEffectsController（转场与动画效果控制器）、measure/layout 和动画准备集中到相邻几帧。
 
 几个 API 的边界需要分清：
 
@@ -582,7 +584,9 @@ Android 15 移除了预测性返回的开发者选项。应用完成 opt-in（�
 - 当前回调是否消费了系统返回，导致系统预测动画无法运行；
 - 当前窗口、目标窗口或 home/task surface（桌面/任务 Surface）的 leash 与 display frame 是否按时。
 
-Perfetto 中没有名为 `predictive_back_progress` 的标准内置 counter（计数轨道）。返回手势的进度与参与者由 SystemUI `EdgeBackGestureHandler`、WindowManager Shell transition 和 `BackGestureProto`/Winscope 记录。trace 会记录各进程的自定义 Trace section（跟踪区间）、Shell transition marker（标记）与 sched（调度）数据，但没有统一的标准 counter 轨道。需要验证 progress 回调时序时，应使用应用自身插桩（例如 `Trace.beginSection("onBackProgressed")`）或 Winscope 的 Shell 参与者，不要预设某个标准 counter 名称。
+Perfetto 中没有名为 `predictive_back_progress` 的标准内置 counter（计数轨道）。返回手势的进度与参与者由 SystemUI `EdgeBackGestureHandler`、WindowManager Shell transition 和 `BackGestureProto`/Winscope 记录。trace 会记录各进程的自定义 Trace section（跟踪区间）、Shell transition marker（标记）与 sched（调度）数据，但没有统一的标准 counter 轨道。
+
+需要验证 progress 回调时序时，应使用应用自身插桩（例如 `Trace.beginSection("onBackProgressed")`）或 Winscope 的 Shell 参与者，不要预设某个标准 counter 名称。
 
 Android 16（API 36）起，可以使用 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER` 观察系统导航而不消费返回；Android 17（API 37）继续保留这一能力。默认优先级或 overlay（覆盖层）优先级回调会参与消费决策。注册方式错误时可能出现“没有预测动画”，这与渲染掉帧属于两类问题。
 
