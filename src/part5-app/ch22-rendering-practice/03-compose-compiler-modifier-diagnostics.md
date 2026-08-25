@@ -2,10 +2,10 @@
 title: Compose 性能、Compiler 与 Modifier.Node 诊断
 chapter: '22.3'
 section: '22.3'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_verified_against: 'Compose BOM 2026.08.00 (Compose 1.12.0), Kotlin 2.4.10; historical checks: Compose 1.10.0 and Foundation 1.10.6'
+last_verified: '2026-08-25'
+last_verified_against: 'Compose BOM 2026.08.00 (Runtime/Foundation/UI/runtime-tracing 1.12.0), Kotlin/Compose compiler 2.4.10, Android 17 android-17.0.0_r1; historical checks: Compose 1.10.0 and Foundation 1.10.6'
 confidence: high
 sources:
 - type: androidx
@@ -16,6 +16,8 @@ sources:
   path: https://developer.android.com/develop/ui/compose/performance/stability/diagnose
 - type: official
   path: https://developer.android.com/develop/ui/compose/performance/stability/fix
+- type: official
+  path: https://developer.android.com/develop/ui/compose/performance/stability/strongskipping
 - type: official
   path: https://kotlinlang.org/docs/releases.html
 - type: official
@@ -32,10 +34,20 @@ sources:
   path: https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-tracing/1.12.0/runtime-tracing-1.12.0-sources.jar
 - type: source
   path: https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp
 - type: official
   path: https://dl.google.com/dl/android/maven2/androidx/compose/compose-bom/2026.08.00/compose-bom-2026.08.00.pom
 - type: official
   path: https://developer.android.com/develop/ui/compose/tooling/tracing
+- type: official
+  path: https://developer.android.com/reference/android/os/ProfilingManager
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java
 - type: official
   path: https://developer.android.com/develop/ui/compose/custom-modifiers
 - type: official
@@ -78,10 +90,12 @@ related_chapters:
 - '22.7'
 - '22.2'
 - '22.4'
-pipeline_stage: ready-for-review
+pipeline_stage: finalized
 task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
+task6_state: verified
+task9_state: verified
+last_review_finalize_at: '2026-08-25'
+last_review_finalize_run_id: 20260825-180523-d6bba095
 consolidated_from:
 - src/part5-app/ch22-rendering-practice/20-compose-performance-blind-spots.md
 - src/part5-app/ch22-rendering-practice/22.40-compose-compiler-v2-k2-migration-performance.md
@@ -97,7 +111,7 @@ last_consolidated_at: '2026-08-24'
 
 Compose 性能优化要回答两个问题：哪一段工作错过了本帧 deadline（必须完成提交的截止点），以及哪些状态或输入让这段工作重复发生。只统计重组次数，容易漏掉 Layout、Drawing、RenderThread 和显示系统；只看整帧耗时，又无法定位到具体 Composable。
 
-截至 2026-08-14，本文使用下面三组基线：
+截至 2026-08-25，本文使用下面三组基线：
 
 - Android 平台以 Android 17 / API 37 / `android-17.0.0_r1` 为源码锚点，Linux kernel 以 `android17-6.18-2026-06_r6` 为锚点。
 - 当前依赖基线为 Compose BOM `2026.08.00`，其 POM 把 Runtime、Foundation 和 UI 约束到 `1.12.0`。文中另保留 BOM `2025.12.00` / Compose `1.10.0` 与 Foundation `1.10.6`，用于说明 Pausable Composition 的历史变化和复现实验。
@@ -292,7 +306,7 @@ Lazy 列表未提供业务 key 时按位置维护身份；显式使用 index 基
 3. 开关启用时，预组合调用 `PausedComposition.resume(shouldPause)`。暂停请求只在运行时提供的可暂停点生效，不能理解成回调返回 `true` 后立即中断任意一行代码。
 4. 组合完成后单独 `apply()`，把结果提交到 Composition，再按约束执行 premeasure。Pausable Composition 只切分 precompose，不能把 apply、measure 或已进入可见窗口的同步工作一并切开。
 
-这个默认值经历过反复：Foundation `1.10.0` 默认开启，`1.10.6` 因稳定性问题改为默认关闭，当前 `1.12.0` 源码又恢复为默认开启。现场行为取决于 Foundation 的精确版本和该版本中的开关值，不能只看“Compose 1.x”这一大版本号。本文保留 BOM `2025.12.00` / Foundation `1.10.0` 作为历史复现点。
+这个默认值经历过反复：Foundation `1.10.0` 默认开启，`1.10.6` 因稳定性问题改为默认关闭，当前 `1.12.0` 源码又恢复为默认开启。现场行为取决于 Foundation 的精确版本和该版本中的开关值，不能只看“Compose 1.x”这一大版本号。`ComposeFoundationFlags` 的源码注释还提醒：调试环境应尽早设置开关，发布环境若要改写默认值需配合 R8；因此本文只用它界定版本默认行为，不把它当作稳定的应用配置 API。本文保留 BOM `2025.12.00` / Foundation `1.10.0` 作为历史复现点。
 
 这项能力没有覆盖普通首帧 Composition、常规重组或非 Lazy 子树。拆分重组作用域、降低列表项的组合成本、提供稳定 key 和控制状态读取范围仍然有效。
 
@@ -1176,11 +1190,12 @@ Kotlin 2.0 起，Compose 编译器随 Kotlin 一同发布，项目应应用与 K
 - [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
 - [Android 17 `Choreographer.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/view/Choreographer.java)
 - [Android 17 `ViewRootImpl.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/view/ViewRootImpl.java)
-- [Android 17 `FrameTimeline.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/graphics/FrameTimeline.java)
+- [Android 17 SurfaceFlinger `FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp)
+- [ProfilingManager API reference](https://developer.android.com/reference/android/os/ProfilingManager) 与 [Android 17 `ProfilingManager.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java)
 - [Android common kernel `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)
 - [本知识库：Android 17 FrameTimeline](../../part1-fundamentals/ch02-rendering/12-android17-frametimeline-composition-boundary.md)
 
-当前工具链与运行时结论核查于 2026-08-15。编译器报告样例来自 Kotlin 2.3.20 对最小源码的实测输出，2.4.10 源码核对用于确认 CSV 与模块 JSON 结构仍一致；升级 Kotlin 或 Compose 后，仍应重新生成报告并复核字段、功能开关与跟踪名称。
+当前工具链与运行时结论核查于 2026-08-25。编译器报告样例来自 Kotlin 2.3.20 对最小源码的实测输出，2.4.10 源码核对用于确认 CSV 与模块 JSON 结构仍一致；升级 Kotlin 或 Compose 后，仍应重新生成报告并复核字段、功能开关与跟踪名称。
 
 ### 常见误判
 
