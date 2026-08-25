@@ -125,7 +125,7 @@ ART inline cache 可能让编译器生成更直接的调用路径，从而间接
 
 业务缓存利用时间局部性，但它的 hit/miss 是数据结构层指标，不能与 CPU cache miss 混算。Android 17 的 `android.util.LruCache` 用 access-order `LinkedHashMap` 保存条目：命中会把条目移到最近使用端，超出权重预算时从最久未使用端逐出。单个公开操作受内部锁保护；由多次 `get`、`remove`、`put` 组成的复合操作仍需调用方提供共同的原子边界。
 
-纯 LRU 的常见弱点是 scan pollution（扫描污染）：分页浏览或大列表预取会连续加入一批只访问一次的新 key，把稍早访问、之后仍会复用的热条目逐出。只有 trace 和缓存指标确认存在这种访问形状时，才需要比 LRU 更复杂的策略。
+纯 LRU 的常见弱点是 scan pollution（扫描污染）：分页浏览或大列表预取会连续加入一批只访问一次的新 key，把稍早访问、之后仍会复用的热条目逐出。只有 trace 和缓存指标确认存在这种访问模式时，才需要比 LRU 更复杂的策略。
 
 ### 用 probation/protected 隔离一次性扫描
 
@@ -255,7 +255,7 @@ struct RenderItemCold {
 
 热结构可以连续存入 vector，cold 数据通过稳定索引关联。这里的代价是多一层索引、两套生命周期和更复杂的更新逻辑。若 cold 字段在常见路径也频繁访问，拆分反而增加一次间接访问。
 
-不要用想象中的 `RenderNode` 布局证明方案。应对自己的结构运行 `sizeof` / `offsetof`，查看编译器输出的布局 dump，并执行能代表真实负载的 workload benchmark。
+不要用想象中的 `RenderNode` 布局来论证方案。应对自己的结构运行 `sizeof` / `offsetof`，查看编译器输出的布局 dump，并执行能代表真实负载的 workload benchmark。
 
 ### 连续内存也有扩容与复制成本
 
@@ -271,7 +271,7 @@ Parcel 的布局主要服务于 Binder 传输格式（wire format）、安全检
 
 在图像、音频、统计和几何运算中，可以优先评估 primitive array、紧凑 buffer 或专用 collection。`List<Float>` 的每个元素访问都要经过对象引用和装箱对象，这种逐级追踪引用的访问方式称为 pointer chasing；其数据密度通常低于 `FloatArray`。
 
-这不意味着业务层的所有模型都要改成数组。对不在热点的代码，可读性与正确性更重要。常见做法是保留清晰的业务对象，只在性能分析已经证实的计算边界把数据转换为批量 buffer。
+这不意味着业务层的所有模型都要改成数组。对不在热点的代码，可读性与正确性更重要。常见做法是保留清晰的业务对象，只在性能分析确认是热点的计算环节，把数据转换为批量 buffer。
 
 ### 谨慎复用可变对象
 
