@@ -2,7 +2,7 @@
 title: Compose 首次组合开销与启动性能
 chapter: '21.9'
 section: '21.9'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-08-14'
 last_verified_against: Compose BOM 2026.08.00 (Compose 1.12.0), AOSP androidx-compose-release@963bf914
@@ -19,7 +19,7 @@ related_chapters:
 - '22.3'
 - '22.14'
 - '22.5'
-- '18.6'
+- '18.8'
 sources:
 - type: androidx
   path: platform/frameworks/support/+/androidx-compose-release/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt
@@ -321,6 +321,10 @@ Macrobenchmark 会产出 system trace，也就是把系统与应用多个线程�
 - 是否用 release-like Macrobenchmark 同时记录 TTID/TTFD，并以 Perfetto 做阶段归因？
 - 是否把内部 trace slice 名称视作版本相关实现细节？
 - 是否在多窗口和混合页面中优先保证生命周期、状态与布局正确，再比较性能？
+
+## 小结
+
+Compose 首次组合只是启动首帧中的一个阶段：业务 composable 建立节点后，仍要经过 View 测量、布局、绘制、RenderThread 和系统合成。优化先缩小首帧实际进入的 UI 与业务计算，再用 Baseline/Startup Profile 改善代码执行和 DEX 布局，并以 TTID/TTFD、FrameTimeline 与 Composition Tracing 区分组合、布局、绘制和外部依赖。后续重组优化不能代替首次组合治理。
 
 ## 参考资料
 

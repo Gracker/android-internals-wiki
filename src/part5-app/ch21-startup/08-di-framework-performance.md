@@ -185,7 +185,7 @@ Hilt 会为 factory、members injector（成员字段注入器）、component �
 
 Dagger/Hilt 没有 `@Module(isDefault = true)` 这个优化参数。scope 也有生成代码和运行时成本；官方建议只在对象身份或生命周期正确性需要时使用 scope。若只希望允许复用、不要求唯一实例，可以评估 `@Reusable`：Dagger 可以在每个使用该 binding 的 component 中分别缓存，也可以不复用，调用方不能依赖对象身份相同。
 
-Baseline Profile 能让启动用到的 generated code 更早进行 AOT（Ahead-Of-Time，运行前预编译），Startup Profile 能改善这些类在 DEX 中的排列。Profile 不会提前创建 component 或 binding。生成规则时按正常启动 CUJ（Critical User Journey，关键用户路径）覆盖 DI 路径即可，不要写“预热所有 binding”的测试。具体方法见 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](04-baseline-startup-cloud-profile.md) 和 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](04-baseline-startup-cloud-profile.md)。
+Baseline Profile 能让启动用到的 generated code 更早进行 AOT（Ahead-Of-Time，运行前预编译），Startup Profile 能改善这些类在 DEX 中的排列。Profile 不会提前创建 component 或 binding。生成规则时按正常启动 CUJ（Critical User Journey，关键用户路径）覆盖 DI 路径即可，不要写“预热所有 binding”的测试。具体方法见 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](04-baseline-startup-cloud-profile.md)。
 
 ## KSP 与 KAPT：只把它当构建优化
 
@@ -247,7 +247,7 @@ override fun onCreate() {
 4. 对 Koin 区分 module registration 与 first resolution；对 Hilt 区分 component/injection 与对象构造。
 5. 用 P50/P90/P99 判断；它们分别表示有 50%、90%、99% 样本不超过的耗时，不能用一次本地毫秒数决定框架迁移。
 
-Allocation Recording（对象分配记录）会明显扰动时序，只用于找对象调用栈；Perfetto/Macrobenchmark 才用于启动回归。两类工具的边界见 [21.7 ART GC 抑制与启动性能优化](07-art-gc-suppression-startup-performance.md)。
+Allocation Recording（对象分配记录）会明显扰动时序，只用于找对象调用栈；Perfetto/Macrobenchmark 才用于启动回归。两类工具的边界见 [21.7 ART GC 启动期开销与分配治理](07-art-gc-startup-allocation-governance.md)。
 
 ## 优化顺序
 
@@ -275,6 +275,10 @@ Allocation Recording（对象分配记录）会明显扰动时序，只用于找
 - scope 是否持有错误 Context、View 或旧 Activity？
 - A/B 是否固定 compiler filter 与 Startup Profile？
 - KSP 迁移是否只按构建指标验收？
+
+## 小结
+
+DI 框架本身只是对象图的承载方式，启动成本取决于哪个入口首次创建容器、哪些直接注入拉起递归依赖，以及构造函数和 provider 是否夹带 I/O、线程或 native 初始化。优化应依次收缩 Application、Provider 和首屏的注入面，延迟非必要对象，修正 scope，再用 release trace 区分容器成本与业务构造成本；框架名称或生成代码数量都不能直接替代测量。
 
 ## 参考资料
 

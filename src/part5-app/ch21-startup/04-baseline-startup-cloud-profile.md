@@ -729,7 +729,7 @@ profile 不匹配通常表现为编译优化缺失，本身不会直接改变 Ap
 
 ### 与 Baseline Profile 生成流程衔接
 
-[21.4 Baseline、Startup 与 Cloud Profile 编译优化](04-baseline-startup-cloud-profile.md) 负责生成和维护 Baseline Profile，发布后则要确认 ART 是否拿到、接受并使用了 profile。两条流程按下面的证据顺序衔接：
+前半篇负责生成和维护 Baseline Profile，发布后则要确认 ART 是否拿到、接受并使用了 profile。两条流程按下面的证据顺序衔接：
 
 1. 21.4 用当前 release 构建生成规则，并通过 Macrobenchmark 验证代表性场景。
 2. 检查 APK/AAB 条目、安装来源和每个 APK 各自对应的 `.dm`。
@@ -780,6 +780,10 @@ App Bundle 的每个安装单元都要单独检查。Base APK 已按 `speed-prof
 7. 分批放量数据按版本、渠道、Android 版本和设备分层，联合观察启动、安装/升级、崩溃与 ANR（应用无响应）。
 
 若 trace 的主要耗时来自业务初始化，profile 排查到这里应停止。扩大规则不会缩短任务自身耗时，还可能增加 dex2oat 与存储成本。
+
+## 小结
+
+Profile 优化必须沿“场景生成 → release 打包 → 渠道交付 → ART 接受 → 实际编译状态 → 启动收益”逐层验证。Baseline/Cloud Profile 负责设备端编译输入，Startup Profile 负责构建期 DEX 布局，DM 只是可能承载外部输入的容器；任何一层存在文件并不能替下一层证明已生效。最终结论仍要回到固定编译条件下的 TTID、TTFD、帧和功能验证。
 
 ## 参考资料
 

@@ -10,6 +10,8 @@ last_verified_against: ARM Cortex-A spec, Linux kernel 6.12, AOSP android-17.0.0
 confidence: medium
 sources:
 - type: aosp
+  path: frameworks/base/core/java/android/util/LruCache.java
+- type: aosp
   path: frameworks/base/core/java/android/os/MessageQueue.java
 - type: aosp
   path: art/runtime/gc/accounting/card_table.h
@@ -24,6 +26,8 @@ sources:
 - type: official
   path: https://developer.arm.com/documentation
 tags:
+- lru-cache
+- cache-pollution
 - cpu-cache
 - cache-line
 - false-sharing
@@ -36,6 +40,9 @@ related_chapters:
 - '5.1'
 - '21.4'
 - '16.5'
+last_consolidated_at: '2026-08-25'
+consolidated_from:
+- src/part5-app/ch21-startup/10-cache-optimization-cpu-locality.md
 ---
 
 # CPU Cache 友好代码与数据布局优化
@@ -113,6 +120,36 @@ ART inline cache 可能让编译器生成更直接的调用路径，从而间接
 时间局部性描述数据在短时间内重复使用。一个工作块在仍位于 cache 时完成多次计算，通常比每轮扫描整个大数据集更有效。
 
 二维数值计算、图片卷积和张量预处理常用 tiling（分块）：把输入拆成能放入目标 cache 的小块，在块内完成多个操作后再进入下一块。tile 大小需要通过基准测试确定，因为代码、栈、其他数组和并发线程也会占用 cache。简单地把 tile 设为“L1 容量除以元素大小”，会低估这些资源竞争。
+
+## 业务缓存的冷热分段
+
+业务缓存利用时间局部性，但它的 hit/miss 是数据结构层指标，不能与 CPU cache miss 混算。Android 17 的 `android.util.LruCache` 用 access-order `LinkedHashMap` 保存条目：命中会把条目移到最近使用端，超出权重预算时从最久未使用端逐出。单个公开操作受内部锁保护；由多次 `get`、`remove`、`put` 组成的复合操作仍需调用方提供共同的原子边界。
+
+纯 LRU 的常见弱点是 scan pollution（扫描污染）：分页浏览或大列表预取会连续加入一批只访问一次的新 key，把稍早访问、之后仍会复用的热条目逐出。只有 trace 和缓存指标确认存在这种访问形状时，才需要比 LRU 更复杂的策略。
+
+### 用 probation/protected 隔离一次性扫描
+
+SLRU（Segmented LRU，分段最近最少使用）把预算拆成两个 access-order 段：
+
+1. 新条目进入 `probation` 观察段。
+2. `probation` 条目再次命中后晋升到 `protected` 保护段。
+3. `protected` 超出预算时，把最久未访问条目降回 `probation`。
+4. `probation` 超出预算时，逐出最久未访问条目。
+
+一次扫描因此主要竞争观察段预算，稳定复用的条目得到单独保护。两段比例没有通用答案，应由 key 分布、value 权重、重复访问间隔和内存预算共同决定。图片可以用实际字节数作为权重；普通对象只能采用团队能持续校准的近似值。
+
+### 并发加载和释放仍要单独设计
+
+`LruCache.create()` 在内部锁外计算 value。多个线程同时 miss 同一个 key 时，可能并行创建多个结果，缓存只保留其中一个。加载昂贵时，应在缓存外合并同 key 的在途请求，并定义失败是否缓存、多久后允许重试。不要把磁盘、网络或解码工作放进全局缓存锁，否则其他 key 的命中也会等待这次 I/O。
+
+若 value 持有 `Bitmap`、文件句柄或其他需释放资源，应先在锁内收集逐出项，再在锁外执行释放回调，避免回调重入缓存或长时间占锁。上线 A/B 至少同时观察：
+
+- 逻辑 hit、miss、逐出、晋升和降级；
+- miss 后的解码、数据库、磁盘或网络成本；
+- 缓存总权重、Java/native heap、PSS 和 GC；
+- 锁等待、主线程耗时与端到端延迟。
+
+命中率提高而 PSS、GC 或锁等待恶化时，缓存并没有带来净收益。分段 LRU 只解决明确的扫描污染，不应替代容量治理、内存压力响应和加载去重。
 
 ## False sharing（伪共享）：不同字段，共用一条一致性 cache line
 
@@ -455,6 +492,7 @@ PSS（按共享比例折算后的进程内存）中的 Dalvik/native/other 分�
 Cache 友好代码要让“经常一起使用的数据”在时间和地址上靠近，并减少“被不同 CPU 频繁写的数据”之间的 cache line 共享。实现方式会随语言层变化：
 
 - Kotlin/Java 优先减少装箱、指针追踪和共享可变状态；
+- 业务缓存用受控权重、加载去重和必要时的冷热分段保护真实热集；
 - NDK 使用连续容器、hot/cold split、SoA/AoSoA 和经过验证的对齐；
 - 启动代码通过 Startup Profile 交给 R8/D8 做 DEX layout；
 - 系统级问题通过 PMU、地址级采样和源码布局核对。
@@ -489,4 +527,5 @@ Cache 友好代码要让“经常一起使用的数据”在时间和地址上�
 - [Android common kernel 6.18 arm64 cache definitions](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/include/asm/cache.h)
 - [Android common kernel 6.18 cache helpers](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/cache.h)
 - [Android common kernel 6.18 false-sharing guide](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/kernel-hacking/false-sharing.rst)
+- [AOSP Android 17 `LruCache`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/util/LruCache.java)
 - [Arm Cortex-A processor comparison](https://developer.arm.com/documentation/109140/latest/)

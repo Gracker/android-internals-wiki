@@ -1,7 +1,7 @@
 ---
 title: 设备分级性能策略实战
-chapter: '21.11'
-section: '21.11'
+chapter: '15.8'
+section: '15.8'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
@@ -11,8 +11,9 @@ tags:
 - feature-flag
 - degradation
 related_chapters:
+- '15.3'
 - '21.2'
-- '21.10'
+- '5.8'
 - '23.7'
 - '25.6'
 last_draft_polish_at: '2026-08-06T23:45:29+08:00'
@@ -345,6 +346,10 @@ class RenderQualityController(
 - [ ] JobScheduler 只设置任务和约束，没有假设 App 能调整系统配额。
 - [ ] 远端配置具有本地默认、上一有效版本、版本校验、过期和回退能力。
 - [ ] 实验按能力群随机，记录曝光，并检查分位数与护栏。
+
+## 小结
+
+设备分级不是给整机打一个高、中、低总分，而是把稳定能力、具体工作负载和会话期压力分开建模。策略只依赖公开且可解释的信号，用本地安全默认值保证离线可用，再通过按能力群随机的实验验证主指标和护栏；温控、内存或帧压力只触发临时收缩，不能永久改变设备身份。
 
 ## 源码与文档
 

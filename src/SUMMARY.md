@@ -208,6 +208,7 @@
   - [15.5 性能测试最佳实践](part3-tools/ch15-methodology/05-testing-best-practices.md)
   - [15.6 AOSP 代码阅读](part3-tools/ch15-methodology/06-aosp-reading.md)
   - [15.7 Google Android Bench：AI 编码能力评测方法论](part3-tools/ch15-methodology/07-google-android-bench-ai-coding-evaluation-methodology.md)
+  - [15.8 设备分级性能策略实战](part3-tools/ch15-methodology/08-device-tier-performance-strategy.md)
 
 - [第 19 章：APM](part3-tools/ch19-apm/README.md)
   - [19.1 APM 全景、Firebase 与商业平台选型](part3-tools/ch19-apm/01-apm-landscape-firebase-commercial.md)
@@ -274,11 +275,9 @@
   - [21.4 Baseline、Startup 与 Cloud Profile 编译优化](part5-app/ch21-startup/04-baseline-startup-cloud-profile.md)
   - [21.5 Splash Screen 与感知启动速度](part5-app/ch21-startup/05-splash-screen.md)
   - [21.6 Privacy Sandbox 退场与广告 SDK 启动治理](part5-app/ch21-startup/06-sdk-runtime-ad-sdk-startup.md)
-  - [21.7 ART GC 抑制与启动性能优化](part5-app/ch21-startup/07-art-gc-suppression-startup-performance.md)
+  - [21.7 ART GC 启动期开销与分配治理](part5-app/ch21-startup/07-art-gc-startup-allocation-governance.md)
   - [21.8 依赖注入框架性能：Dagger/Hilt/Koin 启动开销与优化](part5-app/ch21-startup/08-di-framework-performance.md)
   - [21.9 Compose 首次组合开销与启动性能](part5-app/ch21-startup/09-compose-first-composition-startup.md)
-  - [21.10 缓存优化实战：冷热端分离、重排序与 CPU 缓存命中率提升](part5-app/ch21-startup/10-cache-optimization-cpu-locality.md)
-  - [21.11 设备分级性能策略实战](part5-app/ch21-startup/11-device-tier-performance-strategy.md)
 
 - [第 22 章：渲染实践](part5-app/ch22-rendering-practice/README.md)
   - [22.1 View 布局与自定义绘制优化](part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md)

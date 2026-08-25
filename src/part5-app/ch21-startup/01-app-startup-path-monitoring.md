@@ -109,7 +109,7 @@ consolidated_from:
 工程上要区分两件事：
 
 - **实验分类**：Macrobenchmark 的 `StartupMode.COLD/WARM/HOT` 用固定前置条件构造可比较样本。
-- **线上分类**：使用平台或 Play 的启动指标，并按入口、进程、版本和设备分组；Android 15+ 的 `ApplicationStartInfo` 可提供系统记录的启动类型，应用自有“进程首次启动”标记只能辅助解释。采集方法见[启动监控与度量](01-app-startup-path-monitoring.md)。
+- **线上分类**：使用平台或 Play 的启动指标，并按入口、进程、版本和设备分组；Android 15+ 的 `ApplicationStartInfo` 可提供系统记录的启动类型，应用自有“进程首次启动”标记只能辅助解释。采集方法见本文后半篇。
 
 不要用“温启动一定是冷启动的某个百分比”或“热启动一定小于一帧”作为基线。后台回收、配置变化、首屏数据、CPU 调频和页面重绘都会改变成本。
 
@@ -388,7 +388,7 @@ data_sources {
 
 不存在“Runnable 低于 70% 就是异常”这类通用判据。主线程同步等待 5 ms 可能卡住关键路径，后台线程消耗大量 CPU 也可能让主线程长时间处于 Runnable。判断依据是关键路径上的墙钟时间，也就是现实经过时间，以及任务之间的依赖关系。
 
-#### 6.3 阅读 bind、Activity 和首帧
+#### 6.4 阅读 bind、Activity 和首帧
 
 `bindApplication` 较长时，依次检查：
 
@@ -466,7 +466,7 @@ ORDER BY s.startup_id, s.slice_dur DESC;
 
 Baseline Profile 不会跳过业务初始化，也不会消除磁盘、Binder、锁或网络等待；Startup Profile 也不等于“把类放到文件前面就会进入 CPU cache”。它影响的是 DEX 文件组织和读取局部性，收益要用固定编译模式的启动基准验证。
 
-两者的实践统一见 [Baseline Profile 与 Startup Profile 实战](04-baseline-startup-cloud-profile.md)。启动期 ART/GC 行为见 [ART 启动期 GC 调节](07-art-gc-suppression-startup-performance.md)。
+两者的实践统一见 [Baseline Profile 与 Startup Profile 实战](04-baseline-startup-cloud-profile.md)。启动期 ART/GC 行为见 [ART GC 启动期开销与分配治理](07-art-gc-startup-allocation-governance.md)。
 
 ### 8. 从 Trace 到修复的判断顺序
 
@@ -974,9 +974,9 @@ Android 15+ 还可用 `ProfilingManager` 请求 system trace 或 stack sampling�
 - [ ] Vitals 阈值只作外部风险线，内部预算由产品基线确定。
 - [ ] Macrobenchmark、Perfetto、平台时间戳和线上样本可以按同一启动入口互相对齐。
 
-### 小结
+## 小结
 
-启动监控依赖一份稳定的测量契约。平台 TTID 告诉我们第一帧何时显示，`reportFullyDrawn()` 给出约定的首屏可用边界，`ApplicationStartInfo` 补齐 Android 15+ 的系统起点、启动分类和触发原因，App 事件负责解释任务与业务状态。服务端再按条件一致的样本组计算分位数、完成率和失败率，用绝对预算与统计不确定性共同判断是否变慢。
+启动分析先把系统请求、进程创建、Provider/Application、Activity 和首帧放进同一条时间线，再根据线程运行/等待状态与业务切片定位关键路径。启动监控则依赖一份稳定的测量契约：平台 TTID 告诉我们第一帧何时显示，`reportFullyDrawn()` 给出约定的首屏可用边界，`ApplicationStartInfo` 补齐 Android 15+ 的系统起点、启动分类和触发原因，App 事件负责解释任务与业务状态。服务端再按条件一致的样本组计算分位数、完成率和失败率，用绝对预算与统计不确定性共同判断是否变慢。
 
 当一条告警能够回答“哪个版本、哪种启动、哪个入口、哪类设备、哪个阶段开始变慢”，启动监控才具备工程价值。
 

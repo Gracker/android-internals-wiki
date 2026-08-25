@@ -451,6 +451,10 @@ Trace 解释顺序是：
 - [ ] `reportFullyDrawn()` 对应主要内容可见且可交互。
 - [ ] TTID、TTFD、首屏帧和 Splash 覆盖时间分别记录。
 
+## 小结
+
+Splash Screen 负责把系统 starting surface 平稳交接给应用首帧，骨架和缓存内容负责把首帧继续过渡到可交互状态。它们改善的是反馈与连续性，不会缩短初始化本身；因此必须把 Splash 覆盖、TTID、TTFD 和首屏帧分开测量，并为所有外部入口、失败路径和低版本兼容行为提供一致的退出与降级。
+
 ## 参考资料
 
 - [Splash screens](https://developer.android.com/develop/ui/views/launch/splash-screen)

@@ -2,11 +2,11 @@
 title: 启动任务编排、延迟初始化与并发调度
 chapter: '21.2'
 section: '21.2'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1, current Jetpack App Startup guide and 1.2.0 latest stable sources, alibaba/alpha 04fe7f2 (artifact 1.0.0.1)
-pipeline_stage: ready-for-review
+pipeline_stage: finalized
 confidence: medium-high
 sources:
 - type: aosp
@@ -647,7 +647,7 @@ Android 17 的 `ApplicationStartInfo` 适合补充历史启动类型、原因和
 - 首次使用和动态 Feature（按需交付的功能模块）怎样管理状态；
 - 进程退出、失败、多进程和资源竞争如何处理。
 
-启动依赖图和 Provider 治理分别见 [启动任务编排](02-startup-task-lazy-concurrency.md) 与 [ContentProvider 启动治理](03-contentprovider-multiprocess-startup.md)。
+前半篇已经建立启动依赖图；Provider 治理见 [ContentProvider 启动治理](03-contentprovider-multiprocess-startup.md)。
 
 ### 1. 异步、延迟、懒加载不是同一件事
 
@@ -1365,6 +1365,10 @@ WorkManager 面向应用离开可见状态后仍需执行、需要约束或重�
 - 是否把 `AsyncTask` 和 flag 控制的虚拟线程视为版本边界，而非新代码模板？
 - 是否用 release-like 构建和 Perfetto 验证并发变化对 TTID/TTFD 尾延迟、帧和功耗的影响？
 
+## 小结
+
+启动优化先由任务契约和依赖图决定“哪些工作必须发生”，再由首帧后、首次使用或持久任务决定“何时发生”，最后才用有界执行器和协程调度解决“怎样并发”。把完成信号、失败、取消、进程归属和资源上限统一建模，才能真正缩短 TTID/TTFD，而不是把工作从主线程移到另一个仍会争用启动资源的位置。
+
 ## 参考资料
 
 - [AOSP Android 17 `ActivityThread`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
@@ -1409,6 +1413,5 @@ WorkManager 面向应用离开可见状态后仍需执行、需要约束或重�
 - [WorkManager 按需初始化](https://developer.android.com/develop/background-work/background-tasks/persistent/configuration/custom-configuration)
 - [Android system tracing overview](https://developer.android.com/topic/performance/tracing)
 - [Android startup analysis and optimization](https://developer.android.com/topic/performance/appstartup/analysis-optimization)
-- [21.2 启动任务编排、延迟初始化与并发调度](02-startup-task-lazy-concurrency.md)
 - [21.3 ContentProvider 与多进程启动治理](03-contentprovider-multiprocess-startup.md)
 - [§21.1 启动性能监控](01-app-startup-path-monitoring.md)

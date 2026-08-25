@@ -1,5 +1,5 @@
 ---
-title: ART GC 抑制与启动性能优化
+title: ART GC 启动期开销与分配治理
 chapter: '21.7'
 section: '21.7'
 status: finalized
@@ -42,13 +42,13 @@ sources:
   path: DeepResearch/2026-05-24-android17-art-gc-compose-pause.md
 ---
 
-# ART GC 抑制与启动性能优化
+# ART GC 启动期开销与分配治理
 
 Android Runtime（ART）负责执行 Android 字节码和管理 Java heap（存放 Java/Kotlin 对象的堆内存）。GC（Garbage Collection，垃圾回收）会查找已经不可达的对象并回收它们占用的空间。第三方 App 没有受支持的“暂停 ART GC”接口；本文所说的 GC 抑制，指降低启动阶段的对象分配速率和存活对象规模，让 ART 更少达到 GC 触发条件。
 
 Android 17 会从 Zygote（预先加载公共 framework 代码的系统进程）fork 出 App 进程，并在 fork 后暂时放宽 Java heap 的启动期阈值。首帧前仍可能因为分配接近 growth limit（该进程 Java heap 允许增长的上限）、显式 GC 请求、已登记到 ART 的 native allocation（原生内存分配）压力或进程状态变化而回收。排查时应找到具体的分配点和 GC cause（触发原因），阻塞 `HeapTaskDaemon` 只会破坏运行时调度。
 
-以下内部行为以 `android-17.0.0_r1` 为准。对象分配与 GC 治理见 [23.4 Java Heap、GC 与 Compose 内存分配](../ch23-memory-practice/04-java-heap-gc-compose-allocation.md)，启动任务治理见 [21.2 启动任务编排、延迟初始化与并发调度](02-startup-task-lazy-concurrency.md) 和 [21.2 启动任务编排、延迟初始化与并发调度](02-startup-task-lazy-concurrency.md)。
+以下内部行为以 `android-17.0.0_r1` 为准。对象分配与 GC 治理见 [23.4 Java Heap、GC 与 Compose 内存分配](../ch23-memory-practice/04-java-heap-gc-compose-allocation.md)，启动任务治理见 [21.2 启动任务编排、延迟初始化与并发调度](02-startup-task-lazy-concurrency.md)。
 
 ## GC 对启动性能的影响路径
 
@@ -190,7 +190,7 @@ Android Studio 的 Remaining Size 是所选时间段内“分配大小减去已�
 
 短命对象影响分配速率，长命对象会抬高 live set（一次 GC 时仍能从引用链访问到的对象集合）。live set 越大，GC 需要扫描的对象通常越多，后续 heap 可用空间也越少。
 
-启动期 cache（缓存）应有容量、逐出和生命周期边界。对象池只适合已经测出高频构造且重置成本可控的对象；随意池化会扩大 live set、增加状态错误，并可能让 GC 更慢。
+启动期 cache（缓存）应有容量、逐出和生命周期边界。对象池只适合已经测出高频构造且重置成本可控的对象；随意池化会扩大 live set、增加状态错误，并可能让 GC 更慢。业务缓存的冷热分段与局部性边界见 [5.8 CPU Cache 友好代码与数据布局优化](../../part1-fundamentals/ch05-cpu-power/08-cpu-cache-friendly-code-data-layout.md)。
 
 ### 4. 同时检查 native 与 graphics memory
 
@@ -200,7 +200,7 @@ Java heap 看起来不大时，仍要查看进程 PSS（按共享比例折算的
 
 ### 5. 保持编译状态与实验条件一致
 
-Baseline Profile 会改变启动 CPU 时间和分配时序，Startup Profile 会改变 DEX 文件中的代码排列和读取局部性。比较 GC 优化前后时，要固定 APK、compiler filter（ART 实际采用的编译强度）、安装来源、设备温度、账号数据和启动类型，避免把编译差异解释成 GC 收益。Profile 与编译状态的核查方法见 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](04-baseline-startup-cloud-profile.md) 和 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](04-baseline-startup-cloud-profile.md)。
+Baseline Profile 会改变启动 CPU 时间和分配时序，Startup Profile 会改变 DEX 文件中的代码排列和读取局部性。比较 GC 优化前后时，要固定 APK、compiler filter（ART 实际采用的编译强度）、安装来源、设备温度、账号数据和启动类型，避免把编译差异解释成 GC 收益。Profile 与编译状态的核查方法见 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](04-baseline-startup-cloud-profile.md)。
 
 ## 不应采用的“GC 抑制”方案
 
@@ -281,6 +281,10 @@ OEM（设备厂商）和 ART Mainline 更新可以调整 collector、flags（运
 7. 固定 compiler filter、安装来源和设备条件做 A/B。
 8. 禁止 libart Hook、隐藏 VMRuntime 调用和无证据的 `System.gc()`。
 9. 回归首帧后首交互、低内存设备与多进程启动。
+
+## 小结
+
+Android 17 会在进程 post-fork 阶段暂时放宽堆目标以减少启动 GC，但没有向应用提供关闭回收器的契约。启动治理应先用 Perfetto 证明 GC 与关键路径重叠，再用分配记录找到短命对象、live set 和大对象来源，最后通过减少首帧前对象图、降低分配率和控制缓存验证收益。Hook ART、反射隐藏接口或主动 `System.gc()` 都不能替代这条证据链。
 
 ## 参考资料
 
