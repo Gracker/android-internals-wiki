@@ -406,7 +406,19 @@
       "processed_at": "2026-07-18T10:33:46.781497",
       "status": "injected",
       "summary": "MediaCodec 异步分发→ALooper 双线程→BufferQueue generation 防复用→BUFFER_MODE_BLOCK 零拷贝→setOutputSurface 动态切换",
-      "title": "Media3 视频播放渲染管线全链路源码级拆解"
+      "title": "Media3 视频播放渲染管线全链路源码级拆解",
+      "previous_route_status": null,
+      "target_path": "src/part5-app/ch22-rendering-practice/17-media3-video-rendering.md",
+      "route_confidence": 19,
+      "route_terms": [
+        "media3",
+        "mediacodec",
+        "bufferqueue",
+        "buffer",
+        "android17-media3-video-rendering-pipeline-sourcecode.md"
+      ],
+      "route_status": "existing-chapter-routed",
+      "routed_at": "2026-08-27T06:20:09.720139+08:00"
     },
     {
       "action": "body-applied",
@@ -427,13 +439,16 @@
       "title": "Android 17 ANGLE（GLES-over-Vulkan）选择与同步机制"
     },
     {
-      "action": "direct-inject",
+      "action": "quarantined-non-aiw",
       "chapter": "ch16 §16.07",
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-cloud-profiles-systemserver-onboot.md",
       "processed_at": "2026-07-18T10:33:46.781497",
       "status": "injected",
       "summary": "ART Mainline APEX 驱动 dexopt 触发、ArtModuleServiceInitializer 避免 GC 死锁、Cloud Profile ProfilePath 合并",
-      "title": "Android 17 SystemServer 启动与 ART Mainline Cloud Profiles 协同机制"
+      "title": "Android 17 SystemServer 启动与 ART Mainline Cloud Profiles 协同机制",
+      "previous_route_status": null,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-08-27T06:20:09.720139+08:00"
     },
     {
       "action": "queue",
