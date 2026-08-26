@@ -5,26 +5,44 @@ section: '5.8'
 status: finalized
 pipeline_stage: ready-to-publish
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-06-05'
-last_verified_against: ARM Cortex-A spec, Linux kernel 6.12, AOSP android-17.0.0_r1, Simpleperf docs
+last_verified: '2026-08-26'
+last_verified_against: AOSP android-17.0.0_r1, Android common kernel android17-6.18-2026-06_r6, Android Simpleperf and Startup Profile docs, Arm Cortex-A documentation
 confidence: medium
 sources:
 - type: aosp
   path: frameworks/base/core/java/android/util/LruCache.java
 - type: aosp
-  path: frameworks/base/core/java/android/os/MessageQueue.java
+  path: frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java
+- type: aosp
+  path: frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java
+- type: aosp
+  path: frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java
 - type: aosp
   path: art/runtime/gc/accounting/card_table.h
 - type: aosp
-  path: system/memory/libdmabufheap/
+  path: art/runtime/gc/accounting/card_table.cc
 - type: aosp
   path: frameworks/native/libs/binder/Parcel.cpp
+- type: aosp
+  path: system/extras/simpleperf/doc/executable_commands_reference.md
+- type: aosp
+  path: kernel/common/android17-6.18-2026-06_r6/arch/arm64/include/asm/cache.h
+- type: aosp
+  path: kernel/common/android17-6.18-2026-06_r6/include/linux/cache.h
+- type: aosp
+  path: kernel/common/android17-6.18-2026-06_r6/Documentation/kernel-hacking/false-sharing.rst
 - type: official
   path: https://developer.android.com/ndk/guides/simpleperf
-- type: blog
-  path: Facebook Redex interdex pass
 - type: official
-  path: https://developer.arm.com/documentation
+  path: https://developer.android.com/topic/performance/baselineprofiles/overview
+- type: official
+  path: https://developer.android.com/topic/performance/startupprofiles/overview
+- type: official
+  path: https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations
+- type: official
+  path: https://developer.android.com/topic/performance/baselineprofiles/confirm-startup-profiles
+- type: official
+  path: https://developer.arm.com/documentation/109140/latest/
 tags:
 - lru-cache
 - cache-pollution
@@ -72,7 +90,7 @@ Android common kernel `android17-6.18-2026-06_r6` 的 arm64 `arch/arm64/include/
 #define L1_CACHE_BYTES  (1 << L1_CACHE_SHIFT)
 ```
 
-这个内核基线按 64 字节 L1 cache line 构建。相同文件还从 `CTR_EL0.CWG` 读取 cache writeback granule（cache 写回粒度），并把 arm64 的 `ARCH_DMA_MINALIGN` 设为 128 字节。这说明“CPU L1 cache line”“DMA 安全对齐”和“跨 CPU 避免互相干扰的间隔”不能用同一个常量概括。
+这个内核基线按 64 字节 L1 cache line 构建。相同文件还从 `CTR_EL0.CWG` 读取 cache writeback granule（cache 写回粒度），并把 arm64 的 `ARCH_DMA_MINALIGN` 设为 128 字节。CPU L1 cache line、DMA 安全对齐和跨 CPU 避免互相干扰的间隔属于不同边界，不能用同一个常量概括。
 
 应用代码可以把 64 字节作为当前常见设备的实验起点，但不能写成 Armv8/Armv9 规范保证。涉及共享库、DMA 或多代设备时，应结合目标 ABI、设备资料和测量决定布局。
 
