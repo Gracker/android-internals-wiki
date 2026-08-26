@@ -1,7 +1,7 @@
 ---
 title: Media3 视频播放：解码、帧时序与渲染
 chapter: '22.17'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 11 (API 30) - Android 17 (API 37)
 tags:
 - media3
@@ -34,12 +34,12 @@ sources:
 - type: source
   path: https://android.googlesource.com/platform/frameworks/av/+/android-17.0.0_r1/media/libstagefright/MediaCodec.cpp
   note: Android 17 MediaCodec、Surface 连接与帧丢弃配置
-last_body_apply_at: '2026-07-25T17:15:40+08:00'
-last_body_apply_run_id: 20260725-171540-c68b5cac
+last_body_apply_at: '2026-08-27T07:16:40+08:00'
+last_body_apply_run_id: 20260827-071518-6c1f5795
 task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: finalized
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 last_draft_polish_at: '2026-08-15T06:12:27+08:00'
 last_draft_polish_run_id: 20260815-061227-gracker-writing
 last_review_finalize_at: '2026-08-15T06:12:27+08:00'
@@ -145,6 +145,14 @@ Media3 1.11.0 的 `DefaultMediaCodecAdapterFactory` 在 API 31 及以上默认�
 
 Media3 1.11.0 还默认启用 dynamic scheduling（动态调度）：播放器工作循环尽量等到 renderer 可以继续推进时再唤醒，不再只按固定间隔运行。它控制 playback thread 的唤醒时机，与 `MediaCodec.Callback` 的异步 adapter 是两套机制；排查线程调度时要分别记录。
 
+### Android 17 `MediaCodec.Callback` 的回调边界
+
+Android 17 framework 里的 buffer 回调不是直接在 codec 组件线程执行完整播放器逻辑。native `MediaCodec` 初始化独立的 `mCodecLooper`，把 `CodecBase::BufferCallback` 接到 `kWhatCodecNotify`；`onInputBufferAvailable()` / `onOutputBufferAvailable()` 分别投递 `kWhatFillThisBuffer` / `kWhatDrainThisBuffer`，Java `MediaCodec.EventHandler` 再按 `CB_INPUT_AVAILABLE`、`CB_OUTPUT_AVAILABLE`、`CB_OUTPUT_FORMAT_CHANGE`、`CB_ERROR` 分发到应用注册的 `Callback`。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §1.1、§2.1、§2.2；Android 17 `MediaCodec.java` / `MediaCodec.cpp`]
+
+这意味着 Media3 的异步 adapter 在应用侧看到的是 framework 整理后的 buffer index、format 与 error 事件。Perfetto 排查应同时标出 Media3 playback thread、adapter callback thread、adapter queueing thread，以及 framework/native codec looper；不要把这些线程上的等待都归到 renderer 决策。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §2.1、§2.2]
+
+Android 17 `MediaCodec.java` 还定义了 `CB_LARGE_FRAME_OUTPUT_AVAILABLE`、`CB_REQUIRED_RESOURCES_CHANGE` 等事件码；所选源码调研只核到定义，未追踪常规 Media3 视频播放的触发链路。因此它们只能作为排查时的版本边界线索，不能写成默认播放路径结论。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §1.1、未验证/待深入]
+
 ### 它与 BufferQueue asyncMode 无关
 
 名称相似容易造成误判：
@@ -156,7 +164,7 @@ Media3 1.11.0 还默认启用 dynamic scheduling（动态调度）：播放器�
 | BufferQueue `asyncMode` | native 图形队列 | producer queue 时是否采用可替换的 droppable slot 语义 |
 | EGL swap interval 0 | EGL producer | native GL producer 的交换节奏，可能触发其输出 Surface 的 asyncMode |
 
-普通 `PlayerView` 播放使用异步 codec adapter，不表示 decoder 输出 BufferQueue 被切成 EGL 的 `asyncMode`。`Surface::setSwapInterval(0)` 只与可控制该 native EGL producer 的链路相关；默认 decoder Surface 输出不提供同名 Java 调优开关。
+普通 `PlayerView` 播放使用异步 codec adapter，不表示 decoder 输出 BufferQueue 被切成 EGL 的 `asyncMode`。`Surface::setSwapInterval(0)` 只与可控制该 native EGL producer 的链路相关；默认 decoder Surface 输出不提供同名 Java 调优开关。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §4.3、§5；Android 17 `Surface.cpp`]
 
 ### 何时考虑强制配置
 
@@ -362,7 +370,7 @@ Android 17 的 `MediaCodec::connectToSurface()` 为每次连接生成：
 
 `generation = (pid << 10) | (++counter & ((1 << 10) - 1))`
 
-低 10 bit 是进程内递增计数，高位来自 PID。连接时还会 disconnect/reconnect 并安装 `OnBufferReleasedListener`。generation number 用于防止旧连接留下的 free buffer 被错误附着到新连接。它解决 buffer 身份归属，不保证新 Surface 立刻有内容。
+低 10 bit 是进程内递增计数，高位来自 PID。连接时还会 disconnect/reconnect 并安装 `OnBufferReleasedListener`。generation number 用于防止旧连接留下的 free buffer 被错误附着到新连接。它解决 buffer 身份归属，不保证新 Surface 立刻有内容。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §2.3；Android 17 `MediaCodec.cpp`]
 
 ### 复用 codec 需要满足格式边界
 
@@ -421,9 +429,9 @@ ACodec 使用 OMX port、buffer ownership 与 native window 协调输出。排�
 
 ### 不使用 Block Model 推导默认 Media3 路径
 
-Android 17 的 `MediaCodec` 支持 `BUFFER_MODE_BLOCK`、`QueueRequest` 与 block model flag。Media3 1.11.0 的普通 `MediaCodecVideoRenderer` 默认 adapter 并未把视频输入改成这条通用 block model API。
+Android 17 的 `MediaCodec` 支持 `BUFFER_MODE_BLOCK`、`QueueRequest` 与 block model flag；这是 framework Java API 的能力边界。Media3 1.11.0 的普通 `MediaCodecVideoRenderer` 默认 adapter 并未把视频输入改成这条通用 block model API。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §1.2；已验证: Media3 1.11.0 `AsynchronousMediaCodecAdapter.java`]
 
-异步 adapter 仍通过 `getInputBuffer(index)`、`queueInputBuffer()` 或 `queueSecureInputBuffer()` 工作。看到 AOSP 存在 block model 分支，不能据此宣称 Media3 默认获得“Block Model 零拷贝”。
+异步 adapter 仍通过 `getInputBuffer(index)`、`queueInputBuffer()` 或 `queueSecureInputBuffer()` 工作。看到 AOSP 存在 block model 分支，不能据此宣称 Media3 默认获得“Block Model 零拷贝”。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §1.2；已验证: Media3 1.11.0 `AsynchronousMediaCodecAdapter.java`]
 
 ## 九、视频效果管线
 
