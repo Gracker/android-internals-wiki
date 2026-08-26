@@ -4,8 +4,8 @@ chapter: '6.1'
 section: '6.1'
 status: finalized
 applicable_versions: Android 9 - Android 17 (API 37)
-last_verified: '2026-07-08'
-last_verified_against: Android 17 (android-17.0.0_r1), AOSP cgroups/task_profiles/init/vold/MediaProvider source, dynamic partitions / metadata encryption / system-as-root docs, Android 11-12 shared storage docs, SQLite compile & WAL docs
+last_verified: '2026-08-26'
+last_verified_against: Android 17 (android-17.0.0_r1), AOSP cgroups/task_profiles/init/vold/MediaProvider source, Android Common Kernel android17-6.18 UFS/blk-crypto config, dynamic partitions / metadata encryption / system-as-root / scoped storage / FUSE passthrough / Virtual A/B docs, SQLite compile & WAL docs
 confidence: medium
 sources:
 - type: reference
@@ -52,6 +52,8 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
+last_idle_audit_at: '2026-08-26T22:49:33+08:00'
+last_idle_audit_run_id: 20260826-224308-idle-audit-1f93810e
 ---
 
 # Android 存储架构
@@ -320,7 +322,7 @@ Dynamic Partition 通过 `super` 物理分区和 `dm-linear` 在运行时映射�
 
 ### Android 11：kernel COW
 
-Android 11 引入了 Virtual A/B 的早期形态。更新差异使用 kernel COW（Copy-on-Write，写时复制）format，并由 `dm-snapshot` 提供 base partition（基础分区）与 COW 数据的组合视图。COW 空间从 `super` 分区中分配，确认新 slot 后再把变化合并进 base device。请求是否产生额外读写取决于具体操作和 merge 阶段，不能统一概括成“一次写入变成两次 I/O”。
+Android 11 引入了 Virtual A/B 的早期形态。更新差异使用 kernel COW（Copy-on-Write，写时复制）format，并由 `dm-snapshot` 提供 base partition（基础分区）与 COW 数据的组合视图。COW 数据会占用 OTA 期间的临时空间；AOSP 的空间模型把 Virtual A/B 的额外用量计入 `/data`，`super` 只需容纳动态分区本体，不再常驻一套完整 B 槽。确认新 slot 后再把变化合并进 base device。请求是否产生额外读写取决于具体操作和 merge 阶段，不能统一概括成“一次写入变成两次 I/O”。
 
 ### Android 12：compressed snapshots 与 dm-snapshot 过渡期
 
