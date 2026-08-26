@@ -400,12 +400,13 @@
       "routed_at": "2026-08-26T06:20:51.196046+08:00"
     },
     {
-      "action": "direct-inject",
+      "action": "body-applied",
+      "previous_action": "direct-inject",
       "chapter": "ch22 §43",
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md",
       "processed_at": "2026-07-18T10:33:46.781497",
-      "status": "injected",
-      "summary": "MediaCodec 异步分发→ALooper 双线程→BufferQueue generation 防复用→BUFFER_MODE_BLOCK 零拷贝→setOutputSurface 动态切换",
+      "status": "body-applied",
+      "summary": "已编入 MediaCodec Callback/ALooper 回调边界、Surface generation 防复用、BufferQueue asyncMode 与 EGL swapInterval 的层级边界，并明确 AOSP Block Model 不能推导为 Media3 默认零拷贝路径。",
       "title": "Media3 视频播放渲染管线全链路源码级拆解",
       "previous_route_status": null,
       "target_path": "src/part5-app/ch22-rendering-practice/17-media3-video-rendering.md",
@@ -418,7 +419,10 @@
         "android17-media3-video-rendering-pipeline-sourcecode.md"
       ],
       "route_status": "existing-chapter-routed",
-      "routed_at": "2026-08-27T06:20:09.720139+08:00"
+      "routed_at": "2026-08-27T06:20:09.720139+08:00",
+      "applied_at": "2026-08-27T07:16:40+08:00",
+      "applied_run_id": "20260827-071518-6c1f5795",
+      "canonical_target_chapter": "ch22"
     },
     {
       "action": "body-applied",
