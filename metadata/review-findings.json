@@ -2964,6 +2964,26 @@
       "summary": "Play Integrity 章节官方来源链接失效且修复对话框缺少版本边界",
       "type": "source-lifecycle",
       "updated_at": "2026-08-25T22:41:57.290371+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch20-stability/11-mte-gwp-asan-native-memory-safety.md",
+      "close_note": "Fixed in selected chapter: SampleRate=2500 and GWP-ASan always-mode behavior now records Android 17 Bionic Recoverable boundary.",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20260826-084533-80d0d7d2",
+      "created_at": "2026-08-26T09:01:45.024772+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20260826-084533-80d0d7d2",
+      "details": "Review checked AOSP android-17.0.0_r1 bionic/libc/bionic/gwp_asan_wrappers.cpp: kDefaultSampleRate=2500; SetDefaultGwpAsanOptions() sets Recoverable=true. Chapter corrected the numeric default and softened always-mode termination wording to require recording Bionic Recoverable configuration.",
+      "id": "RF-20260826-084533-20-11-gwp-samplerate",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "bionic/libc/bionic/gwp_asan_wrappers.cpp@android-17.0.0_r1"
+      ],
+      "status": "fixed",
+      "summary": "Android 17 GWP-ASan 默认 SampleRate 应为 2500 而非 25000，always 命中后语义需保留 Recoverable 配置边界",
+      "type": "technical-accuracy",
+      "updated_at": "2026-08-26T09:01:45.077353+08:00"
     }
   ],
   "schema_version": 1
