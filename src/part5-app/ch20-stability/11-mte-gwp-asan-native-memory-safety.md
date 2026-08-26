@@ -2,10 +2,10 @@
 title: MTE 与 GWP-ASan Native 内存安全检测
 chapter: '20.11'
 section: '20.11'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-08-14'
-last_verified_against: AOSP android-17.0.0_r1 framework, Bionic, linker, debuggerd, and android17-6.18-2026-06_r6 kernel sources; current Android Developers and AOSP memory-safety docs through 2026-08-13
+last_verified: '2026-08-26'
+last_verified_against: AOSP android-17.0.0_r1 framework, Bionic, linker, debuggerd, and android17-6.18-2026-06_r6 kernel sources; current Android Developers and AOSP memory-safety docs through 2026-08-26
 confidence: medium-high
 tags:
 - mte
@@ -59,15 +59,17 @@ sources:
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/kernel/mte.c
 - type: internal-reference
   path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md
-  role: Android 17 GWP-ASan defaults, malloc dispatch, recoverable debuggerd path
+  role: Supporting GWP-ASan dispatch and recoverable-debuggerd notes; numeric defaults are checked against AOSP android-17.0.0_r1 sources
 - type: aosp
   path: https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/malloc_common_dynamic.cpp
 - type: aosp
   path: https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/private/bionic_globals.h
-pipeline_stage: ready-for-review
-task6_state: needs-review
-task9_state: needs-review
+pipeline_stage: finalized
+task6_state: reviewed
+task9_state: reviewed
 task2b_state: fixed
+last_review_finalize_at: '2026-08-26T08:59:48+08:00'
+last_review_finalize_run_id: 20260826-084533-80d0d7d2
 last_body_apply_at: '2026-08-26T07:15:59+08:00'
 last_body_apply_run_id: 20260826-071559-6e58db7c
 note: 'Consolidated-source availability: source page not present in the current vault as of 2026-08-14; its retained content is consolidated here'
@@ -347,15 +349,17 @@ MTE 用硬件标签检查受保护内存映射的访问。GWP-ASan（名称来�
 
 GWP-ASan 先决定某次进程启动是否启用，再从该进程的内存分配中抽样。`always` 模式把第一层命中率设为 100%，其他模式由平台策略决定。只有同时通过两层选择的对象才进入 guarded slot（受保护池中的对象槽位），因此“应用启用了 GWP-ASan”不代表所有 `malloc` 都受保护，也不能用固定的 `1/N` 推导某个缺陷的准确发现率。
 
-在 Android 17 的 Bionic 适配层中，默认 `Recoverable=true`，`SampleRate=25000` 表示被选中进程内的分配级抽样分母，`MaxSimultaneousAllocations=32` 表示同一进程同时可占用的保护槽上限；`SYSTEM_PROCESS_OR_SYSTEM_APP` 与 `APP_MANIFEST_DEFAULT` 分支默认 `process_sample_rate=128`，所以默认覆盖还要先经过进程启动级抽样。进程被选中后，每个分配入口先调用 `GuardedAlloc.shouldSample()`；未命中或 guarded pool 已满时，再委派给下一层原生分配器。[来源: DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md; AOSP android-17.0.0_r1 bionic/libc/bionic/gwp_asan_wrappers.cpp]
+在 Android 17 的 Bionic 适配层中，默认 `Recoverable=true`，`SampleRate=2500` 表示被选中进程内的分配级抽样分母，`MaxSimultaneousAllocations=32` 表示同一进程同时可占用的保护槽上限；`SYSTEM_PROCESS_OR_SYSTEM_APP` 与 `APP_MANIFEST_DEFAULT` 分支默认 `process_sample_rate=128`，所以默认覆盖还要先经过进程启动级抽样。进程被选中后，每个分配入口先调用 `GuardedAlloc.shouldSample()`；未命中或 guarded pool 已满时，再委派给下一层原生分配器。[来源: AOSP android-17.0.0_r1 bionic/libc/bionic/gwp_asan_wrappers.cpp]
 
 GWP-ASan 可用于 `targetSdkVersion >= 30`（面向 Android 11 / API 30 或更高版本）的应用。`android:gwpAsanMode` 支持三种请求：
 
 | 值 | 语义 | 适用范围 |
 |---|---|---|
-| `default` 或未填写 | Android 13 及以下对普通应用关闭；Android 14+ 使用约 1% 启动命中的 Recoverable GWP-ASan | Android 14+ 的正式版本基线 |
 | `never` | 对该应用或进程关闭 GWP-ASan | 已有明确兼容问题时使用 |
-| `always` | 每次进程启动都启用，但仍只抽样部分内存分配；命中错误后终止进程 | 测试包、内部日常使用包或小范围候选包 |
+| `default` 或未填写 | Android 13 及以下对普通应用关闭；Android 14+ 使用约 1% 启动命中的 Recoverable GWP-ASan | Android 14+ 的正式版本基线 |
+| `always` | 每次进程启动都启用，但仍只抽样部分内存分配；Android 17 中命中故障后的终止 / 可恢复行为还受 Bionic `Recoverable` 配置控制 | 测试包、内部日常使用包或小范围候选包 |
+
+`always` 不等于“每次 `malloc` 都受保护”。开发者文档仍把 `always` 下命中受保护池错误描述为进程终止；在核对 Android 17 源码时，还要同时记录 Bionic 的 `Recoverable` 配置，因为 `SetDefaultGwpAsanOptions()` 默认将 `Recoverable` 设为 `true`，系统属性可改变这一行为。无论进程是否继续运行，GWP-ASan 报告都代表真实内存破坏，不能自动重试支付、写入等有副作用操作。[来源: Android NDK GWP-ASan 文档；AOSP android-17.0.0_r1 bionic/libc/bionic/gwp_asan_wrappers.cpp]
 
 进程级配置可以覆盖 application 级配置。最终合并后的 manifest 才是检查对象；`always` 只取消进程启动这一层抽样，不会让每次内存分配都进入受保护池。
 
@@ -415,7 +419,7 @@ error type
 | heapprofd | 抽样记录分配 / 释放栈，分析未释放内存增长 | 判定释放后访问或越界 |
 | Scudo | 加固系统分配器并检查部分分配器一致性错误 | 判断业务对象由谁持有，或给出泄漏根因 |
 
-Android 14+ 的正式版本通常保留 `default`，用分阶段发布观察命中率、进程启动分母、致命 / 可恢复事件、符号完整率和业务影响；Android 13 及以下的 `default` 对普通应用仍是关闭状态。`always` 只用于能承受额外虚拟地址、内存成本和进程终止风险的范围。发布报告必须同时写清进程启动覆盖与内存分配抽样，避免把“没有命中”解释为“没有缺陷”。
+Android 14+ 的正式版本通常保留 `default`，用分阶段发布观察命中率、进程启动分母、致命 / 可恢复事件、符号完整率和业务影响；Android 13 及以下的 `default` 对普通应用仍是关闭状态。`always` 只用于能承受额外虚拟地址、内存成本、进程终止或可恢复后状态不确定风险的范围。发布报告必须同时写清进程启动覆盖与内存分配抽样，避免把“没有命中”解释为“没有缺陷”。
 
 ## 源码与官方资料
 
@@ -450,4 +454,4 @@ Android 14+ 的正式版本通常保留 `default`，用分阶段发布观察命�
 
 当 Build ID、tombstone、模式证据、设备实测 MTE 能力和业务入口能够互相校验时，新增的 MTE `SIGSEGV` 才能转化为可修复的 Native 内存缺陷。
 
-GWP-ASan 还要额外记录两层抽样：这次进程启动是否启用，以及具体内存分配是否进入受保护池。Android 14+ 的 `default` 会在少量启动中使用可恢复模式，`always` 则每次启动启用并在命中后终止进程；两种模式都不能用“没有报告”证明没有缺陷。
+GWP-ASan 还要额外记录两层抽样：这次进程启动是否启用，以及具体内存分配是否进入受保护池。Android 14+ 的 `default` 会在少量启动中使用可恢复模式；`always` 每次启动启用，但命中后的终止 / 可恢复行为仍要记录 Android 17 Bionic 的 `Recoverable` 配置。两种模式都不能用“没有报告”证明没有缺陷。
