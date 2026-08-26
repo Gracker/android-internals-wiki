@@ -3027,6 +3027,26 @@
       "summary": "frontmatter listed stale Android 17 AOSP source paths",
       "type": "source-metadata-mismatch",
       "updated_at": "2026-08-26T14:40:56.493165+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/08-zram-compressed-swap-relaunch.md",
+      "close_note": "已修正正文维护顺序、Mermaid 数据流和来源清单，并将章节晋级 finalized。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20260826-160514-a9b30f11",
+      "created_at": "2026-08-26T16:17:41.223638+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20260826-160514-a9b30f11",
+      "details": "正文原称 Android 17 MMD 全局维护先 recompression 再 writeback；android-17.0.0_r1 system/memory/mmd/src/service.rs handle_zram_maintenance() 注释和代码为先 writeback 后 recompression。",
+      "id": "AIW-4.8-20260826-P2-mmd-maintenance-order",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "system/memory/mmd/src/service.rs@android-17.0.0_r1"
+      ],
+      "status": "fixed",
+      "summary": "MMD 全局维护顺序误写为先重压再写回",
+      "type": "source-boundary",
+      "updated_at": "2026-08-26T16:17:41.279893+08:00"
     }
   ],
   "schema_version": 1
