@@ -78,15 +78,15 @@ consolidated_from:
 
 # Connectivity 服务、网络选择与回调
 
-Connectivity 处理的不是单一“联网开关”，而是网络注册、能力验证、策略评分、默认网络切换和回调分发组成的状态机。排障时先区分物理链路、已验证网络与应用实际绑定的网络，才能解释回调顺序和切网延迟。
+Connectivity 是一台由网络注册、能力验证、策略评分、默认网络切换和回调分发组成的状态机，并非单一的“联网开关”。排障时先区分物理链路、已验证网络与应用实际绑定的网络，才能解释回调顺序和切网延迟。
 
 ## 进程模型
 
-应用看到的 `ConnectivityManager` 是 SDK 客户端。它通过 `IConnectivityManager` 访问 `ConnectivityService`。Android 17 中，这套代码已经属于 Connectivity Mainline 模块，可以作为系统模块独立于完整系统镜像更新；服务本身仍运行在 `system_server`。模块归属决定代码如何更新，进程归属决定它使用哪些线程和内存、故障会影响哪个进程，两者不能混为一谈。
+应用看到的 `ConnectivityManager` 是 SDK 客户端。它通过 `IConnectivityManager` 访问 `ConnectivityService`。Android 17 中，这套代码已经属于 Connectivity Mainline 模块，可以作为系统模块独立于完整系统镜像更新；服务本身仍运行在 `system_server`。模块归属决定代码如何更新，进程归属决定代码运行在哪些线程、使用哪部分内存、故障时影响哪个进程，两者不能混为一谈。
 
 网络验证又有不同的边界。`NetworkMonitor` 的实现位于 NetworkStack 模块，`AndroidManifest.xml` 把 `NetworkStackService` 放在独立的 `com.android.networkstack.process` 进程。`ConnectivityService` 通过稳定 AIDL `INetworkStackConnector.makeNetworkMonitor()` 为网络创建监视器。验证探测卡住时，不能直接推断 `system_server` 的 Connectivity 线程正在执行 HTTP 请求。
 
-`netd` 是原生守护进程，负责执行网络创建、路由、权限和防火墙等内核配置。NetworkStats 的部分 Java 代码也由 Connectivity 模块交付并运行在 `system_server`，其内核计数来自 pin 在 BPF 文件系统中的 map；pin 表示为 BPF 对象建立持久路径，map 则是内核与用户空间交换计数数据的容器。
+`netd` 是原生守护进程，负责执行网络创建、路由、权限和防火墙等内核配置。NetworkStats 的部分 Java 代码也由 Connectivity 模块交付并运行在 `system_server`，其内核计数来自固定在 BPF 文件系统中的 map；pin 是指为 BPF 对象建立持久路径的操作；map 则是内核与用户空间交换计数数据的容器。
 
 ```text
 应用进程
@@ -139,7 +139,7 @@ Android 17 的 agent 注册和更新通道是 Binder：
 3. agent 通过 registry 的 `sendNetworkCapabilities()`、`sendLinkProperties()`、`sendScore()` 等方法发送更新。
 4. 服务通过 `INetworkAgent` 回告验证状态、带宽更新请求、keepalive 等事件。
 
-Android 17 的 agent 数据通道不再使用 `AsyncChannel`。`NetworkProvider` 的传统请求通知仍使用 `Messenger` 投递到构造时指定的 `Looper`；较新的 `offerNetwork()` 则为一项网络供给提议（offer）绑定回调和 `Executor`。两条协议分别服务于“系统是否需要提供者建立网络”和“已经建立的网络怎样上报状态”两个阶段。
+Android 17 的 agent 数据通道不再使用 `AsyncChannel`。`NetworkProvider` 的传统请求通知仍使用 `Messenger` 投递到构造时指定的 `Looper`；较新的 `offerNetwork()` 则把回调和 `Executor` 绑定到一项网络供给提议（offer）上。两条协议分别服务于“系统是否需要提供者建立网络”和“已经建立的网络怎样上报状态”两个阶段。
 
 注册只让服务认识这个 agent；agent 标记为 connected 后，网络才可出现在公开查询中、满足请求并参与默认网络选择。`unregister()` 才结束它的生命周期。
 
@@ -167,9 +167,11 @@ Android 17 的 agent 数据通道不再使用 `AsyncChannel`。`NetworkProvider`
 | 有 `NET_CAPABILITY_PARTIAL_CONNECTIVITY` | 验证只得到部分连通结果 |
 | 成为默认网络 | 对某个 UID 而言，它是当前最佳匹配；VPN 和策略可能使不同 UID 看到不同结果 |
 
-源码没有为 NAI 定义一个覆盖全部阶段的单一枚举，而是用时间戳与多个状态组合表达生命周期。`mCreatedTime`、`mConnectedTime`、`mFirstValidationTime`、`mCurrentValidationTime`、`mFirstEvaluationConcludedTime` 和 `mDestroyedTime` 分别帮助判断 native network 创建、首次 connected、首次/当前验证、首轮评估结束和数据通路销毁。netId 在网络销毁后可以复用，长期日志还要关联 transport（Wi-Fi、蜂窝等传输类型）、接口与创建时刻。
+源码没有为 NAI 定义一个覆盖全部阶段的单一枚举，生命周期由时间戳与多个状态组合表达。
 
-`INTERNET` 是网络提供者对用途的声明，`VALIDATED` 是系统探测得到的结果。只检查前者会把已经关联却无法出网的 Wi-Fi 误判为可用；建立连接前又不可能要求已经具有后者，因为 `VALIDATED` 是连接建立后才产生并且会变化的能力。
+`mCreatedTime`、`mConnectedTime`、`mFirstValidationTime`、`mCurrentValidationTime`、`mFirstEvaluationConcludedTime` 和 `mDestroyedTime` 分别帮助判断 native network 创建、首次 connected、首次/当前验证、首轮评估结束和数据通路销毁。netId 在网络销毁后可以复用，长期日志还要关联 transport（Wi-Fi、蜂窝等传输类型）、接口与创建时刻。
+
+`INTERNET` 是网络提供者对用途的声明，`VALIDATED` 是系统探测得到的结果。只检查前者，会把已经关联却无法出网的 Wi-Fi 误判为可用；建立连接之前又不可能要求网络已经具有后者，因为 `VALIDATED` 是连接建立之后才产生、并且会变化的能力。
 
 ## 从注册到可用：真实生命周期
 
@@ -196,9 +198,9 @@ Android 17 的 agent 数据通道不再使用 `AsyncChannel`。`NetworkProvider`
     └─ 再次匹配请求，必要时切换各 UID 的默认网络
 ```
 
-`ConnectivityService.registerNetworkAgentInternal()` 会先发起异步 `makeNetworkMonitor()`。源码专门处理了 monitor 尚未返回而 agent 已继续更新的时间窗口，因此排障时不要把日志出现顺序简单理解为同一条同步调用栈。
+`ConnectivityService.registerNetworkAgentInternal()` 会先发起异步 `makeNetworkMonitor()`。源码专门处理了 monitor 尚未返回、agent 已继续更新的时间窗口；排障时不能因为日志先后出现，就认为它们来自同一条同步调用栈。
 
-网络断开也不是 `NetworkMonitor` 进入某个 `LOST` 状态。物理链路断开或 agent 注销由提供者和 Connectivity 管理；对应用而言，`onLost()` 还可能只表示该网络不再满足当前请求。对于默认网络回调，旧网络被更优网络替代后仍可能继续存在。
+`NetworkMonitor` 中也不存在表示断网的 `LOST` 状态。物理链路断开或 agent 注销由提供者和 Connectivity 管理；对应用而言，`onLost()` 还可能只表示该网络不再满足当前请求。对于默认网络回调，旧网络被更优网络替代后仍可能继续存在。
 
 native network 与 DNS cache 由 `ConnectivityService` 协调创建。不同能力和 VPN 场景会让创建发生在 agent 注册期或首次 connected 处理期；销毁时，服务先重新匹配请求和默认网络，再调用 netd、DnsResolver 与 DnsManager 清理旧数据通路，最后释放 netId。这个顺序用于减少切换中断，不能简化成“清 DNS 导致断网”。
 
@@ -213,7 +215,7 @@ Android 17 的 `NetworkMonitor` 是一个事件驱动的 `StateMachine`。源码
 - strict mode Private DNS（只使用指定加密 DNS 服务器）解析与探测；
 - 连接后的 DNS/TCP 数据停滞信号，用于触发重新验证。
 
-探测 URL、并行策略和超时受资源配置、DeviceConfig、网络属性及模块版本影响。单个探测代码中虽有超时常量，也不能据此写成“所有验证固定 30 秒”。失败后状态机会按逐渐延长等待时间的退避策略重试；验证失败不会自行宣布物理网络断开。
+探测 URL、并行策略和超时受资源配置、DeviceConfig、网络属性及模块版本影响。单个探测代码中虽有超时常量，也不能据此写成“所有验证固定 30 秒”。失败后状态机会按逐渐延长等待时间的退避策略重试；验证失败后，`NetworkMonitor` 也不会自行宣布物理链路断开。
 
 结果要这样理解：
 
@@ -314,7 +316,7 @@ Android 8.0 起，`onAvailable()` 后会按顺序收到：
 2. `onLinkPropertiesChanged()`；
 3. `onBlockedStatusChanged()`。
 
-不要在 `onAvailable()` 内同步调用 `getNetworkCapabilities()` 或 `getLinkProperties()`。网络可能已经再次变化，同步查询结果会与当前回调乱序。使用随后回调携带的对象，可以保留 framework 保证的事件顺序。
+不要在 `onAvailable()` 内同步调用 `getNetworkCapabilities()` 或 `getLinkProperties()`。网络可能已经再次变化，同步查询拿到的结果会与当前回调的时序错位。使用随后回调携带的对象，可以保留 framework 保证的事件顺序。
 
 无 `Handler` 参数时，回调运行在 framework 为应用创建的 Connectivity 线程；传入 `Handler` 后，运行在该 handler 对应的 Looper。回调先经跨进程通知进入应用，再由 `CallbackHandler` 串行分发，并不直接执行在应用 Binder 线程池里。
 
@@ -388,7 +390,7 @@ class NetworkStateTracker(
 
 ### 回调性能的实际约束
 
-Android 17 对每个 UID 尚未注销的请求和回调（outstanding requests）设有 100 个上限。这个计数由多种 `registerNetworkCallback()`、`requestNetwork()` 和 `ConnectivityDiagnosticsManager` 回调共享。达到上限会抛出异常。
+Android 17 对每个 UID 尚未注销的请求和回调（outstanding requests）设有 100 个上限。这个上限由 `registerNetworkCallback()`、`requestNetwork()` 和 `ConnectivityDiagnosticsManager` 注册的各类回调共同占用。达到上限会抛出异常。
 
 优化重点如下：
 
@@ -397,7 +399,7 @@ Android 17 对每个 UID 尚未注销的请求和回调（outstanding requests�
 - 在 capabilities 里只提取业务需要的字段，再做快照去重；
 - DNS、路由和代理变化属于 `LinkProperties`，不要等待 `onCapabilitiesChanged()`；
 - 回调中不做磁盘 I/O、同步网络请求或长时间锁等待；
-- 记录回调处理时长和队列等待，不能用固定“每次 Binder 小于几毫秒”替代测量。
+- 记录回调处理时长和队列等待，不能用“每次 Binder 都小于几毫秒”的固定说法代替实测。
 
 Android 16 起的 `NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED` 也是策略输入：缺少它时，应限制高带宽传输与访问频率，不能只根据 Wi-Fi/蜂窝 transport 推断网络是否受限。
 
@@ -420,7 +422,7 @@ Android 16 起的 `NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED` 也是策略输入�
 
 ### linger 与等待替代网络
 
-请求迁到新的 satisfier 后，旧网络可能进入 linger，为旧 socket 留出收尾时间。Android 17 AOSP 的 linger 与 nascent（新网络尚未满足请求时的短暂观察期）默认延迟分别为 30 秒和 5 秒，但可以由系统配置调整，不属于 SDK 时序承诺。`onLosing()` 只是提示，应用必须允许它缺失，或几乎与 `onLost()` 同时到达。
+请求迁到新的 satisfier 后，旧网络可能进入 linger，为旧 socket 留出收尾时间。Android 17 AOSP 的 linger 与 nascent（新网络尚未满足请求时的短暂观察期）默认延迟分别为 30 秒和 5 秒，但可以由系统配置调整，不属于 SDK 时序承诺。`onLosing()` 只是提示，应用必须容忍它不出现，或几乎与 `onLost()` 同时到达。
 
 `NetworkAgent.unregisterAfterReplacement(timeout)` 让旧 agent 先销毁 native network，再短暂保留注册状态等待等价替代者。此时 `POLICY_IS_DESTROYED` 让新网络在其他条件等价时胜出；若超时仍没有替代者，旧 agent 最终注销。linger 到期或 native network 已销毁，都不表示所有旧连接已经由业务正确恢复，重试与幂等仍由连接库和应用负责。
 
@@ -455,13 +457,13 @@ NetworkStatsManager 查询
 
 以下内核行为以 ACK `android17-6.18-2026-06_r6` 为准。Android 17 的 `bpf/progs/netd.c` 为 6.18 定义了专用 ingress（入站）统计变体，进入 `bpf_traffic_account()` 后更新 UID、tag（应用为 socket 流量设置的分类标签）、interface 维度的 map；egress（出站）也进入同一计数函数。用户空间随后消费这些累计值。这里没有沿用更高版本内核的 BPF 行为。
 
-源码固定了多个 BPF map 路径，例如 `map_netd_app_uid_stats_map`、`map_netd_stats_map_A/B` 和 `map_netd_iface_stats_map`。读取详细统计前会交换当前由内核写入的 active map，再读取暂时停止写入的 inactive map，从而减少与内核更新计数的竞争。
+源码固定了多个 BPF map 路径，例如 `map_netd_app_uid_stats_map`、`map_netd_stats_map_A/B` 和 `map_netd_iface_stats_map`。读取详细统计前，会先把内核正在写入的 active map 与 inactive map 对调，再读取暂时停止写入的 inactive map，从而减少与内核更新计数的竞争。
 
 历史数据不存放在 SQLite 中。`NetworkStatsRecorder` 使用 `FileRotator`（按时间轮换历史文件）和 `NetworkStatsCollection` 管理按时间段聚合的 bucket 记录。`queryDetailsForUid()` 打开统计 session，读取权限允许的历史集合；它不能概括成“Binder 后直接查询单个 UID 的 BPF map”。
 
 ### 何时采集
 
-默认 `NetworkStatsSettings.getPollInterval()` 是 30 分钟，使用允许系统合并触发时间的不精确重复闹钟。除此之外，网络状态变化、上游变化、全局流量阈值警报、注册用量 callback、强制更新、UID 删除及 dumpsys 参数都可能引发采集或持久化。排障时要记录触发本次采集的具体原因（poll reason）。
+默认 `NetworkStatsSettings.getPollInterval()` 是 30 分钟，基于不精确重复闹钟，系统可以合并触发时间。除此之外，网络状态变化、上游变化、全局流量阈值警报、注册用量 callback、强制更新、UID 删除及 dumpsys 参数都可能引发采集或持久化。排障时要记录触发本次采集的具体原因（poll reason）。
 
 查询和 poll 可能涉及：
 
@@ -500,7 +502,7 @@ Android 17 的 Connectivity 代码会从 BPF 规则状态取得所跟踪 UID 的
 
 ### 应用 VpnService
 
-`VpnService.Builder.establish()` 通过 `VpnManagerService` 创建 TUN（向用户空间收发 IP 包的虚拟网络接口），并把封装文件描述符的 `ParcelFileDescriptor` 返回应用。应用从 fd 读取出站 IP 包，经自建隧道发送；从隧道收到的数据写回 fd。隧道控制 socket 必须调用 `protect()` 排除在 VPN 路由之外，否则它本身可能再次被送进 VPN，形成循环。
+`VpnService.Builder.establish()` 通过 `VpnManagerService` 创建 TUN（向用户空间收发 IP 包的虚拟网络接口），并把封装文件描述符的 `ParcelFileDescriptor` 返回应用。应用从 fd 读取出站 IP 包，经自建隧道发送；从隧道收到的数据写回 fd。隧道控制 socket 必须通过 `protect()` 排除在 VPN 路由之外，否则它本身可能再次被送进 VPN，形成循环。
 
 这条路径的性能取决于：
 
@@ -541,7 +543,7 @@ Android 17 对 targetSdk 37 及以上应用强制本地网络保护：
 
 权限被拒绝时，应用必须把 LAN（局域网）不可达与公网故障分开呈现。反复请求公网、切换 Wi-Fi 或清 DNS 都不会解除权限阻断。
 
-官方文档给出的典型表现也不同：TCP 连接常表现为超时，UDP 和一般权限拒绝通常返回表示“不允许操作”的 `EPERM`。使用 NDK 的 TCP 客户端可调用 `android_getnetworkblockedreason(fd)`，检查是否为 `ANDROID_NETWORK_BLOCKED_REASON_LNP`。这个接口只用于解释失败原因，不会绕过权限。
+官方文档给出的典型表现也不同：TCP 连接常表现为超时；UDP 以及一般的权限拒绝场景，通常返回表示“不允许操作”的 `EPERM`。使用 NDK 的 TCP 客户端可调用 `android_getnetworkblockedreason(fd)`，检查是否为 `ANDROID_NETWORK_BLOCKED_REASON_LNP`。这个接口只用于解释失败原因，不会绕过权限。
 
 AOSP 侧不只增加了 Manifest 声明。Connectivity 的 `BpfNetMaps` 维护本地网络权限传播开关、UID/network/host 允许列表和缓存 generation（用于识别规则版本变化的代数）；这也解释了限制为何能作用于由运行时管理的 socket、原生 socket 和上层网络库。
 
@@ -612,7 +614,7 @@ Android 17 的 Connectivity 体系可以概括为四个职责：
 - 独立 NetworkStack 进程中的 `NetworkMonitor` 负责互联网与 Private DNS 验证；
 - `netd`、BPF 和内核负责路由、权限、防火墙与计数执行。
 
-做性能分析时，应先定位职责边界，再测量队列、探测、路由、socket、DNS 和业务请求。不要用旧的 AsyncChannel 图、固定加分表、固定验证超时或通用耗时数字解释 Android 17。
+做性能分析时，应先定位职责边界，再测量队列、探测、路由、socket、DNS 和业务请求。不要用旧的 AsyncChannel 图、固定加分表、固定验证超时或通用耗时数字，来解释 Android 17 的行为。
 
 ## 源码导航与官方资料
 
