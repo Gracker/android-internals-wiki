@@ -73,11 +73,11 @@ consolidated_from:
 
 Android 进程执行原生代码之前，要把 ELF（Executable and Linkable Format，可执行与可链接格式）文件映射进地址空间，找到依赖库，解析动态符号，写入重定位结果，再调整页面权限并运行初始化函数。64 位进程中的这些工作由 bionic 自带的 dynamic linker（动态链接器）完成，常见解释器路径是 `/system/bin/linker64`，下文简称 linker64。
 
-平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为准；涉及 `mmap()`、文件缺页和写时复制（Copy-on-Write，COW）的内核行为以 `android17-6.18-2026-06_r6` 为准。VNDK（Vendor Native Development Kit，厂商原生开发套件）的可见性规则在本文后半部分展开；以下先聚焦 linker64 的执行顺序及各阶段对启动时间、内存和故障定位的影响。
+平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为准；涉及 `mmap()`、文件缺页和写时复制（Copy-on-Write，COW）的内核行为以 `android17-6.18-2026-06_r6` 为准。VNDK（Vendor Native Development Kit，厂商原生开发套件）的可见性规则在本文后半部分展开；前半部分聚焦 linker64 的执行顺序及各阶段对启动时间、内存和故障定位的影响。
 
 后文保留 linker 源码中的常用名称：DSO（Dynamic Shared Object）指 `.so` 动态共享对象；SONAME 是 ELF 内用于依赖匹配的逻辑库名；linker namespace（链接器命名空间）负责约束库的搜索路径和可见范围。RELRO 是“重定位完成后只读”的内存区域，TLS 是每个线程独立保存的数据区，PLT/GOT 是动态函数调用和地址重定位所用的表，ABI 则是二进制接口约定。
 
-Native 库加载先由 linker64 解析依赖、命名空间和重定位，再受分区隔离与稳定 ABI 规则约束。启动慢、找不到库和符号不匹配需要沿同一装载路径定位。
+Native 库加载先由 linker64 解析依赖、确定命名空间并完成重定位，再受分区隔离与稳定 ABI 规则约束。启动慢、找不到库和符号不匹配，都要沿同一条装载路径定位。
 
 ## linker64 装载、重定位与命名空间
 
@@ -124,7 +124,7 @@ linker64 不是常驻系统服务，也没有跨进程共享的“已解析符�
 
 #### 阶段三：映射新库的 `PT_LOAD`
 
-linker64 从新任务中生成待映射列表。普通路径会打乱映射顺序；使用 `ANDROID_DLEXT_RESERVED_ADDRESS_RECURSIVE` 时，为满足保留地址区布局，顺序保持稳定。这项随机排列属于地址布局策略，不是并发调度。
+linker64 从新任务中生成待映射列表。普通路径会随机化映射顺序；使用 `ANDROID_DLEXT_RESERVED_ADDRESS_RECURSIVE` 时，为满足保留地址区布局，顺序保持稳定。这项随机排列属于地址布局策略，不是并发调度。
 
 `ElfReader::Load()` 负责保留地址空间、映射 `PT_LOAD` 可装载段、定位运行时 Program Header（程序头表），并解析 GNU property（编译器写入 ELF 的架构特性说明）。`android_dlopen_ext()` 还能通过文件描述符（fd）、fd 内偏移、保留地址区或 RELRO fd 提供特殊装载条件，WebView loader 是 RELRO 共享能力的重要使用者。
 
@@ -432,7 +432,9 @@ T(loadLibrary)
 
 #### 把加载点放回应用启动关键路径
 
-`System.loadLibrary()` 从调用开始到返回的实际经过时间（wall time），会同时覆盖 ART / `libnativeloader`、linker、ELF constructor 和 `JNI_OnLoad`。它若由 `ContentProvider`、App Startup initializer、`Application.onCreate()` 或静态初始化块触发，就会直接进入冷启动关键路径。排查时应先扫描应用和三方 SDK 的 `System.loadLibrary()` / `System.load()`，再给可控加载点加稳定的 trace 名称；否则只看到一个 `dlopen` slice（trace 中的一段计时区间），仍无法定位是哪个业务模块触发。
+`System.loadLibrary()` 从调用开始到返回的实际经过时间（wall time），会同时覆盖 ART / `libnativeloader`、linker、ELF constructor 和 `JNI_OnLoad`。它若由 `ContentProvider`、App Startup initializer、`Application.onCreate()` 或静态初始化块触发，就会直接落在冷启动关键路径上。
+
+排查时应先扫描应用和三方 SDK 的 `System.loadLibrary()` / `System.load()`，再给可控加载点加稳定的 trace 名称；否则只看到一个 `dlopen` slice（trace 中的一段计时区间），仍无法定位是哪个业务模块触发。
 
 把加载从首帧前挪走不等于优化完成。首次功能入口如果因此多出同步等待，只是把延迟换了位置。更稳妥的策略是按功能依赖确定最晚加载点，在明确的空闲窗口预先装载，并保留取消、超时和失败后的备用路径。`JNI_OnLoad` 只做 VM 校验、native 注册和少量确定状态；文件 I/O（输入输出）、设备枚举、大对象构造和线程创建放进可观测的显式初始化阶段。
 
@@ -495,7 +497,9 @@ adb shell setprop debug.ld.app.com.example.app ''
 
 对三方 SDK 和跨平台引擎，还要记录 APK/AAB 内路径、ABI、build ID（用于唯一识别二进制构建的标识）、`DT_NEEDED`、LOAD alignment（可装载段对齐）、constructor / `JNI_OnLoad` 和首次触发线程。React Native、Flutter、Unity、Unreal、Cocos 的“官方版本支持 16 KB”不能替代最终产物扫描，旧插件仍可能覆盖正确的链接参数。
 
-CI 应检查每个 release APK/AAB，而不是只读 CMake 参数。至少验证所有 ABI 的 ELF LOAD segment、未压缩 `.so` 的 ZIP alignment、AAB page-alignment 配置、`DT_NEEDED` 与动态符号规模，并在 16 KB 设备覆盖启动、动态功能模块、native 插件和低内存场景。即使源码参数正确，最终生成的 split APK（拆分安装包）仍可能被旧版 bundletool（从 AAB 生成安装包的工具）或三方产物破坏，因而必须以发布包的检查结果为准。
+CI 应检查每个 release APK/AAB，而不是只读 CMake 参数。至少验证所有 ABI 的 ELF LOAD segment、未压缩 `.so` 的 ZIP alignment、AAB page-alignment 配置、`DT_NEEDED` 与动态符号规模，并在 16 KB 设备覆盖启动、动态功能模块、native 插件和低内存场景。
+
+即使源码参数正确，最终生成的 split APK（拆分安装包）仍可能被旧版 bundletool（从 AAB 生成安装包的工具）或三方产物破坏，因而必须以发布包的检查结果为准。
 
 ### 版本演进边界
 
@@ -518,7 +522,7 @@ linker namespace 决定进程能看到哪些库，VNDK 和分区规则进一步�
 
 ### 一、Android 17 的 VNDK 边界
 
-VNDK（Vendor Native Development Kit）曾规定 vendor 原生代码可以使用哪些 framework 原生库，以便系统框架与厂商实现分别升级。VNDK 从 Android 15 开始弃用。`vendor` 或 `product` 分区面向 Android 15 及以上版本构建时，原 VNDK 库与其他可用库一样安装到对应分区，不再生成当前版本的 VNDK APEX，`ro.vndk.version` 与 `ro.product.vndk.version` 也被移除。
+VNDK（Vendor Native Development Kit）曾规定 vendor 原生代码可以使用哪些 framework 原生库，以便系统框架与厂商实现分别升级；它从 Android 15 开始弃用。`vendor` 或 `product` 分区面向 Android 15 及以上版本构建时，原 VNDK 库与其他可用库一样安装到对应分区，不再生成当前版本的 VNDK APEX，`ro.vndk.version` 与 `ro.product.vndk.version` 也被移除。
 
 两类兼容边界仍要保留：
 
@@ -535,7 +539,7 @@ VNDK（Vendor Native Development Kit）曾规定 vendor 原生代码可以使用
 
 ### 二、linker namespace 仍是运行时隔离基础
 
-Android 11 起，`linkerconfig` 根据分区、已安装 APEX、公开库和运行时环境生成 `/linkerconfig/ld.config.txt` 及相关配置。动态链接器读取配置后，为进程建立 default、APEX、`vendor`、SP-HAL 等所需 linker namespace。namespace 是一组库搜索和可见性规则；namespace link 则声明可以跨边界访问哪些 soname，soname 是 ELF 共享库记录的逻辑名称，例如 `libfoo.so`。
+Android 11 起，`linkerconfig` 根据分区、已安装 APEX、公开库和运行时环境生成 `/linkerconfig/ld.config.txt` 及相关配置。动态链接器读取配置后，为进程建立 default、APEX、`vendor`、SP-HAL 等所需 linker namespace。namespace 是一组库搜索和可见性规则；namespace link 则声明可以跨边界访问哪些 soname（ELF 共享库记录的逻辑名称，例如 `libfoo.so`）。
 
 一个进程可以有多个 namespace。每个 namespace 保存自己的搜索路径、许可路径、允许库名和到其他 namespace 的链接。跨 namespace 的库查找只会沿配置好的 link 继续，且通常只允许指定的共享库 soname。
 
@@ -572,7 +576,7 @@ return false;
 
 `allowed_libs_` 的实现类型是 `std::vector<std::string>`，检查使用线性查找的 `std::find()`。“哈希表平均 O(1)”与源码不符。它也不是独立的动态允许列表服务；配置会在 namespace 建立时写入对象。
 
-正常按路径加载时，linker 先解析候选文件并取得消除符号链接等影响后的规范路径（realpath），再执行 namespace 可访问性检查。文件的 DAC（传统 Unix 用户/组/其他权限）、挂载选项和 SELinux 仍由各自层次处理；`permitted_paths_` 不会递归验证每级父目录权限，也不能替代 SELinux。
+正常按路径加载时，linker 先解析候选文件，得到消除符号链接等影响的规范路径（realpath），再执行 namespace 可访问性检查。文件的 DAC（传统 Unix 用户/组/其他权限）、挂载选项和 SELinux 仍由各自层次处理；`permitted_paths_` 不会递归验证每级父目录权限，也不能替代 SELinux。
 
 #### 搜索路径和许可路径回答不同问题
 
@@ -606,7 +610,7 @@ return false;
 
 namespace 的允许列表和路径检查只是其中一段。库大小、依赖数量、重定位数量、文件页是否已经在内存中、页大小、构造函数工作和设备 I/O 都会改变总耗时。AOSP 没有“VNDK 检查固定增加 15–25%”的结论；没有说明工作负载与测量方法的百分比，不能写进容量预算。
 
-已经装入且可以复用的库，后续 `dlopen()` 可能命中链接器已有的库记录 `soinfo`；冷启动、首次缺页和构造函数成本不会按相同比例重复。跨 namespace 需要装入另一份库时，映射、重定位和进程修改后无法直接共享的私有脏页可能增加。能否共享物理文件页，还取决于加载的是同一 inode（文件系统中的同一个文件对象）还是不同分区中的不同副本。
+已经装入且可以复用的库，后续 `dlopen()` 可能命中链接器已有的库记录 `soinfo`；冷启动、首次缺页和构造函数成本不会按相同比例重复。跨 namespace 需要装入另一份库时，映射、重定位和私有脏页（进程写入后无法直接共享的页面）都可能增加。能否共享物理文件页，还取决于加载的是同一 inode（文件系统中的同一个文件对象）还是不同分区中的不同副本。
 
 Android 17 linker 是原生 C++ 实现，没有 JIT 编译访问检查，也没有基于 AI 的库访问预测。平台同样没有通用异步 `dlopen()` API；业务可以把允许后台执行的加载放到工作线程，但构造函数、JNI 注册和调用方线程约束仍要自行验证。
 
