@@ -1,11 +1,11 @@
 ---
 title: 内存规整与直接回收性能边界
 chapter: '4.7'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-08-26'
 last_verified_against: Android Common Kernel android17-6.18-2026-06_r6 mm/{page_alloc,compaction,vmscan,vmstat}.c, include/trace/events/{compaction,vmscan}.h, Documentation/admin-guide/{sysctl/vm,mm/transhuge}.rst, Documentation/accounting/psi.rst, arch/arm64/configs/gki_defconfig; AOSP android-17.0.0_r1 lmkd, libpsi and CachedAppOptimizer Java/JNI; Android Source lmkd/mmd docs; Android Developers memory documentation
-confidence: medium
+confidence: medium-high
 tags:
 - memory
 - linux-kernel
@@ -17,10 +17,12 @@ related_chapters:
 - '4.3'
 - '23.2'
 - '14.4'
-pipeline_stage: ready-for-review
-task6_state: pending-review
-task9_state: pending-review
-task2b_state: body-applied
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
+task2b_state: fixed
+last_review_finalize_at: '2026-08-26T14:12:30+08:00'
+last_review_finalize_run_id: 20260826-140558-bdb71749
 last_body_apply_at: '2026-08-26T13:15:54+08:00'
 last_body_apply_run_id: 20260826-131554-2cbecae1
 last_deep_review_at: '2026-08-20T16:35:12+08:00'
