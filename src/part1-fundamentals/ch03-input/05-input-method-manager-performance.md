@@ -16,20 +16,28 @@ related_chapters:
 - '3.2'
 - '2.3'
 - '7.2'
-last_verified: '2026-06-05'
+last_verified: '2026-08-26'
 last_verified_against: AOSP android-17.0.0_r1
 confidence: medium
+last_idle_audit_at: '2026-08-26T14:35:03+08:00'
+last_idle_audit_run_id: 20260826-143503-idle-audit-0632f239
 sources:
 - type: aosp
-  path: frameworks/base/services/core/java/com/android/server/InputMethodManagerService.java
+  path: frameworks/base/services/core/java/com/android/server/inputmethod/InputMethodManagerService.java
 - type: aosp
   path: frameworks/base/core/java/android/view/inputmethod/InputMethodManager.java
 - type: aosp
   path: frameworks/base/core/java/android/view/InsetsController.java
 - type: aosp
-  path: frameworks/base/core/java/android/view/ImeInsetsSourceConsumer.java
+  path: frameworks/base/core/java/android/view/InsetsSourceConsumer.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/inputmethod/InputMethodBindingController.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/wm/ImeInsetsSourceProvider.java
 - type: official
-  path: developer.android.com/develop/ui/views/touch-and-input/keyboard-input
+  path: developer.android.com/develop/ui/views/touch-and-input/keyboard-input/visibility
+- type: official
+  path: developer.android.com/develop/ui/views/layout/sw-keyboard
 ---
 
 # InputMethodManager 与软键盘性能
