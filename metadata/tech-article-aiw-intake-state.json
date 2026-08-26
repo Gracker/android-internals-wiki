@@ -680,6 +680,78 @@
       "size": 13801,
       "status": "skipped-low-score"
     },
+    "source/gracker-rss/2026-08-27-ducklabs-aws-DuckLabs-to-Join-AWS.md": {
+      "chapter": "待分类",
+      "entry_id": "5f329c298fe8ddc4",
+      "last_appended": "2026-08-27T05:25:01.918213+08:00",
+      "last_seen": "2026-08-27T05:25:01.918213+08:00",
+      "mtime": 1787771160.658684,
+      "score": 14,
+      "sha256": "c5e08c6a9ae1f6fabbdf8a3c57fefbef36936f46d583fbc17de90041ac20afdd",
+      "size": 11086,
+      "status": "appended",
+      "title": "DuckLabs to Join AWS, Projects to Remain Open Source"
+    },
+    "source/gracker-rss/2026-08-27-lighthouse-rag-simpler-RAG-Is-Simpler-Than-You-Think.md": {
+      "chapter": "待分类",
+      "entry_id": "fc29dc6281e1d490",
+      "last_appended": "2026-08-27T05:25:01.918213+08:00",
+      "last_seen": "2026-08-27T05:25:01.918213+08:00",
+      "mtime": 1787771160.6590946,
+      "score": 8,
+      "sha256": "8c3df354e00b46049aca56657a66362bce288a38d78fd9908f012be828fd5343",
+      "size": 23426,
+      "status": "appended",
+      "title": "RAG Is Simpler Than You Think"
+    },
+    "source/gracker-rss/2026-08-27-lwn-fossy-bambu-agpl-An-ongoing-3D-printer-AGPL-violation.md": {
+      "chapter": "待分类",
+      "entry_id": "e9c2b4e6ea060875",
+      "last_appended": "2026-08-27T05:25:01.918213+08:00",
+      "last_seen": "2026-08-27T05:25:01.918213+08:00",
+      "mtime": 1787771160.658887,
+      "score": 14,
+      "sha256": "0843e944aa90a80353b46b95b5cf228186e3537068fb2d36e1f95a5608d86f39",
+      "size": 18534,
+      "status": "appended",
+      "title": "An ongoing 3D"
+    },
+    "source/gracker-rss/2026-08-27-qwen3-8-flash-next-Qwen3-8-Flash-Next-GDN-QSA-Hybrid.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "f358d1cc636fe792",
+      "last_appended": "2026-08-27T05:25:01.918213+08:00",
+      "last_seen": "2026-08-27T05:25:01.918213+08:00",
+      "mtime": 1787771160.6585028,
+      "score": 19,
+      "sha256": "0061fca320aed070804971d7181985a5996aa1b027f399dc25f280d85b2716e4",
+      "size": 26880,
+      "status": "appended",
+      "title": "Qwen Studio"
+    },
+    "source/gracker-rss/2026-08-27-trailofbits-vm-containment-VMs-wont-contain-cyber-capable-agents.md": {
+      "chapter": "ch04-memory",
+      "entry_id": "7525bc40d9f82b38",
+      "last_appended": "2026-08-27T05:25:01.918213+08:00",
+      "last_seen": "2026-08-27T05:25:01.918213+08:00",
+      "mtime": 1787771160.6579545,
+      "score": 13,
+      "sha256": "1a3d18d71e667a1d349041f82ca35f4bd3773e3f8603b54f446801880e260a99",
+      "size": 11401,
+      "status": "appended",
+      "title": "VMs won't contain cyber"
+    },
+    "source/gracker-rss/2026-08-27-z-ai-glm-5-3-flash-GLM-5-3-Flash-Frontier-Intelligence-Flash-Cost.md": {
+      "chapter": "待分类",
+      "entry_id": "205f0eb7b306c6b1",
+      "last_appended": "2026-08-27T05:25:01.918213+08:00",
+      "last_seen": "2026-08-27T05:25:01.918213+08:00",
+      "mtime": 1787771160.658271,
+      "score": 14,
+      "sha256": "e15dd28ce0bc4894207bb8a2386c1faf6cdf807fc30eba816277da6d8fbc66d1",
+      "size": 15746,
+      "status": "appended",
+      "title": "GLM-5.3-Flash: Frontier Intelligence, Flash Cost"
+    },
     "source/hacker-news-rss/2026-08-14-andros-html-over-websockets.md": {
       "chapter": "待分类",
       "entry_id": "a2ca4853b47ae8b4",
@@ -3382,6 +3454,30 @@
       "status": "appended",
       "title": "Android-高版本 LMKD 源码解析：基于 PSI 的内存压力监控与查杀全流程Android 高版本 LMKD 源"
     },
+    "source/juejin-android/2026-08-27-76218326-Android Apk 找代码 只需秒级.md": {
+      "chapter": "待分类",
+      "entry_id": "e9ec8d4f48537bd9",
+      "last_appended": "2026-08-27T05:25:01.918213+08:00",
+      "last_seen": "2026-08-27T05:25:01.918213+08:00",
+      "mtime": 1787776687.8135102,
+      "score": 18,
+      "sha256": "b2423797d32a4164874e589f3cb56ec9b214cdc865aeeae342518387cd57eabf",
+      "size": 17945,
+      "status": "appended",
+      "title": "Android Apk 找代码 只需秒级别 这篇文章讲的就是怎么解决这个问题。 痛点 做过大型 Android 项目的人"
+    },
+    "source/juejin-android/2026-08-27-76756264-三星安卓系统BUG排查记录：云闪付、铁路.md": {
+      "chapter": "待分类",
+      "entry_id": "c071c12f5567e5a9",
+      "last_appended": "2026-08-27T05:25:01.918213+08:00",
+      "last_seen": "2026-08-27T05:25:01.918213+08:00",
+      "mtime": 1787776687.8128371,
+      "score": 24,
+      "sha256": "30ee299ef888eb6b83fe6a4e6192181763ef943975f023867f0d126e9dc513b8",
+      "size": 38283,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -5189,24 +5285,24 @@
     }
   },
   "last_report": {
-    "appended": 5,
-    "considered": 9,
-    "cutoff": "2026-08-25T05:20:50.285040+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-26.md",
+    "appended": 8,
+    "considered": 8,
+    "cutoff": "2026-08-26T05:20:42.683590+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-27.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1896,
+    "scanned": 1904,
     "skipped": {
       "existing_link": 0,
-      "low_score": 4,
+      "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 455
+      "unchanged": 464
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-08-26T05:25:42.683590+08:00",
+  "last_run_at": "2026-08-27T05:25:01.918213+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
