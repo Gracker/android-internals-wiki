@@ -2,8 +2,8 @@
 title: App 内存分析与案例
 chapter: '10.1'
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-07-31'
-last_verified_against: AOSP android-17.0.0_r1 / kernel android17-6.18-2026-06_r6
+last_verified: '2026-08-26'
+last_verified_against: AOSP android-17.0.0_r1 / kernel android17-6.18-2026-06_r6; Android Developers memory/profiling/trim docs and Perfetto heapprofd docs checked 2026-08-26
 confidence: medium
 sources:
 - type: aosp
@@ -36,6 +36,8 @@ sources:
 - type: official
   path: https://developer.android.com/ndk/guides/memory-debug
 - type: official
+  path: https://developer.android.com/ndk/guides/wrap-script
+- type: official
   path: https://developer.android.com/guide/practices/page-sizes
 - type: blog
   path: Personal-Knowlodge/source/Android-Jank-Due-To-Low-Memory.md
@@ -59,6 +61,12 @@ sources:
   path: frameworks/base/core/java/android/util/LruCache.java@android-17.0.0_r1
 - type: official
   path: https://developer.android.com/reference/android/util/LruCache
+- type: official
+  path: https://developer.android.com/reference/android/content/ComponentCallbacks2
+- type: official
+  path: https://developer.android.com/reference/android/os/ProfilingManager
+- type: official
+  path: https://developer.android.com/reference/android/os/ProfilingTrigger
 - type: aosp
   path: frameworks/base/libs/hwui/RenderProperties.h
 - type: aosp
@@ -96,10 +104,10 @@ related_chapters:
 - '10.3'
 task6_state: reviewed
 section: '10.1'
-status: ready-for-review
-pipeline_stage: ready-for-review
+status: finalized
+pipeline_stage: ready-to-publish
 task2b_state: fixed
-task9_state: pending-review
+task9_state: reviewed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch10-memory-perf/01-app-memory-analysis.md
@@ -108,6 +116,8 @@ consolidated_from:
 - src/part2-performance/ch10-memory-perf/03-memory-growth.md
 last_body_apply_at: '2026-08-26T19:20:50+08:00'
 last_body_apply_run_id: 20260826-191540-e0aa0648
+last_review_finalize_at: '2026-08-26T20:23:27+08:00'
+last_review_finalize_run_id: 20260826-201101-4eb9807b
 ---
 
 # App 内存分析与案例
@@ -387,7 +397,7 @@ Android 15 起支持使用 16 KB page size（内存页大小）的设备。页�
 | --- | --- | --- |
 | 业务 live set（仍在使用的数据集合） | 关闭页面、清空数据集或结束会话 | 对象类型、条目数、字节预算与业务容量是否同步变化 |
 | 无上限缓存或队列积压 | 执行缓存裁剪、消费完队列或取消任务 | 缓存 owner、队列长度、命中收益和积压产生速度 |
-| Java/Kotlin 对象泄漏 | 结束对象的业务生命周期并等待异步清理 | heap dump 中稳定存在的 GC Root 强引用路径，详见 23.2 |
+| Java/Kotlin 对象泄漏 | 结束对象的业务生命周期并等待异步清理 | heap dump 中稳定存在的 GC Root 强引用路径，见上文第 3.2 节 |
 | Native 未释放分配 | 关闭会话或执行配对释放 | heapprofd 的 live allocation 差分与符号化调用栈 |
 | allocator 保留 | 确认 live allocation 已下降 | allocator 统计、`smaps` 与匿名驻留页；RSS 不立即回落不能单独命名为泄漏 |
 | 直接 `mmap`、文件页或线程栈 | 关闭映射、结束线程并再次采样 | mapping 名称、创建者、线程数量和退出条件 |
