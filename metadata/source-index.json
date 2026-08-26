@@ -4349,7 +4349,11 @@
         "psi",
         "ch04-memory"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "status": "body-applied",
+      "action": "body-applied",
+      "applied_at": "2026-08-26T13:15:54+08:00",
+      "applied_run_id": "20260826-131554-2cbecae1"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-26-76772546-Android高版本LMKD源码解析PSI内存压力监控与查杀全流程.md",
