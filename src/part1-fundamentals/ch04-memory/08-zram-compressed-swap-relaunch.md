@@ -2,7 +2,7 @@
 title: ZRAM 压缩交换与应用重启延迟
 chapter: '4.8'
 section: '4.8'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-08-22'
 last_verified_against: AOSP android-17.0.0_r1 system/memory/lmkd + frameworks/base MMD/ZramMaintenance/CachedAppOptimizer/OomAdjuster；Android common kernel android17-6.18-2026-06_r6 zram；Android MMD/LMKD docs；Linux zram docs；Perfetto memory docs；ApplicationExitInfo/ActivityManager API reference；Android 16 KB page size docs；arXiv 2502.12826
@@ -53,6 +53,8 @@ sources:
   path: DeepResearch/PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研.md
 - type: obsidian
   path: DeepResearch/2026-05-09-mglru-vs-traditional-lru-lock-contention.md
+- type: obsidian
+  path: DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md
 tags:
 - memory
 - zram
@@ -68,9 +70,12 @@ related_chapters:
 - '16.2'
 last_deep_review_at: '2026-08-22T17:05:18+08:00'
 last_deep_review_run_id: 20260822-170518-deep-review-544265d1
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: ready-for-review
+task2b_state: body-applied
+task6_state: pending-review
+task9_state: pending-review
+last_body_apply_at: '2026-08-26T09:55:08+08:00'
+last_body_apply_run_id: 20260826-095344-b5ee28a0
 ---
 
 # ZRAM 压缩交换与应用重启延迟
@@ -344,6 +349,14 @@ return std::min(
 - `ro.lmk.direct_reclaim_threshold_ms`。
 
 这些值影响设备何时认为交换空间过低，以及何时因反复换入换出或直接回收而终止进程。排查具体设备时要读取实际属性，不能只引用 AOSP 默认值。
+
+### PSI 事件如何进入 LMKD
+
+PSI 不是简单读取 `/proc/pressure/memory` 的 `avg10`/`avg60` 摘要值。Android common kernel 6.18 的 `kernel/sched/psi.c` 用每 CPU `psi_group_cpu` 中的 `state_start` 与 `state_mask` 记录任务处于 MEM SOME/FULL 等停顿状态的时间，再把结果聚合到 PSI group；Android 17 的 `libpsi` 会向 `/proc/pressure/memory` 写入 `some/full <threshold_us> <window_us>` 监视器，并让 `lmkd` 通过 `EPOLLPRI` 接收阈值事件。[来源: DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md；已验证: android17-6.18-2026-06_r6 kernel/sched/psi.c；android-17.0.0_r1 system/memory/lmkd/libpsi/psi.cpp]
+
+`lmkd.cpp` 的默认 PSI 阈值表包含 low=`some 70ms/1s`、medium=`some 100ms/1s`、critical=`full 70ms/1s`；启用新策略时，low 阈值会被置为 0，medium 与 critical 改用 `ro.lmk.psi_partial_stall_ms` 和 `ro.lmk.psi_complete_stall_ms`。因此，排查 Android 17 设备时应同时记录 `/proc/pressure/memory` 的 `some/full` 增量、`ro.lmk.*` 实际属性和设备是否使用新策略，不能只凭一个 AOSP 默认阈值表推断杀进程时机。[来源: DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md；已验证: android-17.0.0_r1 system/memory/lmkd/lmkd.cpp]
+
+PSI 事件也不等于 `lmkd` 立即杀进程。`__mp_event_psi()` 会把 PSI 唤醒与内存水位、ZRAM-aware free swap、反复换入换出、进程 `oom_score_adj` 等状态合并后再选候选进程；在 `kill_heaviest_task` 模式下，同一压力档位内会偏向 RSS+swap 更大的候选。[来源: DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md；已验证: android-17.0.0_r1 system/memory/lmkd/lmkd.cpp]
 
 ## 16 KB 页大小的准确影响
 
