@@ -2,7 +2,7 @@
 title: 应用体积分析与优化：DEX、Native SO 与资源
 chapter: '25.10'
 section: '25.10'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
 - dex
@@ -34,9 +34,9 @@ related_chapters:
 - '1.7'
 - '4.5'
 confidence: high
-last_verified: '2026-08-15'
-last_source_verified_at: 2026-08-15
-last_verified_against: Current Android Developers R8 / keep rules / Configuration Analyzer / D8 / apkanalyzer / bundletool / multidex / Startup Profile docs and AOSP DEX format retrieved 2026-08-15; AOSP android-17.0.0_r1 StandardDexFile / DexFile / DexPathList
+last_verified: '2026-08-26'
+last_source_verified_at: '2026-08-26'
+last_verified_against: Android Developers R8 / keep rules / Configuration Analyzer / app optimization / APK Analyzer / D8 / bundletool / multidex / Startup Profile / NDK ABI / native symbols / 16 KB page size / AAPT2 / resource shrinker docs retrieved 2026-08-26; AOSP android-17.0.0_r1 ART DEX, bionic linker, package ABI, NativeLibraryHelper, androidfw and Soong anchors; android17-6.18 kernel mmap anchor
 sources:
 - type: official
   path: Dalvik executable format (source.android.com/docs/core/runtime/dex-format)
@@ -140,18 +140,18 @@ sources:
   path: https://android.googlesource.com/platform/build/soong/+/android-17.0.0_r1/java/app.go
 - type: article
   path: 技术文章/source/juejin-android/2026-08-26-76760926-超好用R8ConfigurationAnalyzer优化App大小和内存.md
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 task2b_state: body-applied
-task6_state: pending-review
-task9_state: pending-review
+task6_state: reviewed
+task9_state: reviewed
 last_body_apply_at: '2026-08-26T11:18:51+08:00'
 last_body_apply_run_id: 20260826-111548-6931200a
 last_draft_polish_at: 2026-08-15 17:19:02+08:00
 last_draft_polish_run_id: 20260815-171902-gracker-writing-458
 last_deep_review_at: 2026-07-31
 last_deep_review_run_id: 20260731-083556-deep-review-977cb49d
-last_review_finalize_at: 2026-08-15 17:19:02+08:00
-last_review_finalize_run_id: 20260815-171902-gracker-writing-458
+last_review_finalize_at: '2026-08-26T12:15:14+08:00'
+last_review_finalize_run_id: 20260826-121205-b3083af1
 last_rework_at: 2026-08-15 17:19:02+08:00
 last_rework_run_id: 20260815-171902-gracker-writing-458
 last_consolidated_at: '2026-08-24'
@@ -525,9 +525,9 @@ R8 缩短和重打包符号后，类名、包名、字段名与方法名字符�
 
 ### Multidex：正确性、体积与启动分别处理
 
-#### Android 12—17 已原生支持 multidex
+#### Android 5.0/API 21 以后已原生支持 multidex
 
-Android 5.0 / API 21 起，ART 原生加载 APK 中的 `classes.dex`、`classes2.dex` 等文件。Android 12—17 不需要 `androidx.multidex` 安装器，也不需要为了类可见性维护旧版主 DEX 类清单（legacy main dex list）。
+Android 5.0 / API 21 起，ART 原生加载 APK 中的 `classes.dex`、`classes2.dex` 等文件。因此，本文覆盖的 Android 10—17 设备不需要 `androidx.multidex` 安装器，也不需要为了类可见性维护旧版主 DEX 类清单（legacy main dex list）。
 
 `minSdk <= 20` 的应用仍要处理旧版 multidex（为 Dalvik 运行时安装和加载次级 DEX 的兼容方案）：
 
