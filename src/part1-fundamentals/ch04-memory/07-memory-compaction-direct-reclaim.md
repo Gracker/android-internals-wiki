@@ -23,8 +23,8 @@ task9_state: pending-review
 task2b_state: body-applied
 last_review_finalize_at: '2026-08-26T14:12:30+08:00'
 last_review_finalize_run_id: 20260826-140558-bdb71749
-last_body_apply_at: '2026-08-26T15:17:28+08:00'
-last_body_apply_run_id: 20260826-151509-7a444578
+last_body_apply_at: '2026-08-26T17:17:35+08:00'
+last_body_apply_run_id: 20260826-171524-cc2d6c7a
 last_deep_review_at: '2026-08-20T16:35:12+08:00'
 last_deep_review_run_id: 20260820-163512-deep-review-90bb83ac
 sources:
@@ -345,6 +345,10 @@ high = min(low + min(10, low / 2), 100)
 ### 7.1 `lmkd` 消费压力信号并选择进程
 
 Android 10 起，PSI 成为 `lmkd` 的默认压力监控方式。Android 17 的 `init_psi_monitors()` 在新策略下把 LOW 级阈值设为 0，MEDIUM 级使用 `PSI_SOME` 的部分停顿阈值，CRITICAL 级使用 `PSI_FULL` 的完全停顿阈值；AOSP 默认窗口是 1000 ms，非 low-ram 设备的部分停顿默认值是 70 ms，完全停顿默认值是 700 ms，产品属性仍可覆盖。[已验证: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp; 来源: 技术文章/source/juejin-android/2026-08-26-76772546-AndroidPSI详解libpsi源码解析116行架起lmkd与内核的桥.md]
+
+不要把 PSI trigger 看成逐次压力回调。Android 17 的 `lmkd.cpp` 明确把默认 PSI 窗口设为 1000 ms，并说明 monitor 每个窗口最多产生一次事件；事件到达后，`lmkd` 会在同一窗口内继续轮询内存状态。一次决策刚执行 kill 或 swap 低时，轮询周期使用 10 ms；其他轮询使用 100 ms；如果正在等待进程死亡通知，则暂停轮询。排查时要把 `lmkd` 日志、`/proc/pressure/memory` 的 `total/avg10` 和采样时间对齐，不能用“没有新的 PSI trigger”排除窗口内的继续决策。[已验证: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp; 来源: 技术文章/source/juejin-android/2026-08-26-76772546-Android高版本LMKD源码解析PSI内存压力监控与查杀全流程.md]
+
+属性与守护进程自身优先级也会影响复现。`GET_LMK_PROPERTY` 让 `persist.device_config.lmkd_native.<name>` 覆盖 `ro.lmk.<name>`；`update_props()` 读取 PSI 窗口、部分/完全停顿阈值、缓存抖动和交换空间等参数。现代 userspace 路径初始化后，`lmkd` 还会尝试 `mlockall(MCL_CURRENT | MCL_FUTURE | MCL_ONFAULT)` 并设置 `SCHED_FIFO` 优先级 1；失败只记录 warning。这些措施是为了降低 `lmkd` 自身在内存高压下受回收或调度影响的概率，不表示它能同步解除某个分配线程的直接回收或物理页规整。[已验证: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp; 来源: 技术文章/source/juejin-android/2026-08-26-76772546-Android高版本LMKD源码解析PSI内存压力监控与查杀全流程.md]
 
 收到事件后，Android 17 的决策代码还会读取或计算：
 
