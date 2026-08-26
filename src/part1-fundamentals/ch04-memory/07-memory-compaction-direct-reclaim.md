@@ -1,10 +1,10 @@
 ---
 title: 内存规整与直接回收性能边界
 chapter: '4.7'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-20'
-last_verified_against: Android Common Kernel android17-6.18-2026-06_r6 mm/{page_alloc,compaction,vmscan,vmstat}.c, include/trace/events/{compaction,vmscan}.h, Documentation/admin-guide/{sysctl/vm,mm/transhuge}.rst, Documentation/accounting/psi.rst, arch/arm64/configs/gki_defconfig; AOSP android-17.0.0_r1 lmkd and CachedAppOptimizer Java/JNI; Android Source lmkd/mmd docs; Android Developers memory documentation
+last_verified: '2026-08-26'
+last_verified_against: Android Common Kernel android17-6.18-2026-06_r6 mm/{page_alloc,compaction,vmscan,vmstat}.c, include/trace/events/{compaction,vmscan}.h, Documentation/admin-guide/{sysctl/vm,mm/transhuge}.rst, Documentation/accounting/psi.rst, arch/arm64/configs/gki_defconfig; AOSP android-17.0.0_r1 lmkd, libpsi and CachedAppOptimizer Java/JNI; Android Source lmkd/mmd docs; Android Developers memory documentation
 confidence: medium
 tags:
 - memory
@@ -17,14 +17,19 @@ related_chapters:
 - '4.3'
 - '23.2'
 - '14.4'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: ready-for-review
+task6_state: pending-review
+task9_state: pending-review
+task2b_state: body-applied
+last_body_apply_at: '2026-08-26T13:15:54+08:00'
+last_body_apply_run_id: 20260826-131554-2cbecae1
 last_deep_review_at: '2026-08-20T16:35:12+08:00'
 last_deep_review_run_id: 20260820-163512-deep-review-90bb83ac
 sources:
 - type: article
   path: Cubox/不懂 内存规整，别说你会 Linux 内存调优-2026-05-13.md
+- type: article
+  path: 技术文章/source/juejin-android/2026-08-26-76772546-AndroidPSI详解libpsi源码解析116行架起lmkd与内核的桥.md
 - type: official
   path: https://source.android.com/docs/core/perf/lmkd
 - type: official
@@ -48,6 +53,10 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp
 - type: aosp
+  path: https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/libpsi/psi.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/libpsi/include/psi/psi.h
+- type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/jni/com_android_server_am_CachedAppOptimizer.cpp
@@ -66,7 +75,7 @@ sources:
 版本边界固定在 Android 17 和对应官方文档：
 
 - Android Common Kernel `android17-6.18-2026-06_r6`，提交 `bcbd6575c301ef871ea15e7ac0fc83909e17ef56`；
-- AOSP `android-17.0.0_r1` 的 `lmkd`、`CachedAppOptimizer.java` 和 JNI 实现；
+- AOSP `android-17.0.0_r1` 的 `lmkd`、`libpsi`、`CachedAppOptimizer.java` 和 JNI 实现；
 - Android Source 的 `lmkd`、`mmd` 文档，以及 Android Developers 的应用内存文档。
 
 Linux 物理页规整、页面回收、ZRAM 压缩、Android 缓存应用回收（cached app compaction）是四种不同操作。诊断时要先确认事件属于哪一层，再讨论性能影响。
@@ -331,7 +340,7 @@ high = min(low + min(10, low / 2), 100)
 
 ### 7.1 `lmkd` 消费压力信号并选择进程
 
-Android 10 起，PSI 成为 `lmkd` 的默认压力监控方式。Android 17 的 `lmkd.cpp` 在新策略下关闭 LOW 级 PSI 监控器，用属性配置 MEDIUM 的 `PSI_SOME` 阈值和 CRITICAL 的 `PSI_FULL` 阈值。
+Android 10 起，PSI 成为 `lmkd` 的默认压力监控方式。Android 17 的 `init_psi_monitors()` 在新策略下把 LOW 级阈值设为 0，MEDIUM 级使用 `PSI_SOME` 的部分停顿阈值，CRITICAL 级使用 `PSI_FULL` 的完全停顿阈值；AOSP 默认窗口是 1000 ms，非 low-ram 设备的部分停顿默认值是 70 ms，完全停顿默认值是 700 ms，产品属性仍可覆盖。[已验证: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp; 来源: 技术文章/source/juejin-android/2026-08-26-76772546-AndroidPSI详解libpsi源码解析116行架起lmkd与内核的桥.md]
 
 收到事件后，Android 17 的决策代码还会读取或计算：
 
@@ -356,7 +365,15 @@ Android 17 源码可以通过内存事件监听器识别直接回收和 `kswapd`
 
 `oom_score_adj` 决定哪些进程更适合作为候选，但终止原因、最低候选分值、严重停顿和设备厂商策略都会改变选择范围。不能概括成“永远只终止 RSS 最大的缓存应用”。
 
-### 7.2 Android 17 的 `mmd` 管理 ZRAM 维护
+### 7.2 `libpsi` 只封装 PSI 触发协议
+
+Android 17 的 `libpsi` 不决定何时杀进程，也不解释内存压力原因。`init_psi_monitor()` 以 `O_WRONLY | O_CLOEXEC` 打开 `/proc/pressure/memory`、`/proc/pressure/io` 或 `/proc/pressure/cpu`，写入 `"some|full threshold_us window_us"` 后返回同一个 fd；`register_psi_monitor()` 把这个 fd 以 `EPOLLPRI` 加入 `lmkd` 的 epoll，`destroy_psi_monitor()` 关闭 fd 并让内核销毁对应 trigger。[已验证: AOSP android-17.0.0_r1 system/memory/lmkd/libpsi/psi.cpp; system/memory/lmkd/libpsi/include/psi/psi.h; 来源: 技术文章/source/juejin-android/2026-08-26-76772546-AndroidPSI详解libpsi源码解析116行架起lmkd与内核的桥.md]
+
+因此，PSI 在 `lmkd` 中有两条通道：trigger fd 只负责“何时唤醒”，统计读取由 `lmkd.cpp` 的 `reread_file()` 缓存另一个只读 fd 后解析 `some/full avg10/avg60/avg300/total`。`psi_parse_mem()` 解析 memory 的 `some` 与 `full` 两行，`psi_parse_cpu()` 只按 `some` 解析 CPU 压力；把 `/proc/pressure/memory` 的读数和 trigger 唤醒混成同一个 fd，会误判采集链路。[已验证: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp; system/memory/lmkd/libpsi/psi.cpp; 来源: 技术文章/source/juejin-android/2026-08-26-76772546-AndroidPSI详解libpsi源码解析116行架起lmkd与内核的桥.md]
+
+排查“PSI 明明升高但 `lmkd` 没动作”时，要同时检查三件事：内核是否支持 PSI trigger、写入的 stall 类型与阈值是否满足、事件监听是否等待 `EPOLLPRI` 而不是普通可读事件。即使 `avg10` 抬高，也只能说明统计窗口内发生过压力停顿；是否触发 `lmkd` 决策，还取决于上述 trigger 条件、窗口限速、轮询补盲和后续决策树。[已验证: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp; system/memory/lmkd/libpsi/psi.cpp; 来源: 技术文章/source/juejin-android/2026-08-26-76772546-AndroidPSI详解libpsi源码解析116行架起lmkd与内核的桥.md]
+
+### 7.3 Android 17 的 `mmd` 管理 ZRAM 维护
 
 Android 17 新增内存管理守护进程（memory management daemon，`mmd`）。官方架构文档把它定位为 ZRAM 配置与持续维护服务，可执行：
 
@@ -369,7 +386,7 @@ Android 17 新增内存管理守护进程（memory management daemon，`mmd`）�
 
 Android 17 的按进程写回还会与 `CachedAppOptimizer` 协作：缓存进程先经过 Framework 所称的应用规整，等待一段时间后，再由 `system_server` 通过进程文件描述符 pidfd 请求 `mmd` 写回该进程的 ZRAM 页面。这里的应用规整仍指 `madvise` 或内存控制组页面回收。
 
-### 7.3 三层关系
+### 7.4 三层关系
 
 | 层 | 主要问题 | Android 17 组件 |
 |---|---|---|
@@ -499,6 +516,7 @@ adb shell cat /proc/meminfo
 判读要点：
 
 - PSI `avg10/60/300` 适合看趋势，`total` 的区间增量适合补充短时停顿证据；
+- `/proc/pressure/memory` 的读数是统计视角，`lmkd` 的 PSI 唤醒是 `libpsi` 写入 trigger 条件后等待 `EPOLLPRI` 的事件视角；没有 `lmkd` 日志或 trace 时，不能只凭一次 `avg10` 抬高还原每次唤醒。[已验证: AOSP android-17.0.0_r1 system/memory/lmkd/libpsi/psi.cpp; system/memory/lmkd/lmkd.cpp; 来源: 技术文章/source/juejin-android/2026-08-26-76772546-AndroidPSI详解libpsi源码解析116行架起lmkd与内核的桥.md]
 - `/proc/swaps` 给出交换设备和使用量；
 - ZRAM `mm_stat` 字段含义应按设备内核文档解释；
 - `SwapTotal/SwapFree`、`CmaTotal/CmaFree` 是否存在取决于配置；
@@ -663,6 +681,8 @@ Android 17 的物理页分配慢路径会在特定高阶条件下先尝试直接
   - `Documentation/accounting/psi.rst`
 - AOSP `android-17.0.0_r1`
   - `platform/system/memory/lmkd/lmkd.cpp`
+  - `platform/system/memory/lmkd/libpsi/psi.cpp`
+  - `platform/system/memory/lmkd/libpsi/include/psi/psi.h`
   - `platform/frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java`
   - `platform/frameworks/base/services/core/jni/com_android_server_am_CachedAppOptimizer.cpp`
 - Android Source：Low memory killer daemon
@@ -671,3 +691,5 @@ Android 17 的物理页分配慢路径会在特定高阶条件下先尝试直接
   - <https://source.android.com/docs/core/perf/mmd>
 - Android Developers：Manage your app's memory
   - <https://developer.android.com/topic/performance/memory>
+- 技术文章：Android-PSI 详解：libpsi 源码解析——116 行代码架起 lmkd 与内核之间的桥
+  - `技术文章/source/juejin-android/2026-08-26-76772546-AndroidPSI详解libpsi源码解析116行架起lmkd与内核的桥.md`
