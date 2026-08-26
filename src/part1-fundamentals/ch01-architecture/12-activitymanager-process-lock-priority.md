@@ -189,7 +189,7 @@ consolidated_from:
 
 活动管理服务（ActivityManagerService，AMS）负责在系统侧协调应用组件与进程生命周期。它不渲染界面，也不直接执行应用代码；它记录“哪个进程承载哪些组件、当前有多重要、某次组件调用是否按时完成”，并协调相应模块创建进程、调度组件和记录异常。
 
-分析冷启动、进程被终止、Service 卡住或广播导致的应用无响应（ANR）时，AMS 的记录常用于对应系统事件与应用调用栈。排查时应先确认：
+分析冷启动、进程被终止、Service 卡住或广播导致的应用无响应（ANR）时，AMS 的记录常用来把系统事件与应用调用栈对应起来。排查时应先确认：
 
 1. 谁发起了操作；
 2. 系统把操作投递给了哪个进程和线程；
@@ -216,7 +216,7 @@ AMS 既维护组件和进程状态，也参与启动、回收、ANR 与调度组
 
 `Instrumentation.execStartActivity()` 直接调用 `ActivityTaskManager.getService().startActivity()`。“启动 Activity 都由 AMS 完成”是旧版实现的说法。现代 Android 中，ATMS 先决定 Activity 应放进哪个任务；只有目标进程不存在时，才请求 AMS/`ProcessList` 创建进程。
 
-AMS 通过 `IActivityManager` Binder 接口接受跨进程请求。请求通常先由 `Binder:system_server_*` 线程接收，再在持锁区域、`Handler` 或其他系统线程中继续处理。不要把名为 `ActivityManager` 的线程理解成唯一的 AMS 主线程，也不要把 Binder 线程池数量写成固定值：线程池上限和实际线程数都可能随系统构建及运行状态变化。
+AMS 通过 `IActivityManager` Binder 接口接受跨进程请求。请求通常先由 `Binder:system_server_*` 线程接收，随后在持锁代码段内、`Handler` 上或其他系统线程中继续处理。不要把名为 `ActivityManager` 的线程理解成唯一的 AMS 主线程，也不要把 Binder 线程池数量写成固定值：线程池上限和实际线程数都可能随系统构建及运行状态变化。
 
 #### Perfetto 中先看什么
 
@@ -358,7 +358,7 @@ Launcher
 6. Activity 生命周期；
 7. 首帧提交与显示。
 
-只计算 `am_proc_start` 到 `am_proc_bound`，得到的是进程创建和应用线程连接（attach）的一部分，不能代表用户感知的启动时间。
+只计算 `am_proc_start` 到 `am_proc_bound`，得到的是进程创建和应用线程连接（attach）耗时的一部分，不能代表用户感知的启动时间。
 
 Android 15（API 35）引入 `ApplicationStartInfo`，Android 16（API 36）又增加 `getStartComponent()`。后者可以区分进程由 Activity、Service、BroadcastReceiver、ContentProvider 或其他组件拉起：
 
@@ -423,7 +423,7 @@ InputDispatcher.processAnrsLocked()
 - **窗口无响应（Window unresponsive）**：已有目标窗口，但输入事件在分发队列中等待过久；
 - **没有焦点窗口（No focused window）**：按键等需要焦点的事件到达时，没有可接收它的焦点窗口。
 
-第二种情况不一定是某个 `onTouchEvent()` 太慢。首帧迟迟没有建立窗口、窗口带有“不接受焦点”标志 `FLAG_NOT_FOCUSABLE`，或焦点切换长时间停留在 WMS 中，都可能触发它。
+第二种情况不一定是某个 `onTouchEvent()` 太慢。首帧迟迟没有建立窗口、窗口带有“不接受焦点”标志 `FLAG_NOT_FOCUSABLE`，或焦点切换在 WMS 中长时间未完成，都可能触发它。
 
 排查时先看应用主线程状态：
 
@@ -585,7 +585,7 @@ Android 17 的后台音频规则分两层：
 
 播放和音量 API 在不满足生命周期条件时通常不会生效，也不会抛出显眼错误；音频焦点请求会返回 `AUDIOFOCUS_REQUEST_FAILED`。因此，不能笼统写成“Android 17 所有后台 FGS 没有 WIU 就静默失败”，目标版本、Activity 可见性、FGS 类型和闹钟例外都要一起判断。
 
-可延迟、可重试的工作优先考虑 `JobScheduler` 或 `WorkManager`；用户发起的数据传输可评估用户发起的数据传输任务（user-initiated data transfer job）；持续媒体播放更适合使用 Media3 的 `MediaSessionService`。选择依据是任务含义和约束，不能把所有 FGS 一律替换成 WorkManager。
+可延迟、可重试的工作优先考虑 `JobScheduler` 或 `WorkManager`；用户发起的数据传输可评估 user-initiated data transfer job（用户发起的数据传输任务）；持续媒体播放更适合使用 Media3 的 `MediaSessionService`。选择依据是任务含义和约束，不能把所有 FGS 一律替换成 WorkManager。
 
 #### AMS 全局锁竞争
 
@@ -597,7 +597,9 @@ synchronized (mGlobalLock) {
 }
 ```
 
-`ActiveServices` 方法名中的 `...Locked()` 表示调用者应持有 AMS 全局锁，不代表存在一个独立的“`mServices` 锁”。`realStartServiceLocked()` 还会在这段受锁保护的代码中向应用发送 `IApplicationThread.scheduleCreateService()`；这是单向异步（oneway）Binder 调用，但 Binder 驱动排队、系统负载和执行时间较长的持锁代码段（临界区）仍可能增加其他线程的锁等待时间。
+`ActiveServices` 方法名中的 `...Locked()` 表示调用者应持有 AMS 全局锁，不代表存在一个独立的“`mServices` 锁”。
+
+`realStartServiceLocked()` 还会在这段受锁保护的代码中向应用发送 `IApplicationThread.scheduleCreateService()`；这是单向异步（oneway）Binder 调用，但 Binder 驱动排队、系统负载和执行时间较长的持锁代码段（临界区）仍可能增加其他线程的锁等待时间。
 
 采集 Java 监视器锁竞争数据后，可以用 Perfetto 标准库定位：
 
@@ -1033,7 +1035,9 @@ ORDER BY dur DESC
 LIMIT 50;
 ```
 
-`dur` 是等待线程被 Java monitor 阻塞的墙钟时间，也就是从等待开始到重新获得执行机会所经过的实际时间。`blocking_thread_name` 与 `short_blocking_method` 指向持锁方，`blocked_thread_name` 与 `short_blocked_method` 指向等待方。`lock_name` 可用时，优先用它区分 `ActivityManagerService` 对象和 `ActivityManagerProcLock` 对象；类名缺失时，再结合源码位置与 `big_locks` 事件判断。仅凭方法属于 `OomAdjuster` 或 `ProcessList` 来猜测锁类型并不可靠，因为这些类中存在同时持有两把锁的路径。
+`dur` 是等待线程被 Java monitor 阻塞的墙钟时间，也就是从等待开始到重新获得执行机会所经过的实际时间。`blocking_thread_name` 与 `short_blocking_method` 指向持锁方，`blocked_thread_name` 与 `short_blocked_method` 指向等待方。
+
+`lock_name` 可用时，优先用它区分 `ActivityManagerService` 对象和 `ActivityManagerProcLock` 对象；类名缺失时，再结合源码位置与 `big_locks` 事件判断。仅凭方法属于 `OomAdjuster` 或 `ProcessList` 来猜测锁类型并不可靠，因为这些类中存在同时持有两把锁的路径。
 
 ### 9. 一次可复用的诊断顺序
 
@@ -1115,9 +1119,9 @@ Controller 在每次计算前调用 `commitStagedEvents()`，把异步暂存的 
 
 API 37 源码还包含基于进程图和 bucket priority queue（按优先级分桶的队列）的 `ProcStateController`。全量更新中，`OomAdjusterImpl` 只有在 `enableProcstateControllerComputation()` 开启时才调用它。
 
-该标签的 `partialUpdate()`、`evaluateProcState(ProcessEdge)`、服务 / Provider 边计算仍留有 TODO；代码注释也说明 CapabilityController 尚未完全切换到它的 `procState` 结果。因此，它代表仍在推进的新算法，不能写成 Android 17 已经完全用基于优先级队列的图遍历替换 OomAdjuster。
+该类的 `partialUpdate()`、`evaluateProcState(ProcessEdge)`、服务 / Provider 边计算仍留有 TODO；代码注释也说明 CapabilityController 尚未完全切换到它的 `procState` 结果。因此，它代表仍在推进的新算法，不能写成 Android 17 已经完全用基于优先级队列的图遍历替换 OomAdjuster。
 
-#### 2.4 `LSP` 不应自行展开成一句英文
+#### 2.4 不要为 `LSP` 臆造英文全称
 
 API 37 用注解给出锁要求：`computeOomAdjLSP()`、`applyResultsLSP()` 等方法由 `@GuardedBy({"mServiceLock", "mProcLock"})` 保护。`updateOomAdjLocked()` 在持有 service lock 时再获取 proc lock，然后进入 LSP 方法。
 
@@ -1208,7 +1212,7 @@ Short FGS 超时后会触发带 `OOM_ADJ_REASON_SHORT_FGS_TIMEOUT` 的重算。�
 
 这里的“承载进程”（源码语境中的 host）指运行该 Service 或 Provider 的进程。
 
-这套做法支持多跳依赖与循环关系，不再是“从每个进程递归 computeClients”的简单伪代码。
+这套做法支持多跳依赖与循环关系，不再停留在“从每个进程递归 computeClients”的简单伪代码层面。
 
 绑定服务的传播结果受多个标志共同影响，例如：
 
@@ -1311,7 +1315,9 @@ kernel PSI / swap / thrashing
 
 当 `mEnableBatchingOomAdj` 开启且属于批量应用结果时，变化进程先放入 `mProcsToOomAdj`，计算末尾调用 `ProcessList.batchSetOomAdj()`。
 
-API 37 每个 `LMK_PROCS_PRIO` 包最多携带 3 个进程，每个进程有 5 个字段：PID、UID、oomadj、进程类型、`for_lmkd_only`。列表超过 3 个时会拆成多条控制套接字消息；批处理路径当前把进程类型固定为应用，并把 `for_lmkd_only` 写为 0（单进程 `LMK_PROCPRIO` 才有 zram 回写场景下的 `for_lmkd_only` 例外）。它不是 Binder IPC，也不会把任意数量进程放进一次调用。LMKD 批量命令编号、数据包长度和 thrashing 决策边界，可与 [4.3 lmkd、Cached App Freezer 与内存压力治理](../ch04-memory/03-lmkd-freezer-memory-pressure.md) 交叉核对。
+API 37 每个 `LMK_PROCS_PRIO` 包最多携带 3 个进程，每个进程有 5 个字段：PID、UID、oomadj、进程类型、`for_lmkd_only`。列表超过 3 个时会拆成多条控制套接字消息；批处理路径当前把进程类型固定为应用，并把 `for_lmkd_only` 写为 0（单进程 `LMK_PROCPRIO` 才有 zram 回写场景下的 `for_lmkd_only` 例外）。
+
+它不是 Binder IPC，也不会把任意数量进程放进一次调用。LMKD 批量命令编号、数据包长度和 thrashing 决策边界，可与 [4.3 lmkd、Cached App Freezer 与内存压力治理](../ch04-memory/03-lmkd-freezer-memory-pressure.md) 交叉核对。
 
 ### 七、何时触发重算
 
@@ -1470,7 +1476,7 @@ FGS 提高进程重要性，但不提供绝对存活保证。它还受启动权�
 
 ## 结论
 
-ActivityManager 的主线不是某一个数值或某一把锁，而是“组件事件改变进程责任，进程责任触发优先级计算，共享状态更新又受到 system_server 锁契约约束”。Activity、Service、Broadcast 和 ContentProvider 的调度入口不同，但都要回到目标进程、计时边界、`procState`、`oom_score_adj` 与 `schedGroup` 解释结果。
+ActivityManager 的主线不是某一个数值或某一把锁。它是“组件事件改变进程责任，进程责任触发优先级计算，共享状态更新又受到 system_server 锁契约约束”这条因果链。Activity、Service、Broadcast 和 ContentProvider 的调度入口不同，但都要回到目标进程、计时边界、`procState`、`oom_score_adj` 与 `schedGroup` 解释结果。
 
 Android 17 的双锁模型没有消除大临界区。OOM adj 和 LRU 写入仍会同时持有全局锁与进程锁，冻结与部分通知路径才可能只使用 `mProcLock`。诊断时应把组件调用链、OomAdjuster 结果、锁等待和持锁者工作连成同一条时间线，不能只凭一次 `futex` 等待或一个 adj 数值下结论。
 
