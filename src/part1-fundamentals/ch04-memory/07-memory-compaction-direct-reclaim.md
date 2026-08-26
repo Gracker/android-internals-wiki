@@ -1,7 +1,7 @@
 ---
 title: 内存规整与直接回收性能边界
 chapter: '4.7'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-08-26'
 last_verified_against: Android Common Kernel android17-6.18-2026-06_r6 mm/{page_alloc,compaction,vmscan,vmstat}.c, include/trace/events/{compaction,vmscan}.h, Documentation/admin-guide/{sysctl/vm,mm/transhuge}.rst, Documentation/accounting/psi.rst, arch/arm64/configs/gki_defconfig; AOSP android-17.0.0_r1 lmkd, libpsi and CachedAppOptimizer Java/JNI; Android Source lmkd/mmd docs; Android Developers memory documentation
@@ -17,14 +17,14 @@ related_chapters:
 - '4.3'
 - '23.2'
 - '14.4'
-pipeline_stage: ready-to-publish
+pipeline_stage: ready-for-review
 task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
+task9_state: pending-review
+task2b_state: body-applied
 last_review_finalize_at: '2026-08-26T14:12:30+08:00'
 last_review_finalize_run_id: 20260826-140558-bdb71749
-last_body_apply_at: '2026-08-26T13:15:54+08:00'
-last_body_apply_run_id: 20260826-131554-2cbecae1
+last_body_apply_at: '2026-08-26T15:17:28+08:00'
+last_body_apply_run_id: 20260826-151509-7a444578
 last_deep_review_at: '2026-08-20T16:35:12+08:00'
 last_deep_review_run_id: 20260820-163512-deep-review-90bb83ac
 sources:
@@ -32,6 +32,8 @@ sources:
   path: Cubox/不懂 内存规整，别说你会 Linux 内存调优-2026-05-13.md
 - type: article
   path: 技术文章/source/juejin-android/2026-08-26-76772546-AndroidPSI详解libpsi源码解析116行架起lmkd与内核的桥.md
+- type: article
+  path: 技术文章/source/juejin-android/2026-08-26-76772546-Android高版本LMKD源码解析PSI内存压力监控与查杀全流程.md
 - type: official
   path: https://source.android.com/docs/core/perf/lmkd
 - type: official
@@ -357,6 +359,10 @@ Android 10 起，PSI 成为 `lmkd` 的默认压力监控方式。Android 17 的 
 Android 17 源码可以通过内存事件监听器识别直接回收和 `kswapd` 活动；该能力不可用时，再根据 `/proc/vmstat` 中 `pgscan_direct`、`pgscan_kswapd` 等计数的变化判断。
 
 终止原因包括 `DIRECT_RECL_AND_THRASHING`、`DIRECT_RECL_STUCK`、`LOW_MEM_AND_SWAP`、`LOW_MEM_AND_THRASHING` 等条件。代码没有把 `/proc/vmstat` 的 `compact_fail`（内核枚举 `COMPACTFAIL`）作为直接终止进程的触发器。
+
+读 bugreport 时，`lmkd` 的“低内存”不等于 `/proc/meminfo` 里的 `MemAvailable`。Android 17 的 `meminfo_parse()` 解析 `MemFree`、文件页/匿名页、`SwapTotal/SwapFree`、`CmaFree` 等字段；`get_lowest_watermark()` 用 `MemFree - CmaFree` 与 `calc_zone_watermarks()` 汇总出的 `max_protection + min/low/high` 水位比较，得出 `WMARK_HIGH/LOW/MIN`。因此，`MemAvailable` 看起来仍高时，`lmkd` 仍可能因为马上可分配页贴近水位而把“低内存 + swap/thrashing”等条件纳入候选；反过来，水位没破、swap 充足且 refault 不增长时，PSI 唤醒也可能被判为无需 kill。[已验证: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp; 来源: 技术文章/source/juejin-android/2026-08-26-76772546-Android高版本LMKD源码解析PSI内存压力监控与查杀全流程.md]
+
+文件页抖动的分子是 `workingset_refault_file` 的区间增量，分母是上一窗口记录的 `nr_inactive_file + nr_active_file`；ZRAM 场景下，可用 swap 还会经过 `easy_available` 和 `swap_compression_ratio` 约束，而不是直接相信 `SwapFree` 的名义容量。排查 LMK 与直接回收相邻发生的问题时，应保存同一时间窗口内的 `/proc/vmstat`、`/proc/meminfo`、`/proc/zoneinfo` 和 `/proc/pressure/memory`，再用增量解释 thrashing、水位和 PSI 是否共同满足同一次查杀条件。[已验证: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp; 来源: 技术文章/source/juejin-android/2026-08-26-76772546-Android高版本LMKD源码解析PSI内存压力监控与查杀全流程.md]
 
 这给出清晰边界：
 
@@ -695,3 +701,5 @@ Android 17 的物理页分配慢路径会在特定高阶条件下先尝试直接
   - <https://developer.android.com/topic/performance/memory>
 - 技术文章：Android-PSI 详解：libpsi 源码解析——116 行代码架起 lmkd 与内核之间的桥
   - `技术文章/source/juejin-android/2026-08-26-76772546-AndroidPSI详解libpsi源码解析116行架起lmkd与内核的桥.md`
+- 技术文章：Android-高版本 LMKD 源码解析：基于 PSI 的内存压力监控与查杀全流程
+  - `技术文章/source/juejin-android/2026-08-26-76772546-Android高版本LMKD源码解析PSI内存压力监控与查杀全流程.md`
