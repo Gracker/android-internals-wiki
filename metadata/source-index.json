@@ -4360,7 +4360,7 @@
       "summary": "> 发布时间: 2026-08-24T07:56:46.000Z > 原文链接: https://juejin.cn/post/7677254638325694474 2026-08-24 49 阅读39分钟 > 本文基于 system/memory/lmkd/lmkd.cpp（Android S/T 时期版本，约 3800 行），从 init 启动讲到一次完整的查杀流程...",
       "chapter": "ch04",
       "processed_at": "2026-08-26T06:20:50.933057+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
       "score": 19,
       "target_path": "src/part1-fundamentals/ch04-memory/07-memory-compaction-direct-reclaim.md",
       "route_confidence": 27,
@@ -4373,7 +4373,10 @@
         "ch04-memory",
         "aosp"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "status": "body-applied",
+      "applied_at": "2026-08-26T15:17:28+08:00",
+      "applied_run_id": "20260826-151509-7a444578"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
