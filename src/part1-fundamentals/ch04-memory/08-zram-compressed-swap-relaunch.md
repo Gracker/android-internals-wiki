@@ -4,7 +4,7 @@ chapter: '4.8'
 section: '4.8'
 status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-22'
+last_verified: '2026-08-26'
 last_verified_against: AOSP android-17.0.0_r1 system/memory/lmkd + frameworks/base MMD/ZramMaintenance/CachedAppOptimizer/OomAdjuster；Android common kernel android17-6.18-2026-06_r6 zram；Android MMD/LMKD docs；Linux zram docs；Perfetto memory docs；ApplicationExitInfo/ActivityManager API reference；Android 16 KB page size docs；arXiv 2502.12826
 confidence: medium
 sources:
@@ -68,11 +68,11 @@ related_chapters:
 - '8.2'
 - '10.1'
 - '16.2'
-last_deep_review_at: '2026-08-22T17:05:18+08:00'
-last_deep_review_run_id: 20260822-170518-deep-review-544265d1
-pipeline_stage: ready-for-review
+last_deep_review_at: '2026-08-26T12:39:47+08:00'
+last_deep_review_run_id: 20260826-123547-deep-review-ebd88334
+pipeline_stage: deep-reviewed
 task2b_state: body-applied
-task6_state: pending-review
+task6_state: reviewed
 task9_state: pending-review
 last_body_apply_at: '2026-08-26T09:55:08+08:00'
 last_body_apply_run_id: 20260826-095344-b5ee28a0
@@ -420,7 +420,7 @@ adb shell cat /proc/<PID>/status
 adb shell cat /proc/<PID>/smaps_rollup
 adb shell cat /sys/block/zram0/mm_stat
 adb shell cat /sys/block/zram0/bd_stat
-adb shell getprop | grep -E 'mmd\\.zram|mm\\.zram|ro\\.lmk'
+adb shell getprop | grep -E 'mmd\.zram|mm\.zram|ro\.lmk'
 adb shell dumpsys -l | grep mmd
 ```
 
