@@ -393,7 +393,7 @@ Android 17 的 [`ProfilingManager.java`](https://android.googlesource.com/platfo
 
 ### 概览
 
-Android 没有一个面向普通 App、涵盖所有性能问题的“统一性能指标 Atom”。StatsD 是 Android 的系统统计收集与聚合服务，atom 是其数据结构定义中字段固定的一类统计事件。可用能力分布在不同权限层：StatsD 面向系统和特权组件；AndroidX `JankStats` 在 App 进程内提供帧级卡顿数据；`Debug.MemoryInfo`、在网络调用前后加入计时点的插桩，以及业务埋点补充 App 自身指标；上传与服务端统计由 APM（Application Performance Monitoring，应用性能监控）系统负责。
+Android 没有一个面向普通 App、涵盖所有性能问题的“统一性能指标 Atom”。StatsD 是 Android 的系统统计收集与聚合服务，atom 是其数据结构定义中字段固定的一类统计事件。可用能力分布在不同权限层：StatsD 面向系统和特权组件；AndroidX `JankStats` 在 App 进程内提供帧级卡顿数据；在网络调用前后加入计时点的插桩、`Debug.MemoryInfo` 与业务埋点补充 App 自身指标；上传与服务端统计由 APM（Application Performance Monitoring，应用性能监控）系统负责。
 
 平台上界为 Android 17 / API 37 / `android-17.0.0_r1`。缓存进程内存整理（Compaction）和暂停缓存进程执行的冻结机制（Freezer）早于 Android 17 已存在；Android 17 新增的 `MemoryLimiter` 还受功能开关（feature flag）、设备能力和厂商（vendor）配置控制。观察到内存曲线变化时，要区分公开 App API 能确认的事实与 Android 核心系统服务进程 system_server 的源码解释。PSS（Proportional Set Size，按共享页面比例分摊后的驻留内存）曲线本身不能证明某项系统策略已经触发。
 
@@ -709,7 +709,7 @@ Firebase Performance Monitoring 会先匹配项目配置的 custom URL pattern�
 
 按 endpoint pattern 统计 DNS 域名解析、连接建立、TLS 加密握手、请求体发送、响应首字节、响应体读取、总耗时和状态码分布。成功率不能统一定义为“非 5xx”：登录接口的 401 可能是预期结果，也可能表示会话刷新故障；下单接口的 409 可能是业务冲突；429 则常常意味着容量或客户端重试策略存在问题。
 
-每个 endpoint 应维护版本化的成功码规则，并单独统计无 HTTP 状态码的 DNS、连接、TLS、取消和超时错误。Firebase Performance 也允许为 URL pattern 自定义哪些响应码算成功，这说明成功口径属于接口语义，而不是 HTTP 大类的固定映射。
+每个 endpoint 应维护版本化的成功码规则，并单独统计无 HTTP 状态码的 DNS、连接、TLS、取消和超时错误。Firebase Performance 也允许为 URL pattern 自定义哪些响应码算成功。成功口径属于接口语义，不是 HTTP 大类的固定映射。
 
 #### 5.3 传输体积（Payload Size）统计
 
@@ -984,7 +984,7 @@ Android 17 增加了 MemoryLimiter 的设备可选能力和 `ActivityManager.Mem
 
 ## 全文小结
 
-App 可观测性的核心不是尽可能多地采集，而是让指标、日志与追踪共享可解释的事件模型、时钟、采样概率和版本上下文。端侧应以低开销入口、有界缓冲、分级存储和受约束上传保存证据，再由服务端完成聚合、告警、样本查询与修复验证；StatsD、JankStats、内存快照和 `ProfilingManager` 等能力则按权限和成本嵌入这条主链，不能被当作一个无边界的统一采集接口。
+App 可观测性的核心是让指标、日志与追踪共享可解释的事件模型、时钟、采样概率和版本上下文，数据采得再多也替代不了这套共享基础。端侧应以低开销入口、有界缓冲、分级存储和受约束上传保存证据，再由服务端完成聚合、告警、样本查询与修复验证；StatsD、JankStats、内存快照和 `ProfilingManager` 等能力则按权限和成本嵌入这条主链，不能被当作一个无边界的统一采集接口。
 
 
 ## 参考资料
