@@ -3478,6 +3478,30 @@
       "status": "appended",
       "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
     },
+    "source/juejin-android/2026-08-28-76447818-klibsio-KMP库一键筛选平台.md": {
+      "chapter": "ch06-storage",
+      "entry_id": "c91d753c41debfc7",
+      "last_appended": "2026-08-28T05:25:18.147213+08:00",
+      "last_seen": "2026-08-28T05:25:18.147213+08:00",
+      "mtime": 1787864196.3145065,
+      "score": 9,
+      "sha256": "606da9fca2da895cc408441574a6c9a0f7787535ee82e93e9c8abcb02014a7da",
+      "size": 7778,
+      "status": "appended",
+      "title": "告别 KMP 选型地狱！klibs.io 上线，全平台库一键筛选太省心KMP 项目最容易卡住的地方，不是写 expect"
+    },
+    "source/juejin-android/2026-08-28-76466747-彦火APP-Flutter包体分析静态拆包.md": {
+      "chapter": "待分类",
+      "entry_id": "31a6798ab82cd46a",
+      "last_appended": "2026-08-28T05:25:18.147213+08:00",
+      "last_seen": "2026-08-28T05:25:18.147213+08:00",
+      "mtime": 1787864196.3134334,
+      "score": 13,
+      "sha256": "a6af1be31951b328467fc4649b3bd686a8954f5ec3e6eafe14b969eaf3c8c2f7",
+      "size": 16789,
+      "status": "appended",
+      "title": "彦火APP-Flutter包体分析拆了胡彦斌「彦火」APK：它确实是 Flutter App，为什么体积还能这么小？ 最"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -5285,24 +5309,24 @@
     }
   },
   "last_report": {
-    "appended": 8,
-    "considered": 8,
-    "cutoff": "2026-08-26T05:20:42.683590+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-27.md",
+    "appended": 2,
+    "considered": 2,
+    "cutoff": "2026-08-27T05:20:01.918213+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-28.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1904,
+    "scanned": 1906,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 464
+      "unchanged": 472
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-08-27T05:25:01.918213+08:00",
+  "last_run_at": "2026-08-28T05:25:18.147213+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
