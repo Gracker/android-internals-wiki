@@ -304,7 +304,7 @@ OkHttp 5 默认启用 fast fallback（快速回退），会并行尝试可用路
 
 #### “预连接”是一笔真实请求成本
 
-OkHttp 没有承诺任意业务请求都能通过公开 `preconnect()` API 预建连接。发送 HEAD 或空 GET 进行 warmup（预热）会产生 DNS、连接、TLS、服务器、流量和电量成本。后续请求还可能因网络切换、不同 authority（URL 中的主机与端口部分）、证书条件、连接空闲回收或服务端关闭而无法复用。
+OkHttp 并不保证任意业务请求都能通过公开的 `preconnect()` API 预建连接。发送 HEAD 或空 GET 进行 warmup（预热）会产生 DNS、连接、TLS、服务器、流量和电量成本。后续请求还可能因网络切换、不同 authority（URL 中的主机与端口部分）、证书条件、连接空闲回收或服务端关闭而无法复用。
 
 若冷启动指标证明预热有收益，可设置无副作用、低成本、允许失败的专用 endpoint（服务端接口），并满足这些条件：
 
@@ -430,7 +430,7 @@ WebSocket 适合高频双向消息，但长连接不会自动省电。固定 pin
 
 Retrofit 的 suspend adapter（协程适配器）也不会让协议本身更快。EventListener 已显示网络完成、业务仍迟迟拿不到数据时，应继续区分 Converter/JSON 解析、数据库和 UI 映射；协程取消还要确认会传到 `Call.cancel()`。网络、CPU 解析和界面提交分别记录 trace，避免把网络完成后的 CPU 时间计入 TTFB。
 
-日志、遥测和可延迟同步应在应用内合批，并交给 WorkManager/JobScheduler 表达网络、电量和充电约束。蜂窝 tail time（请求结束后基带继续活跃的时长）会受设备、RAT（无线接入技术，例如 LTE/5G）、信号和运营商配置影响，不能引用固定时长；是否节能要比较唤醒次数、radio 活跃窗口、字节量和任务完成率。
+日志、遥测和可延迟同步应在应用内合批，并交给 WorkManager/JobScheduler 设置网络、电量和充电约束。蜂窝 tail time（请求结束后基带继续活跃的时长）会受设备、RAT（无线接入技术，例如 LTE/5G）、信号和运营商配置影响，不能引用固定时长；是否节能要比较唤醒次数、radio 活跃窗口、字节量和任务完成率。
 
 ### 监控：EventListener 与 NetworkCallback
 
@@ -506,7 +506,7 @@ val monitoredClient = OkHttpClient.Builder()
     .build()
 ```
 
-生产监控可用同一方式增加 DNS、connect、secure connect、request、response 和 `connectionAcquired` span（时间区间）。DNS、connect、请求与响应事件可能因重定向和恢复重复出现，应追加到 attempt 列表。连接复用时 DNS 和 connect 事件会缺席，这属于正常结果。
+生产监控可以按同样的方式增加 DNS、connect、secure connect、request、response 和 `connectionAcquired` span（时间区间）。DNS、connect、请求与响应事件可能因重定向和恢复重复出现，应追加到 attempt 列表。连接复用时 DNS 和 connect 事件会缺席，这属于正常结果。
 
 指标上传要限制基数，也就是控制字段不同取值的数量，并保护隐私。建议记录经过白名单映射的接口模板、协议、状态码、错误类别和时间分段；完整 URL、query、header、请求体、响应体、Cookie 与 token 不应进入网络性能日志。
 
@@ -646,7 +646,7 @@ Android 17 的 `<domainEncryption>` 提供 `enabled` 和 `disabled` 两种公开
 
 官方文档对 `enabled` 的定义很具体：存在 ECHConfig 时要求使用 ECH；没有配置时发送 ECH GREASE，即发送占位扩展，让中间设备习惯 ECH 报文格式，避免其把现有格式写死并阻碍协议升级。`disabled` 既不启用 ECH，也不发送 GREASE。应用通常不应自行解析和安装 ECHConfig，应交给已经调用平台 ECH 能力的网络库处理。
 
-AOSP `android-17.0.0_r1` 中，Conscrypt 的 `SSLParametersImpl.getEchOptions()` 根据网络安全策略生成 ECH 选项；`Platform` 会把配置不匹配包装为 `android.net.ssl.EchConfigMismatchException`，其中可携带服务端返回的重试配置。这说明“ECH 失败后静默改用普通 TLS”不是可靠的统一行为。网络库可能按重试配置重连，也可能把失败交给调用者。
+AOSP `android-17.0.0_r1` 中，Conscrypt 的 `SSLParametersImpl.getEchOptions()` 根据网络安全策略生成 ECH 选项；`Platform` 会把配置不匹配包装为 `android.net.ssl.EchConfigMismatchException`，其中可携带服务端返回的重试配置；“ECH 失败后静默改用普通 TLS”因此不是可靠的统一行为：网络库可能按重试配置重连，也可能把失败交给调用者。
 
 #### ECH 的性能应分两段测量
 
@@ -673,7 +673,7 @@ Network Security Configuration 的规则还包含一个容易遗漏的分支：
 2. 当前域使用用户证书，或直接在应用配置中声明自定义信任锚时，默认不执行 CT；
 3. 其他情况继承上层配置。
 
-私有 PKI（企业自建的公钥基础设施）和抓包调试环境常落入第二种情况。这就解释了为何同一应用的公网站点执行 CT，使用企业根证书的内网站点却表现不同。若业务确需让自定义信任锚也执行 CT，应显式配置并验证证书签发流程，不能用公网证书的经验替代测试。
+私有 PKI（企业自建的公钥基础设施）和抓包调试环境常落入第二种情况。同一应用的公网站点会执行 CT，使用企业根证书的内网站点则默认不执行。若业务确需让自定义信任锚也执行 CT，应显式配置并验证证书签发流程，不能用公网证书的经验替代测试。
 
 #### Android CT Policy 不能简化为“SCT 至少两个”
 
@@ -700,7 +700,7 @@ Android 7.0 及以上可使用 Network Security Configuration 按域名管理明
 
 TLS 服务端应发送叶子证书（直接签发给目标域名的实体证书）和客户端建立信任链所需的中间证书，通常不发送根证书，也不发送无关中间证书。证书数据会进入握手字节数；在带宽低、丢包高的网络上，过大的握手更容易跨越多个传输包并触发重传。判断“过长”应看实际链路字节和兼容性，不能套用固定层数。
 
-Network Security Configuration 支持 certificate pinning（证书公钥固定），但 Android 官方文档不建议一般应用把 pinning 当作默认方案：服务端证书或 CA 轮换处理不当会使应用失联。如果威胁模型，也就是需要防范的攻击和采用的信任假设，要求使用 pinning，就要准备 backup pin（备用公钥摘要）、合理的失效时间、证书轮换演练和远端恢复方案。删除证书校验、信任所有证书或放宽主机名校验都不属于性能优化。
+Network Security Configuration 支持 certificate pinning（证书公钥固定），但 Android 官方文档不建议一般应用把 pinning 当作默认方案：服务端证书或 CA 轮换处理不当会使应用失联。如果威胁模型（需要防范的攻击和采用的信任假设）要求使用 pinning，就要准备 backup pin（备用公钥摘要）、合理的失效时间、证书轮换演练和远端恢复方案。删除证书校验、信任所有证书或放宽主机名校验都不属于性能优化。
 
 ### API 35 与 API 37 的 HPKE 位于不同接口层
 
