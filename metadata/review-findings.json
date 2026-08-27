@@ -3092,6 +3092,26 @@
       "summary": "Virtual A/B Android 11 COW 空间位置写成从 super 分区分配",
       "type": "technical-accuracy",
       "updated_at": "2026-08-26T22:50:35.274881+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch03-input/06-keyboard-mouse-pointer-input-performance.md",
+      "close_note": "已在章节中补充 pointerCaptureModes()/relativeCaptureModeByDefault() 条件，并改为建议显式传入捕获模式。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20260827-103542-idle-audit-7ba4ea75",
+      "created_at": "2026-08-27T10:47:17.561113+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20260827-103542-idle-audit-7ba4ea75",
+      "details": "android-17.0.0_r1 的 View.requestPointerCapture() 在 pointerCaptureModes() 与 relativeCaptureModeByDefault() 同时为真时请求相对模式，否则请求绝对模式；原文写成无条件默认相对模式。",
+      "id": "AIW-20260827-CH03-INPUT-POINTER-CAPTURE-FLAG-DEFAULT",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "frameworks/base/core/java/android/view/View.java; frameworks/base/core/java/android/hardware/input/input_framework.aconfig"
+      ],
+      "status": "fixed",
+      "summary": "无参数 requestPointerCapture() 默认相对模式的表述缺少 Android 17 功能标志边界",
+      "type": "version-boundary",
+      "updated_at": "2026-08-27T10:47:17.626752+08:00"
     }
   ],
   "schema_version": 1
