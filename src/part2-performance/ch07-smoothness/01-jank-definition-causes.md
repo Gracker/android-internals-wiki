@@ -4,13 +4,15 @@ section: '7.1'
 chapter: '7.1'
 status: finalized
 applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
-last_verified: '2026-07-11'
-last_verified_against: AOSP android-17.0.0_r1 FrameTimeline/JankInfo/VsyncConfiguration + Perfetto android.frames.timeline/android.binder stdlib / Android Developers docs
+last_verified: '2026-08-27'
+last_verified_against: AOSP android-17.0.0_r1 JankInfo/FrameTimeline calculateJankSeverity + Perfetto FrameTimeline + Android Developers Slow rendering/JankStats/ANR docs
 task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: ready-to-publish
 confidence: high
+last_idle_audit_at: '2026-08-27T22:35:18+08:00'
+last_idle_audit_run_id: 20260827-223518-idle-audit-1eb45e55
 sources:
 - type: aosp
   path: frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp
@@ -169,7 +171,7 @@ Perfetto 官方文档明确指出，FrameTimeline 对 SurfaceView 的支持仍�
 
 源码中的 `calculateJankSeverity()` 还会把这些位分成参与严重度计算和仅描述状态的集合。`BufferStuffing`、`SurfaceFlingerStuffing`、`NonAnimating` 以及三类显示状态位不直接进入 jank 严重度计算，但仍有诊断价值。例如，Buffer Stuffing 常对应 Perfetto 的 high-latency state（高延迟状态）：帧间隔可能保持稳定，输入到显示的延迟却在增加。
 
-Android 17 还定义了 `JankSeverityType`：`Partial` 表示超出 deadline 的部分小于一个应用 frame interval（帧间隔），`Full` 表示超出量达到或超过一个应用 frame interval。严重度计算依赖有效的 expected/actual present delta（预期与实际呈现时间差）；证据不足时为 `Unknown`。
+Android 17 还定义了 `JankSeverityType`：`Unknown`、`None`、`Partial` 和 `Full`。源码注释把 `Partial` / `Full` 解释为小于或超过应用 frame interval（帧间隔）的 deadline miss；`android-17.0.0_r1` 的 `calculateJankSeverity()` 会先用 expected/actual present delta（预期与实际呈现时间差）和 frame interval 计算 score，再按 `score == 0`、`score < 0.9`、`score >= 0.9` 分类为 `None`、`Partial`、`Full`；证据不足或仅有 `Dropped` 时为 `Unknown`。
 
 #### App、SurfaceFlinger 与 Display 三层归因
 
