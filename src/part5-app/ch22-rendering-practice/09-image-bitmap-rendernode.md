@@ -234,7 +234,7 @@ Android 17 的 `ALLOCATOR_DEFAULT` 通常产生 `Bitmap.Config.HARDWARE`，小�
 | UI 按时，RenderThread 首次绘制变长 | `DrawFrame`、纹理与图形内存、GPU 工作区间 | 软件 Bitmap 上传、图形分配、复杂裁剪或混合 |
 | 应用帧已提交，上屏仍晚 | FrameTimeline、BLAST（应用窗口缓冲区交接）、SurfaceFlinger（系统合成服务）、HWC（硬件合成器） | 缓冲区积压、合成或显示阶段 |
 
-这四类现象要用同一张图片、同一次请求和同一个 FrameTimeline（关联应用、系统合成与显示阶段的帧时间线）帧关联，单看图片库“加载成功”事件无法判断图片何时可见。
+这四类现象要按帧关联到同一张图片、同一次请求和同一个 FrameTimeline（关联应用、系统合成与显示阶段的帧时间线），单看图片库“加载成功”事件无法判断图片何时可见。
 
 `getAllocationByteCount()` 适合记录单个 Bitmap 的分配空间，不能覆盖临时编解码缓冲区、硬件图形资源和缓存中的其他对象。内存分析还要看原生堆、图形资源与 dma-buf（设备间共享缓冲区）、PSS（按比例归属进程的物理内存）、GC（垃圾回收）、缺页（page fault）、内存回收（reclaim）与进程 OOM（内存不足）状态。Linux 6.18 内核基线下可补看 PSI memory（内存压力停顿）、`kswapd` 后台回收、direct reclaim（当前线程同步回收）、zram 压缩交换和 GPU 驱动等待，避免把内存回收停顿写成解码器算法问题。
 
@@ -402,7 +402,7 @@ Android 官方文档说明平台从 Android 12 / API 31 支持 AVIF；Android 10
 6. 把结果放入普通原生堆（native heap）、共享内存或 Hardware Bitmap；
 7. UI 使用结果时，HWUI 记录绘制命令，其渲染线程 RenderThread 再把图片作为采样资源提交给 GPU。
 
-这几步不会因为调用了一个 Java 方法而变成同一类成本。文件读取受页缓存和存储影响，像素解码主要消耗 CPU 与内存带宽，Hardware Bitmap 的创建还包含图形缓冲分配和上传。诊断时要区分阶段，不能只记录 `decodeBitmap()` 的总耗时后直接归因于格式。
+这几步不会因为调用了一个 Java 方法而变成同一类成本。文件读取受页缓存和存储影响，像素解码主要消耗 CPU 与内存带宽，Hardware Bitmap 的创建还包含图形缓冲分配和上传。诊断时要区分阶段，不能只记录 `decodeBitmap()` 的总耗时就把它直接归因于格式。
 
 压缩文件大小也不能代表解码后内存。普通 `ARGB_8888` 图片的像素存储通常接近 `rowBytes × height`，其中 `rowBytes` 是一行像素实际占用的字节数。行对齐、色彩格式、增益图和中间缓冲会让实际分配不同于简单的 `width × height × 4`。
 
@@ -806,7 +806,9 @@ Android 17 源码中的调用顺序是：
 
 ### 13. RenderNode 与首次纹理准备
 
-`RenderNode` 是 HWUI 中可跨帧复用的绘制节点，`DisplayList` 是它录制的绘制命令列表。Hardware Bitmap 进入 View 或 Compose 后，仍是宿主 RenderNode 的 DisplayList 所引用的图片资源。RenderNode 保存命令和属性，不等于缓存整块栅格结果；`translation`、`scale`、`alpha` 等属性可在内容不变时复用已录制命令，图片对象或绘制内容变化仍要重录。`RecordingCanvas` 会保留所画 Bitmap 的引用，因此业务缓存移除对象，不代表仍存活的 View 或 RenderNode 已立即释放它；自建 RenderNode 结束生命周期时可调用 `discardDisplayList()`，框架 View 的内部节点交给框架管理。
+`RenderNode` 是 HWUI 中可跨帧复用的绘制节点，`DisplayList` 是它录制的绘制命令列表。Hardware Bitmap 进入 View 或 Compose 后，仍是宿主 RenderNode 的 DisplayList 所引用的图片资源。RenderNode 保存命令和属性，不等于缓存整块栅格结果；`translation`、`scale`、`alpha` 等属性可在内容不变时复用已录制命令，图片对象或绘制内容变化仍要重录。
+
+`RecordingCanvas` 会保留所画 Bitmap 的引用，因此业务缓存移除对象，不代表仍存活的 View 或 RenderNode 已立即释放它；自建 RenderNode 结束生命周期时可调用 `discardDisplayList()`，框架 View 的内部节点交给框架管理。
 
 Android 17 的 HWUI 对非 Hardware Bitmap 可进入 `prepareToDraw()` / `PinAsTexture()` 的显式纹理准备分支；Hardware Bitmap 已在创建阶段完成主要图形缓冲上传，所以跳过这段路径。收益是移动工作发生的时间和存储形态，不是让上传消失：格式转换、AHardwareBuffer 分配、GL/Vulkan 提交和驱动延迟仍可能落在解码完成前或首次使用时。
 
