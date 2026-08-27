@@ -199,7 +199,7 @@ APK 使用 ZIP 组织文件，但目录结构不能替代 Android 的安装和�
 
 [APK Analyzer](https://developer.android.com/studio/debug/apk-analyzer) 可查看 APK/AAB 的文件构成、DEX 包结构、资源和编译后的 manifest（应用清单），并比较两版制品。界面中的两个尺寸要分开解释：
 
-- **Raw File Size** 是实体压缩后写入 APK ZIP 的大小，也就是它对当前 APK 文件大小的贡献，不是解压后的大小；
+- **Raw File Size** 是文件压缩后写入 APK ZIP 的大小，也就是它对当前 APK 文件大小的贡献，不是解压后的大小；
 - **Download Size** 是工具对 Google Play 压缩传输大小的估算，适合观察变化方向，但不等于 Play Console 针对某个设备配置给出的精确结果。
 
 先按增长目录选择后续路径：`classes*.dex` 看依赖、生成代码和 R8；`resources.arsc`、`res/` 与 `assets/` 看引用图、替代资源和素材；`lib/<abi>/` 看 ABI、符号、链接与页对齐。签名、压缩、加固和渠道重签也会改变产物，基线与候选必须使用同一发布变体、构建工具、签名流程和设备规格。每次只改变一类变量，重新生成 release 制品，才能把收益归到具体机制。
@@ -349,7 +349,7 @@ android {
 3. 类自身是否已有静态引用，只需保护动态访问的成员？
 4. 这项约束应放在应用规则中，还是由库的消费端规则随 AAR 提供？
 
-这条规则保留一个已由静态代码创建的 WebView bridge 中带注解的方法，同时允许 R8 优化方法体：
+WebView bridge 已由静态代码创建，这条规则只保留其中带注解的方法，同时允许 R8 优化方法体：
 
 ```proguard
 -keepclassmembers,allowoptimization class com.example.web.AppBridge {
@@ -472,7 +472,7 @@ DexArchive 是增量构建中保存中间 DEX 结果的形式。`--intermediate`
 
 #### DEX 里没有 JVM 的 LineNumberTable
 
-JVM 是 Java Virtual Machine（Java 虚拟机）。`LineNumberTable`、`LocalVariableTable` 是输入 `.class` 文件的 JVM 属性；D8/R8 转成 DEX 后，行号、参数名和局部变量事件位于 `debug_info_item`。把 APK 中的 DEX 描述成“包含大量 LineNumberTable”会混淆两种格式。
+`LineNumberTable`、`LocalVariableTable` 是输入 `.class` 文件的 JVM（Java Virtual Machine，Java 虚拟机）属性；D8/R8 转成 DEX 后，行号、参数名和局部变量事件位于 `debug_info_item`。把 APK 中的 DEX 描述成“包含大量 LineNumberTable”会混淆两种格式。
 
 D8 `--release` 会移除调试所需的大部分信息，但保留生成异常堆栈所需的部分。R8 还能对行号和内联调用做编码，并把还原信息写进 `mapping.txt`。现代 R8 已改进发布构建的行号与文件名还原，无需用一个非标准的 `-strip-debug` 规则手工破坏栈信息。
 
@@ -698,7 +698,7 @@ bundletool get-size total \
 
 Android 17 ART 的 [`standard_dex_file.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libdexfile/dex/standard_dex_file.cc) 识别 DEX 035、037、038、039、040 与 041。[`dex_file.h`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libdexfile/dex/dex_file.h) 定义了 v41 容器/文件头边界和传统 DEX 访问结构。
 
-这说明 Android 17 运行时具备对应读取能力，不能据此推导应用构建默认输出 DEX 041。应用输出仍由当前 D8/R8 与 AGP 选择，公开工具配置优先于 ART 读取器的能力上限。
+这只说明 Android 17 运行时能读取这些 DEX 版本，不能据此推导应用构建默认输出 DEX 041。应用输出仍由当前 D8/R8 与 AGP 选择，公开工具配置优先于 ART 读取器的能力上限。
 
 Android Framework 的 [`DexPathList.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/dalvik/src/main/java/dalvik/system/DexPathList.java) 管理类加载器（class loader）的 DEX 元素和原生库元素。它没有为应用定义“DEX 越少越快”或“并行加载 N 个 DEX”的性能契约。
 
@@ -718,7 +718,7 @@ DEX 结论不涉及内核专有机制，也不关联特定 Linux 内核源码标
 
 #### 为了体积删除所有行号
 
-现代 R8 可把行号和内联映射保存在 `mapping.txt`，发布 DEX 不需要保留完整局部变量调试信息。缺少符号映射文件得到的小幅节省，会显著增加线上诊断成本。
+现代 R8 可把行号和内联映射保存在 `mapping.txt`，发布 DEX 不需要保留完整局部变量调试信息。删掉符号映射文件省不下几个字节，线上诊断成本却会明显上升。
 
 #### 用包级 keep 修复一个反射崩溃
 
@@ -793,7 +793,9 @@ Android 平台版本表与 AGP 版本表放在一起是为了说明边界变化�
 
 DEX 优化处理 Java/Kotlin 代码和依赖，Native 库还要按 ABI、调试符号、链接方式和页对齐分析。
 
-Native（本地代码）库是应用随包交付、由 C/C++ 等语言编译而成的 `.so` 共享库。它的优化常被简化成“做一次 `strip`，再删一个 ABI”：`strip` 是从发布二进制中移除不再需要的普通符号和调试信息，ABI（应用二进制接口）则约定指令集、调用方式和数据布局。只做这两步会漏掉三类成本：ELF（Executable and Linkable Format，可执行与可链接格式）内仍存活的代码和数据、同一库在不同交付配置中的副本，以及安装后由动态链接器（dynamic linker）映射的页面与重定位。若只看仓库里的 `.so` 文件大小，很容易把上传包、用户下载、安装占用和运行时内存混在一起。
+Native（本地代码）库是应用随包交付、由 C/C++ 等语言编译而成的 `.so` 共享库。它的优化常被简化成“做一次 `strip`，再删一个 ABI”：`strip` 是从发布二进制中移除不再需要的普通符号和调试信息，ABI（应用二进制接口）则约定指令集、调用方式和数据布局。
+
+只做这两步会漏掉三类成本：ELF（Executable and Linkable Format，可执行与可链接格式）内仍存活的代码和数据、同一库在不同交付配置中的副本，以及安装后由动态链接器（dynamic linker）映射的页面与重定位。若只看仓库里的 `.so` 文件大小，很容易把上传包、用户下载、安装占用和运行时内存混在一起。
 
 平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`；涉及文件映射与基础页时，内核锚点为 `android17-6.18-2026-06_r6`。NDK、AGP 和 Google Play 规则采用 2026 年 8 月的官方文档语义。构建工具版本与 Android 平台版本是两条独立轴，升级 `targetSdk` 不会自动缩小 `.so`。
 
@@ -1186,7 +1188,7 @@ find "$SCAN_DIR/lib" -type f -name '*.so' -print0 \
 
 #### Android 17 的 Safer Native DCL
 
-Safer Native DCL 是 Android 对动态代码加载（Dynamic Code Loading）的加固规则。当应用以 Android 17 / API 37 或更高版本为目标时，通过 `System.load()` 加载的 Native 文件必须在加载前标记为只读，否则抛出 `UnsatisfiedLinkError`。安全写入流程可在应用私有目录排他创建临时文件并打开唯一的写入文件描述符（FD），随即撤销路径的写权限，再通过已打开的 FD 写入、调用 `fsync` 请求内核同步文件数据、校验、关闭和原子重命名，之后才加载；加载后也不应再修改同一个 inode（文件系统中标识文件对象的索引节点）。
+Safer Native DCL 是 Android 对动态代码加载（Dynamic Code Loading）的加固规则。当应用以 Android 17 / API 37 或更高版本为目标时，通过 `System.load()` 加载的 Native 文件必须在加载前标记为只读，否则抛出 `UnsatisfiedLinkError`。安全写入流程是：在应用私有目录排他创建临时文件并打开唯一的写入文件描述符（FD），随即撤销路径的写权限；再通过已打开的 FD 写入，调用 `fsync` 请求内核同步文件数据，然后校验、关闭并原子重命名，之后才加载。加载后也不应再修改同一个 inode（文件系统中标识文件对象的索引节点）。
 
 远程下载可执行代码还涉及代码注入、完整性、回滚和 Google Play 政策。Android 官方建议尽量避免动态代码加载。若业务确有需要，至少要使用应用私有目录、可信传输、签名校验、ABI/版本绑定和失败回退，不能从外部存储直接用 `dlopen()` 加载未验证文件。
 
