@@ -4,7 +4,7 @@ chapter: '3.6'
 section: '3.6'
 status: finalized
 applicable_versions: Android 13 (API 33) - Android 17 (API 37)
-last_verified: '2026-06-27'
+last_verified: '2026-08-27'
 last_verified_against: AOSP android-17.0.0_r1
 confidence: medium
 sources:
@@ -20,6 +20,8 @@ sources:
   path: frameworks/base/core/java/android/view/ViewRootImpl.java
 - type: aosp
   path: frameworks/base/core/java/android/view/View.java
+- type: aosp
+  path: frameworks/base/core/java/android/hardware/input/input_framework.aconfig
 - type: aosp
   path: frameworks/base/core/java/android/view/DragEvent.java
 - type: aosp
@@ -198,9 +200,9 @@ Android 17 为触控板明确了两种模式：
 | `POINTER_CAPTURE_MODE_RELATIVE` | `SOURCE_MOUSE_RELATIVE` | 继续识别移动、按钮和滚动，再按相对量报告 | 游戏视角、远程桌面 |
 | `POINTER_CAPTURE_MODE_ABSOLUTE` | `SOURCE_TOUCHPAD` | 跳过手势识别库，报告触控板坐标空间中的多点数据 | 自定义触控板手势、原始触点分析 |
 
-Android 17 中，无参数 `requestPointerCapture()` 默认使用相对模式；需要原始多点触控板数据时应显式请求绝对模式（absolute）。绝对模式还会提供 `AXIS_RELATIVE_X/Y`，但 `getX(index)`、`getY(index)` 的坐标空间属于触控板表面，不能直接当作屏幕坐标使用。
+Android 17 的源码中，这组捕获模式由平台功能标志控制。无参数 `requestPointerCapture()` 只有在 `pointerCaptureModes()` 与 `relativeCaptureModeByDefault()` 同时为真时才等价于相对模式，否则会请求绝对模式。因此，对事件语义敏感的代码不应依赖无参数默认值；需要相对移动或原始多点触控板数据时，应显式传入对应模式。绝对模式还会提供 `AXIS_RELATIVE_X/Y`，但 `getX(index)`、`getY(index)` 的坐标空间属于触控板表面，不能直接当作屏幕坐标使用。
 
-以下代码用于在 `compileSdk 37` 的项目中明确表达捕获意图：
+以下代码在可以使用 API 37 指针捕获模式常量的项目中，用显式参数表达捕获意图：
 
 ```kotlin
 fun View.captureForCameraControl() {
@@ -635,7 +637,7 @@ private fun inputAgeMs(event: InputEvent): Long {
 - 核心 Java 路径：`frameworks/base/core/java/android/view`
 - 窗口拖放路径：`frameworks/base/services/core/java/com/android/server/wm`
 
-Android 17 需要特别记住的变化是触控板指针捕获模式：默认的相对模式继续识别移动与滚动，显式请求绝对模式才会把原始多点触控板数据作为 `SOURCE_TOUCHPAD` 交给应用。设备厂商仍可调整输入配置、手势属性、超时倍率和窗口策略，所有固定数值都应在目标设备上通过诊断输出与跟踪结果复核。
+Android 17 需要特别记住的变化是触控板指针捕获模式：源码提供相对与绝对两种模式；在平台启用相对默认时，无参数捕获会继续识别移动与滚动，显式请求绝对模式才会把原始多点触控板数据作为 `SOURCE_TOUCHPAD` 交给应用。设备厂商仍可调整输入配置、手势属性、超时倍率和窗口策略，所有固定数值都应在目标设备上通过诊断输出与跟踪结果复核。
 
 ## 参考资料
 
@@ -649,6 +651,7 @@ Android 17 需要特别记住的变化是触控板指针捕获模式：默认的
 - [AOSP Rust keyboard filters](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/inputflinger/rust/)
 - [AOSP `ViewRootImpl.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/view/ViewRootImpl.java)
 - [AOSP `View.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/view/View.java)
+- [AOSP `input_framework.aconfig`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/hardware/input/input_framework.aconfig)
 - [AOSP `DragDropController.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/wm/DragDropController.java)
 - [AOSP `DragState.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/wm/DragState.java)
 - [Android Developers：Android 17 行为变更](https://developer.android.com/about/versions/17/behavior-changes-all)
