@@ -1,7 +1,7 @@
 ---
 title: Media3 视频播放：解码、帧时序与渲染
 chapter: '22.17'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 11 (API 30) - Android 17 (API 37)
 tags:
 - media3
@@ -14,8 +14,8 @@ related_chapters:
 - '22.14'
 - '13.11'
 - '25.10'
-last_verified: '2026-08-15'
-last_verified_against: Media3 1.11.0（2bc207851df311340767e913931ca7b28cab1794）；AOSP android-17.0.0_r1；android17-6.18-2026-06_r6；Media3 与 Android 官方文档
+last_verified: '2026-08-27'
+last_verified_against: Media3 1.11.0（2bc207851df311340767e913931ca7b28cab1794）；AOSP android-17.0.0_r1；android17-6.18-2026-06_r6；Google Maven / Media3 发布页与 Media3 1.11.0、Android 17 源码抽查
 confidence: high
 sources:
 - type: deepresearch
@@ -37,13 +37,13 @@ sources:
 last_body_apply_at: '2026-08-27T07:16:40+08:00'
 last_body_apply_run_id: 20260827-071518-6c1f5795
 task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
+task6_state: verified
+task9_state: reviewed
+pipeline_stage: finalized
 last_draft_polish_at: '2026-08-15T06:12:27+08:00'
 last_draft_polish_run_id: 20260815-061227-gracker-writing
-last_review_finalize_at: '2026-08-15T06:12:27+08:00'
-last_review_finalize_run_id: 20260815-061227-gracker-writing-review
+last_review_finalize_at: '2026-08-27T08:53:35+08:00'
+last_review_finalize_run_id: 20260827-084542-9a6bc8ec
 consolidated_from:
 - src/part5-app/ch22-rendering-practice/30-media3-video-rendering.md
 ---
@@ -211,7 +211,7 @@ Media3 1.11.0 的普通输出路径包含几组重要阈值：
 | 帧晚约 30 ms 以上，且超过 100 ms 没有释放新帧 | 可以强制释放一帧，避免画面长时间停住 |
 | decoder input 预计晚约 15 ms 以上 | sample 标记为不被后续帧依赖，或 AV1 依赖解析证明安全时，可提前丢输入 |
 
-这些值属于 Media3 1.11.0 的 `MediaCodecVideoRenderer` 与 `VideoFrameReleaseControl`，不是 Android 17 平台常量。1.11.0 新增 `MediaCodecVideoRenderer.Builder.setMaxEarlyUsThreshold()`，可以调整默认 50 ms 的提前调度门槛；子类仍可覆盖部分决策，实验 API 也可以关闭 input drop 门槛。
+这些值属于 Media3 1.11.0 的 `MediaCodecVideoRenderer` 与 `VideoFrameReleaseControl`，不是 Android 17 平台常量。1.11.0 新增 `MediaCodecVideoRenderer.Builder.setEarlySchedulingThresholdUs()`，也可通过 `DefaultRenderersFactory.setVideoRendererEarlySchedulingThresholdUs()` 调整默认 50 ms 的提前调度门槛；子类仍可覆盖部分决策，实验 API 也可以关闭 input drop 门槛。
 
 ### 六种 frame release action
 
