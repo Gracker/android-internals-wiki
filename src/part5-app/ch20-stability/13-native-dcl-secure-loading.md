@@ -52,9 +52,11 @@ consolidated_from:
 
 Native 动态库能够被 linker 装入，不等于它适合直接发布。应用还要证明文件来自可信来源、发布过程没有暴露半成品、加载时已不可写，并且新版本失败后能够回到最近一次确认可用的版本。
 
-动态代码加载（Dynamic Code Loading，DCL）是指应用在运行时加载未随当前 APK（Android 安装包）或 AAB（用于发布的 Android App Bundle）常规安装路径直接提供的可执行代码。本章讨论其中的原生动态库：由 C/C++ 等语言编译为机器码、通常以 `.so` 为扩展名的共享库。
+动态代码加载（Dynamic Code Loading，DCL）是指应用在运行时加载可执行代码，而这些代码没有通过当前 APK（Android 安装包）或 AAB（用于发布的 Android App Bundle）的常规安装路径随应用一起提供。本章讨论其中的原生动态库：由 C/C++ 等语言编译为机器码、通常以 `.so` 为扩展名的共享库。
 
-Android 17 把原生 DCL 的只读要求加到了 `System.load(path)` 路径。应用运行在 Android 17（API 37）上且以 API 37 或更高版本为目标时，如果 `System.load()` 发现目标文件仍可写，会在进入 native linker（原生动态链接器）前抛出 `UnsatisfiedLinkError`。target SDK 是应用向系统声明已适配的目标 API 级别。常见受影响场景包括运行时下载 `.so`、从插件包解压 `.so`、把 assets（随安装包携带的原始资源目录）中的库释放到私有目录，以及为兼容旧系统而再次解压并加载库。
+Android 17 把原生 DCL 的只读要求加到了 `System.load(path)` 路径。应用运行在 Android 17（API 37）上且以 API 37 或更高版本为目标时，如果 `System.load()` 发现目标文件仍可写，会在进入 native linker（原生动态链接器）前抛出 `UnsatisfiedLinkError`。target SDK 是应用向系统声明已适配的目标 API 级别。
+
+常见受影响场景包括运行时下载 `.so`、从插件包解压 `.so`、把 assets（随安装包携带的原始资源目录）中的库释放到私有目录，以及为兼容旧系统而再次解压并加载库。
 
 这项检查只处理“加载时文件仍可修改”造成的竞态。只读权限不能证明文件来自可信发布方，也不能代替签名、哈希、ABI、ELF、依赖库与回滚检查。排查问题时，应分别收集平台只读检查、发布文件可信度和动态链接失败的证据。
 
@@ -64,7 +66,7 @@ Android 17 把原生 DCL 的只读要求加到了 `System.load(path)` 路径。�
 
 ### 四条加载路径的检查范围
 
-`System.load()` 接收库文件的绝对路径，`System.loadLibrary()` 接收去掉 `lib` 前缀和 `.so` 后缀的逻辑库名。`ClassLoader` 是 Java/Android 用来查找类和原生库的加载器；`dlopen()` 则是 C/C++ 代码直接请求 bionic 动态链接器打开共享库的函数。同一份 `.so` 经过这些入口时，Android 17 AOSP 走过的 Java 代码不同：
+`System.load()` 接收库文件的绝对路径，`System.loadLibrary()` 接收去掉 `lib` 前缀和 `.so` 后缀的逻辑库名。`ClassLoader` 是 Java/Android 用来查找类和原生库的加载器；`dlopen()` 则是 C/C++ 代码直接请求 bionic 动态链接器打开共享库的函数。同一份 `.so` 从这些入口加载时，在 Android 17 AOSP 中走过的 Java 代码不同：
 
 | 入口 | Android 17 AOSP 调用路径 | 是否执行 `Runtime.load0()` 的可写检查 | 使用建议 |
 |---|---|---:|---|
@@ -87,7 +89,7 @@ Android 17 把原生 DCL 的只读要求加到了 `System.load(path)` 路径。�
 4. Android 17 的功能开关已启用、系统 API 不低于 37，且兼容性变更对该应用生效时，抛出“`Attempt to load writable file: ...`”。`VMRuntime.java` 把该变更标为从 target SDK 37 启用。
 5. 检查通过后才调用 `nativeLoad(filename, classLoader, caller)`。
 
-`File.canWrite()` 给出当前进程对该路径的可写判断；mode bit 是 `stat` 返回的 Unix 所有者、组和其他用户权限位。两者含义不同，不能只看到代表“仅所有者可读”的 `0400` 就断定平台检查一定通过。线上诊断可同时记录 mode bit 与 `canWrite()`，调用 `System.load()` 前则应确认后者为 `false`。
+`File.canWrite()` 给出当前进程对该路径的可写判断；mode bit 是 `stat` 返回的 Unix 所有者、组和其他用户权限位。两者含义不同：`0400` 代表“仅所有者可读”，但看到这个 mode bit 不能断定平台检查一定通过。线上诊断可同时记录 mode bit 与 `canWrite()`，调用 `System.load()` 前则应确认后者为 `false`。
 
 文件权限和目录权限也要分开看。inode 是文件系统保存文件内容位置与权限等元数据的对象；目录项负责把文件名指向 inode。文件改成 `0400` 后，拥有可写父目录的进程仍可能执行 `unlink`（删除目录项）或 `rename`（更换目录项名称或目标）。因此，只读文件可以阻止普通的原地改写，却不能单独保证某个路径始终指向同一组字节。版本化路径、禁止覆盖、签名校验和版本选择记录需要配合使用。
 
@@ -124,7 +126,7 @@ Android 没有面向应用的通用、可靠的原生库卸载和同进程热切
 
 发布进程应持有跨进程锁，也就是让同一应用的多个进程互斥执行发布操作，并确保临时文件与目标文件位于同一私有文件系统。建议按以下顺序执行：
 
-1. 使用唯一临时文件名和 `O_CREAT | O_EXCL | O_CLOEXEC` 创建文件。三个标志分别表示“文件不存在时创建”“文件已存在则失败”和“执行其他程序时自动关闭该描述符”，可避免复用旧临时文件；创建路径时还要拒绝跟随已有符号链接，也就是不能让一个特殊文件把当前路径转向另一个路径。
+1. 使用唯一临时文件名和 `O_CREAT | O_EXCL | O_CLOEXEC` 创建文件。三个标志分别表示“文件不存在时创建”“文件已存在则失败”和“执行其他程序时自动关闭该描述符”，可避免复用旧临时文件；创建路径时还要拒绝跟随已有的符号链接，也就是不能让路径经由符号链接指向其他文件。
 2. 保持写入用的文件描述符（file descriptor，fd）处于打开状态，立即调用 `fchmod`，把该文件设为仅所有者可读。
 3. 通过已经打开的 fd 流式写入并计算摘要，完成后调用 `fsync`，请求系统把该文件的缓存数据提交给存储设备。
 4. 验证已签名清单、长度、摘要、ABI、ELF 的位数与机器类型、Build ID 和依赖声明。
