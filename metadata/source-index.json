@@ -603,15 +603,16 @@
       "title": "[DeepResearch] SurfaceFlinger DisplayMode 选择与 RefreshRateSelector 评分机制"
     },
     {
-      "action": "indexed-only-chapter-freeze",
+      "action": "quarantined-non-aiw",
       "chapter": "ch16",
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-18-76250748-Android现代架构不需要事件总.md",
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
-      "route_status": "unrouted-existing-chapter-needed",
-      "routed_at": "2026-07-25T13:53:24.486291+08:00",
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-08-28T06:20:27.083616+08:00",
       "score": 19,
       "summary": "EventBus 解决了当年的问题，但它带来的问题比解决的更多。本文用真实场景告诉你，现代 Android 架构已经不需要它了。 EventBus、Otto，这些曾经风靡 Android 社区的事件总线框架确实在某个时代解决了组件间通信的难题。但随着 Kotlin 协程、Flow、ViewModel 的成熟，事件总线的种种弊端越来越难以忽视： ：订阅/发布关系散落各处，调...",
-      "title": "[技术文章] 2026-07-18-76250748-Android现代架构不需要事件总"
+      "title": "[技术文章] 2026-07-18-76250748-Android现代架构不需要事件总",
+      "previous_route_status": "unrouted-existing-chapter-needed"
     },
     {
       "action": "indexed-only-chapter-freeze",
