@@ -3133,6 +3133,26 @@
       "summary": "JankSeverityType Partial/Full 不能按一个 frame interval 原始阈值解释",
       "type": "factual-accuracy",
       "updated_at": "2026-08-27T22:41:12.871073+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch07-smoothness/05-hwc-overlay-composition-downgrade.md",
+      "close_note": "已将该段改为同时说明 typical four overlay planes 示例、Implement HWC 至少四个 overlays 支持项、物理 plane/每帧分配不可由应用查询或锁定，以及 getOverlaySupport 在底层 HAL 不支持时可报 EX_UNSUPPORTED。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20260828-110758-idle-audit-7041be2c",
+      "created_at": "2026-08-28T11:12:49.200669+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20260828-110758-idle-audit-7041be2c",
+      "details": "source.android.com Implement HWC 当前文档列出 HWC implementations must support at least four overlays；IComposerClient.getOverlaySupport() AIDL 同时声明底层 HAL 不支持时可返回 EX_UNSUPPORTED。原段落只把四个 overlay plane 写成早期示例且写成直接返回 OverlayProperties，容易让读者漏掉能力下限与可用性边界。",
+      "id": "AIW-7.5-20260828-HWC-OVERLAY-CAPABILITY",
+      "log_path": "logs/audit/2026-08-28-20260828-110758-idle-audit-7041be2c-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://source.android.com/docs/core/graphics/implement-hwc"
+      ],
+      "status": "fixed",
+      "summary": "Overlay plane 数量段落未保留官方 Implement HWC 的至少四个 overlays 边界与 getOverlaySupport 的 EX_UNSUPPORTED 可用性说明",
+      "type": "source-boundary",
+      "updated_at": "2026-08-28T11:12:49.282843+08:00"
     }
   ],
   "schema_version": 1
