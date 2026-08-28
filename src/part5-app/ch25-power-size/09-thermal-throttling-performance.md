@@ -86,7 +86,7 @@ Android 17 也没有 `PowerManager.isThermalStatusProtectionEnabled()`、`getThe
 
 应用无法通过 Thermal API 指定频率或限制档位（cooling state，即冷却设备当前采用的限制强度）。应用能调整的是工作量：目标帧率、渲染分辨率、画质、编码规格、相机分析速率、模型档位、并发度、预取与非紧急后台工作。
 
-较好的策略会提前减掉低价值工作，并在设备冷却后分阶段恢复。只在 `SEVERE` 到来时一次性关闭大量能力，通常会出现明显质量跳变；状态刚降低就全部恢复，又容易在阈值附近反复振荡。
+较好的策略会提前减掉低价值工作，并在设备冷却后分阶段恢复。只在 `SEVERE` 到来时一次性关闭大量能力，通常会出现明显质量跳变；热状态刚回落就全部恢复，又容易在阈值附近反复振荡。
 
 ## Android 17 系统路径
 
@@ -148,7 +148,7 @@ Android 17 的稳定 AIDL [`IThermal`](https://android.googlesource.com/platform
 
 “冷却设备”是 Thermal HAL 对限制执行器的抽象，不一定是风扇；CPU 限频、GPU 限频、充电限流或屏幕亮度限制都可以表现为冷却设备。Framework 的原始温度、热事件与冷却设备 Binder 方法需要特权权限 `DEVICE_POWER`。普通应用不能枚举每个传感器的摄氏温度，也不能读取冷却档位或功率上限。
 
-HAL `CoolingDevice.value` 由 0 到驱动的 `max_state`：0 表示未限制，值越高表示限制越深。这个值到 MHz、亮度或充电电流的映射由驱动与产品配置决定。它适合系统调试和 statsd（Android 的系统指标收集服务），不适合作为普通应用的兼容协议。
+HAL `CoolingDevice.value` 的取值范围从 0 到驱动的 `max_state`：0 表示未限制，值越高表示限制越深。这个值到 MHz、亮度或充电电流的映射由驱动与产品配置决定。它适合系统调试和 statsd（Android 的系统指标收集服务），不适合作为普通应用的兼容协议。
 
 ## 全局热状态的含义
 
@@ -184,7 +184,7 @@ Android 17 的七档状态如下：
 - 大于 1 表示越过 `SEVERE` 归一化位置，但没有到 CRITICAL、EMERGENCY 的固定映射；
 - `NaN`（Not a Number，非数值哨兵）表示设备不支持、数据不足、HAL 未就绪或调用太频繁等情况。
 
-`forecastSeconds` 的允许范围是 0 到 60。预测假设近期工作负载趋势保持相近，预测越远越容易受场景切换影响。应用不能把一次预测值当成未来温度承诺。
+`forecastSeconds` 的允许范围是 0 到 60。预测以近期工作负载趋势保持相近为前提；预测时间越远，越容易受场景切换影响。应用不能把一次预测值当成未来温度承诺。
 
 没有 HAL 预测时，Android 17 的 Framework 回退实现每秒读取表面温度，每个传感器最多保留 30 个样本，至少有三个样本后用线性回归拟合近期变化并外推；连续 10 秒没有查询后停止采样。若 HAL v3 支持 `forecastSkinTemperature()` 且设备只报告一组 SKIN 阈值，服务会改用 HAL 预测。应用不需要识别内部来源，按“短期趋势信号”处理即可。
 
@@ -434,7 +434,9 @@ fun requestedTier(signals: ThermalSignals): WorkloadTier {
 4. 在工作量保持稳定时，线程执行时间、Runnable（可运行但等待 CPU 调度）时长、GPU 完成时间或帧时间随后恶化；
 5. 设备降温，或主动降低单一负载变量后，限制与性能退化按预测回落。
 
-缺少第 2、3 项时，观测到的 CPU/GPU 低频可能只是动态电压频率调整（DVFS）根据普通负载变化做出的选择；缺少稳定工作量与对照组时，无法排除业务负载本身变化；缺少回落过程时，还应检查省电模式（Battery Saver）、刷新率切换、后台争用和厂商短时提频（boost）策略。Perfetto 系统跟踪中应把 `ThermalManagerService.status`、热状态与冷却设备事件、`cpu_frequency_limits`、调度器、FrameTimeline（Android 帧时间线）、渲染线程（RenderThread）与 GPU 完成栅栏（fence）放在同一时间窗口，不能用单条异常帧或一次温度读数完成归因。
+缺少第 2、3 项时，观测到的 CPU/GPU 低频可能只是动态电压频率调整（DVFS）根据普通负载变化做出的选择；缺少稳定工作量与对照组时，无法排除业务负载本身变化；缺少回落过程时，还应检查省电模式（Battery Saver）、刷新率切换、后台争用和厂商短时提频（boost）策略。
+
+Perfetto 系统跟踪中应把 `ThermalManagerService.status`、热状态与冷却设备事件、`cpu_frequency_limits`、调度器、FrameTimeline（Android 帧时间线）、渲染线程（RenderThread）与 GPU 完成栅栏（fence）放在同一时间窗口，不能用单条异常帧或一次温度读数完成归因。
 
 功耗与热问题的时间尺度也要分开：单帧和输入反馈用短时跟踪，数分钟温升用持续跟踪或周期快照；屏幕熄灭后的唤醒锁（WakeLock）、后台作业（Job）与网络重试则回到 [25.1 功耗诊断与 OEM 后台限制](01-power-diagnosis-oem-background.md) 的 Batterystats（系统电量统计）窗口。三类结果通过同一设备、系统构建版本（build）、场景和时间戳关联；power rail 是设备级供电轨的能量统计，不能直接归因到某个 Java 方法。
 
@@ -470,7 +472,7 @@ ADPF 是 Android Dynamic Performance Framework（Android 动态性能框架）�
 API 36 的 CPU/GPU capacity headroom 位于 [`SystemHealthManager`](https://developer.android.com/reference/android/os/health/SystemHealthManager)：
 
 - `getCpuHeadroom()` / `getGpuHeadroom()` 返回 0—100，0 表示没有更多可分配容量；
-- thermal headroom 越高越接近严重热限制，数值方向相反；
+- thermal headroom 的数值方向与 capacity headroom 相反：越高越接近严重热限制；
 - capacity headroom 主要概括近期的 CPU/GPU 可用容量，低值可能来自高负载、调度或其他约束，不一定由温度造成，也不是未来容量预测；
 - 每次有效查询至少执行一次同步 Binder 调用，可能超过 1 毫秒。调用方应遵守系统报告的最小间隔，并避开渲染等关键线程。
 
@@ -625,7 +627,7 @@ Android 17 普通应用只能读取热状态和 headroom。原始温度、冷却
 
 ## 全文小结
 
-热治理的目标不是维持冷机峰值，而是在设备进入热平衡后保住可持续体验。应用应以 thermal status 判断当前限制等级，以 headroom 观察趋势，再通过带滞回和驻留时间的状态机同步降低渲染、媒体、推理、网络和后台工作；频率、冷却档位与性能时间线则用来证明退化是否真的由热限制造成。所有阈值和恢复策略都必须按设备族与业务场景验证。
+热治理的目标是在设备进入热平衡后保住可持续体验，冷机峰值不构成验收标准。应用应以 thermal status 判断当前限制等级，以 headroom 观察趋势，再通过带滞回和驻留时间的状态机同步降低渲染、媒体、推理、网络和后台工作；频率、冷却档位与性能时间线则用来证明退化是否真的由热限制造成。所有阈值和恢复策略都必须按设备族与业务场景验证。
 
 ## 版本演进
 
