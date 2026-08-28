@@ -4,24 +4,34 @@ chapter: '7.5'
 section: '7.5'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-06-22'
-last_verified_against: AOSP android-17.0.0_r1 frameworks/native SurfaceFlinger/HWC2/CompositionEngine + hardware/interfaces composer3 AIDL + source.android.com HWC docs + Perfetto FrameTimeline docs
+last_verified: '2026-08-28'
+last_verified_against: AOSP android-17.0.0_r1 frameworks/native SurfaceFlinger/HWComposer/HWC2/CompositionEngine + hardware/interfaces composer3 AIDL + source.android.com HWC/Winscope docs + Perfetto FrameTimeline docs
 confidence: medium
 sources:
 - type: aosp
   path: frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.cpp
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/CompositionEngine/src/Display.cpp
 - type: aosp
   path: frameworks/native/services/surfaceflinger/CompositionEngine/src/Output.cpp
 - type: aosp
   path: hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/Composition.aidl
 - type: aosp
   path: hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/OverlayProperties.aidl
+- type: aosp
+  path: hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/IComposerClient.aidl
 - type: official
   path: https://source.android.com/docs/core/graphics/hwc
 - type: official
   path: https://source.android.com/docs/core/graphics/implement-hwc
 - type: official
   path: https://perfetto.dev/docs/data-sources/frametimeline
+- type: official
+  path: https://source.android.com/docs/core/graphics/winscope/capture/adb
+- type: official
+  path: https://source.android.com/docs/core/graphics/winscope/analyze/sf
 - type: research
   path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-hwc-overlay-plane-capability-sf-composition-downgrade.md
 tags:
@@ -42,6 +52,8 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
+last_idle_audit_at: '2026-08-28T11:11:00+08:00'
+last_idle_audit_run_id: 20260828-110758-idle-audit-7041be2c
 ---
 
 # HWC Overlay Plane 与合成降级排查
@@ -149,15 +161,15 @@ flowchart TD
 
 ## Overlay 能力没有通用的 plane 数字
 
-早期 HWC 文档用“四个 overlay plane”举例说明硬件资源不足时改用其他合成方式的现象。这个示例不能当作现代设备规格。AOSP 没有要求所有设备提供固定数量的 plane，普通应用也没有公开 API 可以查询或锁定 plane。
+官方 HWC 概览用“典型 Android 设备通常支持四个 overlay plane”解释资源不足时会退到 GLES/client composition；Implement HWC 文档又把“至少四个 overlays”列为 HWC 实现应支持的项目。这里的数字只能作为实现能力下限和示例背景，不能当作某台设备的物理 plane 总数、每帧可用 plane 数或应用可锁定的资源。普通应用也没有公开 API 可以查询或锁定 plane。
 
-Android 17 的 `IComposerClient.getOverlaySupport()` 返回 `OverlayProperties`。该结构描述以下能力：
+Android 17 的 `IComposerClient.getOverlaySupport()` 在底层 HAL 支持时返回 `OverlayProperties`；不支持时接口可报 `EX_UNSUPPORTED`。该结构描述以下能力：
 
 - pixel format（像素格式）与 dataspace 的 standard、transfer、range（色彩标准、传递函数、范围）有效组合；
 - DPU 能否同时处理至少两种输入色彩空间；
 - HWC 支持的 1D / 3D LUT（颜色查找表）属性。
 
-它不会返回物理 plane 数量、每个 plane 的缩放器数量、当前帧的分配结果或厂商功耗策略；接口本身也位于系统与 Composer HAL 之间，不属于应用 SDK。
+即使返回成功，它也不会返回物理 plane 数量、每个 plane 的缩放器数量、当前帧的分配结果或厂商功耗策略；接口本身也位于系统与 Composer HAL 之间，不属于应用 SDK。
 
 设备评估至少要同时记录这些条件：
 
