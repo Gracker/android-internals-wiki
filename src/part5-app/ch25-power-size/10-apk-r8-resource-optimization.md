@@ -2,7 +2,7 @@
 title: 应用体积分析与优化：DEX、Native SO 与资源
 chapter: '25.10'
 section: '25.10'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
 - dex
@@ -34,9 +34,9 @@ related_chapters:
 - '1.7'
 - '4.5'
 confidence: high
-last_verified: '2026-08-26'
-last_source_verified_at: '2026-08-26'
-last_verified_against: Android Developers R8 / keep rules / Configuration Analyzer / app optimization / APK Analyzer / D8 / bundletool / multidex / Startup Profile / NDK ABI / native symbols / 16 KB page size / AAPT2 / resource shrinker docs retrieved 2026-08-26; AOSP android-17.0.0_r1 ART DEX, bionic linker, package ABI, NativeLibraryHelper, androidfw and Soong anchors; android17-6.18 kernel mmap anchor
+last_verified: '2026-08-28'
+last_source_verified_at: '2026-08-28'
+last_verified_against: Android Developers R8 / keep rules / Configuration Analyzer / app optimization / APK Analyzer / D8 / bundletool / multidex / Startup Profile / NDK ABI / native symbols / 16 KB page size / AAPT2 / resource shrinker docs retrieved 2026-08-28; AOSP android-17.0.0_r1 ART DEX, bionic linker, package ABI, NativeLibraryHelper, androidfw and Soong anchors; android17-6.18 kernel mmap anchor
 sources:
 - type: official
   path: Dalvik executable format (source.android.com/docs/core/runtime/dex-format)
@@ -140,18 +140,18 @@ sources:
   path: https://android.googlesource.com/platform/build/soong/+/android-17.0.0_r1/java/app.go
 - type: article
   path: 技术文章/source/juejin-android/2026-08-26-76760926-超好用R8ConfigurationAnalyzer优化App大小和内存.md
-pipeline_stage: ready-for-review
+pipeline_stage: finalized
 task2b_state: body-applied
-task6_state: ready-for-review
-task9_state: pending-review
+task6_state: finalized
+task9_state: finalized
 last_body_apply_at: '2026-08-26T21:17:16+08:00'
 last_body_apply_run_id: 20260826-211556-2a4c65fb
 last_draft_polish_at: 2026-08-15 17:19:02+08:00
 last_draft_polish_run_id: 20260815-171902-gracker-writing-458
 last_deep_review_at: 2026-07-31
 last_deep_review_run_id: 20260731-083556-deep-review-977cb49d
-last_review_finalize_at: '2026-08-26T12:15:14+08:00'
-last_review_finalize_run_id: 20260826-121205-b3083af1
+last_review_finalize_at: '2026-08-28T10:17:00+08:00'
+last_review_finalize_run_id: 20260828-095704-b62a69bb
 last_rework_at: 2026-08-15 17:19:02+08:00
 last_rework_run_id: 20260815-171902-gracker-writing-458
 last_consolidated_at: '2026-08-24'
@@ -222,7 +222,7 @@ DEX（Dalvik Executable，Dalvik 可执行格式）是 Android 保存类定义�
 
 ART（Android Runtime，Android 运行时）会在安装和运行过程中生成验证或编译辅助产物：`.vdex` 保存验证及相关 DEX 数据，`.odex`/`.oat` 保存设备侧编译结果，`.art` 是 App Image（把预初始化类和对象状态映射进内存的镜像）。这些文件占设备存储，不计入商店下载的 DEX 字节。
 
-本文的平台基线为 Android 17 / API 37 / `android-17.0.0_r1`，构建工具部分按 2026 年 8 月 15 日检索到的 Android Developers 文档核对。平台版本和 Android Gradle Plugin（AGP）/R8 版本是两条独立轴：升级 `targetSdk` 不会自动缩小 DEX，升级工具链也不能代替发布产物回归测试。
+本文的平台基线为 Android 17 / API 37 / `android-17.0.0_r1`，构建工具部分按 2026 年 8 月 28 日检索到的 Android Developers 文档核对。平台版本和 Android Gradle Plugin（AGP）/R8 版本是两条独立轴：升级 `targetSdk` 不会自动缩小 DEX，升级工具链也不能代替发布产物回归测试。
 
 一个可执行的目标通常写成三组预算：
 
