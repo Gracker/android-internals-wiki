@@ -4,7 +4,7 @@ chapter: '4.10'
 status: finalized
 pipeline_stage: ready-to-publish
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
-last_verified: '2026-07-06'
+last_verified: '2026-08-28'
 last_verified_against: AOSP android-17.0.0_r1
 confidence: medium
 sources:
@@ -17,7 +17,9 @@ sources:
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java
 - type: aosp
-  path: frameworks/native/libs/binder/Parcel.cpp (Binder 事务缓冲区)
+  path: frameworks/native/libs/binder/ProcessState.cpp (Binder 接收映射)
+- type: aosp
+  path: frameworks/base/services/core/jni/com_android_server_am_MemoryLimiter.cpp
 - type: aosp
   path: system/sepolicy/ — SELinux 隔离进程策略
 tags:
@@ -470,7 +472,7 @@ heapprofd 面向原生堆分配，不能覆盖只读模型文件映射的全部�
 | 请求和响应 Parcelable 格式 | [`ExecuteAppFunctionRequest.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/ExecuteAppFunctionRequest.java)、[`ExecuteAppFunctionResponse.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/ExecuteAppFunctionResponse.java) |
 | 调用资格校验 | [`frameworks/base/services/appfunctions/.../CallerValidatorImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/appfunctions/java/com/android/server/appfunctions/CallerValidatorImpl.java) |
 | Android 17 响应 URI 授权 | [`AppFunctionUriGrant` API reference](https://developer.android.com/reference/android/app/appfunctions/AppFunctionUriGrant)、[`AppFunctionUriGrant.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/AppFunctionUriGrant.java)、[`AppFunctionManagerServiceImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/appfunctions/java/com/android/server/appfunctions/AppFunctionManagerServiceImpl.java) |
-| MemoryLimiter 状态映射与推理服务豁免 | [`frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java) |
+| MemoryLimiter 状态映射、交换限制与推理服务豁免 | [`frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java)、[`frameworks/base/services/core/jni/com_android_server_am_MemoryLimiter.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/jni/com_android_server_am_MemoryLimiter.cpp) |
 | lmkd 终止目标选择与 dma-buf 统计 | [`system/memory/lmkd/lmkd.cpp`](https://android.googlesource.com/platform/system/memory/lmkd/+/android-17.0.0_r1/lmkd.cpp) |
 | 隔离进程 / 隔离计算进程策略 | [`system/sepolicy/private/isolated_app.te`](https://android.googlesource.com/platform/system/sepolicy/+/android-17.0.0_r1/private/isolated_app.te)、[`isolated_compute_app.te`](https://android.googlesource.com/platform/system/sepolicy/+/android-17.0.0_r1/private/isolated_compute_app.te) |
 | Binder 缓冲区分配 | [`kernel/common/drivers/android/binder_alloc.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_alloc.c)，`android17-6.18-2026-06_r6` |
