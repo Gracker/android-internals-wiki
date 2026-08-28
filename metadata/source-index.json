@@ -615,15 +615,16 @@
       "previous_route_status": "unrouted-existing-chapter-needed"
     },
     {
-      "action": "indexed-only-chapter-freeze",
+      "action": "quarantined-non-aiw",
       "chapter": "ch16",
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-18-76500740-现代Android官方为什么更推荐Repo.md",
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
-      "route_status": "unrouted-existing-chapter-needed",
-      "routed_at": "2026-07-25T13:53:24.486291+08:00",
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-08-29T06:20:10.752786+08:00",
       "score": 19,
       "summary": "写这篇文章，其实是因为最近看到有些公众号在介绍 Kotlin 协程时，都推荐在 Repository 中这样写： repositoryScope.launch { // do something 甚至把这种写法包装成一种\"最佳实践\"，理由通常是： Repository 自己负责异步； 看到这样的文章越来越多，我实在忍不住了。 因为它真正改变的并不是\"是否异步\"，而是 耗时...",
-      "title": "[技术文章] 2026-07-18-76500740-现代Android官方为什么更推荐Repo"
+      "title": "[技术文章] 2026-07-18-76500740-现代Android官方为什么更推荐Repo",
+      "previous_route_status": "unrouted-existing-chapter-needed"
     },
     {
       "action": "indexed-only-chapter-freeze",
@@ -4411,6 +4412,88 @@
       "status": "body-applied",
       "applied_at": "2026-08-26T15:17:28+08:00",
       "applied_run_id": "20260826-151509-7a444578"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/2026-08-28-Play内存门槛2027-02先对四行-深度调研.md",
+      "title": "[DeepResearch] 执行摘要",
+      "summary": "--- date: 2026-08-28 type: deep-research-summary --- # 执行摘要 - 材料: master-research + dumps - 一手: 官博 08-26, Play HC 17492799, AOSP Memory Limiter - 成稿见 调研/ 与 Content/Drafts/",
+      "chapter": "ch16",
+      "processed_at": "2026-08-29T06:20:10.543503+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part5-app/ch23-memory-practice/05-large-heap-multiprocess.md",
+      "route_confidence": 22,
+      "route_terms": [
+        "date",
+        "play",
+        "aosp",
+        "memory",
+        "limiter",
+        "content"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/01-dump-play-thresholds.md",
+      "title": "[DeepResearch] Dump 1 - Play 技术质量门槛 (内存 + DEX 优化)",
+      "summary": "--- phase: 1 sub_question: Play memory and DEX optimization thresholds sources_primary: - https://android-developers.googleblog.com/2026/08/app-quality-memory-optimization-secure-onboarding.html - https://support.google.",
+      "chapter": "ch04",
+      "processed_at": "2026-08-29T06:20:10.543503+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
+      "route_confidence": 24,
+      "route_terms": [
+        "play",
+        "memory",
+        "and",
+        "sources",
+        "android-developers.googleblog.com",
+        "ch04"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/references/03-memory-limiter-aosp.md",
+      "title": "[DeepResearch] 03-memory-limiter-aosp",
+      "summary": "--- source: https://source.android.com/docs/core/perf/memory-limiter title: Memory Limiter AOSP fetched: 2026-08-28 --- Android 17+ cgroup v2 memory.high. 见 raw 与 03-memory-limiter-body.txt",
+      "chapter": "ch16",
+      "processed_at": "2026-08-29T06:20:10.543503+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part5-app/ch20-stability/06-native-memory-leak-online-monitoring.md",
+      "route_confidence": 28,
+      "route_terms": [
+        "docs",
+        "core",
+        "memory-limiter",
+        "title",
+        "memory",
+        "limiter",
+        "aosp",
+        "cgroup"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/references/01-googleblog.md",
+      "title": "[DeepResearch] 01-googleblog",
+      "summary": "--- source: https://android-developers.googleblog.com/2026/08/app-quality-memory-optimization-secure-onboarding.html title: Elevating app quality fetched: 2026-08-28 --- 公告 2026-08-26. 内存 AnonRSS+swap / bitmap / DEX 25%.",
+      "chapter": "ch04",
+      "processed_at": "2026-08-29T06:20:10.543503+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part3-tools/ch15-other-tools/17-r8-configuration-analyzer.md",
+      "route_confidence": 22,
+      "route_terms": [
+        "googleblog",
+        "android-developers.googleblog.com",
+        "title",
+        "app",
+        "dex",
+        "references"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
