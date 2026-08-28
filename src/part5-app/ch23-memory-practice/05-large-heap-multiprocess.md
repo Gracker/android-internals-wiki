@@ -2,11 +2,11 @@
 title: 大内存与多进程策略
 chapter: '23.5'
 section: '23.5'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-08-17'
-last_source_verified_at: '2026-08-17'
-last_verified_against: Android 17 / API 37 官方 App memory limits、Manage memory、ComponentCallbacks2、Binder、WebView 与 Google Play 64 位文档；AOSP android-17.0.0_r1 ActivityThread、ActivityManager、ComponentCallbacks2、TransactionTooLargeException、MemoryLimiter、ActivityManagerShellCommand、ActivityManagerService、ART thread.cc
+last_source_verified_at: '2026-08-29'
+last_verified_against: Android 17 / API 37 官方 App memory limits、Manage memory、ComponentCallbacks2、Binder、WebView 与 Google Play 64 位文档；AOSP android-17.0.0_r1 ActivityThread、ActivityManager、ComponentCallbacks2、TransactionTooLargeException、MemoryLimiter、ActivityManagerShellCommand、ActivityManagerService、ART thread.cc；Google Play 2027-02 技术质量门槛文档（17492799）与 2026-08-26 Android Developers Blog
 last_review_finalize_at: '2026-08-15T08:05:42+08:00'
 last_review_finalize_run_id: 20260815-080542-gracker-writing-review
 confidence: high
@@ -41,6 +41,10 @@ sources:
   path: https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/thread.cc
 - type: official
   path: https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits
+- type: official
+  path: https://android-developers.googleblog.com/2026/08/app-quality-memory-optimization-secure-onboarding.html
+- type: official
+  path: https://support.google.com/googleplay/android-developer/answer/17492799
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java
 - type: aosp
@@ -70,14 +74,16 @@ related_chapters:
 - '4.3'
 - '1.1'
 - '4.2'
-pipeline_stage: finalized
+pipeline_stage: ready-for-review
 last_draft_polish_at: '2026-08-15T08:05:42+08:00'
 last_draft_polish_run_id: 20260815-080542-gracker-writing
 last_idle_audit_at: '2026-08-17T18:40:06+08:00'
 last_idle_audit_run_id: 20260817-183500-idle-audit-6907b226
-task9_state: reviewed
-task2b_state: fixed
-task6_state: reviewed
+task9_state: ready-for-review
+task2b_state: body-applied
+task6_state: ready-for-review
+last_body_apply_at: '2026-08-29T07:15:20+08:00'
+last_body_apply_run_id: 20260829-071520-61711c2d
 consolidated_from:
 - src/part5-app/ch23-memory-practice/09-android17-app-memory-limits.md
 ---
@@ -209,6 +215,28 @@ adb shell su 0 cat "/proc/${editor_pid}/smaps_rollup"
 
 `dumpsys meminfo` 各列与 `/proc` 中的 RSS/PSS 采用不同的采集和汇总方式，不能混入同一条时间序列。比较前应固定设备、系统版本、测试场景和采样工具；多进程应用还要分别记录应用进程、WebView 渲染进程和相关 GPU 内存。
 
+### 把 Play 技术质量线纳入发布预算
+
+Google Play 在 2026-08-26 公告的新技术质量要求把内存使用纳入 Android vitals 核心指标：从 2027 年 2 月起，面向手机和平板发布的应用和游戏需要满足各自的内存 bad behavior thresholds；Play 使用最近 28 天的聚合数据，并用 90th percentile（P90）与阈值比较。这个门槛是发布与质量信号，不改变本文的 Android 17 / `android-17.0.0_r1` 平台源码基线，也不能替代本机压力测试。[来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/2026-08-28-Play内存门槛2027-02先对四行-深度调研.md；已验证: raw/02-play-support.html]
+
+Play 的“Memory usage”指标是 Anonymous RSS + Swap：Anon RSS 包括 Java/Kotlin 堆、原生分配和匿名映射等不能在没有 swap 时换出到落盘文件的应用私有数据，Swap 包括压缩或换入 zRAM 的内存；它不等同于 ART `memoryClass`、PSS 或 Android 17 `MemoryLimiter` 源码中的 `AnonSwap` 退出描述。另一个单独指标是 Bitmap memory usage，用来发现后台或缓存状态下长期保留大图的问题。[来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/2026-08-28-Play内存门槛2027-02先对四行-深度调研.md；已验证: raw/01-googleblog.html 与 raw/02-play-support.html]
+
+Play Help Center 17492799 给出的 Apps 类 Anonymous RSS + Swap P90 阈值如下；每个 RAM 档包含下限，Total Memory 可能低于设备宣传的物理 RAM。[来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/2026-08-28-Play内存门槛2027-02先对四行-深度调研.md；已验证: raw/02-play-support.html]
+
+| Total Memory 档 | Foreground | User-perceived services | Background | Cached |
+| --- | --- | --- | --- | --- |
+| 0–3200 MB | - | - | - | - |
+| 3200–4800 MB | 2 GB | 1 GB | 1 GB | - |
+| 4800–6800 MB | 2.25 GB | 1.25 GB | 1.25 GB | - |
+| 6800–9216 MB | 2.25 GB | 1.5 GB | 1.5 GB | - |
+| 9216–14336 MB | 3.25 GB | 1.75 GB | 1.75 GB | - |
+| 14336–18432 MB | 4.25 GB | 2 GB | 2 GB | - |
+| Above 18432 MB | - | - | - | - |
+
+Bitmap memory usage 的 P90 阈值只在非前台状态给出：user-perceived services 与 background 为大于 200 MB，cached 为大于 400 MB。前台可以短时占用 Bitmap，但进入后台或缓存状态后仍长时间保留大图，通常说明 `onTrimMemory()`、页面销毁或图片缓存策略没有把可重建资源释放出去。[来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/2026-08-28-Play内存门槛2027-02先对四行-深度调研.md；已验证: raw/02-play-support.html]
+
+预算表之外还要区分三类观察入口：Play Console / Developer Reporting API 看到的是按用户设备聚合的长期 P90 和 RAM bucket；`dumpsys meminfo`、Perfetto、堆转储与 `/proc` 采样看到的是当前复现场景；Android 17 `MemoryLimiter` 则是在单台设备上按可见性和 cgroup 限制处理“此刻”的异常占用。三组数字口径不同，不能把 Play 阈值直接写成某台设备的 `am memory-limiter manual` 参数，也不能因为本地 PSS 低于某个表格值就跳过 Play Console 的分桶检查。[来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/2026-08-28-Play内存门槛2027-02先对四行-深度调研.md；已验证: raw/01-googleblog.html、raw/02-play-support.html 与 AOSP android-17.0.0_r1 MemoryLimiter 源码]
+
 预算值应来自目标设备上的实测峰值，并提前规定超限时允许降低哪些资源规格。表中列出了各进程需要记录的输入、资源释放时机和超限处理，不提供跨设备通用比例。
 
 | 对象 | 需要单独测量 | 生命周期控制 | 超出预算后的动作 |
@@ -308,6 +336,8 @@ r1 的 Java 控制逻辑与命令解析见 [`MemoryLimiter.java`](https://androi
 
 - [Android 17：App memory limits](https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits)
 - [Android 开发者博客：Android 17 内存效率建议](https://developer.android.com/blog/posts/prioritizing-memory-efficiency-essential-steps-for-android-17)
+- [Android Developers Blog：Elevating app quality](https://android-developers.googleblog.com/2026/08/app-quality-memory-optimization-secure-onboarding.html)
+- [Google Play Help：Play Console technical quality requirements](https://support.google.com/googleplay/android-developer/answer/17492799)
 - [`<application android:largeHeap>`](https://developer.android.com/guide/topics/manifest/application-element#largeHeap)
 - [`ActivityManager`：memory class API](https://developer.android.com/reference/android/app/ActivityManager)
 - [Processes and threads overview](https://developer.android.com/guide/components/processes-and-threads)
