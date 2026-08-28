@@ -1,10 +1,10 @@
 ---
 title: 内存规整与直接回收性能边界
 chapter: '4.7'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-26'
-last_verified_against: Android Common Kernel android17-6.18-2026-06_r6 mm/{page_alloc,compaction,vmscan,vmstat}.c, include/trace/events/{compaction,vmscan}.h, Documentation/admin-guide/{sysctl/vm,mm/transhuge}.rst, Documentation/accounting/psi.rst, arch/arm64/configs/gki_defconfig; AOSP android-17.0.0_r1 lmkd, libpsi and CachedAppOptimizer Java/JNI; Android Source lmkd/mmd docs; Android Developers memory documentation
+last_verified: '2026-08-28'
+last_verified_against: Android Common Kernel android17-6.18-2026-06_r6 mm/{page_alloc,compaction,vmscan,vmstat}.c, include/trace/events/{compaction,vmscan}.h, Documentation/admin-guide/{sysctl/vm,mm/transhuge}.rst, Documentation/accounting/psi.rst, arch/arm64/configs/gki_defconfig; AOSP android-17.0.0_r1 lmkd, libpsi, CachedAppOptimizer Java/JNI and ComponentCallbacks2; Android Source lmkd/mmd docs; Android Developers memory and ComponentCallbacks2 documentation
 confidence: medium-high
 tags:
 - memory
@@ -17,12 +17,12 @@ related_chapters:
 - '4.3'
 - '23.2'
 - '14.4'
-pipeline_stage: ready-for-review
+pipeline_stage: finalized
 task6_state: reviewed
-task9_state: pending-review
+task9_state: reviewed
 task2b_state: body-applied
-last_review_finalize_at: '2026-08-26T14:12:30+08:00'
-last_review_finalize_run_id: 20260826-140558-bdb71749
+last_review_finalize_at: '2026-08-28T12:56:15+08:00'
+last_review_finalize_run_id: 20260828-124650-e321ac61
 last_body_apply_at: '2026-08-26T17:17:35+08:00'
 last_body_apply_run_id: 20260826-171524-cc2d6c7a
 last_deep_review_at: '2026-08-20T16:35:12+08:00'
@@ -40,6 +40,8 @@ sources:
   path: https://source.android.com/docs/core/perf/mmd
 - type: official
   path: https://developer.android.com/topic/performance/memory
+- type: official
+  path: https://developer.android.com/reference/android/content/ComponentCallbacks2
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/page_alloc.c
 - type: kernel
@@ -64,6 +66,8 @@ sources:
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/jni/com_android_server_am_CachedAppOptimizer.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ComponentCallbacks2.java
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/sysctl/vm.rst
 - type: kernel
@@ -80,7 +84,7 @@ sources:
 
 - Android Common Kernel `android17-6.18-2026-06_r6`，提交 `bcbd6575c301ef871ea15e7ac0fc83909e17ef56`；
 - AOSP `android-17.0.0_r1` 的 `lmkd`、`libpsi`、`CachedAppOptimizer.java` 和 JNI 实现；
-- Android Source 的 `lmkd`、`mmd` 文档，以及 Android Developers 的应用内存文档。
+- Android Source 的 `lmkd`、`mmd` 文档，以及 Android Developers 的应用内存与 `ComponentCallbacks2` API 文档。
 
 Linux 物理页规整、页面回收、ZRAM 压缩、Android 缓存应用回收（cached app compaction）是四种不同操作。诊断时要先确认事件属于哪一层，再讨论性能影响。
 
@@ -576,7 +580,7 @@ Android 官方文档的当前口径要求重点处理：
 - `TRIM_MEMORY_UI_HIDDEN`：UI 不再可见，可以释放只服务于界面的 Bitmap、播放缓冲区和动画资源；
 - `TRIM_MEMORY_BACKGROUND`：进程进入后台并可能成为终止候选，应释放可重建的后台资源。
 
-Android 14 起不再投递其他旧版 `onTrimMemory` 级别，相关常量在 Android 15 正式弃用。不要为 Android 17 设计依赖 `TRIM_MEMORY_RUNNING_LOW` 等旧回调的核心策略。
+Android 14 起不再投递其他旧版 `onTrimMemory` 级别，相关常量在 Android 15 正式弃用。不要为 Android 17 设计依赖 `TRIM_MEMORY_RUNNING_LOW` 等旧回调的核心策略。[已验证: AOSP android-17.0.0_r1 frameworks/base/core/java/android/content/ComponentCallbacks2.java; 来源: Android Developers ComponentCallbacks2 API reference]
 
 释放缓存可以降低未来压力和 LMK 风险，但回调不是内核直接回收的同步通知，也不能保证在每次压力出现前到达。
 
@@ -697,12 +701,15 @@ Android 17 的物理页分配慢路径会在特定高阶条件下先尝试直接
   - `platform/system/memory/lmkd/libpsi/include/psi/psi.h`
   - `platform/frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java`
   - `platform/frameworks/base/services/core/jni/com_android_server_am_CachedAppOptimizer.cpp`
+  - `platform/frameworks/base/core/java/android/content/ComponentCallbacks2.java`
 - Android Source：Low memory killer daemon
   - <https://source.android.com/docs/core/perf/lmkd>
 - Android Source：Memory management daemon
   - <https://source.android.com/docs/core/perf/mmd>
 - Android Developers：Manage your app's memory
   - <https://developer.android.com/topic/performance/memory>
+- Android Developers：ComponentCallbacks2
+  - <https://developer.android.com/reference/android/content/ComponentCallbacks2>
 - 技术文章：Android-PSI 详解：libpsi 源码解析——116 行代码架起 lmkd 与内核之间的桥
   - `技术文章/source/juejin-android/2026-08-26-76772546-AndroidPSI详解libpsi源码解析116行架起lmkd与内核的桥.md`
 - 技术文章：Android-高版本 LMKD 源码解析：基于 PSI 的内存压力监控与查杀全流程
