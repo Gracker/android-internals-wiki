@@ -78,7 +78,7 @@ last_idle_audit_run_id: 20260819-143836-idle-audit-140098bc
 
 # WebView 性能优化实战
 
-WebView 页面性能由实例初始化、Chromium 渲染、资源加载和页面脚本共同决定，单改某一端通常只能移动瓶颈。应先按业务可见节点拆分时间线，再针对进程预热、缓存、Bridge 和前端执行分别治理。
+WebView 页面性能由实例初始化、Chromium 渲染、资源加载和页面脚本共同决定，只优化某一端通常只是让瓶颈换个位置。应先按业务可见节点拆分时间线，再针对进程预热、缓存、Bridge 和前端执行分别治理。
 
 ## WebView 优化要同时看四段
 
@@ -97,7 +97,7 @@ WebView 页面打开后出现白屏、无法点击、滚动掉帧或页面重载
 - Linux 内核固定为 `android17-6.18-2026-06_r6`，用于解释内存回收、dma-buf（设备间共享缓冲区）与 fence（跨 CPU、GPU 和显示设备传递完成状态的同步对象）等基础语义；
 - WebView provider（实现包）由设备上的可更新软件包提供。复现记录还要包含 provider 包名、`versionName` 和 `versionCode`。
 
-同为 Android 17 的设备可以安装不同 provider 版本。平台源码能说明 `WebViewFactory` 怎样选择和装入 provider，却无法替代对应的 Chromium 源码版本（revision）。更完整的线程与显示路径见 [13.9 Android 17 WebView 渲染管线](../../part2-performance/ch13-rendering-pipelines/09-webview-rendering.md)。
+同为 Android 17 的设备可以安装不同 provider 版本。平台源码能说明 `WebViewFactory` 怎样选择和加载 provider，却无法替代对应的 Chromium 源码版本（revision）。更完整的线程与显示路径见 [13.9 Android 17 WebView 渲染管线](../../part2-performance/ch13-rendering-pipelines/09-webview-rendering.md)。
 
 ## 页面打开时间怎样量
 
@@ -151,7 +151,7 @@ class H5OpenTiming(
 }
 ```
 
-`elapsedRealtimeNanos()` 不受用户改时间或网络校时影响，适合计算进程内耗时。`navigationId` 用来隔离重定向、刷新和并发打开；缺少它时，旧页面的迟到回调可能写进新导航。`WebView.getCurrentWebViewPackage()` 在 API 26 起可用，查询本身不会装载 provider；适用范围最低为 API 29。
+`elapsedRealtimeNanos()` 不受用户改时间或网络校时影响，适合计算进程内耗时。`navigationId` 用来隔离重定向、刷新和并发打开；缺少它时，旧页面的迟到回调可能写进新导航。`WebView.getCurrentWebViewPackage()` 自 API 26 起可用，查询本身不会装载 provider；适用范围最低为 API 29。
 
 报告还应带上页面 bundle（前端构建产物）版本、离线包版本、预热状态、实例来源、网络类型、设备内存档位、前后台状态和错误码。平均值只适合观察趋势，发布判定至少要看分位数、低内存设备、弱网和各 provider 版本。
 
@@ -231,7 +231,7 @@ class WebViewBootstrap(
 
 ### 预创建只能解决剩余的实例成本
 
-异步启动完成后，如果系统 trace（时间轴）仍显示单个 WebView 实例创建占用可观主线程时间，并且目标页面命中率高，可以评估预创建。预创建实例需要一个明确的 owner（所有者）：
+异步启动完成后，如果系统 trace（时间轴）仍显示单个 WebView 实例创建占用可观主线程时间，并且目标页面大概率会用上预创建实例，可以评估预创建。预创建实例需要一个明确的 owner（所有者）：
 
 - 它在 UI 线程创建和销毁；
 - 它使用将来展示它的 Activity Context；
@@ -353,7 +353,11 @@ class SignedOfflineClient(
 }
 ```
 
-`OfflineIndex` 应绑定一份不可变 manifest（资源清单与校验信息），并区分主文档与子资源。主文档按规范化后的完整 URL 或受控模板匹配；子资源还要核对该 manifest 中的 URL、哈希、MIME、响应头和版本。示例把 Range（字节范围）请求交回 provider；若离线包需要承载音视频或大文件，必须完整实现字节范围与 `206 Partial Content` 语义。返回 `null` 表示交回 provider 正常加载。响应头要保留页面所需的 CSP（内容安全策略）、缓存与内容类型语义，不能给所有资源套同一组响应头。
+`OfflineIndex` 应绑定一份不可变 manifest（资源清单与校验信息），并区分主文档与子资源。主文档按规范化后的完整 URL 或受控模板匹配；子资源还要核对该 manifest 中的 URL、哈希、MIME、响应头和版本。
+
+示例把 Range（字节范围）请求交回 provider；若离线包需要承载音视频或大文件，必须完整实现字节范围与 `206 Partial Content` 语义。返回 `null` 表示交回 provider 正常加载。
+
+响应头要保留页面所需的 CSP（内容安全策略）、缓存与内容类型语义，不能给所有资源套同一组响应头。
 
 该回调还有三个常被漏掉的限制：
 
@@ -390,7 +394,9 @@ AndroidX WebKit 的当前文档把推测加载拆成三类；具体能否使用�
 - `Profile.prefetchUrlAsync()` 按 HTTPS URL 获取主 HTML 并写入 profile 的网络缓存，不会一并执行 JS 或拉取 CSS，可以从任意线程发起；
 - `WebViewCompat.prerenderUrlAsync()` 绑定具体 WebView，后台创建可激活页面，CPU、内存与网络成本最高。
 
-`prerenderUrlAsync()` 必须从 UI 线程发起。三类 API 都要以项目采用的 AndroidX WebKit 版本和 `WebViewFeature` 能力检查为准。预取的后台请求会跳过 `shouldInterceptRequest()`；用户导航时，主 HTML 才进入拦截回调。如果此时返回自定义 `WebResourceResponse`，provider 会采用拦截结果并绕过预取缓存。离线包与 provider 预取同时启用时，必须设计清楚谁拥有主文档。
+`prerenderUrlAsync()` 必须从 UI 线程发起。三类 API 都要以项目采用的 AndroidX WebKit 版本和 `WebViewFeature` 能力检查为准。
+
+预取的后台请求会跳过 `shouldInterceptRequest()`；用户导航时，主 HTML 才进入拦截回调。如果此时返回自定义 `WebResourceResponse`，provider 会采用拦截结果并绕过预取缓存。离线包与 provider 预取同时启用时，必须设计清楚谁拥有主文档。
 
 截至 2026-08-19 的 API reference 中，`Profile.preconnect()` 仍标记为 `Profile.ExperimentalPreconnect`，URL prefetch 相关能力仍标记为 `Profile.ExperimentalUrlPrefetch`；带参数的 prerender 配置也要核对对应 API 注解。上线前应把 opt-in、provider 版本、灰度开关和回退路径写入同一套策略。
 
@@ -569,7 +575,9 @@ App 原生侧优化只能缩短容器、缓存和通信部分。页面仍要控�
 - GPU 服务进程的纹理和图形资源；
 - 宿主 HWUI、窗口缓冲区与可选媒体图层。
 
-只看宿主进程的 Java 堆，会漏掉渲染进程和图形内存。排查时先记录宿主及关联渲染进程的 PID（进程号）：`dumpsys meminfo` 用于观察各类内存汇总，`smaps_rollup` 用于核对单进程内存映射汇总，Perfetto 的 process / memory counter（进程与内存计数器）用于还原时间变化，再结合 LeakCanary 和 Chrome DevTools Memory 定位对象。空闲 WebView 池也要纳入 PSS（按共享页比例折算的实际物理内存）和图形内存统计。
+只看宿主进程的 Java 堆，会漏掉渲染进程和图形内存。排查时先记录宿主及关联渲染进程的 PID（进程号）：`dumpsys meminfo` 用于观察各类内存汇总，`smaps_rollup` 用于核对单进程内存映射汇总，Perfetto 的 process / memory counter（进程与内存计数器）用于还原时间变化，再结合 LeakCanary 和 Chrome DevTools Memory 定位对象。
+
+空闲 WebView 池也要纳入 PSS（按共享页比例折算的实际物理内存）和图形内存统计。
 
 在 `android17-6.18-2026-06_r6` 内核侧，内存抖动可以继续检查 page fault（缺页）、direct reclaim（业务线程同步回收内存）、`kswapd`（内核后台回收线程）、PSI memory（内存压力停顿指标）、设备启用时的 zram（压缩内存交换区）、dma-buf 分配与 GPU driver wait（GPU 驱动等待）。这些内核证据能说明系统压力和等待发生在哪里，却不能直接指出页面对象由谁持有；对象归属仍要回到宿主、渲染进程与 provider 分析。
 
@@ -634,7 +642,7 @@ class RecoveringWebViewClient(
 }
 ```
 
-`navigationSnapshotFor()` 读取所有者在导航期间保存的导航快照，避免在渲染进程已退出后再调用旧 WebView 的 `getUrl()`。返回 `true` 表示宿主已经处理这次退出；返回 `false` 时，渲染进程崩溃会使 App 崩溃，系统回收则可能使 App 被终止。多个 WebView 可以共享一个渲染进程，系统会为每个受影响实例分别回调；每次只清理参数中的实例。
+`navigationSnapshotFor()` 读取所有者在导航期间保存的导航快照，避免在渲染进程已退出后再调用旧 WebView 的 `getUrl()`。返回 `true` 表示宿主已经处理这次退出；返回 `false` 时，渲染进程崩溃会导致 App 一起崩溃，系统回收则可能使 App 被终止。多个 WebView 可以共享一个渲染进程，系统会为每个受影响实例分别回调；每次只清理参数中的实例。
 
 重试策略要区分程序崩溃与内存回收，并受页面 URL 模板、前后台状态、Activity 生命周期和次数预算限制。同一页面连续崩溃时自动反复重载会形成 crash loop（崩溃循环），应转到错误页，并上报 provider 版本、页面版本与复现信息。调用 `setRendererPriorityPolicy()` 降低不可见渲染进程的优先级前，必须先具备这条恢复路径。
 
