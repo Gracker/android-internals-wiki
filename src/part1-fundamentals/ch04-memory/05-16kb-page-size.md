@@ -2,11 +2,11 @@
 title: 16 KB Page Size 与 Android 性能
 chapter: '4.5'
 section: '4.5'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 15 (API 35) - Android 17 (API 37)
-last_verified: '2026-08-24'
-last_verified_against: Android Developers page-size guide updated 2026-08-23 and retrieved 2026-08-24; source.android.com 16 KB architecture docs; AOSP android-17.0.0_r1 bionic/linker and manifest attrs; ARM Architecture Reference Manual
-confidence: medium
+last_verified: '2026-08-29'
+last_verified_against: Android Developers Support 16 KB page sizes and Play requirements checked 2026-08-29; source.android.com 16 KB architecture/backcompat/page-size/system-property docs checked 2026-08-29; AOSP android-17.0.0_r1 bionic/linker and manifest attrs; Android common kernel android17-6.18-2026-06_r6 ARM64 THP/contpte sources; ARM Architecture Reference Manual
+confidence: medium-high
 sources:
 - type: official
   path: developer.android.com/guide/practices/page-sizes
@@ -55,10 +55,12 @@ related_chapters:
 - '1.6'
 - '20.13'
 - '25.10'
-pipeline_stage: ready-for-review
-task6_state: pending
-task9_state: pending
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
 task2b_state: fixed
+last_review_finalize_at: '2026-08-29T10:14:09+08:00'
+last_review_finalize_run_id: 20260829-100545-37b74950
 last_body_apply_at: '2026-08-29T09:24:10+08:00'
 last_body_apply_run_id: 20260829-091539-d315b92b
 last_consolidated_at: '2026-08-24'
@@ -328,7 +330,7 @@ adb shell setprop bionic.linker.16kb.app_compat.enabled false
 adb shell setprop pm.16kb.app_compat.disabled true
 ```
 
-Android 17 还支持致命错误（fatal）模式，用来尽早找出仍依赖兼容路径的 ELF：
+`android-17.0.0_r1` 的 bionic 动态链接器还识别 `fatal` 属性值，用来尽早找出仍依赖兼容路径的 ELF：
 
 ```bash
 adb shell setprop bionic.linker.16kb.app_compat.enabled fatal
@@ -520,7 +522,7 @@ CONT_PTE_SIZE = 128 × 16 KiB = 2 MiB
 - **Android 15 / API 35**：AOSP 开始支持 16 KiB 页设备；16 KiB ELF 对齐的用户空间产物可同时运行在 4 KiB 和 16 KiB 内核上。
 - **Android 16 / API 36**：平台构建可用 `PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE := true` 检查预编译 ELF；`ignore_max_page_size: true` 和 `LOCAL_IGNORE_MAX_PAGE_SIZE := true` 只应用于临时豁免；`atest elf_alignment_test` 可检查设备上的 ELF。
 - **2027 年 2 月 1 日**：Google Play 将阻止不支持 64 位设备 16 KB 页、且目标版本为 Android 15 / API 35 或更高的应用更新继续发布。
-- **Android 17 / API 37**：官方增加 `fatal` 向后兼容验证方式，可让仍不兼容的二进制立即终止，便于在测试阶段找齐遗留库。
+- **Android 17 / API 37**：bionic 动态链接器源码支持 `bionic.linker.16kb.app_compat.enabled=fatal`，可让仍不兼容的二进制立即终止，便于在测试阶段找齐遗留库。
 
 上述时间线描述 AOSP、开发工具和 Play 提交要求，不代表每台 Android 15～17 设备都默认使用 16 KiB 页。设备厂商是否启用，要以目标设备的运行时结果为准。
 
