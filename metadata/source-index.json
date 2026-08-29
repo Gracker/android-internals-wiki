@@ -4510,6 +4510,27 @@
         "references"
       ],
       "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-30-76760926-超好用R8ConfigurationAn.md",
+      "title": "[技术文章] 超好用 R8 Configuration Analyzer， 优化你的 App 大小和内存相信大家最近应该都知道，目前",
+      "summary": "> 发布时间: 2026-08-21T00:49:44.000Z > 原文链接: https://juejin.cn/post/7676092674902868010 2026-08-21 1,001 阅读8分钟 相信大家最近应该都知道，**目前 Google 在整治 keep 滥用行为，建议 App 开启 R8 完整模式，Google 会对 App 进行打分，分数低会有...",
+      "chapter": "ch04",
+      "processed_at": "2026-08-30T06:20:47.568314+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "route_confidence": 25,
+      "route_terms": [
+        "超好用",
+        "configuration",
+        "analyzer",
+        "app",
+        "google",
+        "keep",
+        "juejin-android"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
