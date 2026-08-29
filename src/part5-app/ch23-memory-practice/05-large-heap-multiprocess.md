@@ -2,13 +2,13 @@
 title: 大内存与多进程策略
 chapter: '23.5'
 section: '23.5'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-17'
+last_verified: '2026-08-29'
 last_source_verified_at: '2026-08-29'
-last_verified_against: Android 17 / API 37 官方 App memory limits、Manage memory、ComponentCallbacks2、Binder、WebView 与 Google Play 64 位文档；AOSP android-17.0.0_r1 ActivityThread、ActivityManager、ComponentCallbacks2、TransactionTooLargeException、MemoryLimiter、ActivityManagerShellCommand、ActivityManagerService、ART thread.cc；Google Play 2027-02 技术质量门槛文档（17492799）与 2026-08-26 Android Developers Blog
-last_review_finalize_at: '2026-08-15T08:05:42+08:00'
-last_review_finalize_run_id: 20260815-080542-gracker-writing-review
+last_verified_against: Android 17 / API 37 官方 App memory limits、source.android Memory Limiter、Manage memory、ComponentCallbacks2、Binder、WebView 与 Google Play 64 位文档；AOSP android-17.0.0_r1 ActivityThread、ActivityManager、ComponentCallbacks2、TransactionTooLargeException、MemoryLimiter、ActivityManagerShellCommand、ActivityManagerService、ART thread.cc；Google Play 2027-02 技术质量门槛文档（17492799）与 2026-08-26 Android Developers Blog
+last_review_finalize_at: '2026-08-29T08:14:48+08:00'
+last_review_finalize_run_id: 20260829-081448-e296ef2f
 confidence: high
 sources:
 - type: official
@@ -42,6 +42,8 @@ sources:
 - type: official
   path: https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits
 - type: official
+  path: https://source.android.com/docs/core/perf/memory-limiter
+- type: official
   path: https://android-developers.googleblog.com/2026/08/app-quality-memory-optimization-secure-onboarding.html
 - type: official
   path: https://support.google.com/googleplay/android-developer/answer/17492799
@@ -74,14 +76,14 @@ related_chapters:
 - '4.3'
 - '1.1'
 - '4.2'
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 last_draft_polish_at: '2026-08-15T08:05:42+08:00'
 last_draft_polish_run_id: 20260815-080542-gracker-writing
 last_idle_audit_at: '2026-08-17T18:40:06+08:00'
 last_idle_audit_run_id: 20260817-183500-idle-audit-6907b226
-task9_state: ready-for-review
+task9_state: reviewed
 task2b_state: body-applied
-task6_state: ready-for-review
+task6_state: reviewed
 last_body_apply_at: '2026-08-29T07:15:20+08:00'
 last_body_apply_run_id: 20260829-071520-61711c2d
 consolidated_from:
@@ -297,19 +299,19 @@ Android 17 r1 确认 `AnonSwap` 超限后，先把当前进程的 `memory.high` 
 
 `getPss()` / `getRss()` 可能返回零，也不保证记录的是终止瞬间；`getTraceInputStream()` 也不会固定附带 `MemoryLimiter` 的诊断文件。命中只能证明匿名页、共享内存页与交换空间的组合量超过设备策略，单凭这一条记录无法判定内存泄漏。大图处理、端侧模型推理、WebView 或音视频处理的短时峰值也可能触发限制。
 
-> **版本警告**：这段历史脚本保留了原变量名 `TEST_LIMIT_MB`，但 `android-17.0.0_r1` 把数字解释为设备总 RAM 的百分比，并要求使用 1–99 的整数。运行 r1 时应把该变量设为测试百分比，忽略变量名和报错文字中的 `MB`。现行 Android 17 官方文档已经把数字改为 MB，并增加 `max`，两种语法不能混用。
+> **版本警告**：`android-17.0.0_r1` 的 `manual` 数字解释为设备总 RAM 的百分比，并要求使用 1–99 的整数。现行 developer.android.com 行为变更页把无后缀整数解释为 MB 并增加 `max`；source.android Memory Limiter 文档还示例了字节值和 `MB` / `GB` 后缀。它们都不同于 r1 shell 帮助中的百分比语法，不能混用。
 
 这段脚本只展示“查询状态、施加测试限制、恢复默认限制”的顺序，应在专用测试设备上运行。r1 中传入的数值是根据场景基线选择的故障注入百分比，不是应用发布时的预算：
 
 ```bash
 target_pid="$(adb shell pidof com.example.app:editor | tr -d '\r')"
-test_limit_value="${TEST_LIMIT_MB:?export TEST_LIMIT_MB according to the target build syntax}"
+test_limit_value="${TEST_LIMIT_VALUE:?export TEST_LIMIT_VALUE according to the target build syntax}"
 adb shell am memory-limiter status
 adb shell am memory-limiter manual "$target_pid" "$test_limit_value"
 adb shell am memory-limiter manual "$target_pid" none
 ```
 
-在 r1 上，`manual` 的帮助文本为 `manual <PID> <PERCENT|none>`；现行官方文档则是 `manual <pid> <limit>|max|none`，其中 `limit` 的单位为 MB。测试前应查看目标系统构建的命令帮助和限制状态，不能只根据“Android 17”这个版本名推断参数单位。先用 `status` 保存设备是否启用及 `visible` / `not-visible` 配置，每次 `manual` 后再次查询状态，测试结束用 `none` 恢复设备默认限制。`ignore all` 会改变整台设备的限制策略，不能用于掩盖回归测试失败。
+在 r1 上，`manual` 的帮助文本为 `manual <PID> <PERCENT|none>`；现行 developer.android.com 行为变更页则是 `manual <pid> <limit>|max|none`，并把无后缀整数解释为 MB。source.android Memory Limiter 文档还给出字节值以及 `MB` / `GB` 后缀示例。测试前应查看目标系统构建的命令帮助和限制状态，不能只根据“Android 17”这个版本名推断参数单位。先用 `status` 保存设备是否启用及 `visible` / `not-visible` 配置，每次 `manual` 后再次查询状态，测试结束用 `none` 恢复设备默认限制。`ignore all` 会改变整台设备的限制策略，不能用于掩盖回归测试失败。
 
 r1 的 Java 控制逻辑与命令解析见 [`MemoryLimiter.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java) 和 [`ActivityManagerShellCommand.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java)，cgroup 文件访问与 `AnonSwap` 公式见原生层 [`com_android_server_am_MemoryLimiter.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/jni/com_android_server_am_MemoryLimiter.cpp)。
 
@@ -335,6 +337,7 @@ r1 的 Java 控制逻辑与命令解析见 [`MemoryLimiter.java`](https://androi
 ## 参考资料
 
 - [Android 17：App memory limits](https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits)
+- [Source.android：Memory Limiter](https://source.android.com/docs/core/perf/memory-limiter)
 - [Android 开发者博客：Android 17 内存效率建议](https://developer.android.com/blog/posts/prioritizing-memory-efficiency-essential-steps-for-android-17)
 - [Android Developers Blog：Elevating app quality](https://android-developers.googleblog.com/2026/08/app-quality-memory-optimization-secure-onboarding.html)
 - [Google Play Help：Play Console technical quality requirements](https://support.google.com/googleplay/android-developer/answer/17492799)
