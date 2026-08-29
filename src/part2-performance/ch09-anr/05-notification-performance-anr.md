@@ -5,7 +5,7 @@ section: '9.5'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 task9_state: reviewed
-last_verified: '2026-07-14'
+last_verified: '2026-08-29'
 last_verified_against: AOSP android-17.0.0_r1
 confidence: medium
 sources:
@@ -29,6 +29,8 @@ sources:
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/drawable/Icon.java
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java
 - type: official
   path: https://developer.android.com/develop/ui/views/notifications
 - type: official
@@ -66,6 +68,8 @@ related_chapters:
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task2b_state: fixed
+last_idle_audit_at: '2026-08-29T18:35:04+08:00'
+last_idle_audit_run_id: 20260829-183504-idle-audit-cb8e7f3a
 ---
 
 # Notification 性能与 ANR
@@ -83,7 +87,7 @@ task2b_state: fixed
 | SystemUI 消费并渲染 | SystemUI 创建/复用视图、加载图片和主线程提交界面 | 通知延迟显示、面板卡顿；有输入事件时可能形成 SystemUI Input ANR |
 | NLS 接收回调 | 监听器的 Binder stub（接收跨进程调用的入口）把消息转给主线程 `MyHandler` | 监听器回调积压；进程持有窗口且输入超时时可能形成自己的 Input ANR |
 
-前台服务还有一条相邻的超时：调用 `startForegroundService()` 后若没有及时完成 `Service.startForeground()`，AMS（ActivityManagerService）会让应用收到 `ForegroundServiceDidNotStartInTimeException`。这条路径会导致进程崩溃，不会生成 `am_anr`。复杂通知经常消耗这段时间预算，所以诊断报告仍会把它与通知性能放在一起。
+前台服务还有一条相邻的超时：调用 `startForegroundService()` 后若没有及时完成 `Service.startForeground()`，AMS（ActivityManagerService）的 `serviceForegroundTimeout()` 会为该服务构造 timeout record（超时记录）、停止仍在等待的服务，并延迟派发 `SERVICE_FOREGROUND_TIMEOUT_ANR_MSG`；`serviceForegroundCrash()` 则使用 `ForegroundServiceDidNotStartInTimeException` 报告崩溃路径。复杂通知经常消耗这段时间预算，所以诊断报告仍会把它与通知性能放在一起，但要按前台服务转换超时单独建线。
 
 ## 通知发布流程与 ANR 触发点
 
@@ -145,7 +149,7 @@ backgroundExecutor.execute(() -> {
 
 `startForeground()` 成功返回只表示系统已经接受这次前台转换和通知，不要求完整版已经生成。增强通知仍要处理取消竞态：后台任务完成时，Service 可能已经停止；更新前应检查任务代次（用于识别过期任务的版本号）或当前 Service 状态。
 
-故障日志含 `Context.startForegroundService() did not then call Service.startForeground()` 时，按前台转换超时处理。若同时存在 `am_anr`，需要分别保留两条时间线，不能用其中一条自动解释另一条。
+故障日志含 `Context.startForegroundService() did not then call Service.startForeground()`、`ForegroundServiceDidNotStartInTimeException` 或 service foreground timeout ANR 时，按前台转换超时处理。若同一窗口内还有输入 ANR 或普通 Service 执行 ANR，需要分别保留时间线，不能用其中一条自动解释另一条。
 
 ## NotificationManagerService 内部机制
 
@@ -309,7 +313,7 @@ trace 位于 `NotificationManager.notify*()`、`BinderProxy.transactNative()` �
 
 ### 模式二：前台服务转换超时
 
-异常为 `ForegroundServiceDidNotStartInTimeException`，没有 `am_anr` 也能发生。检查 Service 回调入口到 `startForeground()` 的所有同步工作，先提交最小合规通知，再构造增强内容。
+日志含 `ForegroundServiceDidNotStartInTimeException`、前台转换 timeout record 或 service foreground timeout ANR。检查 Service 回调入口到 `startForeground()` 的所有同步工作，先提交最小合规通知，再构造增强内容。
 
 ### 模式三：NLS 主线程回调积压
 
@@ -550,6 +554,7 @@ resource、URI 和 bitmap 分别会产生资源解析、延迟读取解码和共
 - [RemoteViews.java：Parcel、apply 与 reapply](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/widget/RemoteViews.java)
 - [Icon.java：resource、URI 与 bitmap Parcel 路径](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/drawable/Icon.java)
 - [ActiveServices.java：前台服务转换 timeout](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java)
+- [ActivityManagerService.java：前台服务 timeout / crash 消息分发](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)
 
 ### 官方文档
 
