@@ -3,8 +3,8 @@ title: 启动优化策略
 chapter: '8.3'
 status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-06-06'
-last_verified_against: Android Developers launch-time/SplashScreen/Baseline Profiles/App Startup docs + Android 17 behavior changes + AOSP android-16.0.0_r1 ActivityThread/ViewStub
+last_verified: '2026-08-29'
+last_verified_against: Android Developers launch-time/SplashScreen/SplashScreen migration/Baseline Profiles/App Startup/AsyncLayoutInflater/Android 17 MessageQueue docs + AOSP android-17.0.0_r1 ActivityThread/ViewStub + AndroidX AppInitializer/InitializationProvider/AsyncLayoutInflater sources
 confidence: medium
 sources:
 - type: blog
@@ -20,17 +20,27 @@ sources:
 - type: official
   path: developer.android.com/topic/performance/vitals/launch-time
 - type: official
-  path: developer.android.com/guide/topics/ui/splash-screen
+  path: developer.android.com/develop/ui/views/launch/splash-screen
 - type: official
-  path: developer.android.com/topic/performance/baselineprofiles
+  path: developer.android.com/develop/ui/views/launch/splash-screen/migrate
+- type: official
+  path: developer.android.com/topic/performance/baselineprofiles/overview
 - type: official
   path: developer.android.com/topic/libraries/app-startup
 - type: official
-  path: developer.android.com/about/versions/17/behavior-changes-17
+  path: developer.android.com/reference/androidx/asynclayoutinflater/view/AsyncLayoutInflater
+- type: official
+  path: developer.android.com/about/versions/17/changes/messagequeue
 - type: aosp
-  path: android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/app/ActivityThread.java
+  path: android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java
 - type: aosp
-  path: android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/ViewStub.java
+  path: android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewStub.java
+- type: aosp
+  path: android.googlesource.com/platform/frameworks/support/+/androidx-main/startup/startup-runtime/src/main/java/androidx/startup/AppInitializer.java
+- type: aosp
+  path: android.googlesource.com/platform/frameworks/support/+/androidx-main/startup/startup-runtime/src/main/java/androidx/startup/InitializationProvider.java
+- type: aosp
+  path: android.googlesource.com/platform/frameworks/support/+/androidx-main/asynclayoutinflater/asynclayoutinflater/src/main/java/androidx/asynclayoutinflater/view/AsyncLayoutInflater.java
 tags:
 - startup-optimization
 - lazy-init
@@ -54,6 +64,8 @@ task9_state: reviewed
 task6_state: reviewed
 pipeline_stage: ready-to-publish
 task2b_state: fixed
+last_idle_audit_at: '2026-08-29'
+last_idle_audit_run_id: 20260829-223538-idle-audit-e3a23e9f
 ---
 
 # 启动优化策略
@@ -594,6 +606,7 @@ Android 17 的平台结论以 `android-17.0.0_r1` 为准，系统资源争用分
 - [Android Developers：App startup time](https://developer.android.com/topic/performance/vitals/launch-time)
 - [Android Developers：App startup analysis and optimization](https://developer.android.com/topic/performance/appstartup/analysis-optimization)
 - [Android Developers：Splash screens](https://developer.android.com/develop/ui/views/launch/splash-screen)
+- [Android Developers：Migrate your existing splash screen implementation to Android 12](https://developer.android.com/develop/ui/views/launch/splash-screen/migrate)
 - [Android Developers：Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup)
 - [Android Developers：AsyncLayoutInflater API](https://developer.android.com/reference/androidx/asynclayoutinflater/view/AsyncLayoutInflater)
 - [AndroidX：AsyncLayoutInflater source](https://android.googlesource.com/platform/frameworks/support/+/androidx-main/asynclayoutinflater/asynclayoutinflater/src/main/java/androidx/asynclayoutinflater/view/AsyncLayoutInflater.java)
