@@ -2,7 +2,7 @@
 title: 应用体积分析与优化：DEX、Native SO 与资源
 chapter: '25.10'
 section: '25.10'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
 - dex
@@ -139,13 +139,13 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/build/soong/+/android-17.0.0_r1/java/app.go
 - type: article
-  path: 技术文章/source/juejin-android/2026-08-26-76760926-超好用R8ConfigurationAnalyzer优化App大小和内存.md
-pipeline_stage: finalized
+  path: 技术文章/source/juejin-android/2026-08-30-76760926-超好用R8ConfigurationAn.md
+pipeline_stage: ready-for-review
 task2b_state: body-applied
-task6_state: finalized
-task9_state: finalized
-last_body_apply_at: '2026-08-26T21:17:16+08:00'
-last_body_apply_run_id: 20260826-211556-2a4c65fb
+task6_state: ready-for-review
+task9_state: ready-for-review
+last_body_apply_at: '2026-08-30T07:19:12+08:00'
+last_body_apply_run_id: '20260830-071556-87136e20'
 last_draft_polish_at: 2026-08-15 17:19:02+08:00
 last_draft_polish_run_id: 20260815-171902-gracker-writing-458
 last_deep_review_at: 2026-07-31
@@ -412,11 +412,11 @@ R8 Configuration Analyzer 需要 R8 9.3.7-dev 或更高版本，使用 AGP 时�
 - 分析器没有执行应用的反射、JNI 或序列化路径；
 - 规则修改后的正确性由测试、分批发布与线上崩溃监控确认。
 
-实际排查时，先把 Analyzer 报告中的总分当成入口，再进入 Blast Radius 明细：`keep_rule_blast_radius_table` 会把每条 keep rule 关联到命中的 class/field/method 数量、`kept_by` 关系、keep constraint、规则文件来源与 Maven 坐标；`kept_class_info_table`、`kept_field_info_table`、`kept_method_info_table` 则可按 `DONT_SHRINK`、`DONT_OPTIMIZE`、`DONT_OBFUSCATE` 反查受限对象。这个表适合决定“先缩哪条规则”，不适合直接当作删除许可。[来源: https://juejin.cn/post/7676092674902868010；来源: 技术文章/source/juejin-android/2026-08-26-76760926-超好用R8ConfigurationAnalyzer优化App大小和内存.md；已验证: 本章 R8 Configuration Analyzer 与 Troubleshoot R8 rules 来源]
+实际排查时，先把 Analyzer 报告中的总分当成入口，再进入 Blast Radius 明细：`keep_rule_blast_radius_table` 会把每条 keep rule 关联到命中的 class/field/method 数量、`kept_by` 关系、keep constraint、规则文件来源与 Maven 坐标；`kept_class_info_table`、`kept_field_info_table`、`kept_method_info_table` 则可按 `DONT_SHRINK`、`DONT_OPTIMIZE`、`DONT_OBFUSCATE` 反查受限对象。这个表适合决定“先缩哪条规则”，不适合直接当作删除许可。[来源: https://juejin.cn/post/7676092674902868010；来源: 技术文章/source/juejin-android/2026-08-30-76760926-超好用R8ConfigurationAn.md；已验证: 本章 R8 Configuration Analyzer 与 Troubleshoot R8 rules 来源]
 
-把报告转成修改顺序时，应先固定同一 Release 变体的基线分数，再按 shrinking、optimization、obfuscation 的异常维度查找影响最大的规则；仅从 `app/proguard-rules.pro` 搜索不够，因为内部模块和第三方 AAR 的 consumer rules 会与应用规则合并后一起约束 R8。若报告或辅助导出数据给出规则来源、命中的 class/field/method 范围、`kept_by` 关系或 subsumed rules（被更宽规则覆盖的规则），可以先收敛覆盖范围最大的包级通配符，再用更窄规则保留真实的反射、JNI、序列化或注解扫描协议。[来源: 技术文章/source/juejin-android/2026-08-26-76760926-超好用R8ConfigurationAnalyzer优化App大小和内存.md；已验证: 本章 R8 Configuration Analyzer、Add keep rules 与 Troubleshoot R8 rules 来源]
+把报告转成修改顺序时，应先固定同一 Release 变体的基线分数，再按 shrinking、optimization、obfuscation 的异常维度查找影响最大的规则；仅从 `app/proguard-rules.pro` 搜索不够，因为内部模块和第三方 AAR 的 consumer rules 会与应用规则合并后一起约束 R8。若报告或辅助导出数据给出规则来源、命中的 class/field/method 范围、`kept_by` 关系或 subsumed rules（被更宽规则覆盖的规则），可以先收敛覆盖范围最大的包级通配符，再用更窄规则保留真实的反射、JNI、序列化或注解扫描协议。[来源: 技术文章/source/juejin-android/2026-08-30-76760926-超好用R8ConfigurationAn.md；已验证: 本章 R8 Configuration Analyzer、Add keep rules 与 Troubleshoot R8 rules 来源]
 
-删除或放宽 keep 规则之前，要把 Analyzer 的“影响范围”与运行时语义分开：它能说明哪些类、字段或方法因为某条规则失去裁剪、优化或混淆机会，但不能单独证明这些对象在生产环境一定不会被字符串反射、JNI 注册、序列化框架、WebView bridge 或服务端协议访问。规则改动后至少重新生成 Analyzer 报告、合并配置、`seeds.txt`/`usage.txt` 和发布 APK 对比，并覆盖动态入口测试。[来源: 技术文章/source/juejin-android/2026-08-26-76760926-超好用R8ConfigurationAnalyzer优化App大小和内存.md；已验证: 本章 `-whyareyoukeeping`、APK Analyzer 与 R8 keep rules 来源]
+删除或放宽 keep 规则之前，要把 Analyzer 的“影响范围”与运行时语义分开：它能说明哪些类、字段或方法因为某条规则失去裁剪、优化或混淆机会，但不能单独证明这些对象在生产环境一定不会被字符串反射、JNI 注册、序列化框架、WebView bridge 或服务端协议访问。规则改动后至少重新生成 Analyzer 报告、合并配置、`seeds.txt`/`usage.txt` 和发布 APK 对比，并覆盖动态入口测试。[来源: 技术文章/source/juejin-android/2026-08-30-76760926-超好用R8ConfigurationAn.md；已验证: 本章 `-whyareyoukeeping`、APK Analyzer 与 R8 keep rules 来源]
 
 未使用支持该分析器的工具链时，`configuration.txt`、`seeds.txt`、`usage.txt`、APK Analyzer 和 `-whyareyoukeeping` 已能完成同类排查。
 
