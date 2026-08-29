@@ -3173,6 +3173,26 @@
       "summary": "Source list pointed Binder buffer evidence at Parcel.cpp and omitted MemoryLimiter JNI writer.",
       "type": "source-traceability",
       "updated_at": "2026-08-28T14:42:49.522801+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch09-anr/05-notification-performance-anr.md",
+      "close_note": "正文已改为区分 serviceForegroundTimeout 的 timeout/ANR 消息和 ForegroundServiceDidNotStartInTimeException 崩溃路径，并加入 ActivityManagerService.java 证据。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20260829-183504-idle-audit-cb8e7f3a",
+      "created_at": "2026-08-29T18:41:41.448310+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20260829-183504-idle-audit-cb8e7f3a",
+      "details": "android-17.0.0_r1 ActiveServices.serviceForegroundTimeout() 构造 timeout record、停止服务并延迟派发 SERVICE_FOREGROUND_TIMEOUT_ANR_MSG；serviceForegroundCrash() 才使用 ForegroundServiceDidNotStartInTimeException 报告崩溃路径。正文原句的不会生成 am_anr 过于绝对，会误导 ANR 取证。",
+      "id": "AIW-9.5-20260829-FGS-START-FOREGROUND-ANR",
+      "log_path": "logs/audit/2026-08-29-20260829-183504-idle-audit-cb8e7f3a-idle-audit.md",
+      "severity": "P1",
+      "source_paths": [
+        "AOSP android-17.0.0_r1 ActiveServices.java lines 8344-8395; ActivityManagerService.java lines 1918-1948; Android Developers ANRs/FGS troubleshooting docs"
+      ],
+      "status": "fixed",
+      "summary": "前台服务 startForegroundService 超时路径被写成只会崩溃且不会生成 am_anr",
+      "type": "source-boundary",
+      "updated_at": "2026-08-29T18:41:41.512045+08:00"
     }
   ],
   "schema_version": 1
