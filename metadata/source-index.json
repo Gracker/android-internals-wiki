@@ -4466,10 +4466,10 @@
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/references/03-memory-limiter-aosp.md",
       "title": "[DeepResearch] 03-memory-limiter-aosp",
-      "summary": "--- source: https://source.android.com/docs/core/perf/memory-limiter title: Memory Limiter AOSP fetched: 2026-08-28 --- Android 17+ cgroup v2 memory.high. 见 raw 与 03-memory-limiter-body.txt",
+      "summary": "已补入 Memory Limiter AOSP 文档的系统目标、UID/进程状态限制分类、cached 冻结回收行为，以及 /system 文档路径与 android-17.0.0_r1 /vendor CONFIG_PATH 的边界。",
       "chapter": "ch16",
       "processed_at": "2026-08-29T06:20:10.543503+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
       "score": 19,
       "target_path": "src/part5-app/ch20-stability/06-native-memory-leak-online-monitoring.md",
       "route_confidence": 28,
@@ -4483,7 +4483,13 @@
         "aosp",
         "cgroup"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "previous_action": "indexed-only-chapter-freeze",
+      "previous_route_status": "existing-chapter-routed",
+      "status": "body-applied",
+      "applied_at": "2026-08-29T11:19:37+08:00",
+      "applied_run_id": "20260829-111612-abc9b52a",
+      "canonical_target_chapter": "ch20"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/references/01-googleblog.md",
