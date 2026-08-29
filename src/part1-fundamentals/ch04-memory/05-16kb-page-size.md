@@ -2,7 +2,7 @@
 title: 16 KB Page Size 与 Android 性能
 chapter: '4.5'
 section: '4.5'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 15 (API 35) - Android 17 (API 37)
 last_verified: '2026-08-24'
 last_verified_against: Android Developers page-size guide updated 2026-08-23 and retrieved 2026-08-24; source.android.com 16 KB architecture docs; AOSP android-17.0.0_r1 bionic/linker and manifest attrs; ARM Architecture Reference Manual
@@ -24,6 +24,10 @@ sources:
   path: android-developers.googleblog.com/2024/08/adding-16-kb-page-size-to-android.html
 - type: official
   path: android-developers.googleblog.com/2025/05/prepare-play-apps-for-devices-with-16kb-page-size.html
+- type: official
+  path: android-developers.googleblog.com/2026/08/app-quality-memory-optimization-secure-onboarding.html
+- type: official
+  path: support.google.com/googleplay/android-developer/answer/17492799
 - type: aosp
   path: platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_phdr.cpp
 - type: aosp
@@ -51,10 +55,12 @@ related_chapters:
 - '1.6'
 - '20.13'
 - '25.10'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: ready-for-review
+task6_state: pending
+task9_state: pending
 task2b_state: fixed
+last_body_apply_at: '2026-08-29T09:24:10+08:00'
+last_body_apply_run_id: 20260829-091539-d315b92b
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part5-app/ch20-stability/07-16kb-native-library-compatibility.md
@@ -69,6 +75,8 @@ Android 的 16 KiB 页适配包含两个问题：
 2. 更大的基础页能否改善目标应用的性能。
 
 Google Play 当前要求目标版本为 Android 15（API 35）或更高的应用支持 64 位设备上的 16 KB 页；从 2027 年 2 月 1 日起，不支持 16 KB 页的应用更新将无法发布。这里判断的是 `targetSdkVersion` 与最终分发产物，不能用测试设备的系统版本代替。
+
+这里还要把两个 Play 维度分开：16 KB 页大小要求是面向含原生代码产物的安装/加载兼容性门槛；Play 在 2026-08 公布的内存与 DEX 优化技术质量门槛另按 Android vitals 近 28 天 P90 评估 `Anonymous RSS + Swap`、bitmap memory 和 optimized DEX 覆盖，未达标会触发 Console 告警并可能影响可见度与发布能力。后者不能替代 ELF/ZIP 对齐检查，也不能证明 16 KiB 页本身导致或消除了内存回归。[来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/01-dump-play-thresholds.md]
 
 第一个问题有明确的工程检查项；第二个问题必须测量。ELF（Executable and Linkable Format，可执行与可链接格式）和 APK 都通过对齐检查，只能说明产物具备兼容性，不能据此承诺启动会快多少。
 
@@ -424,6 +432,8 @@ adb shell getprop ro.build.fingerprint
 - PSS/RSS；
 - 设备温度和 CPU 频率限制。
 
+如果同一份报告还要解释 Play Console 的内存告警，先按 Play 口径拆开：`Anonymous RSS + Swap` 统计动态内存，swap 包含 zRAM，且不包含以落盘文件映射为主的 code/assets；bitmap 是单独维度，optimized DEX 又是包体优化维度。它们适合定位 Play 质量风险，不能代替本节的 `smaps` 配对、缺页计数和端到端启动耗时。[来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/01-dump-play-thresholds.md]
+
 `am force-stop` 后启动不等于清空页缓存后的存储冷启动。报告中要写清采用的是哪种进程启动状态、文件缓存状态和重复次数，并优先比较中位数和长尾分位数。
 
 ### 8.2 Perfetto 适合观察时序
@@ -543,6 +553,8 @@ CONT_PTE_SIZE = 128 × 16 KiB = 2 MiB
 - [Android Developers：`android:pageSizeCompat`](https://developer.android.com/guide/topics/manifest/application-element#pageSizeCompat)
 - [AOSP：Enable 16 KB backcompat option](https://source.android.com/docs/core/architecture/16kb-page-size/16kb-backcompat-option)
 - [AOSP：Get the page size](https://source.android.com/docs/core/architecture/16kb-page-size/getting-page-size)
+- [Android Developers Blog：App quality memory optimization and secure onboarding](https://android-developers.googleblog.com/2026/08/app-quality-memory-optimization-secure-onboarding.html)
+- [Google Play Help：Play 技术质量门槛（内存与 DEX）](https://support.google.com/googleplay/android-developer/answer/17492799)
 - [AOSP `android-17.0.0_r1`：`linker_phdr.cpp`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_phdr.cpp)
 - [AOSP `android-17.0.0_r1`：`linker_phdr_16kib_compat.cpp`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_phdr_16kib_compat.cpp)
 - [AOSP `android-17.0.0_r1`：`WriteProtected.h`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/private/WriteProtected.h)
