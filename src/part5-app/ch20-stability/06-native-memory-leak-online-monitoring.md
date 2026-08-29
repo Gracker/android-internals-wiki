@@ -2,7 +2,7 @@
 title: Native 内存泄漏的线上分层监控
 chapter: '20.6'
 section: '20.6'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
 - native
@@ -18,15 +18,18 @@ related_chapters:
 - '20.12'
 - '23.3'
 - '26.13'
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: finalized
+task6_state: pending
+task9_state: pending
+task2b_state: fixed
+pipeline_stage: ready-for-review
 last_draft_polish_at: '2026-08-03T15:35:11+08:00'
 last_draft_polish_run_id: 20260803-153511-draft-polish-5d4831f5
-last_verified: '2026-08-14'
-last_verified_against: Android 17 public docs (updated 2026-08-13) / android-17.0.0_r1 / android17-6.18-2026-06_r6
+last_verified: '2026-08-29'
+last_verified_against: Android 17 public docs (Memory Limiter AOSP fetched 2026-08-28; App memory limits updated 2026-08-13) / android-17.0.0_r1 / android17-6.18-2026-06_r6
 last_review_finalize_at: '2026-08-03T16:06:58+08:00'
 last_review_finalize_run_id: 20260803-160658-53d1b7cb
+last_body_apply_at: '2026-08-29T11:19:37+08:00'
+last_body_apply_run_id: 20260829-111612-abc9b52a
 confidence: high
 sources:
 - type: aosp
@@ -44,6 +47,8 @@ sources:
 - type: official
   path: https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits
 - type: official
+  path: https://source.android.com/docs/core/perf/memory-limiter
+- type: official
   path: https://developer.android.com/ndk/guides/memory-debug
 ---
 
@@ -55,15 +60,21 @@ Native（由 C/C++ 等本地代码管理的）内存问题很少能靠一条曲�
 
 ## 1. Android 17 让异常增长更早变成进程退出
 
-Android 17 引入了 App Memory Limits（应用内存限制）。该变化对运行在 Android 17 上的所有应用生效，不取决于 `targetSdkVersion`，但只在实施该机制的设备上启用。限制值由设备内存和厂商配置决定，平台没有向应用承诺统一的字节阈值。
+Android 17 引入了 App Memory Limits（应用内存限制）。该变化对运行在 Android 17 上的所有应用生效，不取决于 `targetSdkVersion`，但只在实施该机制的设备上启用。限制值由设备内存和厂商配置决定，平台没有向应用承诺统一的字节阈值。AOSP Memory Limiter 文档把目标写成限制单个应用占用过量系统内存，从而降低整体内存压力，并避免关键前台或缓存进程被激进低内存回收；这解释的是系统保护目标，不是应用侧可读取的固定配额。[来源: 03-memory-limiter-body.txt]
 
-在 `android-17.0.0_r1` 中，`MemoryLimiter` 读取 `/vendor/etc/memory-limiter-config.xml`，按可见与不可见进程状态选择限制。JNI（Java Native Interface，Java 与 C/C++ 的调用桥）会操作进程所属的 cgroup v2；cgroup v2 是 Linux 按进程组统计和约束 CPU、内存等资源的接口：
+在启用该机制的构建中，`MemoryLimiter` 随 AMS（Activity Manager Service，活动管理服务）进程生命周期和状态变化调整限制。Android 17 AOSP 文档写明默认监控应用进程（UID >= 10000），核心系统进程为稳定性而豁免；`android-17.0.0_r1` 的状态表也把 `PERSISTENT`/`PERSISTENT_UI` 归为 unrestricted，`TOP`/`BOUND_TOP`/`IMPORTANT_FOREGROUND`/`TOP_SLEEPING` 归为 visible，`FOREGROUND_SERVICE`、`IMPORTANT_BACKGROUND`、`SERVICE`、`RECEIVER`、`HOME`、`LAST_ACTIVITY` 等归为 not visible，`CACHED_*` 归为 cached。cached 状态下进程会先被冻结，再被最大化回收。[来源: 03-memory-limiter-body.txt][已验证: frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java @ android-17.0.0_r1]
+
+配置路径有一个需要单独记下的版本边界：AOSP Memory Limiter 文档把标准配置文件写成 `/system/etc/memory-limiter-config.xml`，XML 数值单位为 MiB；首个 AOSP 标签 `android-17.0.0_r1` 的 `MemoryLimiter.CONFIG_PATH` 则硬编码 `/vendor/etc/memory-limiter-config.xml`。调试时先记录设备 build fingerprint，并用设备上的 `am memory-limiter status` 和镜像实际文件核对，不要把任一路径当成所有 Android 17 构建的稳定承诺。[来源: 03-memory-limiter-body.txt][已验证: frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java @ android-17.0.0_r1]
+
+JNI（Java Native Interface，Java 与 C/C++ 的调用桥）会操作进程所属的 cgroup v2；cgroup v2 是 Linux 按进程组统计和约束 CPU、内存等资源的接口。本文保留 `r1` 中可观察的 cgroup 文件名作为调试锚点：[来源: 03-memory-limiter-body.txt][已验证: frameworks/base/services/core/jni/com_android_server_am_MemoryLimiter.cpp @ android-17.0.0_r1]
 
 - `memory.high`：设置内存高水位；越过后会触发直接回收并减慢新的内存分配，但允许用量短时超过该值；
 - `memory.swap.max`：设置 swap 用量上限；swap 是被换出的匿名页，Android 设备通常由压缩内存设备 zram 承载；
 - `memory.swap.current`：读取当前 swap 用量；
 - `memory.stat`：读取 `anon`（匿名内存）与 `shmem`（共享内存）；
 - `memory.events`：观察 `memory.high` 事件。
+
+越过 `memory.high` 本身先表现为清洁文件页回收、非活跃匿名页换出和临时执行节流；只有持续匿名增长并耗尽可用 swap 等极端情况，才会走向分配失败或进程退出。线上上报应区分“发生过 high 事件”和“已经证明某类资源泄漏”。[来源: 03-memory-limiter-body.txt]
 
 源码里部分 Java 注释和日志仍称 `memory.swap.high`，但 JNI 写入的文件是 `memory.swap.max`。这是系统实现细节，应用侧不应依赖具体 cgroup 文件名。
 
