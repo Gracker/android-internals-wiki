@@ -4538,6 +4538,130 @@
       "applied_at": "2026-08-30T07:19:12+08:00",
       "applied_run_id": "20260830-071556-87136e20",
       "canonical_target_chapter": "ch25"
+    },
+    {
+      "path": "https://people.kernel.org/monsieuricon/creepy-crawlies",
+      "title": "[ClawFeed] Creepy Crawlies",
+      "summary": "kernel.org 维护者用实测数据说明 AI 爬虫负载：5 个节点共 90 核中长期有 14-16 核只在为爬虫渲染 git commit HTML，约占总容量 20%，渲染开销已超过包括 git clone 在内的全部正常访问。linux.git 148 万 commit 加 922 个 fork 构成近乎无限的可枚举 URL 空间。封 UA、封 IP、封 ASN 依次失效后改用 Anubis 工作量证明，难度 5 也已被攻破，每日 600 万请求中 33% 通过挑战，合法请求估算仅占 2%。",
+      "chapter": "ch02",
+      "processed_at": "2026-08-31T06:20:26.641459+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7678586341090803748",
+      "title": "[掘金Android] Firebase 如何让全球 Android 和 Flutter 开发者集体 Build Fail",
+      "summary": "firebase-auth 24.2.0 的 class 文件引用 Checker Framework 的 @UnknownInitialization 注解但 POM 未声明 checker-qual，FlutterFire 6.6.0 Kotlin 重写产生的 SAM lambda 需要 Kotlin 推断参数类型，Kotlin 2.4 把该问题从警告升级为错误，三层叠加导致全球构建失败。官方修复是 lambda 参数写显式类型绕开推断路径。",
+      "chapter": "ch16",
+      "processed_at": "2026-08-31T06:20:26.641459+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "target_path": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "build",
+        "framework",
+        "pom",
+        "kotlin"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "https://juejin.cn/post/7678556373495971883",
+      "title": "[掘金Android] 【车载 Android】从 AAR 到 Plugin：Launcher 卡片插件化解耦实践",
+      "summary": "移植 AOSP SystemUI Plugin Framework 实现车机 Launcher 卡片插件化：插件在 Manifest 声明为不启动的 service 借 PackageManager 查询当注册表，加载时创建独立 PathClassLoader 并用 ClassLoaderFilter 限制类可见性，资源经 createApplicationContext 隔离，权限校验由 PluginActionManager 负责。宿主只依赖 WidgetViewPlugin 接口。",
+      "chapter": "ch08",
+      "processed_at": "2026-08-31T06:20:26.641459+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "route_confidence": 19,
+      "route_terms": [
+        "launcher",
+        "aosp",
+        "systemui",
+        "framework",
+        "service"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "https://juejin.cn/post/7679264879620374568",
+      "title": "[掘金Android] Android 系统启动机制（五）：system_server 是 init 启动的，还是 Zygote fork 出来的？",
+      "summary": "基于 android-16.0.0_r4 源码：init fork/exec app_process64 建立主 Zygote，主 Zygote 在 preload 后直接 forkSystemServer() 创建 system_server，不经 Zygote socket；子进程在 native SpecializeCommon 完成 UID/capabilities/seccomp 改造；Binder 线程池在 onZygoteInit 启动早于 SystemServer.main()；system_server 死亡时 Zygote 确认 PID 后主动退出交 init 重启。",
+      "chapter": "ch08",
+      "processed_at": "2026-08-31T06:20:26.641459+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "target_path": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "route_confidence": 28,
+      "route_terms": [
+        "system",
+        "server",
+        "init",
+        "zygote",
+        "app",
+        "native",
+        "uid",
+        "binder"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "https://juejin.cn/post/7678879264650166291",
+      "title": "[掘金Android] Android 显示流程：从 onResume 到像素上屏",
+      "summary": "在 App、system_server、SurfaceFlinger 三个进程埋 26 个日志点位，冷启动真实 App 用 logcat 时间轴逐行对照源码讲显示全链路：VSync 分 App/SF 双相位且由 App 主动请求，App 画进自己的 buffer 由 SF 按 Z 序合成，CPU drawRect 只是命令、像素由 GPU 异步计算靠 fence 传递，提交走 Android 12+ BLASTBufferQueue。",
+      "chapter": "ch02",
+      "processed_at": "2026-08-31T06:20:26.641459+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "target_path": "src/appendix/glossary.md",
+      "route_confidence": 22,
+      "route_terms": [
+        "app",
+        "surfaceflinger",
+        "vsync",
+        "buffer",
+        "cpu",
+        "gpu"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-31-76788792-Android显示流程从onResume到像素上屏.md",
+      "title": "[技术文章] Android-显示流程从 onResume 到像素上屏：用日志逐行走读 Android 显示全流程 一、前置知识 不讲",
+      "summary": "> 发布时间: 2026-08-28T07:41:05.000Z > 原文链接: https://juejin.cn/post/7678879264650166291 2026-08-28 67 阅读28分钟 > 网上讲 Android 渲染原理的文章很多，但大多数停在\"概念图 + 源码跳转\"层面——你看完知道有 SurfaceFlinger，知道有 vsync，却始终回...",
+      "chapter": "ch02",
+      "processed_at": "2026-08-31T06:20:26.641459+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch02-rendering/03-vsync-choreographer-sf-scheduling.md",
+      "route_confidence": 14,
+      "route_terms": [
+        "surfaceflinger",
+        "vsync",
+        "ch02-rendering"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-31-76792648-system_server是init启动的还是Zygote fork出来的.md",
+      "title": "[技术文章] Android 系统启动机制（五）：system_server 是 init 启动的，还是 Zygote fork 出来的？",
+      "summary": "> 发布时间: 2026-08-30T02:25:12.000Z > 原文链接: https://juejin.cn/post/7679264879620374568 2026-08-30 51 阅读7分钟 关于 system\\_server 的来源，常见两句话看起来互相冲突： Android 的服务都是 init 启动的； system_server 是 Zygote...",
+      "chapter": "ch08",
+      "processed_at": "2026-08-31T06:20:26.641459+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part4-system/ch19-oem/01-oem-performance-app-collaboration.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "system",
+        "server",
+        "init",
+        "zygote"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
