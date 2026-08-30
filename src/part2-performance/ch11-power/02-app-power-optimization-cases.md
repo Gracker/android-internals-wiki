@@ -6,9 +6,11 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 section: '11.2'
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
-last_verified: '2026-07-31'
+last_verified: '2026-08-30'
 last_verified_against: AOSP android-17.0.0_r1, android17-6.18-2026-06_r6, Android Developers Android 16 JobScheduler quota / Android 17 background audio / exact alarm / foreground service / WorkManager docs
 confidence: medium-high
+last_idle_audit_at: '2026-08-30T22:50:37+08:00'
+last_idle_audit_run_id: 20260830-224346-idle-audit-4d6023fa
 sources:
 - type: official
   path: https://developer.android.com/topic/performance/power
@@ -45,7 +47,7 @@ sources:
 - type: aosp
   path: frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java
 - type: aosp
-  path: frameworks/base/core/java/android/app/AlarmManager.java
+  path: frameworks/base/apex/jobscheduler/framework/java/android/app/AlarmManager.java
 - type: aosp
   path: frameworks/base/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java
 - type: aosp
@@ -975,7 +977,7 @@ Android 17 可使用 `getPendingJobReasonStats()` 区分等待主要来自网络
 - [AOSP：PowerManagerService.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java)
 - [AOSP：JobScheduler.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java)
 - [AOSP：JobSchedulerService.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java)
-- [AOSP：AlarmManager.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/app/AlarmManager.java)
+- [AOSP：AlarmManager.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/apex/jobscheduler/framework/java/android/app/AlarmManager.java)
 - [AOSP：AlarmManagerService.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java)
 - [AOSP：ActiveServices.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/am/ActiveServices.java)
 - [AOSP：AudioService.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/audio/AudioService.java)
