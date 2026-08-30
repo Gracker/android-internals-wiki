@@ -1,7 +1,7 @@
 ---
 title: App Widget 更新性能：RemoteViews IPC 与 Glance 渲染
 chapter: '22.19'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
 - appwidget
@@ -15,6 +15,12 @@ related_chapters:
 - '14.1'
 last_verified: '2026-08-15'
 last_verified_against: AOSP android-17.0.0_r1；Jetpack Glance 1.1.1 源码 JAR 与官方文档
+last_body_apply_at: '2026-08-31T07:18:51+08:00'
+last_body_apply_run_id: '20260831-071536-1110b8da'
+task2b_state: body-applied
+task6_state: ready-for-review
+task9_state: pending
+pipeline_stage: body-applied
 confidence: high
 sources:
 - type: aosp
@@ -51,6 +57,14 @@ sources:
   path: https://developer.android.com/develop/background-work/services/alarms
 - type: source-jar
   path: https://dl.google.com/dl/android/maven2/androidx/glance/glance-appwidget/1.1.1/glance-appwidget-1.1.1-sources.jar
+- type: article
+  path: https://juejin.cn/post/7678556373495971883
+- type: aosp
+  path: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginActionManager.kt
+- type: aosp
+  path: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginInstance.kt
+- type: aosp
+  path: packages/SystemUI/plugin_core/src/com/android/systemui/plugins/Plugin.kt
 ---
 
 # App Widget 更新性能：RemoteViews IPC 与 Glance 渲染
@@ -111,6 +125,14 @@ Android 17 的 `AppWidgetHostView.applyRemoteViews()` 会先选择适合当前�
 - 宿主没有设置异步执行器，只能在自己的界面线程同步应用更新。
 
 提供方应减少无意义的布局切换，并把稳定结构留在 XML 中。性能验证还要查看宿主侧的 Perfetto 系统跟踪，确认 `apply`、测量和绘制耗时；只测提供方函数会漏掉桌面侧开销。
+
+### 3. 边界：Launcher 插件卡片不是标准 App Widget
+
+车机或定制桌面中常把可插拔业务视图也叫“Widget”，但这类 Launcher 插件卡片不一定经过 `AppWidgetManager`、`AppWidgetServiceImpl` 和 `RemoteViews` 缓存链路。以一篇移植 SystemUI Plugin Framework 的车机 Launcher 实践为例，插件 APK 在 manifest 中把实现类声明成带 action 的 `service`，宿主用 `PackageManager.queryIntentServices()` 发现候选组件，随后通过自定义 `WidgetViewPlugin` 接口取得插件提供的普通 View；Android 17 的 `PluginActionManager` 源码也保留了“这并不是真的 service、不应启动，只是便于用 PackageManager 管理插件”的注释。[来源: https://juejin.cn/post/7678556373495971883][已验证: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginActionManager.kt@android-17.0.0_r1]
+
+这个插件模型的加载成本和隔离边界也不同。Android 17 的 `PluginActionManager` 在加载前会检查插件权限和是否可启用，`PluginInstance` 为插件创建 `PathClassLoader`，把宿主类加载器包在只放行指定包名前缀的 `ClassLoaderFilter` 之后，并通过 `createApplicationContext()` 加载插件资源；这提供的是类可见性与资源上下文隔离，插件实例仍进入宿主进程执行，不是 AppWidget 的跨进程 `RemoteViews` 安全边界。[已验证: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginActionManager.kt@android-17.0.0_r1][已验证: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginInstance.kt@android-17.0.0_r1]
+
+因此，若排查的是这类自定义 Launcher 卡片，`adb shell dumpsys appwidget`、`partiallyUpdateAppWidget()` 和 `RemoteViews` 图像上限通常不能解释它的加载与刷新成本；应改看 Launcher 进程内的插件发现、类加载、资源 inflation、接口回调和 View 绘制。只有通过标准 `AppWidgetProvider` 或 Glance 发布到系统 AppWidget 服务的桌面组件，才适用本文后续的更新语义、缓存和 IPC 分析。[来源: https://juejin.cn/post/7678556373495971883][已验证: frameworks/base/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java@android-17.0.0_r1]
 
 ## 二、三种更新语义不能混用
 
@@ -454,6 +476,9 @@ Glance 改善的是状态到界面描述的组织方式，最终仍要生成 `Re
 - [RemoteViews.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViews.java)
 - [RemoteViewsService.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViewsService.java)
 - [AlarmManager.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/AlarmManager.java)
+- [PluginActionManager.kt（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginActionManager.kt)
+- [PluginInstance.kt（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginInstance.kt)
+- [Plugin.kt（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/plugin_core/src/com/android/systemui/plugins/Plugin.kt)
 - [高级 Widget 指南](https://developer.android.com/develop/ui/views/appwidgets/advanced)
 - [集合 Widget 指南](https://developer.android.com/develop/ui/views/appwidgets/collections)
 - [Jetpack Glance 概览](https://developer.android.com/develop/ui/compose/glance)
@@ -463,5 +488,6 @@ Glance 改善的是状态到界面描述的组织方式，最终仍要生成 `Re
 - [Glance 1.1.1 发行说明](https://developer.android.com/jetpack/androidx/releases/glance#1.1.1)
 - [`glance-appwidget:1.1.1` 源码 JAR](https://dl.google.com/dl/android/maven2/androidx/glance/glance-appwidget/1.1.1/glance-appwidget-1.1.1-sources.jar)
 - [精确闹钟调度指南](https://developer.android.com/develop/background-work/services/alarms)
+- [【车载 Android】从 AAR 到 Plugin：Launcher 卡片插件化解耦实践](https://juejin.cn/post/7678556373495971883)
 
 本文的平台判断固定到 `android-17.0.0_r1`，Glance 判断固定到 1.1.1。升级 Android 或 Glance 后，应重新核对局部更新缓存、图像上限、集合适配器弃用状态、`GlanceAppWidget` 的会话执行方式和尺寸模式实现。
