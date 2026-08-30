@@ -842,6 +842,20 @@
       "size": 2871,
       "status": "skipped-low-score"
     },
+    "source/gracker-rss/2026-08-31-breaking-claude-code-auto-mode-Breaking-Claude-Code-Opus-5-Auto-Mode.md": {
+      "last_seen": "2026-08-31T05:25:18.687479+08:00",
+      "mtime": 1788116703.1889672,
+      "sha256": "91f33aecaa70a68d7efd055e7951880d1a4fe884f07838f2a9e2eca644582006",
+      "size": 2417,
+      "status": "skipped-low-score"
+    },
+    "source/gracker-rss/2026-08-31-warp-self-improving-Warp-如何让-Agent-自我进化.md": {
+      "last_seen": "2026-08-31T05:25:18.687479+08:00",
+      "mtime": 1788116703.1887624,
+      "sha256": "32d44291b7b8d59d47c8e7a4077302db3a1c61bd7ad59a928c04401edb1cd740",
+      "size": 6330,
+      "status": "skipped-low-score"
+    },
     "source/hacker-news-rss/2026-08-14-andros-html-over-websockets.md": {
       "chapter": "待分类",
       "entry_id": "a2ca4853b47ae8b4",
@@ -3676,6 +3690,54 @@
       "status": "appended",
       "title": "超好用 R8 Configuration Analyzer， 优化你的 App 大小和内存相信大家最近应该都知道，目前"
     },
+    "source/juejin-android/2026-08-31-76785563-车载Android Launcher卡片插件化.md": {
+      "chapter": "待分类",
+      "entry_id": "9e918cca4382423e",
+      "last_appended": "2026-08-31T05:25:18.687479+08:00",
+      "last_seen": "2026-08-31T05:25:18.687479+08:00",
+      "mtime": 1788122399.1052496,
+      "score": 17,
+      "sha256": "7d8959945328b29c1d113045b30d584e5754ad4bdc10d5f55cceff3ba4f72d89",
+      "size": 19170,
+      "status": "appended",
+      "title": "【车载 Android】从 AAR 到 Plugin：Launcher 卡片插件化解耦实践随着智能座舱功能越来越丰富，多"
+    },
+    "source/juejin-android/2026-08-31-76785863-Firebase 如何让全球开发者 Build Fail.md": {
+      "chapter": "待分类",
+      "entry_id": "5c12b247e166591e",
+      "last_appended": "2026-08-31T05:25:18.687479+08:00",
+      "last_seen": "2026-08-31T05:25:18.687479+08:00",
+      "mtime": 1788122399.1050017,
+      "score": 11,
+      "sha256": "3245b5d80adf0461e6c4d73154f40d2407c63d166e81d40aeb905472949fd7ea",
+      "size": 4197,
+      "status": "appended",
+      "title": "Firebase 如何让全球 Android 和 Flutter 开发者集体 Build Fail前几天看到这个的时候都"
+    },
+    "source/juejin-android/2026-08-31-76788792-Android显示流程从onResume到像素上屏.md": {
+      "chapter": "ch02-rendering",
+      "entry_id": "49b89704ccf57ab8",
+      "last_appended": "2026-08-31T05:25:18.687479+08:00",
+      "last_seen": "2026-08-31T05:25:18.687479+08:00",
+      "mtime": 1788122399.1058352,
+      "score": 22,
+      "sha256": "e90eadefcf93bfac9114d66f0cf28613b888549fe7cdc87b68bc04e519925427",
+      "size": 56036,
+      "status": "appended",
+      "title": "Android-显示流程从 onResume 到像素上屏：用日志逐行走读 Android 显示全流程 一、前置知识 不讲"
+    },
+    "source/juejin-android/2026-08-31-76792648-system_server是init启动的还是Zygote fork出来的.md": {
+      "chapter": "ch08-responsiveness",
+      "entry_id": "21352139f9522180",
+      "last_appended": "2026-08-31T05:25:18.687479+08:00",
+      "last_seen": "2026-08-31T05:25:18.687479+08:00",
+      "mtime": 1788122399.1055186,
+      "score": 22,
+      "sha256": "055d06a07dfb9975f81918bbceab33c26f76820f198bbbef8a3e4ac9f4d3a017",
+      "size": 16271,
+      "status": "appended",
+      "title": "Android 系统启动机制（五）：system_server 是 init 启动的，还是 Zygote fork 出来的？"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -5483,24 +5545,24 @@
     }
   },
   "last_report": {
-    "appended": 6,
-    "considered": 7,
-    "cutoff": "2026-08-29T05:20:01.818795+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-30.md",
+    "appended": 4,
+    "considered": 6,
+    "cutoff": "2026-08-30T05:20:38.906595+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-31.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1923,
+    "scanned": 1929,
     "skipped": {
       "existing_link": 0,
-      "low_score": 1,
+      "low_score": 2,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 484
+      "unchanged": 491
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-08-30T05:25:38.906595+08:00",
+  "last_run_at": "2026-08-31T05:25:18.687479+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
