@@ -4,8 +4,10 @@ chapter: '2.12'
 section: '2.12'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-07-08'
+last_verified: '2026-08-30'
 last_verified_against: AOSP android-17.0.0_r1
+last_idle_audit_at: '2026-08-30T14:42:08+08:00'
+last_idle_audit_run_id: 20260830-143503-idle-audit-c720f524
 confidence: medium
 tags:
 - rendering
@@ -29,6 +31,8 @@ sources:
   path: frameworks/native/services/surfaceflinger/FrameTracer/FrameTracer.cpp
 - type: aosp
   path: frameworks/base/core/java/android/view/Choreographer.java
+- type: aosp
+  path: frameworks/base/core/java/android/view/SurfaceControl.java
 - type: aosp
   path: external/perfetto/protos/perfetto/trace/android/graphics_frame_event.proto
 - type: aosp
@@ -513,7 +517,7 @@ AChoreographer / engine tick
 | Android 12（API 31） | FrameTimeline 开始提供 App、SF 的 Expected 与 Actual timeline，作为这里分析的最低版本 |
 | Android 13（API 33） | 公开 `Choreographer.FrameData` 与 FrameTimeline 查询能力；原生与自定义渲染仍要把 token 随目标帧传下去 |
 | Android 14（API 34） | 公共 App Window→BLAST→SF→HWC 主线继续成立；独立 Surface 与混合页面仍需额外 buffer、fence 证据 |
-| Android 15（API 35） | `SurfaceControl.Transaction.setFrameTimeline(vsyncId)` 等公开能力让自管 transaction 可表达帧 timeline；它不生成 buffer，也不消除 fence wait（等待） |
+| Android 15（API 35） | `SurfaceControl.Transaction.setFrameTimeline(long)` 受 SDK `FLAG_SDK_DESIRED_PRESENT_TIME` 约束；flag 开启时可把 Choreographer 的 `vsyncId` 传给 SurfaceFlinger，flag 关闭时该公开入口返回但不设置 timeline。隐藏的 `setFrameTimelineVsync(long)` 仍供系统路径使用。它不生成 buffer，也不消除 fence wait（等待） |
 | Android 16（API 36） | 这里的 token、Expected 与 Actual、CLIENT 与 DEVICE 判读方法继续适用 |
 | Android 17（API 37） | 源码锚点为 `Scheduler/FrameTimeline.{h,cpp}`、当前 BLAST、CompositionEngine，以及 HWC `presentOrValidate` 与 validate 路径 |
 
@@ -525,8 +529,8 @@ AChoreographer / engine tick
   - 核对 SurfaceFrame、DisplayFrame 的预测、Actual end、present、jank 分类与 `gpu_composition` 写入。
 - [`Layer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Layer.cpp) 与 [`FrameTracer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/FrameTracer/FrameTracer.cpp)
   - 核对 DEQUEUE、QUEUE、ACQUIRE_FENCE、LATCH、FALLBACK_COMPOSITION、PRESENT_FENCE 的生产调用点。
-- [`BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp) 与 [`FrameTimelineInfo.aidl`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/aidl/android/gui/FrameTimelineInfo.aidl)
-  - 核对 frame number、vsyncId 与应用时序信息怎样进入 buffer transaction。
+- [`BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)、[`FrameTimelineInfo.aidl`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/aidl/android/gui/FrameTimelineInfo.aidl) 与 [`SurfaceControl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java)
+  - 核对 frame number、vsyncId 与应用时序信息怎样进入 buffer transaction，以及 `setFrameTimeline(long)` 的 SDK flag 边界。
 - [`graphics_frame_event.proto`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/protos/perfetto/trace/android/graphics_frame_event.proto) 与 [`frame_timeline_event.proto`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/protos/perfetto/trace/android/frame_timeline_event.proto)
   - 核对协议枚举、token 关系、present、prediction、jank 字段及 experimental 警告。
 - [Perfetto FrameTimeline 文档](https://perfetto.dev/docs/data-sources/frametimeline)
