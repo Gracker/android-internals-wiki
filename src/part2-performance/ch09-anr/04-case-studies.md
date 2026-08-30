@@ -4,7 +4,7 @@ chapter: '9.4'
 section: '9.4'
 status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: 2026-07-02
+last_verified: 2026-08-30
 last_verified_against: AOSP android-17.0.0_r1
 confidence: medium
 sources:
@@ -22,6 +22,8 @@ sources:
   path: frameworks/base/core/java/android/app/SharedPreferencesImpl.java
 - type: aosp
   path: frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
+- type: aosp
+  path: frameworks/native/libs/input/InputTransport.cpp
 - type: aosp
   path: frameworks/native/libs/binder/ProcessState.cpp
 tags:
@@ -46,6 +48,8 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
+last_idle_audit_at: 2026-08-30T18:41:21+08:00
+last_idle_audit_run_id: 20260830-183540-idle-audit-a030a427
 ---
 
 # ANR 诊断案例集
@@ -162,7 +166,7 @@ Launcher 在 Android 14 设备上收到下面的 Input ANR：
  Waited 5001ms for MotionEvent)]
 ```
 
-`Gesture Monitor` 是手势监听连接名称的一部分，括号内的完整字符串来自 InputChannel（输入通道）名称。AOSP 创建一对输入通道时，会给两个端点附加 `(server)` 和 `(client)`；这里的后缀只区分通道两端，不能证明事件消费者运行在 `system_server`，也不能单独锁定责任进程。
+`Gesture Monitor` 是手势监听连接名称的一部分，括号内的完整字符串来自 InputChannel（输入通道）名称。这个样本运行在 Android 14；AOSP Android 14 的 `InputChannel::openInputChannelPair()` 会把 `(server)` 和 `(client)` 附加到两端名称。Android 17 的同名函数保留调用者传入的 name，不自动追加这两个后缀。无论后缀来自平台还是厂商分支，它只区分通道端点，不能证明事件消费者运行在 `system_server`，也不能单独锁定责任进程。
 
 ### 对齐时间再解释日志
 
@@ -570,10 +574,11 @@ ANR 瞬时 trace 可能采到 `nativePollOnce`、锁等待或耗时工作已经�
 
 ## 参考资料
 
-### Android 17 / API 37 源码核对版本
+### AOSP 源码核对版本与历史对照片段
 
 - [InputDispatcher.cpp：连接响应、WaitQueue、ANR reason 与 atrace counter](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
-- [InputTransport.cpp：InputChannel pair 的 server/client 端点命名](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/input/InputTransport.cpp)
+- [InputTransport.cpp（Android 17）：InputChannel pair 创建与共享 name](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/input/InputTransport.cpp)
+- [InputTransport.cpp（Android 14）：InputChannel pair 的 server/client 后缀](https://android.googlesource.com/platform/frameworks/native/+/android-14.0.0_r1/libs/input/InputTransport.cpp)
 - [ActivityThread.java：Activity、Service 与 QueuedWork 收尾位置](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
 - [QueuedWork.java：待完成工作、finisher 与 waitToFinish](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/QueuedWork.java)
 - [SharedPreferencesImpl.java：apply、加载等待与文件写入](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java)
@@ -581,7 +586,7 @@ ANR 瞬时 trace 可能采到 `nativePollOnce`、锁等待或耗时工作已经�
 - [ActivityManagerService.java：attachApplication 与 start timeout 处理](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)
 - [ProcessState.cpp：Binder 默认最大线程请求值](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/binder/ProcessState.cpp)
 - [InputTransport.cpp：finished signal](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/input/InputTransport.cpp)
-- [am_event_tags.logtags：freeze/unfreeze event 定义](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/EventLogTags.logtags)
+- [EventLogTags.logtags：freeze/unfreeze event 定义](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/EventLogTags.logtags)
 
 ### 案例来源与平台文档
 
