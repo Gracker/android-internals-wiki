@@ -2,7 +2,7 @@
 title: 应用体积分析与优化：DEX、Native SO 与资源
 chapter: '25.10'
 section: '25.10'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
 - dex
@@ -34,9 +34,9 @@ related_chapters:
 - '1.7'
 - '4.5'
 confidence: high
-last_verified: '2026-08-28'
-last_source_verified_at: '2026-08-28'
-last_verified_against: Android Developers R8 / keep rules / Configuration Analyzer / app optimization / APK Analyzer / D8 / bundletool / multidex / Startup Profile / NDK ABI / native symbols / 16 KB page size / AAPT2 / resource shrinker docs retrieved 2026-08-28; AOSP android-17.0.0_r1 ART DEX, bionic linker, package ABI, NativeLibraryHelper, androidfw and Soong anchors; android17-6.18 kernel mmap anchor
+last_verified: '2026-08-30'
+last_source_verified_at: '2026-08-30'
+last_verified_against: Android Developers R8 / keep rules / Configuration Analyzer / app optimization / APK Analyzer / D8 / bundletool / multidex / Startup Profile / NDK ABI / native symbols / 16 KB page size / AAPT2 / resource shrinker docs retrieved 2026-08-30; Google android/skills r8-analyzer reference retrieved 2026-08-30; AOSP android-17.0.0_r1 ART DEX, bionic linker, package ABI, NativeLibraryHelper, androidfw and Soong anchors; android17-6.18 kernel mmap anchor
 sources:
 - type: official
   path: Dalvik executable format (source.android.com/docs/core/runtime/dex-format)
@@ -44,6 +44,8 @@ sources:
   path: Enable app optimization with R8 (developer.android.com/topic/performance/app-optimization/enable-app-optimization)
 - type: official
   path: R8 Configuration Analyzer (developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer)
+- type: official
+  path: https://github.com/android/skills/tree/main/performance/r8-analyzer
 - type: official
   path: Add keep rules / Troubleshoot R8 rules (developer.android.com/topic/performance/app-optimization)
 - type: official
@@ -140,18 +142,18 @@ sources:
   path: https://android.googlesource.com/platform/build/soong/+/android-17.0.0_r1/java/app.go
 - type: article
   path: 技术文章/source/juejin-android/2026-08-30-76760926-超好用R8ConfigurationAn.md
-pipeline_stage: ready-for-review
+pipeline_stage: finalized
 task2b_state: body-applied
-task6_state: ready-for-review
-task9_state: ready-for-review
+task6_state: reviewed
+task9_state: reviewed
 last_body_apply_at: '2026-08-30T07:19:12+08:00'
 last_body_apply_run_id: '20260830-071556-87136e20'
 last_draft_polish_at: 2026-08-15 17:19:02+08:00
 last_draft_polish_run_id: 20260815-171902-gracker-writing-458
 last_deep_review_at: 2026-07-31
 last_deep_review_run_id: 20260731-083556-deep-review-977cb49d
-last_review_finalize_at: '2026-08-28T10:17:00+08:00'
-last_review_finalize_run_id: 20260828-095704-b62a69bb
+last_review_finalize_at: '2026-08-30T08:24:29+08:00'
+last_review_finalize_run_id: 20260830-082429-af3cb088
 last_rework_at: 2026-08-15 17:19:02+08:00
 last_rework_run_id: 20260815-171902-gracker-writing-458
 last_consolidated_at: '2026-08-24'
@@ -222,7 +224,7 @@ DEX（Dalvik Executable，Dalvik 可执行格式）是 Android 保存类定义�
 
 ART（Android Runtime，Android 运行时）会在安装和运行过程中生成验证或编译辅助产物：`.vdex` 保存验证及相关 DEX 数据，`.odex`/`.oat` 保存设备侧编译结果，`.art` 是 App Image（把预初始化类和对象状态映射进内存的镜像）。这些文件占设备存储，不计入商店下载的 DEX 字节。
 
-本文的平台基线为 Android 17 / API 37 / `android-17.0.0_r1`，构建工具部分按 2026 年 8 月 28 日检索到的 Android Developers 文档核对。平台版本和 Android Gradle Plugin（AGP）/R8 版本是两条独立轴：升级 `targetSdk` 不会自动缩小 DEX，升级工具链也不能代替发布产物回归测试。
+本文的平台基线为 Android 17 / API 37 / `android-17.0.0_r1`，构建工具部分按 2026 年 8 月 30 日检索到的 Android Developers 文档核对。平台版本和 Android Gradle Plugin（AGP）/R8 版本是两条独立轴：升级 `targetSdk` 不会自动缩小 DEX，升级工具链也不能代替发布产物回归测试。
 
 一个可执行的目标通常写成三组预算：
 
@@ -412,13 +414,13 @@ R8 Configuration Analyzer 需要 R8 9.3.7-dev 或更高版本，使用 AGP 时�
 - 分析器没有执行应用的反射、JNI 或序列化路径；
 - 规则修改后的正确性由测试、分批发布与线上崩溃监控确认。
 
-实际排查时，先把 Analyzer 报告中的总分当成入口，再进入 Blast Radius 明细：`keep_rule_blast_radius_table` 会把每条 keep rule 关联到命中的 class/field/method 数量、`kept_by` 关系、keep constraint、规则文件来源与 Maven 坐标；`kept_class_info_table`、`kept_field_info_table`、`kept_method_info_table` 则可按 `DONT_SHRINK`、`DONT_OPTIMIZE`、`DONT_OBFUSCATE` 反查受限对象。这个表适合决定“先缩哪条规则”，不适合直接当作删除许可。[来源: https://juejin.cn/post/7676092674902868010；来源: 技术文章/source/juejin-android/2026-08-30-76760926-超好用R8ConfigurationAn.md；已验证: 本章 R8 Configuration Analyzer 与 Troubleshoot R8 rules 来源]
+实际排查时，先把 Analyzer 报告中的总分当成入口，再进入 Blast Radius 明细。官方文档定义报告位置、三项分数和“第三方 consumer rules 也会计入”的边界；Google `android/skills` 仓库的 `performance/r8-analyzer` reference 还展示了面向 protobuf/JSON 导出的字段名，例如 `keep_rule_blast_radius_table`、`kept_class_info_table`、`kept_field_info_table`、`kept_method_info_table`、`kept_by` 和 `DONT_SHRINK` / `DONT_OPTIMIZE` / `DONT_OBFUSCATE`。这些字段适合决定“先缩哪条规则”，不适合直接当作删除许可。
 
-把报告转成修改顺序时，应先固定同一 Release 变体的基线分数，再按 shrinking、optimization、obfuscation 的异常维度查找影响最大的规则；仅从 `app/proguard-rules.pro` 搜索不够，因为内部模块和第三方 AAR 的 consumer rules 会与应用规则合并后一起约束 R8。若报告或辅助导出数据给出规则来源、命中的 class/field/method 范围、`kept_by` 关系或 subsumed rules（被更宽规则覆盖的规则），可以先收敛覆盖范围最大的包级通配符，再用更窄规则保留真实的反射、JNI、序列化或注解扫描协议。[来源: 技术文章/source/juejin-android/2026-08-30-76760926-超好用R8ConfigurationAn.md；已验证: 本章 R8 Configuration Analyzer、Add keep rules 与 Troubleshoot R8 rules 来源]
+把报告转成修改顺序时，应先固定同一 Release 变体的基线分数，再按 shrinking、optimization、obfuscation 的异常维度查找影响最大的规则；仅从 `app/proguard-rules.pro` 搜索不够，因为内部模块和第三方 AAR 的 consumer rules 会与应用规则合并后一起约束 R8。若报告或辅助导出数据给出规则来源、命中的 class/field/method 范围、`kept_by` 关系或 subsumed rules（被更宽规则覆盖的规则），可以先收敛覆盖范围最大的包级通配符，再用更窄规则保留真实的反射、JNI、序列化或注解扫描协议。
 
-删除或放宽 keep 规则之前，要把 Analyzer 的“影响范围”与运行时语义分开：它能说明哪些类、字段或方法因为某条规则失去裁剪、优化或混淆机会，但不能单独证明这些对象在生产环境一定不会被字符串反射、JNI 注册、序列化框架、WebView bridge 或服务端协议访问。规则改动后至少重新生成 Analyzer 报告、合并配置、`seeds.txt`/`usage.txt` 和发布 APK 对比，并覆盖动态入口测试。[来源: 技术文章/source/juejin-android/2026-08-30-76760926-超好用R8ConfigurationAn.md；已验证: 本章 `-whyareyoukeeping`、APK Analyzer 与 R8 keep rules 来源]
+删除或放宽 keep 规则之前，要把 Analyzer 的“影响范围”与运行时语义分开：它能说明哪些类、字段或方法因为某条规则失去裁剪、优化或混淆机会，但不能单独证明这些对象在生产环境一定不会被字符串反射、JNI 注册、序列化框架、WebView bridge 或服务端协议访问。规则改动后至少重新生成 Analyzer 报告、合并配置、`seeds.txt`/`usage.txt` 和发布 APK 对比，并覆盖动态入口测试。
 
-未使用支持该分析器的工具链时，`configuration.txt`、`seeds.txt`、`usage.txt`、APK Analyzer 和 `-whyareyoukeeping` 已能完成同类排查。
+未使用支持该分析器的工具链时，`configuration.txt`、`seeds.txt`、`usage.txt`、APK Analyzer 和 `-whyareyoukeeping` 仍能完成保留原因与发布贡献排查；它们不能直接给出 Analyzer 的三项分数、Blast Radius 表或 subsumed rules 关系。
 
 ### 依赖与生成代码：先看发布贡献
 
@@ -734,7 +736,7 @@ DEX 结论不涉及内核专有机制，也不关联特定 Linux 内核源码标
 
 #### 只追求单 DEX
 
-单 DEX 不等于小包，也不等于快启动。Android 12—17 原生支持 multidex；启动代码布局、R8 删除的代码量和配置文件覆盖更值得测量。
+单 DEX 不等于小包，也不等于快启动。Android 5.0 / API 21 起已经原生支持 multidex，本文覆盖的 Android 10—17 设备更应测量启动代码布局、R8 删除的代码量和配置文件覆盖。
 
 #### 把 Startup Profile 当成体积压缩
 
@@ -797,7 +799,7 @@ Native（本地代码）库是应用随包交付、由 C/C++ 等语言编译而�
 
 只做这两步会漏掉三类成本：ELF（Executable and Linkable Format，可执行与可链接格式）内仍存活的代码和数据、同一库在不同交付配置中的副本，以及安装后由动态链接器（dynamic linker）映射的页面与重定位。若只看仓库里的 `.so` 文件大小，很容易把上传包、用户下载、安装占用和运行时内存混在一起。
 
-平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`；涉及文件映射与基础页时，内核锚点为 `android17-6.18-2026-06_r6`。NDK、AGP 和 Google Play 规则采用 2026 年 8 月的官方文档语义。构建工具版本与 Android 平台版本是两条独立轴，升级 `targetSdk` 不会自动缩小 `.so`。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`；涉及文件映射与基础页时，内核锚点为 `android17-6.18-2026-06_r6`。NDK、AGP 和 Google Play 规则采用 2026 年 8 月 30 日检索到的官方文档语义。构建工具版本与 Android 平台版本是两条独立轴，升级 `targetSdk` 不会自动缩小 `.so`。
 
 ### 先建立四种体积口径
 
@@ -1361,7 +1363,7 @@ Android 平台、NDK、AGP 与 Play 发布政策不能按行互相替代。项�
 
 资源优化很容易退化成一张格式替换清单：PNG 转 WebP、删几套屏幕密度资源、打开 `shrinkResources`。这张清单没有回答三个工程问题：引用图能否证明待删除资源不可达、最低系统版本能否解码新格式、AAB（Android App Bundle，供 Google Play 生成设备 APK 的发布包）上传体积与单设备下载量是否用了同一口径。
 
-平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，构建工具行为采用 2026 年 8 月的 Android Developers 文档语义。AAPT2（Android Asset Packaging Tool 2，Android 资源编译与链接工具）、AGP 与 R8 的版本独立于 Android 平台版本；Android 17 只消费构建后的资源表，不会替应用压缩图片或删除无用资源。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，构建工具行为采用 2026 年 8 月 30 日检索到的 Android Developers 文档语义。AAPT2（Android Asset Packaging Tool 2，Android 资源编译与链接工具）、AGP 与 R8 的版本独立于 Android 平台版本；Android 17 只消费构建后的资源表，不会替应用压缩图片或删除无用资源。
 
 ### 先把资源字节分成四类
 
