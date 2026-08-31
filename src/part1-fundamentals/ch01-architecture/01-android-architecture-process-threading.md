@@ -2,10 +2,10 @@
 title: Android 分层架构、进程模型与线程协作
 chapter: '1.1'
 section: '1.1'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-08-31'
-last_verified_against: 'AOSP android-17.0.0_r1: system/core/init/main.cpp, system/core/rootdir/init.rc and init.zygote64.rc, frameworks/base ZygoteInit.java, Zygote.java, RuntimeInit.java, com_android_internal_os_Zygote.cpp, app_process/app_main.cpp and SystemServer.java, frameworks/native SurfaceFlinger.cpp and libbinder, bionic linker namespaces; Android Common Kernel android17-6.18-2026-06_r6: drivers/android/binder.c and security/selinux/hooks.c'
+last_verified_against: 'AOSP android-17.0.0_r1: system/core/init/main.cpp, rootdir init.rc/init.zygote64.rc, frameworks/base ZygoteInit/Zygote/RuntimeInit/app_process/SystemServer, SurfaceFlinger, libbinder ProcessState, bionic linker namespaces, ActivityManager ProcessList/OomAdjuster/CachedAppOptimizer/ZramMaintenance, MessageQueue/Looper/Handler/ActivityThread, HWUI RenderThread/DrawFrameTask, libcore Thread/current.txt, system/memory lmkd/mmd; Android Common Kernel android17-6.18-2026-06_r6: drivers/android/binder.c, security/selinux/hooks.c, kernel/cgroup/freezer.c, kernel/sched/psi.c and kernel/sched/fair.c; official Android/source.android.com docs for HAL/AIDL/VINTF/VNDK/Mainline/16 KB page sizes/process lifecycle/threading/WorkManager/AsyncTask.'
 confidence: high
 sources:
 - type: official
@@ -178,9 +178,9 @@ related_chapters:
 - '1.8'
 - '2.3'
 - '2.4'
-pipeline_stage: ready-for-review
-task6_state: ready-for-review
-task9_state: ready-for-review
+pipeline_stage: ready-to-publish
+task6_state: finalized
+task9_state: finalized
 task2b_state: body-applied
 last_body_apply_at: '2026-08-31T13:50:13+08:00'
 last_body_apply_run_id: '20260831-135013-7c90554c'
@@ -789,7 +789,7 @@ Android 17 有两层选择：
 
 因此，源树中存在多个同名源码文件，不代表它们会作为三个公开类同时装入应用进程。最终 Java API 仍然是 `android.os.MessageQueue`。
 
-Android 17 对以 API 37 为目标版本的应用启用新的无锁 `MessageQueue` 实现。依赖 `mMessages` 等私有字段的反射代码可能失效。测试代码应使用公开或测试框架提供的同步机制，例如用于告知测试框架何时空闲的 `IdlingResource`；不要通过遍历私有链表判断“队列已空”。具体数据结构和无锁队列 `DeliQueue` 见 §1.8。
+Android 17 对以 API 37 为目标版本的应用启用新的并发 `MessageQueue` 路径。依赖 `mMessages` 等私有字段的反射代码可能失效。测试代码应使用公开或测试框架提供的同步机制，例如用于告知测试框架何时空闲的 `IdlingResource`；不要通过遍历私有链表判断“队列已空”。具体数据结构和兼容路径见 §1.8。
 
 #### Looper 空闲时为什么不消耗 CPU
 
@@ -1028,7 +1028,7 @@ Android 17 的 `libcore` 源码和 API 文本已经出现第一版虚拟线程�
 | Android 8.0 | 后台执行限制趋严，后台 Service 不再适合承载任意长任务 |
 | Android 11 / API 30 | `AsyncTask` 与 `IntentService` 废弃 |
 | Android 12 以后 | 前台服务启动和后台工作的限制持续增加，任务类型必须与系统 API 语义匹配 |
-| Android 17 / API 37 | 以 API 37 为目标的应用启用新的无锁 MessageQueue；私有字段反射存在兼容风险 |
+| Android 17 / API 37 | 以 API 37 为目标的应用启用新的并发 MessageQueue 路径；私有字段反射存在兼容风险 |
 | Android 17 / API 37 | `libcore` 出现受发布开关控制的虚拟线程 v1 API 与实现，不能假定所有构建均启用 |
 
 分析线程问题时，先确认平台版本、应用目标 SDK 版本（`targetSdk`）、设备构建与实际调度配置，再解释系统跟踪数据。只凭线程名称、某个 `nice` 值或旧版 `MessageQueue` 字段，无法得出可靠结论。
