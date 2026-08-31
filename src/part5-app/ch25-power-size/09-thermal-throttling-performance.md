@@ -625,10 +625,6 @@ headroom 跟踪缓慢变化的表面温度信号，高频调用会增加开销�
 
 Android 17 普通应用只能读取热状态和 headroom。原始温度、冷却设备和详细动作属于特权接口或系统诊断信息。
 
-## 全文小结
-
-热治理的目标是在设备进入热平衡后保住可持续体验，冷机峰值不构成验收标准。应用应以 thermal status 判断当前限制等级，以 headroom 观察趋势，再通过带滞回和驻留时间的状态机同步降低渲染、媒体、推理、网络和后台工作；频率、冷却档位与性能时间线则用来证明退化是否真的由热限制造成。所有阈值和恢复策略都必须按设备族与业务场景验证。
-
 ## 版本演进
 
 | 平台 | 与应用热治理有关的变化 |
@@ -640,6 +636,10 @@ Android 17 普通应用只能读取热状态和 headroom。原始温度、冷却
 | Android 15（API 35） | `getThermalHeadroomThresholds()` |
 | Android 16（API 36） | headroom 监听器；`SystemHealthManager` CPU/GPU capacity headroom |
 | Android 17（API 37） | Framework 服务路径位于 `server/power/thermal/`；Thermal AIDL 冻结版本仍为 v1—v3 |
+
+## 全文小结
+
+热治理的目标是在设备进入热平衡后保住可持续体验，冷机峰值不构成验收标准。应用应以 thermal status 判断当前限制等级，以 headroom 观察趋势，再通过带滞回和驻留时间的状态机同步降低渲染、媒体、推理、网络和后台工作；频率、冷却档位与性能时间线则用来证明退化是否真的由热限制造成。所有阈值和恢复策略都必须按设备族与业务场景验证。
 
 ## 延伸阅读与源码锚点
 

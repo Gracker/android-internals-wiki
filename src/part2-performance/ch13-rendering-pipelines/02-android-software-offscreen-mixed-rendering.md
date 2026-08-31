@@ -130,8 +130,6 @@ consolidated_from:
 
 平台实现以 Android 17 / API 37 的 `android-17.0.0_r1` 为基线；涉及 dma-buf（共享 buffer 的内核机制）、dma-fence（内核同步对象）、sync_file（把 fence 暴露为文件描述符的接口）、调度与内存回收时，内核以 `android17-6.18-2026-06_r6` 为基线。
 
-软件渲染由 CPU 写入 buffer，离屏渲染先生成中间结果，混合渲染则让 CPU、GPU 或多个 Surface 共同参与。三种路径的同步点、内存流量和合成成本不同。
-
 ## CPU 光栅化与离屏缓冲区
 
 ### 软件与离屏路径的分类
@@ -927,6 +925,8 @@ common kernel 不能解释 vendor GPU、codec、Camera 或 DPU（Display Process
 - [2.4 MainThread、RenderThread 与 Hardware Layer](../../part1-fundamentals/ch02-rendering/04-main-render-thread-hardware-layer.md)
 
 ## 小结
+
+软件渲染由 CPU 生成像素，离屏渲染将结果写入中间目标，两者可以组合，也可以分别出现。分析时先确认输出是可见 Surface 还是离屏资源，再追踪其 Consumer；离屏任务完成只能证明中间结果可用，不能说明画面已经呈现。
 
 混合页应按内容对象分析。每个对象都要确认 Producer、Consumer、最终 SF layer、几何所有者、帧节奏、buffer 与 fence；宿主窗口内部还可能包含 TextureView 等需要再次采样的输入。
 

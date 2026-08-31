@@ -761,7 +761,7 @@ Telemetry 是工具为了解使用情况和故障而发送的数据。Android CL
 
 ## 结论
 
-Android CLI 为 agent 提供项目描述、SDK 与设备管理、UI 状态读取和 IDE 符号查询入口。它能补全复现输入，但截图、布局树和 Journey 成功都不能单独支持性能结论。Android 17 上的结果应绑定 CLI 版本、设备 build fingerprint、实际 kernel 与 vendor driver；`android-17.0.0_r1` 和 `android17-6.18-2026-06_r6` 可作为对应源码的参照。最后还要由 Profiler、Perfetto、APA、Macrobenchmark 或线上指标验证。
+自动化性能测试要同时固定操作路径、测量窗口、设备状态和判废规则，再通过重复测量建立基线与回归门禁。Microbenchmark 负责局部工作，Macrobenchmark 负责完整用户场景；CLI 与 Agent 负责准备环境、复现操作和回传证据，截图、布局树和 Journey 成功都不能单独支持性能结论。Android 17 上的结果应绑定 APK、脚本与工具版本、设备 build fingerprint、实际 kernel 与 vendor driver，并保留指标及对应 trace；`android-17.0.0_r1` 和 `android17-6.18-2026-06_r6` 可作为对应源码的参照。
 
 
 ## 参考资料

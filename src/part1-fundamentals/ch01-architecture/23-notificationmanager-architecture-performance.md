@@ -98,7 +98,7 @@ related_chapters:
 
 源码基线是 AOSP `android-17.0.0_r1`，公开 API 基线是 Android 17 / API 37。涉及 Binder 驱动的一般性说明以 common kernel `android17-6.18-2026-06_r6` 为准；通知权限、渠道、排序和限流都属于平台策略，不能从内核 Binder 代码推导。
 
-性能优化实战和 ANR 案例分别见 §8.7 与 §9.5。以下结构模型可用于阅读源码、分析 trace 和解释故障。
+性能优化实战和 ANR 案例分别见 [8.6 推送通知管线性能](../../part2-performance/ch08-responsiveness/06-push-notification-pipeline-performance.md)与 [9.5 Notification 性能与 ANR](../../part2-performance/ch09-anr/05-notification-performance-anr.md)。以下结构模型可用于阅读源码、分析 trace 和解释故障。
 
 ## 进程边界与职责
 

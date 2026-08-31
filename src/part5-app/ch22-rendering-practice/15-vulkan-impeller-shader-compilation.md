@@ -121,16 +121,14 @@ consolidated_from:
 
 # Vulkan 管线缓存与 Impeller 着色器编译实战
 
-“异步编译管线管理器”可以概括一类工程方案，却不是 Android 17 面向所有应用提供的系统接口。普通 View/Compose 应用、直接使用 Vulkan 的游戏，以及经 ANGLE 运行的 OpenGL ES 应用，分别由不同组件创建图形管线，应用可控制的范围也不同。若没有先分清渲染路径，后续看到的缓存、线程、系统跟踪和优化建议很容易互相错配。
+Vulkan 管线创建和着色器编译可能在首次使用或状态组合变化时占用 CPU 与驱动时间。Impeller 虽会预编译一部分着色器，设备后端仍可能在运行时建立 Pipeline State Object（管线状态对象）。缓存与预热能复用或提前执行其中一部分工作，应用可控制的范围则取决于原生 Vulkan、Flutter/Impeller、HWUI 或 ANGLE 的具体路径。
 
 本文按 Android 17 / API 37 / `android-17.0.0_r1` 核查平台实现，按 `android17-6.18-2026-06_r6` 核查 Android 内核。内容回答四个问题：
 
 1. 管线创建时间消耗在哪一侧，为什么它会造成帧停顿；
-2. Android 17 的 HWUI、Skia Graphite、原生 Vulkan 和 ANGLE 各自负责什么；
-3. 应用怎样安排创建任务、保存缓存并设计降级；
+2. 原生 Vulkan、HWUI、ANGLE 与 Impeller 分别由谁创建和缓存管线；
+3. 应用与引擎怎样安排创建任务、预热、保存缓存并设计降级；
 4. Perfetto、FrameTimeline、FrameMetrics 和 Android GPU Inspector（AGI）分别能证明什么。
-
-Vulkan pipeline 和 shader 编译会在首次使用或状态组合变化时产生 CPU 和驱动开销。Impeller 预编译一部分 shader，但设备后端和 Pipeline State Object 仍可能在运行时建立。
 
 机制章的 [Vulkan、HWUI 与多队列渲染管线](../../part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md) 和 [Flutter 渲染管线](../../part2-performance/ch13-rendering-pipelines/07-flutter-rendering-pipeline.md) 负责解释端到端架构；本文只负责应用或引擎能控制的管线键、创建调度、缓存、预热、降级与验证方法。
 

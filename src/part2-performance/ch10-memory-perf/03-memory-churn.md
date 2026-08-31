@@ -350,11 +350,9 @@ Compose 通过 AndroidX 发布，不跟 platform API 一一绑定。Compose Runt
 
 - **4.2 ART 虚拟机内存管理**：CC、CMC、TLAB、RegionTLAB 与 GC 日志。
 - **7.1/7.2 卡顿分析**：Frame Timeline、线程状态与 CPU 竞争。
-- **10.1 App 内存分析**：Java、native、graphics 与 mmap 的分类工具。
-- **23.1 内存泄漏检测与治理**：存活对象、GC Root 与引用所有权。
-- **10.1 内存增长分类诊断**：缓存、pool、碎片和虚拟地址空间。
+- [10.1 App 内存分析与案例](01-app-memory-analysis-cases.md)：Java、native、graphics 与 mmap 的分类工具，缓存、pool、碎片和虚拟地址空间的增长诊断，以及 MemoryThrashing 的平台边界与差分采样。
+- [23.2 内存泄漏检测与治理](../../part5-app/ch23-memory-practice/02-memory-leak-governance.md)：存活对象、GC Root 与引用所有权。
 - **10.2 低内存影响**：进程内 GC 与整机回收压力的区别。
-- **10.1 案例集**：MemoryThrashing 的平台边界与差分采样。
 
 ## 参考资料
 

@@ -343,7 +343,7 @@ hash（散列值）不能自动完成脱敏。低熵文件名、手机号或固�
 
 - [Java `FileDescriptor` API](https://developer.android.com/reference/java/io/FileDescriptor)：Java 封装对象的有效性检查与同步接口。
 - [Android NDK：File Descriptor](https://developer.android.com/ndk/reference/group/file-descriptor)：API 31 起 Java `FileDescriptor` 与 Native `int fd` 之间的 JNI 转换接口。
-- [AOSP `bionic_fortify.h`（android-16.0.0_r1，旧锚点）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-16.0.0_r1/libc/private/bionic_fortify.h)：保留原稿来源；本轮结论以下一条 Android 17 源码为准。
+- [AOSP `bionic_fortify.h`（android-16.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-16.0.0_r1/libc/private/bionic_fortify.h)：用于比较 Android 16 与下一条 Android 17 源码中的检查条件。
 - [AOSP `bionic_fortify.h`（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/private/bionic_fortify.h)：`__check_fd_set()` 的 FORTIFY 条件。
 - [AOSP `sys/select.h`（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/include/sys/select.h)：`FD_SETSIZE=1024` 与 `poll` 建议。
 - [AOSP `fdsan.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/fdsan.cpp)：FD 所有者标签检查实现。
@@ -352,14 +352,9 @@ hash（散列值）不能自动完成脱敏。低熵文件名、手机号或固�
 - [Android 11 behavior changes：fdsan](https://developer.android.com/about/versions/11/behavior-changes-all#fdsan)：fdsan 默认中止与所有权错误语义。
 - [Android Common Kernel `proc.rst`（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst)：`Threads`、`FDSize`、`fd` 和 `fdinfo` 的内核接口语义。
 
-### 旧合并稿中的线程来源
+### 线程资源的关联阅读
 
-以下链接只保留合并历史。线程监控的当前说明与完整资料表见 20.8。
-
-- [AOSP `Thread.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java)：Java 线程 API 的旧稿来源。
-- [AOSP `java_lang_Thread.cc`（android-17.0.0_r1）](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/native/java_lang_Thread.cc)：ART 线程创建入口的旧稿来源。
-- [Android Developers：`Thread` API](https://developer.android.com/reference/java/lang/Thread)：Java 线程 ID API 的旧稿来源。
-- [Android Developers：`AsmClassVisitorFactory`](https://developer.android.com/reference/tools/gradle-api/com/android/build/api/instrumentation/AsmClassVisitorFactory)：AGP 字节码插桩接口的旧稿来源。
+FD 增长伴随线程数增长时，还应检查创建线程的组件是否同时持有 socket、pipe 等资源。线程创建、退出与协程取消的证据及源码入口见 [20.8 线程与协程泄漏治理](08-thread-coroutine-leak-governance.md)。
 
 ## 小结
 

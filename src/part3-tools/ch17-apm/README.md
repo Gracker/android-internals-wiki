@@ -76,11 +76,9 @@ consolidation_note: 第二轮逐篇审阅后收敛为 14 篇，合并同一责�
 
 # 第 17 章：APM 工具与性能监控生态
 
-第 14 章介绍线下 trace（按时间排列的性能事件记录）分析，第 15 章覆盖 Android Studio Profiler、CPU 采样工具 simpleperf、系统状态查询命令 dumpsys 等单项工具，第 16 章说明证据组织与判断方法。第 17 章转向生产环境中的采集与分析。
+第 14 章介绍线下 trace（按时间排列的性能事件记录）分析，第 15 章覆盖 Android Studio Profiler、CPU 采样工具 simpleperf、系统状态查询命令 dumpsys 等单项工具，第 16 章说明证据组织与判断方法。第 17 章围绕 APM 选型与采集机制，同时说明配套的开发验证、实验室回归和设备基线测试。
 
 应用上线后仍会出现卡顿、启动慢、ANR（Application Not Responding，应用无响应）、内存泄漏和 OOM（Out of Memory，内存耗尽），但通常无法通过 `adb`（Android Debug Bridge）直连用户设备采集 trace。APM（Application Performance Monitoring，应用性能监控）通过采样率、触发条件、数据量和上传时机限制额外的 CPU、I/O（输入/输出）与网络开销，用于发现、聚合和定位这些问题。
-
-内容按“全景与选型门槛、当前工具、历史方案、官方 API（Application Programming Interface，应用编程接口）、平台、实验室工具、采集机制与端侧（设备端）架构”组织。相邻工具共享的方法、兼容性评测和报告规范只保留一次，具体实现边界留在对应小节。
 
 ## 全景分类
 
@@ -94,7 +92,7 @@ consolidation_note: 第二轮逐篇审阅后收敛为 14 篇，合并同一责�
 |------|------|----------|-----------|------|
 | Matrix | 腾讯微信 | 卡顿、启动、I/O、内存、APK 检查 | 线上 | 成熟项目；最近公开提交较早，接入前验证 AGP 与平台 API |
 | KOOM | 快手 | Java / Native（C/C++）/ 线程泄漏、OOM | 线上 | 有近期维护记录；接入前验证目标 API 与 ABI |
-| btrace / RheaTrace | 字节跳动 | 方法级 trace、采样式 tracing | 线上 | 活跃维护 |
+| btrace / RheaTrace | 字节跳动 | 运行时 Hook、同步抓栈与方法 trace | 受控诊断 | Android 17 需修复 ART 私有接口与 16 KB 兼容性，不直接接入生产项目；详见 17.2 |
 | LeakCanary | Square | Activity / Fragment / ViewModel 泄漏检测 | 线下 | 活跃维护；适合开发与测试阶段 |
 | BlockCanary | — | 主线程卡顿堆栈捕获 | 线上 | 维护停滞；仅作原理参考 |
 | DoKit | 滴滴 | FPS（每秒帧数）、启动、网络、调试工具箱 | 线下 | 维护频率较低；以线下调试为主 |

@@ -34,4 +34,4 @@ I/O（Input/Output，输入/输出）指应用与文件、数据库、设备或�
 - 网络测试需要同时记录网络类型、信号质量、DNS、连接复用和重试次数。
 - 文件访问方案应结合存储权限、数据规模、并发模式和跨进程需求选择。
 - Wi-Fi 选择与切换见 24.8，卫星和低带宽网络见 24.9，BluetoothSocket 长连接见 24.11，无接触支付见 24.12。
-- 已有材料的归并位置：SharedPreferences ANR（Application Not Responding，应用无响应）见 24.1，Room 3 见 24.2，网络分阶段监测与大文件传输见 24.5；CameraX 见 [22.18](../ch22-rendering-practice/18-camerax-rendering.md)。
+- SharedPreferences 引发的 ANR（Application Not Responding，应用无响应）见 24.1，Room 3 见 24.2，网络分阶段监测与大文件传输见 24.5；CameraX 的采集与渲染见 [22.18](../ch22-rendering-practice/18-camerax-rendering.md)。

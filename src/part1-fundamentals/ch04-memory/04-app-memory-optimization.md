@@ -8,6 +8,8 @@ last_verified: '2026-08-20'
 last_verified_against: AOSP android-17.0.0_r1; external/perfetto heapprofd data source; Android Developers 16 KB page-size guidance
 confidence: medium
 sources:
+- type: aosp
+  path: frameworks/base/core/java/android/util/LruCache.java
 - type: official
   path: https://developer.android.com/topic/performance/memory
 - type: official
@@ -29,6 +31,8 @@ sources:
 - type: official
   path: https://developer.android.com/ndk/guides/debug
 tags:
+- lru-cache
+- cache-pollution
 - memory-optimization
 - bitmap
 - memory-leak
@@ -39,6 +43,7 @@ tags:
 - heapprofd
 - 16kb-page-size
 related_chapters:
+- '5.8'
 - '4.1'
 - '4.2'
 - '4.3'
@@ -567,6 +572,36 @@ val javaHeadroom = runtime.maxMemory() - javaUsed
 
 `Debug.MemoryInfo.nativePss` 不能换算 Bitmap 数量。Bitmap 对象统计可查看 `dumpsys meminfo <package>` 的对象区、堆转储，或图片库自身的请求与缓存指标；图形内存和 DMA-BUF 还需要对应的系统计数器。
 
+## 业务缓存的容量与冷热分段
+
+业务缓存利用时间局部性，但它的 hit/miss 是数据结构层指标，不能与 CPU cache miss 混算。Android 17 的 `android.util.LruCache` 用 access-order `LinkedHashMap` 保存条目：命中会把条目移到最近使用端，超出权重预算时从最久未使用端逐出。单个公开操作受内部锁保护；由多次 `get`、`remove`、`put` 组成的复合操作仍需调用方提供共同的原子边界。
+
+纯 LRU 的常见弱点是 scan pollution（扫描污染）：分页浏览或大列表预取会连续加入一批只访问一次的新 key，把稍早访问、之后仍会复用的热条目逐出。只有 trace 和缓存指标确认存在这种访问模式时，才需要比 LRU 更复杂的策略。
+
+### 用 probation/protected 隔离一次性扫描
+
+SLRU（Segmented LRU，分段最近最少使用）把预算拆成两个 access-order 段：
+
+1. 新条目进入 `probation` 观察段。
+2. `probation` 条目再次命中后晋升到 `protected` 保护段。
+3. `protected` 超出预算时，把最久未访问条目降回 `probation`。
+4. `probation` 超出预算时，逐出最久未访问条目。
+
+一次扫描因此主要竞争观察段预算，稳定复用的条目得到单独保护。两段比例没有通用答案，应由 key 分布、value 权重、重复访问间隔和内存预算共同决定。图片可以用实际字节数作为权重；普通对象只能采用团队能持续校准的近似值。
+
+### 并发加载和释放仍要单独设计
+
+`LruCache.create()` 在内部锁外计算 value。多个线程同时 miss 同一个 key 时，可能并行创建多个结果，缓存只保留其中一个。加载昂贵时，应在缓存外合并同 key 的在途请求，并定义失败是否缓存、多久后允许重试。不要把磁盘、网络或解码工作放进全局缓存锁，否则其他 key 的命中也会等待这次 I/O。
+
+若 value 持有 `Bitmap`、文件句柄或其他需释放资源，应先在锁内收集逐出项，再在锁外执行释放回调，避免回调重入缓存或长时间占锁。上线 A/B 至少同时观察：
+
+- 逻辑 hit、miss、逐出、晋升和降级；
+- miss 后的解码、数据库、磁盘或网络成本；
+- 缓存总权重、Java/native heap、PSS 和 GC；
+- 锁等待、主线程耗时与端到端延迟。
+
+命中率提高而 PSS、GC 或锁等待恶化时，缓存并没有带来净收益。分段 LRU 只解决明确的扫描污染，不应替代容量治理、内存压力响应和加载去重。
+
 ## 线上诊断
 
 ### `ApplicationExitInfo`
@@ -676,6 +711,8 @@ Android 14+ 只保留 `UI_HIDDEN` 和 `BACKGROUND` 两个公开投递级别，�
 ## 参考资料
 
 ### AOSP Android 17 源码
+
+- [LruCache.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/util/LruCache.java)：访问顺序、权重预算、锁边界与缓存外创建。
 
 - `frameworks/base/graphics/java/android/graphics/Bitmap.java`：原生分配注册、硬件 Bitmap、Parcel 与 `recycle()`
 - `frameworks/base/graphics/java/android/graphics/BitmapFactory.java`：解码与 `inBitmap`

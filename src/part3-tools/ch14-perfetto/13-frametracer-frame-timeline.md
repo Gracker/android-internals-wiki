@@ -724,7 +724,7 @@ FrameTimeline trace 的最低平台是 Android 12，API 33 只限定应用代码
 
 FrameTimeline 负责用 expected/actual 时间和 frame token 选出异常帧、区分 App 与 SurfaceFlinger 侧原因；FrameTracer 负责用 BufferQueue frame number 和 Graphics Frame Event 补充 queue、acquire、latch、composition 与 present 阶段。两套 ID 不能直接互换，各阶段时长也不等于端到端可见延迟。先用 FrameTimeline 定帧，再用 FrameTracer、线程状态、GPU/HWC 和 fence 证据解释等待，才能避免把颜色或单个时间点直接写成根因。
 
-### FrameTimeline 部分的参考源码与验证材料
+## FrameTimeline 参考源码与验证材料
 
 - [Android 17 `Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java)
 - [API 33 `Choreographer.FrameData`](https://developer.android.com/reference/android/view/Choreographer.FrameData)、[`FrameTimeline`](https://developer.android.com/reference/android/view/Choreographer.FrameTimeline) 与 [`VsyncCallback`](https://developer.android.com/reference/android/view/Choreographer.VsyncCallback)

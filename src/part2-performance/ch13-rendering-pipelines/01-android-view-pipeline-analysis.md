@@ -394,7 +394,7 @@ SurfaceView 提供独立 layer 条件，不保证 DEVICE、低功耗或低延迟
 
 分类确定内容属于普通 App Window 后，可以沿 ViewRootImpl、RenderThread、BLAST 和 SurfaceFlinger 还原一帧。
 
-本文只讨论标准 HWUI App Window：页面主体由普通 View 或 Compose host（Compose 宿主容器）组织，RenderThread 生成宿主窗口 buffer。承载主体内容的独立 Surface、浏览器 compositor（合成器）、游戏引擎 swapchain（轮换使用的一组可显示 buffer）、Camera HAL 或视频解码器 Producer 属于其他管线。
+标准 HWUI App Window 的页面主体由普通 View 或 Compose host（Compose 宿主容器）组织，RenderThread 生成宿主窗口 buffer。承载主体内容的独立 Surface、浏览器 compositor（合成器）、游戏引擎 swapchain（轮换使用的一组可显示 buffer）、Camera HAL 或视频解码器 Producer 属于其他管线，不能直接套用这条标准路径。
 
 平台实现以 Android 17 / API 37 的 `android-17.0.0_r1` 为基线；涉及调度、cpuset（可运行的 CPU 集合）、uclamp（调度利用率上下限）、cpufreq（CPU 频率调节）、dma-buf（共享 buffer 的内核机制）和 fence（同步完成信号）时，内核以 `android17-6.18-2026-06_r6` 为基线。Compose 独立于 Android platform 发布，这里只说明它在标准 App Window 中的位置，不把某个 Jetpack 版本的行为归到 Android 17。
 

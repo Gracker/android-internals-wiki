@@ -501,8 +501,6 @@ AOSP Android 17 没有这个保证。首次启动已返回 `START_ABORTED`。
 
 ## 小结
 
-Android 17 的 App Archiving 可以概括为：
-
 下图串起了归档、恢复请求和重新安装三个阶段：
 
 ```text

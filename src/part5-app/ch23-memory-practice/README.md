@@ -12,7 +12,7 @@
 | RSS / PSS | RSS 统计进程当前驻留页，共享页会在每个进程中重复计入；PSS 按共享者数量分摊共享页，更适合估算跨进程总占用。 |
 | 图形与共享缓冲区 | `GraphicBuffer`、dma-buf 等可在应用、GPU、相机或编解码器之间共享，未必完整计入 Java Heap 或 Native Heap。 |
 
-[第 4 章](../../part1-fundamentals/ch04-memory/README.md)分析 Android 内存管理机制，[第 10 章](../../part2-performance/ch10-memory-perf/README.md)介绍内存分析工具；本章整理应用侧的监控、诊断和优化实践。
+[第 4 章](../../part1-fundamentals/ch04-memory/README.md)分析 Android 内存管理机制，[第 10 章](../../part2-performance/ch10-memory-perf/README.md)讨论内存性能诊断与案例；本章整理应用侧的监控、诊断和优化实践。
 
 ## 内容索引
 

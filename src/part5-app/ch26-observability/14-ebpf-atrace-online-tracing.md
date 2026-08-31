@@ -336,7 +336,7 @@ WOOTdroid 案例重建了十个安全相关的 framework 方法，包含短信�
 - [Android Developers：Log Info Disclosure](https://developer.android.com/privacy-and-security/risks/log-info-disclosure)：日志敏感数据泄露风险与端侧处理建议。
 
 
-## Profilo 数据源、触发与文件管理
+## ATrace 采集与 Profilo 数据源、触发和文件管理
 
 内核事件解决底层语义，Profilo 类框架负责会话、触发、缓冲区和上传。两者组合时要统一时钟和事件 ID。
 

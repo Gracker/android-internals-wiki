@@ -88,13 +88,13 @@ consolidated_from:
 
 # Android Performance Analyzer 与 GAPS：性能追踪与目标可达性
 
-Android Performance Analyzer（APA）是 Google 面向 Android App 与游戏提供的性能分析工具。官方提供独立桌面应用；2026 年 5 月的发布文还说明，其 System Trace viewer 已进入 Android Studio Panda 4 Canary 及后续版本。本文聚焦独立版 System Profiler。
+性能调查既要复现目标路径，也要测量路径执行时的行为。Android Performance Analyzer（APA）用系统 trace 观察线程、帧和资源；GAPS 通过静态路径重建与动态执行验证目标方法是否可达。两者解决不同问题：触达目标方法只是测量的前提，不能证明它就是性能瓶颈。
+
+APA 是 Google 面向 Android App 与游戏提供的性能分析工具。官方提供独立桌面应用；2026 年 5 月的发布文还说明，其 System Trace viewer 已进入 Android Studio Panda 4 Canary 及后续版本。这里的 APA 操作流程以独立版 System Profiler 为准。
 
 官方在 2026 年 5 月 19 日以 open beta 发布 System Profiler。截至 2026 年 8 月 13 日，8 月 12 日更新的 APA 下载页已不再标注 Beta；旧 AGI 页面仍保留“public beta”字样，不能用这条滞后的交叉链接判断当前发布状态。当前 APA 文档仍以 System Profiler 为主：录制 system trace（系统追踪）、在 Project（组织多份 trace 的项目容器）中管理数据、查看 CPU/GPU/内存/功耗与 SurfaceFlinger（Android 系统合成器）事件、运行 PerfettoSQL，并为 Vulkan 工作负载补充调试数据。Vulkan render pass（渲染阶段及其附件处理范围）名称和截图属于 trace 增强信息，不能当成逐 draw（逐次绘制调用）的单帧 capture/replay（捕获与回放）。
 
 设备侧平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核侧固定到 `android17-6.18-2026-06_r6`。APA 的发布周期独立于 Android 平台；它支持 Android 12 及以上的受支持设备，不能写成“Android 17 新增的 framework API”。
-
-动态分析工具先建立进程、线程、调用和系统事件的观察面，再决定能否到达目标代码或状态。Performance Analyzer 偏向统一性能检查，GAPS 关注动态分析目标的可达路径重建。
 
 ## 统一性能检查与系统证据
 

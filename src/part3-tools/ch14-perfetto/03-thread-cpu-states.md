@@ -64,7 +64,7 @@ task2b_state: fixed
 
 本文核对的源码基线是 Android 17 / API 37 / `android-17.0.0_r1` 的 Perfetto 导入逻辑和 `android17-6.18-2026-06_r6` 内核。旧平台也有调度事件，但字段、内核符号和标准库模块可能不同。
 
-## 13.3.1 状态从哪里来
+## 14.3.1 状态从哪里来
 
 ### Linux 状态与 Perfetto 状态分属不同层次
 
@@ -111,7 +111,7 @@ if (preempt)
 
 `R` 也不等于“由睡眠刚刚唤醒”。线程在保持可运行状态时离开 CPU，同样可能产生 `R`。只有存在对应 `sched_waking` 和 `waker_utid` 时，才能讨论这次可运行区间的唤醒来源。
 
-## 13.3.2 采集与 UI 读取
+## 14.3.2 采集与 UI 读取
 
 下面的配置通过 ftrace（Linux 内核跟踪机制）采集线程状态、唤醒、D 状态原因、频率和中断，适合十几秒的定点复现：
 
@@ -173,7 +173,7 @@ data_sources {
 
 分析关键路径时，先固定业务 Slice 或 FrameTimeline 帧，再看该时间范围内的线程状态。FrameTimeline 是 Android 12 起记录预期帧与实际帧时间线的机制；Looper 是 Android 线程处理消息队列的循环。整条线程生命周期的状态占比通常会被 Looper 的正常睡眠主导，对一次掉帧或启动没有直接解释力。
 
-## 13.3.3 Running：已被调度，不等于应用代码独占 CPU
+## 14.3.3 Running：已被调度，不等于应用代码独占 CPU
 
 `Running` 表示调度器让该线程占据某个 CPU 的任务时间线。它可能在用户态执行，也可能在系统调用或异常处理的内核态执行。硬中断（HardIRQ）会立即暂停当前任务去处理设备事件，但不一定发生 `sched_switch`；这段 IRQ 时间仍落在外层 Running 调度区间里。SoftIRQ 是随后处理延迟中断工作的机制，既可能在当前 CPU 的中断返回路径执行，也可能交给 `ksoftirqd` 内核线程。
 
@@ -197,7 +197,7 @@ CPU 编号与大小核布局由 SoC（System on Chip，系统级芯片）决定�
 
 手工绑核会缩小调度器可选 CPU 集合，还会受 cpuset、在线 CPU 和权限限制。亲和性（affinity）限定线程可以在哪些 CPU 上运行，cpuset 用控制组给一组任务划定可用 CPU，uclamp 则限制调度器看到的任务利用率提示范围。普通应用不应依赖 CPU 编号或固定亲和性。平台侧若要调整这些参数，应使用同场景 Trace 验证延迟、能耗和热稳定性。
 
-## 13.3.4 Runnable：测量唤醒到运行的等待
+## 14.3.4 Runnable：测量唤醒到运行的等待
 
 Runnable 区间表示线程具备运行条件却未在 CPU 上执行。对由 `sched_waking` 打开的 `R`，其持续时间近似“被唤醒到被调度”的延迟；`R+` 则从抢占式切出持续到下一次运行。
 
@@ -257,7 +257,7 @@ LIMIT 20;
 
 `R` 包含唤醒后的排队，也可能来自线程保持可运行状态时的切出。具备 `waker_utid` 的 `R` 才能沿 UI 中的 Woken by（由谁唤醒）关系查看唤醒线程。唤醒者负责把线程变为可运行，不一定是锁持有者、Binder 服务端或设备中断的源头；这层业务关系还需 Binder Flow（Binder 事务的跨线程因果连线）、锁事件或代码路径确认。
 
-## 13.3.5 Sleeping：找到等待条件和唤醒者
+## 14.3.5 Sleeping：找到等待条件和唤醒者
 
 `S` 是可中断睡眠。Looper 调用 `epoll_wait()` 等待文件描述符（进程访问文件、socket 等内核对象所用的编号）上的消息事件、线程等待条件变量或 futex（用户态锁常用的内核等待机制）、同步 Binder 客户端等待回复、定时器等待到期，都可能表现为 `S`。大多数线程长期 Sleeping 是健康的空闲状态。
 
@@ -285,7 +285,7 @@ Woken by 记录的是执行唤醒动作的线程：
 
 Perfetto 官方的调度阻塞案例还展示了事件触发调用栈：用 `linux.perf` 在 `sched_switch` 和 `sched_waking` 发生时采样，并用 `prev_comm`、`next_comm` 或 `comm` 过滤目标线程；这里的 `comm` 是内核记录的任务名。若对全系统每次调度切换都取栈，采样器很快会跟不上事件速度，因此必须限制过滤范围并检查丢样统计。
 
-## 13.3.6 Uninterruptible Sleep：D 只说明不可中断等待
+## 14.3.6 Uninterruptible Sleep：D 只说明不可中断等待
 
 Linux 6.18 把 `TASK_UNINTERRUPTIBLE` 定义为独立任务状态。处于该状态的普通信号不会让等待提前返回；条件满足后线程被唤醒，挂起的信号才有机会处理。内核还提供 `TASK_KILLABLE = TASK_WAKEKILL | TASK_UNINTERRUPTIBLE`，供允许致命信号唤醒的等待点使用。
 
@@ -339,13 +339,13 @@ LIMIT 20;
 
 D 状态不会直接触发 ANR（Application Not Responding，应用无响应）。ANR 由输入分发、服务、广播等框架监控条件触发；D 只有在阻止受监控工作按时完成时才会参与这条因果路径。不能给 D 单独套一个通用 ANR 秒数。
 
-## 13.3.7 Stopped 与其他状态
+## 14.3.7 Stopped 与其他状态
 
 `T` 常见于 `SIGSTOP`（强制暂停进程的信号）、Shell 作业控制或调试操作，`t` 表示被调试器等工具跟踪。它们在调试会话中可能完全符合预期。`Z` 表示退出后等待父进程回收的僵尸状态，短暂出现也不等于性能故障；持续堆积才需要检查父进程的回收逻辑。
 
 `X`、`x`、`I`、`P`、`W`、`K`、`N` 属于退出或特殊调度状态。Perfetto 官方文档提醒，不是所有字符组合都有意义。遇到复合状态时，应保留原始 `end_state`，再对照锚点内核的 `TASK_*` 定义和产生该事件的代码。
 
-## 13.3.8 IRQ / SoftIRQ：调度区间里的隐含执行
+## 14.3.8 IRQ / SoftIRQ：调度区间里的隐含执行
 
 HardIRQ 在中断环境执行，会暂停当前 CPU 上的任务；SoftIRQ 可在中断返回路径执行，也可由 `ksoftirqd` 线程处理。HardIRQ 和在中断返回路径执行的 SoftIRQ 都不要求发生任务切换，外层线程在 `thread_state` 中仍可能连续显示 Running。把这整段 Running 都算成应用函数时间，会高估应用函数的执行时间。
 
@@ -372,7 +372,7 @@ Android 17 的 Ftrace 导入器分别用 `cpu_irq` 和 `cpu_softirq` 轨道保�
 
 `ksoftirqd/<cpu>` 是每个 CPU 对应的可调度内核线程，它的 Running 会直接出现在 CPU Scheduling 轨道。统计时要区分 SoftIRQ 在中断返回路径中的执行与 `ksoftirqd` 执行，避免重复计算。
 
-## 13.3.9 在业务区间内量化状态
+## 14.3.9 在业务区间内量化状态
 
 线程整段生命周期的状态占比很少能定位一次卡顿。Android 17 的 `sched.time_in_state` 提供区间函数，可把线程状态裁剪到指定起止时间。下面的查询选取 SystemUI 主线程中最长的 `Choreographer#doFrame`，汇总该 Slice 内的状态：
 
@@ -430,7 +430,7 @@ ORDER BY SUM(x.dur) DESC;
 
 状态只是分析入口。结论至少应包含业务区间、`upid` / `utid`、状态持续时间、至少一种能够解释原因的独立旁证，以及修改前后的同条件对照。
 
-## 13.3.10 常见误读
+## 14.3.10 常见误读
 
 ### “线程 Running 占比高，所以它有性能故障”
 

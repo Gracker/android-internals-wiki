@@ -34,5 +34,5 @@
 - 后台耗电可从 25.2 和 25.3 开始；音频、定位与传感器问题分别进入 25.5 和 25.4。
 - 功耗测试应固定设备、温度、网络和使用时长，并保留系统将耗电量分摊到应用和组件的统计数据。
 - 包体积优化可按 DEX、Native SO、资源和分发四个方向拆分验证。
-- 早期独立案例已并入对应主题：`BatteryUsageStats`（系统电量归因统计）见 25.1；Android vitals（Google Play Console 中的应用质量指标）和 listener alarm（通过监听器回调交付的定时任务）见 25.3；`JobDebugInfo`（Android 后台任务调度器的调试信息）见 25.3；定位服务见 25.4。
-- ADPF 相关案例并入 25.8；Excessive CPU（CPU 使用过量）与固定频率任务并入 25.7；前台服务（Foreground Service，FGS）超时和 `JobScheduler` 任务配额（系统授予后台调度任务的执行预算）分别见 25.2 与 25.3。
+- `BatteryUsageStats`（系统电量归因统计）见 25.1；Android vitals（Google Play Console 中的应用质量指标）、listener alarm（通过监听器回调交付的定时任务）和 `JobDebugInfo`（Android 后台任务调度器的调试信息）见 25.3；定位服务见 25.4。
+- ADPF 能效验证见 25.8，热节流与持续性能见 25.9；Excessive CPU（CPU 使用过量）与固定频率任务见 25.7；前台服务（Foreground Service，FGS）超时和 `JobScheduler` 任务配额（系统授予后台调度任务的执行预算）分别见 25.2 与 25.3。

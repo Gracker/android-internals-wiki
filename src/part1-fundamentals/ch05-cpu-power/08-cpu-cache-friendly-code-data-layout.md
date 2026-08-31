@@ -10,8 +10,6 @@ last_verified_against: AOSP android-17.0.0_r1, Android common kernel android17-6
 confidence: medium
 sources:
 - type: aosp
-  path: frameworks/base/core/java/android/util/LruCache.java
-- type: aosp
   path: frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java
 - type: aosp
   path: frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java
@@ -44,8 +42,6 @@ sources:
 - type: official
   path: https://developer.arm.com/documentation/109140/latest/
 tags:
-- lru-cache
-- cache-pollution
 - cpu-cache
 - cache-line
 - false-sharing
@@ -55,6 +51,7 @@ tags:
 - locality
 - startup-optimization
 related_chapters:
+- '4.4'
 - '5.1'
 - '21.4'
 - '18.5'
@@ -111,7 +108,7 @@ Android common kernel `android17-6.18-2026-06_r6` 的 arm64 `arch/arm64/include/
 
 ### Hardware cache、ART inline cache 与软件缓存属于不同机制
 
-这里讨论的 L1/L2/L3 是硬件 cache。ART 的 inline cache（内联缓存）会记录某个调用点出现过的接收者类型，用来优化虚调用；业务代码中的 `LruCache` 则保存可复用的计算结果。它们虽然都叫 cache，却不属于同一种机制或存储层级。
+这里讨论的 L1/L2/L3 是硬件 cache。ART 的 inline cache（内联缓存）会记录某个调用点出现过的接收者类型，用来优化虚调用；业务代码中的 `LruCache` 则保存可复用的计算结果。它们虽然都叫 cache，却不属于同一种机制或存储层级。业务缓存的容量、淘汰和加载去重见 [4.4 App 内存优化与诊断](../ch04-memory/04-app-memory-optimization.md#业务缓存的容量与冷热分段)。
 
 ART inline cache 可能让编译器生成更直接的调用路径，从而间接影响取指、译码等指令前端工作和数据访问。它不能证明某个对象“进入 L1”，L1 miss 也不能解释所有多态调用开销。
 
@@ -138,36 +135,6 @@ ART inline cache 可能让编译器生成更直接的调用路径，从而间接
 时间局部性描述数据在短时间内重复使用。一个工作块在仍位于 cache 时完成多次计算，通常比每轮扫描整个大数据集更有效。
 
 二维数值计算、图片卷积和张量预处理常用 tiling（分块）：把输入拆成能放入目标 cache 的小块，在块内完成多个操作后再进入下一块。tile 大小需要通过基准测试确定，因为代码、栈、其他数组和并发线程也会占用 cache。简单地把 tile 设为“L1 容量除以元素大小”，会低估这些资源竞争。
-
-## 业务缓存的冷热分段
-
-业务缓存利用时间局部性，但它的 hit/miss 是数据结构层指标，不能与 CPU cache miss 混算。Android 17 的 `android.util.LruCache` 用 access-order `LinkedHashMap` 保存条目：命中会把条目移到最近使用端，超出权重预算时从最久未使用端逐出。单个公开操作受内部锁保护；由多次 `get`、`remove`、`put` 组成的复合操作仍需调用方提供共同的原子边界。
-
-纯 LRU 的常见弱点是 scan pollution（扫描污染）：分页浏览或大列表预取会连续加入一批只访问一次的新 key，把稍早访问、之后仍会复用的热条目逐出。只有 trace 和缓存指标确认存在这种访问模式时，才需要比 LRU 更复杂的策略。
-
-### 用 probation/protected 隔离一次性扫描
-
-SLRU（Segmented LRU，分段最近最少使用）把预算拆成两个 access-order 段：
-
-1. 新条目进入 `probation` 观察段。
-2. `probation` 条目再次命中后晋升到 `protected` 保护段。
-3. `protected` 超出预算时，把最久未访问条目降回 `probation`。
-4. `probation` 超出预算时，逐出最久未访问条目。
-
-一次扫描因此主要竞争观察段预算，稳定复用的条目得到单独保护。两段比例没有通用答案，应由 key 分布、value 权重、重复访问间隔和内存预算共同决定。图片可以用实际字节数作为权重；普通对象只能采用团队能持续校准的近似值。
-
-### 并发加载和释放仍要单独设计
-
-`LruCache.create()` 在内部锁外计算 value。多个线程同时 miss 同一个 key 时，可能并行创建多个结果，缓存只保留其中一个。加载昂贵时，应在缓存外合并同 key 的在途请求，并定义失败是否缓存、多久后允许重试。不要把磁盘、网络或解码工作放进全局缓存锁，否则其他 key 的命中也会等待这次 I/O。
-
-若 value 持有 `Bitmap`、文件句柄或其他需释放资源，应先在锁内收集逐出项，再在锁外执行释放回调，避免回调重入缓存或长时间占锁。上线 A/B 至少同时观察：
-
-- 逻辑 hit、miss、逐出、晋升和降级；
-- miss 后的解码、数据库、磁盘或网络成本；
-- 缓存总权重、Java/native heap、PSS 和 GC；
-- 锁等待、主线程耗时与端到端延迟。
-
-命中率提高而 PSS、GC 或锁等待恶化时，缓存并没有带来净收益。分段 LRU 只解决明确的扫描污染，不应替代容量治理、内存压力响应和加载去重。
 
 ## False sharing（伪共享）：不同字段，共用一条一致性 cache line
 
@@ -455,9 +422,9 @@ Android 17 `Parcel` 的普通数据存储在 `mData` 连续缓冲区，通过 `m
 
 文件注释明确要求谨慎使用 `__read_mostly`，并根据性能分析结果决定是否采用。紧凑排列可以减少读取的 cache line 数，对齐隔离则会增加空间占用。应用层可以借鉴这套决策顺序，但不能直接复制内核宏，也不应让所有结构都独占一条 cache line。
 
-### 删除与 cache 无关的伪案例
+### 内存统计与 Cache 性能证据的边界
 
-PSS（按共享比例折算后的进程内存）中的 Dalvik/native/other 分类用于内存归因，不能说明所谓的“cache 流分离”。`anon_huge_pages`、`file_pmd_mapped` 等 smaps 字段反映大页映射状态，也不能用来避免 false sharing。它们属于内存统计和 TLB/页表主题，不应作为 Android 17 cache 优化案例。
+PSS（按共享比例折算后的进程内存）中的 Dalvik/native/other 分类用于内存归因，不能证明 CPU cache 的数据布局或访问局部性。`anon_huge_pages`、`file_pmd_mapped` 等 smaps 字段反映大页映射状态，也不能证明是否存在 false sharing。它们属于内存统计和 TLB/页表证据，不能替代 cache 事件与地址级采样。
 
 同样，Linux 的 SLUB slab allocator（小对象分配器）不会把所有对象统一向上取整到 cache-line 大小的整数倍；具体 alignment（对齐方式）取决于架构、cache flags、对象大小和创建参数。16 KiB page 对 slab order（一个 slab 占用的连续页阶数）、内存碎片和 TLB 的影响，也需要单独测量。
 
@@ -510,7 +477,6 @@ PSS（按共享比例折算后的进程内存）中的 Dalvik/native/other 分�
 Cache 友好代码要让“经常一起使用的数据”在时间和地址上靠近，并减少“被不同 CPU 频繁写的数据”之间的 cache line 共享。实现方式会随语言层变化：
 
 - Kotlin/Java 优先减少装箱、指针追踪和共享可变状态；
-- 业务缓存用受控权重、加载去重和必要时的冷热分段保护真实热集；
 - NDK 使用连续容器、hot/cold split、SoA/AoSoA 和经过验证的对齐；
 - 启动代码通过 Startup Profile 交给 R8/D8 做 DEX layout；
 - 系统级问题通过 PMU、地址级采样和源码布局核对。
@@ -545,5 +511,4 @@ Cache 友好代码要让“经常一起使用的数据”在时间和地址上�
 - [Android common kernel 6.18 arm64 cache definitions](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/include/asm/cache.h)
 - [Android common kernel 6.18 cache helpers](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/cache.h)
 - [Android common kernel 6.18 false-sharing guide](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/kernel-hacking/false-sharing.rst)
-- [AOSP Android 17 `LruCache`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/util/LruCache.java)
 - [Arm Cortex-A processor comparison](https://developer.arm.com/documentation/109140/latest/)

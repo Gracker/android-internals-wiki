@@ -2204,7 +2204,7 @@ DataGrid 和 Data Explorer 负责提高浏览效率。提交审阅的结论应�
 
 可复用的 Perfetto SQL 应先固定问题窗口和稳定身份，再选择基础表、标准库或 `SPAN_JOIN`。点状 counter 必须先还原为区间，区间相交必须使用交集时长，父子 slice 和一对多关联则要防止重复计数。Jank CUJ 标准库能统一系统交互语义，但第三方 App、缺失轨道和版本差异仍需显式降级；最终报告应保留 SQL、单位、行数、采集缺口与源码语义。
 
-### Jank CUJ 部分的参考源码
+## Jank CUJ 参考源码
 
 - [Perfetto v54.0 release](https://github.com/google/perfetto/releases/tag/v54.0)
 - [Android 17 DataExplorer plugin](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/ui/src/plugins/dev.perfetto.DataExplorer/index.ts)

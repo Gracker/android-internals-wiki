@@ -45,7 +45,7 @@ sources:
 
 手机上的 AI 能力可能由系统服务、应用内运行时、云端模型或跨应用代理交付；接口名称相似，并不代表执行位置、数据边界和可用性相同。选型时应先确定能力由谁交付、模型在哪里运行、失败后由谁兜底，再比较具体 API。
 
-## 1.15.1 先区分由谁交付
+## 1.29.1 先区分由谁交付
 
 “Android AI 手机”常把芯片、AOSP、Google 系统组件、应用 SDK 和云模型混在一起。工程分析应先确认每一层由谁交付：
 
@@ -61,7 +61,7 @@ sources:
 
 系统版本相同，AI 能力仍可能不同。应用需要检测具体 API 和模型是否可用，并准备 CPU、其他本地实现或云端回退。
 
-## 1.15.2 NNAPI 与 Neural Networks HAL：应用入口已经改变
+## 1.29.2 NNAPI 与 Neural Networks HAL：应用入口已经改变
 
 NNAPI 从 Android 8.1 开始提供 C API，让上层推理框架把计算图交给 CPU、GPU、DSP 或专用加速器。它提供模型、编译、内存和执行等抽象，也支持同步或异步执行与编译缓存。
 
@@ -74,7 +74,7 @@ Neural Networks HAL 仍然受支持，`android-17.0.0_r1` 也保留 `hardware/in
 
 “AIDL HAL + NNAPI 是 Android 17 应用统一 AI 通路”的说法已经过时。HAL 是否存在，也不能证明某个应用模型会完整运行在 NPU 上；不受支持的算子可能回退到 CPU，跨处理器同步与内存复制甚至会使混合执行慢于纯 CPU。
 
-## 1.15.3 路线一：AICore 与 ML Kit GenAI
+## 1.29.3 路线一：AICore 与 ML Kit GenAI
 
 ML Kit GenAI API 通过 AICore 使用设备上的 Gemini Nano。当前公开能力包括摘要、校对、改写、图像描述、语音识别和 Prompt API。模型由设备共享，应用无需把基础模型打进 APK，也不直接管理模型文件。
 
@@ -89,7 +89,7 @@ ML Kit GenAI API 通过 AICore 使用设备上的 Gemini Nano。当前公开能�
 
 AICore 是 Google 在兼容设备上交付的系统组件。Android 17 源码中另有 `android.app.ondeviceintelligence` / `android.service.ondeviceintelligence` 这组端侧智能（On-Device Intelligence，ODI）系统 API 与服务协调代码，但它属于平台或设备厂商的服务边界，不等同于 Google AICore 或 Gemini Nano 模型本身。分析 AOSP 平台能力时，不能把 AICore 当成 Android 17 兼容性定义文档（CDD）要求的通用服务。
 
-## 1.15.4 路线二：LiteRT 与自带模型
+## 1.29.4 路线二：LiteRT 与自带模型
 
 需要自定义模型、离线控制或更广设备覆盖时，应用可以自带或按需下载模型，再由 LiteRT 等运行时执行。LiteRT 当前把 `CompiledModel` 作为高性能推理的主要 API，可在支持条件满足时使用 CPU、GPU 或 NPU；`Interpreter` API 继续用于兼容场景。
 
@@ -114,7 +114,7 @@ App → LiteRT CompiledModel / Interpreter
 
 不能仅按“模型小于 100 MB”或“模型大于 1 GB”决定本地还是云端。参数量、上下文长度、KV cache（生成模型保存历史键和值的缓存）、数据类型、峰值临时张量、内存带宽和散热条件都会改变可运行性。最终选择要以目标设备上的测量结果为准。
 
-## 1.15.5 AppFunctions：把应用能力提供给智能代理
+## 1.29.5 AppFunctions：把应用能力提供给智能代理
 
 AppFunctions 解决的是跨应用能力发现和执行。提供方声明函数元数据，并用 `AppFunctionService` 或 Android 17 的运行时注册实现函数；持有相应权限的系统级智能代理（agent）可以搜索函数、读取状态并发起调用。
 
@@ -138,7 +138,7 @@ Android 17（API 37）还增加了运行时注册、Activity 或全局作用域�
 
 AppFunctions 不负责动态模型加载、模型版本回滚或推理调度。它可以把“总结当前笔记”暴露为函数，但该函数内部使用 AICore、自带模型还是云端，是提供方自己的实现选择。
 
-## 1.15.6 VoiceInteractionService 的位置
+## 1.29.6 VoiceInteractionService 的位置
 
 `VoiceInteractionService`、`VoiceInteractionSession` 和语音交互界面早于端侧大模型多年。它们负责系统选定语音交互服务的生命周期、会话与辅助上下文数据（assist data），不等同于语音识别模型或生成式推理运行时。
 
@@ -146,7 +146,7 @@ Android 17 的 AppFunctions 可以与当前 Activity 建立关联；例如 `Voic
 
 语音功能应分别测量录音、端点检测、识别、意图/提示构造、模型推理、文本或语音输出。把这些阶段合成“端到端小于 500 ms”会隐藏网络、设备与交互模式的差异。
 
-## 1.15.7 性能测量：先建立阶段时间线
+## 1.29.7 性能测量：先建立阶段时间线
 
 一次 AI 请求至少拆成下面几段：
 
@@ -177,7 +177,7 @@ try {
 - 连续运行覆盖热平衡后的性能，避免只记录设备尚未升温的前几次。
 - 结果按设备型号、系统版本、运行时版本、模型版本和后端分组。
 
-## 1.15.8 内存、量化与并发的常见误区
+## 1.29.8 内存、量化与并发的常见误区
 
 ### 量化需要同时验性能和质量
 
@@ -195,7 +195,7 @@ INT8、FP16 或其他量化格式可能减小模型并减少内存流量，但�
 
 多个推理任务可能争用同一内存带宽和加速器队列，并加速升温。应用应限制并发，给交互请求优先级，并允许后台任务暂停或取消。AICore 还会执行自己的每应用请求与电量配额，线程池大小不能绕过这些限制。
 
-## 1.15.9 功耗与热管理
+## 1.29.9 功耗与热管理
 
 普通应用不能可靠地指定 NPU 频率，也不应假设可以通过某个公开 API 固定动态电压与频率调节（DVFS）。频率和热节流由内核、Power HAL、温控服务与芯片固件共同决定。
 
@@ -209,7 +209,7 @@ INT8、FP16 或其他量化格式可能减小模型并减少内存流量，但�
 
 CPU、GPU 或 NPU 的标签本身不能决定能效。若 NPU 不支持关键算子、GPU 需要大量格式转换，或者小模型在 CPU 上已足够快，专用加速路径可能没有优势。
 
-## 1.15.10 选型与回退清单
+## 1.29.10 选型与回退清单
 
 | 问题 | ML Kit GenAI / AICore | LiteRT 自带模型 | 云端模型 | AppFunctions |
 |---|---|---|---|---|

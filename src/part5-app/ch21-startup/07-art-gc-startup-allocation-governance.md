@@ -190,7 +190,7 @@ Android Studio 的 Remaining Size 是所选时间段内“分配大小减去已�
 
 短命对象影响分配速率，长命对象会抬高 live set（一次 GC 时仍能从引用链访问到的对象集合）。live set 越大，GC 需要扫描的对象通常越多，后续 heap 可用空间也越少。
 
-启动期 cache（缓存）应有容量、逐出和生命周期边界。对象池只适合已经测出高频构造且重置成本可控的对象；随意池化会扩大 live set、增加状态错误，并可能让 GC 更慢。业务缓存的冷热分段与局部性边界见 [5.8 CPU Cache 友好代码与数据布局优化](../../part1-fundamentals/ch05-cpu-power/08-cpu-cache-friendly-code-data-layout.md)。
+启动期缓存应有容量、逐出和生命周期边界。对象池只适合已经测出高频构造且重置成本可控的对象；随意池化会扩大 live set、增加状态错误，并可能让 GC 更慢。业务缓存的容量与冷热分段见 [4.4 App 内存优化与诊断](../../part1-fundamentals/ch04-memory/04-app-memory-optimization.md#业务缓存的容量与冷热分段)，CPU 硬件缓存与数据局部性见 [5.8 CPU Cache 友好代码与数据布局优化](../../part1-fundamentals/ch05-cpu-power/08-cpu-cache-friendly-code-data-layout.md)。
 
 ### 4. 同时检查 native 与 graphics memory
 

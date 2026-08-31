@@ -59,7 +59,7 @@ sources:
 
 多数新连接在建立前需要先查询 DNS，但一次 HTTP 请求未必会触发查询：连接池可以直接复用现有连接，HTTP/2 或 HTTP/3 也能在同一连接上承载多次请求。诊断时应先回答“本次请求是否查询 DNS、查询绑定哪条网络、后续连接实际使用了哪个结果”，再分析系统 resolver（解析器）或 HTTPDNS（通过 HTTP API 获取解析结果的应用侧方案）。
 
-12.1 介绍请求阶段、连接和传输协议，1.21 说明平台网络状态与系统如何选择默认网络。下面沿 Android 17 的源码路径说明系统 resolver，并给出应用侧可执行的诊断顺序。
+[12.1 Android 网络与 TLS 性能优化](01-android-network-tls-performance.md)介绍请求阶段、连接和传输协议，[1.22 Connectivity 服务、网络选择与回调](../../part1-fundamentals/ch01-architecture/22-connectivity-service.md)说明平台网络状态与系统如何选择默认网络。诊断系统 resolver 时，需要把这些应用侧事件与 Android 17 的系统调用路径对应起来。
 
 ## 一、四层边界：调用方、框架、resolver、netd
 

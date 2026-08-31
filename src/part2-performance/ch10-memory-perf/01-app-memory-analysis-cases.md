@@ -538,13 +538,11 @@ activityManager.setProcessStateSummary(state)
 
 ### 延伸阅读
 
-- **4.1 Android 内存管理机制**
-- **4.2 Java / Native 内存泄漏**
-- **4.3 Low Memory Killer 与进程优先级**
-- **23.1 内存泄漏检测与治理**
-- **10.3 内存抖动**
-- **10.4 GPU 与图形内存统计、归因与诊断**
-- **14.1 Perfetto 内存数据源**
+- [4.1 Android 与 Linux 内存管理全景](../../part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md)：统计口径、物理页与回收机制。
+- [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)：Java 堆、GC 与存活对象的关系。
+- [4.3 lmkd、Cached App Freezer 与内存压力治理](../../part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md)：系统压力、进程优先级与后台状态。
+- [23.2 内存泄漏检测与治理](../../part5-app/ch23-memory-practice/02-memory-leak-governance.md)：引用链与生命周期修复。
+- [14.1 Perfetto 入门、Trace 抓取与可靠性](../../part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md)：采集配置、数据源与 trace 完整性。
 
 
 ## 从异常曲线到分配责任
@@ -744,7 +742,7 @@ Java 引用泄漏、短命对象洪峰、malloc 堆积、GPU pool、文件映射
 ### 相关章节
 
 - **10.1 本文**：内存域分类、基线、持续增长、`dumpsys meminfo`、smaps、Perfetto 与 heapprofd。
-- **23.1 内存泄漏检测与治理**：引用所有权、GC Root 与生命周期修复。
+- [23.2 内存泄漏检测与治理](../../part5-app/ch23-memory-practice/02-memory-leak-governance.md)：引用所有权、GC Root 与生命周期修复。
 - **10.2 低内存对系统性能的影响**：回收、PSI、`lmkd`、ZRAM 与前台性能。
 - **10.3 内存抖动与频繁 GC**：分配速率、GC 停顿和短命对象。
 - **10.4 GPU 与图形内存统计、归因与诊断**：DMA-BUF、GPU 映射与图形缓冲区。

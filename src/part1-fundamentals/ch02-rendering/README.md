@@ -79,7 +79,7 @@ Android 的掉帧、首帧延迟、SurfaceView 错位、视频抖动和刷新率
 | OpenGL ES / Vulkan / 游戏 | [2.7](07-gpu-rendering-graphics-api.md) → [2.11](11-frame-pacing.md) | [OpenGL ES](../../part2-performance/ch13-rendering-pipelines/04-opengl-egl-angle.md)、[Vulkan](../../part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md)、[游戏](../../part2-performance/ch13-rendering-pipelines/12-game-engine.md) |
 | 多窗口 / 折叠屏 / 桌面 | [1.19](../ch01-architecture/19-display-windowmanager-architecture.md) → [2.13](13-displaymanager-service-lifecycle.md) → [2.14](14-multiwindow-desktop-rendering.md) → [2.16](16-foldable-display-pipeline-performance.md) | 按窗口中的 View、Compose、SurfaceView 或其他 Producer 选择对应 13.x 路径 |
 
-若路径尚未确定，先从 [渲染管线分类、选型与分析方法](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md)建立 Producer、Surface、layer 与合成位置的对应关系。
+若路径尚未确定，先从 [13.1 Android View 渲染管线与分析方法](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md)建立 Producer、Surface、layer 与合成位置的对应关系。
 
 ## 按现象选择阅读顺序
 

@@ -65,7 +65,7 @@ consolidated_from:
 
 # Jetpack Benchmark：Microbenchmark、Macrobenchmark 与测量协议
 
-Microbenchmark 测量可重复的局部工作，Macrobenchmark 从外部进程测量启动与完整交互。本文只负责实验结构、编译状态、指标定义、噪声和 CI 门禁；BaselineProfileRule 作为一种实验输入保留最小接入示例，完整的生成、打包、渠道交付和 ART 状态统一由 21.4 维护。
+Microbenchmark 测量可重复的局部工作，Macrobenchmark 从外部进程测量启动与完整交互。可比较的结果依赖实验结构、编译状态、指标定义、噪声控制和 CI 门禁；BaselineProfileRule 生成的 Profile 可以作为实验输入，但测量时仍需显式控制编译状态。Profile 的生成、打包、渠道交付和 ART 状态验证见 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](../../part5-app/ch21-startup/04-baseline-startup-cloud-profile.md)。
 
 ## Microbenchmark、Macrobenchmark 与测量协议
 

@@ -1095,6 +1095,10 @@ SharedTransition overlay 是 `SharedTransitionScope` 根节点 draw pass 内的�
 
 源码没有 `≤5` 的限制或推荐值。一个简单图标和一个包含大图、模糊、阴影的卡片，成本差距远大于元素数量本身。活跃数量应结合内容复杂度、屏幕覆盖面积、resize mode、设备 GPU 和目标刷新率评估。
 
+## 全文小结
+
+动画优化先确认每一帧改变了什么：View 属性更新是否触发布局，Compose 状态读取是否扩大重组范围，共享元素是否增加测量、图形层记录和混合成本。共享元素匹配成功或动画回调按时执行，都不能证明画面按时呈现；验收仍要关联 UI 线程、RenderThread/GPU、窗口缓冲区与实际显示，并覆盖进入、退出和取消三种路径。
+
 ## 参考资料
 
 - [AOSP Android 17 `ViewPropertyAnimator.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewPropertyAnimator.java)

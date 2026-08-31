@@ -142,7 +142,7 @@ last_consolidated_at: '2026-08-24'
 
 sched_ext 允许厂商在受控接口上实现调度策略，游戏模式和输入优先级则把场景信号传给调度、频率和显示系统。收益取决于任务识别、CPU 预算和温度约束。
 
-前半篇说明 sched_ext、MUSCHED 和 Binder 依赖传播怎样影响关键线程获得 CPU 的机会；后半篇沿触控到显示链路核对 Game Mode、InputDispatcher、刷新率与 OEM 私有增强的边界。两部分共同回答“体验变快发生在哪一层”，不把调度提速误写成输入路由优先级。
+sched_ext、MUSCHED 和 Binder 依赖传播影响关键线程获得 CPU 的机会；Game Mode、InputDispatcher 和刷新率分别涉及场景策略、输入路由与呈现时序。判断“游戏更跟手”时，要沿触控到显示的路径分段取证，避免把线程调度提速写成输入路由优先级变化。
 
 ## sched_ext 接口、策略与回退
 

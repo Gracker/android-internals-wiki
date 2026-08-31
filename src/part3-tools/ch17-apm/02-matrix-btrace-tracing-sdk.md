@@ -67,7 +67,7 @@ consolidated_from:
 
 # Matrix、btrace 与 Tracing SDK
 
-androidx.tracing 提供应用埋点入口，btrace/RheaTrace 通过插桩和运行时记录扩大方法覆盖，Matrix 再把 Trace、资源和稳定性能力组织成客户端框架。三者处在不同抽象层。
+androidx.tracing 提供应用埋点入口，btrace/RheaTrace 3.x 通过运行时 Hook 和同步抓栈扩充方法执行证据，Matrix 再把 Trace、资源和稳定性能力组织成客户端框架。三者处在不同抽象层，接入方式和 Android 版本兼容性需要分别验证。
 
 ## 应用 Trace API 与埋点边界
 
@@ -454,9 +454,9 @@ CPU 调度与唤醒证据来自系统和 kernel trace 数据源。涉及这类�
 2.0.0 与 beta01 的 sources JAR 内容哈希相同，已发布 AAR 的哈希不同；表中同时保留两组值，避免复核历史文章时把两个产物混为一谈。
 
 
-## 字节码插桩与方法 Trace
+## btrace 运行时 Hook 与方法采样
 
-显式埋点适合关键业务区间，需要更广方法覆盖时才引入插桩。采样、过滤和方法 ID 映射决定运行开销。
+显式埋点适合关键业务区间；需要观察更多方法现场时，可以评估 btrace 的运行时采样。Hook 覆盖、采样间隔和 ART 私有接口兼容性共同决定能得到哪些证据，不能沿用 btrace 2.0 编译期全量插桩的模型。
 
 ### 官方产物不要直接接入 Android 17 生产项目
 

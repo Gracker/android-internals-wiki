@@ -604,7 +604,11 @@ protected void onDraw(Canvas canvas) {
 - 手动 RenderNode 是否让独立更新区域分别记录，并为软件 Canvas 保留正确输出。
 - UI 线程、RenderThread、BLAST、SurfaceFlinger、HWC 与 actual present 是否用同一帧证据关联。
 
-### 源码与文档
+## 全文小结
+
+View 优化先区分布局失效和绘制失效：层级、inflate、测量与 `requestLayout()` 决定哪些节点重新布局，绘制分配、缓存和 RenderNode 决定哪些内容需要重新记录。减少其中一段工作后，还要沿同一帧检查 RenderThread、缓冲区与实际呈现时间，确认收益没有被图形内存增长或其他阶段的等待抵消。
+
+## 源码与文档
 
 - [Android 17 `View.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java)：`requestLayout()`、绘制失效、图层类型、`setWillNotDraw()` 与 View RenderNode 更新。
 - [Android 17 `ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java) 与 [`ThreadedRenderer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ThreadedRenderer.java)：View 树遍历、测量 / 摆放 / 绘制与 HWUI 同步入口。

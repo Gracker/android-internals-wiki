@@ -638,7 +638,7 @@ Android 17 的 HWUI Vulkan 后端会从同一个 graphics queue family 取得两
 
 源码能够证明 HWUI 创建了两条 queue，也能证明 CPU 线程可以分别向它们执行 host submission（主机侧命令提交）。GPU 是否并行执行这些命令则由驱动与硬件决定；GPU 引擎、依赖、内存带宽、频率和调度策略都可能让工作交错或串行。分析时要分别标明接口保证、由源码推导的结论，以及仍需 trace 验证的硬件行为。
 
-对 `android-14.0.0_r1` 至 `android-17.0.0_r1` 的 `VulkanManager.cpp` 做标签对比后，可以确认双 queue 在 Android 14 基线中已经存在。标题中的 Android 17 表示本文采用的源码版本，不能据此把双 queue 写成 Android 17 新增特性。
+对 `android-14.0.0_r1` 至 `android-17.0.0_r1` 的 `VulkanManager.cpp` 做标签对比后，可以确认双 queue 在 Android 14 基线中已经存在。Android 17 是本文采用的源码版本，双 queue 不能写成 Android 17 新增特性。
 
 ### 复核基线
 

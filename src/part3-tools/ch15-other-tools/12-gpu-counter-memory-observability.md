@@ -110,7 +110,7 @@ consolidated_from:
 
 # GPU Counter、内存与 GpuService 可观测性
 
-> **版本边界**：本文只讨论 Android 17 / `android-17.0.0_r1` 中可在 AOSP `external/perfetto` 核验的 GPU counter descriptor、GPU counter event、GPU memory event 与 Trace Processor 导入链路。跨厂商性能阈值、Ray Tracing（光线追踪）、NPU（神经网络处理器）/ML（机器学习）协同、远程 GPU 调试与完整 AGI 工作流不在讨论范围内。
+> **版本边界**：本文以 Android 17 / `android-17.0.0_r1` 为基线，核对两组实现：`external/perfetto` 中的 GPU counter、GPU memory 事件及 Trace Processor 导入路径，以及 `frameworks/native/services/gpuservice` 中的 GPU 内存采集、驱动统计和消费接口。跨厂商性能阈值、Ray Tracing（光线追踪）、NPU（神经网络处理器）/ML（机器学习）协同、远程 GPU 调试与完整 AGI 工作流不在讨论范围内。
 
 下文沿用 Perfetto 源码名称：counter 是按时间记录的 GPU 指标样本；producer 是向 Perfetto 声明数据源并写入事件的实现；descriptor 是解释 counter ID、名称、单位和采样能力的元数据；Trace Processor 则把 trace packet（追踪数据包）解析成可查询的表与时间轨道。
 
