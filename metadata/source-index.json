@@ -4638,10 +4638,10 @@
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-31-76788792-Android显示流程从onResume到像素上屏.md",
       "title": "[技术文章] Android-显示流程从 onResume 到像素上屏：用日志逐行走读 Android 显示全流程 一、前置知识 不讲",
-      "summary": "> 发布时间: 2026-08-28T07:41:05.000Z > 原文链接: https://juejin.cn/post/7678879264650166291 2026-08-28 67 阅读28分钟 > 网上讲 Android 渲染原理的文章很多，但大多数停在\"概念图 + 源码跳转\"层面——你看完知道有 SurfaceFlinger，知道有 vsync，却始终回...",
+      "summary": "已编入冷启动首帧从 onResume/addView/ViewRootImpl/setView/relayout 到 BLAST-backed Surface、RenderThread 提交、SF commit/latch/composite 的日志走读边界；Android 14 车机日志仅作观察方法，不外推为 Android 17 通用耗时。",
       "chapter": "ch02",
       "processed_at": "2026-08-31T06:20:26.641459+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
       "score": 19,
       "target_path": "src/part1-fundamentals/ch02-rendering/03-vsync-choreographer-sf-scheduling.md",
       "route_confidence": 14,
@@ -4650,7 +4650,12 @@
         "vsync",
         "ch02-rendering"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "previous_action": "indexed-only-chapter-freeze",
+      "status": "body-applied",
+      "applied_at": "2026-08-31T09:53:10+08:00",
+      "applied_run_id": "20260831-095310-cc6c334e",
+      "canonical_target_chapter": "ch02"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-31-76792648-system_server是init启动的还是Zygote fork出来的.md",
