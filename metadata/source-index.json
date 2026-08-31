@@ -4555,7 +4555,9 @@
       "summary": "firebase-auth 24.2.0 的 class 文件引用 Checker Framework 的 @UnknownInitialization 注解但 POM 未声明 checker-qual，FlutterFire 6.6.0 Kotlin 重写产生的 SAM lambda 需要 Kotlin 推断参数类型，Kotlin 2.4 把该问题从警告升级为错误，三层叠加导致全球构建失败。官方修复是 lambda 参数写显式类型绕开推断路径。",
       "chapter": "ch16",
       "processed_at": "2026-08-31T06:20:26.641459+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
+      "status": "body-applied",
+      "previous_action": "indexed-only-chapter-freeze",
       "score": 17,
       "target_path": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
       "route_confidence": 16,
@@ -4565,7 +4567,9 @@
         "pom",
         "kotlin"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "applied_at": "2026-08-31T11:18:58+08:00",
+      "applied_run_id": "20260831-111514-3a3704c0"
     },
     {
       "path": "https://juejin.cn/post/7678556373495971883",
