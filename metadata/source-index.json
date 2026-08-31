@@ -4603,7 +4603,7 @@
       "summary": "基于 android-16.0.0_r4 源码：init fork/exec app_process64 建立主 Zygote，主 Zygote 在 preload 后直接 forkSystemServer() 创建 system_server，不经 Zygote socket；子进程在 native SpecializeCommon 完成 UID/capabilities/seccomp 改造；Binder 线程池在 onZygoteInit 启动早于 SystemServer.main()；system_server 死亡时 Zygote 确认 PID 后主动退出交 init 重启。",
       "chapter": "ch08",
       "processed_at": "2026-08-31T06:20:26.641459+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
       "score": 17,
       "target_path": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
       "route_confidence": 28,
@@ -4617,7 +4617,14 @@
         "uid",
         "binder"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "previous_action": "indexed-only-chapter-freeze",
+      "previous_status": null,
+      "previous_route_status": "existing-chapter-routed",
+      "status": "body-applied",
+      "applied_at": "2026-08-31T13:50:13+08:00",
+      "applied_run_id": "20260831-135013-7c90554c",
+      "canonical_target_chapter": "ch01"
     },
     {
       "path": "https://juejin.cn/post/7678879264650166291",
