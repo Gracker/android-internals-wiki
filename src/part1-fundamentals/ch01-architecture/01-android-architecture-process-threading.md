@@ -2,10 +2,10 @@
 title: Android 分层架构、进程模型与线程协作
 chapter: '1.1'
 section: '1.1'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-06'
-last_verified_against: 'AOSP android-17.0.0_r1: system/core/init/main.cpp, frameworks/base ZygoteInit.java and SystemServer.java, frameworks/native SurfaceFlinger.cpp and libbinder, bionic linker namespaces; Android Common Kernel android17-6.18-2026-06_r6: drivers/android/binder.c and security/selinux/hooks.c'
+last_verified: '2026-08-31'
+last_verified_against: 'AOSP android-17.0.0_r1: system/core/init/main.cpp, system/core/rootdir/init.rc and init.zygote64.rc, frameworks/base ZygoteInit.java, Zygote.java, RuntimeInit.java, com_android_internal_os_Zygote.cpp, app_process/app_main.cpp and SystemServer.java, frameworks/native SurfaceFlinger.cpp and libbinder, bionic linker namespaces; Android Common Kernel android17-6.18-2026-06_r6: drivers/android/binder.c and security/selinux/hooks.c'
 confidence: high
 sources:
 - type: official
@@ -24,6 +24,23 @@ sources:
   path: https://developer.android.com/guide/practices/page-sizes
 - type: source
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/
+- type: aosp
+  path: system/core/rootdir/init.rc @ android-17.0.0_r1
+- type: aosp
+  path: system/core/rootdir/init.zygote64.rc @ android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/core/java/com/android/internal/os/ZygoteInit.java @ android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/core/java/com/android/internal/os/Zygote.java @ android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/core/java/com/android/internal/os/RuntimeInit.java @ android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/core/jni/com_android_internal_os_Zygote.cpp @ android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/cmds/app_process/app_main.cpp @ android-17.0.0_r1
+- type: secondary
+  path: https://juejin.cn/post/7679264879620374568
+  note: system_server birth-path discussion; body conclusions rechecked against AOSP android-17.0.0_r1
 - type: source
   path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/
 - type: source
@@ -161,10 +178,12 @@ related_chapters:
 - '1.8'
 - '2.3'
 - '2.4'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
+pipeline_stage: ready-for-review
+task6_state: ready-for-review
+task9_state: ready-for-review
+task2b_state: body-applied
+last_body_apply_at: '2026-08-31T13:50:13+08:00'
+last_body_apply_run_id: '20260831-135013-7c90554c'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/01-layered-architecture.md
@@ -224,7 +243,13 @@ Android 17 的 init 进程仍按第一阶段（first stage）、SELinux 访问�
 3. 主 Zygote 调用 `forkSystemServer()`。
 4. 父进程进入 `zygoteServer.runSelectLoop()` 接收后续进程创建（fork）请求。
 
+在这一步里，“init 管理 Zygote”和“Zygote 创建 system_server”是两个不同层级的关系。Android 17 的 `init.zygote64.rc` 把 `zygote` 服务定义为 `/system/bin/app_process64 ... --zygote --start-system-server --socket-name=zygote`，`init.rc` 的 `zygote-start` 再执行 `start zygote`；init 直接管理的是 Zygote 进程。[来源: https://juejin.cn/post/7679264879620374568；已验证: system/core/rootdir/init.zygote64.rc 与 init.rc @ android-17.0.0_r1] `system_server` 的直接创建点在 Zygote：`ZygoteInit.main()` 完成预加载和 `new ZygoteServer(...)` 后，在进入 `zygoteServer.runSelectLoop()` 前执行 `forkSystemServer()`。因此它不走普通应用冷启动时由 `system_server` 请求 Zygote socket 的后续 fork 路径。[已验证: frameworks/base/core/java/com/android/internal/os/ZygoteInit.java @ android-17.0.0_r1]
+
 `system_server` 子进程最终进入 `SystemServer.main()`。下面的 Android 17 服务启动骨架比旧资料常列的三组多出第四个 `startApexServices()`，对应 APEX 可更新系统模块的服务阶段。
+
+进入 `SystemServer.main()` 之前，子进程路径会先把 Zygote 模板进程改造成 `system_server` 身份。Android 17 的 `nativeForkSystemServer()` 在 `pid == 0` 分支调用 `SpecializeCommon(..., is_system_server=true, ...)`，处理系统服务的控制组与 task profile、补充组和资源限制、seccomp、`setresgid()`/`setresuid()`、capabilities、SELinux context 和 post-fork hooks；`handleSystemServerProcess()` 随后经 `ZygoteInit.zygoteInit()`、`RuntimeInit.applicationInit()` 找到 `com.android.server.SystemServer.main()`。[来源: https://juejin.cn/post/7679264879620374568；已验证: frameworks/base/core/jni/com_android_internal_os_Zygote.cpp、ZygoteInit.java 与 RuntimeInit.java @ android-17.0.0_r1] `zygoteInit()` 会先调用 `nativeZygoteInit()`，而 `app_process/app_main.cpp` 的 `AppRuntime::onZygoteInit()` 在该回调中执行 `ProcessState::self()->startThreadPool()`，所以 `system_server` 接收 Binder 事务的线程池早于 `SystemServer.main()` 启动。[已验证: frameworks/base/cmds/app_process/app_main.cpp @ android-17.0.0_r1]
+
+排查时可以把进程树、socket 和死亡重启分开取证：`ps -A -o PID,PPID,NAME,ARGS`（或 `/proc/<pid>/status` 的 `PPid`）用于确认 `system_server` 的父进程是否指向 Zygote；Zygote socket 只解释后续应用进程 fork 请求；若 `system_server` 退出，Zygote 的 SIGCHLD 处理路径会 `waitpid()` 匹配 `gSystemServerPid` 并杀死 Zygote，让 init 的 Zygote 服务监督链路接管后续重启。[已验证: frameworks/base/core/jni/com_android_internal_os_Zygote.cpp 与 system/core/rootdir/init.zygote64.rc @ android-17.0.0_r1]
 
 ```java
 // AOSP android-17.0.0_r1
