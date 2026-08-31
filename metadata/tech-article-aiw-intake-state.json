@@ -856,6 +856,51 @@
       "size": 6330,
       "status": "skipped-low-score"
     },
+    "source/gracker-rss/2026-09-01-adaptive-agentic-worms-Adaptive-Agentic-Worms-Are-Here.md": {
+      "chapter": "待分类",
+      "entry_id": "da2469e33baf91eb",
+      "last_appended": "2026-09-01T05:25:58.298086+08:00",
+      "last_seen": "2026-09-01T05:25:58.298086+08:00",
+      "mtime": 1788202992.3634634,
+      "score": 12,
+      "sha256": "a5a99209dd1cd586891553944ee562c9c153fa9f63e2ebc5b2b31a9625ff47e5",
+      "size": 13258,
+      "status": "appended",
+      "title": "Adaptive Agentic Worms Are Here"
+    },
+    "source/gracker-rss/2026-09-01-metr-hf-incident-Brief-independent-investigation-of-agents-behavior.md": {
+      "last_seen": "2026-09-01T05:25:58.298086+08:00",
+      "mtime": 1788202992.365891,
+      "sha256": "18ba7593337576d1c78f5ece1c8198d0003ff0514deef1c784936785a22f3b04",
+      "size": 9413,
+      "status": "skipped-low-score"
+    },
+    "source/gracker-rss/2026-09-01-omarchy-root-Omarchy-Any-User-Process-Can-Escalate-to-Root.md": {
+      "last_seen": "2026-09-01T05:25:58.298086+08:00",
+      "mtime": 1788202992.3610654,
+      "sha256": "8489521b99061ee755e0b6fb3dc3eec3e118894a183230b30afef01ed7376052",
+      "size": 6651,
+      "status": "skipped-low-score"
+    },
+    "source/gracker-rss/2026-09-01-qubes-qsb118-QSB-118-Dom0-arbitrary-code-execution.md": {
+      "chapter": "待分类",
+      "entry_id": "4cb9fce151f46830",
+      "last_appended": "2026-09-01T05:25:58.298086+08:00",
+      "last_seen": "2026-09-01T05:25:58.298086+08:00",
+      "mtime": 1788202992.3682623,
+      "score": 11,
+      "sha256": "7cb162ef7b2e7332d6a63f57765d399ec8e0e5719a7b7db0e8d79d08ff00bd21",
+      "size": 21957,
+      "status": "appended",
+      "title": "QSB-118: Dom0 arbitrary code execution in qvm-copy-to"
+    },
+    "source/gracker-rss/2026-09-01-tencent-hy4-Tencent-Hy4-preview-open-sources.md": {
+      "last_seen": "2026-09-01T05:25:58.298086+08:00",
+      "mtime": 1788202992.3705869,
+      "sha256": "899637d41a4c847afaf4ca2a330b30574855097811b94860a01fb3a5aa4215b7",
+      "size": 5514,
+      "status": "skipped-low-score"
+    },
     "source/hacker-news-rss/2026-08-14-andros-html-over-websockets.md": {
       "chapter": "待分类",
       "entry_id": "a2ca4853b47ae8b4",
@@ -3738,6 +3783,114 @@
       "status": "appended",
       "title": "Android 系统启动机制（五）：system_server 是 init 启动的，还是 Zygote fork 出来的？"
     },
+    "source/juejin-android/2026-09-01-76380773-如何减少89的重组每个Compose开发者.md": {
+      "chapter": "待分类",
+      "entry_id": "a52810d30d93af60",
+      "last_appended": "2026-09-01T05:25:58.298086+08:00",
+      "last_seen": "2026-09-01T05:25:58.298086+08:00",
+      "mtime": 1788208437.4957726,
+      "score": 11,
+      "sha256": "c1bd7a16725f7f58556b2e1bed18674386349a9e63f3f4875687a2750253d1f3",
+      "size": 17942,
+      "status": "appended",
+      "title": "如何减少 89% 的重组，每个Compose开发者都需要的技巧 - derivedStateOf想象一下，你正在浏览一个"
+    },
+    "source/juejin-android/2026-09-01-76382973-Kotlin官网为什么不再强调协程是轻.md": {
+      "chapter": "待分类",
+      "entry_id": "77a5390512d90904",
+      "last_appended": "2026-09-01T05:25:58.298086+08:00",
+      "last_seen": "2026-09-01T05:25:58.298086+08:00",
+      "mtime": 1788208437.4953063,
+      "score": 8,
+      "sha256": "3c6d8bd28961bd43d90c445e721fa33bd12d8f8b26b22b523a5f6d7b7745b383",
+      "size": 4621,
+      "status": "appended",
+      "title": "Kotlin 官网为什么不再强调“协程是轻量级线程”了？一、早期的说法：协程 = 轻量级线程 Kotlin 1.1 刚推"
+    },
+    "source/juejin-android/2026-09-01-76388970-为什么Android不用接口做Activity通信.md": {
+      "chapter": "待分类",
+      "entry_id": "a8deddef5d5059be",
+      "last_appended": "2026-09-01T05:25:58.298086+08:00",
+      "last_seen": "2026-09-01T05:25:58.298086+08:00",
+      "mtime": 1788208437.4948049,
+      "score": 13,
+      "sha256": "9af06d877ef886f276d1ad23cd0052e48b337a978f2c815de2c1b91c982876bd",
+      "size": 5984,
+      "status": "appended",
+      "title": "为什么 Android 不用接口做 Activity 通信？一、一个 iOS 开发者，把我问住了 上周，一个刚从 iO"
+    },
+    "source/juejin-android/2026-09-01-76396188-Android面了50位Kotlin候选人这36个.md": {
+      "chapter": "待分类",
+      "entry_id": "9601130290649778",
+      "last_appended": "2026-09-01T05:25:58.298086+08:00",
+      "last_seen": "2026-09-01T05:25:58.298086+08:00",
+      "mtime": 1788208437.4959877,
+      "score": 14,
+      "sha256": "0b282b368e1e7500f3c5dcf57eeb2514f6d9ba630d761e2ae0318ed4261785c2",
+      "size": 14116,
+      "status": "appended",
+      "title": "13. Android 面了50位Kotlin候选人，这36个语法坑90%的人答不全Q1：Kotlin 中 var 和"
+    },
+    "source/juejin-android/2026-09-01-76400776-我通过3个小改动将Compose重组减少了.md": {
+      "chapter": "ch08-responsiveness",
+      "entry_id": "c65cb13e20e3924a",
+      "last_appended": "2026-09-01T05:25:58.298086+08:00",
+      "last_seen": "2026-09-01T05:25:58.298086+08:00",
+      "mtime": 1788208437.4955404,
+      "score": 8,
+      "sha256": "cb5f5024db1d7e6f35e3b5c67b363d27c281d1c9be363bcda1d3be7237ff6e36",
+      "size": 6379,
+      "status": "appended",
+      "title": "我通过3个小改动将Compose重组减少了78%起初，屏幕看起来很正常。没有崩溃。没有 ANR（应用程序无响应）。也没有"
+    },
+    "source/juejin-android/2026-09-01-76444766-学吧Android全新的嵌入式照片选择器.md": {
+      "chapter": "待分类",
+      "entry_id": "37aecfd5b8bf875b",
+      "last_appended": "2026-09-01T05:25:58.298086+08:00",
+      "last_seen": "2026-09-01T05:25:58.298086+08:00",
+      "mtime": 1788208621.636997,
+      "score": 9,
+      "sha256": "a6be46991e2fd7188f6be52aafbdeecbd16bc3a80aee517e5acdfe51e8302030",
+      "size": 11952,
+      "status": "appended",
+      "title": "学吧！Android 全新的嵌入式照片选择器AndroidX 推出了全新的嵌入式照片选择器（EmbeddedPhotoP"
+    },
+    "source/juejin-android/2026-09-01-76500740-现代Android官方为什么更推荐Rep.md": {
+      "chapter": "待分类",
+      "entry_id": "5db13fd1afb21326",
+      "last_appended": "2026-09-01T05:25:58.298086+08:00",
+      "last_seen": "2026-09-01T05:25:58.298086+08:00",
+      "mtime": 1788208437.4950583,
+      "score": 11,
+      "sha256": "cf140e1e729a757d7fd161997f4da5068694c542ecea8d36e87bce363edfcbc6",
+      "size": 13149,
+      "status": "appended",
+      "title": "现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch"
+    },
+    "source/juejin-android/2026-09-01-76564735-闲聊几句Android老哥们你们多久没做技.md": {
+      "chapter": "待分类",
+      "entry_id": "780b4132f70db96c",
+      "last_appended": "2026-09-01T05:25:58.298086+08:00",
+      "last_seen": "2026-09-01T05:25:58.298086+08:00",
+      "mtime": 1788208621.6367152,
+      "score": 10,
+      "sha256": "003fd90305158cf9cc0889734b36c7495ae69c0ba174df452e07eb68813bd2a5",
+      "size": 7689,
+      "status": "appended",
+      "title": "闲聊几句，Android老哥们，你们多久没做技改需求了背景 由于Q2马上就要结束了，刚好抽点时间整理了一下这个季度做的需"
+    },
+    "source/juejin-android/2026-09-01-76756264-三星安卓系统BUG排查记录云闪付铁路12.md": {
+      "chapter": "待分类",
+      "entry_id": "569a940e7ccaa79c",
+      "last_appended": "2026-09-01T05:25:58.298086+08:00",
+      "last_seen": "2026-09-01T05:25:58.298086+08:00",
+      "mtime": 1788208437.4945195,
+      "score": 24,
+      "sha256": "1cda29acfb688e6684ae95ff180e17f1f64631717a8478e58edc8544072b1f84",
+      "size": 33470,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -5545,24 +5698,24 @@
     }
   },
   "last_report": {
-    "appended": 4,
-    "considered": 6,
-    "cutoff": "2026-08-30T05:20:38.906595+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-31.md",
+    "appended": 11,
+    "considered": 14,
+    "cutoff": "2026-08-31T05:20:18.687479+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-01.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1929,
+    "scanned": 1943,
     "skipped": {
       "existing_link": 0,
-      "low_score": 2,
+      "low_score": 3,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 491
+      "unchanged": 497
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-08-31T05:25:18.687479+08:00",
+  "last_run_at": "2026-09-01T05:25:58.298086+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
