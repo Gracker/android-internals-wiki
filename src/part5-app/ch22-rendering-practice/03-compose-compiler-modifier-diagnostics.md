@@ -2,7 +2,7 @@
 title: Compose 性能、Compiler 与 Modifier.Node 诊断
 chapter: '22.3'
 section: '22.3'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-08-25'
 last_verified_against: 'Compose BOM 2026.08.00 (Runtime/Foundation/UI/runtime-tracing 1.12.0), Kotlin/Compose compiler 2.4.10, Android 17 android-17.0.0_r1; historical checks: Compose 1.10.0 and Foundation 1.10.6'
@@ -58,6 +58,15 @@ sources:
   path: https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/ModifierNodeElement.kt
 - type: androidx
   path: https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/NodeChain.kt
+- type: blog
+  path: https://juejin.cn/post/7678586341090803748
+  note: Firebase Auth / FlutterFire / Kotlin 2.4 classpath build failure case
+- type: official
+  path: https://dl.google.com/dl/android/maven2/com/google/firebase/firebase-auth/24.2.0/firebase-auth-24.2.0.pom
+  note: Firebase Auth 24.2.0 Maven POM checked for checker-qual publication metadata
+- type: official
+  path: https://dl.google.com/dl/android/maven2/com/google/firebase/firebase-auth/24.2.0/firebase-auth-24.2.0.aar
+  note: Firebase Auth 24.2.0 classes.jar inspected for UnknownInitialization annotation signature
 - type: legacy
   path: developer.android.com/develop/ui/compose/performance/stability/diagnose
   availability: preserved from previous_sources during the 2026-08-24 frontmatter migration; not treated as current evidence
@@ -90,10 +99,10 @@ related_chapters:
 - '22.7'
 - '22.2'
 - '22.4'
-pipeline_stage: finalized
-task2b_state: fixed
-task6_state: verified
-task9_state: verified
+pipeline_stage: ready-for-review
+task2b_state: body-applied
+task6_state: needs-review
+task9_state: needs-review
 last_review_finalize_at: '2026-08-25'
 last_review_finalize_run_id: 20260825-180523-d6bba095
 consolidated_from:
@@ -105,6 +114,8 @@ consolidated_from:
 - src/part5-app/ch22-rendering-practice/25-compose-modifier-node.md
 - src/part2-performance/ch07-smoothness/04-compose-performance.md
 last_consolidated_at: '2026-08-24'
+last_body_apply_at: '2026-08-31T11:18:58+08:00'
+last_body_apply_run_id: 20260831-111514-3a3704c0
 ---
 
 # Compose 性能、Compiler 与 Modifier.Node 诊断
@@ -461,6 +472,16 @@ Strong Skipping 只改变可组合调用和 lambda 的跳过机会，不改变�
 ```
 
 BOM 只约束它声明的 Compose artifacts（依赖模块），不会自动添加依赖，也不控制 Kotlin plugin。版本确认后再做同机对比，避免把 Kotlin 编译器、Foundation 预取、Baseline Profile 或业务代码的变化混成一个结果。
+
+#### Kotlin 升级时把 classpath 故障与 Compose 诊断分开
+
+Kotlin/Compose 升级验收还应记录第三方 AAR/JAR 的 POM 与 class 签名：`firebase-auth:24.2.0` 的 Google Maven POM 未声明 `org.checkerframework` / `checker-qual`，但其 `classes.jar` 中至少 `FirebaseAuth$IdTokenListener.class`、`FirebaseAuth.class`、`zzbm.class`、`zzca.class` 和 `zzcj.class` 的签名字符串包含 `org/checkerframework/checker/initialization/qual/UnknownInitialization`。[已验证: https://dl.google.com/dl/android/maven2/com/google/firebase/firebase-auth/24.2.0/firebase-auth-24.2.0.pom；已验证: https://dl.google.com/dl/android/maven2/com/google/firebase/firebase-auth/24.2.0/firebase-auth-24.2.0.aar；来源: https://juejin.cn/post/7678586341090803748]
+
+在 FlutterFire `firebase_auth 6.6.0` 的 Kotlin 重写中，`FirebaseAuth.IdTokenListener { auth -> ... }` 这类 Java SAM lambda 让 `auth` 参数由 Kotlin 推断；材料记录 Kotlin 2.4 会把缺失注解类导致的 “inferred type is inaccessible” 路径表现为编译错误，而 Kotlin 2.3 主要表现为警告。[来源: https://juejin.cn/post/7678586341090803748]
+
+这个故障不属于 Compose Runtime、Stability 或 `Modifier.Node` 性能问题；它是 Kotlin 前端读取依赖 class 元数据时暴露出的 classpath / 发布元数据问题，因此排查顺序应先锁定 Kotlin、AGP、Firebase 与 FlutterFire 版本，再看报错中的 annotation class、来源 artifact 和 POM 依赖。[来源: https://juejin.cn/post/7678586341090803748；已验证: https://dl.google.com/dl/android/maven2/com/google/firebase/firebase-auth/24.2.0/firebase-auth-24.2.0.pom]
+
+处置时不要把 `skippable`、重组次数或 FrameTimeline 作为主证据；对这个案例，材料记录的 FlutterFire 侧修复是把 `FirebaseAuth.IdTokenListener` / `AuthStateListener` 的 lambda 参数写成显式 `FirebaseAuth` 类型，并在测试工程覆盖 Kotlin `2.4.10`、AGP `8.11.1`、Gradle `8.14`。[来源: https://juejin.cn/post/7678586341090803748]
 
 验收可以按下面的顺序执行：
 
@@ -1182,6 +1203,8 @@ Kotlin 2.0 起，Compose 编译器随 Kotlin 一同发布，项目应应用与 K
 - [Compose compiler options DSL](https://kotlinlang.org/docs/compose-compiler-options.html)
 - [Kotlin 2.4.10 `BuildMetrics.kt`](https://github.com/JetBrains/kotlin/blob/v2.4.10/plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/BuildMetrics.kt)
 - [Kotlin 2.3.20 `BuildMetrics.kt`](https://github.com/JetBrains/kotlin/blob/v2.3.20/plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/BuildMetrics.kt)
+- [Firebase Auth 24.2.0 POM](https://dl.google.com/dl/android/maven2/com/google/firebase/firebase-auth/24.2.0/firebase-auth-24.2.0.pom) 与 [AAR](https://dl.google.com/dl/android/maven2/com/google/firebase/firebase-auth/24.2.0/firebase-auth-24.2.0.aar)：核对 `checker-qual` 发布元数据和 `UnknownInitialization` class 签名边界。
+- [掘金：Firebase 如何让全球 Android 和 Flutter 开发者集体 Build Fail](https://juejin.cn/post/7678586341090803748)：作为 FlutterFire `firebase_auth 6.6.0`、Firebase Auth `24.2.0` 与 Kotlin 2.4 编译失败案例来源。
 - [Compose Runtime 1.12.0 release notes](https://developer.android.com/jetpack/androidx/releases/compose-runtime#1.12.0)
 - [Runtime Tracing 1.12.0 sources.jar](https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-tracing/1.12.0/runtime-tracing-1.12.0-sources.jar)
 - [Compose Runtime 1.12.0 `Recomposer.kt`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt)
