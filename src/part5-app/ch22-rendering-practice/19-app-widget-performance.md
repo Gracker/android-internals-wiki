@@ -1,7 +1,7 @@
 ---
 title: App Widget 更新性能：RemoteViews IPC 与 Glance 渲染
 chapter: '22.19'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
 - appwidget
@@ -13,14 +13,16 @@ related_chapters:
 - '2.9'
 - '22.3'
 - '14.1'
-last_verified: '2026-08-15'
-last_verified_against: AOSP android-17.0.0_r1；Jetpack Glance 1.1.1 源码 JAR 与官方文档
+last_verified: '2026-08-31'
+last_verified_against: AOSP android-17.0.0_r1；Jetpack Glance 1.2.0 源码 JAR 与官方文档
 last_body_apply_at: '2026-08-31T07:18:51+08:00'
 last_body_apply_run_id: '20260831-071536-1110b8da'
+last_review_finalize_at: '2026-08-31T08:38:03+08:00'
+last_review_finalize_run_id: '20260831-082743-4251c855'
 task2b_state: body-applied
-task6_state: ready-for-review
-task9_state: pending
-pipeline_stage: body-applied
+task6_state: finalized
+task9_state: finalized
+pipeline_stage: finalized
 confidence: high
 sources:
 - type: aosp
@@ -35,6 +37,8 @@ sources:
   path: frameworks/base/core/java/android/appwidget/AppWidgetManager.java
 - type: aosp
   path: frameworks/base/apex/jobscheduler/framework/java/android/app/AlarmManager.java
+- type: aosp
+  path: frameworks/base/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java
 - type: official
   path: https://developer.android.com/develop/ui/views/appwidgets
 - type: official
@@ -55,8 +59,10 @@ sources:
   path: https://developer.android.com/reference/android/app/AlarmManager
 - type: official
   path: https://developer.android.com/develop/background-work/services/alarms
+- type: official
+  path: https://developer.android.com/reference/androidx/work/PeriodicWorkRequest
 - type: source-jar
-  path: https://dl.google.com/dl/android/maven2/androidx/glance/glance-appwidget/1.1.1/glance-appwidget-1.1.1-sources.jar
+  path: https://dl.google.com/dl/android/maven2/androidx/glance/glance-appwidget/1.2.0/glance-appwidget-1.2.0-sources.jar
 - type: article
   path: https://juejin.cn/post/7678556373495971883
 - type: aosp
@@ -71,7 +77,7 @@ sources:
 
 App Widget 的界面由 Launcher（桌面启动器）、SystemUI（系统界面进程）或其他实现了 `AppWidgetHost` 的宿主承载。提供方进程生成 `RemoteViews`，`system_server`（承载多数系统服务的系统进程）负责校验和缓存，宿主进程再创建 View、执行属性动作并绘制界面。这套 IPC（进程间通信）模型决定了优化重点：减少重复更新和无效动作，控制布局创建、集合数据与图像内存的成本。
 
-本文以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码基线，Glance 部分以当前稳定版 1.1.1 为准。文中的更新、缓存和宿主应用逻辑都发生在 Android 框架与 Jetpack 库中，不延伸到内核实现。
+本文以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码基线，Glance 部分以当前稳定版 1.2.0 为准。文中的更新、缓存和宿主应用逻辑都发生在 Android 框架与 Jetpack 库中，不延伸到内核实现。
 
 ## 一、Android 17 的执行模型
 
@@ -321,7 +327,7 @@ Android 17 的服务端会遍历 `RemoteViews` 中的 URI：`content://` 要求�
 
 ### 1. Glance 使用 Compose Runtime，输出仍是 `RemoteViews`
 
-Glance 1.1.1 建立在 Compose Runtime 上，用声明式 API 生成 App Widget 内容。Compose Runtime 会根据状态执行可组合函数并形成界面描述；Glance 再把这份描述转换为 `RemoteViews`。它不使用 Compose UI 的 `LayoutNode`（Compose UI 内部的布局节点）和绘制管线，也不支持任意 Compose UI 可组合组件，因此不能直接把应用页面中的 Compose UI 组件放到桌面。
+Glance 1.2.0 建立在 Compose Runtime 上，用声明式 API 生成 App Widget 内容。Compose Runtime 会根据状态执行可组合函数并形成界面描述；Glance 再把这份描述转换为 `RemoteViews`。它不使用 Compose UI 的 `LayoutNode`（Compose UI 内部的布局节点）和绘制管线，也不支持任意 Compose UI 可组合组件，因此不能直接把应用页面中的 Compose UI 组件放到桌面。
 
 一次 Glance 更新大致包含：
 
@@ -331,7 +337,7 @@ Glance 1.1.1 建立在 Compose Runtime 上，用声明式 API 生成 App Widget 
 4. 通过 AppWidget 更新接口交给系统；
 5. 由宿主应用并绘制结果。
 
-Glance 1.1.1 的 `GlanceAppWidget` 会在 `CoroutineWorker`（用 Kotlin 协程执行任务的 WorkManager 工作单元）中执行 `provideGlance()`。内部会话类 `AppWidgetSession` 再把组合结果转换成 `RemoteViews`，并调用 `AppWidgetManager.updateAppWidget()`。Glance 简化了状态到 Widget 界面的映射，但 Binder、服务端缓存、宿主布局创建和图像上限仍然存在，性能分析要覆盖完整跨进程路径。
+Glance 1.2.0 的 `GlanceAppWidget` 会在 `CoroutineWorker`（用 Kotlin 协程执行任务的 WorkManager 工作单元）中执行 `provideGlance()`。内部会话类 `AppWidgetSession` 再把组合结果转换成 `RemoteViews`，并调用 `AppWidgetManager.updateAppWidget()`。Glance 简化了状态到 Widget 界面的映射，但 Binder、服务端缓存、宿主布局创建和图像上限仍然存在，性能分析要覆盖完整跨进程路径。
 
 同一个 `provideGlance()` 仍在运行时，再次调用 `update()` 不会重启它。需要展示的新数据应先写入 Glance 能观察到的状态，由现有会话重新组合；反复调用 `update()` 不能替代状态同步。
 
@@ -476,6 +482,7 @@ Glance 改善的是状态到界面描述的组织方式，最终仍要生成 `Re
 - [RemoteViews.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViews.java)
 - [RemoteViewsService.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViewsService.java)
 - [AlarmManager.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/AlarmManager.java)
+- [AlarmManagerService.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java)
 - [PluginActionManager.kt（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginActionManager.kt)
 - [PluginInstance.kt（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginInstance.kt)
 - [Plugin.kt（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/plugin_core/src/com/android/systemui/plugins/Plugin.kt)
@@ -485,9 +492,10 @@ Glance 改善的是状态到界面描述的组织方式，最终仍要生成 `Re
 - [使用 Glance 构建响应式界面](https://developer.android.com/develop/ui/compose/glance/build-ui)
 - [AlarmManager API 参考](https://developer.android.com/reference/android/app/AlarmManager)
 - [AppWidgetManager API 参考](https://developer.android.com/reference/android/appwidget/AppWidgetManager)
-- [Glance 1.1.1 发行说明](https://developer.android.com/jetpack/androidx/releases/glance#1.1.1)
-- [`glance-appwidget:1.1.1` 源码 JAR](https://dl.google.com/dl/android/maven2/androidx/glance/glance-appwidget/1.1.1/glance-appwidget-1.1.1-sources.jar)
+- [Glance 1.2.0 发行说明](https://developer.android.com/jetpack/androidx/releases/glance#1.2.0)
+- [`glance-appwidget:1.2.0` 源码 JAR](https://dl.google.com/dl/android/maven2/androidx/glance/glance-appwidget/1.2.0/glance-appwidget-1.2.0-sources.jar)
 - [精确闹钟调度指南](https://developer.android.com/develop/background-work/services/alarms)
+- [PeriodicWorkRequest API 参考](https://developer.android.com/reference/androidx/work/PeriodicWorkRequest)
 - [【车载 Android】从 AAR 到 Plugin：Launcher 卡片插件化解耦实践](https://juejin.cn/post/7678556373495971883)
 
-本文的平台判断固定到 `android-17.0.0_r1`，Glance 判断固定到 1.1.1。升级 Android 或 Glance 后，应重新核对局部更新缓存、图像上限、集合适配器弃用状态、`GlanceAppWidget` 的会话执行方式和尺寸模式实现。
+本文的平台判断固定到 `android-17.0.0_r1`，Glance 判断固定到 1.2.0。升级 Android 或 Glance 后，应重新核对局部更新缓存、图像上限、集合适配器弃用状态、`GlanceAppWidget` 的会话执行方式和尺寸模式实现。
