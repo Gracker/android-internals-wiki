@@ -2,9 +2,9 @@
 title: Compose 性能、Compiler 与 Modifier.Node 诊断
 chapter: '22.3'
 section: '22.3'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-25'
+last_verified: '2026-08-31'
 last_verified_against: 'Compose BOM 2026.08.00 (Runtime/Foundation/UI/runtime-tracing 1.12.0), Kotlin/Compose compiler 2.4.10, Android 17 android-17.0.0_r1; historical checks: Compose 1.10.0 and Foundation 1.10.6'
 confidence: high
 sources:
@@ -19,6 +19,10 @@ sources:
 - type: official
   path: https://developer.android.com/develop/ui/compose/performance/stability/strongskipping
 - type: official
+  path: https://developer.android.com/develop/ui/compose/phases
+- type: official
+  path: https://developer.android.com/develop/ui/compose/side-effects
+- type: official
   path: https://kotlinlang.org/docs/releases.html
 - type: official
   path: https://kotlinlang.org/docs/compose-compiler-options.html
@@ -30,6 +34,8 @@ sources:
   path: https://github.com/JetBrains/kotlin/blob/v2.4.10/plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/BuildMetrics.kt
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/compose-runtime#1.12.0
+- type: official
+  path: https://developer.android.com/jetpack/androidx/releases/compose-foundation#1.10.6
 - type: official
   path: https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-tracing/1.12.0/runtime-tracing-1.12.0-sources.jar
 - type: source
@@ -50,6 +56,12 @@ sources:
   path: https://android.googlesource.com/platform/packages/modules/Profiling/+/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java
 - type: official
   path: https://developer.android.com/develop/ui/compose/custom-modifiers
+- type: official
+  path: https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views
+- type: official
+  path: https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose
+- type: official
+  path: https://developer.android.com/reference/kotlin/androidx/compose/ui/Modifier.Node
 - type: official
   path: https://developer.android.com/develop/ui/compose/bom/bom-mapping
 - type: official
@@ -99,12 +111,12 @@ related_chapters:
 - '22.7'
 - '22.2'
 - '22.4'
-pipeline_stage: ready-for-review
+pipeline_stage: finalized
 task2b_state: body-applied
-task6_state: needs-review
-task9_state: needs-review
-last_review_finalize_at: '2026-08-25'
-last_review_finalize_run_id: 20260825-180523-d6bba095
+task6_state: reviewed
+task9_state: reviewed
+last_review_finalize_at: '2026-08-31'
+last_review_finalize_run_id: 20260831-140638-1c181bd2
 consolidated_from:
 - src/part5-app/ch22-rendering-practice/20-compose-performance-blind-spots.md
 - src/part5-app/ch22-rendering-practice/22.40-compose-compiler-v2-k2-migration-performance.md
@@ -122,7 +134,7 @@ last_body_apply_run_id: 20260831-111514-3a3704c0
 
 Compose 性能优化要回答两个问题：哪一段工作错过了本帧 deadline（必须完成提交的截止点），以及哪些状态或输入让这段工作重复发生。只统计重组次数，容易漏掉 Layout、Drawing、RenderThread 和显示系统；只看整帧耗时，又无法定位到具体 Composable。
 
-截至 2026-08-25，本文使用下面三组基线：
+截至 2026-08-31，本文使用下面三组基线：
 
 - Android 平台以 Android 17 / API 37 / `android-17.0.0_r1` 为源码锚点，Linux kernel 以 `android17-6.18-2026-06_r6` 为锚点。
 - 当前依赖基线为 Compose BOM `2026.08.00`，其 POM 把 Runtime、Foundation 和 UI 约束到 `1.12.0`。文中另保留 BOM `2025.12.00` / Compose `1.10.0` 与 Foundation `1.10.6`，用于说明 Pausable Composition 的历史变化和复现实验。
@@ -1218,7 +1230,7 @@ Kotlin 2.0 起，Compose 编译器随 Kotlin 一同发布，项目应应用与 K
 - [Android common kernel `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)
 - [本知识库：Android 17 FrameTimeline](../../part1-fundamentals/ch02-rendering/12-android17-frametimeline-composition-boundary.md)
 
-当前工具链与运行时结论核查于 2026-08-25。编译器报告样例来自 Kotlin 2.3.20 对最小源码的实测输出，2.4.10 源码核对用于确认 CSV 与模块 JSON 结构仍一致；升级 Kotlin 或 Compose 后，仍应重新生成报告并复核字段、功能开关与跟踪名称。
+当前工具链与运行时结论核查于 2026-08-31。编译器报告样例来自 Kotlin 2.3.20 对最小源码的实测输出，2.4.10 源码核对用于确认 CSV 与模块 JSON 结构仍一致；升级 Kotlin 或 Compose 后，仍应重新生成报告并复核字段、功能开关与跟踪名称。
 
 ### 常见误判
 
@@ -1772,7 +1784,7 @@ Linux 内核锚点 `android17-6.18-2026-06_r6` 不参与 Node 链差分。只有
 
 ### 14. 源码导航与核查清单
 
-相关结论以 Compose UI 1.12.0 发布提交为准，关键文件如下。每个条目的主链接指向本轮核对的 1.12.0 源码；括号内保留 1.11.4 的历史链接，便于比较版本差异。
+相关结论以 Compose UI 1.12.0 发布提交为准，关键文件如下。每个条目的主链接指向 1.12.0 源码；括号内保留 1.11.4 的历史链接，便于比较版本差异。
 
 - [`ModifierNodeElement.kt`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/ModifierNodeElement.kt)：`create()`、`update()`、`equals()` 与 `hashCode()` 要求（[`ModifierNodeElement.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/ModifierNodeElement.kt)）
 - [`Modifier.kt`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/Modifier.kt)：Node 生命周期、`coroutineScope`、`shouldAutoInvalidate`（[`Modifier.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/Modifier.kt)）
