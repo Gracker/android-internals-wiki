@@ -3274,6 +3274,28 @@
       "summary": "AlarmManager AOSP source path mismatch",
       "type": "source-mismatch",
       "updated_at": "2026-08-30T22:50:17.274623+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "close_note": "Patched selected chapter: “无锁 MessageQueue/DeliQueue” wording replaced with source-backed “并发 MessageQueue 路径/兼容路径”; chapter promoted to finalized after source review.",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20260831-160555-fea01b7a",
+      "created_at": "2026-08-31T16:16:39.697702+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20260831-160555-fea01b7a",
+      "details": "Review 对照 android-17.0.0_r1 core/java/Android.bp、CombinedMessageQueue/MessageQueue.java 和 CombinedDeliMessageQueue/MessageQueue.java：源码与变更注解描述的是 concurrent/new MessageQueue 路径及 targetSdk>Bakalava 启用边界，未用 lock-free 术语作为公开结论。本轮已把正文和版本表从“无锁 MessageQueue/DeliQueue”收窄为“并发 MessageQueue 路径/兼容路径”。",
+      "id": "RF-20260831-160555-1-1-messagequeue-concurrency",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/core/java/Android.bp@android-17.0.0_r1",
+        "frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java@android-17.0.0_r1",
+        "frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java@android-17.0.0_r1"
+      ],
+      "status": "fixed",
+      "summary": "Android 17 MessageQueue 新路径不应无源码依据概括为“无锁”",
+      "type": "terminology-precision",
+      "updated_at": "2026-08-31T16:16:39.751079+08:00"
     }
   ],
   "schema_version": 1
