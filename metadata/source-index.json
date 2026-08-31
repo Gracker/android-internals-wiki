@@ -4685,6 +4685,56 @@
         "zygote"
       ],
       "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "https://www.qubes-os.org/news/2026/08/29/qsb-118/",
+      "title": "[RSS订阅] QSB-118: Dom0 arbitrary code execution in qvm-copy-to-vm error reporting",
+      "summary": "Qubes OS 8 月 28 日安全公告 QSB-118：`qvm-copy-to-vm` 从 dom0 向被攻陷的 qube 拷贝文件时，目标 qube 可通过 qfile 协议错误回执里的「最后接收文件名」字段注入任意命令，dom0 端 GUI 错误消息渲染该字段时被执行。根因是 `sanitize_remote_filename()` 只过滤 ASCII 控制字符、双引号、0x7e 以上字符，没考虑 shell 元字符或 GTK/zenity 等下游组件格式化串注入。复盘意义大于可利用性：隔离架构里凡是涉及从 qube 反向回传字符串到 dom0 的路径都得按 untrusted 处理，sanitize 字符集按白名单而不是黑名单。",
+      "chapter": "ch02",
+      "processed_at": "2026-09-01T06:20:07.134951+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7640077602280456207",
+      "title": "[掘金Android] Compose 重组优化两篇：3 个小改动减少 78% 重组 / derivedStateOf 减少 89%",
+      "summary": "同作者两篇连读。第一篇三个改动：@Immutable + ImmutableList 让 Compose 能跳过、filter 包进 remember(key)、派生状态用 derivedStateOf；第二篇专讲 derivedStateOf 原理（DerivedSnapshotState 四步：追踪依赖、缓存、惰性重算、equals 比较）与反模式：派生值与源值同频变化时是纯开销、必须包 remember、与 remember(key) 的分工是「key 变了重算」vs「结果变了重组」，副作用用 snapshotFlow。实测单帧 22ms 降到 4ms。对应 Compose 渲染与性能章节。",
+      "chapter": "ch02",
+      "processed_at": "2026-09-01T06:20:07.134951+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7656473537566375976",
+      "title": "[掘金Android] 你们多久没做技改需求了",
+      "summary": "把技改分四类给出取舍：架构升级易夭折、基建优化值得做、代码洁癖交给 hook、性能稳定性捎带做。2022 后流量见顶技改被砍成常态，管理者开始要定量数据。实操建议：技改不与业务抢排期、拆小步分期（16KB 适配 26 人日的拆法）。AI 提效让基建与性能类技改有了存活空间。对应行业观察与工程效率章节。",
+      "chapter": "ch16",
+      "processed_at": "2026-09-01T06:20:07.134951+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-01-76400776-我通过3个小改动将Compose重组减少了.md",
+      "title": "[技术文章] 我通过3个小改动将Compose重组减少了78%起初，屏幕看起来很正常。没有崩溃。没有 ANR（应用程序无响应）。也没有",
+      "summary": "> 发布时间: 2026-05-16T13:19:38.000Z > 原文链接: https://juejin.cn/post/7640077602280456207 2026-05-16 739 阅读2分钟 起初，屏幕看起来很正常。没有崩溃。没有 ANR（应用程序无响应）。也没有明显的帧丢失。但是，每次我滚动、输入或更改滤镜时，我总感觉有些不对劲——就像 UI 在做更多...",
+      "chapter": "ch03",
+      "processed_at": "2026-09-01T06:20:07.134951+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-01-76444766-学吧Android全新的嵌入式照片选择器.md",
+      "title": "[技术文章] 学吧！Android 全新的嵌入式照片选择器AndroidX 推出了全新的嵌入式照片选择器（EmbeddedPhotoP",
+      "summary": "> 发布时间: 2026-05-28T00:39:32.000Z > 原文链接: https://juejin.cn/post/7644476634998538249 2026-05-28 1,391 阅读5分钟 2022 年，Android 团队推出了照片选择器，让用户能更隐私地分享媒体文件。用户可以通过可浏览的界面按日期从新到旧查看媒体库，并且只授予应用访问所选文件的...",
+      "chapter": "ch16",
+      "processed_at": "2026-09-01T06:20:07.134951+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
