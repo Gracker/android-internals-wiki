@@ -3891,6 +3891,68 @@
       "status": "appended",
       "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
     },
+    "source/juejin-android/2026-09-02-76703837-launch 不是用来切线程的：为什么我.md": {
+      "chapter": "待分类",
+      "entry_id": "cb8dd8bb060f9d92",
+      "last_appended": "2026-09-02T05:25:44.937850+08:00",
+      "last_seen": "2026-09-02T05:25:44.937850+08:00",
+      "mtime": 1788294258.5692832,
+      "score": 8,
+      "sha256": "5e8f1ed2c57c4de381a09ac6270341d590686c79df7f7d84098f951fa6254162",
+      "size": 14416,
+      "status": "appended",
+      "title": "launch 不是用来切线程的：为什么我越来越少在它后面写 Dispatchers.IO在 Kotlin 协程开发中，有"
+    },
+    "source/juejin-android/2026-09-02-76719941-小团队的最优解：单 Module + 包.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "9b980346d0e61f4c",
+      "last_appended": "2026-09-02T05:25:44.937850+08:00",
+      "last_seen": "2026-09-02T05:25:44.937850+08:00",
+      "mtime": 1788294258.5709977,
+      "score": 7,
+      "sha256": "7971e2a9cf7924977819a83d0890f96dbad8c0d830e21fccc7f5476ad1aacdb2",
+      "size": 17015,
+      "status": "appended",
+      "title": "小团队的最优解：单 Module + 包内 Clean 架构一、为什么小团队不建议拆 module？ module 解决"
+    },
+    "source/juejin-android/2026-09-02-76741236-破坏性更新 - 解读 Jetpack C.md": {
+      "chapter": "待分类",
+      "entry_id": "26d8f3ad232ae1a8",
+      "last_appended": "2026-09-02T05:25:44.937850+08:00",
+      "last_seen": "2026-09-02T05:25:44.937850+08:00",
+      "mtime": 1788294258.5671816,
+      "score": 13,
+      "sha256": "53ccb497e4c8040b0175c33fea7cbb8d9bad85d20ffd2994c64ea894b5a9c27d",
+      "size": 15903,
+      "status": "appended",
+      "title": "破坏性更新 - 解读 Jetpack Compose 1.12Jetpack Compose 2026 年 8 月版本现"
+    },
+    "source/juejin-android/2026-09-02-76743831-Dart 3.13 大更新，感觉比 Fl.md": {
+      "last_seen": "2026-09-02T05:25:44.937850+08:00",
+      "mtime": 1788294258.5724638,
+      "sha256": "f8449937d2de7f64adf315276ebd8a3610229fb0fd227535ce2f90134e1f36cc",
+      "size": 10162,
+      "status": "skipped-low-score"
+    },
+    "source/juejin-android/2026-09-02-76756336-Flutter A2UI 的正确用法，怎.md": {
+      "last_seen": "2026-09-02T05:25:44.937850+08:00",
+      "mtime": 1788294258.5734649,
+      "sha256": "3a0c43aa1010418ea0a21b07edc1fd926b23f92f37a354053d1dbdeabaf637f8",
+      "size": 9962,
+      "status": "skipped-low-score"
+    },
+    "source/juejin-android/2026-09-02-76778544-Gradle 9.7.0 将提速 And.md": {
+      "chapter": "待分类",
+      "entry_id": "5b878c8b5095a101",
+      "last_appended": "2026-09-02T05:25:44.937850+08:00",
+      "last_seen": "2026-09-02T05:25:44.937850+08:00",
+      "mtime": 1788294258.5684247,
+      "score": 8,
+      "sha256": "d972cd001e8fe4ba60fa5c97c83dc8df0ac7080d38571fa3b550922fef68b77d",
+      "size": 8137,
+      "status": "appended",
+      "title": "Gradle 9.7.0 将提速 Android 构建，Sync 提升接近一倍Android 最近和 Gradle 官方"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -5698,24 +5760,24 @@
     }
   },
   "last_report": {
-    "appended": 11,
-    "considered": 14,
-    "cutoff": "2026-08-31T05:20:18.687479+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-01.md",
+    "appended": 4,
+    "considered": 6,
+    "cutoff": "2026-09-01T05:20:58.298086+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-02.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1943,
+    "scanned": 1949,
     "skipped": {
       "existing_link": 0,
-      "low_score": 3,
+      "low_score": 2,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 497
+      "unchanged": 511
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-01T05:25:58.298086+08:00",
+  "last_run_at": "2026-09-02T05:25:44.937850+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
