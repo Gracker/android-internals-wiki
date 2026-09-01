@@ -4752,7 +4752,7 @@
       "summary": "Async A2UI 把 Generative UI 生成时机提前：业务数据变化触发 Cloud Function 让模型预生成 A2UI 写回存储，App 打开直接渲染，类似物化视图；A2UI 从临时消息变成可保存/重放的 UI 数据，复用原 Transport 无需专用渲染器。风险：UI State 并入 Agent State、并发乱序覆盖、schema 演进兼容。建议分层：稳定核心写死、可预测区域预生成、指令依赖部分实时生成。",
       "chapter": "ch02",
       "processed_at": "2026-09-02T06:20:53.543101+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
       "score": 15,
       "target_path": "src/part1-fundamentals/ch04-memory/10-cross-process-memory-ai-inference.md",
       "route_confidence": 19,
@@ -4763,7 +4763,11 @@
         "state",
         "agent"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "previous_action": "indexed-only-chapter-freeze",
+      "status": "body-applied",
+      "applied_at": "2026-09-02T07:18:25+08:00",
+      "applied_run_id": "20260902-071503-6894235d"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-02-76741236-破坏性更新 - 解读 Jetpack C.md",
