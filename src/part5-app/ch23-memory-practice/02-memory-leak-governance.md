@@ -13,10 +13,12 @@ related_chapters:
 - '10.1'
 - '23.3'
 - '23.7'
-last_verified: '2026-08-15'
-last_verified_against: Android 17 / API 37 / AOSP android-17.0.0_r1；Android ProfilingManager、MemoryLimiter 与 ApplicationExitInfo 官方文档；LeakCanary 2.14 与 Shark 文档；KOOM 仓库与 release；Perfetto heapprofd 文档
+last_verified: '2026-09-01'
+last_verified_against: Android 17 / API 37 / AOSP android-17.0.0_r1；Android 17 ProfilingManager trigger 与 MemoryLimiter 官方文档；ProfilingManager、ProfilingTrigger 与 ApplicationExitInfo API 参考；LeakCanary 2.14 与 Shark 文档；KOOM 仓库与 release；Perfetto heapprofd 与 ART HPROF 源码
 last_review_finalize_at: '2026-08-15T06:44:28+08:00'
 last_review_finalize_run_id: 20260815-064428-gracker-writing-review
+last_idle_audit_at: '2026-09-01T22:35:15+08:00'
+last_idle_audit_run_id: 20260901-223515-idle-audit-dc01caa9
 confidence: high
 pipeline_stage: finalized
 last_draft_polish_at: '2026-08-15T06:44:28+08:00'
@@ -480,7 +482,7 @@ class MemoryProfileRegistrar(
 
 `ApplicationExitInfo` 从 API 30 起记录历史进程退出信息。它适合回答“进程为何退出、退出前系统最近采样到多少 PSS/RSS”，不能直接回答“哪条引用造成泄漏”。
 
-Android 17 的 MemoryLimiter 目前只在部分设备启用。按 Android 17 行为变更文档，受限进程的 `reason` 是 `REASON_OTHER`，`description` 包含 `MemoryLimiter:AnonSwap`；同一页还建议注册 `TRIGGER_TYPE_ANOMALY` 获取达到上限时的 heap dump。当前 API 参考把 `REASON_MEMORY_LIMITER` 标为 API level 10000，因此不能把它当作 API 37 的稳定契约。生产记录应同时保存 reason、status 和 description，并按目标系统版本验证识别规则。
+Android 17 的 MemoryLimiter 目前只在部分设备启用。按 Android 17 行为变更文档，受限进程的 `reason` 是 `REASON_OTHER`，`description` 包含 `MemoryLimiter:AnonSwap`；同一页还建议注册 `TRIGGER_TYPE_ANOMALY` 获取达到上限时的 heap dump。API 参考中 `REASON_MEMORY_LIMITER` 标为 37.2 版本加入，不能把它替代该行为变更文档的 Android 17 识别规则。生产记录应同时保存 reason、status 和 description，并按目标系统版本验证识别规则。
 
 下面的代码读取最近退出记录，并提取内存诊断需要的基础字段：
 
