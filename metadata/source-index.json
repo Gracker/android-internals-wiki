@@ -4735,6 +4735,45 @@
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7674123634786484260",
+      "title": "[技术文章] 破坏性更新 - 解读 Jetpack Compose 1.12",
+      "summary": "Compose 1.12 随 BOM 2026.08.00 发布：compileSdk 提到 API 37、最低 AGP 9.1.1，实验性 Styles API 无二进制兼容承诺，onFirstVisible 弃用；新增带 key 的 SideEffect（比 LaunchedEffect 快最多 90%）、DeferredAnimatedContent 两阶段过渡（预测性返回）、P3 广色域与 HDR 全链路、MeshGradient，首帧时间基准已追平 View。",
+      "chapter": "ch16",
+      "processed_at": "2026-09-02T06:20:53.543101+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7675633667490267179",
+      "title": "[技术文章] Flutter A2UI 的正确用法，怎么把 AI 和动态 UI 结合有效生产",
+      "summary": "Async A2UI 把 Generative UI 生成时机提前：业务数据变化触发 Cloud Function 让模型预生成 A2UI 写回存储，App 打开直接渲染，类似物化视图；A2UI 从临时消息变成可保存/重放的 UI 数据，复用原 Transport 无需专用渲染器。风险：UI State 并入 Agent State、并发乱序覆盖、schema 演进兼容。建议分层：稳定核心写死、可预测区域预生成、指令依赖部分实时生成。",
+      "chapter": "ch02",
+      "processed_at": "2026-09-02T06:20:53.543101+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "target_path": "src/part1-fundamentals/ch04-memory/10-cross-process-memory-ai-inference.md",
+      "route_confidence": 19,
+      "route_terms": [
+        "cloud",
+        "function",
+        "app",
+        "state",
+        "agent"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-02-76741236-破坏性更新 - 解读 Jetpack C.md",
+      "title": "[技术文章] 破坏性更新 - 解读 Jetpack Compose 1.12Jetpack Compose 2026 年 8 月版本现",
+      "summary": "> 发布时间: 2026-08-16T15:06:56.000Z > 原文链接: https://juejin.cn/post/7674123634786484260 2026-08-16 866 阅读10分钟 Jetpack Compose 2026 年 8 月版本现已稳定发布。 这次核心 Compose 模块都来到了 1.12: androidx.compose.ru...",
+      "chapter": "ch16",
+      "processed_at": "2026-09-02T06:20:53.543101+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
