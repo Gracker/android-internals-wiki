@@ -1,11 +1,16 @@
 ---
 title: 跨进程内存共享与端侧推理预算
 chapter: '4.10'
-status: finalized
-pipeline_stage: ready-to-publish
+status: ready-for-review
+pipeline_stage: ready-for-review
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 last_verified: '2026-08-28'
 last_verified_against: AOSP android-17.0.0_r1
+last_body_apply_at: '2026-09-02T07:18:25+08:00'
+last_body_apply_run_id: 20260902-071503-6894235d
+task2b_state: fixed
+task6_state: pending-review
+task9_state: pending-review
 confidence: medium
 sources:
 - type: aosp
@@ -22,6 +27,8 @@ sources:
   path: frameworks/base/services/core/jni/com_android_server_am_MemoryLimiter.cpp
 - type: aosp
   path: system/sepolicy/ — SELinux 隔离进程策略
+- type: article
+  path: https://juejin.cn/post/7675633667490267179
 tags:
 - ai-agent
 - memory
@@ -250,6 +257,15 @@ try {
 
 这样可以把“小型索引”和“大型内容”分开，也能在 ContentProvider 一侧执行撤销、审计和按用户隔离。
 
+
+### 生成式 UI 描述可以先物化，再读取
+
+Flutter A2UI 的 Async A2UI 示例把实时生成界面拆成两个生命周期：业务数据变化后由后台 Cloud Function 调用模型生成 A2UI 消息并写回 Firestore；用户打开 App 时，客户端读取已缓存的消息，把它们交给原来的 `A2uiTransportAdapter`、`A2uiParserTransformer` 和 `SurfaceController` 流程恢复 Flutter Widget，而不是再等待一次模型现场输出。[来源: https://juejin.cn/post/7675633667490267179]
+
+放到 Android 内存边界里看，这类方案更接近“把 UI 投影物化成数据”：跨边界流动的是字符串、JSON、URI 或 fd 等数据对象，不是另一个进程的地址空间。缓存命中只改变模型调用发生的时间和数据读取路径；一旦客户端把描述读入、解析成 Widget，或交给 Agent 恢复对 A2UI Surface 的上下文，相关字符串、对象、A2UI 状态和运行时缓存仍按持有它们的进程、映射和驱动资源记账。[来源: https://juejin.cn/post/7675633667490267179][已验证: frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java @ android-17.0.0_r1; frameworks/native/libs/binder/ProcessState.cpp @ android-17.0.0_r1]
+
+因此，把生成式 UI 作为 ContentProvider 或 App Functions 的载荷时，接口仍应传版本、schema、生成时业务数据版本和内容 URI，避免整段大描述塞进 Binder。A2UI 文章提到的乱序覆盖、Widget Catalog schema 演进和 UI State 纳入 Agent State，都是这类“可回放 UI 数据”上线前必须解决的数据一致性问题；它们不构成 Android 17 平台对内存共享的新语义。[来源: https://juejin.cn/post/7675633667490267179][已验证: frameworks/base/core/java/android/os/IBinder.java @ android-17.0.0_r1]
+
 ## 4.10.7 App Functions：受控函数调用，不是共享内存 API
 
 `AppFunctionManager.executeAppFunction()` 和 `AppFunctionService` 从 Android 16 / API 36 开始提供，用于受控地调用另一个应用公开的函数。Android 17 / API 37 仍由 `system_server` 处理执行请求；v2 权限流程（permission-v2）的 AOSP 校验包括：
@@ -453,6 +469,7 @@ heapprofd 面向原生堆分配，不能覆盖只读模型文件映射的全部�
 
 - 共享句柄发送前是否验证 Binder 调用身份与用户边界？
 - URI 授权、App Functions 权限和允许列表是否覆盖预期调用者？
+- 可回放的生成式 UI 描述是否记录 schema、revision 和生成时业务版本，避免旧生成结果覆盖新状态或让 Agent 恢复到错误的 UI 上下文？[来源: https://juejin.cn/post/7675633667490267179]
 - 共享区是否可能残留上一会话的敏感内容？
 - 参数长度、偏移量、格式、版本和取消时序是否做了防御性校验？
 
@@ -485,6 +502,7 @@ heapprofd 面向原生堆分配，不能覆盖只读模型文件映射的全部�
 - SharedMemory 通过 fd 共享同一组页面；`setProtect()`、映射和 fd 必须分别管理。
 - HardwareBuffer 能否避免复制，取决于双方格式、用途、HAL 导入和同步协议。
 - ContentProvider 与 App Functions 提供访问控制和业务协议，大块数据仍应使用 URI、fd 或共享缓冲区。
+- 预生成/缓存 A2UI 这类生成式 UI 描述属于应用层数据物化：它能把实时模型调用拆到后台生命周期，但读入、解析和 Agent 状态恢复后的内存仍按持有进程记账，不能写成 Android 平台共享内存新语义。[来源: https://juejin.cn/post/7675633667490267179]
 - 权重、KV 缓存、工作区、文件映射、dma-buf 和驱动内存必须分开估算与测量。
 - MemoryLimiter 的生产阈值来自厂商 XML；源码里的 4 GiB/2 GiB 内存阈值及 2 GiB/2 GiB 交换空间阈值只是测试配置。默认沙箱推理服务还可能被豁免。
 - lmkd 不识别“AI”标签。进程状态、`oom_score_adj`、设备策略、当时的进程集合与内存压力共同决定结果。
