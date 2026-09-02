@@ -4778,6 +4778,27 @@
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-09-02-evening-AndroidStudio-Quail4-Gemma4/02-dump-skills-gemma-local.md",
+      "title": "[DeepResearch] Dump · Skills + Gemma local + 性能入口",
+      "summary": "--- phase: 1 sub_question: skills 机制、Gemma 本地门槛、Quail 2 并行/LeakCanary 连续性 sources: [developer.android.com/studio/gemini/*, firebase agent-skills, Quail 2 blog] fetched: 2026-09-02T21:10:00+08:00 --- # Dump · Skills + Gem",
+      "chapter": "ch16",
+      "processed_at": "2026-09-03T06:20:54.178845+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part3-tools/ch15-other-tools/03-memory-hprof-heapdump-tools.md",
+      "route_confidence": 25,
+      "route_terms": [
+        "dump",
+        "quail",
+        "leakcanary",
+        "sources",
+        "developer.android.com",
+        "studio",
+        "blog"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
