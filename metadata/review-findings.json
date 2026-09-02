@@ -3336,6 +3336,27 @@
       "summary": "ApplicationExitInfo REASON_MEMORY_LIMITER API reference status drifted from API level 10000 to version 37.2.",
       "type": "source-drift",
       "updated_at": "2026-09-01T22:39:24.097645+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch09-anr/02-anr-kernel-trace-diagnosis.md",
+      "close_note": "Rewrote the D-state paragraph to remove futex as a common D-state cause, added the android17-6.18 futex wait/wake source, and kept ordinary futex waits under S-state analysis.",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20260902-103543-idle-audit-44ab9e51",
+      "created_at": "2026-09-02T10:49:22.926848+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20260902-103543-idle-audit-44ab9e51",
+      "details": "The published text grouped futex with common D-state causes. android17-6.18 futex wait paths set TASK_INTERRUPTIBLE|TASK_FREEZABLE, so ordinary futex waits should be analyzed as S-state waits; D-state attribution needs uninterruptible-wait evidence.",
+      "id": "AIW-9.2-20260902-futex-dstate-boundary",
+      "log_path": "logs/audit/2026-09-02-20260902-103543-idle-audit-44ab9e51-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/futex/waitwake.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h"
+      ],
+      "status": "fixed",
+      "summary": "D-state futex boundary overstated",
+      "type": "technical-accuracy",
+      "updated_at": "2026-09-02T10:49:30.409222+08:00"
     }
   ],
   "schema_version": 1
