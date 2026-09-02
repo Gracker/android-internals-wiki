@@ -3953,6 +3953,30 @@
       "status": "appended",
       "title": "Gradle 9.7.0 将提速 Android 构建，Sync 提升接近一倍Android 最近和 Gradle 官方"
     },
+    "source/juejin-android/2026-09-03-76399466-Android应用隐私合规自动化审计基于Androguard.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "fb62936d1c437542",
+      "last_appended": "2026-09-03T05:25:44.972919+08:00",
+      "last_seen": "2026-09-03T05:25:44.972919+08:00",
+      "mtime": 1788380482.8730083,
+      "score": 10,
+      "sha256": "1f8b884ef0eb1cf6841da457987089126f7573fda66be8cf64ba2342db32789d",
+      "size": 13185,
+      "status": "appended",
+      "title": "Android应用隐私合规自动化审计：基于Androguard的30款App扫描方案前言 2021年《个人信息保护法》正"
+    },
+    "source/juejin-android/2026-09-03-76623252-玩AndroidAI-Coding完整跑通一套AI软件研发工作流.md": {
+      "chapter": "待分类",
+      "entry_id": "9d5760cbdbdd8d44",
+      "last_appended": "2026-09-03T05:25:44.972919+08:00",
+      "last_seen": "2026-09-03T05:25:44.972919+08:00",
+      "mtime": 1788380482.8733764,
+      "score": 9,
+      "sha256": "402904529480702283a699a579a908058485d00810f13e10340a2c400c07172b",
+      "size": 36440,
+      "status": "appended",
+      "title": "玩Android×AI Coding：从产品到代码，完整跑通一套 AI 软件研发工作流从产品、UX、视觉设计到工程搭建与"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -5760,24 +5784,24 @@
     }
   },
   "last_report": {
-    "appended": 4,
-    "considered": 6,
-    "cutoff": "2026-09-01T05:20:58.298086+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-02.md",
+    "appended": 2,
+    "considered": 2,
+    "cutoff": "2026-09-02T05:20:44.937850+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-03.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1949,
+    "scanned": 1951,
     "skipped": {
       "existing_link": 0,
-      "low_score": 2,
+      "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 511
+      "unchanged": 517
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-02T05:25:44.937850+08:00",
+  "last_run_at": "2026-09-03T05:25:44.972919+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
