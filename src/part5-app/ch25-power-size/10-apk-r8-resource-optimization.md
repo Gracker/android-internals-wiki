@@ -2,7 +2,7 @@
 title: 应用体积分析与优化：DEX、Native SO 与资源
 chapter: '25.10'
 section: '25.10'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
 - dex
@@ -142,12 +142,14 @@ sources:
   path: https://android.googlesource.com/platform/build/soong/+/android-17.0.0_r1/java/app.go
 - type: article
   path: 技术文章/source/juejin-android/2026-08-30-76760926-超好用R8ConfigurationAn.md
-pipeline_stage: finalized
+- type: article
+  path: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md
+pipeline_stage: ready-for-review
 task2b_state: body-applied
-task6_state: reviewed
-task9_state: reviewed
-last_body_apply_at: '2026-08-30T07:19:12+08:00'
-last_body_apply_run_id: '20260830-071556-87136e20'
+task6_state: needs-review
+task9_state: needs-review
+last_body_apply_at: '2026-09-04T07:15:57+08:00'
+last_body_apply_run_id: '20260904-071557-f242b756'
 last_draft_polish_at: 2026-08-15 17:19:02+08:00
 last_draft_polish_run_id: 20260815-171902-gracker-writing-458
 last_deep_review_at: 2026-07-31
@@ -401,26 +403,23 @@ WebView bridge 已由静态代码创建，这条规则只保留其中带注解�
 
 #### R8 Configuration Analyzer
 
-R8 Configuration Analyzer 需要 R8 9.3.7-dev 或更高版本，使用 AGP 时则以稳定版 AGP 9.3.0 为起点。AGP 9.3 提供独立任务：
+R8 Configuration Analyzer 把最终合并到应用发布变体上的 keep 配置量化成三个入口分数：Shrinking Score、Optimization Score 和 Obfuscation Score。它们表示当前 live class、live field 和 live method 中仍允许 R8 做裁剪、优化或混淆的比例，不是最终能节省多少字节；一次依赖升级后若 shrinking/optimization 明显下降、obfuscation 基本不变，排查方向应先落到让代码继续存活或禁止内联/类合并的规则上。[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md；已验证: Android Developers R8 Configuration Analyzer]
+
+AGP 9.3 及以上可把这件事作为独立开发循环运行，而不是每次都先生成完整 APK 或 App Bundle：[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md；已验证: Android Developers R8 Configuration Analyzer]
 
 ```bash
 ./gradlew :app:analyzeReleaseR8Config
 ```
 
-该任务把 HTML 报告写到 `app/build/reports/r8/r8-config-analyzer-release.html`。完整的 R8 发布构建也会在 `build/outputs/mapping/release/configanalyzer.html` 生成报告。报告按代码裁剪、优化和混淆三个维度展示规则影响，并定位覆盖范围过大的规则。三个分数表示有多少类、字段和方法仍可参与对应优化，不是最终节省字节数。它适合持续观察规则质量，但仍要结合发布 APK：
+独立任务的 HTML 报告写到 `app/build/reports/r8/r8-config-analyzer-release.html`；完整 R8 发布构建也会在 `build/outputs/mapping/release/configanalyzer.html` 生成报告。若 AGP 还没有提供独立任务，但项目使用的 R8 已支持 Configuration Analyzer，可用 `dumpkeepradiustodirectory` 输出 keep radius 数据，再通过 Google `android/skills` 仓库的 `performance/r8-analyzer` reference 转成 JSON 和分析结果；若工具链连原始数据也不能生成，才退回到包级通配符、整类成员通配符、`!` inversion 等语法启发式检查。[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md；已验证: https://github.com/android/skills/tree/main/performance/r8-analyzer]
 
-- 高裁剪分数（shrinking score）不代表方法体一定小；
-- 某条规则覆盖很多节点，可能对应合法的运行时协议；
-- 分析器没有执行应用的反射、JNI 或序列化路径；
-- 规则修改后的正确性由测试、分批发布与线上崩溃监控确认。
+Blast Radius 明细比单纯搜索 `-keep` 更适合排优先级。导出的 `keep_rule_blast_radius_table` 会把规则关联到 `class_blast_radius`、`field_blast_radius` 和 `method_blast_radius`；对象表 `kept_class_info_table`、`kept_field_info_table`、`kept_method_info_table` 又可通过 `kept_by` 回到具体规则、约束、来源文件或 Maven 坐标。第三方 AAR 的 consumer rules 会与应用规则一起进入合并配置，因此“应用自己的 `proguard-rules.pro` 很干净”不能证明 keep 配置健康。[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md；已验证: Android Developers R8 Configuration Analyzer]
 
-实际排查时，先把 Analyzer 报告中的总分当成入口，再进入 Blast Radius 明细。官方文档定义报告位置、三项分数和“第三方 consumer rules 也会计入”的边界；Google `android/skills` 仓库的 `performance/r8-analyzer` reference 还展示了面向 protobuf/JSON 导出的字段名，例如 `keep_rule_blast_radius_table`、`kept_class_info_table`、`kept_field_info_table`、`kept_method_info_table`、`kept_by` 和 `DONT_SHRINK` / `DONT_OPTIMIZE` / `DONT_OBFUSCATE`。这些字段适合决定“先缩哪条规则”，不适合直接当作删除许可。
+报告还可以暴露 subsumed rules（被更宽规则覆盖的规则）：例如包级 `-keep class com.example.package.** { *; }` 已覆盖整个包时，单独保留 `com.example.package.User` 的窄规则可能没有额外效果。排查时先确认反射、JNI、序列化或注解扫描真正需要保护哪些类、字段、方法、名称或注解，再把宽规则改成更窄的协议规则，并重新生成 Analyzer 报告、合并配置、`seeds.txt`/`usage.txt` 和发布 APK 对比。[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md]
 
-把报告转成修改顺序时，应先固定同一 Release 变体的基线分数，再按 shrinking、optimization、obfuscation 的异常维度查找影响最大的规则；仅从 `app/proguard-rules.pro` 搜索不够，因为内部模块和第三方 AAR 的 consumer rules 会与应用规则合并后一起约束 R8。若报告或辅助导出数据给出规则来源、命中的 class/field/method 范围、`kept_by` 关系或 subsumed rules（被更宽规则覆盖的规则），可以先收敛覆盖范围最大的包级通配符，再用更窄规则保留真实的反射、JNI、序列化或注解扫描协议。
+删除或放宽 keep 规则之前，要把 Analyzer 的“影响范围”与运行时语义分开：它能说明哪些类、字段或方法因为某条规则失去裁剪、优化或混淆机会，但不能单独证明这些对象在生产环境一定不会被字符串反射、`Class.forName()`、`getDeclaredField()`、JNI 注册、序列化框架、WebView bridge、服务端协议或动态加载路径访问。规则改动后至少覆盖对应动态入口测试、分批发布和线上崩溃监控。[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md]
 
-删除或放宽 keep 规则之前，要把 Analyzer 的“影响范围”与运行时语义分开：它能说明哪些类、字段或方法因为某条规则失去裁剪、优化或混淆机会，但不能单独证明这些对象在生产环境一定不会被字符串反射、JNI 注册、序列化框架、WebView bridge 或服务端协议访问。规则改动后至少重新生成 Analyzer 报告、合并配置、`seeds.txt`/`usage.txt` 和发布 APK 对比，并覆盖动态入口测试。
-
-未使用支持该分析器的工具链时，`configuration.txt`、`seeds.txt`、`usage.txt`、APK Analyzer 和 `-whyareyoukeeping` 仍能完成保留原因与发布贡献排查；它们不能直接给出 Analyzer 的三项分数、Blast Radius 表或 subsumed rules 关系。
+未使用支持该分析器的工具链时，`configuration.txt`、`seeds.txt`、`usage.txt`、APK Analyzer 和 `-whyareyoukeeping` 仍能完成保留原因与发布贡献排查；它们不能直接给出 Analyzer 的三项分数、Blast Radius 表或 subsumed rules 关系。[已验证: Android Developers Troubleshoot R8 rules；来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md]
 
 ### 依赖与生成代码：先看发布贡献
 
