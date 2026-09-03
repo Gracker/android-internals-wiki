@@ -868,6 +868,13 @@
       "status": "appended",
       "title": "Adaptive Agentic Worms Are Here"
     },
+    "source/gracker-rss/2026-09-01-hyperscale-normalization-Hyperscale-Normalization.md": {
+      "last_seen": "2026-09-04T05:25:38.407476+08:00",
+      "mtime": 1788462334.3503292,
+      "sha256": "8e5afff2c390085fa4cecdc93b518fb781168456c9f37dcafd5ab9b75a565afd",
+      "size": 73928,
+      "status": "skipped-low-score"
+    },
     "source/gracker-rss/2026-09-01-metr-hf-incident-Brief-independent-investigation-of-agents-behavior.md": {
       "last_seen": "2026-09-01T05:25:58.298086+08:00",
       "mtime": 1788202992.365891,
@@ -899,6 +906,51 @@
       "mtime": 1788202992.3705869,
       "sha256": "899637d41a4c847afaf4ca2a330b30574855097811b94860a01fb3a5aa4215b7",
       "size": 5514,
+      "status": "skipped-low-score"
+    },
+    "source/gracker-rss/2026-09-02-garymarcus-openai-red-Red-Alert-OpenAI-is-poised-to-.md": {
+      "last_seen": "2026-09-04T05:25:38.407476+08:00",
+      "mtime": 1788462334.3150747,
+      "sha256": "6c8a970a8ec014f773be99619fc3f3a7c802ec59c0b0333d9a18e609f4dbc951",
+      "size": 4282,
+      "status": "skipped-low-score"
+    },
+    "source/gracker-rss/2026-09-02-oldnewthing-xaml-The-perils-of-binding-to-value.md": {
+      "chapter": "待分类",
+      "entry_id": "ee47bf99518fae94",
+      "last_appended": "2026-09-04T05:25:38.407476+08:00",
+      "last_seen": "2026-09-04T05:25:38.407476+08:00",
+      "mtime": 1788462334.3909578,
+      "score": 8,
+      "sha256": "8c3b7bab0dc4b2e8b27d70534fb2fcf5d67f94cf2cca1ff5b04dd4b9f05e1b89",
+      "size": 7345,
+      "status": "appended",
+      "title": "The perils of binding to value types in XAML"
+    },
+    "source/gracker-rss/2026-09-03-rfc9421-php-A-reasonably-practical-guide-t.md": {
+      "last_seen": "2026-09-04T05:25:38.407476+08:00",
+      "mtime": 1788462334.2950535,
+      "sha256": "324c1d72fa7497f0f95fd4183bfe38e55cb7b407b1226a64a1211a65eedaa4d8",
+      "size": 11779,
+      "status": "skipped-low-score"
+    },
+    "source/gracker-rss/2026-09-03-rootless-You-Should-be-Using-Rootless-C.md": {
+      "chapter": "待分类",
+      "entry_id": "f0b40d14fd1c9e68",
+      "last_appended": "2026-09-04T05:25:38.407476+08:00",
+      "last_seen": "2026-09-04T05:25:38.407476+08:00",
+      "mtime": 1788462334.2493978,
+      "score": 12,
+      "sha256": "dd54fc295f739c2c9c54cd280040f0440ebacc9c62fa40bc67003135ce837a04",
+      "size": 10558,
+      "status": "appended",
+      "title": "You Should be Using Rootless Containers"
+    },
+    "source/gracker-rss/2026-09-03-rsa260-New-RSA-number-factored.md": {
+      "last_seen": "2026-09-04T05:25:38.407476+08:00",
+      "mtime": 1788462334.2320218,
+      "sha256": "0e1c9f3434d7df3bfc67bcbf5b18bc9bb2ab7bb16410d751f517efce3dba3155",
+      "size": 2468,
       "status": "skipped-low-score"
     },
     "source/hacker-news-rss/2026-08-14-andros-html-over-websockets.md": {
@@ -3977,6 +4029,36 @@
       "status": "appended",
       "title": "玩Android×AI Coding：从产品到代码，完整跑通一套 AI 软件研发工作流从产品、UX、视觉设计到工程搭建与"
     },
+    "source/juejin-android/2026-09-04-76756264-三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等.md": {
+      "chapter": "待分类",
+      "last_seen": "2026-09-04T05:25:38.407476+08:00",
+      "mtime": 1788466722.9009156,
+      "score": 24,
+      "sha256": "442a9be8e8e615b9493b9f00c217089633c4b2d54c9d1a94482628e3162ef48e",
+      "size": 33495,
+      "status": "skipped-existing-link",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
+    "source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md": {
+      "chapter": "ch04-memory",
+      "last_seen": "2026-09-04T05:25:38.407476+08:00",
+      "mtime": 1788466722.9012637,
+      "score": 8,
+      "sha256": "6e751c0018221f3935c41678f5856c043a4abb448d530f720cab301ee541bea0",
+      "size": 10261,
+      "status": "skipped-existing-link",
+      "title": "超好用 R8 Configuration Analyzer， 优化你的 App 大小和内存相信大家最近应该都知道，目前"
+    },
+    "source/juejin-android/2026-09-04-76800243-曾经安卓开发人手一个的EventBus，为什么现在没人爱用了.md": {
+      "chapter": "待分类",
+      "last_seen": "2026-09-04T05:25:38.407476+08:00",
+      "mtime": 1788466722.9015508,
+      "score": 9,
+      "sha256": "3af5569829e042e465abd45afaff84055728a28038728126f71b5053f16142b3",
+      "size": 9397,
+      "status": "skipped-existing-link",
+      "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -5785,23 +5867,23 @@
   },
   "last_report": {
     "appended": 2,
-    "considered": 2,
-    "cutoff": "2026-09-02T05:20:44.937850+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-03.md",
+    "considered": 9,
+    "cutoff": "2026-09-03T05:20:44.972919+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-04.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1951,
+    "scanned": 1960,
     "skipped": {
-      "existing_link": 0,
-      "low_score": 0,
+      "existing_link": 3,
+      "low_score": 4,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 517
+      "unchanged": 519
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-03T05:25:44.972919+08:00",
+  "last_run_at": "2026-09-04T05:25:38.407476+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
