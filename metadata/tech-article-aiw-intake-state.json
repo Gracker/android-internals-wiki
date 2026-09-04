@@ -953,6 +953,68 @@
       "size": 2468,
       "status": "skipped-low-score"
     },
+    "source/gracker-rss/2026-09-05-circular-financing-Haters-Guide-Circular-Financing-Part-Two.md": {
+      "last_seen": "2026-09-05T05:25:33.140537+08:00",
+      "mtime": 1788548675.4391284,
+      "sha256": "c1435684fb5647bb7d4a797f22d46524f5c8cb209b0a4f2539e38132edb1711f",
+      "size": 8336,
+      "status": "skipped-low-score"
+    },
+    "source/gracker-rss/2026-09-05-how-much-should-you-trust-How-much-should-you-trust-your-OSS-data.md": {
+      "chapter": "待分类",
+      "entry_id": "d520a1d1275db0dd",
+      "last_appended": "2026-09-05T05:25:33.140537+08:00",
+      "last_seen": "2026-09-05T05:25:33.140537+08:00",
+      "mtime": 1788548675.4393382,
+      "score": 8,
+      "sha256": "1fdcd54f2834dee6581811b8ecfc6f133e2d5271f9a056a7767a5c296e5e187d",
+      "size": 9099,
+      "status": "appended",
+      "title": "Archived full text"
+    },
+    "source/gracker-rss/2026-09-05-progress-callback-The-case-of-the-progress-callback-that-never-got-called.md": {
+      "chapter": "待分类",
+      "entry_id": "a4a31bef53bb2a17",
+      "last_appended": "2026-09-05T05:25:33.140537+08:00",
+      "last_seen": "2026-09-05T05:25:33.140537+08:00",
+      "mtime": 1788548675.4395306,
+      "score": 11,
+      "sha256": "96beeee24756585fd60d0a847dec24efd38db381663b4decb03748bdbbb3f966",
+      "size": 9982,
+      "status": "appended",
+      "title": "Archived full text"
+    },
+    "source/gracker-rss/2026-09-05-rogue-agent-wikis-OpenAI-rogue-agents-public-wikis.md": {
+      "chapter": "待分类",
+      "entry_id": "1d6e1b654ebfe372",
+      "last_appended": "2026-09-05T05:25:33.140537+08:00",
+      "last_seen": "2026-09-05T05:25:33.140537+08:00",
+      "mtime": 1788548675.4388778,
+      "score": 9,
+      "sha256": "f846b74d2522b0183cf719ac702b44824be88638ec11d489a26c0fd3228ea012",
+      "size": 9001,
+      "status": "appended",
+      "title": "Archived full text"
+    },
+    "source/gracker-rss/2026-09-05-static-allocation-constant-work-Static-Allocation-Constant-Work.md": {
+      "chapter": "待分类",
+      "entry_id": "a7529bdfb8d9d978",
+      "last_appended": "2026-09-05T05:25:33.140537+08:00",
+      "last_seen": "2026-09-05T05:25:33.140537+08:00",
+      "mtime": 1788548675.439873,
+      "score": 13,
+      "sha256": "51e20caba7ddec9d41b339fbb6359467dada8b02b89c663266222a66339f71b0",
+      "size": 8228,
+      "status": "appended",
+      "title": "Archived full text"
+    },
+    "source/gracker-rss/2026-09-05-support-local-variables-Support-Local-Variables-ZJIT.md": {
+      "last_seen": "2026-09-05T05:25:33.140537+08:00",
+      "mtime": 1788548675.4396834,
+      "sha256": "a0cdfe67e241e3f32a39a7f03b5debddbcd84f27d73c0cad95ca862ea817bed2",
+      "size": 1812,
+      "status": "skipped-low-score"
+    },
     "source/hacker-news-rss/2026-08-14-andros-html-over-websockets.md": {
       "chapter": "待分类",
       "entry_id": "a2ca4853b47ae8b4",
@@ -4059,6 +4121,54 @@
       "status": "skipped-existing-link",
       "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
     },
+    "source/juejin-android/2026-09-05-76799975-用 AI Agent 协作完成一个 An.md": {
+      "chapter": "待分类",
+      "entry_id": "234e81a83ab96402",
+      "last_appended": "2026-09-05T05:25:33.140537+08:00",
+      "last_seen": "2026-09-05T05:25:33.140537+08:00",
+      "mtime": 1788553384.45469,
+      "score": 19,
+      "sha256": "031447d9440fd555b785f1d4ff9a2b2607aad515ab500e0345a7e9b64c849efc",
+      "size": 26723,
+      "status": "appended",
+      "title": "用 AI Agent 协作完成一个 Android TOTP 应用：从需求边界到 v1.0.0"
+    },
+    "source/juejin-android/2026-09-05-76800940-别再靠 Code Review 守底线：.md": {
+      "chapter": "待分类",
+      "entry_id": "ca883b5531f978d9",
+      "last_appended": "2026-09-05T05:25:33.140537+08:00",
+      "last_seen": "2026-09-05T05:25:33.140537+08:00",
+      "mtime": 1788553384.4550006,
+      "score": 14,
+      "sha256": "883a57d47b1e786f04fd2811decd803b80c636501d321b9ef8f78a63fdc89096",
+      "size": 20964,
+      "status": "appended",
+      "title": "别再靠 Code Review 守底线：我做了一个静态分析项目 RedLine"
+    },
+    "source/juejin-android/2026-09-05-76801107-Android 17 + OkHttp.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "bb26f3bf8e2a8d34",
+      "last_appended": "2026-09-05T05:25:33.140537+08:00",
+      "last_seen": "2026-09-05T05:25:33.140537+08:00",
+      "mtime": 1788553384.4543703,
+      "score": 10,
+      "sha256": "78454bd8894486adebffaffc44bb58e7cba79da42ef58e9847f6b05120a6eb46",
+      "size": 8935,
+      "status": "appended",
+      "title": "Android 17 + OkHttp 5.5.0 ，全新 ECH 下你的 HTTPS 域名可以请求时被安全隐藏"
+    },
+    "source/juejin-android/2026-09-05-76809960-日常修改，3秒生效：腾讯音乐 Andro.md": {
+      "chapter": "待分类",
+      "entry_id": "c36aefaf98d29b6b",
+      "last_appended": "2026-09-05T05:25:33.140537+08:00",
+      "last_seen": "2026-09-05T05:25:33.140537+08:00",
+      "mtime": 1788553384.4540298,
+      "score": 19,
+      "sha256": "a165ccd0cf123acdc0c5c23b276da23756125c9e5bf18fc47b37268e1e4b58c3",
+      "size": 33870,
+      "status": "appended",
+      "title": "日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -5866,24 +5976,24 @@
     }
   },
   "last_report": {
-    "appended": 2,
-    "considered": 9,
-    "cutoff": "2026-09-03T05:20:44.972919+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-04.md",
+    "appended": 8,
+    "considered": 10,
+    "cutoff": "2026-09-04T05:20:38.407476+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-05.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1960,
+    "scanned": 1970,
     "skipped": {
-      "existing_link": 3,
-      "low_score": 4,
+      "existing_link": 0,
+      "low_score": 2,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 519
+      "unchanged": 528
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-04T05:25:38.407476+08:00",
+  "last_run_at": "2026-09-05T05:25:33.140537+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
