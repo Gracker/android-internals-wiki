@@ -2,7 +2,7 @@
 title: 应用体积分析与优化：DEX、Native SO 与资源
 chapter: '25.10'
 section: '25.10'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
 - dex
@@ -34,9 +34,9 @@ related_chapters:
 - '1.7'
 - '4.5'
 confidence: high
-last_verified: '2026-08-30'
-last_source_verified_at: '2026-08-30'
-last_verified_against: Android Developers R8 / keep rules / Configuration Analyzer / app optimization / APK Analyzer / D8 / bundletool / multidex / Startup Profile / NDK ABI / native symbols / 16 KB page size / AAPT2 / resource shrinker docs retrieved 2026-08-30; Google android/skills r8-analyzer reference retrieved 2026-08-30; AOSP android-17.0.0_r1 ART DEX, bionic linker, package ABI, NativeLibraryHelper, androidfw and Soong anchors; android17-6.18 kernel mmap anchor
+last_verified: '2026-09-04'
+last_source_verified_at: '2026-09-04'
+last_verified_against: Android Developers R8 / keep rules / Configuration Analyzer / app optimization / APK Analyzer / D8 / bundletool / multidex / Startup Profile / NDK ABI / native symbols / 16 KB page size / AAPT2 / resource shrinker docs spot-checked 2026-09-04; Google android/skills r8-analyzer reference spot-checked 2026-09-04; AOSP android-17.0.0_r1 ART DEX, bionic linker, package ABI, NativeLibraryHelper, androidfw and Soong anchors spot-checked; android17-6.18 kernel mmap anchor retained
 sources:
 - type: official
   path: Dalvik executable format (source.android.com/docs/core/runtime/dex-format)
@@ -144,18 +144,18 @@ sources:
   path: 技术文章/source/juejin-android/2026-08-30-76760926-超好用R8ConfigurationAn.md
 - type: article
   path: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md
-pipeline_stage: ready-for-review
+pipeline_stage: finalized
 task2b_state: body-applied
-task6_state: needs-review
-task9_state: needs-review
+task6_state: reviewed
+task9_state: reviewed
 last_body_apply_at: '2026-09-04T07:15:57+08:00'
 last_body_apply_run_id: '20260904-071557-f242b756'
 last_draft_polish_at: 2026-08-15 17:19:02+08:00
 last_draft_polish_run_id: 20260815-171902-gracker-writing-458
 last_deep_review_at: 2026-07-31
 last_deep_review_run_id: 20260731-083556-deep-review-977cb49d
-last_review_finalize_at: '2026-08-30T08:24:29+08:00'
-last_review_finalize_run_id: 20260830-082429-af3cb088
+last_review_finalize_at: '2026-09-04T08:10:59+08:00'
+last_review_finalize_run_id: 20260904-080504-969c124d
 last_rework_at: 2026-08-15 17:19:02+08:00
 last_rework_run_id: 20260815-171902-gracker-writing-458
 last_consolidated_at: '2026-08-24'
@@ -697,7 +697,7 @@ bundletool get-size total \
 
 ### Android 17 源码边界
 
-Android 17 ART 的 [`standard_dex_file.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libdexfile/dex/standard_dex_file.cc) 识别 DEX 035、037、038、039、040 与 041。[`dex_file.h`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libdexfile/dex/dex_file.h) 定义了 v41 容器/文件头边界和传统 DEX 访问结构。
+Android 17 ART 的 [`standard_dex_file.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libdexfile/dex/standard_dex_file.cc) 识别 DEX 035、037、038、039、040 与 041；官方 DEX 格式文档把 041 容器格式标为实验性支持，不应作为应用生产代码格式。[`dex_file.h`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libdexfile/dex/dex_file.h) 定义了 v41 容器/文件头边界和传统 DEX 访问结构。
 
 这只说明 Android 17 运行时能读取这些 DEX 版本，不能据此推导应用构建默认输出 DEX 041。应用输出仍由当前 D8/R8 与 AGP 选择，公开工具配置优先于 ART 读取器的能力上限。
 
