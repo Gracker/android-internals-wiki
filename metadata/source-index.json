@@ -4825,6 +4825,16 @@
       "status": "body-applied",
       "applied_at": "2026-09-04T07:15:57+08:00",
       "applied_run_id": "20260904-071557-f242b756"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-05-76809960-日常修改，3秒生效：腾讯音乐 Andro.md",
+      "title": "[技术文章] 日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源",
+      "summary": "**原文链接**：https://juejin.cn/post/7680996030843125796 **作者**：sickworm陈浩 **日期**：2026-09-03 **浏览**：119 | 点赞 6 | 收藏 3 2026-09-03 119 阅读29分钟 Android 编译优化 > 本文首发自公众号：腾讯音乐技术团队 > 5 年研发和内部使用，累积 80...",
+      "chapter": "ch16",
+      "processed_at": "2026-09-05T06:20:42.075252+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
