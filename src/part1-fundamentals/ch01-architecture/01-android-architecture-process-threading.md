@@ -2,10 +2,10 @@
 title: Android 分层架构、进程模型与线程协作
 chapter: '1.1'
 section: '1.1'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-31'
-last_verified_against: 'AOSP android-17.0.0_r1: system/core/init/main.cpp, rootdir init.rc/init.zygote64.rc, frameworks/base ZygoteInit/Zygote/RuntimeInit/app_process/SystemServer, SurfaceFlinger, libbinder ProcessState, bionic linker namespaces, ActivityManager ProcessList/OomAdjuster/CachedAppOptimizer/ZramMaintenance, MessageQueue/Looper/Handler/ActivityThread, HWUI RenderThread/DrawFrameTask, libcore Thread/current.txt, system/memory lmkd/mmd; Android Common Kernel android17-6.18-2026-06_r6: drivers/android/binder.c, security/selinux/hooks.c, kernel/cgroup/freezer.c, kernel/sched/psi.c and kernel/sched/fair.c; official Android/source.android.com docs for HAL/AIDL/VINTF/VNDK/Mainline/16 KB page sizes/process lifecycle/threading/WorkManager/AsyncTask.'
+last_verified: '2026-09-06'
+last_verified_against: 'AOSP android-17.0.0_r1: system/core/init/main.cpp, rootdir init.rc/init.zygote64.rc, frameworks/base ZygoteInit/ZygoteProcess/ZygoteServer/ZygoteConnection/Zygote/RuntimeInit/app_process/SystemServer, SurfaceFlinger, libbinder ProcessState, bionic linker namespaces, ActivityManager ProcessList/OomAdjuster/CachedAppOptimizer/ZramMaintenance, MessageQueue/Looper/Handler/ActivityThread, HWUI RenderThread/DrawFrameTask, libcore Thread/current.txt, system/memory lmkd/mmd; Android Common Kernel android17-6.18-2026-06_r6: drivers/android/binder.c, security/selinux/hooks.c, kernel/cgroup/freezer.c, kernel/sched/psi.c and kernel/sched/fair.c; official Android/source.android.com docs for HAL/AIDL/VINTF/VNDK/Mainline/16 KB page sizes/process lifecycle/threading/WorkManager/AsyncTask.'
 confidence: high
 sources:
 - type: official
@@ -41,6 +41,9 @@ sources:
 - type: secondary
   path: https://juejin.cn/post/7679264879620374568
   note: system_server birth-path discussion; body conclusions rechecked against AOSP android-17.0.0_r1
+- type: secondary
+  path: https://juejin.cn/post/7681511201547255842
+  note: Zygote socket/USAP app birth-path discussion; body conclusions rechecked against AOSP android-17.0.0_r1
 - type: source
   path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/
 - type: source
@@ -178,12 +181,12 @@ related_chapters:
 - '1.8'
 - '2.3'
 - '2.4'
-pipeline_stage: ready-to-publish
-task6_state: finalized
-task9_state: finalized
+pipeline_stage: ready-for-review
+task6_state: needs-review
+task9_state: needs-review
 task2b_state: body-applied
-last_body_apply_at: '2026-08-31T13:50:13+08:00'
-last_body_apply_run_id: '20260831-135013-7c90554c'
+last_body_apply_at: '2026-09-06T07:15:23+08:00'
+last_body_apply_run_id: '20260906-071523-d9e01292'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/01-layered-architecture.md
@@ -454,6 +457,18 @@ Android 应用可以创建线程，却不能自行决定进程能活多久。系
 - 不以冒号开头的全局进程名只在共享 Linux UID 且签名匹配时才可能跨应用共用。`android:sharedUserId` 从 API 29 起已经废弃，新应用不应依赖这种设计。
 
 在 Android 17 中，`android.os.Process.start()` 仍把用户 ID（UID）、组 ID（GID）、应用二进制接口（ABI）、目标 SDK 版本（targetSdk）、数据目录和运行时参数交给 `ZygoteProcess.start()`。进程创建（fork）发生在 Zygote 一侧；`Process.start()` 是应用框架的请求入口，不会直接调用 Linux `fork()`。应用进程创建后再经 Binder 向 `system_server` 回连，AMS 才能继续 `bindApplication` 和组件调度。
+
+#### 普通应用创建请求为什么走 Zygote socket
+
+普通应用冷启动时，`system_server` 负责决定是否需要目标进程和整理启动参数，不负责自己 `fork()` 出应用进程。Android 17 的 `ProcessList` 会把 UID/GID、运行时标志、目标 SDK、SELinux `seInfo`、ABI、数据目录、包名和入口类 `android.app.ActivityThread` 传给 `Process.start()`；`Process.start()` 再进入 `ZygoteProcess.startViaZygote()`，由后者把参数编码成换行分隔的 Zygote 命令并写入本地 `LocalSocket`。[来源: https://juejin.cn/post/7681511201547255842；已验证: frameworks/base/services/core/java/com/android/server/am/ProcessList.java、frameworks/base/core/java/android/os/Process.java 与 ZygoteProcess.java @ android-17.0.0_r1]
+
+服务端端点也不是 Zygote 临时绑定的 TCP 端口。Android 17 的 `init.zygote64.rc` 为主 Zygote 声明 `socket zygote stream 660 root system` 和 `socket usap_pool_primary stream 660 root system`；Zygote 继承这些受 init 管理的 Unix domain socket 后，由 `ZygoteServer.runSelectLoop()` 轮询服务端和会话文件描述符，连接进入 `ZygoteConnection.processCommand()`，再读取 peer credentials、解析 `ZygoteArguments`、执行参数/身份策略检查并进入 Zygote 侧 fork 与 specialize 路径。[来源: https://juejin.cn/post/7681511201547255842；已验证: system/core/rootdir/init.zygote64.rc、frameworks/base/core/java/com/android/internal/os/ZygoteServer.java、ZygoteConnection.java 与 Zygote.java @ android-17.0.0_r1]
+
+USAP（Unspecialized App Process）池改变的是“从哪个预备进程完成 specialize”和“是否先走 USAP pool socket”，不是把创建权交回 `system_server`。Android 17 的 `ZygoteProcess` 只有在 USAP pool 受支持、已启用、策略允许且命令形态受支持时才尝试 USAP；USAP 通信失败或请求不适合时会回退主 Zygote socket。无论走主 Zygote 还是 USAP，AMS 仍要维护 `ProcessRecord`、启动序号和 PID 映射；客户端读到 PID 只说明 Zygote/USAP 侧返回了创建结果，不等于 `Application` 已经绑定、组件已经启动或首帧已经完成。[来源: https://juejin.cn/post/7681511201547255842；已验证: frameworks/base/core/java/android/os/ZygoteProcess.java 与 frameworks/base/services/core/java/com/android/server/am/ProcessList.java @ android-17.0.0_r1]
+
+这条源码路径只能证明 AOSP Android 17 的普通应用创建请求走 Zygote/USAP 本地 socket，而不是把 Zygote 暴露成一个普通 Binder 服务；它不能推出“Binder 从原理上不能承载创建进程命令”，也不能把“启动更早”或“socket 天然更安全”写成唯一官方原因。当前方案的安全边界来自 init socket 权限、SELinux 策略、peer credentials、Zygote 参数校验和 native specialize 共同作用；Binder 本身也提供调用方身份并经过 Binder 驱动与 SELinux 检查。[来源: https://juejin.cn/post/7681511201547255842；已验证: frameworks/base/core/java/com/android/internal/os/ZygoteConnection.java、frameworks/base/cmds/app_process/app_main.cpp @ android-17.0.0_r1；drivers/android/binder.c 与 security/selinux/hooks.c @ android17-6.18-2026-06_r6]
+
+排查应用“出生点”时，应把三个时间点分开：`ProcessList` 发起进程启动、Zygote/USAP 返回 PID、应用进程进入 `ActivityThread.main()` 并通过 Binder attach 到 AMS。`ps -A -o PID,PPID,NAME,ARGS` 可以先确认新进程父子关系，`dumpsys activity processes` 可以核对 AMS 视角的进程记录；如果只有 PID 已返回，还不能说明 `bindApplication`、组件生命周期或首帧已经成功。[来源: https://juejin.cn/post/7681511201547255842；已验证: frameworks/base/services/core/java/com/android/server/am/ProcessList.java 与 frameworks/base/core/java/android/app/ActivityThread.java @ android-17.0.0_r1]
 
 多进程会带来额外的隔离成本。一个 `android:process=":remote"` 至少增加一套进程地址空间、ART 运行时状态、Java 与原生堆、线程栈、主线程消息循环和 `Application` 初始化；原来的进程内调用也可能变成 Binder 进程间通信（IPC）。
 
