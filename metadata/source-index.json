@@ -4849,10 +4849,10 @@
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-06-76815112-Android系统启动机制六Zygote创建App为什么走Socket哪些是源码事实哪些是架构解释.md",
       "title": "[技术文章] Android 系统启动机制（六）：Zygote 创建 App 为什么走 Socket？哪些是源码事实，哪些是架构解释？",
-      "summary": "> 发布时间: 2026-09-05T02:58:46.000Z > 原文链接: https://juejin.cn/post/7681511201547255842 2026-09-05 53 阅读9分钟 Android Framework 的跨进程调用几乎处处可见 Binder：AMS、PMS、WMS 都通过 Binder 暴露能力。普通 App 又通常由 AMS 侧...",
+      "summary": "已编入普通 App 创建请求由 ProcessList/Process.start/ZygoteProcess 写入 init 预建 Zygote/USAP Unix domain socket，ZygoteServer/ZygoteConnection 解析并在 Zygote/USAP 侧 fork/specialize；补充 PID 返回不等于 Application 绑定/首帧完成，以及“Binder 原理上不能创建进程”“socket 天然更安全”等绝对化说法的边界。",
       "chapter": "ch08",
       "processed_at": "2026-09-06T06:21:00.258747+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
       "score": 19,
       "target_path": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
       "route_confidence": 19,
@@ -4863,7 +4863,12 @@
         "framework",
         "binder"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "previous_action": "indexed-only-chapter-freeze",
+      "status": "body-applied",
+      "applied_at": "2026-09-06T07:15:23+08:00",
+      "applied_run_id": "20260906-071523-d9e01292",
+      "canonical_target_chapter": "ch01"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-06-76815905-APM-OOMDetector-腾讯Mars-OOM-黑匣子实现原理与落盘结构.md",
