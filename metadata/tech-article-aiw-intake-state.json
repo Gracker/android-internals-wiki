@@ -4169,6 +4169,42 @@
       "status": "appended",
       "title": "日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源"
     },
+    "source/juejin-android/2026-09-06-76814678-Android多渠道打包与Gradle构建优化实战.md": {
+      "chapter": "待分类",
+      "entry_id": "335e5594aeb0e25a",
+      "last_appended": "2026-09-06T05:25:51.365563+08:00",
+      "last_seen": "2026-09-06T05:25:51.365563+08:00",
+      "mtime": 1788639753.0176663,
+      "score": 10,
+      "sha256": "e37c3e6adb3b190051f4c27cc42720d3e29cd6fdc94e32fcda0c9a53177c33a6",
+      "size": 15528,
+      "status": "appended",
+      "title": "Android 多渠道打包与 Gradle 构建优化实战Android 多渠道打包与 Gradle 构建优化实战 在 A"
+    },
+    "source/juejin-android/2026-09-06-76815112-Android系统启动机制六Zygote创建App为什么走Socket哪些是源码事实哪些是架构解释.md": {
+      "chapter": "ch08-responsiveness",
+      "entry_id": "7d9dc1722514709f",
+      "last_appended": "2026-09-06T05:25:51.365563+08:00",
+      "last_seen": "2026-09-06T05:25:51.365563+08:00",
+      "mtime": 1788639749.8453155,
+      "score": 22,
+      "sha256": "6c913fcdff344ea95c221077882e44405539ae6afe6eb0f210b87ffc2ff68d44",
+      "size": 16841,
+      "status": "appended",
+      "title": "Android 系统启动机制（六）：Zygote 创建 App 为什么走 Socket？哪些是源码事实，哪些是架构解释？"
+    },
+    "source/juejin-android/2026-09-06-76815905-APM-OOMDetector-腾讯Mars-OOM-黑匣子实现原理与落盘结构.md": {
+      "chapter": "ch04-memory",
+      "entry_id": "ecbd3dd669761c77",
+      "last_appended": "2026-09-06T05:25:51.365563+08:00",
+      "last_seen": "2026-09-06T05:25:51.365563+08:00",
+      "mtime": 1788639755.98945,
+      "score": 13,
+      "sha256": "66e6c42388209d4b96368c7552db51b54975ff92068609ef743ec73d8bb9c9a8",
+      "size": 32951,
+      "status": "appended",
+      "title": "APM_OOMDetector前言 APM 中，有一个模块属于 OOM 检测，也就是内存溢出（Out of Memory"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -5976,24 +6012,24 @@
     }
   },
   "last_report": {
-    "appended": 8,
-    "considered": 10,
-    "cutoff": "2026-09-04T05:20:38.407476+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-05.md",
+    "appended": 3,
+    "considered": 3,
+    "cutoff": "2026-09-05T05:20:33.140537+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-06.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1970,
+    "scanned": 1973,
     "skipped": {
       "existing_link": 0,
-      "low_score": 2,
+      "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 528
+      "unchanged": 538
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-05T05:25:33.140537+08:00",
+  "last_run_at": "2026-09-06T05:25:51.365563+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
