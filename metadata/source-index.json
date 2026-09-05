@@ -4835,6 +4835,54 @@
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-06-76814678-Android多渠道打包与Gradle构建优化实战.md",
+      "title": "[技术文章] Android 多渠道打包与 Gradle 构建优化实战Android 多渠道打包与 Gradle 构建优化实战 在 A",
+      "summary": "> 发布时间: 2026-09-04T02:56:11.000Z > 原文链接: https://juejin.cn/post/7681467854781202442 hunterandroid 2026-09-04 78 阅读7分钟 在 Android 应用开发中，我们经常需要为不同的应用市场、测试环境或灰度发布构建不同的 APK 版本。这些版本可能有着不同的包名、服务...",
+      "chapter": "ch16",
+      "processed_at": "2026-09-06T06:21:00.258747+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-06-76815112-Android系统启动机制六Zygote创建App为什么走Socket哪些是源码事实哪些是架构解释.md",
+      "title": "[技术文章] Android 系统启动机制（六）：Zygote 创建 App 为什么走 Socket？哪些是源码事实，哪些是架构解释？",
+      "summary": "> 发布时间: 2026-09-05T02:58:46.000Z > 原文链接: https://juejin.cn/post/7681511201547255842 2026-09-05 53 阅读9分钟 Android Framework 的跨进程调用几乎处处可见 Binder：AMS、PMS、WMS 都通过 Binder 暴露能力。普通 App 又通常由 AMS 侧...",
+      "chapter": "ch08",
+      "processed_at": "2026-09-06T06:21:00.258747+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "route_confidence": 19,
+      "route_terms": [
+        "zygote",
+        "app",
+        "juejin.cn",
+        "framework",
+        "binder"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-06-76815905-APM-OOMDetector-腾讯Mars-OOM-黑匣子实现原理与落盘结构.md",
+      "title": "[技术文章] APM_OOMDetector前言 APM 中，有一个模块属于 OOM 检测，也就是内存溢出（Out of Memory",
+      "summary": "> 发布时间: 2026-09-05T03:25:43.000Z > 原文链接: https://juejin.cn/post/7681590592267010082 2026-09-05 34 阅读24分钟 APM 中，有一个模块属于 OOM 检测，也就是内存溢出（Out of Memory），当 iOS 应用因为内存原因而系统终止时，进程会被系统直接杀死。如果是被系统...",
+      "chapter": "ch04",
+      "processed_at": "2026-09-06T06:21:00.258747+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "route_confidence": 21,
+      "route_terms": [
+        "oom",
+        "out",
+        "memory",
+        "juejin.cn",
+        "ch04-memory"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
