@@ -2,11 +2,11 @@
 title: Android 与 Linux 内存管理全景
 chapter: '4.1'
 section: '4.1'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-18'
-last_verified_against: AOSP android-17.0.0_r1 / Android Developers bitmap memory & Android 17 app memory limits docs / Perfetto Java heap profiler & OOME docs / 16 KB page size docs / kernel zram docs
-confidence: medium
+last_verified: '2026-09-06'
+last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material
+confidence: medium-high
 sources:
 - type: official
   path: https://developer.android.com/topic/performance/memory-management
@@ -22,6 +22,14 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/am/ProcessList.java
 - type: aosp
   path: frameworks/base/core/java/android/content/ComponentCallbacks2.java
+- type: aosp
+  path: frameworks/base/core/java/android/os/Debug.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java
+- type: aosp
+  path: frameworks/base/services/core/jni/com_android_server_am_MemoryLimiter.cpp
+- type: aosp
+  path: frameworks/base/core/java/android/app/ApplicationExitInfo.java
 - type: aosp
   path: system/core/libprocessgroup/profiles/task_profiles.json
 - type: aosp
@@ -73,6 +81,8 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/process_stats/process_stats_config.proto
 - type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/sys_stats/sys_stats_config.proto
+- type: aosp
   path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/perf_event_config.proto
 - type: aosp
   path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/common/perf_events.proto
@@ -114,9 +124,9 @@ related_chapters:
 - '4.4'
 - '4.5'
 - '2.9'
-pipeline_stage: ready-for-review
-task6_state: needs-review
-task9_state: needs-review
+pipeline_stage: finalized
+task6_state: verified
+task9_state: verified
 task2b_state: body-applied
 last_consolidated_at: '2026-08-24'
 consolidated_from:
@@ -409,7 +419,7 @@ Android 17 r1 源码中的关键流程如下：
 2. JNI 层把限制写入每进程 cgroup 的 `memory.high` 和 `memory.swap.max`。
 3. JNI 从 `memory.stat` 读取 `anon` 与 `shmem`，从 `memory.swap.current` 读取 Swap。
 4. 联合判断会比较 `anon + shmem + swapCurrent` 与 `memHigh + swapMax`。
-5. 联合上限越界后，服务解除该进程的限制；配置允许时触发异常分析事件 `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`，并安排在 30 秒后终止进程。
+5. 联合上限越界后，服务解除该进程的限制；相关系统开关启用时触发异常分析事件 `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`，并安排在 30 秒后终止进程。
 
 应用侧可通过 `ApplicationExitInfo` 区分该类退出：原因字段（reason）为 `REASON_OTHER`，描述字段（description）包含 `MemoryLimiter:AnonSwap`。测试设备可以使用以下命令确认功能状态和临时配置：
 
@@ -421,7 +431,7 @@ adb shell am memory-limiter manual 12345 10
 adb shell am memory-limiter manual 12345 none
 ```
 
-`ignore` 接受用户 ID（UID）、`none` 或 `all`；`manual` 接受进程 ID（PID）与百分比、`max` 或 `none`。手动限制随进程重启或状态变化而失效，适合测试，不应作为应用运行时能力依赖。
+`ignore` 接受用户 ID（UID）、`none` 或 `all`；`manual` 在 AOSP r1 的 shell 解析中接受进程 ID（PID）与整数或 `none`，源码随后把整数按 MiB 转换为限制值，而帮助文本仍写成 `PERCENT|none`。使用前应以目标构建实测为准，不能写成支持 `max` 的通用接口。手动限制随进程重启或状态变化而失效，适合测试，不应作为应用运行时能力依赖。
 
 MemoryLimiter 与 lmkd 的决策依据也不同。MemoryLimiter 约束单个受监控进程的匿名页与交换空间；lmkd 在系统压力下结合进程重要性等信息选择终止目标。复盘进程消失时，应先读取 `ApplicationExitInfo`、系统日志和 PSI，再确定是哪条路径。
 
@@ -564,7 +574,7 @@ ZRAM 是匿名页回收策略的一部分。风险来自持续换入换出、回
 - [AOSP Android 17 `MemoryLimiter.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java)
 - [AOSP Android 17 `MemoryLimiter.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/jni/com_android_server_am_MemoryLimiter.cpp)
 - [Android 17：所有应用的行为变更](https://developer.android.com/about/versions/17/behavior-changes-all)
-- [Android Memory Limiter](https://source.android.com/docs/core/perf/memory-limiter)
+- [Android Memory Limiter（当前官方说明，配置路径以目标源码标签和设备镜像为准）](https://source.android.com/docs/core/perf/memory-limiter)
 - [Android 应用内存管理](https://developer.android.com/topic/performance/memory)
 - [Android 图形内存管理](https://developer.android.com/topic/performance/graphics/manage-memory)
 - [支持 16 KiB 页大小](https://developer.android.com/guide/practices/page-sizes)
@@ -843,7 +853,7 @@ flowchart LR
 
 旧的 ION 共享缓冲区分配器和 DMA-BUF Heaps 都可以作为 dma-buf 导出方（exporter）。历史 ION 通过 `/dev/ion`、内存堆掩码（heap mask）和私有标志选择分配器；DMA-BUF Heaps 为不同内存堆暴露独立字符设备 `/dev/dma_heap/<heap_name>`，便于稳定 UAPI、测试和 SELinux 强制访问控制。
 
-Android 12 的 GKI 2.0 以 DMA-BUF Heaps 替换 ION；AOSP 迁移页属于 5.4/GKI 2.0 过渡期文档，页面标注为 deprecated，因此 Android 17 分析还要以当前内核文档和设备节点为准。`android12-5.10` 通用内核已关闭 `CONFIG_ION`。升级设备仍可能通过 `libdmabufheap` 的兼容映射访问旧 ION 内存堆，因此历史代码和旧内核仍能看到 `/dev/ion`。
+Android 12 的 GKI 2.0 以 DMA-BUF Heaps 替换 ION；AOSP 迁移页的页面标题限定为 “5.4 kernel only”，因此 Android 17 分析还要以当前内核文档和设备节点为准。`android12-5.10` 通用内核已关闭 `CONFIG_ION`。升级设备仍可能通过 `libdmabufheap` 的兼容映射访问旧 ION 内存堆，因此历史代码和旧内核仍能看到 `/dev/ion`。
 
 Android 17 新设备应从 DMA-BUF Heaps 视角分析，同时确认厂商提供的内存堆：
 
@@ -999,7 +1009,7 @@ D 状态表示不可中断睡眠，来源很多。直接回收还可能在 CPU �
 - [Linux 6.18 Multi-Gen LRU](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/mm/multigen_lru.rst)
 - [Linux 6.18 DMA-BUF](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/driver-api/dma-buf.rst)
 - [Linux 6.18 DMA-BUF Heaps](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/userspace-api/dma-buf-heaps.rst)
-- [AOSP：ION 迁移到 DMA-BUF Heaps（5.4/GKI 2.0 过渡期文档，页面标注 deprecated）](https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps)
+- [AOSP：ION 迁移到 DMA-BUF Heaps（5.4/GKI 2.0 过渡期文档）](https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps)
 - [Android：支持 16 KiB page size](https://developer.android.com/guide/practices/page-sizes)
 - [Perfetto `ProcessStatsConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/process_stats/process_stats_config.proto)
 - [Perfetto `PerfEventConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/perf_event_config.proto)
