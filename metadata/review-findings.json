@@ -3357,6 +3357,28 @@
       "summary": "D-state futex boundary overstated",
       "type": "technical-accuracy",
       "updated_at": "2026-09-02T10:49:30.409222+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "close_note": "Patched §4.1 MemoryLimiter shell command boundary and DMA-BUF Heaps transition-page wording; chapter promoted to finalized after source verification.",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20260906-100533-e2f89366",
+      "created_at": "2026-09-06T10:15:05.993423+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20260906-100533-e2f89366",
+      "details": "AOSP android-17.0.0_r1 ActivityManagerShellCommand manual 只解析整数或 none，MemoryLimiter.setManualLimit 将整数按 MiB 转换；源码不支持 max。source.android.com DMA-BUF Heaps 迁移页标题限定为 5.4 kernel only，未在可见官方正文中标注 deprecated。",
+      "id": "AIW-4.1-20260906-P2-memorylimiter-dmabuf-boundary",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/services/core/java/com/android/server/am/ActivityManagerShellCommand.java@android-17.0.0_r1",
+        "frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java@android-17.0.0_r1",
+        "https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps"
+      ],
+      "status": "fixed",
+      "summary": "4.1 MemoryLimiter manual 参数和 DMA-BUF Heaps 迁移页边界需要按 android-17.0.0_r1/官方页修正",
+      "type": "technical-accuracy",
+      "updated_at": "2026-09-06T10:15:06.068398+08:00"
     }
   ],
   "schema_version": 1
