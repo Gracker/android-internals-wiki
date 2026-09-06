@@ -2,7 +2,7 @@
 title: Android 分层架构、进程模型与线程协作
 chapter: '1.1'
 section: '1.1'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-09-06'
 last_verified_against: 'AOSP android-17.0.0_r1: system/core/init/main.cpp, rootdir init.rc/init.zygote64.rc, frameworks/base ZygoteInit/ZygoteProcess/ZygoteServer/ZygoteConnection/Zygote/RuntimeInit/app_process/SystemServer, SurfaceFlinger, libbinder ProcessState, bionic linker namespaces, ActivityManager ProcessList/OomAdjuster/CachedAppOptimizer/ZramMaintenance, MessageQueue/Looper/Handler/ActivityThread, HWUI RenderThread/DrawFrameTask, libcore Thread/current.txt, system/memory lmkd/mmd; Android Common Kernel android17-6.18-2026-06_r6: drivers/android/binder.c, security/selinux/hooks.c, kernel/cgroup/freezer.c, kernel/sched/psi.c and kernel/sched/fair.c; official Android/source.android.com docs for HAL/AIDL/VINTF/VNDK/Mainline/16 KB page sizes/process lifecycle/threading/WorkManager/AsyncTask.'
@@ -181,10 +181,12 @@ related_chapters:
 - '1.8'
 - '2.3'
 - '2.4'
-pipeline_stage: ready-for-review
-task6_state: needs-review
-task9_state: needs-review
+pipeline_stage: finalized
+task6_state: reviewed
+task9_state: reviewed
 task2b_state: body-applied
+last_review_finalize_at: '2026-09-06T08:13:51+08:00'
+last_review_finalize_run_id: '20260906-080531-6b82c938'
 last_body_apply_at: '2026-09-06T07:15:23+08:00'
 last_body_apply_run_id: '20260906-071523-d9e01292'
 last_consolidated_at: '2026-08-24'
@@ -596,7 +598,7 @@ writeLmkd(buf, null);
 
 Android 17 的 `CachedAppOptimizer.DEFAULT_USE_FREEZER` 为 `true`，但设备实际启用还要同时满足可动态调整系统参数的 DeviceConfig 配置、内核和进程资源管理库 `libprocessgroup` 对冻结功能的支持。`task_profiles.json` 中的 `Frozen`/`Unfrozen` 配置最终写入 `FreezerState`，Android 通用内核（Android Common Kernel，ACK）固定版本中的 `kernel/cgroup/freezer.c` 与 `kernel/cgroup/cgroup.c` 实现并暴露 `cgroup.freeze`。
 
-“`adj >= 900` 就一定冻结”也不准确。默认冻结阈值是 `CACHED_APP_MIN_ADJ`，但 Android 17 允许通过 `freezer_cutoff_adj` 和实验开关调整。此外，`OomAdjuster.getFreezePolicy()` 还会检查进程是否持有显式或隐式 CPU 时间能力标志。AMS 只有在冻结功能已启用、进程达到阈值且策略认为可冻结时，才安排异步冻结；中间还存在用于避免频繁切换状态的延迟（debounce）、待处理消息、Binder 事务和解冻原因。
+“`adj >= 900` 就一定冻结”也不准确。Android 17 的常规默认冻结阈值来自 `ActivityManagerConstants.DEFAULT_FREEZER_CUTOFF_ADJ`：未启用 `Flags.prototypeAggressiveFreezing()` 时为 `CACHED_APP_MIN_ADJ`，启用该实验开关时可前移到 `HOME_APP_ADJ`；`freezer_cutoff_adj` 还允许产品配置调整。此外，`OomAdjuster.getFreezePolicy()` 还会检查进程是否持有显式或隐式 CPU 时间能力标志。AMS 只有在冻结功能已启用、进程达到阈值且策略认为可冻结时，才安排异步冻结；中间还存在用于避免频繁切换状态的延迟（debounce）、待处理消息、Binder 事务和解冻原因。
 
 同步 Binder 调用不能简单概括为“自动解冻后一切正常”。Android 17 会冻结 Binder 接口并处理待处理事务；如果应用通过持续 Binder 事务规避冻结，或者冻结状态下异步 Binder 缓冲区耗尽，系统可以终止进程。`ApplicationExitInfo.REASON_FREEZER` 表示进程因为冻结相关错误被终止，例如 Binder `ioctl`、同步事务或异步缓冲区问题；它不表示一次普通冻结事件，也不是“解冻失败”的通用标签。
 
