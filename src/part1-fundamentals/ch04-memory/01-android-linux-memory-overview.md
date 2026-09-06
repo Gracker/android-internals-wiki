@@ -2,10 +2,10 @@
 title: Android 与 Linux 内存管理全景
 chapter: '4.1'
 section: '4.1'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-08-18'
-last_verified_against: AOSP android-16.0.0_r1 / Android Developers bitmap memory & Android 17 app memory limits docs / Perfetto Java heap profiler & OOME docs / 16 KB page size docs / kernel zram docs
+last_verified_against: AOSP android-17.0.0_r1 / Android Developers bitmap memory & Android 17 app memory limits docs / Perfetto Java heap profiler & OOME docs / 16 KB page size docs / kernel zram docs
 confidence: medium
 sources:
 - type: official
@@ -84,6 +84,8 @@ sources:
   path: https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps
 - type: paper
   path: Cubox/Silk-安卓GC与内核内存管理的进一步融合-2025-10-20.md (TACO '25)
+- type: reference
+  path: 技术文章/source/juejin-android/2026-09-06-76815905-APM-OOMDetector-腾讯Mars-OOM-黑匣子实现原理与落盘结构.md
 tags:
 - android-memory
 - memory-model
@@ -112,15 +114,17 @@ related_chapters:
 - '4.4'
 - '4.5'
 - '2.9'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
+pipeline_stage: ready-for-review
+task6_state: needs-review
+task9_state: needs-review
+task2b_state: body-applied
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md
 - src/part1-fundamentals/ch04-memory/01-memory-overview.md
 - src/part1-fundamentals/ch04-memory/02-linux-memory.md
+last_body_apply_at: '2026-09-06T09:17:27+08:00'
+last_body_apply_run_id: '20260906-091528-8790763f'
 ---
 
 # Android 与 Linux 内存管理全景
@@ -505,6 +509,14 @@ data_sources {
 6. 回到稳定业务状态，重复多轮并比较保留量，验证修复前后的差异。
 
 这套顺序能避免在系统杀进程问题上只抓 Java HPROF，也能避免把共享页重新分摊造成的 PSS 上升误判为对象泄漏。
+
+#### APM OOM 黑匣子只能作为退出复盘线索
+
+第三方 APM 的 OOM 黑匣子报告不要和 Android 平台退出原因混同。所选材料中的 Tencent OOMDetector 是 iOS 工具：运行时用 `<uuid>.oom` 记录前后台状态、已知崩溃、主动退出、卡死、系统版本和应用版本等字段，另用 `<uuid>.mmap` 按调用栈 `digest` 汇总超过阈值的 `malloc` 分配，并在下次启动时通过 UUID、`app.images` 与聚合堆栈合并成报告。 [来源: 技术文章/source/juejin-android/2026-09-06-76815905-APM-OOMDetector-腾讯Mars-OOM-黑匣子实现原理与落盘结构.md]
+
+这类报告回答的是“上次退出前记录到了什么状态、哪些分配路径仍有大额聚合占用”，不是 Android 系统杀进程的直接证明，也不能把“仍未释放的聚合分配”直接写成内存泄漏结论。 [来源: 技术文章/source/juejin-android/2026-09-06-76815905-APM-OOMDetector-腾讯Mars-OOM-黑匣子实现原理与落盘结构.md] 在 Android 17 设备上复盘进程突然消失时，仍应先用 `ApplicationExitInfo`、系统日志、tombstone、lmkd/MemoryLimiter 证据和 PSI 时间线区分 ART OOME、原生崩溃、lmkd、MemoryLimiter 或主动退出。 [已验证: 本章“系统内存压力、控制组与进程退出”与“用 Perfetto 把‘数值’变成‘时间线’”段落，AOSP android-17.0.0_r1]
+
+如果 Android APM 也采用类似“运行时持续记录、下次启动合并”的黑匣子设计，报告字段应作为辅助上下文接入取证链：时间戳、前后台状态和业务页面用于对齐 Perfetto/日志；聚合调用栈用于选择 Java HPROF、`heapprofd`、`smaps` 或 DMA-BUF 工具；符号化前的镜像地址只能说明原始地址落在哪个模块，仍需匹配对应构建产物才能回到代码位置。 [来源: 技术文章/source/juejin-android/2026-09-06-76815905-APM-OOMDetector-腾讯Mars-OOM-黑匣子实现原理与落盘结构.md] [已验证: 本章“详细表格用于解释‘增长来自哪里’”与“一条可复用的排查顺序”段落]
 
 ### MTE 与内存数据的比较条件
 
