@@ -10,7 +10,7 @@ pipeline_stage: ready-to-publish
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 version_notes: DEFAULT_STRATEGY_BY_AXIS 仅 Android 14+ (API 34+) 可用
 confidence: medium
-last_verified: '2026-07-05'
+last_verified: '2026-09-06'
 last_verified_against: AOSP android-17.0.0_r1 View/GestureDetector/VelocityTracker paths
 sources:
 - type: aosp
@@ -202,7 +202,7 @@ Android 17 的 `GestureDetector.onTouchEvent()` 在进入 `switch` 前就把事�
 2. 第二次 `DOWN` 与第一次 `UP` 的间隔是否落在 `doubleTapMinTime` 到 `doubleTapTimeout` 之间；
 3. 两次 `DOWN` 的距离平方是否小于 `doubleTapSlopSquare`。
 
-Android 17 的框架后备值是最短 40 ms、最长 300 ms，但运行时可从资源取得配置值。业务逻辑不要自行复制这些数字，应交给 `GestureDetector` 或从对应配置 API 获取。
+Android 17 框架后备的 `doubleTapMinTime` 是 40 ms，`doubleTapTimeout` 是 300 ms，但运行时阈值来自资源与系统配置，业务代码不应自行复制这些数字，应交给 `GestureDetector` 或从对应配置 API 获取。
 
 ### 长按：默认 400 ms，运行时可调整
 
