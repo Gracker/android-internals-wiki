@@ -2,10 +2,10 @@
 title: Android 分层架构、进程模型与线程协作
 chapter: '1.1'
 section: '1.1'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-09-06'
-last_verified_against: 'AOSP android-17.0.0_r1: system/core/init/main.cpp, rootdir init.rc/init.zygote64.rc, frameworks/base ZygoteInit/ZygoteProcess/ZygoteServer/ZygoteConnection/Zygote/RuntimeInit/app_process/SystemServer, SurfaceFlinger, libbinder ProcessState, bionic linker namespaces, ActivityManager ProcessList/OomAdjuster/CachedAppOptimizer/ZramMaintenance, MessageQueue/Looper/Handler/ActivityThread, HWUI RenderThread/DrawFrameTask, libcore Thread/current.txt, system/memory lmkd/mmd; Android Common Kernel android17-6.18-2026-06_r6: drivers/android/binder.c, security/selinux/hooks.c, kernel/cgroup/freezer.c, kernel/sched/psi.c and kernel/sched/fair.c; official Android/source.android.com docs for HAL/AIDL/VINTF/VNDK/Mainline/16 KB page sizes/process lifecycle/threading/WorkManager/AsyncTask.'
+last_verified: '2026-09-07'
+last_verified_against: 'AOSP android-17.0.0_r1: system/core/init/main.cpp, rootdir init.rc/init.zygote64.rc, frameworks/base ZygoteInit/ZygoteProcess/ZygoteServer/ZygoteConnection/Zygote/RuntimeInit/app_process, SystemServer/SystemServiceManager, SurfaceFlinger, libbinder ProcessState, bionic linker namespaces, ActivityManager ProcessList/OomAdjuster/CachedAppOptimizer/ZramMaintenance, MessageQueue/Looper/Handler/ActivityThread, HWUI RenderThread/DrawFrameTask, libcore Thread/current.txt, system/memory lmkd/mmd; Android Common Kernel android17-6.18-2026-06_r6: drivers/android/binder.c, security/selinux/hooks.c, kernel/cgroup/freezer.c, kernel/sched/psi.c and kernel/sched/fair.c; official Android/source.android.com docs for HAL/AIDL/VINTF/VNDK/Mainline/16 KB page sizes/process lifecycle/threading/WorkManager/AsyncTask.'
 confidence: high
 sources:
 - type: official
@@ -24,6 +24,10 @@ sources:
   path: https://developer.android.com/guide/practices/page-sizes
 - type: source
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/
+- type: aosp
+  path: frameworks/base/services/java/com/android/server/SystemServer.java @ android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/SystemServiceManager.java @ android-17.0.0_r1
 - type: aosp
   path: system/core/rootdir/init.rc @ android-17.0.0_r1
 - type: aosp
@@ -44,6 +48,9 @@ sources:
 - type: secondary
   path: https://juejin.cn/post/7681511201547255842
   note: Zygote socket/USAP app birth-path discussion; body conclusions rechecked against AOSP android-17.0.0_r1
+- type: secondary
+  path: https://juejin.cn/post/7681897078311108623
+  note: SystemServer.main()/run() service-container discussion; body conclusions rechecked against AOSP android-17.0.0_r1
 - type: source
   path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/
 - type: source
@@ -181,14 +188,14 @@ related_chapters:
 - '1.8'
 - '2.3'
 - '2.4'
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: ready-for-review
+task6_state: needs-review
+task9_state: needs-review
 task2b_state: body-applied
 last_review_finalize_at: '2026-09-06T08:13:51+08:00'
 last_review_finalize_run_id: '20260906-080531-6b82c938'
-last_body_apply_at: '2026-09-06T07:15:23+08:00'
-last_body_apply_run_id: '20260906-071523-d9e01292'
+last_body_apply_at: '2026-09-07T21:18:59+08:00'
+last_body_apply_run_id: '20260907-211557-0f48073c'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/01-layered-architecture.md
@@ -253,6 +260,16 @@ Android 17 的 init 进程仍按第一阶段（first stage）、SELinux 访问�
 `system_server` 子进程最终进入 `SystemServer.main()`。下面的 Android 17 服务启动骨架比旧资料常列的三组多出第四个 `startApexServices()`，对应 APEX 可更新系统模块的服务阶段。
 
 进入 `SystemServer.main()` 之前，子进程路径会先把 Zygote 模板进程改造成 `system_server` 身份。Android 17 的 `nativeForkSystemServer()` 在 `pid == 0` 分支调用 `SpecializeCommon(..., is_system_server=true, ...)`，处理系统服务的控制组与 task profile、补充组和资源限制、seccomp、`setresgid()`/`setresuid()`、capabilities、SELinux context 和 post-fork hooks；`handleSystemServerProcess()` 随后经 `ZygoteInit.zygoteInit()`、`RuntimeInit.applicationInit()` 找到 `com.android.server.SystemServer.main()`。[来源: https://juejin.cn/post/7679264879620374568；已验证: frameworks/base/core/jni/com_android_internal_os_Zygote.cpp、ZygoteInit.java 与 RuntimeInit.java @ android-17.0.0_r1] `zygoteInit()` 会先调用 `nativeZygoteInit()`，而 `app_process/app_main.cpp` 的 `AppRuntime::onZygoteInit()` 在该回调中执行 `ProcessState::self()->startThreadPool()`，所以 `system_server` 接收 Binder 事务的线程池早于 `SystemServer.main()` 启动。[已验证: frameworks/base/cmds/app_process/app_main.cpp @ android-17.0.0_r1]
+
+#### `SystemServer.main()` 之后补齐服务容器
+
+到达 `SystemServer.main()` 的 `system_server` 不是空进程，也不是服务已经全量 ready 的进程：它已经完成 Zygote 子进程身份 specialize，具备 ART、Framework JNI、预加载页面和 Binder IPC 线程池；但 System Context、主 Looper 的长期循环、`SystemServiceManager` 以及 AMS/PMS/WMS 等服务对象仍要由 `SystemServer.run()` 组织建立。[来源: 技术文章/source/juejin-android/2026-09-07-76818970-Android 系统启动机制七：进入 S.md；已验证: frameworks/base/core/jni/com_android_internal_os_Zygote.cpp、frameworks/base/cmds/app_process/app_main.cpp 与 frameworks/base/services/java/com/android/server/SystemServer.java @ android-17.0.0_r1]
+
+`SystemServer.main()` 本身只是 `new SystemServer().run()`；`SystemServer` 是 Java 装配总控，不是 `system_server` 进程本身、不是 AMS，也不是向全局 ServiceManager 发布的 Binder 服务。[来源: 技术文章/source/juejin-android/2026-09-07-76818970-Android 系统启动机制七：进入 S.md；已验证: frameworks/base/services/java/com/android/server/SystemServer.java @ android-17.0.0_r1] `run()` 的骨架可以按四段阅读：先设置系统进程规则，例如 Binder 阻塞告警、SQLite/Parcel 策略、Binder 后台调度与最大线程数；再准备主线程 Looper 与 `SystemServerInitThreadPool`；随后加载 `android_servers`、建立 System Context/System UI Context 并执行每进程 Mainline 模块初始化；最后创建 `SystemServiceManager`，进入 `startBootstrapServices()`、`startCoreServices()`、`startOtherServices()`、`startApexServices()`。[来源: 技术文章/source/juejin-android/2026-09-07-76818970-Android 系统启动机制七：进入 S.md；已验证: frameworks/base/services/java/com/android/server/SystemServer.java @ android-17.0.0_r1]
+
+`SystemServiceManager` 建立后只是 `system_server` 内部的 Java 管理对象和 `LocalServices` 条目。它的 `startService(Class<T>)` 会用 `Context` 构造 `SystemService`、记录到 `mServices`，再调用该服务的 `onStart()`；它负责已纳管 `SystemService` 的启动和 Boot Phase/User 生命周期分发，不等于读取全局依赖图自动拓扑排序，也不覆盖所有遗留服务的创建方式。[来源: 技术文章/source/juejin-android/2026-09-07-76818970-Android 系统启动机制七：进入 S.md；已验证: frameworks/base/services/core/java/com/android/server/SystemServiceManager.java @ android-17.0.0_r1]
+
+排查 `system_server` 启动卡顿时，先分清三条执行路径：主线程按 `SystemServer.run()` 控制总体顺序并在末尾进入 `Looper.loop()`；Binder 线程池接收远端 transaction，不天然服从主 Looper 顺序；`SystemServerInitThreadPool` 和各服务自有线程可以承载允许并行或服务内部的工作。[来源: 技术文章/source/juejin-android/2026-09-07-76818970-Android 系统启动机制七：进入 S.md；已验证: frameworks/base/services/java/com/android/server/SystemServer.java 与 frameworks/base/services/core/java/com/android/server/SystemServiceManager.java @ android-17.0.0_r1] 因此，`Looper.loop()` 表示主启动控制流进入长期消息循环，不是“Framework 全部 ready”的证据；观察上应结合 `SystemServerTiming`/trace tag、具体服务的 `StartService ...` 片段、Binder 线程状态和 Boot Phase/`systemReady()` 事件，而不是只看某个线程是否活跃。[来源: 技术文章/source/juejin-android/2026-09-07-76818970-Android 系统启动机制七：进入 S.md；已验证: frameworks/base/services/java/com/android/server/SystemServer.java 与 frameworks/base/services/core/java/com/android/server/SystemServiceManager.java @ android-17.0.0_r1]
 
 排查时可以把进程树、socket 和死亡重启分开取证：`ps -A -o PID,PPID,NAME,ARGS`（或 `/proc/<pid>/status` 的 `PPid`）用于确认 `system_server` 的父进程是否指向 Zygote；Zygote socket 只解释后续应用进程 fork 请求；若 `system_server` 退出，Zygote 的 SIGCHLD 处理路径会 `waitpid()` 匹配 `gSystemServerPid` 并杀死 Zygote，让 init 的 Zygote 服务监督链路接管后续重启。[已验证: frameworks/base/core/jni/com_android_internal_os_Zygote.cpp 与 system/core/rootdir/init.zygote64.rc @ android-17.0.0_r1]
 
