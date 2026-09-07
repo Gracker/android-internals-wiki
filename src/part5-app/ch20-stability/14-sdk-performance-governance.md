@@ -1,7 +1,7 @@
 ---
 title: 第三方 SDK 性能影响评估与治理实战
 chapter: '20.14'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags:
 - SDK治理
@@ -14,30 +14,52 @@ related_chapters:
 - '20.1'
 - '23.2'
 - '24.5'
-last_verified: '2026-08-14'
-last_verified_against: android-17.0.0_r1 / Android 17 (API 37); android17-6.18-2026-06_r6; Android Developers, Google Play, and Privacy Sandbox phaseout/API deprecation docs checked 2026-08-14; no Android 18/API 38+ conclusions
+last_verified: '2026-09-07'
+last_verified_against: android-17.0.0_r1 / Android 17 (API 37); android17-6.18-2026-06_r6; Android Developers App Startup, Macrobenchmark, Baseline Profiles, Android 17 behavior changes, Google Play SDK Index, and Privacy Sandbox phaseout/API deprecation docs checked 2026-09-07; no Android 18/API 38+ conclusions
 last_draft_polish_at: '2026-08-08T11:35:18+08:00'
 last_draft_polish_run_id: 20260808-113518-draft-polish-76608468
 confidence: medium-high
 task2b_state: body-applied
-task6_state: needs-review
-task9_state: needs-review
-pipeline_stage: ready-for-review
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: finalized
 last_body_apply_at: '2026-09-07T19:15:39+08:00'
 last_body_apply_run_id: '20260907-191539-e84acff2'
-last_review_finalize_at: '2026-08-08T12:06:09+08:00'
-last_review_finalize_run_id: 20260808-120545-a55fec3c
+last_review_finalize_at: '2026-09-07T20:05:47+08:00'
+last_review_finalize_run_id: '20260907-200547-bac7ab59'
 sources:
 - type: aosp
-  path: AOSP Android 17 ActivityThread (android-17.0.0_r1)
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java
 - type: aosp
-  path: AOSP Android 17 SdkSandboxManagerService deprecation boundary (android-17.0.0_r1)
+  path: https://android.googlesource.com/platform/packages/modules/AdServices/+/refs/tags/android-17.0.0_r1/sdksandbox/service/java/com/android/server/sdksandbox/SdkSandboxManagerService.java
 - type: kernel
-  path: Android Common Kernel proc 文档 (android17-6.18-2026-06_r6)
-- type: reference
-  path: 'Android Developers: App Startup, Macrobenchmark, Baseline Profiles, Android 17 behavior changes'
-- type: reference
-  path: Privacy Sandbox phaseout status plus historical SDK Runtime architecture and backward compatibility
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst
+- type: official
+  path: https://developer.android.com/topic/libraries/app-startup
+- type: official
+  path: https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview
+- type: official
+  path: https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics
+- type: official
+  path: https://developer.android.com/topic/performance/baselineprofiles/overview
+- type: official
+  path: https://developer.android.com/about/versions/17/behavior-changes-all
+- type: official
+  path: https://developer.android.com/about/versions/17/behavior-changes-17
+- type: official
+  path: https://developer.android.com/about/versions/17/changes/bg-audio
+- type: official
+  path: https://developer.android.com/reference/android/app/sdksandbox/SdkSandboxManager
+- type: official
+  path: https://developer.android.com/jetpack/androidx/releases/privacysandbox-sdkruntime
+- type: official
+  path: https://privacysandbox.google.com/blog/update-on-plans-for-privacy-sandbox-technologies
+- type: official
+  path: https://privacysandbox.google.com/overview/status
+- type: official
+  path: https://developer.android.com/distribute/sdk-index
+- type: official
+  path: https://support.google.com/googleplay/android-developer/answer/10358880?hl=zh-Hans
 - type: article
   path: 技术文章/source/juejin-android/2026-09-07-76816756-架构测试为何需要双视图.md
   role: Kotlin/Gradle 双视图架构测试与 SDK 适配层边界
