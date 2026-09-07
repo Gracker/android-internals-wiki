@@ -2,7 +2,7 @@
 title: Android 分层架构、进程模型与线程协作
 chapter: '1.1'
 section: '1.1'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-09-07'
 last_verified_against: 'AOSP android-17.0.0_r1: system/core/init/main.cpp, rootdir init.rc/init.zygote64.rc, frameworks/base ZygoteInit/ZygoteProcess/ZygoteServer/ZygoteConnection/Zygote/RuntimeInit/app_process, SystemServer/SystemServiceManager, SurfaceFlinger, libbinder ProcessState, bionic linker namespaces, ActivityManager ProcessList/OomAdjuster/CachedAppOptimizer/ZramMaintenance, MessageQueue/Looper/Handler/ActivityThread, HWUI RenderThread/DrawFrameTask, libcore Thread/current.txt, system/memory lmkd/mmd; Android Common Kernel android17-6.18-2026-06_r6: drivers/android/binder.c, security/selinux/hooks.c, kernel/cgroup/freezer.c, kernel/sched/psi.c and kernel/sched/fair.c; official Android/source.android.com docs for HAL/AIDL/VINTF/VNDK/Mainline/16 KB page sizes/process lifecycle/threading/WorkManager/AsyncTask.'
@@ -188,12 +188,12 @@ related_chapters:
 - '1.8'
 - '2.3'
 - '2.4'
-pipeline_stage: ready-for-review
-task6_state: needs-review
-task9_state: needs-review
+pipeline_stage: finalized
+task6_state: verified
+task9_state: finalized
 task2b_state: body-applied
-last_review_finalize_at: '2026-09-06T08:13:51+08:00'
-last_review_finalize_run_id: '20260906-080531-6b82c938'
+last_review_finalize_at: '2026-09-07T22:11:40+08:00'
+last_review_finalize_run_id: '20260907-220504-74ca9436'
 last_body_apply_at: '2026-09-07T21:18:59+08:00'
 last_body_apply_run_id: '20260907-211557-0f48073c'
 last_consolidated_at: '2026-08-24'
