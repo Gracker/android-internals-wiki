@@ -4900,7 +4900,7 @@
       "summary": "> 发布时间: 2026-09-06T03:03:31.000Z > 原文链接: https://juejin.cn/post/7681675659220287514 2026-09-06 19 阅读20分钟 Kotlin从挂号到出院 > 本文译自「Kotlin Architecture Tests: Why Konture Exists」，原文链接Kotlin Arch...",
       "chapter": "ch16",
       "processed_at": "2026-09-07T06:20:33.572149+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
       "score": 19,
       "target_path": "src/part5-app/ch20-stability/14-sdk-performance-governance.md",
       "route_confidence": 16,
@@ -4910,7 +4910,12 @@
         "architecture",
         "aosp"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "previous_action": "indexed-only-chapter-freeze",
+      "status": "body-applied",
+      "applied_at": "2026-09-07T19:15:39+08:00",
+      "applied_run_id": "20260907-191539-e84acff2",
+      "canonical_target_chapter": "ch20"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-07-76818970-Android 系统启动机制七：进入 S.md",
