@@ -4253,6 +4253,90 @@
       "status": "appended",
       "title": "不用 AIDL，手把手教你手写 Binder 代理类AIDL 本质上只是一个代码生成工具，它自动生成的 Stub 和 P"
     },
+    "source/juejin-android/2026-09-08-76388970-为什么 Android 不用接口做 Ac.md": {
+      "chapter": "待分类",
+      "entry_id": "c5c6a26b289b3a01",
+      "last_appended": "2026-09-08T05:25:09.345389+08:00",
+      "last_seen": "2026-09-08T05:25:09.345389+08:00",
+      "mtime": 1788812389.8093371,
+      "score": 13,
+      "sha256": "52e6199c95abdad951ffcf0843ab51c72c23ca2fdd6250db04ba6d343843ded4",
+      "size": 6123,
+      "status": "appended",
+      "title": "为什么 Android 不用接口做 Activity 通信？"
+    },
+    "source/juejin-android/2026-09-08-76400776-我通过3个小改动将Compose重组减少.md": {
+      "chapter": "ch08-responsiveness",
+      "entry_id": "b6eb2c5bc0aeca7c",
+      "last_appended": "2026-09-08T05:25:09.345389+08:00",
+      "last_seen": "2026-09-08T05:25:09.345389+08:00",
+      "mtime": 1788812389.8097355,
+      "score": 8,
+      "sha256": "ff70ee0b527cffe79f6d70a70cafa4b8d30297d45d9781f24e6f4e7ef1605568",
+      "size": 6516,
+      "status": "appended",
+      "title": "我通过3个小改动将Compose重组减少了78%"
+    },
+    "source/juejin-android/2026-09-08-76444766-学吧！Android 全新的嵌入式照片选.md": {
+      "chapter": "待分类",
+      "entry_id": "c2765076a8bf9338",
+      "last_appended": "2026-09-08T05:25:09.345389+08:00",
+      "last_seen": "2026-09-08T05:25:09.345389+08:00",
+      "mtime": 1788812389.8085368,
+      "score": 9,
+      "sha256": "61f0c82f428cafca142c54367ca5aa655fa7c837598edf8163e40eb010fe2fd4",
+      "size": 12089,
+      "status": "appended",
+      "title": "学吧！Android 全新的嵌入式照片选择器"
+    },
+    "source/juejin-android/2026-09-08-76469585-AI 写 Android 代码老翻车？我.md": {
+      "chapter": "待分类",
+      "entry_id": "ed122514065f9909",
+      "last_appended": "2026-09-08T05:25:09.345389+08:00",
+      "last_seen": "2026-09-08T05:25:09.345389+08:00",
+      "mtime": 1788812389.8089216,
+      "score": 14,
+      "sha256": "31ab097e99d3d77b5db2309c024a5707ab4e99ac6d35a9d9a201d03aa8763dbb",
+      "size": 10858,
+      "status": "appended",
+      "title": "AI 写 Android 代码老翻车？我把移动端的 Harness 系统开源了"
+    },
+    "source/juejin-android/2026-09-08-76500740-现代 Android 官方为什么更推荐 .md": {
+      "chapter": "待分类",
+      "entry_id": "d035428bc227e527",
+      "last_appended": "2026-09-08T05:25:09.345389+08:00",
+      "last_seen": "2026-09-08T05:25:09.345389+08:00",
+      "mtime": 1788812389.808144,
+      "score": 11,
+      "sha256": "8af8331079e8dd43cf02b16c97330a5afb8f3f357ff1e8c5d104a35a2b5eb6d3",
+      "size": 13333,
+      "status": "appended",
+      "title": "现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch"
+    },
+    "source/juejin-android/2026-09-08-76756264-三星安卓系统BUG排查记录：云闪付、铁路.md": {
+      "chapter": "待分类",
+      "entry_id": "152a57a6ab0dad52",
+      "last_appended": "2026-09-08T05:25:09.345389+08:00",
+      "last_seen": "2026-09-08T05:25:09.345389+08:00",
+      "mtime": 1788812389.8071842,
+      "score": 24,
+      "sha256": "4561fe7d3c5c4845e191fea8b6abadb37f56de32885a5c53d0cf8eb121061cd3",
+      "size": 33688,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App长期闪退的根本原因分析"
+    },
+    "source/juejin-android/2026-09-08-76800243-曾经安卓开发人手一个的EventBus，.md": {
+      "chapter": "待分类",
+      "entry_id": "0bdca8865b99a5ba",
+      "last_appended": "2026-09-08T05:25:09.345389+08:00",
+      "last_seen": "2026-09-08T05:25:09.345389+08:00",
+      "mtime": 1788812389.8076568,
+      "score": 9,
+      "sha256": "ffe04bc8a039dbf8d1eb6f31522c4efb7d5285af88f268d71d413b6cd33fb71f",
+      "size": 9536,
+      "status": "appended",
+      "title": "曾经安卓开发人手一个的EventBus，为什么现在没人爱用了？"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -6060,24 +6144,24 @@
     }
   },
   "last_report": {
-    "appended": 4,
-    "considered": 4,
-    "cutoff": "2026-09-06T05:20:51.365563+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-07.md",
+    "appended": 7,
+    "considered": 7,
+    "cutoff": "2026-09-07T05:20:25.835998+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-08.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1977,
+    "scanned": 1984,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 541
+      "unchanged": 545
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-07T05:25:25.835998+08:00",
+  "last_run_at": "2026-09-08T05:25:09.345389+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
