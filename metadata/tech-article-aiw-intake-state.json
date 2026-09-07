@@ -4205,6 +4205,54 @@
       "status": "appended",
       "title": "APM_OOMDetector前言 APM 中，有一个模块属于 OOM 检测，也就是内存溢出（Out of Memory"
     },
+    "source/juejin-android/2026-09-07-76815749-Android 系统自带机制的卸载更新都.md": {
+      "chapter": "待分类",
+      "entry_id": "8ee75eb0e2780986",
+      "last_appended": "2026-09-07T05:25:25.835998+08:00",
+      "last_seen": "2026-09-07T05:25:25.835998+08:00",
+      "mtime": 1788726188.6707988,
+      "score": 19,
+      "sha256": "aa8d0e82b3cca26221ae27db6a878fc08be9eabb3c9b87411cc5d4c83ff1249b",
+      "size": 11332,
+      "status": "appended",
+      "title": "Android 系统自带机制的卸载更新都哪些实现方案本文系统性地梳理落地实现方案、代码落地、Android 16 适配策"
+    },
+    "source/juejin-android/2026-09-07-76816756-架构测试为何需要双视图.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "8b2aac5aad547ff0",
+      "last_appended": "2026-09-07T05:25:25.835998+08:00",
+      "last_seen": "2026-09-07T05:25:25.835998+08:00",
+      "mtime": 1788726188.670551,
+      "score": 16,
+      "sha256": "544db333cfba4cce84431d36addf133b36f5dbe348cb2d46396b5b19d2ef242d",
+      "size": 25607,
+      "status": "appended",
+      "title": "架构测试为何需要双视图架构测试只靠字节码或源码扫描都不够：本文剖析 Gradle 构建图与 Kotlin 源代码两种视角"
+    },
+    "source/juejin-android/2026-09-07-76818970-Android 系统启动机制七：进入 S.md": {
+      "chapter": "ch08-responsiveness",
+      "entry_id": "1595134ded6d7cff",
+      "last_appended": "2026-09-07T05:25:25.835998+08:00",
+      "last_seen": "2026-09-07T05:25:25.835998+08:00",
+      "mtime": 1788726188.670293,
+      "score": 23,
+      "sha256": "1e3c24fa7da9e2804ea822fc41e7add22d1556612cdf20bda1d2891497a3ff69",
+      "size": 12323,
+      "status": "appended",
+      "title": "Android 系统启动机制（七）：进入 SystemServer.main() 以后，system_server 还是一个空进程吗？"
+    },
+    "source/juejin-android/2026-09-07-76819855-不用 AIDL，手把手教你手写 Bind.md": {
+      "chapter": "ch16-aosp",
+      "entry_id": "c3104d150d5407ea",
+      "last_appended": "2026-09-07T05:25:25.835998+08:00",
+      "last_seen": "2026-09-07T05:25:25.835998+08:00",
+      "mtime": 1788726188.6710396,
+      "score": 15,
+      "sha256": "05429a5e3a821c1b5182814b80641a4e554a08c6b7bf6a19f1019515e27cb4b7",
+      "size": 15879,
+      "status": "appended",
+      "title": "不用 AIDL，手把手教你手写 Binder 代理类AIDL 本质上只是一个代码生成工具，它自动生成的 Stub 和 P"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -6012,24 +6060,24 @@
     }
   },
   "last_report": {
-    "appended": 3,
-    "considered": 3,
-    "cutoff": "2026-09-05T05:20:33.140537+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-06.md",
+    "appended": 4,
+    "considered": 4,
+    "cutoff": "2026-09-06T05:20:51.365563+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-07.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1973,
+    "scanned": 1977,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 538
+      "unchanged": 541
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-06T05:25:51.365563+08:00",
+  "last_run_at": "2026-09-07T05:25:25.835998+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

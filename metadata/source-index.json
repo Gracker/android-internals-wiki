@@ -4893,6 +4893,52 @@
       "applied_at": "2026-09-06T09:17:27+08:00",
       "applied_run_id": "20260906-091528-8790763f",
       "canonical_target_chapter": "ch04"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-07-76816756-架构测试为何需要双视图.md",
+      "title": "[技术文章] 架构测试为何需要双视图架构测试只靠字节码或源码扫描都不够：本文剖析 Gradle 构建图与 Kotlin 源代码两种视角",
+      "summary": "> 发布时间: 2026-09-06T03:03:31.000Z > 原文链接: https://juejin.cn/post/7681675659220287514 2026-09-06 19 阅读20分钟 Kotlin从挂号到出院 > 本文译自「Kotlin Architecture Tests: Why Konture Exists」，原文链接Kotlin Arch...",
+      "chapter": "ch16",
+      "processed_at": "2026-09-07T06:20:33.572149+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part5-app/ch20-stability/14-sdk-performance-governance.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "gradle",
+        "kotlin",
+        "architecture",
+        "aosp"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-07-76818970-Android 系统启动机制七：进入 S.md",
+      "title": "[技术文章] Android 系统启动机制（七）：进入 SystemServer.main() 以后，system_server 还是一个空进程吗？",
+      "summary": "> 发布时间: 2026-09-06T00:54:08.000Z > 原文链接: https://juejin.cn/post/7681897078311108623 2026-09-06 0 阅读7分钟 前面追到 system\\_server 的出生点：Zygote fork 出子进程，子分支完成 specialize，最后进入 com.android.server.S...",
+      "chapter": "ch08",
+      "processed_at": "2026-09-07T06:20:33.572149+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "system",
+        "server",
+        "juejin.cn",
+        "zygote"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-07-76819855-不用 AIDL，手把手教你手写 Bind.md",
+      "title": "[技术文章] 不用 AIDL，手把手教你手写 Binder 代理类AIDL 本质上只是一个代码生成工具，它自动生成的 Stub 和 P",
+      "summary": "> 发布时间: 2026-09-06T09:25:48.000Z > 原文链接: https://juejin.cn/post/7681985571748741147 hai\\_android 2026-09-06 32 阅读8分钟 Kotlin Flow 全栈进阶专栏：从入门源码到生产级Android响应式架构 > **前言：** 在日常 Android 开发中，我们习...",
+      "chapter": "ch16",
+      "processed_at": "2026-09-07T06:20:33.572149+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
