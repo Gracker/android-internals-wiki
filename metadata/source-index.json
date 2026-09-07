@@ -4949,6 +4949,26 @@
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7680024375572021286",
+      "title": "[技术文章] 曾经安卓开发人手一个的EventBus，为什么现在没人爱用了？",
+      "summary": "EventBus 衰落三层原因：隐式依赖（post 的下游要全局搜事件类+翻 @Subscribe 才能弄清）、调用链不可追踪（断点打到 post 就断线）、生命周期失控（忘解绑即泄漏或崩溃）。行业从广播思维转状态思维，ViewModel 持有 StateFlow、UI 观察自动渲染。",
+      "chapter": "ch02",
+      "processed_at": "2026-09-08T06:20:17.729310+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-08-76400776-我通过3个小改动将Compose重组减少.md",
+      "title": "[技术文章] 我通过3个小改动将Compose重组减少了78%",
+      "summary": "原文: https://juejin.cn/post/7640077602280456207 > 发布时间: 2026-05-16T13:19:38.000Z > 原文链接: https://juejin.cn/post/7640077602280456207 2026-05-16 791 阅读2分钟 起初，屏幕看起来很正常。没有崩溃。没有 ANR（应用程序无响应）。也没...",
+      "chapter": "ch09",
+      "processed_at": "2026-09-08T06:20:17.729310+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
