@@ -4923,7 +4923,7 @@
       "summary": "> 发布时间: 2026-09-06T00:54:08.000Z > 原文链接: https://juejin.cn/post/7681897078311108623 2026-09-06 0 阅读7分钟 前面追到 system\\_server 的出生点：Zygote fork 出子进程，子分支完成 specialize，最后进入 com.android.server.S...",
       "chapter": "ch08",
       "processed_at": "2026-09-07T06:20:33.572149+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
       "score": 19,
       "target_path": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
       "route_confidence": 16,
@@ -4933,7 +4933,12 @@
         "juejin.cn",
         "zygote"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "previous_action": "indexed-only-chapter-freeze",
+      "previous_status": null,
+      "status": "body-applied",
+      "applied_at": "2026-09-07T21:18:59+08:00",
+      "applied_run_id": "20260907-211557-0f48073c"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-07-76819855-不用 AIDL，手把手教你手写 Bind.md",
