@@ -1,7 +1,7 @@
 ---
 title: 第三方 SDK 性能影响评估与治理实战
 chapter: '20.14'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags:
 - SDK治理
@@ -19,9 +19,12 @@ last_verified_against: android-17.0.0_r1 / Android 17 (API 37); android17-6.18-2
 last_draft_polish_at: '2026-08-08T11:35:18+08:00'
 last_draft_polish_run_id: 20260808-113518-draft-polish-76608468
 confidence: medium-high
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: finalized
+task2b_state: body-applied
+task6_state: needs-review
+task9_state: needs-review
+pipeline_stage: ready-for-review
+last_body_apply_at: '2026-09-07T19:15:39+08:00'
+last_body_apply_run_id: '20260907-191539-e84acff2'
 last_review_finalize_at: '2026-08-08T12:06:09+08:00'
 last_review_finalize_run_id: 20260808-120545-a55fec3c
 sources:
@@ -35,6 +38,9 @@ sources:
   path: 'Android Developers: App Startup, Macrobenchmark, Baseline Profiles, Android 17 behavior changes'
 - type: reference
   path: Privacy Sandbox phaseout status plus historical SDK Runtime architecture and backward compatibility
+- type: article
+  path: 技术文章/source/juejin-android/2026-09-07-76816756-架构测试为何需要双视图.md
+  role: Kotlin/Gradle 双视图架构测试与 SDK 适配层边界
 ---
 
 # 第三方 SDK 性能影响评估与治理实战
@@ -449,7 +455,13 @@ class GovernedAnalytics(
 
 这里的开关阻止后续调用，并只在供应商支持时执行停止操作。它不能从进程中卸载已经加载的 DEX/`.so`，也不能自动撤销静态初始化、未知监听器或已经排队的任务；SDK 必须提供成对的注册/反注册和可重复调用的停止契约。
 
-### 10.2 远程开关的边界
+### 10.2 用双视图测试守住供应商边界
+
+适配层边界还需要被构建和源码两条线同时约束：Gradle 图能暴露业务模块是否直接依赖供应商 SDK 模块或同级实现模块；Kotlin 源模型能暴露 `UiState`、领域接口、公共 repository 等签名是否导入或返回供应商 DTO、持久化实体或 Android/框架类型。[来源: 技术文章/source/juejin-android/2026-09-07-76816756-架构测试为何需要双视图.md]
+
+可执行规则应放在普通测试和 CI 中，而不是只靠代码审查记忆。对 SDK 治理来说，最低限度可以检查三类契约：只有适配层可以依赖供应商 artifact；公共接口只暴露应用自有类型；KMP 或共享模块禁止意外导入 Android 框架或供应商实现包。若规则太宽，例如笼统禁止 `kotlinx..`，会误伤协程、序列化等合法跨平台库；应从少量高信号规则开始，写明例外并跟随架构演进维护。[来源: 技术文章/source/juejin-android/2026-09-07-76816756-架构测试为何需要双视图.md]
+
+### 10.3 远程开关的边界
 
 远程配置适合阻止后续初始化、停止新请求或隐藏依赖 SDK 的功能，但要满足：
 
@@ -583,3 +595,4 @@ SDK 治理的输出不该是一份静态名单，而应是一组能被重复执�
 - [SDK Runtime 兼容模式](https://privacysandbox.google.com/private-advertising/sdk-runtime/backward-compatibility)
 - [Google Play SDK Index](https://developer.android.com/distribute/sdk-index)
 - [Google Play SDK Index](https://support.google.com/googleplay/android-developer/answer/13326895?hl=zh-Hans)
+- [架构测试为何需要双视图](https://juejin.cn/post/7681675659220287514)
