@@ -4976,7 +4976,9 @@
       "summary": "--- phase: 1 sub_question: 4 title: 性能/稳定性工程师交叉点 fetched: 2026-09-08T09:08:12+08:00 --- # Dump 4 · 与 Android 性能工作的交叉 ## 仓库已提供的诊断面 1. **analyze_logs** 工具（Pro 侧诊断）：专用 LogAnalyzerNode，查询失败/错误/系统事件 2. MCP 工作流文案：真机执行时可「profil",
       "chapter": "ch16",
       "processed_at": "2026-09-09T06:20:04.978031+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
+      "status": "body-applied",
+      "previous_action": "indexed-only-chapter-freeze",
       "score": 15,
       "target_path": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
       "route_confidence": 19,
@@ -4987,7 +4989,10 @@
         "pro",
         "profil"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "applied_at": "2026-09-09T07:17:27+08:00",
+      "applied_run_id": "20260909-071514-64cb95b1",
+      "canonical_target_chapter": "ch26"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
