@@ -2,7 +2,7 @@
 title: ART 动态方法追踪与 JVMTI 边界
 chapter: '26.15'
 section: '26.15'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 tags:
 - ART
@@ -26,8 +26,8 @@ related_chapters:
 - '26.14'
 - '15.1'
 last_verified: '2026-08-25'
-last_source_verified_at: '2026-08-15'
-last_verified_against: arXiv:2512.21555v1, still the only public version and without venue metadata as of 2026-08-15; AOSP android-17.0.0_r1 ART sources; current Android Developers, AOSP ART TI, Android 17 features, and Perfetto documentation retrieved 2026-08-15
+last_source_verified_at: '2026-09-09'
+last_verified_against: arXiv:2512.21555v1, still the only public version and without venue metadata as of 2026-08-15; AOSP android-17.0.0_r1 ART sources; current Android Developers, AOSP ART TI, Android 17 features, and Perfetto documentation retrieved 2026-08-15; selected ARTEMIS performance/stability material read 2026-09-09
 confidence: medium
 sources:
 - type: paper
@@ -93,9 +93,15 @@ sources:
   path: https://developer.android.com/studio/profile/record-java-kotlin-allocations
 - type: official
   path: https://perfetto.dev/docs/data-sources/native-heap-profiler
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: reviewed
+- type: obsidian
+  path: DeepResearch/2026-09-08-morning-google-ARTEMIS-真机自然语言自动化-研究材料/04-dump-perf-engineer-cross.md
+  note: ARTEMIS 真机自动化与性能/稳定性诊断边界材料
+pipeline_stage: ready-for-review
+task2b_state: body-applied
+task6_state: needs-review
+task9_state: needs-review
+last_body_apply_at: '2026-09-09T07:17:27+08:00'
+last_body_apply_run_id: 20260909-071514-64cb95b1
 last_rework_at: '2026-08-25T09:36:49+08:00'
 last_rework_run_id: 20260825-093527-rework-bf95039c
 last_consolidated_at: '2026-08-24'
@@ -379,6 +385,12 @@ XTrace 配置命中该注册方法并记录调用栈。论文展示的调用路�
 [`ProfilingManager`](https://developer.android.com/reference/android/os/ProfilingManager) 从 API 35 提供 system trace、stack sampling、heap profile 和 Java heap dump 请求。heap profile 会在分配发生时采样并保留代码位置，Java heap dump 则保存某一时刻的 Java 对象及引用关系。API 36 加入系统触发 profiling；Android 17 又增加冷启动、OOM、过度 CPU 使用和系统异常等触发类型，不同触发器会返回系统 trace、调用栈样本或堆转储。请求受限流约束，也不保证每次执行；返回结果经过脱敏，只包含请求应用相关信息。
 
 采样适合回答“哪条路径最热”，自有代码插桩适合记录业务状态的写入者，两者都比修改 ART 私有入口更容易验证和维护。只有目标位于设备 Framework、事件短到采样难以命中、并且必须记录每次调用时，XTrace 这类方案才有独特价值。此时工作范围已经属于运行时平台工程，超出常规应用监控 SDK。
+
+#### 自动化复现链路要单独入账
+
+自然语言真机自动化可以帮助复现问题，但它不是 ART 或 JVMTI 的方法事件来源。ARTEMIS 材料列出的诊断面包括 `analyze_logs`、录屏、`video_analyzer`、step screenshot、`inspect_trace`，并提到工作流文案中有 `profile performance` 与 metric tables；同一材料明确说明 README 未声明具体 Perfetto 集成，因此不能把这类报告直接等同于 Perfetto trace 或 ART method tracing。[来源: DeepResearch/2026-09-08-morning-google-ARTEMIS-真机自然语言自动化-研究材料/04-dump-perf-engineer-cross.md]
+
+用自动化控制器驱动 jank、启动或 soak 实验时，实验记录应把外部刺激也写入证据：输入注入路径，人手点击还是自动化点击，连续点击间隔，弹窗 Safety Net/自愈是否改变冷启动或首帧路径，`ARTEMIS_KEEP_DEVICE_AWAKE` 是否保持唤醒，以及 `DeviceExecutionLock` 是否让单设备同一时刻只有一个任务运行。[来源: DeepResearch/2026-09-08-morning-google-ARTEMIS-真机自然语言自动化-研究材料/04-dump-perf-engineer-cross.md] 这些字段回答的是“这次复现如何施加负载”；ART/JVMTI、Perfetto 和编译期插桩回答的是“目标进程和系统当时发生了什么”。材料还提醒，自动化决策时延会叠在 UI 动画与网络上；因此两类证据要用时间戳或步骤编号对齐，不能把外部控制时延写成应用方法耗时或 ART 事件开销。[来源: DeepResearch/2026-09-08-morning-google-ARTEMIS-真机自然语言自动化-研究材料/04-dump-perf-engineer-cross.md]
 
 
 ## JVMTI 事件、Attach 与去优化边界
@@ -737,3 +749,4 @@ JVMTI/ART TI 提供标准的运行时实验入口，可以验证方法事件、G
 8. AOSP 文档：[ART TI](https://source.android.com/docs/core/runtime/art-ti)。
 9. Perfetto：[Tracing documentation](https://perfetto.dev/docs/)。
 10. [26.12 编译期字节码插桩与监控自动化](12-bytecode-instrumentation-monitoring-automation.md)。
+11. DeepResearch：`2026-09-08-morning-google-ARTEMIS-真机自然语言自动化-研究材料/04-dump-perf-engineer-cross.md`。
