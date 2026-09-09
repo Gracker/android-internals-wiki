@@ -4993,6 +4993,92 @@
       "applied_at": "2026-09-09T07:17:27+08:00",
       "applied_run_id": "20260909-071514-64cb95b1",
       "canonical_target_chapter": "ch26"
+    },
+    {
+      "path": "https://juejin.cn/post/7680996030843125796",
+      "title": "[技术文章] 日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源",
+      "summary": "腾讯音乐开源 Android 秒级增量构建插件 Jugg（AS 插件、无侵入）：全量构建后源码修改脱离 Gradle 走独立旁路，直接调 javac/kotlinc/D8/定制 AAPT2；inclink 把资源 link 拆成加载+增量链接，1万+资源工程 10-15s 降到约 0.2s，代价是删除的资源 ID 残留到下次全量构建。正确性靠影响扩散分析（签名变化/常量内联触发连锁编译），部署热重载优先（复用 Apply Changes JVMTI 通道约 0.9s）、类结构变更切热修复、魔改 ROM 降级经典热修复。80 万次生产编译验证，累计省约 3.6 万小时。",
+      "chapter": "ch16",
+      "processed_at": "2026-09-10T06:20:52.342603+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7682633827692658740",
+      "title": "[技术文章] Android17 重写 MessageQueue，解决 Handler 隐性卡顿",
+      "summary": "Android 17（targetSdk 37）将 MessageQueue 替换为无锁 DeliQueue：Treiber 栈 CAS 入队 O(1) + 主线程独占最小堆排序 O(logN)，入队与消费解耦；旧架构全局 synchronized 锁存在优先级反转（低优先级线程持锁被抢占，主线程 BLOCKED 丢帧）。撤销消息用 CAS 标记+延迟删除，同步屏障迁到 WaitState 原子状态位。兼容风险：mMessages 恒为 null，反射窥探内部状态的库失效；debuggable 可用 am compat enable USE_NEW_MESSAGEQUEUE 提前验证。文中「5000 倍」数字官方博客无出处，官方口径为插入 O(N)→O(1)。",
+      "chapter": "ch07",
+      "processed_at": "2026-09-10T06:20:52.342603+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "target_path": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "android17",
+        "messagequeue",
+        "handler",
+        "deliqueue"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "https://juejin.cn/post/7682724380077785103",
+      "title": "[技术文章] 基于 WebUSB 与 CDP：在浏览器端实现 Android 设备通信与无证书抓包实践",
+      "summary": "浏览器扩展 TabQA 用 WebUSB 直连 Android 设备实现 ADB 协议（24 字节报文头、RSA 鉴权），免本地 ADB Server 与 5037 端口冲突；抓包走 CDP：WebView 远程调试 + Network.enable 从渲染引擎内部取请求/响应，HTTPS 与证书固定天然不受影响，免装 CA 根证书（绕开 Android 7+ 不信用户证书）。偶发 Crash 取证用内存环形缓冲区（投屏秒级切片 + logcat 匹配 FATAL/ANR，触发时导出时间对齐证据）。定位敏捷测试而非高刷场景。",
+      "chapter": "ch02",
+      "processed_at": "2026-09-10T06:20:52.342603+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7682628131855728675",
+      "title": "[技术文章] AI时代下，Android的边界正在消失",
+      "summary": "一线 Android 开发者年度观察：Agent 接管多步骤任务后开始跨 iOS/Flutter/鸿蒙开发，身份从「Android 开发」转向「以客户端为核心的 AI 工程师」。关键基础设施：Android CLI（Agent-first 统一入口：环境/Emulator/安装运行/读 UI Layout）、官方 Android Skills 仓库（AGP 9 升级、Edge-to-Edge、R8 分析）、项目 AGENTS.md 写团队约定。判断：Android 底层功（卡顿/ANR 排查）不降级；App Functions 要求业务逻辑从点击事件里拆出来供 Agent 调用；人转向定义问题、设计系统、判断结果。",
+      "chapter": "ch07",
+      "processed_at": "2026-09-10T06:20:52.342603+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-10-76809960-日常修改，3秒生效：腾讯音乐 Andro.md",
+      "title": "[技术文章] 日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源腾讯音乐正式开源 Android 秒级增量构建插件",
+      "summary": "> 发布时间: 2026-09-03T12:51:33.000Z > 原文链接: https://juejin.cn/post/7680996030843125796 2026-09-03 811 阅读29分钟 Android 编译优化 > 本文首发自公众号：腾讯音乐技术团队 > 5 年研发和内部使用，累积 80 万次生产工程编译验证，让大型 Android 工程日常编译...",
+      "chapter": "ch16",
+      "processed_at": "2026-09-10T06:20:52.342603+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-10-76826338-Android17 重写 Message.md",
+      "title": "[技术文章] Android17 重写 MessageQueue，解决 Handler 隐性卡顿服役 20 年的 Handler 迎来",
+      "summary": "> 发布时间: 2026-09-07T08:09:17.000Z > 原文链接: https://juejin.cn/post/7682633827692658740 2026-09-07 141 阅读8分钟 服役 20 年的 Handler 迎来大换血：深入拆解 Android 17 无锁 MessageQueue (DeliQueue) 如果你做过 Android 性...",
+      "chapter": "ch07",
+      "processed_at": "2026-09-10T06:20:52.342603+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "android17",
+        "messagequeue",
+        "handler",
+        "deliqueue"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-10-76827243-基于 WebUSB 与 CDP：在浏览器.md",
+      "title": "[技术文章] 基于 WebUSB 与 CDP：在浏览器端实现 Android 设备通信与无证书抓包实践本文结合我们在开源浏览器扩展 T",
+      "summary": "> 发布时间: 2026-09-08T02:26:03.000Z > 原文链接: https://juejin.cn/post/7682724380077785103 2026-09-08 77 阅读5分钟 在移动端 Android 调试与测试过程中，Scrcpy 等传统桌面工具通常依赖宿主机安装的 ADB Server（通过本地 5037 端口与设备通信）。虽然性能极高...",
+      "chapter": "ch16",
+      "processed_at": "2026-09-10T06:20:52.342603+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
