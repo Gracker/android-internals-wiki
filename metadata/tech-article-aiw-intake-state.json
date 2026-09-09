@@ -4337,6 +4337,66 @@
       "status": "appended",
       "title": "曾经安卓开发人手一个的EventBus，为什么现在没人爱用了？"
     },
+    "source/juejin-android/2026-09-10-76809960-日常修改，3秒生效：腾讯音乐 Andro.md": {
+      "chapter": "待分类",
+      "entry_id": "84cb230130af858a",
+      "last_appended": "2026-09-10T05:25:43.866181+08:00",
+      "last_seen": "2026-09-10T05:25:43.866181+08:00",
+      "mtime": 1788985702.003219,
+      "score": 19,
+      "sha256": "e9eba6924eb0ae73a5ea469d9d2285de85132c4a811b0fe76fdd9db09c2ba18d",
+      "size": 33845,
+      "status": "appended",
+      "title": "日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源腾讯音乐正式开源 Android 秒级增量构建插件"
+    },
+    "source/juejin-android/2026-09-10-76826281-AI时代下，Android的边界正在消失.md": {
+      "chapter": "待分类",
+      "entry_id": "28d0f6f616eac667",
+      "last_appended": "2026-09-10T05:25:43.866181+08:00",
+      "last_seen": "2026-09-10T05:25:43.866181+08:00",
+      "mtime": 1788985702.008571,
+      "score": 16,
+      "sha256": "9ae3687e70a9e885283a0030875db57b25f6bf8b63b87c7452e5b39f10b02191",
+      "size": 20532,
+      "status": "appended",
+      "title": "AI时代下，Android的边界正在消失写在前面 好久没发文章了，难得有空闲时间，那就坐下来好好和各位小伙伴聊聊天，聊聊"
+    },
+    "source/juejin-android/2026-09-10-76826338-Android17 重写 Message.md": {
+      "chapter": "ch07-smoothness",
+      "entry_id": "ed980cec7622e17f",
+      "last_appended": "2026-09-10T05:25:43.866181+08:00",
+      "last_seen": "2026-09-10T05:25:43.866181+08:00",
+      "mtime": 1788985702.0043766,
+      "score": 19,
+      "sha256": "8e8d5ffbefc67d2dc8d5ebbbbf1da83803da8cb2ac3bb68715ba8fe3a3498fb1",
+      "size": 9575,
+      "status": "appended",
+      "title": "Android17 重写 MessageQueue，解决 Handler 隐性卡顿服役 20 年的 Handler 迎来"
+    },
+    "source/juejin-android/2026-09-10-76827243-基于 WebUSB 与 CDP：在浏览器.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "8c53862b134f6fa4",
+      "last_appended": "2026-09-10T05:25:43.866181+08:00",
+      "last_seen": "2026-09-10T05:25:43.866181+08:00",
+      "mtime": 1788985702.0068364,
+      "score": 19,
+      "sha256": "f2479ce3a24259fe3cab6a2e3383f230c0ae7d7e2e57f614151037b53fa79f49",
+      "size": 8357,
+      "status": "appended",
+      "title": "基于 WebUSB 与 CDP：在浏览器端实现 Android 设备通信与无证书抓包实践本文结合我们在开源浏览器扩展 T"
+    },
+    "source/juejin-android/2026-09-10-76828003-Android 工业手持机蓝牙扫描失败：.md": {
+      "chapter": "待分类",
+      "entry_id": "abe2942a7c63e3fb",
+      "last_appended": "2026-09-10T05:25:43.866181+08:00",
+      "last_seen": "2026-09-10T05:25:43.866181+08:00",
+      "mtime": 1788985702.0057912,
+      "score": 13,
+      "sha256": "cc63005c981cc98d5df864d8f37b19de67fbdf6c9e61607219075a37505b4182",
+      "size": 14399,
+      "status": "appended",
+      "title": "Android 工业手持机蓝牙扫描失败：为什么同时需要蓝牙和定位权限Android 工业手持机蓝牙扫描失败：为什么同时需"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -6144,13 +6204,13 @@
     }
   },
   "last_report": {
-    "appended": 0,
-    "considered": 0,
-    "cutoff": "2026-09-08T05:20:09.345389+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-09.md",
+    "appended": 5,
+    "considered": 5,
+    "cutoff": "2026-09-09T05:20:56.985838+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-10.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1984,
+    "scanned": 1989,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
@@ -6161,7 +6221,7 @@
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-09T05:25:56.985838+08:00",
+  "last_run_at": "2026-09-10T05:25:43.866181+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
