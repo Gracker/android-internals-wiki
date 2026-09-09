@@ -5058,7 +5058,7 @@
       "summary": "> 发布时间: 2026-09-07T08:09:17.000Z > 原文链接: https://juejin.cn/post/7682633827692658740 2026-09-07 141 阅读8分钟 服役 20 年的 Handler 迎来大换血：深入拆解 Android 17 无锁 MessageQueue (DeliQueue) 如果你做过 Android 性...",
       "chapter": "ch07",
       "processed_at": "2026-09-10T06:20:52.342603+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
       "score": 19,
       "target_path": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
       "route_confidence": 16,
@@ -5068,7 +5068,12 @@
         "handler",
         "deliqueue"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "previous_action": "indexed-only-chapter-freeze",
+      "status": "body-applied",
+      "applied_at": "2026-09-10T07:18:45+08:00",
+      "applied_run_id": "20260910-071502-666ddd18",
+      "canonical_target_chapter": "ch01"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-10-76827243-基于 WebUSB 与 CDP：在浏览器.md",
