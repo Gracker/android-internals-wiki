@@ -2,7 +2,7 @@
 title: ART 动态方法追踪与 JVMTI 边界
 chapter: '26.15'
 section: '26.15'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 tags:
 - ART
@@ -25,14 +25,14 @@ related_chapters:
 - '26.12'
 - '26.14'
 - '15.1'
-last_verified: '2026-08-25'
+last_verified: '2026-09-09'
 last_source_verified_at: '2026-09-09'
-last_verified_against: arXiv:2512.21555v1, still the only public version and without venue metadata as of 2026-08-15; AOSP android-17.0.0_r1 ART sources; current Android Developers, AOSP ART TI, Android 17 features, and Perfetto documentation retrieved 2026-08-15; selected ARTEMIS performance/stability material read 2026-09-09
+last_verified_against: arXiv:2512.21555v1 submission history and venue metadata checked 2026-09-09; AOSP android-17.0.0_r1 ART instrumentation/trace/JVMTI sources spot-checked 2026-09-09; Android Developers Debug, method tracing, ProfilingManager, Android 17 features and profileable docs spot-checked 2026-09-09; selected ARTEMIS performance/stability material read 2026-09-09
 confidence: medium
 sources:
 - type: paper
   path: https://arxiv.org/abs/2512.21555
-  note: 'XTrace: A Non-Invasive Dynamic Tracing Framework for Android Applications in Production; arXiv v1 submitted 2025-12-25; no public venue metadata as of 2026-08-15'
+  note: 'XTrace: A Non-Invasive Dynamic Tracing Framework for Android Applications in Production; arXiv v1 submitted 2025-12-25; no public venue metadata as of 2026-09-09'
 - type: legacy-reference-preserved
   path: DeepResearch/XTrace：字节跳动生产级 Android 动态追踪系统深度解析.md
 - type: legacy-reference-preserved
@@ -96,10 +96,12 @@ sources:
 - type: obsidian
   path: DeepResearch/2026-09-08-morning-google-ARTEMIS-真机自然语言自动化-研究材料/04-dump-perf-engineer-cross.md
   note: ARTEMIS 真机自动化与性能/稳定性诊断边界材料
-pipeline_stage: ready-for-review
+pipeline_stage: finalized
 task2b_state: body-applied
-task6_state: needs-review
-task9_state: needs-review
+task6_state: reviewed
+task9_state: reviewed
+last_review_finalize_at: '2026-09-09T08:10:42+08:00'
+last_review_finalize_run_id: 20260909-080521-b6c72fe3
 last_body_apply_at: '2026-09-09T07:17:27+08:00'
 last_body_apply_run_id: 20260909-071514-64cb95b1
 last_rework_at: '2026-08-25T09:36:49+08:00'
@@ -126,7 +128,7 @@ ART 动态方法追踪可以通过运行时插桩或 JVMTI 事件获得方法级
 
 ### 证据范围
 
-截至 2026-08-15，arXiv 提交历史仍只有 2025-12-25 上传的 [arXiv v1 手稿](https://arxiv.org/abs/2512.21555)。arXiv 页面没有会议或期刊元数据；PDF 上的 `Conference’17, July 2017, Washington, DC, USA`、假 ISBN 和占位 DOI 来自 ACM 模板，不能作为正式发表证据。
+截至 2026-09-09，arXiv 提交历史仍只有 2025-12-25 上传的 [arXiv v1 手稿](https://arxiv.org/abs/2512.21555)。arXiv 页面只提供 arXiv-issued DataCite DOI，没有会议或期刊元数据；PDF 上的 `Conference’17, July 2017, Washington, DC, USA`、假 ISBN 和模板 DOI 来自 ACM 模板，不能作为正式发表证据。
 
 论文也未附带 XTrace 源码、SDK、符号表或可复现实验脚本。文中的结论按三类证据区分：
 
