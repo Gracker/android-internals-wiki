@@ -2,7 +2,7 @@
 title: MessageQueue 与锁竞争：从 DeliQueue 到系统等待链
 chapter: '1.8'
 section: '1.8'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 1.0 (API 1) - Android 17 (API 37)
 last_verified: '2026-07-25'
 last_verified_against: AOSP android-17.0.0_r1 + Android 17 official documentation
@@ -64,6 +64,9 @@ sources:
   path: https://perfetto.dev/docs/analysis/stdlib-docs#androidmonitor_contention
 - type: official
   path: https://perfetto.dev/docs/analysis/stdlib-docs#androidbinder
+- type: article
+  path: 技术文章/source/juejin-android/2026-09-10-76826338-Android17 重写 Message.md
+  role: 主线程投递入口和旧队列争锁场景提示
 tags:
 - android
 - looper
@@ -84,10 +87,12 @@ related_chapters:
 - '7.1'
 - '1.9'
 - '9.1'
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-pipeline_stage: ready-to-publish
+task6_state: needs-review
+task9_state: needs-review
+task2b_state: body-applied
+pipeline_stage: ready-for-review
+last_body_apply_at: '2026-09-10T07:18:45+08:00'
+last_body_apply_run_id: '20260910-071502-666ddd18'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/01.26-messagqueue-deliqueue-optimization.md
@@ -156,6 +161,8 @@ private static boolean loopOnce(final Looper me,
 UI 线程表面上被低优先级线程阻塞，实际等待时间还被中优先级任务放大，这就是优先级反转。Perfetto 中常见的证据是主线程出现 `monitor contention with ...`，并且能定位持锁线程和加锁代码位置。
 
 #### 哪些业务更容易暴露旧结构的上限
+
+一个容易漏看的入口是“切回主线程”本身。后台线程不需要直接改 UI；只要它调用 `Handler.post()`，或经 `runOnUiThread()`、RxJava 主线程调度、协程主线程调度等封装把回调送到主线程，它就是在给主 Looper 增加生产者压力。[来源: 技术文章/source/juejin-android/2026-09-10-76826338-Android17 重写 Message.md] 对旧实现来说，这类入口最终会汇聚到同一条 MessageQueue 入队路径；对 DeliQueue 来说，优化的也是这段投递与排序的结构，而不是回调自身的工作量。[已验证: frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java @ android-17.0.0_r1]
 
 - 多个后台线程高频向主线程 `post()`。
 - 队列已经积压大量延时消息，生产者需要在长链表中寻找插入位置。
