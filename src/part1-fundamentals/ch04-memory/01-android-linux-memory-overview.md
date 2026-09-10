@@ -2,10 +2,10 @@
 title: Android 与 Linux 内存管理全景
 chapter: '4.1'
 section: '4.1'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-09-06'
-last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material
+last_verified: '2026-09-11'
+last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs / source-index material juejin-android 2026-09-11 Memory Limiter article
 confidence: medium-high
 sources:
 - type: official
@@ -18,6 +18,10 @@ sources:
   path: https://source.android.com/docs/core/perf/lmkd
 - type: official
   path: https://source.android.com/docs/core/perf/cgroups
+- type: official
+  path: https://source.android.com/docs/core/perf/memory-limiter
+- type: official
+  path: https://source.android.com/docs/core/perf/pmgd
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/am/ProcessList.java
 - type: aosp
@@ -96,6 +100,8 @@ sources:
   path: Cubox/Silk-安卓GC与内核内存管理的进一步融合-2025-10-20.md (TACO '25)
 - type: reference
   path: 技术文章/source/juejin-android/2026-09-06-76815905-APM-OOMDetector-腾讯Mars-OOM-黑匣子实现原理与落盘结构.md
+- type: reference
+  path: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md
 tags:
 - android-memory
 - memory-model
@@ -118,23 +124,24 @@ tags:
 - LRU
 - MGLRU
 - 16K-page
+- pmgd
 related_chapters:
 - '4.2'
 - '4.3'
 - '4.4'
 - '4.5'
 - '2.9'
-pipeline_stage: finalized
-task6_state: verified
-task9_state: verified
+pipeline_stage: ready-for-review
+task6_state: ready-for-review
+task9_state: ready-for-review
 task2b_state: body-applied
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md
 - src/part1-fundamentals/ch04-memory/01-memory-overview.md
 - src/part1-fundamentals/ch04-memory/02-linux-memory.md
-last_body_apply_at: '2026-09-06T09:17:27+08:00'
-last_body_apply_run_id: '20260906-091528-8790763f'
+last_body_apply_at: '2026-09-11T07:15:08+08:00'
+last_body_apply_run_id: '20260911-071508-9bd77310'
 ---
 
 # Android 与 Linux 内存管理全景
@@ -411,29 +418,40 @@ Android 通过 `libprocessgroup` 与任务配置文件（task profile）管理�
 
 #### Android 17 MemoryLimiter：只在部分设备生效
 
-Android 17 引入面向单应用的 MemoryLimiter 行为变化。它由 `system_server` 中的 Java 服务和 JNI 组件组成，使用每进程 cgroup v2 监控应用进程。厂商配置文件位于 `/vendor/etc/memory-limiter-config.xml`；该文件并非必需，没有适用配置时功能会关闭。因此，不能把“Android 17 应用都有固定内存上限”当作通用结论。
+Android 17 引入面向单应用的 MemoryLimiter 行为变化。它由 `system_server` 中的 Java 服务和 JNI 组件组成，使用每进程 cgroup v2 监控应用进程；它不是 `Runtime.maxMemory()` 或 Dalvik/ART heap size 调整，而是进程外部的 cgroup 边界。Java 堆之外的原生匿名映射、WebView/Bitmap 背后占用和图形相关缓存，只要最终表现为受统计的匿名页、共享内存或 Swap 增长，也可能把进程推近限制。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android 17 Memory Limiter 官方文档；AOSP android-17.0.0_r1 `MemoryLimiter.java` 与 JNI]
+
+在 `android-17.0.0_r1` 源码锚点下，默认配置文件路径为 `/vendor/etc/memory-limiter-config.xml`；该文件并非必需，没有配置文件或没有匹配当前 RAM 的 limit set 时功能会关闭。因此，不能把“Android 17 应用都有固定内存上限”当作通用结论，阈值也必须以目标设备镜像和运行时 `am memory-limiter status` 为准。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java` `CONFIG_PATH` 与 `isMemoryLimiterSupported()`]
 
 Android 17 r1 源码中的关键流程如下：
 
-1. Java 层按进程状态选择 `visible`、`not-visible`、`cached` 或 `unrestricted` 限制档位。
-2. JNI 层把限制写入每进程 cgroup 的 `memory.high` 和 `memory.swap.max`。
-3. JNI 从 `memory.stat` 读取 `anon` 与 `shmem`，从 `memory.swap.current` 读取 Swap。
-4. 联合判断会比较 `anon + shmem + swapCurrent` 与 `memHigh + swapMax`。
-5. 联合上限越界后，服务解除该进程的限制；相关系统开关启用时触发异常分析事件 `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`，并安排在 30 秒后终止进程。
+1. Java 层按进程状态选择 `visible`、`not-visible`、`cached` 或 `unrestricted` 限制档位。`PERSISTENT`/`PERSISTENT_UI` 为 `unrestricted`；`TOP`、`BOUND_TOP`、`IMPORTANT_FOREGROUND`、`TOP_SLEEPING` 为 `visible`；`FOREGROUND_SERVICE` 与 `BOUND_FOREGROUND_SERVICE` 映射为 `not-visible`，所以前台服务通知不等于 MemoryLimiter 的可见档位。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java` 进程状态映射]
+2. JNI 层把限制写入每进程 cgroup 的 `memory.high` 和 `memory.swap.max`。 [已验证: AOSP android-17.0.0_r1 `com_android_server_am_MemoryLimiter.cpp`]
+3. JNI 从 `memory.stat` 读取 `anon` 与 `shmem`，从 `memory.swap.current` 读取 Swap。 [已验证: AOSP android-17.0.0_r1 `com_android_server_am_MemoryLimiter.cpp`]
+4. 联合判断会比较 `anon + shmem + swapCurrent` 与 `memHigh + swapMax`。 [已验证: AOSP android-17.0.0_r1 `com_android_server_am_MemoryLimiter.cpp`]
+5. 联合上限越界后，服务解除该进程的限制；相关系统开关启用时触发异常分析事件 `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`，并安排在 30 秒后终止进程。 [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java`]
 
-应用侧可通过 `ApplicationExitInfo` 区分该类退出：原因字段（reason）为 `REASON_OTHER`，描述字段（description）包含 `MemoryLimiter:AnonSwap`。测试设备可以使用以下命令确认功能状态和临时配置：
+应用侧可通过 `ApplicationExitInfo` 区分该类退出：原因字段（reason）为 `REASON_OTHER`，描述字段（description）包含 `MemoryLimiter:AnonSwap`。测试设备可以使用以下命令确认功能状态和临时配置： [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java` 与 `ActivityManagerShellCommand.java`]
 
 ```bash
 adb shell am memory-limiter status
 adb shell am memory-limiter ignore 10087
+adb shell am memory-limiter ignore all
 adb shell am memory-limiter ignore none
 adb shell am memory-limiter manual 12345 10
 adb shell am memory-limiter manual 12345 none
 ```
 
-`ignore` 接受用户 ID（UID）、`none` 或 `all`；`manual` 在 AOSP r1 的 shell 解析中接受进程 ID（PID）与整数或 `none`，源码随后把整数按 MiB 转换为限制值，而帮助文本仍写成 `PERCENT|none`。使用前应以目标构建实测为准，不能写成支持 `max` 的通用接口。手动限制随进程重启或状态变化而失效，适合测试，不应作为应用运行时能力依赖。
+`ignore` 在 r1 接受用户 ID（UID）、`none` 或 `all`；`manual` 在 r1 的 shell 解析中接受进程 ID（PID）与整数或 `none`，源码随后把整数按 MiB 转换为限制值，而帮助文本仍写成 `PERCENT|none`。公开二手材料可能把命令写成 `<limit>|max|none`，当前官方文档也给出不同单位写法；使用前应以目标构建源码、`am help` 和实测为准，不能把 `max` 写成 r1 通用接口。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android Memory Limiter 官方文档；AOSP android-17.0.0_r1 `ActivityManagerShellCommand.java` 与 `MemoryLimiter.java`]
 
-MemoryLimiter 与 lmkd 的决策依据也不同。MemoryLimiter 约束单个受监控进程的匿名页与交换空间；lmkd 在系统压力下结合进程重要性等信息选择终止目标。复盘进程消失时，应先读取 `ApplicationExitInfo`、系统日志和 PSI，再确定是哪条路径。
+MemoryLimiter 与 lmkd 的决策依据也不同。MemoryLimiter 约束单个受监控进程的匿名页、共享内存与交换空间；lmkd 在系统压力下结合进程重要性等信息选择终止目标。复盘进程消失时，应先读取 `ApplicationExitInfo`、系统日志和 PSI，再确定是哪条路径。 [已验证: AOSP android-17.0.0_r1 MemoryLimiter 源码；本章“MemAvailable 与 PSI 描述不同维度”段落]
+
+#### PMGD 与 MemoryLimiter 不是同一个机制
+
+Android 17 官方文档还描述了进程内存守护进程 PMGD（Process Memory Guardian Daemon）。PMGD 不是按应用 UID 与前后台状态分档的 MemoryLimiter，而是由 `/vendor/etc/pmgd/config.json` 点名目标进程，并通过 cgroup task profile 设置 `memory.high`、通过 `anon_limit_in_mb` 设置匿名内存硬边界；目标可以是 `system_server` 这类指定进程。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android PMGD 官方文档 `https://source.android.com/docs/core/perf/pmgd`]
+
+PMGD 使用 `inotify` 监听 cgroup v2 的 `memory.events`。命中后，它先检查匿名内存；如果超过 `anon_limit_in_mb` 会立即终止目标进程。如果匿名内存未超过硬边界，PMGD 会等待 `reclaim_wait_time_secs`，再检查 `memory.current` 是否仍大于等于 `memory.high`，或匿名内存是否超过硬边界；仍超限时终止进程，并记录 Statsd memory atoms。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android PMGD 官方文档 `https://source.android.com/docs/core/perf/pmgd`]
+
+因此，看到某个系统或厂商进程因内存被终止时，不能直接归因到普通应用的 MemoryLimiter。排查时应同时确认 PMGD 配置、SELinux 策略、`memory.events`/`memory.current`、`ApplicationExitInfo`、lmkd 日志与 PSI 时间线。 [已验证: Android PMGD 官方文档；本章“MemAvailable 与 PSI 描述不同维度”段落]
 
 ### ZRAM 与 Swap：容量、压缩数据和 RAM 成本
 
@@ -575,6 +593,8 @@ ZRAM 是匿名页回收策略的一部分。风险来自持续换入换出、回
 - [AOSP Android 17 `MemoryLimiter.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/jni/com_android_server_am_MemoryLimiter.cpp)
 - [Android 17：所有应用的行为变更](https://developer.android.com/about/versions/17/behavior-changes-all)
 - [Android Memory Limiter（当前官方说明，配置路径以目标源码标签和设备镜像为准）](https://source.android.com/docs/core/perf/memory-limiter)
+- [Android PMGD（Process Memory Guardian Daemon）](https://source.android.com/docs/core/perf/pmgd)
+- [解读 Android 17 全新内存限制，有没有“豁免”后门？](../../../../技术文章/source/juejin-android/2026-09-11-76535333-解读%20Android%2017%20全新内存限制，有没有.md)
 - [Android 应用内存管理](https://developer.android.com/topic/performance/memory)
 - [Android 图形内存管理](https://developer.android.com/topic/performance/graphics/manage-memory)
 - [支持 16 KiB 页大小](https://developer.android.com/guide/practices/page-sizes)
