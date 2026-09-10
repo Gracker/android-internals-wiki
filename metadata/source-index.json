@@ -5089,6 +5089,25 @@
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md",
+      "title": "[技术文章] 解读 Android 17 全新内存限制，有没有“豁免”后门？App 需要适配和做的基本在 Android 17 内存管",
+      "summary": "> 发布时间: 2026-06-21T11:07:06.000Z > 原文链接: https://juejin.cn/post/7653533398468542473 2026-06-21 1,669 阅读6分钟 App 需要适配和做的基本在 Android 17 内存管理将严格管控，App 要注意适配都已经聊过了，这次 Android 17 正式版发布也就说明这个能力正...",
+      "chapter": "ch04",
+      "processed_at": "2026-09-11T06:20:59.969149+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "route_confidence": 21,
+      "route_terms": [
+        "app",
+        "内存管",
+        "juejin.cn",
+        "juejin-android",
+        "ch04-memory"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
