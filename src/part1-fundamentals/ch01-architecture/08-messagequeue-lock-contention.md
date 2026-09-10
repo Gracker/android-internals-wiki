@@ -2,10 +2,10 @@
 title: MessageQueue 与锁竞争：从 DeliQueue 到系统等待链
 chapter: '1.8'
 section: '1.8'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 1.0 (API 1) - Android 17 (API 37)
-last_verified: '2026-07-25'
-last_verified_against: AOSP android-17.0.0_r1 + Android 17 official documentation
+last_verified: '2026-09-10'
+last_verified_against: AOSP android-17.0.0_r1 + Android 17 official MessageQueue/Perfetto documentation + ACK android17-6.18-2026-06_r6
 confidence: high
 sources:
 - type: aosp
@@ -38,6 +38,8 @@ sources:
   path: https://developer.android.com/about/versions/17/behavior-changes-17
 - type: official
   path: https://developer.android.com/reference/android/os/MessageQueue.IdleHandler
+- type: official
+  path: https://developer.android.com/reference/android/os/TestLooperManager
 - type: official
   path: https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html
 - type: aosp
@@ -87,10 +89,12 @@ related_chapters:
 - '7.1'
 - '1.9'
 - '9.1'
-task6_state: needs-review
-task9_state: needs-review
+task6_state: verified
+task9_state: finalized
 task2b_state: body-applied
-pipeline_stage: ready-for-review
+pipeline_stage: finalized
+last_review_finalize_at: '2026-09-10T08:12:58+08:00'
+last_review_finalize_run_id: '20260910-080508-2b03546b'
 last_body_apply_at: '2026-09-10T07:18:45+08:00'
 last_body_apply_run_id: '20260910-071502-666ddd18'
 last_consolidated_at: '2026-08-24'
@@ -271,13 +275,13 @@ Looper 线程
 
 #### 5.1 入队：Treiber 栈与 CAS
 
-`MessageStack` 的源码注释将其定义为 “Treiber stack of Message objects”。Treiber 栈是一种后进先出的无锁栈，生产者通过比较并交换（Compare-And-Set，CAS）原子更新栈顶。下面的代码使用 release 内存顺序发布新节点，读取方则用 acquire 顺序读取，以保证节点内容在线程间可见：
+`MessageStack` 的源码注释将其定义为 “Treiber stack of Message objects”。Treiber 栈是一种后进先出的无锁栈，生产者通过比较并交换（Compare-And-Set，CAS）原子更新栈顶。入队路径把新节点发布到栈顶时使用 release CAS；后续的 `isQuitting()`、`heapSweep()` 和删除遍历再通过 acquire 读取当前栈顶或空闲链表，以保证节点内容在线程间可见：
 
 ```java
 // frameworks/base/core/java/android/os/MessageStack.java
 // AOSP android-17.0.0_r1，省略退出哨兵判断
 do {
-    current = (Message) sTop.getAcquire(this);
+    current = mTopValue;
     m.next = current;
 } while (!sTop.weakCompareAndSetRelease(this, current, m));
 ```
@@ -293,7 +297,7 @@ CAS 失败说明栈顶已被其他线程改变，当前线程会重新读取并�
 - `mSyncHeap`：同步消息和同步屏障。
 - `mAsyncHeap`：异步消息。
 
-`MessageHeap` 是用数组实现的最小堆，主要按 `when` 排序；执行时间相同时，再用插入序号 `insertSeq` 保持确定的提交顺序。只有 Looper 线程会实际调整堆结构，因此每次向上或向下调整时不需要再取得 Java 锁。
+`MessageHeap` 是用数组实现的最小堆，主要按 `when` 排序；普通消息执行时间相同时，再用插入序号 `insertSeq` 保持 FIFO。`sendMessageAtFrontOfQueue()` 是例外，源码用递减的负序号让队首消息按 LIFO 顺序排列。只有 Looper 线程会实际调整堆结构，因此每次向上或向下调整时不需要再取得 Java 锁。
 
 下一条消息的选择仍遵守旧语义：
 
@@ -417,7 +421,7 @@ Android Developers Blog 给出了 DeliQueue 的内部验证结果：
 
 - Espresso 3.7.0 或更高版本。
 - Robolectric 4.17 或更高版本，并从 `@LooperMode(LEGACY)` 迁移到 `@LooperMode(PAUSED)`。
-- 设备端插桩测试（instrumentation test）使用 `TestLooperManager`，包括 Android 17 增加的 `peekWhen()`、`poll()` 等能力，不再依赖 MessageQueue 私有字段。
+- 设备端插桩测试（instrumentation test）使用 `TestLooperManager`，包括 Android 16（API 36）引入的 `peekWhen()`、`poll()` 等能力，不再依赖 MessageQueue 私有字段。
 
 #### 9.3 用兼容性开关做同版本 A/B
 
@@ -986,6 +990,7 @@ Binder 默认线程配置在历史上容易被误传。在当前 Android 17 锚�
 - [Android Developers：MessageQueue behavior change guidance](https://developer.android.com/about/versions/17/changes/messagequeue)
 - [Android Developers：Android 17 target behavior changes](https://developer.android.com/about/versions/17/behavior-changes-17)
 - [Android Developers：MessageQueue.IdleHandler](https://developer.android.com/reference/android/os/MessageQueue.IdleHandler)
+- [Android Developers：TestLooperManager](https://developer.android.com/reference/android/os/TestLooperManager)
 - [Android Developers Blog：Under the hood: Android 17's lock-free MessageQueue](https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html)
 - [AOSP：CombinedDeliMessageQueue README（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/README.md)
 - [AOSP：CombinedDeliMessageQueue/MessageQueue.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java)
