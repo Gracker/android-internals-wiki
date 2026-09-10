@@ -4397,6 +4397,42 @@
       "status": "appended",
       "title": "Android 工业手持机蓝牙扫描失败：为什么同时需要蓝牙和定位权限Android 工业手持机蓝牙扫描失败：为什么同时需"
     },
+    "source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md": {
+      "chapter": "ch04-memory",
+      "entry_id": "1b86326429c4351b",
+      "last_appended": "2026-09-11T05:25:51.461726+08:00",
+      "last_seen": "2026-09-11T05:25:51.461726+08:00",
+      "mtime": 1789071891.837309,
+      "score": 22,
+      "sha256": "884b950a673d0b7bc7bc3a989b604405bf771c29a732579d505f7cbd6d32fabf",
+      "size": 9053,
+      "status": "appended",
+      "title": "解读 Android 17 全新内存限制，有没有“豁免”后门？App 需要适配和做的基本在 Android 17 内存管"
+    },
+    "source/juejin-android/2026-09-11-76748189-Android 版 MCP 正式登场：AppFunc.md": {
+      "chapter": "ch16-aosp",
+      "entry_id": "c0ddc13cace0240b",
+      "last_appended": "2026-09-11T05:25:51.461726+08:00",
+      "last_seen": "2026-09-11T05:25:51.461726+08:00",
+      "mtime": 1789071891.836339,
+      "score": 12,
+      "sha256": "297c8e0ec5458c64edcb9ece401c67b87f83b7fdfae39a2383d5f58725a318a9",
+      "size": 16203,
+      "status": "appended",
+      "title": "Android 版 MCP 正式登场：AppFunctions前言 今日，Google 在 Android Develo"
+    },
+    "source/juejin-android/2026-09-11-76837043-OkHttp 5.3 隐形变更引发的线上偶发崩.md": {
+      "chapter": "ch12-apk-network",
+      "entry_id": "9633e8716e256126",
+      "last_appended": "2026-09-11T05:25:51.461726+08:00",
+      "last_seen": "2026-09-11T05:25:51.461726+08:00",
+      "mtime": 1789071891.8335369,
+      "score": 12,
+      "sha256": "060a3a4d3365511d78ac3ecdbed5159c4f2fcc69c9f83de422bd24e82aa1b348",
+      "size": 12938,
+      "status": "appended",
+      "title": "OkHttp 5.3 隐形变更引发的线上偶发崩溃复盘记一次诡异的线上偶发崩溃：OkHttp 升级踩坑、安全加固与“时序竞"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -6204,24 +6240,24 @@
     }
   },
   "last_report": {
-    "appended": 5,
-    "considered": 5,
-    "cutoff": "2026-09-09T05:20:56.985838+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-10.md",
+    "appended": 3,
+    "considered": 3,
+    "cutoff": "2026-09-10T05:20:43.866181+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-11.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1989,
+    "scanned": 1992,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 552
+      "unchanged": 557
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-10T05:25:43.866181+08:00",
+  "last_run_at": "2026-09-11T05:25:51.461726+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

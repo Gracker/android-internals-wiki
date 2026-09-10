@@ -3400,6 +3400,23 @@
       "summary": "1.8 finalized 前需校正 MessageStack 入队源码片段和 TestLooperManager API 36 边界",
       "type": "source-anchor-precision",
       "updated_at": "2026-09-10T08:16:07.335348+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch09-anr/06-contentprovider-timeout-anr.md",
+      "created_at": "2026-09-11T02:00:57.042902+08:00",
+      "created_by": "hermes-aiw-weekly-source-audit",
+      "created_run_id": "freshness-2026-09-11",
+      "details": "last source verification 2026-06-07 older than 90 days\nEvidence: 2026-06-07",
+      "id": "AIW-FRESH-2d997379256c9447",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-09-11-时效性巡检.md",
+      "severity": "P2",
+      "source_paths": [
+        "src/part2-performance/ch09-anr/06-contentprovider-timeout-anr.md"
+      ],
+      "status": "open",
+      "summary": "last source verification 2026-06-07 older than 90 days",
+      "type": "stale-source-verification",
+      "updated_at": "2026-09-11T02:00:57.042902+08:00"
     }
   ],
   "schema_version": 1
