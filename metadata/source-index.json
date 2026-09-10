@@ -5007,10 +5007,10 @@
     {
       "path": "https://juejin.cn/post/7682633827692658740",
       "title": "[技术文章] Android17 重写 MessageQueue，解决 Handler 隐性卡顿",
-      "summary": "Android 17（targetSdk 37）将 MessageQueue 替换为无锁 DeliQueue：Treiber 栈 CAS 入队 O(1) + 主线程独占最小堆排序 O(logN)，入队与消费解耦；旧架构全局 synchronized 锁存在优先级反转（低优先级线程持锁被抢占，主线程 BLOCKED 丢帧）。撤销消息用 CAS 标记+延迟删除，同步屏障迁到 WaitState 原子状态位。兼容风险：mMessages 恒为 null，反射窥探内部状态的库失效；debuggable 可用 am compat enable USE_NEW_MESSAGEQUEUE 提前验证。文中「5000 倍」数字官方博客无出处，官方口径为插入 O(N)→O(1)。",
+      "summary": "Android 17（targetSdk 37）将 MessageQueue 替换为无锁 DeliQueue：Treiber 栈 CAS 入队 O(1) + 主线程独占最小堆排序 O(logN)，入队与消费解耦；旧架构全局 synchronized 锁存在优先级反转（低优先级线程持锁被抢占，主线程 BLOCKED 丢帧）。撤销消息用 CAS 标记+延迟删除，同步屏障迁到 WaitState 原子状态位。兼容风险：mMessages 恒为 null，反射窥探内部状态的库失效；debuggable 可用 am compat enable USE_NEW_MESSAGEQUEUE 提前验证。文中「5000 倍」数字需按官方博客 Impact 边界引用：合成高竞争插入最高值，不代表普通应用整体快 5000 倍。",
       "chapter": "ch07",
       "processed_at": "2026-09-10T06:20:52.342603+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
       "score": 17,
       "target_path": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
       "route_confidence": 16,
@@ -5020,7 +5020,12 @@
         "handler",
         "deliqueue"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "previous_action": "indexed-only-chapter-freeze",
+      "status": "body-applied",
+      "applied_at": "2026-09-10T09:15:21+08:00",
+      "applied_run_id": "20260910-091521-ffbe6333",
+      "canonical_target_chapter": "ch01"
     },
     {
       "path": "https://juejin.cn/post/7682724380077785103",
