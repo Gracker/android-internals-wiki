@@ -2,7 +2,7 @@
 title: ContentProvider 超时与 ANR 四路径
 chapter: '9.6'
 section: '9.6'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
 - anr
@@ -15,23 +15,33 @@ related_chapters:
 - '9.1'
 - '9.3'
 - '9.2'
-last_verified: '2026-06-07'
-last_verified_against: AOSP android-17.0.0_r1 ContentResolver / ContentProviderHelper / ContentProviderClient；Android Developers ANR 诊断文档
-confidence: medium
+last_verified: '2026-09-11'
+last_verified_against: AOSP android-17.0.0_r1 ContentResolver / ContentProviderClient / ActivityThread / ContentProviderHelper / ContentProviderRecord / ActivityManagerService / ProcessErrorStateRecord / Build；Android Developers ANR 诊断文档
+confidence: medium-high
 sources:
 - type: aosp
   path: frameworks/base/core/java/android/content/ContentResolver.java
 - type: aosp
   path: frameworks/base/core/java/android/content/ContentProviderClient.java
 - type: aosp
+  path: frameworks/base/core/java/android/app/ActivityThread.java
+- type: aosp
   path: frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java
 - type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/ContentProviderRecord.java
+- type: aosp
   path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java
+- type: aosp
+  path: frameworks/base/core/java/android/os/Build.java
 - type: official
   path: developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: ready-for-review
+task6_state: ready-for-review
+task9_state: pending
+last_rework_at: '2026-09-11T09:35:29+08:00'
+last_rework_run_id: 20260911-093529-rework-b2a40f30
 ---
 
 # ContentProvider 超时与 ANR 四路径
