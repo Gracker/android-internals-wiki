@@ -2,7 +2,7 @@
 title: Android 与 Linux 内存管理全景
 chapter: '4.1'
 section: '4.1'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-09-11'
 last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs / source-index material juejin-android 2026-09-11 Memory Limiter article
@@ -131,10 +131,12 @@ related_chapters:
 - '4.4'
 - '4.5'
 - '2.9'
-pipeline_stage: ready-for-review
-task6_state: ready-for-review
-task9_state: ready-for-review
+pipeline_stage: finalized
+task6_state: verified
+task9_state: finalized
 task2b_state: body-applied
+last_review_finalize_at: '2026-09-11T08:13:14+08:00'
+last_review_finalize_run_id: 20260911-080515-11f5a66c
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md
