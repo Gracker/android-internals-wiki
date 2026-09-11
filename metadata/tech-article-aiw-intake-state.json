@@ -4433,6 +4433,54 @@
       "status": "appended",
       "title": "OkHttp 5.3 隐形变更引发的线上偶发崩溃复盘记一次诡异的线上偶发崩溃：OkHttp 升级踩坑、安全加固与“时序竞"
     },
+    "source/juejin-android/2026-09-12-76833471-AAOS AppCard 实践怎么把自己的 A.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "c2dfbd2a2c070480",
+      "last_appended": "2026-09-12T05:25:17.549270+08:00",
+      "last_seen": "2026-09-12T05:25:17.549270+08:00",
+      "mtime": 1789158228.5975964,
+      "score": 15,
+      "sha256": "a0abde6cbfed300d8159c3286aa2c9ed745d1495f1855d55ca3379e0692e6578",
+      "size": 8973,
+      "status": "appended",
+      "title": "AAOS AppCard 实践：怎么把自己的 App 塞进别人的卡片里车机系统里经常能看到这种场景：天气信息出现在桌面的"
+    },
+    "source/juejin-android/2026-09-12-76838163-Shopify 从 React Native 回到 Swift.md": {
+      "chapter": "待分类",
+      "entry_id": "d3e23bb275a53038",
+      "last_appended": "2026-09-12T05:25:17.549270+08:00",
+      "last_seen": "2026-09-12T05:25:17.549270+08:00",
+      "mtime": 1789158228.5963855,
+      "score": 9,
+      "sha256": "524d4845ece6a92e5c10e205306ca633ac08bce95f687a2c0773504d2c9fb63a",
+      "size": 7454,
+      "status": "appended",
+      "title": "Shopify 从 React Native 回到 Swift/Kotlin，但是你以为有手就行？？最近 Shopify"
+    },
+    "source/juejin-android/2026-09-12-76840193-SO 加固强度自查 Checklist 静态.md": {
+      "chapter": "待分类",
+      "entry_id": "f1cc1380ccf9714a",
+      "last_appended": "2026-09-12T05:25:17.549270+08:00",
+      "last_seen": "2026-09-12T05:25:17.549270+08:00",
+      "mtime": 1789158228.5978303,
+      "score": 10,
+      "sha256": "53681b44a8d717997bd7292a562f3cc001231581d973d1dde5545e8b1c08c338",
+      "size": 4489,
+      "status": "appended",
+      "title": "SO 加固强度自查 Checklist：静态、加载链、运行时看哪几项判断一个 SO 加固强不强，别停在\"符号清没清、字符"
+    },
+    "source/juejin-android/2026-09-12-76841401-车载多 App 同屏渲染二 SurfaceControlView.md": {
+      "chapter": "ch02-rendering",
+      "entry_id": "aaa632dafbd7de2c",
+      "last_appended": "2026-09-12T05:25:17.549270+08:00",
+      "last_seen": "2026-09-12T05:25:17.549270+08:00",
+      "mtime": 1789158228.5973265,
+      "score": 13,
+      "sha256": "780ba9e58fad2c9220b76504d3906921a251d3a266ed6d287e871580a38b69c9",
+      "size": 14089,
+      "status": "appended",
+      "title": "车载多 App 同屏渲染(二):SurfaceControlViewHost 跨进程上一篇留下的问题 ClassLoad"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -6240,24 +6288,24 @@
     }
   },
   "last_report": {
-    "appended": 3,
-    "considered": 3,
-    "cutoff": "2026-09-10T05:20:43.866181+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-11.md",
+    "appended": 4,
+    "considered": 4,
+    "cutoff": "2026-09-11T05:20:51.461726+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-12.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1992,
+    "scanned": 1996,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 557
+      "unchanged": 560
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-11T05:25:51.461726+08:00",
+  "last_run_at": "2026-09-12T05:25:17.549270+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
