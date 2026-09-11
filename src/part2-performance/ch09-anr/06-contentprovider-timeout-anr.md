@@ -2,7 +2,7 @@
 title: ContentProvider 超时与 ANR 四路径
 chapter: '9.6'
 section: '9.6'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
 - anr
@@ -16,7 +16,7 @@ related_chapters:
 - '9.3'
 - '9.2'
 last_verified: '2026-09-11'
-last_verified_against: AOSP android-17.0.0_r1 ContentResolver / ContentProviderClient / ActivityThread / ContentProviderHelper / ContentProviderRecord / ActivityManagerService / ProcessErrorStateRecord / Build；Android Developers ANR 诊断文档
+last_verified_against: AOSP android-17.0.0_r1 ContentResolver / ContentProviderClient / ActivityThread / ContextImpl / ContentProviderHelper / ContentProviderRecord / ActivityManagerService / ProcessErrorStateRecord / TimeoutRecord / Build / PerfettoCategories；Android Developers ANR 诊断文档
 confidence: medium-high
 sources:
 - type: aosp
@@ -26,6 +26,8 @@ sources:
 - type: aosp
   path: frameworks/base/core/java/android/app/ActivityThread.java
 - type: aosp
+  path: frameworks/base/core/java/android/app/ContextImpl.java
+- type: aosp
   path: frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/am/ContentProviderRecord.java
@@ -34,14 +36,20 @@ sources:
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java
 - type: aosp
+  path: frameworks/base/core/java/com/android/internal/os/TimeoutRecord.java
+- type: aosp
   path: frameworks/base/core/java/android/os/Build.java
+- type: aosp
+  path: frameworks/base/core/java/android/os/PerfettoCategories.java
 - type: official
   path: developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs
-pipeline_stage: ready-for-review
-task6_state: ready-for-review
-task9_state: pending
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
 last_rework_at: '2026-09-11T09:35:29+08:00'
 last_rework_run_id: 20260911-093529-rework-b2a40f30
+last_review_finalize_at: '2026-09-11T10:05:34+08:00'
+last_review_finalize_run_id: 20260911-100534-1bac54b6
 ---
 
 # ContentProvider 超时与 ANR 四路径
@@ -89,7 +97,7 @@ private static final int REMOTE_CONTENT_PROVIDER_TIMEOUT_MILLIS =
 | remote callback，`23s × HW` | 经 `system_server` 获取 MIME type 等异步结果 | 结束等待，并由调用点返回空结果或错误 | 否 |
 | call detector（调用卡死检测器），调用方配置 | `ContentProviderClient` 的一次远程操作 | 对 Provider 宿主发起 `ContentProvider not responding` ANR | 是 |
 
-前三个固定预算和 call detector 相互独立。某次 Provider 查询还可能触发调用方的输入 ANR，例如调用方在主线程等待 Provider ready；此时到期的是调用方的输入期限，ANR subject（被记录为事件主体的进程）不会因此自动变成 Provider 宿主。
+四个固定预算和 call detector 相互独立。某次 Provider 查询还可能触发调用方的输入 ANR，例如调用方在主线程等待 Provider ready；此时到期的是调用方的输入期限，ANR subject（被记录为事件主体的进程）不会因此自动变成 Provider 宿主。
 
 ## 2. Publish guard：初始化失败清进程
 
@@ -383,10 +391,13 @@ Jetpack App Startup 会把多个 initializer（初始化器）放进一个 `Init
 - [AOSP android-17.0.0_r1：ContentResolver](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ContentResolver.java)
 - [AOSP android-17.0.0_r1：ContentProviderClient](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ContentProviderClient.java)
 - [AOSP android-17.0.0_r1：ActivityThread](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+- [AOSP android-17.0.0_r1：ContextImpl.ApplicationContentResolver](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ContextImpl.java)
 - [AOSP android-17.0.0_r1：ContentProviderHelper](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderHelper.java)
 - [AOSP android-17.0.0_r1：ActivityManagerService](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)
 - [AOSP android-17.0.0_r1：ProcessErrorStateRecord](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ProcessErrorStateRecord.java)
+- [AOSP android-17.0.0_r1：TimeoutRecord.forContentProvider](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/TimeoutRecord.java)
 - [AOSP android-17.0.0_r1：Build.HW_TIMEOUT_MULTIPLIER](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Build.java)
+- [AOSP android-17.0.0_r1：PerfettoCategories.ANR_CATEGORY](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerfettoCategories.java)
 - [§9.1 ANR 类型与触发条件](01-anr-mechanism-types-triggers.md)
 - [§9.2 ANR 分析方法](02-anr-kernel-trace-diagnosis.md)
 - [§9.2 ANR 与 Kernel Trace 联合诊断](02-anr-kernel-trace-diagnosis.md)
