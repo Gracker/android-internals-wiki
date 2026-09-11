@@ -5111,6 +5111,25 @@
         "ch04-memory"
       ],
       "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-12-76841401-车载多 App 同屏渲染二 SurfaceControlView.md",
+      "title": "[技术文章] 车载多 App 同屏渲染(二):SurfaceControlViewHost 跨进程上一篇留下的问题 ClassLoad",
+      "summary": "> 发布时间: 2026-09-11T09:59:52.000Z > 原文链接: https://juejin.cn/post/7684140186456211506 2026-09-11 18 阅读9分钟 > 这是「多 App 同屏渲染」系列的第二篇。第一篇用 ClassLoader 把插件 APK 加载进宿主进程,插件的 View 直接挂在宿主的视图树上——简单、体验...",
+      "chapter": "ch02",
+      "processed_at": "2026-09-12T06:20:23.941282+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch01-architecture/04-class-loading-art-boot-image.md",
+      "route_confidence": 19,
+      "route_terms": [
+        "app",
+        "classload",
+        "classloader",
+        "apk",
+        "view"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
