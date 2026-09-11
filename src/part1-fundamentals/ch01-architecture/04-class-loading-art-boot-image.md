@@ -2,7 +2,7 @@
 title: Java 类加载与 ART Boot Image
 chapter: '1.4'
 section: '1.4'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-08-22'
 last_source_verified_at: '2026-08-19'
@@ -77,6 +77,9 @@ sources:
   path: https://source.android.com/docs/security/features/verifiedboot/on-device-signing-architecture
 - type: official
   path: https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations
+- type: article
+  path: 技术文章/source/juejin-android/2026-09-12-76841401-车载多 App 同屏渲染二 SurfaceControlView.md
+  role: 插件同进程 ClassLoader 与 SurfaceControlViewHost 跨进程方案的边界对照
 tags:
 - classloader
 - class-loading
@@ -102,16 +105,18 @@ related_chapters:
 - '21.1'
 - '21.4'
 - '4.2'
-pipeline_stage: ready-to-publish
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: ready-for-review
+task2b_state: body-applied
+task6_state: needs-review
+task9_state: needs-review
 last_review_finalize_at: '2026-08-19T12:21:55+08:00'
 last_review_finalize_run_id: 20260819-122155-d78393c0
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/36-java-class-loading-performance.md
 - src/part1-fundamentals/ch01-architecture/49-art-boot-image-memory-mapping-startup.md
+last_body_apply_at: '2026-09-12T07:19:42+08:00'
+last_body_apply_run_id: '20260912-071531-7e1b4c06'
 ---
 
 # Java 类加载与 ART Boot Image
@@ -341,6 +346,14 @@ LoadedApk.makeApplicationInner()
 `ApplicationLoaders` 的 `mLoaders` 通常以 APK/zip 路径作为缓存键（cache key），但只在 parent 等于 base parent 时查找和写入该缓存。使用自定义 parent 会新建加载器，也不会进入这条普通缓存路径。系统还会为部分不在 boot class path 中的系统库建立独立缓存，并校验 parent、加载器名称和 shared-library 环境。
 
 同一路径只有满足缓存条件时才会复用 `PathClassLoader`。分析拆分 APK、共享库（shared library）、WebView 或插件时，要同时检查 parent 与共享库加载关系图。
+
+#### 插件加载不是进程隔离边界
+
+把插件 APK 追加到宿主的 `DexClassLoader`、`PathClassLoader` 或其他 `BaseDexClassLoader` 链路时，改变的是宿主进程内的 DEX 查找路径和类定义归属；插件的静态初始化、View/Compose 运行时代码和崩溃仍发生在宿主进程内。外部材料中的车载多 App 同屏案例把这种 ClassLoader 方案作为第一版：插件 APK 被加载进宿主进程，插件 View 直接挂在宿主视图树，集成简单，但插件崩溃会带崩宿主，Compose 版本也必须与宿主对齐。[来源: 技术文章/source/juejin-android/2026-09-12-76841401-车载多 App 同屏渲染二 SurfaceControlView.md；已验证: libcore/dalvik/src/main/java/dalvik/system/BaseDexClassLoader.java 与 frameworks/base/core/java/android/app/ApplicationLoaders.java @ android-17.0.0_r1]
+
+因此，优化或重排类加载路径只能降低查找、定义、验证和初始化成本，不能提供故障隔离或依赖版本隔离。需要“插件独立进程渲染、宿主只展示结果”的场景，应切到 IPC 与跨进程 UI 嵌入：该材料用 `SurfaceControlViewHost` 对照说明，宿主通过 AIDL 传出 `hostToken`，Provider 在自己的进程中创建内容并把 `SurfacePackage` 回传，最终由 SurfaceFlinger 合成到同一屏；这解决的是进程隔离和图层嵌入，不是一个更快的 ClassLoader。[来源: 技术文章/source/juejin-android/2026-09-12-76841401-车载多 App 同屏渲染二 SurfaceControlView.md]
+
+排查这类方案时，先确认代码运行在哪个进程：同进程插件的类加载、`<clinit>` 和崩溃栈会出现在宿主进程，SIGQUIT/Perfetto 中也应在宿主进程看到对应加载器、DEX 路径或类加载 slice；SCVH 这类跨进程嵌入则应同时观察宿主进程、Provider 进程、Binder 连接和 surface 可见性，Provider 死亡可能导致嵌入区域黑屏或停更，但不应被当作宿主类加载热点。[来源: 技术文章/source/juejin-android/2026-09-12-76841401-车载多 App 同屏渲染二 SurfaceControlView.md；已验证: system/core/debuggerd/debuggerd.cpp 与 art/runtime/class_linker.cc @ android-17.0.0_r1]
 
 ### 如何在 API 37 上定位成本
 
