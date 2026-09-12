@@ -5135,6 +5135,16 @@
       "status": "body-applied",
       "applied_at": "2026-09-12T07:19:42+08:00",
       "applied_run_id": "20260912-071531-7e1b4c06"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-09-12-morning-Habitat-Codex-Rust重写-研究材料/03-dump-python-at-scale.md",
+      "title": "[DeepResearch] Dump 03 · Python 高吞吐手段与坑",
+      "summary": "--- phase: 1 sub_question: Python 服务如何撑到千万级 rps --- # Dump 03 · Python 高吞吐手段与坑 ## 战略债 - 明知 Python 服务有额外网络延迟与 CPU/内存成本，仍先上服务：优先 unblock 产品与平台稳定，而不是立刻最优成本。 - 明确赌注：等自家 coding model 成熟后再整体迁离 Python——后文称赌注兑现。 ## 机制要点（可引用） 1.",
+      "chapter": "ch04",
+      "processed_at": "2026-09-13T06:20:17.304051+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
