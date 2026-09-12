@@ -2,10 +2,11 @@
 title: MessageQueue 与锁竞争：从 DeliQueue 到系统等待链
 chapter: '1.8'
 section: '1.8'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 1.0 (API 1) - Android 17 (API 37)
-last_verified: '2026-09-10'
-last_verified_against: AOSP android-17.0.0_r1 + Android 17 official MessageQueue/Perfetto documentation + ACK android17-6.18-2026-06_r6
+last_verified: '2026-09-12'
+last_source_verified_at: '2026-09-12'
+last_verified_against: AOSP android-17.0.0_r1 (CombinedDeliMessageQueue/MessageQueue/MessageStack/MessageHeap/Message/Looper, ART monitor/lock_word, bionic pthread_mutex, libbinder, AMS/OomAdjuster) + Android 17 official MessageQueue/TestLooperManager docs + Perfetto stdlib + ACK android17-6.18-2026-06_r6
 confidence: high
 sources:
 - type: aosp
@@ -92,12 +93,12 @@ related_chapters:
 - '7.1'
 - '1.9'
 - '9.1'
-task6_state: needs-review
-task9_state: needs-review
+task6_state: reviewed
+task9_state: reviewed
 task2b_state: body-applied
-pipeline_stage: ready-for-review
-last_review_finalize_at: '2026-09-10T08:12:58+08:00'
-last_review_finalize_run_id: '20260910-080508-2b03546b'
+pipeline_stage: finalized
+last_review_finalize_at: '2026-09-12T12:10:17+08:00'
+last_review_finalize_run_id: '20260912-120507-4559ea76'
 last_body_apply_at: '2026-09-10T09:15:21+08:00'
 last_body_apply_run_id: '20260910-091521-ffbe6333'
 last_consolidated_at: '2026-08-24'
