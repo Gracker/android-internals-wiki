@@ -2,11 +2,11 @@
 title: Java 类加载与 ART Boot Image
 chapter: '1.4'
 section: '1.4'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-08-22'
-last_source_verified_at: '2026-08-19'
-last_verified_against: AOSP android-17.0.0_r1 / Android Developers Baseline Profiles docs last updated 2026-05-19
+last_verified: '2026-09-12'
+last_source_verified_at: '2026-09-12'
+last_verified_against: AOSP android-17.0.0_r1 / Android common kernel android17-6.18-2026-06_r6 / Android Developers Baseline & Startup Profile docs / source.android.com Boot Image Profiles
 confidence: high
 sources:
 - type: aosp
@@ -105,12 +105,12 @@ related_chapters:
 - '21.1'
 - '21.4'
 - '4.2'
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 task2b_state: body-applied
-task6_state: needs-review
-task9_state: needs-review
-last_review_finalize_at: '2026-08-19T12:21:55+08:00'
-last_review_finalize_run_id: 20260819-122155-d78393c0
+task6_state: reviewed
+task9_state: reviewed
+last_review_finalize_at: '2026-09-12T10:05:52+08:00'
+last_review_finalize_run_id: '20260912-100552-30ae1e7f'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/36-java-class-loading-performance.md
@@ -122,6 +122,8 @@ last_body_apply_run_id: '20260912-071531-7e1b4c06'
 # Java 类加载与 ART Boot Image
 
 类加载性能取决于查找路径、DEX 元数据、验证与初始化；Boot Image 把一部分核心类和运行时状态提前生成并跨进程共享。两者共同影响启动期缺页、映射和类链接成本。
+
+版本边界：本文按 AOSP `android-17.0.0_r1` 解释 ART、libcore 与 Framework 行为，按 Android common kernel `android17-6.18-2026-06_r6` 解释 `MAP_PRIVATE` 写时复制；应用侧 Baseline Profile 和 Startup Profile 结论以 Android Developers 文档为边界，最终仍要回到所用 AGP/R8 版本、release APK 和目标设备 trace 验证。
 
 ## 类加载委派、查找与启动成本
 
