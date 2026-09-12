@@ -4481,6 +4481,30 @@
       "status": "appended",
       "title": "车载多 App 同屏渲染(二):SurfaceControlViewHost 跨进程上一篇留下的问题 ClassLoad"
     },
+    "source/juejin-android/2026-09-13-76416409-Swift 6.3 官方支持 Andro.md": {
+      "chapter": "待分类",
+      "entry_id": "843227f65cf209b4",
+      "last_appended": "2026-09-13T05:25:10.547958+08:00",
+      "last_seen": "2026-09-13T05:25:10.547958+08:00",
+      "mtime": 1789244654.0884027,
+      "score": 15,
+      "sha256": "1951bc94d464a89604db8bfc67d6d47bbd323455126f0a8f005c5dfc6ea9543c",
+      "size": 11296,
+      "status": "appended",
+      "title": "见证历史！Swift 6.3 官方支持 Android，跨平台要变天了？前言 Swift 6.3 正式发布，首次携带官方"
+    },
+    "source/juejin-android/2026-09-13-76418555-Android View 相关工具包终于成.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "cae8b3a75528111b",
+      "last_appended": "2026-09-13T05:25:10.547958+08:00",
+      "last_seen": "2026-09-13T05:25:10.547958+08:00",
+      "mtime": 1789244654.0896716,
+      "score": 8,
+      "sha256": "f40b872e49e4d1d9715c2f9fbc5300c6ad893bd4ffef9ce7d726130fea98b14e",
+      "size": 12330,
+      "status": "appended",
+      "title": "Android View 相关工具包终于成为了历史前几天，Google 在 Android 官方开发者文档上更新了一篇看"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -6288,24 +6312,24 @@
     }
   },
   "last_report": {
-    "appended": 4,
-    "considered": 4,
-    "cutoff": "2026-09-11T05:20:51.461726+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-12.md",
+    "appended": 2,
+    "considered": 2,
+    "cutoff": "2026-09-12T05:20:17.549270+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-13.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1996,
+    "scanned": 1998,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 560
+      "unchanged": 564
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-12T05:25:17.549270+08:00",
+  "last_run_at": "2026-09-13T05:25:10.547958+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
