@@ -4,8 +4,8 @@ chapter: '1.20'
 section: '1.20'
 status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-07-25'
-last_verified_against: AOSP android-17.0.0_r1 + Android 17 API 37 official documentation
+last_verified: '2026-09-13'
+last_verified_against: AOSP android-17.0.0_r1 + Android 17 API 37 official documentation; audio latency, AAudio/MMAP, background audio hardening, AudioTrack flush/provenance, and AAudio.h flush support checked 2026-09-13
 confidence: high
 sources:
 - type: official
@@ -60,6 +60,8 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
+last_idle_audit_at: '2026-09-13T14:35:20+08:00'
+last_idle_audit_run_id: 20260913-143520-idle-audit-7eb48a57
 ---
 
 # 音频链路（Audio Pipeline）延迟与性能
@@ -446,7 +448,7 @@ adb shell dumpsys audio
 
 它服务于长音频省电，不服务于交互式低延迟，也不能与 `LOW_LATENCY` 同时成立。成功打开后仍应读取实际性能模式，并通过 `dumpsys` 确认输出类型；“已经卸载”不能证明具体使用了哪种 DSP 或硬件解码实现。
 
-Android 17 / API 37 又为 AAudio 硬件卸载增加 `AAudio_getFlushFromFrameSupport()` 和 `AAudioStream_flushFromFrame()` 这类按音频帧位置刷新队列的能力。使用前要以完整的格式和音频属性参数查询设备是否支持。
+Android 17 / API 37 又为 AAudio 硬件卸载增加 `AAudio_getFlushFromFrameSupport()` 和 `AAudioStream_flushFromFrame()` 这类按音频帧位置刷新队列的能力。使用前要用已经填好卸载性能模式、格式、声道掩码和采样率的 `AAudioStreamBuilder` 调用 `AAudio_getFlushFromFrameSupport()`；Java `AudioTrack` 侧则用 `AudioFormat` 与 `AudioAttributes` 查询设备是否支持。
 
 ### 7.3 `AudioTrack.flushWrittenFramesFromPosition()`
 
