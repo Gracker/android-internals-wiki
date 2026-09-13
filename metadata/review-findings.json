@@ -3460,6 +3460,26 @@
       "summary": "AAudio flush-from-frame 支持查询与 Java AudioTrack 查询口径混写",
       "type": "api-contract",
       "updated_at": "2026-09-13T14:41:34.434488+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/04-main-render-thread-hardware-layer.md",
+      "close_note": "已在 Compose graphicsLayer 小节和 CompositingStrategy.Auto 行补入 Android 12+ renderEffect 可用性边界。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20260913-183548-idle-audit-1244ab57",
+      "created_at": "2026-09-13T18:46:44.834990+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20260913-183548-idle-audit-1244ab57",
+      "details": "Compose UI 1.11.4 GraphicsLayerScope.renderEffect 源码注释说明该参数仅 Android 12 及以上支持，旧版本会被忽略；正文只写 RenderEffect 触发 offscreen，容易让 Android 5-11 读者误用。",
+      "id": "AIW-2.4-AUDIT-20260913-COMPOSE-RENDEFFECT-API31",
+      "log_path": "logs/audit/2026-09-13-20260913-183548-idle-audit-1244ab57-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "androidx.compose.ui:ui:1.11.4 commonMain/androidx/compose/ui/graphics/GraphicsLayerScope.kt"
+      ],
+      "status": "fixed",
+      "summary": "Compose graphicsLayer renderEffect 缺少 Android 12+ 可用性边界",
+      "type": "api-availability",
+      "updated_at": "2026-09-13T18:46:50.607116+08:00"
     }
   ],
   "schema_version": 1
