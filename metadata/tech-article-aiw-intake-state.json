@@ -4505,6 +4505,54 @@
       "status": "appended",
       "title": "Android View 相关工具包终于成为了历史前几天，Google 在 Android 官方开发者文档上更新了一篇看"
     },
+    "source/juejin-android/2026-09-14-76418555-Android View 相关工具包终于.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "b2f7da72cfe6758e",
+      "last_appended": "2026-09-14T05:25:27.980807+08:00",
+      "last_seen": "2026-09-14T05:25:27.980807+08:00",
+      "mtime": 1789330680.750332,
+      "score": 8,
+      "sha256": "0895d4747103b621b45bd85bb65258916db64b31517fc3151b42a8a686f01ba6",
+      "size": 12236,
+      "status": "appended",
+      "title": "Android View 相关工具包终于成为了历史前几天，Google 在 Android 官方开发者文档上更新了一篇看"
+    },
+    "source/juejin-android/2026-09-14-76469585-AI 写 Android 代码老翻车？我.md": {
+      "chapter": "ch07-smoothness",
+      "entry_id": "5896c82e5a5fe6ef",
+      "last_appended": "2026-09-14T05:25:27.980807+08:00",
+      "last_seen": "2026-09-14T05:25:27.980807+08:00",
+      "mtime": 1789330680.7509596,
+      "score": 14,
+      "sha256": "c4eb9b6bca3ce2e3dba9e4ad4c8651cad838a209310b97a494f8a376ca1d246a",
+      "size": 10660,
+      "status": "appended",
+      "title": "AI 写 Android 代码老翻车？我把移动端的 Harness 系统开源了AI 写 Android 代码老翻车？我把"
+    },
+    "source/juejin-android/2026-09-14-76500740-现代 Android 官方为什么更推荐 .md": {
+      "chapter": "待分类",
+      "entry_id": "7e1f91f31ed3babd",
+      "last_appended": "2026-09-14T05:25:27.980807+08:00",
+      "last_seen": "2026-09-14T05:25:27.980807+08:00",
+      "mtime": 1789330680.749897,
+      "score": 11,
+      "sha256": "0dfedea263fdf026cc9f87c8e75b7790e57755dbb4aa88b827df14ce222b4b06",
+      "size": 13130,
+      "status": "appended",
+      "title": "现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch"
+    },
+    "source/juejin-android/2026-09-14-76756264-三星安卓系统BUG排查记录：云闪付、铁路.md": {
+      "chapter": "待分类",
+      "entry_id": "22fae8daf5774661",
+      "last_appended": "2026-09-14T05:25:27.980807+08:00",
+      "last_seen": "2026-09-14T05:25:27.980807+08:00",
+      "mtime": 1789330680.749107,
+      "score": 24,
+      "sha256": "66509abdb8c767cb998c9815b4a24fdfa470ba3a146ee2a00d55850094581ac1",
+      "size": 33470,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -6312,24 +6360,24 @@
     }
   },
   "last_report": {
-    "appended": 2,
-    "considered": 2,
-    "cutoff": "2026-09-12T05:20:17.549270+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-13.md",
+    "appended": 4,
+    "considered": 4,
+    "cutoff": "2026-09-13T05:20:10.547958+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-14.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1998,
+    "scanned": 2002,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 564
+      "unchanged": 566
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-13T05:25:10.547958+08:00",
+  "last_run_at": "2026-09-14T05:25:27.980807+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
