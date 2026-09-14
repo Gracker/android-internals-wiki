@@ -4553,6 +4553,138 @@
       "status": "appended",
       "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
     },
+    "source/juejin-android/2026-09-15-76844396-App 架构演进：MVC → MVP → MVVM → MVI.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "baf7b9134ef2d575",
+      "last_appended": "2026-09-15T05:25:31.098782+08:00",
+      "last_seen": "2026-09-15T05:25:31.098782+08:00",
+      "mtime": 1789417237.0786204,
+      "score": 9,
+      "sha256": "52792c2a3a517661bf5e7d1b2f8c40c6ee32d1d04fe4ee08fb71609104b88f7c",
+      "size": 10320,
+      "status": "appended",
+      "title": "App 架构演进：MVC → MVP → MVVM → MVI，一篇看懂很多工程师对架构有一种误解：以为它只是\"换名字\""
+    },
+    "source/juejin-android/2026-09-15-76845335-ADK for Kotlin：Google 官方 AI Agent 教程.md": {
+      "chapter": "待分类",
+      "entry_id": "463ff9eb3d444a66",
+      "last_appended": "2026-09-15T05:25:31.098782+08:00",
+      "last_seen": "2026-09-15T05:25:31.098782+08:00",
+      "mtime": 1789417237.077503,
+      "score": 8,
+      "sha256": "0d3eccf12c1fea79e44c3ee653aa05be1365665f554005450948ec11872b3600",
+      "size": 12440,
+      "status": "appended",
+      "title": "ADK for Kotlin：Google 官方 AI Agent 教程来了前言 今日，Google 发布了 ADK f"
+    },
+    "source/juejin-android/2026-09-15-76845347-从零开始的架构测试套件.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "fa4b1d0b6eefebc5",
+      "last_appended": "2026-09-15T05:25:31.098782+08:00",
+      "last_seen": "2026-09-15T05:25:31.098782+08:00",
+      "mtime": 1789417237.0768263,
+      "score": 13,
+      "sha256": "b5618250fa10d22a003c3bde1bd7911ac5bfd32555e63c9b4c1c349578599600",
+      "size": 30666,
+      "status": "appended",
+      "title": "从零开始的架构测试套件一个专门的架构测试模块、一份入门规则清单，外加关于规则分组、套件形状、指标、可观测性与迁移的实践建"
+    },
+    "source/juejin-android/2026-09-15-76845736-FusibleFlow：Kotlin Flow 的融合机制原理.md": {
+      "chapter": "ch16-aosp",
+      "entry_id": "58fad2391f180183",
+      "last_appended": "2026-09-15T05:25:31.098782+08:00",
+      "last_seen": "2026-09-15T05:25:31.098782+08:00",
+      "mtime": 1789417237.0761285,
+      "score": 14,
+      "sha256": "776fd1c7e47f7e86ef63edc47e4217ebf9fe11949ae783df74b835b6ec679847",
+      "size": 11884,
+      "status": "appended",
+      "title": "FusibleFlow：Kotlin Flow 的融合机制原理本文以 FusibleFlow 为核心，通过源码片段解"
+    },
+    "source/juejin-android/2026-09-15-76845736-Kotlin 2026：裁员、AI、Rust——黄金时代结束了吗.md": {
+      "chapter": "待分类",
+      "entry_id": "192643f41c6cb0a2",
+      "last_appended": "2026-09-15T05:25:31.098782+08:00",
+      "last_seen": "2026-09-15T05:25:31.098782+08:00",
+      "mtime": 1789417237.0755656,
+      "score": 8,
+      "sha256": "06487ac79c1465caaf8089bd674a1b5ab5a37d6543dcb8d45dcae3c75fb7be4a",
+      "size": 7876,
+      "status": "appended",
+      "title": "Kotlin 2026：裁员、AI、Rust——黄金时代结束了吗？Jake Wharton 为你解答 > **前言：**"
+    },
+    "source/juejin-android/2026-09-15-76846124-写过 4000 行 ViewModel 后，我开始这样拆 Comp.md": {
+      "chapter": "待分类",
+      "entry_id": "04c61a310444c8f0",
+      "last_appended": "2026-09-15T05:25:31.098782+08:00",
+      "last_seen": "2026-09-15T05:25:31.098782+08:00",
+      "mtime": 1789417237.0750659,
+      "score": 9,
+      "sha256": "c610567c3f2ef3a52dacad071389a53d14c3c8a43c8bbfb3fdc298e7ca649389",
+      "size": 14657,
+      "status": "appended",
+      "title": "写过 4000 行 ViewModel 后，我开始这样拆 Compose 页面我之前做导航的时候，写过一个引导页面，光"
+    },
+    "source/juejin-android/2026-09-15-76846575-ADB Wi-Fi 2.0，Android 17 把无线调试的连接.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "64468a7f69d06ebe",
+      "last_appended": "2026-09-15T05:25:31.098782+08:00",
+      "last_seen": "2026-09-15T05:25:31.098782+08:00",
+      "mtime": 1789417237.0745862,
+      "score": 10,
+      "sha256": "607bc40fd2cc5a5ca4cf9f2e6ef7a4bce4de00dd40a8f477e5851b73b160f037",
+      "size": 6325,
+      "status": "appended",
+      "title": "ADB Wi-Fi 2.0 ，Android 17 把无线调试的连接链路重新做了一遍有多少之前用过 ADB Wi-Fi"
+    },
+    "source/juejin-android/2026-09-15-76848002-Android 上搞 485 串口通信，android-serialport.md": {
+      "chapter": "待分类",
+      "entry_id": "89fa8a5e770f5da8",
+      "last_appended": "2026-09-15T05:25:31.098782+08:00",
+      "last_seen": "2026-09-15T05:25:31.098782+08:00",
+      "mtime": 1789417237.0780222,
+      "score": 13,
+      "sha256": "d454e1017fc56e94daeff16b1b8346eaa5a910e44dc33d95d3fb108ea9d1c558",
+      "size": 19954,
+      "status": "appended",
+      "title": "Android 上搞 485 串口通信，我被 android-serialport-api 的两个深坑上了一课（附 Modbus 锁板可靠通信实战）"
+    },
+    "source/juejin-android/2026-09-15-76849431-Android性能优化：启动、内存、卡顿的一站式排查手.md": {
+      "chapter": "ch07-smoothness",
+      "entry_id": "cca4c8c8b22833a8",
+      "last_appended": "2026-09-15T05:25:31.098782+08:00",
+      "last_seen": "2026-09-15T05:25:31.098782+08:00",
+      "mtime": 1789417237.0741534,
+      "score": 18,
+      "sha256": "663886bc9a2d1a36f4fbf0111440137022f01798ea36d273946b7b901e77a00c",
+      "size": 10518,
+      "status": "appended",
+      "title": "Android性能优化：启动、内存、卡顿的一站式排查手册性能优化是 Android 工程师晋升高位的必备能力，但也是最容"
+    },
+    "source/juejin-android/2026-09-15-76851907-车载多 App 同屏渲染(三) RemoteCompose 序列.md": {
+      "chapter": "ch02-rendering",
+      "entry_id": "3c54b22db51a5d60",
+      "last_appended": "2026-09-15T05:25:31.098782+08:00",
+      "last_seen": "2026-09-15T05:25:31.098782+08:00",
+      "mtime": 1789417237.0736573,
+      "score": 15,
+      "sha256": "fc786dfc070ef8b26019ec12a97249ec19c1d1272e4e80e9875a1a32ee7464b2",
+      "size": 10036,
+      "status": "appended",
+      "title": "车载多 App 同屏渲染(三):RemoteCompose 序列化 UI为什么还要第三种 第二篇的 SCVH 很强,但代"
+    },
+    "source/juejin-android/2026-09-15-76852071-Android 系统级设备应用踩坑实录：sharedUserId 签名.md": {
+      "chapter": "ch04-memory",
+      "entry_id": "68d9ea67c1aa9eee",
+      "last_appended": "2026-09-15T05:25:31.098782+08:00",
+      "last_seen": "2026-09-15T05:25:31.098782+08:00",
+      "mtime": 1789417237.0729518,
+      "score": 18,
+      "sha256": "51cc52d0435ac88349a346552d70464ca4afe2ace73e2af686ced7b292e2b0d1",
+      "size": 20174,
+      "status": "appended",
+      "title": "Android 系统级设备应用踩坑实录：sharedUserId 签名、SDK 授权失败 -4、开机自启与 U 盘 OTA 升级"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -6360,24 +6492,24 @@
     }
   },
   "last_report": {
-    "appended": 4,
-    "considered": 4,
-    "cutoff": "2026-09-13T05:20:10.547958+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-14.md",
+    "appended": 11,
+    "considered": 11,
+    "cutoff": "2026-09-14T05:20:27.980807+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-15.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2002,
+    "scanned": 2013,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 29,
-      "unchanged": 566
+      "unchanged": 570
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-14T05:25:27.980807+08:00",
+  "last_run_at": "2026-09-15T05:25:31.098782+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
