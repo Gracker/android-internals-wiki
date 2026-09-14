@@ -5152,17 +5152,27 @@
       "summary": "> 发布时间: 2026-09-13T08:26:32.000Z > 原文链接: https://juejin.cn/post/7684573646438842378 hai\\_android 2026-09-13 64 阅读7分钟 Kotlin Flow 全栈进阶专栏：从入门源码到生产级Android响应式架构 > 本文以 FusibleFlow 为核心，通过源码片段解...",
       "chapter": "ch16",
       "processed_at": "2026-09-15T06:20:37.950903+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "rejected",
       "score": 19,
       "target_path": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
-      "route_confidence": 16,
+      "route_confidence": 0,
       "route_terms": [
         "t08",
         "juejin.cn",
         "juejin-android",
         "aosp"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "quarantined-false-route-mismatch",
+      "previous_action": "indexed-only-chapter-freeze",
+      "previous_route_status": "existing-chapter-routed",
+      "previous_target_path": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "status": "rejected",
+      "quarantined_at": "2026-09-15T07:18:51+08:00",
+      "quarantined_run_id": "20260915-071545-0f2c107a",
+      "body_apply_decision": "misroute-no-body-change",
+      "body_apply_decision_at": "2026-09-15T07:18:51+08:00",
+      "body_apply_run_id": "20260915-071545-0f2c107a",
+      "quarantine_reason": "Body-apply rejected this explicit route: the material is about kotlinx.coroutines Kotlin Flow/FusibleFlow, flowOn/channelFlow/ProducerScope mechanics; the target chapter is Android/Linux memory management (PSS/RSS, ART/Native/graphics memory, page allocation/reclaim, ZRAM, DMA-BUF, lmkd, Perfetto memory evidence). No source-backed Android 17 memory-management fact, correction, or version boundary from the material improves the target chapter. No chapter body change was made."
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-15-76846575-ADB Wi-Fi 2.0，Android 17 把无线调试的连接.md",
