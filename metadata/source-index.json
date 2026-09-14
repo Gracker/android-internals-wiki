@@ -5145,6 +5145,83 @@
       "action": "indexed-only-chapter-freeze",
       "score": 15,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-15-76845736-FusibleFlow：Kotlin Flow 的融合机制原理.md",
+      "title": "[技术文章] FusibleFlow：Kotlin Flow 的融合机制原理本文以 FusibleFlow 为核心，通过源码片段解",
+      "summary": "> 发布时间: 2026-09-13T08:26:32.000Z > 原文链接: https://juejin.cn/post/7684573646438842378 hai\\_android 2026-09-13 64 阅读7分钟 Kotlin Flow 全栈进阶专栏：从入门源码到生产级Android响应式架构 > 本文以 FusibleFlow 为核心，通过源码片段解...",
+      "chapter": "ch16",
+      "processed_at": "2026-09-15T06:20:37.950903+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "t08",
+        "juejin.cn",
+        "juejin-android",
+        "aosp"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-15-76846575-ADB Wi-Fi 2.0，Android 17 把无线调试的连接.md",
+      "title": "[技术文章] ADB Wi-Fi 2.0 ，Android 17 把无线调试的连接链路重新做了一遍有多少之前用过 ADB Wi-Fi",
+      "summary": "> 发布时间: 2026-09-14T00:54:22.000Z > 原文链接: https://juejin.cn/post/7684657593512263722 2026-09-14 280 阅读5分钟 有多少之前用过 ADB Wi-Fi 的，有没有被它的稳定性恶心到了？这次在 Android 17 上官方终于做了优化： 自动连接成功率提高了 32% 在 90% 的...",
+      "chapter": "ch16",
+      "processed_at": "2026-09-15T06:20:37.950903+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-15-76849431-Android性能优化：启动、内存、卡顿的一站式排查手.md",
+      "title": "[技术文章] Android性能优化：启动、内存、卡顿的一站式排查手册性能优化是 Android 工程师晋升高位的必备能力，但也是最容",
+      "summary": "> 发布时间: 2026-09-14T03:11:42.000Z > 原文链接: https://juejin.cn/post/7684943124759068682 2026-09-14 350 阅读6分钟 性能优化是 Android 工程师晋升高位的必备能力，但也是**最容易被玄学化**的领域。 \"把 WebView 换成 X5 就快了\"——其实你的卡顿和 WebVi...",
+      "chapter": "ch04",
+      "processed_at": "2026-09-15T06:20:37.950903+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-15-76851907-车载多 App 同屏渲染(三) RemoteCompose 序列.md",
+      "title": "[技术文章] 车载多 App 同屏渲染(三):RemoteCompose 序列化 UI为什么还要第三种 第二篇的 SCVH 很强,但代",
+      "summary": "> 发布时间: 2026-09-14T07:01:19.000Z > 原文链接: https://juejin.cn/post/7685190703505686554 2026-09-14 46 阅读7分钟 > 这是「多 App 同屏渲染」系列的第三篇。第一篇用 ClassLoader 把插件加载进宿主进程,插件的 View 直接挂上来——同进程、体验好,但插件崩了拖垮宿...",
+      "chapter": "ch02",
+      "processed_at": "2026-09-15T06:20:37.950903+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch01-architecture/04-class-loading-art-boot-image.md",
+      "route_confidence": 28,
+      "route_terms": [
+        "车载多",
+        "app",
+        "同屏渲染",
+        "t07",
+        "classloader",
+        "view",
+        "同进程",
+        "juejin-android"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-15-76852071-Android 系统级设备应用踩坑实录：sharedUserId 签名.md",
+      "title": "[技术文章] Android 系统级设备应用踩坑实录：sharedUserId 签名、SDK 授权失败 -4、开机自启与 U 盘 OTA 升级",
+      "summary": "> 发布时间: 2026-09-14T09:40:23.000Z > 原文链接: https://juejin.cn/post/7685207189146255369 2026-09-14 13 阅读12分钟 过去一年我在做一台生物识别智能终端的 Android 应用开发：RK 主板、虹膜 + 人脸双摄、NFC 刷卡、485 串口锁板，2GB 内存，Android 11，...",
+      "chapter": "ch04",
+      "processed_at": "2026-09-15T06:20:37.950903+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "route_confidence": 14,
+      "route_terms": [
+        "juejin.cn",
+        "juejin-android",
+        "ch04-memory"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
