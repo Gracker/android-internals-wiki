@@ -2,10 +2,10 @@
 title: Android 与 Linux 内存管理全景
 chapter: '4.1'
 section: '4.1'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-09-11'
-last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs / source-index material juejin-android 2026-09-11 Memory Limiter article
+last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs / source-index material juejin-android 2026-09-11 Memory Limiter article / source-index material juejin-android 2026-09-15 low-memory APK list case
 confidence: medium-high
 sources:
 - type: official
@@ -102,6 +102,9 @@ sources:
   path: 技术文章/source/juejin-android/2026-09-06-76815905-APM-OOMDetector-腾讯Mars-OOM-黑匣子实现原理与落盘结构.md
 - type: reference
   path: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md
+- type: reference
+  path: 技术文章/source/juejin-android/2026-09-15-76852071-Android 系统级设备应用踩坑实录：sharedUserId 签名.md
+  role: 低内存行业终端 U 盘 APK 列表只保留文件元数据、不在列表阶段解析 APK 内容或读取图标的现场案例
 tags:
 - android-memory
 - memory-model
@@ -131,9 +134,9 @@ related_chapters:
 - '4.4'
 - '4.5'
 - '2.9'
-pipeline_stage: finalized
-task6_state: verified
-task9_state: finalized
+pipeline_stage: ready-for-review
+task6_state: needs-review
+task9_state: needs-review
 task2b_state: body-applied
 last_review_finalize_at: '2026-09-11T08:13:14+08:00'
 last_review_finalize_run_id: 20260911-080515-11f5a66c
@@ -142,8 +145,8 @@ consolidated_from:
 - src/part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md
 - src/part1-fundamentals/ch04-memory/01-memory-overview.md
 - src/part1-fundamentals/ch04-memory/02-linux-memory.md
-last_body_apply_at: '2026-09-11T07:15:08+08:00'
-last_body_apply_run_id: '20260911-071508-9bd77310'
+last_body_apply_at: '2026-09-15T11:19:16+08:00'
+last_body_apply_run_id: '20260915-111514-61b3428f'
 ---
 
 # Android 与 Linux 内存管理全景
@@ -578,6 +581,10 @@ RSS 会在每个进程重复计算共享驻留页。比较多个进程的归因�
 #### “代码和资源不会影响运行时内存”
 
 APK、DEX/OAT/VDEX、`.so`、字体和资源会形成文件映射，代码执行与重定位还会产生私有页。精简依赖、使用 R8 做代码压缩与优化，以及按需加载，都可能同时影响安装体积、启动 I/O 与运行时内存。
+
+低内存终端上的 U 盘升级列表是一个可落地的例子：所选 Android 11 / RK / 2GB 设备案例中，升级页只保存 APK 路径、大小和修改时间，不在列表阶段解析 APK 内容或读取图标；作者把 `PackageManager.getPackageArchiveInfo()` 解析大 APK 的代价列为可避免的瞬时成本。 [来源: 技术文章/source/juejin-android/2026-09-15-76852071-Android 系统级设备应用踩坑实录：sharedUserId 签名.md]
+
+这不能外推成所有设备的固定节省量。排查类似列表页时，应把 APK/资源读取、图标解码和列表对象分配分别放回 Java Heap、Native Heap、Code/File mmap 与 Graphics 等分类观察，再用 `dumpsys meminfo`、`smaps` 或 Perfetto 对齐列表刷新前后的变化。 [来源: 技术文章/source/juejin-android/2026-09-15-76852071-Android 系统级设备应用踩坑实录：sharedUserId 签名.md] [已验证: 本章 `dumpsys meminfo`、`smaps` 与 Perfetto 取证口径]
 
 #### “ZRAM 越高，系统越危险”
 
