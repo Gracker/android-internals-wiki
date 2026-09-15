@@ -5223,10 +5223,10 @@
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-15-76852071-Android 系统级设备应用踩坑实录：sharedUserId 签名.md",
       "title": "[技术文章] Android 系统级设备应用踩坑实录：sharedUserId 签名、SDK 授权失败 -4、开机自启与 U 盘 OTA 升级",
-      "summary": "> 发布时间: 2026-09-14T09:40:23.000Z > 原文链接: https://juejin.cn/post/7685207189146255369 2026-09-14 13 阅读12分钟 过去一年我在做一台生物识别智能终端的 Android 应用开发：RK 主板、虹膜 + 人脸双摄、NFC 刷卡、485 串口锁板，2GB 内存，Android 11，...",
+      "summary": "已编入 4.1 内存总览的“代码和资源影响运行时内存”校正：低内存 Android 11/RK/2GB 行业终端的 U 盘 APK 列表只保存路径、大小、修改时间，不在列表阶段解析 APK 内容或读取图标；作为实践案例提醒用 dumpsys meminfo、smaps 与 Perfetto 观察 APK/资源读取、图标解码和对象分配的瞬时成本。",
       "chapter": "ch04",
       "processed_at": "2026-09-15T06:20:37.950903+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
       "score": 19,
       "target_path": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
       "route_confidence": 14,
@@ -5235,7 +5235,12 @@
         "juejin-android",
         "ch04-memory"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "previous_action": "indexed-only-chapter-freeze",
+      "previous_route_status": "existing-chapter-routed",
+      "status": "body-applied",
+      "applied_at": "2026-09-15T11:19:16+08:00",
+      "applied_run_id": "20260915-111514-61b3428f"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
