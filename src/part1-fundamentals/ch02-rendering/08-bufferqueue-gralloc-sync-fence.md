@@ -35,7 +35,9 @@ related_chapters:
 - '4.1'
 - '4.2'
 - '1.9'
-last_verified: '2026-07-25'
+last_verified: '2026-09-15'
+last_idle_audit_at: '2026-09-15T10:39:05+08:00'
+last_idle_audit_run_id: 20260915-103508-idle-audit-2a07f2fc
 last_verified_against: AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + Android 4.1/11/12 historical tags + Writer rendering_pipelines S01/S02/S05/S06
 confidence: high
 sources:
@@ -767,7 +769,7 @@ Android 15 起平台支持 16 KB page size（内存页大小）设备。它会�
 
 #### 4.3 DMA-BUF Heap 的页对齐边界
 
-在 `android17-6.18-2026-06_r6` 中，通用 `dma_heap_buffer_alloc()` 会对传入长度执行 `PAGE_ALIGN`（按内核页大小向上对齐）。16 KB 内核因而把交给 DMA-BUF Heap 的最终长度向上取整到 16 KB；这一步发生在 Gralloc 已经决定 stride、plane、压缩 metadata 和实现对齐之后，不能反推所有 GraphicBuffer 的 stride 都是 16 KB 倍数。
+在 `android17-6.18-2026-06_r6` 中，通用 `dma_heap_buffer_alloc()` 会对传入长度执行 `__PAGE_ALIGN`（按内核页大小向上对齐）。16 KB 内核因而把交给 DMA-BUF Heap 的最终长度向上取整到 16 KB；这一步发生在 Gralloc 已经决定 stride、plane、压缩 metadata 和实现对齐之后，不能反推所有 GraphicBuffer 的 stride 都是 16 KB 倍数。
 
 通用 system heap 可以用多个不同 order（连续页块大小等级）的 page 构造 `sg_table`，不承诺整块 buffer 物理连续。IOMMU domain（同一套 I/O 地址空间）还会按自己的 `pgsize_bitmap` 选择支持的映射页大小；CPU base page、IOMMU page 和 GPU page table 不是同一个参数。
 
