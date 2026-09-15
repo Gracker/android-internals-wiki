@@ -5241,6 +5241,26 @@
       "status": "body-applied",
       "applied_at": "2026-09-15T11:19:16+08:00",
       "applied_run_id": "20260915-111514-61b3428f"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-09-15-morning-GlassImaging-NeuralISP-OpenAI收购-研究材料/references/02-siliconangle.md",
+      "title": "[DeepResearch] A message from John Furrier, co-founder of SiliconANGLE:",
+      "summary": "Title: OpenAI reportedly buys AI camera startup Glass Imaging for more than $300M URL Source: https://siliconangle.com/2026/09/14/openai-reportedly-buys-ai-camera-startup-glass-imaging-for-more-than-300m/ Published Time:",
+      "chapter": "ch08",
+      "processed_at": "2026-09-16T06:20:39.897812+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "route_confidence": 22,
+      "route_terms": [
+        "message",
+        "from",
+        "title",
+        "startup",
+        "for",
+        "time"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
