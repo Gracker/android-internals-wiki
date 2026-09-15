@@ -5200,7 +5200,7 @@
       "summary": "> 发布时间: 2026-09-14T07:01:19.000Z > 原文链接: https://juejin.cn/post/7685190703505686554 2026-09-14 46 阅读7分钟 > 这是「多 App 同屏渲染」系列的第三篇。第一篇用 ClassLoader 把插件加载进宿主进程,插件的 View 直接挂上来——同进程、体验好,但插件崩了拖垮宿...",
       "chapter": "ch02",
       "processed_at": "2026-09-15T06:20:37.950903+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
       "score": 19,
       "target_path": "src/part1-fundamentals/ch01-architecture/04-class-loading-art-boot-image.md",
       "route_confidence": 28,
@@ -5214,7 +5214,11 @@
         "同进程",
         "juejin-android"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "previous_action": "indexed-only-chapter-freeze",
+      "status": "body-applied",
+      "applied_at": "2026-09-15T09:18:26+08:00",
+      "applied_run_id": "20260915-091600-2942e850"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-15-76852071-Android 系统级设备应用踩坑实录：sharedUserId 签名.md",
