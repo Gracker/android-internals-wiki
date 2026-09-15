@@ -4,8 +4,10 @@ chapter: '11.5'
 section: '11.5'
 status: finalized
 applicable_versions: Android 11 (API 30) - Android 17 (API 37)
-last_verified: '2026-07-31'
-last_verified_against: AOSP android-17.0.0_r1；Android 17 / API 37 SDK；arXiv 2604.25587v1；Android 官方显示与功耗文档 2026-07
+last_verified: '2026-09-15'
+last_verified_against: AOSP android-17.0.0_r1；Android 17 / API 37 SDK；arXiv 2604.25587v1；wellington-oj/user_energy master_energy_data.csv；Android 官方显示与功耗文档 2026-09
+last_idle_audit_at: '2026-09-15T18:41:59+08:00'
+last_idle_audit_run_id: 20260915-183508-idle-audit-d5bdca7f
 confidence: high
 sources:
 - type: paper
@@ -91,12 +93,12 @@ UID 归因也要单独理解。处理器会依据 top activity 时长分配一�
 
 ## 11.5.2 如何阅读 2026 年单机实验
 
-论文与公开复现仓库给出了较完整的实验信息：
+论文正文给出了实验设计与清洗后的统计口径，复现仓库提供脚本和 `master_energy_data.csv`。两处材料的行数清点口径不完全一致；下列数字用于理解论文结论边界，不应用作复现实验的行数验收：
 
 - 设备为一台 Galaxy S23 Ultra，Snapdragon 8 Gen 2、5000 mAh 电池、Dynamic AMOLED、最高 120 Hz；
 - 场景覆盖 WhatsApp、Instagram、TikTok、YouTube 和手电筒；
-- 879 组唯一配置，每组执行 15 次；
-- 初始记录 13,184 条，移除 536 条异常值后保留 12,649 条；
+- 879 组唯一配置，计划为每组执行 15 次，实际清点需以仓库数据为准；
+- 论文正文报告初始记录 13,184 条，移除 536 条异常值后保留 12,649 条；这些值存在 1 条的口径差异；
 - 主要场景持续 15 或 30 秒，手电筒另含 60 秒条件；
 - 通过 `dumpsys batterystats` 获取 mAh，再按采样电压换算为焦耳；
 - 使用 Mann-Whitney U（两组独立样本的非参数检验），以 `p < 0.05` 判定统计显著差异。
@@ -154,7 +156,7 @@ LCD（液晶显示器）的背光通常是显示功耗的重要来源，页面�
 
 应用以 30 fps（每秒帧数）解码视频，不代表面板工作在 30 Hz（每秒刷新次数）。面板可能运行 60 Hz、90 Hz 或 120 Hz，并通过重复帧显示 30 fps 内容。支持 Android Adaptive Refresh Rate（自适应刷新率，ARR）的设备还可能保持某个面板模式，在该模式内改变 VSync 节奏。实验报告要分别写“请求值”和“观察值”。
 
-60 Hz 的单帧预算约为 16.67 ms，120 Hz 约为 8.33 ms。这说明高刷新 UI 给主线程、RenderThread（渲染线程）和 GPU 留出的单帧时间更短。它不表示每次升到 120 Hz 都会让应用计算量翻倍；静态内容、复用 buffer、硬件能力和系统 vote（投票请求）都会改变结果。
+60 Hz 的单帧预算约为 16.67 ms，120 Hz 约为 8.33 ms。高刷新 UI 因此给主线程、RenderThread（渲染线程）和 GPU 留出的单帧时间更短，但不表示每次升到 120 Hz 都会让应用计算量翻倍；静态内容、复用 buffer、硬件能力和系统 vote（投票请求）都会改变结果。
 
 ### 论文中的刷新率数字
 
