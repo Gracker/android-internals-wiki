@@ -2,10 +2,10 @@
 title: Android 与 Linux 内存管理全景
 chapter: '4.1'
 section: '4.1'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-09-11'
-last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs / source-index material juejin-android 2026-09-11 Memory Limiter article / source-index material juejin-android 2026-09-15 low-memory APK list case
+last_verified: '2026-09-15'
+last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs (retrieved 2026-09-15; current docs diverge from r1 source on Memory Limiter config path/manual units) / source-index material juejin-android 2026-09-11 Memory Limiter article / source-index material juejin-android 2026-09-15 low-memory APK list case
 confidence: medium-high
 sources:
 - type: official
@@ -134,12 +134,12 @@ related_chapters:
 - '4.4'
 - '4.5'
 - '2.9'
-pipeline_stage: ready-for-review
-task6_state: needs-review
-task9_state: needs-review
+pipeline_stage: finalized
+task6_state: verified
+task9_state: finalized
 task2b_state: body-applied
-last_review_finalize_at: '2026-09-11T08:13:14+08:00'
-last_review_finalize_run_id: 20260911-080515-11f5a66c
+last_review_finalize_at: '2026-09-15T12:09:44+08:00'
+last_review_finalize_run_id: 20260915-120519-eb0fd63b
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md
@@ -425,7 +425,7 @@ Android 通过 `libprocessgroup` 与任务配置文件（task profile）管理�
 
 Android 17 引入面向单应用的 MemoryLimiter 行为变化。它由 `system_server` 中的 Java 服务和 JNI 组件组成，使用每进程 cgroup v2 监控应用进程；它不是 `Runtime.maxMemory()` 或 Dalvik/ART heap size 调整，而是进程外部的 cgroup 边界。Java 堆之外的原生匿名映射、WebView/Bitmap 背后占用和图形相关缓存，只要最终表现为受统计的匿名页、共享内存或 Swap 增长，也可能把进程推近限制。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android 17 Memory Limiter 官方文档；AOSP android-17.0.0_r1 `MemoryLimiter.java` 与 JNI]
 
-在 `android-17.0.0_r1` 源码锚点下，默认配置文件路径为 `/vendor/etc/memory-limiter-config.xml`；该文件并非必需，没有配置文件或没有匹配当前 RAM 的 limit set 时功能会关闭。因此，不能把“Android 17 应用都有固定内存上限”当作通用结论，阈值也必须以目标设备镜像和运行时 `am memory-limiter status` 为准。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java` `CONFIG_PATH` 与 `isMemoryLimiterSupported()`]
+在 `android-17.0.0_r1` 源码锚点下，默认配置文件路径为 `/vendor/etc/memory-limiter-config.xml`；该文件并非必需，没有配置文件或没有匹配当前 RAM 的 limit set 时功能会关闭。当前线上官方文档描述的标准配置路径是 `/system/etc/memory-limiter-config.xml`，这反映的是当前文档口径，不应覆盖固定源码标签下的 r1 结论。因此，不能把“Android 17 应用都有固定内存上限”当作通用结论，阈值也必须以目标设备镜像和运行时 `am memory-limiter status` 为准。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android Memory Limiter 官方文档；AOSP android-17.0.0_r1 `MemoryLimiter.java` `CONFIG_PATH` 与 `isMemoryLimiterSupported()`]
 
 Android 17 r1 源码中的关键流程如下：
 
