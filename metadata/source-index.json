@@ -5248,9 +5248,9 @@
       "summary": "Title: OpenAI reportedly buys AI camera startup Glass Imaging for more than $300M URL Source: https://siliconangle.com/2026/09/14/openai-reportedly-buys-ai-camera-startup-glass-imaging-for-more-than-300m/ Published Time:",
       "chapter": "ch08",
       "processed_at": "2026-09-16T06:20:39.897812+08:00",
-      "action": "indexed-only-chapter-freeze",
-      "score": 19,
-      "target_path": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "action": "quarantined-misroute",
+      "score": 0,
+      "target_path": null,
       "route_confidence": 22,
       "route_terms": [
         "message",
@@ -5260,7 +5260,17 @@
         "for",
         "time"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "quarantined-misroute-by-apply",
+      "previous_action": "indexed-only-chapter-freeze",
+      "previous_route_status": "existing-chapter-routed",
+      "previous_target_path": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "quarantine_reason": "Body-apply fail-closed: material is a SiliconANGLE news article (OpenAI reportedly buys AI camera startup Glass Imaging for more than $300M, https://siliconangle.com/2026/09/14/openai-reportedly-buys-ai-camera-startup-glass-imaging-for-more-than-300m/), while target chapter is Android 17 startup task DAG / lazy initialization / thread-pool / concurrency (src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md). Route terms ['message','from','title','startup','for','time'] are generic English tokens; only 'startup' is the SiliconANGLE-startup sense, not Android startup-task sense. route_confidence 22 is below high-confidence threshold. Chapter contains zero references to OpenAI/Glass/Imaging/SiliconANGLE/camera/acquisition and material contains zero Android startup framework, DAG, lazy init, App Startup, ThreadPoolExecutor, IdleHandler, or MessageQueue content. No chapter body change made; no Android platform claim incorporated.",
+      "quarantined_at": "2026-09-16T07:16:36+08:00",
+      "quarantined_run_id": "20260916-071547-cc1d9f2d",
+      "routing_finding_id": "finding-4bda91517ebd",
+      "body_apply_decision": "quarantined-misroute",
+      "body_apply_decision_at": "2026-09-16T07:16:36+08:00",
+      "body_apply_run_id": "20260916-071547-cc1d9f2d"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",

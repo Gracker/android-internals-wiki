@@ -3500,6 +3500,21 @@
       "summary": "论文样本行数表述需要标出口径差异",
       "type": "source-mismatch",
       "updated_at": "2026-09-15T18:42:51.755665+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "created_at": "2026-09-16T07:16:31.414306+08:00",
+      "created_by": "aiw-body-apply",
+      "created_run_id": "20260916-071547-cc1d9f2d",
+      "details": "Body-apply fail-closed: source-index item path /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-09-15-morning-GlassImaging-NeuralISP-OpenAI收购-研究材料/references/02-siliconangle.md is a SiliconANGLE news article reporting that OpenAI reportedly acquired AI camera startup Glass Imaging for more than $300M. Selected target chapter src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md is the Android 17 startup task DAG / lazy initialization / thread pool / concurrency chapter (PART 5 ch21.2). Route terms ['message','from','title','startup','for','time'] are generic English stop-words (only 'startup' is the SiliconANGLE sense, not the Android startup-task sense). route_confidence 22 is below threshold. Chapter contains zero mentions of OpenAI/Glass/Imaging/siliconangle/camera/acquisition; the article contains zero content about Android startup frameworks, DAG scheduling, lazy initialization, Jetpack App Startup, ThreadPoolExecutor, IdleHandler, or MessageQueue. Quarantining the source-index entry; no chapter body change made; no Android platform claim incorporated.",
+      "id": "finding-4bda91517ebd",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [],
+      "status": "open",
+      "summary": "Body-apply 路由误判：GlassImaging/OpenAI 收购新闻与 Android 17 启动任务编排章节主题不匹配",
+      "type": "misroute",
+      "updated_at": "2026-09-16T07:16:31.414306+08:00"
     }
   ],
   "schema_version": 1
