@@ -70,9 +70,9 @@ mdbook serve
 ├── intake/           # 外部输入、人工请求、素材索引入口
 ├── metadata/         # 队列、进度、质量索引、扫描状态
 ├── logs/             # review / research / integration / rework 日志
-├── openclaw-tasks/   # OpenClaw 流水线任务说明
-├── scripts/          # 元数据、索引、changelog、校验脚本
-├── changelog/        # 每日变更记录
+├── scripts/          # 校验、Knowledge Pack 与仓库维护脚本
+├── tests/            # Knowledge Pack 等仓库测试
+├── knowledge-pack/   # 公开 Pack 策略与构建说明
 └── i18n/             # 国际化相关（v1.0 中文内容冻结后启用）
 ```
 
