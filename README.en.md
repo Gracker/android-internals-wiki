@@ -36,8 +36,9 @@ The [Android Performance Ecosystem](https://github.com/Gracker/android-performan
 
 ## Full documentation
 
-Read the [Chinese README](README.md) for the current project status, directory
-map, build and validation commands, writing rules, and contribution workflow.
+Read the [Chinese README](README.md) for the chapter map, reading order,
+licensing, and contribution workflow. Weekly EPUB snapshots are published on
+[GitHub Releases](https://github.com/Gracker/android-internals-wiki/releases).
 
 ## Knowledge Pack and licensing
 
