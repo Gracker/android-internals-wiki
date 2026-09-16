@@ -3503,6 +3503,9 @@
     },
     {
       "chapter": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "close_note": "Misroute finding closed: source-index entry /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-09-15-morning-GlassImaging-NeuralISP-OpenAI收购-研究材料/references/02-siliconangle.md already carries action='quarantined-misroute', target_path=null, route_status='quarantined-misroute-by-apply', body_apply_decision='quarantined-misroute' from run 20260916-071547-cc1d9f2d (verified at metadata/source-index.json files[406]). The SiliconANGLE OpenAI/Glass Imaging article is correctly excluded from this Android 17 startup DAG chapter. Verified chapter body contains zero references to OpenAI / Glass Imaging / SiliconANGLE / camera / acquisition (grep exit=1) and chapter SHA-256 UTF-8 prefix matches manifest target (9266e256bb76f2db, file 94363 bytes / 1417 lines). No body change required; quarantine + chapter finalization remain the correct state.",
+      "closed_by": "rework",
+      "closed_run_id": "20260916-093504-rework-dd53ab85",
       "created_at": "2026-09-16T07:16:31.414306+08:00",
       "created_by": "aiw-body-apply",
       "created_run_id": "20260916-071547-cc1d9f2d",
@@ -3511,10 +3514,10 @@
       "log_path": "",
       "severity": "P1",
       "source_paths": [],
-      "status": "open",
+      "status": "fixed",
       "summary": "Body-apply 路由误判：GlassImaging/OpenAI 收购新闻与 Android 17 启动任务编排章节主题不匹配",
       "type": "misroute",
-      "updated_at": "2026-09-16T07:16:31.414306+08:00"
+      "updated_at": "2026-09-16T09:36:05.062615+08:00"
     }
   ],
   "schema_version": 1
