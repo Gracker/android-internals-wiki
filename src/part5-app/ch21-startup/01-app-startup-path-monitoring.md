@@ -4,9 +4,9 @@ chapter: '21.1'
 section: '21.1'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-14'
-last_verified_against: AOSP android-17.0.0_r1 / Android 17 (API 37); Android Developers launch-time and StartupTimingMetric docs; PerfettoSQL standard library checked 2026-08-14; no Android 18/API 38+ conclusions
-confidence: medium
+last_verified: '2026-09-01'
+last_verified_against: AOSP android-17.0.0_r1 / Android 17 (API 37); ActivityThread/ViewRootImpl/ApplicationStartInfo/ActivityManager/AppStartInfoTracker timestamp boundaries; Android Developers launch-time, StartupTimingMetric, ApplicationStartInfo, ActivityManager and FullyDrawnReporter docs; PerfettoSQL standard library checked 2026-09-01; no Android 18/API 38+ conclusions
+confidence: medium-high
 sources:
 - type: aosp
   path: frameworks/base/core/java/android/view/ViewRootImpl.java
@@ -36,6 +36,12 @@ sources:
   path: frameworks/base/core/java/android/app/ApplicationStartInfo.java (android-17.0.0_r1)
 - type: aosp
   path: frameworks/base/core/java/android/app/ActivityManager.java (android-17.0.0_r1)
+- type: official
+  path: https://developer.android.com/reference/android/app/ApplicationStartInfo
+- type: official
+  path: https://developer.android.com/reference/android/app/ActivityManager
+- type: official
+  path: https://developer.android.com/reference/androidx/activity/FullyDrawnReporter
 - type: aosp
   path: frameworks/base/core/java/android/app/Activity.java (android-17.0.0_r1)
 - type: aosp
@@ -76,6 +82,8 @@ pipeline_stage: finalized
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
+last_idle_audit_at: '2026-09-01T14:41:39+08:00'
+last_idle_audit_run_id: 20260901-143528-idle-audit-653f8d66
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part5-app/ch21-startup/17-startup-insights-api-observability.md
@@ -523,7 +531,7 @@ TTID 只说明第一帧出现。骨架屏、空列表或不可点击的占位页
 
 #### 1.2 使用同一种时钟
 
-耗时计算使用单调时钟，即只向前推进、不受用户改时间或时区变化影响的计时源。`ApplicationStartInfo.getStartupTimestamps()` 返回以纳秒表示的单调时间；应用自定义点应使用 `SystemClock.elapsedRealtimeNanos()`。只比较同一进程内的相对耗时时，也可以使用同为单调计时源的 `System.nanoTime()`，但不要把它当成日历时间上传后跨设备相减。
+耗时计算使用单调时钟，即只向前推进、不受用户改时间或时区变化影响的计时源。Android 17 的 `ApplicationStartInfo` 系统时间戳在 Activity launch、fork、bindApplication、首帧和 fully drawn 路径中使用 `SystemClock.uptimeNanos()`；通过 `ActivityManager.addStartInfoTimestamp()` 写入同一启动记录的自定义点也应使用同一时基。只在 App 自有遥测内计算同设备会话耗时时，可以另用 `SystemClock.elapsedRealtimeNanos()`，但不要把它和平台启动记录中的 `uptimeNanos()` 节点相减。`System.nanoTime()` 只保证用于计算同一运行环境中的时间差，不应依赖它的绝对起点。
 
 `System.currentTimeMillis()` 会受到用户改时、网络校时和时区变化影响，适合记录事件发生的墙钟时间，不适合相减得到启动耗时。一个事件可以同时保存：
 
@@ -738,7 +746,7 @@ class PlatformStartInfoCollector(
     fun markRouteResolved() {
         activityManager.addStartInfoTimestamp(
             TIMESTAMP_ROUTE_RESOLVED,
-            SystemClock.elapsedRealtimeNanos(),
+            SystemClock.uptimeNanos(),
         )
     }
 

@@ -4,7 +4,7 @@ chapter: '1.17'
 section: '1.17'
 status: finalized
 applicable_versions: Android 15 (API 35) - Android 17 (API 37)
-last_verified: '2026-07-25'
+last_verified: '2026-09-11'
 last_verified_against: AOSP android-17.0.0_r1 + Android 17 API 37 official documentation
 confidence: high
 sources:
@@ -66,6 +66,8 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
+last_idle_audit_at: '2026-09-11T22:42:48+08:00'
+last_idle_audit_run_id: 20260911-223529-idle-audit-8c9fc93c
 ---
 
 # 应用归档（App Archiving）机制与恢复性能
@@ -163,7 +165,7 @@ APK 删除后，系统不能再从应用清单和资源表中读取桌面入口 
 2. 拒绝系统应用和已更新的系统应用。
 3. 确认该用户当前安装了目标包。
 4. 找到并验证恢复责任安装器。
-5. 检查应用是否明确声明不参与归档（opt-out）。
+5. 检查该用户是否通过系统设置把应用排除在归档之外（opt-out）。
 6. 通过 `LauncherApps.getActivityList()` 取得至少一个桌面入口 Activity。
 7. 保存每个入口的标题、原始组件名和图标。
 

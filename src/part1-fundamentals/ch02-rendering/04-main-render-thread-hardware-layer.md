@@ -4,9 +4,11 @@ chapter: '2.4'
 status: finalized
 section: '2.4'
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
-last_verified: '2026-07-25'
-last_verified_against: AOSP android-17.0.0_r1 frameworks/base HWUI/View; frameworks/native BufferQueue/BLAST; android17-6.18-2026-06_r6 kernel scheduler; historical tags only for version evolution
+last_verified: '2026-09-13'
+last_verified_against: AOSP android-17.0.0_r1 frameworks/base HWUI/View; frameworks/native BufferQueue/BLAST; Compose UI 1.11.4 graphicsLayer; android17-6.18-2026-06_r6 kernel scheduler; historical tags only for version evolution
 confidence: medium
+last_idle_audit_at: '2026-09-13T18:44:51+08:00'
+last_idle_audit_run_id: 20260913-183548-idle-audit-1244ab57
 sources:
 - type: aosp
   path: platform/frameworks/base/libs/hwui/renderthread/RenderThread.cpp
@@ -1060,11 +1062,13 @@ Compose UI 1.11.4 的核心语义是：
 - layer 被 rasterize（栅格化为像素）时，内容才会进入 offscreen buffer；
 - 内容绘制指令不变时，渲染管线可以重新发出已有指令，而不必重跑应用绘制代码。
 
+`renderEffect` 仍有平台边界：Compose UI 1.11.4 的源码注释说明该参数只在 Android 12 及以上生效，旧版本会忽略。
+
 `CompositingStrategy` 决定何时强制离屏：
 
 | 策略 | 官方语义 | 风险 |
 |:---|:---|:---|
-| `Auto` | 默认；alpha < 1 或设置 RenderEffect 等条件会使用 offscreen | 由参数决定，不能只看 modifier 名称 |
+| `Auto` | 默认；alpha < 1 或在 Android 12+ 设置 RenderEffect 等条件会使用 offscreen | 由参数决定，不能只看 modifier 名称 |
 | `Offscreen` | 总是先渲染到离屏 buffer，再合成到目标 | 增加内存、render pass 和边界裁剪 |
 | `ModulateAlpha` | 把 alpha 调制到每条绘制指令；无 RenderEffect 时可避免 alpha 离屏 | 重叠内容可能得到不同视觉结果 |
 

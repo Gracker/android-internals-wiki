@@ -758,17 +758,17 @@ Choreographer 是绑定到某个 `Looper` 的帧回调调度器。它把需要�
 
 ### 冷启动首帧：从 `onResume()` 到第一块 buffer 被 latch
 
-Activity 生命周期到达 `onResume()` 之后，标准 Activity 窗口仍可能还没有可供 HWUI 绘制的有效 `Surface`。Android 17 的 `ActivityThread.handleResumeActivity()` 会在恢复 Activity 后、窗口需要可见且尚未添加时调用 `WindowManager.addView()`；`WindowManagerGlobal.addView()` 再创建 `ViewRootImpl` 并调用 `root.setView()`。被选材料的 Android 14 车机冷启动日志也按 FF01/FF02（resume）、FF03/FF04（addView 与 ViewRootImpl 创建）的顺序记录了这个边界，因此“Activity 已 resumed”不能等同于“窗口 buffer 已经开始生产”。[已验证: AOSP android-17.0.0_r1 `core/java/android/app/ActivityThread.java`、`core/java/android/view/WindowManagerGlobal.java`；来源: 技术文章/source/juejin-android/2026-08-31-76788792-Android显示流程从onResume到像素上屏.md]
+Activity 生命周期到达 `onResume()` 之后，标准 Activity 窗口仍可能还没有可供 HWUI 绘制的有效 `Surface`。AOSP `android-17.0.0_r1` 的 `ActivityThread.handleResumeActivity()` 会在恢复 Activity 后、窗口需要可见且尚未添加时调用 `WindowManager.addView()`；`WindowManagerGlobal.addView()` 再创建 `ViewRootImpl` 并调用 `root.setView()`。Android 14 车机冷启动日志也按 `FF01/FF02`（resume）、`FF03/FF04`（addView 与 ViewRootImpl 创建）的顺序记录了这个边界，因此“Activity 已 resumed”不能等同于“窗口 buffer 已经开始生产”。
 
-`ViewRootImpl.setView()` 的一个关键排序是先安排首次 traversal，再通过 `Session.addToDisplayAsUser()` 到 WMS 登记窗口。Android 17 `ViewRootImpl.scheduleTraversals()` 会设置 `mTraversalScheduled`、向主线程 `MessageQueue` 放置同步屏障，并把 traversal 作为 Choreographer 的 VSync callback 注册；材料中的 FF08 早于 FF06/FF30，正好提供了可复现实验入口。这个顺序只说明“下一轮 traversal 已经挂起等待 App VSync”，不表示 measure/layout/draw 会绕过 VSync 立即执行。[已验证: AOSP android-17.0.0_r1 `core/java/android/view/ViewRootImpl.java`、`services/core/java/com/android/server/wm/WindowManagerService.java`；来源: 技术文章/source/juejin-android/2026-08-31-76788792-Android显示流程从onResume到像素上屏.md]
+`ViewRootImpl.setView()` 的一个关键排序是先安排首次 traversal，再通过 `Session.addToDisplayAsUser()` 到 WMS 登记窗口。`android-17.0.0_r1` 的 `ViewRootImpl.scheduleTraversals()` 会设置 `mTraversalScheduled`、向主线程 `MessageQueue` 放置同步屏障，并把 traversal 作为 Choreographer 的 VSync callback 注册；同源日志中 `FF08` 早于 `FF06/FF30`，可作为可复现实验入口。这个顺序只说明“下一轮 traversal 已经挂起等待 App VSync”，不表示 measure/layout/draw 会绕过 VSync 立即执行。
 
-首次 `performTraversals()` 进入 `relayoutWindow()` 后，WMS 才为窗口创建或返回 `SurfaceControl`，并通过 SurfaceFlinger 创建对应 layer。材料把 WMS 用于组织窗口层级/动画的容器 layer 与 App 真实提交 buffer 的 layer 分开记录为不同 ID；这些数字只属于该次日志，但排查时应保留这一区分：看见窗口相关 layer 创建，不等于 App 侧 `Surface` 已经可用于提交像素。Android 17 标准 View 路径中，`ViewRootImpl.updateBlastSurfaceIfNeeded()` 会围绕当前 `SurfaceControl` 建立或更新 BLASTBufferQueue，并把可绘制的 `Surface` 交给 HWUI。[已验证: AOSP android-17.0.0_r1 `core/java/android/view/ViewRootImpl.java`、`services/core/java/com/android/server/wm/WindowManagerService.java`、`frameworks/native/libs/gui/BLASTBufferQueue.cpp`；来源: 技术文章/source/juejin-android/2026-08-31-76788792-Android显示流程从onResume到像素上屏.md]
+首次 `performTraversals()` 进入 `relayoutWindow()` 后，WMS 才为窗口创建或返回 `SurfaceControl`，并通过 SurfaceFlinger 创建对应 layer。日志把 WMS 用于组织窗口层级/动画的容器 layer 与 App 真实提交 buffer 的 layer 分开记录为不同 ID；这些数字只属于该次采集，排查时应保留这一区分：看见窗口相关 layer 创建，不等于 App 侧 `Surface` 已经可用于提交像素。`android-17.0.0_r1` 的标准 View 路径中，`ViewRootImpl.updateBlastSurfaceIfNeeded()` 会围绕当前 `SurfaceControl` 建立或更新 BLASTBufferQueue，并把可绘制的 `Surface` 交给 HWUI。
 
-硬件加速路径里的 `ViewRootImpl.draw()` 和 `ThreadedRenderer.draw()` 仍处在 App 生产阶段。UI 线程主要更新或录制 RenderNode/DisplayList，并通过 `syncAndDrawFrame()` 把工作交给 RenderThread；像素填充、GPU command submission、buffer 提交和 fence 交接随后继续发生。材料中的 FF13/FF14/FF18/FF19/FF20 日志适合用来分辨“UI 线程 draw 入口”“display list 已准备好”和“RenderThread 后半段仍在工作”这三个不同证据点。[已验证: AOSP android-17.0.0_r1 `core/java/android/view/ViewRootImpl.java`、`graphics/java/android/graphics/HardwareRenderer.java`、`libs/hwui/renderthread/CanvasContext.cpp`；来源: 技术文章/source/juejin-android/2026-08-31-76788792-Android显示流程从onResume到像素上屏.md]
+硬件加速路径里的 `ViewRootImpl.draw()` 和 `ThreadedRenderer.draw()` 仍处在 App 生产阶段。UI 线程主要更新或录制 RenderNode/DisplayList，并通过 `syncAndDrawFrame()` 把工作交给 RenderThread；像素填充、GPU command submission、buffer 提交和 fence 交接随后继续发生。日志中的 `FF13/FF14/FF18/FF19/FF20` 适合用来分辨“UI 线程 draw 入口”“display list 已准备好”和“RenderThread 后半段仍在工作”这三个不同证据点。
 
-App 提交 BLAST transaction 之后，还要等待 SurfaceFlinger 自己的调度相位。SF 在 commit 阶段处理 transaction 与 latch buffer，在 composite/present 阶段与 HWC、RenderEngine 和显示硬件交接；材料中的 FF42/FF43/FF44 日志把这三个观察点连在一起。若启动画面、过渡动画或其他更高 Z 序 layer 仍覆盖目标窗口，`SurfaceFrame` 已经 latch 也不等于用户已经完整看见 App 内容；排查首帧应同时核对 layer 可见区域、窗口动画状态、FrameTimeline token 和 present 结果。[已验证: AOSP android-17.0.0_r1 `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp`、`frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp`；来源: 技术文章/source/juejin-android/2026-08-31-76788792-Android显示流程从onResume到像素上屏.md]
+App 提交 BLAST transaction 之后，还要等待 SurfaceFlinger 自己的调度相位。SF 在 commit 阶段处理 transaction 与 latch buffer，在 composite/present 阶段与 HWC、RenderEngine 和显示硬件交接；日志中的 `FF42/FF43/FF44` 同样把这三个观察点连在一起。若启动画面、过渡动画或其他更高 Z 序 layer 仍覆盖目标窗口，`SurfaceFrame` 已经 latch 也不等于用户已经完整看见 App 内容；排查首帧应同时核对 layer 可见区域、窗口动画状态、FrameTimeline token 和 present 结果。
 
-观察这类冷启动首帧，建议把日志或 trace 至少分成五段：`ActivityThread.handleResumeActivity` 到 `WindowManagerGlobal.addView()`，`ViewRootImpl.setView()` 到 `scheduleTraversals()`，`relayoutWindow()` 到 `SurfaceControl` 与 BLAST-backed `Surface` 就绪，`ThreadedRenderer.draw()` 到 buffer/fence 提交，最后是 SF commit、latch、composite 与 HWC present。材料的 26 个 FF 点位是一套验证方法，不应把其中某台 Android 14 车机的 pid、layer ID、分屏状态或耗时数字外推为 Android 17 通用性能预算。[来源: 技术文章/source/juejin-android/2026-08-31-76788792-Android显示流程从onResume到像素上屏.md；已验证: AOSP android-17.0.0_r1 `ActivityThread.java`、`ViewRootImpl.java`、`WindowManagerService.java`、`SurfaceFlinger.cpp`]
+观察这类冷启动首帧，建议把日志或 trace 至少分成五段：`ActivityThread.handleResumeActivity` 到 `WindowManagerGlobal.addView()`，`ViewRootImpl.setView()` 到 `scheduleTraversals()`，`relayoutWindow()` 到 `SurfaceControl` 与 BLAST-backed `Surface` 就绪，`ThreadedRenderer.draw()` 到 buffer/fence 提交，最后是 SF commit、latch、composite 与 HWC present。其 26 个 FF 点位是一套验证方法，不应把其中某台 Android 14 车机的 pid、layer ID、分屏状态或耗时数字外推为 Android 17 通用性能预算。
 
 ---
 
@@ -811,22 +811,7 @@ Android 17 源码注释给出了消息顺序：
 
 #### 2.2 `mFrameScheduled` 合并重复请求
 
-`scheduleFrameLocked()` 只在 `mFrameScheduled == false` 时继续：
-
-```java
-if (!mFrameScheduled) {
-    mFrameScheduled = true;
-    if (isRunningOnLooperThreadLocked()) {
-        scheduleVsyncLocked();
-    } else {
-        Message msg = mHandler.obtainMessage(MSG_DO_SCHEDULE_VSYNC);
-        msg.setAsynchronous(true);
-        mHandler.sendMessageAtFrontOfQueue(msg);
-    }
-}
-```
-
-这段代码用于说明合并机制。多个组件在同一 pending frame 内注册工作，只会共享一次 VSync 申请。从其他线程安排帧时，Choreographer 先把异步消息放到所属 Looper 的队首，再由正确线程调用 `DisplayEventReceiver.scheduleVsync()`。
+`scheduleFrameLocked()` 的核心判断可以简化为：`mFrameScheduled == false` 时才设置标志并申请 VSync，已经调度过则直接返回。多个组件在同一 pending frame 内注册工作，只会共享一次 VSync 申请。从其他线程安排帧时，Choreographer 先把异步消息放到所属 Looper 的队首，再由正确线程调用 `DisplayEventReceiver.scheduleVsync()`。这段逻辑与本章前文“App VSync 如何进入 Choreographer”给出的代码片段对应；引用本节时只指出标志合并语义，不再重复同一份代码。
 
 `mFrameScheduled` 只合并一次 frame dispatch（五类回调的本轮分发），不会合并不同 callback queue 中的业务内容。每个到期 callback 仍会在对应阶段执行。
 

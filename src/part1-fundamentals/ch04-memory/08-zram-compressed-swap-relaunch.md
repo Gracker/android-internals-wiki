@@ -2,15 +2,24 @@
 title: ZRAM 压缩交换与应用重启延迟
 chapter: '4.8'
 section: '4.8'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-08-26'
-last_verified_against: AOSP android-17.0.0_r1 system/memory/lmkd + frameworks/base MMD/ZramMaintenance/CachedAppOptimizer/OomAdjuster；Android common kernel android17-6.18-2026-06_r6 zram；Android MMD/LMKD docs；Linux zram docs；Perfetto memory docs；ApplicationExitInfo/ActivityManager API reference；Android 16 KB page size docs；arXiv 2502.12826
-confidence: medium
+last_verified_against: AOSP android-17.0.0_r1 system/memory/mmd + system/memory/lmkd + frameworks/base ZramMaintenance/CachedAppOptimizer/OomAdjuster；Android common kernel android17-6.18-2026-06_r6 zram；Android MMD/LMKD docs；Linux zram docs；Perfetto memory docs；ApplicationExitInfo/ActivityManager API reference；Android 16 KB page size docs；arXiv 2502.12826
+confidence: medium-high
 sources:
 - type: aosp
   tag: android-17.0.0_r1
   path: system/memory/lmkd/lmkd.cpp
+- type: aosp
+  tag: android-17.0.0_r1
+  path: system/memory/mmd/src/mmd_setup.rs
+- type: aosp
+  tag: android-17.0.0_r1
+  path: system/memory/mmd/src/service.rs
+- type: aosp
+  tag: android-17.0.0_r1
+  path: system/memory/mmd/src/properties.rs
 - type: aosp
   tag: android-17.0.0_r1
   path: frameworks/base/services/core/java/com/android/server/memory/ZramMaintenance.java
@@ -70,10 +79,12 @@ related_chapters:
 - '16.2'
 last_deep_review_at: '2026-08-26T12:39:47+08:00'
 last_deep_review_run_id: 20260826-123547-deep-review-ebd88334
-pipeline_stage: deep-reviewed
+pipeline_stage: finalized
 task2b_state: body-applied
-task6_state: reviewed
-task9_state: pending-review
+task6_state: verified
+task9_state: finalized
+last_review_finalize_at: '2026-08-26T16:05:14+08:00'
+last_review_finalize_run_id: 20260826-160514-a9b30f11
 last_body_apply_at: '2026-08-26T09:55:08+08:00'
 last_body_apply_run_id: 20260826-095344-b5ee28a0
 ---
@@ -138,12 +149,12 @@ flowchart TD
     B --> C{"页面继续保持热度?"}
     C -->|是| D["访问时从 ZRAM 解压"]
     C -->|否| E["MMD 标记 idle entry"]
-    E --> F{"满足 recompression 条件?"}
-    F -->|是| G["用高压缩率算法重压"]
-    F -->|否| H{"满足 writeback 条件?"}
-    G --> H
+    E --> H{"满足 writeback 条件?"}
     H -->|是| I["写入 backing device"]
-    H -->|否| J["继续保留在 ZRAM"]
+    H -->|否| F{"满足 recompression 条件?"}
+    F -->|是| G["用高压缩率算法重压"]
+    F -->|否| J["继续保留在 ZRAM"]
+    G --> J
     I --> K{"缓存进程因 Activity 激活?"}
     K -->|是| L["CachedAppOptimizer 请求 MMD prefetch"]
     K -->|否| M["访问时按需从后备存储读回"]
@@ -164,7 +175,7 @@ flowchart TD
 - `mmd.zram.size`：设备容量，默认可按物理内存比例设置；
 - `mmd.zram.comp_algorithm`：首轮压缩算法；
 - `mmd.zram.recompression.enabled`：是否启用重压；
-- `mmd.zram.recompression.algorithm`：次级算法，官方文档默认值为 `zstd`；
+- `mmd.zram.recompression.algorithm`：次级算法，AOSP MMD 默认值为 `zstd`；
 - `mmd.zram.writeback.enabled`：是否配置并使用后备存储。
 
 启用 `mmd.zram.enabled` 后，`swapon_all` 中的 ZRAM 设置变为空操作，旧资源覆盖项 `config_zramWriteback` 和 `ro.zram.*` 写回属性也会被忽略。因此，Android 17 排障不能只检查历史 `ZramWriteback` 属性；要先确认设备使用 MMD 还是旧方案。
@@ -175,7 +186,7 @@ flowchart TD
 
 1. `system_server` 异步调用 `mmd.doZramMaintenanceAsync()`。
 2. MMD 把任务放入低优先级工作队列。
-3. MMD 先处理重新压缩，再处理写回。
+3. MMD 在同一个全局维护任务中先尝试写回，再尝试重新压缩；源码注释给出的原因是当前写回路径会先把待写回页面从 ZRAM 解压后再写到磁盘。
 4. 高优先级的按进程预取可以先于低优先级维护执行。
 
 维护不是持续扫描。官方默认的首次调度和后续周期均为一小时；重新压缩与写回还有各自的退避时间、空闲时长、容量门槛和每日写入预算。产品可以调整这些值。
@@ -524,6 +535,9 @@ Android 17 的 ZRAM 已经从单一的压缩交换设备，扩展为由 MMD、`s
 - `ApplicationExitInfo`：<https://developer.android.com/reference/android/app/ApplicationExitInfo>
 - Ariadne / HPCA 2025 extended version：<https://arxiv.org/abs/2502.12826>
 - AOSP `android-17.0.0_r1`：
+  - `system/memory/mmd/src/mmd_setup.rs`
+  - `system/memory/mmd/src/service.rs`
+  - `system/memory/mmd/src/properties.rs`
   - `frameworks/base/services/core/java/com/android/server/memory/ZramMaintenance.java`
   - `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java`
   - `system/memory/lmkd/lmkd.cpp`

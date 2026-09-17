@@ -4,8 +4,10 @@ chapter: '9.2'
 section: '9.2'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-07-16'
-last_verified_against: AOSP android-17.0.0_r1 / Android Common Kernel android17-6.18-2026-06_r6
+last_verified: '2026-09-02'
+last_verified_against: "AOSP android-17.0.0_r1（AnrHelper、ProcessErrorStateRecord、StackTracesDumpHelper、AppExitInfoTracker、ProfilingManager、ProfilingTrigger、PerfettoCategories）；Android Common Kernel android17-6.18-2026-06_r6（sched、binder、block、futex、PSI）；Android Developers ApplicationExitInfo、ProfilingTrigger、ANR vitals docs checked 2026-09-02"
+last_idle_audit_at: '2026-09-02T10:46:17+08:00'
+last_idle_audit_run_id: 20260902-103543-idle-audit-44ab9e51
 confidence: medium
 sources:
 - type: blog
@@ -36,6 +38,8 @@ sources:
   path: frameworks/base/core/java/android/os/Trace.java
 - type: aosp
   path: frameworks/native/cmds/atrace/atrace.cpp
+- type: aosp
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/futex/waitwake.c
 - type: aosp
   path: external/perfetto/src/traced/
 - type: research
@@ -176,7 +180,7 @@ Android 17 在 `ProcessErrorStateRecord.appNotResponding()` 中构造三组候�
 
 ART 状态 `Native` 表示线程正在原生代码中，不能据此判断它是否正在消耗 CPU；主线程在 epoll 中等待消息时也会显示 `Native`。`sCount` 是 ART 当前 suspend count（暂停请求计数），不是线程历史上被 GC 或调试器暂停的次数。
 
-在 6.18 内核锚点中，`D` 对应 `TASK_UNINTERRUPTIBLE` 一类不可中断等待。它常见于 I/O、驱动、futex 或其他内核同步路径，但状态字母本身不包含等待原因。Freezer 还有独立的 `TASK_FROZEN` 状态；cgroup v2 通过 `cgroup.freeze` 请求冻结，并在完成后将 `cgroup.events` 中的 `frozen` 更新为 `1`。只有冻结控制状态、freeze/unfreeze 事件和调度证据能够相互对应时，才能把停顿归因给 freezer。
+在 6.18 内核锚点中，`D` 对应 `TASK_UNINTERRUPTIBLE` 一类不可中断等待。它常见于 I/O、direct reclaim、驱动 completion 或内核锁等待等路径，但状态字母本身不包含等待原因。普通 futex 等待在该内核源码中设置为 `TASK_INTERRUPTIBLE|TASK_FREEZABLE`，通常应按 `S` 等待分析，不能仅凭 `futex_wait` 把 D-state 归因给用户态锁。Freezer 还有独立的 `TASK_FROZEN` 状态；cgroup v2 通过 `cgroup.freeze` 请求冻结，并在完成后将 `cgroup.events` 中的 `frozen` 更新为 `1`。只有冻结控制状态、freeze/unfreeze 事件和调度证据能够相互对应时，才能把停顿归因给 freezer。
 
 #### 沿锁地址建立等待图
 
@@ -1300,6 +1304,7 @@ Android 17 还会收集 parent、`system_server`、persistent（常驻系统进�
 - [AOSP android-17.0.0_r1：ProfilingTrigger](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java)
 - [Android Common Kernel android17-6.18-2026-06_r6：PSI](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/accounting/psi.rst)
 - [Android Common Kernel android17-6.18-2026-06_r6：task state](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/sched.h)
+- [Android Common Kernel android17-6.18-2026-06_r6：futex wait/wake](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/futex/waitwake.c)
 - [Android Common Kernel android17-6.18-2026-06_r6：cgroup v2 freezer](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst)
 - [高爷：Android App ANR 系列 2——ANR 分析套路和关键 Log 介绍](https://www.androidperformance.com/2025/02/08/Android-ANR-02-How-to-analysis-ANR/)
 - [高爷：Android App ANR 系列 3——ANR 案例分享](https://www.androidperformance.com/2025/02/08/Android-ANR-03-ANR-Case-Share/)
