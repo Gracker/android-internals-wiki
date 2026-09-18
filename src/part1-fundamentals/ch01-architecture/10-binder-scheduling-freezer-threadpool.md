@@ -116,7 +116,7 @@ Binder 线程池饥饿是指一个进程暂时没有可用的 Binder 服务线�
 
 以下用户空间行为以 `android-17.0.0_r1` 的 libbinder、framework 和 Perfetto 为准，内核行为以 `android17-6.18-2026-06_r6` 的 Binder 驱动为准。分开标注两处版本，是因为 libbinder 与内核驱动共同决定线程池行为，却来自不同源码仓库。
 
-Binder 延迟由服务端线程供给、事务排队方式和目标进程状态共同决定。线程池饥饿会阻塞同步调用，异步队列会积累 oneway 事务，Freezer 则改变缓存进程何时能够消费这些事务。
+Binder 延迟由服务端线程供给、事务排队方式和目标进程状态共同决定。线程池饥饿会阻塞同步调用，异步队列会积累 oneway 事务，Freezer 则改变缓存进程消费这些事务的时机。
 
 ## Binder 线程池、嵌套调用与饥饿
 
@@ -493,9 +493,9 @@ Flutter Platform Channel 或 Compose 协程（coroutine）可能在 UI 线程发
 Binder 线程池问题的判断链条应从一次具体慢调用出发：调用方等了多久、服务端何时开始、工作线程其间在运行还是等待、同一时间还有多少可用线程。只看线程数、单条饥饿日志或一张线程快照，都不足以确定原因。
 
 
-## 异步事务队列与反压
+## 异步事务队列与背压
 
-线程池决定服务端能同时处理多少工作，oneway 队列决定调用者不等待时压力积累在哪里。异步不等于没有排队。
+线程池决定服务端能同时处理多少工作，oneway 队列决定调用方不等待时压力积累在哪里。异步不等于没有排队。
 
 Binder 的 `oneway`（单向）调用经常被概括成“异步、不会阻塞”。这句话只覆盖了调用方不等待业务回复这一层。调用方仍要把事务提交给驱动，驱动仍要为目标进程分配缓冲区，目标 Binder 线程仍要执行服务端代码；缓冲区耗尽、目标死亡或冻结等状态也可能在提交阶段反馈给调用方。
 
@@ -504,7 +504,7 @@ Binder 的 `oneway`（单向）调用经常被概括成“异步、不会阻塞�
 1. **提交完成**：驱动已经接收事务，调用方收到 `BR_TRANSACTION_COMPLETE`，或收到冻结、死亡、缓冲区不足等结果。
 2. **执行完成**：目标 Binder 线程已经运行服务端方法，相关状态变更也已完成。
 
-同步调用用 `BR_REPLY` 把两个完成点关联起来。`oneway` 调用只观察第一个完成点，服务端执行成功、抛异常或何时完成，都不会通过原事务返回。
+同步调用用 `BR_REPLY` 把两个完成点关联起来。`oneway` 调用只观察第一个完成点，服务端是否执行成功、是否抛异常、何时完成，都不会通过原事务返回。
 
 ### 1. 从 `FLAG_ONEWAY` 到 `IPCThreadState::transact()`
 
@@ -541,7 +541,7 @@ if ((flags & TF_ONE_WAY) == 0) {
 | `ERROR_IF_NOT_ONEWAY` | 记录错误和调用栈，调用继续 |
 | `FATAL_IF_NOT_ONEWAY` | 终止进程 |
 
-这个默认值必须在创建 Binder 线程状态之前设置。`ProcessState::setCallRestriction()` 会检查当前线程是否已经存在 `IPCThreadState`；每个新的 `IPCThreadState` 在构造时复制 `ProcessState::mCallRestriction`。
+这个默认值必须在创建 Binder 线程状态（`IPCThreadState`）之前设置。`ProcessState::setCallRestriction()` 会检查当前线程是否已经存在 `IPCThreadState`；每个新的 `IPCThreadState` 在构造时复制 `ProcessState::mCallRestriction`。
 
 因此它包含两层状态：
 
@@ -619,7 +619,7 @@ if (!(t->flags & TF_ONE_WAY) && binder_supported_policy(current->policy)) {
 
 ### 3. 事务缓冲区与异步配额
 
-这里仅保留解释 `oneway` 反压所需的缓冲区与异步预算语义；映射区、分配器、RPC 上限和错误观测的完整细节见 [1.11 Binder 事务缓冲区与可观测性](11-binder-buffer-observability.md)。
+这里仅保留解释 `oneway` 背压所需的缓冲区与异步预算语义；映射区、分配器、RPC 上限和错误观测的完整细节见 [1.11 Binder 事务缓冲区与可观测性](11-binder-buffer-observability.md)。
 
 #### 3.1 约 1 MB 来自用户态请求，4 MB 是内核上限
 
@@ -713,7 +713,7 @@ ioctl(mProcess->mDriverFD, BINDER_WRITE_READ, &bwr);
 
 `flushIfNeeded()` 只在当前线程不属于 Binder 命令循环（looper）、没有正在服务 Binder 事务且未处于递归刷新时强制发送。普通线程可能很久不再进入驱动，积压在其 `mOut` 中的 `BC_FREE_BUFFER` 等命令会长期占用对端资源，因此需要在这些条件下强制发送。
 
-批处理是 libbinder 的常规传输行为，不是调用者可以为某个 AIDL 方法打开的“批量模式”。业务层若要合并多条消息，仍需单独设计批量接口、上限和部分失败语义。
+批处理是 libbinder 的常规传输行为，不是调用方可以为某个 AIDL 方法打开的“批量模式”。业务层若要合并多条消息，仍需单独设计批量接口、上限和部分失败语义。
 
 ### 6. `oneway` 缩短调用方等待，不减少目标线程池工作
 
