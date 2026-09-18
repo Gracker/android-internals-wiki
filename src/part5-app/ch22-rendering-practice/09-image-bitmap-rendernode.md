@@ -512,7 +512,7 @@ Android 17 的 `ImageDecoder.Source` 只是数据来源描述，创建 Source �
 - Java `InputStream` 在原生层由输入流适配器包装，并增加满足编解码器探测需求的前置缓冲；
 - `ByteBuffer` 与 `byte[]` 使用各自的流适配器。
 
-`mmap` 是把文件区间映射到进程虚拟地址空间的内存映射机制。源码没有承诺文件 Source 必然使用 `mmap`。`SkFILEStream`、C 标准 I/O、内核页缓存和具体编解码器可以减少重复物理读取，但这不等于零拷贝。即使应用自己建立 `MappedByteBuffer`，编解码器仍要读取压缩数据并写入新的像素存储。
+`mmap` 是把文件区间映射到进程虚拟地址空间的内存映射机制。源码并不保证文件 Source 必然使用 `mmap`。`SkFILEStream`、C 标准 I/O、内核页缓存和具体编解码器可以减少重复物理读取，但这不等于零拷贝。即使应用自己建立 `MappedByteBuffer`，编解码器仍要读取压缩数据并写入新的像素存储。
 
 是否采用映射应由访问模式决定：
 
@@ -525,7 +525,7 @@ Android 17 的 `ImageDecoder.Source` 只是数据来源描述，创建 Source �
 
 ### 4. Hardware Bitmap：图形存储不等于硬件编解码
 
-`Bitmap.Config.HARDWARE` 表示结果的像素由图形缓冲持有，且应用不能通过普通 CPU 像素 API 读写。它没有承诺 JPEG、PNG、WebP、HEIF 或 AVIF 一定由专用硬件编解码器处理。
+`Bitmap.Config.HARDWARE` 表示结果的像素由图形缓冲持有，且应用不能通过普通 CPU 像素 API 读写。它并不保证 JPEG、PNG、WebP、HEIF 或 AVIF 一定由专用硬件编解码器处理。
 
 Android 17 的 `ImageDecoder_nDecodeBitmap()` 展示了静态图的关键顺序：
 
@@ -710,7 +710,7 @@ Android 17 的 `FrameMetrics` 公开指标包括：
 
 #### 9.2 Perfetto 中的 Android 17 源码切片
 
-`trace` 是系统跟踪中的带时间区间事件，Perfetto 会把这类区间显示为切片。`ImageDecoder.java` 在 Android 17 记录这些资源 trace：
+系统跟踪中带有时间区间的事件（`trace`）在 Perfetto 中显示为切片。`ImageDecoder.java` 在 Android 17 记录这些资源 trace：
 
 - `ImageDecoder#decodeBitmap`
 - `ImageDecoder#decodeDrawable`
@@ -860,7 +860,7 @@ Hardware Bitmap 解决的是最终图形存储与绘制准备问题，不等同�
 
 图片管线要以同一个请求身份串起获取、各级缓存、目标尺寸、解码、变换、结果交付和首个可见帧。Glide 或 Coil 的名称不能代替这些配置；缓存键、目标像素、并发、取消和显示生命周期必须一起验证。
 
-Bitmap 侧则要区分压缩字节、CPU 可写像素、共享内存、图形缓冲和 RenderNode 引用。最终验收不是“图片库回调成功”，而是在发布构建中用相同资源、目标尺寸和缓存状态，同时证明解码、内存峰值、RenderThread/GPU 资源准备与 actual present 都在预算内。
+Bitmap 侧则要区分压缩字节、CPU 可写像素、共享内存、图形缓冲和 RenderNode 引用。最终验收要在发布构建中用相同资源、目标尺寸和缓存状态，同时证明解码、内存峰值、RenderThread/GPU 资源准备与 actual present 都在预算内；“图片库回调成功”本身不构成验收结论。
 
 ## 参考资料
 
