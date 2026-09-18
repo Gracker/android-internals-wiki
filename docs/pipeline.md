@@ -131,4 +131,4 @@ Hermes 任务 `aiw-github-community` 每天 11:40 / 19:40 处理 1 条未分流�
 
 ## 每周电子书
 
-Hermes 任务 `aiw-weekly-ebook-release` 周日 10:00 从 `origin/master` 打包 EPUB，发到 GitHub Releases。正文归属信息（版权页、章末来源、页脚）由 `~/.hermes/scripts/aiw_weekly_ebook.py` 在打包时插入，不要把同样的页脚写进 280 篇正文。
+Hermes 任务 `aiw-weekly-ebook-release` 周日 10:00 从 `origin/master` 打包 EPUB，发到 GitHub Releases。正文归属信息（版权页、章末来源、页脚）由 `~/.hermes/scripts/aiw_weekly_ebook.py` 在打包时插入，不要把同样的页脚写进 280 篇正文。打赏页 `src/preface/support.md` 在 GitHub 目录里放在作者简介后面；EPUB 打包时从目录中间抽掉，改放到书最前面（版权页之后）和最后面各一次，不要每章重复。

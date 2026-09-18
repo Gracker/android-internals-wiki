@@ -18,12 +18,11 @@ tags: [introduction, support, donate]
 
 如果这些整理对你有用，也可以打赏。钱会用来给家里的猫豆豆买猫粮。扫下面两个码即可，金额随意。
 
-支付宝：
-
-![支付宝赞赏码：给豆豆买猫粮](images/alipay.png)
-
-微信：
-
-![微信支付码](images/wechat-pay.png)
+<table class="donate-row">
+<tr>
+<td align="center"><img src="images/alipay.png" alt="支付宝赞赏码：给豆豆买猫粮" width="200" height="200"><br>支付宝</td>
+<td align="center"><img src="images/wechat-pay.png" alt="微信支付码" width="200" height="200"><br>微信</td>
+</tr>
+</table>
 
 商业使用需要另行书面授权，见 [COMMERCIAL-LICENSE.md](https://github.com/Gracker/android-internals-wiki/blob/master/COMMERCIAL-LICENSE.md)。

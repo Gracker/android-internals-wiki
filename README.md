@@ -108,9 +108,12 @@
 
 也可以打赏，用来给家里的猫豆豆买猫粮。码在 [支持这个项目](src/preface/support.md)，支付宝和微信都可以。
 
-![支付宝赞赏码](src/preface/images/alipay.png)
-
-![微信支付码](src/preface/images/wechat-pay.png)
+<table>
+<tr>
+<td align="center"><img src="src/preface/images/alipay.png" alt="支付宝赞赏码" width="200" height="200"><br>支付宝</td>
+<td align="center"><img src="src/preface/images/wechat-pay.png" alt="微信支付码" width="200" height="200"><br>微信</td>
+</tr>
+</table>
 
 ## 贡献
 
