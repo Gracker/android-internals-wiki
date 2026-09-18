@@ -899,7 +899,7 @@ API 37 的 `EnterInterpreterFromDeoptimize()` 明确说明，它不会为了锁�
 
 #### 2.3 sentinel exception（哨兵异常）只服务于特定跨边界路径
 
-sentinel exception（哨兵异常）是用于传递内部控制信号的保留假对象指针。`Thread::GetDeoptimizationException()` 返回该指针；Instrumentation 可以把它写入线程的异常槽，使 quick 异常投递或 `ArtMethod::Invoke()` 在返回边界识别 deopt 请求。原有 Java 异常保存在去优化上下文中，稍后恢复。
+sentinel exception（哨兵异常）是 ART 保留的假对象指针，用于传递内部控制信号。`Thread::GetDeoptimizationException()` 返回该指针；Instrumentation 可以把它写入线程的异常槽，使 quick 异常投递或 `ArtMethod::Invoke()` 在返回边界识别 deopt 请求。原有 Java 异常保存在去优化上下文中，稍后恢复。
 
 它不会进入 Java `catch`，GC 根访问器也会排除该值。显式 `HDeoptimize` 路径直接获得 long-jump 上下文；只有需要跨既有 quick / invoke 边界传递请求时，哨兵值才用于传递信号。
 
@@ -1020,7 +1020,7 @@ Hook 工具可能使用 JVMTI 断点 / 类重定义、修改方法入口点，�
 
 “每次 deopt 后一定立即重编译”并不准确。JIT 是否再次编译取决于方法热度（hotness）、code cache、当前插桩级别、方法是否可编译，以及进程随后是否继续执行该路径。
 
-Baseline Profile（基准配置文件）也不能阻止守卫条件、CHA 或调试器触发 deopt。它可以改变安装期编译范围和正常启动成本，但全局 interpreter stubs 生效时，已有 AOT / JIT 代码仍不能按原方式执行。评估 Baseline Profile 时要把 deopt 前的编译收益和 deopt 后的运行状态分开。
+Baseline Profile（基准画像）也不能阻止守卫条件、CHA 或调试器触发 deopt。它可以改变安装期编译范围和正常启动成本，但全局 interpreter stubs 生效时，已有 AOT / JIT 代码仍不能按原方式执行。评估 Baseline Profile 时要把 deopt 前的编译收益和 deopt 后的运行状态分开。
 
 ### 七、性能影响怎样分层
 
