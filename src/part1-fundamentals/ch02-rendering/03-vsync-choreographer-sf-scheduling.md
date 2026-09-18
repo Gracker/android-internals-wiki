@@ -762,7 +762,7 @@ Choreographer 是绑定到某个 `Looper` 的帧回调调度器。它把需要�
 
 Activity 生命周期到达 `onResume()` 之后，标准 Activity 窗口仍可能还没有可供 HWUI 绘制的有效 `Surface`。AOSP `android-17.0.0_r1` 的 `ActivityThread.handleResumeActivity()` 会在恢复 Activity 后、窗口需要可见且尚未添加时调用 `WindowManager.addView()`；`WindowManagerGlobal.addView()` 再创建 `ViewRootImpl` 并调用 `root.setView()`。Android 14 车机冷启动日志也按 `FF01/FF02`（resume）、`FF03/FF04`（addView 与 ViewRootImpl 创建）的顺序记录了这个边界，因此“Activity 已 resumed”不能等同于“窗口 buffer 已经开始生产”。
 
-`ViewRootImpl.setView()` 的一个关键排序是先安排首次 traversal，再通过 `Session.addToDisplayAsUser()` 到 WMS 登记窗口。`android-17.0.0_r1` 的 `ViewRootImpl.scheduleTraversals()` 会设置 `mTraversalScheduled`、向主线程 `MessageQueue` 放置同步屏障，并把 traversal 作为 Choreographer 的 VSync callback 注册；同源日志中 `FF08` 早于 `FF06/FF30`，可作为可复现实验入口。这个顺序只说明“下一轮 traversal 已经挂起等待 App VSync”，不表示 measure/layout/draw 会绕过 VSync 立即执行。
+`ViewRootImpl.setView()` 的一个关键顺序是先安排首次 traversal，再通过 `Session.addToDisplayAsUser()` 到 WMS 登记窗口。`android-17.0.0_r1` 的 `ViewRootImpl.scheduleTraversals()` 会设置 `mTraversalScheduled`、向主线程 `MessageQueue` 放置同步屏障，并把 traversal 作为 Choreographer 的 VSync callback 注册；同源日志中 `FF08` 早于 `FF06/FF30`，可作为可复现实验入口。这个顺序只说明“下一轮 traversal 已经挂起等待 App VSync”，不表示 measure/layout/draw 会绕过 VSync 立即执行。
 
 首次 `performTraversals()` 进入 `relayoutWindow()` 后，WMS 才为窗口创建或返回 `SurfaceControl`，并通过 SurfaceFlinger 创建对应 layer。日志把 WMS 用于组织窗口层级/动画的容器 layer 与 App 真实提交 buffer 的 layer 分开记录为不同 ID；这些数字只属于该次采集，排查时应保留这一区分：看见窗口相关 layer 创建，不等于 App 侧 `Surface` 已经可用于提交像素。`android-17.0.0_r1` 的标准 View 路径中，`ViewRootImpl.updateBlastSurfaceIfNeeded()` 会围绕当前 `SurfaceControl` 建立或更新 BLASTBufferQueue，并把可绘制的 `Surface` 交给 HWUI。
 
@@ -813,7 +813,7 @@ Android 17 源码注释给出了消息顺序：
 
 #### 2.2 `mFrameScheduled` 合并重复请求
 
-`scheduleFrameLocked()` 的核心判断可以简化为：`mFrameScheduled == false` 时才设置标志并申请 VSync，已经调度过则直接返回。多个组件在同一 pending frame 内注册工作，只会共享一次 VSync 申请。从其他线程安排帧时，Choreographer 先把异步消息放到所属 Looper 的队首，再由正确线程调用 `DisplayEventReceiver.scheduleVsync()`。这段逻辑与本章前文“App VSync 如何进入 Choreographer”给出的代码片段对应；引用本节时只指出标志合并语义，不再重复同一份代码。
+`scheduleFrameLocked()` 的核心判断可以简化为：`mFrameScheduled == false` 时才设置标志并申请 VSync，已经调度过则直接返回。多个组件在同一 pending frame 内注册工作，只会共享一次 VSync 申请。从其他线程安排帧时，Choreographer 先把异步消息放到所属 Looper 的队首，再由正确线程调用 `DisplayEventReceiver.scheduleVsync()`。这段逻辑与本章前文“App VSync 如何进入 Choreographer”给出的代码片段对应；这里只指出标志合并语义，不再重复同一份代码。
 
 `mFrameScheduled` 只合并一次 frame dispatch（五类回调的本轮分发），不会合并不同 callback queue 中的业务内容。每个到期 callback 仍会在对应阶段执行。
 
