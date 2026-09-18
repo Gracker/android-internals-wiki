@@ -1739,7 +1739,7 @@ Android 17 的 Scheduler 为每个 display 保存独立的 selector（刷新率�
 - SF 是否及时 latch、compose 并提交 HWC；
 - present fence 是否晚于 expected present。
 
-Android 17 `impl::TokenManager`（`frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.h` 内部实现）保存 prediction 使用双重裁剪：上限为 `kMaxTokens = 500` 条的 map 条目数；超过 `120 ms` 滑动时间窗的旧记录由 `flushTokens(flushTime)` 清理，注释明确 “Stores the predictions for 120ms and destroys it later”。`getPredictionsForToken()` 返回 `std::nullopt` 表示 `PredictionState::Expired`，`SurfaceFrame::classifyJank` 会因此退化为 `Unknown` 归因。排查关联失败时，应同时核对 map 容量与时间窗，而不是只看其一。
+Android 17 `impl::TokenManager`（`frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.h` 内部实现）对保存的 prediction 做双重裁剪：map 条目数上限为 `kMaxTokens = 500`；超过 `120 ms` 滑动时间窗的旧记录由 `flushTokens(flushTime)` 清理，注释明确 “Stores the predictions for 120ms and destroys it later”。`getPredictionsForToken()` 返回 `std::nullopt` 表示 `PredictionState::Expired`，`SurfaceFrame::classifyJank` 会因此退化为 `Unknown` 归因。排查关联失败时，应同时核对 map 容量与时间窗，而不是只看其一。
 
 #### 11.2 Jank 类型要按责任域解释
 
