@@ -275,7 +275,7 @@ Android 17 `ProcessState.cpp`：
 #define DEFAULT_MAX_BINDER_THREADS 15
 ```
 
-这个值配置的是驱动可以按需启动的 Binder 线程池默认上限。`startThreadPool()` 启动的线程、主动调用 `joinThreadPool()` 加入线程池的线程，以及进程自行调整的配置都会影响总数。把它口语化成“每个进程固定 16 个 Binder 线程”会误导容量分析。
+这个值配置的是驱动可以按需启动的 Binder 线程池默认上限。`startThreadPool()` 启动的线程、主动调用 `joinThreadPool()` 加入线程池的线程，以及进程自行调整的配置都会影响总数。把它简化成“每个进程固定 16 个 Binder 线程”会误导容量分析。
 
 线程池饥饿指所有工作线程都被占用，新事务长时间得不到处理。判断是否发生这种情况，应看：
 
@@ -449,7 +449,7 @@ Android 常见用途：
 
 Android 17 bionic 把 `BIONIC_SIGNAL_DEBUGGER` 定义为 `__SIGRTMIN + 3`。这是平台保留信号，应用不应复用。
 
-信号处理函数还受异步信号安全（async-signal-safe）规则约束：它被信号打断时，只能调用规范明确允许的少量函数。不要在处理函数里分配内存、获取普通互斥锁、记录复杂日志或调用非安全 API。
+信号处理函数还受异步信号安全（async-signal-safe）规则约束：线程被信号打断时，处理函数只能调用规范明确允许的少量函数。不要在处理函数里分配内存、获取普通互斥锁、记录复杂日志或调用非安全 API。
 
 ### 7. SharedMemory 与 mmap
 
@@ -1102,7 +1102,7 @@ INCLUDE PERFETTO MODULE android.binder_breakdown;
 
 ### 版本与实现边界
 
-- Android 8：用于分离系统框架与厂商实现的 Treble 架构，引入系统框架（framework）与厂商（vendor）的 Binder 上下文隔离；Binder 驱动增加散布-聚集（scatter-gather）传输与细粒度锁等改进。历史设备还可能看到 `/dev/hwbinder` 与 HIDL。
+- Android 8：用于分离系统框架与厂商实现的 Treble 架构，引入系统框架（framework）与厂商（vendor）的 Binder 上下文隔离；Binder 驱动增加分散—聚集（scatter-gather）传输与细粒度锁等改进。历史设备还可能看到 `/dev/hwbinder` 与 HIDL。
 - Android 11：Android 支持硬件抽象层（HAL）使用稳定版 AIDL（Stable AIDL）；HIDL 现已废弃，新 HAL 应优先使用 AIDL，但已有 HIDL HAL 仍需按设备实际接口分析。
 - Android 11 及以后：缓存应用冻结器改变冻结进程的同步与异步 Binder 行为。
 - Android 12：AOSP `frameworks/native` 已通过 `BINDER_ENABLE_ONEWAY_SPAM_DETECTION` 请求驱动启用 `oneway` 滥用检测；它用于诊断缓冲区异常，不是业务流量控制机制。
