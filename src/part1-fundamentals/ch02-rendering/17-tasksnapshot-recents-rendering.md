@@ -4,7 +4,7 @@ chapter: '2.17'
 section: '2.17'
 status: ready-to-publish
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-23'
+last_verified: '2026-09-18'
 last_verified_against: AOSP android-17.0.0_r1 + Launcher3 android-17.0.0_r1
 confidence: high
 sources:
@@ -130,17 +130,11 @@ Android 17 的隐藏系统 API `TaskSnapshotManager.takeTaskSnapshot()` 允许�
 
 Launcher3 在缩略图缺失时会先读取已有 snapshot，仍为空时再请求 `takeTaskThumbnail()`。普通第三方应用没有这组 Task 管理与 framebuffer（显示帧缓冲）读取权限。
 
-### 2.4 没有通用的 freezer-before-snapshot 钩子
+### 2.4 Cached App Freezer 不承担固定触发源
 
-原文把 Cached App Freezer（缓存应用冻结器）描述成固定触发源，但 Android 17 的 `TaskSnapshotController` 没有“每次冻结前先截 Task”的通用 hook（钩子）。快照主要围绕 transition、sleep 和特权主动请求生成。
+Android 17 的 `TaskSnapshotController` 没有“每次冻结前先截 Task”的通用 hook（钩子）。`CachedAppOptimizer`（缓存应用优化器）在冻结应用时只更新自身冻结状态记录，不会主动调用 snapshot 入口。snapshot 主要由 transition、sleep 和特权主动请求三类路径产生（见 §2.1–2.3）。
 
-同理，源码没有向应用承诺：
-
-```text
-capture snapshot → onPause() → transition start
-```
-
-WMS visibility（可见性）、ATMS lifecycle transaction（ActivityTaskManagerService 生命周期事务）、Shell transition 和应用主线程分别调度。应用不应依赖 snapshot 与 `onPause()` 的固定先后；系统只尽量在 Task 关闭前保留可用于过渡的视觉状态。
+同理，WMS visibility（可见性）、ATMS lifecycle transaction（ActivityTaskManagerService 生命周期事务）、Shell transition 和应用主线程分别调度，源码不向应用承诺 `capture snapshot → onPause() → transition start` 的固定顺序；系统只尽量在 Task 关闭前保留可用于过渡的视觉状态。
 
 ## 3. 捕获管线与安全边界
 
@@ -237,7 +231,7 @@ width × height × bytesPerPixel
 
 实际分配还受 row stride（每行实际字节跨度）、gralloc（图形缓冲区分配器）对齐和附加元数据影响；同时存在高低分辨率版本、Binder 引用、Launcher hardware `Bitmap` 或 starting window 引用时，总占用会进一步变化。
 
-默认情况下，real snapshot 使用 RGBA_8888。设备 overlay 开启 `config_use16BitTaskSnapshotPixelFormat` 后，满足 fills-parent（内容填满父容器），且不会因透明窗口与壁纸丢失 alpha（透明度）的 Task，可以使用 RGB_565。
+默认情况下，real snapshot 使用 RGBA_8888。设备 overlay 开启 `config_use16BitTaskSnapshotPixelFormat` 后，满足 `fillsParent()` 且目标 pixel format 不带 alpha 的 Task，可以使用 RGB_565；带 alpha 的 Task 仍会回退到 RGBA_8888（`AbsAppSnapshotController` 中 `use16BitFormat() && activity.fillsParent() && !formatHasAlpha(...)` 的判定）。
 
 因此，“low-RAM（低内存）设备一定缓存 3–5 张、一定使用 RGB_565”没有 Android 17 源码依据。厂商可通过以下 overlay 调整：
 
@@ -257,7 +251,7 @@ AOSP 默认 high-res scale（高分辨率缩放系数）为 1.0，low-res scale�
 3. 写 high-res 图像；
 4. 配置允许时生成并写 low-res 图像。
 
-Android 17 的压缩质量常量为 95。文件位于用户 CE（Credential Encrypted，凭据加密）system 目录下：
+Android 17 默认路径下，JPEG 压缩质量常量为 `SnapshotPersistQueue.COMPRESS_QUALITY = 95`。当 `onlyCacheLowResTaskSnapshot` flag 开启时，high-res 改用 PNG（lossless），low-res 仍按 JPEG 95 写出；磁盘文件扩展名不会随格式变化。
 
 ```text
 /data/system_ce/<userId>/snapshots/<randomized-directory>/
@@ -271,7 +265,7 @@ Android 17 的压缩质量常量为 95。文件位于用户 CE（Credential Encr
 <taskId>_reduced.jpg
 ```
 
-这些文件分别保存元数据、高分辨率图像和低分辨率图像。部分 feature flag 路径会用 PNG 编码高分辨率内容，但仍沿用 `.jpg` 文件名。排查文件格式时应读取文件头，不能只看后缀。
+这些文件分别保存元数据、高分辨率图像和低分辨率图像。`onlyCacheLowResTaskSnapshot` flag 开启后，high-res 文件虽沿用 `.jpg` 文件名，但实际内容是 PNG；排查文件格式时应读取文件头，不能只看后缀。
 
 队列会合并同一 task、user、provider（任务、用户和快照提供者）的重复写入，并限制待处理的 HardwareBuffer store 数量，避免后台持久化积压无限占用图形内存。
 
