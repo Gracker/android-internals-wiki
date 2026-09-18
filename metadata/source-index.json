@@ -4497,7 +4497,7 @@
       "summary": "--- source: https://android-developers.googleblog.com/2026/08/app-quality-memory-optimization-secure-onboarding.html title: Elevating app quality fetched: 2026-08-28 --- 公告 2026-08-26. 内存 AnonRSS+swap / bitmap / DEX 25%.",
       "chapter": "ch04",
       "processed_at": "2026-08-29T06:20:10.543503+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "needs-reroute",
       "score": 19,
       "target_path": "src/part3-tools/ch15-other-tools/17-r8-configuration-analyzer.md",
       "route_confidence": 22,
@@ -4509,7 +4509,9 @@
         "dex",
         "references"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "needs-reroute",
+      "reroute_reason": "post-consolidation ghost target; not a canonical chapter path",
+      "rerouted_at": "2026-09-18T09:29:20.980188+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-30-76760926-超好用R8ConfigurationAn.md",
@@ -4632,7 +4634,7 @@
       "summary": "在 App、system_server、SurfaceFlinger 三个进程埋 26 个日志点位，冷启动真实 App 用 logcat 时间轴逐行对照源码讲显示全链路：VSync 分 App/SF 双相位且由 App 主动请求，App 画进自己的 buffer 由 SF 按 Z 序合成，CPU drawRect 只是命令、像素由 GPU 异步计算靠 fence 传递，提交走 Android 12+ BLASTBufferQueue。",
       "chapter": "ch02",
       "processed_at": "2026-08-31T06:20:26.641459+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "needs-reroute",
       "score": 17,
       "target_path": "src/appendix/glossary.md",
       "route_confidence": 22,
@@ -4644,7 +4646,9 @@
         "cpu",
         "gpu"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "needs-reroute",
+      "reroute_reason": "post-consolidation ghost target; not a canonical chapter path",
+      "rerouted_at": "2026-09-18T09:29:20.980188+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-31-76788792-Android显示流程从onResume到像素上屏.md",
@@ -4674,7 +4678,7 @@
       "summary": "> 发布时间: 2026-08-30T02:25:12.000Z > 原文链接: https://juejin.cn/post/7679264879620374568 2026-08-30 51 阅读7分钟 关于 system\\_server 的来源，常见两句话看起来互相冲突： Android 的服务都是 init 启动的； system_server 是 Zygote...",
       "chapter": "ch08",
       "processed_at": "2026-08-31T06:20:26.641459+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "needs-reroute",
       "score": 19,
       "target_path": "src/part4-system/ch19-oem/01-oem-performance-app-collaboration.md",
       "route_confidence": 16,
@@ -4684,7 +4688,9 @@
         "init",
         "zygote"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "needs-reroute",
+      "reroute_reason": "post-consolidation ghost target; not a canonical chapter path",
+      "rerouted_at": "2026-09-18T09:29:20.980188+08:00"
     },
     {
       "path": "https://www.qubes-os.org/news/2026/08/29/qsb-118/",
@@ -4785,7 +4791,7 @@
       "summary": "--- phase: 1 sub_question: skills 机制、Gemma 本地门槛、Quail 2 并行/LeakCanary 连续性 sources: [developer.android.com/studio/gemini/*, firebase agent-skills, Quail 2 blog] fetched: 2026-09-02T21:10:00+08:00 --- # Dump · Skills + Gem",
       "chapter": "ch16",
       "processed_at": "2026-09-03T06:20:54.178845+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "needs-reroute",
       "score": 19,
       "target_path": "src/part3-tools/ch15-other-tools/03-memory-hprof-heapdump-tools.md",
       "route_confidence": 25,
@@ -4798,7 +4804,9 @@
         "studio",
         "blog"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "needs-reroute",
+      "reroute_reason": "post-consolidation ghost target; not a canonical chapter path",
+      "rerouted_at": "2026-09-18T09:29:20.980188+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md",
