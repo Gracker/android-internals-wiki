@@ -283,7 +283,7 @@ SystemServer 进程由 Zygote 主动创建，不需要 ActivityManagerService（
 
 Android 17 的默认预加载还有 eager 与 lazy 两种进入方式。主 Zygote 的常规 `init.zygote64.rc` 命令行不带 `--enable-lazy-preload`，因此在启动期执行 `preload()`；64/32 mixed 配置中的 `init.zygote64_32.rc` 会让 `zygote_secondary` 携带 `--enable-lazy-preload`，次 Zygote 先进入 socket 监听，等待后续默认预加载命令。[来源: DeepResearch/2026-07-15-android17-zygote-lazy-preload-true-triggers-securefs-not-in-aosp17.md][已验证: `system/core/rootdir/init.zygote64.rc`、`system/core/rootdir/init.zygote64_32.rc` 与 `ZygoteInit.java` @ AOSP `android-17.0.0_r1`]
 
-SystemServer 在 `startOtherServices()` 周期提交 `SecondaryZygotePreload` 线程池任务：当 `Build.SUPPORTED_32_BIT_ABIS` 非空时，它调用 `Process.ZYGOTE_PROCESS.preloadDefault(abis32[0])`，向匹配 ABI 的 Zygote socket 写入 `1\n--preload-default\n`；Zygote 端的 `ZygoteConnection.handlePreload()` 若发现默认预加载尚未完成，就调用 `ZygoteInit.lazyPreload()` 并回写 `0`，已完成时回写 `1`。[来源: DeepResearch/2026-07-15-android17-zygote-lazy-preload-true-triggers-securefs-not-in-aosp17.md][已验证: `frameworks/base/services/java/com/android/server/SystemServer.java`、`frameworks/base/core/java/android/os/ZygoteProcess.java`、`frameworks/base/core/java/com/android/internal/os/ZygoteConnection.java` 与 `ZygoteInit.java` @ AOSP `android-17.0.0_r1`]
+SystemServer 在 `startOtherServices()` 期间提交 `SecondaryZygotePreload` 线程池任务：当 `Build.SUPPORTED_32_BIT_ABIS` 非空时，它调用 `Process.ZYGOTE_PROCESS.preloadDefault(abis32[0])`，向匹配 ABI 的 Zygote socket 写入 `1\n--preload-default\n`；Zygote 端的 `ZygoteConnection.handlePreload()` 若发现默认预加载尚未完成，就调用 `ZygoteInit.lazyPreload()` 并回写 `0`，已完成时回写 `1`。[来源: DeepResearch/2026-07-15-android17-zygote-lazy-preload-true-triggers-securefs-not-in-aosp17.md][已验证: `frameworks/base/services/java/com/android/server/SystemServer.java`、`frameworks/base/core/java/android/os/ZygoteProcess.java`、`frameworks/base/core/java/com/android/internal/os/ZygoteConnection.java` 与 `ZygoteInit.java` @ AOSP `android-17.0.0_r1`]
 
 这个 lazy preload 链路主要服务 32-bit WebView RELRO 准备：`SystemServer.java` 的注释把触发点放在 WebView factory 准备前约 1 秒，`WebViewFactoryPreparation` 会等待 `mZygotePreload`，从而让 32-bit RELRO 进程 fork 前先拿到次 Zygote 的默认预加载结果；socket 调用本身同步，但它运行在线程池任务中，SystemServer 主线程可以继续推进其他服务。[来源: DeepResearch/2026-07-15-android17-zygote-lazy-preload-true-triggers-securefs-not-in-aosp17.md][已验证: `SystemServer.java` 与 `ZygoteProcess.java` @ AOSP `android-17.0.0_r1`]
 
@@ -1183,7 +1183,7 @@ HardwareBitmapUploader::initialize();
 | 没有具体应用与窗口 | 已确定应用驱动，准备实际渲染 |
 | 系统启动期间执行一次 | 每个需要硬件加速的应用进程执行 |
 
-`HardwareRenderer.preload()` 把任务投到 RenderThread，使驱动与图形上下文初始化尽量和主线程创建 Activity 的过程并行。若预热尚未完成，首帧仍可能在 RenderThread 或 UI 线程等待 RenderThread 的同步点阻塞。
+`HardwareRenderer.preload()` 把任务投到 RenderThread，使驱动与图形上下文初始化尽量和主线程创建 Activity 的过程并行。若预热尚未完成，首帧仍可能因等待 RenderThread 的同步点，而在 RenderThread 或 UI 线程阻塞。
 
 ### 8. 首帧阶段还有哪些 Zygote 帮不了的成本
 
