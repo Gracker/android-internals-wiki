@@ -174,7 +174,7 @@ ART 自己解析类型引用时，不一定重新递归调用上述 Java 方法�
 - `InMemoryDexClassLoader`
 - `DelegateLastClassLoader`
 
-对可识别的链，`FindClassInBaseDexClassLoader()` 在 ART 原生层按对应委托顺序查找，减少 Java 与原生层之间的多次调用切换。API 37 的识别谓词比较的是这些 well-known class 的精确类型；自定义 `ClassLoader`，以及即使继承自标准加载器但不等于这些精确类型的加载器，都可能让 ART 回到该加载器定义的 Java `loadClass()` 行为。原生快速路径仍遵循 Java 侧对应的委托顺序。
+对可识别的链，`FindClassInBaseDexClassLoader()` 在 ART 原生层按对应委托顺序查找，减少 Java 与原生层之间的多次调用切换。API 37 的识别谓词比较的是这些 well-known class 的精确类型；自定义 `ClassLoader`，以及虽然继承自标准加载器、但不等于这些精确类型的加载器，都可能让 ART 回到该加载器定义的 Java `loadClass()` 行为。原生快速路径仍遵循 Java 侧对应的委托顺序。
 
 #### `DelegateLastClassLoader` 的准确顺序
 
