@@ -5279,6 +5279,54 @@
       "body_apply_decision": "quarantined-misroute",
       "body_apply_decision_at": "2026-09-16T07:16:36+08:00",
       "body_apply_run_id": "20260916-071547-cc1d9f2d"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-19-76853321-Mermaid 原生渲染：Kotlin .md",
+      "title": "[技术文章] Mermaid 原生渲染：不用 WebView，用 Kotlin + Compose Multiplatform 完成 2048 组对拍",
+      "summary": "> 发布时间: 2026-09-15T04:04:10.000Z > 原文链接: https://juejin.cn/post/7685332147725844490 2026-09-15 270 阅读8分钟 🌍 **跨平台**：支持 Android、iOS、Desktop 和 Web（Kotlin/Wasm）。 📊 **图表范围**：目前只支持 8 类图表：Flowch...",
+      "chapter": "ch02",
+      "processed_at": "2026-09-19T06:20:04.469532+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-19-76855598-Android 工控终端实战：SQLit.md",
+      "title": "[技术文章] Android 工控终端实战：从秒级卡顿到毫秒响应，SQLite/LitePal 性能优化全记录Android 工控机终",
+      "summary": "> 发布时间: 2026-09-15T07:13:34.000Z > 原文链接: https://juejin.cn/post/7685559824035070003 2026-09-15 245 阅读7分钟 > 项目背景：一台运行在 rk3562 工控板（armeabi-v7a，性能有限）上的 Android 智能柜终端，业务涉及人员管理、箱门分配、操作记录等大量本地...",
+      "chapter": "ch07",
+      "processed_at": "2026-09-19T06:20:04.469532+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-19-76859664-不用 Netty：Android 手写 .md",
+      "title": "[技术文章] 不用 Netty：Android 手写 TCP 客户端实战——自定义协议帧、粘包处理与可靠重连不用 Netty：Andr",
+      "summary": "> 发布时间: 2026-09-16T08:29:56.000Z > 原文链接: https://juejin.cn/post/7685966472066334763 2026-09-16 73 阅读4分钟 > 场景：Android 智能柜终端需要通过 TCP 长连接与多个柜门控制板通信（端口 1234，JSON 指令）。对端是性能有限的嵌入式板卡，扛不住指令风暴，还会断...",
+      "chapter": "ch16",
+      "processed_at": "2026-09-19T06:20:04.469532+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "andr",
+        "juejin.cn",
+        "json",
+        "juejin-android"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-19-76860478-Android Fork 机制详解：从 .md",
+      "title": "[技术文章] Android-Fork 机制详解深入理解 Android Fork 机制：从 Linux 系统调用到 Zygote 进",
+      "summary": "> 发布时间: 2026-09-17T02:40:18.000Z > 原文链接: https://juejin.cn/post/7686047891354484770 2026-09-17 68 阅读16分钟 > fork() 是 Linux 内核提供的系统调用，Android 基于它构建了整个应用进程模型（Zygote）。 本文从底层到上层分层讲清楚：fork 本身的语...",
+      "chapter": "ch16",
+      "processed_at": "2026-09-19T06:20:04.469532+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
