@@ -5305,10 +5305,10 @@
       "title": "[技术文章] 不用 Netty：Android 手写 TCP 客户端实战——自定义协议帧、粘包处理与可靠重连不用 Netty：Andr",
       "summary": "> 发布时间: 2026-09-16T08:29:56.000Z > 原文链接: https://juejin.cn/post/7685966472066334763 2026-09-16 73 阅读4分钟 > 场景：Android 智能柜终端需要通过 TCP 长连接与多个柜门控制板通信（端口 1234，JSON 指令）。对端是性能有限的嵌入式板卡，扛不住指令风暴，还会断...",
       "chapter": "ch16",
-      "processed_at": "2026-09-19T06:20:04.469532+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "processed_at": "2026-09-19T07:15:20.382723+08:00",
+      "action": "quarantined-misroute",
       "score": 19,
-      "target_path": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "target_path": null,
       "route_confidence": 16,
       "route_terms": [
         "andr",
@@ -5316,7 +5316,17 @@
         "json",
         "juejin-android"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "quarantined-misroute-by-apply",
+      "previous_action": "indexed-only-chapter-freeze",
+      "previous_status": null,
+      "status": "quarantined",
+      "previous_route_status": "existing-chapter-routed",
+      "previous_target_path": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "applied_at": null,
+      "applied_run_id": null,
+      "body_apply_decision": "quarantined-misroute",
+      "body_apply_decision_run_id": "20260919-071520-6d8dc7fd",
+      "body_apply_decision_reason": "Material is a Juejin TCP/frame-codec/reconnection article; selected target chapter is Android/Linux memory overview. Topic mismatch: route_confidence 16 with generic route_terms (andr/juejin.cn/json/juejin-android); article body contains zero memory topics. Quarantined without body change."
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-19-76860478-Android Fork 机制详解：从 .md",
