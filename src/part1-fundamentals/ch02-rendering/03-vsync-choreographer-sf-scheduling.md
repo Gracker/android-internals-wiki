@@ -2,7 +2,7 @@
 title: VSync、Choreographer 与 SurfaceFlinger 调度
 chapter: '2.3'
 applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
-last_verified: '2026-08-07'
+last_verified: '2026-09-18'
 last_verified_against: AOSP android-17.0.0_r1 VsyncSchedule/VSyncPredictor/VSyncReactor/VSyncDispatchTimerQueue/EventThread/Choreographer；kernel android17-6.18-2026-06_r6 DRM vblank
 confidence: high
 sources:
@@ -163,12 +163,14 @@ related_chapters:
 - '13.12'
 - '14.10'
 task6_state: needs-review
-status: ready-for-review
-pipeline_stage: ready-for-review
+status: verified
+pipeline_stage: verified
 task2b_state: body-applied
 task9_state: needs-review
 last_body_apply_at: '2026-08-31T09:53:10+08:00'
 last_body_apply_run_id: '20260831-095310-cc6c334e'
+last_review_finalize_at: '2026-09-18T10:05:54+08:00'
+last_review_finalize_run_id: '20260918-100554-7f6045ff'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch02-rendering/25-choreographer-buffer-stuffing-recovery.md
@@ -1737,7 +1739,7 @@ Android 17 的 Scheduler 为每个 display 保存独立的 selector（刷新率�
 - SF 是否及时 latch、compose 并提交 HWC；
 - present fence 是否晚于 expected present。
 
-Android 17 `TokenManager` 使用容量为 500 的环形存储保存 prediction（预测记录）。源码中没有基于时间戳的固定 120 ms TTL；不能用“token 超过 120 ms 必然过期”解释关联失败。
+Android 17 `impl::TokenManager`（`frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.h` 内部实现）保存 prediction 使用双重裁剪：上限为 `kMaxTokens = 500` 条的 map 条目数；超过 `120 ms` 滑动时间窗的旧记录由 `flushTokens(flushTime)` 清理，注释明确 “Stores the predictions for 120ms and destroys it later”。`getPredictionsForToken()` 返回 `std::nullopt` 表示 `PredictionState::Expired`，`SurfaceFrame::classifyJank` 会因此退化为 `Unknown` 归因。排查关联失败时，应同时核对 map 容量与时间窗，而不是只看其一。
 
 #### 11.2 Jank 类型要按责任域解释
 
