@@ -40,19 +40,6 @@ Read the [Chinese README](README.md) for the chapter map, reading order,
 licensing, and contribution workflow. Weekly EPUB snapshots are published on
 [GitHub Releases](https://github.com/Gracker/android-internals-wiki/releases).
 
-## Author
-
-Gao Jianwu (Gracker). Chengdu. Android system and app performance (Framework, APM, smoothness / startup / stability / power). Bio: [src/preface/about-author.md](src/preface/about-author.md) (Chinese).
-
-- Blog: <https://www.androidperformance.com/>
-- Zhihu: <https://www.zhihu.com/people/gracker>
-- Jike: <https://okjk.co/pJbjFa>
-- WeChat official account: AndroidPerformance
-- Juejin: <https://juejin.cn/user/1816846860560749>
-- Bilibili: <https://space.bilibili.com/213254842>
-- WeChat: 553000664
-- Email: dreamtale.jg@gmail.com
-
 ## Support
 
 Issues and pull requests help most. Tips (Alipay / WeChat) are in [src/preface/support.md](src/preface/support.md). Community contributions follow [CONTRIBUTING.md](CONTRIBUTING.md). A scheduled job triages open issues/PRs twice a day; it does not merge.
@@ -78,3 +65,20 @@ waive royalties. See [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md).
 Possession of a Pack does not itself grant commercial-use rights. See
 [`KNOWLEDGE-PACK-LICENSE.md`](KNOWLEDGE-PACK-LICENSE.md) for the exact
 SmartPerfetto redistribution boundary.
+
+## About the author
+
+Gao Jianwu. Online as Gracker. Chengdu.
+
+Works on Android system performance and on app smoothness, startup, stability, and power, mostly around Framework, APM, and platform internals. Also does app development and Linux. Writes at [androidperformance.com](https://www.androidperformance.com/). Series still being updated: Systrace, Perfetto, performance case studies, and 快省稳 (smooth / efficient / stable). Full bio (Chinese): [src/preface/about-author.md](src/preface/about-author.md).
+
+### Social
+
+- Blog: [androidperformance.com](https://www.androidperformance.com/)
+- Zhihu: [zhihu.com/people/gracker](https://www.zhihu.com/people/gracker)
+- Jike: [okjk.co/pJbjFa](https://okjk.co/pJbjFa)
+- WeChat official account: AndroidPerformance
+- Juejin: [juejin.cn/user/1816846860560749](https://juejin.cn/user/1816846860560749)
+- Bilibili: [space.bilibili.com/213254842](https://space.bilibili.com/213254842)
+- WeChat: 553000664 (add with note Blog)
+- Email: dreamtale.jg@gmail.com

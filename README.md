@@ -89,19 +89,6 @@
 
 附录目前保留 [性能分析 Checklist](src/appendix/analysis-checklist.md)。
 
-## 作者
-
-高建武（Gracker）。人在成都，做 Android 系统开发优化和应用侧的快、省、稳。完整介绍见 [作者简介](src/preface/about-author.md)。
-
-- 博客：<https://www.androidperformance.com/>
-- 知乎：<https://www.zhihu.com/people/gracker>
-- 即刻：<https://okjk.co/pJbjFa>
-- 微信公众号：AndroidPerformance
-- 掘金：<https://juejin.cn/user/1816846860560749>
-- Bilibili：<https://space.bilibili.com/213254842>
-- 微信：553000664
-- 邮箱：dreamtale.jg@gmail.com
-
 ## 支持这个项目
 
 提 Issue、提 PR，或给仓库点 Star，都直接有用。
@@ -137,3 +124,27 @@ Task6/Task9 或 queue 状态作为门槛。各级 `README.md`、`SUMMARY.md` 和
 [`KNOWLEDGE-PACK-LICENSE.md`](KNOWLEDGE-PACK-LICENSE.md)。
 
 > 注：本书引用的 AOSP 源码遵循 Apache License 2.0。引用他人内容均已标注原始出处，仅用于技术说明目的。
+
+## 关于作者
+
+高建武。网上多用 Gracker，也有人叫高爷。人在成都。
+
+长期在手机厂商做 Android 系统开发优化，以及应用侧的快、省、稳。主要看 Framework、APM 和系统优化；App 开发和 Linux 也接触。业余时间写在 [androidperformance.com](https://www.androidperformance.com/)，现在还在更新的系列：
+
+- **Systrace**：用 Systrace 把系统运行机制和性能问题放到同一条时间线上
+- **Perfetto**：接替 Systrace 的分析工具，多了 SQL 和更完整的数据面
+- **性能分析和实战**：卡顿、ANR、内存、功耗怎么采、怎么看
+- **快省稳**：流畅性、响应速度、内存、稳定性、功耗
+
+这本书把这些题目收进同一套 Android 17 目录。更完整的介绍见书里的 [作者简介](src/preface/about-author.md)。
+
+### 社交网络
+
+- 博客：[androidperformance.com](https://www.androidperformance.com/)
+- 知乎：[zhihu.com/people/gracker](https://www.zhihu.com/people/gracker)
+- 即刻：[okjk.co/pJbjFa](https://okjk.co/pJbjFa)
+- 微信公众号：AndroidPerformance
+- 掘金：[juejin.cn/user/1816846860560749](https://juejin.cn/user/1816846860560749)
+- Bilibili：[space.bilibili.com/213254842](https://space.bilibili.com/213254842)
+- 微信：553000664（加好友请备注 Blog）
+- 邮箱：dreamtale.jg@gmail.com
