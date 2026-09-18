@@ -702,7 +702,7 @@ Android 17 的 `FrameMetrics` 公开指标包括：
 
 这些指标描述窗口帧的 UI/HWUI/GPU 阶段。后台图片解码不计入这些时长字段，只会通过三种间接方式影响帧：
 
-- 错误地在主线程解码，增加垂直同步信号（VSync）的响应延迟或某个 UI 阶段；
+- 错误地在主线程解码，增加垂直同步信号（VSync）的响应延迟或某个 UI 阶段的耗时；
 - 后台解码占用 CPU、内存带宽或触发内存回收，使 UI/RenderThread 调度变差；
 - 软件 Bitmap 首次绘制需要准备 GPU 采样资源，影响 RenderThread 或 GPU。
 
