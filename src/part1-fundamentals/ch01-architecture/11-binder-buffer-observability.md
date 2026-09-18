@@ -124,7 +124,7 @@ Binder 故障既要看事务是否进入驱动，也要看目标进程的缓冲�
 | RPC Binder 协议上限 | `600 KiB`，还要扣除协议头与对象表 | 一条 RPC Binder 命令或回复包 |
 | libbinder 大事务告警线 | `300 KiB` | 内核 Binder 和 RPC Binder 的诊断告警，不是硬上限 |
 
-第一行和第二行并不矛盾。Android 17 的 AOSP `ProcessState` 主动只映射约 1 MiB；r6 内核最多接受 4 MiB，这是驱动对调用者请求的保护上限。普通 AOSP 进程不会因为驱动允许 4 MiB 就自动得到 4 MiB。
+第一行和第二行并不矛盾。Android 17 的 AOSP `ProcessState` 主动只映射约 1 MiB；r6 内核最多接受 4 MiB，这是驱动对调用方请求的保护上限。普通 AOSP 进程不会因为驱动允许 4 MiB 就自动得到 4 MiB。
 
 RPC Binder 不通过目标进程的 `/dev/binder` 映射区传输数据，因此 600 KiB 与内核 Binder 的约 1 MiB 接收池不能互相替代。
 
@@ -161,7 +161,7 @@ mVMStart = mmap(
 );
 ```
 
-这块用户虚拟地址用于接收驱动写入的事务。`MAP_NORESERVE` 表示不为映射预留交换空间；它不能推导出“Binder 页面不计入 RSS（进程当前驻留在物理内存中的大小）”。驱动在事务需要覆盖相应范围时安装后备物理页，内存统计仍要以目标内核和设备实测为准。
+这块用户虚拟地址用于接收驱动写入的事务。`MAP_NORESERVE` 表示不为映射预留交换空间；不能据此推导出“Binder 页面不计入 RSS（进程当前驻留在物理内存中的大小）”。驱动在事务需要覆盖相应范围时安装后备物理页，内存统计仍要以目标内核和设备实测为准。
 
 #### 2. 映射属于接收方
 
@@ -441,7 +441,7 @@ Binder 可观测性由多套机制组成。分析等待时间、查询冻结状�
 | 发送端是否触发 `oneway` 嫌疑检测 | `BR_ONEWAY_SPAM_SUSPECT` | 当前发送线程收到告警并打印调用栈 | 接收端队列的通用统计报表 |
 | 请求和回复的 Parcel 是什么 | `RecordedTransaction` | 接口名、事务码（code）、标志位（flags）、状态、请求 / 回复数据 | 稳定文件协议、低扰动线上采集 |
 
-这些能力没有“粗粒度到细粒度”的固定层级，也不是 Android 17 同时新增。当前版本中的源码入口只能证明 Android 17 的行为，不能反推引入版本。
+这些能力没有“粗粒度到细粒度”的固定层级，也不都是 Android 17 新增的。当前版本中的源码入口只能证明 Android 17 的行为，不能反推引入版本。
 
 ### 二、binderfs 功能文件表示能力，不表示运行状态
 
@@ -726,7 +726,7 @@ Java `Parcel` 有对象池，带明确类型的 Parcelable 由生成代码或显
 
 1. libbinder 编译时定义 `BINDER_ENABLE_RECORDING`，否则 `kEnableRecording` 为 `false`；
 2. 使用内核 Binder；
-3. 发起 `START_RECORDING_TRANSACTION` / `STOP_RECORDING_TRANSACTION` 的调用者 UID 为 root（超级用户）。
+3. 发起 `START_RECORDING_TRANSACTION` / `STOP_RECORDING_TRANSACTION` 的调用方 UID 为 root（超级用户）。
 
 `startRecordingTransactions(const Parcel& data)` 从控制事务的 `Parcel` 中读取一个由 `unique_fd` 管理的文件描述符。同一个 `BBinder` 一次只允许一场录制。仅凭系统是 `userdebug` 构建不能确认该能力可用，还要检查目标产品的 libbinder 编译参数。
 
