@@ -1,19 +1,31 @@
-Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+(CC BY-NC-SA 4.0)
 
-Copyright (c) 2026 Gracker
+Copyright (c) 2026 高建武（Gracker）
 
-This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+人话摘要（以中文说明为准，法律文本以 CC 协议全文为准）：
+
+- 正文、电子书和 Knowledge Pack 正文可以公开阅读、非商业转载和改编。
+- 须署名作者 高建武（Gracker），保留仓库地址，改编后仍用 CC BY-NC-SA 4.0。
+- 出版纸质书或电子书、上架销售、收费培训、把正文打进付费产品，属于商用。
+- 商用必须取得版权人书面授权。仓库公开、免费 EPUB、Knowledge Pack
+  都不等于放弃出版和销售收益，也不等于已经授权别人出书。
+- 商用范围和收益分配只写在版权人签发的书面协议里，见 COMMERCIAL-LICENSE.md。
+- 提交 Pull Request 的授权范围见 CONTRIBUTING.md。
 
 You are free to:
+
   - Share: copy and redistribute the material in any medium or format
   - Adapt: remix, transform, and build upon the material
 
 Under the following terms:
+
   - Attribution: You must give appropriate credit
   - NonCommercial: You may not use the material for commercial purposes
   - ShareAlike: You must distribute contributions under the same license
 
 Full license text: https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
+Chinese deed: https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans
 
 Alternative commercial licensing
 --------------------------------
@@ -25,4 +37,4 @@ commercial-use rights. See COMMERCIAL-LICENSE.md.
 
 Generated SmartPerfetto Knowledge Packs also carry the redistribution notice in
 KNOWLEDGE-PACK-LICENSE.md. Code and third-party source excerpts retain their
-respective licenses.
+respective licenses. AOSP excerpts remain under Apache License 2.0.

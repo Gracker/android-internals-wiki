@@ -42,7 +42,10 @@
 - 正文在 `src/` 下，目录以 [`src/SUMMARY.md`](src/SUMMARY.md) 为准。不要新建历史目录名（`src/chXX-*`、`partX-*` 这类）。
 - 不要改 `metadata/queue.json`、`metadata/progress.json` 等流水线文件，除非维护者明确要你改。
 - 提交说明写人话即可，例如 `fix: 2.3 更正 Choreographer 回调顺序的源码路径`。
-- 许可按 [CC BY-NC-SA 4.0](LICENSE)。提交 PR 即表示你的贡献按同一许可授权。
+- 许可见 [LICENSE](LICENSE) 和 [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md)。提交 Pull Request 即表示：
+  1. 你将贡献按 CC BY-NC-SA 4.0 授权给公众（署名、非商业、相同方式共享）；
+  2. 你同时授予版权人高建武（Gracker）永久性、全球范围的许可，可将该贡献用于本项目的所有版本，包括商业出版、再许可和修改后的版本。
+  你保证贡献是自己的原创，或你有权按上述条件授权。
 
 小的事实修正可以直接 PR。拿不准就先 Issue。
 

@@ -25,4 +25,4 @@ tags: [introduction, support, donate]
 </tr>
 </table>
 
-商业使用需要另行书面授权，见 [COMMERCIAL-LICENSE.md](https://github.com/Gracker/android-internals-wiki/blob/master/COMMERCIAL-LICENSE.md)。
+出版、上架或收费分发需要书面授权，收益安排以该协议为准，见 [COMMERCIAL-LICENSE.md](https://github.com/Gracker/android-internals-wiki/blob/master/COMMERCIAL-LICENSE.md)。

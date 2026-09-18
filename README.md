@@ -125,11 +125,9 @@
 
 ## License
 
-本作品采用双许可：
+正文和电子书可以公开阅读。社区使用按 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans)：非商业转载和改编须署名，并保留相同许可。
 
-- 社区使用：[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)；
-- 商业使用：由权利持有人另行书面授予的
-  [AIW Commercial License](COMMERCIAL-LICENSE.md)。
+出版、上架销售、收费培训、把正文打进付费产品，须取得版权人高建武（Gracker）的书面授权。克隆仓库或下载免费 EPUB 不等于获得出版权，也不等于放弃商业收益。说明见 [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md)，书里的摘要见 [许可说明](src/preface/license.md)。
 
 仅下载仓库或 Knowledge Pack 不代表获得商业授权。SmartPerfetto 使用的公开
 Knowledge Pack 收录规范章节目录中的所有正文，不以 `status`、`pipeline_stage`、

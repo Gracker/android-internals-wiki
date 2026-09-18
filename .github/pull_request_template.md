@@ -27,4 +27,4 @@
 - [ ] 确定性结论不超过 Android 17 / `android-17.0.0_r1`
 - [ ] 没有整篇搬运别人的文章
 - [ ] 新增或大修章节的 YAML 含 title / chapter / status / applicable_versions / tags
-- [ ] 贡献按 CC BY-NC-SA 4.0 授权
+- [ ] 贡献按 CC BY-NC-SA 4.0 授权给公众，并授予版权人高建武用于本项目全部版本（含商业出版）

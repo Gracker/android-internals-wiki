@@ -68,10 +68,12 @@ private-path lines are redacted from the public projection, and secret findings
 fail the release. The exact policy is defined by
 [`knowledge-pack/policy.yaml`](knowledge-pack/policy.yaml).
 
-The content is available under either:
-
-- CC BY-NC-SA 4.0 for community use; or
-- a separate written [AIW Commercial License](COMMERCIAL-LICENSE.md).
+Community reading and non-commercial reuse are under
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+Publishing a book, selling the text, paid courses, or bundling the body into a
+paid product needs a written grant from Gao Jianwu (Gracker). Cloning the repo
+or downloading the free EPUB does not grant publishing rights and does not
+waive royalties. See [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md).
 
 Possession of a Pack does not itself grant commercial-use rights. See
 [`KNOWLEDGE-PACK-LICENSE.md`](KNOWLEDGE-PACK-LICENSE.md) for the exact

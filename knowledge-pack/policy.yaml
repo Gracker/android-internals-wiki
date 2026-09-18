@@ -58,8 +58,8 @@ exported_metadata:
 
 license:
   expression: CC-BY-NC-SA-4.0 OR LicenseRef-AIW-Commercial
-  copyright_holder: Gracker
-  attribution: Android Internals Wiki by Gracker
+  copyright_holder: 高建武（Gracker）
+  attribution: Android Internals Wiki by 高建武（Gracker）
   community_notice: LICENSE
   commercial_notice: COMMERCIAL-LICENSE.md
   redistribution_notice: KNOWLEDGE-PACK-LICENSE.md

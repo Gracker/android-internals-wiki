@@ -1,6 +1,6 @@
 # AIW Knowledge Pack Redistribution Notice
 
-Copyright (c) 2026 Gracker.
+Copyright (c) 2026 高建武（Gracker）.
 
 The copyright holder authorizes the SmartPerfetto project to build, reproduce,
 package, and redistribute public-safe, policy-included Android Internals Wiki

@@ -1,6 +1,7 @@
 # 目录
 
 - [写在前面](preface/intro.md)
+- [许可说明](preface/license.md)
 - [作者简介](preface/about-author.md)
 - [支持这个项目](preface/support.md)
 - [本书的使用方式](preface/how-to-use.md)
