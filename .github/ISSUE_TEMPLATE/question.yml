@@ -1,0 +1,25 @@
+name: 阅读问题
+description: 某一段看不懂、交叉引用断了，或想确认适用范围
+title: "[问题] "
+labels: ["question"]
+body:
+  - type: input
+    id: chapter
+    attributes:
+      label: 章节
+      placeholder: "7.2"
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: 问题
+    validations:
+      required: true
+  - type: input
+    id: android_version
+    attributes:
+      label: 你在用的 Android 版本
+      placeholder: "Android 17"
+    validations:
+      required: false

@@ -1,11 +1,13 @@
 # 目录
 
 - [写在前面](preface/intro.md)
+- [作者简介](preface/about-author.md)
 - [本书的使用方式](preface/how-to-use.md)
 - [适用读者](preface/target-audience.md)
 - [内容验证标准说明](preface/verification-standards.md)
 - [版本约定](preface/version-conventions.md)
 - [阅读路径推荐](preface/reading-paths.md)
+- [支持这个项目](preface/support.md)
 
 ---
 

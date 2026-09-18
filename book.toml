@@ -1,7 +1,7 @@
 [book]
 title = "Android 技术内幕：系统机制、性能优化与工具实战"
 description = "一本由 AI 辅助持续进化的 Android 技术百科（English: Android Internals: System Architecture, Performance & Tooling in Practice）"
-authors = ["Gracker"]
+authors = ["高建武（Gracker）"]
 language = "zh-CN"
 src = "src"
 

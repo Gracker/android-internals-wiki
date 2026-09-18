@@ -1,0 +1,42 @@
+name: 事实勘误
+description: 正文写错、过时，或源码路径对不上
+title: "[勘误] "
+labels: ["fact-error"]
+body:
+  - type: input
+    id: chapter
+    attributes:
+      label: 章节
+      description: 章节号或文件路径，例如 2.3 或 src/part1-fundamentals/ch02-rendering/03-vsync-choreographer-sf-scheduling.md
+      placeholder: "2.3"
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: 现在怎么写
+      description: 贴原文，或说明哪一句有问题。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 你认为应该怎么写
+    validations:
+      required: true
+  - type: input
+    id: android_version
+    attributes:
+      label: Android 版本
+      description: 正文确定性结论最高到 Android 17 / android-17.0.0_r1。
+      placeholder: "Android 17 / android-17.0.0_r1"
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 证据
+      description: AOSP 路径、官方文档 URL，或可复现的观察步骤。
+      placeholder: "frameworks/base/services/core/java/com/android/server/..."
+    validations:
+      required: true

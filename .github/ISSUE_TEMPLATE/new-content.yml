@@ -1,0 +1,34 @@
+name: 新内容或大改
+description: 建议新增章节、整节重写，或补大段案例。请先开 Issue，不要直接丢一个大 PR。
+title: "[新内容] "
+labels: ["new-content"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: 想补什么
+      description: 主题、建议放在哪一章、读者看完能带走什么。
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: 为什么现在要补
+      description: 现有章节缺了哪一段，或者哪个版本变化需要单独写。
+    validations:
+      required: true
+  - type: input
+    id: android_version
+    attributes:
+      label: 目标 Android 版本
+      description: 不要把 Android 18 及之后的材料写成当前结论。
+      placeholder: "Android 17"
+    validations:
+      required: true
+  - type: textarea
+    id: sources
+    attributes:
+      label: 已有来源
+      description: AOSP 路径、官方文档、可公开的文章或论文。不要贴不能公开的内部材料。
+    validations:
+      required: true

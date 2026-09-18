@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 作者博客
+    url: https://www.androidperformance.com/about
+    about: 作者简介和联系方式
+  - name: 每周电子书
+    url: https://github.com/Gracker/android-internals-wiki/releases
+    about: 从正文打包的 EPUB，不是 Issue

@@ -21,7 +21,7 @@
 | 分析 | [SmartPerfetto](https://github.com/Gracker/SmartPerfetto) | 通过 AI 辅助 Web UI、CLI、报告、会话、对比和证据工作流分析 Trace。 | [GitHub](https://github.com/Gracker/SmartPerfetto) |
 | Agent 分析 | [Perfetto Skills](https://github.com/Gracker/Perfetto-Skills) | 为 Agent 提供可移植的 Android、Linux、Chromium Perfetto 分析 Skill，并通过固定版本流程同步选定资产。 | [GitHub](https://github.com/Gracker/Perfetto-Skills) |
 | 学习 | [Android Performance Blog](https://github.com/Gracker/Gracker.github.io) | 通过文章、系统原理和案例复盘讲解 Perfetto 与 Systrace 分析。 | [AndroidPerformance.com](https://www.androidperformance.com/) · [GitHub](https://github.com/Gracker/Gracker.github.io) |
-| 系统知识 | Android Internal Wiki | 处于 alpha 阶段的 Android 系统知识库，覆盖 App、Framework、Native 与 Kernel 机制。 | **Coming soon** |
+| 系统知识 | Android Internal Wiki | 处于 alpha 阶段的 Android 系统知识库，覆盖 App、Framework、Native 与 Kernel 机制。 | [GitHub](https://github.com/Gracker/android-internals-wiki) |
 | 复现 | [Trace for Blog (SystraceForBlog)](https://github.com/Gracker/SystraceForBlog) | 提供文章使用的 Perfetto、Systrace 及相关案例文件，支持动手复现。 | [GitHub](https://github.com/Gracker/SystraceForBlog) |
 <!-- android-performance-ecosystem:end -->
 
@@ -89,9 +89,34 @@
 
 附录目前保留 [性能分析 Checklist](src/appendix/analysis-checklist.md)。
 
+## 作者
+
+高建武（Gracker）。人在成都，做 Android 系统开发优化和应用侧的快、省、稳。完整介绍见 [作者简介](src/preface/about-author.md)。
+
+- 博客：<https://www.androidperformance.com/>
+- 知乎：<https://www.zhihu.com/people/gracker>
+- 即刻：<https://okjk.co/pJbjFa>
+- 微信公众号：AndroidPerformance
+- 掘金：<https://juejin.cn/user/1816846860560749>
+- Bilibili：<https://space.bilibili.com/213254842>
+- 微信：553000664
+- 邮箱：dreamtale.jg@gmail.com
+
+## 支持这个项目
+
+提 Issue、提 PR，或给仓库点 Star，都直接有用。
+
+也可以打赏，用来给家里的猫豆豆买猫粮。码在 [支持这个项目](src/preface/support.md)，支付宝和微信都可以。
+
+![支付宝赞赏码](src/preface/images/alipay.png)
+
+![微信支付码](src/preface/images/wechat-pay.png)
+
 ## 贡献
 
-欢迎贡献。规范和审阅要求见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+欢迎开 Issue 或 Pull Request。错别字、失效链接、事实勘误可以直接 PR；新章节或大段重写请先开 Issue。
+
+每天 11:40 和 19:40（Asia/Shanghai）会有定时任务读未分流的 Issue/PR：致谢、打标签、缺证据时会在评论里问。它不会改书，也不会合 PR。合并由维护者人工完成。规范见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 正文由 AI 辅助整理结构与初稿，技术判断和定稿由人工完成。
 
