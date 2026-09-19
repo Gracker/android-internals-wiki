@@ -38,9 +38,17 @@ jobs:
           cp book.toml src_filtered/
           cp -R theme src_filtered/
           cp -R static src_filtered/
+          echo '--- staging tree ---'
+          ls src_filtered
+          echo '--- staging src ---'
+          ls src_filtered/src | head
+          echo '--- staging theme ---'
+          ls src_filtered/theme
+          echo '--- staging static ---'
+          ls src_filtered/static
       - name: Build
         working-directory: src_filtered
-        run: mdbook build -d ../book
+        run: mdbook build -d ../book --debug 2>&1 | tail -40
       - name: Add Pages CNAME
         run: cp static/CNAME book/CNAME
       - uses: actions/upload-pages-artifact@v3
