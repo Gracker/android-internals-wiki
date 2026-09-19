@@ -323,25 +323,155 @@
         <script src="{{ resource "highlight.js" }}"></script>
         <script src="{{ resource "book.js" }}"></script>
 
-        <!-- Mermaid: render ```mermaid blocks client-side via the pre-classed <pre> elements mdBook produces. -->
+        <!-- Mermaid: render ```mermaid blocks client-side. Each Catppuccin
+             flavor has its own mermaid themeVariables so the diagrams
+             actually pick up the surrounding palette instead of falling
+             back to mermaid's built-in "dark" for all three dark flavors. -->
         <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
         <script>
             (function () {
-                function applyMermaidTheme() {
-                    var theme = document.documentElement.className.match(/(latte|frappe|macchiato|mocha)/);
-                    var palette = theme === 'latte' ? 'default' : 'dark';
-                    if (window.__mermaid_initialized !== palette) {
+                var PALETTES = {
+                    latte: {
+                        theme: 'base',
+                        themeVariables: {
+                            primaryColor: '#ccd0da',
+                            primaryTextColor: '#4c4f69',
+                            primaryBorderColor: '#8c8fa1',
+                            lineColor: '#7c7f93',
+                            secondaryColor: '#bcc0cc',
+                            tertiaryColor: '#e6e9ef',
+                            background: '#eff1f5',
+                            mainBkg: '#ccd0da',
+                            secondBkg: '#bcc0cc',
+                            tertiaryBkg: '#e6e9ef',
+                            clusterBkg: '#dce0e8',
+                            clusterBorder: '#8c8fa1',
+                            titleColor: '#4c4f69',
+                            edgeLabelBackground: '#eff1f5',
+                            nodeBorder: '#8c8fa1',
+                            noteBkgColor: '#dce0e8',
+                            noteTextColor: '#4c4f69',
+                            noteBorderColor: '#8c8fa1',
+                        },
+                    },
+                    frappe: {
+                        theme: 'base',
+                        themeVariables: {
+                            primaryColor: '#51576d',
+                            primaryTextColor: '#c6d0f5',
+                            primaryBorderColor: '#737994',
+                            lineColor: '#949cbb',
+                            secondaryColor: '#414559',
+                            tertiaryColor: '#303446',
+                            background: '#303446',
+                            mainBkg: '#51576d',
+                            secondBkg: '#414559',
+                            tertiaryBkg: '#303446',
+                            clusterBkg: '#414559',
+                            clusterBorder: '#737994',
+                            titleColor: '#c6d0f5',
+                            edgeLabelBackground: '#303446',
+                            nodeBorder: '#737994',
+                            noteBkgColor: '#414559',
+                            noteTextColor: '#c6d0f5',
+                            noteBorderColor: '#737994',
+                        },
+                    },
+                    macchiato: {
+                        theme: 'base',
+                        themeVariables: {
+                            primaryColor: '#5b6078',
+                            primaryTextColor: '#cad3f5',
+                            primaryBorderColor: '#8087a2',
+                            lineColor: '#a5adcb',
+                            secondaryColor: '#494d64',
+                            tertiaryColor: '#363a4f',
+                            background: '#363a4f',
+                            mainBkg: '#5b6078',
+                            secondBkg: '#494d64',
+                            tertiaryBkg: '#363a4f',
+                            clusterBkg: '#494d64',
+                            clusterBorder: '#8087a2',
+                            titleColor: '#cad3f5',
+                            edgeLabelBackground: '#363a4f',
+                            nodeBorder: '#8087a2',
+                            noteBkgColor: '#494d64',
+                            noteTextColor: '#cad3f5',
+                            noteBorderColor: '#8087a2',
+                        },
+                    },
+                    mocha: {
+                        theme: 'base',
+                        themeVariables: {
+                            primaryColor: '#585b70',
+                            primaryTextColor: '#cdd6f4',
+                            primaryBorderColor: '#7f849c',
+                            lineColor: '#a6adc8',
+                            secondaryColor: '#45475a',
+                            tertiaryColor: '#313244',
+                            background: '#1e1e2e',
+                            mainBkg: '#585b70',
+                            secondBkg: '#45475a',
+                            tertiaryBkg: '#313244',
+                            clusterBkg: '#45475a',
+                            clusterBorder: '#7f849c',
+                            titleColor: '#cdd6f4',
+                            edgeLabelBackground: '#1e1e2e',
+                            nodeBorder: '#7f849c',
+                            noteBkgColor: '#45475a',
+                            noteTextColor: '#cdd6f4',
+                            noteBorderColor: '#7f849c',
+                        },
+                    },
+                };
+
+                var currentFlavor = null;
+                var scheduled = false;
+
+                function flavor() {
+                    var m = document.documentElement.className.match(/(latte|frappe|macchiato|mocha)/);
+                    return m ? m[0] : 'latte';
+                }
+
+                function rerender() {
+                    if (scheduled) return;
+                    scheduled = true;
+                    requestAnimationFrame(function () {
+                        scheduled = false;
+                        var f = flavor();
+                        if (f === currentFlavor) return;
+                        currentFlavor = f;
+                        var palette = PALETTES[f] || PALETTES.latte;
+                        var blocks = document.querySelectorAll('pre.mermaid');
+                        if (!blocks.length) return;
                         window.mermaid.initialize({
-                            startOnLoad: true,
-                            theme: palette,
+                            startOnLoad: false,
                             securityLevel: 'loose',
+                            theme: palette.theme,
+                            themeVariables: palette.themeVariables,
                             flowchart: { htmlLabels: true },
                         });
-                        window.__mermaid_initialized = palette;
-                    }
+                        // Replace each <pre class="mermaid"> with rendered SVG.
+                        blocks.forEach(function (block, idx) {
+                            var src = block.textContent;
+                            var id = 'mermaid-' + f + '-' + idx;
+                            try {
+                                window.mermaid.render(id, src).then(function (result) {
+                                    var tmp = document.createElement('div');
+                                    tmp.innerHTML = result.svg;
+                                    var svg = tmp.firstChild;
+                                    svg.id = block.id || ('mermaid-' + f + '-' + idx);
+                                    block.parentNode.replaceChild(svg, block);
+                                }).catch(function () {
+                                    /* leave the raw block in place on failure */
+                                });
+                            } catch (e) { /* swallow */ }
+                        });
+                    });
                 }
-                applyMermaidTheme();
-                var observer = new MutationObserver(applyMermaidTheme);
+
+                rerender();
+                var observer = new MutationObserver(rerender);
                 observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
             })();
         </script>
