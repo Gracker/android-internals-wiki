@@ -6,7 +6,7 @@
 
 面向有经验的 Android 开发者和系统工程师。覆盖 App、Framework、Native 与 Kernel，当前基准是 Android 17 / API 37，源码核对标签是 AOSP `android-17.0.0_r1`。
 
-完整目录见 [`src/SUMMARY.md`](src/SUMMARY.md)。每周会把正文编成 EPUB，放在 [GitHub Releases](https://github.com/Gracker/android-internals-wiki/releases)。
+完整目录见 [`src/SUMMARY.md`](src/SUMMARY.md)。网页版在 [wiki.androidperformance.com](https://wiki.androidperformance.com/)，和博客 [androidperformance.com](https://www.androidperformance.com/) 分开。站点用 [Catppuccin](https://github.com/catppuccin/mdBook) 主题，右上角可换 Latte（浅色）、Frappé、Macchiato、Mocha（深色）。每天编一次。每周会把正文编成 EPUB，放在 [GitHub Releases](https://github.com/Gracker/android-internals-wiki/releases)。
 
 <!-- android-performance-ecosystem:start -->
 ## Android 性能分析生态

@@ -12,7 +12,11 @@ practical tooling.
 > Chinese, and a full English edition is planned after v1.0.
 
 The canonical Chinese body has five parts and 26 chapters, plus a preface and
-appendices. `src/SUMMARY.md` is the mdBook table of contents.
+appendices. `src/SUMMARY.md` is the mdBook table of contents. The HTML edition
+is at [wiki.androidperformance.com](https://wiki.androidperformance.com/),
+separate from the blog at [androidperformance.com](https://www.androidperformance.com/).
+It uses the [Catppuccin](https://github.com/catppuccin/mdBook) theme (Latte,
+Frappé, Macchiato, Mocha) and rebuilds once a day.
 
 <!-- android-performance-ecosystem:start -->
 ## Android performance ecosystem
