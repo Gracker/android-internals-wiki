@@ -22,7 +22,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: taiki-e/install-action@v2
         with:
-          tool: mdbook@0.4.52
+          tool: mdbook@0.4.52,mdbook-mermaid@0.17.1
+      - name: Install mermaid assets
+        run: mdbook-mermaid install
       - name: Strip front matter for the web edition
         # Build a staging book root in src_filtered/ so mdBook can read it
         # as if it were the repo root. Strip YAML from every markdown file
