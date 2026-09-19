@@ -70,7 +70,7 @@ android.util.Log.d(tag, message)
 
 这张路径图有四个需要记住的细节。
 
-JNI 层通过 `GetStringUTFChars()` 取得 tag 和 message 的 Modified UTF-8 表示，随后释放。Modified UTF-8 是 JNI 使用的一种 UTF-8 变体。虚拟机是否复制字符串由实现和字符串内容决定，因此不能把它固定描述为“一次堆分配”，但编码访问和跨越 JNI 边界都有成本。
+JNI 层通过 `GetStringUTFChars()` 取得 tag 和 message 的 Modified UTF-8 表示，随后释放。Modified UTF-8 是 JNI 使用的一种 UTF-8 变体。虚拟机是否复制字符串由实现和字符串内容决定，因此不能把它固定描述为“一次堆分配”，但取得编码表示和跨越 JNI 边界都有成本。
 
 文本日志进入 `__android_log_buf_write()` 后会再次执行 `__android_log_is_loggable()`。`Log.d()` 的参数在进入 native 方法前已经求值，所以 native 级别过滤能省去套接字写入，却省不掉调用方已经完成的字符串拼接、对象 `toString()` 或 JSON 序列化。
 
@@ -97,7 +97,7 @@ Android 17 的 liblog 使用 `writev()` 一次提交头部和 payload（日志�
 
 - 调用方持续做格式化、JNI 转换和系统调用，消耗 CPU 与电量；
 - socket 过载后新日志丢失，关键现场被噪声覆盖；
-- logd 忙于接收、压缩、裁剪和服务读者，增加系统负载；
+- logd 忙于接收、压缩、裁剪和服务读取客户端，增加系统负载；
 - 日志对象和中间字符串增加分配压力。
 
 把普通日志描述成“socket 满后 `write()` 阻塞主线程并导致 ANR”不符合 Android 17 的 liblog 实现。若 trace 显示线程长期停在日志相关调用，应继续检查自建日志框架的锁、磁盘输出端（sink）、格式化、崩溃收集器或厂商改动，不能直接归因于 AOSP `logdw` 的反压（下游处理变慢后迫使上游等待）。
