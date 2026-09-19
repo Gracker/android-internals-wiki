@@ -196,527 +196,527 @@
     }
   ],
   "processed": {
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - ANR 治理实践.md": {
+    "clippings/Android 应用稳定性剖析与优化 - ANR 治理实践.md": {
       "processed_at": "2026-07-18T20:48:18.469012+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - ART 堆内存分布与黑科技扩量：拯救 OOM 的利器.md": {
+    "clippings/Android 应用稳定性剖析与优化 - ART 堆内存分布与黑科技扩量：拯救 OOM 的利器.md": {
       "processed_at": "2026-07-18T20:48:18.469082+08:00",
       "chapter": "ch20",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - ASM 与字节码插桩：改写字节码的“神器”.md": {
+    "clippings/Android 应用稳定性剖析与优化 - ASM 与字节码插桩：改写字节码的“神器”.md": {
       "processed_at": "2026-07-18T20:49:14.831980+08:00",
       "chapter": "ch20",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Android.bp 文件与符号表：如何才能找到函数符号？.md": {
+    "clippings/Android 应用稳定性剖析与优化 - Android.bp 文件与符号表：如何才能找到函数符号？.md": {
       "processed_at": "2026-07-18T20:49:14.832239+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Binder 通信监控：如何监控每一次 Binder 传输？.md": {
+    "clippings/Android 应用稳定性剖析与优化 - Binder 通信监控：如何监控每一次 Binder 传输？.md": {
       "processed_at": "2026-07-19T19:28:50.260009+08:00",
       "chapter": "ch20",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Binder 通信过程：客户端视角领略 Binder.md": {
+    "clippings/Android 应用稳定性剖析与优化 - Binder 通信过程：客户端视角领略 Binder.md": {
       "processed_at": "2026-07-19T19:28:50.260273+08:00",
       "chapter": "ch20",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - ELF 文件与 readelf & objdump ：了解 ELF 格式与解析工具.md": {
+    "clippings/Android 应用稳定性剖析与优化 - ELF 文件与 readelf & objdump ：了解 ELF 格式与解析工具.md": {
       "processed_at": "2026-07-19T19:28:50.261150+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Java Crash 分析与监控原理.md": {
+    "clippings/Android 应用稳定性剖析与优化 - Java Crash 分析与监控原理.md": {
       "processed_at": "2026-07-19T19:28:50.261836+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控：实现自定义 Crash 处理器.md": {
+    "clippings/Android 应用稳定性剖析与优化 - Java Crash 监控：实现自定义 Crash 处理器.md": {
       "processed_at": "2026-07-20T06:30:13.494485+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Java 内存泄漏监控与 OOM：Java 内存泄漏如何定义？.md": {
+    "clippings/Android 应用稳定性剖析与优化 - Java 内存泄漏监控与 OOM：Java 内存泄漏如何定义？.md": {
       "processed_at": "2026-07-20T06:30:13.495212+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Java 堆栈：深入了解 Throwable.md": {
+    "clippings/Android 应用稳定性剖析与优化 - Java 堆栈：深入了解 Throwable.md": {
       "processed_at": "2026-07-20T06:30:13.496047+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Native Backtrace：Native 堆栈信息获取.md": {
+    "clippings/Android 应用稳定性剖析与优化 - Native Backtrace：Native 堆栈信息获取.md": {
       "processed_at": "2026-07-20T06:30:13.496895+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控原理.md": {
+    "clippings/Android 应用稳定性剖析与优化 - Native Crash 监控原理.md": {
       "processed_at": "2026-07-21T06:30:00.232616+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md": {
+    "clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md": {
       "processed_at": "2026-07-21T06:30:00.233518+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Native Hook 全解析：Native 闯关入门秘籍.md": {
+    "clippings/Android 应用稳定性剖析与优化 - Native Hook 全解析：Native 闯关入门秘籍.md": {
       "processed_at": "2026-07-21T06:30:00.234387+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Native 内存泄漏监控：寻找 Native 中不可达内存.md": {
+    "clippings/Android 应用稳定性剖析与优化 - Native 内存泄漏监控：寻找 Native 中不可达内存.md": {
       "processed_at": "2026-07-21T06:30:00.235388+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径与解决方案.md": {
+    "clippings/Android 应用稳定性剖析与优化 - OOM 发生路径与解决方案.md": {
       "processed_at": "2026-07-22T06:30:48.959126+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md": {
+    "clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md": {
       "processed_at": "2026-07-22T06:30:48.960470+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - pthread_create 回溯：原来 Native 也有 try catch！.md": {
+    "clippings/Android 应用稳定性剖析与优化 - pthread_create 回溯：原来 Native 也有 try catch！.md": {
       "processed_at": "2026-07-22T06:30:48.961669+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - 初识内存：内存是什么？.md": {
+    "clippings/Android 应用稳定性剖析与优化 - 初识内存：内存是什么？.md": {
       "processed_at": "2026-07-22T06:30:48.962322+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - 实现 FD 监控：文件描述符（FD）超限怎么办？.md": {
+    "clippings/Android 应用稳定性剖析与优化 - 实现 FD 监控：文件描述符（FD）超限怎么办？.md": {
       "processed_at": "2026-07-23T06:30:36.058441+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - 开篇词：欢迎加入 Android 优化之旅，你将走进稳定性优化的世界！.md": {
+    "clippings/Android 应用稳定性剖析与优化 - 开篇词：欢迎加入 Android 优化之旅，你将走进稳定性优化的世界！.md": {
       "processed_at": "2026-07-23T06:30:36.059303+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - 稳定性全景.md": {
+    "clippings/Android 应用稳定性剖析与优化 - 稳定性全景.md": {
       "processed_at": "2026-07-23T06:30:36.060172+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - 线程监控：如何解决“匿名”线程？.md": {
+    "clippings/Android 应用稳定性剖析与优化 - 线程监控：如何解决“匿名”线程？.md": {
       "processed_at": "2026-07-23T06:30:36.060749+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 -Binder 异常：原来 Binder 异常真不少！.md": {
+    "clippings/Android 应用稳定性剖析与优化 -Binder 异常：原来 Binder 异常真不少！.md": {
       "processed_at": "2026-07-24T06:30:26.060299+08:00",
       "chapter": "ch20",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - Android 性能优化总结.md": {
+    "clippings/Android 性能优化 - Android 性能优化总结.md": {
       "processed_at": "2026-07-24T06:30:26.061178+08:00",
       "chapter": "ch26",
       "points": 1
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md": {
+    "clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md": {
       "processed_at": "2026-07-24T06:30:26.062375+08:00",
       "chapter": "ch23",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md": {
+    "clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md": {
       "processed_at": "2026-07-24T06:30:26.063163+08:00",
       "chapter": "ch25",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md": {
+    "clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md": {
       "processed_at": "2026-07-25T06:30:06.546428+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md": {
+    "clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md": {
       "processed_at": "2026-07-25T06:30:06.547254+08:00",
       "chapter": "ch23",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - dex 文件的体积优化实战.md": {
+    "clippings/Android 性能优化 - dex 文件的体积优化实战.md": {
       "processed_at": "2026-07-25T06:30:06.547881+08:00",
       "chapter": "ch24",
       "points": 1
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - so 文件的体积优化实战.md": {
+    "clippings/Android 性能优化 - so 文件的体积优化实战.md": {
       "processed_at": "2026-07-25T06:30:06.548775+08:00",
       "chapter": "ch23",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md": {
+    "clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md": {
       "processed_at": "2026-07-26T06:30:23.320687+08:00",
       "chapter": "ch24",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md": {
+    "clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md": {
       "processed_at": "2026-07-26T06:30:23.321283+08:00",
       "chapter": "ch23",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 原理：重新认识 APK 安装包.md": {
+    "clippings/Android 性能优化 - 原理：重新认识 APK 安装包.md": {
       "processed_at": "2026-07-26T06:30:23.321883+08:00",
       "chapter": "ch21",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 原理：重新认识内存.md": {
+    "clippings/Android 性能优化 - 原理：重新认识内存.md": {
       "processed_at": "2026-07-26T06:30:23.322257+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md": {
+    "clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md": {
       "processed_at": "2026-07-27T06:30:39.684814+08:00",
       "chapter": "ch21",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md": {
+    "clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md": {
       "processed_at": "2026-07-27T06:30:39.685526+08:00",
       "chapter": "ch21",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md": {
+    "clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md": {
       "processed_at": "2026-07-27T06:30:39.686164+08:00",
       "chapter": "ch21",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md": {
+    "clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md": {
       "processed_at": "2026-07-27T06:30:39.686783+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md": {
+    "clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md": {
       "processed_at": "2026-07-28T06:30:59.256717+08:00",
       "chapter": "ch23",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md": {
+    "clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md": {
       "processed_at": "2026-07-28T06:30:59.257277+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 虚拟内存优化（下）：一些“黑科技”优化手段.md": {
+    "clippings/Android 性能优化 - 虚拟内存优化（下）：一些“黑科技”优化手段.md": {
       "processed_at": "2026-07-28T06:30:59.257882+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 资源文件的体积优化实战.md": {
+    "clippings/Android 性能优化 - 资源文件的体积优化实战.md": {
       "processed_at": "2026-07-28T06:30:59.258698+08:00",
       "chapter": "ch24",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 通过插件化来优化包体积（上）.md": {
+    "clippings/Android 性能优化 - 通过插件化来优化包体积（上）.md": {
       "processed_at": "2026-07-30T06:30:33.668306+08:00",
       "chapter": "ch26",
       "points": 1
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 通过插件化来优化包体积（下）.md": {
+    "clippings/Android 性能优化 - 通过插件化来优化包体积（下）.md": {
       "processed_at": "2026-07-30T06:30:33.668853+08:00",
       "chapter": "ch26",
       "points": 1
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md": {
       "processed_at": "2026-07-30T06:30:33.670507+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md": {
       "processed_at": "2026-07-30T06:30:33.671624+08:00",
       "chapter": "ch21",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 11.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 11.md": {
       "processed_at": "2026-07-31T06:30:38.977430+08:00",
       "chapter": "ch24",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 12.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 12.md": {
       "processed_at": "2026-07-31T06:30:38.978788+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 13.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 13.md": {
       "processed_at": "2026-07-31T06:30:38.979650+08:00",
       "chapter": "ch24",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 14.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 14.md": {
       "processed_at": "2026-07-31T06:30:38.980294+08:00",
       "chapter": "ch24",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 15.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 15.md": {
       "processed_at": "2026-08-01T06:30:54.958830+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 16.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 16.md": {
       "processed_at": "2026-08-01T06:30:54.960144+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 17.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 17.md": {
       "processed_at": "2026-08-01T06:30:54.961322+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md": {
       "processed_at": "2026-08-01T06:30:54.962322+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 19.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 19.md": {
       "processed_at": "2026-08-02T06:30:20.809937+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md": {
       "processed_at": "2026-08-02T06:30:20.811130+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md": {
       "processed_at": "2026-08-02T06:30:20.812112+08:00",
       "chapter": "ch24",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 21.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 21.md": {
       "processed_at": "2026-08-02T06:30:20.812960+08:00",
       "chapter": "ch23",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 22.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 22.md": {
       "processed_at": "2026-08-03T06:30:51.234715+08:00",
       "chapter": "ch24",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 23.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 23.md": {
       "processed_at": "2026-08-03T06:30:51.235758+08:00",
       "chapter": "ch24",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md": {
       "processed_at": "2026-08-03T06:30:51.236708+08:00",
       "chapter": "ch22",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 25.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 25.md": {
       "processed_at": "2026-08-03T06:30:51.237708+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 26.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 26.md": {
       "processed_at": "2026-08-04T06:30:14.303889+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 27.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 27.md": {
       "processed_at": "2026-08-04T06:30:14.305155+08:00",
       "chapter": "ch24",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 28.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 28.md": {
       "processed_at": "2026-08-04T06:30:14.305878+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 29.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 29.md": {
       "processed_at": "2026-08-04T06:30:14.306938+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 3.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 3.md": {
       "processed_at": "2026-08-05T06:30:25.727888+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 30.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 30.md": {
       "processed_at": "2026-08-05T06:30:25.729097+08:00",
       "chapter": "ch21",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 31.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 31.md": {
       "processed_at": "2026-08-05T06:30:25.730636+08:00",
       "chapter": "ch24",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md": {
       "processed_at": "2026-08-05T06:30:25.731853+08:00",
       "chapter": "ch24",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md": {
       "processed_at": "2026-08-06T06:30:39.059625+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 34.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 34.md": {
       "processed_at": "2026-08-06T06:30:39.060960+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md": {
       "processed_at": "2026-08-06T06:30:39.061947+08:00",
       "chapter": "ch24",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 36.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 36.md": {
       "processed_at": "2026-08-06T06:30:39.062937+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 37.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 37.md": {
       "processed_at": "2026-08-07T06:30:05.452157+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 38.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 38.md": {
       "processed_at": "2026-08-07T06:30:05.453815+08:00",
       "chapter": "ch23",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 39.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 39.md": {
       "processed_at": "2026-08-07T06:30:05.454993+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 4.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 4.md": {
       "processed_at": "2026-08-07T06:30:05.456344+08:00",
       "chapter": "ch23",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 40.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 40.md": {
       "processed_at": "2026-08-08T06:30:33.781606+08:00",
       "chapter": "ch24",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 41.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 41.md": {
       "processed_at": "2026-08-08T06:30:33.783131+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 42.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 42.md": {
       "processed_at": "2026-08-08T06:30:33.784401+08:00",
       "chapter": "ch24",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 43.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 43.md": {
       "processed_at": "2026-08-08T06:30:33.785557+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 44.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 44.md": {
       "processed_at": "2026-08-09T06:30:03.951666+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 45.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 45.md": {
       "processed_at": "2026-08-09T06:30:03.952537+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 46.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 46.md": {
       "processed_at": "2026-08-09T06:30:03.953255+08:00",
       "chapter": "ch24",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 47.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 47.md": {
       "processed_at": "2026-08-09T06:30:03.954209+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 48.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 48.md": {
       "processed_at": "2026-08-10T06:30:30.360253+08:00",
       "chapter": "ch24",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 49.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 49.md": {
       "processed_at": "2026-08-10T06:30:30.360995+08:00",
       "chapter": "ch24",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 5.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 5.md": {
       "processed_at": "2026-08-10T06:30:30.362371+08:00",
       "chapter": "ch20",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 50.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 50.md": {
       "processed_at": "2026-08-10T06:30:30.363149+08:00",
       "chapter": "ch24",
       "points": 3
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 51.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 51.md": {
       "processed_at": "2026-08-11T06:30:50.410396+08:00",
       "chapter": "ch24",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 52.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 52.md": {
       "processed_at": "2026-08-11T06:30:50.411041+08:00",
       "chapter": "ch24",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 53.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 53.md": {
       "processed_at": "2026-08-11T06:30:50.411567+08:00",
       "chapter": "ch24",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 54.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 54.md": {
       "processed_at": "2026-08-11T06:30:50.412018+08:00",
       "chapter": "ch24",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 55.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 55.md": {
       "processed_at": "2026-08-12T06:30:09.248723+08:00",
       "chapter": "ch24",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 56.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 56.md": {
       "processed_at": "2026-08-12T06:30:09.249509+08:00",
       "chapter": "ch24",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 57.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 57.md": {
       "processed_at": "2026-08-12T06:30:09.250068+08:00",
       "chapter": "ch24",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 58.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 58.md": {
       "processed_at": "2026-08-12T06:30:09.250634+08:00",
       "chapter": "ch24",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 6.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 6.md": {
       "processed_at": "2026-08-13T06:30:08.236194+08:00",
       "chapter": "ch24",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7.md": {
       "processed_at": "2026-08-13T06:30:08.237161+08:00",
       "chapter": "ch22",
       "points": 4
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md": {
       "processed_at": "2026-08-13T06:30:08.237735+08:00",
       "chapter": "ch24",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 9.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 9.md": {
       "processed_at": "2026-08-13T06:30:08.238219+08:00",
       "chapter": "ch24",
       "points": 2
     },
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间.md": {
+    "clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间.md": {
       "processed_at": "2026-08-14T06:30:51.131213+08:00",
       "chapter": "ch24",
       "points": 2

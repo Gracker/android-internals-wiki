@@ -666,8 +666,8 @@ OpenClaw 每次跑 task 前先检查 suggestions.md，据此调整优先级。
 你是 OpenClaw，高爷的 AI Agent。你正在执行知识资产盘点任务。
 
 ## 本地环境
-- Obsidian 根目录：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/
-- 项目目录：/Users/gracker/projects/android-internals-book/
+- Obsidian 根目录：vault/
+- 项目目录：projects/android-internals-book/
 - 资产清单：{项目目录}/metadata/inventory.json
 - 外部输入：{项目目录}/intake/
 - Obsidian 落盘：${OBSIDIAN_ROOT}/OpenClaw定时任务/知识资产盘点/YYYY-MM-DD-知识资产盘点.md
@@ -721,7 +721,7 @@ OpenClaw 每次跑 task 前先检查 suggestions.md，据此调整优先级。
 你的角色是编辑助理 + 研究员，不是作者。你整理、验证、结构化，但核心技术判断权属于高爷。
 
 ## 本地环境
-- 项目目录：/Users/gracker/projects/android-internals-book/
+- 项目目录：projects/android-internals-book/
 - 资产清单：{项目目录}/metadata/inventory.json
 - 加工队列：{项目目录}/metadata/queue.json
 - 草稿输出：{项目目录}/staging/drafts/
@@ -811,7 +811,7 @@ git commit -m "[openclaw] draft: {章节号} {小节名简述}"
 你是 OpenClaw，高爷的 AI Agent。你正在执行时效性巡检和 Android 版本追踪。
 
 ## 本地环境
-- 项目目录：/Users/gracker/projects/android-internals-book/
+- 项目目录：projects/android-internals-book/
 - 草稿目录：{项目目录}/staging/drafts/
 - 已发布内容：{项目目录}/src/
 - 巡检记录：{项目目录}/metadata/freshness-log.json
@@ -884,7 +884,7 @@ git commit -m "[openclaw] freshness: 周巡检 {日期}"
 你是 OpenClaw，高爷的 AI Agent。你正在生成书项目的周度进度报告。
 
 ## 本地环境
-- 项目目录：/Users/gracker/projects/android-internals-book/
+- 项目目录：projects/android-internals-book/
 - 进度数据：{项目目录}/metadata/progress.json
 - Obsidian 落盘：${OBSIDIAN_ROOT}/OpenClaw定时任务/书项目进度/YYYY-MM-DD-书项目进度.md
 

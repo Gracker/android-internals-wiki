@@ -552,7 +552,7 @@
       "created_run_id": "20260731-131533-d602fc9b",
       "details": "Material 00-primary-x-signals.md covers OpenAI ARC-AGI-3 harness (retained reasoning/context compaction), Nadella earnings substitutable-model system, matanSF three-rings, Unsloth Kimi K3 1-bit, T3 Code mobile. Target chapter is AOSP android-17.0.0_r1 SharedPreferencesImpl/QueuedWork/fsync ANR analysis. route_confidence=28, route_terms are generic stopwords (research/topic/memory/and/system/thread), item action=indexed-only-chapter-freeze, chapter label ch16 vs target 6.03. No body edit made; entry marked body-apply-rejected-misroute.",
       "id": "AIW-BODY-APPLY-20260731-P1-misroute-6.03",
-      "log_path": "/Users/gracker/.hermes/state/aiw-body-apply/evidence/20260731-131533-d602fc9b-misroute-evidence.md",
+      "log_path": "hermes/state/aiw-body-apply/evidence/20260731-131533-d602fc9b-misroute-evidence.md",
       "severity": "P1",
       "source_paths": [
         "metadata/source-index.json#155"
@@ -1708,7 +1708,7 @@
       "created_run_id": "freshness-2026-08-12",
       "details": "last source verification 2026-03-31 older than 90 days\nEvidence: 2026-03-31",
       "id": "AIW-FRESH-bfb7868d39d57e84",
-      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
+      "log_path": "vault/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
       "severity": "P2",
       "source_paths": [
         "src/part1-fundamentals/ch03-input/02-touch-performance.md"
@@ -1728,7 +1728,7 @@
       "created_run_id": "freshness-2026-08-12",
       "details": "last source verification 2026-03-31 older than 90 days\nEvidence: 2026-03-31",
       "id": "AIW-FRESH-a938aacbccd1ba4e",
-      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
+      "log_path": "vault/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
       "severity": "P2",
       "source_paths": [
         "src/part1-fundamentals/ch04-memory/02-linux-memory.md"
@@ -1748,7 +1748,7 @@
       "created_run_id": "freshness-2026-08-12",
       "details": "last source verification 2026-05-09 older than 90 days\nEvidence: 2026-05-09",
       "id": "AIW-FRESH-3e116f1dfe390fb2",
-      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
+      "log_path": "vault/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
       "severity": "P2",
       "source_paths": [
         "src/part1-fundamentals/ch04-memory/04-lmk.md"
@@ -1768,7 +1768,7 @@
       "created_run_id": "freshness-2026-08-12",
       "details": "last source verification 2026-04-12 older than 90 days\nEvidence: 2026-04-12",
       "id": "AIW-FRESH-704a10ad8e3f94fc",
-      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
+      "log_path": "vault/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
       "severity": "P2",
       "source_paths": [
         "src/part1-fundamentals/ch04-memory/07-art-generational-gc.md"
@@ -1788,7 +1788,7 @@
       "created_run_id": "freshness-2026-08-12",
       "details": "last source verification 2026-04-29 older than 90 days\nEvidence: 2026-04-29",
       "id": "AIW-FRESH-014f54bb39766b56",
-      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
+      "log_path": "vault/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
       "severity": "P2",
       "source_paths": [
         "src/part1-fundamentals/ch05-cpu-power/03-big-little.md"
@@ -1808,7 +1808,7 @@
       "created_run_id": "freshness-2026-08-12",
       "details": "last source verification 2026-04-23 older than 90 days\nEvidence: 2026-04-23",
       "id": "AIW-FRESH-53264034991be5cf",
-      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
+      "log_path": "vault/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
       "severity": "P2",
       "source_paths": [
         "src/part1-fundamentals/ch06-storage/02-filesystem.md"
@@ -1828,7 +1828,7 @@
       "created_run_id": "freshness-2026-08-12",
       "details": "last source verification 2026-05-09 older than 90 days\nEvidence: 2026-05-09",
       "id": "AIW-FRESH-f2d2aa237dafaa14",
-      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
+      "log_path": "vault/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
       "severity": "P2",
       "source_paths": [
         "src/part1-fundamentals/ch06-storage/03-io-scheduling.md"
@@ -1848,7 +1848,7 @@
       "created_run_id": "freshness-2026-08-12",
       "details": "last source verification 2026-03-31 older than 90 days\nEvidence: 2026-03-31",
       "id": "AIW-FRESH-013bdd62078fe615",
-      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
+      "log_path": "vault/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
       "severity": "P2",
       "source_paths": [
         "src/part2-performance/ch07-smoothness/03-jank-methodology.md"
@@ -1868,7 +1868,7 @@
       "created_run_id": "freshness-2026-08-12",
       "details": "last source verification 2026-04-20 older than 90 days\nEvidence: 2026-04-20",
       "id": "AIW-FRESH-5fadf01bf04cf544",
-      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
+      "log_path": "vault/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
       "severity": "P2",
       "source_paths": [
         "src/part2-performance/ch07-smoothness/05-optimization.md"
@@ -1888,7 +1888,7 @@
       "created_run_id": "freshness-2026-08-12",
       "details": "last source verification 2026-04-25 older than 90 days\nEvidence: 2026-04-25",
       "id": "AIW-FRESH-6bfa4ac1ab331229",
-      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
+      "log_path": "vault/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
       "severity": "P2",
       "source_paths": [
         "src/part2-performance/ch07-smoothness/10-view-layout-performance.md"
@@ -1908,7 +1908,7 @@
       "created_run_id": "freshness-2026-08-12",
       "details": "last source verification 2026-04-26 older than 90 days\nEvidence: 2026-04-26",
       "id": "AIW-FRESH-76b9f15232905040",
-      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
+      "log_path": "vault/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
       "severity": "P2",
       "source_paths": [
         "src/part2-performance/ch07-smoothness/11-systemui-performance.md"
@@ -1928,7 +1928,7 @@
       "created_run_id": "freshness-2026-08-12",
       "details": "last source verification 2026-04-20 older than 90 days\nEvidence: 2026-04-20",
       "id": "AIW-FRESH-285597b20a617049",
-      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
+      "log_path": "vault/OpenClaw定时任务/AIW自动化流水线/2026-08-12-时效性巡检.md",
       "severity": "P2",
       "source_paths": [
         "src/part2-performance/ch08-responsiveness/02-app-launch.md"
@@ -2009,7 +2009,7 @@
       "created_run_id": "freshness-2026-08-14",
       "details": "last source verification 2026-04-27 older than 90 days\nEvidence: 2026-04-27",
       "id": "AIW-FRESH-19c4d3320e9ab657",
-      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-08-14-时效性巡检.md",
+      "log_path": "vault/OpenClaw定时任务/AIW自动化流水线/2026-08-14-时效性巡检.md",
       "severity": "P2",
       "source_paths": [
         "src/part2-performance/ch09-anr/04-special-anr.md"
@@ -2029,7 +2029,7 @@
       "created_run_id": "freshness-2026-08-14",
       "details": "affirmative higher-than-Android-17 out-of-scope claim\nEvidence: 能说明](https://developer.android.com/about/versions/16/features#apv)：APV 定位、标准特征与 Android 422-10 实现范围。",
       "id": "AIW-FRESH-ecc5e6cbeab1e705",
-      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-08-14-时效性巡检.md",
+      "log_path": "vault/OpenClaw定时任务/AIW自动化流水线/2026-08-14-时效性巡检.md",
       "severity": "P1",
       "source_paths": [
         "src/part2-performance/ch18-rendering-pipelines/22-advanced-professional-video-apv.md"
@@ -2601,7 +2601,7 @@
       "created_run_id": "freshness-2026-08-21",
       "details": "affirmative higher-than-Android-17 out-of-scope claim\nEvidence: > **版本限定**：源码锚点统一使用 `android-17.0.0_r1`。main/master（持续开发的主分支）或 Android 18/API 38 及以上的内容不在讨论范围内；公开 API 只核对到 Android 17/API 37。",
       "id": "AIW-FRESH-86fd15836f5d35ca",
-      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-08-21-时效性巡检.md",
+      "log_path": "vault/OpenClaw定时任务/AIW自动化流水线/2026-08-21-时效性巡检.md",
       "severity": "P1",
       "source_paths": [
         "src/part5-app/ch25-power-size/10-performance-hint-adpf-power.md"
@@ -2849,11 +2849,11 @@
       "created_run_id": "20260824-071516-a32a6691",
       "details": "Material covers configuration-change Fragment rebuild, View.performTraversals timing between onViewCreated/onResume and first performLayout, OnLayoutChangeListener / doOnLayout / doOnNextLayout one-shot listeners, btnSelectRect left/right=0 measurement bug, and dialog anchor coordinate computation. Target chapter 26.25 covers JVMTI / ART TI plugin loading, libopenjdkjvmti events.cc, DeoptManager kLimited/kThread/kFull deoptimization, RedefineClasses vs structural_redefine_classes extension, ti_heap object tag table, profileable/debuggable attach boundary. route_confidence=16, route_terms=['bug','view','t07','title'] are generic tokens; chapter label ch16 (Fragment lifecycle) is closer to material than ch26 (observability). No JVMTI / ART TI / AOSP android-17.0.0_r1 overlap; no chapter body edit made.",
       "id": "AIW-BODY-APPLY-20260824-P1-misroute-26.25",
-      "log_path": "/Users/gracker/.hermes/state/aiw-body-apply/20260824-071516-a32a6691.evidence.json",
+      "log_path": "hermes/state/aiw-body-apply/20260824-071516-a32a6691.evidence.json",
       "severity": "P1",
       "source_paths": [
         "metadata/source-index.json#351",
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-24-76343650-配置变更后弹窗为什么飞到了最左边.md"
+        "vault/技术文章/source/juejin-android/2026-08-24-76343650-配置变更后弹窗为什么飞到了最左边.md"
       ],
       "status": "verified",
       "summary": "body-apply misroute: source-index #351 (View 布局 performTraversals 时序 / Fragment 重建 / doOnLayout 弹窗错位) routed to JVMTI Agent ART 运行时监控章节 26.25; zero topical overlap, quarantined to prevent fabrication.",
@@ -3411,7 +3411,7 @@
       "created_run_id": "freshness-2026-09-11",
       "details": "last source verification 2026-06-07 older than 90 days\nEvidence: 2026-06-07",
       "id": "AIW-FRESH-2d997379256c9447",
-      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-09-11-时效性巡检.md",
+      "log_path": "vault/OpenClaw定时任务/AIW自动化流水线/2026-09-11-时效性巡检.md",
       "severity": "P2",
       "source_paths": [
         "src/part2-performance/ch09-anr/06-contentprovider-timeout-anr.md"
@@ -3503,13 +3503,13 @@
     },
     {
       "chapter": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
-      "close_note": "Misroute finding closed: source-index entry /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-09-15-morning-GlassImaging-NeuralISP-OpenAI收购-研究材料/references/02-siliconangle.md already carries action='quarantined-misroute', target_path=null, route_status='quarantined-misroute-by-apply', body_apply_decision='quarantined-misroute' from run 20260916-071547-cc1d9f2d (verified at metadata/source-index.json files[406]). The SiliconANGLE OpenAI/Glass Imaging article is correctly excluded from this Android 17 startup DAG chapter. Verified chapter body contains zero references to OpenAI / Glass Imaging / SiliconANGLE / camera / acquisition (grep exit=1) and chapter SHA-256 UTF-8 prefix matches manifest target (9266e256bb76f2db, file 94363 bytes / 1417 lines). No body change required; quarantine + chapter finalization remain the correct state.",
+      "close_note": "Misroute finding closed: source-index entry vault/DeepResearch/2026-09-15-morning-GlassImaging-NeuralISP-OpenAI收购-研究材料/references/02-siliconangle.md already carries action='quarantined-misroute', target_path=null, route_status='quarantined-misroute-by-apply', body_apply_decision='quarantined-misroute' from run 20260916-071547-cc1d9f2d (verified at metadata/source-index.json files[406]). The SiliconANGLE OpenAI/Glass Imaging article is correctly excluded from this Android 17 startup DAG chapter. Verified chapter body contains zero references to OpenAI / Glass Imaging / SiliconANGLE / camera / acquisition (grep exit=1) and chapter SHA-256 UTF-8 prefix matches manifest target (9266e256bb76f2db, file 94363 bytes / 1417 lines). No body change required; quarantine + chapter finalization remain the correct state.",
       "closed_by": "rework",
       "closed_run_id": "20260916-093504-rework-dd53ab85",
       "created_at": "2026-09-16T07:16:31.414306+08:00",
       "created_by": "aiw-body-apply",
       "created_run_id": "20260916-071547-cc1d9f2d",
-      "details": "Body-apply fail-closed: source-index item path /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-09-15-morning-GlassImaging-NeuralISP-OpenAI收购-研究材料/references/02-siliconangle.md is a SiliconANGLE news article reporting that OpenAI reportedly acquired AI camera startup Glass Imaging for more than $300M. Selected target chapter src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md is the Android 17 startup task DAG / lazy initialization / thread pool / concurrency chapter (PART 5 ch21.2). Route terms ['message','from','title','startup','for','time'] are generic English stop-words (only 'startup' is the SiliconANGLE sense, not the Android startup-task sense). route_confidence 22 is below threshold. Chapter contains zero mentions of OpenAI/Glass/Imaging/siliconangle/camera/acquisition; the article contains zero content about Android startup frameworks, DAG scheduling, lazy initialization, Jetpack App Startup, ThreadPoolExecutor, IdleHandler, or MessageQueue. Quarantining the source-index entry; no chapter body change made; no Android platform claim incorporated.",
+      "details": "Body-apply fail-closed: source-index item path vault/DeepResearch/2026-09-15-morning-GlassImaging-NeuralISP-OpenAI收购-研究材料/references/02-siliconangle.md is a SiliconANGLE news article reporting that OpenAI reportedly acquired AI camera startup Glass Imaging for more than $300M. Selected target chapter src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md is the Android 17 startup task DAG / lazy initialization / thread pool / concurrency chapter (PART 5 ch21.2). Route terms ['message','from','title','startup','for','time'] are generic English stop-words (only 'startup' is the SiliconANGLE sense, not the Android startup-task sense). route_confidence 22 is below threshold. Chapter contains zero mentions of OpenAI/Glass/Imaging/siliconangle/camera/acquisition; the article contains zero content about Android startup frameworks, DAG scheduling, lazy initialization, Jetpack App Startup, ThreadPoolExecutor, IdleHandler, or MessageQueue. Quarantining the source-index entry; no chapter body change made; no Android platform claim incorporated.",
       "id": "finding-4bda91517ebd",
       "log_path": "",
       "severity": "P1",
@@ -3524,7 +3524,7 @@
       "created_at": "2026-09-19T07:15:53.446867+08:00",
       "created_by": "aiw-body-apply",
       "created_run_id": "20260919-071520-6d8dc7fd",
-      "details": "Body-apply fail-closed: source-index item path /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-19-76859664-不用 Netty：Android 手写 .md is a Juejin article describing a hand-written Android TCP client for smart cabinet terminals (frame codecs, sticky packet handling, priority queues, multi-layer reconnection, CompletableDeferred request/response wrapping). Selected target chapter src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md is the Android 17 vs Linux memory management overview chapter (PART 1 ch4.1, covering pages, allocation, reclaim, MGLRU, DMA-BUF, ART madvise, MADV_COLD boundary). The source-index item's chapter label was 'ch16' (not ch04-memory), route_confidence was only 16, and route_terms ['andr','juejin.cn','json','juejin-android'] are generic tokens that match any Android/Juejin article — no memory-specific terms (memory, page, mmu, reclaim, slab, vm, oom, lmkkd, lmkd, etc.). Article content covers zero memory topics: no pages, no allocation, no reclaim, no ART madvise, no MADV_COLD, no lmkd, no PMGD, no DMA-BUF, no 16 KiB pages, no MGLRU. Quarantining the source-index entry; no chapter body change made; no Android platform claim incorporated.\n\n--- aiw-rework 2026-09-19T09:35 verification ---\nRecomputed chapter SHA-256 = c83eaafb21be42fa, matches manifest target_sha_before. Body scan for misroute tokens (Netty/TCP/长连接/重连/粘包/帧编解码/CompletableDeferred/ByteBuffer/SocketChannel/NIO/heartbeat/selector) returned ZERO leakage. Only `frame` match is the legitimate AOSP path `frameworks/base/services/core/java/...` in sources YAML; only `ping` match is the `anon_vma` reference link text. No article body change made this round -- the defect is in the source-router decision, not in chapter prose, so aiw-rework cannot close it. Finding remains open awaiting router fix (or manual override); chapter body stays clean. No new chapter added.",
+      "details": "Body-apply fail-closed: source-index item path vault/技术文章/source/juejin-android/2026-09-19-76859664-不用 Netty：Android 手写 .md is a Juejin article describing a hand-written Android TCP client for smart cabinet terminals (frame codecs, sticky packet handling, priority queues, multi-layer reconnection, CompletableDeferred request/response wrapping). Selected target chapter src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md is the Android 17 vs Linux memory management overview chapter (PART 1 ch4.1, covering pages, allocation, reclaim, MGLRU, DMA-BUF, ART madvise, MADV_COLD boundary). The source-index item's chapter label was 'ch16' (not ch04-memory), route_confidence was only 16, and route_terms ['andr','juejin.cn','json','juejin-android'] are generic tokens that match any Android/Juejin article — no memory-specific terms (memory, page, mmu, reclaim, slab, vm, oom, lmkkd, lmkd, etc.). Article content covers zero memory topics: no pages, no allocation, no reclaim, no ART madvise, no MADV_COLD, no lmkd, no PMGD, no DMA-BUF, no 16 KiB pages, no MGLRU. Quarantining the source-index entry; no chapter body change made; no Android platform claim incorporated.\n\n--- aiw-rework 2026-09-19T09:35 verification ---\nRecomputed chapter SHA-256 = c83eaafb21be42fa, matches manifest target_sha_before. Body scan for misroute tokens (Netty/TCP/长连接/重连/粘包/帧编解码/CompletableDeferred/ByteBuffer/SocketChannel/NIO/heartbeat/selector) returned ZERO leakage. Only `frame` match is the legitimate AOSP path `frameworks/base/services/core/java/...` in sources YAML; only `ping` match is the `anon_vma` reference link text. No article body change made this round -- the defect is in the source-router decision, not in chapter prose, so aiw-rework cannot close it. Finding remains open awaiting router fix (or manual override); chapter body stays clean. No new chapter added.",
       "id": "finding-560ccd7927e7",
       "log_path": "",
       "severity": "P1",

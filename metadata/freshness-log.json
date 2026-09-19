@@ -142,31 +142,31 @@
       "scanned": 80,
       "risks": [
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+          "path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
           "severity": "medium",
           "reason": "last_verified 2026-04-17 older than 90 days",
           "action": "重新核验至 Android 17/API37"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+          "path": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
           "severity": "medium",
           "reason": "last_verified 2026-04-05 older than 90 days",
           "action": "重新核验至 Android 17/API37"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+          "path": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md",
+          "path": "src/part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/1.60-linux-610-bpf-android17-boundary.md",
+          "path": "src/part1-fundamentals/ch01-architecture/1.60-linux-610-bpf-android17-boundary.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
@@ -179,31 +179,31 @@
       "scanned": 80,
       "risks": [
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+          "path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
           "severity": "medium",
           "reason": "last_verified 2026-04-17 older than 90 days",
           "action": "重新核验至 Android 17/API37"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+          "path": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
           "severity": "medium",
           "reason": "last_verified 2026-04-05 older than 90 days",
           "action": "重新核验至 Android 17/API37"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+          "path": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md",
+          "path": "src/part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/1.60-linux-610-bpf-android17-boundary.md",
+          "path": "src/part1-fundamentals/ch01-architecture/1.60-linux-610-bpf-android17-boundary.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
@@ -216,31 +216,31 @@
       "scanned": 80,
       "risks": [
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+          "path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
           "severity": "medium",
           "reason": "last_verified 2026-04-17 older than 90 days",
           "action": "重新核验至 Android 17/API37"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+          "path": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
           "severity": "medium",
           "reason": "last_verified 2026-04-05 older than 90 days",
           "action": "重新核验至 Android 17/API37"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+          "path": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md",
+          "path": "src/part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/1.60-linux-610-bpf-android17-boundary.md",
+          "path": "src/part1-fundamentals/ch01-architecture/1.60-linux-610-bpf-android17-boundary.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
@@ -253,43 +253,43 @@
       "scanned": 80,
       "risks": [
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/8.1-android17-task-scheduler-optimization.md",
+          "path": "src/8.1-android17-task-scheduler-optimization.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+          "path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
           "severity": "medium",
           "reason": "last_verified 2026-04-17 older than 90 days",
           "action": "重新核验至 Android 17/API37"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+          "path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
           "severity": "medium",
           "reason": "last_verified 2026-04-24 older than 90 days",
           "action": "重新核验至 Android 17/API37"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+          "path": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
           "severity": "medium",
           "reason": "last_verified 2026-04-05 older than 90 days",
           "action": "重新核验至 Android 17/API37"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+          "path": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md",
+          "path": "src/part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/1.60-linux-610-bpf-android17-boundary.md",
+          "path": "src/part1-fundamentals/ch01-architecture/1.60-linux-610-bpf-android17-boundary.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
@@ -302,19 +302,19 @@
       "scanned": 80,
       "risks": [
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/8.1-android17-task-scheduler-optimization.md",
+          "path": "src/8.1-android17-task-scheduler-optimization.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+          "path": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md",
+          "path": "src/part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
@@ -327,25 +327,25 @@
       "scanned": 80,
       "risks": [
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/8.1-android17-task-scheduler-optimization.md",
+          "path": "src/8.1-android17-task-scheduler-optimization.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+          "path": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md",
+          "path": "src/part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/1.66-android17-windowmanager-architecture-performance.md",
+          "path": "src/part1-fundamentals/ch01-architecture/1.66-android17-windowmanager-architecture-performance.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
@@ -358,19 +358,19 @@
       "scanned": 80,
       "risks": [
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/8.1-android17-task-scheduler-optimization.md",
+          "path": "src/8.1-android17-task-scheduler-optimization.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+          "path": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md",
+          "path": "src/part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
@@ -383,19 +383,19 @@
       "scanned": 80,
       "risks": [
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/8.1-android17-task-scheduler-optimization.md",
+          "path": "src/8.1-android17-task-scheduler-optimization.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+          "path": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md",
+          "path": "src/part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
@@ -408,37 +408,37 @@
       "scanned": 80,
       "risks": [
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+          "path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+          "path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/1.60-linux-610-bpf-android17-boundary.md",
+          "path": "src/part1-fundamentals/ch01-architecture/1.60-linux-610-bpf-android17-boundary.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md",
+          "path": "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md",
+          "path": "src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md",
           "severity": "high",
           "reason": "contains Android 18/API38+ out-of-scope mention",
           "action": "标注超出 AIW 范围或移除正文结论"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/README.md",
+          "path": "src/part1-fundamentals/ch01-architecture/README.md",
           "severity": "medium",
           "reason": "last_verified 2026-05-08 older than 90 days",
           "action": "重新核验至 Android 17/API37"
@@ -473,7 +473,7 @@
       "cursor_next": 160,
       "risks": [
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch03-input/02-touch-performance.md",
+          "path": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
           "target_path": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
           "severity": "medium",
           "rule_id": "stale-source-verification",
@@ -482,7 +482,7 @@
           "action": "重新核验至 Android 17"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch04-memory/02-linux-memory.md",
+          "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
           "target_path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
           "severity": "medium",
           "rule_id": "stale-source-verification",
@@ -491,7 +491,7 @@
           "action": "重新核验至 Android 17"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch04-memory/04-lmk.md",
+          "path": "src/part1-fundamentals/ch04-memory/04-lmk.md",
           "target_path": "src/part1-fundamentals/ch04-memory/04-lmk.md",
           "severity": "medium",
           "rule_id": "stale-source-verification",
@@ -500,7 +500,7 @@
           "action": "重新核验至 Android 17"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch04-memory/07-art-generational-gc.md",
+          "path": "src/part1-fundamentals/ch04-memory/07-art-generational-gc.md",
           "target_path": "src/part1-fundamentals/ch04-memory/07-art-generational-gc.md",
           "severity": "medium",
           "rule_id": "stale-source-verification",
@@ -509,7 +509,7 @@
           "action": "重新核验至 Android 17"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
+          "path": "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
           "target_path": "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
           "severity": "medium",
           "rule_id": "stale-source-verification",
@@ -518,7 +518,7 @@
           "action": "重新核验至 Android 17"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch06-storage/02-filesystem.md",
+          "path": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
           "target_path": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
           "severity": "medium",
           "rule_id": "stale-source-verification",
@@ -527,7 +527,7 @@
           "action": "重新核验至 Android 17"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch06-storage/03-io-scheduling.md",
+          "path": "src/part1-fundamentals/ch06-storage/03-io-scheduling.md",
           "target_path": "src/part1-fundamentals/ch06-storage/03-io-scheduling.md",
           "severity": "medium",
           "rule_id": "stale-source-verification",
@@ -536,7 +536,7 @@
           "action": "重新核验至 Android 17"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch07-smoothness/03-jank-methodology.md",
+          "path": "src/part2-performance/ch07-smoothness/03-jank-methodology.md",
           "target_path": "src/part2-performance/ch07-smoothness/03-jank-methodology.md",
           "severity": "medium",
           "rule_id": "stale-source-verification",
@@ -545,7 +545,7 @@
           "action": "重新核验至 Android 17"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch07-smoothness/05-optimization.md",
+          "path": "src/part2-performance/ch07-smoothness/05-optimization.md",
           "target_path": "src/part2-performance/ch07-smoothness/05-optimization.md",
           "severity": "medium",
           "rule_id": "stale-source-verification",
@@ -554,7 +554,7 @@
           "action": "重新核验至 Android 17"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch07-smoothness/10-view-layout-performance.md",
+          "path": "src/part2-performance/ch07-smoothness/10-view-layout-performance.md",
           "target_path": "src/part2-performance/ch07-smoothness/10-view-layout-performance.md",
           "severity": "medium",
           "rule_id": "stale-source-verification",
@@ -563,7 +563,7 @@
           "action": "重新核验至 Android 17"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch07-smoothness/11-systemui-performance.md",
+          "path": "src/part2-performance/ch07-smoothness/11-systemui-performance.md",
           "target_path": "src/part2-performance/ch07-smoothness/11-systemui-performance.md",
           "severity": "medium",
           "rule_id": "stale-source-verification",
@@ -572,7 +572,7 @@
           "action": "重新核验至 Android 17"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch08-responsiveness/02-app-launch.md",
+          "path": "src/part2-performance/ch08-responsiveness/02-app-launch.md",
           "target_path": "src/part2-performance/ch08-responsiveness/02-app-launch.md",
           "severity": "medium",
           "rule_id": "stale-source-verification",
@@ -592,7 +592,7 @@
       "cursor_next": 240,
       "risks": [
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch09-anr/04-special-anr.md",
+          "path": "src/part2-performance/ch09-anr/04-special-anr.md",
           "target_path": "src/part2-performance/ch09-anr/04-special-anr.md",
           "severity": "medium",
           "rule_id": "stale-source-verification",
@@ -601,7 +601,7 @@
           "action": "重新核验至 Android 17"
         },
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch18-rendering-pipelines/22-advanced-professional-video-apv.md",
+          "path": "src/part2-performance/ch18-rendering-pipelines/22-advanced-professional-video-apv.md",
           "target_path": "src/part2-performance/ch18-rendering-pipelines/22-advanced-professional-video-apv.md",
           "severity": "high",
           "rule_id": "above-android17-affirmative-claim",
@@ -641,7 +641,7 @@
       "cursor_next": 26,
       "risks": [
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part5-app/ch25-power-size/10-performance-hint-adpf-power.md",
+          "path": "src/part5-app/ch25-power-size/10-performance-hint-adpf-power.md",
           "target_path": "src/part5-app/ch25-power-size/10-performance-hint-adpf-power.md",
           "severity": "high",
           "rule_id": "above-android17-affirmative-claim",
@@ -741,7 +741,7 @@
       "cursor_next": 164,
       "risks": [
         {
-          "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch09-anr/06-contentprovider-timeout-anr.md",
+          "path": "src/part2-performance/ch09-anr/06-contentprovider-timeout-anr.md",
           "target_path": "src/part2-performance/ch09-anr/06-contentprovider-timeout-anr.md",
           "severity": "medium",
           "rule_id": "stale-source-verification",

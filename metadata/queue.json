@@ -115,7 +115,7 @@
     "priority": 85,
     "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
     "material_paths": [
-      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md"
+      "vault/DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md"
     ],
     "review_issues": [
       {
@@ -355,12 +355,12 @@
     "priority": 85,
     "reason": "[时效性巡检] contains Android 18/API38+ out-of-scope mention",
     "material_paths": [
-      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/02-boot-process.md"
+      "src/part1-fundamentals/ch01-architecture/02-boot-process.md"
     ],
     "review_issues": [
       {
         "type": "时效性",
-        "location": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+        "location": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
         "detail": "contains Android 18/API38+ out-of-scope mention",
         "suggestion": "标注超出 AIW 范围或移除正文结论"
       }
@@ -381,12 +381,12 @@
     "priority": 85,
     "reason": "[时效性巡检] contains Android 18/API38+ out-of-scope mention",
     "material_paths": [
-      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/05-threading-model.md"
+      "src/part1-fundamentals/ch01-architecture/05-threading-model.md"
     ],
     "review_issues": [
       {
         "type": "时效性",
-        "location": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+        "location": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
         "detail": "contains Android 18/API38+ out-of-scope mention",
         "suggestion": "标注超出 AIW 范围或移除正文结论"
       }
@@ -403,12 +403,12 @@
     "priority": 85,
     "reason": "[时效性巡检] contains Android 18/API38+ out-of-scope mention",
     "material_paths": [
-      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/41-bpf-observability-boundary.md"
+      "src/part1-fundamentals/ch01-architecture/41-bpf-observability-boundary.md"
     ],
     "review_issues": [
       {
         "type": "时效性",
-        "location": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/41-bpf-observability-boundary.md",
+        "location": "src/part1-fundamentals/ch01-architecture/41-bpf-observability-boundary.md",
         "detail": "contains Android 18/API38+ out-of-scope mention",
         "suggestion": "标注超出 AIW 范围或移除正文结论"
       }
@@ -425,12 +425,12 @@
     "priority": 85,
     "reason": "[时效性巡检] contains Android 18/API38+ out-of-scope mention",
     "material_paths": [
-      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
+      "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
     ],
     "review_issues": [
       {
         "type": "时效性",
-        "location": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md",
+        "location": "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md",
         "detail": "contains Android 18/API38+ out-of-scope mention",
         "suggestion": "标注超出 AIW 范围或移除正文结论"
       }
@@ -447,12 +447,12 @@
     "priority": 85,
     "reason": "[时效性巡检] contains Android 18/API38+ out-of-scope mention",
     "material_paths": [
-      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md"
+      "src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md"
     ],
     "review_issues": [
       {
         "type": "时效性",
-        "location": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md",
+        "location": "src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md",
         "detail": "contains Android 18/API38+ out-of-scope mention",
         "suggestion": "标注超出 AIW 范围或移除正文结论"
       }
@@ -469,12 +469,12 @@
     "priority": 70,
     "reason": "[时效性巡检] last_verified 2026-05-08 older than 90 days",
     "material_paths": [
-      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/README.md"
+      "src/part1-fundamentals/ch01-architecture/README.md"
     ],
     "review_issues": [
       {
         "type": "时效性",
-        "location": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/README.md",
+        "location": "src/part1-fundamentals/ch01-architecture/README.md",
         "detail": "last_verified 2026-05-08 older than 90 days",
         "suggestion": "重新核验至 Android 17/API37"
       }

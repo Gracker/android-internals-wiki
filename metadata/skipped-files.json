@@ -1615,7 +1615,7 @@
   },
   {
     "path": "调研/graphify-out/GRAPH_REPORT.md",
-    "title": "Graph Report - /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/调研  (2026-04-08)",
+    "title": "Graph Report - vault/调研  (2026-04-08)",
     "scores": {
       "relevance": 1,
       "depth": 1,
@@ -1623,7 +1623,7 @@
       "verifiability": 1
     },
     "total_score": 8,
-    "first_chars": "# Graph Report - /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/调研  (2026-04-08)\n\n## Corpus Check\n- 282 files · ~0 words\n- Verdict: corpus is large enough that graph str",
+    "first_chars": "# Graph Report - vault/调研  (2026-04-08)\n\n## Corpus Check\n- 282 files · ~0 words\n- Verdict: corpus is large enough that graph str",
     "indexed_at": "2026-04-09T12:53:30.627694",
     "reason": "Total score 8 < 10"
   },
@@ -2104,197 +2104,197 @@
     "indexed_at": "2026-04-09T13:58:32.593672"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-23-1850-Citrini-2028-Global-Intelligence-Crisis-2025792470345224683.md",
+    "path": "vault/X 文章/2026-02-23-1850-Citrini-2028-Global-Intelligence-Crisis-2025792470345224683.md",
     "reason": "Failed to process",
     "score": 0
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-23-2005-KevinHe-ClawFeed-5min-5000feeds-2025781752971809010.md",
+    "path": "vault/X 文章/2026-02-23-2005-KevinHe-ClawFeed-5min-5000feeds-2025781752971809010.md",
     "reason": "Score 4 < 10",
     "score": 4
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-23-2005-Lijiuer-OpenClaw-Memory-Guide-2025678747509391664.md",
+    "path": "vault/X 文章/2026-02-23-2005-Lijiuer-OpenClaw-Memory-Guide-2025678747509391664.md",
     "reason": "Score 7 < 10",
     "score": 7
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-23-2005-MuratcanKoylan-The-File-System-Is-the-New-Database-2025286163641118915.md",
+    "path": "vault/X 文章/2026-02-23-2005-MuratcanKoylan-The-File-System-Is-the-New-Database-2025286163641118915.md",
     "reason": "Score 7 < 10",
     "score": 7
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-24-1205-0xJA-Conway-Agent-Guide-2024376180707905816.md",
+    "path": "vault/X 文章/2026-02-24-1205-0xJA-Conway-Agent-Guide-2024376180707905816.md",
     "reason": "Score 4 < 10",
     "score": 4
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-24-1205-Bozhou-Agent-Skills-Context-Engineering-2026109258224574963.md",
+    "path": "vault/X 文章/2026-02-24-1205-Bozhou-Agent-Skills-Context-Engineering-2026109258224574963.md",
     "reason": "Score 7 < 10",
     "score": 7
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-24-1605-123olp-Elite-Autonomous-Developer-Agent-2025704271921213731.md",
+    "path": "vault/X 文章/2026-02-24-1605-123olp-Elite-Autonomous-Developer-Agent-2025704271921213731.md",
     "reason": "Score 6 < 10",
     "score": 6
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-24-1605-MisbahSy-Build-Your-Own-Claw-Empire-2025570052108665231.md",
+    "path": "vault/X 文章/2026-02-24-1605-MisbahSy-Build-Your-Own-Claw-Empire-2025570052108665231.md",
     "reason": "Score 7 < 10",
     "score": 7
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-24-2005-AugmentCode-What-spec-driven-development-gets-wrong-2025993446633492725.md",
+    "path": "vault/X 文章/2026-02-24-2005-AugmentCode-What-spec-driven-development-gets-wrong-2025993446633492725.md",
     "reason": "Score 6 < 10",
     "score": 6
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-24-2005-Elvis-OpenClaw-Codex-ClaudeCode-Agent-Swarm-2025920521871716562.md",
+    "path": "vault/X 文章/2026-02-24-2005-Elvis-OpenClaw-Codex-ClaudeCode-Agent-Swarm-2025920521871716562.md",
     "reason": "Score 6 < 10",
     "score": 6
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-25-1835-MilesDeutscher-3-steps-before-buying-OpenClaw-2026037201591787801.md",
+    "path": "vault/X 文章/2026-02-25-1835-MilesDeutscher-3-steps-before-buying-OpenClaw-2026037201591787801.md",
     "reason": "Score 4 < 10",
     "score": 4
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-25-1836-NeoReid-Agent-Reach-install-2026322683756216423.md",
+    "path": "vault/X 文章/2026-02-25-1836-NeoReid-Agent-Reach-install-2026322683756216423.md",
     "reason": "Score 7 < 10",
     "score": 7
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-25-2012-AshleyHa-Elvis-gets-it-2026175486980948448.md",
+    "path": "vault/X 文章/2026-02-25-2012-AshleyHa-Elvis-gets-it-2026175486980948448.md",
     "reason": "Score 4 < 10",
     "score": 4
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-25-2013-zhl-ClaudeCode-Obsidian-Minimal-2026261405788405767.md",
+    "path": "vault/X 文章/2026-02-25-2013-zhl-ClaudeCode-Obsidian-Minimal-2026261405788405767.md",
     "reason": "Score 6 < 10",
     "score": 6
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-0805-Geek-TenacitOS-Mission-Control-2026223826263044136.md",
+    "path": "vault/X 文章/2026-02-26-0805-Geek-TenacitOS-Mission-Control-2026223826263044136.md",
     "reason": "Score 4 < 10",
     "score": 4
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-1141-LufzzLiz-openclaw-system-prompt-2026669714072809755.md",
+    "path": "vault/X 文章/2026-02-26-1141-LufzzLiz-openclaw-system-prompt-2026669714072809755.md",
     "reason": "Score 7 < 10",
     "score": 7
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-1141-op7418-ai-2026520431700881816.md",
+    "path": "vault/X 文章/2026-02-26-1141-op7418-ai-2026520431700881816.md",
     "reason": "Score 6 < 10",
     "score": 6
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-1211-AravSrinivas-The-AI-is-the-Computer-2026710957272207490.md",
+    "path": "vault/X 文章/2026-02-26-1211-AravSrinivas-The-AI-is-the-Computer-2026710957272207490.md",
     "reason": "Score 4 < 10",
     "score": 4
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-1211-GabrielChua-Codex-in-Plain-English-2026832978056458383.md",
+    "path": "vault/X 文章/2026-02-26-1211-GabrielChua-Codex-in-Plain-English-2026832978056458383.md",
     "reason": "Score 6 < 10",
     "score": 6
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-1610-vista8-2026-AI-2026195338898588101.md",
+    "path": "vault/X 文章/2026-02-26-1610-vista8-2026-AI-2026195338898588101.md",
     "reason": "Score 4 < 10",
     "score": 4
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-EXM7777-how-to-master-prompt-engineering-2011800604709175808.md",
+    "path": "vault/X 文章/2026-02-26-2017-EXM7777-how-to-master-prompt-engineering-2011800604709175808.md",
     "reason": "Score 8 < 10",
     "score": 8
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-FuSheng_0306-AI的负面-2-你的知识在贬值-但房贷不会贬值-2026910973030969477.md",
+    "path": "vault/X 文章/2026-02-26-2017-FuSheng_0306-AI的负面-2-你的知识在贬值-但房贷不会贬值-2026910973030969477.md",
     "reason": "Score 4 < 10",
     "score": 4
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-LawrenceW_Zen-新手劝退-OpenClaw-99-的人根本不需要它-2026872793187627276.md",
+    "path": "vault/X 文章/2026-02-26-2017-LawrenceW_Zen-新手劝退-OpenClaw-99-的人根本不需要它-2026872793187627276.md",
     "reason": "Score 4 < 10",
     "score": 4
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-UncleJAI-我的-Obsidian-不是笔记软件-是操作系统-2026929169511362928.md",
+    "path": "vault/X 文章/2026-02-26-2017-UncleJAI-我的-Obsidian-不是笔记软件-是操作系统-2026929169511362928.md",
     "reason": "Score 6 < 10",
     "score": 6
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-Zephyr_hg-The-Business-Models-That-Will-Dominate-202-2026656410084258042.md",
+    "path": "vault/X 文章/2026-02-26-2017-Zephyr_hg-The-Business-Models-That-Will-Dominate-202-2026656410084258042.md",
     "reason": "Score 4 < 10",
     "score": 4
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-garyvee-The-Era-of-the-Individual-Empire-Is-Here-2026667949382316285.md",
+    "path": "vault/X 文章/2026-02-26-2017-garyvee-The-Era-of-the-Individual-Empire-Is-Here-2026667949382316285.md",
     "reason": "Score 6 < 10",
     "score": 6
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-indigox-科学家的消亡-AI-会终结科学-还是会引发一场新的革命-2026911299494449635.md",
+    "path": "vault/X 文章/2026-02-26-2017-indigox-科学家的消亡-AI-会终结科学-还是会引发一场新的革命-2026911299494449635.md",
     "reason": "Score 7 < 10",
     "score": 7
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-jinglian-2026最新-X-收益曝光量详解-2026844528204984796.md",
+    "path": "vault/X 文章/2026-02-26-2017-jinglian-2026最新-X-收益曝光量详解-2026844528204984796.md",
     "reason": "Score 8 < 10",
     "score": 8
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-mntruell-The-third-era-of-AI-software-development-2026736314272591924.md",
+    "path": "vault/X 文章/2026-02-26-2017-mntruell-The-third-era-of-AI-software-development-2026736314272591924.md",
     "reason": "Score 6 < 10",
     "score": 6
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-onehopeA9-OpenClaw-从中级到高级完整教程-2026905651088339408.md",
+    "path": "vault/X 文章/2026-02-26-2017-onehopeA9-OpenClaw-从中级到高级完整教程-2026905651088339408.md",
     "reason": "Score 8 < 10",
     "score": 8
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-27-2014-Bytedance-GitHub-bytedance-deer-flow-An-open-source-SuperAgent-harness-url-ab15f474a276.md",
+    "path": "vault/X 文章/2026-02-27-2014-Bytedance-GitHub-bytedance-deer-flow-An-open-source-SuperAgent-harness-url-ab15f474a276.md",
     "reason": "Score 7 < 10",
     "score": 7
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-27-2014-D-GitHub-D4Vinci-Scrapling-An-adaptive-Web-Scraping-framework-url-db1126994486.md",
+    "path": "vault/X 文章/2026-02-27-2014-D-GitHub-D4Vinci-Scrapling-An-adaptive-Web-Scraping-framework-url-db1126994486.md",
     "reason": "Score 9 < 10",
     "score": 9
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-27-2014-Obra-GitHub-obra-superpowers-An-agentic-skills-framework-software-url-2046f5e50faf.md",
+    "path": "vault/X 文章/2026-02-27-2014-Obra-GitHub-obra-superpowers-An-agentic-skills-framework-software-url-2046f5e50faf.md",
     "reason": "Score 4 < 10",
     "score": 4
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-27-2014-dotey-Anthropic-CEO-Dario-Amodei-海啸已在地平线上-但没人在看-2027265200781402351.md",
+    "path": "vault/X 文章/2026-02-27-2014-dotey-Anthropic-CEO-Dario-Amodei-海啸已在地平线上-但没人在看-2027265200781402351.md",
     "reason": "Score 8 < 10",
     "score": 8
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-28-1210-TrevinPeterson-Qwen35-122B-A10B-RDMA-2027404303749546459.md",
+    "path": "vault/X 文章/2026-02-28-1210-TrevinPeterson-Qwen35-122B-A10B-RDMA-2027404303749546459.md",
     "reason": "Score 4 < 10",
     "score": 4
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-28-1210-mike_chong_zh-GoldenRetriever-Block-Layoff-2027228656951803914.md",
+    "path": "vault/X 文章/2026-02-28-1210-mike_chong_zh-GoldenRetriever-Block-Layoff-2027228656951803914.md",
     "reason": "Score 8 < 10",
     "score": 8
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-28-1210-szslg-Software-Future-Not-What-You-Think-2027198886981587407.md",
+    "path": "vault/X 文章/2026-02-28-1210-szslg-Software-Future-Not-What-You-Think-2027198886981587407.md",
     "reason": "Score 8 < 10",
     "score": 8
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-28-1610-Saboo_Shubham_-How-to-set-up-OpenClaw-Agents-that-actually-get-better-Over-Time-My-exac-2027463195150131572.md",
+    "path": "vault/X 文章/2026-02-28-1610-Saboo_Shubham_-How-to-set-up-OpenClaw-Agents-that-actually-get-better-Over-Time-My-exac-2027463195150131572.md",
     "reason": "Score 8 < 10",
     "score": 8
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-28-1610-trq212-Lessons-from-Building-Claude-Code-Seeing-like-an-Agent-2027463795355095314.md",
+    "path": "vault/X 文章/2026-02-28-1610-trq212-Lessons-from-Building-Claude-Code-Seeing-like-an-Agent-2027463795355095314.md",
     "reason": "Score 8 < 10",
     "score": 8
   },
@@ -3220,7 +3220,7 @@
   },
   {
     "title": "McKinsey Healthcare Insights (待核实)",
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-02-1209-FRED-dgs10-10y-treasury-yield-url-9f491e385999.md",
+    "path": "vault/X 文章/2026-03-02-1209-FRED-dgs10-10y-treasury-yield-url-9f491e385999.md",
     "score": 6,
     "reason": "Healthcare industry insights, no Android relevance",
     "relevance": 1,
@@ -3230,7 +3230,7 @@
   },
   {
     "title": "Baltic Exchange Dry Index - Chart, Historical Data, and News",
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-LawrenceW_Zen-新手劝退-OpenClaw-99-的人根本不需要它-2026872793187627276.md",
+    "path": "vault/X 文章/2026-02-26-2017-LawrenceW_Zen-新手劝退-OpenClaw-99-的人根本不需要它-2026872793187627276.md",
     "score": 4,
     "reason": "Financial shipping index, no technical relevance",
     "relevance": 1,
@@ -3240,7 +3240,7 @@
   },
   {
     "title": "使用一个月 OpenClaw 的门槛与成本复盘",
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-28-1210-runes_leo-ClaudeCode-Codex-Review-Loop-2027269214524903892.md",
+    "path": "vault/X 文章/2026-02-28-1210-runes_leo-ClaudeCode-Codex-Review-Loop-2027269214524903892.md",
     "score": 5,
     "reason": "Personal experience article, low technical depth",
     "relevance": 2,
@@ -3250,7 +3250,7 @@
   },
   {
     "title": "📝 【完整】从自己的渠道讲一下 \"极客湾 Geekerwan\" 的这次风波的全部",
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-12-0804-QingYue-搜索外脑接入龙虾生态 - SearxNG 方案-2030996280051462609.md",
+    "path": "vault/X 文章/2026-03-12-0804-QingYue-搜索外脑接入龙虾生态 - SearxNG 方案-2030996280051462609.md",
     "score": 3,
     "reason": "Industry controversy discussion, no technical content",
     "relevance": 1,
@@ -3260,7 +3260,7 @@
   },
   {
     "title": "AI Robot Phone！！",
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-03-1612-RichTerry123-读霍华德-马克斯的-AI-Hurtles-Ahead-有感-2027639530820669704.md",
+    "path": "vault/X 文章/2026-03-03-1612-RichTerry123-读霍华德-马克斯的-AI-Hurtles-Ahead-有感-2027639530820669704.md",
     "score": 2,
     "reason": "Vague AI phone announcement, no technical details",
     "relevance": 1,
@@ -3270,7 +3270,7 @@
   },
   {
     "title": "我在 ClawHub 折腾一周后的 10 个真香技能",
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/04-06-dotey-Anthropic-Claude-Managed-Agents.md",
+    "path": "vault/X 文章/04-06-dotey-Anthropic-Claude-Managed-Agents.md",
     "score": 5,
     "reason": "Personal skills list, not AIW focused",
     "relevance": 2,
@@ -3280,7 +3280,7 @@
   },
   {
     "title": "重读《Shipping at Inference-Speed》后的工作流启发",
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-03-0810-guoyu-Self-Driving-Codebase-agent-matrix-2028041975472247094.md",
+    "path": "vault/X 文章/2026-03-03-0810-guoyu-Self-Driving-Codebase-agent-matrix-2028041975472247094.md",
     "score": 4,
     "reason": "Workflow inspiration, no technical depth",
     "relevance": 2,
@@ -3290,7 +3290,7 @@
   },
   {
     "title": "Agent Frameworks Are Getting Squeezed",
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-05-0817-vista8-CC-Switch-Jason-Story-2027765124828905529.md",
+    "path": "vault/X 文章/2026-03-05-0817-vista8-CC-Switch-Jason-Story-2027765124828905529.md",
     "score": 3,
     "reason": "Market analysis article, no technical depth",
     "relevance": 1,
@@ -3300,7 +3300,7 @@
   },
   {
     "title": "伊朗的困局：革命、制裁与帝国的阴影对话",
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-28-2013-cryptoxiao-Tweet-by-@cryptoxiao-(Thu-Feb-26-09-43-37-+0000-2026)-2026956308092453360.md",
+    "path": "vault/X 文章/2026-02-28-2013-cryptoxiao-Tweet-by-@cryptoxiao-(Thu-Feb-26-09-43-37-+0000-2026)-2026956308092453360.md",
     "score": 2,
     "reason": "Political analysis, no technical relevance",
     "relevance": 1,
@@ -3310,7 +3310,7 @@
   },
   {
     "title": "[ 个人经验及避坑 ] 从 0M -> 5M 快速通过创作者收益门槛！",
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/04-06-blackanger-Codex-Over-Asking.md",
+    "path": "vault/X 文章/04-06-blackanger-Codex-Over-Asking.md",
     "score": 2,
     "reason": "Creator monetization guide, no technical content",
     "relevance": 1,
@@ -3320,7 +3320,7 @@
   },
   {
     "title": "Deep Research 盲测：ChatGPT 5.2 Pro vs Claude Opus 4.6 vs Gemini 3.1 Pro",
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-1141-LufzzLiz-openclaw-system-prompt-2026669714072809755.md",
+    "path": "vault/X 文章/2026-02-26-1141-LufzzLiz-openclaw-system-prompt-2026669714072809755.md",
     "score": 3,
     "reason": "AI model comparison, not Android specific",
     "relevance": 2,
@@ -3330,7 +3330,7 @@
   },
   {
     "title": "从说英语蛋疼，到雅思8.5，到清华苏世民——如何英语逆袭",
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-04-06-1240-Geek Lite-graphify图谱skill.md",
+    "path": "vault/X 文章/2026-04-06-1240-Geek Lite-graphify图谱skill.md",
     "score": 1,
     "reason": "Language learning experience, no technical relevance",
     "relevance": 0,
@@ -3340,7 +3340,7 @@
   },
   {
     "title": "同一场 AI 革命，中美创业者却走向了两条路",
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-01-1612-wquguru-一个反直觉的事实-狭义理解的开发工作-feature占比80-以上阶段-其实只占一个软件产品的30-2027727983583367436.md",
+    "path": "vault/X 文章/2026-03-01-1612-wquguru-一个反直觉的事实-狭义理解的开发工作-feature占比80-以上阶段-其实只占一个软件产品的30-2027727983583367436.md",
     "score": 2,
     "reason": "Business analysis, no technical depth",
     "relevance": 1,
@@ -3350,7 +3350,7 @@
   },
   {
     "title": "AI、矿产与澳洲经济：2026，澳洲能迎来\"新国运\"吗？",
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-01-1212-Zephyr_hg-The-Businesses-That-Will-Own-2028-(And-the-Ones-That-Won't-Survi-2027774076673028371.md",
+    "path": "vault/X 文章/2026-03-01-1212-Zephyr_hg-The-Businesses-That-Will-Own-2028-(And-the-Ones-That-Won't-Survi-2027774076673028371.md",
     "score": 2,
     "reason": "Economic analysis, no technical relevance",
     "relevance": 1,
@@ -3360,7 +3360,7 @@
   },
   {
     "title": "喜剧爆款视频教程：复古画面 × 离谱道具 × 极致反转",
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-onehopeA9-OpenClaw-从中级到高级完整教程-2026905651088339408.md",
+    "path": "vault/X 文章/2026-02-26-2017-onehopeA9-OpenClaw-从中级到高级完整教程-2026905651088339408.md",
     "score": 1,
     "reason": "Video production tutorial, no technical relevance",
     "relevance": 0,
@@ -3370,7 +3370,7 @@
   },
   {
     "title": "苹果2026年新品：M5 Max MacBook Pro来了，AI性能提升很多啊！",
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-garyvee-The-Era-of-the-Individual-Empire-Is-Here-2026667949382316285.md",
+    "path": "vault/X 文章/2026-02-26-2017-garyvee-The-Era-of-the-Individual-Empire-Is-Here-2026667949382316285.md",
     "score": 1,
     "reason": "Product announcement, no technical depth",
     "relevance": 0,
@@ -3380,7 +3380,7 @@
   },
   {
     "title": "Vibe Coding 高效工具清单：Codex、Paper、21st、Unicorn、Agentation、Axion、Apple Docs MCP",
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-06-1628-Yanhua-Claude 终极入门指南：100 小时实测，一篇讲透-2029748928091148665.md",
+    "path": "vault/X 文章/2026-03-06-1628-Yanhua-Claude 终极入门指南：100 小时实测，一篇讲透-2029748928091148665.md",
     "score": 2,
     "reason": "Tool list, insufficient depth for indexing",
     "relevance": 1,
@@ -3390,7 +3390,7 @@
   },
   {
     "title": "130万次下载，2万Star开源项目CC Switch，36岁转行程序员Jason的第一个作品",
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-05-0817-vista8-CC-Switch-Jason-Story-2027765124828905529.md",
+    "path": "vault/X 文章/2026-03-05-0817-vista8-CC-Switch-Jason-Story-2027765124828905529.md",
     "score": 4,
     "reason": "Project story, insufficient technical depth",
     "relevance": 2,
@@ -3400,7 +3400,7 @@
   },
   {
     "title": "17 Best Practices That Make Claude Cowork 100x More Powerful",
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-03-2022-yanhua1010-从-Vibe-Coding-到-Agentic-Engineering：开发者角色正在重写-2028737821855580662.md",
+    "path": "vault/X 文章/2026-03-03-2022-yanhua1010-从-Vibe-Coding-到-Agentic-Engineering：开发者角色正在重写-2028737821855580662.md",
     "score": 3,
     "reason": "General practices list, not AIW specific",
     "relevance": 2,
@@ -3410,7 +3410,7 @@
   },
   {
     "title": "Investigating how Codex context compaction works",
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-12-0804-AI进化论-花生-98页的 OpenClaw橙皮书-2031212769694068775.md",
+    "path": "vault/X 文章/2026-03-12-0804-AI进化论-花生-98页的 OpenClaw橙皮书-2031212769694068775.md",
     "score": 3,
     "reason": "Codex research, not Android specific",
     "relevance": 2,
@@ -6446,235 +6446,235 @@
     "score": 2
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw/分享调研/01-架构与原理.md",
+    "path": "vault/OpenClaw/分享调研/01-架构与原理.md",
     "title": "01-架构与原理",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw/分享调研/02-核心机制.md",
+    "path": "vault/OpenClaw/分享调研/02-核心机制.md",
     "title": "02-核心机制",
     "total_score": 4,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AI手机行业日报/2026-04-09-AI手机行业日报.md",
+    "path": "vault/OpenClaw定时任务/AI手机行业日报/2026-04-09-AI手机行业日报.md",
     "title": "2026-04-09-AI手机行业日报",
     "total_score": 9,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AK-RSS-Digest（89源精选）/2026-04-09-AK-RSS-Digest（89源精选）.md",
+    "path": "vault/OpenClaw定时任务/AK-RSS-Digest（89源精选）/2026-04-09-AK-RSS-Digest（89源精选）.md",
     "title": "2026-04-09-AK-RSS-Digest（89源精选）",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/ClawFeed24小时高价值一览/2026-04-10-ClawFeed24小时高价值一览.md",
+    "path": "vault/OpenClaw定时任务/ClawFeed24小时高价值一览/2026-04-10-ClawFeed24小时高价值一览.md",
     "title": "2026-04-10-ClawFeed24小时高价值一览",
     "total_score": 9,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/DailyDigest日终复盘/2026-04-09-DailyDigest日终复盘.md",
+    "path": "vault/OpenClaw定时任务/DailyDigest日终复盘/2026-04-09-DailyDigest日终复盘.md",
     "title": "2026-04-09-DailyDigest日终复盘",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/GitHub自仓库IssuePR监控/2026-04-09-GitHub自仓库IssuePR监控.md",
+    "path": "vault/OpenClaw定时任务/GitHub自仓库IssuePR监控/2026-04-09-GitHub自仓库IssuePR监控.md",
     "title": "2026-04-09-GitHub自仓库IssuePR监控",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Gracker的Rss订阅/2026-04-09-Gracker的Rss订阅.md",
+    "path": "vault/OpenClaw定时任务/Gracker的Rss订阅/2026-04-09-Gracker的Rss订阅.md",
     "title": "2026-04-09-Gracker的Rss订阅",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Obsidian内容回顾/2026-04-09-Obsidian内容回顾.md",
+    "path": "vault/OpenClaw定时任务/Obsidian内容回顾/2026-04-09-Obsidian内容回顾.md",
     "title": "2026-04-09-Obsidian内容回顾",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Obsidian新增文件与今日总结（22点）/2026-04-09-Obsidian新增文件与今日总结（22点）.md",
+    "path": "vault/OpenClaw定时任务/Obsidian新增文件与今日总结（22点）/2026-04-09-Obsidian新增文件与今日总结（22点）.md",
     "title": "2026-04-09-Obsidian新增文件与今日总结（22点）",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Perfetto每日提交解读/2026-04-09-Perfetto提交解读.md",
+    "path": "vault/OpenClaw定时任务/Perfetto每日提交解读/2026-04-09-Perfetto提交解读.md",
     "title": "2026-04-09-Perfetto提交解读",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/三层记忆维护/2026-04-09-三层记忆维护.md",
+    "path": "vault/OpenClaw定时任务/三层记忆维护/2026-04-09-三层记忆维护.md",
     "title": "2026-04-09-三层记忆维护",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/前沿研究/2026-04-09-07-gpu-graphics-no-results.md",
+    "path": "vault/OpenClaw定时任务/前沿研究/2026-04-09-07-gpu-graphics-no-results.md",
     "title": "2026-04-09-07-gpu-graphics-no-results",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/夜航之上发布准备/2026-04-09-夜航之上发布准备.md",
+    "path": "vault/OpenClaw定时任务/夜航之上发布准备/2026-04-09-夜航之上发布准备.md",
     "title": "2026-04-09-夜航之上发布准备",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/工具链守门-SkillVetter/2026-04-09-工具链守门-SkillVetter.md",
+    "path": "vault/OpenClaw定时任务/工具链守门-SkillVetter/2026-04-09-工具链守门-SkillVetter.md",
     "title": "2026-04-09-工具链守门-SkillVetter",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/时效性巡检/2026-04-10-时效性巡检.md",
+    "path": "vault/OpenClaw定时任务/时效性巡检/2026-04-10-时效性巡检.md",
     "title": "2026-04-10-时效性巡检",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日Task巡检与自修复/2026-04-09-每日Task巡检与自修复.md",
+    "path": "vault/OpenClaw定时任务/每日Task巡检与自修复/2026-04-09-每日Task巡检与自修复.md",
     "title": "2026-04-09-每日Task巡检与自修复",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日冥想流程/2026-04-09-每日冥想流程.md",
+    "path": "vault/OpenClaw定时任务/每日冥想流程/2026-04-09-每日冥想流程.md",
     "title": "2026-04-09-每日冥想流程",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日自我进化/2026-04-09-每日自我进化.md",
+    "path": "vault/OpenClaw定时任务/每日自我进化/2026-04-09-每日自我进化.md",
     "title": "2026-04-09-每日自我进化",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识资产盘点/2026-04-09-知识资产盘点.md",
+    "path": "vault/OpenClaw定时任务/知识资产盘点/2026-04-09-知识资产盘点.md",
     "title": "2026-04-09-知识资产盘点",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/资讯简报（综合）/2026-04-09-资讯简报（综合）.md",
+    "path": "vault/OpenClaw定时任务/资讯简报（综合）/2026-04-09-资讯简报（综合）.md",
     "title": "2026-04-09-资讯简报（综合）",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/00-首页.md",
+    "path": "vault/source/claude-code-docs/00-首页.md",
     "title": "00-首页",
     "total_score": 4,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/01-架构总览.md",
+    "path": "vault/source/claude-code-docs/01-架构总览.md",
     "title": "01-架构总览",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/02-源码泄露的价值之争.md",
+    "path": "vault/source/claude-code-docs/02-源码泄露的价值之争.md",
     "title": "02-源码泄露的价值之争",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/03-Agent循环.md",
+    "path": "vault/source/claude-code-docs/03-Agent循环.md",
     "title": "03-Agent循环",
     "total_score": 4,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/04-上下文工程.md",
+    "path": "vault/source/claude-code-docs/04-上下文工程.md",
     "title": "04-上下文工程",
     "total_score": 4,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/05-消息压缩系统.md",
+    "path": "vault/source/claude-code-docs/05-消息压缩系统.md",
     "title": "05-消息压缩系统",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/06-权限系统.md",
+    "path": "vault/source/claude-code-docs/06-权限系统.md",
     "title": "06-权限系统",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/07-记忆管理.md",
+    "path": "vault/source/claude-code-docs/07-记忆管理.md",
     "title": "07-记忆管理",
     "total_score": 4,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/08-工具与Skill系统.md",
+    "path": "vault/source/claude-code-docs/08-工具与Skill系统.md",
     "title": "08-工具与Skill系统",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/09-MCP集成.md",
+    "path": "vault/source/claude-code-docs/09-MCP集成.md",
     "title": "09-MCP集成",
     "total_score": 4,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/10-未来功能蓝图.md",
+    "path": "vault/source/claude-code-docs/10-未来功能蓝图.md",
     "title": "10-未来功能蓝图",
     "total_score": 4,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/11-AI-Coding时代的Code-Review.md",
+    "path": "vault/source/claude-code-docs/11-AI-Coding时代的Code-Review.md",
     "title": "11-AI-Coding时代的Code-Review",
     "total_score": 4,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/12-从Claude-Code权限系统学Agent安全设计.md",
+    "path": "vault/source/claude-code-docs/12-从Claude-Code权限系统学Agent安全设计.md",
     "title": "12-从Claude-Code权限系统学Agent安全设计",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/13-啃完源码之后的一些发现.md",
+    "path": "vault/source/claude-code-docs/13-啃完源码之后的一些发现.md",
     "title": "13-啃完源码之后的一些发现",
     "total_score": 8,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第002章-演练终结.md",
+    "path": "vault/小说工坊/夜航之上（分章）/第002章-演练终结.md",
     "title": "第002章-演练终结",
     "total_score": 4,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第007章-效用函数.md",
+    "path": "vault/小说工坊/夜航之上（分章）/第007章-效用函数.md",
     "title": "第007章-效用函数",
     "total_score": 4,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第044章-动态调整.md",
+    "path": "vault/小说工坊/夜航之上（分章）/第044章-动态调整.md",
     "title": "第044章-动态调整",
     "total_score": 4,
     "reason": "Total score < 10"
   },
   {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第052章-临界点突破.md",
+    "path": "vault/小说工坊/夜航之上（分章）/第052章-临界点突破.md",
     "title": "第052章-临界点突破",
     "total_score": 4,
     "reason": "Total score < 10"

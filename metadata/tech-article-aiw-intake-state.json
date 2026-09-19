@@ -1,5 +1,5 @@
 {
-  "daily_info_dir": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info",
+  "daily_info_dir": "intake/daily-info",
   "files": {
     "Android/Android-17系统层面新特性/01-MemoryLimiter-cgroup-v2-应用内存限制.md": {
       "chapter": "ch04-memory",
@@ -6627,9 +6627,9 @@
     "appended": 11,
     "considered": 11,
     "cutoff": "2026-09-18T05:20:11.951688+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-19.md",
+    "daily_info": "intake/daily-info/2026-09-19.md",
     "dry_run": false,
-    "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
+    "root": "vault/技术文章",
     "scanned": 2024,
     "skipped": {
       "existing_link": 0,
@@ -6639,9 +6639,9 @@
       "path": 29,
       "unchanged": 581
     },
-    "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
+    "state": "metadata/tech-article-aiw-intake-state.json"
   },
   "last_run_at": "2026-09-19T05:25:55.897598+08:00",
-  "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
+  "root": "vault/技术文章",
   "version": 1
 }
