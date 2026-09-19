@@ -112,7 +112,7 @@ Android 15 把应用归档做成了平台能力；Android 17 延续并完善了�
 
 ### 2.1 发起归档的一方
 
-调用入口是 `PackageInstaller.requestArchive(packageName, statusReceiver)`，API 35 加入。调用者需要：
+调用入口是 `PackageInstaller.requestArchive(packageName, statusReceiver)`，API 35 加入。调用方需要：
 
 - `DELETE_PACKAGES`，通常只授予系统或特权组件；或
 - `REQUEST_DELETE_PACKAGES`，没有静默删除资格时仍会进入用户确认。
@@ -130,7 +130,7 @@ SDK 注解只是第一层。服务端还会校验调用方软件包与 Binder UI
 - 把归档请求转换成带特殊标志的卸载。
 - 识别桌面启动器的点击是否指向归档入口。
 - 建立恢复草稿会话，并通知恢复责任安装器。
-- 把安装器返回的接受状态或错误转给桌面启动器或 API 调用者。
+- 把安装器返回的接受状态或错误转给桌面启动器或 API 调用方。
 
 它不负责下载 APK，也不负责应用首帧。
 
@@ -279,7 +279,7 @@ Android 17 的实现允许：
 
 - 目标包在该用户下处于归档状态。
 - 调用方软件包与 UID 一致。
-- 调用者声明或持有 `REQUEST_INSTALL_PACKAGES` / `INSTALL_PACKAGES`。
+- 调用方声明或持有 `REQUEST_INSTALL_PACKAGES` / `INSTALL_PACKAGES`。
 - 跨用户权限满足。
 
 若需要用户确认，系统先通过 `STATUS_PENDING_USER_ACTION` 返回确认 Intent。确认通过后，Android 框架为恢复责任安装器创建草稿安装会话：
@@ -378,7 +378,7 @@ T_user_ready
 
 恢复后的启动仍是普通应用冷启动：Zygote 创建应用进程、`bindApplication`、Provider、`Application`、Activity 与首帧都不会被归档机制跳过。
 
-归档路径还会清理缓存、代码缓存和 ART 应用配置文件，因此首次启动可能比应用一直保留安装时的冷启动更慢。应用内置 Baseline Profile（预先列出的启动热点代码）并控制启动依赖和安装包体积，仍能帮助 ART 更早优化常用路径；但这不等于恢复后一定完成 AOT（安装前编译）优化。
+归档路径还会清理缓存、代码缓存和 ART 应用配置文件，因此首次启动可能比应用一直保持安装状态时的冷启动更慢。应用内置 Baseline Profile（预先列出的启动热点代码）并控制启动依赖和安装包体积，仍能帮助 ART 更早优化常用路径；但这不等于恢复后一定完成 AOT（安装前编译）优化。
 
 ## 9. 指标与观测
 
