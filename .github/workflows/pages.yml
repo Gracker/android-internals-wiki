@@ -25,8 +25,20 @@ jobs:
           tool: mdbook@0.4.52,mdbook-mermaid@0.14.1
       - name: Install mermaid assets
         run: mdbook-mermaid install
+      - name: Strip front matter for the web edition
+        # Build a staging book root in src_filtered/ so mdBook can read it
+        # as if it were the repo root. Strip YAML from every markdown file
+        # under src/, then run mdbook build with src_filtered as cwd. The
+        # source tree on disk stays untouched.
+        run: |
+          rm -rf src_filtered book
+          mkdir -p src_filtered/src
+          cp -R src/. src_filtered/src/
+          python3 tools/filter_frontmatter.py src_filtered/src
+          cp book.toml theme src_filtered/ -R
       - name: Build
-        run: mdbook build
+        working-directory: src_filtered
+        run: mdbook build -d ../book
       - name: Add Pages CNAME
         run: cp static/CNAME book/CNAME
       - uses: actions/upload-pages-artifact@v3
