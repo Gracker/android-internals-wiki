@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
-"""Filter YAML front matter out of every markdown file under src/.
+"""Strip YAML front matter out of every markdown file under the given root.
 
-Pandoc is already installed on the macOS host, but we ship a pure-Python
-fallback so the GitHub Actions runner does not need pandoc. The fallback
-mimics pandoc's behaviour for our corpus: drop the leading `---` block,
-promote `title:` to the first H1, and leave everything else alone.
+The web edition of this book must not expose pipeline state, status
+flags, or review timestamps. The original source tree on disk is left
+untouched: this script edits an in-tree copy produced by Pages CI.
 
-mdbook-mermaid picks up the ```mermaid fences untouched.
+Behavior:
+  * If a file starts with `---`, drop the entire leading front-matter
+    block. The body is left exactly as written.
+  * If the body already begins with an H1 (`# ...`), do not add another
+    one — the chapter's own title wins.
+  * If `title:` was present in the dropped block and the body has no
+    leading H1, prepend `# title` so mdBook still gets a chapter title.
+
+The fallback path uses pure Python so it works on a GitHub Actions
+runner even when pandoc is not installed. When pandoc is available, it
+takes over for a higher-fidelity markdown round-trip.
 """
 from __future__ import annotations
 
@@ -17,8 +26,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-FM_OPEN = re.compile(r"^---\s*$")
 TITLE_LINE = re.compile(r"^title:\s*(.+?)\s*$")
+H1_LINE = re.compile(r"^\s*#\s+\S")
 
 
 def try_pandoc(path: Path) -> str | None:
@@ -26,7 +35,7 @@ def try_pandoc(path: Path) -> str | None:
     if not binary:
         return None
     try:
-        result = subprocess.check_output(
+        return subprocess.check_output(
             [
                 binary,
                 "-f", "markdown",
@@ -40,11 +49,11 @@ def try_pandoc(path: Path) -> str | None:
         )
     except subprocess.CalledProcessError:
         return None
-    return result
 
 
-def python_filter(text: str) -> str:
-    """Pure-Python fallback that mirrors pandoc's markdown round-trip."""
+def strip_front_matter(text: str) -> str:
+    """Drop the leading `---` block. Promote `title:` to an H1 only if
+    the body does not already start with one."""
     lines = text.splitlines()
     if not lines or lines[0].strip() != "---":
         return text
@@ -55,29 +64,30 @@ def python_filter(text: str) -> str:
             break
     if end is None:
         return text
-    fm_block = lines[1:end]
-    body = lines[end + 1:]
+    fm = lines[1:end]
+    body_lines = lines[end + 1 :]
+    while body_lines and body_lines[0].strip() == "":
+        body_lines = body_lines[1:]
     title = None
-    for ln in fm_block:
+    for ln in fm:
         m = TITLE_LINE.match(ln)
         if m:
             title = m.group(1).strip().strip('"').strip("'")
             break
-    if title is None:
-        return "\n".join(body).lstrip("\n")
-    head = f"# {title}\n\n"
-    return head + "\n".join(body).lstrip("\n")
+    if title and body_lines and not H1_LINE.match(body_lines[0]):
+        return f"# {title}\n\n" + "\n".join(body_lines).lstrip("\n") + "\n"
+    return "\n".join(body_lines).lstrip("\n") + ("\n" if body_lines else "")
 
 
 def process(path: Path, force_python: bool) -> bool:
     original = path.read_text(encoding="utf-8")
     if not original.lstrip().startswith("---"):
         return False
-    filtered = None if not force_python else None
-    if not force_python:
-        filtered = try_pandoc(path)
-    if filtered is None:
-        filtered = python_filter(original)
+    if force_python:
+        filtered = strip_front_matter(original)
+    else:
+        rendered = try_pandoc(path)
+        filtered = rendered if rendered is not None else strip_front_matter(original)
     if filtered == original:
         return False
     path.write_text(filtered, encoding="utf-8")
@@ -86,14 +96,11 @@ def process(path: Path, force_python: bool) -> bool:
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("root", type=Path, help="src/ root of the book")
-    p.add_argument("--force-python", action="store_true",
-                   help="skip pandoc, use the pure-Python fallback")
+    p.add_argument("root", type=Path)
+    p.add_argument("--force-python", action="store_true")
     args = p.parse_args()
-    root: Path = args.root
-    changed = 0
-    scanned = 0
-    for path in sorted(root.rglob("*.md")):
+    changed = scanned = 0
+    for path in sorted(args.root.rglob("*.md")):
         scanned += 1
         if process(path, args.force_python):
             changed += 1
