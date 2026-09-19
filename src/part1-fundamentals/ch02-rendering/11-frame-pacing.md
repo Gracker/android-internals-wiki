@@ -97,7 +97,7 @@ Frame pacing（帧节奏控制）要同时约束三件事：应用从哪个节�
 
 提交 `f81f888fe11e` 的 OpenGL 路径由 `SwappyGL::swapInternal()` 组织，fence、presentation time、等待策略和统计分别位于 `SwappyGL.cpp`、`EGL.cpp` 与 `SwappyCommon.cpp`。
 
-下面的节选化伪代码用于展示调用顺序；错误处理和成员访问已简化。
+下面的伪代码节选用于展示调用顺序；错误处理和成员访问已简化。
 
 ```cpp
 // 伪代码，按 frameworks/opt/gamesdk android-games-sdk-games-frame-pacing-release 分支调用顺序整理
@@ -373,7 +373,7 @@ I/FrameStatistics: offset from previous frame: <bucket histogram>
 I/FrameStatistics: frame latency: <bucket histogram>
 ```
 
-`idleFrames` 上升通常表示 buffer 在 compositor queue 中多等了刷新周期；`lateFrames` 上升说明目标 presentation time 与完成时刻错位；`latencyFrames` 增大说明从 CPU 工作开始到 present 的在途周期变多。把这些直方图与 queue depth、GPU fence 和输入延迟放在同一测试窗口内比较，才能判断主动等待是在稳定节拍，还是目标 interval 配置不当。
+`idleFrames` 上升通常表示 buffer 在 compositor queue 中多等了刷新周期；`lateFrames` 上升说明目标 presentation time 与完成时刻错位；`latencyFrames` 增大说明从 CPU 工作开始到 present 的在途周期变多。把这些直方图与 queue depth、GPU fence 和输入延迟放在同一测试窗口内比较，才能判断主动等待是在维持稳定节拍，还是目标 interval 配置不当。
 
 ## 帧率投票、ARR 与版本边界
 
