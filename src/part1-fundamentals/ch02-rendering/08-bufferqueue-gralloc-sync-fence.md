@@ -607,7 +607,7 @@ BufferQueue 负责回答“哪个 slot（可复用的槽位索引）归谁使用
 
 这个数只用于说明数量级。Gralloc 分配还可能包含 stride padding（每行末尾的对齐填充）、多个 plane（分别存放亮度、色度等分量的平面）、压缩元数据、对齐区和实现私有区域，不能用它推算设备上的准确占用。
 
-若每帧都把像素从应用复制到 SurfaceFlinger，60 fps 时单次 IPC（跨进程调用）边界就会增加约 593 MiB/s 的读写数据量。Android 因而让参与者共享 buffer，并用 handle 传递访问能力。这里仍会产生真实内存流量：GPU 渲染要写，SurfaceFlinger 或 HWC（Hardware Composer，硬件合成器）要读，CLIENT composition（由 RenderEngine/GPU 合成）还会读取源图层，并写入 client target（交给显示系统的 GPU 合成结果）。共享避免的是跨进程所有权转移所需的整帧复制。
+若每帧都把像素从应用复制到 SurfaceFlinger，60 fps 时仅这一处 IPC（跨进程调用）边界就会增加约 593 MiB/s 的读写数据量。Android 因而让参与者共享 buffer，并用 handle 传递访问能力。这里仍会产生真实内存流量：GPU 渲染要写，SurfaceFlinger 或 HWC（Hardware Composer，硬件合成器）要读，CLIENT composition（由 RenderEngine/GPU 合成）还会读取源图层，并写入 client target（交给显示系统的 GPU 合成结果）。共享避免的是跨进程所有权转移所需的整帧复制。
 
 ### 2. 从 API 到内核的分层
 
