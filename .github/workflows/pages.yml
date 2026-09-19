@@ -26,6 +26,8 @@ jobs:
         run: mdbook-mermaid install
       - name: Build
         run: mdbook build
+      - name: Add Pages CNAME
+        run: cp static/CNAME book/CNAME
       - uses: actions/upload-pages-artifact@v3
         with:
           path: book
