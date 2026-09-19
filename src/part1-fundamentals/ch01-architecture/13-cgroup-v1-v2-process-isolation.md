@@ -54,7 +54,7 @@ Android 17 使用 cgroup（control group，控制组）管理 CPU 调度、CPU �
 
 以下行为以 AOSP `android-17.0.0_r1` 和内核 `android17-6.18-2026-06_r6` 为准。设备厂商可以覆盖控制器版本、挂载点、子组和参数，设备实际值需要另行核对。
 
-本文沿用内核术语：controller 表示 CPU、memory 等一种资源控制器，hierarchy 表示 cgroup 的父子树，cgroupfs 是把控制接口暴露成文件的虚拟文件系统。cgroup v1 可以让不同 controller 使用不同树；v2 则让接入 v2 的 controller 共用一棵统一树。task profile 是一套有稳定名称的操作配方，其中 attribute 把名称映射到控制文件，action 执行加入分组、写值或调整调度等操作，aggregate profile 再按顺序组合多个 profile。
+本文沿用内核术语：controller 表示 CPU、memory 这类资源控制器，hierarchy 表示 cgroup 的父子树，cgroupfs 是把控制接口暴露成文件的虚拟文件系统。cgroup v1 可以让不同 controller 使用不同树；v2 则让接入 v2 的 controller 共用一棵统一树。task profile 是一套有稳定名称的操作配方，其中 attribute 把名称映射到控制文件，action 执行加入分组、写值或调整调度等操作，aggregate profile 再按顺序组合多个 profile。
 
 ## 1. Android 17 的默认拓扑
 
@@ -139,7 +139,7 @@ UID < AID_APP_START：
 
 ### 2.3 `cgroup.subtree_control` 的作用边界
 
-cgroup v2 controller 默认不会自动向子层级分发。父 cgroup 只能启用 `cgroup.controllers` 中列出的 controller，并且要满足 top-down（子层不能启用父层未启用的控制器）和 no-internal-process（启用域控制器的内部节点不能同时直接承载进程）约束。Android 的 `NeedsActivation`、`MaxActivationDepth` 和 `ActivateControllers()` 封装了这部分操作。
+cgroup v2 controller 默认不会自动在子层级生效。父 cgroup 只能启用 `cgroup.controllers` 中列出的 controller，并且要满足 top-down（子层不能启用父层未启用的控制器）和 no-internal-process（启用域控制器的内部节点不能同时直接承载进程）约束。Android 的 `NeedsActivation`、`MaxActivationDepth` 和 `ActivateControllers()` 封装了这部分操作。
 
 freezer 需要单独说明。`cgroup.freeze` 是 cgroup v2 的核心接口，存在于非根 cgroup；它不作为 `+freezer` 写入 `cgroup.subtree_control`。AOSP 在 `cgroups.json` 中把它命名为 `freezer`，是为了让 task profile 通过统一的 controller/attribute 抽象找到文件。
 
