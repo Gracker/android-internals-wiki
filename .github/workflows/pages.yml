@@ -35,7 +35,7 @@ jobs:
           mkdir -p src_filtered/src
           cp -R src/. src_filtered/src/
           python3 tools/filter_frontmatter.py src_filtered/src
-          cp book.toml theme src_filtered/ -R
+          cp book.toml theme static src_filtered/ -R
       - name: Build
         working-directory: src_filtered
         run: mdbook build -d ../book
