@@ -552,7 +552,7 @@ Z-order 表示窗口从底到顶的遮挡顺序。`WindowContainer.mChildren` �
 
 #### `mGlobalLock` 是架构和性能的共同约束
 
-WMS 与 ActivityTaskManagerService 共享 `WindowManagerGlobalLock`。`addWindow()`、`relayoutWindow()`、容器 reparent、焦点变化和大量配置更新都会在锁内修改状态。共享锁让 Task/Activity/Window 的相关状态作为整体一致更新，也意味着慢操作会扩大等待范围。
+WMS 与 ActivityTaskManagerService（ATMS）共享 `WindowManagerGlobalLock`。`addWindow()`、`relayoutWindow()`、容器 reparent、焦点变化和大量配置更新都会在锁内修改状态。共享锁让 Task/Activity/Window 的相关状态作为整体一致更新，也意味着慢操作会扩大等待范围。
 
 排查 `system_server` 窗口卡顿时，应区分：
 
@@ -631,7 +631,7 @@ WMS 构造通过 `DisplayThread.getHandler().runWithScissors()` 同步切到 Dis
 
 #### 决策与创建为何分属 WMS 和 WM Shell
 
-Android 12 之后，StartingWindow 的决策与实际创建分在两侧。ATMS/WMS 负责判断本次 Activity 启动是否需要 starting surface，`StartingSurfaceController` 根据 SplashScreen 或 TaskSnapshot 路径生成 starting data（描述启动窗口类型和资源的请求数据）；WM Shell 的 starting-surface 组件负责创建 SplashScreen/TaskSnapshot 窗口并挂到对应 Task 上。常用源码锚点包括：
+Android 12 之后，StartingWindow 的决策与实际创建分在两侧。ATMS/WMS 负责判断本次 Activity 启动是否需要 starting surface，`StartingSurfaceController` 根据 SplashScreen 或 TaskSnapshot 路径生成 starting data（描述启动窗口类型和资源的请求数据）；WM Shell（WindowManager Shell）的 starting-surface 组件负责创建 SplashScreen/TaskSnapshot 窗口并挂到对应 Task 上。常用源码锚点包括：
 
 - `frameworks/base/services/core/java/com/android/server/wm/StartingSurfaceController.java`：服务端发起 starting surface 请求
 - `frameworks/base/services/core/java/com/android/server/wm/SplashScreenStartingData.java`：保存 SplashScreen starting data
@@ -857,7 +857,7 @@ Android 17 有两处相关计数：
 1. `performSurfacePlacement()` 的 `loopCount = 6`：同一次直接调用中，如果 placement 又请求 traversal，最多立即再跑 6 轮；
 2. `performSurfacePlacementLoop()` 的 `mLayoutRepeatCount`：Root 仍标记 `layoutNeeded` 时继续请求 traversal，累计到阈值后输出 `Performed 6 layouts in a row. Skipping` 并重置。
 
-两者会相互影响，但不能描述成“严格跨 6 帧”和“同一帧外内两层各 6 次”。源码约束的是调用/重复布局次数，最终跨多少 vsync（显示刷新同步信号）取决于调度时机和每轮耗时。
+两者会相互影响，但不能描述成“严格跨 6 帧”和“同一帧内、内外两层各 6 次”。源码约束的是调用/重复布局次数，最终跨多少 vsync（显示刷新同步信号）取决于调度时机和每轮耗时。
 
 #### 延后、重入和内存故障
 
