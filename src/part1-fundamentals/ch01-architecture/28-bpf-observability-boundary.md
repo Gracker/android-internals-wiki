@@ -65,7 +65,7 @@ Android 17 的新 ACK 是 `android17-6.18`，`android17-6.18-2026-06_r6` 是对�
 
 判断一项 BPF 能力能否在设备上使用，至少要依次通过四道检查：
 
-1. 当前 ACK 源码是否包含对应的 map（共享数据容器）、program type（程序类别）、helper（内核提供给 BPF 的辅助函数）、kfunc（允许 BPF 调用的内核函数）或 attach 点（程序挂接并接收事件的位置）。
+1. 当前 ACK 源码是否包含对应的 map（共享数据容器）、program type（程序类别）、helper（内核提供给 BPF 的辅助函数）、kfunc（允许 BPF 调用的内核函数）或 attach 点（程序附着并接收事件的位置）。
 2. 设备内核配置是否编译该能力，当前 CPU 架构的 JIT（把 BPF 字节码即时编译为机器码）是否支持它。
 3. BPF 对象是否随系统镜像安装，loader 是否按内核版本和功能开关（feature flag）加载，程序是否已经附着到目标事件或内核对象。
 4. 调用方是否有相应的文件权限、Linux capability（细分的特权能力）与 SELinux 权限。
@@ -190,7 +190,7 @@ mount bpf bpf /sys/fs/bpf nodev noexec nosuid
 
 ## 4. `android-17.0.0_r1` 的平台 BPF 程序清单
 
-平台 BPF 程序不止 `cyclePerUid`、`dmabufIter`、`kernelWakelockDuration` 和锁竞争程序。每项支持的 CPU 架构、功能开关和 attach 状态也不同。
+平台 BPF 程序不止 `cyclePerUid`、`dmabufIter`、`kernelWakelockDuration` 和锁竞争程序。每个程序支持的 CPU 架构、功能开关和 attach 状态也各不相同。
 
 ### 4.1 loader 固定描述表中的对象
 
@@ -277,7 +277,7 @@ Arena 不是普通的键值（key/value）map。源码中的 lookup、update、d
 
 Arena 可能减少特定数据结构在 BPF 与用户空间之间交换时的系统调用、复制或重新编码成本。它本身不会：
 
-- 自动挂接 page fault、reclaim、GPU 或 NPU 事件。
+- 自动附着到 page fault、reclaim、GPU 或 NPU 事件。
 - 自动收集 DMA-BUF 生命周期。
 - 让普通应用绕开 SELinux 和 bpffs 权限。
 - 直接减少系统内存占用或改善任务响应时间。
