@@ -40,7 +40,7 @@ jobs:
           cp -R static src_filtered/
       - name: Build
         working-directory: src_filtered
-        run: mdbook build -d ../book
+        run: RUST_BACKTRACE=1 mdbook build -d ../book 2>&1 | tail -40
       - name: Add Pages CNAME
         run: cp static/CNAME book/CNAME
       - uses: actions/upload-pages-artifact@v3
