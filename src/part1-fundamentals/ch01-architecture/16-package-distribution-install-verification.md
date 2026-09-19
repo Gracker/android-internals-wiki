@@ -242,9 +242,9 @@ Android 17 的 `SystemServer.startBootstrapServices()` 用名为 `StartPackageMa
 - `AndroidPackage`：包解析后的内部只读视图，包含组件、权限、代码路径等声明信息；
 - `PackageSetting`：系统持久化的安装状态，例如 appId、安装路径、签名和各用户状态；
 - `PackageStateInternal`：供系统内部查询的包状态视图；
-- `PackageInfo`：根据调用者权限、用户和查询标志位（flags）生成的公共 API 返回对象。
+- `PackageInfo`：根据调用方权限、用户和查询标志位（flags）生成的公共 API 返回对象。
 
-因此，`getPackageInfo()` 并非从全局映射表（Map）中原样取出一个 `PackageInfo`。它要根据调用者可见性、用户状态和查询标志位生成结果；包数量、标志位组合和对象构造成本都可能影响查询耗时。
+因此，`getPackageInfo()` 并非从全局映射表（Map）中原样取出一个 `PackageInfo`。它要根据调用方可见性、用户状态和查询标志位生成结果；包数量、标志位组合和对象构造成本都可能影响查询耗时。
 
 ---
 
@@ -599,7 +599,7 @@ LIMIT 100;
 
 ## 安装来源验证与权限边界
 
-安装会话进入 PMS 之前，平台可能先检查来源、安装者身份和用户授权。验证结果只回答当前来源是否允许继续，不替代签名、会话提交和包扫描。
+安装会话进入 PMS 之前，平台可能先检查来源、安装器身份和用户授权。验证结果只回答当前来源是否允许继续，不替代签名、会话提交和包扫描。
 
 Android Developer Verification（Android 开发者验证，后文简称“开发者验证”）回答的是：
 
@@ -623,7 +623,7 @@ Android Developer Verification（Android 开发者验证，后文简称“开发
 | Android 平台机制 | 安装会话如何请求验证、等待结果、触发用户动作并回传错误 | `PackageInstallerSession`、`DeveloperVerifierController`、`PackageInstaller` API | 以 `android-17.0.0_r1` 为源码基准；公开结果 API 自 36.1 提供 |
 | APK 与安装信任链 | APK 是否可解析、签名是否有效、升级证书是否兼容、权限与设备策略是否允许 | APK Signature Scheme、PMS、PackageInstaller、DPM、旧版包验证服务 | 由各自的平台版本和策略决定 |
 
-Android 17 AOSP 提供开发者验证服务的接入框架，却没有把 Google 的身份数据库和判定逻辑开源在 `frameworks/base` 中。下文用 verifier 指代设备指定的这项验证服务。在 Google 认证设备上，官方把 Android Developer Verifier 描述为一项新的 Google 系统服务，并说明 Android 7 及以上设备通过 Google Play services 接收相关更新。
+Android 17 AOSP 提供开发者验证服务的接入框架，却没有在 `frameworks/base` 中开源 Google 的身份数据库和判定逻辑。下文用 verifier 指代设备指定的这项验证服务。在 Google 认证设备上，官方把 Android Developer Verifier 描述为一项新的 Google 系统服务，并说明 Android 7 及以上设备通过 Google Play services 接收相关更新。
 
 AOSP 中存在这些类，并不表示任意 AOSP 构建都会自动执行 Google 的政策。Android 17 的 `PackageInstallerService` 默认策略是 `DEVELOPER_VERIFICATION_POLICY_NONE`；设备没有配置 verifier，或功能开关没有启用时，安装会话会跳过这一步。
 
@@ -1094,7 +1094,7 @@ fun readLitePerformedCompat(intent: Intent): Boolean? {
 | 机制 | 失败说明 | 是否由 Developer Verification 替代 |
 |---|---|---|
 | APK 解析与签名 | 文件损坏、签名无效、split APK 不一致、升级证书冲突 | 否 |
-| 安装器权限与未知来源授权 | 调用者无权创建/提交安装，或用户未授权该来源 | 否 |
+| 安装器权限与未知来源授权 | 调用方无权创建/提交安装，或用户未授权该来源 | 否 |
 | 设备策略 / 用户限制 | 管理员禁止安装、卸载或未知来源 | 否 |
 | 旧版包验证服务 / Play Protect | 对应用内容、恶意行为或包风险做判断 | 否 |
 | Developer Verification | 开发者身份、包名与密钥登记不满足当前策略 | 当前机制 |
@@ -1132,7 +1132,7 @@ fun readLitePerformedCompat(intent: Intent): Boolean? {
 
 普通 APK 安装完成于当前系统会话，Staged Install 还要跨越重启验证和回滚状态机。它用更长的提交周期换取系统组件更新的原子性。
 
-Staged Install（分阶段安装，后文简称“分阶段安装”）经常被概括成“原子性更强的 APK 安装”，这种概括混淆了两个问题。
+Staged Install（分阶段安装）经常被概括成“原子性更强的 APK 安装”，这种概括混淆了两个问题。
 
 Android 的普通安装本来就有事务边界。Android 17 的 `InstallPackageHelper.installPackagesTraced()` 把安装组织为准备（Prepare）、扫描（Scan）、协调（Reconcile）和提交（Commit）；前三个阶段完成检查，Commit 才修改 Package Manager 的系统状态。多包安装会话（multi-package session）还可以把多个子会话作为一组提交。
 
@@ -1604,7 +1604,7 @@ Android 17 的 `PackageInstaller` API 文档和 `PackageInstallerSession.validat
 
 #### 3. 普通安装器不因此获得静默安装能力
 
-任何应用都可以使用安装会话 API 创建安装请求，但最终能否无交互安装，取决于调用者身份、权限、设备策略和用户授权。面向普通用户的外部来源安装通常需要：
+任何应用都可以使用安装会话 API 创建安装请求，但最终能否无交互安装，取决于调用方身份、权限、设备策略和用户授权。面向普通用户的外部来源安装通常需要：
 
 - 声明 `REQUEST_INSTALL_PACKAGES`；
 - 用户允许该来源请求安装应用；
@@ -1667,7 +1667,7 @@ fun stageApks(
 
 每个 `openWrite()` 返回的流必须在 `commit()` 前关闭。对目标 API 35 及以上的安装器，传给 `commit()` 的状态接收器必须来自可变的 `PendingIntent`，因为系统要写入结果附加字段。这个 `PendingIntent` 应使用明确的组件或限定包名，并采用不会与其他安装混淆的请求码。
 
-`commit()` 之后，安装会话被封存，调用者不能继续改写内容。回调可能先返回 `STATUS_PENDING_USER_ACTION`，也可能直接给出成功或失败。收到待确认状态时，应读取 `Intent.EXTRA_INTENT`；只有用户正在操作安装界面时才直接启动，否则应通过通知把用户带回交互流程。
+`commit()` 之后，安装会话被封存，调用方不能继续改写内容。回调可能先返回 `STATUS_PENDING_USER_ACTION`，也可能直接给出成功或失败。收到待确认状态时，应读取 `Intent.EXTRA_INTENT`；只有用户正在操作安装界面时才直接启动，否则应通过通知把用户带回交互流程。
 
 #### 2. `system_server` 侧：封存先于安装
 
