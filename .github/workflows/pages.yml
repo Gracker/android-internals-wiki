@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: taiki-e/install-action@v2
         with:
-          tool: mdbook,mdbook-mermaid
+          tool: mdbook@0.4.52,mdbook-mermaid@0.14.1
       - name: Install mermaid assets
         run: mdbook-mermaid install
       - name: Build
