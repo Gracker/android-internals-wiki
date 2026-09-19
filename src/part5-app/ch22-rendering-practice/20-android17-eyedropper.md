@@ -17,8 +17,8 @@ related_chapters:
 - '22.1'
 - '22.8'
 - '22.12'
-last_verified: '2026-07-31'
-last_verified_against: android-17.0.0_r1 (Intent/current.txt, ScreenCapture, WindowManagerService, packages/apps/EyeDropper) / Android 17 API 37 Intent、Activity Result、Package Visibility 与 Trace 官方文档
+last_verified: '2026-09-19'
+last_verified_against: android-17.0.0_r1 (Intent/current.txt, ScreenCapture, WindowManagerService, packages/apps/EyeDropper) / Android 17 API 37 Intent、Activity Result、Package Visibility、Bitmap 与 Trace 官方文档
 confidence: high
 sources:
 - type: official
@@ -227,7 +227,7 @@ AOSP EyeDropper manifest 使用了三个普通第三方应用无法取得的系�
 | --- | --- |
 | `READ_FRAME_BUFFER` | 调用系统屏幕捕获能力 |
 | `INTERNAL_SYSTEM_WINDOW` | 添加 `TYPE_SCREENSHOT` 系统 overlay |
-| `INJECT_EVENTS` | 使用受限的输入事件注入能力 |
+| `INJECT_EVENTS` | 读取受限的光标位置，用于桌面模式下的准星控制 |
 
 第三方应用通过标准 action 把任务交给系统处理器，无需也不应申请这些权限。用户显式选择、secure/protected redaction（遮蔽）以及只返回单个颜色值，共同限制了调用方能取得的数据范围。
 
