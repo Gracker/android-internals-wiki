@@ -169,7 +169,7 @@ ContextImpl.sendBroadcast()
 
 目标进程不存在时，`scheduleReceiverColdLocked()` 请求启动进程；进程完成 attach（与 `system_server` 建立应用线程连接）后，再转入 `scheduleReceiverWarmLocked()`。同一进程的多条广播共用一个进程队列，可以在一次占用 `running` 槽期间连续处理若干项，减少调度槽反复切换。
 
-但源码仍对每个接收者分别调用 `scheduleRegisteredReceiver()` 或 `scheduleReceiver()`，不会把多条广播序列化进一次 Binder 调用。“同进程多个广播自动合并为一次 IPC”没有源码依据。
+但源码仍对每个接收者分别调用 `scheduleRegisteredReceiver()` 或 `scheduleReceiver()`，不会把多条广播合并进一次 Binder 调用。“同进程多个广播自动合并为一次 IPC”没有源码依据。
 
 冷启动耗时也没有 300～800 ms 的平台保证。Zygote 分支、存储冷热、`bindApplication`、应用初始化和设备负载都会改变结果，应使用进程启动轨迹与广播轨迹在目标设备上测量。
 
@@ -290,7 +290,7 @@ API 37 另有受功能开关（feature flag）控制的发送方广播延迟：�
 
 如果接收者需要接收来自框架中高权限但不以 system UID 运行的组件（例如 Bluetooth、telephony）发送的系统广播，官方文档建议使用 `RECEIVER_EXPORTED`；选择导出时又必须配套私有 action、权限或发送方校验，因为其他应用也可能向导出接收者发送未保护广播。
 
-它不会把广播自动变成进程内函数调用，也不能据此声称省去了 PackageManager 查询或 Binder IPC。若事件只在一个进程内使用，直接回调、`Flow` 或应用自己的事件模型更简单。
+`RECEIVER_NOT_EXPORTED` 不会把广播自动变成进程内函数调用，也不能据此声称省去了 PackageManager 查询或 Binder IPC。若事件只在一个进程内使用，直接回调、`Flow` 或应用自己的事件模型更简单。
 
 ### 7.3 低延迟 IPC 不要依赖广播
 
