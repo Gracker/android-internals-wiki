@@ -1,8 +1,9 @@
 name: GitHub Pages
 
 on:
-  push:
-    branches: [master]
+  schedule:
+    # 每天 02:00 Asia/Shanghai（UTC 18:00）。不跟 master 每次 push。
+    - cron: "0 18 * * *"
   workflow_dispatch:
 
 permissions:
