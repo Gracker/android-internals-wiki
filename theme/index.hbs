@@ -323,6 +323,29 @@
         <script src="{{ resource "highlight.js" }}"></script>
         <script src="{{ resource "book.js" }}"></script>
 
+        <!-- Mermaid: render ```mermaid blocks client-side via the pre-classed <pre> elements mdBook produces. -->
+        <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+        <script>
+            (function () {
+                function applyMermaidTheme() {
+                    var theme = document.documentElement.className.match(/(latte|frappe|macchiato|mocha)/);
+                    var palette = theme === 'latte' ? 'default' : 'dark';
+                    if (window.__mermaid_initialized !== palette) {
+                        window.mermaid.initialize({
+                            startOnLoad: true,
+                            theme: palette,
+                            securityLevel: 'loose',
+                            flowchart: { htmlLabels: true },
+                        });
+                        window.__mermaid_initialized = palette;
+                    }
+                }
+                applyMermaidTheme();
+                var observer = new MutationObserver(applyMermaidTheme);
+                observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+            })();
+        </script>
+
         <!-- Custom JS scripts -->
         {{#each additional_js}}
         <script src="{{ resource this}}"></script>

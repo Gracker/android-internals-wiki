@@ -18,9 +18,6 @@ site-url = "/"
 additional-css = ["theme/catppuccin.css"]
 no-section-label = true
 
-[preprocessor.mermaid]
-command = "mdbook-mermaid"
-
 [output.html.search]
 enable = true
 limit-results = 30
