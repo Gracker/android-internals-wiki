@@ -16,7 +16,7 @@ git-repository-url = "https://github.com/Gracker/android-internals-wiki"
 edit-url-template = "https://github.com/Gracker/android-internals-wiki/edit/master/{path}"
 site-url = "/"
 additional-css = ["theme/catppuccin.css"]
-no-section-label = false
+no-section-label = true
 
 [preprocessor.mermaid]
 command = "mdbook-mermaid"
