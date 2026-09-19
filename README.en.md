@@ -11,11 +11,8 @@ practical tooling.
 > navigation summary; the complete current README and book content remain in
 > Chinese, and a full English edition is planned after v1.0.
 
-The canonical Chinese body now follows five parts and 26 chapters, plus a
-preface and appendices. `src/SUMMARY.md` is the complete mdBook entry point; as
-of 2026-08-06 it links all retained canonical material without missing or
-duplicate local targets. Workflow maturity remains tracked separately in
-`metadata/progress.json` and `metadata/queue.json`.
+The canonical Chinese body has five parts and 26 chapters, plus a preface and
+appendices. `src/SUMMARY.md` is the mdBook table of contents.
 
 <!-- android-performance-ecosystem:start -->
 ## Android performance ecosystem
@@ -46,21 +43,15 @@ Issues and pull requests help most. Tips (Alipay / WeChat) are in [src/preface/s
 
 ## Knowledge Pack and licensing
 
-Every body Markdown file under the canonical 26 chapter directories can be
-published in the versioned, read-only SmartPerfetto Knowledge Pack. Workflow
-state, Task 6/Task 9 results, and review queues are audit metadata rather than
-inclusion gates. Navigation README/SUMMARY files, obsolete paths, duplicates,
-blank files, and generated reports are not article bodies. Local
-private-path lines are redacted from the public projection, and secret findings
-fail the release. The exact policy is defined by
-[`knowledge-pack/policy.yaml`](knowledge-pack/policy.yaml).
+The versioned, read-only SmartPerfetto Knowledge Pack includes the 26 chapter
+bodies. Navigation README/SUMMARY files and generated reports are not article
+bodies. Build rules are in [`knowledge-pack/policy.yaml`](knowledge-pack/policy.yaml).
 
 Community reading and non-commercial reuse are under
 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 Publishing a book, selling the text, paid courses, or bundling the body into a
-paid product needs a written grant from Gao Jianwu (Gracker). Cloning the repo
-or downloading the free EPUB does not grant publishing rights and does not
-waive royalties. See [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md).
+paid product needs a written grant from Gao Jianwu (Gracker).
+See [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md).
 
 Possession of a Pack does not itself grant commercial-use rights. See
 [`KNOWLEDGE-PACK-LICENSE.md`](KNOWLEDGE-PACK-LICENSE.md) for the exact

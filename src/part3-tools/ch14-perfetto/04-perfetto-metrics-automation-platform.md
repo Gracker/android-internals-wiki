@@ -34,7 +34,7 @@ sources:
 - type: official
   path: https://developer.android.com/topic/performance/measuring-performance
 - type: blog
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/RSS/rss-tech/2026-05-18_RSS_886623bf54.md
+  path: rss-tech/2026-05-18_RSS_886623bf54.md
 - type: github
   path: https://github.com/Gracker/SmartPerfetto
 - type: internal

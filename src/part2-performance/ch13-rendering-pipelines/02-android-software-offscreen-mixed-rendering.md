@@ -9,7 +9,7 @@ last_verified_against: AOSP android-17.0.0_r1 ViewRootImpl/View/Surface/GraphicB
 confidence: high
 sources:
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S07_software_offscreen_type.md
+  path: rendering_pipelines/S07_software_offscreen_type.md
   role: software 与 offscreen 正交分类、生产/消费路径与版本演进
 - type: official
   path: https://developer.android.com/develop/ui/views/graphics/hardware-accel
@@ -45,7 +45,7 @@ sources:
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/driver-api/sync_file.rst
   role: dma-fence 到 sync_file fd 的语义
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S05_mixed_rendering_type.md
+  path: rendering_pipelines/S05_mixed_rendering_type.md
   role: 混合出图的对象模型、三类拓扑、同步边界与 Perfetto 证据链
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java

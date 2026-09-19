@@ -9,7 +9,7 @@ last_verified_against: Android 17 kernel tag android17-6.18-2026-06_r6, OSDI '26
 confidence: medium
 sources:
 - type: research
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-04-sched-ext-oplus-impl.md
+  path: AutoResearchClaw调研报告/2026-05-04-sched-ext-oplus-impl.md
 - type: official
   path: https://raw.githubusercontent.com/torvalds/linux/master/Documentation/scheduler/sched-ext.rst
 - type: upstream-linux

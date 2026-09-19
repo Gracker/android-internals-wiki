@@ -24,28 +24,28 @@ tags:
 - android17
 sources:
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S12_video_overlay_hwc_type.md
+  path: rendering_pipelines/S12_video_overlay_hwc_type.md
   role: 普通视频、Overlay、tunneled、protected、帧率、Perfetto 与版本边界
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S12_video_overlay_hwc_architecture/source.md
+  path: S12_video_overlay_hwc_architecture/source.md
   role: 非 tunneled、TextureView、sideband、protected 与帧率五类路径总览
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S12_video_non_tunneled_pipeline/source.md
+  path: S12_video_non_tunneled_pipeline/source.md
   role: MediaCodec Surface 输出、requested present、HWC present 与 fence
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S12_video_textureview_gl_pipeline/source.md
+  path: S12_video_textureview_gl_pipeline/source.md
   role: Android 17 TextureView 与自研 GL/Vulkan 中间消费路径
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S12_video_hwc_overlay_decision_pipeline/source.md
+  path: S12_video_hwc_overlay_decision_pipeline/source.md
   role: CompositionEngine、RenderEngine、Composer HAL 与 present 决策链
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S12_video_tunneled_sideband_pipeline/source.md
+  path: S12_video_tunneled_sideband_pipeline/source.md
   role: tunneled codec、硬件时钟、sideband Layer 与 HWC
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S12_video_protected_secure_pipeline/source.md
+  path: S12_video_protected_secure_pipeline/source.md
   role: DRM、secure decoder、protected buffer 与安全显示链
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S12_video_framerate_present_pipeline/source.md
+  path: S12_video_framerate_present_pipeline/source.md
   role: 帧率 vote、requested present、Scheduler 与 display feedback
 - type: official
   path: https://developer.android.com/about/versions/17/release-notes
@@ -141,13 +141,13 @@ sources:
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c
   role: dma-fence 的 sync_file fd 接口
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S03_surfaceview_type.md
+  path: rendering_pipelines/S03_surfaceview_type.md
   role: SurfaceView 独立 BLAST child、宿主窗口与 HWC composition 的边界
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S04_textureview_type.md
+  path: rendering_pipelines/S04_textureview_type.md
   role: TextureView 的 SurfaceTexture、宿主 HWUI 二次采样与两套 BufferQueue
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S12_video_overlay_hwc_type.md
+  path: rendering_pipelines/S12_video_overlay_hwc_type.md
   role: 普通视频 Surface、tunneled sideband、protected path 与 HWC 决策链
 - type: official
   path: https://source.android.com/docs/devices/tv/multimedia-tunneling
@@ -222,7 +222,7 @@ sources:
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/dma-fence.h
   role: dma-fence 的完成与 wait 语义
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S12_video_overlay_hwc_type.md
+  path: rendering_pipelines/S12_video_overlay_hwc_type.md
   role: 普通视频 Surface、buffer/fence、SurfaceFlinger 与 HWC overlay 决策边界
 - type: official
   path: https://developer.android.com/about/versions/16/features#apv

@@ -29,13 +29,13 @@ last_verified_against: androidx.webgpu 1.0.0-alpha05 / AndroidX c48b772dd76241af
 confidence: medium
 sources:
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S01_rendering_types_overview.md
+  path: rendering_pipelines/S01_rendering_types_overview.md
   role: 标准 App Window、独立 Surface layer 与显示末端的公共边界
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S03_surfaceview_type.md
+  path: rendering_pipelines/S03_surfaceview_type.md
   role: SurfaceView 独立 Producer、独立 layer、BufferQueue 与宿主窗口的关系
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S04_textureview_type.md
+  path: rendering_pipelines/S04_textureview_type.md
   role: TextureView 嵌入宿主窗口、变换能力与中间纹理成本
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/webgpu

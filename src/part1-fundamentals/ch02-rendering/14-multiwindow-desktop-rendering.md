@@ -81,11 +81,11 @@ sources:
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
 - type: material
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S01_rendering_types_overview.md
+  path: rendering_pipelines/S01_rendering_types_overview.md
 - type: material
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S06_multi_window_type.md
+  path: rendering_pipelines/S06_multi_window_type.md
 - type: material
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S08_native_graphics_type.md
+  path: rendering_pipelines/S08_native_graphics_type.md
 tags:
 - multiwindow
 - desktop-mode

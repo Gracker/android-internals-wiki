@@ -33,34 +33,34 @@ related_chapters:
 - '22.3'
 sources:
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S10_flutter_type.md
+  path: rendering_pipelines/S10_flutter_type.md
   role: Flutter root、external texture、PlatformView、fence、Perfetto 与版本边界
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S10_flutter_architecture/source.md
+  path: S10_flutter_architecture/source.md
   role: Flutter framework、engine、embedder 与 Android 显示架构
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S10_flutter_engine_threads_architecture/source.md
+  path: S10_flutter_engine_threads_architecture/source.md
   role: platform、Dart UI、Raster、IO 与 GPU 线程关系
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S10_flutter_surface_render_mode_pipeline/source.md
+  path: S10_flutter_surface_render_mode_pipeline/source.md
   role: FlutterSurfaceView 独立 Surface 输出
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S10_flutter_texture_render_mode_pipeline/source.md
+  path: S10_flutter_texture_render_mode_pipeline/source.md
   role: FlutterTextureView、SurfaceTexture 与宿主 HWUI 消费
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S10_flutter_imageview_pipeline/source.md
+  path: S10_flutter_imageview_pipeline/source.md
   role: FlutterImageView、ImageReader 与宿主 Canvas/HWUI
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S10_flutter_plugin_surfaceproducer_pipeline/source.md
+  path: S10_flutter_plugin_surfaceproducer_pipeline/source.md
   role: 插件 external texture 与 SurfaceProducer backing
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S10_flutter_platformview_texturelayer_pipeline/source.md
+  path: S10_flutter_platformview_texturelayer_pipeline/source.md
   role: TLHC 与 VirtualDisplay 中转路径
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S10_flutter_platformview_hybrid_composition_pipeline/source.md
+  path: S10_flutter_platformview_hybrid_composition_pipeline/source.md
   role: 原始 Hybrid Composition 的 ImageReader 与宿主层级
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S10_flutter_hcpp_overlay_optimization_pipeline/source.md
+  path: S10_flutter_hcpp_overlay_optimization_pipeline/source.md
   role: HCPP SurfaceControl、overlay 与 transaction synchronization
 - type: official
   path: https://docs.flutter.dev/resources/architectural-overview
@@ -150,7 +150,7 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/
 - type: material
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S10_flutter_type.md
+  path: rendering_pipelines/S10_flutter_type.md
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed

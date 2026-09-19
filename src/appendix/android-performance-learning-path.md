@@ -8,9 +8,6 @@ last_verified: "2026-08-16"
 confidence: medium
 tags: [learning-path, performance, framework, perfetto, apm]
 related_chapters: ["13.0", "14.7", "15.6", "19.0", "21.4"]
-pipeline_stage: "draft"
-task6_state: "pending"
-task9_state: "pending"
 ---
 
 # 附录 G：Android 性能学习路线

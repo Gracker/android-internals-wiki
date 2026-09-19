@@ -33,7 +33,7 @@ sources:
 - type: official
   path: https://source.android.com/docs/core/graphics/winscope/analyze/sf
 - type: research
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-hwc-overlay-plane-capability-sf-composition-downgrade.md
+  path: 2026-05-22-hwc-overlay-plane-capability-sf-composition-downgrade.md
 tags:
 - hwc
 - surfaceflinger

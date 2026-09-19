@@ -37,7 +37,7 @@ related_chapters:
 - '13.6'
 sources:
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S08_native_graphics_type.md
+  path: rendering_pipelines/S08_native_graphics_type.md
   role: Native Graphics 类型边界、Vulkan swapchain、frame pacing、显示后半段与 Perfetto 证据链
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp
@@ -94,10 +94,10 @@ sources:
   path: https://perfetto.dev/docs/data-sources/frametimeline
   role: SurfaceFrame、DisplayFrame 与 jank 字段
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S01_rendering_types_overview.md
+  path: rendering_pipelines/S01_rendering_types_overview.md
   role: 标准 App Window 从应用生产 buffer 到 SurfaceFlinger、HWC 和 present 的公共基线
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S02_aosp_standard_type.md
+  path: rendering_pipelines/S02_aosp_standard_type.md
   role: Choreographer、UI Thread、RenderThread、BufferQueue 与 FrameTimeline 的标准 HWUI 路径
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp

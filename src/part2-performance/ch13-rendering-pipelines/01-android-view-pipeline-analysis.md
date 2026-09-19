@@ -43,7 +43,7 @@ consolidated_from:
 - src/part2-performance/ch13-rendering-pipelines/02-android-view-standard.md
 sources:
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S01_rendering_types_overview.md
+  path: rendering_pipelines/S01_rendering_types_overview.md
   role: App 出图类型公共基线、12 个显示锚点与版本演进
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java
@@ -73,7 +73,7 @@ sources:
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6
   role: dma-buf、dma-fence、sync_file 与 DRM/KMS 的统一 kernel 锚点
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S02_aosp_standard_type.md
+  path: rendering_pipelines/S02_aosp_standard_type.md
   role: 标准 HWUI 页面分型、完整证据链与版本演进
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java

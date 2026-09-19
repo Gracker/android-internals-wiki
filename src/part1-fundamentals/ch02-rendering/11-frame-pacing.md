@@ -35,11 +35,11 @@ sources:
 - type: official
   path: https://developer.android.com/games/develop/vulkan/frame-pacing-extensions
 - type: material
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/diagrams/S01_baseline_12_anchor_pipeline/source.md
+  path: S01_baseline_12_anchor_pipeline/source.md
 - type: material
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S08_native_graphics_type.md
+  path: rendering_pipelines/S08_native_graphics_type.md
 - type: material
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S12_video_overlay_hwc_type.md
+  path: rendering_pipelines/S12_video_overlay_hwc_type.md
 tags:
 - rendering
 - frame-pacing

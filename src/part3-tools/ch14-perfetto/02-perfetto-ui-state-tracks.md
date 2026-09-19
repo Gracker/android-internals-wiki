@@ -10,13 +10,13 @@ last_verified_against: AOSP android-17.0.0_r1（external/perfetto ece66975738007
 confidence: high
 sources:
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/当 Perfetto 显示 Running 时,Android 程序到底在做什么? .md
+  path: 当 Perfetto 显示 Running 时,Android 程序到底在做什么? .md
   role: Running、Runnable 与线程状态解释边界
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-13-android17-surfaceflinger-perfetto-trace.md
+  path: 2026-07-13-android17-surfaceflinger-perfetto-trace.md
   role: Android 17 SurfaceFlinger trace 入口与调用阶段
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-06-binder-transaction-trace-perfetto-analysis.md
+  path: 2026-05-06-binder-transaction-trace-perfetto-analysis.md
   role: Binder transaction、线程状态与跨进程关联
 - type: official
   path: https://perfetto.dev/docs/visualization/perfetto-ui

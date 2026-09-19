@@ -162,7 +162,7 @@ sources:
 - type: official
   path: https://developer.android.com/reference/android/window/SurfaceSyncGroup
 - type: material
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S06_multi_window_type.md
+  path: rendering_pipelines/S06_multi_window_type.md
 related_chapters:
 - '2.1'
 - '2.9'

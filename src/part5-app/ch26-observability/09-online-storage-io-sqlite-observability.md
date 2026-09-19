@@ -10,11 +10,11 @@ last_verified_against: Android 17 android-17.0.0_r1 SQLite and libcore sources; 
 confidence: high
 sources:
 - type: clipping
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 14.md
+  path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 14.md
 - type: clipping
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 16.md
+  path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 16.md
 - type: clipping
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 17.md
+  path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 17.md
 - type: official
   path: https://developer.android.com/topic/performance/sqlite-performance-best-practices
 - type: official

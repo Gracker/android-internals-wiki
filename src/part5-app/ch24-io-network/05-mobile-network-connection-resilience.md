@@ -103,13 +103,13 @@ sources:
 - type: official
   path: https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/OkHttpClient.kt#L750-L766
 - type: aosp
-  path: /Users/gracker/Android/sources/android-35/android/net/DnsResolver.java
+  path: net/DnsResolver.java
 - type: aosp
-  path: /Users/gracker/Android/sources/android-35/android/net/NetworkCapabilities.java
+  path: net/NetworkCapabilities.java
 - type: aosp
-  path: /Users/gracker/Android/sources/android-35/android/net/TrafficStats.java
+  path: net/TrafficStats.java
 - type: aosp
-  path: /Users/gracker/Android/sources/android-30/com/android/server/ConnectivityService.java
+  path: server/ConnectivityService.java
 - type: clipping-structure
   path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md
 - type: clipping-structure

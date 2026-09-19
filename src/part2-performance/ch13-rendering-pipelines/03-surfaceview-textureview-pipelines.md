@@ -8,7 +8,7 @@ last_verified_against: AOSP android-17.0.0_r1 SurfaceView.java / BLASTBufferQueu
 confidence: high
 sources:
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S03_surfaceview_type.md
+  path: rendering_pipelines/S03_surfaceview_type.md
   role: SurfaceView 双生产线、三层对象、几何同步、HWC 与 Perfetto 证据链
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java
@@ -47,7 +47,7 @@ sources:
   path: https://perfetto.dev/docs/data-sources/frametimeline
   role: SurfaceView 的 FrameTimeline 支持边界
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S04_textureview_type.md
+  path: rendering_pipelines/S04_textureview_type.md
   role: TextureView 双队列、宿主采样、生命周期、版本边界与 Perfetto 证据链
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/TextureView.java

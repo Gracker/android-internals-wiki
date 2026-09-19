@@ -53,7 +53,7 @@ sources:
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h
 - type: research
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-perfetto-span-join-window-function.md
+  path: 2026-05-13-perfetto-span-join-window-function.md
 - type: official
   path: https://perfetto.dev/docs/analysis/trace-processor
 - type: official

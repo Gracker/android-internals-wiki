@@ -29,10 +29,10 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 sources:
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S01_rendering_types_overview.md
+  path: rendering_pipelines/S01_rendering_types_overview.md
   role: Android 2D panel、Surface/Buffer 与最终 display present 的证据边界
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S05_mixed_rendering_architecture/source.md
+  path: S05_mixed_rendering_architecture/source.md
   role: 宿主面板、独立 Surface 与多 Layer 混合场景的 Producer/Consumer 边界
 - type: official
   path: https://developer.android.com/develop/xr

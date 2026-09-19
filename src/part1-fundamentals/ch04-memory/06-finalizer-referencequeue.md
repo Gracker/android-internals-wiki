@@ -9,7 +9,7 @@ last_verified_against: AOSP android-17.0.0_r1 libcore ReferenceQueue/FinalizerRe
 confidence: medium
 sources:
 - type: research
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-art-finalizerdaemon-referencequeue-concurrency.md
+  path: 2026-05-09-art-finalizerdaemon-referencequeue-concurrency.md
 - type: aosp
   path: https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/ref/ReferenceQueue.java
 - type: aosp

@@ -49,7 +49,7 @@ sources:
 - type: official
   path: https://developer.android.com/topic/performance/power/battery-historian
 - type: obsidian
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S13_game_type.md
+  path: rendering_pipelines/S13_game_type.md
 - type: internal
   path: src/part3-tools/ch14-perfetto/01-perfetto-intro.md
 - type: internal

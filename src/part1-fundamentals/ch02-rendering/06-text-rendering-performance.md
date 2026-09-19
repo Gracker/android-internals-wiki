@@ -48,9 +48,9 @@ sources:
 - type: official
   path: https://perfetto.dev/docs/learning-more/android
 - type: material
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S01_rendering_types_overview.md
+  path: rendering_pipelines/S01_rendering_types_overview.md
 - type: material
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S02_aosp_standard_type.md
+  path: rendering_pipelines/S02_aosp_standard_type.md
 tags:
 - text
 - rendering

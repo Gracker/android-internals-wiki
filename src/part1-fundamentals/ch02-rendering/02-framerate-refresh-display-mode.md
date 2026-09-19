@@ -135,11 +135,11 @@ sources:
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/gpu/drm/drm_vblank.c
 - type: material
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/diagrams/S01_baseline_12_anchor_pipeline/source.md
+  path: S01_baseline_12_anchor_pipeline/source.md
 - type: material
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S08_native_graphics_type.md
+  path: rendering_pipelines/S08_native_graphics_type.md
 - type: material
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S12_video_overlay_hwc_type.md
+  path: rendering_pipelines/S12_video_overlay_hwc_type.md
 - type: aosp
   path: https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp
 - type: aosp
@@ -165,7 +165,7 @@ sources:
 - type: official-doc
   path: https://developer.android.com/media/optimize/performance/frame-rate
 - type: material
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S01_rendering_types_overview.md
+  path: rendering_pipelines/S01_rendering_types_overview.md
 - type: aosp
   path: frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp
 - type: aosp

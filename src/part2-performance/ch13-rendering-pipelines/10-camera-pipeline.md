@@ -38,19 +38,19 @@ related_chapters:
 - '22.18'
 sources:
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S11_camera_type.md
+  path: rendering_pipelines/S11_camera_type.md
   role: Camera 多输出、预览承载、fence、Perfetto、内存证据与版本边界
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S11_camera_architecture/source.md
+  path: S11_camera_architecture/source.md
   role: Camera2、cameraserver、HAL3、consumer 与显示系统总体架构
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S11_camera_multi_output_pipeline/source.md
+  path: S11_camera_multi_output_pipeline/source.md
   role: preview、record、analysis 与 still capture 多输出关系
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S11_camera_surfaceview_preview_pipeline/source.md
+  path: S11_camera_surfaceview_preview_pipeline/source.md
   role: SurfaceView preview 独立 layer 与宿主窗口关系
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S11_camera_textureview_gl_pipeline/source.md
+  path: S11_camera_textureview_gl_pipeline/source.md
   role: TextureView 与自研 GL/Vulkan 中间消费路径
 - type: official
   path: https://developer.android.com/about/versions/17/release-notes

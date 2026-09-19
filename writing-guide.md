@@ -7,7 +7,7 @@ tags:
 
 # Android Internals & Performance 技术文章写作规范
 
-> 本规范用于指导 OpenClaw 在"知识加工"task 中产出的章节草稿质量。
+> 章节草稿的质量标准如下。
 > 核心标准：**读完这篇文章的人，能独立分析同类问题。**
 
 ---

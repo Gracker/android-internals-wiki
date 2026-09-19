@@ -37,31 +37,31 @@ last_body_apply_at: '2026-08-25T09:24:13+08:00'
 last_body_apply_run_id: 20260825-091525-bb1ff868
 sources:
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S13_game_type.md
+  path: rendering_pipelines/S13_game_type.md
   role: 游戏线程、pacing、ADPF、SurfaceFlinger、Perfetto 与版本边界
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S13_game_architecture/source.md
+  path: S13_game_architecture/source.md
   role: Native 游戏、小游戏、云游戏、AR 与 XR 生产者分类
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S13_game_native_engine_pipeline/source.md
+  path: S13_game_native_engine_pipeline/source.md
   role: Android 17 Vulkan WSI、BufferQueue 与显示尾链
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S13_game_android_display_pipeline/source.md
+  path: S13_game_android_display_pipeline/source.md
   role: CompositionEngine、Composer HAL、present fence 与 release fence
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S13_game_mini_game_pipeline/source.md
+  path: S13_game_mini_game_pipeline/source.md
   role: 小游戏独立 Surface 与 TextureView 宿主回接分支
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S13_game_cloud_game_pipeline/source.md
+  path: S13_game_cloud_game_pipeline/source.md
   role: 云游戏输入上行、视频下行与本地输出承载
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S13_game_ar_pipeline/source.md
+  path: S13_game_ar_pipeline/source.md
   role: Camera、IMU、VIO、pose 与显示时间戳边界
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S13_game_xr_pipeline/source.md
+  path: S13_game_xr_pipeline/source.md
   role: OpenXR frame loop、runtime swapchain 与 compositor 边界
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-game-engine-resolution-memory-allocation.md
+  path: 2026-07-17-game-engine-resolution-memory-allocation.md
   role: BufferQueue image count、分辨率切换和低内存降级材料
 - type: official
   path: https://developer.android.com/games/agdk/game-activity

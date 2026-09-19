@@ -14,13 +14,13 @@ last_verified_against: Compose BOM 2026.06.01 / Runtime、UI、Foundation 1.11.4
 confidence: high
 sources:
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S01_rendering_types_overview.md
+  path: rendering_pipelines/S01_rendering_types_overview.md
   role: 标准 App Window 从 Choreographer、HWUI、BLAST 到 present 的公共基线
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S02_aosp_standard_type.md
+  path: rendering_pipelines/S02_aosp_standard_type.md
   role: 纯 Compose 仍属标准 HWUI App Window、三阶段失效与 Perfetto 分层
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S05_mixed_rendering_type.md
+  path: rendering_pipelines/S05_mixed_rendering_type.md
   role: AndroidView、SurfaceView、TextureView 引入多 Producer 后的拓扑与取证边界
 - type: official
   path: https://developer.android.com/develop/ui/compose/bom/bom-mapping

@@ -58,7 +58,7 @@ sources:
 - type: aosp-kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/kernel/mte.c
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md
+  path: 2026-07-16-android17-gwp-asan-recoverable-sourcecode.md
   role: Supporting GWP-ASan dispatch and recoverable-debuggerd notes; numeric defaults are checked against AOSP android-17.0.0_r1 sources
 - type: aosp
   path: https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/malloc_common_dynamic.cpp

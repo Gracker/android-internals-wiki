@@ -68,7 +68,7 @@ sources:
 - type: official
   path: https://developer.android.com/android-performance-analyzer
 - type: research
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-rendereffect-gpu-rendering-pipeline-analysis.md
+  path: AutoResearchClaw调研报告/2026-05-01-rendereffect-gpu-rendering-pipeline-analysis.md
 - type: clippings
   path: Clippings/Android 性能优化 - Android 性能优化总结.md
 - type: clippings

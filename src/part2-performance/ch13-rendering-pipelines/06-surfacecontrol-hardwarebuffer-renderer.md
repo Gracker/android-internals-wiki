@@ -33,10 +33,10 @@ related_chapters:
 - '13.11'
 sources:
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S03_surfaceview_type.md
+  path: rendering_pipelines/S03_surfaceview_type.md
   role: SurfaceControl layer 树、BLAST buffer transaction、几何同步与 release fence
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S05_mixed_rendering_type.md
+  path: rendering_pipelines/S05_mixed_rendering_type.md
   role: 混合内容对象、原子 Transaction、SurfaceSyncGroup 与独立 Producer 边界
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/include/android/surface_control.h

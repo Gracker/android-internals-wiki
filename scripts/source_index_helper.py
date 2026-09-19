@@ -25,9 +25,10 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
 METADATA_DIR = Path(os.environ.get(
     "AIW_METADATA_DIR",
-    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata"
+    REPO_ROOT / "metadata",
 ))
 
 SOURCE_INDEX = METADATA_DIR / "source-index.json"

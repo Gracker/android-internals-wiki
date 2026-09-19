@@ -11,9 +11,9 @@ sources:
   - type: official
     path: "https://perfetto.dev/docs/"
   - type: research
-    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Perfetto 2026 架构级深度技术分析  .md"
+    path: "Perfetto 2026 架构级深度技术分析  .md"
   - type: research
-    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/AndroidX Tracing 2.0 架构级深度技术分析 .md"
+    path: "AndroidX Tracing 2.0 架构级深度技术分析 .md"
 tags: ['perfetto', 'tracing', 'overview', 'chapter-intro']
 related_chapters: ["14.1", "14.2", "14.3", "14.4", "14.5", "14.6", "14.7", "14.8", "14.9", "14.10", "14.11", "14.12", "14.13"]
 pipeline_stage: ready-to-publish

@@ -360,4 +360,10 @@
 
 # 附录
 
+- [附录 A：Android 版本性能变更速查表](appendix/version-changelog.md)
+- [附录 B：常用 adb / dumpsys 命令速查](appendix/commands-cheatsheet.md)
+- [附录 C：Perfetto TraceConfig 模板集](appendix/perfetto-templates.md)
 - [附录 D：性能分析 Checklist](appendix/analysis-checklist.md)
+- [附录 E：术语表（中英对照）](appendix/glossary.md)
+- [附录 F：推荐阅读与资源](appendix/recommended-reading.md)
+- [附录 G：Android 性能学习路线](appendix/android-performance-learning-path.md)

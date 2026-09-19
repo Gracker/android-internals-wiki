@@ -29,7 +29,7 @@ related_chapters:
 - '13.5'
 sources:
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S08_native_graphics_type.md
+  path: rendering_pipelines/S08_native_graphics_type.md
   role: Native Graphics 类型边界、EGL/GLES 提交、frame pacing、ANGLE 与 Perfetto 证据链
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/opengl/java/android/opengl/GLSurfaceView.java
@@ -77,10 +77,10 @@ sources:
   path: https://perfetto.dev/docs/data-sources/frametimeline
   role: SurfaceFrame、DisplayFrame 与 jank 字段
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S08_native_graphics_type.md
+  path: rendering_pipelines/S08_native_graphics_type.md
   role: Native Graphics 类型边界、ANGLE backend、frame pacing 与显示后半段
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S08_angle_gles_to_vulkan_pipeline/source.md
+  path: S08_angle_gles_to_vulkan_pipeline/source.md
   role: ANGLE frontend、Vulkan backend、driver selection 与 trace 证据边界
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/GraphicsEnvironment.java

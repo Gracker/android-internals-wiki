@@ -10,10 +10,10 @@ last_verified_against: AOSP android-17.0.0_r1（external/perfetto ece66975738007
 confidence: high
 sources:
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Perfetto 2026 架构级深度技术分析  .md
+  path: Perfetto 2026 架构级深度技术分析  .md
   role: v51-v54 架构演进、Trace Summary、FrameTimeline 与 buffer 丢包研究入口
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-perfetto-version-availability-android9-17.md
+  path: 2026-06-29-perfetto-version-availability-android9-17.md
   role: Android 9-17 服务、配置输入和 data source 版本研究入口
 - type: official
   path: https://perfetto.dev/docs/
@@ -79,13 +79,13 @@ sources:
   path: https://androidperformance.com/2019/05/28/Android-Systrace-About/
   role: Systrace 到 Perfetto 的中文实践背景
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-05-trace-capture-linux-perf-frametimeline.md
+  path: 2026-06-05-trace-capture-linux-perf-frametimeline.md
   role: Trace 抓取、FrameTimeline 与 linux.perf 源码研究入口
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-12-android17-ftrace-atrace-perfetto-bridge.md
+  path: 2026-07-12-android17-ftrace-atrace-perfetto-bridge.md
   role: Android 17 ftrace、atrace 与 Perfetto 数据通路研究入口
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-tracekit-perfetto-apm-toolchain.md
+  path: 2026-06-09-android17-tracekit-perfetto-apm-toolchain.md
   role: Android 14-17 data source 与 APM 工具链演进研究入口
 - type: official
   path: https://perfetto.dev/docs/getting-started/system-tracing
@@ -169,10 +169,10 @@ sources:
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/power.h
   role: cpu_frequency、cpu_idle 等通用功耗 tracepoint
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-perfetto-remote-trace-processor-architecture.md
+  path: 2026-06-20-perfetto-remote-trace-processor-architecture.md
   role: 本机 Trace Processor RPC 与大型 trace 分析架构
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-30-android17-perfetto-version-availability-verification.md
+  path: 2026-06-30-android17-perfetto-version-availability-verification.md
   role: Android 17 Perfetto 主机工具与平台版本边界
 - type: official
   path: https://perfetto.dev/docs/visualization/large-traces

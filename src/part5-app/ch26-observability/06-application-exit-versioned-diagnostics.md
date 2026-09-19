@@ -14,9 +14,9 @@ task9_state: reviewed
 task2b_state: fixed
 sources:
 - type: research
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-08-applicationexitinfo-android11-below-alternatives.md
+  path: 2026-05-08-applicationexitinfo-android11-below-alternatives.md
 - type: research
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-application-exit-info-android11-alternatives.md
+  path: 2026-05-09-application-exit-info-android11-alternatives.md
 - type: legacy-reference-preserved
   path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md
 - type: legacy-reference-preserved

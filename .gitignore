@@ -71,3 +71,10 @@ node_modules/
 # Generated public Knowledge Pack candidates
 /dist/knowledge-pack/
 /dist/knowledge-pack-release/
+
+# Internal automation artifacts (not part of the published book)
+/logs/
+/intake/
+/metadata/queue_backup.json
+/metadata/queue.json.backup
+/metadata/queue.backup.*

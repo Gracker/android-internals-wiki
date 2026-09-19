@@ -50,11 +50,11 @@ sources:
 - type: official
   path: https://perfetto.dev/docs/contributing/testing
 - type: research
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-深度调研.md
+  path: android-skills-profilers/2026-05-16-android-skills-profilers-深度调研.md
 - type: material
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Skill/android-skills/profilers/perfetto-sql/SKILL.md
+  path: perfetto-sql/SKILL.md
 - type: material
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Skill/android-skills/profilers/perfetto-trace-analysis/SKILL.md
+  path: perfetto-trace-analysis/SKILL.md
 last_review_finalize_at: '2026-08-04T14:07:05+08:00'
 last_review_finalize_run_id: 20260804-140516-9d7a366c
 ---

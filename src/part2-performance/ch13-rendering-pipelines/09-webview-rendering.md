@@ -20,31 +20,31 @@ related_chapters:
 - '22.16'
 sources:
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S09_webview_type.md
+  path: rendering_pipelines/S09_webview_type.md
   role: WebView 双版本、functor、overlay、renderer 生命周期、Perfetto 与版本边界
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S09_webview_architecture/source.md
+  path: S09_webview_architecture/source.md
   role: WebView provider、宿主 HWUI、定制容器与最终显示对象分类
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S09_webview_chromium_process_architecture/source.md
+  path: S09_webview_chromium_process_architecture/source.md
   role: browser code、renderer、GPU service 与 Viz 的进程和线程边界
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S09_webview_functor_drawfn_pipeline/source.md
+  path: S09_webview_functor_drawfn_pipeline/source.md
   role: 标准 WebView functor 与 DrawFn 宿主窗口路径
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S09_webview_software_fallback_pipeline/source.md
+  path: S09_webview_software_fallback_pipeline/source.md
   role: OnDrawSoftware、CPU Canvas 与宿主窗口 fallback
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S09_webview_surfacecontrol_overlay_pipeline/source.md
+  path: S09_webview_surfacecontrol_overlay_pipeline/source.md
   role: WebView overlay gate、SurfaceControl child 与 HWC
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S09_webview_imagereader_pipeline/source.md
+  path: S09_webview_imagereader_pipeline/source.md
   role: ImageReader、AHardwareBuffer、acquire 与中间消费
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S09_webview_surfaceview_pipeline/source.md
+  path: S09_webview_surfaceview_pipeline/source.md
   role: fullscreen/custom-container 独立 Surface 分支
 - type: internal-reference
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S09_webview_textureview_pipeline/source.md
+  path: S09_webview_textureview_pipeline/source.md
   role: TextureView-like producer、宿主更新与纹理采样
 - type: official
   path: https://developer.android.com/develop/ui/views/layout/webapps/webview

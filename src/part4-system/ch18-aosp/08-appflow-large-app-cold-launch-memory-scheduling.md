@@ -15,7 +15,7 @@ sources:
 - type: paper
   path: https://arxiv.org/html/2603.17259v1
 - type: note
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/论文/Android-2026-05-23-AppFlow-ColdLaunch/03-精读.md
+  path: Android-2026-05-23-AppFlow-ColdLaunch/03-精读.md
 - type: research-feed
   path: intake/research-feeds/2026-04-02-15-ch05-appflow-cold-launch-scheduler.md
 - type: official
@@ -445,5 +445,5 @@ Profile 与 AppFlow 处理不同成本：
 - [AOSP r1：UsageStatsManager.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/usage/UsageStatsManager.java)
 - [AOSP r1：ApplicationExitInfo.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java)
 - [Android kernel：android17-6.18-2026-06_r6 vmscan.c](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c)
-- 本地精读笔记：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/论文/Android-2026-05-23-AppFlow-ColdLaunch/03-精读.md`
+- 本地精读笔记：`Android-2026-05-23-AppFlow-ColdLaunch/03-精读.md`
 - 研究采集稿：`intake/research-feeds/2026-04-02-15-ch05-appflow-cold-launch-scheduler.md`

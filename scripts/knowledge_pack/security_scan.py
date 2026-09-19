@@ -26,14 +26,6 @@ PRIVATE_CONTEXT_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("macos_user_path", re.compile(r"(?<![\w.-])/Users/[A-Za-z0-9._-]+/")),
     ("linux_user_path", re.compile(r"(?<![\w.-])/home/[A-Za-z0-9._-]+/")),
     ("windows_user_path", re.compile(r"\b[A-Za-z]:\\Users\\[^\\\r\n]+\\", re.IGNORECASE)),
-    (
-        "private_aiw_remote",
-        re.compile(
-            r"(?:github\.com[:/]|git@github\.com:)"
-            r"Gracker/android-internals-wiki(?:\.git)?",
-            re.IGNORECASE,
-        ),
-    ),
 )
 
 

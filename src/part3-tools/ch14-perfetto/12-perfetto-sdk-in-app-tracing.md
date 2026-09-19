@@ -27,7 +27,7 @@ sources:
 - type: official
   path: https://developer.android.com/reference/android/os/ProfilingTrigger
 - type: blog
-  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/性能工具-Perfetto(4)-通过SDK抓取信息-2026-05-02.md
+  path: Cubox/性能工具-Perfetto(4)-通过SDK抓取信息-2026-05-02.md
 tags:
 - perfetto
 - tracing-sdk

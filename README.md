@@ -87,7 +87,15 @@
 - [第 25 章 功耗与包体积优化](src/part5-app/ch25-power-size/README.md)：后台任务、定位、音频、ADPF、热节流，以及 DEX / SO / 资源体积。同一设备和同一测试条件下比较改动前后。
 - [第 26 章 应用可观测性](src/part5-app/ch26-observability/README.md)：崩溃上报、性能采集、线上排查和发布质量门禁。第 17 章讲 APM 怎么实现，这一章讲应用团队怎么把证据用起来。
 
-附录目前保留 [性能分析 Checklist](src/appendix/analysis-checklist.md)。
+附录：
+
+- [附录 A：Android 版本性能变更速查](src/appendix/version-changelog.md)
+- [附录 B：常用 adb / dumpsys 命令](src/appendix/commands-cheatsheet.md)
+- [附录 C：Perfetto TraceConfig 模板](src/appendix/perfetto-templates.md)
+- [附录 D：性能分析 Checklist](src/appendix/analysis-checklist.md)
+- [附录 E：术语表](src/appendix/glossary.md)
+- [附录 F：推荐阅读](src/appendix/recommended-reading.md)
+- [附录 G：Android 性能学习路线](src/appendix/android-performance-learning-path.md)
 
 ## 支持这个项目
 
@@ -114,14 +122,9 @@
 
 正文和电子书可以公开阅读。社区使用按 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans)：非商业转载和改编须署名，并保留相同许可。
 
-出版、上架销售、收费培训、把正文打进付费产品，须取得版权人高建武（Gracker）的书面授权。克隆仓库或下载免费 EPUB 不等于获得出版权，也不等于放弃商业收益。说明见 [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md)，书里的摘要见 [许可说明](src/preface/license.md)。
+出版、上架销售、收费培训、把正文打进付费产品，需要版权人高建武（Gracker）的书面授权。说明见 [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md)，书里的摘要见 [许可说明](src/preface/license.md)。
 
-仅下载仓库或 Knowledge Pack 不代表获得商业授权。SmartPerfetto 使用的公开
-Knowledge Pack 收录规范章节目录中的所有正文，不以 `status`、`pipeline_stage`、
-Task6/Task9 或 queue 状态作为门槛。各级 `README.md`、`SUMMARY.md` 和自动生成的
-导航/分析产物不属于正文；私有路径行会在公开投影中脱敏，密钥命中会阻断发布。构建和分发规则见
-[`knowledge-pack/policy.yaml`](knowledge-pack/policy.yaml)，Pack 再分发边界见
-[`KNOWLEDGE-PACK-LICENSE.md`](KNOWLEDGE-PACK-LICENSE.md)。
+SmartPerfetto 使用的公开 Knowledge Pack 收录 26 章正文。目录页、导航 README 和生成产物不算正文。构建规则见 [`knowledge-pack/policy.yaml`](knowledge-pack/policy.yaml)，再分发边界见 [`KNOWLEDGE-PACK-LICENSE.md`](KNOWLEDGE-PACK-LICENSE.md)。
 
 > 注：本书引用的 AOSP 源码遵循 Apache License 2.0。引用他人内容均已标注原始出处，仅用于技术说明目的。
 
