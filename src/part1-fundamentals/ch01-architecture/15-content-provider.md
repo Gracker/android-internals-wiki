@@ -114,7 +114,7 @@ ContentProvider 调用不一定经过 Binder。可用进程名、PID 和 Binder 
 
 ### 权限检查发生在哪里
 
-Provider 可以通过 `readPermission`、`writePermission`、路径级权限（path permission）和临时 URI 授权（URI grant）控制访问。`Transport` 会校验 `authority`、用于标识实际调用者的归因信息，以及读写权限，再把请求交给 Provider 实现。
+Provider 可以通过 `readPermission`、`writePermission`、路径级权限（path permission）和临时 URI 授权（URI grant）控制访问。`Transport` 会校验 `authority`、用于标识实际调用方的归因信息，以及读写权限，再把请求交给 Provider 实现。
 
 性能优化不能绕过这层安全语义：
 
@@ -237,7 +237,7 @@ Android 17 在受权限保护的系统 API 中补充了两种监测入口，但�
 
 `ContentResolver.acquireContentProviderClient()` 返回稳定客户端（stable client）。系统会把 Provider 视为调用方的稳定依赖，并据此处理 Provider 意外死亡对调用方进程的影响；调用方用完客户端后必须调用 `close()` 释放引用。
 
-`acquireUnstableContentProviderClient()` 返回非稳定客户端，适合调用方不能假定 Provider 会持续存活的场景。Provider 进程死亡时，系统不会按稳定引用的规则处理依赖进程，但调用者必须自己处理：
+`acquireUnstableContentProviderClient()` 返回非稳定客户端，适合调用方不能假定 Provider 会持续存活的场景。Provider 进程死亡时，系统不会按稳定引用的规则处理依赖进程，但调用方必须自己处理：
 
 - 表示远端 Binder 对象已经死亡的 `DeadObjectException`；
 - 当前客户端已经失效；
@@ -263,7 +263,7 @@ Android 17 的 ContentProvider 没有覆盖所有操作的“统一 10 秒超时
 
 ### `setDetectNotResponding()` 不属于普通应用超时 API
 
-`ContentProviderClient.setDetectNotResponding()` 是标有 `@SystemApi` / `@hide` 的系统接口，并要求 `REMOVE_TASKS` 权限。调用者为它设置时长后，`NotRespondingRunnable` 才会调用 `appNotRespondingViaProvider()`，把已经连接的 Provider 标记为无响应。
+`ContentProviderClient.setDetectNotResponding()` 是标有 `@SystemApi` / `@hide` 的系统接口，并要求 `REMOVE_TASKS` 权限。调用方为它设置时长后，`NotRespondingRunnable` 才会调用 `appNotRespondingViaProvider()`，把已经连接的 Provider 标记为无响应。
 
 普通应用不能借此获得通用 Provider ANR 计时器。应用侧应该：
 
