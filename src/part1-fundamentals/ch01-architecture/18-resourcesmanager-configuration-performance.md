@@ -453,7 +453,7 @@ val title = localizedContext.getString(R.string.title)
 
 应用级语言优先使用 `LocaleManager.setApplicationLocales()` 或 AndroidX `AppCompatDelegate.setApplicationLocales()`。手工创建 `Context` 不会替应用完成 Activity、Service、通知和 Compose 的整体语言切换。
 
-大量缓存带不同覆盖配置的 `Context`，会让 `ResourcesManager` 同时维护更多资源键与 `ResourcesImpl` 组合。临时 `Context` 用完即释放，不要为每次绑定 View 创建一份并长期存入单例。
+缓存大量带不同覆盖配置的 `Context`，会让 `ResourcesManager` 同时维护更多资源键与 `ResourcesImpl` 组合。临时 `Context` 用完即释放，不要为每次绑定 View 创建一份并长期存入单例。
 
 ## Resources 内存诊断
 
