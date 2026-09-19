@@ -638,7 +638,7 @@ Gatekeeper 负责 PIN、图案和密码等设备凭据验证；设备的安全�
 
 ### 建议记录的时间点
 
-人脸可在 Prompt 入场前启动，指纹通常等待 SystemUI 信号。两种模态不能共用一条假定严格递增的 T0～T9 时间轴。应把 App、会话、UI 和每个 sensor 分开记录：
+人脸可在 Prompt 入场前启动，指纹通常等待 SystemUI 信号。两种模态不能共用一条假定严格递增的时间轴。应把 App、会话、UI 和每个 sensor 分开记录：
 
 | 标记 | 事件 | 可观测位置 |
 | --- | --- | --- |
@@ -656,7 +656,7 @@ Gatekeeper 负责 PIN、图案和密码等设备凭据验证；设备的安全�
 | `U_dismiss` | SystemUI dismiss 完成回调 | `onDialogDismissed()` |
 | `A_callback` | App callback 开始执行 | 调用方 Executor |
 
-跨进程计算必须使用同一单调时钟，例如 Perfetto 的 trace clock（跟踪时钟）；不能直接相减各进程记录的 wall clock（日期时间）日志。公开 `authenticate()` 也不会把内部 requestId 返回给 App，因此 App 与 `system_server` 的事件关联需要受控的单请求测试或自有系统埋点。并发场景下不能用“时间上最近的一条 biometric 日志”代替关联 ID。
+跨进程计算必须使用同一单调时钟，例如 Perfetto 的 trace clock（跟踪时钟）；不能直接相减各进程记录的 wall clock（日期时间）时间戳。公开 `authenticate()` 也不会把内部 requestId 返回给 App，因此 App 与 `system_server` 的事件关联需要受控的单请求测试或自有系统埋点。并发场景下不能用“时间上最近的一条 biometric 日志”代替关联 ID。
 
 这些标记允许在同一份 trace 中分别计算：
 
