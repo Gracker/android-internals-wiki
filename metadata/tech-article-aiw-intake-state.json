@@ -1,5 +1,5 @@
 {
-  "daily_info_dir": "intake/daily-info",
+  "daily_info_dir": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info",
   "files": {
     "Android/Android-17系统层面新特性/01-MemoryLimiter-cgroup-v2-应用内存限制.md": {
       "chapter": "ch04-memory",
@@ -4817,6 +4817,30 @@
       "status": "appended",
       "title": "协程并发执行与共享状态协程并发执行与共享状态 本文整理 Kotlin 协程中共享状态、数据竞争和并发同步的核心内容。重点"
     },
+    "source/juejin-android/2026-09-20-76604358-Android架构消灭碎片化异步.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "a21dd81f69fa2be7",
+      "last_appended": "2026-09-20T05:25:47.716651+08:00",
+      "last_seen": "2026-09-20T05:25:47.716651+08:00",
+      "mtime": 1789849212.7660813,
+      "score": 12,
+      "sha256": "ddf3cb4a870998560355e6a05ddf63d75137d8b5c8261677f7ffe090c6ddcb09",
+      "size": 10248,
+      "status": "appended",
+      "title": "Android 架构这些年，其实一直在消灭碎片化异步很多 Android 开发者刚入行的时候都会觉得： 后来工作几年才"
+    },
+    "source/juejin-android/2026-09-20-76845736-Kotlin 2026 Jake Wharton 访谈.md": {
+      "chapter": "待分类",
+      "entry_id": "9d76a9f44ec54579",
+      "last_appended": "2026-09-20T05:25:47.716651+08:00",
+      "last_seen": "2026-09-20T05:25:47.716651+08:00",
+      "mtime": 1789849212.765844,
+      "score": 8,
+      "sha256": "cb2592fa710691bbad257b256301b59fea970349742c4bbe7baca63f57bbf8aa",
+      "size": 7853,
+      "status": "appended",
+      "title": "Kotlin 2026：裁员、AI、Rust——黄金时代结束了吗？Jake Wharton 为你解答 > **前言：**"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -6624,24 +6648,24 @@
     }
   },
   "last_report": {
-    "appended": 11,
-    "considered": 11,
-    "cutoff": "2026-09-18T05:20:11.951688+08:00",
-    "daily_info": "intake/daily-info/2026-09-19.md",
+    "appended": 2,
+    "considered": 2,
+    "cutoff": "2026-09-19T05:20:55.897598+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-20.md",
     "dry_run": false,
-    "root": "vault/技术文章",
-    "scanned": 2024,
+    "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
+    "scanned": 2027,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
-      "path": 29,
-      "unchanged": 581
+      "path": 30,
+      "unchanged": 592
     },
-    "state": "metadata/tech-article-aiw-intake-state.json"
+    "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-19T05:25:55.897598+08:00",
-  "root": "vault/技术文章",
+  "last_run_at": "2026-09-20T05:25:47.716651+08:00",
+  "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
