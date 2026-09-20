@@ -514,7 +514,7 @@ Android 17 中：
 - JIT GC 会标记线程栈上仍在执行的编译代码，并移除未标记、已经失效但尚待回收的代码（zombie code）；
 - 到达最大容量且仍无法满足代码/数据分配时，本次缓存分配失败。不能概括成“满了就按最近最少使用顺序淘汰旧方法”。
 
-配置文件引导编译（profile-guided compilation）会把运行期热点信息交给后续编译决策。基准配置文件（Baseline Profile）让关键路径更早获得预先编译（AOT）或 JIT 优化，减少冷启动早期的解释执行与即时编译工作。它的主要收益在执行和启动，不能直接当成 Java 堆优化手段。
+配置文件引导编译（profile-guided compilation）会把运行期热点信息用于后续编译决策。基准配置文件（Baseline Profile）让关键路径更早获得预先编译（AOT）或 JIT 优化，减少冷启动早期的解释执行与即时编译工作。它的主要收益在执行和启动，不能直接当成 Java 堆优化手段。
 
 详细实践参见 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](../../part5-app/ch21-startup/04-baseline-startup-cloud-profile.md)。
 
@@ -673,7 +673,7 @@ adb shell kill -s QUIT <pid>
 
 建立分配和回收主路径后，分代策略需要结合晋升、Remembered Set、Region 碎片和并发阶段判断收益。
 
-ART 源码以 Android 17 / API 37 的 `android-17.0.0_r1` 为准，内核能力以 `android17-6.18-2026-06_r6` 为准。§4.2 介绍 ART 堆、分配器与收集器的整体关系。
+ART 源码以 Android 17 / API 37 的 `android-17.0.0_r1` 为准，内核能力以 `android17-6.18-2026-06_r6` 为准。本章前面的小节已介绍 ART 堆、分配器与收集器的整体关系。
 
 GC 与慢帧重叠，只能说明两件事同时发生。要判断 GC 是否参与造成慢帧，还要分别检查应用线程暂停时间、GC 线程实际运行时间、GC 线程等待 CPU 的时间，以及主线程和渲染线程（RenderThread）当时的调度情况。
 
@@ -809,7 +809,7 @@ Android 17 的 `CardTable` 以 `kCardShift = 10` 划分堆，因此一个卡表�
 
 ART 不按固定次数轮换年轻代与全堆回收。`heap.cc` 在一次非 sticky 回收后把下一次设为 sticky；完成 sticky 回收后，则比较本次回收吞吐和历史非 sticky 回收的平均吞吐，再结合目标阈值决定下一次继续 sticky，还是改用非 sticky 回收。这里的 sticky 表示只处理近期分配或特定范围，非 sticky 则覆盖更大范围。
 
-在这里：
+对应关系如下：
 
 - sticky 对分代收集器对应年轻代回收；
 - non-sticky 对应覆盖更大范围的回收；
@@ -1113,7 +1113,7 @@ GC 算法决定一次回收做什么，HeapTask 决定维护工作何时执行�
 - 它是 ART 运行时的内部设施，应用没有受支持的 API 可以启动、停止或改写队列。
 - `target_footprint_` 是 ART 用来决定堆增长和 GC 时机的目标值，不是进程的硬内存上限，也不是 `lmkd` 的评分输入。
 
-源码以 `android-17.0.0_r1` 为当前锚点。由于缺少逐版本源码标签证据，不能根据标题中的“新增子类”反推历史起点。Android 17 的生产源码中可以找到 **10 个** `HeapTask` 派生类，其中 6 个定义在 `heap.cc`。
+源码以 `android-17.0.0_r1` 为当前锚点。由于缺少逐版本源码标签证据，不能仅凭“新增子类”这一说法反推这些类型的历史起点。Android 17 的生产源码中可以找到 **10 个** `HeapTask` 派生类，其中 6 个定义在 `heap.cc`。
 
 ### 从 Java 守护线程进入原生调度器
 
