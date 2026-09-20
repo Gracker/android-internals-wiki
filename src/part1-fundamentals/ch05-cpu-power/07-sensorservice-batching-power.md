@@ -126,7 +126,7 @@ val registered = sensorManager.registerListener(
 )
 ```
 
-这段请求会继续以约 50 Hz 产生事件，只是允许每批事件最多等待 5 秒；它不会将 sensor 改为 0.2 Hz。应用回调可能一次收到多个时间戳（timestamp）早于回调时刻的事件。
+这段请求会继续以约 50 Hz 产生事件，只是允许每批事件最多等待 5 秒；它不会将 sensor 改为 0.2 Hz。应用回调可能一次收到多个事件，其时间戳（timestamp）早于回调时刻。
 
 下面的公式可用 FIFO 能容纳的事件数估算理论批量时长上限：
 
@@ -288,7 +288,7 @@ Direct Channel 不提供普遍的节能保证。高频 sensor、持续轮询共�
 5. 如果它是最后一个有效客户端，底层 sensor 会停用；
 6. `SensorEventConnection::hasSensorAccess()` 也会在 PID frozen 时拒绝向该连接投递事件。
 
-解冻后，连接会重新参与参数聚合，必要时重新激活 sensor。源码没有向普通应用承诺回放冻结期间的全部事件，因此应用不能将进程冻结器（freezer）当作另一种 batching 机制。
+解冻后，连接会重新参与参数聚合，必要时重新激活 sensor。源码没有向普通应用承诺补发冻结期间的全部事件，因此应用不能将进程冻结器（freezer）当作另一种 batching 机制。
 
 这条路径受 Android 配置系统 aconfig / 硬件 flag 控制。`android-17.0.0_r1` 中存在调用点，不能证明所有 Android 17 产品都默认启用它。分析具体设备时，要结合 `dumpsys sensorservice` 中客户端冻结 / 禁用（client frozen / disabled）信息、产品 flag 和实际事件时间线。
 
