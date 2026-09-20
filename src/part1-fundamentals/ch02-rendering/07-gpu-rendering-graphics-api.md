@@ -4,9 +4,11 @@ section: '2.7'
 title: GPU 渲染与图形 API 选型
 chapter: '2.7'
 applicable_versions: Android 5.0 - Android 17 (API 21-37)
-last_verified: '2026-07-25'
-last_verified_against: AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + official Android/Perfetto GPU documentation + AndroidX WebGPU 1.0.0-alpha05 + Writer rendering_pipelines S01/S02/S05/S08/S13
+last_verified: '2026-09-20'
+last_verified_against: AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + official Android/Perfetto/APA/AGI GPU documentation + AndroidX WebGPU 1.0.0-alpha05 + Writer rendering_pipelines S01/S02/S05/S08/S13
 confidence: medium-high
+last_idle_audit_at: '2026-09-20T22:39:38+08:00'
+last_idle_audit_run_id: 20260920-223532-idle-audit-3d5d14f8
 sources:
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/
@@ -28,6 +30,10 @@ sources:
   path: https://developer.android.com/games/develop/vulkan/frame-pacing-extensions
 - type: official
   path: https://developer.android.com/android-performance-analyzer
+- type: official
+  path: https://developer.android.com/android-performance-analyzer/quickstart
+- type: official
+  path: https://developer.android.com/agi
 - type: official
   path: https://perfetto.dev/docs/data-sources/gpu
 - type: official
@@ -558,7 +564,7 @@ Perfetto 适合把以下时间放在同一时钟域，也就是用可直接对�
 
 #### APA 与 AGI：区分系统 profile、单帧分析
 
-截至 2026 年 5 月，Android Performance Analyzer（APA）处于 public beta（公开测试）阶段，官方已把它作为 system profiling（跨进程观察系统时间线）的推荐工具，可联合查看 CPU、GPU、memory、power 和系统行为。Android GPU Inspector（AGI）的 System Profiler 仍可采集 Perfetto 与 GPU 数据，但新建 system profile 应先评估 APA 的设备支持与数据源覆盖。
+当前官方把 Android Performance Analyzer（APA）定位为面向游戏和 Vulkan 图形的 profiler；AGI 页面仍称 APA 是 profiling games（游戏性能分析）的推荐工具，并指向 public beta 发布。APA 的 System Profiler 可以记录系统 trace，但不宜泛化到所有 App：非游戏、非 Vulkan 图形场景优先使用 Android Studio profiler 或 Perfetto。Android GPU Inspector（AGI）的 System Profiler 仍可采集 Perfetto 与 GPU 数据；新建游戏/图形 system profile 时，再根据 APA 的设备验证、数据源覆盖和目标场景决定是否使用 APA。
 
 AGI Frame Profiler 继续负责单帧检查：对受支持应用查看 Vulkan API call、framebuffer、draw call、pipeline、shader、texture、render state（本帧图形管线配置）与 memory。
 
