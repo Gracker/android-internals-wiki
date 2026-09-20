@@ -484,7 +484,7 @@ Linux thermal core 位于 `drivers/thermal/`。三个基本对象分别负责不
 
 冷却设备的 state 是抽象等级。对于 CPU 调频冷却设备（cpufreq cooling），更高的 cooling state 通常映射到更低的最高频率；其他 cooling device 可以控制设备调频框架 devfreq、风扇或平台自定义资源。state 编号不等于温度，也不保证与 Android `ThrottlingSeverity` 一一对应。
 
-在允许访问的设备上，`/sys/class/thermal/thermal_zone*/` 可以提供 `type`、`temp` 和 trip 等信息。sysfs 是 Linux 向用户空间暴露设备与内核对象状态的虚拟文件系统，其温控节点约定的温度通常使用毫摄氏度。不过，节点是否存在、是否允许 `adb shell` 读取、zone 名称怎样解释，都由内核配置与安全增强型 Linux（Security-Enhanced Linux，SELinux）策略决定。分析时要先把 `type` 和 `temp` 配对，不能按目录编号猜测 CPU、GPU 或电池。
+在允许访问的设备上，`/sys/class/thermal/thermal_zone*/` 可以提供 `type`、`temp` 和 trip 等信息。sysfs 是 Linux 向用户空间暴露设备与内核对象状态的虚拟文件系统，其温控节点的温度通常以毫摄氏度表示。不过，节点是否存在、是否允许 `adb shell` 读取、zone 名称怎样解释，都由内核配置与安全增强型 Linux（Security-Enhanced Linux，SELinux）策略决定。分析时要先把 `type` 和 `temp` 配对，不能按目录编号猜测 CPU、GPU 或电池。
 
 #### thermal governor 决定怎样调整 cooling state
 
