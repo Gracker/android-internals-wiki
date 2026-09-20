@@ -4841,6 +4841,30 @@
       "status": "appended",
       "title": "Kotlin 2026：裁员、AI、Rust——黄金时代结束了吗？Jake Wharton 为你解答 > **前言：**"
     },
+    "source/juejin-android/2026-09-21-76648798-kotlin-select-practical-fanout.md": {
+      "chapter": "待分类",
+      "entry_id": "b3d79a0cc00efbb9",
+      "last_appended": "2026-09-21T05:25:22.587099+08:00",
+      "last_seen": "2026-09-21T05:25:22.587099+08:00",
+      "mtime": 1789935589.0410452,
+      "score": 9,
+      "sha256": "a4afb745c00d3c786b6549cecccc0df9b8cc9233ccf7a2f50c7155f30ec51f22",
+      "size": 18533,
+      "status": "appended",
+      "title": "你是不是还没用过 select？实战 Kotlin select 在 Kotlin 协程中，select 算是一个有点尴"
+    },
+    "source/juejin-android/2026-09-21-76852381-webview-initial-scale-when-to-set-100.md": {
+      "chapter": "待分类",
+      "entry_id": "81485abf535cabf4",
+      "last_appended": "2026-09-21T05:25:22.587099+08:00",
+      "last_seen": "2026-09-21T05:25:22.587099+08:00",
+      "mtime": 1789935586.5494297,
+      "score": 15,
+      "sha256": "176f86e5039841691721b5857d9b8043959cfa8539c7dc2021804c35194dcd35",
+      "size": 8169,
+      "status": "appended",
+      "title": "Android WebView 初始缩放：什么时候该设置 100%，什么时候不要设置Android WebView 初始"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -6650,22 +6674,22 @@
   "last_report": {
     "appended": 2,
     "considered": 2,
-    "cutoff": "2026-09-19T05:20:55.897598+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-20.md",
+    "cutoff": "2026-09-20T05:20:47.716651+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-21.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2027,
+    "scanned": 2031,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
-      "old_unseen": 1403,
+      "old_unseen": 1405,
       "path": 30,
-      "unchanged": 592
+      "unchanged": 594
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-20T05:25:47.716651+08:00",
+  "last_run_at": "2026-09-21T05:25:22.587099+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
