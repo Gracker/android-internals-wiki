@@ -226,7 +226,7 @@ mHandler.sendMessageAtTime(
 
 `ViewGroup.dispatchTouchEvent()` 在 `ACTION_DOWN` 时清理上一个手势的状态并为本次触摸寻找子 View。命中的子 View 会保存为 `TouchTarget`。后续 `MOVE`、`UP` 通常沿已建立的目标链分发，不会每次从头对整棵 View 树做命中测试。
 
-父 `ViewGroup` 仍有机会在后续事件调用 `onInterceptTouchEvent()`。一旦从“不拦截”变为“拦截”，原子目标会收到 `ACTION_CANCEL`，之后的事件交给父容器。诊断冲突时，应把同一序列的 `DOWN → MOVE → CANCEL/UP` 连起来看，只看某一个 `MOVE` 很容易误判。
+父 `ViewGroup` 仍有机会在后续事件调用 `onInterceptTouchEvent()`。一旦从“不拦截”变为“拦截”，原先命中的子 View 会收到 `ACTION_CANCEL`，之后的事件交给父容器。诊断冲突时，应把同一序列的 `DOWN → MOVE → CANCEL/UP` 连起来看，只看某一个 `MOVE` 很容易误判。
 
 ### 横向父容器与纵向子容器
 
