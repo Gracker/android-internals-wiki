@@ -151,7 +151,7 @@ Android 17 的触摸判定按以下顺序进行：
 
 1. `ACTION_DOWN` 到来时，检查导航模式、SystemUI 状态、底部手势区、画中画（PiP）和桌面模式排除区、应用排除区、左右边缘宽度及设备类型。
 2. 资格成立后，事件才会送入 `BackPanelController`；如果启用了提前返回分发（ahead-of-time back dispatch），还会送入 WM Shell 的 `BackAnimation.onBackMotion()`。这里的“提前”是指在松手提交前就开始解析返回目标并产生手势进度。
-3. 阈值之前，纵向位移先超过 `mTouchSlop`、停留超时或出现第二根触点，都会取消候选返回手势。
+3. 阈值之前，以下任一情况都会取消候选返回手势：纵向位移先超过 `mTouchSlop`、停留超时或出现第二根触点。
 4. 横向位移大于纵向位移并超过 `mTouchSlop` 后，`mThresholdCrossed` 变为 `true`。
 5. 旧式分支此时由 `EdgeBackGestureHandler` 直接调用 `pilferPointers()`；提前分发分支调用 `BackAnimation.onThresholdCrossed()`，由 `BackAnimationController` 根据描述返回目标和动画能力的 `BackNavigationInfo`、系统动画及应用进度生成方式决定何时抢占指针。
 
@@ -427,7 +427,7 @@ Perfetto 的查询引擎 Trace Processor 在 `android.input` 模块中提供 `an
 
 ### 2. Android 17 的端到端架构
 
-下面的流程图标出 SystemUI、WM Shell、`system_server` 和应用之间的决策与动画边界。下文把 WindowManagerService 简称为 WMS，把 ActivityTaskManagerService 简称为 ATMS。
+下面的流程图标出 SystemUI、WM Shell、`system_server` 和应用之间的决策与动画边界。下文把 WindowManagerService 简称为 WMS，把 ActivityTaskManagerService 简称为 ATMS，把 InputMethodManagerService 简称为 IMMS。
 
 ```mermaid
 flowchart TD
@@ -631,7 +631,7 @@ flowchart LR
 
 输入法进程通过 `ImeBackCallbackSender` 把回调注册转发给当前应用。应用侧 `ImeBackCallbackProxy` 收到默认系统回调后，会把它映射到 `PRIORITY_DEFAULT`；若 ViewRoot 已提供 `ImeBackAnimationController`，分发器就用该控制器处理预测动画。
 
-默认结果是输入法回调的优先级高于 Activity 的框架系统回调，所以一次返回先隐藏输入法。这个行为仍有明确例外：
+默认情况下，输入法回调的优先级高于 Activity 的框架系统回调，所以一次返回先隐藏输入法。这个行为仍有明确例外：
 
 - 输入法可通过返回处置策略（back disposition）选择跳过默认回调；
 - 应用更高优先级的覆盖层回调可以先处理；
