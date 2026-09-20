@@ -764,7 +764,7 @@ android.input.inputevent
 
 ### 为什么要了解输入事件拦截与安全机制
 
-第 3.1 节追踪了输入事件从硬件到 View 树的完整路径。正常分发之外，系统还允许特权组件在不同位置监控、过滤或注入事件。
+本章前半部分追踪了输入事件从硬件到 View 树的完整路径。正常分发之外，系统还允许特权组件在不同位置监控、过滤或注入事件。
 
 如果 InputDispatcher 队列和应用主线程都没有明显阻塞，事件仍可能停留在 `system_server` 的过滤器 Handler 消息队列、无障碍按键待决队列或监视窗口（spy window）的手势接管阶段。忽略这些分支，容易把事件未到达应用误判成 View 分发问题。
 
@@ -831,7 +831,7 @@ if (shouldSendMotionToInputFilterLocked(args)) {
 
 该机制会拦下原事件，再决定是否发出另一个事件，并不会原地修改共享状态。`InputFilter` 文档也强调事件一致性：如果过滤器重组一串 `MotionEvent`，必须保证 `ACTION_DOWN`、`ACTION_MOVE`、`ACTION_UP` 序列仍然合法，否则下游窗口会收到不成对的事件。
 
-Android 默认的 `AccessibilityInputFilter` 运行在 `system_server`。接口本身是隐藏 API，而且全局过滤器由 WindowManagerService（WMS，窗口管理服务）和 IMS 管理；普通应用无法注册。若系统把自定义过滤器放在其他进程，`InputFilterHost.sendInputEvent()` 还会检查调用者是否持有 `INJECT_EVENTS`。
+Android 默认的 `AccessibilityInputFilter` 运行在 `system_server`。接口本身是隐藏 API，而且全局过滤器由 WindowManagerService（WMS，窗口管理服务）和 IMS 管理；普通应用无法注册。若系统把自定义过滤器放在其他进程，`InputFilterHost.sendInputEvent()` 还会检查调用方是否持有 `INJECT_EVENTS`。
 
 #### InputFilter 在 Perfetto 中的表现
 
@@ -998,7 +998,7 @@ public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int di
 
 #### 注入事件的权限控制
 
-标准注入入口最终都会经过 `InputManagerService.injectInputEventToTarget()` 的权限检查。`android-17.0.0_r1` 调用 `checkCallingPermission(INJECT_EVENTS, ..., checkInstrumentationSource = true)`：先检查直接调用者，再按需检查 Instrumentation 来源 UID。两者都不满足时抛出 `SecurityException`。
+标准注入入口最终都会经过 `InputManagerService.injectInputEventToTarget()` 的权限检查。`android-17.0.0_r1` 调用 `checkCallingPermission(INJECT_EVENTS, ..., checkInstrumentationSource = true)`：先检查直接调用方，再按需检查 Instrumentation 来源 UID。两者都不满足时抛出 `SecurityException`。
 
 `Instrumentation` 和 `UiAutomation` 的可用性来自测试框架建立的受控身份，并不表示普通应用获得全局注入权。`dispatchGesture()` 使用另一套门禁：服务配置元数据需要声明 `canPerformGestures`，连接还要通过无障碍安全策略校验。
 
@@ -1103,8 +1103,8 @@ AOSP 标准游戏模式（GameMode）没有独立的 InputDispatcher 游戏优�
 `android-17.0.0_r1` 中需要同时记住四类门禁：
 
 1. **全局过滤器**：隐藏系统接口，只能由 WMS 或 IMS 安装；
-2. **手势监视器**：调用者必须持有 `MONITOR_INPUT`，其保护级别是 `signature|recents`；
-3. **标准注入**：调用者或 Instrumentation 来源必须满足 `INJECT_EVENTS`；
+2. **手势监视器**：调用方必须持有 `MONITOR_INPUT`，其保护级别是 `signature|recents`；
+3. **标准注入**：调用方或 Instrumentation 来源必须满足 `INJECT_EVENTS`；
 4. **无障碍能力**：按键过滤和手势注入分别受配置能力、运行时标志与 `canPerformGestures()` 控制，敏感 View 还会按 `isAccessibilityTool` 再过滤。
 
 ### 在 Perfetto 中分析事件拦截问题
