@@ -4,7 +4,7 @@ chapter: '2.17'
 section: '2.17'
 status: ready-to-publish
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-09-18'
+last_verified: '2026-09-20'
 last_verified_against: AOSP android-17.0.0_r1 + Launcher3 android-17.0.0_r1
 confidence: high
 sources:
@@ -16,6 +16,8 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/wm/SnapshotController.java
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/wm/TaskSnapshotController.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/wm/TaskSnapshotCache.java
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/wm/AbsAppSnapshotController.java
 - type: aosp
@@ -217,7 +219,7 @@ ArrayMap<Integer, CacheEntry> mRunningCache
 
 进程死亡时，system_server 的运行时 cache entry 会删除；已经持久化的磁盘文件可以继续用于后续 Overview 或启动恢复。Launcher 进程还维护独立的缩略图缓存。
 
-Android 17 还包含 `onlyCacheLowResTaskSnapshot` feature flag（功能开关）路径：开启时，`TaskSnapshotController.getRecordSnapshotSupplier()` 在持久化完成后把 `updateLowResToCacheFunction(task, snapshotId)` 回调 post 到 `mHandler`。回调里会重新进入全局锁，校验 task 仍 attached 且缓存里的 snapshot id 仍是同一份、且仍是高分辨率版本，才把 low-res 写回 `mCache`；任一条件不满足就调用 `supplier.abort()`，旧 high-res buffer 立即释放。因此旧 high-res 的保留时长取决于 low-res 生成 + handler post + 后续校验的耗时，没有固定秒级上限，属于 flag 控制的内存策略，不应写成所有 Android 17 设备都固定启用。
+Android 17 还包含 `onlyCacheLowResTaskSnapshot` feature flag（功能开关）路径：开启时，`TaskSnapshotController.getRecordSnapshotSupplier()` 在持久化完成后把 `updateLowResToCacheFunction(task, snapshotId)` 回调 post 到 `mHandler`。回调里会重新进入全局锁，校验 task 仍 attached 且缓存里的 snapshot id 仍是同一份、且仍是高分辨率版本，才把 low-res 写回 `mCache`；任一条件不满足就调用 `supplier.abort()`，不把这份 low-res 放入运行时缓存。写回成功时，`TaskSnapshotCache` 会把旧 high-res 从主 `mRunningCache` 替换出去，并在 `DeferRemoveHighResCache` 中短暂保留同一 ID 的 high-res；Android 17 源码里的延迟移除常量是 5000 ms。也就是说，flag 开启后的主缓存目标是 low-res，但高分辨率 buffer 仍可能在转换、回调排队和延迟移除窗口内继续被引用，不能简单写成“生成 low-res 后 high-res 立即释放”。
 
 ### 4.2 内存估算要带上 scale、format 与 stride
 
@@ -231,7 +233,7 @@ width × height × bytesPerPixel
 
 实际分配还受 row stride（每行实际字节跨度）、gralloc（图形缓冲区分配器）对齐和附加元数据影响；同时存在高低分辨率版本、Binder 引用、Launcher hardware `Bitmap` 或 starting window 引用时，总占用会进一步变化。
 
-默认情况下，real snapshot 使用 RGBA_8888。设备 overlay 开启 `config_use16BitTaskSnapshotPixelFormat` 后，满足 `fillsParent()` 且目标 pixel format 不带 alpha 的 Task，可以使用 RGB_565；带 alpha 的 Task 仍会回退到 RGBA_8888（`AbsAppSnapshotController` 中 `use16BitFormat() && activity.fillsParent() && !formatHasAlpha(...)` 的判定）。
+默认情况下，real snapshot 使用 RGBA_8888。设备 overlay 开启 `config_use16BitTaskSnapshotPixelFormat` 后，`AbsAppSnapshotController` 也只会在 snapshot pixel format 仍为 `UNKNOWN`、`use16BitFormat()` 为真、top Activity `fillsParent()`，且主窗口不是“半透明并显示壁纸”的组合时选择 RGB_565；否则回退到 RGBA_8888。随后 `isTranslucent` 再由 `PixelFormat.formatHasAlpha(pixelFormat)`、`fillsParent()` 和窗口半透明状态计算。
 
 因此，“low-RAM（低内存）设备一定缓存 3–5 张、一定使用 RGB_565”没有 Android 17 源码依据。厂商可通过以下 overlay 调整：
 
@@ -611,6 +613,7 @@ adb shell dumpsys meminfo <launcher-package>
 
 - [`SnapshotController.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/SnapshotController.java)：transition 捕获、snapshot manager Binder 服务与可见 Task 清理；
 - [`TaskSnapshotController.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/TaskSnapshotController.java)：Task 触发、高低分辨率策略、sleep 捕获和持久化入口；
+- [`TaskSnapshotCache.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/TaskSnapshotCache.java)：运行时缓存、高分辨率延迟移除和磁盘恢复入口；
 - [`AbsAppSnapshotController.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/AbsAppSnapshotController.java)：`REAL`、`APP_THEME`、`NONE` 模式，`captureLayers`、像素格式与元数据；
 - [`TaskSnapshot.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/TaskSnapshot.java) 与 [`TaskSnapshotManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/TaskSnapshotManager.java)：buffer、引用、分辨率与 Binder 客户端；
 - [`SnapshotPersistQueue.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/SnapshotPersistQueue.java) 与 [`AppSnapshotLoader.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/AppSnapshotLoader.java)：后台写入、压缩与磁盘恢复；
