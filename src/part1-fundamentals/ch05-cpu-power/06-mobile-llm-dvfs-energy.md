@@ -58,7 +58,7 @@ last_idle_audit_run_id: 20260822-183518-idle-audit-1772199f
 
 # 移动端 LLM 推理的 DVFS 与能效边界
 
-端侧大语言模型（Large Language Model，LLM）推理会同时占用中央处理器（Central Processing Unit，CPU）、图形处理器（Graphics Processing Unit，GPU）或神经网络处理器（Neural Processing Unit，NPU）、内存带宽和设备散热能力。计算方式会随阶段变化：预填充（prefill）负责一次处理输入上下文，解码（decode）负责持续生成输出；模型加载、后端编译、采样和键值缓存（Key-Value cache，KV cache）管理还会在这两段计算之外引入额外开销。只看平均 CPU 利用率或某一次每秒生成 token 数（tokens/s），通常无法解释用户感受到的等待、速度波动和发热。
+端侧大语言模型（Large Language Model，LLM）推理会同时占用中央处理器（Central Processing Unit，CPU）、图形处理器（Graphics Processing Unit，GPU）或神经网络处理器（Neural Processing Unit，NPU）与内存带宽，并消耗设备的散热余量。计算方式会随阶段变化：预填充（prefill）负责一次处理输入上下文，解码（decode）负责持续生成输出；模型加载、后端编译、采样和键值缓存（Key-Value cache，KV cache）管理还会在这两段计算之外引入额外开销。只看平均 CPU 利用率或某一次每秒生成 token 数（tokens/s），通常无法解释用户感受到的等待、速度波动和发热。
 
 本文按照 Android 17 / API 37 / `android-17.0.0_r1` 核对平台行为，按照 `android17-6.18-2026-06_r6` 核对内核实现，并讨论四个工程问题：
 
