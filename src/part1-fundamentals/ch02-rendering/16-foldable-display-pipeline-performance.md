@@ -154,7 +154,7 @@ flowchart TD
 - `debug.tracing.device_state` system property（系统属性）；
 - `DEVICE_STATE_CHANGED` stats atom（系统统计事件）。
 
-这条路径先把连续的传感器条件归纳成离散 DeviceState，再选择相应 display layout。DisplayManager 收到回调后，先向 WMS 投递 device state 消息，再调用 `LogicalDisplayMapper.setDeviceState()`。源码注释说明，这个次序用于让 WMS 的 device-state 更新与 display change 事件保持可控次序。
+这条路径先把连续的传感器条件归纳成离散 DeviceState，再选择相应 display layout。DisplayManager 收到回调后，先向 WMS 投递 device state 消息，再调用 `LogicalDisplayMapper.setDeviceState()`。源码注释说明，这个次序用于让 WMS 的 device-state 更新与 display change 事件保持可控的先后关系。
 
 ### 2.3 为什么切换过程中会看到黑场或过渡层
 
@@ -502,7 +502,7 @@ adb shell cmd device_state state <STATE_ID>
 adb shell cmd device_state state reset
 ```
 
-输出中的 `print-states` 用于查询可用状态，`state` 用于设置或重置模拟状态。`state <STATE_ID>` 请求的是 emulated device state（模拟设备状态），shell 帮助明确说明它不会改变设备的物理状态。
+其中 `print-states` 用于查询可用状态，`state` 用于设置或重置模拟状态。`state <STATE_ID>` 请求的是 emulated device state（模拟设备状态），shell 帮助明确说明它不会改变设备的物理状态。
 
 它可以覆盖 DMS、WMS、SF 的状态切换测试，却跳过真实 hall 与 hinge 运动、面板机械过程以及部分 power timing（电源时序）。
 
