@@ -91,7 +91,7 @@ last_consolidated_at: '2026-08-24'
 2. CPU、GPU、神经网络处理器（Neural Processing Unit，NPU）与 AICore 分别属于哪条路径；
 3. 如何用可复现的测试和系统证据判断瓶颈，避免只看一组平均耗时。
 
-端侧推理性能由模型、张量布局、运行时、加速器和内存传输共同决定。应用自管 LiteRT 管线、平台提供的 ML Runtime 以及系统托管 GenAI 服务拥有不同的设备访问和资源隔离边界。
+端侧推理性能由模型、张量布局、运行时、加速器和内存传输共同决定。应用自管 LiteRT 管线、平台提供的 ML Runtime 以及系统托管 GenAI 服务，三者的设备访问和资源隔离边界并不相同。
 
 ## 模型执行、委托与数据搬运
 
@@ -212,7 +212,7 @@ Android 17 源码没有删除 NNAPI。当前版本仍包含：
 
 ### LiteRT / TFLite 的准备与执行管线
 
-LiteRT 是 TensorFlow Lite 后续使用的品牌，也是运行时的继续演进。旧项目仍大量使用 `Interpreter` 和 delegate；新的 LiteRT API 提供 `CompiledModel` 与 `TensorBuffer`。两代接口可以共存，分析时应先确认应用实际打包的构件（artifact）及其版本。
+LiteRT 是 TensorFlow Lite 之后启用的名称，运行时本身也继续演进。旧项目仍大量使用 `Interpreter` 和 delegate；新的 LiteRT API 提供 `CompiledModel` 与 `TensorBuffer`。两代接口可以共存，分析时应先确认应用实际打包的构件（artifact）及其版本。
 
 #### `Interpreter` 路径
 
@@ -274,7 +274,7 @@ PackageManager.FEATURE_NEURAL_PROCESSING_UNIT
     android:required="false" />
 ```
 
-`required="false"` 会保留对无 NPU 设备的安装覆盖，同时将 NPU feature 写入请求列表。Android 17 的 `NpuManager` 源码按 feature 名称检查声明，不要求 `required` 必须为 `true`。如果产品没有无 NPU 时的回退路径，可以使用默认的 `required="true"`，使应用商店的兼容性筛选与产品要求一致。
+`required="false"` 会让没有 NPU 的设备仍然可以安装，同时把 NPU feature 写入请求列表。Android 17 的 `NpuManager` 源码按 feature 名称检查声明，不要求 `required` 必须为 `true`。如果产品没有无 NPU 时的回退路径，可以使用默认的 `required="true"`，使应用商店的兼容性筛选与产品要求一致。
 
 下面的代码在运行时检查设备是否报告 NPU feature：
 
@@ -288,7 +288,7 @@ val hasNpu = packageManager.hasSystemFeature(
 
 #### Android 17 NPU 调度层在做什么
 
-Android 17 的 Android 开源项目（Android Open Source Project，AOSP）新增 `NpuManager` 模块和 `hardware/interfaces/npu/aidl/`。两者共同描述 NPU 访问与调度控制面，即负责资格、优先级和工作状态，不负责定义模型计算：
+Android 17 的 Android 开源项目（Android Open Source Project，AOSP）新增 `NpuManager` 模块和 `hardware/interfaces/npu/aidl/`。两者共同描述 NPU 访问与调度控制面：它负责资格、优先级和工作状态，不负责定义模型计算。
 
 - `PriorityManager` 读取目标 SDK、manifest feature 和用户标识符（User Identifier，UID）的重要性；
 - 对 `targetSdkVersion >= 37` 且缺少声明的应用，系统可将 `hasDirectAccess` 设为 `false`；
