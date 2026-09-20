@@ -470,7 +470,7 @@ LIMIT 40;
 4. 检查是否同时出现 IME、transition、视频、dim、HDR 或多窗口变化；
 5. 查看 RenderEngine client composition 和 present 路径，而非只看一个 `composeSurfaces` slice 的时长。
 
-只有透明栏出现、SF duration 变长或功耗上升，都不足以单独证明 HWC 回退。
+仅凭透明栏出现、SF duration 变长或功耗上升中的任何一项，都不足以单独证明 HWC 回退。
 
 ## 9. 常见误判
 
