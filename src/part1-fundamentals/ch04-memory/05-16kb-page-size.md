@@ -403,11 +403,11 @@ adb shell getprop ro.build.fingerprint
 
 ### 7.3 `mprotect()` 返回 `EINVAL`
 
-检查起始地址是否按运行时页大小对齐，并重新计算保护范围。bionic Android 17 的 `WriteProtected<T>` 使用 `max_android_page_size()` 对齐存储区和 `mprotect()` 长度，体现了同一原则。旧工具或静态组件中的相似代码要按其源码和版本单独确认，不能把所有 NDK r27 产物归因于同一个实现。
+检查起始地址是否按运行时页大小对齐，并重新计算保护范围。Android 17 的 bionic 中，`WriteProtected<T>` 使用 `max_android_page_size()` 对齐存储区和 `mprotect()` 长度，体现了同一原则。旧工具或静态组件中的相似代码要按其源码和版本单独确认，不能把所有 NDK r27 产物归因于同一个实现。
 
 ### 7.4 只在某个业务页面崩溃
 
-这通常意味着延迟加载的 `.so`、动态模块或某段页大小计算直到该路径才执行。应把 `dlopen()` 失败信息、信号（signal）、出错地址（fault address）、目标 ABI 和库构建 ID 一起记录，再回到产物盘点表定位来源。
+这通常意味着延迟加载的 `.so`、动态模块或某段页大小计算直到该路径才执行。应把 `dlopen()` 失败信息、信号（signal）、出错地址（fault address）、目标 ABI 和库构建 ID 一起记录，再回到第一步的产物盘点记录定位来源。
 
 ### 7.5 内存明显增长
 
@@ -506,7 +506,7 @@ CONT_PTE_SIZE = 128 × 16 KiB = 2 MiB
 
 “启用 `CONFIG_ARM64_CONTPTE` 后每 2 MiB 都只占一个 TLB 表项”过于绝对。mTHP 提供较大的 folio，contpte 处理符合条件的 2 MiB PTE 组；较小的 mTHP 即使减少了缺页，也不会自动满足 2 MiB 连续页表项条件。CPU 还可能有硬件页聚合能力，那属于另一个实现层级。
 
-### 9.4 三种机制的边界
+### 9.4 四种机制的边界
 
 | 机制 | 16 KiB 内核上的典型粒度 | 主要作用 | 关键条件 |
 |---|---:|---|---|
