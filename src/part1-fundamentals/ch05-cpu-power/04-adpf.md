@@ -93,7 +93,7 @@ if (session != null) {
 }
 ```
 
-这段代码只在 session 创建成功后上报一次完整周期的 actual duration。系统比较 actual 与 target，尝试调整线程运行在哪些 CPU 核上或调整运行频率，使后续周期接近目标。事后上报无法修复已经超时的工作；对于可预测的负载突增，应用应提前调整自身策略，使用原生开发套件（Native Development Kit，NDK）的客户端还可发送 Android 16 新增的工作负载提示（workload hint）。
+这段代码只在 session 创建成功后上报一次完整周期的 actual duration。系统比较 actual 与 target，尝试调整线程运行在哪些 CPU 核上或调整运行频率，使后续周期接近目标。事后上报无法修复已经超时的工作；对于可预测的负载突增，应用应提前调整自身策略；使用原生开发套件（Native Development Kit，NDK）的应用还可发送 Android 16 新增的工作负载提示（workload hint）。
 
 目标改变时应调用 `updateTargetWorkDuration()`。例如，帧率、渲染比例或流水线分工发生变化后，需要重新测量这组线程可用的工作预算，不能只用 `1000 / fps` 生成固定数值；FPS 表示每秒显示帧数（frames per second）。
 
@@ -342,7 +342,7 @@ API 37 的 `core/api/current.txt` 以及 NDK `performance_hint.h` 都没有 `set
 
 ### HintSession 会把 CPU 拉到最高频率
 
-公开契约只说明系统会“尝试”调整线程所运行的 CPU 核和 / 或运行频率，使 actual 接近 target。系统可能维持当前频率、改变线程的 CPU 分配、采用厂商内部策略，也可能因热或功耗约束无法提供更多资源。
+公开契约只说明系统会“尝试”调整线程所运行的 CPU 核或运行频率，也可能同时调整两者，使 actual 接近 target。系统可能维持当前频率、改变线程的 CPU 分配、采用厂商内部策略，也可能因热或功耗约束无法提供更多资源。
 
 ### target duration 等于整帧周期
 
