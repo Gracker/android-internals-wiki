@@ -238,7 +238,7 @@ progressCounter.incrementAndGet();
 | `FinalizerDaemon` | 一个终结方法或 `SystemCleaner` 动作跨过完整超时窗口仍无进展 | 当次即可构造 `TimeoutException` |
 | `ReferenceQueueDaemon` | 一个旧 Cleaner 或同队列批处理长期没有可见进展 | 容忍计数为 5；同一段未完成处理期间第 6 次被判定超时才构造异常 |
 
-一批待处理引用完成转移后，`ReferenceQueueDaemon` 会重置其超时观察计数。这个容忍机制是因为该线程不会在每处理一个引用后都更新进度。
+一批待处理引用完成转移后，`ReferenceQueueDaemon` 会重置其超时观察计数。之所以存在这个容忍机制，是因为该线程不会在每处理一个引用后都更新进度。
 
 确认超时且调试器未连接时，看门狗会先给本进程发送 `SIGQUIT`，留出时间记录原生线程栈，再把超时异常交给未捕获异常处理机制。由 Zygote 派生的应用进程通常会由 `RuntimeInit` 的处理器生成崩溃报告并终止。调试器连接期间，源码明确跳过这次致命超时处理。
 
@@ -594,7 +594,7 @@ Android 17 的源码复核结果是：
 
 ## 13. 小结
 
-Android 17 的 `ReferenceQueueDaemon` 负责待处理引用入队，`FinalizerDaemon` 负责普通终结方法和 SystemCleaner，两者由独立进度计数器接受看门狗监控。`ReferenceQueue` 仍是带实例锁的先进先出队列；按同队列批处理减少了加锁次数，却没有提供实时清理保证。
+Android 17 的 `ReferenceQueueDaemon` 负责待处理引用入队，`FinalizerDaemon` 负责普通终结方法和 SystemCleaner，两者各有独立的进度计数器，供看门狗监控。`ReferenceQueue` 仍是带实例锁的先进先出队列；按同队列批处理减少了加锁次数，却没有提供实时清理保证。
 
 定位问题时，先证明文件描述符、原生堆或图形内存随操作持续增长，再用日志、线程栈、Perfetto、simpleperf 和堆转储确认资源所有者与清理执行点。最终修复应回到显式生命周期，不能依靠增加 GC、主动调用 `System.gc()` 或等待 FinalizerDaemon 追赶。
 
