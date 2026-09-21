@@ -84,7 +84,7 @@ FrameTimeline 中的绿色帧表示该帧没有被判为 jank。它不保存 `sc
 
 ### 整数毫秒来自哪里
 
-Android 17 的 `SplineOverScroller.update()` 通过 `AnimationUtils.currentAnimationTimeMillis()` 取得当前时间，再计算 `currentTime = time - mStartTime`。常规 fling 的 `SPLINE`（样条减速曲线）分支把 elapsed time（已经过时间）除以 `mSplineDuration`，在 101 个 `SPLINE_POSITION` 采样点之间做线性插值，再把结果乘以 `mSplineDistance`。位置写入 `mCurrentPosition` 前，还会通过 `Math.round(distance)` 取整到像素。
+Android 17 的 `SplineOverScroller.update()` 通过 `AnimationUtils.currentAnimationTimeMillis()` 取得当前时间，再计算 `currentTime = time - mStartTime`。常规 fling 的 `SPLINE`（样条减速曲线）分支把 elapsed time（已经过的时间）除以 `mSplineDuration`，在 101 个 `SPLINE_POSITION` 采样点之间做线性插值，再把结果乘以 `mSplineDistance`。位置写入 `mCurrentPosition` 前，还会通过 `Math.round(distance)` 取整到像素。
 
 这条路径包含三种离散化：
 
@@ -106,7 +106,7 @@ Android 17 的源码入口是 [`OverScroller.java`](https://android.googlesource
 
 ## Choreographer 保留了哪些精度
 
-Android 17 的 `Choreographer` 在 `doFrame()` 内维护纳秒级 frame time（帧时间）、frame interval（帧间隔）、deadline 和可能的 frame timelines。公开的 `FrameCallback.doFrame(frameTimeNanos)` 也接收纳秒值。API 33 起，`postVsyncCallback()` 还能提供 `FrameData` 和候选 presentation timeline（呈现时间线）。
+Android 17 的 `Choreographer` 在 `doFrame()` 内维护纳秒级 frame time（帧时间）、frame interval（帧间隔）、deadline 和可能存在的 frame timelines。公开的 `FrameCallback.doFrame(frameTimeNanos)` 也接收纳秒值。API 33 起，`postVsyncCallback()` 还能提供 `FrameData` 和候选 presentation timeline（呈现时间线）。
 
 精度从纳秒变为毫秒，发生在 legacy View animation clock 的转换位置：`AnimationUtils.lockAnimationClock(frameTimeNanos / NANOS_PER_MS)`。同一主线程帧内调用 `currentAnimationTimeMillis()` 的旧动画与滚动代码会读到锁定的整数毫秒值，并通过 `max(currentVsyncTimeMillis, lastReportedTimeMillis)` 防止时间倒退。
 
