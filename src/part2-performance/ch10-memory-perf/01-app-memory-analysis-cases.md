@@ -122,7 +122,7 @@ last_review_finalize_run_id: 20260826-201101-4eb9807b
 
 # App 内存分析与案例
 
-一条内存曲线只能说明某个统计口径发生了变化。Java heap（ART 管理的 Java/Kotlin 对象堆）、native allocator（C/C++ 默认内存分配器）、RSS、PSS、SwapPss、DMA-BUF（设备间共享缓冲区）和 GPU private memory（GPU 私有分配）分别观察不同对象；数值来自不同采样时刻时，连加都可能失真。
+一条内存曲线只能说明某个统计口径发生了变化。Java heap（ART 管理的 Java/Kotlin 对象堆）、native allocator（C/C++ 默认内存分配器）、RSS、PSS、SwapPss、DMA-BUF（设备间共享缓冲区）和 GPU private memory（GPU 私有分配）分别观察不同对象；数值来自不同采样时刻时，直接相加都可能失真。
 
 本文按 Android 17 / API 37 的 `android-17.0.0_r1` 核对平台行为，涉及 PSI 的内核实现以 `android17-6.18-2026-06_r6` 为准。分析顺序是先确定指标，再定位内存域，随后用对应工具寻找 owner（内存持有者或归属方）和生命周期。
 
@@ -353,7 +353,7 @@ GPU 专项工具与 layer/buffer 追踪见 10.4 节；这里仅将 Graphics 从 
 | 负载 | 账号数据量、图片规格、列表长度、网络响应 |
 | 指标 | Java used/max、Native allocated、PSS、RSS、SwapPss、Graphics |
 
-一条实用脚本可以设置这些采样点：
+一份实用的采样脚本可以设置这些采样点：
 
 1. 冷启动首屏稳定；
 2. 目标页面第一次进入；
@@ -611,7 +611,7 @@ Java OOM 常落在 Bitmap 分配、字符串构造或数组扩容等位置。该
 
 公开方案由客户端采集、服务端恢复与自动分析组成：
 
-- 客户端可在 OOM 或可配置的高水位采集 Hprof，使用子进程减轻 dump（导出堆快照）对交互线程的影响。
+- 客户端可在 OOM 或可配置的内存高水位采集 Hprof，使用子进程减轻 dump（导出堆快照）对交互线程的影响。
 - Tailor（该方案的 Hprof 裁剪工具）在 native 层移除字符串内容、Bitmap 像素等分析无需保留的数据。原文公布的头条样本平均文件大小从 355 MB 降至 44 MB。
 - 服务端重建引用图和支配树，计算 Shallow Size（对象自身大小）、Retained Size（对象不可达后可一并回收的估算大小）与 GC Root 路径，再按泄漏类、持有业务代码或大对象类聚合。
 - 混淆后的类名和引用路径经 Retrace（根据映射文件恢复原始符号）还原，问题才能分派给代码所有者。
@@ -668,7 +668,7 @@ Android 17（API 37）的 `ProfilingTrigger.TRIGGER_TYPE_OOM` 可在 OOM 时请�
 
 - 先按设备型号、SoC、GPU、OS、驱动与 ABI 聚类，确认问题是否只出现在少量设备组合中。
 - 监控 `/proc/self/maps` 或 smaps 中 `renderD128` 映射，区分虚拟地址耗尽与物理驻留增长。
-- 在受影响设备上减少能够稳定触发增长的渲染组合，必要时仅对这些设备降低动画或复杂效果。
+- 在受影响设备上减少使用能够稳定触发映射增长的渲染组合，必要时仅对这些设备降低动画或复杂效果。
 - 推进 64 位进程可缓解 32 位地址空间耗尽，但不会减少 buffer 的物理内存成本。
 - 将复现工程、映射增长曲线和 vendor 调用栈交给 SoC、GPU 或 ROM 厂商修复。
 
