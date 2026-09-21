@@ -427,7 +427,7 @@ F2FS 的更新会产生旧的无效块，GC 随后搬移 victim 中仍然有效�
 
 ext4 是成熟的通用读写文件系统；F2FS 使用 segment、NAT/SIT、冷热日志和 GC 适配闪存更新负载；EROFS 服务于构建期生成的只读镜像。三者的职责与代价不同。Android 17 同时保留了对应的内核能力，应由产品配置和现场证据决定分析哪一条路径。
 
-文件系统生成的 `bio` 如何变成设备请求，见 [6.2 文件系统与 I/O 调度](02-filesystem-io-scheduling.md)。
+文件系统生成的 `bio` 如何变成设备请求，见后文「块层队列、调度与延迟分析」一节。
 
 ## 块层队列、调度与延迟分析
 
@@ -476,7 +476,7 @@ CFQ（Completely Fair Queuing，完全公平排队）为每个 I/O context（I/O
 
 BFQ（Budget Fair Queueing，预算公平排队）按照权重和 budget（一次获准处理的数据量）为队列分配服务，目标是在吞吐、公平性和交互延迟之间取得平衡。启用 `CONFIG_BFQ_GROUP_IOSCHED` 后，它还能进行 cgroup 层级调度。
 
-BFQ 的 per-request（逐请求）处理和队列管理比 mq-deadline 更复杂。在较慢设备、需要比例带宽或交互保障的负载上，这份成本可能值得；在高 IOPS（每秒 I/O 操作次数）设备上，额外调度工作也可能限制吞吐。不能用“最低延迟一定是 mq-deadline 的数倍”概括所有设备。
+BFQ 的 per-request（逐请求）处理和队列管理比 mq-deadline 更复杂。在较慢设备、需要比例带宽或交互保障的负载上，这份成本可能值得；在高 IOPS（每秒 I/O 操作次数）设备上，额外调度工作也可能限制吞吐。不能用“BFQ 的最低延迟一定是 mq-deadline 的数倍”概括所有设备。
 
 Android 17 的 6.18 `Kconfig.iosched` 把 BFQ 保留为可选项，但 arm64 GKI defconfig（默认内核配置）没有显式启用 `CONFIG_IOSCHED_BFQ`。vendor 可以改变配置，因此实机上是否出现 `bfq` 仍以 sysfs（内核导出的运行时属性接口）为准。
 
@@ -631,7 +631,7 @@ Page Cache 可以合并小写、提供 readahead，并让热点数据复用。�
 
 #### `O_DIRECT` 的边界
 
-`O_DIRECT` 尝试让文件数据 I/O 绕过 Page Cache。它适合自身管理缓存、访问模式明确，而且能够满足对齐约束的系统软件。Linux 6.18 可以通过 `statx(..., STATX_DIOALIGN)` 查询文件系统报告的 direct-I/O 对齐要求。
+`O_DIRECT` 尝试让文件数据 I/O 绕过 Page Cache。它适合自身管理缓存、访问模式明确、能够满足对齐约束的系统软件。Linux 6.18 可以通过 `statx(..., STATX_DIOALIGN)` 查询文件系统报告的 direct-I/O 对齐要求。
 
 几个限制需要记住：
 
