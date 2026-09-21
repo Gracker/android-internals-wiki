@@ -64,7 +64,7 @@ last_idle_audit_run_id: 20260826-224308-idle-audit-1f93810e
 
 平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点是 Android Common Kernel `android17-6.18-2026-06_r6`。设备厂商可以定制分区表、文件系统、UFS 控制器和 vendor kernel（厂商内核），因此涉及具体机型的性能结论仍要以运行时信息为准。
 
-在 Perfetto 中追踪主线程卡顿时，常会遇到这样的片段：线程调用 SQLite、SharedPreferences 或普通文件 API 后进入睡眠，直到数据回写、日志提交或设备请求完成才重新运行。SQLite 事务和 SharedPreferences 写盘是两条独立的实现路径，不能看到 `fsync()` 就把前者解释成后者；还要结合调用栈、文件名、文件系统事件和 block trace（块 I/O 跟踪记录）判断。
+在 Perfetto 中追踪主线程卡顿时，常会遇到这样的片段：线程调用 SQLite、SharedPreferences 或普通文件 API 后进入睡眠，直到数据回写、日志提交或设备请求完成才重新运行。SQLite 事务和 SharedPreferences 写盘是两条独立的实现路径，不能看到 `fsync()` 就断定它来自哪条实现路径；还要结合调用栈、文件名、文件系统事件和 block trace（块 I/O 跟踪记录）判断。
 
 这类问题有时伴随大量 CPU 工作，有时则主要耗在 I/O wait（等待输入/输出完成）。Android 文件访问可能依次经过 VFS（统一文件系统接口）、具体文件系统、fscrypt（文件级加密框架）、device-mapper（块设备映射层）、块层、主机控制器和闪存；共享存储还可能经过 MediaProvider/FUSE。只有把等待时间对应到具体层级，才能判断延迟来自同步点设计、文件系统回写、设备排队、加密准备，还是共享存储的权限检查路径。
 
@@ -220,7 +220,7 @@ f2fs（Flash-Friendly File System）是 Android 设备可选的 `userdata` 文�
 
 f2fs 的关键设计包括：
 
-**Out-of-place update（异地更新）**：f2fs 通常把修改后的数据写入新逻辑块，再更新元数据。它可以把主机侧的随机更新整理到 segment 中，降低文件系统层的覆盖写与碎片压力。NAND 的物理擦除、有效页搬移和写入放大仍由器件 FTL 参与，f2fs 无法保证一次 4 KiB 更新在闪存内部只产生 4 KiB 写入。
+**Out-of-place update（异地更新）**：f2fs 通常把修改后的数据写入新逻辑块，再更新元数据。它可以把主机侧的随机更新整理到 segment 中，降低文件系统层的覆盖写与碎片压力。NAND 的物理擦除、有效页搬移和写入放大仍有器件 FTL 参与，f2fs 无法保证一次 4 KiB 更新在闪存内部只产生 4 KiB 写入。
 
 **冷热数据分离**：f2fs 会根据更新模式给数据与 node（索引节点）标记不同温度，尽量把更新频率相近的数据放入相应 segment。这样可以降低 GC 搬移仍然有效的冷数据的概率，但这种分类属于启发式策略，不能保证热写入永远不影响冷数据。
 
