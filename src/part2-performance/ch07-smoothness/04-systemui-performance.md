@@ -172,7 +172,7 @@ Scene flag 开启时，`ShadeViewProviderModule` 会 inflate `scene_window_root.
 
 ## SceneContainer：按 Android 17 源码理解
 
-`SceneContainerFlag.isEnabled` 在 `android-17.0.0_r1` 中等于 `Flags.sceneContainer() && isEnabledOnVariant`，不要求一组 secondary flags（辅助开关）同时满足。Automotive 等 SystemUI variant（产品变体）可以通过 `isEnabledOnVariant` 强制关闭；普通产品仍要以目标构建的 aconfig 值为准。
+`SceneContainerFlag.isEnabled` 在 `android-17.0.0_r1` 中等于 `Flags.sceneContainer() && isEnabledOnVariant`，不要求一组 secondary flags（辅助开关）同时开启。Automotive 等 SystemUI variant（产品变体）可以通过 `isEnabledOnVariant` 强制关闭；普通产品仍要以目标构建的 aconfig 值为准。
 
 `SceneContainerFrameworkModule` 注册的场景包括 `Gone`、`Communal`、`Dream`、`Occluded`、`Lockscreen`、`QuickSettings` 和 `Shade`；overlay（覆盖层）包括通知 Shade、QS Shade、Quick Actions 与 Bouncer。Dual Shade（双面板通知/快捷设置）生效后，某些大屏配置会省去 Shade/QS scene，改用两类 overlay。这个差异会改变 Compose 节点数量、过渡路径和 trace 名称。
 
