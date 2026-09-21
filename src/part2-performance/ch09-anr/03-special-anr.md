@@ -123,7 +123,7 @@ Perfetto 中要按唤醒事件拆分：
 4. 目标线程的 nice（普通调度优先级）、调度组、uclamp（CPU 性能需求上下限）与 CPU affinity（可运行 CPU 范围）是否符合预期；
 5. CPU frequency（频率）、idle（空闲状态）和 thermal throttling（温控降频）是否降低了可用算力。
 
-多核总利用率没有达到 100% 时也可能发生局部饥饿。空闲核可能不在目标 cpuset、频率很低，或者任务受 affinity 限制。即使所有核都很忙，主线程也未必得不到运行机会；更高优先级和调度组仍可能让它及时运行。
+多核总利用率没有达到 100% 时也可能发生局部饥饿。空闲核可能不在目标 cpuset、频率很低，或者任务受 affinity 限制。即使所有核都很忙，主线程也仍可能得到运行机会；更高优先级和调度组仍可能让它及时运行。
 
 ### 判断 `D` 状态需要 kernel callstack
 
@@ -343,7 +343,7 @@ Android 17 的 libbinder `ProcessState.cpp` 把 `DEFAULT_MAX_BINDER_THREADS` 设
 
 ### GC 要拆成暂停、分配等待和 CPU 竞争
 
-Android 8 起，ART 默认采用 Concurrent Copying（并发复制）垃圾回收器；Android 10 起，该回收计划支持按对象存活时间分代收集。并发收集仍包含短暂停顿，线程到达 suspend point（可安全暂停的位置）所花的时间也计入暂停。一次 ANR 时间窗内还可能出现：
+Android 8 起，ART 默认采用 Concurrent Copying（并发复制）垃圾回收器；Android 10 起，该回收器支持按对象存活时间分代收集。并发收集仍包含短暂停顿，线程到达 suspend point（可安全暂停的位置）所花的时间也计入暂停。一次 ANR 时间窗内还可能出现：
 
 - 主线程等待正在进行的 GC；
 - 分配慢路径触发 `kGcCauseForAlloc`；
@@ -468,7 +468,7 @@ sqlite3 app.db 'PRAGMA synchronous;'
 
 ## 版本演进
 
-- **Android 8 / API 26**：加入 `startForegroundService()`；ART 默认 GC 计划切换到 Concurrent Copying。
+- **Android 8 / API 26**：加入 `startForegroundService()`；ART 默认垃圾回收器切换到 Concurrent Copying。
 - **Android 10 / API 29**：Concurrent Copying 支持分代收集。
 - **Android 12 / API 31**：后台启动 FGS 的入口限制趋严，使用 `ForegroundServiceStartNotAllowedException` 表达拒绝。
 - **Android 14 / API 34**：Broadcast timeout 可按 CPU starvation 延长；加入 `shortService` 与超时回调。
