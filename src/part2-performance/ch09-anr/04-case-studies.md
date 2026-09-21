@@ -254,7 +254,7 @@ ANR 报告覆盖 `15:01:27.683` 至 `15:01:37.233` 的 CPU 窗口，`system_serv
 - 避免在 Activity stop、Service 回调收尾和 Receiver 完成前集中触发持久化；
 - 为写文件和 `fsync()` 采集耗时，按设备与存储状态分布分析长尾；
 - 对需要事务、结构化数据或稳定异步 API 的场景，评估 Preferences DataStore、Proto DataStore 或数据库；
-- 预加载只能移动首次读取成本，使用前要测量启动路径和内存代价；
+- 预加载只能把首次读取成本提前，使用前要测量启动路径和内存代价；
 - 不要反射修改 `QueuedWork`、清空 finisher 或绕过组件完成通知，这会破坏持久化和框架时序。
 
 修复验收不能只看平均写入耗时。应在应用退后台、Service 完成、广播密集和低速存储压力下，确认主线程等待的 P95/P99 与 ANR 数量同时下降。P95/P99 表示 95%/99% 的样本不超过该耗时，用于观察少数慢样本是否改善。
@@ -542,7 +542,7 @@ anr?.traceInputStream?.use { stream ->
 
 ### 主线程历史
 
-ANR 瞬时 trace 可能采到 `nativePollOnce`、锁等待或耗时工作已经返回后的状态。应用可以用公开的 `Looper.setMessageLogging(Printer)` 记录主线程消息的开始和结束，但它会增加消息分发热路径上的开销，输出也不保证包含同步屏障（用于暂时阻止同步消息执行的队列标记）、native 回调和每个耗时来源。`Looper.Observer` 属于隐藏接口，不应绕过 Hidden API 限制后部署到普通应用。
+ANR 瞬时 trace 采到的状态可能是 `nativePollOnce`、锁等待，也可能是耗时工作已经返回之后的状态。应用可以用公开的 `Looper.setMessageLogging(Printer)` 记录主线程消息的开始和结束，但它会在消息分发的热路径上增加开销，输出也不保证包含同步屏障（用于暂时阻止同步消息执行的队列标记）、native 回调和每个耗时来源。`Looper.Observer` 属于隐藏接口，不应绕过 Hidden API 限制后部署到普通应用。
 
 历史窗口应按内存预算和目标 ANR 类型配置，并用覆盖最旧记录的环形缓冲区保存。固定“过去 10 秒”只是一种工程选择；Input、前台 Service、后台 Service 和广播的超时预算不同。采样数据至少要包含消息目标、开始/结束时间、线程 CPU 时间、wall time（实际经过时间）、队列延迟和采集版本。
 
