@@ -1,0 +1,392 @@
+/* ============================================================================
+   book-parchment.css — Parchment Reader
+   Re-skin mdBook with a book-page feel: serif typography (LXGW WenKai),
+   wider measure, generous line-height, quiet borders, and a soft "paper" palette
+   derived from the existing Catppuccin Latte/Mocha variables (no brand recolor).
+   Zero code copied from external themes; only the structural *pattern* of a
+   book reader is reused. All colors resolve through mdBook's --bg/--fg/--links
+   so theme switching (latte / mocha) still works.
+   ============================================================================ */
+
+/* ---- self-hosted serif (subset for this book's character set) ----
+   Subsets are produced from LXGW WenKai (OFL-1.1, 2021-2026 LXGW).
+   See fonts/OFL.txt for the full license. We host the subset locally so the
+   page does not depend on fonts.googleapis.com (unreliable in mainland CN). */
+@font-face {
+  font-family: "Parchment Serif";
+  src: url("./fonts/wenkai-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Parchment Serif";
+  src: url("./fonts/wenkai-medium.woff2") format("woff2");
+  font-weight: 500 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* Parchment-specific tokens. All colors are resolved from existing mdBook
+     variables so theme switching stays consistent with the rest of the book. */
+  --prch-serif: "Parchment Serif", "Source Han Serif SC", "Noto Serif SC",
+                 "Songti SC", Georgia, "Times New Roman", serif;
+  --prch-mono:  "JetBrains Mono", "SF Mono", ui-monospace, Consolas,
+                 "Parchment Serif", monospace;
+
+  --prch-measure: 46rem;        /* ideal reading width ~ 720-740px */
+  --prch-line: 1.85;            /* book-page rhythm */
+  --prch-base:  17px;           /* body font-size */
+  --prch-radius: 10px;
+  --prch-shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+
+  /* Soften the chrome: top bar is paper, not a slab */
+  --prch-bar-bg: color-mix(in srgb, var(--bg) 92%, transparent);
+  --prch-line-quiet: color-mix(in srgb, var(--fg) 8%, transparent);
+  --prch-line-soft:   color-mix(in srgb, var(--fg) 12%, transparent);
+
+  /* Active nav uses the brand link color, not the loud default */
+  --prch-nav-active: var(--links);
+}
+
+/* ---------- typography ---------- */
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+body {
+  font-family: var(--prch-serif);
+  font-size: var(--prch-base);
+  line-height: var(--prch-line);
+  letter-spacing: .005em;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "kern" 1, "liga" 1;
+}
+
+code, pre, kbd, .hljs, .mono {
+  font-family: var(--prch-mono);
+}
+
+p { text-wrap: pretty; }
+.content p { margin-block-end: 1em; }
+
+/* ---------- top bar (mdBook's #menu-bar) ---------- */
+#menu-bar,
+#menu-bar-hover-placeholder {
+  background: var(--prch-bar-bg);
+  backdrop-filter: saturate(140%) blur(8px);
+  -webkit-backdrop-filter: saturate(140%) blur(8px);
+  border-block-end: 1px solid var(--prch-line-quiet);
+}
+#menu-bar {
+  font-family: var(--prch-serif);
+}
+.menu-title {
+  font-weight: 500 !important;
+  font-size: 1.05rem !important;
+  letter-spacing: .01em;
+  color: var(--fg);
+}
+#menu-bar i, #menu-bar .icon-button {
+  padding: 0 10px;
+  line-height: var(--menu-bar-height);
+  color: var(--icons);
+  transition: color .16s ease;
+}
+#menu-bar i:hover, #menu-bar .icon-button:hover {
+  color: var(--links);
+}
+
+/* ---------- sidebar ---------- */
+.sidebar {
+  font-family: var(--prch-serif);
+  font-size: 14px;
+  background-color: var(--sidebar-bg);
+  border-inline-end: 1px solid var(--prch-line-quiet);
+}
+.sidebar .sidebar-scrollbox {
+  padding: 14px 14px 24px;
+}
+.chapter { line-height: 1.9; }
+.chapter li.chapter-item {
+  line-height: 1.55;
+  margin-block-start: .25em;
+}
+.chapter li a {
+  color: var(--sidebar-fg);
+  border-radius: 6px;
+  padding: 2px 4px;
+  transition: background-color .14s ease, color .14s ease;
+}
+.chapter li a:hover {
+  background: color-mix(in srgb, var(--sidebar-fg) 6%, transparent);
+  color: var(--prch-nav-active);
+}
+.chapter li a.active {
+  color: var(--prch-nav-active);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--links) 10%, transparent);
+}
+.chapter li.part-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--prch-nav-active);
+  margin-block: 18px 6px;
+  padding-inline-start: 4px;
+  opacity: .9;
+}
+.chapter li > a.toggle { opacity: .55; }
+.chapter li > a.toggle:hover { opacity: 1; color: var(--prch-nav-active); }
+
+.spacer {
+  height: 1px;
+  margin: 14px 0;
+  background: var(--prch-line-quiet);
+}
+
+/* ---------- main content ---------- */
+.content {
+  max-width: var(--prch-measure);
+  padding: 28px 0 60px;
+  font-family: var(--prch-serif);
+}
+
+/* page title block — mdBook renders <h1> at top of .content */
+.content > h1:first-child {
+  font-size: 2.05rem;
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 6px 0 28px;
+  letter-spacing: .005em;
+  color: var(--fg);
+}
+.content h2 {
+  font-size: 1.45rem;
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 2em 0 .6em;
+  letter-spacing: .005em;
+  color: var(--fg);
+  border-bottom: 1px solid var(--prch-line-quiet);
+  padding-bottom: .25em;
+}
+.content h3 {
+  font-size: 1.18rem;
+  font-weight: 600;
+  margin: 1.6em 0 .5em;
+  color: var(--fg);
+}
+.content h4, .content h5, .content h6 {
+  font-size: 1.02rem;
+  font-weight: 600;
+  margin: 1.2em 0 .4em;
+  color: var(--fg);
+}
+.content strong { color: var(--fg); }
+.content em { font-style: italic; }
+
+.content ul, .content ol { margin-block-end: 1em; padding-inline-start: 1.4em; }
+.content li { margin-block-end: .35em; }
+.content li::marker { color: var(--links); }
+
+/* links — quiet underline appears on hover */
+.content a:link,
+.content a:visited,
+#searchresults a {
+  color: var(--links);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color .16s ease, color .16s ease;
+}
+.content a:hover {
+  color: var(--links);
+  text-decoration-color: var(--links);
+}
+
+/* ---------- blockquote ---------- */
+.content blockquote {
+  margin: 1.2em .4em 1.2em 1em;
+  padding: .1em 0 .1em 1.1em;
+  border-inline-start: 3px solid var(--prch-line-soft);
+  color: color-mix(in srgb, var(--fg) 78%, transparent);
+  font-style: italic;
+  background: transparent;
+}
+
+.content hr {
+  border: 0;
+  border-top: 1px solid var(--prch-line-quiet);
+  margin: 2em 0;
+}
+
+/* ---------- inline code ---------- */
+:not(pre) > .hljs {
+  font-family: var(--prch-mono);
+  font-size: .85em;
+  padding: .08em .35em;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--fg) 7%, transparent);
+  color: var(--inline-code-color);
+  border: 1px solid var(--prch-line-quiet);
+}
+
+/* ---------- code blocks ---------- */
+pre {
+  border: 1px solid var(--prch-line-quiet);
+  border-radius: var(--prch-radius);
+  background: var(--quote-bg);
+  box-shadow: var(--prch-shadow);
+  overflow: hidden;
+}
+pre > code {
+  padding: 1rem 1.15rem;
+  font-size: 13.5px;
+  line-height: 1.65;
+  font-family: var(--prch-mono);
+  letter-spacing: 0;
+}
+.hljs { background: var(--quote-bg); }
+
+/* tighten the copy button position to sit in the rounded corner */
+pre > .buttons { top: 6px; right: 6px; }
+
+/* ---------- tables ---------- */
+.content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+  line-height: 1.65;
+  margin: 1.2em 0;
+  border: 1px solid var(--prch-line-quiet);
+  border-radius: var(--prch-radius);
+  overflow: hidden;
+}
+.content th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--fg);
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--links) 6%, transparent);
+  border-bottom: 1.5px solid var(--prch-line-soft);
+}
+.content td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--prch-line-quiet);
+}
+.content tbody tr:last-child td { border-bottom: 0; }
+.content tbody tr { transition: background .12s ease; }
+.content tbody tr:hover { background: color-mix(in srgb, var(--links) 4%, transparent); }
+
+/* ---------- figures ---------- */
+.content figure { margin: 1.6em 0; }
+.content figure img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  border-radius: var(--prch-radius);
+  background: var(--bg);
+  border: 1px solid var(--prch-line-quiet);
+}
+
+/* ---------- search ---------- */
+#searchbar {
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-family: var(--prch-serif);
+  border: 1px solid var(--prch-line-soft);
+}
+#searchbar:focus {
+  border-color: var(--links);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--links) 18%, transparent);
+}
+ul#searchresults li { border-radius: 6px; padding: 4px 8px; }
+ul#searchresults li.focus {
+  background: color-mix(in srgb, var(--links) 10%, transparent);
+}
+
+/* ---------- theme picker ---------- */
+.theme-popup {
+  border-radius: 8px;
+  box-shadow: var(--prch-shadow);
+  font-family: var(--prch-serif);
+}
+
+/* ---------- nav chapter arrows (wide) ---------- */
+.nav-chapters {
+  color: color-mix(in srgb, var(--fg) 35%, transparent);
+  font-family: var(--prch-serif);
+  transition: color .16s ease, background-color .16s ease;
+}
+.nav-chapters:hover {
+  color: var(--links);
+  background-color: color-mix(in srgb, var(--links) 6%, transparent);
+}
+
+/* ---------- progress bar (injected by book-enhance.js) ---------- */
+#prch-progress {
+  position: fixed; inset: 0 0 auto 0; height: 2px; z-index: 60;
+  background: transparent; pointer-events: none;
+}
+#prch-progress > span {
+  display: block; height: 100%; width: 0;
+  background: var(--links);
+  transition: width .1s linear;
+}
+
+/* ---------- to-top button (injected by book-enhance.js) ---------- */
+#prch-totop {
+  position: fixed; right: 22px; bottom: 22px; z-index: 45;
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  border-radius: var(--prch-radius);
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--prch-line-soft);
+  box-shadow: var(--prch-shadow);
+  font-family: var(--prch-serif);
+  font-size: 18px; line-height: 1;
+  cursor: pointer;
+  opacity: 0; pointer-events: none;
+  transform: translateY(6px);
+  transition: opacity .2s ease, transform .2s ease, color .16s ease, border-color .16s ease;
+}
+#prch-totop.show {
+  opacity: 1; pointer-events: auto; transform: none;
+}
+#prch-totop:hover {
+  color: var(--links);
+  border-color: var(--links);
+}
+
+/* ---------- focus visibility ---------- */
+a:focus-visible, button:focus-visible, input:focus-visible {
+  outline: 2px solid var(--links);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ---------- print ---------- */
+@media print {
+  body { font-size: 11pt; line-height: 1.6; }
+  .content { max-width: none; padding: 0; }
+  pre, .content table { break-inside: avoid; }
+  .content h1, .content h2, .content h3 { break-after: avoid; }
+  #menu-bar, .sidebar, #prch-progress, #prch-totop { display: none !important; }
+}
+
+/* ---------- responsive ---------- */
+@media only screen and (max-width: 720px) {
+  body { font-size: 16.5px; line-height: 1.8; }
+  .content { padding: 22px 0 48px; }
+  .content > h1:first-child { font-size: 1.7rem; }
+  .content h2 { font-size: 1.25rem; }
+}

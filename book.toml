@@ -15,7 +15,8 @@ preferred-dark-theme = "mocha"
 git-repository-url = "https://github.com/Gracker/android-internals-wiki"
 edit-url-template = "https://github.com/Gracker/android-internals-wiki/edit/master/{path}"
 site-url = "/"
-additional-css = ["theme/catppuccin.css"]
+additional-css = ["theme/catppuccin.css", "theme/book-parchment.css"]
+additional-js = ["theme/book-enhance.js"]
 no-section-label = true
 
 [output.html.search]
