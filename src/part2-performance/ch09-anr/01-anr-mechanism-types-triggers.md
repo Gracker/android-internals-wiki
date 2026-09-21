@@ -147,7 +147,7 @@ ANR（Application Not Responding，应用无响应）机制因此负责三项工
 | 前台服务启动 | `startForegroundService()` 建立前台化期限 | 服务按要求调用 `startForeground()` |
 | ContentProvider | 系统侧的 provider 调用监控被触发 | provider 调用返回 |
 
-输入派发的 AOSP 默认超时是 5 秒，设备还可能通过 `ro.hw_timeout_multiplier`（硬件超时倍数）和窗口级配置调整。广播、Service 等期限也会随前后台状态、目标 SDK 和组件类型变化，具体数值见 [9.1 ANR 机制、类型与触发条件](01-anr-mechanism-types-triggers.md)。若把所有 ANR 都概括为“主线程超过 5 秒”，就会掩盖不同检测器的触发条件。
+输入派发的 AOSP 默认超时是 5 秒，设备还可能通过 `ro.hw_timeout_multiplier`（硬件超时倍数）和窗口级配置调整。广播、Service 等期限也会随前后台状态、目标 SDK 和组件类型变化，具体数值见 [Input、Broadcast、Service 与 Provider 超时](#inputbroadcastservice-与-provider-超时) 一节。若把所有 ANR 都概括为“主线程超过 5 秒”，就会掩盖不同检测器的触发条件。
 
 #### `TimeoutRecord` 统一表达超时
 
@@ -410,7 +410,7 @@ PID 会被后续进程复用，应用进程也可能在 ANR 后重启。若只�
 - 主线程在期限耗尽前执行了长任务，dump 时任务刚刚结束，堆栈已经回到 `nativePollOnce()` 等待下一条消息；
 - 主线程 dump 时等待某把锁，持锁线程稍后释放，后续采样只留下普通业务帧。
 
-因此，主线程栈停在 `nativePollOnce()`，不能反向证明主线程此前一直空闲；主线程停在某个普通方法中，也不能单独证明该方法消耗了整个超时时间。官方 ANR 诊断文档也将“采样过晚而显示 idle 的主线程聚类”列为难以直接行动的线索。
+因此，主线程栈停在 `nativePollOnce()`，不能反向证明主线程此前一直空闲；主线程停在某个普通方法中，也不能单独证明该方法消耗了整个超时时间。官方 ANR 诊断文档也将“采样过晚而显示 idle 的主线程聚类”列为难以直接采取行动的线索。
 
 排查时可按下面的证据顺序推进：
 
@@ -505,7 +505,7 @@ Android 17 的常用类型可以先按下表定位。表中数值是 AOSP 源码
 
 #### 默认 5 秒从哪里来
 
-`InputDispatcher` 位于 native inputflinger（原生输入系统服务）。事件写入应用的 InputChannel（输入通道）后，待确认的 `DispatchEntry` 会留在 connection 的 `waitQueue` 中。应用完成输入处理并通过 `InputEventReceiver.finishInputEvent()` 方向回执后，该条目才离开等待队列。普通 View 事件通常由主线程处理，因此主线程阻塞是常见根因；不过，检测器直接监控的是输入连接有没有按时确认事件。
+`InputDispatcher` 位于 native inputflinger（原生输入系统服务）。事件写入应用的 InputChannel（输入通道）后，待确认的 `DispatchEntry` 会留在 connection 的 `waitQueue` 中。应用完成输入处理并通过 `InputEventReceiver.finishInputEvent()` 发回确认后，该条目才离开等待队列。普通 View 事件通常由主线程处理，因此主线程阻塞是常见根因；不过，检测器直接监控的是输入连接有没有按时确认事件。
 
 下面的源码用于确认 Android 17 怎样从 5 秒基础值、硬件超时倍率和窗口级配置计算实际超时：
 
@@ -796,7 +796,7 @@ adb pull /data/anr ./anr-traces
 | `No response to onStartJob/onStopJob` | JobService 主线程回调 |
 | `required notification not provided` | user-initiated job 的公开通知契约、内部 user-visible 状态 |
 
-Logcat 文案可能被 AMS 再次包装，因此不能要求整行文字与表格逐字相同。联合使用 `TimeoutRecord` kind、`ApplicationExitInfo` 子原因和原始 reason，分类会更可靠。
+Logcat 文案可能被 AMS 再次包装，因此不能要求整行文字与表格中的片段逐字相同。联合使用 `TimeoutRecord` kind、`ApplicationExitInfo` 子原因和原始 reason，分类会更可靠。
 
 ### Perfetto 中能确认什么
 
