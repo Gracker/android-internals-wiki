@@ -241,7 +241,7 @@ BiometricPrompt 等待阶段需要单独记录：
 
 ### StrongBox、TEE 与 security level
 
-Android 9 / API 28 及以上设备可以提供 StrongBox KeyMint。TEE 与 Android 主系统隔离运行，StrongBox 则使用隔离程度更高的安全硬件。StrongBox 面向更高的物理攻击和侧信道风险，但通常速度更慢、资源更少、并发能力更低，因此多数应用无需默认选择。
+Android 9 / API 28 及以上设备可以提供 StrongBox KeyMint。TEE 与 Android 主系统隔离运行，StrongBox 则使用隔离程度更高的安全硬件。StrongBox 面向物理攻击和侧信道风险更高的场景，但通常速度更慢、资源更少、并发能力更低，因此多数应用无需默认选择。
 
 #### 区分设备能力与业务策略
 
@@ -291,7 +291,7 @@ AOSP KeyMint AIDL 自 Android 12 / API 31 起就把 `IKeyMintDevice.begin()` 的
 - 多个 SDK 各自使用无界线程池访问 Keystore。
 - 超时后保留旧 `Cipher`，同时开始新一轮重试。
 
-Keystore 工作线程池应限制最大线程数，通常一到少量线程即可。合适的并发值要分别在 TEE 和 StrongBox 上压测确定，不能直接照搬 CPU 核数。
+Keystore 工作线程池应限制最大线程数，通常一到几条线程即可。合适的并发值要分别在 TEE 和 StrongBox 上压测确定，不能直接照搬 CPU 核数。
 
 ### 冷启动和登录的线程调度
 
