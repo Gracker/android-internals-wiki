@@ -87,7 +87,7 @@ ART 为小对象提供线程本地分配快路径。TLAB（Thread-Local Allocati
 
 Android 17 `collector_type.h` 将 `kCollectorTypeCMC` 定义为 **Concurrent mark-compact**。`heap.cc` 在 `gUseUserfaultfd` 为真时校验前台收集器为 CMC、后台收集器为 CMCBackground；启用 generational GC（分代垃圾回收）时，还会创建负责年轻代的 `YoungMarkCompact`。`runtime.cc` 对 generational GC 的选择同时检查 collector 能力、`-Xgc` 选项和 `ShouldUseGenerationalGC()`。
 
-这几处源码说明 Android 17 具备 CMC 与 generational CMC 路径。源码中存在 `YoungMarkCompact`，不代表每台 Android 17 设备、每个进程都使用同一运行参数。OEM 配置、ART Mainline 模块和进程选项仍可能影响选择；取证时可从 ART 启动日志中的 collector 描述核对当前进程。
+这几处源码说明 Android 17 具备 CMC 与 generational CMC 路径。源码中存在 `YoungMarkCompact`，不代表每台 Android 17 设备、每个进程都使用同一运行参数。OEM 配置、ART Mainline 模块和进程选项仍可能影响选择；取证时可从 ART 启动日志中的 collector 描述，核对当前进程实际使用的收集器。
 
 CMC 的 `mark_compact.cc` 检查 `UFFD_FEATURE_SIGBUS` 与 `MREMAP_DONTUNMAP`，并实现 `SigbusHandler()` 处理压缩期间的页面访问。kernel 侧对应实现按 `android17-6.18-2026-06_r6` 的 `fs/userfaultfd.c` 与 `mm/mremap.c` 核对。该机制用于缩短并发压缩对 mutator（执行应用代码的线程）的阻塞范围，但不会消除 GC 工作量。应用持续制造短命对象时，年轻代回收、CPU 占用和 allocation stall（分配等待）仍然需要测量。
 
@@ -144,7 +144,7 @@ class MeterView @JvmOverloads constructor(
 
 ### 字符串与日志
 
-循环中的 `result += item` 会反复生成新的 String 内容。日志参数也会在调用前求值，日志方法内部再判断开关已经来不及避免参数构造。
+循环中的 `result += item` 会反复生成新的 String 内容。日志参数在调用前就会求值；等日志方法内部再判断开关，参数已经构造完成。
 
 下面的示例把多次不可变字符串拼接改成使用同一个 builder（可变构建器）完成。
 
@@ -173,7 +173,7 @@ fun joinNames(items: List<String>): String = buildString {
 | `HashMap<Long, T>` | `LongSparseArray<T>` |
 | `List<Int>` 的密集数值计算 | `IntArray` |
 
-`SparseArray` 使用排序后的原始类型 key 数组，能省去 key 装箱；它与哈希表的查找、插入特征不同。数据规模和更新模式必须通过 benchmark（基准测试）决定，不能按“元素超过某个数量”设置统一切换点。
+`SparseArray` 使用排序后的原始类型 key 数组，能省去 key 装箱；它与哈希表的查找、插入特征不同。选哪种结构要在真实数据规模和更新模式下用 benchmark（基准测试）决定，不能按“元素超过某个数量”设置统一切换点。
 
 ### 大型 buffer 与图像
 
@@ -257,11 +257,11 @@ Android framework 的 `Message.obtain()`、`MotionEvent.obtain()` 等 API 使用
 - 每个字段都能可靠重置；
 - 池命中率、容量与内存占用可观测。
 
-池会延长对象存活期，也可能增加同步、清理和泄漏风险。小型不可变对象或构造很便宜的对象通常交给 ART 更合适。池大小不能照搬 16、32 等经验数字，应由并发峰值和命中率决定。
+池会延长对象存活期，也可能增加同步、清理和泄漏风险。小型不可变对象或构造成本很低的对象，通常交给 ART 更合适。池大小不能照搬 16、32 等经验数字，应由并发峰值和命中率决定。
 
 ### 不调用 `System.gc()` 治理抖动
 
-`System.gc()` 只是向虚拟机提出 GC 请求，既不保证立即执行，也不消除分配源。主动请求可能把回收安排到用户操作期间。测试工具可在明确目的下触发 GC；产品代码应修正分配速率、生命周期和容量。
+`System.gc()` 只是向虚拟机提出 GC 请求，既不保证立即执行，也不消除分配源。主动请求可能让回收落在用户操作期间。测试工具可在明确目的下触发 GC；产品代码应修正分配速率、生命周期和容量。
 
 ## Kotlin value class 的边界
 
@@ -280,7 +280,7 @@ Compose Runtime 通过 SlotTable/LinkTable（记录组合树结构的数据表�
 
 ### `remember` 解决的是重组期重建
 
-在 composable（可组合函数）中直接创建集合、格式化器或状态对象，会在该代码重新执行时创建新实例。需要跨重组保存的对象可用 `remember(keys)` 缓存，并让 key 精确描述对象何时失效。
+在 composable（可组合函数）中直接创建集合、格式化器或状态对象，这段代码每次重新执行都会创建新实例。需要跨重组保存的对象可用 `remember(keys)` 缓存，并让 key 精确描述对象何时失效。
 
 下面的示例让 formatter 只在 locale 改变时重建。
 
