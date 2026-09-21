@@ -200,7 +200,7 @@ ART 状态 `Native` 表示线程正在原生代码中，不能据此判断它是
 
 对象地址 `<0x0e57c91f>` 将两段栈连成一条等待边：主线程等待 `CacheWriter`，后者持锁执行同步写盘。若 `CacheWriter` 又等待主线程持有的另一把锁，等待图会形成循环，可以判定为死锁；没有形成循环时，则属于长临界区或锁竞争。常见修复方向是缩短持锁范围、把 I/O 移出临界区，或统一多把锁的获取顺序。
 
-不能只在所有工具中搜索 `tid=89`。ART 的 `tid` 是 ART 内部线程编号，Linux 的 `sysTid` 是内核线程 ID，Perfetto 的 TID 对应 Linux 线程；在 ANR trace 内按 ART `tid` 找持锁者，切换到 Perfetto 时要使用 `sysTid`。
+不能拿 `tid=89` 在所有工具中搜索。ART 的 `tid` 是 ART 内部线程编号，Linux 的 `sysTid` 是内核线程 ID，Perfetto 的 TID 对应 Linux 线程；在 ANR trace 内按 ART `tid` 找持锁者，切换到 Perfetto 时要使用 `sysTid`。
 
 #### 识别 Binder 等待
 
@@ -472,7 +472,7 @@ Android 17 的 ANR 路径可能输出两套 `ProcessCpuTracker` 结果，两者�
 
 #### 4. 为主线程分类
 
-把期限分为 Running、Runnable、Sleeping、monitor blocked、Binder wait 和 I/O/`D` wait。先找持续时间最长的区间，再阅读该区间的调用栈、锁和 flow。采样栈与时间线一致时可以提高结论置信度；不一致时要说明线程状态在超时与采样之间如何变化。
+把期限内主线程的状态分为 Running、Runnable、Sleeping、monitor blocked、Binder wait 和 I/O/`D` wait。先找持续时间最长的区间，再阅读该区间的调用栈、锁和 flow。采样栈与时间线一致时可以提高结论置信度；不一致时要说明线程状态在超时与采样之间如何变化。
 
 #### 5. 沿等待边追到资源拥有者
 
@@ -480,7 +480,7 @@ Android 17 的 ANR 路径可能输出两套 `ProcessCpuTracker` 结果，两者�
 
 #### 6. 检查系统放大因素
 
-检查 CPU 竞争与频率、thermal、GC、reclaim（内存回收）、PSI、lmkd（低内存回收守护进程）、I/O 和 freezer。系统异常与应用慢路径可以同时存在，报告中要分别列出主因、触发条件和让超时更容易发生的因素。
+检查 CPU 竞争与频率、thermal、GC、reclaim（内存回收）、PSI、lmkd（低内存终止守护进程）、I/O 和 freezer。系统异常与应用慢路径可以同时存在，报告中要分别列出主因、触发条件和让超时更容易发生的因素。
 
 #### 7. 用反事实验证修复
 
@@ -1091,7 +1091,7 @@ Java 栈停在 `FileDescriptor.sync()`、SQLite checkpoint 或资源读取附近
 
 insert→issue 可以反映 request 在块队列中的一段等待，issue→complete 覆盖驱动可见的服务阶段。文件系统准备、page cache、reclaim、request merge（请求合并）、device mapper 和完成后的线程唤醒，都在这两个区间之外。
 
-这些 raw event 没有一个能在所有事件中稳定使用的 request id。仅用 `dev + sector`（设备号与扇区号）配对，会在并发、merge、split（请求拆分）、重复访问同一扇区和 partial completion（部分完成）时发生错配。完成事件也常在 IRQ 或 kworker（内核工作线程）上下文触发，不能按 `ftrace_event.utid` 归属到最初发起 I/O 的应用。
+这些 raw event 都没有可以稳定跨事件使用的 request id。仅用 `dev + sector`（设备号与扇区号）配对，会在并发、merge、split（请求拆分）、重复访问同一扇区和 partial completion（部分完成）时发生错配。完成事件也常在 IRQ 或 kworker（内核工作线程）上下文触发，不能按 `ftrace_event.utid` 归属到最初发起 I/O 的应用。
 
 下面的查询用于查看目标窗口内块事件的真实参数，避免进行依据不足的一对一配对：
 
