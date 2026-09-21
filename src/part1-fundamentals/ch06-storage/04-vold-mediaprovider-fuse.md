@@ -104,7 +104,7 @@ MediaProvider 同时负责两种角色：
 - 作为 ContentProvider（跨进程数据提供组件），维护媒体索引并处理 MediaStore 的查询、插入、更新、删除和打开 URI。
 - 作为共享存储 FUSE handler（请求处理器），根据 UID（Linux 用户标识）、包归属、权限、脱敏与转码状态处理文件系统请求。
 
-这两种入口最终可能访问同一份底层文件，但 Binder（Android 进程间通信机制）查询、Provider 打开文件和直接路径进入 FUSE 的前半段不同。`content://` URI 是通过 ContentProvider 标识数据的地址，不能简化成“换一种字符串表示的 `/storage` 路径”。
+这两种入口最终可能访问同一份底层文件，但前半段不同：一种经过 Binder（Android 进程间通信机制）查询和 Provider 打开文件，另一种直接进入 FUSE。`content://` URI 是通过 ContentProvider 标识数据的地址，不能简化成“换一种字符串表示的 `/storage` 路径”。
 
 ## 两类常见 I/O 路径
 
