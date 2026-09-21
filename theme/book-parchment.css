@@ -36,6 +36,7 @@
                  "Parchment Serif", monospace;
 
   --prch-measure: 46rem;        /* ideal reading width ~ 720-740px */
+  --prch-measure-wide: 64rem;  /* wide content (figures, tables) on big screens */
   --prch-line: 1.85;            /* book-page rhythm */
   --prch-base:  17px;           /* body font-size */
   --prch-radius: 10px;
@@ -150,11 +151,40 @@ p { text-wrap: pretty; }
   background: var(--prch-line-quiet);
 }
 
-/* ---------- main content ---------- */
+/* ---------- main content ----------
+   .content fills the available width (viewport minus sidebar). The reading
+   measure (~46rem) is applied to *text blocks* (p/li/h*/blockquote/ul/ol)
+   so tables, code blocks, figures, and the blockquote-rule can stretch to
+   use the leftover width on wide screens — only text lines stay book-width. */
 .content {
-  max-width: var(--prch-measure);
   padding: 28px 0 60px;
   font-family: var(--prch-serif);
+}
+
+/* text blocks: cap the reading measure but center within the wide container */
+.content > h1:first-child,
+.content > p,
+.content > ul,
+.content > ol,
+.content > blockquote,
+.content > dl,
+.content > h2,
+.content > h3,
+.content > h4,
+.content > h5,
+.content > h6 {
+  max-width: var(--prch-measure);
+  margin-inline-start: 0;
+  margin-inline-end: auto;
+}
+/* headings centered to the measure block */
+.content > h1:first-child,
+.content > h2,
+.content > h3,
+.content > h4,
+.content > h5,
+.content > h6 {
+  margin-inline-start: 0;
 }
 
 /* page title block — mdBook renders <h1> at top of .content */
@@ -261,6 +291,7 @@ pre > .buttons { top: 6px; right: 6px; }
 /* ---------- tables ---------- */
 .content table {
   width: 100%;
+  max-width: var(--prch-measure-wide);
   border-collapse: collapse;
   font-size: 14.5px;
   line-height: 1.65;
@@ -286,7 +317,7 @@ pre > .buttons { top: 6px; right: 6px; }
 .content tbody tr:hover { background: color-mix(in srgb, var(--links) 4%, transparent); }
 
 /* ---------- figures ---------- */
-.content figure { margin: 1.6em 0; }
+.content figure { margin: 1.6em 0; max-width: var(--prch-measure-wide); }
 .content figure img {
   max-width: 100%;
   height: auto;
