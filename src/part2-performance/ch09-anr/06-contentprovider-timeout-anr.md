@@ -110,7 +110,7 @@ AMS 启动承载 Provider 的进程后，把对应的 `ContentProviderRecord` �
 - delay：`CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`；
 - `obj`：宿主 `ProcessRecord`。
 
-这个 10 秒窗口不包含 Zygote fork（由 Zygote 创建应用进程）到进程 attach 之前的时间。它覆盖 attach 之后的 `bindApplication` 准备、Application 实例创建、Provider 安装及各 Provider 的 `onCreate()`。
+这个 10 秒窗口从进程 attach 开始计时，不包含 Zygote fork（由 Zygote 创建应用进程）到 attach 之间的时间。它覆盖 attach 之后的 `bindApplication` 准备、Application 实例创建、Provider 安装及各 Provider 的 `onCreate()`。
 
 Android 17 的 `ActivityThread.handleBindApplication()` 顺序很容易被写反：
 
@@ -187,7 +187,7 @@ system_server 同时为该 `ContentProviderRecord` 安排 `WAIT_FOR_CONTENT_PROV
 
 应用侧等待结束后若 holder 仍为空，`acquireProvider()` 记录 `Failed to find provider info` 并返回 `null`。shell 等 external client（外部调用方）的特殊路径会在 `system_server` 内等待同一 ready 预算，到期后写入 `Timeout waiting for provider` 并返回 `null`。
 
-Ready timeout 比 publish guard 长 10 秒，是为了给宿主的 publish timeout、进程清理和等待方通知留下顺序空间。它不会把等待方或 Provider 宿主直接送入 `AnrHelper`。
+Ready timeout 比 publish guard 长 10 秒，是为了让宿主的 publish timeout、进程清理和等待方通知依次完成。它不会把等待方或 Provider 宿主直接送入 `AnrHelper`。
 
 这里还有一个同时运行的计时器：调用方若在 UI 线程同步执行 `ContentResolver.query()`，可能在 ready timeout 到达前，就因输入事件、Service 或 Broadcast 的期限到期而发生调用方 ANR。栈中常见 `ActivityThread.acquireProvider()`、`Object.wait()` 或 AMS Binder 调用。归因时要写“调用方主线程同步等待 Provider 发布”，不能标成 call detector 触发的 Provider ANR。
 
@@ -238,7 +238,7 @@ Android 17 源码还包含受 feature flag（功能开关）控制的 `setDetect
 
 `REMOTE_CONTENT_PROVIDER_TIMEOUT_MILLIS` 用于通过 ActivityManager 异步获取远程 MIME type 等结果，预算包含 ready timeout 再加 3 秒回调等待。
 
-这两条到期路径会结束 `ResultListener` 等待，再由调用点返回 `null`、传播记录的异常或返回能力较弱的结果。它们没有调用 `appNotRespondingViaProvider()`。看到 3 秒或 23 秒等待，不能据此声称 Provider 宿主发生 ANR。
+这两条到期路径会结束 `ResultListener` 等待，再由调用点返回 `null`、传播记录的异常，或返回降级结果。它们没有调用 `appNotRespondingViaProvider()`。看到 3 秒或 23 秒等待，不能据此声称 Provider 宿主发生 ANR。
 
 ## 6. 诊断决策表
 
