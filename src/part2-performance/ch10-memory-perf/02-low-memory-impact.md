@@ -119,7 +119,7 @@ Pressure Stall Information（PSI，资源压力停顿信息）统计任务因 CP
 - `avg10`、`avg60`、`avg300`：滚动时间窗平均值。
 - `total`：累计停顿时间，单位为微秒。
 
-`full` 为零不能证明系统没有内存压力；只要仍有其他任务能运行，压力可能只反映在 `some`。PSI 也不告诉我们哪一页、哪个进程或哪条分配路径造成停顿，需要结合回收和进程数据。
+`full` 为零不能证明系统没有内存压力；只要仍有其他任务能运行，压力可能只反映在 `some`。PSI 也不会指出哪一页、哪个进程或哪条分配路径造成停顿，还要结合回收与进程数据一起分析。
 
 下面的命令用于查看当前 PSI、vmstat、ZRAM 与进程退出记录：
 
@@ -130,13 +130,13 @@ adb shell cat /proc/swaps
 adb shell dumpsys activity exit-info com.example.app
 ```
 
-`/proc/pressure/memory` 是系统级累计与平均信息，`vmstat` 需要用两个时间点做差分。退出记录负责确认进程死亡原因，不能用当前 PSI 值反推过去某次退出。
+`/proc/pressure/memory` 是系统级累计与平均信息，`vmstat` 需要用两个时间点做差分。要确认进程死亡原因，应查看退出记录，不能用当前 PSI 值反推过去某次退出。
 
 ## 3. Android 17 的两个 PSI 消费者
 
 ### 3.1 lmkd
 
-Android 17 的 lmkd（low memory killer daemon，低内存终止守护进程）启动时初始化 PSI monitors（压力事件监听器）。默认新策略不使用 LOW 档，把 MEDIUM 映射到可配置的 partial stall（部分任务停顿），把 CRITICAL 映射到可配置的 complete stall（所有非空闲任务停顿）。收到 PSI 事件后，lmkd 还会读取 zone watermark、swap、working-set refault / thrashing（工作集页面频繁换入造成的抖动）、进程 `oom_score_adj`（进程受保护级别）与 footprint（内存占用），再决定是否选择进程。
+Android 17 的 lmkd（low memory killer daemon，低内存终止守护进程）启动时初始化 PSI monitors（压力事件监听器）。新的默认策略不使用 LOW 档，把 MEDIUM 映射到可配置的 partial stall（部分任务停顿），把 CRITICAL 映射到可配置的 complete stall（所有非空闲任务停顿）。收到 PSI 事件后，lmkd 还会读取 zone watermark、swap、working-set refault / thrashing（工作集页面频繁换入造成的抖动）、进程 `oom_score_adj`（进程受保护级别）与 footprint（内存占用），再决定是否选择进程。
 
 `use_minfree_levels` 在 Android 17 影响 kill strategy（终止进程策略），不能解释成旧版 `ro.lmk.use_psi=false`。Android 17 源码已经没有该 PSI 开关的旧用法。
 
@@ -167,7 +167,7 @@ LowMemDetector 与 lmkd 读取同一个 PSI 子系统，但监听配置和动作
 
 ## 4. lmkd kill 怎样转化为用户性能损失
 
-cached process 被终止后，物理内存得到回收。用户再次访问该 App 时，需要创建进程、加载代码与资源、初始化 Application / ContentProvider、恢复 Activity 和业务状态。代价取决于包体、I/O、初始化工作、编译状态和系统压力，不能用一个固定毫秒数概括。
+cached process 被终止后，物理内存得到回收。用户再次访问该 App 时，系统需要创建进程、加载代码与资源、初始化 Application / ContentProvider、恢复 Activity 和业务状态。代价取决于包体、I/O、初始化工作、编译状态和系统压力，不能用一个固定毫秒数概括。
 
 评估低内存的产品影响时，建议关联：
 
@@ -326,7 +326,7 @@ Android 17 的 `CachedAppOptimizer` 同时包含 cached app compaction（缓存�
 
 ### 8.4 cgroup、Task Profiles 与 Android 17 Memory Limiter
 
-Android 的 cgroup（控制组）抽象和 Task Profiles（任务资源配置）负责进程分组与资源策略。PSI 负责度量 stall（资源停顿），lmkd 负责在压力下选择进程，这三者不能写成一个开关。
+Android 的 cgroup（控制组）抽象和 Task Profiles（任务资源配置）负责进程分组与资源策略。PSI 负责度量 stall（资源停顿），lmkd 负责在压力下选择进程。这三项职责不能写成一个开关。
 
 Android 17 还在部分设备启用 App Memory Limiter。`MemoryLimiter.java` 为 visible / not-visible 状态配置 cgroup `memory.high` 与 `memory.swap.high`；越限后可采集诊断并终止目标进程。它的退出记录是 `REASON_OTHER` + `MemoryLimiter:AnonSwap`，与 lmkd 的系统压力 kill 分开统计。
 
