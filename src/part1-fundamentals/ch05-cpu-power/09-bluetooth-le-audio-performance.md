@@ -277,7 +277,7 @@ HFP active-device handover 属于 Classic 通话路径，不应和 LE Audio rout
 - 先确认当前采用 Host 还是 offload 路径，再比较 A2DP 与 LE Audio；
 - 同时记录丢包、重传和 glitch，避免把牺牲可靠性换来的低功耗当成优化收益。
 
-手机侧优先使用外部电源监测或设备电源轨；耳机侧需要夹具、电池电量计或厂商遥测。`batterystats` 适合观察系统归因和长期趋势，却很难单独分离几十毫秒周期内的 Codec 与射频成本。没有同时说明设备、固件、测量仪器和置信区间的 Pixel 电流范围，不能作为通用参考数据。
+手机侧优先使用外部电源监测或设备电源轨；耳机侧需要夹具、电池电量计或厂商遥测。`batterystats` 适合观察系统归因和长期趋势，却很难单独分离几十毫秒周期内的 Codec 与射频成本。如果 Pixel 电流范围不同时说明设备、固件、测量仪器和置信区间，就不能作为通用参考数据。
 
 ## 广播音频与 Auracast
 
@@ -358,7 +358,7 @@ Wireshark 字段名会随 dissector（协议解析器）版本变化。`btatt` �
 
 ### 第三步：用 Perfetto 看 Host 侧
 
-Perfetto 适合检查 AudioFlinger 线程、Binder、调度、CPU idle/frequency 和 wakeup；HCI snoop 更适合还原空口控制过程与 ISO 数据包。Android 17 没有 AOSP 保证提供、名为 `android.bluetooth` 的专用 Perfetto data source（数据源），也不能假定所有产品都有 `btif_le_audio_thread` 这条固定轨道。
+Perfetto 适合检查 AudioFlinger 线程、Binder、调度、CPU idle/frequency 和 wakeup；HCI snoop 更适合还原空口控制过程与 ISO 数据包。AOSP 不保证 Android 17 提供名为 `android.bluetooth` 的专用 Perfetto data source（数据源），也不能假定所有产品都有 `btif_le_audio_thread` 这条固定轨道。
 
 采集前应先查询目标系统构建支持的数据源与 atrace categories（可跟踪类别），再选择：
 
