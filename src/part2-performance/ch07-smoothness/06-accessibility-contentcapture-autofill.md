@@ -362,7 +362,7 @@ Android 17 的 AOSP dump 没有通用的“Event Dispatch Statistics”或“Int
 
 ### 运行时上下文与隐私
 
-`AccessibilityManager.isEnabled()` 用来查询框架当前是否启用了无障碍事件发送。Android 17 的 Javadoc 明确提醒，应用不应根据这个布尔值切换产品 UI 或交互路径；专门设置的分支往往测试不足，容易让辅助技术用户进入维护较差的体验。
+`AccessibilityManager.isEnabled()` 用来查询框架当前是否启用了无障碍事件发送。Android 17 的 Javadoc 明确提醒，应用不应根据这个布尔值切换产品 UI 或交互路径；专门设置的分支往往测试不足，容易让辅助技术用户得到维护较差的体验。
 
 性能监控可把以下信息作为受控实验上下文：
 
