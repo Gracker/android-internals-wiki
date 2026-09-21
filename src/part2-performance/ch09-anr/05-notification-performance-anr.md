@@ -87,7 +87,7 @@ last_idle_audit_run_id: 20260829-183504-idle-audit-cb8e7f3a
 | SystemUI 消费并渲染 | SystemUI 创建/复用视图、加载图片和主线程提交界面 | 通知延迟显示、面板卡顿；有输入事件时可能形成 SystemUI Input ANR |
 | NLS 接收回调 | 监听器的 Binder stub（接收跨进程调用的入口）把消息转给主线程 `MyHandler` | 监听器回调积压；进程持有窗口且输入超时时可能形成自己的 Input ANR |
 
-前台服务还有一条相邻的超时：调用 `startForegroundService()` 后若没有及时完成 `Service.startForeground()`，AMS（ActivityManagerService）的 `serviceForegroundTimeout()` 会为该服务构造 timeout record（超时记录）、停止仍在等待的服务，并延迟派发 `SERVICE_FOREGROUND_TIMEOUT_ANR_MSG`；`serviceForegroundCrash()` 则使用 `ForegroundServiceDidNotStartInTimeException` 报告崩溃路径。复杂通知经常消耗这段时间预算，所以诊断报告仍会把它与通知性能放在一起，但要按前台服务转换超时单独建线。
+前台服务还有一条相邻的超时：调用 `startForegroundService()` 后若没有及时完成 `Service.startForeground()`，AMS（ActivityManagerService）的 `serviceForegroundTimeout()` 会为该服务构造 timeout record（超时记录）、停止仍在等待的服务，并延迟派发 `SERVICE_FOREGROUND_TIMEOUT_ANR_MSG`；`serviceForegroundCrash()` 则使用 `ForegroundServiceDidNotStartInTimeException` 报告崩溃路径。复杂通知经常消耗这段时间预算，所以诊断报告仍会把它与通知性能放在一起，但要按前台服务转换超时单独归类。
 
 ## 通知发布流程与 ANR 触发点
 
@@ -270,7 +270,7 @@ public class MyNotificationListener extends NotificationListenerService {
 }
 ```
 
-这段代码会延迟该 listener 本次回调结束的时间，也会推迟后续主线程消息。若进程没有窗口或输入连接，回调耗时过长只表现为通知处理积压；只有输入事件也被派发到该进程，并且等待超过 InputDispatcher 预算时，才会形成 Input ANR。
+这段代码会延长该 listener 本次回调的执行时间，也会推迟后续主线程消息。若进程没有窗口或输入连接，回调耗时过长只表现为通知处理积压；只有输入事件也被派发到该进程，并且等待超过 InputDispatcher 预算时，才会形成 Input ANR。
 
 ### 回调只做快照与转交
 
@@ -348,7 +348,7 @@ trace 位于 `NotificationManager.notify*()`、`BinderProxy.transactNative()` �
 
 `ProgressStyle` 描述通知内容。Live Update 则表示系统是否把 ongoing（持续进行中）通知提升为 promoted ongoing，并放到更显眼的 surface。它还要满足 manifest permission（清单声明的权限）、channel importance（渠道重要性）、样式和用户设置等条件；OEM 可以增加资格规则。
 
-官方 Android 17 文档允许 Standard、`BigTextStyle`、`CallStyle`、`ProgressStyle` 和 `MetricStyle` 申请 Live Update，并禁止设置 `customContentView`。这条限制减少了 Live Update 上任意自定义布局，但不能据此保证某个通知耗时一定降低。
+官方 Android 17 文档允许 Standard、`BigTextStyle`、`CallStyle`、`ProgressStyle` 和 `MetricStyle` 申请 Live Update，并禁止设置 `customContentView`。这条限制排除了 Live Update 上的任意自定义布局，但不能据此保证某个通知耗时一定降低。
 
 ### MetricStyle 与 Semantic Coloring
 
@@ -539,7 +539,7 @@ adb logcat -b system -d | grep -E \
 
 ### 「Icon 构造方式对性能没影响」
 
-resource、URI 和 bitmap 分别会产生资源解析、延迟读取解码和共享内存复制成本。bitmap 应预先缩放；URI 要保证授权在通知存活期间有效；resource 要保证接收端能解析对应包和资源。选择依据是图片来源、更新频率和目标尺寸，不存在适用于所有来源的统一性能排序。
+resource、URI 和 bitmap 的成本分别落在资源解析、延迟读取与解码、共享内存复制上。bitmap 应预先缩放；URI 要保证授权在通知存活期间有效；resource 要保证接收端能解析对应包和资源。选择依据是图片来源、更新频率和目标尺寸，不存在适用于所有来源的统一性能排序。
 
 ## 参考资料
 
