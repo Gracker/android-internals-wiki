@@ -275,7 +275,7 @@ AMS 的 callback 表按 UID 分组。一个包的主进程和 `:remote` 进程�
 
 ### 6. warning 发生在 deadline 前
 
-旧式 ANR 线程转储在 deadline 到期后才开始，容易遇到取样变旧。Android 17 warning 的时序更早：
+旧式 ANR 线程转储在 deadline 到期后才开始，取样时现场往往已经变化。Android 17 warning 的时序更早：
 
 ```text
 计时器开始
@@ -418,7 +418,7 @@ Android 17 的 `AnrWarningController` 在目标 UID 已经注册 callback 时发
 | `matched_exit` | 是否匹配到最终 `ApplicationExitInfo.AnrInfo` |
 | `evidence_refs` | trace、breadcrumb、日志文件的索引 |
 
-warning 对恢复样本也有价值。若同一业务阶段出现大量 warning 后恢复，说明该阶段经常接近 deadline，适合在产生用户可感知 ANR 前优化耗时。
+warning 对恢复样本也有价值。若同一业务阶段反复出现“warning 后恢复”的样本，说明该阶段经常接近 deadline，适合在产生用户可感知 ANR 前优化耗时。
 
 ### 12. 常见误解
 
@@ -558,7 +558,7 @@ consumed   = actual_timeout - (timeout_end - now)
 | 3000 ms | 1500 ms | 2000 ms | 1000 ms |
 | 1000 ms | 500 ms | 2000 ms | 首次检查时立即满足 |
 
-默认 5 秒路径恰好在一半附近发出 warning。自定义 timeout 较短时，warning 会早于 50% 进度；若计算出的 `warning_at` 已经过去，InputDispatcher 会立即排队通知。
+默认 5 秒路径恰好在一半附近发出 warning。自定义 timeout 较短时，warning 的触发点会早于 50% 进度；若计算出的 `warning_at` 已经过去，InputDispatcher 会立即排队通知。
 
 `notifiedPreAnr` 保证同一 `mNoFocusedWindowAnrState` 只排队一次。状态被重置后，新事件可以开始新的预警周期。
 
@@ -599,7 +599,7 @@ flowchart TD
 
 `AnrWarningController` 再向该 UID 下已经注册 listener（监听器）的进程投递。warning payload（载荷）没有 PID 或 Activity token（系统识别 Activity 的句柄）；多进程应用应按 `(type, id, boot/session)` 去重，其中 boot/session 表示本次开机或应用会话。
 
-公开 API、类型清单和载荷字段见 [9.7 Android 17 ANR 预警与 Input pre-ANR](07-android17-anr-prewarning.md)。
+公开 API、类型清单和载荷字段见本章前文“公开回调、类型与交付约束”。
 
 ### 5. warning 时可选的 Long Method Trace
 
