@@ -84,7 +84,7 @@ consolidated_from:
 
 # 卡顿定义、分类与原因体系
 
-卡顿需要相对具体刷新周期和帧截止时间定义。确认哪一帧晚到后，再沿主线程、RenderThread、GPU、SurfaceFlinger 和显示链路定位责任阶段。
+卡顿需要相对具体的刷新周期和帧截止时间来定义。确认哪一帧晚到后，再沿主线程、RenderThread、GPU、SurfaceFlinger 和显示链路定位责任阶段。
 
 ## 帧截止时间、卡顿类型与统计口径
 
@@ -112,7 +112,7 @@ consolidated_from:
 | 90 Hz | 11.11 ms |
 | 120 Hz | 8.33 ms |
 
-这些数字表示显示刷新周期，并非主线程（MainThread）、RenderThread 和 SurfaceFlinger 必须依次执行完毕的总耗时。Android 显示栈采用流水线：标准 HWUI（Android 硬件加速 UI 渲染器）窗口通常经过 `Choreographer#doFrame`（一帧 UI 工作的回调入口）、RenderThread（渲染线程）、BLASTBufferQueue（图形缓冲区队列）、SurfaceFlinger（系统合成服务）、HWC（Hardware Composer，硬件合成器）与 display present（显示提交）。每一段都有自己的调度窗口和同步边界。120 Hz 会缩短相邻刷新周期，但不能据此要求每个 slice（时间区间）都小于 8.33 ms；应比较该帧的 expected timeline、actual timeline、finish 状态与 present 结果。
+这些数字表示显示刷新周期，并非主线程（MainThread）、RenderThread 和 SurfaceFlinger 依次执行完毕所需的总耗时。Android 显示栈采用流水线：标准 HWUI（Android 硬件加速 UI 渲染器）窗口通常经过 `Choreographer#doFrame`（一帧 UI 工作的回调入口）、RenderThread（渲染线程）、BLASTBufferQueue（图形缓冲区队列）、SurfaceFlinger（系统合成服务）、HWC（Hardware Composer，硬件合成器）与 display present（显示提交）。每一段都有自己的调度窗口和同步边界。120 Hz 会缩短相邻刷新周期，但不能据此要求每个 slice（时间区间）都小于 8.33 ms；应比较该帧的 expected timeline、actual timeline、finish 状态与 present 结果。
 
 同一个应用还可能存在多种出图路径。标准 App Window 的像素生产者通常在应用进程，SurfaceView、Camera、Video、Native Graphics、Flutter 或游戏可能使用独立 Surface、独立 layer（图层）或其他生产线程。分析前应确认四个对象：谁生产 buffer（图形缓冲区）、buffer 进入哪个 Surface、对应哪个 layer，以及由 HWC 还是 RenderEngine（SurfaceFlinger 的 GPU 合成引擎）完成相关合成。出图类型判断错误时，针对主线程或 RenderThread 得出的结论便无法覆盖整幅画面。
 
@@ -181,7 +181,7 @@ Android 17 还定义了 `JankSeverityType`：`Unknown`、`None`、`Partial` 和 
 - SurfaceFlinger 层关注 CPU/GPU deadline、SF scheduling 与 SF stuffing，检查合成线程、RenderEngine、HWC 调用和调度；
 - Display 层关注 `DisplayHAL` 及显示状态变化，检查 Composer HAL、present fence、显示模式与电源模式切换。
 
-`PredictionError`、`Dropped`、`Unknown` 和 `BufferStuffing` 需要结合 SurfaceFrame、DisplayFrame 及相邻帧判断。直接归给单一进程，会遗漏形成结果所需的前后条件。
+`PredictionError`、`Dropped`、`Unknown` 和 `BufferStuffing` 需要结合 SurfaceFrame、DisplayFrame 及相邻帧判断。直接归因到单一进程，会遗漏形成结果所需的前后条件。
 
 #### 颜色只用于导航
 
@@ -253,7 +253,7 @@ AndroidX `JankStats` 用于应用内逐帧监测，可以把页面、交互状�
 
 #### 消息排队与回调执行
 
-主线程变慢包含两种时间：消息已经到期却迟迟没有开始分发，以及 callback（回调）开始后执行过久。前者是 delivery delay（投递延迟），常见原因包括前一条消息执行过久、同步屏障与异步消息的关系、主线程阻塞或调度不足；后者是 dispatch duration（分发耗时），常见原因包括 callback 自身的计算、I/O、锁或同步 IPC（进程间通信）。
+主线程变慢包含两种耗时：消息已经到期却迟迟没有开始分发，以及 callback（回调）开始后执行过久。前者是 delivery delay（投递延迟），常见原因包括前一条消息执行过久、同步屏障与异步消息的关系、主线程阻塞或调度不足；后者是 dispatch duration（分发耗时），常见原因包括 callback 自身的计算、I/O、锁或同步 IPC（进程间通信）。
 
 看到 `Choreographer#doFrame` 开始较晚，应向前检查 Looper（消息循环）队列与主线程状态。看到 `doFrame` 内部耗时较长，再分别检查 Input（输入）、Animation（动画）、Insets Animation（系统栏等区域的动画）、Traversal（测量、布局和绘制遍历）与 Commit（提交）阶段。把两种情况都写成“绘制慢”，会漏掉队列拥塞和业务消息延迟。
 
