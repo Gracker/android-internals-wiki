@@ -4865,6 +4865,54 @@
       "status": "appended",
       "title": "Android WebView 初始缩放：什么时候该设置 100%，什么时候不要设置Android WebView 初始"
     },
+    "source/juejin-android/2026-09-22-76744618-千万别误用Android-Skills.md": {
+      "chapter": "待分类",
+      "entry_id": "bc4317d220415968",
+      "last_appended": "2026-09-22T05:25:40.617180+08:00",
+      "last_seen": "2026-09-22T05:25:40.617180+08:00",
+      "mtime": 1790022125.863848,
+      "score": 9,
+      "sha256": "e2a7db72ab70ee84410882aa57d36022f24cdbcce739b1f6bd16bc6330939148",
+      "size": 11967,
+      "status": "appended",
+      "title": "千万别误用Android Skills解析谷歌最新发布的Android Skills，真正理解谷歌全新智能体系统背后的反"
+    },
+    "source/juejin-android/2026-09-22-76800243-EventBus为什么没人爱用了.md": {
+      "chapter": "待分类",
+      "entry_id": "c3755da9278c7ccf",
+      "last_appended": "2026-09-22T05:25:40.617180+08:00",
+      "last_seen": "2026-09-22T05:25:40.617180+08:00",
+      "mtime": 1790022125.864366,
+      "score": 9,
+      "sha256": "63bd3db29eeb4c1ad3e6c30f0c2a27dad6325e3c4a86be5d9f04d08603d334c3",
+      "size": 9373,
+      "status": "appended",
+      "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
+    },
+    "source/juejin-android/2026-09-22-76826281-AI时代下Android边界正在消失.md": {
+      "chapter": "待分类",
+      "entry_id": "54b65f2d949cb896",
+      "last_appended": "2026-09-22T05:25:40.617180+08:00",
+      "last_seen": "2026-09-22T05:25:40.617180+08:00",
+      "mtime": 1790022125.863272,
+      "score": 16,
+      "sha256": "4013208fc85a9a5acdc923fa13609230f1eb9c2a8d44d3b0a80860792378fe84",
+      "size": 21458,
+      "status": "appended",
+      "title": "AI时代下，Android的边界正在消失写在前面 好久没发文章了，难得有空闲时间，那就坐下来好好和各位小伙伴聊聊天，聊聊"
+    },
+    "source/juejin-android/2026-09-22-76844396-App架构演进MVC-MVP-MVVM-MVI.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "e41e71daaa4bad01",
+      "last_appended": "2026-09-22T05:25:40.617180+08:00",
+      "last_seen": "2026-09-22T05:25:40.617180+08:00",
+      "mtime": 1790022125.8641386,
+      "score": 9,
+      "sha256": "1cb67d71bb8cb02eb4b5dcf86f91dc7cd7301ea04a6f31067c7ce215080aa8f8",
+      "size": 10296,
+      "status": "appended",
+      "title": "App 架构演进：MVC → MVP → MVVM → MVI，一篇看懂很多工程师对架构有一种误解：以为它只是\"换名字\""
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -6672,24 +6720,24 @@
     }
   },
   "last_report": {
-    "appended": 2,
-    "considered": 2,
-    "cutoff": "2026-09-20T05:20:47.716651+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-21.md",
+    "appended": 4,
+    "considered": 4,
+    "cutoff": "2026-09-21T05:20:22.587099+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-22.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2031,
+    "scanned": 2035,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1405,
       "path": 30,
-      "unchanged": 594
+      "unchanged": 596
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-21T05:25:22.587099+08:00",
+  "last_run_at": "2026-09-22T05:25:40.617180+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
