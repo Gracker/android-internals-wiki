@@ -176,7 +176,7 @@ fun canUseLegacyPlatformSdkSandbox(): Boolean {
 - 代码仍在应用进程内执行；
 - 独立 ClassLoader 能减少类名冲突，但它不是安全隔离边界，不能提供独立 Linux 进程、UID 或内存空间；
 - 首次提取 DEX、类加载和资源处理会增加存储与启动成本；
-- Binder 形式的接口可以保持同一种调用接口，但 bundled SDK（随 App 打包的 SDK）位于本进程时，不一定发生跨进程事务；
+- Binder 形式的接口可以保持同一套调用方式，但 bundled SDK（随 App 打包的 SDK）位于本进程时，不一定发生跨进程事务；
 - AndroidX 该库已经 deprecated，不能负责面向 Android 17 的长期抽象。
 
 现有产品若仍依赖 alpha19，应固定版本、保留兼容测试，并与 SDK/广告供应方确认替代交付。alpha 表示尚未稳定的预发布版本，既然该库已停止更新，就不应只给 `SdkSandboxManagerCompat` 换一层名字后继续扩展新功能。
@@ -202,7 +202,7 @@ SDK Runtime 退场后，广告 SDK 常见形态回到宿主进程中的 AAR、dy
 | 数据 | 读取字段、同意状态、上传时机、保留与删除策略 |
 | 控制 | 负责人、分批放量开关、关闭广告位和回滚 SDK 的路径 |
 
-SDK 文档声称“异步初始化”也要在 trace（系统时间线）中验证。异步 API 可能在返回前同步执行类加载、Manifest 查询、Preferences 读取和线程创建；完成回调也可能回到主线程。
+即使 SDK 文档声称“异步初始化”，也要在 trace（系统时间线）中验证。异步 API 可能在返回前同步执行类加载、Manifest 查询、Preferences 读取和线程创建；完成回调也可能回到主线程。
 
 ### 3.2 把广告能力拆成阶段
 
