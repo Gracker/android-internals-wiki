@@ -69,7 +69,7 @@ public void onCreate() {
 
 Hilt Gradle 插件默认启用 `fastInit`，用更集中式的 provider 生成方式减少 component 初始化时需要加载的类；普通 Dagger component 默认不启用。这个模式不会让重对象自动延迟，也不会删除 binding。
 
-代价是 `fastInit` 下的 `Provider` 会持有整个 component，而默认模式下通常只持有传递依赖的 provider。若短生命周期对象泄漏了一个 `Provider`，前者可能连带保留更大的对象关系。Hilt 2.60 起可以用 Gradle 属性 `-Pdagger.hilt.fastInit=false` 做发布构建对照；不要把它写进 annotation processor 参数，也不要预设关闭后一定更快。官方边界见 [Hilt Fast Init](https://dagger.dev/hilt/flags.html#fast-init)。
+代价是 `fastInit` 下的 `Provider` 会持有整个 component，而默认模式下通常只持有传递依赖的 provider。若短生命周期对象泄漏了一个 `Provider`，`fastInit` 模式下可能连带保留更大的对象关系。Hilt 2.60 起可以用 Gradle 属性 `-Pdagger.hilt.fastInit=false` 做发布构建对照；不要把它写进 annotation processor 参数，也不要预设关闭后一定更快。官方边界见 [Hilt Fast Init](https://dagger.dev/hilt/flags.html#fast-init)。
 
 ## Eager、direct、`Lazy` 与 `Provider`
 
