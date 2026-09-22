@@ -492,7 +492,7 @@ OOM 治理达到可发布状态时，每个接近资源预算的事件都有责�
 
 WebView 页面突然变白时，宿主 Activity 可能仍能响应，导航栏和原生按钮也都正常。若同时收到 `onRenderProcessGone()`，可以确认关联的 Renderer（负责网页解析、脚本执行与绘制的渲染进程）已经退出。此时旧 `WebView` 失效，`reload()`、`goBack()`、`evaluateJavascript()` 和 JS Bridge（JavaScript 与原生代码之间的通信接口）调用都救不回它。
 
-标题中的 OOM 是 Out of Memory（内存不足）的缩写。本文讨论的是系统在内存压力下结束 Renderer 这一类情况；每次白屏或每个 `didCrash=false` 都不能直接定为 OOM。
+这里的 OOM 是 Out of Memory（内存不足）的缩写。本文讨论的是系统在内存压力下结束 Renderer 这一类情况；每次白屏或每个 `didCrash=false` 都不能直接定为 OOM。
 
 下文把一次 `onRenderProcessGone()` 回调简称为 gone 事件。本文以 Android 17 / API 37 / `android-17.0.0_r1` 的 framework（Android 系统框架）契约为准。WebView provider（向 framework 提供 WebView 实现的可更新系统包）可能来自 Chromium，也可能由厂商定制，因此排查时还要记录设备上的 provider 包名与版本。文中涉及内核内存压力的源码名词时，以 Android common kernel（Android 公共内核源码仓库）的 `android17-6.18-2026-06_r6` 标签为参照；这个标签用于固定源码版本，不代表所有 Android 17 设备都运行同一内核。
 
@@ -529,7 +529,7 @@ Android 8 / API 26 起，`WebViewClient.onRenderProcessGone(view, detail)` 是 R
 | `true` | 应用声明已处理退出 | 当前旧实例已被移除、销毁，业务开始恢复或展示原生错误页 |
 | `false` | Renderer 崩溃时宿主随之崩溃；Renderer 被系统结束时宿主也被结束 | 应用没有能力安全处理，保留默认终止语义 |
 
-默认实现返回 `false`。只有在清理动作已完成、后续代码不会再触碰旧实例时，才应返回 `true`。用 `true` 隐藏回调后仍在访问旧对象的错误，会把一次清晰的 Renderer 退出变成随机异常或长期白屏。
+默认实现返回 `false`。只有在清理动作已完成、后续代码不会再触碰旧实例时，才应返回 `true`。返回 `true` 却仍在访问旧对象，会把一次清晰的 Renderer 退出变成随机异常或长期白屏。
 
 #### `didCrash()` 只做二分类，不能给出完整原因
 
@@ -538,7 +538,9 @@ Android 8 / API 26 起，`WebViewClient.onRenderProcessGone(view, detail)` 是 R
 - `true`：Renderer 被观察到发生崩溃；
 - `false`：Renderer 被系统结束，AOSP 注释说明最常见背景是低内存。
 
-`false` 仍不足以单独证明“页面 OOM”。应用在 API 29 及以上可能主动调用 `WebViewRenderProcess.terminate()`；设备实现和系统资源管理也会影响进程寿命。provider 更新通常会结束已经加载 WebView 的整个应用进程，这类进程重启要单独记录，不能假定一定会留下 renderer-only gone 事件。若应用会主动终止 Renderer，应在调用前生成一条短时有效的“预期终止标记”（下文简称 termination token），至少包含会话、调用时间、有效期和关联的 WebView 实例。随后到达且命中这条标记的 gone 事件，才归为预期终止。未命中时，再结合设备内存档位、前后台状态、Renderer 优先级、系统内存压力和问题页面是否反复出现来判断。
+`false` 仍不足以单独证明“页面 OOM”。应用在 API 29 及以上可能主动调用 `WebViewRenderProcess.terminate()`；设备实现和系统资源管理也会影响进程寿命。provider 更新通常会结束已经加载 WebView 的整个应用进程，这类进程重启要单独记录，不能假定一定会留下 renderer-only gone 事件。
+
+若应用会主动终止 Renderer，应在调用前生成一条短时有效的“预期终止标记”（下文简称 termination token），至少包含会话、调用时间、有效期和关联的 WebView 实例。随后到达且命中这条标记的 gone 事件，才归为预期终止。未命中时，再结合设备内存档位、前后台状态、Renderer 优先级、系统内存压力和问题页面是否反复出现来判断。
 
 `rendererPriorityAtExit()` 返回退出时的最终 Renderer 优先级。一个 Renderer 可被多个 WebView 共享；`WebView.java` 规定，最终优先级取所有关联实例请求值中的最高值，实例销毁后不再参与计算。`RenderProcessGoneDetail.java` 也提醒，退出值可能高于某个单独实例请求的值。这个字段适合描述现场，不能反推出是哪一个 WebView 提高了优先级，也不能单独解释它为何被回收。
 
