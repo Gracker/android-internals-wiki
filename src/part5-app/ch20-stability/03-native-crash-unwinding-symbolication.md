@@ -151,13 +151,13 @@ ART 的 [`sigchain.cc`](https://android.googlesource.com/platform/art/+/refs/tag
 
 [`SignalChain::Handler()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/sigchainlib/sigchain.cc) 先尝试平台特殊处理器，再调用动态链接器与 debuggerd 暴露的 `android_handle_signal()`，之后才按保存的 `action_` 交给用户处理器。Recoverable GWP-ASan 是一个特殊分支：debuggerd 若已经完成报告并确认可恢复，`android_handle_signal()` 可以返回 `true`，SignalChain 随即返回；普通致命故障不会因此变成可恢复。
 
-注册时间无法推导处理器在这套流程中的位置。直接绕过 SignalChain 改写内核 disposition，可能破坏 ART 隐式空检查、Recoverable GWP-ASan 和系统 tombstone。
+不能根据注册时间推导处理器在这套流程中的位置。直接绕过 SignalChain 改写内核 disposition，可能破坏 ART 隐式空检查、Recoverable GWP-ASan 和系统 tombstone。
 
 #### Android 17 的 debuggerd 收集流程
 
 Android 17 的动态链接器（linker）在早期调用 [`linker_debuggerd_init()`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_debuggerd_android.cpp)，把 allocator、GWP-ASan 和额外崩溃详情（crash detail）等回调交给 [`debuggerd_init()`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)。平台随后为致命信号安装 `debuggerd_signal_handler`。
 
-下面的流程图用于区分崩溃进程内的最小入口和进程外的重工作。图中的 `ptrace` 是一个进程检查另一个进程线程与内存的系统机制，maps 是进程内存映射表，protobuf 是结构化二进制数据格式。
+下面的流程图用于区分崩溃进程内完成的最小入口动作，以及放到进程外完成的主要工作。图中的 `ptrace` 是一个进程检查另一个进程线程与内存的系统机制，maps 是进程内存映射表，protobuf 是结构化二进制数据格式。
 
 ```text
 同步致命信号
@@ -171,7 +171,9 @@ Android 17 的动态链接器（linker）在早期调用 [`linker_debuggerd_init
   → 恢复致命信号 disposition，使父进程观察到正确退出状态
 ```
 
-[`debuggerd_handler.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp) 使用预先准备的 pseudothread（专用于崩溃协作的伪线程）栈和受控的 `fork`/`exec` 协议；[`crash_dump.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp) 通过 `ptrace` 读取现场，并创建崩溃地址空间的快照进程来缩短原进程所有线程的暂停时间。进程内处理器仍处于约束严格的信号处理上下文，只能执行很小一组安全操作，不能据此认为任意 C++ 逻辑都可以安全运行。
+[`debuggerd_handler.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp) 使用预先准备的 pseudothread（专用于崩溃协作的伪线程）栈和受控的 `fork`/`exec` 协议；[`crash_dump.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp) 通过 `ptrace` 读取现场，并创建崩溃地址空间的快照进程来缩短原进程所有线程的暂停时间。
+
+进程内处理器仍处于约束严格的信号处理上下文，只能执行很小一组安全操作，不能据此认为任意 C++ 逻辑都可以安全运行。
 
 `crash_dump` 还会连接 `/data/system/ndebugsocket` 通知 ActivityManager。Native Crash 不经过 Java `UncaughtExceptionHandler`；应用安装 Java 致命异常处理器无法覆盖这条路径。
 
@@ -739,7 +741,7 @@ rel_pc = runtime_pc - map_start + load_bias + elf_offset
 
 `map_start` 是当前映射的起始地址；`load_bias` 是 ELF 虚拟地址与文件偏移之间的装载修正；`elf_offset` 表示当前映射相对 ELF 起点的文件偏移。现代 ELF 常有独立的只读映射和可执行映射，`.so` 还可能直接从 APK 中加载。`MapInfo` 会判断当前映射的 offset 指向完整 ELF 起点、可执行段起点，还是 APK 内嵌 ELF 起点，并尝试关联前一条只读映射。
 
-手工只算 `runtime_pc - map_start`，在这些布局上很容易稳定地错到另一个函数。Android 10—12 的 `libunwindstack` 版本记录列出了多次 load bias、只读段和 APK offset 修复，说明这些布局已经造成过实际错误。
+手工只算 `runtime_pc - map_start`，在这些布局上很容易稳定地解析到错误的函数。Android 10—12 的 `libunwindstack` 版本记录列出了多次 load bias、只读段和 APK offset 修复，说明这些布局已经造成过实际错误。
 
 #### 4.2 Tombstone 的 `pc` 列通常已完成归一化
 
