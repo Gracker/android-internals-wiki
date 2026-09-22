@@ -52,7 +52,7 @@ Android 17 会从 Zygote（预先加载公共 framework 代码的系统进程）
 
 ## GC 对启动性能的影响路径
 
-现代 ART 的回收大部分可以与 mutator 并发执行。mutator 是运行 App 代码并分配、读取或修改对象的线程；并发 GC 仍会给启动带来三类成本：
+现代 ART 的大部分回收工作可以与 mutator 并发执行。mutator 是运行 App 代码并分配、读取或修改对象的线程；并发 GC 仍会给启动带来三类成本：
 
 1. **短暂停顿。** 并发收集器仍有需要挂起 mutator 的阶段。暂停若落在主线程关键路径上，会直接增加 TTID（首次显示时间）或 TTFD（主要内容完整可用时间）。
 2. **分配线程等待。** 分配失败，或分配线程必须等待正在运行的 GC 完成时，主线程可能阻塞；`heap.cc` 用 `kGcCauseForAlloc` 标记这类“为完成分配而触发的 GC”。
@@ -91,7 +91,7 @@ Android 17 的常见任务包括：
 
 `Heap::PostForkChildAction()` 是理解启动期策略的关键源码入口。Android 17 的处理可分为四步：
 
-1. 把 `gcs_completed_` 计数加一，让 Zygote 或 fork 极早期按旧 GC 编号排队的请求失效。这里增加的是用来判定请求是否过期的 GC 编号，并没有执行一次回收。
+1. 把 `gcs_completed_` 计数加一，让在 Zygote 中或 fork 后极早期按旧 GC 编号排队的请求失效。这里增加的是用来判定请求是否过期的 GC 编号，并没有执行一次回收。
 2. 把 `target_footprint_` 暂时提高到 `growth_limit_`，再重算 `concurrent_start_bytes_`（并发 GC 的启动阈值）。源码注释给出的目的就是减少 App launch 期间的 GC。
 3. 若 `initial_heap_size_ < growth_limit_`，2 秒后尝试把 target footprint 降到 `max(growth_limit / 4, initial_heap_size)`；若该值仍高于初始 heap，再过 8 秒降到 `initial_heap_size`，即第二次目标时间约为 fork 后 10 秒。只要期间已完成 GC，或任务执行时已有 collector 在运行，降低任务就不再改这个目标。
 4. 随后安排 `TriggerPostForkCCGcTask`。根据前面安排了零、一个还是两个降低任务，其目标时间分别约为 fork 后 8—28 秒、10—30 秒或 18—38 秒；区间来自固定的 8 秒延迟和按 UID（系统分配给 App 的用户标识）生成的 0—19,999 ms jitter（确定性的错峰伪随机量）。任务执行时若 GC 编号仍与 fork 后相同，才请求一次后台并发 GC。
