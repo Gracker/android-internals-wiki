@@ -123,7 +123,7 @@ joinable pthread 在退出后保留回收信息，必须由另一个线程调用
 
 OOM 是 out of memory，表示某层内存或相关资源无法满足分配请求。`ThreadLocal` 是按线程保存值的线程局部存储。上表中的几类问题可以同时发生：某个 SDK 每次初始化都创建一个 pool，每个 worker 又持有 `ThreadLocal<Activity>`，每个任务还打开 socket。此时 Linux task、Java heap 和 FD 会一起增长，但不能据此推导“每条线程固定占一个 FD”。
 
-OpenJDK 的 `Thread.exit()` 会调用 `clearReferences()`，清空 `target`、`threadLocals`、`inheritableThreadLocals`、`blocker` 和未捕获异常处理器等引用；Android 17 的行为不同。该标签的 `Thread.getThreadGroup()` 源码明确注明 ART 在线程退出时没有调用 `Thread.exit()`。ART 的 `Thread::Destroy()` 会分发未捕获异常、从 `ThreadGroup` 移除 Java peer、清除 Native peer，并唤醒等待 `join()` 的线程，但不会代替 Java `clearReferences()` 清空上述字段。
+OpenJDK 的 `Thread.exit()` 会调用 `clearReferences()`，清空 `target`、`threadLocals`、`inheritableThreadLocals`、`blocker` 和未捕获异常处理器等引用；Android 17 的行为不同。`android-17.0.0_r1` 标签的 `Thread.getThreadGroup()` 源码明确注明 ART 在线程退出时没有调用 `Thread.exit()`。ART 的 `Thread::Destroy()` 会分发未捕获异常、从 `ThreadGroup` 移除 Java peer、清除 Native peer，并唤醒等待 `join()` 的线程，但不会代替 Java `clearReferences()` 清空上述字段。
 
 因此要区分两类对象链：仍存活的线程会作为 GC root 保留栈和线程局部引用；已经终止的 `Thread` 不再对应 Linux task，但业务静态集合、线程注册表或其他长生命周期对象若仍强引用它，`target`、`ThreadLocalMap` 或线程子类字段仍可能继续保留对象。终止线程本身不再被引用后，这些字段会随整个 `Thread` 对象一起回收。heap dominator 分析应确认具体强引用链，不能从线程状态直接推断。
 
@@ -702,7 +702,7 @@ override fun onViewCreated(
 }
 ```
 
-进入 `STARTED` 时，`repeatOnLifecycle` 为 block 创建新的 child scope；状态变为 `STOPPED` 时取消这一轮 children，再次可见时重新启动。外层 job 在 View `DESTROYED` 时取消。多个 Flow 需要并行收集，所以分别放进 child `launch`；连续写两个 `collect` 会被第一个长期挂起。
+进入 `STARTED` 时，`repeatOnLifecycle` 会为 block（传入的挂起代码块）创建新的 child scope；状态变为 `STOPPED` 时取消这一轮 children，再次可见时重新启动。外层 job 在 View `DESTROYED` 时取消。多个 Flow 需要并行收集，所以分别放进 child `launch`；连续写两个 `collect` 时，第二个会被第一个长期挂起。
 
 Compose 中优先使用 `collectAsStateWithLifecycle()` 把 UI 状态收集绑定到 Lifecycle。一次性事件仍要明确消费和重放策略；`replay` 是新订阅者可收到的历史值数量，调大它无法解决丢事件或重复消费的协议问题。
 
@@ -947,7 +947,7 @@ fun DetailScreen(
 }
 ```
 
-`itemId` 变化会重启加载，`rememberUpdatedState` 更新 callback（回调函数），同时避免因 callback 实例变化重启 effect。点击任务使用与 Composition 生命周期绑定的 scope。代码显式重抛 `CancellationException`，避免 `runCatching` 把正常取消改写成失败处理。
+`itemId` 变化会重启加载，`rememberUpdatedState` 让 effect 读到最新的 callback（回调函数），同时避免因 callback 实例变化重启 effect。点击任务使用与 Composition 生命周期绑定的 scope。代码显式重抛 `CancellationException`，避免 `runCatching` 把正常取消改写成失败处理。
 
 高频变化或不稳定的 key 会造成反复取消和重启，表现为请求抖动与重复分配。它未必造成泄漏，却会浪费计算与网络资源。需要跨页面或跨 configuration change（例如旋转屏幕引发的 Activity 重建）的工作应提升到合适的 `ViewModel`/repository owner，不要把 Compose scope 存入单例。
 
