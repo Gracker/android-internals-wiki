@@ -152,7 +152,7 @@ public final class CpuBoundExport {
 }
 ```
 
-超时只用于限制故障时最长持锁多久，正常路径仍应尽早 release。超时时间需要覆盖合理的最慢执行时长；若任务经常接近超时，应改造成可恢复的分段任务，或改用调度 API。多个线程共享同一个非引用计数锁时，任意一次 release 都会解除此前的 acquire，因此这类封装必须由单一对象管理。
+超时只用于限制故障情况下的最长持锁时间，正常路径仍应尽早 release。超时时间需要覆盖合理的最慢执行时长；若任务经常接近超时，应改造成可恢复的分段任务，或改用调度 API。多个线程共享同一个非引用计数锁时，任意一次 release 都会解除此前的 acquire，因此这类封装必须由单一对象管理。
 
 ### 引用计数
 
@@ -297,7 +297,7 @@ Android 17 kernel 表头包括：
 | `last_change` | 最近一次状态变化时间 |
 | `prevent_suspend_time` | autosleep（内核自动挂起）开启期间阻止 suspend 的累计时间 |
 
-这些时间单位由该 debugfs 输出实现转换为毫秒。比较两次快照时应使用增量；设备运行很久后的绝对累计值不能直接归因到本次复现。
+这些时间在该 debugfs 输出中已换算为毫秒。比较两次快照时应使用增量；设备运行很久后的绝对累计值不能直接归因到本次复现。
 
 `wakeup_stats.c` 还会把各 source 注册到 `/sys/class/wakeup/wakeupN/`，并提供 `active_time_ms`、`total_time_ms`、`max_time_ms`、`prevent_suspend_time_ms` 等属性。sysfs（内核设备与驱动信息文件系统）的读取权限同样由设备构建与 SELinux 安全策略决定。
 
@@ -402,7 +402,7 @@ data_sources: {
 duration_ms: 60000
 ```
 
-tracepoint 会保留为原始 ftrace event（内核跟踪事件），分析时要按 source 名称和时间配对 activate/deactivate（激活/停用）事件。`android.power` 是否有 rail 数据取决于设备的 PowerStats HAL（电源统计硬件抽象层）；轨道缺失不能当成功耗为零。生产 user build 还可能禁止相关 ftrace 事件。
+tracepoint 在 trace 中以原始 ftrace event（内核跟踪事件）的形式保留，分析时要按 source 名称和时间配对 activate/deactivate（激活/停用）事件。`android.power` 是否有 rail 数据取决于设备的 PowerStats HAL（电源统计硬件抽象层）；轨道缺失不能当成功耗为零。生产 user build 还可能禁止相关 ftrace 事件。
 
 ### 四层证据表
 
