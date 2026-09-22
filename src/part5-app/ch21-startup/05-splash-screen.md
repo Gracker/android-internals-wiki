@@ -118,7 +118,7 @@ StartingSurfaceDrawer
 
 ### 2.3 移除与退出动画
 
-当 App 内容可以显示时，system_server 请求 Shell 移除 starting window。若应用注册了退出动画，系统可以把可复制的 `SplashScreenView` 交给 App 继续播放。Android 17 的 [`SplashscreenWindowCreator`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/SplashscreenWindowCreator.java)包含视图复制、窗口移除和 `SurfaceControlViewHost` 释放路径；这里的 host 是跨进程承载动画图标 View 的容器。
+当 App 内容可以显示时，system_server 请求 Shell 移除 starting window。若应用注册了退出动画，系统可以把 `SplashScreenView` 复制一份交给 App 继续播放。Android 17 的 [`SplashscreenWindowCreator`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/SplashscreenWindowCreator.java)包含视图复制、窗口移除和 `SurfaceControlViewHost` 释放路径；这里的 host 是跨进程承载动画图标 View 的容器。
 
 不要把“App 已提交第一帧”“starting window 已移除”“退出动画已完成”视为同一个时间点。自定义动画会在 App 内容已经准备显示后继续覆盖它一段时间。
 
@@ -134,7 +134,7 @@ StartingSurfaceDrawer
 | API 23～30 | AndroidX 模拟 Android 12 行为 | 支持静态图标；不支持启动图标 AVD（AnimatedVectorDrawable，可动画矢量图）动画 |
 | API 31～37 | 委托平台 SplashScreen API | 系统 Splash、图标动画和平台退出交接 |
 
-兼容库的 `minSdk` 是 21，图标在启动早期可见的兼容能力从 API 23 开始。测试范围至少要覆盖 API 21/22、23～30、31 和当前目标 API，不能只在 Android 17 模拟器上验收。
+兼容库的 `minSdk` 是 21，启动早期就能显示图标的兼容能力从 API 23 才开始。测试范围至少要覆盖 API 21/22、23～30、31 和当前目标 API，不能只在 Android 17 模拟器上验收。
 
 ### 3.2 添加依赖
 
