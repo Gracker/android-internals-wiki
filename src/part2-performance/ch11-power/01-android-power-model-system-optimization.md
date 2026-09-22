@@ -265,7 +265,7 @@ Android 17 的标准 `BatteryConsumer.POWER_COMPONENT_*` 集合没有 GPU，`Ene
 - Perfetto 中设备提供的 GPU rail；
 - GPU frequency、busy 和调度 trace，用作负载代理指标；它们描述活跃程度，不直接等于能量。
 
-`PowerMonitor` consumer 名称可以出现 GPU，但名称和组合方式允许 OEM 自定义。它与 `BatteryConsumer` 是否有标准 GPU 组件是两个 API 层面。
+`PowerMonitor` consumer 名称可以出现 GPU，但名称和组合方式允许 OEM 自定义。这与 `BatteryConsumer` 是否有标准 GPU 组件是两个不同的 API 层面。
 
 #### 3.4 Cellular、Wi-Fi 与 Bluetooth
 
@@ -669,11 +669,11 @@ Android 7.0（API 24）加入限制较轻的 Light Doze。Light Doze 与 Deep Do
 
 高优先级 FCM 只适合时间敏感、会产生用户可见通知的消息。系统会给接收方短暂使用网络和 partial WakeLock（只保持 CPU 运行的唤醒锁）的机会，处理完成后设备继续空闲。普通数据刷新使用 normal priority（普通优先级），并接受维护窗口延迟。
 
-`setAndAllowWhileIdle()`、`setExactAndAllowWhileIdle()` 和 `setAlarmClock()` 能在空闲期间交付。前两者受每个 App 约九分钟一次的频率边界，系统还可以延长间隔。它们适合用户感知的关键事件，不能用于高频轮询。
+`setAndAllowWhileIdle()`、`setExactAndAllowWhileIdle()` 和 `setAlarmClock()` 能在空闲期间交付。前两者受频率边界限制：每个 App 约九分钟一次，系统还可以延长间隔。它们适合用户感知的关键事件，不能用于高频轮询。
 
 #### Android 17 的 listener 型 allow-while-idle Alarm
 
-API 37 新增 `setExactAndAllowWhileIdle(int, long, String, Executor, OnAlarmListener)`。这是 listener（监听器）形式的 allow-while-idle Alarm，可在设备空闲时交付。回调直接在指定 `Executor` 上执行，仍有组件存活的 App 因而无需为等待精确回调而持续持有 WakeLock。
+API 37 新增 `setExactAndAllowWhileIdle(int, long, String, Executor, OnAlarmListener)`。这是 listener（监听器）形式的 allow-while-idle Alarm，可在设备空闲时交付。回调直接在指定 `Executor` 上执行；对仍有组件存活的 App 来说，无需为等待精确回调而持续持有 WakeLock。
 
 `OnAlarmListener` 形式的 Alarm 依赖调用进程继续有组件运行。进程没有 Activity、Service 或 ContentProvider 时，系统可以取消它。需要在进程退出后仍能收到事件，应使用 `PendingIntent` 形式并遵守精确闹钟权限。新 API 没有改变 allow-while-idle 只能低频使用的原则。
 
@@ -917,7 +917,7 @@ Perfetto 配置至少考虑 `sched/*`、`power/suspend_resume`、`power/cpu_idle
 
 ### 与其他章节的关系
 
-§5.1–§5.2 解释 cpuidle（CPU 空闲管理）、cpufreq（CPU 频率管理）、EAS（Energy Aware Scheduling，能量感知调度）与 suspend 的基础，§11.1 说明能量归因，§11.2 讨论 App 如何减少 WakeLock、Job、位置和网络开销。本节说明二者之间的关系：Framework 策略决定任务何时获得资源，内核与硬件决定设备能进入多深的低功耗状态。进程被回收时还要结合 §1.1，避免把 LMKD 与功耗限制混为一类。
+§5.1–§5.2 解释 cpuidle（CPU 空闲管理）、cpufreq（CPU 频率管理）、EAS（Energy Aware Scheduling，能量感知调度）与 suspend 的基础，§11.1 说明能量归因，§11.2 讨论 App 如何减少 WakeLock、Job、位置和网络开销。本节说明 Framework 策略与内核机制之间的关系：Framework 策略决定任务何时获得资源，内核与硬件决定设备能进入多深的低功耗状态。进程被回收时还要结合 §1.1，避免把 LMKD 与功耗限制混为一类。
 
 ### 版本与实现边界
 
