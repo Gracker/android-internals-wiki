@@ -102,7 +102,7 @@ Android 应用常用的解析入口包括：
 
 API 29 的 `DnsResolver.getInstance()` 在 API 37 被标记为废弃。Android 17 新增 `DnsResolver(Context, Looper)`：传入的 `Looper`（Android 消息循环）用来监视 resolver 文件描述符的可读事件，查询方法中的 `Executor`（任务执行器）决定结果回调在哪个执行环境运行。这两个线程参数不能互相替代。
 
-迁移时可在应用的相应生命周期内复用 resolver，避免为每次查询创建线程和 Looper。查询还应绑定 `CancellationSignal`（可从调用方取消异步操作的信号）；页面退出、请求取消或网络会话失效后，继续等待旧查询只会增加无效工作。使用新构造方法时要检查 API 级别或扩展版本，低版本仍走兼容分支。
+迁移到新构造方法后，可在应用的相应生命周期内复用一个 resolver 实例，避免为每次查询都创建线程和 Looper。查询还应绑定 `CancellationSignal`（可从调用方取消异步操作的信号）；页面退出、请求取消或网络会话失效后，继续等待旧查询只会增加无效工作。使用新构造方法时要检查 API 级别或扩展版本，低版本仍走兼容分支。
 
 ### 3.2 `query()`、`rawQuery()` 与错误信息
 
@@ -127,9 +127,9 @@ API 37 与 S 扩展版本 22 增加 `TYPE_HTTPS`、`HttpsEndpoint`，以及同�
 - `HTTPS_QUERY_WAIT_AUTO`：由平台在延迟和 HTTPS 元数据完整性之间选择；
 - `HTTPS_QUERY_WAIT_UNTIL_TIMEOUT`：等待 HTTPS 查询完成或达到调用方给出的超时。
 
-`UNTIL_TIMEOUT` 遇到上游丢弃 HTTPS 查询时会增加等待时间。该超时应来自连接建立预算和线上分位数，不能复制一个固定常量到所有网络类型。
+`UNTIL_TIMEOUT` 遇到上游丢弃 HTTPS 查询时会增加等待时间。该超时应来自连接建立预算和线上分位数，不能把一个固定常量套用到所有网络类型。
 
-OkHttp 5.3 的 `Dns.lookup()` 只返回 `List<InetAddress>`。把 `HttpsEndpoint` 查询结果简单塞进自定义 `Dns` 无法传递 ALPN、端口、优先级或 ECH 配置。需要使用这些元数据时，网络库的连接实现必须显式支持它们。
+OkHttp 5.3 的 `Dns.lookup()` 只返回 `List<InetAddress>`。即使把 `HttpsEndpoint` 查询结果塞进自定义 `Dns`，也无法传递 ALPN、端口、优先级或 ECH 配置。需要使用这些元数据时，网络库的连接实现必须显式支持它们。
 
 ## 四、Android 17 的系统调用路径
 
@@ -241,7 +241,7 @@ targetSdk 37 的应用访问本地网络时，需要申请 `ACCESS_LOCAL_NETWORK
 - 默认网络变化到请求开始之间的时间；
 - 查询来源：系统、HTTPDNS、应用 DoH 或缓存。
 
-`netId` 会被系统重复分配，也只是平台内部标识。线上长期聚合可使用进程内递增的网络会话号，或使用带定期更换盐值的标识，避免把原始 `netId` 当成稳定的设备属性。
+`netId` 由系统重复分配，同一个值可能先后属于不同网络，它也只是平台内部标识。线上长期聚合可使用进程内递增的网络会话号，或使用带定期更换盐值的标识，避免把原始 `netId` 当成稳定的设备属性。
 
 ### 6.3 三组 shell 证据
 
