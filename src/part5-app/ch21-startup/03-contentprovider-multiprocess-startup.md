@@ -692,7 +692,7 @@ class WorkerConnection :
 }
 ```
 
-这段代码只展示连接骨架。调用方仍需成对执行 bind/unbind。`onServiceDisconnected()` 表示连接意外丢失，原绑定仍然有效，服务重新运行后可能再次收到 `onServiceConnected()`；`onBindingDied()` 表示这条绑定不会自动恢复，必须先解绑再按业务需要重绑；`onNullBinding()` 也要解绑以释放跟踪资源。不用仍存活的旧 Binder 时，还要解除 `linkToDeath()` 注册。`binderDied()` 可能在 Binder 线程执行，并与新连接回调并发，生产实现应给每次连接分配代次，忽略旧代次回调，避免旧死亡通知覆盖新的 `Ready` 状态。状态更新之外的重工作应切换到受控协程或执行器。
+这段代码只展示连接骨架。调用方仍需成对执行 bind/unbind。`onServiceDisconnected()` 表示连接意外丢失，原绑定仍然有效，服务重新运行后可能再次收到 `onServiceConnected()`；`onBindingDied()` 表示这条绑定不会自动恢复，必须先解绑再按业务需要重绑；`onNullBinding()` 也要解绑以释放跟踪资源。旧 Binder 仍然存活但不再使用时，还要解除 `linkToDeath()` 注册。`binderDied()` 可能在 Binder 线程执行，并与新连接回调并发，生产实现应给每次连接分配代次，忽略旧代次回调，避免旧死亡通知覆盖新的 `Ready` 状态。状态更新之外的重工作应切换到受控协程或执行器。
 
 远程事务可能包含磁盘、网络或重计算。AIDL（Android Interface Definition Language）用于声明跨进程接口；客户端应把同步 AIDL 调用放到允许阻塞的调度器，并给业务请求单独设置超时：
 
