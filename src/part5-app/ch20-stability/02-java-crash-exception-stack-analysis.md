@@ -182,7 +182,7 @@ Java 层的顺序是：
 
 #### 自定义处理器的最小正确结构
 
-下面的示例强调委托和故障隔离。`CrashSpool.tryAppendMinimal()` 代表正常运行时已经初始化好的有界暂存区；spool 是等待下次启动校验和上传的追加式临时存储。致命异常路径中不应临时创建复杂对象。
+下面的示例强调委托和故障隔离。`CrashSpool.tryAppendMinimal()` 代表正常运行时已经初始化好的有界暂存区；spool 是等待下次启动校验并上传的追加式临时存储。致命异常路径中不应临时创建复杂对象。
 
 ```kotlin
 class DelegatingFatalHandler(
@@ -505,7 +505,7 @@ Android 17 的 [`ThreadList::Dump()`](https://android.googlesource.com/platform/
 
 - 各线程的 dump 仍不是同一 CPU 指令时刻的原子快照；
 - checkpoint、栈遍历、native unwind 和输出都可能耗时，故障或进程退出也可能让 trace 缺帧；
-- 这条系统路径可以服务 ANR 和调试，不能被简化成普通 SDK 可复制的 `ThreadList::ForEach()` 调用。
+- 这条系统路径服务于 ANR 和调试场景，不能简化成普通 SDK 可复制的 `ThreadList::ForEach()` 调用。
 
 #### 3.2 ART dump 可以附加 Java monitor 关系
 
