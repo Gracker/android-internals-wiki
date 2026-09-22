@@ -93,7 +93,7 @@ Android 官方要求客户端把 `TransactionTooLargeException` 当作“部分�
 | `TransactionTooLargeException` | 大 transaction 失败后的推测性分类 | 请求和回复都可能失败；异常名不能证明精确的字节原因 |
 | 其他 `RemoteException` | 未实现 transaction、底层传输失败等 | 要结合接口版本、日志和服务端证据 |
 
-`proxy` 是客户端代表远端接口的本地代理对象。普通应用调用 `PackageManager`、`ActivityManager` 等 framework 管理类（系统 API 的 Java 外观类）时，管理类往往已经在内部捕获 `RemoteException`，再调用 `rethrowFromSystemServer()` 或转换成该 API 约定的运行时异常。因此，“给所有系统 API 加 `catch (RemoteException)`”既不一定能编译，也覆盖不了完整边界。只有自有 AIDL 代理对象，或方法签名明确声明 `RemoteException` 的接口，才在调用处处理这组受检异常。
+`proxy` 是远端接口在客户端的本地代理对象。普通应用调用 `PackageManager`、`ActivityManager` 等 framework 管理类（系统 API 的 Java 外观类）时，管理类往往已经在内部捕获 `RemoteException`，再调用 `rethrowFromSystemServer()` 或转换成该 API 约定的运行时异常。因此，“给所有系统 API 加 `catch (RemoteException)`”既不一定能编译，也覆盖不了完整边界。只有自有 AIDL 代理对象，或方法签名明确声明 `RemoteException` 的接口，才在调用处处理这组受检异常。
 
 ### 2.2 回复中传播的运行时异常
 
@@ -247,7 +247,7 @@ API 36 起，`IBinder.addFrozenStateChangeCallback()` 是公开 API。服务端�
 
 ### 6.1 不要把 15/16 当作所有进程的固定线程数
 
-Android 17 C++ libbinder 的 `DEFAULT_MAX_BINDER_THREADS` 是 15。这个值表示内核最多还能按需启动多少线程；`startThreadPool()` 会先额外启动 1 个线程，手工调用 `joinThreadPool()` 也可能增加参与者。Java 应用、native 守护进程（用 C/C++ 等实现的常驻进程）、HAL（硬件抽象层）和 `system_server` 的配置并不完全相同。
+Android 17 C++ libbinder 的 `DEFAULT_MAX_BINDER_THREADS` 是 15。这个值表示内核最多还能按需启动多少线程；`startThreadPool()` 会先额外启动 1 个线程，手工调用 `joinThreadPool()` 也可能让调用线程加入线程池。Java 应用、native 守护进程（用 C/C++ 等实现的常驻进程）、HAL（硬件抽象层）和 `system_server` 的配置并不完全相同。
 
 排障时要从 Perfetto trace 或 bugreport（系统诊断报告）读取目标进程实际存在的 Binder 线程及其状态。看到 15 个线程不能直接下结论，看到 16 个也不代表达到所有进程通用的上限。
 
