@@ -295,7 +295,7 @@ class LoggerInitializer : Initializer<Logger> {
 }
 ```
 
-App Startup 会先完成 `LocalConfigInitializer.create()`，再调用 Logger。`create()` 必须同步返回可用实例；内部若只提交异步任务，依赖顺序对逻辑就绪没有保证。
+App Startup 会先完成 `LocalConfigInitializer.create()`，再调用 `LoggerInitializer.create()`。`create()` 必须同步返回可用实例；内部若只提交异步任务，依赖顺序对逻辑就绪没有保证。
 
 #### 5.2 适用范围与限制
 
