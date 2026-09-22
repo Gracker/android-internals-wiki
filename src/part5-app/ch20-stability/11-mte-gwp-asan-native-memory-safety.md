@@ -166,7 +166,7 @@ ASYMM（非对称检查）对读访问做同步检查，对写访问做异步报
 这带来两个诊断边界：
 
 - manifest 的 `async` 只能记为 `requested_mode=async`，不能直接写成 `effective_mode=async`；
-- ASYNC 请求在某个 CPU 上被增强为 SYNC 时，错误现场可能更精确，但进程并未按 SYNC 配置分配器，因此仍未必具有分配 / 释放调用栈。
+- ASYNC 请求在某个 CPU 上被增强为 SYNC 时，错误现场可能更精确，但进程并未按 SYNC 配置分配器，因此分配 / 释放调用栈仍未必可用。
 
 普通应用没有公开的 `asymm` 请求值，也没有可靠 API 读取每次访问所在 CPU 的最终首选模式。事件上报应保留原始 `tagged_addr_ctrl`（线程的 tagged-address 控制位）或 tombstone（系统生成的 Native 崩溃报告）证据，并允许 `effective_mode=unknown`。
 
