@@ -101,7 +101,7 @@ GPU 驱动还会管理 API 私有资源，例如纹理、render target（渲染�
 | Vulkan memory tracker / AGI（Android GPU Inspector） | Vulkan API 分配、绑定及单帧资源 | 非 Vulkan 路径的全部系统图形内存 |
 | ART / native heap profile | Bitmap、Surface 等持有者或 wrapper（包装对象）的引用与调用栈 | DMA-BUF、驱动私有页的完整字节数 |
 
-各列不能直接相加。进程 GPU 总量可能重复计入跨进程 import（导入的共享资源），memtrack 则要求按 PSS 规则处理共享并排除类型间重叠；两套接口的目标不同。
+不同工具的数字不能直接相加。进程 GPU 总量可能重复计入跨进程 import（导入的共享资源），memtrack 则要求按 PSS 规则处理共享并排除类型间重叠；两套接口的目标不同。
 
 ## 2. `dumpsys meminfo`：Graphics 摘要由什么组成
 
@@ -189,7 +189,7 @@ data_sources {
 }
 ```
 
-只开 ftrace 时，trace 开始前已存在且采集期间不变化的资源缺少基线；只开 `android.gpu.memory` 时，只能得到启动快照。两种方式都要求 GPU 驱动实现相应 tracepoint。
+只开 ftrace 时，trace 开始前已存在且采集期间不变化的资源缺少基线；只开 `android.gpu.memory` 时，只能得到 trace 启动时的快照。两种方式都要求 GPU 驱动实现相应 tracepoint。
 
 Perfetto 当前标准库已经把事件整理为按进程的区间 counter，即每个数值都覆盖一段持续时间。下面的 SQL 用于列出 GPU 内存随时间的变化：
 
@@ -297,7 +297,7 @@ debugfs（内核调试文件系统）不适合作为生产接口，格式也不�
 5. 比较进程 GPU 总量、唯一 DMA-BUF、EGL/GL mtrack 与 Java/native 持有者数量。
 6. 找到最早开始增长的指标，再选择 Bitmap、Surface、GL/Vulkan 或厂商工具继续定位。
 
-报告要保存原始值与差值。若只有 App Summary `Graphics` 一列，就无法区分 Gfx dev、EGL mtrack 和 GL mtrack。
+报告要保存原始值与差值。若只有 App Summary 的 `Graphics` 一个数字，就无法区分 Gfx dev、EGL mtrack 和 GL mtrack。
 
 ### 5.3 Java 与 native profile 能发现什么
 
@@ -327,7 +327,7 @@ BufferQueue 没有适用于所有 producer/consumer 的固定“三缓冲”结�
 
 OpenGL ES 资源需要在属于相应 share group（共享资源组）的 context（上下文）中调用匹配的 delete API。删除纹理、buffer、renderbuffer、framebuffer 或 EGL surface 后，driver 仍可等到引用它的命令完成再释放。
 
-Vulkan 要区分 object 与 bound memory（绑定到对象的设备内存）：销毁 `VkImage` 不会隐式替代所有 `vkFreeMemory()`，suballocation（从大块内存中切出的子分配）还要交还给应用 allocator。释放前必须满足 Vulkan 生命周期与同步规则。诊断构建可用 validation layer（校验层）、`vulkan.memory_tracker` 和 AGI frame profile 核对 allocation/bind/free；不要在每次资源销毁时用 `vkDeviceWaitIdle()` 作为生产修复，它会让 GPU 队列失去并行。
+Vulkan 要区分 object 与 bound memory（绑定到对象的设备内存）：销毁 `VkImage` 不会隐式完成所有 `vkFreeMemory()`，suballocation（从大块内存中切出的子分配）还要交还给应用 allocator。释放前必须满足 Vulkan 生命周期与同步规则。诊断构建可用 validation layer（校验层）、`vulkan.memory_tracker` 和 AGI frame profile 核对 allocation/bind/free；不要在每次资源销毁时用 `vkDeviceWaitIdle()` 作为生产修复，它会让 GPU 队列失去并行。
 
 RenderScript 已在 API 31 废弃。维护历史代码时仍需销毁 `Allocation` 等对象，新项目应迁移到当前图形、计算或媒体 API。
 
