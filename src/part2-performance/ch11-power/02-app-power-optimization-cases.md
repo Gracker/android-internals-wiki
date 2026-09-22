@@ -103,7 +103,7 @@ consolidated_from:
 
 # App 耗电优化与案例
 
-应用耗电治理从场景、时间窗口和组件活动开始，继续检查 WakeLock、Alarm、网络、定位、动画和后台任务。修复结果需要在相同设备状态和业务负载下复测。
+应用耗电治理先从场景、时间窗口和组件活动入手，再检查 WakeLock、Alarm、网络、定位、动画和后台任务。修复结果需要在相同设备状态和业务负载下复测。
 
 ## 组件活动、唤醒与后台工作
 
@@ -190,7 +190,7 @@ Android 16（API 36）调整了 regular 与 expedited job 的运行时配额：
 - 与 FGS 并发执行的 job，也要遵守 job runtime quota。
 - WorkManager、JobScheduler 和 DownloadManager 调度的相关工作都受影响。
 
-这里没有“Job 与 FGS 共用一个预算”的规则。FGS 的类型时长和 JobScheduler 的 runtime quota 属于两套限制。用户发起的大文件传输可评估 user-initiated data transfer job（用户发起的数据传输任务）；它有专门的资格条件和配额语义，不能当成通用后台通道。
+平台没有“Job 与 FGS 共用一个预算”的规则：FGS 的类型时长和 JobScheduler 的 runtime quota 属于两套限制。用户发起的大文件传输可评估 user-initiated data transfer job（用户发起的数据传输任务）；它有专门的资格条件和配额语义，不能当成通用后台通道。
 
 定位延迟与停止原因时，WorkManager 通过 `WorkInfo.getStopReason()` 提供原因，直接使用 JobScheduler 时则读取 `JobParameters.getStopReason()`。Android 16 还提供 `JobScheduler.getPendingJobReasonsHistory()`，用于查看任务没有运行的历史原因。
 
@@ -337,7 +337,7 @@ Camera 的开销受 sensor mode（传感器工作模式）、分辨率、帧率�
 
 #### Audio
 
-采样率、声道数、格式、缓冲区、编解码器、offload（交给专用音频硬件处理）能力和输出路由共同决定音频开销。44.1 kHz、48 kHz 或 96 kHz 没有脱离内容与设备的统一优劣关系。应使用内容和设备支持的原生配置，避免无收益的重采样；长时间播放要检查硬件 offload 是否生效，短提示音则要避免维持不必要的常驻播放对象。
+采样率、声道数、格式、缓冲区、编解码器、offload（交给专用音频硬件处理）能力和输出路由共同决定音频开销。44.1 kHz、48 kHz 或 96 kHz 之间没有统一的优劣排序，哪种更合适取决于内容和设备。应使用内容和设备支持的原生配置，避免无收益的重采样；长时间播放要检查硬件 offload 是否生效，短提示音则要避免维持不必要的常驻播放对象。
 
 录音、播放、焦点和 media session 都要跟随用户会话结束。音频线程不工作时还持有 WakeLock，或播放停止后仍保留 FGS，是常见的额外待机成本。
 
@@ -501,7 +501,7 @@ public final class MessageSync {
 
 #### Android 17 下的调度边界
 
-`JobScheduler` 在 Android 16 起位于 `frameworks/base/apex/jobscheduler/`。应用无需为正在执行的 Job 再持有 CPU WakeLock，系统会在 Job 从开始到结束的执行期内代持。下面几条边界比内部可调常量更适合作为应用契约：
+`JobScheduler` 在 Android 16 起位于 `frameworks/base/apex/jobscheduler/`。应用无需为正在执行的 Job 再持有 CPU WakeLock，系统会在 Job 的整个执行期内代为持有。下面几条边界比内部可调常量更适合作为应用契约：
 
 - Android 12 起，每个应用最多保有 150 个已调度 Job，expedited job（加急任务）也计入。
 - Android 11 起，高频调用 `schedule()`、`enqueue()` 等调度入口会被节流。
