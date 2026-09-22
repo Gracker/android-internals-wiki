@@ -78,7 +78,7 @@ JNI（Java Native Interface，Java 与 C/C++ 的调用桥）会操作进程所�
 
 源码里部分 Java 注释和日志仍称 `memory.swap.high`，但 JNI 写入的文件是 `memory.swap.max`。这是系统实现细节，应用侧不应依赖具体 cgroup 文件名。
 
-`memory.stat` 中的 `anon + shmem` 再加 `memory.swap.current` 超过组合阈值后，系统会上报 `TRIGGER_TYPE_ANOMALY`。应用若已通过 `ProfilingManager`（系统剖析服务的应用接口）注册该触发器，系统可在后台 trace（带时间轴的性能记录）正在运行且配额允许时保存诊断资料。`r1` 的 `MemoryLimiter` 随后延迟 30 秒结束进程。历史退出记录可通过 `ApplicationExitInfo`（系统保存的进程退出元数据）识别：
+`memory.stat` 中的 `anon + shmem` 再加 `memory.swap.current` 超过组合阈值后，系统会上报 `TRIGGER_TYPE_ANOMALY`。应用若已通过 `ProfilingManager`（系统剖析服务的应用接口）注册该触发器，当后台 trace（带时间轴的性能记录）正在运行且配额允许时，系统可以保存诊断资料。`r1` 的 `MemoryLimiter` 随后延迟 30 秒结束进程。历史退出记录可通过 `ApplicationExitInfo`（系统保存的进程退出元数据）识别：
 
 - `ApplicationExitInfo.reason == REASON_OTHER`；
 - `ApplicationExitInfo.description` 包含 `MemoryLimiter:AnonSwap`。
@@ -213,7 +213,7 @@ Scudo 实现还会分配临时尺寸数组、暂停 allocator 并遍历 chunks�
 
 现代 Android 上，Scudo 会创建带名称的匿名映射，例如 `[anon:scudo:*]`。GWP-ASan 也有自己的匿名映射。只累计传统 `[heap]` VMA 会漏掉大部分 allocator 区域。
 
-完整 `smaps` 的分类建议按“映射语义”而非固定单一名称进行：
+对完整 `smaps`，建议按“映射语义”而非固定单一名称来分类：
 
 - `[anon:libc_malloc]`、`[anon:scudo:*]`、GWP-ASan 区域：allocator 相关；
 - `[stack]` 与线程栈：线程数量和栈提交；
@@ -234,7 +234,7 @@ VMA 名称会随版本和 allocator 变化。解析器应保留原始名称，�
 4. 重复同一场景若干轮；
 5. 回到相同稳态后再次采样。
 
-比较点必须具有相近的页面、网络、播放和前后台状态。启动后 1 分钟、10 分钟、1 小时的固定时刻只适合连续使用场景；若用户行为不同，时间点本身没有可比性。
+比较点之间要在页面、网络、播放和前后台状态上保持相近。启动后 1 分钟、10 分钟、1 小时的固定时刻只适合连续使用场景；若用户行为不同，时间点本身没有可比性。
 
 线上告警可以同时观察：
 
