@@ -88,7 +88,7 @@ BLE 连接空闲时的成本通常低于持续扫描，但“已连接”不等�
 
 ## 11.4.2 BLE 扫描成本由哪些参数决定
 
-一次扫描的能耗要区分 controller 与 host（运行蓝牙协议栈的主机系统）两部分：
+一次扫描的能耗要区分 controller 与 host（运行蓝牙协议栈的主机系统）：
 
 - **Controller 侧**：扫描窗口占用接收机；active scan 还可能发送 scan request（扫描请求）并等待 scan response（扫描响应）。
 - **Bluetooth 进程侧**：过滤、组装 `ScanResult`、维护 scanner（扫描客户端）与统计。
@@ -360,7 +360,7 @@ Direct connect 适合用户正在等待的首次连接；已知设备的长期 p
 
 Android 14 起，首个 GATT client 调用 `requestMtu()` 时，Android 栈会请求 ATT MTU 517，并忽略后续 client 的 MTU 请求。API 37 的 `setAutomaticMtuEnabled(true)` 默认为连接后自动协商。应用仍要在 `onMtuChanged()` 中读取结果，按协商 MTU 分片，不能假定链路一定使用 517。
 
-对于周期状态更新，启用 characteristic notification 后，由外围设备在数据变化时发送，比主机固定周期调用 `readCharacteristic()` 更适合低功耗。通知频率仍受配件固件控制；配件每几十毫秒发送一次无变化数据时，手机侧无法单独消除这部分成本。
+对于周期状态更新，启用 characteristic notification 后，由外围设备在数据变化时发送，这比主机固定周期调用 `readCharacteristic()` 更适合低功耗。通知频率仍受配件固件控制；配件每几十毫秒发送一次无变化数据时，手机侧无法单独消除这部分成本。
 
 ### 重连状态机
 
