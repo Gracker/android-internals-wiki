@@ -125,7 +125,7 @@ FGS（Foreground Service）指前台服务。相关故障经常把三套计时�
 | `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE` | `mShortFgsTimeoutDuration` 默认约 3 分钟；`onTimeout()` 后还有 `mShortFgsAnrExtraWaitDuration` 默认 10 秒 | 仍未停止服务时触发 ANR。 |
 | 以 Android 15 及以上为目标平台的 `dataSync` / `mediaProcessing` | 应用处于后台时，每种类型在 24 小时内累计约 6 小时；用户把应用带到前台会重置额度 | 收到 `onTimeout()` 后仍不停止会抛出内部 `RemoteServiceException` 并导致崩溃，不能归类为 ANR。 |
 
-这些默认值用于读懂 `android-17.0.0_r1`。产品代码仍应在业务可接受的时间内结束工作，不要用系统超时减去一小段时间作为日常预算。
+这些默认值用于对照 `android-17.0.0_r1` 的源码。产品代码仍应在业务可接受的时间内结束工作，不要用系统超时减去一小段时间作为日常预算。
 
 ### 从类型进入修复路径
 
@@ -268,7 +268,7 @@ IPC（inter-process communication）指进程间通信，Binder 是 Android 的�
 - **固定获取顺序**：需要多把锁时，在模块内规定稳定顺序，并用代码审查或测试检查反向获取。
 - **临界区只保留内存状态变更**：磁盘、网络、Binder、等待 future（代表尚未完成结果的句柄）和外部回调都放到锁外。可以在锁内生成不可变快照，锁外执行耗时操作。
 - **明确数据所有者**：单线程所有权、不可变对象或消息传递常比多处共享可变状态更容易验证。
-- **主线程可以持有短而无竞争的锁**：绝对禁止会逼出复杂的无锁代码。需要禁止的是不可控等待和锁内阻塞。
+- **主线程可以持有短而无竞争的锁**：一律禁止加锁，反而会逼出复杂的无锁代码。需要禁止的是不可控等待和锁内阻塞。
 - **粗锁与细锁都要测量**：一把粗锁减少嵌套，却可能扩大竞争；多把细锁降低局部冲突，也会增加顺序错误。选择取决于访问模式。
 - **原子类只保护对应的原子操作**：`volatile`、`AtomicReference` 和并发容器无法自动保护跨字段不变量或“检查后执行”。
 - **`tryLock()` 需要安全退路**：超时后必须能返回旧值、跳过非必要工作或重试。业务必须等待结果时，`tryLock()` 只会把失败改成另一种表现。
@@ -333,7 +333,7 @@ trace 只负责测量，不会让初始化变快。`installLightweightHooks()` �
 
 静态注册的 receiver 通常由主线程执行；使用 [`registerReceiver(..., scheduler)`](https://developer.android.com/reference/android/content/BroadcastReceiver) 可以通过 `Handler` 指定接收线程。换到后台线程能保护 UI 响应，但 receiver 仍受广播期限约束，线程池排队也会消耗时间。
 
-`goAsync()` 返回的 `PendingResult` 允许 `onReceive()` 返回后继续处理。系统从分发广播开始计时，直到 `PendingResult.finish()`；异步工作沿用原有截止时间。进程在 receiver 完成后也可能被回收，需要保证进程重建后继续的工作应交给 WorkManager 或 JobScheduler。
+`goAsync()` 返回的 `PendingResult` 允许 `onReceive()` 返回后继续处理。系统从分发广播开始计时，直到 `PendingResult.finish()`；异步工作沿用原有截止时间。进程在 receiver 完成后也可能被回收，需要在进程重建后继续的工作，应交给 WorkManager 或 JobScheduler。
 
 下面的示例只适合能在广播期限内完成、支持协程取消的短任务。`receiverScope` 由应用统一持有，避免每次广播创建无人管理的作用域。
 
@@ -374,7 +374,7 @@ class SyncReceiver(
 
 ## ANR Watchdog（看门狗）搭建
 
-Watchdog 是周期检查目标是否仍能响应的看门狗式监测器。应用 Watchdog 通过后台线程向主 Looper 投递探针（供主线程执行的轻量 `Runnable`），测量探针多久才被执行。它能发现主 Looper 长时间没有响应，不能复刻 InputDispatcher、广播、Service、provider 和 `system_server` 的全部判定条件。
+Watchdog 是一种看门狗式监测器，按固定周期检查目标是否还能响应。应用 Watchdog 通过后台线程向主 Looper 投递探针（供主线程执行的轻量 `Runnable`），测量探针多久才被执行。它能发现主 Looper 长时间没有响应，不能复刻 InputDispatcher、广播、Service、provider 和 `system_server` 的全部判定条件。
 
 ### 避免探针互相确认
 
