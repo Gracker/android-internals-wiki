@@ -5354,7 +5354,7 @@
       "summary": "> 发布时间: 2026-06-04T06:05:31.000Z > 原文链接: https://juejin.cn/post/7647186702176157722 2026-06-04 1,657 阅读6分钟 Android 17 开始引入 App 内存限制，限制值会根据设备总 RAM 决定。 如果进程超过限制，系统可以直接杀掉这个进程，而且不会给一段常规 crash...",
       "chapter": "ch04",
       "processed_at": "2026-09-23T06:20:54.440658+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
       "score": 19,
       "target_path": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
       "route_confidence": 24,
@@ -5366,7 +5366,13 @@
         "juejin-android",
         "ch04-memory"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "previous_action": "indexed-only-chapter-freeze",
+      "previous_route_status": "existing-chapter-routed",
+      "status": "body-applied",
+      "applied_at": "2026-09-23T07:15:01+08:00",
+      "applied_run_id": "20260923-071501-642a4cca",
+      "canonical_target_chapter": "ch04"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
