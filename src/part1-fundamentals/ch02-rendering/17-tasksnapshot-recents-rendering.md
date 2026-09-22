@@ -4,7 +4,7 @@ chapter: '2.17'
 section: '2.17'
 status: ready-to-publish
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-09-20'
+last_verified: '2026-09-22'
 last_verified_against: AOSP android-17.0.0_r1 + Launcher3 android-17.0.0_r1
 confidence: high
 sources:
@@ -28,6 +28,12 @@ sources:
   path: frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/
 - type: aosp
   path: packages/apps/Launcher3/quickstep/src/com/android/quickstep/
+- type: aosp
+  path: packages/SystemUI/shared/src/com/android/systemui/shared/system/ActivityManagerWrapper.java
+- type: aosp
+  path: packages/SystemUI/shared/src/com/android/systemui/shared/recents/utilities/PreviewPositionHelper.java
+- type: aosp
+  path: packages/SystemUI/shared/src/com/android/systemui/shared/recents/model/ThumbnailData.kt
 tags:
 - tasksnapshot
 - recents
@@ -113,18 +119,18 @@ SnapshotController.onTransactionReady()
 这条调用链在转场事务提交前记录符合条件的 Task。Android 17 会排除或特殊处理：
 
 - home 与 PiP（Picture-in-Picture，画中画）change；
-- organizer（任务组织器）创建的 Task；
+- organizer（任务组织器）创建的 Task（`Task.mCreatedByOrganizer`）；
 - transient hide（转场中的临时隐藏）；
-- Task 仍为 `isVisibleRequested()`；
+- Task 仍 `isVisibleRequested()` 为 true；只有 `!task.isVisibleRequested()` 的 Task 才会被记录；
 - 某些 display change 同时改变 bounds 的场景。
 
 传入 `ChangeInfo` 是因为 Task configuration（任务配置）可能已在 transition 准备阶段改变。捕获时仍要使用关闭前的 rotation（旋转）和 bounds（边界），避免把旧画面配上新几何。
 
 ### 2.2 休眠前还有一条捕获路径
 
-屏幕即将关闭或设备进入 sleep（休眠）时，`snapshotForSleeping(displayId)` 会遍历对应 Display 上的可见 leaf Task（没有子 Task 的叶子任务）。正在被 Recents animation 控制的 Task 会跳过，因为 Recents 路径需要在更合适的时刻处理快照和 IME（输入法窗口）。
+屏幕即将关闭或设备进入 sleep（休眠）时，`snapshotForSleeping(displayId)` 会遍历对应 Display 上的可见 leaf Task（`Task.isVisible()` 为 true 且没有子 Task 的叶子任务）。正在被 Recents animation 控制的 Task 会被跳过（`!task.isAnimatingByRecents()`），因为 Recents 路径需要在更合适的时刻处理快照和 IME（输入法窗口）。
 
-安全锁屏进入 sleep 时，默认 Display 的 home Task 也可能被捕获，用于解锁回到桌面的 starting window。
+安全锁屏进入 sleep 时，只有默认 Display（`Display.DEFAULT_DISPLAY`）且 keyguard 是 secure 的 home Task 才可能被捕获，用于解锁回到桌面的 starting window；其他情况下 home Task 被显式跳过。
 
 ### 2.3 特权调用方可以主动请求
 
@@ -185,7 +191,13 @@ AOSP 没有给出“1080p 必须 5–15 ms”一类保证。截图策略、SoC�
 - `SNAPSHOT_MODE_APP_THEME`：根据 `TaskDescription` 和 window background 生成主题占位；
 - `SNAPSHOT_MODE_NONE`：不生成 Task snapshot。
 
-Recents activity 和 dream activity（屏保 Activity）不捕获 Task snapshot。TV、IoT 或设备 overlay（资源覆盖）`config_disableTaskSnapshots = true` 也可以关闭该能力。
+具体规则如下：
+
+- `ACTIVITY_TYPE_RECENTS`（最近任务 UI Activity）和 `ACTIVITY_TYPE_DREAM`（屏保 Activity）直接返回 `SNAPSHOT_MODE_NONE`，不捕获任何 Task snapshot；
+- `ACTIVITY_TYPE_HOME` 总是走 `SNAPSHOT_MODE_REAL`，并不会因为是 home Task 就跳过；
+- 其他 Task 在 top Activity 触发 `shouldUseAppThemeSnapshot()`（综合 `setRecentsScreenshotEnabled(false)`、FLAG_SECURE、敏感内容策略和设备策略）时选择 app-theme，否则走 real。
+
+TV（`FEATURE_LEANBACK`）、IoT（`FEATURE_EMBEDDED`）或设备 overlay `config_disableTaskSnapshots = true` 也会通过 `shouldDisableSnapshots()` 直接关闭整个快照路径。
 
 以下情况会选择 app-theme snapshot（应用主题占位快照）：
 
@@ -314,11 +326,11 @@ HWC 仍会按整屏 layer 集合选择 `DEVICE` composition（由 HWC 合成）�
 `TaskThumbnailCache` 的容量来自 Launcher 资源 `recentsThumbnailCacheSize`，与 system_server `SnapshotCache` 无关。它支持：
 
 - 低、高或任意分辨率请求；
-- 后台 executor 加载；
-- cache size（缓存容量）变化后的裁剪；
-- 进入 Overview 前预加载；
-- `onTaskSnapshotChanged` 后更新已有 entry（缓存条目）；
-- `TRIM_MEMORY_RUNNING_CRITICAL` 时清空缩略图与图标 cache。
+- 后台 executor 加载（`TaskImageCache` 的后台协程 + `WorkerThread`）；
+- cache size（缓存容量）变化后裁剪（`updateCacheSizeAndRemoveExcess`）；
+- 进入 Overview 前预加载（由 `enableTaskSnapshotPreloading` 与 `HighResLoadingState.visible` 控制）；
+- 高分辨率转换到低分辨率或反之时的"旧 entry 失效"逻辑（`cache.getAndInvalidateIfModified(key)`）；
+- 进程进入高负载（trim）回调通常通过 Launcher 的 trim dispatcher 清空缩略图与图标 cache。具体 trim 阈值与回调绑定在 Launcher 调度层（`TaskIconCache` / 进程级 `ComponentCallbacks2`），不是 `TaskThumbnailCache` 自身的方法；引用 14.30 章节的 trim 边界时不可外推。
 
 排查内存时至少要区分 system_server 的 TaskSnapshot buffer、Launcher 的 hardware `Bitmap` 引用和屏幕上 Launcher App Window buffer。
 
@@ -632,6 +644,19 @@ adb shell dumpsys meminfo <launcher-package>
 - [AOSP Task snapshots](https://source.android.com/docs/core/perf/task-snapshots)：Android 8.0 起源、Recents 与 starting window 共用 buffer，以及高低分辨率配置；
 - [`Activity.setRecentsScreenshotEnabled()`](https://developer.android.com/reference/android/app/Activity#setRecentsScreenshotEnabled(boolean))：API 33 的 Overview 隐私开关；
 - [`WindowManager.LayoutParams.FLAG_SECURE`](https://developer.android.com/reference/android/view/WindowManager.LayoutParams#FLAG_SECURE)：安全窗口的截图与 Display 约束。
+
+## 13. 复核边界与常见误读
+
+本轮对正文中关键事实做了逐项核对，下面把容易误读的几条集中说明：
+
+1. **transition 路径只记录 `!isVisibleRequested()` 的 Task**。`SnapshotController.onTransactionReady()` 中 `task != null && !task.mCreatedByOrganizer && !task.isVisibleRequested()` 是同一行的复合条件，遗漏否定就是相反结论。
+2. **`getSnapshotMode` 对 home 一律走 REAL**，对 recents / dream 直接 NONE，不能因为是 home 就跳过；对其他 Task 是否走 app-theme 由 top Activity `shouldUseAppThemeSnapshot()` 决定。
+3. **sleep 路径只捕获 `isVisible()` 且 `!isAnimatingByRecents()` 的 leaf Task**；secure keyguard 情况下默认 Display 的 home Task 才被纳入，其他 home Task 在这一路径被显式跳过。
+4. **`DeferRemoveHighResCache` 缓存的 high-res 在 `onlyCacheLowResTaskSnapshot` 关闭时不存在**。flag 关闭时 `TaskSnapshotCache` 构造里 `mDeferRemoveCache` 为 `null`，所有 high-res 引用只在主 `mRunningCache`。
+5. **`TaskThumbnailCache` 不直接订阅 `ITaskSnapshotListener`**。`TaskSnapshotManager.registerTaskSnapshotListener` 是 `TaskSnapshotListenerTracker` 提供的统一入口；highRes / lowRes 状态切换在 `HighResLoadingState` 内部维护，不要把 trim 阈值或 onTaskSnapshotChanged 流程归到 `TaskThumbnailCache` 自身。
+6. **`isSnapshotOrientationCompatible` 的 aspect ratio 阈值是 `0.01f`**，且比较的是宽高比（`taskSize.x / taskSize.y` 与 `w / h`），不是宽度差值的绝对比例；折叠后不旋转但宽高比变化超过阈值时 starting window 直接走 splash 或 NONE。
+7. **`TaskSnapshot.getHardwareBuffer()` 已 `@Deprecated` 并返回 `null`**，仅作为升级期兼容而保留。新代码应走 `setBufferToSurface(Transaction, SurfaceControl)` 或 `getHardwareBufferWidth/Height` 取得元数据，再交给 `wrapToBitmap()` 在 Launcher 进程里生成硬件 `Bitmap`。
+8. **`FLAG_SECURE` 与 `setRecentsScreenshotEnabled(false)` 的范围在前文 §3.4 已经分别说明**；混用会丢掉 `FLAG_SECURE` 的 Display 限制与截屏防护，是真实工程里经常出现的回归点。
 
 ## 小结
 
