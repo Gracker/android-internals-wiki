@@ -114,7 +114,7 @@ Android 17 会根据 target SDK 暴露不同的配额错误码：
 - `targetSdkVersion >= 37`：`ERROR_TOO_MANY_KEYS` 可以直接确认配额超限。
 - `targetSdkVersion < 37`：系统返回 `ERROR_INCORRECT_USAGE`，异常消息中会包含密钥数量限制信息。消息文本只适合辅助诊断，因为同一个公开错误码也可表示算法或参数组合错误。
 
-JCA（Java Cryptography Architecture，Java 加密 API 体系）可能把底层 `KeyStoreException` 包在 `ProviderException`、`InvalidKeyException` 或其他算法异常的 cause 链中；cause 链就是异常逐层保存的原始原因。`UserNotAuthenticatedException`、`KeyPermanentlyInvalidatedException` 和 `StrongBoxUnavailableException` 又是独立的公开异常类型。因此，分类器要同时查看外层异常、cause 链、公开错误码和失败发生在哪个操作阶段。
+JCA（Java Cryptography Architecture，Java 加密 API 体系）可能把底层 `KeyStoreException` 包在 `ProviderException`、`InvalidKeyException` 或其他算法异常的 cause 链中；cause 链就是异常逐层保存的原始原因。`UserNotAuthenticatedException`、`KeyPermanentlyInvalidatedException` 和 `StrongBoxUnavailableException` 又是独立的公开异常类型。因此，分类器要同时查看外层异常、cause 链和公开错误码，并判断失败发生在哪个操作阶段。
 
 建议分类为以下几组：
 
@@ -233,7 +233,7 @@ LSKF（Lock Screen Knowledge Factor）指锁屏 PIN、图案或密码等知识�
 
 ## 6. 盘点与回收实现
 
-全量枚举接近 50,000 个 alias 会产生 Binder 调用、数据库查询和字符串分配开销。Binder 是 Android 的进程间通信机制，应用枚举密钥时需要通过它访问 keystore2。枚举不能运行在主线程、未捕获异常处理器、`Application.onCreate()` 的首帧之前，也不能在每次登录时执行。日常监控可由低频后台任务采集总数和已知前缀分布，只有进入预警区间或出现创建失败时才做详细盘点。
+全量枚举接近 50,000 个 alias 会产生 Binder 调用、数据库查询和字符串分配开销。Binder 是 Android 的进程间通信机制，应用枚举密钥时需要通过它访问 keystore2。枚举不能在主线程或未捕获异常处理器中运行，不能在每次登录时执行，也不能安排在 `Application.onCreate()` 的首帧之前。日常监控可由低频后台任务采集总数和已知前缀分布，只有进入预警区间或出现创建失败时才做详细盘点。
 
 下面的代码在后台生成去标识化的盘点结果。它只保留总数和受控前缀分布，不把完整 alias 写入遥测数据：
 
