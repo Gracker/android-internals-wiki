@@ -731,7 +731,7 @@ profile 不匹配通常表现为编译优化缺失，本身不会直接改变 Ap
 
 前半篇负责生成和维护 Baseline Profile，发布后则要确认 ART 是否拿到、接受并使用了 profile。两条流程按下面的证据顺序衔接：
 
-1. 21.4 用当前 release 构建生成规则，并通过 Macrobenchmark 验证代表性场景。
+1. 前半篇用当前 release 构建生成规则，并通过 Macrobenchmark 验证代表性场景。
 2. 检查 APK/AAB 条目、安装来源和每个 APK 各自对应的 `.dm`。
 3. 用 `pm art dump` 与 `pm compile -v` 读取 actual filter 和 compilation reason。
 4. 用 Perfetto 区分 JIT/类加载成本与业务初始化成本。
