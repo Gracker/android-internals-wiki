@@ -189,7 +189,7 @@ TextureView 的一块内容帧大致经过：
 
 `Producer fill → SurfaceTexture queue → frame-available → host frame → RT acquire/sample → host queue → SF readiness/latch → HWC/RenderEngine → present`
 
-TextureView 多了宿主 callback、宿主帧截止点、输入 acquire 和纹理采样。若输入恰好赶上已经安排的 host frame，这些工作可能落在同一 VSync 周期；若到达晚于 RenderThread pending layer update，它会等下一次宿主帧。不能统一写成“必定多一帧”。
+TextureView 多了宿主 callback、宿主帧截止点、输入 acquire 和纹理采样。若输入恰好赶上已经安排的 host frame，这些工作可能落在同一 VSync 周期；若输入到达晚于 RenderThread pending layer update，就要等下一次宿主帧。不能统一写成“必定多一帧”。
 
 SurfaceView 也可能迟到：
 
@@ -260,7 +260,7 @@ YUV、多平面、压缩 modifier、tile 对齐、metadata、HDR 与厂商 grall
 | 功耗 | 同亮度、网络、音频、温度区间 | 电源轨能耗、GPU busy、带宽、CLIENT 时间 |
 | 内存 | 相同 slot 稳态与操作步骤 | gralloc allocation、heap、GPU resource |
 
-跨设备对比可以回答兼容性和分布，不能拿一台设备的 overlay 成功率替另一台下结论。
+跨设备对比可以回答兼容性和分布，不能拿一台设备的 overlay 成功率替另一台设备下结论。
 
 ## 三、SurfaceControl 在 Android 17 中负责什么
 
@@ -270,7 +270,7 @@ SurfaceView 的 position、matrix、crop、alpha、composition order、show/hide
 
 硬件加速路径使用 `RenderNode.PositionUpdateListener` 取得最终位置和 host frame number，再经 `ViewRootImpl.mergeWithNextTransaction()` 与宿主目标帧合并。UI 线程的其它更新可由 `applyTransactionOnDraw()` 随下一次 ViewRoot draw 应用。
 
-需要把状态绑定到 SurfaceView 下一块内容 buffer 时，可以使用 `applyTransactionToFrame()`。源码按 `lastAcquiredFrameNum + 1` 合并目标 transaction。连续 Producer 中“下一块”不能映射成业务上的固定逻辑帧；没有新内容 buffer 时，该更新也可能不生效。
+需要把状态绑定到 SurfaceView 下一块内容 buffer 时，可以使用 `applyTransactionToFrame()`。源码按 `lastAcquiredFrameNum + 1` 合并目标 transaction。对连续出帧的 Producer 来说，“下一块”不能映射成业务上的固定逻辑帧；没有新内容 buffer 时，该更新也可能不生效。
 
 ### `apply()`、sync 与 async
 
