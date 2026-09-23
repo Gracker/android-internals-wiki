@@ -85,7 +85,7 @@ Material 3 Adaptive 1.3.0-rc01 是候选发布版（release candidate，RC），
 | 中等（Medium）高度 | `480dp ≤ height < 900dp` |
 | 扩展（Expanded）高度 | `height ≥ 900dp` |
 
-宽度适合决定导航形态、窗格（pane）数量和信息密度，高度也不能省略。横屏手机或桌面上的矮窗口可能具有中等或扩展宽度，同时只有紧凑高度；此时机械地切成双窗格会压缩触控区域、列表和详情内容。
+导航形态、窗格（pane）数量和信息密度适合按宽度决定，高度也不能省略。横屏手机或桌面上的矮窗口可能具有中等或扩展宽度，同时只有紧凑高度；此时机械地切成双窗格会压缩触控区域、列表和详情内容。
 
 Material 3 Adaptive 1.2.0 的 `currentWindowAdaptiveInfo()` 默认仍按 Compact、Medium、Expanded 三档计算。传入 `supportLargeAndXLargeWidth = true` 后，计算才会包含 1200dp 与 1600dp 两个断点。`calculatePaneScaffoldDirective()` 生成窗格布局指令：Compact 和 Medium 默认允许一个横向分区，Expanded 允许两个，Large 和 Extra-large 最多允许三个。`calculatePaneScaffoldDirectiveWithTwoPanesOnMediumWidth()` 会让 Medium 使用双窗格，但源码文档也提醒，这可能使内容过密，只适合确有需求的页面。
 
@@ -179,7 +179,7 @@ fun AdaptiveArticleRoute(
 
 ### 3. `BoxWithConstraints` 只处理组件级约束
 
-`BoxWithConstraints` 基于 `SubcomposeLayout`：它先取得父级约束，再据此组合子内容。内容读取 `maxWidth`、`maxHeight` 等约束后，约束变化可能使该内容重新组合并再次测量。它适合卡片、工具栏、图表等局部组件；页面每一层都使用它，会增加这种二阶段组合和测量工作。
+`BoxWithConstraints` 基于 `SubcomposeLayout`：它先取得父级约束，再据此组合子内容。内容读取 `maxWidth`、`maxHeight` 等约束；这些约束变化时，该内容可能重新组合并再次测量。它适合卡片、工具栏、图表等局部组件；页面每一层都使用它，会增加这种二阶段组合和测量工作。
 
 判断某个组件是否需要它，可以问三个问题：
 
@@ -347,7 +347,7 @@ flowchart LR
 - `resizeableActivity`；
 - `minAspectRatio` 与 `maxAspectRatio`。
 
-游戏类别、低于 `sw600dp` 的屏幕，以及用户在设备宽高比设置中明确选择应用原有行为，属于官方列出的例外。不同厂商的桌面窗口能力和窗口策略也有差异，验收记录要包含设备与窗口模式。
+游戏类别、低于 `sw600dp` 的屏幕，以及用户在设备宽高比设置中明确选择应用原有行为的情况，属于官方列出的例外。不同厂商的桌面窗口能力和窗口策略也有差异，验收记录要包含设备与窗口模式。
 
 这项变化没有替换 `ViewRootImpl`、BLAST 或 SurfaceFlinger 渲染路径，但应用会更常遇到旋转、自由调整窗口、分屏和多种宽高比。兼容工作包括：
 
