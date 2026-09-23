@@ -618,7 +618,7 @@ flowchart LR
     L -.-> M["SurfaceFlinger / HWC / 显示器"]
 ```
 
-`Text` 的组合节点负责保存输入和发起失效，`Paragraph`/`MultiParagraph` 负责文本测量与排版。Android 实现只有在系统判定文本适合简化路径、内容不换行时所需的最大宽度不超过可用宽度，并且没有基线偏移样式时，才使用适合单行简单文本的 `BoringLayout`；其余情况交给支持换行和复杂样式的 `StaticLayout`。
+`Text` 的组合节点负责保存输入和发起失效，`Paragraph`/`MultiParagraph` 负责文本测量与排版。Android 实现只在同时满足下列条件时才使用适合单行简单文本的 `BoringLayout`：系统判定文本适合简化路径、内容不换行时所需的最大宽度不超过可用宽度，并且没有基线偏移样式；其余情况交给支持换行和复杂样式的 `StaticLayout`。
 
 绘制结果记录到宿主 `ComposeView` 所在窗口。HWUI 是 Android 的硬件加速二维渲染库，RenderThread 执行其中一部分渲染工作；BLAST BufferQueue 协调窗口缓冲区与事务，SurfaceFlinger（常缩写为 SF）负责系统合成，HWC（Hardware Composer）是硬件合成接口。声明一个 `Text` 不会创建独立图形缓冲层（Surface）。
 
