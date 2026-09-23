@@ -82,7 +82,7 @@ AndroidX 的 `ComponentActivity.setContent` 扩展函数先检查 `android.R.id.
 - 已进入 group 中的 `remember { ... }` calculation（花括号内的计算）会执行一次；
 - 一个 composable 可以不产生布局节点，也可以产生多个节点，函数调用数不等于 UI 节点数。
 
-因此，首次成本无法用 `N × M` 这样的层数公式表示。更有用的模型是：被进入的 composable 工作量，创建的布局节点、modifier 节点和 semantics 节点，业务计算、子组合、文本与图片处理，再加上应用变更、测量、布局和绘制的总和。modifier 节点承载布局、绘制或输入行为；semantics 节点保存无障碍和测试所需的语义信息。
+因此，首次成本无法用 `N × M` 这样的层数公式表示。更有用的模型是这几部分的总和：被进入的 composable 工作量；创建的布局节点、modifier 节点和 semantics 节点；业务计算、子组合、文本与图片处理；以及应用变更、测量、布局和绘制。modifier 节点承载布局、绘制或输入行为；semantics 节点保存无障碍和测试所需的语义信息。
 
 ### 1.4 composition 完成后仍要经过 View traversal
 
