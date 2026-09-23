@@ -213,7 +213,7 @@ Caller Activity
 | preserve display colors | `false` | 捕获结果不保留 display 原始颜色表达 |
 | capture timeout | 2000 ms | 单次异步封装的超时上限 |
 
-回调拿到 `HardwareBuffer` 后，代码先用 `Bitmap.wrapHardwareBuffer()` 创建 hardware Bitmap。hardware Bitmap 的像素主要供 GPU 使用，`Bitmap.getPixel()` 不能直接读取；实现随后调用 `copy(Bitmap.Config.ARGB_8888, false)`，把整张图复制为 CPU 可读的 software Bitmap。用户确认时，ViewModel 才从这份快照读取一个像素并返回。因此，单次取色前已经发生全帧捕获与全帧复制，移动准星时无需反复截屏。
+回调拿到 `HardwareBuffer` 后，实现先用 `Bitmap.wrapHardwareBuffer()` 创建 hardware Bitmap。hardware Bitmap 的像素主要供 GPU 使用，`Bitmap.getPixel()` 不能直接读取；实现随后调用 `copy(Bitmap.Config.ARGB_8888, false)`，把整张图复制为 CPU 可读的 software Bitmap。用户确认时，ViewModel 才从这份快照读取一个像素并返回。因此，单次取色前已经发生全帧捕获与全帧复制，移动准星时无需反复截屏。
 
 调用链进入 system_server 后，`WindowManagerService.screenCapture()` 会检查 `READ_FRAME_BUFFER`，把 `ScreenCaptureParams` 转成 display capture 参数，再交给 `DisplayManagerInternal.systemScreenshot()`。回调将 `ScreenshotHardwareBuffer` 中的 `HardwareBuffer` 与 `ColorSpace` 送回 EyeDropper 进程。权限检查与实际 display capture 都发生在系统服务路径中；调用方 Activity 只发出标准 Intent，EyeDropper 的 Compose overlay 则负责交互和显示准星。
 
