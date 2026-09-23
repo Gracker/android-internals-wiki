@@ -62,7 +62,7 @@ consolidated_from:
 
 ## 图片内存为什么容易超预算
 
-Bitmap（位图）是 Android 表示解码后像素及其描述信息的对象。图片内存问题通常由解码尺寸、缓存复用、页面生命周期和设备内存预算共同造成。一张 4000×3000 的 `ARGB_8888` 图片需要 48,000,000 字节，约 45.8 MiB（1 MiB 为 1,048,576 字节）；200×150 的目标 View 只有 30,000 个像素。若仍按原尺寸解码，分配的像素数是显示目标的 400 倍，随后交给 Canvas 缩小也无法省掉这次像素分配。Android 10 到 Android 17 的普通软件 Bitmap 会增加原生堆（Native Heap）占用，Hardware Bitmap 的像素则位于图形缓冲区。
+Bitmap（位图）是 Android 中表示解码后像素及其描述信息的对象。图片内存问题通常由解码尺寸、缓存复用、页面生命周期和设备内存预算共同造成。一张 4000×3000 的 `ARGB_8888` 图片需要 48,000,000 字节，约 45.8 MiB（1 MiB 为 1,048,576 字节）；200×150 的目标 View 只有 30,000 个像素。若仍按原尺寸解码，分配的像素数是显示目标的 400 倍，随后交给 Canvas 缩小也无法省掉这次像素分配。Android 10 到 Android 17 的普通软件 Bitmap 会增加原生堆（Native Heap）占用，Hardware Bitmap 的像素则位于图形缓冲区。
 
 应用侧要同时控制四件事：解码前按目标尺寸降采样；按像素所在的内存分区选择监控指标；在图片加载入口记录大图和生命周期线索；只在所有权清楚时复用像素存储。ART 堆与 GC 见 [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)，图片请求、缓存、解码与绘制见 [22.9 图片加载、Bitmap 解码与 RenderNode](../ch22-rendering-practice/09-image-bitmap-rendernode.md)，对象泄漏判断见 [23.2 内存泄漏检测与治理](02-memory-leak-governance.md)。
 
@@ -137,15 +137,17 @@ fun calculateInSampleSize(
 
 `inSampleSize = 4` 表示宽高约降到原图的 1/4，像素数约降到 1/16。官方文档说明，非 2 的幂会向下取到最接近的 2 的幂；因此采样率计算不能当作任意比例的精确缩放。解码后的图片仍可能需要再按 View 尺寸缩放，但显示阶段的缩放不能替代解码阶段的像素数控制。
 
-API 28 及以上使用 `ImageDecoder` 时，可在 `OnHeaderDecodedListener` 里调用 `setTargetSampleSize()` 或 `setTargetSize()`，在头信息回调中设定输出尺寸，避免默认按编码图的原始尺寸输出。它与 `BitmapFactory` 的两阶段解码差异见 22.9。
+API 28 及以上使用 `ImageDecoder` 时，可在 `OnHeaderDecodedListener` 里调用 `setTargetSampleSize()` 或 `setTargetSize()`，在头信息回调中设定输出尺寸，避免默认按编码图的原始尺寸输出。它与 `BitmapFactory` 两阶段解码的差异见 22.9。
 
-`inPreferredConfig` 是解码器尽量满足的请求，不保证结果一定采用指定配置；实际结果应读取 `bitmap.config` 和 `allocationByteCount`。照片、透明图和需要高质量缩放的 UI 图通常优先使用 `ARGB_8888`。没有 alpha、质量要求较低的列表缩略图可以评估 `RGB_565`，但要接受色彩精度下降和渐变色带风险。广色域或 HDR 内容还可能使用 `RGBA_F16`，或在 API 33 及以上使用 `RGBA_1010102`；前者为 8 字节/像素，后者与 `ARGB_8888` 一样为 4 字节/像素。`RGB_565` 不能作为所有图片共用的省内存开关。
+`inPreferredConfig` 是解码器尽量满足的请求，不保证结果一定采用指定配置；实际结果应读取 `bitmap.config` 和 `allocationByteCount`。
+
+照片、透明图和需要高质量缩放的 UI 图通常优先使用 `ARGB_8888`。没有 alpha、质量要求较低的列表缩略图可以评估 `RGB_565`，但要接受色彩精度下降和渐变色带风险。广色域或 HDR 内容还可能使用 `RGBA_F16`，或在 API 33 及以上使用 `RGBA_1010102`；前者为 8 字节/像素，后者与 `ARGB_8888` 一样为 4 字节/像素。`RGB_565` 不能作为所有图片共用的省内存开关。
 
 ## Android 8.0+：Bitmap 像素内存位于原生堆
 
 Bitmap 像素数据的存放位置经历过三次变化：Android 2.3.3 及更早版本位于原生内存；Android 3.0 到 7.1 随 Bitmap 对象位于 Dalvik 堆；Android 8.0 及以上又回到原生堆。本文覆盖 Android 10 到 Android 17：普通软件 Bitmap 的像素分配按原生堆排查，`Config.HARDWARE` 的像素分配按图形缓冲区排查。
 
-AOSP `Bitmap.java` 中的 Java 对象通过 `mNativePtr` 指向原生 Bitmap。`NativeAllocationRegistry` 用来把 Java 对象关联的原生分配量和释放函数登记给 ART。Android 17 的 `registerNativeAllocation()` 使用两个登记器：一个以空操作释放函数记录像素数据大小，只负责分配记账；另一个通过 `sRegistry` 登记原生 Bitmap 对象和对应的释放函数。`mRecycler` 是前一个登记器返回的清理任务，`recycle()` 释放像素后运行它，更新 ART 记录的原生分配量。这个设计带来两个工程结论：
+AOSP `Bitmap.java` 中，Bitmap 的 Java 对象通过 `mNativePtr` 指向原生 Bitmap。`NativeAllocationRegistry` 用来把 Java 对象关联的原生分配量和释放函数登记给 ART。Android 17 的 `registerNativeAllocation()` 使用两个登记器：一个以空操作释放函数记录像素数据大小，只负责分配记账；另一个通过 `sRegistry` 登记原生 Bitmap 对象和对应的释放函数。`mRecycler` 是前一个登记器返回的清理任务，`recycle()` 释放像素后运行它，更新 ART 记录的原生分配量。这个设计带来两个工程结论：
 
 - **Bitmap 对象仍受 Java 可达性影响**：Java 层对象被 Activity、Adapter、缓存或回调引用时，原生像素内存也会被保留。Bitmap 泄漏的根不一定在原生层，常常是 Java 引用链没有断开。
 - **原生堆变大不等于 JNI 泄漏**：Android 8.0 之后，图片加载增加会直接推高原生堆。用 `dumpsys meminfo` 或线上内存指标看到原生堆上升时，先区分 Bitmap 分配与 JNI（Java 和原生代码之间的调用接口）或 `.so` 原生库分配，不能直接归因于 JNI 泄漏。
@@ -280,7 +282,7 @@ fun decodeWithReuse(
 
 ## Hardware Bitmap 的使用场景与限制
 
-`Bitmap.Config.HARDWARE` 表示像素只存放在图形内存中；Java `Bitmap` 包装对象和原生元数据仍然存在，因此“像素不在 Java 或原生堆”不等于这张图没有内存成本。`ImageDecoder` 的 AOSP 注释说明，默认创建的 Bitmap 不可修改，并且通常采用 `Config.HARDWARE`。这里必须保留“通常”：`ALLOCATOR_DEFAULT`（默认像素分配策略）可能为小图选择软件分配，也会在 mutable、alpha mask（透明度蒙版）等条件与硬件分配不兼容时切换到软件。只展示、不修改、由硬件加速管线绘制的图片适合 Hardware Bitmap，例如详情页大图、列表中不需要像素读取的封面图。
+`Bitmap.Config.HARDWARE` 表示像素只存放在图形内存中；Java `Bitmap` 包装对象和原生元数据仍然存在，因此“像素不在 Java 或原生堆”不等于这张图没有内存成本。`ImageDecoder` 的 AOSP 注释说明，默认创建的 Bitmap 不可修改，并且通常采用 `Config.HARDWARE`。这个“通常”有具体边界：`ALLOCATOR_DEFAULT`（默认像素分配策略）可能为小图选择软件分配，也会在 mutable、alpha mask（透明度蒙版）等条件与硬件分配不兼容时切换到软件。只展示、不修改、由硬件加速管线绘制的图片适合 Hardware Bitmap，例如详情页大图、列表中不需要像素读取的封面图。
 
 硬件 Bitmap 的限制集中在可变性和绘制路径：它不能作为 `inBitmap` 候选，也不能和 `inMutable = true` 同时要求。AOSP `BaseCanvas` 的标准软件绘制路径遇到 `Config.HARDWARE` 会抛出 `IllegalArgumentException("Software rendering doesn't support hardware bitmaps")`。因此下列场景应避免硬件 Bitmap：
 
@@ -293,7 +295,7 @@ fun decodeWithReuse(
 
 ## 案例：在第一次像素分配前限制尺寸
 
-货拉拉公开复盘记录过一个图片发送峰值：发送前后原生内存突增，内存分类把增长指向大 Bitmap，代码检查发现旋转逻辑先完整解码原图，再做缩放与方向变换。输出图片即使很小，峰值阶段仍可能同时持有原图像素和变换后的中间结果。
+货拉拉公开复盘记录过一个图片发送峰值：发送前后原生内存突增，内存分类显示这部分增长来自大 Bitmap，代码检查发现旋转逻辑先完整解码原图，再做缩放与方向变换。输出图片即使很小，峰值阶段仍可能同时持有原图像素和变换后的中间结果。
 
 这类问题要在第一次像素分配之前限制尺寸：先读取边界与 EXIF 方向，根据上传或展示目标计算采样尺寸，再解码、旋转或裁剪。验收至少覆盖处理前基线、解码峰值、变换峰值、上传结束和页面退出后的回落，并使用接近业务允许上限的图片尺寸与方向组合。只比较操作结束后的平均值，会漏掉触发 OOM 的瞬时峰值。
 
