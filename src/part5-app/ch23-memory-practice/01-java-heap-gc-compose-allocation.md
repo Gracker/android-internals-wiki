@@ -636,7 +636,7 @@ Android Studio 的 Java/Kotlin 分配记录要求 debuggable（可调试）构�
 
 零分配不应成为通用目标。ART 对短命小对象提供了低开销分配路径，强行池化反而可能把短命对象变成长命对象，增加老年代压力；字段未完整重置时还会产生残留数据。对象池只适合创建频繁、初始化成本高、状态可完整清理的对象；普通数据对象和持有 View、Context 或回调的对象不要池化。
 
-下面的函数把批处理切成多个可协作让出执行权的调度片段。它直接把原列表和左闭右开的 `[start, end)` 索引交给调用方，省去分块子列表；`chunkSize` 必须由测量决定。
+下面的函数把批处理切成多个调度片段，并在片段之间协作式让出执行权。它直接把原列表和左闭右开的 `[start, end)` 索引交给调用方，省去分块子列表；`chunkSize` 必须由测量决定。
 
 ```kotlin
 suspend fun <T> processInChunks(
@@ -683,7 +683,7 @@ suspend fun <T> processInChunks(
 
 Compose Runtime 1.13.0-alpha01 已发布，但仍是预览版。版本比较会标出预览变化，正文结论以 1.12.0 稳定版为准。
 
-Composition 是一棵可组合界面在运行时的实例，保存界面结构、状态订阅和 `remember` 值；重组（recomposition）是状态变化后重新执行受影响的可组合函数。处理 Compose 内存问题时，先区分两种症状：
+Composition 是可组合界面在运行时的实例树，保存界面结构、状态订阅和 `remember` 值；重组（recomposition）是状态变化后重新执行受影响的可组合函数。处理 Compose 内存问题时，先区分两种症状：
 
 - 存活对象持续增加：常见于 Composition 没有按宿主生命周期释放、协程或监听器存活过久、状态所有者范围过大、View 与 Compose 互相持有。
 - 短命对象分配速率过高：常见于组合阶段反复排序、映射、格式化，频繁重建输入对象，或在高频状态变化中执行不必要的组合。
@@ -953,7 +953,7 @@ composeCompiler {
 | Perfetto + Compose tracing | 重组、布局、绘制、线程与 GC 的时间关系 | 需要固定场景和接近发布配置的构建 |
 | Allocation recording / heap dump | 哪些类型在分配、哪些对象被谁持有 | 分配记录成本高；heap dump 只反映采集时刻 |
 
-[Composition tracing 文档](https://developer.android.com/develop/ui/compose/tooling/tracing)说明，Macrobenchmark（在应用外驱动完整场景的基准测试）可以产出带 Compose tracing 的系统跟踪。滚动、页面切换和启动应写成可重复的 Macrobenchmark；Memory Profiler 用于定位具体分配或持有关系，不能单独作为回归判断依据。四类工具提供的是不同证据，需要按同一时间段、设备和操作进行关联。
+[Composition tracing 文档](https://developer.android.com/develop/ui/compose/tooling/tracing)说明，Macrobenchmark（在应用外驱动完整场景的基准测试）可以产出带 Compose tracing 的系统跟踪。滚动、页面切换和启动应写成可重复的 Macrobenchmark；Memory Profiler 用于定位具体分配或持有关系，不能单独作为回归判断依据。四类工具提供的是不同证据，需要按同一时间段、设备和操作关联起来。
 
 #### 先判断分配抖动，再判断泄漏
 
@@ -989,7 +989,7 @@ Compose 内存问题要把“对象被长期持有”和“短命对象分配过
 
 ### “看到 GC 就要抑制 GC”
 
-GC 请求反映堆状态和分配行为。AOSP 中，`ShouldConcurrentGCForJava()` 判定需要回收后才会请求 `ConcurrentGCTask`；应用侧盲目抑制 GC 只会把回收延后。除非进行虚拟机研究或受控实验，业务应用不要通过原生函数拦截来阻塞 `HeapTaskDaemon`。
+GC 请求反映堆状态和分配行为。AOSP 中，`ShouldConcurrentGCForJava()` 判定需要回收后才会请求 `ConcurrentGCTask`；应用侧盲目抑制 GC 只会把回收延后。除非做虚拟机研究或受控实验，业务应用不要通过原生函数拦截来阻塞 `HeapTaskDaemon`。
 
 修改 `ConcurrentGCTask::Run()` 的 vtable（虚函数表）依赖非公开 C++ ABI，也只能拦截一类后台请求；分配失败路径仍会等待或触发 GC。伪造 `num_bytes_allocated_` 不会增加分配器空间或物理内存，还会让 GC 起点、分配限制、系统跟踪和回收记账互相矛盾。向 `TaskProcessor` 注入阻塞任务还会影响整条堆维护队列。这些方案都不能进入第三方应用的生产构建。
 
