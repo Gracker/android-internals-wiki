@@ -4,8 +4,8 @@ chapter: '4.1'
 section: '4.1'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-09-15'
-last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs (retrieved 2026-09-15; current docs diverge from r1 source on Memory Limiter config path/manual units) / source-index material juejin-android 2026-09-11 Memory Limiter article / source-index material juejin-android 2026-09-15 low-memory APK list case
+last_verified: '2026-09-23'
+last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / ComponentCallbacks2.java / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs (retrieved 2026-09-15; current docs diverge from r1 source on Memory Limiter config path/manual units) / Android Developers ProfilingManager+ProfilingTrigger docs (API 35/36/37) / source-index material juejin-android 2026-09-11 Memory Limiter article / source-index material juejin-android 2026-09-15 low-memory APK list case / source-index material juejin-android 2026-09-23 Android 17 MemoryLimiter kill R8+onTrimMemory+ProfilingManager article
 confidence: medium-high
 sources:
 - type: official
@@ -105,6 +105,13 @@ sources:
 - type: reference
   path: 技术文章/source/juejin-android/2026-09-15-76852071-Android 系统级设备应用踩坑实录：sharedUserId 签名.md
   role: 低内存行业终端 U 盘 APK 列表只保留文件元数据、不在列表阶段解析 APK 内容或读取图标的现场案例
+- type: reference
+  path: 技术文章/source/juejin-android/2026-09-23-76471867-Android17内存超限杀App排查.md
+  role: Android 17 MemoryLimiter 杀进程现场的应用侧应答：release 包 R8 minify+shrinkResources+fullMode 配置、`onTrimMemory()` 主动让出可重建缓存、`ProfilingManager` OOM/anomaly 触发式 heap dump 接入
+- type: official
+  path: https://developer.android.com/reference/android/os/ProfilingManager
+- type: official
+  path: https://developer.android.com/reference/android/os/ProfilingTrigger
 tags:
 - android-memory
 - memory-model
@@ -145,8 +152,8 @@ consolidated_from:
 - src/part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md
 - src/part1-fundamentals/ch04-memory/01-memory-overview.md
 - src/part1-fundamentals/ch04-memory/02-linux-memory.md
-last_body_apply_at: '2026-09-15T11:19:16+08:00'
-last_body_apply_run_id: '20260915-111514-61b3428f'
+last_body_apply_at: '2026-09-23T07:15:01+08:00'
+last_body_apply_run_id: '20260923-071501-642a4cca'
 ---
 
 # Android 与 Linux 内存管理全景
@@ -461,6 +468,62 @@ Android 17 官方文档还描述了进程内存守护进程 PMGD（Process Memor
 PMGD 使用 `inotify` 监听 cgroup v2 的 `memory.events`。命中后，它先检查匿名内存；如果超过 `anon_limit_in_mb` 会立即终止目标进程。如果匿名内存未超过硬边界，PMGD 会等待 `reclaim_wait_time_secs`，再检查 `memory.current` 是否仍大于等于 `memory.high`，或匿名内存是否超过硬边界；仍超限时终止进程，并记录 Statsd memory atoms。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android PMGD 官方文档 `https://source.android.com/docs/core/perf/pmgd`]
 
 因此，看到某个系统或厂商进程因内存被终止时，不能直接归因到普通应用的 MemoryLimiter。排查时应同时确认 PMGD 配置、SELinux 策略、`memory.events`/`memory.current`、`ApplicationExitInfo`、lmkd 日志与 PSI 时间线。 [已验证: Android PMGD 官方文档；本章“MemAvailable 与 PSI 描述不同维度”段落]
+
+#### 应用侧对 MemoryLimiter 的应答路径
+
+MemoryLimiter 触发“匿名页 + 共享内存 + 交换空间”越界终止后，应用拿不到常规 Java 堆栈，排查只能从 `ApplicationExitInfo`、PSI 和运行时注册的反向取证入口入手。下面的三个方向是同一份退出现场的不同时间点。
+
+**编译期：让 R8 真正生效**
+
+发布包若仍保留被 R8 删掉的代码、资源反射入口或被 proguard 规则拦住的优化，运行时常驻内存会无谓上涨，间接把进程推近 MemoryLimiter 的 `anon + shmem + swap` 边界。`buildTypes.release` 至少要确认：
+
+- `isMinifyEnabled = true`：启用代码压缩与混淆；
+- `isShrinkResources = true`：移除未引用的资源映射；
+- `proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")`：使用 `proguard-android-optimize.txt`，而不是偏兼容旧行为、阻止部分优化的 `proguard-android.txt`。
+
+`gradle.properties` 中如果仍保留 `android.enableR8.fullMode=false` 应删除，让 R8 进一步做激进优化。`proguard-rules.pro` 里要避免 `-dontoptimize`、`-dontshrink`、`-dontobfuscate` 这类全局开关，它们会挡住 R8 对整库的优化。
+
+反射、序列化与三方 SDK 的 keep 规则应当收窄到具体类、字段或注解。库工程应把对外规则放在 `consumer-rules.pro`，把库内部为自身编译和测试保留的规则放在模块自己的 `proguard-rules.pro`；两者混在一起会让接入方拿到过宽的 keep，最终影响运行时代码与资源映射规模。 [来源: 技术文章/source/juejin-android/2026-09-23-76471867-Android17内存超限杀App排查.md] [已验证: Android Gradle Plugin 官方文档关于 R8 与 shrinkResources 的配置入口]
+
+R8 与资源压缩不是 MemoryLimiter 的直接解，但运行时代码映射和未回收资源都会进入匿名页与共享内存，从 cgroup 视角观察到 `anon + shmem + swap` 的相对位置更靠上限。R8 效果应在带 R8 完整模式的 release 构建上做前后对比，而不是在 debug 构建里凭直觉判断。
+
+**运行时：主动让出可重建缓存**
+
+应用退到后台后，平台可能按进程状态释放一部分内存。`ComponentCallbacks2.onTrimMemory(level)` 是应用主动交还可重建对象的入口。Android 14 起多个旧的 trim 常量不再继续下发，Android 15 已标记若干 trim 常量为废弃，trim 处理的常见入口仍集中在 `TRIM_MEMORY_UI_HIDDEN` 和 `TRIM_MEMORY_BACKGROUND`：
+
+- `TRIM_MEMORY_UI_HIDDEN`：UI 不再可见后清理图片缓存、视频预览 buffer、动画资源等大对象；这些对象重新进入页面时通常可以从网络或磁盘重建。
+- `TRIM_MEMORY_BACKGROUND`：进程已进入后台，可一并清空搜索结果缓存、临时 buffer 池等能在下次进入页面时再生成的资源。
+
+不要在 `onTrimMemory` 中释放无法低成本恢复的业务状态，例如正在编辑的草稿、支付流程状态或用户选择路径；这些应走持久化或 `ViewModel` / saved state。错误地把业务状态当作普通缓存清掉，反而会触发重保存和重分配，加重后续一次内存事件。 [来源: 技术文章/source/juejin-android/2026-09-23-76471867-Android17内存超限杀App排查.md] [已验证: AOSP android-17.0.0_r1 `ComponentCallbacks2.java` 常量；本章“进程内存域与统计口径”段落]
+
+trim 处理的实时性影响 `anon + shmem + swap` 的峰值。在 `visible` 或 `not-visible` 档位下，进程已经被 MemoryLimiter 盯住；`onTrimMemory` 的工作通常需要在进入这些档位之前完成，才有空间余量。
+
+**线上取证：用 `ProfilingManager` 抓被杀前的现场**
+
+MemoryLimiter 触发的终止不会有 Java 堆栈；`ApplicationExitInfo` 只能给出现 `REASON_OTHER` 与 `MemoryLimiter:AnonSwap` 这类标记字符串。补齐堆图需要应用侧提前注册反向取证入口。
+
+`ProfilingManager` 提供触发式 profiling 注册能力：
+
+- `ProfilingTrigger.TRIGGER_TYPE_OOM`：面向 `OutOfMemoryError` 抓取 Java heap dump；
+- `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`：面向系统识别出的严重性能异常；MemoryLimiter 触发时按其源码流程会在杀进程前/调度异常分析事件（`MemoryLimiter.java` 中异常事件触发路径），结合 `registerForAllProfilingResults` 可拿到 artifact。
+
+下面给出一个最小接入示例，拿到文件路径后交给自己的上传任务处理：
+
+```kotlin
+val profilingManager = context.getSystemService(ProfilingManager::class.java)
+val executor = Executors.newSingleThreadExecutor()
+profilingManager.registerForAllProfilingResults(executor) { result ->
+    if (result.errorCode == ProfilingResult.ERROR_NONE) {
+        enqueueProfileUpload(result.resultFilePath)
+    } else {
+        logProfilingError(result.errorCode)
+    }
+}
+```
+
+artifact 在 App 下次启动并注册回调后才会返回。线上接入还要考虑采样比例、用户同意、文件大小、上传时机和保留时间：Java heap dump 可能包含对象引用与内容，不适合当作普通日志直接上传，应按业务敏感字段先脱敏再走既有 APM 通道。 [来源: 技术文章/source/juejin-android/2026-09-23-76471867-Android17内存超限杀App排查.md] [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java` 异常分析事件触发路径；Android Developers `ProfilingManager` / `ProfilingTrigger` 参考文档]
+
+`ProfilingManager` 的产物只能作为 MemoryLimiter 杀进程这一类“没有 Java 堆栈的系统终止”的补充证据。常规路径上 `ApplicationExitInfo`、系统日志、tombstone、lmkd 记录、PSI 时间线仍是主线，ProfilingManager 用来补 heap dump 而不是取代它们。
 
 ### ZRAM 与 Swap：容量、压缩数据和 RAM 成本
 
