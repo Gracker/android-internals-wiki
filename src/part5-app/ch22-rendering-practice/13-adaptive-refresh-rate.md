@@ -160,7 +160,7 @@ class ArrAwareScrollView @JvmOverloads constructor(
 }
 ```
 
-`currVelocity` 已是非负的像素/秒。`setFrameContentVelocity()` 的值只对下一个绘制帧有效，所以一次手势只写一次无法覆盖完整的惯性滚动。触摸按住期间仍由触摸升帧保持较高节奏；速度映射用于松手后的减速阶段。
+`currVelocity` 已经是非负值，单位是像素/秒。`setFrameContentVelocity()` 的值只对下一个绘制帧有效，所以一次手势只写一次无法覆盖完整的惯性滚动。触摸按住期间仍由触摸升帧保持较高节奏；速度映射用于松手后的减速阶段。
 
 ARR 只改变目标节拍。若滚动仍出现“应用错过帧截止时间”（`app deadline missed`），应继续检查布局、数据绑定、图片处理、预取、`RenderThread` 和 GPU。相关 `RecyclerView` 方法见 [22.2 RecyclerView 与 Compose LazyList 性能](02-recyclerview-compose-lazylist.md)。
 
@@ -302,7 +302,7 @@ read -r -p "Record the Perfetto trace, then press Enter to restore settings."
 
 脚本只用于实验机。运行前应从设备支持的显示模式或系统设置中确认目标值，并在跟踪数据中验证设置是否生效。日常基线还要保留一组完全不改系统设置的数据，避免把调试时的强制设置当成量产策略。
 
-应用线上可以记录 `displayId`、API 版本、`hasArrSupport()`、应用提交的策略、窗口模式、`FrameMetrics`/卡顿指标和交互时延。普通应用拿不到通用、可信的面板刷新率驻留统计；请求值或 `Display.getRefreshRate()` 也不能代替面板功耗证据。刷新率驻留时间、CPU/GPU 工作频点和耗电应通过实验室跟踪数据、功耗仪或设备提供的可靠计数器验证。
+线上应用可以记录 `displayId`、API 版本、`hasArrSupport()`、应用提交的策略、窗口模式、`FrameMetrics`/卡顿指标和交互时延。普通应用拿不到通用、可信的面板刷新率驻留统计；请求值或 `Display.getRefreshRate()` 也不能代替面板功耗证据。刷新率驻留时间、CPU/GPU 工作频点和耗电应通过实验室跟踪数据、功耗仪或设备提供的可靠计数器验证。
 
 ## 跨设备实验与回退
 
