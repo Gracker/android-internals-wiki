@@ -65,7 +65,9 @@ consolidated_from:
 
 # 内存泄漏检测与治理
 
-内存上涨只能说明占用正在变化，无法单独证明泄漏；OOM（内存耗尽）的报错位置也未必是增长源。Android 应用的内存包含 ART（Android 运行时）托管堆（managed heap）、原生堆（native heap）、线程栈、代码与文件映射、图形缓冲区等部分。某个对象仍可达，也不等于它已经违反业务生命周期。
+内存上涨只能说明占用正在变化，无法单独证明泄漏；OOM（内存耗尽）的报错位置也未必是增长源。Android 应用的内存包含 ART（Android 运行时）托管堆（managed heap）、原生堆（native heap）、线程栈、代码与文件映射、图形缓冲区等部分。
+
+某个对象仍可达，也不等于它已经违反业务生命周期。
 
 平台基线为 Android 17 / API 37 / `android-17.0.0_r1`。排查需要回答三个问题：
 
@@ -160,7 +162,7 @@ class ImageRepository(context: Context) {
 }
 ```
 
-这里使用 `applicationContext` 是因为仓库与进程同寿命。不要把所有 Context 都改成 Application：主题、窗口、权限交互和 Activity Result 等能力仍可能要求 Activity Context。
+这里使用 `applicationContext` 是因为仓库与进程同寿命。不要把所有 Context 都改成 Application Context：主题、窗口、权限交互和 Activity Result 等能力仍可能要求 Activity Context。
 
 ### 2.2 监听器注册与注销不对称
 
@@ -224,7 +226,7 @@ class ResultFragment : Fragment(R.layout.result) {
 
 Fragment 可以留在 back stack（返回栈）中，而它的 view 已被销毁。把 binding、Adapter callback、Animator 或 ComposeView 相关对象存为 Fragment 字段时，应在 `onDestroyView()` 释放 view 级引用。
 
-不要用 `mFragmentManager == null`、`mCalled == true` 之类 Android 系统框架内部字段判断泄漏。这些字段不是应用契约，含义也不能代替 view lifecycle（View 生命周期）。
+不要用 `mFragmentManager == null`、`mCalled == true` 之类 Android 系统框架内部字段判断泄漏。这些字段不是应用契约，其含义也不能代替 view lifecycle（View 生命周期）。
 
 ### 2.5 Compose 的 effect 没有释放外部订阅
 
@@ -290,11 +292,15 @@ class FeedFragment : Fragment(R.layout.feed) {
 
 ### 2.9 案例：常驻 Activity 如何保留已关闭弹窗
 
-货拉拉司机端公开复盘中的首页弹窗问题，展示了“业务事件—对象增长—引用链—生命周期缺口”的完整证据链。测试人员每两秒触发一次弹窗，约八分钟、约 240 次展示后观察到内存上涨约 50 MB；线上 OOM 样本中的弹窗展示次数超过 2000 次。这些数字只描述当时版本和测试口径，尚不足以证明泄漏。
+货拉拉司机端公开复盘中的首页弹窗问题，展示了“业务事件—对象增长—引用链—生命周期缺口”的完整证据链。
 
-heap dump 进一步显示 `SolverVariable[]`、`SolverVariable`、`ArrayRow` 等布局对象持续增加，一条引用链从弹窗 `mView` 经 `LifecycleRegistry.mObserverMap` 到常驻 `MainActivity`。代码审查确认：Dialog 初始化时注册了 Activity 生命周期观察者，`dismiss` 时却没有移除。修复后应使用同一事件序列复测，确认观察者、旧 Dialog/View 和布局对象不再随展示次数累积。
+测试人员每两秒触发一次弹窗，约八分钟、约 240 次展示后观察到内存上涨约 50 MB；线上 OOM 样本中的弹窗展示次数超过 2000 次。这些数字只描述当时版本和测试口径，尚不足以证明泄漏。
 
-这个案例说明，缺陷来自注册方、注销方和资源生命周期终点不一致。相同方法也适用于监听器、回调、Flow collector（收集器）和外部 SDK observer。
+heap dump 进一步显示 `SolverVariable[]`、`SolverVariable`、`ArrayRow` 等布局对象持续增加，一条引用链从弹窗 `mView` 经 `LifecycleRegistry.mObserverMap` 到常驻 `MainActivity`。代码审查确认：Dialog 初始化时注册了 Activity 生命周期观察者，`dismiss` 时却没有移除。
+
+修复后应使用同一事件序列复测，确认观察者、旧 Dialog/View 和布局对象不再随展示次数累积。
+
+这个案例说明，缺陷来自注册方、注销方和资源生命周期终点的不一致。相同方法也适用于监听器、回调、Flow collector（收集器）和外部 SDK observer。
 
 ## 3. 证据链：从“内存上涨”到引用路径
 
@@ -365,7 +371,9 @@ LeakCanary 的检测过程可以概括为：
 
 阅读一条 LeakCanary 报告时，先确认 `╰→` 指向的对象是否已经越过业务生命周期，再从 GC Root 沿 `↓` 阅读强引用路径。`~~~` 标出的是分析器认为可疑的引用边，修复点仍要回到注册、缓存、任务或 JNI 代码中的实际 owner。
 
-retained size 要和 dominator（支配）关系一起看。它估算某对象不可达后可随之释放的内存，不能单独证明对象已经泄漏。leak signature（泄漏签名）根据可疑路径归组，适合统计同类缺陷；Shark 展示的是便于诊断的一条路径，对象仍可能存在其他到 Root 的路径，修复后必须重新抓取验证。
+retained size 要和 dominator（支配）关系一起看。它估算某对象不可达后可随之释放的内存，不能单独证明对象已经泄漏。
+
+leak signature（泄漏签名）根据可疑路径归组，适合统计同类缺陷；Shark 展示的是便于诊断的一条路径，对象仍可能存在其他到 Root 的路径，修复后必须重新抓取验证。
 
 `Library Leak` 表示路径匹配已知库或 Framework 模式，不等于可以忽略。应核对依赖版本和上游修复，评估发生频率与 retained bytes；应用侧无法消除时，仍要记录受影响版本、规避方案和验收条件。
 
@@ -408,7 +416,7 @@ KOOM 官方仓库提供 Java Heap、Native Heap 和 Thread 三类监控模块。
 
 ### 6.1 API 边界
 
-`ProfilingManager` 在 API 35（Android 15）加入平台，可请求 system trace（系统轨迹）、Java heap dump、heap profile（堆分配采样）和 stack sampling（调用栈采样）。系统 trigger 能力从后续版本继续扩展。
+`ProfilingManager` 在 API 35（Android 15）加入平台，可请求 system trace（系统轨迹）、Java heap dump、heap profile（堆分配采样）和 stack sampling（调用栈采样）。系统 trigger 能力在后续版本继续扩展。
 
 Android 17 / API 37 新增了与内存诊断直接相关的 trigger：
 
@@ -426,7 +434,9 @@ Android 17 已不能用 `kill -10 <pid>` 触发 HPROF；数字 10 对应 SIGUSR1
 
 Native heapprofd 使用另一条数据源和 `__SIGRTMIN + 4`，不能因为 Java HeapGraph 可采集，就推断 native profile 也满足权限和运行条件。
 
-完整 HPROF 在 Android 17 中先遍历堆计算输出长度，再进行第二遍写入；segment（输出分段）以最多 128 个对象或 4 KiB 为边界。直接流式写入能避免为整个 dump 再持有一份大缓冲区，但 dump 仍会暂停、遍历并输出大量数据。Perfetto HeapGraph 同样有 fork、页表、COW、trace buffer（轨迹缓冲区）和子进程序列化成本。两类产物都只能在调试、灰度或系统受控触发下采集，不能放进常规高频监控。
+完整 HPROF 在 Android 17 中先遍历堆计算输出长度，再进行第二遍写入；segment（输出分段）以最多 128 个对象或 4 KiB 为边界。直接流式写入能避免为整个 dump 再持有一份大缓冲区，但 dump 仍会暂停、遍历并输出大量数据。Perfetto HeapGraph 同样有 fork、页表、COW、trace buffer（轨迹缓冲区）和子进程序列化成本。
+
+两类产物都只能在调试、灰度或系统受控触发下采集，不能放进常规高频监控。
 
 ### 6.3 注册 trigger 和结果监听
 
@@ -482,7 +492,9 @@ class MemoryProfileRegistrar(
 
 `ApplicationExitInfo` 从 API 30 起记录历史进程退出信息。它适合回答“进程为何退出、退出前系统最近采样到多少 PSS/RSS”，不能直接回答“哪条引用造成泄漏”。
 
-Android 17 的 MemoryLimiter 目前只在部分设备启用。按 Android 17 行为变更文档，受限进程的 `reason` 是 `REASON_OTHER`，`description` 包含 `MemoryLimiter:AnonSwap`；同一页还建议注册 `TRIGGER_TYPE_ANOMALY` 获取达到上限时的 heap dump。API 参考中 `REASON_MEMORY_LIMITER` 标为 37.2 版本加入，不能把它替代该行为变更文档的 Android 17 识别规则。生产记录应同时保存 reason、status 和 description，并按目标系统版本验证识别规则。
+Android 17 的 MemoryLimiter 目前只在部分设备启用。按 Android 17 行为变更文档，受限进程的 `reason` 是 `REASON_OTHER`，`description` 包含 `MemoryLimiter:AnonSwap`；同一页还建议注册 `TRIGGER_TYPE_ANOMALY` 获取达到上限时的 heap dump。API 参考中 `REASON_MEMORY_LIMITER` 标为 37.2 版本加入，不能用它替代该行为变更文档的 Android 17 识别规则。
+
+生产记录应同时保存 reason、status 和 description，并按目标系统版本验证识别规则。
 
 下面的代码读取最近退出记录，并提取内存诊断需要的基础字段：
 
