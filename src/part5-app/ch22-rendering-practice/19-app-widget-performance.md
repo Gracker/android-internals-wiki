@@ -88,7 +88,7 @@ App Widget 的界面由 Launcher（桌面启动器）、SystemUI（系统界面�
 这一区别直接影响分析方法：
 
 - 提供方进程中的耗时主要来自取数、构造 `RemoteViews`、准备图像和发起 Binder 调用；Binder 是 Android 的进程间调用机制。
-- `system_server` 负责检查调用者、更新缓存、检查图像内存，并把有效快照通知给宿主。这里的快照是能够描述 Widget 某一时刻界面状态的一份 `RemoteViews`。
+- `system_server` 负责检查调用者、更新缓存、检查图像内存，并把有效快照通知给宿主。这里的快照是一份 `RemoteViews`，它能够描述 Widget 某一时刻的界面状态。
 - 宿主进程负责布局加载、动作应用、测量、布局、绘制等 UI 工作。
 - 提供方完成 `updateAppWidget()` 调用，只代表更新请求已经交给系统服务，不代表桌面像素已经刷新。
 
@@ -377,7 +377,7 @@ Glance 更适合集中维护声明式状态，手写 `RemoteViews` 对更新类�
 
 Android 17 的 `AppWidgetServiceImpl.updateAppWidgetIds()` 会校验调用包与 UID，并检查调用者是否有权访问目标 Widget。服务还会遍历 `RemoteViews` 中的 URI，通过 URI 授权服务确认调用 UID 对 `content://` URI 具有读权限。
 
-应用不需要、也没有公开的 `RemoteViews.CallingIdentity` API 来替代这些校验。更新失败时应先确认：
+平台没有公开的 `RemoteViews.CallingIdentity` API 来替代这些校验，应用也不需要这样的接口。更新失败时应先确认：
 
 - 当前进程的包名是否与提供方一致；
 - `appWidgetId` 是否仍属于当前提供方和用户；
