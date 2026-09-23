@@ -500,12 +500,12 @@ trim 处理的实时性影响 `anon + shmem + swap` 的峰值。在 `visible` �
 
 **线上取证：用 `ProfilingManager` 抓被杀前的现场**
 
-MemoryLimiter 触发的终止不会有 Java 堆栈；`ApplicationExitInfo` 只能给出现 `REASON_OTHER` 与 `MemoryLimiter:AnonSwap` 这类标记字符串。补齐堆图需要应用侧提前注册反向取证入口。
+MemoryLimiter 触发的终止不会有 Java 堆栈；`ApplicationExitInfo` 只能给出 `REASON_OTHER` 与 `MemoryLimiter:AnonSwap` 这类标记字符串。补齐堆图需要应用侧提前注册反向取证入口。
 
 `ProfilingManager` 提供触发式 profiling 注册能力：
 
 - `ProfilingTrigger.TRIGGER_TYPE_OOM`：面向 `OutOfMemoryError` 抓取 Java heap dump；
-- `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`：面向系统识别出的严重性能异常；MemoryLimiter 触发时按其源码流程会在杀进程前/调度异常分析事件（`MemoryLimiter.java` 中异常事件触发路径），结合 `registerForAllProfilingResults` 可拿到 artifact。
+- `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`：面向系统识别出的严重性能异常；MemoryLimiter 触发时按其源码流程会在杀进程前调度异常分析事件（`MemoryLimiter.java` 中异常事件触发路径），结合 `registerForAllProfilingResults` 可拿到 artifact。
 
 下面给出一个最小接入示例，拿到文件路径后交给自己的上传任务处理：
 
