@@ -567,7 +567,7 @@ overrun_p99 >= baseline_overrun_p99 + policy.min_p99_regression
 - FrameCallback / VsyncCallback 只在短诊断窗口运行，回调只写预分配内存。
 - 堆栈采样具有远程开关、版本化策略、冷却时间、大小与隐私限制。
 - 告警按版本、设备层级、页面、状态和 Surface 拓扑分组，先检查报告完整率再判断趋势。
-- 线下回放至少验证一个 UI 线程、一个 RenderThread / GPU、一个系统合成器以及一个独立 Surface 场景。
+- 线下回放至少验证 UI 线程、RenderThread / GPU、系统合成器和独立 Surface 各一个场景。
 - Android 17 trace 中出现 buffer-stuffing recovery 时，把主动恢复和原始积压分开解释。
 
 验收时要保留一组可以复核的证据：异常属于哪个 Window 或 Surface、集中在哪组用户和交互状态、应用是否超过 deadline、系统合成器怎样分类、哪一段耗时或代码栈重复出现。具备这些信息后，才能判断由哪个模块处理，并用同一口径验证修复。
