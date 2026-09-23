@@ -204,7 +204,7 @@ CameraX 的关键版本变化可按下面的顺序理解：
 
 ## 2. CameraX 1.6 的位置：CameraPipe 仍在 Camera2 与 HAL 之上
 
-CameraX 1.6 的架构变化需要单独说明。CameraPipe 是 CameraX 内部负责 Camera2 适配、会话和请求管理的模块。`Camera2Config.defaultConfig()` 已返回基于 CameraPipe 的配置，CameraX 不再沿用早期那套 Camera2 内部实现。CameraPipe 使用的仍是平台 Camera2 接口，也会经过相机服务进程 `cameraserver`、Camera HAL、sensor 和 ISP。
+CameraPipe 是 CameraX 内部负责 Camera2 适配、会话和请求管理的模块。`Camera2Config.defaultConfig()` 已返回基于 CameraPipe 的配置，CameraX 不再沿用早期那套 Camera2 内部实现。CameraPipe 使用的仍是平台 Camera2 接口，也会经过相机服务进程 `cameraserver`、Camera HAL、sensor 和 ISP。
 
 下图用于标出配置层与数据消费者，避免把所有耗时都记在 CameraX 名下。
 
@@ -502,7 +502,7 @@ API 文档还规定最低系统版本为 Android 6.0（API 23）。这个返回�
 - `getValidOutputFormatsForInput(PRIVATE)` 不包含 JPEG；
 - 拍照时环形队列为空，或其中没有可用的元数据。
 
-闪光灯的处理需要单独说明。CameraX 可以保留已经建立的可重处理会话，只在闪光灯为 `ON` 或 `AUTO` 时提交普通静态拍照；用户切回 `OFF` 后，无需仅为这一变化重建整个会话。用例配置、设备能力或兼容性特例不允许 ZSL 时，`ZslControlImpl` 会跳过输入流的建立。
+闪光灯的处理有所不同：CameraX 可以保留已经建立的可重处理会话，只在闪光灯为 `ON` 或 `AUTO` 时提交普通静态拍照；用户切回 `OFF` 后，无需仅为这一变化重建整个会话。用例配置、设备能力或兼容性特例不允许 ZSL 时，`ZslControlImpl` 会跳过输入流的建立。
 
 CameraX 1.6.1 的兼容性特例列表包含若干 Samsung Fold4、S22、S24 型号和 Xiaomi Mi 8，原因是重处理图像可能出现颜色异常或变焦冻结。机型名单属于库版本的实现细节，升级 CameraX 后应重新检查相应版本的 `ZslDisablerQuirk`。
 
@@ -657,7 +657,7 @@ cameraDevice.createReprocessCaptureRequest(totalCaptureResult)
 - 重复请求被输出端背压拖慢；
 - 预览、分析或其他共享 camera 资源出现连带延迟。
 
-这类问题要按照 [Camera 平台管线的逐 stream Buffer 方法](../../part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md)中的方法逐条流检查。预览正常不能证明 ZSL 输出流和输入队列正常。
+这类问题要按 [Camera 平台管线的逐 stream Buffer 方法](../../part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md) 对每条流分别检查。预览正常不能证明 ZSL 输出流和输入队列正常。
 
 #### 应用条件、降级与日志证据
 
@@ -789,7 +789,7 @@ ML Kit 集成通常运行在 `ImageAnalysis` 消费端。CameraEffect 或自研 
 - 逐帧 YUV → RGB 与 Bitmap 分配会增加 CPU、内存和 GC（垃圾回收）压力；
 - 结果覆盖层若每帧触发复杂 UI 重绘，还会增加宿主窗口的帧耗时。
 
-性能计时要覆盖从相机 timestamp 到结果显示的端到端延迟。模型推理很快，但输入帧在队列里等待较久时，用户看到的仍是旧结果。
+性能计时要覆盖从相机 timestamp 到结果显示的端到端延迟。即使模型推理很快，输入帧在队列里等待较久时，用户看到的仍是旧结果。
 
 坐标转换也要使用 CameraX 提供的 rotation、crop rect 与 transformation 信息。直接用传感器坐标绘制到 `PreviewView`，在裁剪、镜像和旋转场景会错位；为修错位反复复制或旋转 Bitmap，会引入额外开销。
 
