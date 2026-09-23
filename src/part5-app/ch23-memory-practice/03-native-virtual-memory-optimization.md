@@ -149,7 +149,7 @@ Java 堆没有持续增长，不代表进程的内存占用稳定。使用 JNI�
 
 Android 17 中，`android_os_Debug.cpp` 的 `android_os_Debug_getDirtyPagesPid()` 调用 libmeminfo 的 `ExtractAndroidHeapStats()` 取得按 VMA 分类的统计，再把 memtrack 返回的图形数据计入相应字段。VMA 分类规则位于 `androidprocheaps.cpp`：`[heap]`、`[anon:libc_malloc]`、`[anon:scudo:]` 和 `[anon:GWP-ASan]` 等名称归入原生堆，`.so` 归入共享库，`.jar`、`.apk` 等归入对应的代码分类。Graphics 数值还可能来自 memtrack，不能推断所有 `dma-buf` 都由 `androidprocheaps.cpp` 按名称归类。
 
-VMA 分类和总量统计使用不同读取路径。`androidprocheaps.cpp` 必须扫描详细的 `/proc/<pid>/smaps`，因为分类依赖每个 VMA 的名字。`ProcMemInfo::SmapsOrRollup()` 服务于 PSS、RSS 等聚合值；内核提供 `smaps_rollup` 时读取汇总文件，否则改读 `smaps`。`smaps_rollup` 没有逐 VMA 名称，不能替代分类路径。
+VMA 分类和总量统计使用不同读取路径。`androidprocheaps.cpp` 必须扫描详细的 `/proc/<pid>/smaps`，因为分类依赖每个 VMA 的名字。`ProcMemInfo::SmapsOrRollup()` 用于计算 PSS、RSS 等聚合值；内核提供 `smaps_rollup` 时读取汇总文件，否则改读 `smaps`。`smaps_rollup` 没有逐 VMA 名称，不能替代分类路径。
 
 [源码锚点: AOSP `android-17.0.0_r1`, `frameworks/base/core/jni/android_os_Debug.cpp`, `system/memory/libmeminfo/androidprocheaps.cpp`, `system/memory/libmeminfo/procmeminfo.cpp`]
 
@@ -180,7 +180,7 @@ heapprofd 适合回答两个问题：哪条调用栈的累计分配量高，哪�
 
 #### 中央服务默认禁用，由采集请求按需启动
 
-Android 17 的 `heapprofd.rc` 把 `heapprofd` 服务声明为 `disabled`。`persist.heapprofd.enable=1` 或 `traced.lazy.heapprofd=1` 时，init（Android 启动后负责管理系统服务的进程）才启动服务；两个属性都清空后停止。因此，heapprofd 不是从开机起持续运行的常驻采集器。
+Android 17 的 `heapprofd.rc` 把 `heapprofd` 服务声明为 `disabled`。`persist.heapprofd.enable=1` 或 `traced.lazy.heapprofd=1` 时，init（Android 启动后负责管理系统服务的进程）才启动服务；两个属性都清空后，服务随之停止。因此，heapprofd 不是从开机起持续运行的常驻采集器。
 
 服务启动后，`heapprofd.cc::StartCentralHeapprofd()` 从 init 进程传入的 socket（本地通信端点）取得监听端，建立 `HeapprofdProducer`，接收目标进程中分析 client 的连接。应用进程使用 `malloc_interceptor_bionic_hooks.cc` 中的 Bionic `MallocDispatch` 拦截 `malloc`、`free`、`calloc`、`realloc` 等入口，并通过 `AHeapProfile_registerHeap` 注册要分析的堆；这条路径不依赖 `LD_PRELOAD`。
 
@@ -302,7 +302,7 @@ HWASan 适合测试构建，ASan 只在 HWASan 不可用时作为兼容方案。
 
 一套可控方案可以分三层：
 
-- **基础指标层**：定时采集 PSS、RSS、Native Heap Alloc（原生堆已分配量）、Graphics、GL、线程数、文件描述符（FD）数量，并带上页面、业务场景、前后台状态和设备可用内存分组。采集频率按场景设定，避免常驻高频轮询。
+- **基础指标层**：定时采集 PSS、RSS、Native Heap Alloc（原生堆已分配量）、Graphics、GL、线程数、文件描述符（FD）数量，并按页面、业务场景、前后台状态和设备可用内存分组。采集频率按场景设定，避免常驻高频轮询。
 - **异常判定层**：在同一会话内观察增长斜率，例如进入页面前后、按确定脚本重复操作后、播放或上传结束后。单点阈值容易把合理的高占用当成异常。
 - **诊断触发层**：命中抽样诊断规则后，对少量 debuggable 或 profileable 包触发 heapprofd、系统 meminfo 快照或业务侧原生分配摘要。普通发布包只上报聚合指标和场景标签。
 
@@ -362,7 +362,7 @@ Android 15 起支持 16 KiB 页面设备。按 2026-08-15 的 Google Play 规则
 
 ## mmap、页驻留、缺页与回收
 
-对象释放解决逻辑所有权，虚拟内存分析继续检查地址空间、文件映射、匿名页和 page fault。已 free 的内存也可能暂时留在进程 RSS。
+对象释放解决逻辑所有权，虚拟内存分析继续检查地址空间、文件映射、匿名页和 page fault。调用 `free()` 后的内存也可能暂时留在进程 RSS。
 
 虚拟内存问题经常与 Java heap OOM（ART 托管对象堆耗尽）、native heap（C/C++ 分配使用的堆）和线程资源耗尽混在一起。VMA（virtual memory area，虚拟内存区域）是内核记录的一段连续地址范围；同一 VMA 具有一致的权限和映射来源。排查时要先确认失败来自地址空间、物理内存、VMA 数量还是线程资源。只看一个很大的 VSS 数字，容易把正常的地址空间预留误判成泄漏。对象持有关系可参阅 [23.2 内存泄漏检测与治理](02-memory-leak-governance.md)，Native Heap 的分配与所有权则见本文前一部分。
 
@@ -401,7 +401,7 @@ Android 15 起支持 16 KiB 页面设备。按 2026-08-15 的 Google Play 规则
 
 #### 1.3 `VmSwap` 不能当成另一份 VSS
 
-内核 `proc.rst` 把 `VmSwap` 定义为匿名私有数据使用的 swap（换出空间），shared memory（共享内存）的换出量不包含在内。页被换出后，原虚拟地址仍在 VMA 中，所以该页仍计入 `VmSize`；`VmSwap` 不是可以再加到 VSS 上的独立地址空间。
+内核 `proc.rst` 把 `VmSwap` 定义为匿名私有数据使用的 swap（换出空间），不包含 shared memory（共享内存）的换出量。页被换出后，原虚拟地址仍在 VMA 中，所以该页仍计入 `VmSize`；`VmSwap` 不是可以再加到 VSS 上的独立地址空间。
 
 Android 17 及以上支持内存管理守护进程 `mmd`：`mmd_setup` 负责配置 ZRAM（在 RAM 中保存压缩换出页的块设备），`mmd` 再执行重压缩和可选的 writeback（把冷页写到后备存储）。应用从 `VmSwap` 只能看到按页核算的换出量，不能反推出 ZRAM 中压缩后的字节数，也不能判断页面此刻位于 ZRAM 还是后备存储。分析卡顿时，应同时查看 `VmSwap` 增长、major fault（需要存储 I/O 才能完成的主缺页）、PSI（Pressure Stall Information，资源压力导致的任务停顿统计）、`lmkd` 事件和业务时间线。
 
@@ -612,7 +612,7 @@ WebView 加载器随后把 `gReservedAddress` 和 `gReservedSize` 交给 `androi
 - 业务不需要 WebView 时，避免初始化 provider 和相关 SDK，接受从 Zygote（用于孵化应用进程的模板进程）继承的预留仍计入 VSS；
 - 需要隔离 WebView 时，按产品架构放入受控进程，管理该进程生命周期，并测量总 PSS、启动时延和 Binder（Android 进程间通信机制）代价。
 
-把 WebView Activity 放到子进程不会自动移除主进程继承的预留；它的收益主要来自已提交页、WebView 对象与故障边界的隔离。
+把 WebView Activity 放到子进程不会自动移除主进程继承的预留；子进程方案的收益主要来自已提交页、WebView 对象与故障边界的隔离。
 
 ### 5. ART 托管堆：应用不能释放运行时内存区域
 
@@ -620,7 +620,9 @@ WebView 加载器随后把 `gReservedAddress` 和 `gReservedSize` 交给 `androi
 
 HSC（Homogeneous Space Compact，同构空间压缩）把主分配空间中的存活对象复制到备用空间，以整理碎片。Android 17 的 [`Heap::SupportHomogeneousSpaceCompactAndCollectorTransitions()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc) 要求同时存在 `main_space_backup_`、`main_space_`，且前台垃圾回收器为 CMS（Concurrent Mark Sweep，并发标记清扫）。`PerformHomogeneousSpaceCompact()` 还会在 moving GC（会移动存活对象的垃圾回收）已被禁用、当前回收器本身会移动对象，或主空间不允许移动对象时拒绝执行。
 
-同一文件的 Heap 构造路径会对 CC（Concurrent Copying，并发复制）和 CMC（Concurrent Mark Compact，并发标记压缩）关闭 `use_homogeneous_space_compaction_for_oom_`。HSC 是受回收器与 Space（ART 管理的一类内存区域）布局约束的兼容路径，并非 Android 17 应用普遍执行的内存整理流程。它也不能推出“每个 Android 17 应用都有两块固定 512 MiB MainSpace”。ART 会按回收器、heap growth limit（托管堆允许增长到的上限）、设备配置和进程类型建立不同 Space。RegionSpace 用分区支持移动回收，zygote space 保存进程孵化前已有的对象，large object space 管理大对象，image space 映射启动镜像；JIT 代码映射则保存即时编译生成的机器码，各自的用途和生命周期不同。
+同一文件的 Heap 构造路径会对 CC（Concurrent Copying，并发复制）和 CMC（Concurrent Mark Compact，并发标记压缩）关闭 `use_homogeneous_space_compaction_for_oom_`。HSC 是受回收器与 Space（ART 管理的一类内存区域）布局约束的兼容路径，并非 Android 17 应用普遍执行的内存整理流程。它也不能推出“每个 Android 17 应用都有两块固定 512 MiB MainSpace”。ART 会按回收器、heap growth limit（托管堆允许增长到的上限）、设备配置和进程类型建立不同 Space。
+
+RegionSpace 用分区支持移动回收，zygote space 保存进程孵化前已有的对象，large object space 管理大对象，image space 映射启动镜像；JIT 代码映射则保存即时编译生成的机器码，各自的用途和生命周期不同。
 
 #### 5.2 JNI 临界区必须成对释放
 
@@ -678,7 +680,7 @@ HSC（Homogeneous Space Compact，同构空间压缩）把主分配空间中的�
 - 占用较大的 VSS 分类及其 VMA 数量，按报告容量保留排名靠前的若干类别；
 - 最近一次 `mmap`、`pthread_create` 或内存分配器失败信息。
 
-采样频率按风险控制。`/proc/self/status` 成本较低，可在场景边界采样；读取并解析 `maps`、记录每个 VMA 物理页明细的 `smaps`，或抓取堆转储，应由异常触发，避免高频磁盘读取和主线程阻塞。
+采样频率按风险控制。`/proc/self/status` 成本较低，可在场景边界采样；读取并解析 `maps`、读取记录每个 VMA 物理页明细的 `smaps`，或抓取堆转储，都应由异常触发，避免高频磁盘读取和主线程阻塞。
 
 #### 7.2 阈值按设备分组
 
