@@ -316,7 +316,7 @@ AGI 适合在开发和预发布阶段分析 GPU。Frame Profiler 可以直接捕
 
 #### Compose graphicsLayer / RenderEffect 对应关系
 
-Compose 的 `graphicsLayer` 可以通过 Compose `RenderEffect` 把效果应用到图层。只要设置 `RenderEffect`，内容就会先进入离屏缓冲区，不受 `CompositingStrategy` 取值影响。默认 `Auto` 策略下，`alpha < 1f` 也会离屏；`ModulateAlpha` 可以省去仅由透明度引起的离屏缓冲区，但图层内有重叠内容时，合成结果可能不同。裁剪或阴影本身不等于必然新增缓冲区，判断时要看完整的 `graphicsLayer` 参数。效果应挂到能覆盖目标视觉区域的最小 Composable 节点。Compose RenderEffect 在 Android 11（API 30）及以下会被忽略，可以用 `RenderEffect.isSupported()` 做能力判断。
+Compose 的 `graphicsLayer` 可以通过 Compose `RenderEffect` 把效果应用到图层。只要设置 `RenderEffect`，内容就会先进入离屏缓冲区，不受 `CompositingStrategy` 取值影响。默认 `Auto` 策略下，`alpha < 1f` 也会离屏；`ModulateAlpha` 可以省去仅由透明度引起的离屏缓冲区，但图层内有重叠内容时，合成结果可能不同。裁剪或阴影本身并不必然新增缓冲区，判断时要看完整的 `graphicsLayer` 参数。效果应挂到能覆盖目标视觉区域的最小 Composable 节点。Compose RenderEffect 在 Android 11（API 30）及以下会被忽略，可以用 `RenderEffect.isSupported()` 做能力判断。
 
 Compose 与 View 在 RenderThread 之后共用标准管线，详见 13.1 节。排查 Compose 页面时，在 `MainThread` 轨道观察重组（recomposition）和布局（layout）；RenderThread 和 GPU 侧仍按上述 `RenderEffect` 方法做对照。
 
@@ -483,7 +483,7 @@ fun Sparkline(
 }
 ```
 
-这段代码中，`samples` 或 `Modifier` lambda 更新会重建缓存，尺寸变化也会重建 Path；`progress.value` 位于绘制 block，只让绘制失效。每个动画帧仍会重新录制 `drawPath` 和 clip（裁剪）命令；缓存保存的是对象与几何计算结果，不会自动保存上一帧像素。
+这段代码中，`samples` 变化或 `Modifier` lambda 更新会重建缓存，尺寸变化也会重建 Path；`progress.value` 位于绘制 block，只让绘制失效。每个动画帧仍会重新录制 `drawPath` 和 clip（裁剪）命令；缓存保存的是对象与几何计算结果，不会自动保存上一帧像素。
 
 没有可缓存对象时，`drawWithCache` 会增加 lambda 与缓存管理。简单的单色 `drawRect()` 使用 `drawBehind` 更合适。
 
@@ -557,7 +557,7 @@ Compose UI 1.12.0 的 `CanvasDrawScope` 有两个延迟创建字段：
 | 由后台计算的大数据 | ViewModel/worker（工作线程）生成不可变快照，UI 只消费 |
 | Android native 绘制对象 | 外层 `remember`，在 `drawIntoCanvas` 中使用 |
 
-这个示例调用只接受 framework Canvas 的旧 `Drawable`，并把对象创建留在组合阶段。
+这个示例调用的是只接受 framework Canvas 的旧 `Drawable`，并把对象创建留在组合阶段。
 
 ```kotlin
 @Composable
@@ -963,7 +963,7 @@ Android 17 没有 Compose Canvas 专属显示管线。分析时应固定 Compose
 
 Runtime 图形效果和 Compose Canvas 的共同主线是“先界定绘制边界，再计算这块边界每帧变化什么”。`RenderEffect`、RuntimeShader、`graphicsLayer` 和 `saveLayer()` 可以把工作留在 HWUI/GPU 路径，但不会消除离屏目标、采样、像素填充、带宽和图形内存成本；作用面积、内容变化率和效果链长度才是降级与选型的输入。
 
-Compose Canvas 侧要把组合、绘制回调、display list 录制和 GPU 执行分开。`drawWithCache` 只缓存对象与几何，`graphicsLayer` 只隔离命令和属性，两者都不等于上一帧像素被无条件复用。最终验收需同时证明 UI 录制、RenderThread/GPU、图形内存和 actual present 没有被一个局部视觉效果拖过当前帧的 deadline。
+Compose Canvas 侧要把组合、绘制回调、display list 录制和 GPU 执行分开。`drawWithCache` 只缓存对象与几何，`graphicsLayer` 只隔离命令和属性，两者都不等于上一帧像素被无条件复用。最终验收需同时证明：一个局部视觉效果没有把 UI 录制、RenderThread/GPU、图形内存和 actual present 拖过当前帧的 deadline。
 
 ## 参考资料
 
