@@ -299,7 +299,7 @@ TextureView 路径为：
 
 `decoder → SurfaceTexture BufferQueue → app HWUI / RenderThread → App Window BufferQueue → SurfaceFlinger`
 
-它适合普通 View 级的旋转、裁剪、alpha、圆角和复杂层叠。代价包括宿主帧截止点、GPU 纹理采样、App Window 提交以及独立视频 layer 的消失。SurfaceFlinger 看到的是已经包含视频像素的宿主窗口。
+它适合普通 View 级的旋转、裁剪、alpha、圆角和复杂层叠。代价包括受宿主帧截止点约束、增加 GPU 纹理采样与 App Window 提交，以及失去独立视频 layer。SurfaceFlinger 看到的是已经包含视频像素的宿主窗口。
 
 TextureView 也不是“开启视频特效”的必要条件。Media3 的 effects 管线可以用独立输入 Surface 和输出 Surface 完成 GPU 处理；是否选 TextureView，要由最终 UI 变换需求决定。
 
@@ -506,11 +506,11 @@ HDR 播放至少涉及：
 - HWC、显示器与当前 display mode；
 - UI 与视频混合时的 client/device composition 选择。
 
-Media3 1.11.0 能在支持的 codec 上通过 `PARAMETER_KEY_HDR10_PLUS_INFO` 传递 HDR10+ out-of-band metadata（带外元数据）。这个动作不保证当前帧获得 HWC overlay，也不保证外接显示链路保持动态元数据。
+Media3 1.11.0 能在支持的 codec 上通过 `PARAMETER_KEY_HDR10_PLUS_INFO` 传递 HDR10+ out-of-band metadata（带外元数据）。传递本身不保证当前帧获得 HWC overlay，也不保证外接显示链路保持动态元数据。
 
 ### secure decoder 与 secure Surface 要成组验证
 
-DRM 内容可能要求 secure decoder、protected graphic buffer、secure Surface 与受保护的 HWC 路径。普通应用 GPU 不能任意读取 protected 视频纹理，因此以下组合必须在目标设备核查：
+DRM 内容可能要求 secure decoder、protected graphic buffer、secure Surface 与受保护的 HWC 路径。普通应用的 GPU 不能任意读取 protected 视频纹理，因此以下组合必须在目标设备核查：
 
 - secure decoder + SurfaceView；
 - secure decoder + TextureView；
