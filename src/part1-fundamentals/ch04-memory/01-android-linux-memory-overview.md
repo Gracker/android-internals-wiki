@@ -173,7 +173,7 @@ Android 应用遇到的“内存问题”至少有四类：
 
 这几类问题的触发条件、证据和处理方向各不相同。只看一个按共享页比例分摊的 PSS 数字，很难判断是哪一类。排查时应沿着“系统是否有压力、进程用了什么、哪一类对象或映射在增长、进程怎样退出”逐层缩小范围。
 
-Android 开源项目（AOSP）的 `android-17.0.0_r1`（Android 17 / API 37）是平台源码锚点，内核语义以 `android17-6.18-2026-06_r6` 为锚点。设备厂商可以调整用于在 RAM 中保存压缩数据的 ZRAM 块设备、控制组（cgroup）、图形驱动和进程限制，因此节点与数值仍以目标设备为准。
+Android 开源项目（AOSP）的 `android-17.0.0_r1`（Android 17 / API 37）是平台源码锚点，内核语义以 `android17-6.18-2026-06_r6` 为锚点。设备厂商可以调整 ZRAM 块设备（用于在 RAM 中保存压缩数据）、控制组（cgroup）、图形驱动和进程限制，因此节点与数值仍以目标设备为准。
 
 排查过程涉及以下层次：
 
@@ -434,7 +434,7 @@ Android 17 引入面向单应用的 MemoryLimiter 行为变化。它由 `system_
 
 在 `android-17.0.0_r1` 源码锚点下，默认配置文件路径为 `/vendor/etc/memory-limiter-config.xml`；该文件并非必需，没有配置文件或没有匹配当前 RAM 的 limit set 时功能会关闭。
 
-当前线上官方文档描述的标准配置路径是 `/system/etc/memory-limiter-config.xml`，这反映的是当前文档口径，不应覆盖固定源码标签下的 r1 结论。因此，不能把“Android 17 应用都有固定内存上限”当作通用结论，阈值也必须以目标设备镜像和运行时 `am memory-limiter status` 为准。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android Memory Limiter 官方文档；AOSP android-17.0.0_r1 `MemoryLimiter.java` `CONFIG_PATH` 与 `isMemoryLimiterSupported()`]
+当前线上官方文档描述的标准配置路径是 `/system/etc/memory-limiter-config.xml`；这是当前文档的口径，不应覆盖固定源码标签下的 r1 结论。因此，不能把“Android 17 应用都有固定内存上限”当作通用结论，阈值也必须以目标设备镜像和运行时 `am memory-limiter status` 为准。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android Memory Limiter 官方文档；AOSP android-17.0.0_r1 `MemoryLimiter.java` `CONFIG_PATH` 与 `isMemoryLimiterSupported()`]
 
 Android 17 r1 源码中的关键流程如下：
 
@@ -455,7 +455,7 @@ adb shell am memory-limiter manual 12345 10
 adb shell am memory-limiter manual 12345 none
 ```
 
-`ignore` 在 r1 接受用户 ID（UID）、`none` 或 `all`；`manual` 在 r1 的 shell 解析中接受进程 ID（PID）与整数或 `none`，源码随后把整数按 MiB 转换为限制值，而帮助文本仍写成 `PERCENT|none`。
+`ignore` 在 r1 接受用户 ID（UID）、`none` 或 `all`；`manual` 在 r1 的 shell 解析中接受进程 ID（PID）和一个整数（或 `none`），源码随后把整数按 MiB 转换为限制值，而帮助文本仍写成 `PERCENT|none`。
 
 公开二手材料可能把命令写成 `<limit>|max|none`，当前官方文档也给出不同单位写法；使用前应以目标构建源码、`am help` 和实测为准，不能把 `max` 写成 r1 通用接口。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android Memory Limiter 官方文档；AOSP android-17.0.0_r1 `ActivityManagerShellCommand.java` 与 `MemoryLimiter.java`]
 
@@ -475,7 +475,7 @@ MemoryLimiter 触发“匿名页 + 共享内存 + 交换空间”越界终止后
 
 **编译期：让 R8 真正生效**
 
-发布包若仍保留被 R8 删掉的代码、资源反射入口或被 proguard 规则拦住的优化，运行时常驻内存会无谓上涨，间接把进程推近 MemoryLimiter 的 `anon + shmem + swap` 边界。`buildTypes.release` 至少要确认：
+发布包若仍保留本应被 R8 删掉的代码、资源反射入口或被 proguard 规则拦住的优化，运行时常驻内存会无谓上涨，间接把进程推近 MemoryLimiter 的 `anon + shmem + swap` 边界。`buildTypes.release` 至少要确认：
 
 - `isMinifyEnabled = true`：启用代码压缩与混淆；
 - `isShrinkResources = true`：移除未引用的资源映射；
