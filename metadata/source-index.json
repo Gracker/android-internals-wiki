@@ -5373,6 +5373,35 @@
       "applied_at": "2026-09-23T07:15:01+08:00",
       "applied_run_id": "20260923-071501-642a4cca",
       "canonical_target_chapter": "ch04"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-25-76471867-Android17新规内存超限直接杀Ap.md",
+      "title": "[技术文章] Android17新规：内存超限直接杀App，没有崩溃日志怎么排查？Android 17 开始引入 App 内存限制，限",
+      "summary": "> 发布时间: 2026-06-04T06:05:31.000Z > 原文链接: https://juejin.cn/post/7647186702176157722 2026-06-04 1,701 阅读6分钟 Android 17 开始引入 App 内存限制，限制值会根据设备总 RAM 决定。 如果进程超过限制，系统可以直接杀掉这个进程，而且不会给一段常规 crash...",
+      "chapter": "ch04",
+      "processed_at": "2026-09-25T06:20:10.804207+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "route_confidence": 21,
+      "route_terms": [
+        "android17",
+        "app",
+        "ram",
+        "juejin-android",
+        "ch04-memory"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-25-76809960-腾讯音乐Android秒编方案Jugg开.md",
+      "title": "[技术文章] 日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源腾讯音乐正式开源 Android 秒级增量构建插件",
+      "summary": "> 发布时间: 2026-09-03T12:51:33.000Z > 原文链接: https://juejin.cn/post/7680996030843125796 2026-09-03 1,610 阅读29分钟 Android 编译优化 > 本文首发自公众号：腾讯音乐技术团队 > 5 年研发和内部使用，累积 80 万次生产工程编译验证，让大型 Android 工程日常...",
+      "chapter": "ch16",
+      "processed_at": "2026-09-25T06:20:10.804207+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
