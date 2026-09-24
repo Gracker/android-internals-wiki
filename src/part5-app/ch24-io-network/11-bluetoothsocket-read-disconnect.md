@@ -167,7 +167,11 @@ class BtReadLoop(
 }
 ```
 
-`closeRequested` 是原子布尔值，供关闭线程与读线程安全地共享意图。它必须先更新，再调用 `close()`，这样被 `close()` 终止阻塞的读线程才能看见本地意图。EOF 分支在观察到返回值时保存原因，避免稍后的关闭请求改写已经发生的结果。示例复制有效字节，避免异步消费者继续引用下一次读取会覆盖的数组；高吞吐场景可以改用容量受限、且规定缓冲区归还前只能由一个消费者持有的缓冲池。`onBytes` 应只移交字节且不抛异常，协议解析错误由独立事件返回状态机。`onCloseFailure` 还应触发读线程存活检查，防止关闭失败后线程持续阻塞。
+`closeRequested` 是原子布尔值，供关闭线程与读线程安全地共享意图。关闭线程必须先更新它，再调用 `close()`，这样读线程被 `close()` 终止阻塞时才能看见本地意图。EOF 分支在观察到返回值时保存原因，避免稍后的关闭请求改写已经发生的结果。
+
+示例复制有效字节，避免异步消费者继续引用下一次读取会覆盖的数组；高吞吐场景可以改用容量受限的缓冲池，并要求缓冲区归还前只能由一个消费者持有。
+
+`onBytes` 应只移交字节且不抛异常，协议解析错误由独立事件返回状态机。`onCloseFailure` 还应触发读线程存活检查，防止关闭失败后线程持续阻塞。
 
 ### 源码中的生效条件
 
@@ -191,7 +195,9 @@ if (ret < 0) {
 }
 ```
 
-[`BluetoothSocket.java`](https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothSocket.java) 中，RFCOMM 路径先调用底层 `mSocketIS.read()`。负返回值会先把私有 `mSocketState` 设为 `CLOSED`，再根据 aconfig 特性开关、兼容性变更 383671392 和设备版本选择返回 `-1` 或抛出 `IOException`。aconfig 是 Android 平台声明并生成特性开关的配置机制，`CINNAMON_BUN` 是源码中代表 Android 17 的版本常量。`@EnabledSince` 标在兼容性变更常量上，`read()` 方法本身没有这个注解。
+[`BluetoothSocket.java`](https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothSocket.java) 中，RFCOMM 路径先调用底层 `mSocketIS.read()`。负返回值会先把私有 `mSocketState` 设为 `CLOSED`，再根据 aconfig 特性开关、兼容性变更 383671392 和设备版本选择返回 `-1` 或抛出 `IOException`。
+
+aconfig 是 Android 平台声明并生成特性开关的配置机制，`CINNAMON_BUN` 是源码中代表 Android 17 的版本常量。`@EnabledSince` 标在兼容性变更常量上，`read()` 方法本身没有这个注解。
 
 [`BluetoothInputStream.java`](https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothInputStream.java) 的数组读取直接委托给 `BluetoothSocket.read()`。[`sockets.aconfig`](https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/flags/sockets.aconfig) 则说明 `make_socket_read_behavior_consistent` 的用途是统一 RFCOMM 与 LE CoC 的 EOF 返回值。
 
@@ -296,7 +302,9 @@ API 34 及以上的 `BluetoothSocketException.getErrorCode()` 提供结构化整
 | 扫描 | `scan_reason`、`scan_duration_ms`、`scan_attempts` | 区分重连扫描与用户主动配网 |
 | 写入重放 | `pending_request_count`、`replay_decision` | 只重放协议允许且幂等的请求 |
 
-等待时间可以使用有上限的指数退避：每次失败后成倍延长等待，但不超过设定上限。再加入少量随机时间偏移，也就是重连抖动，可以减少多台设备或大量客户端同时发起连接。初始等待、上限和尝试次数属于产品参数，应由设备类型、前后台状态和用户等待预期决定。连接刚成功时不要立即清零失败计数；等连接持续稳定或完成一次有效业务交换后再重置，更能减少短连接反复建立和断开。
+等待时间可以使用有上限的指数退避：每次失败后成倍延长等待，但不超过设定上限。再加入少量随机时间偏移，也就是重连抖动，可以减少多台设备或大量客户端同时发起连接。
+
+初始等待、上限和尝试次数属于产品参数，应由设备类型、前后台状态和用户等待预期决定。连接刚成功时不要立即清零失败计数；等连接持续稳定或完成一次有效业务交换后再重置，更能减少短连接反复建立和断开。
 
 对已配对且地址已知的经典蓝牙（Bluetooth Classic）设备，断线后通常可以直接创建新的 RFCOMM 套接字。全量设备发现会扫描周围设备，不应成为每次重连的固定前置步骤。确需发现设备时，应带过滤条件、截止时间和停止条件，并把原因标记为 `reconnect`。执行 `connect()` 前还要调用 `BluetoothAdapter.cancelDiscovery()`；官方 API 文档说明，进行中的设备发现会显著拖慢新连接。
 
@@ -309,7 +317,7 @@ API 34 及以上的 `BluetoothSocketException.getErrorCode()` 提供结构化整
 
 ### 后台连续连接
 
-应用需要在后台持续与外部设备传输数据时，应按场景评估 `connectedDevice` 前台服务或配套设备管理器（Companion Device Manager）。普通后台线程本身不会提高进程被系统保留的优先级。[前台服务类型文档](https://developer.android.com/develop/background-work/services/fgs/service-types#connected-device) 要求 Android 14 及以上在服务上声明 `android:foregroundServiceType="connectedDevice"`，并在清单中声明 `FOREGROUND_SERVICE_CONNECTED_DEVICE` 权限。启动服务时还要满足文档列出的至少一项运行前提；已经授予 `BLUETOOTH_CONNECT` 可满足蓝牙连接场景的这一条件。
+应用需要在后台持续与外部设备传输数据时，应按场景评估 `connectedDevice` 前台服务或配套设备管理器（Companion Device Manager）。普通后台线程本身不会提高进程被系统保留的优先级。[前台服务类型文档](https://developer.android.com/develop/background-work/services/fgs/service-types#connected-device) 要求 Android 14 及以上在服务上声明 `android:foregroundServiceType="connectedDevice"`，并在清单中声明 `FOREGROUND_SERVICE_CONNECTED_DEVICE` 权限。启动服务时还要满足文档列出的至少一项运行前提；已授予 `BLUETOOTH_CONNECT` 的应用可满足蓝牙连接场景的这一条件。
 
 前台服务只影响进程执行条件，不改变 `BluetoothSocket.read()` 的 EOF 语义，也不允许无限扫描和重连。用户主动断开、权限撤销或预算用尽后，应停止连接任务和不再需要的前台服务。若使用配套设备管理器，还要按设备进入或离开通信范围的事件设计恢复流程，不能假设旧套接字会跨进程存活。
 
@@ -327,11 +335,11 @@ Bluetooth 套接字指标应与 HTTP 指标分开，单独保留传输类型与�
 | 扫描 | `scan_reason`、`scan_duration_ms`、`filter_present` | 与 11.4 的扫描功耗分析关联 |
 | 系统 | `adapter_state`、`permission_state`、`app_importance`、`battery_saver` | 区分系统状态与传输失败 |
 
-遥测是应用自动采集并上报的运行指标。`connection_id` 应是应用生成的短期随机标识。若必须按设备族聚合，优先上传非唯一的产品型号或固件大版本；需要识别同一设备产生的重复事件时，使用定期更换的密钥生成仅在指定业务范围内有效、且不能还原设备地址的标识。`build_fingerprint_group` 也应是粗粒度构建分组，不能上传完整构建指纹。完整 MAC、设备名、广播负载和业务数据都不应进入遥测。
+遥测是应用自动采集并上报的运行指标。`connection_id` 应是应用生成的短期随机标识。若必须按设备族聚合，优先上传非唯一的产品型号或固件大版本；需要识别同一设备产生的重复事件时，用定期更换的密钥生成一个标识：它只在指定业务范围内有效，也不能还原设备地址。`build_fingerprint_group` 也应是粗粒度构建分组，不能上传完整构建指纹。完整 MAC、设备名、广播负载和业务数据都不应进入遥测。
 
 Perfetto 是 Android 的系统跟踪工具，BatteryStats 统计设备电量使用；二者结合应用跟踪，可以核对断线后的线程、唤醒锁、扫描和重连是否仍在运行。Perfetto 中的 Bluetooth 与电源时间轴随设备实现变化，测试脚本应先枚举当前设备可用数据源，再选择分析字段，不依赖某一台设备的时间轴名称。
 
-观测结论还要区分没有业务数据和读线程已经退出。空闲连接可能长时间阻塞在 `read()`，这本身不是线程泄漏；本地关闭后仍未退出，或连接换代后旧线程仍存活，才是需要告警的异常。
+观测结论还要区分没有业务数据和读线程已经退出这两种情况。空闲连接可能长时间阻塞在 `read()`，这本身不是线程泄漏；本地关闭后仍未退出，或连接换代后旧线程仍存活，才是需要告警的异常。
 
 ## Android 17 适配测试表
 
