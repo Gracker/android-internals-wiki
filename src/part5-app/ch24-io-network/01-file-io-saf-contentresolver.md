@@ -105,9 +105,9 @@ consolidated_from:
 
 平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。涉及页缓存、回写和 `fsync()` 时，内核锚点是 `android17-6.18-2026-06_r6`。
 
-文件 I/O 的等待时间不一定表现为大量 CPU 计算。CPU 火焰图（按调用栈汇总 CPU 采样的图）里可能看不到明显热点，主线程却会停在 `read()`、`write()`、`fsync()`、缺页（所需文件页尚未驻留内存）或 `QueuedWork.waitToFinish()`。Perfetto 中，线程可能显示为可中断睡眠、等待内核 I/O 的不可中断睡眠，或等待锁；用户看到的结果是启动变慢、点击无响应和页面切换掉帧。
+文件 I/O 的等待不一定体现在 CPU 计算量上。CPU 火焰图（按调用栈汇总 CPU 采样的图）里可能看不到明显热点，主线程却会停在 `read()`、`write()`、`fsync()`、缺页（所需文件页尚未驻留内存）或 `QueuedWork.waitToFinish()`。Perfetto 中，线程可能显示为可中断睡眠、等待内核 I/O 的不可中断睡眠，或等待锁；用户看到的结果是启动变慢、点击无响应和页面切换掉帧。
 
-Android 存储栈、I/O 调度、页缓存和 SharedPreferences 的内部路径见 [6.1 Android 存储架构](../../part1-fundamentals/ch06-storage/01-storage-architecture.md)、[6.2 文件系统与 I/O 调度](../../part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md)和 [6.3 SharedPreferences 与 DataStore：I/O、ANR 与多进程一致性](../../part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md)。应用侧要回答四个取舍：哪些 I/O 不能放在主线程，哪些键值数据该迁移，什么时候 MMKV 合适，普通文件读写怎样避免并发和同步持久化放大尾延迟（少量最慢操作的延迟）。
+Android 存储栈、I/O 调度、页缓存和 SharedPreferences 的内部路径见 [6.1 Android 存储架构](../../part1-fundamentals/ch06-storage/01-storage-architecture.md)、[6.2 文件系统与 I/O 调度](../../part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md)和 [6.3 SharedPreferences 与 DataStore：I/O、ANR 与多进程一致性](../../part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md)。应用侧要回答四个取舍问题：哪些 I/O 不能放在主线程，哪些键值数据该迁移，什么时候 MMKV 合适，普通文件读写怎样避免并发和同步持久化放大尾延迟（少量最慢操作的延迟）。
 
 ### 主线程 I/O 的危害与 StrictMode 检测
 
@@ -162,7 +162,7 @@ SP 适合少量、低频、轻量配置。以下场景应迁移或拆分：
 | 多进程同时读写同一份配置 | SP 不支持跨进程一致性 | 使用 `MultiProcessDataStoreFactory`、数据库或单进程服务 |
 | 结构化对象被序列化成字符串塞进 SP | XML 体积膨胀，解析成本上升 | Proto DataStore 或数据库 |
 
-DataStore 用协程和 `Flow`（按时间发出数据的 Kotlin 异步流）提供异步读取与事务性更新；同一次事务更新要么写入新值，要么保留原值。Preferences DataStore 适合没有固定字段模式的小型键值设置；Proto DataStore 适合由 Protocol Buffers 模式定义字段和类型的结构化设置。它仍面向小型数据，不支持 Room 那样的局部更新、条件查询和表关系。
+DataStore 用协程和 `Flow`（按时间发出数据的 Kotlin 异步流）提供异步读取与事务性更新；同一次事务更新要么写入新值，要么保留原值。Preferences DataStore 适合没有固定字段模式的小型键值设置；Proto DataStore 适合由 Protocol Buffers 模式定义字段和类型的结构化设置。两者仍面向小型数据，不支持 Room 那样的局部更新、条件查询和表关系。
 
 迁移时应先按一致性要求和读取时机分组：启动必须确认的键、界面可延后键、后台刷新键不能共用一种等待策略。允许先显示默认值的设置可在 `Flow` 发出数据后更新界面；认证、隐私和数据迁移状态要在进入相关业务前完成异步读取与校验。不要用 `runBlocking` 把 DataStore 重新变成主线程同步 I/O。
 
@@ -196,7 +196,7 @@ DataStore 面向少量配置、强类型设置和 SP 键值迁移；多表查询
 
 #### 从 `QueuedWork.waitToFinish()` 还原 SharedPreferences ANR
 
-看到页面停止、应用进入后台或 Service 回调结束时的 ANR，主线程停在 `QueuedWork.waitToFinish()`，不能因为业务代码使用了 `apply()` 就排除 SharedPreferences。`apply()` 只是把调用点与磁盘写入分开：它先更新内存，再向 `QueuedWork` 登记等待磁盘完成的收尾回调；框架稍后在 Activity 停止、Service 命令结束和 Service 销毁等边界等待这些工作。`commit()` 则会直接等待 `writtenToDiskLatch`，没有其他磁盘写入时，当前调用线程还可能参与写文件。
+ANR 出现在页面停止、应用进入后台或 Service 回调结束时，如果主线程停在 `QueuedWork.waitToFinish()`，就不能因为业务代码使用了 `apply()` 就排除 SharedPreferences。`apply()` 只是把调用点与磁盘写入分开：它先更新内存，再向 `QueuedWork` 登记等待磁盘完成的收尾回调；框架稍后在 Activity 停止、Service 命令结束和 Service 销毁等边界等待这些工作。`commit()` 则会直接等待 `writtenToDiskLatch`，没有其他磁盘写入时，当前调用线程还可能参与写文件。
 
 排查要把同一时间窗口里的五类证据拼在一起：
 
@@ -208,7 +208,7 @@ DataStore 面向少量配置、强类型设置和 SP 键值迁移；多表查询
 | 文件状态 | 应用内部诊断 | XML 大小、键值条目数、备份文件是否存在 |
 | 生命周期 | Activity、Service 与广播时序 | 写入是否集中在停止、销毁或回调返回前 |
 
-日志只记录经过分类的业务来源，或只用于同类来源聚合的稳定散列标识，不输出原始键和值。StrictMode 能发现主线程同步磁盘访问，却不能证明此前的 `apply()` 是否会在生命周期边界造成等待；两类证据不能互相替代。
+日志只记录经过分类的业务来源，或只记录用于同类来源聚合的稳定散列标识，不输出原始键和值。StrictMode 能发现主线程同步磁盘访问，却不能证明此前的 `apply()` 是否会在生命周期边界造成等待；两类证据不能互相替代。
 
 治理时先按数据语义决定迁移方向：小型设置进入 Preferences/Proto DataStore，结构化和可查询数据进入 Room，高频瞬时状态尽量只保留在内存，需要确认的用户操作必须暴露持久化失败，跨进程数据使用明确支持跨进程一致性的存储或单进程服务。不要用固定防抖时间窗冒充持久化保证；只有“中间状态可丢，只需保留较新值”的数据才允许合并写入，并且要写明进程终止后的恢复规则。
 
@@ -220,7 +220,7 @@ MMKV 的设计路线和 SP、DataStore 不同。Tencent MMKV 的设计文档说�
 
 `mmap` 能减少传统 `read()` / `write()` 路径上的部分复制，并把小写入转成映射页修改，但不会取消文件 I/O。首次访问仍可能触发缺页；脏页（已修改但尚未写回存储的内存页）仍要回写；初始化还要校验并解析文件。同步读取放在主线程，不等于延迟一定稳定，StrictMode 也未必把映射缺页报告成普通磁盘读取。
 
-MMKV API 返回与数据已到达持久化介质不是同一件事。若业务需要断电或进程异常下的明确持久性，应核对所用 MMKV 版本的同步接口、返回值与恢复策略，并做故障注入（主动模拟进程终止、存储错误等失败）；不能从“使用 `mmap` 文件映射”推导出它满足交易数据的持久性要求。
+MMKV API 返回，不等于数据已经到达持久化介质。若业务需要断电或进程异常下的明确持久性，应核对所用 MMKV 版本的同步接口、返回值与恢复策略，并做故障注入（主动模拟进程终止、存储错误等失败）；不能从“使用 `mmap` 文件映射”推导出它满足交易数据的持久性要求。
 
 MMKV 适合这些位置：
 
@@ -234,7 +234,7 @@ MMKV 适合这些位置：
 - 需要范围查询、排序、分页的数据：数据库更合适。
 - 要求明确持久化确认的交易数据：应使用能表达事务、失败和恢复语义的存储。
 
-MMKV 与 DataStore 的选择应基于访问行为和一致性要求。需要 Jetpack 组件、`Flow` 订阅、SP 迁移或官方多进程一致性时，可优先评估 DataStore；读写频繁的小型键值数据经过真实设备基准证明 MMKV 更合适，并且团队能维护第三方库与恢复策略时，再选 MMKV。不要拿库作者提供的一次基准结果代替本应用的冷启动、尾延迟、内存和异常恢复测试。
+MMKV 与 DataStore 的选择应基于访问行为和一致性要求。需要 Jetpack 组件、`Flow` 订阅、SP 迁移或官方多进程一致性时，可优先评估 DataStore；只有当真实设备基准证明 MMKV 更适合读写频繁的小型键值数据，并且团队能维护第三方库与恢复策略时，再选 MMKV。不要拿库作者提供的一次基准结果代替本应用的冷启动、尾延迟、内存和异常恢复测试。
 
 [项目来源：[Tencent/MMKV](https://github.com/Tencent/MMKV)、[MMKV Design](https://github.com/Tencent/MMKV/wiki/design_eng)]
 
@@ -401,7 +401,7 @@ AndroidX 官方文档将 `DocumentFile` 定义为模仿 `File` 的便利封装�
 
 [`TreeDocumentFile.listFiles()`](https://android.googlesource.com/platform/frameworks/support/+/27495ca3d1fe4a1166bea16413ecf8cff5d85855/documentfile/documentfile/src/main/java/androidx/documentfile/provider/TreeDocumentFile.java) 先用 `buildChildDocumentsUriUsingTree()` 构造子项集合 URI，再执行一次 `ContentResolver.query()`，只读取 `COLUMN_DOCUMENT_ID`。它遍历查询结果游标（`Cursor`），把每个文档 ID 包装成新的 `TreeDocumentFile`。
 
-所以，目录中有 N 个文件时，`listFiles()` 本身通常只发起一次查询。`Cursor` 分批装载数据或远端 Provider 的内部实现仍可能发生多次进程间通信（IPC）；Java 代码没有逐项调用 `query()`。
+所以，目录中有 N 个文件时，`listFiles()` 本身通常只发起一次查询。`Cursor` 分批装载数据，或远端 Provider 的内部实现，仍可能触发多次进程间通信（IPC）；Java 代码没有逐项调用 `query()`。
 
 #### 属性读取会形成 N+1
 
@@ -697,7 +697,7 @@ fun trashIfSupported(
 
 文档进入回收站后，框架会撤销原文档 ID 对应的 URI 授权。Provider 返回的新 URI 可能使用不同的文档 ID；调用方要更新记录，并在访问失败时重新取得合适的授权，不能继续依赖旧 URI。
 
-云文档列表可以读取 `COLUMN_CONTENT_SYNC_STATE_FLAGS`，区分内容是否已在本机、是否存在待上传的本地修改、上传或下载是否正在进行，以及最近一次同步是否失败。这是可选列；缺失或 `null` 只表示 Provider 没有报告状态，不能解释成文件已经在本机。
+云文档列表可以读取 `COLUMN_CONTENT_SYNC_STATE_FLAGS`，区分内容是否已在本机、是否存在待上传的本地修改、上传或下载是否正在进行，以及最近一次同步是否失败。这是可选列；缺失或 `null` 只表示 Provider 没有报告状态，不能据此推断文件已经在本机。
 
 #### `content://` 与 `java.nio.file.Path` 没有通用转换
 
