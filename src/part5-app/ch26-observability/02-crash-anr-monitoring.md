@@ -132,7 +132,7 @@ consolidated_from:
 
 # Crash 与 ANR 监控体系
 
-崩溃（Crash）上报体系需要在进程退出前尽量保存定位证据，并在后续可用的执行窗口把证据送到分析系统。Java Crash 指未处理的 Java/Kotlin 异常，Native Crash 指 C/C++ 等原生代码触发的致命信号；捕获机制见 20.2、20.3 和 17.9。本节关注本地留存、多进程归集、符号化、告警和发布门禁。符号化是把混淆名或二进制地址还原成可读函数、文件和行号的过程。
+崩溃（Crash）上报体系需要在进程退出前尽量保存定位证据，并在后续可用的执行窗口把证据送到分析系统。Java Crash 指未处理的 Java/Kotlin 异常，Native Crash 指 C/C++ 等原生代码触发的致命信号；捕获机制见 20.2、20.3 和 17.9。本节关注本地留存、多进程归集、符号化、告警和发布门禁。符号化是把混淆名或二进制地址还原成可读的函数名、文件名和行号的过程。
 
 平台源码上界为 Android 17 / API 37 / `android-17.0.0_r1`。崩溃主路径位于 Android 框架、bionic C 库与 debuggerd 等用户空间组件，不依赖 Android 17 的某项内核专有实现，因此不附加内核源码标签。
 
@@ -174,7 +174,7 @@ Android 平台的 Native Crash 路径约束更多。debuggerd 是 Android 的原
 - 信号处理代码在目标进程一侧初始化；debuggerd 守护进程不会进入应用替它注册 `sigaction`，`crash_dump` 与 tombstoned 只参与后续抓取和保存。
 - 平台处理器依赖预分配栈、管道、专用辅助进程和平台权限，普通 Crash SDK 不能照搬。自定义信号处理函数只能使用经过审计的异步信号安全（async-signal-safe）操作和预分配内存；现场不能构造 JSON、申请堆内存、获取普通互斥锁或发起网络请求。
 
-第三方应用通常无权读取 `/data/tombstones`。应用侧一般通过经过验证的 Native Crash SDK 生成 minidump（只保存诊断所需线程、寄存器和选定内存信息的小型转储），或在后续启动时查询记录近期进程退出原因的系统 API `ApplicationExitInfo`。tombstone、bugreport（系统诊断包）、logcat（Android 日志工具）与 `ndk-stack`（NDK，即 Native Development Kit，原生开发工具包中的地址符号化工具）主要用于开发和平台诊断。
+第三方应用通常无权读取 `/data/tombstones`。应用侧一般通过经过验证的 Native Crash SDK 生成 minidump（只保存诊断所需线程、寄存器和选定内存信息的小型转储），或在后续启动时查询记录近期进程退出原因的系统 API `ApplicationExitInfo`。tombstone、bugreport（系统诊断包）、logcat（Android 日志工具）与 `ndk-stack` 主要用于开发和平台诊断；`ndk-stack` 是 NDK（Native Development Kit，Android 原生开发工具包）自带的地址符号化工具。
 
 #### 最小记录：字段用于关联，不堆积现场信息
 
@@ -260,7 +260,7 @@ WebView 渲染进程由系统和 WebView 实现管理，不是应用可以安装
 
 应用清单中设置 [`android:isolatedProcess="true"`](https://developer.android.com/guide/topics/manifest/service-element#isolated) 的 Service（Android 服务组件）会在特殊隔离进程中运行。该进程没有自己的应用权限，只能通过 Service 的启动或绑定接口与应用交互。它虽然来自同一个 APK，也不能被视为可以直接访问应用私有状态或发起网络上传。
 
-可行的设计是：应用的管理进程通过受控 IPC（Inter-Process Communication，进程间通信）接收隔离服务平时产生的有限诊断数据；进程退出后，再用 `ApplicationExitInfo` 对照进程名、Linux 用户标识（UID）、时间和退出原因补齐记录。隔离进程崩溃后已无法保证 Binder 调用继续执行，因此不能把收尾保存依赖于崩溃发生后的跨进程调用。
+可行的设计是：应用的管理进程通过受控 IPC（Inter-Process Communication，进程间通信）接收隔离服务平时产生的有限诊断数据；进程退出后，再用 `ApplicationExitInfo` 对照进程名、Linux 用户标识（UID）、时间和退出原因补齐记录。隔离进程崩溃后已无法保证 Binder 调用继续执行，因此收尾保存不能依赖崩溃发生后的跨进程调用。
 
 #### 动态特性模块：记录是否安装，不虚构独立版本
 
@@ -348,7 +348,7 @@ S0/S1/S2 在这里仅作为内部响应级别示例；Android 平台没有这套
 | S1 | 单个问题组的影响持续增长；特定机型、系统版本或同一 `.so` 文件的 Build ID 明显集中 | 分派模块负责人，调整分层采样，评估热修或小版本 |
 | S2 | 低影响非致命异常、老版本存量问题、已知问题组的稳定重复 | 进入排期或继续观察，不中断当前发布 |
 
-阈值应由产品流量、基线波动、样本纳入概率和事故容忍度校准，不能把固定的每日活跃用户数（DAU）、事件数或等待时间写成通用答案。告警页面至少要同时展示分母、趋势、表示估计不确定范围的置信区间或可信区间、版本与设备分布、符号化状态、近期发布记录和代表样本，值班人员才能判断这是发布回归、机型兼容还是数据质量问题。
+阈值应由产品流量、基线波动、样本纳入概率和事故容忍度校准，不能把固定的每日活跃用户数（DAU）、事件数或等待时间写成通用答案。告警页面至少要同时展示分母、趋势、置信区间或可信区间（表示估计的不确定范围）、版本与设备分布、符号化状态、近期发布记录和代表样本，值班人员才能判断这是发布回归、机型兼容还是数据质量问题。
 
 #### 发布门禁检查可诊断性
 
@@ -387,7 +387,9 @@ Crash 附件可能包含 URL、请求参数、用户输入、文件路径、设�
 | Android 16 | 36 | 新增 `ProfilingTrigger`，可按受支持事件请求诊断采集 |
 | Android 17 | 37 | 诊断触发器新增冷启动、OOM（内存耗尽）、CPU 使用过量、异常行为和应用兼容性等类型 |
 
-`ProfilingManager` 支持系统追踪（`PROFILING_TYPE_SYSTEM_TRACE`）、Java 堆转储（`PROFILING_TYPE_JAVA_HEAP_DUMP`）、堆性能剖析（`PROFILING_TYPE_HEAP_PROFILE`）和调用栈采样（`PROFILING_TYPE_STACK_SAMPLING`）等类型。`ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN` 对应应用调用 `reportFullyDrawn()`，表示应用认为界面已经完整绘制，并不等同于“首帧完成”。Android 17 的 `TRIGGER_TYPE_OOM` 还明确要求自定义 `Thread.UncaughtExceptionHandler` 继续调用默认处理器，否则系统无法使用该触发器。因此，自定义 Java 处理器仍须调用默认处理链。这些 API 适合收集性能诊断资料，不能代替 Java 未捕获异常处理器、Native 崩溃机制或退出历史查询。
+`ProfilingManager` 支持系统追踪（`PROFILING_TYPE_SYSTEM_TRACE`）、Java 堆转储（`PROFILING_TYPE_JAVA_HEAP_DUMP`）、堆性能剖析（`PROFILING_TYPE_HEAP_PROFILE`）和调用栈采样（`PROFILING_TYPE_STACK_SAMPLING`）等类型。`ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN` 对应应用调用 `reportFullyDrawn()`，表示应用认为界面已经完整绘制，并不等同于“首帧完成”。
+
+Android 17 的 `TRIGGER_TYPE_OOM` 还明确要求自定义 `Thread.UncaughtExceptionHandler` 继续调用默认处理器，否则系统无法使用该触发器。因此，自定义 Java 处理器仍须调用默认处理链。这些 API 适合收集性能诊断资料，不能代替 Java 未捕获异常处理器、Native 崩溃机制或退出历史查询。
 
 ### Crash 部分小结
 
@@ -424,11 +426,13 @@ ANR 监控可以分成四层：系统 ANR 记录、Google Play Android vitals �
 
 `getProcessesInErrorState()` 返回调用时仍处于错误状态的瞬时快照，正常时可以为 `null`；Android 13 起，普通应用在没有 `DUMP` 权限时只能看到本 UID，轮询还可能重复读取或错过快速恢复事件。它适合作为补充信号，不能用作事件账本。`ApplicationExitInfo` 是 Android 11+ 的历史退出入口，但非空 trace 不能覆盖系统记录的实际退出原因：进程可能从 ANR 恢复，稍后因其他原因退出，而记录仍附带先前的 ANR trace。
 
-事件模型至少要保留证据来源字段 `authority`：系统退出、当前错误状态、Android 17 预警、端侧疑似卡顿、Play 聚合或 OEM 系统事件分别入库，之后再关联。API 37 的 `ActivityManager.registerAnrWarningListener()` 会在应用接近 ANR 超时时，以 `AnrWarningResult` 传递已消耗时长、总期限、ANR 类型和关联 ID；执行器不应使用主线程。该回调采用 best-effort（尽力通知、不保证到达）方式，系统也可能没有留出执行时间，因此收到预警不表示已经判定 ANR。`ApplicationExitInfo.AnrInfo` 则只属于 `REASON_ANR` 退出记录。API 与系统生产路径详见 [§9.7 Android 17 ANR 预警回调](../../part2-performance/ch09-anr/07-android17-anr-prewarning.md)。
+事件模型至少要保留证据来源字段 `authority`：系统退出、当前错误状态、Android 17 预警、端侧疑似卡顿、Play 聚合或 OEM 系统事件分别入库，之后再关联。
+
+API 37 的 `ActivityManager.registerAnrWarningListener()` 会在应用接近 ANR 超时时，以 `AnrWarningResult` 传递已消耗时长、总期限、ANR 类型和关联 ID；执行器不应使用主线程。该回调采用 best-effort（尽力通知、不保证到达）方式，系统也可能没有留出执行时间，因此收到预警不表示已经判定 ANR。`ApplicationExitInfo.AnrInfo` 则只属于 `REASON_ANR` 退出记录。API 与系统生产路径详见 [§9.7 Android 17 ANR 预警回调](../../part2-performance/ch09-anr/07-android17-anr-prewarning.md)。
 
 ### 系统侧 ANR 记录与 trace 采集
 
-系统 ANR 的触发点不在 App SDK 里。输入派发、执行 Service、广播、ContentProvider 查询和 JobService 响应等超时会沿各自路径进入 system_server（Android 核心系统服务进程）的 ANR 处理逻辑；具体时限随 ANR 类型、平台版本和 OEM 实现变化。AOSP（Android Open Source Project，Android 开源项目）`android-17.0.0_r1` 中，`AnrHelper.appNotResponding()` 会拒绝同一 PID（进程标识）正在预抓取、排队或处理的重复记录，先提交目标进程的 early dump（提前线程转储），再由 `AnrConsumer` 串行调用 `ProcessErrorStateRecord.appNotResponding()`。
+系统 ANR 的触发点不在 App SDK 里。输入派发、Service 执行、广播、ContentProvider 查询和 JobService 响应等超时会沿各自路径进入 system_server（Android 核心系统服务进程）的 ANR 处理逻辑；具体时限随 ANR 类型、平台版本和 OEM 实现变化。AOSP（Android Open Source Project，Android 开源项目）`android-17.0.0_r1` 中，`AnrHelper.appNotResponding()` 会拒绝同一 PID（进程标识）正在预抓取、排队或处理的重复记录，先提交目标进程的 early dump（提前线程转储），再由 `AnrConsumer` 串行调用 `ProcessErrorStateRecord.appNotResponding()`。
 
 下面的时序图只表达 Android 17 system_server 中的主要职责，不把 trace 文件写入与退出历史记录误画成同一个调用。
 
@@ -527,7 +531,7 @@ ANR 现场还原依赖快照质量。只上传一段主线程栈，很多问题�
 
 ### 事件、落盘与去重
 
-设备侧应把“事实”和“推断”分开保存。最小事件外层记录（envelope）包含稳定的 `event_id`、`schema_version`、`event_kind`、`authority`、设备与应用构建、进程身份、观测时间、原始附件摘要，以及独立的 `derived` 区域；`derived` 专门保存服务端根据原始证据推导出的结果。服务端解析器只能按版本填写该区域，不能改写退出原因、原始时间戳或用于校验附件内容是否相同的摘要（digest）。
+设备侧应把“事实”和“推断”分开保存。最小事件外层记录（envelope）包含稳定的 `event_id`、`schema_version`、`event_kind`、`authority`、设备与应用构建、进程身份、观测时间、原始附件摘要，以及独立的 `derived` 区域；`derived` 专门保存服务端根据原始证据推导出的结果。服务端解析器只能按版本填写该区域，不能改写退出原因和原始时间戳，也不能改写用于校验附件内容是否相同的摘要（digest）。
 
 ANR 发生时主线程已不可依赖，进程也可能很快被终止。平稳期维护有界环形缓冲区，故障时只固定索引与少量元数据；本地持久化队列（spool）按证据价值分级：
 
