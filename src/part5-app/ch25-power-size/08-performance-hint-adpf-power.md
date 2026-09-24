@@ -225,9 +225,9 @@ Power Efficiency Mode 允许系统利用任务 deadline 前的余量。业务没
 
 Android 15（API 35）新增的 `PowerMonitor` / `PowerMonitorReadings` 让应用读取设备提供的累计能耗。一个 `PowerMonitor` 表示一个功耗监测项，可以是直接测量的电源轨，也可以是系统建模的能耗消费者。两个入口都是异步方法：`getSupportedPowerMonitors(executor, callback)` 返回支持列表，`getPowerMonitorReadings(monitors, executor, outcomeReceiver)` 返回指定监测项的读数。回调执行器可以传 `null`，但此时回调线程由实现选择，应用代码通常应提供自己的执行器。
 
-AOSP `android-17.0.0_r1` 中，`SystemHealthManager.getSupportedPowerMonitors()` 的注释把监测项分成 ODPM（On-Device Power Rails Monitor，设备电源轨监测器）的原始电源轨，以及 modeled energy consumer（通过模型估算的子系统能耗消费者）；设备不支持 ODPM 时，公开 API 允许返回空列表。`getPowerMonitorReadings()` 通过 `PowerStatsService` 获取指定监测项的累计读数；监测项不受支持时，`onError()` 返回 `IllegalArgumentException`。
+AOSP `android-17.0.0_r1` 中，`SystemHealthManager.getSupportedPowerMonitors()` 的注释把监测项分成两类：ODPM（On-Device Power Rails Monitor，设备电源轨监测器）的原始电源轨，以及 modeled energy consumer（通过模型估算的子系统能耗消费者）；设备不支持 ODPM 时，公开 API 允许返回空列表。`getPowerMonitorReadings()` 通过 `PowerStatsService` 获取指定监测项的累计读数；监测项不受支持时，`onError()` 返回 `IllegalArgumentException`。
 
-`PowerMonitor` 有两类类型：
+`PowerMonitor` 的类型分两类：
 
 - `POWER_MONITOR_TYPE_CONSUMER`：子系统或建模能耗消费者。它可能由多个电源轨组合而来，也可能代表共享电源轨的一部分，例如 Wi-Fi 与 Bluetooth 共用芯片供电时的模型拆分。
 - `POWER_MONITOR_TYPE_MEASUREMENT`：直接测量的电源轨。名称和测量范围由设备厂商决定，不能跨设备用同名电源轨做绝对对比。
@@ -236,9 +236,9 @@ AOSP `android-17.0.0_r1` 中，`SystemHealthManager.getSupportedPowerMonitors()`
 
 Android 17 r1 的内部实现还规定了读数新鲜度和精度边界。普通调用方使用 `MAX_POWER_MONITOR_AGE_MILLIS = 20_000` 的缓存；持有隐藏系统权限 `ACCESS_FINE_POWER_MONITORS` 的调用方使用另一组状态缓存，最大年龄为 `250 ms`。该权限只面向系统签名、特权或开发场景，普通第三方应用不能申请。20 秒和 250 ms 都是 r1 实现细节，不是公开 API 对其他版本与设备的保证。
 
-普通路径与精细路径在返回累计值前都会经过 `IntervalRandomNoiseGenerator`，以降低公开读数的时间和数值精度。在 r1 中，下界为 `max(上一次原始读数, 当前原始读数 - 10_000_000 μWs)`，系统在该下界与当前读数之间返回按 UID 稳定的随机值；`10_000_000 μWs` 等于 `10 J`。下一次底层刷新前，同一 UID 会得到同一个扰动样本。公开读数适合较长实验窗口和重复对照，不适合把一次短任务的前后差值当作精密能量计结果。
+普通路径与精细路径在返回累计值前都会经过 `IntervalRandomNoiseGenerator`，以降低公开读数在时间和数值上的精度。在 r1 中，下界为 `max(上一次原始读数, 当前原始读数 - 10_000_000 μWs)`，系统在该下界与当前读数之间返回按 UID 稳定的随机值；`10_000_000 μWs` 等于 `10 J`。下一次底层刷新前，同一 UID 会得到同一个扰动样本。公开读数适合较长实验窗口和重复对照，不适合把一次短任务的前后差值当作精密能量计结果。
 
-这段纯函数先检查两次异步快照是否来自不同采样时刻，再计算累计值差；同一缓存快照、不可用读数或累计值回退都会返回空结果。
+这个纯函数先检查两次异步快照是否来自不同采样时刻，再计算累计值差；同一缓存快照、不可用读数或累计值回退都会返回空结果。
 
 ```kotlin
 data class PowerWindowDelta(
@@ -345,7 +345,7 @@ Power Efficiency Mode 应按单位任务验收：固定设备、温度起点、�
 
 ## 小流量发布与指标设计
 
-线上小流量实验不应把 `PowerMonitor` 当作高频采样接口。它是异步读数 API，返回累计能耗，而且设备支持度不一致。线上只把能效提示作为实验变量，采集轻量业务指标，再用实验室电源轨数据解释差异。
+线上小流量实验不应把 `PowerMonitor` 当作高频采样接口。`PowerMonitor` 是异步读数 API，返回累计能耗，而且设备支持度不一致。线上只把能效提示作为实验变量，采集轻量业务指标，再用实验室电源轨数据解释差异。
 
 每个实验样本至少记录这些字段：
 
@@ -359,7 +359,7 @@ Power Efficiency Mode 应按单位任务验收：固定设备、温度起点、�
 
 ## OEM 差异与降级策略
 
-`PowerMonitor` 与 Perfetto 电源轨都受设备厂商实现影响。设备可能返回空监测项列表，也可能只提供少量建模能耗消费者；同名电源轨在不同设备上也可能对应不同硬件范围。`PowerMonitor` 源码还说明监测项索引不保证跨重启稳定，因此不能持久化该索引。
+`PowerMonitor` 与 Perfetto 电源轨都受设备厂商实现影响。设备可能返回空监测项列表，也可能只提供少量建模能耗消费者；同名电源轨在不同设备上对应的硬件范围也可能不同。`PowerMonitor` 源码还说明监测项索引不保证跨重启稳定，因此不能持久化该索引。
 
 降级策略按三档处理：
 
@@ -392,7 +392,7 @@ Power Efficiency Mode 和 Thermal API 处理的是同一类长期负载问题的
 
 ### 误区二：把输入和渲染线程也标成节能优先
 
-输入线程、主线程、RenderThread、音视频低延迟线程一般不适合默认节能优先。它们对尾部延迟更敏感，错误提示会增加用户可感知的卡顿或响应延迟。图形、游戏和相机相关周期任务如果要接入，应先按 5.4 节和这里的 Session 边界验证线程身份。
+输入线程、主线程、RenderThread、音视频低延迟线程一般不适合默认节能优先。它们对尾部延迟更敏感，误用这类提示会增加用户可感知的卡顿或响应延迟。图形、游戏和相机相关周期任务如果要接入，应先按 5.4 节和这里的 Session 边界验证线程身份。
 
 ### 误区三：PowerMonitor 的电源轨名称能跨设备对比
 
@@ -423,7 +423,7 @@ Perfetto 文档说明，电池计数器在 USB 插电时会反映充电电流，
 
 ## 源码追踪：系统服务与 Power HAL 的协作
 
-前文给出了应用侧接入与验证主线；本节继续向下追踪公开 API 进入系统后的路径，用来解释提示为何可能被暂停、读数为何会命中缓存，以及不同设备为何不能承诺相同收益。ADPF 的完整效果同时取决于应用上报、系统服务和 Power HAL。AOSP `android-17.0.0_r1` 展示了这条路径的实现边界。
+前文给出了应用侧接入与验证主线；公开 API 进入系统后的路径决定了提示为何可能被暂停、读数为何会命中缓存，以及不同设备为何不能承诺相同收益。ADPF 的完整效果同时取决于应用上报、系统服务和 Power HAL。AOSP `android-17.0.0_r1` 展示了这条路径的实现边界。
 
 > **版本限定**：源码锚点统一使用 `android-17.0.0_r1`；公开 API 只核对到 Android 17/API 37。后续主开发分支的变更不作为本文结论。
 
@@ -523,7 +523,7 @@ Power HAL V5 开始提供 `getSessionChannel()`，服务端可以通过 FMQ 传�
 
 Android 17 r1 为普通读数和精细读数维护两组 `PowerMonitorState`。普通调用方的最大缓存年龄是 `20_000 ms`；持有隐藏系统权限 `ACCESS_FINE_POWER_MONITORS` 的调用方使用 `250 ms`。当所选监测项中最早的时间戳为 0，或其年龄超过对应阈值，服务才更新能耗消费者与能量测量值。调用频率高于阈值只会反复拿到缓存，不会提高底层采样频率。
 
-读数更新后，服务在上一次原始累计值与当前原始累计值之间生成按 UID 稳定的随机返回值。下界不会低于 `current - 10_000_000 μWs`，也不会低于 `prevEnergyUws`；上界是当前原始值。因为 `1 μWs = 1 μJ`，该常量对应 `10 J`，不是 `10 MJ`。这段逻辑降低了公开读数的时间与数值精度，也解释了相邻窗口为何可能出现零差值或波动。
+读数更新后，服务在上一次原始累计值与当前原始累计值之间生成按 UID 稳定的随机返回值。下界不会低于 `current - 10_000_000 μWs`，也不会低于 `prevEnergyUws`；上界是当前原始值。因为 `1 μWs = 1 μJ`，该常量对应 `10 J`，不是 `10 MJ`。这段逻辑降低了公开读数在时间与数值上的精度，也解释了相邻窗口为何可能出现零差值或波动。
 
 `LocalService` 另有 `getEnergyConsumedAsync()`、`getStateResidencyAsync()` 和 `readEnergyMeterAsync()` 三个系统内部入口，返回 `CompletableFuture`（稍后完成的异步结果）。`getEnergyConsumedAsync()` 发现 HAL 返回的消费者数量少于请求时，会记录严重级别日志 `Slog.wtf`，随后仍用已有数组完成异步结果。这个内部路径不能直接用来推断应用 `getPowerMonitorReadings()` 的错误语义；应用路径由 `IPowerStatsService` 的结果码和 `OutcomeReceiver` 约定决定。
 
