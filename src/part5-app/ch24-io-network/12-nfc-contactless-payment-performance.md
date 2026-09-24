@@ -66,7 +66,9 @@ Android 17 的 NFC 框架和系统服务源码位于 `packages/modules/Nfc`。�
 
 ## 1. 三条 NFC 路径
 
-标签分发（tag dispatch）由系统解析标签并向匹配的 Activity 发送 `Intent`；Reader Mode 则让前台 Activity 通过回调直接取得 `Tag`。NDEF（NFC Data Exchange Format）是 NFC Forum 定义的标签消息格式。卡模拟使用应用协议数据单元（Application Protocol Data Unit，APDU）交换命令与响应，并用应用标识符（Application Identifier，AID）选择卡应用。
+标签分发（tag dispatch）由系统解析标签并向匹配的 Activity 发送 `Intent`；Reader Mode 则让前台 Activity 通过回调直接取得 `Tag`。NDEF（NFC Data Exchange Format）是 NFC Forum 定义的标签消息格式。
+
+卡模拟使用应用协议数据单元（Application Protocol Data Unit，APDU）交换命令与响应，并用应用标识符（Application Identifier，AID）选择卡应用。
 
 | 模式 | 手机扮演的角色 | Android 应用入口 | 数据经过应用进程吗 | 常见场景 |
 | --- | --- | --- | --- | --- |
@@ -92,7 +94,7 @@ flowchart LR
     A -->|Off-host| E["eSE / UICC"]
 ```
 
-NFCC 路由表先把选择应用的 `SELECT AID` 命令指向主处理器（host）或 SE。Host 路由进入 `NfcService` 后，`RegisteredAidCache` 与 `HostEmulationManager` 再从已注册的 HCE 服务中选择目标组件；off-host 路由则把 APDU 交给 SE。省去应用处理环节并不等于端到端延迟固定，终端、射频、SE 中的卡应用和支付协议仍会影响结果。
+NFCC 路由表先把用于选择应用的 `SELECT AID` 命令指向主处理器（host）或 SE。Host 路由进入 `NfcService` 后，`RegisteredAidCache` 与 `HostEmulationManager` 再从已注册的 HCE 服务中选择目标组件；off-host 路由则把 APDU 交给 SE。省去应用处理环节并不等于端到端延迟固定，终端、射频、SE 中的卡应用和支付协议仍会影响结果。
 
 ## 2. HCE 交易的延迟来自哪些阶段
 
@@ -137,7 +139,9 @@ API 37 的官方差异页列出了 `NfcAdapter`、`NfcAdapter.ReaderCallback` �
 
 表格将标签分发、读卡、支付和特权硬件控制分开。新增方法出现在 API 37 SDK 中，并不表示所有 NFC 设备都支持对应硬件能力；带 `is...Supported()` 的功能仍要先查询。
 
-官方差异页还列出 `getGestureExchangeAid()`。它需要 `PERFORM_GESTURE_EXCHANGE` 权限，用于 Tap to Share，不是支付 APDU 优化接口。部分参考页把节电模式和退出帧 API 标为 Android API 36.1，API 37 的 36→37 差异页也收录了这些符号。面向 Android 17 时使用 API 37 SDK 编译；若还要覆盖 API 36.1，则按对应 SDK 版本与功能开关判断，不能只检查硬件能力。
+官方差异页还列出 `getGestureExchangeAid()`。它需要 `PERFORM_GESTURE_EXCHANGE` 权限，用于 Tap to Share，不是支付 APDU 优化接口。
+
+部分参考页把节电模式和退出帧 API 标为 Android API 36.1，API 37 的 36→37 差异页也收录了这些符号。面向 Android 17 时使用 API 37 SDK 编译；若还要覆盖 API 36.1，则按对应 SDK 版本与功能开关判断，不能只检查硬件能力。
 
 ### 3.1 目标 SDK 37 的 NFC `Intent` 适配
 
@@ -163,7 +167,9 @@ API 37 的官方差异页列出了 `NfcAdapter`、`NfcAdapter.ReaderCallback` �
 </application>
 ```
 
-`DISPATCH_NFC_MESSAGE` 写在 Activity 的 `android:permission` 上，表示启动该组件的调用方必须持有这项签名级权限。普通应用无需申请，也无法按普通运行时权限取得它；Android NFC 系统服务持有该权限。Android 17 的 `NfcDispatcher.isMatchAdditionalActivityFilters()` 会检查目标 SDK、应用的 stopped 标志和 Activity 声明。尚未由用户启动过或被强行停止（force-stop）的应用处于 stopped 状态，不会收到 NFC `Intent`；用户手动启动应用后才解除该状态。
+`DISPATCH_NFC_MESSAGE` 写在 Activity 的 `android:permission` 上，表示启动该组件的调用方必须持有这项签名级权限。普通应用无需申请，也无法按普通运行时权限取得它；Android NFC 系统服务持有该权限。
+
+Android 17 的 `NfcDispatcher.isMatchAdditionalActivityFilters()` 会检查目标 SDK、应用的 stopped 标志和 Activity 声明。尚未由用户启动过或被强行停止（force-stop）的应用处于 stopped 状态，不会收到 NFC `Intent`；用户手动启动应用后才解除该状态。
 
 `ACTION_TAG_DISCOVERED` 是在前两种分发均未匹配时使用的宽泛后备入口，API 37 已将它废弃。应用应优先匹配具体的 NDEF MIME 类型、URI 或标签技术列表。Android 16 起，含 HTTP/HTTPS 链接的 NFC 标签改走 `ACTION_VIEW`；Android 17 会先显示打开链接通知，用户确认后才触发 `ACTION_VIEW`。需要接收自有域名的应用应配置 Android App Links，不再等待 `ACTION_NDEF_DISCOVERED`。
 
@@ -247,7 +253,9 @@ Reader Mode 只在 Activity 位于前台时启用。API 没有承诺 `ReaderCall
 
 ### 4.2 `processCommandApdu()` 运行在主线程
 
-`Looper` 是 Android 线程的消息循环，`Handler` 负责向该循环投递消息。`HostApduService` 使用绑定应用主线程 `Looper` 的 `Handler` 接收 `MSG_COMMAND_APDU`，随后直接调用 `processCommandApdu()`；官方文档也明确说明该回调运行在主线程。能立即算出的响应可以直接返回。需要异步处理时返回 `null`，工作完成后从任意线程调用非阻塞的 `sendResponseApdu()`。
+`Looper` 是 Android 线程的消息循环，`Handler` 负责向该循环投递消息。`HostApduService` 使用绑定应用主线程 `Looper` 的 `Handler` 接收 `MSG_COMMAND_APDU`，随后直接调用 `processCommandApdu()`；官方文档也明确说明该回调运行在主线程。
+
+能立即算出的响应可以直接返回。需要异步处理时返回 `null`，工作完成后从任意线程调用非阻塞的 `sendResponseApdu()`。
 
 这个骨架展示同步响应、异步响应和链路断开后的取消边界：
 
@@ -284,9 +292,9 @@ class DemoApduService : HostApduService() {
 }
 ```
 
-这个骨架只表达线程与生命周期关系，没有实现支付协议。`transactionEpoch` 是本地交易代号：每次停用服务时递增，用来阻止旧交易的异步结果误发到新交易；系统也会丢弃非活动服务或错误状态下的响应。
+这个骨架只表达线程与生命周期关系，没有实现支付协议。`transactionEpoch` 是本地交易代号：每次服务被停用时递增，用来阻止旧交易的异步结果误发到新交易；系统也会丢弃非活动服务或错误状态下的响应。
 
-生产实现还要校验 APDU 长度与字段：CLA 表示命令类别，INS 表示指令，P1/P2 是指令参数，Lc 是命令数据长度，Le 是期望响应长度。返回值还要包含协议状态字，并遵守密钥隔离、重放防护和认证要求。
+生产实现还要校验 APDU 长度与字段：CLA 表示命令类别，INS 表示指令，P1/P2 是指令参数，Lc 是命令数据长度，Le 是期望响应长度。返回值还要包含协议状态字；实现还要遵守密钥隔离、重放防护和认证要求。
 
 ### 4.3 APDU 路径的优化顺序
 
@@ -320,7 +328,7 @@ override fun processCommandApdu(commandApdu: ByteArray, extras: Bundle?): ByteAr
 
 ## 5. Observe Mode 与 API 37 的单次交易
 
-NFC 终端会循环发送轮询帧（polling frames），寻找附近支持的卡。观察模式（Observe Mode）让手机监听这些帧，但暂不响应终端，也不进入卡交易。它从 Android 15（API 35）开始提供；API 37 增加了单次允许交易、退出帧能力查询和 Reader Mode 注释帧支持。
+NFC 终端会循环发送轮询帧（polling frames），寻找附近支持的卡。观察模式（Observe Mode）让手机监听这些帧，但暂不响应终端，也不进入卡交易。Observe Mode 从 Android 15（API 35）开始提供；API 37 增加了单次允许交易、退出帧能力查询和 Reader Mode 注释帧支持。
 
 ### `allowOneTransaction()` 的权限边界
 
@@ -373,7 +381,9 @@ Android 17 的 `NfcService.setPowerSavingModeInternal()` 会根据当前 NFC 适
 | 密钥位置 | 由钱包方案决定，可能结合 Android Keystore、可信执行环境（TEE）或服务端 | 通常由 SE 安全域与 applet 管理 |
 | Android 可观测点 | 服务绑定、Binder、应用 Trace、NFC 服务日志 | 路由和交易事件可见，applet 内部耗时一般不可见 |
 
-表中的 `OffHostApduService` 只是路由声明，交易时不会启动该 Android Service。它不能代替 SE 处理 APDU。Android 的卡模拟 API 也不提供任意控制 SE 交易 APDU 的能力。OMAPI（Open Mobile API）是应用访问 SE 的另一套接口，受独立访问规则约束，不能与 NFC 终端侧的 APDU 通道混用。
+表中的 `OffHostApduService` 只是路由声明，交易时不会启动该 Android Service。它不能代替 SE 处理 APDU。Android 的卡模拟 API 也不提供任意控制 SE 交易 APDU 的能力。
+
+OMAPI（Open Mobile API）是应用访问 SE 的另一套接口，受独立访问规则约束，不能与 NFC 终端侧的 APDU 通道混用。
 
 支付令牌化（tokenization，用受限令牌替代真实卡号）、动态密码、持卡人验证、离线额度、风险控制、收单结果和终端认证都由具体支付方案决定。AOSP 没有提供统一配置这些策略的公开 NFC API，应用不能把某个支付方案的规则写成 Android 平台能力。
 
@@ -408,7 +418,9 @@ adb logcat -v threadtime \
 
 `dumpsys nfc` 在 Android 17 会输出 NFC 适配器状态、屏幕状态、节电模式、Observe Mode、轮询与监听技术、当前发现参数、卡模拟管理器、路由表和 NFC 事件日志。`cmd nfc help` 还会列出修改 Observe Mode、Reader Mode、路由与控制器常开状态的命令，其中多数需要 `root`（超级用户）权限，只适合受控测试设备；日常排查使用 `status` 与 `dumpsys` 即可。
 
-Android 17 的 HCE 源码在对应功能开关（feature flag）启用时，还会写入 `hce_active`、`hce_bind_payment_service`、`hce_bind_service`、`hce_command_apdu`、`hce_response_apdu` 和 `hce_polling_frames` 异步 Trace。`hce_command_apdu` 从系统发送命令开始，到应用 `Handler` 完成回调并回复确认消息（ACK）为止；应用返回 `null` 后继续执行的异步工作不在这个区间中。`hce_response_apdu` 覆盖应用发送响应到系统回复 ACK 的过程。设备构建未启用相应功能开关时，缺少这些时间片不能证明 NFC 没有工作。
+Android 17 的 HCE 源码在对应功能开关（feature flag）启用时，还会写入 `hce_active`、`hce_bind_payment_service`、`hce_bind_service`、`hce_command_apdu`、`hce_response_apdu` 和 `hce_polling_frames` 异步 Trace。`hce_command_apdu` 从系统发送命令开始，到应用 `Handler` 完成回调并回复确认消息（ACK）为止；应用返回 `null` 后继续执行的异步工作不在这个区间中。`hce_response_apdu` 覆盖应用发送响应到系统回复 ACK 的过程。
+
+设备构建未启用相应功能开关时，缺少这些时间片不能证明 NFC 没有工作。
 
 ### 8.3 指标按场景分组
 
