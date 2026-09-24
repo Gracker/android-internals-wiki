@@ -167,7 +167,7 @@ consolidated_from:
 
 ### SQLite WAL 模式与并发优化
 
-回滚日志模式会在修改主库页之前保存旧内容，写事务进入需要排除读者的阶段时，新的读写访问会受锁状态限制。WAL（Write-Ahead Logging，预写式日志）改为把新页追加到 `-wal` 文件：读事务记录自己的 end mark（当前快照可见的 WAL 终点），再用主库与该位置之前的 WAL frame（记录一次数据库页变更的帧）组成一致快照；写者可以在既有读者读取旧快照时继续追加。两种模式都只有一个活跃写者，WAL 提供读写并发，不提供并行写入。
+回滚日志模式会在修改主库页之前保存旧内容，写事务需要排除读者时，新的读写访问会受锁状态限制。WAL（Write-Ahead Logging，预写式日志）改为把新页追加到 `-wal` 文件：读事务记录自己的 end mark（当前快照可见的 WAL 终点），再用主库与该位置之前的 WAL frame（记录一次数据库页变更的帧）组成一致快照；写者可以在既有读者读取旧快照时继续追加。两种模式都只有一个活跃写者，WAL 提供读写并发，不提供并行写入。
 
 Android 官方性能文档建议：除使用 `ATTACH DATABASE` 的场景外启用 WAL，并在 WAL 下使用 `synchronous=NORMAL`。这个选择改变持久性边界：应用进程崩溃后事务仍可恢复，但设备断电或内核崩溃可能回滚已经返回成功的事务。订单、支付或跨库依赖不能只按吞吐量选择同步级别。
 
@@ -213,7 +213,7 @@ PRAGMA wal_checkpoint(PASSIVE);
 
 #### Room 怎样选择日志模式
 
-Room 2.8.4 必须按 `source set`（Kotlin Multiplatform 按目标平台区分的源码集合）判断。Android `actual` 实现有 `AUTOMATIC`、`TRUNCATE` 和 `WRITE_AHEAD_LOGGING`，Builder 默认是 `AUTOMATIC`；它在普通设备解析为 WAL，在低内存设备解析为 `TRUNCATE`。common/KMP（Kotlin Multiplatform）声明只有后两项，Builder 默认 WAL。官网聚合 API 可能同时呈现不同 `source set` 的说明，因此 Android 项目应核对 `RoomDatabase.android.kt`，KMP 或自定义驱动项目则核对实际目标和依赖源码。
+判断 Room 2.8.4 的日志模式必须区分 `source set`（Kotlin Multiplatform 按目标平台区分的源码集合）。Android `actual` 实现有 `AUTOMATIC`、`TRUNCATE` 和 `WRITE_AHEAD_LOGGING`，Builder 默认是 `AUTOMATIC`；它在普通设备解析为 WAL，在低内存设备解析为 `TRUNCATE`。common/KMP（Kotlin Multiplatform）声明只有后两项，Builder 默认 WAL。官网聚合 API 可能同时呈现不同 `source set` 的说明，因此 Android 项目应核对 `RoomDatabase.android.kt`，KMP 或自定义驱动项目则核对实际目标和依赖源码。
 
 下面的配置用于展示一个可审计的 Room 打开入口。日志模式和 Migration 都在同一个 builder 中明确声明；执行器先保留 Room 默认值，只有追踪结果证明默认调度不符合业务需求时才自定义。
 
@@ -236,7 +236,9 @@ val database = Room.databaseBuilder(
 
 Android framework 的 `SQLiteDatabase` 为每个线程保存一个 `SQLiteSession`。Session 只维护事务与连接使用状态；执行语句时仍要向 `SQLiteConnectionPool` 申请连接。线程停在 `waitForConnection()` 表示当前没有符合要求的连接可用，不等于它长时间卡在保护连接池状态的 Java 对象监视器锁上。
 
-WAL 下，平台池可用非主连接服务只读工作，写事务通常要使用主连接；增加只读连接也不会增加 SQLite 写连接数量。Room 2.8.4 的默认 SupportSQLite 兼容路径使用 passthrough pool（只转交连接请求、不自行管理物理连接的池），实际连接仍由 Android framework 管理；只有驱动本身没有连接池时，`RoomConnectionManager` 才自建池，并把 WAL 映射为最多 4 个只读连接、1 个写连接，`TRUNCATE` 下各为 1 个。这些数字是特定路径的当前实现，不是应用可依赖的稳定契约。看到连接等待时，先查长事务、耗时过长的读取、未关闭资源、写入队列和首次打开，不要先扩池。
+WAL 下，平台池可用非主连接服务只读工作，写事务通常要使用主连接；增加只读连接也不会增加 SQLite 写连接数量。Room 2.8.4 的默认 SupportSQLite 兼容路径使用 passthrough pool（只转交连接请求、不自行管理物理连接的池），实际连接仍由 Android framework 管理；只有驱动本身没有连接池时，`RoomConnectionManager` 才自建池，并把 WAL 映射为最多 4 个只读连接、1 个写连接，`TRUNCATE` 下各为 1 个。
+
+这些数字是特定路径的当前实现，不是应用可依赖的稳定契约。看到连接等待时，先查长事务、耗时过长的读取、未关闭资源、写入队列和首次打开，不要先扩池。
 
 WAL 的应用侧检查项：
 
@@ -265,7 +267,7 @@ DAO 方法按执行模型分开设计：
 
 Room 2.8.4 已提供显式的读写连接 API：同步 DAO 在调用线程执行；`suspend` DAO 通过 Room 的协程上下文申请连接；`Flow` 在开始收集后查询，并在相关表失效时重查；`useReaderConnection()`、`useWriterConnection()` 是显式连接入口。Android 兼容路径仍保留 `queryExecutor` / `transactionExecutor`，驱动路径和 common/KMP 路径则不应套用同一套执行器结论。排障时要看项目实际 `source set`、驱动、生成代码和 `sources.jar`（依赖附带的源码包）。
 
-下面的 DAO 用来区分列表投影（projection，只读取指定列）和详情实体。列表只选择渲染所需列，正文等大字段留到详情查询；调用方还要限制 `limit` 的合法范围。
+下面的 DAO 演示列表投影（projection，只读取指定列）与详情实体的区别。列表只选择渲染所需列，正文等大字段留到详情查询；调用方还要限制 `limit` 的合法范围。
 
 ```kotlin
 data class MessageRow(
@@ -409,7 +411,7 @@ ORDER BY sent_at DESC
 LIMIT 50;
 ```
 
-即使输出出现 `SCAN`，也不能脱离对象判断它一定错误：小表扫描、覆盖索引扫描或统计信息变化都可能使扫描成为合理选择。应同时检查扫描对象、临时 B-tree、返回行数和实际耗时。空库或均匀小样本也不能代表线上偏斜分布。
+即使输出出现 `SCAN`，也不能脱离被扫描的对象断定它一定是错误选择：小表扫描、覆盖索引扫描或统计信息变化都可能使扫描成为合理选择。应同时检查扫描对象、临时 B-tree、返回行数和实际耗时。空库或均匀小样本也不能代表线上偏斜分布。
 
 查询回归可以进入 CI（Continuous Integration，持续集成）：为关键 DAO 准备有代表性的规模与分布，验证结果正确性、索引是否存在，并对明显的计划退化和耗时变化报警。不要断言完整的 `EXPLAIN QUERY PLAN` 文本；SQLite 明确不保证该输出格式跨版本稳定。
 
@@ -435,7 +437,7 @@ LIMIT :limit;
 
 #### `WITHOUT ROWID` 与 PRAGMA 的适用边界
 
-普通表的 `INTEGER PRIMARY KEY` 已是 rowid 别名。`WITHOUT ROWID` 更适合较短的非整数或复合主键，并且查询频繁沿主键访问的表；它不支持 `AUTOINCREMENT`，大主键还会复制进二级索引。迁移前必须用真实数据比较库大小与读写耗时，不能把它当作通用省空间开关。
+普通表的 `INTEGER PRIMARY KEY` 已是 rowid 别名。`WITHOUT ROWID` 更适合较短的非整数或复合主键，以及查询频繁沿主键访问的表；它不支持 `AUTOINCREMENT`，大主键还会复制进二级索引。迁移前必须用真实数据比较库大小与读写耗时，不能把它当作通用省空间开关。
 
 PRAGMA 同时包含持久状态与每连接状态。`journal_mode`、`synchronous`、`wal_autocheckpoint`、`busy_timeout`、`cache_size` 和 `page_size` 的生效范围不同；Room 或平台连接池创建多个连接后，在一个临时连接执行 per-connection PRAGMA（仅对当前连接生效的配置）不代表其他连接继承。配置应通过受支持的 Builder、驱动或 open callback（数据库打开回调）统一下发，并逐连接验证。`busy_timeout` 只能把锁冲突改成等待，无法消除长事务，还可能把 UI 或 Binder 路径上的快速失败变成长卡顿。
 
@@ -443,9 +445,15 @@ PRAGMA 同时包含持久状态与每连接状态。`journal_mode`、`synchronou
 
 ### 调度、多进程与加密数据库
 
-SQLite 在同一数据库上同一时间只允许一个写事务，这项约束不会替应用安排业务写入的先后顺序和优先级。高频写入可以先进入一个有容量上限的队列；队列接近满载时，应让生产者减速或拒绝新任务，这就是背压。若同一对象的旧状态可由较新状态覆盖，还可以合并等待中的更新。事务只包住不可分割的数据变更，不在其中等待网络、结果不确定的回调或无关锁。读连接数也要根据目标设备的吞吐、P95/P99 延迟（第 95/99 百分位耗时，即 95%/99% 的请求耗时不超过对应数值）、I/O 和数据库页缓存确定；同时启动更多读连接，可能只会让多次大表扫描一起争用存储。
+SQLite 在同一数据库上同一时间只允许一个写事务，这项约束不会替应用安排业务写入的先后顺序和优先级。高频写入可以先进入一个有容量上限的队列；队列接近满载时，应让生产者减速或拒绝新任务，这就是背压。若同一对象的旧状态可由较新状态覆盖，还可以合并等待中的更新。
 
-多个进程打开同一数据库文件时，日志模式（例如 WAL）、数据库结构版本（`schema version`）和连接配置必须一致。SQLite 文件锁与 WAL 负责数据库级协调。Room 的多实例失效通知（`multi-instance invalidation`）只告诉其他数据库实例“哪些表发生了变化”，既不提供跨进程事务，也不规定不同进程写入的先后顺序。高频写入宜交给一个职责明确的进程统一接收；数据库迁移、备份、恢复和清库也只能有一个协调者。若客户端线程停在 Binder 调用，应同时采集实际访问数据库的 ContentProvider 所在进程，不能只看调用端调用栈。
+事务只包住不可分割的数据变更，不在其中等待网络、结果不确定的回调或无关锁。
+
+读连接数也要根据目标设备的吞吐、P95/P99 延迟（第 95/99 百分位耗时，即 95%/99% 的请求耗时不超过对应数值）、I/O 和数据库页缓存确定；同时启动更多读连接，可能只会让多次大表扫描一起争用存储。
+
+多个进程打开同一数据库文件时，日志模式（例如 WAL）、数据库结构版本（`schema version`）和连接配置必须一致。SQLite 文件锁与 WAL 负责数据库级协调。Room 的多实例失效通知（`multi-instance invalidation`）只告诉其他数据库实例“哪些表发生了变化”，既不提供跨进程事务，也不规定不同进程写入的先后顺序。高频写入宜交给一个职责明确的进程统一接收；数据库迁移、备份、恢复和清库也只能有一个协调者。
+
+若客户端线程停在 Binder 调用，应同时采集实际访问数据库的 ContentProvider 所在进程，不能只看调用端调用栈。
 
 SQLCipher 会在数据库打开、密钥派生和数据页读写路径上增加工作。具体代价取决于 SQLCipher 版本、加密页大小（`cipher_page_size`）、密钥派生函数（KDF，Key Derivation Function）参数、硬件、短期频繁访问的数据页、页缓存与索引，不能套用固定百分比。对比实验至少覆盖冷打开、热查询、批量事务、WAL 检查点、数据库迁移和低端设备，并保持持久性配置相同。Android Keystore 可以保护或封装密钥材料，数据库页面是否透明加密仍由 SQLCipher 等数据库实现负责。
 
@@ -689,7 +697,9 @@ JSON 便于抓包、日志检查和跨语言协作。解析端仍要扫描括号
 
 #### 三个库的当前边界
 
-截至本轮复核，Gson 仍处于维护模式：项目会继续修复已有问题，但通常不再增加大型功能。其项目说明明确指出：Gson 以 Java 为主要目标，不支持 Kotlin 非空类型和默认参数等语言语义；它还会在运行时反射任意模型字段，这种开放式反射难以与 Android 发布包的缩减、优化和混淆配合，因此官方不再推荐用 Gson 处理 Android JSON。存量项目不必仅因这段说明立即重写，但应限制允许反射的模型、用 `@SerializedName` 为字段声明稳定名称，并用经过 R8 处理的发布 APK 或 AAB 验证字段名、构造方式和泛型适配器。新 Kotlin 数据模型宜优先评估代码生成方案。
+截至本轮复核，Gson 仍处于维护模式：项目会继续修复已有问题，但通常不再增加大型功能。其项目说明明确指出：Gson 以 Java 为主要目标，不支持 Kotlin 非空类型和默认参数等语言语义；它还会在运行时反射任意模型字段，这种开放式反射难以与 Android 发布包的缩减、优化和混淆配合，因此官方不再推荐用 Gson 处理 Android JSON。
+
+存量项目不必仅因这段说明立即重写，但应限制允许反射的模型、用 `@SerializedName` 为字段声明稳定名称，并用经过 R8 处理的发布 APK 或 AAB 验证字段名、构造方式和泛型适配器。新 Kotlin 数据模型宜优先评估代码生成方案。
 
 [Gson 项目说明](https://github.com/google/gson)
 
@@ -788,7 +798,9 @@ class FeedJsonBenchmark {
 
 这段测试没有测首次类加载、读取文件、网络等待或对象到业务模型的转换，也没有比较编码。它适合隔离解码函数，不代表启动或接口从输入到结果的完整耗时。项目还应分别建立编码用例、小型与大型测试样本、正常与缺字段样本；库配置必须与发布代码一致。
 
-Jetpack Microbenchmark 会预热代码，记录执行时间和对象分配次数，并把明细写入 JSON 报告。使用 Benchmark 1.3.0-beta01 以上和 Android Gradle Plugin 8.4.0 以上版本时，`androidx.benchmark` 插件默认对基准测试 APK 做 AOT（Ahead-of-Time，运行前）完整编译；这不等于 R8 缩减与混淆。若要验证 R8 处理后的差异，库模块需使用 AGP 8.3 以上并单独启用测试最小化。不要用可调试包或模拟器结果决定生产环境选型；首次使用成本和完整用户路径仍要由 Macrobenchmark（从应用外部测量启动、滚动等场景）与 Perfetto 系统追踪验证。
+Jetpack Microbenchmark 会预热代码，记录执行时间和对象分配次数，并把明细写入 JSON 报告。使用 Benchmark 1.3.0-beta01 以上和 Android Gradle Plugin 8.4.0 以上版本时，`androidx.benchmark` 插件默认对基准测试 APK 做 AOT（Ahead-of-Time，运行前）完整编译；这不等于 R8 缩减与混淆。若要验证 R8 处理后的差异，库模块需使用 AGP 8.3 以上并单独启用测试最小化。
+
+不要用可调试包或模拟器结果决定生产环境选型；首次使用成本和完整用户路径仍要由 Macrobenchmark（从应用外部测量启动、滚动等场景）与 Perfetto 系统追踪验证。
 
 [Microbenchmark 概览](https://developer.android.com/topic/performance/benchmarking/microbenchmark-overview) · [编写 Microbenchmark](https://developer.android.com/topic/performance/benchmarking/microbenchmark-write) · [`BlackHole`](https://developer.android.com/reference/kotlin/androidx/benchmark/BlackHole)
 
