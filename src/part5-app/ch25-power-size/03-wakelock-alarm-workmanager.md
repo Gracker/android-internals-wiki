@@ -94,7 +94,9 @@ WakeLock（唤醒锁）和 Alarm（系统定时通知）解决两个不同问题
 - WakeLock 表示工作已经开始，设备暂时不能进入会中断它的休眠状态。
 - Alarm 表示工作尚未开始，系统到达约定时刻后通知应用。
 
-它们都不是进程保活接口。WakeLock 不保证进程存活，也不提供后台启动资格；Alarm 回调应只完成短小的分发工作，耗时任务需要另行调度。持锁范围过大，会阻止系统进入低功耗状态；唤醒型 Alarm 过密，会增加设备被唤醒的次数；精确 Alarm 若未满足权限条件，调用时会抛出 `SecurityException`。
+它们都不是进程保活接口。WakeLock 不保证进程存活，也不提供后台启动资格；Alarm 回调应只完成短小的分发工作，耗时任务需要另行调度。
+
+持锁范围过大，会阻止系统进入低功耗状态；唤醒型 Alarm 过密，会增加设备被唤醒的次数；精确 Alarm 若未满足权限条件，调用时会抛出 `SecurityException`。
 
 系统电源状态机见 §5.2 和 §11.3，后台任务分类见 §25.2，WorkManager（Jetpack 的持久后台任务调度库）实践见本文后半部分。这里讨论应用侧的选择、生命周期、权限和诊断。
 
@@ -173,9 +175,11 @@ inline fun <T> Context.withPartialWakeLock(
 }
 ```
 
-`block()` 必须在函数返回前完成。如果它只负责启动协程、提交线程池任务或发起异步请求，函数返回时 WakeLock 就会释放。反向做法——把释放分散到异步回调——会增加遗漏异常、取消和超时分支的风险。可延后工作应交给 WorkManager；长时间且用户可感知的工作应使用符合类型与权限要求的 FGS。
+`block()` 必须在函数返回前完成。如果它只负责启动协程、提交线程池任务或发起异步请求，函数返回时 WakeLock 就会释放。反过来，把释放分散到异步回调会增加遗漏异常、取消和超时分支的风险。可延后工作应交给 WorkManager；长时间且用户可感知的工作应使用符合类型与权限要求的 FGS。
 
-WakeLock 默认使用引用计数：每次 `acquire()` 增加一次计数，每次 `release()` 减少一次，计数归零后才释放。示例将它关闭，是因为每次调用都创建独立对象，并且只有当前函数拥有这把锁。共享对象不适合这样处理：非引用计数模式下一次 `release()` 就会撤销此前所有 `acquire()` 的效果。超时到达后 `block()` 仍可能继续运行，因此超时不能替代业务取消，也不能用作任务成功的判断。
+WakeLock 默认使用引用计数：每次 `acquire()` 增加一次计数，每次 `release()` 减少一次，计数归零后才释放。示例将它关闭，是因为每次调用都创建独立对象，并且只有当前函数拥有这把锁。共享对象不适合这样处理：非引用计数模式下一次 `release()` 就会撤销此前所有 `acquire()` 的效果。
+
+超时到达后 `block()` 仍可能继续运行，因此超时不能替代业务取消，也不能用作任务成功的判断。
 
 ### WakeLock 泄漏检测与治理
 
@@ -192,7 +196,9 @@ WakeLock 异常往往来自所有权不清：异常提前返回、回调没有�
 
 AlarmManager 分发广播时会持有名为 `*alarm*` 的 WakeLock，并将它归因给设置 Alarm 的应用。该锁只覆盖 `BroadcastReceiver.onReceive()`；方法返回后，系统就可以释放锁。接收器中若启动异步工作，应该将输入持久化并交给 WorkManager 或其他合适接口，不能依赖 `*alarm*` 继续保护后续工作。
 
-Android Vitals 当前将一个应用会话中、24 小时内累计达到两小时的非豁免 partial WakeLock 记为过度使用；若最近 28 天超过 5% 的应用会话出现该问题，可能影响应用在 Google Play 的可见性。统计只计算屏幕关闭且应用处于后台或运行 FGS 时持有的锁，并对部分有明确用户价值的系统 API 提供豁免。这个门槛用于识别严重问题，不应成为应用允许自己消耗的预算。参见 [Excessive partial wake locks](https://developer.android.com/topic/performance/vitals/excessive-wakelock)。
+Android Vitals 当前将一个应用会话中、24 小时内累计达到两小时的非豁免 partial WakeLock 记为过度使用；若最近 28 天超过 5% 的应用会话出现该问题，可能影响应用在 Google Play 的可见性。统计只计算屏幕关闭且应用处于后台或运行 FGS 时持有的锁，并对部分有明确用户价值的系统 API 提供豁免。
+
+这个门槛用于识别严重问题，不应成为应用允许自己消耗的预算。参见 [Excessive partial wake locks](https://developer.android.com/topic/performance/vitals/excessive-wakelock)。
 
 应用自己的审计记录不要只保存标签：
 
@@ -206,13 +212,13 @@ Android Vitals 当前将一个应用会话中、24 小时内累计达到两小�
 | `visible_to_user` | 区分用户感知任务和静默后台任务 |
 | `failure_reason` | 记录异常、取消、超时、进程退出等释放路径 |
 
-新增 WakeLock 应通过统一封装，标签固定且可定位，超时来自业务上限，每一条退出路径都能释放。单次时长和累计时长阈值应从具体场景的稳定版本与服务目标推导；下载、媒体、导航和短同步不能共用一个数字。
+新增 WakeLock 应通过统一封装：标签固定且可定位，超时来自业务上限，每一条退出路径都能释放。单次时长和累计时长阈值应从具体场景的稳定版本与服务目标推导；下载、媒体、导航和短同步不能共用一个数字。
 
 ### AlarmManager 最佳实践
 
 AlarmManager 用于跨越应用生命周期的时间通知。应用仍在运行时的界面计时、动画或请求超时，使用 Handler（进程内消息调度器）、协程等进程内工具；允许延后的持久化工作使用 WorkManager。用户指定的闹钟、日历事件和到时提醒，才需要评估 AlarmManager。参见 [Schedule alarms](https://developer.android.com/develop/background-work/services/alarms)。
 
-选择 API 时，同时判断是否要唤醒设备、允许多大时间偏差，以及是否需要跨进程存活。Doze 指设备空闲时的低功耗模式。
+Doze 指设备空闲时的低功耗模式。选择 API 时，同时判断是否要唤醒设备、允许多大时间偏差，以及是否需要跨进程存活。
 
 | API | 系统行为 | 适用边界 |
 |-----|----------|----------|
@@ -224,7 +230,9 @@ AlarmManager 用于跨越应用生命周期的时间通知。应用仍在运行�
 | `setExactAndAllowWhileIdle()` | Doze 中允许分发的精确 Alarm，受权限和频率限制 | 闹钟、日历提醒等强时效场景 |
 | `setAlarmClock()` | 用户可见的闹钟；系统必要时离开低功耗模式 | 闹钟应用的核心功能 |
 
-目标版本 31 及以上调用 `setWindow()` 时，小于十分钟的窗口可能被系统扩展到十分钟。这个平台下限不表示业务都应该选择十分钟；窗口仍应来自产品对延迟的接受范围。精确 Alarm 难以和其他应用的唤醒合并，只有非精确接口无法满足用户需求时才使用。
+目标版本 31 及以上调用 `setWindow()` 时，小于十分钟的窗口可能被系统扩展到十分钟。这个平台下限不表示业务都应该选择十分钟；窗口仍应来自产品对延迟的接受范围。
+
+精确 Alarm 难以和其他应用的唤醒合并，只有非精确接口无法满足用户需求时才使用。
 
 #### 先选时间基准，再选是否唤醒
 
@@ -271,13 +279,13 @@ fun scheduleReminderWindow(
 }
 ```
 
-`Intent` 的附加字段不参与 `PendingIntent` 等价判断；只改变 `reminder_id`，可能覆盖已有 Alarm。示例使用唯一的 `data` URI（统一资源标识符）区分提醒，取消时必须重建等价的 `action`、`data`、组件、`requestCode` 和标志位。示例使用 `RTC_WAKEUP` 表示按用户墙上时钟提醒；若设备无需被唤醒，应改用 `RTC`。
+`Intent` 的附加字段不参与 `PendingIntent` 等价判断；只改变 `reminder_id`，可能覆盖已有 Alarm。示例使用唯一的 `data` URI（统一资源标识符）区分提醒，取消时必须重建等价的 `action`、`data`、组件、`requestCode` 和标志位。这段代码用 `RTC_WAKEUP` 表示按用户墙上时钟提醒；若设备无需被唤醒，应改用 `RTC`。
 
 接收器只做输入校验、状态确认和短小的本地处理。下载、数据库批处理或多轮网络请求需要入队；同一提醒已删除、账号已退出或状态已过期时，应直接结束。
 
 #### Android 17：允许空闲分发的 Listener Alarm
 
-Android 17 / API 37 新增接受 `OnAlarmListener`（Alarm 回调监听器）与 `Executor`（回调执行器）的 `setExactAndAllowWhileIdle()`。它适合组件仍在运行、但不希望持续持有 WakeLock 等待下一次时机的场景。这个示例按开机后的单调时间安排一次回调。
+Android 17 / API 37 新增接受 `OnAlarmListener`（Alarm 回调监听器）与 `Executor`（回调执行器）的 `setExactAndAllowWhileIdle()`。它适合这样的场景：组件仍在运行，但不希望持续持有 WakeLock 等待下一次时机。这个示例按开机后的单调时间安排一次回调。
 
 ```kotlin
 @RequiresApi(37)
@@ -301,7 +309,9 @@ fun scheduleProcessLocalIdleAlarm(
 
 使用这个重载需同时满足四个条件：活跃组件仍在、设备空闲时需要唤醒、回调能快速同步完成、回调丢失后能够恢复。Android 17 的 AlarmManager 会在投递回调前获取共享 WakeLock，`onAlarm()` 返回后完成投递并释放；因此回调内通常不应再获取应用 WakeLock。把工作另起异步线程后立即返回，会失去这段系统保护。
 
-`OnAlarmListener` 通过进程内 Binder（Android 进程间通信机制）回调交付。应用进程进入 cached（缓存进程）或 frozen（冻结）状态、监听器对应的 Binder 失效，或者拥有该监听器的组件结束时，系统可以移除 Alarm；进程死亡后仍需交付的提醒应使用 `PendingIntent`。Android 17 还为 Listener 型允许空闲分发 Alarm 维护独立配额（quota）。AOSP 中的默认值用于解释当前实现，业务不能据此承诺固定心跳间隔。每次回调完成后，再按当前协议状态安排下一次一次性 Alarm，并记录请求时间、实际触发时间和回调完成时间，避免形成无法追踪来源的周期唤醒。
+`OnAlarmListener` 通过进程内 Binder（Android 进程间通信机制）回调交付。应用进程进入 cached（缓存进程）或 frozen（冻结）状态、监听器对应的 Binder 失效，或者拥有该监听器的组件结束时，系统可以移除 Alarm；进程死亡后仍需交付的提醒应使用 `PendingIntent`。
+
+Android 17 还为 Listener 型允许空闲分发 Alarm 维护独立配额（quota）。AOSP 中的默认值用于解释当前实现，业务不能据此承诺固定心跳间隔。每次回调完成后，再按当前协议状态安排下一次一次性 Alarm，并记录请求时间、实际触发时间和回调完成时间，避免形成无法追踪来源的周期唤醒。
 
 ### Exact Alarm 权限变化（Android 12+）
 
@@ -315,7 +325,7 @@ fun scheduleProcessLocalIdleAlarm(
 
 `USE_EXACT_ALARM` 会自动授予且用户不能撤销，但用途受限，并受 Google Play 政策约束，适合核心功能就是闹钟或日历的应用。`SCHEDULE_EXACT_ALARM` 是用户可授予和撤销的特殊访问权限，适用范围更广。两者都不该为普通同步任务声明。
 
-精确 Alarm 到达属于 FGS 后台启动限制的豁免场景，但不会免除 FGS 类型、类型权限和使用中权限（while-in-use permission，一般只在应用可见或对应 FGS 满足条件时可用）检查。普通后台任务不能为了获得启动资格而改用精确 Alarm。
+精确 Alarm 到达属于 FGS 后台启动限制的豁免场景，但不会免除三项检查：FGS 类型、类型权限和使用中权限（while-in-use permission，一般只在应用可见或对应 FGS 满足条件时可用）。普通后台任务不能为了获得启动资格而改用精确 Alarm。
 
 使用基于 `PendingIntent` 的 `setExact()`、`setExactAndAllowWhileIdle()` 或 `setAlarmClock()` 前，应通过 `canScheduleExactAlarms()` 检查资格。这个示例只负责安排 Alarm，并向调用层返回需要权限的结果；它不会从后台突然打开系统设置页。
 
@@ -557,7 +567,7 @@ WorkManager.getInstance(context).enqueueUniquePeriodicWork(
 
 #### 精确网络能力
 
-WorkManager 2.10.0 增加了 `setRequiredNetworkRequest()`。它在 API 28 及以上把 `NetworkRequest`（Android 网络能力请求）交给 JobScheduler，第二个 `NetworkType` 参数用于较低平台的兼容表达。
+WorkManager 2.10.0 增加了 `setRequiredNetworkRequest()`。它在 API 28 及以上把 `NetworkRequest`（Android 网络能力请求）交给 JobScheduler，第二个 `NetworkType` 参数用于在较低平台上表达同类约束。
 
 这项约束要求网络已通过系统联网验证且不计费：
 
@@ -846,7 +856,9 @@ Perfetto（Android 系统追踪工具）适合分析 Worker 运行时占用的�
 
 这些方法的返回类型、异常和版本边界以 [`JobScheduler` API](https://developer.android.com/reference/android/app/job/JobScheduler) 为准。
 
-多个原因可以同时计时，所以各项累计时长之和可能大于 Job 的实际等待时间。这些历史和统计不会跨设备重启保存；Job 成功完成或取消后，统计也会清空。采集查询若正好与 Job 完成或取消同时发生，可能因对象已不存在而抛出 `IllegalArgumentException`，此时应转查应用自己的完成记录。查询范围还受应用 UID（系统分配的应用身份）与 `JobScheduler` namespace（命名空间）限制，使用 `forNamespace()` 调度时必须从同一命名空间查询。
+多个原因可以同时计时，所以各项累计时长之和可能大于 Job 的实际等待时间。这些历史和统计不会跨设备重启保存；Job 成功完成或取消后，统计也会清空。
+
+采集查询若正好与 Job 完成或取消同时发生，可能因对象已不存在而抛出 `IllegalArgumentException`，此时应转查应用自己的完成记录。查询范围还受应用 UID（系统分配的应用身份）与 `JobScheduler` namespace（命名空间）限制，使用 `forNamespace()` 调度时必须从同一命名空间查询。
 
 原因常量只给出排查方向：`CONSTRAINT_*` 指向显式约束，`QUOTA` 指向待机分组或运行额度，`BACKGROUND_RESTRICTION` / `APP_STANDBY` 指向应用状态，`DEVICE_STATE` 还可能包含 Doze、热状态、内存压力或并发槽位。它们必须与 WorkInfo、停止原因、`dumpsys jobscheduler` 和业务阶段日志一起解释。
 
