@@ -92,7 +92,7 @@ Wi-Fi 图标、RSSI（received signal strength indicator，接收信号强度）
 
 ### ConnectivityService 与 Wi-Fi 模块各管一层
 
-这条路径只描述主要控制关系，不代表每次扫描都会触发重选或重新关联。BSSID（basic service set identifier）标识一个基本服务集，通常对应 AP 的一个无线电接口；`NetworkAgent` 是各网络模块向 Connectivity 报告网络及其能力的系统对象：
+下面的流程只描述主要控制关系，不代表每次扫描都会触发重选或重新关联。BSSID（basic service set identifier）标识一个基本服务集，通常对应 AP 的一个无线电接口；`NetworkAgent` 是各网络模块向 Connectivity 报告网络及其能力的系统对象：
 
 ```text
 Wi-Fi 扫描结果
@@ -110,7 +110,7 @@ Wi-Fi 模块主要回答“连接哪个 Wi-Fi 网络或 BSSID”。Connectivity 
 
 Android 17 的 `WifiNetworkSelector.filterScanResults()` 会排除低于入网 RSSI 阈值、命中 BSSID 阻止列表、被 MBO/OCE 拒绝关联、不满足设备管理策略或使用已弃用安全类型的结果。MBO（Multi Band Operation）与 OCE（Optimized Connectivity Experience）是 Wi-Fi 联盟定义的接入管理和连接优化能力。已连接的当前 BSSID 会在这些普通过滤条件之前保留；当前 BSSID 未出现在一次扫描中时，源码还可能放弃本轮选择，避免不完整的扫描结果触发不必要的切换。
 
-`getCandidatesFromScan()` 调用已注册的 nominator（候选提名器），产生已保存网络、由应用通过 `WifiNetworkSuggestion` 提交的 Suggestion 网络等候选，并把当前连接留在候选集合中。`selectNetwork()` 再交给活动的 `CandidateScorer`（候选评分器）选出结果，并应用兼容旧版用户选择的逻辑。Android 17 的预设评分器是 `ThroughputScorer`。
+`getCandidatesFromScan()` 调用已注册的 nominator（候选提名器），产生候选，包括已保存网络、应用通过 `WifiNetworkSuggestion` 提交的 Suggestion 网络等，并把当前连接留在候选集合中。`selectNetwork()` 再交给活动的 `CandidateScorer`（候选评分器）选出结果，并应用兼容旧版用户选择的逻辑。Android 17 的预设评分器是 `ThroughputScorer`。
 
 Connectivity 先保留能满足请求能力的网络，再执行 `NetworkRanker.getBestNetworkByPolicy()`。Android 17 的主要规则按源码顺序如下：
 
@@ -294,7 +294,9 @@ class TimelineEventListener(
 
 截至 2026-08-15，OkHttp 最新稳定版本为 5.4.0。示例使用该版本的 `dispatcherQueueStart(call, dispatcher)` 和 `dispatcherQueueEnd(call, dispatcher)` 签名；升级依赖后仍应以对应版本的 `EventListener` 源码为准。
 
-监听器应由 `EventListener.Factory` 为每个 `Call` 单独创建。一次 `Call` 可能因重试或重定向包含多次 HTTP 交换，也就是多轮请求与响应；分析端要按完整事件序列分组，不能把末次 `dnsEnd` 与第一次 `dnsStart` 相减。`defaultGenerationAtStart` 也不能证明连接使用了该网络：复用连接可能建立在更早的默认网络上，显式绑定的客户端还可能使用其他 `Network`。若要确认套接字经过哪条网络，还要结合绑定配置、系统追踪数据或网络数据包捕获结果。
+监听器应由 `EventListener.Factory` 为每个 `Call` 单独创建。一次 `Call` 可能因重试或重定向包含多次 HTTP 交换，也就是多轮请求与响应；分析端要按完整事件序列分组，不能把末次 `dnsEnd` 与第一次 `dnsStart` 相减。
+
+`defaultGenerationAtStart` 也不能证明连接使用了该网络：复用连接可能建立在更早的默认网络上，显式绑定的客户端还可能使用其他 `Network`。若要确认套接字经过哪条网络，还要结合绑定配置、系统追踪数据或网络数据包捕获结果。
 
 ### 弱网与多网络并存时怎样判断
 
@@ -326,7 +328,7 @@ Android 17 的 `NetworkMonitor` 会在目标 `Network` 上执行 DNS 与 HTTP/HT
 
 #### 1. 用 NetworkCallback 维护网络状态记录
 
-`registerDefaultNetworkCallback()` 的当前 API 文档和 Android 17 源码都要求 `ACCESS_NETWORK_STATE`。Android 开发者指南在机制概述中说明，使用 `NetworkCallback` 等方式观察连接状态没有统一的额外权限；同一段也要求按具体方法文档检查权限，不能据此省略本方法所需声明。
+`registerDefaultNetworkCallback()` 的当前 API 文档和 Android 17 源码都要求 `ACCESS_NETWORK_STATE`。Android 开发者指南在机制概述中说明，使用 `NetworkCallback` 等方式观察连接状态没有统一的额外权限；同一段也要求按具体方法文档检查权限，不能据此省略 `registerDefaultNetworkCallback()` 所需声明。
 
 Android 8.0（API 26）起，新默认网络触发 `onAvailable()` 后，系统会紧接着按序发送 `onCapabilitiesChanged()`、`onLinkPropertiesChanged()` 和 `onBlockedStatusChanged()` 的初始状态。不要在这些回调中同步查询 `getNetworkCapabilities()` 或 `getLinkProperties()`；网络状态可能在收到回调与发起查询之间变化，查询结果会过期或为 `null`。这段追踪器把回调放到调用方提供的 `Handler` 消息队列，并为每次新默认网络分配递增序号：
 
@@ -453,7 +455,7 @@ class DefaultNetworkTracker(
 
 #### 2. 在连接层附近区分失败原因
 
-官方文档说明，新连接在默认网络变化后使用新网络，旧默认网络上的既有连接稍后会被系统终止。应用不需要在每次 `onAvailable()` 时销毁共享 `OkHttpClient` 或清空整个连接池，这会同时破坏仍可复用的健康连接。
+官方文档说明，新连接在默认网络变化后使用新网络，旧默认网络上的既有连接稍后会被系统终止。应用不需要在每次 `onAvailable()` 时销毁共享 `OkHttpClient` 或清空整个连接池，这么做还会破坏仍可复用的健康连接。
 
 - DNS 返回多个地址时保留全部结果，让 OkHttp 的路由重试与 `fast fallback`（错开尝试备用地址，以较快成功的连接继续）有选择空间。
 - HTTPS URL 始终保留原主机名；把 URL 改成 IP 会破坏 SNI（Server Name Indication，TLS 握手中携带目标主机名的扩展）、证书校验和虚拟主机路由。
@@ -538,7 +540,7 @@ Perfetto 是 Android 的系统追踪工具，适合判断网络回调之后是�
 
 ### OEM Wi-Fi 评分为何不同
 
-AOSP 的 Connectivity 选择逻辑位于 Mainline 模块，也就是可独立于整机系统版本更新的一类模块化系统组件。设备厂商能通过 `NetworkScore` 属性表达网络策略，也能通过 Wi-Fi 资源覆盖、HAL（hardware abstraction layer，连接系统框架与厂商实现的硬件抽象层）、芯片固件、内核驱动、漫游策略、双 STA 和厂商服务改变 Wi-Fi 行为。
+AOSP 的 Connectivity 选择逻辑位于 Mainline 模块，也就是一类可独立于整机系统版本更新的模块化系统组件。设备厂商能通过 `NetworkScore` 属性表达网络策略，也能通过 Wi-Fi 资源覆盖、HAL（hardware abstraction layer，连接系统框架与厂商实现的硬件抽象层）、芯片固件、内核驱动、漫游策略、双 STA 和厂商服务改变 Wi-Fi 行为。
 
 `WifiManager.WifiConnectedNetworkScorer` 是只向特定系统组件开放的 `@SystemApi`，并要求签名级权限 `WIFI_UPDATE_USABILITY_STATS_SCORE`，普通第三方应用不能把它当成公开扩展点。Android 17 的 `ScoreUpdateObserver` 对各回传值给出了明确边界：
 
@@ -562,7 +564,7 @@ AOSP 的 Connectivity 选择逻辑位于 Mainline 模块，也就是可独立于
 
 ### HTTP/3、QUIC 与网络切换
 
-示例中的 `EventListener` 代码与正文统一以 OkHttp 5.4.0 为锚点。OkHttp 自带传输实现支持 HTTP/1.1 与 HTTP/2，不直接提供 HTTP/3。HTTP/3 运行在 QUIC 传输协议之上；需要它时，应评估 Android `HttpEngine`（平台网络引擎 API）、Cronet（Chromium 网络栈的 Android 库），或官方提供的 Cronet Transport for OkHttp 集成。
+本文的 `EventListener` 示例与正文一致，都以 OkHttp 5.4.0 为锚点。OkHttp 自带传输实现支持 HTTP/1.1 与 HTTP/2，不直接提供 HTTP/3。HTTP/3 运行在 QUIC 传输协议之上；需要它时，应评估 Android `HttpEngine`（平台网络引擎 API）、Cronet（Chromium 网络栈的 Android 库），或官方提供的 Cronet Transport for OkHttp 集成。
 
 QUIC 用连接 ID 标识一条逻辑连接，不把连接身份完全绑定在原来的 IP 地址和端口上，因此具备连接迁移的协议基础。迁移仍不会因使用 HTTP/3 自动发生。`HttpEngine` 和 Cronet 都提供连接迁移选项；只有启用默认网络迁移、请求使用 QUIC 且服务端支持迁移时，活动连接才有机会在网络变化后继续。允许迁往非默认网络还可能使用按量计费的流量。
 
@@ -591,7 +593,7 @@ QUIC 用连接 ID 标识一条逻辑连接，不把连接身份完全绑定在�
 
 Wi-Fi 模块负责在候选 AP 与 BSSID 中做无线侧选择，Connectivity 模块再依据 `NetworkRequest`、能力与系统策略选择默认 `Network`。RSSI、Wi-Fi 图标、`VALIDATED` 和业务可用性分属不同层，应用不应试图用一个自定义分数复刻系统决策。
 
-工程观测要把默认网络世代、`NetworkCapabilities`、OkHttp 完整事件序列、系统证据和服务端请求编号关联起来。OEM 评分、双 STA、MLO 与 HTTP/3 连接迁移都必须用目标设备证据验证；传输连续性也不能替代业务幂等和恢复协议。
+工程观测要把默认网络序号、`NetworkCapabilities`、OkHttp 完整事件序列、系统证据和服务端请求编号关联起来。OEM 评分、双 STA、MLO 与 HTTP/3 连接迁移都必须用目标设备证据验证；传输连续性也不能替代业务幂等和恢复协议。
 
 ## 参考资料
 
