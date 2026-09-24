@@ -88,7 +88,7 @@ sources:
 | Blocked/Sleeping（阻塞/休眠）时间 | 线程在等锁、I/O、定时器或条件 | CPU 低也可能有很差的响应 |
 | 能耗与温度 | 这段工作付出了多少设备成本 | 同样的 CPU 时间在不同工作频率和 CPU 核上成本不同 |
 
-应用层 CPU 优化通常落在四件事上：少做工作、减少同一时刻的并行工作、减少唤醒与切换、把非紧急工作交给合适的系统调度时机。线程池参数只是其中一个控制点。
+应用层 CPU 优化通常落在四件事上：少做工作、减少同一时刻的并行工作、减少唤醒与切换、把非紧急工作安排到合适的系统调度时机。线程池参数只是其中一个控制点。
 
 ## ThreadPoolExecutor：先理解队列，再谈线程数
 
@@ -106,7 +106,7 @@ Android 17 的 `ThreadPoolExecutor` 来自 libcore 内置的 OpenJDK 并发实�
 
 ### 没有跨应用通用的“核数公式”
 
-`Runtime.availableProcessors()` 返回 JVM 当前可用的逻辑处理器数量。它不是性能核数量，也不是应用可长期占满的核数，更不能直接推出合适的 worker 数量。任务内部还可能调用并行库，设备也会受前台状态、温度、功耗策略和其他进程影响。
+`Runtime.availableProcessors()` 返回 JVM 当前可用的逻辑处理器数量。它不是性能核数量，也不是应用可长期占满的核数，也不能据此直接推出合适的 worker 数量。任务内部还可能调用并行库，设备也会受前台状态、温度、功耗策略和其他进程影响。
 
 线程数需要从任务模型出发：
 
@@ -193,7 +193,7 @@ fun newBoundedCpuExecutor(
 
 ### 公开 SDK 的低成本窗口采样
 
-`Process.getElapsedCpuTime()` 返回进程从启动以来消耗的 CPU 毫秒数，`SystemClock.elapsedRealtime()` 返回包含深度睡眠在内的单调墙钟毫秒数。两次采样的增量可以得到窗口内的“等效占用核数”。
+`Process.getElapsedCpuTime()` 返回进程从启动以来消耗的 CPU 毫秒数，`SystemClock.elapsedRealtime()` 返回包含深度睡眠在内的单调墙钟毫秒数。用两次采样的增量可以得到窗口内的“等效占用核数”。
 
 ```kotlin
 import android.os.Process
@@ -260,7 +260,7 @@ cpu  user nice system idle iowait irq softirq steal guest guest_nice
 
 Android 的 C 标准库 bionic 会把 `times()` 调用交给 Linux `do_sys_times()`。在 `android17-6.18-2026-06_r6` 中，内核通过 `thread_group_cputime_adjusted()` 取得当前线程组的用户态/内核态 CPU 时间，再用 `nsec_to_clock_t()` 转成 clock tick（接口定义的计时单位）；返回值来自 `jiffies_64_to_clock_t(get_jiffies_64())`，其中 jiffies 是内核启动后累计的定时节拍。源码可在 [`kernel/sys.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sys.c) 中核对。
 
-`tms_utime` 与 `tms_stime` 是当前进程线程组的累计 CPU tick。`tms_cutime` 与 `tms_cstime` 反映已纳入 `times()` 子进程统计语义的子进程时间，普通 Android 应用通常不需要它们。`times()` 的返回值是从系统定义起点累计的 elapsed tick，绝对值没有业务含义，应只比较短时间窗口内的差值。
+`tms_utime` 与 `tms_stime` 是当前进程线程组的累计 CPU tick。`tms_cutime` 与 `tms_cstime` 反映子进程时间，这些时间已纳入 `times()` 的子进程统计语义；普通 Android 应用通常不需要它们。`times()` 的返回值是从系统定义起点累计的 elapsed tick，绝对值没有业务含义，应只比较短时间窗口内的差值。
 
 下面的 NDK 示例保留单位换算，并拒绝无效样本：
 
@@ -339,7 +339,9 @@ std::optional<double> EquivalentCores(
 | 可延期、需跨进程/重启、带约束 | WorkManager / JobScheduler |
 | 用户可感知的精确时刻 | 合适的 AlarmManager 接口 |
 
-固定频率任务一旦抛出未处理异常，后续周期默认不会再执行；取消后还应启用 remove-on-cancel（取消时立即从队列移除）或明确清理队列。采集“进程冻结→恢复→首帧完成”的完整区间，检查后台 Runnable 是否与主线程、RenderThread（负责界面渲染的线程）和网络重连同时争用 CPU。升级 target SDK 时还要检查广告、埋点、APM（应用性能监控）、IM（即时通信）等 SDK 内部定时器，不能只测试应用自有线程池。
+固定频率任务一旦抛出未处理异常，后续周期默认不会再执行；取消后还应启用 remove-on-cancel（取消时立即从队列移除）或明确清理队列。
+
+采集“进程冻结→恢复→首帧完成”的完整区间，检查后台 Runnable 是否与主线程、RenderThread（负责界面渲染的线程）和网络重连同时争用 CPU。升级 target SDK 时还要检查广告、埋点、APM（应用性能监控）、IM（即时通信）等 SDK 内部定时器，不能只测试应用自有线程池。
 
 ## Android 17：CPU 使用过量终止与取证
 
@@ -404,7 +406,7 @@ class WorkDispatchers(
 
 `limitedParallelism()` 限制该视图同时执行的协程数量，不承诺对应固定数量的物理线程。阻塞并发上限应与数据库连接池、服务端限流、文件描述符和内存预算匹配。CPU 任务即使写成 `suspend`（可挂起而不阻塞当前线程）函数，所需指令和 CPU 时间也不会减少；仍要分批、取消过期任务并控制并发。
 
-不要在主线程用 `runBlocking` 阻塞等待后台结果。结构化并发是让父任务统一管理子任务的生命周期、取消与错误传播，它不能补偿不受控的工作量。
+不要在主线程用 `runBlocking` 阻塞等待后台结果。结构化并发让父任务统一管理子任务的生命周期、取消与错误传播，但它不能补偿不受控的工作量。
 
 ## Android 17 上应用能控制什么
 
