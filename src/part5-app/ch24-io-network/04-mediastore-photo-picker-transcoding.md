@@ -333,14 +333,16 @@ fun queryChangedImages(
 
 调用方处理并持久化所有行后，还要再次读取 `version`。前后 `version` 相同，才能把 `endGeneration` 写入检查点；检查点是已经完整处理到哪个位置的持久记录。查询期间发生且 `generation` 大于 `endGeneration` 的变化会留给下一轮。代码把 `Cursor` 交给调用方是为了突出查询区间，业务实现必须用 `use` 关闭它。
 
-`android-17.0.0_r1` 的公开 API 没有删除记录查询。原始媒体行删除后，`GENERATION_MODIFIED` 查询不会返回一个替代它的删除标记；这种保留“某项已删除”信息的记录常称为删除墓碑。因此，以基础 API 为基准的可靠同步需要两条路径：
+`android-17.0.0_r1` 的公开 API 没有删除记录查询。原始媒体行删除后，`GENERATION_MODIFIED` 查询不会返回替代它的删除标记；保留“某项已删除”信息的记录，常称为删除墓碑。因此，以基础 API 为基准的可靠同步需要两条路径：
 
 1. `generation` 增量查询处理新增和修改。
 2. 定期分页查询该卷当前可见的 `_ID`，与本地记录逐项比较，补偿进程停止期间遗漏的删除。
 
 比较前要确认卷仍然挂载，且媒体读取权限没有收窄。权限变化造成的“不可见”不能记为用户删除。
 
-当前 API 37.1 / S 扩展 23 已增加 `MediaStore.queryDeletedFiles()`；这里的 S 指 Android 12 的 SDK 扩展线。SDK 扩展版本让 Mainline 模块在基础 Android API 级别不变时增加公开 API。该方法返回外部卷的删除记录，包括原 `_ID`、媒体类型、删除 `generation` 和卷名；内部卷的删除不会返回，外部卷移除后，其删除记录也不再保留。应用应在运行时检查 SDK 扩展版本：支持时用新增/修改查询配合删除查询，不支持时继续比较当前 `_ID` 集合。即使支持该 API，卷移除和权限收窄仍要单独处理。
+SDK 扩展版本让 Mainline 模块在基础 Android API 级别不变时增加公开 API。当前 API 37.1 / S 扩展 23（这里的 S 指 Android 12 的 SDK 扩展线）已增加 `MediaStore.queryDeletedFiles()`。该方法返回外部卷的删除记录，包括原 `_ID`、媒体类型、删除 `generation` 和卷名；内部卷的删除不会返回，外部卷移除后，其删除记录也不再保留。
+
+应用应在运行时检查 SDK 扩展版本：支持时用新增/修改查询配合删除查询，不支持时继续比较当前 `_ID` 集合。即使支持该 API，卷移除和权限收窄仍要单独处理。
 
 #### `ContentObserver` 只负责唤醒重新查询
 
@@ -377,7 +379,9 @@ Android 11 及以上提供四种系统确认请求：
 - `createTrashRequest()`：移入或移出回收站。
 - `createDeleteRequest()`：立即删除。
 
-每个 `Uri` 都必须由 `MediaStore` 的 `authority` 托管，并指向带 `_ID` 的具体媒体项。`authority` 是内容提供方在 `content://` 内容标识符中的唯一名称，`MediaStore` 使用 `media`。收藏、回收站或删除请求在系统返回结果前已经执行完成；`createWriteRequest()` 的成功结果只代表用户授予写权限，应用随后还要执行写入。该写权限与发起请求的 `Activity`（界面组件）生命周期相关，不能持久保存，也不能扩展到同一路径前缀。
+`authority` 是内容提供方在 `content://` 内容标识符中的唯一名称，`MediaStore` 使用 `media`；每个 `Uri` 都必须由 `MediaStore` 的 `authority` 托管，并指向带 `_ID` 的具体媒体项。
+
+收藏、回收站或删除请求在系统返回结果前已经执行完成；`createWriteRequest()` 的成功结果只代表用户授予写权限，应用随后还要执行写入。该写权限与发起请求的 `Activity`（界面组件）生命周期相关，不能持久保存，也不能扩展到同一路径前缀。
 
 Android 17 中，`targetSdkVersion` 为 36（Android 16）及以上的应用，每次请求最多传入 2000 个 `Uri`，超出会抛出 `IllegalArgumentException`。2000 是 API 输入上限，并非建议一次让用户确认 2000 项。实际批次应由确认界面的可理解程度、失败恢复方式和设备测量决定。
 
@@ -516,7 +520,7 @@ Perfetto 采集至少包含应用进程和 `com.android.providers.media.module` 
 
 #### Android 17 的 `MediaProvider` 诊断命令
 
-`android-17.0.0_r1` 的清单把 `MediaProvider` 注册为 `com.android.providers.media.module` 包中的 `ContentProvider`，`authority` 为 `media`。它没有注册成名为 `media_provider` 的 `ServiceManager` 服务；`ServiceManager` 是 Android 原生 Binder 服务的注册表。因此 `adb shell dumpsys media_provider` 不是该版本可依赖的命令。`dumpsys` 是读取 Android 系统服务和组件诊断状态的命令行工具。
+`dumpsys` 是读取 Android 系统服务和组件诊断状态的命令行工具；`ServiceManager` 是 Android 原生 Binder 服务的注册表。`android-17.0.0_r1` 的清单把 `MediaProvider` 注册为 `com.android.providers.media.module` 包中的 `ContentProvider`，`authority` 为 `media`，它没有注册成名为 `media_provider` 的 `ServiceManager` 服务。因此 `adb shell dumpsys media_provider` 不是该版本可依赖的命令。
 
 先列出匹配的 `ContentProvider` 状态：
 
@@ -569,7 +573,7 @@ Android 17 源码中的 `dump()` 输出包含缩略图尺寸、已连接卷、�
 
 这段状态机区分全量恢复、增量更新和删除补偿。每一步完成后再保存对应检查点，失败时从上一份完整检查点恢复。支持 `queryDeletedFiles()` 的系统可以把删除查询放在 `generation` 增量阶段，但仍要保留卷和权限检查。
 
-`IS_PENDING=1` 的其他应用媒体默认不在普通查询结果中，回收站项目也默认被过滤。需要管理回收站的应用应显式使用对应查询参数，并把该状态与普通图库分开。上传任务在打开文件前再次查询记录并处理 `FileNotFoundException`、`SecurityException`，因为排队期间媒体可能被删除、移出可见范围或卸载。
+其他应用中 `IS_PENDING=1` 的媒体默认不在普通查询结果中，回收站项目也默认被过滤。需要管理回收站的应用应显式使用对应查询参数，并把该状态与普通图库分开。上传任务在打开文件前再次查询记录并处理 `FileNotFoundException`、`SecurityException`，因为排队期间媒体可能被删除、移出可见范围或卸载。
 
 性能验收应覆盖：
 
@@ -583,7 +587,7 @@ Android 17 源码中的 `dump()` 输出包含缩略图尺寸、已连接卷、�
 
 ### 拥有 `MANAGE_EXTERNAL_STORAGE` 权限的应用仍要限制扫描
 
-`MANAGE_EXTERNAL_STORAGE` 是“所有文件访问”特殊权限。Google Play 当前只允许它服务于需要广泛文件访问的核心功能，例如文件管理、备份与恢复、防病毒、文档管理、设备内文件搜索、文件加密和设备迁移。开发者需要在 Play Console 提交权限声明并通过审核。只访问媒体，或让用户手动选择单个文件，不属于允许申请该权限的理由；这些场景应使用 `MediaStore` 或 Storage Access Framework。Storage Access Framework 是由系统文件选择器和文档提供方组成的授权框架。
+`MANAGE_EXTERNAL_STORAGE` 是“所有文件访问”特殊权限。Google Play 当前只允许它服务于需要广泛文件访问的核心功能，例如文件管理、备份与恢复、防病毒、文档管理、设备内文件搜索、文件加密和设备迁移。开发者需要在 Play Console 提交权限声明并通过审核。只访问媒体，或让用户手动选择单个文件，不属于允许申请该权限的理由；这些场景应使用 `MediaStore` 或 Storage Access Framework（由系统文件选择器和文档提供方组成的授权框架）。
 
 这项权限不会让目录遍历或随机 I/O 自动变快，也不会取消 FUSE 的所有工作。可见范围扩大后，待扫描条目更多，启动时全盘遍历会增加 I/O、电量、温度和隐私成本。
 
@@ -728,7 +732,9 @@ fun openSelectedMedia(
 }
 ```
 
-示例只在 `SDK_INT >= 36` 时进入新 API 分支，便于展示平台版本判断。若产品还要在 Android 11–15 上使用 R Extension 15 提供的同名 API，需要额外检查 R 扩展版本，并把调用隔离在受 `@RequiresExtension` 约束的函数中；只检查 `SDK_INT` 不够。调用方拥有返回的描述符，使用后必须关闭。用户取消任务、页面退出或新选择替代旧选择时调用 `signal.cancel()`。云端失败、权限取消、Provider 崩溃和媒体被删除都应作为可恢复的读取失败处理。
+示例只在 `SDK_INT >= 36` 时进入新 API 分支，便于展示平台版本判断。若产品还要在 Android 11–15 上使用 R Extension 15 提供的同名 API，需要额外检查 R 扩展版本，并把调用隔离在受 `@RequiresExtension` 约束的函数中；只检查 `SDK_INT` 不够。
+
+调用方拥有返回的描述符，使用后必须关闭。用户取消任务、页面退出或新选择替代旧选择时调用 `signal.cancel()`。云端失败、权限取消、Provider 崩溃和媒体被删除都应作为可恢复的读取失败处理。
 
 Picker URI 可查询 `SIZE`、`DISPLAY_NAME`、`MIME_TYPE`、`DURATION_MILLIS`、`WIDTH`、`HEIGHT`、`ORIENTATION` 等只读列。MIME type（媒体类型标识，例如 `video/mp4`）描述内容格式。`SIZE` 和路径信息只能作为提示；云媒体可能依赖网络，应用也不应根据 `DATA` 拼装文件路径。
 
@@ -780,7 +786,7 @@ fun createConstrainedVideoPicker(
 }
 ```
 
-这段代码以 `@RequiresApi(37)` 表示平台版本分支；同一 API 也通过 Android 14（U）的 SDK Extension 22 提供。SDK Extension 是模块化系统组件的功能版本号，同一 Android 大版本可因系统组件更新获得新增 API，因此扩展路径要检查 U Extension 22，并把调用隔离在受 `@RequiresExtension` 约束的函数中。更早的版本需要在选择后校验。Picker 的元数据限制可以减少无效选择，却不能保证云端内容已经下载，也不能代替打开、读取和上传阶段的错误处理。
+SDK Extension 是模块化系统组件的功能版本号，同一 Android 大版本可因系统组件更新获得新增 API。这段代码以 `@RequiresApi(37)` 表示平台版本分支；同一 API 也通过 Android 14（U）的 SDK Extension 22 提供，因此扩展路径要检查 U Extension 22，并把调用隔离在受 `@RequiresExtension` 约束的函数中。更早的版本需要在选择后校验。Picker 的元数据限制可以减少无效选择，却不能保证云端内容已经下载，也不能代替打开、读取和上传阶段的错误处理。
 
 ### 嵌入式 Photo Picker 的接入成本
 
@@ -799,7 +805,7 @@ fun createConstrainedVideoPicker(
 
 #### 连续选择需要双向维护状态
 
-Jetpack 提供 `onUriPermissionGranted` 和 `onUriPermissionRevoked`，分别通知用户选择和取消选择的 URI，应用据此更新附件列表。应用主动调用 `deselectUri()` / `deselectUris()` 时还应同步删除自己的选中状态；不能等待只为“用户取消选择”定义的 revoked 回调来维护客户端状态。否则，附件条与系统网格可能出现选择不一致。
+Jetpack 提供 `onUriPermissionGranted` 和 `onUriPermissionRevoked`，分别通知用户选择和取消选择的 URI，应用据此更新附件列表。应用主动调用 `deselectUri()` / `deselectUris()` 时还应同步删除自己的选中状态；不能靠 `onUriPermissionRevoked` 维护客户端状态，这个回调只为“用户取消选择”定义。否则，附件条与系统网格可能出现选择不一致。
 
 选择事件只应安排后台准备任务。缩略图预览、元数据查询、云媒体打开和上传准备都不应在回调的主线程中完成。用户取消选择后，依次取消该 URI 的打开信号、解码任务和尚未开始的上传任务。
 
@@ -868,7 +874,7 @@ Android 17 延续 Android 12 引入的兼容转码。AOSP 文档规定的标准�
 
 在 Android 17 AOSP 实现中，`TranscodeHelperImpl.java` 把兼容转码文件放在 `/storage/emulated/<user>/.transforms/transcode/`，以 MediaStore 数据库行 ID 生成内部文件名，并实现 `freeCache()` 与单项删除。该路径不是公开 API 契约，只适合源码阅读和系统调试；应用无权据此定位或清理文件，也不能从一次缓存命中推断后续仍会命中。
 
-同一版本的 `PhotoPickerTranscodeHelper.java` 把 Picker HDR 转码结果放在 `/storage/emulated/<user>/.picker_transcoded/`，按媒体提供方 authority 与媒体 ID 生成缓存名，并提供按容量、全量和单项清理入口。这里的 host 是被 Picker URI 包装的媒体提供方 authority。两种目录都由 MediaProvider 模块管理，但服务于不同的请求路径；应用只能通过有效 URI 读取，不能直接访问这些目录。
+同一版本的 `PhotoPickerTranscodeHelper.java` 把 Picker HDR 转码结果放在 `/storage/emulated/<user>/.picker_transcoded/`，按媒体提供方 authority 与媒体 ID 生成缓存名，并提供按容量、全量和单项清理入口。缓存名中的 host 是被 Picker URI 包装的媒体提供方 authority。两种目录都由 MediaProvider 模块管理，但服务于不同的请求路径；应用只能通过有效 URI 读取，不能直接访问这些目录。
 
 系统设备空闲维护不会处理应用的 `cacheDir`、草稿数据库和失败上传。应用应给每个私有临时文件记录：
 
@@ -991,7 +997,7 @@ AndroidX 回退到 SAF 时，使用 `ContentResolver.getType()` 与 `OpenableCol
 
 网格预览使用 `ContentResolver.loadThumbnail()` 或支持 `content://` 的图片库，并传入控件所需的像素尺寸。上传服务接受 HEIC、AVIF、JPEG 或 PNG 源文件时，直接流式上传，避免生成 Bitmap。
 
-只有裁剪、缩放、去除元数据或转换格式时才解码。解码器应设置目标尺寸或采样，再依据 Bitmap 字节数限制并发。图片文件的压缩字节数无法预测解码内存，宽高、像素格式、色彩空间和中间 Bitmap 都会影响内存峰值。
+只有裁剪、缩放、去除元数据或转换格式时才解码。解码器应设置目标尺寸或采样，再依据 Bitmap 字节数限制并发。压缩后的文件字节数无法预测解码内存，宽高、像素格式、色彩空间和中间 Bitmap 都会影响内存峰值。
 
 #### 视频路径
 
