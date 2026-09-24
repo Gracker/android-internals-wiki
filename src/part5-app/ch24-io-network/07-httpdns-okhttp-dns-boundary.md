@@ -70,7 +70,7 @@ last_draft_polish_run_id: 20260815-112347-gracker-writing
 
 本文所说的 HTTPDNS，是指应用通过 HTTP 或 HTTPS 解析服务取得“域名到 IP 地址”的结果。OkHttp 通过自定义 `Dns` 接入这组地址，解析服务请求本身仍是普通 HTTP/HTTPS 请求。
 
-OkHttp 要在建立连接前把主机名转换成一组 `InetAddress`，也就是 Java 表示 IP 地址的对象。`Dns.lookup()` 返回之前，请求还没有开始 TCP 连接。如果在这个同步回调中再请求 HTTPDNS，业务请求必须先等待解析服务的网络请求，随后才能连接目标服务。
+OkHttp 要在建立连接前把主机名转换成一组 `InetAddress`，也就是 Java 中表示 IP 地址的对象。`Dns.lookup()` 返回之前，请求还没有开始 TCP 连接。如果在这个同步回调中再请求 HTTPDNS，业务请求必须先等解析服务完成这次网络请求，随后才能连接目标服务。
 
 平台基准是 Android 17 / API 37 / `android-17.0.0_r1`，OkHttp 源码基准是 5.4.0 的 `parent-5.4.0` 标签。OkHttp 4.x 的旧实现使用 `StreamAllocation` 等类；5.x 应按 `RealRoutePlanner`、`RouteSelector` 和 `FastFallbackExchangeFinder` 分析路由规划、地址选择与并发连接，不能套用旧调用路径。
 
@@ -144,11 +144,15 @@ class BlockingHttpDns(
 }
 ```
 
-业务请求必须等待内层 HTTPDNS 请求完成。若 `client` 也安装了这个 `Dns`，解析 HTTPDNS 服务域名时会再次进入 `lookup()`，形成递归调用。即使通过固定地址避开递归，共用 `Dispatcher`、连接池和请求并发配额仍会让解析流量与业务流量相互影响。`Dispatcher` 是 OkHttp 管理异步请求并发和排队的调度器。HTTPDNS 服务变慢、TLS 握手失败或响应解析异常，都会延长外层业务请求在建连前的等待。
+业务请求必须等待内层 HTTPDNS 请求完成。若 `client` 也安装了这个 `Dns`，解析 HTTPDNS 服务域名时会再次进入 `lookup()`，形成递归调用。即使通过固定地址避开递归，共用 `Dispatcher`、连接池和请求并发配额仍会让解析流量与业务流量相互影响。`Dispatcher` 是 OkHttp 管理异步请求并发和排队的调度器。
+
+HTTPDNS 服务变慢、TLS 握手失败或响应解析异常，都会延长外层业务请求在建连前的等待。
 
 `connectTimeout` 只约束套接字连接，不是 DNS 超时。OkHttp 的 `callTimeout` 把 DNS 计入整次调用期限，但取消一个 `Call` 无法保证任意自定义阻塞代码立即返回。自定义 `lookup()` 应只执行耗时可控的本地操作，不能依赖外层超时终止网络查询。
 
-OkHttp 自带的 [`DnsOverHttps`](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp-dnsoverhttps/src/main/kotlin/okhttp3/dnsoverhttps/DnsOverHttps.kt) 也受同步接口约束。DoH（DNS over HTTPS）把 DNS 查询放入 HTTPS 请求。5.4.0 源码会异步提交 A 记录和 AAAA 记录查询，再用 `CountDownLatch.await()` 等待全部请求结束；A 记录返回 IPv4 地址，AAAA 记录返回 IPv6 地址。`CountDownLatch` 是让当前线程等待一组任务完成的同步工具，所以 `enqueue()` 没有把 `lookup()` 变成异步方法。DoH 仍需独立的引导解析来找到解析服务本身，并使用配置受控的专用客户端；它的网络等待仍发生在 OkHttp 路由规划期间。
+OkHttp 自带的 [`DnsOverHttps`](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp-dnsoverhttps/src/main/kotlin/okhttp3/dnsoverhttps/DnsOverHttps.kt) 也受同步接口约束。DoH（DNS over HTTPS）把 DNS 查询放入 HTTPS 请求。5.4.0 源码会异步提交 A 记录和 AAAA 记录查询，再用 `CountDownLatch.await()` 等待全部请求结束；A 记录返回 IPv4 地址，AAAA 记录返回 IPv6 地址。`CountDownLatch` 是让当前线程等待一组任务完成的同步工具，所以 `enqueue()` 没有把 `lookup()` 变成异步方法。
+
+DoH 仍需独立的引导解析来找到解析服务本身，并使用配置受控的专用客户端；它的网络等待仍发生在 OkHttp 路由规划期间。
 
 ## Android 17 系统解析器提供了哪些语义
 
@@ -162,7 +166,7 @@ OkHttp 自带的 [`DnsOverHttps`](https://github.com/lysine-dev/okhttp/blob/pare
 - VPN、企业网络的分域解析和本地网络名称仍能按系统策略工作；分域解析会按域名后缀选择不同的 DNS 服务器；
 - 网络变化时，平台解析器能按相应网络配置查询。
 
-自定义 HTTPDNS 返回 IP 后，OkHttp 不再通过系统解析器查询该主机，因此会绕过当前网络的部分 DNS 策略。Android 的 [`LinkProperties`](https://developer.android.com/reference/android/net/LinkProperties) 文档要求应用在 Private DNS 生效时不要发送未加密查询；严格模式还要求把查询发给指定的 Private DNS 主机，并验证其证书。面向 Android 9 及以上版本的应用，不应静默用明文自定义 DNS 替代用户或设备管理员设置的加密解析。
+自定义 HTTPDNS 返回 IP 后，OkHttp 不再通过系统解析器查询该主机，因此会绕过当前网络的部分 DNS 策略。Android 的 [`LinkProperties`](https://developer.android.com/reference/android/net/LinkProperties) 文档要求应用在 Private DNS 生效时不要发送未加密查询；严格模式还要求把查询发给指定的 Private DNS 主机，并验证其证书。在 Android 9 及以上版本上，应用不应静默用明文自定义 DNS 替代用户或设备管理员设置的加密解析。
 
 企业 VPN 可能通过分域 DNS 返回内网地址，校园网和酒店网络可能要求先完成登录门户认证，`.local` 名称还可能由 mDNS（multicast DNS，在本地网络内通过组播解析名称）处理。公共 HTTPDNS 服务通常没有这些网络内部信息。域名不在经过验证的 HTTPDNS 允许列表内，或当前网络处于 VPN、门户认证等不适合自定义解析的状态时，应直接使用系统解析。
 
@@ -214,7 +218,9 @@ data class HttpDnsRecord(
 )
 ```
 
-`networkHandle` 区分实际出站网络；没有显式绑定网络时，也应记录刷新开始时的默认网络标识。网络句柄只适合关联该网络对象的存活期，不能当作跨设备重启的永久标识。内存中的刷新与过期判断使用单调时钟，它只随设备运行时间前进，不受用户改时间或系统校时影响。磁盘记录无法跨重启保留 `elapsedRealtime` 的时间基准，加载时要根据服务端 TTL、接收时的墙上时钟和合理性检查重新计算，不能直接复用旧的单调时钟值。墙上时钟是日历时间，可能被用户或系统调整。
+`networkHandle` 区分实际出站网络；没有显式绑定网络时，也应记录刷新开始时的默认网络标识。网络句柄只适合关联该网络对象的存活期，不能当作跨设备重启的永久标识。
+
+内存中的刷新与过期判断使用单调时钟，它只随设备运行时间前进，不受用户改时间或系统校时影响。磁盘记录无法跨重启保留 `elapsedRealtime` 的时间基准，加载时要根据服务端 TTL、接收时的墙上时钟和合理性检查重新计算，不能直接复用旧的单调时钟值。墙上时钟是日历时间，可能被用户或系统调整。
 
 这段实现骨架说明 `lookup()` 的职责边界，省略具体存储和地址排序策略：
 
@@ -262,7 +268,7 @@ HTTPDNS 服务返回的 TTL 决定地址还能被信任多久。工程实现通�
 - `refreshAtElapsedMs` 到达后启动后台刷新，旧记录在 TTL 内仍可使用；
 - `expiresAtElapsedMs` 到达后停止把旧记录作为 HTTPDNS 结果返回。
 
-刷新时间可以加入随机偏移，让大量客户端不要在同一秒请求解析服务；偏移范围应来自服务约定和生产环境测量，不能写成适用于所有域名的常量。超出 TTL 后继续使用旧 IP 属于额外的陈旧数据策略，必须由域名所有者确认。没有这项约定时，应停止返回旧 HTTPDNS 结果并使用系统解析。
+刷新时间可以加入随机偏移，避免大量客户端在同一秒请求解析服务；偏移范围应来自服务约定和生产环境测量，不能写成适用于所有域名的常量。超出 TTL 后继续使用旧 IP 属于额外的陈旧数据策略，必须由域名所有者确认。没有这项约定时，应停止返回旧 HTTPDNS 结果并使用系统解析。
 
 失败结果也不能无限缓存。NXDOMAIN 表示负责该域名最终记录的权威 DNS 服务器回答“该域名不存在”，它与空响应、服务端错误、响应签名失败和本地解析异常不是同一种结果。只有服务约定明确给出负缓存规则时，才缓存对应失败结果；其余情况记录失败并使用系统解析。
 
@@ -278,7 +284,7 @@ HTTPDNS 服务返回的 TTL 决定地址还能被信任多久。工程实现通�
 
 若 HTTPDNS 端点仍通过系统 DNS 完成首次解析，刷新客户端可以保留 `Dns.SYSTEM`。若服务方提供固定的引导地址，自定义 `Dns` 只能对解析端点主机返回这些地址，其他主机仍交给系统解析。固定地址也要支持更新、IPv4/IPv6 双栈和撤销，不能作为永久有效的常量。
 
-刷新成功后要验证响应属于请求的 `hostname`，地址列表非空，TTL 可解析，地址族（IPv4 或 IPv6）和地址范围符合该域名的策略。解析响应中的文本 IP 时应直接构造 `InetAddress`，不要为了把字符串转换为地址再次触发名称查询。
+刷新成功后要验证响应属于请求的 `hostname`，地址列表非空，TTL 可解析，地址族（IPv4 或 IPv6）和地址范围符合该域名的策略。解析响应中的文本 IP 时应直接构造 `InetAddress`，不要再用名称查询把字符串转换成地址。
 
 ## 指定 `Network` 时要同时约束解析和套接字
 
@@ -299,7 +305,9 @@ fun OkHttpClient.onNetwork(network: Network): OkHttpClient {
 }
 ```
 
-`Network.getAllByName()` 在指定网络上解析，[`Network.getSocketFactory()`](https://developer.android.com/reference/android/net/Network) 创建发往同一网络的套接字。只绑定套接字却使用默认网络 DNS，或在指定网络解析后让套接字经过另一条网络，都会引发分域 DNS、NAT64、VPN 和 CDN 选择不一致。NAT64 让仅有 IPv6 的网络访问 IPv4 服务，所需的合成地址与当前网络有关；CDN（content delivery network，内容分发网络）也可能按查询来源返回不同节点。`Network` 断开后，它的 `SocketFactory` 以及过去或将来创建的套接字都会失效；绑定客户端应随该网络释放。
+`Network.getAllByName()` 在指定网络上解析，[`Network.getSocketFactory()`](https://developer.android.com/reference/android/net/Network) 创建发往同一网络的套接字。只绑定套接字却使用默认网络 DNS，或在指定网络解析后让套接字经过另一条网络，都会引发分域 DNS、NAT64、VPN 和 CDN 选择不一致。NAT64 让仅有 IPv6 的网络访问 IPv4 服务，所需的合成地址与当前网络有关；CDN（content delivery network，内容分发网络）也可能按查询来源返回不同节点。
+
+`Network` 断开后，它的 `SocketFactory` 以及过去或将来创建的套接字都会失效；绑定客户端应随该网络释放。
 
 HTTPDNS 刷新同样要记录实际出站网络。可为刷新任务创建绑定到目标 `Network` 的独立客户端，并在写缓存前确认该网络仍有效。若刷新过程使用默认网络，默认网络已经改变的响应不应写入新网络对应的缓存项。
 
@@ -334,7 +342,7 @@ HTTPDNS 刷新同样要记录实际出站网络。可为刷新任务创建绑定
 - HTTP 5xx，响应可能来自共享集群，连接本身已经成功；
 - 请求超时，耗时可能发生在上传、服务端处理或响应读取阶段；
 - 使用 HTTP 代理时的 `connectFailed`，其中的套接字地址属于代理，不是目标站点；
-- Fast Fallback（错开启动多个候选地址的连接尝试）中被取消的竞速连接，它没有产生可归因的连接失败。
+- Fast Fallback（错开启动多个候选地址的连接尝试）中被取消的竞速连接，没有产生可归因的连接失败。
 
 OkHttp 本身会记录失败路由并尝试其他候选，自定义隔离层不应设置过长期限，也不应因一个地址失败而删除整个主机记录。成功连接可以提前恢复对应地址的优先级。隔离期限和触发次数应由故障演练与生产数据确定。
 
@@ -342,7 +350,9 @@ OkHttp 本身会记录失败路由并尝试其他候选，自定义隔离层不�
 
 HTTPDNS 只应替换 `Dns` 返回的连接地址，原始 URL 仍保留域名。OkHttp 会用原始主机名生成 HTTP `Host` 请求头；TLS 的 SNI（Server Name Indication）也会在握手中携带目标主机名。证书主机名校验、Cookie 适用域和证书锁定同样依赖这个名称。证书锁定要求服务端证书或公钥匹配应用预置值，用来限制可被接受的证书范围。
 
-把 `https://api.example.com/` 改成 `https://203.0.113.10/`，再手工补一个 `Host` 请求头，会改变 TLS 主机名、连接合并、重定向和 Cookie 规则。`example.com` 与 `203.0.113.0/24` 都是文档示例保留值，不是可访问的业务端点。关闭 `HostnameVerifier`、信任所有证书，或放宽 Network Security Config 来适配 URL 改写，都会削弱 HTTPS 校验。Network Security Config 是 Android 用 XML 配置受信任 CA 或证书、明文流量和证书锁定等网络安全规则的机制。
+把 `https://api.example.com/` 改成 `https://203.0.113.10/`，再手工补一个 `Host` 请求头，会改变 TLS 主机名、连接合并、重定向和 Cookie 规则。`example.com` 与 `203.0.113.0/24` 都是文档示例保留值，不是可访问的业务端点。
+
+关闭 `HostnameVerifier`、信任所有证书，或放宽 Network Security Config 来适配 URL 改写，都会削弱 HTTPS 校验。Network Security Config 是 Android 用 XML 配置受信任 CA 或证书、明文流量和证书锁定等网络安全规则的机制。
 
 HTTPDNS 响应也属于不可信网络输入。应用至少要校验 HTTPS 端点、响应主机、地址格式和允许的地址范围。公网业务域名若返回回环地址（只指向本机）、链路本地地址（只在当前二层网络有效）、组播地址或未指定地址，应拒绝该结果。企业内网域名可能合法返回私有地址，这类例外需要按域名配置，不能用一条全局规则覆盖。
 
@@ -406,7 +416,9 @@ OkHttp [`EventListener`](https://lysine.dev/okhttp/features/events/) 提供 DNS�
 - 多地址中首个地址不可达，以及 Fast Fallback 开启和关闭；
 - 连接池命中与新建连接，确认两者的事件差异。
 
-发布判断应使用应用既有的成功率和分位耗时目标，分别比较缓存命中、系统解析、网络类型和地址族。P90 与 P99 分别表示 90% 和 99% 的样本不超过该耗时。不能预设一组通用 P90/P99 数值或“切网后若干秒”的门槛；阈值应来自改造前实测值、用户体验目标和允许的失败额度。还要通过故障演练确认：HTTPDNS 服务完全不可用时，系统解析路径仍保持可用。这个结果比只看到平均 DNS 耗时下降更能说明方案可发布。
+发布判断应使用应用既有的成功率和分位耗时目标，分别比较缓存命中、系统解析、网络类型和地址族。P90 与 P99 分别表示 90% 和 99% 的样本不超过该耗时。不能预设一组通用 P90/P99 数值或“切网后若干秒”的门槛；阈值应来自改造前实测值、用户体验目标和允许的失败额度。
+
+还要通过故障演练确认：HTTPDNS 服务完全不可用时，系统解析路径仍保持可用。这个结果比只看到平均 DNS 耗时下降更能说明方案可发布。
 
 ## 工程检查清单
 
