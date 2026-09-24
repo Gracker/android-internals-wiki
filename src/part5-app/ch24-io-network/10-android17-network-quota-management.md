@@ -55,7 +55,7 @@ sources:
 
 # Android 17 移动数据配额与 Data Saver 执行链路
 
-Android 17 的网络用量控制包含统计、周期策略、告警、阻断和后台访问限制。源码里的配额（quota）表示剩余字节预算，耗尽后拒绝网络报文；它不表示把移动网络调整到某个每秒千比特（Kbit/s）速率。`NetworkStatsService` 负责网络用量统计，`NetworkPolicyManagerService` 负责把套餐周期策略转换为系统规则。本节沿 `android-17.0.0_r1` 追踪调用路径，并说明普通应用能够观察和控制的边界。
+Android 17 的网络用量控制包含统计、周期策略、告警、阻断和后台访问限制。源码里的配额（quota）表示剩余字节预算，耗尽后拒绝网络报文；它不表示把移动网络限速到某个每秒千比特（Kbit/s）的速率。`NetworkStatsService` 负责网络用量统计，`NetworkPolicyManagerService` 负责把套餐周期策略转换为系统规则。本节沿 `android-17.0.0_r1` 追踪调用路径，并说明普通应用能够观察和控制的边界。
 
 ## 1. 版本与结论
 
@@ -63,7 +63,7 @@ Android 17 的网络用量控制包含统计、周期策略、告警、阻断和
 - 内核源码锚点：`android17-6.18-2026-06_r6`。
 - `NetworkStatsService` 已位于 Connectivity Mainline 模块。Mainline 是可通过系统组件更新机制独立升级的 Android 模块，它不再使用旧的 `frameworks/base/services/core/...` 路径。
 - `NetworkPolicyManagerService` 仍位于 `frameworks/base`，运行在承载 Android 核心服务的 `system_server` 进程中。
-- 接口配额由 `NetworkPolicyManagerService` 计算剩余字节，经 `NetworkManagementService` 和原生网络守护进程 `netd` 写入 `quota2` 规则。Netfilter 是 Linux 内核的报文过滤框架，`quota2` 是其中按报文字节递减计数的匹配器。
+- 接口配额由 `NetworkPolicyManagerService` 计算为剩余字节，经 `NetworkManagementService` 和原生网络守护进程 `netd` 写入 `quota2` 规则。Netfilter 是 Linux 内核的报文过滤框架，`quota2` 是其中按报文字节递减计数的匹配器。
 - 周期总量超过强制上限且未延后提醒时，Android 的电话与移动网络框架还会通过 `TelephonyManager.setPolicyDataEnabled(false)` 停用策略数据。
 - 在本节追踪的手机移动数据路径中，流量节省程序（Data Saver）和应用用户标识符（UID）规则控制某个应用能否在计量网络传输，不提供速率整形。Android TV 是官方明确记录的例外，会对前台和后台流量设置不同速率。
 
@@ -79,11 +79,13 @@ Android 17 的网络用量控制包含统计、周期策略、告警、阻断和
 | Data Saver / UID 规则 | `NetworkPolicyManagerService`、Connectivity、BPF/防火墙规则 | 限制后台 UID 使用计量网络，处理前台和允许名单例外 | 手机路径为访问控制；Android TV 另有速率限制 |
 | 机会型配额（opportunistic quota） | `NetworkPolicyManagerService` | 为可等待的作业、多路径传输等流量给出预算 | 否，与用户套餐强制上限无关 |
 
-UID 是 Android 基于 Linux 用户标识符为应用分配的隔离身份。BPF（Berkeley Packet Filter）在这里指内核中执行的网络统计与规则程序，以及供系统服务读写的映射表。`NetworkStatsFactory` 还有名为 `per_uid_tag_throttling` 的配置，它限制单个 UID 可进入统计结果的不同流量标签数量，防止标签种类持续增加。这里的 `throttling` 只限制统计标签数量，不会降低网络吞吐。
+UID 是 Android 基于 Linux 用户标识符为应用分配的隔离身份。BPF（Berkeley Packet Filter）在这里指内核中执行的网络统计与规则程序，以及供系统服务读写的映射表。
+
+`NetworkStatsFactory` 还有名为 `per_uid_tag_throttling` 的配置，它限制单个 UID 可进入统计结果的不同流量标签数量，防止标签种类持续增加。这里的 `throttling` 只限制统计标签数量，不会降低网络吞吐。
 
 ## 3. Android 17 中各模块的职责
 
-虚拟专用网络（VPN）会改变流量归因；464xlat 是让 IPv4 应用通过仅支持 IPv6 的网络通信的地址转换机制。带着这两个边界查看模块职责，才能理解接口总量与应用 UID 总量为何可能不同。
+虚拟专用网络（VPN）会改变流量归因；464xlat 是一种地址转换机制，让 IPv4 应用通过仅支持 IPv6 的网络通信。带着这两个边界查看模块职责，才能理解接口总量与应用 UID 总量为何可能不同。
 
 | 层次 | Android 17 源码 | 职责 |
 | --- | --- | --- |
@@ -105,7 +107,7 @@ UID 是 Android 基于 Linux 用户标识符为应用分配的隔离身份。BPF
 
 读取结果是自上次切换以来的增量。`NetworkStatsFactory` 把增量合入 `mPersistSnapshot`，再按顺序处理 464xlat 修正和 VPN TUN 流量归因。TUN 是 VPN 常用的虚拟网络接口。查询方获得的是筛选后的累计视图，并非直接读取一张持续增长的 UID 表。
 
-接口汇总走另一条入口：`readNetworkStatsSummaryXt()` 调用 `getNetworkStatsDev()` 读取设备和接口维度统计。Java 原生接口（Java Native Interface，JNI）实现 [`com_android_server_net_NetworkStatsFactory.cpp`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/jni/com_android_server_net_NetworkStatsFactory.cpp)，通过 `BpfNetworkStats` 解析接口和 UID 明细，并填充 `uid`、前后台集合 `set`、流量分类标签 `tag`、收发字节与报文数。
+接口汇总走另一条入口：`readNetworkStatsSummaryXt()` 调用 `getNetworkStatsDev()` 读取设备和接口维度统计。Java 原生接口（Java Native Interface，JNI）的实现位于 [`com_android_server_net_NetworkStatsFactory.cpp`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/jni/com_android_server_net_NetworkStatsFactory.cpp)，通过 `BpfNetworkStats` 解析接口和 UID 明细，并填充 `uid`、前后台集合 `set`、流量分类标签 `tag`、收发字节与报文数。
 
 ### 4.2 `NetworkStatsService` 先读 UID，再读接口
 
@@ -118,7 +120,7 @@ UID 是 Android 基于 Linux 用户标识符为应用分配的隔离身份。BPF
 5. `mUidRecorder` 和 `mUidTagRecorder` 记录 UID、标签历史。
 6. 通知用量观察器检查已注册的阈值。
 
-UID 统计先读，是为了减少接口统计相对 UID 统计多计一小段时间窗口的概率。两次读取仍不具备数据库事务的原子性；网络身份切换、VPN、网络共享和硬件卸载都会让统计归因需要额外处理。这里的硬件卸载是把部分网络处理交给网卡或专用硬件，系统需要把相应计数合回统一视图。
+UID 统计先读，是为了减少接口统计比 UID 统计多计一小段时间窗口的概率。两次读取仍不具备数据库事务的原子性；网络身份切换、VPN、网络共享和硬件卸载都会让统计归因需要额外处理。这里的硬件卸载是把部分网络处理交给网卡或专用硬件，系统需要把相应计数合回统一视图。
 
 `performPollLocked()` 在周期闹钟、网络状态变化、强制更新、UID 移除和全局告警等场景执行。它先向自定义统计提供方发起轮询，再记录快照，并按照调用标志决定是否写入持久化历史。自定义 `NetworkStatsProvider` 是系统组件向统计服务补充硬件或专用网络计数的接口。
 
@@ -155,13 +157,15 @@ if (hasWarning && policy.lastWarningSnooze < start
 }
 ```
 
-这里下发的是从当前用量到阈值还剩多少字节。内核规则不接受 0 字节，所以余量用 `Math.max(1, ...)` 保持至少 1；服务随后还会根据完整周期统计停用移动数据。源码中的 `snooze` 表示用户暂时延后警告或强制上限。它只在当前周期内影响对应阈值；进入新周期后，旧的延后时间早于新周期起点，限制重新生效。
+这里下发的是从当前用量到阈值还剩多少字节。内核规则不接受 0 字节，所以余量用 `Math.max(1, ...)` 保持至少 1；服务随后还会根据完整周期统计停用移动数据。
+
+源码中的 `snooze` 表示用户暂时延后警告或强制上限。它只在当前周期内影响对应阈值；进入新周期后，旧的延后时间早于新周期起点，限制重新生效。
 
 ### 5.1 计量接口没有套餐上限，也会安装规则入口
 
-计量网络（metered network）表示传输可能计入用户套餐或产生费用。`updateNetworkRulesNL()` 对满足警告、强制上限或 `policy.metered` 任一条件的接口调用 `setInterfaceQuotasAsync()`。没有有效周期、没有强制上限或已延后提醒时，余量可为 `Long.MAX_VALUE`。
+计量网络（metered network）表示传输可能计入用户套餐或产生费用。`updateNetworkRulesNL()` 对设有警告阈值、强制上限，或被标记为 `policy.metered` 的接口调用 `setInterfaceQuotasAsync()`。没有有效周期、没有强制上限或已延后提醒时，余量可为 `Long.MAX_VALUE`。
 
-Android 17 还会为没有显式 `NetworkPolicy` 的计量接口下发 `Long.MAX_VALUE`。这个接近 64 位有符号整数上限的值，为计量接口安装规则入口，使 Data Saver 和 UID 计量网络限制有执行位置；它表示接口总量近似不受限，不代表该网络免费。
+Android 17 还会为没有显式 `NetworkPolicy` 的计量接口下发 `Long.MAX_VALUE`。用这个接近 64 位有符号整数上限的值，为计量接口安装规则入口，使 Data Saver 和 UID 计量网络限制有执行位置；它表示接口总量近似不受限，不代表该网络免费。
 
 同一策略同时匹配多个接口时，源码会记录 `shared quota unsupported; generating rule for each iface`，表示当前实现不支持跨接口共享同一内核配额。每个接口各自获得一份相同余量，所以不能把多个接口的内核计数器相加视作共享套餐的精确强制限制。策略服务仍以模板历史总量判断周期是否超限。
 
@@ -177,7 +181,7 @@ Android 17 还会为没有显式 `NetworkPolicy` 的计量接口下发 `Long.MAX
 
 ## 6. 接口上限如何进入 `netd` 与内核
 
-`NetworkManagementService.setInterfaceQuota()` 需要仅系统网络组件持有的 Network Stack 特权。它拒绝给同一接口重复安装未移除的上限，随后调用 `INetd.bandwidthSetInterfaceQuota(iface, quotaBytes)`。`NetdNativeService` 再把请求交给 `BandwidthController.setInterfaceQuota()`。
+`NetworkManagementService.setInterfaceQuota()` 需要仅系统网络组件持有的 Network Stack 特权。同一接口已有未移除的上限时，它会拒绝重复安装，随后调用 `INetd.bandwidthSetInterfaceQuota(iface, quotaBytes)`。`NetdNativeService` 再把请求交给 `BandwidthController.setInterfaceQuota()`。
 
 末尾的 `REJECT` 决定了这项接口上限的执行语义：
 
@@ -194,7 +198,7 @@ StringPrintf("-A %s -m quota2 ! --quota %" PRId64
 
 `bw_costly_<iface>` 同时挂到输入、输出和转发路径。`quota2` 计数器按报文长度递减；`! --quota` 使匹配结果在余量耗尽后成立，后续目标是 `REJECT`。这是一条按总字节数触发的拒绝规则。它没有令牌桶、队列调度或目标速率参数；令牌桶是按固定速率补充发送额度、从而控制吞吐的常见整形算法。
 
-同一命名计数器可由 `/proc/net/xt_quota/<name>` 更新。`/proc` 是内核向用户空间暴露运行状态和控制入口的虚拟文件系统。`BandwidthController.updateQuota()` 会向该路径写入新值；内核 `xt_quota2.c` 在计数器从非零跨到零时记录事件，`netd` 再把 `onQuotaLimitReached(alertName, ifName)` 传给 `NetworkManagementService` 的观察器。
+同一命名计数器可通过 `/proc/net/xt_quota/<name>` 更新。`/proc` 是内核向用户空间暴露运行状态和控制入口的虚拟文件系统。`BandwidthController.updateQuota()` 会向该路径写入新值；内核 `xt_quota2.c` 在计数器从非零跨到零时记录事件，`netd` 再把 `onQuotaLimitReached(alertName, ifName)` 传给 `NetworkManagementService` 的观察器。
 
 `NetworkPolicyManagerService` 收到接口上限事件后会：
 
@@ -216,20 +220,22 @@ StringPrintf("-A %s -m quota2 ! --quota %" PRId64
 tm.createForSubscriptionId(subId).setPolicyDataEnabled(enabled);
 ```
 
-Telephony 是 Android 的电话与移动网络框架。这段调用在套餐强制上限成立时改变其策略数据开关，不设置无线连接速率。用户延后限制或进入新周期后，重新计算会把 `enabled` 改回 `true`。
+Telephony 是 Android 的电话与移动网络框架。这段调用在套餐强制上限成立时改变该订阅的策略数据开关，不设置无线连接速率。用户延后限制或进入新周期后，重新计算会把 `enabled` 改回 `true`。
 
 接口 `quota2` 的即时拒绝和 Telephony 策略开关互相补充：前者在剩余字节耗尽时阻止继续传输，后者按模板周期总量控制移动数据连接。VPN、叠加接口和多接口场景中，两者观察的对象并不完全相同。
 
 ## 8. Data Saver 与 UID 计量网络规则
 
-Data Saver 的全局状态由 `NetworkPolicyManagerService.setRestrictBackgroundUL()` 更新。服务先重新计算 UID 规则，再调用 `NetworkManagementService.setDataSaverModeEnabled()`。Android 17 的 `NetworkManagementService` 转到 `ConnectivityManager.setDataSaverEnabled()`；Connectivity 服务同时更新 `netd.bandwidthEnableDataSaver()` 和 `BpfNetMaps.setDataSaverEnabled()`。
+Data Saver 的全局状态由 `NetworkPolicyManagerService.setRestrictBackgroundUL()` 更新。服务先重新计算 UID 规则，再调用 `NetworkManagementService.setDataSaverModeEnabled()`。Android 17 的 `NetworkManagementService` 转发到 `ConnectivityManager.setDataSaverEnabled()`；Connectivity 服务同时更新 `netd.bandwidthEnableDataSaver()` 和 `BpfNetMaps.setDataSaverEnabled()`。
 
 对单个 UID，`updateRulesForDataUsageRestrictionsULInner()` 计算两组原因：
 
 - 阻止原因：设备管理员限制、Data Saver、用户设置的计量网络后台限制；
 - 允许原因：系统 UID、前台 UID、用户允许名单。
 
-启用新的计量防火墙规则组时，服务使用 `FIREWALL_CHAIN_METERED_DENY_ADMIN`、`FIREWALL_CHAIN_METERED_DENY_USER` 和 `FIREWALL_CHAIN_METERED_ALLOW`。兼容路径则更新计量网络允许或拒绝名单。`BpfNetMaps.setUidRule()` 把规则转换成 UID 所有者位标记，也就是用整数中的不同二进制位记录多种规则；`isUidNetworkingBlocked(uid, isNetworkMetered)` 结合计量属性、UID 规则和 Data Saver 开关给出阻止结果。
+启用新的计量防火墙规则组时，服务使用 `FIREWALL_CHAIN_METERED_DENY_ADMIN`、`FIREWALL_CHAIN_METERED_DENY_USER` 和 `FIREWALL_CHAIN_METERED_ALLOW`。兼容路径则更新计量网络允许或拒绝名单。
+
+`BpfNetMaps.setUidRule()` 把规则转换成 UID 所有者位标记，也就是用整数中的不同二进制位记录多种规则；`isUidNetworkingBlocked(uid, isNetworkMetered)` 结合计量属性、UID 规则和 Data Saver 开关给出阻止结果。
 
 在手机移动数据路径中，Data Saver 主要限制后台 UID，前台活动、系统 UID 和用户允许名单会改变有效结果。因此，Data Saver 已开启不能直接推出该应用的全部网络请求都会失败。[官方 Data Saver 指南](https://developer.android.com/develop/connectivity/network-ops/data-saver) 另行说明，Android TV 会把前台应用限制到 800 Kbit/s、后台应用限制到 10 Kbit/s；排查 TV 时不能套用手机路径的无速率整形结论。
 
@@ -259,7 +265,7 @@ Data Saver 的全局状态由 `NetworkPolicyManagerService.setRestrictBackground
 
 [`NetworkStatsManager`](https://developer.android.com/reference/android/app/usage/NetworkStatsManager) 返回按时间桶保存的历史统计。时间桶是把一段连续时间内的字节数聚合为一条记录。Android 7.0 及以上，应用默认可查询自己的用量；设备汇总或其他应用用量需要声明 `PACKAGE_USAGE_STATS`，并由用户在设置中授予使用情况访问权。设备所有者、资料所有者和具备运营商权限的应用另有授权范围。
 
-这些查询可能耗时数秒，应放在工作线程。统计桶通常以小时为量级，API 文档也明确说明明细查询不会对只覆盖部分时间范围的桶做比例估算。它适合用量分析，不适合实时测速，也不能代替运营商账单。
+这些查询可能耗时数秒，应放在工作线程。统计桶通常以小时为粒度，API 文档也明确说明明细查询不会对只覆盖部分时间范围的桶做比例估算。它适合用量分析，不适合实时测速，也不能代替运营商账单。
 
 ### 9.4 调度大流量工作
 
