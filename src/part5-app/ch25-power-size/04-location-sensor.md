@@ -105,7 +105,7 @@ Android 8.0（API 26）起，后台应用的位置计算与交付被限制为每
 
 ## Fused Location Provider 最佳实践
 
-Fused Location Provider（FLP，融合位置提供器）把 GNSS、Wi-Fi、蜂窝与传感器等来源交给 Google Play services 选择和融合。应用表达优先级、期望间隔、最小回调间隔、最小位移、最大交付延迟、精度档位和持续时间。`LocationRequest` 文档明确说明多项参数会尽力满足：权限、硬件、系统状态与其他客户端请求可能让结果更慢、更快、更粗或更细。
+Fused Location Provider（FLP，融合位置提供器）把 GNSS、Wi-Fi、蜂窝与传感器等来源交给 Google Play services 选择和融合。应用指定优先级、期望间隔、最小回调间隔、最小位移、最大交付延迟、精度档位和持续时间。`LocationRequest` 文档明确说明系统只能尽力满足这些参数：权限、硬件、系统状态与其他客户端请求可能让结果更慢、更快、更粗或更细。
 
 连续定位请求要有两层停止条件：
 
@@ -190,9 +190,9 @@ FLP 参数与功耗建议可对照 [`LocationRequest`](https://developers.google
 
 ## Geofencing 与被动定位
 
-Geofencing 适合设备到达区域后再通知应用的业务。位置服务统一维护围栏，应用无需周期性唤醒进程查询当前位置。每个应用、每个设备用户最多同时注册 100 个围栏；大量门店场景可以先维护城市或商圈范围，再按用户所在区域替换附近门店集合。
+Geofencing 适合这类业务：设备到达区域后再通知应用。位置服务统一维护围栏，应用无需周期性唤醒进程查询当前位置。每个应用、每个设备用户最多同时注册 100 个围栏；大量门店场景可以先维护城市或商圈范围，再按用户所在区域替换附近门店集合。
 
-半径与响应时间属于产品正确性的一部分。官方建议典型围栏采用 100 到 150 米的最小半径，以容纳常见 Wi-Fi 定位误差；`setNotificationResponsiveness()` 取 5 分钟或更大更有利于功耗。它们是经验建议，室内定位能力、道路速度、误触成本和业务半径不同，不能直接复制成所有产品的常量。Android 8.0 及以上设备在应用处于后台时通常每隔几分钟处理一次围栏事件，低数值也不构成及时送达保证。
+半径与响应时间属于产品正确性的一部分。官方建议典型围栏采用 100 到 150 米的最小半径，以容纳常见 Wi-Fi 定位误差；`setNotificationResponsiveness()` 取 5 分钟或更大更有利于功耗。这些是经验建议；室内定位能力、道路速度、误触成本和业务半径不同，不能直接照抄成所有产品通用的常量。Android 8.0 及以上设备在应用处于后台时通常每隔几分钟处理一次围栏事件，低数值也不构成及时送达保证。
 
 这个函数把围栏半径、停留时间、响应时间和过期时间留给业务配置。构建器只验证 API 所需的基本范围。
 
@@ -225,7 +225,7 @@ fun buildDwellGeofence(
 }
 ```
 
-`DWELL` 表示在围栏内停留，可过滤短暂穿越区域造成的频繁提醒。围栏事件通过 `PendingIntent`（由系统在未来代应用执行操作的凭据）交给 `BroadcastReceiver` 时，接收器应核对错误码、transition（进入、离开或停留事件类型）与触发列表，再发布通知或安排有限的后台工作；不要从后台事件直接展示 Activity。功能关闭、账号退出或区域集合改变时，应按 request ID（围栏标识）或原 `PendingIntent` 移除旧围栏。
+`DWELL` 表示在围栏内停留，可过滤短暂穿越区域造成的频繁提醒。围栏事件通过 `PendingIntent`（系统稍后代应用执行操作的凭据）交给 `BroadcastReceiver` 时，接收器应核对错误码、transition（进入、离开或停留事件类型）与触发列表，再发布通知或安排有限的后台工作；不要从后台事件直接展示 Activity。功能关闭、账号退出或区域集合改变时，应按 request ID（围栏标识）或原 `PendingIntent` 移除旧围栏。
 
 被动定位使用 `PRIORITY_PASSIVE`。该优先级不会因为当前请求单独计算位置，只接收系统为其他客户端生成的位置；它仍受位置权限、后台访问限制和进程调度影响，也可能收到批量数据。
 
@@ -252,7 +252,7 @@ fun buildPassiveLocationRequest(
 
 这里的间隔控制回调资格，不会把被动请求变成周期定位。没有其他客户端计算位置时，它可以一直没有结果；安全告警、导航和完整运动轨迹不能依赖这条路径。收到数据后还要按事件时间去重，把多条写库与上报合并处理。
 
-定位层的公开资料包括 [Geofencing 指南](https://developer.android.com/develop/sensors-and-location/location/geofencing)、[后台定位权限](https://developer.android.com/develop/sensors-and-location/location/permissions/background) 和 [`Priority.PRIORITY_PASSIVE`](https://developers.google.com/android/reference/com/google/android/gms/location/Priority)。Android 17 平台实现可从这些 `android-17.0.0_r1` 源码核对：
+定位层的公开资料包括 [Geofencing 指南](https://developer.android.com/develop/sensors-and-location/location/geofencing)、[后台定位权限](https://developer.android.com/develop/sensors-and-location/location/permissions/background) 和 [`Priority.PRIORITY_PASSIVE`](https://developers.google.com/android/reference/com/google/android/gms/location/Priority)。这些 `android-17.0.0_r1` 源码可用于核对 Android 17 平台实现：
 
 - [`LocationManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/location/LocationManagerService.java) 提供系统位置服务入口。
 - [`LocationProviderManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/location/provider/LocationProviderManager.java) 管理 provider（位置数据提供器）的注册、请求和交付。
@@ -263,7 +263,7 @@ fun buildPassiveLocationRequest(
 
 传感器功耗包含传感器本身、sensor hub（负责低功耗采集的传感器协处理器）、硬件 FIFO、应用处理器唤醒、事件分发和应用计算。批处理的目标是让 sensor hub 或 FIFO 暂存事件，减少应用处理器从 suspend（系统挂起）状态醒来的次数。它不会降低传感器的采样频率；采样频率仍由 `samplingPeriodUs` 决定。
 
-关系图说明 Android 17 传感器事件从硬件到应用的主要层次。批处理发生在 HAL 之前的 sensor hub 或硬件 FIFO，`SensorService` 负责连接、权限、速率调整和事件分发。
+下面的流程图说明 Android 17 传感器事件从硬件到应用的主要层次。批处理发生在 HAL 之前的 sensor hub 或硬件 FIFO，`SensorService` 负责连接、权限、速率调整和事件分发。
 
 ```mermaid
 flowchart LR
@@ -339,7 +339,7 @@ Android 17 的 `SystemSensorManager` 使用 5000 微秒作为 200 Hz 周期边�
 - 在 Android 16（API 36）及以上系统中，目标版本 36 及以上的应用改用 `READ_HEART_RATE`、`READ_SKIN_TEMPERATURE`、`READ_OXYGEN_SATURATION` 等细分权限；后台读取对应健康数据需要 `READ_HEALTH_DATA_IN_BACKGROUND`。
 - `ACTIVITY_RECOGNITION` 或清单中的 `HIGH_SAMPLING_RATE_SENSORS` 也可以满足 health FGS 的一种启动先决条件，但只能访问各自授权范围内的数据。
 
-这些规则延续到 Android 17（API 37）。前台服务只提供合规的长时执行形态，应用仍应选择最低采样率、允许批处理、显示持续通知，并在用户停止会话后及时结束服务。
+这些规则延续到 Android 17（API 37）。前台服务只解决长时运行的合规问题，应用仍应选择最低采样率、允许批处理、显示持续通知，并在用户停止会话后及时结束服务。
 
 ### Android 17 源码锚点
 
@@ -415,7 +415,7 @@ adb shell dumpsys batterystats --charged
 
 ## 全文小结
 
-定位优化从一次性、低精度、低频和延迟容忍度开始；只有用户可见且确有精度需要时才持续使用高精度请求。Geofencing 与被动定位能减少主动计算，但仍受后台权限和交付延迟限制。传感器侧要同时降低采样率与应用处理器唤醒，批处理只解决后者。
+定位优化从一次性、低精度、低频、可容忍延迟的请求开始；只有用户可见且确有精度需要时才持续使用高精度请求。Geofencing 与被动定位能减少主动计算，但仍受后台权限和交付延迟限制。传感器侧要同时降低采样率与应用处理器唤醒，批处理只解决后者。
 
 Android 17 的平台边界由位置服务、`SystemSensorManager` 和 native `SensorService` 共同执行；Google Play services FLP 还具有独立版本。评审时把两套实现和各自公开契约分开，才能避免用 AOSP 结论代替 FLP 行为。
 
