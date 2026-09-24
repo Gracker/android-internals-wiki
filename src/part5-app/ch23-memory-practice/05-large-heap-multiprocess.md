@@ -92,7 +92,7 @@ consolidated_from:
 
 # 大内存与多进程策略
 
-`largeHeap` 与多进程都可能扩大单个故障前的可用空间，却会引入更高系统压力、跨进程成本和回收不确定性。只有在对象所有权、进程生命周期和设备预算已经量化后，才适合把它们作为架构选择。
+`largeHeap` 与多进程都可能扩大单个故障发生前的可用空间，却会引入更高系统压力、跨进程成本和回收不确定性。只有在对象所有权、进程生命周期和设备预算都量化之后，才适合把它们作为架构选择。
 
 > **版本基线**
 >
@@ -174,7 +174,7 @@ Android 默认让同一应用的组件运行在一个 Linux 进程和主线程�
 - 跨进程输入输出可以表示为文件路径、统一资源标识符（URI）、文件描述符等资源句柄、任务 ID 或小型结果对象。句柄只引用资源，不携带资源的全部内容。
 - 启动开销可测量：子进程冷启动、`ClassLoader` 初始化，以及该进程中的 `ContentProvider` 初始化都已纳入目标操作的耗时测量。
 
-不适合拆进程的模块也要明确：高频小调用、强共享内存状态、需要大量 Java 对象跨进程传输、每次都要同步 UI 状态的模块，拆出去后很容易把内存问题换成 Binder 成本、序列化成本和一致性问题。
+不适合拆进程的模块包括：高频小调用、强共享内存状态、需要大量 Java 对象跨进程传输、每次都要同步 UI 状态的模块，拆出去后很容易把内存问题换成 Binder 成本、序列化成本和一致性问题。
 
 一种常见拆分方式是：主进程只保留任务调度和少量状态，独立进程处理边界明确的任务。服务按任务 ID 读取输入，将产物写入文件或数据库，Binder 只返回状态和结果引用。Binder 事务缓冲区当前为每个进程固定 1 MB，并由该进程所有正在执行的事务共享；即使单次参数不大，并发事务也可能触发 `TransactionTooLargeException`。大数组和 Bitmap 因此不应直接写入 `Parcel`。
 
@@ -237,7 +237,7 @@ Play Help Center 17492799 给出的 Apps 类 Anonymous RSS + Swap P90 阈值如�
 
 Bitmap memory usage 的 P90 阈值只在非前台状态给出：user-perceived services 与 background 为大于 200 MB，cached 为大于 400 MB。前台可以短时占用 Bitmap，但进入后台或缓存状态后仍长时间保留大图，通常说明 `onTrimMemory()`、页面销毁或图片缓存策略没有把可重建资源释放出去。[来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/2026-08-28-Play内存门槛2027-02先对四行-深度调研.md；已验证: raw/02-play-support.html]
 
-预算表之外还要区分三类观察入口：Play Console / Developer Reporting API 看到的是按用户设备聚合的长期 P90 和 RAM bucket；`dumpsys meminfo`、Perfetto、堆转储与 `/proc` 采样看到的是当前复现场景；Android 17 `MemoryLimiter` 则是在单台设备上按可见性和 cgroup 限制处理“此刻”的异常占用。三组数字口径不同，不能把 Play 阈值直接写成某台设备的 `am memory-limiter manual` 参数，也不能因为本地 PSS 低于某个表格值就跳过 Play Console 的分桶检查。[来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/2026-08-28-Play内存门槛2027-02先对四行-深度调研.md；已验证: raw/01-googleblog.html、raw/02-play-support.html 与 AOSP android-17.0.0_r1 MemoryLimiter 源码]
+预算表之外还要区分三类观察入口：Play Console / Developer Reporting API 看到的是按用户设备聚合的长期 P90 和 RAM 档；`dumpsys meminfo`、Perfetto、堆转储与 `/proc` 采样看到的是当前复现场景；Android 17 `MemoryLimiter` 则是在单台设备上按可见性和 cgroup 限制处理“此刻”的异常占用。三组数字口径不同，不能把 Play 阈值直接写成某台设备的 `am memory-limiter manual` 参数，也不能因为本地 PSS 低于某个表格值就跳过 Play Console 的分桶检查。[来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/2026-08-28-Play内存门槛2027-02先对四行-深度调研.md；已验证: raw/01-googleblog.html、raw/02-play-support.html 与 AOSP android-17.0.0_r1 MemoryLimiter 源码]
 
 预算值应来自目标设备上的实测峰值，并提前规定超限时允许降低哪些资源规格。表中列出了各进程需要记录的输入、资源释放时机和超限处理，不提供跨设备通用比例。
 
@@ -273,7 +273,7 @@ override fun onTrimMemory(level: Int) {
 
 ### 把线程数纳入虚拟地址预算
 
-线程栈会占用虚拟地址；其中已访问的页面还可能计入 RSS/PSS。Android 17 ART 的 `Thread::CreateNativeThread()` 先调用 `FixStackSize()`：默认请求改用运行时默认栈大小，然后加入兼容空间和栈溢出保护区，满足 POSIX 线程库规定的最小栈大小 `PTHREAD_STACK_MIN`，并向上进行页对齐。修正后的数值才会传给 `pthread_attr_setstacksize()` 和 `pthread_create()`，所以代码请求的栈大小不等于最终映射大小。
+线程栈会占用虚拟地址；其中已访问的页面还可能计入 RSS/PSS。Android 17 ART 的 `Thread::CreateNativeThread()` 先调用 `FixStackSize()`：默认请求改用运行时默认栈大小，然后加入兼容空间和栈溢出保护区，满足 POSIX 线程库规定的最小栈大小 `PTHREAD_STACK_MIN`，并向上按页对齐。修正后的数值才会传给 `pthread_attr_setstacksize()` 和 `pthread_create()`，所以代码请求的栈大小不等于最终映射大小。
 
 治理线程内存时应限制线程来源和最大并发：复用有界线程池，关闭不再使用的执行器（executor），并核对每个 SDK 创建的常驻线程。只有在调用深度可控，且递归、JNI、复杂解析与第三方库调用路径都经过压力测试时，才可以自行缩小栈；否则线程创建失败可能转化为 `StackOverflowError` 或原生代码崩溃。
 
