@@ -4997,6 +4997,78 @@
       "status": "appended",
       "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
     },
+    "source/juejin-android/2026-09-25-76471867-Android17新规内存超限直接杀Ap.md": {
+      "chapter": "ch04-memory",
+      "entry_id": "43574eae86f3156c",
+      "last_appended": "2026-09-25T05:25:03.682328+08:00",
+      "last_seen": "2026-09-25T05:25:03.682328+08:00",
+      "mtime": 1790281225.881415,
+      "score": 20,
+      "sha256": "8f0e51c60088bd1e07a9221bbfeb78db85634430a09fd61459237c6e17cd53a2",
+      "size": 10882,
+      "status": "appended",
+      "title": "Android17新规：内存超限直接杀App，没有崩溃日志怎么排查？Android 17 开始引入 App 内存限制，限"
+    },
+    "source/juejin-android/2026-09-25-76476792-Kotlin240更新了啥.md": {
+      "chapter": "待分类",
+      "entry_id": "814f368f4d636e20",
+      "last_appended": "2026-09-25T05:25:03.682328+08:00",
+      "last_seen": "2026-09-25T05:25:03.682328+08:00",
+      "mtime": 1790281225.8847322,
+      "score": 15,
+      "sha256": "bda5fdee3ad8f88e07b506db8c4c926a326841d66d47b70ba6a5b15c5a4098b1",
+      "size": 18994,
+      "status": "appended",
+      "title": "Android 开发来看看 Kotlin 2.4.0 更新了个啥Kotlin 2.4.0 发布了，更新挺多的。语言、标准"
+    },
+    "source/juejin-android/2026-09-25-76500740-Repository暴露suspend函.md": {
+      "chapter": "待分类",
+      "entry_id": "dcb172df563664e4",
+      "last_appended": "2026-09-25T05:25:03.682328+08:00",
+      "last_seen": "2026-09-25T05:25:03.682328+08:00",
+      "mtime": 1790281225.8833382,
+      "score": 11,
+      "sha256": "f56dbaaf45cc6825434ca336b6ac8cd7fe16c2a72ea1abdb87370e2cc5992c8c",
+      "size": 18456,
+      "status": "appended",
+      "title": "现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch"
+    },
+    "source/juejin-android/2026-09-25-76756264-三星安卓幻影进程BUG排查记录.md": {
+      "chapter": "待分类",
+      "entry_id": "00da4c128ed1b925",
+      "last_appended": "2026-09-25T05:25:03.682328+08:00",
+      "last_seen": "2026-09-25T05:25:03.682328+08:00",
+      "mtime": 1790281225.8817723,
+      "score": 24,
+      "sha256": "9b53fe46893b59789664923eca7db7815fd88cac942fdf07a40ccb72b447d963",
+      "size": 38271,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
+    "source/juejin-android/2026-09-25-76800243-EventBus为何没人爱用了.md": {
+      "chapter": "待分类",
+      "entry_id": "d41250833c2a0d29",
+      "last_appended": "2026-09-25T05:25:03.682328+08:00",
+      "last_seen": "2026-09-25T05:25:03.682328+08:00",
+      "mtime": 1790281225.8840926,
+      "score": 9,
+      "sha256": "698ed089f4d9a840985321e7c868160b7e68ae34deec2cfc027135f794808803",
+      "size": 9372,
+      "status": "appended",
+      "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
+    },
+    "source/juejin-android/2026-09-25-76809960-腾讯音乐Android秒编方案Jugg开.md": {
+      "chapter": "待分类",
+      "entry_id": "f22600c214e973c5",
+      "last_appended": "2026-09-25T05:25:03.682328+08:00",
+      "last_seen": "2026-09-25T05:25:03.682328+08:00",
+      "mtime": 1790281225.880713,
+      "score": 19,
+      "sha256": "c4b4ccea96ca700aac6635a535456805fc10756b2c9b0d6072063a47e55c4057",
+      "size": 36720,
+      "status": "appended",
+      "title": "日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源腾讯音乐正式开源 Android 秒级增量构建插件"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -6804,13 +6876,13 @@
     }
   },
   "last_report": {
-    "appended": 0,
-    "considered": 0,
-    "cutoff": "2026-09-23T05:20:47.577115+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-24.md",
+    "appended": 6,
+    "considered": 6,
+    "cutoff": "2026-09-24T05:20:53.455608+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-25.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2042,
+    "scanned": 2048,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
@@ -6821,7 +6893,7 @@
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-24T05:25:53.455608+08:00",
+  "last_run_at": "2026-09-25T05:25:03.682328+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
