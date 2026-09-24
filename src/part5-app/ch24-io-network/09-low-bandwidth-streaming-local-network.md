@@ -107,11 +107,11 @@ consolidated_from:
 
 # 低带宽、流媒体与本地网络适配
 
-卫星直连是手机与卫星直接通信、在地面基站覆盖不足时提供有限连接的方式。这类网络通常吞吐较低、往返时延较高，连接可能间歇可用，系统还可能限制后台应用访问。本文把应用在一种网络状态下允许使用的字节数、访问频率和后台活动范围统称为“数据预算”。适配工作不能停在显示卫星图标；请求优先级、离线队列、媒体规格、推送投递和监控都要遵守同一份预算。
+卫星直连指手机与卫星直接通信，在地面基站覆盖不足时提供有限连接。这类网络通常吞吐较低、往返时延较高，连接可能间歇可用，系统还可能限制后台应用访问。本文把应用在一种网络状态下允许使用的字节数、访问频率和后台活动范围统称为“数据预算”。适配工作不能停在显示卫星图标；请求优先级、离线队列、媒体规格、推送投递和监控都要遵守同一份预算。
 
 平台基准是 Android 17 / API 37 / `android-17.0.0_r1`。Android 15 和 Android 16 QPR2 用于说明公开 API 的版本变化；QPR（Quarterly Platform Release）是 Android 的季度平台更新。卫星短信、紧急通信、运营商开通和卫星调制解调器控制不属于普通应用的数据网络适配范围。
 
-低带宽和卫星网络要求应用缩小请求、延长容错窗口并允许离线；流媒体还要根据吞吐预算调整码率。Android 17 本地网络权限影响局域网发现和连接，是另一项必须显式处理的网络能力。
+低带宽和卫星网络要求应用缩小请求、延长容错窗口并允许离线；流媒体还要根据吞吐预算调整码率。Android 17 本地网络权限影响局域网发现和连接；局域网访问是另一项必须显式处理的网络能力。
 
 ## 低带宽与卫星网络的数据预算
 
@@ -134,11 +134,11 @@ Android 17 的 [`NetworkCapabilities.java`](https://android.googlesource.com/pla
 - 卫星网络也可能带有“不受带宽约束”能力。官方仍建议在所有卫星网络上减少数据用量。
 - 非卫星网络也可能缺少“不受带宽约束”能力，应用应按约束网络处理。
 
-`NET_CAPABILITY_NOT_METERED` 表示计费属性，`NET_CAPABILITY_NOT_CONGESTED` 表示当前是否拥塞。两者都不能替代带宽约束能力。上下行带宽字段是首跳估算值，也就是设备到接入网络这一段的预测能力，并非应用到服务端的实际吞吐。
+`NET_CAPABILITY_NOT_METERED` 表示计费属性，`NET_CAPABILITY_NOT_CONGESTED` 表示当前是否拥塞。两者都不能替代带宽约束能力。上下行带宽字段是首跳估算值，也就是对设备到接入网络这一段能力的预测，并非应用到服务端的实际吞吐。
 
 ### AndroidManifest.xml 声明代表接入承诺
 
-Android 应用默认不使用约束卫星网络。应用完成数据预算适配后，才应在 `<application>` 中加入平台要求的元数据。这段应用清单声明应用已经针对卫星数据做过优化：
+Android 应用默认不使用约束卫星网络。应用完成数据预算适配后，才应在 `<application>` 中加入平台要求的元数据。这段应用清单声明该应用已经针对卫星数据做过优化：
 
 ```xml
 <uses-permission android:name="android.permission.INTERNET" />
@@ -157,7 +157,7 @@ Android 库不能替宿主加入这项元数据。声明代表完整应用已经
 
 ### 以“最佳匹配网络”驱动应用预算
 
-普通 `registerNetworkCallback()` 会报告所有匹配网络。如果应用把任一网络的能力直接写进全局布尔值，Wi-Fi、蜂窝与卫星并存时，较晚到达的回调会覆盖正在使用的网络。官方示例使用 `registerBestMatchingNetworkCallback()`，让一个回调只跟踪满足请求的最佳网络；这个调用用于监听，不会主动请求系统建立新的网络。
+普通 `registerNetworkCallback()` 会报告所有匹配网络。如果应用把任一网络的能力直接写进全局布尔值，Wi-Fi、蜂窝与卫星并存时，较晚到达的回调会覆盖正在使用的网络所对应的值。官方示例使用 `registerBestMatchingNetworkCallback()`，让一个回调只跟踪满足请求的最佳网络；这个调用用于监听，不会主动请求系统建立新的网络。
 
 这段 Android 17 实现产生一份不可变网络预算快照。快照是发布后不再修改的一组网络状态，读取方不会看到更新到一半的数据。调用方提供已有的 `Handler`，因此监听器不会自行创建难以释放的线程：
 
@@ -298,21 +298,33 @@ class ConstrainedNetworkMonitor(
 }
 ```
 
-`NetworkRequest.Builder` 默认要求“不受带宽约束”。代码移除该能力，表示约束网络也可匹配；它没有请求系统建立新的卫星网络。`onAvailable()` 之后等待按序到达的 `onCapabilitiesChanged()`，避免回调与同步查询读取到不同时间点的状态。代码等到网络能力和 `onBlockedStatusChanged()` 报告的应用身份限制状态都到达后再发布快照；UID 是系统分配给应用的 Linux 用户标识，这里的 `blocked` 状态表示系统当前限制该 UID 使用这条网络。自动传输还要确认网络已通过公网验证、没有暂停，且当前 UID 未被限制。`onLost()` 只清除当前网络，防止旧网络的丢失事件覆盖刚出现的新网络。
+`NetworkRequest.Builder` 默认要求“不受带宽约束”。代码移除该能力，表示约束网络也可匹配；它没有请求系统建立新的卫星网络。
+
+`onAvailable()` 之后等待按序到达的 `onCapabilitiesChanged()`，避免回调与同步查询读取到不同时间点的状态。代码等到网络能力和 `onBlockedStatusChanged()` 报告的应用身份限制状态都到达后再发布快照；UID 是系统分配给应用的 Linux 用户标识，这里的 `blocked` 状态表示系统当前限制该 UID 使用这条网络。
+
+自动传输还要确认网络已通过公网验证、没有暂停，且当前 UID 未被限制。`onLost()` 只清除当前网络，防止旧网络的丢失事件覆盖刚出现的新网络。
 
 `start()`、`close()` 和回调共享同一 `Handler` 线程，避免生命周期字段被多个线程同时修改。若调用方拥有 `HandlerThread`，也就是带消息循环的后台线程，应先注销回调，再退出线程。当前 [`ConnectivityManager`](https://developer.android.com/reference/android/net/ConnectivityManager) 文档规定，每个 UID 通过该类 API 提交且尚未释放的网络请求与回调合计最多 100 个；重复注册却不注销会达到上限并触发运行时异常。
 
-这段实现面向 Android 17。兼容旧系统时要同时满足编译 SDK、设备 API 级别与 SDK 扩展版本要求：编译 SDK 决定代码能否引用符号，API 级别和扩展版本决定运行设备是否提供该能力。不支持该能力的平台继续使用默认网络回调和应用实测指标。官方指南允许在较低版本上直接使用常量数值，但项目若没有跨 QPR 验证环境，不应让这些数值进入业务层。Android 16 设备注册回调时还要按官方建议处理 `ConnectivityManager` 抛出的异常。
+这段实现面向 Android 17。兼容旧系统时要同时满足编译 SDK、设备 API 级别与 SDK 扩展版本要求：编译 SDK 决定代码能否引用符号，API 级别和扩展版本决定运行设备是否提供该能力。不支持该能力的平台继续使用默认网络回调和应用实测指标。
+
+官方指南允许在较低版本上直接使用常量数值，但项目若没有跨 QPR 验证环境，不应让这些数值进入业务层。
+
+Android 16 设备注册回调时还要按官方建议处理 `ConnectivityManager` 抛出的异常。
 
 `registerBestMatchingNetworkCallback()` 反映请求的最佳匹配网络。若应用把某个 `Network` 显式绑定到专用客户端，应读取该绑定网络的能力，不能把全局快照套在所有套接字上。VPN 也可能改变应用的实际出站路径，测试中要覆盖 VPN 开关。
 
 ### NTN（非地面网络）状态不能替代数据网络能力
 
-NTN 是 non-terrestrial network，即非地面网络。Android 15 的 [`ServiceState.isUsingNonTerrestrialNetwork()`](https://developer.android.com/reference/android/telephony/ServiceState#isUsingNonTerrestrialNetwork%28%29) 表示设备的电话业务注册信息中存在非地面网络。Android 17 [`ServiceState.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/telephony/java/android/telephony/ServiceState.java) 遍历 `NetworkRegistrationInfo`；只要一个电话业务注册条目标记为 NTN，就返回 `true`。
+NTN 是 non-terrestrial network，即非地面网络。Android 15 的 [`ServiceState.isUsingNonTerrestrialNetwork()`](https://developer.android.com/reference/android/telephony/ServiceState#isUsingNonTerrestrialNetwork%28%29) 表示设备的电话业务注册信息中存在非地面网络。
+
+Android 17 [`ServiceState.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/telephony/java/android/telephony/ServiceState.java) 遍历 `NetworkRegistrationInfo`；只要一个电话业务注册条目标记为 NTN，就返回 `true`。
 
 这个值适合解释电话业务状态，不能证明当前应用数据正在经过卫星。应用还可能使用 Wi-Fi、VPN 或另一张订阅的数据网络。数据访问与低数据模式决策应以 `NetworkCapabilities` 为准；确有电话业务界面需要时，再通过具备相应权限的电话服务回调读取 `ServiceState`。
 
-`SatelliteManager` 的公开范围也要区分。普通应用可以使用 `PROPERTY_SATELLITE_DATA_OPTIMIZED`，并在具备 `READ_BASIC_PHONE_STATE`、`READ_PHONE_STATE`、`READ_PRIVILEGED_PHONE_STATE` 或运营商权限之一时注册公开的状态监听器。Android 17 源码中的 `getSatelliteDataOptimizedApps()`、`requestNtnSignalStrength()`、`requestTimeForNextSatelliteVisibility()` 和 `getSatelliteDisallowedReasons()` 都标为 `@SystemApi`，并要求 `SATELLITE_COMMUNICATION` 特权权限。`@SystemApi` 只向指定系统组件开放，普通第三方应用不能依赖这些方法制定网络策略。
+`SatelliteManager` 的公开范围也要区分。普通应用可以使用 `PROPERTY_SATELLITE_DATA_OPTIMIZED`，并在具备 `READ_BASIC_PHONE_STATE`、`READ_PHONE_STATE`、`READ_PRIVILEGED_PHONE_STATE` 或运营商权限之一时注册公开的状态监听器。
+
+Android 17 源码中的 `getSatelliteDataOptimizedApps()`、`requestNtnSignalStrength()`、`requestTimeForNextSatelliteVisibility()` 和 `getSatelliteDisallowedReasons()` 都标为 `@SystemApi`，并要求 `SATELLITE_COMMUNICATION` 特权权限。`@SystemApi` 只向指定系统组件开放，普通第三方应用不能依赖这些方法制定网络策略。
 
 ### 先定义数据预算，再调整网络参数
 
@@ -538,7 +550,7 @@ Android 17 同时增加了流媒体数据计划速率接口和本地网络访问
 | 本地网络 | Google Cast 投屏、物联网（IoT）、mDNS、SSDP、本地 HTTP 服务 | 目标 API 37 后默认阻断，需系统设备选择器或运行时权限 | 发现失败、UDP `EPERM`、TCP 超时、入站连接失败 | 权限与设备选择流程 |
 | 普通互联网请求 | 登录、信息流、配置、图片、诊断事件 | 不由上述速率上限或本地网络权限统一控制 | DNS、传输层安全协议（TLS）、连接、服务端或队列失败 | 24.7、24.6、26.10 |
 
-建议在诊断事件中记录取值种类固定且较少的低基数字段 `request_class`，例如 `media_segment`、`lan_discovery` 和 `api`。低基数字段便于聚合，也不会因每个用户或设备都产生新取值而放大存储成本。订阅标识、设备地址和服务实例名不得写入通用诊断事件。
+建议在诊断事件中记录 `request_class` 这类取值种类固定且较少的低基数字段，例如 `media_segment`、`lan_discovery` 和 `api`。低基数字段便于聚合，也不会因每个用户或设备都产生新取值而放大存储成本。订阅标识、设备地址和服务实例名不得写入通用诊断事件。
 
 ## 流媒体码率预算
 
@@ -549,7 +561,7 @@ Android 17 为 `SubscriptionInfo` 增加：
 - `getStreamingAppMaxDownlinkKbps()`：流媒体应用在该订阅上的最大下行速率。
 - `getStreamingAppMaxUplinkKbps()`：流媒体应用在该订阅上的最大上行速率。
 
-单位均为 Kbps（kilobits per second，每秒千比特），语义来自移动通信行业组织 GSMA 的 TS.43 服务配置规范。运营商未提供该值或该值不适用时，接口返回 `SubscriptionPlan.BITRATE_UNKNOWN`；在 API 37 的公开签名中，该常量为 `-1L`。这个值表达数据计划或运营商策略。播放器测得的端到端吞吐、服务器供给能力、无线传输状态和设备解码能力仍要单独测量。
+单位均为 Kbps（kilobits per second，每秒千比特），语义来自移动通信行业组织 GSMA 的 TS.43 服务配置规范。运营商未提供该值或该值不适用时，接口返回 `SubscriptionPlan.BITRATE_UNKNOWN`；在 API 37 的公开签名中，该常量为 `-1L`。运营商上限表达数据计划或运营商策略。播放器测得的端到端吞吐、服务器供给能力、无线传输状态和设备解码能力仍要单独测量。
 
 读取订阅列表还有两个前提：
 
@@ -691,7 +703,7 @@ adb reboot
 - 基于 DNS 的服务发现（DNS-SD）场景可使用 `DiscoveryRequest.FLAG_SHOW_PICKER`；mDNS 常用来在局域网内承载 DNS-SD 查询。
 - 用户选中的服务会获得按服务授权，不需要应用取得整个局域网的访问权限。
 
-NSD 是 Network Service Discovery 的缩写，即 Android 的网络服务发现 API。Android 17 的 NSD 设备选择器也通过 T SDK Extension 22 提供；这里的 T 指 Android 13，SDK Extension 是系统模块更新带来的 API 版本，可能在不升级完整 Android 大版本的设备上增加新接口。运行在可接收模块更新的旧平台时，应检查 T 扩展版本；示例只展示 Android 17 直接路径。
+NSD 是 Network Service Discovery 的缩写，即 Android 的网络服务发现 API。Android 17 的 NSD 设备选择器也通过 T SDK Extension 22 提供；这里的 T 指 Android 13，SDK Extension 是系统模块更新带来的 API 版本，让设备在不升级完整 Android 大版本的情况下也可能获得新接口。运行在可接收模块更新的旧平台时，应检查 T 扩展版本；示例只展示 Android 17 直接路径。
 
 这段代码发起一次系统 NSD 设备选择。页面或控制器要保存回调对象，并在生命周期结束时调用 `unregisterServiceInfoCallback()` 取消注册。
 
@@ -781,7 +793,9 @@ private fun startLanFeature() {
 | 弱网与低带宽 | 首包慢、媒体分片超时、缓冲下降 | 网络会话、吞吐估计、缓冲时长、运营商速率是否已知 | 运营商上限一定生效 |
 | NSD 选择器 | `FAILURE_PERMISSION_DENIED`、未选择服务、服务授权被撤销 | API/扩展版本、服务类型分组、授权查询结果 | 用户拒绝广泛权限 |
 
-Android 17 官方迁移文档把 `android_getnetworkblockedreason(sockFd)` 称为 NDK API。C/C++ 网络代码可在 TCP 套接字失败后查询它。只有返回 `ANDROID_NETWORK_BLOCKED_REASON_LNP`，才能把该连接归因到本地网络保护（Local Network Protection，LNP）。截至 2026-08-15，NDK 公开参考页尚未列出这个符号；网络库需要按构建所用 NDK 和设备版本检查声明与符号是否可用，不能假定旧版本可直接链接。普通 Java/Kotlin TCP 超时没有同等精确的公开错误码，也不能见到超时就上报为权限拒绝。
+Android 17 官方迁移文档把 `android_getnetworkblockedreason(sockFd)` 称为 NDK API。C/C++ 网络代码可在 TCP 套接字失败后查询它。只有返回 `ANDROID_NETWORK_BLOCKED_REASON_LNP`，才能把该连接归因到本地网络保护（Local Network Protection，LNP）。
+
+截至 2026-08-15，NDK 公开参考页尚未列出这个符号；网络库需要按构建所用 NDK 和设备版本检查声明与符号是否可用，不能假定旧版本可直接链接。普通 Java/Kotlin TCP 超时没有同等精确的公开错误码，也不能见到超时就上报为权限拒绝。
 
 `android-17.0.0_r1` 的实现提供了两条可核对的证据：
 
@@ -794,7 +808,7 @@ Android 17 官方迁移文档把 `android_getnetworkblockedreason(sockFd)` 称�
 
 ### 保持预算、权限与安全边界独立
 
-运营商流媒体上限只是媒体预算来源之一。应用仍要结合 `NetworkCapabilities`、实时吞吐、缓冲、漫游、计费和卫星网络状态。以下字段名是一份诊断事件示例，不是 Android 强制规定的接口：
+运营商流媒体上限只是媒体预算来源之一。应用仍要结合 `NetworkCapabilities`、实时吞吐、缓冲、漫游、计费和卫星网络状态。以下字段名取自一份诊断事件示例，不是 Android 强制规定的接口：
 
 - `media_plan_limit_kbps` 只约束当前订阅上的媒体质量。
 - `measured_bps` 反映近期路径吞吐，用于短周期升降档。
@@ -804,7 +818,9 @@ Android 17 官方迁移文档把 `android_getnetworkblockedreason(sockFd)` 称�
 
 本地网络权限拒绝不能触发所有互联网请求降级，蜂窝数据计划上限也不能限制 Wi-Fi 局域网控制。
 
-Android 17 为目标 API 37 及以上应用把 ECH 默认模式设为 `enabled`。这项配置只对已经集成 ECH 的网络库生效，远端服务器也必须发布可用配置；HttpEngine、WebView 或 OkHttp 等库的具体版本仍需单独确认。协商条件不满足时，支持该机制的客户端会发送内容随机的 ECH GREASE 扩展，避免中间设备只接受未携带 ECH 的固定握手格式。`<domainEncryption>` 控制全局或指定域名的 ECH 模式，它不授予局域网访问，也不改变 `ACCESS_LOCAL_NETWORK` 的判定。详细安全边界见 [24.6 HTTP/2、HTTP/3、gRPC 与 ECH](06-http2-http3-grpc-ech.md)。
+Android 17 为目标 API 37 及以上应用把 ECH 默认模式设为 `enabled`。这项配置只对已经集成 ECH 的网络库生效，远端服务器也必须发布可用配置；HttpEngine、WebView 或 OkHttp 等库的具体版本仍需单独确认。协商条件不满足时，支持该机制的客户端会发送内容随机的 ECH GREASE 扩展，避免中间设备只接受未携带 ECH 的固定握手格式。
+
+`<domainEncryption>` 控制全局或指定域名的 ECH 模式，它不授予局域网访问，也不改变 `ACCESS_LOCAL_NETWORK` 的判定。详细安全边界见 [24.6 HTTP/2、HTTP/3、gRPC 与 ECH](06-http2-http3-grpc-ech.md)。
 
 ### 验证与分阶段发布
 
