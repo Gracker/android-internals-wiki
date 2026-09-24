@@ -111,14 +111,14 @@ consolidated_from:
 
 ### 两级限制：FGS 基础门槛与 WIU 附加门槛
 
-Android 17 的规则需要分两级理解。文章用 target 简称 `targetSdkVersion`，即应用声明的目标 API 版本。把两级条件合成一句“target 37 才限制后台音频”，会漏掉旧 target 应用也要满足的基础门槛。
+Android 17 的规则需要分两级理解。下文把 `targetSdkVersion` 简称为 target，即应用声明的目标 API 版本。把两级条件合成一句“target 37 才限制后台音频”，会漏掉旧 target 应用也要满足的基础门槛。
 
 #### 所有应用都要满足的基础门槛
 
 任何运行在 Android 17 上的应用，只要在后台播放、申请音频焦点或修改音量，就必须满足以下任一条件：
 
 - Activity 对用户可见；画中画（PiP）也属于可见场景。
-- 应用正在运行一个类型不是 `shortService`（短时任务前台服务类型）的前台服务。
+- 应用正在运行一个前台服务，其类型不是 `shortService`（短时任务前台服务类型）。
 
 这条规则与 `targetSdkVersion` 无关。没有可见 Activity，也没有合格前台服务时，target 35、36 和 37 都会受到限制。
 
@@ -159,7 +159,7 @@ API 37 应用同时满足两个条件时，可以免除 WIU 要求：
 | `requestAudioFocus()` | 返回 `AUDIOFOCUS_REQUEST_FAILED`，且不会获得焦点 | 抛出 `IllegalStateException` |
 | 音量与铃声模式 API | 调用被忽略，目标状态不变 | 抛出 `IllegalStateException` |
 
-`AudioTrack.write()` 返回成功只能说明数据被客户端提交，不能证明系统把声音送到了输出设备。Media3 的 `playWhenReady`、`playbackState` 也表达播放器状态机，而不是平台授权状态。线上诊断应额外记录焦点结果、前台服务状态、Activity 可见性、音频用途和 `AudioHardening` 日志。
+`AudioTrack.write()` 返回成功只能说明数据被客户端提交，不能证明系统把声音送到了输出设备。Media3 的 `playWhenReady`、`playbackState` 描述的是播放器状态机，而不是平台授权状态。线上诊断应额外记录焦点结果、前台服务状态、Activity 可见性、音频用途和 `AudioHardening` 日志。
 
 ### FGS 和 MediaSession 的正确职责
 
@@ -236,7 +236,7 @@ Android 17 的最低条件是“非 `shortService` 前台服务”，但媒体�
 | 音量与铃声模式 | `AudioService` 调用 `HardeningEnforcer.blockVolumeMethod()` | `OP_CONTROL_AUDIO_PARTIAL`、`OP_CONTROL_AUDIO`、target 和权限豁免 |
 | 播放 | AudioFlinger `Tracks.cpp` 的 `getHardeningDecision()` 与 `AfPlaybackCommon` | 播放 Track（音频播放轨道）创建时确定限制级别，并持续观察两级 AppOps |
 
-音频焦点请求先经过 `HardeningEnforcer`，通过后才进入 `MediaFocusControl` 的焦点仲裁。后台硬化返回 `AUDIOFOCUS_REQUEST_FAILED` 时，请求没有进入常规焦点竞争；这与“另一应用占用了焦点”是两种原因。
+音频焦点请求先经过 `HardeningEnforcer`，通过后才进入 `MediaFocusControl` 的焦点仲裁。后台硬化返回 `AUDIOFOCUS_REQUEST_FAILED` 时，请求没有进入常规焦点竞争；这与“另一应用占用了焦点”属于两类不同的失败原因。
 
 #### partial 与 full 的含义
 
@@ -245,16 +245,16 @@ AudioFlinger 为播放 Track 观察 `OP_CONTROL_AUDIO_PARTIAL` 和 `OP_CONTROL_A
 - partial（基础级）对应所有应用都要满足的生命周期条件，典型失败原因是没有合格 FGS。
 - full（完整级）增加 API 37 的 WIU 条件，典型失败原因是已有 FGS，但服务没有 WIU。
 
-这也解释了官方日志：
+官方日志里的 `level` 也对应这两级：
 
 - `level: partial`：应用没有运行合格的前台服务。
 - `level: full`：应用有前台服务，但该服务缺少 WIU。
 
-限制级别还会受平台兼容条件影响。r1 的 C++ 决策在严格模式下，对 target 小于 37 的应用、符合条件的闹钟以及持有 `BLUETOOTH_CONNECT` 的调用者采用 partial 级别；系统音频用途和具有路由或电话特权的调用者可以豁免。应用不应依赖内部兼容分支代替公开的后台播放模型。
+限制级别还会受平台兼容条件影响。r1 的 C++ 决策在严格模式下，对 target 小于 37 的应用、符合条件的闹钟以及持有 `BLUETOOTH_CONNECT` 的调用者采用 partial 级别；系统音频用途和具有路由或电话特权的调用者可以豁免。应用不应依赖内部兼容分支来替代公开的后台播放模型。
 
 #### Offload 和 MMap 没有绕过限制
 
-`AfPlaybackCommon` 在 Track 创建时注册两条异步 AppOps 会话。Offload 指把音频处理交给专用音频处理器，MMap 指使用内存映射的低延迟音频路径。对于这两类 Track，源码使用 40 ms 的 `asyncBroadcast` 异步唤醒延迟，让 partial 与 full 两个权限回调都有机会在音频线程唤醒前到达。该延迟是权限状态传播的实现细节，不是应用可调的播放缓冲参数。
+`AfPlaybackCommon` 在 Track 创建时注册两条异步 AppOps 会话。Offload 指把音频处理交给专用音频处理器，MMAP 指使用内存映射的低延迟音频路径。对于这两类 Track，源码使用 40 ms 的 `asyncBroadcast` 异步唤醒延迟，让 partial 与 full 两个权限回调都有机会在音频线程唤醒前到达。该延迟是权限状态传播的实现细节，不是应用可调的播放缓冲参数。
 
 每条 Track 只记录一次对应的后台播放限制事件，避免同一 Track 反复上报。新的 Track 会重新计算决策，因此重新创建播放器并不能修复不合规生命周期，只会生成新的受限 Track。
 
@@ -283,7 +283,9 @@ adb shell cmd audio set-enable-hardening throw
 adb shell cmd audio set-enable-hardening disable
 ```
 
-r1 的 `clear-hardening` 与 `set-hardening default` 都恢复平台默认行为；`set-hardening disable` 是强制关闭限制，并不等同于恢复默认。新命令中的 `disable` 也表示关闭全部限制。r1 的测试覆盖状态会同步写入 `system_server`（承载多数 Java 系统服务的进程）与 `audioserver`（承载原生音频服务的进程），但不会持久化。只提供新命令、没有 `clear` 或 `default` 子命令的系统镜像，应按设备帮助确认恢复方式，必要时重启专用测试设备。测试报告还要记录命令和构建号。
+r1 的 `clear-hardening` 与 `set-hardening default` 都恢复平台默认行为；`set-hardening disable` 是强制关闭限制，并不等同于恢复默认。新命令中的 `disable` 也表示关闭全部限制。
+
+r1 的测试覆盖状态会同步写入 `system_server`（承载多数 Java 系统服务的进程）与 `audioserver`（承载原生音频服务的进程），但不会持久化。只提供新命令、没有 `clear` 或 `default` 子命令的系统镜像，应按设备帮助确认恢复方式，必要时重启专用测试设备。测试报告还要记录命令和构建号。
 
 `enable` 会把完整限制应用到所有应用，并取消 target 与闹钟豁免，适合寻找潜在问题；它不能替代默认行为下的 target 36/37 对照测试。`throw` 还会把静默失败改成异常、持续写入错误或崩溃，只能用于开发与回归环境。
 
@@ -307,7 +309,7 @@ adb shell dumpsys batterystats --reset
 adb shell dumpsys batterystats > batterystats.txt
 ```
 
-这批文件要使用统一的会话标识，并按同一时钟关联事件。`dumpsys audio` 说明平台为何限制交互，`media_session` 和服务记录说明应用宣告了什么状态，`batterystats` 说明播放停止后是否仍有 WakeLock、网络和后台活动。
+这批文件要使用统一的会话标识，并按同一时钟关联事件。`dumpsys audio` 说明平台为何限制交互，`media_session` 和服务记录说明应用向系统公开了什么状态，`batterystats` 说明播放停止后是否仍有 WakeLock、网络和后台活动。
 
 Perfetto 是 Android 的系统级跟踪工具，采集应覆盖音频、调度、CPU 频率、电源、Binder（Android 跨进程调用机制）和 ActivityManager 相关轨迹。阅读顺序可以固定为：用户操作、FGS 启动、MediaSession 激活、焦点结果、Track 创建、页面退后台或锁屏、网络或路由变化、播放停止、资源释放。若声音消失后 CPU、网络或 WakeLock 仍活跃，说明声音停止后的资源清理不足。
 
@@ -332,7 +334,7 @@ Android 17 r1 的 `LeAudioService.setSystemSuspended()` 会在系统进入 suspe
 
 ### 验证场景与线上指标
 
-回归测试要覆盖入口、target、音频用途和路由组合。用例时长按产品的预期会话设计；除平台规定的 10 分钟暂时性失败边界外，不需要编造固定分钟数。
+回归测试要覆盖入口、target、音频用途和路由组合。用例时长按产品的预期会话设计；除平台规定的 10 分钟暂时性失败边界外，不必自行假定一个固定分钟数。
 
 | 用例 | 操作 | 预期 |
 | --- | --- | --- |
@@ -358,11 +360,11 @@ Android 17 r1 的 `LeAudioService.setSystemSuspended()` 会在系统进入 suspe
 | 后台耗电 P90/P99 | 会话时长、网络、路由、offload、设备 |
 | 用户手动恢复播放比例 | 页面、通知、媒体键、蓝牙设备 |
 
-小流量发布时应同时比较 target 36 与 37。若中断率上升，要按 partial/full 区分缺 FGS 与缺 WIU；若声音已经停止但耗电上升，则检查资源释放与重试状态机。两类问题需要分别定位原因。
+小流量发布时应同时比较 target 36 与 37。若中断率上升，要按 partial/full 区分缺 FGS 与缺 WIU；若声音已经停止但耗电上升，则检查资源释放与重试状态机。
 
 ### 后台音频小结
 
-Android 17 后台音频硬化有清晰的两级条件：所有应用都需要可见 Activity 或非 `shortService` FGS；target 37 的后台应用还需要带 WIU 的 FGS，真实闹钟可以在满足权限和 `USAGE_ALARM` 时免除 WIU。
+Android 17 后台音频硬化分两级条件：所有应用都需要可见 Activity 或非 `shortService` FGS；target 37 的后台应用还需要带 WIU 的 FGS，真实闹钟可以在满足权限和 `USAGE_ALARM` 时免除 WIU。
 
 应用适配的重点是让播放入口、MediaSession、`mediaPlayback` FGS 和资源生命周期表达同一份用户意图。平台限制播放后，业务也要停止无效的网络、解码和保活。验收不能只看播放器有没有报错，还要确认声音、焦点、通知、路由和资源释放都可由证据解释。
 
@@ -441,7 +443,9 @@ bool openOffloadProbe(
 
 API 36 的 `AAudioStreamBuilder_setPresentationEndCallback()` 会在应用请求停止后，等待系统与硬件中已排队的数据播放完，再通知结束。若应用提前关闭 stream，回调不会发生；若它和数据回调共用框架的实时线程，回调中也不能执行阻塞工作。
 
-Android 17 / API 37 又增加了 `AAudio_getFlushFromFrameSupport(builder)` 和 `AAudioStream_flushFromFrame()`。flush 指丢弃已经写入但尚未播放的数据，frame（音频帧）是这里的位置计数单位。前者必须在打开流前查询，并要求 builder 已设置 offloaded 性能模式、格式、采样率与声道掩码；后者通过 `inOutPosition` 传入目标 frame，并在成功时写回实际 flush 位置。调用返回前不能并发写数据；成功后剩余数据不足时要立即补写，否则会出现 underrun（数据供给不及时造成的播放断续）。若要求 `AAUDIO_FLUSH_FROM_FRAME_ACCURATE` 而设备无法从指定位置处理，r1 返回 `AAUDIO_ERROR_OUT_OF_RANGE`，且不会把一次失败当作成功 flush。
+Android 17 / API 37 又增加了 `AAudio_getFlushFromFrameSupport(builder)` 和 `AAudioStream_flushFromFrame()`。flush 指丢弃已经写入但尚未播放的数据，frame（音频帧）是这里的位置计数单位。前者必须在打开流前查询，并要求 builder 已设置 offloaded 性能模式、格式、采样率与声道掩码；后者通过 `inOutPosition` 传入目标 frame，并在成功时写回实际 flush 位置。
+
+调用返回前不能并发写数据；成功后剩余数据不足时要立即补写，否则会出现 underrun（数据供给不及时造成的播放断续）。若要求 `AAUDIO_FLUSH_FROM_FRAME_ACCURATE` 而设备无法从指定位置处理，r1 返回 `AAUDIO_ERROR_OUT_OF_RANGE`，且不会把一次失败当作成功 flush。
 
 ### AudioTrack Offload 的 API 37 新边界
 
@@ -456,7 +460,9 @@ Android 17 为 `AudioTrack` 增加了 codec provenance（原始内容的编解�
 
 codec provenance 由应用在 Builder 中设置。例如原始内容是 Dolby Atmos 的 E-AC3 JOC，但交给 `AudioTrack` 的数据格式已经转换，此时可以传入相应的 `MediaFormat` MIME 常量。它是来源提示，不是运行时探测结果。
 
-`flushWrittenFramesFromPosition()` 的 `positionInFrames` 必须位于 0 到 `getWrittenFramesCount()` 之间。`FLUSH_FROM_ACCURACY_BEST_EFFORT` 允许系统选择不小于目标的位置；`FLUSH_FROM_ACCURACY_EXACT` 要求从目标位置开始。以 `android-17.0.0_r1` 为准，exact 无法满足时返回 `ERROR_BAD_VALUE`；非法 accuracy 或越界输入抛 `IllegalArgumentException`；非 offload 或未初始化抛 `IllegalStateException`；设备不支持则抛 `UnsupportedOperationException`。调用期间不能写入；成功且 Track 仍活跃时，要根据剩余数据及时补写。
+`flushWrittenFramesFromPosition()` 的 `positionInFrames` 必须位于 0 到 `getWrittenFramesCount()` 之间。`FLUSH_FROM_ACCURACY_BEST_EFFORT` 允许系统选择不小于目标的位置；`FLUSH_FROM_ACCURACY_EXACT` 要求从目标位置开始。
+
+以 `android-17.0.0_r1` 为准，exact 无法满足时返回 `ERROR_BAD_VALUE`；非法 accuracy 或越界输入抛 `IllegalArgumentException`；非 offload 或未初始化抛 `IllegalStateException`；设备不支持则抛 `UnsupportedOperationException`。调用期间不能写入；成功且 Track 仍活跃时，要根据剩余数据及时补写。
 
 需要区分三种坐标：
 
@@ -467,7 +473,7 @@ codec provenance 由应用在 Builder 中设置。例如原始内容是 Dolby At
 断点续播和 seek 应以媒体时间线为主，把 frame 坐标作为底层执行证据。不能把写入计数直接保存成“用户已经听到的位置”。
 
 
-这些 API 对四类产品动作有价值：
+这些 API 在四类场景中各有用途：
 
 - 有声书断点续播：记录用户听到的位置、已写入 frame、实际 flush 位置，避免章节跳转后重复播放或少播。
 - 切歌和 seek：在 offload buffer 较深时，把“业务目标位置”和“系统实际 flush 位置”都上报，方便定位误差。
