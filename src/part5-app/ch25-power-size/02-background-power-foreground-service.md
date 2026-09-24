@@ -120,7 +120,7 @@ consolidated_from:
 
 # 后台功耗与前台服务执行边界
 
-后台功耗来自唤醒、网络、定位、传感器和持续计算。Foreground Service 只为用户可感知的持续任务提供执行边界，还受类型、启动时机、通知和超时约束。
+后台功耗来自唤醒、网络、定位、传感器和持续计算。前台服务只为用户可感知的持续任务提供执行边界，还受类型、启动时机、通知和超时约束。
 
 ## 后台唤醒、网络与任务预算
 
@@ -128,7 +128,7 @@ consolidated_from:
 
 后台功耗治理关注应用如何控制不可见阶段的资源消耗。Doze（设备空闲低功耗模式）、App Standby（应用待机）和 Job（由系统调度的后台任务）配额的系统实现见 §5.3；WakeLock（唤醒锁）、Alarm（定时任务）、定位与 FCM（Firebase Cloud Messaging，Firebase 云消息）的横向策略见 §11.2；诊断流程见 §25.1；前台服务（Foreground Service，FGS）超时和 Android 16 Job 配额的专题分析见 §25.2。
 
-后台工作应具备四项性质：允许延后的工作交给系统调度，同一目的的工作可以合并，业务条件失效后可以取消，运行与停止原因可以观测。系统负责限制 CPU（中央处理器）、网络、Job、Alarm 和位置访问，却不了解某次同步是否仍有业务价值，也不知道某段轨迹何时可以降低采样频率。应用必须自己定义任务有效期、停止条件和资源预算。
+后台工作按四条要求设计：允许延后的工作交给系统调度，同一目的的工作可以合并，业务条件失效后可以取消，运行与停止原因可以观测。系统负责限制 CPU（中央处理器）、网络、Job、Alarm 和位置访问，却不了解某次同步是否仍有业务价值，也不知道某段轨迹何时可以降低采样频率。应用必须自己定义任务有效期、停止条件和资源预算。
 
 进程仍然存活并不表示任务可以持续执行。进程存活、组件生命周期、后台启动资格、Job 配额和资源访问权限是不同条件。某项工作即使已经进入进程，也可能因约束变化、配额用完或服务超时而停止。
 
@@ -241,7 +241,11 @@ fun enqueueBulkInboxSync(
 }
 ```
 
-示例假定已导入 `java.util.concurrent.TimeUnit`。`UNMETERED` 表示非计费网络约束，`BatteryNotLow` 表示电量不能过低；两者会减少高成本网络与低电量阶段的执行，但也会增加等待时间，只适合允许延迟的批量同步。`KEEP` 表示同名工作尚未结束时忽略新请求；如果新请求代表更新后的用户意图，应重新评估 `REPLACE` 或 `APPEND_OR_REPLACE`。退避只处理 Worker（WorkManager 的任务执行单元）返回 `Result.retry()` 的情况，不能代替网络请求自身的超时和幂等设计。
+示例假定已导入 `java.util.concurrent.TimeUnit`。`UNMETERED` 表示非计费网络约束，`BatteryNotLow` 表示电量不能过低；两者会减少高成本网络与低电量阶段的执行，但也会增加等待时间，只适合允许延迟的批量同步。
+
+`KEEP` 表示同名工作尚未结束时忽略新请求；如果新请求代表更新后的用户意图，应重新评估 `REPLACE` 或 `APPEND_OR_REPLACE`。
+
+退避只处理 Worker（WorkManager 的任务执行单元）返回 `Result.retry()` 的情况，不能代替网络请求自身的超时和幂等设计。
 
 任务开始时间不能视为承诺时间。Doze、待机分组、约束和系统负载都可能推迟执行。运行后也可能因约束变化、配额或应用取消而停止。WorkManager 可读取 `WorkInfo.getStopReason()`；直接使用 JobScheduler 时，可读取 `JobParameters.getStopReason()`。Android 14 及以上，如果 Job 频繁超时，系统可能将应用放入 `restricted` 分组。
 
@@ -267,7 +271,7 @@ Android 16 进一步扩大了 Job 运行配额的适用范围：
 | `attempt` / `enqueue_time` / `start_time` | 区分排队延迟、执行耗时与重试次数 |
 | `network_bytes` / `cpu_time_ms` | 和 §25.1 的 BatteryStats / Perfetto 数据对齐 |
 
-统一封装的价值在于一致记录调度语义，但不应隐藏所有平台差异。业务仍需明确时效、幂等键、取消条件和数据归属；基础组件负责记录调度接口、系统约束、停止原因和资源用量。只修某个 Worker 的执行逻辑，无法解释它为什么被排队、停止或重复触发。
+统一封装能一致地记录调度语义，但不应隐藏所有平台差异。业务仍需明确时效、幂等键、取消条件和数据归属；基础组件负责记录调度接口、系统约束、停止原因和资源用量。只修某个 Worker 的执行逻辑，无法解释它为什么被排队、停止或重复触发。
 
 ### 前台服务只解决用户可感知的持续执行
 
@@ -277,7 +281,9 @@ Android 16 进一步扩大了 Job 运行配额的适用范围：
 
 ### 后台定位与传感器管控
 
-Android 8.0 及以上会限制后台应用接收位置更新的频率，官方只给出每小时少数几次这一量级，不承诺固定次数。业务若依赖精确到达时间，不应从这个描述推导服务等级。区域进入或离开可使用 Geofencing API（地理围栏接口）；允许延迟的轨迹可使用批量位置；只希望复用其他客户端已经计算的位置时，可使用被动请求。参见[后台位置限制](https://developer.android.com/about/versions/oreo/background-location-limits)和[位置功耗场景指南](https://developer.android.com/develop/sensors-and-location/location/battery/scenarios)。
+Android 8.0 及以上会限制后台应用接收位置更新的频率，官方只给出每小时少数几次这一量级，不承诺固定次数。业务若依赖精确到达时间，不应从这个描述推导服务等级。
+
+区域进入或离开可使用 Geofencing API（地理围栏接口）；允许延迟的轨迹可使用批量位置；只希望复用其他客户端已经计算的位置时，可使用被动请求。参见[后台位置限制](https://developer.android.com/about/versions/oreo/background-location-limits)和[位置功耗场景指南](https://developer.android.com/develop/sensors-and-location/location/battery/scenarios)。
 
 | 场景 | 推荐策略 | 功耗边界 |
 |------|----------|----------|
@@ -309,7 +315,9 @@ fun buildPassiveLocationRequest(
 }
 ```
 
-当前 Google Play services API 使用 `Priority.PRIORITY_PASSIVE`。这种请求不会为了自己额外计算位置，只接收其他客户端产生的位置，因此可能没有任何回调。`desiredIntervalMillis` 也不是交付期限。如果业务需要在规定时间内获得位置，应在用户可见阶段使用与精度需求匹配的优先级，并限制持续时间；不能悄悄将被动请求改成长时间 `PRIORITY_HIGH_ACCURACY`。参见 [`Priority` API](https://developers.google.com/android/reference/com/google/android/gms/location/Priority)。
+当前 Google Play services API 使用 `Priority.PRIORITY_PASSIVE`。这种请求不会为了自己额外计算位置，只接收其他客户端产生的位置，因此可能没有任何回调。
+
+`desiredIntervalMillis` 也不是交付期限。如果业务需要在规定时间内获得位置，应在用户可见阶段使用与精度需求匹配的优先级，并限制持续时间；不能悄悄将被动请求改成长时间 `PRIORITY_HIGH_ACCURACY`。参见 [`Priority` API](https://developers.google.com/android/reference/com/google/android/gms/location/Priority)。
 
 传感器治理要区分普通传感器和受使用中权限约束的身体传感器。`health` 类型 FGS 需要声明 `FOREGROUND_SERVICE_HEALTH`，并满足 `HIGH_SAMPLING_RATE_SENSORS` 或相应的健康数据运行时权限。身体传感器权限边界按系统版本区分：
 
@@ -544,7 +552,7 @@ fun startUserRequestedSync(context: Context) {
 }
 ```
 
-`ForegroundServiceStartNotAllowedException` 适合转入可延期任务或提示用户重试。类型专用权限与运行前提在 Service 调用 `startForeground()` 时校验，那里抛出的 `SecurityException` 不会同步返回这段调用代码；应在启动前核对前提，并把 Service 端异常纳入崩溃监控。
+对 `ForegroundServiceStartNotAllowedException`，合适的处理是转入可延期任务或提示用户重试。类型专用权限与运行前提在 Service 调用 `startForeground()` 时校验，那里抛出的 `SecurityException` 不会同步返回这段调用代码；应在启动前核对前提，并把 Service 端异常纳入崩溃监控。
 
 #### 3.3 `ActiveServices` 的四类校验结果
 
@@ -599,7 +607,9 @@ Context.startForegroundService() did not then call Service.startForeground()
 2. 从到期点起默认约 5 秒后，进程失去 short FGS 对应的进程状态保护。
 3. 从到期点起默认约 10 秒后仍未停止，`onShortFgsAnrTimeout()` 触发 ANR。
 
-三个时间都可由 DeviceConfig 调整，约 3 分钟是 API 语义，不能当成高精度定时器。`shortService` 不支持 sticky（返回 `START_STICKY` 后由系统尝试重建 Service）的重启模式，也不会因为正在运行就获得从后台启动另一个 FGS 的资格。它可以切换为其他类型，但应用在切换时必须具备启动新 FGS 的资格。再次用 `shortService` 调用 `startForeground()` 只有在应用当前可见或符合后台启动例外时才能延长时限，不能把重复调用当作后台续期信号。
+三个时间都可由 DeviceConfig 调整，约 3 分钟是 API 语义，不能当成高精度定时器。
+
+`shortService` 不支持 sticky（返回 `START_STICKY` 后由系统尝试重建 Service）的重启模式，也不会因为正在运行就获得从后台启动另一个 FGS 的资格。`shortService` 可以切换为其他类型，但应用在切换时必须具备启动新 FGS 的资格。再次用 `shortService` 调用 `startForeground()` 只有在应用当前可见或符合后台启动例外时才能延长时限，不能把重复调用当作后台续期信号。
 
 `shortService` 没有“禁止启动 Activity”的专用规则。Activity 能否启动仍由 BAL 判断；仅有 short FGS 通常无法因此获得 BAL 许可。
 
@@ -619,9 +629,11 @@ Android 17 的 `getTimeLimitedFgsType()` 只处理 `dataSync` 和 `mediaProcessi
 
 从 Android 16 起，FGS 中启动的 `JobScheduler`、WorkManager 或 DownloadManager 工作仍消耗各自的运行配额。FGS 运行时长与 JobScheduler 配额没有合并成同一份计数；FGS 也不能为 Job 解除 App Standby 或调度额度。
 
-用户明确触发的大文件传输可评估用户发起的数据传输任务（user-initiated data transfer，UIDT job）。这种 Job 专门表达用户已经启动且正在等待进度的数据传输。可延期、可重试、带网络或充电约束的工作更适合 WorkManager 或 JobScheduler。长时间 Worker 使用 FGS 时，仍要遵守 FGS 类型、启动和超时规则。
+对于用户明确触发的大文件传输，可以评估使用用户发起的数据传输任务（user-initiated data transfer，UIDT job）。这种 Job 专门表达用户已经启动且正在等待进度的数据传输。可延期、可重试、带网络或充电约束的工作更适合 WorkManager 或 JobScheduler。长时间 Worker 使用 FGS 时，仍要遵守 FGS 类型、启动和超时规则。
 
-Job 配额与 FGS 时长是两套预算。排障时分别保存 FGS 类型、运行区间和超时回调，以及 Job 所属的应用待机分桶（App Standby bucket，即系统按近期使用情况给应用分档）、pending reason、stop reason、运行时长和是否与 FGS 同时运行。pending reason 说明任务为何尚未执行，stop reason 说明本轮执行为何结束。`ForegroundService` 只表达用户可感知的持续工作，不会让同进程 Job 获得无限额度。
+Job 配额与 FGS 时长是两套预算。排障时分别保存 FGS 类型、运行区间和超时回调，以及 Job 所属的应用待机分桶（App Standby bucket，即系统按近期使用情况给应用分档）、pending reason、stop reason、运行时长和是否与 FGS 同时运行。
+
+pending reason 说明任务为何尚未执行，stop reason 说明本轮执行为何结束。`ForegroundService` 只表达用户可感知的持续工作，不会让同进程 Job 获得无限额度。
 
 #### 5.5 长任务必须可恢复
 
