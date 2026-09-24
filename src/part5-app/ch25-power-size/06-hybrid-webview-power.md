@@ -80,7 +80,7 @@ Hybrid 页面的能耗来自 WebView 进程、JavaScript、网络、媒体和原
 
 Hybrid（混合开发）页面通常由原生应用里的 WebView 承载。同一次用户操作会经过应用进程、提供 WebView 实现的 provider 包、执行网页代码的 Chromium renderer（渲染进程）、JavaScript、页面资源，以及连接网页与原生代码的 JSBridge（JavaScript bridge，JS 桥）。电量百分比只能反映整机变化，无法指出耗电来自页面脚本、容器生命周期、网络请求还是原生代码。
 
-版本基线为 Android 17（API 37）和 `android-17.0.0_r1`，比较同一业务在原生页、应用内 WebView 和外部浏览器中的成本。结论分成两类：同机对照实验得到的相对差异，以及能够在线上按页面和 provider 包版本持续验证的指标。
+版本基线为 Android 17（API 37）和 `android-17.0.0_r1`，用于比较同一业务在原生页、应用内 WebView 和外部浏览器中的成本。结论分成两类：同机对照实验得到的相对差异，以及能够在线上按页面和 provider 包版本持续验证的指标。
 
 WebView 渲染管线见 13.10 节，优化实战见 22.16 节，内存持续增长的分类诊断见 10.1 节，Hybrid APM（Application Performance Monitoring，应用性能监控）见 17.11 节。功耗分析与技术选型会复用这些章节的指标和结论。
 
@@ -100,7 +100,7 @@ CPU 时间、网络传输、内存压力、页面驻留、后台活动和屏幕�
 
 论文 [arXiv:2308.16734](https://arxiv.org/abs/2308.16734) 对比了 10 个互联网内容平台的 Android 原生应用与 Chrome Web 版本，覆盖新闻、社交媒体、电商、音频流和视频流五类。这里的 Web 版本运行在 Chrome，不是应用内 `WebView`。
 
-实验使用一台 Nokia 6.2（TA-1198）。论文把系统写作 Android (Go edition) 10，但没有提供构建指纹或系统镜像来源，因此这个标签不能代表其他 Android Go 设备。每个脚本运行 3 分钟，每个研究对象重复 25 次，总计 500 次。设备通过 USB 连接并保持充电，能耗由 Batterystats 根据硬件活动和 power profile 估算。作者在每轮之间清理对应原生应用缓存，并清理浏览器标签页和除登录 Cookie 以外的缓存；交互是固定的点击、滚动和输入脚本。
+实验使用一台 Nokia 6.2（TA-1198）。论文把系统记为 Android (Go edition) 10，但没有提供构建指纹或系统镜像来源，因此这个标签不能代表其他 Android Go 设备。每个脚本运行 3 分钟，每个研究对象重复 25 次，总计 500 次。设备通过 USB 连接并保持充电，能耗由 Batterystats 根据硬件活动和 power profile 估算。作者在每轮之间清理对应原生应用缓存，并清理浏览器标签页和除登录 Cookie 以外的缓存；交互是固定的点击、滚动和输入脚本。
 
 这里的“统计显著”表示在该样本和检验假设下，观察到的差异不太可能只由随机波动造成；“效应量”描述差异幅度。两者都不能保证其他设备、页面和浏览器保持同一差异。在这套实验条件下，论文得到以下结果：
 
@@ -205,7 +205,7 @@ WebView renderer 的版本边界如下：
 
 ## WebView provider 版本差异
 
-WebView provider 会随系统或 Play 更新。相同应用版本在不同 provider 上可能出现不同的 renderer 内存、崩溃率和网络行为。Android 7.0（API 24）起设备可以选择不同 WebView provider；应用可用 [`WebViewCompat.getCurrentWebViewPackage()`](https://developer.android.com/develop/ui/views/layout/webapps/managing-webview#version-api) 记录包名和版本。该方法可能返回 `null`，观测代码要允许设备不支持或配置异常。
+WebView provider 会随系统或 Play 更新。相同应用版本在不同 provider 上可能出现不同的 renderer 内存、崩溃率和网络行为。Android 7.0（API 24）起设备可以选择不同 WebView provider；应用可用 [`WebViewCompat.getCurrentWebViewPackage()`](https://developer.android.com/develop/ui/views/layout/webapps/managing-webview#version-api) 记录包名和版本。该方法可能返回 `null`，观测代码要考虑设备不支持或配置异常的情况。
 
 Android 官方提供 WebView DevTools App，用于查看系统 WebView 组件信息、崩溃报告、实验开关（flags）和网络日志。它适合作为本地诊断入口，不适合作为线上监控替代品。
 
