@@ -98,7 +98,7 @@ token 是模型处理文本的离散单元，tensor（张量）是保存输入�
 | 7B | 13.04 GiB | 6.52 GiB | 3.26 GiB |
 | 13B | 24.21 GiB | 12.11 GiB | 6.05 GiB |
 
-“4-bit 模型”也可能保留 FP16/FP32 的归一化层、embedding 或输出层。分组量化还要为每组保存 scale，非对称方案通常还需要 zero-point。表中数字只是权重位数换算结果；模型文件大小高于它并不说明打包异常。
+“4-bit 模型”也可能保留 FP16/FP32 的归一化层、embedding 或输出层。分组量化还要为每组保存 scale，非对称方案通常还需要 zero-point。表中数字只是权重位数换算结果；模型文件大小高于这些数字并不说明打包异常。
 
 量化选择不能只看压缩率。算子是否被目标后端支持、是否触发 CPU 回退、加载时是否反量化或重排，都会改变运行时内存。精度变化也依赖模型、校准集、量化算法和任务，不能用一个通用的 MMLU（多学科问答基准）降幅代替应用验收。
 
@@ -124,7 +124,7 @@ MediaPipe LLM Inference 目前处于维护模式，官方建议新 Android 项�
 
 ### 1.4 文件映射不等于零成本加载
 
-权重以只读文件映射加载时，VSS（虚拟地址映射总量）会先增加，RSS（当前驻留物理页）和 PSS（按共享比例分摊的物理内存）随缺页和回收变化。文件页可以被内核回收，也可能与其他进程共享页缓存；这不保证 delegate 会直接使用原始映射。后端可能为了对齐、布局转换、量化解码或设备私有格式再分配一份缓冲区。
+权重以只读文件映射加载时，VSS（虚拟地址映射总量）会先增加，RSS（当前驻留物理页）和 PSS（按共享比例分摊的物理内存）随缺页和回收变化。文件页可以被内核回收，也可能与其他进程共享页缓存；但这些性质不保证 delegate 会直接使用原始映射。后端可能为了对齐、布局转换、量化解码或设备私有格式再分配一份缓冲区。
 
 因此需要分别观察：
 
@@ -148,7 +148,7 @@ MediaPipe LLM Inference 目前处于维护模式，官方建议新 Android 项�
 
 ### 2.1 三种上限回答不同问题
 
-`ActivityManager.getMemoryClass()` 与 `getLargeMemoryClass()` 描述的是应用近似的 Java 托管堆容量档位，不覆盖 native heap、线程栈、文件映射和图形缓冲区。系统在内存压力下还会根据进程重要性和整体压力回收或终止进程。
+`ActivityManager.getMemoryClass()` 与 `getLargeMemoryClass()` 描述的是应用 Java 托管堆容量的近似档位，不覆盖 native heap、线程栈、文件映射和图形缓冲区。系统在内存压力下还会根据进程重要性和整体压力回收或终止进程。
 
 [`ActivityManager.MemoryInfo`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java) 中：
 
@@ -258,7 +258,7 @@ override fun onTrimMemory(level: Int) {
 }
 ```
 
-`inferenceController` 是应用自己的生命周期组件，不是平台类。任务还要去重，避免连续回调排队执行多次关闭。`TRIM_MEMORY_UI_HIDDEN` 表示 UI 已不可见，不证明系统已经出现内存压力；它提供的是释放 UI 输入与预览缓存的时机。该回调也不是“杀进程前一定通知”的协议；会话文本和用户操作进度应在正常业务流程中持续保存。
+`inferenceController` 是应用自己的生命周期组件，不是平台类。这些释放任务还要去重，避免连续回调排队执行多次关闭。`TRIM_MEMORY_UI_HIDDEN` 表示 UI 已不可见，不证明系统已经出现内存压力；它提供的是释放 UI 输入与预览缓存的时机。该回调也不是“杀进程前一定通知”的协议；会话文本和用户操作进度应在正常业务流程中持续保存。
 
 ### 4.3 `MemoryInfo` 适合做信号，不适合做容量承诺
 
@@ -274,7 +274,7 @@ Android 17 的 [`ProfilingTrigger`](https://developer.android.com/reference/andr
 
 当前 [LiteRT `CompiledModel` API](https://developers.google.com/edge/litert/next/android_kotlin) 提供 CPU、GPU 和 NPU 路径，复核时文档中的 Maven 版本为 2.1.0。具体 NPU 支持仍依赖 SoC、运行时包、delegate、模型算子和分发方式。选择 `Accelerator.NPU` 不能证明整张计算图都在 NPU 上运行；需要记录子图分区、回退、初始化峰值和首轮峰值。
 
-对较大的、目标 SoC 已知的模型，[部分 LiteRT NPU 路径](https://developers.google.com/edge/litert/android/npu/qualcomm) 与当前 [LiteRT NPU 编译和分发文档](https://developers.google.com/edge/litert/next/qualcomm) 都提供 AOT 方案，用于减少设备侧初始化编译。当前路径还支持设备侧编译及编译缓存，缓存是否命中会显著改变初始化时间和内存。AOT 产物、原始模型、AI Pack（按设备投递模型资产的 Google Play 包）和厂商运行时库可能在安装或加载阶段同时存在，仍要按对应 SoC 与运行时版本测量峰值。
+对较大且目标 SoC 已知的模型，[部分 LiteRT NPU 路径](https://developers.google.com/edge/litert/android/npu/qualcomm) 与当前 [LiteRT NPU 编译和分发文档](https://developers.google.com/edge/litert/next/qualcomm) 都提供 AOT 方案，用于减少设备侧初始化编译。当前路径还支持设备侧编译及编译缓存，缓存是否命中会显著改变初始化时间和内存。AOT 产物、原始模型、AI Pack（按设备投递模型资产的 Google Play 包）和厂商运行时库可能在安装或加载阶段同时存在，仍要按对应 SoC 与运行时版本测量峰值。
 
 ### 5.2 共享缓冲区不代表所有硬件都能直接访问
 
