@@ -72,7 +72,9 @@ last_rework_run_id: 20260815-203958-gracker-writing-472
 
 启动耗时要结合启动类型、启动原因和前一次进程状态解释。桌面图标触发的冷启动、最近任务恢复、广播拉起和低内存后的状态恢复，即使首帧耗时相同，优化方向也可能完全不同。
 
-Android 15 / API 35 的 `ApplicationStartInfo` 给应用提供系统侧启动记录，包括进程身份、启动原因、冷/温/热类型、启动状态和单调时钟时间戳。冷启动从创建进程开始，温启动会复用部分已保存状态，热启动把仍在运行的应用带回前台。业务仍需记录首页何时可用、页面路由、异步数据完成和产品场景；Perfetto 与 `ProfilingManager` 继续解释线程、调度、输入输出（I/O）和 Binder 进程间通信等运行现场。
+Android 15 / API 35 的 `ApplicationStartInfo` 给应用提供系统侧启动记录，包括进程身份、启动原因、冷/温/热类型、启动状态和单调时钟时间戳。冷启动从创建进程开始，温启动会复用部分已保存状态，热启动把仍在运行的应用带回前台。
+
+业务仍需记录首页何时可用、页面路由、异步数据完成和产品场景；Perfetto 与 `ProfilingManager` 继续解释线程、调度、输入输出（I/O）和 Binder 进程间通信等运行现场。
 
 源码锚点采用 `android-17.0.0_r1` 的 `ApplicationStartInfo.java`、`ActivityManager.java` 和 `ProfilingTrigger.java`。
 
@@ -125,7 +127,9 @@ Android 15 / API 35 的 `ApplicationStartInfo` 给应用提供系统侧启动记
 
 公开的 start reason 包括 alarm、backup、boot complete、broadcast、content provider、job、launcher、launcher recents、push、service、start activity 和 other。reason 描述启动诱因，同一个原因可能覆盖多种组件；组件类型要从 Android 16 新增的 `getStartComponent()` 读取。
 
-Android 16 / API 36 增加 `getStartComponent()`，用于区分 Activity、Service、Broadcast、ContentProvider 和 Other。API 36 起应先按 start component 分流，再结合 reason 细分来源；Android 15 没有该字段，只能保留 reason，并接受较低的分类精度。external service 指应用绑定后以调用方身份运行、但代码由另一个包提供的外部服务，这类场景的 UID 字段尤其需要分别保存。
+Android 16 / API 36 增加 `getStartComponent()`，用于区分 Activity、Service、Broadcast、ContentProvider 和 Other。API 36 起应先按 start component 分流，再结合 reason 细分来源；Android 15 没有该字段，只能保留 reason，并接受较低的分类精度。
+
+external service 指应用绑定后以调用方身份运行、但代码由另一个包提供的服务；这类场景下 UID 字段尤其需要分别保存。
 
 ### 冷、温、热启动
 
@@ -259,7 +263,7 @@ fun markHomeReadyBeforeFullyDrawn(context: Context) {
 | 诊断关联 | `session_id`、`trace_id`、`case_id`、`app_version`、`os_build`、`api_level` | 关联文件时保留 source |
 | 策略信息 | `sample_policy_version`、`consent_state`、`upload_policy` | 支持审计和远程停用 |
 
-广告、引导页或登录流程是否从产品体验指标中调整，应由版本化协议定义。研发回归始终保留原始时长，否则一次产品流程变化可能被误判为系统启动性能改善。
+广告、引导页或登录流程是否纳入产品体验指标的口径调整，应由版本化协议定义。研发回归始终保留原始时长，否则一次产品流程变化可能被误判为系统启动性能改善。
 
 TTID 是系统从收到启动 Intent 到首次显示帧的指标；TTFD 从同一起点到应用报告 fully drawn。业务 `home_ready` 可以早于或晚于其他页面条件，但不能冒充 TTFD。应用应在主内容可见且可用后调用 `reportFullyDrawn()`，并让该语义跨版本稳定。
 
@@ -275,7 +279,9 @@ trigger 是系统事件满足条件后启动或保存 profiling 结果的触发�
 | 业务 ready 与 route | 按业务指标策略 | 用户体验和页面归因 |
 | cold-start system trace + stack sampling | 低频、问题版本或指定 case（诊断案例） | 定位线程、I/O、Binder、调度与调用栈 |
 
-系统触发结果只能通过 `ProfilingManager#registerForAllProfilingResults()` 的全局监听器接收。文件路径读取 `ProfilingResult#getResultFilePath()`；回调缺失或无文件属于预期降级路径。`TRIGGER_TYPE_APP_FULLY_DRAWN` 是 API 36 trigger，它在冷启动调用 `reportFullyDrawn()` 后保存正在运行的后台 system trace 快照，与 API 37 新启动采集的 cold-start trigger 语义不同。
+系统触发结果只能通过 `ProfilingManager#registerForAllProfilingResults()` 的全局监听器接收。文件路径读取 `ProfilingResult#getResultFilePath()`；回调缺失或无文件属于预期降级路径。
+
+`TRIGGER_TYPE_APP_FULLY_DRAWN` 是 API 36 trigger，它在冷启动调用 `reportFullyDrawn()` 后保存正在运行的后台 system trace 快照，与 API 37 新启动采集的 cold-start trigger 语义不同。
 
 ## 与 ApplicationExitInfo 联合归因
 
@@ -304,7 +310,7 @@ trigger 是系统事件满足条件后启动或保存 profiling 结果的触发�
 
 - 历史查询的 `maxNum` 由客户端策略配置，读取后用稳定 record key 去重。
 - completion listener 在首帧阶段只做内存复制或轻量落盘，避免同步网络和重型序列化影响启动。
-- 端侧队列设置容量、过期和失败退避；达到磁盘预算时优先删除过期诊断文件。
+- 端侧队列要设置容量、过期时间和失败退避；达到磁盘预算时优先删除过期诊断文件。
 - 结构化字段和 profiling 文件使用不同的采样、上传条件、保留期限和访问权限。
 - 记录采样策略版本、丢弃原因、上传状态和 `ProfilingResult` 错误码，便于判断“没有数据”的原因。
 
