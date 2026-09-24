@@ -72,7 +72,7 @@ last_review_finalize_run_id: 20260815-150303-gracker-writing-449
 
 # App Bundle 与按需分发
 
-按需分发把安装包体积问题转化为模块边界、下载时机和失败恢复问题。设计 AAB、Dynamic Feature 或资源包时，应同时考虑商店能力、首用路径、离线场景和版本兼容，而不只比较基础 APK 大小。
+按需分发把安装包体积问题转化为模块边界、下载时机和失败恢复问题。规划 AAB、Dynamic Feature 或资源包时，应同时考虑商店能力、首用路径、离线场景和版本兼容，而不只比较基础 APK 大小。
 
 ## 分发要解决的问题
 
@@ -106,7 +106,7 @@ bundletool get-size total \
   --device-spec=device-spec.json
 ```
 
-`get-size total` 默认统计首次下载时安装的所有 module，不只包含 base。指定 `--modules` 时，工具会把所选 module 的依赖一并计入。未提供设备规格时，结果可能以设备维度的最小值和最大值表示，不能作为某台设备的基线。命令语义见 [`bundletool` 文档](https://developer.android.com/tools/bundletool)。
+`get-size total` 默认统计首次下载时安装的所有 module，不只包含 base。指定 `--modules` 时，工具会把所选 module 的依赖一并计入。未提供设备规格时，结果可能给出一组跨设备维度的最小值和最大值，不能作为某台设备的基线。命令语义见 [`bundletool` 文档](https://developer.android.com/tools/bundletool)。
 
 本地 `build-apks` 使用与 Play 相关的拆包工具，但签名、Play 服务端处理和线上设备选择仍要通过测试轨道验证。未显式传 keystore（签名密钥库）时，`bundletool` 会尝试使用 debug key（调试签名密钥）；这样的 APK Set 适合本地测试，不能作为渠道发布制品。
 
@@ -120,11 +120,11 @@ bundletool get-size total \
 - 完整安装缺少必需 split 时返回 `INSTALL_FAILED_MISSING_SPLIT`；
 - 通过 [`ApkLiteParseUtils.composePackageLiteFromApks()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/parsing/ApkLiteParseUtils.java) 形成 base、feature、`uses-split`（功能依赖）和 `configForSplit`（配置归属）的统一视图。
 
-验证完成后，不需要重启生效的安装会进入 `installNonStaged()` 等后续流程。这些校验表明，split APK 不是任意文件集合：base、配置 split 和功能 split 必须作为同一个包的一致集合安装。Android 官方还明确说明，缺少必需 split 的侧载安装会在 Android 10 及以上设备或 Google 认证设备失败。
+验证完成后，不需要重启即可生效的安装会进入 `installNonStaged()` 等后续流程。这些校验表明，split APK 不是可以随意拼凑的文件集合：base、配置 split 和功能 split 必须作为同一个包的一致集合安装。Android 官方还明确说明，缺少必需 split 的侧载安装会在 Android 10 及以上设备或 Google 认证设备失败。
 
 ## Dynamic Feature Module 实践
 
-Dynamic Feature Module（动态功能模块）适合低频、体积较大、允许等待的完整功能，例如视频编辑、OCR（光学字符识别）、AR（增强现实）或额外关卡。登录恢复、崩溃提示、支付结果、通知入口等必须立即可用的路径应留在 base。拆分前要检查使用率、首次进入可接受等待、离线需求和模块依赖。
+Dynamic Feature Module（动态功能模块）适合低频、体积较大、允许等待的完整功能，例如视频编辑、OCR（光学字符识别）、AR（增强现实）或额外关卡。登录恢复、崩溃提示、支付结果、通知入口等必须立即可用的路径应留在 base。拆分前要检查使用率、首次进入的等待是否可接受、离线需求和模块依赖。
 
 ### 交付方式
 
@@ -145,7 +145,7 @@ android {
 }
 ```
 
-这只建立 base 到 feature 的构建关系。Feature module 还要应用动态功能插件并依赖 base：
+这段配置只建立 base 到 feature 的构建关系。Feature module 还要应用动态功能插件并依赖 base：
 
 ```kotlin
 plugins {
@@ -219,9 +219,11 @@ manager.startInstall(request)
     .addOnFailureListener { /* 请求尚未建立，展示可恢复错误。 */ }
 ```
 
-`startInstall()` 成功回调只返回安装会话 ID，不代表安装完成。监听器要按页面或进程生命周期注销；进程重建后，通过 `installedModules`（已安装模块集合）和安装会话状态恢复，不能只依赖内存变量。`deferredInstall()` 是无法追踪进度的尽力而为请求，需要立即使用模块时仍应调用 `startInstall()`。完整状态和用户确认流程见 [Configure on-demand delivery](https://developer.android.com/guide/playcore/feature-delivery/on-demand)。
+`startInstall()` 成功回调只返回安装会话 ID，不代表安装完成。监听器要按页面或进程生命周期注销；进程重建后，通过 `installedModules`（已安装模块集合）和安装会话状态恢复，不能只依赖内存变量。`deferredInstall()` 只是后台尽力预取，无法跟踪进度，需要立即使用模块时仍应调用 `startInstall()`。完整状态和用户确认流程见 [Configure on-demand delivery](https://developer.android.com/guide/playcore/feature-delivery/on-demand)。
 
-应用和 feature Activity（界面组件）还要按官方要求启用 SplitCompat（让应用访问新下载 split 代码与资源的兼容库）。可选 feature 不应声明 exported（可被其他应用调用）组件；需要对外入口时，在 base 放代理组件，确认模块已安装后再转发。刚下载完成的一段时间内，平台可能无法应用 feature 新增的 manifest 组件，也可能无法让通知等系统界面访问 feature 资源。通知图标、系统会拉起的组件和故障页面应放在 base。
+应用和 feature Activity（界面组件）还要按官方要求启用 SplitCompat（让应用访问新下载 split 代码与资源的兼容库）。可选 feature 不应声明 exported（可被其他应用调用）组件；需要对外入口时，在 base 放代理组件，确认模块已安装后再转发。
+
+刚下载完成的一段时间内，平台可能无法应用 feature 新增的 manifest 组件，也可能无法让通知等系统界面访问 feature 资源。通知图标、系统会拉起的组件和故障页面应放在 base。
 
 Play 会让已安装 feature 随应用更新；不要给 Play feature 自建独立版本协议。版本一致性问题主要出现在自建资源下载、非 Play 插件或绕过 Play 的分发方案中。
 
@@ -237,7 +239,9 @@ Play Asset Delivery（PAD，Play 资源交付）面向 asset（原始素材）�
 | fast-follow | 安装完成后自动下载，不要求先启动应用 | 以归档文件交付并展开到应用内部存储 |
 | on-demand | 应用运行时请求 | 以归档文件交付并展开到应用内部存储 |
 
-Fast-follow 和 on-demand pack 的路径可能跨会话移动，文件也可能被用户或 Play Asset Delivery Library（PAD 访问库）删除。应用每次使用前都要查询 pack 状态和位置，并把展开后的内容视为只读，因为补丁依赖文件完整性。应用更新期间还可能出现新二进制已安装、资源补丁尚未应用完的短暂状态，页面要能显示 `资源更新中`。
+Fast-follow 和 on-demand pack 的路径可能跨会话变化，文件也可能被用户或 Play Asset Delivery Library（PAD 访问库）删除。应用每次使用前都要查询 pack 状态和位置，并把展开后的内容视为只读，因为补丁依赖文件完整性。
+
+应用更新期间还可能出现新二进制已安装、资源补丁尚未应用完的短暂状态，页面要能显示 `资源更新中`。
 
 首屏必需的最小资源留在 base 或 install-time pack；可在安装后准备的内容用 fast-follow；低频内容用 on-demand。推迟下载不会减少最终磁盘占用，仍要设计空间检查、失败恢复和资源回收。
 
@@ -270,7 +274,9 @@ bundletool install-apks --apks=app-release.apks
 
 这只能验证本地 APK Set。渠道的加固、重签、签名方案、升级、安装器和审核仍要用渠道最终制品测试。Universal APK 还要单独记录体积，避免 Play 的设备裁剪结果掩盖单 APK 渠道成本。
 
-动态 DEX、JAR 或 `.so` 下载不应被当作普通体积方案。Google Play 的 [Device and Network Abuse policy](https://support.google.com/googleplay/android-developer/answer/16559646) 禁止应用从 Google Play 之外下载可执行代码。该限制不适用于在虚拟机或解释器中运行、仅间接访问 Android API 的代码，例如 WebView（应用内网页容器）或浏览器中的 JavaScript；但运行时加载的解释型代码仍不得促成其他 Play 政策违规。其他渠道也要逐项核对政策、安全、兼容和更新责任；面向 Play 的自建分发默认只交付非代码资源。
+动态 DEX、JAR 或 `.so` 下载不应被当作普通体积方案。Google Play 的 [Device and Network Abuse policy](https://support.google.com/googleplay/android-developer/answer/16559646) 禁止应用从 Google Play 之外下载可执行代码。该限制不适用于在虚拟机或解释器中运行、仅间接访问 Android API 的代码，例如 WebView（应用内网页容器）或浏览器中的 JavaScript；但运行时加载的解释型代码仍不得促成其他 Play 政策违规。
+
+其他渠道也要逐项核对政策、安全、兼容和更新责任；面向 Play 的自建分发默认只交付非代码资源。
 
 ## 按需分发要进入体积门禁
 
@@ -297,7 +303,7 @@ bundletool get-size total \
 
 第一条默认包含首次下载时安装的所有 module；第二条按显式 module 集合测量，并自动加入依赖。两条结果的含义不同，不能简单相减推导 feature 自身大小。最终发布还应使用 Play 测试轨道或渠道测试环境校验。
 
-门禁阈值来自项目基线和实际设备分布，不填写通用百分位或固定数字。制品、`bundletool` 版本、device spec（设备规格 JSON）、签名方式和 module 集合必须随结果归档。
+门禁阈值来自项目基线和实际设备分布，不要直接套用通用百分位或固定数字。制品、`bundletool` 版本、device spec（设备规格 JSON）、签名方式和 module 集合必须随结果归档。
 
 ## 全文小结
 
