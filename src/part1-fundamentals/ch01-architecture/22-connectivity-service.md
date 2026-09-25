@@ -86,7 +86,7 @@ Connectivity 是一台由网络注册、能力验证、策略评分、默认网�
 
 网络验证又有不同的边界。`NetworkMonitor` 的实现位于 NetworkStack 模块，`AndroidManifest.xml` 把 `NetworkStackService` 放在独立的 `com.android.networkstack.process` 进程。`ConnectivityService` 通过稳定 AIDL `INetworkStackConnector.makeNetworkMonitor()` 为网络创建监视器。验证探测卡住时，不能直接推断 `system_server` 的 Connectivity 线程正在执行 HTTP 请求。
 
-`netd` 是原生守护进程，负责执行网络创建、路由、权限和防火墙等内核配置。NetworkStats 的部分 Java 代码也由 Connectivity 模块交付并运行在 `system_server`，其内核计数来自固定在 BPF 文件系统中的 map；pin 是指为 BPF 对象建立持久路径的操作；map 则是内核与用户空间交换计数数据的容器。
+`netd` 是原生守护进程，负责执行网络创建、路由、权限和防火墙等内核配置。NetworkStats 的部分 Java 代码也由 Connectivity 模块交付并运行在 `system_server`，它的内核计数来自 BPF 文件系统中的 map。map 是内核与用户空间交换计数数据的容器，pin 则是为 BPF 对象建立持久路径的操作。
 
 ```text
 应用进程
@@ -231,7 +231,7 @@ Android 17 的 `NetworkMonitor` 是一个事件驱动的 `StateMachine`。源码
 
 - 用 `INTERNET + VALIDATED` 判断通用互联网可用性；
 - 可公开检查 `CAPTIVE_PORTAL`，对其余未验证状态依赖业务请求结果并给出可恢复错误；
-- 最终仍对业务请求设置连接、读写和整体超时，因为系统验证不等于你的服务端健康。
+- 最终仍对业务请求设置连接、读写和整体超时，因为系统验证不等于服务端健康。
 
 ## 网络选择：有序策略，不是加分公式
 
@@ -256,7 +256,7 @@ Partial connectivity +20
 
 原生 `Vpn` 仍会构造 legacy int 为 101 的 `NetworkScore`，这是历史兼容值。`FullScore` 会基于 `TRANSPORT_VPN` 设置 VPN 策略；不能据此描述成“VPN 继承底层网络分数”。
 
-legacy int 还有一个受限的 prospective-offer（尚未建网时的预期供给）特例：provider 在真正建网前可用 `NetworkOffer` 表示可能提供的能力，`FullScore.makeProspectiveScore()` 会把高于 `NetworkRanker.LEGACY_INT_MAX` 的 filter 值映射为 `POLICY_IS_INVINCIBLE`，只用于判断这条 offer 是否值得尝试建网。网络 connected 后仍按完整策略链排序，不能用这个兼容分支恢复旧整数打分模型。
+legacy int 还有一个受限的 prospective-offer（尚未建网时的预期供给）特例：提供者在真正建网前可用 `NetworkOffer` 表示可能提供的能力，`FullScore.makeProspectiveScore()` 会把高于 `NetworkRanker.LEGACY_INT_MAX` 的 filter 值映射为 `POLICY_IS_INVINCIBLE`，只用于判断这条 offer 是否值得尝试建网。网络 connected 后仍按完整策略链排序，不能用这个兼容分支恢复旧整数打分模型。
 
 ### NetworkRanker 的决策顺序
 
@@ -278,7 +278,7 @@ legacy int 还有一个受限的 prospective-offer（尚未建网时的预期供
 
 这份顺序用于理解源码，不适合在业务代码中复制一套“系统打分器”。运营商配置、Wi-Fi 策略、VPN、每 UID 路由和后续平台版本都会影响最终选择。
 
-网络提供者的 `NetworkOffer` 也不是建网承诺。offer 表示“如果系统需要，我可能提供具有这些能力和策略的网络”。系统只有在它可能胜过当前 satisfier 时才通知 provider 尝试建网，从而减少没有收益的扫描、拨号和耗电。
+网络提供者的 `NetworkOffer` 也不是建网承诺。offer 表示“如果系统需要，我可能提供具有这些能力和策略的网络”。系统只有在它可能胜过当前 satisfier 时才通知提供者尝试建网，从而减少没有收益的扫描、拨号和耗电。
 
 score、能力或验证状态变化后，重匹配的主要方法边界是：
 
@@ -290,7 +290,7 @@ rematchAllNetworksAndRequests()
   -> issueNetworkNeeds()
 ```
 
-计算阶段遍历需要重新评估的 request/layer（请求及其优先级层），应用阶段更新 satisfier、默认网络、可用/丢失通知、被动监听和不活动状态，随后才通知 provider 新的网络需求。源码明确提示 rematch 可能较慢；实际耗时应从调试日志中的 compute/apply/issue 三段测量，不能用固定复杂度或毫秒常数替代。
+计算阶段遍历需要重新评估的 request/layer（请求及其优先级层），应用阶段更新 satisfier、默认网络、可用/丢失通知、被动监听和不活动状态，随后才通知提供者新的网络需求。源码明确提示重匹配可能较慢；实际耗时应从调试日志中的 compute/apply/issue 三段测量，不能拿固定复杂度或毫秒常数代替实测。
 
 ## NetworkRequest 与 NetworkCallback
 
@@ -459,11 +459,11 @@ NetworkStatsManager 查询
 
 源码固定了多个 BPF map 路径，例如 `map_netd_app_uid_stats_map`、`map_netd_stats_map_A/B` 和 `map_netd_iface_stats_map`。读取详细统计前，会先把内核正在写入的 active map 与 inactive map 对调，再读取暂时停止写入的 inactive map，从而减少与内核更新计数的竞争。
 
-历史数据不存放在 SQLite 中。`NetworkStatsRecorder` 使用 `FileRotator`（按时间轮换历史文件）和 `NetworkStatsCollection` 管理按时间段聚合的 bucket 记录。`queryDetailsForUid()` 打开统计 session，读取权限允许的历史集合；它不能概括成“Binder 后直接查询单个 UID 的 BPF map”。
+历史数据不存放在 SQLite 中。`NetworkStatsRecorder` 使用 `FileRotator`（按时间轮换历史文件）和 `NetworkStatsCollection` 管理按时间段聚合的 bucket 记录。`queryDetailsForUid()` 打开统计 session，读取权限允许的历史集合；但不能把它概括成“Binder 后直接查询单个 UID 的 BPF map”。
 
 ### 何时采集
 
-默认 `NetworkStatsSettings.getPollInterval()` 是 30 分钟，基于不精确重复闹钟，系统可以合并触发时间。除此之外，网络状态变化、上游变化、全局流量阈值警报、注册用量 callback、强制更新、UID 删除及 dumpsys 参数都可能引发采集或持久化。排障时要记录触发本次采集的具体原因（poll reason）。
+默认 `NetworkStatsSettings.getPollInterval()` 是 30 分钟，基于不精确重复闹钟，系统可以合并触发时间。除此之外，网络状态变化、上游变化、全局流量阈值警报、注册用量回调、强制更新、UID 删除及 dumpsys 参数都可能引发采集或持久化。排障时要记录触发本次采集的具体原因（poll reason）。
 
 查询和 poll 可能涉及：
 
@@ -473,7 +473,7 @@ NetworkStatsManager 查询
 - stats provider 同步；
 - 持久化 I/O。
 
-所以 `NetworkStatsManager` 的查询 API 标注为 `@WorkerThread`，表示不应在 UI 主线程调用。数据规模、时间范围、tag 数量、设备 I/O 和缓存状态共同决定耗时，不存在通用的“低于 10 ms”保证。
+所以 `NetworkStatsManager` 的查询 API 标注为 `@WorkerThread`，意味着它不应在 UI 主线程调用。数据规模、时间范围、tag 数量、设备 I/O 和缓存状态共同决定耗时，不存在通用的“低于 10 ms”保证。
 
 需要较高频率观察当前进程收发量时，可以在其统计语义允许的范围内使用 `TrafficStats` 计算前后差值；需要计费口径和跨时间段历史时再用 `NetworkStatsManager`。两者的统计范围、更新时效和权限都不同。
 
@@ -494,7 +494,7 @@ Data Saver 不是给前台应用“降速”。Doze 也不能概括成关闭所�
 
 Android 17 的 Connectivity 代码会从 BPF 规则状态取得所跟踪 UID 的 blocked reasons（被阻止的原因位集合）。网络的计费属性或 UID 规则变化时，系统向匹配回调发送 `onBlockedStatusChanged()`。`onAvailable()` 表示网络满足请求，blocked 回调表示当前 UID 是否能在该网络上正常发送流量；一个网络可以已经 available，同时仍对该 UID blocked。
 
-普通 SDK 应用收到的是 `onBlockedStatusChanged(Network, boolean)`，只能知道是否被阻止。携带 blocked-reason 位掩码的重载是面向 module libraries 的 `@SystemApi`。因此，应用可以把布尔状态与 Data Saver、前后台状态等公开信息结合展示，但不能仅凭这个 callback 断定限制一定来自 Doze、Data Saver 或 VPN。
+普通 SDK 应用收到的是 `onBlockedStatusChanged(Network, boolean)`，只能知道是否被阻止。携带 blocked-reason 位掩码的重载是面向 module libraries 的 `@SystemApi`。因此，应用可以把布尔状态与 Data Saver、前后台状态等公开信息结合展示，但不能仅凭这个回调断定限制一定来自 Doze、Data Saver 或 VPN。
 
 应用应把阻止状态作为调度输入，停止无意义的重试或把工作交给 JobScheduler/WorkManager，而不是循环创建 socket 验证限制是否解除。
 
@@ -527,7 +527,7 @@ VPN 优化要测端到端指标：
 - DNS 是否走预期网络；
 - 分流隧道（split tunnel）、允许绕过 VPN（bypass）和强制 VPN（lockdown）规则是否符合设计。
 
-固定“VPN 增加多少 CPU”或“每条规则耗时多少微秒”无法跨设备、算法和包长成立。
+“VPN 增加多少 CPU”或“每条规则耗时多少微秒”这类固定数字无法跨设备、算法和包长成立。
 
 ## Android 17 / API 37 的应用可见变化
 
@@ -543,9 +543,9 @@ Android 17 对 targetSdk 37 及以上应用强制本地网络保护：
 
 权限被拒绝时，应用必须把 LAN（局域网）不可达与公网故障分开呈现。反复请求公网、切换 Wi-Fi 或清 DNS 都不会解除权限阻断。
 
-官方文档给出的典型表现也不同：TCP 连接常表现为超时；UDP 以及一般的权限拒绝场景，通常返回表示“不允许操作”的 `EPERM`。使用 NDK 的 TCP 客户端可调用 `android_getnetworkblockedreason(fd)`，检查是否为 `ANDROID_NETWORK_BLOCKED_REASON_LNP`。这个接口只用于解释失败原因，不会绕过权限。
+官方文档列出的失败表现随协议不同：TCP 连接常表现为超时；UDP 以及一般的权限拒绝场景，通常返回表示“不允许操作”的 `EPERM`。使用 NDK 的 TCP 客户端可调用 `android_getnetworkblockedreason(fd)`，检查是否为 `ANDROID_NETWORK_BLOCKED_REASON_LNP`。这个接口只用于解释失败原因，不会绕过权限。
 
-AOSP 侧不只增加了 Manifest 声明。Connectivity 的 `BpfNetMaps` 维护本地网络权限传播开关、UID/network/host 允许列表和缓存 generation（用于识别规则版本变化的代数）；这也解释了限制为何能作用于由运行时管理的 socket、原生 socket 和上层网络库。
+AOSP 侧的改动不止 Manifest 声明：Connectivity 的 `BpfNetMaps` 维护本地网络权限传播开关、UID/network/host 允许列表和缓存 generation（用于识别规则版本变化的代数），这些机制解释了限制为何能作用于由运行时管理的 socket、原生 socket 和上层网络库。
 
 ### 流媒体套餐上下行速率
 
@@ -560,11 +560,11 @@ SubscriptionInfo.getStreamingAppMaxUplinkKbps()
 
 这个值是套餐/运营商策略输入，不是当前链路吞吐量。码率控制还要结合播放器缓冲区、实际传输采样、丢包、RTT（网络往返时延）、`NetworkCapabilities` 带宽估计和服务端策略。
 
-Android 17 还加入 `NET_CAPABILITY_PRIORITIZE_UNIFIED_COMMUNICATIONS`，面向符合条件的 OTT（通过互联网提供）语音/视频通话。它表示网络可能提供优先通信路径，不保证一定获得隔离资源的 5G network slice；普通列表、图片和遥测流量不应申请。显式请求这类能力时，要处理不可用、超时、回到默认网络以及 callback 注销。
+Android 17 还加入 `NET_CAPABILITY_PRIORITIZE_UNIFIED_COMMUNICATIONS`，面向符合条件的 OTT（通过互联网提供）语音/视频通话。它表示网络可能提供优先通信路径，不保证一定获得隔离资源的 5G network slice；普通列表、图片和遥测流量不应申请。显式请求这类能力时，要处理不可用、超时、回到默认网络以及回调注销。
 
 ### ECH
 
-对 targetSdk 37 及以上应用，Android 17 为已经集成支持的网络库启用 Encrypted Client Hello（ECH，加密客户端问候）。客户端库和服务端都支持时，可以保护 TLS ClientHello 中暴露目标主机名的 SNI；无法协商时使用 ECH GREASE，以兼容方式发送类似 ECH 的扩展并发现中间设备兼容问题。应用可通过 Network Security Config 的 `<domainEncryption>` 按全局或域名选择模式。
+对 targetSdk 37 及以上应用，Android 17 为已经集成支持的网络库启用 Encrypted Client Hello（ECH，加密客户端问候）。客户端库和服务端都支持时，TLS ClientHello 中暴露的目标主机名（SNI）可以得到加密保护；无法协商时使用 ECH GREASE，以兼容方式发送类似 ECH 的扩展并发现中间设备兼容问题。应用可通过 Network Security Config 的 `<domainEncryption>` 按全局或域名选择模式。
 
 ECH 属于 TLS 栈和网络安全配置，不由 `ConnectivityManager` 完成，也不保证连接会更快。握手行为要根据实际使用的 HttpEngine、WebView、OkHttp/平台 TLS 集成和服务端配置验证。
 
