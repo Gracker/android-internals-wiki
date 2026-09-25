@@ -120,11 +120,9 @@ consolidated_from:
 
 # App 可观测性架构与性能数据采集
 
-App 可观测性需要回答四个问题：影响了多少用户、现场留下了哪些证据、可能由哪个模块负责、修复上线后同口径指标是否恢复。新版本的崩溃（Crash）率异常时，应先确认受影响的用户、机型和版本，再关联崩溃堆栈、发布记录与经过控制的用户操作摘要。指标（Metrics）用于观察群体趋势，日志（Logs）用于还原单次事件，追踪（Traces）用于解释耗时路径。整体架构可从数据模型、端侧采集、服务端处理和问题流转四个层面展开。
+App 可观测性需要回答四个问题：影响了多少用户、现场留下了哪些证据、可能由哪个模块负责、修复上线后同口径指标是否恢复。新版本的崩溃（Crash）率异常时，应先确认受影响的用户、机型和版本，再关联崩溃堆栈、发布记录与经过控制的用户操作摘要。指标（Metrics）用于观察群体趋势，日志（Logs）用于还原单次事件，追踪（Traces）用于解释耗时路径。三者共享同一套事件模型，把性能、稳定性、资源和业务上下文关联到会话、设备和版本；客户端采集还要控制线程、序列化、存储、网络和隐私开销。全章按数据模型、端侧采集、服务端处理和问题流转四个层面展开。
 
 平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`。可观测性协议大多由应用与服务端共同定义，第三方 SDK（Software Development Kit，软件开发工具包）的字段不属于 Android 平台保证。时间基准和线上系统性能剖析资料（profile）的边界，分别以 Android 17 的 `SystemClock` 与 `ProfilingManager` 实现为准。
-
-应用可观测性从统一事件模型开始，把性能、稳定性、资源和业务上下文关联到会话、设备和版本。客户端采集还要控制线程、序列化、存储、网络和隐私开销。
 
 ## 信号模型、上下文与端云职责
 
@@ -245,9 +243,13 @@ Firebase Performance Monitoring 更接近应用内部性能观测：它可自动
 }
 ```
 
-`trace_id`、`span_id` 和 `parent_span_id` 构成父子关联，单调时钟给出同设备会话内的起点与时长。Android 15 / API 35 起，普通应用可通过 `ProfilingManager` 请求系统追踪（system trace）、Java 堆转储（heap dump）、原生堆采样（heap profile）或调用栈采样（stack sampling）；请求受系统限流且不保证执行，结果会脱敏并只包含请求应用的相关信息。Android 16 / API 36 起可注册系统触发器；Android 17 / API 37 又增加冷启动（`TRIGGER_TYPE_COLD_START`）、异常行为（`TRIGGER_TYPE_ANOMALY`）等类型。该能力不保证异常后取得完整设备 Perfetto 数据；回调失败、文件配额、用户数据政策与上传策略都要单独处理。
+`trace_id`、`span_id` 和 `parent_span_id` 构成父子关联，单调时钟给出同设备会话内的起点与时长。
 
-数据模型不能依赖“字段永不删除”的约定维持兼容。每条事件都要携带数据结构（schema）版本；服务端至少兼容当前版本和迁移窗口内的旧版本。新增字段必须有缺省语义；废弃字段应先让服务端同时读取新旧格式，验证新格式数据后再停止发送旧字段。最小版本只需要事件类型、双时钟、构建版本、会话/场景 ID、采样纳入概率与业务核心字段。高基数字段的不同取值数量很大，不能直接放入指标标签集合。
+Android 15 / API 35 起，普通应用可通过 `ProfilingManager` 请求系统追踪（system trace）、Java 堆转储（heap dump）、原生堆采样（heap profile）或调用栈采样（stack sampling）；请求受系统限流且不保证执行，结果会脱敏并只包含请求应用的相关信息。Android 16 / API 36 起可注册系统触发器；Android 17 / API 37 又增加冷启动（`TRIGGER_TYPE_COLD_START`）、异常行为（`TRIGGER_TYPE_ANOMALY`）等类型。该能力不保证异常后取得完整设备 Perfetto 数据；回调失败、文件配额、用户数据政策与上传策略都要单独处理。
+
+数据模型不能依赖“字段永不删除”的约定维持兼容。每条事件都要携带数据结构（schema）版本；服务端至少兼容当前版本和迁移窗口内的旧版本。新增字段必须有缺省语义；废弃字段应先让服务端同时读取新旧格式，验证新格式数据后再停止发送旧字段。
+
+最小版本只需要事件类型、双时钟、构建版本、会话/场景 ID、采样纳入概率与业务核心字段。高基数字段的不同取值数量很大，不能直接放入指标标签集合。
 
 ### 应用侧监控体系分层设计
 
@@ -282,7 +284,7 @@ Crash 还需要一条不依赖普通异步队列的最小保全路径。进程�
 
 ### 从采集到告警的完整数据路径
 
-一套可用的应用可观测性系统通常经过：端侧采集 → 本地暂存 → 批量上传 → 接入清洗 → 实时聚合或离线聚合 → 告警 → 证据查询 → 修复验证。
+一套可用的应用可观测性系统通常经过：端侧采集 → 本地暂存 → 批量上报 → 接入清洗与存储 → 实时聚合或离线聚合（分析）→ 告警 → 证据查询 → 修复验证。
 
 | 阶段 | 主要任务 | 失败表现 |
 | --- | --- | --- |
@@ -302,7 +304,7 @@ Android 官方启动优化文档区分 TTID 和 TTFD：TTID 表示首帧出现�
 
 ### 采样策略与数据量控制
 
-可观测性系统的成本来自端侧 CPU / I/O、用户流量以及服务端存储与计算。采样策略要同时控制这些成本。容量评估不能只按 DAU（Daily Active Users，日活跃用户数）猜测，应使用“活跃设备数 × 每设备事件频率 × 编码后字节 × 保留期 × 副本数”计算，再用灰度实测校正压缩率和一次查询实际读取的数据量。
+可观测性系统的成本来自端侧 CPU / I/O、用户流量和服务端存储与计算，采样策略要同时控制这三处。容量评估不能只按 DAU（Daily Active Users，日活跃用户数）猜测，应使用“活跃设备数 × 每设备事件频率 × 编码后字节 × 保留期 × 副本数”计算，再用灰度实测校正压缩率和一次查询实际读取的数据量。
 
 常用策略可以分成四类：
 
@@ -353,7 +355,7 @@ Android 官方启动优化文档区分 TTID 和 TTFD：TTID 表示首帧出现�
 
 固定的绝对增量没有考虑基线、样本量、设备分布和产品场景，同样的变化在不同页面可能含义完全不同。告警应绑定用户可感知的 SLO（Service Level Objective，服务等级目标），例如产品定义的 TTFD 慢会话比例、用户感知 ANR/Crash 率或冻帧会话比例，并同时检查置信区间、持续时间和版本/机型分层。Android vitals 的不良行为阈值（bad behavior threshold）采用 Play 分发口径；内部告警可以更早，但必须明确两者的分母不同。
 
-#### 用户日志与远程诊断：现场证据层
+### 用户日志与远程诊断：现场证据层
 
 指标告诉团队哪里异常，日志和远程诊断帮助团队还原现场。可观测性架构除了指标看板，还要能在必要时为特定用户、特定版本、特定机型补采现场证据。
 
@@ -391,9 +393,9 @@ Android 17 的 [`ProfilingManager.java`](https://android.googlesource.com/platfo
 
 数据模型确定后，客户端需要按信号价值分配采样和缓冲预算，并在离线、弱网和进程退出时保证可控降级。
 
-### 概览
+### 平台能力分层与采集边界
 
-Android 没有一个面向普通 App、涵盖所有性能问题的“统一性能指标 Atom”。StatsD 是 Android 的系统统计收集与聚合服务，atom 是其数据结构定义中字段固定的一类统计事件。可用能力分布在不同权限层：StatsD 面向系统和特权组件；AndroidX `JankStats` 在 App 进程内提供帧级卡顿数据；在网络调用前后加入计时点的插桩、`Debug.MemoryInfo` 与业务埋点补充 App 自身指标；上传与服务端统计由 APM（Application Performance Monitoring，应用性能监控）系统负责。
+Android 没有一个面向普通 App、涵盖所有性能问题的“统一性能指标 Atom”。StatsD 是 Android 的系统统计收集与聚合服务，atom 是它数据结构定义中字段固定的一类统计事件。App 能用到哪些能力，取决于权限和用途：StatsD 面向系统和特权组件；AndroidX `JankStats` 在 App 进程内提供帧级卡顿数据；网络调用前后的计时插桩、`Debug.MemoryInfo` 与业务埋点补充 App 自身指标；上传与服务端统计由 APM（Application Performance Monitoring，应用性能监控）系统负责。
 
 平台上界为 Android 17 / API 37 / `android-17.0.0_r1`。缓存进程内存整理（Compaction）和暂停缓存进程执行的冻结机制（Freezer）早于 Android 17 已存在；Android 17 新增的 `MemoryLimiter` 还受功能开关（feature flag）、设备能力和厂商（vendor）配置控制。观察到内存曲线变化时，要区分公开 App API 能确认的事实与 Android 核心系统服务进程 system_server 的源码解释。PSS（Proportional Set Size，按共享页面比例分摊后的驻留内存）曲线本身不能证明某项系统策略已经触发。
 
@@ -401,7 +403,7 @@ Android 没有一个面向普通 App、涵盖所有性能问题的“统一性�
 
 ### 1. 系统级指标采集：StatsD 的能力与权限边界
 
-Android 17 的 StatsD 模块位于 `packages/modules/StatsD`。statsd 后台守护进程（daemon）接收 `atoms.proto` 定义的 pushed atom，即事件发生方主动推送的原子事件；它也会按照采集配置（config）向已注册的数据提供方请求 pulled atom。后者是由 statsd 发起拉取、提供方通过回调函数（callback）返回数据。聚合结果由具备权限的客户端通过报告或受限查询 API 读取。
+Android 17 的 StatsD 模块位于 `packages/modules/StatsD`。statsd 后台守护进程（daemon）的输入有两类：pushed atom 由事件发生方主动推送，结构来自 `atoms.proto`；pulled atom 由 statsd 按采集配置（config）向已注册的数据提供方发起拉取，数据在回调函数（callback）中返回。聚合结果由具备权限的客户端通过报告或受限查询 API 读取。
 
 #### 1.1 StatsManager 客户端 API
 
@@ -427,7 +429,7 @@ public byte[] getReports(long configId)
 
 App 侧不能通过 `StatsManager` 写入事件。`android.util.StatsLog.logStart/logStop/logEvent(int)` 是公开的 breadcrumb API；breadcrumb 在这里指用于标记操作起止或单次事件的轻量记录，它只能写入 `APP_BREADCRUMB_REPORTED`。任意 `StatsEvent` 写入路径 `StatsLog.write(StatsEvent)` 属于受限的 `@SystemApi`，系统服务通常使用生成的 `FrameworkStatsLog` / `StatsdStatsLog`。
 
-`setPullAtomCallback()` 用于**客户端向 statsd 提供自定义 pulled atom 数据**，读取 statsd 聚合指标要使用其他接口。当 statsd 需要拉取某个原子事件时，它会调用已注册的 `StatsPullAtomCallback.onPullAtom(int atomTag, List<StatsEvent> data)`；其中 atom tag 是原子事件编号。客户端把 `StatsEvent` 加入 `data` 列表并返回 `RESULT_SUCCESS` / `RESULT_SKIP` 等结果，`StatsManager` 内部的 `PullAtomCallbackInternal` 再调用 `resultReceiver.pullFinished()` 把结果交回 statsd。`PullAtomMetadata` 的默认冷却间隔为 1000 ms，超时为 1500 ms，用于限制按需拉取频率，并不形成周期性定时回调。
+`setPullAtomCallback()` 注册的是数据提供方，方向是客户端向 statsd 提供自定义 pulled atom 数据；读取 statsd 聚合指标要走其他接口。statsd 需要拉取某个原子事件时，会调用已注册的 `StatsPullAtomCallback.onPullAtom(int atomTag, List<StatsEvent> data)`，其中 atom tag 是原子事件编号；客户端把 `StatsEvent` 加入 `data` 列表并返回 `RESULT_SUCCESS` / `RESULT_SKIP` 等结果，`StatsManager` 内部的 `PullAtomCallbackInternal` 再调用 `resultReceiver.pullFinished()` 把结果交回 statsd。`PullAtomMetadata` 的默认冷却间隔为 1000 ms，超时为 1500 ms，用于限制按需拉取频率，并不形成周期性定时回调。
 
 `addConfig()` 返回 `void`（而非 boolean），用于向 statsd 注册 `StatsdConfig`；该配置描述要收集的原子事件与聚合方式。`getReports(long configId)` 用于读取 statsd 已收集的报告，是特权 App 获取聚合数据的主要接口。`query()` 需要 `READ_RESTRICTED_STATS` 权限，签名为 `query(long configKey, String configPackage, StatsQuery query, Executor executor, OutcomeReceiver<StatsCursor, StatsQueryException> outcomeReceiver)`。
 
@@ -439,9 +441,7 @@ App 侧不能通过 `StatsManager` 写入事件。`android.util.StatsLog.logStar
 
 #### 1.2 数据流路径
 
-整体数据流分三条路径：
-
-下面的路径表示 pushed atom 和公开 breadcrumb 如何进入 statsd。
+整体数据流分三条路径。先看 pushed atom 和公开 breadcrumb 如何进入 statsd。
 
 **系统事件入站（系统服务 → statsd daemon）：**
 ```
@@ -450,7 +450,7 @@ App breadcrumb / system service → StatsLog / FrameworkStatsLog / StatsdStatsLo
 
 `StatsLog` 在 `packages/modules/StatsD/framework/java/android/util/StatsLog.java` 中定义。普通 App 可调用 `logStart/logStop/logEvent(int)` 写 breadcrumb；系统服务写入框架原子通常走生成的 `FrameworkStatsLog.write()` / `StatsdStatsLog.write()`，最终通过 `libstatssocket` 的本地 socket 写入 statsd daemon。普通 App 不能用这条路径写任意系统 atom。
 
-下面的路径表示特权客户端注册 config 并读取聚合报告。
+第二条路径用于特权客户端注册 config、读取聚合报告。
 
 **Config 订阅与报告读取（statsd ⇄ 特权 App）：**
 ```
@@ -458,21 +458,25 @@ StatsManager.addConfig(configId, config) → statsd daemon 按 config 聚合
 StatsManager.getReports(configId) ← statsd daemon 返回已收集报告
 ```
 
-特权 App 通过 `addConfig()` 向 statsd 注册 `StatsdConfig`（定义要收集哪些 atom、聚合方式），statsd 按 config 持续收集并聚合。App 通过 `getReports()` 读取聚合结果——这是获取 statsd 系统健康指标的主路径。
+特权 App 用 `addConfig()` 注册的 `StatsdConfig` 决定收集哪些 atom、按什么方式聚合，statsd 按这份 config 持续收集；`getReports()` 取回聚合结果，这是读取 statsd 系统健康指标的主路径。
 
-下面的路径表示 statsd 向特权数据提供方发起 pull。
+第三条路径方向相反，由 statsd 向特权数据提供方发起 pull。
 
 **Pull atom 数据提供（特权组件 → statsd）：**
 ```
 StatsPullAtomCallback.onPullAtom(int atomTag, List<StatsEvent> data) → statsd 向客户端拉取自定义 pulled atom
 ```
 
-`setPullAtomCallback()` 注册的是**数据提供方**：当 statsd 的 config 中包含 pulled atom 时，statsd 回调已注册的 callback，由客户端向 `List<StatsEvent>` 中填充指标数据。这不是 App 从 statsd 拉取系统聚合指标的通道——读取聚合指标应走 `addConfig` + `getReports` 路径。
+`setPullAtomCallback()` 注册的是数据提供方：只有 statsd 的 config 里包含 pulled atom 时才会回调，由客户端向 `List<StatsEvent>` 填充指标数据。它不是 App 从 statsd 拉取系统聚合指标的通道；要读聚合指标，走 `addConfig` + `getReports`。
 
-当前 `atoms.proto`（android-17.0.0_r1）中定义了大量系统健康原子（如 `AppStartOccurred`（ID 48）、`AnrOccurred`、`BatteryLevelChanged` 等），但没有统一的 "性能指标大 Atom"。App 侧如需收集系统级指标，优先通过 AndroidX API（如 `JankStats`）和 `Debug.MemoryInfo` 等公开接口，而非直接依赖 StatsD。
+特权系统组件若要提供 pulled atom，只能用 `setPullAtomCallback()` 注册已经定义并获准使用的 atom tag；statsd 调用 `StatsPullAtomCallback.onPullAtom()` 时，提供方把符合数据结构定义（schema）的 `StatsEvent` 加入列表并返回结果码。atom ID、字段顺序、字段类型和可累加字段（additive field）必须来自同一次平台发布的 schema，不能用业务自定义常量代替平台定义。
+
+当前 `atoms.proto`（android-17.0.0_r1）中定义了大量系统健康原子（如 `AppStartOccurred`（ID 48）、`AnrOccurred`、`BatteryLevelChanged` 等），却没有一个覆盖全部性能问题的“统一性能指标 Atom”。App 侧如需收集系统级指标，优先通过 AndroidX API（如 `JankStats`）和 `Debug.MemoryInfo` 等公开接口，而非直接依赖 StatsD。
+
+`AppStartOccurred` 在 Android 17 `atoms.proto` 中的 ID 为 48（`app_start_occurred = 48`），字段包含 `transition_delay_millis`、`starting_window_delay_millis`、`bind_application_delay_millis`、`windows_drawn_delay_millis` 等，没有 `latencyMillis` 字段。
 
 **StatsCompanionService 的职责：**
-`StatsCompanionService` 运行在 system_server 中，是通过 `IStatsd` 接口与 statsd 守护进程交互的辅助服务，主要处理配置管理和数据拉取方注册。事件写入由 `StatsLog` 通过 `libstatssocket` 直接连接 statsd 的本地套接字（socket），不经过 `StatsCompanionService`；因此，它也不是从 `/dev/socket/statsdw` 读取事件流的 JNI（Java Native Interface，Java 原生接口）桥接层。
+`StatsCompanionService` 运行在 system_server 中，是通过 `IStatsd` 接口与 statsd 守护进程交互的辅助服务，主要处理配置管理和数据拉取方注册。它不参与事件写入：`StatsLog` 通过 `libstatssocket` 直接连接 statsd 的本地套接字（socket），不经过 `StatsCompanionService`。它也不是从 `/dev/socket/statsdw` 读取事件流的 JNI（Java Native Interface，Java 原生接口）桥接层。
 
 #### 1.3 系统指标采集边界与 App 侧替代方案
 
@@ -514,10 +518,6 @@ int totalPss = info[0].getTotalPss();
 
 网络耗时、启动耗时、自定义业务指标由 APM SDK 在 App 进程中直接采集，无需经过 StatsD。详见 §5、§9。
 
-特权系统组件若要提供 pulled atom，需要为已经定义并获准使用的 atom tag 调用 `setPullAtomCallback()`。statsd 调用 `StatsPullAtomCallback.onPullAtom()` 时，提供方把符合数据结构定义（schema）的 `StatsEvent` 加入列表并返回结果码。atom ID、字段顺序、字段类型和可累加字段（additive field）必须来自同一次平台发布的 schema，不能用业务自定义常量代替平台定义。
-
-`AppStartOccurred` 在 Android 17 `atoms.proto` 中的 ID 为 48（`app_start_occurred = 48`），字段包含 `transition_delay_millis`、`starting_window_delay_millis`、`bind_application_delay_millis`、`windows_drawn_delay_millis` 等，没有 `latencyMillis` 字段。
-
 ---
 
 ### 2. 电池感知采样：App 层实现策略
@@ -537,7 +537,7 @@ StatsD 在 daemon 层不根据电池状态自动调节采样率。电池感知�
 | 充电且网络不计量 | 处理积压批次或执行已授权的高成本诊断 | 仍受温度、存储和用户设置约束 |
 | 远程诊断命令 | 在有效期、配额和同意范围内临时调整 | 记录命令来源、有效期与审计 ID |
 
-同一用户或会话是否被采样，宜使用稳定哈希做确定性分配，即让同一输入始终得到相同的采样结果，避免每次事件随机选择造成会话不完整。若再按机型、版本或场景分层，服务端必须知道各层纳入概率，才能计算可比较的总体指标。
+同一用户或会话是否被采样，用稳定哈希做确定性分配，让同一输入始终得到相同结果；若再按机型、版本或场景分层，服务端必须知道各层纳入概率，才能计算可比较的总体指标。
 
 #### 2.2 配置与失效保护
 
@@ -626,7 +626,7 @@ Android 17 的 `MemoryLimiter` 由 system_server 的 Java 控制层与 JNI / Nat
 
 #### 3.4 Android 17 原生内存跟踪架构
 
-两条路径协同工作：
+系统侧的内存跟踪分两条路径：图形内存由 memtrack HAL 汇总，进程内存来自内核导出的 smaps 统计，两者口径不同。
 
 下面的结构展示 framework 汇总 memtrack 图形内存时使用的三个分类。
 
@@ -811,7 +811,7 @@ LeakCanary 官方不建议把完整 `leakcanary-android` 放入发布构建（re
 
 #### 8.1 性能开销
 
-性能监控本身带来的开销需要控制在可接受范围。
+性能监控的开销集中在三处：回调线程里的同步工作、后台的序列化与写盘、以及上传流量。三处都要有预算，也要有测量方法。
 
 **异步采集：**
 不能把所有采集都机械地切到后台线程：UI 状态和帧回调有明确的线程语义，跨线程读取 View 反而会出错。应在回调线程读取最小且线程安全的快照，再把聚合、压缩、写入存储和上传交给后台执行器。`StatsManager.setPullAtomCallback()` 使用调用方指定的 executor（任务执行器）；`JankStats.OnFrameListener` 的交付线程随平台机制变化，两者都需要快速返回。
@@ -900,19 +900,19 @@ Android 17 的性能监控权限分层明确：
 - 内存使用率和 GC 频率
 - 网络时延与错误率
 
-摘要按设备层、版本和场景确定性采样，服务端保留纳入概率。
+摘要按设备层、版本和场景确定性采样，服务端保留纳入概率。启动“慢”的阈值应基于 Android Vitals 定义、产品 SLO（Service Level Objective，服务等级目标）和分位数基线，不写成无来源的固定秒数。
 
 **按需诊断附件：**
 - Perfetto trace、heap dump、详细行为窗口；
 - 高频逐帧明细、完整网络阶段数据；
 - 设备与进程快照。
 
-这类数据只在预设配额、远程诊断或代表样本中获取。启动“慢”的阈值应基于 Android Vitals 定义、产品 SLO（Service Level Objective，服务等级目标）和分位数基线，不写成无来源的固定秒数。
+这类数据只在预设配额、远程诊断或代表样本中获取。
 
 #### 10.2 隐私保护
 
 1. 敏感数据在写入本地缓冲前完成最小化与脱敏。
-2. 网络上报使用 TLS，并对服务端身份、证书策略和失败模式进行测试。
+2. 网络上报使用 TLS；服务端身份、证书策略和失败模式都要测试。
 3. 日志、URL、UI 状态标签（如页面或交互阶段）和业务标签不嵌入原始用户标识或用户内容。
 4. 需要跨事件关联时使用有明确保留期的假名标识；哈希并不自动等于匿名化。
 5. heap dump、trace 和原始日志采用更严格的授权、访问审计与删除策略。
