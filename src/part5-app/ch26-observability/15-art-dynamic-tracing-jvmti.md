@@ -217,7 +217,7 @@ runtime->GetInstrumentation()->EnableMethodTracing(
 
 method tracing 仍不适合长期运行在生产环境。Android 17 的普通 tracing 路径会执行这些工作：
 
-- 切换到 Java-debuggable 状态，失效 JIT 编译代码缓存（`code cache`），并对 boot image 做反优化；boot image 是预加载核心类及其编译结果的运行时镜像；
+- 切换到 Java-debuggable 状态，使 JIT 编译代码缓存（`code cache`）失效，并对 boot image 做反优化；boot image 是预加载核心类及其编译结果的运行时镜像；
 - `ConfigureStubs()` 进入 `UpdateStubs()` 后，通过 `ClassLinker::VisitClasses()` 检查已加载方法；
 - 现有代码不支持 entry/exit hook 时，把非 native 方法入口改到解释器桥；解释器桥会从已编译入口转入字节码解释执行；
 - 为每次方法进入、退出或异常展开记录事件。
@@ -228,7 +228,7 @@ JIT（Just-In-Time）会在应用运行时编译热点方法，AOT（Ahead-Of-Ti
 
 论文展示的 ARM64 快速入口名为 `art_quick_instrumentation_entry`。`android-17.0.0_r1` 的 [`quick_entrypoints_arm64.S`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/arch/arm64/quick_entrypoints_arm64.S) 已找不到这个旧名称，源码包含 `art_quick_method_entry_hook`，并通过 `artMethodEntryHook` 进入 C++。`Trace::Start()` 还会根据时钟源选择 fast 或 slow listener：fast 路径要求 JIT 代码无需为读取线程 CPU 时钟进入内核，32 位 Arm 因时间戳条件固定使用 slow 路径。这是 ART 内部分类，不表示 fast 路径没有追踪成本。
 
-这些变化说明 Android 15 的私有符号映射无法直接充当 Android 17 适配结果。每个目标版本都要重新核对入口协议、寄存器保存、JIT/AOT code header（编译代码头）、线程挂起条件、失败恢复路径和厂商 ART 版本。
+这些变化说明 Android 15 的私有符号映射无法直接作为 Android 17 的适配结果。每个目标版本都要重新核对入口协议、寄存器保存、JIT/AOT code header（编译代码头）、线程挂起条件、失败恢复路径和厂商 ART 版本。
 
 ### XTrace 论文提出了什么
 
@@ -674,7 +674,7 @@ Android 17 的 [`ti_heap.cc`](https://android.googlesource.com/platform/art/+/re
 
 allocation 指为对象或 Native 缓冲区申请内存。[heapprofd](https://perfetto.dev/docs/data-sources/native-heap-profiler) 是 Perfetto 的 Native 堆采样器，会按采样规则记录分配调用栈。观察 Native 内存分配时，它更贴近问题。
 
-观察 Java/Kotlin allocation 时，[Android Studio Memory Profiler](https://developer.android.com/studio/profile/record-java-kotlin-allocations) 已提供受支持的调试路径。自定义 agent 更适合验证标准工具无法表达的窄问题。
+观察 Java/Kotlin allocation 时，[Android Studio Memory Profiler](https://developer.android.com/studio/profile/record-java-kotlin-allocations) 已提供受支持的调试路径。自定义 agent 更适合验证标准工具无法回答的窄问题。
 
 ### attach 只面向调试构建
 
