@@ -5069,6 +5069,54 @@
       "status": "appended",
       "title": "日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源腾讯音乐正式开源 Android 秒级增量构建插件"
     },
+    "source/juejin-android/2026-09-26-76878078-AndroidX 新增 Security.md": {
+      "chapter": "待分类",
+      "entry_id": "cb777cf6ef3682d6",
+      "last_appended": "2026-09-26T05:25:02.791476+08:00",
+      "last_seen": "2026-09-26T05:25:02.791476+08:00",
+      "mtime": 1790367821.8812191,
+      "score": 18,
+      "sha256": "2bcb001b1ddf1b796cbe8c15f5e8ea77c9842f02f45be283789f6d542d1fab5c",
+      "size": 8281,
+      "status": "appended",
+      "title": "AndroidX 新增 Security State ，支持可编程的系统安全状态查询最近谷歌算是正式介绍了 Androi"
+    },
+    "source/juejin-android/2026-09-26-76882124-AOSP编译：敲下 `lunch xxx.md": {
+      "chapter": "ch16-aosp",
+      "entry_id": "34c2f7c1ed4f23ea",
+      "last_appended": "2026-09-26T05:25:02.791476+08:00",
+      "last_seen": "2026-09-26T05:25:02.791476+08:00",
+      "mtime": 1790367821.8836021,
+      "score": 19,
+      "sha256": "d8f24faa7bcdb1418b664eaa6ab28d56f9d2ce619d98d2cef5179a7ba3d8c011",
+      "size": 17250,
+      "status": "appended",
+      "title": "AOSP编译：敲下 lunch xxx-userdebug，你知道系统偷偷干了什么吗？很多人会 lunch，但没人说"
+    },
+    "source/juejin-android/2026-09-26-76883347-Shell Transition 机制详.md": {
+      "chapter": "ch16-aosp",
+      "entry_id": "eba5717628594c40",
+      "last_appended": "2026-09-26T05:25:02.791476+08:00",
+      "last_seen": "2026-09-26T05:25:02.791476+08:00",
+      "mtime": 1790367821.8851628,
+      "score": 20,
+      "sha256": "0139b01f14833ba89e3bb1a6c518cb6d837c923fed8748560b5d9afc135ea0d1",
+      "size": 37649,
+      "status": "appended",
+      "title": "Shell Transition 机制详解Shell Transition 机制详解 面向 WMS 开发者的完整指南 一"
+    },
+    "source/juejin-android/2026-09-26-76886890-Android HWC退化与防治方法.md": {
+      "chapter": "待分类",
+      "entry_id": "a016e146b45b9ddb",
+      "last_appended": "2026-09-26T05:25:02.791476+08:00",
+      "last_seen": "2026-09-26T05:25:02.791476+08:00",
+      "mtime": 1790367821.882632,
+      "score": 18,
+      "sha256": "a2cc6288e4130bcd7db23ce9ec27c7668a5cba7f6e582de9b742e61f9f89687c",
+      "size": 15096,
+      "status": "appended",
+      "title": "Android HWC退化与防治方法前言 Android 技术目前已经非常成熟了，无论是硬件还是软件，当前大环境下，为数"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -6876,24 +6924,24 @@
     }
   },
   "last_report": {
-    "appended": 6,
-    "considered": 6,
-    "cutoff": "2026-09-24T05:20:53.455608+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-25.md",
+    "appended": 4,
+    "considered": 4,
+    "cutoff": "2026-09-25T05:20:03.682328+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-26.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2048,
+    "scanned": 2052,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1405,
       "path": 30,
-      "unchanged": 607
+      "unchanged": 613
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-25T05:25:03.682328+08:00",
+  "last_run_at": "2026-09-26T05:25:02.791476+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
