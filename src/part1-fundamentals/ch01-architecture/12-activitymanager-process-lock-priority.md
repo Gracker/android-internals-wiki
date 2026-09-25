@@ -283,7 +283,7 @@ Android 不只把进程分为“前台”和“后台”。AMS 会综合 Activit
 | `SERVICE_B_ADJ` | 800 | 较低优先级的旧 Service |
 | `CACHED_APP_MIN_ADJ`～`CACHED_APP_MAX_ADJ` | 900～999 | 缓存进程 |
 
-表中数值是源码常量，不承诺每种组件永远落在某一行。Android 17 还可以通过功能开关（feature flag）对可见进程和上一个应用（previous app）分配更细的档位。`TOP_SLEEPING` 也是计算分支中的调整类型 `adjType`，不能把它当成独立常量档位。
+表中数值是源码常量，但每种组件不一定永远落在同一行。Android 17 还可以通过功能开关（feature flag）对可见进程和上一个应用（previous app）分配更细的档位。`TOP_SLEEPING` 也是计算分支中的调整类型 `adjType`，不能把它当成独立常量档位。
 
 前台 Service 的 `adj` 同样不是“永远 100”。在当前固定源码版本中，常规的非 `shortService` 类型 FGS 通常受 `PERCEPTIBLE_APP_ADJ = 200` 保护；刚从顶层应用进入 FGS 的进程可在宽限期内使用 50。它仍可能在极端内存压力、异常或用户停止服务时退出。
 
@@ -360,7 +360,7 @@ Launcher
 
 只计算 `am_proc_start` 到 `am_proc_bound`，得到的是进程创建和应用线程连接（attach）耗时的一部分，不能代表用户感知的启动时间。
 
-Android 15（API 35）引入 `ApplicationStartInfo`，Android 16（API 36）又增加 `getStartComponent()`。后者可以区分进程由 Activity、Service、BroadcastReceiver、ContentProvider 或其他组件拉起：
+Android 15（API 35）引入 `ApplicationStartInfo`，Android 16（API 36）又增加 `getStartComponent()`。后者可以区分进程由 Activity、Service、BroadcastReceiver、ContentProvider 还是其他组件拉起：
 
 ```kotlin
 val activityManager = getSystemService(ActivityManager::class.java)
@@ -386,7 +386,7 @@ if (Build.VERSION.SDK_INT >= 36 && latest != null) {
 }
 ```
 
-这段代码适合用于启动诊断，并根据启动组件选择不同的初始化路径。`getReason()` 提供更细的启动原因，`getStartComponent()` 则直接区分四类应用组件。
+这段代码可用于启动诊断，并按启动组件走不同的初始化路径。`getReason()` 提供更细的启动原因，`getStartComponent()` 则直接区分四类应用组件。
 
 ---
 
@@ -402,7 +402,7 @@ if (Build.VERSION.SDK_INT >= 36 && latest != null) {
 | 前台进程中的 Service 回调 | 20 秒基础值 | 对应 Service 执行回调完成 |
 | 后台进程中的 Service 回调 | 200 秒基础值 | 对应 Service 执行回调完成 |
 
-这些值不是跨设备保证不变的 API 约定。AOSP 会乘以 `Build.HW_TIMEOUT_MULTIPLIER`，设备厂商也可能调整。Android 14 及以上版本的广播计时还会为长时间得不到 CPU 的进程延长窗口：官方诊断文档给出的范围是前台优先级 10～20 秒、后台优先级 60～120 秒。
+这些值不是 API 约定，不保证跨设备一致。AOSP 会乘以 `Build.HW_TIMEOUT_MULTIPLIER`，设备厂商也可能调整。Android 14 及以上版本的广播计时还会为长时间得不到 CPU 的进程延长窗口：官方诊断文档给出的范围是前台优先级 10～20 秒、后台优先级 60～120 秒。
 
 #### 输入 ANR
 
@@ -1088,7 +1088,7 @@ OomAdjuster 每轮计算会同时产生多组结果：
 
 四者相关，但不是一一映射。同为 `adj=0` 的顶部 Activity、正在执行广播接收者和服务回调，可以拥有不同的 `procState` 与调度组；同为前台服务（FGS）进程状态，普通 FGS 和 short FGS（短时前台服务）也使用不同的 adj。
 
-`oom_score_adj` 越小，进程越受保护。Android 为受 AMS 管理的进程使用的大部分有效范围是 `-1000..999`；`UNKNOWN_ADJ=1001` 是计算中的未定值，不会作为正常结果写给 lmkd。
+`oom_score_adj` 越小，进程越受保护。Android 给 AMS 管理的进程分配的 `oom_score_adj` 有效范围大部分是 `-1000..999`；`UNKNOWN_ADJ=1001` 是计算中的未定值，不会作为正常结果写给 lmkd。
 
 ### 二、Android 17 的 PSC 代码结构
 
@@ -1292,7 +1292,9 @@ OomAdjuster 只计算资格并回调 `onProcessFreezabilityChanged()`。`CachedA
 
 OomAdjuster 把 `curAdj` 应用到 `ProcessList.setOomAdj()`。该方法通过 lmkd 控制套接字发送 `LMK_PROCPRIO`；lmkd 校验进程 ID（PID）、用户 ID（UID）和值域，更新内部进程表，并在 `for_lmkd_only` 为 `false` 时写入内核的 `/proc/<pid>/oom_score_adj`。`for_lmkd_only` 表示只更新 lmkd 内部信息，不同步写这个内核分数文件。
 
-lmkd 使用内存 PSI 事件、swap、thrashing 和设备属性判断何时需要回收。PSI 框架本身可衡量任务因 CPU、内存或 I/O 资源不足而停顿的时间；在 lmkd 的回收触发路径中，内存压力事件由 lmkd 直接订阅，通常不会先回调 AMS，再要求 OomAdjuster“加快 cached 进程老化”。API 37 的 OomAdjuster 中也没有通过 `PSI_SOME` / `PSI_FULL` 分支修改 cached adj。
+lmkd 使用内存 PSI 事件、swap、thrashing 和设备属性判断何时需要回收。
+
+PSI 框架本身可衡量任务因 CPU、内存或 I/O 资源不足而停顿的时间；在 lmkd 的回收触发路径中，内存压力事件由 lmkd 直接订阅，通常不会先回调 AMS，再要求 OomAdjuster“加快 cached 进程老化”。API 37 的 OomAdjuster 中也没有通过 `PSI_SOME` / `PSI_FULL` 分支修改 cached adj。
 
 这两个环节要分开理解：
 
@@ -1354,7 +1356,7 @@ API 37 没有“每 1 秒无条件全量重算”的 `OOM_ADJ_UPDATE_INTERVAL`�
 
 #### 9.1 从 dumpsys 和 procfs 核对结果
 
-procfs 是以 `/proc` 路径暴露进程和内核状态的虚拟文件系统。保存 AMS 视角后，再与内核接收的分数对照：
+procfs 是以 `/proc` 路径暴露进程和内核状态的虚拟文件系统。先保存 AMS 视角下的分数，再与内核接收的分数对照：
 
 ```bash
 adb shell dumpsys activity oom
