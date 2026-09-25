@@ -217,15 +217,13 @@ consolidated_from:
 
 user build 是面向量产设备的系统构建类型，许多只供调试使用的权限会在其中关闭。普通应用只能稳定读取自身 CPU 与 fault 计数；系统级 native heap profile、全机 CPU 和内核事件还受 `ProfilingManager`、profileable、SELinux、Perfetto 会话身份或平台权限约束。
 
-native heap 是 App 通过 `malloc`、C++ `new` 等接口，在 ART（Android Runtime）管理的 Java/Kotlin 对象堆之外维护的内存。Page Fault 则发生在 CPU 访问虚拟地址、页表或权限不能直接满足访问时。本文先建立 native 分配采样的权限与开销边界，再说明 CPU 计数口径，最后用缺页来源把两类资源变化放回虚拟内存时间线。
+native heap 是 App 通过 `malloc`、C++ `new` 等接口，在 ART（Android Runtime）管理的 Java/Kotlin 对象堆之外维护的内存。Page Fault 则发生在 CPU 访问虚拟地址、页表或权限不能直接满足访问时。
 
 平台源码以 `android-17.0.0_r1` 为锚点；procfs、CPU 记账与 Page Fault 实现另以 Android Common Kernel `android17-6.18-2026-06_r39` 复核。
 
 heapprofd 随 Android 10 引入。Android 12 增加 named heap（由分配器注册名称、可单独选择的一类堆）、`all_heaps` 和 installer 过滤等配置。
 
 Android 15 又通过 `ProfilingManager` 向普通应用开放受系统约束的 heap profile 请求，Android 17 保留这些入口。`<profileable>` 元素从 API 29 可用，`android:enabled` 属性从 API 30 可用；heapprofd 的起始版本仍是 Android 10。
-
-线上低层资源诊断可以分别观察 Native 分配、进程 CPU 统计和 page fault。heapprofd 提供采样调用栈，procfs 提供累计 CPU 数据，缺页分析解释页面为何需要分配或读入。
 
 ## Native 分配采样、权限与开销
 
