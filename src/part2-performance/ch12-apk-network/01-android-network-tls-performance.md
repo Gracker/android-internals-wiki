@@ -124,13 +124,11 @@ consolidated_from:
 
 # Android 网络与 TLS 性能优化
 
-一次接口调用的等待时间分散在客户端排队、DNS（域名系统）解析、路由尝试、建立连接、加密握手、上传、边缘节点、服务端、响应传输、解析和界面更新中。“接口耗时 2 秒”只给出了结果，无法指出时间具体花在哪个阶段。
+一次接口调用的等待时间分散在客户端排队、DNS（域名系统）解析、路由尝试、建立连接与拥塞控制、加密握手、上传、边缘节点、服务端、响应传输、解析和界面更新中。“接口耗时 2 秒”只给出了结果，无法指出时间具体花在哪个阶段。
 
 移动网络持续变化，客户端仍然可以控制请求时机、复用、总期限、缓存、重试和内容降级。优化工作的起点是统一计时口径，然后按协议、请求组织和网络状态选择策略。
 
 基准版本为 Android 17 / API 37、AOSP `android-17.0.0_r1`、OkHttp 5.3.0 和 Play services Cronet 18.0.1。`netd`（Android 网络管理守护进程）与 DNS Resolver（解析器）的内部细节见 12.2，系统选网与 `NetworkAgent` 见 1.22。
-
-一次安全网络请求包含 DNS、连接建立、拥塞控制、TLS 握手、请求传输和应用解析。性能优化要先确认慢在哪一段，再考虑连接复用、协议升级或密码套件调整。
 
 ## DNS、连接、传输与应用处理
 
@@ -424,6 +422,10 @@ cache miss 时，`onlyIfCached()` 会得到 504 `Unsatisfiable Request`，不会
 
 弱网降级可以选择已有缓存、较低分辨率、较小分页、暂停自动播放或延后非交互同步。网络 transport 只是提示；同一 Wi‑Fi 可能经过拥塞链路，蜂窝也可能有良好吞吐。策略输入应结合用户设置、metered、roaming、系统估计和近期请求观测，并设置滞回，也就是为升降级使用不同阈值，避免频繁切换画质。
 
+### Android 17 的平台策略输入
+
+策略输入里还有两项来自平台。`SubscriptionInfo.getStreamingAppMaxDownlinkKbps()` / `getStreamingAppMaxUplinkKbps()` 表示运营商为流媒体应用分配的速率上限，未知时返回 `BITRATE_UNKNOWN`，它不是链路测速；targetSdk 37 的局域网功能则要适配 `ACCESS_LOCAL_NETWORK` 或系统 picker（由系统展示的设备选择器），权限拒绝不能归类成普通弱网。局域网权限与网络切换的完整边界见 [1.22 Connectivity 服务、网络选择与回调](../../part1-fundamentals/ch01-architecture/22-connectivity-service.md)。
+
 ### 长连接、解析与后台流量
 
 WebSocket 适合高频双向消息，但长连接不会自动省电。固定 ping/pong（心跳请求/响应）、代理或 NAT 空闲超时、网络切换后的重复重连，都可能让蜂窝 radio（无线基带）频繁保持活跃；低频通知优先复用 FCM（Firebase Cloud Messaging）等系统通道，高频业务则要共同定义心跳、退避、会话恢复和消息去重。
@@ -512,7 +514,7 @@ val monitoredClient = OkHttpClient.Builder()
 
 #### 用 Perfetto 对齐网络与线程
 
-Perfetto 不会自动把 OkHttp `Call` 展成 DNS、TLS 和 TTFB。可以用 AndroidX Tracing 的异步 slice（时间片段）标记整个逻辑调用，用唯一 cookie（关联编号）区分同名并发请求；阶段事件仍由 EventListener 使用单调时钟记录，单调时钟只持续递增，不受系统时间校准影响。之后再按 Call、route（路由）和 attempt 关联。trace 名称只使用低基数常量，不写完整 URL、用户 ID、token 或查询参数。
+Perfetto 不会自动把 OkHttp `Call` 展成 DNS、TLS 和 TTFB。可以用 AndroidX Tracing 的异步 slice（时间片段）标记整个逻辑调用，用唯一 cookie（关联编号）区分同名并发请求；阶段事件仍由 EventListener 使用单调时钟记录，单调时钟只持续递增，不受系统时间校准影响。之后再按 Call、route（路由）和 attempt 关联。trace 名称沿用同一套低基数与隐私约束，不写完整 URL、用户 ID、token 或查询参数。
 
 主线程出现 `nativePollOnce` 通常只说明 Looper 正在等待消息。只有调用栈、线程状态和时间重叠共同指向 `Future.get()`、锁、socket 或协程桥接点时，才能判断 UI 在等待网络。网络 slice 与主线程慢区间重叠只能建立相关性，业务 request ID 和同步对象栈才能补足因果证据。
 
@@ -521,10 +523,6 @@ Perfetto 不会自动把 OkHttp `Call` 展成 DNS、TLS 和 TTFB。可以用 And
 `NetworkCallback` 不能测量业务 host（目标主机）的 DNS、TLS 或响应延迟。`INTERNET` 是网络能力声明，`VALIDATED` 是系统公网探测结果，业务请求成功仍取决于目标域名、路由、证书、CDN 和服务端。应用只需把 capability（网络能力）、metered、blocked（是否被系统阻止）、VPN 与网络切换作为请求策略输入；回调顺序、每 UID 100 个共享 request/callback 配额、注册生命周期、FullScore（系统内部用于选网的完整评分）和 linger（旧网络短暂保留期）统一见 [1.22 Connectivity 服务、网络选择与回调](../../part1-fundamentals/ch01-architecture/22-connectivity-service.md)。
 
 后台任务若只关心“有网”或“非计费网络”，优先使用 WorkManager/JobScheduler constraint（约束条件）。网络切换后也不要统一清空连接池或立即重放全部失败请求，应让网络库先处理连接状态，再由业务幂等和退避策略决定恢复。
-
-### Android 17 的平台策略输入
-
-`SubscriptionInfo.getStreamingAppMaxDownlinkKbps()` / `getStreamingAppMaxUplinkKbps()` 表示运营商为流媒体应用分配的速率上限，未知时返回 `BITRATE_UNKNOWN`；它不是链路测速。targetSdk 37 的局域网功能还需适配 `ACCESS_LOCAL_NETWORK` 或系统 picker（由系统展示的设备选择器），权限拒绝不能归类成普通弱网。完整的权限、NetworkCallback、FullScore、网络切换和系统源码边界见 [1.22 Connectivity 服务、网络选择与回调](../../part1-fundamentals/ch01-architecture/22-connectivity-service.md)。
 
 ### 排查清单
 
@@ -564,11 +562,9 @@ Perfetto 不会自动把 OkHttp `Call` 展成 DNS、TLS 和 TTFB。可以用 And
 
 ## TLS 握手、证书与安全边界
 
-基础网络路径可用后，TLS 增加密钥协商、证书验证和会话恢复。安全配置不能为了降低握手耗时而绕过验证。
+基础网络路径可用后，TLS 在这一段增加密钥协商、证书验证和会话恢复。一个 HTTPS 请求在发送业务数据前可能依次经过 DNS 解析、传输层连接、TLS 握手和证书验证；业务数据很少的短请求，这些准备工作反而可能占据大部分等待时间。安全配置不能为了降低握手耗时而绕过验证，分析时也不能把所有耗时都记到“TLS”名下，或用降低验证强度换取表面上的延迟下降。
 
-一个 HTTPS 请求在传输业务数据前，可能依次经过 DNS 解析、传输层连接、TLS 握手和证书验证。对于业务数据很少的短请求，这些准备工作反而可能占据大部分等待时间。分析这类问题时，不能把所有耗时都记到“TLS”名下，也不能用降低验证强度来换取表面上的延迟下降。
-
-本文以 Android 17（API 37）和 AOSP `android-17.0.0_r1` 为核对基线。以下内容说明 TLS 1.3、连接复用、Encrypted Client Hello（ECH，加密客户端问候）、Certificate Transparency（CT，证书透明度）、明文流量策略与 HPKE 各自解决什么问题；版本迭代只保留会影响迁移判断的节点。
+核对基线沿用前文：Android 17（API 37）和 AOSP `android-17.0.0_r1`。以下内容说明 TLS 1.3、连接复用、Encrypted Client Hello（ECH，加密客户端问候）、Certificate Transparency（CT，证书透明度）、明文流量策略与 HPKE 各自解决什么问题；版本迭代只保留会影响迁移判断的节点。
 
 ### 先把一次安全连接分段
 
@@ -582,7 +578,7 @@ RTT（Round-Trip Time）表示报文往返一次的时间。不同网络制式�
 | 证书验证 | 信任链、主机名、有效期、CT 等检查 | 失败类型、证书链、SCT（证书透明度时间戳） |
 | HTTP | 发送请求并等待响应头与响应体 | 协议、连接复用、服务端处理 |
 
-HTTP/2 或 HTTP/3 可以让多个请求复用一条连接。复用命中时，前四段不会为每个请求重新执行；这通常比微调某个加密算法更值得检查。
+HTTP/2 或 HTTP/3 可以让多个请求复用一条连接。复用命中时，前四段不会为每个请求重新执行，收益通常大于调整加密算法参数。
 
 ### TLS 1.3 减少了哪些等待
 
@@ -602,15 +598,15 @@ Android 10（API 29）起，平台 TLS 实现默认启用 TLS 1.3。该版本的
 | TLS 会话恢复 | 是 | 是，但使用 PSK（预共享密钥）或缓存的 session state（会话状态）缩短协商 | 原连接已关闭，双方仍保留恢复状态 |
 | TLS 1.3 0-RTT | 是 | 恢复握手中提前发送 early data（握手确认前的早期数据） | 网络栈、服务端和业务语义均允许 |
 
-OkHttp 5.3 的默认连接池保留最多 5 条空闲连接，每条空闲连接的 keep-alive（连接保持）时长为 5 分钟。“5”是空闲连接上限，不是客户端总并发连接数。不要因为某个经验数字就扩大连接池；应先统计 `connectionAcquired`（取得可用连接）回调、新建连接率、域名数量和服务端空闲超时，再调整 `maxIdleConnections` 与 keep-alive。
+连接复用能否命中，取决于池内是否还有可用连接；池容量与 keep-alive（连接保持）的口径见前文「共享 OkHttpClient」。要判断复用是否发生，应先统计 `connectionAcquired`（取得可用连接）回调、新建连接率、域名数量和服务端空闲超时，再调整 `maxIdleConnections` 与 keep-alive。
 
 会话恢复发生在新连接上。客户端持有可用的 session ticket（会话票据），并不保证服务端接受恢复：服务端重启、用于保护票据的 ticket key 轮换、负载均衡把请求转到其他节点，以及票据过期，都可能使这次连接改为完整握手。仅看客户端的 `secureConnectStart`/`secureConnectEnd` 也无法可靠判断是否恢复，应结合 TLS 库日志或服务端的 full/resumed handshake（完整/恢复握手）指标。
 
 #### 0-RTT 的限制来自“可重放”
 
-TLS 1.3 early data 可能被攻击者截获后再次发送，即发生重放。RFC 8446 要求应用协议评估重复执行的后果。HTTP 方法名只能作为初筛条件：一个 GET 请求也可能消费一次性令牌、改变计数器或读取带时序约束的敏感资源；某些 POST 请求在业务上则可能带有幂等键，用于识别并去重同一次业务操作。安全条件应写成“该请求被重复执行也不会产生不可接受后果”，不能简化为 GET/HEAD 白名单。
+前文已经说明 early data 可能被重放。RFC 8446 要求应用协议评估重复执行的后果，HTTP 方法名只能作为初筛条件：一个 GET 请求也可能消费一次性令牌、改变计数器或读取带时序约束的敏感资源；某些 POST 请求在业务上则可能带有幂等键，用于识别并去重同一次业务操作。安全条件应写成“该请求被重复执行也不会产生不可接受后果”，不能简化为 GET/HEAD 白名单。
 
-OkHttp 5.3 的稳定公开协议配置没有 HTTP/3 或 TLS early-data 开关。Cronet 的 `QuicOptions.Builder.enableTlsZeroRtt()` 面向 QUIC/TLS 0-RTT；平台 `HttpEngine` 的 QUIC hint（提示某个主机可尝试 QUIC）也不能证明某个请求已经使用 early data。启用前应确认以下事项：
+OkHttp 5.3 的稳定公开协议配置没有 HTTP/3 或 TLS early-data 开关；平台 `HttpEngine` 的 QUIC hint（提示某个主机可尝试 QUIC）也不能证明某个请求已经使用 early data。Cronet 侧 `QuicOptions.Builder.enableTlsZeroRtt()` 与跨进程会话恢复的配置面，已在前文「0-RTT 的边界」列出。启用前应确认以下事项：
 
 - 网络库版本和具体传输协议支持 0-RTT；
 - 服务端具备重放（replay）防护，并能区分 early data；
@@ -731,7 +727,7 @@ DoH 首次查询也不等于固定增加一个 RTT。已有 HTTP/2/HTTP/3 连接
 
 OkHttp `EventListener` 可记录 `dnsStart`/`dnsEnd`、`connectStart`、`secureConnectStart`/`secureConnectEnd`、`connectionAcquired`、`responseHeadersStart`（开始收到响应头）和失败回调。这些时间点能回答“时间花在哪一段”，却不能独自证明会话已恢复、ECH 已被接受或 CT 的某条规则已命中。
 
-Perfetto 不会自动生成通用的 OkHttp 握手时间轨道。若要把网络阶段与线程、CPU、蜂窝无线电（Radio）和进程状态对齐，应在网络回调中加入应用 trace slice（表示一段持续时间的追踪区间），或使用 Cronet NetLog（Cronet 网络事件日志）、平台网络日志和服务端 TLS 指标补充协议证据。生产日志不要记录会话密钥、完整证书、鉴权头或用户请求内容。
+前文已经说明 Perfetto 不会自动生成 OkHttp 的阶段轨道。要把网络阶段与线程、CPU、蜂窝无线电（Radio）和进程状态对齐，仍应在网络回调中加入应用 trace slice（表示一段持续时间的追踪区间）；协议层证据要靠 Cronet NetLog（Cronet 网络事件日志）、平台网络日志和服务端 TLS 指标补齐。生产日志不要记录会话密钥、完整证书、鉴权头或用户请求内容。
 
 #### 服务端指标
 
@@ -756,9 +752,9 @@ Perfetto 不会自动生成通用的 OkHttp 握手时间轨道。若要把网络
 | 开启 DoH 后解析变慢 | DoH 连接复用、缓存、解析器地域、网络切换 | 固定认为多一个 RTT |
 | HPKE 解密失败 | suite（算法组合）、info（上下文信息）、AAD（参与认证但不加密的附加数据）、密钥格式和 base mode 边界 | 把 HPKE 当作 TLS 会话 |
 
-### 与其他章节的关联
+### 与其他部分的关联
 
-- **§12.1 网络性能优化**：连接池、缓存、HTTP/2、HTTP/3 与 OkHttp 事件决定新连接出现的频率并提供分段指标。
+- **前文「DNS、连接、传输与应用处理」**：连接池、缓存、HTTP/2、HTTP/3 与 OkHttp 事件决定新连接出现的频率并提供分段指标。
 - **§12.2 netd 与 DnsResolver**：系统 DNS、Private DNS、HTTPS 资源记录与每网络解析状态。
 - **§1.2 版本演进**：适合核对 targetSdk 与运行系统共同改变行为的案例。
 
