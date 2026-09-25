@@ -92,7 +92,7 @@ Android 17 没有改变 App 构建期 `.class` 插桩的基本边界。运行时
 
 variant 是由构建类型、产品风味等配置组合出的构建变体。stack frame 是 JVM verifier（字节码验证器）用来核对操作数栈和局部变量类型的校验信息。
 
-APM（Application Performance Monitoring）指应用性能监控。热路径是调用频繁、少量额外工作也可能累积成明显开销的代码路径。
+APM（Application Performance Monitoring）指应用性能监控。热路径是调用频繁的代码路径，少量额外工作也可能累积成明显开销。
 
 | 层级 | 责任 | 常见错误 |
 |---|---|---|
