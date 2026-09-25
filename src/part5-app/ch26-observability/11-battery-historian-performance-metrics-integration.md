@@ -114,7 +114,7 @@ ODPM（On-Device Power Rails Monitor）是部分设备提供的板载电源轨�
 Android 17 仍由两个分工不同的系统服务处理电池统计与硬件功耗数据，这种分工早于 Android 15。
 
 - [`BatteryStatsService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java) 维护 `BatteryStatsImpl`，接收系统组件上报的状态与活动数据，触发外部统计同步，并通过 `BatteryUsageStatsProvider` 生成 UID 和功耗组件归因。
-- [`PowerStatsService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java) 访问 `android.hardware.power.stats` HAL。HAL 是系统与厂商硬件实现之间的标准接口；这里可读取 `energy consumer`（HAL 归类的用能组件）、`energy meter`（计量通道）和 `state residency`（硬件处于各功耗状态的累计时长），再把供系统服务间调用的内部接口 `PowerStatsInternal` 发布给系统服务进程 `system_server`。
+- [`PowerStatsService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java) 访问 `android.hardware.power.stats` HAL。HAL 是系统与厂商硬件实现之间的标准接口；这里可读取 `energy consumer`（HAL 归类的用能组件）、`energy meter`（计量通道）和 `state residency`（硬件处于各功耗状态的累计时长），再把内部接口 `PowerStatsInternal` 发布给系统服务进程 `system_server`，供系统服务之间调用。
 - 两者通过 `PowerStatsInternal` 协作。BatteryStats 还能使用控制器活动、内核时间、网络统计和设备 `power_profile.xml`；该 XML 保存设备厂商提供的功耗估算系数。设备缺少 HAL 电源轨时，系统仍可能给出模型估算。
 
 “Streamlined Battery Stats”的 CPU、misc、connectivity 等 `flag` 只是平台迁移期间的实现开关，公开 API 没有与之对应的“三层架构”承诺。设备构建、季度版本和 OEM（设备厂商）可以采用不同开关状态。监控协议应依赖公开输出语义，不能假设某个内部开关始终开启。
@@ -142,7 +142,7 @@ Android 17 的 `com.android.server.powerstats.TimerTrigger` 保留高频与低�
 
 Battery Historian 的输入优先使用完整 bugreport。官方 [采集流程](https://developer.android.com/topic/performance/power/setup-battery-historian) 要求在 USB 调试设备上重置统计、断开供电、执行目标场景，再生成 bugreport。`dumpsys batterystats --proto` 只输出 Protocol Buffers 二进制格式的当前聚合统计且不带历史记录，无法替代完整的 Historian 时间线。
 
-下面的命令用于一台专门的测试设备。`--reset` 会清除该设备当前的 Batterystats 数据；`full-history` 会额外记录 WakeLock、Alarm 和进程事件，官方最小采集流程无需此开关。它也会增加报告体积，因此不要在仍需保留现场的设备上运行。
+下面的命令用于一台专门的测试设备。`--reset` 会清除该设备当前的 Batterystats 数据；`full-history` 会额外记录 WakeLock、Alarm 和进程事件，官方最小采集流程无需此开关。该开关也会增加报告体积，因此不要在仍需保留现场的设备上运行。
 
 ```bash
 adb shell dumpsys batterystats --reset
@@ -297,7 +297,7 @@ Power Profiler 或 PowerMonitor 显示 `CPU`、`display`、`cellular` 等电源�
 - 查看同一窗口是否有系统更新、媒体播放、其他 App、屏幕或温控变化；
 - 对照空闲基线和不启动目标 App 的对照组；
 - 将设备温度与 `thermal status`（系统热状态等级）纳入报告，避免把降频后的低功率误判为效率提升；
-- 分别报告总能量、任务数、耗时和失败，不按假设给电源轨强制分配到进程。
+- 分别报告总能量、任务数、耗时和失败，不按假设把电源轨强制分配到进程。
 
 内核调度、驱动、显示与基带（modem）可能共同影响电源轨。需要精确到硬件组件时，优先使用设备厂商的电源轨定义、外置功耗仪和受控 system trace。Battery Historian 的柱状状态只能协助缩小时间窗。
 
