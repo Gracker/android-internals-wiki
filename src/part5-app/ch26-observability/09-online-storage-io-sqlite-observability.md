@@ -96,13 +96,13 @@ last_rework_run_id: 20260815-210707-gracker-writing-474
 
 两种时间必须分开记录。wall time 很长而当前线程 CPU time 很短，可能是调度、锁或 I/O 等待；两者都高则更像应用代码中的计算。这个判断只能用于选择下一步证据，不能仅凭两个时长认定内核 I/O 是原因。
 
-事件还要标注观测范围。围绕 DAO（data access object，数据访问对象）方法计时得到的是调用端到端时长，可能包含协程调度和连接等待；在 driver 执行边界计时更接近 SQLite 操作；Native（本地 C/C++ 层）`read()`/`write()` Hook 看到的是系统调用，无法覆盖所有页缓存回写。页缓存是内核用于暂存文件页的内存区域。若字段里只写 `duration`，后台会把不同 scope 的数据错误合并。
+事件还要标注观测范围。围绕 DAO（data access object，数据访问对象）方法计时得到的是调用端到端时长，可能包含协程调度和连接等待；在 driver 执行边界计时更接近 SQLite 操作；Native（本地 C/C++ 层）`read()`/`write()` Hook 看到的是系统调用，无法覆盖所有页缓存回写。页缓存是内核用于暂存文件页的内存区域。若字段里只写 `duration`，聚合端会把不同 scope 的数据错误地合并。
 
 路径、SQL 和文件内容都可能包含用户数据。默认只采集稳定类别、用于聚合同类对象的受控指纹和应用调用点；需要原始证据时，应走 26.3 的受限诊断流程，常规事件仍维持较低的敏感数据采集范围。
 
 ## I/O 采集路径选择
 
-采集路径决定了覆盖面，也决定了升级风险。优先选择公开 API 和应用可控边界，只有确认缺口值得引入额外兼容成本时，才使用 Hook。
+采集路径决定了覆盖面，也决定了升级风险。优先选择公开 API 和应用可控边界，只有在确认缺口值得承担额外兼容成本时，才使用 Hook。
 
 | 路径 | 能看到什么 | 看不到什么 | 建议使用范围 |
 |---|---|---|---|
@@ -140,7 +140,7 @@ StrictMode.setVmPolicy(
 
 `setThreadPolicy()` 作用于调用它的线程；若只在主线程安装，就不能据此声称覆盖全部工作线程。`detectUnbufferedIo()` 从 API 26 提供，`detectLeakedSqlLiteObjects()` 从 API 9 提供。`detectResourceMismatches()` 从 API 23 开始检查资源类型与读取方法是否匹配；它不检查文件句柄泄漏，也没有在 Android 17 新增。
 
-[`CloseGuard.setReporter()`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/dalvik/src/main/java/dalvik/system/CloseGuard.java) 在 Android 17 仍标记为隐藏/System API，即普通应用没有稳定的公开调用契约。通过反射替换 reporter 会同时引入 non-SDK 限制和版本兼容风险；长期监控应优先使用公开的 StrictMode VM policy，并限制在测试与受控诊断场景。
+[`CloseGuard.setReporter()`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/dalvik/src/main/java/dalvik/system/CloseGuard.java) 在 Android 17 仍标记为隐藏/System API，即普通应用没有稳定的公开调用契约。通过反射替换 reporter 会同时引入 non-SDK 限制和版本兼容风险；长期监控应优先使用公开的 StrictMode VM policy，并把使用范围限制在测试与受控诊断场景。
 
 ### Native Hook 的工程边界
 
@@ -176,7 +176,7 @@ Hook 覆盖不完整并不表示数据无用，但事件必须带 `collector` �
 
 ## SQLite 耗时、损坏与查询计划
 
-SQLite 可观测性应区分执行、事务、连接等待、错误和恢复。一个 DAO 方法慢，不代表 SQL 计划一定慢；它也可能在等待 writer（写连接）、调度到数据库线程，或在结果映射，也就是把查询行转换为业务对象的阶段消耗 CPU。
+SQLite 可观测性应区分执行、事务、连接等待、错误和恢复。一个 DAO 方法慢，不代表 SQL 计划一定慢；它也可能消耗在等待 writer（写连接）、调度到数据库线程，或结果映射（把查询行转换为业务对象）上。
 
 | 事件 scope | 起止位置 | 可以解释什么 | 不能直接解释什么 |
 |---|---|---|---|
@@ -218,13 +218,13 @@ private static final long LONG_OPERATION_THRESHOLD_MS = 2_000;
 
 这段实现只服务于 framework 调试和 dump（诊断信息输出），普通 App 没有对应的采集接口。2 秒是 framework 内部的“long operation”分类值，不应复制成业务慢查询门槛。源码还保存最近 10 条长操作，并对相关日志做限速；“20 条最近操作”“10 条长操作”和累计长操作数是三个不同概念。
 
-Android 17 的 [`SQLiteConnectionPool#getStatementCacheMissRate()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteConnectionPool.java#1248) 从各可用连接的 prepared statement cache（预编译语句缓存）命中与未命中次数计算 miss rate（未命中率），但该方法带 `@hide`。每个 framework connection 的默认 cache size 在 [`SQLiteDatabaseConfiguration`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteDatabaseConfiguration.java#70) 中是 25，公开 `SQLiteDatabase#setMaxSqlCacheSize()` 允许的上限是 100。应用不应通过隐藏方法读取 miss rate，也不应在没有内存与命中率证据时把 cache 调到上限。
+Android 17 的 [`SQLiteConnectionPool#getStatementCacheMissRate()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteConnectionPool.java#1248) 从各可用连接的 prepared statement cache（预编译语句缓存）命中与未命中次数计算 miss rate（未命中率），但该方法带 `@hide`。在 [`SQLiteDatabaseConfiguration`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteDatabaseConfiguration.java#70) 中，每个 framework connection 的默认 cache size 是 25，公开 `SQLiteDatabase#setMaxSqlCacheSize()` 允许的上限是 100。应用不应通过隐藏方法读取 miss rate，也不应在没有内存与命中率证据时把 cache 调到上限。
 
-开发设备可用 `adb shell dumpsys meminfo <package>` 查看 SQLite 的 cache hit、miss、cache size 和部分连接统计；Android 官方 SQLite 性能文档给出了该输出。Android 17 的 `POOL STATS cache size` 表示缓存中的预编译语句总数；较早版本的同名字段等于 hit 与 miss 之和，不能按缓存容量解读。该命令适合复现时观察，普通应用没有对应的免权限生产 API。
+开发设备可用 `adb shell dumpsys meminfo <package>` 查看 SQLite 的 cache hit、miss、cache size 和部分连接统计；Android 官方 SQLite 性能文档给出了该命令的输出。Android 17 的 `POOL STATS cache size` 表示缓存中的预编译语句总数；较早版本的同名字段等于 hit 与 miss 之和，不能按缓存容量解读。该命令适合复现时观察，普通应用没有对应的免权限生产 API。
 
 [`SQLiteDebug.shouldLogSlowQuery()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteDebug.java#99) 读取 `db.log.slow_query_threshold` 及 UID（应用进程的用户标识）后缀的系统属性，并且相关日志还受 `SQLiteSlowQueries` 日志标签控制。这个隐藏的 adb/系统调试开关不能作为普通 App 动态下发慢查询阈值的方案。官方另有 `log.tag.SQLiteTime` 的开发设备查询计时日志，两条机制也不要混为一个开关。
 
-Android 17 仍提供 lookaside（SQLite 的小对象内存复用区）和 idle connection timeout（空闲连接超时）配置，但不能从“可配置”推导出“应在生产环境调整”。`SQLiteDatabase.OpenParams.Builder#setIdleConnectionTimeout()` 已废弃，文档明确警告重建连接会清除 per-connection PRAGMA，即每条连接上的 SQLite 运行时配置；系统又没有供 App 恢复这些状态的回调。`setLookasideConfig(0, 0)` 可以请求禁用 lookaside，但系统可能按设备选择不同值；只有在目标 driver、内存和查询基准都证明收益时才考虑修改。
+Android 17 仍提供 lookaside（SQLite 的小对象内存复用区）和 idle connection timeout（空闲连接超时）配置，但不能从“可配置”推导出“应在生产环境调整”。`SQLiteDatabase.OpenParams.Builder#setIdleConnectionTimeout()` 已废弃，文档明确警告重建连接会清除 per-connection PRAGMA，即每条连接各自的 SQLite 运行时配置；系统又没有供 App 恢复这些状态的回调。`setLookasideConfig(0, 0)` 可以请求禁用 lookaside，但系统可能按设备选择不同值；只有在目标 driver、内存和查询基准都证明收益时才考虑修改。
 
 ### 查询计划应在同一 SQLite 实现上验证
 
@@ -242,7 +242,7 @@ LIMIT 50;
 
 输出中的 `SCAN` 表示扫描，`SEARCH ... USING INDEX` 表示使用索引；`USE TEMP B-TREE` 说明排序、分组或去重可能需要临时 B-tree（平衡树结构）。这些计划节点不能当作自动修复指令：小表扫描可能合理，索引会增加写入和空间成本，复合索引的列顺序还要结合过滤、排序和选择性判断。
 
-Android 官方建议用目标设备的 `adb shell sqlite3`，因为不同 Android 版本使用的 SQLite revision（源码修订版）不同。使用 `BundledSQLiteDriver` 时，应用携带自己的 SQLite 实现，设备自带 `sqlite3` 可能与它不同；此时应使用同一 driver 和同一 schema（数据库结构定义）的测试工具执行计划。
+Android 官方建议用目标设备的 `adb shell sqlite3`，因为不同 Android 版本使用的 SQLite revision（源码修订版）不同。使用 `BundledSQLiteDriver` 时，应用携带自己的 SQLite 实现，设备自带的 `sqlite3` 可能对应不同实现；此时应使用同一 driver 和同一 schema（数据库结构定义）的测试工具执行计划。
 
 ### 错误、损坏和恢复必须分开
 
@@ -266,7 +266,7 @@ Android 官方建议用目标设备的 `adb shell sqlite3`，因为不同 Androi
 | 文件格式校验 | magic（固定文件头标识）、版本、长度、CRC（循环冗余校验）/hash（哈希摘要）或业务结构校验 | 校验算法必须属于文件格式协议，不能给所有文件统一加 CRC |
 | 清理效果 | 规则版本、候选字节、删除字节、失败原因、再次扫描结果 | 只操作明确可再生且在 allowlist（允许清理的固定名单）内的文件 |
 
-全量目录扫描本身会产生 I/O 和 CPU 开销。大目录应保存扫描游标，分批进行，并在前台交互、低电量或系统压力不合适时停止。事件中的 `coverage`（本次覆盖范围）、`visited_count`（已访问节点数）和 `complete`（扫描是否完整）与大小值同等重要。
+全量目录扫描本身会产生 I/O 和 CPU 开销。大目录应保存扫描游标，分批扫描，并在前台交互、低电量或系统压力不合适时停止。事件中的 `coverage`（本次覆盖范围）、`visited_count`（已访问节点数）和 `complete`（扫描是否完整）与大小值同等重要。
 
 “目录树剪枝”，即跳过不需要继续深入的分支，再配合受控样本，比上传完整路径更安全。每层保留聚合后的最大目录类别，其他节点归入 `other`；若业务必须关联同一对象，可以使用服务端持有密钥的 keyed digest（带密钥摘要），并设置密钥轮换周期。普通 SHA-256 截断并不能可靠匿名化可枚举的短路径。
 
@@ -301,7 +301,7 @@ I/O 和 SQL 都是高频事件，采集器必须在设计阶段设定 CPU、内�
 - 26.3 负责远程证据包、受限诊断、灰度隔离和问题单流程。
 - 26.6 负责 `ProfilingManager` 与 trigger 的系统版本边界。
 
-这些事件字段用于把问题导航到对应章节，不重复给出另一套优化规则。
+这些事件字段用于把问题定位到对应章节，不重复给出另一套优化规则。
 
 ## 扩展：Matrix I/O Canary 与 SQLiteLint
 
@@ -312,15 +312,15 @@ Matrix 中的 I/O Canary 和 SQLiteLint 仍适合作为规则设计参考，但�
 | I/O Canary | 从文件调用重建主线程 I/O、细碎访问、重复读和泄漏规则 | Hook 符号、链接器/ABI、mmap 缺口、采集递归、当前 AGP 与打包流程 |
 | SQLiteLint | 基于运行时 SQL、schema 和 `EXPLAIN QUERY PLAN` 检查索引及临时 B-tree 等问题 | 2019 wiki 所述 `sqlite3_profile` Hook、Room/SQLiteDriver 覆盖、SQLite 新版计划文本和误报 |
 
-SQLiteLint 的 wiki 明确说明其系统 SQLite 路径通过 Hook 向 C 层 `sqlite3_profile` 注册回调。该说明的上次编辑时间为 2019 年，不能推导出它在 API 37、所有 driver 或所有 ABI 上仍有相同覆盖。使用 BundledSQLiteDriver、WCDB（腾讯开源的移动数据库框架）或自带 SQLite 时，目标库可能与系统 framework 打开的 SQLite 实现不同。
+SQLiteLint 的 wiki 明确说明其系统 SQLite 路径通过 Hook 向 C 层 `sqlite3_profile` 注册回调。该说明的上次编辑时间为 2019 年，不能推导出它在 API 37、所有 driver 或所有 ABI 上仍有相同覆盖。使用 BundledSQLiteDriver、WCDB（腾讯开源的移动数据库框架）或应用自带 SQLite 时，目标库可能与系统 framework 打开的 SQLite 实现不同。
 
 接入评审至少要求：固定 Matrix revision（源码修订号）；列出支持的 API/ABI/driver；在目标构建工具中运行启动、查询、并发、进程退出和崩溃测试；验证关闭开关；对采集前后 CPU、内存、I/O 与崩溃率做对照。达不到这些条件时，可以复用规则思想，在应用封装或 Room/driver 回调上重新实现。
 
-自动分析 `EXPLAIN QUERY PLAN` 也要允许例外。小表的 `SCAN`、联接的外层扫描和一次性迁移不一定需要索引；看到 `SEARCH` 也不表示结果集、排序和根据索引记录再次访问原表（回表）的成本合格。规则输出应包含 schema 版本、表行数范围、计划文本和人工处置状态。
+自动分析 `EXPLAIN QUERY PLAN` 也要允许例外。小表的 `SCAN`、联接的外层扫描和一次性迁移不一定需要索引；看到 `SEARCH` 也不表示结果集、排序和回表（根据索引记录再次访问原表）的成本合格。规则输出应包含 schema 版本、表行数范围、计划文本和人工处置状态。
 
 ## 扩展：AndroidX SQLite/Room 新版本诊断能力
 
-截至 2026 年 8 月 15 日，AndroidX SQLite 稳定版为 2.7.0，Room 稳定版为 2.8.4。它们是独立于 Android 17 / API 37 的库版本，Room 主版本也不能从系统版本或 AndroidX SQLite 版本推导。本文讨论稳定版能力，因此使用 Room 2.8.4，不把 SQLite 2.7.0 的版本号写成 Room 版本。
+截至 2026 年 8 月 15 日，AndroidX SQLite 稳定版为 2.7.0，Room 稳定版为 2.8.4。它们是独立于 Android 17 / API 37 的库版本，Room 主版本也不能从系统版本或 AndroidX SQLite 版本推导。本文讨论稳定版能力，因此使用 Room 2.8.4；SQLite 2.7.0 只表示 SQLite 库版本，不是 Room 版本。
 
 与观测直接相关的变化包括：
 
