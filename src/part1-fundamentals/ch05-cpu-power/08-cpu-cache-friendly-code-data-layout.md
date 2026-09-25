@@ -87,7 +87,7 @@ Android common kernel `android17-6.18-2026-06_r6` 的 arm64 `arch/arm64/include/
 #define L1_CACHE_BYTES  (1 << L1_CACHE_SHIFT)
 ```
 
-这个内核基线按 64 字节 L1 cache line 构建。相同文件还从 `CTR_EL0.CWG` 读取 cache writeback granule（cache 写回粒度），并把 arm64 的 `ARCH_DMA_MINALIGN` 设为 128 字节。CPU L1 cache line、DMA 安全对齐和跨 CPU 避免互相干扰的间隔属于不同边界，不能用同一个常量概括。
+这个内核基线按 64 字节 L1 cache line 构建。相同文件还从 `CTR_EL0.CWG` 读取 cache writeback granule（cache 写回粒度），并把 arm64 的 `ARCH_DMA_MINALIGN` 设为 128 字节。CPU L1 cache line、DMA 安全对齐和跨 CPU 之间避免互相干扰所需的间隔是三种不同的边界，不能用同一个常量概括。
 
 应用代码可以把 64 字节作为当前常见设备的实验起点，但不能写成 Armv8/Armv9 规范保证。涉及共享库、DMA 或多代设备时，应结合目标 ABI、设备资料和测量决定布局。
 
@@ -118,7 +118,7 @@ ART inline cache 可能让编译器生成更直接的调用路径，从而间接
 
 空间局部性描述相邻地址在接近的时间被访问。CPU 以 cache line 为单位传输数据，顺序遍历连续数组通常能充分利用一次 refill，并让预取器提前请求后续 cache line。
 
-以 C++ 为例，`std::vector<float>` 的元素连续；链表节点通常分散分配。批量求和时，数组通常更有利。不过“链表每个节点必 miss、数组每 line 只 miss 一次”只是最坏与理想模型，分配器复用、节点大小、预取器和 cache 容量都会改变结果。
+以 C++ 为例，`std::vector<float>` 的元素连续；链表节点通常分散分配。批量求和时，数组通常更有利。不过“链表每个节点必 miss、数组每 line 只 miss 一次”只是最坏与理想这两种模型，分配器复用、节点大小、预取器和 cache 容量都会改变结果。
 
 在 Java/Kotlin 中还要分清容器实际保存的内容：
 
@@ -134,11 +134,11 @@ ART inline cache 可能让编译器生成更直接的调用路径，从而间接
 
 时间局部性描述数据在短时间内重复使用。一个工作块在仍位于 cache 时完成多次计算，通常比每轮扫描整个大数据集更有效。
 
-二维数值计算、图片卷积和张量预处理常用 tiling（分块）：把输入拆成能放入目标 cache 的小块，在块内完成多个操作后再进入下一块。tile 大小需要通过基准测试确定，因为代码、栈、其他数组和并发线程也会占用 cache。简单地把 tile 设为“L1 容量除以元素大小”，会低估这些资源竞争。
+二维数值计算、图片卷积和张量预处理常用 tiling（分块）：把输入拆成能放入目标 cache 的小块，在块内完成多个操作后再进入下一块。tile 大小需要通过基准测试确定，因为代码、栈、其他数组和并发线程也会占用 cache。只按“L1 容量除以元素大小”估算，会低估这些资源对 cache 的占用。
 
 ## False sharing（伪共享）：不同字段，共用一条一致性 cache line
 
-当多个 CPU 并发访问同一 cache line，且至少一个 CPU 写入时，一致性协议需要转移数据或让其他核心上的副本失效。如果线程操作的是不同字段，却因为这些字段位于同一 cache line 而产生大量一致性通信，就形成了 false sharing。这里“共享”的是硬件维护一致性的 cache line，业务数据本身并没有被多个线程共同修改。
+当多个 CPU 并发访问同一 cache line，且至少一个 CPU 写入时，一致性协议需要转移数据或让其他核心上的副本失效。如果线程操作的是不同字段，却因为这些字段位于同一 cache line 而产生大量一致性通信，就形成了 false sharing。这里的“共享”发生在硬件用来维护一致性的 cache line 上，业务数据本身并没有被多个线程共同修改。
 
 典型模式包括：
 
@@ -250,7 +250,7 @@ Android 17 `frameworks/native/libs/binder/Parcel.cpp` 中，`mData`、`mDataSize
 
 Parcel 的布局主要服务于 Binder 传输格式（wire format）、安全检查和对象管理，cache 局部性只是连续数据区带来的性质之一。它不足以证明“Parcel 总比 JSON 快”；序列化格式、数据规模、解析器和 IPC 拷贝都要纳入比较。
 
-## Java/Kotlin 热路径：先减少工作，再谈对象池
+## 应用层热路径：先减少工作，再谈对象池
 
 ### 避免装箱和指针追踪
 
@@ -322,7 +322,7 @@ Startup Profile 应覆盖 launcher、常见 deep link（直接打开应用内指
 
 ### 先查看设备支持哪些 PMU 事件
 
-事件名和可用性取决于 CPU PMU、内核及权限。PMU 事件是硬件提供的计数项，用来统计周期、指令、cache miss 等微架构行为。采集前先运行：
+PMU 事件是硬件提供的计数项，用来统计周期、指令、cache miss 等微架构行为；事件名和可用性取决于 CPU PMU、内核及权限。采集前先运行：
 
 ```bash
 simpleperf list
@@ -332,7 +332,7 @@ simpleperf stat --print-hw-counter
 
 第一条列出内核封装的事件，第二条列出当前 Arm PMU 直接暴露的 raw event（原始硬件事件），第三条显示可用硬件 counter（计数器）数量。不能假设每台设备都支持 `raw-l2-dcache-refill`，也不能把某个 Cortex 文档中的 event number 直接用于另一款 SoC。
 
-### 先做成组计数
+### 先做分组计数
 
 如果设备支持通用事件，可以先比较周期、指令和 cache 事件：
 
@@ -343,7 +343,7 @@ simpleperf stat \
   -p <pid> --duration 10
 ```
 
-同组事件会尽量同时调度，适合计算 IPC（instructions per cycle，每周期执行的指令数）或 miss ratio（未命中比例）。硬件 counter 不足时会发生 multiplexing（分时复用），输出中的 enabled/running 时间和警告必须保留。不同 cluster 可能使用不同 PMU，线程迁移也会影响结果解释。
+同组事件会尽量同时调度，适合计算 IPC（instructions per cycle，每周期执行的指令数）或 miss ratio（未命中比例）。硬件 counter 不足时会发生 multiplexing（分时复用）；引用输出时要连 enabled/running 时间和警告一起保留。不同 cluster 可能使用不同 PMU，线程迁移也会影响结果解释。
 
 不存在通用的“cache miss 超过 10% 就该优化”阈值。miss 的种类、每次 miss 的代价、memory-level parallelism（内存访问并行度）和业务 deadline（截止时间）都会影响结果。应该比较相同工作量下的前后变化，并确认 latency（延迟）或 throughput（吞吐量）也随之改善。
 
@@ -373,7 +373,7 @@ IPC 低还可能来自：
 - 不同核心宽度与频率；
 - PMU multiplexing 或统计窗口错误。
 
-判断负载是否 memory-bound，至少需要观察 cache/TLB refill、backend stall（执行后端停顿）、内存带宽或访问延迟采样中的一部分，并通过改变数据布局或工作集进行可控实验。
+判断负载是否 memory-bound，至少需要观察以下几类证据中的一部分：cache/TLB refill、backend stall（执行后端停顿）、内存带宽或访问延迟采样。同时要通过改变数据布局或工作集做可控实验。
 
 Perfetto 的 sched、CPU frequency、thread state 和应用 slice（带起止时间的自定义事件区间）可以提供时间上下文。默认 trace 不会自动产生每线程 instructions/cycles，也不存在一段可直接套用的通用 SQL，能把任意 counter 按线程换算成 IPC。可以用相同 workload 的时间窗口关联 Simpleperf 与 Perfetto，但需注明数据来自两次采集还是同一次采集。
 
@@ -474,7 +474,7 @@ PSS（按共享比例折算后的进程内存）中的 Dalvik/native/other 分�
 
 ## 结论
 
-Cache 友好代码要让“经常一起使用的数据”在时间和地址上靠近，并减少“被不同 CPU 频繁写的数据”之间的 cache line 共享。实现方式会随语言层变化：
+Cache 友好代码要让“经常一起使用的数据”在时间和地址上靠近，也要让被不同 CPU 频繁写入的数据不挤在同一条 cache line 上。实现方式会随语言层变化：
 
 - Kotlin/Java 优先减少装箱、指针追踪和共享可变状态；
 - NDK 使用连续容器、hot/cold split、SoA/AoSoA 和经过验证的对齐；
