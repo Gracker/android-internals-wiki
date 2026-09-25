@@ -59,7 +59,7 @@ last_rework_run_id: 20260815-165828-gracker-writing-457
 
 # 热节流适配与性能退化治理
 
-热节流是设备维持安全温度的动态控制结果，不同机型的阈值和降级动作不会完全一致。应用应把 thermal status 与 headroom 当作趋势信号，提前降低可选工作，并用持续性能而非瞬时峰值验收。
+热节流是设备维持安全温度的动态控制结果，不同机型的阈值和降级动作不会完全一致。应用应把热状态与 headroom 当作趋势信号，提前降低可选工作，并用持续性能而非瞬时峰值验收。
 
 ## 公开 API 的实际入口
 
@@ -70,9 +70,9 @@ last_rework_run_id: 20260815-165828-gracker-writing-457
 - `getThermalHeadroomThresholds()`：API 35；
 - `addThermalHeadroomListener()`：API 36。
 
-Android 17 也没有 `PowerManager.isThermalStatusProtectionEnabled()`、`getThermalMitigations()` 或“热缓解动作（thermal mitigation）列表”公开接口。应用能读取全局热状态和表面温度对应的 thermal headroom，但无法查询系统当前启用了哪组 CPU、GPU、屏幕或充电限制。热状态用 0—6 的 severity（限制等级）表示；skin 指机身表面温度传感器或厂商建立的虚拟表面温度模型；thermal headroom（热余量）是接近严重热限制阈值的归一化数值。
+Android 17 也没有 `PowerManager.isThermalStatusProtectionEnabled()`、`getThermalMitigations()` 或“热缓解动作（thermal mitigation）列表”公开接口。应用能读取全局热状态和表面温度对应的 thermal headroom，但无法查询系统当前启用了哪组 CPU、GPU、屏幕或充电限制。
 
-系统内部服务名是 `ThermalManagerService`。它连接 Thermal HAL；HAL 是 Hardware Abstraction Layer（硬件抽象层），负责把厂商硬件实现转换成 Android 统一接口。Power HAL 负责 Performance Hint Session（性能提示会话）与 CPU/GPU capacity headroom（容量余量）等另一组能力。两套 HAL 可以在厂商策略中协同，但 AOSP 接口和 Binder 服务彼此独立；Binder 是 Android 的跨进程调用机制。
+下面这三个词会在全章反复出现，先对齐含义：热状态用 0—6 的 severity（限制等级）表示；skin 指机身表面温度传感器或厂商建立的虚拟表面温度模型；thermal headroom（热余量）是接近严重热限制阈值的归一化数值。
 
 ## 热治理的目标
 
@@ -121,11 +121,15 @@ flowchart TB
 
 限制 CPU/GPU、充电或屏幕的动作通常发生在内核、固件和厂商策略层，不需要等待应用回调。`PowerManager` 给应用的是产品级热压力信号，应用根据该信号减少自己的工作量。
 
+系统内部服务名是 `ThermalManagerService`。它连接 Thermal HAL；HAL 是 Hardware Abstraction Layer（硬件抽象层），负责把厂商硬件实现转换成 Android 统一接口。
+
+另一组能力由 Power HAL 提供，覆盖 Performance Hint Session（性能提示会话）与 CPU/GPU capacity headroom（容量余量）。两套 HAL 可以在厂商策略中协同，但 AOSP 接口和 Binder 服务彼此独立；Binder 是 Android 的跨进程调用机制。
+
 Android 17 的 Framework 服务位于 [`services/core/java/com/android/server/power/thermal/ThermalManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java)。这里的 Framework 指 Android 系统框架层。旧版本资料中的 `server/power/ThermalManagerService.java` 路径不能直接套到当前源码标签。
 
 ### Thermal HAL 的当前接口
 
-Android 17 的稳定 AIDL [`IThermal`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/thermal/aidl/android/hardware/thermal/IThermal.aidl) 提供四类能力。AIDL 是 Android 接口定义语言，用来生成稳定的 Binder 接口；HIDL 是旧一代 HAL 接口体系：
+AIDL 是 Android 接口定义语言，用来生成稳定的 Binder 接口；HIDL 是旧一代 HAL 接口体系。Android 17 的稳定 AIDL [`IThermal`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/thermal/aidl/android/hardware/thermal/IThermal.aidl) 提供四类能力：
 
 | 能力 | AIDL 方法 |
 |---|---|
@@ -159,8 +163,6 @@ HAL `CoolingDevice.value` 的取值范围从 0 到驱动的 `max_state`：0 表�
 - 全局热状态说明整机热缓解等级，不能直接推导某个 CPU 集群的最高频率；
 - 热状态上报来源可能包含电池功率约束、充电和厂商虚拟模型，公开回调不提供原因字段。
 
-任何 CPU、GPU、NPU 或 SKIN 传感器到达 `SHUTDOWN` 时，Framework 会以 thermal-state（热状态）原因请求关机；BATTERY 传感器使用 battery-thermal（电池过热）原因。应用可能来不及收到 `SHUTDOWN` 回调，状态保存和媒体文件收尾不能拖到这一档才开始。
-
 Android 17 的七档状态如下：
 
 | 值 | 常量 | Framework 含义 | 应用侧建议 |
@@ -175,14 +177,17 @@ Android 17 的七档状态如下：
 
 这张表定义响应强度，不定义通用产品参数。游戏是否从 120 FPS 调到 90、60 或 30，视频是否降低分辨率，必须由目标设备的帧时间、功耗、温升和质量实验决定；不能把某个状态直接换算成固定频率或画质档位。
 
+任何 CPU、GPU、NPU 或 SKIN 传感器到达 `SHUTDOWN` 时，Framework 会以 thermal-state（热状态）原因请求关机；BATTERY 传感器使用 battery-thermal（电池过热）原因。应用可能来不及收到 `SHUTDOWN` 回调，状态保存和媒体文件收尾不能拖到这一档才开始。
+
 ## Thermal headroom：提前量与读取边界
 
-[`PowerManager.getThermalHeadroom()`](https://developer.android.com/reference/android/os/PowerManager#getThermalHeadroom(int)) 跟踪表面温度这类慢变化传感器。headroom 把当前或预测的温度位置归一化到严重热限制阈值附近，数值方向如下：
+[`PowerManager.getThermalHeadroom()`](https://developer.android.com/reference/android/os/PowerManager#getThermalHeadroom(int)) 基于表面温度这类慢变化传感器。headroom 把当前或预测的温度位置归一化到严重热限制阈值附近，数值方向如下：
 
 - 0 是公开值域的下界，但 API 不承诺它对应某个热状态或固定摄氏温度；
 - 1 表示当前或预测将到达 `THERMAL_STATUS_SEVERE`；
-- 大于 1 表示越过 `SEVERE` 归一化位置，但没有到 CRITICAL、EMERGENCY 的固定映射；
-- `NaN`（Not a Number，非数值哨兵）表示设备不支持、数据不足、HAL 未就绪或调用太频繁等情况。
+- 大于 1 表示越过 `SEVERE` 归一化位置，但没有到 CRITICAL、EMERGENCY 的固定映射。
+
+另一类返回值是 `NaN`（Not a Number，非数值哨兵），表示设备不支持、数据不足、HAL 未就绪或调用太频繁等情况。
 
 `forecastSeconds` 的允许范围是 0 到 60。预测以近期工作负载趋势保持相近为前提；预测时间越远，越容易受场景切换影响。应用不能把一次预测值当成未来温度承诺。
 
@@ -204,7 +209,7 @@ Android 17 服务端对相似回调使用 5 秒最小间隔，并以 headroom �
 
 ## 应用监听器的安全封装
 
-这个 Kotlin 示例只注册一次热状态监听器；API 36 起再注册 headroom 监听器，API 30—35 由外部调度器以低频调用 `pollForecast()`：
+这个 Kotlin 示例只注册一次热状态监听器；API 36 起再注册 headroom 监听器，API 30—35 由外部调度器以低频调用 `pollForecast()`。阅读时先看 `start()` 里的版本分支和 `stop()` 里成对的注销：
 
 ```kotlin
 import android.content.Context
@@ -367,7 +372,7 @@ API 30—35 的 `pollForecast()` 每次只发起一次 headroom 查询。调度�
 
 ## 从信号映射到工作量档位
 
-这段函数展示一种不写死设备 headroom 阈值的映射方式：
+这段函数展示一种不写死设备 headroom 阈值的映射方式，判断从最严重的档位依次放宽：
 
 ```kotlin
 enum class WorkloadTier {
@@ -492,7 +497,13 @@ API 24 的 Sustained Performance Mode（持续性能模式）面向长时间负�
 
 ## 与后台调度、Doze 和 App Standby 的关系
 
-Android 17 的 [`ThermalStatusRestriction`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/restrictions/ThermalStatusRestriction.java) 监听 PowerManager 热状态，并随限制等级提高而收缩 JobScheduler 的可运行范围。priority 是 Job 的有效优先级；bias 是系统根据应用当前重要性给出的调度权重；TOP_APP 表示应用正与用户交互；user-initiated job 是用户明确发起的数据传输任务；expedited job 是需要尽快执行但仍受系统配额控制的加急任务；overtime 表示本轮 Job 已超过正常运行时段：
+Android 17 的 [`ThermalStatusRestriction`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/restrictions/ThermalStatusRestriction.java) 监听 PowerManager 热状态，并随限制等级提高而收缩 JobScheduler 的可运行范围。先对齐这条规则里出现的几个 Job 术语：
+
+- priority 是 Job 的有效优先级，bias 是系统根据应用当前重要性给出的调度权重，TOP_APP 表示应用正与用户交互；
+- user-initiated job 是用户明确发起的数据传输任务，expedited job 是需要尽快执行但仍受系统配额控制的加急任务；
+- overtime 表示本轮 Job 已超过正常运行时段。
+
+限制等级越高，可运行范围越窄：
 
 - `LIGHT` 开始限制 MIN priority，以及部分未运行或 overtime 的 LOW priority job；
 - `MODERATE` 放行 user-initiated job；expedited job 仅在首次尝试，且若已运行则尚未进入 overtime 时放行；HIGH priority job 仅在已运行且未进入 overtime 时放行；
@@ -521,7 +532,14 @@ Doze（设备空闲节电）、App Standby（按应用活跃度限制后台任�
 
 ### 有用的指标
 
-P50/P95 分别表示第 50 和第 95 百分位，用于观察典型值与慢尾；GPU deadline miss 指 GPU 未能在帧截止时间前完成；dropped frame 是视频丢帧；audio underrun 是音频缓冲区来不及供数造成的断续；stop/pending reason 是后台任务停止或等待执行的系统原因；tier 指工作量档位。
+下表用到的几个指标名先对齐含义：
+
+- P50/P95：第 50 和第 95 百分位，用于观察典型值与慢尾；
+- GPU deadline miss：GPU 未能在帧截止时间前完成；
+- dropped frame：视频丢帧；
+- audio underrun：音频缓冲区来不及供数造成的断续；
+- stop/pending reason：后台任务停止或等待执行的系统原因；
+- tier：工作量档位。
 
 | 目标 | 指标 |
 |---|---|
@@ -639,7 +657,7 @@ Android 17 普通应用只能读取热状态和 headroom。原始温度、冷却
 
 ## 全文小结
 
-热治理的目标是在设备进入热平衡后保住可持续体验，冷机峰值不构成验收标准。应用应以 thermal status 判断当前限制等级，以 headroom 观察趋势，再通过带滞回和驻留时间的状态机同步降低渲染、媒体、推理、网络和后台工作；频率、冷却档位与性能时间线则用来证明退化是否真的由热限制造成。所有阈值和恢复策略都必须按设备族与业务场景验证。
+热治理的目标是在设备进入热平衡后保住可持续体验，冷机峰值不构成验收标准。应用应以热状态判断当前限制等级，以 headroom 观察趋势，再通过带滞回和驻留时间的状态机同步降低渲染、媒体、推理、网络和后台工作；频率、冷却档位与性能时间线则用来证明退化是否由热限制造成。所有阈值和恢复策略都必须按设备族与业务场景验证。
 
 ## 延伸阅读与源码锚点
 
