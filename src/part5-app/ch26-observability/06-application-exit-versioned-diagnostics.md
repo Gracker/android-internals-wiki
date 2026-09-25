@@ -157,7 +157,7 @@ Android 11 引入 `ActivityManager.getHistoricalProcessExitReasons(packageName, 
 - `maxNum = 0` 表示返回当前仍保留的全部匹配记录，历史范围仍受系统容量限制。
 - 通过 `BIND_EXTERNAL_SERVICE` 绑定的外部服务进程也可能出现在调用包的退出记录中，归因时要保留进程名与 UID 字段。
 
-公开文档只承诺历史信息位于环形缓冲区（ring buffer，容量满后会淘汰旧记录）。AOSP `android-17.0.0_r1` 的默认资源 `config_app_exit_info_history_list_size` 是每包 16 条，但设备厂商可以覆盖这个资源值，它不属于 SDK 合约。Android 17 的 `AppExitInfoContainer` 使用 `ArrayList<ApplicationExitInfo>`，容量超限时删除时间最早的记录；同一 PID 可以保留多次退出。因此，基于旧实现得出的“以 PID 为键，同一 PID 必然覆盖”不适用于该标签。
+公开文档只承诺历史信息位于环形缓冲区（ring buffer，容量满后会淘汰旧记录）。AOSP `android-17.0.0_r1` 的默认资源 `config_app_exit_info_history_list_size` 是每包 16 条，但设备厂商可以覆盖这个资源值，它不属于 SDK 合约。Android 17 的 `AppExitInfoContainer` 使用 `ArrayList<ApplicationExitInfo>`，容量超限时删除时间最早的记录；同一 PID 可以保留多次退出。因此，基于旧实现得出的“以 PID 为键，同一 PID 必然覆盖”这一结论不适用于该标签。
 
 这段代码只读取轻量元数据，不在调用线程复制 trace。调用应放到应用自己的 I/O 执行器（executor）中；`maxNum = 0` 读取系统当前保留的记录，服务端或本地处理游标（记录已处理位置）负责去重。
 
@@ -200,7 +200,7 @@ fun readExitSummaries(
 
 `ExitSummary` 是项目自定义的数据传输对象（DTO），只负责在层之间传递退出摘要。`description` 只能用于受控明细，不能参与稳定分组；`processStateSummary` 与 ANR 字段都可能为 `null`。查询会通过 Binder 进行进程间通信，批量返回的对象也会占用内存，所以不能在首帧关键路径同步执行。
 
-`reason` 是分类主字段，`status` 的解释取决于 `reason`：进程调用 `exit()` 时，它保存退出码；进程因操作系统信号结束时，它保存信号编号。业务协议应保存 SDK 枚举值与采集设备的 API 级别，不要自行复制 `reason` 的整数常量。
+`reason` 是分类主字段，`status` 的解释取决于 `reason`：进程调用 `exit()` 时，`status` 保存退出码；进程因操作系统信号结束时，`status` 保存信号编号。业务协议应保存 SDK 枚举值与采集设备的 API 级别，不要自行复制 `reason` 的整数常量。
 
 部分设备不支持低内存终止（LMK）分类上报，应先调用 `ActivityManager.isLowMemoryKillReportSupported()`。在不支持的设备上，内存压力终止可能表现为 `REASON_SIGNALED`，且 `status` 为 `SIGKILL`。即使设备支持，`REASON_LOW_MEMORY` 也只说明系统当时存在内存压力，无法单独证明应用存在内存泄漏。
 
@@ -270,7 +270,9 @@ Android 5–10 的退出推断必须把结论、置信度和原始证据分开�
 | `LOW_MEMORY_SUSPECTED` | 会话未闭合且退出前内存、线程、文件描述符（FD）或堆证据异常 | 疑似内存压力，不写成低内存终止守护进程（LMKD）已确认 |
 | `ABNORMAL_END_UNKNOWN` | 只有未闭合标记，或多类证据冲突 | 原因未知 |
 
-统一数据域中，`system_reason_code` 只接收 API 30+ `ApplicationExitInfo` 的公开 `reason`；`legacy_reason` 只接收应用规则结论；`reason_source` 区分 `android_system`、`external_platform`、`app_confirmed` 和 `app_inferred`。两类原因不能用 `coalesce()`（返回第一个非空值的数据库函数）合成一个字段，否则会丢失证据来源。事件还应保留 `session_id`、`process_name`、设备启动周期、前一进程启动的单调时间、发现旧会话的时间、`confidence`、原始证据数组 `evidence[]`、附件引用、采集器与规则版本。
+统一数据域中，`system_reason_code` 只接收 API 30+ `ApplicationExitInfo` 的公开 `reason`；`legacy_reason` 只接收应用规则结论；`reason_source` 区分 `android_system`、`external_platform`、`app_confirmed` 和 `app_inferred`。
+
+两类原因不能用 `coalesce()`（返回第一个非空值的数据库函数）合成一个字段，否则会丢失证据来源。事件还应保留 `session_id`、`process_name`、设备启动周期、前一进程启动的单调时间、发现旧会话的时间、`confidence`、原始证据数组 `evidence[]`、附件引用、采集器与规则版本。
 
 低版本没有可靠退出时间，下一次启动时间只表示何时发现旧会话未闭合。PID 也会复用；关联时应使用会话、进程、构建、设备启动周期和证据指纹（evidence fingerprint，由多项稳定特征生成的匹配键）。外部 ANR 或崩溃记录无法唯一匹配时，保留候选及分数，不要为了生成一个统一事件而丢掉来源关系。
 
@@ -383,7 +385,7 @@ Android 10 到 Android 17 的公开诊断能力可以分成三条路径。本文
 | 应用请求采集 | App 已知问题正在复现，能否请求一次 profile | Android 15 / API 35 | `ProfilingManager#requestProfiling()`，或 AndroidX Profiling | system trace、Java heap dump、heap profile、stack sampling |
 | 系统事件触发采集 | 系统识别到特定事件时，能否保存事件前后的 profile | Android 16 / API 36 | `addProfilingTriggers()`、全局结果监听器 | 后台 trace 快照、Java heap dump、stack sample 等 |
 
-退出追溯记录进程终点。它适合确认应用无响应（ANR）、原生代码崩溃（native crash）、用户操作或系统资源处置，但通常缺少故障前的完整运行时序。应用请求采集针对可以控制的复现时段。系统事件触发采集依赖后台采样和限流，用来捕获难以预测的事件。
+退出追溯记录进程终点。它适合确认由应用无响应（ANR）、原生代码崩溃（native crash）、用户操作或系统资源处置引起的退出，但通常缺少故障前的完整运行时序。应用请求采集针对可以控制的复现时段。系统事件触发采集依赖后台采样和限流，用来捕获难以预测的事件。
 
 一次问题可以关联多条路径。例如，ANR 发生时系统可能生成触发式 system trace；进程随后被杀，下次启动又能读到 `ApplicationExitInfo`。两者应作为独立来源归档，再通过时间、进程和事件语义建立关联，不能因为时间相近就覆盖其中一份。
 
@@ -399,7 +401,9 @@ Android 10 到 Android 17 的公开诊断能力可以分成三条路径。本文
 | Android 16 minor release / API 36.1 | 增加主动请求后台 trace 快照、注册全部 trigger 及三类用户终止 trigger | 运行时按完整 SDK 版本检查 |
 | Android 17 / API 37 | 增加 cold start、OOM、anomaly、CPU kill、app compat trigger；部分设备启用 MemoryLimiter | 设备覆盖、系统限流和无产物路径都要监控 |
 
-API 36.1 是 Android 16 的 minor SDK release（次版本 SDK 发布），同一大版本内也可以新增 API。它与 `SdkExtensions.getExtensionVersion()` 表示的 Mainline SDK Extension（可由模块更新提供的扩展版本）是两套版本机制。调用 36.1 新 API 前，应检查 `Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1`；`SDK_INT` 只记录大版本，`SDK_INT >= 36` 无法区分 36.0 和 36.1。Android 17 的 `SDK_INT_FULL` 高于该值，也满足条件。
+API 36.1 是 Android 16 的 minor SDK release（次版本 SDK 发布），同一大版本内也可以新增 API。它与 `SdkExtensions.getExtensionVersion()` 表示的 Mainline SDK Extension（可由模块更新提供的扩展版本）是两套版本机制。
+
+调用 36.1 新 API 前，应检查 `Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1`；`SDK_INT` 只记录大版本，`SDK_INT >= 36` 无法区分 36.0 和 36.1。Android 17 的 `SDK_INT_FULL` 高于该值，也满足条件。
 
 ### Android 10–14：沿用前文退出证据
 
@@ -409,7 +413,7 @@ Android 10 只能依赖 App 自有状态、Crash SDK，以及受控场景下的 
 
 ### Android 15：应用请求 profiling
 
-Android 15 / API 35 引入公开的 `ProfilingManager`。实现位于 Mainline Profiling 模块 `packages/modules/Profiling`；Mainline 模块是可以通过系统组件更新、无需完整系统 OTA 才能升级的 Android 组件。Android 17 的直接 API 签名为：
+Android 15 / API 35 引入公开的 `ProfilingManager`。实现位于 Mainline Profiling 模块 `packages/modules/Profiling`；Mainline 模块属于可通过系统组件更新升级、无需完整系统 OTA 的 Android 组件。Android 17 的直接 API 签名为：
 
 `requestProfiling(int profilingType, Bundle parameters, String tag, CancellationSignal cancellationSignal, Executor executor, Consumer<ProfilingResult> listener)`
 
@@ -431,7 +435,9 @@ Android 15 / API 35 引入公开的 `ProfilingManager`。实现位于 Mainline P
 
 如果请求没有同时提供专用 listener / executor，进程也没有已注册的全局 listener / executor 组合，系统会丢弃该请求，不会启动采集。系统触发的结果没有请求现场的 callback（回调），只能经全局监听器交付；应用若在生成结果时未运行，下次启动并重新注册监听器后仍可能收到该结果。
 
-成功文件的位置必须读取 `ProfilingResult#getResultFilePath()`。目录结构和文件命名属于实现细节，上传器不能自行拼接 `/data/user/0/<package>/files/profiling/...`。`ProfilingResult` 可直接读取 error code、error message、结果路径、tag（调用方附加的短标识）和 trigger type；它没有 `getProfilingType()`。主动请求时，应用要把请求类型和自有 request ID 一起保存。系统触发时，应根据 trigger type、tag 和收到的文件类型归档，数据模型中不要虚构 profiling type 字段。
+成功文件的位置必须读取 `ProfilingResult#getResultFilePath()`。目录结构和文件命名属于实现细节，上传器不能自行拼接 `/data/user/0/<package>/files/profiling/...`。`ProfilingResult` 可直接读取 error code、error message、结果路径、tag（调用方附加的短标识）和 trigger type；它没有 `getProfilingType()`。
+
+主动请求时，应用要把请求类型和自有 request ID 一起保存。系统触发时，应根据 trigger type、tag 和收到的文件类型归档，数据模型中不要虚构 profiling type 字段。
 
 ### Android 16-17：系统事件触发 profiling
 
@@ -471,11 +477,13 @@ trigger 注册表达的是“应用希望接收某类系统事件对应的采集
 
 Android 17 在部分设备上实施 MemoryLimiter，且不受应用 `targetSdkVersion` 限制。被其终止的进程表现为 `REASON_OTHER`，`getDescription()` 包含精确字符串 `"MemoryLimiter:AnonSwap"`；命中限制时，`TRIGGER_TYPE_ANOMALY` 还可能提供 Java heap dump，但仍受设备覆盖、后台采样和限流约束。
 
-只有这个文档明确保证的完整标记适合机器判断；不能匹配宽泛的 `"MemoryLimiter"`，也不能把所有 `REASON_OTHER` 都归入内存限制。MemoryLimiter kill 与 Java `OutOfMemoryError` 是不同事件：前者走 anomaly trigger，后者才对应 `TRIGGER_TYPE_OOM`。
+只有文档明确保证的完整标记适合机器判断；不能匹配宽泛的 `"MemoryLimiter"`，也不能把所有 `REASON_OTHER` 都归入内存限制。MemoryLimiter kill 与 Java `OutOfMemoryError` 是不同事件：前者走 anomaly trigger，后者才对应 `TRIGGER_TYPE_OOM`。
 
 `TRIGGER_TYPE_OOM` 依赖默认未捕获异常处理路径。`UncaughtExceptionHandler` 是线程异常无人处理时的末端回调；自定义 handler 如果不继续调用原默认 handler，系统无法使用这个 trigger。应用仍可在合适时机主动请求 Java heap dump，但要评估进程当时是否还有足够资源完成请求。
 
-`TRIGGER_TYPE_ANOMALY` 的产物不能预设为一种格式。Android 17 文档列出的场景包括：命中系统内存限制时返回 heap dump，过量 Binder 调用时返回 stack sample；回调发生在系统实施相应处置之前。多个 package 共享同一 UID（多个包使用同一个系统身份）并同时注册某些异常 trigger 时，系统可能不提供附件。结果处理器应先看 trigger type、tag 和文件，再选择解析器。
+`TRIGGER_TYPE_ANOMALY` 的产物不能预设为一种格式。Android 17 文档列出的场景包括：命中系统内存限制时返回 heap dump，过量 Binder 调用时返回 stack sample；回调发生在系统实施相应处置之前。
+
+多个 package 共享同一 UID（多个包使用同一个系统身份）并同时注册某些异常 trigger 时，系统可能不提供附件。结果处理器应先看 trigger type、tag 和文件，再选择解析器。
 
 `TRIGGER_TYPE_COLD_START` 会尽早启动一份新的 system trace 和 stack sampling profile，持续到应用调用 `reportFullyDrawn()`；未调用时，公开 API 文档给出的默认停止时间为 5 秒。它使用 discard buffer（满后丢弃新事件的缓冲区），以保留启动初期的内容。采集启动仍可能有延迟，因此产物不保证覆盖进程创建后的每个事件。
 
