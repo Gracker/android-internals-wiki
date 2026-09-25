@@ -104,7 +104,9 @@ last_rework_run_id: 20260815-212220-gracker-writing-475
 
 这四层 ID 规定了如何把多个事件归到同一次用户操作。同一个 `request_id` 可能出现多次 DNS、connect 或 `connectionAcquired`，也可能复用已有连接而完全没有 DNS、connect 和 TLS 事件。若采集器只为每个阶段保留一个开始时间，后一次路由尝试会覆盖前一次失败，计算出的分段之和也可能和调用总耗时对不上。
 
-截至 2026 年 8 月 15 日，Maven Central 标记的 OkHttp release 为 5.4.0；其 [`EventListener` 5.4.0 源码](https://github.com/square/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 与本文原先核对的 [`EventListener`](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 5.3.0 源码一致。dispatcher（请求调度器）排队，以及 DNS、建连、安全连接、连接获取、请求发送和响应读取事件都属于同一个 `Call`。connect 系列事件可能因候选路由与 Fast Fallback 重复出现；Fast Fallback 会交错尝试多个地址，以缩短单一路径迟迟无法建连造成的等待。`connectionAcquired` 也可能在一个 `Call` 中出现多次。连接复用时，DNS、connect 和 TLS 事件可能缺席。采集器应保存有序事件和对应的 attempt/exchange，不能假设事件序列固定。
+截至 2026 年 8 月 15 日，Maven Central 标记的 OkHttp release 为 5.4.0；其 [`EventListener` 5.4.0 源码](https://github.com/square/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 与本文原先核对的 [`EventListener`](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 5.3.0 源码一致。
+
+dispatcher（请求调度器）排队事件，以及 DNS、建连、安全连接、连接获取、请求发送和响应读取事件，都属于同一个 `Call`。connect 系列事件可能因候选路由与 Fast Fallback 重复出现；Fast Fallback 会交错尝试多个地址，以缩短单一路径迟迟无法建连造成的等待。`connectionAcquired` 也可能在一个 `Call` 中出现多次。连接复用时，DNS、connect 和 TLS 事件可能缺席。采集器应保存有序事件和对应的 attempt/exchange，不能假设事件序列固定。
 
 Cronet 的公开采集入口是 `org.chromium.net.RequestFinishedInfo.Listener`。本文逐方法核验的 API 版本为 `143.7445.0`；[`RequestFinishedInfo.Metrics`](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Metrics) 提供请求开始、DNS、建连、SSL、发送、响应开始和请求结束时间戳，以及套接字复用、TTFB（time to first byte，收到首个响应字节前的时间）、总耗时和可空的传输字节数。没有发生或无法取得的阶段返回 `null`；复用连接时 DNS、connect 和 SSL 均为空。DNS 命中本地缓存但没有复用 socket 时，Cronet 仍可给出 DNS 时间戳，所以“存在 DNS 事件”不能直接等价为“访问了远端 DNS”。
 
@@ -112,7 +114,7 @@ Google Maven 当前把 `cronet-api:500.0.1` 标为 release，但其 [`POM`](http
 
 字节字段也要注明来源。`Metrics#getReceivedByteCount()` 是当前请求的传输层接收字节，不包含之前的重定向；`UrlResponseInfo#getReceivedByteCount()` 是从请求开始累计到当前响应的最小接收字节估计，包含重定向但不覆盖所有协议开销。两个字段不能混入同一指标序列。
 
-AOSP `android-17.0.0_r1` 没有向 App 提供 `android.net.http.RequestFinishedInfo` 这一公共 API。Cronet 独立于平台版本发布；App 应使用 `org.chromium.net` 公共 API，并在事件中记录 Cronet 版本。它也无法观测绕过 Cronet 的 OkHttp、`HttpURLConnection` 或 Native 自研协议。
+AOSP `android-17.0.0_r1` 没有向 App 提供 `android.net.http.RequestFinishedInfo` 这一公共 API。Cronet 独立于平台版本发布；App 应使用 `org.chromium.net` 公共 API，并在事件中记录 Cronet 版本。Cronet 也无法观测绕过它的 OkHttp、`HttpURLConnection` 或 Native 自研协议。
 
 自研网络库应把阶段事件纳入接口设计。下表用 `observed` 表示采集器看到了该阶段，`not_observed` 表示该阶段未发生或未被回调覆盖，`unsupported` 表示当前库不提供该字段。
 
@@ -146,13 +148,13 @@ AOSP `android-17.0.0_r1` 没有向 App 提供 `android.net.http.RequestFinishedI
 
 `NetworkCapabilities` 描述系统当前知道的网络属性。`NET_CAPABILITY_INTERNET` 表示网络被配置为可访问互联网，不代表已经连通；`NET_CAPABILITY_VALIDATED` 表示系统探测到公共互联网，仍不能证明某个业务域名可达。Captive Portal 探测期间通常有 `INTERNET` 和 `CAPTIVE_PORTAL`，没有 `VALIDATED`。Wi-Fi、蜂窝和 VPN 都是 transport（网络承载类型）；一张网络可以同时具有多个 transport，例如 VPN 运行在 Wi-Fi 与蜂窝之上。
 
-网络状态要按样本发生时记录。使用 `registerDefaultNetworkCallback()` 时，Android 8.0 及以上会在 `onAvailable()` 后立即给出 `onCapabilitiesChanged()` 和 `onLinkPropertiesChanged()`；不要在 `onAvailable()` 内同步查询新网络属性，否则会出现时序竞争（竞态）。默认网络回调的 `onLost()` 只说明这张网络不再是 App 的默认网络，它未必已经断开。
+网络状态要按样本发生的时刻记录。使用 `registerDefaultNetworkCallback()` 时，Android 8.0 及以上会在 `onAvailable()` 后立即给出 `onCapabilitiesChanged()` 和 `onLinkPropertiesChanged()`；不要在 `onAvailable()` 内同步查询新网络属性，否则会出现时序竞争（竞态）。默认网络回调的 `onLost()` 只说明这张网络不再是 App 的默认网络，它未必已经断开。
 
 默认网络回调运行在 App 的 `ConnectivityManager` 专用线程。回调中只更新创建后不再修改的内存快照，耗时计算与上传放到工作线程，并在不再使用时注销该回调。`Network` 对象仅在该次连接存续期内有效，同一接入点重连后也会得到新对象，因此只能在端侧短期关联，不能当作跨会话设备或网络标识。
 
 ## Native Hook 与统一网络库的边界
 
-网络监控入口有四类：编译期插桩（构建时在字节码中加入观测代码）、库层回调、Native Hook（运行时拦截本地函数调用）、统一网络库。它们分别对应不同覆盖面、成本和风险。
+网络监控入口有四类：编译期插桩（构建时在字节码中加入观测代码）、库层回调、Native Hook（运行时拦截本地函数调用）、统一网络库。
 
 | 方案 | 覆盖面 | 优点 | 风险 |
 | --- | --- | --- | --- |
@@ -193,11 +195,11 @@ PLT（Procedure Linkage Table，过程链接表）保存动态函数的跳转入
 
 实时告警不展开取值种类很多的高基数字段。每个分位值与错误率都要同时展示样本数、采样率、覆盖率和数据新鲜度；低样本量下的 P90/P99（90/99 分位值）波动不能直接解释为用户体验突变。客户端网络故障还会阻断遥测上传，因此“已收到的失败率”存在幸存者偏差：无法上报的失败用户没有进入统计。接入层请求量下降、客户端待上传队列增长、上传延迟升高和预计样本缺口应一起报警。
 
-尾延迟是少量最慢请求形成的分布尾部，需要结合阶段分布分析。DNS 长尾提示检查解析、调度和网络切换；connect 长尾提示检查候选路由、可达性、CDN 和防火墙；TTFB 同时包含客户端到入口的传输、入口排队与服务端处理，不能单凭这一项归因服务端；响应体读取阶段（body）长尾还会受响应大小、网络路径吞吐和应用读取速度影响。指标用于缩小检索范围，结论仍需客户端事件、接入层日志和服务端 span 相互验证。
+尾延迟是少量最慢请求形成的分布尾部，需要结合阶段分布分析。DNS 长尾提示检查解析、调度和网络切换；connect 长尾提示检查候选路由、可达性、CDN 和防火墙；TTFB 同时包含客户端到入口的传输、入口排队与服务端处理，不能单凭这一项归因到服务端；响应体读取阶段（body）长尾还会受响应大小、网络路径吞吐和应用读取速度影响。指标用于缩小检索范围，结论仍需客户端事件、接入层日志和服务端 span 相互验证。
 
 ## 网络故障证据包
 
-一次线上网络故障的证据包要支持判定影响范围、模拟触发条件和验证修复。字段按采样策略与数据分级收集，严重故障也不能绕过隐私、权限和保留期限约束。
+一次线上网络故障的证据包要能判定影响范围、模拟触发条件并验证修复。字段按采样策略与数据分级收集，严重故障也不能绕过隐私、权限和保留期限约束。
 
 | 字段组 | 必要字段 | 用途 |
 | --- | --- | --- |
