@@ -80,7 +80,7 @@ last_rework_run_id: 20260815-205207-gracker-writing-473
 
 # Android Vitals 与 Play Console 质量指标归因
 
-Android Vitals 是 Google Play 对线上技术质量的外部观测。它统计从 Play 安装应用、允许共享使用情况与诊断数据的用户所经历的稳定性、性能和功耗问题。内部应用性能监控（application performance monitoring，APM）负责定位问题所在的版本、场景和调用路径，帮助团队在灰度阶段，也就是只向部分用户逐步发布时，暂停异常版本。两套数据的采集范围、分母和时效不同，应分别判断趋势，再按版本、设备和错误类型相互校验，不能直接比较两个百分比的大小。
+Android Vitals 是 Google Play 对线上技术质量的外部观测。它统计从 Play 安装应用、允许共享使用情况与诊断数据的用户所经历的稳定性、性能和功耗问题。内部应用性能监控（application performance monitoring，APM）负责定位问题所在的版本、场景和调用路径，帮助团队在只向部分用户逐步发布的灰度阶段暂停异常版本。两套数据的采集范围、分母和时效不同，应分别判断趋势，再按版本、设备和错误类型相互校验，不能直接比较两个百分比的大小。
 
 指标口径以 2026 年 8 月 15 日可见的公开文档为准，平台版本上界为 Android 17 / API 37。Vitals 的指标定义、阈值和 Play 可见性策略由 Google Play 服务端制定，不在 `android-17.0.0_r1` 的 Android 开源项目（Android Open Source Project，AOSP）API 契约内。Android 17 源码可用于解释应用无响应（ANR）、低内存终止守护进程（low memory killer daemon，LMKD）、帧时间或唤醒机制，无法据此证明 Play 的服务端阈值。升级平台源码锚点不应连带改写这些阈值；Play 文档变更也不表示 Android 框架同时发生了对应改动。
 
@@ -96,7 +96,7 @@ Android Vitals 是 Google Play 对线上技术质量的外部观测。它统计�
 | 表盘专项 | watch face excessive battery usage 及 CPU、partial wakelock 贡献因素 | 表盘在非充电、没有其他应用使用设备时的耗电情况 | AoD（常亮显示）配置、刷新频率、Complication（表盘信息组件）更新、资源与动画成本 |
 | 内部 APM | crash-free users（无崩溃用户率）、启动分位数、页面卡顿、内存水位、业务错误率 | 当前版本是否回归，问题发生在什么路径 | 与 Play 维度一致的版本、设备、系统和渠道标识 |
 
-“表盘应用”这个限定不能省略。`excessive battery usage` 目前只对具有足够数据的 watch face app 提供，其范围不扩展到所有 Wear OS 应用。Slow Sessions 也只适用于游戏，普通应用应使用 UI 渲染指标和端侧帧证据。
+“表盘应用”这个限定不能省略。`excessive battery usage` 目前只为具备足够数据的表盘应用提供，并不覆盖所有 Wear OS 应用。Slow Sessions 也只适用于游戏，普通应用应使用 UI 渲染指标和端侧帧证据。
 
 Play 阈值只是发版暂停规则之一。一个版本可能尚未达到该阈值，却已经相对上个版本明显恶化；这时内部灰度指标应先阻止继续放量。反过来，Play 上的存量问题也可能在 28 天窗口中继续出现，不能仅凭当天内部指标恢复就宣布问题结束。
 
@@ -111,15 +111,15 @@ Google Play 每天检查 core vitals，通常依据最近 28 天的用户加权�
 | Excessive partial wake locks | > 5% | 无机型阈值 | 发生 excessive partial wake lock 的 app sessions |
 | Excessive battery usage（表盘） | > 1% | 手表机型 > 1% | 电量消耗超过 4.44%/hour 的 watch face sessions |
 
-DAU 是 daily active user（每日活跃用户）的缩写，统计单位是“某一天、某台设备上使用应用的一名用户”，与安装数和启动次数分开计算。同一用户当天使用两台设备会贡献两个 DAU；多人当天共用一台设备只计一个。Crash、ANR 或 LMK 多次发生，不会让“至少一次”的 rate（受影响比例）分子重复增加。若要观察循环失败，应同时查看 multiple crash rate 和 multiple ANR rate。
+DAU 是 daily active user（每日活跃用户）的缩写，统计单位是“某一天、某台设备上使用应用的一名用户”，与安装数和启动次数分开计算。同一用户当天使用两台设备会贡献两个 DAU；多人当天共用一台设备只计一个。同一用户多次发生 Crash、ANR 或 LMK，不会让“至少一次”的 rate（受影响比例）分子重复增加。若要观察循环失败，应同时查看 multiple crash rate 和 multiple ANR rate。
 
-Vitals 的 user session（用户会话）按日聚合，与一次 launch（启动）分别计量。官方将其定义为从太平洋时间午夜开始的 24 小时内，应用全部使用活动的总和；当天没有记录到使用活动时，不产生 session。涉及 partial wake lock、表盘耗电或其他 session rate 时，应沿用这一日会话口径，不能拿内部的一次启动会话直接充当分母。
+Vitals 的 user session（用户会话）按日聚合，与一次 launch（启动）分别计量。官方将其定义为太平洋时间午夜起 24 小时内应用全部使用活动的总和；当天没有记录到使用活动时，不产生 session。涉及 partial wake lock、表盘耗电或其他 session rate 时，应沿用这一日会话口径，不能拿内部的一次启动会话直接充当分母。
 
 阈值附近还要注意比较符号。Crash 和 ANR 文档使用 “at least”，达到阈值即属于 bad behavior；partial wake lock 与表盘耗电文档使用 “more than”。内部暂停阈值可以比官方阈值更严格，但字段名必须表明它属于团队规则，不能写成 Play 官方阈值。
 
 ### Partial wake lock 的当前规则
 
-Partial wake lock（局部唤醒锁）让设备屏幕关闭后 CPU 仍可继续运行，因此持有过久会阻止设备进入低功耗状态。Android Vitals 将所有符合统计条件的 partial wake lock 时长相加：若它们在 24 小时内累计达到 2 小时或以上，这个会话被判为 excessive。统计时只计算应用位于后台或正在运行前台服务时的持有时间；现行文档列出的豁免包括音频、定位和由用户发起的 JobScheduler API 等具有明确用户收益的场景。28 天内 excessive 会话超过 5%，可能影响 Play 可见性。
+Partial wake lock（局部唤醒锁）在设备屏幕关闭后仍让 CPU 继续运行，因此持有过久会阻止设备进入低功耗状态。Android Vitals 将所有符合统计条件的 partial wake lock 时长相加：若它们在 24 小时内累计达到 2 小时或以上，这个会话被判为 excessive。统计时只计算应用位于后台或正在运行前台服务时的持有时间；现行文档列出的豁免包括音频、定位和由用户发起的 JobScheduler API 等具有明确用户收益的场景。28 天内 excessive 会话超过 5%，可能影响 Play 可见性。
 
 这一政策从 2026 年 3 月 1 日起已进入可见性约束阶段。旧资料中的“3 小时”或“仍处于不影响可见性的 beta”已不适合作为当前结论；诊断时应以 2026-06-10 更新的 [Excessive partial wake locks](https://developer.android.com/topic/performance/vitals/excessive-wakelock) 页面和 [Android Vitals 总览](https://developer.android.com/topic/performance/vitals) 为准。
 
@@ -140,7 +140,7 @@ Vitals 的 rate 以受影响用户为中心，自建 Crash SDK（崩溃采集软
 | 多次问题 | multiple crash / ANR rate 统计一天内至少两次的受影响用户 | 事件表通常保留每次发生记录 |
 | 时效 | 每日更新并受聚合与隐私门槛影响 | 可做到分钟级，但受采样、进程死亡和上传成功率影响 |
 
-Wear OS 的 user-perceived crash 有一项单独规则：官方 crash 文档将前台和后台崩溃都纳入手表的 user-perceived 口径。手机应用若直接复用手表结论，会高估 Play 在后台崩溃上的统计范围。
+Wear OS 的 user-perceived crash 有一项单独规则：官方 crash 文档将前台和后台崩溃都纳入手表的 user-perceived 口径。若把这条手表规则直接套用到手机应用，会高估 Play 在后台崩溃上的统计范围。
 
 ### 三层证据如何配合
 
@@ -161,9 +161,11 @@ ANR 不能只看一张堆栈。`Input dispatching timed out` 说明用户输入�
 | User-perceived LMK | DAU 中至少经历一次可感知 LMK（low memory kill，低内存终止）；例如 Activity 正在显示或 foreground service 正在运行 | `ApplicationExitInfo.REASON_LOW_MEMORY`、PSS/RSS、native heap、bitmap、WebView、设备 RAM 桶 | 同时判断版本内存增长与设备整体压力，不能把每个 `REASON_LOW_MEMORY` 都归咎于单一对象泄漏 |
 | Slow Sessions | 仅游戏；运行满一分钟后统计；超过 25% 帧的 present-to-present 间隔不低于 50ms 即为 20 FPS slow session，另有 34ms/30 FPS 指标 | Swappy、SurfaceFlinger（系统显示合成服务）timestats、ADPF、thermal status、场景、画质档、SoC/GPU | 统计相邻画面呈现间隔，覆盖 OpenGL、Vulkan 和 UI Toolkit surface（应用提交画面的缓冲区载体），不等同于应用 CPU frame time |
 
-这些渲染诊断项位于不同层次：FrameTimeline 记录一帧从应用到系统合成的时间线，FrameMetrics 提供应用窗口的帧耗时，JankStats 状态标签给慢帧附加页面或交互信息；RenderThread 是执行部分渲染工作的线程，BufferQueue 是生产者向显示消费者传递图形缓冲区的队列。内存项中，PSS 是按共享比例折算后的进程内存，RSS 是进程当前驻留在物理内存中的总量，native heap 是 C/C++ 等原生代码使用的堆，设备 RAM 桶则按物理内存容量给设备分组。单独一个数值不足以解释 LMK，需要结合设备内存分组和同机内存压力。
+这些渲染诊断项位于不同层次：FrameTimeline 记录一帧从应用到系统合成的时间线，FrameMetrics 提供应用窗口的帧耗时，JankStats 状态标签给慢帧附加页面或交互信息；RenderThread 是执行部分渲染工作的线程，BufferQueue 是生产者向显示消费者传递图形缓冲区的队列。
 
-Slow Sessions 的 present-to-present 指相邻两帧送达屏幕合成端的时间间隔；thermal status 是设备因温度变化进入的性能限制状态。这些定义说明该指标反映用户看到的出帧节奏，无法直接代替 CPU 或 GPU 单阶段耗时。
+内存项中，PSS 是按共享比例折算后的进程内存，RSS 是进程当前驻留在物理内存中的总量，native heap 是 C/C++ 等原生代码使用的堆，设备 RAM 桶则按物理内存容量给设备分组。单独一个数值不足以解释 LMK，需要结合设备内存分组和同机内存压力。
+
+Slow Sessions 的 present-to-present 指相邻两帧送达屏幕合成端的时间间隔；thermal status 是设备因温度变化进入的性能限制状态。因此 Slow Sessions 统计的是用户看到的出帧节奏，无法直接代替 CPU 或 GPU 单阶段耗时。
 
 Slow startup 的固定秒数适合识别严重慢开，却无法识别从 1.8 秒退化到 2.4 秒这类未达到 Play 门槛的回归。灰度暂停规则仍需比较相同启动类型、相同设备档和相同安装状态下的分布；第 21.1 节给出了启动数据的详细边界。
 
@@ -226,7 +228,7 @@ Vitals 未越线也不足以判定性能合格。Play 的固定启动或 frozen 
 
 ## Play Developer Reporting API 与内部数据仓库对接
 
-Play Developer Reporting API 以 metric set（指标集）组织共享数据新鲜度、聚合粒度和可用维度的一组指标。2026 年稳定性和性能 rate（比例指标）的主要入口为 `v1beta1`，包括 `vitals.anrrate`、`vitals.crashrate`、`vitals.lmkrate`、`vitals.excessivewakeuprate`、`vitals.stuckbackgroundwakelockrate`、`vitals.slowstartrate` 和 `vitals.slowrenderingrate`；错误报告计数仍有 `v1alpha1` 资源。API 版本、metric set 名称和指标名应按官方 schema（字段、类型和约束定义）保存，不能从 Console 文案自行拼接。
+Play Developer Reporting API 用 metric set（指标集）组织指标，同一个 metric set 内的指标共享数据新鲜度、聚合粒度和可用维度。2026 年稳定性和性能 rate（比例指标）的主要入口为 `v1beta1`，包括 `vitals.anrrate`、`vitals.crashrate`、`vitals.lmkrate`、`vitals.excessivewakeuprate`、`vitals.stuckbackgroundwakelockrate`、`vitals.slowstartrate` 和 `vitals.slowrenderingrate`；错误报告计数仍有 `v1alpha1` 资源。API 版本、metric set 名称和指标名应按官方 schema（字段、类型和约束定义）保存，不能从 Console 文案自行拼接。
 
 一次 `query` 请求包含四类核心信息：
 
@@ -271,7 +273,7 @@ Crash 和 ANR 的新出现问题（emerging issues）还有一条独立时效：
 - 设备动作：远程配置或发布策略能够按 `deviceModel`、API level、ABI 等可靠条件关闭高风险功能；条件表达式必须在目标设备上验证。
 - 证据入口：Play 指标和错误聚类应链接到内部趋势、堆栈、trace、实验与变更记录，并明确标注关联是精确还是推测。
 
-Android Vitals 提供一套由 Play 定义、会影响分发结果的外部证据，不能当作版本质量印章。内部系统越早发现同一趋势，团队越有机会在 28 天窗口和商店风险扩大前完成修复。
+Android Vitals 提供一套由 Play 定义、会影响分发结果的外部证据，不能当作版本质量的证明。内部系统越早发现同一趋势，团队越有机会在 28 天窗口和商店风险扩大前完成修复。
 
 ## 全文小结
 
