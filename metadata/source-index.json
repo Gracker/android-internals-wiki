@@ -5409,6 +5409,73 @@
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://f-droid.org/2026/09/24/f-droid-2.0-a-new-chapter-for-android-freedom.html",
+      "title": "[ClawFeed] F-Droid 2.0: a new chapter for Android freedom",
+      "summary": "F-Droid 9 月 24 日发布 2.0，是十年来最大一次客户端重写。UI 全部用 Kotlin + Jetpack Compose 重建对齐 Material 3；类别从几个宽分类拆成数十个细分（VPN、防火墙、密码管理器、启动器、导航、17 个游戏子类），搜索扩展到描述、类别、翻译内容并强化 CJK。底层装包切到 Android 会话安装器和预授权 API（欧盟 DMA 推动），用户点确认即开始下载，体验对齐系统商店。F-Droid 特权扩展（FPE）作为后台更新通道被永久放弃。Tor 集成迁到统一代理设置（推荐 TorVPN），应急伪装功能从伪装成计算器改回只换图标。开发由 NLnet/Mobifree 资助，UX 由 OTF UXD Lab + Ura Design 完成，OTF Security Lab + Convocation 完成独立安全审计并闭环。",
+      "chapter": "ch08",
+      "processed_at": "2026-09-26T06:20:10.341905+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "target_path": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "chapter",
+        "for",
+        "kotlin",
+        "material"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-26-76878078-AndroidX 新增 Security.md",
+      "title": "[技术文章] AndroidX 新增 Security State ，支持可编程的系统安全状态查询最近谷歌算是正式介绍了 Androi",
+      "summary": "> 发布时间: 2026-09-22T01:14:20.000Z > 原文链接: https://juejin.cn/post/7687807835842248710 2026-09-22 560 阅读5分钟 最近谷歌算是正式介绍了 AndroidX Security State Libraries ，包括 androidx.security:security-state...",
+      "chapter": "ch16",
+      "processed_at": "2026-09-26T06:20:10.341905+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part4-system/ch18-aosp/03-android17-kernel-arm64-security.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "security",
+        "state",
+        "androi",
+        "security.md"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-26-76882124-AOSP编译：敲下 `lunch xxx.md",
+      "title": "[技术文章] AOSP编译：敲下 lunch xxx-userdebug，你知道系统偷偷干了什么吗？很多人会 lunch，但没人说",
+      "summary": "> 发布时间: 2026-09-22T13:53:13.000Z > 原文链接: https://juejin.cn/post/7688212417864908827 2026-09-22 79 阅读6分钟 AOSP 构建系统全解析 > 专栏：AOSP 构建系统全解析 源码版本：Android 17 作者：知昂七昂 上一篇我们讲完了 source build/envset...",
+      "chapter": "ch16",
+      "processed_at": "2026-09-26T06:20:10.341905+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-26-76883347-Shell Transition 机制详.md",
+      "title": "[技术文章] Shell Transition 机制详解Shell Transition 机制详解 面向 WMS 开发者的完整指南 一",
+      "summary": "> 发布时间: 2026-09-23T07:56:21.000Z > 原文链接: https://juejin.cn/post/7688334749719035940 2026-09-23 39 阅读15分钟 > 基于 android 16 代码库分析，覆盖 Shell Transition 架构。 关键源码路径：frameworks/base/services/core...",
+      "chapter": "ch16",
+      "processed_at": "2026-09-26T06:20:10.341905+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "route_confidence": 25,
+      "route_terms": [
+        "shell",
+        "transition",
+        "wms",
+        "frameworks",
+        "base",
+        "services",
+        "aosp"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
