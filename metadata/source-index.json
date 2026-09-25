@@ -5380,9 +5380,9 @@
       "summary": "> 发布时间: 2026-06-04T06:05:31.000Z > 原文链接: https://juejin.cn/post/7647186702176157722 2026-06-04 1,701 阅读6分钟 Android 17 开始引入 App 内存限制，限制值会根据设备总 RAM 决定。 如果进程超过限制，系统可以直接杀掉这个进程，而且不会给一段常规 crash...",
       "chapter": "ch04",
       "processed_at": "2026-09-25T06:20:10.804207+08:00",
-      "action": "indexed-only-chapter-freeze",
-      "score": 19,
-      "target_path": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "action": "quarantined-misroute",
+      "score": 0,
+      "target_path": null,
       "route_confidence": 21,
       "route_terms": [
         "android17",
@@ -5391,7 +5391,14 @@
         "juejin-android",
         "ch04-memory"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "quarantined-misroute-by-apply",
+      "previous_action": "indexed-only-chapter-freeze",
+      "previous_route_status": "existing-chapter-routed",
+      "previous_target_path": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "quarantine_reason": "Body-apply no-change: material is a same-URL re-fetch of source-index entry 412 (juejin post 7647186702176157722, Android 17 MemoryLimiter kill R8+onTrimMemory+ProfilingManager article). Files are byte-equivalent (10882 bytes each; only diff is a single read counter line, 1657->1701). Chapter 01-android-linux-memory-overview.md already body-applied this content under run 20260923-071501-642a4cca (entry 412 status=body-applied). No new technical fact exists in the 09-25 file; the chapter's R8 / onTrimMemory / ProfilingManager / ApplicationExitInfo REASON_OTHER + MemoryLimiter:AnonSwap / am memory-limiter status|manual|ignore sections already cite this material. Re-applying would duplicate the same source markers with no accuracy gain. Chapter body, frontmatter, and findings left unchanged; no formal report.",
+      "quarantined_at": "2026-09-25T09:15:34+08:00",
+      "quarantined_run_id": "20260925-091534-402d81c6",
+      "status": "quarantined"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-25-76809960-腾讯音乐Android秒编方案Jugg开.md",
