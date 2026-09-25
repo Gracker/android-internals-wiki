@@ -135,7 +135,9 @@ consolidated_from:
 
 线上排障通常从日志、应用埋点和短时间的系统跟踪（system trace）入手。它们未覆盖的系统调用与 Binder 边界，可以在具备系统权限的设备上用 ftrace 或 eBPF 补充：ftrace 是 Linux 内核自带的事件追踪框架；eBPF 是在内核内运行、先经安全校验的受限程序；Binder 是 Android 主要的进程间通信（IPC）机制。这里的“在线”只表示设备运行期间持续或按条件追踪，普通应用仍无权在商店发布包中自行加载 BPF 程序。
 
-适用范围为 Android 12～17。平台源码核对到 `android-17.0.0_r1`；Binder 内核接口与追踪事件核对到 `android17-6.18-2026-06_r39`。文末保留的 r6 链接是这篇文章原有的历史锚点，经复核，涉及的三个 Binder 文件与 r39 内容一致。WOOTdroid 的正式实验使用两台已 root（取得超级用户权限）的 Pixel 9，系统为 Android 16；论文另用 Pixel 7 和 Pixel 9 检查逐系统调用 tracepoint 的可用性。实验结果不能直接外推到 Android 17 的量产 user build、其他芯片平台（SoC）或厂商内核。
+适用范围为 Android 12～17。平台源码核对到 `android-17.0.0_r1`；Binder 内核接口与追踪事件核对到 `android17-6.18-2026-06_r39`。文末保留的 r6 链接是这篇文章原有的历史锚点，经复核，涉及的三个 Binder 文件与 r39 内容一致。
+
+WOOTdroid 的正式实验使用两台已 root（取得超级用户权限）的 Pixel 9，系统为 Android 16；论文另用 Pixel 7 和 Pixel 9 检查逐系统调用 tracepoint 的可用性。实验结果不能直接外推到 Android 17 的量产 user build、其他芯片平台（SoC）或厂商内核。
 
 这类能力适合设备厂商（OEM）系统集成、开放额外调试能力的 userdebug 测试机和经过授权的安全实验。普通应用应优先使用应用日志、系统管理的性能分析 API `ProfilingManager`、Android Vitals，以及用户授权生成的 bugreport（系统诊断包）。
 
@@ -147,7 +149,9 @@ consolidated_from:
 
 ftrace 是 Android / Perfetto 系统追踪的重要数据源，适合观察调度、频率、Binder 和输入输出（I/O）等内核事件。它通常把事件写入“每 CPU 缓冲区”，也就是每个处理器核心各自维护的环形存储区。读取端消费不及时且空间耗尽时，较早的事件可能被覆盖。短时间人工诊断可以通过扩大缓冲区、缩小事件集和控制复现步骤来降低风险；常驻审计还要控制持续事件率、读取阻塞、存储占用和耗电。
 
-ftrace 本身能提供不少信息。Android 17 的 Binder 驱动提供 `binder_transaction`、`binder_transaction_received`、`binder_command`、`binder_return` 等 tracepoint；tracepoint 是内核预先定义、供追踪工具订阅的事件点。这些事件适合观察事务路由和驱动阶段，但不携带完整的 `Parcel` 参数，也不属于 Android 应用 SDK 的稳定契约。若要还原方法含义，还需建立 transaction code（接口内的方法编号）与具体接口版本之间的映射。
+Android 17 的 Binder 驱动提供 `binder_transaction`、`binder_transaction_received`、`binder_command`、`binder_return` 等 tracepoint；tracepoint 是内核预先定义、供追踪工具订阅的事件点。这些事件适合观察事务路由和驱动阶段，但不携带完整的 `Parcel` 参数，也不属于 Android 应用 SDK 的稳定契约。
+
+若要还原方法含义，还需建立 transaction code（接口内的方法编号）与具体接口版本之间的映射。
 
 WOOTdroid 关注系统调用审计：WDSys 在 eBPF 侧过滤并编码事件，再通过 perf buffer（BPF 的事件传输缓冲区）交给用户态进程。论文让它与基于 ftrace 的系统调用追踪同时运行，再比较两份日志。这个实验说明缓冲和读取架构会影响观察结果，但无法证明任一方案获得了全部事件，因为实验没有独立真值（ground truth），也就是一份可以确认所有应出现事件的第三方记录。
 
@@ -166,7 +170,9 @@ WOOTdroid 关注系统调用审计：WDSys 在 eBPF 侧过滤并编码事件，�
 
 ### Android eBPF 系统调用追踪路径
 
-Android 平台自身就在使用 eBPF。AOSP 文档说明，系统镜像中的 BPF 对象由 Android BPF loader 在启动阶段加载，所需 map 和 program 会 pin 到 BPF 文件系统；pin 表示给内核对象建立持久路径，使 loader 退出后其他进程仍可按权限访问。Android 17 的 `system/bpf` 源码还显示，平台程序受 loader 描述项和文件权限管理，带 `skip_on_user` 标记的对象会在 `ro.build.type=user` 时跳过。它属于系统集成机制；普通应用即使把编译后的 `.o` 对象文件放进自身目录，也不会因此获得加载权。
+Android 平台自身就在使用 eBPF。AOSP 文档说明，系统镜像中的 BPF 对象由 Android BPF loader 在启动阶段加载，所需 map 和 program 会 pin 到 BPF 文件系统；pin 表示给内核对象建立持久路径，使 loader 退出后其他进程仍可按权限访问。Android 17 的 `system/bpf` 源码还显示，平台程序受 loader 描述项和文件权限管理，带 `skip_on_user` 标记的对象会在 `ro.build.type=user` 时跳过。
+
+它属于系统集成机制；普通应用即使把编译后的 `.o` 对象文件放进自身目录，也不会因此获得加载权。
 
 WDSys 的论文原型可以拆成五个阶段：
 
@@ -176,15 +182,21 @@ WDSys 的论文原型可以拆成五个阶段：
 4. **传输**：WOOTdroid 使用 perf buffer，论文也称其为 perf ring buffer。`BPF_MAP_TYPE_RINGBUF` 是另一种 BPF map 类型；两者在空间预留、事件提交、跨 CPU 顺序和丢失统计上都有差异，设计文档应写明具体机制。
 5. **用户态消费**：读取进程负责拼接分片、统一时间表示、落盘和审计。内核程序成功输出只表示事件进入传输缓冲区，仍需单独确认读取进程已经消费并持久化。
 
-为了读取带 tag 的用户地址，论文的 Pixel 原型使用了固定按位掩码。这里的 tag 是 arm64 可放在地址高位的标记；TBI（Top Byte Ignore）允许处理器忽略地址最高字节，MTE（Memory Tagging Extension）则用标签检测内存访问错误。该常量依赖所测设备的虚拟地址布局，不能照搬成 Android 17 通用方案。去除地址标签前，需要结合目标 arm64 内核、TBI/MTE 配置、BPF helper（内核提供给 BPF 程序的受控函数）行为和进程 ABI（应用二进制接口）验证；验证失败时只记录元数据，不读取用户缓冲区。
+为了读取带 tag 的用户地址，论文的 Pixel 原型使用了固定按位掩码。这里的 tag 是 arm64 可放在地址高位的标记；TBI（Top Byte Ignore）允许处理器忽略地址最高字节，MTE（Memory Tagging Extension）则用标签检测内存访问错误。该常量依赖所测设备的虚拟地址布局，不能照搬成 Android 17 通用方案。
+
+去除地址标签前，需要结合目标 arm64 内核、TBI/MTE 配置、BPF helper（内核提供给 BPF 程序的受控函数）行为和进程 ABI（应用二进制接口）验证；验证失败时只记录元数据，不读取用户缓冲区。
 
 eBPF 在这里更像内核侧筛选器：尽早排除无关事件，只送出长度有上限的结构化数据。字符串、用户栈和可变长 payload（事件携带的数据内容）都会增加校验、内存读取、传输带宽和隐私成本。代码运行在内核内，也无法消除这些开销。
 
 ### Binder 语义重建的关键问题
 
-应用调用 AIDL Proxy 后，接口 token 和参数会按该接口版本的规则写入 `Parcel`，再由 `IBinder.transact()` 进入 Binder 驱动。AIDL 是 Android 接口定义语言，Proxy 是 AIDL 工具生成的客户端代理；`Parcel` 是 Binder 用来顺序编码参数的二进制容器；接口 token 通常是标识接口的 descriptor 字符串。驱动只处理 transaction code、flags（同步、oneway 等事务标志）、目标 handle（进程内的 Binder 引用编号）、数据缓冲区和对象 offsets（特殊 Binder 对象在缓冲区中的位置表）。方法名与 Java/Kotlin 参数类型不在 Binder 内核 ABI 中，驱动无法直接提供这些语义。
+应用调用 AIDL Proxy 后，接口 token 和参数会按该接口版本的规则写入 `Parcel`，再由 `IBinder.transact()` 进入 Binder 驱动。AIDL 是 Android 接口定义语言，Proxy 是 AIDL 工具生成的客户端代理；`Parcel` 是 Binder 用来顺序编码参数的二进制容器；接口 token 通常是标识接口的 descriptor 字符串。
 
-Android 17 / 6.18 的 UAPI（内核向用户空间公开的二进制接口）可以从 `include/uapi/linux/android/binder.h` 核对。`BINDER_WRITE_READ` 的参数是 `binder_write_read`，其中 `write_buffer` 指向一串 Binder 命令；`BC_TRANSACTION` 和 `BC_TRANSACTION_SG` 后面跟着大小不同的事务结构。驱动的 `binder_ioctl_write_read()` 先用 `copy_from_user()` 读取 `binder_write_read`，再分别处理写入与读取部分。这里的 ioctl 是进程通过文件描述符向设备驱动发送控制命令的系统调用。
+驱动只处理 transaction code、flags（同步、oneway 等事务标志）、目标 handle（进程内的 Binder 引用编号）、数据缓冲区和对象 offsets（特殊 Binder 对象在缓冲区中的位置表）。方法名与 Java/Kotlin 参数类型不在 Binder 内核 ABI 中，驱动无法直接提供这些语义。
+
+Android 17 / 6.18 的 UAPI（内核向用户空间公开的二进制接口）可以从 `include/uapi/linux/android/binder.h` 核对。`BINDER_WRITE_READ` 的参数是 `binder_write_read`，其中 `write_buffer` 指向一串 Binder 命令；`BC_TRANSACTION` 和 `BC_TRANSACTION_SG` 后面跟着大小不同的事务结构。
+
+驱动的 `binder_ioctl_write_read()` 先用 `copy_from_user()` 读取 `binder_write_read`，再分别处理写入与读取部分。这里的 ioctl 是进程通过文件描述符向设备驱动发送控制命令的系统调用。
 
 WDBind 在 `raw_syscalls:sys_enter` 事件中运行于内核态，但读取的数据仍来自调用进程的用户地址。它观察的是驱动执行 `copy_from_user()` 之前的 `binder_write_read` 和 `Parcel`，还未经过驱动复制、校验和 Binder 对象重写。因此，采集器读到的字节与驱动稍后使用的字节之间可能出现 TOCTOU（检查时与使用时数据发生变化）、短读、地址标签和 ABI 兼容风险。
 
@@ -338,7 +350,7 @@ WOOTdroid 案例重建了十个安全相关的 framework 方法，包含短信�
 
 ## ATrace 采集与 Profilo 数据源、触发和文件管理
 
-内核事件解决底层语义，Profilo 类框架负责会话、触发、缓冲区和上传。两者组合时要统一时钟和事件 ID。
+内核事件提供底层语义，Profilo 类框架负责会话、触发、缓冲区和上传。两者组合时要统一时钟和事件 ID。
 
 ### Android 17 的使用边界
 
@@ -565,7 +577,7 @@ AAR 是 Android 库的发布归档。上游 README 明确声明 API 不稳定，
 
 #### 把 provider 安装结果纳入能力协商
 
-能力协商是客户端在每次采集旁明确报告“哪些 provider 安装成功、哪些事件类型可用”。`installSystraceHook()` 返回失败时，应跳过 ATrace provider；其他 provider 是否继续由配置决定。
+能力协商是客户端在每次采集的同时明确报告“哪些 provider 安装成功、哪些事件类型可用”。`installSystraceHook()` 返回失败时，应跳过 ATrace provider；其他 provider 是否继续由配置决定。
 
 诊断信息至少区分私有符号未找到、PLT hook 安装失败与缓冲区分配失败。后端也要收到对应能力位，避免把内容为空或缺少部分事件的 trace 标成完整数据。
 
@@ -623,7 +635,7 @@ Java/Kotlin 可使用 `android.os.Trace` 或 AndroidX Tracing，native 可使用
 
 `2.0.0-beta01` 提供可插拔 backend 与 sink，并可把应用内事件写成 Perfetto trace packet。trace packet 是 Perfetto 文件中承载事件、时间戳与关联字段的序列化记录单元。
 
-它在当前日期仍是预发布版本。采用方要把 API 变更、依赖升级和回归测试纳入计划。
+它目前仍是预发布版本。采用方要把 API 变更、依赖升级和回归测试纳入计划。
 
 [Perfetto Tracing SDK 的 in-process backend](https://perfetto.dev/docs/instrumentation/tracing-sdk) 面向 C++17 客户端，也能由应用自行控制采集。
 
