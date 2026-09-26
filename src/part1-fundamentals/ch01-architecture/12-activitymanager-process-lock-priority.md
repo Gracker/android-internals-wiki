@@ -200,7 +200,7 @@ consolidated_from:
 
 ---
 
-AMS 既维护组件和进程状态，也参与启动、回收、ANR 与调度组更新。分析 system_server 延迟时，需要把业务状态变化、锁等待和 OomAdjuster 计算放在同一条因果线上。
+分析 system_server 延迟时，需要把业务状态变化、锁等待和 OomAdjuster 计算放在同一条因果线上。全文按这条线分三部分：「进程管理的主路径」看组件与调度入口（AMS、ATMS、WMS 的分工，进程重要性，冷启动，各类 ANR，广播与 ContentProvider），「system_server 锁模型与竞争」看双锁契约、锁顺序与竞争观测，「进程状态、OomAdjuster 与优先级」看 adj、procState、schedGroup 的计算与应用；双锁的版本边界、常见误区与参考资料放在末尾。
 
 ## 进程管理的主路径
 
@@ -289,7 +289,9 @@ Android 不只把进程分为“前台”和“后台”。AMS 会综合 Activit
 
 #### AMS 如何把分数交给 `lmkd`
 
-Android 17 的实际计算位于 `com.android.server.am.psc.OomAdjuster` 和 `OomAdjusterImpl`。计算完成后，`ProcessList.setOomAdj()` 通过套接字（socket）向低内存终止守护进程 `lmkd` 发送 `LMK_PROCPRIO` 消息，消息中包含进程 ID、用户 ID（UID）与 `adj`。`lmkd` 再结合资源压力停顿信息（PSI）、剩余内存阈值（内存水位）、回收压力及候选进程信息，决定是否终止进程以及选择哪个进程。
+Android 17 的实际计算位于 `com.android.server.am.psc.OomAdjuster` 和 `OomAdjusterImpl`。
+
+计算完成后，`ProcessList.setOomAdj()` 通过套接字（socket）向低内存终止守护进程 `lmkd` 发送 `LMK_PROCPRIO` 消息，消息中包含进程 ID、用户 ID（UID）与 `adj`。`lmkd` 再结合资源压力停顿信息（PSI）、剩余内存阈值（内存水位）、回收压力及候选进程信息，决定是否终止进程以及选择哪个进程。
 
 “`lmkd` 每次从 `/proc/<pid>/oom_score_adj` 扫描并按最大值终止进程”过度简化了现行实现。`oom_score_adj` 仍是内核可见的重要状态，但 AMS 与 `lmkd` 之间存在明确的控制消息。
 
@@ -587,49 +589,6 @@ Android 17 的后台音频规则分两层：
 
 可延迟、可重试的工作优先考虑 `JobScheduler` 或 `WorkManager`；用户发起的数据传输可评估 user-initiated data transfer job（用户发起的数据传输任务）；持续媒体播放更适合使用 Media3 的 `MediaSessionService`。选择依据是任务含义和约束，不能把所有 FGS 一律替换成 WorkManager。
 
-#### AMS 全局锁竞争
-
-`ActivityManagerService.startService()` 在 Android 17 中没有给整个 Java 方法加 `synchronized`。它完成调用者检查后才进入以下同步代码块：
-
-```java
-synchronized (mGlobalLock) {
-    res = mServices.startServiceLocked(...);
-}
-```
-
-`ActiveServices` 方法名中的 `...Locked()` 表示调用者应持有 AMS 全局锁，不代表存在一个独立的“`mServices` 锁”。
-
-`realStartServiceLocked()` 还会在这段受锁保护的代码中向应用发送 `IApplicationThread.scheduleCreateService()`；这是单向异步（oneway）Binder 调用，但 Binder 驱动排队、系统负载和执行时间较长的持锁代码段（临界区）仍可能增加其他线程的锁等待时间。
-
-采集 Java 监视器锁竞争数据后，可以用 Perfetto 标准库定位：
-
-```sql
-INCLUDE PERFETTO MODULE android.monitor_contention;
-
-SELECT
-  ts,
-  dur / 1e6 AS duration_ms,
-  blocked_thread_name,
-  blocking_thread_name,
-  short_blocked_method,
-  short_blocking_method,
-  waiter_count,
-  binder_reply_id,
-  lock_name
-FROM android_monitor_contention
-WHERE process_name = 'system_server'
-  AND (
-    blocked_method GLOB '*ActivityManagerService*'
-    OR blocking_method GLOB '*ActivityManagerService*'
-    OR blocked_method GLOB '*ActiveServices*'
-    OR blocking_method GLOB '*ActiveServices*'
-  )
-ORDER BY dur DESC
-LIMIT 20;
-```
-
-`blocked_*` 表示等待锁的一侧，`blocking_*` 表示持锁的一侧。`binder_reply_id` 非空时，标准库已经把锁竞争与相关 Binder 响应建立关联；不能只凭两个时间片段相邻就判断它们存在因果关系。
-
 ---
 
 ### Android 17 的广播调度
@@ -754,7 +713,9 @@ Android 14 起，应用处于缓存态（cached state）时，系统可以暂存
 
 AMS 的状态变化会触发多组共享结构更新。调用落到 system_server 后，应先确认持锁范围、锁顺序和 Binder 回调是否把局部操作放大为全局等待。
 
-`ActivityManagerService`（AMS）处在 Android 进程管理的中心。进程启动和退出、组件状态、LRU（最近最少使用）次序、OOM adj（进程回收优先级分值）、应用冻结等操作，都可能在 `system_server` 内并发发生。只用一把大锁保护这些状态，代码容易保持一致，却会让互不修改同一组数据的线程排在同一个等待队列中。
+`ActivityManagerService`（AMS）处在 Android 进程管理的中心。进程启动和退出、组件状态、LRU（最近最少使用）次序、OOM adj（进程回收优先级分值）、应用冻结等操作，都可能在 `system_server` 内并发发生。
+
+只用一把大锁保护这些状态，代码容易保持一致，却会让互不修改同一组数据的线程排在同一个等待队列中。
 
 Android 12 引入 `mProcLock`，并保留原有的 `mGlobalLock`。Android 17 仍采用这套双锁设计。双锁扩大了部分进程状态读取和独立操作的并发空间，但没有把 AMS 的所有进程管理操作改成只持 `mProcLock`。OOM adj 全量计算、LRU 写入等关键路径仍会同时持有两把锁。
 
@@ -792,6 +753,49 @@ Android 17 在 `ActivityManagerService` 的注释中给出了边界：Service、
 | 任一把锁均可读取 | 使用 `@CompositeRWLock` 保护的数据，例如 `mLruProcesses` | “任一把锁可读”不表示任一把锁都可写 |
 
 这里的“进程状态”也不能简单理解成 `ProcessRecord` 的全部字段。`ProcessRecord` 聚合了 Activity、Service、Provider、错误状态、优化状态等多个子记录，各字段的锁注解并不相同。判断某段代码能否只持 `mProcLock`，应查看字段与方法上的 `@GuardedBy`、`@CompositeRWLock` 注解，不能只看对象类型。
+
+#### 具体入口：`startService()` 的持锁范围与竞争观测
+
+`ActivityManagerService.startService()` 在 Android 17 中没有给整个 Java 方法加 `synchronized`。它完成调用者检查后才进入以下同步代码块：
+
+```java
+synchronized (mGlobalLock) {
+    res = mServices.startServiceLocked(...);
+}
+```
+
+`ActiveServices` 方法名中的 `...Locked()` 表示调用者应持有 AMS 全局锁，不代表存在一个独立的“`mServices` 锁”。
+
+`realStartServiceLocked()` 还会在这段受锁保护的代码中向应用发送 `IApplicationThread.scheduleCreateService()`；这是单向异步（oneway）Binder 调用，但 Binder 驱动排队、系统负载和执行时间较长的持锁代码段（临界区）仍可能增加其他线程的锁等待时间。
+
+采集 Java 监视器锁竞争数据后，可以用 Perfetto 标准库定位：
+
+```sql
+INCLUDE PERFETTO MODULE android.monitor_contention;
+
+SELECT
+  ts,
+  dur / 1e6 AS duration_ms,
+  blocked_thread_name,
+  blocking_thread_name,
+  short_blocked_method,
+  short_blocking_method,
+  waiter_count,
+  binder_reply_id,
+  lock_name
+FROM android_monitor_contention
+WHERE process_name = 'system_server'
+  AND (
+    blocked_method GLOB '*ActivityManagerService*'
+    OR blocking_method GLOB '*ActivityManagerService*'
+    OR blocked_method GLOB '*ActiveServices*'
+    OR blocking_method GLOB '*ActiveServices*'
+  )
+ORDER BY dur DESC
+LIMIT 20;
+```
+
+`blocked_*` 表示等待锁的一侧，`blocking_*` 表示持锁的一侧。`binder_reply_id` 非空时，标准库已经把锁竞争与相关 Binder 响应建立关联；不能只凭两个时间片段相邻就判断它们存在因果关系。
 
 ### 3. `@CompositeRWLock`：任一锁读、两把锁写
 
@@ -947,7 +951,7 @@ case UPDATE_TIME_ZONE: {
 
 Android 17 的 `CachedAppOptimizer` 使用 `mProcLock` 保护 `mPendingCompactionProcesses`、`mFrozenProcesses` 和冻结器相关状态。这里的压缩是回收或整理缓存进程内存的 compaction 操作。典型代码会在锁内复制 PID 或移出一个待压缩进程，再在锁外执行较慢的工作。
 
-这种写法体现了缩短临界区的常用方法：锁内完成一致性检查和最小状态变更，耗时操作使用局部副本在锁外继续。能否这样处理取决于对象生命周期与并发修改规则，不能机械地把现有代码移出锁外。
+这是缩短临界区的常用做法：锁内完成一致性检查和最小状态变更，耗时操作使用局部副本在锁外继续。能否这样处理取决于对象生命周期与并发修改规则，不能机械地把现有代码移出锁外。
 
 ### 7. `ActivityManagerProcLock` 与线程优先级提升
 
@@ -1062,7 +1066,7 @@ LIMIT 50;
 - `ActivityManager.getRunningAppProcesses()` 是进程可见性查询，不会因为“读取列表”就刷新 LRU。`UsageStatsManager` 提供应用使用记录，语义不同，不能当作进程列表的通用替代品。
 - `ServiceConnection.onServiceConnected()` 等回调在应用进程中按 `ServiceDispatcher` 配置的执行器或 `Handler` 分发。回调里发起新的系统调用可能形成新的同步 IPC，但不能据此声称 `system_server` 仍持有原来的 AMS 锁。
 
-平台代码的优化需要遵守更严格的条件：缩短锁内工作、避免持锁进行不可控的跨进程调用、在安全时复制所需状态后释放锁，并用相同负载的系统轨迹验证等待时间和持锁时间。任何把代码移到锁外的修改，都要先证明对象生命周期与组合写锁规则仍然成立。
+平台代码的优化需要遵守更严格的条件：缩短锁内工作、避免持锁时发起不可控的跨进程调用、在安全时复制所需状态后释放锁，并用相同负载的系统轨迹验证等待时间和持锁时间。任何把代码移到锁外的修改，都要先证明对象生命周期与组合写锁规则仍然成立。
 
 
 ## 进程状态、OomAdjuster 与优先级
