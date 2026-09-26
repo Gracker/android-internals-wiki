@@ -72,15 +72,17 @@ consolidated_from:
 
 # ResourcesManager 与 Configuration 变更性能
 
-一次旋转、折叠展开、窗口缩放或语言切换，应用可能只收到 `onConfigurationChanged()`，也可能销毁并重建 Activity。两条路径都会更新资源，性能成本却完全不同。
+一次旋转、折叠展开、窗口缩放或语言切换，应用可能只收到 `onConfigurationChanged()`，也可能销毁并重建 Activity（relaunch）。relaunch 是销毁旧 Activity 实例并创建新实例，通常不会重启整个应用进程。两条路径都会更新资源，性能成本却完全不同。
 
-排查这类问题时，应依次确认 `Configuration` 中哪些配置位发生变化、`system_server` 选择热派发还是重新启动 Activity（relaunch），再检查资源更新、状态恢复和首帧。这里的 relaunch 是销毁旧 Activity 实例并创建新实例，通常不会重启整个应用进程。Android 17 还改变了部分配置项的默认重建策略，旧版本经验不能直接套用。
+排查这类问题时，应依次确认 `Configuration` 中哪些配置位发生变化、`system_server` 选择热派发还是重新启动 Activity，再检查资源更新、状态恢复和首帧。
+
+Android 17 还改变了部分配置项的默认重建策略，旧版本经验不能直接套用。
 
 当前源码锚点为 Android 17 / API 37 / AOSP `android-17.0.0_r1`，同时说明 Android 12–16 的演进边界。
 
 ## 一次 Configuration 变更经过哪些模块
 
-系统级 `Configuration` 更新和单个 Activity 的覆盖配置（override Configuration）最终会在 `ActivityRecord.ensureActivityConfiguration()` 汇合。覆盖配置是窗口容器或 Activity 在全局配置之上叠加的局部值。主路径如下：
+覆盖配置是窗口容器或 Activity 在全局配置之上叠加的局部值。系统级 `Configuration` 更新和单个 Activity 的覆盖配置（override Configuration）最终会在 `ActivityRecord.ensureActivityConfiguration()` 汇合，主路径如下：
 
 ```text
 全局设置变化                              窗口 / display 层级变化
@@ -112,7 +114,9 @@ ActivityManagerService.updateConfiguration()  DisplayContent / Task / ActivityRe
 - **进程级配置**：`ConfigurationChangeItem` 更新应用进程的全局资源和组件回调。
 - **Activity 级配置**：`ActivityRecord` 根据变化位、应用清单和兼容策略决定是否 relaunch；不重建时，则把新的合并后覆盖配置热派发给现有 Activity。
 
-多窗口 Activity 收到的不是一份孤立的全局配置。服务端会把全局 `Configuration` 与 Activity 的覆盖配置合并后再下发，这就是合并后配置（merged Configuration）。其中的窗口大小、`displayId`、旋转方向和应用边界都可能来自 Activity 所在的容器。relaunch 路径还会在创建新 Activity 实例前应用待处理的进程配置，避免新实例读取旧资源。
+多窗口 Activity 收到的不是一份孤立的全局配置。服务端会把全局 `Configuration` 与 Activity 的覆盖配置合并后再下发，这就是合并后配置（merged Configuration）。其中的窗口大小、`displayId`、旋转方向和应用边界都可能来自 Activity 所在的容器。
+
+relaunch 路径还会在创建新 Activity 实例前应用待处理的进程配置，避免新实例读取旧资源。
 
 ## Resources、ResourcesImpl 与 AssetManager
 
@@ -129,7 +133,7 @@ Resources
 - `ResourcesImpl` 保存当前 `Configuration`、`DisplayMetrics`（显示指标）、资源缓存和 `AssetManager`。
 - `AssetManager` 管理基础 APK、split APK、资源覆盖包（overlay）和共享库的资源表与原生对象。
 
-多个 `Resources` 可以指向同一个 `ResourcesImpl`。因此，看到多个 `Context` 或 `Resources` 对象，不能据此认定原生资源表被完整复制了多份。
+多个 `Resources` 可以指向同一个 `ResourcesImpl`。因此，看到多个 `Context` 或 `Resources` 对象，不能据此认定原生资源表复制了多份。
 
 ### ResourcesKey 保存什么
 
@@ -214,7 +218,7 @@ Android 17 默认不再因为以下变化重建 Activity：
 - `CONFIG_COLOR_MODE`
 - `CONFIG_UI_MODE` 从桌面模式切入或切出，且应用没有对应桌面模式资源时
 
-前五项由 `SKIP_ACTIVITY_RECREATION_ON_CONFIG_CHANGE` 与 `AppCompatRecreateOnConfigChangePolicy` 处理。策略还会扫描包内的 `Configuration` 资源限定符；包内存在相应资源时，系统仍可把该变化放回重建掩码。
+前五项由 `SKIP_ACTIVITY_RECREATION_ON_CONFIG_CHANGE` 与 `AppCompatRecreateOnConfigChangePolicy` 处理，但包内存在对应的 `Configuration` 资源限定符时，这五个变化位仍可以进入重建掩码。
 
 依赖旧重建行为刷新界面的 Activity，可以在应用清单中明确声明 `android:recreateOnConfigChanges`：
 
@@ -224,7 +228,7 @@ Android 17 默认不再因为以下变化重建 Activity：
     android:recreateOnConfigChanges="keyboard|keyboardHidden|navigation|touchscreen|colorMode" />
 ```
 
-同一配置位同时出现在 `configChanges` 和 `recreateOnConfigChanges` 时，以“不重建、由 Activity 处理”为结果。代码审查时应避免这种自相矛盾的声明。
+同一配置位同时出现在 `configChanges` 和 `recreateOnConfigChanges` 时，结果是不重建、由 Activity 处理。代码审查时应避免这种自相矛盾的声明。
 
 这项 Android 17 变化不包含 `locale`、`layoutDirection`、`screenSize`、`smallestScreenSize`、`density`、普通夜间模式或字体缩放。它们仍由应用清单、资源限定符和 `shouldRelaunchLocked()` 的其他策略决定。
 
@@ -232,7 +236,7 @@ Android 17 默认不再因为以下变化重建 Activity：
 
 `android:configChanges` 把资源和界面更新责任交给 Activity。系统仍会更新 `Configuration`，也仍会调用 `onConfigurationChanged()`；省掉的是 Activity 销毁与重建。
 
-一个只准备自行处理旋转和窗口尺寸的 Activity，可以使用窄声明：
+一个只需自行处理旋转和窗口尺寸的 Activity，可以使用较窄的声明：
 
 ```xml
 <activity
@@ -353,7 +357,9 @@ WHERE ts BETWEEN <start_ns> AND <end_ns>
 ORDER BY ts;
 ```
 
-采集时至少记录设备、系统构建指纹、刷新率、Activity、触发方式、是否重建、变化位和样本次数。重建与热更新的对比必须使用同一页面、同一窗口状态和相同数据集，并报告中位数 P50 与尾部值 P95，不能引用缺少测试条件的“快 5–10 倍”。
+采集时至少记录设备、系统构建指纹、刷新率、Activity、触发方式、是否重建、变化位和样本次数。
+
+重建与热更新的对比必须使用同一页面、同一窗口状态和相同数据集，并报告中位数 P50 与尾部值 P95，不能引用缺少测试条件的“快 5–10 倍”。
 
 ### 性能归因顺序
 
@@ -365,7 +371,7 @@ ORDER BY ts;
 
 ## 多窗口与折叠屏的连续变化
 
-折叠、展开、跨显示屏和拖动自由窗口时，一次用户操作可能产生多次合并后配置。AOSP 不规定不同厂商必须以相同顺序更新尺寸、密度、旋转方向与窗口形态（posture），应用应把每次回调当作当前有效状态。
+折叠、展开、跨显示屏和拖动自由窗口时，一次用户操作可能产生多次合并后配置更新。AOSP 不规定不同厂商必须以相同顺序更新尺寸、密度、旋转方向与窗口形态（posture），应用应把每次回调当作当前有效状态。
 
 处理原则：
 
@@ -461,7 +467,9 @@ Android 17 的 `mResourceImpls` 是 `ResourcesKey → WeakReference<ResourcesImp
 
 `resourcesManagerCacheLeakCleanup()` 功能开关启用时，`ReferenceQueue` 负责及时移除失效的键；全局配置更新也会删除已经失效的弱引用。开关未启用时，指向失效弱引用的键可能暂留在映射表中，但对应的 `ResourcesImpl` 已可被垃圾回收。映射表项仍存在，不等于原生对象仍存活。
 
-Android 17 内部有 `ActivityManagerService.dumpResources()` / `dumpAllResources()`，客户端最终调用 `Resources.dumpHistory()`。这组接口按底层 `ApkAssets` 去重后输出资源历史和资源文件，但 `android-17.0.0_r1` 没有提供稳定、公开的 `dumpsys activity resources <process>` 子命令。即使厂商调试工具暴露了内部转储，也不能把输出项数直接解释为 `ResourcesKey` 数量；输出同样不提供“最近创建时间”。
+Android 17 内部有 `ActivityManagerService.dumpResources()` / `dumpAllResources()`，客户端最终调用 `Resources.dumpHistory()`。这组接口按底层 `ApkAssets` 去重后输出资源历史和资源文件，但 `android-17.0.0_r1` 没有提供稳定、公开的 `dumpsys activity resources <process>` 子命令。
+
+即使厂商调试工具暴露了内部转储，也不能把输出项数直接解释为 `ResourcesKey` 数量；输出同样不提供“最近创建时间”。
 
 通用工具先看进程内存，再对 debuggable 进程抓堆：
 
