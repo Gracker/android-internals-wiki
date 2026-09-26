@@ -3578,6 +3578,23 @@
       "summary": "2.17 low-res feature flag 下旧 high-res cache 释放路径需补 TaskSnapshotCache 5 秒延迟移除边界",
       "type": "technical-accuracy",
       "updated_at": "2026-09-20T12:16:53.934850+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "created_at": "2026-09-26T09:16:16.760142+08:00",
+      "created_by": "aiw-body-apply",
+      "created_run_id": "20260926-091534-76f70449",
+      "details": "source-index#415 path=https://f-droid.org/2026/09/24/f-droid-2.0-a-new-chapter-for-android-freedom.html summary only mentions client UI rewrite (Kotlin + Jetpack Compose + Material 3), category split (VPN/firewall/launcher/17 game subclasses), Android session installer + pre-authorization API (DMA), Tor/proxy integration, FPE removal. Target chapter is ART dynamic method tracing & JVMTI boundaries — covers XTrace, instrumentation.h, instrumentation.cc, trace.cc, art_method.h, quick_entrypoints_arm64.S, ti/agent.cc, events.cc, deopt_manager.cc, ti_redefine.cc, ti_extension.cc, ti_heap.cc, ProfilingManager, ARTEMIS, can_tag_objects, RedefineClasses/StructuralRedefine. No overlap in mechanism, source, observation path or tool. route_terms=[chapter,for,kotlin,material] are generic title-overlap tokens; source-index.chapter field reads 'ch08' but routed to ch26.15. Quarantining the source-index item and the queue reference (no queue item exists for this path yet) without modifying the chapter. Open finding as routing-misfire P1; recommend a body-apply pre-check that requires route_terms overlap with topic keywords (e.g., ART, JVMTI, instrumentation, tracing, XTrace, ProfilingManager).",
+      "id": "finding-route-misfire-fdroid2-jvmti-20260926-76f70449",
+      "log_path": "/Users/gracker/.hermes/state/aiw-body-apply/20260926-091534-76f70449.evidence.json",
+      "severity": "P1",
+      "source_paths": [
+        "metadata/source-index.json#415"
+      ],
+      "status": "open",
+      "summary": "Source-index entry 415 misrouted: F-Droid 2.0 client rewrite (Kotlin/Compose/Material 3/session installer) does not belong in ART dynamic-method-tracing & JVMTI chapter",
+      "type": "routing-misfire",
+      "updated_at": "2026-09-26T09:16:16.760142+08:00"
     }
   ],
   "schema_version": 1

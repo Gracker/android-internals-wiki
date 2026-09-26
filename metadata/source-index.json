@@ -5416,7 +5416,7 @@
       "summary": "F-Droid 9 月 24 日发布 2.0，是十年来最大一次客户端重写。UI 全部用 Kotlin + Jetpack Compose 重建对齐 Material 3；类别从几个宽分类拆成数十个细分（VPN、防火墙、密码管理器、启动器、导航、17 个游戏子类），搜索扩展到描述、类别、翻译内容并强化 CJK。底层装包切到 Android 会话安装器和预授权 API（欧盟 DMA 推动），用户点确认即开始下载，体验对齐系统商店。F-Droid 特权扩展（FPE）作为后台更新通道被永久放弃。Tor 集成迁到统一代理设置（推荐 TorVPN），应急伪装功能从伪装成计算器改回只换图标。开发由 NLnet/Mobifree 资助，UX 由 OTF UXD Lab + Ura Design 完成，OTF Security Lab + Convocation 完成独立安全审计并闭环。",
       "chapter": "ch08",
       "processed_at": "2026-09-26T06:20:10.341905+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "quarantined-misroute",
       "score": 15,
       "target_path": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
       "route_confidence": 16,
@@ -5426,7 +5426,14 @@
         "kotlin",
         "material"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "quarantined-misroute",
+      "status": "quarantined",
+      "previous_action": "quarantined-misroute",
+      "previous_route_status": "existing-chapter-routed",
+      "quarantine_reason": "route-misfire: F-Droid 2.0 client rewrite (UI/Compose/Material 3/session installer) does not match ART dynamic-method-tracing & JVMTI boundary chapter; route_terms=chapter,for,kotlin,material are title-overlap tokens; source-index.chapter=ch08 but routed to ch26.15",
+      "quarantined_at": "2026-09-26T09:15:34+08:00",
+      "quarantined_run_id": "20260926-091534-76f70449",
+      "finding_id": "finding-route-misfire-fdroid2-jvmti-20260926-76f70449"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-09-26-76878078-AndroidX 新增 Security.md",
