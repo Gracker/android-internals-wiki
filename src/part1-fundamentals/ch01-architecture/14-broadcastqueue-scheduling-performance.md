@@ -60,9 +60,9 @@ last_review_finalize_run_id: 20260816-224852-07ce8fb9
 
 # Android 17 BroadcastQueue 进程级调度与广播性能边界
 
-Android 广播是一种受系统策略调度的事件分发机制。调用 `sendBroadcast()` 只表示系统接受了发送请求，不表示接收方会立刻执行。目标进程是否存活、是否处于 cached（当前没有活跃组件的缓存进程）状态、接收者类型、广播是否有序，以及可并行投递的进程槽是否空闲，都会改变投递时间。
+Android 广播是一种受系统策略调度的事件分发机制。调用 `sendBroadcast()` 只表示系统接受了发送请求，不表示接收方会立刻执行。目标进程是否存活、是否为没有活跃组件的缓存进程（cached）、接收者类型、广播是否有序，以及可并行投递的进程槽是否空闲，都会改变投递时间。
 
-Android 17 的实现与早期 Android 常见的“前台一条队列、后台一条队列”示意图已有明显差异。广播性能由 `BroadcastRecord`、`BroadcastProcessQueue` 和进程调度槽三个层次共同决定。
+Android 17 已经没有早期 Android 示意图里“前台一条队列、后台一条队列”的结构，这一点在第一节说明。广播性能由三个层次共同决定：`BroadcastRecord` 记录一次发送和它的接收者，`BroadcastProcessQueue` 记录每个目标进程的待投递项，进程调度槽决定同一时刻有多少个进程队列在投递。本章按这个顺序展开：第二节讲这三层结构，第三节跟一遍从 `sendBroadcast()` 到 `onReceive()` 的调用路径，第四到第六节分别讲优先级与顺序、cached 进程的延迟和广播 ANR 计时，第七到第十节给应用侧取舍、排查手段、版本边界和源码锚点。
 
 ## 一、Android 17 只有一个 BroadcastQueue 实例
 
@@ -83,13 +83,13 @@ API 37 的 `ActivityManagerService` 只持有一个 `mBroadcastQueue`。`Activit
 | 前台广播 | `10 s × Build.HW_TIMEOUT_MULTIPLIER` | 带 `FLAG_RECEIVER_FOREGROUND` |
 | 后台广播 | `60 s × Build.HW_TIMEOUT_MULTIPLIER` | 未带上述标志 |
 
-这两个值还能通过 `Settings.Global.BROADCAST_FG_CONSTANTS` 和 `BROADCAST_BG_CONSTANTS` 中的 `bcast_timeout` 覆盖。因此，10 秒/60 秒是源码基准值，不是所有构建和设备都无法更改的常量。
+这两个值还能通过 `Settings.Global.BROADCAST_FG_CONSTANTS` 和 `BROADCAST_BG_CONSTANTS` 中的 `bcast_timeout` 覆盖。因此，10 秒/60 秒是源码基准值，而且可以按上述设置覆盖。
 
 ### 1.2 API 37 的实现类名就是 `BroadcastQueueImpl`
 
 Android 17 标签中不存在 `BroadcastQueueModernImpl.java`。当前的 `BroadcastQueueImpl` 类注释直接说明：广播按目标进程分发，每个进程由一个 `BroadcastProcessQueue` 表示。
 
-内部类名在开发分支和历史版本中发生过变化。应用可以依赖公开广播语义，但不能根据某个旧类名判断设备一定运行 Legacy 或 Modern 模式。以下实现细节均以 `android-17.0.0_r1` 为准。
+框架内部的类名在开发分支和历史版本中发生过变化。应用可以依赖公开广播语义，但不能根据某个旧类名判断设备一定运行 Legacy 或 Modern 模式。以下实现细节均以 `android-17.0.0_r1` 为准。
 
 ## 二、三层数据结构分别解决什么问题
 
@@ -123,7 +123,7 @@ Android 17 标签中不存在 `BroadcastQueueModernImpl.java`。当前的 `Broad
 | `mPending` | 普通广播 | 位于 urgent 之后、offload 之前 |
 | `mPendingOffload` | 隐藏标志 `FLAG_RECEIVER_OFFLOAD` | 系统内部使用，优先级最低 |
 
-这里的 urgent、normal 和 offload 分别表示紧急、普通和卸载调度类别。`FLAG_RECEIVER_OFFLOAD` 不是“允许系统延迟合并”的公开性能开关；`Intent.java` 将它标记为 `@hide`，其语义是进入 offload 调度类别。
+`FLAG_RECEIVER_OFFLOAD` 不是“允许系统延迟合并”的公开性能开关：`Intent.java` 将它标记为 `@hide`，它的语义只是让这条记录进入 offload 调度类别。
 
 ### 2.3 `runnable` 与 `running`：控制跨进程并行度
 
@@ -163,7 +163,7 @@ ContextImpl.sendBroadcast()
   → finishReceiver()（系统需要等待完成的投递）
 ```
 
-这条链说明，广播总延迟至少包含接收者解析、进程队列等待、必要时的进程冷启动、Binder 调度、应用主线程排队和 `onReceive()` 执行。只测 `onReceive()` 方法体，无法代表从发送到接收的端到端延迟。
+这条链说明，广播总延迟至少包含接收者解析、进程队列等待、必要时的进程冷启动、Binder 调度、应用主线程排队和 `onReceive()` 执行。只测 `onReceive()` 方法体的耗时，不能代表从发送到接收的端到端延迟。
 
 ### 3.1 冷启动不会把多条广播合并为一次 ApplicationThread IPC
 
@@ -183,7 +183,7 @@ ContextImpl.sendBroadcast()
 - 有序广播接收者；
 - 带完成回调、不能按“假定已投递”（assumed-delivered）处理的投递。
 
-这不表示无序动态接收者可以长期占用主线程。它仍会阻塞该应用自己的 UI 和后续消息，可能触发输入、前台服务等其他类型 ANR；BroadcastQueue 只是不等待这次无序动态投递的完成回执。
+不等待完成回执，不表示无序动态接收者可以长期占用主线程。这次投递仍会阻塞该应用自己的 UI 和后续消息，可能触发输入、前台服务等其他类型 ANR；BroadcastQueue 只是不等待它的完成回执。
 
 ## 四、优先级、顺序与避免低优先级长期等待
 
@@ -195,13 +195,13 @@ Android 没有 `PRIORITY_URGENT_APP`、`PRIORITY_NORMAL_APP` 这组广播字符�
 - `BroadcastOptions` 将其标记为交互型（interactive）；
 - `BroadcastOptions` 将其标记为闹钟广播（alarm broadcast）。
 
-后两项主要供系统组件使用。普通应用不应为了抢占调度而滥用前台接收者标志；它会让接收者以更高调度优先级运行，并把广播超时基准缩短到 10 秒。
+后两项主要供系统组件使用。普通应用不应为了抢占调度而滥用前台接收者标志：带上这个标志会让接收者以更高调度优先级运行，并把广播超时基准缩短到 10 秒。
 
 ### 4.2 接收者优先级是整数，但 Android 16 起不再提供跨进程全序
 
 `IntentFilter` 的 `priority` 仍是整数。Android 16 起，公开行为增加了两项限制：优先级只保证在同一应用进程内生效，不保证不同进程之间的接收顺序；应用可设置的值也会被限制在系统保留上下界之间。
 
-因此，即使两个应用为同一个广播设置不同 `priority`，也不能把它设计成跨应用协议顺序。需要请求 / 响应、确认或全序处理时，应使用 Binder 服务、明确的任务队列或持久化协调机制。
+因此，即使两个应用为同一个广播设置不同 `priority`，也不能指望它决定跨应用的接收顺序。需要请求 / 响应、确认或全序处理时，应使用 Binder 服务、明确的任务队列或持久化协调机制。
 
 ### 4.3 有序广播仍会建立接收者依赖
 
@@ -240,9 +240,9 @@ API 34 加入的 `BroadcastOptions` 提供两组不同能力：
 - `setDeferralPolicy(DEFERRAL_POLICY_UNTIL_ACTIVE)`：允许把符合条件的运行时接收者延后到进程 active；它不适用于有序、闹钟、交互型广播和清单接收者；
 - `setDeliveryGroupPolicy(DELIVERY_GROUP_POLICY_MOST_RECENT)`：同一 delivery group（投递组）只保留最近一条，旧的待投递项被跳过。
 
-对带 completion callback 的无序广播，`DEFERRAL_POLICY_UNTIL_ACTIVE` 还有一个容易误读的边界：处于 inactive / cached 进程状态的接收者不计入回调完成前必须接收的 eligible 集合，因此完成回调不能被当成“所有 cached 接收者都已经执行”的确认。
+对带完成回调（completion callback）的无序广播，`DEFERRAL_POLICY_UNTIL_ACTIVE` 还有一个容易误读的边界：处于 inactive / cached 进程状态的接收者不计入“回调完成前必须接收”的 eligible 集合。因此完成回调不能被当成“所有 cached 接收者都已经执行”的确认。
 
-延后策略解决何时投递，delivery group 解决积压项是否都要投递。没有显式 delivery group 策略时，系统不会因为接收者在同一进程就自动合并任意广播。
+延后策略解决何时投递，投递组（delivery group）解决积压项是否都要投递。没有显式投递组策略时，系统不会因为接收者在同一进程就自动合并任意广播。
 
 `FLAG_RECEIVER_REPLACE_PENDING` 也只替换同时满足发送 UID、用户、Intent 匹配、接收者和其他条件的待处理项。它不会对整个 `action` 或整个进程执行无条件去重。
 
@@ -256,7 +256,7 @@ API 37 另有受功能开关（feature flag）控制的发送方广播延迟：�
 
 ### 6.1 定时器从提交给接收进程前开始
 
-`dispatchReceivers()` 在调用 `scheduleRegisteredReceiver()` 或 `scheduleReceiver()` 之前启动 `AnrTimer`，完成后由 `finishReceiverLocked()` 取消。超时会把该接收者标为 `DELIVERY_TIMEOUT`，随后调用 `appNotResponding()`。
+`dispatchReceivers()` 在调用 `scheduleRegisteredReceiver()` 或 `scheduleReceiver()` 之前启动 `AnrTimer`，投递完成后由 `finishReceiverLocked()` 取消。超时会把该接收者标为 `DELIVERY_TIMEOUT`，随后调用 `appNotResponding()`。
 
 队列等待和广播触发的冷启动发生在启动此定时器之前。因此，一条广播端到端等待很久，不等于接收者已经执行超时；排障必须区分调度延迟与完成延迟。
 
@@ -264,7 +264,7 @@ API 37 另有受功能开关（feature flag）控制的发送方广播延迟：�
 
 需要异步完成的接收者可以调用 `goAsync()` 取得 `PendingResult`，在短任务结束后调用 `finish()`。对于需要 `system_server` 等待完成的投递，ANR 定时器不会因为 `goAsync()` 自动取消。
 
-长时间网络、磁盘扫描、数据库迁移等工作不应留在广播完成窗口内。接收者更适合做参数校验、去重和任务入队，再交给 `JobScheduler`、WorkManager 或具备明确生命周期的服务。
+长时间网络、磁盘扫描、数据库迁移等工作不应留在广播完成窗口内；接收者更适合做参数校验、去重和任务入队，具体怎么划提交点、把执行交给哪类机制，见 7.4。
 
 ### 6.3 从 ANR 文件看哪一段卡住
 
@@ -280,7 +280,7 @@ API 37 另有受功能开关（feature flag）控制的发送方广播延迟：�
 
 ### 7.1 不要默认认为清单接收者更省性能
 
-清单接收者的 IntentFilter 在安装阶段解析，但投递时仍要查询并执行权限 / 可见性检查，而且它能启动尚未运行的进程。Android 8 起，多数隐式广播不能由面向 API 26+ 的应用随意静态注册。
+清单接收者的 IntentFilter 在安装阶段解析，但投递时仍要查询并做权限 / 可见性检查，而且它能启动尚未运行的进程。Android 8 起，多数隐式广播不能由面向 API 26+ 的应用随意静态注册。
 
 动态接收者适合只在页面、服务或进程存活期间关注的事件；清单接收者适合需要在进程不存在时接收、且平台允许静态注册的事件。应根据生命周期与后台启动语义选择，不能用“静态注册一定更快”代替测量。
 
