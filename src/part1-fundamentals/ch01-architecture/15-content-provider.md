@@ -82,7 +82,7 @@ ContentProvider（内容提供组件，下文简称 Provider）同时出现在�
 
 前一条路径影响冷启动，后一条路径容易造成主线程阻塞、Binder 线程池排队和数据库 I/O。分析 ContentProvider 问题时，应先确认调用发生在同一进程还是跨进程，以及提供方已经运行还是正在冷启动，再检查具体 URI 和查询参数。
 
-当前源码基线为 AOSP `android-17.0.0_r1`。Android 8～16 只在解释版本演进时保留。
+当前源码基线为 AOSP `android-17.0.0_r1`。Android 8～16 的差异只在“版本演进”一节说明。
 
 ---
 
@@ -179,7 +179,7 @@ fork 进程
 
 AOSP Android 17 的 `config_cursorWindowSize` 默认为 2048 KiB。产品配置可以覆盖该值，它也不是所有窗口统一且不可调整的硬上限。公开构造函数 `CursorWindow(String, long)` 允许调用方指定容量；实际内存按写入数据动态分配，不超过该窗口的配置容量。
 
-窗口能减少大结果集的复制，但容量仍然有限。一个窗口装不下全部结果时，调用方移动到窗口外的行，`BulkCursorToCursorAdaptor` 会调用远端 `getWindow(newPosition)` 取得新窗口。若 Provider 要求接收所有游标移动事件，即使目标仍在当前窗口，也可能调用远端 `onMove()`。
+窗口能减少大结果集的复制，但容量仍然有限。一个窗口装不下全部结果时，调用方一旦移动到窗口之外的行，`BulkCursorToCursorAdaptor` 就会调用远端 `getWindow(newPosition)` 取得新窗口。若 Provider 要求接收所有游标移动事件，即使目标仍在当前窗口，也可能调用远端 `onMove()`。
 
 “`moveToNext()` 永远不走 Binder”并不准确。通常在当前窗口内读取列值不需要远程取数；窗口失效、越界或 Provider 请求所有移动回调时，仍会发生 Binder 往返。
 
@@ -194,7 +194,7 @@ SQLiteCursor.onMove()
   → SQLiteSession.executeForCursorWindow(...)
 ```
 
-Android 框架不会把原 SQL 自动改写成高效的基于键值分页（keyset pagination）。访问结果集中很靠后的位置时，底层查询仍可能遍历大量前序结果才能填充目标窗口。对于数据量大且需要翻页的接口，应让 Provider 直接提供分页条件，例如：
+Android 框架不会把原 SQL 自动改写成高效的基于键值分页（keyset pagination）。调用方访问结果集中很靠后的位置时，底层查询仍可能遍历大量前序结果才能填充目标窗口。对于数据量大且需要翻页的接口，应让 Provider 直接提供分页条件，例如：
 
 ```sql
 SELECT _id, title
@@ -221,16 +221,6 @@ LIMIT ?
 
 图片、视频和大文件应通过 `openFile()`、`openAssetFile()` 或 `openTypedAssetFile()` 返回 `ParcelFileDescriptor`，不要塞进 `Bundle` 或 `ContentValues`。
 
-### Android 17 对取消请求的无响应监测
-
-Android 17 在受权限保护的系统 API 中补充了两种监测入口，但没有给普通应用增加统一的 CRUD（增删改查）超时：
-
-- `setDetectNotRespondingOnCancel()` 从调用方发出取消后开始计时；
-- `setCallNotCancelledTimeout()` 是测试入口，用来设置“调用开始后迟迟没有取消”的监测窗口；
-- 原有 `setDetectNotResponding(fixed)` 在对应功能开关（feature flag）开启时仍保持固定时长语义。
-
-计时到期后，`NotRespondingRunnable` 会通过 `ContentResolver.appNotRespondingViaProvider()` 通知系统处理已经连接但无响应的 Provider。这套机制供系统识别和处理故障，不会向普通应用自动抛出 `TimeoutException`。普通应用仍应在工作线程发起查询，传入取消信号 `CancellationSignal`，在业务截止时间到达时调用 `cancel()`，并丢弃逾期返回的结果。取消采用协作方式：Provider 和数据库执行路径只有主动检查取消信号，操作才会及时停止。
-
 ---
 
 ## 稳定与非稳定的 Provider 客户端
@@ -239,9 +229,8 @@ Android 17 在受权限保护的系统 API 中补充了两种监测入口，但�
 
 `acquireUnstableContentProviderClient()` 返回非稳定客户端，适合调用方不能假定 Provider 会持续存活的场景。Provider 进程死亡时，系统不会按稳定引用的规则处理依赖进程，但调用方必须自己处理：
 
-- 表示远端 Binder 对象已经死亡的 `DeadObjectException`；
-- 当前客户端已经失效；
-- 关闭旧客户端；
+- 捕获 `DeadObjectException`，它表示远端 Binder 对象已经死亡；
+- 检查当前客户端是否已经失效，失效后关闭旧客户端；
 - 需要时重新调用获取接口，让系统重启 Provider。
 
 非稳定客户端不会让慢查询自动变快，也不会给 CRUD 增加超时。它改变的是 Provider 进程死亡时调用方需要承担的恢复责任。
@@ -261,16 +250,28 @@ Android 17 的 ContentProvider 没有覆盖所有操作的“统一 10 秒超时
 
 如果 `ContentResolver.getType()` 不能直接取得 Provider，Android 17 还会经过 `system_server` 的异步备用路径（fallback）；其等待上限由 20 秒的发布就绪等待与 3 秒的回调等待组合而来，不能把这个上限当作 CRUD 超时。
 
+### Android 17 对取消请求的无响应监测
+
+Android 17 在受权限保护的系统 API 中补充了两种监测入口，但没有给普通应用增加统一的 CRUD（增删改查）超时：
+
+- `setDetectNotRespondingOnCancel()` 从调用方发出取消后开始计时；
+- `setCallNotCancelledTimeout()` 是测试入口，用来设置“调用开始后迟迟没有取消”的监测窗口；
+- 原有 `setDetectNotResponding(fixed)` 在对应功能开关（feature flag）开启时仍保持固定时长语义。
+
+计时到期后，`NotRespondingRunnable` 会通过 `ContentResolver.appNotRespondingViaProvider()` 通知系统处理已经连接但无响应的 Provider。这套机制供系统识别和处理故障，不会向普通应用自动抛出 `TimeoutException`。
+
 ### `setDetectNotResponding()` 不属于普通应用超时 API
 
-`ContentProviderClient.setDetectNotResponding()` 是标有 `@SystemApi` / `@hide` 的系统接口，并要求 `REMOVE_TASKS` 权限。调用方为它设置时长后，`NotRespondingRunnable` 才会调用 `appNotRespondingViaProvider()`，把已经连接的 Provider 标记为无响应。
+`ContentProviderClient.setDetectNotResponding()` 是标有 `@SystemApi` / `@hide` 的系统接口，并要求 `REMOVE_TASKS` 权限；调用方为它设置时长后才会启用上面这套无响应监测。
 
 普通应用不能借此获得通用 Provider ANR 计时器。应用侧应该：
 
 - 在后台线程执行同步的 ContentResolver API；
 - 为自己的业务请求设置超时；
 - 向支持取消的 `query()` 传入 `CancellationSignal`；
-- 超时后取消请求并丢弃迟到结果。
+- 超时后调用 `cancel()` 取消请求，并丢弃迟到结果。
+
+取消采用协作方式：Provider 和数据库执行路径只有主动检查取消信号，操作才会及时停止。
 
 下面的 Kotlin 代码让调度器在 5 秒后主动取消远程查询。5 秒是业务选择，不是 Android 平台常量：
 
