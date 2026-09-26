@@ -645,9 +645,9 @@ adb shell dumpsys meminfo <launcher-package>
 - [`Activity.setRecentsScreenshotEnabled()`](https://developer.android.com/reference/android/app/Activity#setRecentsScreenshotEnabled(boolean))：API 33 的 Overview 隐私开关；
 - [`WindowManager.LayoutParams.FLAG_SECURE`](https://developer.android.com/reference/android/view/WindowManager.LayoutParams#FLAG_SECURE)：安全窗口的截图与 Display 约束。
 
-## 13. 复核边界与常见误读
+## 13. 常见误读
 
-本轮对正文中关键事实做了逐项核对，下面把容易误读的几条集中说明：
+下面把阅读正文时容易记错的边界集中说明，每条都对应到前文的具体来源：
 
 1. **transition 路径只记录 `!isVisibleRequested()` 的 Task**。`SnapshotController.onTransactionReady()` 中 `task != null && !task.mCreatedByOrganizer && !task.isVisibleRequested()` 是同一行的复合条件，遗漏否定就是相反结论。
 2. **`getSnapshotMode` 对 home 一律走 REAL**，对 recents / dream 直接 NONE，不能因为是 home 就跳过；对其他 Task 是否走 app-theme 由 top Activity `shouldUseAppThemeSnapshot()` 决定。
@@ -655,8 +655,7 @@ adb shell dumpsys meminfo <launcher-package>
 4. **`DeferRemoveHighResCache` 缓存的 high-res 在 `onlyCacheLowResTaskSnapshot` 关闭时不存在**。flag 关闭时 `TaskSnapshotCache` 构造里 `mDeferRemoveCache` 为 `null`，所有 high-res 引用只在主 `mRunningCache`。
 5. **`TaskThumbnailCache` 不直接订阅 `ITaskSnapshotListener`**。`TaskSnapshotManager.registerTaskSnapshotListener` 是 `TaskSnapshotListenerTracker` 提供的统一入口；highRes / lowRes 状态切换在 `HighResLoadingState` 内部维护，不要把 trim 阈值或 onTaskSnapshotChanged 流程归到 `TaskThumbnailCache` 自身。
 6. **`isSnapshotOrientationCompatible` 的 aspect ratio 阈值是 `0.01f`**，且比较的是宽高比（`taskSize.x / taskSize.y` 与 `w / h`），不是宽度差值的绝对比例；折叠后不旋转但宽高比变化超过阈值时 starting window 直接走 splash 或 NONE。
-7. **`TaskSnapshot.getHardwareBuffer()` 已 `@Deprecated` 并返回 `null`**，仅作为升级期兼容而保留。新代码应走 `setBufferToSurface(Transaction, SurfaceControl)` 或 `getHardwareBufferWidth/Height` 取得元数据，再交给 `wrapToBitmap()` 在 Launcher 进程里生成硬件 `Bitmap`。
-8. **`FLAG_SECURE` 与 `setRecentsScreenshotEnabled(false)` 的范围在前文 §3.4 已经分别说明**；混用会丢掉 `FLAG_SECURE` 的 Display 限制与截屏防护，是真实工程里经常出现的回归点。
+7. **`FLAG_SECURE` 与 `setRecentsScreenshotEnabled(false)` 的范围在前文 §3.4 已经分别说明**；混用会丢掉 `FLAG_SECURE` 的 Display 限制与截屏防护，是真实工程里经常出现的回归点。
 
 ## 小结
 
