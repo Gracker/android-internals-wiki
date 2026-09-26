@@ -160,7 +160,9 @@ consolidated_from:
 3. AOT 产物为什么不存在、失效，或者没有覆盖这条路径？
 4. 为了得到更多机器码，安装时间、存储和后台编译成本增加了多少？
 
-诊断时，先看 `pm art dump` 和决定 AOT 编译范围的编译过滤器（compiler filter），再确认记录常用方法与类的代码使用画像（Profile）是否参与 AOT，然后用系统性能跟踪工具 Perfetto 或启动性能测试工具 Macrobenchmark，量化解释执行、JIT 与 `dex2oat` 的成本。仅凭 ODEX 文件存在、单条 JIT 时间片段（slice）或 Profile 文件打包成功，都不足以证明启动性能已经优化。
+这四个问题都能落到具体工具上。`pm art dump` 看设备上的最终状态，编译过滤器（compiler filter）决定 AOT 编译范围，代码使用画像（Profile）记录常用方法与类并决定它们是否参与 AOT；解释执行、JIT 与 `dex2oat` 各自的成本，则用系统性能跟踪工具 Perfetto 或启动性能测试工具 Macrobenchmark 量化。
+
+仅凭 ODEX 文件存在、单条 JIT 时间片段（slice）或 Profile 文件打包成功，都不足以证明启动性能已经优化。
 
 ART 从 DEX 验证和编译开始，通过 AOT、JIT 与 Profile 选择执行代码；运行时假设失效时再进入去优化和解释执行。安装、首启和动态调试需要沿同一产物与状态链判断。
 
@@ -295,7 +297,7 @@ JIT 的典型过程是：
 
 #### JIT 代码缓存的数字要注明层级
 
-Android 17 固定标签中的源码默认值是：
+Android 17 固定标签 `android-17.0.0_r1` 中的源码默认值是：
 
 ```cpp
 // art/runtime/jit/jit_code_cache.h
@@ -315,13 +317,17 @@ static size_t GetInitialCapacity() {
 - 容量上限、虚拟地址空间、常驻集大小（RSS）和按共享页比例分摊的内存（PSS）不是同一个指标；
 - 进程中的真实机器码、用于描述栈内容的栈映射（stack map）与性能剖析数据会随工作负载增长。
 
-空间压力下，`JitCodeCache::DoCollection(Thread*)` 扫描活动栈和代码缓存状态，保留仍然需要的代码并回收可移除项。调试信息、Java 虚拟机工具接口（JVMTI）、首次使用即编译（JIT-at-first-use）等模式会影响是否允许回收。不能把它简化成固定的最近最少使用（LRU）策略，也没有依据说大型应用“通常稳定在 4 MB”。
+空间压力下，`JitCodeCache::DoCollection(Thread*)` 扫描活动栈和代码缓存状态，保留仍然需要的代码并回收可移除项。
+
+是否允许回收还受模式影响：调试信息、Java 虚拟机工具接口（JVMTI）、首次使用即编译（JIT-at-first-use）等模式都会改变回收行为。不能把它简化成固定的最近最少使用（LRU）策略，也没有依据说大型应用“通常稳定在 4 MB”。
 
 #### 去优化用于撤销不再成立的投机优化
 
 JIT/AOT 可能根据当前类层次、记录调用点常见目标的内联缓存（inline cache）或只有一种实现的方法做优化。如果后来加载的新类型、类重定义、调试器或插桩工具（instrumentation）破坏这些假设，ART 必须丢弃代码、改用不依赖该假设的执行入口，或去优化栈帧。
 
 看到去优化（deoptimization）活动时，需要确认原因和 CPU 时间。一次去优化可能只是正常的类加载边界；持续反复的失效和重编译才更值得检查动态代理、热修复、JVMTI 或插件化行为。
+
+触发原因、栈帧恢复和观测手段在「去优化触发、栈重建与诊断」一节展开。
 
 ### 四类代码使用画像不要混在一起
 
@@ -334,7 +340,7 @@ ART 在应用运行时收集热点方法、类和部分调用点类型信息，�
 /data/misc/profiles/ref/<package>/primary.prof
 ```
 
-这些是系统内部目录，普通应用和普通命令行用户（shell）不一定有直接读取权限，路径和布局也不属于公开 SDK 保证稳定的内容。诊断时优先使用 ART Service 或 Package Manager 提供的 shell 命令。
+这些是系统内部目录，普通应用和 shell 用户不一定有直接读取权限，路径和布局也不属于公开 SDK 保证稳定的内容。诊断时优先使用 ART Service 或 Package Manager 提供的 shell 命令。
 
 本地画像只反映这台设备、这个用户实际执行过的路径。后台 DEX 优化可以把它与外部画像合并，用于下一轮 `speed-profile` 编译。
 
@@ -404,13 +410,13 @@ Android 14 及以上版本可以通过 ART Service 查看应用包的 DEX 优化
 adb shell pm art dump com.example.app
 ```
 
-`android-17.0.0_r1` 的 `ArtShellCommand` 会把这个子命令转到 `ArtManagerLocal.dumpPackage()`。输出中关注：
+`android-17.0.0_r1` 的 `ArtShellCommand` 会把这个子命令转到 `ArtManagerLocal.dumpPackage()`。输出中关注五类信息：
 
-- DEX 容器与拆分包；
-- 编译过滤器；
-- 编译原因；
-- 主/次 DEX（primary/secondary dex）的产物状态；
-- 代码使用画像与编译产物是否匹配。
+- DEX 容器与拆分包：包里的 DEX 是不是按容器和 split 分别生成产物；
+- 编译过滤器：ART 最终采用的过滤器，而不是命令行请求的那个；
+- 编译原因：这一轮 `dexopt` 为什么发生，例如 `install`、`bg-dexopt`、`ab-ota`；
+- 主/次 DEX（primary/secondary dex）的产物状态：主 DEX 与次级 DEX 是否各自都有可用的编译产物；
+- 代码使用画像与编译产物是否匹配：profile 是否已经参与过编译，还是只停留在收集阶段。
 
 较老版本常用 `dumpsys package dexopt`，字段与新 ART Service 不同。诊断脚本需要按平台分支解析。
 
@@ -452,7 +458,7 @@ adb shell pm compile --reset com.example.app
 可靠的观察点包括：
 
 - 应用进程中 JIT 编译器线程占用 CPU 的时间；
-- `art::jit`、`JitCodeCache::DoCollection`、`ProfileSaver` 等调用栈或时间片段；
+- `art::jit`、`JitCodeCache::DoCollection`、`ProfileSaver` 等调用栈或时间片段：编译、代码回收和画像保存各由谁执行；
 - 独立的 `dex2oat` 进程或 ART 守护进程 `artd` 的活动，以及它们造成的 CPU、I/O 和内存压力；
 - 主线程同一时段是在运行（Running）、等待 CPU（Runnable），还是等待锁或 I/O；
 - 安装后首次启动与画像编译后相同路径的对比。
@@ -464,19 +470,19 @@ adb shell pm compile --reset com.example.app
 
 编译策略决定生成多少机器码，Verifier 和 dexopt 产物决定代码能否安全复用。安装、首次启动和后台优化使用不同场景与过滤器。
 
-看到 `speed-profile`，不能直接认定应用已经充分编译；看到 `verify`，也不能认定应用完全没有优化。编译过滤器（compiler filter，下文简称 filter）描述某一次 `dexopt` 想达到的目标。最终写入磁盘的结果还会受到性能配置文件（profile）、DEX 规模、依赖关系、安装方式和设备策略影响；profile 记录需要优先优化的方法和类。
+当前锚点为 Android 17 / API 37 / AOSP `android-17.0.0_r1`，同时保留 Android 8–16 的演进边界。
+
+看到 `speed-profile`，不能直接认定应用已经充分编译；看到 `verify`，也不能认定应用完全没有优化。编译过滤器（compiler filter，下文简称 filter）描述某一次 `dexopt` 想达到的目标。最终写入磁盘的结果还会受到代码使用画像（profile）、DEX 规模、依赖关系、安装方式和设备策略影响；profile 记录需要优先优化的方法和类。
 
 排查安装慢、首次启动慢或 OTA 后应用变慢时，先分清三件事：
 
 1. DEX 是否已经通过验证，验证结果能否复用。
-2. 哪些方法已有 AOT（预先编译）机器码，哪些方法仍要解释执行或等待 JIT（运行时即时编译）。
+2. 哪些方法已有 AOT（提前编译）机器码，哪些方法仍要解释执行或等待 JIT（运行时即时编译）。
 3. 当前看到的是请求使用的 filter，还是 ART 最终采用的 filter。
-
-当前锚点为 Android 17 / API 37 / AOSP `android-17.0.0_r1`，同时保留 Android 8–16 的演进边界。
 
 ### 先建立一张执行地图
 
-应用代码从安装到稳定运行，大致经过下面几层：
+应用代码从安装到稳定运行，大致经过下面几层。其中 split APK 是按功能或设备配置拆分的 APK，次级 DEX 是应用运行时另外加载的 DEX。
 
 ```text
 APK / split APK / secondary DEX
@@ -501,7 +507,7 @@ VDEX / ODEX(OAT) / ART image
 运行时：AOT + 解释器 + JIT
 ```
 
-split APK 是按功能或设备配置拆分的 APK，次级 DEX 则是应用运行时另外加载的 DEX。单个产物文件或一种 filter，都不足以独立证明启动已经达到最佳状态。例如：
+单个产物文件或一种 filter，都不足以独立证明启动已经达到最佳状态。例如：
 
 - `verify` 可以让验证结果被复用，但不会为 Java/Kotlin 方法生成 AOT 机器码。
 - `speed-profile` 只编译 profile 覆盖的方法；没有可用 profile 时，实际结果可以降为 `verify`。
@@ -1020,7 +1026,7 @@ Hook 工具可能使用 JVMTI 断点 / 类重定义、修改方法入口点，�
 
 “每次 deopt 后一定立即重编译”并不准确。JIT 是否再次编译取决于方法热度（hotness）、code cache、当前插桩级别、方法是否可编译，以及进程随后是否继续执行该路径。
 
-Baseline Profile（基准画像）也不能阻止守卫条件、CHA 或调试器触发 deopt。它可以改变安装期编译范围和正常启动成本，但全局 interpreter stubs 生效时，已有 AOT / JIT 代码仍不能按原方式执行。评估 Baseline Profile 时要把 deopt 前的编译收益和 deopt 后的运行状态分开。
+基准画像（Baseline Profile）也不能阻止守卫条件、CHA 或调试器触发 deopt。它可以改变安装期编译范围和正常启动成本，但全局 interpreter stubs 生效时，已有 AOT / JIT 代码仍不能按原方式执行。评估 Baseline Profile 时要把 deopt 前的编译收益和 deopt 后的运行状态分开。
 
 ### 七、性能影响怎样分层
 
@@ -1122,7 +1128,7 @@ adb shell pidof com.example.app
 
 `pm art dump` 反映 dexopt 产物与编译过滤器（compiler filter），不会显示某个活动帧是否刚刚发生 deopt。三组信息要与系统构建指纹（build fingerprint）、应用版本、是否连接调试器、JVMTI 代理配置一起记录。
 
-`-verbose:deopt,jit` 是 API 37 支持的 ART runtime 日志选项，但必须在目标 runtime 启动参数中生效。临时修改属性后不重启对应 runtime / 进程，不能保证已有应用获得该选项；量产设备也可能限制这类日志。未确认启动参数时，不能把“logcat 没有 Deoptimizing”当作零 deopt。
+`-verbose:deopt,jit` 是 API 37 支持的 ART runtime 日志选项，但必须在目标 runtime 启动参数中生效。临时修改启动参数或属性、又不重启对应 runtime / 进程，不能保证已有应用获得该选项；量产设备也可能限制这类日志。未确认启动参数时，不能把“logcat 没有 Deoptimizing”当作零 deopt。
 
 ### 九、一次可复现的实验
 
@@ -1170,7 +1176,7 @@ API 37 的主要入口如下：
 
 相关机制可继续阅读：
 
-- 本节前文：ART 解释器、JIT、AOT 与 profile 的完整流程。
+- 本章前文：ART 解释器、JIT、AOT 与 profile 的完整流程。
 - 1.16：PackageManager 安装会话与 `dexopt` 调用位置。
 - 18.4：Cloud Profile 的生成、传递与覆盖边界。
 - 21.4：Baseline、Startup、Cloud Profile 与安装后编译验证。
