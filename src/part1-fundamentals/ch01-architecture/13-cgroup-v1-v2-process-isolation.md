@@ -50,11 +50,11 @@ sources:
 
 Android 17 使用 cgroup（control group，控制组）管理 CPU 调度、CPU 集合、I/O、内存、进程冻结与进程组生命周期。平台通过 `libprocessgroup` 和任务配置（task profile）隐藏底层文件路径，使 framework 和 native service 只表达“后台”“top-app”“冻结”等意图。
 
+本文沿用内核术语：controller 表示 CPU、memory 这类资源控制器，hierarchy 表示 cgroup 的父子树，cgroupfs 是把控制接口暴露成文件的虚拟文件系统。cgroup v1 可以让不同 controller 使用不同树；v2 则让接入 v2 的 controller 共用一棵统一树。task profile 是一套有稳定名称的操作配方，其中 attribute 把名称映射到控制文件，action 执行加入分组、写值或调整调度等操作，aggregate profile 再按顺序组合多个 profile。
+
 `android-17.0.0_r1` 的 AOSP 默认配置仍是 cgroup v1/v2 混合拓扑。cgroup v2 的“统一层级”只约束 v2 控制器；它没有把 Android 的 v1 `cpu`、`cpuset`、`blkio` 自动并入同一棵树。
 
 以下行为以 AOSP `android-17.0.0_r1` 和内核 `android17-6.18-2026-06_r6` 为准。设备厂商可以覆盖控制器版本、挂载点、子组和参数，设备实际值需要另行核对。
-
-本文沿用内核术语：controller 表示 CPU、memory 这类资源控制器，hierarchy 表示 cgroup 的父子树，cgroupfs 是把控制接口暴露成文件的虚拟文件系统。cgroup v1 可以让不同 controller 使用不同树；v2 则让接入 v2 的 controller 共用一棵统一树。task profile 是一套有稳定名称的操作配方，其中 attribute 把名称映射到控制文件，action 执行加入分组、写值或调整调度等操作，aggregate profile 再按顺序组合多个 profile。
 
 ## 1. Android 17 的默认拓扑
 
@@ -141,7 +141,7 @@ UID < AID_APP_START：
 
 cgroup v2 controller 默认不会自动在子层级生效。父 cgroup 只能启用 `cgroup.controllers` 中列出的 controller，并且要满足 top-down（子层不能启用父层未启用的控制器）和 no-internal-process（启用域控制器的内部节点不能同时直接承载进程）约束。Android 的 `NeedsActivation`、`MaxActivationDepth` 和 `ActivateControllers()` 封装了这部分操作。
 
-freezer 需要单独说明。`cgroup.freeze` 是 cgroup v2 的核心接口，存在于非根 cgroup；它不作为 `+freezer` 写入 `cgroup.subtree_control`。AOSP 在 `cgroups.json` 中把它命名为 `freezer`，是为了让 task profile 通过统一的 controller/attribute 抽象找到文件。
+freezer 不走上面这条路径。`cgroup.freeze` 是 cgroup v2 的核心接口，存在于非根 cgroup；它不作为 `+freezer` 写入 `cgroup.subtree_control`。AOSP 在 `cgroups.json` 中把它命名为 `freezer`，是为了让 task profile 通过统一的 controller/attribute 抽象找到文件。
 
 ## 3. `libprocessgroup`：把意图翻译成文件操作
 
@@ -204,15 +204,15 @@ CPUSET_SP_TOP_APP
     + MaxIoPriority + TimerSlackNormal
 ```
 
-线程 API 名称也反映了这项差别：只设置 scheduling group 的入口不会自动修改 cpuset；“group and cpuset”或进程级入口使用包含 `ProcessCapacity*` 的 aggregate profile。
+线程 API 的命名也按这个区别划分：只设置 scheduling group 的入口不会自动修改 cpuset；“group and cpuset”或进程级入口使用包含 `ProcessCapacity*` 的 aggregate profile。
 
 ## 4. Java/JNI 到 task profile 的调用链
 
-JNI（Java Native Interface）把 framework 的 Java 调用接到 `libprocessgroup` 的 native 实现。
+JNI（Java Native Interface）把 framework 的 Java 调用接到 `libprocessgroup` 的 native 实现；init 侧则在启动 service 时应用 profile，入口是 `.rc` 里的 `task_profiles`。
 
 ### 4.1 三个常用 JNI 入口
 
-Android 17 的 `android_util_Process.cpp` 给出清晰边界：
+Android 17 的 `android_util_Process.cpp` 把这三个入口映射到两组 profile 名：
 
 | Java 入口 | Native 调用 | Profile 名来源 |
 | --- | --- | --- |
@@ -220,7 +220,7 @@ Android 17 的 `android_util_Process.cpp` 给出清晰边界：
 | `Process.setThreadGroupAndCpuset(tid, group)` | `SetTaskProfiles(..., use_fd_cache=true)` | `CPUSET_SP_*` |
 | `Process.setProcessGroup(pid, group)` | `SetProcessProfilesCached(uid, pid, ...)` | `CPUSET_SP_*` |
 
-`SetProcessProfilesCached` 函数名中的 `Cached` 指文件描述符（fd）缓存，可减少反复打开固定 cgroup 文件的成本。它不会比较进程旧状态并跳过所有 profile action。带 `<uid>`/`<pid>` 的动态路径也不会使用同一套全局 fd 缓存。
+`SetProcessProfilesCached` 函数名中的 `Cached` 指文件描述符（fd）缓存，可减少反复打开固定 cgroup 文件的成本。这个缓存不会先比较进程的旧状态、再跳过所有 profile action。带 `<uid>`/`<pid>` 的动态路径也不会使用同一套全局 fd 缓存。
 
 进程级 `setProcessGroup` 还保留历史约束：不能直接传 `THREAD_GROUP_FOREGROUND`；默认组会按 API 语义处理。阅读 framework 调用时，应继续追踪实际配置名，不要只看 `THREAD_GROUP_*` 的整数。
 
@@ -239,7 +239,7 @@ service zygote /system/bin/app_process64 ...
 
 ### 5.1 procstate 与 sched group 没有固定一一映射
 
-procstate 是 framework 对进程当前业务重要性的分类，sched group 是随后选择的调度资源组，两者不是同一概念。Android 17 的 OomAdjuster 已位于 `services/core/java/com/android/server/am/psc/`。它综合 Activity、可见 UI、前台服务、广播、绑定关系、屏幕状态、远程动画和限制策略计算：
+procstate 是 framework 对进程当前业务重要性的分类，sched group 是随后选择的调度资源组，两者不是同一概念。Android 17 的 OomAdjuster 已位于 `services/core/java/com/android/server/am/psc/`。它综合 Activity、可见 UI、前台服务、广播、绑定关系、屏幕状态、远程动画和限制策略，为每个进程算出四项结果：
 
 - `oom_score_adj`（供低内存杀进程决策使用的优先级）；
 - process state（进程状态）；
@@ -260,7 +260,7 @@ procstate 是 framework 对进程当前业务重要性的分类，sched group �
 | `SCHED_GROUP_FOREGROUND_WINDOW` | `THREAD_GROUP_FOREGROUND_WINDOW` |
 | 其他默认情形 | `THREAD_GROUP_DEFAULT` |
 
-OomAdjuster 通过 `mProcessGroupHandler` 异步发送组变更，再由 callback 调整应用及相关子进程。profile 文件写入不在 OomAdjuster 的计算循环内执行。状态字段先更新、cgroup 迁移随后执行，因此短时间观察可能同时看到“新 sched group”与“旧 cgroup 路径”；不能预设固定的 100～200 ms 窗口。
+OomAdjuster 通过 `mProcessGroupHandler` 异步发送组变更，再由 callback 调整应用及相关子进程。profile 文件写入不在 OomAdjuster 的计算循环内执行。状态字段先更新、cgroup 迁移随后执行，因此短时间观察可能同时看到“新 sched group”与“旧 cgroup 路径”；这两步之间的间隔不能预设为固定的 100～200 ms。
 
 进入或离开 `top-app` 时，framework 还可能单独调整主线程/RenderThread nice，或在配置允许时切换 FIFO（先进先出实时调度）UI scheduling。这些动作和 cgroup 迁移有关联，但属于不同内核接口，排查时要分别取证。
 
@@ -363,7 +363,7 @@ SetProcessProfiles(uid, pid, {"Frozen"})
 
 解冻使用 `Unfrozen` 并写 `0`。这里不使用 cached fd 路径，因为文件名包含 UID/PID，且进程 cgroup 会创建和删除。
 
-向 `cgroup.freeze` 写 `1` 会发起该 cgroup 及其后代的冻结。冻结完成可能滞后于写入；内核通过 `cgroup.events` 的 `frozen` 字段报告完成状态。因此，“一次写入就原子完成冻结”不准确。
+向 `cgroup.freeze` 写 `1` 会发起该 cgroup 及其后代的冻结。冻结完成可能滞后于写入；内核通过 `cgroup.events` 的 `frozen` 字段报告完成状态。“一次写入就原子完成冻结”的说法因此不准确。
 
 ### 8.2 Android 为什么还需要 Binder Freezer
 
@@ -381,7 +381,9 @@ SetProcessProfiles(uid, pid, {"Frozen"})
 
 进程冻结后，其普通线程不再获得 CPU，进程内 Watchdog、采样线程和上传线程也会暂停。解冻后的时间间隔突增不能直接算作 ANR、CPU starvation（长时间得不到 CPU）或网络超时。
 
-普通应用没有可依赖的公开“即将被冻结”回调。监控系统若需要区分冻结，应结合系统侧/外部观测、生命周期上下文与采样连续性判断，不能靠在已冻结进程里轮询 `cgroup.freeze`。也没有证据支持把后台 profiler（性能采样器）的 10 ms 周期统一换算成 50～100 ms。
+普通应用没有可依赖的公开“即将被冻结”回调。监控系统若需要区分冻结，应结合系统侧/外部观测、生命周期上下文与采样连续性判断，不能靠在已冻结进程里轮询 `cgroup.freeze`。
+
+后台 profiler（性能采样器）的 10 ms 周期同样没有证据支持统一换算成 50～100 ms。
 
 ## 9. 设备核对方法
 
@@ -445,7 +447,7 @@ Perfetto 中看到大核迁移或频率上升，只能作为结果证据。要�
 5. 读取目标组的当前文件值；
 6. 用 Perfetto 观察调度、频率、freezer、PSI 和用户可见延迟。
 
-不要从 AOSP profile 名推断厂商参数。`MaxPerformance` 表达策略意图，具体 CPU mask、UClamp 与 thermal 上限由产品配置决定。
+不要从 AOSP profile 名推断厂商参数。`MaxPerformance` 只声明策略意图（把线程加入 `cpu/top-app`），具体 CPU mask、UClamp 与 thermal 上限由产品配置决定。
 
 ## 11. Android 17 的资源分组层次
 
