@@ -51,7 +51,7 @@ sources:
 
 # Android 17 AVF 架构与 pKVM 隔离性能边界
 
-Android Virtualization Framework（Android 虚拟化框架，AVF）从 Android 13 开始提供受保护虚拟机能力。它面向需要抵御宿主（host）Android 被攻破的敏感工作负载：宿主仍负责创建、调度和终止虚拟机，但不能读取 protected VM（受保护虚拟机，pVM）的私有内存，也不能悄悄替换通过验证的 Microdroid 和其中运行的载荷（payload）。
+Android Virtualization Framework（Android 虚拟化框架，AVF）从 Android 13 开始提供受保护虚拟机能力。它面向敏感工作负载：这些负载要抵御的威胁是宿主（host）Android 被攻破。宿主仍负责创建、调度和终止虚拟机，但不能读取 protected VM（受保护虚拟机，pVM）的私有内存，也不能悄悄替换通过验证的 Microdroid 和其中运行的载荷（payload）。
 
 “运行在虚拟机里会慢多少”没有跨设备固定答案。AVF 的成本取决于 vCPU（虚拟 CPU）调度、VM exit（执行从客户机退出到虚拟机监控器或宿主）、共享内存窗口、virtio 虚拟 I/O、验证启动以及 payload 行为。可复现的测量必须建立在 Android 17 的组件关系和安全边界之上。
 
@@ -59,7 +59,7 @@ Android Virtualization Framework（Android 虚拟化框架，AVF）从 Android 1
 
 ### 1.1 宿主侧有两个服务层次
 
-AVF 文档里的 `VirtualizationService` 容易与 `system_server` 中的 Java 服务混淆。API 37 的实现由多个独立进程组成：
+AVF 文档里的 `VirtualizationService` 容易与 `system_server` 中的 Java 服务混淆。API 37 的实现由多个独立进程组成：宿主应用经 `framework-virtualization` Java 库连到 `virtmgr`，`virtmgr` 为每台运行中的 VM 拉起一个 crosvm 子进程，另有全局的 `VirtualizationServiceInternal`（全局 Rust lazy Binder 服务）管 CID 和全局资源；crosvm 与它最终都落到 EL2 上的 pKVM。
 
 ```text
 Host app / system component
@@ -101,14 +101,14 @@ Microdroid 是 AVF 提供的一种轻量客户机 OS，但不是 AVF 唯一支�
 
 ## 二、Microdroid 不是“小号完整 Android”
 
-Microdroid 为原生 payload 提供 Android 基础设施：Bionic C 库、验证启动（Verified Boot）、SELinux、APEX 系统组件包、日志 / 崩溃调试能力，以及基于 vsock（宿主与客户机通信的虚拟套接字）的 Binder RPC。它明确不提供：
+payload 通常是 APK 内嵌的原生共享库，由 Microdroid payload launcher（载荷启动器）执行。Microdroid 为原生 payload 提供 Android 基础设施：Bionic C 库、验证启动（Verified Boot）、SELinux、APEX 系统组件包、日志 / 崩溃调试能力，以及基于 vsock（宿主与客户机通信的虚拟套接字）的 Binder RPC。它明确不提供：
 
 - `system_server` 和 Zygote；
 - 图形/UI；
 - HAL；
 - `android.*` Java framework API。
 
-启用 ART APEX 后可以使用 `java.*` 核心 API，但这不等于拥有常规 Android 应用运行环境。payload 通常是 APK 内嵌的原生共享库，由 Microdroid payload launcher（载荷启动器）执行。
+启用 ART APEX 后可以使用 `java.*` 核心 API，但这不等于拥有常规 Android 应用运行环境。
 
 因此，下列推断在 API 37 中没有依据：
 
@@ -128,7 +128,9 @@ Microdroid 为原生 payload 提供 Android 基础设施：Bionic C 库、验证
 - 客户机仍有自己的 Stage-2，把客户机中间物理地址（IPA）映射到真实物理地址；
 - EL2 维护页面所有者，并决定宿主、某台 pVM、虚拟机监控器或设备能否映射该页。
 
-Android 启动之初，除虚拟机监控器保留区外的内存归宿主所有。创建 pVM 时，宿主把页面 donate（捐赠）给客户机；EL2 随后从宿主 Stage-2 中撤销这些页的访问权限。crosvm 进程仍保留用于建立 KVM memslot（客户机内存槽）的虚拟地址区间和内存记账关系，但对应物理页已不在宿主 Stage-2 的可访问映射中。宿主 CPU 或受宿主控制的设备，不能凭借这段用户空间地址绕过 EL2 读取 pVM 私有页。
+Android 启动之初，除虚拟机监控器保留区外的内存归宿主所有。创建 pVM 时，宿主把页面 donate（捐赠）给客户机；EL2 随后从宿主 Stage-2 中撤销这些页的访问权限。crosvm 进程仍保留用于建立 KVM memslot（客户机内存槽）的虚拟地址区间和内存记账关系，但对应物理页已不在宿主 Stage-2 的可访问映射中。
+
+宿主 CPU 或受宿主控制的设备，不能凭借这段用户空间地址绕过 EL2 读取 pVM 私有页。
 
 当前内核把宿主 Stage-2 标记为 `KVM_PGTABLE_S2_IDMAP`，并在 `host_stage2_set_owner_locked()` 中根据所有者 ID 建立宿主映射或记录其他所有者。保护来自 EL2 管理的权限，与某个用户空间 `shared_buf` 名称无关。
 
@@ -157,11 +159,11 @@ ret = __host_stage2_set_owner_locked(
         HOST_SET_PSCI_MEM_PROTECT);
 ```
 
-页面回收伴随权限变更和内容处理；配置给 VM 的内存也可以在 VM 销毁前归还。pKVM 提供 `relinquish` hypercall（客户机请求虚拟机监控器执行操作的调用），virtio balloon（由客户机配合归还内存的虚拟设备）可以借此回收长期运行 VM 中不用的页。
+页面回收伴随权限变更和内容处理；配置给 VM 的内存也可以在 VM 销毁前归还。pKVM 提供 `relinquish` hypercall（客户机通过它请求虚拟机监控器执行操作），virtio balloon（由客户机配合归还内存的虚拟设备）可以借此回收长期运行 VM 中不用的页。
 
 ### 3.3 共享窗口为什么影响 I/O
 
-virtio 的常规设计假设宿主设备后端可以根据 virtqueue（virtio 队列）描述符访问客户机 buffer。pVM 私有页不满足这个假设。若每次请求都临时 `share` 一个小 buffer，页面粒度共享还可能暴露同页中的无关数据。
+virtio 的常规设计假设宿主设备后端可以根据 virtqueue（virtio 队列）描述符访问客户机 buffer。pVM 私有页不满足这个假设。共享按页进行，若每次请求都临时 `share` 一个小 buffer，同页中无关的数据也可能一并暴露。
 
 AVF 的受保护客户机因此为 virtqueue 和数据 buffer 预留固定共享内存窗口，客户机在私有页与共享窗口之间执行 bounce copy（中转复制）。性能影响包括：
 
@@ -270,7 +272,7 @@ connectToVsockServer(port)
 - `testVsockTransferFromHostToVM()`：48 MiB 连续发送，报告吞吐；
 - `testVirtioBlkSeqReadRate()` / `RandReadRate()`：区分顺序与随机读，并丢弃首次受宿主页缓存冷启动影响的样本。
 
-这些用例没有把某一台实验设备的结果固化为平台常量。复用时应保留原始样本，报告 P50 / P90 / P99 分位数，并记录 protected 模式、调试级别、内存、vCPU 数量与拓扑（组织关系）、huge page、uclamp、温度和 CPU 频点。
+这些用例没有把某一台实验设备的结果固化为平台常量。复用时应保留原始样本，报告 P50 / P90 / P99 分位数，并记录 protected 模式、调试级别、内存、vCPU 数量与拓扑、huge page、uclamp、温度和 CPU 频点。
 
 ## 七、VM 生命周期语义
 
