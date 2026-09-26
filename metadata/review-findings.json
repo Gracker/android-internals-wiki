@@ -3581,6 +3581,9 @@
     },
     {
       "chapter": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "close_note": "F-Droid 2.0 client rewrite is off-topic for ART dynamic method tracing and JVMTI chapter. The misroute was already quarantined at source-index layer (metadata/source-index.json quarantined block around entries 5413-5437, route_status=quarantined-misroute, finding_id linked back). This rework run re-verified: target chapter body contains 0 hits for f-droid or fdroid, body length 754 lines, hash dbe67f05059654c5 matches pre-run target.sha16. The misroute was blocked before any body write. Closing this finding; chapter stays ready for review pipeline.",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20260926-133505-rework-bf95039c",
       "created_at": "2026-09-26T09:16:16.760142+08:00",
       "created_by": "aiw-body-apply",
       "created_run_id": "20260926-091534-76f70449",
@@ -3591,10 +3594,10 @@
       "source_paths": [
         "metadata/source-index.json#415"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "Source-index entry 415 misrouted: F-Droid 2.0 client rewrite (Kotlin/Compose/Material 3/session installer) does not belong in ART dynamic-method-tracing & JVMTI chapter",
       "type": "routing-misfire",
-      "updated_at": "2026-09-26T09:16:16.760142+08:00"
+      "updated_at": "2026-09-26T13:35:49.574806+08:00"
     }
   ],
   "schema_version": 1
