@@ -148,7 +148,7 @@ NMS 还会调用多个系统组件，但要区分本地服务调用和 Binder �
 `NotificationManager.notify()` 最终进入 `notifyAsUser()`。发起 Binder 调用之前，Android 17 的客户端会依次完成：
 
 - 用 `(user, package, tag, id)` 识别更新；
-- 对“同一个通知且进度状态未改变”的高频更新执行以 5 次/秒为目标上限的客户端限流；
+- 对“同一条通知且进度状态未改变”的高频更新做客户端限流，目标上限 5 次/秒；
 - 补充上下文字段和旧版 small icon；
 - 调用 `Notification.reduceImageSizes()`；
 - 通过 `Notification.Builder.maybeCloneStrippedForDelivery()` 去掉可由接收端重建的冗余内容；
@@ -171,7 +171,7 @@ private Notification fixNotification(Notification notification) {
 }
 ```
 
-这段代码说明两件事。第一，`notify()` 可能在 App 侧直接丢弃一次高频更新，连 Binder 都不会发生。第二，大图缩放、对象 clone 和 Parcel write 都计入 calling thread 时间。把大图 decode、文本拼装和 `Notification.Builder.build()` 全放在 main thread，会先造成 App 自身卡顿，随后才轮到 NMS。
+这段代码说明两件事。第一，`notify()` 可能在 App 侧直接丢掉一次高频更新，连 Binder 调用都不会发生。第二，大图缩放、对象克隆和 Parcel 写入都算在调用线程的时间里。把大图解码、文本拼装和 `Notification.Builder.build()` 全放在主线程，先卡住的是 App 自身，随后才轮到 NMS。
 
 ### 同步 Binder 阶段：远不止“快速入队”
 
@@ -181,7 +181,7 @@ private Notification fixNotification(Notification notification) {
 - 应用 FGS 通知策略，修正不允许由应用设置的 flag；
 - 读取 `ApplicationInfo`，校验 full-screen intent（全屏通知意图）等权限；
 - 检查自定义 `RemoteViews`（可跨进程应用的受限视图描述）的估算内存；
-- 根据 channel ID 从 `PreferencesHelper` 读取渠道，渠道不存在时拒绝发布；
+- 根据渠道 ID 从 `PreferencesHelper` 读取渠道，渠道不存在时拒绝发布；
 - 创建 `StatusBarNotification` 和 `NotificationRecord`；
 - 执行速率、数量、snooze（稍后提醒）、包状态等淘汰检查；
 - 为通知内的 PendingIntent 设置临时 allowlist；
@@ -265,7 +265,7 @@ Android 17 对高频更新设置了两级保护，但两者的作用域和算法
 
 `getProgressState()` 只有 `NONE`、`ONGOING`、`COMPLETE` 三种内部状态。进度从 41% 变为 42% 时仍是 `ONGOING`，所以持续刷新百分比会进入限流；从 `ONGOING` 变为 `COMPLETE` 的关键更新可以通过“状态改变”条件。这里的豁免依据是状态变化，不会对每个进度值做特殊判断。
 
-客户端的 `mUpdateRateLimiter` 是 `NotificationManager` 的实例字段，同一实例中的合格更新共用一个 `RateEstimator`；通知 key 用于判断这次调用是否属于更新并记录拒绝日志，不会为每个 key 建立独立的 5 次/秒计数桶。`eventExceedsRate()` 比较估算输出速率与 `5f`，所以它也不是按自然秒清零的固定窗口计数器。
+客户端的 `mUpdateRateLimiter` 是 `NotificationManager` 的实例字段，同一实例中的合格更新共用一个 `RateEstimator`。通知 key 只用来判断这次调用是否属于更新、记录拒绝日志，不会为每个 key 建立独立的 5 次/秒计数桶。`eventExceedsRate()` 比较估算输出速率与 `5f`，它同样不是按自然秒清零的固定窗口计数器。
 
 服务端判断使用 `NotificationUsageStats.getAppEnqueueRate(pkg)`，阈值来自 `Settings.Global.MAX_NOTIFICATION_ENQUEUE_RATE`，AOSP 默认 `5f`。这是 NMS 的包级速率估算。超限时记录日志和统计后返回 `false`。应用通常收不到异常或成功回调，因此业务层不能把每次 `notify()` 当成可靠消息投递。
 
@@ -308,11 +308,11 @@ Android 17 对高频更新设置了两级保护，但两者的作用域和算法
                                          └─ create(同一 id) ──> 恢复原配置
 ```
 
-这项设计防止应用用“删掉再创建”绕过用户选择。需要一套全新的声音、重要性或用途时，应设计新的稳定 channel ID，并向用户解释迁移原因。
+这项设计防止应用用“删掉再创建”绕过用户选择。需要一套全新的声音、重要性或用途时，应设计新的稳定渠道 ID，并向用户解释迁移原因。
 
 ### 渠道不存在时不会替现代应用兜底
 
-通知中的 channel ID 随 `Notification` 一起传给 NMS。NMS 在同步提交阶段查询 `PreferencesHelper`；普通应用发布到不存在的渠道时，记录会被拒绝，并在日志中出现 `No Channel found`。它不会把 API 26 及以上应用的错误 channel 自动改成另一个默认渠道。
+通知中的渠道 ID 随 `Notification` 一起传给 NMS。NMS 在同步提交阶段查询 `PreferencesHelper`；普通应用发布到不存在的渠道时，记录会被拒绝，并在日志中出现 `No Channel found`。它不会把 API 26 及以上应用的错误渠道自动改成另一个默认渠道。
 
 `notify()` 也不会先额外发起一次“渠道是否存在”的客户端查询。应用主动调用 `getNotificationChannel()` 才是查询 API。创建多个渠道时，应使用 `createNotificationChannels(List)`，它把列表装进一次 Binder 调用；在循环中逐个调用会产生多次往返。
 
@@ -342,7 +342,7 @@ NMS 排序后调用 `NotificationListeners.notifyPostedLocked()`。它会在持�
 
 ## SystemUI：现代通知管线
 
-Android 17 已经使用 `NotifCollection` 与 `NotifPipeline`，不应再用旧的 `NotificationEntryManager` 解释主路径：
+Android 17 的主路径由 `NotifCollection` 与 `NotifPipeline` 组成，旧的 `NotificationEntryManager` 不再适用于解释这条路径：
 
 ```text
 NotificationListener callback
@@ -361,9 +361,11 @@ NotificationListener callback
                            └─ NotificationRowContentBinderImpl
 ```
 
-`NotifCollection.onNotificationPosted()` 有 `Assert.isMainThread()`。列表事件、ranking 应用和重建请求会经过 SystemUI 主线程。视图内容随后由 `NotificationRowContentBinderImpl` 异步构建 `RemoteViews` 并 apply 到 row；主线程仍需接收结果、替换 view、执行测量与 layout 并提交绘制。
+图中的几个环节各管一件事：pre-group filter 在分组前排除记录，promoter 可以把子通知提升为顶层条目，section 与 comparator 决定分区和区内顺序，finalize filter 在列表输出前再做一次过滤。这里的 row 指一条通知对应的界面项，apply 指把 `RemoteViews` 中记录的操作应用到该界面项。
 
-图中的 pre-group filter 会在分组前排除记录，promoter 可把子通知提升为顶层条目，section 与 comparator 决定分区和区内顺序，finalize filter 在列表输出前再做最后过滤。这里的 row 指一条通知对应的界面项，apply 指把 `RemoteViews` 中记录的操作应用到该界面项。
+`NotifCollection.onNotificationPosted()` 有 `Assert.isMainThread()`。列表事件、ranking 应用和重建请求都在 SystemUI 主线程上处理。
+
+视图内容随后由 `NotificationRowContentBinderImpl` 异步构建 `RemoteViews` 并 apply 到 row；主线程仍需接收结果、替换 view、执行测量与 layout 并提交绘制。
 
 因此，分析通知 UI 卡顿时至少要同时看：
 
@@ -388,7 +390,7 @@ RemoteViews(package, layout, actions)
 
 可调用的方法受 `RemoteViews` 规则限制。SystemUI 不会加载并运行应用自定义 View 类的任意代码。这个限制兼顾安全、跨进程稳定性和版本兼容。
 
-系统样式也会在 SystemUI 中恢复 `Notification.Builder` 并生成平台模板 `RemoteViews`。这类布局和操作由框架控制，兼容性、内存约束和不同设备形态更可预测。能用 `BigTextStyle`、`MessagingStyle`、`CallStyle`、`ProgressStyle` 或 `MetricStyle` 表达的内容，优先使用系统模板。
+系统样式同样由 SystemUI 还原 `Notification.Builder` 的配置，再生成平台模板 `RemoteViews`。这类布局和操作由框架控制，兼容性、内存约束和不同设备形态更可预测。能用 `BigTextStyle`、`MessagingStyle`、`CallStyle`、`ProgressStyle` 或 `MetricStyle` 表达的内容，优先使用系统模板。
 
 ### `reapply` 的条件
 
@@ -403,14 +405,16 @@ Android 17 的 `NotificationRowContentBinderImpl.canReapplyRemoteView()` 在以�
 
 ### Android 17 的自定义视图内存约束
 
-`NotificationManager.fixNotification()` 会先调用 `reduceImageSizes()`。NMS 的 `checkRemoteViews()` 随后用 `RemoteViews.estimateMemoryUsage()` 检查每个自定义 collapsed（折叠）、expanded（展开）、heads-up 和 public view（锁屏公开版本）。AOSP `android-17.0.0_r1` 的默认资源值为：
+`NotificationManager.fixNotification()` 会先调用 `reduceImageSizes()`。NMS 的 `checkRemoteViews()` 随后用 `RemoteViews.estimateMemoryUsage()` 检查自定义视图的每种形态：collapsed（折叠）、expanded（展开）、heads-up 与 public view（锁屏公开版本）。AOSP `android-17.0.0_r1` 的默认资源值为：
 
 - 估算内存大于 2,000,000 bytes：写 warning；
 - 估算内存达到 5,000,000 bytes：剥离该 `RemoteViews`。
 
 这两个值是 framework resource，可被设备配置覆盖，不应作为应用可用预算。上面这一层发生在 NMS，检查的是 `RemoteViews` 传输对象的估算值；它无法完整反映 URI 或资源图片在 SystemUI 解码后的占用。
 
-Android 17 还在 SystemUI 的 `NotificationCustomContentMemoryVerifier` 增加了第二层检查。`NotificationRowContentBinderImpl` apply 自定义视图后，验证器遍历其中的 `ImageView`：`BitmapDrawable` 按实际像素内存 `allocationByteCount` 计入，其他 Drawable（可绘制资源）按固有宽高乘以 4 估算。`CHECK_SIZE_OF_INFLATED_CUSTOM_VIEWS` 使用 `@EnabledAfter(BAKLAVA)`，所以从 target API 37 开始强制拒绝；目标版本较低的应用在同样超限时只收到迁移警告。这个检查针对展开后的 Drawable，因而覆盖了 URI 和资源图片未计入 Parcel 估算的情况。
+Android 17 还在 SystemUI 的 `NotificationCustomContentMemoryVerifier` 增加了第二层检查。`NotificationRowContentBinderImpl` apply 自定义视图后，验证器遍历其中的 `ImageView`：`BitmapDrawable` 按实际像素内存 `allocationByteCount` 计入，其他 Drawable（可绘制资源）按固有宽高乘以 4 估算。
+
+`CHECK_SIZE_OF_INFLATED_CUSTOM_VIEWS` 使用 `@EnabledAfter(BAKLAVA)`，所以从 target API 37 开始强制拒绝；目标版本较低的应用在同样超限时只收到迁移警告。这个检查针对展开后的 Drawable，因而覆盖了 URI 和资源图片未计入 Parcel 估算的情况。
 
 应用应优先使用系统模板；确需自定义视图时，要在解码前限制图片尺寸，并为视图被 NMS 剥离或被 SystemUI 拒绝准备可接受的退化路径。AOSP 阈值适合用于理解源码和日志，不适合作为应用的图片预算。
 
@@ -454,7 +458,7 @@ PendingIntent contentIntent = PendingIntent.getActivity(
 
 冷启动或 cached app（缓存进程）解冻没有可跨设备使用的固定毫秒数。它取决于存储、代码和资源量、设备负载、进程状态与首帧工作。诊断时应记录点击业务 ID，在 Activity 的 `onCreate()`、`onNewIntent()` 和首帧处添加 trace，再结合 ActivityManager / ActivityTaskManager 日志、`am_*` 事件、Binder 和调度事件定位。
 
-通知点击应直接使用指向 Activity 的 PendingIntent。面向 Android 12 及以上的应用不能依赖 notification trampoline（通知跳板），即“点击先启动 broadcast receiver/service，再由它启动 Activity”；官方文档即使提到 `SYSTEM_ALERT_WINDOW` 的例外，也要求避免这种交互模式并改用直接 `PendingIntent`。直接目标还减少一次组件调度和一次应用内转交。
+通知点击应直接使用指向 Activity 的 PendingIntent。面向 Android 12 及以上的应用不能依赖 notification trampoline（通知跳板，即“点击先启动 broadcast receiver/service，再由它启动 Activity”）。官方文档提到 `SYSTEM_ALERT_WINDOW` 的例外，但仍要求避免这种交互模式，改用直接 `PendingIntent`。直接目标还减少一次组件调度和一次应用内转交。
 
 ## 通知分组机制
 
@@ -494,9 +498,9 @@ Android 13 / API 33 起，非豁免通知受 `POST_NOTIFICATIONS` 运行时权�
 
 ### 状态栏图标不是“每包一个”
 
-状态栏使用 `Notification.smallIcon` 生成图标；`largeIcon` 服务于通知内容或通知圆点（badge）的可选表现。Android 17 没有“同一个包最多显示一个状态栏图标”的通用规则。同一包的多条独立通知可以占据多个图标位置，最终可见数量由屏幕空间、优先级、静默图标设置和 SystemUI 策略共同决定。
+状态栏用 `Notification.smallIcon` 生成图标；`largeIcon` 则用于通知内容或通知圆点（badge）的可选展示。Android 17 没有“同一个包最多显示一个状态栏图标”的通用规则。同一包的多条独立通知可以占据多个图标位置，最终可见数量由屏幕空间、优先级、静默图标设置和 SystemUI 策略共同决定。
 
-`IMPORTANCE_LOW` 的 SDK 定义是可能出现在状态栏，但不产生声音式打扰；用户还可以选择隐藏 silent notification icons。不能用单一 importance 值推断图标一定显示或一定隐藏。
+`IMPORTANCE_LOW` 的 SDK 定义是可能出现在状态栏，但不产生声音式打扰；用户还可以选择隐藏静默通知图标。不能用单一 importance 值推断图标一定显示或一定隐藏。
 
 一次图标属性更新通常不是通知性能的主要部分。高频更新的问题来自整次 notification callback、ranking、shade list rebuild、内容 reapply 和可能的 layout，不能只估算一个 `ImageView.invalidate()`。
 
@@ -584,7 +588,7 @@ adb logcat -s NotificationManager NotificationService \
 常见判读顺序：
 
 1. 应用 `notif:submit` 很长：分解 builder、图片、Parcel 和同步 Binder 等待；
-2. NMS 没有记录：查客户端限流、channel、权限、50 条上限和 NMS 日志；
+2. NMS 没有记录：查客户端限流、渠道、权限、50 条上限和 NMS 日志；
 3. NMS 已 post、SystemUI 尚未收到：查 listener dispatch、Binder 队列和 SystemUI 进程状态；
 4. `NotifCollection` 收到但 row 很晚：查通知栏列表重建、展开执行器和 shade list rebuild、inflation executor、RemoteViews apply；
 5. row 已 apply、首帧仍晚：查 SystemUI 主线程 layout、RenderThread 和 GPU。
@@ -647,7 +651,7 @@ Android 17 的 Live Update 可以使用标准系统样式（Standard Style）、
 
 `Notification.hasPromotableCharacteristics()` 检查通知对象本身的结构条件，不包含用户是否允许、渠道 importance 或 OEM 附加条件。`NotificationManager.canPostPromotedNotifications()` 用于检查应用当前是否获准发布提升通知。是否设置 `FLAG_PROMOTED_ONGOING` 仍由系统决定。
 
-实时更新适用于已经开始、由用户发起且对时间敏感的活动，例如导航、行程、配送和进行中的训练。普通促销、未来很久才发生的事件或没有明确结束点的状态不符合用途。
+实时更新适用于已经开始、由用户发起且对时间敏感的场景，例如导航、行程、配送和进行中的训练。普通促销、很久之后才发生的事件或没有明确结束点的状态不符合用途。
 
 ### Semantic style 表达含义，不直接指定颜色
 
@@ -660,7 +664,7 @@ Android 17 提供四种语义：
 | `SEMANTIC_STYLE_CAUTION` | 注意、中等紧迫度或延迟 | 黄/橙 |
 | `SEMANTIC_STYLE_DANGER` | 危险、极高紧迫度或严重延迟 | 红 |
 
-它可以用于 `Metric`、`ProgressStyle.Segment`、`ProgressStyle.Point`，也可通过 `createSemanticStyleAnnotation()` 为部分文本添加语义注解（annotation）。颜色由平台根据主题和显示界面选择；应用不应依赖某个固定 ARGB 值。文本去掉颜色后仍必须表达完整含义，无障碍信息不能只靠颜色区分。
+语义样式可以用在 `Metric`、`ProgressStyle.Segment`、`ProgressStyle.Point` 上，也可以通过 `createSemanticStyleAnnotation()` 为部分文本添加语义注解（annotation）。颜色由平台根据主题和显示界面选择；应用不应依赖某个固定 ARGB 值。文本去掉颜色后仍必须表达完整含义，无障碍信息不能只靠颜色区分。
 
 这些语义样式只有在通知和显示界面符合条件时才会生效。AOSP 的 `Metric` 文档明确把语义显示限定在提升通知，文本 annotation 的文档也把提升通知作为典型资格条件；普通通知中保留语义数据，不代表界面一定着色。
 
@@ -690,7 +694,7 @@ Android 17 针对 target API 37 的 custom notification view 增加了展开后�
 
 审查应用通知实现时，可以按以下顺序检查：
 
-1. channel ID 是否稳定，是否批量创建，是否错误尝试覆盖用户设置；
+1. 渠道 ID 是否稳定，是否批量创建，是否错误尝试覆盖用户设置；
 2. `(tag, id)` 是否对应稳定业务对象，进度更新是否合并；
 3. builder、图片解码与 `notify()` 是否占用主线程；
 4. custom `RemoteViews` 是否有系统 style 替代方案；
