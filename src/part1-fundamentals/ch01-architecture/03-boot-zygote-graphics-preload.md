@@ -189,7 +189,7 @@ flowchart LR
 
 这是一条主线，不代表所有工作都严格串行。驱动探测（probe）、init 服务、APEX 模块准备、SystemServer 内部初始化和 Virtual A/B 快照合并（snapshot merge）都可能并行执行或争用 CPU、存储与锁。
 
-启动耗时可以按系统启动、进程孵化和应用首帧三段归因。前一段准备内核与系统服务，Zygote 负责共享预加载结果并创建进程，应用进程仍需完成图形环境和首帧资源初始化。
+启动耗时可以按系统启动、进程孵化和应用首帧三段归因。系统启动负责内核与系统服务；进程孵化由 Zygote 复用预加载结果并创建进程；应用进程还要完成图形环境和首帧资源初始化。
 
 ## 从 Boot ROM 到 SystemServer
 
@@ -281,17 +281,25 @@ init 的 Zygote `.rc` 服务通过 `app_process` 启动 `ZygoteInit.main()`，�
 
 SystemServer 进程由 Zygote 主动创建，不需要 ActivityManagerService（AMS）发起；应用进程由 `system_server` 通过 Zygote 命令套接字请求创建，两条路径要分开。[已验证: `ZygoteInit.java` 与 `ZygoteProcess.java` @ AOSP `android-17.0.0_r1`]
 
-Android 17 的默认预加载还有 eager 与 lazy 两种进入方式。主 Zygote 的常规 `init.zygote64.rc` 命令行不带 `--enable-lazy-preload`，因此在启动期执行 `preload()`；64/32 mixed 配置中的 `init.zygote64_32.rc` 会让 `zygote_secondary` 携带 `--enable-lazy-preload`，次 Zygote 先进入 socket 监听，等待后续默认预加载命令。[来源: DeepResearch/2026-07-15-android17-zygote-lazy-preload-true-triggers-securefs-not-in-aosp17.md][已验证: `system/core/rootdir/init.zygote64.rc`、`system/core/rootdir/init.zygote64_32.rc` 与 `ZygoteInit.java` @ AOSP `android-17.0.0_r1`]
-
-SystemServer 在 `startOtherServices()` 期间提交 `SecondaryZygotePreload` 线程池任务：当 `Build.SUPPORTED_32_BIT_ABIS` 非空时，它调用 `Process.ZYGOTE_PROCESS.preloadDefault(abis32[0])`，向匹配 ABI 的 Zygote socket 写入 `1\n--preload-default\n`；Zygote 端的 `ZygoteConnection.handlePreload()` 若发现默认预加载尚未完成，就调用 `ZygoteInit.lazyPreload()` 并回写 `0`，已完成时回写 `1`。[来源: DeepResearch/2026-07-15-android17-zygote-lazy-preload-true-triggers-securefs-not-in-aosp17.md][已验证: `frameworks/base/services/java/com/android/server/SystemServer.java`、`frameworks/base/core/java/android/os/ZygoteProcess.java`、`frameworks/base/core/java/com/android/internal/os/ZygoteConnection.java` 与 `ZygoteInit.java` @ AOSP `android-17.0.0_r1`]
-
-这个 lazy preload 链路主要服务 32-bit WebView RELRO 准备：`SystemServer.java` 的注释把触发点放在 WebView factory 准备前约 1 秒，`WebViewFactoryPreparation` 会等待 `mZygotePreload`，从而让 32-bit RELRO 进程 fork 前先拿到次 Zygote 的默认预加载结果；socket 调用本身同步，但它运行在线程池任务中，SystemServer 主线程可以继续推进其他服务。[来源: DeepResearch/2026-07-15-android17-zygote-lazy-preload-true-triggers-securefs-not-in-aosp17.md][已验证: `SystemServer.java` 与 `ZygoteProcess.java` @ AOSP `android-17.0.0_r1`]
-
-排查 Zygote 预加载时要区分来源：启动期 eager 预加载通常表现为 `ZygotePreload` 与 `Zygote32Timing`/`Zygote64Timing`，lazy 预加载会出现 `SecondaryZygotePreload`、`WebViewFactoryPreparation` 和 `ZygoteInitTiming_lazy`；只有结合 32-bit ABI 是否存在，才能判断次 Zygote lazy preload 是否位于关键路径。[来源: DeepResearch/2026-07-15-android17-zygote-lazy-preload-true-triggers-securefs-not-in-aosp17.md][已验证: `ZygoteInit.java`、`SystemServer.java` 与 `ZygoteProcess.java` @ AOSP `android-17.0.0_r1`]
-
 `frameworks/base/config/preloaded-classes` 在 `android-17.0.0_r1` 中去掉注释和空行后有 18,784 条。这个数字只描述该固定源码标签的生成输入，不是所有 Android 版本和厂商构建的常量。预加载过少会把公共类加载成本留给进程启动，预加载过多会增加整机开机时间、Zygote 常驻内存和可能被写脏的页面。调整列表必须同时测量整机启动、进程启动与 PSS（按共享比例分摊后的进程物理内存）。[已验证: `frameworks/base/config/preloaded-classes` 与 `ZygoteInit.java` @ AOSP `android-17.0.0_r1`]
 
 Zygote 创建进程时使用写时复制（Copy-on-Write）共享未修改页面。它降低公共运行时的重复物理内存，并不保证创建进程后没有内存成本：ART 线程、应用类加载、堆写入和原生代码初始化都会逐步产生私有页。[已验证: `ZygoteInit.java` 与 ART/Zygote fork 路径 @ AOSP `android-17.0.0_r1`]
+
+Android 17 的默认预加载有两种进入方式：eager 与 lazy，区别落在主 Zygote 和次 Zygote 的启动参数上。
+
+主 Zygote 的常规 `init.zygote64.rc` 命令行不带 `--enable-lazy-preload`，因此在启动期执行 `preload()`。
+
+64/32 mixed 配置中的 `init.zygote64_32.rc` 会让 `zygote_secondary` 携带 `--enable-lazy-preload`，次 Zygote 先进入 socket 监听，等待后续默认预加载命令。[来源: DeepResearch/2026-07-15-android17-zygote-lazy-preload-true-triggers-securefs-not-in-aosp17.md][已验证: `system/core/rootdir/init.zygote64.rc`、`system/core/rootdir/init.zygote64_32.rc` 与 `ZygoteInit.java` @ AOSP `android-17.0.0_r1`]
+
+SystemServer 在 `startOtherServices()` 期间提交 `SecondaryZygotePreload` 线程池任务：当 `Build.SUPPORTED_32_BIT_ABIS` 非空时，它调用 `Process.ZYGOTE_PROCESS.preloadDefault(abis32[0])`，向匹配 ABI 的 Zygote socket 写入 `1\n--preload-default\n`。
+
+Zygote 端的 `ZygoteConnection.handlePreload()` 若发现默认预加载尚未完成，就调用 `ZygoteInit.lazyPreload()` 并回写 `0`，已完成时回写 `1`。[来源: DeepResearch/2026-07-15-android17-zygote-lazy-preload-true-triggers-securefs-not-in-aosp17.md][已验证: `frameworks/base/services/java/com/android/server/SystemServer.java`、`frameworks/base/core/java/android/os/ZygoteProcess.java`、`frameworks/base/core/java/com/android/internal/os/ZygoteConnection.java` 与 `ZygoteInit.java` @ AOSP `android-17.0.0_r1`]
+
+这个 lazy preload 链路主要服务 32-bit WebView RELRO 准备：`SystemServer.java` 的注释把触发点放在 WebView factory 准备前约 1 秒，`WebViewFactoryPreparation` 会等待 `mZygotePreload`，从而让 32-bit RELRO 进程 fork 前先拿到次 Zygote 的默认预加载结果。
+
+这次 socket 调用本身同步，但它运行在线程池任务中，SystemServer 主线程可以继续推进其他服务。[来源: DeepResearch/2026-07-15-android17-zygote-lazy-preload-true-triggers-securefs-not-in-aosp17.md][已验证: `SystemServer.java` 与 `ZygoteProcess.java` @ AOSP `android-17.0.0_r1`]
+
+排查 Zygote 预加载时要区分来源：启动期 eager 预加载通常表现为 `ZygotePreload` 与 `Zygote32Timing`/`Zygote64Timing`，lazy 预加载会出现 `SecondaryZygotePreload`、`WebViewFactoryPreparation` 和 `ZygoteInitTiming_lazy`；只有结合 32-bit ABI 是否存在，才能判断次 Zygote lazy preload 是否位于关键路径。[来源: DeepResearch/2026-07-15-android17-zygote-lazy-preload-true-triggers-securefs-not-in-aosp17.md][已验证: `ZygoteInit.java`、`SystemServer.java` 与 `ZygoteProcess.java` @ AOSP `android-17.0.0_r1`]
 
 ### SystemServer：四组服务与 APEX 服务阶段
 
@@ -532,6 +540,8 @@ android::GraphicBufferMapper::preloadHal();
 
 #### 32 位次 Zygote 的延迟预加载
 
+延迟预加载的触发链路（`SecondaryZygotePreload` 的提交位置、`--preload-default` 的写入与回写、与 WebView 准备任务的先后）在「Zygote：预加载、创建 SystemServer、等待应用请求」一节已经展开。这里只保留图形部分会用到的返回值和设备差异。
+
 在 64/32 双 ABI 的 AOSP 配置中：
 
 - `init.zygote64.rc` 启动 64 位主 Zygote，并立即预加载（eager preload）；
@@ -543,7 +553,7 @@ Android 17 的 `SystemServer` 提交 `SecondaryZygotePreload` 任务，调用：
 Process.ZYGOTE_PROCESS.preloadDefault(Build.SUPPORTED_32_BIT_ABIS[0]);
 ```
 
-该任务约在 WebView 准备任务开始前一秒启动，后者会等待它完成。`preloadDefault()` 通过 Zygote 套接字发送 `--preload-default`。返回 `true` 表示本次触发了延迟预加载；返回 `false` 表示此前已经完成，或该 Zygote 没有采用延迟预加载模式。
+调用方看到的返回值是：`true` 表示本次触发了延迟预加载，`false` 表示此前已经完成，或该 Zygote 没有采用延迟预加载模式。
 
 这是特定 `init` 配置下的行为。只支持 64 位、只支持 32 位以及使用厂商自定义 Zygote 配置的设备可能不同。分析设备时，要同时检查 `ro.zygote`、实际的 `init` 服务配置和对应进程。
 
@@ -793,9 +803,7 @@ Android 17 可使用的源码锚点包括：
 
 ## 图形栈预加载与应用首帧边界
 
-Zygote 只提前承担一部分公共图形初始化。GraphicsEnvironment、RenderThread、着色器和首批资源仍在应用进程执行，需要与系统预加载收益分开测量。
-
-Zygote 是 Android 创建应用进程时使用的进程模板。Android 会在 Zygote 通过 `fork` 派生应用进程前，预先调用一部分图形栈入口。这项工作不会替应用绘制首帧；它只是把多数应用都会遇到的硬件抽象层（HAL）发现、动态库映射和首次执行成本，提前到系统启动阶段。
+Zygote 是 Android 创建应用进程时使用的进程模板。在 Zygote 通过 `fork` 派生应用进程前，Android 会预先调用一部分图形栈入口，把多数应用都会遇到的硬件抽象层（HAL）发现、动态库映射和首次执行成本提前到系统启动阶段。这项工作不会替应用绘制首帧：GraphicsEnvironment、RenderThread、着色器和首批资源仍在应用进程执行，收益要与系统预加载分开测量。
 
 这里有两个常见误解：
 
@@ -869,7 +877,7 @@ Zygote 启动可能更轻
 
 ### 2. Android 17 的 Zygote 预加载顺序
 
-下面列出 `android-17.0.0_r1` 中 `ZygoteInit.preload()` 的关键调用顺序：
+`android-17.0.0_r1` 中 `ZygoteInit.preload()` 的调用顺序与前面列出的完全一致，这里只标出图形相关的两个入口落在流程的哪一段：
 
 ```text
 beginPreload()
@@ -1387,6 +1395,22 @@ adb logcat -v threadtime \
 13. 厂商结论应附上系统级芯片（SoC）、系统与厂商构建版本、驱动软件包和属性快照。
 14. 当前平台源码统一引用 `android-17.0.0_r1`。
 
+同时记录分段测量结果、固定源码标签和设备配置，才能把“开机慢”定位到可修改的代码与依赖。
+
+## 冷启动的源码路径与职责边界
+
+普通冷启动涉及以下源码路径：
+
+1. `ProcessList.startProcess()`：选择普通、WebView 还是 App Zygote；
+2. `ZygoteProcess.startViaZygote()`：组装参数、选择对应 ABI 的套接字、判断是否使用 USAP；
+3. `ZygoteServer.runSelectLoop()` / `ZygoteConnection.processCommand()`：Zygote 端接收命令；
+4. `Zygote.forkAndSpecialize()` 与 `com_android_internal_os_Zygote.cpp`：fork 并为进程设置安全身份；
+5. `ZygoteConnection.handleChildProc()`：结束 `PostFork` 并选择普通应用或子 Zygote 入口；
+6. `ZygoteInit.zygoteInit()` / `RuntimeInit.applicationInit()`：进入 `ActivityThread.main()`；
+7. `ActivityThread.attach()` 与 AMS 的绑定处理：从新进程回到 `bindApplication`。
+
+冷启动轨迹中的每段时间都能对应到具体进程和职责：创建慢就检查 Zygote，特化慢就检查原生安全准备，绑定慢就检查应用初始化，首帧慢就检查组件与渲染。Zygote 优化应限定在它负责的范围内。
+
 ## 参考资料
 
 1. init 入口分派：`system/core/init/main.cpp`，AOSP `android-17.0.0_r1`。
@@ -1402,20 +1426,6 @@ adb logcat -v threadtime \
 11. 启动事件命令：`system/core/bootstat/bootstat.cpp`，AOSP `android-17.0.0_r1`。
 12. 启动跟踪的 init 服务：`external/perfetto/perfetto.rc`，AOSP `android-17.0.0_r1`。
 13. Linux 启动公共版本：`init/main.c` 及设备相关驱动，ACK `android17-6.18-2026-06_r6`。
-
-同时记录分段测量结果、固定源码标签和设备配置，才能把“开机慢”定位到可修改的代码与依赖。
-
-普通冷启动涉及以下源码路径：
-
-1. `ProcessList.startProcess()`：选择普通、WebView 还是 App Zygote；
-2. `ZygoteProcess.startViaZygote()`：组装参数、选择对应 ABI 的套接字、判断是否使用 USAP；
-3. `ZygoteServer.runSelectLoop()` / `ZygoteConnection.processCommand()`：Zygote 端接收命令；
-4. `Zygote.forkAndSpecialize()` 与 `com_android_internal_os_Zygote.cpp`：fork 并为进程设置安全身份；
-5. `ZygoteConnection.handleChildProc()`：结束 `PostFork` 并选择普通应用或子 Zygote 入口；
-6. `ZygoteInit.zygoteInit()` / `RuntimeInit.applicationInit()`：进入 `ActivityThread.main()`；
-7. `ActivityThread.attach()` 与 AMS 的绑定处理：从新进程回到 `bindApplication`。
-
-冷启动轨迹中的每段时间都能对应到具体进程和职责：创建慢就检查 Zygote，特化慢就检查原生安全准备，绑定慢就检查应用初始化，首帧慢就检查组件与渲染。Zygote 优化应限定在它负责的范围内。
 
 - [AOSP：Graphics architecture](https://source.android.com/docs/core/graphics)
 - [AOSP：Vulkan architecture](https://source.android.com/docs/core/graphics/arch-vulkan)
