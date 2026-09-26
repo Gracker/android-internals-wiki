@@ -98,7 +98,7 @@ consolidated_from:
 
 # JNI、NDK 与 Bionic 原生运行时性能
 
-JNI（Java Native Interface，Java 原生接口）用于在 Java/Kotlin 与 C/C++ 之间调用代码；NDK（Native Development Kit）提供 Android 原生开发工具链。优化 JNI 时，应优先减少跨语言调用次数和数据编组，也就是参数在两侧表示之间的转换，并正确管理线程与引用生命周期。继续压缩单次边界切换（transition）的十几纳秒，应排在这些工作之后。
+JNI（Java Native Interface，Java 原生接口）用于在 Java/Kotlin 与 C/C++ 之间调用代码；NDK（Native Development Kit）提供 Android 原生开发工具链。优化 JNI 时，先减少跨语言调用次数和数据编组（参数在两侧表示之间的转换），再管好线程与引用生命周期；把单次边界切换（transition）再压十几纳秒，排在这两件事之后。
 
 音视频、图像、游戏和设备端 AI 推理经常需要 C/C++，但“原生代码天生比 Java/Kotlin 快”不是可靠结论。一个原本能被 ART 即时编译（JIT）或运行前编译（AOT）优化的短循环，如果被拆成大量小粒度 JNI 调用，再叠加字符串转换、数组复制、引用管理和异常检查，整体可能更慢。
 
@@ -125,7 +125,11 @@ Native 性能问题通常跨过 Java/Native 调用边界、动态链接器和 li
 
 普通 JNI 调用需要通知 ART：线程将从托管代码状态进入原生代码状态。随后，调用按 JNI 的二进制调用约定（ABI）传递 `JNIEnv*`、`jobject` / `jclass` 和业务参数；返回时再恢复运行时状态，处理引用和异常。
 
-Android 17 中，普通入口会经过 ART 的 JNI 跳板代码（trampoline），为本次调用建立本地引用区段（local-reference segment），并把线程从可运行的 `Runnable` 状态切换到执行原生代码的 `Native` 状态。返回时，线程再恢复 `Runnable`，检查运行时挂起请求和待处理的 Java 异常（pending exception）。对象参数还要放入引用表，并在原生侧解析为实际对象；纯基本类型（primitive）参数没有这层对象引用处理。因此，一次 JNI 调用并非一条固定指令，方法属性、参数类型、编译状态和运行时挂起请求都会改变执行路径。
+Android 17 中，普通入口会经过 ART 的 JNI 跳板代码（trampoline），为本次调用建立本地引用区段（local-reference segment），并把线程从可运行的 `Runnable` 状态切换到执行原生代码的 `Native` 状态。
+
+返回时，线程再恢复 `Runnable`，检查运行时挂起请求和待处理的 Java 异常（pending exception）。对象参数还要放入引用表，并在原生侧解析为实际对象；纯基本类型（primitive）参数没有这层对象引用处理。
+
+因此，一次 JNI 调用并非一条固定指令，方法属性、参数类型、编译状态和运行时挂起请求都会改变执行路径。
 
 `@FastNative` 与 `@CriticalNative` 让线程保持 `Runnable` 状态，省去普通 JNI 状态切换，但也推迟了线程响应垃圾回收暂停请求（GC suspend）的机会。`@CriticalNative` 进一步去掉 `JNIEnv*`、`jclass` 和对象参数能力。它们只适合调用链末端那些极短、无锁、无 I/O 的叶子函数，也就是不会再调用其他函数的末端实现。长计算即使平均耗时更短，也可能延长 GC 在 P95/P99 等尾部样本中的暂停时间。
 
@@ -168,7 +172,7 @@ private static native void native_set(String key, String def);
 
 ### 2. 第一原则：减少小粒度 JNI 调用
 
-官方 JNI tips 把“减少跨 JNI 编组的数据量与频率”放在通用建议首位。工程上可以从三个方向做。
+官方 JNI tips 把“减少跨 JNI 编组的数据量与频率”放在通用建议首位。按这条建议，接口设计要回答三个问题：一次调用搬多少数据、跨语言回调由哪一侧发起、每次都要重新查找的类和方法 ID 能不能提前缓存。
 
 #### 2.1 批量传输
 
@@ -239,12 +243,12 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void*) {
 
 `JNI_OnLoad()` 是动态库加载时调用的特殊入口。ART 会使用发起 `.so` 加载的类所对应的 `ClassLoader`；因此，应用调用 `System.loadLibrary()` 时，通常可以在这里找到应用自己的类。
 
-普通 JNI 调用中，`FindClass()` 使用 Java 调用栈顶部方法对应的 `ClassLoader`。问题通常出现在由原生代码创建的线程：
+普通 JNI 调用中，`FindClass()` 使用 Java 调用栈顶部方法对应的 `ClassLoader`。由原生代码创建的线程上，失败路径是这样几步：
 
 1. `pthread_create()` / `std::thread` 创建线程。
 2. 线程通过 `AttachCurrentThread()` 附着到 VM。
-3. 当前调用栈中没有应用的 Java 栈帧；
-4. `FindClass()` 回退到系统类加载器；
+3. 当前调用栈中没有应用的 Java 栈帧。
+4. `FindClass()` 回退到系统类加载器。
 5. 系统类加载器不认识应用自己的类。
 
 常用解法：
@@ -330,12 +334,6 @@ static jint NativeWriteInt(jlong ptr, jint value) {
 
 即使只支持 Android 14 及以上版本，官方仍建议性能关键方法使用 `RegisterNatives()`：这样，签名错误会在库加载时暴露，只需导出 `JNI_OnLoad()`，也不必等到首次调用时再由 `dlsym()` 按符号名称查找。
 
-#### 4.4 Baseline Profile 的角色
-
-Baseline Profile 是随应用提供的一份高频方法清单，帮助 ART 提前编译这些方法。JNI 边界切换很快，不代表托管代码调用方已经优化。如果启动阶段频繁执行、显著影响总耗时的路径仍处于解释执行或 JIT 预热阶段，调用方耗时可能掩盖 JNI 差异。把稳定的高频调用方纳入 Baseline Profile，可以让比较聚焦于 JNI 与原生工作，减少首次编译的干扰。
-
-Baseline Profile 不会自动合并 JNI 调用，也不会把不符合条件的方法变成 CriticalNative；它解决的是托管代码调用方的编译状态。
-
 ### 5. 线程附着与 `JNIEnv*`
 
 #### 5.1 `JNIEnv*` 只能属于当前线程
@@ -362,13 +360,15 @@ Baseline Profile 不会自动合并 JNI 调用，也不会把不符合条件的�
 - 或使用 `PushLocalFrame()` / `PopLocalFrame()` 管理一批引用；
 - 必要时使用 `EnsureLocalCapacity()` 预留容量。
 
-JNI 规范只要求虚拟机保证至少 16 个本地引用槽位。Android 8 移除了旧的固定小容量限制，Android 17 的本地引用表（Local Reference Table）可以扩容，但初始存储和后续扩容仍会消耗进程资源；“可以扩容”不代表可以无限创建引用。长循环应优先按批次使用 `PushLocalFrame()` / `PopLocalFrame()`，并保证提前退出和异常路径也会弹出本地引用帧。
+JNI 规范只要求虚拟机保证至少 16 个本地引用槽位。Android 8 移除了旧的固定小容量限制，Android 17 的本地引用表（Local Reference Table）可以扩容，但初始存储和后续扩容仍会消耗进程资源；“可以扩容”不代表可以无限创建引用。按批次使用本地引用帧时，还要保证循环的提前退出和异常路径也会弹出帧。
 
 #### 5.3 Attach、Detach 与操作系统线程的生命周期
 
 首次调用 `AttachCurrentThread()` 不只是返回一个指针。ART 还要建立 `Thread`、`JNIEnvExt`、本地引用表、与原生线程配对的 Java `Thread` 对象、线程组和运行时登记。已经附着的线程再次调用会返回当前环境，但把附着与分离放进每个小任务，仍会增加生命周期管理的复杂度。
 
-可靠的做法是让一个明确的组件管理长期运行的操作系统线程或有上限的线程池：线程入口先调用 `GetEnv()`，只在线程由该组件首次附着时记录 `attached_here=true`，退出时也只分离这类线程。用于在 C++ 作用域结束时自动清理资源的 RAII 对象，其生命周期必须覆盖整个操作系统线程，而不能只覆盖线程池中的单个任务；`JNIEnv*` 永远不能跨线程保存。
+可靠的做法是让一个明确的组件管理长期运行的操作系统线程或有上限的线程池：线程入口先调用 `GetEnv()`，只在线程由该组件首次附着时记录 `attached_here=true`，退出时也只分离这类线程。
+
+用于在 C++ 作用域结束时自动清理资源的 RAII 对象，其生命周期必须覆盖整个操作系统线程，而不能只覆盖线程池中的单个任务；`JNIEnv*` 永远不能跨线程保存。
 
 原生线程本身也有成本。Android 17 的 bionic `pthread_create()` 要建立线程栈、栈保护页（guard）和线程本地存储（TLS）映射，再通过 `clone` 创建内核任务；首次访问栈页还会触发缺页。默认栈预留的虚拟地址空间不等于会占用同等大小的驻留物理内存（RSS），但高频创建线程仍会叠加内存映射、TLS、调度实体、ART 附着和缓存预热成本。应根据真实栈深度测量所需的栈大小并复用线程，这通常比为每个数据块创建一个 pthread 更可靠。
 
@@ -418,7 +418,7 @@ CheckJNI 会检查：
 - Modified UTF-8 是否合法；
 - 直接缓冲区参数、数组大小、释放模式等。
 
-模拟器默认启用。普通设备可以在启动目标进程前设置：
+CheckJNI 在模拟器上默认启用；普通设备可以在启动目标进程前设置：
 
 ```bash
 adb shell setprop debug.checkjni 1
@@ -451,7 +451,9 @@ JNI 规范允许 `Get<PrimitiveType>ArrayElements()`：
 - 返回指向托管数组的直接指针，并在此期间固定数组位置；
 - 或分配原生缓冲区，把数组内容复制进去。
 
-调用方不能把其中一种实现当成跨版本保证。对于 Android 17 中可能被 GC 移动的基本类型数组，ART 的普通 Elements 路径通常建立原生副本并执行 `memcpy`；`GetPrimitiveArrayCritical()` 则可通过限制移动式 GC 和线程翻转（thread flip，ART 协调线程状态的一种机制）来提供直接地址。这种实现差异说明，大数组既要测量复制成本，也要观察 GC 影响，不能只比较 API 名称。所有 Elements 调用仍必须用对应的 `Release<PrimitiveType>ArrayElements()` 结束生命周期。
+调用方不能把其中一种实现当成跨版本保证。对于 Android 17 中可能被 GC 移动的基本类型数组，ART 的普通 Elements 路径通常建立原生副本并执行 `memcpy`；`GetPrimitiveArrayCritical()` 则可通过限制移动式 GC 和线程翻转（thread flip，ART 协调线程状态的一种机制）来提供直接地址。
+
+这种实现差异说明，大数组既要测量复制成本，也要观察 GC 影响，不能只比较 API 名称。所有 Elements 调用仍必须用对应的 `Release<PrimitiveType>ArrayElements()` 结束生命周期。
 
 如果只读写一个明确区间，`Get/Set<PrimitiveType>ArrayRegion()` 用一次显式复制换取更简单的生命周期，通常比长期持有 Elements 指针更容易审查。大批量数据可以比较 Region、Elements、Critical 和 Direct Buffer，但要同时记录调用次数、字节量、临时分配、GC 暂停以及 P95/P99 耗时。
 
@@ -536,9 +538,8 @@ CPU 采样能回答“处理器时间花在哪些函数”，也可能看到 ART
 
 为了把地址还原成可读的 C/C++ 函数名，构建产物至少要保留：
 
-- 未剥离符号的 `.so`，或单独保存的调试符号文件。
+- 未剥离符号的 `.so`，或与 APK 完全匹配、单独保存的调试符号文件。
 - 正确的 build ID；它用于匹配二进制文件与对应的符号文件。
-- 与 APK 完全匹配的符号文件。
 - 合适的调用栈采集方式。
 
 下面的命令把 Simpleperf 的采样结果转换成 Perfetto 可直接导入的 Protobuf 文件，并保留调用链：
@@ -564,13 +565,17 @@ simpleperf report-sample \
 - 关闭 CheckJNI、调试日志和 sanitizer 后再测发布版本的性能；sanitizer 是用于发现内存、线程等错误的运行时检查器。
 - 同时保留开启检查的正确性测试。
 
+JNI 边界切换很快，不代表托管代码调用方已经优化。Baseline Profile 是随应用提供的一份高频方法清单，帮助 ART 提前编译这些方法。如果启动阶段频繁执行、显著影响总耗时的路径仍处于解释执行或 JIT 预热阶段，调用方耗时可能掩盖 JNI 差异。把稳定的高频调用方纳入 Baseline Profile，可以让比较聚焦于 JNI 与原生工作，减少首次编译的干扰。
+
+Baseline Profile 不会自动合并 JNI 调用，也不会把不符合条件的方法变成 CriticalNative；它解决的是托管代码调用方的编译状态。
+
 只报告平均值会掩盖 GC、调度和锁带来的长尾，至少看 P50/P95/P99。
 
 Android 17 源码中的 `benchmark/jni-perf` 可作为实验设计参考：它比较空 JNI 入口和 ART 内部路径，但依赖平台构建与内部头文件，不能直接复制到普通 APK，也不提供跨设备通用常数。应用侧应使用 AndroidX Microbenchmark，分别测试普通入口、Fast、Critical、`Region`、`Elements` 和批处理接口。测试代码还要实际使用返回值，避免编译器删除没有可见效果的工作。
 
 ### 10. 16KB 内存页：Android 17 上必须验证的原生代码边界
 
-这一节站在 JNI/NDK 发布验收视角，只回答“最终 App 产物要检查什么”；后文 Bionic 部分再解释运行时页大小、linker 兼容装载和 libc 内部实现。两处是同一个主题，但分工不同：这里负责产物验收，后文负责运行时机制。
+这一节站在 JNI/NDK 发布验收视角，只回答“最终 App 产物要检查什么”；运行时页大小、linker 兼容装载和 libc 内部实现的机制放在后文 Bionic 部分。同一个主题在两处的分工是：这里检查产物，那里解释机制。
 
 Android 15 起支持使用 16KB 内存页的设备。内存页是操作系统管理内存映射的基本单位。只要 APK 或 SDK 包含 `.so`，就要同时检查 ELF 文件、APK 打包布局，以及代码对运行时页大小所作的假设。ELF 是 Android 原生共享库 `.so` 使用的二进制格式。
 
@@ -930,7 +935,9 @@ inline size_t page_size() {
 
 可变页大小构建会从内核在进程启动时提供的辅助向量（auxiliary vector）中读取 `AT_PAGESZ`。`page_start`、`page_offset`、`page_end` 以及 pthread 映射随后都使用该值。NDK 代码应使用 `getpagesize()` 或 `sysconf(_SC_PAGESIZE)`，不要假设 `PAGE_SIZE == 4096`。
 
-Android 15 起，AOSP 支持配置为 16 KB 页的设备；4 KB 设备仍受支持。TLB 缓存虚拟地址到物理地址的转换，16 KB 页能让单个 TLB entry 覆盖更多内存，但也会增大映射、保护、文件尾页和部分分配器回收的粒度。小对象通常共享 Scudo slab（为同类小对象集中提供空间的内存页组），一个 1 字节 `malloc` 不会单独占用一个 16 KB 物理页。RSS 是增加还是下降，取决于 TLB miss、页表、文件映射、工作集局部性和页内浪费共同产生的结果。
+Android 15 起，AOSP 支持配置为 16 KB 页的设备；4 KB 设备仍受支持。TLB 缓存虚拟地址到物理地址的转换，16 KB 页能让单个 TLB entry 覆盖更多内存，但也会增大映射、保护、文件尾页和部分分配器回收的粒度。
+
+小对象通常共享 Scudo slab（为同类小对象集中提供空间的内存页组），一个 1 字节 `malloc` 不会单独占用一个 16 KB 物理页。RSS 是增加还是下降，取决于 TLB miss、页表、文件映射、工作集局部性和页内浪费共同产生的结果。
 
 #### 7.2 linker 的兼容路径不能替代重新构建
 
