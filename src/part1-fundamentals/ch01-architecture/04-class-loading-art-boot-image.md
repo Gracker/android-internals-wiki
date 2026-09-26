@@ -128,17 +128,19 @@ last_body_apply_run_id: '20260915-091600-2942e850'
 
 版本边界：本文按 AOSP `android-17.0.0_r1` 解释 ART、libcore 与 Framework 行为，按 Android common kernel `android17-6.18-2026-06_r6` 解释 `MAP_PRIVATE` 写时复制；应用侧 Baseline Profile 和 Startup Profile 结论以 Android Developers 文档为边界，最终仍要回到所用 AGP/R8 版本、release APK 和目标设备 trace 验证。
 
+本文中的 ART 指 Android Runtime，Zygote 是预先初始化运行时、再 fork 出 System Server 和应用进程的父进程。Boot Class Path 是系统核心 Java 类路径，System Server Class Path 则承载 `system_server` 专用类。profile 是记录应优先处理哪些类和方法的编译输入；AOT（Ahead-of-Time）表示运行前编译，JIT（Just-in-Time）表示运行时即时编译。
+
 ## 类加载委派、查找与启动成本
 
 ### 类加载包含三个动作
 
-类加载性能涉及三类不同工作：
+这三个动作各自的开销来源不同，排查时先分清耗时落在哪一个：
 
 1. **查找并定义类**：找到 DEX 中描述该类的 `class_def`，构造 `java.lang.Class` 对象，装入字段、方法、父类和接口信息，再完成方法表布局、引用解析等链接工作。
 2. **验证类**：检查 DEX 指令、类型流和访问约束。VDEX/OAT 是 dexopt 生成或使用的 ART 产物，其中可复用的验证信息能够省掉重复验证；缺少有效结果时，运行时仍要调用验证器（verifier）。
 3. **初始化类**：写入 DEX 编码的静态字段初值，再执行 `<clinit>`。`<clinit>` 是虚拟机看到的类初始化方法，由静态字段初始化表达式和 `static` 代码块汇成；完成后，ART 还要按 Java 内存模型让其他线程看到初始化结果。
 
-`ClassLoader.loadClass()` 会取得类并完成 ART 所需的定义/链接，但不会仅因这次调用就执行 `<clinit>`。验证结果可能已经存在于有效产物中；尚未满足验证条件的类，可以在后续初始化或使用路径进入 verifier。`Class.forName(name)` 的单参数重载会请求初始化。`new`、调用静态方法、读写非常量静态字段等“主动使用”也可能触发初始化。
+`ClassLoader.loadClass()` 会取得类并完成 ART 所需的定义/链接，但不会仅因这次调用就执行 `<clinit>`。`Class.forName(name)` 的单参数重载会请求初始化；`new`、调用静态方法、读写非常量静态字段等“主动使用”也可能触发初始化。验证结果可能已经存在于有效产物中；尚未满足验证条件的类，可以在后续初始化或使用路径进入 verifier。
 
 因此，即使一段启动耗时由某个类首次出现引起，也要继续判断时间落在查找、定义/链接、验证，还是业务自己的 `<clinit>`。四者的修复方向不同。
 
@@ -186,11 +188,13 @@ ART 自己解析类型引用时，不一定重新递归调用上述 Java 方法�
 4. `sharedLibraryLoadersAfter`；
 5. parent。
 
-它只把应用/库 DEX 放到了普通 parent 之前，boot class path 仍有最高优先级。该策略适合有明确隔离需求的运行环境，不能用来给普通应用加速类加载。Java 类型身份由二进制类名和定义它的类加载器共同决定，因此同名类由谁定义会影响强制转换、包访问和链接约束。应先保证正确性，再评估性能收益。
+它只把应用/库 DEX 放到了普通 parent 之前，boot class path 仍有最高优先级。该策略适合有明确隔离需求的运行环境，不能用来给普通应用加速类加载。
+
+Java 类型身份由二进制类名和定义它的类加载器共同决定，因此同名类由谁定义会影响强制转换、包访问和链接约束。应先保证正确性，再评估性能收益。
 
 ### DEX 中怎样找到 `class_def`
 
-“每个 DEX 都对 `class_defs` 做二分查找”不符合 API 37 实现。
+API 37 的实现里没有对 `class_defs` 做二分查找这一步。
 
 `DexPathList` 或 ART 的标准加载器快速路径会依次访问加载器持有的 DEX。进入某一个 DEX 后，`OatDexFile::FindClassDef()` 的优先路径如下：
 
@@ -198,7 +202,7 @@ ART 自己解析类型引用时，不一定重新递归调用上述 Java 方法�
 2. 如果没有有效查找表，先由描述符找到 `type_id`，也就是 DEX 类型表中的条目。
 3. 再调用 `DexFile::FindClassDef(type_idx)`；它在 API 37 中顺序扫描 `class_defs`，寻找引用该 `type_id` 的类定义。
 
-`TypeLookupTable` 在编译阶段创建，运行时从已经映射到进程地址空间的产物中读取。它避免了常见路径上的整表扫描。外层 DEX 元素仍然按类路径（class path）顺序访问，所以 Startup Profile 对 DEX 布局的优化依旧有价值。
+`TypeLookupTable` 在编译阶段创建，运行时从已经映射到进程地址空间的产物中读取，常见路径上的整表扫描因此可以省掉。外层 DEX 元素仍然按类路径（class path）顺序访问，所以 Startup Profile 对 DEX 布局的优化依旧有价值。
 
 #### MultiDex 优化应看什么
 
@@ -242,7 +246,7 @@ API 37 的主要步骤可概括为：
 - `ArtField` 数组；
 - 部分 IMT、方法冲突表和链接期表结构。
 
-应用类加载器注册时，ART 为它创建 `ClassTable` 和专属 `LinearAlloc`。当该类加载器不再可达并被清理时，ART 会移除相关 JIT/CHA 依赖，随后删除对应分配器和类表。“LinearAlloc 中的类元数据永不释放”只适用于类加载器长期存活的观察窗口，不能当成 ART 的一般回收规则。
+应用类加载器注册时，ART 为它创建 `ClassTable` 和专属 `LinearAlloc`。当该类加载器不再可达并被清理时，ART 会移除相关 JIT/CHA 依赖，随后删除对应分配器和类表。类加载器长期存活时，`LinearAlloc` 中的类元数据会一直存在；这只描述该观察窗口，不能当成 ART 的一般回收规则。
 
 #### 并发定义使用多层同步
 
@@ -286,7 +290,9 @@ kNotReady → kIdx → kLoaded → kResolving/kResolved
   → kInitialized（部分架构的过渡态）→ kVisiblyInitialized
 ```
 
-失败路径可能进入 `kErrorUnresolved` 或 `kErrorResolved`；编译期软验证失败还可能记录 `kRetryVerificationAtRuntime` 或 `kVerifiedNeedsAccessChecks`。OAT 中记录的 class status 可用 `kSuperclassValidated` 表示父类描述符已经校验，但运行时类对象不会把它作为每次初始化都经历的固定节点。临时类在确定最终大小并复制到正式对象后会进入 `kRetired`。因此，诊断代码不应假设每个类都会逐项经历同一组状态。
+失败路径可能进入 `kErrorUnresolved` 或 `kErrorResolved`；编译期软验证失败还可能记录 `kRetryVerificationAtRuntime` 或 `kVerifiedNeedsAccessChecks`。
+
+OAT 中记录的 class status 可用 `kSuperclassValidated` 表示父类描述符已经校验，但运行时类对象不会把它作为每次初始化都经历的固定节点。临时类在确定最终大小并复制到正式对象后会进入 `kRetired`。因此，诊断代码不应假设每个类都会逐项经历同一组状态。
 
 `kInitialized` 表示执行初始化的线程已经完成工作，但其他线程仍需通过 acquire 内存语义取得此前写入的值。`kVisiblyInitialized` 表示初始化结果已经对所有线程可见，编译代码因而可以使用开销更小的检查。API 37 在 x86/x86_64 或单线程事务中可直接进入 `kVisiblyInitialized`；其他路径先记录 `kInitialized`，再由批处理回调使用 `membarrier()`（Linux 内存屏障系统调用）或线程 checkpoint（让目标线程运行一段 ART 检查代码）建立可见性。
 
@@ -299,7 +305,7 @@ kNotReady → kIdx → kLoaded → kResolving/kResolved
 - `<clinit>` 抛异常后，类进入错误状态，后续使用会收到相应的初始化失败异常；
 - 成功后更新统计、发布状态并唤醒等待线程。
 
-同线程递归初始化可能让该线程在 `<clinit>` 尚未结束时读到默认值或阶段性值。其他线程不会把 `kInitializing` 当成初始化成功，它们会等待。两个线程分别初始化存在交叉依赖的类时，仍可能形成跨线程死锁；“`<clinit>` 可重入”只处理同一线程的递归情形。
+同线程递归初始化时，该线程可能在 `<clinit>` 尚未结束就读到默认值或阶段性值；其他线程不会把 `kInitializing` 当成初始化成功，只会继续等待。两个线程分别初始化存在交叉依赖的类时，仍可能形成跨线程死锁；“`<clinit>` 可重入”只处理同一线程的递归情形。
 
 #### `<clinit>` 耗时属于应用代码
 
@@ -324,7 +330,7 @@ LoadedApk.makeApplicationInner()
   → 启动 Activity
 ```
 
-清单中声明的 ContentProvider 会在 `attachBaseContext()` 之后、`Application.onCreate()` 之前安装。Jetpack Startup 的 `InitializationProvider` 也处在这个区间，各个 `Initializer` 的类加载和执行会阻塞后续 `Application.onCreate()`。它把多个初始化入口集中到一个 Provider，应用仍需控制每个 `Initializer` 的工作量和依赖关系。
+清单中声明的 ContentProvider 会在 `attachBaseContext()` 之后、`Application.onCreate()` 之前安装。Jetpack Startup 的 `InitializationProvider` 也处在这个区间，各个 `Initializer` 的类加载和执行会阻塞后续 `Application.onCreate()`。这种做法把多个初始化入口集中到一个 Provider，应用仍需控制每个 `Initializer` 的工作量和依赖关系。
 
 启动阶段常见的类加载来源包括：
 
@@ -358,7 +364,9 @@ LoadedApk.makeApplicationInner()
 
 因此，优化或重排类加载路径只能降低查找、定义、验证和初始化成本，不能提供故障隔离或依赖版本隔离。需要“插件独立进程渲染、宿主只展示结果”的场景，应切到 IPC 与跨进程 UI 嵌入：前一篇材料用 `SurfaceControlViewHost` 对照说明，宿主通过 AIDL 传出 `hostToken`，Provider 在自己的进程中创建内容并把 `SurfacePackage` 回传，最终由 SurfaceFlinger 合成到同一屏；这解决的是进程隔离和图层嵌入，不是一个更快的 ClassLoader。[来源: 技术文章/source/juejin-android/2026-09-12-76841401-车载多 App 同屏渲染二 SurfaceControlView.md]
 
-如果场景只是展示型卡片，RemoteCompose 这类数据化方案把边界推得更远：Provider 把 UI 描述序列化成字节文档，通过 AIDL 交给宿主；宿主用自己的播放器解释并绘制这份文档，既不把插件 View 挂进宿主视图树，也不共享 Provider 的实时 `Surface`，插件代码不会在宿主进程执行。Provider 交付文档后不必持续持有渲染面，崩溃边界不再表现为宿主类加载失败或嵌入图层黑屏；代价是交互被收敛到预声明动作、回传 `actionId`、重新生成文档这类有限往返，不适合滚动、拖拽等连续交互。该材料使用的是应用层 `androidx.compose.remote:*` alpha 实现，并提醒平台侧 `com.android.internal.widget.remotecompose.*` 属于隐藏实现，不能把示例 API 写成 Android 17 稳定 SDK 契约。[来源: 技术文章/source/juejin-android/2026-09-15-76851907-车载多 App 同屏渲染(三) RemoteCompose 序列.md]
+如果场景只是展示型卡片，RemoteCompose 这类数据化方案把边界推得更远：Provider 把 UI 描述序列化成字节文档，通过 AIDL 交给宿主；宿主用自己的播放器解释并绘制这份文档，既不把插件 View 挂进宿主视图树，也不共享 Provider 的实时 `Surface`，插件代码不会在宿主进程执行。Provider 交付文档后不必持续持有渲染面，崩溃边界不再表现为宿主类加载失败或嵌入图层黑屏；代价是交互被收敛到预声明动作、回传 `actionId`、重新生成文档这类有限往返，不适合滚动、拖拽等连续交互。
+
+该材料使用的是应用层 `androidx.compose.remote:*` alpha 实现，并提醒平台侧 `com.android.internal.widget.remotecompose.*` 属于隐藏实现，不能把示例 API 写成 Android 17 稳定 SDK 契约。[来源: 技术文章/source/juejin-android/2026-09-15-76851907-车载多 App 同屏渲染(三) RemoteCompose 序列.md]
 
 排查这类方案时，先确认代码运行在哪个进程：同进程插件的类加载、`<clinit>` 和崩溃栈会出现在宿主进程，SIGQUIT/Perfetto 中也应在宿主进程看到对应加载器、DEX 路径或类加载 slice；SCVH 这类跨进程嵌入则应同时观察宿主进程、Provider 进程、Binder 连接和 surface 可见性，Provider 死亡可能导致嵌入区域黑屏或停更；RemoteCompose 这类字节文档路径则应优先核对宿主播放器、Binder 文档传输和 Provider 重新生成文档的时机，若宿主出现插件 DEX 加载或插件 `<clinit>` 热点，应先怀疑架构中混入了同进程加载，而不是把它归因于 RemoteCompose 文档渲染。[来源: 技术文章/source/juejin-android/2026-09-12-76841401-车载多 App 同屏渲染二 SurfaceControlView.md；来源: 技术文章/source/juejin-android/2026-09-15-76851907-车载多 App 同屏渲染(三) RemoteCompose 序列.md；已验证: system/core/debuggerd/debuggerd.cpp 与 art/runtime/class_linker.cc @ android-17.0.0_r1]
 
@@ -366,7 +374,7 @@ LoadedApk.makeApplicationInner()
 
 #### 1. 固定编译状态
 
-类验证以及即时编译（JIT）/预先编译（AOT）状态会直接改变 trace。对比优化前后时，应明确使用哪种 Macrobenchmark `CompilationMode`，不要把首次安装时的 `verify` 状态和已完成后台 dexopt 后的 `speed-profile` 状态混在一组结果中。
+类验证以及 JIT/AOT 编译状态会直接改变 trace。对比优化前后时，应明确使用哪种 Macrobenchmark `CompilationMode`，不要把首次安装时的 `verify` 状态和已完成后台 dexopt 后的 `speed-profile` 状态混在一组结果中。
 
 设备支持 ART Service shell 命令时，可这样检查包的 dexopt 状态：
 
@@ -472,13 +480,11 @@ Baseline Profile 可以减少解释执行、JIT 和部分运行时验证，也�
 
 ## Boot Image 的映射、共享与失效
 
-普通类加载沿 ClassLoader 和 DEX 路径查找，Boot Image 则把常用类放进预生成映像。映像是否命中、是否重定位以及页面如何共享，会直接改变前一阶段的成本。
+普通类加载沿 ClassLoader 和 DEX 路径查找，Boot Image 则把常用类放进预生成映像。映像是否命中、是否重定位、页面如何共享，都会改变前面那些类加载成本。
 
 Boot Image 处在 ART 启动、系统镜像预编译和 Zygote 共享内存的交点。排查开机变慢、Zygote 私有脏页增长或 ART Mainline（可独立于完整系统 OTA 更新的 ART 模块）更新后的编译行为时，需要分别观察镜像文件、编译 profile 和 Zygote 预加载。
 
 平台行为以 Android 17 / API 37 / `android-17.0.0_r1` 为准；涉及 `MAP_PRIVATE` 与写时复制的内核行为以 `android17-6.18-2026-06_r6` 为准。
-
-本文中的 ART 指 Android Runtime，Zygote 是预先初始化运行时、再 fork 出 System Server 和应用进程的父进程。Boot Class Path 是系统核心 Java 类路径，System Server Class Path 则承载 `system_server` 专用类。profile 是记录应优先处理哪些类和方法的编译输入；AOT（Ahead-of-Time）表示运行前编译，JIT（Just-in-Time）表示运行时即时编译。
 
 ### Boot Image 保存了什么
 
