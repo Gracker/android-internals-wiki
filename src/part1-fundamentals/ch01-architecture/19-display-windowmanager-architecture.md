@@ -452,7 +452,9 @@ WindowManager 需要保持四套状态一致：
 3. SurfaceFlinger 里的 Layer、buffer 与 transaction；
 4. InputFlinger 里的输入窗口快照、焦点和事件队列。
 
-`WindowManagerService`（WMS）负责第 2 层，并把需要合成与输入系统执行的状态写进 `SurfaceControl.Transaction`（一批原子提交的 Surface 属性修改）。它不会绘制应用 View，也不负责逐个消费触摸事件。这条边界可用于判断卡顿发生在应用遍历、WMS 全局锁、等待首帧、SurfaceFlinger 提交，还是 InputDispatcher。
+`WindowManagerService`（WMS）负责第 2 层，并把需要合成与输入系统执行的状态写进 `SurfaceControl.Transaction`（一批原子提交的 Surface 属性修改）。它不会绘制应用 View，也不负责逐个消费触摸事件。
+
+这条边界可用于判断卡顿发生在应用遍历、WMS 全局锁、等待首帧、SurfaceFlinger 提交，还是 InputDispatcher。
 
 版本范围是 Android 17 / API 37 / `android-17.0.0_r1`。SurfaceFlinger、BLAST 与 InputDispatcher 以同一标签下的 `frameworks/native` 为准。耗时和 Surface 内存必须结合设备、刷新率、窗口数量与 trace 采集条件测量。
 
@@ -489,7 +491,7 @@ system_server
     → SurfaceFlinger 合成显示
 ```
 
-`addWindow()` 只把逻辑窗口加入系统。方法尾部的源码注释明确说明：这里不做 layout，窗口必须随后调用 relayout（让 WMS 重新计算窗口几何与 Surface）才会显示。因此，“addWindow 返回成功”和“首帧已经可见”是两个时间点。
+`addWindow()` 只把逻辑窗口加入系统。方法尾部的源码注释明确说明：这里不做 layout，窗口必须随后调用 relayout（让 WMS 重新计算窗口几何与 Surface）才会显示。“addWindow 返回成功”和“首帧已经可见”因此是两个时间点。
 
 #### 三个容易混在一起的对象
 
@@ -505,9 +507,7 @@ system_server
 
 ### 容器、图层与内容事务的职责边界
 
-窗口状态变化会同时经过容器、图层几何与内容 buffer 三条事务链。先分清事务承载的对象，才能判断 resize 中的一帧错位发生在哪个边界。
-
-窗口 resize 或 transition 中经常同时出现三类 transaction，它们虽然都叫“事务”，表达的状态却不同：
+窗口状态变化会同时经过容器、图层几何与内容 buffer 三条事务链，它们虽然都叫“事务”，表达的状态却不同：
 
 | 类型 | 表达的内容 | 典型持有者 |
 |------|-----------|-----------|
@@ -540,7 +540,7 @@ IME、wallpaper、system overlay 等窗口会进入由 `DisplayAreaPolicy` 决�
 
 Z-order 表示窗口从底到顶的遮挡顺序。`WindowContainer.mChildren` 保存有序子节点，索引方向表达 bottom-to-top 关系。添加、移动到顶/底、reparent（更换父节点）、task reorder（调整任务顺序）或特殊窗口策略改变顺序后，`assignChildLayers()` 把结果写入 SurfaceControl transaction。
 
-需要同时考虑：
+这个顺序还受下面几项影响：
 
 - DisplayArea policy 决定不同窗口类别落在哪个区域；
 - Task/Activity 的前后顺序影响应用窗口；
@@ -573,7 +573,9 @@ Android 17 至少有三条与窗口动画/布局密切相关的执行通道：
 | `mAnimationHandler` | `AnimationThread`，线程名 `android.anim` | traversal、layout、surface placement（重算窗口/Surface 状态并提交 transaction）以及影响动画时序的任务 |
 | `SurfaceAnimationThread` | 线程名 `android.anim.lf` | `SurfaceAnimationRunner` 的逐帧动画计算，设计目标是不持有 WMS 全局锁 |
 
-WMS 构造通过 `DisplayThread.getHandler().runWithScissors()` 同步切到 DisplayThread 执行，`mH = new H()` 因而绑定到该线程。`AnimationThread` 和 `SurfaceAnimationThread` 都由 `ServiceThread` 以 `THREAD_PRIORITY_DISPLAY` 创建。源码没有在这两个类里把线程配置为 `SCHED_FIFO`，不应把 display priority 写成实时调度策略。
+WMS 构造通过 `DisplayThread.getHandler().runWithScissors()` 同步切到 DisplayThread 执行，`mH = new H()` 因而绑定到该线程。`AnimationThread` 和 `SurfaceAnimationThread` 都由 `ServiceThread` 以 `THREAD_PRIORITY_DISPLAY` 创建。
+
+源码没有在这两个类里把线程配置为 `SCHED_FIFO`，不应把 display priority 写成实时调度策略。
 
 `SurfaceAnimationRunner` 同时使用两条线程：动画帧计算在 `SurfaceAnimationThread`，transaction apply 会借助 `AnimationThread` 调度。这样可以把逐帧动画计算与持有窗口全局锁的容器变更隔开。
 
@@ -606,7 +608,7 @@ WMS 构造通过 `DisplayThread.getHandler().runWithScissors()` 同步切到 Dis
 
 `TYPE_APPLICATION_OVERLAY` 的授权主要由 policy permission/AppOp 检查。`unprivilegedAppCanCreateTokenWith()` 的源码并没有把 application overlay 列入“未知 token 必须拒绝”的类型，不能把这个 helper 描述成专门防止 overlay 提升权限的开关。
 
-如果 `displayContent.getWindowToken(attrs.token)` 查不到现有 token，还要区分 WindowContext 与兜底 Binder 两条路径：合法的 `WindowContext` 监听器会通过 `WindowToken.Builder` 携带 `ownerCanManageAppTokens`、`roundedCornerOverlay`、`fromClientToken` 和 `options` 等语义标志构造 token；否则使用 `attrs.token` 或 `client.asBinder()` 继续按窗口类型约束创建或验证。这里不是在 HashMap 查询失败后直接调用 `new WindowToken`。
+如果 `displayContent.getWindowToken(attrs.token)` 查不到现有 token，WindowContext 路径会由 `WindowToken.Builder` 携带 `ownerCanManageAppTokens`、`roundedCornerOverlay`、`fromClientToken` 和 `options` 等语义标志构造 token，兜底 Binder 路径继续按 `attrs.token` 或 `client.asBinder()` 及窗口类型约束创建或验证；两条路径都不是在 HashMap 查询失败后直接调用 `new WindowToken`。
 
 #### 常见失败码对应的是哪个阶段
 
@@ -625,9 +627,9 @@ WMS 构造通过 `DisplayThread.getHandler().runWithScissors()` 同步切到 Dis
 
 ### StartingWindow 与应用首帧交接
 
-窗口身份建立后，冷启动还需要在应用主窗口交出首帧前维持可见反馈。StartingWindow 是这段窗口生命周期的一部分，但它的创建者、内容生产者和移除信号不在同一进程。
+窗口身份建立后，冷启动还需要在应用主窗口交出首帧前维持可见反馈。StartingWindow（启动占位窗口）是这段窗口生命周期的一部分，但它的创建者、内容生产者和移除信号不在同一进程。
 
-冷启动期间，进程创建、Runtime/Application/Activity 初始化和首帧绘制尚未完成。StartingWindow（启动占位窗口）在这段空档提供可见内容，避免用户只看到桌面、空白或旧画面。它可以显示统一 SplashScreen，也可以在恢复历史任务时显示 TaskSnapshot（此前任务画面的快照）。
+冷启动期间，进程创建、Runtime/Application/Activity 初始化和首帧绘制尚未完成。它在这段空档提供可见内容，避免用户只看到桌面、空白或旧画面。它可以显示统一 SplashScreen，也可以在恢复历史任务时显示 TaskSnapshot（此前任务画面的快照）。
 
 #### 决策与创建为何分属 WMS 和 WM Shell
 
@@ -665,7 +667,9 @@ StartingWindow 的移除时机会影响启动体感：
 - **过早移除**：App 主 Window 第一帧还没准备好时移除 starting surface，用户可能看到短暂闪白或闪黑。
 - **过晚移除**：主 Window 已经完成首帧，starting surface 仍停留在前台，用户会把这段时间感知为启动变慢。
 
-主 Window 首帧完成后，服务端才确认有新内容可以替换 StartingWindow。服务端通过 `finishDrawing`/`reportDrawFinished` 收到信号，再走 `removeStartingWindow` 路径让 Shell 移除 starting surface。分析启动 trace 时，`reportDrawFinished` 只说明 App 首帧完成；视觉切换还要看 Shell 移除窗口、SurfaceFlinger 消费 transaction 和后续 present。
+主 Window 首帧完成后，服务端才确认有新内容可以替换 StartingWindow。服务端通过 `finishDrawing`/`reportDrawFinished` 收到信号，再走 `removeStartingWindow` 路径让 Shell 移除 starting surface。
+
+分析启动 trace 时，`reportDrawFinished` 只说明 App 首帧完成；视觉切换还要看 Shell 移除窗口、SurfaceFlinger 消费 transaction 和后续 present。
 
 ### Android 17 的两种窗口 Surface 所有权路径
 
@@ -835,7 +839,7 @@ WMS/InsetsStateController 维护状态栏、导航栏、IME、caption 和 cutout
 
 ### surface placement：让一次状态变更收敛
 
-这里的“收敛”是指反复处理新产生的布局请求，直到窗口、Surface、焦点和输入状态不再要求重算。`WindowSurfacePlacer.requestTraversal()` 会合并重复请求，并把 `mPerformSurfacePlacement` 投递到 `mAnimationHandler`。核心流程是：
+`WindowSurfacePlacer.requestTraversal()` 会合并重复请求，并把 `mPerformSurfacePlacement` 投递到 `mAnimationHandler`；placement 反复处理新产生的布局请求，直到窗口、Surface、焦点和输入状态不再要求重算。核心流程是：
 
 ```text
 requestTraversal()
@@ -872,7 +876,7 @@ Android 17 有两处相关计数：
 
 ### `BLASTSyncEngine`：多 Surface 状态的原子交付
 
-这里的“原子交付”表示一组参与者的 Surface 修改在同一个合并 transaction 中交给下一层。`BLASTSyncEngine` 与 `BLASTBufferQueue` 分属不同层：
+`BLASTSyncEngine` 让一组参与者的 Surface 修改在同一个合并 transaction 中交给下一层；它与 `BLASTBufferQueue` 分属不同层：
 
 - `BLASTBufferQueue` 在 producer/consumer（buffer 生产端/消费端）之间把某个窗口的 buffer 与 transaction 对齐；
 - `BLASTSyncEngine` 在 WMS 中等待一组 `WindowContainer` 完成同步，再合并这组容器的 SurfaceControl transaction。
@@ -938,7 +942,7 @@ Android 17 的 Shell Transitions 由 `TransitionController`/`Transition` 在 `sy
 - start transaction 何时交付；
 - animation leash 的逐帧 transaction；
 - 应用 RenderThread 是否按时生产 buffer；
-- SurfaceFlinger latch/present 是否延迟；latch 表示选取即将合成的 buffer，present 表示这一帧真正送到显示设备。
+- SurfaceFlinger latch/present 是否延迟。
 
 #### Activity 切换的版本边界
 
@@ -993,7 +997,7 @@ NO_SURFACE
   → HAS_DRAWN
 ```
 
-`READY_TO_SHOW` 允许 WMS 等同一 token 或 sync group 的其他窗口准备好后再统一显示。因此，`mHasSurface=true` 只能说明资源存在，不能证明用户已经看到内容。
+`READY_TO_SHOW` 允许 WMS 等同一 token 或 sync group 的其他窗口准备好后再统一显示。`mHasSurface=true` 因此只能说明资源存在，不能证明用户已经看到内容。
 
 排查黑屏/闪屏时，应分别确认“请求可见、已有 Surface、首帧已提交、Surface 已 show、Layer 已 present（显示到屏幕）”。
 
@@ -1039,9 +1043,13 @@ WMS add/relayout/focus/layout
 
 Android 17 的 `InputMonitor.UpdateInputWindows` 在 `mGlobalLock` 下按 Z-order 填充窗口输入信息，再用 `SurfaceControl.Transaction.setInputWindowInfo()` 把 touchable region、transform、focusability 与对应 layer 一起提交。非立即路径会先合并进 `DisplayContent` 的 pending transaction，而不是为每个输入事件同步询问 WMS。
 
-SurfaceFlinger 消费 transaction 后，从已提交的 layer snapshot 生成 `WindowInfo`/`DisplayInfo`，`updateInputFlinger()` 再发布 `WindowInfosUpdate`。InputDispatcher 的 `onWindowInfosChanged()` 按 Display 替换窗口缓存并唤醒 poll loop；`onWindowInfosReported()` 表示监听器已处理通知，不是 InputDispatcher 更新命中缓存的前置等待。
+SurfaceFlinger 消费 transaction 后，从已提交的 layer snapshot 生成 `WindowInfo`/`DisplayInfo`，`updateInputFlinger()` 再发布 `WindowInfosUpdate`。
 
-窗口移动、转场、焦点或 touchable region 变化时，应依次对齐：WMS 标记并提交 input info、SurfaceFlinger 生成新 snapshot、InputDispatcher 替换缓存和处理 focus request、应用 input channel 收到事件。点击无响应可能来自旧 snapshot、不可触摸窗口、未完成的焦点请求、channel backlog 或应用主线程迟到，不能只凭焦点切换下结论。
+InputDispatcher 的 `onWindowInfosChanged()` 按 Display 替换窗口缓存并唤醒 poll loop；`onWindowInfosReported()` 表示监听器已处理通知，不是 InputDispatcher 更新命中缓存的前置等待。
+
+窗口移动、转场、焦点或 touchable region 变化时，应依次对齐：WMS 标记并提交 input info、SurfaceFlinger 生成新 snapshot、InputDispatcher 替换缓存和处理 focus request、应用 input channel 收到事件。
+
+点击无响应可能来自旧 snapshot、不可触摸窗口、未完成的焦点请求、channel backlog 或应用主线程迟到，不能只凭焦点切换下结论。
 
 ### 多窗口、自由窗体与大屏
 
@@ -1070,7 +1078,7 @@ fluid resize 的重点是减少不必要的同步 relayout，同时保证“尺�
 | 不同进程、位于同一 Display | SurfaceFlinger 的该 Display layer 集合、HWC/overlay（硬件合成平面）、输出带宽和本轮 present | App UI 线程、进程 RenderThread、窗口 buffer 队列 | 单个慢窗口拖延同步组，或合成资源不足 |
 | 位于不同 Display | 设备级 GPU/HWC 资源仍可能共享 | 各 Display 的 layer 集合、时序和 present fence | 只看默认屏会漏掉外接屏的掉帧 |
 
-因此，多窗口 trace 的第一层索引应是 Display，第二层是 Window/ViewRoot，第三层才是进程、UI 线程、RenderThread 和内容 producer（内容生产者）。每个 ViewRoot 有自己的 Surface/BLAST 内容通道；同进程只表示部分执行资源共享，多个窗口仍各有自己的 BufferQueue。
+多窗口 trace 的第一层索引因此应是 Display，第二层是 Window/ViewRoot，第三层才是进程、UI 线程、RenderThread 和内容 producer（内容生产者）。每个 ViewRoot 有自己的 Surface/BLAST 内容通道；同进程只表示部分执行资源共享，多个窗口仍各有自己的 BufferQueue。
 
 #### 折叠屏与大屏的配置边界
 
@@ -1080,7 +1088,7 @@ target SDK 37 的应用运行在 `sw >= 600dp` 的大屏时，固定方向、`re
 
 Android 17 还减少了部分配置变化的 Activity 重建：`CONFIG_KEYBOARD`、`CONFIG_KEYBOARD_HIDDEN`、`CONFIG_NAVIGATION`、`CONFIG_TOUCHSCREEN`、`CONFIG_COLOR_MODE`，以及进入/离开 `UI_MODE_TYPE_DESK` 的 `CONFIG_UI_MODE` 默认改为 `onConfigurationChanged()`。
 
-当前 AOSP tag 的 `attrs_manifest.xml` 为 `android:recreateOnConfigChanges` 定义了 `mcc`、`mnc`、`touchscreen`、`keyboard`、`keyboardHidden`、`navigation`、`colorMode`，没有 `uiMode`。`mcc`/`mnc` 分别是移动国家码和移动网络码，其余名称对应触摸屏、键盘、导航设备和颜色模式等配置。因此：
+当前 AOSP tag 的 `attrs_manifest.xml` 为 `android:recreateOnConfigChanges` 定义了 `mcc`、`mnc`、`touchscreen`、`keyboard`、`keyboardHidden`、`navigation`、`colorMode`，没有 `uiMode`。`mcc`/`mnc` 分别是移动国家码和移动网络码，其余名称对应触摸屏、键盘、导航设备和颜色模式等配置。
 
 - 对已列出的 flag，如果 App 依赖 Activity 重建来刷新资源，可以通过 `recreateOnConfigChanges` 显式要求重建；
 - 不要把 `uiMode` 写进该属性；进入或离开 desk mode（桌面模式）时，应在 `onConfigurationChanged()` 更新依赖配置的资源和组件；
