@@ -203,6 +203,8 @@ consolidated_from:
 
 应用交付从制品生成开始，经过安装来源验证、PackageInstaller 会话、PMS 扫描与 dexopt，最后形成可启动的软件包状态。AAB、普通安装与 Staged Install 位于这条路径的不同边界，不能用同一个成功信号代替整条链路的完成。
 
+按问题入口找对应部分：安装本身或 dexopt 变慢，看“PMS 扫描、解析与安装主路径”；安装被策略拦下，看“安装来源验证与权限边界”；更新要跨重启，看“Staged Install 的提交、重启与恢复”；问题出在商店侧的制品与下载，看“AAB 与 PackageInstaller 内容分发”。全文末尾汇总常见误区与结论。
+
 ## PMS 扫描、解析与安装主路径
 
 ### 先建立一张职责表
@@ -244,7 +246,7 @@ Android 17 的 `SystemServer.startBootstrapServices()` 用名为 `StartPackageMa
 - `PackageStateInternal`：供系统内部查询的包状态视图；
 - `PackageInfo`：根据调用方权限、用户和查询标志位（flags）生成的公共 API 返回对象。
 
-因此，`getPackageInfo()` 并非从全局映射表（Map）中原样取出一个 `PackageInfo`。它要根据调用方可见性、用户状态和查询标志位生成结果；包数量、标志位组合和对象构造成本都可能影响查询耗时。
+`getPackageInfo()` 因此并非从全局映射表（Map）中原样取出一个 `PackageInfo`。它要根据调用方可见性、用户状态和查询标志位生成结果；包数量、标志位组合和对象构造成本都可能影响查询耗时。
 
 ---
 
@@ -313,7 +315,9 @@ prepareInstallPackages
   → post-install / package broadcasts
 ```
 
-路径切换发生在 dexopt 前，因为 OAT、VDEX 等 ART 产物会关联最终代码路径。应用数据也要在编译前准备好。`DexOptHelper.performDexoptIfNeededAsync()` 使用单线程执行器（executor）处理安装 dexopt，也就是同一时刻只处理一个任务。源码还明确规定，dexopt 失败不应导致应用安装失败：应用可以先以解释执行或较低优化级别运行，之后再由后台 dexopt 补齐优化。
+路径切换发生在 dexopt 前，因为 OAT、VDEX 等 ART 产物会关联最终代码路径。应用数据也要在编译前准备好。
+
+`DexOptHelper.performDexoptIfNeededAsync()` 使用单线程执行器（executor）处理安装 dexopt，也就是同一时刻只处理一个任务。源码还明确规定，dexopt 失败不应导致应用安装失败：应用可以先以解释执行或较低优化级别运行，之后再由后台 dexopt 补齐优化。
 
 #### 3. 哪些阶段消耗什么资源
 
@@ -327,7 +331,7 @@ prepareInstallPackages
 | dexopt | CPU + I/O | DEX 大、Profile 缺失、设备热限制、后台负载 |
 | 提交与发布 | 锁 + Binder | 多包事务、观察者和广播接收端繁忙 |
 
-诊断时不能只看总安装时长。安装会话写入缓慢与 `dex2oat` 执行缓慢，需要从不同方向排查。
+诊断时不能只看总安装时长。安装会话写入缓慢与 `dex2oat` 执行缓慢，要分开排查。
 
 ---
 
@@ -350,7 +354,7 @@ IncFS 允许应用在 APK 的全部数据块下载完之前开始安装或运行
 
 平台侧入口可在 `frameworks/base/services/incremental/IncrementalService.cpp` 看到；内核侧实现在 ACK `android17-6.18-2026-06_r6` 的 `fs/incfs/main.c` 与 `fs/incfs/vfs.c`。内核负责增量文件系统和缺块读取语义，不负责 PackageManager 的签名策略。
 
-因此，增量安装可以准确描述为“边下载，边提供并校验数据块”，其中没有“APK 按需解密”这一步。遇到 IncFS 安装卡顿，要同时观察：
+增量安装因此可以准确描述为“边下载，边提供并校验数据块”，其中没有“APK 按需解密”这一步。遇到 IncFS 安装卡顿，要同时观察：
 
 - 数据加载器是否及时提供系统请求的数据块；
 - 存储读取是否阻塞；
@@ -363,7 +367,7 @@ IncFS 允许应用在 APK 的全部数据块下载完之前开始安装或运行
 
 #### 编译过滤器取决于设备配置
 
-Android 构建可以通过 `pm.dexopt.<reason>` 配置不同编译原因对应的编译过滤器（compiler filter），它决定 ART 采用的优化级别。ART Service 文档给出的标准配置中，`bg-dexopt` 通常使用 `speed-profile`，多个开机相关原因使用 `verify`；产品配置可以覆盖这些值。
+`pm.dexopt.<reason>` 用于在 Android 构建中为不同编译原因指定编译过滤器（compiler filter），它决定 ART 采用的优化级别。ART Service 文档给出的标准配置中，`bg-dexopt` 通常使用 `speed-profile`，多个开机相关原因使用 `verify`；产品配置可以覆盖这些值。
 
 即使请求了 `speed-profile`，没有可用 Profile 时也不能假定系统一定进行完整 AOT。ART 会综合 Profile、磁盘空间、温度、现有产物和其他约束，选择实际可用的编译方式。分析设备行为时，应读取设备配置并检查实际产物，不能把某个默认值当成所有 Android 17 设备的保证。
 
@@ -461,7 +465,7 @@ ART Service 的 `PrimaryDexopter` 会尝试为各 ABI（如 arm64）创建 `.sdc
 
 ### 跨重启的分阶段安装与 APEX
 
-普通 APK 安装会话通常在当前开机周期完成。`StagingManager` 处理的是必须重启后才能完成的分阶段会话（staged session），常见于 APEX，或要求多包全部成功、否则全部撤销的原子系统更新。
+普通 APK 安装会话通常在当前开机周期完成。`StagingManager` 处理的是必须重启后才能完成的分阶段会话（staged session），常见于 APEX（Android 用于交付和更新系统模块的包格式），或要求多包全部成功、否则全部撤销的原子系统更新。
 
 `PackageSessionVerifier` 会执行所有会话共用的校验；对于分阶段会话，还要处理重启前验证、与 `apexd` 交互、检查点与回滚（checkpoint/rollback），以及 `ready`（就绪）、`applied`（已应用）、`failed`（失败）等状态。这些步骤共同组成一个跨重启事务：
 
@@ -498,7 +502,7 @@ Android 17 的 `PackageArchiver` 使用带 `DELETE_ARCHIVE` 与 `DELETE_KEEP_DAT
 
 #### 查询快照、客户端缓存与包可见性
 
-服务端通过 `Computer` 快照减少长时间持有 PMS 主锁；应用侧的 `ApplicationPackageManager` 还可能缓存部分查询结果。缓存命中只能说明省去了一部分 Binder 或对象构造成本，不能证明结果不受版本、用户、调用 UID 和可见性规则影响。
+服务端通过 `Computer` 快照减少长时间持有 PMS 主锁；应用侧的 `ApplicationPackageManager` 还可能缓存部分查询结果。缓存命中只能说明省去了一部分 Binder 或对象构造成本，不能据此认为结果与版本、用户、调用 UID 和可见性规则无关。
 
 Android 11 以后，普通应用的包查询受 `<queries>`、自动可见规则和调用身份限制。`AppsFilterImpl` 参与服务端过滤，因此“查询为空”未必表示包没有安装；诊断应同时记录调用方 UID、用户 ID（`userId`）、查询 API、查询标志位和 Manifest 可见性声明。系统组件或持有特权权限的工具得到的结果不能直接用于推断普通应用的查询结果。
 
@@ -515,9 +519,13 @@ Android 17 的权限状态由 `AccessCheckingService` 及其权限与访问策�
 
 #### 拆分包（Split）、UID 与更新冲突
 
-一个已安装包可以包含主包（base APK）、按设备配置选择的拆分包（config split）和动态功能拆分包（dynamic feature split）。`PackageInstallerSession` 用一次安装会话表示待提交的文件集合；缺少必要拆分包、版本不一致或签名不匹配，都会在验证或协调阶段失败。Play Feature Delivery 负责从分发侧按需交付功能模块；到了设备端，仍以 PackageInstaller/PMS 实际收到的文件集合为准。
+一个已安装包可以包含主包（base APK）、按设备配置选择的拆分包（config split）和动态功能拆分包（dynamic feature split）。`PackageInstallerSession` 用一次安装会话表示待提交的文件集合；缺少必要拆分包、版本不一致或签名不匹配，都会在验证或协调阶段失败。
 
-Linux UID、应用数据目录、SELinux 安全域（domain）和运行时权限共同构成应用沙箱。包名相同并不意味着可以直接覆盖安装：签名密钥轮换历史、`versionCode`、共享 UID 的历史约束、安装来源以及系统分区与数据分区的关系都会影响结果。安装流程中的包冻结（package freeze）用于阻止更新期间发生并发启动或状态变化，与“应用休眠”或“冻结缓存进程”无关。
+Play Feature Delivery 负责从分发侧按需交付功能模块；到了设备端，仍以 PackageInstaller/PMS 实际收到的文件集合为准。
+
+Linux UID、应用数据目录、SELinux 安全域（domain）和运行时权限共同构成应用沙箱。包名相同并不意味着可以直接覆盖安装：签名密钥轮换历史、`versionCode`、共享 UID 的历史约束、安装来源以及系统分区与数据分区的关系都会影响结果。
+
+安装流程中的包冻结（package freeze）用于阻止更新期间发生并发启动或状态变化，与“应用休眠”或“冻结缓存进程”无关。
 
 ---
 
@@ -1150,7 +1158,9 @@ Android 的普通安装本来就有事务边界。Android 17 的 `InstallPackage
 
 这三层可以叠加。一个分阶段父会话可以包含多个子会话，其中既有 APEX，也有 APK。此时既要满足多包同组提交规则，又要满足分阶段安装的跨重启状态机。
 
-普通安装的原子性也有边界。`installPackagesTraced()` 要求可预见错误在 Commit 前被发现，并把系统状态修改集中到 Commit；但 `commitReconciledScanResultLocked()` 的源码注释同时警告，Commit 中抛出异常仍可能留下不一致状态。这是 Package Manager 的逻辑事务划分，不等同于数据库式或掉电安全的完整回滚。分阶段安装增加了持久化状态、`apexd` 协调和文件系统 checkpoint；checkpoint 是系统可在启动失败时放弃一组文件系统变更的恢复点。
+普通安装的原子性也有边界。`installPackagesTraced()` 要求可预见错误在 Commit 前被发现，并把系统状态修改集中到 Commit；但 `commitReconciledScanResultLocked()` 的源码注释同时警告，Commit 中抛出异常仍可能留下不一致状态。这是 Package Manager 的逻辑事务划分，不等同于数据库式或掉电安全的完整回滚。
+
+分阶段安装增加了持久化状态、`apexd` 协调和文件系统 checkpoint；checkpoint 是系统可在启动失败时放弃一组文件系统变更的恢复点。
 
 ### API 边界：谁能创建分阶段安装会话
 
@@ -1158,7 +1168,9 @@ Android 的普通安装本来就有事务边界。Android 17 的 `InstallPackage
 
 调用 `setStaged()` 后，这个安装会话会被安排到下一次重启时安装。若它是多包安装的父会话，所有子会话都必须采用一致的分阶段安装属性；回滚（rollback）属性也有同样约束。任一子会话在激活时失败，整组都不能按部分成功处理。
 
-另一个边界是免重启 APEX 更新。APEX 可以声明支持免重启更新（rebootless update），但这种 APEX 更新不属于分阶段安装会话。命令行使用 `--force-non-staged` 进入另一条路径。明确设置了 `staged` 属性的安装会话都要等待重启。
+另一个边界是免重启 APEX 更新。APEX 可以声明支持免重启更新（rebootless update），但这种 APEX 更新不属于分阶段安装会话。
+
+命令行使用 `--force-non-staged` 进入另一条路径。明确设置了 `staged` 属性的安装会话都要等待重启。
 
 ### Android 17 的完整状态机
 
@@ -1227,7 +1239,7 @@ Android 的普通安装本来就有事务边界。Android 17 的 `InstallPackage
 2. **回滚冲突**：回滚会话与普通分阶段更新冲突时，回滚具有更高优先级。
 3. **包重叠**：两批活动会话更新同一软件包时，系统根据提交顺序拒绝冲突的一方。
 4. **APEX 提交与验证**：包含 APEX 时，向 `apexd` 提交会话，并继续检查 APEX 容器签名与包信息。
-5. **建立 checkpoint 并转为 ready**：支持 checkpoint 的设备调用 `StorageManager.startCheckpoint(2)`，随后按前述顺序更新 Package Installer 与 `apexd` 的状态。
+5. **建立 checkpoint 并转为 ready**：支持 checkpoint 的设备调用 `StorageManager.startCheckpoint(2)`，随后按前述顺序更新 Package Installer 与 `apexd` 的状态：先持久化 `ready`，再通知 `apexd`。
 
 “重启前验证”（pre-reboot verification）不能简化成检查磁盘空间和签名。它还负责检查并发的分阶段安装会话、回滚、包重叠和 APEX 状态是否一致。
 
@@ -1592,7 +1604,7 @@ Android 17 的 `PackageInstaller` API 文档和 `PackageInstallerSession.validat
 - 完整安装包含一个基础 APK；
 - 部分更新必须与设备上已有包保持一致。
 
-`validateApkInstallLocked()` 会收集新增 APK，检查重复的 split APK，通过 `assertApkConsistentLocked()` 核对包名、版本和签名，并将文件改为平台使用的规范名称。AAB 到 split APK 的选择可以发生在商店或 `bundletool`，但基础 APK 与 split APK 的集合一旦交给设备，设备端只接受满足一致性规则的结果。
+`validateApkInstallLocked()` 会收集新增 APK，检查重复的 split APK，通过 `assertApkConsistentLocked()` 核对包名、版本和签名，并将文件改为平台使用的规范名称。挑选 split APK 的工作可以发生在商店或 `bundletool` 侧，但基础 APK 与 split APK 的集合一旦交给设备，设备端只接受满足一致性规则的结果。
 
 #### 2. 下载器和 PackageInstaller 是两个模块
 
@@ -1694,7 +1706,7 @@ PackageInstallerSession.commit()
                         └─ InstallingSession.installStage()
 ```
 
-`commit()` 返回不代表安装完成。它只发起异步处理，最终结果由 `IntentSender` 送回。把 `commit()` 放到主线程并不会让系统安装工作在应用主线程执行；但安装器自己的下载、哈希计算或 APK 复制如果阻塞主线程，仍会造成应用无响应（ANR）。
+`commit()` 返回不代表安装完成。它只发起异步处理，最终结果由 `IntentSender` 送回。把 `commit()` 放到主线程并不会让系统安装工作在应用主线程执行；但如果安装器自己的下载、哈希计算或 APK 复制阻塞主线程，仍会造成应用无响应（ANR）。
 
 #### 3. 完整安装、继承安装和多包安装
 
