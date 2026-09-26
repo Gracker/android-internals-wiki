@@ -72,7 +72,7 @@ last_idle_audit_run_id: 20260911-223529-idle-audit-8c9fc93c
 
 # 应用归档（App Archiving）机制与恢复性能
 
-Android 15 把应用归档做成了平台能力；Android 17 延续并完善了这条链路。这里的“归档”不涉及压缩，也不等于换了名称的普通卸载，而是把应用包转换成一种可以恢复安装的状态：
+Android 15 把应用归档做成了平台能力；Android 17 延续并完善了这条链路。这里说的“归档”不压缩应用包，也不等于换个名字的普通卸载：它把应用包转换成一种可以恢复安装的状态。
 
 ```text
 已安装
@@ -95,7 +95,9 @@ Android 15 把应用归档做成了平台能力；Android 17 延续并完善了�
   └─ ACTION_PACKAGE_ADDED 表示安装完成
 ```
 
-恢复责任安装器是原本安装或更新该应用、现在负责重新取得 APK 的安装器。安装会话（session）则是一笔可提交、可报告状态的安装任务。这套机制主要解决磁盘空间与恢复体验问题。它会经过包删除路径并通常终止目标进程，但不属于低内存终止守护进程 `lmkd` 的内存回收策略。恢复过程还要先完成下载与安装，然后才能进入普通冷启动。
+恢复责任安装器是原本安装或更新该应用、现在负责重新取得 APK 的安装器；安装会话（session）是一笔可提交、可报告状态的安装任务。这套机制解决的是磁盘空间与恢复体验问题。归档请求最终走包删除路径，通常也会终止目标进程，但不属于低内存终止守护进程 `lmkd` 的内存回收策略；恢复过程要先完成下载与安装，之后才能进入普通冷启动。
+
+本章先分清容易混淆的状态，再跟着归档与恢复的链路走一遍，最后把恢复耗时和观测指标拆开。
 
 ## 1. 四种容易混淆的状态
 
@@ -106,7 +108,7 @@ Android 15 把应用归档做成了平台能力；Android 17 延续并完善了�
 | 卸载但保留数据 | 通常无 | 保留 | 没有平台归档入口 | 没有标准恢复契约 |
 | `installPackageArchived()` 创建的归档包 | 无 APK，只有归档元数据 | API 不负责生成业务数据 | 归档入口 | 指定安装器 |
 
-最末行是 Android 15 同期加入的另一条特权 API。`PackageInstaller.installPackageArchived()` 使用 `ArchivedPackageInfo`，在没有 APK 的情况下登记包名、签名、入口等归档元数据，供系统级流程预先建立归档条目。它不是用户点击归档图标后的下载接口，也不能替代 `requestUnarchive()`。
+表格最后一行是 Android 15 同期加入的另一条特权 API。`PackageInstaller.installPackageArchived()` 使用 `ArchivedPackageInfo`，在没有 APK 的情况下登记包名、签名、入口等归档元数据，供系统级流程预先建立归档条目。它不是用户点击归档图标后的下载接口，也不能替代 `requestUnarchive()`。
 
 ## 2. 平台中的参与者
 
@@ -117,7 +119,7 @@ Android 15 把应用归档做成了平台能力；Android 17 延续并完善了�
 - `DELETE_PACKAGES`，通常只授予系统或特权组件；或
 - `REQUEST_DELETE_PACKAGES`，没有静默删除资格时仍会进入用户确认。
 
-SDK 注解只是第一层。服务端还会校验调用方软件包与 Binder UID 是否一致、是否具有跨用户权限，以及后续卸载策略。持有 `REQUEST_DELETE_PACKAGES` 不等于可以静默归档任意应用。
+SDK 注解只是第一层限制，服务端还会校验调用方软件包与 Binder UID 是否一致、是否具有跨用户权限，以及后续卸载策略。持有 `REQUEST_DELETE_PACKAGES` 不等于可以静默归档任意应用。
 
 归档前可先调用 `PackageManager.isAppArchivable(packageName)`。它适合用于界面能力判断，但不承诺操作一定成功：设备策略、应用锁、用户限制、包状态变化或确认流程仍可能导致归档失败。
 
@@ -136,7 +138,7 @@ SDK 注解只是第一层。服务端还会校验调用方软件包与 Binder UI
 
 ### 2.3 桌面启动器
 
-`LauncherApps` 会把归档应用作为可展示条目返回。AOSP 的 `LauncherAppsService` 根据 `ArchiveState` 合成 `ActivityInfo`，并保留原始 `ComponentName` 和标题，因此桌面仍能展示并点击这个入口。
+`LauncherApps` 会把归档应用也列进可展示的条目。AOSP 的 `LauncherAppsService` 根据 `ArchiveState` 合成 `ActivityInfo`，并保留原始 `ComponentName` 和标题，因此桌面仍能展示并点击这个入口。
 
 默认兼容行为包括：
 
@@ -257,7 +259,7 @@ aInfo == null
        └─ component 必须匹配 ArchiveState 中的原始入口
 ```
 
-只有三项都满足，系统才调用 `requestUnarchiveOnActivityStart()`。普通的类名写错、组件被移除或包完全卸载，仍按 `START_CLASS_NOT_FOUND` 处理，不会被归档逻辑误判。
+只有三项都满足，系统才调用 `requestUnarchiveOnActivityStart()`。类名写错、组件被移除或包完全卸载这类普通失败，仍按 `START_CLASS_NOT_FOUND` 处理，不会被归档逻辑误判。
 
 ### 5.1 谁能从点击路径发起恢复
 
@@ -364,25 +366,29 @@ T_user_ready
 
 ### 8.1 `T_framework_request`
 
-包括 `ActivityStarter` 发现目标类不存在、匹配 `ArchiveState`、校验桌面启动器与确认策略、创建草稿安装会话，以及发送恢复广播。这些工作主要在 `system_server` 进程内完成，通常远短于网络和安装。如果这一段很慢，应优先检查 `system_server` 的锁竞争、Package Manager `Handler` 消息队列是否积压，以及安装会话的磁盘 I/O。
+`T_framework_request` 覆盖 `ActivityStarter` 发现目标类不存在、匹配 `ArchiveState`、校验桌面启动器与确认策略、创建草稿安装会话，以及发送恢复广播。这些工作主要在 `system_server` 进程内完成，通常远短于网络和安装。
+
+如果这一段很慢，应优先检查 `system_server` 的锁竞争、Package Manager `Handler` 消息队列是否积压，以及安装会话的磁盘 I/O。
 
 ### 8.2 `T_installer_prepare`
 
-包括安装器进程拉起、账号与授权检查、包版本选择、空间估算和状态上报。需要登录、付费校验或用户确认时，耗时没有固定上限。
+`T_installer_prepare` 覆盖安装器进程拉起、账号与授权检查、包版本选择、空间估算和状态上报。需要登录、付费校验或用户确认时，耗时没有固定上限。
 
 ### 8.3 `T_download_and_install`
 
-包括网络下载与 split APK 选择、安装会话写入和提交、签名与版本校验、包扫描、权限状态恢复、`dexopt`/ART 编译优化，以及发送 `ACTION_PACKAGE_ADDED`。这通常是恢复的主要耗时。即使 `PackageArchiver` 很快返回，安装器和 PackageInstaller 仍可能出现少量耗时很长的尾部样本，两者要分别统计。
+`T_download_and_install` 覆盖网络下载与 split APK 选择、安装会话写入和提交、签名与版本校验、包扫描、权限状态恢复、`dexopt`/ART 编译优化，以及发送 `ACTION_PACKAGE_ADDED`。这通常是恢复的主要耗时。
+
+即使 `PackageArchiver` 很快返回，安装器和 PackageInstaller 仍可能出现少量耗时很长的尾部样本，两者要分别统计。
 
 ### 8.4 `T_next_launch`
 
-恢复后的启动仍是普通应用冷启动：Zygote 创建应用进程、`bindApplication`、Provider、`Application`、Activity 与首帧都不会被归档机制跳过。
+`T_next_launch` 是恢复后的首次启动，仍然走普通应用冷启动：Zygote 创建应用进程、`bindApplication`、Provider、`Application`、Activity 到首帧，这些步骤都不会被归档机制跳过。
 
 归档路径还会清理缓存、代码缓存和 ART 应用配置文件，因此首次启动可能比应用一直保持安装状态时的冷启动更慢。应用内置 Baseline Profile（预先列出的启动热点代码）并控制启动依赖和安装包体积，仍能帮助 ART 更早优化常用路径；但这不等于恢复后一定完成 AOT（安装前编译）优化。
 
 ## 9. 指标与观测
 
-不要只报一个“恢复耗时”。至少拆成：
+不要只报一个“恢复耗时”，至少要拆成下面几个指标：
 
 | 指标 | 起点 | 终点 | 主要责任域 |
 |---|---|---|---|
