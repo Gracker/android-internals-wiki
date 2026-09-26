@@ -133,7 +133,9 @@ val proAudio = pm.hasSystemFeature(
 
 ## 2. Android 音频架构：控制面与数据面
 
-控制面负责创建音频流、选择路由和修改状态；数据面负责持续传送音频样本。分析时先把两者分开。PCM（脉冲编码调制）是未经有损压缩的数字音频样本表示。
+控制面负责创建音频流、选择路由和修改状态；数据面负责持续传送音频样本。分析时先把两者分开。
+
+PCM（脉冲编码调制）是未经有损压缩的数字音频样本表示。
 
 ```text
 控制面
@@ -162,7 +164,7 @@ Binder 主要负责建流、状态、路由、参数和控制操作；高频 PCM
 - `usage` 对应的音量组和路由策略。
 - 设备切换时重新打开或迁移流。
 
-路由切换常伴随音频流重新配置、旧端点（endpoint，即底层输入或输出接口）关闭和新端点启动，因此可能出现短暂静音或声音不连续。分析切换问题时，必须把切换前后当作两条不同路径。
+路由切换常伴随音频流的重新配置：旧端点（endpoint，即底层输入或输出接口）关闭、新端点启动，因此可能出现短暂静音或声音不连续。分析切换问题时，必须把切换前后当作两条不同路径。
 
 ### 2.2 AudioFlinger 决定“这条音轨怎么运行”
 
@@ -176,7 +178,7 @@ AudioFlinger 用 track 表示一条应用侧播放或录制流。按输出类型
 - `MmapPlaybackThread`：MMAP 输出的服务端管理路径。
 - `RecordThread`、`FastCapture`、`MmapCaptureThread`：输入侧对应路径。
 
-AudioFlinger 负责创建 track、维护共享缓冲区状态、混音或转交数据、与 HAL 交互，并记录输出欠载等状态。AudioPolicyService 的选路决定与 AudioFlinger 的 track 接纳条件共同决定最终路径。
+AudioFlinger 负责创建 track、维护共享缓冲区状态、混音或转交数据、与 HAL 交互，并记录输出欠载等情况。AudioPolicyService 的选路决定与 AudioFlinger 的 track 接纳条件共同决定最终路径。
 
 ### 2.3 HAL 不能只写成“AIDL”
 
@@ -323,10 +325,10 @@ aaudio_performance_mode_t performance =
 
 Android 8.1 扩展了 AAudio MMAP。设备需要在 Audio HAL 和驱动中声明并实现 MMAP/NOIRQ 能力，还要提供对应的音频策略配置档。MMAP 让应用和驱动通过内存映射缓冲区交换数据；NOIRQ 表示这条路径不依赖传统的周期性中断通知方式。
 
-- **EXCLUSIVE**：应用可写入与 ALSA 驱动共享的内存映射缓冲区，绕过普通软件混音器；延迟最低，但端点更容易因路由变化或资源竞争而断开。ALSA 是 Linux 的音频驱动框架。
+- **EXCLUSIVE**：应用可写入与 ALSA（Linux 的音频驱动框架）驱动共享的内存映射缓冲区，绕过普通软件混音器；延迟最低，但端点更容易因路由变化或资源竞争而断开。
 - **SHARED**：多个流共享端点，由系统侧负责混合与管理；它不等于应用独占硬件缓冲区。
 
-无论哪种模式，建流、权限、路由、状态切换、时间戳、xrun 和错误恢复仍要通过 AAudio 服务、AudioFlinger / AudioPolicy 与 HAL 的控制路径。xrun 是输出欠载与输入溢出的统称。把 MMAP 画成“应用直接打开 `/dev/snd/*`，audioserver 完全不参与”是错误模型。
+无论哪种模式，建流、权限、路由、状态切换、时间戳、xrun（输出欠载与输入溢出的统称）和错误恢复仍要通过 AAudio 服务、AudioFlinger / AudioPolicy 与 HAL 的控制路径。把 MMAP 画成“应用直接打开 `/dev/snd/*`，audioserver 完全不参与”是错误模型。
 
 AAudio 的 MMAP 策略通常允许自动回退。只有在专用验证环境里才适合强制 MMAP 并禁止回退；面向用户的代码要能处理传统 AudioFlinger 路径。
 
@@ -357,7 +359,7 @@ AAudio 中三个概念容易混淆：
 1. 从能稳定播放的大小开始。
 2. 每次减小一个 burst。
 3. 观察 `AAudioStream_getXRunCount()`。
-4. 一旦 xrun 增长，就增大一到数个 burst，并在真实负载、设备充分运行升温后和存在后台干扰时复测。
+4. 一旦 xrun 增长，就增大一到数个 burst，然后在真实负载下、设备充分运行升温后、有后台干扰时分别复测。
 
 对输入流，官方文档不建议照搬这套“逐步增大缓冲区来防止欠载”的输出调法；输入端会尽快搬运数据，应用更应关注读取是否及时，以及有没有发生输入溢出。
 
@@ -391,7 +393,7 @@ AAudio/Oboe 的数据回调运行在高优先级线程上。回调内应避免�
 
 - 用时间戳估计输入和输出的音频帧位置。
 - 监控环形缓冲区中的数据量。
-- 用异步采样率转换或小幅速度补偿吸收时钟漂移，也就是输入、输出实际速率之间不断累积的微小差异。
+- 用异步采样率转换或小幅速度补偿吸收时钟漂移（输入、输出实际速率之间不断累积的微小差异）。
 - 把算法固有延迟与系统排队延迟分开记录。
 
 只把输入回调的缓冲区原样交给输出回调，短时间测试可能正常，长时间运行仍会周期性出现 xrun。
@@ -400,7 +402,7 @@ AAudio/Oboe 的数据回调运行在高优先级线程上。回调内应避免�
 
 ### 7.1 后台音频限制（audio hardening）
 
-这里的 hardening 指系统更严格地执行后台使用条件。Android 17 对后台播放、音频焦点请求、音量与铃声修改施加生命周期限制。音频焦点用于协调多个应用谁可以主导当前声音输出。
+这里的 hardening 指系统更严格地执行后台使用条件。音频焦点用于协调多个应用谁可以主导当前声音输出。Android 17 对后台播放、音频焦点请求、音量与铃声修改施加生命周期限制。
 
 对所有运行在 Android 17 上的应用，至少要满足以下一项：
 
@@ -448,7 +450,7 @@ adb shell dumpsys audio
 
 它服务于长音频省电，不服务于交互式低延迟，也不能与 `LOW_LATENCY` 同时成立。成功打开后仍应读取实际性能模式，并通过 `dumpsys` 确认输出类型；“已经卸载”不能证明具体使用了哪种 DSP 或硬件解码实现。
 
-Android 17 / API 37 又为 AAudio 硬件卸载增加 `AAudio_getFlushFromFrameSupport()` 和 `AAudioStream_flushFromFrame()` 这类按音频帧位置刷新队列的能力。使用前要用已经填好卸载性能模式、格式、声道掩码和采样率的 `AAudioStreamBuilder` 调用 `AAudio_getFlushFromFrameSupport()`；Java `AudioTrack` 侧则用 `AudioFormat` 与 `AudioAttributes` 查询设备是否支持。
+Android 17 / API 37 又为 AAudio 硬件卸载增加了按音频帧位置刷新队列的能力：`AAudio_getFlushFromFrameSupport()` 与 `AAudioStream_flushFromFrame()`。使用前要用已经填好卸载性能模式、格式、声道掩码和采样率的 `AAudioStreamBuilder` 调用 `AAudio_getFlushFromFrameSupport()`；Java `AudioTrack` 侧则用 `AudioFormat` 与 `AudioAttributes` 查询设备是否支持。
 
 ### 7.3 `AudioTrack.flushWrittenFramesFromPosition()`
 
@@ -602,7 +604,7 @@ Perfetto 能解释软件时序，却看不到扬声器振膜何时发声，也�
 
 ## 10. 蓝牙音频：不要按编解码器名称给固定延迟
 
-蓝牙路径会增加编码、分包、无线调度、抖动缓冲、耳机解码和本地 DSP。分包是把音频装入无线传输的数据包；抖动缓冲用于吸收数据包到达时间的波动。SBC、AAC、aptX、LDAC、LC3 只是其中一部分变量；同一种编解码器在不同缓冲配置、耳机固件、链路质量和模式下也会有明显差异。
+蓝牙路径会增加编码、分包（把音频装入无线传输的数据包）、无线调度、抖动缓冲（吸收数据包到达时间的波动）、耳机解码和本地 DSP。SBC、AAC、aptX、LDAC、LC3 只是其中一部分变量；同一种编解码器在不同缓冲配置、耳机固件、链路质量和模式下也会有明显差异。
 
 因此不应写成：
 
