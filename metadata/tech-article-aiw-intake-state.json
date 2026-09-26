@@ -6924,10 +6924,10 @@
     }
   },
   "last_report": {
-    "appended": 4,
-    "considered": 4,
-    "cutoff": "2026-09-25T05:20:03.682328+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-26.md",
+    "appended": 0,
+    "considered": 0,
+    "cutoff": "2026-09-26T05:20:02.791476+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-27.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
     "scanned": 2052,
@@ -6937,11 +6937,11 @@
       "max_files": 0,
       "old_unseen": 1405,
       "path": 30,
-      "unchanged": 613
+      "unchanged": 617
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-26T05:25:02.791476+08:00",
+  "last_run_at": "2026-09-27T05:25:18.653820+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
