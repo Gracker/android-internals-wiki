@@ -78,7 +78,7 @@ consolidated_from:
 
 # Connectivity 服务、网络选择与回调
 
-Connectivity 是一台由网络注册、能力验证、策略评分、默认网络切换和回调分发组成的状态机，并非单一的“联网开关”。排障时先区分物理链路、已验证网络与应用实际绑定的网络，才能解释回调顺序和切网延迟。
+Connectivity 的状态机由网络注册、能力验证、策略评分、默认网络切换和回调分发组成，并非单一的“联网开关”。排障时先区分物理链路、已验证网络与应用实际绑定的网络，才能解释回调顺序和切网延迟。
 
 ## 进程模型
 
@@ -86,7 +86,7 @@ Connectivity 是一台由网络注册、能力验证、策略评分、默认网�
 
 网络验证又有不同的边界。`NetworkMonitor` 的实现位于 NetworkStack 模块，`AndroidManifest.xml` 把 `NetworkStackService` 放在独立的 `com.android.networkstack.process` 进程。`ConnectivityService` 通过稳定 AIDL `INetworkStackConnector.makeNetworkMonitor()` 为网络创建监视器。验证探测卡住时，不能直接推断 `system_server` 的 Connectivity 线程正在执行 HTTP 请求。
 
-`netd` 是原生守护进程，负责执行网络创建、路由、权限和防火墙等内核配置。NetworkStats 的部分 Java 代码也由 Connectivity 模块交付并运行在 `system_server`，它的内核计数来自 BPF 文件系统中的 map。map 是内核与用户空间交换计数数据的容器，pin 则是为 BPF 对象建立持久路径的操作。
+`netd` 是原生守护进程，负责执行网络创建、路由、权限和防火墙等内核配置。NetworkStats 的部分 Java 代码也由 Connectivity 模块交付并运行在 `system_server`，它的内核计数来自 BPF 文件系统中的 map。
 
 ```text
 应用进程
@@ -114,7 +114,7 @@ com.android.networkstack.process  netd
     NetworkAgent    ──Binder────► ConnectivityService
 ```
 
-需要区分三个位置：
+需要区分三点：
 
 1. `ConnectivityService` 不再位于 `frameworks/base/services/core/java/com/android/server/ConnectivityService.java`；Android 17 的实现路径是 `packages/modules/Connectivity/service/src/com/android/server/ConnectivityService.java`。
 2. `NetworkMonitor` 不在 `system_server` 内执行探测。
@@ -139,7 +139,7 @@ Android 17 的 agent 注册和更新通道是 Binder：
 3. agent 通过 registry 的 `sendNetworkCapabilities()`、`sendLinkProperties()`、`sendScore()` 等方法发送更新。
 4. 服务通过 `INetworkAgent` 回告验证状态、带宽更新请求、keepalive 等事件。
 
-Android 17 的 agent 数据通道不再使用 `AsyncChannel`。`NetworkProvider` 的传统请求通知仍使用 `Messenger` 投递到构造时指定的 `Looper`；较新的 `offerNetwork()` 则把回调和 `Executor` 绑定到一项网络供给提议（offer）上。两条协议分别服务于“系统是否需要提供者建立网络”和“已经建立的网络怎样上报状态”两个阶段。
+Android 17 的 agent 数据通道不再使用 `AsyncChannel`。`NetworkProvider` 的传统请求通知仍使用 `Messenger` 投递到构造时指定的 `Looper`；较新的 `offerNetwork()` 则把回调和 `Executor` 绑定到一项网络供给提议（offer）上。`NetworkProvider` 的请求通知和 agent 的数据通道服务于两个不同的阶段：“系统是否需要提供者建立网络”和“已经建立的网络怎样上报状态”。
 
 注册只让服务认识这个 agent；agent 标记为 connected 后，网络才可出现在公开查询中、满足请求并参与默认网络选择。`unregister()` 才结束它的生命周期。
 
@@ -202,7 +202,7 @@ Android 17 的 agent 数据通道不再使用 `AsyncChannel`。`NetworkProvider`
 
 `NetworkMonitor` 中也不存在表示断网的 `LOST` 状态。物理链路断开或 agent 注销由提供者和 Connectivity 管理；对应用而言，`onLost()` 还可能只表示该网络不再满足当前请求。对于默认网络回调，旧网络被更优网络替代后仍可能继续存在。
 
-native network 与 DNS cache 由 `ConnectivityService` 协调创建。不同能力和 VPN 场景会让创建发生在 agent 注册期或首次 connected 处理期；销毁时，服务先重新匹配请求和默认网络，再调用 netd、DnsResolver 与 DnsManager 清理旧数据通路，最后释放 netId。这个顺序用于减少切换中断，不能简化成“清 DNS 导致断网”。
+native network 与 DNS 缓存由 `ConnectivityService` 协调创建。不同能力和 VPN 场景会让创建发生在 agent 注册期或首次 connected 处理期；销毁时，服务先重新匹配请求和默认网络，再调用 netd、DnsResolver 与 DnsManager 清理旧数据通路，最后释放 netId。这个顺序用于减少切换中断，不能简化成“清 DNS 导致断网”。
 
 ## NetworkMonitor：验证的是互联网质量，不是物理链路
 
@@ -271,7 +271,7 @@ legacy int 还有一个受限的 prospective-offer（尚未建网时的预期供
 7. 仍无法区分时按 Ethernet、Wi-Fi、Bluetooth、Cellular 的 transport 顺序；
 8. 等价蜂窝候选中的 VCN；
 9. 尚未进入“已销毁数据通路、等待替代者”状态的网络；
-10. 全部等价时保持当前满足该请求的网络（satisfier），减少无意义切换。
+10. 全部等价时保持当前满足该请求的网络（satisfier），减少无意义切换；
 11. 前述条件仍不能区分时，从剩余等价候选中返回一个。
 
 `FullScore` 中虽有 `POLICY_IS_UNMETERED`，Android 17 的 `NetworkRanker` 对应筛选仍是带 TODO 的注释代码。不能据此声称所有非计费网络都会直接获得更高数值分数。
@@ -457,7 +457,7 @@ NetworkStatsManager 查询
 
 以下内核行为以 ACK `android17-6.18-2026-06_r6` 为准。Android 17 的 `bpf/progs/netd.c` 为 6.18 定义了专用 ingress（入站）统计变体，进入 `bpf_traffic_account()` 后更新 UID、tag（应用为 socket 流量设置的分类标签）、interface 维度的 map；egress（出站）也进入同一计数函数。用户空间随后消费这些累计值。这里没有沿用更高版本内核的 BPF 行为。
 
-源码固定了多个 BPF map 路径，例如 `map_netd_app_uid_stats_map`、`map_netd_stats_map_A/B` 和 `map_netd_iface_stats_map`。读取详细统计前，会先把内核正在写入的 active map 与 inactive map 对调，再读取暂时停止写入的 inactive map，从而减少与内核更新计数的竞争。
+map 是内核与用户空间交换计数数据的容器，pin 则是为 BPF 对象建立持久路径的操作。源码固定了多个 BPF map 路径，例如 `map_netd_app_uid_stats_map`、`map_netd_stats_map_A/B` 和 `map_netd_iface_stats_map`。读取详细统计前，会先把内核正在写入的 active map 与 inactive map 对调，再读取暂时停止写入的 inactive map，从而减少与内核更新计数的竞争。
 
 历史数据不存放在 SQLite 中。`NetworkStatsRecorder` 使用 `FileRotator`（按时间轮换历史文件）和 `NetworkStatsCollection` 管理按时间段聚合的 bucket 记录。`queryDetailsForUid()` 打开统计 session，读取权限允许的历史集合；但不能把它概括成“Binder 后直接查询单个 UID 的 BPF map”。
 
