@@ -54,7 +54,7 @@ sources:
 
 # DisplayManagerService：显示器发现、拓扑、功耗与渲染交接
 
-`DisplayManagerService`（DMS，显示管理服务）管理 Display 的发现、身份、能力、逻辑映射、状态、功耗和对外事件。本文的 Display 指 Android 显示管线中的显示对象，不一定等同于一块物理面板。DMS 会把 Display 配置交给 WindowManager、InputManager 和 SurfaceFlinger，但不负责应用逐帧绘制，也不直接决定某个 layer（图层）使用 HWC（Hardware Composer，硬件合成器）的 `DEVICE` composition，还是 RenderEngine 的 `CLIENT` composition。
+`DisplayManagerService`（DMS，显示管理服务）管理 Display 的发现、身份、能力、逻辑映射、状态、功耗和对外事件。本文的 Display 指 Android 显示管线中的显示对象，不一定等同于一块物理面板。DMS 会把 Display 配置交给 WindowManager、InputManager 和 SurfaceFlinger，但不负责应用逐帧绘制。某个 layer（图层）使用 HWC（Hardware Composer，硬件合成器）的 `DEVICE` composition 还是 RenderEngine 的 `CLIENT` composition，也不由 DMS 决定。
 
 分析 DMS 时，最容易出错的是把几套对象混成一棵树。Android 17 至少要区分：
 
@@ -116,9 +116,9 @@ AND
 VirtualDisplayAdapter 已创建
 ```
 
-等待发生在 `mSyncRoot.wait(delay)`，会释放 Java monitor（对象监视器锁），让 DisplayThread 能继续完成 adapter 事件处理。默认超时常量为 10000 ms，并乘以 `Build.HW_TIMEOUT_MULTIPLIER`；超时后抛出 `RuntimeException`，不会无限等待。
+等待发生在 `mSyncRoot.wait(delay)`，会释放 Java monitor（对象监视器锁），让 DisplayThread 能继续完成 adapter 事件处理。默认超时常量为 10000 ms，并乘以 `Build.HW_TIMEOUT_MULTIPLIER`；超时后抛出 `RuntimeException`，不会无限等待。Android 17 等待的 phase 是 `PHASE_WAIT_FOR_DEFAULT_DISPLAY`，不在 `PHASE_LOCKED_BOOT_COMPLETED`，默认超时也不是 5 秒。
 
-Android 17 在 `PHASE_WAIT_FOR_DEFAULT_DISPLAY` 等待，默认超时为 10 秒，而非 `PHASE_LOCKED_BOOT_COMPLETED` 或 5 秒。排查开机卡住时，应对齐：
+排查开机卡住时，应对齐：
 
 - `MSG_REGISTER_DEFAULT_DISPLAY_ADAPTERS` 是否执行；
 - `LocalDisplayAdapter.registerLocked()` 是否从 SF 得到 physical display ID 与 token；
@@ -168,7 +168,7 @@ flowchart TD
 - `CHANGED`：比较新旧 `DisplayDeviceInfo`，计算 mode、state、rotation、color、timing 等差异，应用 pending info（待生效信息）后通知 mapper；
 - `REMOVED`：从 repository 删除设备，再通知 mapper（映射器）。
 
-LogicalDisplay 层还有 `CONNECTED`、`DISCONNECTED`、`ADDED`、`REMOVED`、`BASIC_CHANGED`、`STATE_CHANGED` 等更细的事件 mask（事件位掩码）。设备断开、LogicalDisplay disabled、framework 对外移除不会同时发生。DMS 按预处理和后处理顺序更新资源、DisplayPowerController、拓扑、缓存、外接屏 policy（策略）与回调，不能只凭一条 `onDisplayRemoved()` 推断所有资源已经释放。
+上面三条是 `DisplayDeviceRepository` 的设备事件；LogicalDisplay 层还有另一套 mask（事件位掩码），粒度更细：`CONNECTED`、`DISCONNECTED`、`ADDED`、`REMOVED`、`BASIC_CHANGED`、`STATE_CHANGED`。设备断开、LogicalDisplay 被 disable、framework 对外回调 removed 是三层不同状态，不会同时发生。DMS 按预处理和后处理顺序更新资源、DisplayPowerController、拓扑、缓存、外接屏 policy（策略）与回调，不能只凭一条 `onDisplayRemoved()` 推断所有资源已经释放。
 
 ### 2.3 物理 hotplug 不等于“重建全局 layer 树”
 
@@ -189,7 +189,7 @@ LogicalDisplay 层还有 `CONNECTED`、`DISCONNECTED`、`ADDED`、`REMOVED`、`B
 `mSyncRoot` 保护整个 DMS 共享模型，包括：
 
 - DisplayAdapter 与 DisplayDevice repository；
-- LogicalDisplay、DisplayGroup、DeviceState Layout；
+- LogicalDisplay、DisplayGroup 与 DeviceState Layout（按设备状态决定的 Display 布局）；
 - Display state、brightness 与 power controller 索引；
 - callback registry（回调注册表）；
 - viewport（输入视口）与 pending traversal（待执行遍历）；
@@ -579,7 +579,7 @@ adb shell perfetto \
 - WMS display traversal 与 surface placement；
 - SF hotplug、mode change、composition 与目标 Display present。
 
-`mSyncRoot` 没有固定的同名 trace slice。判断锁竞争需要结合 system_server 线程的 running、runnable、blocked 状态（运行中、可运行、阻塞）、Java monitor contention（对象锁竞争）、调用栈和相邻 DMS slice，不能用 `android.display` 线程 CPU 占用替代持锁时间。
+`mSyncRoot` 没有固定的同名 trace slice。判断锁竞争要同时看几类证据：system_server 线程的 running、runnable、blocked 状态（运行中、可运行、阻塞）；Java monitor contention（对象锁竞争）；调用栈；以及相邻 DMS slice。不能用 `android.display` 线程 CPU 占用替代持锁时间。
 
 ### 11.3 dumpsys 与日志基线
 
@@ -625,7 +625,7 @@ adb shell logcat -b system -s \
 6. default LogicalDisplay 是否被 Layout 接纳；
 7. VirtualDisplayAdapter 是否创建。
 
-超时日志中的 default display 与 `mVirtualDisplayAdapter` 值能直接区分两个等待条件。
+超时日志会打出 default display 与 `mVirtualDisplayAdapter` 两个值，分别对应两条等待条件，可以直接看出卡在哪一条。
 
 ### 12.2 外接屏已识别但没有画面
 
@@ -668,7 +668,7 @@ adb shell logcat -b system -s \
 - 目标 Display 的 present cadence（显示节奏）；
 - 外接屏是否受 primary VSync 驱动和 cadence 转换。
 
-DMS mode 变化与 App 逐帧生产是两个阶段。
+mode 变化与 App 逐帧生产是两个阶段：前者完成只说明配置层走完，后者要看 Choreographer 预测周期是否更新、buffer 是否 late。
 
 ### 12.5 `setDisplayPowerMode` 很慢
 
