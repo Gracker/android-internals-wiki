@@ -72,7 +72,9 @@ related_chapters:
 
 # Android 17 Edge-to-Edge 渲染与 WindowInsets 处理性能
 
-Android 15（API 35）开始对满足版本条件的 Activity 强制 Edge-to-Edge（内容延伸到系统栏和屏幕缺口后方）。它改变的是窗口布局、系统栏背景和 Insets（系统界面占用或建议避让的边缘区域）的责任边界，不会为应用更换渲染管线。普通 View 或 Compose 页面仍沿 `ViewRootImpl → HWUI RenderThread（硬件加速渲染线程）→ App Window BLAST（应用窗口缓冲队列）→ SurfaceFlinger → HWC（Hardware Composer，硬件合成器）` 生成并显示；状态栏、导航栏、桌面 caption（标题栏）和 IME（输入法窗口）则作为系统 UI 或受控 Surface 参与同一 Display 的合成。
+Android 15（API 35）开始对满足版本条件的 Activity 强制 Edge-to-Edge（内容延伸到系统栏和屏幕缺口后方）。它改变的是窗口布局、系统栏背景和 Insets（系统界面占用或建议避让的边缘区域）的责任边界，不会为应用更换渲染管线。
+
+普通 View 或 Compose 页面仍沿 `ViewRootImpl → HWUI RenderThread（硬件加速渲染线程）→ App Window BLAST（应用窗口缓冲队列）→ SurfaceFlinger → HWC（Hardware Composer，硬件合成器）` 生成并显示；状态栏、导航栏、桌面 caption（标题栏）和 IME（输入法窗口）则作为系统 UI 或受控 Surface 参与同一 Display 的合成。
 
 性能分析要区分三类问题：
 
@@ -110,7 +112,7 @@ Android 15 还把 target 35 及以上应用的 `Configuration` 尺寸与系统�
 
 ### 1.3 `enableEdgeToEdge()` 不是固定的一组 legacy flag
 
-`WindowCompat.enableEdgeToEdge()` 属于 AndroidX。它会按运行平台选择合适实现，并配置透明系统栏、图标明暗和三键导航保护。不同系统版本采用不同的兼容路径，因此不能把它固定描述为设置某一组 legacy flag（旧版窗口标志）；在 Android 15 及以上的强制场景中，平台自身的 `PhoneWindow` 已经决定 `decorFitsSystemWindows = false`。
+`WindowCompat.enableEdgeToEdge()` 属于 AndroidX。它会按运行平台选择合适实现，并配置透明系统栏、图标明暗和三键导航保护。不同系统版本采用不同的兼容路径，因此不能把它等同于设置一组固定的 legacy flag（旧版窗口标志）；在 Android 15 及以上的强制场景中，平台自身的 `PhoneWindow` 已经决定 `decorFitsSystemWindows = false`。
 
 ## 2. Edge-to-Edge 没有改变标准 App Window 出图拓扑
 
@@ -129,7 +131,7 @@ HWUI RenderThread → App Window BLASTBufferQueue
 SurfaceFlinger → HWC / RenderEngine → Display present
 ```
 
-这段骨架用于确定责任位置。Edge-to-Edge 可能让 App Window 的内容覆盖更大的窗口区域，也可能因 Insets 变化触发 traversal（View 树遍历）；它没有自动创建第二个应用 Producer（BufferQueue 生产端），也没有绕过 App Window 的 BLAST 队列。
+这段骨架用来定位问题落在哪一层。Edge-to-Edge 可能让 App Window 的内容覆盖更大的窗口区域，也可能因 Insets 变化触发 traversal（View 树遍历）；它没有自动创建第二个应用 Producer（BufferQueue 生产端），也没有绕过 App Window 的 BLAST 队列。
 
 ### 2.1 系统栏透明不等于新增透明 Surface
 
@@ -156,12 +158,12 @@ HWC 会按整个 Display 的可见 layer 集合评估 composition strategy（合
 
 窗口内容延伸到边缘，不代表每帧都会增加一次 measure 或 layout。各阶段是否执行取决于当前帧状态：
 
-- 边缘区域本来已在 App Window buffer 内，且内容静止时，可以复用已有 RenderNode 与 DisplayList（可重复回放的绘制命令）；
+- 边缘区域本来就在 App Window buffer 内；内容静止时，可以复用已有的 RenderNode 与 DisplayList（可重复回放的绘制命令）；
 - Insets 数值变化或监听器修改 padding、margin、LayoutParams 时，可能请求 layout；
 - 边缘渐变、模糊、大图、视频采样或持续动画会增加实际像素工作；
 - dirty region（需要重绘的区域）、buffer age（缓冲区内容保留轮次）、GPU tile（分块渲染）架构和 OEM 驱动都会影响最终成本。
 
-评估 Edge-to-Edge 的 GPU 成本，应对比同一设备、页面和导航模式下的 App GPU 与 RenderThread、SF composition 和功耗，不能用系统栏高度乘屏幕宽度代替测量。
+评估 Edge-to-Edge 的 GPU 成本，应对比同一设备、页面和导航模式下的 App GPU 与 RenderThread、SurfaceFlinger composition 和功耗，不能用系统栏高度乘屏幕宽度代替测量。
 
 ## 3. Android 17 的 WindowInsets 分发链
 
@@ -183,9 +185,9 @@ root.dispatchApplyWindowInsets(WindowInsets)
 View / ViewGroup hierarchy
 ```
 
-`WindowState.computeFrameLw()` 不是 Android 17 这条分发链的可靠锚点。WMS（WindowManagerService，窗口管理服务）维护带类型的 `InsetsState`、Insets source（区域数据源）和 `InsetsSourceControl`（控制权信息）；应用进程由 `InsetsController` 结合当前窗口 frame、bounds（边界）、可见性和窗口属性计算 `WindowInsets`。
+WMS（WindowManagerService，窗口管理服务）维护带类型的 `InsetsState`、Insets source（区域数据源）和 `InsetsSourceControl`（控制权信息）；应用进程由 `InsetsController` 结合当前窗口 frame、bounds（边界）、可见性和窗口属性计算 `WindowInsets`。`WindowState.computeFrameLw()` 不是 Android 17 这条分发链的可靠锚点。
 
-系统发来新的 Insets 状态时，`ViewRootImpl.notifyInsetsChanged()` 会设置 `mApplyInsetsRequested`、调用 `requestLayout()`，并在需要时安排 traversal。应用主动调用 `View.requestApplyInsets()` 时，View 请求根节点重新分发；它不等于收到一次新的 WMS 状态，也不会为每种 Insets type 分别发起一轮 Binder（跨进程通信）请求。
+系统发来新的 Insets 状态时，`ViewRootImpl.notifyInsetsChanged()` 会设置 `mApplyInsetsRequested`、调用 `requestLayout()`，并在需要时安排 traversal。应用主动调用 `View.requestApplyInsets()` 时，View 请求根节点重新分发；这条路径不等于收到一次新的 WMS 状态，也不会为每种 Insets type 分别发起一轮 Binder（跨进程通信）请求。
 
 ### 3.2 一次 `WindowInsets` 可以同时携带多种 type
 
@@ -212,7 +214,7 @@ val safe = insets.getInsets(
 
 ### 3.4 消费语义要区分后代和兄弟节点
 
-如果一个 `ViewGroup` 自身返回 consumed（已消费），分发会在进入其子树前停止。Android 11（API 30）及以上的现代 `ViewGroup` 分发会把输入 Insets 分别交给兄弟节点，不会让前一个 child 返回的消费结果影响后一个 child。target SDK 低于 30 的兼容路径仍保留旧的顺序消费行为。
+如果一个 `ViewGroup` 自身返回 consumed（已消费），分发会在进入其子树前停止。Android 11（API 30）及以上的现代 `ViewGroup` 分发会把输入 Insets 分别交给兄弟节点，不会让前一个子节点返回的消费结果影响后一个子节点。target SDK 低于 30 的兼容路径仍保留旧的顺序消费行为。
 
 如果在 `decorView` 根节点无条件返回 `CONSUMED`，再把 Insets 放入 `ViewModel` 供所有子 View 自行读取，会产生以下问题：
 
@@ -224,13 +226,13 @@ val safe = insets.getInsets(
 
 ## 4. Insets Animation：两条路径不能混写
 
-`Choreographer` 在 Android 17 中按：
+Android 17 的 `Choreographer` 按下面的顺序执行回调：
 
 ```text
 INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT
 ```
 
-执行回调。`InsetsController` 把动画帧安排到 `CALLBACK_INSETS_ANIMATION`，因此同一帧中的 Insets 动画工作位于普通 animation 之后、traversal 之前。这段顺序只说明回调阶段，不代表每个阶段都会执行布局。
+`InsetsController` 把动画帧安排到 `CALLBACK_INSETS_ANIMATION`，因此同一帧中的 Insets 动画工作位于普通 animation 之后、traversal 之前。这段顺序只说明回调阶段，不代表每个阶段都会执行布局。
 
 ### 4.1 有动画回调：分发 `onProgress()`
 
@@ -247,7 +249,7 @@ INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT
 
 ### 4.2 Android 17 的同步 Insets 动画：满足条件才逐帧 apply
 
-`android-17.0.0_r1` 已包含同步 Insets 动画机制：
+`android-17.0.0_r1` 已包含同步 Insets 动画机制，涉及的开关和条件如下：
 
 1. `ActivityInfo.ENABLE_SYNCHRONIZED_INSETS_ANIMATION` 是从 Android 16 target 开始启用、允许设备覆盖的 compat change（兼容性变更开关）；
 2. `WindowState` 计算窗口是否允许同步动画，并把结果随 add 与 relayout result（窗口创建或重布局结果）交给 `ViewRootImpl`；
@@ -383,7 +385,7 @@ ViewCompat.setOnApplyWindowInsetsListener(list) { view, windowInsets ->
 - 自定义 header（标题区域）要结合 `WindowInsets.getBoundingRects()` 返回的系统控件边界，避开关闭、最大化等按钮；
 - resize 期间同时核对 Window bounds、Insets source 与 control、App traversal、Shell transition leash 和 App Window buffer geometry（缓冲区几何）。
 
-浮动 IME 不保证 `ime()` 永远返回 0。Insets 是相对于当前窗口计算的：IME 未遮挡窗口时可以为 0，与窗口相交或系统选择 resize（调整窗口大小）或 pan（平移内容）时可以非 0。应记录当前 windowing mode（窗口模式）、IME window 与 leash 几何和实际 Insets，不能仅凭“桌面模式”决定。
+浮动 IME 不保证 `ime()` 永远返回 0。Insets 是相对于当前窗口计算的：IME 未遮挡窗口时可以为 0，与窗口相交或系统选择 resize（调整窗口大小）或 pan（平移内容）时可以非 0。应记录当前 windowing mode（窗口模式）、IME window 与 leash 的几何，以及实际 Insets，不能仅凭“桌面模式”判断 `ime()` 的值。
 
 ## 7. Predictive Back 与 Insets 的关系
 
@@ -396,7 +398,7 @@ Predictive Back（预测性返回）让用户在完成返回手势前预览目�
 - 应用回调是否触发 composition、layout、draw，取决于具体导航库和页面实现；
 - 没有 Android 17 证据表明 Predictive Back 会自动逐帧调用 `requestApplyInsets()`。
 
-如果返回手势卡顿，先区分系统 transition（转场）与应用自定义动画。系统路径检查 WM Shell、SurfaceFlinger layer 与 transaction 和 DisplayFrame；应用路径检查返回进度回调、Compose 或 Fragment 状态变化、`doFrame` 和 App SurfaceFrame。详见 22.11。
+如果返回手势卡顿，先区分系统 transition（转场）与应用自定义动画。系统路径检查 WM Shell、SurfaceFlinger 的 layer 与 transaction，以及 DisplayFrame；应用路径检查返回进度回调、Compose 或 Fragment 状态变化、`doFrame` 和 App SurfaceFrame。详见 22.11。
 
 ## 8. Perfetto：按证据定位 Insets 成本
 
