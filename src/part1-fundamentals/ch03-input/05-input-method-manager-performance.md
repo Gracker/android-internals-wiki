@@ -48,10 +48,10 @@ sources:
 
 1. 显示请求从应用到达 IME 的路径；
 2. `startInput`、IME 绑定和窗口显示的独立状态；
-3. 应用布局与 `WindowInsetsAnimation` 影响帧时间的位置；
+3. 应用布局与 `WindowInsetsAnimation` 各在哪个环节影响帧时间；
 4. ImeTracker、`dumpsys input_method` 和 Perfetto 各自能定位哪些等待阶段。
 
-这里的“冷”“热”描述状态，不预设固定时延。IME 实现、设备性能、进程驻留、词库初始化和当前系统负载都会改变结果，性能结论应来自同一设备、同一构建和同一输入法上的分位数数据。
+本章说的“冷”“热”描述状态，不预设固定时延。IME 实现、设备性能、进程驻留、词库初始化和当前系统负载都会改变结果，性能结论应来自同一设备、同一构建和同一输入法上的分位数数据。
 
 ## 1. 先分清三件事
 
@@ -73,9 +73,11 @@ Android 17 的 `InputMethodManager.showSoftInput(view, flags)` 要求：
 - `view` 是当前服务目标；
 - `view` 自身有焦点；
 - 它所在的窗口也有焦点；
-- 当前没有需要保留控制权的用户驱动 IME 动画，预测返回正在隐藏 IME 的特殊情况除外。
+- 当前没有需要保留控制权的用户驱动 IME 动画；预测返回正在隐藏 IME 时属于例外。
 
-返回 `true` 表示请求已进入后续处理，不表示输入法已经显示。带 `ResultReceiver` 的重载在 API 36 已弃用，因为回调同样不能可靠代表屏幕上的最终状态。`hideSoftInputFromWindow()` 对目标版本为 API 36 及以上的应用还有兼容行为：即使最终状态没有改变也会返回 `true`。显示和隐藏都应通过 `WindowInsets.Type.ime()` 的可见性确认；WindowInsets 表示系统窗口占用的区域及其可见状态。
+返回 `true` 表示请求已进入后续处理，不表示输入法已经显示。带 `ResultReceiver` 的重载在 API 36 已弃用，因为回调同样不能可靠代表屏幕上的最终状态。`hideSoftInputFromWindow()` 对目标版本为 API 36 及以上的应用还有兼容行为：即使最终状态没有改变也会返回 `true`。
+
+WindowInsets 表示系统窗口占用的区域及其可见状态；显示和隐藏都应通过 `WindowInsets.Type.ime()` 的可见性确认。
 
 Android 16 起，`SHOW_IMPLICIT`、`SHOW_FORCED`、`HIDE_IMPLICIT_ONLY` 和 `HIDE_NOT_ALWAYS` 不再影响平台处理。Android 17 应传 `0`，或直接使用 `WindowInsetsController.show()`、`hide()`。
 
@@ -115,7 +117,9 @@ flowchart TD
     P --> Q["WindowInsetsAnimation 回调与帧提交"]
 ```
 
-这条路径有三个容易漏看的边界。图中的 leash 是 WMS 下发的 SurfaceControl 动画控制柄；应用借助它变换输入法图层，但不会直接取得输入法窗口的 Surface。
+图中的 leash 是 WMS 下发的 SurfaceControl 动画控制柄；应用借助它变换输入法图层，但不会直接取得输入法窗口的 Surface。
+
+这条路径有三个容易漏看的边界。
 
 第一，`InsetsController` 通过 `IWindowSession.updateRequestedVisibleTypes()` 把请求可见的 Insets 类型交给 WMS。WMS 更新目标窗口的状态后，`ImeInsetsSourceProvider` 再把输入法可见性请求的变化通知 IMMS。将现代路径概括为“应用直接通过 Binder 调用 IMMS”会漏掉 WMS 的状态机。
 
@@ -167,7 +171,7 @@ AOSP `android-17.0.0_r1` 的下面这项资源用于控制“非文本编辑器�
 
 这个资源允许设备厂商通过资源覆盖（OEM overlay）改为 `true`。启用后，IMMS 可在当前焦点没有落在文本编辑器时避免启动输入法，并为配置中的输入法或应用保留例外。它控制“何时启动输入法”，与输入法是否运行在隔离进程（isolated process）没有直接关系。
 
-`AutofillSuggestionsController` 在输入法尚未连接时可暂存行内建议（inline suggestions）请求，并在主连接的 `onServiceConnected()` 后继续处理。源码能证明请求被延后，不能单凭这一点声称它减少了多少次冷启动或节省了多少毫秒。
+绑定状态还影响其他子系统对输入的暂存行为。`AutofillSuggestionsController` 在输入法尚未连接时可暂存行内建议（inline suggestions）请求，并在主连接的 `onServiceConnected()` 后继续处理。源码能证明请求被延后，不能单凭这一点声称它减少了多少次冷启动或节省了多少毫秒。
 
 ## 4. 应用侧如何可靠显示和确认 IME
 
@@ -308,7 +312,7 @@ Android 17 的 ImeTracker 为同一次显示或隐藏请求分配令牌，并跨
 | `PHASE_CLIENT_ANIMATION_RUNNING` | 客户端动画运行中 |
 | `PHASE_CLIENT_ANIMATION_FINISHED_SHOW` | 显示动画完成 |
 
-ImeTracker 历史记录会给出请求类型、状态、持续时间、最终阶段和请求窗口。可按以下位置判断：
+ImeTracker 历史记录会给出请求类型、状态、持续时间、最终阶段和请求窗口。可以从请求停在哪一步和它的最终状态两方面判断：
 
 - 停在 `CLIENT_VIEW_SERVED` 之前：检查 View 焦点、窗口焦点、当前服务目标和调用时机；
 - 长时间停在 `SERVER_WAIT_IME`：检查进程启动、服务绑定、会话创建和输入法崩溃；
@@ -365,7 +369,7 @@ adb shell cmd input_method tracing stop
 
 FrameTimeline 的帧异常类型（jank type）用于描述错过截止时间（missed deadline）、高延迟（high latency）、缓冲区持续排队（buffer stuffing）等结果，不包含 `LAYOUT` 或 `MEASURE`。要判断布局是否拖慢一帧，应展开应用主线程的界面遍历、测量和布局轨迹区段，再与该帧的截止时间对齐。
 
-输入法和应用通常是两个独立 Surface。一次过渡中可能出现四种不同结论：
+输入法和应用通常是两个独立 Surface。一次过渡中，两侧的帧结果和动画前的等待可能给出四种不同的判断结果：
 
 1. 应用帧稳定，输入法窗口掉帧；
 2. 输入法帧稳定，应用因 Insets 回调掉帧；
