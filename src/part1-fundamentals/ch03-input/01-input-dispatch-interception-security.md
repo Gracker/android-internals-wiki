@@ -84,7 +84,9 @@ consolidated_from:
 
 # Input 分发、拦截与安全边界
 
-一次点击“没有反应”，至少可能停在五个位置：内核尚未产生 evdev 事件、`InputReader` 没有及时读取、`InputDispatcher` 没有选出目标窗口、事件已经发出但应用尚未消费，或者应用收到事件后没有完成 View 或 IME 处理。evdev 是 Linux 内核向用户空间提供输入事件的设备接口。这些问题在 Perfetto 中都可能表现为输入延迟，但排查方法完全不同。
+evdev 是 Linux 内核向用户空间提供输入事件的设备接口。一次点击“没有反应”，至少可能停在五个位置：内核尚未产生 evdev 事件、`InputReader` 没有及时读取、`InputDispatcher` 没有选出目标窗口、事件已经发出但应用尚未消费，或者应用收到事件后没有完成 View 或 IME 处理。这些问题在 Perfetto 中都可能表现为输入延迟，但排查方法完全不同。
+
+输入事件从内核进入 InputReader，再由 InputDispatcher 选择窗口并等待消费确认。拦截、监控和注入能力位于这条路径的不同位置，权限和超时语义也不同。
 
 分析 Android 输入系统时，需要把同一个事件在不同时间域中的位置对应起来：
 
@@ -97,8 +99,6 @@ consolidated_from:
 以下分析以 Android 17（API 37）的 `android-17.0.0_r1` 标签为平台源码边界，内核 evdev 行为以 `android17-6.18-2026-06_r6` 为边界。Android 12 到 Android 16 的差异列在版本边界一节，不使用旧实现解释当前主路径。
 
 ---
-
-输入事件从内核进入 InputReader，再由 InputDispatcher 选择窗口并等待消费确认。拦截、监控和注入能力位于这条路径的不同位置，权限和超时语义也不同。
 
 ## 事件入队、目标选择与反压
 
@@ -226,7 +226,7 @@ InputReader
   → InputDispatcher
 ```
 
-这个顺序按构造代码中的 listener 连接判断：`InputManager` 先创建 `InputDispatcher`，再逐层包上 `InteractionReporter`、`InputFilter`、指标收集器、`InputProcessor`、`PointerChoreographer` 和 `UnwantedInteractionBlocker`，最后把最外层 listener 交给 `InputReader`。阅读源码时要沿每个阶段构造函数收到的下游 listener 反向推导事件转发方向。
+这个顺序由构造代码中的监听器连接推出：`InputManager` 先创建 `InputDispatcher`，再逐层包上 `InteractionReporter`、`InputFilter`、指标收集器、`InputProcessor`、`PointerChoreographer` 和 `UnwantedInteractionBlocker`，最后把最外层的监听器交给 `InputReader`。阅读源码时，要沿每个阶段构造函数收到的下游监听器反向推导事件转发方向。
 
 其中部分阶段可能只负责透传，也可能是可选组件，或受功能开关和服务能力控制：
 
@@ -262,7 +262,7 @@ Android 17 的窗口输入拓扑由 `gui::WindowInfosUpdate` 提供。`InputDisp
 - 分发超时时间；
 - 可信覆盖层、监视窗口、丢弃输入等安全与行为属性。
 
-焦点应用（focused application）由 WindowManager 设置，主要用于无焦点窗口 ANR 和调试。焦点窗口、焦点应用与最上层可见窗口是三个不同概念。
+焦点应用（focused application）由 WindowManager 设置，主要用于无焦点窗口 ANR 和调试。焦点窗口、焦点应用与最上层可见窗口并不等价：按键目标由焦点窗口决定，焦点应用用于无焦点窗口 ANR 和调试，触摸目标则在 `DOWN` 时按命中测试选出。
 
 #### 4.2 按键按焦点分发，指针动作按触摸状态分发
 
@@ -286,11 +286,11 @@ Android 17 当前调用的是 `TouchState` 与 `findTouchedWindowTargets()`，�
 - 安全策略要求丢弃事件；
 - 系统合成 CANCEL，结束原接收者的手势。
 
-因此，“点到谁就永远给谁”只能作为粗略描述。分析时要跟踪触摸状态、触点 ID 与 `CANCEL` 事件。
+“点到谁就永远给谁”只能作为粗略描述；分析时要跟踪触摸状态、触点 ID 与 `CANCEL` 事件。
 
 #### 4.4 坐标转换属于分发语义
 
-`InputDispatcher` 不只选择窗口，还会根据显示器和窗口的变换矩阵为目标转换坐标。在折叠屏、旋转、桌面模式、窗口缩放或镜像场景中，原始显示坐标与应用收到的窗口局部坐标可能不同。
+`InputDispatcher` 选择窗口时，还会根据显示器和窗口的变换矩阵为目标转换坐标。在折叠屏、旋转、桌面模式、窗口缩放或镜像场景中，原始显示坐标与应用收到的窗口局部坐标可能不同。
 
 遇到“事件送对窗口但坐标不对”时，应同时检查：
 
@@ -303,7 +303,7 @@ Android 17 当前调用的是 `TouchState` 与 `findTouchedWindowTargets()`，�
 
 可信按键进入 InputDispatcher 时可调用 `interceptKeyBeforeQueueing()`；准备发往焦点窗口前还可异步执行 `interceptKeyBeforeDispatching()`。后者的结果可以继续、跳过或延迟重试。
 
-`PhoneWindowManager` 是这套策略的主要 Java 实现，但不同系统按键并不都在同一个 `switch` 或同一阶段处理。电源、音量、Home、组合键和设备形态都有各自的条件。排查应用收不到按键时，要沿具体 keycode 的入队与分发策略分支验证，不能笼统归结为“返回 -1 后被系统吃掉”。
+`PhoneWindowManager` 是这套策略的主要 Java 实现，但不同系统按键并不都在同一个 `switch` 或同一阶段处理：电源、音量、Home、组合键和设备形态各自有不同的条件。排查应用收不到按键时，要沿具体 keycode 的入队与分发策略分支验证，不能笼统归结为“返回 -1 后被系统吃掉”。
 
 #### 4.6 安全检查也会丢事件
 
@@ -334,7 +334,7 @@ WindowState.openInputChannel()
 socketpair(AF_UNIX, SOCK_SEQPACKET, 0, sockets);
 ```
 
-socketpair 的两端都设为非阻塞，并共享一个 Binder 令牌。服务端点被包装进 `InputDispatcher` 的 `Connection`，客户端点则作为可跨进程传递的 `InputChannel` 返回给窗口进程。
+socketpair 的两端都设为非阻塞，并共享一个 Binder 令牌。服务端点被包装进 `InputDispatcher` 的 `Connection`，另一端作为可跨进程传递的 `InputChannel` 返回给窗口进程。
 
 #### 5.2 “输入事件不走 Binder”需要加限定
 
@@ -399,10 +399,10 @@ fd 可读时：
 
 `WindowInputEventReceiver.onBatchedInputEventPending()` 默认调用 `scheduleConsumeBatchedInput()`，通过 `Choreographer` 的 `CALLBACK_INPUT` 在 VSYNC 附近消费一批事件。应用请求无缓冲输入（unbuffered input）时，可以改走立即消费路径。
 
-这有两个重要含义：
+这带来两个结果：
 
 - 通道已经收到消息，不代表 Java 会立刻逐条执行 `dispatchTouchEvent()`；
-- 下一帧输入回调前的短暂等待，可能来自设计中的批处理，不应直接视为调度故障。
+- 下一帧输入回调前的短暂等待，可能来自有意的批处理，不应直接视为调度故障。
 
 输入批处理、重采样、预测与绘制帧的关系，统一见 3.2。
 
@@ -415,7 +415,7 @@ Android 17 会同时创建同步和异步系统跟踪区段：
 - 同步执行片段 `deliverInputEvent src=...` 覆盖本次 Java 方法调用；
 - 异步 `deliverInputEvent` 从开始投递一直持续到 `finishInputEvent()`，可以跨越异步 IME 处理阶段。
 
-因此，同步 `deliverInputEvent` 执行片段很短，并不表示同一个事件的异步处理已经结束；只有执行到 `finishInputEvent()`，客户端才会尝试发送原生 `FINISHED` 消息。
+同步 `deliverInputEvent` 执行片段很短，但这并不表示同一个事件的异步处理已经结束；只有执行到 `finishInputEvent()`，客户端才会尝试发送原生 `FINISHED` 消息。
 
 #### 6.4 `InputStage` 处理链
 
@@ -465,7 +465,7 @@ Activity 会先获得窗口级处理机会；事件未被消费时，再继续�
 - 动作事件拆分可以把不同触点 ID 分给不同子 View；
 - 子 View 被移除、窗口失焦或系统取消手势时，会清理目标。
 
-因此，分析手势问题时要同时查看 `DOWN` 的命中结果、后续拦截、`CANCEL` 和触点 ID，不能只看最终的 `onTouchEvent()` 返回值。
+分析手势问题时要同时查看 `DOWN` 的命中结果、后续拦截、`CANCEL` 和触点 ID，不能只看最终的 `onTouchEvent()` 返回值。
 
 ---
 
@@ -499,7 +499,7 @@ UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS = 5000
 
 `InputDispatcher` 还会乘以 `HwTimeoutMultiplier()`。普通窗口可以通过 `WindowInfo.dispatchingTimeout` 提供覆盖值，焦点应用也有自己的分发超时，输入监视器则使用 dispatcher 的监视器超时。
 
-因此，“所有按键和触摸事件都固定等待 5 秒”并不准确。5 秒是尚未乘系数、也没有覆盖值时的默认基值；具体事件的 `timeoutTime` 以发布时读取的配置为准。之后即使窗口超时配置改变，也不会追溯修改已经发送的分发项。
+“所有按键和触摸事件都固定等待 5 秒”并不准确。5 秒是尚未乘系数、也没有覆盖值时的默认基值；具体事件的 `timeoutTime` 以发布时读取的配置为准。之后即使窗口超时配置改变，也不会追溯修改已经发送的分发项。
 
 #### 7.3 没有焦点窗口时的 ANR
 
@@ -764,7 +764,7 @@ android.input.inputevent
 
 ### 为什么要了解输入事件拦截与安全机制
 
-本章前半部分追踪了输入事件从硬件到 View 树的完整路径。正常分发之外，系统还允许特权组件在不同位置监控、过滤或注入事件。
+到这里，事件从硬件到 View 树的正常分发路径已经走完。系统还允许特权组件在这条路径的不同位置监控、过滤或注入事件。
 
 如果 InputDispatcher 队列和应用主线程都没有明显阻塞，事件仍可能停留在 `system_server` 的过滤器 Handler 消息队列、无障碍按键待决队列或监视窗口（spy window）的手势接管阶段。忽略这些分支，容易把事件未到达应用误判成 View 分发问题。
 
@@ -774,7 +774,7 @@ android.input.inputevent
 
 #### 什么是 InputFilter
 
-`InputFilter` 是隐藏的系统级全局过滤机制。硬件按键、触摸或其他运动事件经过 WindowManagerPolicy 的早期策略回调后，如果过滤器已启用，`InputDispatcher` 会先把事件交给过滤器，而不直接放入目标窗口的分发队列。
+`InputFilter` 是隐藏的系统级全局过滤机制。过滤器启用时，`InputDispatcher` 会把硬件按键、触摸或其他运动事件先交给过滤器，而不直接放入目标窗口的分发队列；这一步发生在 WindowManagerPolicy 的早期策略回调之后。
 
 它与 `ViewGroup.onInterceptTouchEvent()` 的作用域不同：前者位于系统分发链，最多只能安装一个，影响全局硬件输入；后者只决定本 View 树中的触摸归属。`InputFilter` 不接收 Instrumentation 等普通注入入口产生的事件，这可防止注入事件再次进入过滤器形成循环。
 
@@ -817,7 +817,7 @@ if (shouldSendMotionToInputFilterLocked(args)) {
 }
 ```
 
-返回 `false` 的含义是“当前原事件不再继续入队”，不等于过滤器已经永久消费它。`InputManagerService.filterInputEvent()` 会把事件交给 `IInputFilter.filterInputEvent()`；`InputFilter` 再通过自己的 Handler 调用 `onInputEvent()`。默认实现调用 `sendInputEvent()`，由 `InputFilterHost` 加上 `FLAG_FILTERED` 并异步注回原生分发器。
+返回 `false` 的含义是“当前原事件不再继续入队”，不等于过滤器已经永久消费它。`InputManagerService.filterInputEvent()` 会把事件交给 `IInputFilter.filterInputEvent()`；`InputFilter` 再通过自己的 Handler 调用 `onInputEvent()`。默认实现调用 `sendInputEvent()`，由 `InputFilterHost` 加上 `FLAG_FILTERED` 并异步注入回原生分发器。
 
 完整链路如下：
 
@@ -840,13 +840,13 @@ Android 默认的 `AccessibilityInputFilter` 运行在 `system_server`。接口�
 - 过滤器通用开销来自事件复制、Handler 排队、变换逻辑和带 `FLAG_FILTERED` 事件的重新注入。原生策略回调带有 `filterInputEvent` atrace 轨迹区段，但异步 Handler 与再次注入之间的耗时不能只靠这一段量完。
 - 无障碍按键过滤还会进入 `KeyboardInterceptor` 和 `KeyEventDispatcher`，等待一个或多个服务异步返回 `setOnKeyEventResult()`。这个等待不会让 InputDispatcher 线程同步卡在远端 Binder 上。
 
-Android 17 在过滤器启用时，不会为 InputReader 读入的原始事件记录 `InputDispatcher` 的单设备延迟指标。因此，缺少这项指标不能证明过滤器没有开销。
+Android 17 在过滤器启用时，不会为 InputReader 读入的原始事件记录 `InputDispatcher` 的单设备延迟指标；缺少这项指标不能证明过滤器没有开销。
 
 ### InputMonitor：特权组件的旁路监控
 
 #### 什么是 InputMonitor
 
-`InputMonitor` 允许特权组件在不是普通触摸目标窗口时也能接收指针事件流。`InputManagerService.monitorGestureInput()` 会创建 `InputChannel`、手势监视器 Surface 和监视窗口（spy window）。监视窗口不参与普通前台目标窗口的命中选择，但可以作为额外目标收到事件。
+`InputMonitor` 让特权组件在窗口不是普通触摸目标时也能接收指针事件流。`InputManagerService.monitorGestureInput()` 会创建 `InputChannel`、手势监视器 Surface 和监视窗口（spy window）。监视窗口不参与普通前台目标窗口的命中选择，但可以作为额外目标收到事件。
 
 调用方必须持有隐藏权限 `android.permission.MONITOR_INPUT`。`android-17.0.0_r1` 的平台清单将它声明为 `signature|recents`，不属于通用的 `privileged` 权限。普通应用和第三方无障碍服务拿不到这个入口。
 
@@ -857,7 +857,7 @@ Android 17 在过滤器启用时，不会为 InputReader 读入的原始事件�
 1. **监控阶段**：监视窗口与普通目标各自通过自身连接接收事件。它不替代命中的前台窗口，也不会因为“看见了事件”就消费目标流；监视器自身仍须及时读取并确认 `InputChannel` 中的事件。
 2. **接管阶段**：调用 `pilferPointers()` 后，InputDispatcher 从其他允许被抢占的窗口移走当前指针，并向被取消的目标合成取消事件。典型结果是原目标窗口收到 `ACTION_CANCEL`，后续事件流由请求抢占的监视窗口持有；标记了 `DO_NOT_PILFER` 的窗口例外。
 
-SystemUI 的边缘返回手势使用这套模式：先用手势监视器观察边缘触摸，确认系统返回手势后再抢占指针。“收到副本”与“主动接管”对目标应用的影响完全不同。
+SystemUI 的边缘返回手势使用这套模式：先用手势监视器观察边缘触摸，确认系统返回手势后再抢占指针。
 
 在 Perfetto 中，目标窗口的触摸轨迹区段会以 `ACTION_CANCEL` 中断，同时 SystemUI 进程开始处理手势。如果应用的触摸流意外中断，可以检查是否有系统监视窗口抢占了指针。
 
@@ -1025,7 +1025,7 @@ public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int di
 
 #### 安全策略的版本演进
 
-当前只保留能直接从 AOSP 和官方文档核对到的结论。
+下表只列能直接从 AOSP 和官方文档核对到的结论。
 
 | 版本或来源 | 能直接核对到的结论 | 证据 |
 |-----------|--------------------|------|
@@ -1046,6 +1046,15 @@ public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int di
 
 这组限制同时作用于无障碍查询通道和 View 触摸安全检查。它不关闭 InputDispatcher，也不表示系统已经停止所有 InputMonitor 副本。
 
+### Android 17 基线下仍可核对到的权限边界
+
+`android-17.0.0_r1` 的门禁有四类：
+
+1. **全局过滤器**：隐藏系统接口，只能由 WMS 或 IMS 安装；
+2. **手势监视器**：调用方必须持有 `MONITOR_INPUT`，其保护级别是 `signature|recents`；
+3. **标准注入**：调用方或 Instrumentation 来源必须满足 `INJECT_EVENTS`；
+4. **无障碍能力**：按键过滤和手势注入分别受配置能力、运行时标志与 `canPerformGestures()` 控制，敏感 View 还会按 `isAccessibilityTool` 再过滤。
+
 ### 事件拦截对性能的影响
 
 #### InputFilter 的延迟开销
@@ -1060,7 +1069,7 @@ public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int di
 
 **按键事件。** 开启 `FLAG_REQUEST_FILTER_KEY_EVENTS` 后，事件会先到 `KeyboardInterceptor`，再交给 `KeyEventDispatcher` 等待服务结果。等待窗口上限是 500 ms。这个等待发生在无障碍子系统维护的 `PendingKeyEvent` 队列里，不是 `InputDispatcher` 同步等待远端 Binder。
 
-**触摸事件。** `TouchExplorer`、放大镜手势处理器、`MotionEventInjector` 可能把一段原始触摸重写成另一串 `MotionEvent`。这会增加事件数量，也会让时序更复杂。TalkBack 的“朗读后双击激活”就是这类变换的典型例子。
+**触摸事件。** `TouchExplorer`、放大镜手势处理器、`MotionEventInjector` 可能把一段原始触摸重写成另一串 `MotionEvent`。这会增加事件数量，也会让时序更复杂。TalkBack 的“朗读后双击激活”就是这类变换。
 
 **服务进程自身的耗时。** `AccessibilityService.onKeyEvent()` 的 Binder 回调经服务执行器运行；如果执行线程被占用，结果返回就会变慢，待决按键在 `KeyEventDispatcher` 中停留更久。`onAccessibilityEvent()` 中的耗时任务也可能争用同一服务执行资源。
 
@@ -1091,21 +1100,12 @@ AOSP 标准游戏模式（GameMode）没有独立的 InputDispatcher 游戏优�
 
 边缘抑制、口袋模式和手掌拒绝可能由触控固件、内核驱动、InputReader 映射器或系统过滤器实现。AOSP 没有规定统一的边缘宽度、压力阈值或厂商算法。
 
-定位实现层时可以按事件是否存在逐级判断：
+定位实现层时，可以按事件在哪一级消失逐级判断：
 
 1. `getevent -lt` 已经没有对应触点：优先查触控控制器或内核驱动；
 2. evdev 有事件、InputReader 输出缺失或发生重分类：查设备配置与映射器；
 3. 分发器收到事件、目标窗口没有收到：查系统策略、InputFilter、监视窗口、指针抢占和窗口安全规则；
 4. 应用收到完整事件流后自行取消：回到 View 或 Compose 手势逻辑。
-
-### Android 17 基线下仍可核对到的权限边界
-
-`android-17.0.0_r1` 中需要同时记住四类门禁：
-
-1. **全局过滤器**：隐藏系统接口，只能由 WMS 或 IMS 安装；
-2. **手势监视器**：调用方必须持有 `MONITOR_INPUT`，其保护级别是 `signature|recents`；
-3. **标准注入**：调用方或 Instrumentation 来源必须满足 `INJECT_EVENTS`；
-4. **无障碍能力**：按键过滤和手势注入分别受配置能力、运行时标志与 `canPerformGestures()` 控制，敏感 View 还会按 `isAccessibilityTool` 再过滤。
 
 ### 在 Perfetto 中分析事件拦截问题
 
@@ -1116,7 +1116,7 @@ AOSP 标准游戏模式（GameMode）没有独立的 InputDispatcher 游戏优�
 在 `system_server` 中对齐原生 `filterInputEvent`、InputDispatcher 分发轨迹区段与目标进程的 `deliverInputEvent`：
 
 - 应用完全收不到事件，先确认是否在过滤器或无障碍层被消费；
-- 应用能收到事件但时间明显偏晚，再检查 `system_server` 的前置处理和无障碍服务返回结果所需的时间。
+- 应用能收到事件但时间明显偏晚，再检查 `system_server` 的前置处理耗时，以及无障碍服务返回结果所需的时间。
 
 #### 步骤 2：把 InputFilter 本地处理和无障碍异步判定分开看
 
