@@ -57,7 +57,9 @@ sources:
 | 应用推理运行时 | LiteRT、MediaPipe、自研或厂商 SDK | 加载自带模型并选择 CPU/GPU/NPU 路径 | 自动得到最优 delegate、质量或功耗 |
 | 云端模型 | Gemini 等服务 | 更大模型、在线知识和服务端算力 | 离线可用、固定成本或数据不出设备 |
 
-这里的 delegate 是推理运行时连接特定硬件后端的适配器。Qualcomm Hexagon、MediaTek APU 和 Google Tensor 的 TPU 都属于芯片或厂商层；TensorFlow、LiteRT、ML Kit 则是软件框架或 SDK，不能与硬件单元并列。即使两台手机都宣传有 NPU，它们支持的数值精度、算子、内存布局、并发能力和驱动质量也可能不同。算子是模型计算图中的单项运算，例如卷积或矩阵乘法。
+这里的 delegate 是推理运行时连接特定硬件后端的适配器。Qualcomm Hexagon、MediaTek APU 和 Google Tensor 的 TPU 都属于芯片或厂商层；TensorFlow、LiteRT、ML Kit 则是软件框架或 SDK，不能与硬件单元并列。
+
+算子是模型计算图中的单项运算，例如卷积或矩阵乘法。即使两台手机都宣传有 NPU，它们支持的数值精度、算子、内存布局、并发能力和驱动质量也可能不同。
 
 系统版本相同，AI 能力仍可能不同。应用需要检测具体 API 和模型是否可用，并准备回退到 CPU、其他本地实现或云端。
 
@@ -76,9 +78,9 @@ Neural Networks HAL 仍然受支持，`android-17.0.0_r1` 也保留 `hardware/in
 
 ## 1.29.3 路线一：AICore 与 ML Kit GenAI
 
-ML Kit GenAI API 通过 AICore 使用设备上的 Gemini Nano。当前公开能力包括摘要、校对、改写、图像描述、语音识别和 Prompt API。模型由设备共享，应用无需把基础模型打进 APK，也不直接管理模型文件。
+ML Kit GenAI API 通过 AICore 使用设备上的 Gemini Nano。当前公开能力包括摘要、校对、改写、图像描述、语音识别，并提供 Prompt API。模型由设备共享，应用无需把基础模型打进 APK，也不直接管理模型文件。
 
-这条路线适合希望使用受支持端侧生成能力、又不需要控制底层模型实现的应用。接入时必须处理下面的运行条件：
+如果应用需要的是受支持的端侧生成能力，不需要自己控制底层模型实现，这条路线更合适。接入时必须处理下面的运行条件：
 
 - **设备与功能可用性**：不同 API、设备和 Gemini Nano 版本的支持范围不同；调用前使用对应 API 的功能状态（feature status）检查。
 - **模型准备状态**：新设备或 AICore 重置后，配置和模型可能尚未准备好，应用要显示可恢复状态，而不是卡住主线程等待。
@@ -87,7 +89,9 @@ ML Kit GenAI API 通过 AICore 使用设备上的 Gemini Nano。当前公开能�
 - **模型版本差异**：应用可读取基础模型名称；同一提示在不同版本上可能产生不同输出，质量测试不能只覆盖一台设备。
 - **流式结果**：长结果优先使用流式接口缩短首个可见结果的等待，但流式不会减少总计算量。
 
-AICore 是 Google 在兼容设备上交付的系统组件。Android 17 源码中另有 `android.app.ondeviceintelligence` / `android.service.ondeviceintelligence` 这组端侧智能（On-Device Intelligence，ODI）系统 API 与服务协调代码，但它属于平台或设备厂商的服务边界，不等同于 Google AICore 或 Gemini Nano 模型本身。分析 AOSP 平台能力时，不能把 AICore 当成 Android 17 兼容性定义文档（CDD）要求的通用服务。
+AICore 是 Google 在兼容设备上交付的系统组件。Android 17 源码中另有 `android.app.ondeviceintelligence` / `android.service.ondeviceintelligence` 这组端侧智能（On-Device Intelligence，ODI）系统 API 与服务协调代码。它属于平台或设备厂商的服务边界，不等同于 Google AICore 或 Gemini Nano 模型本身。
+
+分析 AOSP 平台能力时，不能把 AICore 当成 Android 17 兼容性定义文档（CDD）要求的通用服务。
 
 ## 1.29.4 路线二：LiteRT 与自带模型
 
@@ -132,7 +136,7 @@ public abstract void onExecuteFunction(
         OutcomeReceiver<ExecuteAppFunctionResponse, AppFunctionException> callback);
 ```
 
-回调从主线程进入，耗时 I/O、数据库和模型推理必须切到工作线程，并响应 `CancellationSignal`，最终通过 `callback` 返回成功或错误，否则智能代理的调用会直接造成应用主线程卡顿。
+回调从主线程进入，耗时 I/O、数据库和模型推理必须切到工作线程，并响应 `CancellationSignal`，最终通过 `callback` 返回成功或错误。否则，智能代理的调用会直接造成应用主线程卡顿。
 
 Android 17（API 37）还增加了运行时注册、Activity 或全局作用域、函数状态观察等能力。运行时注册只在相应进程和 `Context` 生命周期内有效，调用者必须保存 `AppFunctionRegistration`，并在不再需要时调用 `unregister()`。
 
@@ -140,9 +144,9 @@ AppFunctions 不负责动态模型加载、模型版本回滚或推理调度。�
 
 ## 1.29.6 VoiceInteractionService 的位置
 
-`VoiceInteractionService`、`VoiceInteractionSession` 和语音交互界面早于端侧大模型多年。它们负责系统选定语音交互服务的生命周期、会话与辅助上下文数据（assist data），不等同于语音识别模型或生成式推理运行时。
+`VoiceInteractionService`、`VoiceInteractionSession` 和语音交互界面早于端侧大模型多年。它们负责系统选定语音交互服务的生命周期与会话，以及辅助上下文数据（assist data）的传递，不等同于语音识别模型或生成式推理运行时。
 
-Android 17 的 AppFunctions 可以与当前 Activity 建立关联；例如 `VoiceInteractionSession` 可转换出 `AppFunctionActivityId`，让智能代理查询该 Activity 暴露的函数。这个连接只说明语音或智能代理入口可以调用应用能力，没有规定语音识别必须在本地运行，也没有给出固定的延迟、准确率、CPU 或内存指标。
+Android 17 的 AppFunctions 可以与当前 Activity 建立关联；例如 `VoiceInteractionSession` 可转换出 `AppFunctionActivityId`，让智能代理查询该 Activity 暴露的函数。这个连接让语音或智能代理入口可以调用应用能力，但没有规定语音识别必须在本地运行，也没有给出固定的延迟、准确率、CPU 或内存指标。
 
 语音功能应分别测量录音、端点检测、识别、意图/提示构造、模型推理、文本或语音输出。把这些阶段合成“端到端小于 500 ms”会隐藏网络、设备与交互模式的差异。
 
@@ -153,7 +157,7 @@ Android 17 的 AppFunctions 可以与当前 Activity 建立关联；例如 `Voic
 1. **能力检查与模型准备**：功能状态检查、模型下载或首次解压。
 2. **运行时初始化**：创建会话或 `CompiledModel`、选择 delegate、编译计算图。
 3. **输入处理**：图像解码与缩放、音频分帧、分词和缓冲区填充。
-4. **推理**：首个结果延迟、单次推理延迟，或生成模型的首个 token（生成单位）延迟与持续吞吐。
+4. **推理**：首个结果延迟与单次推理延迟；生成模型则关注首个 token（生成单位）延迟与持续吞吐。
 5. **输出处理**：解码、过滤、结构化、持久化与界面更新。
 6. **稳态影响**：PSS/RSS 进程内存、原生堆、GPU/NPU 缓冲区、电量、温度和降频后的尾部延迟。
 
@@ -181,7 +185,7 @@ try {
 
 ### 量化需要同时验性能和质量
 
-INT8、FP16 或其他量化格式可能减小模型并减少内存流量，但收益取决于后端是否原生支持。量化是用更低位宽表示模型权重或中间数据。若 delegate 需要在 CPU 上频繁量化与反量化，或某些算子因此回退，延迟反而可能上升。质量评估应使用产品数据集，不能只看模型文件缩小比例。
+量化是用更低位宽表示模型权重或中间数据。INT8、FP16 或其他量化格式可能减小模型并减少内存流量，但收益取决于后端是否原生支持。若 delegate 需要在 CPU 上频繁量化与反量化，或某些算子因此回退，延迟反而可能上升。质量评估应使用产品数据集，不能只看模型文件缩小比例。
 
 ### 批处理偏向吞吐，不一定适合交互
 
@@ -189,7 +193,7 @@ INT8、FP16 或其他量化格式可能减小模型并减少内存流量，但�
 
 ### 缓存要区分对象和产物
 
-复用分词器（tokenizer）、推理会话、`CompiledModel` 与输入输出缓冲区，通常能减少延迟波动。磁盘上的编译缓存还必须绑定模型内容、运行时、delegate 和设备；版本不匹配时应安全失效，不能长期复用旧二进制产物。
+应用复用分词器（tokenizer）、推理会话、`CompiledModel` 与输入输出缓冲区，通常能减少延迟波动。磁盘上的编译缓存还必须绑定模型内容、运行时、delegate 和设备；版本不匹配时应安全失效，不能长期复用旧二进制产物。
 
 ### 并发不是越多越快
 
@@ -197,7 +201,7 @@ INT8、FP16 或其他量化格式可能减小模型并减少内存流量，但�
 
 ## 1.29.9 功耗与热管理
 
-普通应用不能可靠地指定 NPU 频率，也不应假设可以通过某个公开 API 固定频率和电压（DVFS，动态电压与频率调节）。频率和热节流由内核、Power HAL、温控服务与芯片固件共同决定。
+普通应用不能可靠地指定 NPU 频率，也不应假设可以通过某个公开 API 固定频率和电压。频率和热节流由内核、Power HAL、温控服务与芯片固件共同决定，其中频率与电压的调节即 DVFS（动态电压与频率调节）。
 
 应用可做的是控制工作量：
 
@@ -228,7 +232,7 @@ CPU、GPU 或 NPU 的标签本身不能决定能效。若 NPU 不支持关键算
 5. 应用进入后台、用户取消、设备升温或内存紧张时如何停止工作？
 6. AppFunctions 的耗时工作是否已离开主线程，是否正确处理权限、取消和生命周期？
 
-工程选型应以上述检查结果为依据，不能只看 NPU TOPS、模型文件大小或一次实验室峰值。TOPS 表示每秒可执行多少万亿次运算，是硬件理论吞吐指标，不能直接换算成某个模型的响应时间。Android 17 提供了跨应用能力框架和系统资源边界；端侧模型的可用性与性能，仍要在具体设备、具体运行时和具体模型上验证。
+TOPS 表示每秒可执行多少万亿次运算，是硬件理论吞吐指标，不能直接换算成某个模型的响应时间。工程选型应以上述检查结果为依据，不能只看 NPU TOPS、模型文件大小或一次实验室峰值。Android 17 提供了跨应用能力框架和系统资源边界；端侧模型的可用性与性能，仍要在具体设备、具体运行时和具体模型上验证。
 
 ## 参考资料
 
