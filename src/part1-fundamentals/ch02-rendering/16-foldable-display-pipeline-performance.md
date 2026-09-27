@@ -100,7 +100,7 @@ Android 显示框架区分物理设备和系统对外使用的逻辑 Display：
 - **`LogicalDisplay`**：系统用于组织 layer stack（图层栈）、`DisplayInfo`、display group（显示组）和窗口内容的逻辑对象；
 - **SurfaceFlinger Display 与 CompositionEngine Output**：针对最终输出建立合成状态并执行 present（送显）。
 
-折叠设备可能让一个稳定的 logical display ID（逻辑显示标识）在不同设备状态下映射到不同内建面板。它也可能保留多个逻辑 Display，并在 layout（显示布局配置）中改变 enabled（是否启用）状态。具体方式由设备厂商配置决定。
+折叠设备可能让一个稳定的 logical display ID（逻辑显示标识）在不同设备状态下映射到不同内建面板，也可能保留多个逻辑 Display，并在 layout（显示布局配置）中改变它们的 enabled（是否启用）状态。具体方式由设备厂商配置决定。
 
 因此：
 
@@ -131,7 +131,7 @@ Android 17 的 `DeviceStateToLayoutMap` 从以下位置读取 display layout：
 
 ### 1.3 多内屏并发属于设备能力
 
-`config_supportsConcurrentInternalDisplays` 表示设备是否支持同时点亮多个内建 Display。layout 还要把相应 Display 设为 enabled，系统才会进入并发内屏状态。
+`config_supportsConcurrentInternalDisplays` 表示设备是否支持同时点亮多个内建 Display。layout 还要把要并发的 Display 设为 enabled，系统才会进入并发内屏状态。
 
 即使两个 Display 同时工作，也不能假设它们的硬件资源完全隔离。HWC 对每个 Display 进行 validate 与 present（验证合成方案并送显），但 overlay（硬件叠加平面）、内存带宽、GPU、显示控制器和功耗预算可能受 SoC 与 vendor（设备厂商）实现共同约束。
 
@@ -221,13 +221,13 @@ RootWindowContainer
 
 这棵树表达 WMS 的窗口与任务管理关系，不会与 SurfaceFlinger layer tree 一一对应。
 
-Shell transition 可以创建 leash（转场期间使用的临时父 Surface），把 Task 或窗口 Surface 临时 reparent（更换父节点）到 leash，再对 leash 设置 matrix（变换矩阵）、crop（裁剪）、corner radius（圆角）和 position。
+Shell transition 可以创建 leash（转场期间使用的临时父 Surface），把 Task 或窗口 Surface reparent（更换父节点）到 leash 上，再对 leash 设置 matrix（变换矩阵）、crop（裁剪）、corner radius（圆角）和 position。
 
-折叠动画期间看到 task leash 缩放，不能据此判断 App 在每次 progress（进度回调）时都重新提交了一张完整 buffer。
+折叠动画期间看到 task leash 缩放，不能据此判断 App 在每次 progress（进度回调）时都重新提交了完整 buffer。
 
 ### 3.2 Android 17 的可选 unfold 动画
 
-平台资源 `config_unfoldTransitionEnabled` 与 `config_unfoldTransitionHingeAngle` 决定设备是否启用相应能力。启用角度进度时，SystemUI 的 `HingeSensorAngleProvider` 获取 `TYPE_HINGE_ANGLE`，并通过后台 Handler（消息处理器）以 `SENSOR_DELAY_FASTEST` 接收事件。
+平台资源 `config_unfoldTransitionEnabled` 与 `config_unfoldTransitionHingeAngle` 决定设备是否启用相应能力。启用基于 hinge angle 的进度时，SystemUI 的 `HingeSensorAngleProvider` 获取 `TYPE_HINGE_ANGLE`，并通过后台 Handler（消息处理器）以 `SENSOR_DELAY_FASTEST` 接收事件。
 
 `PhysicsBasedUnfoldTransitionProgressProvider` 把 hinge angle 映射到 0～1 的 progress，并用 spring animation（弹簧动画）平滑更新。
 
@@ -246,7 +246,7 @@ WM Shell 的 `UnfoldTransitionHandler` 在进度回调中创建 `SurfaceControl.
 
 ### 3.3 Configuration 与 WindowLayoutInfo 没有固定先后顺序
 
-物理 Display 切换、窗口 bounds（边界）更新和 WindowManager Extensions posture 更新来自不同组件。下面的顺序仅用于说明一个不可靠的假设，应用不应依赖它：
+物理 Display 切换、窗口 bounds（边界）更新和 WindowManager Extensions posture 更新来自不同组件。下面这条顺序常被当成前提，但并不可靠，应用不应依赖它：
 
 ```text
 WindowLayoutInfo → Configuration → onConfigurationChanged
@@ -254,11 +254,11 @@ WindowLayoutInfo → Configuration → onConfigurationChanged
 
 这些事件可以按不同顺序到达。一次折叠或展开可能改变 `screenSize`、`smallestScreenSize`、`screenLayout`、`orientation`、`density` 或其他配置；具体集合取决于物理面板、windowing mode（窗口模式）、rotation（旋转）与厂商实现。
 
-默认情况下，Activity 未声明自行处理的 configuration change（配置变化）会触发重建。若使用 `android:configChanges`，应用必须重新读取受影响资源并更新 UI，不能只记录回调后原样返回。
+默认情况下，Activity 未声明自行处理的 configuration change（配置变化）会触发重建。若使用 `android:configChanges`，应用必须重新读取受影响的资源并更新 UI，不能只在回调里记录一下就原样返回。
 
 ### 3.5 Shell Transition 状态机与 BLAST 同步
 
-折叠或展开时，App 端观察到的“动画期 buffer 一起出现”，是 WMS 通过 `BLASTSyncEngine` 统一合并提交的结果。Android 自 Android 12 起把窗口动画从 WMS 内置的 `AppTransition` 迁出，由 `WM Shell` 进程通过 `ITransitionPlayer` AIDL 与 WMS 对接；同步则由 WMS 的 `BLASTSyncEngine` 完成。[来源: juejin Shell Transition 机制详解, 2026-09-23, https://juejin.cn/post/7688334749719035940][已验证: AOSP android-17.0.0_r1 `frameworks/base/services/core/java/com/android/server/wm/Transition.java`、`TransitionController.java`、`BLASTSyncEngine.java`、`WindowOrganizerController.java`、`frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java`、`DefaultTransitionHandler.java`、`frameworks/base/core/java/android/window/ITransitionPlayer.aidl`]
+折叠或展开时，App 端会看到“动画期的 buffer 一起出现”，这是 WMS 通过 `BLASTSyncEngine` 把多个参与窗口统一合并提交的结果。平台自 Android 12 起把窗口动画从 WMS 内置的 `AppTransition` 迁出，改由 `WM Shell` 进程通过 `ITransitionPlayer` AIDL 与 WMS 对接，同步由 WMS 的 `BLASTSyncEngine` 完成。[来源: juejin Shell Transition 机制详解, 2026-09-23, https://juejin.cn/post/7688334749719035940][已验证: AOSP android-17.0.0_r1 `frameworks/base/services/core/java/com/android/server/wm/Transition.java`、`TransitionController.java`、`BLASTSyncEngine.java`、`WindowOrganizerController.java`、`frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java`、`DefaultTransitionHandler.java`、`frameworks/base/core/java/android/window/ITransitionPlayer.aidl`]
 
 #### 3.5.1 进程边界与两条 Binder 通知
 
@@ -298,17 +298,17 @@ STATE_COLLECTING → STATE_STARTED → STATE_PLAYING → STATE_FINISHED
 
 `persist.wm.debug.shell_transit_blast` 决定 `TransitionController.SYNC_METHOD`：`true` 走 `METHOD_BLAST`（完整 BLAST 同步），`false` 走 `METHOD_NONE`（仅 App 内部绘制报告，不做 BLAST 级 buffer 同步）。[来源: juejin Shell Transition 机制详解 4.5；AOSP `TransitionController.SYNC_METHOD`]
 
-在折叠/展开场景里，如果 transition 跨 Display，或同时携带 starting window、旧 Task leash 与新 Activity Surface，BLAST 是避免“先看到旧 Activity 残影，再看到新 Activity 边界”的关键一环。它不能保证 buffer 同步耗时为零，也不能保证 App 内部 `performTraversals` 在窗口准备好后立即提交。[来源: juejin Shell Transition 机制详解 10.2；AOSP `BLASTSyncEngine`]
+在折叠/展开场景里，如果 transition 跨 Display，或同时携带 starting window、旧 Task leash 与新 Activity Surface，BLAST 是避免“先看到旧 Activity 残影，再看到新 Activity 边界”的关键一环。它不能保证 buffer 同步不耗时间，也不能保证 App 内部 `performTraversals` 在窗口准备好后立即提交。[来源: juejin Shell Transition 机制详解 10.2；AOSP `BLASTSyncEngine`]
 
 #### 3.5.4 TransitionController 的三个队列与“伪并行”
 
 `TransitionController` 维护三个容器：
 
-- `mCollectingTransition`：当前唯一正在收参与者的 transition（`STATE_COLLECTING` 或 `STATE_STARTED`）。
+- `mCollectingTransition`：当前唯一正在收集参与者的 transition（`STATE_COLLECTING` 或 `STATE_STARTED`）。
 - `mWaitingTransitions`：已进入 `STATE_STARTED` 且 `isPopulated()=true`、但仍在等 BLAST 同步的 transition。
 - `mQueuedTransitions`：还没创建 `Transition` 对象、连并行收集条件都不满足的申请。
 
-新 transition 申请按以下优先级处理：队列非空 → 排队；无 active sync 或无 collecting → 直接 `moveToCollecting`；当前 collecting 满足并行条件 → 旧的进 `mWaitingTransitions`，新的成为 `mCollectingTransition`；否则进 `mQueuedTransitions`。[来源: juejin Shell Transition 机制详解 8.2、8.6；AOSP `TransitionController.canStartCollectingNow` / `tryStartCollectFromQueue`]
+新 transition 申请按以下优先级处理：队列非空就排队；没有 active sync 或 collecting 时直接 `moveToCollecting`；当前 collecting 已满足并行条件时，旧的进 `mWaitingTransitions`，新的成为 `mCollectingTransition`；以上都不满足，则进 `mQueuedTransitions`。[来源: juejin Shell Transition 机制详解 8.2、8.6；AOSP `TransitionController.canStartCollectingNow` / `tryStartCollectFromQueue`]
 
 并行收集的三个前置条件：
 
@@ -316,9 +316,9 @@ STATE_COLLECTING → STATE_STARTED → STATE_PLAYING → STATE_FINISHED
 2. 新 transition 与当前 collecting 独立（`getCanBeIndependent()` 返回 true）。
 3. 新 transition 与所有 waiting transitions 都独立。
 
-`getCanBeIndependent()` 的默认返回是 false；同 display 上的窗口变化、参与者可能重叠的 case 都不会独立——所以 `TRANSIT_SPLIT_TO_FREEFORM_AND_FULL` 必须由一个 transition 统一处理，Shell 端一次播放，而不是拆成两个 transition 各自播放。[来源: juejin Shell Transition 机制详解 8.4、8.5；AOSP `Transition.getCanBeIndependent`]
+`getCanBeIndependent()` 的默认返回是 false；同 display 上的窗口变化、参与者可能重叠的情况都不会独立。所以 `TRANSIT_SPLIT_TO_FREEFORM_AND_FULL` 必须由一个 transition 统一处理，Shell 端一次播放，而不是拆成两个 transition 各自播放。[来源: juejin Shell Transition 机制详解 8.4、8.5；AOSP `Transition.getCanBeIndependent`]
 
-折叠展开期间，task leash 通常就是 transition 用的 leash Surface；新 transition 是否能并行，取决于是否有第二个独立的 Display 或 `PARALLEL_TYPE_RECENTS` 这类特例。[来源: juejin Shell Transition 机制详解 8.5]
+折叠展开期间，transition 用的 leash Surface 通常就是 task 的 leash；新 transition 是否能并行，取决于是否存在第二个独立的 Display，或是否命中 `PARALLEL_TYPE_RECENTS` 这类特例。[来源: juejin Shell Transition 机制详解 8.5]
 
 #### 3.5.5 折叠/展开分析时可用的观察点
 
@@ -337,7 +337,7 @@ Logcat 过滤 tag：`TransitionController`、`Transition`、`BLASTSyncEngine`、
 
 Jetpack WindowManager 的 `WindowInfoTracker.windowLayoutInfo(activity)` 返回持续更新的 `WindowLayoutInfo` 异步数据流。`displayFeatures` 中可能包含 `FoldingFeature`（窗口内的折叠或铰链特征）。
 
-它描述当前应用窗口坐标系中的 fold 或 hinge 特征：
+`FoldingFeature` 描述当前应用窗口坐标系中的 fold 或 hinge 特征：
 
 - `bounds`：feature 在应用窗口中的矩形；
 - `state`：`FLAT` 或 `HALF_OPENED`；
@@ -345,7 +345,7 @@ Jetpack WindowManager 的 `WindowInfoTracker.windowLayoutInfo(activity)` 返回�
 - `occlusionType`：`NONE` 或 `FULL`；
 - `isSeparating`：该 feature 是否把可用窗口视为两个逻辑区域。
 
-`FoldingFeature` 没有 `CLOSED` 状态，也不提供精确 hinge angle。应用切到外屏后，当前窗口可能不再包含 folding feature。它适合描述当前窗口如何布局，不是底层物理铰链的完整状态接口。
+`FoldingFeature` 没有 `CLOSED` 状态，也不提供精确 hinge angle。应用切到外屏后，当前窗口可能不再包含 folding feature。`FoldingFeature` 适合描述当前窗口如何布局，不是底层物理铰链的完整状态接口。
 
 ### 4.2 orientation 的含义容易读反
 
@@ -389,7 +389,7 @@ lifecycleScope.launch(Dispatchers.Main) {
 }
 ```
 
-这段代码在 Activity 低于 `STARTED` 状态时停止收集，解决订阅生命周期问题；它不限制重组或 View layout 成本。回调中应先把 posture 归一化为小而稳定的 UI state（界面状态），再让受影响的区域读取它。
+这段代码在 Activity 低于 `STARTED` 状态时停止收集，避免 Activity 不可见后继续持有订阅；它不限制重组或 View layout 成本。回调中应先把 posture 归一化为小而稳定的 UI state（界面状态），再让受影响的区域读取它。
 
 ## 5. 原始 hinge angle sensor 的使用边界
 
@@ -403,11 +403,11 @@ lifecycleScope.launch(Dispatchers.Main) {
 
 它不是每台设备都必须提供的公共能力。应用需要检查 `getDefaultSensor(TYPE_HINGE_ANGLE)` 是否为 null。
 
-on-change 也意味着不能把它写成固定 60 Hz 或 120 Hz 的周期源。`SENSOR_DELAY_FASTEST` 只是请求尽快交付，不会突破 sensor 的实际 min delay（最小报告间隔）、HAL 去抖或事件变化规律。
+on-change 也意味着不能把它当成固定 60 Hz 或 120 Hz 的周期源。`SENSOR_DELAY_FASTEST` 只是请求尽快交付，不会突破 sensor 的实际 min delay（最小报告间隔）、HAL 去抖或事件变化规律。
 
 ### 5.2 精确角度动画需要设备校准
 
-Android 官方明确提醒：不同设备的上报范围和精度可能不同，基于精确角度的动画或业务逻辑需要针对设备调校。
+Android 官方提醒：不同设备的上报范围和精度可能不同，基于精确角度的动画或业务逻辑需要针对设备调校。
 
 面向普通应用：
 
@@ -429,9 +429,7 @@ Perfetto 中出现 `DeviceStateChanged`，只能证明 DeviceState 已提交。�
 
 ### 6.1 Activity 重建与 ViewModel
 
-默认 configuration handling（配置变化处理）会销毁并重建 Activity。Architecture Components `ViewModel` 会跨 configuration change 保留；`SavedStateHandle`、`rememberSaveable` 等用于恢复可保存 UI 状态，并应覆盖应用进程被系统回收的情况。
-
-Activity 重建通常不会创建新的 ViewModel；`ViewModelStore`（保存 ViewModel 实例的容器）会跨配置变化保留实例。
+默认 configuration handling（配置变化处理）会销毁并重建 Activity，但 `ViewModel` 通常不会被一起重建：Architecture Components 通过 `ViewModelStore`（保存 ViewModel 实例的容器）跨 configuration change 保留实例。`SavedStateHandle`、`rememberSaveable` 等用于恢复可保存 UI 状态，并应覆盖应用进程被系统回收的情况。
 
 需要保留的状态通常包括：
 
@@ -477,7 +475,7 @@ Compose 中 window size 或 posture state 改变后，读取该 state 的 compos
 
 ### 6.4 Android 17 大屏行为
 
-Android 16 对 target 36 的应用引入大屏方向、宽高比与 resizability 限制忽略行为，并提供临时退出项。
+Android 16 起，平台会对 target 36 的应用忽略其大屏方向、宽高比与 resizability 限制，同时提供临时退出项。
 
 Android 17 对 target SDK 37 应用移除该 opt-out（临时退出项）。官方文档将适用范围写为 smallest width（最小宽度）至少 600 dp（sw600dp 及以上）的 Display；在这类环境中，以下限制不再能作为布局前提：
 
@@ -486,9 +484,9 @@ Android 17 对 target SDK 37 应用移除该 opt-out（临时退出项）。官�
 - `resizeableActivity="false"`；
 - `minAspectRatio` 与 `maxAspectRatio`。
 
-按 `android:appCategory` 分类的 game（游戏）、smallest width 小于 600 dp 的屏幕，以及用户在设备比例设置中选择应用默认行为的情况，属于官方列出的例外。
+官方列出的例外包括：按 `android:appCategory` 分类的 game（游戏）、smallest width 小于 600 dp 的屏幕，以及用户在设备比例设置中选择应用默认行为的情况。
 
-这项变更增加了应用遇到旋转、resize、折叠和桌面窗口边界的机会，但没有改变 BLAST（应用窗口缓冲队列适配层）、SurfaceFlinger 或 HWC 的基本显示管线。
+这项变更会让应用遇到更多旋转、resize、折叠和桌面窗口边界变化，但 BLAST（应用窗口缓冲队列适配层）、SurfaceFlinger 和 HWC 的基本显示管线没有变。
 
 ## 7. SurfaceFlinger、HWC 与像素成本
 
@@ -649,7 +647,7 @@ adb shell dumpsys SurfaceFlinger --display
 
 只看 App `onSensorChanged()` 间隔无法定位显示后段。
 
-如果 Shell 端看起来没有进度回调，先确认 transition 是否已经进入播放：检查 `Transition` 是否仍停在 `STATE_STARTED`、`onTransactionReady` 是否被触发、`moveToPlaying` 之前 BLAST 同步是否真的就绪。常见卡点：
+如果 Shell 端看起来没有进度回调，先确认 transition 是否已经进入播放：检查 `Transition` 是否仍停在 `STATE_STARTED`、`onTransactionReady` 是否被触发、`moveToPlaying` 之前 BLAST 同步是否已就绪。常见卡点：
 
 - transition 卡在 `STATE_COLLECTING`：检查 Shell 是否收到 `requestStartTransition` 并回告了 `startTransition`，以及 `WindowOrganizerController.startTransition` 内 transition 是否仍处于 `isCollecting()` 状态。[来源: juejin Shell Transition 机制详解 10.2；AOSP `WindowOrganizerController.startTransition`]
 - transition 卡在 `STATE_STARTED` 不进入 playing：检查 `BLASTSyncEngine.onSurfacePlacement` 是否触发、`tryFinish` 中 `isSyncFinished` 是否返回 true；`persist.wm.debug.shell_transit_blast` 是否打开。[来源: juejin Shell Transition 机制详解 10.2；AOSP `BLASTSyncEngine.onSurfacePlacement` / `tryFinish`]
