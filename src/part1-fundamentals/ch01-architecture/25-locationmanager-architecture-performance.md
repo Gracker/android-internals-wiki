@@ -90,7 +90,7 @@ related_chapters:
 
 # Android 17 LocationManager 架构与性能优化
 
-`LocationManager` 是 Android 平台位置 API 的客户端入口。应用选定 provider，描述更新间隔、质量、批处理延迟等需求，再通过 Binder 把请求交给 `system_server`。这里保留 API 中的 provider 一词，它表示按名称选择的位置提供者或数据源。服务端负责权限检查、前后台限制、请求合并、Provider 调度、结果裁剪和回调投递。
+`LocationManager` 是 Android 平台位置 API 的客户端入口。应用选定 provider，描述更新间隔、质量、批处理延迟等需求，再通过 Binder 把请求交给 `system_server`。provider 沿用 API 里的叫法，指调用者按名称选择的位置来源。服务端负责权限检查、前后台限制、请求合并、Provider 调度、结果裁剪和回调投递。
 
 范围限定在 Android 平台 API 与 AOSP 服务端。Google Play services 的 `FusedLocationProviderClient`、`LocationCallback` 和 Geofencing API 是另一套客户端 API；它们可能使用系统的 `fused` provider，也可能在自己的服务中增加策略，但不能用来解释 `LocationManager` 的公开调用链。
 
@@ -134,7 +134,7 @@ system_server
 
 ### 1.2 `FUSED_PROVIDER` 与 Play services API
 
-这两个名称容易产生误解：
+排查前先分清这三点：
 
 - `LocationManager.FUSED_PROVIDER` 是平台定义的 provider 名称。调用者仍通过 `LocationManager`、`LocationListener` 或 `PendingIntent` 使用它。
 - `FusedLocationProviderClient` 是 Google Play services 的客户端 API，回调类型是 `LocationCallback`。
@@ -170,13 +170,13 @@ locationManager.requestLocationUpdates(
 | `quality` | 质量/功耗提示；数值越小表示要求越高，`100` 比 `104` 更强 |
 | `minUpdateIntervalMillis` | 对单个注册的投递限速 |
 | `minUpdateDistanceMeters` | 对单个注册按位移过滤 |
-| `maxUpdateDelayMillis` | 允许批量延迟；达到条件时 Provider 才可能 batching（先缓存多条位置，再成批交付） |
+| `maxUpdateDelayMillis` | 允许批量延迟；达到条件时 Provider 才可能启用 batching（先缓存多条位置，再成批交付） |
 | `durationMillis` | 注册有效时间 |
 | `maxUpdates` | 成功投递达到次数后移除注册 |
 | `lowPower` | 传给 Provider 的低功耗提示，是否支持由实现决定 |
 | `WorkSource` | 供有权限的调用者指定这项工作应归因给谁；普通应用不能随意伪造 |
 
-公开的 Builder 形式自 API 31 起可用。`maxUpdates` 和 `durationMillis` 也不是 Android 14 才出现的字段。
+公开的 Builder 形式自 API 31 起可用。`maxUpdates` 和 `durationMillis` 在 Android 14 之前就已存在。
 
 下面的示例用于明确指定平台 `gps` provider，并允许最多 10 秒的批量延迟：
 
@@ -212,12 +212,12 @@ locationManager.requestLocationUpdates(
 
 ### 3.2 单次位置：先尝试缓存，再等待新结果
 
-`getCurrentLocation()` 的 Android 17 服务端行为包含两个明确上限：
+`getCurrentLocation()` 在 Android 17 服务端有两个 30 秒界限：
 
 1. 注册激活时，指定 Provider 若有不超过 30 秒的合格缓存，可以立即返回；
 2. 请求 duration 超过 30 秒时，`LocationProviderManager` 会把它截到 30 秒。
 
-权限、位置开关、Provider 状态或 AppOps 导致注册不活跃时，回调可能很快收到 `null`。超时也返回 `null`。调用者应保留并在业务结束时触发 `CancellationSignal`，不要把“等待单次结果”写成无期限状态。
+权限、位置开关、Provider 状态或 AppOps 导致注册不活跃时，回调可能很快收到 `null`。超时也返回 `null`。调用者应保留 `CancellationSignal` 实例，并在业务结束时取消它，不要把“等待单次结果”写成无期限状态。
 
 ### 3.3 连续更新：注册会参与 Provider 合并
 
@@ -289,7 +289,7 @@ Binder 注册成功不代表 Provider 马上运行，也不代表每个位置都
 
 ### 4.3 coarse 权限会改请求，也会改结果
 
-Android 12 起，用户可以在应用同时请求 fine（精确）和 coarse（粗略）权限时选择 approximate location（大致位置）。Android 17 服务端对只有 coarse 权限的注册至少做两层处理：
+Android 12 起，应用同时请求 fine（精确）和 coarse（粗略）权限时，用户可以选择 approximate location（大致位置）。Android 17 服务端对只有 coarse 权限的注册至少做两层处理：
 
 1. `LocationProviderManager` 把 quality 改为 `QUALITY_LOW_POWER`，并把 interval 与 min interval 提高到内部的 10 分钟下限；
 2. 位置结果经过 `LocationFudger`（模糊位置生成器），通过随时间变化的偏移和网格化生成 coarse 位置。
@@ -330,7 +330,7 @@ maxDelay=20s
 lowPower=false
 ```
 
-这个结果只配置一次 `gps` Provider。A、B 各自是否收到某个位置，仍要经过各自注册的 min interval、min distance、权限、AppOps、duration 和 max updates 过滤。B 不会因为底层以 5 秒工作就必然每 5 秒收到回调。
+合并结果只用来配置一次 `gps` Provider。A、B 各自是否收到某个位置，仍要经过各自注册的 min interval、min distance、权限、AppOps、duration 和 max updates 过滤。B 不会因为底层以 5 秒工作就必然每 5 秒收到回调。
 
 ### 5.2 一条高频请求会抬高该 Provider 的共同成本
 
@@ -378,7 +378,7 @@ Provider.reportLocation()
 
 ## 7. GNSS 从 framework 到 HAL
 
-这里的 AIDL 是当前稳定的 HAL 接口技术，HIDL 是旧版接口技术；JNI 是 Java 与本地 C++ 代码之间的调用桥梁。
+GNSS HAL 的接口分两代：AIDL 是当前稳定的版本，HIDL 是旧版；framework 的 Java 代码与本地 C++ 之间通过 JNI 调用。
 
 Android 17 的 GNSS 主路径是：
 
@@ -468,7 +468,7 @@ vendor GNSS HAL
             → IGnssPsds.injectPsdsData()
 ```
 
-framework 把 PSDS 内容视为 opaque bytes（不解析内部格式的不透明字节），不会自行拆成“星历表字段”。`GnssPsdsDownloader` 对单次内容设置 1 MB 上限，连接超时 30 秒、读取超时 60 秒；服务器地址来自设备配置。下载失败会按 framework 策略重试，但设备是否支持某类 PSDS、数据含义及有效期由 HAL/服务配置决定。
+framework 把 PSDS 内容视为 opaque bytes（不透明的字节流），不解析其内部格式，也不会自行拆成“星历表字段”。`GnssPsdsDownloader` 对单次内容设置 1 MB 上限，连接超时 30 秒、读取超时 60 秒；服务器地址来自设备配置。下载失败会按 framework 策略重试，但设备是否支持某类 PSDS、数据含义及有效期由 HAL/服务配置决定。
 
 PSDS 有助于缩短部分启动场景的捕获时间，却不是 TTFF 的唯一变量。时间/位置注入、SUPL（Secure User Plane Location，一种通过数据网络提供定位辅助信息的协议）、网络状态、aiding data、天线、天空遮挡、干扰、频段和厂商算法都可能影响首次定位。
 
@@ -507,7 +507,7 @@ LocationManager.addProximityAlert()
             → PendingIntent
 ```
 
-`GeofenceManager` 要求 fine location 权限。proximity alert（邻近提醒）由中心点、半径和 `PendingIntent` 定义。它为所有 active 围栏合并一个位置请求，根据“当前位置到最近围栏边界的距离 / 假定最大速度”估算下次更新间隔，并受后台 proximity alert 节流值约束，最长不超过 2 小时。缓存位置超过 5 分钟就不用于这个估算。
+`GeofenceManager` 要求 fine location 权限。proximity alert（邻近提醒）由中心点、半径和 `PendingIntent` 定义。`GeofenceManager` 为所有 active 围栏合并一个位置请求，根据“当前位置到最近围栏边界的距离 / 假定最大速度”估算下次更新间隔，并受后台 proximity alert 节流值约束，最长不超过 2 小时。缓存位置超过 5 分钟就不用于这个估算。
 
 收到位置后，它计算中心距离，并用：
 
@@ -516,7 +516,7 @@ effectiveRadius = max(geofenceRadius, locationAccuracy)
 inside = distanceToCenter <= effectiveRadius
 ```
 
-从 `UNKNOWN`/`OUTSIDE` 进入 `INSIDE` 时发送 entering；只有先处于 `INSIDE`，之后转为 `OUTSIDE`，才发送 exiting。该实现没有网格空间索引、loitering delay（进入后停留多久才触发）或通用 hysteresis margin（防止边界抖动的迟滞余量）。
+围栏状态从 `UNKNOWN` 或 `OUTSIDE` 变为 `INSIDE` 时发送 entering；只有先处于 `INSIDE`、之后转为 `OUTSIDE` 才发送 exiting。该实现没有网格空间索引、loitering delay（进入后停留多久才触发）或通用 hysteresis margin（防止边界抖动的迟滞余量）。
 
 ### 10.2 硬件 GNSS geofence 路径
 
@@ -574,7 +574,7 @@ A_done      应用完成轻量回调处理
 
 这组数据能直接计算应用看到的端到端等待时间 `A_callback - A_request`，以及回调工作时间 `A_done - A_callback`。前者包含服务端策略、Provider 产出、Binder 投递和 Executor 排队，不能仅凭应用日志继续归因。
 
-要继续分段，需要在用于调试的 userdebug/eng 构建、定制 framework/Provider 或设备已经提供对应 Perfetto 数据源时，增加系统侧观测点：
+要继续分段，需要增加系统侧观测点；前提是具备用于调试的 userdebug/eng 构建、定制 framework/Provider，或设备已经提供对应的 Perfetto 数据源：
 
 | 观测点 | 所在层 | 可用于解释的阶段 |
 | --- | --- | --- |
