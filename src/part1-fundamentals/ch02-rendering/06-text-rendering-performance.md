@@ -119,7 +119,7 @@ flowchart LR
 
 ## `TextView` 怎样选择 Layout
 
-`TextView.makeNewLayout()` 最终调用 `makeSingleLayout()`。Android 17 的选择条件比“单行用 Boring、多行用 Static、EditText 用 Dynamic”更复杂。
+`TextView.makeNewLayout()` 最终调用 `makeSingleLayout()`。Android 17 的选择顺序是：先看文本是否需要 `DynamicLayout`；其余文本由 `BoringLayout.isBoring()` 做资格检查，资格和宽度条件都通过时用 `BoringLayout`，否则用 `StaticLayout`。常见的“单行用 Boring、多行用 Static、EditText 用 Dynamic”只是这条顺序的粗略概括。
 
 ### `DynamicLayout`：面向可变或可选择文本
 
@@ -128,7 +128,7 @@ flowchart LR
 - 文本可选择；
 - `mSpannable` 非空，并且当前文本没有以 `PrecomputedText` 形式保存。
 
-因此，`DynamicLayout` 不只服务于 `EditText`。可选择的普通 `TextView` 或需要监听 Span 变化的文本也可能使用它。它通过 `reflow()` 重新排版受编辑影响的区域，并维护供硬件加速绘制使用的 block（文本分块）信息；增量更新表示无需每次重建全部文本，但不保证每次编辑的成本都很小。
+`DynamicLayout` 的适用面比 `EditText` 宽，可选择的普通 `TextView`、需要监听 Span 变化的文本都可能用它。它通过 `reflow()` 重新排版受编辑影响的区域，并维护供硬件加速绘制使用的 block（文本分块）信息。增量更新不必每次重建全部文本，但单次编辑的成本仍可能不小。
 
 ### `BoringLayout`：资格比“单行无 Span”更严格，也更细
 
@@ -143,7 +143,7 @@ flowchart LR
 
 `setSingleLine(true)` 或 `maxLines = 1` 都不能强制这条路径。包含换行、RTL、使用 UTF-16 代理对表示的 emoji 或段落级样式时，单行显示仍可能落到 `StaticLayout`。反过来，部分 BMP（Unicode 基本多文种平面）文字即使不是拉丁字母，只要满足上述条件，也可能被判定为 boring。
 
-`BoringLayout` 的“简单”指单行、LTR（从左向右）和较少的段落结构，不代表跳过文字整形。`isBoring()` 仍通过 `TextLine.metrics()` 计算宽度和字体指标；ellipsize 后还可能再次测量。它比完整多行换行少做一些工作，但不能简化成“一次 `Paint.measureText()`”。
+`BoringLayout` 的“简单”指单行、LTR（从左向右）和较少的段落结构。它不跳过文字整形：`isBoring()` 仍通过 `TextLine.metrics()` 计算宽度和字体指标，ellipsize 后还可能再次测量。工作量少于完整的多行换行，但不能按一次 `Paint.measureText()` 估算。
 
 ### `StaticLayout`：不可变多行文本的主路径
 
@@ -174,7 +174,9 @@ Minikin 的 `WordBreaker` 使用 ICU break iterator（Unicode 文本边界迭代
 
 ### Android 17 的缓存边界
 
-Minikin 的 `LayoutCache` 是进程内单例 LRU（Least Recently Used，最近最少使用）缓存，当前最多保存 5000 个 entry（条目）；长度达到 128 个 UTF-16 code unit 的待整形 piece（文本片段）会绕过这层缓存。key（缓存键）包含文字上下文与 range（范围）、font collection ID（字体集合标识）、字号、scale/skew（缩放与倾斜）、letter/word spacing（字距与词距）、locale（语言区域）、方向、font feature（字体特性）、variation settings（可变字体轴设置）和 hyphen edit（连字符边界状态）。
+Minikin 的 `LayoutCache` 是进程内单例 LRU（Least Recently Used，最近最少使用）缓存，当前最多保存 5000 个 entry（条目）；长度达到 128 个 UTF-16 code unit 的待整形 piece（文本片段）会绕过这层缓存。
+
+key（缓存键）包含文字上下文与 range（范围）、font collection ID（字体集合标识）、字号、scale/skew（缩放与倾斜）、letter/word spacing（字距与词距）、locale（语言区域）、方向、font feature（字体特性）、variation settings（可变字体轴设置）和 hyphen edit（连字符边界状态）。
 
 可用宽度不在文字整形缓存键中。因此：
 
@@ -182,7 +184,9 @@ Minikin 的 `LayoutCache` 是进程内单例 LRU（Least Recently Used，最近�
 - 文本、字体、locale、方向或 variation settings 改变，会形成不同的缓存键；
 - 两条业务文本只有局部字词相同，不代表必然共享缓存，因为缓存键还包含传入的文字上下文和 range。
 
-`TextLine` 还有一个容量为 3 的静态对象池，用于减少临时对象分配。它缓存可复用对象，不保存排版结果。Skia 的 `StrikeCache` 则管理 GPU 文字 strike/glyph 资源；这里的 strike 是同一字体、字号和变换参数下的一组字形资源。它和 Minikin shaping cache 属于不同阶段，不能合并计算所谓的文字缓存命中率。
+`TextLine` 还有一个容量为 3 的静态对象池，用于减少临时对象分配。它缓存可复用对象，不保存排版结果。
+
+Skia 的 `StrikeCache` 则管理 GPU 文字 strike/glyph 资源；这里的 strike 是同一字体、字号和变换参数下的一组字形资源。它和 Minikin 的 shaping cache 分属不同阶段，不能合并成一个笼统的文字缓存命中率。
 
 ## Span 与 Emoji：先判断它改变哪一层
 
@@ -248,13 +252,13 @@ class MessageHolder(
 }
 ```
 
-这段代码只演示预计算结果的所有权。实际项目还要取消无用任务、限制队列长度，并按 API 版本选择平台或 AndroidX 实现。`TextView.setText(PrecomputedText)` 遇到不兼容的测量参数会抛出 `IllegalArgumentException`；只有可重新计算的文字方向存在差异时，framework（框架层）也可能重新计算。
+这段代码演示的是写回条件：只有 `generation` 未变、测量参数仍一致时才把预计算结果设回 `TextView`。实际项目还要取消无用任务、限制队列长度，并按 API 版本选择平台或 AndroidX 实现。`TextView.setText(PrecomputedText)` 遇到不兼容的测量参数会抛出 `IllegalArgumentException`；只有可重新计算的文字方向存在差异时，framework（框架层）也可能重新计算。
 
 AndroidX 的 `AppCompatTextView.setTextFuture()` 会在 `onMeasure()` 中调用 `future.get()`。如果后台任务尚未完成，主线程仍会阻塞等待。它适合提前 prefetch（预取），但不能保证调用后的主线程完全没有文字处理成本。
 
 ### 列表场景按触发源优化
 
-优先处理这些会重复创建 Layout 的原因：
+优先处理这几种会重复创建 Layout 的情况：
 
 1. 用 payload（局部更新信息）或内容 diff（差异比较）避免对未变化字段重复 `setText()`；
 2. 固定 item 的文字宽度约束，避免动画期间反复改变可用宽度；
@@ -263,7 +267,7 @@ AndroidX 的 `AppCompatTextView.setTextFuture()` 会在 `onMeasure()` 中调用 
 5. 对长文本使用预计算，并让任务在 item measure 前完成；
 6. 把字体下载、Typeface 创建和大段文本解析移出首个需要显示它们的帧。
 
-`TextView.setText()` 不只是保存一个引用。它还可能执行 filter（过滤器）、listener（监听器）通知、spannable/watcher（富文本变化监听）处理、auto-link（自动识别链接）和 transformation（文本转换），并通过 `checkForRelayout()` 立即重建内部 Layout 或申请新的 View layout。重复设置相同内容仍应由应用层避免。
+`TextView.setText()` 除了保存引用，还可能执行 filter（过滤器）、listener（监听器）通知、spannable/watcher（富文本变化监听）处理、auto-link（自动识别链接）和 transformation（文本转换），并通过 `checkForRelayout()` 立即重建内部 Layout 或申请新的 View layout。应用层仍应避免重复设置相同内容。
 
 ### 不把视觉参数包装成性能开关
 
