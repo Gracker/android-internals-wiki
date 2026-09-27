@@ -66,7 +66,7 @@ consolidated_from:
 
 # 键盘、鼠标与指针输入性能 — 桌面模式交互管线
 
-手机上的输入优化常以触摸为中心。到了大屏、多窗口和桌面窗口场景，键盘、鼠标、触控板会把另外几类问题放大：
+手机上的输入优化常以触摸为中心。到了大屏、多窗口和桌面窗口场景，键盘、鼠标、触控板、悬停和拖放都比触摸多出一层或几层处理：
 
 - 键盘按键先经过系统策略和输入法（Input Method Editor，IME），目标由窗口焦点决定；
 - 鼠标移动需要维护屏幕光标，窗口目标来自坐标命中；
@@ -74,13 +74,13 @@ consolidated_from:
 - 悬停（hover）没有按下状态，却持续触发窗口命中、View 命中、指针图标解析和应用回调；
 - 跨窗口拖放同时涉及 InputDispatcher、WindowManager、SurfaceControl 和应用主线程。
 
-这些事件最终仍通过输入通道（input channel）进入应用。性能问题的共同终点也相同：应用没有及时完成事件，`InputDispatcher` 的连接等待队列持续增长。用户先看到光标、焦点或快捷键响应落后，随后才可能遇到输入分发超时（input dispatching timeout）。
+这些事件最终仍通过输入通道（input channel）进入应用，性能问题的收敛点也相同：应用没有及时完成事件，`InputDispatcher` 的连接等待队列持续增长。用户先看到光标、焦点或快捷键响应落后，随后才可能遇到输入分发超时（input dispatching timeout）。
 
 平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。历史版本只用于解释兼容边界。
 
 ## 1. 先建立一张完整的路径图
 
-下图用于区分设备事件的转换路径，以及它们汇入 `InputDispatcher` 后进入应用的共同路径：
+图中的 evdev 是 Linux 输入子系统向用户空间提供的事件设备接口。下图用于区分设备事件的转换路径，以及它们汇入 `InputDispatcher` 后进入应用的共同路径：
 
 ```mermaid
 flowchart LR
@@ -101,7 +101,7 @@ flowchart LR
     M --> N["View 或 Compose UI"]
 ```
 
-图中的 evdev 是 Linux 输入子系统向用户空间提供的事件设备接口。三个映射器（mapper）共享 `EventHub → InputReader → InputDispatcher` 主干，但设备语义不能互换：
+三个映射器（mapper）共享 `EventHub → InputReader → InputDispatcher` 主干，但设备语义不能互换：
 
 | 输入 | 原始内核事件 | Android 17 的主要转换者 | 常见应用事件 |
 | --- | --- | --- | --- |
@@ -135,18 +135,18 @@ flowchart LR
 - 其余 `TOUCH_MT` 设备才进入 `MultiTouchInputMapper`；
 - `JOYSTICK` 创建 `JoystickInputMapper`。
 
-因此，即使多点数据都来自 `EV_ABS`，触控板与触摸屏也可能在映射器创建阶段走向不同路径。
+即使多点数据都来自 `EV_ABS`，触控板与触摸屏也可能在映射器创建阶段走向不同路径。
 
 ### 2.2 键盘：扫描码、键码与字符是三层概念
 
-`KeyboardInputMapper` 收到 `EV_KEY` 后，以扫描码（scan code）和可选的人机接口设备（Human Interface Device，HID）用法码（usage）查表。Android 17 的 `EventHub::mapKey()` 会先检查按键字符映射（key character map），再检查按键布局（key layout），之后应用用户按键重映射和 KCM 中的按键行为（key behavior）。KCM 是按键字符映射文件的简称。输出包含：
+`KeyboardInputMapper` 收到 `EV_KEY` 后，以扫描码（scan code）和可选的人机接口设备（Human Interface Device，HID）用法码（usage）查表。Android 17 的 `EventHub::mapKey()` 会先检查按键字符映射文件（key character map，KCM），再检查按键布局（key layout），之后应用用户按键重映射和 KCM 中的按键行为（key behavior）。输出包含：
 
 - `scanCode`：接近 Linux 输入设备报告的物理按键编号，也就是扫描码；
 - `keyCode`：Android 的 `KEYCODE_*` 语义键码；
 - `metaState`：Shift、Ctrl、Alt、Meta 等组合状态；
 - 策略标志（policy flags）：是否唤醒、是否为虚拟键等策略信息。
 
-字符生成还要结合布局、修饰键、输入法，以及先记录重音、等待下一键组合字符的“死键”。业务代码不应把 `scanCode` 当成稳定快捷键，也不应假设同一个 `keyCode` 在所有键盘布局上产生同一个字符。
+字符生成还要结合布局、修饰键和输入法；“死键”会先记录重音，等下一个按键到来再组合成字符。业务代码不应把 `scanCode` 当成稳定快捷键，也不应假设同一个 `keyCode` 在所有键盘布局上产生同一个字符。
 
 ### 2.3 鼠标：相对位移先更新系统光标
 
@@ -159,11 +159,11 @@ flowchart LR
 5. 滚轮生成 `ACTION_SCROLL`，数值位于 `AXIS_VSCROLL` 和 `AXIS_HSCROLL`；
 6. 按钮状态还会产生 `ACTION_BUTTON_PRESS`、`ACTION_BUTTON_RELEASE`，主按钮状态变化伴随 `ACTION_DOWN`、`ACTION_UP`。
 
-应用看到的指针坐标已经经过显示映射和速度曲线。鼠标每英寸点数（DPI）、USB 或 Bluetooth 报告间隔、用户指针速度、显示刷新率都会改变观测结果，不宜写成固定的事件频率或固定精度。
+应用看到的指针坐标已经经过显示映射和速度曲线。鼠标每英寸点数（DPI）、USB 或 Bluetooth 报告间隔、用户指针速度、显示刷新率都会改变观测结果，事件频率和精度不宜当成固定值。
 
 ### 2.4 触控板：普通模式先解释手势
 
-Android 17 的触控板路径比“相对坐标转光标”多一层手势解释。下面这段流程列出原始触点转换成平台事件时经过的组件：
+Android 17 的触控板路径比“相对坐标转光标”多一层手势解释，原始触点要经过下面这些组件才变成平台事件：
 
 ```text
 多点槽位
@@ -181,7 +181,7 @@ Android 17 的触控板路径比“相对坐标转光标”多一层手势解释
 
 指针捕获适用于第一人称视角、远程桌面、三维编辑器等需要持续相对移动的场景。普通表单、列表和桌面窗口不应主动捕获指针。
 
-捕获有三个重要前提：
+捕获有三个前提：
 
 - 所属 View 层级必须具有窗口焦点；
 - 获取和失去捕获会触发设备重新配置，事件来源和运动范围（motion range）可能改变；
@@ -240,7 +240,7 @@ override fun onCapturedPointerEvent(event: MotionEvent): Boolean {
 
 ### 4.2 按键重复在 InputDispatcher
 
-Android 17 的重复链路有清晰分工：
+Android 17 的按键重复分布在这条路径的多个位置：
 
 - `EventHub` 打开设备时尝试用 `EVIOCSREP` 关闭内核重复；
 - `KeyboardInputMapper` 忽略 Linux `EV_KEY value == 2`；
@@ -249,7 +249,7 @@ Android 17 的重复链路有清晰分工：
 - 后续重复按 `keyRepeatDelay` 继续产生；
 - 按键抬起（key-up）、设备重置、分发关闭等状态会清理重复状态。
 
-`InputDispatcherConfiguration` 的默认值是首次等待 500 ms、后续间隔 50 ms。系统可以重新配置这两个值，应用应读取 `repeatCount` 和事件时间，不要把默认值写成业务定时器的协议。
+`InputDispatcherConfiguration` 的默认值是首次等待 500 ms、后续间隔 50 ms。系统可以重新配置这两个值，应用应读取 `repeatCount` 和事件时间，不要把默认值当成业务定时器可以依赖的协议。
 
 长按操作应允许重复执行而不产生额外副作用，也就是保持幂等；同时还要明确区分初次按下与重复：
 
@@ -267,7 +267,7 @@ override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
 }
 ```
 
-这段代码允许系统重复驱动连续移动，同时把一次性初始化限定在首次按下。若每次重复都启动动画、I/O 或对象图重建，50 ms 的默认间隔很快就会造成主线程积压。
+重复事件由系统驱动连续移动，这段代码把一次性初始化限定在首次按下。若每次重复都启动动画、I/O 或对象图重建，50 ms 的默认间隔很快就会造成主线程积压。
 
 ### 4.3 IME 位于 View 的 pre-IME 与 post-IME 之间
 
@@ -282,8 +282,6 @@ flowchart LR
     E --> F["ViewPostImeInputStage"]
     F --> G["SyntheticInputStage"]
 ```
-
-关键点有三项：
 
 - `dispatchKeyEventPreIme()` 发生在 IME 之前；
 - `ImeInputStage` 可以异步处理，IME 返回未处理后才进入 post-IME；
@@ -329,9 +327,9 @@ BounceKeysFilter
 
 Bounce 和 Slow 的受支持设备必须是非虚拟键盘，且为外接设备或内置 `Alphabetic`（字母键盘类型）键盘；外接的非字母键盘也可能生效。Sticky 的设备集更窄，仅包括非虚拟 `Alphabetic` 键盘。这些条件不能只从外设名称推断，应检查 InputReader/InputFilter 的诊断输出（dump）。
 
-Slow Keys 会把延后后的 `DOWN` 改写为新的 `downTime/eventTime`，并添加禁止按键重复的策略标志。等待由名为 `InputFilter` 的线程和超时回调完成。因此，当“短按稳定消失”或“延迟接近配置阈值”时，要先检查 Slow Keys；如果是 InputDispatcher 反压，也就是下游处理不过来迫使分发端等待，通常还能同时看到目标选择、连接队列或应用线程异常。
+Slow Keys 会把延后后的 `DOWN` 改写为新的 `downTime/eventTime`，并添加禁止按键重复的策略标志。等待由名为 `InputFilter` 的线程和超时回调完成。遇到“短按稳定消失”或“延迟接近配置阈值”，先检查 Slow Keys；如果是 InputDispatcher 反压，也就是下游处理不过来迫使分发端等待，通常还能同时看到目标选择、连接队列或应用线程异常。
 
-Rust 状态初始为关闭（disabled），安装任一过滤器后转为启用（enabled）。Android 17 在“曾开启、随后全部关闭”时可能仍显示 `enabled`，但重建后的链只有负责原样转发的 `BaseFilter`；功能上不再有 Bounce、Slow 或 Sticky 语义，只可能多一次本地调用往返。这是 `android-17.0.0_r1` 的实现细节，不应被应用当成 API 契约。
+Rust 状态初始为关闭（disabled），安装任一过滤器后转为启用（enabled）。Android 17 在“曾开启、随后全部关闭”时可能仍显示 `enabled`，但重建后的链只有负责原样转发的 `BaseFilter`；功能上不再有 Bounce、Slow 或 Sticky 语义，只可能多一次本地调用往返。这是 `android-17.0.0_r1` 的实现细节，应用不应把它当成 API 契约。
 
 ## 5. 鼠标悬停、滚轮与窗口命中
 
@@ -358,7 +356,7 @@ InputDispatcher：显示坐标 → input window
 ViewGroup：窗口局部坐标 → child View
 ```
 
-层级很深的 View 树、频繁变化的变换属性，以及每次悬停都触发布局，都会提高后半段成本。框架不会因为悬停事件到达就无条件让所有 View 重绘；重绘通常来自组件状态变化或应用自己的 `invalidate()`、`requestLayout()`。
+层级很深的 View 树、频繁变化的变换属性，以及每次悬停都触发布局，都会提高第二层的成本。框架不会因为悬停事件到达就无条件让所有 View 重绘；重绘通常来自组件状态变化或应用自己的 `invalidate()`、`requestLayout()`。
 
 ### 5.3 滚动使用轴值，不能只看 x/y
 
@@ -376,7 +374,7 @@ ViewGroup：窗口局部坐标 → child View
 
 应用侧 `BatchedInputEventReceiver` 会尽量在垂直同步（vsync）输入回调中消费可批处理的运动事件。原生层的 `InputConsumer` 只把兼容样本放进同一批次：设备、事件来源、动作类型、显示设备、指针数量和指针属性必须匹配。
 
-合批后，一个 `MotionEvent` 除当前样本外还包含历史样本（history）。它减少了 Java 回调数量，但没有按固定比例删除硬件采样。需要轨迹细节的组件应遍历历史样本：
+合批后，一个 `MotionEvent` 除当前样本外还包含历史样本（history）。合批减少了 Java 回调数量，但没有按固定比例删除硬件采样。需要轨迹细节的组件应遍历历史样本：
 
 ```kotlin
 fun consumeMotion(event: MotionEvent, sink: (Long, Float, Float) -> Unit) {
@@ -391,7 +389,7 @@ fun consumeMotion(event: MotionEvent, sink: (Long, Float, Float) -> Unit) {
 }
 ```
 
-这段代码按时间顺序消费历史样本和当前样本。若 UI 只需要最新光标位置，可以只保存末尾状态；绘图、手写或速度估算才需要完整历史。
+循环按时间顺序消费历史样本和当前样本。若 UI 只需要最新光标位置，可以只保存末尾状态；绘图、手写或速度估算才需要完整历史。
 
 `ViewRootImpl` 还会在尚未处理的 `ACTION_DRAG_LOCATION` Handler 消息中只保留最新一条。这个优化只针对拖放位置消息，不能推广成“所有悬停或移动事件都只保留最终一条”。
 
@@ -399,7 +397,7 @@ fun consumeMotion(event: MotionEvent, sink: (Long, Float, Float) -> Unit) {
 
 事件写入应用输入通道后，`InputDispatcher` 将对应 `DispatchEntry` 放入该连接的 `waitQueue`。应用通过 `finishInputEvent()` 回报处理完成后，条目才会移除。
 
-Android 17 默认的输入分发超时为 5 秒，还会乘以硬件超时倍率；具体窗口可以提供自己的超时时间。应用无响应（ANR）的判断围绕“连接中是否有超过超时时间的未完成条目”，不存在“键盘固定 5 秒、悬停永不触发 ANR”这种按事件类型划分的规则。
+Android 17 默认的输入分发超时为 5 秒，还会乘以硬件超时倍率；具体窗口可以提供自己的超时时间。应用无响应（ANR）只按“连接中是否有超过超时时间的未完成条目”判断，不按事件类型区分，不存在“键盘固定 5 秒、悬停永不触发 ANR”这种规则。
 
 连续悬停、滚轮或按键重复的风险在于放大积压：
 
@@ -455,7 +453,7 @@ Android 17 的输入焦点需要分成两个概念：
 
 ## 8. 跨窗口拖放的控制面与数据面
 
-跨应用拖放会脱离普通 `MotionEvent` 的窗口分发路径。这里的“控制面”负责维护拖放状态、选择目标窗口，“数据面”负责把封装拖放内容的 `ClipData` 和 URI 权限交给目标。下图展示 Android 17 中各组件的职责：
+跨应用拖放会脱离普通 `MotionEvent` 的窗口分发路径。这里的“控制面”负责维护拖放状态、选择目标窗口，“数据面”负责把封装拖放内容的 `ClipData` 和 URI 权限交给目标。下图展示 Android 17 中各组件的职责，图中的 WMS 是窗口管理服务（WindowManagerService）：
 
 ```mermaid
 flowchart LR
@@ -471,7 +469,7 @@ flowchart LR
     J --> B
 ```
 
-图中的 WMS 是窗口管理服务（WindowManagerService）；拖放输入通道负责接收位置变化，普通应用输入通道则接收最终的 `DragEvent`。
+拖放输入通道负责接收位置变化，普通应用输入通道则接收最终的 `DragEvent`。
 
 ### 8.1 移动阶段
 
@@ -504,7 +502,7 @@ WMS 对放下结果另有 5 秒等待。这个计时属于拖放状态机，与�
 
 ## 9. View 与 Compose 的优化边界
 
-平台源码能验证事件到应用窗口的路径。Jetpack Compose 属于 AndroidX，版本节奏独立于 `android-17.0.0_r1`；分析其指针输入节点、协程或 `Modifier` 行为时，应同时固定 Compose 版本。
+平台源码覆盖的是事件到应用窗口这一段路径。Jetpack Compose 属于 AndroidX，版本节奏独立于 `android-17.0.0_r1`；分析其指针输入节点、协程或 `Modifier` 行为时，应同时固定 Compose 版本。
 
 ### View 系统
 
