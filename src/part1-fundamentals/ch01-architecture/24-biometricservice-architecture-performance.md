@@ -101,7 +101,16 @@ related_chapters:
 
 ### 进程与接口边界
 
-下文保留几组与源码一一对应的术语。provider 管理一种模态的一组传感器，`BiometricScheduler` 为单个传感器串行调度任务。client 表示一次认证、录入或枚举任务，operation 表示 client 发给 HAL 的具体操作，session 是 framework 与 HAL 为当前用户复用的会话接口。HAL（硬件抽象层）连接 Android framework 与厂商实现；AIDL 用于当前稳定接口，HIDL 是旧版接口技术，Android 17 仍保留兼容适配。HAT（`HardwareAuthToken`）是安全环境生成、可供 Keystore 验证的认证令牌。
+先约定几组与源码一一对应的术语：
+
+- provider：管理一种模态的一组传感器；
+- `BiometricScheduler`：为单个传感器串行调度任务；
+- client：一次认证、录入或枚举任务；
+- operation：client 发给 HAL 的具体操作；
+- session：framework 与 HAL 为当前用户复用的会话接口；
+- HAL（硬件抽象层）：连接 Android framework 与厂商实现；
+- AIDL 与 HIDL：前者用于当前稳定接口，后者是旧版接口技术，Android 17 仍保留兼容适配；
+- HAT（`HardwareAuthToken`）：安全环境生成、可供 Keystore 验证的认证令牌。
 
 进程图展示了 SDK、`system_server`、SystemUI、HAL 与安全环境各自负责的部分：
 
@@ -180,15 +189,15 @@ final long authId = mService.authenticate(
 - 调用 UID/PID 是否位于前台；
 - 非公开、测试或高级 prompt 选项所需的额外权限。
 
-通过检查后，`AuthService` 清除来访 Binder identity，避免后续系统内部调用继续沿用应用身份，再把请求交给内部 `BiometricService`。`BiometricServiceWrapper.authenticate()` 只做内部权限、参数和认证器配置检查，然后把后续工作投递到专用 Handler 所在线程。它不会在应用 Binder 调用栈中等待传感器完成。
+通过检查后，`AuthService` 清除来访 Binder identity，避免后续系统内部调用继续沿用应用身份，再把请求交给内部 `BiometricService`。
 
-因此，`authenticate()` 调用返回快，只能说明请求已被系统接受，不能说明认证器已经开始采集。
+`BiometricServiceWrapper.authenticate()` 只做内部权限、参数和认证器配置检查，然后把后续工作投递到专用 Handler 所在线程。它不会在应用 Binder 调用栈中等待传感器完成，因此 `authenticate()` 返回快，只能说明请求已被系统接受，不能说明认证器已经开始采集。
 
 ### 新请求如何处理旧会话
 
 Android 17 的 `BiometricService` 只有一个 `mAuthSession`。创建新会话时，如果旧会话还在，`authenticateInternal()` 会强制取消旧会话、关闭旧 UI，并向旧客户端返回取消。
 
-这与“所有 App 认证请求都在 BiometricService 排队”不同。队列存在于每个传感器的 `BiometricScheduler`；BiometricPrompt 层的新会话会替换旧会话。公开 API 文档也明确指出：已有认证进行时再次调用 `authenticate()`，旧客户端会收到取消。
+这与“所有 App 认证请求都在 BiometricService 排队”不同：队列存在于每个传感器的 `BiometricScheduler`，BiometricPrompt 层则是新会话替换旧会话。公开 API 文档也明确指出，已有认证进行时再次调用 `authenticate()`，旧客户端会收到取消。
 
 应用不应在配置变化、重复点击或状态重组时快速执行“取消—重建—认证”。这种写法会产生界面重建、HAL 取消确认以及 scheduler 队列清理开销，还会让一次用户操作产生多份互相覆盖的回调。
 
@@ -332,7 +341,7 @@ UNKNOWN
   → STOPPED
 ```
 
-cookie 是一次准备请求的关联值，用来把以下三层动作对应起来：
+cookie 是一次准备请求的关联值，用来把下面这些动作对应起来：
 
 1. `AuthSession` 为每个 eligible sensor 生成非零 cookie。
 2. `BiometricSensor.goToStateWaitingForCookie()` 调用 `prepareForAuthentication()`。
@@ -379,7 +388,7 @@ goToInitialState()
 
 `BiometricHandlerProvider` 为 `BiometricsCallbackHandler` 创建独立 `HandlerThread`，优先级为 `THREAD_PRIORITY_DISPLAY`；Face 和 Fingerprint handler 也是独立线程，优先级为 `THREAD_PRIORITY_DEFAULT`。
 
-Sensor HAL 回调与 SystemUI 回调到达 Binder stub（接收端接口实现）后，`BiometricService` 都会再次 `post()` 到 callback handler。这样，`mAuthSession` 的状态转换集中在一个串行执行上下文中，避免由多个 Binder 线程直接并发修改。
+Sensor HAL 回调与 SystemUI 回调到达 Binder stub（接收端接口实现）后，`BiometricService` 都会再次 `post()` 到 callback handler。这样，`mAuthSession` 的状态转换集中在一个串行执行上下文中，避免多个 Binder 线程直接并发修改。
 
 ### 应用回调线程
 
@@ -656,7 +665,9 @@ Gatekeeper 负责 PIN、图案和密码等设备凭据验证；设备的安全�
 | `U_dismiss` | SystemUI dismiss 完成回调 | `onDialogDismissed()` |
 | `A_callback` | App callback 开始执行 | 调用方 Executor |
 
-跨进程计算必须使用同一单调时钟，例如 Perfetto 的 trace clock（跟踪时钟）；不能直接相减各进程记录的 wall clock（日期时间）时间戳。公开 `authenticate()` 也不会把内部 requestId 返回给 App，因此 App 与 `system_server` 的事件关联需要受控的单请求测试或自有系统埋点。并发场景下不能用“时间上最近的一条 biometric 日志”代替关联 ID。
+跨进程计算必须使用同一单调时钟，例如 Perfetto 的 trace clock（跟踪时钟）；不能直接相减各进程记录的 wall clock（日期时间）时间戳。
+
+公开 `authenticate()` 也不会把内部 requestId 返回给 App，因此 App 与 `system_server` 的事件关联需要受控的单请求测试或自有系统埋点。并发场景下不能用“时间上最近的一条 biometric 日志”代替关联 ID。
 
 这些标记允许在同一份 trace 中分别计算：
 
