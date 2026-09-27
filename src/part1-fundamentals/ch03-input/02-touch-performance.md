@@ -74,11 +74,11 @@ consolidated_from:
 
 # 触摸延迟、预测与低延迟渲染
 
-触摸体验由采样、事件分发、应用处理、渲染和显示共同决定，单看回调耗时会漏掉前后两端。应先固定 input-to-display 的测量口径，再判断问题来自采样密度、批处理、主线程、帧调度还是显示提交。
+触摸体验由采样、事件分发、应用处理、渲染和显示共同决定，单看回调耗时会漏掉前后两端。应先固定输入到显示的测量口径，再判断问题来自采样密度、批处理、主线程、帧调度还是显示提交。
 
 ## 为什么需要关注触摸响应
 
-在列表滑动的 Perfetto 系统跟踪中，可以沿时间轴看到 `InputReader`、`InputDispatcher`、应用主线程、`RenderThread`、SurfaceFlinger 和显示帧。触摸样本进入系统后，应用还要消费事件、更新界面状态、提交缓冲区，再由 SurfaceFlinger 合成并送显；其中任何一段延后，都会增加可见响应时间。
+列表滑动时抓一份 Perfetto 系统跟踪，时间轴上会同时出现 `InputReader`、`InputDispatcher`、应用主线程、`RenderThread`、SurfaceFlinger 和显示帧这些轨道。
 
 从物理动作到显示内容变化的时间通常称为触摸到显示延迟（touch-to-display latency）。如果终点是面板像素实际发光变化，则称为触摸到光子延迟（touch-to-photon latency）。刷新周期只是其中一个时间尺度：60 Hz 每周期约 16.67 ms，120 Hz 每周期约 8.33 ms。事件落在 VSYNC 周期的哪个相位、应用是否赶上当前帧、缓冲区是否按期合成，都会改变结果。因此，一个刷新周期不能直接代表端到端延迟，也不应脱离设备、操作和统计分位数给出通用的“典型毫秒数”。
 
@@ -114,13 +114,13 @@ CPU 与 GPU 可能并行，多个样本也可能合并到同一帧；FrameTimeli
 
 ### 人机交互阈值不能脱离具体任务
 
-直接操控的感知线索与离散点击差异很大。UIST 2012 的连续拖动实验中，参与者在该装置和 1 ms 参照延迟下的差别阈限（JND，即刚好能察觉差异的最小变化）约为 2.38–11.36 ms；CHI 2013 的落点反馈实验则得到更宽的 20–100 ms 范围。这些数字只说明任务类型会改变人的感知敏感度，不是 Android 17 设备的通用验收线。
+直接操控的感知敏感度与离散点击差别很大。UIST 2012 的连续拖动实验中，参与者在该装置和 1 ms 参照延迟下的差别阈限（JND，即刚好能察觉差异的最小变化）约为 2.38–11.36 ms；CHI 2013 的落点反馈实验则得到更宽的 20–100 ms 范围。这些数字只说明任务类型会改变人的感知敏感度，不是 Android 17 设备的通用验收线。
 
 产品指标应按照交互类型建立：点击关注首个可见反馈；拖动与书写同时关注时间滞后、空间偏差、步幅波动和预测误差；游戏还要分开统计本地判定、渲染帧和网络确认。同一脚本至少覆盖 P50、P90、P95、刷新率、温控和电源模式。
 
 ## 触摸响应延迟的组成
 
-从手指触碰屏幕到画面更新，触摸事件要经过多个阶段。按时间顺序拆分，才能确定耗时所在的边界。
+从手指触碰屏幕到画面更新，触摸事件要依次经过七个阶段。下面按时间顺序逐个过一遍：每段给出可用的时间点，也给出这些时间点能证明什么、不能证明什么。七段证据最后汇总成本节的“延迟全景图”。
 
 ### 1. 硬件采样（触摸屏 → 驱动）
 
@@ -130,7 +130,7 @@ CPU 与 GPU 可能并行，多个样本也可能合并到同一帧；FrameTimeli
 - **240 Hz**：约 4.17 ms 一个采样周期
 - **480 Hz**：约 2.08 ms 一个采样周期
 
-周期只给出相位等待的上界模型，不能覆盖控制器内部滤波和上报策略。更高的采样率通常能减小首次检测等待，并为轨迹重建提供更密集的 `MOVE` 样本；即使这些样本被批量放入同一个 `MotionEvent`，应用仍可以读取历史样本，系统也可以用它们进行重采样。高于显示帧率的采样并非自动浪费，但能否改善画面取决于应用是否消费历史点、是否使用无缓冲分发路径，以及渲染和显示是否及时。
+采样周期只给出相位等待的上界模型，不能覆盖控制器内部滤波和上报策略。更高的采样率通常能减小首次检测等待，并为轨迹重建提供更密集的 `MOVE` 样本；即使这些样本被批量放入同一个 `MotionEvent`，应用仍可以读取历史样本，系统也可以用它们做重采样。高于显示帧率的采样并非自动浪费，但能否改善画面取决于应用是否消费历史点、是否使用无缓冲分发路径，以及渲染和显示是否及时。
 
 ### 2. 内核处理（驱动 → EventHub）
 
@@ -198,7 +198,7 @@ void InputReader::loopOnce() {
 
 `NativeInputEventReceiver` 把事件转换成 Java `InputEvent` 后，`WindowInputEventReceiver` 会将其加入 `ViewRootImpl` 的待处理队列。Android 17 用 `aq:pending:<window>` 计数器记录队列长度，并用同步和异步 `deliverInputEvent` 区段标记整段处理。触摸这类指针事件通常从 IME 后处理链进入 `EarlyPostImeInputStage`、`NativePostImeInputStage` 和 `ViewPostImeInputStage`，再由 View 树处理。
 
-View 的触摸分发沿命中的目标分支和已经建立的 `TouchTarget` 关系进行，并非每个 `MOVE` 都遍历整棵 View 树。事件可能只更新滚动偏移或状态，也可能触发 `invalidate()`、`requestLayout()` 或动画。前者通常只要求重绘，后者可能让下一次遍历执行测量、布局与绘制。
+View 的触摸分发沿命中的目标分支和已经建立的 `TouchTarget` 关系走，并非每个 `MOVE` 都遍历整棵 View 树。事件可能只更新滚动偏移或状态，也可能触发 `invalidate()`、`requestLayout()` 或动画。前者通常只要求重绘，后者可能让下一次遍历执行测量、布局与绘制。
 
 ### 7. 渲染上屏
 
@@ -231,7 +231,7 @@ Android 17 的 `InputEventAssigner` 有一项限制：在连续手势中，一�
 
 ### 采样率和渲染帧率的匹配
 
-高采样率的价值，要放到“应用如何消费样本、每秒能显示多少帧”两个前提下看。
+判断高采样率有没有用，先看两个前提：应用怎么消费样本、设备每秒能显示多少帧。
 
 - **60 fps + 120 Hz 触控**：按理想固定频率估算，一个显示周期约有两个样本。它们可以合并到一个 `MotionEvent` 中，较早的点通过历史样本接口读取；
 - **60 fps + 240 Hz 触控**：一个显示周期约有四个样本。列表仍然只能每帧呈现一次位置，但笔迹拟合、速度估计和轨迹预测可以使用更密集的数据；
@@ -244,7 +244,7 @@ Android 17 的 `InputEventAssigner` 有一项限制：在连续手势中，一�
 
 ### 为什么需要批处理
 
-当触摸采样率高于渲染帧率时，一个 VSYNC 周期内可能到达多个 `ACTION_MOVE` 样本。若每个样本都立即唤醒应用并执行完整的 View 分发，会增加 Looper 和业务回调压力；即使多次重绘请求最终合并到一帧，前面的 CPU 工作也可能重复。批处理（batching）用较少的应用交付次数携带这些样本。
+当触摸采样率高于渲染帧率时，一个 VSYNC 周期内可能到达多个 `ACTION_MOVE` 样本。若每个样本都立即唤醒应用并执行完整的 View 分发，会增加 Looper 和业务回调压力；即使多次重绘请求最终合并到一帧，前面的 CPU 工作也可能重复。批处理（batching）把多个样本合并成更少的事件交给应用。
 
 Android 的输入批处理会合并交付，但不会直接删除中间坐标。Android 17 的应用侧 `InputConsumer` 会把相互兼容的 `ACTION_MOVE` 或 `ACTION_HOVER_MOVE` 消息组成一批；消费时，第一条样本初始化 `MotionEvent`，后续样本通过 `addSample()` 加入历史记录。当前坐标通过 `getX()` 和 `getY()` 读取，较早样本则通过 `getHistorySize()` 和 `getHistorical*()` 读取。
 
@@ -265,7 +265,7 @@ float latestY = event.getY();
 
 ### 批处理之外还有重采样
 
-批处理决定样本怎样合并交付；重采样负责让轨迹时间更接近显示帧时序。Android 17 的常规 `ViewRootImpl` 路径在应用进程 JNI 中持有 `InputConsumer`。当它使用有效的 `frameTimeNanos` 消费一批事件，而且厂商没有关闭 `ro.input.resampling` 时，会以 `frameTimeNanos - 5 ms` 为目标时间，在真实样本之间插值，或者根据最近两个样本做受限外推。
+批处理决定样本怎样合并交付；重采样负责让轨迹时间更接近显示帧时序。Android 17 的常规 `ViewRootImpl` 路径在应用进程 JNI 中持有 `InputConsumer`。它消费一批事件时，如果 `frameTimeNanos` 有效、厂商也没有关闭 `ro.input.resampling`，就会以 `frameTimeNanos - 5 ms` 为目标时间，在真实样本之间插值，或者根据最近两个样本做受限外推。
 
 这 5 ms 是重采样目标相对于帧时间的相位偏移，用于给插值预留后续样本并限制错误外推；它不能单独计入触摸到显示耗时，更不能写成“系统额外等待 5 ms”。有效帧时间、样本间隔、工具类型或厂商开关不满足条件时，重采样会跳过。
 
@@ -298,7 +298,9 @@ for (int h = 0; h < event.getHistorySize(); h++) {
 
 连续 `MOVE` 事件默认使用缓冲路径。`ViewRootImpl.WindowInputEventReceiver#onBatchedInputEventPending()` 会检查 `mUnbufferedInputDispatch` 和 `mUnbufferedInputSource`：当前序列请求无缓冲分发时，直接调用 `consumeBatchedInputEvents(-1)`；否则调用 `scheduleConsumeBatchedInput()`，让事件在接近下一帧输入阶段时被消费。
 
-这条分支决定 `MOVE` 是立即送达，还是接近下一帧时由输入回调消费。普通滚动应保留缓冲路径，因为它可以减少 Looper 唤醒和 View 分发次数，并保留系统重采样机会。`View.requestUnbufferedDispatch(event)` 的官方文档也提示它不适合多数应用；随意启用可能增加延迟、造成滚动抖动，并失去系统重采样收益。笔迹、绘图、签名场景如果已经确认目标 View 和手势归属，可以在已 attach 的 View 上针对触摸 `ACTION_DOWN` 或 `ACTION_MOVE` 请求无缓冲分发；该请求只影响到对应 `ACTION_UP` 之前的当前序列。即便事件更早交付，应用仍要逐个处理事件，CPU 调度和回调压力也会增加。
+这条分支决定 `MOVE` 是立即送达，还是接近下一帧时由输入回调消费。普通滚动应保留缓冲路径，因为它可以减少 Looper 唤醒和 View 分发次数，并保留系统重采样机会。`View.requestUnbufferedDispatch(event)` 的官方文档也提示它不适合多数应用；随意启用可能增加延迟、造成滚动抖动，并失去系统重采样收益。
+
+笔迹、绘图、签名场景如果已经确认目标 View 和手势归属，可以在已 attach 的 View 上针对触摸 `ACTION_DOWN` 或 `ACTION_MOVE` 请求无缓冲分发；该请求只影响到对应 `ACTION_UP` 之前的当前序列。即便事件更早交付，应用仍要逐个处理事件，CPU 调度和回调压力也会增加。
 
 ### 批处理与等待队列在 Perfetto 中的表现
 
@@ -306,10 +308,9 @@ for (int h = 0; h < event.getHistorySize(); h++) {
 
 **InputDispatcher 侧——分发与完成确认的背压**：
 
-1. 找到 `system_server` 进程中的 `InputDispatcher` 线程；
-2. 观察 `iq`、`oq:<channel>`、`wq:<channel>` 的 `ATRACE_INT` 计数器；它们记录队列长度，不是执行片段；
-3. `WaitQueue` 反映已经分发但仍在等待应用完成确认的事件数量。`wq` 堆积说明应用端处理缓慢或确认回写延迟，不等同于批处理本身；
-4. 如果等待队列持续堆积且不下降，转到目标应用检查主线程、异步 `InputStage` 与回写；计数器本身还不能区分这三种原因。
+1. 找到 `system_server` 进程中的 `InputDispatcher` 线程，看 `iq`、`oq:<channel>`、`wq:<channel>` 这三个 `ATRACE_INT` 计数器的长度和持续时间；三个队列各自的含义见本章“4. InputDispatcher 派发”；
+2. `WaitQueue` 反映已经分发、仍在等待应用完成确认的事件数量；`wq` 堆积说明应用端处理缓慢或确认回写延迟，不等同于批处理本身；
+3. 等待队列持续堆积且不下降时，转到目标应用检查主线程、异步 `InputStage` 与回写；计数器本身还不能区分这三种原因。
 
 **应用侧——批量事件消费**：
 
@@ -328,7 +329,7 @@ for (int h = 0; h < event.getHistorySize(); h++) {
 - `libs/input/InputConsumer.cpp`：当前 `android_view_InputEventReceiver.cpp` 的 `NativeInputEventReceiver` 直接构造并使用这套 `InputConsumer`，重采样逻辑仍在该文件内。
 - `libs/input/InputConsumerNoResampling.cpp` 与 `libs/input/Resampler.cpp`：把批处理与传输和 `LegacyResampler`、`FilteredLegacyResampler` 分开，Android 17 源树已经编译并测试这些实现，但常规 `ViewRootImpl` JNI 代码尚未改用它。
 
-分析 Android 17 应用行为时，应以第一条实际调用链为准；阅读第二套代码可以理解重构方向，不能把它描述成所有应用已经切换的生产路径。两套旧算法的常量和核心边界一致：
+分析 Android 17 应用行为时，应以第一条实际调用链为准；阅读第二套代码可以理解重构方向，不能把它描述成所有应用已经切换的生产路径。两套实现沿用同一组旧算法的常量，核心边界也一致：
 
 - 目标时间为 `sampleTime = frameTime - 5 ms`；
 - 若一批事件中还有目标时间之后的未来样本，则在当前样本与未来样本之间线性插值；两点间隔至少为 2 ms；
@@ -392,7 +393,7 @@ data_sources: {
 下面的设备案例说明如何从函数执行片段转向调度证据。系统跟踪中的 `processInputEventForCompatibility` 区段持续约 4 ms，但相应的 AOSP 逻辑不足以解释整段墙钟时间。展开线程状态后可见：
 
 - 线程在该区段内并非始终处于 Running 状态，中间存在被抢占和 Runnable 等待；
-- 第二次触摸没有复现该设备第一次触摸时的频率变化，主线程以较低频率执行。
+- 第二次触摸没有复现该设备第一次触摸时的频率变化，主线程以较低频率执行；
 - 同时唤醒的硬件服务计时器线程占用了 CPU，应用主线程因此延后获得运行机会。
 
 这里的结论只适用于当时的设备实现：厂商输入或触摸提频没有按预期触发，再叠加线程竞争，放大了墙钟耗时。AOSP 不保证所有设备都有同名的 CPU 提频机制，也不规定输入后必须在几毫秒内升到某个频点。排查时应把执行片段拆成 Running 时间和非 Running 时间，再用频率、调度与厂商策略解释差值。
@@ -454,7 +455,7 @@ FrameTimeline 还可能出现“帧率稳定，但内容整体晚一帧”的高
 - `EventHub` 与 `InputReader` 的设备、映射器和配置状态；
 - 焦点应用与窗口、当前触摸状态和指针捕获；
 - `RecentQueue`：最多 10 个最近分发或丢弃的事件及其 `age`；
-- `PendingEvent`、`InboundQueue`。
+- `PendingEvent`、`InboundQueue`；
 - 每个连接的状态、是否可响应、输出队列和等待队列；非空条目会附带事件年龄等描述。
 
 `age` 是执行 `dumpsys` 时计算的瞬时年龄，不存在通用的“正常必须小于 16 ms”阈值。等待队列的 ANR 截止时间在事件发布时按连接设置：默认基值为 5000 ms，再乘 `HwTimeoutMultiplier()`；窗口或应用可以覆盖分发超时。判断风险时，应查看该连接的超时设置、是否可响应，以及连续多次采样的变化趋势。
@@ -463,7 +464,7 @@ FrameTimeline 还可能出现“帧率稳定，但内容整体晚一帧”的高
 
 ### 1. 主线程阻塞
 
-主线程阻塞是常见的触摸卡顿原因。当应用主线程执行磁盘 I/O、数据库查询、复杂计算或等待 Binder 调用返回时，排队等待处理的输入事件也会被延后。
+当应用主线程执行磁盘 I/O、数据库查询、复杂计算或等待 Binder 调用返回时，排队等待处理的输入事件也会被延后。
 
 在 Perfetto 中的表现：
 - 主线程长时间处于 **Running** 状态但没有处理输入
@@ -481,12 +482,12 @@ FrameTimeline 还可能出现“帧率稳定，但内容整体晚一帧”的高
 
 触摸分发从根 View 进入 `dispatchPointerEvent()`，随后沿命中的子树和当前 `TouchTarget` 路径执行 `dispatchTouchEvent()`。每一层 `ViewGroup` 都可能执行拦截判断、坐标变换和监听器，但 `MOVE` 不会无条件扫描整棵树。层级深度会增加固定调用成本，复杂的自定义命中测试、监听器和手势识别通常更值得优先检查。
 
-批处理后的一个 `MotionEvent` 只进行一次 View 分发；只有应用主动遍历历史样本，或使用无缓冲分发收到更多事件时，才会按照更多样本执行自身的轨迹逻辑。不要用“采样点数量 × 整棵 View 树深度”估算开销。
+批处理后的一个 `MotionEvent` 只做一次 View 分发；只有应用主动遍历历史样本，或使用无缓冲分发收到更多事件时，才会按照更多样本执行自身的轨迹逻辑。不要用“采样点数量 × 整棵 View 树深度”估算开销。
 
 优化思路：
 - 用系统跟踪或方法级采样确认 `dispatchTouchEvent()`、手势检测器和业务监听器的耗时；
 - 删除没有布局或语义价值的包装层；是否改用 `ConstraintLayout` 要以测量和布局数据为依据；
-- 避免在 MOVE 回调中分配大量临时对象、同步 I/O、复杂路径运算或重复 `requestLayout()`。
+- 避免在 MOVE 回调中分配大量临时对象、同步 I/O、复杂路径运算或重复 `requestLayout()`；
 - 自定义容器只在手势归属明确后拦截，并正确发送和处理 `ACTION_CANCEL`。
 
 ### 3. 事件分发冲突
@@ -539,7 +540,9 @@ Motion Prediction（轨迹预测）涉及四层彼此独立的概念：
 
 `android-17.0.0_r1` 的 `MotionPredictor` 是 Java 到原生层的轻量封装。设备资源 `config_enableMotionPrediction` 决定 Java API 是否启用，AOSP 基础值为 `false`，厂商需要在确认模型适配设备后覆盖；原生层还会检查可在运行时关闭功能的系统属性 `enable_motion_prediction`。`isPredictionAvailable(deviceId, source)` 同时受这些开关约束，当前原生实现只接受手写笔来源。API 存在不表示所有 Android 17 设备都默认可用。
 
-原生 `TfLiteMotionPredictorModel` 优先加载 `/vendor/etc/motion_predictor_model.tflite`，否则使用 `/system/etc/motion_predictor_model.tflite`；同目录的 XML 提供预测间隔、噪声下限和急转阈值等配置。输入张量包括相对轨迹的半径 `r`、角度 `phi`、压力、倾斜和方向，输出为 `r`、`phi` 与压力。Android 17 还包含受功能开关控制的急转点裁剪；无论该开关是否启用，模型的噪声下限、输出长度和请求时间都可能让 `predict()` 返回 `null`，或使结果停在早于请求时间的位置。
+原生 `TfLiteMotionPredictorModel` 优先加载 `/vendor/etc/motion_predictor_model.tflite`，否则使用 `/system/etc/motion_predictor_model.tflite`；同目录的 XML 提供预测间隔、噪声下限和急转阈值等配置。
+
+输入张量包括相对轨迹的半径 `r`、角度 `phi`、压力、倾斜和方向，输出为 `r`、`phi` 与压力。Android 17 还包含受功能开关控制的急转点裁剪；无论该开关是否启用，模型的噪声下限、输出长度和请求时间都可能让 `predict()` 返回 `null`，或使结果停在早于请求时间的位置。
 
 源码没有为预测事件定义 `FLAG_PREDICTED`。应用需要分层管理真实笔迹与临时预测笔迹：下一批真实事件到达后，删除或修正尚未确认的预测段，再继续绘制。
 
@@ -586,7 +589,7 @@ Jetpack 低延迟图形组件会把短生命周期的增量内容放到专用前
 | 普通按钮反馈 | 通常不适合 | 需要与 View 状态、无障碍和动画系统保持一致 |
 | 画笔、游戏准星 | 取决于引擎 | 只有引擎能正确管理局部增量层才适用 |
 
-手写优化可以形成一条从临时内容到持久内容的明确流程：读取真实样本及历史点，必要时用无缓冲分发缩短到达等待，用 `MotionPredictor` 只产生短时间窗口内的临时点，并在前缓冲层绘制；真实样本到达后修正预测段，抬笔或分段结束时通过 `commit()` 提交到多缓冲层，并清理临时内容。只增加预测而不修正，会在轨迹急转时出现回弹；只增加前缓冲却不限制更新区域，画面撕裂可能比延迟更显眼。
+手写场景的完整链路是：读取真实样本及历史点；必要时用无缓冲分发缩短到达等待；用 `MotionPredictor` 只产生短时间窗口内的临时点，并在前缓冲层绘制；真实样本到达后修正预测段；抬笔或分段结束时通过 `commit()` 提交到多缓冲层，并清理临时内容。只增加预测而不修正，会在轨迹急转时出现回弹；只增加前缓冲却不限制更新区域，画面撕裂可能比延迟更显眼。
 
 ## 厂商触控优化方案
 
@@ -598,11 +601,11 @@ Jetpack 低延迟图形组件会把短生命周期的增量内容放到专用前
 
 ### 触控固件与控制器调校
 
-很多设备会定制触控固件、滤波参数、采样率和上报节奏。规格表中常见 240 Hz、480 Hz、720 Hz 甚至更高的触控采样率，但它只能说明采样机会更多，不能单独推导出触摸到显示延迟。还要结合驱动处理、`ViewRootImpl` 的批处理策略、应用是否消费历史样本，以及实际显示刷新周期。
+很多设备会定制触控固件、滤波参数、采样率和上报节奏。规格表中常见 240 Hz、480 Hz、720 Hz 甚至更高的触控采样率，但这些数字只能说明采样机会更多，不能单独推导出触摸到显示延迟。还要结合驱动处理、`ViewRootImpl` 的批处理策略、应用是否消费历史样本，以及实际显示刷新周期。
 
 ### 调度与提频策略
 
-厂商系统常会在输入到来后短时间提高 CPU 或 GPU 频率，或者提高 UI 相关线程的调度优先级。不同平台会给这类机制使用不同名称，但策略是否存在、持续多长、是否把线程放到高性能核心，都必须以目标设备的系统跟踪、内核和系统实现为准，不能写成固定数值。排查时应直接查看 Perfetto 中的 CPU 频率、线程调度、SurfaceFlinger 与 `RenderThread` 行为。
+厂商系统常会在输入到来后短时间提高 CPU 或 GPU 频率，或者提高 UI 相关线程的调度优先级；同一类策略在不同平台的名字、触发条件和覆盖范围都不一样（原理与判读边界见本章“4. CPU 频率和调度问题”）。策略是否存在、持续多长、是否把线程放到高性能核心，都必须以目标设备的系统跟踪、内核和系统实现为准，不能写成固定数值。排查时应直接查看 Perfetto 中的 CPU 频率、线程调度、SurfaceFlinger 与 `RenderThread` 行为。
 
 ### 交互提示与自适应刷新率的边界
 
@@ -610,7 +613,7 @@ Android 17 中，`InputDispatcher` 会把符合条件的按键、触摸动作和
 
 这个信号只是 `RefreshRateSelector` 的一个排名输入。图层的显式帧率投票、显示策略范围、候选模式、面板与 HAL 能力以及温控状态仍可能改变结果。应用还可以用 `Window.setFrameRateBoostOnTouchEnabled()` 表达是否允许触摸升频，并用 View 或 Window 帧率 API 提交偏好；这些设置都不保证当前帧一定使用最高刷新率。
 
-验证时应同时观察 Power `userActivity`、SurfaceFlinger `TouchState`、`Touch Boost`、`Touch Boost [late]`、图层投票、当前渲染帧率、刷新率与 FrameTimeline。完整的 ARR 选择和显示时序见 2.2，这里只保留与输入延迟直接相关的交互边界。
+验证时应同时观察 Power `userActivity`、SurfaceFlinger `TouchState`、`Touch Boost`、`Touch Boost [late]`、图层投票、当前渲染帧率、刷新率与 FrameTimeline。完整的自适应刷新率（ARR）选择与显示时序见 2.2，这里只保留与输入延迟直接相关的交互边界。
 
 ## 与其他章节的关系
 
