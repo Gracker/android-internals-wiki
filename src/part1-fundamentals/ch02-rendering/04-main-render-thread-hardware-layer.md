@@ -139,9 +139,11 @@ consolidated_from:
 
 `Choreographer → ViewRootImpl → ThreadedRenderer → HWUI RenderThread → Surface / BLASTBufferQueue → SurfaceFlinger`
 
-这里的 MainThread 指持有目标 `ViewRootImpl` 的 UI 线程。多数 Activity 窗口使用进程主线程，不过 `ViewRootImpl` 也可以绑定其他具有 Looper 的线程。RenderThread 是 HWUI（Android 的硬件加速 UI 渲染器）在应用进程中的共享渲染线程。软件 Canvas、`SurfaceView` 自建 Producer、游戏引擎直接使用 EGL/Vulkan 等路径具有不同的线程与 buffer 所有权，不能照搬这里的全部结论。
+这里的 MainThread 指持有目标 `ViewRootImpl` 的 UI 线程。多数 Activity 窗口使用进程主线程，不过 `ViewRootImpl` 也可以绑定其他具有 Looper 的线程。
 
-后文保留几组源码名称：RenderNode 保存一个渲染节点的属性和绘制记录；DisplayList 是可回放的绘制命令列表；RecordingCanvas 负责生成这份记录；CanvasContext 管理一条窗口渲染上下文。BLAST 用于协调窗口 buffer 与 SurfaceControl transaction（对 Layer 属性或 buffer 的一组更新）；fence 则表示异步读写何时完成。
+RenderThread 是 HWUI（Android 的硬件加速 UI 渲染器）在应用进程中的共享渲染线程。软件 Canvas、`SurfaceView` 自建 Producer、游戏引擎直接使用 EGL/Vulkan 等路径，线程与 buffer 所有权都不同，不能照搬这里的全部结论。
+
+后文会反复用到这几个名称：RenderNode 保存一个渲染节点的属性和绘制记录；DisplayList 是可回放的绘制命令列表；RecordingCanvas 负责生成这份记录；CanvasContext 管理一条窗口渲染上下文。下面两个概念用于描述 buffer 与 transaction 的协调：BLAST 用于协调窗口 buffer 与 SurfaceControl transaction（对 Layer 属性或 buffer 的一组更新）；fence 则表示异步读写何时完成。
 
 标准路径的线程边界可用下图定位：
 
@@ -186,7 +188,7 @@ MainThread 与 RenderThread 的并行来自相邻帧重叠：RenderThread 推进
 
 #### 硬件加速路径中的绘制以记录为主
 
-每个 View 都持有一个 `RenderNode`。View 需要更新显示列表时，`updateDisplayListIfDirty()` 会向 RenderNode 请求 `RecordingCanvas`，调用 View 的绘制逻辑，最终结束记录。下面的结构摘录保留了 Android 17 的关键判断，省略异常处理、overlay（额外叠加内容）和辅助绘制分支：
+每个 View 都持有一个 `RenderNode`。View 需要更新显示列表时，`updateDisplayListIfDirty()` 会先向 RenderNode 申请一个 `RecordingCanvas`，调用 View 的绘制逻辑，最后再结束这次录制。下面的结构摘录保留了 Android 17 的关键判断，省略异常处理、overlay（额外叠加内容）和辅助绘制分支：
 
 ```java
 // frameworks/base/core/java/android/view/View.java
@@ -224,7 +226,7 @@ public RenderNode updateDisplayListIfDirty() {
 }
 ```
 
-这段代码给出两个排障边界。第一，`Canvas.drawRect()`、`drawText()`、`drawBitmap()` 等调用此时主要在记录绘制操作；像素生成留给后面的 HWUI/Skia 渲染。第二，RenderNode 已有可复用 DisplayList 且没有重建请求时，系统会复用记录结果并递归取得所需子节点。
+这段代码划出两条排障边界。一条关于像素何时产生：`Canvas.drawRect()`、`drawText()`、`drawBitmap()` 等调用此时主要在记录绘制操作，像素生成留给后面的 HWUI/Skia 渲染。另一条关于记录何时复用：RenderNode 已有可复用 DisplayList 且没有重建请求时，系统会复用记录结果并递归取得所需子节点。
 
 `invalidate()`、内容变化、尺寸变化、软件/硬件 layer 状态和 View 自身绘制实现都会影响是否重录。仅凭“调用了 `requestLayout()`”无法保证 DisplayList 一定复用；也不能断言位置变化必然重录。能映射为 RenderNode 属性的 translation、alpha、scale 等更新，通常可以减少内容重录，但仍要看 View 是否同时改变了布局或绘制内容。
 
@@ -245,7 +247,7 @@ ViewRootImpl.performDraw()
           → DrawFrameTask::drawFrame()
 ```
 
-到达 `DrawFrameTask::drawFrame()` 后，UI 线程会进入一次明确的等待。DisplayList 并没有被整棵复制到 RenderThread；HWUI 在两条线程间同步 RenderNode 树、属性、资源引用和本帧状态。
+到达 `DrawFrameTask::drawFrame()` 后，UI 线程会在这里等待一次。DisplayList 不会整棵复制到 RenderThread；HWUI 只是在两条线程间同步 RenderNode 树、属性、资源引用和本帧状态。
 
 ### SyncFrameState：UI 线程究竟等到什么时候
 
@@ -405,7 +407,9 @@ Consumer / BLAST / SurfaceFlinger
 
 #### buffer 数量没有“永远是三个”的结论
 
-Android 17 的 `CanvasContext.cpp` 定义了文件内静态函数 `setBufferCount()`：它查询 `NATIVE_WINDOW_MIN_UNDEQUEUED_BUFFERS`，再设置 `min_undequeued_buffers + 2`。`CanvasContext::setupPipelineSurface()` 只在 NativeSurface 尚未设置额外 buffer 时调用它。这个表达式不代表所有设备、所有 Surface、所有时刻都固定为三块 buffer。
+Android 17 的 `CanvasContext.cpp` 定义了文件内静态函数 `setBufferCount()`：它查询 `NATIVE_WINDOW_MIN_UNDEQUEUED_BUFFERS`，再设置 `min_undequeued_buffers + 2`；`CanvasContext::setupPipelineSurface()` 只在 NativeSurface 尚未设置额外 buffer 时调用它。
+
+这个值很容易被读成“每个 Surface 固定三块 buffer”，但它不代表所有设备、所有 Surface、所有时刻都固定为三块 buffer。
 
 Producer 能否继续 dequeue 还取决于：
 
@@ -428,25 +432,25 @@ Producer 能否继续 dequeue 还取决于：
 
 #### `Bitmap.prepareToDraw()`
 
-`Bitmap.prepareToDraw()` 很早就已存在。官方 API 文档说明，从 Android N 开始，如果 Bitmap 尚未上传，该调用会启动由 RenderThread 完成的异步上传。它适合在图片即将显示前做准备；第一次直接绘制通常也会触发上传。Bitmap 内容发生修改后，后续绘制仍可能需要重新上传。
+`Bitmap.prepareToDraw()` 很早就已存在。官方 API 文档说明，从 Android N 开始，如果 Bitmap 尚未上传，该调用会让 RenderThread 异步完成上传。它适合在图片即将显示前做准备；第一次直接绘制通常也会触发上传。Bitmap 内容发生修改后，后续绘制仍可能需要重新上传。
 
 这项 API 只能减少“首次可见帧才遇到上传”的概率，不能保证图片解码、内存分配、导入和所有 GPU 准备工作都已结束。调用时机过早还会增加纹理驻留时间和缓存压力。
 
 #### `Bitmap.Config.HARDWARE`
 
-Android 8.0 引入 `Bitmap.Config.HARDWARE`。官方文档将其描述为像素只存储在图形内存（graphic memory）、不可变、适合只绘制用途。它可减少普通 mutable Bitmap 的重复上传机会，但仍有 GraphicBuffer 导入、资源绑定、同步和内存占用成本，也受到软件 Canvas 访问限制。
+Android 8.0 引入 `Bitmap.Config.HARDWARE`。官方文档对它的描述是：像素只存储在图形内存（graphic memory）、不可变、适合只绘制的用途。它可减少普通 mutable Bitmap 的重复上传机会，但仍有 GraphicBuffer 导入、资源绑定、同步和内存占用成本，也受到软件 Canvas 访问限制。
 
 选择 HARDWARE Bitmap 前，要确认后续是否需要读写像素、软件绘制、序列化或兼容旧 API。把它当成“零上传、零首帧成本”的开关会造成新的误判。
 
 #### `prepareTextures` 与 UI 解锁的关系
 
-`TreeInfo::prepareTextures` 是同步阶段状态，不是一个公开上传方法。Android 17 的 `DrawFrameTask::syncFrameState()` 用它决定 UI 能否提前解锁；源码只把 `false` 明确解释为纹理缓存空间不足。若本帧被跳过，而同步阶段已经产生纹理上传或删除工作，`DrawFrameTask::run()` 会调用 `GrDirectContext::flushAndSubmit()`，避免这些工作滞留到下一帧。
+`TreeInfo::prepareTextures` 是同步阶段的状态，不是公开的上传方法；上文的早/晚解锁判断来自 Android 17 的 `DrawFrameTask::syncFrameState()`，源码也只把 `false` 解释为纹理缓存空间不足。另有一条容易漏掉的分支：若本帧被跳过，而同步阶段已经产生纹理上传或删除工作，`DrawFrameTask::run()` 会调用 `GrDirectContext::flushAndSubmit()`，避免这些工作滞留到下一帧。
 
 这条分支可以解释某些长 `syncAndDrawFrame()`：资源压力既可能增加 RenderThread 工作，也可能把 UI 解锁推迟到 draw/skip 之后。确认时仍需查看同帧的 cache、upload、skip reason 和 GPU 证据。
 
 ### Deferred GPU Commands（延迟提交的 GPU 命令）与 flush 边界
 
-DisplayList 记录的是有顺序与状态语义的绘制操作。HWUI/Skia 可以在不改变画面语义的前提下合并批次、缓存资源、延迟提交或调整后端工作，但不能把所有同类型命令跨越裁剪、混合、保存/恢复和依赖关系随意重排。这里的 flush 指把已经积累的后端命令提交出去，`flushAndSubmit()` 则同时要求执行提交步骤；它不等同于等待 GPU 全部执行完成。
+DisplayList 记录的是有顺序与状态语义的绘制操作。HWUI/Skia 可以在不改变画面语义的前提下合并批次、缓存资源、延迟提交或调整后端工作，但不能把所有同类型命令跨越裁剪、混合、保存/恢复和依赖关系随意重排。这里的 flush 指把已经积累的后端命令提交出去，`flushAndSubmit()` 则在这个动作之外还要求执行提交步骤；它不等同于等待 GPU 全部执行完成。
 
 Android 17 源码能直接确认两个 flush 场景：
 
@@ -459,7 +463,9 @@ Android 17 源码能直接确认两个 flush 场景：
 
 Android 5.0 已有 `RenderNodeAnimator` 和 `ViewPropertyAnimatorRT` 基础。alpha、translation、scale、rotation 等能直接映射到 RenderNode 属性的动画，有机会由 RenderThread 推进，减少每帧重新执行完整 View traversal 的需要。
 
-Android 17 的 `RenderThread` 使用 `AChoreographer` VSync callback 驱动 RenderThread 帧回调。`CanvasContext::prepareTree()` 检测到仍有动画且不要求 UI redraw（重新执行 UI 绘制记录）时，会继续注册 RenderThread frame callback。VSync 到达后，`CanvasContext::doFrame()` 调用 `prepareAndDraw(nullptr)`；`prepareAndDraw()` 使用 `TreeInfo::MODE_RT_ONLY` 准备树并绘制。`RenderProxy::drawRenderNode()` 也会同步调用同一个 `prepareAndDraw(node)` 入口。
+Android 17 的 `RenderThread` 使用 `AChoreographer` VSync callback 驱动 RenderThread 帧回调。`CanvasContext::prepareTree()` 检测到仍有动画且不要求 UI redraw（重新执行 UI 绘制记录）时，会继续注册 RenderThread frame callback。
+
+VSync 到达后，`CanvasContext::doFrame()` 调用 `prepareAndDraw(nullptr)`；`prepareAndDraw()` 使用 `TreeInfo::MODE_RT_ONLY` 准备树并绘制。`RenderProxy::drawRenderNode()` 也会同步调用同一个 `prepareAndDraw(node)` 入口。
 
 判断一段动画能否持续走 RT 路径，要看这些条件：
 
@@ -483,7 +489,7 @@ view.animate()
 
 ### ADPF：性能提示不等于频率承诺
 
-ADPF（Android Dynamic Performance Framework）让应用或系统组件向平台提供性能目标与实际工作时长。Android 17 的 `CanvasContext.cpp` 通过 `HintSessionWrapper` 更新目标工作时长并上报帧的实际工作时长。AOSP Android 14 源码中已经能看到这条 HWUI hint session（持续提交性能提示的会话）路径。Android 16 增加的 CPU/GPU headroom API 用于查询距离性能上限还有多少余量，两者的 API 边界不同。
+ADPF（Android Dynamic Performance Framework）让应用或系统组件向平台提供性能目标与实际工作时长。Android 17 的 `CanvasContext.cpp` 通过 `HintSessionWrapper` 更新目标工作时长并上报帧的实际工作时长。AOSP Android 14 源码中已经能看到这条 HWUI hint session（持续提交性能提示的会话）路径。Android 16 增加的 CPU/GPU headroom API 用于查询距离性能上限还有多少余量，它和 hint session 的 API 边界不同。
 
 ADPF 是系统调度与电源策略的提示输入。收到提示后，系统仍会综合温控、功耗、并发负载和设备策略。trace 中出现 hint session 更新，不能单独证明 CPU/GPU 频率已提升，也不能证明帧一定按时。需要把 hint、频率/idle counter（频率与空闲状态轨道）、线程运行位置、GPU 工作和帧结果一并核对。
 
@@ -565,6 +571,8 @@ ORDER BY s.ts;
 
 ### 六种常见 Trace 组合
 
+下表按 trace 上先看到的现象排列，查表时重点看最后一列要排除的下游原因。
+
 | Trace 组合 | 优先检查 | 仍需排除 |
 |:---|:---|:---|
 | UI `doFrame` 很长，RenderThread 很晚才接到本帧 | input、animation、measure、layout、DisplayList 记录、UI runnable delay | RenderThread 可能同时有旧帧积压 |
@@ -576,7 +584,7 @@ ORDER BY s.ts;
 
 #### 主线程过重：RenderThread 得到的时间窗口变窄
 
-复杂布局、自定义绘制、同步 I/O、锁竞争或运行队列等待都可能让 UI 线程错过提交时间。排查时先区分线程处于运行、RUNNABLE、SLEEPING 还是 BLOCKED，再定位 Java/Kotlin/native 调用栈。一个很长的 `performTraversals` 需要继续拆成 measure、layout、record 和 `syncAndDrawFrame`，不能只按总时长优化 View 数量。
+复杂布局、自定义绘制、同步 I/O、锁竞争或运行队列等待都可能让 UI 线程错过提交时间。排查时先区分线程处于运行、可运行（RUNNABLE）、睡眠（SLEEPING）还是阻塞（BLOCKED）状态，再定位 Java/Kotlin/native 调用栈。一个很长的 `performTraversals` 需要继续拆成 measure、layout、record 和 `syncAndDrawFrame`，不能只按总时长优化 View 数量。
 
 改动也要与证据对应：
 
@@ -605,7 +613,7 @@ Android 17 还存在 buffer stuffing（Producer 持续提交，导致多个 buff
 
 ### 多窗口：共享关系要按进程划分
 
-同一进程的多个 HWUI 窗口共享 `RenderThread::getInstance()`。它们常常也使用同一主线程，但 UI 线程归属取决于各自 `ViewRootImpl` 的 Looper。RenderThread WorkQueue 是共享的，一个窗口的长同步、资源上传或 draw 可能延迟队列后方的另一个窗口。
+同一进程的多个 HWUI 窗口共享 `RenderThread::getInstance()`。它们常常也使用同一主线程，但 UI 线程归属取决于各自 `ViewRootImpl` 的 Looper。RenderThread WorkQueue 是共享的，一个窗口的长同步、资源上传或 draw，可能把排在队列后方的另一个窗口一起推迟。
 
 来自不同进程的分屏应用拥有各自的 UI 线程和 RenderThread。它们仍共享系统 GPU、SurfaceFlinger、HWC、内存带宽和显示 deadline。两边 App 都按时 `queueBuffer()`，仍可能在合成或显示阶段相互影响。
 
@@ -657,7 +665,7 @@ Android 17 根据 `info.prepareTextures` 选择早解锁或晚解锁。纹理缓
 
 #### “RenderThread 的 `waitOnFences()` 就是在等 SF release fence”
 
-`CanvasContext::waitOnFences()` 处理 CommonPool 异步帧任务。GraphicBuffer release fence来自 Producer/Consumer 路径，两者需按对象与调用栈区分。
+`CanvasContext::waitOnFences()` 处理 CommonPool 异步帧任务。GraphicBuffer release fence 来自 Producer/Consumer 路径；两者要按对象与调用栈区分。
 
 #### “所有窗口都使用相同的 buffer 数量”
 
@@ -697,11 +705,11 @@ MainThread 负责计算 View 层级并记录 RenderNode DisplayList；RenderThre
 
 ## Hardware Layer 的录制、缓存与失效
 
-线程分工解释了一帧如何产生，Hardware Layer 进一步改变 DisplayList 和纹理是否复用。收益取决于内容稳定性、更新范围和显存压力。
+上一节用线程分工说明了一帧怎样产生；Hardware Layer 改变的是 DisplayList 和纹理是否复用。收益取决于内容稳定性、更新范围和显存压力。
 
 ### 区分三种“Layer”
 
-Hardware Layer 这个名称容易混淆概念。Android 图形栈里至少有三种不同对象会被称为 layer：
+“Hardware Layer”这个名字容易混淆，因为 Android 图形栈里至少有三种对象都叫 layer：
 
 | 名称 | 所在范围 | 是否有独立 BufferQueue / SurfaceControl | SurfaceFlinger 能否单独看到 |
 |:---|:---|:---|:---|
@@ -709,7 +717,7 @@ Hardware Layer 这个名称容易混淆概念。Android 图形栈里至少有三
 | `TextureLayer` / `TextureView` 输入层 | 应用进程，HWUI 消费外部 SurfaceTexture | 输入端有独立 BufferQueue，但最终采样进宿主窗口 | 通常只能看到最终宿主 App Window |
 | SurfaceFlinger Layer | 系统合成层，来自 SurfaceControl | 通常携带独立 buffer/transaction 状态 | 是 |
 
-先约定本文的几个对象：HWUI 是 Android 渲染 View 的硬件加速管线；`RenderNode` 保存一个 View 子树的绘制指令与合成属性，`DisplayList` 是其中可重放的绘制指令列表；layer surface 或 render target 是 GPU 接收绘制结果的目标图像。这里讨论第一种 Layer：HWUI 为某个 View/RenderNode 子树创建中间渲染结果，后续将它作为一个整体参与 App Window 绘制。它不会为这个 View 创建新的窗口，也不会给 HWC 增加一个可独立分配 overlay plane（显示控制器硬件叠加通道）的 Layer。
+先约定本文反复出现的四个对象：HWUI 是 Android 渲染 View 的硬件加速管线；`RenderNode` 保存一个 View 子树的绘制指令与合成属性；`DisplayList` 是其中可重放的绘制指令列表；layer surface 或 render target 是 GPU 接收绘制结果的目标图像。这里讨论第一种 Layer：HWUI 为某个 View/RenderNode 子树创建中间渲染结果，后续将它作为一个整体参与 App Window 绘制。这种 Layer 不会为这个 View 创建新的窗口，也不会给 HWC 增加一个可独立分配 overlay plane（显示控制器硬件叠加通道）的 Layer。
 
 整体关系如下：
 
@@ -860,11 +868,11 @@ LayerType effectiveLayerType() const {
 }
 ```
 
-摘录中的字段名做了类成员前缀压缩，条件与 Android 17 源码一致。自动升层覆盖 functor（由外部渲染组件交给 HWUI 执行的绘制回调）隔离、`ImageFilter` 图像滤镜、`StretchEffect` 拉伸效果，以及非零半透明 alpha 与 overlapping rendering（子树中的绘制内容彼此重叠）的组合。尺寸超过最大纹理限制时无法走这条 RenderLayer 路径。
+摘录中的字段名做了类成员前缀压缩，条件与 Android 17 源码一致。自动升层覆盖四类情况：functor（由外部渲染组件交给 HWUI 执行的绘制回调）需要隔离、设置了 `ImageFilter` 图像滤镜、需要 `StretchEffect` 拉伸效果，以及非零半透明 alpha 与 overlapping rendering（子树中的绘制内容彼此重叠）同时成立。尺寸超过最大纹理限制时，这条 RenderLayer 路径无法生效。
 
 #### `hasOverlappingRendering()` 为什么重要
 
-alpha 直接乘到每条绘制操作上，与“先把整棵子树画到离屏层，再对整体乘 alpha”在重叠区域会产生不同结果。View 声明没有 overlapping rendering 时，HWUI 有机会直接调制每条绘制指令的 alpha，避免创建离屏 buffer。
+把 alpha 直接乘到每条绘制操作上，和先把整棵子树画到离屏层、再对整体乘 alpha，在重叠区域会得到不同结果。View 声明没有 overlapping rendering 时，HWUI 有机会直接调制每条绘制指令的 alpha，避免创建离屏 buffer。
 
 自定义 View 只有在语义可靠时才应让 `hasOverlappingRendering()` 返回 `false`。错误声明可能改变视觉结果；它不是纯粹的性能标记。
 
@@ -965,7 +973,7 @@ Hardware Layer 是已经栅格化的图像。大幅放大可能暴露采样模�
 
 #### Kernel 与 driver 边界
 
-kernel 侧统一以 `android17-6.18-2026-06_r6` 为版本锚点。View Hardware Layer 是 HWUI/Skia 内部 render target，不保证每个 layer 都对应一个可在 `drivers/dma-buf/dma-buf.c` 中单独识别的导出 dma-buf；dma-buf 是 Linux 在设备和进程间共享缓冲内存的机制。最终 App Window `GraphicBuffer` 通常跨进程共享，内部 layer texture 则可能只存在于 GPU 驱动和图形 API 的资源空间。
+kernel 侧统一以 `android17-6.18-2026-06_r6` 为版本锚点。View Hardware Layer 是 HWUI/Skia 内部 render target，不保证每个 layer 都对应一个导出的 dma-buf，也无法在 `drivers/dma-buf/dma-buf.c` 里单独识别出它；dma-buf 是 Linux 在设备和进程间共享缓冲内存的机制。最终 App Window `GraphicBuffer` 通常跨进程共享，内部 layer texture 则可能只存在于 GPU 驱动和图形 API 的资源空间。
 
 因此，进程 dma-buf 总量、`dumpsys SurfaceFlinger` Layer 数和 View Hardware Layer 数之间没有一一对应关系。分析内部纹理分配要依赖 GPU/driver 工具；最终窗口 buffer 才进入 gralloc（Android 图形缓冲分配模块）、dma-buf、BufferQueue 与 SurfaceFlinger 的共享路径。
 
@@ -995,7 +1003,7 @@ kernel 侧统一以 `android17-6.18-2026-06_r6` 为版本锚点。View Hardware 
 
 #### 优先考虑 `withLayer()`
 
-`ViewPropertyAnimator.withLayer()` 会保存当前 layer type，在下一次动画准备阶段切到 HARDWARE；View 已 attach 时还会调用 `buildLayer()`。动画结束后恢复原类型。
+`ViewPropertyAnimator.withLayer()` 会保存当前 layer type，在下一次动画准备阶段切到 HARDWARE；View 已 attach 时还会调用 `buildLayer()`。动画结束后再恢复原类型。
 
 下面的写法适合纯 View property animation，并能减少漏恢复：
 
