@@ -131,7 +131,11 @@ consolidated_from:
 
 # GPU 渲染与图形 API 选型
 
-“主线程不忙，所以 GPU 慢”会混淆不同的完成边界。UI 线程结束、RenderThread 提交命令、GPU completion（GPU 完成这批工作）、buffer queue（窗口 buffer 入队）和 present（把显示帧提交给显示设备）彼此独立；任何一个边界迟到，都可能让画面错过目标周期。
+“主线程不忙，所以 GPU 慢”这句话把不同的完成边界混在了一起。UI 线程结束、RenderThread 提交命令、GPU completion（GPU 完成这批工作）、buffer queue（窗口 buffer 入队）和 present（把显示帧提交给显示设备）彼此独立；任何一个边界迟到，都可能让画面错过目标周期。
+
+先约定贯穿全文的对象：Producer 生成并提交 buffer，Consumer 取得并使用它，fence 表示异步读写何时完成。
+
+HWUI 是 View/Compose 的硬件加速管线，RenderEngine 是 SurfaceFlinger 使用 GPU 合成 CLIENT Layer 的组件。HWC（Hardware Composer，硬件合成器）通过 display plane（显示控制器可独立处理的图层通道）处理 DEVICE Layer，或接收 RenderEngine 生成的 client target。本文会分别标明“App GPU 工作”“SurfaceFlinger GPU 工作”和“不一定经过通用 GPU 的显示硬件工作”。
 
 以下分析以 Android 17 / API 37 的 `android-17.0.0_r1` 为源码锚点，覆盖三类内容：
 
@@ -140,9 +144,6 @@ consolidated_from:
 - SurfaceFlinger 必要时用 RenderEngine 做 CLIENT composition。
 
 它们可以共享同一块 GPU，也会竞争内存带宽，但线程、Surface、fence 和工具入口并不相同。
-
-先约定贯穿全文的对象：Producer 生成并提交 buffer，Consumer 取得并使用它，fence 表示异步读写何时完成。HWUI 是 View/Compose 的硬件加速管线，RenderEngine 是 SurfaceFlinger 使用 GPU 合成 CLIENT Layer 的组件。HWC（Hardware Composer，硬件合成器）通过 display plane（显示控制器可独立处理的图层通道）处理 DEVICE Layer，或接收 RenderEngine 生成的 client target。本文会分别标明“App GPU 工作”“SurfaceFlinger GPU 工作”和“不一定经过通用 GPU 的显示硬件工作”。
-
 GPU 性能取决于工作负载、提交方式、同步和带宽，图形 API 只决定应用怎样表达这些工作。选型前先确认渲染内容、设备覆盖和工具能力，再比较 OpenGL ES、Vulkan 与 ANGLE 的工程成本。
 
 ## GPU 管线、瓶颈与测量
@@ -181,7 +182,7 @@ CPU record / submit
 
 这个模型适合建立概念，但不能据此断言每个 Canvas 操作固定生成多少顶点或使用哪一种 shader。Skia 可以根据图形、抗锯齿、clip、transform、backend 和 GPU capability 选择 analytic shader、实例化几何、tessellation、纹理 quad、离屏 pass 或其他策略。
 
-图中的 vertex processing 负责变换顶点，primitive assembly 把顶点组成三角形等图元，clipping 去掉视口外部分。rasterization 把图元转换成片元候选，fragment shading 计算颜色或采样纹理；depth/stencil tests 决定哪些结果可写入，blending 再与目标中已有颜色混合。color attachment 是最终接收颜色结果的图像。
+上面这段流程里，vertex processing 负责变换顶点，primitive assembly 把顶点组成三角形等图元，clipping 去掉视口外部分。rasterization 把图元转换成片元候选，fragment shading 计算颜色或采样纹理；depth/stencil tests 决定哪些结果可写入，blending 再与目标中已有颜色混合。color attachment 是最终接收颜色结果的图像。
 
 Skia 的具体选择会随内容变化。analytic shader 用数学表达式直接计算覆盖率；实例化几何复用同一份几何描述绘制多个对象；tessellation 把曲线等复杂形状细分为 GPU 可处理的图元；纹理 quad 是用于采样一张纹理的矩形；离屏 pass 先把结果画到中间目标。backend 指 Skia 连接 OpenGL/Vulkan 与驱动的后端实现，GPU capability 则是设备实际支持的功能与限制。
 
@@ -322,7 +323,9 @@ Android 17 的 `frameworks/native/vulkan/libvulkan/swapchain.cpp` 把 Vulkan swa
 
 `vkQueuePresentKHR()` 返回不表示 panel 已显示，`vkQueueSubmit()` 返回也不表示 GPU 已完成。需要区分 GPU fence/semaphore、producer fence、SurfaceFlinger latch、display present fence（显示系统完成本次 present 的同步边界）和 buffer release（Consumer 不再使用该 buffer）。
 
-Android 17 的 loader/swapchain 路径增加 `VK_EXT_present_timing` 支持，可以按 present ID（一次 present 的关联标识）查询 dequeue、queue operations end、first pixel out（面板开始输出首个像素）和 first pixel visible（首个像素达到可见状态）等阶段。这个扩展并非所有 Android 17 设备都可用。应用要枚举 extension（扩展），同时检查 `VK_KHR_present_id2`、`presentTiming` / `presentId2` feature，并在创建 swapchain 时启用 `VK_SWAPCHAIN_CREATE_PRESENT_TIMING_BIT_EXT`。缺少条件时可回退到 `VK_GOOGLE_display_timing` 或 Swappy（Android 游戏帧节奏库）。
+Android 17 的 loader/swapchain 路径增加 `VK_EXT_present_timing` 支持，可以按 present ID（一次 present 的关联标识）查询 dequeue、queue operations end、first pixel out（面板开始输出首个像素）和 first pixel visible（首个像素达到可见状态）等阶段。这个扩展并非所有 Android 17 设备都可用。
+
+应用要枚举 extension（扩展），同时检查 `VK_KHR_present_id2`、`presentTiming` / `presentId2` feature，并在创建 swapchain 时启用 `VK_SWAPCHAIN_CREATE_PRESENT_TIMING_BIT_EXT`。缺少条件时可回退到 `VK_GOOGLE_display_timing` 或 Swappy（Android 游戏帧节奏库）。
 
 #### Render pass 与 tile-based GPU
 
@@ -521,7 +524,7 @@ Perfetto 对 data source（数据源）名称做精确匹配，带后缀的 prod
 
 ### Android 16 GPU Headroom
 
-API 36 的 `SystemHealthManager.getGpuHeadroom()` 返回 `[0, 100]` 的可用 GPU capacity（余量）估计，0 表示系统无法再提供更多 GPU 资源；暂时无数据时返回 `Float.NaN`，设备不支持时抛 `UnsupportedOperationException`。
+API 36 的 `SystemHealthManager.getGpuHeadroom()` 返回 `[0, 100]` 区间的 GPU 余量（capacity）估计，0 表示系统无法再提供更多 GPU 资源；暂时无数据时返回 `Float.NaN`，设备不支持时抛 `UnsupportedOperationException`。
 
 每次有效调用至少包含一次同步 Binder transaction（调用线程等待系统服务返回的跨进程调用），官方说明它可能超过 1 ms，首次调用或更换参数还可能因延迟初始化更慢。不能在 UI、RenderThread 或游戏关键 render loop（逐帧执行的渲染循环）中调用。
 
@@ -564,7 +567,9 @@ Perfetto 适合把以下时间放在同一时钟域，也就是用可直接对�
 
 #### APA 与 AGI：区分系统 profile、单帧分析
 
-当前官方把 Android Performance Analyzer（APA）定位为面向游戏和 Vulkan 图形的 profiler；AGI 页面仍称 APA 是 profiling games（游戏性能分析）的推荐工具，并指向 public beta 发布。APA 的 System Profiler 可以记录系统 trace，但不宜泛化到所有 App：非游戏、非 Vulkan 图形场景优先使用 Android Studio profiler 或 Perfetto。Android GPU Inspector（AGI）的 System Profiler 仍可采集 Perfetto 与 GPU 数据；新建游戏/图形 system profile 时，再根据 APA 的设备验证、数据源覆盖和目标场景决定是否使用 APA。
+当前官方把 Android Performance Analyzer（APA）定位为面向游戏和 Vulkan 图形的 profiler；AGI 页面仍称 APA 是 profiling games（游戏性能分析）的推荐工具，并指向 public beta 发布。APA 的 System Profiler 可以记录系统 trace，但不宜泛化到所有 App：非游戏、非 Vulkan 图形场景优先使用 Android Studio profiler 或 Perfetto。
+
+Android GPU Inspector（AGI）的 System Profiler 仍可采集 Perfetto 与 GPU 数据；新建游戏/图形 system profile 时，再根据 APA 的设备验证、数据源覆盖和目标场景决定是否使用 APA。
 
 AGI Frame Profiler 继续负责单帧检查：对受支持应用查看 Vulkan API call、framebuffer、draw call、pipeline、shader、texture、render state（本帧图形管线配置）与 memory。
 
@@ -741,21 +746,6 @@ fence wait 只说明依赖尚未完成。判断 GPU 为何晚，需要找到 fen
 - Graphics HAL [allocator AIDL](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/allocator/aidl/)、[mapper stable-C](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/mapper/stable-c/)：allocator/mapper 当前接口。
 - Kernel [`dma-buf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)、[`dma-heap.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-heap.c)、[`dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)、[`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)：共享 buffer 与同步。
 
-### 官方资料
-
-- [Android graphics architecture: BufferQueue and Gralloc](https://source.android.com/docs/core/graphics/arch-bq-gralloc)
-- [Transition from ION to DMA-BUF heaps](https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps)
-- [Perfetto GPU data sources](https://perfetto.dev/docs/data-sources/gpu)
-- [Android GPU Inspector](https://developer.android.com/agi)
-- [AGI Frame Profiler](https://developer.android.com/agi/frame-trace/frame-profiler)
-- [Android Performance Analyzer](https://developer.android.com/android-performance-analyzer)
-- [SystemHealthManager GPU Headroom](https://developer.android.com/reference/android/os/health/SystemHealthManager#getGpuHeadroom(android.os.GpuHeadroomParams))
-- [Vulkan on Android](https://developer.android.com/games/develop/vulkan/overview)
-- [Vulkan frame pacing extensions](https://developer.android.com/games/develop/vulkan/frame-pacing-extensions)
-- [WebGPU for Android](https://developer.android.com/develop/ui/views/graphics/webgpu)、[AndroidX WebGPU releases](https://developer.android.com/jetpack/androidx/releases/webgpu)
-- [Texture compression](https://developer.android.com/games/optimize/textures)
-- [FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
-
 ### 常见误区
 
 #### “Perfetto 有 GPU Track，就能直接看 Vertex/Fragment 时间”
@@ -785,6 +775,21 @@ ANGLE 可能增加翻译成本，也可能因 Vulkan driver 质量改善表现�
 #### “SurfaceFlinger 合成不算 App 的 GPU 问题”
 
 它不属于 App renderer，但会影响最终 DisplayFrame，并与 App 争用 GPU/带宽。报告时应分开归因，再说明共同资源影响。
+
+### 官方资料
+
+- [Android graphics architecture: BufferQueue and Gralloc](https://source.android.com/docs/core/graphics/arch-bq-gralloc)
+- [Transition from ION to DMA-BUF heaps](https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps)
+- [Perfetto GPU data sources](https://perfetto.dev/docs/data-sources/gpu)
+- [Android GPU Inspector](https://developer.android.com/agi)
+- [AGI Frame Profiler](https://developer.android.com/agi/frame-trace/frame-profiler)
+- [Android Performance Analyzer](https://developer.android.com/android-performance-analyzer)
+- [SystemHealthManager GPU Headroom](https://developer.android.com/reference/android/os/health/SystemHealthManager#getGpuHeadroom(android.os.GpuHeadroomParams))
+- [Vulkan on Android](https://developer.android.com/games/develop/vulkan/overview)
+- [Vulkan frame pacing extensions](https://developer.android.com/games/develop/vulkan/frame-pacing-extensions)
+- [WebGPU for Android](https://developer.android.com/develop/ui/views/graphics/webgpu)、[AndroidX WebGPU releases](https://developer.android.com/jetpack/androidx/releases/webgpu)
+- [Texture compression](https://developer.android.com/games/optimize/textures)
+- [FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
 
 ## OpenGL ES、Vulkan 与 ANGLE 选型
 
@@ -906,7 +911,9 @@ Android 17 同时存在 CDD、平台源码内的设备要求 profile（能力配
 
 Android 17 CDD 的强制项与建议项要分开读。对包含 Vulkan 实现的设备，CDD 7.1.4.2 要求支持 `VK_EXT_present_mode_fifo_latest_ready`、`VK_KHR_present_wait2`、`VK_KHR_android_surface`、`VK_KHR_incremental_present`、`VK_KHR_present_id`、`VK_KHR_present_id2`、`VK_KHR_surface` 和 `VK_KHR_swapchain`。`VK_EXT_present_timing`、`VK_GOOGLE_display_timing` 与 `VK_KHR_driver_properties` 在 CDD 中属于强烈建议项，与强制项层级不同。
 
-Android 17 还增加了两类限制。第一，声明 Vulkan 1.1 及相应 feature flag 的实现必须支持 `SYNC_FD` external semaphore handle（用文件描述符跨 API/进程传递 semaphore）和 `VK_ANDROID_external_memory_android_hardware_buffer`（导入 Android HardwareBuffer），而 `VK_KHR_external_fence_fd` 仍是强烈建议项。第二，普通不可调试应用不能枚举包外 Vulkan layer，也不能被包外实现跟踪或拦截 Vulkan API；这里的 layer 是插在应用与驱动之间的 Vulkan 功能层，不是 SurfaceFlinger 图层。只有应用设置 `com.android.graphics.injectLayers.enable=true` 时才放行这一入口，OEM 和平台 layer 按 CDD 例外处理。这会直接影响抓帧、验证层和图形调试工具的接入方式。
+Android 17 还增加了两类限制。第一，声明 Vulkan 1.1 及相应 feature flag 的实现必须支持 `SYNC_FD` external semaphore handle（用文件描述符跨 API/进程传递 semaphore）和 `VK_ANDROID_external_memory_android_hardware_buffer`（导入 Android HardwareBuffer），而 `VK_KHR_external_fence_fd` 仍是强烈建议项。
+
+第二，普通不可调试应用不能枚举包外 Vulkan layer，也不能被包外实现跟踪或拦截 Vulkan API；这里的 layer 是插在应用与驱动之间的 Vulkan 功能层，不是 SurfaceFlinger 图层。只有应用设置 `com.android.graphics.injectLayers.enable=true` 时才放行这一入口，OEM 和平台 layer 按 CDD 例外处理。这会直接影响抓帧、验证层和图形调试工具的接入方式。
 
 `frameworks/native/vulkan/vkprofiles/profiles/VP_ANDROID_17_requirements.json` 列出的 Android 17 芯片组要求更宽。它除了 present 扩展，还包含 `VK_KHR_pipeline_binary`、`VK_KHR_pipeline_library`、`VK_EXT_graphics_pipeline_library`、`VK_EXT_present_timing`，并要求 Vulkan 1.4 的 `hostImageCopy` feature（允许主机侧直接复制部分图像数据）。该 JSON 的说明把适用范围限定为在 Android 17 首发或重新进行 Google Requirements Freeze 的芯片组，不能拿它约束所有从旧版本升级到 Android 17 的设备。
 
@@ -963,7 +970,7 @@ Android 17 的 HWUI `VulkanManager` 会请求同一 graphics family 的两条 qu
 
 ### 5. Android WSI：不同 API 的共同出口
 
-Native Graphics 的边界是画面生产权。应用或引擎通过自身 render loop（持续获取图像、生成并提交每帧工作的循环）取得 buffer、记录 GPU 工作并提交到可见 `Surface`。宿主可以是 `SurfaceView`、`GameActivity`、`NativeActivity` 或其他能提供 `Surface` 的组件。
+Native Graphics 的边界在于画面由谁生产。应用或引擎通过自身 render loop（持续获取图像、生成并提交每帧工作的循环）取得 buffer、记录 GPU 工作并提交到可见 `Surface`。宿主可以是 `SurfaceView`、`GameActivity`、`NativeActivity` 或其他能提供 `Surface` 的组件。
 
 Java `Surface` 可由 `ANativeWindow_fromSurface()` 转成 `ANativeWindow`。EGL window surface 与 Vulkan Android surface 都通过它连接 Android 图形缓冲区。
 
@@ -1120,7 +1127,7 @@ producer 持续尽快提交会逐渐占满可用 buffer。随后 render thread �
 - Android 16 / API 36：首发设备 Vulkan 基线提升到 1.4。
 - Android 17/API 37：CDD 增加 present、外部同步与 layer 注入要求；`VP_ANDROID_17_requirements` 定义该代首发/重新冻结芯片组的 Vulkan 1.4.335 能力集合；应用可通过 `com.android.graphics.driver.prefer_angle` 表达 ANGLE 偏好；AndroidX WebGPU 仍处预览阶段。
 
-这里没有把“平台新增”“兼容设备要求”“新芯片组要求”和“活跃设备覆盖率”写成一条递增版本线。它们回答的问题不同，也是做设备分层时最容易混淆的地方。
+上面列出的版本节点要分成四类来读：“平台新增”“兼容设备要求”“新芯片组要求”和“活跃设备覆盖率”。它们各自回答不同的问题，不构成一条递增的版本线；做设备分层时，这几类最容易混淆。
 
 ### 10. 源码阅读入口
 
