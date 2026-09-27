@@ -55,13 +55,15 @@ last_review_finalize_run_id: 20260806-160557-24b5c632
 
 # Android 17 / ACK 6.18 BPF 可观测性与可编程边界
 
-Android 上“内核支持 BPF”不等于普通应用可以任意装载程序。可观测范围同时受内核配置、平台加载器、SELinux 与公开接口约束，排查时要把编译能力、系统已部署程序和应用可访问证据分开。
+Android 上“内核支持 BPF”不等于普通应用可以任意装载程序。可观测范围同时受内核配置、平台加载器、SELinux 与公开接口约束，排查时要区分三样东西：内核的编译能力、系统已经部署的程序、应用侧可访问的证据。
 
 ## 范围与判断
 
-BPF 是 Linux 内核中的受限程序运行机制，可在 verifier 检查通过后附着到网络、跟踪、安全或调度等内核位置；本文沿用内核与 Android 源码中的 BPF 名称。版本范围是 Android 17（API 37）、AOSP `android-17.0.0_r1` 与 ACK `android17-6.18-2026-06_r6`。ACK 是 Android Common Kernel，即 Android 共同内核分支。本文关于 6.18、Arena、`sched_ext` 和平台 BPF 加载器的结论，都以这些源码版本为准。
+BPF 是 Linux 内核中的受限程序运行机制，可在 verifier（加载前检查程序安全性与合法性的验证器）检查通过后附着到网络、跟踪、安全或调度等内核位置；全文使用的 BPF 名称与内核和 Android 源码保持一致。
 
-Android 17 的新 ACK 是 `android17-6.18`，`android17-6.18-2026-06_r6` 是对应的一次发布标签（release tag）。兼容表仍列有旧 ACK，但不能因此把 6.12 当作 Android 17 的最高内核版本。
+版本范围是 Android 17（API 37）、AOSP `android-17.0.0_r1` 与 ACK `android17-6.18-2026-06_r6`。ACK 是 Android Common Kernel，即 Android 共同内核分支。本文关于 6.18、Arena、`sched_ext` 和平台 BPF 加载器的结论，都以这些源码版本为准。
+
+Android 17 的新 ACK 是 `android17-6.18`，`android17-6.18-2026-06_r6` 是对应的一次发布标签（release tag）。AOSP 的兼容表仍列有旧 ACK，但不能因此把 6.12 当作 Android 17 的最高内核版本。
 
 判断一项 BPF 能力能否在设备上使用，至少要依次通过四道检查：
 
@@ -70,7 +72,7 @@ Android 17 的新 ACK 是 `android17-6.18`，`android17-6.18-2026-06_r6` 是对�
 3. BPF 对象是否随系统镜像安装，loader 是否按内核版本和功能开关（feature flag）加载，程序是否已经附着到目标事件或内核对象。
 4. 调用方是否有相应的文件权限、Linux capability（细分的特权能力）与 SELinux 权限。
 
-可用能力满足以下交集：
+可用的 BPF 能力是四项的交集：
 
 ```text
 可用能力 = 内核实现 ∩ 内核配置 ∩ 已加载并附着的程序 ∩ 调用方权限
@@ -101,19 +103,17 @@ AOSP 的 Android 17 兼容表列出了多条受支持的 GKI 内核。GKI 是 Ge
 adb shell uname -r
 ```
 
-这条命令只确认运行内核的版本字符串。若要确认它是否对应受支持的 GKI 构建，还要结合 GKI 构建版本、KMI generation（内核模块接口的代际标识）、Android 安全补丁级别和厂商模块版本。
+这条命令只确认运行内核的版本字符串。若要确认该内核是否对应受支持的 GKI 构建，还要结合 GKI 构建版本、KMI generation（内核模块接口的代际标识）、Android 安全补丁级别和厂商模块版本。
 
 ### 1.2 Linux 6.10 的定位
 
-Linux 6.10 是上游演进过程中的一个版本阶段，并非 Android 17 的 GKI 分支名。Android 17 的 6.18 ACK 已包含 Arena、`sched_ext`、BPF iterators（由 BPF 程序遍历内核对象的接口）、BPF LSM 安全钩子和 `struct_ops`（用 BPF 实现一组内核操作回调）等机制。
-
-分析 Android 平台时，应直接检查目标 ACK，不应只根据上游版本推测某项特性是否已被回移（backport）到 Android 内核。这里的检查对象是：
+Linux 6.10 是上游内核的一个版本阶段，不是 Android 17 的 GKI 分支名。分析 Android 平台时，应直接检查目标 ACK，不能只根据上游版本推测某项特性是否已被回移（backport）到 Android 内核。检查对象是下面这个固定 tag：
 
 ```text
 android17-6.18-2026-06_r6
 ```
 
-除非明确说明兼容分支，内核实现和配置都以这个固定 tag 为准。
+除非明确说明兼容分支，内核实现和配置都以它为准。Android 17 的 6.18 ACK 已经包含 Arena、`sched_ext`、BPF iterators（由 BPF 程序遍历内核对象的接口）、BPF LSM 安全钩子和 `struct_ops`（用 BPF 实现一组内核操作回调）等机制。
 
 ## 2. ACK 6.18 编译了哪些 BPF 基础能力
 
@@ -135,14 +135,14 @@ CONFIG_DEBUG_INFO_BTF=y
 
 - 内核实现了 `bpf()` 系统调用，并始终使用 BPF JIT。
 - BPF LSM、cgroup BPF、网络流量分类和处理动作等程序类别具备编译基础。
-- BTF 类型信息可供 verifier（在加载前检查程序安全性和合法性的验证器）、tracing 和 CO-RE 重定位使用。
-- `sched_ext` 调度类被编入内核。
+- BTF 类型信息可供 verifier、tracing 和 CO-RE 重定位使用。
+- 内核编入了 `sched_ext` 调度类。
 
-配置只能证明代码被编入 GKI。普通应用仍受 Android UID、capability、SELinux 和 bpffs 节点权限约束；bpffs 是用于保存并共享 BPF 对象的虚拟文件系统。因此，不能因为 `CONFIG_BPF_SYSCALL=y` 就认定普通应用可以加载任意内核 BPF 程序。BPF LSM 被编译也不代表 Android 以 BPF LSM 替换 SELinux；两者是否启用、以何种顺序参与安全决策，还取决于启动参数、LSM 列表和产品策略。
+配置只能证明代码已经编入 GKI。普通应用仍受 Android UID、capability、SELinux 和 bpffs 节点权限约束；bpffs 是用于保存并共享 BPF 对象的虚拟文件系统。因此，不能因为 `CONFIG_BPF_SYSCALL=y` 就认定普通应用可以加载任意内核 BPF 程序。
+
+编入 BPF LSM 也不代表 Android 会用 BPF LSM 替换 SELinux。两者是否启用、以何种顺序参与安全决策，还取决于启动参数、LSM 列表和产品策略。
 
 ### 2.1 BTF、CO-RE 与 KMI 是三件事
-
-这三个概念需要分别理解：
 
 - **BTF（BPF Type Format）** 描述内核或 BPF 对象中的类型、成员和部分源码行信息。
 - **CO-RE（Compile Once – Run Everywhere）** 利用 BTF relocation，让同一个已经编译的 BPF 对象在类型布局发生兼容变化时修正字段访问。
@@ -190,7 +190,7 @@ mount bpf bpf /sys/fs/bpf nodev noexec nosuid
 
 ## 4. `android-17.0.0_r1` 的平台 BPF 程序清单
 
-平台 BPF 程序不止 `cyclePerUid`、`dmabufIter`、`kernelWakelockDuration` 和锁竞争程序。每个程序支持的 CPU 架构、功能开关和 attach 状态也各不相同。
+平台 BPF 程序不止一类。`cyclePerUid`、`dmabufIter`、`kernelWakelockDuration` 和锁竞争程序只是其中一部分；每个程序支持的 CPU 架构、功能开关和 attach 状态各不相同。
 
 ### 4.1 loader 固定描述表中的对象
 
@@ -261,7 +261,7 @@ kernel wakelock 程序累计内核 wakeup source（阻止系统进入某些低�
 
 ## 6. BPF Arena 的准确边界
 
-`android17-6.18-2026-06_r6` 的 `kernel/bpf/arena.c` 将 Arena 定义为 BPF 程序与用户进程之间的稀疏共享内存区域。“稀疏”表示预留较大的虚拟地址范围，但只为实际使用的部分建立物理页。它适合构造包含较多指针、由 BPF 与用户空间共同约定布局的数据结构。
+`android17-6.18-2026-06_r6` 的 `kernel/bpf/arena.c` 将 Arena 定义为 BPF 程序与用户进程之间的稀疏共享内存区域。“稀疏”表示预留较大的虚拟地址范围，但只为实际使用的部分建立物理页。它适合构造一类数据结构：布局由 BPF 与用户空间共同约定，指针也较多。
 
 创建 Arena 时有几项直接来自源码的限制：
 
@@ -275,7 +275,7 @@ kernel wakelock 程序累计内核 wakeup source（阻止系统进入某些低�
 
 Arena 不是普通的键值（key/value）map。源码中的 lookup、update、delete、push、pop 等 map 操作会返回“不支持”或错误，用户空间不能把它当成哈希表调用 `bpf_map_lookup_elem()`。
 
-Arena 可能减少特定数据结构在 BPF 与用户空间之间交换时的系统调用、复制或重新编码成本。它本身不会：
+Arena 可能降低 BPF 与用户空间交换特定数据结构时的开销，减少系统调用、复制或重新编码。它本身不会：
 
 - 自动附着到 page fault、reclaim、GPU 或 NPU 事件。
 - 自动收集 DMA-BUF 生命周期。
@@ -310,7 +310,9 @@ adb shell 'cat /sys/kernel/sched_ext/root/ops 2>/dev/null'
 adb shell 'cat /sys/kernel/sched_ext/enable_seq 2>/dev/null'
 ```
 
-`state` 显示框架当前是 `disabled`、`enabling` 还是 `enabled`；`switch_all` 表示当前调度器是否接管全部符合条件的任务；`root/ops` 在调度器对象存在时显示 ops 名称。`enable_seq` 是只增不减的计数器：值为 0 表示本次启动后从未成功启用 BPF 调度器，非 0 只能证明曾经启用过，不能证明当前仍在运行。节点不存在或访问被拒绝时，应记录内核版本、构建类型和 SELinux 拒绝日志，不能把空输出直接解释成某项能力不存在。
+`state` 显示框架当前是 `disabled`、`enabling` 还是 `enabled`；`switch_all` 表示当前调度器是否接管全部符合条件的任务；`root/ops` 在调度器对象存在时显示 ops 名称。
+
+`enable_seq` 是只增不减的计数器：值为 0 表示本次启动后从未成功启用 BPF 调度器，非 0 只能证明曾经启用过，不能证明当前仍在运行。节点不存在或访问被拒绝时，应记录内核版本、构建类型和 SELinux 拒绝日志，不能把空输出直接解释成某项能力不存在。
 
 Android 17 AOSP 平台源码没有提供名为“ML Scheduler”的系统级 BPF 调度器，也没有 `bpf_runqueue_hook` 或 `bpf_cpufreq_hook` 这类通用接口。调度观测通常依赖已有的 sched/power tracepoint、BPF tracing 程序或 Perfetto；调度控制则需要单独实现 `sched_ext` 策略，并完成权限配置和产品验证。“关键任务响应时间改善 35%”如果缺少可复现实验，不能作为平台结论。
 
