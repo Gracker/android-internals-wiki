@@ -3598,6 +3598,26 @@
       "summary": "Source-index entry 415 misrouted: F-Droid 2.0 client rewrite (Kotlin/Compose/Material 3/session installer) does not belong in ART dynamic-method-tracing & JVMTI chapter",
       "type": "routing-misfire",
       "updated_at": "2026-09-26T13:35:49.574806+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/28-bpf-observability-boundary.md",
+      "close_note": "Added sched_ext ABI instability note to section 7 and refreshed audit metadata.",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20260927-103557-idle-audit-2a7a1499",
+      "created_at": "2026-09-27T10:44:53.925798+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20260927-103557-idle-audit-2a7a1499",
+      "details": "Kernel sched_ext documentation marks struct sched_ext_ops, ext.h constants and scx_bpf_* kfunc APIs as unstable across kernel versions; article used sched_ext behavior but did not preserve this lifecycle boundary.",
+      "id": "AIW-1.28-20260927-SCHED-EXT-ABI",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://docs.kernel.org/scheduler/sched-ext.html"
+      ],
+      "status": "fixed",
+      "summary": "sched_ext ABI instability warning missing from finalized BPF boundary chapter",
+      "type": "source-boundary",
+      "updated_at": "2026-09-27T10:45:01.680438+08:00"
     }
   ],
   "schema_version": 1
