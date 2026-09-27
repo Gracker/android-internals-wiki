@@ -176,7 +176,7 @@ consolidated_from:
 
 # BufferQueue、Gralloc 与 Sync Fence
 
-BufferQueue 管理 Producer 与 Consumer 之间的缓冲区所有权，Gralloc 和 DMA-BUF 提供实际内存，fence 表示读写何时完成。三个层次共同决定是否阻塞、能否复用以及跨进程共享是否安全。
+BufferQueue 管理 Producer 与 Consumer 之间的缓冲区所有权，Gralloc 和 DMA-BUF 提供实际内存，fence 表示读写何时完成。三个层次共同决定是否阻塞、能否复用以及跨进程共享是否安全；下文按这三层依次展开。
 
 ## BufferQueue 的槽位、所有权与反压
 
@@ -196,11 +196,13 @@ Perfetto 中出现以下现象时，BufferQueue 是必须检查的一层：
 
 BufferQueue 连接一个 Producer（生产者）和一个 Consumer（消费者）。Producer 写入内容，Consumer 读取内容；`BufferQueueCore` 维护一组 slot（可循环复用的槽位索引）、各 slot 绑定的 `GraphicBuffer`、队列元数据和同步对象。`GraphicBuffer` 代表一块可供图形组件共享的 buffer，slot 则用于反复引用它，二者不是同一个对象。
 
-`GraphicBuffer` 底层通常关联可跨进程、跨设备共享的 dma-buf（Linux 内核的共享 buffer 机制）。双方传递 slot、buffer 引用、时间戳、crop、transform（旋转或翻转）、dataspace（颜色空间和传输特征）以及 fence，无需在每次交接时复制整帧像素。fence 是异步读写的完成凭证：signal 表示对应工作已经完成，acquire fence 约束下游何时可读，release fence 约束上游何时可复用。
+`GraphicBuffer` 底层通常关联可跨进程、跨设备共享的 dma-buf（Linux 内核的共享 buffer 机制）。双方传递 slot、buffer 引用、时间戳、crop、transform（旋转或翻转）、dataspace（颜色空间和传输特征）以及 fence，无需在每次交接时复制整帧像素。
+
+fence 是异步读写的完成凭证：signal 表示对应工作已经完成，acquire fence 约束下游何时可读，release fence 约束上游何时可复用。
 
 这里的“零拷贝”只描述 BufferQueue 的交接方式。TextureView 回流、截图、格式转换或 SurfaceFlinger 的 client composition（由 GPU 合成多个输入图层）仍可能增加采样和输出 buffer。
 
-Android 的可见 Surface 也不都采用同一种拓扑：
+Android 的可见 Surface 也不都采用同一种拓扑。BLAST 是 BufferQueue Layer Aware Surface Transactions，用于把 App 窗口内容 buffer 与对应的图层事务关联起来；下文用 SF 代指 SurfaceFlinger，用 HWC 代指 Hardware Composer（硬件合成器）。常见拓扑如下：
 
 | 场景 | 常见 Producer | BufferQueue Consumer 所在处 | 最终去向 |
 |---|---|---|---|
@@ -209,7 +211,7 @@ Android 的可见 Surface 也不都采用同一种拓扑：
 | `TextureView` 输入 | 外部 Producer | App 进程中的 `SurfaceTexture` | 被宿主 HWUI 再采样 |
 | Vulkan swapchain（轮换呈现的一组图像） | Vulkan queue | Android WSI（Vulkan 与窗口系统的接口）/BufferQueue 路径 | 对应 Surface 的消费链 |
 
-BLAST 是 BufferQueue Layer Aware Surface Transactions，用于把 App 窗口内容 buffer 与对应的图层事务关联起来。下文用 SF 代指 SurfaceFlinger，用 HWC 代指 Hardware Composer（硬件合成器）。因此，“App 是 Producer、SF 是 Consumer”只适用于一部分历史或独立 Surface 模型。Android 17 的标准 App Window 要按 App 内 BLAST Consumer 分析。
+因此，“App 是 Producer、SF 是 Consumer”只适用于一部分历史或独立 Surface 模型。Android 17 的标准 App Window 要按 App 内 BLAST Consumer 分析。
 
 ### Producer 的三个主调用
 
@@ -340,7 +342,14 @@ SF 的 release 信息还会携带当前刷新率对应的 acquired 数。对于 
 
 #### slot 复用不是 framework 通用显存池
 
-Android 17 的 `BufferQueueCore` 默认准备 64 个 slot 索引，但刚创建的队列可以一块 `GraphicBuffer` 都没有。slot 分布在四类容器：`mFreeSlots` 保存尚未绑定 buffer 的 FREE slot，`mFreeBuffers` 保存仍绑定旧 buffer 的 FREE slot，`mUnusedSlots` 保存当前不计入可用数量且无 buffer 的 slot，`mActiveBuffers` 保存 DEQUEUED、QUEUED、ACQUIRED 等活动 slot。64 描述可用索引的容量，不代表已经分配了 64 块内存；经过 Consumer/Producer 显式协商的路径还可以扩展 slot 数。
+Android 17 的 `BufferQueueCore` 默认准备 64 个 slot 索引，但刚创建的队列可以一块 `GraphicBuffer` 都没有。slot 分布在四类容器：
+
+- `mFreeSlots` 保存尚未绑定 buffer 的 FREE slot；
+- `mFreeBuffers` 保存仍绑定旧 buffer 的 FREE slot；
+- `mUnusedSlots` 保存当前不计入可用数量且无 buffer 的 slot；
+- `mActiveBuffers` 保存 DEQUEUED、QUEUED、ACQUIRED 等活动 slot。
+
+64 描述可用索引的容量，不代表已经分配了 64 块内存；经过 Consumer/Producer 显式协商的路径还可以扩展 slot 数。
 
 普通 `dequeueBuffer()` 优先从 `mFreeBuffers.front()` 取得已分配对象；没有可复用 buffer 且允许分配时，才选择 `mFreeSlots` 并在 `dequeueBuffer()` 内创建新 `GraphicBuffer`。`requestBuffer()` 只是把新映射交给 Producer 缓存，分配动作不发生在这个调用中。
 
@@ -374,7 +383,7 @@ waitForFreeSlotThenRelock()
       retry
 ```
 
-把 `INVALID_OPERATION`、`WOULD_BLOCK` 和长时间等待都归为“背压”，会得到错误结论。背压指下游消费不及，使上游不能继续生产；判断是否属于这种情况，需要同时记录返回码、Surface 模式、slot 数量和 Consumer 进度。
+背压指下游消费不及，使上游不能继续生产；把 `INVALID_OPERATION`、`WOULD_BLOCK` 和长时间等待都归为背压，会得到错误结论。要判断是否属于背压，需要同时记录返回码、Surface 模式、slot 数量和 Consumer 进度。
 
 ### 通用 BufferQueue 与 Android 17 BLAST 的等待方式
 
@@ -461,7 +470,7 @@ Android 13 起，`AutoSingleLayer` 允许 SurfaceFlinger 在严格条件下先 l
 
 ### 三类 fence 的方向
 
-这里讨论 BufferQueue 交接，后文继续解释 sync_file 与 dma-fence。排障时至少要标明以下三类对象：
+这里讨论 BufferQueue 交接，后文继续解释 sync_file 与 dma-fence。排障时至少要写明三件事：这条 fence 的粒度、由谁产生并交给谁、它能证明什么。
 
 | 名称 | 粒度 | 产生方与流向 | 能证明什么 |
 |---|---|---|---|
@@ -489,7 +498,7 @@ buffer stuffing 指队列中的在途帧过多，Producer 因缺少 free buffer 
 
 ### 在 Perfetto 中建立证据链
 
-绝对毫秒阈值会随刷新率、Surface 类型、GPU/HWC、热状态和 trace 开销变化。应先采集同机型、同刷新率、同场景的顺畅基线，再比较异常段。
+Perfetto 里的绝对毫秒阈值会随刷新率、Surface 类型、GPU/HWC、热状态和 trace 开销变化。应先采集同机型、同刷新率、同场景的顺畅基线，再比较异常段。
 
 #### 三个时间点需要分开
 
@@ -581,13 +590,13 @@ BLAST 的职责是把 buffer、frame number、fence 和受控 layer 状态放入
 
 ## Gralloc 分配与 DMA-BUF 共享
 
-BufferQueue 只管理槽位和状态，GraphicBuffer 背后的物理页、格式和映射由 Gralloc 与 DMA-BUF 决定。
+前一节讨论的是槽位、所有权与 fence 时序；GraphicBuffer 背后的物理页、格式和映射由 Gralloc 与 DMA-BUF 决定。
 
 BufferQueue 负责回答“哪个 slot（可复用的槽位索引）归谁使用”，Gralloc（graphics allocator，图形 buffer 分配接口）负责回答“按什么规格分配、怎样导入和访问”，DMA-BUF 负责回答“同一份 buffer 怎样被多个设备驱动和进程引用”。三者解决不同问题。
 
-先区分几个贯穿全文的对象：handle 是描述 buffer 及其文件描述符、私有整数等信息的不透明句柄；raw handle 是尚未导入当前进程的传输形态，imported handle 是 Mapper 导入后可供当前进程使用的形态；backing storage 是真正承载像素和元数据的底层存储；attachment 则表示某个硬件设备已经把这块 DMA-BUF 接入自己的访问路径。关闭一个 fd、释放一个 handle、解除一次 attachment 和回收 backing storage 是四个不同动作。
+先区分几组容易混同的对象名：handle 是描述 buffer 及其文件描述符、私有整数等信息的不透明句柄；raw handle 是尚未导入当前进程的传输形态，imported handle 是 Mapper 导入后可供当前进程使用的形态；backing storage 是真正承载像素和元数据的底层存储；attachment 则表示某个硬件设备已经把这块 DMA-BUF 接入自己的访问路径。关闭一个 fd、释放一个 handle、解除一次 attachment 和回收 backing storage 是四个不同动作。
 
-理解这组边界后，许多常见现象会变得清楚：
+这组边界对应下面几条容易读错的结论：
 
 - Binder 传递 `GraphicBuffer` 时会复制元数据和文件描述符引用，不会复制整帧像素；
 - “零拷贝”只描述跨模块共享这一段，不保证后续没有 GPU 合成、格式转换、resolve（把多重采样或中间结果转成目标图像）或 CPU copy；
@@ -658,7 +667,7 @@ Android 17 的主线分配接口是 Stable AIDL `IAllocator`。Stable AIDL 表�
 
 旧 `allocate(byte[] descriptor, count)` 仍在 AIDL 中，但注释明确：配合 `AIMAPPER_VERSION_5` 时已由 `allocate2()` 替代；设备仍使用 `mapper@4` 时，旧入口还需要实现。Android 17 framework 同时保留新旧 vendor 接口适配，不能概括为“Gralloc 已完全改成 AIDL”。
 
-`BufferDescriptorInfo` 包含名称、宽高、layer count、format、usage、`reservedSize`（为调用方保留的额外区域大小）与 `additionalOptions`。`additionalOptions` 用于不改变总体 usage、却影响分配方式的扩展条件；AIDL 注释以 surface compression level（表面压缩级别）为例。它不是公开的 `AHardwareBuffer_allocateWithOptions()`，NDK 没有这个函数。
+`BufferDescriptorInfo` 包含名称、宽高、layer count、format、usage、`reservedSize`（为调用方保留的额外区域大小）与 `additionalOptions`。`additionalOptions` 用于不改变总体 usage、却影响分配方式的扩展条件；AIDL 注释以 surface compression level（表面压缩级别）为例。`additionalOptions` 不是公开的 `AHardwareBuffer_allocateWithOptions()`，NDK 没有这个函数。
 
 #### 2.3 Gralloc Mapper
 
@@ -720,11 +729,13 @@ DMA-BUF 文档要求 exporter 创建 fd 时支持原子设置 `O_CLOEXEC`，使�
 
 DMA-BUF 本身不规定 backing storage 从哪里来。DMA-BUF Heap 是一个标准用户空间分配前端，通过 `/dev/dma_heap/<heap-name>` 分配并返回 dma-buf fd；GPU GEM（图形执行管理器的内存对象）、Camera 或 vendor allocator 也可以成为 exporter。
 
-Android 12 的 GKI（Generic Kernel Image，通用内核镜像）2.0 用 DMA-BUF Heaps 替换 ION（Android 旧的共享内存分配框架）作为 GKI 分配框架。`libdmabufheap` 在迁移阶段曾支持把 heap name 映射回 ION；Android 17 的 `android-17.0.0_r1` 已移除 ION 实现。当前 `Alloc()` 打开 `/dev/dma_heap/<name>` 后直接执行 `DMA_HEAP_IOCTL_ALLOC`，打开失败就返回错误。带旧参数的 overload（重载函数）和 `MapNameToIonHeap()` 仅为二进制兼容保留，`CheckIonSupport()` 固定返回 false，不能再据此推导 ION fallback（备用路径）。设备上的 heap 名称、安全或物理连续策略、cache policy 与访问权限仍由产品和 vendor 决定。看到 `/dev/dma_heap/system` 等节点可以确认分配入口，不能据此断定物理内存控制器或带宽已经隔离。
+Android 12 的 GKI（Generic Kernel Image，通用内核镜像）2.0 用 DMA-BUF Heaps 替换 ION（Android 旧的共享内存分配框架）作为 GKI 分配框架。`libdmabufheap` 在迁移阶段曾支持把 heap name 映射回 ION；Android 17 的 `android-17.0.0_r1` 已移除 ION 实现。当前 `Alloc()` 打开 `/dev/dma_heap/<name>` 后直接执行 `DMA_HEAP_IOCTL_ALLOC`，打开失败就返回错误。带旧参数的 overload（重载函数）和 `MapNameToIonHeap()` 仅为二进制兼容保留，`CheckIonSupport()` 固定返回 false，不能再据此推导 ION fallback（备用路径）。
+
+设备上的 heap 名称、安全或物理连续策略、cache policy 与访问权限仍由产品和 vendor 决定。看到 `/dev/dma_heap/system` 等节点可以确认分配入口，不能据此断定物理内存控制器或带宽已经隔离。
 
 ### 4. 一次分配怎样发生
 
-以 classic BufferQueue（不含 BLAST 特有封装的通用队列路径）为例，Android 17 `BufferQueueProducer::dequeueBuffer()` 会先选择可用 slot，再检查该 slot 的 `GraphicBuffer` 是否为空，或 width、height、format、layer count、usage 是否需要重新分配。
+以通用 BufferQueue（不含 BLAST 特有封装的那条队列路径）为例，Android 17 `BufferQueueProducer::dequeueBuffer()` 会先选择可用 slot，再检查该 slot 的 `GraphicBuffer` 是否为空，或 width、height、format、layer count、usage 是否需要重新分配。
 
 需要新 buffer 时，流程如下：
 
@@ -736,7 +747,7 @@ Android 12 的 GKI（Generic Kernel Image，通用内核镜像）2.0 用 DMA-BUF
 6. producer 看到 reallocation flag 后调用 `requestBuffer(slot)`，取得这一 slot 的 `GraphicBuffer`；
 7. `queueBuffer()` 要求该 slot 已经执行过 `requestBuffer()`。
 
-`GraphicBufferAllocator` 不直接承诺使用某个 DMA-BUF Heap。它只调用适配当前 Gralloc 版本的 allocator。AOSP 的 `sAllocList` 保存已分配 handle 的估算尺寸和请求者，用于 `dump()`、`getTotalSize()` 与 atrace（Android 系统 trace 标记）计数；释放后不会由这张表保留 buffer 供再次分配。
+`GraphicBufferAllocator` 不直接承诺使用某个 DMA-BUF Heap。它只调用适配当前 Gralloc 版本的 allocator。AOSP 的 `sAllocList` 只用于 `dump()`、`getTotalSize()` 与 atrace（Android 系统 trace 标记）计数；它的字段与“不保留已释放 buffer”的边界在 BufferQueue 一节已经说明。
 
 #### 4.1 什么时候会复用 slot 中的 buffer
 
@@ -773,11 +784,11 @@ Android 15 起平台支持 16 KB page size（内存页大小）设备。它会�
 
 通用 system heap 可以用多个不同 order（连续页块大小等级）的 page 构造 `sg_table`，不承诺整块 buffer 物理连续。IOMMU domain（同一套 I/O 地址空间）还会按自己的 `pgsize_bitmap` 选择支持的映射页大小；CPU base page、IOMMU page 和 GPU page table 不是同一个参数。
 
-Android 17 的 `libdmabufheap` 已移除 ION 实现。`Alloc()` 打开目标 `/dev/dma_heap/<name>` 失败后直接返回错误，带 `legacy_align` 的 overload 只保留二进制兼容，`CheckIonSupport()` 固定为 false。`AllocSystem()` 是否选择 `system-uncached` 也只描述通用库入口；vendor Gralloc 仍可根据 format、usage、protected content 和硬件约束选择其他 exporter。
+Android 17 的 `libdmabufheap` 已经移除 ION 实现，没有可回退的旧路径（3.3 节）；带 `legacy_align` 的 overload 只保留二进制兼容。`AllocSystem()` 是否选择 `system-uncached` 也只描述通用库入口；vendor Gralloc 仍可根据 format、usage、protected content 和硬件约束选择其他 exporter。
 
 #### 4.4 16 KB App 兼容不是图形内存开关
 
-ELF `LOAD` segment（装载段）、APK 中未压缩 `.so`、`mmap()` 参数和硬编码 `4096` 属于应用运行时兼容问题。它们可以用 `getconf PAGE_SIZE`、`readelf -lW` 和 `zipalign -c -P 16` 分别验证，但通过这些检查既不能证明 GraphicBuffer layout 改变，也不能证明 GPU/HWC 性能提升。
+ELF `LOAD` segment（装载段）、APK 中未压缩 `.so`、`mmap()` 参数和硬编码 `4096` 属于应用运行时兼容问题。这几类问题可以用 `getconf PAGE_SIZE`、`readelf -lW` 和 `zipalign -c -P 16` 检查，但通过这些检查既不能证明 GraphicBuffer layout 改变，也不能证明 GPU/HWC 性能提升。
 
 排查时把三组证据分开保存：页大小与原生二进制文件兼容性；Surface、slot、buffer id、format/usage 和 fence 生命周期；dma-buf inode、size、exporter 与跨进程引用。多个进程导入同一个 inode 时不能把每个进程的映射大小相加成唯一物理占用。
 
@@ -800,7 +811,7 @@ ELF `LOAD` segment（装载段）、APK 中未压缩 `.so`、`mmap()` 参数和�
 
 BufferQueue 两端按 slot 缓存 buffer。`BufferQueueConsumer::acquireBuffer()` 在某个 slot 第一次 acquire 新对象时返回 `mGraphicBuffer`；该 slot 之前已被 consumer acquire 过时，源码把输出的 `mGraphicBuffer` 设为 null，避免 consumer 再次 remap（重新导入或映射同一对象）。后续帧仍会携带 slot、frame number、fence、crop、transform、dataspace、damage 和时间信息。
 
-以下序列用于说明 classic BufferQueue 的 handle 缓存点。以跨进程 consumer 为例，首次返回的 `GraphicBuffer` 在 IPC 反序列化时由 `GraphicBuffer::unflatten()` 调用 Mapper import；consumer 侧业务代码不会额外发起这次调用。
+以下序列用于说明通用 BufferQueue 的 handle 缓存点。以跨进程 consumer 为例，首次返回的 `GraphicBuffer` 在 IPC 反序列化时由 `GraphicBuffer::unflatten()` 调用 Mapper import；consumer 侧业务代码不会额外发起这次调用。
 
 ```mermaid
 sequenceDiagram
@@ -823,7 +834,7 @@ sequenceDiagram
     BQ-->>C: slot + null GraphicBuffer + fence
 ```
 
-图中 import 的进程和 IPC 次数取决于 BufferQueue 拓扑。同进程 producer/consumer 不需要跨 Binder 复制 fd。标准应用窗口常由应用进程内的 BLASTBufferQueue 先消费窗口 buffer，再用 `SurfaceControl.Transaction` 把 buffer 与窗口状态提交给 SurfaceFlinger；此时 SF（SurfaceFlinger）侧还有自己的 buffer cache 与 import 边界。不能把 classic BufferQueue 的单次 IPC 示意直接套到所有窗口。
+图中 import 的进程和 IPC 次数取决于 BufferQueue 拓扑。同进程 producer/consumer 不需要跨 Binder 复制 fd。标准应用窗口常由应用进程内的 BLASTBufferQueue 先消费窗口 buffer，再用 `SurfaceControl.Transaction` 把 buffer 与窗口状态提交给 SurfaceFlinger；此时 SF（SurfaceFlinger）侧还有自己的 buffer cache 与 import 边界。不能把通用 BufferQueue 的单次 IPC 示意直接套到所有窗口。
 
 ### 6. 同步：共享地址不代表可以同时读写
 
@@ -893,7 +904,7 @@ Android 17 `GraphicBufferAllocator.cpp` 定义了两个直接观察点：
 
 它们只覆盖经过该进程 `GraphicBufferAllocator` 的对象，不是系统全部 dma-buf。设备支持时还可采集 `dmabuf_heap/dma_heap_stat` ftrace event（内核函数跟踪事件）；事件是否存在取决于内核配置和 vendor 实现，应先检查 tracefs（内核 trace 接口文件系统）的 `available_events`。
 
-结合以下信息更容易定位：
+下表把证据和它能回答的问题配在一起，定位时先从问题出发选证据：
 
 | 证据 | 回答的问题 |
 |---|---|
@@ -991,7 +1002,7 @@ slot 复用表示继续持有同一个 `GraphicBuffer`。buffer 被释放后，v
 
 ## Acquire、Release 与 Present Fence
 
-缓冲区跨 CPU、GPU、HWC 和显示设备流转时，所有权变化还需要 fence 约束访问顺序。等待错误会表现为卡顿、撕裂或复用过早。
+缓冲区跨 CPU、GPU、HWC 和显示设备流转时，所有权变化还需要 fence 约束访问顺序。等待条件写错时，现象是卡顿、撕裂或过早复用 buffer。
 
 Fence（同步栅栏）是异步工作的完成凭证。它不保存像素、不拥有 BufferQueue slot，也不让两个线程自动互斥；它只表达一条依赖：“在这项工作完成前，后续访问不能越过这个点。”
 
