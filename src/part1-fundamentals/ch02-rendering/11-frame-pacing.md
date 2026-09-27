@@ -81,7 +81,9 @@ Frame pacing（帧节奏控制）要同时约束三件事：应用从哪个节�
 
 90 Hz 的刷新周期约为 11.11 ms，60 FPS 内容的目标帧间隔约为 16.67 ms。两者没有整数倍关系。应用若每次 GPU 工作结束后立即 present，显示侧可能让相邻内容帧分别停留一个和两个刷新周期；重负载场景还会让间隔变成更杂乱的组合。
 
-另一类情况是 queue-stuffing。应用持续以最快速度提交，BufferQueue 很快积累多个待显示 buffer。队列满后，render thread（渲染线程）会在 acquire、swap 或 present 附近受到 backpressure（反压，即下游处理不过来时阻塞上游），看起来像是系统自动替应用“限帧”。这时输入已经在更早的逻辑帧采样，多出来的排队会直接增加触控到显示的延迟。等待也可能由 pacing 主动施加，用来阻止队列继续变深；不能只凭 wait slice（trace 中的一段等待区间）很长就判为故障。
+另一类情况是 queue-stuffing。应用持续以最快速度提交，BufferQueue 很快积累多个待显示 buffer。队列满后，render thread（渲染线程）会在 acquire、swap 或 present 附近受到 backpressure（反压，即下游处理不过来时阻塞上游），看起来像是系统自动替应用“限帧”。这时输入已经在更早的逻辑帧采样，多出来的排队会直接增加触控到显示的延迟。
+
+等待也可能由 pacing 主动施加，用来阻止队列继续变深；不能只凭 wait slice（trace 中的一段等待区间）很长就判为故障。
 
 诊断时先比较以下信号：
 
@@ -95,7 +97,7 @@ Frame pacing（帧节奏控制）要同时约束三件事：应用从哪个节�
 
 ## Swappy 的真实提交链
 
-提交 `f81f888fe11e` 的 OpenGL 路径由 `SwappyGL::swapInternal()` 组织，fence、presentation time、等待策略和统计分别位于 `SwappyGL.cpp`、`EGL.cpp` 与 `SwappyCommon.cpp`。
+`f81f888fe11e` 的 OpenGL 路径由 `SwappyGL::swapInternal()` 组织，fence、presentation time、等待策略和统计分别位于 `SwappyGL.cpp`、`EGL.cpp` 与 `SwappyCommon.cpp`。
 
 下面的伪代码节选用于展示调用顺序；错误处理和成员访问已简化。
 
@@ -241,7 +243,7 @@ VkResult result = SwappyVk_queuePresent(queue, &presentInfo);
 
 Unity、Unreal 等引擎的集成与默认开关会随版本变化。分析时记录引擎版本、graphics API、render pipeline（渲染管线）和 frame-pacing 配置，不能根据“引擎支持 Swappy”推断某个 APK 已启用。
 
-非游戏 native 渲染器若只需要 VSync 驱动，可以直接使用 `AChoreographer`；Java 渲染循环可以使用 `Choreographer.FrameCallback`。以下例子只演示每帧重新注册自身的 callback（回调）。
+非游戏 native 渲染器若只需要 VSync 驱动，可以直接使用 `AChoreographer`；Java 渲染循环可以使用 `Choreographer.FrameCallback`。下面的例子只演示 callback（回调）在每次执行后把自己重新注册一次。
 
 ```java
 Choreographer choreographer = Choreographer.getInstance();
@@ -261,21 +263,25 @@ choreographer.postFrameCallback(callback);
 
 ## Android 17 的 Vulkan present timing
 
-Android 17/API 37 新增 `VK_EXT_present_timing` 平台支持。它允许自研 Vulkan pacing 查询 swapchain 支持的 time domain（时钟域）、为 present 请求指定目标时间，并读取 `QUEUE_OPERATIONS_END`、`REQUEST_DEQUEUED`、`IMAGE_FIRST_PIXEL_OUT`、`IMAGE_FIRST_PIXEL_VISIBLE` 等 present stage（显示过程阶段）的反馈。Android 17 的 `swapchain.cpp` 把前两项分别映射到 render-complete timestamp（渲染完成时间）与 composition-latch timestamp（合成锁存时间）；后两项目前都映射到同一个 actual-present timestamp（实际显示时间），不能用两者之差估算 scan-out（逐行扫描输出）时长。该扩展与较早的 `VK_GOOGLE_display_timing` 解决相近问题，但接口更标准，反馈阶段也更细。
+Android 17/API 37 新增 `VK_EXT_present_timing` 平台支持。它允许自研 Vulkan pacing 查询 swapchain 支持的 time domain（时钟域）、为 present 请求指定目标时间，并读取 `QUEUE_OPERATIONS_END`、`REQUEST_DEQUEUED`、`IMAGE_FIRST_PIXEL_OUT`、`IMAGE_FIRST_PIXEL_VISIBLE` 等 present stage（显示过程阶段）的反馈。
 
-AOSP 的 `VP_ANDROID_17_requirements.json` 把 `VK_EXT_present_timing`、`VK_KHR_present_id2` 和 `VK_KHR_present_wait2` 列在 Android 17 Vulkan Profile（能力要求集合）的 `MUST`（必须支持）项中。这个 Profile 约束相应的 Android 17 首发设备和新芯片能力要求，不能代替应用的运行时检查：升级设备、定制系统、驱动状态和 feature（功能）开关都可能造成差异。
+Android 17 的 `swapchain.cpp` 把前两项分别映射到 render-complete timestamp（渲染完成时间）与 composition-latch timestamp（合成锁存时间）；后两项目前都映射到同一个 actual-present timestamp（实际显示时间），不能用两者之差估算 scan-out（逐行扫描输出）时长。该扩展与较早的 `VK_GOOGLE_display_timing` 解决相近问题，但接口更标准，反馈阶段也更细。
 
-`android-17.0.0_r1` 的 Vulkan loader（加载器）也体现了这层条件。`EnumerateDeviceExtensionProperties()` 只有在以下条件满足时才加入 `VK_EXT_present_timing`：
+AOSP 的 `VP_ANDROID_17_requirements.json` 把 `VK_EXT_present_timing`、`VK_KHR_present_id2` 和 `VK_KHR_present_wait2` 列在 Android 17 Vulkan Profile（能力要求集合）的 `MUST`（必须支持）项中。这个 Profile 约束 Android 17 首发设备和新芯片的能力要求，不能代替应用的运行时检查：升级设备、定制系统、驱动状态和 feature（功能）开关都可能造成差异。
+
+`android-17.0.0_r1` 的 Vulkan loader（加载器）不会无条件公布这个扩展。`EnumerateDeviceExtensionProperties()` 只有在以下条件满足时才加入 `VK_EXT_present_timing`：
 
 1. `service.sf.present_timestamp` 为 true；
 2. `present_timing_ext` 平台 flag（功能开关）已开启；
 3. ICD（Installable Client Driver，可安装客户端驱动）支持该扩展硬依赖的 calibrated timestamps（校准时间戳）能力。
 
-应用仍需执行 `vkEnumerateDeviceExtensionProperties()`，并通过 `VkPhysicalDevicePresentTimingFeaturesEXT`、`VkPhysicalDevicePresentId2FeaturesKHR` 等 feature 结构查询和启用所需能力。查询 past presentation timing（历史显示时序）前，还要用 `vkSetSwapchainPresentTimingQueueSizeEXT()` 配置反馈队列。Android 17 实现只公布 absolute scheduling（绝对时间调度），不支持 relative scheduling（相对时间调度）；`vkGetSwapchainTimeDomainPropertiesEXT()` 返回 `VK_TIME_DOMAIN_PRESENT_STAGE_LOCAL_EXT`。需要与 CPU 时钟关联时，应按规范通过 calibrated timestamp 机制转换，不能把接口时间域直接写死为 `CLOCK_MONOTONIC`。
+应用仍需执行 `vkEnumerateDeviceExtensionProperties()`，并通过 `VkPhysicalDevicePresentTimingFeaturesEXT`、`VkPhysicalDevicePresentId2FeaturesKHR` 等 feature 结构查询和启用所需能力。查询 past presentation timing（历史显示时序）前，还要用 `vkSetSwapchainPresentTimingQueueSizeEXT()` 配置反馈队列。
+
+Android 17 实现只公布 absolute scheduling（绝对时间调度），不支持 relative scheduling（相对时间调度）；`vkGetSwapchainTimeDomainPropertiesEXT()` 返回 `VK_TIME_DOMAIN_PRESENT_STAGE_LOCAL_EXT`。需要与 CPU 时钟关联时，应按规范通过 calibrated timestamp 机制转换，不能把接口时间域直接写死为 `CLOCK_MONOTONIC`。
 
 `targetTime = 0` 时，Android Vulkan WSI（Window System Integration，窗口系统集成层）不设置 requested-present timestamp（请求显示时间）。非零目标会传入 native window；`BufferQueueConsumer::acquireBuffer()` 只在目标位于合理的未来窗口时返回 `PRESENT_LATER`，表示当前还不到取得该 buffer 的时刻。若目标比本轮 `expectedPresent` 晚超过 1 秒，系统会按安全规则立即处理，避免异常时间戳长期占住队列。
 
-这里要特别区分平台能力和库实现。`f81f888fe11e` 的 `SwappyVk` 仍按 `VK_GOOGLE_display_timing` 是否可用，在 `SwappyVkGoogleDisplayTiming` 与 `SwappyVkFallback` 之间选择；该提交没有使用 `VK_EXT_present_timing`、`VK_KHR_present_id2` 或 `VK_KHR_present_wait2`。所以：
+这里要把平台能力和库实现分开看。`f81f888fe11e` 的 `SwappyVk` 仍按 `VK_GOOGLE_display_timing` 是否可用，在 `SwappyVkGoogleDisplayTiming` 与 `SwappyVkFallback` 之间选择；该提交没有使用 `VK_EXT_present_timing`、`VK_KHR_present_id2` 或 `VK_KHR_present_wait2`。
 
 - 使用 Swappy 时，按 APK 打包版本的源码和运行日志判断它选择了哪个实现。
 - 自研 pacing 可以在 Android 17 设备上优先探测 `VK_EXT_present_timing`，再按能力回退。
