@@ -123,7 +123,7 @@ flowchart LR
 
 ### 1.3 未知 dataspace 不是安全的万能值
 
-Android 17 的 `Layer::translateDataspace()` 会兼容一部分旧 dataspace，并把未知值按兼容规则处理。这个行为服务于历史应用，不能当作生产代码省略 dataspace 标记的理由。缺少或错误的 dataspace 可能造成：
+Android 17 的 `Layer::translateDataspace()` 会按兼容规则处理一部分旧 dataspace 和未知值。这个行为服务于历史应用，不能当作生产代码省略 dataspace 标记的理由。缺少或错误的 dataspace 可能造成：
 
 - P3 内容按 sRGB 解释，颜色偏差；
 - HDR 传递函数按 SDR 处理，高光被压坏；
@@ -146,7 +146,7 @@ Android 17 的 `DisplayColorProfile` 从 HWC 能力构造以下信息：
 - HWC 报告的 `ColorMode -> RenderIntent[]` 组合；
 - desired minimum、maximum 和 maximum-average luminance（期望最小、最大和最大平均亮度）。
 
-`DisplayColorProfile::getBestColorMode()` 会把期望的 dataspace 与 render intent 映射到 HWC 支持的 dataspace、color mode 和 render intent。找不到匹配时会退到 `ColorMode::NATIVE`、`Dataspace::UNKNOWN` 和 colorimetric intent（色度呈现意图）。这里执行的是能力匹配，没有宣称所有 Layer 都能用硬件完成转换。
+`DisplayColorProfile::getBestColorMode()` 会把期望的 dataspace 与 render intent 映射到 HWC 实际支持的组合。找不到匹配时会退到 `ColorMode::NATIVE`、`Dataspace::UNKNOWN` 和 colorimetric intent（色度呈现意图）。这里执行的是能力匹配，没有宣称所有 Layer 都能用硬件完成转换。
 
 ### 2.2 输出 dataspace 由当前可见 Layer 共同影响
 
@@ -158,7 +158,7 @@ Android 17 的 `DisplayColorProfile` 从 HWC 能力构造以下信息：
 - PQ 或 HLG Layer 会记录 HDR 候选 dataspace；
 - 同时存在 PQ 与 HLG 时，Android 17 的实现通常选择 PQ；若 PQ 只有 legacy support（旧版兼容支持），或被判定为需要 RenderEngine 合成，则可能退到 Display P3。
 
-这一行为有 `OutputTest` 覆盖，不能照搬 `getBestDataspace()` 内一处仍写着“混合时使用 HLG”的旧注释。随后 `pickColorProfile()` 根据 HDR 支持、是否强制 client composition（客户端合成）、用户与系统色彩设置和 HWC 能力，得到显示的 `ColorMode`、输出 dataspace 与 `RenderIntent`。
+这一行为有 `OutputTest` 覆盖；`getBestDataspace()` 内还留着一处写着“混合时使用 HLG”的旧注释，不要照搬。随后 `pickColorProfile()` 根据 HDR 支持、是否强制 client composition（客户端合成）、用户与系统色彩设置和 HWC 能力，得到显示的 `ColorMode`、输出 dataspace 与 `RenderIntent`。
 
 因此，“某个 Layer 是 HDR”和“显示器当前运行在 HDR 输出模式”是两个不同事实。屏幕能力、可见 Layer 集合、强制 SDR 设置、镜像目标和 HWC 模式都会影响结果。
 
@@ -254,7 +254,7 @@ shader 先把输入转换为线性亮度和 XYZ，再计算 gain（增益），�
 HDR/SDR ratio = target HDR peak brightness / target SDR white point
 ```
 
-公式分子是目标 HDR 峰值亮度，分母是目标 SDR 白点亮度。`Display.getHdrSdrRatio()` 从 API 34 开始报告当前比值；环境光、热状态、面板限制和系统策略都可能使它变化。API 36 增加 `getHighestHdrSdrRatio()`，用于查询设备当前能报告的最高可能比值。
+`Display.getHdrSdrRatio()` 从 API 34 开始报告当前比值；环境光、热状态、面板限制和系统策略都可能使它变化。API 36 增加 `getHighestHdrSdrRatio()`，用于查询设备当前能报告的最高可能比值。
 
 API 35 的 `Window.setDesiredHdrHeadroom()` 只在窗口使用 `COLOR_MODE_HDR` 时生效。`0` 表示交给系统自动选择，其他有效值表达期望范围。它有三条重要限制：
 
@@ -274,7 +274,7 @@ HWC 通过 `DimmingStage`（调暗阶段）告诉框架在哪个阶段处理：
 - `GAMMA_OETF`：在 OETF 之后的 gamma 空间处理；
 - `NONE`：当前场景没有相关要求。
 
-RenderEngine 会把 Layer white point、显示亮度和 dimming stage 放进 `DisplaySettings`。当需要在线性域调暗且比例不为 1 时，它也会启用 `LinearEffect`。
+RenderEngine 会把 Layer white point、显示亮度和 dimming stage 放进 `DisplaySettings`。需要在线性域调暗且比例不为 1 时，它也会启用 `LinearEffect`。
 
 ### 4.3 ColorMode 切换没有统一的黑帧或延迟保证
 
@@ -337,7 +337,7 @@ Android 8.0（API 26）为兼容设备提供广色域色彩管理。应用可以
 - 目标 buffer 格式；
 - GPU 是否因整个窗口进入更重的合成配置。
 
-脱离具体设备、分辨率、资源和渲染后端给出的开销比例，无法迁移到其他场景。更可靠的做法是在同一设备上准备 sRGB 与 P3 对照资源，固定分辨率、亮度和刷新率，再比较 GPU counters（计数器）、RenderThread 与 SurfaceFlinger client composition。
+脱离具体设备、分辨率、资源和渲染后端，任何开销比例都无法迁移到其他场景。更可靠的做法是在同一设备上准备 sRGB 与 P3 对照资源，固定分辨率、亮度和刷新率，再比较 GPU counters（计数器）、RenderThread 与 SurfaceFlinger client composition。
 
 ### 5.5 未标记和误标记是不同故障
 
@@ -407,7 +407,7 @@ HDR 只描述色彩和亮度。DRM（Digital Rights Management，数字版权管
 - secure Layer 或 Display 约束截图、录屏和输出目标；
 - RenderEngine 是否有 protected context（受保护上下文），会影响 client composition 能否处理该 Layer。
 
-当 HDR DRM 视频回退或黑屏时，要同时检查色彩能力与保护路径，不能把所有失败都归因于 tone mapping。
+HDR DRM 视频回退或黑屏时，要同时检查色彩能力与保护路径，不能把所有失败都归因于 tone mapping。
 
 ### 7.3 设备能力查询
 
@@ -496,7 +496,7 @@ val p3 = Color(
 val srgb = p3.convert(ColorSpaces.Srgb)
 ```
 
-这段代码先创建 Display P3 的 `Color`，再得到显式转换到 sRGB 的 `srgb`。颜色对象有色彩空间，不代表承载它的 Window 已获得 WCG 或 HDR 输出；最终效果还取决于 Android Window color mode、Canvas 与 Skia 目标空间、设备显示能力和 SurfaceFlinger 输出配置。
+颜色对象有色彩空间，不代表承载它的 Window 已获得 WCG 或 HDR 输出；最终效果还取决于 Android Window color mode、Canvas 与 Skia 目标空间、设备显示能力和 SurfaceFlinger 输出配置。
 
 颜色动画没有跨版本、跨 API 通用的额外开销比例。应确认插值在哪个空间执行、是否每帧分配 connector、参与动画的像素覆盖范围，再用基准测试判断是否值得缓存转换结果。
 
@@ -549,7 +549,7 @@ GPU 时间较低并不说明整机成本低。高亮 HDR 内容的主要功耗�
 
 ### 10.4 不要跨设备搬用固定功耗表
 
-显示功耗取决于面板材料、尺寸、亮度曲线、APL、刷新率、温度、环境光策略和厂商校准。没有测试夹具、内容 hash（内容文件指纹）、亮度计读数和电源测量方法的功耗值，无法用来指导另一台设备。
+显示功耗取决于面板材料、尺寸、亮度曲线、APL、刷新率、温度、环境光策略和厂商校准。缺少测试夹具、内容 hash（内容文件指纹）、亮度计读数和电源测量方法时，测出的功耗值无法指导另一台设备。
 
 建议把报告写成可复现的测试变量表：
 
@@ -576,7 +576,7 @@ adb shell dumpsys SurfaceFlinger > /data/local/tmp/sf-hdr.txt
 adb pull /data/local/tmp/sf-hdr.txt
 ```
 
-第一条命令把完整 SurfaceFlinger 状态写到设备文件，第二条把文件拉到本机。随后在文件中搜索：
+第一条命令把完整状态写到设备文件，第二条拉到本机；后面的搜索都基于这同一份状态。随后在文件中搜索：
 
 ```text
 composition type
@@ -655,9 +655,9 @@ Android 17 源码中可直接对应的 trace 名称包括：
 
 这个问题涉及亮度协调，不能只看 UI 的 sRGB 颜色值。
 
-### 12.3 一加控制层，GPU 时间突然升高
+### 12.3 加一层控制层后，GPU 时间突然升高
 
-检查控制层是否带来：
+先检查新加的控制层是否带来：
 
 - TextureView 合并；
 - 背景模糊；
@@ -732,4 +732,4 @@ HDR 与广色域的性能问题可以归结为四个可验证的问题：
 3. HWC validate 后，哪些 Layer 是 `DEVICE`，哪些进入 `CLIENT`？
 4. 最终成本落在 Producer GPU、RenderEngine、DPU、内存还是面板？
 
-沿这四个问题取证，才能区分格式带宽、GPU tone mapping、硬件 plane 竞争与面板亮度功耗。脱离设备能力和逐帧 composition result（合成结果）的固定毫秒或固定百分比，都不适合作为 Android 17 的平台结论。
+沿这四个问题取证，才能区分格式带宽、GPU tone mapping、硬件 plane 竞争与面板亮度功耗。脱离设备能力和逐帧 composition result（合成结果），固定毫秒或固定百分比都不适合作为 Android 17 的平台结论。
