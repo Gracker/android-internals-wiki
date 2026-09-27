@@ -5117,6 +5117,236 @@
       "status": "appended",
       "title": "Android HWC退化与防治方法前言 Android 技术目前已经非常成熟了，无论是硬件还是软件，当前大环境下，为数"
     },
+    "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536682.1143188,
+      "sha256": "ff0c5d7faf5b3bd9719b5fa847dd993bed5dad023f10b0f11aea2caa8b366be4",
+      "size": 3363,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-Advice-to-a-beginning-software-engineer.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536625.0503094,
+      "sha256": "11965690625ab4e88ad52244aac1f27f07ccd58f646e97a6d7cf8f25ae450462",
+      "size": 10451,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-Alexandr-Wang-Why-I-m-Building-Muse.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536599.0352151,
+      "sha256": "d3c29800a30e0df099f7e10f5b4bd40369bd6e630d9b656b8c4e9ead647f50d8",
+      "size": 3053,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-Apple-s-Other-Recent-Duo.md": {
+      "chapter": "待分类",
+      "entry_id": "3414ed29ce054188",
+      "last_appended": "2026-09-28T05:25:49.875545+08:00",
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536601.1305807,
+      "score": 7,
+      "sha256": "94bb894beeb2e53d4290b91343de9895da7865b00b192326d60cd9a038f0e700",
+      "size": 6807,
+      "status": "appended",
+      "title": "How to use MagSafe Duo Charger with your iPhone and Apple Watch"
+    },
+    "source/rss-snapshot/2026-09-28-BREAKING-AI-agent-incident-toll-has-risen-to-ten.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536592.567079,
+      "sha256": "9ce0734e656a3d7639b50281fceb7ffcc7210bff204562f6fdd43316ccfa14ce",
+      "size": 10401,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-BREAKING-OpenAI-s-security-fiasco-explodes-and-c.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536646.2988787,
+      "sha256": "d5ea6a4f8064552fc0821fe32dce3d600adf0163b981a3f0687144371a5a5ed9",
+      "size": 9865,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-Brent-Simmons-on-Stock-Mac-UI.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536655.1004753,
+      "sha256": "9ee496e0cb23ea965328197e9757b6c5a95603c4d0387697d2622b99eb5ef68b",
+      "size": 6350,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-Combo-Platter.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536583.1384299,
+      "sha256": "cdd8e48d0d328528dc089af534470eee656ab977e85e1318b80fb67c324e967a",
+      "size": 18297,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-Debugging-walkthrough-Access-violation-on-nonsen.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536353.2466593,
+      "sha256": "9f5a0d5200990a1cfcbfbcdc5fc28b9f4f56cec1228e234469a72d9edcfeb75d",
+      "size": 7181,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-Gig-Review-Public-Service-Broadcasting-s-Race-Fo.md": {
+      "chapter": "待分类",
+      "entry_id": "82aa2ac4b4fd2a2d",
+      "last_appended": "2026-09-28T05:25:49.875545+08:00",
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536588.2011986,
+      "score": 8,
+      "sha256": "08fff0ab01c19648d4ba5e5d791a23cac862b13dbab7cf748910fb6f25fc83ec",
+      "size": 6108,
+      "status": "appended",
+      "title": "Gig Review: Public Service Broadcasting's Race For Space at Alexandra Palace"
+    },
+    "source/rss-snapshot/2026-09-28-Human-AI-partnerships-are-for-alignment-not-capa.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536590.2131855,
+      "sha256": "8220f5ccce82cc81db4cf261c7c71ea9b547650336392fa9d4cb03d29f071249",
+      "size": 5891,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-I-ll-Wait.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536664.8760958,
+      "sha256": "74b874d7cd2e1fb4e60b91ed41bf19cc3089384e4fd31cac78db836ec12530d6",
+      "size": 5127,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-I-m-starting-HomelabFest-in-St-Louis-Sep-2027.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536695.0170548,
+      "sha256": "96df734df2bca7c49b217bac8b36505b56394d4f17519fdc0d7c0995ca9750a4",
+      "size": 3586,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-International-Standard-Paper-Sizes.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536602.764813,
+      "sha256": "ff16f885885e34256150c9ca75dace92faa803bc048eda5ebd3123040120070f",
+      "size": 54531,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-K-k-p-Party.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "9e57de5604dd2805",
+      "last_appended": "2026-09-28T05:25:49.875545+08:00",
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536594.1408222,
+      "score": 7,
+      "sha256": "f1f46fa9cc0a3f1b3a0d38e5cd87c6c21677bded9e75ccfedf3971718eff6b39",
+      "size": 3468,
+      "status": "appended",
+      "title": "Tool: Kākāpō Party"
+    },
+    "source/rss-snapshot/2026-09-28-Microsoft-Took-the-Copilot-PC-Brand-Out-Behind-t.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536605.6252012,
+      "sha256": "9582c14b107f51c96a98d89d7a0560c917f674d674455a03b0e2407474318394",
+      "size": 9578,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-Mr-Choyka-Is-Apparently-Doing-Well.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536641.6137247,
+      "sha256": "2077a2c3d26eeed3a68d44ad68a50fc57be4191b54bc1ecb9a0e22acbb229e59",
+      "size": 19607,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-Muse-Looks-Cute-but-Looks-Are-Deceiving.md": {
+      "chapter": "待分类",
+      "entry_id": "0effdf6e8604b6ca",
+      "last_appended": "2026-09-28T05:25:49.875545+08:00",
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536689.95015,
+      "score": 7,
+      "sha256": "d1a78ad32e31db381b4f9469b7fa6de34030955e2534845dbd5ebc27160b30d5",
+      "size": 7068,
+      "status": "appended",
+      "title": "Meta Keeps Apologizing For Muse. Its Explanations Miss the Point Entirely"
+    },
+    "source/rss-snapshot/2026-09-28-No-errors-no-warnings-no-gods-no-masters-HTML-Pu.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536616.1502109,
+      "sha256": "d31390af772b722d60cc0d28a20fc6ca0de527f4dee7a706fd2824d5e60e1e24",
+      "size": 9184,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-Pluralistic-Itch-scratching-25-Sep-2026.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536661.9082828,
+      "sha256": "385629c6f89df5d88659e60715914639ab04f9c9fea019e6b4d18b6744caa42a",
+      "size": 32435,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-Premium-The-Hater-s-Guide-To-AI-Debt-Part-2.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536344.179039,
+      "sha256": "8610a93582fc4a7b8f85d9806d3945fc2962adbe98c883d8b3c1549e681fc174",
+      "size": 7280,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-Quoting-John-Gruber.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536667.142028,
+      "sha256": "4f678d21de2b4c1b6bde53994f949951f0410bd94886de97e2c1e0ba1d82fb7e",
+      "size": 1189,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-Reading-List-2026-09-26.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536619.3239763,
+      "sha256": "9262d02bebc26213faa6f615348bd32f3e8ddff6446aa63d8af53ca14d39d757",
+      "size": 9630,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-Reelizer-Returns.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536596.1084187,
+      "sha256": "04819608ce128b0440b4f690f4959730ea833724809cc125fab59428bce5f1d7",
+      "size": 443,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-Regarding-the-Provenance-of-Charm-Within-Meta.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536678.909034,
+      "sha256": "ba9d2c690be5287e34ed59abd95c1311c19370b5a4663d5c83a397277db67bcc",
+      "size": 14320,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-Reverse-engineering-the-vintage-Intel-8087-s-tan.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536609.5009418,
+      "sha256": "f83e6a811146f50cf09e576ce895cb5804f59075a9a956823e1abbad381f06d8",
+      "size": 14424,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-Rusty-thoughts-on-Parse-don-t-validate.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536611.1837463,
+      "sha256": "98adebeaa774ad7019e4c43487755caaa42143f1741fdbf486c8fc63b95818fa",
+      "size": 11328,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-Stock-UI-in-MacOS-27-Eschews-Clarity.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536653.682944,
+      "sha256": "9ee7eb04972d53425a51f32f430c93a5b260ef328fd2365b20749bc4ff96c873",
+      "size": 18434,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-The-Talk-Show-I-m-Thinking-X-Not-X.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536607.8204575,
+      "sha256": "d3bb897629c42f9ca49d9e917f2c8c5c70580e3b2e9a6522e27b8f2d92aca533",
+      "size": 1869,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-09-28-This-Week-in-Package-Management-26-September-202.md": {
+      "last_seen": "2026-09-28T05:25:49.875545+08:00",
+      "mtime": 1790536622.4966412,
+      "sha256": "15cb3f891dee2e48598dc2016f9b3d53783306cb813ee74145c78a5f109e998c",
+      "size": 9130,
+      "status": "skipped-low-score"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -6924,24 +7154,24 @@
     }
   },
   "last_report": {
-    "appended": 0,
-    "considered": 0,
-    "cutoff": "2026-09-26T05:20:02.791476+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-27.md",
+    "appended": 4,
+    "considered": 33,
+    "cutoff": "2026-09-27T05:20:18.653820+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-28.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2052,
+    "scanned": 2085,
     "skipped": {
       "existing_link": 0,
-      "low_score": 0,
-      "max_files": 0,
+      "low_score": 26,
+      "max_files": 3,
       "old_unseen": 1405,
       "path": 30,
       "unchanged": 617
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-27T05:25:18.653820+08:00",
+  "last_run_at": "2026-09-28T05:25:49.875545+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
