@@ -66,7 +66,9 @@ Producer 生成内容
   → release fence 约束旧 buffer 何时可以复用
 ```
 
-这条主线把“应用提交”“SurfaceFlinger 采纳”“合成”“显示反馈”和“buffer 复用”分成不同边界。acquire fence 表示新 buffer 何时可读，latch 表示 SurfaceFlinger 采纳 buffer，client target 是 RenderEngine（SurfaceFlinger 的 GPU 合成组件）的合成结果，present fence 与 release fence 分别约束显示完成反馈和旧 buffer 复用。HWC 是 Hardware Composer（硬件合成器）。`queueBuffer()` 返回只代表提交动作完成，不能作为上屏时间。
+这条主线把“应用提交”“SurfaceFlinger 采纳”“合成”“显示反馈”和“buffer 复用”分成不同边界。acquire fence 表示新 buffer 何时可读，latch 表示 SurfaceFlinger 采纳 buffer，client target 是 RenderEngine（SurfaceFlinger 的 GPU 合成组件）的合成结果，present fence 与 release fence 分别约束显示完成反馈和旧 buffer 复用。HWC 是 Hardware Composer（硬件合成器）。
+
+`queueBuffer()` 返回只代表提交动作完成，不能作为上屏时间。
 
 ## 先确认 FrameTimeline 覆盖了哪条出图路径
 
@@ -132,9 +134,9 @@ Android 图形 trace 中有两个独立的数据源：
 | 主要问题 | buffer 在 dequeue、queue、fence、latch、present 哪段停留 | Expected 与 Actual 是否偏离、哪一侧被分类为 jank（卡顿） |
 | Trace Processor | `frame_slice` | `expected_frame_timeline_slice`、`actual_frame_timeline_slice` |
 
-两套 proto 没有声明 `FrameTracer.frame_number = FrameTimeline.surface_frame_token`。可靠关联需要同一 layer、Producer、相邻时间窗、buffer 与 transaction 事件和 display token 共同收窄；只按整数相等执行 join（表连接）会把无关帧拼在一起。
+两套 proto 没有声明 `FrameTracer.frame_number = FrameTimeline.surface_frame_token`。可靠关联要同时收窄到同一 layer、同一 Producer、相邻时间窗、buffer 与 transaction 事件、display token 这些维度；只按整数相等执行 join（表连接）会把无关帧拼在一起。
 
-FrameTracer 的事件时间位于外层 `TracePacket.timestamp`。带 fence 的事件会先进入 pending tracker（待完成事件跟踪器），fence signal（发出完成信号）后再闭合 span（时间区间）；立即完成的事件可能表现为 instant（瞬时事件）。Trace Processor 依据事件 phase（阶段）构造 `frame_slice`，因此不能假设每个枚举都对应一条固定 duration slice，也不能由协议中存在某个枚举推断 Android 17 的生产代码一定发射它。
+FrameTracer 的事件时间位于外层 `TracePacket.timestamp`。带 fence 的事件会先进入 pending tracker（待完成事件跟踪器），fence signal（发出完成信号）后再闭合 span（时间区间）；立即完成的事件可能表现为 instant（瞬时事件）。Trace Processor 依据事件 phase（阶段）构造 `frame_slice`，因此不能假设每个枚举都对应一条固定 duration slice。
 
 FrameTimeline 的 Expected、Actual start packet 用 cookie（配对标识）建立 slice，end packet 用同一 cookie 闭合。Trace Processor 再把 surface token、display token、PID、layer、present type、prediction type 和 jank bit（卡顿位标记）暴露给 SQL。数据源名称不是 SQL 表名，FrameTracer 的 `frame_slice` 也不是 FrameTimeline actual 表的别名。
 
@@ -184,7 +186,19 @@ DisplayFrame 的 slice 时长包含 Composer、Display HAL 与 present 反馈，
 | `present_type` | actual present 相对 predicted present 是 on-time、late、early、dropped 还是 unknown（按时、晚、早、丢弃或未知） | early 不自动等于 pacing bug（节奏控制错误） |
 | `prediction_type` | 用于比较的预测是否仍有效 | expired 仍直接比较两个 slice |
 
-FrameTimeline 的 jank 定义围绕 predicted present 与 actual present 是否匹配。单独用 `Actual Display Time - Expected Display Time > 0` 作为所有场景的“用户可见卡顿”判据，会把持续但平滑的高延迟状态、预测误差、模式切换和无效预测混在一起。
+## fence 与 BufferQueue：不要把三个方向混在一起
+
+| 同步对象 | 生产者与消费者关系 | 能回答的问题 |
+|---|---|---|
+| acquire fence | Producer 随新 buffer 交给 Consumer | 新 buffer 何时写完、何时可安全读取 |
+| present fence | HWC、display 对本次 display present 的反馈 | 本轮显示更新到达哪个系统完成边界 |
+| release fence | Consumer、HWC 交还旧 buffer 的使用完成约束 | Producer 何时可以安全复用该 buffer |
+
+Android 用户态通过 `Fence`、`FenceTime` 与 sync file（同步文件对象）传递这些同步对象；指定内核锚点中的 `dma_fence` 提供 signal、wait 与 callback 基础。FrameTimeline 读取的是用户态和 HAL 传回的时间，不是直接把某个内核函数耗时当作 jank 根因。
+
+排查 buffer starvation（可用 buffer 不足）时，应观察 `dequeueBuffer` 等待、可用 slot（槽位）、pending buffer、release callback 与 fence，以及前序帧的 present。把“当前 Actual end 到下一帧 Expected start”的差当作 release fence 时间，会混淆两个不同对象。
+
+Android 的 BufferQueue 与 fence 设计用于避免 Consumer 读取未完成内容。看到游戏或视频画面撕裂感时，先区分 frame pacing（帧节奏控制）、重复帧或丢帧、transform 更新不同步和厂商显示路径；只有拿到绕过正常同步或显示扫描异常的证据，才适合使用 classic tearing（经典撕裂）结论。
 
 ## GraphicsFrameEvent：buffer 与 fence 的补充证据
 
@@ -253,6 +267,8 @@ actualDisplayFrameStartEvent->set_gpu_composition(
 
 ## Jank 分类与颜色
 
+FrameTimeline 的 jank 定义围绕 predicted present 与 actual present 是否匹配。单独用 `Actual Display Time - Expected Display Time > 0` 作为所有场景的“用户可见卡顿”判据，会把持续但平滑的高延迟状态、预测误差、模式切换和无效预测混在一起。
+
 ### Android 17 的主要分类
 
 `frame_timeline_event.proto` 把 `jank_type` 定义为 bitmask（位掩码），一帧可以同时具有多个原因。工程分析常用的分类如下：
@@ -292,21 +308,7 @@ FrameTimeline 负责逐帧计划、完成时间和 jank 分类；另外两套机
 - `TimeStats` 按 layer 与 display 汇总 present-to-present、post-to-present、acquire-to-present、jank、composition 等趋势，可通过受控的 `dumpsys SurfaceFlinger --timestats` 或 statsd pull（拉取聚合统计）做前后对照。它不是逐帧根因表，也不保证提供任意分位数。
 - `JankTracker` 接收已经分类的结果，按 listener（监听器）批量投递；Android 17 的 batch（批次）以 50 条为边界，并支持显式 flush（立即发送积累结果）。通知晚到只说明批量或调度延迟，不表示 jank 到那一刻才被判定。
 
-一轮诊断应先用 FrameTimeline 找出同一 SurfaceFrame 与 DisplayFrame 的异常，再用 FrameTracer、线程 slice、BufferTX、fence 与 HWC 解释阶段；最后用 TimeStats 验证现象是否在稳定样本中持续。若业务需要在线反馈，再核对 JankTracker listener 收到的 bit（分类位）、批次和 flush 时机。
-
-## fence 与 BufferQueue：不要把三个方向混在一起
-
-| 同步对象 | 生产者与消费者关系 | 能回答的问题 |
-|---|---|---|
-| acquire fence | Producer 随新 buffer 交给 Consumer | 新 buffer 何时写完、何时可安全读取 |
-| present fence | HWC、display 对本次 display present 的反馈 | 本轮显示更新到达哪个系统完成边界 |
-| release fence | Consumer、HWC 交还旧 buffer 的使用完成约束 | Producer 何时可以安全复用该 buffer |
-
-Android 用户态通过 `Fence`、`FenceTime` 与 sync file（同步文件对象）传递这些同步对象；指定内核锚点中的 `dma_fence` 提供 signal、wait 与 callback 基础。FrameTimeline 读取的是用户态和 HAL 传回的时间，不是直接把某个内核函数耗时当作 jank 根因。
-
-排查 buffer starvation（可用 buffer 不足）时，应观察 `dequeueBuffer` 等待、可用 slot（槽位）、pending buffer、release callback 与 fence，以及前序帧的 present。把“当前 Actual end 到下一帧 Expected start”的差当作 release fence 时间，会混淆两个不同对象。
-
-Android 的 BufferQueue 与 fence 设计用于避免 Consumer 读取未完成内容。看到游戏或视频画面撕裂感时，先区分 frame pacing（帧节奏控制）、重复帧或丢帧、transform 更新不同步和厂商显示路径；只有拿到绕过正常同步或显示扫描异常的证据，才适合使用 classic tearing（经典撕裂）结论。
+已经定位到异常帧时，用 TimeStats 验证现象是否在稳定样本中持续；若业务需要在线反馈，再核对 JankTracker listener 收到的 bit（分类位）、批次和 flush 时机。
 
 ## 采集一份可解释的 trace
 
