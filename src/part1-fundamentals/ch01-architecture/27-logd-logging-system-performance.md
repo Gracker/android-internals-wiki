@@ -46,7 +46,7 @@ related_chapters:
 
 # Android logd 日志系统性能与开销
 
-一条 `Log.d()` 会经过级别判断、JNI 字符串访问、Unix Domain Socket（同一设备上进程间通信使用的本地套接字）发送、缓冲保存和读取客户端分发。分析这条链路时，需要区分三个边界：应用写日志与 logd 保存日志、logd 的服务端筛选与 logcat 的客户端筛选、EventLog 与 StatsD 原子事件（atom，即 StatsD 定义的一类结构化指标事件）的传输。以下行为以 `android-17.0.0_r1` 为准。
+一条 `Log.d()` 会依次经过级别判断、JNI 取字符串、通过 Unix Domain Socket（同一设备上进程间通信使用的本地套接字）发送、缓冲保存，最后由读取客户端分发。分析这条链路时，需要区分三个边界：应用写日志与 logd 保存日志、logd 的服务端筛选与 logcat 的客户端筛选、EventLog 与 StatsD 原子事件（atom，即 StatsD 定义的一类结构化指标事件）的传输。以下行为以 `android-17.0.0_r1` 为准。
 
 ## 1. Android 17 的写入链路
 
@@ -68,9 +68,9 @@ android.util.Log.d(tag, message)
   -> LogBuffer::Log()
 ```
 
-这张路径图有四个需要记住的细节。
+这条路径上有四个细节会影响后面的判断：JNI 取字符串、native 侧的第二次级别过滤、`writev()` 的提交方式，以及 socket 的凭据传递。
 
-JNI 层通过 `GetStringUTFChars()` 取得 tag 和 message 的 Modified UTF-8 表示，随后释放。Modified UTF-8 是 JNI 使用的一种 UTF-8 变体。虚拟机是否复制字符串由实现和字符串内容决定，因此不能把它固定描述为“一次堆分配”，但取得编码表示和跨越 JNI 边界都有成本。
+JNI 层用 `GetStringUTFChars()` 取到 tag 和 message 的表示，编码是 Modified UTF-8（JNI 使用的一种 UTF-8 变体），用完即释放。虚拟机是否复制字符串由实现和字符串内容决定，不能一概写成“一次堆分配”；不过取编码、跨 JNI 边界都有成本。
 
 文本日志进入 `__android_log_buf_write()` 后会再次执行 `__android_log_is_loggable()`。`Log.d()` 的参数在进入 native 方法前已经求值，所以 native 级别过滤能省去套接字写入，却省不掉调用方已经完成的字符串拼接、对象 `toString()` 或 JSON 序列化。
 
@@ -91,7 +91,7 @@ Android 17 的 liblog 使用 `writev()` 一次提交头部和 payload（日志�
 
 `LogdWrite()` 为普通日志使用 `SOCK_NONBLOCK`，也就是让写入在套接字暂时不可用时立即返回。这里的普通日志包括 `main`、`system`、`radio`、`events`、`stats`、`crash` 等合法 buffer；`security` 是受权限控制的特殊二进制 buffer，liblog 为它另设阻塞 socket。
 
-当 logd 来不及接收、socket 返回表示“稍后再试”的 `EAGAIN` 时，liblog 记录一次丢弃（drop）并返回。后续写入恢复且 liblog 内部日志允许输出时，它会尝试写入 event tag `1006`（`liblog`），报告此前丢弃的数量。这与旧版 `chatty` 行属于不同机制。
+当 logd 来不及接收、socket 返回 `EAGAIN`（表示“稍后再试”）时，liblog 记录一次丢弃（drop）并返回。后续写入恢复且 liblog 内部日志允许输出时，它会尝试写入 event tag `1006`（`liblog`），报告此前丢弃的数量。这与旧版 `chatty` 行属于不同机制。
 
 因此，普通应用日志风暴的风险主要是：
 
@@ -119,12 +119,12 @@ Android 17 的 `LOGGER_ENTRY_MAX_PAYLOAD` 为 4068 字节。`LogdWrite()` 会把
 
 ### 2.1 `LogListener` 的两条接收实现
 
-logd 从 init 继承 `logdw` socket。Android 17 的 `LogListener` 有两种接收方式：
+logd 从 init 继承 `logdw` socket。Android 17 的 `LogListener` 有两条接收路径，其中一条依赖 io_uring（Linux 提供的异步 I/O 接口）：
 
 - `android.logd.flags.use_iouring` 开启且内核支持时，使用 `IOUringSocketHandler` 的 multishot `recvmsg`，即一次提交接收请求后连续取得多个完成事件；
 - 条件不满足时，使用传统 `recvmsg()` 循环。
 
-两条路径都会校验包长度、读取发送方凭据，再调用 `LogBuffer::Log()`。io_uring 是 Linux 提供的异步 I/O 接口；这里是否使用它，由 aconfig 功能开关和运行时支持共同决定，不能据此断言所有 Android 17 设备都已启用。
+两条路径都会校验包长度、读取发送方凭据，再调用 `LogBuffer::Log()`。是否走 io_uring 由 aconfig 功能开关和运行时支持共同决定，不能据此断言所有 Android 17 设备都已启用。
 
 ### 2.2 buffer 名称、容量与设备差异
 
@@ -141,7 +141,7 @@ Android 17 定义了八个 log ID；每个 ID 对应一类独立的日志缓冲�
 | `security` | 受权限控制的安全事件 |
 | `kernel` | logd 收集的内核日志 |
 
-`system/logging/logd/LogSize.h` 给出的通用默认值是每个 buffer 256 KiB，最小值 64 KiB，最大值 256 MiB。在 `LogSize.cpp` 中，启动时读取 `persist.logd.size*` / `ro.logd.size*` 覆盖值只发生在 `ro.debuggable=true` 且设备类型为 automotive 或 `ro.hardware=android-desktop` 的设备上；不可调试的低内存（low-RAM）设备会选择 64 KiB。产品配置和 `logcat -G` 运行时设置仍可改变实际大小，不能用一张固定容量表代表所有设备。
+`system/logging/logd/LogSize.h` 给出的通用默认值是每个 buffer 256 KiB，最小值 64 KiB，最大值 256 MiB。在 `LogSize.cpp` 中，启动时读取 `persist.logd.size*` / `ro.logd.size*` 覆盖值的路径只对 `ro.debuggable=true`，且设备类型为 automotive 或 `ro.hardware=android-desktop` 的设备生效；不可调试的低内存（low-RAM）设备会选择 64 KiB。产品配置和 `logcat -G` 运行时设置仍可改变实际大小，不能用一张固定容量表代表所有设备。
 
 应直接查询目标设备：
 
@@ -149,19 +149,19 @@ Android 17 定义了八个 log ID；每个 ID 对应一类独立的日志缓冲�
 adb logcat -g
 ```
 
-输出会列出各 buffer 的环形缓冲区大小（ring buffer size）、已使用量、可读量以及单条上限。`logcat -G` 可以按 `-b` 选择修改运行时大小，但通常需要相应权限；调大容量只能延长日志保留窗口，不能消除写入成本或 socket 丢包。
+输出会列出各 buffer 的环形缓冲区大小（ring buffer size）、已使用量、可读量以及单条上限。`logcat -G` 配合 `-b` 可以修改运行时大小，但通常需要相应权限；调大容量只能延长日志保留窗口，不能消除写入成本或 socket 丢包。
 
 ### 2.3 默认实现使用序列化数据块
 
 Android 17 的 `logd.buffer_type` 默认值是 `serialized`，表示把日志编码后按数据块保存；另一个可选值为 `simple`。默认实现不是定长的 `LogBufferEntry[]` 数组。
 
-`SerializedLogBuffer` 为每个 log ID 维护一份 `SerializedLogChunk` 列表；chunk 是一批连续保存的序列化日志。当前 chunk 保持可追加状态，写满或封存后的 chunk 使用 Zstd 1 级压缩。用于容量计算的总大小超过目标值时，logd 从较老的 chunk 开始裁剪。读取客户端需要访问压缩 chunk 时才解压，并通过引用状态避免正在读取的数据被释放。
+`SerializedLogBuffer` 为每个 log ID 维护一份 `SerializedLogChunk` 列表；chunk 是一批连续保存的序列化日志。当前 chunk 保持可追加状态，写满或封存后的 chunk 使用 Zstd 1 级压缩。当计入容量的总大小超过目标值时，logd 从较老的 chunk 开始裁剪。读取客户端访问到压缩 chunk 时才解压，并通过引用状态避免正在读取的数据被释放。
 
 这套设计对外仍表现为“只保留有限窗口，并淘汰旧数据”，内部管理单位则是 chunk 和序列化条目。分析裁剪成本、内存占用或慢速读取客户端行为时，需要以该实现为准。
 
 ### 2.4 `chatty` 属于历史机制
 
-`system/logging/logd/README.compression.md` 的标题直接说明了 Android S 的变化：使用日志压缩取代 Chatty。Android 17 的 logd 源码没有当前默认路径所需的 `ChattyLogBuffer.cpp`，默认的 serialized buffer 也不会按旧说明插入 `uid=... expired ... lines` 来表示重复日志。
+`system/logging/logd/README.compression.md` 的标题就写着 Android S 的这次变化：用日志压缩取代 Chatty。Android 17 的 logd 源码没有当前默认路径所需的 `ChattyLogBuffer.cpp`，默认的 serialized buffer 也不会按旧说明插入 `uid=... expired ... lines` 来表示重复日志。
 
 旧设备的日志中仍可能看到 `chatty`，AOSP 的事件 tag 表也保留了历史名称，但这不足以证明 Android 17 默认使用旧的重复行合并策略。当前版本有两个相关但不同的现象：
 
@@ -178,7 +178,7 @@ logcat 连接 `/dev/socket/logdr`。该 reader socket 使用 `SOCK_SEQPACKET`，
 - PID；
 - 起始时间或日志序号（sequence）；
 - tail 条数；
-- 非阻塞、等待缓冲区即将回绕后返回（wrap）等读取模式。
+- 非阻塞读取，以及等到缓冲区即将回绕才返回（wrap）这类读取模式。
 
 安全 buffer 和跨 UID 读取还受凭据与权限约束。面向应用公开的 NDK logging API 通常写入 `main`；读取全局 logcat 所需的 `READ_LOGS` 也只授予受信任的特权组件。
 
@@ -206,9 +206,9 @@ adb logcat -b main --pid="$(adb shell pidof -s com.example.app)" \
 
 每个 reader（读取客户端）都有独立线程和读取状态。多开 logcat 会增加线程、解压和 socket 发送工作，但 AOSP 没有给出“每个客户端固定占用多少 KB”或“超过多少个必然变慢”的通用阈值。
 
-当 reader 的读取位置已经落到被裁剪的数据之后，serialized buffer 会让它跳过已回收的旧 chunk，并记录相应警告。读 socket 也配置了发送超时，避免一个停止读取的客户端长期占住发送线程。是否达到瓶颈取决于日志速率、buffer 容量、读取客户端数量、输出介质和设备性能，需要在目标设备上测量。
+当 reader 要读的位置已经落在被裁剪的数据之后，serialized buffer 会让它跳过已回收的旧 chunk，并记一条警告。读 socket 也配置了发送超时，避免一个停止读取的客户端长期占住发送线程。是否达到瓶颈取决于日志速率、buffer 容量、读取客户端数量、输出介质和设备性能，需要在目标设备上测量。
 
-## 4. 容易混淆的两条旁路
+## 4. 容易被算进 logd 的两件事
 
 ### 4.1 EventLog 与 StatsD atom
 
@@ -224,15 +224,15 @@ adb logcat -b main --pid="$(adb shell pidof -s com.example.app)" \
 
 ### 4.2 system/logging 中的 Rust 代码
 
-`system/logging/rust/` 包含 Rust logging API、结构化日志和 liblog 绑定等客户端代码。这个目录的存在不代表 logd 守护进程已经改写为 Rust。
+`system/logging/rust/` 包含的 Rust logging API、结构化日志和 liblog 绑定等都是客户端代码，这个目录的存在不代表 logd 守护进程已经改写为 Rust。
 
-在 `android-17.0.0_r1` 中，`logd/Android.bp` 构建的是 `cc_binary`，核心文件仍包括 C++ 的 `main.cpp`、`LogListener.cpp`、`SerializedLogBuffer.cpp`、`LogReader.cpp` 和 `LogReaderThread.cpp`。`logd/` 下没有负责这些核心职责的 `.rs` 实现。基于 `RwLock<VecDeque<...>>`、`mio` 或“Rust 版吞吐提升比例”的描述都得不到该版本源码支持，不应写入 Android 17 的结论。
+在 `android-17.0.0_r1` 中，`logd/Android.bp` 构建的是 `cc_binary`，核心文件仍包括 C++ 的 `main.cpp`、`LogListener.cpp`、`SerializedLogBuffer.cpp`、`LogReader.cpp` 和 `LogReaderThread.cpp`；`logd/` 下没有负责这些核心职责的 `.rs` 实现。基于 `RwLock<VecDeque<...>>`、`mio` 或“Rust 版吞吐提升比例”的描述都得不到该版本源码支持，不应写入 Android 17 的结论。
 
 ## 5. 应用侧怎样减少日志开销
 
 ### 5.1 消除无效的参数求值
 
-这段代码即使最终被 liblog 级别过滤，参数仍已在 Java/Kotlin 层构造：
+即使这行日志最终被 liblog 的级别过滤拦下，参数仍已经在 Java/Kotlin 层构造完：
 
 ```kotlin
 Log.d(TAG, "user=${user.name}, payload=${encodeLargePayload(data)}")
@@ -272,13 +272,13 @@ R8 会处理匹配的 `Log.*` 与 `Log.isLoggable()` 调用。这个规则近年
 | 警告与错误 | 保留稳定错误码和必要上下文 |
 | 凭据、令牌、完整账号、原始请求体 | 禁止写入 |
 
-采样率不能机械固定成“每 100 次一次”。故障可能集中在被跳过的请求，多线程共享计数器也会改变样本分布。需要采样时，应明确采样单位、用于稳定决定同一对象是否入样的 key、时间窗口和紧急开关，并在构造昂贵消息之前作出决定。
+采样率不能机械固定成“每 100 次一次”。故障可能集中在被跳过的请求，多线程共享计数器也会改变样本分布。需要采样时，要明确采样单位、时间窗口和紧急开关，还要选一个稳定的 key 决定同一对象是否入样；这个决定要在构造昂贵消息之前作出。
 
 ### 5.4 隐私边界
 
 Android 4.1 以后，全局 `READ_LOGS` 读取能力受到特权权限限制，但预装特权组件、bugreport、工程构建和设备厂商诊断工具仍可能接触日志。限制读取权限不能抵消敏感数据已经写入系统日志的风险。
 
-发布版日志应采用字段白名单，令牌、密码和会话密钥必须完全删去；掩码只适合允许显示部分信息的字段。异常对象也要审查，因为服务端响应、URI 查询参数和用户输入可能通过异常文本进入日志。
+发布版日志按字段白名单输出，令牌、密码和会话密钥必须完全删去；掩码只适合允许显示部分信息的字段。异常对象也要审查，因为服务端响应、URI 查询参数和用户输入可能通过异常文本进入日志。
 
 官方依据：[Log Info Disclosure](https://developer.android.com/privacy-and-security/risks/log-info-disclosure) 与 [R8 Additional rule types](https://developer.android.com/topic/performance/app-optimization/additional-rule-types)。
 
@@ -305,9 +305,13 @@ adb shell pidof logd
 3. logd 的 CPU 调度、接收、压缩和裁剪；
 4. logcat reader 的解压、正则匹配与输出介质。
 
-Perfetto 可同时观察应用与 logd 的线程调度、CPU 时间和频率变化。`userdebug`/`eng` 环境还可用 CPU 采样工具 simpleperf 分析应用或 logd 热点；短时使用系统调用跟踪工具 `strace`，能验证应用是否频繁调用 `writev()`，以及调用是否返回 `EAGAIN`。Android 的 bpfloader 负责加载系统批准的 BPF 程序，并不表示普通应用可以随意加载自定义 BPF 程序，因此排障手册不应把它写成通用方案。
+Perfetto 可同时观察应用与 logd 的线程调度、CPU 时间和频率变化。`userdebug`/`eng` 环境还可用 CPU 采样工具 simpleperf 分析应用或 logd 热点；用系统调用跟踪工具 `strace` 短时间跟踪，能验证应用是否频繁调用 `writev()`、调用是否返回 `EAGAIN`。
 
-AOSP 自带 `system/logging/liblog/tests/liblog_benchmark.cpp`，其中有轻载写入和高压写入基准。结果取决于 SoC、内核、构建类型（build type）、buffer 和 logd 负载，不能据此给出跨设备固定的“单条若干微秒”。比较优化前后的结果时，应固定消息长度、日志级别、CPU 状态和读取客户端配置，并同时记录丢失量；只统计成功循环次数，会把日志丢弃误判为吞吐提升。
+Android 的 bpfloader 只负责加载系统批准的 BPF 程序，普通应用并不能因此随意加载自定义 BPF 程序，排障手册不应把加载自定义 BPF 程序写成通用方案。
+
+AOSP 自带 `system/logging/liblog/tests/liblog_benchmark.cpp`，其中有轻载写入和高压写入基准。结果取决于 SoC、内核、构建类型（build type）、buffer 和 logd 负载，不能据此给出跨设备固定的“单条若干微秒”。
+
+比较优化前后的结果时，应固定消息长度、日志级别、CPU 状态和读取客户端配置，并同时记录丢失量；只统计成功循环次数，会把日志丢弃误判为吞吐提升。
 
 ### 6.3 一个实用的判断顺序
 
@@ -327,7 +331,7 @@ AOSP 自带 `system/logging/liblog/tests/liblog_benchmark.cpp`，其中有轻载
 | Android R 起 | StatsD 原生 atom 经独立 statsd socket 传输，应与 EventLog 路径分开分析 |
 | Android 17 / API 37 | logd 核心仍为 C++；默认使用 serialized/Zstd buffer；接收端具备由功能开关控制的 io_uring 路径；Rust logging 代码位于客户端侧 |
 
-版本演进可以保留旧路径，供分析历史 trace 时参考；当前行为判断均以 `android-17.0.0_r1` 为准。现代应用日志链路不依赖 kernel 日志驱动实现，无需引入 `android17-6.18-2026-06_r6` 的额外假设。
+上表的旧路径保留下来，只用于分析历史 trace 时参考；当前行为判断均以 `android-17.0.0_r1` 为准。现代应用日志链路不依赖 kernel 日志驱动实现，无需引入 `android17-6.18-2026-06_r6` 的额外假设。
 
 ## 8. 源码核查清单
 
