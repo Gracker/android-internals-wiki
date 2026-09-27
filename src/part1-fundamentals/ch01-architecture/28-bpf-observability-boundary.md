@@ -4,8 +4,8 @@ chapter: '1.28'
 section: '1.28'
 status: finalized
 applicable_versions: Android 17 (API 37) / AOSP android-17.0.0_r1 / ACK android17-6.18-2026-06_r6
-last_verified: '2026-08-06'
-last_verified_against: AOSP android-17.0.0_r1; ACK android17-6.18-2026-06_r6; AIW freshness audit no Android 18/API38+ conclusion
+last_verified: '2026-09-27'
+last_verified_against: AOSP android-17.0.0_r1; ACK android17-6.18-2026-06_r6; official docs rechecked 2026-09-27; sched_ext ABI instability note preserved; no Android 18/API38+ conclusion
 confidence: high
 sources:
 - type: blog
@@ -51,6 +51,8 @@ task9_state: reviewed
 pipeline_stage: ready-to-publish
 last_review_finalize_at: '2026-08-06T16:08:13+08:00'
 last_review_finalize_run_id: 20260806-160557-24b5c632
+last_idle_audit_at: '2026-09-27T10:43:16+08:00'
+last_idle_audit_run_id: 20260927-103557-idle-audit-2a7a1499
 ---
 
 # Android 17 / ACK 6.18 BPF 可观测性与可编程边界
@@ -315,6 +317,8 @@ adb shell 'cat /sys/kernel/sched_ext/enable_seq 2>/dev/null'
 `enable_seq` 是只增不减的计数器：值为 0 表示本次启动后从未成功启用 BPF 调度器，非 0 只能证明曾经启用过，不能证明当前仍在运行。节点不存在或访问被拒绝时，应记录内核版本、构建类型和 SELinux 拒绝日志，不能把空输出直接解释成某项能力不存在。
 
 Android 17 AOSP 平台源码没有提供名为“ML Scheduler”的系统级 BPF 调度器，也没有 `bpf_runqueue_hook` 或 `bpf_cpufreq_hook` 这类通用接口。调度观测通常依赖已有的 sched/power tracepoint、BPF tracing 程序或 Perfetto；调度控制则需要单独实现 `sched_ext` 策略，并完成权限配置和产品验证。“关键任务响应时间改善 35%”如果缺少可复现实验，不能作为平台结论。
+
+内核文档还把 `sched_ext` 的 BPF 调度器接口列为 ABI 不稳定：`struct sched_ext_ops`、`include/linux/sched/ext.h` 常量和 `scx_bpf_*` kfunc 可能随内核版本变化。把策略从一个 ACK 或月度 tag 搬到另一个版本前，应重新编译并验证。
 
 ## 8. 安全边界与产品部署
 
