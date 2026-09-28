@@ -55,9 +55,9 @@ task9_state: reviewed
 
 # ART FinalizerDaemon、Cleaner 与 ReferenceQueue
 
-看到 `FinalizerDaemon` 忙、文件描述符（FD）数量上涨或 CloseGuard 告警时，先把几个相邻概念分开：
+看到 `FinalizerDaemon` 忙、文件描述符（FD）数量上涨或 CloseGuard 告警时，先分清下面四个相邻概念：
 
-- GC 判断对象的可达性，并把需要后续处理的 `Reference` 交给引用处理机制。
+- GC 判断对象的可达性，并把需要后续处理的 `Reference` 放进运行时的待处理列表。
 - `ReferenceQueueDaemon` 把 GC 提供的待处理（pending）引用转移到目标 `ReferenceQueue`。
 - `FinalizerDaemon` 串行执行 `finalize()`，也负责 Android 共享 `SystemCleaner` 的清理动作。
 - 应用代码负责在明确的生命周期边界释放文件描述符、套接字、游标、图形缓冲区和原生资源句柄。
@@ -103,7 +103,7 @@ private T zombie;
 - `head` 指向的链表覆盖堆中所有可终结对象，对象此时可能仍然可达。
 - `queue` 只存放已经具备执行终结条件的 `FinalizerReference`。
 
-`FinalizerReference.get()` 返回 `zombie`，而非普通的 `Reference.referent`。`zombie` 是源码字段名，表示等待终结方法处理期间用于保留对象的引用，并不表示资源已经释放。GC 判定对象需要终结时，会把对象从 `referent` 移到 `zombie`，使它在 `finalize()` 执行前仍保持可访问。
+`FinalizerReference.get()` 返回 `zombie`，而非普通的 `Reference.referent`。`zombie` 是源码字段名，指等待终结方法处理期间用来保留对象的那个引用，并不表示资源已经释放。GC 判定对象需要终结时，会把对象从 `referent` 移到 `zombie`，使它在 `finalize()` 执行前仍保持可访问。
 
 ### 2.2 GC 先交给 `ReferenceQueueDaemon`
 
@@ -115,7 +115,7 @@ ReferenceQueue.enqueuePending(list, progressCounter);
 
 这一段只负责把引用从待处理链表转移到目标队列。对于 `FinalizerReference`，目标队列就是 `FinalizerReference.queue`。
 
-Android 17 还在这个循环里观察全堆 GC 计数。当没有待处理引用且发现全堆 GC 次数增加时，它会调用 `VMRuntime.onPostCleanup()`。这属于运行时的 GC 后处理，不能据此推断某个业务资源已经关闭。
+Android 17 还在这个循环里观察全堆 GC 计数。它发现没有待处理引用、全堆 GC 次数增加时，会调用 `VMRuntime.onPostCleanup()`。这属于运行时的 GC 后处理，不能据此推断某个业务资源已经关闭。
 
 ### 2.3 `FinalizerDaemon` 串行执行
 
@@ -207,7 +207,7 @@ progressCounter.incrementAndGet();
 
 `MAX_ITERS = 100` 限制一个批次的规模，也让 `ReferenceQueueDaemon.progressCounter` 能够定期更新，供看门狗判断线程是否仍在推进。
 
-需要准确理解这个计数器：
+这个计数器有几点需要区分：
 
 - 普通引用按“同队列批次”递增，不是每处理一个引用都递增。
 - 旧式 `sun.misc.Cleaner` 每处理一个就递增。
@@ -262,7 +262,7 @@ GC pending list
            -> thunk.run()
 ```
 
-图中的 `thunk.run()` 是旧 Cleaner 包装的实际清理动作。因此，这类慢动作会卡住全进程的 `ReferenceQueueDaemon`，连带推迟其他引用入队。应用不应通过反射或隐藏 API 依赖这套实现。
+图中的 `thunk.run()` 是旧 Cleaner 包装的实际清理动作。这类慢动作因此会卡住全进程的 `ReferenceQueueDaemon`，连带推迟其他引用入队。应用不应通过反射或隐藏 API 依赖这套实现。
 
 ### 5.2 公开 `java.lang.ref.Cleaner.create()`
 
@@ -292,7 +292,7 @@ SystemCleaner.cleaner()
            -> Cleanable.clean()
 ```
 
-官方契约要求这类动作快速结束，并避免显式 I/O、IPC 和网络访问，原因如下：
+官方契约要求这类动作快速结束，并避免显式 I/O、IPC 和网络访问：
 
 - 全进程共享，同一个动作会挡住后续共享清理动作；
 - 它与普通终结方法共用 `FinalizerDaemon`，还受终结器看门狗监控。
@@ -423,7 +423,7 @@ StrictMode 适合在开发和持续集成（CI）阶段尽早暴露错误。生�
 - GraphicBuffer、ImageReader image 或 Surface；
 - JNI 全局引用和它间接保活的对象图。
 
-因此，Java 堆变化不大，而原生堆或图形内存持续上涨，是合理且常见的组合。浅层大小（shallow size）只统计对象本身直接占用的 Java 堆空间；只按这个值排序会漏掉对象间接持有的原生和图形资源。
+Java 堆变化不大，而原生堆或图形内存持续上涨，因此是合理且常见的组合。浅层大小（shallow size）只统计对象本身直接占用的 Java 堆空间；只按这个值排序会漏掉对象间接持有的原生和图形资源。
 
 ### 7.2 单线程清理形成排队等待
 
@@ -555,7 +555,7 @@ NEW -> OPEN -> CLOSING -> CLOSED
 5. 用 Perfetto 对齐相机回调、页面退出、守护线程运行和主线程掉帧，确认是否存在锁或 Binder 竞争。
 6. 修复后重复同样轮数，要求资源曲线回到稳定区间，并让 StrictMode/CloseGuard 不再报告遗漏。
 
-这个流程把“守护线程很忙”的表象还原成可验证的资源所有权问题。
+按这个顺序走一遍，“守护线程很忙”会落到某个可验证的资源所有权问题上。
 
 ## 11. Android 8 到 Android 17 的版本边界
 
