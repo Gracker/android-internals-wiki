@@ -58,17 +58,15 @@ last_idle_audit_run_id: 20260826-224308-idle-audit-1f93810e
 
 # Android 存储架构
 
-一次应用 I/O 会跨越 API、文件系统、页缓存、块层和存储器件，任何一层都可能把短请求放大成长尾。阅读这条链路的目的，是把“磁盘慢”拆成可观测的缓存命中、回写、排队、同步和介质延迟。
-
-## 从一个卡顿现象说起
+一次应用 I/O 会跨越 API、文件系统、页缓存、块层和存储器件，任何一层都可能把短请求放大成长尾。读懂这条链路，才能把“磁盘慢”拆成可观测的缓存命中、回写、排队、同步和介质延迟。
 
 平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点是 Android Common Kernel `android17-6.18-2026-06_r6`。设备厂商可以定制分区表、文件系统、UFS 控制器和 vendor kernel（厂商内核），因此涉及具体机型的性能结论仍要以运行时信息为准。
 
-在 Perfetto 中追踪主线程卡顿时，常会遇到这样的片段：线程调用 SQLite、SharedPreferences 或普通文件 API 后进入睡眠，直到数据回写、日志提交或设备请求完成才重新运行。SQLite 事务和 SharedPreferences 写盘是两条独立的实现路径，不能看到 `fsync()` 就断定它来自哪条实现路径；还要结合调用栈、文件名、文件系统事件和 block trace（块 I/O 跟踪记录）判断。
+## 从一个卡顿现象说起
+
+在 Perfetto 中追踪主线程卡顿时，常会遇到这样的片段：线程调用 SQLite、SharedPreferences 或普通文件 API 后进入睡眠，直到数据回写、日志提交或设备请求完成才重新运行。SQLite 事务和 SharedPreferences 写盘是两条独立的实现路径，不能看到 `fsync()` 就断定它来自哪一条；还要结合调用栈、文件名、文件系统事件和 block trace（块 I/O 跟踪记录）判断。
 
 这类问题有时伴随大量 CPU 工作，有时则主要耗在 I/O wait（等待输入/输出完成）。Android 文件访问可能依次经过 VFS（统一文件系统接口）、具体文件系统、fscrypt（文件级加密框架）、device-mapper（块设备映射层）、块层、主机控制器和闪存；共享存储还可能经过 MediaProvider/FUSE。只有把等待时间对应到具体层级，才能判断延迟来自同步点设计、文件系统回写、设备排队、加密准备，还是共享存储的权限检查路径。
-
-以下沿数据从应用 API 到存储器件的路径梳理 Android 存储架构。
 
 ## 存储栈全景：从闪存芯片到应用 API
 
@@ -106,7 +104,7 @@ eMMC 使用并行总线，数据传输为半双工。旧式 eMMC 请求模型的
 
 UFS 使用 MIPI M-PHY 差分串行链路和 UniPro 协议，UTP（UFS Transport Protocol）负责承载 UFS Command Set。链路支持全双工，协议和主机控制器也支持同时处理多个 outstanding request（尚未完成的请求）。更高的链路速率、队列并发度和控制器并行度可以改善吞吐与尾延迟，但应用实际感受到的性能仍受 NAND 类型、SLC cache（用单层单元模式提供的高速缓存）、温度、容量占用和固件影响。
 
-下面的图用于区分 UFS 协议层次。
+下面这张图按层列出 UFS 协议，以及每层承载的规范。
 
 ```text
 ┌─────────────────────────┐
@@ -120,7 +118,7 @@ UFS 使用 MIPI M-PHY 差分串行链路和 UniPro 协议，UTP（UFS Transport 
 └─────────────────────────┘
 ```
 
-应用调用 `read()` 时不会直接生成 UFS Command Set 命令。文件系统与块层会先把文件偏移转换、合并或拆分为块请求，再由 UFS host driver（主机驱动）把请求映射为 UTP transfer request。
+应用调用 `read()` 时不会直接生成 UFS Command Set 命令。文件系统与块层会先把文件偏移翻译成块请求，再按需要合并或拆分，最后由 UFS host driver（主机驱动）把请求映射为 UTP transfer request。
 
 ### 性能差距不能只看版本号
 
@@ -140,21 +138,15 @@ JEDEC 版本规定的是接口能力，不承诺某颗量产器件一定达到�
 
 发现 I/O 延迟异常时，应先记录器件型号、UFS/eMMC 版本、文件系统、可用空间、温度与当前后台负载，再为这台设备建立冷启动、随机读写和 `fsync()` 基线。Perfetto 的 block request 延迟可以说明请求在块设备路径上等待了多久，但不能仅凭“UFS 4.0”标签设定固定的毫秒阈值。
 
-## 块设备层：I/O 调度与设备映射
+## 块设备层：设备映射与 I/O 调度
 
 文件系统会把一段或多段内存页组织成 `bio`（描述一组块 I/O 的内核结构）并提交给块层。device-mapper 可以先改写目标设备和扇区；块层再合并或拆分 `bio`，形成 request，并交给 blk-mq（多队列块层）与设备驱动。映射和调度的先后关系还取决于具体的 device-mapper 叠加方式，不能把整个过程理解成一个固定函数。
-
-### I/O 调度器
-
-I/O 调度器负责块 request 的排序、合并与派发。Android 设备可能选择 `mq-deadline`、BFQ（Budget Fair Queueing）或 `none`，UFS MCQ 与设备厂商配置都会影响最终选择。`mq-deadline` 同时维护排序队列和 FIFO（先进先出）到期约束；BFQ 根据预算和权重分配设备服务时间，启用相应 cgroup（控制组）支持时可以体现组级权重。调度器名称本身并不保证前台请求一定优先。
-
-手机上经常出现前台随机读与后台顺序写竞争。AOSP `android-17.0.0_r1` 的 `libprocessgroup/profiles/cgroups.json` 仍把 v1 `blkio`（块 I/O 控制组）挂载到 `/dev/blkio`；在 `task_profiles.json` 中，`LowIoPriority` 进入 `blkio/background`，`SCHED_SP_FOREGROUND` 与 `SCHED_SP_TOP_APP` 分别组合 `HighIoPriority`、`MaxIoPriority`。这些 profile 只表达用户空间的分组意图，能否转化为实际的设备服务差异，取决于 active scheduler（当前启用的调度器）、内核 cgroup 支持和厂商的 blkio 属性。可结合 `/sys/block/<dev>/queue/scheduler`、`/proc/cgroups`、`/dev/blkio` 与设备配置进行核对。
 
 ### device-mapper：虚拟块设备映射层
 
 device-mapper（简称 dm）是 Linux 内核提供的通用块设备映射框架。它可以把一个或多个底层块设备映射成新的虚拟块设备。Android 使用 device-mapper 实现分区管理、完整性校验和加密等功能。
 
-device-mapper 的工作涉及三个基本概念：
+device-mapper 有三个基本概念：
 
 1. **映射设备（Mapped Device）**：对上层可见的虚拟块设备，例如 `/dev/block/dm-0`；
 2. **映射表（Mapping Table）**：定义虚拟设备的每段扇区范围对应哪个底层设备的哪些扇区；
@@ -164,10 +156,18 @@ Android 常用的 dm target（映射目标类型）包括：
 
 - **dm-linear**：把一个连续扇区范围线性映射到另一个设备的连续扇区。它是 Dynamic Partition 的基础，`system`、`vendor` 等逻辑分区通过 dm-linear 从 `super` 物理分区中映射出来。
 - **dm-verity**：通过预先计算的 hash tree（哈希树）校验只读分区（如 `system`）的完整性，检测数据是否被篡改。
-- **dm-snapshot / dm-user**：用于 Virtual A/B 的快照路径，但具体职责要按 Android 版本区分。Android 11 使用 `dm-snapshot` 和 kernel COW；Android 12 compressed snapshots 引入 Android COW format 与 `snapuserd`，但仍需转换到 kernel COW / `dm-snapshot`；Android 13+ 的 userspace merge 才移除对 kernel COW 和 `dm-snapshot` 的依赖。
+- **dm-snapshot / dm-user**：用于 Virtual A/B 的快照路径，但具体职责要按 Android 版本区分：Android 11 使用 `dm-snapshot` 和 kernel COW；Android 12 compressed snapshots 引入 Android COW format 与 `snapuserd`，但仍需转换到 kernel COW / `dm-snapshot`；Android 13+ 的 userspace merge 才移除对 kernel COW 和 `dm-snapshot` 的依赖。
 - **dm-default-key**：用于 metadata encryption，在 `data` 分区的块设备层执行加密。
 
 这些 dm 目标可以叠加，形成 Android 的分区布局。各分区的职责、挂载方式和性能影响需要分别分析。
+
+### I/O 调度器
+
+I/O 调度器负责块 request 的排序、合并与派发。Android 设备可能选择 `mq-deadline`、BFQ（Budget Fair Queueing）或 `none`，UFS MCQ 与设备厂商配置都会影响最终选择。`mq-deadline` 同时维护排序队列和 FIFO（先进先出）到期约束；BFQ 根据预算和权重分配设备服务时间，启用相应 cgroup（控制组）支持时可以体现组级权重。调度器名称本身并不保证前台请求一定优先。
+
+手机上经常出现前台随机读与后台顺序写竞争。AOSP `android-17.0.0_r1` 的 `libprocessgroup/profiles/cgroups.json` 仍把 v1 `blkio`（块 I/O 控制组）挂载到 `/dev/blkio`；在 `task_profiles.json` 中，`LowIoPriority` 进入 `blkio/background`，`SCHED_SP_FOREGROUND` 与 `SCHED_SP_TOP_APP` 分别组合 `HighIoPriority`、`MaxIoPriority`。这些 profile 只表达用户空间的分组意图，能否转化为实际的设备服务差异，取决于 active scheduler（当前启用的调度器）、内核 cgroup 支持和厂商的 blkio 属性。
+
+核对时可结合 `/sys/block/<dev>/queue/scheduler`、`/proc/cgroups`、`/dev/blkio` 与设备配置。
 
 ## 分区布局：system、vendor、data 与 metadata
 
@@ -202,7 +202,11 @@ Physical Partition: super
 
 ### 挂载流程：从 bootloader 到用户空间
 
-Android 10+ 设备的常见启动链远比“bootloader 挂分区”复杂。bootloader 完成 Verified Boot 和硬件初始化后，把 boot image 中的 kernel 与 ramdisk 交给内核。内核启动后进入 ramdisk 中的 `first-stage init`；`first-stage init` 解析 `super` 分区 metadata，创建 `dm-linear` 逻辑设备，并挂载 `system`、`vendor`、`product` 等 `first_stage_mount` 分区。到 `early-fs` 阶段，系统先启动 `vold`，提前进行 metadata encryption 的准备工作；到 `late-fs` 阶段，`init` 先执行 `wait_for_keymaster`，再通过 `mount_all` 挂载 `/data`。`vold` 负责 `/data` 挂载前的密钥准备和设备映射，bootloader 本身不负责挂载 `super` 或 `/data`。
+Android 10+ 设备的常见启动链远比“bootloader 挂分区”复杂。bootloader 完成 Verified Boot 和硬件初始化后，把 boot image 中的 kernel 与 ramdisk 交给内核。
+
+内核启动后进入 ramdisk 中的 `first-stage init`；`first-stage init` 解析 `super` 分区 metadata，创建 `dm-linear` 逻辑设备，并挂载 `system`、`vendor`、`product` 等 `first_stage_mount` 分区。
+
+到 `early-fs` 阶段，系统先启动 `vold`，提前做 metadata encryption 的准备工作；到 `late-fs` 阶段，`init` 先执行 `wait_for_keymaster`，再通过 `mount_all` 挂载 `/data`。`vold` 负责 `/data` 挂载前的密钥准备和设备映射，bootloader 本身不负责挂载 `super` 或 `/data`。
 
 ## 文件系统：ext4 与 f2fs
 
@@ -212,7 +216,9 @@ ext4 和 f2fs 都是 Android 17 GKI（Generic Kernel Image，通用内核镜像�
 
 应用的普通 buffered I/O（缓冲 I/O）会先进入 page cache（页缓存），持久化边界则常由 SQLite、SharedPreferences、文件下载器或系统服务调用 `fsync()` / `fdatasync()` 建立。手机还同时面对进程频繁启动、后台回写、突然掉电保护、热约束和共享闪存队列竞争，这些因素都可能放大一次同步写的尾延迟。
 
-SQLite 可以使用 rollback journal（回滚日志）或 WAL（Write-Ahead Logging，预写日志）。一次提交会发出哪些同步操作，还取决于 journal mode、`synchronous` 级别、checkpoint（检查点）状态和 Android SQLite 配置。WAL 模式通常把事务记录追加到 `-wal` 文件，再由 checkpoint 回写主库，不能把所有事务简化成“每次都同步整个数据库”。在 ext4 常见的 `data=ordered` 配置下，`fsync()` 需要协调目标文件的脏数据、必要的 jbd2 metadata transaction（文件系统日志事务）和设备 flush。延迟分配可能把块分配工作推到回写或同步阶段，后台写入也可能占据设备队列，因此要通过具体 trace 判断耗时落在哪一步。
+SQLite 可以使用 rollback journal（回滚日志）或 WAL（Write-Ahead Logging，预写日志）。一次提交会发出哪些同步操作，还取决于 journal mode、`synchronous` 级别、checkpoint（检查点）状态和 Android SQLite 配置。WAL 模式通常把事务记录追加到 `-wal` 文件，再由 checkpoint 回写主库，不能把所有事务简化成“每次都同步整个数据库”。
+
+在 ext4 常见的 `data=ordered` 配置下，`fsync()` 需要协调目标文件的脏数据、必要的 jbd2 metadata transaction（文件系统日志事务）和设备 flush。延迟分配可能把块分配工作推到回写或同步阶段，后台写入也可能占据设备队列，因此要通过具体 trace 判断耗时落在哪一步。
 
 ### f2fs：为闪存优化的文件系统
 
@@ -243,9 +249,9 @@ Android 10 引入 Scoped Storage（分区存储）。Android 10 允许应用通�
 
 ### FUSE 层的性能开销
 
-Android 11 重新引入 FUSE，作为共享外部存储执行权限策略的路径。MediaProvider 充当 userspace FUSE handler（用户态 FUSE 处理程序），可以允许、拒绝或按策略对文件访问结果进行脱敏。首发搭载 Android 11 且使用 5.4 以上内核的设备不能再使用 SDCardFS；从旧版本升级的设备则可能在 SDCardFS 上叠加 FUSE。应用内部目录 `/data/user/<user_id>/<package>/` 不在这条 FUSE 挂载路径中。
+Android 11 重新引入 FUSE，作为共享外部存储执行权限策略的路径。MediaProvider 充当 userspace FUSE handler（用户态 FUSE 处理程序），可以允许、拒绝或按策略对文件访问结果脱敏。首发搭载 Android 11 且使用 5.4 以上内核的设备不能再使用 SDCardFS；从旧版本升级的设备则可能在 SDCardFS 上叠加 FUSE。应用内部目录 `/data/user/<user_id>/<package>/` 不在这条 FUSE 挂载路径中。
 
-Android 11 新增了 shared media 的 direct file paths（直接文件路径）访问方式。取得相应权限后，App 可以继续使用 `File` API 或 `fopen()` 访问媒体文件，从而兼容大量第三方媒体库。这一能力解决的是 API 兼容问题，不等于天然绕过 FUSE。官方文档指出，顺序读取时 direct file path 与 MediaStore 的性能接近；随机读写时，direct file path 反而可能慢到接近 2 倍，此类场景更适合继续使用 MediaStore。
+Android 11 新增了 shared media 的 direct file paths（直接文件路径）访问方式。取得相应权限后，App 可以继续使用 `File` API 或 `fopen()` 访问媒体文件，从而兼容大量第三方媒体库。这一能力解决的是 API 兼容问题，不等于天然绕过 FUSE。官方文档指出，顺序读取时 direct file path 与 MediaStore 的性能接近；随机读写时，direct file path 的耗时反而可能接近 MediaStore 的 2 倍，此类场景更适合继续使用 MediaStore。
 
 Android 12 增加了 FUSE passthrough（直通路径）。设备需要匹配的 official kernel、MediaProvider 实现与产品属性。文件通过权限与 redaction（内容脱敏）检查后，FUSE driver 可以在 `open()` 之后把后续读写直接转发到 lower file system（底层文件系统）。`android-17.0.0_r1` 的 `MediaProvider/jni/FuseDaemon.cpp` 仍会检查 `persist.sys.fuse.passthrough.enable`、内核 capability（能力支持）以及文件是否需要 redaction/transform，再决定能否启用 passthrough；源码还包含 FUSE BPF（通过内核 BPF 程序处理部分 FUSE 操作）路径。MediaStore API、Android 11 direct file path、FUSE passthrough 和 FUSE BPF 分属四个不同层次。
 
@@ -285,19 +291,13 @@ Android 的存储加密经历了从全盘加密（Full-Disk Encryption，FDE）�
 
 ### metadata encryption、FBE 与 `/metadata` 的分工
 
-“存储加密”包含三个容易混淆的层级。`/metadata` 是独立小分区，用于保存保护 metadata encryption key 的 KeyMint blobs；metadata encryption 工作在 userdata block device 层，保护目录项、inode（索引节点）、文件长度等文件系统 metadata，现代设备常见实现是 `dm-default-key` 配合 inline crypto / blk-crypto；FBE 则建立在文件系统之上，由 `vold` 在 `/data` 可以挂载后安装 DE/CE key，再由 `fscrypt` 把策略应用到不同目录。
+“存储加密”包含三个容易混淆的层级。`/metadata` 是独立小分区，用于保存保护 metadata encryption key 的 KeyMint blobs。
+
+metadata encryption 工作在 userdata block device 层，保护目录项、inode（索引节点）、文件长度等文件系统 metadata，现代设备常见实现是 `dm-default-key` 配合 inline crypto / blk-crypto。
+
+FBE 则建立在文件系统之上，由 `vold` 在 `/data` 可以挂载后安装 DE/CE key，再由 `fscrypt` 把策略应用到不同目录。
 
 按启动顺序观察会更清楚：系统先挂载 `/metadata`，让 `vold` 取得保护 metadata encryption key 的 key material；随后 `wait_for_keymaster` 与 `mount_all` 协作，使 `/data` 进入可挂载状态；文件系统可用后，`vold` 才继续安装 System DE、User DE 和 User CE key。`dm-default-key` 负责 `/data` block device 的 metadata 保护，不是 FBE 的别名。
-
-### 加密的 I/O 性能影响
-
-加密路径会增加密钥准备、crypto mapping（加密映射）和数据加解密工作，成本取决于设备是否具备 CPU crypto acceleration（加密指令加速）、inline crypto、hardware-wrapped key（硬件封装密钥）以及匹配的驱动。
-
-inline encryption hardware（内联加密硬件）通常由 UFS 或 eMMC host controller 实现，在数据往返存储器件的路径上执行块加解密。`android17-6.18-2026-06_r6` 的 arm64 GKI 打开了 `CONFIG_BLK_INLINE_ENCRYPTION`、`CONFIG_FS_ENCRYPTION_INLINE_CRYPT`、`CONFIG_DM_DEFAULT_KEY`、`CONFIG_SCSI_UFS_CRYPTO`，也打开了 `CONFIG_BLK_INLINE_ENCRYPTION_FALLBACK`。这些配置表示内核同时具备硬件接口与软件 fallback（回退实现），但设备驱动和 fstab 仍决定运行时采用哪条路径。
-
-Android 17 还把当前版 hardware-wrapped keys 命名为 `wrappedkey`，与旧版 `wrappedkey_v0` 区分。前者使用 android17 内核的 blk-crypto key generate/import/prepare 接口，并与 mainline Linux 方向兼容。是否启用，可从 userdata 的 fstab（文件系统挂载配置）`fileencryption=` 选项、内核日志和加密测试确认。
-
-性能分析时不能预先忽略加密。软件 fallback 可能增加 CPU 时间；inline crypto 也会受 keyslot（硬件密钥槽）编程、host reset、队列和内存带宽影响。最小验证应包含 fstab、`dmctl table userdata`、内核配置和 `vts_kernel_encryption_test`，再把 CPU 活动与 block trace 对齐。
 
 ### FBE 的密钥层次
 
@@ -313,6 +313,16 @@ AOSP `android-17.0.0_r1` 中的关键实现路径如下：
 - `system/vold/Utils.cpp`：`BuildDataSystemDePath()`、`BuildDataMiscDePath()`、`BuildDataUserDePath()` 生成 `/data/system_de/<user>`、`/data/misc_de/<user>`、`/data/user_de/<user>` 等路径。
 
 fscrypt policy 设置在加密目录上，并保存在文件系统 metadata 中。新建的子文件或子目录会继承父目录的加密上下文，内核再从已经安装的 master key（主密钥）派生或选择相应的内容密钥与文件名密钥。应用看到的仍是普通文件 API，解锁边界由 DE/CE class key 是否可用决定。
+
+### 加密的 I/O 性能影响
+
+加密路径会增加密钥准备、crypto mapping（加密映射）和数据加解密工作，成本取决于设备是否具备 CPU crypto acceleration（加密指令加速）、inline crypto、hardware-wrapped key（硬件封装密钥）以及匹配的驱动。
+
+inline encryption hardware（内联加密硬件）通常由 UFS 或 eMMC host controller 实现，在数据往返存储器件的路径上执行块加解密。`android17-6.18-2026-06_r6` 的 arm64 GKI 打开了 `CONFIG_BLK_INLINE_ENCRYPTION`、`CONFIG_FS_ENCRYPTION_INLINE_CRYPT`、`CONFIG_DM_DEFAULT_KEY`、`CONFIG_SCSI_UFS_CRYPTO`，也打开了 `CONFIG_BLK_INLINE_ENCRYPTION_FALLBACK`。这些配置表示内核同时具备硬件接口与软件 fallback（回退实现），但设备驱动和 fstab 仍决定运行时采用哪条路径。
+
+Android 17 还把当前版 hardware-wrapped keys 命名为 `wrappedkey`，与旧版 `wrappedkey_v0` 区分。前者使用 android17 内核的 blk-crypto key generate/import/prepare 接口，并与 mainline Linux 方向兼容。是否启用，可从 userdata 的 fstab（文件系统挂载配置）`fileencryption=` 选项、内核日志和加密测试确认。
+
+性能分析时不能预先忽略加密。软件 fallback 可能增加 CPU 时间；inline crypto 也会受 keyslot（硬件密钥槽）编程、host reset、队列和内存带宽影响。最小验证应包含 fstab、`dmctl table userdata`、内核配置和 `vts_kernel_encryption_test`，再把 CPU 活动与 block trace 对齐。
 
 ## Dynamic Partition 与 Virtual A/B 的存储布局
 
