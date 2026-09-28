@@ -103,24 +103,6 @@ consolidated_from:
 
 ## VFS、页缓存与文件系统语义
 
-### 先把 `fsync` 卡顿放回完整 I/O 路径
-
-Perfetto 中偶尔会看到主线程进入不可中断睡眠，调用栈停在 `fsync()`、`fdatasync()` 或文件关闭附近。这个现象只能说明线程正在等待持久化路径完成，不能只凭一次 syscall（系统调用）就认定文件系统存在缺陷。
-
-一次同步写可能经过这些层次：
-
-1. App 或数据库提交修改。
-2. VFS 把脏页，即内存中已修改但尚未写回存储的数据页，交给 ext4 或 F2FS。
-3. 文件系统写数据、必要的元数据和恢复信息。
-4. 块层处理请求合并、调度、加密与 device-mapper 映射。
-5. UFS 控制器和设备内部 FTL 完成写入与缓存刷新。
-
-`fsync()` 的返回语义还受挂载参数、写屏障，以及存储设备对 flush/FUA（刷新设备缓存/要求本次写入到达非易失介质）的实现影响。文件系统会改变其中一部分成本，却无法消除器件尾延迟、温度降频、磨损控制或队列拥塞。
-
-SQLite 也不等于“每执行一条 SQL 就调用一次 `fsync()`”。同步次数取决于事务边界、journal（事务日志）模式、`PRAGMA synchronous`、是否发生 cache spill（缓存页提前写出），以及文件系统是否提供 SQLite 能识别的原子批写能力。SharedPreferences 的 `apply()` 会先更新内存并把磁盘写入排到后台；它减少了调用线程的直接等待，但排队写入仍可能在组件生命周期切换时参与 ANR（应用无响应）。
-
-> 源码锚点：Android 17 / API 37 / `android-17.0.0_r1`，Android Common Kernel `android17-6.18-2026-06_r6`。
-
 ### VFS 与 Page Cache：统一接口不代表相同行为
 
 VFS（Virtual File System，虚拟文件系统）通过 `super_block`、`inode`、`dentry` 和 `file` 等内核对象向上提供统一接口：它们分别描述挂载的文件系统、文件元数据、目录项和已打开文件。App 调用相同的 `open()`、`read()`、`write()` 和 `fsync()`，VFS 再把操作分发到具体文件系统的 `file_operations`、`address_space_operations` 等实现。
@@ -134,11 +116,31 @@ VFS（Virtual File System，虚拟文件系统）通过 `super_block`、`inode`�
 
 Page Cache 命中会掩盖很多读取差异。分析随机读时，应先区分缓存命中、page fault（缺页）触发的读取和直接观察到的存储设备读取，避免把内存访问速度算到文件系统名下。
 
+### 先把 `fsync` 卡顿放回完整 I/O 路径
+
+Perfetto 中偶尔会看到主线程进入不可中断睡眠，调用栈停在 `fsync()`、`fdatasync()` 或文件关闭附近。这个现象只能说明线程正在等待持久化路径完成，不能只凭一次 syscall（系统调用）就认定文件系统存在缺陷。
+
+一次同步写可能经过这些层次：
+
+1. App 或数据库提交修改。
+2. VFS 把脏页，即内存中已修改但尚未写回存储的数据页，交给 ext4 或 F2FS。
+3. 文件系统写数据、必要的元数据和恢复信息。
+4. 块层处理请求合并、调度、加密与 device-mapper 映射。
+5. UFS 控制器和设备内部 FTL 完成写入与缓存刷新。
+
+`fsync()` 的返回语义还受挂载参数和写屏障影响；存储设备怎样实现 flush/FUA（刷新设备缓存/要求本次写入到达非易失介质）同样会改变它。文件系统会改变其中一部分成本，却无法消除器件尾延迟、温度降频、磨损控制或队列拥塞。
+
+SQLite 也不等于“每执行一条 SQL 就调用一次 `fsync()`”。同步次数取决于事务边界、journal（事务日志）模式、`PRAGMA synchronous`、是否发生 cache spill（缓存页提前写出），以及文件系统是否提供 SQLite 能识别的原子批写能力。
+
+SharedPreferences 的 `apply()` 会先更新内存并把磁盘写入排到后台；它减少了调用线程的直接等待，但排队写入仍可能在组件生命周期切换时参与 ANR（应用无响应）。
+
+> 源码锚点：Android 17 / API 37 / `android-17.0.0_r1`，Android Common Kernel `android17-6.18-2026-06_r6`。
+
 ### ext4：成熟的通用读写文件系统
 
 #### ext4 解决了哪些问题
 
-ext4 在 Android 17 的 arm64 GKI（Generic Kernel Image，通用内核镜像）中仍为内建能力：`CONFIG_EXT4_FS=y`。它并未退出 Android，也不应被概括为“不适合手机”。设备可以根据分区职责、升级方案、故障恢复经验和性能目标选择 ext4。
+ext4 在 Android 17 的 arm64 GKI（Generic Kernel Image，通用内核镜像）中仍为内建能力：`CONFIG_EXT4_FS=y`。
 
 几个重要机制如下：
 
@@ -149,6 +151,8 @@ ext4 在 Android 17 的 arm64 GKI（Generic Kernel Image，通用内核镜像）
 - **fast commit（快速提交）**：条件允许时只记录较小的增量；遇到不支持的操作会回退到完整 journal commit。
 
 “就地更新”描述的是 ext4 的逻辑块分配倾向。NAND 的物理擦除、搬移和磨损均衡由 UFS/eMMC 内部的 FTL（闪存转换层）处理，文件系统看不到固定的 NAND erase block（擦除块）。把每次 ext4 小写入都描述成一次固定大小的“读—改—擦—写”并不准确。
+
+ext4 并未退出 Android，也不应被概括为“不适合手机”。设备可以根据分区职责、升级方案、故障恢复经验和性能目标选择 ext4。
 
 #### Android 17 内核中的 ext4 `fsync`
 
@@ -167,7 +171,7 @@ if (needs_barrier)
 
 这条路径先提交并等待目标文件范围的数据，再等待对应的 journal transaction（日志事务）；需要写屏障时还会发出块设备 flush。`ext4_fsync_journal()` 会对普通文件尝试 `ext4_fc_commit()`，能否使用 fast commit 由文件系统特性和本次修改类型共同决定。
 
-因此，ext4 的一次 `fsync()` 可能等待同一 journal transaction 中的其他工作，但不能扩写成“等待所有进程的脏数据”或“每次都做完整 checkpoint”。诊断时应同时查看 `ext4_sync_file_enter/exit`、jbd2 commit 和块层事件。
+ext4 的一次 `fsync()` 因此可能等待同一 journal transaction 中的其他工作，但不能扩写成“等待所有进程的脏数据”或“每次都做完整 checkpoint”。诊断时应同时查看 `ext4_sync_file_enter/exit`、jbd2 commit 和块层事件。
 
 ### F2FS：围绕闪存负载组织写入
 
@@ -179,7 +183,7 @@ F2FS 借鉴 log-structured file system（LFS，日志结构文件系统）的思
 - `CONFIG_F2FS_FS_COMPRESSION=y`
 - `CONFIG_F2FS_FS_SECURITY=y`
 
-F2FS 的关键磁盘结构可以这样理解：
+F2FS 的空间分配单位是 segment，默认含 512 个 block；一个 section 由一个或多个 segment 组成。关键磁盘结构可以这样理解：
 
 - **NAT（Node Address Table）**：把 `nid`（节点编号）映射到最新 node block 的物理地址。inode、direct node 和 indirect node 都属于 node。
 - **SIT（Segment Information Table）**：记录 segment 中有效块数量、有效位图和类型信息，供分配与 GC 使用。
@@ -189,7 +193,7 @@ F2FS 的关键磁盘结构可以这样理解：
 
 NAT 只负责 `nid → node block address`。文件数据块地址位于 inode 或其他 node 的地址数组中。把 NAT 说成“文件逻辑块到数据块的直接映射”会漏掉 F2FS 解决 wandering tree 的关键层。
 
-#### F2FS 并非所有写入都永远顺序追加
+#### SSR 与 IPU：追加式写入的例外
 
 默认 adaptive（自适应）模式会在 LFS 分配与 SSR（Selective Segment Reuse，选择性复用分段）之间选择。空间宽裕时，out-of-place update（异地更新）更容易保持追加式写入；空间紧张时，SSR 可以复用已用 segment 中的空洞。挂载为 `mode=lfs` 时，主区域不采用随机覆盖分配，代价是需要更多连续空闲空间。
 
@@ -201,7 +205,7 @@ F2FS 还存在 IPU（in-place update，就地更新）路径。例如 Android 17
 - `GC_URGENT_HIGH` 或 checkpoint disabled 状态需要 SSR；
 - 常规模式比较 free sections 与 dirty node/dentry/inode metadata、`min_ssr_sections`、reserved sections 的需求。
 
-这里的 section 是由一个或多个 segment 组成的空间管理单位。阈值来自运行时状态和格式化参数，并不存在适用于所有设备的固定百分比。
+这些阈值来自运行时状态和格式化参数，并不存在适用于所有设备的固定百分比。
 
 #### `fsync`、roll-forward 与 checkpoint
 
@@ -224,7 +228,7 @@ Android 17 的 AOSP SQLite 在 `external/sqlite/dist/Android.bp` 中启用了 `S
 
 #### GC：空间紧张时为什么会抬高尾延迟
 
-out-of-place update 会留下无效块。F2FS 需要选择 victim segment（待回收分段），核对其中仍有效的数据与 node，再搬移有效块来释放 segment。后台 GC 可以利用空闲窗口；当写入路径发现可用 section 不足时，请求线程可能直接参与空间回收，或等待回收完成。
+out-of-place update 会留下无效块。F2FS 需要选择 victim segment（待回收分段），核对其中仍有效的数据与 node，再搬移有效块来释放 segment。后台 GC 可以利用空闲窗口；可用 section 不足时，写入路径上的请求线程可能直接参与空间回收，或等待回收完成。
 
 Android 17 的判定已经不同于旧版 kernel 6.6 的 lower/upper 阈值写法。下面的摘录用于固定当前 6.18 源码中的比较对象，来自 `fs/f2fs/segment.h`：
 
@@ -265,7 +269,7 @@ F2FS 和 ext4 都可以承载 Android 所需的配额、大小写无关目录与
 
 #### 适用边界
 
-EROFS（Enhanced Read-Only File System）没有运行时写入、journal 和空闲块分配路径，适合 `system`、`vendor`、`product`、`system_ext` 等在构建期生成、启动后只读的镜像。`/data` 需要创建和修改文件，因此不能使用 EROFS。
+EROFS（Enhanced Read-Only File System）没有运行时写入、journal 和空闲块分配路径，适合在构建期生成、启动后只读的镜像，例如 `system`、`vendor`、`product` 和 `system_ext`。`/data` 需要创建和修改文件，因此不能使用 EROFS。
 
 AOSP 的 EROFS 文档给出了 BoardConfig、fstab、压缩和 Virtual A/B 配置。文档中的示例允许为 `/system` 同时保留 EROFS 与只读 ext4 的 fstab 条目，以便测试 ext4 GSI（Generic System Image，通用系统镜像）。这类配置表明 Android 为两者提供了完整支持，具体分区采用哪一种格式仍由产品配置决定。
 
@@ -373,7 +377,7 @@ F2FS 的更新会产生旧的无效块，GC 随后搬移 victim 中仍然有效�
 
 保留一定空闲空间通常有利于文件系统和 FTL 回收，但不存在跨设备统一适用的“至少 10%”安全线。系统开发者应结合 `/sys/fs/f2fs/<dev>/` 统计、GC trace、块层延迟和产品容量策略建立阈值；普通 App 不应依赖 root 工具定期对用户设备强制执行 defrag（碎片整理）。
 
-恢复出厂设置会重建或清空用户数据，短期内改变空间与布局状态。它无法修复持续制造高频小写、无边界缓存或过多事务提交的业务模式。
+恢复出厂设置会重建或清空用户数据，短期内改变空间与布局状态。它无法改变持续制造高频小写、无边界缓存或过多事务提交的业务模式。
 
 ### 版本脉络：保留能力边界，不推导统一选型
 
@@ -476,7 +480,7 @@ CFQ（Completely Fair Queuing，完全公平排队）为每个 I/O context（I/O
 
 BFQ（Budget Fair Queueing，预算公平排队）按照权重和 budget（一次获准处理的数据量）为队列分配服务，目标是在吞吐、公平性和交互延迟之间取得平衡。启用 `CONFIG_BFQ_GROUP_IOSCHED` 后，它还能进行 cgroup 层级调度。
 
-BFQ 的 per-request（逐请求）处理和队列管理比 mq-deadline 更复杂。在较慢设备、需要比例带宽或交互保障的负载上，这份成本可能值得；在高 IOPS（每秒 I/O 操作次数）设备上，额外调度工作也可能限制吞吐。不能用“BFQ 的最低延迟一定是 mq-deadline 的数倍”概括所有设备。
+BFQ 的 per-request（逐请求）处理和队列管理比 mq-deadline 更复杂。在较慢设备、需要比例带宽或交互保障的负载上，这份成本可能值得；在高 IOPS（每秒 I/O 操作次数）设备上，额外调度工作也可能限制吞吐。“BFQ 的最低延迟一定是 mq-deadline 的数倍”并不适用于所有设备。
 
 Android 17 的 6.18 `Kconfig.iosched` 把 BFQ 保留为可选项，但 arm64 GKI defconfig（默认内核配置）没有显式启用 `CONFIG_IOSCHED_BFQ`。vendor 可以改变配置，因此实机上是否出现 `bfq` 仍以 sysfs（内核导出的运行时属性接口）为准。
 
@@ -599,7 +603,7 @@ Buffered write（缓冲写）会先把 folio 标为 dirty（脏），writeback�
 - 文件系统需要支持 cgroup writeback，ext4 与 F2FS 均支持；
 - inode（索引节点）的 writeback owner（回写归属者）会根据持续写入来源调整，不能把每个回写请求都归因于当时运行的 flush（刷写）线程。
 
-缓冲写转交后台线程后，不会必然丢失原进程的 cgroup 信息。支持 cgroup writeback 的路径会把 `bio` 关联到 inode owner 所属的 blkcg。
+缓冲写转交给后台线程后，原进程的 cgroup 信息并不一定丢失。支持 cgroup writeback 的路径会把 `bio` 关联到 inode owner 所属的 blkcg。
 
 #### dirty sysctl 与 swappiness
 
@@ -713,7 +717,7 @@ ORDER BY max_ops DESC;
 
 CPU iowait 是 CPU idle 记账中的一个状态，无法精确归属到某个 App，也不等于所有线程 I/O 等待时间之和。异步 writeback 可能让设备很忙而 CPU iowait 很低；一个线程等待 I/O 时，其他 runnable（可运行）线程也可能让 CPU 保持忙碌。
 
-因此，CPU iowait 适合作为系统级线索；定位时还要结合线程 `io_wait`、I/O PSI、block queue、文件系统事件和应用调用栈。
+CPU iowait 因此适合作为系统级线索；定位时还要结合线程 `io_wait`、I/O PSI、block queue、文件系统事件和应用调用栈。
 
 ### SQLite、Room 与 SharedPreferences：优先减少同步工作
 
