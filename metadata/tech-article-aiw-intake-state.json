@@ -5117,6 +5117,54 @@
       "status": "appended",
       "title": "Android HWC退化与防治方法前言 Android 技术目前已经非常成熟了，无论是硬件还是软件，当前大环境下，为数"
     },
+    "source/juejin-android/2026-09-29-76469585-AI 写 Android 代码老翻车？我把移动端的.md": {
+      "chapter": "待分类",
+      "entry_id": "04c787426915741b",
+      "last_appended": "2026-09-29T05:25:29.503471+08:00",
+      "last_seen": "2026-09-29T05:25:29.503471+08:00",
+      "mtime": 1790627182.4465604,
+      "score": 14,
+      "sha256": "e6c2ce23dbfddc9eab1b0430d51ccdc7de5c1626a1cde78fc4e9ca243c402ab7",
+      "size": 10778,
+      "status": "appended",
+      "title": "AI 写 Android 代码老翻车？我把移动端的 Harness 系统开源了AI 写 Android 代码老翻车？我把"
+    },
+    "source/juejin-android/2026-09-29-76471867-Android17新规：内存超限直接杀App，没有崩溃.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "565a60de3c4c9cf0",
+      "last_appended": "2026-09-29T05:25:29.503471+08:00",
+      "last_seen": "2026-09-29T05:25:29.503471+08:00",
+      "mtime": 1790627182.4446359,
+      "score": 20,
+      "sha256": "1bd8b4bcdd4127d459e7467e9e9bbfceb9603fc790bb386b67be8804f7a8681e",
+      "size": 10962,
+      "status": "appended",
+      "title": "Android17新规：内存超限直接杀App，没有崩溃日志怎么排查？Android 17 开始引入 App 内存限制，限"
+    },
+    "source/juejin-android/2026-09-29-76476792-Android 开发来看看 Kotlin 2.4.0 更新了个.md": {
+      "chapter": "待分类",
+      "entry_id": "4707eb7ca5f27663",
+      "last_appended": "2026-09-29T05:25:29.503471+08:00",
+      "last_seen": "2026-09-29T05:25:29.503471+08:00",
+      "mtime": 1790627182.445782,
+      "score": 15,
+      "sha256": "f2c16f44655489bf8c258c976356dc3f2111d36f9273c61510ba5b2efb216266",
+      "size": 19075,
+      "status": "appended",
+      "title": "Android 开发来看看 Kotlin 2.4.0 更新了个啥Kotlin 2.4.0 发布了，更新挺多的。语言、标准"
+    },
+    "source/juejin-android/2026-09-29-76756264-三星安卓系统BUG排查记录：云闪付、铁路12306.md": {
+      "chapter": "待分类",
+      "entry_id": "f5ebd2f2db7a7555",
+      "last_appended": "2026-09-29T05:25:29.503471+08:00",
+      "last_seen": "2026-09-29T05:25:29.503471+08:00",
+      "mtime": 1790627182.4435675,
+      "score": 24,
+      "sha256": "9eb5649794077481a0236a86489e364b205d591a26485a6b45e198d8cb6ff670",
+      "size": 38347,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -7155,23 +7203,23 @@
   },
   "last_report": {
     "appended": 4,
-    "considered": 33,
-    "cutoff": "2026-09-27T05:20:18.653820+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-28.md",
+    "considered": 4,
+    "cutoff": "2026-09-28T05:20:49.875545+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-09-29.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2085,
+    "scanned": 2089,
     "skipped": {
       "existing_link": 0,
-      "low_score": 26,
-      "max_files": 3,
-      "old_unseen": 1405,
+      "low_score": 0,
+      "max_files": 0,
+      "old_unseen": 1408,
       "path": 30,
-      "unchanged": 617
+      "unchanged": 647
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-09-28T05:25:49.875545+08:00",
+  "last_run_at": "2026-09-29T05:25:29.503471+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
