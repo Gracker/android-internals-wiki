@@ -93,6 +93,8 @@ last_body_apply_run_id: 20260826-095344-b5ee28a0
 
 ZRAM 会用 CPU 换取匿名页的压缩驻留空间，但它既不能保证进程存活，也不能消除重新调页和解压的长尾。分析重启或恢复变慢时，应先区分进程被杀后的冷路径与存活进程的换入路径。
 
+平台基线是 Android 17 / API 37 / `android-17.0.0_r1`，内核基线是 `android17-6.18-2026-06_r6`。
+
 ## 先判断进程还在不在
 
 讨论 ZRAM 对应用恢复耗时的影响，应先确认原进程是否仍然存在，再看 `VmSwap`。两种场景的执行成本完全不同：
@@ -105,8 +107,6 @@ ZRAM 会用 CPU 换取匿名页的压缩驻留空间，但它既不能保证进�
 Android 的冷启动、温启动和热启动是 Activity 启动分类；论文和系统优化语境中的“重新拉起”（relaunch）范围更宽，可能包含从后台任务恢复、Activity 重建或进程重建。本文用“换入恢复”表示 PID 不变、但需要重新访问已换出页面；用“冷启动”表示原进程已经终止。
 
 用户感觉“像冷启动”只描述了体验，不能证明进程发生过重建。应先记录 PID 与 Activity 启动类型；在 Android 11（API 30）及以上再结合 `ApplicationExitInfo`，低版本需要依赖日志、`dumpsys activity` 或自有启动埋点。
-
-平台基线是 Android 17 / API 37 / `android-17.0.0_r1`，内核基线是 `android17-6.18-2026-06_r6`。
 
 ## ZRAM 位于匿名页回收与进程淘汰之间
 
@@ -135,13 +135,13 @@ Android 17 可以为 ZRAM 配置后备设备（backing device）。冷的 ZRAM �
 | 后备设备 | 发起块 I/O，再把内容恢复到 ZRAM 或进程页面 | 存储延迟、队列竞争、解压 |
 | 交换缓存 | 可能复用已在内存中的页面 | 页表更新与普通缺页处理 |
 
-所以，`VmSwap` 相同的两个进程，恢复耗时也可能不同。还要知道对应页面是否已经写回、访问是否集中在首帧之前，以及设备当时的 CPU 与存储负载。
+`VmSwap` 相同的两个进程，恢复耗时也可能不同。排查时还要确认对应页面是否已经写回、访问是否集中在首帧之前，以及设备当时的 CPU 与存储负载。
 
 ## Android 17 的管理者是 MMD
 
 Android 17 引入内存管理守护进程（memory management daemon，`mmd`），负责 ZRAM 配置、重新压缩、写回与按进程维护。`system_server` 决定何时发起任务，MMD 通过 `IMmd` 接口接收请求并执行内核操作。这种分工把 Java 系统服务的调度决策与原生守护进程的内存操作分开。
 
-Android 17 的主要数据流如下：
+Android 17 的主要数据流如下，重点是页面被标记为 idle 后，写回与重新压缩之间的分支：
 
 ```mermaid
 flowchart TD
@@ -199,10 +199,46 @@ Android 17 的 `CachedAppOptimizer` 把进程冻结器（freezer）与 MMD 接�
 2. 页面回收完成后，延迟投递 `ZRAM_WRITEBACK_MSG`。消息处理阶段要求进程承载 Activity、交换空间占用量低于配置阈值，并且 GPU 内存和 DMA-BUF 共享缓冲区内存没有超过各自阈值。
 3. `system_server` 用 pidfd 标识目标进程，调用 `mmd.asyncWritebackProcessZramMemory()`。
 4. MMD 通过 Android ZRAM 的 ioctl 控制接口扫描该进程页表，选出指向目标 ZRAM 的交换条目。
-5. 回调成功后，ActivityManager 标记 `isZramWrittenBack`。下一轮 OOM 调整会用 `min(adj, zramWritebackAdj)` 计算只发送给 LMKD 的进程优先级分值（`adj`）；AOSP 默认 `zramWritebackAdj` 为 `249`，因此该进程在已写回状态下得到更强的 LMKD 保护。解冻时此标记会被清除。
+5. 回调成功后，ActivityManager 标记 `isZramWrittenBack`。下一轮 OOM 调整会用 `min(adj, zramWritebackAdj)` 计算进程优先级分值（`adj`），这个值只发送给 LMKD；AOSP 默认 `zramWritebackAdj` 为 `249`，因此该进程在已写回状态下得到更强的 LMKD 保护。解冻时此标记会被清除。
 6. 进程因 Activity 激活而解冻时，`CachedAppOptimizer.prefetchZram()` 调用 `mmd.asyncPrefetchProcessZramMemory()`。
 
 pidfd 是内核提供的进程文件描述符，可以避免只用整数 PID 时遇到编号复用问题。写回和预取都是异步请求，目标进程可能在执行前退出，后备设备也可能空间不足；这些都属于预期失败分支。
+
+## 恢复耗时为什么容易出现长尾
+
+### 页面触碰顺序比总量更重要
+
+应用恢复时不会一次读回全部已换出页面。只有 CPU 执行到某条指令并访问尚未驻留的虚拟页后，内核才会处理缺页。以下页面若集中在首帧前被访问，延迟会更明显：
+
+- Activity 与 View 层级的状态对象；
+- 首屏 Bitmap、字体、Skia 或 GPU 资源相关的匿名数据；
+- Java/原生内存分配器的热点元数据；
+- 数据库连接、序列化缓存和业务索引；
+- Binder 恢复后立刻消费的大批回调数据。
+
+同样是 100 MiB `SwapPss`，首帧前访问 5 MiB 热页与访问 40 MiB 热页的体验完全不同。`SwapPss` 适合描述当前归属，但不足以预测恢复成本。
+
+### ZRAM 命中和后备设备命中的成本不同
+
+页面仍在 ZRAM 时，缺页处理主要付出线程调度、查找、分配目标页和解压成本。页面已经写回时，还要等待后备设备 I/O。MMD 的按进程预取会尝试在 Activity 主线程初始化期间异步读回相关条目，以减少后续同步缺页等待；它不能保证全部页面都在应用访问前就绪。
+
+分析时可以把恢复窗口分为：
+
+```text
+Activity 解冻
+  -> MMD 收到 prefetch 请求
+  -> 内核扫描目标进程 swap PTE
+  -> backing bio 与 high-priority deferred work
+  -> 应用线程恢复执行
+  -> 按页面触碰顺序继续发生 swap fault
+  -> 首帧 / 完整显示
+```
+
+这段时序用于安排性能轨迹标记。预取与应用初始化会重叠，不能把两者的耗时简单相加。
+
+### CPU 与 I/O 竞争会放大延迟
+
+ZRAM 解压消耗 CPU。低端设备或持续高负载下，解压可能与主线程、渲染线程（RenderThread）、编译线程争用核心。写回和预取又会访问 `/data` 后备设备，可能与 APK、DEX、数据库和图片读取共享队列。即使单次缺页很短，数百次分散缺页仍可能形成明显长尾。
 
 ## Linux 6.18 的 ZRAM 实现
 
@@ -262,7 +298,7 @@ drivers/block/zram/
 
 `recompress_slot()` 依次尝试更高优先级的算法。只有新结果进入更小的 zsmalloc 尺寸类别，并满足阈值条件时，才会替换旧对象。重新压缩失败不会破坏旧对象；所有高优先级算法都无法带来收益时，可以标记 `ZRAM_INCOMPRESSIBLE`。
 
-因此，不能把实现概括为“冷页统一改用 zstd”。MMD 的默认次级算法可以是 zstd，驱动本身支持多个后端和优先级，最终可用组合取决于内核配置与设备属性。
+不能把实现概括为“冷页统一改用 zstd”。MMD 的默认次级算法可以是 zstd，驱动本身支持多个后端和优先级，最终可用组合取决于内核配置与设备属性。
 
 ### 后处理串行化
 
@@ -288,42 +324,6 @@ drivers/block/zram/
 3. `zram_deferred_prefetch()` 调用 `zram_populate_table()`；后者重新取得槽位锁，再次确认 `ZRAM_WB`，防止 I/O 期间槽位已经被释放或替换。
 
 这个时序允许驱动在等待后备存储 I/O 时释放槽位锁，再通过 I/O 完成后的二次检查处理并发变化。
-
-## 恢复耗时为什么容易出现长尾
-
-### 页面触碰顺序比总量更重要
-
-应用恢复时不会一次读回全部已换出页面。只有 CPU 执行到某条指令并访问尚未驻留的虚拟页后，内核才会处理缺页。以下页面若集中在首帧前被访问，延迟会更明显：
-
-- Activity 与 View 层级的状态对象；
-- 首屏 Bitmap、字体、Skia 或 GPU 资源相关的匿名数据；
-- Java/原生内存分配器的热点元数据；
-- 数据库连接、序列化缓存和业务索引；
-- Binder 恢复后立刻消费的大批回调数据。
-
-同样是 100 MiB `SwapPss`，首帧前访问 5 MiB 热页与访问 40 MiB 热页的体验完全不同。`SwapPss` 适合描述当前归属，但不足以预测恢复成本。
-
-### ZRAM 命中和后备设备命中的成本不同
-
-页面仍在 ZRAM 时，缺页处理主要付出线程调度、查找、分配目标页和解压成本。页面已经写回时，还要等待后备设备 I/O。MMD 的按进程预取会尝试在 Activity 主线程初始化期间异步读回相关条目，以减少后续同步缺页等待；它不能保证全部页面都在应用访问前就绪。
-
-分析时可以把恢复窗口分为：
-
-```text
-Activity 解冻
-  -> MMD 收到 prefetch 请求
-  -> 内核扫描目标进程 swap PTE
-  -> backing bio 与 high-priority deferred work
-  -> 应用线程恢复执行
-  -> 按页面触碰顺序继续发生 swap fault
-  -> 首帧 / 完整显示
-```
-
-这段时序用于安排性能轨迹标记。预取与应用初始化会重叠，不能把两者的耗时简单相加。
-
-### CPU 与 I/O 竞争会放大延迟
-
-ZRAM 解压消耗 CPU。低端设备或持续高负载下，解压可能与主线程、渲染线程（RenderThread）、编译线程争用核心。写回和预取又会访问 `/data` 后备设备，可能与 APK、DEX、数据库和图片读取共享队列。即使单次缺页很短，数百次分散缺页仍可能形成明显长尾。
 
 ## `kswapd`、直接回收与 LMKD
 
