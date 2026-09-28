@@ -53,7 +53,7 @@ consolidated_from:
 
 # vold、MediaProvider 与 FUSE：共享存储 I/O 路径
 
-共享存储把挂载与权限控制面、文件数据面以及 MediaProvider 元数据管理叠在一起。定位 I/O 问题时，应先识别请求实际走的是直接文件、FUSE 还是 `ContentResolver` 路径，再分析跨进程与逐项访问成本。
+共享存储把挂载与权限控制面、文件数据面以及 MediaProvider 元数据管理叠在一起。定位 I/O 问题时，应先识别请求实际走的是直接文件、FUSE 还是 `ContentResolver` 路径，再分析跨进程调用和逐项访问各自的开销。
 
 ## 排障范围
 
@@ -104,13 +104,13 @@ MediaProvider 同时负责两种角色：
 - 作为 ContentProvider（跨进程数据提供组件），维护媒体索引并处理 MediaStore 的查询、插入、更新、删除和打开 URI。
 - 作为共享存储 FUSE handler（请求处理器），根据 UID（Linux 用户标识）、包归属、权限、脱敏与转码状态处理文件系统请求。
 
-这两种入口最终可能访问同一份底层文件，但前半段不同：一种经过 Binder（Android 进程间通信机制）查询和 Provider 打开文件，另一种直接进入 FUSE。`content://` URI 是通过 ContentProvider 标识数据的地址，不能简化成“换一种字符串表示的 `/storage` 路径”。
+两种角色最终可能访问同一份底层文件，但前半段不同：ContentProvider 这一侧要经过 Binder（Android 进程间通信机制）查询，再由 Provider 打开文件；FUSE handler 这一侧直接从文件系统请求进入。`content://` URI 是通过 ContentProvider 标识数据的地址，不能简化成“换一种字符串表示的 `/storage` 路径”。
 
 ## 两类常见 I/O 路径
 
 ### 直接文件路径
 
-下面的图用于展示没有命中 BPF 或 passthrough（数据直通）时的关键节点，以及文件打开后可能缩短的数据路径：
+下图的实线画出没有命中 BPF 或 passthrough（数据直通）时，一次直接文件访问要经过的节点；虚线标出文件打开获准后可能缩短的那一段数据路径。先交代图里出现的几个术语：VFS 是 Linux 虚拟文件系统抽象层，FUSE driver 是对应的内核驱动；redaction 指敏感元数据脱敏，transcode 指兼容格式转码；lower file system 是实际保存数据的底层文件系统，backing path 是它对应的真实路径。
 
 ```mermaid
 flowchart LR
@@ -121,15 +121,13 @@ flowchart LR
     VFS -. "open 获准且满足条件后<br/>read/write passthrough" .-> Lower
 ```
 
-图中的 VFS 是 Linux 虚拟文件系统抽象层，FUSE driver 是对应的内核驱动。redaction 指敏感元数据脱敏，transcode 指兼容格式转码；lower file system 是实际保存数据的底层文件系统，backing path 是它对应的真实路径。
-
 目录 lookup（名称查找）、`getattr()`（读取属性）、`readdir()`（枚举目录项）、打开文件和数据读写属于不同请求。passthrough 只会在文件打开获准且条件满足后缩短该文件后续的数据传输；路径可见性、打开权限，以及是否需要脱敏或转码，仍由 MediaProvider 决定。
 
 ### MediaStore 与其他 Provider URI
 
 MediaStore 查询先通过 Binder 进入 MediaProvider 数据库。打开某个媒体 URI 时，Provider 可以根据访问模式、缓存一致性、脱敏和转码要求返回合适的 fd。Android 17 的 `FuseDaemon.shouldOpenWithFuse()` 也表明，Provider 打开的 fd 是否还要回到 FUSE 路径，要根据文件和锁状态决定。
 
-官方文档还建议，大批量操作使用 ContentProvider 的批处理能力，减少逐个路径进入 FUSE 的元数据操作。这里的“非 FUSE 优化路径”是指优化访问入口和批处理方式，媒体内容仍然位于底层文件系统和块设备上。
+官方文档还建议，大批量操作使用 ContentProvider 的批处理能力，减少逐个路径进入 FUSE 的元数据操作。这些做法优化的是访问入口和批处理方式；媒体内容仍然位于底层文件系统和块设备上。
 
 SAF URI 经过 `DocumentsProvider`，提供者可能是本地文件系统、USB 盘或云端服务。它不保证低延迟，也不保证能够转换成普通路径。App 应按 `ContentResolver` 接口约定使用流或 fd，并处理 Provider 进程被终止、授权撤销和远端读取失败。
 
@@ -152,7 +150,7 @@ Android 11 的 FUSE 调优包含 read-ahead、writeback cache（回写缓存）�
 
 ## passthrough 与 FUSE BPF 的边界
 
-先区分三种经常被混写成“直通”的能力：
+下表把普通缓存 FUSE 与三种常被笼统称作“直通”的能力放在一起对照，表中的 daemon 指 MediaProvider 里的 `FuseDaemon`：
 
 | 路径 | FUSE 页缓存 | `read`/`write` 是否到 daemon | lower filesystem 怎样参与 |
 |---|---|---|---|
@@ -164,6 +162,8 @@ Android 11 的 FUSE 调优包含 read-ahead、writeback cache（回写缓存）�
 `direct_io` 只改变 FUSE 页缓存语义。没有 passthrough 或 BPF backing 时，请求仍经 `/dev/fuse` 到 MediaProvider。passthrough 也不会绕过 Scoped Storage（分区存储）：归属、权限、redaction（元数据脱敏）和转码都在 `open` 阶段判断。
 
 ### passthrough 是逐文件打开决策
+
+设备满足内核条件是前提，单个文件还要在 `open` 时单独判断一次能否直通，两层都成立，后续的 `read`/`write` 才会缩短数据路径。
 
 Android 12 支持 FUSE passthrough。由 Android 11 升级到 Android 12 的设备受冻结内核限制，无法仅通过系统升级获得该能力；以 Android 12 出厂且使用官方支持内核的设备才具备当时的启用条件。
 
@@ -185,7 +185,7 @@ bool passthrough = !redaction_needed && transforms_complete;
 bool direct_io = open_info_direct_io && !passthrough;
 ```
 
-文件需要位置元数据脱敏，或者转码尚未完成时，MediaProvider 不能让后续读取绕过 daemon。passthrough 主要减少已获准文件在 `read`/`write` 数据搬运阶段的开销，对目录枚举、MediaStore 查询和首次 `open` 没有同等作用。
+文件需要做位置元数据脱敏，或者转码尚未完成时，MediaProvider 不能让后续读取绕过 daemon。passthrough 主要减少已获准文件在 `read`/`write` 数据搬运阶段的开销，对目录枚举、MediaStore 查询和首次 `open` 没有同等作用。
 
 Android 17 的源码同时兼容 Android 早期 passthrough 接口与 upstream FUSE passthrough。上游协议按以下顺序建立：daemon 打开 lower-fs 文件，向 FUSE connection（连接会话）注册并取得 `backing_id`，再在 open 回复中携带 `FOPEN_PASSTHROUGH` 与该 ID。内核随后为这次 FUSE open 创建独立的 backing file，文件关闭后绑定关系结束。
 
@@ -195,7 +195,9 @@ Android 17 的源码同时兼容 Android 早期 passthrough 接口与 upstream F
 
 ### `iomode` 保护缓存与 backing 一致性
 
-`iomode` 记录一次 FUSE 文件打开所采用的 I/O 模式。Android 17 的 `fuse_file` 区分 cached（缓存）、uncached（非缓存）与 passthrough 模式。cached I/O 不能和破坏缓存一致性的 direct write（直接写）任意并发；同一 FUSE inode 也不能同时绑定互相冲突的 backing file。Android common kernel 为 MediaProvider 的 mixed-mode（混合模式）用例放宽了一条上游 `-ETXTBSY` 拒绝分支，但仍保留 backing file 冲突检查、direct-write 锁和 passthrough write 的 inode lock。
+`iomode` 记录一次 FUSE 文件打开所采用的 I/O 模式。Android 17 的 `fuse_file` 区分 cached（缓存）、uncached（非缓存）与 passthrough 模式。cached I/O 与破坏缓存一致性的 direct write（直接写）之间不能随意并发；同一 FUSE inode 也不能同时绑定互相冲突的 backing file。
+
+Android common kernel 为 MediaProvider 的 mixed-mode（混合模式）用例放宽了一条上游 `-ETXTBSY` 拒绝分支，但仍保留 backing file 冲突检查、direct-write 锁和 passthrough write 的 inode lock。
 
 这类 Android 补丁解决的是合法组合的兼容性，不意味着任意多个进程和缓存模式都能无额外成本地并发访问同一文件。
 
@@ -218,11 +220,11 @@ Android 17 的源码同时兼容 Android 早期 passthrough 接口与 upstream F
 
 相册列表优先查询 MediaStore，projection（查询返回列）只保留界面和分页所需字段，例如 `_ID`、`DATE_TAKEN`、`MIME_TYPE`、`WIDTH`、`HEIGHT`。用户打开详情、编辑或上传时，再通过 URI 打开具体文件。
 
-不要为了得到“文件路径”而先查询整个媒体库，再对每个项目执行 `stat()`。这会同时引入数据库查询、FUSE 元数据请求和缩略图解码。确有 native（本地代码）库只接受 fd 时，可以用 `ParcelFileDescriptor.detachFd()` 明确移交 fd 所有权；库只接受路径时，再评估复制到私有工作目录的成本。
+不要为了得到“文件路径”而先查询整个媒体库，再对每个条目执行 `stat()`。这会同时引入数据库查询、FUSE 元数据请求和缩略图解码。确有 native（本地代码）库只接受 fd 时，可以用 `ParcelFileDescriptor.detachFd()` 明确移交 fd 所有权；库只接受路径时，再评估复制到私有工作目录的成本。
 
 ### 图片编辑、视频处理与断点续传
 
-随机改写、临时分片和中间产物适合放在内部私有目录。处理完成后，把成品作为一次受控写入提交到 MediaStore。这样可以把高频随机 I/O 留在不经过共享存储策略的路径，并避免半成品被其他 App 扫描。
+随机改写、临时分片和中间产物适合放在内部私有目录。处理完成后，把成品作为一次受控写入提交到 MediaStore。高频随机 I/O 因此留在私有目录、不经过共享存储策略，半成品也不会被其他 App 扫描。
 
 Android 10 及更高版本写入媒体时可以使用 `IS_PENDING`：创建条目后保持待发布状态，写完并完成必要的同步处理后再发布。崩溃恢复还要记录未完成的 URI，不能只依赖进程内状态。
 
@@ -258,7 +260,7 @@ adb shell 'dumpsys -l | grep -i media'
 
 ### Perfetto 观察点
 
-一轮有用的 Trace（性能跟踪）至少要覆盖：
+一次有效的 Trace（性能跟踪）至少覆盖以下内容：
 
 1. App 主线程、工作线程与 Binder 调用。
 2. MediaProvider 进程、Binder 线程和 FUSE session（会话）线程。
@@ -287,7 +289,9 @@ grep "^fuse:" "$TRACE/available_events"
 '
 ```
 
-受控 I/O 窗口中出现 `FUSE_READ` 或 `FUSE_WRITE` send（发送）事件，说明相应请求进入 daemon。只有 `FUSE_OPEN` 而没有 read/write，可能符合 passthrough/BPF backing，也可能是页缓存命中、测试未产生预期 syscall（系统调用）、读取失败或采集窗口不完整。还要按时间对齐文件来源、冷暖缓存、MediaProvider 日志、应用 syscall，以及底层文件系统和块层事件。
+受控 I/O 窗口中出现 `FUSE_READ` 或 `FUSE_WRITE` send（发送）事件，说明相应请求进入 daemon。
+
+只有 `FUSE_OPEN` 而没有 read/write，可能符合 passthrough/BPF backing，也可能是页缓存命中、测试未产生预期 syscall（系统调用）、读取失败或采集窗口不完整。还要按时间对齐文件来源、冷暖缓存、MediaProvider 日志、应用 syscall，以及底层文件系统和块层事件。
 
 ### `strace` 只在可调试测试环境使用
 
@@ -299,7 +303,7 @@ adb shell su 0 strace -f -ttT \
   -p <pid>
 ```
 
-`strace` 会扰动时序，设备系统也可能没有该工具。它适合回答“是否出现大量小块读取、属性查询或目录枚举”，不适合直接生成性能基线。发布结论前，仍应使用无附加工具或低扰动的 Perfetto/应用埋点复测。
+`strace` 会扰动时序，设备系统也可能没有该工具。它适合回答“是否出现大量小块读取、属性查询或目录枚举”，不适合直接生成性能基线。发布结论前，仍应使用不引入额外工具、扰动更低的 Perfetto 或应用埋点复测。
 
 ### `vold` 何时才是优先调查对象
 
@@ -370,7 +374,7 @@ SAF 可以连接本地或远端 Provider。URI 可能只支持流式读取，甚
 
 - `vold` 负责卷与 FUSE 会话的创建和销毁。
 - MediaProvider 既是媒体 ContentProvider，也是共享存储 FUSE handler。
-- 直接路径、MediaStore、SAF 和私有目录拥有不同的前半段成本。
+- 直接路径、MediaStore、SAF 和私有目录，前半段付出的成本各不相同。
 - passthrough 只缩短满足条件文件的后续数据请求；FUSE BPF 在当前 Android 17 源码中主要服务 `Android/data`、`Android/obb`。
 - FBE、文件系统、块调度和 UFS 仍在 FUSE 下层，策略层与设备层可能同时变慢。
 
