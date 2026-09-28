@@ -76,15 +76,15 @@ Android 的 16 KiB 页适配包含两个问题：
 1. 应用能否在使用 16 KiB 基础页的内核上正确安装、加载和运行。
 2. 更大的基础页能否改善目标应用的性能。
 
-Google Play 当前要求目标版本为 Android 15（API 35）或更高的应用支持 64 位设备上的 16 KB 页；从 2027 年 2 月 1 日起，不支持 16 KB 页的应用更新将无法发布。这里判断的是 `targetSdkVersion` 与最终分发产物，不能用测试设备的系统版本代替。
+Google Play 当前要求目标版本为 Android 15（API 35）或更高的应用支持 64 位设备上的 16 KB 页；从 2027 年 2 月 1 日起，不支持 16 KB 页的应用更新将无法发布。这项要求判断的是 `targetSdkVersion` 与最终分发产物，不能用测试设备的系统版本代替。
 
-这里还要把两个 Play 维度分开：16 KB 页大小要求是面向含原生代码产物的安装/加载兼容性门槛；Play 在 2026-08 公布的内存与 DEX 优化技术质量门槛另按 Android vitals 近 28 天 P90 评估 `Anonymous RSS + Swap`、bitmap memory 和 optimized DEX 覆盖，未达标会触发 Console 告警并可能影响可见度与发布能力。后者不能替代 ELF/ZIP 对齐检查，也不能证明 16 KiB 页本身导致或消除了内存回归。[来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/01-dump-play-thresholds.md]
+Play 的两套门槛口径不同：16 KB 页大小要求面向含原生代码产物的安装/加载兼容性；Play 在 2026-08 公布的内存与 DEX 优化技术质量门槛按 Android vitals 近 28 天 P90 评估 `Anonymous RSS + Swap`、bitmap memory 和 optimized DEX 覆盖，未达标会触发 Console 告警并可能影响可见度与发布能力。后者不能替代 ELF/ZIP 对齐检查，也不能证明 16 KiB 页本身导致或消除了内存回归。[来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/01-dump-play-thresholds.md]
 
-第一个问题有明确的工程检查项；第二个问题必须测量。ELF（Executable and Linkable Format，可执行与可链接格式）和 APK 都通过对齐检查，只能说明产物具备兼容性，不能据此承诺启动会快多少。
+第一个问题有明确的工程检查项：ELF（Executable and Linkable Format，可执行与可链接格式）和 APK 都通过对齐检查判定。第二个问题必须测量，而对齐检查通过只能说明产物具备兼容性，不能据此承诺启动会快多少。
 
 平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点，内核以 `android17-6.18-2026-06_r6` 为锚点。
 
-## 1. 先建立页大小的正确模型
+## 1. 页大小的正确模型
 
 ### 1.1 基础页是内核管理内存的基本粒度
 
@@ -111,7 +111,7 @@ TLB 未命中不会自然表现为 Perfetto 调度轨道中的一个内核持续
 
 对于连续访问的代码或数据，内核每次建立 16 KiB 映射，可以覆盖比 4 KiB 页更多的相邻字节。因此，顺序访问且局部性良好的工作负载可能产生更少的缺页和页表项。
 
-代价是每次按页进行的映射、保护和回收也使用更大粒度。下面几类区域更容易增加内存：
+代价是映射、保护和回收的粒度也一起变大。下面几类区域更容易增加内存：
 
 - 很多彼此独立的小型 `mmap()`；
 - ELF 段尾部无法被其他内容利用的空隙；
@@ -120,7 +120,7 @@ TLB 未命中不会自然表现为 Perfetto 调度轨道中的一个内核持续
 
 “一个 1 KiB 对象在 16 KiB 设备上浪费 15 KiB”并不是普遍规律。ART 堆和常见原生内存分配器会在一页内放置多个小对象。只有单独向内核申请映射，或者保护边界迫使内容分开时，页尾空间才会按基础页粒度损失。
 
-页表内存则可能减少，因为覆盖相同虚拟地址范围所需的叶子页表项更少。最终 PSS/RSS 如何变化，要看应用的映射结构、线程数、分配器行为、文件共享，以及系统服务共同产生的内存压力。PSS 会按比例分摊共享页，RSS 则统计进程当前驻留的全部页面。Android 官方文档只给出“内存使用略有增加”的定性结论，不应扩展成固定百分比，也不能按设备总内存推导固定增量。
+页表内存则可能减少，因为覆盖相同虚拟地址范围所需的叶子页表项更少。PSS 会按比例分摊共享页，RSS 则统计进程当前驻留的全部页面；最终 PSS/RSS 如何变化，要看应用的映射结构、线程数、分配器行为、文件共享，以及系统服务共同产生的内存压力。Android 官方文档只给出“内存使用略有增加”的定性结论，不应扩展成固定百分比，也不能按设备总内存推导固定增量。
 
 ## 2. 官方性能数据应该怎样解读
 
@@ -266,7 +266,7 @@ static uintptr_t align_up(uintptr_t value, size_t alignment) {
 
 ### 5.1 页大小从哪里来
 
-`libc/platform/bionic/page.h` 为 bionic 提供统一的页大小接口。固定页大小构建可以直接使用编译期值；页大小迁移构建则从进程启动辅助向量中的 `AT_PAGESZ` 取得运行时值。辅助向量是内核在启动进程时传给用户空间的一组键值信息。平台构建还可用 `PRODUCT_NO_BIONIC_PAGE_SIZE_MACRO := true` 移除 `PAGE_SIZE` 宏，迫使相关组件使用运行时接口。
+`libc/platform/bionic/page.h` 为 bionic 提供统一的页大小接口。固定页大小构建可以直接使用编译期值；页大小迁移构建则改从运行时取值。内核启动进程时会传给用户空间一组键值信息，也就是辅助向量，其中的 `AT_PAGESZ` 就是运行时页大小。平台构建还可用 `PRODUCT_NO_BIONIC_PAGE_SIZE_MACRO := true` 移除 `PAGE_SIZE` 宏，迫使相关组件使用运行时接口。
 
 应用自己定义的 `PAGE_SIZE` 不受这些保护，因此仍要扫描源码。
 
@@ -310,7 +310,7 @@ program alignment (4096) cannot be smaller than system page size (16384)
 4. 调整加载偏移 `load_bias_` 和 16 KiB 页上的权限边界；
 5. 在加载完成后恢复代码段、数据段和 RELRO 的保护。
 
-`linker_phdr_16kib_compat.cpp` 中的 `protect_segment_middle_pages()` 遇到 `PT_GNU_RELRO` 时会强制使用 `PROT_READ`。Android 17 的兼容模式没有关闭 RELRO 保护，而是把权限恢复放进专用的 16 KiB 兼容处理流程。
+`linker_phdr_16kib_compat.cpp` 中的 `protect_segment_middle_pages()` 遇到 `PT_GNU_RELRO` 时会强制使用 `PROT_READ`。Android 17 的兼容模式保留 RELRO 保护，把权限恢复放进专用的 16 KiB 兼容处理流程。
 
 兼容模式让旧库有机会运行，但可能带来匿名拷贝、更多私有内存、额外读入和启动开销。具体增量取决于 ELF 布局和共享方式。系统依旧使用 16 KiB 基础页，不能据此断言应用失去所有 TLB 收益；也不能保证 `Shared_Clean` 必然归零或 PSS 必然增加某个数值。
 
@@ -337,7 +337,7 @@ adb shell setprop bionic.linker.16kb.app_compat.enabled fatal
 adb shell setprop pm.16kb.app_compat.disabled true
 ```
 
-应用也可以在使用 Android 16 SDK 或更高版本编译时，通过 `<application>` 上的 `android:pageSizeCompat` 控制单个应用：
+用 Android 16 SDK 或更高版本编译时，也可以通过 `<application>` 上的 `android:pageSizeCompat` 按应用控制兼容模式：
 
 ```xml
 <application
@@ -372,7 +372,7 @@ adb shell getprop ro.build.fingerprint
 
 期望 `PAGE_SIZE` 输出 `16384`。Android 16 起还可以检查 `ro.product.page_size`、`ro.product.cpu.pagesize.max` 和 `ro.product.build.16k_page.enabled`，但运行时页大小仍以 `getconf`、`AT_PAGESZ` 或进程接口为准。
 
-可用的测试环境包括 16 KiB 模拟器、Cuttlefish，以及提供“Boot with 16KB page size”开发者选项的 Pixel 8/8 Pro、Pixel 8a、Pixel 9 系列和 Android 16+ 的 Pixel 9a。设备能切换页大小时，4 KiB/16 KiB 对比更容易控制硬件差异。
+可用的测试环境包括 16 KiB 模拟器和 Cuttlefish；Pixel 8/8 Pro、Pixel 8a、Pixel 9 系列和 Android 16+ 的 Pixel 9a 提供“Boot with 16KB page size”开发者选项。设备能切换页大小时，4 KiB/16 KiB 对比更容易控制硬件差异。
 
 ### 第五步：关闭兼容模式再跑完整用例
 
@@ -403,7 +403,7 @@ adb shell getprop ro.build.fingerprint
 
 ### 7.3 `mprotect()` 返回 `EINVAL`
 
-检查起始地址是否按运行时页大小对齐，并重新计算保护范围。Android 17 的 bionic 中，`WriteProtected<T>` 使用 `max_android_page_size()` 对齐存储区和 `mprotect()` 长度，体现了同一原则。旧工具或静态组件中的相似代码要按其源码和版本单独确认，不能把所有 NDK r27 产物归因于同一个实现。
+检查起始地址是否按运行时页大小对齐，并重新计算保护范围。Android 17 的 bionic 里就有按运行时页大小对齐的写法：`WriteProtected<T>` 用 `max_android_page_size()` 对齐存储区和 `mprotect()` 长度。旧工具或静态组件中的相似代码要按其源码和版本单独确认，不能把所有 NDK r27 产物归因于同一个实现。
 
 ### 7.4 只在某个业务页面崩溃
 
@@ -442,11 +442,11 @@ adb shell getprop ro.build.fingerprint
 
 Perfetto 可以对齐应用启动、主线程调度、Binder、文件 I/O、`mmap()`/`munmap()` 系统调用，以及设备支持的内存计数器。它适合回答“时间花在哪个阶段”，但没有一个通用的“16 KiB 收益”轨道。
 
-某些设备会暴露进程缺页计数器，另一些设备不会。即使计数器存在，其值也常是累计值；对累计值求和会得到错误结果，应计算测量窗口起止值之差。因此，不能直接在 SQL 中对 `counter.value` 使用 `SUM()`。
+某些设备会暴露进程缺页计数器，另一些设备不会。即使计数器存在，其值也常是累计值；对累计值求和会得到错误结果，应计算测量窗口起止值之差，不能直接在 SQL 中对 `counter.value` 使用 `SUM()`。
 
 ### 8.3 simpleperf 适合观察缺页与 TLB 事件
 
-先用 `simpleperf list` 查看芯片和内核导出的事件。`minor-faults`、`major-faults` 等软件事件通常可用；指令或数据 TLB 重新填充、页表遍历等性能监控单元（PMU）事件的名称和权限因芯片而异，正文不能写死一个跨设备名称。
+先用 `simpleperf list` 查看芯片和内核导出的事件。`minor-faults`、`major-faults` 等软件事件通常可用；指令或数据 TLB 重新填充、页表遍历等性能监控单元（PMU）事件的名称和权限因芯片而异，不能写成跨设备通用的固定名称。
 
 TLB 指标降低而启动时间不变，说明 TLB 可能不在关键路径。启动更快而 TLB 事件不可用，也只能证明端到端结果变化，不能把原因单独归给 TLB。
 
@@ -471,7 +471,7 @@ adb shell cat /sys/kernel/mm/transparent_hugepage/hpage_pmd_size
 adb shell zcat /proc/config.gz | grep CONFIG_TRANSPARENT_HUGEPAGE
 ```
 
-在 16 KiB 内核上，`hpage_pmd_size` 通常会显示 32 MiB。PMD THP 可以显著扩大单个映射的覆盖范围，也需要更大的连续 folio。folio 是内核统一管理一页或一组连续物理页的数据结构；缺页分配、清零、内存规整和拆分大页的成本都要纳入评估。
+在 16 KiB 内核上，`hpage_pmd_size` 通常会显示 32 MiB。PMD THP 可以显著扩大单个映射的覆盖范围，也需要更大的连续 folio；folio 是内核统一管理一页或一组连续物理页的数据结构。缺页分配、清零、内存规整和拆分大页的成本都要纳入评估。
 
 ### 9.2 mTHP
 
