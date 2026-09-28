@@ -98,7 +98,7 @@ task2b_state: fixed
 
 # SystemUI 性能分析
 
-普通 App 卡顿时，受影响的画面往往局限在一个任务内。SystemUI 负责的状态栏、通知抽屉、锁屏和导航区域覆盖面更大；同一段阻塞还可能与 Launcher（桌面与最近任务组件）、WM Shell（窗口管理的交互与动画组件）和目标 App 的动画重叠。只查看 `com.android.systemui` 的主线程，很容易混淆窗口由谁创建、工作在哪个线程执行，以及最终画面何时呈现。
+普通 App 卡顿时，受影响的画面往往局限在一个任务内。SystemUI 负责的状态栏、通知抽屉、锁屏和导航区域覆盖面更大；同一段阻塞还可能与 Launcher（桌面与最近任务组件）、WM Shell（窗口管理的交互与动画组件）和目标 App 的动画重叠。只看 `com.android.systemui` 的主线程，容易分不清窗口由谁创建、工作在哪个线程执行，以及最终画面何时呈现。
 
 Android 12—16 的演进用于说明版本差异，现行结论统一以 Android 17 / API 37 / `android-17.0.0_r1` 为平台版本。涉及输入、调度和显示栅栏时，内核版本采用 `android17-6.18-2026-06_r6`。
 
@@ -106,7 +106,7 @@ Android 17 同时保留 legacy shade（传统通知面板）与 SceneContainer�
 
 ## 版本、flag、窗口和线程
 
-Android 17 的 SystemUI 不能用一张固定架构图概括。`scene_container`、`dual_shade`、`status_bar_for_desktop`、`status_bar_root_modernization`、`status_bar_system_status_icons_in_compose`、`status_bar_ui_thread`、`notification_shade_ui_thread` 与 `edge_back_gesture_handler_thread` 都会改变应当观察的窗口、线程或 UI 实现。AOSP tag 只能证明代码存在；目标产品是否执行该分支，仍由构建配置和运行时 flag 决定。
+Android 17 的 SystemUI 不能用一张固定架构图概括。`scene_container`、`dual_shade`、`status_bar_for_desktop`、`status_bar_root_modernization`、`status_bar_system_status_icons_in_compose`、`status_bar_ui_thread`、`notification_shade_ui_thread` 与 `edge_back_gesture_handler_thread` 都会改变应当观察的窗口、线程或 UI 实现。AOSP tag 只能证明对应代码存在；目标产品是否执行该分支，仍由构建配置和运行时 flag 决定。
 
 下面的只读命令用于保存设备身份、相关 aconfig 状态、线程名和窗口名：
 
@@ -146,7 +146,7 @@ Android 17 的三个窗口入口可以直接从 `WindowManager.LayoutParams` 对
 | 通知抽屉/锁屏主窗口 | `TYPE_NOTIFICATION_SHADE` | `NotificationShade` | `ShadeWindowLayoutParams.create()` |
 | 三按钮导航栏 | `TYPE_NAVIGATION_BAR` | `NavigationBarN` | `NavigationBar.getBarLayoutParams()` |
 
-三者都有各自的 `WindowManager.addView()` 路径。一个窗口也可能在 SurfaceFlinger 中产生多个 Layer（图层），因此窗口名与 Layer 数量没有一一对应关系。窗口由谁创建应通过 `dumpsys window` 确认；合成阶段再根据名称和时间，在 SurfaceFlinger Layers 中找到相应图层。
+三者都由各自的 `WindowManager.addView()` 路径创建，一个窗口也可能在 SurfaceFlinger 中产生多个 Layer（图层），因此窗口名与 Layer 数量没有一一对应关系。窗口由谁创建应通过 `dumpsys window` 确认；合成阶段再根据名称和时间，在 SurfaceFlinger Layers 中找到相应图层。
 
 ### Legacy shade 的树
 
@@ -168,7 +168,7 @@ Scene flag 开启时，`ShadeViewProviderModule` 会 inflate `scene_window_root.
 2. 将 `legacy_window_root`（传统窗口根节点）设为不可见。
 3. 把包含 NSSL 的 `SharedNotificationContainer` 从旧父节点移出，放到 Scene ComposeView 之后，作为同一窗口中的兄弟 View。
 
-因此，Scene 开启后仍要保留 NSSL 相关观察点。锁屏、Shade、QS（Quick Settings，快捷设置）等场景切换进入 Compose，但通知行仍可以走 View 体系。一次展开可能同时包含 Compose 的 recomposition/layout/draw（重组/布局/绘制）、NSSL 的 View 测量与状态计算、RenderThread 的绘制记录和提交，以及 SurfaceFlinger 合成。
+Scene 开启后仍要保留 NSSL 相关观察点。锁屏、Shade、QS（Quick Settings，快捷设置）等场景切换进入 Compose，但通知行仍可以走 View 体系。一次展开可能同时包含 Compose 的 recomposition/layout/draw（重组/布局/绘制）、NSSL 的 View 测量与状态计算、RenderThread 的绘制记录和提交，以及 SurfaceFlinger 合成。
 
 ## SceneContainer：按 Android 17 源码理解
 
@@ -186,7 +186,7 @@ Scene flag 开启时，`ShadeViewProviderModule` 会 inflate `scene_window_root.
 
 模糊成本需要根据目标设备的 RenderThread、GPU 和 SurfaceFlinger 数据判断。`debug.hwui.disable_blur_visual_feedback` 在 Android 17 参考源码中没有形成稳定的 SystemUI 诊断接口，不适合作为通用诊断入口。工程验证可以在可控分支中关闭具体的 blur flag，或把模糊半径设为零进行实验，同时保留同一设备、同一场景、同一热状态下的对照 trace。
 
-Compose 路径的 PSS（按比例分摊的进程内存）也没有固定增幅。Scene 数量、always-compose（始终保持组合）策略、状态对象、缓存和 OEM 内容都会影响初始值。应按 flag 组合分别记录冷启动后、稳定待机、展开 Shade、通知集中到达后的内存，再检查对象以及 native/GPU（原生/GPU）内存来自哪里。
+Compose 路径的 PSS（按比例分摊的进程内存）也没有固定增幅。Scene 数量、always-compose（始终保持组合）策略、状态对象、缓存和 OEM 内容都会影响初始值。应按 flag 组合分别记录冷启动后、稳定待机、展开 Shade、通知集中到达后的内存，再检查这些内存来自哪些对象和 native/GPU（原生/GPU）分配。
 
 ## 通知从入库到显示的 Android 17 路径
 
@@ -199,11 +199,11 @@ Compose 路径的 PSS（按比例分摊的进程内存）也没有固定增幅�
 5. 异步 apply 失败时，`OnViewAppliedListener.onError()` 会在 UI 回调路径尝试同步 `apply()` 或 `reapply()`，以区分异步框架异常与通知内容本身无法 inflate。
 6. 所需内容全部完成后，更新后的 row 进入 View 树，引起后续的测量、布局、动画和绘制。
 
-Android 17 已没有旧路径中的 `NotificationContentInflater.java`。实现类迁移为 Kotlin 的 `NotificationRowContentBinderImpl.kt`，但 `doInBackground()` 仍保留历史 trace 名 `NotificationContentInflater.AsyncInflationTask#doInBackground`。搜索 trace 时要区分“为了兼容保留的 slice 名称”和“当前源码中是否仍存在同名类”。
+Android 17 已没有旧路径中的 `NotificationContentInflater.java`。实现类迁移为 Kotlin 的 `NotificationRowContentBinderImpl.kt`，但 `doInBackground()` 仍保留历史 trace 名 `NotificationContentInflater.AsyncInflationTask#doInBackground`。搜索 trace 时，不要把为了兼容保留的 slice 名称当成当前源码中仍有同名类的证据。
 
 ### 异步绑定没有消除 UI 线程成本
 
-`AsyncInflationTask` 把 Builder 恢复（从通知数据还原模板构建器）、模板生成、部分图片工作和 RemoteViews inflate 移到 `NotifInflation` 线程。UI 线程仍要处理完成回调、把 View 加入界面树、wrapper（内容包装 View）更新、`requestLayout()`、动画状态和窗口 traversal（界面遍历）。大量通知在短时间到达时，常见的时序是：
+`AsyncInflationTask` 把 Builder 恢复（从通知数据还原模板构建器）、模板生成、部分图片工作和 RemoteViews inflate 移到 `NotifInflation` 线程。UI 线程仍要处理完成回调、把 View 加入界面树、更新 wrapper（内容包装 View）、响应 `requestLayout()`、维护动画状态，并完成窗口 traversal（界面遍历）。大量通知在短时间到达时，常见的时序是：
 
 - `NotifInflation` 队列持续工作；
 - 多个异步结果在相近时刻完成；
@@ -234,7 +234,7 @@ NSSL 在 legacy 路径中通过 pre-draw listener（绘制前监听器）调用 
 | 大图通知 | 解码与缩放、像素常驻、异步预加载等待、纹理上传 | worker CPU、bitmap/native（位图/原生）内存、RenderThread 与 GPU |
 | 分组通知 | summary/child（摘要/子通知）内容形态、展开状态与动画、更多 row 参与测量 | group 状态变化、NSSL measure/updateChildren |
 
-`BigPictureIconManager` 对部分 URI/resource（资源）类型支持延迟加载；bitmap、adaptive bitmap（自适应位图）和 data 类型会跳过这套延迟策略，因为像素仍会常驻内存。`NotificationRowContentBinderImpl` 的 worker 最多等待图片预加载 1000 ms。这个超时发生在异步任务中，不能写成 UI 线程一定卡住一秒；但队列延迟、完成回调集中到达和后续纹理上传仍可能影响可见帧。
+`BigPictureIconManager` 对部分 URI/resource（资源）类型支持延迟加载；bitmap、adaptive bitmap（自适应位图）和 data 类型会跳过这套延迟策略，因为像素仍会常驻内存。`NotificationRowContentBinderImpl` 的 worker 最多等待图片预加载 1000 ms。这个超时发生在异步任务中，不能据此认为 UI 线程一定卡住一秒；但队列延迟、完成回调集中到达和后续纹理上传仍可能影响可见帧。
 
 App 侧的改进通常更直接：合并高频进度更新，保持通知 ID 与模板稳定，减少内容未变化时的 `notify()`，避免每秒替换大图，控制自定义 RemoteViews 层级，并利用通知分组减少不必要的结构变化。SystemUI 侧则要保留异步路径，修复触发 fallback 的原因，限制同一帧中的状态更新量，并用设备数据验证任何缓存策略。
 
@@ -318,7 +318,7 @@ SystemUI 的特殊之处在于窗口数量多、状态来源多，并且可以�
 
 这条路径带来几条诊断约束：
 
-- `doFrame` 很长只能说明 UI 线程在这一帧占用时间较多，不能直接等同于 layout 慢。
+- `doFrame` 很长只能说明 UI 线程在这一帧占用时间较多，不能直接断定 layout 慢。
 - `Traversal` 包含 measure/layout、绘制记录和向 RenderThread 同步等工作。其尾部的 `syncAndDrawFrame()` 可能等待 RenderThread 状态同步；后续阶段处理不及时造成的 backpressure（反压）也可能延长 traversal。
 - Compose 的 recomposition、layout 和 draw 记录仍在对应窗口的 UI 线程；GPU 工作与 display 合成要到 RenderThread、SurfaceFlinger 和 HWC 中继续确认。
 - `requestLayout` instant event 只说明请求已经发出，不能表示当场完成了一次 layout。
@@ -370,7 +370,7 @@ ORDER BY s.ts;
 - 两条路径都要检查 NSSL，因为 Android 17 Scene 仍保留 View 通知容器；
 - UI 线程没有超过该帧可用时间时，继续查看 RenderThread、buffer queue、SurfaceFlinger 和 GPU。
 
-若 NSSL measure 随通知总数增长，优化目标是减少参与测量的 row、内容形态和层级。若 `NSSL#updateChildren` 变长，应检查分组、heads-up、动画状态与同一帧中的更新次数。若 UI 与 RenderThread 都没有异常，而 display frame 仍然 miss，则继续检查 SurfaceFlinger/HWC、其他高层 Surface 或显示模式切换。
+若 NSSL measure 随通知总数增长，优化目标是减少参与测量的 row、内容形态和层级。若 `NSSL#updateChildren` 变长，应检查分组、heads-up、动画状态与同一帧中的更新次数。UI 与 RenderThread 都没有异常而 display frame 仍然 miss 时，继续检查 SurfaceFlinger/HWC、其他高层 Surface 或显示模式切换。
 
 ### 通知集中到达
 
@@ -384,7 +384,7 @@ ORDER BY s.ts;
 
 ### 启动动画不连贯
 
-应把 Launcher、Shell、starting window、目标 App、SystemUI 和 SurfaceFlinger 的轨道放在同一时间范围内比较，并区分：
+同一个时间范围内，应同时比较 Launcher、Shell、starting window、目标 App、SystemUI 和 SurfaceFlinger 的轨道，并区分：
 
 - Launcher 任务卡或 workspace 自身掉帧；
 - Shell handler 选择或动画执行延迟；
@@ -393,7 +393,7 @@ ORDER BY s.ts;
 - StatusBar/NavigationBar 同期更新超预算；
 - SurfaceFlinger/HWC 合成或 present 延迟。
 
-只看 SystemUI CPU 使用率的峰值，无法判断责任。只有当受影响的系统栏 SurfaceFrame 与其 UI/RenderThread 工作在时间上相互对应，才能把该帧归因到 SystemUI。
+只看 SystemUI CPU 使用率的峰值，无法判断责任归谁。只有当受影响的系统栏 SurfaceFrame 与其 UI/RenderThread 工作在时间上相互对应，才能把该帧归因到 SystemUI。
 
 ## OEM 差异的处理方式
 
