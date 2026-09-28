@@ -89,7 +89,7 @@ last_idle_audit_run_id: '20260825-143835-idle-audit-d3b85a7c'
 
 ### 先分清两个问题：完成得多快，以及消耗多少能量
 
-调度器决定任务何时运行、运行在哪个 CPU 上；DVFS（Dynamic Voltage and Frequency Scaling，动态电压与频率调节）决定一个共享电压和频率的硬件域采用哪个性能档位。两者互相影响：
+完成得多快和消耗多少能量是两个不同的问题。调度器决定任务何时运行、运行在哪个 CPU 上；DVFS（Dynamic Voltage and Frequency Scaling，动态电压与频率调节）决定一个共享电压和频率的硬件域采用哪个性能档位。两者互相影响：
 
 - 同一段 CPU 指令在高频下通常更早完成，但瞬时功率往往更高。
 - 任务更早完成后，CPU 可能更早进入空闲态，整段工作的能量未必更高。
@@ -123,7 +123,7 @@ CMOS（Complementary Metal-Oxide-Semiconductor，互补金属氧化物半导体�
 
 #### 为什么频率与电压通常一起变化
 
-更高时钟频率缩短了组合逻辑完成一次传播的时间。为了在目标温度和芯片个体差异下保留足够的时序裕量，也就是确保信号能在时钟边沿前稳定，较高频率通常需要较高电压。SoC 厂商会对芯片进行表征，为一个性能域提供经过验证的频率—电压组合。
+更高时钟频率缩短了组合逻辑完成一次传播的时间。为了在目标温度和芯片个体差异下保留足够的时序裕量（让信号能在时钟边沿前稳定下来），较高频率通常需要较高电压。SoC 厂商会对芯片进行表征，为一个性能域提供经过验证的频率—电压组合。
 
 由此可以得到更严谨的表述：
 
@@ -162,7 +162,7 @@ Linux CPUFreq 可以分成三层理解：
 
 #### policy 不等于单个 CPU
 
-`/sys/devices/system/cpu/cpufreq/policyN/` 位于 sysfs，也就是 Linux 向用户空间暴露设备和内核对象状态的虚拟文件系统。这个目录表示一个 CPUFreq 策略域（policy），其中可以包含多个共享性能状态接口的 CPU。分析前可读取：
+`/sys/devices/system/cpu/cpufreq/policyN/` 是一个 CPUFreq 策略域（policy），其中可以包含多个共享性能状态接口的 CPU。这个目录位于 sysfs（Linux 向用户空间暴露设备和内核对象状态的虚拟文件系统）。分析前可读取：
 
 - `related_cpus`：属于该 policy 的 CPU；
 - `scaling_driver`：当前驱动；
@@ -191,6 +191,10 @@ CFS（Completely Fair Scheduler，完全公平调度器）任务的利用率主�
 - 可扩展调度器框架 sched_ext 启用时提供的 CPU 性能目标（performance target）。
 
 Android 17 这一内核分支的 `sugov_get_util()` 会读取 `scx_cpuperf_target()`；没有把全部任务切换到 sched_ext 时，还会加入 `CFS boost`，即对 fair 类利用率的增强值，再经 `effective_cpu_util()` 和 DVFS 余量（headroom）处理。因此，使用“CPU 百分比 × 最高频率”描述当前实现，会漏掉多个输入。
+
+Android 公共内核 6.18 允许 `sched_ext` 用 `scx_bpf_cpuperf_set()` 提交 CPU 性能目标。该入口与 CFS/PELT 路径会在 schedutil 中汇合，随后仍受 policy 上下限、驱动、固件与 thermal pressure 约束。
+
+BPF 是 Linux 内核中可验证、可加载的程序机制，BPF kfunc 则是内核向这类程序开放的函数接口。不能因为内核已有这一接口，就写成“Android 17 使用 BPF 直接控频”；需要在目标设备上确认 `sched_ext` 状态、已加载的 BPF 程序与 CPUFreq 路径。
 
 #### 从利用率映射到支持的频率
 
@@ -257,7 +261,7 @@ I/O wait boost 用来响应刚从 I/O 等待中唤醒的任务。在这一内核
 
 #### 任务配置（Task Profiles）与 UClamp
 
-Android 可以借助任务配置（task profile）、限制线程可运行 CPU 集合的 cpuset，以及 UClamp 调整线程的放置范围与性能提示。UClamp min 给 schedutil 一个利用率下界，适合短时提高响应能力；UClamp max 可限制性能需求。它们仍受 policy 上限、CPU capacity、thermal pressure 和厂商实现约束。
+Android 可以借助任务配置（task profile）、cpuset（限制线程可运行的 CPU 集合）以及 UClamp 调整线程的放置范围与性能提示。UClamp min 给 schedutil 一个利用率下界，适合短时提高响应能力；UClamp max 可限制性能需求。它们仍受 policy 上限、CPU capacity、thermal pressure 和厂商实现约束。
 
 长时间把 UClamp min 设得很高会增加功耗和温度，也可能减少其他任务可获得的性能资源。应围绕关键线程和关键阶段使用，并通过帧时间与能量数据验证。
 
@@ -288,11 +292,9 @@ Android 17 的游戏管理服务 `GameManagerService` 在游戏前台状态变�
 
 #### 从 Framework 提示到频率请求没有固定直连
 
-Power HAL 是场景提示与厂商策略的接口边界，schedutil 是 Linux 内核的 CPUFreq governor。`setMode()`、`setBoost()` 与提示会话进入厂商 HAL 后，可以被实现为 UClamp、cpuset、devfreq、固件投票（向固件提交性能需求）或其他私有策略；AOSP 不规定它们必须写入某个 schedutil 参数。`IPowerStats` 负责观测能量消费者、计量值（meter）和状态驻留时间（residency）等数据，不会反向决定 governor 行为。
+Power HAL 是场景提示与厂商策略的接口边界，schedutil 是 Linux 内核的 CPUFreq governor。`setMode()`、`setBoost()` 与提示会话进入厂商 HAL 后，可以被实现为 UClamp、cpuset、devfreq、固件投票（向固件提交性能需求）或其他私有策略；AOSP 不规定它们必须写入某个 schedutil 参数。
 
-Android 公共内核 6.18 还允许 `sched_ext` 用 `scx_bpf_cpuperf_set()` 提交 CPU 性能目标。该入口与 CFS/PELT 路径会在 schedutil 中汇合，随后仍受 policy 上下限、驱动、固件与 thermal pressure 约束。BPF 是 Linux 内核中可验证、可加载的程序机制，BPF kfunc 则是内核向这类程序开放的函数接口；不能因为内核已有这一接口，就写成“Android 17 使用 BPF 直接控频”。需要在目标设备上确认 `sched_ext` 状态、已加载的 BPF 程序与 CPUFreq 路径。
-
-架构活动监控单元（Activity Monitors Unit，AMU）、性能监控单元（Performance Monitoring Unit，PMU）和厂商计数器（counter）可以帮助解释同频不同效：AMU 反映架构活动周期与参考周期，PMU 可以提供指令数、周期数、缓存未命中（cache miss）和停顿（stall）等事件。它们是反馈或诊断来源，不是 AOSP 统一的升频仲裁器。比较“提频是否有收益”时，应在相同工作负载（workload）下同时报告完成时间、指令数与周期数、内存停顿、温度和能量，避免仅凭利用率或频率轨迹下结论。
+`IPowerStats` 负责观测能量消费者、计量值（meter）和状态驻留时间（residency）等数据，不会反向决定 governor 行为。
 
 ### 用 Perfetto 观察 CPU DVFS
 
@@ -367,23 +369,25 @@ DDR 频率高低不能单独证明内存存在瓶颈。应优先使用设备提�
 
 ### 一套可复现的 DVFS 排障顺序
 
-#### 第一步：界定超时工作
+#### 界定超时工作
 
 标出掉帧、启动或交互的截止时间，找到关键线程和耗时最长的切片。先区分运行态（running）、可运行等待态（runnable）、睡眠态（sleeping）与阻塞态（blocked）。
 
-#### 第二步：确定 CPU 与 policy
+#### 确定 CPU 与 policy
 
 记录线程运行过的 CPU，再读取 policy 的 `related_cpus`、驱动、governor 和频率上下限。不要用“CPU 0～3 一定是小核”之类的固定编号推断拓扑。
 
-#### 第三步：对齐请求、执行和限制
+#### 对齐请求、执行和限制
 
 把 schedutil 输入线索、频率事件、idle 状态、温控压力、capacity 与关键切片对齐。设备若提供硬件频率反馈，再把“内核请求”和“硬件反馈”分开比较。
 
-#### 第四步：建立对照
+#### 建立对照
 
 保持工作负载、温度、电量、屏幕刷新率和网络条件尽量一致，重复采集。工程设备上的 UClamp、提示会话或受控频率上限实验可以帮助验证因果，但每次只改变一个变量，并在实验后恢复策略。
 
-#### 第五步：选择对应修复
+架构活动监控单元（Activity Monitors Unit，AMU）、性能监控单元（Performance Monitoring Unit，PMU）和厂商计数器（counter）可以帮助解释同频不同效：AMU 反映架构活动周期与参考周期，PMU 可以提供指令数、周期数、缓存未命中（cache miss）和停顿（stall）等事件。它们是反馈或诊断来源，不是 AOSP 统一的升频仲裁器。比较“提频是否有收益”时，应在相同工作负载（workload）下同时报告完成时间、指令数与周期数、内存停顿、温度和能量，避免仅凭利用率或频率轨迹下结论。
+
+#### 选择对应修复
 
 - 线程长期处于 running 状态且算力不足：先优化工作量，再评估性能提示、UClamp 和调频响应；
 - 线程处于 runnable 状态却没有获得 CPU：处理调度竞争、优先级或 CPU 放置；
@@ -484,7 +488,9 @@ Linux thermal core 位于 `drivers/thermal/`。三个基本对象分别负责不
 
 冷却设备的 state 是抽象等级。对于 CPU 调频冷却设备（cpufreq cooling），更高的 cooling state 通常映射到更低的最高频率；其他 cooling device 可以控制设备调频框架 devfreq、风扇或平台自定义资源。state 编号不等于温度，也不保证与 Android `ThrottlingSeverity` 一一对应。
 
-在允许访问的设备上，`/sys/class/thermal/thermal_zone*/` 可以提供 `type`、`temp` 和 trip 等信息。sysfs 是 Linux 向用户空间暴露设备与内核对象状态的虚拟文件系统，其温控节点的温度通常以毫摄氏度表示。不过，节点是否存在、是否允许 `adb shell` 读取、zone 名称怎样解释，都由内核配置与安全增强型 Linux（Security-Enhanced Linux，SELinux）策略决定。分析时要先把 `type` 和 `temp` 配对，不能按目录编号猜测 CPU、GPU 或电池。
+在允许访问的设备上，`/sys/class/thermal/thermal_zone*/` 可以提供 `type`、`temp` 和 trip 等信息；温控节点的温度通常以毫摄氏度表示。
+
+节点是否存在、是否允许 `adb shell` 读取、zone 名称怎样解释，都由内核配置与安全增强型 Linux（Security-Enhanced Linux，SELinux）策略决定。分析时要先把 `type` 和 `temp` 配对，不能按目录编号猜测 CPU、GPU 或电池。
 
 #### thermal governor 决定怎样调整 cooling state
 
@@ -622,7 +628,7 @@ if (!Float.isNaN(forecast)) {
 - 阈值在 Android 17 上可以随调用变化；
 - 功能未启用会抛出 `UnsupportedOperationException`，服务未就绪会抛出 `IllegalStateException`。
 
-因此，status 适合响应已经发生的状态变化；预测 headroom（forecast headroom）与阈值适合提前准备降载。两类数据要分开记录。
+status 适合响应已经发生的状态变化；预测 headroom（forecast headroom）与阈值适合提前准备降载，两类数据要分开记录。
 
 ### CPU/GPU headroom 与 thermal headroom 的区别
 
@@ -635,7 +641,7 @@ Android 16（API 36）增加了公开的 CPU/GPU 性能余量（headroom）API�
 - 不支持时抛出 `UnsupportedOperationException`；
 - 这是同步 Binder 调用，源码提示可能耗时超过 1 毫秒，不应放在关键线程中调用。
 
-查询频率应遵守 `getCpuHeadroomMinIntervalMillis()` 和 `getGpuHeadroomMinIntervalMillis()` 返回的最短间隔。这两个指标可用于判断工作是否接近 CPU/GPU capacity 边界，但 capacity 不足不一定由温度造成；thermal headroom 也不能指出瓶颈位于 CPU 还是 GPU。
+查询频率应遵守 `getCpuHeadroomMinIntervalMillis()` 和 `getGpuHeadroomMinIntervalMillis()` 返回的最短间隔。这两个 API 估算的余量可用于判断工作是否接近 CPU/GPU capacity 边界，但 capacity 不足不一定由温度造成；thermal headroom 也不能指出瓶颈位于 CPU 还是 GPU。
 
 ### 温控怎样影响性能
 
@@ -710,7 +716,7 @@ data_sources: {
 4. 对齐目标线程的运行态（running）、可运行等待态（runnable）时间及 CPU 频率；
 5. 把进入 throttling、稳态和冷却恢复三个阶段分开统计。
 
-`power/cpu_frequency` 或轮询到的 `scaling_cur_freq` 可能接近 CPUFreq 请求状态，不能自动视为片上计数器测得的物理实频。本节前文已经说明了这一数据边界。
+`power/cpu_frequency` 或轮询到的 `scaling_cur_freq` 可能接近 CPUFreq 请求状态，不能自动视为片上计数器测得的物理实频。
 
 ### 常见的温控缓解手段（Thermal Mitigation）
 
@@ -900,7 +906,7 @@ Android 17 的功耗主路径可以分为四层：
 
 JNI（Java Native Interface，Java 原生接口）文件 `com_android_server_power_PowerManagerService.cpp` 连接 `ISystemSuspend` 与挂起控制服务（suspend control service）。启用 autosuspend 后，只要没有有效的 blocker，内核和平台就可以尝试进入 system suspend。
 
-PMS 还会用 `Mode.INTERACTIVE` 向 AIDL（Android Interface Definition Language，Android 接口定义语言）Power HAL 通知交互状态。这个模式由厂商映射到自己的电源策略；一次普通的 WakeLock 获取（acquire）没有“AOSP 固定调用 `Boost.INTERACTION` 若干毫秒”的通用链路，也不会直接命令 schedutil 升到某个频点。
+PMS 还会用 `Mode.INTERACTIVE` 向 AIDL（Android Interface Definition Language，Android 接口定义语言）Power HAL 通知交互状态。这个模式由厂商映射到自己的电源策略；一次普通的 WakeLock 获取（acquire）也不会直接命令 schedutil 升到某个频点。
 
 #### CPU 空闲与系统挂起
 
@@ -911,11 +917,13 @@ PMS 还会用 `Mode.INTERACTIVE` 向 AIDL（Android Interface Definition Languag
 - **挂起到空闲（suspend-to-idle，s2idle）**：一种较轻的 system suspend；CPU 可以停留在深度空闲状态，但仍要经过冻结用户空间和挂起设备的系统流程。
 - **挂起到内存（suspend-to-RAM）**：平台支持时可以进入更深状态，内存自刷新，更多设备与总线断电或进入低功耗状态。
 
-因此，“CPU idle 比例接近 100%”不能证明系统已经挂起；Trace 中没有调度切片（slice）也可能只是采集缺失。应使用 `power/suspend_resume` 等事件确认 system suspend 的边界。
+“CPU idle 比例接近 100%”不能证明系统已经挂起；Trace 中没有调度切片（slice）也可能只是采集缺失。要确认 system suspend 的边界，应使用 `power/suspend_resume` 等事件。
 
 #### CPUIdle 与 schedutil 分别处理空闲和运行需求
 
-cpuidle governor（空闲状态选择策略）只在 CPU 已经没有可运行等待态（runnable）的任务、准备进入 idle 时选择空闲状态；schedutil 则在 CPU 执行或负载变化时，把利用率需求映射成 Linux CPU 调频框架 CPUFreq 的请求。PMS 可以通过交互状态、suspend blocker 与 Power HAL mode 改变外部条件，但不会替内核逐 CPU 选择 idle state 或频率。一次唤醒中常会同时出现退出 idle、任务进入 runnable、升频和 Framework 交互提示；这些事件时间相邻，不代表存在一条固定的 PMS → cpuidle → schedutil 调用链。
+cpuidle governor（空闲状态选择策略）只在 CPU 已经没有可运行等待态（runnable）的任务、准备进入 idle 时选择空闲状态；schedutil 则在 CPU 执行或负载变化时，把利用率需求映射成 Linux CPU 调频框架 CPUFreq 的请求。PMS 可以通过交互状态、suspend blocker 与 Power HAL mode 改变外部条件，但不会替内核逐 CPU 选择 idle state 或频率。
+
+一次唤醒中常会同时出现退出 idle、任务进入 runnable、升频和 Framework 交互提示；这些事件时间相邻，不代表存在一条固定的 PMS → cpuidle → schedutil 调用链。
 
 ### WakeLock：类型、语义与责任
 
@@ -967,7 +975,7 @@ try {
 
 Android 17 PMS 有 `no_cached_wake_locks` 等配置与缓存进程（cached process）判断，可以把某些 WakeLock 标记为禁用（disabled）。具体条件还涉及 UID 状态、豁免、锁类型和设备配置。
 
-因此，应用不能把 `PARTIAL_WAKE_LOCK` 当作后台永久运行承诺。即使应用内的对象仍显示 `isHeld`，系统也不会因此保证所有后台能力、网络或 Job 调度都不受限制。
+应用不能把 `PARTIAL_WAKE_LOCK` 当作后台永久运行的承诺。即使应用内的对象仍显示 `isHeld`，系统也不会因此保证所有后台能力、网络或 Job 调度都不受限制。
 
 ### WakeLock 怎样进入 Batterystats
 
@@ -1001,8 +1009,6 @@ Batterystats 是 Android 的功耗记账系统，适合回答“某 UID 在多�
 | 低功耗待机（Low Power Standby） | 设备非交互后的更深策略 | 平台支持、配置与豁免（exemptions） | 网络和 WakeLock 等能力进一步受限 |
 
 这些机制可以叠加。一次 Job 延迟可能同时受到 Doze、standby bucket、后台限制、配额（quota）、网络约束和温控状态影响。
-
-Low Power Standby 开启后，当设备处于非交互状态且不在设备空闲（device-idle）维护窗口时，应用的网络访问会被禁用，持有的 WakeLock 会被忽略；运行前台服务（foreground service）的应用也在限制范围内。Android 14 / API 34 增加了 `isExemptFromLowPowerStandby()` 与 `isAllowedInLowPowerStandby()`，用于查询当前策略下的豁免和允许能力。这些查询只描述 Low Power Standby，不能代替 Doze 允许名单（allowlist）、standby bucket 或用户后台限制检查。
 
 #### Doze 的行为
 
@@ -1064,9 +1070,11 @@ adb shell am get-standby-bucket com.example.app
 
 #### Low Power Standby 在非交互期间限制网络与 WakeLock 效力
 
-Low Power Standby（LPS）与 Doze、App Standby 和应用休眠（App Hibernation）是不同的状态机。Android 13 起，LPS 可以在设备进入非交互状态并超过配置的超时时间后启用；Android 17 的 Framework 主要把策略交给两个使用方：网络策略限制部分后台 UID 的联网能力，PowerManagerService 则让不在允许范围内的 WakeLock 不再阻止低功耗状态。
+Low Power Standby（LPS）与 Doze、App Standby 和应用休眠（App Hibernation）是不同的状态机。Android 13 起，设备进入非交互状态、超过配置的超时时间，且不在设备空闲（device-idle）维护窗口内时，LPS 可以启用；启用后应用的网络访问会被禁用，持有的 WakeLock 会被忽略，运行前台服务（foreground service）的应用也在限制范围内。Android 17 的 Framework 主要把策略交给两个使用方：网络策略限制部分后台 UID 的联网能力，PowerManagerService 则让不在允许范围内的 WakeLock 不再阻止低功耗状态。
 
-LPS 不会删除 WakeLock，也不会取消 Job。设备恢复交互，或应用符合软件包（package）、功能（feature）、允许原因（allowed reason）等豁免条件后，限制可以解除。验证时应读取 `dumpsys power` 中的 Low Power Standby 状态与 policy，并同时观察网络访问、WakeLock、suspend blocker 和 `power/suspend_resume`；只看到一次请求超时，无法区分 LPS、Doze、待机桶或网络故障。
+LPS 不会删除 WakeLock，也不会取消 Job。设备恢复交互，或应用符合软件包（package）、功能（feature）、允许原因（allowed reason）等豁免条件后，限制可以解除。Android 14 / API 34 增加了 `isExemptFromLowPowerStandby()` 与 `isAllowedInLowPowerStandby()`，用于查询当前策略下的豁免和允许能力。这些查询只描述 Low Power Standby，不能代替 Doze 允许名单（allowlist）、standby bucket 或用户后台限制检查。
+
+验证时应读取 `dumpsys power` 中的 Low Power Standby 状态与 policy，并同时观察网络访问、WakeLock、suspend blocker 和 `power/suspend_resume`；只看到一次请求超时，无法区分 LPS、Doze、待机桶或网络故障。
 
 ### JobScheduler 与 WorkManager
 
@@ -1091,7 +1099,7 @@ JobScheduler 能根据充电、网络、空闲、存储和配额等条件，批�
 
 ### 检测 WakeLock 与 suspend 问题
 
-#### 第一步：看当前状态
+#### 看当前状态
 
 `dumpsys power` 能显示 PMS 当前的 wakefulness、suspend blocker 和 WakeLock。下面的命令只读取状态：
 
@@ -1102,7 +1110,7 @@ adb shell cat /sys/kernel/debug/wakeup_sources
 
 第二个节点需要相应的内核配置、权限和安全增强型 Linux（Security-Enhanced Linux，SELinux）许可，量产设备上可能无法读取。输出中的活跃次数（active count）、事件次数（event count）、活跃时长（active time）和唤醒次数（wakeup count），其具体语义由内核 wakeup-source 统计决定。
 
-#### 第二步：抓取系统 Trace
+#### 抓取系统 Trace
 
 Linux 6.18 的 `include/trace/events/power.h` 定义了以下 ftrace 内核跟踪事件：
 
@@ -1140,7 +1148,7 @@ Android 17 PMS 还会在 `SuspendBlockers` 轨道（track）中写入异步 Trac
 
 “某应用有 WakeLock”与“该锁阻止了本次 system suspend”之间，仍需要时间重叠证据。系统服务可能代表应用持锁，硬件 wakeup source 也可能没有直接对应的应用标签。
 
-#### 第三步：看长时间统计
+#### 看长时间统计
 
 Batterystats 可用于跨数小时或一天观察 UID 归因。下面的命令先清空旧统计并启用完整 WakeLock 历史，然后在复现场景后生成 bugreport：
 
@@ -1155,7 +1163,7 @@ adb bugreport /path/to/output/bugreport.zip
 
 Battery Historian 可以读取 bugreport，并显示用户空间 WakeLock（Userspace Wakelock）、JobScheduler、同步管理器（SyncManager）和进程状态等长时间线。但官方已注明该工具不再积极维护；能够使用系统跟踪（system tracing）、Macrobenchmark 功耗指标（power metric）或 Android Studio Power Profiler 时，应优先采用这些工具。Historian 适合查看历史关联，不适合作为精确能量仪表。
 
-#### 第四步：验证能量
+#### 验证能量
 
 要判断优化是否省电，应保持工作量和环境一致，比较：
 
