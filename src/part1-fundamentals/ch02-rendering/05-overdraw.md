@@ -3,14 +3,17 @@ title: 过度绘制
 chapter: '2.5'
 section: '2.5'
 applicable_versions: Android 4.2 (API 17) - Android 17 (API 37)
-last_verified: 2026-07-25
-last_verified_against: AOSP android-17.0.0_r1 Properties.h/Properties.cpp, SkiaPipeline.cpp, RenderNodeDrawable.cpp, Canvas.java; androidx.compose.ui:ui:1.11.4 GraphicsLayerModifier.kt/GraphicsLayerScope.kt; kernel android17-6.18-2026-06_r6 dma-buf/dma-fence
+last_verified: 2026-09-28
+last_verified_against: AOSP android-17.0.0_r1 Properties.h/Properties.cpp, SkiaPipeline.cpp, RenderNodeDrawable.cpp, Canvas.java; Perfetto FrameTimeline docs (Android 12+, SurfaceView unsupported notice); androidx.compose.ui:ui:1.11.4 GraphicsLayerModifier.kt/GraphicsLayerScope.kt; kernel android17-6.18-2026-06_r6 dma-buf/dma-fence
+last_source_verified_at: '2026-09-28T18:35:34+08:00'
 confidence: high
 task2b_state: fixed
 task9_state: reviewed
 task6_state: reviewed
 pipeline_stage: ready-to-publish
 status: finalized
+last_idle_audit_at: '2026-09-28T18:35:34+08:00'
+last_idle_audit_run_id: 20260928-183534-idle-audit-e96dfd0a
 sources:
 - type: aosp
   path: frameworks/base/libs/hwui/Properties.h
@@ -40,6 +43,8 @@ sources:
   path: https://developer.android.com/develop/ui/compose/graphics/draw/modifiers
 - type: official
   path: https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui/1.11.4/ui-1.11.4-sources.jar
+- type: official
+  path: https://perfetto.dev/docs/data-sources/frametimeline
 - type: obsidian
   path: Writer/rendering_pipelines/S01_rendering_types_overview.md
 - type: obsidian
@@ -189,6 +194,8 @@ fill rate 指 GPU 在单位时间内生成并写出像素或片元结果的能�
 ### Perfetto / FrameTimeline：找迟到的帧和责任边界
 
 从 Android 12 起，FrameTimeline 可以把 App 的 `SurfaceFrame`（应用向某个 Surface 提交的一帧）与最终 `DisplayFrame`（显示系统合成并呈现的一帧）对应起来。`Expected Timeline` 是系统预测的时间目标，`Actual Timeline` 记录实际结果；后者晚于前者只说明帧迟到，不能单凭这一条认定 GPU 是原因。App 帧完成时间会综合 buffer post（应用提交窗口 buffer）与 GPU 完成，SurfaceFlinger 也可能单独迟到。
+
+Perfetto 文档同时注明，FrameTimeline 目前不支持 `SurfaceView`。页面里有 `SurfaceView` 时，应把它当作独立 Layer 继续看 buffer、fence 和 SurfaceFlinger 合成，而不要指望宿主窗口的一条 FrameTimeline 覆盖它的完整节拍。
 
 建议按下面顺序检查：
 
