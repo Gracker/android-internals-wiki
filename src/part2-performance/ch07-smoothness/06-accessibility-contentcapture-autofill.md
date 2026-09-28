@@ -59,11 +59,11 @@ consolidated_from:
 
 # Accessibility、ContentCapture 与 Autofill 性能
 
-Android 无障碍框架既支持屏幕阅读、开关控制、放大和语音控制，也被测试自动化等场景使用。分析性能时，不能只按“无障碍是否开启”分组：不同服务订阅的事件类型、读取窗口内容的能力、节点查询频率、输入模式和实现方式都有差异。
+Accessibility、ContentCapture 和 Autofill 都会读取或描述界面状态，但触发条件、数据范围和服务端组件不同，性能问题通常来自频繁事件、视图树遍历、跨进程调用或第三方服务处理。
+
+讨论无障碍开销时，不能只按“无障碍是否开启”分组。无障碍框架既支持屏幕阅读、开关控制、放大和语音控制，也被测试自动化等场景使用；不同服务订阅的事件类型、读取窗口内容的能力、节点查询频率、输入模式和实现方式都有差异。
 
 本文以 Android 17 / API 37 的 `android-17.0.0_r1` 为平台源码基线，讨论 framework、Binder、应用 UI 线程和无障碍服务进程。需要厂商内核 trace 标签才能识别的专有机制不在本文范围内。
-
-Accessibility、ContentCapture 和 Autofill 都会读取或描述界面状态，但触发条件、数据范围和服务端组件不同。性能问题通常来自频繁事件、视图树遍历、跨进程调用或第三方服务处理。
 
 ## 无障碍事件、节点查询与服务开销
 
@@ -117,7 +117,7 @@ Android 17 的 `IAccessibilityManager.aidl` 将 `sendAccessibilityEvent()` 声�
 4. Binder 驱动接收这笔 `oneway` 事务并排队；
 5. `system_server` 的 Binder 线程处理权限、用户、窗口和事件来源信息。
 
-`oneway` 省掉的只是等待服务端处理完成的时间。事件构造、字符串复制、Parcel 写入和 Binder 入队仍由调用链承担；高频事件仍会消耗 UI 线程 CPU、Binder 传输缓冲区和 `system_server` 资源。
+`oneway` 省掉的只是等待服务端处理完成的时间，事件构造、字符串复制、Parcel 写入和 Binder 入队仍由调用链承担。高频事件因此继续消耗 UI 线程 CPU、Binder 传输缓冲区和 `system_server` 资源。
 
 #### system_server 怎样过滤和排队
 
@@ -169,7 +169,7 @@ Android 17 提供多种 prefetch（预取）策略，包括 ancestors（祖先�
 - 可中断的 prefetch 会在 ViewRoot handler 中已有用户交互消息等待时停止；
 - 窗口正在滚动时，`AccessibilityInteractionClient` 会清除 prefetch flags（预取标志）。
 
-因此，不能把一次 `getRootInActiveWindow()` 查询直接等同于递归构造整棵 View 树。定位成本时，需要同时记录请求 API、prefetch flags、缓存是否命中、虚拟节点 provider 和实际返回的节点数。
+不能因此把一次 `getRootInActiveWindow()` 查询直接等同于递归构造整棵 View 树。定位成本时，需要同时记录请求 API、prefetch flags、缓存是否命中、虚拟节点 provider 和实际返回的节点数。
 
 服务侧的 `AccessibilityInteractionClient` 最多等待 5000 ms 获取查询结果，这段等待发生在发起查询的服务线程。目标应用承担的是另一类风险：ViewRoot looper 上增加了节点创建任务，可能让同一线程上的 input（输入分发）、traversal（测量、布局与绘制）或 frame callback（逐帧回调）延后执行。
 
@@ -231,7 +231,7 @@ class PriceTickerView(context: Context) : View(context) {
 }
 ```
 
-示例将格式化工作放在业务状态更新处。`View.setContentDescription()` 会在描述变化时通知无障碍框架，后续节点初始化直接使用 View 已保存的属性。`AccessibilityService` 可以读取节点声明的最小间隔，并据此限制来自该节点的内容变化事件频率。`setMinDurationBetweenContentChanges()` 适合进度、计时器、行情等持续变化、但无须逐次朗读的节点。间隔应按照用户能够理解的更新节奏设置；焦点、错误、可操作状态和关键结果仍需及时上报。
+示例将格式化工作放在业务状态更新处。`View.setContentDescription()` 会在描述变化时通知无障碍框架，后续节点初始化直接使用 View 已保存的属性。`AccessibilityService` 可以读取节点声明的最小间隔，并据此限制来自该节点的内容变化事件频率。`setMinDurationBetweenContentChanges()` 适合进度、计时器、行情这类持续变化但无须逐次朗读的节点。间隔应按照用户能够理解的更新节奏设置；焦点、错误、可操作状态和关键结果仍需及时上报。
 
 不要为了批量更新，临时将真实内容设置成 `NO_HIDE_DESCENDANTS`。这会让当前焦点节点消失，改变节点树结构，还可能额外触发内容变化。列表应使用增量数据更新并提供正确的 change type，让 ViewRoot 或控件库使用已有的事件合并机制。
 
@@ -288,10 +288,10 @@ Compose 来自 AndroidX 依赖，其性能行为应按照项目锁定的 Compose
 1. `eventTypes` 只订阅功能需要的类型，运行时场景变化可用 `setServiceInfo()` 调整。
 2. 为可合并事件设置合理的 `notificationTimeout`，同时根据 Android 17 对 `TYPE_WINDOW_CONTENT_CHANGED` 的特殊处理单独实测。
 3. 让 `onAccessibilityEvent()` 尽快返回；网络、磁盘、模型推理和大规模解析转到工作线程执行。
-4. 优先使用事件已有字段和明确的 source（来源节点）；cache miss 时再发起节点查询。
+4. 优先使用事件已有字段和明确的 source（来源节点）；缓存未命中时再发起节点查询。
 5. 避免每个事件都调用 `getRootInActiveWindow()`，也不要从 root 反复扫描寻找同一个节点。
 6. 先复制跨线程处理需要的字符串、ID 和业务值，不要把只在回调期有效的对象直接交给长时间任务持有。
-7. 记录 query API、cache hit / miss（缓存命中 / 未命中）、返回节点数和业务触发原因，以便与目标应用的 trace 对齐。
+7. 记录查询 API、缓存命中 / 未命中、返回节点数和业务触发原因，以便与目标应用的 trace 对齐。
 
 服务主线程等待节点查询结果期间，该服务收到的其他事件也可能排队。频繁查询 root 节点既会增加目标应用的 UI 线程工作，也会延迟服务自身的反馈。
 
@@ -322,7 +322,7 @@ Compose 来自 AndroidX 依赖，其性能行为应按照项目锁定的 Compose
 
 #### Android 17 accessibility trace
 
-`userdebug` 或 `eng` 构建可以使用专用的 accessibility trace；这两类构建包含面向调试和工程验证的系统能力。下面的命令只启用相关接口类型，避免其他无障碍调用占满 trace。
+`userdebug` 和 `eng` 构建带有面向调试和工程验证的系统能力，可以启用专用的 accessibility trace。下面的命令只打开相关接口类型，避免其他无障碍调用占满 trace。
 
 ```bash
 adb root
@@ -397,9 +397,9 @@ Android 17 的 AOSP dump 没有通用的“Event Dispatch Statistics”或“Int
 
 ## 内容捕获、自动填充与视图结构传输
 
-无障碍服务面向交互辅助，ContentCapture 和 Autofill 面向内容理解与字段填充。三者都可能遍历视图结构，但不能共用同一开关或归因。
+无障碍服务面向交互辅助，ContentCapture 和 Autofill 面向内容理解与字段填充。三者都可能遍历同一棵视图树，开关、触发条件和归因却不能互相套用。
 
-ContentCapture 和 Autofill 都会读取 View 的结构化信息，但用途并不相同：ContentCapture 持续向系统选定的服务报告页面内容变化，Autofill 则在需要填充字段时采集页面快照并请求候选数据。它们的触发条件、数据模型和进程路径也各不相同。本文以 Android 17 / API 37 的 `android-17.0.0_r1` 为平台源码基线；当密码管理器、IME 和 WebView 同时参与时，需要分别判断每条路径产生了什么开销。
+两者的入口不同。ContentCapture 持续向系统选定的服务报告页面内容变化，Autofill 只在需要填充字段时采集页面快照并请求候选数据，数据模型和进程路径也随之不同。下文仍以 Android 17 / API 37 的 `android-17.0.0_r1` 基线为准；密码管理器、IME 和 WebView 同时参与时，需要分别判断每条路径产生了什么开销。
 
 ### 三个容易混在一起的数据模型
 
@@ -460,13 +460,13 @@ Activity 创建时，`ContentCaptureManager` 通过 `IContentCaptureManager.star
 
 后续事件不必逐批经过 `system_server`。`MainContentCaptureSession` 调用 direct interface（直连接口）的 `sendEvents()`，把装有一批 `ContentCaptureEvent` 的 `ParceledListSlice` 直接发往 `ContentCaptureService`；这个接口同样是 `oneway`。
 
-`oneway` 只表示发送方不等待服务方法处理结束。应用仍要创建事件、复制文本、写入 Parcel，并把 transaction（事务）放进 Binder 队列。服务处理过慢还会消耗异步 Binder 配额和系统 CPU，因此异步调用同样需要计入成本。
+`oneway` 只表示发送方不等待服务方法处理结束。应用仍要创建事件、复制文本、写入 Parcel，并把 transaction（事务）放进 Binder 队列。服务处理过慢还会消耗异步 Binder 配额和系统 CPU。
 
 #### 初始结构生成仍在 UI 线程
 
 Android 17 的 `ViewRootImpl` 会在窗口首帧成功 draw（绘制）后执行一次 `performContentCaptureInitialReport()`。它先调用根 View 的 `dispatchInitialProvideContentCaptureStructure()`，再由 `ViewGroup.dispatchProvideContentCaptureStructure()` 遍历允许采集的子节点。每个节点通过 `onProvideContentCaptureStructure()` 填充自己的结构信息。
 
-这段工作在应用 UI 线程上执行，并且仍属于 ViewRoot 的一次 traversal（测量、布局与绘制）路径。自定义 View 如果在回调中访问磁盘、数据库或网络，或者临时解析大型对象，就会直接延长这次主线程任务。
+这段工作在应用 UI 线程上执行，并且属于 ViewRoot 的一次 traversal 路径。自定义 View 如果在回调中访问磁盘、数据库或网络，或者临时解析大型对象，就会直接延长这次主线程任务。
 
 遍历范围由 `importantForContentCapture` 和 View 的启发式判断共同决定。`no` 只排除当前节点，框架仍可能访问它的子节点；`noExcludeDescendants` 表示整棵子树都不参与采集。父节点一旦使用 exclude-descendants（排除后代）模式，子节点即使显式设置为重要，也无法重新加入这次采集。
 
@@ -486,7 +486,7 @@ View 的出现、消失和交互变化会先记录在 `AttachInfo` 中。`ViewRo
 
 `ContentCaptureService` 的 direct Binder stub（接收 Binder 调用的服务端对象）拿到批次后，会把消息投递到服务进程的 main looper，再逐个调用 `onContentCaptureEvent()`。如果服务在回调中执行大规模解析、同步 I/O 或模型推理，它自己的事件队列就会延迟。应用侧使用的是 `oneway`，所以这种积压通常表现为服务处理滞后、异步 Binder 压力或系统 CPU 上升，并不表示应用正在同步等待服务方法返回。
 
-ContentCapture 没有一套适用于所有设备的结构大小或耗时阈值。节点字段、文本长度、虚拟层级、更新频率、服务 options 和设备 CPU 都会影响结果；“500 个 View 固定需要 30–100 ms”这类数字不能直接用于其他页面或设备。
+ContentCapture 没有一套适用于所有设备的结构大小或耗时阈值。节点字段、文本长度、虚拟层级、更新频率、服务配置和设备 CPU 都会影响结果；“500 个 View 固定需要 30–100 ms”这类数字不能直接用于其他页面或设备。
 
 ### Autofill：会话等待、AssistStructure 与提供方响应
 
@@ -507,7 +507,7 @@ Autofill Session 需要新响应时，会通过 `ActivityTaskManager.requestAuto
 3. `ViewGroup` 选择需要进入结构的子节点并递归采集；
 4. `ActivityThread` 记录 acquisition start / end（采集开始 / 结束），再把结构的传输通道报告给 `system_server`。
 
-普通节点回调与应用 UI 工作共享线程。虚拟层级也可以用 `asyncNewChild()` / `asyncCommit()` 在异步任务中补充；`AssistStructure.waitForReady()` 最多等待 5000 ms，超过时限仍未提交就会放弃该结构。
+这些回调与应用的 UI 工作共享线程。虚拟层级也可以用 `asyncNewChild()` / `asyncCommit()` 在异步任务中补充；`AssistStructure.waitForReady()` 最多等待 5000 ms，超过时限仍未提交就会放弃该结构。
 
 #### 大结构采用分段传输
 
@@ -575,9 +575,9 @@ IME 自身的启动、`InputConnection` 和窗口动画问题见 [3.5 InputMetho
 
 `autofillHints` 帮助提供方稳定识别字段用途，并不会让系统跳过结构采集。需要自动填充的用户名、密码、地址和银行卡字段，不应为了缩小结构而设置为 `no`。
 
-只有整块 UI 都没有可填充字段或可采集内容时，才适合评估在容器上使用 `noExcludeDescendants`。ContentCapture 会据此排除整棵子树，之后在其中新增的有效内容也不会被服务看到。Autofill 的同名模式表达相同意图，但请求 flags 和系统 options 仍可能要求包含更多节点；复用组件和动态页面都需要覆盖回归测试。
+只有整块 UI 都没有可填充字段或可采集内容时，才适合评估在容器上使用 `noExcludeDescendants`。ContentCapture 会据此排除整棵子树，之后在其中新增的有效内容也不会被服务看到。Autofill 的同名模式表达相同意图，但请求 flags 和系统配置选项仍可能要求包含更多节点；复用组件和动态页面都需要覆盖回归测试。
 
-从 Android 14 / API 34 开始，Autofill 会结合 importance、其他 View 属性、请求 flags 和系统 options（配置选项），决定是否触发以及结构中包含哪些节点。手动请求、compat mode（兼容模式）、PCC detection（Autofill 的字段分类检测流程）或设备配置，都可能纳入原本标记为不重要的节点。`importantForAutofill` 是语义提示，无法保证每种请求模式都会减少相同数量的节点。
+从 Android 14 / API 34 开始，Autofill 会结合 importance、其他 View 属性、请求 flags 和系统配置选项，决定是否触发以及结构中包含哪些节点。手动请求、compat mode（兼容模式）、PCC detection（Autofill 的字段分类检测流程）或设备配置，都可能纳入原本标记为不重要的节点。`importantForAutofill` 是语义提示，无法保证每种请求模式都会减少相同数量的节点。
 
 #### 保持结构回调纯内存
 
@@ -589,7 +589,7 @@ IME 自身的启动、`InputConnection` 和窗口动画问题见 [3.5 InputMetho
 - 等待锁、`Future` 或主线程之外的渲染进程；
 - 每次回调重新构造不变的 hints、资源映射和长文本。
 
-对于自绘控件或虚拟层级，应保持 `AutofillId` 稳定，以便框架在多次请求间识别同一个节点，并且只报告当前可交互、语义完整的节点。ContentCapture 的多个虚拟节点可以用 `notifyViewsAppeared()` / `notifyViewsDisappeared()` 批量报告；Autofill 的异步虚拟节点必须在时限内调用 `asyncCommit()`。批量 API 可以减少调用次数，但节点是否需要报告仍由产品语义决定。
+自绘控件和虚拟层级应保持 `AutofillId` 稳定，让框架在多次请求间认出同一个节点，并且只报告当前可交互、语义完整的节点。ContentCapture 的多个虚拟节点可以用 `notifyViewsAppeared()` / `notifyViewsDisappeared()` 批量报告；Autofill 的异步虚拟节点必须在时限内调用 `asyncCommit()`。批量 API 可以减少调用次数，但节点是否需要报告仍由产品语义决定。
 
 #### 避免重复触发
 
@@ -623,7 +623,7 @@ WebView 可以通过 `onProvideAutofillVirtualStructure()` 向 Autofill 暴露 H
 - WebView 渲染进程准备虚拟节点的语义数据；
 - provider、IME 与 ContentCaptureService 各自的处理。
 
-是否存在重复计算，取决于 WebView 的版本和实现。应同时记录 WebView provider 版本、页面 DOM（文档对象模型）规模、虚拟节点数、目标字段、ContentCapture conditions 和 Autofill request ID，再从 trace 判断是哪条路径占用了 UI 线程。
+是否存在重复计算，取决于 WebView 的版本和实现。应同时记录 WebView provider 版本、页面 DOM（文档对象模型）规模、虚拟节点数、目标字段、ContentCapture 采集条件和 Autofill request ID，再从 trace 判断是哪条路径占用了 UI 线程。
 
 ### 观测与复现
 
@@ -648,7 +648,7 @@ adb shell dumpsys content_capture
 adb shell dumpsys autofill
 ```
 
-`dumpsys` 适合确认“哪个服务、哪个 session、使用了哪些 options”。它无法代替帧时间、线程 slice、Binder flow 和结构规模数据。输出中可能包含账号、字段、组件或采集条件等敏感信息，分享前需要脱敏。
+`dumpsys` 适合确认“哪个服务、哪个会话、使用了哪些配置选项”。它无法代替帧时间、线程 slice、Binder flow 和结构规模数据。输出中可能包含账号、字段、组件或采集条件等敏感信息，分享前需要脱敏。
 
 #### 一轮可复核的 A/B
 
