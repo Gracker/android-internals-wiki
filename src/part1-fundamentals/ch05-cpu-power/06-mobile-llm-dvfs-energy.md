@@ -58,7 +58,9 @@ last_idle_audit_run_id: 20260822-183518-idle-audit-1772199f
 
 # 移动端 LLM 推理的 DVFS 与能效边界
 
-端侧大语言模型（Large Language Model，LLM）推理会同时占用中央处理器（Central Processing Unit，CPU）、图形处理器（Graphics Processing Unit，GPU）或神经网络处理器（Neural Processing Unit，NPU）与内存带宽，并消耗设备的散热余量。计算方式会随阶段变化：预填充（prefill）负责一次处理输入上下文，解码（decode）负责持续生成输出；模型加载、后端编译、采样和键值缓存（Key-Value cache，KV cache）管理还会在这两段计算之外引入额外开销。只看平均 CPU 利用率或某一次每秒生成 token 数（tokens/s），通常无法解释用户感受到的等待、速度波动和发热。
+端侧大语言模型（Large Language Model，LLM）推理会同时占用中央处理器（Central Processing Unit，CPU）、图形处理器（Graphics Processing Unit，GPU）或神经网络处理器（Neural Processing Unit，NPU）与内存带宽，并消耗设备的散热余量。计算方式会随阶段变化：预填充（prefill）负责一次处理输入上下文，解码（decode）负责持续生成输出；模型加载、后端编译、采样和键值缓存（Key-Value cache，KV cache）管理还会在这两段计算之外引入额外开销。
+
+只看平均 CPU 利用率或某一次每秒生成 token 数（tokens/s），通常无法解释用户感受到的等待、速度波动和发热。
 
 本文按照 Android 17 / API 37 / `android-17.0.0_r1` 核对平台行为，按照 `android17-6.18-2026-06_r6` 核对内核实现，并讨论四个工程问题：
 
@@ -67,7 +69,7 @@ last_idle_audit_run_id: 20260822-183518-idle-audit-1772199f
 3. 普通应用能调节哪些负载参数，哪些操作只适用于系统、厂商或取得最高系统权限的 root 实验；
 4. 如何判断一次优化确实节能，或只是将耗电和热限频推迟到下一轮请求。
 
-EAS、CPUFreq、ADPF、端侧 AI 后端和温控的基础分别见 5.1、5.2、5.4、5.5、5.2 节。本节将这些机制放到同一条 LLM 请求时间线上观察。
+这些机制的基础分属不同章节：EAS 见 5.1 节，CPUFreq 与温控见 5.2 节，ADPF 见 5.4 节，端侧 AI 后端见 5.5 节。本文把它们放到同一条 LLM 请求时间线上观察。
 
 ## 先统一指标和测量边界
 
@@ -79,7 +81,7 @@ LLM 性能指标只有在起止点一致时才具有可比性。建议在应用�
 - `t_i`：第 `i` 个输出 token 到达应用；
 - `t_done`：生成结束、取消或报错。
 
-下面的公式给出本文采用的 TTFT、TPOT 和单请求每输出 token 能耗定义：
+本文采用的 TTFT、TPOT 和单请求每输出 token 能耗定义如下：
 
 ```text
 TTFT = t_first_token - t_request
@@ -106,7 +108,7 @@ TPOT 是整段 decode 的平均值，容易掩盖个别 token 的停顿。工程
 
 ## 一次请求经过哪些硬件
 
-典型端侧推理请求会经过多个执行层。具体分工由模型格式、运行时和 delegate 决定。下面的表格用于建立排查顺序，不表示每台设备都采用相同后端。
+典型端侧推理请求会经过多个执行层，具体分工由模型格式、运行时和 delegate 决定。下表用于建立排查顺序，不表示每台设备都采用相同后端。
 
 | 层级 | 常见工作 | 容易漏看的成本 |
 |---|---|---|
@@ -118,7 +120,9 @@ TPOT 是整段 decode 的平均值，容易掩盖个别 token 的停顿。工程
 | 存储 | 首次读取模型与编译产物 | 尚未进入内存缓存的文件页（冷页）、解压、校验、存储空间不足 |
 | 显示、网络及其他进程 | 展示流式文本、下载上下文、系统并发任务 | 全机功耗与模型功耗混在一起 |
 
-### Prefill：并行度较高，但先别假定它只受算力限制
+## Prefill 与 Decode 的负载特征
+
+### Prefill：并行度较高，但算力不是唯一瓶颈
 
 Prefill 会一次处理较长的输入序列，其张量运算通常比单 token decode 更容易形成批量工作。随着 prompt 增长，计算量、权重读取、attention 中间数据和 KV cache 写入都可能增加。GPU 或 NPU 利用率高，不能自动证明瓶颈位于计算单元；内存带宽、计算图分区、首次编译和 CPU 提交也可能延长 TTFT。
 
@@ -126,7 +130,7 @@ Prefill 会一次处理较长的输入序列，其张量运算通常比单 token
 
 传统自回归 decode 每轮根据已有上下文生成后续 token。各轮之间存在数据依赖，可批量并行的工作通常少于 prefill。CPU 可能负责采样、运行时调度与命令提交，加速器则读取权重和不断增长的 KV cache。token 周期还会受到采样策略、停止条件、上下文长度、计算图回退和系统抢占影响。
 
-因此，decode 常呈现“CPU 短暂工作—提交—等待加速器—读取结果—采样”的交替过程。某个硬件在一个采样窗口内利用率不高，其运行频率仍可能影响端到端 token 间隔。
+decode 因此常呈现“CPU 短暂工作—提交—等待加速器—读取结果—采样”的交替过程。某个硬件在一个采样窗口内利用率不高，其运行频率仍可能影响端到端 token 间隔。
 
 ## Android 17 的调度与频率控制分工
 
@@ -140,9 +144,11 @@ Energy Model 只用于估算调度选择，不是测量整机功耗的仪器。�
 
 ### schedutil 与 CPUFreq 负责 CPU 频率
 
-在同一内核版本中，`kernel/sched/cpufreq_schedutil.c` 的 schedutil governor 根据调度器利用率计算下一个目标频率。`get_next_freq()` 会经过 `map_util_freq()` 等映射，并考虑策略容量、输入输出等待加速（I/O wait boost）、更新速率等条件；Android 厂商钩子（vendor hook）`android_vh_map_util_freq` 允许厂商调整这项映射。最终频率还受 CPUFreq policy 的最低 / 最高值、频率服务质量（`freq_qos`）请求、热限制和硬件可用频点约束。
+在同一内核版本中，`kernel/sched/cpufreq_schedutil.c` 的 schedutil governor 根据调度器利用率计算下一个目标频率。`get_next_freq()` 会经过 `map_util_freq()` 等映射，并考虑策略容量、输入输出等待加速（I/O wait boost）、更新速率等条件；Android 厂商钩子（vendor hook）`android_vh_map_util_freq` 允许厂商调整这项映射。
 
-下面的流程概括选核、选频与最终硬件频点之间的关系：
+最终频率还受 CPUFreq policy 的最低 / 最高值、频率服务质量（`freq_qos`）请求、热限制和硬件可用频点约束。
+
+选核、选频与最终硬件频点的关系如下：
 
 ```text
 任务唤醒
@@ -157,7 +163,9 @@ Energy Model 只用于估算调度选择，不是测量整机功耗的仪器。�
 
 ### GPU 与内存 DVFS 多由厂商实现
 
-Linux 提供设备调频（devfreq）框架和通用 governor，但 Android 设备的 GPU、片上互连、内存控制器、带宽请求，以及相关遥测数据（telemetry），往往由 SoC 厂商驱动和策略管理。Android 开源项目（Android Open Source Project，AOSP）没有让普通应用指定 GPU 或 DRAM 频点的统一 API。某台设备上的 sysfs（内核向用户空间暴露状态和控制项的虚拟文件系统）节点、跟踪点（tracepoint）或频率表，不能当作跨设备接口。
+Linux 提供设备调频（devfreq）框架和通用 governor，但 Android 设备的 GPU、片上互连和内存控制器往往由 SoC 厂商驱动与策略管理，带宽请求和相关遥测数据（telemetry）也是如此。
+
+Android 开源项目（Android Open Source Project，AOSP）没有让普通应用指定 GPU 或 DRAM 频点的统一 API。某台设备上的 sysfs（内核向用户空间暴露状态和控制项的虚拟文件系统）节点、跟踪点（tracepoint）或频率表，不能当作跨设备接口。
 
 GPU delegate、NPU delegate 或厂商运行时可能通过驱动提交工作，并间接触发性能状态变化。是否升频、升到哪里、维持多久，仍受厂商实现、系统功耗模式和热预算约束。
 
@@ -167,9 +175,9 @@ Android 17 的 Android 接口定义语言（Android Interface Definition Languag
 
 温度达到限制后，热冷却设备（thermal cooling device，即系统用来执行降频等降温动作的抽象）、CPUFreq / Devfreq 限制、Power HAL 和厂商策略都可能降低性能上限。此时增加负载、增加线程数或反复发送性能提示，可能只会增加排队与功耗，无法突破热限制。
 
-## 为什么独立的利用率反馈会误读 LLM decode
+## 为什么单看利用率判断不了 LLM decode
 
-利用率驱动的策略并没有“失效”，但它只掌握局部信号。LLM decode 在以下条件下容易让局部信号与端到端目标不一致：
+利用率驱动的策略本身没有问题，但它看到的只是局部信号。LLM decode 在以下条件下容易让局部信号与端到端目标不一致：
 
 1. **串行依赖**：CPU 必须等待加速器结果后才能采样并发起下一轮，任一侧空闲都可能表示正在等待前一阶段；
 2. **短时突发（burst）**：短 kernel 的利用率会在采样窗口内被平均；频率尚未稳定升高，工作可能已经结束；
@@ -179,9 +187,9 @@ Android 17 的 Android 接口定义语言（Android Interface Definition Languag
 6. **热与功率上限**：观测到的低频可能来自热限制（thermal clamp）或平台功率预算，不一定是 governor 低估了利用率；
 7. **后台竞争**：相机、显示、网络、系统服务和其他应用会共同消耗 CPU、内存带宽与热余量。
 
-因此，诊断应从 token 时间线开始，再关联 CPU 放置、CPU / GPU 频率、调度、内存、功耗和温度。单张利用率（utilization）截图无法证明升频策略存在问题。
+诊断因此应从 token 时间线开始，再关联 CPU 放置、CPU / GPU 频率、调度、内存、功耗和温度。单张利用率（utilization）截图无法证明升频策略存在问题。
 
-## FUSE 论文：有边界的 Pixel 7 案例
+## FUSE 论文：边界明确的 Pixel 7 案例
 
 论文 *Dissecting the Impact of Mobile DVFS Governors on LLM Inference Performance and Energy Efficiency*（arXiv:2507.02135）提供了一个有明确边界的案例：各 governor 独立选择的频率组合，可能偏离某个 LLM 请求在给定能耗预算下的低延迟组合。FUSE 是论文提出并评估的联合频率选择原型。
 
@@ -203,7 +211,7 @@ Android 17 的 Android 接口定义语言（Android Interface Definition Languag
 | TinyLlama decode / CPU | 约 1130.8 MHz | 2252 MHz | 降低 13.2% |
 | StableLM decode / CPU | 约 1038.8 MHz | 2401 MHz | 降低 13.4% |
 
-TinyLlama 的 GPU 案例中，论文给出的默认 governor TPOT 为 215.1 ms、单 token 能耗为 402.7 mJ；固定 GPU 848 MHz 后，TPOT 为 126.9 ms、单 token 能耗为 396.5 mJ；mJ 表示毫焦耳。该数据说明，在这台设备与这一请求上，提高 GPU 频率缩短了执行时间，单 token 能耗仍与默认 governor 接近。它不能支持“GPU 总应保持高频”这一普遍结论。
+TinyLlama 的 GPU 案例中，论文给出的默认 governor TPOT 为 215.1 ms、单 token 能耗为 402.7 mJ（毫焦耳）；固定 GPU 848 MHz 后，TPOT 为 126.9 ms、单 token 能耗为 396.5 mJ。这组数据说明，在这台设备与这一请求上，提高 GPU 频率缩短了执行时间，单 token 能耗仍与默认 governor 接近，但不能支持“GPU 总应保持高频”这一普遍结论。
 
 FUSE 联合搜索 CPU、GPU 与内存频率组合，再按请求特征选择配置。论文在其工作负载上报告：单 token 能耗相同时，TTFT 平均改善 7.0%～16.9%，TPOT 平均改善 25.4%～36.8%。
 
@@ -236,7 +244,7 @@ FUSE 联合搜索 CPU、GPU 与内存频率组合，再按请求特征选择配�
 
 ## 用 ADPF 描述周期工作
 
-Android 17 的 `android.os.PerformanceHintManager` 可以为一组相互关联、长期存在的线程创建性能提示 `Session`。下面的代码创建会话并报告一次 decode 的实际工作时长：
+Android 17 的 `android.os.PerformanceHintManager` 可以为一组相互关联、长期存在的线程创建性能提示 `Session`。这段代码创建会话，并报告一次 decode 的实际工作时长：
 
 ```java
 PerformanceHintManager manager =
@@ -268,7 +276,7 @@ LLM decode 具有周期性，可以把一个稳定的 token 生成过程或一�
 2. target 来自产品可接受的 token 周期或吞吐目标，不能长期填一个无法达到的极小值；
 3. actual duration 的边界固定，不能这轮只量 GPU、下一轮又把采样与 UI 回调计入。
 
-Prefill 往往是一段较长的批量工作。如果运行时没有稳定、可重复的 prefill 分块（chunk）周期，强行将整段 prefill 当作高频周期上报，会使信号难以解释。可以为边界明确的 prefill chunk 使用独立 session，也可以只为 decode 建立 session，并用性能跟踪（trace）单独评估 TTFT。
+Prefill 往往是一段较长的批量工作。如果运行时没有稳定、可重复的 prefill 分块（chunk）周期，强行把整段 prefill 当作一个高频次重复的周期上报，信号会难以解释。可以为边界明确的 prefill chunk 使用独立 session，也可以只为 decode 建立 session，并用性能跟踪（trace）单独评估 TTFT。
 
 目标时长也不是越短越好。如果产品只要求稳定达到某个 token 速率，可以将 target 设在体验预算附近，并在温度升高、电量策略变化或应用进入后台时适当放宽。`setPreferPowerEfficiency(true)` 只表达偏好，最终选择仍由平台决定；调用前还要检查当前 SDK、功能开关（flag）和设备能力。
 
@@ -289,14 +297,16 @@ Prefill 往往是一段较长的批量工作。如果运行时没有稳定、可
 
 ### KV cache 与上下文长度
 
-下面的公式用于粗略估算未压缩 KV cache 的主体容量：
+未压缩 KV cache 的主体容量可以粗略估算为：
 
 ```text
 KV bytes ≈ 2 × layers × tokens
            × num_kv_heads × head_dim × bytes_per_element
 ```
 
-公式中的系数 2 对应键（key）和值（value）。采用分组查询注意力（Grouped-Query Attention，GQA）、多查询注意力（Multi-Query Attention，MQA）、分页 cache、量化 cache、滑动窗口或特殊布局后，公式参数和额外元数据都会变化。上下文越长，cache 容量与访问成本通常越高，也更容易触发内存压力。应记录运行时真实分配、常驻集大小（RSS）和比例集大小（PSS），不能只根据模型配置推算。
+公式中的系数 2 对应键（key）和值（value）。采用分组查询注意力（Grouped-Query Attention，GQA）、多查询注意力（Multi-Query Attention，MQA）、分页 cache、量化 cache、滑动窗口或特殊布局后，公式参数和额外元数据都会变化。
+
+上下文越长，cache 容量与访问成本通常越高，也更容易触发内存压力。应记录运行时真实分配、常驻集大小（RSS）和比例集大小（PSS），不能只根据模型配置推算。
 
 产品可以控制历史消息长度、检索片段数量、系统提示词（system prompt）大小和最大输出 token 数。截断规则要与语义评测一起验证，避免以明显降低回答质量为代价换取更高的 tokens/s。
 
@@ -322,12 +332,6 @@ KV bytes ≈ 2 × layers × tokens
 - 取消请求后 worker、缓冲区（buffer）和 hint session 的清理；
 - 低内存回调和设备热状态变化。
 
-### LiteRT-LM 的版本边界
-
-LiteRT-LM 是 Google AI Edge 在 AOSP 之外维护的端侧生成式 AI 运行时项目。其公开仓库提供 Kotlin / C++ 接口、`.litertlm` 模型格式，以及 CPU、GPU、NPU 后端支持说明；具体硬件覆盖受版本、模型和设备影响。应用应固定经过验证的 LiteRT-LM 版本和模型产物，并保存运行时日志。
-
-`android-17.0.0_r1` 只能确定 Android 平台 API、Framework 与 HAL 的版本，不能用来确定 LiteRT-LM 仓库版本。AOSP 源码和 LiteRT-LM 发布版本（release）必须分别记录。系统服务提供的模型能力也不等同于应用内嵌 LiteRT-LM；二者的模型、权限、更新和资源管理边界不同，详见 5.5 节。
-
 ## 建立可复现的能效实验
 
 ### 1. 固定工作负载组合
@@ -351,7 +355,7 @@ LiteRT-LM 是 Google AI Edge 在 AOSP 之外维护的端侧生成式 AI 运行�
 
 ### 3. 同时采集 CPU 频率变化与轮询值
 
-Perfetto 的 `power/cpu_frequency` 跟踪点（tracepoint）只在频率变化时产生事件，trace 开始时不保证给出初始频率。`linux.sys_stats` 的 `cpufreq_period_ms` 可以补充周期性读取的频率值。下面是同时采集频率变化、CPU 空闲、调度事件和 100 ms 频率轮询的精简配置：
+Perfetto 的 `power/cpu_frequency` 跟踪点（tracepoint）只在频率变化时产生事件，trace 开始时不保证给出初始频率。`linux.sys_stats` 的 `cpufreq_period_ms` 可以补充周期性读取的频率值。这份精简配置同时采集频率变化、CPU 空闲、调度事件和 100 ms 频率轮询：
 
 ```protobuf
 buffers {
@@ -381,11 +385,13 @@ data_sources {
 }
 ```
 
-这段配置使用环形缓冲区（ring buffer），数据写满后会覆盖旧数据。100 ms 适合作为观察长期趋势的起点，不适合解析单个很短的 kernel。分析短周期时，应结合频率变化事件、调度 slice 和应用 token 标记，同时评估 trace 本身的开销。GPU、NPU、互连和内存频率数据源依赖设备，采集前要确认计数器（counter）的名称、单位和更新含义。
+这段配置使用环形缓冲区（ring buffer），数据写满后会覆盖旧数据。100 ms 适合作为观察长期趋势的起点，不适合解析单个很短的 kernel。分析短周期时，应结合频率变化事件、调度 slice 和应用 token 标记，同时评估 trace 本身的开销。
+
+GPU、NPU、互连和内存频率数据源依赖设备，采集前要确认计数器（counter）的名称、单位和更新含义。
 
 ### 4. 明确整机功耗和部件能量的区别
 
-下面的 Perfetto `android.power` 配置每 250 ms 采集电量百分比、电流、电压等电池计数器，并请求采集部件能量轨道（power rails）：
+这段 Perfetto `android.power` 配置每 250 ms 采集电量百分比、电流、电压等电池计数器，并请求采集部件能量轨道（power rails）：
 
 ```protobuf
 data_sources {
@@ -405,13 +411,13 @@ data_sources {
 
 这段配置中的电池电流和电压代表整机，屏幕、蜂窝通信模块（调制解调器）与后台任务都会计入结果。USB 充电会改变电池计数器的含义，边充电边测试的数据不能直接与放电测试比较。`collect_power_rails` 依赖设备的 `IPowerStats` 实现，很多量产设备不会提供可用的部件能量轨道（rail）；没有 rail 数据时应报告“不可用”，不能用估算值填补。
 
-Android 17 的 `IPowerStats` 将能量消费者和能量通道作为厂商定义的数据返回。累计能量使用微瓦秒等明确单位；调用方还要处理结果暂不可用、缺少按用户标识符（User Identifier，UID）归因，以及通道名称因设备而异等情况。原始 HAL 数据通常不在普通应用的权限范围内。
+Android 17 的 `IPowerStats` 将能量消费者（energy consumer）与能量计量器（energy meter）作为厂商定义的数据返回。累计能量使用微瓦秒等明确单位；调用方还要处理结果暂不可用、缺少按用户标识符（User Identifier，UID）归因，以及通道名称因设备而异等情况。原始 HAL 数据通常不在普通应用的权限范围内。
 
 使用外置功耗仪时，要记录供电路径、采样频率、电压设置、电池是否被旁路、屏幕状态与 Android 调试桥（ADB）连接状态。外置仪器能提高采样一致性，但拆机并旁路电池后的结论仍只适用于相应实验条件，不能与正常电池供电数据混用。
 
 ### 5. 积分、基线与重复试验
 
-若测得随时间变化的电压 `V(t)` 和电流 `I(t)`，可以用下面的积分近似计算请求窗口能量：
+若测得随时间变化的电压 `V(t)` 和电流 `I(t)`，请求窗口能量可以积分近似为：
 
 ```text
 E_request = ∫ V(t) × I(t) dt
@@ -512,6 +518,12 @@ E_request = ∫ V(t) × I(t) dt
 
 上述内核路径按 `android17-6.18-2026-06_r6` 复核。
 
+### LiteRT-LM 的版本边界
+
+LiteRT-LM 是 Google AI Edge 在 AOSP 之外维护的端侧生成式 AI 运行时项目。其公开仓库提供 Kotlin / C++ 接口、`.litertlm` 模型格式，以及 CPU、GPU、NPU 后端支持说明；具体硬件覆盖受版本、模型和设备影响。应用应固定经过验证的 LiteRT-LM 版本和模型产物，并保存运行时日志。
+
+`android-17.0.0_r1` 只能确定 Android 平台 API、Framework 与 HAL 的版本，不能用来确定 LiteRT-LM 仓库版本。AOSP 源码和 LiteRT-LM 发布版本（release）必须分别记录。系统服务提供的模型能力也不等同于应用内嵌 LiteRT-LM；二者的模型、权限、更新和资源管理边界不同，详见 5.5 节。
+
 ### 外部运行时与研究
 
 - LiteRT-LM：<https://github.com/google-ai-edge/LiteRT-LM>
@@ -520,4 +532,4 @@ E_request = ∫ V(t) × I(t) dt
 - Perfetto battery counters：<https://perfetto.dev/docs/data-sources/battery-counters>
 - Android Performance Hint API：<https://source.android.com/docs/core/perf/performance-hint-api>
 
-LiteRT-LM 和论文各自使用独立版本，不会随 `android-17.0.0_r1` 标签固定在同一版本。
+FUSE 论文同样使用独立版本，不会随 `android-17.0.0_r1` 标签固定在同一版本。
