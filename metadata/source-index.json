@@ -5493,9 +5493,9 @@
       "summary": "> 原文: https://juejin.cn/post/7647186702176157722 > 抓取日期: 2026-09-29 > 发布时间: 2026-06-04T06:05:31.000Z > 原文链接: https://juejin.cn/post/7647186702176157722 2026-06-04 1,739 阅读6分钟 Android 17 开...",
       "chapter": "ch04",
       "processed_at": "2026-09-29T06:20:36.667565+08:00",
-      "action": "indexed-only-chapter-freeze",
-      "score": 19,
-      "target_path": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
+      "action": "quarantined-misroute",
+      "score": 0,
+      "target_path": null,
       "route_confidence": 16,
       "route_terms": [
         "android17",
@@ -5503,7 +5503,15 @@
         "juejin-android",
         "ch01-architecture"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "quarantined-misroute-by-apply",
+      "previous_action": "indexed-only-chapter-freeze",
+      "previous_route_status": "existing-chapter-routed",
+      "previous_target_path": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
+      "quarantine_reason": "route-misfire: material discusses Android 17 MemoryLimiter/App memory-limit exits, ApplicationExitInfo REASON_OTHER + MemoryLimiter:AnonSwap, am memory-limiter, R8, onTrimMemory and ProfilingManager; it does not match the MessageQueue/DeliQueue/lock-contention chapter boundary. The same Juejin URL was already body-applied to the memory chapter under source-index entry 412/run 20260923-071501-642a4cca. The 2026-09-29 scrape differs only by wrapper metadata, read count and expiring image URLs, so it adds no verifiable fact to the routed target. Chapter body left unchanged; no formal report.",
+      "quarantined_at": "2026-09-29T07:15:45+08:00",
+      "quarantined_run_id": "20260929-071545-db6050b4",
+      "status": "quarantined",
+      "finding_id": "finding-route-misfire-memorylimiter-messagequeue-20260929-db6050b4"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
