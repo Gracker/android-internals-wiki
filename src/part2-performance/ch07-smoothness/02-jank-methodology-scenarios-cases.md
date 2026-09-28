@@ -132,7 +132,7 @@ last_consolidated_at: '2026-08-24'
 5. 在帧窗口内分析线程状态、Binder、GC、I/O、GPU 与 fence；
 6. 用相同设备状态和操作脚本验证修复。
 
-每一步都要保留帧 token（标识）、进程、线程、layer（图层）和时间区间。只根据界面中位置相邻的 slice 判断，容易把后台事件误归给目标帧。
+每一步都要保留帧 token（标识）、进程、线程、layer（图层）和时间区间。只看界面上位置相邻的 slice，容易把后台事件误归给目标帧。
 
 ### 抓取前先固定现场
 
@@ -140,7 +140,7 @@ last_consolidated_at: '2026-08-24'
 
 “竞品不卡”只能提供比较线索。两个应用可能使用不同的刷新率请求、Surface 结构、解码路径和画质，不能据此排除设备或系统瓶颈。问题只在低端设备上复现，也不能直接归为 CPU 调度问题；还要区分计算量、内存带宽、GPU、I/O 与 thermal（温控）因素。
 
-采集时长由复现概率决定。稳定复现适合短 trace，以减少无关数据；偶发问题适合使用 ring buffer（环形缓冲区）、触发式停止或多轮采样。trace buffer（跟踪缓冲区）的大小要能够覆盖目标窗口，并在结果中检查是否丢失数据。
+采集时长由复现概率决定。稳定复现适合短 trace，以减少无关数据；偶发问题适合使用 ring buffer（环形缓冲区）、触发式停止或多轮采样。trace buffer（跟踪缓冲区）的大小要覆盖目标窗口，并在结果中检查是否丢失数据。
 
 ### Android 17 的基础 Perfetto 配置
 
@@ -237,40 +237,6 @@ RenderThread 的 `DrawFrame` 较长时，要区分 Running（运行中）、Runn
 Runnable duration（持续时间）描述等待 CPU 的时间，不是前一条 `sched_slice` 的 `dur`。`sched_slice.end_state = R` 或 `R+` 表示线程离开 CPU 时仍可运行，适合解释它为何被切出；该字段不直接给出后续等待时长。测量调度延迟应使用 `thread_state` 的 Runnable 区间，必要时再结合 `sched_waking` 的唤醒关系。
 
 `D` 状态也不等同于存储 I/O。fence、驱动、页错误和其他内核 wait queue（等待队列）都可能形成不可中断等待。只有 `blocked_function`、`io_wait` 与相邻事件共同支持时，才能写明具体等待的资源。
-
-### 标准化分析检查清单
-
-#### 现场与 trace 完整性
-
-- [ ] 记录设备、build、应用版本、刷新率、thermal 和操作脚本；
-- [ ] 标出目标问题的开始、结束和复现次数；
-- [ ] 确认 FrameTimeline、sched、atrace 和所需专项 probe 有数据；
-- [ ] 检查 buffer overwrite、数据丢失与 tracing overhead（跟踪开销）；
-- [ ] 确认 Producer、Surface、layer 和合成路径。
-
-#### 帧与责任边界
-
-- [ ] 记录 SurfaceFrame token、DisplayFrame token、layer name；
-- [ ] 读取 expected / actual、finish、present 与 JankType；
-- [ ] 沿 flow 找到对应 DisplayFrame；
-- [ ] 检查相邻帧是否存在 stuffing（帧堆积）、drop（未呈现）、mode/power transition（显示或电源模式切换）；
-- [ ] 按 App、SF CPU、SF GPU、Display 或 buffer 选择分支。
-
-#### 线程与依赖
-
-- [ ] App 分支拆 MainThread、RenderThread、应用 GPU 和 buffer；
-- [ ] SF 分支拆主线程、RenderEngine、HWC 与 present；
-- [ ] 对长等待区分 Runnable、Sleeping、`D`、Binder、锁和 fence；
-- [ ] GC 只计算与目标线程重叠的 pause（暂停），不把并发阶段全算作停顿；
-- [ ] thermal、频率、内存压力和后台负载保留为需要时序验证的系统因素。
-
-#### 结论与验证
-
-- [ ] 写出异常帧、责任方、关键路径事件和排除项；
-- [ ] 区分直接证据、组合证据与相关现象；
-- [ ] 修复前后使用同一设备状态、场景和 trace 配置；
-- [ ] 比较 jank 类型、帧间隔分布、关键 slice/wait（执行区间/等待）和业务指标；
-- [ ] 结论无法复现时保留不确定性和下一轮采集项。
 
 ### FrameMetrics 与 JankStats 的线上角色
 
@@ -408,6 +374,40 @@ ORDER BY b.client_dur DESC;
 
 分析大型 trace 时，应先用时间窗口、进程/线程条件和 `LIMIT` 缩小查询范围，再考虑使用 `MATERIALIZED` CTE（物化公共表表达式）或临时表。命令行 `trace_processor_shell trace.pb --query-file analysis.sql` 适合离线批处理；SQL 文件应与 trace、Trace Processor 版本和查询参数一起归档，确保结果可以重放。
 
+### 标准化分析检查清单
+
+#### 现场与 trace 完整性
+
+- [ ] 记录设备、build、应用版本、刷新率、thermal 和操作脚本；
+- [ ] 标出目标问题的开始、结束和复现次数；
+- [ ] 确认 FrameTimeline、sched、atrace 和所需专项 probe 有数据；
+- [ ] 检查 buffer overwrite、数据丢失与 tracing overhead（跟踪开销）；
+- [ ] 确认 Producer、Surface、layer 和合成路径。
+
+#### 帧与责任边界
+
+- [ ] 记录 SurfaceFrame token、DisplayFrame token、layer name；
+- [ ] 读取 expected / actual、finish、present 与 JankType；
+- [ ] 沿 flow 找到对应 DisplayFrame；
+- [ ] 检查相邻帧是否存在 stuffing（帧堆积）、drop（未呈现）、mode/power transition（显示或电源模式切换）；
+- [ ] 按 App、SF CPU、SF GPU、Display 或 buffer 选择分支。
+
+#### 线程与依赖
+
+- [ ] App 分支拆 MainThread、RenderThread、应用 GPU 和 buffer；
+- [ ] SF 分支拆主线程、RenderEngine、HWC 与 present；
+- [ ] 对长等待区分 Runnable、Sleeping、`D`、Binder、锁和 fence；
+- [ ] GC 只计算与目标线程重叠的 pause（暂停），不把并发阶段全算作停顿；
+- [ ] thermal、频率、内存压力和后台负载保留为需要时序验证的系统因素。
+
+#### 结论与验证
+
+- [ ] 写出异常帧、责任方、关键路径事件和排除项；
+- [ ] 区分直接证据、组合证据与相关现象；
+- [ ] 修复前后使用同一设备状态、场景和 trace 配置；
+- [ ] 比较 jank 类型、帧间隔分布、关键 slice/wait（执行区间/等待）和业务指标；
+- [ ] 结论无法复现时保留不确定性和下一轮采集项。
+
 ### 常见失误
 
 | 失误 | 修正 |
@@ -430,19 +430,19 @@ ORDER BY b.client_dur DESC;
 
 ## 滚动、动画、启动与交互场景
 
-通用流程确定后，不同场景需要选择不同起止点和关键轨道。滚动、动画、启动与页面切换的帧生产方式并不相同。
+滚动、动画、启动与页面切换的帧生产方式不同，起止点和关键轨道也不同。
 
 ### 场景名只负责缩小范围
 
-“列表卡”“转场卡”“通知栏卡”描述的是用户当时看到了什么，还没有说明哪条渲染链路迟到。同一个列表里可以同时出现普通 View、SurfaceView 视频和 TextureView 地图。同一个页面切换又可能包含应用窗口的 buffer（图形缓冲区）、Shell transition（系统窗口过渡）的 leash（用于统一控制窗口动画的临时图层）变换、壁纸、IME（输入法窗口）与 SurfaceFlinger 合成。若从场景名称直接跳到某个线程，证据很容易落到错误的对象上。
+“列表卡”“转场卡”“通知栏卡”描述的是用户当时看到了什么，还没有说明哪条渲染链路迟到。同一个列表里可以同时出现普通 View、SurfaceView 视频和 TextureView 地图；一次页面切换又可能包含应用窗口的 buffer、Shell transition（系统窗口过渡）的 leash（用于统一控制窗口动画的临时图层）变换、壁纸、IME（输入法窗口）与 SurfaceFlinger 合成。若从场景名称直接跳到某个线程，证据很容易落到错误的对象上。
 
 定位顺序如下：
 
 1. 记录发生卡顿的交互阶段、显示屏、刷新率和时间区间。
 2. 列出屏幕上的内容生产者，以及各自产出的 Surface（图形内容提交接口）、BufferQueue（连接内容生产者和消费者的缓冲队列）和 SurfaceFlinger layer（图层）。
-3. 从 FrameTimeline（逐帧时间线）的异常 SurfaceFrame/DisplayFrame（单个 Surface 的帧记录/整屏显示帧记录），或目标 layer 的异常 present（呈现）反查。
-4. 沿 token（帧标识）、frame number（帧序号）、transaction（图层状态事务）、buffer 与 fence（同步栅栏）找到最早迟到的阶段。
-5. 回到责任线程，检查执行时间、Runnable（可运行但未获得 CPU）等待、锁、Binder、I/O、GC（垃圾回收）、GPU 和温控状态。
+3. 从 FrameTimeline 的异常 SurfaceFrame/DisplayFrame，或目标 layer 的异常 present 反查。
+4. 沿 token（帧标识）、frame number（帧序号）、transaction（图层状态事务）、buffer 与 fence 找到最早迟到的阶段。
+5. 回到责任线程，检查执行时间、Runnable 等待、锁、Binder、I/O、GC（垃圾回收）、GPU 和温控状态。
 
 60 Hz 的名义刷新间隔约为 16.67 ms，120 Hz 约为 8.33 ms。它们不能直接充当任意线程的固定预算。Choreographer 回调相位、应用 deadline（截止时间）、BufferQueue 状态、SurfaceFlinger 调度和显示模式都会改变一帧的可用时间。诊断目标应写成“该帧相对 expected timeline（预期时间线）在哪里开始偏离”，不宜写成“整条管线必须在一个 VSync（垂直同步）间隔内全部结束”。
 
@@ -468,11 +468,11 @@ ORDER BY b.client_dur DESC;
 - 手指抬起进入 fling 后，滚动由动画时钟和 RecyclerView/ScrollView 的滚动计算继续推进。此时没有持续的触摸移动事件；要检查动画回调是否及时，以及每帧滚动工作是否稳定。
 - 两个阶段都可能受 RenderThread、GPU、BufferQueue 或显示合成影响。主线程短只排除了部分应用 CPU 工作。
 
-FrameTimeline 可以先圈定异常帧。随后把异常帧与正常帧放在一起比较，查看 UI Thread（主线程）、RenderThread（渲染线程）、对应的 App Window buffer 和 DisplayFrame。只看某个较长的 slice（时间区间），没有相邻正常帧作为对照，常会把稳定存在的初始化或后台任务误判为根因。
+FrameTimeline 可以先圈定异常帧。随后把异常帧与正常帧放在一起比较，查看 UI Thread（主线程）、RenderThread（渲染线程）、对应的 App Window buffer 和 DisplayFrame。只看某个较长的 slice，没有相邻正常帧作为对照，常会把稳定存在的初始化或后台任务误判为根因。
 
 #### RecyclerView 的三组内建线索
 
-AndroidX RecyclerView 会在系统跟踪中留下有用的 slice。不同库版本的名称可能略有差别，官方慢帧文档常用以下三组线索：
+AndroidX RecyclerView 在系统跟踪中留下了自己的一组 slice；不同库版本的名称可能略有差别，官方慢帧文档常用以下三组线索：
 
 | 线索 | 代表的工作 | 常见原因 | 处理方向 |
 |---|---|---|---|
@@ -584,7 +584,7 @@ Android 15 移除了预测性返回的开发者选项。应用完成 opt-in（�
 - 当前回调是否消费了系统返回，导致系统预测动画无法运行；
 - 当前窗口、目标窗口或 home/task surface（桌面/任务 Surface）的 leash 与 display frame 是否按时。
 
-Perfetto 中没有名为 `predictive_back_progress` 的标准内置 counter（计数轨道）。返回手势的进度与参与者由 SystemUI `EdgeBackGestureHandler`、WindowManager Shell transition 和 `BackGestureProto`/Winscope 记录。trace 会记录各进程的自定义 Trace section（跟踪区间）、Shell transition marker（标记）与 sched（调度）数据，但没有统一的标准 counter 轨道。
+Perfetto 中没有名为 `predictive_back_progress` 的标准内置 counter（计数轨道）。返回手势的进度与参与者由 SystemUI `EdgeBackGestureHandler`、WindowManager Shell transition 和 `BackGestureProto`/Winscope 记录；trace 里只有各进程的自定义 Trace section（跟踪区间）、Shell transition marker（标记）与 sched（调度）数据。
 
 需要验证 progress 回调时序时，应使用应用自身插桩（例如 `Trace.beginSection("onBackProgressed")`）或 Winscope 的 Shell 参与者，不要预设某个标准 counter 名称。
 
@@ -659,7 +659,7 @@ Task snapshot 通过 `TaskSnapshot` 携带 HardwareBuffer（硬件图形缓冲�
 
 ### 视频：UI 帧与视频帧要分开
 
-视频通常由 MediaCodec 或播放器渲染器向 Surface 输出 buffer。使用 SurfaceView 时，视频通常拥有独立的 child layer（子图层）；使用 TextureView 时，视频 buffer 先进入 SurfaceTexture，再由宿主 HWUI（Android 硬件加速 UI 渲染管线）在 App Window 中采样。两条路径的责任线程、buffer 数量和 FrameTimeline 覆盖范围不同。
+视频通常由 MediaCodec 或播放器渲染器向 Surface 输出 buffer。使用 SurfaceView 时，视频通常拥有独立的 child layer（子图层）；使用 TextureView 时，视频 buffer 先进入 SurfaceTexture，再由宿主 HWUI 在 App Window 中采样。两条路径的责任线程、buffer 数量和 FrameTimeline 覆盖范围不同。
 
 视频“卡”的含义至少有三种：
 
@@ -742,13 +742,13 @@ Renderer 退出应结合进程生命周期、LMK（低内存终止）/OOM（内�
 
 ## 案例：从现场证据到修复判断
 
-场景模板用于提出假设，案例要继续说明哪条证据排除了其他原因，以及修复后哪项指标发生变化。
+场景模板用于提出假设；案例要说明哪条证据排除了其他原因，以及修复后哪项指标发生变化。
 
 ### 案例证据怎样使用
 
-以下五个公开工程案例覆盖主线程、GC（垃圾回收）/内存、调度、SurfaceFlinger（系统合成服务）合成和温控。案例来源分成三类：
+以下五个公开工程案例覆盖主线程、GC/内存、调度、SurfaceFlinger 合成和温控。案例来源分成三类：
 
-- 腾讯音乐技术团队的 WeSing 复盘给出了设备、测试动作、版本差异和若干 trace（系统跟踪）数据；
+- 腾讯音乐技术团队的 WeSing 复盘给出了设备、测试动作、版本差异和若干 trace 数据；
 - AndroidPerformance 的系统案例给出了 Systrace（旧版 Android 系统跟踪工具）截图和对照数据，但仓库没有原始 trace 文件；
 - 温控案例采用 Android Developers 发布的 Netmarble ADPF（Android Dynamic Performance Framework，Android 动态性能框架）案例，保留官方披露的效果数字。
 
@@ -781,7 +781,7 @@ Renderer 退出应结合进程生命周期、LMK（低内存终止）/OOM（内�
 
 #### 从现象到根因
 
-团队没有止步于“主线程有一个 312 ms 长任务”，而是继续区分这条消息中的各项工作：
+“主线程有一个 312 ms 长任务”只是起点。团队接着把这条消息里的各项工作拆了开来：
 
 1. 微服务框架允许 lazy（按需）初始化，但业务不断把服务标成进房预加载；
 2. 多项工作集中在同一条 Looper message（消息循环中的一条消息）里，首批 UI 更新只能排在它们之后；
@@ -809,7 +809,7 @@ Renderer 退出应结合进程生命周期、LMK（低内存终止）/OOM（内�
 
 在 Android 17 上复验同类修改，应同时核对：
 
-- 目标 CUJ 的 FrameTimeline（逐帧时间线）与进房 marker（跟踪标记）；
+- 目标 CUJ 的 FrameTimeline 与进房 marker；
 - 每条主线程 message 的 wall time（从开始到结束的实际经过时间）、Running（运行中）与 Runnable（可运行但尚未获得 CPU）时间；
 - 冷启动类加载/JIT（即时编译）、后台预热占用的 CPU 和内存；
 - 第一帧、内容稳定时刻与用户可交互时刻；
@@ -863,7 +863,7 @@ AndroidPerformance 还公开过一组整机低内存冷启动对照：
 
 Android 14 起，应用不再收到部分旧的 `TRIM_MEMORY_RUNNING_*`（运行中内存压力）回调；对应常量在 API 35 被弃用。应用仍可结合 `TRIM_MEMORY_UI_HIDDEN`（界面进入后台）、后台状态和自身内存预算释放可重建资源，不能等到旧式“运行中低内存”通知再处理。
 
-验收至少包含重复进退房的 heap 曲线、GC pause、FrameTimeline（逐帧时间线）、native/graphics（原生/图形）内存、PSI 和热状态。只看到 Java heap 下降，还不足以证明 GPU buffer（图形缓冲区）或整机内存压力已经改善。
+验收至少包含重复进退房的 heap 曲线、GC pause、FrameTimeline、native/graphics（原生/图形）内存、PSI 和热状态。只看到 Java heap 下降，还不足以证明 GPU buffer（图形缓冲区）或整机内存压力已经改善。
 
 来源：[WeSing 复盘](https://cloud.tencent.com/developer/article/2372774)、[Android 低内存案例](https://www.androidperformance.com/2019/09/18/Android-Jank-Due-To-Low-Memory/)、[ComponentCallbacks2](https://developer.android.com/reference/android/content/ComponentCallbacks2)。
 
@@ -888,7 +888,7 @@ WeSing 5.68 的版本对比发现：
 
 在 Android 17 上，还应补两项证据：
 
-- 异常帧里 UI Thread/RenderThread 是否长时间处于 Runnable，wakeup（唤醒）到 Running 的等待是否增加；
+- 异常帧里 UI Thread/RenderThread 是否长时间处于 Runnable，wakeup 到 Running 的等待是否增加；
 - 新线程在同一时间是否处于 Running，占用了哪些 CPU，是否带来频率、迁核、thermal、内存或 GC 变化。
 
 如果新增线程多数处于 Sleeping（睡眠），调度影响可能很小；如果一个新增 CPU worker（工作线程）长时间处于 Running，即使线程总数不高，也可能推迟交互线程获得 CPU。文件描述符增加只能说明新版本的资源占用发生了变化，不能直接解释 CPU 调度。
@@ -921,7 +921,7 @@ AndroidPerformance 的系统案例展示过这样一个现场：App 侧没有对
 
 ![SurfaceFlinger GPU 合成案例二](https://www.androidperformance.com/images/15683644447973.jpg)
 
-这是一份早于现代 FrameTimeline（逐帧时间线）的旧版 Systrace 现场。图片支持“该现场的 SurfaceFlinger GPU 合成很慢”这一观察，但不包含 Android 17 的 jank type（卡顿类型）、完整 layer（图层）属性或 HWC（Hardware Composer，硬件合成器）validate（能力校验）结果。
+这是一份早于 FrameTimeline 的旧版 Systrace 现场。图片支持“该现场的 SurfaceFlinger GPU 合成很慢”这一观察，但不包含 Android 17 的 jank type、完整 layer 属性或 HWC validate（能力校验）结果。
 
 #### Android 17 下怎样重建证据
 
