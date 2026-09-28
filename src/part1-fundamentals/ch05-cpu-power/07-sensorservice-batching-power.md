@@ -45,11 +45,17 @@ task2b_state: fixed
 
 # SensorService 与传感器批处理功耗模型
 
-SensorService 的功耗问题常被简化为“采样频率越低越省电”，但这只覆盖传感器本体的一部分成本。一次传感器请求还会使用传感器中枢（sensor hub，用低功耗处理器代替主处理器收集和处理传感器数据）及其先进先出缓冲区（First In, First Out，FIFO），还可能唤醒应用处理器（Application Processor，AP），并让 `system_server`（承载 Android 核心系统服务的进程）、原生 SensorService 和应用回调线程参与数据交付。
+SensorService 的功耗问题常被简化为“采样频率越低越省电”，但这只覆盖传感器本体的一部分成本。
 
-本文按照 Android 17 / API 37 / `android-17.0.0_r1` 核对源码，分析采样周期、批量延迟、唤醒（wake-up）属性、多客户端请求聚合和 AP 挂起（suspend）之间的关系。版本沿革只保留理解当前行为所需的节点：Android 4.4 引入标准化的批处理（batching），API 26 增加 Sensor Direct Channel，Android 12 对部分运动 / 姿态传感器增加高采样率限制；Android 17 继续保留这些机制，并增加由功能开关（flag）控制的冻结进程（frozen-PID）处理路径。
+一次传感器请求还会使用传感器中枢（sensor hub，用低功耗处理器代替主处理器收集和处理传感器数据）及其先进先出缓冲区（First In, First Out，FIFO），还可能唤醒应用处理器（Application Processor，AP），并让 `system_server`（承载 Android 核心系统服务的进程）、原生 SensorService 和应用回调线程参与数据交付。
+
+本文按照 Android 17 / API 37 / `android-17.0.0_r1` 核对源码，分析采样周期、批量延迟、唤醒（wake-up）属性、多客户端请求聚合和 AP 挂起（suspend）之间的关系。
+
+版本沿革只保留理解当前行为所需的节点：Android 4.4 引入标准化的批处理（batching），API 26 增加 Sensor Direct Channel，Android 12 对部分运动 / 姿态传感器增加高采样率限制；Android 17 继续保留这些机制，并增加由功能开关（flag）控制的冻结进程（frozen-PID）处理路径。
 
 ## 传感器耗电来自三个位置
+
+一次传感器请求的成本可以分成三处，它们的影响因素和优化手段并不相同：
 
 | 成本 | 发生位置 | 主要影响因素 | 常见误判 |
 |---|---|---|---|
@@ -57,19 +63,34 @@ SensorService 的功耗问题常被简化为“采样频率越低越省电”，
 | 缓冲与搬运 | hub 的静态随机存取内存（SRAM）、硬件 FIFO、HAL 快速消息队列（FMQ）、SensorService 队列 | FIFO 深度、事件大小、共享方式 | 认为 batching 会减少采样 |
 | AP 唤醒与处理 | 片上系统（SoC）从低功耗状态恢复（resume）、SensorService、应用线程 | wake-up 属性、批量窗口、回调工作量 | 认为低频一定等于少唤醒 |
 
-对于连续型传感器（continuous sensor），采样频率可用下面的公式粗略换算：
+对于连续型传感器（continuous sensor），采样频率与采样周期可以互相换算：
 
 ```text
 frequency_hz ≈ 1_000_000 / samplingPeriodUs
 ```
 
-公式中的 `samplingPeriodUs` 以微秒为单位，因此只有**增大**它才会降低请求频率。例如，20,000 µs 约为 50 Hz，200,000 µs 约为 5 Hz。硬件通常只支持若干离散的输出数据率（Output Data Rate，ODR），硬件抽象层（Hardware Abstraction Layer，HAL）会将请求映射到可用档位；`SensorManager` 也将采样周期定义为提示值（hint），应用不能假定回调严格等间隔到达。
+公式中的 `samplingPeriodUs` 以微秒为单位，因此只有**增大**它才会降低请求频率。例如，20,000 µs 约为 50 Hz，200,000 µs 约为 5 Hz。
+
+硬件通常只支持若干离散的输出数据率（Output Data Rate，ODR），硬件抽象层（Hardware Abstraction Layer，HAL）会将请求映射到可用档位；`SensorManager` 也将采样周期定义为提示值（hint），应用不能假定回调严格等间隔到达。
 
 `Sensor.getPower()` 返回厂商写入传感器元数据（sensor metadata）的估算电流，适合粗略比较传感器类型，但不是针对当前频率和设备状态的实时功耗测量值。
 
+## 先区分上报模式（reporting mode）
+
+`samplingPeriodUs` 的含义取决于上报模式（reporting mode，即传感器以何种规则产生事件），不同模式下并不相同：
+
+| reporting mode | `samplingPeriodUs` 的含义 | 典型 sensor |
+|---|---|---|
+| continuous（连续） | 期望的连续采样周期 | 加速度计（accelerometer）、陀螺仪（gyroscope） |
+| on-change（变化时上报） | 事件最快产生间隔；值不变时可以长时间没有事件 | 光线传感器（light）、计步器（step counter） |
+| one-shot（单次触发） | 被忽略；触发一次后自动停用 | 显著运动检测（significant motion） |
+| special trigger（特殊触发） | 按具体 sensor 定义 | 步伐检测器（step detector）等 |
+
+应用应通过 `Sensor.getReportingMode()` 判断模式，不能对所有 sensor 都使用 `1 / period` 计算事件频率。one-shot sensor 应使用 `requestTriggerSensor()`，不应注册到普通 `registerListener()`。
+
 ## 从应用请求到硬件 FIFO
 
-下面的流程展示普通监听器（listener）路径中，请求如何从应用经过 framework、SensorService 和 HAL 到达硬件 FIFO，事件又如何沿反方向返回：
+普通监听器（listener）路径中，请求从应用经过 framework、SensorService 和 HAL 到达硬件 FIFO，事件沿反方向返回：
 
 ```mermaid
 flowchart LR
@@ -86,7 +107,9 @@ flowchart LR
     EQ --> App
 ```
 
-这条路径中，Android 17 的 `SystemSensorManager.registerListenerImpl()` 为 listener 创建或复用 `SensorEventQueue`，`BaseEventQueue.addSensor()` 再调用原生层启用接口。SensorService 在启用前根据 sensor 的 `minDelay` / `maxDelay` 限制采样周期，然后将 `samplingPeriodNs` 和 `maxBatchReportLatencyNs` 传给 sensor 接口的 `batch()`，最后调用 `activate()`。
+这条路径中，Android 17 的 `SystemSensorManager.registerListenerImpl()` 为 listener 创建或复用 `SensorEventQueue`，`BaseEventQueue.addSensor()` 再调用原生层启用接口。
+
+SensorService 在启用前根据 sensor 的 `minDelay` / `maxDelay` 限制采样周期，然后将 `samplingPeriodNs` 和 `maxBatchReportLatencyNs` 传给 sensor 接口的 `batch()`，再调用 `activate()`（framework 侧同名参数以微秒为单位，原生层字段以纳秒为单位）。
 
 在 HAL 一侧，Android 17 同时保留使用 Android 接口定义语言（AIDL）的现代 Sensors HAL，以及兼容 HAL 接口定义语言（HIDL）2.0 / 2.1 的封装层（wrapper）。`SensorDevice::connectHalService()` 先尝试 AIDL，再尝试 HIDL。AIDL `ISensors` 的关键接口包括：
 
@@ -98,24 +121,11 @@ flowchart LR
 
 这里的 `batch()` 只负责提交配置。真正的省电效果来自 hub / FIFO 在 AP 之外暂存事件，从而合并交付和唤醒。没有硬件 FIFO 或低功耗 hub 时，即使 `batch()` 返回成功，也可能无法减少 AP 唤醒。
 
-## 先区分上报模式（reporting mode）
-
-reporting mode 表示传感器以何种规则产生事件。`samplingPeriodUs` 在不同模式下含义不同：
-
-| reporting mode | `samplingPeriodUs` 的含义 | 典型 sensor |
-|---|---|---|
-| continuous（连续） | 期望的连续采样周期 | 加速度计（accelerometer）、陀螺仪（gyroscope） |
-| on-change（变化时上报） | 事件最快产生间隔；值不变时可以长时间没有事件 | 光线传感器（light）、计步器（step counter） |
-| one-shot（单次触发） | 被忽略；触发一次后自动停用 | 显著运动检测（significant motion） |
-| special trigger（特殊触发） | 按具体 sensor 定义 | 步伐检测器（step detector）等 |
-
-应用应通过 `Sensor.getReportingMode()` 判断模式，不能对所有 sensor 都使用 `1 / period` 计算事件频率。one-shot sensor 应使用 `requestTriggerSensor()`，不应注册到普通 `registerListener()`。
-
-`maxReportLatencyUs` 控制事件允许暂存在 FIFO 中的最长时间。正数表示允许批量交付，0 表示尽快上报。它不会降低采样频率，也不保证事件一定等到整个窗口结束；FIFO 已满、其他 sensor 到期、应用主动调用 `flush()`，或 AP 因其他原因醒来，都可能使事件提前交付。
-
 ## `samplingPeriodUs` 与 `maxReportLatencyUs`
 
-应用可以通过四参数重载同时指定采样周期和最大批量延迟。下面的代码请求约 50 Hz 采样，并允许最多延迟约 5 秒交付：
+`maxReportLatencyUs` 控制事件允许暂存在 FIFO 中的最长时间。正数表示允许批量交付，0 表示尽快上报。它不会降低采样频率，也不保证事件一定等到整个窗口结束；实际交付时机还受 FIFO 容量、其他 sensor 和 AP 状态影响，见「AP 醒着时的 batching」一节。
+
+应用可以通过四参数重载同时指定采样周期和最大批量延迟。例如这次注册请求约 50 Hz 采样，并允许最多延迟约 5 秒交付：
 
 ```kotlin
 val registered = sensorManager.registerListener(
@@ -128,13 +138,13 @@ val registered = sensorManager.registerListener(
 
 这段请求会继续以约 50 Hz 产生事件，只是允许每批事件最多等待 5 秒；它不会将 sensor 改为 0.2 Hz。应用回调可能一次收到多个事件，其时间戳（timestamp）早于回调时刻。
 
-下面的公式可用 FIFO 能容纳的事件数估算理论批量时长上限：
+批量时长的理论上限可以用 FIFO 能容纳的事件数估算，即用 FIFO 事件数除以采样频率：
 
 ```text
 fifo_duration_seconds ≈ fifo_event_count / frequency_hz
 ```
 
-公式用 FIFO 事件数除以采样频率。估算前需要选择正确的 FIFO 数值：
+估算前需要选择正确的 FIFO 数值：
 
 - `Sensor.getFifoReservedEventCount()` 是多个 sensor 并发使用 FIFO 时，为该 sensor 保证的事件数；
 - `Sensor.getFifoMaxEventCount()` 是该 sensor 在理想条件下最多可用的事件数；
@@ -144,7 +154,9 @@ fifo_duration_seconds ≈ fifo_event_count / frequency_hz
 
 ## SensorService 如何合并多个客户端
 
-同一个传感器句柄（sensor handle，即系统识别传感器实例的整数标识）可能被多个应用和系统组件同时请求。Android 17 的 `SensorDevice` 为每个连接保存一组 `BatchParams`，再由 `Info::selectBatchParams()` 选择硬件能够同时满足的聚合参数。
+同一个传感器句柄（sensor handle，即系统识别传感器实例的整数标识）可能被多个应用和系统组件同时请求。
+
+Android 17 的 `SensorDevice` 为每个连接保存一组 `BatchParams`，再由 `Info::selectBatchParams()` 选择硬件能够同时满足的聚合参数。
 
 聚合规则可按下面的顺序理解：
 
@@ -175,13 +187,16 @@ AP 处于运行（on）或空闲但未挂起（idle）状态时，HAL 可以将�
 - 某个事件达到 `maxReportLatency`；
 - FIFO 即将满；
 - framework 调用 `flush()`；
-- HAL 或共享 FIFO 中的其他 sensor 需要上报。
+- HAL 或共享 FIFO 中的其他 sensor 需要上报；
+- AP 因其他原因醒来。
 
 一旦某批事件必须上报，FIFO 中其他 sensor 的事件也可能同时交付，即使它们各自的最大延迟尚未到期。因此，应用观察到的批次间隔通常小于或等于请求值，不能将 `maxReportLatencyUs` 当作固定定时器周期。
 
 事件 timestamp 必须对应物理事件发生时间，延迟上报不能改写它。应用可以用与 `elapsedRealtimeNanos()` 相同时间基准记录回调到达时间，再减去 `SensorEvent.timestamp`，估算事件在 FIFO、framework 和回调队列中的总等待时间。不能用可能受校时影响的墙钟时间（wall clock）减去 sensor timestamp。
 
 ## Suspend 中的 wake-up 与 non-wake-up 行为
+
+AP 挂起期间的行为由 sensor 实例的 wake-up 属性决定。应用应使用 `Sensor.isWakeUpSensor()` 判断当前 sensor 实例；相同传感器类型（type）可以同时存在 wake-up 和 non-wake-up 两个独立实例，不能只根据 `TYPE_ACCELEROMETER`、`TYPE_STEP_COUNTER` 等类型名称推断。
 
 ### Non-wake-up sensor
 
@@ -209,11 +224,9 @@ on-change sensor 有一项特殊保证：HAL 要在共享 FIFO 之外保存最�
 
 设备从 suspend 恢复时，平台会尽量交付 FIFO 中的全部内容，包括尚未达到各自延迟的批次，从而减少 AP 刚回到 suspend 后又被另一批事件唤醒的概率。
 
-应用应使用 `Sensor.isWakeUpSensor()` 判断当前 sensor 实例。相同传感器类型（type）可以同时存在 wake-up 和 non-wake-up 两个独立实例，不能只根据 `TYPE_ACCELEROMETER`、`TYPE_STEP_COUNTER` 等类型名称推断。
-
 ## Wake lock 确认链
 
-Wake-up 事件需要跨越 HAL、SensorService 和应用进程；在事件尚未被消费时，系统必须防止 AP 再次 suspend。Android 17 AIDL Sensors HAL 使用两级确认：
+Wake-up 事件需要跨越 HAL、SensorService 和应用进程；在事件尚未被消费时，系统必须防止 AP 再次 suspend。Android 17 AIDL Sensors HAL 在 HAL 与 framework 之间使用两级确认，SensorService 侧另有一把唤醒锁覆盖到应用连接确认：
 
 1. HAL 在将 wake-up 事件写入 Event FMQ 前，持有名称以 `SensorsHAL_WAKEUP` 开头的唤醒锁（wake lock）；
 2. framework 读到事件后，通过 Wake Lock FMQ 告知 HAL 已处理的 wake-up 事件数；
@@ -262,7 +275,9 @@ Android 17 的 `SensorService::enable()` 还有一项避免事件混入新连接
 
 当用户关闭麦克风访问权限（microphone access）时，这六类 sensor 即使已经获得高采样权限，也会受到限制。原因是高频运动 / 姿态数据可能泄露音频相关信息。
 
-公开 SDK 文档要求应用声明权限，并提示高频请求可能抛出 `SecurityException`。Android 17 源码还包含兼容模式（compatibility）、可调试构建（debuggable）和服务端不抛异常而直接限制采样率的分支。应用不应依赖某一种失败表现，而应声明权限、检查注册结果，并根据实际事件时间戳（event timestamp）验证最终采样率。
+公开 SDK 文档要求应用声明权限，并提示高频请求可能抛出 `SecurityException`。Android 17 源码还包含兼容模式（compatibility）、可调试构建（debuggable）和服务端不抛异常而直接限制采样率的分支。
+
+应用不应依赖某一种失败表现，而应声明权限、检查注册结果，并根据实际事件时间戳（event timestamp）验证最终采样率。
 
 ## Sensor Direct Channel 的适用边界
 
@@ -293,6 +308,8 @@ Direct Channel 不提供普遍的节能保证。高频 sensor、持续轮询共�
 这条路径受 Android 配置系统 aconfig / 硬件 flag 控制。`android-17.0.0_r1` 中存在调用点，不能证明所有 Android 17 产品都默认启用它。分析具体设备时，要结合 `dumpsys sensorservice` 中客户端冻结 / 禁用（client frozen / disabled）信息、产品 flag 和实际事件时间线。
 
 ## 批处理失效或收益变小的常见原因
+
+批次表现和预期不一致时，可以按下表从现象反查可能原因和验证入口：
 
 | 现象 | 可能原因 | 验证入口 |
 |---|---|---|
@@ -383,7 +400,7 @@ Battery Historian 或 `dumpsys batterystats` 可以观察 UID 的 sensor 使用�
 - 请求业务可接受的最大 `maxReportLatencyUs`；
 - 优先选择符合业务且功耗较低的 sensor，例如 step counter、significant motion；
 - 退出使用场景时注销，不能依赖熄屏自动停用；
-- 对 wake-up sensor、partial wake lock 和后台任务进行统一评估。
+- 统一评估 wake-up sensor、partial wake lock 和后台任务。
 
 WakeLock、Doze 和后台限制决定 AP / 应用能否继续运行；SensorService batching 决定 sensor 事件如何生成、缓存和交付。三类机制需要放在同一时间线中分析。
 
