@@ -52,9 +52,9 @@ related_chapters:
 
 # 跨进程内存共享与端侧推理预算
 
-Android 17 / API 37 没有名为“智能体进程”的内核对象，也没有为智能体定义专用内存命名空间。模型推理、工具调用和跨应用协作仍受 Android 现有机制约束，包括应用身份 UID、进程地址空间、Binder、文件描述符（fd）、SELinux、第二版控制组 cgroup v2、ActivityManagerService（AMS）进程状态，以及低内存终止守护进程 lmkd。
+Android 17 / API 37 没有名为“智能体进程”的内核对象，也没有为智能体定义专用内存命名空间。模型推理、工具调用和跨应用协作仍受 Android 现有机制约束，包括应用身份 UID、进程地址空间、Binder、文件描述符（fd）、SELinux、cgroup v2、ActivityManagerService（AMS）进程状态，以及低内存终止守护进程 lmkd。
 
-看到某个产品使用 AICore、私有推理服务或厂商 NPU 服务时，不能把该产品的包名、进程优先级和缓存策略写成 AOSP Android 17 的通用行为。`com.google.android.aicore` 不属于 AOSP `android-17.0.0_r1`；它在具体设备上的生命周期和内存策略，应以该设备的实现为准。
+产品如果使用 AICore、私有推理服务或厂商 NPU 服务，不能把它的包名、进程优先级和缓存策略写成 AOSP Android 17 的通用行为。`com.google.android.aicore` 不属于 AOSP `android-17.0.0_r1`；它在具体设备上的生命周期和内存策略，应以该设备的实现为准。
 
 平台层面可以确认以下结论：
 
@@ -79,7 +79,7 @@ Android 17 / API 37 没有名为“智能体进程”的内核对象，也没有
 
 AMS 会根据组件状态、绑定关系和前台可感知性等信息，持续计算进程状态和 `oom_score_adj`。这个分值越高，进程通常越容易在内存紧张时被选中终止。同一应用的主进程和 `:inference` 进程可以得到不同分值；前台组件绑定的服务也可能因依赖关系而提高优先级。
 
-因此，不能把“推理服务”固定写成 `oom_score_adj=500～800`，也不能假设系统推理服务永远比调用方更难被终止。应在目标设备和目标场景中读取以下信息：
+不能把“推理服务”固定写成 `oom_score_adj=500～800`，也不能假设系统推理服务永远比调用方更难被终止；实际值要在目标设备和目标场景中读取：
 
 ```shell
 adb shell dumpsys activity processes
@@ -148,7 +148,7 @@ Android 17 的原生 Binder 库 libbinder 会在 `ProcessState.cpp` 中按下面
 
 这是进程内所有 Binder 线程共享的接收缓冲区，多个正在进行的事务会共同使用它，不能理解成“每个 Binder 线程各有 1 MiB”。请求、返回值、对象偏移表和并发事务都会占用这块空间。
 
-`TransactionTooLargeException` 的 Java 文档也强调，它只是大事务失败时的启发式异常。调用方无法可靠判断请求是否未送达，也可能是服务端已经处理请求、但返回值发送失败。因此，接口要按“操作可能已经部分完成”设计幂等性，也就是同一请求重复执行时不应产生额外副作用。
+`TransactionTooLargeException` 的 Java 文档也强调，它只是大事务失败时的启发式异常。请求是否未送达，调用方无法可靠判断；也可能是服务端已经处理请求、但返回值发送失败。因此，接口要按“操作可能已经部分完成”设计幂等性，也就是同一请求重复执行时不应产生额外副作用。
 
 公开 API `IBinder.getSuggestedMaxIpcSizeBytes()` 返回 64 KiB；它引用的 `MAX_IPC_SIZE` 常量在源码中带有 `@hide`，应用不能直接访问。64 KiB 是让事务安全低于接收缓冲区上限的建议值，并非驱动的硬上限。可以按下面的分工选择传输通道：
 
@@ -215,7 +215,7 @@ try {
 - 加速器驱动导入失败后创建私有暂存缓冲区（staging buffer）；
 - 任一可写私有映射触发 COW。
 
-所以，更准确的说法是“两个进程可以共享同一组页面”。还要结合 PSS、缺页（page fault）和驱动统计，验证从输入到推理后端的完整路径是否真的避免了复制。
+更准确的说法是“两个进程可以共享同一组页面”。要判断从输入到推理后端的完整路径是否避免了复制，需要结合 PSS、缺页（page fault）和驱动统计。
 
 ### fd 代表访问能力，不能代替身份校验
 
@@ -259,15 +259,6 @@ try {
 
 这样可以把“小型索引”和“大型内容”分开，也能在 ContentProvider 一侧执行撤销、审计和按用户隔离。
 
-
-### 生成式 UI 描述可以先物化，再读取
-
-Flutter A2UI 的 Async A2UI 示例把实时生成界面拆成两个生命周期：业务数据变化后由后台 Cloud Function 调用模型生成 A2UI 消息并写回 Firestore；用户打开 App 时，客户端读取已缓存的消息，把它们交给原来的 `A2uiTransportAdapter`、`A2uiParserTransformer` 和 `SurfaceController` 流程恢复 Flutter Widget，而不是再等待一次模型现场输出。[来源: https://juejin.cn/post/7675633667490267179]
-
-放到 Android 内存边界里看，这类方案更接近“把 UI 投影物化成数据”：跨边界流动的是字符串、JSON、URI 或 fd 等数据对象，不是另一个进程的地址空间。缓存命中只改变模型调用发生的时间和数据读取路径；一旦客户端把描述读入、解析成 Widget，或交给智能体恢复对 A2UI Surface 的上下文，相关字符串、对象、A2UI 状态和运行时缓存仍按持有它们的进程、映射和驱动资源记账。[来源: https://juejin.cn/post/7675633667490267179][已验证: frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java @ android-17.0.0_r1; frameworks/native/libs/binder/ProcessState.cpp @ android-17.0.0_r1]
-
-因此，把生成式 UI 作为 ContentProvider 或 App Functions 的载荷时，接口仍应传版本、schema、生成时业务数据版本和内容 URI，避免整段大描述塞进 Binder。A2UI 文章提到的乱序覆盖、Widget Catalog schema 演进和界面状态纳入智能体状态，都是这类“可回放 UI 数据”上线前必须解决的数据一致性问题；它们不构成 Android 17 平台对内存共享的新语义。[来源: https://juejin.cn/post/7675633667490267179][已验证: frameworks/base/core/java/android/os/IBinder.java @ android-17.0.0_r1]
-
 ## 4.10.7 App Functions：受控函数调用，不是共享内存 API
 
 `AppFunctionManager.executeAppFunction()` 和 `AppFunctionService` 从 Android 16 / API 36 开始提供，用于受控地调用另一个应用公开的函数。Android 17 / API 37 仍由 `system_server` 处理执行请求；v2 权限流程（permission-v2）的 AOSP 校验包括：
@@ -278,13 +269,23 @@ Flutter A2UI 的 Async A2UI 示例把实时生成界面拆成两个生命周期�
 - 调用其他包时，普通调用方需要 `EXECUTE_APP_FUNCTIONS`；permission-v2 还要求“调用方—目标”组合命中允许列表（allowlist）。持有 `EXECUTE_APP_FUNCTIONS_SYSTEM` 的系统调用方不受该列表限制；
 - 目标服务必须要求 `android.permission.BIND_APP_FUNCTION_SERVICE`，外部应用不能绕过 `system_server` 直接绑定。
 
-目标应用通过 `AppFunctionService.onExecuteFunction()` 接收请求。该回调在主线程触发，模型推理、磁盘读取和网络访问必须切换到后台工作线程，再通过回调返回结果，并处理取消信号 `CancellationSignal`。Android 17 的 permission-v2 路径会把 `callingPackage` 置为空字符串，并把 `callingPackageSigningInfo` 置为 unknown；函数实现不能再使用这两个参数鉴权。
+目标应用通过 `AppFunctionService.onExecuteFunction()` 接收请求。该回调在主线程触发；模型推理、磁盘读取和网络访问必须切换到后台工作线程，完成后通过回调返回结果，并处理取消信号 `CancellationSignal`。Android 17 的 permission-v2 路径会把 `callingPackage` 置为空字符串，并把 `callingPackageSigningInfo` 置为 unknown；函数实现不能再使用这两个参数鉴权。
 
 请求中的 `GenericDocument`、`Bundle extras` 和响应对象都实现了 Parcelable，仍受 Binder 事务空间限制。大图像、文档或音频应传递受控 URI 或小型句柄描述；App Functions 负责判断“谁可以调用哪个函数”，大块数据仍应使用合适的内容接口。
 
-Android 17 / API 37 新增了 `AppFunctionUriGrant` 和 `ExecuteAppFunctionResponse.getUriGrants()`。permission-v2 开启后，目标函数可以在响应中同时返回 URI 和对应授权。`system_server` 只处理 `content://` URI，接收者固定为本次请求的调用包；目标函数只能选择 URI，以及读、写、前缀匹配和可持久化等授权模式。ContentProvider 还必须允许 URI 授权。临时授权通常持续到设备重启；可持久化标志只表示接收方可以调用 `takePersistableUriPermission()`，不会自动把授权持久化。需要更短生命周期时，仍要由 ContentProvider 设计一次性 URI、过期检查或主动撤销。
+Android 17 / API 37 新增了 `AppFunctionUriGrant` 和 `ExecuteAppFunctionResponse.getUriGrants()`。permission-v2 开启后，目标函数可以在响应中同时返回 URI 和对应授权。`system_server` 只处理 `content://` URI，接收者固定为本次请求的调用包；目标函数只能选择 URI，以及读、写、前缀匹配和可持久化等授权模式。ContentProvider 还必须允许 URI 授权。
+
+临时授权通常持续到设备重启；可持久化标志只表示接收方可以调用 `takePersistableUriPermission()`，不会自动把授权持久化。需要更短生命周期时，仍要由 ContentProvider 设计一次性 URI、过期检查或主动撤销。
 
 App Functions 也不会自动获得目标应用的全部数据。目标函数只能读取目标应用自己有权访问的内容，并由函数实现决定返回哪些字段。
+
+### 生成式 UI 描述可以先物化，再读取
+
+Flutter A2UI 的 Async A2UI 示例把实时生成界面拆成两个生命周期：业务数据变化后由后台 Cloud Function 调用模型生成 A2UI 消息并写回 Firestore；用户打开 App 时，客户端读取已缓存的消息，把它们交给原来的 `A2uiTransportAdapter`、`A2uiParserTransformer` 和 `SurfaceController` 流程恢复 Flutter Widget，而不是再等待一次模型现场输出。[来源: https://juejin.cn/post/7675633667490267179]
+
+放到 Android 内存边界里看，这类方案更接近“把 UI 投影物化成数据”：跨边界流动的是字符串、JSON、URI 或 fd 等数据对象，不是另一个进程的地址空间。缓存命中只改变模型调用发生的时间和数据读取路径。客户端把描述读入、解析成 Widget，或交给智能体恢复 A2UI Surface 的上下文，相关字符串、对象、A2UI 状态和运行时缓存仍按持有它们的进程、映射和驱动资源记账。[来源: https://juejin.cn/post/7675633667490267179][已验证: frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java @ android-17.0.0_r1; frameworks/native/libs/binder/ProcessState.cpp @ android-17.0.0_r1]
+
+因此，把生成式 UI 作为 ContentProvider 或 App Functions 的载荷时，接口仍应传版本、schema、生成时业务数据版本和内容 URI，避免整段大描述塞进 Binder。A2UI 文章提到的乱序覆盖、Widget Catalog schema 演进和界面状态纳入智能体状态，都是这类“可回放 UI 数据”上线前必须解决的数据一致性问题；它们不构成 Android 17 平台对内存共享的新语义。[来源: https://juejin.cn/post/7675633667490267179][已验证: frameworks/base/core/java/android/os/IBinder.java @ android-17.0.0_r1]
 
 ## 4.10.8 模型推理内存要按阶段和后端计算
 
@@ -310,9 +311,9 @@ App Functions 也不会自动获得目标应用的全部数据。目标函数只
 weight_bytes = P × q / 8
 ```
 
-2B（20 亿）参数、4 位权重的理论值约为 1,000,000,000 字节，即约 0.93 GiB。文件与运行时还可能包含量化比例因子（scale）、零点（zero point）、张量元数据、词表、对齐填充和重排后的权重副本，所以不能只根据“INT4（4 位整数权重）”就断言文件或 RSS 是 1.0 GiB、1.1 GiB 或 1.4 GiB。
+对 2B（20 亿）参数、4 位权重的模型，理论值约为 1,000,000,000 字节，即约 0.93 GiB。文件与运行时还可能包含量化比例因子（scale）、零点（zero point）、张量元数据、词表、对齐填充和重排后的权重副本，所以不能只根据“INT4（4 位整数权重）”就断言文件或 RSS 是 1.0 GiB、1.1 GiB 或 1.4 GiB。
 
-如果推理运行时对同一只读模型文件使用 `MAP_PRIVATE` 映射，未修改的驻留文件页可以通过页缓存被多个进程共享。要满足这个结论，至少需要：
+如果推理运行时对同一只读模型文件使用 `MAP_PRIVATE` 映射，未修改的驻留文件页可以通过页缓存被多个进程共享。这个结论成立的前提是：
 
 - 映射的是同一底层文件和相同页；
 - 页保持只读，没有 COW；
@@ -372,7 +373,7 @@ Android 17 的 `MemoryLimiter.java` 包含一份 `sDefaultConfig`：可见组（
 
 这里的 visible 是 MemoryLimiter 自己的分组，不能直接等同于窗口可见性或某个应用组件名称。
 
-还有一个与端侧推理直接相关的例外：`initializeExemptList()` 会读取 `config_defaultOnDeviceSandboxedInferenceService`，把配置的包加入豁免列表。因此，设备默认的沙箱推理服务可能不受 MemoryLimiter 管理。第三方 `:inference` 进程不会仅因名称含有 `inference` 就自动获得豁免。
+还有一个与端侧推理直接相关的例外：`initializeExemptList()` 会读取 `config_defaultOnDeviceSandboxedInferenceService`，把配置的包加入豁免列表。设备默认的沙箱推理服务可能因此不受 MemoryLimiter 管理。第三方 `:inference` 进程不会仅因名称含有 `inference` 就自动获得豁免。
 
 `memory.high` 是 cgroup v2 的内存软边界，超过后会增加内存回收和执行节流压力；它不是“到值立即发生内存耗尽（OOM）”的硬上限。Android 17 的 JNI 实际写入 `memory.swap.max`，用于限制该 cgroup 可使用的交换空间。具体延迟变化取决于页面类型、工作集、交换空间、存储和内核回收，不能根据阈值推导固定的 P99（第 99 百分位）延迟倍数。
 
