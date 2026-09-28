@@ -54,15 +54,15 @@ consolidated_from:
 
 # SharedPreferences 与 DataStore：I/O、ANR 与多进程一致性
 
-`SharedPreferences.apply()` 只保证调用较快返回，并不等于写盘工作与主线程生命周期完全解耦；多进程一致性也不是它的契约。选用 SP 或 DataStore 时，应同时检查首次加载、写入收尾、序列化成本和数据所有权。
+`SharedPreferences.apply()` 只保证调用较快返回，并不等于写盘工作与主线程生命周期完全解耦；多进程一致性也不是它的契约。选用 SharedPreferences（下文简称 SP）或 DataStore 时，应同时检查首次加载、写入收尾、序列化成本和数据所有权。
 
 ## `apply()` 返回后的写盘与主线程关系
 
-SharedPreferences（下文简称 SP）适合少量、低频、单进程配置。它引发 I/O 与 ANR（Application Not Responding，应用无响应）风险的原因，不只在于 XML 读写速度，还涉及 API 语义：
+SP 适合少量、低频、单进程配置。它引发 I/O 与 ANR（Application Not Responding，应用无响应）风险的原因有两层：XML 读写速度，以及 API 语义本身。
 
 - 首次加载由后台线程执行，但调用方第一次读取可能在 `awaitLoadedLocked()` 等待。
 - `apply()` 先更新内存并返回，磁盘结果无法反馈给调用方。
-- Android 框架会在部分组件收尾点清空 `QueuedWork`，主线程可能执行尚未开始的写盘，也可能等待已经开始的写盘。
+- Android 框架会在部分组件收尾点排空 `QueuedWork`，主线程可能执行尚未开始的写盘，也可能等待已经开始的写盘。
 - 每次有效修改都要序列化当前整份 map（键值映射），SP 不支持按 key 增量更新文件。
 - 平台接口不支持可靠的跨进程一致性。
 
@@ -81,7 +81,7 @@ Android 17 的 `SharedPreferences` 接口文档已经明确建议：新的小型
 
 `ContextImpl` 使用静态的 `sSharedPrefsCache`，先按包名，再按文件路径缓存 `SharedPreferencesImpl`。同一进程中重复调用相同 Context/文件名，通常拿到同一个对象，不会为每次 `getSharedPreferences()` 重新创建加载任务。
 
-这个缓存只解决进程内对象复用。不同进程有各自的内存 map，也没有一套由 SP 提供的可靠变更通知协议。`MODE_MULTI_PROCESS` 已废弃，Android 17 仍保留的代码只是根据文件变化尝试重新加载，无法提供事务和一致性保证。
+这个缓存只解决进程内对象复用。不同进程有各自的内存 map，SP 也没有提供跨进程的可靠变更通知协议。`MODE_MULTI_PROCESS` 已废弃，Android 17 保留的这段代码只在文件变化时尝试重新加载，无法提供事务和一致性保证。
 
 ### `startLoadFromDisk()` 异步，`getXxx()` 仍可能同步等待
 
@@ -128,7 +128,7 @@ private void awaitLoadedLocked() {
 }
 ```
 
-`getString()`、`getInt()`、`contains()`、`getAll()`，甚至 `edit()` 都会先走这里。后台线程可能正在读盘，主线程则在 `mLock.wait()`。代码还会主动报告一次调用线程的 StrictMode（线程违规检测工具）磁盘读取，即使文件 I/O 发生在另一条线程上。
+`getString()`、`getInt()`、`contains()`、`getAll()`，甚至 `edit()` 都会先走这里。后台线程可能正在读盘，主线程则在 `mLock.wait()`。即使文件 I/O 发生在另一条线程上，这次调用也会向调用线程的 StrictMode（线程违规检测工具）策略上报一次磁盘读取。
 
 首次等待通常被以下因素放大：
 
@@ -374,7 +374,7 @@ Proto DataStore 的 schema 更利于审查和演进，但 protobuf 不能自动�
 
 自建 `DataStoreFactory` 时，scope（协程作用域）应与应用级数据拥有者同寿命。不要在 Activity、Fragment 或一次请求中重复创建实例，也不要让 `produceFile` 每次返回不同路径。
 
-多进程场景中的“每个进程一个实例”仍然要指向规范化后的同一文件路径。所有进程必须使用 `MultiProcessDataStoreFactory`，不能把单进程和多进程工厂混用于同一文件；transform 返回的数据对象也必须保持不可变，否则进程内缓存的 hash（哈希）校验会失去意义。
+多进程场景的实例与路径要求、单进程与多进程工厂的选择，见 MultiProcess DataStore 的实现边界一节。路径需要先规范化，transform 返回的数据对象也必须保持不可变，否则进程内缓存的 hash（哈希）校验会失去意义。
 
 ### 错误与损坏要分开处理
 
@@ -472,7 +472,7 @@ override suspend fun incrementAndGetVersion(): Int =
     withLazyCounter { it.incrementAndGetValue() }
 ```
 
-实际源码还会在文件锁报告死锁错误后退避重试，也包含共享读锁的兼容处理，不能用上面的精简代码替换库实现。这里的退避是指失败后先暂缓，再重新尝试获取锁。
+实际源码还会在文件锁报告死锁错误后退避（失败后先暂缓，再重新尝试获取锁）重试，也包含共享读锁的兼容处理。上面的精简代码不能替换库实现。
 
 读路径拿不到进程内 mutex 或共享文件锁时，仍可读取当前正式文件，但不会把这次无锁结果作为稳定缓存提交。后续再通过共享版本和文件通知校准缓存。这样，读取不必等待正在生成的 `.tmp` 文件，缓存也只会在稳定快照上更新。
 
@@ -484,7 +484,7 @@ override suspend fun incrementAndGetVersion(): Int =
 
 `updateData()` 的 transform 位于跨进程独占锁范围内。它应保持短小、确定且无副作用；网络请求、长计算或另一把业务锁会延长所有进程的写等待。DataStore 的事务边界覆盖一个完整对象，不提供多文件原子提交、字段级更新或历史版本回滚。
 
-`FileObserver(MOVED_TO)` 只在目标进程存在活跃的 `data` Flow collector（数据流收集者）时用于唤醒刷新；collector 数量回到零后，观察任务会停止。下一次读取仍会比较共享版本，因此这种通知只负责唤醒刷新，不能当作必达的事件日志。
+`FileObserver(MOVED_TO)` 只在目标进程存在活跃的 `data` Flow collector（数据流收集者）时用于唤醒刷新；collector 数量回到零后，观察任务会停止。下一次读取仍会比较共享版本，因此不能把这种通知当作必达的事件日志。
 
 不要直接修改 `.preferences_pb`、`.lock`、`.version` 或 `.tmp`。文件锁属于协作式协议，绕过 DataStore 的直接文件写入会破坏版本和通知关系。
 
