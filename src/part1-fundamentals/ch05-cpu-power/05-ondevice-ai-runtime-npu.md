@@ -8,9 +8,11 @@ task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 applicable_versions: Android 8.1 (API 27) - Android 17 (API 37)
-last_verified: '2026-07-26'
-last_verified_against: Android API reference API 37 + developer.android.com + ai.google.dev/edge/litert; AOSP android-17.0.0_r1
+last_verified: '2026-09-28'
+last_verified_against: Android API reference API 37 + Android 17 release notes + AOSP android-17.0.0_r1 + LiteRT NPU/Google Tensor/Qualcomm/MediaTek + ML Kit GenAI/AICore docs
 confidence: medium-low
+last_idle_audit_at: '2026-09-28T14:35:02+08:00'
+last_idle_audit_run_id: 20260928-143502-idle-audit-09a3b1c3
 consolidated_from:
 - src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md
 - src/part1-fundamentals/ch05-cpu-power/5.30-android17-ondevice-intelligence-framework-performance.md
@@ -730,7 +732,7 @@ Google Play 交付不覆盖所有渠道。没有 Google 移动服务（Google Mo
 
 | 后端 | `CompiledModel` 文档能力 | 需要额外确认 |
 |---|---|---|
-| Google Tensor | AOT 执行；Google Tensor SDK 处于 Beta，文档注明暂不支持设备侧 JIT | 支持的 Tensor 代际、模型产物和 AI Pack |
+| Google Tensor | AOT 执行；Google Tensor SDK 处于 Beta，当前公开页只列 AOT，未把 Google Tensor 写入设备侧编译支持项 | 支持的 Tensor 代际、模型产物和 AI Pack |
 | Qualcomm AI Engine Direct | AOT 与设备侧编译 | Qualcomm Neural Network（QNN）/ Hexagon Tensor Processor（HTP）版本、支持的 SoC 与算子 |
 | MediaTek NeuroPilot | AOT 与设备侧编译 | 支持的 Dimensity SoC、runtime 与算子 |
 | Samsung Exynos AI LiteCore | AOT 与设备侧编译 | 公开兼容列表和 runtime 版本 |
@@ -740,7 +742,7 @@ Google Play 交付不覆盖所有渠道。没有 Google 移动服务（Google Mo
 
 #### Google Tensor 仍需逐层验证是否实际使用 NPU
 
-对于 Google Tensor 设备，当前可核实的公开结论是：LiteRT NPU 文档支持通过 `CompiledModel` 执行 AOT 产物，并提供使用 `NpuCompatibilityChecker.GoogleTensor` 匹配设备的示例；设备侧 JIT 仍标为不支持。
+对于 Google Tensor 设备，当前可核实的公开结论是：LiteRT NPU 文档支持通过 `CompiledModel` 执行 AOT 产物，并提供使用 `NpuCompatibilityChecker.GoogleTensor` 匹配设备的示例；设备侧编译没有出现在 Google Tensor 当前公开支持项中。
 
 仍需验证四层证据：
 
