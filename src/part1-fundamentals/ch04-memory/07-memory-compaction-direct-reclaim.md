@@ -109,7 +109,7 @@ Linux 物理页规整、页面回收、ZRAM 压缩、Android 缓存应用回收�
 
 ### 1.3 ZRAM 保存换出的匿名内容
 
-ZRAM 把换出页压缩后保存在 RAM 中。它通过较少的压缩数据占用替代原始页占用，代价是压缩、解压 CPU 时间和内存带宽。
+ZRAM 把换出页压缩后保存在 RAM 中。压缩后的数据占用比原始页小，代价是压缩、解压的 CPU 时间和内存带宽。
 
 ZRAM 不会把伙伴系统里的离散空闲页自动排列成高阶块。它为匿名页换出提供存放位置；释放出的基础页能否形成连续块，还取决于物理位置、迁移类型和后续规整。
 
@@ -140,7 +140,9 @@ order-0 是一个基础页，order-1 是两个相邻基础页。高阶分配还�
 - 页面迁移类型（migratetype）与分配标志能够满足；
 - 页面没有被无法迁移的使用方式长期占住。
 
-大块 `malloc()` 或 Java 大对象申请的是连续虚拟地址，不等于直接申请同样大小的连续物理页。应用可能在发生缺页时逐个获得 order-0 页。高阶物理页需求更多见于内核对象、透明大页（THP）或大型 folio、连续内存分配器（CMA）以及特定驱动路径。图形和多媒体缓冲区是否要求物理连续，还取决于 IOMMU 是否支持地址重映射、使用的 DMA 堆和驱动实现。
+大块 `malloc()` 或 Java 大对象申请的是连续虚拟地址，不等于直接申请同样大小的连续物理页。应用可能在发生缺页时逐个获得 order-0 页。判断一次申请会不会进入高阶分配，先看它要的是虚拟地址连续还是物理地址连续。
+
+高阶物理页需求更多见于内核对象、透明大页（THP）或大型 folio、连续内存分配器（CMA）以及特定驱动路径。图形和多媒体缓冲区是否要求物理连续，还取决于 IOMMU 是否支持地址重映射、使用的 DMA 堆和驱动实现。
 
 举例说明 order 与页大小的数学关系：
 
@@ -158,13 +160,13 @@ order-0 是一个基础页，order-1 是两个相邻基础页。高阶分配还�
 - 迁移扫描器寻找可以搬走的已占用页；
 - 空闲页扫描器寻找可作为迁移目标的空闲页。
 
-页迁移成功后，低地址或目标区域中的占用页被移走，分散空闲页便有机会按伙伴系统规则合并。长期固定（pinned）、无法迁移的页，不可移动内核分配和受约束的页块都会降低成功率。
+页迁移成功后，低地址或目标区域中的占用页被移走，分散空闲页便有机会按伙伴系统规则合并。长期固定（pinned）或无法迁移的页、不可移动的内核分配、受约束的页块，都会降低迁移成功率。
 
 ### 3.1 迁移类型降低长期碎片
 
 页块会按用途区分 `MIGRATE_MOVABLE`、`MIGRATE_RECLAIMABLE`、`MIGRATE_UNMOVABLE`、`MIGRATE_CMA` 等迁移类型。这样分组可以减少可移动页与不可移动页交错，降低长期外部碎片。
 
-紧急情况下，分配器仍可能退而使用其他迁移类型的空闲块。随着设备运行时间增长、这种回退增多，一个页块（pageblock）中可能混入迁移能力不同的页面，后续高阶规整就更难成功。
+紧急情况下，分配器仍可能退而使用其他迁移类型的空闲块。设备运行越久，这种回退越多，一个页块（pageblock）中就可能混入迁移能力不同的页面，后续高阶规整也更难成功。
 
 ### 3.2 CMA 也可能需要迁移，但入口不同
 
@@ -180,7 +182,7 @@ CMA 为连续内存分配保留适合迁移的区域。CMA 分配或 `alloc_cont
 
 ## 4. Android 17 分配慢路径的真实顺序
 
-现象层面常把慢路径概括成“先回收，再规整”。Android 17 的 `__alloc_pages_slowpath()` 还有一个关键分支：部分高阶分配会在直接回收（direct reclaim）之前，先尝试直接规整（direct compaction）。两者都在当前请求分配的线程中同步执行。
+把慢路径概括成“先回收，再规整”会漏掉 Android 17 `__alloc_pages_slowpath()` 中的一个分支：部分高阶分配会在直接回收（direct reclaim）之前，先尝试直接规整（direct compaction）。两者都在当前请求分配的线程中同步执行。
 
 ### 4.1 第一次规整发生在什么条件下
 
@@ -256,7 +258,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order, ...)
 
 ### 4.4 直接回收和直接规整都计入 PSI
 
-`__alloc_pages_direct_reclaim()` 与 `__alloc_pages_direct_compact()` 都调用 `psi_memstall_enter()` / `psi_memstall_leave()`。这表示分配线程在两类同步处理中的停顿时间，都会计入内存压力停顿信息（memory PSI）。
+`__alloc_pages_direct_reclaim()` 与 `__alloc_pages_direct_compact()` 都调用 `psi_memstall_enter()` / `psi_memstall_leave()`。分配线程在两类同步处理中的停顿时间，都会计入内存压力停顿信息（memory PSI）。
 
 PSI 只能说明任务因内存资源短缺而停顿：
 
@@ -368,11 +370,13 @@ Android 17 源码可以通过内存事件监听器识别直接回收和 `kswapd`
 
 终止原因包括 `DIRECT_RECL_AND_THRASHING`、`DIRECT_RECL_STUCK`、`LOW_MEM_AND_SWAP`、`LOW_MEM_AND_THRASHING` 等条件。代码没有把 `/proc/vmstat` 的 `compact_fail`（内核枚举 `COMPACTFAIL`）作为直接终止进程的触发器。
 
-读 bugreport 时，`lmkd` 的“低内存”不等于 `/proc/meminfo` 里的 `MemAvailable`。Android 17 的 `meminfo_parse()` 解析 `MemFree`、文件页/匿名页、`SwapTotal/SwapFree`、`CmaFree` 等字段；`get_lowest_watermark()` 用 `MemFree - CmaFree` 与 `calc_zone_watermarks()` 汇总出的 `max_protection + min/low/high` 水位比较，得出 `WMARK_HIGH/LOW/MIN`。因此，`MemAvailable` 看起来仍高时，`lmkd` 仍可能因为马上可分配页贴近水位而把“低内存 + swap/thrashing”等条件纳入候选；反过来，水位没破、swap 充足且 refault 不增长时，PSI 唤醒也可能被判为无需 kill。[已验证: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp; 来源: 技术文章/source/juejin-android/2026-08-26-76772546-Android高版本LMKD源码解析PSI内存压力监控与查杀全流程.md]
+读 bugreport 时，`lmkd` 的“低内存”不等于 `/proc/meminfo` 里的 `MemAvailable`。Android 17 的 `meminfo_parse()` 解析 `MemFree`、文件页/匿名页、`SwapTotal/SwapFree`、`CmaFree` 等字段；`get_lowest_watermark()` 用 `MemFree - CmaFree` 与 `calc_zone_watermarks()` 汇总出的 `max_protection + min/low/high` 水位比较，得出 `WMARK_HIGH/LOW/MIN`。
+
+因此，`MemAvailable` 看起来仍高时，`lmkd` 仍可能因为马上可分配页贴近水位而把“低内存 + swap/thrashing”等条件纳入候选；反过来，水位没破、swap 充足且 refault 不增长时，PSI 唤醒也可能被判为无需 kill。[已验证: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp; 来源: 技术文章/source/juejin-android/2026-08-26-76772546-Android高版本LMKD源码解析PSI内存压力监控与查杀全流程.md]
 
 文件页抖动的分子是 `workingset_refault_file` 的区间增量，分母是上一窗口记录的 `nr_inactive_file + nr_active_file`；ZRAM 场景下，可用 swap 还会经过 `easy_available` 和 `swap_compression_ratio` 约束，而不是直接相信 `SwapFree` 的名义容量。排查 LMK 与直接回收相邻发生的问题时，应保存同一时间窗口内的 `/proc/vmstat`、`/proc/meminfo`、`/proc/zoneinfo` 和 `/proc/pressure/memory`，再用增量解释 thrashing、水位和 PSI 是否共同满足同一次查杀条件。[已验证: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp; 来源: 技术文章/source/juejin-android/2026-08-26-76772546-Android高版本LMKD源码解析PSI内存压力监控与查杀全流程.md]
 
-这给出清晰边界：
+这些增量证据给出四条边界：
 
 - 规整失败可能增加分配延迟或让高阶请求失败；
 - 同一压力期也可能让 PSI、内存水位、交换空间和缓存抖动条件恶化；
@@ -438,8 +442,6 @@ data_sources {
   }
 }
 ```
-
-各事件回答的问题不同：
 
 | 事件 | 关键字段或配对 | 用途 |
 |---|---|---|
@@ -529,7 +531,7 @@ adb shell cat /sys/block/zram0/mm_stat
 adb shell cat /proc/meminfo
 ```
 
-判读要点：
+这几个文件各自覆盖整条链路的一部分：
 
 - PSI `avg10/60/300` 适合看趋势，`total` 的区间增量适合补充短时停顿证据；
 - `/proc/pressure/memory` 的读数是统计视角，`lmkd` 的 PSI 唤醒是 `libpsi` 写入 trigger 条件后等待 `EPOLLPRI` 的事件视角；没有 `lmkd` 日志或 trace 时，不能只凭一次 `avg10` 抬高还原每次唤醒。[已验证: AOSP android-17.0.0_r1 system/memory/lmkd/libpsi/psi.cpp; system/memory/lmkd/lmkd.cpp; 来源: 技术文章/source/juejin-android/2026-08-26-76772546-AndroidPSI详解libpsi源码解析116行架起lmkd与内核的桥.md]
@@ -612,7 +614,7 @@ Android 14 起不再投递其他旧版 `onTrimMemory` 级别，相关常量在 A
 
 多尺寸透明大页（multi-size THP，mTHP）允许匿名内存使用大于基础页、又小于传统 PMD 尺寸 THP 的 2 的幂倍页面。它仍由页表项（PTE）映射，可以减少部分缺页和 TLB 压力，也会引入更高阶的物理页需求。
 
-Android 17 通用内核的 arm64 GKI 配置（`arch/arm64/configs/gki_defconfig`）启用了 `CONFIG_TRANSPARENT_HUGEPAGE=y` 与 `CONFIG_TRANSPARENT_HUGEPAGE_MADVISE=y`，不代表具体产品启用了所有 mTHP 尺寸。设备会按实际字节数暴露 `hugepages-*kB` 目录；4 KiB 基础页上的 order-2 是 16 KiB，16 KiB 基础页上则是 64 KiB。报告应同时记录基础页、实际大页尺寸、分配与回退计数和规整事件，不能只写 order。
+Android 17 通用内核的 arm64 GKI 配置（`arch/arm64/configs/gki_defconfig`）启用了 `CONFIG_TRANSPARENT_HUGEPAGE=y` 与 `CONFIG_TRANSPARENT_HUGEPAGE_MADVISE=y`，但这不代表具体产品启用了所有 mTHP 尺寸。设备会按实际字节数暴露 `hugepages-*kB` 目录；4 KiB 基础页上的 order-2 是 16 KiB，16 KiB 基础页上则是 64 KiB。报告应同时记录基础页、实际大页尺寸、分配与回退计数和规整事件，不能只写 order。
 
 ## 12. 低内存设备与厂商差异
 
