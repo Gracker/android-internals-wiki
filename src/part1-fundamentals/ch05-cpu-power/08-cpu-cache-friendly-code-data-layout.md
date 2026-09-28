@@ -62,7 +62,7 @@ consolidated_from:
 
 # CPU Cache 友好代码与数据布局优化
 
-CPU cache（高速缓存，下文保留 cache）优化应先证明当前负载受内存层级限制，再让数据布局匹配访问模式，不能停留在“顺序数组比链表快”这类经验判断。这里的内存层级包括各级 cache、地址转换缓存和 DRAM。不同移动 SoC（系统级芯片）的 CPU 核心、频率、cache 容量、共享层级和 PMU（Performance Monitoring Unit，性能监控单元）事件均有差异；没有测量支撑的 padding（填充）、prefetch（预取）或对象池，很容易增加内存占用，却没有改善延迟。
+CPU cache（高速缓存，下文保留 cache）优化要解决两个问题：让经常一起使用的数据在时间和地址上靠近，让被不同 CPU 频繁写入的数据不共用同一条 cache line。做法是先证明当前负载受内存层级限制，再让数据布局匹配访问模式，不能停留在“顺序数组比链表快”这类经验判断。这里的内存层级包括各级 cache、地址转换缓存和 DRAM。不同移动 SoC（系统级芯片）的 CPU 核心、频率、cache 容量、共享层级和 PMU（Performance Monitoring Unit，性能监控单元）事件均有差异；没有测量支撑的 padding（填充）、prefetch（预取）或对象池，很容易增加内存占用，却没有改善延迟。
 
 平台与内核基线分别为 Android 17 / API 37 / `android-17.0.0_r1` 和 `android17-6.18-2026-06_r6`。分析范围包括 Kotlin/Java、NDK C/C++、DEX 布局和系统源码中的局部性设计。调度、EAS 与大小核见 5.1，Baseline Profile 见 21.4，启动测量见 21.1。
 
@@ -87,7 +87,7 @@ Android common kernel `android17-6.18-2026-06_r6` 的 arm64 `arch/arm64/include/
 #define L1_CACHE_BYTES  (1 << L1_CACHE_SHIFT)
 ```
 
-这个内核基线按 64 字节 L1 cache line 构建。相同文件还从 `CTR_EL0.CWG` 读取 cache writeback granule（cache 写回粒度），并把 arm64 的 `ARCH_DMA_MINALIGN` 设为 128 字节。CPU L1 cache line、DMA 安全对齐和跨 CPU 之间避免互相干扰所需的间隔是三种不同的边界，不能用同一个常量概括。
+这个内核基线按 64 字节 L1 cache line 构建。相同文件还从 `CTR_EL0.CWG` 读取 cache writeback granule（cache 写回粒度），并把 arm64 的 `ARCH_DMA_MINALIGN` 设为 128 字节。CPU L1 cache line、DMA 安全对齐、跨 CPU 避免互相干扰所需的间隔，是三种不同的边界，不能用同一个常量概括。
 
 应用代码可以把 64 字节作为当前常见设备的实验起点，但不能写成 Armv8/Armv9 规范保证。涉及共享库、DMA 或多代设备时，应结合目标 ABI、设备资料和测量决定布局。
 
@@ -246,11 +246,13 @@ struct RenderItemCold {
 
 `std::vector` 和 Binder `Parcel` 使用连续缓冲区，顺序读写具备空间局部性。但容量增长可能触发重新分配和复制。已知大小时合理调用 `reserve()` 可以减少扩容；过度预留则会增加 RSS（常驻内存）。
 
-Android 17 `frameworks/native/libs/binder/Parcel.cpp` 中，`mData`、`mDataSize`、`mDataCapacity` 和 `mDataPos` 管理连续数据区，写入按 4 字节 padding，增长路径使用 `realloc` 或分配并复制。Parcel 另有对象偏移数组，读取也可以调整 data position，因此“Parcel 只能从头顺序读、不能随机访问”并不准确。
+Android 17 `frameworks/native/libs/binder/Parcel.cpp` 中，`mData`、`mDataSize`、`mDataCapacity` 和 `mDataPos` 管理连续数据区，写入按 4 字节 padding，增长路径使用 `realloc` 或分配并复制。Parcel 另有对象偏移数组，读取也可以调整 data position，因此“Parcel 只能从头顺序读、不能随机访问”并不准确。Parcel 字段与增长路径的完整说明见本章「Binder Parcel：连续数据与独立对象表」。
 
 Parcel 的布局主要服务于 Binder 传输格式（wire format）、安全检查和对象管理，cache 局部性只是连续数据区带来的性质之一。它不足以证明“Parcel 总比 JSON 快”；序列化格式、数据规模、解析器和 IPC 拷贝都要纳入比较。
 
 ## 应用层热路径：先减少工作，再谈对象池
+
+应用层能控制的布局手段比 NDK 少：对象布局由 ART 和分配器决定，可改的主要是“少做工作”和“少引入额外机制”。本节按这个顺序展开：先去装箱和指针追踪，再判断对象池是否划算，最后单独评估分支预测和软件 prefetch，因为后两者与 cache miss 属于不同机制。
 
 ### 避免装箱和指针追踪
 
@@ -319,6 +321,8 @@ Startup Profile 应覆盖 launcher、常见 deep link（直接打开应用内指
 不要引用与当前应用、构建链无关的 Redex 百分比作为预期收益。官方给出的经验范围也只能用于决定是否实验，发布结论应来自自己的 A/B 数据。
 
 ## Simpleperf：从症状到证据
+
+Simpleperf 能提供的证据有强弱之分。这一节先确认设备支持哪些 PMU 事件，再用分组计数和热点采样定位到符号，然后说明低 IPC、cache miss 与 false sharing 各自能被证明到什么程度，最后交代内存统计类的数据为什么不能替代这些证据。
 
 ### 先查看设备支持哪些 PMU 事件
 
@@ -389,7 +393,15 @@ Perfetto 的 sched、CPU frequency、thread state 和应用 slice（带起止时
 
 这些条件在量产 Android 手机上经常无法全部满足。可行的替代实验是固定线程和工作量，只改变计数器分片或字段间距，同时比较吞吐量、atomic retry、cache event 与功耗。若无法得到地址级证据，结论应写成“现象与共享 cache line 竞争一致”，不要声称已经定位到某个字段。
 
+### 内存统计与 Cache 性能证据的边界
+
+PSS（按共享比例折算后的进程内存）中的 Dalvik/native/other 分类用于内存归因，不能证明 CPU cache 的数据布局或访问局部性。`anon_huge_pages`、`file_pmd_mapped` 等 smaps 字段反映大页映射状态，也不能证明是否存在 false sharing。它们属于内存统计和 TLB/页表证据，不能替代 cache 事件与地址级采样。
+
+同样，Linux 的 SLUB slab allocator（小对象分配器）不会把所有对象统一向上取整到 cache-line 大小的整数倍；具体 alignment（对齐方式）取决于架构、cache flags、对象大小和创建参数。16 KiB page 对 slab order（一个 slab 占用的连续页阶数）、内存碎片和 TLB 的影响，也需要单独测量。
+
 ## Android 17 源码中的局部性设计
+
+本节看三类能从 Android 17 源码直接核对的布局设计：ART 卡表的偏置基地址、Binder Parcel 的连续数据区、内核的 cache 对齐宏。每一类都先给可以确认的边界，再说清哪些性能结论不能从这些常量直接推出来。
 
 ### ART CardTable：一字节表示 1 KiB 堆区间
 
@@ -400,7 +412,7 @@ Android 17 ART 的 `CardTable`（卡表）定义 `kCardShift = 10`，因此卡�
 可确认的边界是：
 
 - card granularity 是 1 KiB heap / 1 byte table；
-- biased base（带偏置的基地址）用于高效计算 card 地址并写入 dirty 状态；
+- `biased_begin`（带偏置的基地址）用于高效计算 card 地址并写入 dirty 状态；
 - dirty、aged、aged2 是 GC 状态。
 
 不能从这些常量推出“每次写屏障节省一条 cache line”或固定的性能百分比。实际指令序列依赖 ISA（指令集架构）、编译器后端和运行模式；多个 mutator（并发修改堆的应用线程）写入相邻的 card byte，也不等于已经观测到 false sharing。
@@ -421,12 +433,6 @@ Android 17 `Parcel` 的普通数据存储在 `mData` 连续缓冲区，通过 `m
 - `cache_line_size()`。
 
 文件注释明确要求谨慎使用 `__read_mostly`，并根据性能分析结果决定是否采用。紧凑排列可以减少读取的 cache line 数，对齐隔离则会增加空间占用。应用层可以借鉴这套决策顺序，但不能直接复制内核宏，也不应让所有结构都独占一条 cache line。
-
-### 内存统计与 Cache 性能证据的边界
-
-PSS（按共享比例折算后的进程内存）中的 Dalvik/native/other 分类用于内存归因，不能证明 CPU cache 的数据布局或访问局部性。`anon_huge_pages`、`file_pmd_mapped` 等 smaps 字段反映大页映射状态，也不能证明是否存在 false sharing。它们属于内存统计和 TLB/页表证据，不能替代 cache 事件与地址级采样。
-
-同样，Linux 的 SLUB slab allocator（小对象分配器）不会把所有对象统一向上取整到 cache-line 大小的整数倍；具体 alignment（对齐方式）取决于架构、cache flags、对象大小和创建参数。16 KiB page 对 slab order（一个 slab 占用的连续页阶数）、内存碎片和 TLB 的影响，也需要单独测量。
 
 ## 一套可执行的优化流程
 
@@ -486,7 +492,7 @@ Cache 友好代码要让“经常一起使用的数据”在时间和地址上�
 ## 源码核对索引
 
 - `art/runtime/gc/accounting/card_table.h`
-  - `kCardShift`、card 状态和 biased base 字段。
+  - `kCardShift`、card 状态和 `biased_begin` 字段。
 - `art/runtime/gc/accounting/card_table.cc`
   - 额外 256 字节映射与 `biased_begin` 计算。
 - `frameworks/native/libs/binder/Parcel.cpp`
