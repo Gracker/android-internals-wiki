@@ -134,13 +134,17 @@ consolidated_from:
 
 ### 应用网络栈和主线程边界
 
-Android 应用常见的 HTTP 路径不能合写成一条调用栈：OkHttp 自己管理连接池，TCP 通常经 `java.net.Socket`，TLS（传输层安全）经平台 JSSE/Conscrypt（Java 与 Android 的 TLS 实现）；Cronet 使用 Chromium native（原生代码）网络栈；API 34 起的 `HttpEngine` 使用设备提供的实现。HTTP/3/QUIC 状态机位于 Cronet/HttpEngine 的用户空间 provider（实现提供方），内核只看到 UDP/IP/socket，OkHttp 5.3.0 则没有稳定公开的 HTTP/3 配置入口。
+Android 应用常见的 HTTP 路径不能合写成一条调用栈：OkHttp 自己管理连接池，TCP 通常经 `java.net.Socket`，TLS（传输层安全）经平台 JSSE/Conscrypt（Java 与 Android 的 TLS 实现）；Cronet 使用 Chromium native（原生代码）网络栈；API 34 起的 `HttpEngine` 使用设备提供的实现。
 
-主线程禁网也要区分“直接发起网络”与“等待后台网络”。Android 17 的 `Inet6AddressImpl` 在 DNS 缓存检查前调用 `BlockGuard.getThreadPolicy().onNetwork()`；BlockGuard 是检测线程违规 I/O 的机制，`BlockGuardOs` 还覆盖 connect、阻塞 poll（等待文件描述符事件）与 recvmsg（接收 socket 消息）等入口。JNI 直接 I/O 可能避开部分检测。`Future.get()`、`CountDownLatch.await()` 或 `runBlocking` 虽不会抛 `NetworkOnMainThreadException`，仍会让 UI 等待后台请求并造成卡顿或 ANR（应用无响应）。
+HTTP/3/QUIC 状态机位于 Cronet/HttpEngine 的用户空间 provider（实现提供方），内核只看到 UDP/IP/socket，OkHttp 5.3.0 则没有稳定公开的 HTTP/3 配置入口。
+
+主线程的网络限制要区分“直接发起网络”与“等待后台网络”两种情况。Android 17 的 `Inet6AddressImpl` 在 DNS 缓存检查前调用 `BlockGuard.getThreadPolicy().onNetwork()`；BlockGuard 是检测线程违规 I/O 的机制，`BlockGuardOs` 还覆盖 connect、阻塞 poll（等待文件描述符事件）与 recvmsg（接收 socket 消息）等入口，JNI 直接 I/O 则可能避开部分检测。
+
+`Future.get()`、`CountDownLatch.await()` 或 `runBlocking` 虽不会抛 `NetworkOnMainThreadException`，仍会让 UI 等待后台请求并造成卡顿或 ANR（应用无响应）。
 
 ### 一次请求应当怎样计时
 
-常规非双工请求可以按下面的顺序观察：
+常规的非双工请求（发送和接收不能同时进行）可以按下面的顺序观察：
 
 ```text
 enqueue / execute
@@ -154,7 +158,7 @@ enqueue / execute
   → 反序列化、业务处理与界面更新
 ```
 
-缓存命中或连接复用会跳过若干阶段，重定向、认证、路由回退和重试又可能让某些阶段出现多次。双工（可同时发送和接收）请求还允许请求体与响应交错，因此监控系统要保存事件序列，不能假定每种事件只出现一次。
+缓存命中或连接复用会跳过若干阶段，重定向、认证、路由回退和重试又可能让某些阶段出现多次。双工请求还允许请求体与响应交错，因此监控系统要保存事件序列，不能假定每种事件只出现一次。
 
 #### 需要分开的指标
 
@@ -179,7 +183,7 @@ TTFB（Time to First Byte，首字节时间）在不同平台可能采用不同�
 - `callStart` 到 `responseHeadersStart`：包含排队、DNS、连接、握手、上传和等待响应，接近用户等待响应头的时间。
 - 请求发送结束到 `responseHeadersStart`：排除了前置阶段，但仍包含网络往返、代理、CDN、服务端排队与处理。
 
-TTFB 高不能单独证明服务端慢。服务端 trace（性能跟踪）、`Server-Timing`、CDN（内容分发网络）cache 状态和客户端分段计时一起使用，才能缩小范围。对响应头和响应体之间的边界也要保持一致；OkHttp 的 `responseHeadersStart` 表示开始读取响应头，并不等同于业务已经拿到可展示数据。
+TTFB 高不能单独证明服务端慢。服务端 trace（性能跟踪）、`Server-Timing`、CDN（内容分发网络）cache 状态和客户端分段计时一起使用，才能缩小范围。统计时要固定响应头和响应体的边界口径；OkHttp 的 `responseHeadersStart` 表示开始读取响应头，并不等同于业务已经拿到可展示数据。
 
 #### 传输速率的口径
 
@@ -192,7 +196,7 @@ TTFB 高不能单独证明服务端慢。服务端 trace（性能跟踪）、`Se
 - 协议、网络 transport（传输类型）、是否 metered（按流量计费）、是否 roaming（漫游）；
 - 中断、续传和重试字节。
 
-`NetworkCapabilities.getLinkDownstreamBandwidthKbps()` 返回系统估计的**第一跳 transport 带宽**，也就是设备到所连接网络的链路能力，不能代替到目标服务的实际请求吞吐。Wi‑Fi、蜂窝、VPN 也不能直接映射成“快”或“慢”。
+`NetworkCapabilities.getLinkDownstreamBandwidthKbps()` 返回系统估计的**第一跳 transport 带宽**，也就是设备到所连接网络的链路能力，不能代替到目标服务的实际请求吞吐。
 
 ### HTTP/1.1、HTTP/2 与 HTTP/3
 
@@ -508,7 +512,7 @@ val monitoredClient = OkHttpClient.Builder()
     .build()
 ```
 
-生产监控可以按同样的方式增加 DNS、connect、secure connect、request、response 和 `connectionAcquired` span（时间区间）。DNS、connect、请求与响应事件可能因重定向和恢复重复出现，应追加到 attempt 列表。连接复用时 DNS 和 connect 事件会缺席，这属于正常结果。
+生产监控可以按同样的方式增加 DNS、connect、secure connect、request、response 和 `connectionAcquired`（取得可用连接）span（时间区间）。DNS、connect、请求与响应事件可能因重定向和恢复重复出现，应追加到 attempt 列表。连接复用时 DNS 和 connect 事件会缺席，这属于正常结果。
 
 指标上传要限制基数，也就是控制字段不同取值的数量，并保护隐私。建议记录经过白名单映射的接口模板、协议、状态码、错误类别和时间分段；完整 URL、query、header、请求体、响应体、Cookie 与 token 不应进入网络性能日志。
 
@@ -562,9 +566,9 @@ Perfetto 不会自动把 OkHttp `Call` 展成 DNS、TLS 和 TTFB。可以用 And
 
 ## TLS 握手、证书与安全边界
 
-基础网络路径可用后，TLS 在这一段增加密钥协商、证书验证和会话恢复。一个 HTTPS 请求在发送业务数据前可能依次经过 DNS 解析、传输层连接、TLS 握手和证书验证；业务数据很少的短请求，这些准备工作反而可能占据大部分等待时间。安全配置不能为了降低握手耗时而绕过验证，分析时也不能把所有耗时都记到“TLS”名下，或用降低验证强度换取表面上的延迟下降。
+基础网络路径之上，TLS 增加密钥协商、证书验证和会话恢复。一个 HTTPS 请求在发送业务数据前可能依次经过 DNS 解析、传输层连接、TLS 握手和证书验证；业务数据很少的短请求里，这些准备工作反而可能占据大部分等待时间。安全配置不能为了降低握手耗时而绕过验证，分析时也不能把所有耗时都记到“TLS”名下，或用降低验证强度换取表面上的延迟下降。
 
-核对基线沿用前文：Android 17（API 37）和 AOSP `android-17.0.0_r1`。以下内容说明 TLS 1.3、连接复用、Encrypted Client Hello（ECH，加密客户端问候）、Certificate Transparency（CT，证书透明度）、明文流量策略与 HPKE 各自解决什么问题；版本迭代只保留会影响迁移判断的节点。
+核对基线沿用前文：Android 17（API 37）和 AOSP `android-17.0.0_r1`。TLS 1.3、连接复用、Encrypted Client Hello（ECH，加密客户端问候）、Certificate Transparency（CT，证书透明度）、明文流量策略与 HPKE 的版本边界都按这条基线核对；版本迭代只保留会影响迁移判断的节点。
 
 ### 先把一次安全连接分段
 
@@ -598,7 +602,7 @@ Android 10（API 29）起，平台 TLS 实现默认启用 TLS 1.3。该版本的
 | TLS 会话恢复 | 是 | 是，但使用 PSK（预共享密钥）或缓存的 session state（会话状态）缩短协商 | 原连接已关闭，双方仍保留恢复状态 |
 | TLS 1.3 0-RTT | 是 | 恢复握手中提前发送 early data（握手确认前的早期数据） | 网络栈、服务端和业务语义均允许 |
 
-连接复用能否命中，取决于池内是否还有可用连接；池容量与 keep-alive（连接保持）的口径见前文「共享 OkHttpClient」。要判断复用是否发生，应先统计 `connectionAcquired`（取得可用连接）回调、新建连接率、域名数量和服务端空闲超时，再调整 `maxIdleConnections` 与 keep-alive。
+连接复用能否命中，取决于池内是否还有可用连接；池容量与 keep-alive 的口径见前文「共享 OkHttpClient」。要判断复用是否发生，应先统计 `connectionAcquired` 回调、新建连接率、域名数量和服务端空闲超时，再调整 `maxIdleConnections` 与 keep-alive。
 
 会话恢复发生在新连接上。客户端持有可用的 session ticket（会话票据），并不保证服务端接受恢复：服务端重启、用于保护票据的 ticket key 轮换、负载均衡把请求转到其他节点，以及票据过期，都可能使这次连接改为完整握手。仅看客户端的 `secureConnectStart`/`secureConnectEnd` 也无法可靠判断是否恢复，应结合 TLS 库日志或服务端的 full/resumed handshake（完整/恢复握手）指标。
 
@@ -719,7 +723,7 @@ Android 9 引入 Private DNS 的 DNS over TLS（DoT）设置。AOSP `android-17.
 - 只有 ECH：ClientHello 的敏感字段被保护，但明文 DNS 仍可能暴露查询；
 - 两者均启用：仍不能隐藏目标 IP、包长、时序和连接频率。
 
-DoH 首次查询也不等于固定增加一个 RTT。已有 HTTP/2/HTTP/3 连接、DNS 缓存、连接竞速（并行尝试多个地址或协议）和解析器实现都会改变成本。应用层自定义 DNS 还可能绕过系统 Private DNS、HTTPS 记录处理，以及网络切换后的缓存和重新解析规则，采用前要评估这些副作用。
+DoH 首次查询的成本取决于已有 HTTP/2/HTTP/3 连接、DNS 缓存、连接竞速（并行尝试多个地址或协议）和解析器实现，并不固定增加一个 RTT。应用层自定义 DNS 还可能绕过系统 Private DNS、HTTPS 记录处理，以及网络切换后的缓存和重新解析规则，采用前要评估这些副作用。
 
 ### 建立可核对的性能证据
 
@@ -752,12 +756,6 @@ OkHttp `EventListener` 可记录 `dnsStart`/`dnsEnd`、`connectStart`、`secureC
 | 开启 DoH 后解析变慢 | DoH 连接复用、缓存、解析器地域、网络切换 | 固定认为多一个 RTT |
 | HPKE 解密失败 | suite（算法组合）、info（上下文信息）、AAD（参与认证但不加密的附加数据）、密钥格式和 base mode 边界 | 把 HPKE 当作 TLS 会话 |
 
-### 与其他部分的关联
-
-- **前文「DNS、连接、传输与应用处理」**：连接池、缓存、HTTP/2、HTTP/3 与 OkHttp 事件决定新连接出现的频率并提供分段指标。
-- **§12.2 netd 与 DnsResolver**：系统 DNS、Private DNS、HTTPS 资源记录与每网络解析状态。
-- **§1.2 版本演进**：适合核对 targetSdk 与运行系统共同改变行为的案例。
-
 
 ## 版本与实现边界
 
@@ -768,6 +766,13 @@ OkHttp `EventListener` 可记录 `dnsStart`/`dnsEnd`、`connectStart`、`secureC
 | Android 17 / API 37 | `SubscriptionInfo` 增加流媒体分配速率；target 37 的局域网访问受 `ACCESS_LOCAL_NETWORK` 约束 |
 | OkHttp 5.3.0 | 客户端锚点；共享 client、fast fallback、EventListener 排队事件与默认 timeout（超时）口径以此版本为准 |
 | Cronet 18.0.1 | Play services Cronet 接入锚点；provider 可用性和协议协商需要在运行时观测 |
+
+
+## 与其他部分的关联
+
+- **前文「DNS、连接、传输与应用处理」**：连接池、缓存、HTTP/2、HTTP/3 与 OkHttp 事件决定新连接出现的频率并提供分段指标。
+- **§12.2 netd 与 DnsResolver**：系统 DNS、Private DNS、HTTPS 资源记录与每网络解析状态。
+- **§1.2 版本演进**：适合核对 targetSdk 与运行系统共同改变行为的案例。
 
 
 ## 参考资料
