@@ -84,7 +84,7 @@ consolidated_from:
 
 若把这些阶段统称为“Keystore 很慢”，既无法定位瓶颈，也可能让性能改动破坏原有安全约束。
 
-平台源码锚点为 Android 17 / API 37 的 `android-17.0.0_r1`，kernel 侧固定到 `android17-6.18-2026-06_r6`。应用 API 以 Android Developers 文档为准，服务行为与 operation 生命周期则回到 Android 17 的 framework 和 `system/security` 源码核查。这里的 operation 是一次有状态的密码操作会话，从初始化到完成或中止都占用后端资源。
+平台源码锚点为 Android 17 / API 37 的 `android-17.0.0_r1`，kernel 侧固定到 `android17-6.18-2026-06_r6`。应用 API 以 Android Developers 文档为准；这里的 operation 是一次有状态的密码操作会话，从初始化到完成或中止都占用后端资源，它的生命周期和服务行为回到 Android 17 的 framework 和 `system/security` 源码核查。
 
 登录链路可能同时访问 Keystore/KeyMint、BiometricPrompt 和 Credential Manager。密钥操作、硬件认证、系统 UI 与网络请求应分段计时，避免把安全等待统一归为接口慢。
 
@@ -92,9 +92,9 @@ consolidated_from:
 
 ### 调用路径：App、Keystore2、KeyMint 与安全环境
 
-Android Keystore 以 JCA/JCE Provider 的形式接入 Java 密码 API。JCA/JCE 是 Java 的密码体系，Provider 负责实现具体算法和密钥访问。`KeyStore`、`KeyGenerator`、`KeyPairGenerator`、`Cipher`、`Signature` 和 `Mac` 对象在 App 进程中创建；需要使用受保护密钥时，调用才通过 Binder 进入 `keystore2`。
+Android Keystore 作为 JCA/JCE Provider 接入 Java 密码 API。JCA/JCE 是 Java 的密码体系，Provider 负责实现具体算法和密钥访问。`KeyStore`、`KeyGenerator`、`KeyPairGenerator`、`Cipher`、`Signature` 和 `Mac` 对象在 App 进程中创建；需要使用受保护密钥时，调用才通过 Binder 进入 `keystore2`。
 
-下面的图同时展示密码操作和用户认证两条路径，说明认证结果怎样参与密钥授权；它们并不共享完全相同的执行阶段。
+下面的图同时展示密码操作和用户认证两条路径，说明认证结果怎样参与密钥授权；两条路径的执行阶段并不完全重合。
 
 ```mermaid
 flowchart LR
@@ -116,6 +116,8 @@ flowchart LR
 
 #### 一次操作至少有五段
 
+表里的可观测性一列多次提到 App trace marker，它是应用写入时间线的自定义起止标记。
+
 | 阶段 | 入口示例 | 主要成本 | 可观测性 |
 |---|---|---|---|
 | 密钥查找（key lookup） | `KeyStore.getKey()`、`getEntry()` | Provider、Binder、数据库/key blob 读取 | App trace marker、Binder、`keystore2` 调度 |
@@ -124,7 +126,7 @@ flowchart LR
 | 数据处理与结束 | `update()`、`doFinal()`、`sign()` | 数据传输、硬件计算、认证 token 校验 | payload 大小、端到端耗时 |
 | 用户认证 | `BiometricPrompt.authenticate()` | 系统 UI、用户操作、传感器、认证 TA | prompt 回调与认证错误 |
 
-App trace marker 是应用写入时间线的自定义起止标记。认证 UI 的等待时间不属于密码算法耗时；通过网络换取会话 token、由服务端校验 attestation 的时间也不属于本地 KeyMint 耗时。指标必须沿这些边界分段记录。
+认证 UI 的等待时间不属于密码算法耗时；通过网络换取会话 token、由服务端校验 attestation 的时间也不属于本地 KeyMint 耗时。指标必须沿这些边界分段记录。
 
 ### `init()` 已经创建 KeyMint operation
 
@@ -133,7 +135,7 @@ Android 17 的 `AndroidKeyStoreCipherSpiBase.engineInit()` 会调用 `ensureKeys
 Android 17 源码还给出两个工程约束：
 
 - `engineGenerateKey()` 和多处 `engineInit()` 会调用 `StrictMode.noteSlowCall()`，或标记磁盘读写，表明这些路径可能阻塞调用线程。
-- Cipher reset、成功结束和部分错误都会 abort（中止）operation；finalizer 是对象回收前的兜底清理，不能依赖 GC 及时释放硬件 slot。
+- `Cipher` 的 reset、成功结束和部分错误都会 abort（中止）operation；finalizer 是对象回收前的兜底清理，不能依赖 GC 及时释放硬件 slot。
 
 因此，`Cipher`、`Signature` 或 `Mac` 在 `init` 后应尽快完成。提前数分钟创建对象再等待用户操作，会无谓地延长 operation 和 slot 的占用时间。
 
@@ -147,7 +149,7 @@ Android 17 源码还给出两个工程约束：
 - operation 对应的 Binder 对象被释放；
 - slot 紧张时被 Keystore2 prune，也就是选中并回收。
 
-同一个 operation 代理还有并发保护。Android 17 的 `operation.rs` 在多个线程同时调用同一 operation 时可返回 `OPERATION_BUSY`，因此同一个 `Cipher` 或 `Signature` 实例不能并发使用。
+同一个 operation 自身还有并发保护。Android 17 的 `operation.rs` 在多个线程同时调用同一 operation 时可返回 `OPERATION_BUSY`，因此同一个 `Cipher` 或 `Signature` 实例不能并发使用。
 
 ### 密钥生成、签名、解密与 attestation
 
@@ -161,7 +163,7 @@ Android 17 源码还给出两个工程约束：
 - 用户启用支付、设备绑定或安全登录的设置流程；
 - 注册完成后、进入高频登录之前的准备阶段。
 
-同一用途的密钥不应在每次 App 冷启动、每次登录点击或每个网络请求中重复生成。检查密钥是否存在时，还要处理密钥被删除，以及锁屏重置、biometric enrollment（生物识别模板录入状态）变化或 OTA 系统升级后失效等情况。
+同一用途的密钥不应在每次 App 冷启动、每次登录点击或每个网络请求中重复生成。检查密钥是否存在时，还要考虑密钥已被删除，或因锁屏重置、biometric enrollment（生物识别模板录入状态）变化、OTA 系统升级而失效的情况。
 
 #### begin/update/finish
 
@@ -405,7 +407,7 @@ TEE/StrongBox 内部阶段通常不会出现在普通 Perfetto trace 中。若�
 | 超时或备用登录 | 让 UI 可以继续响应 | 上层超时不代表 operation 已取消 |
 | 能力缓存 | 减少重复探测 | 系统升级、锁屏和 enrollment 变化后失效 |
 
-可以缓存设备能力结果、密钥是否存在的非敏感状态和服务端策略版本。解密后的 refresh token（刷新令牌）不应仅为缩短 Keystore 耗时而缓存；明文缓存扩大了数据可能暴露的位置，必须单独进行安全评审。
+可以缓存设备能力结果、密钥是否存在的非敏感状态和服务端策略版本。解密后的 refresh token（刷新令牌）不应仅为缩短 Keystore 耗时而缓存；明文缓存会扩大数据可能暴露的范围，必须单独做安全评审。
 
 ### Passkey / Credential Manager 的边界
 
@@ -445,19 +447,19 @@ Android 17 可从以下固定源码继续追踪：
 - Keystore2 [`operation.rs`](https://android.googlesource.com/platform/system/security/+/android-17.0.0_r1/keystore2/src/operation.rs)：operation 生命周期、并发保护和 pruning 算法。
 - [`IKeyMintDevice.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/security/keymint/aidl/android/hardware/security/keymint/IKeyMintDevice.aidl)：KeyMint HAL 的 generate/import/begin 接口。
 
-App 到 `keystore2`，以及 `keystore2` 到 Binderized KeyMint HAL（通过 Binder 暴露的 KeyMint 服务）都经过 Binder。kernel `android17-6.18-2026-06_r6` 可固定查看 [`drivers/android/binder.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)。TEE/StrongBox 的 transport（通信通道）和 driver 多由设备厂商实现，不在 common kernel 中；没有设备内核与 HAL 源码时，应明确说明这部分无法继续归因。
+App 到 `keystore2`、`keystore2` 到 Binderized KeyMint HAL（通过 Binder 暴露的 KeyMint 服务），这两段都经过 Binder。kernel `android17-6.18-2026-06_r6` 可固定查看 [`drivers/android/binder.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)。TEE/StrongBox 的 transport（通信通道）和 driver 多由设备厂商实现，不在 common kernel 中；没有设备内核与 HAL 源码时，应明确说明这部分无法继续归因。
 
 ## 生物认证、凭据选择与登录完成
 
 密钥可用后，认证 UI 和凭据提供方还会引入 Binder、硬件和用户交互等待。最终登录完成时间应与密钥阶段分开归因。
 
-如果登录页只记录一个 `login_cost_ms`（登录总耗时），出现慢登录时几乎无法判断时间花在哪里。一次凭据登录可能包含 Credential Provider 查询、系统凭据选择器、用户操作、传感器认证、passkey assertion（通行密钥生成的认证断言）、服务端验证和会话初始化；会话内的重新授权则可能只经过 `BiometricPrompt`、Keystore 与业务操作。两个流程都会显示系统认证界面，但调用者、数据边界和可观测信号并不相同。
+如果登录页只记录一个 `login_cost_ms`（登录总耗时），出现慢登录时几乎无法判断时间花在哪里。一次凭据登录可能包含这些环节：Credential Provider 查询、系统凭据选择器、用户操作、传感器认证、passkey assertion（通行密钥生成的认证断言）、服务端验证和会话初始化。会话内的重新授权则可能只经过 `BiometricPrompt`、Keystore 与业务操作。两个流程都会显示系统认证界面，但调用者、数据边界和可观测信号并不相同。
 
 平台源码基线为 Android 17（API 37）的 `android-17.0.0_r1`，内核基线为 `android17-6.18-2026-06_r6`。应用初次登录优先使用 Credential Manager；已登录会话内确认敏感操作时，可以使用 Credential Manager 或 AndroidX `BiometricPrompt`。这一分工来自当前 [Android 生物认证指南](https://developer.android.com/identity/sign-in/biometric-auth)，也能避免应用自行实现账号选择与认证界面。
 
 ### 两条流程，两个责任边界
 
-登录与重新授权可以共享同一种 `flow_id`（一次用户意图的短期关联 ID）规则，但应使用各自的阶段名称。下图中的实线表示 Credential Manager 登录，虚线表示会话内重新授权：
+登录与重新授权可以遵循同一套 `flow_id`（一次用户意图的短期关联 ID）规则，但两边的阶段名称要分开。下图中的实线表示 Credential Manager 登录，虚线表示会话内重新授权：
 
 ```mermaid
 flowchart LR
@@ -598,7 +600,9 @@ Credential Manager 这套体系包含 Jetpack API、平台服务、系统 UI 和
 
 业务 App 通常属于依赖方。它调用 `getCredential()`，却不能直接读取系统选择器中的候选总数，也不知道每个 provider 的查询耗时。凭据提供方可以统计自己返回的候选和内部时延，但它看不到其他 provider，因而不能把自己的数量当作系统候选总数。
 
-Android 17 的 [`CredentialManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/credentials/java/com/android/server/credentials/CredentialManagerService.java) 展示了平台侧结构：`executeGetCredential()` 创建请求级 `GetRequestSession`，为各 provider 准备子会话并启动查询；`executePrepareGetCredential()` 创建 `PrepareGetRequestSession`，同样准备 provider session，并返回后续请求所需的 handle（继续这次预取的句柄）。一次 API 调用可以包含多个 provider session，而依赖方应用只能收到最终 response 或 exception。
+从 Android 17 的 [`CredentialManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/credentials/java/com/android/server/credentials/CredentialManagerService.java) 可以看到平台侧的结构：`executeGetCredential()` 创建请求级 `GetRequestSession`，为各 provider 准备子会话并启动查询；`executePrepareGetCredential()` 创建 `PrepareGetRequestSession`，同样准备 provider session，并返回后续请求所需的 handle（继续这次预取的句柄）。
+
+一次 API 调用可以包含多个 provider session，而依赖方应用只能收到最终 response 或 exception。
 
 #### `prepareGetCredential()` 的适用边界
 
@@ -631,7 +635,7 @@ provider 集成时有四条硬约束：
 
 ### CryptoObject：相似名字下有两套约束
 
-旧实现常把“允许 device credential 时不能传 `CryptoObject`”写成适用于所有场景的规则。当前 API 要结合密钥类型、Android 版本和调用方角色判断：
+旧的说法常把“允许 device credential 时不能传 `CryptoObject`”当成适用于所有场景的规则。当前 API 要结合密钥类型、Android 版本和调用方角色判断：
 
 | 形态 | 认证器配置 | `CryptoObject` 用法 | 版本或角色边界 |
 |---|---|---|---|
@@ -642,7 +646,7 @@ provider 集成时有四条硬约束：
 
 当前 [Android 生物认证指南的 auth-per-use 章节](https://developer.android.com/identity/sign-in/biometric-auth#auth-per-use-keys) 给出的密钥策略允许 `AUTH_BIOMETRIC_STRONG | AUTH_DEVICE_CREDENTIAL`；AndroidX `BiometricPrompt.authenticate(info, crypto)` 参考文档还说明了 Android 11 之前的兼容限制。指南中“不带 `CryptoObject`”的说明位于 time-based key 流程，不能套用到 Android 11+ 的 auth-per-use key。
 
-密钥授权条件还要与 prompt 策略一致。若密钥只允许 strong biometric，即使 prompt 同时提供 device credential，PIN 也不能授权使用这把密钥。密钥允许两种认证器时，调用方仍需处理密钥失效、认证 token 不匹配和安全级别差异。完整的初始化顺序、KeyMint operation 与异常分类见 [§8.5 Keystore/KeyMint 调用链延迟](05-keystore-biometric-credential-login.md)。
+密钥授权条件还要与 prompt 策略一致。若密钥只允许 strong biometric，即使 prompt 同时提供 device credential，PIN 也不能授权使用这把密钥。密钥允许两种认证器时，调用方仍需处理密钥失效、认证 token 不匹配和安全级别差异。完整的初始化顺序、KeyMint operation 与异常分类见前文 [「密钥生成、访问与 KeyMint 延迟」](05-keystore-biometric-credential-login.md) 一节。
 
 性能埋点至少拆成这些时间段：
 
@@ -677,7 +681,7 @@ stateDiagram-v2
     Recovery --> [*]
 ```
 
-这张状态图将样本未识别、终态错误和业务验证失败放在不同状态，便于避免重复弹窗和错误归因。
+这张状态图把样本未识别、终态错误和业务验证失败放在不同状态，可以避免重复弹窗和错误归因。
 
 | 信号 | 含义 | 合适的动作 |
 |---|---|---|
@@ -728,7 +732,7 @@ SystemUI 和 Framework API 为应用提供一致接口，但 sensor HAL、屏幕
 
 ### Android 17 源码与内核锚点
 
-源码排查按责任范围进入：
+源码排查按责任范围分层：
 
 | 层级 | Android 17 固定入口 | 能回答的问题 |
 |---|---|---|
