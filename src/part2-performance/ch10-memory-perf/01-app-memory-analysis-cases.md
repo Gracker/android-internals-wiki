@@ -122,9 +122,9 @@ last_review_finalize_run_id: 20260826-201101-4eb9807b
 
 # App 内存分析与案例
 
-一条内存曲线只能说明某个统计口径发生了变化。Java heap（ART 管理的 Java/Kotlin 对象堆）、native allocator（C/C++ 默认内存分配器）、RSS、PSS、SwapPss、DMA-BUF（设备间共享缓冲区）和 GPU private memory（GPU 私有分配）分别观察不同对象；数值来自不同采样时刻时，直接相加都可能失真。
+一条内存曲线只能说明某个统计口径发生了变化。Java heap（ART 管理的 Java/Kotlin 对象堆）、native allocator（C/C++ 默认内存分配器）、RSS、PSS、SwapPss、DMA-BUF（设备间共享缓冲区）和 GPU private memory（GPU 私有分配）观察的对象各不相同，数值又常来自不同采样时刻，直接相加都可能失真。
 
-本文按 Android 17 / API 37 的 `android-17.0.0_r1` 核对平台行为，涉及 PSI 的内核实现以 `android17-6.18-2026-06_r6` 为准。分析顺序是先确定指标，再定位内存域，随后用对应工具寻找 owner（内存持有者或归属方）和生命周期。
+本文按 Android 17 / API 37 的 `android-17.0.0_r1` 核对平台行为，涉及 PSI（Pressure Stall Information，压力停顿信息）的内核实现以 `android17-6.18-2026-06_r6` 为准。前半部分给出分析顺序：先确定指标，再定位内存域，随后用对应工具寻找 owner（内存持有者或归属方）和生命周期；后半部分用四个公开案例走同一条路径。
 
 ## 内存域、基线与增长分类
 
@@ -151,7 +151,7 @@ PSS 适合比较包含共享映射的进程内存占用，RSS 适合低成本观
 
 `Debug.MemoryInfo` 将统计分成 dalvik（ART 托管堆）、native（原生分配）和 other（其他映射），并提供 Java Heap、Native Heap、Code、Stack、Graphics、Private Other、System、Total PSS 与 Total Swap 摘要。公开字段和摘要值以 kB 为单位。
 
-几个边界需要保留：
+有几个边界要注意：
 
 - `getTotalPss()` 包含 swapped-out PSS，即按比例分摊的已换出页面；
 - `getTotalUss()` 由各域 Private Clean 与 Private Dirty 相加；
@@ -166,7 +166,7 @@ PSS 适合比较包含共享映射的进程内存占用，RSS 适合低成本观
 
 ### 2. 建立第一份内存快照
 
-下面的命令用于记录同一实验阶段的进程摘要、内存页大小和进程状态：
+记录同一实验阶段的进程摘要、内存页大小和进程状态，可以用下面几条命令：
 
 ```bash
 adb shell dumpsys meminfo -d com.example.app
@@ -175,9 +175,9 @@ adb shell 'pid=$(pidof com.example.app); grep -E "VmRSS|RssAnon|RssFile|RssShmem
 adb shell dumpsys SurfaceFlinger --list
 ```
 
-`dumpsys meminfo` 的详细列会随平台和厂商实现变化，报告中应保存原始输出。`/proc/<pid>/status` 的 `VmRSS` 是低成本估计；Android 17 `libmeminfo` 的源码也注明它不如 smaps（逐映射内存统计）精确。SurfaceFlinger layer（图层）列表只用于核对可见图形对象，不能单独给出每个图层的 GPU 内存。
+`dumpsys meminfo` 的详细列会随平台和厂商实现变化，报告中应保存原始输出。`/proc/<pid>/status` 的 `VmRSS` 是低成本估计；Android 17 `libmeminfo` 的源码里注明它不如 smaps（逐映射内存统计）精确。SurfaceFlinger layer（图层）列表只用于核对可见图形对象，不能单独给出每个图层的 GPU 内存。
 
-应用内若要取得一次自进程快照，可以使用公开 `ActivityManager` API：
+应用内要拿一次本进程快照，可以用公开的 `ActivityManager` API：
 
 ```kotlin
 data class AppMemorySnapshot(
@@ -211,7 +211,7 @@ fun captureAppMemory(
 }
 ```
 
-这个函数保留了 kB 与 byte 的单位后缀，避免混算。系统会限制 `getProcessMemoryInfo()` 的采样频率，不能把它放进每帧回调、紧循环或高频定时器；它适合在实验步骤边界调用，或由低频诊断任务触发。
+字段名带 kB 与 byte 后缀，避免混算。系统会限制 `getProcessMemoryInfo()` 的采样频率，不能把它放进每帧回调、紧循环或高频定时器；它适合在实验步骤边界调用，或由低频诊断任务触发。
 
 ### 3. Java/Kotlin heap：用引用关系证明泄漏
 
@@ -338,7 +338,7 @@ HAL 必须避免不同 memtrack type（记账类别）重复记账，但设备�
 
 源码核对：[`IMemtrack.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/memtrack/aidl/android/hardware/memtrack/IMemtrack.aidl)
 
-GPU 专项工具与 layer/buffer 追踪见 10.4 节；这里仅将 Graphics 从 Java/Native heap 口径中分离。
+GPU 专项工具与 layer/buffer 追踪见 10.4 节；本节只把 Graphics 从 Java/Native heap 的口径里分出来。
 
 ### 6. 建立可比较的基线
 
@@ -375,7 +375,7 @@ GPU 专项工具与 layer/buffer 追踪见 10.4 节；这里仅将 Graphics 从 
 
 #### 6.1 4 KB 与 16 KB page size 分组
 
-Android 15 起支持使用 16 KB page size（内存页大小）的设备。页大小会影响 ELF（二进制文件格式）对齐、`mmap`、allocator page span（分配器跨越的页面范围）和驻留内存的计量单位。同一 APK 在 4 KB 与 16 KB 设备上的 PSS/RSS 基线可能不同。
+Android 15 起，设备可以使用 16 KB page size（内存页大小）。页大小会影响 ELF（二进制文件格式）对齐、`mmap`、allocator page span（分配器跨越的页面范围）和驻留内存的计量单位。同一 APK 在 4 KB 与 16 KB 设备上的 PSS/RSS 基线可能不同。
 
 基线处理规则：
 
@@ -404,7 +404,15 @@ Android 15 起支持使用 16 KB page size（内存页大小）的设备。页�
 | Surface、Image、Codec 或 DMA-BUF | 关闭资源并等待 consumer 释放引用 | 图形内存、layer/buffer 生命周期与相关进程的变化 |
 | WebView 工作集 | 销毁实例并分别观察宿主与 renderer 进程 | provider 版本、renderer 生命周期、代码页、缓存与图形内存 |
 
-缓存需要一份可执行协议，而不是“内存高时清一点”的约定。至少记录五项：任何输入下都不能超过的 hard limit（硬上限）、页面不可见或进入后台后的 shrink target（收缩目标）、统一计量单位、负责创建和裁剪的 owner，以及 size/hit/miss/eviction/rebuild cost（大小、命中、未命中、淘汰和重建成本）。`ActivityManager.getMemoryClass()` 只描述 ART 堆的近似上限，不能直接拿来当整个进程的缓存预算。
+缓存需要一份可执行协议，而不是“内存高时清一点”的约定。至少记录五项：
+
+- 任何输入下都不能超过的 hard limit（硬上限）；
+- 页面不可见或进入后台后的 shrink target（收缩目标）；
+- 统一计量单位；
+- 负责创建和裁剪的 owner；
+- size/hit/miss/eviction/rebuild cost（大小、命中、未命中、淘汰和重建成本）。
+
+`ActivityManager.getMemoryClass()` 只描述 ART 堆的近似上限，不能直接拿来当整个进程的缓存预算。
 
 `LruCache.sizeOf()` 决定预算单位，`maxSize` 必须使用相同单位。条目离开 `LruCache` 后，Adapter、View、任务或其他集合仍可能保存引用；缓存计数下降不等于对象已经回收。`entryRemoved()` 也不是通用的 Bitmap `recycle()` 开关，只有所有权协议能证明没有其他使用者时，才可在淘汰回调中主动销毁资源。
 
@@ -412,7 +420,7 @@ Android 15 起支持使用 16 KB page size（内存页大小）的设备。页�
 
 ### 7. 系统内存压力与 LMKD
 
-Android 17 `lmkd` 可通过 PSI（Pressure Stall Information，压力停顿信息）事件感知 memory stall（内存压力造成的任务停顿），并结合 watermark（可用内存水位）、swap、workingset refault/thrashing（工作集页面频繁换入引起的抖动）、reclaim（页面回收）状态和产品属性决定是否回收进程。候选进程按 `oom_score_adj` 的保护级别扫描；配置或压力级别要求比较进程大小时，再从同一 adj 档选择内存占用较高的进程。
+Android 17 `lmkd` 可通过 PSI（Pressure Stall Information，压力停顿信息）事件感知 memory stall（内存压力造成的任务停顿），据此决定是否回收进程。判断依据还包括 watermark（可用内存水位）、swap、workingset refault/thrashing（工作集页面频繁换入引起的抖动）、reclaim（页面回收）状态和产品属性。候选进程按 `oom_score_adj` 的保护级别扫描；只有配置或压力级别要求比较进程大小时，才从同一 adj 档选择内存占用较高的进程。
 
 所以：
 
@@ -503,7 +511,7 @@ activityManager.setProcessStateSummary(state)
 - 采样失败返回 unknown，不循环重试；
 - 单位写进字段名；
 - 多进程分别记录 PID、进程名和角色；
-- OOM 前末次样本只当上下文，不当死亡瞬间证据。
+- OOM 前末次样本只当上下文，不能当作死亡瞬间的证据。
 
 ### 9. 按现象选工具
 
@@ -536,15 +544,6 @@ activityManager.setProcessStateSummary(state)
 
 ---
 
-### 延伸阅读
-
-- [4.1 Android 与 Linux 内存管理全景](../../part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md)：统计口径、物理页与回收机制。
-- [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)：Java 堆、GC 与存活对象的关系。
-- [4.3 lmkd、Cached App Freezer 与内存压力治理](../../part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md)：系统压力、进程优先级与后台状态。
-- [23.2 内存泄漏检测与治理](../../part5-app/ch23-memory-practice/02-memory-leak-governance.md)：引用链与生命周期修复。
-- [14.1 Perfetto 入门、Trace 抓取与可靠性](../../part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md)：采集配置、数据源与 trace 完整性。
-
-
 ## 从异常曲线到分配责任
 
 基线模型用于提出假设，案例需要继续证明增长来自泄漏、缓存、抖动、图形资源还是系统共享内存。
@@ -568,11 +567,11 @@ activityManager.setProcessStateSummary(state)
 
 #### 证据怎样形成完整链条
 
-诊断需要把四类时间对齐：
+诊断需要把四类证据对齐在同一条时间轴上：
 
 1. 在 Perfetto 中圈出启动区间，比较主线程 Running、Runnable（可运行但在等待 CPU）、Sleeping 与 D 状态。
 2. 展开 D 状态对应的内核调用栈，确认是否等待文件页、块设备或文件系统锁。
-3. 在同一时间窗检查 `kswapd0`、内存回收 tracepoint（跟踪点）、`meminfo`、`vmstat`、swap/ZRAM 和 PSI（资源压力停顿信息）。
+3. 在同一时间窗检查 `kswapd0`、内存回收 tracepoint（跟踪点）、`meminfo`、`vmstat`、swap/ZRAM 和 PSI。
 4. 检查 `lmkd` 与 ActivityManager 事件，确认同一进程是否在短时间内反复被终止，又被业务或系统重新启动。
 
 `mm/vmscan.c` 中的回收路径解释了 `kswapd` 与直接回收的执行位置，`include/trace/events/vmscan.h` 提供回收 tracepoint 定义。Android 17 的 `lmkd.cpp` 使用 PSI 监视器感知 stall（资源停顿），并结合进程重要性和内存状态选择要终止的进程。两部分要放在同一时间轴上观察：回收持续繁忙、前台线程进入 D 状态和终止进程记录同时出现，才足以支持“系统内存压力拖慢前台”的判断。
@@ -656,7 +655,7 @@ Android 17（API 37）的 `ProfilingTrigger.TRIGGER_TYPE_OOM` 可在 OOM 时请�
 
 随后只拦截 `libsrv_um.so` 与 `gralloc.mt6765.so` 对 `syscall` 的调用，映射记录出现。这个证据修正了“映射完全发生在内核驱动内部”的早期猜测：PowerVR 用户态库绕过了 libc 的 `mmap` 符号，直接进入系统调用。
 
-调用栈继续指向 `libIMGegl.so` 的 `KEGLGetPoolBuffers`。一次增长会连续调用五次 `PVRSRVAcquireCPUMapping`，五类 buffer 合计约 25 MB，与 View 实验的增量吻合。绘制结束时，`KEGLReleasePoolBuffers` 只把 buffer 标为空闲，没有对应调用 `PVRSRVReleaseCPUMapping`。这些映射可在 EGL surface（EGL 绘制表面）或 `CanvasContext` 销毁路径释放，因此文章将其定性为 buffer pool 长期保留；它不同于任何释放路径都不存在的永久泄漏。
+调用栈继续指向 `libIMGegl.so` 的 `KEGLGetPoolBuffers`。一次增长会连续调用五次 `PVRSRVAcquireCPUMapping`，五类 buffer 合计约 25 MB，与 View 实验的增量吻合。绘制结束时，`KEGLReleasePoolBuffers` 只把 buffer 标为空闲，没有对应调用 `PVRSRVReleaseCPUMapping`。这些映射可在 EGL surface（EGL 绘制表面）或 `CanvasContext` 销毁路径释放，因此文章将其定性为 buffer pool 长期保留；它和永久泄漏不同，后者不存在任何释放路径。
 
 #### 根因与历史修复
 
@@ -722,7 +721,7 @@ Java 引用泄漏、短命对象洪峰、malloc 堆积、GPU pool、文件映射
 
 #### 发布数字要保留实验上下文
 
-80%、近 50%、355 MB 到 44 MB 都是来源文章在特定产品、周期或设备上的数据。文章复用这些数字时，应同时写明产品、周期、设备或指标口径。缺少结果数据的案例保持空白结论，比补一个“明显改善”更可靠。
+80%、近 50%、355 MB 到 44 MB 都是来源文章在特定产品、周期或设备上的数据。引用这些数字时，应同时写明产品、周期、设备或指标口径。缺少结果数据的案例保持空白结论，比补一个“明显改善”更可靠。
 
 #### 驱动与 ROM 问题先做设备聚类
 
@@ -738,6 +737,14 @@ Java 引用泄漏、短命对象洪峰、malloc 堆积、GPU pool、文件映射
 - vendor 故障是否按设备、SoC、GPU、驱动、OS 和 ABI 聚类？
 - 突增探针是否按内存域采样，并为缺失 artifact 设计回退路径？
 - 修复后是否重放同一场景，比较同口径的峰值、回落速度、帧时间和崩溃率？
+
+### 延伸阅读
+
+- [4.1 Android 与 Linux 内存管理全景](../../part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md)：统计口径、物理页与回收机制。
+- [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)：Java 堆、GC 与存活对象的关系。
+- [4.3 lmkd、Cached App Freezer 与内存压力治理](../../part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md)：系统压力、进程优先级与后台状态。
+- [23.2 内存泄漏检测与治理](../../part5-app/ch23-memory-practice/02-memory-leak-governance.md)：引用链与生命周期修复。
+- [14.1 Perfetto 入门、Trace 抓取与可靠性](../../part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md)：采集配置、数据源与 trace 完整性。
 
 ### 相关章节
 
