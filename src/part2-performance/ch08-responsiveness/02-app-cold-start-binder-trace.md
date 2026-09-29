@@ -144,7 +144,7 @@ consolidated_from:
 
 # App 冷启动链路与 Binder Trace 分析
 
-冷启动跨越 Launcher、system_server、Zygote 和应用进程。总时长拆成进程创建、绑定应用、组件启动和首帧后，再用 Binder 事务把跨进程等待接回具体服务端线程。
+冷启动跨越 Launcher、system_server、Zygote 和应用进程。把总时长拆成进程创建、绑定应用、组件启动和首帧之后，再用 Binder 事务把跨进程等待接回具体的服务端线程。
 
 ## 从启动请求到首帧
 
@@ -211,7 +211,7 @@ sequenceDiagram
 
 Launcher 通过 Activity API 发起启动，Binder 请求随后进入 `ActivityTaskManagerService`（ATMS）。系统解析 Intent、权限、后台启动限制，以及 Task 与 Activity 的复用关系，并为本次启动建立计时记录。
 
-冷启动期间，WindowManager 可以先显示 starting window（启动占位窗口）。从 Android 12（API 31）开始，标准路径由 SplashScreen API 统一。starting window 是系统在目标应用首帧之前显示的过渡画面，不会因此提前结束目标 Activity 的 TTID。若再使用专门的 trampoline Activity（只负责跳转的中间 Activity）充当启动页，还会额外增加一次 Activity 创建和窗口转场。
+冷启动期间，WindowManager 可以先显示 starting window（启动占位窗口）。从 Android 12（API 31）开始，标准路径由 SplashScreen API 统一。starting window 是系统在目标应用首帧之前显示的过渡画面，不会让目标 Activity 的 TTID 提前结束。若再使用专门的 trampoline Activity（只负责跳转的中间 Activity）充当启动页，还会额外增加一次 Activity 创建和窗口转场。
 
 #### 进程选择与 Zygote fork
 
@@ -311,7 +311,7 @@ Compose 页面可以使用 `ReportDrawn`、`ReportDrawnWhen` 或 `ReportDrawnAft
 
 ### API 35+：ApplicationStartInfo
 
-Android 15（API 35）引入了 `ApplicationStartInfo`，用于描述进程为何启动、由哪类组件触发、属于哪种启动类型、当前到达什么状态，以及各阶段的 monotonic（单调递增时钟）纳秒时间戳。一条记录可能对应 Activity，也可能由 Service、Provider、Broadcast 或其他原因触发进程启动，因此读取后应先检查 component、reason 和 startup state。
+Android 15（API 35）引入了 `ApplicationStartInfo`，用于描述进程为何启动、由哪类组件触发、属于哪种启动类型、当前到达什么状态，以及各阶段的 monotonic（单调递增时钟）纳秒时间戳。一条记录可能对应 Activity，也可能由 Service、Provider、Broadcast 或其他原因触发进程启动，因此读取后应先检查组件类型、启动原因和启动状态。
 
 常用字段如下：
 
@@ -484,6 +484,26 @@ Android 8.0 到 Android 17 的 ART 原生支持多 DEX。Android 5.0 以下版�
 
 多 DEX 仍会影响现代 Android 的启动表现：类在 DEX 文件中的布局、页缓存、校验、类加载，以及解释执行、JIT、AOT 等编译状态都会改变启动开销。应通过 class loading slice、文件 I/O、编译过滤器和 Macrobenchmark 的 compilation mode 验证具体原因，不能把所有 DEX 成本都归因于“方法数超过 65536”。
 
+### AndroidX App Startup
+
+AndroidX App Startup 让多个支持它的组件共享一个 `InitializationProvider`，并通过 `Initializer.dependencies()` 声明初始化顺序。这样可以减少多个独立 Provider 带来的框架开销，也更容易看清组件之间的依赖关系。
+
+下面的 `Initializer` 表示 Telemetry 必须在配置组件完成初始化后才能创建：
+
+```kotlin
+class TelemetryInitializer : Initializer<Telemetry> {
+    override fun create(context: Context): Telemetry =
+        Telemetry.create(context)
+
+    override fun dependencies(): List<Class<out Initializer<*>>> =
+        listOf(ConfigInitializer::class.java)
+}
+```
+
+App Startup 会先初始化 `ConfigInitializer`，再调用 `TelemetryInitializer.create()`。通过 manifest metadata 注册的 `Initializer` 仍在 `InitializationProvider.onCreate()` 中执行，并且早于 `Application.onCreate()`。共享 Provider 不会自动把工作移到后台线程，也不会自动推迟初始化时间。
+
+如果组件无须在首帧前运行，应从 manifest 中移除对应 metadata，再按需调用 `AppInitializer.initializeComponent()`。尚未适配 App Startup 的第三方 Provider 不会被框架自动接管，需要使用 SDK 提供的关闭开关，或向供应方确认其他初始化入口。
+
 ### 首帧 UI 的成本
 
 #### View 页面
@@ -520,26 +540,6 @@ Startup Profile 是 Baseline Profile 中用于构建期 DEX layout（文件布�
 #### Cloud Profile
 
 Cloud Profile 由 Google Play 汇总真实用户设备上的热点，再提供给后续安装或更新应用的设备，支持 Android 9（API 28）及更高版本。它需要积累足够样本，可能在版本发布数小时到数天后才开始分发。没有 Google Play 的渠道不能假定存在 Cloud Profile；APK 内的 Baseline Profile、ProfileInstaller 和设备本地 ART 优化仍可独立工作，具体安装行为需要按分发渠道验证。
-
-### AndroidX App Startup
-
-AndroidX App Startup 让多个支持它的组件共享一个 `InitializationProvider`，并通过 `Initializer.dependencies()` 声明初始化顺序。这样可以减少多个独立 Provider 带来的框架开销，也更容易看清组件之间的依赖关系。
-
-下面的 `Initializer` 表示 Telemetry 必须在配置组件完成初始化后才能创建：
-
-```kotlin
-class TelemetryInitializer : Initializer<Telemetry> {
-    override fun create(context: Context): Telemetry =
-        Telemetry.create(context)
-
-    override fun dependencies(): List<Class<out Initializer<*>>> =
-        listOf(ConfigInitializer::class.java)
-}
-```
-
-App Startup 会先初始化 `ConfigInitializer`，再调用 `TelemetryInitializer.create()`。通过 manifest metadata 注册的 `Initializer` 仍在 `InitializationProvider.onCreate()` 中执行，并且早于 `Application.onCreate()`。共享 Provider 不会自动把工作移到后台线程，也不会自动推迟初始化时间。
-
-如果组件无须在首帧前运行，应从 manifest 中移除对应 metadata，再按需调用 `AppInitializer.initializeComponent()`。尚未适配 App Startup 的第三方 Provider 不会被框架自动接管，需要使用 SDK 提供的关闭开关，或向供应方确认其他初始化入口。
 
 ### 16 KB page size 的边界
 
@@ -591,15 +591,15 @@ Google 的初始测试显示，在系统存在内存压力时，样本中的应�
 
 ## 用 Binder Trace 还原跨进程等待
 
-启动阶段表给出时间边界，Binder Trace 用于解释 system_server、PackageManager、WindowManager 或其他服务为何延迟返回。
+前文给出的是各启动阶段的时间边界，但没有说明跨进程等待究竟卡在哪里。后半部分用 Binder Trace 回答 system_server、PackageManager、WindowManager 或其他服务为什么延迟返回。
 
-Binder Trace 用来定位冷启动路径上的 IPC（Inter-Process Communication，进程间通信）瓶颈。借助 Perfetto 的 `android.binder` 标准库，可以分辨一笔事务在客户端等待、服务端处理和返回调度上分别花了多久，也能检查 Binder 线程池是否饱和，以及目标进程被冻结后返回的错误是否干扰启动。Binder 机制原理见 §1.9 和 §1.10，冷启动阶段划分见 §8.2。
+冷启动路径上的 IPC（Inter-Process Communication，进程间通信）瓶颈可以用 Perfetto 的 `android.binder` 标准库定位：一笔事务在客户端等待、服务端处理和返回调度上各花了多久，Binder 线程池是否饱和，以及目标进程被冻结后返回的错误是否干扰启动，都能从这里分辨。Binder 机制原理见 §1.9 和 §1.10，冷启动阶段划分见前文「从启动请求到首帧」。
 
 平台与源码基线为 AOSP `android-17.0.0_r1`、`frameworks/native`、`external/perfetto`，以及 kernel `android17-6.18-2026-06_r6`。
 
 ### 一、先把冷启动窗口和 Binder 范围分开
 
-一次 Activity 冷启动会经过 Launcher、`system_server`、Zygote 和目标应用进程。Binder 只负责其中一部分跨进程通信。Perfetto 中的 slice 表示一段有起止时间的执行区间；下面几类工作经常与 Binder slice 紧挨在时间线上，却要按各自的数据源分析：
+一次 Activity 冷启动会经过 Launcher、`system_server`、Zygote 和目标应用进程，Binder 只负责其中一部分跨进程通信。Perfetto 中的 slice 表示一段有起止时间的执行区间；下面几类工作经常与 Binder slice 紧挨在时间线上，却要按各自的数据源分析：
 
 - `system_server` 通过 Zygote command socket（命令套接字）请求创建应用进程，这段通信不走 Binder；
 - 应用读取 dex、resources、SharedPreferences 或 DataStore 时产生文件 I/O；
@@ -631,7 +631,7 @@ Android 17 上可从源码确认的主要方向如下：
 2. 事务与冷启动区间相交多少，是否位于首帧关键路径？
 3. 时间主要花在请求派发、服务端处理，还是 reply（回复）传回后客户端重新获得 CPU 的阶段？
 
-调用次数和单次时长要同时看。大量短事务可能累积成明显延迟；单笔长事务也可能与其他工作并行，不一定等量增加首帧时间。多个嵌套事务的 `client_dur` 区间会互相包含，直接求和会重复计时，因此“事务总和”只适合用来排序排查对象，不能直接当作启动可节省时间。
+调用次数和单次时长要同时看。大量短事务可能累积成明显延迟；单笔长事务也可能与其他工作并行，不一定等量增加首帧时间。多个嵌套事务的 `client_dur` 区间会互相包含，直接求和会重复计时，因此“事务总和”只适合用来排序排查对象，不能直接当作可节省的启动时间。
 
 ### 二、采集 Binder Trace
 
@@ -724,7 +724,9 @@ adb shell am start -W -S \
   -n com.example.app/.MainActivity
 ```
 
-采集结束后再执行 `adb pull /data/local/tmp/cold-start-binder.pftrace .`。这里的“进程冷启动”只保证应用进程已被终止并重新创建；文件页缓存、shader cache（已编译的 GPU 着色程序缓存）和 ART 编译产物仍可能保留。需要可比较的统计结果时，应使用 Macrobenchmark 的 `StartupMode.COLD`，并固定 CompilationMode、设备温度、动画和迭代次数。磁盘缓存是否清空是另一项实验变量；在权限与 API 条件允许时，可使用 Macrobenchmark 的 `dropKernelPageCache()` 单独控制。
+采集结束后再执行 `adb pull /data/local/tmp/cold-start-binder.pftrace .`。
+
+这里的“进程冷启动”只保证应用进程已被终止并重新创建；文件页缓存、shader cache（已编译的 GPU 着色程序缓存）和 ART 编译产物仍可能保留。需要可比较的统计结果时，应使用 Macrobenchmark 的 `StartupMode.COLD`，并固定 CompilationMode、设备温度、动画和迭代次数。磁盘缓存是否清空是另一项实验变量；在权限与 API 条件允许时，可使用 Macrobenchmark 的 `dropKernelPageCache()` 单独控制。
 
 #### 2.4 atrace 只用于快速查看
 
@@ -965,7 +967,7 @@ ORDER BY event_count DESC;
 
 #### 5.1 PackageManager 查询重复
 
-应用框架已经向新进程传递 `ApplicationInfo` 等启动数据，但应用代码和 SDK 仍可能重复调用 `PackageManager`。单次查询即使命中 `PackageManagerService` 的 snapshot/cache（服务内保存的状态快照或缓存），仍要完成 Binder 往返、权限检查和结果构造。
+系统框架已经向新进程传递 `ApplicationInfo` 等启动数据，但应用代码和 SDK 仍可能重复调用 `PackageManager`。单次查询即使命中 `PackageManagerService` 的 snapshot/cache（服务内保存的状态快照或缓存），仍要完成 Binder 往返、权限检查和结果构造。
 
 处理步骤：
 
@@ -973,7 +975,7 @@ ORDER BY event_count DESC;
 - 对稳定的包元数据使用进程内缓存，并明确版本升级、包变更和配置变化时怎样使旧缓存失效；
 - 无法定位 SDK 来源时，在 SDK 初始化边界加应用 slice，再用时间重叠缩小范围。
 
-应用无法把多个公开 PackageManager API 私自合成一笔系统事务。可控的优化包括减少重复请求、延后读取首帧不需要的数据，以及让 SDK 支持懒初始化，也就是在功能首次使用时再初始化。
+应用无法自行把多个公开的 PackageManager API 合并成一笔系统事务。可控的优化包括减少重复请求、延后读取首帧不需要的数据，以及让 SDK 支持懒初始化，也就是在功能首次使用时再初始化。
 
 #### 5.2 WindowManager 的必要同步事务
 
@@ -985,7 +987,7 @@ ORDER BY event_count DESC;
 
 本进程 Provider 的对象创建和 `onCreate()` 属于应用主线程工作。获取远端 Provider 会调用 AMS；Provider 初始化内部还可能访问 PKMS、Settings、账号、网络或另一 Provider。
 
-AndroidX Startup 使用一个 `InitializationProvider` 管理多个 `Initializer`。通过 manifest（应用清单）注册的 Initializer 仍会在启动阶段执行。需要延后时，应从 manifest 中移除对应 Initializer 的注册，再在业务允许的时点手动调用 `AppInitializer.initializeComponent()`；第三方 Provider 能否移除要遵循其文档。
+通过 manifest（应用清单）注册的 Initializer 仍会在启动阶段执行。需要延后时，应从 manifest 中移除对应注册，再在业务允许的时点调用 `AppInitializer.initializeComponent()`（机制见前文「AndroidX App Startup」）；第三方 Provider 能否移除要遵循其文档。
 
 #### 5.4 Binder 线程池拥塞
 
@@ -1117,7 +1119,7 @@ Macrobenchmark 是 AndroidX 提供的应用级基准测试工具，A/B 表示只
 - 电量、温度、充电状态和后台负载；
 - 每组迭代数与异常值处理规则。
 
-同时比较 TTID（Time to Initial Display，首帧初次显示时间）、TTFD（Time to Full Display，页面完全可用时间）、主线程同步事务计数、endpoint 分布、请求派发间隔、`server_dur` 和 breakdown。若 Binder 指标下降而启动指标不变，这笔事务可能不在首帧关键路径上，也可能有新的工作占用了节省出的时间。
+同时比较 TTID（Time to Initial Display，首帧显示时间）、TTFD（Time to Full Display，完整显示时间）、主线程同步事务计数、endpoint 分布、请求派发间隔、`server_dur` 和 breakdown。若 Binder 指标下降而启动指标不变，这笔事务可能不在首帧关键路径上，也可能有新的工作占用了节省出的时间。
 
 ### 扩展
 
