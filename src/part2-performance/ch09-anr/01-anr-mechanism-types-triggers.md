@@ -118,9 +118,9 @@ ANR（Application Not Responding，应用无响应）机制因此负责三项工
 这里有两个容易混淆的边界。
 
 - ANR 约束的是系统正在等待完成的工作。应用中的某项操作即使耗时很长，只要没有超过任何受监控期限，系统就不会仅凭时长生成 ANR。
-- 主线程阻塞是常见原因，但检测对象不局限于主线程。广播可以交给指定 `Handler`，服务问题可能牵涉 Binder 线程、锁持有者或远端进程；系统判定依据是对应工作没有按协议按时完成。
+- 主线程阻塞是常见原因，但检测对象不局限于主线程。广播可以交给指定 `Handler`，服务问题可能牵涉 Binder 线程、锁持有者或远端进程；系统只按对应工作有没有按协议按时完成来判定。
 
-分析 ANR 时，应先问“哪个系统期限耗尽，系统在等什么完成信号”，再问“哪条线程阻断了完成条件”。若直接从主线程栈猜业务根因，很容易把采样瞬间的现场误当成此前几秒的完整过程。
+分析 ANR 时，应先问“是哪个系统期限耗尽、系统在等什么完成信号”，再问“哪条线程挡住了这个完成信号”。若直接从主线程栈猜业务根因，很容易把采样瞬间的现场误当成此前几秒的完整过程。
 
 ### Android 17 的整体分层
 
@@ -133,7 +133,7 @@ ANR（Application Not Responding，应用无响应）机制因此负责三项工
 | 编排层 | `AnrHelper` | 去重、尽早抓取目标进程栈，再将完整报告排队处理 |
 | 记录与处置层 | `ProcessErrorStateRecord` | 写日志和统计、生成 trace、提交 DropBox（系统诊断条目仓库），再进入杀进程或界面策略 |
 
-这种分层解决了两个系统级问题。检测器最了解自己等待的协议，因此能写出“广播未完成”或“输入窗口未响应”等具体原因；耗时较高的堆栈、CPU 和 DropBox 采集则放在统一路径，避免每种组件重复实现。
+这样分层有两个好处。检测器最了解自己等待的协议，能写出“广播未完成”或“输入窗口未响应”这类具体原因；堆栈、CPU 和 DropBox 采集成本较高，统一放到一条路径上，不必每种组件各实现一遍。
 
 #### 检测器关注完成协议
 
@@ -193,7 +193,7 @@ public static TimeoutRecord forContentProvider(String reason) {
 
 #### 阶段二：应用执行并报告完成
 
-大部分 Android 组件回调在应用主线程运行，因此主线程 I/O、长计算、同步 Binder、锁竞争和死锁很容易拖过期限。这个阶段仍要检查参与完成条件的其他线程：
+大部分 Android 组件回调在应用主线程运行，因此主线程 I/O、长计算、同步 Binder、锁竞争和死锁很容易拖过期限。这个阶段还要检查其他线程是否挡住了完成信号：
 
 - 主线程可能正在等待工作线程释放锁；
 - 同步 Binder 的耗时由服务端线程和调度状态决定；
@@ -269,7 +269,7 @@ Android 17 在单条 ANR 处理结束后还可以发送 `ProfilingTrigger.TRIGGE
 
 ### AMS 主路径：`ProcessErrorStateRecord`
 
-`ProcessErrorStateRecord.appNotResponding()` 将已经确认的超时转成可诊断、可统计、可处置的系统事件。
+`ProcessErrorStateRecord.appNotResponding()` 把已经确认的超时转成一条可诊断、可处置的系统事件，同时留下统计记录。
 
 #### 进入报告前的状态防护
 
@@ -279,7 +279,7 @@ AMS 在下列条件下跳过普通报告：系统正在关机、进程已有 ANR
 
 #### 收集可关联证据
 
-Android 17 的报告路径会组合：
+Android 17 生成 ANR 报告时会汇总这些证据：
 
 - 超时原因、组件和 PID；
 - 目标进程及选定关联进程的 Java/native 线程栈；
@@ -289,7 +289,7 @@ Android 17 的报告路径会组合：
 - CriticalEventLog、EventLog、statsd 和 Perfetto 标记；
 - DropBox 报告与 `ApplicationExitInfo` 可回捞的 trace 片段。
 
-下面的源码节选用于确认三类产物都来自同一处理函数：
+下面的源码节选展示 EventLog 事件、trace 文件和 DropBox 条目都出自 `appNotResponding()` 这一次调用：
 
 ```java
 EventLog.writeEvent(EventLogTags.AM_ANR, mApp.userId, pid,
@@ -376,7 +376,7 @@ latestAnr?.traceInputStream?.bufferedReader()?.use { reader ->
 }
 ```
 
-这个 API 只返回本应用有权访问的历史信息，内容范围小于完整 bugreport。生产环境上传前要限制大小、进行隐私审查并脱敏；trace 为 `null` 是允许出现的结果，不能当成采集逻辑异常。
+这个 API 只返回本应用有权访问的历史信息，内容范围小于完整 bugreport。生产环境上传前要限制大小、做隐私审查并脱敏；trace 为 `null` 是允许出现的结果，不能当成采集逻辑异常。
 
 Android 17（API 37）还为 `ApplicationExitInfo` 增加了 `getAnrInfo()`。返回的 `AnrInfo` 包含 ANR ID、`AnrTypes` 类型、系统等待时长和用户可感知标志。它只可能出现在 `REASON_ANR` 记录中；输入派发等没有 `AnrTimer.ExpiredTimer` 的路径仍可能拿不到该对象，因此兼容代码要同时判断系统版本和空值。
 
@@ -433,7 +433,7 @@ PID 会被后续进程复用，应用进程也可能在 ANR 后重启。若只�
 - **Android 16（API 36）**：公开 `ProfilingTrigger.TRIGGER_TYPE_ANR` 和系统触发式 profiling 注册能力，为 ANR 增加一份时间段证据。
 - **Android 17（API 37）**：`TimeoutRecord` 可映射公开 `AnrTypes`；`ApplicationExitInfo.getAnrInfo()` 提供结构化 ANR 元数据；`ActivityManager.registerAnrWarningListener()` 允许应用按尽力而为原则接收临近 ANR 期限的预警。详情见 [9.7 Android 17 ANR 预警与 Input pre-ANR](07-android17-anr-prewarning.md)。
 
-这些版本变化呈现出一条主线：各检测器继续保留自己的协议语义，AMS 统一组织报告；诊断材料则从单次线程快照扩展到结构化退出信息、早期预警和可选的时间段 profiling。传统 trace 仍是基础证据，但需要与时间线和结构化信息一起解释。
+这些版本变化方向一致：各检测器继续保留自己的协议语义，AMS 统一组织报告；诊断材料则从单次线程快照扩展到结构化退出信息、早期预警和可选的时间段 profiling。传统 trace 仍是基础证据，但需要与时间线和结构化信息一起解释。
 
 ### Google Play Console 的统计边界
 
@@ -472,11 +472,11 @@ PID 会被后续进程复用，应用进程也可能在 ANR 后重启。若只�
 
 ## Input、Broadcast、Service 与 Provider 超时
 
-统一处置流程之下，各类 ANR 的计时入口和责任线程不同。错误使用另一类型的阈值会直接带偏分析。
+统一处置流程之下，各类 ANR 的计时入口和责任线程不同。拿另一类型的阈值套用，会直接把分析带偏。
 
 ### 先认超时契约，再看线程栈
 
-ANR 报告中的 `Reason` 描述系统正在等待哪一个完成信号。Input 等待应用确认输入事件已处理，Broadcast 等待 receiver 完成，execute-service 等待服务生命周期调用结束。不同类型可能留下相似的主线程栈，但计时起点、完成条件和责任进程并不相同。
+ANR 报告中的 `Reason` 描述系统正在等待哪一个完成信号。Input 等待应用确认输入事件已经处理完，Broadcast 等待 receiver 完成，execute-service 等待服务生命周期调用结束。不同类型可能留下相似的主线程栈，但计时起点、完成条件和责任进程并不相同。
 
 拿到报告后可以依次回答三个问题：
 
@@ -588,7 +588,7 @@ mAnrTimer.accept(queue, tr);
 mService.appNotResponding(queue.app, tr);
 ```
 
-系统尚未完成启动时，以及广播标记为 `timeoutExempt`（豁免超时）或 `assumeDelivered`（系统无需等待明确回执）时，不会启动这只计时器。动态注册的无序 receiver 可能走 assumed-delivered 路径，因此并非每个 BroadcastReceiver 都有 10/60 秒 ANR 计时器。
+在系统尚未完成启动，或广播带有 `timeoutExempt`（豁免超时）、`assumeDelivered`（系统无需等待明确回执）标记时，系统不会启动这只计时器。动态注册的无序 receiver 可能走 assumed-delivered 路径，因此并非每个 BroadcastReceiver 都有 10/60 秒 ANR 计时器。
 
 #### `goAsync()` 不会增加一段预算
 
@@ -652,7 +652,9 @@ long SERVICE_BACKGROUND_TIMEOUT = DEFAULT_SERVICE_BACKGROUND_TIMEOUT;
 
 #### `shortService` 超时后未停止：ANR
 
-Android 14 引入 `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE`，用于约三分钟内能够结束的短任务。Android 17 默认时限为 3 分钟。到期后，系统调用 `Service.onTimeout(int startId, int fgsType)`；同时为兼容 API 34 保留单参数 `onTimeout(int startId)` 语义，面向 Android 15+ 的实现只需覆盖双参数回调。系统还会启动 short-FGS ANR timer，源码默认再等待 10 秒。若服务仍未停止，`onShortFgsAnrTimeout()` 会构造以下 reason 并调用 `appNotResponding()`：
+Android 14 引入 `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE`，用于约三分钟内能够结束的短任务。Android 17 默认时限为 3 分钟。
+
+到期后，系统调用 `Service.onTimeout(int startId, int fgsType)`；同时为兼容 API 34 保留单参数 `onTimeout(int startId)` 语义，面向 Android 15+ 的实现只需覆盖双参数回调。系统还会启动 short-FGS ANR timer，源码默认再等待 10 秒。若服务仍未停止，`onShortFgsAnrTimeout()` 会构造以下 reason 并调用 `appNotResponding()`：
 
 `A foreground service of FOREGROUND_SERVICE_TYPE_SHORT_SERVICE did not stop within a timeout: <component>`
 
@@ -809,6 +811,8 @@ Perfetto 用来回答“超时窗口内线程和 CPU 在做什么”，单靠一
 对 Provider 远程调用，要关联 caller（调用方）的 Binder transaction、Provider 进程的 binder thread 和主线程。caller 等待时，Provider 可能正在主线程工作、Binder 线程池排队、等待锁，或发起下游 Binder 调用；单一线程状态无法代替完整调用链。
 
 ### 版本演进：只保留会影响判断的变化
+
+各版本中会改变超时判断的变化如下。
 
 - **Android 8.0 / API 26**：引入 `startForegroundService()` 与及时调用 `startForeground()` 的契约。
 - **Android 12 / API 31**：后台启动前台服务受到更严格限制，晋升超时的 `ForegroundServiceDidNotStartInTimeException` 成为常见诊断信号。
