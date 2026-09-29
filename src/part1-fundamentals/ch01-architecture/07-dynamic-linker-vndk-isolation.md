@@ -75,9 +75,11 @@ Android 进程执行原生代码之前，要把 ELF（Executable and Linkable Fo
 
 平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为准；涉及 `mmap()`、文件缺页和写时复制（Copy-on-Write，COW）的内核行为以 `android17-6.18-2026-06_r6` 为准。VNDK（Vendor Native Development Kit，厂商原生开发套件）的可见性规则在本文后半部分展开；前半部分聚焦 linker64 的执行顺序及各阶段对启动时间、内存和故障定位的影响。
 
-后文保留 linker 源码中的常用名称：DSO（Dynamic Shared Object）指 `.so` 动态共享对象；SONAME 是 ELF 内用于依赖匹配的逻辑库名；linker namespace（链接器命名空间）负责约束库的搜索路径和可见范围。RELRO 是“重定位完成后只读”的内存区域，TLS 是每个线程独立保存的数据区，PLT/GOT 是动态函数调用和地址重定位所用的表，ABI 则是二进制接口约定。
+Native 库加载先由 linker64 解析依赖、确定命名空间并完成重定位，再受分区隔离与稳定 ABI 规则约束。启动慢、找不到库、符号不匹配这三类症状，都要沿同一条装载路径逐段定位。
 
-Native 库加载先由 linker64 解析依赖、确定命名空间并完成重定位，再受分区隔离与稳定 ABI 规则约束。启动慢、找不到库和符号不匹配，都要沿同一条装载路径定位。
+后文保留 linker 源码中的常用名称：DSO（Dynamic Shared Object）指 `.so` 动态共享对象；SONAME 是 ELF 内用于依赖匹配的逻辑库名；linker namespace（链接器命名空间）负责约束库的搜索路径和可见范围。
+
+接着是几个与内存布局和调用约定有关的名称：RELRO 是“重定位完成后只读”的内存区域，TLS 是每个线程独立保存的数据区，PLT/GOT 是动态函数调用和地址重定位所用的表，ABI 则是二进制接口约定。
 
 ## linker64 装载、重定位与命名空间
 
@@ -115,7 +117,7 @@ Android 17 源码没有“把频繁访问与很少访问的字段按 CPU cache l
 
 下面七个阶段都在持锁状态下执行。`bionic/linker/dlfcn.cpp` 中的 `dlopen`、`dlsym`、`dlclose`、`dl_iterate_phdr` 等入口都会持有 `g_dl_mutex`。它是 `PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP`，因此构造函数递归调用 `dlopen()` 时不会因重复加锁立刻死锁。
 
-递归锁不等于并行装载。Android 17 的 `find_libraries()` 在顺序循环里完成依赖扩展、文件映射、预链接和重定位。另一个线程同时进入 linker API 时要等待这把锁。由于 `do_dlopen()` 在返回前还会调用 ELF 构造函数，耗时构造函数也会延长其他线程的 loader-lock wait，也就是等待链接器全局锁的时间。
+递归锁不等于并行装载。Android 17 的 `find_libraries()` 在顺序循环里完成依赖扩展、文件映射、预链接和重定位。另一个线程同时进入 linker API 时要等待这把锁。`do_dlopen()` 在返回前还会调用 ELF 构造函数，因此一个耗时的构造函数同样会延长其他线程的 loader-lock wait（等待链接器全局锁的时间）。
 
 两个执行特征：
 
@@ -143,7 +145,9 @@ Android 17 源码没有“把频繁访问与很少访问的字段按 CPU cache l
 
 linker64 从新任务中生成待映射列表。普通路径会随机化映射顺序；使用 `ANDROID_DLEXT_RESERVED_ADDRESS_RECURSIVE` 时，为满足保留地址区布局，顺序保持稳定。这项随机排列属于地址布局策略，不是并发调度。
 
-`ElfReader::Load()` 负责保留地址空间、映射 `PT_LOAD` 可装载段、定位运行时 Program Header（程序头表），并解析 GNU property（编译器写入 ELF 的架构特性说明）。`android_dlopen_ext()` 还能通过文件描述符（fd）、fd 内偏移、保留地址区或 RELRO fd 提供特殊装载条件，WebView loader 是 RELRO 共享能力的重要使用者。
+`ElfReader::Load()` 负责保留地址空间、映射 `PT_LOAD` 可装载段、定位运行时 Program Header（程序头表），并解析 GNU property（编译器写入 ELF 的架构特性说明）。
+
+`android_dlopen_ext()` 还能通过文件描述符（fd）、fd 内偏移、保留地址区或 RELRO fd 提供特殊装载条件；WebView loader 用的就是其中的 RELRO 共享路径。
 
 `mmap()` 成功只表示建立了映射。尚未访问的文件页可以继续留在磁盘或 page cache 中；“`dlopen()` 完成”不代表库的全部代码页已经产生缺页并进入物理内存。
 
@@ -343,7 +347,7 @@ Android 15 开始支持使用 16 KB 内存页（page size）的设备。Android 
 adb shell getconf PAGE_SIZE
 ```
 
-当系统页大小至少为 16 KB、ELF 的最小 `PT_LOAD p_align` 小于系统页大小且 compatibility mode（兼容模式）未启用时，`ElfReader::LoadSegments()` 会返回“program alignment cannot be smaller than system page size”。Android 17 同时保留 `linker_phdr_16kib_compat.cpp` 的 4 KB 对齐兼容装载路径，因此不能断言旧库在所有 16 KB 设备上都会立即拒载。
+三种条件同时成立时，`ElfReader::LoadSegments()` 会返回“program alignment cannot be smaller than system page size”：系统页大小至少为 16 KB、ELF 的最小 `PT_LOAD p_align` 小于系统页大小、compatibility mode（兼容模式）未启用。Android 17 同时保留 `linker_phdr_16kib_compat.cpp` 的 4 KB 对齐兼容装载路径，因此不能断言旧库在所有 16 KB 设备上都会立即拒载。
 
 `bionic.linker.16kb.app_compat.enabled` 在 Android 17 源码中有三种取值：
 
@@ -384,7 +388,7 @@ zipalign -v -c -P 16 4 app-release.apk
 
 ### AArch64 MTE 与 BTI：按 ELF 声明执行
 
-这里的 MTE 用内存标签检查特定越界或悬空访问，BTI（Branch Target Identification，分支目标识别）限制间接分支可到达的入口，PAC（Pointer Authentication Code，指针认证码）则用签名校验指针。三者都需要硬件、内核、工具链和 ELF 声明共同配合，名称相近但职责不同。
+MTE 用内存标签检查特定越界或悬空访问，BTI（Branch Target Identification，分支目标识别）限制间接分支可到达的入口，PAC（Pointer Authentication Code，指针认证码）则用签名校验指针。三者都需要硬件、内核、工具链和 ELF 声明共同配合，名称相近但职责不同。
 
 Android 17 解析的 MTE 动态项包括：
 
@@ -393,7 +397,9 @@ Android 17 解析的 MTE 动态项包括：
 - `DT_AARCH64_MEMTAG_STACK`；
 - `DT_AARCH64_MEMTAG_GLOBALS` 与 `DT_AARCH64_MEMTAG_GLOBALSSZ`。
 
-开启 MTE globals 时，linker 可能把含可写数据的文件映射重映射为带 `PROT_MTE` 的匿名页，然后根据 descriptor stream（描述各对象位置和标签规则的数据流）为全局对象分配内存标签，再恢复应有的只读权限。这会减少相应数据页的文件共享机会。WebView 的共享 RELRO 路径为此使用确定性的 global tagging，即让不同进程按同一规则生成标签，从而继续复用 RELRO 内容。
+开启 MTE globals 时，linker 可能把含可写数据的文件映射重映射为带 `PROT_MTE` 的匿名页，然后根据 descriptor stream（描述各对象位置和标签规则的数据流）为全局对象分配内存标签，再恢复应有的只读权限。这会减少相应数据页的文件共享机会。
+
+WebView 的共享 RELRO 路径为此使用确定性的 global tagging，即让不同进程按同一规则生成标签，从而继续复用 RELRO 内容。
 
 BTI 走另一条路径：`linker_note_gnu_property.cpp` 解析 `GNU_PROPERTY_AARCH64_FEATURE_1_BTI`，硬件和 ELF 都满足条件时，linker 给可执行 segment 加 `PROT_BTI`。
 
@@ -455,9 +461,13 @@ llvm-readelf -lW libfoo.so
 
 #### 2. 用 Perfetto 区分链接与 constructor
 
-Android 17 的 `do_dlopen()` 写入 `dlopen: <name>` 与 `dlopen: <name> - loading and linking` trace，`call_constructors()` 还写入 `calling constructors: <realpath>`。`loading and linking` 在 `find_library()` 返回后结束，外层 `dlopen` slice 则继续覆盖 constructor，因此两者的差值可以帮助定位构造阶段。
+Android 17 的 `do_dlopen()` 写入 `dlopen: <name>` 与 `dlopen: <name> - loading and linking` trace，`call_constructors()` 还写入 `calling constructors: <realpath>`。
 
-锁等待不在这两条 bionic slice 内：`dlfcn.cpp` 的 `dlopen_ext()` 获取 `g_dl_mutex` 后才调用 `do_dlopen()`。测 loader-lock wait 时，需要在调用侧给整个 `System.loadLibrary()` 或 `dlopen()` 加 trace，并结合线程调度、futex（内核提供的用户态互斥量等待机制）状态及同时持锁线程的 bionic slice 一起看。调用侧 slice 开始到 `dlopen:` slice 出现前的区间，才可能包含等锁时间。
+`loading and linking` 在 `find_library()` 返回后结束，外层 `dlopen` slice 则继续覆盖 constructor，因此两者的差值可以帮助定位构造阶段。
+
+锁等待不在这两条 bionic slice 内：`dlfcn.cpp` 的 `dlopen_ext()` 获取 `g_dl_mutex` 后才调用 `do_dlopen()`。
+
+测 loader-lock wait 时，需要在调用侧给整个 `System.loadLibrary()` 或 `dlopen()` 加 trace，并结合线程调度、futex（内核提供的用户态互斥量等待机制）状态及同时持锁线程的 bionic slice 一起看。调用侧 slice 开始到 `dlopen:` slice 出现前的区间，才可能包含等锁时间。
 
 若 Java 调用仍比 bionic slice 长，再检查 ART 的 native library load 与 `JNI_OnLoad`。
 
@@ -520,7 +530,9 @@ linker namespace 决定进程能看到哪些库，VNDK 和分区规则进一步�
 
 ### 一、Android 17 的 VNDK 边界
 
-VNDK（Vendor Native Development Kit）曾规定 vendor 原生代码可以使用哪些 framework 原生库，以便系统框架与厂商实现分别升级；它从 Android 15 开始弃用。`vendor` 或 `product` 分区面向 Android 15 及以上版本构建时，原 VNDK 库与其他可用库一样安装到对应分区，不再生成当前版本的 VNDK APEX，`ro.vndk.version` 与 `ro.product.vndk.version` 也被移除。
+VNDK（Vendor Native Development Kit）曾规定 vendor 原生代码可以使用哪些 framework 原生库，以便系统框架与厂商实现分别升级；它从 Android 15 开始弃用。
+
+`vendor` 或 `product` 分区面向 Android 15 及以上版本构建时，原 VNDK 库与其他可用库一样安装到对应分区，且不再生成当前版本的 VNDK APEX。随之移除的还有 `ro.vndk.version` 与 `ro.product.vndk.version`。
 
 两类兼容边界仍要保留：
 
@@ -533,7 +545,7 @@ APEX 只改变库的来源、配置和激活边界，不会在进程运行期间
 
 #### “Self-contained HAL”不是新的 linker 模式
 
-旧 VNDK 文档要求 VNDK-SP（可安全加载进 framework 进程的一组 VNDK 库）及 SP-HAL（同样会被 framework 进程加载的 vendor HAL）依赖集合满足自包含约束，避免加载 `vendor` HAL 时继续依赖不允许进入该进程的厂商私有库。Android 17 的 Bionic 中没有名为“Self-contained HAL”的新 namespace 类型、`dlopen()` 标志或预加载调度器。
+旧 VNDK 文档要求 VNDK-SP 与 SP-HAL 的依赖集合满足自包含约束：VNDK-SP 是可安全加载进 framework 进程的一组 VNDK 库，SP-HAL 是同样会被 framework 进程加载的 vendor HAL。约束的目的是避免加载 `vendor` HAL 时继续依赖不允许进入该进程的厂商私有库。Android 17 的 Bionic 中没有名为“Self-contained HAL”的新 namespace 类型、`dlopen()` 标志或预加载调度器。
 
 把 HAL 及依赖放在 `vendor`/`product` 侧，是构建与部署约束。静态链接多少库、是否采用 AIDL HAL、哪些库由 LL-NDK 提供，要由模块定义、稳定接口要求和升级边界决定。“自包含”不会自动减少动态库数量，平台也没有承诺由此获得固定的启动收益。
 
@@ -572,7 +584,7 @@ for (const auto& dir : permitted_paths_) {
 return false;
 ```
 
-这段摘录展示了条件满足后立即返回、库名限制与三组路径检查的先后关系。`ld_library_paths_` 与 `default_library_paths_` 使用 `file_is_in_dir()`，只接受目录的直接子项；`permitted_paths_` 使用 `file_is_under_dir()`，允许更深层路径。
+这段摘录的重点是判断顺序：`is_isolated_` 为假时直接返回 true；`allowed_libs_` 非空时先查库名，不在集合里就直接返回 false；三组路径检查排在库名限制之后。`ld_library_paths_` 与 `default_library_paths_` 使用 `file_is_in_dir()`，只接受目录的直接子项；`permitted_paths_` 使用 `file_is_under_dir()`，允许更深层路径。
 
 `allowed_libs_` 的实现类型是 `std::vector<std::string>`，检查使用线性查找的 `std::find()`。“哈希表平均 O(1)”与源码不符。它也不是独立的动态允许列表服务；配置会在 namespace 建立时写入对象。
 
@@ -582,7 +594,7 @@ return false;
 
 `ld_library_paths_` 与 `default_library_paths_` 参与按 soname 搜索。`permitted_paths_` 允许 isolated namespace 通过绝对路径访问额外目录，但不会自动把目录加入 soname 搜索顺序。把路径加入 permitted 列表，只表示某个绝对路径可能通过可访问性检查，不表示 `dlopen("libfoo.so")` 会从那里找到库。
 
-`LD_LIBRARY_PATH` 只在非 secure execution 环境读取；secure execution 指动态链接器因进程具有特殊权限等安全条件而忽略部分环境变量。该变量只作用于 default namespace 的对应搜索路径。Android 17 Bionic 没有名为 `LOADER_PATH` 的同类环境变量。系统进程和应用还受启动环境、namespace 配置与公开库规则限制。
+secure execution 指动态链接器因进程具有特殊权限等安全条件而忽略部分环境变量，`LD_LIBRARY_PATH` 只在非 secure execution 环境读取，而且只作用于 default namespace 的对应搜索路径。Android 17 Bionic 没有名为 `LOADER_PATH` 的同类环境变量。系统进程和应用还受启动环境、namespace 配置与公开库规则限制。
 
 ### 四、符号可见性怎样限制
 
