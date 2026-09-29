@@ -92,8 +92,9 @@ BLE 连接空闲时的成本通常低于持续扫描，但“已连接”不等�
 
 - **Controller 侧**：扫描窗口占用接收机；active scan 还可能发送 scan request（扫描请求）并等待 scan response（扫描响应）。
 - **Bluetooth 进程侧**：过滤、组装 `ScanResult`、维护 scanner（扫描客户端）与统计。
-- **应用进程侧**：Binder 回调、对象分配、业务判断、日志和网络上报。
-- **系统侧归因**：BatteryStats 根据 WorkSource（工作归属信息）、扫描类型和 controller activity 估算 UID 与组件成本。
+- **应用进程侧**：Binder（进程间通信）回调、对象分配、业务判断、日志和网络上报。
+
+这三类成本由 BatteryStats 归因：它根据 WorkSource（工作归属信息）、扫描类型和 controller activity 估算 UID 与组件成本。
 
 ### Scan mode 控制接收 duty cycle
 
@@ -108,7 +109,7 @@ Android 17 的 `ScanUtil.kt` 为常规模式提供以下 AOSP 默认参数：
 
 这些数字是 AOSP 17 默认值，不属于 SDK 的公开行为保证。`Settings.Global`、DeviceConfig、feature flag（功能开关）、controller 能力和 OEM（设备厂商）配置都可能改变运行参数。应用应依赖 mode 的语义，不应依赖某组固定毫秒数。
 
-Android 17 栈还使用内部 screen-off scan mode（熄屏扫描模式）。无过滤扫描会在屏幕关闭时暂停；部分可继续的扫描会被降低到更稀疏的内部参数。应用不能借此推断每台设备的屏幕关闭功耗。
+Android 17 栈还使用内部的 screen-off scan mode（熄屏扫描模式）：无过滤扫描会在屏幕关闭时暂停；部分可继续的扫描会被降低到更稀疏的内部参数。完整机制见 11.4.5。应用不能借此推断每台设备的屏幕关闭功耗。
 
 ### Filter 主要减少结果与主机唤醒
 
@@ -174,7 +175,7 @@ class PairingScanner(
 
 ## 11.4.4 后台发现、权限与进程存活
 
-后台问题要区分“界面不可见”和“进程不存在”。官方文档允许进程存活的应用在不可见时继续使用 `BluetoothLeScanner`，系统仍会应用扫描降级、屏幕状态和后台执行策略。若进程可能被回收，可使用 `PendingIntent`（由系统代应用投递的预封装操作）扫描，或 Companion Device Manager（配套设备管理器）。
+后台问题要区分“界面不可见”和“进程不存在”。按官方文档，进程存活的应用在界面不可见时仍可使用 `BluetoothLeScanner`；系统仍会应用扫描降级、屏幕状态和后台执行策略。若进程可能被回收，可使用 `PendingIntent`（由系统代应用投递的预封装操作）扫描，或 Companion Device Manager（配套设备管理器）。
 
 ### Android 12+ 权限
 
@@ -241,9 +242,9 @@ Bluetooth 栈需要向 Intent 填充扫描 extras（附加数据），因此这�
 
 不要使用 AlarmManager 或 WorkManager 周期启动扫描来模拟“设备出现”事件。外围设备不在附近时，这种设计仍会唤醒进程。穿戴、配件和 IoT（物联网）产品若存在稳定关联关系，可评估 Companion Device Manager 的 presence API（设备出现/离开事件接口）；它对 filter 和随机 MAC（定期变化的设备地址）的支持有边界，配件广播协议也要一起评估。
 
-## 11.4.5 Android 17 的 BLE 扫描源码路径
+## 11.4.5 Android 17 的 BLE 扫描实现与平台限制
 
-Android 17 已把扫描实现集中到 `packages/modules/Bluetooth/android/app/src/com/android/bluetooth/le_scan/`。以下函数与默认参数均取自 `android-17.0.0_r1` 的实际路径，不沿用旧目录结构或历史 master 分支行号。
+Android 17 已把扫描实现集中到 `packages/modules/Bluetooth/android/app/src/com/android/bluetooth/le_scan/`。以下函数与默认参数均取自 `android-17.0.0_r1` 的这条路径，旧目录结构和历史 master 分支的行号在这里不适用。
 
 下图标出回调扫描和 `PendingIntent` 扫描共享的主要路径。
 
@@ -279,7 +280,7 @@ sequenceDiagram
 
 `AppScanStats.isScanningTooFrequently()` 读取可由 DeviceConfig 调整的 quota（配额）。AOSP 17 默认保留最近 5 次已结束扫描；若其中最早一次的开始时间仍处于 30 秒窗口内，后续非特权注册会收到 `SCAN_FAILED_SCANNING_TOO_FREQUENTLY`。
 
-这里的 5 次和 30 秒是默认配置，不属于应用可依赖的公开保证。连续 start/stop 来提高发现概率，会更容易触发拒绝，也会增加 Binder（进程间通信）与 controller 配置开销。注册失败后应停止循环，并等待业务事件或退避计时器。
+这里的 5 次和 30 秒来自 DeviceConfig 的默认值，OEM 和不同设备上的实际窗口可能不同。连续 start/stop 来提高发现概率，会更容易触发拒绝，也会增加 Binder 与 controller 配置开销。注册失败后应停止循环，并等待业务事件或退避计时器。
 
 ### 熄屏与位置关闭时的暂停
 
@@ -287,7 +288,7 @@ sequenceDiagram
 
 `ScanUtil.requiresLocationOn()` 对未声明 disavowed location（声明扫描不用于位置）且没有非空 filter 的扫描返回 true。位置关闭时，这类扫描同样暂停。位置状态检查与 `BLUETOOTH_SCAN` 运行时授权是两层独立检查。
 
-无过滤扫描受这些规则保护，不代表应用可以故意依赖自动暂停。逻辑请求仍存在，系统配置和 OEM 行为也可能变化。业务离开扫描场景时仍要显式 stop。
+这些规则只保护无过滤扫描，应用不能故意依赖自动暂停。逻辑请求仍然存在，系统配置和 OEM 行为也可能变化，业务离开扫描场景时仍要显式 stop。
 
 ### 长时间扫描降级
 
@@ -296,7 +297,7 @@ AOSP 17 的 legacy scan timeout（旧扫描超时）默认为 10 分钟，可由
 - 无 filter：改成 opportunistic，不再单独驱动 controller 扫描。
 - 有 filter：扫描 mode 被限制到不高于 `SCAN_MODE_LOW_POWER`。
 
-Android 17 还包含由 feature flag 控制的 scan allowance throttling（扫描额度限速）。该模式启用时，系统会跳过 legacy timeout 路径，由 `ScanThrottler` 按 UID 记录加权扫描额度；AOSP 默认每 1 小时补充 6 分钟额度，耗尽后降到内部 screen-off mode（熄屏扫描模式）。该机制属于平台实现与可配置策略，应用不能据此安排任务时限。
+Android 17 还包含由 feature flag 控制的 scan allowance throttling（扫描额度限速）。该模式启用时，系统会跳过 legacy timeout 路径，由 `ScanThrottler` 按 UID 记录加权扫描额度；AOSP 默认每 1 小时补充 6 分钟额度，耗尽后降到内部 screen-off mode。该机制属于平台实现与可配置策略，应用不能据此安排任务时限。
 
 ### BatteryStats 归因
 
@@ -344,7 +345,7 @@ fun connectForForegroundTransfer(
 }
 ```
 
-Direct connect 适合用户正在等待的首次连接；已知设备的长期 presence（在场检测）场景可评估 auto connect（自动连接）或 Companion Device presence。API 37 的 opportunistic GATT client（机会式客户端）不维持底层连接，其他 client 都离开后它会自动断开，只适合愿意复用现有连接的观察者。
+Direct connect 适合用户正在等待的首次连接；已知设备的长期 presence 场景可评估 auto connect（自动连接）或 Companion Device presence。API 37 的 opportunistic GATT client（机会式客户端）不维持底层连接，其他 client 都离开后它会自动断开，只适合愿意复用现有连接的观察者。
 
 ### 连接参数要随业务阶段变化
 
@@ -360,7 +361,7 @@ Direct connect 适合用户正在等待的首次连接；已知设备的长期 p
 
 Android 14 起，首个 GATT client 调用 `requestMtu()` 时，Android 栈会请求 ATT MTU 517，并忽略后续 client 的 MTU 请求。API 37 的 `setAutomaticMtuEnabled(true)` 默认为连接后自动协商。应用仍要在 `onMtuChanged()` 中读取结果，按协商 MTU 分片，不能假定链路一定使用 517。
 
-对于周期状态更新，启用 characteristic notification 后，由外围设备在数据变化时发送，这比主机固定周期调用 `readCharacteristic()` 更适合低功耗。通知频率仍受配件固件控制；配件每几十毫秒发送一次无变化数据时，手机侧无法单独消除这部分成本。
+对于周期状态更新，启用 characteristic notification 后由外围设备在数据变化时发送，比主机固定周期调用 `readCharacteristic()` 更适合低功耗。通知频率仍受配件固件控制；配件每几十毫秒发送一次无变化数据时，手机侧无法单独消除这部分成本。
 
 ### 重连状态机
 
@@ -431,7 +432,7 @@ BatteryStats 的 controller 数据依赖 Bluetooth controller activity reporting
 
 版本表只描述平台公开行为和 AOSP 17 实现。OEM 可调整 scan quota、timeout、window/interval、feature flag 和后台策略；涉及产品承诺时必须在目标设备上验证。
 
-## 11.4.9 BLE Audio、空间音频与头动追踪
+## 11.4.9 LE Audio、空间音频与头动追踪
 
 LE Audio 播放时，Bluetooth 只是媒体功耗的一部分。还要同时观察：
 
