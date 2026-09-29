@@ -58,25 +58,25 @@ last_idle_audit_run_id: 20260828-110758-idle-audit-7041be2c
 
 # HWC Overlay Plane 与合成降级排查
 
-应用按时提交 buffer 后，显示链路仍可能因合成策略变化而迟到。排查 Overlay 降级要从具体 DisplayFrame 和 Layer 属性出发，验证 HWC 的 validate/present 决策，不能用固定 plane 数或单一 composition type 推断所有设备。
+应用按时提交 buffer 后，显示链路仍可能因为合成策略变化而迟到。排查 Overlay 降级要从具体的 DisplayFrame 和 Layer 属性出发，验证 HWC 的 validate/present 决策，不能用固定的 plane 数或单一 composition type 去推断其他设备的行为。
 
 ## 诊断边界：App 按时交帧，屏幕仍可能迟到
 
-平台源码版本为 Android 17 / API 37、`android-17.0.0_r1`，内核版本为 `android17-6.18-2026-06_r6`。Composer HAL（显示合成器硬件抽象层）、显示驱动和 plane（显示硬件合成平面）分配策略通常由厂商实现。AOSP 可以确认接口含义与 SurfaceFlinger（系统合成服务）的调用关系，设备行为仍需要实机证据。
+本章的平台源码版本为 Android 17 / API 37（`android-17.0.0_r1`），内核版本为 `android17-6.18-2026-06_r6`。Composer HAL（显示合成器硬件抽象层）、显示驱动和 plane（显示硬件合成平面）怎么分配，通常由厂商自己实现。AOSP 能确认的是接口含义和 SurfaceFlinger（系统合成服务）的调用关系，设备上的实际行为仍要实机证据。
 
 一次可见更新至少涉及两类帧记录：
 
 - **SurfaceFrame**：记录某个 App 或系统 Layer（图层）生产并提交的一帧，通常关联 `surface_frame_token`（Surface 帧标识）。
 - **DisplayFrame**：记录 SurfaceFlinger 汇集本轮可见 Layer、完成合成并提交显示的一帧，关联 `display_frame_token`（显示帧标识）。
 
-App 的 `Choreographer#doFrame` 和 RenderThread（渲染线程）按时结束，只能说明该 SurfaceFrame 没有明显迟到。此后还要经过 BufferQueue（图形缓冲队列）、SurfaceFlinger latch（获取并采用缓冲区）、composition strategy（合成策略）、RenderEngine（GPU 合成引擎）或 Composer HAL、display driver（显示驱动）和 panel scanout（面板逐行扫描显示）。DisplayFrame 在后半段错过目标 VSync（垂直同步），用户仍会看到掉帧或延迟。
+App 的 `Choreographer#doFrame` 和 RenderThread（渲染线程）按时结束，只能说明该 SurfaceFrame 没有明显迟到。这帧随后要依次经过 BufferQueue（图形缓冲队列）、SurfaceFlinger latch（获取并采用缓冲区）和 composition strategy（合成策略），再由 RenderEngine（GPU 合成引擎）或 Composer HAL 完成合成，最后交给 display driver（显示驱动）和 panel scanout（面板逐行扫描显示）。DisplayFrame 如果在后半段错过目标 VSync（垂直同步），用户看到的仍然是掉帧或延迟。
 
 适合进入 HWC 合成排查的现场通常具备以下组合：
 
 - App 侧 SurfaceFrame 大多按时，关联的 DisplayFrame 却出现 `SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed` 或 `DisplayHAL`（显示侧错过时限）。
 - 视频、相机、画中画、外接屏、系统浮层或高刷新率打开后复现，关闭其中一个条件后缓解。
 - SurfaceFlinger 侧出现 GPU composition（GPU 合成），或同一 Layer 的最终 composition type（合成类型）在 `DEVICE` 与 `CLIENT` 之间变化。
-- RenderEngine、HWC validate/present（能力校验/显示提交）或 fence 等待的时长与卡顿帧在时间上对应。
+- RenderEngine、HWC validate/present（合成方式校验/显示提交）或 fence 等待的时长与卡顿帧在时间上对应。
 
 composition type 的变化本身不是故障。只有它与 DisplayFrame 迟到、GPU/DPU（图形/显示处理器）负载或 fence 延迟同时出现，才能支持“合成方式变化导致问题”的结论。
 
@@ -92,17 +92,17 @@ composition type 的变化本身不是故障。只有它与 DisplayFrame 迟到�
 | Tunneled Playback（隧道播放） | sideband Layer（旁路媒体图层）与厂商媒体路径 | 依赖 `SIDEBAND` capability（能力）、codec HAL（编解码器硬件抽象层）和 HWC |
 | Protected content（受保护内容） | 带安全约束的 Layer / buffer | 只能选择满足 secure composition（安全合成）要求的路径 |
 
-`SurfaceView` 提供独立 Layer，因此显示硬件有机会单独处理视频或相机画面，但它不保证一定使用 overlay（硬件叠加平面）。`TextureView` 的 View 变换、裁剪和 alpha（透明度）更灵活，代价是视频 buffer 要由宿主 RenderThread 采样进 App Window，不再存在独立的视频 Layer。
+`SurfaceView` 提供独立 Layer，显示硬件因此有机会单独处理视频或相机画面，但不保证一定用 overlay（硬件叠加平面）。`TextureView` 的 View 变换、裁剪和 alpha（透明度）更灵活，代价是视频 buffer 要由宿主 RenderThread 采样进 App Window，独立的视频 Layer 不再存在。
 
-独立 producer（内容生产者）不要求在同一个显示周期同时更新。一个 DisplayFrame 可以合法地组合“新宿主 UI + 旧视频 buffer”或“旧宿主 UI + 新视频 buffer”。遇到字幕、遮罩和视频内容错位时，应核对目标 present 采用了哪组 buffer 与 transaction（图层状态事务）；composition type 只能回答合成方式，不能说明内容是否来自同一时刻。
+受保护内容的合成路径另算，不能直接当成普通 overlay。设备可能使用安全 plane，也可能用受保护图形上下文做安全合成。出现黑屏、外接屏失败或截图不可见时，要核对 DRM（数字版权管理）、secure decoder（安全解码器）、buffer usage（缓冲区用途标记）、HDCP（数字内容传输保护）与 Composer capability，不能只看 `DEVICE` 一个字段就下结论。
 
-受保护内容也不能直接等同于普通 overlay。设备可能使用安全 plane，也可能使用受保护图形上下文支持的安全合成。出现黑屏、外接屏失败或截图不可见时，应核对 DRM（数字版权管理）、secure decoder（安全解码器）、buffer usage（缓冲区用途标记）、HDCP（数字内容传输保护）与 Composer capability，不能只根据 `DEVICE` 一个字段下结论。
+还有一层和合成方式无关的问题：独立 producer（内容生产者）不要求在同一个显示周期同时更新。一个 DisplayFrame 可以合法地组合“新宿主 UI + 旧视频 buffer”或“旧宿主 UI + 新视频 buffer”。遇到字幕、遮罩和视频内容错位时，要核对目标 present 采用了哪组 buffer 与 transaction（图层状态事务）；composition type 只能回答合成方式，不能说明内容是否来自同一时刻。
 
 视频从 codec 提交到 Surface 后仍要经历 queue、latch、合成与 present。完整的视频时序和 SurfaceView / TextureView 差异见 [13.11 视频 Overlay、Media3 与专业编解码管线](../ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md)。
 
 ## Android 17 的 Composition 类型
 
-Android 17 的 Composer3 AIDL（Android 接口定义语言）在 `Composition.aidl` 中定义了八个枚举值。排查工具显示的值应按以下定义理解：
+Android 17 的 Composer3 AIDL（Android 接口定义语言）在 `Composition.aidl` 中定义了八个枚举值，排查工具里显示的值按下面的定义理解：
 
 | 类型 | Android 17 语义 | 诊断时的边界 |
 |---|---|---|
@@ -115,7 +115,7 @@ Android 17 的 Composer3 AIDL（Android 接口定义语言）在 `Composition.ai
 | `DISPLAY_DECORATION` | 为挖孔和屏幕圆角提供抗锯齿装饰 | 依赖 `getDisplayDecorationSupport()` |
 | `REFRESH_RATE_INDICATOR` | 类似 `DEVICE`，更新不应重置 HWC 的 activity timer（活跃计时器） | 能力不足时可改为 `CLIENT` |
 
-`DEVICE` 的接口定义特意保留了 “hardware overlay or other similar means”。因此，以下推断都越过了公开证据边界：
+`DEVICE` 的接口定义特意保留了 “hardware overlay or other similar means”。下面三种推断都越过了公开证据的边界：
 
 - 看到 `DEVICE` 就断言该 Layer 独占一个物理 overlay plane。
 - 统计 `DEVICE` Layer 数就反推出设备 plane 总数。
@@ -123,11 +123,38 @@ Android 17 的 Composer3 AIDL（Android 接口定义语言）在 `Composition.ai
 
 Composer 会针对每个显示帧重新协商。Layer 集合、属性、显示模式或资源竞争改变后，HWC 可以给出不同结果。混合合成也很常见：若一部分 Layer 为 `CLIENT`，RenderEngine 会把它们画进一张 client target；HWC 再把 client target 与剩余的 `DEVICE`、`CURSOR` 或其他 Layer 一起提交显示。
 
+## Overlay 能力没有通用的 plane 数字
+
+`DEVICE` 不等于独占 plane，设备上实际能用几个 plane 也没有统一数字。官方文档里出现的“四个 overlay plane”只是典型值说明：HWC 概览用它解释“典型 Android 设备通常支持四个 overlay plane”，以及资源不足时会退到 GLES/client composition；Implement HWC 把“至少四个 overlays”列为实现应支持的项目。这类数字只能作为实现能力下限和示例背景，不能当作某台设备的物理 plane 总数、每帧可用的 plane 数，也不能当作应用能锁定的资源。普通应用没有公开 API 可以查询或锁定 plane。
+
+Android 17 的 `IComposerClient.getOverlaySupport()` 在底层 HAL 支持时返回 `OverlayProperties`；不支持时接口可报 `EX_UNSUPPORTED`。该结构描述以下能力：
+
+- pixel format（像素格式）与 dataspace 在 standard、transfer、range（色彩标准、传递函数、范围）三个维度上的有效组合；
+- DPU 能否同时处理至少两种输入色彩空间；
+- HWC 支持的 1D / 3D LUT（颜色查找表）属性。
+
+即使返回成功，它也不会返回物理 plane 数量、每个 plane 的缩放器数量、当前帧的分配结果或厂商功耗策略；接口本身也位于系统与 Composer HAL 之间，不属于应用 SDK。
+
+设备评估至少要同时记录这些条件：
+
+| 约束 | 容易触发变化的现场 | 需要核对的证据 |
+|---|---|---|
+| Layer 数量与共享资源 | 双视频、相机预览、字幕、系统栏、悬浮窗并存 | 可见 Layer 集合、z-order（前后层级）、最终类型 |
+| format / dataspace | YUV + RGBA、HDR（高动态范围）+ SDR（标准动态范围）、广色域 UI | buffer 格式、dataspace、颜色转换 |
+| crop / scale / transform | 画中画、旋转动画、自由窗口、外接屏 | source crop（源裁剪区域）、display frame（目标显示区域）、transform（变换） |
+| alpha / blending | 半透明控制栏、圆角遮罩、模糊、淡入淡出 | plane blending（混合）能力、client target |
+| protected / sideband | DRM 视频、tunneled playback | secure path、capability、HWC/DRM 日志 |
+| display decoration | 屏幕圆角、挖孔抗锯齿 | `DISPLAY_DECORATION` 支持及最终类型 |
+| 刷新率与分辨率 | 120 Hz、4K 外接屏、多显示器 | active mode（当前显示模式）、像素吞吐、带宽与时钟 |
+| 厂商资源策略 | 温控、省电、writeback（显示内容回写）、并发显示 | 同机 HWC 日志、驱动 trace、功耗状态 |
+
+格式、缩放、颜色混合与 plane 往往共享 DPU 资源。只看 Layer 数，分不清是“plane 不够”“该格式不能缩放”“HDR/SDR 混合超出色彩能力”，还是“厂商策略主动选择 client composition”。
+
 ## validate、presentOrValidate 与 present
 
-旧式流程图经常把每帧写成先调用 `validateDisplay()`（校验各 Layer 的合成方式），再固定调用 `presentDisplay()`（提交本轮显示）。Android 17 的 `HWComposer::getDeviceCompositionChanges()` 还支持通过快速分支跳过单独的 validate 调用。
+很多旧资料把每帧画成固定两步：先调 `validateDisplay()`（校验各 Layer 的合成方式），再调 `presentDisplay()`（提交本轮显示）。Android 17 的提交路径有两种，`HWComposer::getDeviceCompositionChanges()` 支持走快速分支，用一次 `presentOrValidate()` 把 validate 和 present 合并成一次调用。
 
-下面的状态图用来区分 Android 17 中的两条提交路径。图中的 earliest-present 表示当前条件允许 HWC 尝试直接完成 present。
+下面的状态图画出 Android 17 这两条提交路径的分支条件。图中的 earliest-present 表示当前条件允许 HWC 尝试直接完成 present。
 
 ```mermaid
 flowchart TD
@@ -157,38 +184,11 @@ flowchart TD
 2. `DisplayHardware/HWComposer.cpp` 决定调用 `presentOrValidate()` 或 `validate()`，读取 changed types、display/layer requests、client-target 属性后执行 `acceptChanges()`（接受 HWC 提出的修改）。
 3. `CompositionEngine/src/Output.cpp` 在 `usesClientComposition` 为真时进入 `composeSurfaces()`，由 `RenderEngine::drawLayers()` 生成 client target；`Display::presentFrame()` 再调用 `presentAndGetReleaseFences()`（提交显示并取得释放栅栏）。
 
-`acceptDisplayChanges()` 发生在 SurfaceFlinger 接受 HWC 请求的阶段。工具中若同时展示“客户端原始请求类型”和“validate 后的最终类型”，排查时应采用最终被接受的类型，避免把 `DEVICE` 的初始请求误当成该帧的实际结果。
-
-## Overlay 能力没有通用的 plane 数字
-
-官方 HWC 概览用“典型 Android 设备通常支持四个 overlay plane”解释资源不足时会退到 GLES/client composition；Implement HWC 文档又把“至少四个 overlays”列为 HWC 实现应支持的项目。这里的数字只能作为实现能力下限和示例背景，不能当作某台设备的物理 plane 总数、每帧可用 plane 数或应用可锁定的资源。普通应用也没有公开 API 可以查询或锁定 plane。
-
-Android 17 的 `IComposerClient.getOverlaySupport()` 在底层 HAL 支持时返回 `OverlayProperties`；不支持时接口可报 `EX_UNSUPPORTED`。该结构描述以下能力：
-
-- pixel format（像素格式）与 dataspace 的 standard、transfer、range（色彩标准、传递函数、范围）有效组合；
-- DPU 能否同时处理至少两种输入色彩空间；
-- HWC 支持的 1D / 3D LUT（颜色查找表）属性。
-
-即使返回成功，它也不会返回物理 plane 数量、每个 plane 的缩放器数量、当前帧的分配结果或厂商功耗策略；接口本身也位于系统与 Composer HAL 之间，不属于应用 SDK。
-
-设备评估至少要同时记录这些条件：
-
-| 约束 | 容易触发变化的现场 | 需要核对的证据 |
-|---|---|---|
-| Layer 数量与共享资源 | 双视频、相机预览、字幕、系统栏、悬浮窗并存 | 可见 Layer 集合、z-order（前后层级）、最终类型 |
-| format / dataspace | YUV + RGBA、HDR（高动态范围）+ SDR（标准动态范围）、广色域 UI | buffer 格式、dataspace、颜色转换 |
-| crop / scale / transform | 画中画、旋转动画、自由窗口、外接屏 | source crop（源裁剪区域）、display frame（目标显示区域）、transform（变换） |
-| alpha / blending | 半透明控制栏、圆角遮罩、模糊、淡入淡出 | plane blending（混合）能力、client target |
-| protected / sideband | DRM 视频、tunneled playback | secure path、capability、HWC/DRM 日志 |
-| display decoration | 屏幕圆角、挖孔抗锯齿 | `DISPLAY_DECORATION` 支持及最终类型 |
-| 刷新率与分辨率 | 120 Hz、4K 外接屏、多显示器 | active mode（当前显示模式）、像素吞吐、带宽与时钟 |
-| 厂商资源策略 | 温控、省电、writeback（显示内容回写）、并发显示 | 同机 HWC 日志、驱动 trace、功耗状态 |
-
-格式、缩放、颜色混合与 plane 往往共享 DPU 资源。只看 Layer 数，无法区分“plane 不够”“该格式不能缩放”“HDR/SDR 混合超出色彩能力”，或“厂商策略主动选择 client composition”。
+工具里如果同时展示“客户端原始请求类型”和“validate 后的最终类型”，排查要采用最终被接受的那个，避免把 `DEVICE` 的初始请求误当成该帧的实际结果。接受 HWC 修改这一步就是 `acceptDisplayChanges()`。
 
 ## 证据采集：从 DisplayFrame 回到合成决策
 
-较稳妥的取证顺序是：先定位迟到的 DisplayFrame，判断本轮是否使用 GPU composition，再查看 Layer composition、RenderEngine/HWC slice（时间区间）与 fence。`dumpsys` 只提供执行命令时附近的状态快照，不能单独证明某次卡顿帧发生了类型切换。
+较稳妥的取证顺序是：先定位迟到的 DisplayFrame，判断本轮是否使用 GPU composition，再查看 Layer composition、RenderEngine/HWC slice（时间区间）与 fence。每一步都要落到具体时间和具体 Layer 上，快照类证据只够做前后对照。
 
 ### FrameTimeline：定位责任范围
 
@@ -215,7 +215,7 @@ where actual.jank_type is not null
 order by actual.ts;
 ```
 
-`app_token` 与 `sf_token` 属于不同对象，不能仅因数值相等就把它们关联起来。Perfetto 的 flow（事件流关系）或 `display_frame_token` 才用于确认某个 SurfaceFrame 进入了哪个 DisplayFrame。`gpu_composition = 1` 只说明该 DisplayFrame 使用过 GPU composition，不提供每个 Layer 的 plane 分配结果。
+`app_token` 与 `sf_token` 属于不同对象，不能只因为数值相等就把它们关联起来。要确认某个 SurfaceFrame 进了哪个 DisplayFrame，看 Perfetto 的 flow（事件流关系）或 `display_frame_token`。`gpu_composition = 1` 只说明该 DisplayFrame 用过 GPU composition，不提供每个 Layer 的 plane 分配结果。
 
 FrameTimeline 的三类显示侧结果可用于缩小检查范围：
 
@@ -295,7 +295,7 @@ present fence 描述一轮 DisplayFrame 何时完成显示；layer release fence
 
 ### SurfaceView 视频 + 字幕、弹幕或控制栏
 
-视频 Layer、宿主 UI、系统栏和弹窗会一起参与 HWC 协商。打开半透明控制栏后改成 `CLIENT`，原因可能是 blending、色彩、scale（缩放）或资源竞争，不能直接归结为“多了一个浮层”。
+视频 Layer、宿主 UI、系统栏和弹窗会一起参与 HWC 协商。打开半透明控制栏后某一帧变成 `CLIENT`，原因可能是 blending、色彩、scale（缩放）或资源竞争，不能直接归结为“多了一个浮层”。
 
 建议在同一台设备上固定视频分辨率、HDR 状态、刷新率和窗口尺寸，每轮只改变一个浮层。每组都记录最终 composition、FrameTimeline、RenderEngine、GPU/DPU 频率与 fence。
 
@@ -303,7 +303,7 @@ present fence 描述一轮 DisplayFrame 何时完成显示；layer release fence
 
 TextureView 已把视频纹理采样进宿主窗口。即使宿主 App Window 最终为 `DEVICE`，也不能据此宣称视频获得了独立 overlay。若问题发生在宿主 RenderThread 的 texture acquire（纹理获取）、采样或 GPU 绘制阶段，HWC trace 只能看到后续的合成结果。
 
-选择 SurfaceView 或 TextureView 时，需要同时评估动画与裁剪需求、延迟、功耗、安全内容，以及保留独立 Layer 的价值。只为减少 Layer 而把视频迁入 TextureView，可能反而减少 HWC 可选择的合成方式。
+选择 SurfaceView 或 TextureView 时，要同时评估动画与裁剪需求、延迟、功耗、安全内容，以及保留独立 Layer 的价值。只为减少 Layer 就把视频迁进 TextureView，HWC 可选的合成方式可能反而更少。
 
 ### 相机预览 + 业务标注
 
@@ -319,13 +319,13 @@ TextureView 已把视频纹理采样进宿主窗口。即使宿主 App Window �
 
 ### 高刷新率、温控与省电模式
 
-120 Hz 缩短每帧可用时间，高分辨率提高像素吞吐；温控和省电模式还可能调整 GPU、DPU 或内存带宽。Qualcomm、MediaTek、Pixel 的具体 HWC 策略不在 AOSP 公共代码中，缺少公开资料时，只能将结果标记为目标设备上的结论。
+120 Hz 缩短每帧可用时间，高分辨率提高像素吞吐；温控和省电模式还可能调整 GPU、DPU 或内存带宽。Qualcomm、MediaTek、Pixel 的具体 HWC 策略不在 AOSP 公共代码里，缺少公开资料时，结论只能限定在目标设备上。
 
 应分别测试设备温度较低和升温后的状态、60/90/120 Hz，以及正常和省电模式。若 composition type 不变但 present 仍变慢，更应检查时钟、带宽或 display HAL，无需强行修改 Layer 结构。
 
 ## 优化动作：根据证据选择拆分或合并
 
-普通应用无法强制 HWC 分配 plane。应用侧可以调整输入 Layer 结构、buffer 属性与动画组合，再通过同一设备上的 trace 验证效果。
+plane 怎么分配不由应用决定，应用能改的只有输入 Layer 结构、buffer 属性与动画组合，改完再在同一设备上用 trace 验证效果。
 
 ### 独立 Surface 的取舍
 
@@ -365,7 +365,7 @@ TextureView 已把视频纹理采样进宿主窗口。即使宿主 App Window �
 
 ## 线上可观测性
 
-普通应用没有稳定的公开 API 获取逐帧 HWC composition type，也不能在线上统计物理 plane 使用率。线上可以收集与问题相关、但不能直接代表 HWC 结果的代理信号：
+普通应用没有稳定的公开 API 获取逐帧 HWC composition type，也无法在线上统计物理 plane 使用率。线上能收集的只有与问题相关、但不能直接代表 HWC 结果的代理信号：
 
 - JankStats、FrameMetrics 或自有帧指标，并记录页面和交互标签；
 - SurfaceView / TextureView、视频/相机/PIP/多窗口等场景标签；
