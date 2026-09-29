@@ -83,7 +83,7 @@ last_consolidated_at: '2026-08-24'
 
 # ANR 与 Kernel Trace 联合诊断
 
-ANR traces 记录超时附近的线程栈，Kernel Trace 补充 CPU 调度、锁、I/O 和内存压力。两类证据必须在同一时间窗口对齐，才能区分线程主动执行、可运行未调度和不可中断等待。
+ANR trace 记录超时附近的线程栈，Kernel Trace 补充 CPU 调度、锁、I/O 和内存压力。两类证据要对齐到同一个时间窗口，才能区分线程主动执行、可运行未调度和不可中断等待。
 
 ## 现场保护、线程栈与责任链
 
@@ -180,7 +180,9 @@ Android 17 在 `ProcessErrorStateRecord.appNotResponding()` 中构造三组候�
 
 ART 状态 `Native` 表示线程正在原生代码中，不能据此判断它是否正在消耗 CPU；主线程在 epoll 中等待消息时也会显示 `Native`。`sCount` 是 ART 当前 suspend count（暂停请求计数），不是线程历史上被 GC 或调试器暂停的次数。
 
-在 6.18 内核锚点中，`D` 对应 `TASK_UNINTERRUPTIBLE` 一类不可中断等待。它常见于 I/O、direct reclaim、驱动 completion 或内核锁等待等路径，但状态字母本身不包含等待原因。普通 futex 等待在该内核源码中设置为 `TASK_INTERRUPTIBLE|TASK_FREEZABLE`，通常应按 `S` 等待分析，不能仅凭 `futex_wait` 把 D-state 归因给用户态锁。Freezer 还有独立的 `TASK_FROZEN` 状态；cgroup v2 通过 `cgroup.freeze` 请求冻结，并在完成后将 `cgroup.events` 中的 `frozen` 更新为 `1`。只有冻结控制状态、freeze/unfreeze 事件和调度证据能够相互对应时，才能把停顿归因给 freezer。
+在 6.18 内核锚点中，`D` 对应 `TASK_UNINTERRUPTIBLE` 一类不可中断等待。它常见于 I/O、direct reclaim、驱动 completion 或内核锁等待等路径，但状态字母本身不包含等待原因。普通 futex 等待在该内核源码中设置为 `TASK_INTERRUPTIBLE|TASK_FREEZABLE`，通常应按 `S` 等待分析，不能仅凭 `futex_wait` 把 D-state 归因给用户态锁。
+
+Freezer 还有独立的 `TASK_FROZEN` 状态；cgroup v2 通过 `cgroup.freeze` 请求冻结，并在完成后将 `cgroup.events` 中的 `frozen` 更新为 `1`。只有冻结控制状态、freeze/unfreeze 事件和调度证据能够相互对应时，才能把停顿归因给 freezer。
 
 #### 沿锁地址建立等待图
 
@@ -280,7 +282,9 @@ Perfetto 配置决定 trace 包含哪些数据；bugreport 补充 ANR 报告、E
 | `D` 等待 | 不可中断内核等待 | kernel callstack（内核调用栈）、I/O/驱动事件、等待对象 |
 | Blocked monitor | Java 锁未取得 | 持锁线程、锁序、持锁区工作 |
 
-CPU 饥饿要用“Runnable 区间远大于 Running 区间”和显著的 wakeup-to-run（线程被唤醒到真正运行）延迟来证明。整机 CPU 百分比高只能提供环境背景；大小核调度、cpuset（允许线程运行的 CPU 集合）限制、uclamp（调度器利用率约束）、温控降频或一个高优先级线程，都可能让主线程得不到 CPU，即使整机仍有空闲核。
+CPU 饥饿要用“Runnable 区间远大于 Running 区间”和显著的 wakeup-to-run（线程被唤醒到真正运行）延迟来证明。
+
+整机 CPU 百分比高只能提供环境背景。大小核调度、cpuset（允许线程运行的 CPU 集合）限制、uclamp（调度器利用率约束）、温控降频或一个高优先级线程，都可能让主线程得不到 CPU，即使整机仍有空闲核。
 
 #### 跟踪同步 Binder
 
@@ -436,7 +440,9 @@ Android 17 的 ANR 路径可能输出两套 `ProcessCpuTracker` 结果，两者�
 
 `ProcessErrorStateRecord` 记录的 `anrTime` 位于 ANR 处理开始附近。临时榜通常在它之后采样，因此标题可能出现 `ms later`；长期榜则可能覆盖 deadline 之前、之后或两侧。解析每个 CPU 块时，要保存 `sample_start`、`sample_end`、`duration`、它位于 `anrTime` 之前还是之后、采样器类型，以及与超时窗口的重叠关系。只覆盖转储阶段的数据，只能说明抓栈时仍观察到该现象。
 
-进程和线程行以各自两个采样点之间的 uptime 为分母，因此多线程进程超过 `100%` 合法。`TOTAL` 行的分母则是所有 CPU 的 `/proc/stat` 增量总和；其非 idle 百分比包含 `iowait`（CPU 等待 I/O 的记账时间），不能当作纯执行利用率，也不能与进程行直接相减。AOSP `ProcessCpuTracker` 的标准输出不附带 `R/S/D`，若报告中带有状态字符，应按厂商扩展或其他采集器解释，并保留来源名称。
+进程和线程行以各自两个采样点之间的 uptime 为分母，因此多线程进程超过 `100%` 合法。`TOTAL` 行的分母则是所有 CPU 的 `/proc/stat` 增量总和；其非 idle 百分比包含 `iowait`（CPU 等待 I/O 的记账时间），不能当作纯执行利用率，也不能与进程行直接相减。
+
+AOSP `ProcessCpuTracker` 的标准输出不附带 `R/S/D`，若报告中带有状态字符，应按厂商扩展或其他采集器解释，并保留来源名称。
 
 `minor`、`major` fault 是两个采样点之间发生的缺页事件数，不表示内存分配量或 I/O 字节数。页大小可能是 4 KB、16 KB 或其他值，major fault 的后备介质也可能是 zram（压缩内存交换设备）。只有 fault 增量与 D 状态、reclaim、文件系统或 block I/O 在同一时间窗口相互印证时，存储或内存压力解释才更可信。
 
@@ -532,7 +538,7 @@ if (Build.VERSION.SDK_INT >= 30) {
 
 #### ProfilingManager 触发式采集
 
-`ProfilingManager` 在 Android 15（API 35）加入公开 API；Android 16（API 36）的 `ProfilingTrigger` 提供 `TRIGGER_TYPE_ANR`。系统识别 ANR 后、可能杀进程前，可以从正在后台运行的系统 trace 环形缓冲区中截取一份快照。触发不代表应用一定会被杀，也不保证每次都产生文件：后台 trace 是否活跃、缓冲区内容、系统规则和 rate limit（频率限制）都会影响结果。
+`ProfilingManager` 在 Android 15（API 35）加入公开 API；Android 16（API 36）的 `ProfilingTrigger` 提供 `TRIGGER_TYPE_ANR`。系统识别 ANR 后、可能杀进程前，可以从正在后台运行的系统 trace 环形缓冲区中截取一份快照；它不会等到 ANR 发生才开始录 trace，所以产物能否覆盖超时之前的过程，取决于 system trace 是否已经在运行、缓冲区还保留多少内容、系统规则和设备配置。触发不代表应用一定会被杀，也不保证每次都产生文件，rate limit（频率限制）也会拦住一部分请求。
 
 下面的代码在 API 36 及以上注册 ANR trigger，并通过全局结果 listener 接收系统返回的 profiling 文件：
 
@@ -560,7 +566,9 @@ if (Build.VERSION.SDK_INT >= 36) {
 }
 ```
 
-触发式结果只会投递给通过 `registerForAllProfilingResults()` 注册的全局 listener（监听器）。生产代码还要检查 `ProfilingResult` 的 error code、文件生命周期，并避免重复注册。Android 17（API 37）新增的 `TRIGGER_TYPE_ANOMALY` 面向系统检测到的通用异常，产物类型取决于 anomaly tag；ANR 采集应继续使用含义明确的 `TRIGGER_TYPE_ANR`。
+触发式结果只会投递给通过 `registerForAllProfilingResults()` 注册的全局 listener（监听器）。生产代码还要检查 `ProfilingResult` 的 error code（错误码）、文件生命周期，并避免重复注册，同时按隐私规范处理产物。Android 17（API 37）新增的 `TRIGGER_TYPE_ANOMALY` 面向系统检测到的通用异常，产物类型取决于 anomaly tag；ANR 采集应继续使用含义明确的 `TRIGGER_TYPE_ANR`。
+
+公开 SDK 中没有 `android.os.PerfettoManager`：开发调试用 Perfetto CLI，普通应用的系统触发入口是 `ProfilingManager`。
 
 #### SIGQUIT hook 的边界
 
@@ -612,9 +620,7 @@ Google Play Android vitals 按 daily active user（每日活跃用户，DAU）�
 
 ## 调度、锁、I/O 与内核等待
 
-Java 或 Native 栈给出线程停留位置，内核轨迹解释它为什么长时间没有推进。两者结合后再判断修复位置。
-
-ANR trace（线程转储）回答“取样时各线程停在哪里”，Perfetto 回答“超时窗口内发生过什么”。两份证据处理的是两个时间尺度，联合诊断的目的，是把线程转储中的等待点放回调度、Binder、文件系统和块设备的时间线上。
+Java 或 Native 栈给出线程停留位置，内核轨迹解释它为什么长时间没有推进。ANR trace（线程转储）回答“取样时各线程停在哪里”，Perfetto 回答“超时窗口内发生过什么”；两者处在两个时间尺度上，联合诊断要做的是把线程转储中的等待点放回调度、Binder、文件系统和块设备的时间线上。
 
 `nativePollOnce`、`BinderProxy.transactNative` 和 `D` 状态都只是现象：
 
@@ -626,14 +632,7 @@ ANR trace（线程转储）回答“取样时各线程停在哪里”，Perfetto
 
 ### 1. ANR trace 的能力边界
 
-Android 17 的 ANR 处理采用异步队列，并行安排目标进程的 early dump（优先线程转储）。检测路径把记录交给 `AnrHelper.appNotResponding()`；`AnrHelper` 先把目标进程的临时转储提交给 early-dump executor（执行器），再由 `AnrConsumer` 依次处理队列并调用 `ProcessErrorStateRecord.appNotResponding()`。后者设置 `notResponding` 状态、写入 `AM_ANR` EventLog、发出 Perfetto ANR instant（瞬时事件），随后组织目标进程、parent（父进程）、`system_server`、persistent（常驻系统进程）及 native interest（系统关注的 native 进程）转储。
-
-这个实现解释了两个诊断现象：
-
-- 目标进程的 early dump 更接近超时现场，后续进程的栈可能晚数秒。
-- 排队超过 10 秒或开机 10 分钟内的记录会走 `onlyDumpSelf`（只转储目标进程），不能从“文件里没有对端栈”推导“系统没有尝试采集对端”。
-
-`StackTracesDumpHelper` 对 Java 进程调用 tombstoned/ART 的 Java backtrace（调用栈）接口；Java 转储失败时才回退到 native backtrace。转储可以包含线程状态、Java 帧、native 边界和调度统计，但它仍是某个时间点附近的样本，缺少等待起点、唤醒者、run queue（CPU 运行队列）延迟和历史 Binder 事务流。
+`StackTracesDumpHelper` 对 Java 进程调用 tombstoned/ART 的 Java backtrace（调用栈）接口，Java 转储失败时才回退到 native backtrace。一份转储可以包含线程状态、Java 帧、native 边界和调度统计，但它仍然是某个时间点附近的样本：等待从什么时候开始、由谁唤醒、在 run queue（CPU 运行队列）里排了多久、此前经历过哪些 Binder 事务，都不在文件里。
 
 一份 ANR trace 可以可靠提供：
 
@@ -1146,43 +1145,14 @@ ORDER BY event.ts, event.name, args.key;
 
 应用发起大分配与系统内存紧张可以同时成立，没必要把责任强行二分为“应用侧”或“系统侧”。修复可能包括降低内存峰值、把工作移出完成期限、避免同步触发缺页，也可能需要调整系统内存参数和 vendor（厂商）策略。
 
-### 9. Android 17 的系统触发式 profiling
+### 9. 读懂 AnrHelper 带来的取样偏差
 
-`ProfilingManager` 在 Android 15（API 35）成为公开的 profiling（性能剖析）API。Android 16（API 36）的 `ProfilingTrigger.TRIGGER_TYPE_ANR` 支持在系统识别 ANR 后、可能终止进程前，请求正在后台运行的 system trace 快照。它不会等 ANR 发生后才启动一份 trace，因此产物能否覆盖超时前的过程，取决于 system trace 是否已经运行、缓冲区保留情况、系统限流和设备配置。
+Android 17 的 ANR 处理走异步队列：目标进程的转储先提交，完整 ANR 处理可能排队。检测路径把记录交给 `AnrHelper.appNotResponding()`；`AnrHelper` 先把目标进程的临时转储提交给 early-dump executor（执行器），再由 `AnrConsumer` 依次处理队列并调用 `ProcessErrorStateRecord.appNotResponding()`。后者设置 `notResponding` 状态、写入 `AM_ANR` EventLog、发出 Perfetto ANR instant（瞬时事件），随后组织目标进程、parent（父进程）、`system_server`、persistent（常驻系统进程）及 native interest（系统关注的 native 进程）转储。
 
-下面的 Kotlin 代码用于 API 36 及以上注册全局结果 listener 和 ANR trigger：
+`AnrHelper` 还会对同一 PID 的 predump（预转储）、queued ANR（已排队记录）和正在处理的 ANR 去重，由 consumer（队列消费者）串行处理记录。因此文件里各段栈来自不同时刻：
 
-```kotlin
-if (Build.VERSION.SDK_INT >= 36) {
-    val profilingManager =
-        context.getSystemService(ProfilingManager::class.java)
-
-    profilingManager.registerForAllProfilingResults(
-        context.mainExecutor
-    ) { result ->
-        val path = result.resultFilePath
-        // 在回调外检查结果状态、复制文件并执行合规上传。
-    }
-
-    profilingManager.addProfilingTriggers(
-        listOf(
-            ProfilingTrigger.Builder(
-                ProfilingTrigger.TRIGGER_TYPE_ANR
-            )
-                .setRateLimitingPeriodHours(24)
-                .build()
-        )
-    )
-}
-```
-
-结果只投递给通过 `registerForAllProfilingResults()` 注册的全局 listener（监听器）。触发与产物都不保证成功，应用还要处理 error code（错误码）、文件生命周期、重复注册、用户隐私和系统 rate limit（频率限制）。Android 17（API 37）的 `TRIGGER_TYPE_ANOMALY` 面向更广的系统异常，没有替代专用的 ANR trigger。
-
-公开 SDK 中没有 `android.os.PerfettoManager`。开发调试可用 Perfetto CLI；普通应用的系统触发入口是 `ProfilingManager`。
-
-### 10. 读懂 AnrHelper 带来的取样偏差
-
-Android 17 的 `AnrHelper` 会对同一 PID 的 predump（预转储）、queued ANR（已排队记录）和正在处理的 ANR 去重，并由 consumer（队列消费者）串行处理记录。目标进程的 early dump 会尽早提交，完整 ANR 处理则可能排队。排队过久后只转储目标进程，是为了避免已经失去时效的大范围采集继续增加系统压力。
+- 目标进程的 early dump 更接近超时现场，后续进程的栈可能晚数秒。
+- 排队超过 10 秒或开机 10 分钟内的记录会走 `onlyDumpSelf`（只转储目标进程），不能从“文件里没有对端栈”推导“系统没有尝试采集对端”；这样处理的目的是避免已经失去时效的大范围采集继续增加系统压力。
 
 排障时应记录：
 
@@ -1194,13 +1164,13 @@ Android 17 的 `AnrHelper` 会对同一 PID 的 predump（预转储）、queued 
 
 这组时间能解释“ANR 时主线程被卡住，trace 却已经回到 `nativePollOnce`”一类矛盾。线程可能在 dump 到达前恢复，栈没有错，只是样本晚了。
 
-### 11. eBPF 的适用边界
+### 10. eBPF 的适用边界
 
 Android 的 eBPF 基础设施早于 Android 14。系统组件可以在内核配置、SELinux、BPF loader（加载器）和稳定性评估允许时，用 BPF 在内核事件发生时进行过滤和聚合。普通第三方应用不能随意加载 BPF 程序，也不能把它当作通用的 ANR SDK。
 
 BPF 程序仍会在事件路径上执行，事件频率、map（BPF 键值存储）操作、栈采样和上报都会产生开销。若系统团队采用它辅助 ANR，需在目标内核与 SoC 上测量 CPU、内存、功耗、丢事件情况和 verifier（内核安全校验器）限制，并提供停用开关。
 
-### 12. 从证据生成分类，不让分类替代证据
+### 11. 从证据生成分类，不让分类替代证据
 
 自动分类可以按下面的顺序产出“候选原因”：
 
@@ -1214,7 +1184,7 @@ BPF 程序仍会在事件路径上执行，事件频率、map（BPF 键值存储
 
 分类结果不应只写“Binder ANR”或“I/O ANR”。更便于采取行动的描述是：“主线程在输入期限的 4.2 秒内等待同步 Binder；server 线程晚 3.6 秒开始运行；同一窗口 server 的全部 Binder 线程持续处理请求；未发现客户端长 Runnable。”这样的结论能指向服务端线程池、共享锁或请求合并策略，也保留后续验证空间。
 
-### 13. 生产采集策略
+### 12. 生产采集策略
 
 不同 SoC、kernel config（内核配置）、trace processor 和业务负载下的事件采集成本差异很大，不能套用固定百分比。上线前应覆盖目标设备组合并测量：
 
@@ -1232,7 +1202,7 @@ BPF 程序仍会在事件路径上执行，事件频率、map（BPF 键值存储
 
 每次修改 category 都应重新测量。设备提供某个 tracepoint，并不代表它适合持续开启；低频测试结果也不能外推到 Binder 或 I/O 请求集中出现的场景。
 
-### 14. 一份联合诊断报告应包含什么
+### 13. 一份联合诊断报告应包含什么
 
 交付给应用、Framework 或内核团队时，报告至少包含：
 
@@ -1245,7 +1215,7 @@ BPF 程序仍会在事件路径上执行，事件频率、map（BPF 键值存储
 - 能排除的假设；
 - 结论置信度、缺失事件与下一次复现要增加的数据源。
 
-联合诊断的价值来自时间一致性：线程栈说明取样位置，scheduler（调度器）说明线程何时能运行，Binder flow 说明跨进程依赖，filesystem/block 说明 I/O 经过了哪些阶段。只有这些证据在同一窗口互相支持时，才适合把“相关”提升为“根因”。
+联合诊断靠的是时间一致性：线程栈说明取样位置，scheduler（调度器）说明线程何时能运行，Binder flow 说明跨进程依赖，filesystem/block 说明 I/O 经过了哪些阶段。只有这些证据在同一个窗口互相支持时，才适合把“相关”写成“根因”。
 
 
 ## 常见误区
