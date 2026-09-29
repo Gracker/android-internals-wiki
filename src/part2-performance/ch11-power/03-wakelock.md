@@ -77,6 +77,18 @@ WakeLock 解决一个很窄的问题：设备准备进入 system suspend（整�
 - **System suspend**：整机经过设备挂起流程进入更深的低功耗状态。有效的 partial wake lock（只保持 CPU 可运行的唤醒锁）会阻止这一步。
 - **硬件唤醒事件**：Alarm、按键、modem（蜂窝基带）、蓝牙或其他具备 wakeup 能力的设备可让系统从 suspend 返回。
 
+### WakeLock level（级别）
+
+| Level | 语义 | 应用建议 |
+|---|---|---|
+| `PARTIAL_WAKE_LOCK` | 屏幕可灭，CPU 不进入 system suspend | 只在专用 API 无法覆盖时短时使用 |
+| `PROXIMITY_SCREEN_OFF_WAKE_LOCK` | 距离传感器靠近时控制屏幕关闭 | 通话等专用场景；先检查设备支持 |
+| `SCREEN_DIM_WAKE_LOCK` | 保持屏幕暗亮 | API 17 废弃 |
+| `SCREEN_BRIGHT_WAKE_LOCK` | 保持屏幕亮 | API 13 废弃 |
+| `FULL_WAKE_LOCK` | 保持屏幕与设备唤醒 | API 17 废弃 |
+
+需要让当前界面保持亮屏时，使用 `WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON` 或 View 的 `keepScreenOn`。这类状态由系统根据窗口可见性管理。`PROXIMITY_SCREEN_OFF_WAKE_LOCK` 主要控制显示，不应当作保持 CPU 唤醒的锁。
+
 下面的简图只表达 partial wake lock 的作用位置。
 
 ```text
@@ -92,18 +104,6 @@ PowerManagerService 判断是否需要 CPU suspend blocker
 图中的 suspend blocker 是用户态阻止整机挂起的计数锁，`wakeup_count` 握手用于确认准备挂起期间没有出现新的唤醒事件。
 
 长时间持锁不代表 CPU 一直满负载，但会阻止整机进入更深的省电状态；锁内还有轮询、网络、定位或计算时，能耗会继续增加。即使单次持锁很短，触发过于频繁也可能让设备难以形成稳定的 suspend 区间。
-
-### WakeLock level（级别）
-
-| Level | 语义 | 应用建议 |
-|---|---|---|
-| `PARTIAL_WAKE_LOCK` | 屏幕可灭，CPU 不进入 system suspend | 只在专用 API 无法覆盖时短时使用 |
-| `PROXIMITY_SCREEN_OFF_WAKE_LOCK` | 距离传感器靠近时控制屏幕关闭 | 通话等专用场景；先检查设备支持 |
-| `SCREEN_DIM_WAKE_LOCK` | 保持屏幕暗亮 | API 17 废弃 |
-| `SCREEN_BRIGHT_WAKE_LOCK` | 保持屏幕亮 | API 13 废弃 |
-| `FULL_WAKE_LOCK` | 保持屏幕与设备唤醒 | API 17 废弃 |
-
-需要让当前界面保持亮屏时，使用 `WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON` 或 View 的 `keepScreenOn`。这类状态会随窗口可见性由系统管理。`PROXIMITY_SCREEN_OFF_WAKE_LOCK` 主要控制显示，不应当作保持 CPU 唤醒的锁。
 
 ## 11.3.2 申请之前先检查专用 API
 
@@ -124,7 +124,13 @@ Foreground Service（前台服务，FGS）会提高进程重要性并展示通�
 
 ## 11.3.3 应用层的安全持锁模式
 
-应用必须在 Manifest（应用清单）中声明 `android.permission.WAKE_LOCK`。下面的同步工作示例使用稳定 tag、由单一对象负责申请和释放、设置超时保险，并在 `finally` 中释放锁。
+应用必须在 Manifest（应用清单）中声明 `android.permission.WAKE_LOCK`。
+
+### 引用计数
+
+`WakeLock` 默认启用引用计数。两次 `acquire()` 需要两次 `release()` 才会解除锁；release 次数过多会产生 under-lock（释放次数超过申请次数）异常。适合共享锁的代码要明确记录每个 owner（所有者），普通单任务更适合关闭引用计数并集中管理生命周期。
+
+下面的同步工作示例使用稳定 tag、由单一对象负责申请和释放、设置超时保险，并在 `finally` 中释放锁。
 
 ```java
 public final class CpuBoundExport {
@@ -152,11 +158,7 @@ public final class CpuBoundExport {
 }
 ```
 
-超时只用于限制故障情况下的最长持锁时间，正常路径仍应尽早 release。超时时间需要覆盖合理的最慢执行时长；若任务经常接近超时，应改造成可恢复的分段任务，或改用调度 API。多个线程共享同一个非引用计数锁时，任意一次 release 都会解除此前的 acquire，因此这类封装必须由单一对象管理。
-
-### 引用计数
-
-`WakeLock` 默认启用引用计数。两次 `acquire()` 需要两次 `release()` 才会解除锁；release 次数过多会产生 under-lock（释放次数超过申请次数）异常。适合共享锁的代码要明确记录每个 owner（所有者），普通单任务更适合关闭引用计数并集中管理生命周期。
+超时只用于限制故障情况下的最长持锁时间，正常路径仍应尽早 release。超时时间需要覆盖合理的最慢执行时长；若任务经常接近超时，应改造成可恢复的分段任务，或改用调度 API。多个线程共享同一把关闭了引用计数的锁时，任意一次 release 都会解除此前的 acquire，因此这类封装必须由单一对象管理。
 
 ### Tag
 
@@ -172,8 +174,6 @@ public final class CpuBoundExport {
 ### WorkSource
 
 `WorkSource` 表示“这份工作替哪个 UID（应用用户标识）执行”，常见于系统服务或中间层。Android 17 的 `PowerManagerService.BinderService.acquireWakeLock()` 会在非空 `WorkSource` 上校验 `UPDATE_DEVICE_STATS` 权限。普通应用不能靠它更改归因，也不应把成本转给其他 UID。
-
-PowerManagerService 根据 owner 与 WorkSource 保存归因，Notifier（电源事件通知组件）再把 acquire/release 事件交给 BatteryStats。某个系统组件持有锁，不代表成本一定计在该系统组件名下；排查时要结合 WorkSource、UID 和 tag。
 
 ### held 与 enabled
 
@@ -213,6 +213,8 @@ WakeLock.release()
 ```
 
 Binder token 是服务端识别某次持锁关系的令牌，`linkToDeath()` 用于注册客户端进程死亡回调，WakeLock summary 则是服务端汇总后的锁状态。客户端进程死亡时，Binder death 回调会清理服务端记录。这是故障清理机制，不能替代应用的正常 release。进程仍在但业务逻辑已经泄漏时，token 也仍有效，系统无法据此判断任务已经结束。
+
+PowerManagerService 根据 owner 与 WorkSource 保存归因，Notifier（电源事件通知组件）再把 acquire/release 事件交给 BatteryStats。某个系统组件持有锁，不代表成本一定计在该系统组件名下；排查时要结合 WorkSource、UID 和 tag。
 
 ### PowerManagerService 会禁用已申请的锁
 
@@ -344,9 +346,20 @@ API 37 新增公开重载：
 
 `setExactAndAllowWhileIdle(int, long, String, Executor, OnAlarmListener)`
 
-它适合只有当前组件存活时才有意义的精确 idle（设备空闲期）回调。系统可在调用进程不再有 Activity、Service 或 ContentProvider 时取消 Alarm，组件结束时也要 `cancel(listener)`。需要在进程终止后继续投递的闹钟、日历提醒，仍使用合适的 `PendingIntent` 路径，并满足 exact Alarm 资格。
+它适合精确的 idle（设备空闲期）回调：这类回调只在当前组件存活时才有意义。系统可在调用进程不再有 Activity、Service 或 ContentProvider 时取消 Alarm，组件结束时也要 `cancel(listener)`。需要在进程终止后继续投递的闹钟、日历提醒，仍使用合适的 `PendingIntent` 路径，并满足 exact Alarm 资格。
 
 ## 11.3.8 本地诊断
+
+### 四层证据表
+
+| 层级 | 工具 | 能回答的问题 |
+|---|---|---|
+| 应用 | 日志、Background Task Inspector | 哪段业务申请、完成、取消或重试 |
+| Framework | `dumpsys power`、BatteryStats、Historian | token、tag、UID、WorkSource、前后台时间 |
+| SystemSuspend | `dumpsys suspend_control_internal` | 用户态 blocker 与 suspend/wakeup 统计 |
+| Kernel/硬件 | wakeup sources、Perfetto、PowerMonitor、电源轨 | 哪个 source 活跃，整机能量是否变化 |
+
+PowerMonitor 从 API 35 起可读取设备公开的累计 subsystem（子系统）能量。它适合验证修复是否改变对应 rail，不能识别是哪一行代码持锁。ADPF（Android Dynamic Performance Framework）的 power-efficiency hint（能效提示）只表达调度偏好，也不会替应用 release wake lock。
 
 ### 第一步：确认 Framework 记录
 
@@ -403,17 +416,6 @@ duration_ms: 60000
 ```
 
 tracepoint 在 trace 中以原始 ftrace event（内核跟踪事件）的形式保留，分析时要按 source 名称和时间配对 activate/deactivate（激活/停用）事件。`android.power` 是否有 rail 数据取决于设备的 PowerStats HAL（电源统计硬件抽象层）；轨道缺失不能当成功耗为零。生产 user build 还可能禁止相关 ftrace 事件。
-
-### 四层证据表
-
-| 层级 | 工具 | 能回答的问题 |
-|---|---|---|
-| 应用 | 日志、Background Task Inspector | 哪段业务申请、完成、取消或重试 |
-| Framework | `dumpsys power`、BatteryStats、Historian | token、tag、UID、WorkSource、前后台时间 |
-| SystemSuspend | `dumpsys suspend_control_internal` | 用户态 blocker 与 suspend/wakeup 统计 |
-| Kernel/硬件 | wakeup sources、Perfetto、PowerMonitor、电源轨 | 哪个 source 活跃，整机能量是否变化 |
-
-PowerMonitor 从 API 35 起可读取设备公开的累计 subsystem（子系统）能量。它适合验证修复是否改变对应 rail，不能识别是哪一行代码持锁。ADPF（Android Dynamic Performance Framework）的 power-efficiency hint（能效提示）只表达调度偏好，也不会替应用 release wake lock。
 
 ## 11.3.9 常见故障模式
 
