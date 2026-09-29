@@ -70,17 +70,17 @@ task2b_state: fixed
 
 > 适用范围：Android 10（API 29）至 Android 17（API 37）。平台源码按 `android-17.0.0_r1` 核对；回收、水位线、PSI、ZRAM 与页规整的内核源码按 `android17-6.18-2026-06_r6` 核对。
 
-低内存带来的性能损失没有固定顺序。系统可能回收 clean file page（未修改的文件页）、把匿名页换入 ZRAM（内存中的压缩交换设备）、让分配线程进入 direct reclaim（同步直接回收）、终止 cached process（缓存进程），也可能由 Android 17 Memory Limiter 约束异常进程。不同路径消耗 CPU、I/O、内存带宽或启动时间，必须在同一段 Trace 中核对事件先后和因果关系。
+低内存带来的性能损失没有固定顺序。系统可能回收 clean file page（未修改的文件页）、把匿名页换入 ZRAM（内存中的压缩交换设备）、让分配线程进入 direct reclaim（同步直接回收），也可能终止 cached process（缓存进程）；Android 17 的 Memory Limiter 还会约束异常进程。这些路径各自消耗 CPU、I/O、内存带宽或启动时间，只有在同一段 Trace 中核对事件先后和因果关系，才能确认是哪一条在起作用。
 
 ## 1. 从分配失败到回收
 
 ### 1.1 Zone 水位线与 kswapd
 
-Linux 将物理内存划分为多个 zone（内存区域），并为每个 zone 维护 `min`、`low`、`high` 等 watermark（水位阈值）。这些阈值参与分配快速路径、后台回收唤醒、保留页和高阶分配判断。常见行为是空闲页接近低水位时，唤醒对应 NUMA node（内存节点）的 `kswapd` 后台回收线程，由 `mm/vmscan.c` 的 `balance_pgdat()` 扫描和回收，随后尝试进入休眠。
+Linux 把物理内存划分为多个 zone（内存区域），每个 zone 各自维护 `min`、`low`、`high` 等 watermark（水位阈值）。空闲页接近低水位时，内核通常会唤醒该 NUMA node（内存节点）的 `kswapd` 后台回收线程；`mm/vmscan.c` 的 `balance_pgdat()` 负责扫描和回收，回收完再尝试休眠。水位同样参与分配快速路径、保留页和高阶分配判断，空闲页有多少只是其中一项。
 
 这条规则有多个条件：
 
-- 分配的 order（连续页块阶数）、GFP flags（内核分配约束）、允许使用的 zone 与保留页不同。
+- 分配请求的 order（连续页块阶数）、GFP flags（内核分配约束）、允许使用的 zone 与保留页各不相同。
 - per-CPU page list（每 CPU 页缓存）、watermark boost（水位临时增量）、碎片和 compaction（内存规整）会改变分配慢路径。
 - `kswapd0` 短暂运行属于正常回收；持续扫描、扫描收益低或频繁 wake/sleep 才值得追查。
 
@@ -92,7 +92,7 @@ Android 17 的 6.18 内核锚点：
 
 ### 1.2 Direct reclaim
 
-分配快速路径失败，且请求允许 `__GFP_DIRECT_RECLAIM` 时，当前分配线程可能同步进入回收。空闲页低于 `min` 并不会无条件触发这条路径；分配 order、zone、reserve（保留页）、memcg（内存控制组）与 GFP 语义都会参与选择。
+分配请求在快速路径上失败，同时又允许 `__GFP_DIRECT_RECLAIM` 时，发起分配的线程可能同步进入回收。空闲页低于 `min` 并不会无条件触发这条路径，分配 order、zone、reserve（保留页）、memcg（内存控制组）与 GFP 语义都会影响这个判断。
 
 Direct reclaim 会占用当前线程的执行时间。线程可能在 CPU 上扫描页面，也可能因 throttle（限速）、swap 或 I/O 等待进入不可中断睡眠。看到主线程处于 `D` 状态时，仍要用 `sched_switch`、blocked reason（阻塞原因）或内核调用栈证明它在等待什么，不能只凭线程状态归因到内存回收。
 
@@ -121,7 +121,7 @@ Pressure Stall Information（PSI，资源压力停顿信息）统计任务因 CP
 
 `full` 为零不能证明系统没有内存压力；只要仍有其他任务能运行，压力可能只反映在 `some`。PSI 也不会指出哪一页、哪个进程或哪条分配路径造成停顿，还要结合回收与进程数据一起分析。
 
-下面的命令用于查看当前 PSI、vmstat、ZRAM 与进程退出记录：
+这几条命令分别读取当前 PSI、vmstat、ZRAM 与进程退出记录：
 
 ```bash
 adb shell cat /proc/pressure/memory
@@ -136,9 +136,9 @@ adb shell dumpsys activity exit-info com.example.app
 
 ### 3.1 lmkd
 
-Android 17 的 lmkd（low memory killer daemon，低内存终止守护进程）启动时初始化 PSI monitors（压力事件监听器）。新的默认策略不使用 LOW 档，把 MEDIUM 映射到可配置的 partial stall（部分任务停顿），把 CRITICAL 映射到可配置的 complete stall（所有非空闲任务停顿）。收到 PSI 事件后，lmkd 还会读取 zone watermark、swap、working-set refault / thrashing（工作集页面频繁换入造成的抖动）、进程 `oom_score_adj`（进程受保护级别）与 footprint（内存占用），再决定是否选择进程。
+Android 17 的 lmkd（low memory killer daemon，低内存终止守护进程）启动时初始化 PSI monitors（压力事件监听器），走的是新的默认策略：不使用 LOW 档，把 MEDIUM 映射到可配置的 partial stall（部分任务停顿），把 CRITICAL 映射到可配置的 complete stall（所有非空闲任务停顿）。收到 PSI 事件后，lmkd 还会读取 zone watermark、swap、working-set refault / thrashing（工作集页面频繁换入造成的抖动）、进程 `oom_score_adj`（进程受保护级别）与 footprint（内存占用），再决定是否选择进程。
 
-`use_minfree_levels` 在 Android 17 影响 kill strategy（终止进程策略），不能解释成旧版 `ro.lmk.use_psi=false`。Android 17 源码已经没有该 PSI 开关的旧用法。
+`use_minfree_levels` 在 Android 17 影响 kill strategy（终止进程策略），它不能按旧版的 `ro.lmk.use_psi=false` 来理解。Android 17 源码已经没有该 PSI 开关的旧用法。
 
 lmkd 选择目标时应以事件证据为准：
 
@@ -149,7 +149,7 @@ lmkd 选择目标时应以事件证据为准：
 
 不要把某个固定 adj 数写成所有设备的杀进程边界。进程状态、设备属性、OEM 策略和当时压力都会改变候选范围。
 
-Android 17 在成功 kill 后调用 `ATRACE_INSTANT_FOR_TRACK()`，description 格式为 `lmk,pid,reason,oomadj,min_oom_score,max_thrashing`；同一动作也写入 `lowmemorykiller` 日志与统计。现代设备应优先读取这个 userspace instant（用户空间瞬时事件）、logcat/statsd 和 `ApplicationExitInfo`，不要依赖可能不存在的 legacy（旧式）`lowmemorykiller/lowmemory_kill` 内核事件。
+Android 17 在成功 kill 后调用 `ATRACE_INSTANT_FOR_TRACK()`，description 格式为 `lmk,pid,reason,oomadj,min_oom_score,max_thrashing`；同一动作也写入 `lowmemorykiller` 日志与统计。在现代设备上排查时，优先读这个 userspace instant（用户空间瞬时事件）、logcat/statsd 和 `ApplicationExitInfo`，不要依赖可能不存在的 legacy（旧式）`lowmemorykiller/lowmemory_kill` 内核事件。
 
 ### 3.2 system_server 的 LowMemDetector
 
@@ -161,15 +161,15 @@ Android 17 在成功 kill 后调用 `ATRACE_INSTANT_FOR_TRACK()`，description �
 | MEDIUM | `PSI_FULL` | 1 s 窗口内 30 ms |
 | HIGH | `PSI_FULL` | 1 s 窗口内 50 ms |
 
-这些是 `android-17.0.0_r1` 的 Framework 常量，不能直接作为所有 OEM 分支的性能阈值。Java 线程通过 epoll（事件等待机制）等待等级变化，CRITICAL 区间会留下 `criticalLowMemory` trace slice（轨迹片段）。该状态供 ActivityManager 内部的 memory factor（内存压力等级）、进程统计和相关调整使用。
+这些是 `android-17.0.0_r1` 的 Framework 常量，不能直接作为所有 OEM 分支的性能阈值。Java 线程通过 epoll（事件等待机制）等待等级变化，CRITICAL 区间会留下 `criticalLowMemory` trace slice（轨迹片段）。ActivityManager 内部的 memory factor（内存压力等级）、进程统计和相关调整都会用到这个状态。
 
 LowMemDetector 与 lmkd 读取同一个 PSI 子系统，但监听配置和动作不同。前者属于 system_server 状态管理，后者负责内存压力下的进程选择与终止；出现两个监听 fd（文件描述符）不表示 PSI 被重复计算。
 
 ## 4. lmkd kill 怎样转化为用户性能损失
 
-cached process 被终止后，物理内存得到回收。用户再次访问该 App 时，系统需要创建进程、加载代码与资源、初始化 Application / ContentProvider、恢复 Activity 和业务状态。代价取决于包体、I/O、初始化工作、编译状态和系统压力，不能用一个固定毫秒数概括。
+cached process 被终止后，它占用的物理内存随之回收。用户再次访问这个 App 时，系统要重新创建进程、加载代码与资源、初始化 Application / ContentProvider、恢复 Activity 和业务状态。这笔代价取决于包体、I/O、初始化工作、编译状态和系统压力，不能用一个固定毫秒数概括。
 
-评估低内存的产品影响时，建议关联：
+评估低内存的产品影响时，至少要关联这几项：
 
 1. lmkd kill 时间与原因。
 2. 用户返回该 App 的时间间隔。
@@ -188,13 +188,13 @@ ART GC 的频率主要由 App 的 allocation rate（分配速率）、live set�
 - 分配线程进入 direct reclaim，allocation stall 与 GC pause 出现在相邻时间窗。
 - cached process 被 Framework compact（压减进程驻留内存）或 freeze（冻结调度），属于进程驻留优化，不等同于 ART 的 Java heap GC。
 
-60 Hz 一帧约 16.67 ms，120 Hz 一帧约 8.33 ms。刷新率越高，可供 GC pause、调度延迟和回收干扰使用的余量越小。仍应按实际 FrameTimeline（帧时间线）、GC slice 和调度时间判断掉帧，不能给所有设备设置通用 GC 毫秒阈值。
+60 Hz 一帧约 16.67 ms，120 Hz 一帧约 8.33 ms，刷新率越高，可供 GC pause、调度延迟和回收干扰使用的余量越小，能容忍的停顿也越短。是否掉帧仍要按实际 FrameTimeline（帧时间线）、GC slice 和调度时间判断，不能给所有设备设置通用的 GC 毫秒阈值。
 
 如果 GC 密度上升而 PSI、vmscan 和 kswapd 平稳，问题更可能来自 App allocation churn。若 PSI 和 direct reclaim 上升而 GC 不变，瓶颈可能位于系统回收或 I/O。两组信号重叠时，再检查 CPU 竞争和分配线程调用栈。
 
 ## 6. Android 17 中 `memevents` 与旧 `mm_events`
 
-两个名称容易混淆：
+这两个名字容易混淆，指向的东西不同：
 
 - `libmemevents`：Android 17 的 BPF（内核可编程观测机制）memory event 库。lmkd 用 `MemEventListener` 订阅 direct reclaim begin/end、kswapd wake/sleep、vendor kill 和 zone info 更新；初始化失败时回退到 vmstat（内核虚拟内存统计）。
 - Perfetto `mm_events` service：旧版本中用于常驻启用 `kmem_activity` trigger 的脚本和 probe（探针）。
@@ -219,7 +219,7 @@ Android 17 的通用证据仍是 vmscan / compaction ftrace（内核函数跟踪
 | lmkd instant / log | 谁被 kill、原因和候选边界 |
 | process stats | 进程创建、退出与 RSS 变化 |
 
-下面的配置可作为 Android 17 低内存复现的起始模板。buffer（轨迹缓冲区）和时长属于采集参数，应按复现窗口调整：
+Android 17 低内存复现可以从下面这份配置起步，buffer（轨迹缓冲区）和时长属于采集参数，按复现窗口调整。
 
 ```protobuf
 buffers {
@@ -270,7 +270,7 @@ data_sources {
 }
 ```
 
-Android 17 的 `atrace.cpp` 明确定义了 `memreclaim` category（轨迹类别），它启用 direct reclaim、kswapd 和可选 lowmemorykiller 事件组。配置同时显式列出 vmscan 事件，便于在设备裁剪类别时核对。录制前应查看 tracefs（内核跟踪文件系统）中的事件是否存在；缺少可选事件时按设备能力删减。
+Android 17 的 `atrace.cpp` 明确定义了 `memreclaim` category（轨迹类别），它启用 direct reclaim、kswapd 和可选 lowmemorykiller 事件组。上面这份配置同时显式列出 vmscan 事件，便于在设备裁剪类别时核对。录制前还要确认 tracefs（内核跟踪文件系统）里存在这些事件，缺少可选事件时按设备能力删减。
 
 ### 7.2 阅读顺序
 
@@ -287,9 +287,9 @@ Android 17 的 `atrace.cpp` 明确定义了 `memreclaim` category（轨迹类别
 
 ### 8.1 ZRAM
 
-ZRAM 用 RAM 保存压缩后的 swap page（交换页）。它提高匿名页的存储密度，也消耗物理内存和压缩/解压 CPU；部分设备还启用 writeback 或 recompression（重新压缩）。不存在跨设备通用的 ZRAM 大小、压缩比、算法或 swappiness（交换倾向参数）值。
+ZRAM 用 RAM 保存压缩后的 swap page（交换页），提高匿名页的存储密度，同时占用物理内存和压缩/解压 CPU；部分设备还启用 writeback 或 recompression（重新压缩）。ZRAM 大小、压缩比、算法和 swappiness（交换倾向参数）都没有跨设备通用的取值。
 
-下面的节点用于保存设备配置与运行统计：
+下列节点保存交换与 ZRAM 的配置和运行统计：
 
 ```bash
 adb shell cat /proc/swaps
@@ -322,15 +322,15 @@ Multi-Gen LRU（MGLRU，多代最近最少使用）用 generation（代）记录
 
 Android 17 的 `CachedAppOptimizer` 同时包含 cached app compaction（缓存进程内存压减）与 freezer（进程冻结）逻辑。compaction profile 有 `SOME`（file）、`ANON` 和 `FULL`（file + anon），系统会根据 RSS、时间、swap 余量和配置决定是否执行或降级。
 
-这条路径通过 `madvise` / memcg compaction（控制组内存回收）降低 cached process 的驻留成本，不会删除 App 的业务对象，也不能修复泄漏。Freezer 暂停 cached process 的调度，解冻时还要处理 Binder、文件锁和任务积压；它与物理页规整、ART GC 属于不同机制。
+cached app compaction 通过 `madvise` / memcg compaction（控制组内存回收）降低 cached process 的驻留成本，不会删除 App 的业务对象，也不能修复泄漏。Freezer 暂停 cached process 的调度，解冻时还要处理 Binder、文件锁和任务积压；Freezer 与物理页规整、ART GC 属于不同机制。
 
 ### 8.4 cgroup、Task Profiles 与 Android 17 Memory Limiter
 
-Android 的 cgroup（控制组）抽象和 Task Profiles（任务资源配置）负责进程分组与资源策略。PSI 负责度量 stall（资源停顿），lmkd 负责在压力下选择进程。这三项职责不能写成一个开关。
+Android 的 cgroup（控制组）抽象和 Task Profiles（任务资源配置）负责进程分组与资源策略，PSI 度量 stall（资源停顿），lmkd 在压力下选择进程。这三项职责各自独立，不能混成一个开关。
 
 Android 17 还在部分设备启用 App Memory Limiter。`MemoryLimiter.java` 为 visible / not-visible 状态配置 cgroup `memory.high` 与 `memory.swap.high`；越限后可采集诊断并终止目标进程。它的退出记录是 `REASON_OTHER` + `MemoryLimiter:AnonSwap`，与 lmkd 的系统压力 kill 分开统计。
 
-下面的命令用于检查设备是否支持该机制，并在测试设备验证受限场景：
+下列命令用于检查设备是否支持该机制，也可以在测试设备上验证受限场景：
 
 ```bash
 adb shell am memory-limiter status
@@ -340,15 +340,9 @@ adb shell am memory-limiter manual <pid> none
 
 命令在未启用 Memory Limiter 的设备上没有效果。手动限制适合测试状态保存与恢复，不能由测试值推导产品设备的系统阈值。
 
-### 8.5 `onTrimMemory()`
-
-Android 17 App 侧稳定可用的状态提示包括 `TRIM_MEMORY_UI_HIDDEN` 与 `TRIM_MEMORY_BACKGROUND`。`TRIM_MEMORY_RUNNING_*`、`MODERATE`、`COMPLETE` 自 API 34 起不再投递，并在 API 35 标为 deprecated。
-
-App 应在 UI 隐藏和进入后台状态时缩减可重新生成的缓存、停止预取并关闭界面资源。该回调不提供 PSI 数值，也不能代替 hard memory budget（内存硬上限）。主动 `System.gc()` 无法释放仍被引用的对象，也会干扰正常调度。
-
 ## 9. App 与低 RAM 产品适配
 
-`ActivityManager.isLowRamDevice()` 表示设备使用 low-RAM（低内存设备）产品配置，不能用“RAM 小于等于某个 GB 数”替代。`getMemoryClass()` 只描述 ART heap 的近似预算，也不等于进程 PSS 上限。
+`ActivityManager.isLowRamDevice()` 表示设备使用 low-RAM（低内存设备）产品配置，不能用“RAM 小于等于某个 GB 数”来判断。`getMemoryClass()` 只描述 ART heap 的近似预算，也不等于进程 PSS 上限。
 
 App 可以按产品档位调整：
 
@@ -359,6 +353,12 @@ App 可以按产品档位调整：
 - 冷启动状态恢复和 cached process 被 kill 后的数据加载。
 
 Android Go Edition 是一组面向低内存设备的产品配置与系统应用策略，不能只按物理 RAM 判断。测试范围应覆盖真实 Go / low-RAM 设备、普通 4 KB 与 16 KB page size 设备，以及启用和未启用 Android 17 Memory Limiter 的产品。
+
+### 9.1 `onTrimMemory()`
+
+Android 17 App 侧稳定可用的状态提示包括 `TRIM_MEMORY_UI_HIDDEN` 与 `TRIM_MEMORY_BACKGROUND`。`TRIM_MEMORY_RUNNING_*`、`MODERATE`、`COMPLETE` 自 API 34 起不再投递，并在 API 35 标为 deprecated。
+
+App 应在 UI 隐藏和进入后台状态时缩减可重新生成的缓存、停止预取并关闭界面资源。该回调不提供 PSI 数值，也不能代替 hard memory budget（内存硬上限）。主动 `System.gc()` 无法释放仍被引用的对象，也会干扰正常调度。
 
 ## 10. 诊断表
 
