@@ -115,7 +115,7 @@ ANR 仍由 Input、Broadcast、Service、ContentProvider、Job 等 detector 按�
 
 主线程长时间处于 Runnable，而 Running（正在 CPU 上执行）占比很低，说明它已具备运行条件却没有及时获得 CPU。整机 CPU 利用率高、Load 高或某个进程占比高只能描述运行环境，不能替代目标线程的调度证据。
 
-Perfetto 中要按唤醒事件拆分：
+在 Perfetto 里沿唤醒事件逐项确认：
 
 1. 主线程何时从睡眠或等待变为 Runnable；
 2. wakeup-to-run（从被唤醒到获得 CPU）延迟多长；
@@ -156,9 +156,9 @@ Android 17 的 Broadcast 路径对 freezer 有明确处理：
 
 `BroadcastQueueImpl` 为每个目标进程维护一个 `BroadcastProcessQueue`，再按优先级、可运行时间和全局并行度选择要执行的队列。
 
-普通广播默认可同时运行的进程队列数，在低内存设备上为 2、其他设备上为 4，DeviceConfig（系统可动态调整的配置）可以改写该值。系统还限制单个 running process queue 连续投递的 active broadcast（当前活跃广播）数量，以便其他进程获得调度机会。
+普通广播默认可同时运行的进程队列数在低内存设备上为 2，其他设备上为 4，DeviceConfig（系统可动态调整的配置）可以改写该值。系统还限制单个 running process queue 连续投递的 active broadcast（当前活跃广播）数量，以便其他进程获得调度机会。
 
-这个模型没有取消以下约束：
+按进程组织队列以后，下面几点仍然成立：
 
 - 同一进程默认仍由主线程顺序处理 receiver callback（接收器回调）；
 - ordered broadcast（有序广播）和需要返回 result 的投递仍有前后完成依赖；
@@ -246,7 +246,7 @@ Jetpack App Startup 让多个初始化组件共享一个 `InitializationProvider
 
 ### Android 17 的写入链
 
-`apply()` 先通过 `commitToMemory()` 更新内存状态，再把 `writeToDiskRunnable` 放入 `QueuedWork`。它还注册一个等待 `writtenToDiskLatch` 的 finisher（收尾任务）。下面的 Android 17 摘要片段用于说明这三个对象的关系：
+`apply()` 先通过 `commitToMemory()` 更新内存状态，再把 `writeToDiskRunnable` 放入 `QueuedWork`。它还注册一个等待 `writtenToDiskLatch` 的 finisher（收尾任务）。下面的 Android 17 摘要片段说明内存提交结果、finisher 与写盘任务三者的关系：
 
 ```java
 final MemoryCommitResult mcr = commitToMemory();
@@ -382,7 +382,7 @@ LMKD（Low Memory Killer Daemon，低内存终止守护进程）会根据压力�
 
 ## 前台服务附近的四条结果
 
-FGS（Foreground Service，前台服务）日志经常与 ANR 同时出现，但下面四条规则会产生不同结果。Android 17 的边界如下：
+FGS（Foreground Service，前台服务）日志经常与 ANR 同时出现，但四条规则的结果各不相同。Android 17 的边界如下：
 
 | 场景 | Android 17 计时或入口 | 结果 |
 |---|---|---|
