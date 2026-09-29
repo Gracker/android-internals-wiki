@@ -41,7 +41,7 @@ task2b_state: fixed
 
 以下说明按照 kotlinx.coroutines 1.11.0 的公开 API 和 Android 17 / API 37 核对。平台源码基线为 `android-17.0.0_r1`，涉及线程调度时使用内核基线 `android17-6.18-2026-06_r6`。协程库可以独立于系统升级，不能根据 Android API 级别推断 Dispatcher 的内部实现。
 
-## 一张图式化的性能模型
+## 从挂起到恢复的七个阶段
 
 一次挂起和恢复可能经历以下阶段：
 
@@ -62,7 +62,7 @@ task2b_state: fixed
 | Dispatcher | 执行模型 | 适合的工作 | 容易写错的地方 |
 |---|---|---|---|
 | `Dispatchers.Main` | Android 主 Looper 对应的单线程 Dispatcher | UI 状态读取与更新、很短的主线程工作 | suspend 函数仍可能阻塞；队列拥塞不会消失 |
-| `Dispatchers.Default` | 共享后台调度器，面向 CPU task；worker 有本地队列，并可通过 work stealing 从其他队列取任务 | 排序、解析、压缩、纯计算 | 阻塞 I/O 会占住计算并行度 |
+| `Dispatchers.Default` | 共享后台调度器，面向 CPU 任务；worker 有本地队列，并可通过 work stealing 从其他队列取任务 | 排序、解析、压缩、纯计算 | 阻塞 I/O 会占住计算并行度 |
 | `Dispatchers.IO` | 面向阻塞 I/O 的弹性视图，与 Default 共享线程和资源 | 阻塞文件、阻塞 socket、旧数据库或 SDK API | suspend 网络 API 往往已经自行调度；IO 不适合所有后台代码 |
 | `Dispatchers.Unconfined` | 调用帧内启动，挂起后在恢复方所在线程继续 | 少数框架、测试和高级控制场景 | 没有线程约束，嵌套执行顺序也不应依赖 |
 
@@ -76,7 +76,7 @@ Android 17 的 MessageQueue 已改为无全局队列锁的实现，减少了一�
 
 #### Default：CPU 并行度与阻塞补偿
 
-Default 面向持续占用 CPU 的任务。当前 JVM 调度器使用共享 worker、本地队列、全局队列和 work stealing（空闲 worker 从其他队列窃取任务）；CPU task 的有效并行度接近可用处理器数量，并保留最低并行度。内部实现可能随 kotlinx.coroutines 版本变化，业务代码不能依赖具体 worker 数量、队列顺序或线程名。
+Default 面向持续占用 CPU 的任务。当前 JVM 调度器使用共享 worker、本地队列、全局队列和 work stealing（空闲 worker 从其他队列窃取任务）；CPU 任务的有效并行度接近可用处理器数量，并保留最低并行度。内部实现可能随 kotlinx.coroutines 版本变化，业务代码不能依赖具体 worker 数量、队列顺序或线程名。
 
 CPU 任务数量超过并行度后，新增任务排队属于预期行为。把阻塞调用放入 Default 会一直占用 worker；调度器可以为被正确标记为 blocking 的内部任务增加补偿线程，但普通业务代码不会自动获得这个标记。调用方应将阻塞边界放到 IO 或专用的受限 Dispatcher。
 
@@ -221,7 +221,7 @@ viewLifecycleOwner.lifecycleScope.launch {
 | `conflate()` | 是，只保留较新值 | 是 | emitter（发送方）不因慢 collector 挂起 | 可跳过中间状态的 UI 快照 |
 | `collectLatest` | 取消旧 action | action 可反复重启 | 新值到来时取消前一个 action | 搜索、预览、最新选择驱动的工作 |
 
-`conflate()` 等价于容量 0、溢出策略为 `DROP_OLDEST` 的 buffer 语义。StateFlow 已经根据 `Any.equals` 合并相同状态，再调用 `conflate()` 不会产生效果。StateFlow 写入新值时会遍历活跃订阅者，官方实现说明更新成本为 O(N)，即订阅者数量翻倍时遍历工作也近似翻倍；订阅者很多时应纳入测量。
+`conflate()` 等价于容量 0、溢出策略为 `DROP_OLDEST` 的 buffer 语义。StateFlow 已经根据 `Any.equals` 合并相同状态，再调用 `conflate()` 不会产生效果。
 
 `buffer()` 的默认容量是 `Channel.BUFFERED`，并非业务代码中写死的固定数字。相邻的 `channelFlow`、`flowOn`、`buffer` 和 `produceIn` 可能发生操作符融合，共享底层 Channel；最终容量和溢出策略要按照操作符顺序推导。使用 `Channel.UNLIMITED` 会把生产与消费之间长期存在的速率差转化为没有上限的内存增长。
 
@@ -258,19 +258,21 @@ suspend fun collectPipelines(
 
 事件缓冲区满后会让上游挂起，不会丢失事件；UI 快照允许跳过中间值；新查询则会取消旧的 collector action。示例假定函数从 Main scope 调用，`persist()` 和 `repository.search()` 自己满足 main-safe 契约。`buffer()` 会增加协程和 Channel，但不会自动选择后台 Dispatcher。第三条路径只有在搜索支持协作式取消时才能及时停止；不可中断的阻塞 SDK 即使放在 IO 中，也可能一直执行到调用返回。
 
+### StateFlow、SharedFlow 与 flatten 的资源语义
+
+`StateFlow` 是只保存一个当前值的状态容器，按照 `Any.equals` 合并相同值；写入新值时会遍历活跃订阅者，官方实现说明更新成本为 O(N)，即订阅者数量翻倍时遍历工作也近似翻倍，订阅者很多时应纳入测量。`SharedFlow` 是广播流，`replay`（为新订阅者重放的值数量）、`extraBufferCapacity` 和 `onBufferOverflow` 共同决定慢订阅者如何影响 emitter。两者都不会自动拥有上游生命周期，只有 `shareIn` / `stateIn` 使用的 scope 和 `SharingStarted` 才决定上游何时启动、停止，以及是否保留最后状态。
+
+`flatMapConcat` 按顺序处理内层流，`flatMapMerge(concurrency)` 允许多条内层流并发，`flatMapLatest` 则在新值到来时取消旧内层流。并发上限必须符合数据库连接数、HTTP client、文件描述符和内存预算。
+
+只有内层操作支持协作取消时，取消才能及时生效。操作符链不会为每一级都创建 Job，但 `buffer`、`flowOn`、`channelFlow` 和并发 flatten（将内层流合并回外层）会引入协程或 Channel 边界。
+
 ### flowOn 只改变上游
 
 `flowOn(dispatcher)` 只改变它前方上游操作符的执行上下文，不改变下游 collector。跨 Dispatcher 时通常会加入 Channel 和额外协程，因此它既影响执行位置，也影响缓冲和取消边界。数据层已经提供 main-safe suspend API 时，不要在每一层重复叠加 `flowOn(IO)`。
 
 ### UI 收集还要考虑生命周期
 
-StateFlow 和 SharedFlow 是热流，页面停止显示后，共享上游仍可能继续运行。上游何时停止由 `stateIn / shareIn` 的 `SharingStarted` 策略和外部 scope 决定；`repeatOnLifecycle` 只控制当前 UI collector。排查后台耗电时，还要检查共享上游的 owner、停止超时和订阅数量。
-
-### StateFlow、SharedFlow 与 flatten 的资源语义
-
-`StateFlow` 是只保存一个当前值的状态容器，按照 `Any.equals` 合并相同值；更新时会遍历活跃订阅者，开销随订阅者数量增长。`SharedFlow` 是广播流，`replay`（为新订阅者重放的值数量）、`extraBufferCapacity` 和 `onBufferOverflow` 共同决定慢订阅者如何影响 emitter。两者都不会自动拥有上游生命周期，只有 `shareIn` / `stateIn` 使用的 scope 和 `SharingStarted` 才决定上游何时启动、停止，以及是否保留最后状态。
-
-`flatMapConcat` 按顺序处理内层流，`flatMapMerge(concurrency)` 允许多条内层流并发，`flatMapLatest` 则在新值到来时取消旧内层流。并发上限必须符合数据库连接数、HTTP client、文件描述符和内存预算；只有内层操作支持协作取消时，取消才能及时生效。操作符链不会为每一级都创建 Job，但 `buffer`、`flowOn`、`channelFlow` 和并发 flatten（将内层流合并回外层）会引入协程或 Channel 边界。
+StateFlow 和 SharedFlow 是热流，页面停止显示后，共享上游仍可能继续运行；`repeatOnLifecycle` 只控制当前 UI collector，不会停止共享上游。排查后台耗电时，还要检查共享上游的 owner、停止超时和订阅数量。
 
 ## 在 Perfetto、调试器和 CPU Profiler 中定位协程
 
@@ -397,15 +399,17 @@ class NativeSessionExecutor : Closeable {
 
 ### Executor、HandlerThread 与队列所有权
 
-自定义 `ExecutorCoroutineDispatcher` 的 owner 还要定义 queue、rejection（拒绝新任务时的策略）、停止接单、shutdown timeout 和未完成任务的处理方式。`Executors.newFixedThreadPool()` 使用无界队列，线程数固定不表示提交方会受到背压。需要限制队列容量时，应显式构造 `ThreadPoolExecutor`，并让 rejection 对应明确的业务失败或降级结果。
+自定义 `ExecutorCoroutineDispatcher` 的 owner 还要定义队列（queue）、拒绝新任务的策略（rejection）、停止接单、关闭超时（shutdown timeout）和未完成任务的处理方式。`Executors.newFixedThreadPool()` 使用无界队列，线程数固定不表示提交方会受到背压。需要限制队列容量时，应显式构造 `ThreadPoolExecutor`，并让 rejection 对应明确的业务失败或降级结果。
 
-只有 API 明确要求 `Looper` / `Handler`、固定线程亲和性或 MessageQueue 语义时，才应使用 `HandlerThread`。它包含一个常驻线程和一条串行队列，长 callback 会阻塞所有后续消息；owner 结束时应调用 `quitSafely()`，必要时从其他线程使用带超时的 `join()` 等待退出。对于普通串行状态操作，可以优先比较 `limitedParallelism(1)`、Mutex、actor / Channel 和单线程 Executor。`limitedParallelism(1)` 不保证固定 TID，也不保证包含 suspension 的整个业务操作始终互斥。
+只有 API 明确要求 `Looper` / `Handler`、固定线程亲和性或 MessageQueue 语义时，才应使用 `HandlerThread`。它包含一个常驻线程和一条串行队列，长 callback 会阻塞所有后续消息；owner 结束时应调用 `quitSafely()`，必要时从其他线程使用带超时的 `join()` 等待退出。
+
+对于普通串行状态操作，可以优先比较 `limitedParallelism(1)`、Mutex、actor / Channel 和单线程 Executor。`limitedParallelism(1)` 不保证固定 TID，也不保证包含 suspension 的整个业务操作始终互斥。
 
 `Channel` 的发送 / 接收通过挂起等待，不占用物理线程；`BlockingQueue.put / take` 则会阻塞调用线程。两者都可以实现有界背压，也都需要明确关闭、取消和异常协议，不能笼统地说 `BlockingQueue`“没有背压”。
 
 ### 线程优先级与 ADPF 不能从协程名字推导
 
-`Process.setThreadPriority()` 设置 Linux nice 值，`Thread.setPriority()` 维护 Java priority 语义；二者的数值范围、继承关系和 runtime 行为不同。Android 的 task profile、cpuset（允许线程运行的 CPU 集合）、uclamp（调度利用率上下限）、进程状态、thermal 和 OEM 策略，仍会改变线程实际获得的 CPU。需要设置 Android nice 时，应在目标线程入口设置并测量，不能根据创建者线程或 `CoroutineName` 推断内核优先级。
+`Process.setThreadPriority()` 设置 Linux nice 值，`Thread.setPriority()` 维护 Java priority 语义；二者的数值范围、继承关系和运行时行为不同。Android 的 task profile、cpuset（允许线程运行的 CPU 集合）、uclamp（调度利用率上下限）、进程状态、thermal 和 OEM 策略，仍会改变线程实际获得的 CPU。需要设置 Android nice 时，应在目标线程入口设置并测量，不能根据创建者线程或 `CoroutineName` 推断内核优先级。
 
 Linux 6.18 的 EEVDF 调度器会在 runnable fair entity（可运行的普通调度实体）中，根据 eligibility（是否具备运行资格）和 virtual deadline（虚拟截止时间）选择任务。协程 continuation 仍在用户态 scheduler 队列中，和 worker 已经 Runnable 但尚未获得 CPU，是两种不同的等待：前者通过提交 / 开始标记和 worker 队列压力判断，后者通过 Perfetto `sched` / `thread_state`、频率、cgroup 和 uclamp 判断。
 
