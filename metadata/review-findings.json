@@ -3658,6 +3658,26 @@
       "summary": "FrameTimeline section omitted Perfetto SurfaceView unsupported boundary",
       "type": "source-boundary",
       "updated_at": "2026-09-28T18:42:19.591153+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "close_note": "正文与 last_verified 已按 2026-09-29 官方文档核对结果更新。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20260929-143545-idle-audit-6cf6ba1a",
+      "created_at": "2026-09-29T14:41:12.738524+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20260929-143545-idle-audit-6cf6ba1a",
+      "details": "2026-09-29 核对 Android Developers 文档：Baseline Profiles 概览的 Macrobenchmark 最低推荐版本已为 1.5.0；ProfileVerifier.CompilationStatus 文档显示 RESULT_CODE_NO_PROFILE 已废弃、推荐 RESULT_CODE_NO_PROFILE_INSTALLED，并且 ProfileVerifier 支持 Android 9 / API 28 及以上。",
+      "id": "aiw-21-4-profile-doc-stale",
+      "log_path": "logs/audit/2026-09-29-20260929-143545-idle-audit-6cf6ba1a-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/topic/performance/baselineprofiles/overview; https://developer.android.com/reference/androidx/profileinstaller/ProfileVerifier.CompilationStatus"
+      ],
+      "status": "fixed",
+      "summary": "Baseline/ProfileVerifier 官方文档版本边界过期",
+      "type": "source-stale",
+      "updated_at": "2026-09-29T14:41:12.792036+08:00"
     }
   ],
   "schema_version": 1
