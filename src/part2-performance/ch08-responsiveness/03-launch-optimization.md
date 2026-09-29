@@ -88,13 +88,13 @@ last_idle_audit_run_id: 20260829-223538-idle-audit-e3a23e9f
 6. 用相同构建、设备和编译状态复测。
 7. 通过线上分位数和版本对照，持续确认收益没有回退。
 
-这几步应按顺序执行。把无用初始化移到后台后，它仍会消耗 CPU、I/O 和内存；盲目增加并发，也可能使首帧线程长时间得不到 CPU。
+这几步应按顺序执行，因为把无用初始化移到后台后，它仍会消耗 CPU、I/O 和内存；盲目增加并发，也可能使首帧线程长时间得不到 CPU。
 
 ## 从 TTID、TTFD 和关键路径开始
 
 ### 两个终点不能混用
 
-TTID（Time to Initial Display，首帧显示时间）的终点，是系统报告应用首帧已经绘制。首帧可以是完整首页，也可以是骨架屏、占位内容或错误页。系统 Splash 已经可见，不表示应用 TTID 已经结束；如果继续保持 Splash，应用首帧也会随之后移。
+TTID（Time to Initial Display，首帧显示时间）的终点是系统报告应用首帧已经绘制。首帧可以是完整首页，也可以是骨架屏、占位内容或错误页。系统 Splash 已经可见，不表示应用 TTID 已经结束；如果继续保持 Splash，应用首帧也会随之后移。
 
 TTFD（Time to Full Display，完整显示时间）由应用调用 `reportFullyDrawn()` 标记，用来表达“当前入口的主要内容已经可用”。具体边界应由产品和工程团队共同定义。例如，支持离线使用的首页可以在本地数据显示完成后上报，无须等待推荐位、广告和后台同步。应用没有上报时，测量工具可能没有 TTFD 结果，不能自行用 TTID 替代。
 
@@ -110,13 +110,11 @@ TTFD（Time to Full Display，完整显示时间）由应用调用 `reportFullyD
 | TTFD 必需 | 首帧可以出现，但主要内容或主交互尚不可用 | 首帧后继续执行，完成后上报 TTFD |
 | 当前入口不需要 | 用户没有进入相关功能时，是否可以一直不执行 | 条件初始化或按需初始化 |
 
-不能只根据 SDK 名称分类。崩溃恢复、加密密钥、用户同意状态和路由规则在某些产品中必须很早准备；图片、网络、统计或推送功能也可能在另一个入口完全用不到。分类依据应是当前入口的依赖和任务失败后的影响。
+分类依据应是当前入口的依赖和任务失败后的影响，不能只根据 SDK 名称分类。崩溃恢复、加密密钥、用户同意状态和路由规则在某些产品中必须很早准备；图片、网络、统计或推送功能也可能在另一个入口完全用不到。
 
 ### 关键路径决定总时长
 
-启动任务可以表示成 DAG（Directed Acyclic Graph，有向无环图）：节点代表任务，箭头代表先后依赖，图中不存在循环依赖。总时长由最长依赖链决定，并非所有任务耗时的简单相加。下图展示了一个简化入口，只保留实际执行依赖。
-
-这张图用于区分首帧与完整可交互内容各自依赖哪些任务：
+启动任务可以表示成 DAG（Directed Acyclic Graph，有向无环图）：节点代表任务，箭头代表先后依赖，图中不存在循环依赖。总时长由最长依赖链决定，并非所有任务耗时的简单相加。下图是一个只保留实际执行依赖的简化入口，用来区分首帧与完整可交互内容各自依赖哪些任务：
 
 ```mermaid
 flowchart LR
@@ -142,7 +140,7 @@ flowchart LR
 - **懒加载**改变触发条件，例如用户进入搜索页时才创建搜索索引。
 - **异步初始化**改变执行线程或等待方式，但任务仍可能在启动时立即开始。
 
-异步任务仍可能位于关键路径上。主线程提交后台任务后如果马上 `await`、`join` 或等待锁，依赖链没有缩短，反而增加了调度和同步开销。
+异步任务仍可能位于关键路径上。把任务交给后台线程后，如果主线程马上 `await`、`join` 或等待锁，依赖链没有缩短，反而增加了调度和同步开销。
 
 ### 为每项初始化写出任务契约
 
@@ -201,7 +199,7 @@ data class StartupTaskSpec(
 
 ### 按需初始化需要状态机
 
-按需初始化可能被多个线程同时触发，因此需要状态机明确当前处于 `UNINITIALIZED`、`INITIALIZING`、`READY` 还是 `FAILED`，并规定失败后能否重试。初始化对象交给其他线程前还要满足内存可见性要求，确保其他线程看到的是完整状态；可以使用语言级同步原语、`Mutex`、`CompletableFuture` 或受控的 `Deferred`。
+按需初始化可能被多个线程同时触发，因此需要状态机明确当前处于 `UNINITIALIZED`、`INITIALIZING`、`READY` 还是 `FAILED`，并规定失败后能否重试。把初始化对象交给其他线程前，还要满足内存可见性要求，确保对方看到的是完整状态；可以使用语言级同步原语、`Mutex`、`CompletableFuture` 或受控的 `Deferred`。
 
 主线程发现组件仍处于 `INITIALIZING` 时，可以暂时禁用局部操作、缓存事件或显示轻量占位。无条件调用 `CountDownLatch.await()` 会让主线程重新等待后台任务，还可能因锁获取顺序形成死锁。只有业务确实无法降级时才能等待，并且要设置有限期限、取消语义和现场记录。
 
@@ -209,7 +207,7 @@ data class StartupTaskSpec(
 
 启动期的后台工作仍与主线程共享 CPU 时间、内存带宽、文件缓存、Binder 线程和存储队列。在 `android17-6.18-2026-06_r6` 上，调度器会从可运行任务中选择下一项，但它不知道哪个自定义 SDK 对 TTID 更重要。线程优先级、CPU 集群选择和频率也会受到系统策略影响。
 
-因此，不要按照 CPU 核数直接创建同等数量的启动线程，也不要为每个库单独建立线程池。先查看 Perfetto 中的 `sched`、`thread_state`、CPU frequency、Binder 和 I/O 轨迹，再决定并发上限。并发容量应根据设备实验和任务所消耗的资源类型确定。
+不要按照 CPU 核数直接创建同等数量的启动线程，也不要为每个库单独建立线程池。先查看 Perfetto 中的 `sched`、`thread_state`、CPU frequency、Binder 和 I/O 轨迹，再决定并发上限。并发容量应根据设备实验和任务所消耗的资源类型确定。
 
 ## 多线程初始化：DAG 只是起点
 
@@ -247,7 +245,9 @@ CPU 任务和阻塞 I/O 也应分开管理。协程的 `Dispatchers.Default` 与
 
 ## Jetpack App Startup 的准确边界
 
-Jetpack App Startup 使用一个 `InitializationProvider`，读取 manifest metadata 中注册的 `Initializer`，并通过 `dependencies()` 声明依赖顺序。AndroidX `AppInitializer#doInitialize()` 会先递归完成依赖，再调用 `Initializer.create()`。这项自动注册处理发生在 Provider 安装阶段，通常运行在应用主线程上，并且早于 `Application.onCreate()`。
+Jetpack App Startup 使用一个 `InitializationProvider`，读取 manifest metadata 中注册的 `Initializer`，并通过 `dependencies()` 声明依赖顺序。AndroidX `AppInitializer#doInitialize()` 会先递归完成依赖，再调用 `Initializer.create()`。
+
+这项自动注册处理发生在 Provider 安装阶段，通常运行在应用主线程上，并且早于 `Application.onCreate()`。
 
 它可以减少独立 Provider 的数量并统一依赖顺序，但仍有三个边界：
 
@@ -263,7 +263,7 @@ Jetpack App Startup 使用一个 `InitializationProvider`，读取 manifest meta
 
 ### Provider 位于 Application.onCreate 之前
 
-Android 17 的 `ActivityThread#handleBindApplication()` 创建 `Application` 后，会先调用 `installContentProviders()`，随后才调用 `Instrumentation.callApplicationOnCreate()`。Provider 的 `onCreate()` 通常在应用主线程执行，因此第三方库通过 Provider 进行的自动初始化会直接进入冷启动路径。
+Android 17 的 `ActivityThread#handleBindApplication()` 创建 `Application` 后，会先调用 `installContentProviders()`，随后才调用 `Instrumentation.callApplicationOnCreate()`。Provider 的 `onCreate()` 通常在应用主线程执行，因此第三方库靠 Provider 完成的自动初始化会直接进入冷启动路径。
 
 Provider 还可能负责跨进程数据、`FileProvider` URI、数据库、WorkManager、Emoji 或其他功能。数量多不代表它们都没有用途，可以按照以下顺序检查：
 
@@ -346,7 +346,7 @@ override fun onCreate(savedInstanceState: Bundle?) {
 
 ### 保持 Splash 会推迟 TTID
 
-如果首屏必须先读取少量本地设置，否则会立即切换主题、改变路由或显示错误内容，可以短暂保持 Splash。等待网络、广告、完整远程配置或大型数据库迁移会直接延长应用首帧，也会让失败后的界面迟迟不出现。更合适的做法是先绘制可用占位、缓存内容或局部错误状态，再异步更新。
+只有当首屏必须先读取少量本地设置，且不读就会立即切换主题、改变路由或显示错误内容时，才可以短暂保持 Splash。等待网络、广告、完整远程配置或大型数据库迁移会直接延长应用首帧，也会让失败后的界面迟迟不出现。更合适的做法是先绘制可用占位、缓存内容或局部错误状态，再异步更新。
 
 保持条件还需要明确的失败出口。数据读取失败、协程取消或页面销毁时，都要将状态更新为允许绘制。超时策略应在状态持有层实现并记录原因，不能在每次条件求值时执行时钟查询、磁盘访问或网络操作。
 
@@ -403,7 +403,9 @@ inflater.inflate(R.layout.view_filter_panel, filterContainer) {
 }
 ```
 
-父容器的 `generateLayoutParams()` 和所有 View 构造过程都必须能在后台线程安全执行；View 不能在构造时创建 Handler 或依赖当前 Looper。普通的 `LayoutInflater.Factory / Factory2` 设置方式和包含 Fragment 的布局不受支持；当前库提供的 `AsyncLayoutFactory` 构造入口需要单独验证适配。后台 inflate 抛出运行时异常时，AndroidX 会回到 UI 线程重试。
+父容器的 `generateLayoutParams()` 和所有 View 构造过程都必须能在后台线程安全执行；View 不能在构造时创建 Handler 或依赖当前 Looper。
+
+普通的 `LayoutInflater.Factory / Factory2` 设置方式和包含 Fragment 的布局不受支持；当前库提供的 `AsyncLayoutFactory` 构造入口需要单独验证适配。后台 inflate 抛出运行时异常时，AndroidX 会回到 UI 线程重试。
 
 如果应用必须等待异步结果才能设置首屏根布局，这项工作仍位于 TTID 关键路径上，线程切换还可能增加开销。它更适合提前准备后续 UI，或让当前 UI 在 inflate 期间保持可响应。选用前应测试主题包装、AppCompat / Material 自定义 View、回调生命周期，以及任务取消后如何丢弃结果。
 
@@ -493,7 +495,7 @@ ORDER BY ts;
 
 Perfetto 不同版本中的表字段会演进，应以当前 Trace Processor stdlib 文档和 `DESCRIBE` 结果为准。查询得到启动区间后，再检查应用主线程、worker、Binder、`sched`、频率、缺页、I/O、GC、`inflate` 和 FrameTimeline；只看总区间无法确定应修改哪一段。
 
-应用自己的任务应使用 `androidx.tracing.trace` 或平台 trace API 标记稳定名称，避免把用户 ID、URL 等取值数量极多的高基数字段写入 slice 名。在线上采样时还要控制性能开销并保护隐私。
+应用自己的任务应使用 `androidx.tracing.trace` 或平台 trace API 标记稳定名称，避免把用户 ID、URL 这类高基数字段（取值组合极多）写入 slice 名。在线上采样时还要控制性能开销并保护隐私。
 
 ### CI 门禁需要处理噪声
 
@@ -513,7 +515,7 @@ Perfetto 不同版本中的表字段会演进，应以当前 Trace Processor std
 
 ### lock-free MessageQueue 是兼容性检查项
 
-Android 17 会为 targetSdk 37 及以上的应用启用新的 lock-free（无锁）`android.os.MessageQueue` 实现，用来减少队列锁竞争和 missed frames（错过截止时间的帧）。私有字段 `mMessages` 为兼容旧实现仍然保留，但在新实现下始终为 null。通过反射读取私有字段或调用私有方法的性能 SDK、测试工具和自研 Hook 都需要迁移。
+Android 17 会为 targetSdk 37 及以上的应用启用新的 lock-free（无锁）`android.os.MessageQueue` 实现，用来减少队列锁竞争和 missed frames（错过截止时间的帧）。私有字段 `mMessages` 为兼容旧实现仍然保留，但在新实现下始终为 null。性能 SDK、测试工具和自研 Hook 如果通过反射读取私有字段或调用私有方法，都需要迁移。
 
 下面的命令用于在 Android 17 的 debuggable 构建上，按包名开启或关闭新实现，以便进行兼容性对照：
 
