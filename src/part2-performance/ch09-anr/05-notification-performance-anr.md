@@ -87,7 +87,9 @@ last_idle_audit_run_id: 20260829-183504-idle-audit-cb8e7f3a
 | SystemUI 消费并渲染 | SystemUI 创建/复用视图、加载图片和主线程提交界面 | 通知延迟显示、面板卡顿；有输入事件时可能形成 SystemUI Input ANR |
 | NLS 接收回调 | 监听器的 Binder stub（接收跨进程调用的入口）把消息转给主线程 `MyHandler` | 监听器回调积压；进程持有窗口且输入超时时可能形成自己的 Input ANR |
 
-前台服务还有一条相邻的超时：调用 `startForegroundService()` 后若没有及时完成 `Service.startForeground()`，AMS（ActivityManagerService）的 `serviceForegroundTimeout()` 会为该服务构造 timeout record（超时记录）、停止仍在等待的服务，并延迟派发 `SERVICE_FOREGROUND_TIMEOUT_ANR_MSG`；`serviceForegroundCrash()` 则使用 `ForegroundServiceDidNotStartInTimeException` 报告崩溃路径。复杂通知经常消耗这段时间预算，所以诊断报告仍会把它与通知性能放在一起，但要按前台服务转换超时单独归类。
+前台服务还有一条相邻的超时：调用 `startForegroundService()` 后若没有及时完成 `Service.startForeground()`，AMS（ActivityManagerService）的 `serviceForegroundTimeout()` 会为该服务构造 timeout record（超时记录）、停止仍在等待的服务，并延迟派发 `SERVICE_FOREGROUND_TIMEOUT_ANR_MSG`；`serviceForegroundCrash()` 则使用 `ForegroundServiceDidNotStartInTimeException` 报告崩溃路径。
+
+复杂通知经常消耗这段时间预算，所以诊断报告仍会把它与通知性能放在一起，但要按前台服务转换超时单独归类。
 
 ## 通知发布流程与 ANR 触发点
 
@@ -119,7 +121,7 @@ mHandler.post(new EnqueueNotificationRunnable(
 return true;
 ```
 
-`mHandler.post()` 之前的 NMS 工作都在发布者的同步等待范围内，工作量远多于“权限校验后立刻入队”。`INotificationListener.aidl` 则声明为 `oneway interface`，因此 listener 回调和 SystemUI 显示通知都不属于发布者这次 Binder 调用的返回条件。
+`mHandler.post()` 之前的 NMS 工作都在发布者的同步等待范围内，工作量远多于“权限校验后立刻入队”。`INotificationListener.aidl` 则声明为 `oneway interface`，因此 listener 回调和 SystemUI 显示通知都不在发布者这次 Binder 调用的返回路径上。
 
 发布应用主线程停在 `notify()` 时，应继续判断耗时位于哪一侧：
 
@@ -130,7 +132,7 @@ return true;
 
 ### 前台服务转换超时
 
-AMS 在启动要求转为前台的 Service 时安排独立 timer（计时器）。服务完成 `startForeground()` 后才取消这段等待。图片下载、磁盘读图、数据库查询和复杂布局都不应放在此前的主线程路径上。
+AMS 给要求转为前台的 Service 安排独立 timer（计时器）；服务完成 `startForeground()` 后，这段等待才取消。图片下载、磁盘读图、数据库查询和复杂布局都不应放在此前的主线程路径上。
 
 下面的两阶段写法先提交满足渠道、small icon 和内容要求的通知，再在后台生成增强内容：
 
@@ -147,7 +149,7 @@ backgroundExecutor.execute(() -> {
 });
 ```
 
-`startForeground()` 成功返回只表示系统已经接受这次前台转换和通知，不要求完整版已经生成。增强通知仍要处理取消竞态：后台任务完成时，Service 可能已经停止；更新前应检查任务代次（用于识别过期任务的版本号）或当前 Service 状态。
+`startForeground()` 成功返回只表示系统已经接受这次前台转换和通知，此时并不要求已经生成完整版通知。增强通知仍要处理取消竞态：后台任务完成时，Service 可能已经停止；更新前应检查任务代次（用于识别过期任务的版本号）或当前 Service 状态。
 
 故障日志含 `Context.startForegroundService() did not then call Service.startForeground()`、`ForegroundServiceDidNotStartInTimeException` 或 service foreground timeout ANR 时，按前台转换超时处理。若同一窗口内还有输入 ANR 或普通 Service 执行 ANR，需要分别保留时间线，不能用其中一条自动解释另一条。
 
@@ -157,7 +159,7 @@ backgroundExecutor.execute(() -> {
 
 NMS Binder 线程负责检查调用身份、渠道和策略，修正对象，并完成配额检查和入队准备。`EnqueueNotificationRunnable` 进入 handler 后，NMS 才在通知锁保护下处理旧记录、分组、排序、提醒效果、URI 权限和 listener 通知。
 
-源码里的线程名和 Trace section 会被平台分支调整。诊断时用执行上下文建立证据：
+源码里的线程名和 Trace section 会被平台分支调整。诊断时从执行上下文逐项确认：
 
 - 发布线程处于 Running、Runnable（具备运行条件但尚未获得 CPU）还是 Binder sleep（等待 Binder 回复）；
 - 同一 Binder transaction 的服务端线程何时开始、何时返回；
@@ -166,7 +168,7 @@ NMS Binder 线程负责检查调用身份、渠道和策略，修正对象，并
 
 ### 通知排序与分发的开销
 
-`NotificationListeners.prepareNotifyPostedLocked()` 会遍历已注册 listener，按用户、可见性、敏感信息与版本规则准备各自的数据。`makeRankingUpdateLocked(info)` 遍历当前通知列表，只把该 listener 可见的记录写进 `NotificationRankingUpdate`（通知排序与状态快照）。这项工作发生在通知锁内，因此每个 listener 得到的 map（映射表）可能不同。
+`NotificationListeners.prepareNotifyPostedLocked()` 会遍历已注册 listener，按用户、可见性、敏感信息与版本规则准备各自的数据。`makeRankingUpdateLocked(info)` 遍历当前通知列表，只把该 listener 可见的记录写进 `NotificationRankingUpdate`（通知排序与状态快照）。这项工作在通知锁内完成，每个 listener 得到的 map（映射表）可能不同。
 
 准备完成后，NMS 把 listener runnable 投递到 handler，再调用 `oneway` Binder 接口。异步只省去了“等待客户端执行完”的过程，以下成本仍由 `system_server` 承担：
 
@@ -229,7 +231,7 @@ private View apply(Context context, ViewGroup parent, ...) {
 
 ### RemoteViews 的 reapply 机制
 
-SystemUI 会先检查复用条件，通过后才能调用 `reapply()` / `reapplyAsync()`。package 和 layout ID 保持不变是常见必要条件；旧或新 `RemoteViews` 带有 `FLAG_REAPPLY_DISALLOWED`，或视图类型不匹配时，系统会放弃复用。
+SystemUI 会先检查复用条件，通过后才能调用 `reapply()` / `reapplyAsync()`。包名和 layout ID 保持不变是常见必要条件；旧或新 `RemoteViews` 带有 `FLAG_REAPPLY_DISALLOWED`，或视图类型不匹配时，系统会放弃复用。
 
 `reapply()` 会跳过根布局的 inflate，但仍会执行新对象中的 action。频繁更新进度时，保持模板和布局标识不变有助于复用；`setText`、`setImageViewBitmap` 等 action 的成本仍然存在。需要在目标 build（系统构建版本）的 SystemUI trace 中分别测量 inflate、async apply、reapply 和主线程提交。
 
@@ -247,7 +249,9 @@ SystemUI 会先检查复用条件，通过后才能调用 `reapply()` / `reapply
 - `createWithContentUri()` 传 URI 字符串，消费者稍后打开并解码，需要 URI 在通知存活期间可读；
 - `createWithBitmap()` 在 `Icon.writeToParcel()` 中调用 `Bitmap.asShared()`。已由共享内存支持且不可变的 bitmap 可直接复用，其余情况要创建共享副本。
 
-共享内存可以避免把每个像素作为普通 Parcel 数据复制，但并非零成本。首次 `asShared()`、FD 管理、接收端对象创建和 GPU 上传仍会产生开销。AOSP 没有要求通知 bitmap 必须是 `ARGB_8888`；应根据图像内容选择合适格式，并在发布前缩放到实际需要的尺寸。
+共享内存可以避免把每个像素作为普通 Parcel 数据复制，但并非零成本。首次 `asShared()`、FD 管理、接收端对象创建和 GPU 上传仍会产生开销。
+
+AOSP 没有要求通知 bitmap 必须是 `ARGB_8888`；应根据图像内容选择合适格式，并在发布前缩放到实际需要的尺寸。
 
 ## NotificationListenerService 与性能
 
@@ -303,7 +307,7 @@ public class MyNotificationListener extends NotificationListenerService {
 - 构造和 Parcel 成本随可见通知数量与 listener 数量增长；
 - 应用缓存旧 map，会让整批 ranking 对象更久不能释放。
 
-如果业务只关心本次 `sbn.getKey()`，在回调里调用 `rankingMap.getRanking(key, reusableRanking)` 取出需要字段即可。不要为“以后也许会用”保存每一代 map。
+如果业务只关心本次 `sbn.getKey()`，在回调里调用 `rankingMap.getRanking(key, reusableRanking)` 取出需要的字段即可。不要为“以后也许会用”保存每一代 map。
 
 ## 通知与 ANR 的典型模式
 
@@ -317,7 +321,7 @@ trace 位于 `NotificationManager.notify*()`、`BinderProxy.transactNative()` �
 
 ### 模式三：NLS 主线程回调积压
 
-监听器自己的主线程栈落在数据库、JSON、锁或网络等待。输入 ANR 还需证明该进程存在等待中的输入事件；没有这项证据时，结论写成 NLS 主线程长任务和回调积压。
+监听器自己的主线程栈落在数据库、JSON、锁或网络等待上。输入 ANR 还需证明该进程存在等待中的输入事件；没有这项证据时，结论写成 NLS 主线程长任务和回调积压。
 
 ### 模式四：高频 update 被限流丢弃
 
@@ -329,7 +333,7 @@ trace 位于 `NotificationManager.notify*()`、`BinderProxy.transactNative()` �
 
 ### 模式六：渠道创建进入首次关键启动路径
 
-`createNotificationChannel()` 与 `notify()` 都会进入 NMS。固定 channel 可以在可控的初始化阶段幂等创建，也就是重复执行不会改变最终结果；首次启动前台服务时，不应同时执行大量 channel 迁移、图片读取和通知发布。必需 channel 也不能为减少启动耗时而延后创建，否则首个通知会因 channel 缺失被拒绝。
+`createNotificationChannel()` 与 `notify()` 都会进入 NMS。固定 channel 可以幂等创建（重复执行不会改变最终结果），放在可控的初始化阶段完成；首次启动前台服务时，不应同时执行大量 channel 迁移、图片读取和通知发布。必需 channel 也不能为减少启动耗时而延后创建，否则首个通知会因 channel 缺失被拒绝。
 
 ## Android 17 通知性能变更
 
@@ -442,7 +446,7 @@ data_sources: {
 duration_ms: 30000
 ```
 
-15 秒固定窗口容易错过故障前因；这里使用 30 秒只是起点。线上触发器还要保留触发前的环形缓冲数据，并按设备内存调整 buffer（缓冲区）大小。
+固定 15 秒的窗口容易错过故障前因；这里使用 30 秒只是起点。线上触发器还要保留触发前的环形缓冲数据，并按设备内存调整 buffer（缓冲区）大小。
 
 ### 查询应用 section
 
