@@ -105,7 +105,7 @@ consolidated_from:
 
 应用耗电治理先从场景、时间窗口和组件活动入手，再检查 WakeLock、Alarm、网络、定位、动画和后台任务。修复结果需要在相同设备状态和业务负载下复测。
 
-## 组件活动、唤醒与后台工作
+## 机制、系统边界与排查
 
 ### 从系统行为理解 App 耗电
 
@@ -129,6 +129,10 @@ App 不能直接决定电池消耗多少。它提交工作、请求硬件资源�
 | 服务端有新事件才处理 | FCM（Firebase Cloud Messaging）或业务推送通道 | 优先级必须符合用户可见性，离线与厂商环境要有降级方案 |
 
 这个选择决定系统还有多少合并和延后空间。把普通同步放进精确闹钟或长期 FGS，会主动绕开大量省电机会。
+
+#### Doze 不会消失
+
+Doze 会延后普通网络访问、Job 和 Alarm，并在 maintenance window（维护窗口）批量执行。FGS 不能让同进程里的 Job 免除配额，也不提供设备级 Doze 豁免。应用若依赖“前台服务开着，所以网络和 Job 一直畅通”，在熄屏静置测试中很容易暴露问题。
 
 ### WakeLock：只保护不可中断的短窗口
 
@@ -194,9 +198,67 @@ Android 16（API 36）调整了 regular 与 expedited job 的运行时配额：
 
 定位延迟与停止原因时，WorkManager 通过 `WorkInfo.getStopReason()` 提供原因，直接使用 JobScheduler 时则读取 `JobParameters.getStopReason()`。Android 16 还提供 `JobScheduler.getPendingJobReasonsHistory()`，用于查看任务没有运行的历史原因。
 
-#### Doze 不会消失
+### AlarmManager：精确性有明确成本
 
-Doze 会延后普通网络访问、Job 和 Alarm，并在 maintenance window（维护窗口）批量执行。FGS 不能让同进程里的 Job 免除配额，也不提供设备级 Doze 豁免。应用若依赖“前台服务开着，所以网络和 Job 一直畅通”，在熄屏静置测试中很容易暴露问题。
+AlarmManager 用于进程生命周期之外的时间事件。普通同步、清理和重试更适合 WorkManager。若用户接受时间窗口，使用 `set()`、`setWindow()`、`setAndAllowWhileIdle()` 或不精确重复闹钟，让系统有机会合并唤醒。
+
+#### 精确闹钟权限与例外
+
+Android 12（API 31）引入 “Alarms & reminders” special app access（特殊应用访问权限）。Android 13+ 可根据受限使用场景选择 `SCHEDULE_EXACT_ALARM` 或 `USE_EXACT_ALARM`：
+
+| 能力 | 授权方式 | 适用边界 |
+| --- | --- | --- |
+| `SCHEDULE_EXACT_ALARM` | 用户授予，也可被用户或系统撤销 | 使用面较宽；调用前检查 `canScheduleExactAlarms()` |
+| `USE_EXACT_ALARM` | 安装时自动授予，用户不可撤销 | 只允许闹钟、计时器、日历等受限核心场景，并受 Google Play 政策约束 |
+
+Android 14 对 target 33+ 的多数新安装应用不再预授予 `SCHEDULE_EXACT_ALARM`；备份恢复到 Android 14 设备时也按拒绝处理。已有授权随系统升级通常会保留。
+
+`AlarmManager.OnAlarmListener` 形式的 `setExact()` 不要求 `SCHEDULE_EXACT_ALARM`。它是进程内监听器：进程退出后不能指望系统重新创建 App 来交付回调。需要跨进程生命周期可靠触发时，通常使用 `PendingIntent`（可由系统代应用执行的预封装操作），并遵守精确闹钟权限规则。这个例外不能用于构造后台保活。
+
+#### Doze 与 allow-while-idle
+
+- `setAlarmClock()` 面向用户可见闹钟，系统会为交付离开低功耗模式。
+- `setExactAndAllowWhileIdle()` 能穿过 Doze，但受到严格频率限制。
+- `setAndAllowWhileIdle()` 允许在空闲状态交付不精确闹钟。
+- 普通 Alarm 在 Doze 中可能延后到 maintenance window（维护窗口）。
+
+AlarmManager API 文档给出的正常条件下节流量级约为每个 App 九分钟一次，系统也可以拉长间隔。这个数值是防滥用边界，不是建议轮询周期。闹钟回调里只安排短操作；需要联网或持久执行时，把后续工作交给 JobScheduler 或 WorkManager。
+
+### 前台服务：持续可见不等于无限运行
+
+FGS 用持续通知表达用户知情的长任务，并提高进程重要性。它不免除 Doze、Job quota（任务配额）、网络限制或硬件资源管理。Android 14（target 34+）要求服务类型、类型权限和运行时前置条件同时成立：
+
+- 未声明 `android:foregroundServiceType` 可能触发 `MissingForegroundServiceTypeException`。
+- 缺少 `FOREGROUND_SERVICE_*` 权限，或 location、camera、microphone 等 while-in-use 条件不满足，可能触发 `SecurityException`。
+- App 已在后台且不满足 FGS 启动豁免时，可能触发 `ForegroundServiceStartNotAllowedException`。
+
+日志判读要区分声明、权限与启动资格，三个异常指向的修复位置不同。
+
+#### Android 14 与 Android 15 的超时
+
+| 类型 | 平台限制 | 超时回调 | 未及时停止 |
+| --- | --- | --- | --- |
+| `shortService` | Android 14+，约三分钟 | `Service.onTimeout(int)` | 系统触发 ANR；系统不会代替服务自动完成 `stopSelf()` |
+| `dataSync` | target 35+，后台状态下每 24 小时累计六小时 | `Service.onTimeout(int, int)` | 几秒内不停止会抛内部远程服务异常并终止进程 |
+| `mediaProcessing` | target 35+，后台状态下每 24 小时累计六小时 | `Service.onTimeout(int, int)` | 与 `dataSync` 相同 |
+
+六小时按类型分别计时，同一 App 的多个同类型服务共享该类型额度。用户把 App 带到前台会重置计时器。额度耗尽后继续启动同类型服务会收到 `ForegroundServiceStartNotAllowedException`。
+
+`android-17.0.0_r1` 的 `ActiveServices.getTimeLimitedFgsType()` 把 `dataSync` 与 `mediaProcessing` 纳入此路径；宽限期结束后，`onFgsCrashTimeout()` 通过 `ForegroundServiceDidNotStopInTimeException` 终止宿主进程。`shortService` 使用独立的 ANR timer（超时计时器），两条超时路径不能混为同一种故障。
+
+超时回调只应保存进度、释放资源并停止服务。数据同步可评估 WorkManager、user-initiated data transfer job 或 DownloadManager，选择时仍要接受对应 API 的调度和配额规则。
+
+#### Android 17 后台音频
+
+Android 17（API 37）把后台播放、音频焦点请求和音量修改纳入音频 hardening（限制强化）：
+
+- 所有运行在 Android 17 上的 App，无论 targetSdk，都要有可见 Activity，或正在运行一个类型不是 `shortService` 的 FGS，才能进行这些后台音频交互。
+- target 37 的 App 在后台还要求该 FGS 具有 while-in-use（WIU，仅使用期间允许）能力。通常由用户操作或 App 可见状态下启动的 FGS 获得。
+- App 具有精确闹钟权限并操作 `USAGE_ALARM` 音频流时，WIU 要求可豁免；前一条“可见 Activity 或非 shortService FGS”仍然存在。
+
+不满足条件时，播放和音量 API 可能静默失败，音频焦点请求返回 `AUDIOFOCUS_REQUEST_FAILED`。使用 `adb dumpsys audio` 或 logcat 搜索 `AudioHardening`：`level: partial` 表示没有运行 FGS，`level: full` 表示 FGS 缺少 WIU 能力。系统实现可对照 `AudioService.java` 与 `HardeningEnforcer.java`。
+
+媒体播放服务仍需声明 `mediaPlayback` 类型及对应权限。播放永久结束、收到不可恢复的焦点丢失或用户明确停止后，应关闭播放器、media session 和 FGS。
 
 ### 位置服务：请求目标，不指定传感器
 
@@ -262,68 +324,6 @@ Geofencing（地理围栏）适合“进入或离开区域时通知”这类事�
 
 推送不能替代数据一致性设计。消息可能重复、延迟或丢失，客户端仍需用版本号或游标拉取缺失数据；低频兜底同步可交给 WorkManager。
 
-### AlarmManager：精确性有明确成本
-
-AlarmManager 用于进程生命周期之外的时间事件。普通同步、清理和重试更适合 WorkManager。若用户接受时间窗口，使用 `set()`、`setWindow()`、`setAndAllowWhileIdle()` 或不精确重复闹钟，让系统有机会合并唤醒。
-
-#### 精确闹钟权限与例外
-
-Android 12（API 31）引入 “Alarms & reminders” special app access（特殊应用访问权限）。Android 13+ 可根据受限使用场景选择 `SCHEDULE_EXACT_ALARM` 或 `USE_EXACT_ALARM`：
-
-| 能力 | 授权方式 | 适用边界 |
-| --- | --- | --- |
-| `SCHEDULE_EXACT_ALARM` | 用户授予，也可被用户或系统撤销 | 使用面较宽；调用前检查 `canScheduleExactAlarms()` |
-| `USE_EXACT_ALARM` | 安装时自动授予，用户不可撤销 | 只允许闹钟、计时器、日历等受限核心场景，并受 Google Play 政策约束 |
-
-Android 14 对 target 33+ 的多数新安装应用不再预授予 `SCHEDULE_EXACT_ALARM`；备份恢复到 Android 14 设备时也按拒绝处理。已有授权随系统升级通常会保留。
-
-`AlarmManager.OnAlarmListener` 形式的 `setExact()` 不要求 `SCHEDULE_EXACT_ALARM`。它是进程内监听器：进程退出后不能指望系统重新创建 App 来交付回调。需要跨进程生命周期可靠触发时，通常使用 `PendingIntent`（可由系统代应用执行的预封装操作），并遵守精确闹钟权限规则。这个例外不能用于构造后台保活。
-
-#### Doze 与 allow-while-idle
-
-- `setAlarmClock()` 面向用户可见闹钟，系统会为交付离开低功耗模式。
-- `setExactAndAllowWhileIdle()` 能穿过 Doze，但受到严格频率限制。
-- `setAndAllowWhileIdle()` 允许在空闲状态交付不精确闹钟。
-- 普通 Alarm 在 Doze 中可能延后到 maintenance window（维护窗口）。
-
-AlarmManager API 文档给出的正常条件下节流量级约为每个 App 九分钟一次，系统也可以拉长间隔。这个数值是防滥用边界，不是建议轮询周期。闹钟回调里只安排短操作；需要联网或持久执行时，把后续工作交给 JobScheduler 或 WorkManager。
-
-### 前台服务：持续可见不等于无限运行
-
-FGS 用持续通知表达用户知情的长任务，并提高进程重要性。它不免除 Doze、Job quota（任务配额）、网络限制或硬件资源管理。Android 14（target 34+）要求服务类型、类型权限和运行时前置条件同时成立：
-
-- 未声明 `android:foregroundServiceType` 可能触发 `MissingForegroundServiceTypeException`。
-- 缺少 `FOREGROUND_SERVICE_*` 权限，或 location、camera、microphone 等 while-in-use 条件不满足，可能触发 `SecurityException`。
-- App 已在后台且不满足 FGS 启动豁免时，可能触发 `ForegroundServiceStartNotAllowedException`。
-
-日志判读要区分声明、权限与启动资格，三个异常指向的修复位置不同。
-
-#### Android 14 与 Android 15 的超时
-
-| 类型 | 平台限制 | 超时回调 | 未及时停止 |
-| --- | --- | --- | --- |
-| `shortService` | Android 14+，约三分钟 | `Service.onTimeout(int)` | 系统触发 ANR；系统不会代替服务自动完成 `stopSelf()` |
-| `dataSync` | target 35+，后台状态下每 24 小时累计六小时 | `Service.onTimeout(int, int)` | 几秒内不停止会抛内部远程服务异常并终止进程 |
-| `mediaProcessing` | target 35+，后台状态下每 24 小时累计六小时 | `Service.onTimeout(int, int)` | 与 `dataSync` 相同 |
-
-六小时按类型分别计时，同一 App 的多个同类型服务共享该类型额度。用户把 App 带到前台会重置计时器。额度耗尽后继续启动同类型服务会收到 `ForegroundServiceStartNotAllowedException`。
-
-`android-17.0.0_r1` 的 `ActiveServices.getTimeLimitedFgsType()` 把 `dataSync` 与 `mediaProcessing` 纳入此路径；宽限期结束后，`onFgsCrashTimeout()` 通过 `ForegroundServiceDidNotStopInTimeException` 终止宿主进程。`shortService` 使用独立的 ANR timer（超时计时器），两条超时路径不能混为同一种故障。
-
-超时回调只应保存进度、释放资源并停止服务。数据同步可评估 WorkManager、user-initiated data transfer job 或 DownloadManager，选择时仍要接受对应 API 的调度和配额规则。
-
-#### Android 17 后台音频
-
-Android 17（API 37）把后台播放、音频焦点请求和音量修改纳入音频 hardening（限制强化）：
-
-- 所有运行在 Android 17 上的 App，无论 targetSdk，都要有可见 Activity，或正在运行一个类型不是 `shortService` 的 FGS，才能进行这些后台音频交互。
-- target 37 的 App 在后台还要求该 FGS 具有 while-in-use（WIU，仅使用期间允许）能力。通常由用户操作或 App 可见状态下启动的 FGS 获得。
-- App 具有精确闹钟权限并操作 `USAGE_ALARM` 音频流时，WIU 要求可豁免；前一条“可见 Activity 或非 shortService FGS”仍然存在。
-
-不满足条件时，播放和音量 API 可能静默失败，音频焦点请求返回 `AUDIOFOCUS_REQUEST_FAILED`。使用 `adb dumpsys audio` 或 logcat 搜索 `AudioHardening`：`level: partial` 表示没有运行 FGS，`level: full` 表示 FGS 缺少 WIU 能力。系统实现可对照 `AudioService.java` 与 `HardeningEnforcer.java`。
-
-媒体播放服务仍需声明 `mediaPlayback` 类型及对应权限。播放永久结束、收到不可恢复的焦点丢失或用户明确停止后，应关闭播放器、media session 和 FGS。
-
 ### Camera 与 Audio 资源生命周期
 
 #### Camera
@@ -377,32 +377,13 @@ adb shell dumpsys audio > audio.txt
 
 Perfetto 轨道依赖 trace config（采集配置）、系统 build 和厂商实现。标准 user build 看不到 location、camera 或 wakelock 专用轨道时，应回到 bugreport 与系统服务状态，不能把“没有轨道”等同于“没有耗电”。
 
-### 复核清单
-
-- WakeLock 是否有稳定 tag、业务上限和覆盖成功/失败/取消的释放路径？
-- 可延迟任务是否使用 WorkManager 或 JobScheduler，并只添加必要约束？
-- 是否把 `UNMETERED` 错当成 Wi‑Fi，或把周期最小间隔错当成准时保证？
-- Android 16 上是否记录 Job/Work 的 stop reason 和 pending reason history？
-- 位置 priority 是否按业务容差选择，退出会话后是否移除更新？
-- Geofencing 是否被当成分钟级事件入口，而非秒级轨迹服务？
-- 网络是否合并可延迟上传、复用连接、区分可重试与永久错误？
-- high-priority FCM 是否对应时间敏感且用户可见的结果？
-- 精确闹钟是否属于用户明确感知的准点功能，权限撤销后能否降级？
-- 是否理解 `OnAlarmListener` 例外只适合进程存活期间？
-- FGS type、权限、启动资格和 timeout（超时）是否分别处理？
-- Android 17 后台音频是否满足非 shortService FGS、WIU 与 usage 规则？
-- Camera、Audio、Surface、media session 是否在业务结束时关闭？
-- 功耗结论是否来自目标设备、固定脚本和多轮对照？
-
-### 与其他章节的关系
-
-§11.1 解释系统如何把 CPU、屏幕、网络、GNSS 与其他组件能量归因到 UID；这里讨论 App 怎样减少这些组件的活跃时间。§5.3 说明 Doze、App Standby 与 JobScheduler/WorkManager，§11.3 追踪 WakeLock 在 PowerManagerService 与 suspend 路径中的实现。遇到“任务被推迟”或“设备不休眠”时，应沿这些章节的系统路径继续定位。
-
 ## 案例：能量归因、修复与复测
 
 通用检查项用于缩小范围，案例应保留功耗基线、异常组件、修改变量和复测窗口。
 
-功耗问题很少由一行代码单独造成。常见过程是：应用发起工作，系统为它安排 CPU、网络、定位或存储资源，硬件进入高功耗状态，工作结束后资源又未及时释放。以下六个案例说明怎样从业务现象找到系统证据，再选择合适的 Android API 修复问题。
+功耗问题很少由一行代码单独造成。常见过程是：应用发起工作，系统为它安排 CPU、网络、定位或存储资源，硬件进入高功耗状态，工作结束后资源又未及时释放。
+
+以下六个案例说明怎样从业务现象找到系统证据，再选择合适的 Android API 修复问题：用前台服务轮询消息、后台持续请求高精度定位、零散网络请求反复激活蜂窝链路、组件泄漏伴随周期回调、用 WakeLock 和 Alarm 对抗 Doze、多个模块各自注册后台任务。
 
 这里不给出通用的“节电百分比”。芯片、基带、信号、屏幕、温度、账号数据和 OEM（设备厂商）策略都会改变结果。缺少 bugreport（系统诊断包）、trace（性能跟踪）、测试脚本与环境记录的数字，无法支撑工程决策。
 
@@ -525,15 +506,9 @@ if (Build.VERSION.SDK_INT >= 37) {
 
 #### 前台服务超时不是调度方案
 
-| 类型 | Android 14—17 的边界 |
-|---|---|
-| `shortService` | 约三分钟；超时回调后仍不停止会进入 ANR 流程 |
-| `dataSync` | target SDK 35+ 时，应用位于后台的累计运行额度通常为每 24 小时 6 小时 |
-| `mediaProcessing` | target SDK 35+ 时，单独统计每 24 小时 6 小时 |
+各类型的超时边界已在前面的前台服务小节列出：`shortService` 约三分钟；target SDK 35+ 且应用位于后台时，`dataSync` 与 `mediaProcessing` 按类型分别累计每 24 小时 6 小时，同一类型下的多个服务共享这份额度；收到 `Service.onTimeout(int, int)` 后必须在数秒内停止。
 
-`dataSync` 与 `mediaProcessing` 按类型分别计时；同一类型下的多个服务共享运行额度。应用回到前台会重置可用时间。收到 `Service.onTimeout(int, int)` 后必须在数秒内 `stopSelf()`，否则进程会因服务未及时停止而异常终止。Android 17 延续这组行为。
-
-这些超时限制用于约束前台服务滥用，不会把轮询自动变成可靠同步。可恢复的数据传输应保存进度，交给调度 API；用户可见且不可中断的工作才进入对应的前台服务。
+这些限制用于约束前台服务滥用，不会把轮询自动变成可靠同步。可恢复的数据传输应保存进度，交给调度 API；用户可见且不可中断的工作才进入对应的前台服务。
 
 #### 验证
 
@@ -684,7 +659,9 @@ public final class TelemetryUpload {
 }
 ```
 
-Worker 在一次运行中循环读取大小受限的批次，收到服务端确认后再通过事务删除；达到本次执行额度且 outbox 尚未清空时返回 `Result.retry()`。数据库保存唯一可信的待发送记录，还要安排低频恢复同步，以处理“写入 outbox”与“调用 enqueue”无法纳入同一事务的问题，以及 `KEEP` 判断期间出现并发请求的竞争窗口。网络客户端应复用连接，并分别设置连接、读写与整次调用的超时。交互请求、支付确认和用户正在等待的发送操作不能为了批量而任意延后，它们需要单独的及时执行路径。
+Worker 在一次运行中循环读取大小受限的批次，收到服务端确认后再通过事务删除；达到本次执行额度且 outbox 尚未清空时返回 `Result.retry()`。数据库保存唯一可信的待发送记录，还要安排低频恢复同步，以处理“写入 outbox”与“调用 enqueue”无法纳入同一事务的问题，以及 `KEEP` 判断期间出现并发请求的竞争窗口。
+
+网络客户端应复用连接，并分别设置连接、读写与整次调用的超时。交互请求、支付确认和用户正在等待的发送操作不能为了批量而任意延后，它们需要单独的及时执行路径。
 
 #### 诊断证据
 
@@ -889,7 +866,9 @@ public final class DeferredWorkQueue {
 }
 ```
 
-`NETWORK_TYPE_UNMETERED` 表示系统判定的非计量网络，不等同于 Wi-Fi。persisted Job 需要在 Manifest 中声明 `RECEIVE_BOOT_COMPLETED`，`DeferredJobService` 需要受 `BIND_JOB_SERVICE` 权限保护。服务应逐个调用 `dequeueWork()` 取出工作项，成功后调用 `completeWork()`，并在异步处理结束时调用 `jobFinished()`。业务记录需要自己的幂等键，以保证重复处理不会产生额外副作用；`JobWorkItem` 只负责排队，不能作为业务数据的唯一可信来源。
+`NETWORK_TYPE_UNMETERED` 表示系统判定的非计量网络，不等同于 Wi-Fi。persisted Job 需要在 Manifest 中声明 `RECEIVE_BOOT_COMPLETED`，`DeferredJobService` 需要受 `BIND_JOB_SERVICE` 权限保护。服务应逐个调用 `dequeueWork()` 取出工作项，成功后调用 `completeWork()`，并在异步处理结束时调用 `jobFinished()`。
+
+业务记录需要自己的幂等键，以保证重复处理不会产生额外副作用；`JobWorkItem` 只负责排队，不能作为业务数据的唯一可信来源。
 
 官方 API 建议同一队列持续使用相同的 `JobInfo`。反复改变 extras（附加参数）、ClipData（可携带 URI 等内容的数据容器）或约束，可能让系统认为任务描述发生变化，导致正在运行的 Job 被停止后重启。合并后仍受 150 个 Job 上限、调度入口频率限制、standby bucket、quota 和设备状态限制。
 
@@ -922,26 +901,29 @@ Android 17 可使用 `getPendingJobReasonStats()` 区分等待主要来自网络
 
 ### 复核清单
 
-- [ ] 后台工作是否有明确的延迟和可靠性契约？
-- [ ] 用户不可见的工作是否误用了前台服务、WakeLock 或 exact alarm？
+- [ ] 后台工作是否有明确的延迟与可靠性契约，并用 WorkManager 或 JobScheduler 承载、只添加必要约束？
+- [ ] 用户不可见的工作是否误用了前台服务、WakeLock 或精确闹钟？
+- [ ] WakeLock 是否有稳定 tag、业务上限和覆盖成功、失败、取消的释放路径？
+- [ ] 是否把 `UNMETERED` 错当成 Wi‑Fi，或把周期最小间隔错当成准时保证？
 - [ ] 是否用唯一工作、稳定 Job ID 或服务端游标消除了重复调度？
-- [ ] 定位请求是否由场景推导精度、间隔、距离和退出条件？
-- [ ] 网络批量是否只作用于允许延迟的请求？
+- [ ] Android 16 起是否记录 Job/Work 的 stop reason 与 pending reason history，并同时记录 standby bucket 和系统电源状态？
+- [ ] 定位请求是否由场景推导精度、间隔、距离和退出条件，priority 按业务容差选择，退出后移除更新？
+- [ ] Geofencing 是否被当成分钟级事件入口，而非秒级轨迹服务？
+- [ ] 网络是否合并可延迟上传、复用连接、区分可重试与永久错误，且批量只作用于允许延迟的请求？
+- [ ] high-priority FCM 是否对应时间敏感且用户可见的结果？
+- [ ] 精确闹钟是否属于用户明确感知的准点功能、权限撤销后能否降级，`OnAlarmListener` 例外是否只用在进程存活期间？
+- [ ] FGS type、权限、启动资格和 timeout 是否分别处理？
+- [ ] Android 17 后台音频是否满足非 shortService FGS、WIU 与 usage 规则？
+- [ ] Camera、Audio、Surface、media session 是否在业务结束时关闭？
 - [ ] listener、callback、线程、协程和 WakeLock 是否对称释放？
-- [ ] 是否记录 pending reason、stop reason、standby bucket 和系统电源状态？
-- [ ] 功耗数字是否附带设备、网络、温度、样本与原始产物？
+- [ ] 功耗结论是否来自目标设备、固定脚本和多轮对照，并附带设备、网络、温度、样本与原始产物？
 - [ ] AOSP 引用是否来自 `android-17.0.0_r1`，内核引用是否来自 `android17-6.18-2026-06_r6`？
 
-### 案例涉及的版本边界
+### 与其他章节的关系
 
-| 版本 | 与案例有关的变化 |
-|---|---|
-| Android 14 / API 34 | Job pending reason API；persisted Job 可携带持久化的 JobWorkItem；`shortService` 类型 |
-| Android 15 / API 35 | target 35+ 的 `dataSync`、`mediaProcessing` FGS 进入 6 小时/24 小时限制；`Service.onTimeout(int, int)` |
-| Android 16 / API 36 | `getPendingJobReasons()` 返回多个等待原因；后台调度 quota 对 WorkManager 使用更需关注 |
-| Android 17 / API 37 | `getPendingJobReasonStats()`；listener 版本 `setExactAndAllowWhileIdle()`；平台源码锚点 `android-17.0.0_r1` |
+§11.1 解释系统如何把 CPU、屏幕、网络、GNSS 与其他组件能量归因到 UID；这里讨论 App 怎样减少这些组件的活跃时间。§5.3 说明 Doze、App Standby 与 JobScheduler/WorkManager，§11.3 追踪 WakeLock 在 PowerManagerService 与 suspend 路径中的实现。遇到“任务被推迟”或“设备不休眠”时，应沿这些章节的系统路径继续定位。
 
-## 全文版本与实现边界
+## 版本与实现边界
 
 | Android 版本 | 相关变化 |
 | --- | --- |
@@ -950,10 +932,10 @@ Android 17 可使用 `getPendingJobReasonStats()` 区分等待主要来自网络
 | Android 8.0 / API 26 | 后台执行、后台位置与隐式广播限制趋严 |
 | Android 12 / API 31 | 精确闹钟 special app access；后台启动 FGS 受限 |
 | Android 13 / API 33 | `USE_EXACT_ALARM` 与通知权限等边界进入适配范围 |
-| Android 14 / API 34 | target 34+ 强制 FGS type 与对应权限；`shortService` 时限；多数 target 33+ 新安装不预授予精确闹钟权限 |
-| Android 15 / API 35 | target 35+ 的 `dataSync`、`mediaProcessing` FGS 后台累计时限；ADPF 能效偏好提示 |
-| Android 16 / API 36 | top-started 与 FGS 并发 job 恢复受 runtime quota 约束；新增 pending job reasons history |
-| Android 17 / API 37 | 后台音频 hardening；target 37 后台音频增加 WIU 能力要求 |
+| Android 14 / API 34 | target 34+ 强制 FGS type 与对应权限；`shortService` 时限；多数 target 33+ 新安装不预授予精确闹钟权限；Job pending reason API；persisted Job 可携带持久化的 `JobWorkItem` |
+| Android 15 / API 35 | target 35+ 的 `dataSync`、`mediaProcessing` FGS 后台累计时限；`Service.onTimeout(int, int)`；ADPF 能效偏好提示 |
+| Android 16 / API 36 | top-started 与 FGS 并发 job 恢复受 runtime quota 约束；`getPendingJobReasons()` 返回多个等待原因；新增 pending job reasons history |
+| Android 17 / API 37 | 后台音频 hardening；target 37 后台音频增加 WIU 能力要求；`getPendingJobReasonStats()`；listener 版本 `setExactAndAllowWhileIdle()`；平台源码锚点 `android-17.0.0_r1` |
 
 ## 参考资料
 
