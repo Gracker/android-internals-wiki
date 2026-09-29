@@ -4,8 +4,8 @@ chapter: '21.4'
 section: '21.4'
 status: finalized
 applicable_versions: Android 7 (API 24) - Android 17 (API 37)
-last_verified: '2026-08-14'
-last_verified_against: Current Android Developers Baseline/Startup Profile, ProfileVerifier and Macrobenchmark docs; AOSP android-17.0.0_r1 art/profman + art/dex2oat
+last_verified: '2026-09-29'
+last_verified_against: Current Android Developers Baseline/Startup Profile and ProfileVerifier docs; AOSP android-17.0.0_r1 art/profman + art/dex2oat + ART Service sources
 confidence: medium-high
 sources:
 - type: official
@@ -84,7 +84,7 @@ Baseline Profile 和 Startup Profile 由应用构建流程提供热路径，Clou
 
 Baseline Profile 解决的是代码在用户设备上“何时以什么编译状态运行”。ART 是 Android Runtime，负责执行 DEX 字节码；DEX 是 APK 中承载应用字节码的文件格式。没有预编译时，ART 可以先解释执行代码，再由 JIT（Just-In-Time）在运行中编译热点；AOT（Ahead-Of-Time）则在代码运行前完成编译。Baseline Profile 可以让关键路径更早获得合适的编译状态，却不能消除磁盘、网络、Binder、锁等待、业务初始化或首屏布局工作。
 
-平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。截至 2026-08-14，官方列出的最低推荐稳定组合是 AGP 8.0.0、Macrobenchmark 1.4.1 和 ProfileInstaller 1.4.1；Android Studio 的 Baseline Profile Generator 模板和 Startup Profile 建议使用 AGP 8.2 以上。AGP、Macrobenchmark、ProfileInstaller 和 Google Play 各自演进，项目仍需固定一组经过验证的版本并写入实验记录。
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。截至 2026-09-29，官方列出的最低推荐稳定组合是 AGP 8.0.0、Macrobenchmark 1.5.0 和 ProfileInstaller 1.4.1；Android Studio 的 Baseline Profile Generator 模板从 Android Studio Iguana / AGP 8.2 开始提供，Startup Profile 的 DEX layout 优化从 AGP 8.1 可用、AGP 8.3 起默认启用。AGP、Macrobenchmark、ProfileInstaller 和 Google Play 各自演进，项目仍需固定一组经过验证的版本并写入实验记录。
 
 这里还要划清两条相邻但不同的优化链路。Baseline/Startup Profile 只处理由 ART 管理的 DEX 代码；[AutoFDO](../../part4-system/ch18-aosp/04-autofdo-feedback-directed-optimization.md) 用采样或硬件分支轨迹指导 LLVM/Clang 优化 native 可执行文件和共享库。OEM dexpreopt 则发生在系统镜像构建阶段，处理 boot classpath、`system_server`、系统组件和预装 APK。预装应用可能同时受三者影响，但输入数据、消费者、产物位置和验证工具不能互换。
 
@@ -312,9 +312,9 @@ Android 7～8.1 主要依靠 `ProfileInstaller` 在首次运行后写入 current
 - 已使用不完全匹配的 profile 编译；
 - 不支持的 API 或缓存/包错误。
 
-`RESULT_CODE_ERROR_NO_PROFILE_EMBEDDED` 表示包内没有规则，`RESULT_CODE_NO_PROFILE` 则可能表示包内有规则，但 ProfileInstaller 没有运行或设备尚无已安装 profile。`ProfileVerifier` 不能区分当前编译使用的是 Baseline Profile 还是 Cloud Profile。`RESULT_CODE_COMPILED_WITH_PROFILE` 说明应用已有可用的 profile 引导编译状态，不说明全部代码已经 AOT。
+`RESULT_CODE_ERROR_NO_PROFILE_EMBEDDED` 表示包内没有规则；ProfileInstaller 1.4.1 起推荐看 `RESULT_CODE_NO_PROFILE_INSTALLED`（旧名 `RESULT_CODE_NO_PROFILE`，已废弃），它通常表示包内有规则，但 ProfileInstaller 没有运行或设备尚无已安装 profile。`ProfileVerifier` 不能区分当前编译使用的是 Baseline Profile 还是 Cloud Profile。`RESULT_CODE_COMPILED_WITH_PROFILE` 说明应用已有可用的 profile 引导编译状态，不说明全部代码已经 AOT。
 
-`ProfileVerifier` 支持 API 28～29 和 API 31+；API 27 以下以及 API 30 都会返回 `RESULT_CODE_ERROR_UNSUPPORTED_API_VERSION`，API 30 的原因也是 reference profile 目录权限限制。`writeProfileVerification()` 会执行 I/O，应在后台线程调用。若关闭 `ProfileInstallerInitializer`，需要在启动数秒后手动调用该方法，否则 `getCompilationStatusAsync()` 返回的 Future（异步结果对象）可能一直等待或超时。
+`ProfileVerifier` 支持 Android 9 / API 28 及以上；更低 API 会返回 `RESULT_CODE_ERROR_UNSUPPORTED_API_VERSION`。`writeProfileVerification()` 会执行 I/O，应在后台线程调用。若关闭 `ProfileInstallerInitializer`，需要在启动数秒后手动调用该方法，否则 `getCompilationStatusAsync()` 返回的 Future（异步结果对象）可能一直等待或超时。
 
 #### 7.3 `dumpsys package dexopt`
 
