@@ -123,7 +123,7 @@ consolidated_from:
 
 ### 响应速度要量哪一段
 
-响应速度描述从用户操作到界面出现可见反馈所经历的延迟。真正测量时，还需要明确起点、终点，以及这次交互以按下、抬手还是业务结果为完成标志。
+响应速度描述从用户操作到界面出现可见反馈所经历的延迟。测量时要先明确起点、终点，以及这次交互以按下、抬手还是业务结果为完成标志。
 
 以同一个按钮为例，至少有两种合理的测量口径：
 
@@ -131,6 +131,8 @@ consolidated_from:
 - 点击结果：从 `ACTION_UP` 的事件时间开始，到包含操作结果的帧实际呈现为止。Android 的普通 `View` 通常在抬手后才确认点击，因此不宜从 `ACTION_DOWN` 计算业务完成时间。
 
 拖动和滚动需要使用另一种口径：逐个考察输入样本与对应画面更新之间的 event-to-photon（事件采样到画面发光）延迟，并观察整段手势中的延迟分布是否稳定。只记录“手指开始移动到列表开始滚动”，会漏掉手势中段偶发的延迟波动。
+
+TTID（Time to Initial Display）表示从启动请求到首帧显示，TTFD（Time to Full Display）表示从启动请求到应用报告内容已经完整呈现。二者分别描述首帧和完整可用状态，不能互相替代。
 
 常用场景与测量端点如下：
 
@@ -141,8 +143,6 @@ consolidated_from:
 | 拖动、滚动 | 每个运动样本的事件时间 | 消费该样本的帧呈现时间 | 一个批处理事件可能包含多个 historical sample（历史采样点） |
 | 应用启动 | 系统接收启动请求 | TTID 或 TTFD | TTID 只到首帧，与“内容可交互”含义不同 |
 | 长任务 | 用户确认操作 | 进度反馈帧与业务完成点 | 只量业务耗时会漏掉反馈延迟 |
-
-TTID（Time to Initial Display）表示从启动请求到首帧显示，TTFD（Time to Full Display）表示从启动请求到应用报告内容已经完整呈现。二者分别描述首帧和完整可用状态，不能互相替代。
 
 `MotionEvent.getEventTimeNanos()` 接近输入样本的时间基准，但不等同于手指接触屏幕玻璃的物理时刻。帧的 present 信号也不表示面板像素已经完成发光。若要测量实验室级 touch-to-photon（触摸到画面发光）延迟，需要高速相机、光电传感器或厂商显示链路 trace；普通应用采集的 Perfetto 更适合定位软件路径中的耗时阶段。
 
@@ -223,11 +223,11 @@ flowchart LR
 
 应用处理完成后调用 `finishInputEvent()` 回送 ACK。Perfetto 的 `android.input` 标准库为分发、接收、ACK 和帧呈现分别提供字段，因此可以区分系统分发延迟、应用排队延迟、应用处理耗时和画面呈现延迟。
 
-连续的 `MOVE` 事件可能被批量传递，一个 `MotionEvent` 可以携带多个 historical samples；`ViewRootImpl` 也可以等到下一次帧回调前再消费这批样本。分析滑动时应保留历史样本，以免把框架有意进行的帧对齐误判成事件丢失，也避免只看最新坐标而遗漏中间轨迹。
+连续的 `MOVE` 事件可能被批量传递，一个 `MotionEvent` 可以携带多个 historical samples；`ViewRootImpl` 也可以等到下一次帧回调前再消费这批样本。分析滑动时要保留历史样本：只看最新坐标会漏掉中间轨迹，也容易把框架有意做的帧对齐误判成事件丢失。
 
 #### 状态变更与帧调度
 
-调用 `invalidate()`、`requestLayout()` 或改变 Compose 状态，会促使窗口安排后续遍历。Android 17 的 `ViewRootImpl.scheduleTraversals()` 会向 `Choreographer` 投递 traversal callback（遍历回调），并在消息队列中设置同步屏障，让允许穿过屏障的异步帧消息优先执行，避免普通同步消息继续排在本帧遍历之前。
+调用 `invalidate()`、`requestLayout()` 或改变 Compose 状态，会促使窗口安排后续遍历。Android 17 的 `ViewRootImpl.scheduleTraversals()` 会向 `Choreographer` 投递 traversal callback（遍历回调），并在消息队列中设置同步屏障。允许穿过屏障的异步帧消息会优先执行，普通同步消息不会继续排在本帧遍历之前。
 
 `Choreographer` 需要生成新帧时，会通过 `DisplayEventReceiver.scheduleVsync()` 请求 VSync（显示垂直同步信号）。Android 17 主路径中的回调顺序如下：
 
@@ -319,20 +319,29 @@ Jitter 表示偶发工作阻塞了用户能感知到的执行路径。常见来�
 
 ### Android Vitals 能回答什么
 
-Google Play 的 Android Vitals 提供多类真实用户设备指标，但公开指标中没有一项与 Web INP 完全等价、覆盖“所有点击到下一次绘制”的统一指标。分析响应问题时，需要组合解读以下数据：
+Google Play 的 Android Vitals 提供多类真实用户设备指标，但公开指标中没有一个统一指标能覆盖“所有点击到下一次绘制”，也没有与 Web INP 完全等价的口径。分析响应问题时，需要组合解读以下数据：
 
 | 指标 | 回答的问题 | 边界 |
 | --- | --- | --- |
 | Slow rendering | UI Toolkit 帧是否落入 16 ms 到 700 ms 的慢帧区间 | 固定 16 ms 是 Vitals 分类口径，诊断仍要结合设备 deadline |
 | Frozen frames | UI Toolkit 帧是否达到 700 ms 或更长 | 原生 Vulkan、OpenGL、Unity 等路径可能不在这组统计内 |
 | User-perceived ANR rate | 用户可感知 ANR 的现场发生率 | ANR 类型和超时规则不同，不能从一个固定数字反推全部原因 |
-| TTID（Time to Initial Display） | 启动请求到首帧显示 | 首帧可能只是启动壳，未必可交互 |
-| TTFD（Time to Full Display） | 启动请求到应用报告 fully drawn | 依赖应用在可用状态调用 `reportFullyDrawn()` |
+| TTID | 启动请求到首帧显示 | 首帧可能只是启动壳，未必可交互 |
+| TTFD | 启动请求到应用报告 fully drawn | 依赖应用在可用状态调用 `reportFullyDrawn()` |
 | Slow sessions | 游戏会话中慢帧占比 | 游戏专用，统计口径不同于普通 UI Toolkit 帧 |
 
 Android Vitals 将冷启动达到 5 秒、温启动达到 2 秒、热启动达到 1.5 秒视为 excessive startup（启动时间过长），并使用 TTID 统计告警。TTFD 包含 TTID 以及首帧后的异步内容加载时间，需要应用在内容可用时主动报告。两个指标描述不同阶段，较短的 TTID 不能说明 TTFD 同样较短。
 
 ANR 也不能简化成“主线程超过某个时长”的单一规则。AOSP / Pixel 的 input dispatch 默认超时为 5 秒；`Service`、`BroadcastReceiver`、`ContentProvider`、`JobService` 和前台服务还有各自的规则。Android 14 及更高版本会根据进程是否 CPU-starved（长时间得不到足够 CPU）在一定区间内调整广播超时，OEM 也可能修改默认值。分析响应问题时，应先确认 ANR 类型，再检查对应的计时起点、截止条件和责任线程。
+
+### 从 Web INP 借鉴交互口径
+
+Web INP（Interaction to Next Paint）衡量一次交互从事件处理到下一次绘制的长尾表现。Android 没有同名、同口径的公开 Vitals 指标，但可以借鉴两点：
+
+- 以完整交互为单位关联输入、处理与下一次可见更新；
+- 关注高分位和最差交互，避免只看平均帧率。
+
+Android 上的证据应来自 input trace、应用标记、FrameTimeline 和显示呈现信息。团队可以把内部指标命名为 UIL（User Interaction Latency，用户交互延迟），但必须在文档中定义起点、终点、采样范围，以及无法关联到帧时的处理方式。如果 P99 200 ms 等目标来自 Web INP，只能标为内部目标或类比值，不能写成 Android 官方标准。
 
 ### 感知速度的工程边界
 
@@ -376,15 +385,6 @@ Android 14（API 34）开始提供公开的 `MotionPredictor` API，用来根据
 
 预测用估算位置补偿采样到显示之间的空间滞后，不会改变原始事件的分发时间。预测可能返回 `null`，也可能无法达到请求的时间点；手势结束、方向突然变化或设备不支持时，应用必须回退到真实样本。Android 不会自动为所有 View 或 Compose 手势启用这项能力。
 
-### 从 Web INP 借鉴交互口径
-
-Web INP（Interaction to Next Paint）衡量一次交互从事件处理到下一次绘制的长尾表现。Android 没有同名、同口径的公开 Vitals 指标，但可以借鉴两点：
-
-- 以完整交互为单位关联输入、处理与下一次可见更新；
-- 关注高分位和最差交互，避免只看平均帧率。
-
-Android 上的证据应来自 input trace、应用标记、FrameTimeline 和显示呈现信息。团队可以把内部指标命名为 UIL（User Interaction Latency，用户交互延迟），但必须在文档中定义起点、终点、采样范围，以及无法关联到帧时的处理方式。如果 P99 200 ms 等目标来自 Web INP，只能标为内部目标或类比值，不能写成 Android 官方标准。
-
 ### 一套可复现的检查流程
 
 1. 定义单一交互，例如“搜索页 `ACTION_UP` 到结果骨架首帧呈现”，不要把后续网络完成时间混入同一指标。
@@ -418,34 +418,9 @@ ACK 表示应用已返回事件处理结果。帧请求、VSync 等待、渲染�
 
 骨架屏只改变用户看到的中间状态，不会自动降低 TTID 或 TTFD。如果骨架布局复杂、动画持续运行，或真实内容到达后发生大范围重排，还可能增加渲染开销。
 
-### Android 17 输入链的核对入口
-
-#### Android 17 源码
-
-- [`InputManager.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/InputManager.cpp)：创建并启动 `InputReader`、`InputDispatcher`。
-- [`InputReader.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/reader/InputReader.cpp)：从 EventHub 读取并处理原始输入。
-- [`InputDispatcher.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)：目标选择与 `publishMotionEvent()`。
-- [`InputTransport.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/input/InputTransport.cpp)：`InputChannel` 消息发送、接收和 ACK。
-- [`android_view_InputEventReceiver.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_view_InputEventReceiver.cpp)：应用 native 接收与 `finishInputEvent()`。
-- [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)：窗口输入阶段、批处理输入与 traversal 调度。
-- [`Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)：VSync 请求和回调顺序。
-- [`RenderThread.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/RenderThread.cpp)：HWUI RenderThread 主循环与帧工作。
-- [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)：显示帧调度、合成与提交。
-
-#### 官方文档
-
-- [Evaluate performance](https://source.android.com/docs/core/tests/debug/eval_perf)
-- [PerfettoSQL `android.input`](https://perfetto.dev/docs/analysis/stdlib-docs#android-input)
-- [Slow rendering and frozen frames](https://developer.android.com/topic/performance/vitals/render)
-- [App startup time: TTID and TTFD](https://developer.android.com/topic/performance/vitals/launch-time)
-- [Diagnose and fix ANRs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
-- [`MotionPredictor` API](https://developer.android.com/reference/android/view/MotionPredictor)
-- [Adaptive refresh rate](https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate)
-- [RAIL performance model](https://web.dev/articles/rail)
-
 ## 页面、输入、网络与后台唤醒场景
 
-通用等待模型需要映射到具体交互。页面打开、搜索、输入、登录和后台唤醒拥有不同的完成信号。
+等待模型要落到具体交互上。页面打开、搜索、输入、登录和后台唤醒的完成信号各不相同。
 
 ### 把“响应快”定义成可测量的终点
 
@@ -463,7 +438,7 @@ ACK 表示应用已返回事件处理结果。帧请求、VSync 等待、渲染�
 
 起点同样需要明确。`ACTION_DOWN`、`ACTION_UP`、`onClick()` 和导航调用分别发生在不同时间点；搜索文字变化、debounce 等待结束和请求发出也属于不同阶段。Perfetto 适合关联 Input、主线程、Binder、FrameTimeline 和自定义 trace，Macrobenchmark 适合重复执行固定交互。
 
-本文以 Android 17 / API 37 的 `android-17.0.0_r1` 为平台源码基线。输入驱动、线程调度、CPU frequency 和 I/O 分析以内核 `android17-6.18-2026-06_r6` 为准。任何固定毫秒数的收益都必须附带设备、刷新率和业务入口条件。
+本文的平台基线是 Android 17 / API 37（`android-17.0.0_r1`）；输入驱动、线程调度、CPU frequency 和 I/O 分析以内核 `android17-6.18-2026-06_r6` 为准。任何固定毫秒数的收益都必须附带设备、刷新率和业务入口条件。
 
 ### 页面跳转：Activity 与 Fragment 要分开看
 
@@ -488,7 +463,7 @@ Android 9（API 28）引入了 `ClientTransaction` 体系；Android 8.x 的旧�
 | 目标 Activity 已在 Task 中 | Task / launchMode 决策、`onNewIntent()` 或生命周期恢复、必要重绘 |
 | 目标进程不存在 | 额外包含进程创建、`Application`、Provider 和首 Activity；接近冷启动 |
 
-因此，无法给 Binder、Activity 构造、inflate 或首帧分配一套通用时间。进程是否存活、目标页资源、转场、系统负载和编译状态都会改变结果。
+无法给 Binder、Activity 构造、inflate 或首帧套用一套通用时间，因为进程是否存活、目标页资源、转场、系统负载和编译状态都会改变结果。
 
 #### 从输入到目标帧拆开测
 
@@ -510,7 +485,7 @@ trace("Navigation.OpenDetail") {
 }
 ```
 
-这个 slice 会在 `navigate()` 返回时结束，并不表示目标页已经显示。验收时还要结合目标窗口的 FrameTimeline、目标页的阶段标记和内容就绪事件。trace 名称应保持低基数，也就是只使用少量稳定名称；业务 ID 应通过受控参数或单独事件记录。
+这个 slice 会在 `navigate()` 返回时结束，并不表示目标页已经显示。验收时还要结合目标窗口的 FrameTimeline、目标页的阶段标记和内容就绪事件。slice 命名同样要控制基数，做法见“用 Perfetto 和基准把场景关联起来”。
 
 转场动画需要单独测量。动画播放期间可以同时创建页面；流畅动画能遮住部分准备时间，掉帧动画则会让延迟感更明显。不能用动画时长代替页面准备耗时，也不应为了缩短一个数字而删除有助于理解页面空间关系的过渡。
 
@@ -638,7 +613,7 @@ override fun onResume() {
 8. 合法点击在 `ACTION_UP` 后通过 `performClick()` 调用 listener（监听器）；
 9. 下一次遍历、渲染与合成把反馈像素呈现到屏幕。
 
-平台步骤以 `android-17.0.0_r1` 中的 InputDispatcher、InputTransport、ViewRootImpl 和 View 为依据；驱动调度和 CPU 运行状态以内核 `android17-6.18-2026-06_r6` 为依据。每个阶段的时长都会受到触控采样、队列、刷新率和系统负载影响，不能套用固定区间。
+上面这些平台步骤来自 `android-17.0.0_r1` 的 InputDispatcher、InputTransport、ViewRootImpl 和 View；驱动调度和 CPU 运行状态对应内核基线。每个阶段的时长都会受到触控采样、队列、刷新率和系统负载影响，不能套用固定区间。
 
 `MotionEvent.getEventTime()` 和 `SystemClock.uptimeMillis()` 可以在应用内粗略比较事件采样时间和回调开始时间。`Choreographer.postFrameCallback()` 只表示帧回调发生，不能直接代表面板呈现时间；精确分析 input-to-display（输入到显示）延迟时，应使用 Perfetto 的 Input 关联、FrameTimeline 和显示轨迹。
 
@@ -856,18 +831,18 @@ Android 17 还引入了 generational Concurrent Mark-Compact GC，也就是按�
 
 阅读案例前要分清几类口径：
 
-- 启动耗时、页面 Time to Interactive（TTI，可交互时间）和点击后的可见反馈使用不同的起止点。TTID（Time to Initial Display）止于首帧显示，TTFD（Time to Full Display）止于应用声明主要内容已经就绪。
+- 启动耗时、页面 Time to Interactive（TTI，可交互时间）和点击后的可见反馈使用不同的起止点；TTID 止于首帧显示，TTFD 止于应用声明主要内容已经就绪。
 - P50、P90、P95 表示第 50、90、95 百分位，不能直接横向比较。
 - 实验室 Macrobenchmark、线上 Android Vitals 和产品转化率回答的问题不同。
 - 一项发布同时带有 R8、Baseline Profiles 或 UI 重写时，只能报告组合结果，除非原团队做过单变量实验。
 
-本文核对的平台上限为 Android 17 / API 37，源码基线是 `android-17.0.0_r1`。涉及调度、Binder 或 I/O 归因时，内核基线为 `android17-6.18-2026-06_r6`。这些生产案例形成于不同年份，保留历史数据是为了分析优化方法；平台版本事实仍以 Android 17 为边界。
+这些生产案例形成于不同年份，保留历史数据是为了分析优化方法；平台版本事实仍以 Android 17 / API 37 为边界，源码基线 `android-17.0.0_r1`、内核基线 `android17-6.18-2026-06_r6`。
 
 ### 案例一：Reddit 用分屏 CUJ 改善冷启动与页面切换
 
 #### 优化前数据
 
-CUJ（Critical User Journey，关键用户旅程）是一条可以重复执行和测量的典型用户操作路径。Reddit 没有公开启动耗时的绝对毫秒数。团队在 2024 年发布的案例中说明，他们已经进行过多轮性能优化，容易处理的问题大多已经解决，仍需继续降低启动、页面加载和滚动开销。团队按页面维护性能指标，并结合地域和设备档位观察线上表现。
+CUJ（Critical User Journey，关键用户旅程）指的是一条典型用户操作路径，可以重复执行和测量。Reddit 没有公开启动耗时的绝对毫秒数。团队在 2024 年发布的案例中说明，他们已经进行过多轮性能优化，容易处理的问题大多已经解决，仍需继续降低启动、页面加载和滚动开销。团队按页面维护性能指标，并结合地域和设备档位观察线上表现。
 
 全局启动指标仍有价值，但单个页面的问题可能被总体分布掩盖。Reddit 为五条高频用户路径维护 Baseline Profile：
 
@@ -927,7 +902,7 @@ Reddit 工程师披露，一个功能团队制作一条 CUJ Profile 通常只需
 
 #### 优化前数据
 
-Gmail Wear OS 团队公开了诊断步骤和相对收益，但没有披露优化前的毫秒数、设备型号或投入人天。优化前的 Perfetto trace 显示，测试使用的 Wear OS 设备只有两个 CPU，启动期间主线程有较多 Runnable 时间；这表示线程已经可以运行，却暂时没有获得 CPU。加载动画、系统工作和应用初始化会争用有限的 CPU 时间。
+Gmail Wear OS 团队公开了诊断步骤和相对收益，但没有披露优化前的毫秒数、设备型号或投入人天。优化前的 Perfetto trace 显示，测试使用的 Wear OS 设备只有两个 CPU，启动期间主线程有较多 Runnable 时间。加载动画、系统工作和应用初始化会争用有限的 CPU 时间。
 
 案例中的 `Android App Startups` 轨道止于首帧，对应 TTID。即使应用调用了 `reportFullyDrawn()`，这条轨道也不会自动延长到 TTFD。分析完整内容可用时间时，需要在 Perfetto 中另外找到 `reportFullyDrawn()` 标记。
 
@@ -947,7 +922,7 @@ Gmail Wear OS 团队公开了诊断步骤和相对收益，但没有披露优化
 
 团队做了两组改动，原文分别报告收益：
 
-- 将加载 spinner（旋转指示器）换成静态图片，并推迟 shimmer（扫光动画）状态，让启动阶段减少持续动画，把更多 CPU 时间留给应用主线程和系统服务。
+- 将加载 spinner（旋转指示器）换成静态图片，并推迟 shimmer 状态，让启动阶段减少持续动画，把更多 CPU 时间留给应用主线程和系统服务。
 - 启用 R8 对 Baseline Profile 的重写，使代码缩减、重命名后 Profile 仍能对应优化后的程序结构。官方案例注明这项能力要求 AGP 8.2 或更高版本。
 
 延长启动画面不是通用优化手段。这个案例减少的是双核 Wear OS 设备启动期间的动画争用；手机、不同 UI 状态或没有 CPU 争用的应用都应重新测量。为了视觉稳定而无条件延长 Splash，只会增加用户等待时间。
@@ -1162,6 +1137,31 @@ Android 17 的平台源码基线是 `android-17.0.0_r1`，输入驱动和调度�
 
 ## 参考资料
 
+### Android 17 输入链的核对入口
+
+#### Android 17 源码
+
+- [`InputManager.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/InputManager.cpp)：创建并启动 `InputReader`、`InputDispatcher`。
+- [`InputReader.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/reader/InputReader.cpp)：从 EventHub 读取并处理原始输入。
+- [`InputDispatcher.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)：目标选择与 `publishMotionEvent()`。
+- [`InputTransport.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/input/InputTransport.cpp)：`InputChannel` 消息发送、接收和 ACK。
+- [`android_view_InputEventReceiver.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_view_InputEventReceiver.cpp)：应用 native 接收与 `finishInputEvent()`。
+- [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)：窗口输入阶段、批处理输入与 traversal 调度。
+- [`Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)：VSync 请求和回调顺序。
+- [`RenderThread.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/RenderThread.cpp)：HWUI RenderThread 主循环与帧工作。
+- [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)：显示帧调度、合成与提交。
+
+#### 官方文档
+
+- [Evaluate performance](https://source.android.com/docs/core/tests/debug/eval_perf)
+- [PerfettoSQL `android.input`](https://perfetto.dev/docs/analysis/stdlib-docs#android-input)
+- [Slow rendering and frozen frames](https://developer.android.com/topic/performance/vitals/render)
+- [App startup time: TTID and TTFD](https://developer.android.com/topic/performance/vitals/launch-time)
+- [Diagnose and fix ANRs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
+- [`MotionPredictor` API](https://developer.android.com/reference/android/view/MotionPredictor)
+- [Adaptive refresh rate](https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate)
+- [RAIL performance model](https://web.dev/articles/rail)
+
 ### 场景与平台资料
 
 - [AOSP Android 17：Activity.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Activity.java)
@@ -1171,9 +1171,6 @@ Android 17 的平台源码基线是 `android-17.0.0_r1`，输入驱动和调度�
 - [AOSP Android 17：ActivityInfo.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/pm/ActivityInfo.java)
 - [AOSP Android 17：Manifest attributes](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/res/values/attrs_manifest.xml)
 - [AOSP Android 17：View.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java)
-- [AOSP Android 17：ViewRootImpl.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)
-- [AOSP Android 17：InputDispatcher.cpp](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
-- [AOSP Android 17：InputTransport.cpp](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/input/InputTransport.cpp)
 - [Android Developers：Fragment transactions](https://developer.android.com/guide/fragments/transactions)
 - [Android Developers：Fragment animations and postponed transitions](https://developer.android.com/guide/fragments/animate)
 - [Android Developers：ViewPager2 API](https://developer.android.com/reference/androidx/viewpager2/widget/ViewPager2)
