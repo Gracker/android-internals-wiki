@@ -81,31 +81,36 @@ task2b_state: fixed
 
 ### Android 17 的显示归因有测量与模型两条路径
 
-旧资料常把 BatteryStats 描述成“状态时长乘 power profile”。这个描述已经不完整。Android 17 的 `ScreenPowerStatsCollector` 会收集：
+旧资料常把 BatteryStats 描述成“状态时长乘 power profile”。Android 17 里这个描述已经不完整，`ScreenPowerStatsCollector` 会收集：
 
 - `DISPLAY` energy consumer（显示能量计量组件）提供的 consumed energy（已消耗能量）；
 - 各显示的 screen-on、doze（低功耗显示）与亮度档位时长；
 - UID 的 top activity（最前台 Activity）时长。
 
-`ScreenPowerStatsProcessor` 在设备提供显示 energy consumer 时，把硬件报告的微库仑换算成 mAh（毫安时）；没有这类数据时，才使用 `PowerProfile` 的显示参数估算。现代参数按显示设备区分，包括 `ambient.on.display`、`screen.on.display` 和 `screen.full.display`。旧的 `screen.on`、`screen.full` 常量只保留兼容含义。
+设备提供显示 energy consumer 时，`ScreenPowerStatsProcessor` 把硬件报告的微库仑换算成 mAh（毫安时）；没有这类数据时才回退到 `PowerProfile` 的显示参数估算。现代参数按显示设备区分，包括 `ambient.on.display`、`screen.on.display` 和 `screen.full.display`；旧的 `screen.on`、`screen.full` 常量只保留兼容含义。
 
 UID 归因走的是另一条路径：处理器会依据 top activity 时长分配一部分显示成本。这能支持系统级归因，却不能证明某个 View、某帧 GPU 工作或某个颜色像素消耗了对应能量。文章或评审报告若要证明产品设置带来的整机收益，仍应使用设备 rail、长时间燃料计测试或外接仪器补证。
 
 ## 11.5.2 如何阅读 2026 年单机实验
 
-论文正文给出了实验设计与清洗后的统计口径，复现仓库提供脚本和 `master_energy_data.csv`。论文正文与复现仓库的行数清点口径不完全一致；下列数字用于理解论文结论边界，不应用作复现实验的行数验收：
+论文正文给出了实验设计与清洗后的统计口径，复现仓库提供脚本和 `master_energy_data.csv`。两侧的行数清点口径不完全一致，下列数字用于理解论文结论边界，不应用作复现实验的行数验收。
+
+论文给出的实验条件：
 
 - 设备为一台 Galaxy S23 Ultra，Snapdragon 8 Gen 2、5000 mAh 电池、Dynamic AMOLED、最高 120 Hz；
 - 场景覆盖 WhatsApp、Instagram、TikTok、YouTube 和手电筒；
 - 879 组唯一配置，计划为每组执行 15 次，实际清点需以仓库数据为准；
+- 主要场景持续 15 或 30 秒，手电筒另含 60 秒条件。
+
+论文的数据清洗与统计口径：
+
 - 论文正文报告初始记录 13,184 条，移除 536 条异常值后保留 12,649 条；这些值存在 1 条的口径差异；
-- 主要场景持续 15 或 30 秒，手电筒另含 60 秒条件；
 - 通过 `dumpsys batterystats` 获取 mAh，再按采样电压换算为焦耳；
 - 使用 Mann-Whitney U（两组独立样本的非参数检验），以 `p < 0.05` 判定统计显著差异。
 
-这项工作可以用来建立实验变量表，也能说明同一设备、同一脚本下的变化方向。它没有提供跨面板、跨 SoC、跨 OEM（设备厂商）的结论，也不包含长时间稳态下的结论。软件归因、短采样窗口和单机设计会限制外推范围。
+这项工作可以用来建立实验变量表，也能说明同一设备、同一脚本下的变化方向。它没有跨面板、跨 SoC、跨 OEM（设备厂商）的结论，也没有长时间稳态下的结论；软件归因、短采样窗口和单机设计都会限制外推。
 
-后文引用其数字时，都应读作“该设备、该脚本、该窗口的观察”。产品文案、系统默认值和 KPI（关键绩效指标）不能直接套用这些百分比。
+后文引用这些数字时都应读作“该设备、该脚本、该窗口的观察”。产品文案、系统默认值和 KPI（关键绩效指标）不能直接套用这些百分比。
 
 ## 11.5.3 亮度：滑块位置、面板亮度与显示功耗
 
@@ -143,7 +148,7 @@ LCD（液晶显示器）的背光通常是显示功耗的重要来源，页面�
 - 自动亮度适合用户场景复测，用来检查策略在环境变化下的表现；
 - 户外高亮、HDR 与相机预览应单独建组，避免与普通室内结果合并。
 
-固定档位时还要关闭会自动改变亮度的测试外变量，等待亮度稳定后再开始采样。报告只写“亮度 50%”不够；至少要补充自动亮度状态、环境与设备。
+固定档位时还要关掉其他会自动改变亮度的变量，等亮度稳定后再开始采样。报告只写“亮度 50%”不够，至少要补充自动亮度状态、环境与设备。
 
 ## 11.5.4 刷新率：四个频率不能混为一个数字
 
@@ -194,7 +199,7 @@ SurfaceFlinger 的 `RefreshRateSelector` 再结合 Layer 需求、可选模式�
 
 Android 15 / API 35 增加 `View.setRequestedFrameRate()`，普通 View 层级可以提供帧率类别或数值提示。官方 ARR 文档把 Android 15 作为平台引入点，但设备支持还依赖显示硬件、Composer HAL（显示合成硬件抽象层）接口和 OEM 配置。应用侧文档将 Android 15 QPR1（季度平台更新 1）及后续版本列为相关支持范围。
 
-Android 16 / API 36 增加 `Display.hasArrSupport()`。在 Android 17 / API 37 上，应用仍应先检查设备能力，再讨论 ARR 行为。系统版本达到 Android 17 也不能推出设备一定支持 ARR。
+Android 16 / API 36 增加 `Display.hasArrSupport()`。在 Android 17 / API 37 上，应用仍应先检查设备能力再讨论 ARR 行为：系统版本达到 Android 17 也不能推出设备一定支持 ARR。
 
 ### 常见场景的策略
 
@@ -206,7 +211,7 @@ Android 16 / API 36 增加 `Display.hasArrSupport()`。在 Android 17 / API 37 �
 | 长视频 | 用 Surface API 报告源内容帧率 | 24/30/60 fps 的倍频、切换黑屏或卡顿 |
 | 游戏 | 结合帧率、热预算和用户画质选择 | sustained fps（可持续帧率）、GPU、温度、功率 |
 
-省电模式常会收窄允许的刷新率范围，但“固定限制到 60 Hz”不应写成所有 Android 设备的平台保证。限制值与行为可受平台版本、OEM 策略和设备配置影响。
+省电模式常会收窄允许的刷新率范围，但“固定限制到 60 Hz”不应写成所有 Android 设备的平台保证；限制值与行为还可能受平台版本、OEM 策略和设备配置影响。
 
 ## 11.5.6 深色模式：屏幕技术与内容共同决定收益
 
@@ -220,7 +225,7 @@ Android 官方文档把暗色主题的收益放在屏幕技术条件下描述，
 | WhatsApp | -3.8% | 文本页面占比与配色会影响结果 |
 | 全部场景汇总 | -1.4% | 不能推广为 AMOLED 的固定收益 |
 
-收益偏小不表示深色主题没有价值。该实验的内容、亮度和时长限制了结果。
+收益偏小来自该实验的内容、亮度和时长限制，并不表示深色主题没有价值。
 
 对 OLED / AMOLED，大面积低亮度像素通常有利；图片、视频、地图与相机预览中的媒体像素，不会因应用的背景、导航栏等界面元素变暗而同步变化。对 LCD，背光仍持续工作，页面配色通常难以形成同等级别的面板收益。
 
@@ -308,7 +313,11 @@ adb bugreport display-power.zip
 
 `dumpsys display` 与 SurfaceFlinger 输出适合确认配置和当时状态，不能替代连续时间线。BatteryStats 用于系统归因，bugreport 保存诊断上下文；命令输出中的应用、账号、设备标识和网络信息应在分享前脱敏。
 
-连续分析时，可在 Perfetto 中同时观察 FrameTimeline（帧时间线）、VSync、调度、CPU frequency/idle（频率/空闲状态）、thermal 与设备开放的 power rail。Battery Historian 适合查看较长时间线上的屏幕亮度、信号和 UID 活动。Android Studio Power Profiler（功耗分析器）或 Macrobenchmark `PowerMetric`（功耗指标）的可用数据取决于设备能力，仍需写明设备与指标来源。
+连续分析时，几类工具的分工不同：
+
+- Perfetto：同时观察 FrameTimeline（帧时间线）、VSync、调度、CPU frequency/idle（频率/空闲状态）、thermal 与设备开放的 power rail；
+- Battery Historian：查看较长时间线上的屏幕亮度、信号和 UID 活动；
+- Android Studio Power Profiler（功耗分析器）或 Macrobenchmark `PowerMetric`（功耗指标）：可用数据取决于设备能力，仍需写明设备与指标来源。
 
 ### 重复、统计与失败样本
 
@@ -326,7 +335,7 @@ adb bugreport display-power.zip
 | Android 16 / API 36 | `Display.hasArrSupport()` 提供能力检查 | 系统版本与设备能力分开判断 |
 | Android 17 / API 37 | 源码锚点；显示策略继续汇集用户、应用、亮度、热与省电投票 | 以设备生效状态验证请求结果 |
 
-版本表描述平台能力演进，不表示每台升级到对应版本的设备都开放相同显示模式。刷新率列表、ARR、HBM、power rail 和 consumed-energy 数据均可能存在设备差异。
+版本表描述平台能力演进，不表示每台升级到对应版本的设备都开放相同显示模式；刷新率列表、ARR、HBM、power rail 和 consumed-energy 数据的可用范围仍要按具体设备确认。
 
 ## 11.5.11 产品策略：提示必须带条件
 
@@ -340,7 +349,7 @@ adb bugreport display-power.zip
 
 ### 深色模式
 
-可说明部分 OLED 设备、深色页面和合适亮度下存在省电机会。不要把它写成所有设备通用的续航功能。媒体内容占主导的页面尤其要谨慎。
+可说明部分 OLED 设备、深色页面和合适亮度下存在省电机会；媒体内容占主导的页面尤其要谨慎，不要把它写成所有设备通用的续航功能。
 
 ### 分辨率与网络
 
