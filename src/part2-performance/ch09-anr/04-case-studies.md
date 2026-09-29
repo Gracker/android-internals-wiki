@@ -54,7 +54,7 @@ last_idle_audit_run_id: 20260830-183540-idle-audit-a030a427
 
 # ANR 诊断案例集
 
-相关基础定义见 §9.1 ANR 机制、类型与触发条件、§9.2 ANR 与 Kernel Trace 联合诊断，以及 §9.3 特殊与跨边界 ANR。
+相关基础定义见 §9.1（ANR 机制、类型与触发条件）、§9.2（ANR 与 Kernel Trace 联合诊断）和 §9.3（特殊与跨边界 ANR）。
 
 ## 先给证据分级
 
@@ -134,7 +134,9 @@ full avg10=38.46 avg60=20.76 avg300=7.13
 CPU usage TOTAL: 99% 14% user + 36% kernel + 43% iowait
 ```
 
-`kswapd0`（内核后台内存回收线程）活跃、major fault（需要从存储载入页面的缺页）、memory PSI、I/O PSI 和 `43% iowait` 同时出现，足以确认设备正处于严重的内存与存储压力中。`iowait` 表示 CPU 空闲期间存在尚未完成的 I/O，不能直接当作某个进程的 I/O 耗时。load 还会计入不可中断睡眠任务，因此不能只用“load 除以 CPU 核数”判断 CPU 是否饱和。
+`kswapd0`（内核后台内存回收线程）活跃、major fault（需要从存储载入页面的缺页）、memory PSI、I/O PSI 和 `43% iowait` 同时出现，足以确认设备正承受严重的内存与存储压力。
+
+`iowait` 表示 CPU 空闲期间存在尚未完成的 I/O，不能直接当作某个进程的 I/O 耗时。load 还会计入不可中断睡眠任务，因此不能只用“load 除以 CPU 核数”判断 CPU 是否饱和。
 
 ### 根因结论
 
@@ -149,7 +151,9 @@ CPU usage TOTAL: 99% 14% user + 36% kernel + 43% iowait
 
 ### 修复方向
 
-系统团队应先定位压力来源：匿名页（没有文件作为后备存储的内存页）增长、文件页反复回收和载入、频繁 major fault、写回拥塞、低速存储或某个进程的突发 I/O。应用团队应移除主线程上的文件访问、大对象分配和高频数据库写入，并在压测中复现相近的 PSI 区间。调整 I/O 优先级或 WAL checkpoint（检查点回写）参数，必须以设备、数据库页大小和写入模型的测量结果为依据；本案例不支持给出固定阈值。
+系统团队应先定位压力来源：匿名页（没有文件作为后备存储的内存页）增长、文件页反复回收和载入、频繁 major fault、写回拥塞，以及低速存储或某个进程的突发 I/O。
+
+应用团队应移除主线程上的文件访问、大对象分配和高频数据库写入，并在压测中复现相近的 PSI 区间。调整 I/O 优先级或 WAL checkpoint（检查点回写）参数，必须以设备、数据库页大小和写入模型的测量结果为依据；本案例不支持给出固定阈值。
 
 这个案例留下一个实用提醒：`nativePollOnce` 只是单个采样点的 Java 入口。结合 native 栈、调度历史和系统压力，才能判断采样时主线程正在空闲、退出回调，还是等待资源。
 
@@ -166,7 +170,7 @@ Launcher 在 Android 14 设备上收到下面的 Input ANR：
  Waited 5001ms for MotionEvent)]
 ```
 
-`Gesture Monitor` 是手势监听连接名称的一部分，括号内的完整字符串来自 InputChannel（输入通道）名称。这个样本运行在 Android 14；AOSP Android 14 的 `InputChannel::openInputChannelPair()` 会把 `(server)` 和 `(client)` 附加到两端名称。Android 17 的同名函数保留调用者传入的 name，不自动追加这两个后缀。无论后缀来自平台还是厂商分支，它只区分通道端点，不能证明事件消费者运行在 `system_server`，也不能单独锁定责任进程。
+`Gesture Monitor` 是手势监听连接名称的一部分，括号内的完整字符串来自 InputChannel（输入通道）名称。这个样本运行在 Android 14；AOSP Android 14 的 `InputChannel::openInputChannelPair()` 会把 `(server)` 和 `(client)` 附加到两端名称。Android 17 的同名函数保留调用者传入的名称，不自动追加这两个后缀。无论后缀来自平台还是厂商分支，它只区分通道端点，不能证明事件消费者运行在 `system_server`，也不能单独锁定责任进程。
 
 ### 对齐时间再解释日志
 
@@ -205,7 +209,7 @@ ANR 报告覆盖 `15:01:27.683` 至 `15:01:37.233` 的 CPU 窗口，`system_serv
 
 修复对象取决于补充证据。若连接消费者线程被长任务占用，应把任务移出该线程或缩短临界区；若输入 monitor（输入事件观察者）已经失去有效消费者，应修复注册和销毁时序；若 `system_server` 因调度或 I/O 延迟无法及时运行，则继续定位压力源。当前材料不足以要求修改 `Notifier`。
 
-这个案例的价值在于展示一次应当撤回的归因：日志内容很可疑，时间却对不上。ANR 分析里，时钟和对象身份优先于关键词相似度。
+这个案例展示了一次应当撤回的归因：日志内容很可疑，时间却对不上。ANR 分析里，时钟和对象身份优先于关键词相似度。
 
 ## 案例 3：SharedPreferences 写入在组件收尾阶段阻塞主线程
 
@@ -233,6 +237,8 @@ ANR 报告覆盖 `15:01:27.683` 至 `15:01:37.233` 的 CPU 窗口，`system_serv
 | manifest Receiver 的 `PendingResult.finish()` | 仍有待处理任务时，把 `sendFinished()` 作为 finisher（收尾任务）排到 `QueuedWork` 后面 |
 
 `SharedPreferencesImpl.apply()` 会先更新内存，再创建写盘任务和 finisher。Android 17 的 `QueuedWork.waitToFinish()` 会在当前调用线程执行尚未处理的 work（任务），随后等待并运行所有 finisher。于是，原本排给单线程 executor（执行器）的写入，可能在组件收尾点变成主线程上的同步操作。
+
+### 两种等待要分开归因
 
 诊断时还要区分两个栈：
 
@@ -337,7 +343,7 @@ Cached Apps Freezer 是 Android 冻结缓存进程、减少其资源消耗的机
   [0,2758,com.android.launcher,... Application does not have a focused window]
 ```
 
-系统在 `12:15:25` 创建 Dialer 进程并让焦点离开 Launcher。约 10 秒后，Dialer 因 process start timeout 被杀；又过了 14 秒，Launcher 所在显示区域仍没有恢复出可接收输入的焦点窗口。
+系统在 `12:15:25` 创建 Dialer 进程并让焦点离开 Launcher。约 10 秒后，Dialer 因 process start timeout 被杀；又过了 14 秒，Launcher 所在的显示区域仍没有可接收输入的焦点窗口。
 
 ### Android 17 源码怎样定义 start timeout
 
@@ -349,7 +355,14 @@ Cached Apps Freezer 是 Android 冻结缓存进程、减少其资源消耗的机
 
 **结论强度：强推断。** Dialer 未完成 attach 与焦点窗口长期缺失处在同一条启动链上，焦点回退未完成是 Launcher 后续 Input ANR 的直接前置条件。Dialer 为何没有 attach 仍未查明，焦点为何在进程被杀后没有恢复也缺少 WindowManager 转场记录。
 
-Dialer attach 失败时，应检查 zygote fork（由 Zygote 创建应用进程）的返回结果、进程是否进入 `D` 状态、调度延迟、native runtime 启动、seccomp/SELinux 安全策略拒绝、崩溃信号和 Binder attach 事务。此时进程尚未进入应用 Java 初始化，因此优化 `Application.onCreate()` 不是这条证据链的起点。
+Dialer attach 失败时，应检查 attach 之前的这些环节：
+
+- zygote fork（由 Zygote 创建应用进程）的返回结果；
+- 进程是否进入 `D` 状态，以及调度延迟；
+- native runtime 启动、seccomp/SELinux 安全策略拒绝和崩溃信号；
+- Binder attach 事务。
+
+此时进程尚未进入应用 Java 初始化，因此优化 `Application.onCreate()` 不是这条证据链的起点。
 
 ### 修复方案
 
@@ -461,7 +474,9 @@ public Cursor query(String table, String selection) {
 
 即便还有空闲 Binder 线程，这个锁等待循环也不会自行解除。另一种形态是所有处理线程都被嵌套事务或外部等待占用，新回调无法获得执行线程。
 
-Android 17 的 `ProcessState.cpp` 定义 `DEFAULT_MAX_BINDER_THREADS = 15`，并把它作为 Binder driver（内核驱动）可以请求的默认最大线程数。调用线程主动加入线程池、已经启动的线程和 Binder 实现细节，都会影响进程中观察到的线程总数。`15` 不是固定池大小，“再留一个线程”也无法证明系统不会死锁。诊断时应画出事务方向、同步或异步属性、线程状态、锁持有关系，以及 executor（执行器）或线程池的容量。
+Android 17 的 `ProcessState.cpp` 定义 `DEFAULT_MAX_BINDER_THREADS = 15`，并把它作为 Binder driver（内核驱动）可以请求的默认最大线程数。线程是否主动加入线程池、已经启动的线程数量，以及 Binder 实现细节，都会影响进程中观察到的线程总数。
+
+`15` 不是固定池大小，“再留一个线程”也无法证明系统不会死锁。诊断时应画出事务方向、同步或异步属性、线程状态、锁持有关系，以及 executor（执行器）或线程池的容量。
 
 ## 案例 7：InputTransport finished signal 的历史平台缺陷
 
@@ -542,7 +557,7 @@ anr?.traceInputStream?.use { stream ->
 
 ### 主线程历史
 
-ANR 瞬时 trace 采到的状态可能是 `nativePollOnce`、锁等待，也可能是耗时工作已经返回之后的状态。应用可以用公开的 `Looper.setMessageLogging(Printer)` 记录主线程消息的开始和结束，但它会在消息分发的热路径上增加开销，输出也不保证包含同步屏障（用于暂时阻止同步消息执行的队列标记）、native 回调和每个耗时来源。`Looper.Observer` 属于隐藏接口，不应绕过 Hidden API 限制后部署到普通应用。
+ANR 瞬时 trace 采到的状态可能是 `nativePollOnce`、锁等待，也可能是耗时工作已经返回之后的状态。应用可以用公开的 `Looper.setMessageLogging(Printer)` 记录主线程消息的开始和结束。这个接口要在消息分发的热路径上执行，会带来额外开销；输出也不保证包含同步屏障（用于暂时阻止同步消息执行的队列标记）、native 回调和每个耗时来源。`Looper.Observer` 属于隐藏接口，不应绕过 Hidden API 限制后部署到普通应用。
 
 历史窗口应按内存预算和目标 ANR 类型配置，并用覆盖最旧记录的环形缓冲区保存。固定“过去 10 秒”只是一种工程选择；Input、前台 Service、后台 Service 和广播的超时预算不同。采样数据至少要包含消息目标、开始/结束时间、线程 CPU 时间、wall time（实际经过时间）、队列延迟和采集版本。
 
@@ -557,7 +572,7 @@ ANR 瞬时 trace 采到的状态可能是 `nativePollOnce`、锁等待，也可�
 - CPU/PSI 压力桶（按压力数值划分的区间）、采样相对 ANR 的时间偏移；
 - focused-window、process-start、freeze 等特征。
 
-聚合结果应保留若干原始样本供人工复核。这里的“簇”指被归入同一组的相似 ANR；某个簇的数量很大，并不代表每个样本都共享同一根因。证据完整度应作为簇内字段参与排序。
+“簇”指被归入同一组的相似 ANR。聚合结果应保留若干原始样本供人工复核；某个簇的数量很大，并不代表每个样本都共享同一根因。证据完整度应作为簇内字段参与排序。
 
 ## 检查清单
 
