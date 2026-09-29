@@ -57,9 +57,9 @@ sources:
 
 # netd 与 DnsResolver：DNS 解析性能和故障诊断
 
-多数新连接在建立前需要先查询 DNS，但一次 HTTP 请求未必会触发查询：连接池可以直接复用现有连接，HTTP/2 或 HTTP/3 也能在同一连接上承载多次请求。诊断时应先回答“本次请求是否查询 DNS、查询绑定哪条网络、后续连接实际使用了哪个结果”，再分析系统 resolver（解析器）或 HTTPDNS（通过 HTTP API 获取解析结果的应用侧方案）。
+建立一条新连接前通常要先解析域名，但一次 HTTP 请求不一定触发解析：连接池能复用现有连接，HTTP/2、HTTP/3 也能在同一连接上承载多次请求。诊断 DNS 问题时，先确认本次请求有没有触发解析、解析绑定在哪条网络、后续连接实际用了哪个结果，再区分系统 resolver（解析器）与 HTTPDNS（通过 HTTP API 获取解析结果的应用侧方案）。
 
-[12.1 Android 网络与 TLS 性能优化](01-android-network-tls-performance.md)介绍请求阶段、连接和传输协议，[1.22 Connectivity 服务、网络选择与回调](../../part1-fundamentals/ch01-architecture/22-connectivity-service.md)说明平台网络状态与系统如何选择默认网络。诊断系统 resolver 时，需要把这些应用侧事件与 Android 17 的系统调用路径对应起来。
+[12.1 Android 网络与 TLS 性能优化](01-android-network-tls-performance.md)介绍请求阶段、连接和传输协议，[1.22 Connectivity 服务、网络选择与回调](../../part1-fundamentals/ch01-architecture/22-connectivity-service.md)说明平台网络状态与系统如何选择默认网络。诊断时先要把这些应用侧事件与 Android 17 的系统调用路径对应起来，才能落到具体的系统证据上。
 
 ## 一、四层边界：调用方、框架、resolver、netd
 
@@ -70,7 +70,7 @@ Android 应用常用的解析入口包括：
 - OkHttp 默认的 `Dns.SYSTEM`，它在 Android 上委托 `InetAddress.getAllByName()`；
 - native（C/C++ 层）代码的 `android_getaddrinfofornetwork()` 等 NDK 网络 API。
 
-传入明确的 `Network` 时，查询应使用该网络的 resolver 配置。未指定网络的入口跟随系统为调用方选择的默认网络。Wi-Fi、蜂窝、VPN 并存时，这项区别会直接影响 DNS server（DNS 服务器）、路由和返回地址能否到达。
+传入明确的 `Network` 时，查询使用该网络的 resolver 配置；未指定网络的入口，跟随系统为调用方选择的默认网络。Wi-Fi、蜂窝、VPN 同时存在时，这个区别决定了用哪套 DNS server（DNS 服务器）、走哪条路由，以及返回的地址能不能到达。
 
 | 层级 | 典型组件 | 主要职责 | 应用侧证据 |
 |---|---|---|---|
@@ -79,11 +79,11 @@ Android 应用常用的解析入口包括：
 | DNS Resolver 模块 | `com.android.resolv`、`IDnsResolver` | 按 `netId`（系统分配的网络标识）保存配置与缓存，执行 DNS 查询和 Private DNS | `dumpsys dnsresolver` |
 | native 网络管理 | `netd`（Android 原生网络管理服务） | 创建网络、路由、接口、权限、转发规则 | `dumpsys connectivity`、平台日志 |
 
-“netd 负责 Android DNS”是一种过度简化。Android 17 的 resolver 源码位于 `packages/modules/DnsResolver`，native `netd` 位于 `system/netd`。两者是不同服务，`ConnectivityService` 会在同一个网络生命周期中分别调用它们。
+“netd 负责 Android DNS”这个说法把两个服务混成了一个。Android 17 的 resolver 源码在 `packages/modules/DnsResolver`，native `netd` 在 `system/netd`；`ConnectivityService` 会在同一个网络生命周期里分别调用它们。
 
 ## 二、版本迁移：从 netd 内部代码到独立主线模块
 
-这段历史有助于阅读旧资料，但排查 Android 17 时应使用当前目录和服务边界。
+这段历史解释了旧资料里的路径从哪来；排查 Android 17 时，以当前目录和服务边界为准。
 
 | 版本 | 变化 | 阅读旧资料时的判断 |
 |---|---|---|
@@ -92,30 +92,31 @@ Android 应用常用的解析入口包括：
 | Android 10 | resolver 迁入 `system/netd/resolv`，以 `com.android.resolv` APEX（可独立更新的系统模块包）交付 | 这是模块化初期的源码位置 |
 | Android 17 | 当前实现位于 `packages/modules/DnsResolver`；接口仍以 `IDnsResolver` 与本地代理入口服务系统调用方 | 源码锚点使用 `android-17.0.0_r1` |
 
-官方模块文档说明，Android 10 的 DNS Resolver 模块直接服务 `/dev/socket/dnsproxyd`，resolver 配置的 Binder（Android 进程间通信机制）入口也从 netd 移入该模块。resolver 会与 netd 的库动态链接，但配置接口由 resolver 模块自身提供，不经 netd 服务转发。模块化还允许通过 Mainline（Google Play 系统更新机制）更新解析器，无需等待完整系统 OTA 升级。
+官方模块文档说明，Android 10 的 DNS Resolver 模块直接服务 `/dev/socket/dnsproxyd`，resolver 配置的 Binder（Android 进程间通信机制）入口也从 netd 移入该模块。
 
-模块独立不代表应用获得了全局 DNS 控制权。普通应用不能清空所有网络的 resolver 缓存，不能修改别的网络的 DNS server，也不能操纵 Private DNS 校验状态。这些能力受系统权限和服务边界保护。
+resolver 会与 netd 的库动态链接，但配置接口由 resolver 模块自己提供，不经 netd 服务转发。模块化还允许通过 Mainline（Google Play 系统更新机制）更新解析器，无需等待完整系统 OTA 升级。
+
+模块独立也不意味着应用拿到了全局 DNS 控制权。清空所有网络的 resolver 缓存、修改别的网络的 DNS server、操纵 Private DNS 校验状态，这些能力都受系统权限和服务边界保护，普通应用用不了。
 
 ## 三、Android 17 的 `DnsResolver` API
 
 ### 3.1 Looper、Executor 与取消信号分别控制什么
 
-API 29 的 `DnsResolver.getInstance()` 在 API 37 被标记为废弃。Android 17 新增 `DnsResolver(Context, Looper)`：传入的 `Looper`（Android 消息循环）用来监视 resolver 文件描述符的可读事件，查询方法中的 `Executor`（任务执行器）决定结果回调在哪个执行环境运行。这两个线程参数不能互相替代。
+Android 17 新增 `DnsResolver(Context, Looper)`；API 29 的 `DnsResolver.getInstance()` 在 API 37 被标记为废弃。新构造方法的两个参数分工不同：`Looper`（Android 消息循环）用来监视 resolver 文件描述符的可读事件，查询方法中的 `Executor`（任务执行器）决定结果回调在哪个执行环境运行。前者负责等待，后者负责回调，不能互相替代。
 
-迁移到新构造方法后，可在应用的相应生命周期内复用一个 resolver 实例，避免为每次查询都创建线程和 Looper。查询还应绑定 `CancellationSignal`（可从调用方取消异步操作的信号）；页面退出、请求取消或网络会话失效后，继续等待旧查询只会增加无效工作。使用新构造方法时要检查 API 级别或扩展版本，低版本仍走兼容分支。
+查询应绑定 `CancellationSignal`（可从调用方取消异步操作的信号）。页面退出、请求取消或网络会话失效后，继续等待旧查询只会增加无效工作。
+
+迁移到新构造方法后，可在应用的相应生命周期内复用一个 resolver 实例，避免为每次查询都创建线程和 Looper；同时要检查 API 级别或扩展版本，低版本仍走兼容分支。
 
 ### 3.2 `query()`、`rawQuery()` 与错误信息
 
-普通地址查询可使用 `query()`。Framework 会依据目标网络支持的地址族发起 A、AAAA 查询，分别获取 IPv4、IPv6 地址，整理后返回 `InetAddress` 列表。`rawQuery()` 面向需要指定记录类型或解析原始 DNS 报文的调用方。
+普通地址查询用 `query()`：Framework 依据目标网络支持的地址族发起 A、AAAA 查询，分别获取 IPv4、IPv6 地址，整理后返回 `InetAddress` 列表。`rawQuery()` 面向需要指定记录类型或解析原始 DNS 报文的调用方。
 
-两类 API 暴露的信息也不同：
+两类 API 暴露的信息也不同：`DnsResolver.Callback` 能区分成功结果与 `DnsException`，raw query 回调还能提供 DNS rcode 和原始 answer（应答报文）。
 
-- `DnsResolver.Callback` 能区分成功结果与 `DnsException`；
-- raw query 回调还能提供 DNS rcode 和原始 answer（应答报文）；
-- `InetAddress` 与 OkHttp 的常规路径经常把多种解析失败折叠为 `UnknownHostException`，不能从这一个异常反推出 NXDOMAIN（域名不存在）、SERVFAIL（服务器处理失败）、超时或本地策略拒绝；
-- `FLAG_NO_CACHE_LOOKUP`、`FLAG_NO_CACHE_STORE` 和 `FLAG_NO_RETRY` 是诊断或特定协议策略，不适合为了“更实时”而长期全量开启。
+常规路径会把失败信息折叠。`InetAddress` 与 OkHttp 经常把多种解析失败统一成 `UnknownHostException`，从这个异常反推不出 NXDOMAIN（域名不存在）、SERVFAIL（服务器处理失败）、超时还是本地策略拒绝。
 
-缓存旁路会增加延迟、流量与 resolver 压力。若要对比缓存与上游行为，应控制样本量，并把实验请求与用户请求分开标记。
+`FLAG_NO_CACHE_LOOKUP`、`FLAG_NO_CACHE_STORE` 和 `FLAG_NO_RETRY` 属于诊断或特定协议策略，不适合为了“更实时”而长期全量开启。缓存旁路会增加延迟、流量与 resolver 压力；若要对比缓存与上游行为，应控制样本量，并把实验请求与用户请求分开标记。
 
 ### 3.3 API 37 的 HTTPS 资源记录组合查询
 
@@ -161,18 +162,15 @@ sequenceDiagram
 
 在 `android-17.0.0_r1` 的 `ConnectivityService` 中，创建平台内部网络对象时先调用 `mNetd.networkCreate(config)`，再调用 `mDnsResolver.createNetworkCache(netId)`。销毁时分别调用 `networkDestroy(netId)` 与 `destroyNetworkCache(netId)`。
 
-按网络隔离缓存，可以避免 Wi-Fi 与蜂窝共用彼此不兼容的解析状态。应用自定义缓存也应遵循这个边界：只以 hostname（主机名）作为 cache key（缓存键），会让旧网络得到的地址在新网络上继续使用，VPN 分流与企业域名尤其容易受影响。
+resolver 按网络隔离缓存，是为了避免 Wi-Fi 与蜂窝共用彼此不兼容的解析状态。应用自定义缓存也要守这条边界。只以 hostname（主机名）作为 cache key（缓存键）时，旧网络拿到的地址会继续用在新网络上，VPN 分流和企业域名最容易踩到。
 
 ### 4.2 DNS server 与 Private DNS 配置
 
 `LinkProperties`（接口、路由、DNS 等链路属性）更新后，`ConnectivityService.updateDnses()` 把变化交给 `DnsManager.noteDnsServersForNetwork()`。`DnsManager` 生成用于跨进程传递配置的 `ResolverParamsParcel`，再经 `IDnsResolver.setResolverConfiguration()` 写入对应 `netId`。参数包括 DNS server、用于补全短主机名的搜索域、采样与超时配置、Private DNS 信息等。
 
-`DnsManager` 还会发送受权限保护的 `ACTION_CLEAR_DNS_CACHE`，让 Java 运行时的进程内 VM DNS 缓存丢弃旧结果。这里存在两个缓存层：
+`DnsManager` 还会发送受权限保护的 `ACTION_CLEAR_DNS_CACHE`，让 Java 运行时的进程内 VM DNS 缓存丢弃旧结果。这里的缓存分两层：resolver 模块按 `netId` 隔离的 native cache（原生解析缓存），以及 Java 运行时和网络库保存的进程内结果与已建立连接。
 
-- resolver 模块维护按 `netId` 隔离的 native cache（原生解析缓存）；
-- Java/运行时和网络库还可能保存进程内结果或复用已建立连接。
-
-系统清理 resolver 或 VM 缓存不会关闭 OkHttp 连接池中的 socket（网络套接字）。切网后出现“域名已经解析到新地址，但请求仍访问旧链路”，常由连接复用引起；此时应回看 connect 事件、目标地址和 socket 所绑定的网络。
+系统清理 resolver 或 VM 缓存不会关闭 OkHttp 连接池中的 socket（网络套接字）。切网后出现“域名已经解析到新地址，但请求仍访问旧链路”，多数是连接复用造成的，这时要回看 connect 事件、目标地址和 socket 绑定的网络。
 
 ### 4.3 服务接口与 Android 17 源码位置
 
@@ -189,7 +187,7 @@ Android 17 的关键锚点如下：
 | DoT/DoH 状态 | `packages/modules/DnsResolver/PrivateDnsConfiguration.cpp` |
 | native 网络管理 | `system/netd/server/NetdNativeService.cpp` |
 
-看到把 Android 10 的 `system/netd/resolv` 当作当前目录的资料时，应保留它的迁移史结论，再回到表中的 Android 17 文件核对实现。
+遇到把 Android 10 的 `system/netd/resolv` 当作当前目录的资料，保留它的迁移史结论，再回到上表的 Android 17 文件核对实现。
 
 ## 五、Private DNS、DoT、DoH 与 `.local`
 
@@ -197,13 +195,13 @@ Android 17 的关键锚点如下：
 
 Android 的公开 Private DNS 设置向用户展示 DoT 模式和 provider hostname（提供商主机名）。Android 17 的 resolver 内部同时存在 DoT 与 DNS-over-HTTPS（DoH，通过 HTTPS 发送 DNS 查询）的配置、验证和统计代码，DoH 实现还包括 `packages/modules/DnsResolver/rust/src/doh/`。内部采用哪种加密传输，受平台版本、provider 与实验配置影响。
 
-应用从 `InetAddress`、OkHttp `Dns` 或普通 `DnsResolver.query()` 回调中无法可靠判断这次查询经 DoT 还是 DoH。可观测的公开状态主要是 `LinkProperties` 中 Private DNS 是否生效、provider name 及已验证服务器。诊断报告应写“Private DNS 状态”，不要在没有平台证据时写死传输协议。
+应用从 `InetAddress`、OkHttp `Dns` 或普通 `DnsResolver.query()` 回调里都无法可靠判断这次查询走的是 DoT 还是 DoH。能观测到的公开状态主要是 `LinkProperties` 里 Private DNS 是否生效、provider name 和已验证服务器。诊断报告写“Private DNS 状态”就够了，没有平台证据时不要写死传输协议。
 
 Private DNS 保护系统 resolver 到上游 DNS provider 之间的 DNS 流量。它不替代 HTTPS，也不自动隐藏 TLS ClientHello 中的服务器名称；ECH 的适用条件见 12.1。
 
 ### 5.2 应用 DoH 是另一套解析策略
 
-应用自带 DoH 会自行选择服务端、缓存、bootstrap（连接 DoH 服务所需的初始解析路径）与 fallback（失败后改走的备用路径），可能绕开系统 Private DNS、VPN DNS、企业 split DNS（按域名选择不同解析器的规则）和 Captive Portal（需登录或确认的门户网络）的预期路径。安全收益与兼容成本要一起评估：
+应用自带 DoH 后，服务端、缓存、bootstrap（连接 DoH 服务所需的初始解析路径）和 fallback（失败后改走的备用路径）都由应用自己选，可能绕开系统侧的几条既定路径：Private DNS、VPN DNS、企业 split DNS（按域名选择不同解析器的规则）和 Captive Portal（需登录或确认的门户网络）。安全收益与兼容成本要一起评估：
 
 - 公网固定域名可按业务策略使用应用 resolver；
 - 企业内网域名、VPN 域名和门户网络优先遵循系统策略；
@@ -241,7 +239,7 @@ targetSdk 37 的应用访问本地网络时，需要申请 `ACCESS_LOCAL_NETWORK
 - 默认网络变化到请求开始之间的时间；
 - 查询来源：系统、HTTPDNS、应用 DoH 或缓存。
 
-`netId` 由系统重复分配，同一个值可能先后属于不同网络，它也只是平台内部标识。线上长期聚合可使用进程内递增的网络会话号，或使用带定期更换盐值的标识，避免把原始 `netId` 当成稳定的设备属性。
+`netId` 由系统重复分配，同一个值可能先后属于不同网络，它只是平台内部标识，不能当成稳定的设备属性。线上长期聚合可以用进程内递增的网络会话号，或使用带定期更换盐值的标识。
 
 ### 6.3 三组 shell 证据
 
@@ -276,7 +274,7 @@ Android 17 的 `NetworkDiagnostics` 会把探测 socket 绑定到指定 `Network
 
 ## 七、HTTPDNS 与 OkHttp 自定义 `Dns`
 
-系统 resolver 与 HTTPDNS 解决不同问题。系统路径继承 `Network`、VPN、Private DNS 与平台缓存策略；HTTPDNS 能提供业务域名调度和独立的上游服务。接入后，应用也要自行维护网络隔离、TTL（Time to Live，缓存有效期）、并发、bootstrap 和 fallback。
+系统 resolver 与 HTTPDNS 解决不同问题。系统路径继承 `Network`、VPN、Private DNS 与平台缓存策略；HTTPDNS 能提供业务域名调度和独立的上游服务。接入 HTTPDNS 之后，网络隔离、TTL（Time to Live，缓存有效期）、并发、bootstrap 和 fallback 都要应用自己维护。
 
 OkHttp 的 `Dns.lookup(hostname)` 是同步接口，并且可能被多个请求并发调用。可执行的实现边界包括：
 
@@ -297,7 +295,7 @@ OkHttp 的 `Dns.lookup(hostname)` 是同步接口，并且可能被多个请求�
 
 ### 8.1 分位数应服务于 SLO
 
-中位数、p90、p95 或 p99 表示不同百分位的延迟，例如 p90 表示 90% 的样本延迟不超过该值。应按业务请求量和 SLO（Service Level Objective，服务等级目标）选择分位数；低流量域名的 p99 波动很大，固定套用会制造噪声。聚合时至少要区分：
+中位数、p90、p95 和 p99 描述的是不同百分位的延迟，p90 表示 90% 的样本延迟不超过该值。分位数按业务请求量和 SLO（Service Level Objective，服务等级目标）来选；低流量域名的 p99 波动很大，固定套用只会制造噪声。聚合时至少要区分：
 
 - 解析来源与缓存状态；
 - 网络传输类型、VPN 和 Private DNS 状态；
@@ -344,7 +342,7 @@ OkHttp 的 `Dns.lookup(hostname)` 是同步接口，并且可能被多个请求�
 
 ## 小结
 
-Android 17 的 DNS 诊断应围绕 `Network` 建立证据链：`ConnectivityService` 协调网络生命周期，netd 管理平台内部网络，DNS Resolver 主线模块维护每个 `netId` 的配置、缓存和 Private DNS，应用网络库决定查询时机、连接复用与自定义解析策略。
+Android 17 的 DNS 诊断以 `Network` 为主线串起证据链。`ConnectivityService` 协调网络生命周期，netd 管理平台内部网络，DNS Resolver 主线模块维护每个 `netId` 的配置、缓存和 Private DNS，应用网络库决定查询时机、连接复用与自定义解析策略。
 
 排查时先确认请求是否发生 DNS，再记录对应的网络会话和解析来源；随后使用客户端阶段事件、`dumpsys connectivity`、`dumpsys dnsresolver` 与脱敏 query log（查询日志）相互印证。HTTPDNS 或应用 DoH 能补充业务调度与安全策略，但接入时仍要设计 TTL、网络隔离、bootstrap、企业网络兼容和隐私保护。
 
