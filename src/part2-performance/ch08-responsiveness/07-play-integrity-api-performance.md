@@ -50,9 +50,9 @@ last_idle_audit_run_id: 20260825-223551-idle-audit-7fa603ef
 
 Play Integrity API 向业务服务端提供应用完整性、Play 账号授权、设备环境和可选风险信号。它适合保护登录、支付提交、兑换、排行榜上报等需要服务端处理的动作。API 返回的是一组 verdict（风险判定字段），并不直接替业务做“允许或拒绝”的决定；服务端仍要结合账号、交易和行为信息制定处置规则。
 
-这套校验也会增加交互等待：客户端先向 Google Play 申请加密 token（完整性令牌），业务服务端再把 token 交给 Google 解密和验证。优化时应把可以提前完成的 provider 准备移出用户交互路径，并分别记录其余阶段。若只记录一个“Play Integrity 总耗时”，慢请求发生时就无法判断问题在客户端、接入网络、Google 解密接口还是业务服务端。
+这套校验也会增加交互等待：客户端先向 Google Play 申请加密 token（完整性令牌），业务服务端再把 token 交给 Google 解密和验证。其中 Standard 请求的 token provider 可以在受保护动作发生前先准备好，这段准备能移出交互路径；其余阶段只能各自记录耗时。若只记录一个“Play Integrity 总耗时”，慢请求发生时就无法判断问题在客户端、接入网络、Google 解密接口还是业务服务端。
 
-本文覆盖到 Android 17 / API 37 / `android-17.0.0_r1`。Play Integrity 的判定实现在闭源 Google Play 组件和 Google 服务端中，AOSP 不包含 verdict 生成源码；文末列出的 AOSP 与 kernel 锚点只用于解释 IPC、调度和网络承载边界，不能证明闭源组件的内部步骤。
+本文覆盖到 Android 17 / API 37 / `android-17.0.0_r1`。Play Integrity 的判定实现在闭源 Google Play 组件和 Google 服务端中，AOSP 不包含 verdict 生成源码；后文列出的 AOSP 与 kernel 锚点只用于解释 IPC、调度和网络承载边界，不能证明闭源组件的内部步骤。
 
 ## 1. 先把接口定位说清
 
@@ -61,13 +61,15 @@ SafetyNet Attestation API 已弃用，官方替代接口是 Play Integrity API�
 Play Integrity 与 Key Attestation（密钥证明）解决的问题也不同：
 
 - Play Integrity 返回 Google Play 对应用版本、Play 授权状态、设备环境和可选风险项的判定。
-- Key Attestation 证明某把密钥及其生成环境的属性，常用于设备绑定密钥、签名或密钥交换。
-- Key Attestation 不会给出 `PLAY_RECOGNIZED`、`LICENSED` 等 Play 分发信号，也不能当作“没有 Play Store 时的等价 Play Integrity 接口”。
-- 是否同时使用两类信号取决于威胁模型，也就是业务需要防范哪些攻击。组合使用会增加客户端集成与服务端校验成本，并非所有支付或反作弊场景都必须如此。
+- Key Attestation 证明某把密钥及其生成环境的属性，常用于设备绑定密钥、签名或密钥交换；它不会给出 `PLAY_RECOGNIZED`、`LICENSED` 等 Play 分发信号，也不能当作“没有 Play Store 时的等价 Play Integrity 接口”。
+
+是否同时使用两类信号取决于威胁模型，也就是业务需要防范哪些攻击。组合使用会增加客户端集成与服务端校验成本，并非所有支付或反作弊场景都必须如此。
 
 ### 1.1 服务端会看到哪些主要判定
 
-应用授权字段 `appLicensingVerdict` 有三个值。这里的“授权”指当前 Play 账号是否拥有这款应用，并不等同于业务账号登录状态：
+服务端至少要分清两个独立字段：应用授权 `appLicensingVerdict` 与应用完整性 `appRecognitionVerdict`。两者独立取值，同一个请求可能在其中一个字段得到明确结果，另一个字段仍为 `UNEVALUATED`（未评估）。
+
+先看 `appLicensingVerdict`，它有下面三个值。这里的“授权”指当前 Play 账号是否拥有这款应用，并不等同于业务账号登录状态：
 
 | 值 | 官方语义 | 业务解读边界 |
 |---|---|---|
@@ -75,7 +77,7 @@ Play Integrity 与 Key Attestation（密钥证明）解决的问题也不同：
 | `UNLICENSED` | 当前账号没有该应用授权，例如侧载或从其他商店取得应用 | 可引导用户通过官方修复对话框获取 Play 版本 |
 | `UNEVALUATED` | 前置条件缺失，授权状态未被评估 | 不能当成 `UNLICENSED`，应保留“未知”语义 |
 
-应用完整性字段 `appRecognitionVerdict` 也要独立判断：
+再看 `appRecognitionVerdict`：
 
 | 值 | 官方语义 |
 |---|---|
@@ -83,7 +85,7 @@ Play Integrity 与 Key Attestation（密钥证明）解决的问题也不同：
 | `UNRECOGNIZED_VERSION` | 证书或包名与 Google Play 记录不匹配 |
 | `UNEVALUATED` | 应用完整性没有得到评估 |
 
-`PLAY_RETAIL` 不是 `appLicensingVerdict` 的有效值。应用识别与 Play 账号授权是两个独立字段；同一个请求可能在其中一个字段得到明确结果，另一个字段仍为 `UNEVALUATED`（未评估）。
+`PLAY_RETAIL` 不是 `appLicensingVerdict` 的有效值。
 
 ### 1.2 设备标签不能简化成“root / 未 root”
 
@@ -95,13 +97,13 @@ Play Integrity 与 Key Attestation（密钥证明）解决的问题也不同：
 | `MEETS_DEVICE_INTEGRITY` | 运行于真实、通过认证的 Android 设备；Android 13 及以上还要求硬件支持的证据表明 bootloader 已锁定，并加载认证厂商镜像 |
 | `MEETS_STRONG_INTEGRITY` | Android 13 及以上要求满足 `MEETS_DEVICE_INTEGRITY`，且 Android OS、vendor 等设备分区的安全更新都在最近一年内 |
 
-Android 12 及以下的 `MEETS_STRONG_INTEGRITY` 不要求近期安全更新，只要求硬件支持的启动完整性证据。若策略覆盖旧系统，应同时读取可选的 `deviceAttributes.sdkVersion`，按 Android 版本解释同名标签，避免误用 Android 13 及以上的更新要求。
+Android 12 及以下的 `MEETS_STRONG_INTEGRITY` 不要求近期安全更新，只要求硬件支持的启动完整性证据。若策略覆盖旧系统，应同时读取可选的 `deviceAttributes.sdkVersion`，按 Android 版本解释 `MEETS_STRONG_INTEGRITY` 的含义，避免把 Android 13 及以上的更新要求套到旧系统上。
 
 标签数组为空也不能精确诊断为“设备已 root”。API hooking（运行时拦截或替换 API）、系统受损、未通过检查的模拟环境或技术故障，都可能导致没有设备标签。面向用户时应提供修复路径或较宽泛的环境提示，不能把内部风险信号表述成已经确认的入侵结论。
 
 ## 2. Standard 与 Classic 是两套调用方式
 
-当前官方文档建议大多数应用使用 Standard 请求。Standard 先准备可复用的 token provider，再为每个业务动作申请新 token；Classic 不做预先准备，每次重新计算判定，因此成本更高，适合少量、高价值且强调本次计算新鲜度的动作。
+当前官方文档建议大多数应用使用 Standard 请求：它先准备一个可复用的 token provider，再为每个业务动作申请新 token。Classic 不做预先准备，每次请求都重新计算判定，成本因此更高，适合少量、高价值、且强调本次计算新鲜度的动作。
 
 | 维度 | Standard API | Classic API |
 |---|---|---|
@@ -114,7 +116,7 @@ Android 12 及以下的 `MEETS_STRONG_INTEGRITY` 不要求近期安全更新，�
 | 适用请求 | 可按需保护频繁的服务端动作 | 偶发的高价值或高敏感动作 |
 | verdict 计算 | Google Play 在设备上缓存部分证明材料并加以保护 | 每次重新计算；应用不应缓存结果 |
 
-表中的时间只是官方给出的量级，不能当作业务 SLA（服务等级目标）。设备负载、Play 组件版本、网络、Google 服务状态和业务服务部署位置都会影响尾延迟。固定写成“Standard 50–150 ms”或“Classic 慢 3–5 倍”，都缺少能够跨设备和地区成立的证据。
+表中的时间只是官方给出的量级，不能当作业务 SLA（服务等级目标）。设备负载、Play 组件版本、网络、Google 服务状态和业务服务部署位置都会影响尾延迟。固定写成“Standard 50–150 ms”或“Classic 慢 3–5 倍”，都没有跨设备、跨地区成立的证据。
 
 下面的时序图划分 Standard 请求中可以单独测量的阶段，并标出 provider 准备位于非交互路径：
 
@@ -144,7 +146,7 @@ sequenceDiagram
     end
 ```
 
-prepare 会访问服务端，通常需要数秒，多数请求在 10 秒内完成；官方建议为长尾预留更长的调用超时，例如 1 分钟。它适合在应用打开后异步启动，但“异步”只表示不必阻塞当前线程，不能因此让首页或登录按钮一直等待 prepare 完成。
+prepare 要访问服务端，通常需要数秒，多数请求在 10 秒内完成，因此适合在应用打开后异步启动。注意“异步”只表示不必阻塞当前线程，不能因此让首页或登录按钮一直等 prepare 完成才继续。
 
 ## 3. Standard API 的正确集成
 
@@ -155,7 +157,7 @@ Standard 请求分成两个动作，二者的生命周期不同：
 1. 用 Cloud project number（Google Cloud 项目编号）调用 `prepareIntegrityToken()`，得到保存在进程内存中的 `StandardIntegrityTokenProvider`。
 2. 用户执行受保护动作时，计算该动作的 `requestHash`，再通过 provider 为这次动作申请一个新 token。
 
-下面的 Kotlin 片段用来展示两阶段 API 的类型边界：`prepare()` 更新 provider，`requestToken()` 只从已经准备好的 provider 申请 token。生产代码还要在应用数据层补充错误处理、并发保护和生命周期管理。
+下面这段 Kotlin 代码展示两阶段 API 的类型边界：`prepare()` 更新 provider，`requestToken()` 只从已经准备好的 provider 申请 token。生产代码还要在应用数据层补充错误处理、并发保护和生命周期管理。
 
 ```kotlin
 class IntegrityTokenSource(
@@ -211,9 +213,9 @@ class IntegrityTokenSource(
 1. 定义稳定的请求规范化格式，使相同业务数据总能产生相同字节序列；明确字段顺序、空值、字符编码、金额单位和版本号。
 2. 纳入所有会改变安全决定的字段，例如账号 ID、服务端下发的 action ID、订单 ID、金额、币种和动作类型。
 3. 对规范化后的字节计算 SHA-256，再用约定的编码生成 `requestHash`。
-4. 业务服务端按相同规则重新计算摘要，并与解密 payload 中的 `requestDetails.requestHash` 做常量时间比较；这种比较方式避免根据第一个不同字节的位置提前返回，减少时序侧信道。
+4. 业务服务端按相同规则重新计算摘要，并与解密 payload 中的 `requestDetails.requestHash` 比较。比较要用常量时间实现，避免根据第一个不同字节的位置提前返回，减少时序侧信道。
 
-下面的示例只演示怎样先得到无歧义的固定格式，再计算哈希。字符串长度也写入输入，可以区分字段边界，避免简单拼接造成不同字段组合产生相同文本。
+下面的示例只演示如何先得到无歧义的固定格式，再计算哈希：字符串长度也写入输入，用来区分字段边界，避免简单拼接让不同字段组合产生相同文本。
 
 ```kotlin
 fun integrityRequestHash(
@@ -242,13 +244,13 @@ fun integrityRequestHash(
 
 ### 3.3 服务端校验顺序
 
-客户端拿到的是加密 token，不能在客户端自行读取 verdict。常规做法是由业务服务端使用关联 Cloud project 的 service account（服务账号）访问以下端点：
+客户端拿到的是加密 token，不能自行读出 verdict。常规做法是让业务服务端用绑定了 Cloud project 的 service account（服务账号）访问以下端点：
 
 ```text
 POST https://playintegrity.googleapis.com/v1/{packageName}:decodeIntegrityToken
 ```
 
-这个端点返回已经由 Google 解密并验证的 payload。调用成功只完成了 token 层校验，业务服务端还要依次检查：
+这个端点返回已经由 Google 解密并验证的 payload。调用成功只完成了 token 这一层的校验，业务服务端还要依次检查：
 
 - `requestDetails.requestPackageName` 等于预期包名；
 - `requestHash` 或 Classic 的 `nonce` 与当前业务动作匹配；
@@ -263,7 +265,7 @@ Standard token 带有 Google Play 的自动重放缓解：同一个 token 被反
 
 ## 4. Classic 请求的使用边界
 
-Classic 使用 `IntegrityManagerFactory.create()`、`IntegrityTokenRequest` 和 `nonce`。nonce 是每次动作唯一、不可预测的值，用于将 token 与这次请求绑定并防止重放。Classic 没有 prepare 阶段，每次请求都会重新计算 verdict，官方建议只用于偶发的高价值动作。
+Classic 使用 `IntegrityManagerFactory.create()`、`IntegrityTokenRequest` 和 `nonce`。nonce 是每次动作唯一、不可预测的值，用来把 token 绑定到这次请求，并防止重放。Classic 没有 prepare 阶段，每次请求都会重新计算 verdict，官方建议只用于偶发的高价值动作。
 
 下面的代码展示 Classic API 的入口和返回类型，便于与 Standard 的 prepare + request 两阶段调用区分：
 
@@ -285,7 +287,7 @@ integrityManager.requestIntegrityToken(request)
     }
 ```
 
-对于通过 Google Play 分发的应用，若 Cloud project 已在 Play Console 关联，请求中通常无需再次设置 project number；只有官方列出的站外分发应用或 SDK 场景才按文档设置。这里的 `serverBoundNonce` 必须每次变化，不能使用硬编码常量。
+通过 Google Play 分发的应用，只要 Cloud project 已在 Play Console 关联，请求中通常无需再设置 project number。只有官方列出的站外分发应用或 SDK 场景才需要按文档设置。这里的 `serverBoundNonce` 必须每次变化，不能使用硬编码常量。
 
 Classic 的 nonce 既要防止业务字段被篡改，也要防止旧请求被重放：
 
@@ -336,7 +338,7 @@ Classic 的 nonce 既要防止业务字段被篡改，也要防止旧请求被�
 - 服务端访问 Google 时应复用 HTTP 客户端和连接，并设置连接池容量、超时及熔断监控；熔断是在依赖持续失败时暂时停止继续请求，防止故障扩散。不要为每次业务请求重新创建客户端。
 - 分开观察冷启动后第一次 prepare、provider 重建、普通 Standard 请求与 Classic 请求。
 
-用户通常会在支付页停留一段时间，因此可以进入页面后就 prepare provider；订单金额和 action ID 仍要等用户确认后再写入 `requestHash`。游戏可以在首个可交互界面出现后准备 provider，到匹配、兑换或成绩上报等受保护动作发生时再申请 token。
+具体时机随场景不同。用户通常会在支付页停留一段时间，可以进入页面后就 prepare provider，但订单金额和 action ID 要等用户确认后再写入 `requestHash`；游戏可以在首个可交互界面出现后准备 provider，到匹配、兑换或成绩上报等受保护动作发生时再申请 token。
 
 ## 6. 超时、重试与业务处置
 
@@ -348,7 +350,9 @@ Classic 的 nonce 既要防止业务字段被篡改，也要防止旧请求被�
 2. **未评估**：token 有效，但某个 verdict 字段为 `UNEVALUATED` 或标签缺失。
 3. **明确的风险结果**：例如 `UNRECOGNIZED_VERSION`、`UNLICENSED`，或业务要求的设备标签没有出现。
 
-网络错误不代表设备受损，`UNEVALUATED` 也不代表已经得到明确失败结果。另一方面，支付、转账、密钥恢复等高价值动作也不能因网络超时就自动放行。服务端要按动作配置允许、追加验证、延迟处理、限制额度或拒绝等处置方式。
+网络错误不代表设备受损，`UNEVALUATED` 也不代表已经得到明确失败结果。反过来，支付、转账、密钥恢复等高价值动作也不能因网络超时就自动放行。
+
+服务端要按动作分别配置允许、追加验证、延迟处理、限制额度或拒绝等处置方式。
 
 ### 6.2 按错误类别重试
 
@@ -362,7 +366,9 @@ Classic 的 nonce 既要防止业务字段被篡改，也要防止旧请求被�
 | 可疑调用环境 | `APP_NOT_INSTALLED`、`APP_UID_MISMATCH` | 按完整性检查失败处理 |
 | 参数错误 | nonce 长度、编码或 Cloud project number 错误 | 修复输入或发布配置；原样重试相同错误参数不会成功 |
 
-后台动作可以参考官方示例，从 5 秒开始指数退避，并以最大次数作为退出条件。前台交互不适合照搬 5、10、20 秒的等待序列；可以结束当前 UI 请求，把重试交给下一次用户动作或后台任务。连续三次仍失败时，官方建议按客户端未通过完整性检查处置。
+后台动作可以参考官方示例，从 5 秒开始指数退避，并以最大次数作为退出条件。前台交互不适合照搬这套 5、10、20 秒的等待序列：当前 UI 请求可以直接结束，把重试交给下一次用户动作或后台任务。
+
+连续三次仍失败时，官方建议按客户端未通过完整性检查处置。
 
 超时值应依据本应用的延迟分布和风险预算设定。Standard prepare 与 Classic 请求的官方示例都允许约 1 分钟覆盖长尾，但用户无需在前台等待整整 1 分钟。UI 愿意等待多久、底层网络调用何时停止，以及服务端在无判定结果时怎样处置，是三项独立配置，不能全部塞进一个硬编码的 `withTimeout(3000)`。
 
@@ -382,7 +388,7 @@ Play Integrity 提供 `GET_INTEGRITY`、`GET_STRONG_INTEGRITY`、`GET_LICENSED` 
 - Classic 单实例 token 最多 5 次/分钟；
 - Standard token 请求没有公开的低频上限，但高流量仍会受到未公开的防滥用限制。
 
-这里容易混淆的一点是：普通 Standard token 请求不计入文档所说的“Classic + prepare”每日 token 生成配额，但每个送到 Google 解密的 token 仍会消耗服务端解密配额。上线前要根据日活用户数、每人受保护动作次数、重试率和峰值放大系数，分别估算客户端与服务端用量，并在 Cloud Console 设置告警。需要提高配额时，应先关联 Play Console 与 Cloud project，再提交官方申请，并逐步增加流量，避免突然放量触发限流。
+普通 Standard token 请求不计入文档所说的“Classic + prepare”每日 token 生成配额，但每个送到 Google 解密的 token 仍会消耗服务端解密配额。上线前要根据日活用户数、每人受保护动作次数、重试率和峰值放大系数，分别估算客户端与服务端用量，并在 Cloud Console 设置告警。需要提高配额时，应先关联 Play Console 与 Cloud project，再提交官方申请，并逐步增加流量，避免突然放量触发限流。
 
 ## 8. 可观测性：Perfetto 只能看到应用这一侧
 
@@ -411,7 +417,7 @@ fun requestWithTrace(
 }
 ```
 
-async slice 可以跨线程覆盖 `Task` 的整个等待区间。它显示从应用发起请求到收到完成回调的 wall time（墙上时钟时间），其中包含运行与等待；它无法证明 Google Play 内部使用了哪个线程，也不能用来计算 Binder 或网络往返次数。
+async slice 可以跨线程覆盖 `Task` 的整个等待区间，显示从应用发起请求到收到完成回调的 wall time（墙上时钟时间），其中包含运行与等待。但它无法证明 Google Play 内部使用了哪个线程，也不能用来计算 Binder 或网络往返次数。
 
 客户端和服务端建议记录：
 
@@ -422,7 +428,7 @@ async slice 可以跨线程覆盖 `Task` 的整个等待区间。它显示从应
 - verdict 各类别占比，但不能把 token、nonce、`requestHash` 原文或用户敏感数据写入日志；
 - 从 token 申请到服务端消费的年龄，以及 action ID 重复消费次数。
 
-按网络类型、地区、机型和应用冷暖状态拆分数据，通常比一条总体 P95 更容易定位问题。对照组还应保留“不调用 Integrity 时的业务耗时”，防止把数据库或账号服务变慢误归因给 Play Integrity。
+按网络类型、地区、机型和应用冷暖状态拆分数据，通常比一条总体 P95 更容易定位问题。还应保留“不调用 Play Integrity 时的业务耗时”作为对照，防止把数据库或账号服务变慢误归因给 Play Integrity。
 
 ## 9. Android 17 / API 37 的源码边界
 
