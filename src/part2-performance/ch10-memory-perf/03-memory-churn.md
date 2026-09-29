@@ -64,32 +64,31 @@ task2b_state: fixed
 
 内存抖动（allocation churn）描述高频分配与回收，不等同于内存泄漏。泄漏对象长期可达，GC 后的堆基线不断上升；抖动对象通常很快失去引用，堆曲线反复上升和回落。两种现象也可能同时存在，例如一个页面既在每帧创建临时对象，又把少量对象留在错误的生命周期里。
 
-一次 GC 事件也不能直接判定卡顿。诊断要证明三件事：目标场景的分配速率异常、GC 或分配等待与慢帧时间重叠、减少热点分配后同场景指标改善。这里的热点分配是指在目标时间窗中反复出现或累计字节数较高的分配调用栈。
+一次 GC 事件也不能直接判定卡顿。诊断要证明三件事：目标场景的分配速率异常、GC 或分配等待与慢帧时间重叠、减少热点分配后同场景指标改善。热点分配指在目标时间窗中反复出现，或累计字节数较高的分配调用栈。抖动和泄漏要分开取证：前者看时间窗内的分配速率与调用栈，后者看 GC 之后仍然存活的对象数量和引用关系。
 
 ## 从分配到慢帧发生了什么
 
 ### 分配快，不代表分配免费
 
-ART 为小对象提供线程本地分配快路径。TLAB（Thread-Local Allocation Buffer，线程本地分配缓冲区）让线程在自己的缓冲区内推进指针，避免每次分配都争用堆的全局锁。Android 8 以来的 Concurrent Copying（CC，并发复制）可使用 RegionTLAB；Android 17 的 Concurrent Mark-Compact（CMC，并发标记压缩）在启用 TLAB 时使用 TLAB allocator。
+ART 给小对象留了一条线程本地快路径。TLAB（Thread-Local Allocation Buffer，线程本地分配缓冲区）让线程在自己的缓冲区里推进分配指针，不必每次分配都去抢堆的全局锁。快路径的具体形式随收集器变化：Android 8 以来的 Concurrent Copying（CC，并发复制）可以用 RegionTLAB，Android 17 的 Concurrent Mark-Compact（CMC，并发标记压缩）在启用 TLAB 时使用 TLAB allocator。
 
 对象仍有后续成本：
 
 - TLAB 或 RegionTLAB（按堆区域划分的 TLAB）用尽后需要补充空间。
-- 分配会增加标记、扫描和回收工作量。
-- 活对象越多，收集器需要处理的引用越多。
+- 分配要计入标记、扫描和回收的工作量；活对象越多，收集器需要处理的引用越多。
 - 大对象或突发分配更容易离开最轻的分配路径。
 - 回收线程会消耗 CPU 和内存带宽，与 UI 线程、RenderThread（渲染线程）竞争。
 - 可分配空间不足时，发起分配的线程可能等待 GC 完成。
 
-120 Hz 屏幕的理论帧间隔约为 8.33 ms。GC 暂停、分配等待或 CPU 竞争只要与已经接近预算的帧重叠，就可能产生 missed frame（未按时呈现的帧）。暂停时间没有跨设备通用常量，不能用“某类 GC 固定耗时几毫秒”代替 trace 证据。
+120 Hz 屏幕的理论帧间隔约为 8.33 ms。GC 暂停、分配等待或 CPU 竞争只要落在已经接近预算的那一帧上，就可能产生 missed frame（未按时呈现的帧）。暂停时间没有跨设备通用常量，不能用“某类 GC 固定耗时几毫秒”代替 trace 证据。
 
 ### Android 17 的 CMC 源码边界
 
-Android 17 `collector_type.h` 将 `kCollectorTypeCMC` 定义为 **Concurrent mark-compact**。`heap.cc` 在 `gUseUserfaultfd` 为真时校验前台收集器为 CMC、后台收集器为 CMCBackground；启用 generational GC（分代垃圾回收）时，还会创建负责年轻代的 `YoungMarkCompact`。`runtime.cc` 对 generational GC 的选择同时检查 collector 能力、`-Xgc` 选项和 `ShouldUseGenerationalGC()`。
+Android 17 的 `collector_type.h` 把 `kCollectorTypeCMC` 定义为 **Concurrent mark-compact**。`heap.cc` 在 `gUseUserfaultfd` 为真时校验前台收集器为 CMC、后台收集器为 CMCBackground；启用 generational GC（分代垃圾回收）时，还会创建负责年轻代的 `YoungMarkCompact`。`runtime.cc` 选择 generational GC 时，同时检查 collector 能力、`-Xgc` 选项和 `ShouldUseGenerationalGC()`。
 
-这几处源码说明 Android 17 具备 CMC 与 generational CMC 路径。源码中存在 `YoungMarkCompact`，不代表每台 Android 17 设备、每个进程都使用同一运行参数。OEM 配置、ART Mainline 模块和进程选项仍可能影响选择；取证时可从 ART 启动日志中的 collector 描述，核对当前进程实际使用的收集器。
+这几处源码说明 Android 17 具备 CMC 与 generational CMC 路径。源码中存在 `YoungMarkCompact`，不代表每台 Android 17 设备、每个进程都使用同一运行参数：OEM 配置、ART Mainline 模块和进程选项仍可能影响选择。判断手上的设备实际走了哪条路径，要看 ART 启动日志里的 collector 描述。
 
-CMC 的 `mark_compact.cc` 检查 `UFFD_FEATURE_SIGBUS` 与 `MREMAP_DONTUNMAP`，并实现 `SigbusHandler()` 处理压缩期间的页面访问。kernel 侧对应实现按 `android17-6.18-2026-06_r6` 的 `fs/userfaultfd.c` 与 `mm/mremap.c` 核对。该机制用于缩短并发压缩对 mutator（执行应用代码的线程）的阻塞范围，但不会消除 GC 工作量。应用持续制造短命对象时，年轻代回收、CPU 占用和 allocation stall（分配等待）仍然需要测量。
+CMC 的 `mark_compact.cc` 检查 `UFFD_FEATURE_SIGBUS` 与 `MREMAP_DONTUNMAP`，并实现 `SigbusHandler()` 处理压缩期间的页面访问。kernel 侧的对应实现按 `android17-6.18-2026-06_r6` 的 `fs/userfaultfd.c` 与 `mm/mremap.c` 核对。该机制缩短的是并发压缩对 mutator（执行应用代码的线程）的阻塞范围，不会消除 GC 工作量。应用持续制造短命对象时，年轻代回收、CPU 占用和 allocation stall（分配等待）仍然需要测量。
 
 ## 识别抖动、泄漏与正常波动
 
@@ -101,9 +100,63 @@ CMC 的 `mark_compact.cc` 检查 `UFFD_FEATURE_SIGBUS` 与 `MREMAP_DONTUNMAP`，
 | 大对象突发 | 单次或少数分配拉高曲线 | 分配大小、调用栈、业务事件 | 复用 buffer、分块或移出关键路径 |
 | 正常预热 | 启动阶段增长，随后稳定 | 类加载、资源初始化、后续稳态 | 通常不改，保留基线 |
 
-“锯齿形”只是线索。若每次 GC 后基线也在上升，需要同时排查存活对象；若分配很高但帧时间、CPU 和 GC 等待没有退化，优化优先级可以后移。
+读这张表先按曲线形态归类，再拿对应的证据确认。“锯齿形”只是线索：若每次 GC 后基线也在上升，需要同时排查存活对象；若分配很高但帧时间、CPU 和 GC 等待没有退化，优化优先级可以后移。
+
+## 用证据定位
+
+### Android Studio：记录 Java/Kotlin 分配
+
+Android Studio 的 “Track Memory Consumption (Java/Kotlin Allocations)” 可以显示分配类型、大小、线程、调用栈和释放时间。完整记录本身会减慢高分配应用；官方工具提供 sampled（抽样）模式降低影响。
+
+一次有效的录制应满足：
+
+1. 在可重复的用户动作前开始录制。
+2. 只保留足以覆盖该动作的时间窗。
+3. 分别按 Allocations、Allocation Size 与 Total Count 排序。
+4. 回到调用栈，确认对象来自业务路径、profiler（分析器）自身或框架预热。
+5. 修复后在同设备、同构建类型、同数据集下复测。
+
+分析 churn 时关注时间窗内累计分配次数与字节数；分析泄漏时关注结束时仍存活的数量、大小和引用关系。两个问题不应使用同一排序口径。
+
+### Perfetto heapprofd：调用栈采样
+
+heapprofd 从 Android 10 起支持 native malloc/free 分配分析。Android 12 起可把 heap 指定为 `com.android.art`，记录 Java allocation call stack。ART allocation profile 只记录对象创建位置，不提供对象删除时间或完整引用图；分析存活对象的引用关系需要 heap dump。
+
+下面两条命令展示当前 Perfetto 脚本的 native 与 ART 入口。
+
+```bash
+# Native malloc/free allocation profile
+tools/heap_profile android -n com.example.app
+
+# Java allocation profile（Android 12+）
+tools/heap_profile android -n com.example.app --heaps com.android.art
+```
+
+user build（日常发布版本的系统镜像）只允许分析 manifest 标记为 `debuggable` 或 `profileable` 的 App。
+
+读 Java profile 先看清两个数字的含义：`Total allocation size` 和 `Total allocation count` 包含采样期间的累计分配，即使对象稍后已经回收，也不能把它们当作当前存活堆大小。分配突发还可能让共享缓冲区溢出，Perfetto 会提前结束 profile，此时需要提高 sampling interval（采样间隔）或按官方建议调整缓冲区。
+
+### Perfetto：把分配、GC 和帧放进同一窗口
+
+系统 trace 至少应包含调度、频率、Frame Timeline 与 ART/应用 trace。分析顺序如下：
+
+1. 从 missed frame 或业务事件确定时间窗。
+2. 检查 UI 线程是否暂停、处于 Runnable（可运行但在等待 CPU）状态，或正在等待分配。
+3. 对齐 GC slice、`HeapTaskDaemon` 活动和 CPU 频率。
+4. 用 allocation profile 找到同一场景的高频调用栈。
+5. 排除锁竞争、I/O、Binder、thermal throttling（温控限频）等同时发生的原因。
+
+`HeapTaskDaemon`（ART 堆任务线程）活跃且附近出现慢帧，只能说明两者时间相近。还要结合线程状态、GC slice（GC 轨迹片段）和修复前后对照，才能判断因果关系。
+
+### 不要在 App 中复制 `GcWatcher`
+
+Android 17 的 `BinderInternal.GcWatcher` 仍通过 `WeakReference` 与 `finalize()` 感知 GC，并向 framework 内部 watcher（观察者）分发回调。`BinderInternal` 属于隐藏 API，finalization（终结处理）的执行时间也没有确定性。应用不应复制这种模式做线上 GC 计数，更不应把 watcher 的 `finalize()` 当作每次 GC 的精确通知。
+
+开发期使用 Android Studio、Perfetto 和 ART 日志；线上只保留经过开销评估的场景指标。Android 17 的 `ProfilingManager` 可提供受系统控制的 profile artifact（分析产物），但同样不构成实时 GC 回调 API。
 
 ## 常见分配热点
+
+拿到 allocation profile 之后，可以先按下面几类位置找候选。
 
 ### `onDraw()`、布局和动画回调
 
@@ -161,7 +214,7 @@ fun joinNames(items: List<String>): String = buildString {
 
 ### 装箱
 
-泛型集合、可空原始类型和接口调用可能把 `Int`、`Long` 等原始值包装成对象，这一过程称为装箱。JVM 对部分数值有 wrapper cache（包装对象缓存），编译器也可能消除一些临时对象，因此不能断言每次装箱都会产生新对象。
+泛型集合、可空原始类型和接口调用可能把 `Int`、`Long` 等原始值包装成对象，这个过程叫装箱。JVM 对部分数值有 wrapper cache（包装对象缓存），编译器也可能消除一些临时对象，因此不能断言每次装箱都会产生新对象。是否值得处理，取决于它在 allocation profile 里出现的频率和字节数。
 
 在已确认的热点中可评估以下替代：
 
@@ -177,59 +230,9 @@ fun joinNames(items: List<String>): String = buildString {
 
 ### 大型 buffer 与图像
 
-相机、编解码、Bitmap 和序列化常产生大数组或 native buffer。此类问题的 Java 对象数可能不高，allocation bytes（累计分配字节数）却很大。优化方向包括固定数量的 buffer 轮转、按目标尺寸解码、分块处理和遵守库的 buffer pool（缓冲池）所有权。
+相机、编解码、Bitmap 和序列化常产生大数组或 native buffer。这类问题的 Java 对象数可能不高，allocation bytes（累计分配字节数）却很大，只看对象数会漏掉它。优化方向包括固定数量的 buffer 轮转、按目标尺寸解码、分块处理和遵守库的 buffer pool（缓冲池）所有权。
 
 Android 8.0（API 26）起 Bitmap 像素位于 native heap。图片库管理的 Bitmap 应归还给库自己的池；业务代码不要在未知调用方仍可能使用 Bitmap 时提前 `recycle()`。
-
-## 用证据定位
-
-### Android Studio：记录 Java/Kotlin 分配
-
-Android Studio 的 “Track Memory Consumption (Java/Kotlin Allocations)” 可以显示分配类型、大小、线程、调用栈和释放时间。完整记录本身会减慢高分配应用；官方工具提供 sampled（抽样）模式降低影响。
-
-一次有效的录制应满足：
-
-1. 在可重复的用户动作前开始录制。
-2. 只保留足以覆盖该动作的时间窗。
-3. 分别按 Allocations、Allocation Size 与 Total Count 排序。
-4. 回到调用栈，确认对象来自业务路径、profiler（分析器）自身或框架预热。
-5. 修复后在同设备、同构建类型、同数据集下复测。
-
-分析 churn 时关注时间窗内累计分配次数与字节数；分析泄漏时关注结束时仍存活的数量、大小和引用关系。两个问题不应使用同一排序口径。
-
-### Perfetto heapprofd：调用栈采样
-
-heapprofd 从 Android 10 起支持 native malloc/free 分配分析。Android 12 起可把 heap 指定为 `com.android.art`，记录 Java allocation call stack。ART allocation profile 只记录对象创建位置，不提供对象删除时间或完整引用图；分析存活对象的引用关系需要 heap dump。
-
-下面两条命令展示当前 Perfetto 脚本的 native 与 ART 入口。
-
-```bash
-# Native malloc/free allocation profile
-tools/heap_profile android -n com.example.app
-
-# Java allocation profile（Android 12+）
-tools/heap_profile android -n com.example.app --heaps com.android.art
-```
-
-user build（日常发布版本的系统镜像）只允许分析 manifest 标记为 `debuggable` 或 `profileable` 的 App。Java profile 里的 `Total allocation size` 和 `Total allocation count` 包含采样期间的累计分配，即使对象稍后已经回收；不能把它们当作当前存活堆大小。分配突发还可能让共享缓冲区溢出，Perfetto 会提前结束 profile，此时需要提高 sampling interval（采样间隔）或按官方建议调整缓冲区。
-
-### Perfetto：把分配、GC 和帧放进同一窗口
-
-系统 trace 至少应包含调度、频率、Frame Timeline 与 ART/应用 trace。分析顺序如下：
-
-1. 从 missed frame 或业务事件确定时间窗。
-2. 检查 UI 线程是否暂停、处于 Runnable（可运行但在等待 CPU）状态，或正在等待分配。
-3. 对齐 GC slice、`HeapTaskDaemon` 活动和 CPU 频率。
-4. 用 allocation profile 找到同一场景的高频调用栈。
-5. 排除锁竞争、I/O、Binder、thermal throttling（温控限频）等同时发生的原因。
-
-`HeapTaskDaemon`（ART 堆任务线程）活跃且附近出现慢帧，只能说明两者时间相近。还要结合线程状态、GC slice（GC 轨迹片段）和修复前后对照，才能判断因果关系。
-
-### 不要在 App 中复制 `GcWatcher`
-
-Android 17 的 `BinderInternal.GcWatcher` 仍通过 `WeakReference` 与 `finalize()` 感知 GC，并向 framework 内部 watcher（观察者）分发回调。`BinderInternal` 属于隐藏 API，finalization（终结处理）的执行时间也没有确定性。应用不应复制这种模式做线上 GC 计数，更不应把 watcher 的 `finalize()` 当作每次 GC 的精确通知。
-
-开发期使用 Android Studio、Perfetto 和 ART 日志；线上只保留经过开销评估的场景指标。Android 17 的 `ProfilingManager` 可提供受系统控制的 profile artifact（分析产物），但同样不构成实时 GC 回调 API。
 
 ## 优化策略
 
@@ -265,7 +268,7 @@ Android framework 的 `Message.obtain()`、`MotionEvent.obtain()` 等 API 使用
 
 ## Kotlin value class 的边界
 
-`@JvmInline value class` 在 JVM 上可用底层值表示，适合给原始类型增加类型安全，同时避免部分 wrapper（包装对象）。下面的类型在直接参数和局部变量路径上通常可用 `long` 表示。
+`@JvmInline value class` 在 JVM 上可用底层值表示，适合给原始类型增加类型安全，但能省下的 wrapper（包装对象）只覆盖部分路径。下面的类型在直接参数和局部变量路径上通常可用 `long` 表示。
 
 ```kotlin
 @JvmInline
@@ -331,7 +334,7 @@ Compose 通过 AndroidX 发布，不跟 platform API 一一绑定。Compose Runt
 | 资源 | Java heap、native heap、graphics、RSS/PSS 与 CPU 频率 |
 | 正确性 | 对象池状态、并发、画面、数据一致性和生命周期 |
 
-只比较峰值 heap 容易漏掉“总分配量下降但存活集上升”。只比较 GC 次数也会受 heap 上限、收集器和设备配置影响。目标场景的分配、GC、帧时间与正确性同时验收，结论才可复用。
+只比较峰值 heap，容易漏掉“总分配量下降但存活集上升”这种组合。反过来只比较 GC 次数，结果又会受 heap 上限、收集器和设备配置影响。目标场景的分配、GC、帧时间与正确性同时验收，结论才可复用。
 
 ## 排查清单
 
