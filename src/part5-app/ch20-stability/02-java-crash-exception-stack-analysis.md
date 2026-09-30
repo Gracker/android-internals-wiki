@@ -117,9 +117,11 @@ consolidated_from:
 
 # Java Crash、异常架构与线程堆栈分析
 
-异常处理架构面对的是一个很苛刻的时刻：线程可能持有锁，堆可能已经耗尽，文件系统可能正在写入，系统也可能马上结束进程。架构目标因此分成三件事：在当前进程保留最小证据，在下次启动限制重复失败，通过分阶段发布、暂停发布和修复版本控制影响范围。
+异常处理架构要在最差的时机工作：线程可能持有锁，堆可能已经耗尽，文件系统可能正在写入，系统也可能马上结束进程。架构目标分成三件事：在当前进程保留最小证据，在下次启动限制重复失败，通过分阶段发布、暂停发布和修复版本控制影响范围。
 
-平台锚点是 Android 17（API 37，`android-17.0.0_r1`）。本文负责 Java Crash 的异常边界、现场记录和下次启动恢复；Native Crash、ANR 和 OOM 的系统机制分别见 [20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md)、[20.4 ANR 治理策略](04-anr-governance.md) 和 [20.5 OOM、进程资源治理与 WebView Renderer 恢复](05-oom-webview-renderer-recovery.md)。本文把一次应用启动尝试简称为 launch；SafeMode 指应用在下次启动时主动跳过高风险模块的安全模式。
+平台锚点是 Android 17（API 37，`android-17.0.0_r1`）。本文负责 Java Crash 的异常边界、现场记录和下次启动恢复；Native Crash、ANR 和 OOM 的系统机制分别见 [20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md)、[20.4 ANR 治理策略](04-anr-governance.md) 和 [20.5 OOM、进程资源治理与 WebView Renderer 恢复](05-oom-webview-renderer-recovery.md)。
+
+本文把一次应用启动尝试简称为 launch；SafeMode 指应用在下次启动时主动跳过高风险模块的安全模式。
 
 Java 异常先在调用栈中传播，未被处理时进入 UncaughtExceptionHandler 并触发进程终止。治理既要设计异常边界，也要在 Crash 状态下可靠记录当前线程、其他线程和锁等待。
 
@@ -161,7 +163,7 @@ Checked Exception 也可能由程序错误引起，例如关闭顺序错误导�
 
 #### 从 ART 到 `Thread.dispatchUncaughtException()`
 
-ART 把当前未处理异常保存在每个线程的 pending exception（待处理异常）状态中。解释器或已编译代码按照异常处理器表查找处理位置并展开栈帧；当异常逃出线程入口，线程销毁路径中的 [`Thread::HandleUncaughtExceptions()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc) 取出并清除该状态，然后调用 Java 层 [`Thread.dispatchUncaughtException(Throwable)`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java)。
+ART 把当前未处理异常保存在每个线程的 pending exception（待处理异常）状态中。解释器或已编译代码按照异常处理器表查找处理位置并展开栈帧。异常逃出线程入口后，线程销毁路径中的 [`Thread::HandleUncaughtExceptions()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc) 取出并清除该状态，然后调用 Java 层 [`Thread.dispatchUncaughtException(Throwable)`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java)。
 
 Java 层的顺序是：
 
@@ -246,7 +248,9 @@ fun installFatalHandler(crashSpool: CrashSpool) {
 
 #### 安装时机与多 SDK 链
 
-`Application.attachBaseContext()` 是应用侧常用的早期安装点。Android 17 的 [`ActivityThread.handleBindApplication()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java) 先创建 `Application` 并在此过程中调用 `attachBaseContext()`，再安装常规 ContentProvider，随后调用 `Application.onCreate()`。它仍覆盖不了自定义 `Application` 构造、类加载或处理器安装前发生的故障；这些事件要依赖平台日志、Android vitals 等进程外来源。
+`Application.attachBaseContext()` 是应用侧常用的早期安装点。Android 17 的 [`ActivityThread.handleBindApplication()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java) 先创建 `Application` 并在此过程中调用 `attachBaseContext()`，再安装常规 ContentProvider，随后调用 `Application.onCreate()`。
+
+这个安装点仍覆盖不了自定义 `Application` 构造、类加载或处理器安装前发生的故障。这些事件要依赖平台日志、Android vitals 等进程外来源。
 
 多个 SDK 都修改默认处理器时，后注册者只能看到注册当时的前一个处理器。每个处理器都应在 `finally` 中继续委托，并限制自己的执行时间与写入量。建议在测试构建中记录处理器类名和安装顺序，主动注入以下故障条件：
 
@@ -364,6 +368,37 @@ RecyclerView 点击时应重新读取 `bindingAdapterPosition` 并处理表示�
 
 协程行为应以项目锁定的 `kotlinx.coroutines` 版本为准。本文核对的 1.11.0 官方 [`CoroutineExceptionHandler`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-exception-handler/) 文档说明：JVM 的最终处理流程会调用通过 `ServiceLoader`（运行时发现服务实现的标准机制）找到的处理器，以及当前线程的 `Thread.uncaughtExceptionHandler`。旧版 `kotlinx-coroutines-android` 的反射实现不能视为 Android 17 平台的固定机制。
 
+### Kotlin Coroutine 异常处理
+
+当前官方 [Coroutine exceptions handling](https://kotlinlang.org/docs/exception-handling.html) 把协程构建函数（builder）分成两类：根协程 `launch` 把未处理异常视为未捕获异常；根协程 `async` / `produce` 把异常保存在结果中，调用方通过 `await()` / `receive()` 消费。这里的根协程指没有父协程继续接管其异常的协程。
+
+其余场景见上一节的对照表：普通子协程的异常向父协程传播并取消父级、`supervisorScope` 或 `SupervisorJob` 下同级任务不互相取消（每个子任务仍要处理自己的失败）、`CancellationException` 用于协作取消通常不进入错误上报。子协程上的 `CoroutineExceptionHandler` 通常不会截断这类传播。
+
+`CoroutineExceptionHandler` 适合记录根协程未处理异常，不能代替 `try/catch`、`await()` 处的错误处理或结构化并发（用父子作用域约束任务生命周期和取消传播）。
+
+下面的例子只捕获调用契约中允许恢复的网络错误，其他编程错误继续传播：
+
+```kotlin
+viewModelScope.launch {
+    try {
+        uiState.value = UiState.Content(repository.load())
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (error: IOException) {
+        nonFatalReporter.record(error)
+        uiState.value = UiState.Error(retryable = true)
+    }
+}
+```
+
+这里的 `IOException` 被转换成页面状态，不应计为 Crash。若数据仓库接口还声明了明确的业务错误，可以逐类处理；不要用 `runCatching` 把 `Error` 等任意 `Throwable` 一起变成页面错误。若希望多个子任务互不取消，可在 `supervisorScope` 内分别处理；不能只加一个 `CoroutineExceptionHandler` 后忽略各子任务的失败结果。
+
+kotlinx.coroutines 1.11.0 的 [JVM `CoroutineExceptionHandlerImpl.kt`](https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/kotlinx-coroutines-core/jvm/src/internal/CoroutineExceptionHandlerImpl.kt) 就是这条加载路径的实现：它通过 Java 服务发现机制 `ServiceLoader` 加载平台处理器，最终兜底时调用当前线程的 `uncaughtExceptionHandler`。
+
+Android 模块的 [`AndroidExceptionPreHandler.kt`](https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/ui/kotlinx-coroutines-android/src/AndroidExceptionPreHandler.kt) 只为 API 26/27 的 Oreo pre-handler 差异做反射补偿；Android 17 仍回到线程未捕获异常处理器与 `RuntimeInit` 的平台路径。
+
+协程记录要带 `CoroutineName`、作用域类型、页面生命周期和 Dispatcher（决定协程在哪个线程或线程池执行的调度器）。不能在 `CoroutineExceptionHandler` 中同步访问网络或执行大规模序列化，它可能运行在主线程或已经处于失败传播过程的工作线程上。
+
 协程异常也应遵守下文 Crash 恢复架构的责任边界：致命路径保留最小证据，下次启动再决定降级与恢复。
 
 ### 第三方 SDK：线程隔离不等于进程隔离
@@ -426,15 +461,11 @@ RecyclerView 点击时应重新读取 `bindingAdapterPosition` 并处理表示�
 
 Crash 时获取全部 Java 栈，需要先区分四类现场：Java 未捕获异常、Native 致命信号、系统 ANR，以及进程退出后的证据读取。它们的运行时状态、权限和安全边界各不相同。若统一塞进 signal handler（信号处理函数），一次可诊断的故障可能演变成死锁、二次崩溃或残缺报告。
 
-本文的平台与 ART（Android Runtime，执行 Java/Kotlin 字节码并管理对象、线程和垃圾回收的运行时）源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。涉及 futex 与线程调度时，内核锚点为 `android17-6.18-2026-06_r6`。futex 是 Linux 的快速用户态互斥机制：无竞争时主要在用户态完成，发生竞争后才进入内核等待。Java monitor（`synchronized` 和 `Object.wait()` 使用的对象锁结构）的 owner、held lock 和栈帧仍由 ART 解释，无法从一条内核睡眠状态直接反推。
+本文的平台与 ART（Android Runtime，执行 Java/Kotlin 字节码并管理对象、线程和垃圾回收的运行时）源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。涉及 futex 与线程调度时，内核锚点为 `android17-6.18-2026-06_r6`。futex 是 Linux 的快速用户态互斥机制：无竞争时主要在用户态完成，发生竞争后才进入内核等待。
+
+Java monitor（`synchronized` 和 `Object.wait()` 使用的对象锁结构）的 owner、held lock 和栈帧仍由 ART 解释，无法从一条内核睡眠状态直接反推。
 
 ### 1. 先按现场选择取证路径
-
-OOM 指 `OutOfMemoryError`，即 Java 堆或相关内存资源无法满足分配请求。ANR 是 Application Not Responding，表示系统判定应用在规定时间内没有响应。`SIGQUIT` 是 Android/ART 用来请求诊断转储的信号，SignalCatcher 是 ART 中专门等待并处理这类信号的线程。Perfetto trace 是按时间记录系统与应用事件的诊断轨迹。
-
-breadcrumb 是故障前预先保存的少量关键事件记录；`siginfo_t` 保存信号编号、故障地址等信号信息，`ucontext_t` 保存信号发生时的寄存器上下文；tombstone 是 Android debuggerd 生成的 Native 崩溃诊断文件；minidump 是由应用或外部采集器生成的紧凑二进制转储。JNI 是 Java 与 C/C++ 代码互相调用的接口。`ApplicationExitInfo` 则是 API 30 引入的历史进程退出记录。
-
-fatal handler 指致命故障发生后、进程终止前执行的回调。Java 与 Native 的回调环境不同，不能共享一套安全假设。`sigaction()` 是注册 Unix 信号处理动作的系统接口；应用自行接管 `SIGQUIT` 会与 ART 的诊断机制冲突，也不属于 Android SDK 承诺兼容的用法。
 
 | 现场 | 进程状态 | 应用可优先保存的证据 | 不应依赖的动作 |
 | --- | --- | --- | --- |
@@ -444,6 +475,20 @@ fatal handler 指致命故障发生后、进程终止前执行的回调。Java �
 | 进程已经退出 | 进程内 Java 状态已经不存在 | `ApplicationExitInfo`、tombstone/ANR trace、进程退出前写好的记录 | 重启后再查询旧进程的 Java 对象或 monitor |
 
 选路依据是现场边界，而非某个函数在平时能否调用。正常运行期可用的 API 未必适合未捕获异常回调；Java fatal handler 中偶尔成功的代码，也不能移入 Native signal handler。
+
+后文反复出现的术语，按用途列出：
+
+- OOM：`OutOfMemoryError`，即 Java 堆或相关内存资源无法满足分配请求。
+- ANR：Application Not Responding，系统判定应用在规定时间内没有响应。
+- `SIGQUIT` 与 SignalCatcher：`SIGQUIT` 是 Android/ART 用来请求诊断转储的信号，SignalCatcher 是 ART 中专门等待并处理这类信号的线程。
+- Perfetto trace：按时间记录系统与应用事件的诊断轨迹。
+- breadcrumb：故障前预先保存的少量关键事件记录。
+- `siginfo_t` 与 `ucontext_t`：前者保存信号编号、故障地址等信号信息，后者保存信号发生时的寄存器上下文。
+- tombstone 与 minidump：tombstone 是 Android debuggerd 生成的 Native 崩溃诊断文件，minidump 是由应用或外部采集器生成的紧凑二进制转储。
+- JNI：Java 与 C/C++ 代码互相调用的接口。
+- `ApplicationExitInfo`：API 30 引入的历史进程退出记录。
+- fatal handler：致命故障发生后、进程终止前执行的回调。Java 与 Native 的回调环境不同，不能共享一套安全假设。
+- `sigaction()`：注册 Unix 信号处理动作的系统接口；应用自行接管 `SIGQUIT` 会与 ART 的诊断机制冲突，也不属于 Android SDK 承诺兼容的用法。
 
 ### 2. `Thread.getAllStackTraces()` 的 Android 17 语义
 
@@ -540,7 +585,7 @@ ART 的 `Thread::CreateAnnotatedStackTrace()` 能构造带 `blockedOn`（当前�
 - 它是 `system_server` 等平台代码可用的内部接口。`system_server` 是承载 Android 大多数 Java 系统服务的核心进程，普通应用不具备相同权限与类路径。
 - 实现会遍历 Java 栈、访问对象并分配数组，不是 Native fatal signal 下的安全替代方案。
 
-公开的 `Thread.getStackTrace()` 只返回 `StackTraceElement[]`，不包含持锁对象、阻塞对象或 owner。普通应用不能假设存在稳定的 `thread.getLockedObjects()`。Java SE 提供 `ThreadMXBean.findDeadlockedThreads()` 等管理接口，但 Android 17 的[公共 API 清单](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/api/current.txt)中没有 `java.lang.management.ThreadMXBean`，应用代码不应把它当作 Android SDK 能力。
+公开的 `Thread.getStackTrace()` 只返回 `StackTraceElement[]`，不包含持锁对象、阻塞对象或 owner。普通应用不能假设存在稳定的 `thread.getLockedObjects()`。Java SE 提供 `ThreadMXBean.findDeadlockedThreads()` 等管理接口。Android 17 的[公共 API 清单](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/api/current.txt)中没有 `java.lang.management.ThreadMXBean`，应用代码不应把它当作 Android SDK 能力。
 
 ### 4. 不同故障现场怎样取 Java 栈
 
@@ -574,7 +619,9 @@ OOM 路径需要把操作压到最少。`getAllStackTraces()` 会创建 `Map` �
 
 `ArtMethod` 是 ART 的方法元数据结构，JIT frame 是即时编译代码的调用帧，read barrier 是 GC 读取对象引用时使用的校验或转发屏障，ART APEX 则是可独立更新的运行时系统模块。它们的布局与行为都属于私有实现。按设备版本维护偏移只会增加脆弱性，无法让已损坏的进程成为可信调试目标。采样 profiler 可以在受控挂起点完成 Java unwind（调用栈回溯），不代表同一逻辑能在任意 fatal signal 中安全执行。
 
-Android 8 的 debuggerd handler 会先创建一个与故障进程共享地址空间的辅助线程；该线程再创建子进程，并按进程位数 `exec` [`/system/bin/crash_dump32` 或 `crash_dump64`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-8.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)。`exec` 会用指定程序替换子进程当前执行的程序映像。随后 `crash_dump` 连接 tombstoned（接收并保存系统 tombstone 的守护进程）并生成诊断数据。系统 tombstone 至少包含崩溃线程寄存器、maps（进程虚拟内存映射）和进程内各线程的 Native backtrace。能否识别托管代码帧取决于运行时与回溯器可获得的信息，采集端不应把它当作 ART SIGQUIT 的 Java monitor dump，也不能指望它给出 Java monitor owner。
+Android 8 的 debuggerd handler 会先创建一个与故障进程共享地址空间的辅助线程；该线程再创建子进程，并按进程位数 `exec` [`/system/bin/crash_dump32` 或 `crash_dump64`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-8.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)。`exec` 会用指定程序替换子进程当前执行的程序映像。随后 `crash_dump` 连接 tombstoned（接收并保存系统 tombstone 的守护进程）并生成诊断数据。系统 tombstone 至少包含崩溃线程寄存器、maps（进程虚拟内存映射）和进程内各线程的 Native backtrace。
+
+能否识别托管代码帧取决于运行时与回溯器可获得的信息，采集端不应把它当作 ART SIGQUIT 的 Java monitor dump，也不能指望它给出 Java monitor owner。
 
 普通应用应保留 debuggerd 的 signal 链。Android 12 / API 31 起，应用可在下次启动查询 `ApplicationExitInfo.REASON_CRASH_NATIVE`，并从 `getTraceInputStream()` 读取 tombstone protobuf；protobuf 是 Protocol Buffers 的二进制序列化格式，不能按普通文本解析。Native 栈回溯、符号化与系统 signal/debuggerd 链路统一见 [20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md)。
 
@@ -762,10 +809,7 @@ Crash handler（未捕获异常处理器）所处的左半段只适合做有上�
 
 #### Java 未捕获异常入口
 
-Android 17 的 [`RuntimeInit.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java) 在 `commonInit()` 中安装两个入口：
-
-- `LoggingHandler` 通过 `RuntimeHooks.setUncaughtExceptionPreHandler()` 注册为 pre-handler（前置处理器，在默认未捕获异常处理器之前运行），应用不能替换它；
-- `KillApplicationHandler` 成为默认 `Thread.UncaughtExceptionHandler`（线程未捕获异常处理器），向 ActivityManager 报告后，在 `finally` 中调用 `Process.killProcess()` 和 `System.exit(10)`。
+Android 17 的 [`RuntimeInit.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java) 在 `commonInit()` 中安装的两个入口见本章「Android 17 的默认致命异常处理链」，这里补应用侧要保留的约束：`LoggingHandler` 通过 `RuntimeHooks.setUncaughtExceptionPreHandler()` 注册为 pre-handler（前置处理器，在默认未捕获异常处理器之前运行），应用不能替换它。
 
 应用或 Crash SDK 替换默认处理器时，要保存替换前的处理器，并在自己的最小记录结束后调用它。不再调用默认处理器会改变系统对 fatal（致命、会终止进程）异常的处理，可能留下状态损坏的进程，也会绕过 `KillApplicationHandler` 向 ActivityManager 报告并终止进程的默认路径。
 
@@ -798,7 +842,7 @@ Kotlin 协程改变异常的传播位置，却没有增加一种 Android 进程�
 
 #### 最小崩溃记录（crash envelope）只保存关联所需字段
 
-故障当下的记录不需要复制全部业务上下文。一个有长度上限的最小崩溃记录通常包括：
+故障当下的记录不复制全部业务上下文，字段只覆盖关联所需的信息：
 
 | 字段 | 用途 |
 |---|---|
@@ -810,6 +854,40 @@ Kotlin 协程改变异常的传播位置，却没有增加一种 Android 进程�
 | 完整长度、格式版本、校验值 | 下次启动识别 partial（只写入一部分的残缺）文件 |
 
 账号、访问令牌（Token）、URL 查询参数、用户输入和完整 Intent 不应进入 Crash 文件。`ActivityManager.setProcessStateSummary()`（API 30+）可以向后续 `ApplicationExitInfo` 附带最多 128 字节的非敏感状态，但系统可能限制过于频繁的调用；它适合写版本、`process_start_id` 和阶段标识，不适合频繁同步页面状态。
+
+### Crash 文件的持久化边界
+
+#### 原子替换不等于每次都能落盘
+
+AOSP Android 17 的 [`AtomicFile.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/util/AtomicFile.java) 采用 `.new` 文件：
+
+1. `startWrite()` 打开新文件；
+2. `finishWrite()` 调用 `FileUtils.sync()`，关闭后重命名为目标文件；
+3. `failWrite()` 同步、关闭并删除 `.new`。
+
+这能让读取者在旧完整版本与新完整版本之间选择，避免直接覆盖目标文件留下半截内容。实现没有对父目录执行 `fsync`（要求系统把缓冲中的文件或目录元数据写向存储），所以不能把它描述成掉电条件下的严格事务。应用若要求重命名后的目录项也尽量持久化，可通过公开的 `android.system.Os.open()`、`Os.fsync()` 和 `Os.close()` 处理父目录 fd（file descriptor，文件描述符）；还要按文件系统能力处理失败，不能假定所有设备表现一致。
+
+文件协议本身还要包含 magic（固定文件头，用来快速识别格式）、schema version（结构版本）、payload length（有效内容长度）、序号和校验值。下次启动扫描时：
+
+| 状态 | 处理 |
+|---|---|
+| `completed`（完成）且校验通过 | 消除重复记录后进入待上报队列 |
+| `completed` 但校验失败 | 标记为 `corrupt`（损坏），保留短摘要后隔离 |
+| `tmp/new`（临时文件）且完整 | 可按协议恢复为 `completed` |
+| `tmp/new` 不完整 | 记录 `partial`（残缺）计数后删除 |
+| 已上报 | 按保留周期清理 |
+
+AOSP [`DropBoxManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/DropBoxManagerService.java) 采用只尽力完成、不保证成功的轻量协议：临时文件关闭后直接重命名，没有额外 `fsync`；服务启动扫描到 `.tmp` 时直接删除。
+
+[`ActivityManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java) 只有在 system_server 自身 Crash 的特定路径上才等待 DropBox 后台线程最多两秒。普通应用不能从这些实现推导出“异步 Crash 上报一定来得及”。
+
+#### Java 与 Native 的写入策略不能共用
+
+Java 未捕获异常处理器可以尝试一次有大小限制的同步写入，但仍可能遇到 OOM、文件系统阻塞或递归异常。记录器应预先创建目录、限制文件数、避免 JSON 反射和大对象复制，并确保无论写入成功与否都会调用前一个默认处理器。
+
+Native 信号处理函数只能使用异步信号安全操作。若方案需要压缩、符号化、锁或堆分配，就应放到独立转储进程或下次启动。不能把 Java 版本的“临时文件 + rename”代码直接移进信号处理函数。
+
+Crash 文件属于应用私有诊断数据，也要限制文件数量和占用空间，并执行加密与删除策略。存储满时保留事件摘要和丢弃计数，比无限写入直到影响用户数据更安全。
 
 ### ApplicationExitInfo：补全证据，不替代应用采集
 
@@ -956,7 +1034,9 @@ stateDiagram-v2
 | `FailureOccurrence`（一次失败证据） | 哪个退出证据能与该启动关联 | 有数量、时间和隐私上限 |
 | `DegradationPlan`（降级计划） | 下次启动跳过哪些模块 | 按模块、页面、进程和版本限定 |
 
-启动租约可按 `LAUNCHING → PROCESS_READY → INTERACTIVE → PROBATION → HEALTHY` 推进。入口必须先读取旧租约，再写入本轮 `launchId`；若先覆盖文件，上一轮阶段和时间窗都会丢失。租约至少保存 schema（数据结构版本）、`versionCode`、安装时间、进程角色、随机 `launchId`、大致启动入口、系统日历时间、`elapsedRealtime`、boot sequence（本次开机的标识）、阶段和 plan ID（降级计划标识）。不要保存 URL、账号或 Intent 参数。
+启动租约可按 `LAUNCHING → PROCESS_READY → INTERACTIVE → PROBATION → HEALTHY` 推进。入口必须先读取旧租约，再写入本轮 `launchId`；若先覆盖文件，上一轮阶段和时间窗都会丢失。
+
+租约至少保存 schema（数据结构版本）、`versionCode`、安装时间、进程角色、随机 `launchId`、大致启动入口、系统日历时间、`elapsedRealtime`、boot sequence（本次开机的标识）、阶段和 plan ID（降级计划标识）。不要保存 URL、账号或 Intent 参数。
 
 `ApplicationExitInfo.getTimestamp()` 使用系统日历时间，`elapsedRealtime()` 只适合同一次开机内计算时长，两者不能直接相减。开机标识变化、`elapsedRealtime` 倒退或系统日历时间偏移异常时，应降低证据置信度，不能增加失败次数。
 
@@ -1104,71 +1184,6 @@ override fun onRenderProcessGone(
 
 远程进程死亡可通过 Binder death（Binder 对端进程死亡通知）或业务连接回调感知，但“连接断开”不等于 Crash。要结合 `ApplicationExitInfo`、本地最小崩溃记录和服务端记录分类。自动重启采用指数退避，即每次失败后逐步延长等待时间，并设置次数上限；持续重启后关闭对应功能，让用户可以回到主流程。
 
-### Crash 文件的持久化边界
-
-#### 原子替换不等于每次都能落盘
-
-AOSP Android 17 的 [`AtomicFile.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/util/AtomicFile.java) 采用 `.new` 文件：
-
-1. `startWrite()` 打开新文件；
-2. `finishWrite()` 调用 `FileUtils.sync()`，关闭后重命名为目标文件；
-3. `failWrite()` 同步、关闭并删除 `.new`。
-
-这能让读取者在旧完整版本与新完整版本之间选择，避免直接覆盖目标文件留下半截内容。实现没有对父目录执行 `fsync`（要求系统把缓冲中的文件或目录元数据写向存储），所以不能把它描述成掉电条件下的严格事务。应用若要求重命名后的目录项也尽量持久化，可通过公开的 `android.system.Os.open()`、`Os.fsync()` 和 `Os.close()` 处理父目录 fd（file descriptor，文件描述符）；还要按文件系统能力处理失败，不能假定所有设备表现一致。
-
-文件协议本身还要包含 magic（固定文件头，用来快速识别格式）、schema version（结构版本）、payload length（有效内容长度）、序号和校验值。下次启动扫描时：
-
-| 状态 | 处理 |
-|---|---|
-| `completed`（完成）且校验通过 | 消除重复记录后进入待上报队列 |
-| `completed` 但校验失败 | 标记为 `corrupt`（损坏），保留短摘要后隔离 |
-| `tmp/new`（临时文件）且完整 | 可按协议恢复为 `completed` |
-| `tmp/new` 不完整 | 记录 `partial`（残缺）计数后删除 |
-| 已上报 | 按保留周期清理 |
-
-AOSP [`DropBoxManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/DropBoxManagerService.java) 采用只尽力完成、不保证成功的轻量协议：临时文件关闭后直接重命名，没有额外 `fsync`；服务启动扫描到 `.tmp` 时直接删除。[`ActivityManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java) 只有在 system_server 自身 Crash 的特定路径上才等待 DropBox 后台线程最多两秒。普通应用不能从这些实现推导出“异步 Crash 上报一定来得及”。
-
-#### Java 与 Native 的写入策略不能共用
-
-Java 未捕获异常处理器可以尝试一次有大小限制的同步写入，但仍可能遇到 OOM、文件系统阻塞或递归异常。记录器应预先创建目录、限制文件数、避免 JSON 反射和大对象复制，并确保无论写入成功与否都会调用前一个默认处理器。
-
-Native 信号处理函数只能使用异步信号安全操作。若方案需要压缩、符号化、锁或堆分配，就应放到独立转储进程或下次启动。不能把 Java 版本的“临时文件 + rename”代码直接移进信号处理函数。
-
-Crash 文件属于应用私有诊断数据，也要限制文件数量和占用空间，并执行加密与删除策略。存储满时保留事件摘要和丢弃计数，比无限写入直到影响用户数据更安全。
-
-### Kotlin Coroutine 异常处理
-
-当前官方 [Coroutine exceptions handling](https://kotlinlang.org/docs/exception-handling.html) 把协程构建函数（builder）分成两类。这里的根协程指没有父协程继续接管其异常的协程：
-
-- 根协程 `launch` 把未处理异常视为未捕获异常；
-- 根协程 `async` / `produce` 把异常保存在结果中，调用方通过 `await()` / `receive()` 消费；
-- 普通子协程的异常向父协程传播并取消父级，子协程上的 `CoroutineExceptionHandler` 通常不会截断传播；
-- `supervisorScope` 或 `SupervisorJob` 使子任务失败不自动取消同级任务，每个子任务仍要处理自己的失败；
-- `CancellationException` 用于协作取消，通常不进入错误上报。
-
-`CoroutineExceptionHandler` 在协程已经以异常完成后才被调用，不能恢复该协程。它适合记录根协程未处理异常，不能代替 `try/catch`、`await()` 处的错误处理或结构化并发（用父子作用域约束任务生命周期和取消传播）。
-
-下面的例子只捕获调用契约中允许恢复的网络错误，其他编程错误继续传播：
-
-```kotlin
-viewModelScope.launch {
-    try {
-        uiState.value = UiState.Content(repository.load())
-    } catch (cancelled: CancellationException) {
-        throw cancelled
-    } catch (error: IOException) {
-        nonFatalReporter.record(error)
-        uiState.value = UiState.Error(retryable = true)
-    }
-}
-```
-
-这里的 `IOException` 被转换成页面状态，不应计为 Crash。若数据仓库接口还声明了明确的业务错误，可以逐类处理；不要用 `runCatching` 把 `Error` 等任意 `Throwable` 一起变成页面错误。若希望多个子任务互不取消，可在 `supervisorScope` 内分别处理；不能只加一个 `CoroutineExceptionHandler` 后忽略各子任务的失败结果。
-
-kotlinx.coroutines 1.11.0 的 [JVM `CoroutineExceptionHandlerImpl.kt`](https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/kotlinx-coroutines-core/jvm/src/internal/CoroutineExceptionHandlerImpl.kt) 通过 Java 服务发现机制 `ServiceLoader` 加载平台处理器，最终兜底时调用当前线程的 `uncaughtExceptionHandler`。Android 模块的 [`AndroidExceptionPreHandler.kt`](https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/ui/kotlinx-coroutines-android/src/AndroidExceptionPreHandler.kt) 只为 API 26/27 的 Oreo pre-handler 差异做反射补偿；Android 17 仍回到线程未捕获异常处理器与 `RuntimeInit` 的平台路径。
-
-协程记录要带 `CoroutineName`、作用域类型、页面生命周期和 Dispatcher（决定协程在哪个线程或线程池执行的调度器）。不能在 `CoroutineExceptionHandler` 中同步访问网络或执行大规模序列化，它可能运行在主线程或已经处于失败传播过程的工作线程上。
-
 ### 上线前检查
 
 1. Java 自定义处理器是否无条件调用替换前的默认处理器；
@@ -1184,7 +1199,7 @@ kotlinx.coroutines 1.11.0 的 [JVM `CoroutineExceptionHandlerImpl.kt`](https://g
 11. Google Play 应用是否避免从 Play 之外下载 dex、JAR 或 Native 可执行代码；
 12. 协程取消、可恢复业务错误和进程级 Crash 是否进入不同指标。
 
-异常处理架构的成败不由“捕获了多少异常”决定。严谨的实现会承认当前进程不可恢复的边界，把少量可信证据带到下一次启动，再用受控降级和发布动作阻止同一故障反复伤害用户。
+捕获数量不能说明异常处理架构是否可靠。当前进程不可恢复时，能不能把少量可信证据带到下一次启动，并用受控降级阻止同一故障反复出现，才是要检验的部分。
 
 ## 小结
 
