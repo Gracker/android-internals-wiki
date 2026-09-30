@@ -4,10 +4,12 @@ chapter: '25.5'
 section: '25.5'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
-last_verified_against: Android Developers background audio hardening docs updated 2026-08-13 + current Media3/audio focus/battery docs retrieved 2026-08-15；AOSP android-17.0.0_r1 AudioManagerShellCommand/AudioManager/AudioService/HardeningEnforcer/AudioFlinger Tracks.cpp/LeAudioService/codec_manager
+last_verified: '2026-09-30'
+last_source_verified_at: '2026-09-30'
+last_verified_against: Android Developers background audio hardening, Media3 battery/track-selection/offload listener, Android 17 features, AAudio/AudioTrack references, and Android 17 CDD retrieved 2026-09-30；AOSP android-17.0.0_r1 HardeningEnforcer/AudioManagerShellCommand/AudioManager/AudioService/MediaFocusControl/AudioFlinger Tracks.cpp/AAudio.h/AudioTrack.java/LeAudioService/codec_manager
 confidence: medium
+last_idle_audit_at: '2026-09-30T18:35:04+08:00'
+last_idle_audit_run_id: 20260930-183504-idle-audit-8ebf0e86
 sources:
 - type: official
   path: https://developer.android.com/about/versions/17/changes/bg-audio
@@ -23,6 +25,10 @@ sources:
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/HardeningEnforcer.java
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/AudioManagerShellCommand.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/AudioManager.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/AudioService.java
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/MediaFocusControl.java
 - type: aosp
@@ -615,6 +621,8 @@ DSP offload 改变音频数据经过的处理路径，但不会取消音量安�
 - [Battery consumption | Android media | Android Developers](https://developer.android.com/media/media3/exoplayer/battery-consumption)
 - [`HardeningEnforcer.java` | AOSP `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/HardeningEnforcer.java)
 - [`AudioManagerShellCommand.java` | AOSP `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/AudioManagerShellCommand.java)
+- [`AudioManager.java` | AOSP `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/AudioManager.java)
+- [`AudioService.java` | AOSP `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/AudioService.java)
 - [`MediaFocusControl.java` | AOSP `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/MediaFocusControl.java)
 - [`Tracks.cpp` | AOSP `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/audioflinger/Tracks.cpp)
 - [`LeAudioService.java` | AOSP `android-17.0.0_r1`](https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/android/app/src/com/android/bluetooth/le_audio/LeAudioService.java)
