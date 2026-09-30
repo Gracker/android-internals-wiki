@@ -38,15 +38,17 @@ last_review_finalize_run_id: 20260728-081833-99d1a2d7
 
 # Native Hook 技术选型与实现
 
-Native Hook 指在进程内修改本地代码（C/C++）的函数解析结果或执行入口，让调用先经过代理函数。改一个地址通常很容易，难点集中在命中范围、并发发布、ABI 一致性、动态装载和平台防护。只按 GOT、Trap、Inline 三个名字选型，容易把不同层级的机制混在一起。
+Native Hook 指在进程内修改本地代码（C/C++）的函数解析结果或执行入口，让调用先经过代理函数。改一个地址通常很容易，难点集中在命中范围、并发发布、ABI 一致性、动态装载和平台防护。只按 PLT/GOT、Inline、Trap 三个名字选型，容易把不同层级的机制混在一起。
 
-本文以 `android-17.0.0_r1` 为源码基线，讨论普通应用进程中的 arm64（AArch64，64 位 Arm 指令集）Native Hook。Android 17 没有公开的 Hook API，Hook 框架也不会因此获得额外权限。业务代码应优先选择公开 NDK（Native Development Kit）API、编译期插桩、显式代理或系统诊断工具。无法改造调用方，并且诊断收益足以覆盖稳定性成本时，再评估运行时 Hook。
+本文以 `android-17.0.0_r1` 为源码基线，讨论普通应用进程中的 arm64（AArch64，64 位 Arm 指令集）Native Hook。
+
+Android 17 没有公开的 Hook API，Hook 框架也不会因此获得额外权限。业务代码应优先选择公开 NDK（Native Development Kit）API、编译期插桩、显式代理或系统诊断工具；无法改造调用方，并且诊断收益足以覆盖稳定性成本时，再评估运行时 Hook。
 
 文中沿用源码和业内常用名称：proxy 指 Hook 命中后先进入的代理函数；linker 指 bionic 动态链接器；debuggerd 指 Android 的 Native 崩溃转储组件；ART 指 Android Runtime。
 
 ## 1. 先确定要改写哪一层
 
-Native Hook 常见方案处理三个不同对象。PLT（Procedure Linkage Table）负责把外部函数调用引向动态链接结果；GOT（Global Offset Table）保存这类运行时地址。实践中所说的 PLT/GOT Hook，通常修改 GOT 中与动态重定位对应的槽位。
+Native Hook 常见方案处理三个不同对象。ELF（Executable and Linkable Format）是 Android Native 可执行文件和 `.so` 的二进制格式。PLT（Procedure Linkage Table）负责把外部函数调用引向动态链接结果；GOT（Global Offset Table）保存这类运行时地址。实践中所说的 PLT/GOT Hook，通常修改 GOT 中与动态重定位对应的槽位。
 
 | 方案 | 改写对象 | 能观察到什么 | 主要盲区 |
 |---|---|---|---|
@@ -54,7 +56,7 @@ Native Hook 常见方案处理三个不同对象。PLT（Procedure Linkage Table
 | Inline Hook | 目标函数入口或函数内指令 | 所有经过该指令地址的执行流 | 无法安全搬迁的指令、已经内联的调用、未命中的其他实现 |
 | Trap/Breakpoint Hook | 指令替换为断点，借 `SIGTRAP` 改写上下文 | 命中断点的执行流和寄存器现场 | 信号冲突、调试器抢占、频繁信号带来的高成本 |
 
-ELF（Executable and Linkable Format）是 Android Native 可执行文件和 `.so` 的二进制格式。PLT/GOT Hook 按调用方修改重定位槽，Inline Hook 按目标指令地址修改执行流。两者即使都针对 `malloc`，覆盖面也不同：修改 `libfoo.so` 中 `malloc` 的导入槽，只影响 `libfoo.so` 经该槽发出的调用；修改 `libc.so` 中 `malloc` 的入口，可能影响进程内更多调用者，也会放大递归和并发风险。
+PLT/GOT Hook 按调用方修改重定位槽，Inline Hook 按目标指令地址修改执行流。两者即使都针对 `malloc`，覆盖面也不同：修改 `libfoo.so` 中 `malloc` 的导入槽，只影响 `libfoo.so` 经该槽发出的调用；修改 `libc.so` 中 `malloc` 的入口，可能影响进程内更多调用者，也会放大递归和并发风险。
 
 Trap Hook 接近用户态软件断点：用断点指令触发 `SIGTRAP`，再由信号处理函数改写执行现场。它与 debuggerd 没有扩展接口关系，也不同于调试器通过 `ptrace` 控制目标线程。框架必须管理或正确串接 `SIGTRAP` 的 signal disposition（信号处置配置），识别自有断点，并通过 `ucontext_t` 读取或修改信号发生时的寄存器和 PC（Program Counter，程序计数器）。
 
@@ -118,7 +120,19 @@ if (r_type == R_GENERIC_JUMP_SLOT) {
 2. PLT/GOT Hook 修改 linker 已写好的重定位结果，不依赖 `DT_PLTGOT` 提供延迟解析入口。
 3. 新装载的 ELF 有独立的重定位槽，必须另行扫描。已经完成解析的普通调用不会自行重新解析并覆盖 Hook。
 
-IFUNC（indirect function，运行时选择实现的函数）需要单独说明。`dlsym()` 会返回解析后的符号地址；`R_GENERIC_IRELATIVE` 则是一类重定位，linker 会调用其 resolver 并把结果写入目标槽。两条路径都可能得到最终实现地址，但它们没有共用同一个 `R_GENERIC_IRELATIVE` 分支。校验旧值时，应比较最终实现地址，不能把 resolver 地址当作普通函数入口。
+IFUNC（indirect function，运行时选择实现的函数）有两条解析路径。`dlsym()` 会返回解析后的符号地址；`R_GENERIC_IRELATIVE` 则是一类重定位，linker 会调用其 resolver 并把结果写入目标槽。两条路径都可能得到最终实现地址，但它们没有共用同一个 `R_GENERIC_IRELATIVE` 分支。校验旧值时，应比较最终实现地址，不能把 resolver 地址当作普通函数入口。
+
+MTE（Memory Tagging Extension，内存标记扩展）globals 会给符合条件的全局对象使用地址标记。该支持在 Android 16 已存在，Android 17 延续了这套重定位语义。`should_tag_memtag_globals()` 返回 true 时，`R_AARCH64_RELATIVE` 会利用 relocation place（重定位目标位置的原始值）中的位生成带标记的结果：
+
+```cpp
+if (relocator.si->should_tag_memtag_globals()) {
+  int64_t* place = static_cast<int64_t*>(rel_target);
+  int64_t offset = *place;
+  result = relocator.si->apply_memtag_if_mte_globals(result + offset) - offset;
+}
+```
+
+这段代码只说明启用 MTE globals 的二进制会改变部分重定位的地址计算，不能推导出“每个 GOT 槽都带有 MTE 元数据”。Hook 仍要按具体 relocation type、当前槽值以及目标地址是否保留 tag 校验。
 
 ### 3.2 RELRO 限制写权限，同进程修改仍需显式处理
 
@@ -137,23 +151,11 @@ bool soinfo::link_image(...) {
 
 待修改的函数地址可能位于 `.got.plt`、`.data` 或 `.data.rel.ro`。是否落入 `PT_GNU_RELRO`、当前页有哪些权限，都要按目标 ELF 和运行时映射判断。
 
-MTE（Memory Tagging Extension，内存标记扩展）globals 会给符合条件的全局对象使用地址标记。该支持在 Android 16 已存在，Android 17 延续了这套重定位语义。当 `should_tag_memtag_globals()` 返回 true 时，`R_AARCH64_RELATIVE` 会利用 relocation place（重定位目标位置的原始值）中的位生成带标记的结果：
-
-```cpp
-if (relocator.si->should_tag_memtag_globals()) {
-  int64_t* place = static_cast<int64_t*>(rel_target);
-  int64_t offset = *place;
-  result = relocator.si->apply_memtag_if_mte_globals(result + offset) - offset;
-}
-```
-
-这段代码只说明启用 MTE globals 的二进制会改变部分重定位的地址计算，不能推导出“每个 GOT 槽都带有 MTE 元数据”。Hook 仍要按具体 relocation type、当前槽值以及目标地址是否保留 tag 校验。
-
 加载完成后，落入 RELRO 的槽位已经只读。普通应用中的 Hook 通常只能在 `dlopen()` 返回后看到新 ELF，此时需要确认页边界和原权限，再决定是否用 `mprotect()` 临时增加写权限。该调用可能因地址、长度、映射类型或进程安全策略而失败，失败应进入可观测的降级分支。
 
 监听 `dlopen()` 只解决“何时重新扫描”的问题，不会获得 linker 内部从重定位结束到 `protect_relro()` 之前的公开插入点。依赖这个内部时机的方案必须 Hook linker 私有实现，版本风险会随之增加。
 
-ByteHook 当前实现会记录 program header（程序头）推导出的原页权限，对不可写槽增加 `PROT_WRITE`，先回调原函数地址，再用原子写替换 GOT。源码中的权限恢复语句目前被注释，因此“写完是否恢复原权限”必须作为显式的框架策略记录，不能假定库会自动恢复。这也说明，可靠的 PLT/GOT Hook 包含 ELF 解析、权限处理、发布顺序和错误恢复，扫描 `/proc/self/maps` 后写一个指针远远不够。
+ByteHook 当前实现会记录 program header（程序头）推导出的原页权限，对不可写槽增加 `PROT_WRITE`，先回调原函数地址，再用原子写替换 GOT。源码中的权限恢复语句目前被注释，因此“写完是否恢复原权限”必须作为显式的框架策略记录，不能假定库会自动恢复。可靠的 PLT/GOT Hook 包含 ELF 解析、权限处理、发布顺序和错误恢复，扫一遍 `/proc/self/maps` 再写一个指针并不够。
 
 ### 3.3 `DT_TEXTREL` 与 Inline Hook 受不同机制约束
 
@@ -210,13 +212,13 @@ dl_iterate_phdr()
 
 判断时要同时锁定调用方 ELF 和 relocation type。以 arm64 为例，常见函数导入会涉及 `R_AARCH64_JUMP_SLOT`，部分函数地址引用还可能落在 `R_AARCH64_GLOB_DAT` 或 `R_AARCH64_ABS64`。同名字符串只提供候选符号，不能据此修改附近地址。
 
-定位出的槽地址可写成：
+load bias 是 ELF 虚拟地址映射到进程地址时使用的装载偏移。定位出的槽地址可写成：
 
 ```text
 runtime_slot = load_bias + relocation.r_offset
 ```
 
-load bias 是 ELF 虚拟地址映射到进程地址时使用的装载偏移。上面的公式只完成这一步换算。写入前仍需核对 relocation 对应的符号、当前槽值、目标映射和 ABI，避免把同名数据符号或已被其他框架改写的槽当作函数入口。
+上面的公式只完成这一步换算。写入前仍需核对 relocation 对应的符号、当前槽值、目标映射和 ABI，避免把同名数据符号或已被其他框架改写的槽当作函数入口。
 
 ### 4.2 安装顺序
 
@@ -244,7 +246,7 @@ orig 指代理函数继续调用的原目标地址。它必须先于新槽值发
 - 在 Hook 安装后通过 `dlopen()` 加载的新调用方；
 - 已卸载又复用同一地址区间的 ELF。
 
-因此，“Hook 成功”只能说明某些 relocation slot 已改写，不能说明目标函数的所有调用都被覆盖。测试报告应同时给出命中调用方列表和明确的盲区。
+“Hook 成功”只能说明某些 relocation slot 已改写，不能说明目标函数的所有调用都被覆盖。测试报告应同时给出命中调用方列表和明确的盲区。
 
 ### 4.4 动态装载和多框架共存
 
@@ -296,7 +298,7 @@ AArch64 Inline Hook 一般需要完成：
 
 步骤 7 也不能省略。代码通过数据写入路径更新后，其他核心取指前必须看到新指令；在 Android NDK 代码中通常使用 `__builtin___clear_cache(begin, end)`。Android 17 的 bionic 只在 32 位 `__arm__` 下声明 `cacheflush()`，头文件也建议新代码使用跨架构的 builtin。
 
-ShadowHook 的 arm64 重写器显式识别 `B`、`BL`、`B.cond`、`ADR`、`ADRP`、literal load、`CBZ/CBNZ`、`TBZ/TBNZ` 等类型。每类指令都有独立的长度计算和 rewrite 分支，因此“复制几条指令后跳回去”不足以构成可靠实现。
+ShadowHook 的 arm64 重写器显式识别 `B`、`BL`、`B.cond`、`ADR`、`ADRP`、literal load、`CBZ/CBNZ`、`TBZ/TBNZ` 等类型。每类指令都有独立的长度计算和 rewrite 分支，“复制几条指令后跳回去”不足以构成可靠实现。
 
 ### 5.2 branch island 与并发改写
 
@@ -304,14 +306,14 @@ AArch64 的直接 `B` 使用 26 位有符号立即数并按 4 字节缩放，目
 
 单条对齐的 32 位写入比多指令覆盖容易控制，但“数据写入不可撕裂”仍不等于“其他核心立即按新指令执行”。发布协议还要包含线程协调和指令缓存同步。多指令 patch 的窗口更大，其他核心可能取到新旧混合的指令序列；一次 `memcpy()` 无法提供所需的并发保证。
 
-因此，在可证明安全的前提下，近地址 branch island 还能把原入口的发布动作缩小到一条指令；节省 trampoline 空间只是附带收益。
+在可证明安全的前提下，近地址 branch island 还能把原入口的发布动作缩小到一条指令；节省 trampoline 空间只是附带收益。
 
 ### 5.3 PAC、BTI 与 CFI
 
 Android 17 的 arm64 代码可能同时使用几类控制流保护：
 
 - **PAC（Pointer Authentication Code，指针认证码）**：函数序言或返回路径可能对 LR 签名、认证。搬迁序言时不能遗漏或重复这些指令，也不能改变它们依赖的栈状态。
-- **BTI（Branch Target Identification，分支目标识别）**：bionic linker 会读取 GNU property（ELF 中声明处理器特性的 note）；当 ELF 声明兼容且硬件支持时，为可执行段加入 `PROT_BTI`。若 proxy 或 trampoline 所在映射受 BTI 保护，通过间接 `BR/BLR` 到达的入口必须有匹配的 landing pad（允许间接分支落入的入口指令）。
+- **BTI（Branch Target Identification，分支目标识别）**：bionic linker 会读取 GNU property（ELF 中声明处理器特性的 note）；ELF 声明兼容且硬件支持时，为可执行段加入 `PROT_BTI`。若 proxy 或 trampoline 所在映射受 BTI 保护，通过间接 `BR/BLR` 到达的入口必须有匹配的 landing pad（允许间接分支落入的入口指令）。
 - **CFI（Control-Flow Integrity，控制流完整性）**：函数指针等间接调用到达签名不兼容的代理地址时，可能触发类型检查并终止进程。Hook 私有 CFI helper 以绕过检查，又会新增一组没有兼容性承诺的依赖。
 
 Hook 框架需要把这些能力纳入测试组合，CPU 架构只能作为第一层筛选。至少要覆盖启用 `-mbranch-protection`、LTO/CFI、不同链接可见性和不同系统库 Build ID 的产物。
@@ -344,7 +346,7 @@ action.sa_flags |= SA_EXPOSE_TAGBITS;   // 请求内核把 fault addr 的 tag bi
 debuggerd_register_handlers(&action);
 ```
 
-`SA_EXPOSE_TAGBITS` 请求内核在 `siginfo_t.si_addr` 中保留受支持架构的 address tag bits（地址高位标记），用于分析 MTE 等故障。Android 16 的同一路径已经设置该 flag，因此这里的代码只能证明 Android 17 继续使用它。
+`SA_EXPOSE_TAGBITS` 请求内核在 `siginfo_t.si_addr` 中保留受支持架构的 address tag bits（地址高位标记），用于分析 MTE 等故障。Android 16 的同一路径已经设置该 flag，这里的代码能证明的只是 Android 17 继续使用它。
 
 `debuggerd_signal_handler()` 处理 `SIGTRAP`、`SIGSEGV`、`SIGBUS`、`SIGFPE`、`SIGILL`、`SIGABRT` 等信号。致命路径会暂时允许 `crash_dump` 使用 `ptrace` 读取进程，通过 `clone()` 建立共享地址空间的 pseudothread（专用于分派崩溃转储的轻量线程），再由 `crash_dump` 暂停线程并生成 tombstone（Native 崩溃转储）。可恢复 GWP-ASan 或 permissive MTE（记录 MTE 故障后允许继续执行的宽松模式）等特定路径可能在记录后返回；其他致命路径会重新发送信号。
 
@@ -391,7 +393,9 @@ ssize_t proxy_read(int fd, void* buffer, size_t count) {
 }
 ```
 
-这个示例仍省略了 cancellation point（线程可响应 pthread cancellation 的位置）、异常退出、信号重入和多线程同时初始化的竞态。`thread_local` 标记只能约束当前线程的常规递归，无法让记录函数自动满足异步信号安全。生产代码还要使用 RAII（让对象析构时自动执行清理）或等价的 scope guard（退出当前作用域时自动清理），保证每条返回路径都清理线程局部状态，并确认代理声明与目标导出声明逐项一致。
+这个示例仍省略了 cancellation point（线程可响应 pthread cancellation 的位置）、异常退出、信号重入和多线程同时初始化的竞态。
+
+`thread_local` 标记只能约束当前线程的常规递归，无法让记录函数自动满足异步信号安全。生产代码还要使用 RAII（让对象析构时自动执行清理）或等价的 scope guard（退出当前作用域时自动清理），保证每条返回路径都清理线程局部状态，并确认代理声明与目标导出声明逐项一致。
 
 ## 8. 生命周期设计
 
@@ -496,10 +500,6 @@ API level 只适合作为第一层筛选。安装前还要检查：
 - [ ] 关闭功能不立即释放仍可能执行的 proxy 或 trampoline
 - [ ] 崩溃事件可还原目标 Build ID、偏移、原指令或 relocation
 
-## 小结
-
-Native Hook 的选型应从“需要命中哪条调用路径”开始：PLT/GOT 修改特定调用方的导入槽，Inline 改写目标指令，Trap 则依赖完整信号语义。上线前必须把 ABI、Build ID、页大小、RELRO、PAC/BTI/CFI、动态装载、并发发布和多框架共存写成可验证的安装条件；任何条件不匹配时默认停用，不用猜测偏移继续执行。
-
 ## 12. 源码锚点与参考资料
 
 正文的平台实现以 `android-17.0.0_r1` 为准：
@@ -532,3 +532,7 @@ Native Hook 的选型应从“需要命中哪条调用路径”开始：PLT/GOT 
 - 14.7《三方性能库、Hook 与可观测性基础设施》
 - 20.7《FD 与资源耗尽监控》
 - 20.3《Native Crash、堆栈回溯与符号化》
+
+## 小结
+
+Native Hook 的选型应从“需要命中哪条调用路径”开始：PLT/GOT 修改特定调用方的导入槽，Inline 改写目标指令，Trap 则依赖完整信号语义。上线前必须把 ABI、Build ID、页大小、RELRO、PAC/BTI/CFI、动态装载、并发发布和多框架共存写成可验证的安装条件；任何条件不匹配时默认停用，不用猜测偏移继续执行。
