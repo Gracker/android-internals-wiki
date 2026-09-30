@@ -60,20 +60,20 @@ consolidated_from:
 
 # Privacy Sandbox 退场与广告 SDK 启动治理
 
-Privacy Sandbox on Android 是一组曾用于隐私广告与第三方 SDK 隔离的平台技术。其中 Topics 用于提供粗粒度兴趣主题，Protected Audience 用于设备端广告受众和选取，Attribution Reporting 用于广告归因，SDK Runtime 用独立进程承载适配后的 SDK。Google 已决定让这四项技术退出。旧文章和设计页仍会展示 `getTopics()`、`selectAds()`、`registerSource()`、`SdkSandboxManager.loadSdk()` 与独立 sandbox（隔离运行环境）进程，但面向 Android 17 的新代码不能继续把它们当作可采用的平台方案。
+Android 上的 Privacy Sandbox 曾是一组用于隐私广告与第三方 SDK 隔离的平台技术：Topics 提供粗粒度兴趣主题，Protected Audience 负责设备端广告受众与选取，Attribution Reporting 负责广告归因，SDK Runtime 用独立进程承载适配后的 SDK。Google 已决定让这四项技术退出。旧文章和设计页仍会展示 `getTopics()`、`selectAds()`、`registerSource()`、`SdkSandboxManager.loadSdk()` 与独立 sandbox（隔离运行环境）进程，但面向 Android 17 的新代码不能继续把它们当作可采用的平台方案。
 
 讨论分为两部分：
 
 - Android 14–16 遗留 SDK Runtime 的行为与迁移边界；
 - Android 17 上普通嵌入式广告 SDK 的启动治理。
 
-启动任务编排见 [启动任务编排框架](02-startup-task-lazy-concurrency.md)，Provider 自动初始化见 [ContentProvider 启动优化](03-contentprovider-multiprocess-startup.md)，懒初始化见 [延迟与懒初始化](02-startup-task-lazy-concurrency.md)，多进程成本见 [多进程启动优化](03-contentprovider-multiprocess-startup.md)，指标设计见 [启动监控与度量](01-app-startup-path-monitoring.md)。
+这些环节的做法见同章其他小节：启动任务编排见 [启动任务编排框架](02-startup-task-lazy-concurrency.md)，懒初始化见 [延迟与懒初始化](02-startup-task-lazy-concurrency.md)；Provider 自动初始化见 [ContentProvider 启动优化](03-contentprovider-multiprocess-startup.md)，多进程成本见 [多进程启动优化](03-contentprovider-multiprocess-startup.md)；指标设计见 [启动监控与度量](01-app-startup-path-monitoring.md)。
 
 ## 1. Android 17 版本结论
 
 ### 1.1 平台 API 已明确退场
 
-Android 17 / API 37 的公开 API 文档对 `SdkSandboxManager`、`SandboxedSdkProvider` 和 `SandboxedSdk` 给出相同结论：这些类在 API 37 deprecated（已废弃，不应再用于新代码），SDK sandbox 不再受支持。
+Android 17 / API 37 的公开 API 文档对 `SdkSandboxManager`、`SandboxedSdkProvider` 和 `SandboxedSdk` 给出相同结论：这些类在 API 37 的标注是 deprecated（已废弃，不应再用于新代码），SDK sandbox 不再受支持。
 
 Android 17 的 `packages/modules/AdServices` 源码与公开文档一致：
 
@@ -86,7 +86,7 @@ API 符号仍然存在，只能说明代码可以编译，不能证明设备上�
 
 ### 1.2 其他 AdServices API 也不能作为新依赖
 
-Google 在 2025 年 10 月 17 日公告退役相关技术，官方状态页把 Android 上的 Topics、Protected Audience、Attribution Reporting、SDK Runtime 等能力列为“Deprecate and remove”，但没有给出一个适用于所有能力的 Android 移除版本。源码存在、manager 对象可以取得或旧接入文档仍在线，都不能单独证明能力可用于新业务。
+Google 在 2025 年 10 月 17 日公告退役相关技术，官方状态页把 Android 上的 Topics、Protected Audience、Attribution Reporting、SDK Runtime 等能力列为“Deprecate and remove”，但没有给出一个对所有这些能力都适用的 Android 移除版本。对新业务来说，源码存在、manager 对象可以取得、旧接入文档仍在线，这三件事都不构成能力可用的证明。
 
 Android 17 Framework 的边界更具体：
 
@@ -97,7 +97,7 @@ Android 17 Framework 的边界更具体：
 | Attribution Measurement | `MeasurementManager` 已废弃，但注释明确处于 soft removal（先废弃、随后分阶段拒绝调用） | 停止新集成；把当前仍能成功的调用视作迁移窗口，不视作长期保证 |
 | SDK Runtime | API 37 deprecated，官方说明 sandbox 不再受支持 | Android 17 明确关闭平台路径 |
 
-旧 Topics epoch（平台定期更新主题的一段时间）、竞价 JavaScript、registration URI（注册端点地址）网络获取和延迟报告只用于解释遗留流量。它们不再构成需要继续优化的 Android 17 高频启动路径。Privacy Sandbox 退场也没有自动扩大 GAID（Google Advertising ID，广告标识符）、App Set ID（同一开发者应用集合标识）或第一方标识的用途；替代方案仍需重新通过隐私、政策、安全和性能评审。
+旧 Topics epoch（平台定期更新主题的一段时间）、竞价 JavaScript、registration URI（注册端点地址）的网络获取与延迟报告，都只用来解释遗留流量，不再是 Android 17 上需要继续优化的高频启动路径。Privacy Sandbox 退场也没有自动扩大 GAID（Google Advertising ID，广告标识符）、App Set ID（同一开发者应用集合标识）或第一方标识的用途；替代方案仍需重新通过隐私、政策、安全和性能评审。
 
 ### 1.3 版本表
 
@@ -117,7 +117,7 @@ Privacy Sandbox 的 SDK Runtime architecture 与 developer guide 仍可用于理
 
 ### 2.1 `loadSdk()` 做了什么
 
-在历史实现中，App 的调用链如下。`system_server` 是承载 Android 核心系统服务的进程，SDK sandbox process 是为当前 App 创建的隔离进程，`IBinder` 是跨进程接口句柄：
+在历史实现中，App 的调用链如下：
 
 ```text
 App process
@@ -129,7 +129,7 @@ App process
   -> App 通过 Binder 调用 SDK 接口
 ```
 
-这条链路包含进程创建、SDK 代码加载、Provider 准备和 Binder（Android 进程间通信机制）回调。`loadSdk()` 是异步 API，只表示结果稍后通过 receiver（结果接收回调）返回，并不表示工作没有成本；调用方若在首帧前等待 receiver，仍会让页面等待 sandbox 冷启动。
+链路上有三个对象：`system_server` 是承载 Android 核心系统服务的进程，SDK sandbox process 是为当前 App 创建的隔离进程，`IBinder` 是跨进程接口句柄。整条链路包含进程创建、SDK 代码加载、Provider 准备和 Binder（Android 进程间通信机制）回调。`loadSdk()` 是异步 API，只说明结果稍后通过 receiver（结果接收回调）返回，不代表这项工作没有成本：调用方如果在首帧前等 receiver，页面仍然要等 sandbox 冷启动。
 
 历史 API 还有这些边界：
 
@@ -147,11 +147,13 @@ App process
 - 同一应用不能从多个进程共同使用这套同步管理；
 - 移除 key 后，已经同步到 sandbox 的对应值会被删除。
 
-同步适合少量稳定标量，也就是字符串、数字、布尔值这类单个值，不适合复制整份业务配置。每个 key 都应有数据所有者、默认值、版本与隐私用途。高频状态通过一次携带完整业务含义的接口传递；大对象使用文件描述符或受支持的数据通道，避免在 Binder 与 `Bundle` 中反复复制。
+同步适合少量稳定标量，也就是字符串、数字、布尔值这类单个值，不适合复制整份业务配置。每个 key 都应有数据所有者、默认值、版本与隐私用途。
+
+高频状态走一次调用，接口本身携带完整的业务含义；大对象则用文件描述符或受支持的数据通道传递，避免在 Binder 与 `Bundle` 中反复复制。
 
 ### 2.3 遗留能力探测
 
-维护 Android 14–16 时，能力判断需要同时约束系统版本和 sandbox 状态。下面的代码只用于现有迁移层；面向 API 37 编译时会产生 deprecated 警告，因此用局部 `Suppress` 抑制警告，并把这处仍需移除的兼容代码明确标成技术债：
+维护 Android 14–16 时，能力判断需要同时约束系统版本和 sandbox 状态。下面的代码只用于现有迁移层：面向 API 37 编译时会产生 deprecated 警告，所以用局部 `Suppress` 抑制，并把这段仍需移除的兼容代码标成技术债。
 
 ```kotlin
 @Suppress("DEPRECATION")
@@ -165,7 +167,7 @@ fun canUseLegacyPlatformSdkSandbox(): Boolean {
 }
 ```
 
-返回 `false` 只表示平台 sandbox 路径不可用，不等于可以在主线程同步加载旧广告 SDK。是否存在嵌入式版本、功能是否应关闭、能否延后加载，要由广告网关（业务页面与各家广告 SDK 之间的统一接口）的明确策略决定。API 37 直接返回 `false`，不再尝试 deprecated `loadSdk()`。
+API 37 直接返回 `false`，不再尝试 deprecated `loadSdk()`。返回 `false` 只表示平台 sandbox 路径不可用，不等于可以在主线程同步加载旧广告 SDK。是否存在嵌入式版本、功能是否应关闭、能否延后加载，要由广告网关（业务页面与各家广告 SDK 之间的统一接口）的明确策略决定。
 
 ### 2.4 AndroidX compat 的历史语义
 
@@ -179,7 +181,7 @@ fun canUseLegacyPlatformSdkSandbox(): Boolean {
 - Binder 形式的接口可以保持同一套调用方式，但 bundled SDK（随 App 打包的 SDK）位于本进程时，不一定发生跨进程事务；
 - AndroidX 该库已经 deprecated，不能负责面向 Android 17 的长期抽象。
 
-现有产品若仍依赖 alpha19，应固定版本、保留兼容测试，并与 SDK/广告供应方确认替代交付。alpha 表示尚未稳定的预发布版本，既然该库已停止更新，就不应只给 `SdkSandboxManagerCompat` 换一层名字后继续扩展新功能。
+alpha19 属于尚未稳定的预发布版本，而这个库已经停止更新。现有产品若仍依赖它，应固定版本、保留兼容测试，并与 SDK/广告供应方确认替代交付；不应只给 `SdkSandboxManagerCompat` 换一层名字后继续扩展新功能。
 
 ## 3. Android 17 上的广告 SDK 启动模型
 
@@ -215,13 +217,13 @@ SDK Runtime 退场后，广告 SDK 常见形态回到宿主进程中的 AAR、dy
 | 临近广告入口 | 初始化、请求、素材准备 | 阻塞页面主线程 |
 | 广告位可见 | 展示已 ready 内容，或按产品规则占位/跳过 | 同步执行备用初始化路径 |
 
-“首帧后”仍可能影响 TTFD（Time to Full Display，主要内容完整可用时间）和第一段交互。低端设备、首屏动画或 Jetpack Compose 首次生成并稳定 UI 的期间，应延迟到明确空闲窗口或临近广告入口，并用实验确认首个广告可用率与启动体验的取舍。
+“首帧后”仍可能影响 TTFD（Time to Full Display，主要内容完整可用时间）和第一段交互。在低端设备、首屏动画或 Jetpack Compose 首次生成并稳定 UI 期间，初始化要延迟到明确的空闲窗口或临近广告入口，并用实验确认首个广告可用率与启动体验之间的取舍。
 
 ### 3.3 用状态机管理一次会话的初始化
 
 页面不应各自调用 SDK init（初始化）。广告网关应持有 App 级状态，把同时到达的多次请求合并成同一个任务，并把失败保存为调用方可以读取的结果。
 
-下面的状态机把初始化限制为 `Idle`（未开始）、`Initializing`（进行中）、`Ready`（可用）和 `Failed`（本次会话失败）。所有调用方共享同一个 `Deferred`，也就是稍后产生结果、可以被多个协程等待的对象。示例不假设 SDK 可在后台线程初始化，具体 `initializer` 必须遵守供应方要求并切到正确线程：
+下面的状态机把初始化限制为四个状态：`Idle`（未开始）、`Initializing`（进行中）、`Ready`（可用）和 `Failed`（会话失败）。所有调用方共享同一个 `Deferred`，也就是稍后产生结果、可以被多个协程等待的对象。示例不假设 SDK 能在后台线程初始化，具体 `initializer` 要按供应方要求切到正确线程：
 
 ```kotlin
 sealed interface AdSdkState {
@@ -267,13 +269,17 @@ class AdSdkGateway(
 }
 ```
 
-`appScope` 是由 App 生命周期管理的协程作用域，应使用 `SupervisorJob`，避免一个 SDK 子任务失败时取消同作用域的无关任务。调用方等待超时后返回 `null`，共享初始化仍可继续；如果产品需要取消，SDK 必须提供可验证的取消协议。示例把失败保持为本次进程会话的状态；若允许重试，应由网关按错误类型和逐次延长的等待间隔重置，不能由多个页面各自循环触发。
+`appScope` 是由 App 生命周期管理的协程作用域，应使用 `SupervisorJob`，避免一个 SDK 子任务失败时取消同作用域的无关任务。
 
-若供应方要求主线程调用 init，`initializer` 可以只在主线程提交轻量入口，后续重工作是否异步仍由 trace 验证。`Dispatchers.IO` 是 Kotlin 协程面向阻塞 I/O 的共享线程池；把整个 gateway 切到这里，也不能强迫看不到内部实现的 SDK 改变自己的线程行为。
+调用方等待超时后得到 `null`，共享初始化仍然继续；如果产品需要取消，SDK 必须提供可验证的取消协议。
+
+示例把失败留作进程会话级的状态。若允许重试，应由网关按错误类型和逐次延长的等待间隔重置，不能由多个页面各自循环触发。
+
+若供应方要求主线程调用 init，`initializer` 可以只在主线程提交轻量入口，后续重工作是否异步仍由 trace 验证。`Dispatchers.IO` 是 Kotlin 协程面向阻塞 I/O 的共享线程池；把整个 gateway 切到这里，也不能让内部实现不可见的 SDK 改掉自己的线程行为。
 
 ## 4. 首屏广告怎样取舍
 
-首屏广告、App Open（打开 App 时展示的）广告或首页首个广告位会让广告等待直接影响启动体验。技术方案需要产品先确定默认行为：
+首屏广告、App Open 广告（打开 App 时展示）或首页首个广告位，都会让广告等待直接影响启动体验。技术方案需要产品先确定默认行为：
 
 - SDK 未 ready 时跳过本次广告；
 - 展示固定尺寸占位，内容 ready 后再填充；
@@ -358,7 +364,9 @@ PSS（Proportional Set Size）会按比例分摊进程间共享的内存页，RS
 
 ### 7.3 A/B 条件
 
-A/B 实验是把条件相同的用户随机分到基准组与改动组进行对比。这里的 cold 表示需要创建 App 进程，warm 表示保留部分状态但仍需重建一部分启动路径，hot 表示进程和目标 Activity 仍在内存中。广告初始化实验至少固定：
+A/B 实验是随机把条件相同的用户分到基准组与改动组，再对比两组结果。启动类型也要固定：cold 表示需要创建 App 进程，warm 表示保留部分状态但仍需重建一部分启动路径，hot 表示进程和目标 Activity 仍在内存中。
+
+广告初始化实验至少固定：
 
 - 相同 App 与 SDK 版本；
 - 相同同意状态、广告位和服务端配置；
@@ -370,7 +378,14 @@ A/B 实验是把条件相同的用户随机分到基准组与改动组进行对�
 
 ## 8. 迁移清单
 
-清单保留代码和交付系统里的原名：runtime-enabled SDK 是为旧 SDK Runtime 改造的 SDK，ASB 是 Android SDK Bundle 交付包，`<uses-sdk-library>` 是 App 声明所需 SDK 包的 Manifest 元素，Binder DTO 是跨进程传递的数据对象，endpoint 是服务端地址，rate limit 是调用频率上限。
+清单保留代码和交付系统里的原名：
+
+- runtime-enabled SDK：为旧 SDK Runtime 改造的 SDK；
+- ASB：Android SDK Bundle 交付包；
+- `<uses-sdk-library>`：App 声明所需 SDK 包的 Manifest 元素；
+- Binder DTO：跨进程传递的数据对象；
+- endpoint：服务端地址；
+- rate limit：调用频率上限。
 
 ### 从旧 Privacy Sandbox 业务 API 退出
 
