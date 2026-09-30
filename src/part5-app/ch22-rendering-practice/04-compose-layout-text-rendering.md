@@ -329,7 +329,7 @@ Compose UI 1.12.0 的 `MeasurePassDelegate` 是处理常规测量的内部委托
 
 `MeasureAndLayoutDelegate` 把待处理节点放进按树深排序的集合。父节点已经处于测量待处理状态时，子节点通常不用再作为独立根重复登记；子节点测量后尺寸发生变化，依赖它尺寸的父节点会继续更新。未放置或停用的节点会保留待处理标记，但不会无条件触发一轮完整树遍历。
 
-失效传播没有固定的逐级父节点路径。它还取决于节点是否被放置、父节点上次在测量还是放置代码中使用子节点、尺寸是否变化，以及是否存在前瞻布局或对齐线依赖。
+失效传播没有固定的逐级父节点路径。它还取决于节点是否被放置、父节点上次是在测量还是放置代码里使用子节点、尺寸是否变化，以及是否存在前瞻布局或对齐线依赖。
 
 #### 3. `@Stable` 不控制布局缓存
 
@@ -347,11 +347,11 @@ Compose UI 1.12.0 的 `MeasurePassDelegate` 是处理常规测量的内部委托
 
 `minIntrinsicWidth()`、`maxIntrinsicWidth()`、`minIntrinsicHeight()` 和 `maxIntrinsicHeight()` 用于在最终约束尚未确定时询问内容所需尺寸。官方文档明确说明：固有尺寸查询不会把同一个子节点正式测量两次。父节点先查询固有尺寸，再根据结果生成最终约束，随后执行一次正式 `measure()`。
 
-查询仍然需要计算。`IntrinsicSize.Min` 会递归询问相关子树，文本固有尺寸可能运行段落宽高计算，自定义 `MeasurePolicy` 的默认实现还会复用测量逻辑做近似。成本取决于布局实现、查询方向、节点数量和内容，不能统一写成随树深线性增长的 `O(depth)`、指数增长或“一次完整子树测量”。
+查询仍然需要计算。`IntrinsicSize.Min` 会递归询问相关子树，文本固有尺寸可能需要计算段落宽高，自定义 `MeasurePolicy` 的默认实现还会复用测量逻辑做近似。成本取决于布局实现、查询方向、节点数量和内容，不能统一写成随树深线性增长的 `O(depth)`、指数增长或“一次完整子树测量”。
 
 #### 2. 默认固有尺寸只是近似
 
-自定义 `Layout` 没有覆写固有尺寸方法时，`MeasurePolicy` 会提供近似的默认实现。它对部分布局足够，对具有特殊约束协商的布局可能返回不合适的结果。
+自定义 `Layout` 没有覆写固有尺寸方法时，`MeasurePolicy` 会提供近似的默认实现。它对部分布局足够，但对需要在约束上做特殊协商的布局可能返回不合适的结果。
 
 需要精确的固有尺寸语义时，应只覆写会被父节点查询的方法，并保证：
 
@@ -589,9 +589,9 @@ Layout Inspector 可以显示 Composable 的组合次数和跳过次数。Compos
 
 通用布局确定可用尺寸后，文本组件才能整形和换行。缓存键必须包含字体、样式、宽度和文本内容。
 
-Compose 文本卡顿不能只看重组次数。重组是 Compose 因状态变化重新执行部分可组合函数的过程；一次文本更新还可能停在测量、字体解析、绘制或显示系统中的任意一段。同样的 `Text` 调用也可能进入两套不同的 Modifier 节点实现；Modifier 节点挂在界面元素上，负责布局、绘制或语义等行为。排查时要同时回答：哪项输入变了、是否重新排版、目标帧在哪个阶段错过显示截止时间。
+Compose 文本卡顿不能只看重组次数。一次文本更新可能停在测量、字体解析、绘制或显示系统中的任意一段；同样的 `Text` 调用还可能进入两套不同的 Modifier 节点实现。排查时要同时回答：哪项输入变了、是否重新排版、目标帧在哪个阶段错过显示截止时间。
 
-平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`，Compose UI 与 Foundation 源码锚点是稳定版 1.12.0 的发行范围终点 `963bf914f78b389bdddef0da7f36bee19d897274`。Compose 与 Android 平台独立发布，报告中应分别记录 Compose BOM（统一声明 Compose 库版本的物料清单）、Compose UI、Kotlin、Compose Compiler 插件和 Android 版本。涉及调度、缺页（访问尚未驻留内存页时由内核处理）或内存回收时，内核侧统一使用 `android17-6.18-2026-06_r6`；普通文本排版结论不能从内核标签直接推导。
+平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`，Compose UI 与 Foundation 源码锚点是稳定版 1.12.0 的发行范围终点 `963bf914f78b389bdddef0da7f36bee19d897274`。涉及调度、缺页（访问尚未驻留内存页时由内核处理）或内存回收时，内核侧统一使用 `android17-6.18-2026-06_r6`；普通文本排版结论不能从内核标签直接推导。
 
 这里不提供固定耗时、提升比例或文本长度阈值。文字内容、字体、语言、字形、断行、约束、设备、刷新率和编译状态都会改变结果，性能判断必须附带可复现的场景和系统跟踪。
 
@@ -618,9 +618,9 @@ flowchart LR
     L -.-> M["SurfaceFlinger / HWC / 显示器"]
 ```
 
-`Text` 的组合节点负责保存输入和发起失效，`Paragraph`/`MultiParagraph` 负责文本测量与排版。Android 实现只在同时满足下列条件时才使用适合单行简单文本的 `BoringLayout`：系统判定文本适合简化路径、内容不换行时所需的最大宽度不超过可用宽度，并且没有基线偏移样式；其余情况交给支持换行和复杂样式的 `StaticLayout`。
+`Text` 的组合节点负责保存输入和发起失效，`Paragraph`/`MultiParagraph` 负责文本测量与排版。Android 实现只在同时满足三个条件时才走适合单行简单文本的 `BoringLayout`：系统判定文本适合简化路径；内容不换行时所需的最大宽度不超过可用宽度；没有基线偏移样式。其余情况交给支持换行和复杂样式的 `StaticLayout`。
 
-绘制结果记录到宿主 `ComposeView` 所在窗口。HWUI 是 Android 的硬件加速二维渲染库，RenderThread 执行其中一部分渲染工作；BLAST BufferQueue 协调窗口缓冲区与事务，SurfaceFlinger（常缩写为 SF）负责系统合成，HWC（Hardware Composer）是硬件合成接口。声明一个 `Text` 不会创建独立图形缓冲层（Surface）。
+绘制结果记录到宿主 `ComposeView` 所在窗口，再沿普通应用窗口的显示流程提交。声明一个 `Text` 不会创建独立图形缓冲层（Surface）。
 
 这条分层对诊断很有用。Perfetto 中的 `TextLayout:initLayout` 时间片很长，说明 Android 文本排版工作较重；RenderThread 或 SurfaceFlinger 较晚时，继续调整重组稳定性通常不会解决那一帧。
 
@@ -665,7 +665,7 @@ Compose 1.12.0 还把 `softWrap` 显式传入 `ParagraphIntrinsics` 和 `TextLay
 
 `ParagraphLayoutCache.newLayoutWillBeDifferent()` 会检查旧段落、字体解析状态、布局方向和新约束。约束完全相同时可直接复用。宽度不变且新的高度仍能容纳旧段落时，断行不会变化，缓存可以保留已有 `Paragraph`；最大宽度或最小宽度变化时需要重新排版。
 
-高度仍可能影响裁剪和省略。旧段落高于新的最大高度，或旧结果已经超过 `maxLines` 时，缓存会重新计算。列表项宽度在滚动期间保持不变，通常有利于复用；窗口尺寸、折叠状态、Insets（状态栏、导航栏或输入法占用的边缘区域）或父布局反复改变宽度，会让文本重新断行。
+高度仍可能影响裁剪和省略。旧段落高于新的最大高度，或旧结果已经超过 `maxLines` 时，缓存会重新计算。列表项宽度在滚动期间保持不变，通常有利于复用；窗口尺寸、折叠状态、Insets 或父布局反复改变宽度，会让文本重新断行。
 
 更完整的 Compose 测量失效机制见前一部分“约束、测量、放置与 Subcompose”。
 
@@ -685,7 +685,7 @@ Compose 的 `FontFamily.Resolver`（字体解析器）返回可观察的字体�
 
 #### 1. 换行和字体塑形
 
-文本排版至少要处理字符到字形的映射、字体回退、双向文本、字距、断行和行度量。Android 的 `TextLayout` 对满足简化条件且能在给定宽度内显示的文本可以选择 `BoringLayout`；包含复杂的字符范围样式、需要换行或不满足简化条件时会使用 `StaticLayout`。
+文本排版至少要处理字符到字形的映射、字体回退、双向文本、字距、断行和行度量。Android 的 `TextLayout` 只把满足简化条件、能在给定宽度内显示的文本交给 `BoringLayout`，其余情况由 `StaticLayout` 处理。
 
 下面这些变化常使一次排版包含更多工作：
 
@@ -739,7 +739,7 @@ fun MeasuredTitle(
 }
 ```
 
-`rememberUpdatedState` 让稳定回调读取最新的外部处理函数，`lastSize` 过滤相同结果。外部函数仍不应同步执行 I/O（磁盘或网络读写）、解析或网络上报；这些工作应交给受控的异步任务。
+`rememberUpdatedState` 让稳定回调读取最新的外部处理函数，`lastSize` 过滤相同结果。外部函数仍不应同步执行 I/O、解析或网络上报；这些工作应交给受控的异步任务。
 
 #### 4. 选择、链接和无障碍语义都有额外职责
 
@@ -916,13 +916,13 @@ fun LabeledBackground(
 - 列表宽度、窗口模式、字体缩放和显示密度；
 - 手势、迭代次数与启动模式。
 
-Macrobenchmark（从应用进程外启动并测量完整场景的基准测试库）的 `FrameTimingMetric` 给出 `frameOverrunMs`（相对显示截止时间的超前或逾期）与 `frameDurationCpuMs`（界面线程和 RenderThread 生成一帧的 CPU 时间）分布，并为每次迭代保存系统跟踪文件。Android 12 及以上才提供 `frameOverrunMs`；Android 10 到 11 的兼容测试要使用对应平台可用的帧指标和跟踪证据。
+Macrobenchmark 的 `FrameTimingMetric` 给出 `frameOverrunMs` 与 `frameDurationCpuMs` 分布，并为每次迭代保存系统跟踪文件。Android 12 及以上才提供 `frameOverrunMs`；Android 10 到 11 的兼容测试要使用对应平台可用的帧指标和跟踪证据。
 
 #### 2. 源码中的文本时间片可以辅助定位
 
 Compose UI 1.12.0 的文本实现包含 `TextStringSimpleNode::measure`、`TextAnnotatedStringNode:measure` 和 Android 端 `TextLayout:initLayout` 等跟踪名称。前两个名称通过 Compose UI 的 `trace()` 写入，Android 实现会直接调用 `Trace.beginSection()`；第三个名称也直接使用 Android Trace。它们不受 `ComposeToolingFlags.isVerboseTracingEnabled` 控制，但跟踪配置仍要采集应用时间片，目标代码也必须在采集期间执行。
 
-下面的 PerfettoSQL（Perfetto Trace Processor 使用的 SQL 方言）用于汇总这些已确认的文本测量时间片，并保留进程和线程维度。
+下面的 PerfettoSQL 用于汇总这些已确认的文本测量时间片，并保留进程和线程维度。
 
 ```sql
 SELECT
@@ -950,10 +950,10 @@ ORDER BY total_ms DESC;
 
 #### 3. 诊断顺序从目标帧开始
 
-1. 在 FrameTimeline（把应用帧与显示截止时间对应起来的 Perfetto 数据源）中选中错过截止时间的应用帧。
+1. 在 FrameTimeline 中选中错过截止时间的应用帧。
 2. 查看界面线程（UI 线程）是否出现 Compose 测量、`TextLayout:initLayout`、富文本构造、业务跟踪时间片、GC 或同步 I/O。
 3. 文本测量较长时，对比文字、字符范围样式、字体、宽度、行数、自动字号和回调条件。
-4. 组合工作较长时，再看 Layout Inspector（Android Studio 的布局检查器）、组合跟踪和 Compose Compiler 报告。
+4. 组合工作较长时，再看 Layout Inspector、组合跟踪和 Compose Compiler 报告。
 5. UI 线程按时完成后，继续检查 RenderThread、GPU、BLAST、SurfaceFlinger 和显示侧等待。
 
 Compose Text 仍使用标准应用窗口显示流程。`queueBuffer()` 只表示生产者把图形缓冲区提交到队列，不能证明画面已经显示；整帧判断方法见 [13.1 Android View 渲染管线与分析方法](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md)。
