@@ -108,7 +108,9 @@ SDK 并不只是一份 AAR。一次商业能力接入可能同时带来：
   --dependency <artifact-name>
 ```
 
-第一条命令给出直接依赖和传递依赖，第二条命令显示版本选择与依赖路径。它们仍然只是构建输入；还要检查最终合并 Manifest、APK/AAB 和动态交付模块。APK 是可直接安装的应用包，AAB（Android App Bundle）则由应用商店按设备配置生成安装包。Android Studio 的 [APK Analyzer](https://developer.android.com/studio/debug/apk-analyzer) 可以比较两个 APK/AAB 的下载大小、文件组成、DEX 内容和最终 Manifest。
+第一条命令给出直接依赖和传递依赖，第二条命令显示版本选择与依赖路径。它们仍然只是构建输入；还要检查最终合并 Manifest、APK/AAB 和动态交付模块。
+
+APK 是可直接安装的应用包，AAB（Android App Bundle）则由应用商店按设备配置生成安装包。Android Studio 的 [APK Analyzer](https://developer.android.com/studio/debug/apk-analyzer) 可以比较两个 APK/AAB 的下载大小、文件组成、DEX 内容和最终 Manifest。
 
 每个 SDK 至少记录这些字段：
 
@@ -167,7 +169,7 @@ SDK 评估容易出现“工具显示了数字，于是数字属于 SDK”的误
 
 ### 4.1 Provider 早于 `Application.onCreate`
 
-在 Android 17 的 [`ActivityThread`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java) 启动路径中，系统先调用 `installContentProviders(...)`，随后通过 `Instrumentation.callApplicationOnCreate(...)` 调用 `Application.onCreate()`；`Instrumentation` 是 Android 用来创建和驱动应用组件的框架入口。因此，SDK 的自动 `ContentProvider` 初始化发生在应用自己的 `Application.onCreate()` 之前。
+在 Android 17 的 [`ActivityThread`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java) 启动路径里，系统先调用 `installContentProviders(...)`，随后通过 `Instrumentation.callApplicationOnCreate(...)` 调用 `Application.onCreate()`。`Instrumentation` 是 Android 用来创建和驱动应用组件的框架入口。因此，SDK 的自动 `ContentProvider` 初始化发生在应用自己的 `Application.onCreate()` 之前。
 
 常见主线程成本包括：
 
@@ -179,47 +181,11 @@ SDK 评估容易出现“工具显示了数字，于是数字属于 SDK”的误
 
 这也解释了为什么只给 `Application.onCreate()` 打点会漏掉早期成本。Provider 优化的完整路径见 [ContentProvider 启动优化](../ch21-startup/03-contentprovider-multiprocess-startup.md)。
 
-### 4.2 App Startup 能解决什么
+### 4.2 用 Macrobenchmark 建立可比较基线
 
-[Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup) 将多个自动初始化 Provider 合并到一个 `InitializationProvider`，并通过 `Initializer.dependencies()` 显式声明依赖顺序。它适合统一入口和减少 Provider 数量，但不会自动把初始化移出主线程：由 Manifest 声明的 `Initializer.create()` 仍在 Provider 启动阶段执行。
+[Macrobenchmark](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview) 能在应用进程外重复驱动冷、温、热启动，并保存 Perfetto Trace。冷启动从无进程状态开始，温启动保留进程但重新启动 Activity，热启动则把仍在内存中的 Activity 带回前台。
 
-如果某个初始化器与首屏无关，可从 Manifest 中移除对应声明：
-
-```xml
-<provider
-    android:name="androidx.startup.InitializationProvider"
-    android:authorities="${applicationId}.androidx-startup"
-    android:exported="false"
-    tools:node="merge">
-    <meta-data
-        android:name="com.example.analytics.AnalyticsInitializer"
-        tools:node="remove" />
-</provider>
-```
-
-删除这条元数据后，应用可在用户同意或功能首用时调用 `AppInitializer.initializeComponent(...)`。App Startup 的公开契约还规定：关闭某个组件（component）的自动初始化，也会关闭其 `dependencies()` 返回组件的自动初始化；随后手动初始化该组件时，这些依赖会按图一并初始化。若某个依赖同时被其他 Manifest 声明的 `Initializer` 引用，它仍可能从另一条路径启动，因此必须检查完整依赖图。
-
-### 4.3 按需、延迟与异步不是同义词
-
-- **按需初始化**：功能第一次需要时才启动，通常最节省未使用能力的成本。
-- **延迟初始化**：在首帧后某个时点启动，成本仍会发生，并可能撞上首屏交互。
-- **异步初始化**：把允许并发的工作移出主线程，但没有改变后台执行限制、生命周期和依赖时序。
-
-选择策略时先拆分 SDK 工作：
-
-| 工作 | 建议 |
-| --- | --- |
-| 首次 API 调用前必须完成的轻量状态 | 保持同步，但设定很小的主线程预算 |
-| 用户同意前不得运行的数据能力 | 同意后显式初始化 |
-| 只在特定页面使用的能力 | 页面或功能首用时初始化 |
-| 可预取且可取消的资源 | 首帧后按场景调度，限制并发和截止时间 |
-| 需要持久保证的后台任务 | 按任务契约选择系统调度 API，不靠常驻线程 |
-
-把同步调用包进协程不代表它就安全。如果代码仍在 Main dispatcher 运行，主线程成本没有变化；即使换到后台线程，也可能带来 CPU、I/O 竞争或生命周期泄漏。
-
-### 4.4 用 Macrobenchmark 建立可比较基线
-
-[Macrobenchmark](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview) 能在应用进程外重复驱动冷、温、热启动，并保存 Perfetto Trace。冷启动从无进程状态开始，温启动保留进程但重新启动 Activity，热启动则把仍在内存中的 Activity 带回前台。目标应用需要可 profile，即发布构建通过 `android:profileable` 允许性能工具读取跟踪数据。比较 SDK 版本时，release 配置、设备、启动模式和编译模式都要相同。
+目标应用需要可 profile，即发布构建通过 `android:profileable` 允许性能工具读取跟踪数据。比较 SDK 版本时，release 配置、设备、启动模式和编译模式都要相同。
 
 下面的测试用于测量带有 Baseline Profile 的冷启动；`BaselineProfileMode.Require` 会在配置不满足时让测试失败，避免悄悄换成另一种编译条件：
 
@@ -254,6 +220,46 @@ class SdkStartupBenchmark {
 
 对于可控的集成代码，可用 `androidx.tracing` 给初始化入口增加命名切片；切片是 Trace 时间轴上带开始、结束与名称的一段区间。不透明的 Provider 只能依赖系统切片、调用栈或供应商提供的 Trace。切片应覆盖等待时间和结果，不能只包住一次异步任务提交。
 
+### 4.3 App Startup 能解决什么
+
+[Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup) 将多个自动初始化 Provider 合并到一个 `InitializationProvider`，并通过 `Initializer.dependencies()` 显式声明依赖顺序。它适合统一入口和减少 Provider 数量，但不会自动把初始化移出主线程：由 Manifest 声明的 `Initializer.create()` 仍在 Provider 启动阶段执行。
+
+如果某个初始化器与首屏无关，可从 Manifest 中移除对应声明：
+
+```xml
+<provider
+    android:name="androidx.startup.InitializationProvider"
+    android:authorities="${applicationId}.androidx-startup"
+    android:exported="false"
+    tools:node="merge">
+    <meta-data
+        android:name="com.example.analytics.AnalyticsInitializer"
+        tools:node="remove" />
+</provider>
+```
+
+删除这条元数据后，应用可在用户同意或功能首用时调用 `AppInitializer.initializeComponent(...)`。App Startup 的公开契约还规定：关闭某个组件（component）的自动初始化，也会关闭其 `dependencies()` 返回组件的自动初始化；随后手动初始化该组件时，这些依赖会按图一并初始化。
+
+若某个依赖同时被其他 Manifest 声明的 `Initializer` 引用，它仍可能从另一条路径启动，因此必须检查完整依赖图。
+
+### 4.4 按需、延迟与异步不是同义词
+
+- **按需初始化**：功能第一次需要时才启动，通常最节省未使用能力的成本。
+- **延迟初始化**：在首帧后某个时点启动，成本仍会发生，并可能撞上首屏交互。
+- **异步初始化**：把允许并发的工作移出主线程，但没有改变后台执行限制、生命周期和依赖时序。
+
+选择策略时先拆分 SDK 工作：
+
+| 工作 | 建议 |
+| --- | --- |
+| 首次 API 调用前必须完成的轻量状态 | 保持同步，但设定很小的主线程预算 |
+| 用户同意前不得运行的数据能力 | 同意后显式初始化 |
+| 只在特定页面使用的能力 | 页面或功能首用时初始化 |
+| 可预取且可取消的资源 | 首帧后按场景调度，限制并发和截止时间 |
+| 需要持久保证的后台任务 | 按任务契约选择系统调度 API，不靠常驻线程 |
+
+把同步调用包进协程不代表它就安全。如果代码仍在 Main dispatcher 运行，主线程成本没有变化；即使换到后台线程，也可能带来 CPU、I/O 竞争或生命周期泄漏。
+
 ## 5. 内存：同进程没有可靠的“每 SDK PSS”
 
 ### 5.1 先辨认工具边界
@@ -266,7 +272,7 @@ class SdkStartupBenchmark {
 - Java heap dump 是 Java/Kotlin 托管堆在某一时刻的对象与引用快照；
 - heapprofd 是 Perfetto 的原生堆采样器，可按分配调用栈归集 native 分配。
 
-Android 17 的内核接口定义可核对 [`Documentation/filesystems/proc.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst)。这些工具不会凭空生成 SDK 所有权：
+Android 17 的内核接口定义可核对 [`Documentation/filesystems/proc.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst)。这些工具本身不会把内存归属到某个 SDK：
 
 - 同一进程的 Java heap 与 native 内存分配器被宿主和各 SDK 共用；
 - 类的包名不等于对象的保留责任，宿主可能把对象长期放进缓存；
@@ -295,7 +301,9 @@ SDK 使用独立进程时，可以分别观测宿主和子进程，却仍要报�
 
 Android 17 的 [所有应用行为变更](https://developer.android.com/about/versions/17/behavior-changes-all) 引入 App Memory Limits，但只在部分设备启用，限制值由设备配置决定，不存在一个适用于全部 Android 17 设备的固定阈值。
 
-嵌入宿主进程的 SDK 内存会计入宿主进程。若命中限制，历史退出信息在 Android 17 上可能以 `REASON_OTHER` 出现，并在描述中包含 `MemoryLimiter:AnonSwap`；不要把更高版本新增的退出 reason 常量提前写进 Android 17 代码。准入实验至少覆盖一个可能启用该机制的低内存设备档位，并验证应用的降级和状态恢复。
+嵌入宿主进程的 SDK 内存会计入宿主进程。若命中限制，历史退出信息在 Android 17 上可能以 `REASON_OTHER` 出现，并在描述中包含 `MemoryLimiter:AnonSwap`；不要把更高版本新增的退出 reason 常量提前写进 Android 17 代码。
+
+准入实验至少覆盖一个可能启用该机制的低内存设备档位，并验证应用的降级和状态恢复。
 
 ## 6. 后台、CPU、网络与功耗
 
@@ -340,7 +348,9 @@ Android 17 的 [所有应用行为变更](https://developer.android.com/about/ve
 
 ### 6.4 功耗看场景，不看请求次数
 
-请求次数少不代表耗电低。频繁唤醒、差网络下重传、无线电尾部能耗、过密 Alarm、持续定位和音频资源都可能放大成本。应在固定场景中比较 CPU 时间、唤醒、调度、网络字节与电量指标。Macrobenchmark [`PowerMetric`](https://developer.android.com/reference/kotlin/androidx/benchmark/macro/PowerMetric) 仍带 `ExperimentalMetricApi` 标记；高精度 power/energy 数据依赖设备支持，而且结果反映测量窗口内的系统总消耗，并非某个应用或 SDK 的独占消耗。Perfetto power rails（设备暴露的硬件供电轨功耗计数器）也有相同的设备与归因边界；缺失数据不能按零消耗处理。
+请求次数少不代表耗电低。频繁唤醒、差网络下重传、无线电尾部能耗、过密 Alarm、持续定位和音频资源都可能放大成本。应在固定场景中比较 CPU 时间、唤醒、调度、网络字节与电量指标。
+
+Macrobenchmark [`PowerMetric`](https://developer.android.com/reference/kotlin/androidx/benchmark/macro/PowerMetric) 仍带 `ExperimentalMetricApi` 标记；高精度 power/energy 数据依赖设备支持，而且结果反映测量窗口内的系统总消耗，并非某个应用或 SDK 的独占消耗。Perfetto power rails（设备暴露的硬件供电轨功耗计数器）也有相同的设备与归因边界；缺失数据不能按零消耗处理。
 
 ### 6.5 Android 17 的相关兼容点
 
@@ -348,7 +358,7 @@ Android 17 的 [所有应用行为变更](https://developer.android.com/about/ve
 
 - target API 37 后，[`MessageQueue` 使用无锁实现](https://developer.android.com/about/versions/17/changes/messagequeue)；依赖反射访问其私有字段的 SDK 可能失效。公共 `Handler`/`Looper` 契约没有因此改变。
 - Android 17 对所有应用施加了更严格的[后台音频交互限制](https://developer.android.com/about/versions/17/changes/bg-audio)：后台播放、音频焦点和音量操作需要可见 Activity，或一个类型不为 `SHORT_SERVICE` 的前台服务。target API 37 后，后台应用还需让该前台服务具备 while-in-use（由可见界面或用户操作授予的“使用期间”）能力；精确闹钟权限配合 `USAGE_ALARM` 音频流是例外。不满足条件时，播放和音量操作会静默失败，音频焦点请求返回 `AUDIOFOCUS_REQUEST_FAILED`。
-- 后台调度、前台服务和权限仍由宿主应用共同负责合规与稳定性责任。
+- 后台调度、前台服务和权限的合规与稳定性责任仍由宿主应用承担。
 
 评估报告要写明 SDK 行为依赖的是公开 API 还是私有实现。Android 17 的目标 SDK 变更可从 [target 37 行为变更](https://developer.android.com/about/versions/17/behavior-changes-17)逐项核对。
 
@@ -375,7 +385,9 @@ ANR（Application Not Responding，应用无响应）同样不能只看是否出
 
 [ndk-stack](https://developer.android.com/ndk/guides/ndk-stack)需要与崩溃二进制匹配的符号。若闭源 SDK 只提供 stripped `.so` 且供应商无法按 Build ID 符号化，团队就无法可靠定位 native crash；这项缺口应直接记入准入风险，并在发布前备齐材料。
 
-聚类键是把疑似同一根因的事件归为一组的字段组合，建议包含异常类型或 signal（如 native crash 的 `SIGSEGV`）、归一化栈、SDK 版本、ABI、Android 版本、设备、进程和功能路径。归一化栈会去掉地址偏移等易变信息，保留稳定的调用结构。[Android vitals](https://support.google.com/googleplay/android-developer/answer/9859174?hl=zh-Hans)可能标记“可能与 SDK 有关”的问题，这仍是线索；SDK 供应商可通过 [Google Play SDK Console](https://support.google.com/googleplay/android-developer/answer/12246095?hl=zh-Hans)接收聚合信息并上传反混淆文件。
+聚类键是把疑似同一根因的事件归为一组的字段组合，建议包含异常类型或 signal（如 native crash 的 `SIGSEGV`）、归一化栈、SDK 版本、ABI、Android 版本、设备、进程和功能路径。归一化栈会去掉地址偏移等易变信息，保留稳定的调用结构。
+
+[Android vitals](https://support.google.com/googleplay/android-developer/answer/9859174?hl=zh-Hans)可能标记“可能与 SDK 有关”的问题，这仍是线索；SDK 供应商可通过 [Google Play SDK Console](https://support.google.com/googleplay/android-developer/answer/12246095?hl=zh-Hans)接收聚合信息并上传反混淆文件。
 
 对于没有 Java/Native 崩溃栈的异常退出，应结合 `ApplicationExitInfo`（系统保存的历史进程退出原因）、系统日志、内存样本和前台状态分析。不要把低内存杀进程、用户停止、系统更新与 SDK crash 混成同一指标。
 
@@ -545,7 +557,7 @@ Google 在 2025 年 10 月 17 日宣布[退役 SDK Runtime 等 Privacy Sandbox �
 
 API 符号、旧设计页或系统服务类仍然存在，不能据此判断能力可用于新项目。Android 17 AOSP 仍保留 [`SdkSandboxManagerService`](https://android.googlesource.com/platform/packages/modules/AdServices/+/refs/tags/android-17.0.0_r1/sdksandbox/service/java/com/android/server/sdksandbox/SdkSandboxManagerService.java) 等兼容代码，但面向 API 37 的接入决策应服从公开 API 的废弃契约。新项目不应再围绕 runtime-enabled SDK bundle、`SdkSandboxManager.loadSdk()` 或旧 sandbox 生命周期设计广告架构。
 
-现有产品需要按 Android 版本和 SDK 精确版本记录运行路径：Android 14–16 上只维护已经发布的遗留能力，并做可用性探测和失败降级；Android 17 上关闭 sandbox 路径，转回受支持的普通嵌入式 SDK 或供应商明确支持的其他进程模型。
+现有产品要按 Android 版本和 SDK 精确版本分流：Android 14–16 上只维护已经发布的遗留能力，并做可用性探测和失败降级；Android 17 上关闭 sandbox 路径，转回受支持的普通嵌入式 SDK 或供应商明确支持的其他进程模型。
 
 ### 12.2 遗留隔离路径仍要计算合计成本
 
@@ -559,9 +571,11 @@ API 符号、旧设计页或系统服务类仍然存在，不能据此判断能�
 - 远端 UI 的 Surface 与帧同步；
 - 进程死亡后的状态恢复和重新加载。
 
-当旧 Runtime 路径仍在运行时，评估应报告宿主与 Runtime 进程的合计 PSS/RSS，并同时测量加载延迟、Binder 回调、远端 UI 帧时间、进程死亡率与恢复成功率。两端没有共享堆；应用商店曾提出的可信分发可能影响下载或磁盘存储，不能据此推断运行时 RAM 会下降。
+旧 Runtime 路径如果仍在运行，评估应报告宿主与 Runtime 进程的合计 PSS/RSS，并同时测量加载延迟、Binder 回调、远端 UI 帧时间、进程死亡率与恢复成功率。两端没有共享堆；应用商店曾提出的可信分发可能影响下载或磁盘存储，不能据此推断运行时 RAM 会下降。
 
-历史兼容方案由 Android Gradle Plugin（AGP）和 Bundletool 构建包含 SDK 的应用变体，再由 SDK Runtime client library 从应用 assets 提取 DEX，并通过独立 classloader（类加载器）载入宿主进程。类加载器能降低类名冲突，却不提供进程隔离。AndroidX 兼容库已经停止更新，所以它只能解释现有发布包的行为，不能充当 Android 17 的替代方案或新接入路径。
+历史兼容方案的构建流程是：Android Gradle Plugin（AGP）和 Bundletool 构建包含 SDK 的应用变体，SDK Runtime client library 从应用 assets 提取 DEX，再用独立 classloader（类加载器）载入宿主进程。类加载器能降低类名冲突，却不提供进程隔离。
+
+AndroidX 兼容库已经停止更新，所以它只能解释现有发布包的行为，不能充当 Android 17 的替代方案或新接入路径。
 
 迁移时应验证禁用开关、Manifest 与构建依赖清理、普通 SDK 回退、进程死亡和数据合规路径。每个发布版本都要记录实际运行路径，避免把 Android 14–16 的遗留行为推到 Android 17。
 
@@ -595,7 +609,7 @@ API 符号、旧设计页或系统服务类仍然存在，不能据此判断能�
 
 ## 小结
 
-SDK 治理的输出不该是一份静态名单，而应是一组能被重复执行的实验、制品差异和运行时证据。当团队能回答“哪段代码在什么条件下运行、成本如何复现、出错后如何停止”时，SDK 才处于可控状态。
+SDK 治理的输出应当是一组能被重复执行的实验、制品差异和运行时证据，而不是一份静态名单。当团队能回答“哪段代码在什么条件下运行、成本如何复现、出错后如何停止”时，SDK 才处于可控状态。
 
 ## 参考资料
 
