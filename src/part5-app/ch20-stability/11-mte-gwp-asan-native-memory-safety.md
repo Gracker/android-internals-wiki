@@ -79,9 +79,11 @@ note: 'Consolidated-source availability: source page not present in the current 
 
 MTE（Memory Tagging Extension，内存标记扩展）会把一部分 Native 内存越界和释放后访问转换成可识别的 `SIGSEGV` 信号。这里的 Native 内存指 C/C++ 等原生代码直接管理的内存，`SIGSEGV` 则是非法内存访问常见的进程终止信号。MTE 既提供安全缓解，也用于稳定性诊断：错误会更早终止进程，静默内存破坏随之减少，短期内应用崩溃数却可能上升。目标应是发现、定位并修复内存安全缺陷，不能只追求 MTE 崩溃数下降。
 
-平台与用户空间（内核之外运行的系统库和应用代码）源码以 Android 17 / API 37 / `android-17.0.0_r1` 为准，内核源码以 `android17-6.18-2026-06_r6` 为准。MTE 依赖 Arm64 硬件、内核、进程配置、内存映射属性和分配器协作；manifest 中的一行配置不能代表所有 Native 内存都受到检查。
+平台与用户空间（内核之外运行的系统库和应用代码）源码以 Android 17 / API 37 / `android-17.0.0_r1` 为准，内核源码以 `android17-6.18-2026-06_r6` 为准。Android 12 提供了内核和用户空间堆分配器支持，当前应用文档则把“部分设备可用”的起点写为 Android 13；这里覆盖 Android 12，是为了说明平台能力出现的版本，不能据此认定任意 Android 12 商用设备都可为应用启用 MTE。
 
-Android 12 提供了内核和用户空间堆分配器支持，当前应用文档则把“部分设备可用”的起点写为 Android 13。这里覆盖 Android 12，是为了说明平台能力出现的版本，不能据此认定任意 Android 12 商用设备都可为应用启用 MTE。
+MTE 依赖 Arm64 硬件、内核、进程配置、内存映射属性和分配器协作。manifest 中的一行配置不能代表所有 Native 内存都受到检查。
+
+本文前半章讲 MTE，覆盖检查对象、检查模式、进程生效路径、崩溃报告阅读和分批启用；后半章讲抽样式检测器 GWP-ASan，覆盖两层抽样、受保护槽位、可恢复模式和发布取舍。
 
 ## MTE 检查的对象与盲区
 
@@ -92,9 +94,7 @@ Android 的标准 Native heap 使用 Scudo（Android 默认的加固型 Native �
 - heap buffer overflow / underflow（堆缓冲区上溢 / 下溢）跨越到不同标签的粒度；
 - use-after-free（释放后继续访问）在旧指针标签与新分配标签不匹配时被捕获。
 
-检测存在概率边界。4 位最多编码 16 种标签，释放后重新分配可能碰巧得到相同标签；越界仍落在同一个 16 字节粒度内时也不会跨越标签边界。官方工具对比把 MTE 的典型漏检概率写作 1/16。MTE 提高发现概率，未报告错误不等于代码没有内存缺陷。
-
-还要区分三类存储：
+覆盖范围按存储类型分三类，启用条件各不相同：
 
 | 存储 | 只设置 `android:memtagMode` 是否足够 | 补充条件 |
 | --- | --- | --- |
@@ -103,6 +103,8 @@ Android 的标准 Native heap 使用 Scudo（Android 默认的加固型 Native �
 | Native stack / globals（原生栈 / 全局变量） | 不足 | 需要编译器插桩、ELF（Native 二进制文件格式）标记，以及动态链接器和运行时库支持 |
 
 Java/Kotlin 对象仍由 ART（Android 运行时）管理；32 位进程、未启用 MTE 的映射、同一标记粒度内的越界和不配合的自定义分配器都不在同一保护范围。面向应用的 Stack MTE（原生栈标记）从 Android 14 QPR3（第三次季度平台更新）开始提供，插桩后的应用只能运行在支持 MTE 的设备上。
+
+检测还有概率边界。4 位最多编码 16 种标签，释放后重新分配可能碰巧得到相同标签；越界仍落在同一个 16 字节粒度内时也不会跨越标签边界。官方工具对比把 MTE 的典型漏检概率写作 1/16。MTE 提高的是发现概率，未报告错误不等于代码没有内存缺陷。
 
 MTE 也不统计 Native heap 大小。定位“哪些调用栈分配最多”应使用 heapprofd（低开销的抽样堆分析器）、`dumpsys meminfo`、`/proc/<pid>/smaps` 等工具；MTE 回答的是某次访问是否违反标签约束。
 
@@ -117,7 +119,7 @@ MTE 也不统计 Native heap 大小。定位“哪些调用栈分配最多”应
 | `sync` | 请求同步检查 | 调试包、实验室和小范围诊断包 |
 | `async` | 请求异步检查，并允许设备按 CPU 首选模式增强 | 充分测试后的正式发布候选 |
 
-下面的 debug manifest 只让 debug 变体请求 SYNC：
+下面的 debug manifest 只让 debug 变体请求 SYNC，把它放在 `app/src/debug/AndroidManifest.xml`，调试策略就不会进入普通发布包：
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -129,11 +131,13 @@ MTE 也不统计 Native heap 大小。定位“哪些调用栈分配最多”应
 </manifest>
 ```
 
-把文件放在 `app/src/debug/AndroidManifest.xml`，可以避免调试策略进入普通发布包。最终 merged manifest（构建工具合并后的 manifest）才是检查对象；依赖库 manifest、构建类型和产品变体都可能改变结果。
+最终 merged manifest（构建工具合并后的 manifest）才是检查对象；依赖库 manifest、构建类型和产品变体都可能改变结果。
 
-这段配置只表达应用请求，不能探测设备能力。设备缺少 MTE 时，Android 17 的 Zygote 会按硬件能力降级到 TBI（Top Byte Ignore，CPU 忽略指针最高字节，Bionic 可在释放时检查标签，但不会逐次检查内存访问）或 NONE（不启用标签）。即使硬件支持，检查模式也可能受兼容性开关、系统属性和设备的逐 CPU 策略影响。
+这段配置只表达应用请求，不能探测设备能力。设备缺少 MTE 时，Android 17 的 Zygote 会按硬件能力降级到 TBI（Top Byte Ignore，CPU 忽略指针最高字节）或 NONE（不启用标签）。在 TBI 下，Bionic 可以在释放时检查标签，但不会逐次检查内存访问。即使硬件支持，检查模式也可能受兼容性开关、系统属性和设备的逐 CPU 策略影响。
 
 ## SYNC、ASYNC 与 ASYMM
+
+三种模式的差别在标签不匹配之后进程何时终止，以及报告能定位到什么程度。
 
 ### SYNC
 
@@ -163,7 +167,7 @@ ASYMM（非对称检查）对读访问做同步检查，对写访问做异步报
 
 应用请求 ASYNC 时，Android 17 的 Bionic 会把 `PR_MTE_TCF_ASYNC | PR_MTE_TCF_SYNC` 交给内核；若内核不接受组合值，再退回单独 ASYNC。设备可在启动时通过 `/sys/devices/system/cpu/cpu*/mte_tcf_preferred` 为每个 CPU 配置 `async`、`sync` 或 `asymm`。线程迁移到不同 CPU 后，有效检查行为可能随首选模式变化。
 
-这带来两个诊断边界：
+请求模式与有效模式可能不一致，由此产生两个诊断边界：
 
 - manifest 的 `async` 只能记为 `requested_mode=async`，不能直接写成 `effective_mode=async`；
 - ASYNC 请求在某个 CPU 上被增强为 SYNC 时，错误现场可能更精确，但进程并未按 SYNC 配置分配器，因此分配 / 释放调用栈仍未必可用。
@@ -186,7 +190,9 @@ merged AndroidManifest.xml
   -> Scudo 管理标准 Native heap tag
 ```
 
-`Zygote.getRequestedMemtagLevel()` 依次考虑平台为指定包设置的覆盖值、`<process>`、`<application>`、兼容性开关和平台默认值。`decideTaggingLevel()` 再检查 MTE/TBI 硬件能力；`userdebug` 或 `eng` 调试系统还可能通过平台属性把 ASYNC 请求升为 SYNC。64 位 `system_server` 创建 32 位子进程时，不会把 MTE 运行时标志传给非 arm64 进程。
+`Zygote.getRequestedMemtagLevel()` 依次考虑平台为指定包设置的覆盖值、`<process>`、`<application>`、兼容性开关和平台默认值。`decideTaggingLevel()` 再检查 MTE/TBI 硬件能力；`userdebug` 或 `eng` 调试系统还可能通过平台属性把 ASYNC 请求升为 SYNC。
+
+64 位 `system_server` 创建 32 位子进程时，不会把 MTE 运行时标志传给非 arm64 进程。
 
 Native `SpecializeCommon()` 把运行时标志映射到 `M_HEAP_TAGGING_LEVEL_TBI`、`ASYNC`、`SYNC` 或 `NONE`，再调用 `mallopt(M_BIONIC_SET_HEAP_TAGGING_LEVEL, ...)`。Bionic 的 `malloc_common.cpp` 在锁保护下调用 `SetHeapTaggingLevel()`，标准分配器随后按该级别管理堆标签。
 
@@ -194,7 +200,7 @@ Native `SpecializeCommon()` 把运行时标志映射到 `M_HEAP_TAGGING_LEVEL_TB
 
 ## 怎样确认支持与请求状态
 
-测试设备不能只看预先列出的型号名单。官方推荐先检查：
+确认分两步：先看设备是否具备 MTE，再看正在运行的进程实际请求到什么模式。测试设备不能只看预先列出的型号名单，官方推荐先检查：
 
 ```shell
 adb shell grep -w mte /proc/cpuinfo
@@ -327,20 +333,6 @@ MTE 标签不匹配通常表示进程违反了 tagged-memory（带标签内存�
 
 分析 Android 17 应用时，framework、Bionic 与 debuggerd 固定到 `android-17.0.0_r1`，内核固定到 `android17-6.18-2026-06_r6`。设备厂商内核、SoC 的 MTE 模式性能和发布配置仍需结合系统构建指纹与实测结果。
 
-## 发布检查表
-
-- [ ] 合并后的 manifest 中每个进程的 `memtagMode` 已确认
-- [ ] 只在 64 位、实测支持 MTE 的设备上执行诊断
-- [ ] 标准堆、自定义分配器、栈与全局变量的覆盖范围没有混写
-- [ ] 调试包的 SYNC 已覆盖高风险 Native 场景
-- [ ] 正式发布配置未把 SYNC 当作普通默认值
-- [ ] 分批启用依赖分阶段发布或构建变体，没有假设远程动态切换
-- [ ] Build ID、符号、tombstone 与事件去重可用
-- [ ] SYNC 和 ASYNC 使用不同聚合规则
-- [ ] 致命信号采集器不会破坏 debuggerd 语义
-- [ ] 性能、功耗、应用崩溃与业务恢复都完成对照
-- [ ] 回到上一版本的流程和关键状态持久化已经演练
-
 ## GWP-ASan：抽样保护少量堆分配
 
 MTE 用硬件标签检查受保护内存映射的访问。GWP-ASan（名称来自 “GWP-ASan Will Provide Allocation SANity”）则从 Native 堆分配中抽样，把少量对象放进 guarded pool（由不可访问页面包围的受保护内存池）。两者都能发现释放后访问和越界，但命中范围、成本和报告含义不同；正式版本可以组合使用，不能把两种覆盖率相加成“内存安全百分比”。
@@ -349,7 +341,9 @@ MTE 用硬件标签检查受保护内存映射的访问。GWP-ASan（名称来�
 
 GWP-ASan 先决定某次进程启动是否启用，再从该进程的内存分配中抽样。`always` 模式把第一层命中率设为 100%，其他模式由平台策略决定。只有同时通过两层选择的对象才进入 guarded slot（受保护池中的对象槽位），因此“应用启用了 GWP-ASan”不代表所有 `malloc` 都受保护，也不能用固定的 `1/N` 推导某个缺陷的准确发现率。
 
-在 Android 17 的 Bionic 适配层中，默认 `Recoverable=true`，`SampleRate=2500` 表示被选中进程内的分配级抽样分母，`MaxSimultaneousAllocations=32` 表示同一进程同时可占用的保护槽上限；`SYSTEM_PROCESS_OR_SYSTEM_APP` 与 `APP_MANIFEST_DEFAULT` 分支默认 `process_sample_rate=128`，所以默认覆盖还要先经过进程启动级抽样。进程被选中后，每个分配入口先调用 `GuardedAlloc.shouldSample()`；未命中或 guarded pool 已满时，再委派给下一层原生分配器。[来源: AOSP android-17.0.0_r1 bionic/libc/bionic/gwp_asan_wrappers.cpp]
+在 Android 17 的 Bionic 适配层中，默认 `Recoverable=true`，`SampleRate=2500` 表示被选中进程内的分配级抽样分母，`MaxSimultaneousAllocations=32` 表示同一进程同时可占用的保护槽上限；`SYSTEM_PROCESS_OR_SYSTEM_APP` 与 `APP_MANIFEST_DEFAULT` 分支默认 `process_sample_rate=128`，所以默认覆盖还要先经过进程启动级抽样。
+
+进程被选中后，每个分配入口先调用 `GuardedAlloc.shouldSample()`；未命中或 guarded pool 已满时，再委派给下一层原生分配器。[来源: AOSP android-17.0.0_r1 bionic/libc/bionic/gwp_asan_wrappers.cpp]
 
 GWP-ASan 可用于 `targetSdkVersion >= 30`（面向 Android 11 / API 30 或更高版本）的应用。`android:gwpAsanMode` 支持三种请求：
 
@@ -359,11 +353,13 @@ GWP-ASan 可用于 `targetSdkVersion >= 30`（面向 Android 11 / API 30 或更�
 | `default` 或未填写 | Android 13 及以下对普通应用关闭；Android 14+ 使用约 1% 启动命中的 Recoverable GWP-ASan | Android 14+ 的正式版本基线 |
 | `always` | 每次进程启动都启用，但仍只抽样部分内存分配；Android 17 中命中故障后的终止 / 可恢复行为还受 Bionic `Recoverable` 配置控制 | 测试包、内部日常使用包或小范围候选包 |
 
-`always` 不等于“每次 `malloc` 都受保护”。开发者文档仍把 `always` 下命中受保护池错误描述为进程终止；在核对 Android 17 源码时，还要同时记录 Bionic 的 `Recoverable` 配置，因为 `SetDefaultGwpAsanOptions()` 默认将 `Recoverable` 设为 `true`，系统属性可改变这一行为。无论进程是否继续运行，GWP-ASan 报告都代表真实内存破坏，不能自动重试支付、写入等有副作用操作。[来源: Android NDK GWP-ASan 文档；AOSP android-17.0.0_r1 bionic/libc/bionic/gwp_asan_wrappers.cpp]
+`always` 不等于“每次 `malloc` 都受保护”：它只取消进程启动这一层抽样，不会让每次内存分配都进入受保护池。进程级配置可以覆盖 application 级配置，最终合并后的 manifest 才是检查对象。
 
-进程级配置可以覆盖 application 级配置。最终合并后的 manifest 才是检查对象；`always` 只取消进程启动这一层抽样，不会让每次内存分配都进入受保护池。
+开发者文档仍把 `always` 下命中受保护池错误描述为进程终止；在核对 Android 17 源码时，还要同时记录 Bionic 的 `Recoverable` 配置，因为 `SetDefaultGwpAsanOptions()` 默认将 `Recoverable` 设为 `true`，系统属性可改变这一行为。无论进程是否继续运行，GWP-ASan 报告都代表真实内存破坏，不能自动重试支付、写入等有副作用操作。[来源: Android NDK GWP-ASan 文档；AOSP android-17.0.0_r1 bionic/libc/bionic/gwp_asan_wrappers.cpp]
 
-Android 17 的大致路径是：Zygote/AndroidRuntime 从应用配置和平台策略得到 GWP-ASan mode，每个 fork 出来的子进程在分配器初始化阶段调用 Bionic 的 `MaybeInitGwpAsan()`；Zygote 自身的 `app_process` 初始化会被显式跳过，避免一次采样影响所有子进程。命中进程抽样后，Bionic 把 `gwp_asan_dispatch` 放到 malloc dispatch chain 的第一站，`prev_dispatch` 指向下一层原生分配器；它不会逐个修改 ELF 的导入跳转项。应用若安装自己的 `malloc` 拦截器，能否与 GWP-ASan 共存取决于安装顺序和 Bionic 分派链，不能只看 manifest 配置。[来源: DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md; AOSP android-17.0.0_r1 bionic/libc/bionic/gwp_asan_wrappers.cpp; AOSP android-17.0.0_r1 bionic/libc/bionic/malloc_common_dynamic.cpp]
+Android 17 的大致路径是：Zygote/AndroidRuntime 从应用配置和平台策略得到 GWP-ASan mode，每个 fork 出来的子进程在分配器初始化阶段调用 Bionic 的 `MaybeInitGwpAsan()`；Zygote 自身的 `app_process` 初始化会被显式跳过，避免一次采样影响所有子进程。
+
+命中进程抽样后，Bionic 把 `gwp_asan_dispatch` 放到 malloc dispatch chain 的第一站，`prev_dispatch` 指向下一层原生分配器；它不会逐个修改 ELF 的导入跳转项。应用若安装自己的 `malloc` 拦截器，能否与 GWP-ASan 共存取决于安装顺序和 Bionic 分派链，不能只看 manifest 配置。[来源: DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md; AOSP android-17.0.0_r1 bionic/libc/bionic/gwp_asan_wrappers.cpp; AOSP android-17.0.0_r1 bionic/libc/bionic/malloc_common_dynamic.cpp]
 
 若本次启动已经由 `malloc_debug`、`malloc_hooks` 或 heapprofd 占用 default dispatch，Android 17 的 `MaybeInitGwpAsan()` 会直接返回未启用；因此泄漏画像和 GWP-ASan 越界 / 释放后访问诊断通常要分开实验，并在报告中记录 allocator hook 状态。[来源: DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md; AOSP android-17.0.0_r1 bionic/libc/bionic/gwp_asan_wrappers.cpp]
 
@@ -383,7 +379,9 @@ Android 17 的大致路径是：Zygote/AndroidRuntime 从应用配置和平台�
 
 ### Recoverable 模式仍是高优先级故障
 
-Android 14 / API 34 及以上，当 manifest 未填写 `android:gwpAsanMode` 或使用 `default` 时，普通应用采用 Recoverable GWP-ASan：约 1% 的进程启动会启用它。Android 17 的 Bionic 默认把 GWP-ASan 设为 `Recoverable=true`。发生受保护池错误后，debuggerd 会先调用 Bionic 注入的 pre-crash hook，生成首份完整报告，再在 handler 出口调用 post-crash hook，让分配器处理对应故障槽并允许进程继续运行。`debuggerd_handle_gwp_asan_signal()` 还用 `first_crash_mutex` 和 `static bool first_crash` 限制同一进程只有第一次 GWP-ASan 错误走完整 tombstone / DropBoxManager 流程；后续 GWP-ASan 错误只执行 pre/post hook，不再重复触发完整 reporter 输出。应用自定义的 `SIGSEGV` 处理函数不会收到这种可恢复错误，也不应复制平台的恢复判断。[来源: DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md; AOSP android-17.0.0_r1 system/core/debuggerd/handler/debuggerd_handler.cpp; AOSP android-17.0.0_r1 bionic/libc/bionic/gwp_asan_wrappers.cpp]
+Android 14 / API 34 及以上，当 manifest 未填写 `android:gwpAsanMode` 或使用 `default` 时，普通应用采用 Recoverable GWP-ASan：约 1% 的进程启动会启用它。Android 17 的 Bionic 默认把 GWP-ASan 设为 `Recoverable=true`。
+
+发生受保护池错误后，debuggerd 会先调用 Bionic 注入的 pre-crash hook，生成首份完整报告，再在 handler 出口调用 post-crash hook，让分配器处理对应故障槽并允许进程继续运行。`debuggerd_handle_gwp_asan_signal()` 还用 `first_crash_mutex` 和 `static bool first_crash` 限制同一进程只有第一次 GWP-ASan 错误走完整 tombstone / DropBoxManager 流程；后续 GWP-ASan 错误只执行 pre/post hook，不再重复触发完整 reporter 输出。应用自定义的 `SIGSEGV` 处理函数不会收到这种可恢复错误，也不应复制平台的恢复判断。[来源: DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md; AOSP android-17.0.0_r1 system/core/debuggerd/handler/debuggerd_handler.cpp; AOSP android-17.0.0_r1 bionic/libc/bionic/gwp_asan_wrappers.cpp]
 
 “进程没有立刻退出”不代表状态安全。发生释放后访问或越界后，官方将后续行为定义为不确定；Recoverable GWP-ASan 事件仍应进入稳定性指标、去重、告警和高优先级修复队列。支付、写入等有副作用的操作不能因为进程继续运行就自动重试。
 
@@ -420,6 +418,20 @@ error type
 | Scudo | 加固系统分配器并检查部分分配器一致性错误 | 判断业务对象由谁持有，或给出泄漏根因 |
 
 Android 14+ 的正式版本通常保留 `default`，用分阶段发布观察命中率、进程启动分母、致命 / 可恢复事件、符号完整率和业务影响；Android 13 及以下的 `default` 对普通应用仍是关闭状态。`always` 只用于能承受额外虚拟地址、内存成本、进程终止或可恢复后状态不确定风险的范围。发布报告必须同时写清进程启动覆盖与内存分配抽样，避免把“没有命中”解释为“没有缺陷”。
+
+## 发布检查表
+
+- [ ] 合并后的 manifest 中每个进程的 `memtagMode` 已确认
+- [ ] 只在 64 位、实测支持 MTE 的设备上执行诊断
+- [ ] 标准堆、自定义分配器、栈与全局变量的覆盖范围没有混写
+- [ ] 调试包的 SYNC 已覆盖高风险 Native 场景
+- [ ] 正式发布配置未把 SYNC 当作普通默认值
+- [ ] 分批启用依赖分阶段发布或构建变体，没有假设远程动态切换
+- [ ] Build ID、符号、tombstone 与事件去重可用
+- [ ] SYNC 和 ASYNC 使用不同聚合规则
+- [ ] 致命信号采集器不会破坏 debuggerd 语义
+- [ ] 性能、功耗、应用崩溃与业务恢复都完成对照
+- [ ] 回到上一版本的流程和关键状态持久化已经演练
 
 ## 源码与官方资料
 
