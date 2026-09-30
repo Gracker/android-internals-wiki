@@ -4,9 +4,9 @@ chapter: '26.9'
 section: '26.9'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
-last_verified_against: Android 17 android-17.0.0_r1 SQLite and libcore sources; AndroidX SQLite 2.7.0 and Room 2.8.4 release notes; current Android SQLite performance, StrictMode, Room API, and SQLite EXPLAIN QUERY PLAN docs, retrieved 2026-08-15
+last_verified: '2026-09-30'
+last_source_verified_at: '2026-09-30'
+last_verified_against: Android 17 android-17.0.0_r1 SQLite and libcore sources; AndroidX SQLite 2.7.1 and Room 2.8.5 release notes; current Android SQLite performance, StrictMode, Room API, and SQLite EXPLAIN QUERY PLAN docs, retrieved 2026-09-30
 confidence: high
 sources:
 - type: clipping
@@ -72,6 +72,8 @@ last_review_finalize_at: '2026-08-15T21:07:07+08:00'
 last_review_finalize_run_id: 20260815-210707-gracker-writing-474
 last_rework_at: '2026-08-15T21:07:07+08:00'
 last_rework_run_id: 20260815-210707-gracker-writing-474
+last_idle_audit_at: '2026-09-30T14:35:34+08:00'
+last_idle_audit_run_id: 20260930-143534-idle-audit-f9e10da4
 ---
 
 # 线上存储、I/O 与 SQLite 可观测性
@@ -320,13 +322,13 @@ SQLiteLint 的 wiki 明确说明其系统 SQLite 路径通过 Hook 向 C 层 `sq
 
 ## 扩展：AndroidX SQLite/Room 新版本诊断能力
 
-截至 2026 年 8 月 15 日，AndroidX SQLite 稳定版为 2.7.0，Room 稳定版为 2.8.4。它们是独立于 Android 17 / API 37 的库版本，Room 主版本也不能从系统版本或 AndroidX SQLite 版本推导。本文讨论稳定版能力，因此使用 Room 2.8.4；SQLite 2.7.0 只表示 SQLite 库版本，不是 Room 版本。
+截至 2026 年 9 月 30 日，AndroidX SQLite 稳定版为 2.7.1，Room 稳定版为 2.8.5。它们是独立于 Android 17 / API 37 的库版本，Room 主版本也不能从系统版本或 AndroidX SQLite 版本推导。本文讨论与存储可观测性直接相关的稳定版能力：Room 2.8.4 引入连接池 prepared statement cache，Room 2.8.5 仍属于同一 2.8 稳定线；SQLite 2.7.1 只表示 SQLite 库版本，不是 Room 版本。
 
 与观测直接相关的变化包括：
 
 - AndroidX SQLite 2.6.2 为 `BundledSQLiteDriver` 创建的连接启用 extended error codes（扩展错误码），并用 `@FastNative` 降低部分 JNI（Java 与本地代码调用接口）成本。
-- AndroidX SQLite 2.7.0 已发布，但是否采用应根据该版本发布说明、目标平台和回归测试决定，不能只因它更新而替换生产环境 driver。
-- Room 2.8.4 在使用内部没有连接池的 `SQLiteDriver`（例如 `BundledSQLiteDriver`）时，为 Room 连接池增加 prepared statement cache；它与 Android 17 framework connection 自带的 cache 分属两层。
+- AndroidX SQLite 2.7.1 是当前稳定版；2.7.1 修复 web 和 suspending drivers 在事务中取消协程后可能让数据库和连接无法继续使用的问题。Android App 是否升级仍应根据发布说明、目标平台和回归测试决定，不能只因它更新而替换生产环境 driver。
+- Room 2.8.4 在使用内部没有连接池的 `SQLiteDriver`（例如 `BundledSQLiteDriver`）时，为 Room 连接池增加 prepared statement cache；Room 2.8.5 调整了数据库关闭后的挂起查询和 invalidation tracker（失效追踪器）操作，此时会抛出 `IllegalStateException`。Room 的连接池 cache 与 Android 17 framework connection 自带的 cache 分属两层。
 - `RoomDatabase.QueryCallback` 仍会为每条执行的查询触发回调，官方继续提示其运行成本。开启前应按实际查询量测试。
 
 线上事件建议保留 `room_version`、`androidx_sqlite_version`、driver 类型、SQLite 是否随应用打包、journal mode（日志模式）和 schema version（数据库结构版本）。更换系统 `AndroidSQLiteDriver`、`BundledSQLiteDriver` 或其他实现后，性能基线和错误码能力都可能变化，时间序列应标记切换点。
