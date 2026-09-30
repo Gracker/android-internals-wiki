@@ -5519,9 +5519,9 @@
       "summary": "> 发布时间: 2026-06-04T06:05:31.000Z > 原文链接: https://juejin.cn/post/7647186702176157722 2026-06-04 1,714 阅读6分钟 Android 17 开始引入 App 内存限制，限制值会根据设备总 RAM 决定。 如果进程超过限制，系统可以直接杀掉这个进程，而且不会给一段常规 crash...",
       "chapter": "ch04",
       "processed_at": "2026-10-01T06:20:34.417434+08:00",
-      "action": "indexed-only-chapter-freeze",
-      "score": 19,
-      "target_path": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "action": "quarantined-misroute",
+      "score": 0,
+      "target_path": null,
       "route_confidence": 21,
       "route_terms": [
         "android17",
@@ -5530,7 +5530,14 @@
         "juejin-android",
         "ch04-memory"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "quarantined-misroute-by-apply",
+      "previous_action": "indexed-only-chapter-freeze",
+      "previous_route_status": "existing-chapter-routed",
+      "previous_target_path": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "quarantine_reason": "Body-apply no-change: material is a same-URL re-fetch of source-index entry 412 (juejin post 7647186702176157722, Android 17 MemoryLimiter kill R8+onTrimMemory+ProfilingManager article). Compared with the 2026-09-23 source already applied to the memory chapter, the 2026-10-01 file changes only wrapper metadata/read count/follow state and local image references; it adds no verifiable technical fact. The chapter already contains the ApplicationExitInfo REASON_OTHER + MemoryLimiter:AnonSwap, am memory-limiter status/manual/ignore, R8, onTrimMemory and ProfilingManager conclusions with explicit source markers. Chapter body and frontmatter left unchanged.",
+      "quarantined_at": "2026-10-01T07:15:34+08:00",
+      "quarantined_run_id": "20261001-071534-2b2d75d8",
+      "status": "quarantined"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
