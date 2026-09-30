@@ -60,17 +60,15 @@ note: 'Consolidated-source availability: source page not present in the current 
 
 # FD 耗尽监控与故障排查
 
-FD（file descriptor，文件描述符）是进程用来引用内核对象的整数编号。文件、socket（网络套接字）、pipe（管道）、eventfd（事件通知描述符）和 epoll（事件监听器）都会占用 FD。FD 接近进程限额时，新建对象会失败；即使打开数量不多，把编号过高的 FD 交给旧式 `select()`，也可能触发 bionic（Android 的 C 标准库及底层运行时）FORTIFY 主动中止进程。
+FD（file descriptor，文件描述符）是进程用来引用内核对象的整数编号。文件、socket（网络套接字）和 pipe（管道）都会占用 FD，eventfd（事件通知描述符）与 epoll（事件监听器）这类内核对象同样如此。FD 接近进程限额时，新建对象会失败；即使打开数量不多，把编号过高的 FD 交给旧式 `select()`，也可能触发 bionic（Android 的 C 标准库及底层运行时）的 FORTIFY 检查，检查失败会主动中止进程。
 
-排查时要区分打开数量、FD 编号、对象类型、generation（创建代次）与 owner（负责释放资源的所有者）。`/proc/self/fd` 只能提供某一时刻的近似快照，无法单独回答每个 FD 由谁创建、应由谁关闭。
+排查时要区分打开数量、FD 编号、对象类型、generation（创建代次）与 owner（负责释放资源的所有者）；`/proc/self/fd` 只能提供某一时刻的近似快照，无法单独回答每个 FD 由谁创建、应由谁关闭。
 
 平台源码固定到 Android 17 / API 37 / `android-17.0.0_r1`；涉及 `/proc`、rlimit 与 FD 分配语义时，内核源码固定到 `android17-6.18-2026-06_r6`。线程与协程见 20.8，Native 内存见 20.6；本文只在它们与 FD 出现在同一故障现场时说明证据关系。
 
-## FD：数量、编号、对象和所有者要分开
+## 数量、编号、对象和所有者要分开
 
-FD 是进程文件描述符表中的整数索引。关闭一个 FD 后，内核通常会把较小的空闲编号分配给后续对象。double-close 指同一编号被关闭两次：第二次关闭时，该编号可能已经指向另一线程刚创建的对象，最终造成 use-after-close（关闭后仍使用）或数据损坏。因此，监控记录不能只保存“编号 123 曾由谁打开”。
-
-需要区分：
+FD 是进程文件描述符表中的整数索引。监控记录至少要把下面几项分开：
 
 - 当前打开 FD 的数量；
 - FD 数值本身，例如是否达到 `FD_SETSIZE`；
@@ -81,7 +79,9 @@ FD 是进程文件描述符表中的整数索引。关闭一个 FD 后，内核�
 
 generation 是同一编号每次重新创建或复用时递增的代次，用于区分“旧的 123”和“新的 123”。所有者可以是创建该 FD 的对象、模块或任务，其职责是保证每条成功创建路径都有且只有一次关闭。
 
-`/proc/self/status` 中的 `FDSize` 表示已分配的描述符槽位数，并非当前打开数量。procfs 是内核通过 `/proc` 暴露进程和系统状态的虚拟文件系统。Linux 6.18 的 procfs 文档说明，`/proc/<pid>/fd` 目录包含进程当前打开 FD 的符号链接；应用采集自身进程时应使用 `/proc/self/fd`，这样可避开 PID（进程编号）复用和跨进程访问权限问题。
+关闭一个 FD 后，内核通常会把较小的空闲编号分配给后续对象。double-close 指同一编号被关闭两次：第二次关闭时，该编号可能已经指向另一线程刚创建的对象，最终造成 use-after-close（关闭后仍使用）或数据损坏。因此，监控记录不能只保存“编号 123 曾由谁打开”。
+
+procfs 是内核通过 `/proc` 暴露进程和系统状态的虚拟文件系统。`/proc/self/status` 中的 `FDSize` 表示已分配的描述符槽位数，并非当前打开数量。Linux 6.18 的 procfs 文档说明，`/proc/<pid>/fd` 目录包含进程当前打开 FD 的符号链接；应用采集自身进程时应使用 `/proc/self/fd`，这样可避开 PID（进程编号）复用和跨进程访问权限问题。
 
 ### 常规计数与触发式详细快照
 
@@ -156,11 +156,9 @@ fun collectFdSnapshot(): FdSnapshot {
 
 新建 FD 会超出 soft limit 时，调用通常返回 `EMFILE`；`ENFILE` 表示系统级打开文件表承受压力。限额取决于设备与进程环境，不应写死统一数值。采样时可以读取 `/proc/self/limits`，或在 Native 层调用 `getrlimit(RLIMIT_NOFILE)`。
 
-`FD_SETSIZE` 是 `select()` 所用 `fd_set` 位集合的默认表示边界。Android 17 bionic 的 `sys/select.h` 将它定义为 1024；`__check_fd_set()` 发现 FD 小于 0、FD 不小于 `FD_SETSIZE`，或调用方提供的 `fd_set` 空间不足时，会触发 FORTIFY fatal。
+`FD_SETSIZE` 是 `select()` 所用 `fd_set` 位集合的默认表示边界。Android 17 bionic 的 `sys/select.h` 将它定义为 1024。FORTIFY 是 bionic 的运行时参数检查，fatal 表示检查失败后主动中止进程；`__check_fd_set()` 发现 FD 小于 0、FD 不小于 `FD_SETSIZE`，或调用方提供的 `fd_set` 空间不足时，就会触发 FORTIFY fatal。
 
-FORTIFY 是 bionic 的运行时参数检查；fatal 表示检查失败后主动中止进程。
-
-由此有四个结论：
+限额和 `FD_SET` 是两条独立的边界，由此得到四个结论：
 
 - “打开 FD 总数超过 1024 就会崩溃”是错误结论；
 - 进程打开数量很少，也可能通过 `dup2` 得到一个大于等于 1024 的 FD；
@@ -179,7 +177,9 @@ FD 的创建入口不限于 `open()`。诊断采集至少要考虑：
 - `dup/dup2/dup3` 与 `fcntl(F_DUPFD*)`；
 - `close` 及语言或框架层所有者发起的关闭。
 
-eventfd、epoll、inotify 和 timerfd 都是通过 FD 暴露能力的内核接口；`dup*` 和 `fcntl(F_DUPFD*)` 会复制描述符。Hook 指在运行时拦截函数调用。如果只拦截 `open()` 与 `close()`，事件表必然缺少其他入口；在所有用户进程长期启用一组 libc（C 标准库）Hook，开销和兼容风险也很高。
+eventfd、epoll、inotify 和 timerfd 都是通过 FD 暴露能力的内核接口；`dup*` 和 `fcntl(F_DUPFD*)` 会复制描述符。
+
+Hook 指在运行时拦截函数调用。如果只拦截 `open()` 与 `close()`，事件表必然缺少其他入口；在所有用户进程长期启用一组 libc（C 标准库）Hook，开销和兼容风险也很高。
 
 事件表可以使用 `fd + generation` 作为本地键。每次成功创建或复制，都为目标编号递增 generation；`dup2()` / `dup3()` 成功覆盖目标编号时，要先结束该编号的旧记录，再建立新记录。每条事件至少包含操作、结果、类型、单调时间、线程 ID、来源 ID，以及按采样规则选取的调用栈。
 
@@ -261,7 +261,7 @@ Crash、ANR（应用无响应）和 OOM（内存不足）的完整判定分别�
 - 远程开关不可用时采用本地安全默认值；
 - 同一进程只启用一个 Native FD 事件采集器，避免多个 hook 争用。
 
-## 资源接近上限时，由所有者负责释放
+## 释放动作由所有者执行
 
 FD 持续增长且接近上限时，可按影响范围采取以下动作：
 
@@ -273,7 +273,7 @@ FD 持续增长且接近上限时，可按影响范围采取以下动作：
 
 不要强制关闭任意 FD、停止未知线程、清除用户数据，也不要把主动终止主进程当作日常恢复方案。SafeMode（安全模式）只能跳过边界明确的可选模块，详见 20.2。
 
-## 资源接近上限时只记录最小证据
+## 崩溃现场只写最小证据
 
 资源接近耗尽时，创建线程、分配大数组、枚举全部调用栈或打开新文件都可能失败。fatal handler（致命故障处理器）中不应调用 `Thread.getAllStackTraces()`、遍历每个 `fdinfo` 或启动上传任务。
 
