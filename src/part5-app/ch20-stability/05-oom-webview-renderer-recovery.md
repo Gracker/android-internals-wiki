@@ -492,9 +492,11 @@ OOM 治理达到可发布状态时，每个接近资源预算的事件都有责�
 
 WebView 页面突然变白时，宿主 Activity 可能仍能响应，导航栏和原生按钮也都正常。若同时收到 `onRenderProcessGone()`，可以确认关联的 Renderer（负责网页解析、脚本执行与绘制的渲染进程）已经退出。此时旧 `WebView` 失效，`reload()`、`goBack()`、`evaluateJavascript()` 和 JS Bridge（JavaScript 与原生代码之间的通信接口）调用都救不回它。
 
-这里的 OOM 是 Out of Memory（内存不足）的缩写。本文讨论的是系统在内存压力下结束 Renderer 这一类情况；每次白屏或每个 `didCrash=false` 都不能直接定为 OOM。
+本节讨论的是系统在内存压力下结束 Renderer 这一类情况；每次白屏或每个 `didCrash=false` 都不能直接定为 OOM。
 
-下文把一次 `onRenderProcessGone()` 回调简称为 gone 事件。本文以 Android 17 / API 37 / `android-17.0.0_r1` 的 framework（Android 系统框架）契约为准。WebView provider（向 framework 提供 WebView 实现的可更新系统包）可能来自 Chromium，也可能由厂商定制，因此排查时还要记录设备上的 provider 包名与版本。文中涉及内核内存压力的源码名词时，以 Android common kernel（Android 公共内核源码仓库）的 `android17-6.18-2026-06_r6` 标签为参照；这个标签用于固定源码版本，不代表所有 Android 17 设备都运行同一内核。
+下文把一次 `onRenderProcessGone()` 回调简称为 gone 事件。本节以 Android 17 / API 37 / `android-17.0.0_r1` 的 framework（Android 系统框架）契约为准。WebView provider（向 framework 提供 WebView 实现的可更新系统包）可能来自 Chromium，也可能由厂商定制，因此排查时还要记录设备上的 provider 包名与版本。
+
+文中涉及内核内存压力的源码名词时，以 Android common kernel（Android 公共内核源码仓库）的 `android17-6.18-2026-06_r6` 标签为参照；这个标签用于固定源码版本，不代表所有 Android 17 设备都运行同一内核。
 
 ### 先分清平台、Provider 和进程
 
@@ -507,7 +509,7 @@ WebView 页面突然变白时，宿主 Activity 可能仍能响应，导航栏�
 
 现代标准 WebView 可以按三个执行域理解：
 
-1. 宿主进程保存 `WebView` Java 对象、Activity/Fragment 状态、业务 Bridge，以及 provider 的 browser-side 代码；这里的 browser-side 指导航、网络、权限等浏览器控制逻辑，并不表示另有一个浏览器应用；
+1. 宿主进程保存 `WebView` Java 对象、Activity/Fragment 状态、业务 Bridge，以及 provider 的 browser-side 代码；这里的 browser-side 覆盖导航、网络、权限等浏览器控制逻辑，并不表示另有一个浏览器应用；
 2. 沙箱 Renderer 运行 Blink 排版引擎、JavaScript，以及样式计算、布局、绘制和部分页面合成工作；
 3. 宿主的 HWUI RenderThread（Android UI 硬件加速渲染线程）通过 WebView functor 接收 provider 的绘制回调。functor 是 provider 与 HWUI 之间的原生绘制桥，结果通常先合入应用窗口，再交给 SurfaceFlinger（Android 的系统画面合成服务）和 HWC（Hardware Composer，硬件合成器）。
 
@@ -689,7 +691,9 @@ class H5Activity : AppCompatActivity() {
 }
 ```
 
-旧实例按官方要求从视图树移除、清除引用并调用 `destroy()`，之后不再设置 client、停止加载或执行 JavaScript。代码先把 `RenderProcessGoneDetail` 中需要的字段复制成普通值，避免延后任务继续持有回调对象；事件上报函数也必须自行处理异常，不能让异常从回调中抛出。重建通过 `container.post` 放入主线程消息队列，等回调返回后再执行，避免尚未退出回调又开始创建 WebView。任务执行前还会检查 Activity 是否正在结束或已经销毁。自动恢复次数写入 `savedInstanceState`（Activity 重建时由系统传回的状态 Bundle），避免屏幕旋转等配置变更把次数重新置零。
+旧实例按官方要求从视图树移除、清除引用并调用 `destroy()`，之后不再设置 client、停止加载或执行 JavaScript。代码先把 `RenderProcessGoneDetail` 中需要的字段复制成普通值，避免延后任务继续持有回调对象；事件上报函数也必须自行处理异常，不能让异常从回调中抛出。
+
+重建通过 `container.post` 放入主线程消息队列，等回调返回后再执行，避免尚未退出回调又开始创建 WebView。任务执行前还会检查 Activity 是否正在结束或已经销毁。自动恢复次数写入 `savedInstanceState`（Activity 重建时由系统传回的状态 Bundle），避免屏幕旋转等配置变更把次数重新置零。
 
 示例对崩溃采取保守策略：同一页面可能稳定复现 Chromium 或页面内容触发的问题，因此不自动重载。被系统结束的页面也只有一次自动恢复机会。`WebCheckpoint` 应保存去敏后的业务路由和重放规则，不应序列化完整浏览历史、POST 数据或 JavaScript 运行时状态。
 
@@ -757,9 +761,15 @@ WebView 页面资源分布在多个域：
 
 PSS（Proportional Set Size）把共享内存按比例计入进程，适合估算进程对物理内存的贡献；RSS（Resident Set Size）会把当前驻留的共享页全部计入，跨进程相加可能重复。这里记录二者是为了补充宿主现场，不能把它们当成 Renderer 的内存值。
 
-在 Android 8 及以上，`WebView.getCurrentWebViewPackage()` 可在 WebView 加载前后调用。已经加载时，它返回当前进程实际使用的 provider；尚未加载时，它返回“此刻加载将会使用”的 provider，这个结果随后可能过期。设备不支持 WebView 或配置异常时，返回值也可能为 `null`。AndroidX WebKit 环境可使用对应的兼容 API。provider `versionName` 常能帮助定位 Chromium 版本，但厂商格式不统一；从版本号解析 milestone（Chromium 的主版本代号，如 M140）只能作为针对特定 provider 的逻辑。
+在 Android 8 及以上，`WebView.getCurrentWebViewPackage()` 可在 WebView 加载前后调用。已经加载时，它返回当前进程实际使用的 provider；尚未加载时，它返回“此刻加载将会使用”的 provider，这个结果随后可能过期。设备不支持 WebView 或配置异常时，返回值也可能为 `null`。AndroidX WebKit 环境可使用对应的兼容 API。
 
-实验室可用 Perfetto（系统跟踪工具）、bugreport（系统诊断包）、Chrome DevTools（网页调试工具）和 provider 对应的 Chromium 符号文件调查 Renderer、GPU 与系统内存压力；符号文件用于把原生地址还原成函数名和调用栈。查看内核证据时，reclaim 表示内存回收活动，PSI（Pressure Stall Information）memory 表示任务因内存压力停顿的时间比例，page fault 表示缺页事件，dma-buf 则常用于追踪跨进程共享的图形缓冲区；zram 的含义见上文。若要与本文源码对应，应固定到 `android17-6.18-2026-06_r6`。线上公开 API 通常拿不到 Renderer 的精确 PSS，不要依赖反射、读取其他进程 `/proc` 或私有 Chromium 接口。
+provider `versionName` 常能帮助定位 Chromium 版本，但厂商格式不统一；从版本号解析 milestone（Chromium 的主版本代号，如 M140）只能作为针对特定 provider 的逻辑。
+
+实验室可用 Perfetto（系统跟踪工具）、bugreport（系统诊断包）、Chrome DevTools（网页调试工具）和 provider 对应的 Chromium 符号文件调查 Renderer、GPU 与系统内存压力；符号文件用于把原生地址还原成函数名和调用栈。
+
+查看内核证据时，reclaim 表示内存回收活动，PSI（Pressure Stall Information）memory 表示任务因内存压力停顿的时间比例，page fault 表示缺页事件，dma-buf 则常用于追踪跨进程共享的图形缓冲区；zram 的含义见上文。若要与本文源码对应，应固定到 `android17-6.18-2026-06_r6`。
+
+线上公开 API 通常拿不到 Renderer 的精确 PSS，不要依赖反射、读取其他进程 `/proc` 或私有 Chromium 接口。
 
 `ApplicationExitInfo` 记录的是应用进程的退出信息，适合补充宿主进程为何结束。Renderer 被回收而宿主继续运行时，不一定会产生应用可查询的对应记录；它不能替代 `onRenderProcessGone()` 事件，也不能在没有时间和进程证据时与某次 Renderer gone 一一配对。
 
@@ -843,25 +853,6 @@ Android 17 源码说明，无响应期间会重复回调，相邻回调最短间
 
 API 26 以下没有 `onRenderProcessGone()`。若产品仍支持更低版本，需要单独定义进程级隔离、原生错误页和 provider 升级策略；不要把 API 26 的恢复契约套到旧系统。
 
-### 源码与官方资料
-
-- [Android 17 `WebViewClient.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/webkit/WebViewClient.java)
-- [Android 17 `RenderProcessGoneDetail.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/webkit/RenderProcessGoneDetail.java)
-- [Android 17 `WebView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/webkit/WebView.java)
-- [Android 17 `WebViewRenderProcessClient.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/webkit/WebViewRenderProcessClient.java)
-- [Android 17 `WebViewRenderProcess.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/webkit/WebViewRenderProcess.java)
-- [Android 17 HWUI `WebViewFunctor.h`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/private/hwui/WebViewFunctor.h)
-- [Android 17 `WebViewFunctorManager.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/WebViewFunctorManager.cpp)
-- [Android Developers：处理 WebView Renderer 终止](https://developer.android.com/develop/ui/views/layout/webapps/handle-termination)
-- [Android Developers：管理 WebView 对象](https://developer.android.com/develop/ui/views/layout/webapps/managing-webview)
-- [Android Developers：`WebViewClient` API](https://developer.android.com/reference/android/webkit/WebViewClient)
-- [Android Developers：`WebView` API](https://developer.android.com/reference/android/webkit/WebView)
-- [Chromium WebView architecture](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/android_webview/docs/architecture.md)
-- [AndroidX WebKit `WebViewCompat`](https://developer.android.com/reference/androidx/webkit/WebViewCompat)
-- [`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)
-- [`ActivityManager.getHistoricalProcessExitReasons()`](https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,%20int,%20int))
-- [Android 17 kernel `mm/vmscan.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c)
-
 ### 常见误判
 
 | 误判 | 更严谨的结论 |
@@ -887,6 +878,25 @@ Renderer gone 的恢复原则可以压缩成五句话：
 5. 视觉提交与业务就绪都成功，才能计为用户已恢复。
 
 把 gone 事件、旧实例清理、新实例状态和 provider 版本放在同一条事件记录中，才能区分系统回收、Renderer 崩溃、主动终止和恢复代码自身的缺陷。
+
+### 源码与官方资料
+
+- [Android 17 `WebViewClient.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/webkit/WebViewClient.java)
+- [Android 17 `RenderProcessGoneDetail.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/webkit/RenderProcessGoneDetail.java)
+- [Android 17 `WebView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/webkit/WebView.java)
+- [Android 17 `WebViewRenderProcessClient.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/webkit/WebViewRenderProcessClient.java)
+- [Android 17 `WebViewRenderProcess.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/webkit/WebViewRenderProcess.java)
+- [Android 17 HWUI `WebViewFunctor.h`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/private/hwui/WebViewFunctor.h)
+- [Android 17 `WebViewFunctorManager.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/WebViewFunctorManager.cpp)
+- [Android Developers：处理 WebView Renderer 终止](https://developer.android.com/develop/ui/views/layout/webapps/handle-termination)
+- [Android Developers：管理 WebView 对象](https://developer.android.com/develop/ui/views/layout/webapps/managing-webview)
+- [Android Developers：`WebViewClient` API](https://developer.android.com/reference/android/webkit/WebViewClient)
+- [Android Developers：`WebView` API](https://developer.android.com/reference/android/webkit/WebView)
+- [Chromium WebView architecture](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/android_webview/docs/architecture.md)
+- [AndroidX WebKit `WebViewCompat`](https://developer.android.com/reference/androidx/webkit/WebViewCompat)
+- [`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+- [`ActivityManager.getHistoricalProcessExitReasons()`](https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,%20int,%20int))
+- [Android 17 kernel `mm/vmscan.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c)
 
 ## 小结
 
