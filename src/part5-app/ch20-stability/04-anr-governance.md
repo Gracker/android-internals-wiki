@@ -140,7 +140,7 @@ ANR 主题决定后续要看哪条执行路径：
 | start foreground / short FGS | Service 回调与停止时序 | 按时调用 `startForeground()` 或停止服务，处理 `onTimeout()` |
 | job service start/stop | `JobService` 主线程回调 | 立即返回并异步执行，遵守通知与完成协议 |
 
-一份主线程快照只能说明采样瞬间。广播可能运行在自定义 `Handler`，`goAsync()` 工作也可能在后台工作线程（worker）上；主线程出现表示 Looper 正在等待消息的 `nativePollOnce`，不能直接排除这类 ANR。
+一份主线程快照只能说明采样瞬间。广播可能运行在自定义 `Handler`，`goAsync()` 工作也可能在后台工作线程（worker）上；主线程栈里出现 `nativePollOnce`，只表示 Looper 正在等待消息，不能据此排除这类 ANR。
 
 ## 缩短主线程同步工作并异步化
 
@@ -243,7 +243,9 @@ IPC（inter-process communication）指进程间通信，Binder 是 Android 的�
 - 服务端持有锁调用客户端回调，客户端又请求服务端同一把锁，形成跨进程环路等待。
 - 大对象频繁序列化，占用 Binder 线程和内存带宽。
 
-自有服务应记录接口名、请求 ID、调用方、排队时间、执行时间和结果状态。生产环境的观测代码优先放在自有客户端代理（proxy）、服务端桩（stub）或调用点。依赖隐藏的 `BinderProxy.transactNative()` Hook（拦截内部调用入口）容易随系统实现变化，也可能与运行时或其他 SDK 冲突。系统服务问题可结合 Perfetto、线程采样和系统 traces 判断；`system_server` 是承载 ActivityManager 等 Android 系统服务的进程。
+自有服务应记录接口名、请求 ID、调用方、排队时间、执行时间和结果状态。生产环境的观测代码优先放在自有客户端代理（proxy）、服务端桩（stub）或调用点。依赖隐藏的 `BinderProxy.transactNative()` Hook（拦截内部调用入口）容易随系统实现变化，也可能与运行时或其他 SDK 冲突。
+
+系统服务问题可结合 Perfetto、线程采样和系统 traces 判断。`system_server` 是承载 ActivityManager 等 Android 系统服务的进程。
 
 外部 Service 变慢不会自动给 ContentProvider 判 ANR。应用线程在 provider 发布、provider 请求或其他受监控阶段同步等待该 Service，系统计时器到期后，才会形成相应类型的 ANR。
 
@@ -286,7 +288,7 @@ IPC（inter-process communication）指进程间通信，Binder 是 Android 的�
 
 锁 A 只存在于应用进程，等待环却跨过了 Binder。规则仍相同：持锁期间不调用未知代码，也不做同步 IPC。
 
-## ContentProvider / BroadcastReceiver 超时治理
+## ContentProvider、BroadcastReceiver 与 Service 超时治理
 
 组件 ANR 的计时范围常常比组件方法本身更长。冷启动、前置初始化和线程排队都可能包含在系统窗口中，因此只测 `onReceive()` 或 `onStartCommand()` 的函数耗时不够。
 
@@ -327,7 +329,17 @@ class DiagnosticsProvider : ContentProvider() {
 
 trace 只负责测量，不会让初始化变快。`installLightweightHooks()` 只能保留主线程可接受的注册工作。明确支持后台执行的磁盘与解析可以移出 Provider；可延迟能力改为按需初始化；要求主线程的 SDK 步骤仍保留在主线程并压缩。不能把所有初始化统一丢给 `Dispatchers.IO`，否则调用方可能在初始化完成前访问能力，或违反 SDK 的线程约束。
 
-修复后至少重放全新安装、数据库 schema（表和字段结构）跨版本覆盖升级、桌面/Provider/Service/Broadcast/Job/推送启动、主/独立进程、离线/弱网、初始化完成前立即调用和多调用方并发等待。Macrobenchmark 用于批量测量启动性能分布，Perfetto 用时间线确认主线程区间，`ApplicationStartInfo` 对齐系统记录的启动节点，`ApplicationExitInfo` 和 ANR traces 复核进程退出与现场栈。若 P95、P99 等高百分位启动延迟下降，但 SDK 初始化失败率上升，修复仍不合格。
+修复后至少重放这些场景：
+
+- 全新安装。
+- 数据库 schema（表和字段结构）跨版本覆盖升级。
+- 桌面、Provider、Service、Broadcast、Job 和推送启动。
+- 主进程与独立进程。
+- 离线与弱网。
+- 初始化完成前立即调用。
+- 多调用方并发等待。
+
+Macrobenchmark 用于批量测量启动性能分布，Perfetto 用时间线确认主线程区间，`ApplicationStartInfo` 对齐系统记录的启动节点，`ApplicationExitInfo` 和 ANR traces 复核进程退出与现场栈。若 P95、P99 等高百分位启动延迟下降，但 SDK 初始化失败率上升，修复仍不合格。
 
 ### BroadcastReceiver：`goAsync()` 不增加时间
 
@@ -374,7 +386,7 @@ class SyncReceiver(
 
 ## ANR Watchdog（看门狗）搭建
 
-Watchdog 是一种看门狗式监测器，按固定周期检查目标是否还能响应。应用 Watchdog 通过后台线程向主 Looper 投递探针（供主线程执行的轻量 `Runnable`），测量探针多久才被执行。它能发现主 Looper 长时间没有响应，不能复刻 InputDispatcher、广播、Service、provider 和 `system_server` 的全部判定条件。
+Watchdog 按固定周期检查目标是否还能响应。应用 Watchdog 通过后台线程向主 Looper 投递探针（供主线程执行的轻量 `Runnable`），测量探针多久才被执行。它能发现主 Looper 长时间没有响应，不能复刻 InputDispatcher、广播、Service、provider 和 `system_server` 的全部判定条件。
 
 ### 避免探针互相确认
 
