@@ -72,7 +72,7 @@ consolidated_from:
 
 # ContentProvider 与多进程启动治理
 
-ContentProvider 会在 Application.onCreate 之前安装，多进程组件又可能在每个进程重复执行初始化。启动治理需要明确 Provider 权限和依赖，并为每个进程建立独立初始化清单。
+ContentProvider 会在 Application.onCreate 之前安装，多进程组件又可能在每个进程重复执行初始化。前者要核对安装顺序、权限、依赖和最终 Manifest，后者要为每个进程建立独立初始化清单，并把跨进程能力设计成可超时、可重连的异步接口。
 
 ## Provider 安装顺序、依赖与延迟方案
 
@@ -98,7 +98,7 @@ Instrumentation.onCreate(...)
 Instrumentation.callApplicationOnCreate(app)
 ```
 
-图中的 attach 指把新建的 `Application` 绑定到进程 `Context` 等运行环境。`data.providers` 是 `system_server` 为当前进程准备的 Provider 列表；`system_server` 是承载 ActivityManager 等核心系统服务的进程。Provider 属于哪个进程，由最终 Manifest 中的 `android:process` 决定，未声明时属于应用默认进程。
+图中的 attach 指把新建的 `Application` 绑定到进程 `Context` 等运行环境。`data.providers` 是 `system_server` 为当前进程准备的 Provider 列表；`system_server` 是承载 ActivityManager 等核心系统服务的进程。`bindApplication` 指系统把应用信息、组件和 `Application` 绑定到新进程的启动阶段。Provider 属于哪个进程，由最终 Manifest 中的 `android:process` 决定，未声明时属于应用默认进程。
 
 `installContentProviders()` 对列表逐个调用 `installProvider()`。本地 Provider 的关键路径是：
 
@@ -124,7 +124,7 @@ Provider 多时会增加类加载、实例化、`attachInfo()` 和各自 `onCrea
 
 #### 1.3 App 埋点为什么容易漏掉
 
-很多项目从 `Application.onCreate()` 第一行开始计时。Provider 已经在此前完成，因此这类埋点只能看到 Application 阶段，无法解释完整的 `bindApplication`：这是系统把应用信息、组件和 `Application` 绑定到新进程的启动阶段。
+很多项目从 `Application.onCreate()` 第一行开始计时。Provider 已经在此前完成，因此这类埋点只能看到 Application 阶段，无法解释完整的 `bindApplication`。
 
 启动基线应以 Macrobenchmark 自动化基准测试得到的端到端 TTID/TTFD 为主：TTID 表示首帧首次显示所需时间，TTFD 表示应用达到完整可用状态所需时间。再结合 Perfetto 系统 Trace 的 Android App Startups 区间和自定义 slice；slice 是 Trace 上带开始、结束时间的命名区间，可用于分解自有 Provider。
 
@@ -152,7 +152,7 @@ Provider 数量可以作为审计入口，不能直接换算成毫秒。
 
 #### 3.1 检查最终合并结果
 
-源码里的 Manifest 不是安装包中的最终结果。依赖库、渠道配置、build type（如 debug/release）、product flavor（如 free/paid 产品配置）和构建时替换的 Manifest placeholder 都可能改变最终组件；build type 与 product flavor 等配置的组合称为 build variant（构建变体）。
+源码里的 Manifest 不是安装包中的最终结果。build type（如 debug/release）与 product flavor（如 free/paid 产品配置）等配置的组合称为 build variant（构建变体）；依赖库、渠道配置、build variant 和构建时替换的 Manifest placeholder 都可能改变最终组件。
 
 Android Gradle Plugin（AGP）的合并决策报告位于模块的 `build/outputs/logs/manifest-merger-<variant>-report.txt`。Android Studio 的 Merged Manifest 视图也能定位某个 Provider 来自哪个依赖。应检查准备发布的每个构建变体，不能只看 debug。
 
@@ -242,7 +242,7 @@ class AppInitProvider : ContentProvider() {
 - 承载进程的进程绑定、Provider `onCreate()` 和发布；
 - 超时、死亡与重试。
 
-调用方线程若是 Main，这段等待会直接进入 UI 关键路径。远端进程并不会让同步访问自动变快。
+调用方线程若是 Main 线程，这段等待会直接进入 UI 关键路径。远端进程并不会让同步访问自动变快。
 
 ### 5. 按用户可见边界分类
 
@@ -313,7 +313,7 @@ NotStarted → Initializing → Ready
 
 状态机还要定义：
 
-- SDK 是否要求 Main 调用；
+- SDK 是否要求在 Main 线程调用；
 - 异步回调何时代表逻辑可用；
 - 超时是否能协作取消，即任务是否会响应中断、取消标记或底层取消 API；
 - 晚到结果是否允许写状态；
@@ -327,7 +327,7 @@ NotStarted → Initializing → Ready
 
 `OnPreDrawListener` 在视图树即将绘制时执行，`View.post()` 只表示把一段 `Runnable` 工作放进 Main 消息队列。两者都不能证明该帧已经提交给渲染系统。
 
-适用范围从 API 29 开始。硬件渲染页面可以用 `registerFrameCommitCallback()` 等下一帧提交到 swap chain 后再触发延后任务；swap chain 是渲染系统轮换使用、等待显示的一组图像缓冲区：
+下面这套做法从 API 29 开始适用。硬件渲染页面可以用 `registerFrameCommitCallback()` 等下一帧提交到 swap chain 后再触发延后任务；swap chain 是渲染系统轮换使用、等待显示的一组图像缓冲区：
 
 ```kotlin
 val root = window.decorView
@@ -498,7 +498,7 @@ App 可以控制的部分包括：是否拆进程、何时启动、每个进程�
 
 ### 1. 先确认拆进程的目的
 
-在 Manifest 中给组件设置 `android:process=":worker"`，会让它运行在名为“应用包名`:worker`”的私有远程进程中。这个进程通常仍使用应用的 UID（Linux 用户身份）和权限，但拥有独立的 ART（Android Runtime）实例、Java/Kotlin 堆（托管对象内存）、native 堆（C/C++ 动态分配内存）、静态字段、线程、ClassLoader 类加载状态和 Binder 线程池。主进程里的单例不会自动出现在远程进程，远程进程修改的内存对象也不会同步回来。
+在 Manifest 中给组件设置 `android:process=":worker"`，会让它运行在一个私有远程进程中，进程名由应用包名和 `:worker` 拼接而成。这个进程通常仍使用应用的 UID（Linux 用户身份）和权限，但拥有独立的 ART（Android Runtime）实例、Java/Kotlin 堆（托管对象内存）、native 堆（C/C++ 动态分配内存）、静态字段、线程、ClassLoader 类加载状态和 Binder 线程池。主进程里的单例不会自动出现在远程进程，远程进程修改的内存对象也不会同步回来。
 
 拆进程常见的合理目标包括：
 
@@ -526,7 +526,9 @@ WebView 在多进程模式下会把网页内容放进 renderer process（Chromiu
 
 ### 2. Android 17 的进程启动链路
 
-当系统需要运行一个尚无进程可用的组件时，system_server（运行 Android 核心系统服务的进程）会请求 Zygote 创建应用进程。Zygote 是预加载了通用框架代码的进程，可通过 fork（用写时复制派生子进程，修改内存页时才生成私有副本）快速创建 App 进程。Android 17 的 `ZygoteProcess.startViaZygote()` 负责整理参数，并通过 Zygote socket（进程间通信端点）发送创建请求；新进程随后进入 `ActivityThread` 的应用绑定流程。`ActivityThread` 是 App 进程接收组件与生命周期调度的核心类。
+系统需要运行一个尚无进程可用的组件，system_server（运行 Android 核心系统服务的进程）会请求 Zygote 创建应用进程。Zygote 是预加载了通用框架代码的进程，可通过 fork（用写时复制派生子进程，修改内存页时才生成私有副本）快速创建 App 进程。Android 17 的 `ZygoteProcess.startViaZygote()` 负责整理参数，并通过 Zygote socket（进程间通信端点）发送创建请求。
+
+新进程随后进入 `ActivityThread` 的应用绑定流程。`ActivityThread` 是 App 进程接收组件与生命周期调度的核心类。
 
 相关链路可以压缩成下面几步：
 
@@ -692,7 +694,9 @@ class WorkerConnection :
 }
 ```
 
-这段代码只展示连接骨架。调用方仍需成对执行 bind/unbind。`onServiceDisconnected()` 表示连接意外丢失，原绑定仍然有效，服务重新运行后可能再次收到 `onServiceConnected()`；`onBindingDied()` 表示这条绑定不会自动恢复，必须先解绑再按业务需要重绑；`onNullBinding()` 也要解绑以释放跟踪资源。旧 Binder 仍然存活但不再使用时，还要解除 `linkToDeath()` 注册。`binderDied()` 可能在 Binder 线程执行，并与新连接回调并发，生产实现应给每次连接分配代次，忽略旧代次回调，避免旧死亡通知覆盖新的 `Ready` 状态。状态更新之外的重工作应切换到受控协程或执行器。
+这段代码只展示连接骨架。调用方仍需成对执行 bind/unbind。`onServiceDisconnected()` 表示连接意外丢失，原绑定仍然有效，服务重新运行后可能再次收到 `onServiceConnected()`；`onBindingDied()` 表示这条绑定不会自动恢复，必须先解绑再按业务需要重绑；`onNullBinding()` 也要解绑以释放跟踪资源。旧 Binder 仍然存活但不再使用时，还要解除 `linkToDeath()` 注册。`binderDied()` 可能在 Binder 线程执行，并与新连接回调并发，生产实现应给每次连接分配代次，忽略旧代次回调，避免旧死亡通知覆盖新的 `Ready` 状态。
+
+状态更新之外的重工作应切换到受控协程或执行器。
 
 远程事务可能包含磁盘、网络或重计算。AIDL（Android Interface Definition Language）用于声明跨进程接口；客户端应把同步 AIDL 调用放到允许阻塞的调度器，并给业务请求单独设置超时：
 
