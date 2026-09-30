@@ -47,11 +47,11 @@ related_chapters:
 
 Android Keystore 是由系统管理的密钥容器。应用通过 alias（密钥条目的字符串名称）访问密钥；私钥或对称密钥的材料不能通过 Keystore API 导出，设备支持时还可由安全硬件保护。
 
-Android 17 开始按应用 UID 限制 Keystore 密钥条目数量。UID 是 Linux/Android 用来标识应用身份的数字，同一应用的多个进程通常共用一个 UID。运行在 Android 17 上的非系统应用，如果 target SDK（应用声明已适配的目标 API 级别）不低于 37，上限为 50,000；其他应用的上限为 200,000，系统应用也使用 200,000。达到上限后，系统不会主动删除旧密钥，也不会仅因配额耗尽而阻止应用继续使用有效旧密钥；新的生成和导入请求会失败。
+Android 17 开始按应用 UID 限制 Keystore 密钥条目数量。UID 是 Linux/Android 用来标识应用身份的数字，同一应用的多个进程通常共用一个 UID。非系统应用如果 target SDK（应用声明已适配的目标 API 级别）不低于 37，上限是 50,000；其余应用（含系统应用）的上限是 200,000。达到上限后，系统不会主动删除旧密钥，也不会仅因配额耗尽就阻止应用继续使用仍有效的旧密钥；只有新的生成和导入请求会失败。
 
-故障往往在登录、设备绑定、支付签名或加密数据库初始化时出现，但数量增长可能已经持续很久：alias 每次带新时间戳、账号退出后不回收、轮换只增不减，或自动化测试长期留下密钥。处理工作应从 alias 的责任模块与生命周期开始，不能等到数量逼近 50,000 后临时批量删除。
+故障往往在登录、设备绑定、支付签名或加密数据库初始化时出现，但数量增长可能已经持续很久：alias 每次带新时间戳、账号退出后不回收、轮换只增不减，或自动化测试长期留下密钥。处理时先看清 alias 归哪个责任模块、生命周期走到哪一步，不能等到数量逼近 50,000 才临时批量删除。
 
-本章以 AOSP（Android Open Source Project，Android 开源项目）`android-17.0.0_r1` 为源码依据。Android framework 是应用调用的 Java API 层；keystore2 是管理密钥元数据并转发密码操作的系统服务；KeyMint HAL 是系统与负责执行密码运算、保护密钥的实现之间的硬件抽象接口。TEE（Trusted Execution Environment，可信执行环境）和 StrongBox（隔离程度更高的安全硬件）是常见安全级别。本章不讨论 Linux 内核实现。
+本章以 AOSP（Android Open Source Project，Android 开源项目）`android-17.0.0_r1` 为源码依据。Android framework 是应用调用的 Java API 层；keystore2 是管理密钥元数据并转发密码操作的系统服务；KeyMint HAL 是系统与密钥实现之间的硬件抽象接口，密码运算和密钥保护由实现侧完成。TEE（Trusted Execution Environment，可信执行环境）和 StrongBox（隔离程度更高的安全硬件）是常见安全级别。本章不讨论 Linux 内核实现。
 
 ## 1. Android 17 配额的适用范围
 
@@ -64,27 +64,23 @@ Android 17 开始按应用 UID 限制 Keystore 密钥条目数量。UID 是 Linu
 | Android 17，系统应用 | 200,000 | 由 target SDK 决定返回哪个公开错误码 |
 | Android 16 及更早版本 | 不执行这项 Android 17 配额 | 不适用 |
 
-这是 Android 17 的“所有应用行为变更”，所以 target SDK 低于 37 的应用也受 200,000 上限约束。系统应用的上限固定为 200,000；系统应用若以 API 37 或更高版本为目标，超限时仍返回 `ERROR_TOO_MANY_KEYS`。错误码由 target SDK 决定，数量上限还取决于应用是否属于系统应用。
+这条规则属于 Android 17 的“所有应用行为变更”，所以 target SDK 低于 37 的应用同样受 200,000 上限约束。系统应用的上限固定为 200,000；若以 API 37 或更高版本为目标，超限时仍返回 `ERROR_TOO_MANY_KEYS`。数量上限取决于应用是否属于系统应用，错误码则取决于 target SDK。
 
 ### 1.1 源码按 UID 计数
 
-`Domain::APP` 表示应用拥有的密钥域。keystore2 会把调用方 UID 写入 `KeyDescriptor` 的 `namespace` 字段，再按“域与命名空间”统计面向客户端的密钥条目。`count_key_entries()` 把当前 keystore2 数据库中的条目数与 legacy importer（读取旧版 Keystore 数据的兼容导入器）列出的 alias 数量相加。由此可得到以下边界：
+`Domain::APP` 表示应用拥有的密钥域。keystore2 会把调用方 UID 写入 `KeyDescriptor` 的 `namespace` 字段，再按“域与命名空间”统计面向客户端的密钥条目。`count_key_entries()` 把当前 keystore2 数据库中的条目数与 legacy importer（读取旧版 Keystore 数据的兼容导入器）列出的 alias 数量相加。这个计数口径决定了下面几条边界：
 
 - 配额属于 UID，不属于进程、业务模块或某个 `KeyStore` 对象。
 - 同一安装包在不同 Android 用户或工作资料中通常有不同 UID，数量分别计算。
-- 历史 shared UID 让多个包共享一个 UID。源码会取这些包中最低的 target SDK；任一包属于系统应用时，整个 UID 按系统应用处理。因此，这类部署必须按 UID 评估，不能只看包名。
+- 历史 shared UID 让多个包共享一个 UID。源码取这些包中最低的 target SDK；任一包属于系统应用，整个 UID 就都按系统应用处理。这类部署要按 UID 评估，不能只看包名。
 - TEE 与 StrongBox 没有各自独立的 50,000 额度；不同安全级别创建的应用密钥进入同一 UID 总数。
 - 计数对象是客户端密钥条目。轮换后未删除的 alias 仍占额度；证书链或同一条目内部保存的二进制数据块不会按普通文件个数分别计数。
 
-如果 `count_key_entries()` 自身失败，Android 17 这份源码会记录错误并放行本次创建；应用不能把这种容错路径当作可用额度。应用侧的 `KeyStore.aliases()` 或 `KeyStore.size()` 可用于盘点自己可见的条目，但它们不是系统配额查询 API。盘点结果只能视为应用视角的估算，还应记录枚举失败和耗时。
+如果 `count_key_entries()` 自身失败，Android 17 这份源码会记录错误并放行本次创建；应用不能把这种容错路径当作可用额度。应用侧可以用 `KeyStore.aliases()` 或 `KeyStore.size()` 盘点自己可见的条目，但它们不是系统配额查询 API。盘点结果只能视为应用视角的估算，还应记录枚举失败和耗时。
 
 ### 1.2 创建、导入与使用旧密钥走不同路径
 
-AOSP `KeystoreSecurityLevel.check_key_counts()` 会在以下三条路径进入 KeyMint 前执行：
-
-- `generate_key()`；
-- `import_key()`；
-- `import_wrapped_key()`，即导入由另一把包装密钥加密保护的密钥材料。
+AOSP `KeystoreSecurityLevel.check_key_counts()` 会在三条路径进入 KeyMint 之前执行：`generate_key()`、`import_key()`、`import_wrapped_key()`（导入由另一把包装密钥加密保护的密钥材料）。
 
 计数达到上限时，检查直接返回错误。现有密钥的 `Cipher.init()`、`Signature.initSign()` 等使用路径没有经过这项创建数量检查。因此，升级 target SDK 不会仅因配额变化让全部旧密钥同时失效。
 
@@ -103,7 +99,7 @@ AOSP `KeystoreSecurityLevel.check_key_counts()` 会在以下三条路径进入 K
 | SDK 或多进程 | 各组件各自执行“没有就创建” | 命名冲突、重复创建、责任模块不明 | 由单一密钥管理组件负责，创建与删除使用跨进程协调协议 |
 | QA/自动化测试 | alias 含测试用例 ID 或运行批次 ID | 共享测试设备长期累积 | 使用测试专用前缀，每轮结束时清理，并设置生成数量硬上限 |
 
-Passkey 需要单独说明。relying party 是发起注册和登录的网站或应用，credential provider（凭据提供方）是保存并使用 passkey 私钥的密码管理器等组件。普通应用通过 Credential Manager 请求 passkey 时，私钥由用户选定的凭据提供方保存，不能把每个 passkey 都算成本应用的 Android Keystore alias。应用只有在自己调用 Keystore 生成密钥，或自身实现凭据提供方并管理相关密钥时，才需要把这些条目纳入本 UID 的盘点。排查时应查看本应用 `AndroidKeyStore` 可见的 alias 和密钥创建调用栈，不能根据用户拥有的 passkey 数量推算配额。
+Passkey 的密钥归属与普通应用密钥不同。relying party 是发起注册和登录的网站或应用，credential provider（凭据提供方）是保存并使用 passkey 私钥的密码管理器等组件。普通应用通过 Credential Manager 请求 passkey 时，私钥由用户选定的凭据提供方保存，不能把每个 passkey 都算成本应用的 Android Keystore alias。只有应用自己调用 Keystore 生成密钥，或自己实现凭据提供方并管理相关密钥时，这些条目才需要纳入本 UID 的盘点。排查时看本应用 `AndroidKeyStore` 可见的 alias 和密钥创建调用栈即可，不要按用户拥有的 passkey 数量推算配额。
 
 ## 3. 用错误码、异常类型和调用阶段共同分类
 
@@ -114,9 +110,9 @@ Android 17 会根据 target SDK 暴露不同的配额错误码：
 - `targetSdkVersion >= 37`：`ERROR_TOO_MANY_KEYS` 可以直接确认配额超限。
 - `targetSdkVersion < 37`：系统返回 `ERROR_INCORRECT_USAGE`，异常消息中会包含密钥数量限制信息。消息文本只适合辅助诊断，因为同一个公开错误码也可表示算法或参数组合错误。
 
-JCA（Java Cryptography Architecture，Java 加密 API 体系）可能把底层 `KeyStoreException` 包在 `ProviderException`、`InvalidKeyException` 或其他算法异常的 cause 链中；cause 链就是异常逐层保存的原始原因。`UserNotAuthenticatedException`、`KeyPermanentlyInvalidatedException` 和 `StrongBoxUnavailableException` 又是独立的公开异常类型。因此，分类器要同时查看外层异常、cause 链和公开错误码，并判断失败发生在哪个操作阶段。
+JCA（Java Cryptography Architecture，Java 加密 API 体系）可能把底层 `KeyStoreException` 包在 `ProviderException`、`InvalidKeyException` 或其他算法异常的 cause 链中，也就是异常逐层保存的原始原因。`UserNotAuthenticatedException`、`KeyPermanentlyInvalidatedException` 和 `StrongBoxUnavailableException` 是另外三个独立的公开异常类型。分类器因此要同时看外层异常、cause 链和公开错误码，并判断失败发生在哪个操作阶段。
 
-建议分类为以下几组：
+常见失败可以分成下面几组，每组的处理方式不同：
 
 | 分类 | 可靠证据 | 处理 |
 |---|---|---|
@@ -183,7 +179,7 @@ fun classifyAndroid17KeystoreFailure(
 
 1. **停止新增**：写入持久化的“暂停创建”标记，并让同一应用的其他进程读取它，阻止失败后继续生成密钥。
 2. **继续使用旧密钥**：如果当前选中的 alias 仍存在且可用，优先完成解密、签名或登录恢复。
-3. **核对生命周期登记表**：找出已退出使用的版本、孤立条目、测试前缀和已注销账号的候选集合。孤立条目指 Keystore 中存在、登记表中却没有归属记录的 alias。
+3. **核对生命周期登记表**：找出已退出使用的版本、孤立条目（Keystore 中存在、登记表中却没有归属记录的 alias）、测试前缀和已注销账号的候选集合。
 4. **完成业务授权**：账号注销、设备解绑或凭据撤销需要服务端参与时，先完成服务端动作。
 5. **小批量回收**：按责任模块和版本删除已确认无引用的 alias，每批记录成功、失败和剩余数量。
 6. **重新盘点**：确认已释放足够余量，再恢复创建或轮换。
@@ -195,9 +191,7 @@ fun classifyAndroid17KeystoreFailure(
 
 ### 5.1 命名规则与生命周期登记表
 
-这里的生命周期登记表是应用自行维护的数据，不是 Android Keystore API。alias 可由稳定业务域、不含敏感信息的账号槽位、用途和版本号构成，例如：
-
-`auth.<account-slot>.device-sign.v3`
+这里的生命周期登记表是应用自行维护的数据，不是 Android Keystore API。alias 可由稳定业务域、不含敏感信息的账号槽位、用途和版本号构成，例如 `auth.<account-slot>.device-sign.v3`，四段依次对应业务域、账号槽位、用途和版本号。
 
 不要把账号 ID、手机号、订单号、token 或容易猜测的简单哈希放进 alias。`account-slot` 可以是首次绑定时生成并持久化的随机标识。登记表至少包含：
 
@@ -227,13 +221,13 @@ fun classifyAndroid17KeystoreFailure(
 
 ### 5.3 生物认证与锁屏变化
 
-生物认证密钥的失效行为取决于 `KeyGenParameterSpec`：认证有效期、允许使用的认证器组合，以及新增生物特征后是否失效等参数都会改变结果。遇到 `UserNotAuthenticatedException` 时应先请求认证；遇到 `KeyPermanentlyInvalidatedException` 时，密钥已经不可继续使用，完成业务身份验证后才能重建。混淆两类异常会造成不必要的删密钥和重新登录。
+生物认证密钥的失效行为取决于 `KeyGenParameterSpec`：认证有效期、允许使用的认证器组合，以及新增生物特征后是否失效等参数都会改变结果。遇到 `UserNotAuthenticatedException` 时应先请求认证，不要直接删密钥；遇到 `KeyPermanentlyInvalidatedException` 时，密钥已经不可继续使用，完成业务身份验证后才能重建。混淆这两类异常会造成不必要的删密钥和重新登录。
 
 LSKF（Lock Screen Knowledge Factor）指锁屏 PIN、图案或密码等知识型认证因子。设备没有设置 LSKF 时，生成需要用户认证的密钥可能得到 `ERROR_KEYSTORE_UNINITIALIZED`。这个错误也可能表示应用尚未调用 `KeyStore.load()`，必须结合失败位置区分，不能直接提示“Keystore 损坏”。
 
 ## 6. 盘点与回收实现
 
-全量枚举接近 50,000 个 alias 会产生 Binder 调用、数据库查询和字符串分配开销。Binder 是 Android 的进程间通信机制，应用枚举密钥时需要通过它访问 keystore2。枚举不能在主线程或未捕获异常处理器中运行，不能在每次登录时执行，也不能安排在 `Application.onCreate()` 的首帧之前。日常监控可由低频后台任务采集总数和已知前缀分布，只有进入预警区间或出现创建失败时才做详细盘点。
+枚举 alias 要走 Binder（Android 的进程间通信机制）访问 keystore2，还要查数据库、分配字符串；全量枚举接近 50,000 个 alias 时，这些开销会明显放大。枚举不能在主线程或未捕获异常处理器中运行，不能每次登录都执行，也不能安排在 `Application.onCreate()` 的首帧之前。日常监控可由低频后台任务采集总数和已知前缀分布，只有进入预警区间或出现创建失败时才做详细盘点。
 
 下面的代码在后台生成去标识化的盘点结果。它只保留总数和受控前缀分布，不把完整 alias 写入遥测数据：
 
@@ -341,13 +335,13 @@ target SDK 从 36 升到 37 时，系统不会自动清理已有密钥。某个�
 
 ## 10. 与相邻章节的边界
 
-8.5 讨论应用进程、keystore2、KeyMint HAL 与 TEE/StrongBox 之间的延迟、并发操作槽位和线程调度。本章讨论持久密钥条目数量与 alias 生命周期。并发操作槽位限制同一时间能进行多少次密码操作，UID 密钥配额限制能够保存多少个条目，两者应分别统计。
+8.5 讨论应用进程、keystore2、KeyMint HAL 与 TEE/StrongBox 之间的延迟、并发操作槽位和线程调度。本章讨论持久密钥条目数量与 alias 生命周期。并发操作槽位限制同一时间能执行多少个密码操作，UID 密钥配额限制能保存多少个条目；两者要分别统计。
 
 20.2 讨论异常恢复、Crash Loop（应用启动后反复崩溃）与 SafeMode（只启用必要功能的降级启动模式），26.6 讨论 `ApplicationExitInfo`。本章只定义 Keystore 故障分类和恢复状态；进程退出记录只能提供时间与结果证据。
 
 ## 小结
 
-Android 17 Keystore 配额治理的核心是把 alias 当作有 owner、状态和回滚期的持久资源。故障时先按调用阶段、异常链和公开错误码区分配额、认证、失效与暂时性问题，再依据生命周期登记表小批量回收。全量清空、无上限重试或降级到明文存储，都会把配额故障扩大成账号和数据安全故障。
+Android 17 Keystore 配额治理的核心是把 alias 当作有责任模块、状态和回滚期的持久资源。故障时先按调用阶段、异常链和公开错误码区分配额、认证、失效与暂时性问题，再依据生命周期登记表小批量回收。全量清空、无上限重试或降级到明文存储，都会把配额故障扩大成账号和数据安全故障。
 
 ## 参考资料
 
