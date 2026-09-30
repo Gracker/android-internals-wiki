@@ -45,17 +45,17 @@ pipeline_stage: finalized
 
 用户点击图标后，App 自己的首帧通常还没有准备好。Starting Window（起始窗口）是系统在这段空档显示的临时画面；Android 12 引入的 SplashScreen API 统一了它的样式与交接方式，AndroidX 兼容库再把主要接入方式带到 API 21。首帧之后还可以用骨架屏（按内容结构预留的占位界面）和退出动画减少视觉跳变。本文说明这些工具的用法、版本边界和 Perfetto 分析方法。
 
-系统侧由 `ActivityTaskManagerService`（活动与任务管理服务，简称 ATMS）判断是否需要 Starting Window，再由 WM Shell（WindowManager Shell，负责起始表面和窗口过渡等工作的系统组件）创建具体画面。TaskSnapshot 则是系统保存的任务界面快照。完整机制详见 1.19 节，这里聚焦 App 侧的配置、适配和感知优化。
+系统侧由 `ActivityTaskManagerService`（活动与任务管理服务，简称 ATMS）判断是否需要 Starting Window，再由 WM Shell（WindowManager Shell，负责起始表面和窗口过渡等工作的系统组件）创建具体画面。TaskSnapshot 则是系统保存的任务界面快照。
 
 ## 范围
 
-这里的“感知启动速度”指用户从点击到看见稳定反馈、再到内容可用的主观等待。Splash Screen 可以提前给出连续的视觉反馈，却不会缩短进程创建、主线程初始化、I/O 或首屏布局本身；把启动画面多留几秒，也不会改善这些执行时间。
+这里的“感知启动速度”指用户从点击图标到看见稳定反馈、再到内容可用的主观感受。Splash Screen 可以提前给出连续的视觉反馈，却不会缩短进程创建、主线程初始化、I/O 或首屏布局本身；把启动画面多留几秒，也不会改善这些执行时间。
 
-平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，App 侧兼容实现以 AndroidX `core-splashscreen:1.2.0` 为参考。系统侧 Starting Window 的完整机制见 [WindowManager](../../part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md)，以下重点说明应用如何配置、迁移、交接内容和验证效果。
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，App 侧兼容实现以 AndroidX `core-splashscreen:1.2.0` 为参考。系统侧 Starting Window 的完整机制见 1.19 节 [WindowManager](../../part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md)，本文只处理 App 侧的配置、迁移、内容交接与效果验证。
 
 ## 1. 先区分三种画面
 
-启动期间可能连续出现三类画面。TTID（Time to Initial Display）结束于 App 第一帧，TTFD（Time to Full Display）结束于主要内容可见且可交互时：
+启动期间可能连续出现三类画面。第一类是系统在 App 窗口可显示前临时展示的 starting surface（起始表面），它不一定是带品牌图标的 Splash。TTID（Time to Initial Display）结束于 App 第一帧，TTFD（Time to Full Display）结束于主要内容可见且可交互时：
 
 | 画面 | 创建者 | 出现阶段 | 主要职责 |
 | --- | --- | --- | --- |
@@ -63,7 +63,7 @@ pipeline_stage: finalized
 | App 第一帧 | App 主窗口 | TTID | 给出可识别的应用结构 |
 | 完整内容 | App 主窗口 | TTFD | 主要内容可见并可交互 |
 
-starting surface 是系统在 App 窗口前临时展示的表面，不一定是带品牌图标的 Splash。Android 17 可以按启动条件选择：
+Android 17 可以按启动条件在这些形态之间选择：
 
 - Splash Screen；
 - 纯色 Splash Screen；
@@ -72,9 +72,9 @@ starting surface 是系统在 App 窗口前临时展示的表面，不一定是�
 - windowless starting surface（直接挂到任务表面、没有传统 Starting Window 容器的实现）；
 - 不创建 starting window（源码类型为 `none`）。
 
-冷启动表示 App 进程尚不存在；warm start 表示进程还在，但目标 Activity 尚未创建或需要重建；hot start 则是进程和目标 Activity 都在，只需把它带回前台。TaskSnapshot 常用于已有任务切回前台且快照兼容的情况，Splash 常见于冷启动、新任务或 warm start。hot start 不会重复显示 Splash。
+选择哪个形态，还取决于启动类型。冷启动表示 App 进程尚不存在；warm start 表示进程还在，但目标 Activity 尚未创建或需要重建；hot start 则是进程和目标 Activity 都在，只需把它带回前台。TaskSnapshot 常用于已有任务切回前台且快照兼容的情况，Splash 常见于冷启动、新任务或 warm start。hot start 不会重复显示 Splash。
 
-因此，“点击图标后看见了一张图”还不足以判断系统走了哪条路径。先确认启动类型和 starting window 类型，再解释 Perfetto trace（系统与应用事件的时间线记录）。
+“点击图标后看见了一张图”还不足以判断系统走了哪条路径；要解释 Perfetto trace（系统与应用事件的时间线记录），先确认启动类型和 starting window 类型。
 
 ## 2. Android 17 的系统链路
 
@@ -109,7 +109,7 @@ StartingSurfaceDrawer
        └─ Windowless*Creator
 ```
 
-[`PhoneStartingWindowTypeAlgorithm`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/phone/PhoneStartingWindowTypeAlgorithm.java)根据 system_server 传来的参数，在 snapshot、不同 Splash 类型、windowless 和 none 之间给出建议。[`StartingWindowController`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingWindowController.java)接收 TaskOrganizer 回调，[`StartingSurfaceDrawer`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingSurfaceDrawer.java)再交给对应的创建器（源码中的 `creator`）。
+[`PhoneStartingWindowTypeAlgorithm`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/phone/PhoneStartingWindowTypeAlgorithm.java)根据 system_server 传来的参数，在 snapshot、不同 Splash 类型、windowless 和 none 之间给出建议。选中后，[`StartingWindowController`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingWindowController.java)接收 TaskOrganizer 回调，[`StartingSurfaceDrawer`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingSurfaceDrawer.java)再交给对应的创建器（源码中的 `creator`）。
 
 这条链路说明两个边界：
 
@@ -118,7 +118,7 @@ StartingSurfaceDrawer
 
 ### 2.3 移除与退出动画
 
-当 App 内容可以显示时，system_server 请求 Shell 移除 starting window。若应用注册了退出动画，系统可以把 `SplashScreenView` 复制一份交给 App 继续播放。Android 17 的 [`SplashscreenWindowCreator`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/SplashscreenWindowCreator.java)包含视图复制、窗口移除和 `SurfaceControlViewHost` 释放路径；这里的 host 是跨进程承载动画图标 View 的容器。
+App 内容可以显示时，system_server 请求 Shell 移除 starting window。若应用注册了退出动画，系统可以把 `SplashScreenView` 复制一份交给 App 继续播放。Android 17 的 [`SplashscreenWindowCreator`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/SplashscreenWindowCreator.java)包含视图复制、窗口移除和 `SurfaceControlViewHost` 释放路径；这里的 host 是跨进程承载动画图标 View 的容器。
 
 不要把“App 已提交第一帧”“starting window 已移除”“退出动画已完成”视为同一个时间点。自定义动画会在 App 内容已经准备显示后继续覆盖它一段时间。
 
@@ -150,7 +150,7 @@ dependencies {
 
 ### 3.3 配置 starting theme
 
-starting theme 是 Manifest 在启动入口上配置的临时主题。下面的配置给出单色背景、启动图标，以及 Splash 结束后切换到的正常主题：
+starting theme 是写在 Manifest 启动入口上的临时主题。下面的配置给出单色背景、启动图标，以及 Splash 结束后切换到的正常主题：
 
 ```xml
 <!-- res/values/themes.xml -->
@@ -169,7 +169,7 @@ starting theme 是 Manifest 在启动入口上配置的临时主题。下面的�
 - `windowSplashScreenAnimationDuration` 只描述图标动画时长，不控制 Splash 在屏幕上停留多久；Android 13（API 33）起，平台会直接从 AVD 推断时长；
 - `postSplashScreenTheme` 应指向 Activity 的正常主题。若不使用它，就必须在 `onCreate()` 前自行调用 `setTheme()`，两种方式只能有一套清晰的主题切换责任。
 
-API 提供 `windowSplashScreenBrandingImage` 在底部放置品牌图片，但官方设计规范不建议使用。品牌信息优先放在中央图标、颜色和进入内容后的界面中。
+`windowSplashScreenBrandingImage` 可以把品牌图片放在底部，官方设计规范不建议使用。品牌信息优先放在中央图标、颜色和进入内容后的界面中。
 
 ### 3.4 覆盖每个外部启动入口
 
@@ -210,7 +210,7 @@ class MainActivity : ComponentActivity() {
 
 ### 4.1 回调运行在主线程
 
-`KeepOnScreenCondition.shouldKeepOnScreen()` 会在 Activity 每次请求绘制前于主线程调用。它可能在一秒内执行多次，所以回调只能读取已经存在的内存状态，不能执行：
+`KeepOnScreenCondition.shouldKeepOnScreen()` 会在 Activity 每次请求绘制前于主线程调用。它可能在一秒内执行多次，所以回调只能读取内存里已有的状态，不能执行：
 
 - 文件或数据库读取；
 - Binder 跨进程调用；
@@ -244,7 +244,7 @@ enum class LaunchState {
 }
 ```
 
-`by viewModels()` 是惰性委托，第一次访问时才可能创建 ViewModel。生产代码应在注册条件前取得 ViewModel 和 `launchState` 引用，并让构造过程保持轻量，避免首次绘制回调顺带执行对象创建或初始化。
+`by viewModels()` 是惰性委托，ViewModel 要到第一次访问时才可能创建，也就是第一次绘制回调。生产代码应在注册条件前先取到 ViewModel 和 `launchState` 引用，并让构造过程保持轻量，避免首次绘制回调顺带执行对象创建或初始化。
 
 异步任务必须有失败和超时出口，把 `LoadingLocal` 转成 `Ready` 或 `RecoverableError`。若状态一直不变化，Splash 会持续挡住 Activity，页面也不会开始绘制。
 
@@ -259,11 +259,11 @@ enum class LaunchState {
 
 网络首页、远程配置、图片、推荐流和广告都没有可保证的完成时限。对这些数据，应尽快显示 App 第一帧，再用缓存、占位或错误态继续加载。官方迁移指南也建议：时长不确定的网络加载应在退出 Splash 后显示 placeholder（占位界面）。
 
-`KeepOnScreenCondition` 会推迟 Activity 的绘制请求。它适合避免极短的路由闪烁，不适合用来把 TTID 包装成一段品牌动画。
+`KeepOnScreenCondition` 会推迟 Activity 的绘制请求。它适合避免极短的路由闪烁，不要用它把启动过程延长成一段品牌动画。
 
 ## 5. 退出动画
 
-注册 `setOnExitAnimationListener` 后，回调会在 UI 线程执行，应用也要负责移除 `provider`。这里的参数是 `SplashScreenViewProvider`，即退出动画所用视图的包装对象，与 `ContentProvider` 无关。下面用短淡出连接 Splash 和已准备好的首屏：
+注册 `setOnExitAnimationListener` 后，回调会在 UI 线程执行，应用也要负责移除 `provider`。回调拿到的 `provider` 是 `SplashScreenViewProvider`，即退出动画所用视图的包装对象，与 `ContentProvider` 无关。下面用短淡出连接 Splash 和已准备好的首屏：
 
 ```kotlin
 splashScreen.setOnExitAnimationListener { provider ->
@@ -291,7 +291,7 @@ splashScreen.setOnExitAnimationListener { provider ->
 
 ### 6.1 旧 `windowBackground`
 
-Android 11 及更早版本常在启动主题的 `android:windowBackground` 中放置 layer-list，也就是按顺序叠加多个 Drawable 的资源。Android 12+ 会在 cold/warm start 显示系统 Splash；旧的复杂 `windowBackground` 可能被系统默认 Splash 替换，外观不再等同于旧设备。
+Android 11 及更早版本常在启动主题的 `android:windowBackground` 中放一个 layer-list，也就是把多个 Drawable 依次叠加的资源。Android 12+ 会在 cold/warm start 显示系统 Splash；旧的复杂 `windowBackground` 可能被系统默认 Splash 替换，外观不再等同于旧设备。
 
 迁移时：
 
@@ -305,7 +305,7 @@ Android 11 及更早版本常在启动主题的 `android:windowBackground` 中�
 
 Android 12+ 会先显示系统 Splash，再启动旧 `SplashActivity`，容易连续出现两次启动画面。专用 Activity 还会增加一轮生命周期、窗口创建和页面跳转。
 
-优先把路由判断放进单 Activity，或直接启动目标 Activity。这里的路由指根据登录态、链接参数等条件决定首个页面。若路由 Activity 暂时不能移除，官方迁移方案允许它保持 Splash、立即跳到下一 Activity 并结束自己；这只适合作为迁移期间的方案，路由判断必须同步、快速且没有网络等待。
+路由判断（根据登录态、链接参数等条件决定首个页面）最好放进单 Activity，或直接启动目标 Activity。若路由 Activity 暂时不能移除，官方迁移方案允许它保持 Splash、立即跳到下一 Activity 并结束自己；这只适合作为迁移期间的方案，路由判断必须同步、快速且没有网络等待。
 
 开屏广告属于业务页面，不应伪装成系统 Splash。需要展示时，应在系统 Splash 退出后进入可度量、可跳过、失败可恢复的广告页面。
 
@@ -333,11 +333,13 @@ App 第一帧至少应具备：
 4. 以稳定过渡替换变化区域；
 5. 保留失败重试入口。
 
-没有缓存时显示骨架或空态，不要让 Splash 等网络。骨架元素不应被无障碍服务当成真实按钮或正文；shimmer（在占位块上移动的高光）也要控制面积和时长，并尊重减少动态效果的偏好。
+没有缓存时显示骨架或空态，不要让 Splash 等网络。
+
+骨架元素不应被无障碍服务当成真实按钮或正文；shimmer（在占位块上移动的高光）也要控制面积和时长，并尊重减少动态效果的偏好。
 
 ### 7.3 不要在后台线程普通 inflate View
 
-`LayoutInflater.inflate()` 会读取 XML 并创建 View 树。普通 `LayoutInflater` 和多数 View 构造、主题解析、Drawable 状态都按主线程 UI 模型设计。把完整页面放到 worker（后台工作线程）中 inflate，再缓存 View 树并挂到 Activity，可能引入主题错误、线程约束、错误的 `Context`（资源与主题环境）、生命周期泄漏和 `LayoutParams`（父容器使用的布局参数）不匹配。
+`LayoutInflater.inflate()` 会读取 XML 并创建 View 树。普通 `LayoutInflater` 和多数 View 构造、主题解析、Drawable 状态都按主线程 UI 模型设计。把完整页面放到 worker（后台工作线程）中 inflate，再缓存 View 树并挂到 Activity，可能引入主题错误、线程约束和生命周期泄漏，也可能拿到错误的 `Context`（资源与主题环境）或不匹配的 `LayoutParams`（父容器使用的布局参数）。
 
 若 Trace 显示 inflate 是主成本，优先：
 
@@ -370,7 +372,7 @@ Splash 不解决 JIT（Just-In-Time，运行时即时编译）预热、第三方
 | TTID | App 第一帧完成 | App 多久开始显示自己的 UI |
 | TTFD | App 调用 `reportFullyDrawn()` | 主要内容多久达到可用状态 |
 
-starting surface 首见时间通常来自录屏或 trace，是用于分析体感的观察点，并非 Android vitals 的标准启动指标。Splash 显示得早，不会自动缩短 TTID。骨架屏可以形成更稳定的第一帧，却不等于内容已可用；TTFD 包含 TTID，要等主要内容与关键交互都就绪后上报。
+starting surface 首见时间通常来自录屏或 trace，是分析主观感受时的观察点，并非 Android vitals 的标准启动指标。Splash 显示得早，不会自动缩短 TTID。骨架屏可以形成更稳定的第一帧，却不等于内容已可用；TTFD 包含 TTID，要等主要内容与关键交互都就绪后上报。
 
 下面在页面状态达到可用条件后上报 TTFD：
 
@@ -453,7 +455,7 @@ Trace 解释顺序是：
 
 ## 小结
 
-Splash Screen 负责把系统 starting surface 平稳交接给应用首帧，骨架和缓存内容负责把首帧继续过渡到可交互状态。它们改善的是反馈与连续性，不会缩短初始化本身；因此必须把 Splash 覆盖、TTID、TTFD 和首屏帧分开测量，并为所有外部入口、失败路径和低版本兼容行为提供一致的退出与降级。
+Splash Screen 负责把系统 starting surface 平稳交接给应用首帧，骨架和缓存内容负责把首帧继续过渡到可交互状态。它们改善的是反馈与连续性，不会缩短初始化本身；因此要把 Splash 覆盖、TTID、TTFD 和首屏帧分开测量，外部入口、失败路径和低版本兼容行为都要有明确的退出与降级方式。
 
 ## 参考资料
 
