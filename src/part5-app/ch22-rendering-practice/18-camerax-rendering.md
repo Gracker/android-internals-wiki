@@ -229,7 +229,7 @@ flowchart TD
     Outputs --> Video
 ```
 
-图里的分层也给出了归因规则：用例协商、quirk 与绑定行为属于 CameraX；请求提交和结果分发跨越 CameraPipe 与平台。Binder 是 Android 的跨进程通信机制，图中的 Camera2 Binder 表示应用进程与 `cameraserver` 之间的调用。曝光、ISP 和厂商多帧算法属于设备；分析、编码、封装、存储和显示各有独立消费者。
+图里的分层也给出了归因规则：用例协商、quirk 与绑定行为属于 CameraX，请求提交和结果分发跨越 CameraPipe 与平台；曝光、ISP 和厂商多帧算法属于设备，分析、编码、封装、存储和显示则各有独立消费者。图中的 Camera2 Binder 指应用进程与 `cameraserver` 之间的调用（Binder 是 Android 的跨进程通信机制）。
 
 | CameraX 用例 | 主要下游 | 常见限制 |
 |---|---|---|
@@ -299,7 +299,7 @@ if (!cameraInfo.isSessionConfigSupported(sessionConfig)) {
 
 界面状态变化若只影响覆盖层、焦点框或分析开关，优先保留会话。停止分析可以清除 Analyzer；恢复时再设置 Analyzer，不必为每次暂停都重建全部用例。
 
-Android 17 / API 37 新增的 `CameraCaptureSession.updateOutputConfigurations()` 是 Camera2 平台接口，可替换既有、属性兼容的输出 Surface，无需重建整个会话。它不能增加或删除输出配置，传入数量必须与现有输出一致。CameraX 1.6 没有承诺把任意用例切换自动映射为该 API。需要精确控制 Android 17 动态输出更新时，应评估 Camera2。
+Android 17 / API 37 新增的 `CameraCaptureSession.updateOutputConfigurations()` 是 Camera2 平台接口，可替换属性兼容的既有输出 Surface，无需重建整个会话。它不能增加或删除输出配置，传入数量必须与现有输出一致。CameraX 1.6 没有承诺把任意用例切换自动映射为该 API。需要精确控制 Android 17 动态输出更新时，应评估 Camera2。
 
 ## 4. Preview：请求模式不等于实际显示路径
 
@@ -308,8 +308,9 @@ Android 17 / API 37 新增的 `CameraCaptureSession.updateOutputConfigurations()
 `PreviewView.ImplementationMode.PERFORMANCE` 是默认值。它会尽量使用 `SurfaceView`；`COMPATIBLE` 使用 `TextureView`。
 
 - `SurfaceView` 为预览提供独立 Surface，SurfaceFlinger 可以把它作为独立 layer 参与合成。满足设备条件时，HWC 有机会使用 overlay，因而减少宿主窗口的纹理采样；
-- `TextureView` 把相机图像作为纹理进入宿主窗口，裁剪、旋转、动画和 View 变换更灵活，但每帧还要经过宿主 HWUI（Android 界面硬件加速渲染器）/ GPU 路径；
-- overlay 是 HWC 对当帧 layer 集合的决定。使用 `SurfaceView` 不能证明每帧都走硬件 overlay。
+- `TextureView` 把相机图像作为纹理进入宿主窗口，裁剪、旋转、动画和 View 变换更灵活，但每帧还要经过宿主 HWUI（Android 界面硬件加速渲染器）/ GPU 路径。
+
+overlay 是 HWC 对当帧 layer 集合的决定，用 `SurfaceView` 不能证明每帧都走硬件 overlay。
 
 下面的代码用于普通取景页明确表达低开销预览偏好。
 
@@ -449,7 +450,7 @@ Android 17 / API 37 新增 `ImageFormat.RAW14`，表示紧密打包的单平面 
 
 ### 6.4 CameraX 1.6.1 ZSL：3 帧 ring 与 CameraPipe 重处理
 
-6.1 说明公开模式偏好；这一节锁定 CameraX 1.6.1，回答一次请求怎样从能力检查走到 PRIVATE 候选帧、CameraPipe `InputRequest` 和资源回收。升级 CameraX 后，ring 容量、quirk、过滤条件与后端路径都要重新核对。
+6.1 说的是公开模式偏好；CameraX 1.6.1 的一次请求，从能力检查到 `PRIVATE` 候选帧、CameraPipe `InputRequest` 和资源回收，逐段拆开看。升级 CameraX 后，ring 容量、quirk、过滤条件与后端路径都要重新核对。
 
 #### 能力预筛选、会话校验与禁用条件
 
@@ -601,7 +602,7 @@ CameraX 1.6.1 的 Camera2 后端已经迁移到 CameraPipe。较早资料中常�
 
 ##### `CaptureConfigAdapter` 生成 InputRequest
 
-当捕获配置的模板为 `TEMPLATE_ZERO_SHUTTER_LAG`，并且用例和闪光灯设置没有禁用 ZSL 时，`CaptureConfigAdapter` 会尝试从环形队列取出一帧。
+捕获配置的模板为 `TEMPLATE_ZERO_SHUTTER_LAG`，且用例和闪光灯设置未禁用 ZSL 时，`CaptureConfigAdapter` 会尝试从环形队列取出一帧。
 
 取帧成功后，它完成三件事：
 
@@ -629,7 +630,7 @@ CameraPipe 从 `FrameInfo` 中解包同一源帧的 `TotalCaptureResult`，再�
 cameraDevice.createReprocessCaptureRequest(totalCaptureResult)
 ```
 
-设备需要原始捕获结果中的曝光、白平衡、镜头、裁剪和厂商元数据，才能按照源图像的拍摄条件进行重处理。Android Camera2 要求输入图像来自同一台相机设备，并在同一个会话中直接或间接产生；随意组合其他相机或其他会话的图像与结果，不符合接口约定。
+设备需要原始捕获结果中的曝光、白平衡、镜头、裁剪和厂商元数据，才能按源图像的拍摄条件重处理。Android Camera2 要求输入图像来自同一台相机设备，并在同一个会话中直接或间接产生；随意组合其他相机或其他会话的图像与结果，不符合接口约定。
 
 创建请求构建器后，CameraPipe 会添加本次静态拍照的目标 `Surface`，通常是 CameraX 图像流水线的 JPEG 输出端，并写入 JPEG 方向、质量等请求参数。
 
