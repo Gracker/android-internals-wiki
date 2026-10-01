@@ -50,9 +50,9 @@ consolidated_from:
 
 # Media3 视频播放：解码、帧时序与渲染
 
-视频已经被 decoder（解码器）解出，不代表用户已经看见这一帧。普通 Media3 播放还要经过帧时序判断、`releaseOutputBuffer()`、输出 `Surface`、BufferQueue、SurfaceFlinger、HWC 和面板扫描。任一阶段延迟，都可能表现为首帧慢、画面卡住、声音继续或掉帧。
+decoder（解码器）解出视频帧，不代表用户已经看见这一帧。普通 Media3 播放还要经过帧时序判断、`releaseOutputBuffer()`、输出 `Surface`、BufferQueue、SurfaceFlinger、HWC 和面板扫描。任一阶段延迟，都可能表现为首帧慢、画面卡住、声音继续或掉帧。
 
-这些阶段需要放回各自的责任层。播放器事件用于解释 Media3 做了什么；Android 平台 trace 用于解释帧怎样到达合成器；present fence 或设备显示证据才接近“画面何时显示”。三类证据不能相互替代。
+这些阶段分属不同组件，排查时要先说清证据指向哪一层：播放器事件用于解释 Media3 做了什么；Android 平台 trace 用于解释帧怎样到达合成器；present fence 或设备显示证据才接近“画面何时显示”。三类证据不能相互替代。
 
 正文保留源码、日志和 Perfetto 中可检索的英文名，含义统一如下：
 
@@ -62,7 +62,7 @@ consolidated_from:
 - **BufferQueue / fence**：BufferQueue 管理 Producer 与 Consumer 之间循环复用的 buffer；fence 是跨 codec、GPU 与显示硬件传递的完成信号。
 - **latch / present**：latch 表示 SurfaceFlinger 为某个显示周期选中一块已就绪 buffer；present 表示该周期已经交给显示路径，仍早于面板像素的光学响应完成。
 - **HWC 与 DEVICE / CLIENT composition**：HWC（Hardware Composer，硬件合成器）按当前整屏图层集合选择合成方式。DEVICE 表示交给显示硬件处理；CLIENT 表示 RenderEngine 先用 GPU 合成中间目标。
-- **drop / skip**：drop 表示本应显示但因迟到而丢弃；skip 表示 decode-only、joining 追赶等有意跳过。两者可能都不显示画面，统计含义不同。
+- **drop / skip**：drop 表示本应显示但因迟到而丢弃；skip 表示 decode-only（只解码、不显示）、joining（新视频流接入正在进行的播放）追赶等有意跳过。两者可能都不显示画面，统计含义不同。
 
 ## 一、版本基线与证据范围
 
@@ -115,7 +115,7 @@ flowchart LR
 - 管理 `SurfaceView`、`TextureView` 或效果管线的输出面；
 - 上报 decoder 初始化、格式变化、首帧、掉帧和处理偏移。
 
-Media3 的默认 ABR 不读取 HWC composition type，也不会根据 renderer 掉帧自动降低清晰度。网络选档、解码能力与显示能力需要产品层建立自己的关联策略。
+Media3 的默认 ABR 不读取 HWC composition type，也不会根据 renderer 掉帧自动降低清晰度。网络选档、解码能力与显示能力之间的关联，要靠应用自己建立策略。
 
 ### Android 平台负责什么
 
@@ -143,13 +143,17 @@ Media3 1.11.0 的 `DefaultMediaCodecAdapterFactory` 在 API 31 及以上默认�
 
 播放器的 playback thread 仍会从 adapter 的内部队列取 index，并执行 renderer 状态机。异步 callback 没有把完整播放器逻辑搬到 codec callback 线程。
 
-Media3 1.11.0 还默认启用 dynamic scheduling（动态调度）：播放器工作循环尽量等到 renderer 可以继续推进时再唤醒，不再只按固定间隔运行。它控制 playback thread 的唤醒时机，与 `MediaCodec.Callback` 的异步 adapter 是两套机制；排查线程调度时要分别记录。
+Media3 1.11.0 还默认启用 dynamic scheduling（动态调度）：播放器工作循环尽量等到 renderer 可以继续推进时再唤醒，不再只按固定间隔运行。它控制的是 playback thread 的唤醒时机，与 `MediaCodec.Callback` 的异步 adapter 是两套机制；排查线程调度时要分别记录。
+
+### Android 17 的 crypto async 分支
+
+Media3 1.11.0 在异步 adapter 中还处理 `CONFIGURE_FLAG_USE_CRYPTO_ASYNC`。`DefaultMediaCodecAdapterFactory(Context)` 默认启用这项实验配置，但源码只在 API 36 及以上设置 flag；此时 input buffer 改由同步 enqueuer 提交，crypto 工作交给 codec 的异步路径。它属于 secure input queueing 行为，不能用来推导图形输出 Surface 的异步状态。
 
 ### Android 17 `MediaCodec.Callback` 的回调边界
 
 Android 17 framework 里的 buffer 回调不是直接在 codec 组件线程执行完整播放器逻辑。native `MediaCodec` 初始化独立的 `mCodecLooper`，把 `CodecBase::BufferCallback` 接到 `kWhatCodecNotify`；`onInputBufferAvailable()` / `onOutputBufferAvailable()` 分别投递 `kWhatFillThisBuffer` / `kWhatDrainThisBuffer`，Java `MediaCodec.EventHandler` 再按 `CB_INPUT_AVAILABLE`、`CB_OUTPUT_AVAILABLE`、`CB_OUTPUT_FORMAT_CHANGE`、`CB_ERROR` 分发到应用注册的 `Callback`。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §1.1、§2.1、§2.2；Android 17 `MediaCodec.java` / `MediaCodec.cpp`]
 
-这意味着 Media3 的异步 adapter 在应用侧看到的是 framework 整理后的 buffer index、format 与 error 事件。Perfetto 排查应同时标出 Media3 playback thread、adapter callback thread、adapter queueing thread，以及 framework/native codec looper；不要把这些线程上的等待都归到 renderer 决策。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §2.1、§2.2]
+Media3 的异步 adapter 在应用侧拿到的，是 framework 整理后的 buffer index、format 与 error 事件。Perfetto 排查应同时标出 Media3 playback thread、adapter callback thread、adapter queueing thread，以及 framework/native codec looper；不要把这些线程上的等待都归到 renderer 决策。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §2.1、§2.2]
 
 Android 17 `MediaCodec.java` 还定义了 `CB_LARGE_FRAME_OUTPUT_AVAILABLE`、`CB_REQUIRED_RESOURCES_CHANGE` 等事件码；所选源码调研只核到定义，未追踪常规 Media3 视频播放的触发链路。因此它们只能作为排查时的版本边界线索，不能写成默认播放路径结论。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §1.1、未验证/待深入]
 
@@ -186,10 +190,6 @@ val player = ExoPlayer.Builder(context, renderersFactory)
 ```
 
 实验的另一组应调用 `forceDisableMediaCodecAsynchronousQueueing()`，并保持内容、Surface 类型、codec、DRM、显示模式和温度区间一致。仅比较平均首帧容易掩盖 flush、seek 与 playlist transition 的尾部延迟。
-
-### Android 17 的 crypto async 分支
-
-Media3 1.11.0 在异步 adapter 中还处理 `CONFIGURE_FLAG_USE_CRYPTO_ASYNC`。`DefaultMediaCodecAdapterFactory(Context)` 默认启用这项实验配置，但源码只在 API 36 及以上设置 flag；此时 input buffer 改由同步 enqueuer 提交，crypto 工作交给 codec 的异步路径。它属于 secure input queueing 行为，不能用来推导图形输出 Surface 的异步状态。
 
 ## 四、从 PTS 到 release timestamp
 
@@ -277,7 +277,7 @@ Android 10 起，Surface 输出默认允许在消费不及时的时候丢弃过�
 
 原因是效果管线要在自己的输入端判断晚帧。若 decoder 输出 Surface 提前丢帧，`VideoGraph` 无法按媒体时间掌握完整输入。Media3 同时限制 decoder 允许积压的输出帧数，避免无限背压。
 
-这段行为说明 key 的主用途是“控制哪一层做帧取舍”，而非画质增强或 HWC overlay 开关。
+`KEY_ALLOW_FRAME_DROP` 的作用是决定由哪一层做帧取舍，与画质增强或 HWC overlay 开关无关。
 
 ## 六、SurfaceView、TextureView 与 raw Surface
 
