@@ -237,7 +237,9 @@ ArrayMap<Integer, CacheEntry> mRunningCache
 
 进程死亡时，system_server 的运行时 cache entry 会删除；已经持久化的磁盘文件可以继续用于后续 Overview 或启动恢复。Launcher 进程还维护独立的缩略图缓存。
 
-Android 17 还包含 `onlyCacheLowResTaskSnapshot` feature flag（功能开关）路径：开启时，`TaskSnapshotController.getRecordSnapshotSupplier()` 在持久化完成后把 `updateLowResToCacheFunction(task, snapshotId)` 回调 post 到 `mHandler`。回调里会重新进入全局锁，校验 task 仍 attached 且缓存里的 snapshot id 仍是同一份、且仍是高分辨率版本，才把 low-res 写回 `mCache`；任一条件不满足就调用 `supplier.abort()`，不把这份 low-res 放入运行时缓存。写回成功时，`TaskSnapshotCache` 会把旧 high-res 从主 `mRunningCache` 替换出去，并在 `DeferRemoveHighResCache` 中短暂保留同一 ID 的 high-res；Android 17 源码里的延迟移除常量是 5000 ms。也就是说，flag 开启后的主缓存目标是 low-res，但高分辨率 buffer 仍可能在转换、回调排队和延迟移除窗口内继续被引用，不能简单写成“生成 low-res 后 high-res 立即释放”。
+Android 17 还包含 `onlyCacheLowResTaskSnapshot` feature flag（功能开关）路径：开启时，`TaskSnapshotController.getRecordSnapshotSupplier()` 在持久化完成后把 `updateLowResToCacheFunction(task, snapshotId)` 回调 post 到 `mHandler`。回调里会重新进入全局锁，校验 task 仍 attached、缓存里的 snapshot id 仍是同一份、且仍是高分辨率版本，才把 low-res 写回 `mCache`；任一条件不满足就调用 `supplier.abort()`，不把这份 low-res 放入运行时缓存。
+
+写回成功时，`TaskSnapshotCache` 会把旧 high-res 从主 `mRunningCache` 替换出去，并在 `DeferRemoveHighResCache` 中短暂保留同一 ID 的 high-res；Android 17 源码里的延迟移除常量是 5000 ms。也就是说，flag 开启后的主缓存目标是 low-res，但高分辨率 buffer 仍可能在转换、回调排队和延迟移除窗口内继续被引用，不能简单写成“生成 low-res 后 high-res 立即释放”。
 
 ### 4.2 内存估算要带上 scale、format 与 stride
 
@@ -251,7 +253,9 @@ width × height × bytesPerPixel
 
 实际分配还受 row stride（每行实际字节跨度）、gralloc（图形缓冲区分配器）对齐和附加元数据影响；同时存在高低分辨率版本、Binder 引用、Launcher hardware `Bitmap` 或 starting window 引用时，总占用会进一步变化。
 
-默认情况下，real snapshot 使用 RGBA_8888。设备 overlay 开启 `config_use16BitTaskSnapshotPixelFormat` 后，`AbsAppSnapshotController` 也只会在 snapshot pixel format 仍为 `UNKNOWN`、`use16BitFormat()` 为真、top Activity `fillsParent()`，且主窗口不是“半透明并显示壁纸”的组合时选择 RGB_565；否则回退到 RGBA_8888。随后 `isTranslucent` 再由 `PixelFormat.formatHasAlpha(pixelFormat)`、`fillsParent()` 和窗口半透明状态计算。
+默认情况下，real snapshot 使用 RGBA_8888。设备 overlay 开启 `config_use16BitTaskSnapshotPixelFormat` 后，`AbsAppSnapshotController` 也只会在 snapshot pixel format 仍为 `UNKNOWN`、`use16BitFormat()` 为真、top Activity `fillsParent()`，且主窗口不是“半透明并显示壁纸”的组合时选择 RGB_565；否则回退到 RGBA_8888。
+
+随后 `isTranslucent` 再由 `PixelFormat.formatHasAlpha(pixelFormat)`、`fillsParent()` 和窗口半透明状态计算。
 
 因此，“low-RAM（低内存）设备一定缓存 3–5 张、一定使用 RGB_565”没有 Android 17 源码依据。厂商可通过以下 overlay 调整：
 
@@ -335,7 +339,7 @@ HWC 仍会按整屏 layer 集合选择 `DEVICE` composition（由 HWC 合成）�
 - 后台 executor 加载（`TaskImageCache` 的后台协程 + `WorkerThread`）；
 - cache size（缓存容量）变化后裁剪（`updateCacheSizeAndRemoveExcess`）；
 - 进入 Overview 前预加载（由 `enableTaskSnapshotPreloading` 与 `HighResLoadingState.visible` 控制）；
-- 高分辨率转换到低分辨率或反之时的"旧 entry 失效"逻辑（`cache.getAndInvalidateIfModified(key)`）；
+- 高分辨率转换到低分辨率或反之时的“旧 entry 失效”逻辑（`cache.getAndInvalidateIfModified(key)`）；
 - 进程进入高负载（trim）回调通常通过 Launcher 的 trim dispatcher 清空缩略图与图标 cache。具体 trim 阈值与回调绑定在 Launcher 调度层（`TaskIconCache` / 进程级 `ComponentCallbacks2`），不是 `TaskThumbnailCache` 自身的方法；引用 14.30 章节的 trim 边界时不可外推。
 
 排查内存时至少要区分 system_server 的 TaskSnapshot buffer、Launcher 的 hardware `Bitmap` 引用和屏幕上 Launcher App Window buffer。
