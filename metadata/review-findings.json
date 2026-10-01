@@ -3698,6 +3698,23 @@
       "summary": "ApplicationExitInfo 使用处缺少 API 30 可用性边界",
       "type": "version-boundary",
       "updated_at": "2026-10-01T10:56:37.806882+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "created_at": "2026-10-02T02:00:34.196775+08:00",
+      "created_by": "hermes-aiw-weekly-source-audit",
+      "created_run_id": "freshness-2026-10-02",
+      "details": "last source verification 2026-07-01 older than 90 days\nEvidence: 2026-07-01",
+      "id": "AIW-FRESH-3c606a318f622ac0",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-10-02-时效性巡检.md",
+      "severity": "P2",
+      "source_paths": [
+        "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md"
+      ],
+      "status": "open",
+      "summary": "last source verification 2026-07-01 older than 90 days",
+      "type": "stale-source-verification",
+      "updated_at": "2026-10-02T02:00:34.196775+08:00"
     }
   ],
   "schema_version": 1
