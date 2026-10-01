@@ -133,13 +133,13 @@ last_consolidated_at: '2026-08-24'
 
 应用侧要回答三个问题：哪些效果值得实时做，什么时候降级，以及怎样用性能 trace（按时间记录系统事件的轨迹）和 GPU 工具验证。平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。标准 View 或 Compose 内容仍沿 UI 线程 → RenderThread → BLAST / BufferQueue（把图形缓冲区交给系统）→ SurfaceFlinger（系统合成服务）→ HWC / RenderEngine（硬件合成器或系统 GPU 合成器）→ present（送往显示设备）前进。`RenderEffect` 改变的是 HWUI 的绘制工作，不会绕开这条显示路径。RenderNode 与 Hardware Layer（硬件图层）见 2.4，完整渲染管线见 13.1，GPU 瓶颈分类见 2.7。
 
-RenderEffect 和 RuntimeShader 在渲染管线中增加图像处理或 AGSL 计算，Compose Canvas 提供自定义绘制入口。效果复杂度、离屏缓冲区、shader 编译和重绘范围共同决定帧成本。
+RenderEffect 和 RuntimeShader 在渲染管线里新增图像处理与 AGSL 计算，Compose Canvas 提供自定义绘制入口。前者把成本压在离屏缓冲区和逐像素处理上，后者把成本压在绘制状态、对象复用和重绘范围上；效果复杂度、shader 编译和实际绘制范围共同决定两部分的帧成本。
 
 ## RenderEffect、RuntimeShader 与离屏成本
 
 ### RenderEffect 的适用场景
 
-`RenderEffect` 从 Android 12（API 31）开始提供。AOSP 把它定义为一个中间渲染步骤：效果可以配置到 `RenderNode`，也可以通过 `View.setRenderEffect()` 配置到 View 背后的 RenderNode。`View.setRenderEffect()` 调用 `mRenderNode.setRenderEffect()`；属性确有变化时，View 会请求重新绘制。以模糊为例，`RenderNode.setRenderEffect()` 的注释说明内容会先绘制到独立图层，再对该图层做模糊。这里指离屏图层：像素先写入一块暂不直接显示的缓冲区，处理完成后再合成到目标画面。
+`RenderEffect` 从 Android 12（API 31）开始提供。AOSP 把它定义为一个中间渲染步骤：效果可以配置到 `RenderNode`，也可以通过 `View.setRenderEffect()` 配置到 View 背后的 RenderNode。`View.setRenderEffect()` 调用 `mRenderNode.setRenderEffect()`；属性确有变化时，View 会请求重新绘制。以模糊为例，`RenderNode.setRenderEffect()` 的注释说明内容会先绘制到独立图层，再对该图层做模糊。这里的独立图层就是离屏图层：像素先写入一块暂不直接显示的缓冲区，处理完成后再合成到目标画面。
 
 适合用 `RenderEffect` 的场景有三个共同点：效果区域可控、内容变化频率不高、视觉收益足以覆盖 GPU 成本。
 
@@ -152,7 +152,7 @@ RenderEffect 和 RuntimeShader 在渲染管线中增加图像处理或 AGSL 计�
 | 颜色统一处理、灰度、着色（tint） | `createColorFilterEffect()` | 中到高 | 简单颜色处理通常比模糊轻，但仍需在目标机型上验证 |
 | 自定义像素效果 | `RuntimeShader` + `createRuntimeShaderEffect()` | 中 | Android 13+，适合小范围、可降级、可缓存的动态效果 |
 
-需要处理 View 的当前画面时，`RenderEffect` 无需先把内容读回 Bitmap，再由 CPU 逐像素修改，可以直接留在 HWUI 管线中。每次内容变化仍可能让 GPU 重新处理这块区域。静态背景、固定遮罩、品牌氛围图优先预生成或缓存；手势跟随、转场、局部反馈这类短时动态效果再考虑 `RenderEffect`。
+需要处理 View 的当前画面时，`RenderEffect` 可以直接留在 HWUI 管线中，不必先把内容读回 Bitmap 再由 CPU 逐像素修改。每次内容变化仍可能让 GPU 重新处理这块区域。静态背景、固定遮罩、品牌氛围图优先预生成或缓存；手势跟随、转场、局部反馈这类短时动态效果再考虑 `RenderEffect`。
 
 `RenderEffect` 模糊与 Window blur（窗口模糊）是两套接口。前者只处理同一 RenderNode 的输出；后者由系统模糊窗口后方的画面。Window blur 可能因 GPU 能力、省电模式、视频直通（multimedia tunneling，编解码器与显示路径直接协作的播放模式）或系统配置而动态关闭。应用要监听 `WindowManager.addCrossWindowBlurEnabledListener()`，并准备不透明度更高的无模糊背景。不要通过反射调用 `setBackdropRenderEffect()` 一类隐藏接口。
 
@@ -186,7 +186,9 @@ fun View.applyBlurEffectIfSupported(
 
 `RenderEffect` 的成本不只来自 API 调用本身。对模糊这类效果，AOSP 注释已经给出运行路径：先把目标 RenderNode 的内容绘制到独立图层，再处理该图层。这会增加中间纹理以及对应的读写开销。
 
-一块 1080 × 2400、RGBA_8888 格式的全屏中间纹理，未压缩的逻辑像素量是 9.9 MiB，按十进制计量约 10.4 MB。实际占用还受行跨度（stride，每行实际分配的字节数）、内存对齐、分块渲染缓冲区（tile buffer）、驱动复用池、压缩和实际格式影响，这个数字只表示量级，不能当作进程图形内存的下限。分析时也不要只看 Java 堆；`dumpsys meminfo` 或 trace 若提供 Graphics、GL/EGL mtrack 与 GPU memory（GPU 内存）轨道，应分别核对。mtrack 是内核或驱动上报的内存记账分类，各设备提供的分类不完全相同。
+一块 1080 × 2400、RGBA_8888 格式的全屏中间纹理，未压缩的逻辑像素量是 9.9 MiB，按十进制计量约 10.4 MB。实际占用还受行跨度（stride，每行实际分配的字节数）、内存对齐、分块渲染缓冲区（tile buffer）、驱动复用池、压缩和实际格式影响，这个数字只表示量级，不能当作进程图形内存的下限。
+
+分析时也不要只看 Java 堆；`dumpsys meminfo` 或 trace 若提供 Graphics、GL/EGL mtrack 与 GPU memory（GPU 内存）轨道，应分别核对。mtrack 是内核或驱动上报的内存记账分类，各设备提供的分类不完全相同。
 
 成本主要有四类：
 
@@ -249,7 +251,7 @@ class HighlightEffect {
 
 这段示例只调用一次 `content.eval()`，动态参数也只有 `size` 和 `progress`。AGSL 的 `float2` 是两个 `float` 组成的向量，`half4` 是四个半精度分量，常用来表示 RGBA。`View.setRenderEffect()` 只在 RenderNode 的效果属性变化时请求重绘；同一个 `RenderEffect` 安装后，更新 `RuntimeShader` uniform 不会自动请求下一帧，所以动画场景要显式调用 `postInvalidateOnAnimation()`，或由动画框架驱动重绘。`effectApplied` 属于 `HighlightEffect` 实例，这个示例要求一个实例只服务一个 View。
 
-示例中的加法还假定目标内容完全不透明。AGSL 要求 `main()` 返回预乘 alpha 颜色，也就是透明度为 A 时，RGB 要先乘 A；若输入带透明边缘，新增高光也要乘 `src.a`，否则透明像素可能保留非零 RGB，合成后出现色边。工程中还要补三个保护：API 33 以下使用静态效果或不加效果；页面不可见时清空效果；低端机或省电模式下关闭动态着色器。
+这个高光叠加还假定目标内容完全不透明。AGSL 要求 `main()` 返回预乘 alpha 颜色，也就是透明度为 A 时，RGB 要先乘 A；若输入带透明边缘，新增高光也要乘 `src.a`，否则透明像素可能保留非零 RGB，合成后出现色边。工程中还要补三个保护：API 33 以下使用静态效果或不加效果；页面不可见时清空效果；低端机或省电模式下关闭动态着色器。
 
 `RuntimeShader(shaderSource)` 构造时会编译 AGSL，源码或 uniform 声明不合法时会抛出 `IllegalArgumentException`。不要在动画回调或 Composable 的频繁执行路径里构造它，也不要在页面加载时创建所有着色器。按场景懒创建、按效果实例复用，并在扩大用户范围前用目标设备检查编译失败与驱动差异。如果要提前初始化，只创建首屏短时间内会用到的效果，避免延长启动时间。
 
@@ -304,7 +306,9 @@ AGI 适合在开发和预发布阶段分析 GPU。Frame Profiler 可以直接捕
 
 透明边缘要单独做像素对照，避免把 straight alpha（RGB 尚未乘透明度）与 premultiplied alpha（RGB 已乘透明度）混用；`RuntimeShader` 的预乘约束可参考前面的高光示例。`RuntimeColorFilter` 和 `RuntimeXfermode` 的 sRGB 契约在广色域或 HDR 窗口里尤其需要截图验证，确认色域转换和精度满足设计要求。动态 uniform 可以复用同一个 `RuntimeColorFilter` 或 `RuntimeXfermode` 实例并更新数值；框架会在绘制前通过 `Paint.getNativeInstance()` 取得更新后的底层对象。uniform 的赋值方法不会替 View 请求重绘，动画仍要调用 `invalidate()` 或 `postInvalidateOnAnimation()`。只有 AGSL 程序结构、混合方式或作用范围改变时才重建对象，不要逐帧重新解析源码。
 
-测量时分成四组：普通 `SrcOver`、只加颜色滤镜、只加 `RuntimeXfermode`、完整的颜色滤镜 + `RuntimeXfermode` / 离屏图层。比较 UI 线程的绘制命令记录、RenderThread、GPU 用时、离屏目标和 FrameTimeline。像素正确性用截图覆盖透明边缘、不同背景、裁剪区和版本判断。API 36 以下要使用明确的兼容方案，清理时也要从 Paint 和业务对象中移除旧的 `RuntimeColorFilter` / `RuntimeXfermode` 引用。
+测量时分成四组：普通 `SrcOver`、只加颜色滤镜、只加 `RuntimeXfermode`、完整的颜色滤镜 + `RuntimeXfermode` / 离屏图层。比较 UI 线程的绘制命令记录、RenderThread、GPU 用时、离屏目标和 FrameTimeline。
+
+像素正确性用截图覆盖透明边缘、不同背景、裁剪区和版本判断。API 36 以下要使用明确的兼容方案，清理时也要从 Paint 和业务对象中移除旧的 `RuntimeColorFilter` / `RuntimeXfermode` 引用。
 
 ### 扩展
 
@@ -316,7 +320,9 @@ AGI 适合在开发和预发布阶段分析 GPU。Frame Profiler 可以直接捕
 
 #### Compose graphicsLayer / RenderEffect 对应关系
 
-Compose 的 `graphicsLayer` 可以通过 Compose `RenderEffect` 把效果应用到图层。只要设置 `RenderEffect`，内容就会先进入离屏缓冲区，不受 `CompositingStrategy` 取值影响。默认 `Auto` 策略下，`alpha < 1f` 也会离屏；`ModulateAlpha` 可以省去仅由透明度引起的离屏缓冲区，但图层内有重叠内容时，合成结果可能不同。裁剪或阴影本身并不必然新增缓冲区，判断时要看完整的 `graphicsLayer` 参数。效果应挂到能覆盖目标视觉区域的最小 Composable 节点。Compose RenderEffect 在 Android 11（API 30）及以下会被忽略，可以用 `RenderEffect.isSupported()` 做能力判断。
+Compose 的 `graphicsLayer` 可以通过 Compose `RenderEffect` 把效果应用到图层。只要设置 `RenderEffect`，内容就会先进入离屏缓冲区，不受 `CompositingStrategy` 取值影响。默认 `Auto` 策略下，`alpha < 1f` 也会离屏；`ModulateAlpha` 可以省去仅由透明度引起的离屏缓冲区，但图层内有重叠内容时，合成结果可能不同。裁剪或阴影本身并不必然新增缓冲区，判断时要看完整的 `graphicsLayer` 参数。
+
+效果应挂到能覆盖目标视觉区域的最小 Composable 节点。Compose RenderEffect 在 Android 11（API 30）及以下会被忽略，可以用 `RenderEffect.isSupported()` 做能力判断。
 
 Compose 与 View 在 RenderThread 之后共用标准管线，详见 13.1 节。排查 Compose 页面时，在 `MainThread` 轨道观察重组（recomposition）和布局（layout）；RenderThread 和 GPU 侧仍按上述 `RenderEffect` 方法做对照。
 
@@ -328,11 +334,11 @@ Compose 与 View 在 RenderThread 之后共用标准管线，详见 13.1 节。�
 
 ## Canvas 状态、DrawScope 与重绘控制
 
-图形效果确定后，Compose Canvas 还要管理绘制状态、对象复用和 invalidate 范围。Runtime effect 应只覆盖需要处理的内容。
+效果选型确定后，还要管住 Compose Canvas 的绘制状态、对象复用和 invalidate 范围，让 Runtime effect 只作用在需要处理的内容上。
 
 ### 1. 范围与版本锚点
 
-讨论对象是 Android 上的 Compose Canvas。平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`，内核固定为 `android17-6.18-2026-06_r6`；Compose 采用独立发布的 UI 1.12.0，源码快照为 `963bf914f78b389bdddef0da7f36bee19d897274`。截至 2026 年 8 月 15 日，Google Maven 中的最新稳定版是 1.12.0，1.13.0-alpha01 属于预览版。
+本节讨论 Android 上的 Compose Canvas。平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`，内核固定为 `android17-6.18-2026-06_r6`；Compose 采用独立发布的 UI 1.12.0，源码快照为 `963bf914f78b389bdddef0da7f36bee19d897274`。截至 2026 年 8 月 15 日，Google Maven 中的最新稳定版是 1.12.0，1.13.0-alpha01 属于预览版。
 
 HWUI 是 Android 的硬件加速 UI 渲染器；RenderNode 记录一组绘制命令，display list 是这些命令的列表；RenderThread 是执行 HWUI 渲染工作的线程；buffer 是窗口提交的像素缓冲区。
 
@@ -557,7 +563,7 @@ Compose UI 1.12.0 的 `CanvasDrawScope` 有两个延迟创建字段：
 | 由后台计算的大数据 | ViewModel/worker（工作线程）生成不可变快照，UI 只消费 |
 | Android native 绘制对象 | 外层 `remember`，在 `drawIntoCanvas` 中使用 |
 
-这个示例调用的是只接受 framework Canvas 的旧 `Drawable`，并把对象创建留在组合阶段。
+这个示例使用的旧 `Drawable` 只接受 framework Canvas，对象创建留在组合阶段。
 
 ```kotlin
 @Composable
@@ -698,7 +704,7 @@ fun RotatingIcon(
 
 #### 7.3 渐变与 RuntimeShader
 
-AGSL 是 Android Graphics Shading Language（Android 图形着色语言）。大面积渐变和 AGSL 的成本取决于覆盖像素数、shader（着色器）指令复杂度、采样次数、精度与后端/驱动。Shader 对象和不变 uniform（着色器参数）应缓存，每帧只更新动态 uniform。
+大面积渐变和 AGSL 的成本取决于覆盖像素数、shader（着色器）指令复杂度、采样次数、精度与后端/驱动。Shader 对象和不变 uniform（着色器参数）应缓存，每帧只更新动态 uniform。
 
 `android.graphics.RuntimeShader` 从 API 33 提供。这个示例缓存 shader 与 brush，在 `size` 改变时更新 `resolution`，动画时间只在绘制阶段写入。
 
@@ -849,7 +855,7 @@ Perfetto trace 是按时间记录系统与应用事件的性能轨迹。Compose 
 
 [Composition Tracing](03-compose-compiler-modifier-diagnostics.md) 记录 Composable 在组合阶段的执行时序，不会自动给每个绘制 Modifier 的函数体或 GPU draw op 建立 slice（带起止时间的区间事件）。两类 trace 不能混用。
 
-定位按层次进行：
+按下面的层次定位：
 
 1. 在 FrameTimeline（关联计划帧与实际帧的时间线）中找到目标 App SurfaceFrame（应用 Surface 对应的一帧）；
 2. UI Thread 查看 `Choreographer#doFrame`、Traversal（View 树遍历）、`AndroidOwner:draw` 与自定义 marker（追踪标记）；
