@@ -225,7 +225,7 @@ object JavaHeapPressure {
 
 ### ART 分配失败与 OOM 触发路径
 
-普通对象的快速分配失败后，`Heap::AllocateInternalWithGc()` 不会立即抛出 OOME。Android 17 会先等待正在运行的 GC；等待期间完成过回收时重试分配；随后按 `next_gc_type_` 执行阻塞式 GC，也就是由分配线程发起并等待完成的回收。仍未取得足够空间时，ART 会执行覆盖整个堆的回收，并清除 SoftReference（内存不足时允许 GC 清除的软引用）。部分分配器在配置启用且达到时间间隔后，还会尝试 homogeneous space compaction（同构空间压缩），即在两个同类堆空间之间复制对象以整理碎片。以上尝试都失败后才抛出 OOME。
+普通对象快速分配失败后，`Heap::AllocateInternalWithGc()` 不会立即抛出 OOME。Android 17 会先等待正在运行的 GC；等待期间完成过回收时重试分配；随后按 `next_gc_type_` 执行阻塞式 GC，也就是由分配线程发起并等待完成的回收。仍未取得足够空间时，ART 会执行覆盖整个堆的回收，并清除 SoftReference（内存不足时允许 GC 清除的软引用）。部分分配器在配置启用且达到时间间隔后，还会尝试 homogeneous space compaction（同构空间压缩），即在两个同类堆空间之间复制对象以整理碎片。以上尝试都失败后才抛出 OOME。
 
 这里不存在设备无关的“Young GC（年轻代回收）→ Full GC（全堆回收）”固定两步顺序。`next_gc_type_` 取决于收集器、代际状态、上次 GC 和目标堆大小。分配线程也可能主要耗时在等待另一线程执行 GC，因此 Perfetto 中看到的业务停顿可能长于单次 GC 暂停。
 
@@ -260,11 +260,11 @@ giving up on allocation because <1% of heap free after GC.
 
 #### 不修改 ART 内部计数来“扩堆”
 
-`largeHeap` 只扩展 Java 堆的 `growth limit`，不增加设备物理内存，也不处理原生内存、Graphics、线程栈或无界缓存。修改 `num_bytes_allocated_`、`large_object_threshold_`，伪造已释放字节数，拦截分配器以绕过 GC，或解除 ART 堆空间映射，会破坏分配计数、对象存活位图、card table（记录跨区域引用的卡表）、对象所属空间和 GC 根集合之间的一致性，不能用于生产环境。Android 17 的 LOS 也没有为应用提供固定保留 512 MiB 空间的接口。
+`largeHeap` 只扩展 Java 堆的 `growth limit`，不增加设备物理内存，也不处理原生内存、Graphics、线程栈或无界缓存。修改 `num_bytes_allocated_`、`large_object_threshold_`，伪造已释放字节数，拦截分配器以绕过 GC，或解除 ART 堆空间映射，都会破坏分配计数、对象存活位图、card table（记录跨区域引用的卡表）、对象所属空间和 GC 根集合之间的一致性。这类做法不能用于生产环境。Android 17 的 LOS 也没有为应用提供固定保留 512 MiB 空间的接口。
 
 ### 大对象与集合优化
 
-大对象优化先从减少一次性装入开始。服务端返回几 MB JSON、一次性读取完整文件、把长日志拼成一个 `String`、把列表全量转换成界面状态模型，都会让 Java 堆压力集中在一个短窗口内。GC 能回收不可达对象，但它不能替业务决定哪些数据不该一次性加载。
+大对象优化先要减少一次性装入。服务端返回几 MB JSON、一次性读取完整文件、把长日志拼成一个 `String`、把列表全量转换成界面状态模型，都会让 Java 堆压力集中在一个短窗口内。GC 能回收不可达对象，但它不能替业务决定哪些数据不该一次性加载。
 
 处理大对象时按这个顺序排查：
 
@@ -675,7 +675,7 @@ suspend fun <T> processInChunks(
 
 ## Compose 重组、状态与分配热点
 
-通用分配模型进入 Compose 后，要沿 composition、measure 和 draw 确认对象来源。remember 只能延长明确可复用对象的生命周期。
+通用分配模型进入 Compose 后，要沿 composition、measure 和 draw 确认对象来源。`remember` 只能延长明确可复用对象的生命周期。
 
 ### 范围与版本
 
