@@ -17,8 +17,8 @@ related_chapters:
 - '15.10'
 consolidated_from:
 - src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md
-last_verified: '2026-08-14'
-last_verified_against: AOSP android-17.0.0_r1 bionic, libcore, and ART sources; android17-6.18-2026-06_r6 procfs documentation; current Android Developers API and Android 11 fdsan guidance through 2026-08-13
+last_verified: '2026-10-01'
+last_verified_against: AOSP android-17.0.0_r1 bionic, libcore, and ART sources; android17-6.18-2026-06_r6 procfs documentation; current Android Developers API, ApplicationExitInfo API 30 availability, and Android 11 fdsan guidance through 2026-10-01
 confidence: medium-high
 sources:
 - type: aosp-legacy
@@ -39,6 +39,8 @@ sources:
 - type: official
   path: https://developer.android.com/reference/android/system/Os#readlink(java.lang.String)
 - type: official
+  path: https://developer.android.com/reference/android/app/ApplicationExitInfo
+- type: official
   path: https://developer.android.com/about/versions/11/behavior-changes-all#fdsan
 - type: aosp-kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst
@@ -55,6 +57,8 @@ task6_state: reviewed
 section: '20.7'
 task9_state: reviewed
 task2b_state: fixed
+last_idle_audit_at: '2026-10-01T10:35:34+08:00'
+last_idle_audit_run_id: 20261001-103534-idle-audit-c893a666
 note: 'Consolidated-source availability: source page not present in the current vault as of 2026-08-14; FD content is retained here and thread-specific guidance is covered by chapter 20.19'
 ---
 
@@ -282,7 +286,7 @@ FD 持续增长且接近上限时，可按影响范围采取以下动作：
 1. 平时把低成本趋势写入固定容量环形缓冲区，写满后覆盖最旧记录；
 2. 阈值触发时预生成有大小上限的 FD 摘要；
 3. 如果已有预留并验证过的低成本写入通道，崩溃现场只写摘要 ID 和少量计数；
-4. 下一次启动用 `ApplicationExitInfo`、tombstone 与本地摘要核对；
+4. Android 11（API 30）及以上，下一次启动可用 `ApplicationExitInfo`、tombstone 与本地摘要核对；更低版本可用 tombstone 与本地摘要核对；
 5. 后台再上传、符号化和聚合；符号化是把机器地址还原为函数名与源码位置。
 
 证据文件要使用原子替换，确保读取方只能看到完整旧版本或完整新版本；还要限制总容量，并为格式设置版本号。Crash/ANR 证据包见 26.2、26.3；Java/Native handler 的职责边界见 20.2、20.3。
@@ -349,6 +353,7 @@ hash（散列值）不能自动完成脱敏。低熵文件名、手机号或固�
 - [AOSP `fdsan.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/fdsan.cpp)：FD 所有者标签检查实现。
 - [AOSP `libfdtrack`（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libfdtrack/)：平台 FD 创建栈追踪实现及其内部边界。
 - [Android Developers：`Os.readlink()`](https://developer.android.com/reference/android/system/Os#readlink(java.lang.String))：应用读取自身 FD 符号链接的公开接口。
+- [Android Developers：`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)：API 30 起可读取应用进程退出信息，用于和本地崩溃、ANR 摘要交叉核对。
 - [Android 11 behavior changes：fdsan](https://developer.android.com/about/versions/11/behavior-changes-all#fdsan)：fdsan 默认中止与所有权错误语义。
 - [Android Common Kernel `proc.rst`（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst)：`Threads`、`FDSize`、`fd` 和 `fdinfo` 的内核接口语义。
 
