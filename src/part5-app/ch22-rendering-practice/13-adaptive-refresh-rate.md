@@ -42,7 +42,7 @@ related_chapters:
 
 ## 从三个帧率开始判断
 
-自适应刷新率（Adaptive Refresh Rate，ARR）调整的是显示节奏，不会缩短应用生成一帧时的 CPU、GPU 或解码耗时。排查前要分清三个量：
+自适应刷新率（Adaptive Refresh Rate，ARR）调的是显示节奏。排查前先分清三个量：
 
 - **内容帧率**：视频、游戏或动画每秒产生多少个不同画面；
 - **应用渲染速率**：应用收到帧回调并提交新图形缓冲区的节奏；
@@ -50,11 +50,11 @@ related_chapters:
 
 `fps` 表示每秒生成的画面数，`Hz` 表示显示设备每秒刷新的次数。60 fps 的应用可以运行在 120 Hz 显示设备上，每个应用帧保持两个刷新周期，画面仍然均匀。应用平均达到 60 fps，也可能因为提交间隔忽快忽慢而出现卡顿。帧率平均值、呈现间隔和输入延迟回答的是不同问题。
 
-本文的平台实现基线是 Android 17、API 37 和 `android-17.0.0_r1`，内核源码基线是 `android17-6.18-2026-06_r6`。ARR 从 Android 15 进入平台；应用要使用完整能力，系统需为 Android 15 QPR1 或更高版本，设备还要实现相应的 Composer3 硬件抽象层（Hardware Abstraction Layer，HAL）能力。系统版本符合要求，并不表示每块显示设备都支持 ARR。
+应用要负责两件事：控制生成一帧的成本和节奏，并向系统准确描述内容偏好。ARR 不会缩短应用生成一帧要花的 CPU、GPU 或解码时间，也不会修复主线程超时、`RenderThread` 堵塞、GPU 迟完成、视频时间戳错误或 `BufferQueue` 中待显示缓冲区堆积。
 
-在 ARR 配置中，显示设备的垂直同步（VSync）或面板 TE（Tearing Effect，面板扫描时序信号）可以与内容刷新节奏分开。面板能在同一个显示模式内，按 TE 周期的离散倍数选择呈现时机。这样可以减少只为改变刷新率而切换显示模式的次数，也能缩短静态内容和低频动画占用高刷新率的时间。平台选择链、ARR/MRR 分支和 attached Choreographer 反馈统一见 [2.2 帧率、刷新率与显示模式选择](../../part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md)；本文只负责应用接入、跨设备实验和回退策略。
+本文的平台实现基线是 Android 17、API 37 和 `android-17.0.0_r1`，内核源码基线是 `android17-6.18-2026-06_r6`。ARR 从 Android 15 进入平台；应用想用上完整能力，系统需为 Android 15 QPR1 或更高版本，设备还要实现相应的 Composer3 硬件抽象层（Hardware Abstraction Layer，HAL）能力。系统版本符合要求，并不表示每块显示设备都支持 ARR。
 
-应用仍有两项责任：控制生成一帧的成本和节奏，并向系统准确描述内容偏好。ARR 不会修复主线程超时、`RenderThread` 堵塞、GPU 迟完成、视频时间戳错误或 `BufferQueue` 中待显示缓冲区堆积。
+ARR 配置下，显示设备的垂直同步（VSync）或面板 TE（Tearing Effect，面板扫描时序信号）可以与内容刷新节奏分开：面板在同一个显示模式内，按 TE 周期的离散倍数选择呈现时机。这样既减少了只为改变刷新率而切换显示模式的次数，也缩短了静态内容和低频动画占用高刷新率的时间。平台侧的选择链、ARR 与 MRR 的分支判断，以及 Choreographer 的反馈回路见 [2.2 帧率、刷新率与显示模式选择](../../part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md)；本文只负责应用接入、跨设备实验和回退策略。
 
 ## Android 15—17 API 边界
 
@@ -109,7 +109,7 @@ fun Display.readArrCapability(): ArrCapability {
 
 `QueryUnavailable` 表示 API 35 没有公开查询入口，不表示设备一定缺少 ARR。应用仍可提交公开的 `View` 或 `Surface` 帧率请求，由系统按设备能力处理。折叠屏内外屏、外接屏和窗口迁移都可能改变关联的 `Display` 对象；缓存结果时应带上 `displayId`，并在收到显示设备变化回调后重新读取。
 
-Android 17 的 `getFrameRateVelocityMapping()` 主要服务滚动组件。`setFrameContentVelocity()` 接收像素/秒，返回映射中的 `FrameRateVelocityPoint.dpPerSecond` 则使用密度无关像素/秒。普通自定义 `View` 只需按接口要求上报像素速度，由框架结合当前显示设备选择偏好；应用不应复制一套固定速度阈值，也不能直接比较这两种单位的数值。
+Android 17 的 `getFrameRateVelocityMapping()` 主要服务滚动组件。`setFrameContentVelocity()` 接收的是像素/秒，而 `Display.getFrameRateVelocityMapping()` 返回的 `FrameRateVelocityPoint.dpPerSecond` 用的是密度无关像素/秒。普通自定义 `View` 只需按接口要求上报像素速度，由框架结合当前显示设备选择偏好；应用不应复制一套固定速度阈值，也不能直接比较这两种单位的数值。
 
 ## View 帧率请求要贴近会更新的内容
 
@@ -259,7 +259,16 @@ ARR 验收至少同时覆盖四条证据：
 | SurfaceFlinger `DisplayFrame` | 预期/实际时间线、呈现类型、SurfaceFlinger 卡顿标记 | 合成与显示提交是否按目标时间完成 |
 | 刷新率与图层 | 当前显示模式、渲染速率、图层请求、选择过程的区间事件、实际呈现节奏 | 何时改变节拍，哪个显示对象参与决策 |
 
-应用 `SurfaceFrame` 与 SurfaceFlinger `DisplayFrame` 是两种对象：前者描述应用窗口帧，后者描述合成后送往显示设备的帧。预期时间线与实际时间线的关联用于比较目标时间和完成结果，不能把两条区间事件（slice，即有开始和结束时间的跟踪记录）在界面上的“分叉”直接判成某类卡顿。`SurfaceView`、视频、相机和游戏的独立画面生产方，也未必拥有与标准 HWUI 应用窗口同样完整的 `FrameTimeline` 信息。信息缺失时，应依次查看对应图层的 `queueBuffer`（缓冲区入队）、`BufferTX`（图层事务）、`acquire fence`（缓冲区就绪同步）、`latch`（SurfaceFlinger 接收缓冲区）、HWC 合成和 `present`（送显）。
+应用 `SurfaceFrame` 与 SurfaceFlinger `DisplayFrame` 是两种对象：前者描述应用窗口帧，后者描述合成后送往显示设备的帧。预期时间线与实际时间线的关联用于比较目标时间和完成结果，不能把两条区间事件（slice，即有开始和结束时间的跟踪记录）在界面上的“分叉”直接判成某类卡顿。
+
+`SurfaceView`、视频、相机和游戏的独立画面生产方，也未必拥有与标准 HWUI 应用窗口同样完整的 `FrameTimeline` 信息。信息缺失时，按这个顺序看对应图层的证据：
+
+1. `queueBuffer`（缓冲区入队）；
+2. `BufferTX`（图层事务）；
+3. `acquire fence`（缓冲区就绪同步）；
+4. `latch`（SurfaceFlinger 接收缓冲区）；
+5. HWC 合成；
+6. `present`（送显）。
 
 View 请求不等于独立图层请求。普通 `View` 和 `TextureView` 的结果通常要在宿主应用窗口上验证；`SurfaceView` 内容则要找到它自己的 BLAST 缓冲区图层。Perfetto 的计数器（counter）是随时间记录数值的轨道；只看到刷新率计数器下降，无法证明是哪项应用策略触发，也无法证明交互没有受损。
 
