@@ -50,7 +50,7 @@ consolidated_from:
 
 # 自适应布局、桌面窗口与多形态设备性能
 
-自适应布局应响应当前窗口和姿态，而不是猜测设备类别；桌面窗口、折叠状态和旋转都可能在运行中改变可用空间。把尺寸决策集中在页面入口，并限制重组与重新布局范围，才能同时保证正确性和性能。
+自适应布局响应的是运行时窗口的可用空间、折叠姿态和输入方式，不是设备名称。桌面窗口、折叠状态和旋转都会在使用中改变这块空间，按设备类别预设布局在这些场景下会判断错误。本文覆盖自适应布局、桌面窗口和多形态设备下的性能问题，核心做法是把尺寸决策集中在页面入口，并限制重组与重新布局的范围。
 
 ## 版本范围与源码依据
 
@@ -85,9 +85,13 @@ Material 3 Adaptive 1.3.0-rc01 是候选发布版（release candidate，RC），
 | 中等（Medium）高度 | `480dp ≤ height < 900dp` |
 | 扩展（Expanded）高度 | `height ≥ 900dp` |
 
-导航形态、窗格（pane）数量和信息密度适合按宽度决定，高度也不能省略。横屏手机或桌面上的矮窗口可能具有中等或扩展宽度，同时只有紧凑高度；此时机械地切成双窗格会压缩触控区域、列表和详情内容。
+宽度决定导航形态、窗格（pane）数量和信息密度，高度同样不能省略。横屏手机或桌面上的矮窗口可能同时具备中等或扩展宽度与紧凑高度；只看宽度就机械地切成双窗格，会压缩触控区域、列表和详情内容。
 
-Material 3 Adaptive 1.2.0 的 `currentWindowAdaptiveInfo()` 默认仍按 Compact、Medium、Expanded 三档计算。传入 `supportLargeAndXLargeWidth = true` 后，计算才会包含 1200dp 与 1600dp 两个断点。`calculatePaneScaffoldDirective()` 生成窗格布局指令：Compact 和 Medium 默认允许一个横向分区，Expanded 允许两个，Large 和 Extra-large 最多允许三个。`calculatePaneScaffoldDirectiveWithTwoPanesOnMediumWidth()` 会让 Medium 使用双窗格，但源码文档也提醒，这可能使内容过密，只适合确有需求的页面。
+Material 3 Adaptive 1.2.0 对宽度分类和窗格数量有几处默认行为：
+
+- `currentWindowAdaptiveInfo()` 默认仍按 Compact、Medium、Expanded 三档计算；传入 `supportLargeAndXLargeWidth = true` 后，计算才会包含 1200dp 与 1600dp 两个断点。
+- `calculatePaneScaffoldDirective()` 生成窗格布局指令：Compact 和 Medium 默认允许一个横向分区，Expanded 允许两个，Large 和 Extra-large 最多允许三个。
+- `calculatePaneScaffoldDirectiveWithTwoPanesOnMediumWidth()` 会让 Medium 使用双窗格，但源码文档也提醒，这可能使内容过密，只适合确有需求的页面。
 
 ### 2. 类别变化和连续调整窗口不是同一频率
 
@@ -102,9 +106,9 @@ Material 3 Adaptive 1.2.0 的 `currentWindowAdaptiveInfo()` 默认仍按 Compact
 
 ### 3. 系统栏和窗口装饰仍占用内容空间
 
-桌面窗口标题栏（caption）、状态栏、导航栏、显示缺口和输入法（IME）都会改变内容可用区域。窗口达到 Expanded 宽度，不代表扣除系统占用区域（Insets）后，每个窗格仍满足设计的最小宽度。边到边（edge-to-edge）页面应在统一位置处理 `WindowInsets`，避免页面布局容器、窗格和子组件重复增加内边距。
+桌面窗口标题栏（caption）、状态栏、导航栏、显示缺口和输入法（IME）都会占用内容区域，可用空间因此变小。窗口达到 Expanded 宽度，并不保证扣除系统占用区域（Insets）后，每个窗格仍满足设计的最小宽度。边到边（edge-to-edge）页面应在统一位置处理 `WindowInsets`，避免页面布局容器、窗格和子组件重复增加内边距。
 
-`LocalWindowInfo.current.containerSize`、平台 `WindowMetrics` 和布局阶段得到的内容约束处于不同层次。页面模式可以由窗口级信息决定，具体窗格的排版应以自身测量约束为准。混用这些尺寸而不注明坐标空间，容易重复扣除 Insets，或者误把窗口尺寸当成内容尺寸。
+`LocalWindowInfo.current.containerSize`、平台 `WindowMetrics` 和布局阶段得到的内容约束是三套不同层次的尺寸。页面模式可以由窗口级信息决定，具体窗格的排版应以自身测量约束为准；混用而不注明坐标空间，容易重复扣除 Insets，或者误把窗口尺寸当成内容尺寸。
 
 ## 二、把自适应决策集中在页面入口
 
@@ -255,7 +259,9 @@ class FoldAwareActivity : ComponentActivity() {
 }
 ```
 
-`windowLayoutInfo(activity)` 首次发出数据的时机取决于设备实现，页面要允许暂时没有 `FoldingFeature`。它返回的数据流与当前 Activity 的窗口实例绑定，不应缓存到跨 Activity 单例中长期复用。页面可以在 Compose 中按生命周期收集公开的 `StateFlow`；业务数据仍由 ViewModel 管理。一个窗口也可能报告多个显示特征；示例只取第一个是业务约束，不是 API 的全局保证。
+`windowLayoutInfo(activity)` 首次发出数据的时机取决于设备实现，页面要允许暂时没有 `FoldingFeature`。它返回的数据流与当前 Activity 的窗口实例绑定，不应缓存到跨 Activity 单例中长期复用。
+
+页面可以在 Compose 中按生命周期收集公开的 `StateFlow`；业务数据仍由 ViewModel 管理。一个窗口也可能报告多个显示特征，示例只取第一个是业务约束，不是 API 的全局保证。
 
 ### 3. 窗口姿态和内容状态分开
 
@@ -411,7 +417,13 @@ flowchart LR
 
 ### 桌面窗口的多实例、拖拽与共享状态
 
-桌面窗口化会让同一应用同时拥有多个任务（task），甚至跨显示器展示同一业务对象。`PROPERTY_SUPPORTS_MULTI_INSTANCE_SYSTEM_UI` 只允许系统界面提供“新窗口”入口，不会自动解决启动模式、路由、草稿冲突和数据库并发。状态可以分成三层：实例内的滚动、选择和窗格状态；由数据仓库管理、带修订版本号和事务的共享业务状态；以及可以共享但不能隐含“当前窗口”的进程级缓存与连接池。
+桌面窗口化会让同一应用同时拥有多个任务（task），甚至跨显示器展示同一业务对象。`PROPERTY_SUPPORTS_MULTI_INSTANCE_SYSTEM_UI` 只允许系统界面提供“新窗口”入口，不会自动解决启动模式、路由、草稿冲突和数据库并发。
+
+状态可以分成三层：
+
+- 实例内的滚动、选择和窗格状态；
+- 由数据仓库管理、带修订版本号和事务的共享业务状态；
+- 可以共享、但不隐含“当前窗口”的进程级缓存与连接池。
 
 跨窗口拖放只在回调中传递轻量的 `ClipData`、URI 和访问授权；MIME 类型校验、Bitmap 解码、缩略图生成与导入事务放到后台。Android 15 提供 `DRAG_FLAG_GLOBAL_SAME_APPLICATION`，允许拖放跨越同一应用的窗口；`DRAG_FLAG_START_INTENT_SENDER_ON_UNHANDLED_DRAG` 则在没有窗口接收放下动作时启动 `IntentSender`。这两个入口仍要重新经过任务路由和权限验证，不能把大对象序列化进 Intent 或 Binder 调用。
 
@@ -557,7 +569,7 @@ ORDER BY a.actual_start_ns;
 
 自适应布局的核心输入是当前窗口、设备姿态、Insets 和输入能力，而不是设备名称或应用启动时记录的一次屏幕宽度。页面入口负责把连续的环境信息收敛成离散布局指令，组件再依据局部约束完成布局；内容状态应当独立持有，避免随布局模式切换而丢失或重复加载。
 
-性能验收也要分层：应用侧区分组合、测量与布局，系统侧区分 WMS/Shell 几何变化、应用 buffer 生产和各显示设备的 present。测试矩阵至少覆盖断点两侧、连续拖拽、多窗口、多实例、多显示设备以及状态恢复。
+性能验收也要分层：应用侧区分组合、测量与布局，系统侧区分 WMS/Shell 几何变化、应用缓冲区提交和各显示设备的呈现。测试矩阵至少覆盖断点两侧、连续拖拽、多窗口、多实例、多显示设备以及状态恢复。
 
 ## 参考资料
 
