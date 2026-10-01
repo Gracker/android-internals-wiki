@@ -265,7 +265,7 @@ DAO 方法按执行模型分开设计：
 | `Flow`（异步数据流） | 观察表失效后重新查询 | UI 订阅数据变化 | 表中任意行变化都可能触发重查 |
 | `PagingSource`（分页数据源） | 分页列表 | 大列表、离线缓存 | 深 offset（跳过大量前置行）仍可能扫描许多行，游标分页需按查询设计 |
 
-Room 2.8.4 已提供显式的读写连接 API：同步 DAO 在调用线程执行；`suspend` DAO 通过 Room 的协程上下文申请连接；`Flow` 在开始收集后查询，并在相关表失效时重查；`useReaderConnection()`、`useWriterConnection()` 是显式连接入口。Android 兼容路径仍保留 `queryExecutor` / `transactionExecutor`，驱动路径和 common/KMP 路径则不应套用同一套执行器结论。排障时要看项目实际 `source set`、驱动、生成代码和 `sources.jar`（依赖附带的源码包）。
+Room 2.8.4 另外提供显式连接入口：`useReaderConnection()` 与 `useWriterConnection()` 由调用方直接申请读连接或写连接，`suspend` DAO 通过 Room 的协程上下文申请连接，`Flow` 在开始收集后才查询。Android 兼容路径仍保留 `queryExecutor` / `transactionExecutor`，驱动路径和 common/KMP 路径则不应套用同一套执行器结论。排障时要看项目实际 `source set`、驱动、生成代码和 `sources.jar`（依赖附带的源码包）。
 
 下面的 DAO 演示列表投影（projection，只读取指定列）与详情实体的区别。列表只选择渲染所需列，正文等大字段留到详情查询；调用方还要限制 `limit` 的合法范围。
 
@@ -643,7 +643,9 @@ Room 3 移除了 Room 接口中的 `SupportSQLiteDatabase`、`SupportSQLiteOpenH
 
 Room 3 支持 JavaScript 与 WasmJS（以 WebAssembly 为目标的 Kotlin/JS 运行方式）。SQLite 2.7.0 的 `WebWorkerSQLiteDriver` 可把数据库操作放进 Web Worker，并将文件保存到 OPFS（Origin Private File System，浏览器为站点提供的私有文件系统），但项目要自行提供符合消息协议的 Worker 脚本。Web 与非 Web 平台共用代码时，可以评估异步 SQLite 接口 `androidx.sqlite:sqlite-async:2.7.0`；Android、Web、Apple 与桌面 JVM 必须分别建立性能基线，共享 DAO 不会消除驱动、文件系统和线程模型的差异。
 
-迁移性能要分别观察应用启动、数据库首次打开、每段 `Migration`、首个关键 DAO、稳定期查询和连接等待。为这些阶段添加自定义 trace（可在 Perfetto 时间轴上定位的事件区间），再用固定数据集的 Macrobenchmark（Android 宏基准测试）、Perfetto、查询计划和数据库测试交叉验证。记录表行数、索引、数据库/WAL 大小、驱动、日志模式、Room 版本、设备、构建类型、R8 代码优化状态与 Baseline Profile（预先指定热点代码的编译配置）；平均值不能替代 P95/P99 延迟和迁移失败率。
+迁移性能要分别观察应用启动、数据库首次打开、每段 `Migration`、首个关键 DAO、稳定期查询和连接等待。为这些阶段添加自定义 trace（可在 Perfetto 时间轴上定位的事件区间），再用固定数据集的 Macrobenchmark（Android 宏基准测试）、Perfetto、查询计划和数据库测试交叉验证。
+
+记录表行数、索引、数据库/WAL 大小、驱动、日志模式、Room 版本、设备、构建类型、R8 代码优化状态与 Baseline Profile（预先指定热点代码的编译配置）；平均值不能替代 P95/P99 延迟和迁移失败率。
 
 迁移时依次检查这些事项：固定 Room 3.0.1 与 SQLite 2.7.0；启用 Kotlin/KSP 和数据库结构输出；选择并验证一种驱动；改造同步 DAO、回调以及直接使用 SupportSQLite 接口的代码；从每个受支持版本执行升级与应用版本回退测试；在分阶段发布期间观察迁移失败、`SQLiteException`、ANR、数据库损坏与关键操作耗时。
 
@@ -680,7 +682,9 @@ WAL 允许读写并发，但不提供并行写入；Android 17 的 Compatibility
 
 平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`；涉及 Binder 驱动时，内核锚点是 `android17-6.18-2026-06_r6`。JSON、Protocol Buffers、FlatBuffers 等库独立于 Android 平台发布，行为要以项目锁定的依赖版本为准。
 
-序列化把内存中的对象编码成可传输或保存的数据，反序列化则把这些数据还原成运行时对象。两步都会消耗 CPU、产生临时对象，还会影响安装包体积、代码优化规则和协议升级方式。问题通常表现为冷启动解析配置时在 Perfetto（Android 系统追踪工具）中出现较长区段、网络响应后频繁分配对象并触发 GC（Garbage Collection，垃圾回收）、Binder 调用两侧花时间编解码，或者字段只在经过 R8 缩减、优化与混淆的发布包中丢失。
+序列化把内存中的对象编码成可传输或保存的数据，反序列化则把这些数据还原成运行时对象。两步都会消耗 CPU、产生临时对象，还会影响安装包体积、代码优化规则和协议升级方式。
+
+问题通常表现为冷启动解析配置时在 Perfetto（Android 系统追踪工具）中出现较长区段、网络响应后频繁分配对象并触发 GC（Garbage Collection，垃圾回收）、Binder 调用两侧花时间编解码，或者字段只在经过 R8 缩减、优化与混淆的发布包中丢失。
 
 选型要先确定数据边界：
 
