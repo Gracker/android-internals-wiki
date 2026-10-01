@@ -58,15 +58,15 @@ consolidated_from:
 
 # Bitmap 与图片内存优化
 
-图片内存取决于解码尺寸、像素格式、存储位置、生命周期和缓存策略，文件体积不能直接代表运行时占用。优化顺序应从限制目标尺寸开始，再用大图监控、复用与 Hardware Bitmap 处理不同场景。
+图片内存取决于解码尺寸、像素格式、存储位置、生命周期和缓存策略，文件体积不能直接代表运行时占用。
 
 ## 图片内存为什么容易超预算
 
-Bitmap（位图）是 Android 中表示解码后像素及其描述信息的对象。图片内存问题通常由解码尺寸、缓存复用、页面生命周期和设备内存预算共同造成。一张 4000×3000 的 `ARGB_8888` 图片需要 48,000,000 字节，约 45.8 MiB（1 MiB 为 1,048,576 字节）；200×150 的目标 View 只有 30,000 个像素。若仍按原尺寸解码，分配的像素数是显示目标的 400 倍，随后交给 Canvas 缩小也无法省掉这次像素分配。Android 10 到 Android 17 的普通软件 Bitmap 会增加原生堆（Native Heap）占用，Hardware Bitmap 的像素则位于图形缓冲区。
+Bitmap（位图）是 Android 中表示解码后像素及其描述信息的对象。图片内存问题通常由解码尺寸、缓存复用、页面生命周期和设备内存预算共同造成。一张 4000×3000 的 `ARGB_8888` 图片需要 48,000,000 字节，约 45.8 MiB（1 MiB 为 1,048,576 字节）；200×150 的目标 View 只有 30,000 个像素。若仍按原尺寸解码，分配的像素数是显示目标的 400 倍，随后交给 Canvas 缩小也无法省掉这次像素分配。
 
-应用侧要同时控制四件事：解码前按目标尺寸降采样；按像素所在的内存分区选择监控指标；在图片加载入口记录大图和生命周期线索；只在所有权清楚时复用像素存储。ART 堆与 GC 见 [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)，图片请求、缓存、解码与绘制见 [22.9 图片加载、Bitmap 解码与 RenderNode](../ch22-rendering-practice/09-image-bitmap-rendernode.md)，对象泄漏判断见 [23.2 内存泄漏检测与治理](02-memory-leak-governance.md)。
+像素本身落在哪类内存，决定了后续该看哪个指标。Android 10 到 Android 17 的普通软件 Bitmap 会增加原生堆（Native Heap）占用，Hardware Bitmap 的像素则位于图形缓冲区。
 
-文中几组容易混淆的术语含义如下：
+这几组术语在排查里经常混用，本文统一按以下含义：
 
 | 术语 | 本文含义 |
 |---|---|
@@ -78,7 +78,9 @@ Bitmap（位图）是 Android 中表示解码后像素及其描述信息的对�
 | HPROF | Java 堆转储格式，用于查看 Bitmap 包装对象到 GC Root 的引用路径；Hardware Bitmap 的图形缓冲大小不能只靠 HPROF 判断。 |
 | EXIF 方向 | 相机图片元数据中的旋转或镜像标记；像素宽高与最终显示方向可能因此不同。 |
 
-排查时先确认像素位于哪类存储，再核对解码尺寸和对象生命周期；三个问题使用的证据不同。
+应用侧要同时控制四件事：解码前按目标尺寸降采样；按像素所在的内存分区选择监控指标；在图片加载入口记录大图和生命周期线索；只在所有权清楚时复用像素存储。四件事涉及的机制分布在其他章节：ART 堆与 GC 见 [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)，图片请求、缓存、解码与绘制见 [22.9 图片加载、Bitmap 解码与 RenderNode](../ch22-rendering-practice/09-image-bitmap-rendernode.md)，对象泄漏判断见 [23.2 内存泄漏检测与治理](02-memory-leak-governance.md)。
+
+排查时先确认像素落在哪类存储，再分别核对解码尺寸和对象生命周期。三件事的证据不同，不能互相替代。
 
 ## Bitmap 内存计算与 inSampleSize
 
@@ -88,7 +90,7 @@ Bitmap 的内存预算从三个量开始：宽、高、每像素字节数。常�
 bytes ≈ width × height × bytesPerPixel
 ```
 
-这个式子没有体现每行像素的对齐填充，因此只适合预算估算。Android `Bitmap.getByteCount()` 返回当前像素所需的最小字节数，`getAllocationByteCount()` 返回底层分配区大小；当 Bitmap 被 `inBitmap` 复用或 `reconfigure()` 调整后，后者可能大于前者。排查内存占用时优先记录 `allocationByteCount`，否则会低估复用池里的大块分配。
+这个式子没有体现每行像素的对齐填充，因此只适合预算估算。Android `Bitmap.getByteCount()` 返回当前像素所需的最小字节数，`getAllocationByteCount()` 返回底层分配区大小；Bitmap 被 `inBitmap` 复用，或者经过 `reconfigure()` 调整后，后者可能大于前者。排查内存占用时优先记录 `allocationByteCount`，否则会低估复用池里的大块分配。
 
 解码前先读尺寸，不直接创建像素内存。`BitmapFactory.Options.inJustDecodeBounds = true` 时，解码方法返回 `null`，但会填充 `outWidth`、`outHeight` 和 `outMimeType`。这一步适合放在所有本地文件、资源图、网络图落盘后的统一解码入口。
 
@@ -147,7 +149,9 @@ API 28 及以上使用 `ImageDecoder` 时，可在 `OnHeaderDecodedListener` 里
 
 Bitmap 像素数据的存放位置经历过三次变化：Android 2.3.3 及更早版本位于原生内存；Android 3.0 到 7.1 随 Bitmap 对象位于 Dalvik 堆；Android 8.0 及以上又回到原生堆。本文覆盖 Android 10 到 Android 17：普通软件 Bitmap 的像素分配按原生堆排查，`Config.HARDWARE` 的像素分配按图形缓冲区排查。
 
-AOSP `Bitmap.java` 中，Bitmap 的 Java 对象通过 `mNativePtr` 指向原生 Bitmap。`NativeAllocationRegistry` 用来把 Java 对象关联的原生分配量和释放函数登记给 ART。Android 17 的 `registerNativeAllocation()` 使用两个登记器：一个以空操作释放函数记录像素数据大小，只负责分配记账；另一个通过 `sRegistry` 登记原生 Bitmap 对象和对应的释放函数。`mRecycler` 是前一个登记器返回的清理任务，`recycle()` 释放像素后运行它，更新 ART 记录的原生分配量。这个设计带来两个工程结论：
+AOSP `Bitmap.java` 中，Bitmap 的 Java 对象通过 `mNativePtr` 指向原生 Bitmap。`NativeAllocationRegistry` 用来把 Java 对象关联的原生分配量和释放函数登记给 ART。
+
+Android 17 的 `registerNativeAllocation()` 使用两个登记器：一个以空操作释放函数记录像素数据大小，只负责分配记账；另一个通过 `sRegistry` 登记原生 Bitmap 对象和对应的释放函数。`mRecycler` 是前一个登记器返回的清理任务，`recycle()` 释放像素后运行它，更新 ART 记录的原生分配量。这个设计带来两个工程结论：
 
 - **Bitmap 对象仍受 Java 可达性影响**：Java 层对象被 Activity、Adapter、缓存或回调引用时，原生像素内存也会被保留。Bitmap 泄漏的根不一定在原生层，常常是 Java 引用链没有断开。
 - **原生堆变大不等于 JNI 泄漏**：Android 8.0 之后，图片加载增加会直接推高原生堆。用 `dumpsys meminfo` 或线上内存指标看到原生堆上升时，先区分 Bitmap 分配与 JNI（Java 和原生代码之间的调用接口）或 `.so` 原生库分配，不能直接归因于 JNI 泄漏。
@@ -212,11 +216,11 @@ fun BitmapDecodeRecord.isSuspiciousLargeBitmap(
 
 调用方需要按场景传入经过实测的字节预算和维度比，不能把示例函数变成全业务共用的固定阈值。这段记录还要和页面生命周期合起来看。页面退出后，如果同一 `scene` 的大图对象仍在 HPROF 中可达，按 23.2 的引用链方法处理；如果对象已释放，但原生堆峰值过高，重点查解码尺寸、缓存上限和并发解码数量。
 
-生产采样要控制频率。建议只上报超过阈值的记录，用不含用户数据的类别标识记录图片来源，不上传真实 URL、文件名或用户图片内容。图片问题经常涉及用户隐私，监控只需要尺寸、配置、字节数和页面路径。
+生产采样要控制频率，只上报超过阈值的记录。图片问题经常涉及用户隐私，监控只需要尺寸、配置、字节数和页面路径，图片来源用不含用户数据的类别标识，不上传真实 URL、文件名或用户图片内容。
 
 ## 图片复用池与 inBitmap
 
-`inBitmap` 用于减少反复分配和释放像素内存的成本。列表快速滑动、瀑布流和聊天图片流会持续创建相近尺寸的 Bitmap；如果每次都新分配，原生堆峰值和分配抖动都会增大。这里的分配抖动是指短时间内反复申请、释放大量像素存储。复用池保留已淘汰、容量合适且不再显示的 mutable Bitmap，下一次解码尝试写入这块内存。
+`inBitmap` 用于减少反复分配和释放像素内存的成本。列表快速滑动、瀑布流和聊天图片流会持续创建相近尺寸的 Bitmap，每次新分配都会推高原生堆峰值，短时间内反复申请和释放大量像素存储又会带来分配抖动。复用池保留已淘汰、容量合适且不再显示的 mutable Bitmap，下一次解码尝试写入这块内存。
 
 Android 4.4 之后，`BitmapFactory` 的复用条件放宽为：任意 mutable Bitmap 都可以作为候选，只要预计输出所需的字节数小于或等于候选 Bitmap 的 `allocationByteCount`。AOSP `BitmapFactory.Options` 也明确写着，复用失败时解码方法会抛出 `IllegalArgumentException`；调用方必须使用方法返回的 Bitmap，不能假定传入的 `inBitmap` 一定被使用。
 
@@ -278,20 +282,22 @@ fun decodeWithReuse(
 
 生产实现还要补齐三类约束：复用池必须有总容量上限，避免变成常驻大缓存；候选进入池前必须确认不再显示或被其他解码任务使用；候选选择除字节数外还要考虑宽高、色彩配置和业务场景。把一张超大横图的分配区复用于小图，虽然可能解码成功，却会让 `allocationByteCount` 长期偏大。如果所用图片库已经管理缓存或像素复用，应由图片库统一管理所有权，避免再叠加一套互不知情的自建池。
 
-`inBitmap` 不适合和 `Bitmap.Config.HARDWARE` 混用。AOSP `BitmapFactory.Options.validate()` 会拒绝硬件 Bitmap 作为 `inBitmap`，官方文档也说明硬件 Bitmap 总是 immutable。需要可变像素、二次绘制或复用池的图片，应走软件 Bitmap。
+`inBitmap` 不适合和 `Bitmap.Config.HARDWARE` 混用。AOSP `BitmapFactory.Options.validate()` 会拒绝 Hardware Bitmap 作为 `inBitmap`，官方文档也说明 Hardware Bitmap 总是 immutable。需要可变像素、二次绘制或复用池的图片，应走软件 Bitmap。
 
 ## Hardware Bitmap 的使用场景与限制
 
-`Bitmap.Config.HARDWARE` 表示像素只存放在图形内存中；Java `Bitmap` 包装对象和原生元数据仍然存在，因此“像素不在 Java 或原生堆”不等于这张图没有内存成本。`ImageDecoder` 的 AOSP 注释说明，默认创建的 Bitmap 不可修改，并且通常采用 `Config.HARDWARE`。这个“通常”有具体边界：`ALLOCATOR_DEFAULT`（默认像素分配策略）可能为小图选择软件分配，也会在 mutable、alpha mask（透明度蒙版）等条件与硬件分配不兼容时切换到软件。只展示、不修改、由硬件加速管线绘制的图片适合 Hardware Bitmap，例如详情页大图、列表中不需要像素读取的封面图。
+`Bitmap.Config.HARDWARE` 表示像素只存放在图形内存中；Java `Bitmap` 包装对象和原生元数据仍然存在，因此“像素不在 Java 或原生堆”不等于这张图没有内存成本。`ImageDecoder` 的 AOSP 注释说明，默认创建的 Bitmap 不可修改，并且通常采用 `Config.HARDWARE`。
 
-硬件 Bitmap 的限制集中在可变性和绘制路径：它不能作为 `inBitmap` 候选，也不能和 `inMutable = true` 同时要求。AOSP `BaseCanvas` 的标准软件绘制路径遇到 `Config.HARDWARE` 会抛出 `IllegalArgumentException("Software rendering doesn't support hardware bitmaps")`。因此下列场景应避免硬件 Bitmap：
+这个“通常”有具体边界：`ALLOCATOR_DEFAULT`（默认像素分配策略）可能为小图选择软件分配，也会在 mutable、alpha mask（透明度蒙版）等条件与硬件分配不兼容时切换到软件。只展示、不修改、由硬件加速管线绘制的图片适合 Hardware Bitmap，例如详情页大图、列表中不需要像素读取的封面图。
+
+Hardware Bitmap 的限制集中在可变性和绘制路径：它不能作为 `inBitmap` 候选，也不能和 `inMutable = true` 同时要求。AOSP `BaseCanvas` 的标准软件绘制路径遇到 `Config.HARDWARE` 会抛出 `IllegalArgumentException("Software rendering doesn't support hardware bitmaps")`。因此下列场景应避免 Hardware Bitmap：
 
 - 需要 `Canvas` 软件绘制、截图合成、离屏处理或生成分享图。
 - 需要读取或修改像素，例如滤镜、马赛克、取色、手写涂鸦。
 - 需要进入 `inBitmap` 复用池。
 - 目标 View 可能跑在软件渲染路径，或者业务里显式创建了软件 `Canvas`。
 
-图片库的默认策略可以按用途区分：展示型图片优先允许 Hardware Bitmap，编辑型图片强制使用软件 Bitmap；列表页根据设备内存、圆角或变换需求和占位图策略决定。全局开关不能只依据“硬件更省内存”或“软件更兼容”，还要看 Bitmap 的实际使用方式。
+图片库的默认策略可以按用途区分：展示型图片优先允许 Hardware Bitmap，编辑型图片强制使用软件 Bitmap；列表页则按设备内存、是否有圆角或变换需求以及占位图策略决定。全局开关不能只依据“硬件更省内存”或“软件更兼容”，还要看 Bitmap 的实际使用方式。
 
 ## 案例：在第一次像素分配前限制尺寸
 
@@ -306,12 +312,12 @@ Bitmap 问题适合按“尺寸 → 生命周期 → 复用 → 配置”四步�
 1. **尺寸是否匹配显示目标**：检查原图尺寸、解码尺寸、目标 View 尺寸和 `allocationByteCount`。大图先用 `inJustDecodeBounds` + `inSampleSize` 降低像素数。
 2. **生命周期是否按页面释放**：页面退出后查 HPROF，确认 Activity、Adapter、ImageView、图片请求和 Bitmap 是否仍被引用。引用链处理见 23.2。
 3. **复用池是否降低分配峰值**：列表和图片流场景观察 Bitmap 分配次数、复用命中率、池容量和淘汰策略。复用池命中低时，先检查尺寸分组是否合理，不能直接扩大容量。
-4. **配置是否符合使用方式**：展示图可评估硬件 Bitmap；需要像素处理、软件 Canvas 或复用池时使用软件 Bitmap；低质量缩略图再评估 `RGB_565`。
+4. **配置是否符合使用方式**：展示图可评估 Hardware Bitmap；需要像素处理、软件 Canvas 或复用池时使用软件 Bitmap；低质量缩略图再评估 `RGB_565`。
 
 这四步仍无法解释原生堆增长时，再进入 [23.3 Native 与虚拟内存管理优化](03-native-virtual-memory-optimization.md)，使用 `malloc_debug`（原生分配调试工具）、heapprofd（Perfetto 原生堆分析器）或图片库内部统计继续归因。
 
 ## 全文小结
 
-Bitmap 内存优化首先控制第一次像素分配：依据目标尺寸和方向读取边界、降采样，再选择与显示或编辑需求匹配的像素格式。文件体积、Java 包装对象大小和最终 View 尺寸都不能代替 `allocationByteCount` 与实际存储分区。
+Bitmap 内存优化首先控制第一次像素分配：先按目标尺寸和 EXIF 方向读取边界、降采样，再选择与显示或编辑需求匹配的像素格式。文件体积、Java 包装对象大小和最终 View 尺寸都不能代替 `allocationByteCount` 与实际存储分区。
 
 随后才处理生命周期、缓存和复用。软件 Bitmap、Hardware Bitmap 与 `inBitmap` 有不同的所有权和绘制约束；统一入口应记录尺寸、配置、分配量和场景，并用页面退出后的引用链与原生/图形内存回落共同验收。
