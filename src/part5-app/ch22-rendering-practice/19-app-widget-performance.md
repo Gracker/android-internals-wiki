@@ -120,7 +120,7 @@ sequenceDiagram
 
 ### 2. `apply()` 与 `reapply()` 由宿主选择
 
-Android 17 的 `AppWidgetHostView.applyRemoteViews()` 会先选择适合当前尺寸的 `RemoteViews`。宿主配置了异步 `Executor`（执行任务的线程调度接口）时，代码进入 `inflateAsync()`；同步路径会调用 `canRecycleView(mView)`。布局与现有 View 满足复用条件时执行 `reapply()`，否则由 `apply()` 创建新内容。异步路径使用同样的判断，分别调用 `reapplyAsync()` 或 `applyAsync()`。
+Android 17 的 `AppWidgetHostView.applyRemoteViews()` 会先选择适合当前尺寸的 `RemoteViews`，再判断现有 View 能否复用。同步路径调用 `canRecycleView(mView)`：布局与现有 View 满足复用条件时执行 `reapply()`，否则由 `apply()` 创建新内容。宿主配置了异步 `Executor`（执行任务的线程调度接口）时，代码进入 `inflateAsync()`，按同样的判断分别调用 `reapplyAsync()` 或 `applyAsync()`。
 
 提供方没有“强制宿主执行 `reapply()`”的公开接口。以下变化容易让复用条件失效或增加宿主工作量：
 
@@ -138,7 +138,7 @@ Android 17 的 `AppWidgetHostView.applyRemoteViews()` 会先选择适合当前�
 
 这个插件模型的加载成本和隔离边界也不同。Android 17 的 `PluginActionManager` 在加载前会检查插件权限和是否可启用，`PluginInstance` 为插件创建 `PathClassLoader`，把宿主类加载器包在只放行指定包名前缀的 `ClassLoaderFilter` 之后，并通过 `createApplicationContext()` 加载插件资源；这提供的是类可见性与资源上下文隔离，插件实例仍进入宿主进程执行，不是 AppWidget 的跨进程 `RemoteViews` 安全边界。[已验证: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginActionManager.kt@android-17.0.0_r1][已验证: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginInstance.kt@android-17.0.0_r1]
 
-因此，若排查的是这类自定义 Launcher 卡片，`adb shell dumpsys appwidget`、`partiallyUpdateAppWidget()` 和 `RemoteViews` 图像上限通常不能解释它的加载与刷新成本；应改看 Launcher 进程内的插件发现、类加载、资源 inflation、接口回调和 View 绘制。只有通过标准 `AppWidgetProvider` 或 Glance 发布到系统 AppWidget 服务的桌面组件，才适用本文后续的更新语义、缓存和 IPC 分析。[来源: https://juejin.cn/post/7678556373495971883][已验证: frameworks/base/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java@android-17.0.0_r1]
+因此，若排查的是这类自定义 Launcher 卡片，`adb shell dumpsys appwidget`、`partiallyUpdateAppWidget()` 和 `RemoteViews` 图像上限通常不能解释它的加载与刷新成本；应改看 Launcher 进程内的插件发现、类加载、资源加载、接口回调和 View 绘制。只有通过标准 `AppWidgetProvider` 或 Glance 发布到系统 AppWidget 服务的桌面组件，才适用本文后续的更新语义、缓存和 IPC 分析。[来源: https://juejin.cn/post/7678556373495971883][已验证: frameworks/base/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java@android-17.0.0_r1]
 
 ## 二、三种更新语义不能混用
 
@@ -272,7 +272,7 @@ Android 17 / API 37 为 `AlarmManager` 增加了带 `Executor` 的监听器重�
 
 这个入口可以把回调交给指定执行器，适合某个 `Activity`、`Service` 或 `ContentProvider` 仍在运行期间的一次性短期任务。Android 17 源码和 API 文档都说明：监听器闹钟要求请求进程持续运行；进程没有运行中的组件或进入缓存状态后，系统可能取消或丢弃回调。
 
-Android 17 上的监听器形式不需要 `SCHEDULE_EXACT_ALARM` 特殊访问权限，代价是受进程生命周期约束。调用方应在所属组件结束时调用 `cancel(OnAlarmListener)`；进程死亡后仍要触发更新时，应评估 `PendingIntent` 形式。`PendingIntent` 是由系统代应用保存、可在应用进程不存在时触发的操作令牌，其精确闹钟形式需要满足对应的访问规则。允许延迟时优先使用 WorkManager 或系统的非精确周期机制。
+Android 17 上的监听器形式不需要 `SCHEDULE_EXACT_ALARM` 特殊访问权限，代价是受这条进程生命周期约束。调用方应在所属组件结束时调用 `cancel(OnAlarmListener)`；如果进程死亡后仍要触发更新，就改用 `PendingIntent` 形式：它是由系统代应用保存、可在应用进程不存在时触发的操作令牌，其精确闹钟形式需要满足对应的访问规则。允许延迟时，优先使用 WorkManager 或系统的非精确周期机制。
 
 ### 4. 可见状态与刷新节奏
 
@@ -296,7 +296,7 @@ Android 17 在启动时读取真实显示尺寸，并计算：
 
 `mMaxWidgetBitmapMemory = 6 × displayWidth × displayHeight`
 
-源码注释给出的含义是 1.5 个屏幕、每像素 4 字节。每次更新完成缓存合并或替换后，服务都会检查该 Widget 的 `RemoteViews` 图像估算值。`targetSdkVersion` 表示应用声明适配的 Android API 级别：目标版本不高于 37 时，强制上限只计普通位图缓存，超限会清空该次缓存并抛出 `IllegalArgumentException`；`Icon` 对象内携带的位图会计入总量，目标版本不高于 37 且总量超限时记录警告。目标版本高于 37 后，普通位图与 `Icon` 位图的总量都会用于强制检查。
+源码注释给出的含义是 1.5 个屏幕、每像素 4 字节。每次更新完成缓存合并或替换后，服务都会检查该 Widget 的 `RemoteViews` 图像估算值。`targetSdkVersion` 表示应用声明适配的 Android API 级别。目标版本不高于 37 时，强制上限只计普通位图缓存，超限会清空该次缓存并抛出 `IllegalArgumentException`；`Icon` 对象内携带的位图会计入总量，总量超限时记录警告。目标版本高于 37 后，普通位图与 `Icon` 位图的总量都会用于强制检查。
 
 这个上限随设备显示尺寸变化，不能写成固定的 1 MB、8 MB 或某个机型测得值。设计时仍应让峰值显著低于系统上限，因为同一宿主还要同时处理桌面、其他 Widget 和自身图形资源。
 
@@ -387,7 +387,7 @@ Android 17 的 `AppWidgetServiceImpl.updateAppWidgetIds()` 会校验调用包与
 
 ### 2. 每个用户和配置文件分别维护状态
 
-`AppWidgetServiceImpl` 的提供方、宿主和实例记录都带有用户维度。个人资料与工作资料中的同名包仍属于不同身份。数据库缓存、图片 URI、任务唯一名称和 `appWidgetId` 映射都要纳入用户边界。
+`AppWidgetServiceImpl` 的提供方、宿主和实例记录都带有用户维度。个人资料与工作资料中的同名包仍属于不同身份。数据库缓存、图片 URI、任务唯一名称和 `appWidgetId` 映射都要按用户区分。
 
 把一个整数 ID 复制到另一份资料中，不能定位另一侧实例。工作资料暂停、锁定或移除后，提供方还要停止任务并清理对应缓存。
 
@@ -448,7 +448,7 @@ adb shell dumpsys appwidget
 | 只在应用前台收到监听器闹钟 | `OnAlarmListener` 的进程生命周期边界 |
 | 多用户或工作资料显示错数据 | `UserHandle`（Android 的用户身份句柄）、实例映射、URI，以及用于隔离不同用户数据的数据库命名范围 |
 
-排查时先确认实例、用户与宿主归属，再按本次调用属于完整更新、局部更新还是集合刷新继续检查。这样可以先排除身份或更新类型错误，避免一开始就在图像解码和绘制耗时中寻找原因。
+排查时先确认实例、用户与宿主归属，再按这次调用属于完整更新、局部更新还是集合刷新继续检查。这样可以先排除身份或更新类型错误，避免一开始就在图像解码和绘制耗时中寻找原因。
 
 ## 八、全文小结
 
