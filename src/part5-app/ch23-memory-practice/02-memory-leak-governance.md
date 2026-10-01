@@ -106,7 +106,7 @@ ART 从 GC Root 出发遍历引用图。只要对象仍能通过强引用路径�
 | JNI global reference（JNI 全局引用） | `NewGlobalRef()` | 是否存在配对的 `DeleteGlobalRef()` 与明确持有者 |
 | VM internal / monitor（运行时内部结构或监视器） | 虚拟机内部对象、锁相关结构 | 结合 Root 类型、引用边与对象生命周期判断 |
 
-静态字段通常位于“类对象 → static field → 业务对象”的路径上。把每个 static 字段都叫作独立 GC Root，会省略类对象这一层，也容易把合法进程级状态误判成泄漏。
+静态字段通常位于“类对象 → static field → 业务对象”的路径上。把每个 static 字段都当成独立 GC Root，就漏掉了类对象这一层，也容易把合法进程级状态误判成泄漏。
 
 泄漏判断还需要业务语义：
 
@@ -142,7 +142,7 @@ retained object 不一定已经构成泄漏：
 | RSS/PSS 上升但 Java heap 稳定 | `dumpsys meminfo`、maps/smaps（进程虚拟内存映射）、Perfetto | `mmap`、共享页、native/graphics |
 | 分配速率过高但回落正常 | allocation recording（分配记录）、GC 事件 | 内存抖动，不一定是泄漏 |
 
-`ActivityManager.getMemoryClass()` 可以读取当前设备给普通应用配置的近似 Java Heap 上限等级，但它不是“安全缓存容量”，也不能解释原生或图形内存。
+`ActivityManager.getMemoryClass()` 可以读取当前设备为普通应用配置的 Java Heap 上限等级（近似值），但它不是“安全缓存容量”，也不能解释原生或图形内存。
 
 ## 2. Android 常见泄漏路径
 
@@ -351,7 +351,7 @@ adb shell am dumpheap com.example.app /data/local/tmp/example.hprof
 adb pull /data/local/tmp/example.hprof
 ```
 
-heap dump 会暂停或扰动目标进程，文件还可能包含账号、页面文本与业务对象。采集、保存、上传和删除都要遵守调试数据的访问控制；生产设备不应把全量 HPROF 当作常规定时监控数据。
+heap dump 文件还可能包含账号、页面文本与业务对象。采集、保存、上传和删除都要遵守调试数据的访问控制；生产设备不应把全量 HPROF 当作常规定时监控数据。
 
 ### 3.4 原生增长要看分配调用栈
 
@@ -369,7 +369,7 @@ LeakCanary 的检测过程可以概括为：
 4. Shark 分析对象图并计算 leak trace（泄漏引用路径）；
 5. 相同可疑引用路径按 signature（路径特征签名）归组。
 
-阅读一条 LeakCanary 报告时，先确认 `╰→` 指向的对象是否已经越过业务生命周期，再从 GC Root 沿 `↓` 阅读强引用路径。`~~~` 标出的是分析器认为可疑的引用边，修复点仍要回到注册、缓存、任务或 JNI 代码中的实际 owner。
+阅读一条 LeakCanary 报告时，先确认 `╰→` 指向的对象是否已经越过业务生命周期，再从 GC Root 沿 `↓` 阅读强引用路径。`~~~` 标出的是分析器认为可疑的引用边，修复点仍要回到注册、缓存、任务或 JNI 代码中的实际持有者。
 
 retained size 要和 dominator（支配）关系一起看。它估算某对象不可达后可随之释放的内存，不能单独证明对象已经泄漏。
 
@@ -402,7 +402,7 @@ KOOM 官方仓库提供 Java Heap、Native Heap 和 Thread 三类监控模块。
 
 截至 2026-08-15，KOOM 仓库未归档，默认分支最近一次推送为 2026-01-12；GitHub 最新正式版仍是 2024-04-16 发布的 v2.2.2。这个时间跨度不能直接证明库与新系统不兼容，接入时仍要固定版本或提交，并覆盖目标 Android 版本、ABI 和厂商设备。
 
-它不应被简化成“计数器推断泄漏”，也不能用固定的“精度高低”表格和 LeakCanary 互相排名。是否接入取决于：
+KOOM 不应被简化成“计数器推断泄漏”，也不能用固定的“精度高低”表格和 LeakCanary 互相排名。是否接入取决于：
 
 - 目标 Android 版本、ABI 与厂商设备兼容性；
 - native hook、fork/dump 策略对稳定性和时延的影响；
@@ -434,7 +434,7 @@ Android 17 已不能用 `kill -10 <pid>` 触发 HPROF；数字 10 对应 SIGUSR1
 
 Native heapprofd 使用另一条数据源和 `__SIGRTMIN + 4`，不能因为 Java HeapGraph 可采集，就推断 native profile 也满足权限和运行条件。
 
-完整 HPROF 在 Android 17 中先遍历堆计算输出长度，再进行第二遍写入；segment（输出分段）以最多 128 个对象或 4 KiB 为边界。直接流式写入能避免为整个 dump 再持有一份大缓冲区，但 dump 仍会暂停、遍历并输出大量数据。Perfetto HeapGraph 同样有 fork、页表、COW、trace buffer（轨迹缓冲区）和子进程序列化成本。
+完整 HPROF 在 Android 17 中先遍历堆计算输出长度，第二遍才写出；segment（输出分段）以最多 128 个对象或 4 KiB 为边界。直接流式写入能避免为整个 dump 再持有一份大缓冲区，但 dump 仍会暂停、遍历并输出大量数据。Perfetto HeapGraph 同样有 fork、页表、COW、trace buffer（轨迹缓冲区）和子进程序列化成本。
 
 两类产物都只能在调试、灰度或系统受控触发下采集，不能放进常规高频监控。
 
