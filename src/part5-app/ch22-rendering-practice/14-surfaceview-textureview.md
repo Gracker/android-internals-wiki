@@ -68,7 +68,7 @@ sources:
 
 这个分界决定了延迟组成、GPU 带宽、HWC 机会、变换能力、生命周期和 trace（性能轨迹）读法。控件名称本身不能保证低延迟、低功耗或硬件叠加；所有性能结论都要回到当前设备的 Producer、BufferQueue、layer、fence 和 display present。
 
-[SurfaceView 与 TextureView 渲染管线](../../part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md) 负责从源码解释两条端到端管线；本文保留选型所需的最小拓扑模型，重点负责生命周期、场景决策、Compose 包装与 Perfetto 排障步骤。
+[SurfaceView 与 TextureView 渲染管线](../../part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md) 负责从源码解释两条端到端管线；本文只保留选型所需的最小拓扑模型，重点负责生命周期、场景决策、Compose 包装与 Perfetto 排障步骤。
 
 正文保留源码和 Perfetto 中可检索的英文名，含义统一如下：
 
@@ -93,7 +93,7 @@ sources:
 | Jetpack Compose | Compose BOM 2026.08.00；UI 与 Foundation 1.12.0 | `AndroidView` 与外部 Surface 的互操作边界 |
 | Media3 / CameraX | 使用项目锁定的稳定版 | 组件策略独立发布，不能由 platform tag 代替 |
 
-版本演进保留 Android 12—17 的现代路径。Android 10/11 只用于兼容性判断，不把早期实现套到 Android 17。
+版本演进只覆盖 Android 12—17 的现代路径；Android 10/11 只用于兼容性判断，不把早期实现套到 Android 17。
 
 几项常见描述需要按当前实现收窄：
 
@@ -120,14 +120,14 @@ Android 17 的 `SurfaceView.createBlastSurfaceControls()` 维护三个主要对�
 
 它们挂在 `ViewRootImpl.updateAndGetBoundsLayer()` 返回的宿主 bounds layer 下。`SurfaceHolder.getSurface()` 暴露 Producer 侧 `Surface`，Producer 可以位于应用线程、codec/camera 服务或厂商进程。
 
-默认 composition order 小于 0 时，内容 layer 的合成层级低于宿主窗口。宿主 HWUI 把对应区域处理为透明，并通过 `Canvas.punchHole()` 露出独立内容。控制条、字幕和其它 View 仍画进宿主应用窗口；视频、预览或游戏帧进入独立 BLAST child。
+默认 composition order 小于 0 时，内容 layer 的合成层级低于宿主窗口。宿主 HWUI 把对应区域处理为透明，并通过 `Canvas.punchHole()` 露出独立内容。控制条、字幕和其他 View 仍画进宿主应用窗口；视频、预览或游戏帧进入独立 BLAST child。
 
-一次屏幕更新会包含两组提交：
+一次屏幕更新里有两组提交：
 
-1. 宿主 `Choreographer#doFrame()` 更新 View 树、hole-punch 和 SurfaceView 几何；
-2. 内容 Producer 按自己的节奏向独立 Surface queue buffer；
-3. SurfaceFlinger 把宿主 layer 与 SurfaceView child 一起交给 HWC；
-4. 每个 layer 可以采用新 buffer，也可以继续使用上次内容。
+1. 宿主侧：`Choreographer#doFrame()` 更新 View 树、hole-punch 和 SurfaceView 几何；
+2. 内容侧：Producer 按自己的节奏向独立 Surface queue buffer。
+
+SurfaceFlinger 把宿主 layer 与 SurfaceView child 一起交给 HWC；每个 layer 可以采用新 buffer，也可以继续使用上次内容。
 
 宿主 120 Hz、视频 30 fps 时，多次 display present 复用同一视频 buffer 属于正常节奏。需要定位的是新 buffer 是否赶上业务期望的 present，以及几何、遮罩和内容是否对应同一业务时刻。
 
@@ -146,7 +146,7 @@ Android 17 的主要执行点如下：
 4. UI 线程的 `TextureView.draw()` 调用 `TextureLayer.updateSurfaceTexture()`，把 updater 加入 RenderThread pending list；
 5. `DrawFrameTask::syncFrameState()` 处理 pending update；
 6. `DeferredLayerUpdater::apply()` 通过 `ASurfaceTexture_dequeueBuffer()` 取得最新 `AHardwareBuffer`；
-7. HWUI 将其包装为可采样 `SkImage`，与其它 View 一起画进 App Window；
+7. HWUI 将其包装为可采样 `SkImage`，与其他 View 一起画进 App Window；
 8. 宿主 RenderThread 再向 App Window BLAST 提交窗口 buffer。
 
 `onSurfaceTextureUpdated()` 发生在 UI 线程提交 layer update 之后，不能证明 RenderThread 已取得输入、GPU 已完成采样或画面已经 present。
@@ -211,7 +211,7 @@ SurfaceView 常用于视频和相机，因为独立 layer 能交给 HWC 单独�
 - 透明度、blend、复杂 crop 或旋转；
 - HDR、dataspace、color transform；
 - protected/secure 属性；
-- 同屏 overlay plane、scaler 或带宽被其它 layer 占用；
+- 同屏 overlay plane、scaler 或带宽被其他 layer 占用；
 - 系统栏、圆角、dim、窗口动画或外接显示；
 - 厂商 Composer HAL 的限制与错误回退。
 
@@ -268,7 +268,7 @@ YUV、多平面、压缩 modifier、tile 对齐、metadata、HDR 与厂商 grall
 
 SurfaceView 的 position、matrix、crop、alpha、composition order、show/hide 等状态由 `SurfaceControl.Transaction` 管理。内容 Producer 的 frame 进入 BLAST child BufferQueue。两类更新可以合进同一 transaction，也可能来自不同时间。
 
-硬件加速路径使用 `RenderNode.PositionUpdateListener` 取得最终位置和 host frame number，再经 `ViewRootImpl.mergeWithNextTransaction()` 与宿主目标帧合并。UI 线程的其它更新可由 `applyTransactionOnDraw()` 随下一次 ViewRoot draw 应用。
+硬件加速路径使用 `RenderNode.PositionUpdateListener` 取得最终位置和 host frame number，再经 `ViewRootImpl.mergeWithNextTransaction()` 与宿主目标帧合并。UI 线程的其他更新可由 `applyTransactionOnDraw()` 随下一次 ViewRoot draw 应用。
 
 需要把状态绑定到 SurfaceView 下一块内容 buffer 时，可以使用 `applyTransactionToFrame()`。源码按 `lastAcquiredFrameNum + 1` 合并目标 transaction。对连续出帧的 Producer 来说，“下一块”不能映射成业务上的固定逻辑帧；没有新内容 buffer 时，该更新也可能不生效。
 
@@ -594,9 +594,9 @@ SurfaceFlinger layer tree 中找不到独立 TextureView buffer layer 属于预�
 
 ### TextureView 动画
 
-对 TextureView 做 scale、rotation、alpha 或 clip 时，外部内容能够按普通 View 语义参与宿主绘制，这是它的能力来源。代价可能包括更大的采样区域、非整数过滤、blend、离屏或更高宿主 GPU 带宽。
+对 TextureView 做 scale、rotation、alpha 或 clip 时，外部内容能够按普通 View 语义参与宿主绘制。代价可能包括更大的采样区域、非整数过滤、blend、离屏或更高宿主 GPU 带宽。
 
-`animate()` 不会因为方法名就固定新增一个渲染步骤。要从 RenderThread 和 GPU 捕获结果确认该动画怎样改变 draw、clip 和图形层缓存。动画期间还应检查 Producer 帧率与宿主刷新率是否不同。
+调用 `animate()` 不代表固定增加一个渲染步骤；要从 RenderThread 和 GPU 捕获结果确认该动画怎样改变 draw、clip 和图形层缓存。动画期间还应检查 Producer 帧率与宿主刷新率是否不同。
 
 ### SurfaceView 动画和半透明
 
@@ -664,7 +664,9 @@ fun CameraSurfaceHost(
 }
 ```
 
-`onReset` 先解除旧绑定；同一 View 再次启用时，后续 `update` 会检查当前 holder 并重新连接。Compose 也允许 View 在 reset 后暂时处于未启用状态，此时不会立即调用 `update`，所以 reset 阶段不能继续输出。`key(producer)` 使 Producer 身份变化时旧 View 退出组合，避免回调仍指向旧对象。业务实现还要保证 `detachAndWaitUntilIdle()` 幂等。`producer` 由上层持有时，整个 Producer 的终止释放应由上层所有者负责；这里仅解除当前 Surface。
+`onReset` 先解除旧绑定；同一 View 再次启用时，后续 `update` 会检查当前 holder 并重新连接。Compose 也允许 View 在 reset 后暂时处于未启用状态，此时不会立即调用 `update`，所以 reset 阶段不能继续输出。
+
+`key(producer)` 使 Producer 身份变化时旧 View 退出组合，避免回调仍指向旧对象。业务实现还要保证 `detachAndWaitUntilIdle()` 幂等。`producer` 由上层持有时，整个 Producer 的终止释放应由上层所有者负责；这里仅解除当前 Surface。
 
 播放器优先使用 Media3 自己的生命周期感知 API。Media3 明确说明 `PlayerView` 并非针对 `AndroidView` 设计，不能统一保证兼容性；API 34 的拉伸、裁剪或 Surface 泄漏问题可依据 Media3 的最新说明评估 `setEnableComposeSurfaceSyncWorkaround()`，但该兼容方案与 XML shared transition 存在冲突。
 
