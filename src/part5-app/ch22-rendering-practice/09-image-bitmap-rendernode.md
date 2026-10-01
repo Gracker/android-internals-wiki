@@ -88,9 +88,11 @@ consolidated_from:
 
 图片从 URL 变成屏幕像素，要经过获取压缩数据、查找各级缓存、解码、变换、持有像素、更新 UI、HWUI（Android 硬件加速 UI 渲染系统）采样，再提交窗口缓冲区直至上屏（present）。任何一段都可能成为首图慢、列表掉帧或内存峰值的来源。
 
-平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`，Linux 内核观察基线固定为 `android17-6.18-2026-06_r6`。软件 Bitmap 解码完成后，宿主 View 仍要更新 DisplayList（记录待执行绘制命令的显示列表），专用渲染线程 RenderThread 再通过 HWUI 采样 Bitmap，并提交应用窗口缓冲区。硬件 Bitmap 的像素存储位于图形内存，适合只在硬件加速 Canvas 上显示；它仍占用图形资源，也不代表图片已经按期上屏。显示阶段可结合 [Android View 标准渲染路径](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md) 阅读。
+平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`，Linux 内核观察基线固定为 `android17-6.18-2026-06_r6`。软件 Bitmap 解码完成后，宿主 View 仍要更新 DisplayList（记录待执行绘制命令的显示列表），专用渲染线程 RenderThread 再通过 HWUI 采样 Bitmap，并提交应用窗口缓冲区。
 
-图片显示跨越网络或磁盘读取、解码、缩放、Bitmap 存储、纹理上传和最终绘制。Hardware Bitmap 与 RenderNode 可以减少部分复制或录制成本，但受可变性、内存和生命周期限制。
+硬件 Bitmap 的像素存储位于图形内存，适合只在硬件加速 Canvas 上显示；它仍占用图形资源，也不代表图片已经按期上屏。显示阶段可结合 [Android View 标准渲染路径](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md) 阅读。
+
+Hardware Bitmap 与 RenderNode 可以减少这条链路上的一部分复制或录制成本，但受可变性、内存和生命周期限制。
 
 ## 请求、缓存、尺寸与显示生命周期
 
@@ -106,11 +108,11 @@ consolidated_from:
 | 磁盘 | 原始数据与变换后资源可按策略缓存 | `ImageLoader` 自有磁盘缓存 | 缓存的是原始响应还是输出结果；失效标识是什么 |
 | 网络 | 默认可用 HttpURLConnection，也可接入其他网络栈 | 核心依赖模块默认不含网络支持，需要 OkHttp、Ktor 或自定义 `NetworkClient` 组件 | 连接池是否共享；HTTP 缓存语义是否满足服务端协议 |
 
-框架名称不能替代请求配置。相同 URL 在不同目标尺寸、变换、色彩配置、硬件位图策略和生命周期下，内存峰值与首帧时间都可能不同。选型应使用同一批资源、相同目标尺寸、相同缓存未命中或命中状态和相同设备做对比。
+框架名称不能替代请求配置。相同 URL 在不同目标尺寸、变换、色彩配置、硬件位图策略和生命周期下，内存峰值与首帧时间都可能不同。对比时要固定同一批资源、相同目标尺寸、相同的缓存命中或未命中状态，以及相同设备。
 
 #### Glide 的使用边界
 
-Glide 5.0.9 的 `Engine` 先查正在使用的资源和内存缓存；未命中后复用同一缓存键对应的 `EngineJob`（进行中的加载任务），否则启动新的 `DecodeJob`（解码任务）。原始数据和变换后资源的磁盘缓存策略由请求决定。加载到 `ImageView` 时，新的 `into(imageView)` 会替换该 View 上的旧请求；RecyclerView 回收后若暂时不绑定新图，应调用 `clear(imageView)`，同时清掉占位图之外的旧内容。
+Glide 5.0.9 的 `Engine` 先查正在使用的资源和内存缓存；未命中后复用同一缓存键对应的 `EngineJob`（进行中的加载任务），否则启动新的 `DecodeJob`（解码任务）。原始数据和变换后资源的磁盘缓存策略由请求决定。加载到 `ImageView` 时，新的 `into(imageView)` 会替换该 View 上的旧请求；RecyclerView 回收后若暂时不绑定新图，应调用 `clear(imageView)`，同时清掉除占位图之外的旧内容。
 
 `Glide.with(fragment)`、`Glide.with(activity)` 或 `Glide.with(view)` 可以获得与界面关联的 `RequestManager`。传入 Application Context（应用级 Context）会得到应用级 `RequestManager`，不具备页面停止时的自动暂停语义。Glide 返回的 Bitmap 可能受引用计数和 `BitmapPool` 管理；请求清理后继续持有 Bitmap，或在 Transformation（变换实现）中手动调用 `recycle()` 回收原始 Bitmap，都可能造成内容复用错误或崩溃。
 
@@ -141,7 +143,9 @@ Coil 3 的网络行为要单独配置：
 
 显示目标为 1000 × 750 时，同配置像素约 2.86 MiB，两者像素数量相差 16 倍。行跨度（row stride，即相邻两行像素起始位置之间的字节数）、色彩配置、复用空间、辅助解码缓冲区和图形驱动资源还会增加运行时占用。
 
-Android 8.0 / API 26 起，软件 Bitmap 的像素数据位于原生堆（native heap）。Android 17 的 `Bitmap` 通过 `NativeAllocationRegistry` 登记原生内存分配，`getAllocationByteCount()` 返回当前底层分配空间的字节数；复用过的 Bitmap 可能出现这个值大于当前 `getByteCount()`。`Bitmap.Config.HARDWARE` 的像素存放在图形内存且始终不可变：`getPixel()`、`getPixels()` 与 `copyPixelsToBuffer()` 等直接访问会抛出异常，软件 Canvas 也不能绘制它。显式复制成软件 Bitmap 等路径可能触发 GPU 回读（readback，即把图形内存读回 CPU 可访问内存），需要单独测量。
+Android 8.0 / API 26 起，软件 Bitmap 的像素数据位于原生堆（native heap）。Android 17 的 `Bitmap` 通过 `NativeAllocationRegistry` 登记原生内存分配，`getAllocationByteCount()` 返回当前底层分配空间的字节数；复用过的 Bitmap 可能出现这个值大于当前 `getByteCount()`。
+
+`Bitmap.Config.HARDWARE` 的像素存放在图形内存，并且始终不可变：`getPixel()`、`getPixels()` 与 `copyPixelsToBuffer()` 等直接访问会抛出异常，软件 Canvas 也不能绘制它。把硬件 Bitmap 显式复制成软件 Bitmap 时可能触发 GPU 回读（readback，即把图形内存读回 CPU 可访问内存），这部分开销要单独测量。
 
 #### BitmapFactory：先读边界尺寸，再按 2 的幂采样
 
@@ -185,7 +189,7 @@ fun decodeSampledFile(
 
 Android 17 的 `BitmapFactory.Options` 仍说明：`inSampleSize <= 1` 按 1 处理，非 2 的幂会向下取到最近的 2 的幂。采样得到的是解码近似尺寸，ImageView 或图片库还可能执行精确缩放与裁剪。服务端能提供接近目标的资源时，应先减少下载尺寸，再让客户端做末端适配。
 
-`inBitmap` 能复用可变 Bitmap 的已分配空间。API 19 起，只要新结果所需字节不超过旧 Bitmap 的 `getAllocationByteCount()`，复用限制比早期版本宽；配置、可变性、色彩空间和仍在展示的引用仍要正确。普通业务应交给经过测试的框架资源池，手写池需要处理并发占用、拒绝复用和异常回退。
+`inBitmap` 能复用可变 Bitmap 的已分配空间。API 19 起，只要新结果所需字节不超过旧 Bitmap 的 `getAllocationByteCount()`，复用限制比早期版本宽；配置、可变性、色彩空间以及旧对象是否仍在展示，都会影响能否复用。普通业务应交给经过测试的框架资源池，手写池需要处理并发占用、拒绝复用和异常回退。
 
 #### ImageDecoder：默认结果通常是硬件 Bitmap
 
@@ -236,7 +240,9 @@ Android 17 的 `ALLOCATOR_DEFAULT` 通常产生 `Bitmap.Config.HARDWARE`，小�
 
 这四类现象要按帧关联到同一张图片、同一次请求和同一个 FrameTimeline（关联应用、系统合成与显示阶段的帧时间线），单看图片库“加载成功”事件无法判断图片何时可见。
 
-`getAllocationByteCount()` 适合记录单个 Bitmap 的分配空间，不能覆盖临时编解码缓冲区、硬件图形资源和缓存中的其他对象。内存分析还要看原生堆、图形资源与 dma-buf（设备间共享缓冲区）、PSS（按比例归属进程的物理内存）、GC（垃圾回收）、缺页（page fault）、内存回收（reclaim）与进程 OOM（内存不足）状态。Linux 6.18 内核基线下可补看 PSI memory（内存压力停顿）、`kswapd` 后台回收、direct reclaim（当前线程同步回收）、zram 压缩交换和 GPU 驱动等待，避免把内存回收停顿写成解码器算法问题。
+`getAllocationByteCount()` 适合记录单个 Bitmap 的分配空间，不能覆盖临时编解码缓冲区、硬件图形资源和缓存中的其他对象。内存分析还要看原生堆、图形资源与 dma-buf（设备间共享缓冲区）、PSS（按比例归属进程的物理内存）、GC（垃圾回收）、缺页（page fault）、内存回收（reclaim）与进程 OOM（内存不足）状态。
+
+Linux 6.18 内核基线下，还可以补看 PSI memory（内存压力停顿）、`kswapd` 后台回收、direct reclaim（当前线程同步回收）、zram 压缩交换和 GPU 驱动等待，避免把内存回收停顿写成解码器算法问题。
 
 ### 大图与 BitmapRegionDecoder
 
@@ -388,7 +394,7 @@ Android 官方文档说明平台从 Android 12 / API 31 支持 AVIF；Android 10
 >
 > 这里的“Android 17 行为”以这些源码为准。编解码器实现、图形内存分配和内存统计还会受 SoC（片上系统）、厂商图形缓冲分配器 `gralloc` 与驱动影响，因此设备实测仍是性能结论的一部分。
 
-讨论范围是压缩图片数据如何变成可绘制像素，以及这些像素如何进入 Android 17 的 HWUI（Android 硬件加速 UI 渲染器）路径。图片请求、缓存与框架选型已由前一节建立边界；本节继续深入 Hardware Bitmap 与 RenderNode 的绘制侧行为，Bitmap 内存治理见 [23.4 Bitmap 与图片内存优化](../ch23-memory-practice/04-bitmap-optimization.md)。
+讨论范围是压缩图片数据如何变成可绘制像素，以及这些像素如何进入 Android 17 的 HWUI 路径。图片请求、缓存与框架选型已由前一节建立边界；本节覆盖解码内部的格式与线程调度、像素存储的实际位置，以及 Hardware Bitmap 与 RenderNode 的绘制侧行为，Bitmap 内存治理见 [23.4 Bitmap 与图片内存优化](../ch23-memory-practice/04-bitmap-optimization.md)。
 
 ### 1. 一次解码包含哪些工作
 
@@ -428,7 +434,7 @@ Android 官方文档说明平台从 Android 12 / API 31 支持 AVIF；Android 10
 
 #### 2.1 正确使用 ImageDecoder
 
-这段代码在调用方提供的后台调度器中解码一张只用于显示的静态图片，并在头信息回调中限制输出尺寸。
+这段代码在调用方提供的后台调度器中解码一张只用于显示的静态图片，并在头信息回调中限制输出尺寸。它与前面「默认结果通常是硬件 Bitmap」一节演示的是同一条路径，这里显式使用 `ALLOCATOR_DEFAULT`，需要像素读写时再改分配器。
 
 ```kotlin
 @RequiresApi(Build.VERSION_CODES.P)
@@ -462,11 +468,11 @@ suspend fun decodeForDisplay(
 
 `withContext` 决定代码在哪个线程池执行，`ImageDecoder` 本身仍是同步调用。协程被取消时可以阻止排队任务开始或阻止结果交付，但已经进入原生编解码器的任务不一定会立即中断。列表快速滑动时，结果返回后还要核对请求身份。
 
-若输出需要 `getPixel()`、`copyPixelsToBuffer()`、软件 `Canvas` 或后续原地修改，应显式选择 `ALLOCATOR_SOFTWARE`。如果只是在解码后画圆角，`ImageDecoder.setPostProcessor()` 可以先在内部软件像素上绘制，再生成不可变结果；它与“业务拿到结果后仍能修改像素”是两件事。
+若输出需要 `getPixel()`、`copyPixelsToBuffer()`、软件 `Canvas` 或后续原地修改，应显式选择 `ALLOCATOR_SOFTWARE`。如果只是在解码后画圆角，`ImageDecoder.setPostProcessor()` 可以先在内部软件像素上绘制，再生成不可变结果；这并不等于业务拿到结果后还能继续修改像素。
 
 #### 2.2 BitmapFactory 的两阶段尺寸决策
 
-文件来源必须使用 `BitmapFactory` 时，第一次调用只读取边界，第二次才分配像素：
+文件来源必须使用 `BitmapFactory` 时，第一次调用只读取边界，第二次才分配像素。这一段与前面「先读边界尺寸，再按 2 的幂采样」是同一条两阶段流程，差别在失败处理：这里边界读取不到尺寸就返回 `null`，由调用方决定回退。
 
 ```kotlin
 fun decodeSampledFile(
@@ -585,7 +591,9 @@ Android 14 起，Ultra HDR 图片可以在 SDR 基础图之外携带增益图（
 
 Android 17 的 `ImageDecoder.cpp` 在设置 `PostProcessor` 时跳过自动增益图提取，因为平台无法推断任意 Canvas 处理应怎样等价作用于增益图。Ultra HDR 输入若还要做解码期后处理，应同时验证 `hasGainmap()` 和显示效果，不能只检查最终 Bitmap 是否为 `Config.HARDWARE`。
 
-计算这类图片的驻留内存与解码峰值时，要纳入基础 Bitmap、增益图 Bitmap 和解码、缩放期间的临时缓冲；生成硬件结果时，软件像素与硬件像素存储还可能短暂共存。`Bitmap.getAllocationByteCount()` 只描述当前 Bitmap 的底层像素存储，不能代表附着的增益图和全部图形分配，因此不存在可跨设备套用的固定倍数。实测时应同时记录两层 Bitmap 的尺寸、配置、行跨度（stride），以及进程 Graphics、Native Heap 和比例分摊内存（PSS）的变化。
+计算这类图片的驻留内存与解码峰值时，要纳入基础 Bitmap、增益图 Bitmap 和解码、缩放期间的临时缓冲；生成硬件结果时，软件像素与硬件像素存储还可能短暂共存。
+
+`Bitmap.getAllocationByteCount()` 只描述当前 Bitmap 的底层像素存储，不能代表附着的增益图和全部图形分配，因此不存在可跨设备套用的固定倍数。实测时应同时记录两层 Bitmap 的尺寸、配置、行跨度（stride），以及进程 Graphics、Native Heap 和比例分摊内存（PSS）的变化。
 
 `bitmap.setGainmap(null)` 只解除基础 Bitmap 对增益图的关联；其他 Java 或原生层引用结束后，对应资源才具备释放条件。移除增益图还会改变 HDR 效果、显示能力适配和色彩一致性，不应作为低端机的无条件节省内存开关。
 
