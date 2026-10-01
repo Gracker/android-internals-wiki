@@ -132,7 +132,7 @@ Intent.ACTION_OPEN_EYE_DROPPER
 Intent.EXTRA_COLOR
 ```
 
-`@FlaggedApi` 表示该 API 的公开启用曾受 aconfig feature flag 管理。对应用而言，要分别判断三层条件：使用 `compileSdk 37` 才能编译引用这些常量；运行系统达到 API 37 才能进入调用路径；当前产品还必须安装并启用能处理该 Intent 的 Activity。`SDK_INT == 37` 不能证明 handler 必然存在，旧系统或无 handler 的产品都要走应用内取色等降级路径。
+`@FlaggedApi` 表示该 API 的公开启用曾受 aconfig feature flag 管理。应用侧要分别判断三层条件：使用 `compileSdk 37` 才能编译引用这些常量；运行系统达到 API 37 才能进入调用路径；当前产品还必须安装并启用能处理该 Intent 的 Activity。`SDK_INT == 37` 不能证明 handler 必然存在，旧系统或无 handler 的产品都要走应用内取色等降级路径。
 
 ## App 侧正确接入
 
@@ -179,7 +179,7 @@ class EditorActivity : ComponentActivity() {
 
 ## Android 17 AOSP 的真实实现
 
-公开契约只要求启动 Activity 并返回颜色，处理器的包名、进程和 UI 结构都不属于 SDK 保证。`android-17.0.0_r1` 的 AOSP 参考实现位于 `platform/packages/apps/EyeDropper`，是一款使用平台证书签名并安装到特权分区的应用，因此能获得普通第三方应用不可用的系统权限。
+公开契约只要求启动 Activity 并返回颜色，处理器的包名、进程和 UI 结构都不属于 SDK 保证。`android-17.0.0_r1` 的 AOSP 参考实现位于 `platform/packages/apps/EyeDropper`。它用平台证书签名，安装在特权分区，因此能获得普通第三方应用不可用的系统权限。
 
 ### 从 Intent 到颜色结果
 
@@ -202,7 +202,7 @@ Caller Activity
 
 ### 系统侧会截屏
 
-`ScreenCaptureHelper` 通过内部 `IWindowManager.screenCapture()` 获取每个 display 的 `HardwareBuffer`。`HardwareBuffer` 是可在 GPU、显示和进程之间共享的图形内存对象。关键参数包括：
+`ScreenCaptureHelper` 通过内部 `IWindowManager.screenCapture()` 获取每个 display 的 `HardwareBuffer`。`HardwareBuffer` 是可在 GPU、显示和进程之间共享的图形内存对象。
 
 | 参数 | Android 17 AOSP 取值 | 含义 |
 | --- | --- | --- |
@@ -217,7 +217,7 @@ Caller Activity
 
 调用链进入 system_server 后，`WindowManagerService.screenCapture()` 会检查 `READ_FRAME_BUFFER`，把 `ScreenCaptureParams` 转成 display capture 参数，再交给 `DisplayManagerInternal.systemScreenshot()`。回调将 `ScreenshotHardwareBuffer` 中的 `HardwareBuffer` 与 `ColorSpace` 送回 EyeDropper 进程。权限检查与实际 display capture 都发生在系统服务路径中；调用方 Activity 只发出标准 Intent，EyeDropper 的 Compose overlay 则负责交互和显示准星。
 
-因此，准确的隐私表述是：**系统特权实现内部持有 display 截图，普通调用方只收到一个颜色整数。** 调用方无需申请 MediaProjection 授权，是因为屏幕捕获由受信任的系统处理器执行，并不表示内部没有发生屏幕捕获。
+准确的隐私表述是：**系统特权实现内部持有 display 截图，普通调用方只收到一个颜色整数。** 调用方无需申请 MediaProjection 授权，是因为屏幕捕获由受信任的系统处理器执行，并不表示内部没有发生屏幕捕获。
 
 ### 为什么普通 App 做不了同样的内部流程
 
@@ -257,7 +257,7 @@ Activity result 只有一个 `int`，没有携带以下上下文：
 - 取样时间；
 - secure/protected 状态标记。
 
-AOSP 捕获参数还设置了 `preserveDisplayColors(false)`。因此，`0xFFRRGGBB` 适合用于色板、画笔或普通 UI 颜色，不能证明两块屏幕上的物理亮度、广色域色度坐标或 HDR 观感一致。即使跨设备同步同一个整数，两台设备仍可能因面板、色彩管理、亮度和 HDR 状态而呈现不同效果。
+AOSP 捕获参数还设置了 `preserveDisplayColors(false)`，因此 `0xFFRRGGBB` 适合用于色板、画笔或普通 UI 颜色，不能证明两块屏幕上的物理亮度、广色域色度坐标或 HDR 观感一致。即使跨设备同步同一个整数，两台设备仍可能因面板、色彩管理、亮度和 HDR 状态而呈现不同效果。
 
 ### 与其他取色方案的区别
 
