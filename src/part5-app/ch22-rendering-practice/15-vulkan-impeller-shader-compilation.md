@@ -132,7 +132,7 @@ Vulkan 管线创建和着色器编译可能在首次使用或状态组合变化�
 
 机制章的 [Vulkan、HWUI 与多队列渲染管线](../../part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md) 和 [Flutter 渲染管线](../../part2-performance/ch13-rendering-pipelines/07-flutter-rendering-pipeline.md) 负责解释端到端架构；本文只负责应用或引擎能控制的管线键、创建调度、缓存、预热、降级与验证方法。
 
-## Pipeline Cache、编译与提交时机
+## 管线缓存、编译与提交时机
 
 ### 一、先确认应用走哪条图形路径
 
@@ -203,7 +203,7 @@ SurfaceFlinger / display:                                                     la
 
 #### 普通 `uniform` 值通常不会增加管线变体
 
-同一着色器程序和固定状态下，修改普通 `uniform` 变量——绘制时传给着色器、但不写入管线静态状态的数据——通常不需要新建图形管线。下列变化更容易产生新变体：
+上面这些输入里，会随绘制内容或运行环境变化的只是一部分。在同一着色器程序和固定状态下，修改普通 `uniform` 变量——绘制时传给着色器、但不写入管线静态状态的数据——通常不需要新建图形管线；下列变化更容易产生新变体：
 
 - 着色器源码或入口发生变化；
 - 专门化常量改变；
@@ -674,19 +674,7 @@ AGI 能看到一帧内的 API 调用和 GPU 工作，但长时间加载阶段不
 - [ ] 管线销毁等待相关 GPU 使用完成；
 - [ ] 创建反馈、`ATrace` 和 GPU 数据分别记录主机端创建与 GPU 执行。
 
-### 十二、版本与实现边界
-
-| 项目 | 采用的边界 |
-| --- | --- |
-| Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` |
-| HWUI | 标准路径按 Skia Ganesh 核查；不把 Graphite 源码等同于 HWUI 默认实现 |
-| Vulkan | 以设备实际报告并启用的 API、扩展、功能位和属性为准 |
-| Android 内核 | `android17-6.18-2026-06_r6`，用于调度、同步栅栏和驱动线程证据 |
-| 厂商驱动 | 设备相关；AOSP 公共源码无法保证编译并行度、缓存命中成本和 GPU 队列的物理并行 |
-
-Android 16 的历史数据可以用于对比，但相关源码名称、跟踪标记和 HWUI 缓存实现只对 Android 17 锚点作核查。后续平台若把 HWUI 切换到 Graphite，应重新核对 `RenderPipelineType`、上下文创建点、管线任务执行方式和跟踪类别，不能沿用这里的结论。
-
-### 十三、常见错误结论
+### 十二、常见错误结论
 
 | 错误结论 | 修正后的判断 |
 | --- | --- |
@@ -701,15 +689,27 @@ Android 16 的历史数据可以用于对比，但相关源码名称、跟踪标
 | Android 17 设备都支持图形管线库 | 必须在运行时查询该设备扩展和功能位 |
 | Baseline Profile 会预编译 GPU 管线 | 它针对应用代码执行，不保存厂商 GPU 管线 |
 
+### 十三、版本与实现边界
+
+| 项目 | 采用的边界 |
+| --- | --- |
+| Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` |
+| HWUI | 标准路径按 Skia Ganesh 核查；不把 Graphite 源码等同于 HWUI 默认实现 |
+| Vulkan | 以设备实际报告并启用的 API、扩展、功能位和属性为准 |
+| Android 内核 | `android17-6.18-2026-06_r6`，用于调度、同步栅栏和驱动线程证据 |
+| 厂商驱动 | 设备相关；AOSP 公共源码无法保证编译并行度、缓存命中成本和 GPU 队列的物理并行 |
+
+Android 16 的历史数据可以用于对比，但相关源码名称、跟踪标记和 HWUI 缓存实现只对 Android 17 锚点作核查。后续平台若把 HWUI 切换到 Graphite，应重新核对 `RenderPipelineType`、上下文创建点、管线任务执行方式和跟踪类别，不能沿用这里的结论。
+
 ### 十四、Vulkan 管线小结
 
 标准 View/Compose 应用只能控制效果变体与首次出现时机，HWUI 的 Vulkan 设备、队列和持久化缓存由平台管理；直接使用 Vulkan 的引擎才负责管线键、创建线程、缓存文件、发布与销毁。管线创建属于主机端工作，不能用 GPU 队列数量、`GPU_DURATION` 或单段缓冲生命周期直接归因。
 
 工程优化应先确认实际图形路径，再以仅缓存查询、任务去重、兼容降级和可验证的持久化降低关键帧首次创建成本。所有可选扩展与并发策略都必须按设备能力和真实分布启用。
 
-## Impeller Shader、PSO 与预热
+## Impeller 着色器、PSO 与预热
 
-原生 Vulkan 的 pipeline 机制同样约束 Impeller 后端。预编译、缓存命中和设备驱动差异决定首帧是否仍出现编译抖动。
+原生 Vulkan 的管线机制同样约束 Impeller 后端。预编译、缓存命中和设备驱动差异决定首帧是否仍出现编译抖动。
 
 ### 1. 先区分着色器、图形管线与一帧显示
 
@@ -1186,7 +1186,7 @@ Scenario and iteration count:
 - Android 内核 [`dma-buf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)
 - Android 内核 [`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)
 
-### 版本与实现边界
+### 13. 版本锚点：平台、内核与 Flutter
 
 版本锚点分为三条互相独立的版本线：
 
@@ -1200,7 +1200,7 @@ Impeller 位于 Flutter 引擎（Flutter Engine），不在 AOSP `android-17.0.0
 
 源码结论固定到 Flutter 3.44.7。Flutter 后续版本可能修改设备规避表、后端回退条件、图形管线创建时机和跟踪事件名称，升级时需要重新核对对应标签。
 
-### 13. Impeller 小结
+### 14. Impeller 小结
 
 Impeller 的主要改进是把着色器前端编译和反射移到构建阶段，并用提前创建、异步任务、描述缓存与 Vulkan 磁盘缓存管理管线。设备运行时仍存在着色器函数注册、管线对象创建、驱动处理、GPU 执行和 Android 显示链路成本。
 
