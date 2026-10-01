@@ -78,7 +78,7 @@ last_idle_audit_run_id: 20260819-143836-idle-audit-140098bc
 
 # WebView 性能优化实战
 
-WebView 页面性能由实例初始化、Chromium 渲染、资源加载和页面脚本共同决定，只优化某一端通常只是让瓶颈换个位置。应先按业务可见节点拆分时间线，再针对进程预热、缓存、Bridge 和前端执行分别治理。
+WebView 页面性能由实例初始化、Chromium 渲染、资源加载和页面脚本共同决定，只优化其中一段，瓶颈往往换个位置。要判断问题出在哪一段，先按业务可见节点拆开页面打开时间，再依次处理启动初始化与实例所有权、离线包与缓存、JS Bridge 和页面侧执行，最后沿显示路径与渲染进程生命周期定位卡顿、内存和恢复问题。
 
 ## WebView 优化要同时看四段
 
@@ -394,7 +394,7 @@ AndroidX WebKit 的当前文档把推测加载拆成三类；具体能否使用�
 - `Profile.prefetchUrlAsync()` 按 HTTPS URL 获取主 HTML 并写入 profile 的网络缓存，不会一并执行 JS 或拉取 CSS，可以从任意线程发起；
 - `WebViewCompat.prerenderUrlAsync()` 绑定具体 WebView，后台创建可激活页面，CPU、内存与网络成本最高。
 
-`prerenderUrlAsync()` 必须从 UI 线程发起。三类 API 都要以项目采用的 AndroidX WebKit 版本和 `WebViewFeature` 能力检查为准。
+`prerenderUrlAsync()` 必须从 UI 线程发起。
 
 预取的后台请求会跳过 `shouldInterceptRequest()`；用户导航时，主 HTML 才进入拦截回调。如果此时返回自定义 `WebResourceResponse`，provider 会采用拦截结果并绕过预取缓存。离线包与 provider 预取同时启用时，必须设计清楚谁拥有主文档。
 
