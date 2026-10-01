@@ -136,7 +136,7 @@ Java 堆没有持续增长，不代表进程的内存占用稳定。使用 JNI�
 | HPROF | Java 堆快照的数据格式和分析路径，用于查看 Java 对象，不等同于 heapprofd 记录的原生堆分配。 |
 | producer / client | 在 heapprofd 中，producer 是写入 Perfetto 数据的组件，client 是目标进程内接收配置并记录分配的组件。 |
 
-原生内存先按系统统计分区，再选择对应工具；分配调用栈、虚拟内存页和图形缓冲不能用同一份数据互相替代。
+原生内存先按系统统计分区，再选择对应工具。
 
 ### 原生内存包含哪些部分
 
@@ -250,7 +250,7 @@ adb shell setprop libc.debug.malloc.program "''"
 adb shell setprop wrap.<process> "''"
 ```
 
-这些清理命令只撤销本次 malloc_debug 配置，不会修改应用数据。量产 user 设备通常不具备执行该流程所需的 root、属性和 SELinux 权限，因此它应位于可控环境的复现阶段。
+这些清理命令只撤销本次 malloc_debug 配置，不会修改应用数据。量产 user 设备通常不具备执行该流程所需的 root、属性和 SELinux 权限，因此这套流程只适合在可控环境中复现。
 
 ### 怎样选择 ASan、HWASan、GWP-ASan 与 MTE
 
@@ -273,7 +273,7 @@ HWASan 适合测试构建，ASan 只在 HWASan 不可用时作为兼容方案。
 
 #### 装载成本：少装、晚装、按需装
 
-一个 `.so` 被加载后，代码段、只读数据、重定位表和符号相关页面会进入进程地址空间。只看 APK 体积无法判断运行时内存，排查时要看进程 `maps` / `smaps` 中对应 `.so` 的 RSS、PSS 和 Private Dirty。
+`.so` 加载后，代码段、只读数据、重定位表和符号相关页面会进入进程地址空间。只看 APK 体积无法判断运行时内存，排查时要看进程 `maps` / `smaps` 中对应 `.so` 的 RSS、PSS 和 Private Dirty。
 
 可执行动作：
 
@@ -298,7 +298,7 @@ HWASan 适合测试构建，ASan 只在 HWASan 不可用时作为兼容方案。
 
 生产监控不应照搬本地分析工具。用户设备上的目标是发现趋势、定位版本和场景，不能长期记录完整调用栈。
 
-本节只定义 Native Heap、映射和内存安全错误的原生侧信号；跨 Java、Native、图形与系统回收的统一监控闭环见 [23.7 内存监控与线上治理](07-memory-monitoring.md)。
+本节只定义 Native Heap、映射和内存安全错误的原生侧信号；跨 Java、Native、图形与系统回收的统一监控见 [23.7 内存监控与线上治理](07-memory-monitoring.md)。
 
 一套可控方案可以分三层：
 
@@ -331,9 +331,11 @@ Android 17 的 `android_os_Debug.cpp` 直接把 `mallinfo().uordblks` 返回为 
 
 #### Scudo ERROR：发现错误的位置不等于破坏内存的位置
 
-Scudo 会在发现 `corrupted chunk header`、`invalid chunk state`、`misaligned pointer`、`allocation type mismatch` 或 `invalid sized delete` 等异常时终止进程。这些是日志中的原始错误标签，其中 chunk header 是分配器保存大小、状态等信息的元数据。若线程 B 在 `free()` 时发现 header 已损坏，越界写可能早已发生在线程 A。排查必须保留完整 tombstone、错误文本、fault address、Build ID、ABI、相关线程和匹配的未剥离符号，再用 GWP-ASan、MTE 或 HWASan 补充分配、释放与访问位置的证据。
+Scudo 会在发现 `corrupted chunk header`、`invalid chunk state`、`misaligned pointer`、`allocation type mismatch` 或 `invalid sized delete` 等异常时终止进程。这些是日志中的原始错误标签，其中 chunk header 是分配器保存大小、状态等信息的元数据。
 
-GWP-ASan 是抽样检测，Recoverable（可恢复上报）模式写出 tombstone 后继续运行也不代表进程已经恢复正确状态。MTE 的 SYNC、ASYNC 和平台 ASYMM 模式在定位精度与成本上不同，应用清单请求还受设备硬件和系统配置约束。这些工具定位内存安全错误，不能替代 heapprofd 的容量归因。
+若线程 B 在 `free()` 时发现 header 已损坏，越界写可能早已发生在线程 A。排查必须保留完整 tombstone、错误文本、fault address、Build ID、ABI、相关线程和匹配的未剥离符号，再用 GWP-ASan、MTE 或 HWASan 补充分配、释放与访问位置的证据。
+
+GWP-ASan 是抽样检测，Recoverable（可恢复上报）模式写出 tombstone 后继续运行也不代表进程已经恢复正确状态。MTE 的 SYNC、ASYNC 和平台 ASYMM 模式在定位精度与成本上不同，应用清单请求还受设备硬件和系统配置约束。
 
 #### 16 KiB 页与三方 so
 
@@ -364,7 +366,9 @@ Android 15 起支持 16 KiB 页面设备。按 2026-08-15 的 Google Play 规则
 
 对象释放解决逻辑所有权，虚拟内存分析继续检查地址空间、文件映射、匿名页和 page fault。调用 `free()` 后的内存也可能暂时留在进程 RSS。
 
-虚拟内存问题经常与 Java heap OOM（ART 托管对象堆耗尽）、native heap（C/C++ 分配使用的堆）和线程资源耗尽混在一起。VMA（virtual memory area，虚拟内存区域）是内核记录的一段连续地址范围；同一 VMA 具有一致的权限和映射来源。排查时要先确认失败来自地址空间、物理内存、VMA 数量还是线程资源。只看一个很大的 VSS 数字，容易把正常的地址空间预留误判成泄漏。对象持有关系可参阅 [23.2 内存泄漏检测与治理](02-memory-leak-governance.md)，Native Heap 的分配与所有权则见本文前一部分。
+虚拟内存问题经常与 Java heap OOM（ART 托管对象堆耗尽）、native heap（C/C++ 分配使用的堆）和线程资源耗尽混在一起。排查时要先确认失败来自地址空间、物理内存、VMA 数量还是线程资源。
+
+VMA（virtual memory area，虚拟内存区域）是内核记录的一段连续地址范围，同一 VMA 具有一致的权限和映射来源。只看一个很大的 VSS 数字，容易把正常的地址空间预留误判成泄漏。对象持有关系可参阅 [23.2 内存泄漏检测与治理](02-memory-leak-governance.md)，Native Heap 的分配与所有权则见本文前一部分。
 
 平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`；涉及内核 `/proc` 与 VMA 语义时，以 `android17-6.18-2026-06_r6` 为内核锚点。Android 10—16 的历史行为只用于解释存量设备，实际诊断仍以目标设备为准。
 
@@ -447,11 +451,11 @@ grep -E '^(Name|VmPeak|VmSize|VmRSS|RssAnon|RssFile|VmSwap|Threads):' \
 
 采集点至少覆盖：
 
-- 冷启动完成；
-- 进入目标业务前；
-- 业务稳定运行；
-- 业务退出并等待缓存回收；
-- 异常前后。
+- 冷启动完成（基线）；
+- 进入目标业务前（场景起点）；
+- 业务稳定运行（稳态）；
+- 业务退出并等待缓存回收（确认是否回落）；
+- 异常前后（保留失败现场）。
 
 只有一张峰值快照时，无法区分一次性预留、可复用缓存和持续泄漏。
 
@@ -573,7 +577,9 @@ CPU 密集任务的并发度可从 CPU 核数起步，I/O 任务没有通用的�
 
 #### 3.3 栈大小与函数拦截的边界
 
-`Thread(ThreadGroup, Runnable, String, long)` 把 stack size（期望栈大小）定义为平台相关的建议值。Android 17 的 [`Thread.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java) 会原样保存该构造器传入的负数，JNI 桥接再把 `jlong` 交给接收 `size_t` 的 `Thread::CreateNativeThread()`。因此，特定负数可能在无符号转换和增加 1 MiB 时回绕成较小值；例如 `-512 KiB` 会在增加 1 MiB 后得到 512 KiB，再叠加 ART 保留区并按页取整。`Thread.Builder.OfPlatform.stackSize()` 则明确拒绝负数。这条回绕路径属于实现细节，构建变化后可能得到超大栈、`pthread_attr_setstacksize()` 失败或进程异常，不能进入生产方案。
+`Thread(ThreadGroup, Runnable, String, long)` 把 stack size（期望栈大小）定义为平台相关的建议值。Android 17 的 [`Thread.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java) 会原样保存该构造器传入的负数，JNI 桥接再把 `jlong` 交给接收 `size_t` 的 `Thread::CreateNativeThread()`。
+
+因此，特定负数可能在无符号转换和增加 1 MiB 时回绕成较小值；例如 `-512 KiB` 会在增加 1 MiB 后得到 512 KiB，再叠加 ART 保留区并按页取整。`Thread.Builder.OfPlatform.stackSize()` 则明确拒绝负数。这条回绕路径属于实现细节，构建变化后可能得到超大栈、`pthread_attr_setstacksize()` 失败或进程异常，不能进入生产方案。
 
 对 `pthread_create()` 做 PLT hook（通过 Procedure Linkage Table 拦截动态库函数调用）也不能覆盖所有线程来源，并会改变系统库与三方库的栈假设。诊断时可以在可调试构建中记录调用栈和 `pthread_attr_t` 属性；修改栈大小则必须按 ABI、4/16 KiB 页、递归深度、JNI 栈帧大小和极端调用链做压力测试。生产环境仍应优先减少线程数量。
 
