@@ -88,7 +88,9 @@ consolidated_from:
 
 观测边界会直接影响结论。`queueBuffer()` 只表示 producer（缓冲区生产者）提交了 buffer（缓冲区），不能据此认定 SurfaceFlinger 已经接收、latch 或 present。FrameMetrics 的 `TOTAL_DURATION` 结束于“应用完成渲染并把帧交给显示子系统”，也不包含屏幕面板扫描像素的时间。
 
-页面包含 `SurfaceView`、Camera、视频、WebView、Flutter 或游戏引擎时，还要画清 Surface 拓扑：谁向哪个 Surface 图层提供缓冲区，各图层怎样挂到宿主窗口。宿主 App Window 的指标可能很平稳，独立 producer 对应的内容却在重复显示旧缓冲区。此类页面要按目标 layer（图层）补充生产者入队、fence、FrameTimeline（帧时间线）与显示证据，不能只凭宿主 Window 的 JankStats 完成归因。
+页面包含 `SurfaceView`、Camera、视频、WebView、Flutter 或游戏引擎时，还要画清 Surface 拓扑：谁向哪个 Surface 图层提供缓冲区，各图层怎样挂到宿主窗口。
+
+宿主 App Window 的指标可能很平稳，独立 producer 对应的内容却在重复显示旧缓冲区。此类页面要按目标 layer（图层）补充生产者入队、fence、FrameTimeline（帧时间线）与显示证据，不能只凭宿主 Window 的 JankStats 完成归因。
 
 ## Choreographer.FrameCallback：观察调整后的帧时间
 
@@ -195,7 +197,9 @@ class VsyncTimelineProbe(
 
 ### 发布物下限、实现分桶与字段语义
 
-版本下限必须以实际发布物为准。`metrics-performance:1.0.0` 的 sources JAR 仍包含 `JankStatsApi16Impl`，但稳定 AAR 的 manifest 声明 `minSdkVersion=23`；正常 Gradle 依赖因此从 Android 6 / API 23 开始，不能因为类名里有 Api16 就写成稳定版支持 API 16。2026-08-14 复核的 AAR SHA-256 为 `efe2e0d92c7cb2f40c77d337052623fdb631d684ba145881e5a52a664d5614a0`，sources JAR 为 `55c5478b4fde6e1cded38d647e9d995a6d9d08e3b8abd28268b5d5a5c3e700a2`。
+版本下限必须以实际发布物为准。`metrics-performance:1.0.0` 的 sources JAR 仍包含 `JankStatsApi16Impl`，但稳定 AAR 的 manifest 声明 `minSdkVersion=23`；正常 Gradle 依赖因此从 Android 6 / API 23 开始，不能因为类名里有 Api16 就写成稳定版支持 API 16。
+
+2026-08-14 复核发布物校验和：AAR SHA-256 为 `efe2e0d92c7cb2f40c77d337052623fdb631d684ba145881e5a52a664d5614a0`，sources JAR 为 `55c5478b4fde6e1cded38d647e9d995a6d9d08e3b8abd28268b5d5a5c3e700a2`。
 
 稳定 AAR 在当前系统范围内采用四条路径：
 
@@ -276,7 +280,9 @@ JankStats 的监听线程随 API 层级变化：稳定 AAR 的 API 23 fallback �
 
 状态标签不是回调到达瞬间读取的一份“当前页面变量”。`putState()` / `removeState()` 用 `System.nanoTime()` 记录每个 `StateInfo` 的起止时间，JankStats 再用一帧的 `[frameStart, frameEnd]` 与这些区间求交集。因此 `screen=Home`、`interaction=scroll` 表示该状态与这帧时间范围重叠；异步回调到达后再读取当前 route，会把转场后的页面误贴到旧帧上。
 
-同一 View hierarchy 只有一个 `PerformanceMetricsState`，同名 key 会覆盖。团队应明确 owner：页面容器负责 `screen`，交互控制器负责 `interaction`，复用组件使用 `feed.list_state` 这类带命名空间的 key，并在离开层级时清理；只标记下一帧的短事件使用 `putSingleFrameState()`。Compose 没有独立采集器，可由 `LocalView.current` 找到同一个 hierarchy，但 Navigation 转场期间的 `screen` 应由 NavHost 或 Activity 统一维护，避免新旧页面同时写同一 key。
+同一 View hierarchy 只有一个 `PerformanceMetricsState`，同名 key 会覆盖。团队应明确 owner：页面容器负责 `screen`，交互控制器负责 `interaction`，复用组件使用 `feed.list_state` 这类带命名空间的 key，并在离开层级时清理；只标记下一帧的短事件使用 `putSingleFrameState()`。
+
+Compose 没有独立采集器，可由 `LocalView.current` 找到同一个 hierarchy，但 Navigation 转场期间的 `screen` 应由 NavHost 或 Activity 统一维护，避免新旧页面同时写同一 key。
 
 ### `isJank`、deadline miss 与 frozen frame 是三套口径
 
@@ -295,7 +301,7 @@ Firebase Performance 的 slow rendering frame 使用固定 16 ms，frozen frame 
 
 JankStats 已能覆盖多数线上趋势。某个页面出现可重复的性能退化后，可以按远程配置对少量会话开启 FrameMetrics，补充各阶段耗时和 VSync ID。字段按平台版本分层：
 
-- API 24+：`UNKNOWN_DELAY_DURATION`（UI 线程响应前的未知等待）、输入、动画、测量与布局、绘制、与 RenderThread 同步、向 GPU 发命令、提交缓冲区、总时长及首帧标记。对应的常量名依次为 `INPUT_HANDLING_DURATION`、`ANIMATION_DURATION`、`LAYOUT_MEASURE_DURATION`、`DRAW_DURATION`、`SYNC_DURATION`、`COMMAND_ISSUE_DURATION`、`SWAP_BUFFERS_DURATION`、`TOTAL_DURATION`、`FIRST_DRAW_FRAME`。
+- API 24+ 的阶段字段：`UNKNOWN_DELAY_DURATION`（UI 线程响应前的未知等待）、`INPUT_HANDLING_DURATION`（输入）、`ANIMATION_DURATION`（动画）、`LAYOUT_MEASURE_DURATION`（测量与布局）、`DRAW_DURATION`（绘制）、`SYNC_DURATION`（与 RenderThread 同步）、`COMMAND_ISSUE_DURATION`（向 GPU 发命令）、`SWAP_BUFFERS_DURATION`（提交缓冲区）、`TOTAL_DURATION`（总时长）、`FIRST_DRAW_FRAME`（首帧标记）。
 - API 26+：`INTENDED_VSYNC_TIMESTAMP` 与 `VSYNC_TIMESTAMP`。两者不同表示 UI 线程未及时响应原定 VSync。
 - API 31+：`GPU_DURATION` 与 `DEADLINE`。`DEADLINE` 是系统给应用产出该帧的总时间预算，单位是时长。
 - API 36+：`FRAME_TIMELINE_VSYNC_ID`，用于关联系统合成器的帧时间线。
@@ -322,7 +328,9 @@ Android 17 的 UI 线程和 RenderThread 共同填写 `FrameInfo` 时间戳数�
 | `DEADLINE` | 31+ | `INTENDED_VSYNC → FRAME_DEADLINE` | 应用产出本帧的预算 |
 | `FRAME_TIMELINE_VSYNC_ID` | 36+ | FrameTimeline VSync ID | 与 compositor jank data 关联 |
 
-字段不可用时 `getMetric()` 返回 `-1`，不能补零。阶段可能并行，公开字段之间还有未单列的间隙；`TOTAL_DURATION - sum(stages)` 不能直接命名为“其他耗时”。GPU 与 swap 的定义也要按 API 分桶：24—30 没有 GPU/deadline，31—32 的 GPU 从 swap 起算，33—35 改从 command submission complete 起算，36—37 再增加 VSync ID。跨桶比较原始值会把平台定义变化误判成回归。
+字段不可用时 `getMetric()` 返回 `-1`，不能补零。阶段可能并行，公开字段之间还有未单列的间隙；`TOTAL_DURATION - sum(stages)` 不能直接命名为“其他耗时”。
+
+GPU 与 swap 的定义也要按 API 分桶：24—30 没有 GPU/deadline，31—32 的 GPU 从 swap 起算，33—35 改从 command submission complete 起算，36—37 再增加 VSync ID。跨桶比较原始值会把平台定义变化误判成回归。
 
 ### Window 与独立内容流的覆盖边界
 
@@ -334,7 +342,9 @@ Android 17 的 UI 线程和 RenderThread 共同填写 `FrameInfo` 时间戳数�
 | Dialog / PopupWindow / 多窗口 | 每个已注册 Window 各自的帧 | 未注册 Window；不同 Window 不会自动合并 |
 | 软件渲染 Window | 没有硬件渲染帧统计 | 软件 Canvas 的完整耗时 |
 
-JankStats 在 API 24+ 内部已经注册 FrameMetrics listener。应用再次直接监听时，要量化双重回调、复制和聚合开销；常规线上分布优先保留 JankStats，只有分段诊断或 API 36+ compositor join 才对受控样本开启直接 FrameMetrics。延迟回调也不能读取“当前 route”：API 26+ 用 `INTENDED_VSYNC_TIMESTAMP` 与应用状态区间关联，API 24—25 只做 Window session 级聚合，或在路由切换时明确结束旧会话。
+JankStats 在 API 24+ 内部已经注册 FrameMetrics listener。应用再次直接监听时，要先量化双重回调、复制和聚合开销；常规线上分布优先保留 JankStats，只有分段诊断或 API 36+ compositor join 才对受控样本开启直接 FrameMetrics。
+
+延迟回调也不能读取“当前 route”：API 26+ 用 `INTENDED_VSYNC_TIMESTAMP` 与应用状态区间关联，API 24—25 只做 Window session 级聚合，或在路由切换时明确结束旧会话。
 
 `Window.OnFrameMetricsAvailableListener` 把回调投递到注册时指定的 `Handler`。回调中的 `FrameMetrics` 会复用，必须当场构造副本。第三个参数是上次回调以来丢失的**指标报告数**，说明监控消费者跟不上；它不是用户侧掉帧数。
 
@@ -427,9 +437,13 @@ class CompositorJankSession(
 
 ## Android 17 的 buffer-stuffing recovery 会主动延后一帧
 
-Android 17 的 `Choreographer` 源码包含 buffer-stuffing recovery（缓冲区积压恢复）。BLAST producer 等待 buffer release（可复用缓冲区被释放）的时间超过半个 frame interval（刷新周期）后，`onWaitForBufferRelease()` 会标记 stuffed（队列积压）状态；后续 `doFrame()` 可以主动延后一帧，减少排队缓冲区，并在恢复期调整动画时间线。相关 aconfig flag（Android 平台功能配置开关）会影响同一段动画能否多次恢复，以及累计主动延迟是否受 100 ms 上限约束；设备上的实际取值需要从 trace 或配置确认。
+Android 17 的 `Choreographer` 源码包含 buffer-stuffing recovery（缓冲区积压恢复）。BLAST producer 等待 buffer release（可复用缓冲区被释放）的时间超过半个 frame interval（刷新周期）后，`onWaitForBufferRelease()` 会标记 stuffed（队列积压）状态；后续 `doFrame()` 可以主动延后一帧，减少排队缓冲区，并在恢复期调整动画时间线。
 
-Perfetto 中出现 `Buffer stuffing recovery`、`buffer stuffed` 或 `Negative offset` 时，这一帧的迟到可能来自系统为降低队列深度而安排的恢复动作。归因时应同时检查 `dequeueBuffer` wait（获取可用缓冲区的等待）、queued buffer（已排队缓冲区）、FrameTimeline 的 `Buffer Stuffing` 分类及恢复后的 backlog（仍未消费的积压）。只看 UI / CPU 时长就把责任归给业务代码，会漏掉队列已经过深这一前因。
+相关 aconfig flag（Android 平台功能配置开关）会影响同一段动画能否多次恢复，以及累计主动延迟是否受 100 ms 上限约束；设备上的实际取值需要从 trace 或配置确认。
+
+Perfetto 中出现 `Buffer stuffing recovery`、`buffer stuffed` 或 `Negative offset` 时，这一帧的迟到可能来自系统为降低队列深度而安排的恢复动作。
+
+归因时应同时检查 `dequeueBuffer` wait（获取可用缓冲区的等待）、queued buffer（已排队缓冲区）、FrameTimeline 的 `Buffer Stuffing` 分类及恢复后的 backlog（仍未消费的积压）。只看 UI / CPU 时长就把责任归给业务代码，会漏掉队列已经过深这一前因。
 
 该机制只处理排队造成的额外延迟，不会提高 GPU 或显示吞吐量。若恢复频繁出现，还要追查 producer 产出节奏、RenderThread / GPU 完成时间、release fence（缓冲区释放栅栏）和 consumer（缓冲区消费者）的释放速度。
 
