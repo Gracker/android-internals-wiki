@@ -106,17 +106,17 @@ last_consolidated_at: '2026-08-24'
 
 # View、Compose 动画与共享元素性能
 
-动画掉帧可能出现在 UI 线程推进属性值时，也可能出现在 RenderThread 绘制、窗口缓冲区排队、SurfaceFlinger 合成或显示提交阶段。只观察 Animator 回调时长，会漏掉后半段问题。
+动画掉帧可能出现在 UI 线程推进属性值时，也可能出现在 RenderThread 绘制、窗口缓冲区排队、SurfaceFlinger 合成或显示提交阶段。只观察 Animator 回调时长，会漏掉后半段问题。动画性能取决于每帧更新发生在哪个线程、是否触发布局，以及中间图层如何合成；Compose 动画延续同一原则，SharedTransition 还要在两个内容状态之间匹配元素、同步边界。
 
 平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`，Linux 内核观察基线固定为 `android17-6.18-2026-06_r6`。普通 View 动画走应用窗口的标准 HWUI（Android 硬件加速 UI 渲染系统）路径：
 
 `vsync-app → Choreographer#doFrame → input / animation / insets animation / traversal / commit → HardwareRenderer.syncAndDrawFrame() → RenderThread → BLAST → SurfaceFlinger → HWC → present`
 
-这条路径中的 input、animation、insets animation、traversal 与 commit，分别对应输入、动画、窗口边衬区变化动画（如系统栏或输入法区域变化）、View 树遍历和提交回调。RenderThread 是专用渲染线程，BLAST 负责在应用窗口与 SurfaceFlinger 之间交接缓冲区，SurfaceFlinger 是系统合成服务，HWC 是硬件合成器，present 表示显示系统确认的上屏时刻。
+这条路径中的 input、animation、insets animation、traversal 与 commit，分别对应输入、动画、窗口边衬区变化动画（如系统栏或输入法区域变化）、View 树遍历和提交回调。
+
+RenderThread 是专用渲染线程，BLAST 负责在应用窗口与 SurfaceFlinger 之间交接缓冲区，SurfaceFlinger 是系统合成服务，HWC 是硬件合成器，present 表示显示系统确认的上屏时刻。
 
 动画 API 的状态推进主要位于 Android 框架和应用进程。内核基线用于解释线程调度、GPU 驱动、fence（跨 CPU、GPU、显示设备传递完成状态的同步对象）与显示侧现象，不能拿内核标签推导 Animator 的 Java 语义。完整显示路径可结合 [Android View 标准渲染路径](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md) 阅读。
-
-动画性能取决于每帧更新发生在哪个线程、是否触发布局以及中间图层如何合成。Compose 动画延续相同原则，SharedTransition 还要在两个内容状态之间匹配元素和同步边界。
 
 ## 属性更新、布局触发与 RenderThread
 
@@ -317,7 +317,7 @@ AVD 适合路径、颜色和 transform 数量有限的图标动画。路径节�
 
 ### 转场动画：限制捕获范围和目标数量
 
-`TransitionManager.beginDelayedTransition(sceneRoot, transition)` 会立即捕获 start values（变化前的属性），并安排在下一次 pre-draw（绘制前回调）捕获 end values（变化后的属性），然后为有差异的目标创建 Animator。`sceneRoot` 是转场捕获和动画的根容器；范围过大时，遍历、布局影响和候选目标都会增加。具体成本还取决于 Transition 类型，以及 target / exclude（纳入 / 排除目标）配置。
+`TransitionManager.beginDelayedTransition(sceneRoot, transition)` 先立即捕获 start values（变化前的属性），再安排在下一次 pre-draw（绘制前回调）捕获 end values（变化后的属性），最后为有差异的目标创建 Animator。`sceneRoot` 是转场捕获和动画的根容器；范围过大时，遍历、布局影响和候选目标都会增加。具体成本还取决于 Transition 类型，以及 target / exclude（纳入 / 排除目标）配置。
 
 场景根节点应选能容纳目标变化的最小共同父容器，再显式限制 target。下面的例子让筛选面板和结果列表的外框参与转场，同时排除列表项。
 
@@ -375,11 +375,11 @@ View 动画按属性和线程判断成本，Compose 动画还要检查状态读�
 
 Compose 动画每帧会做多少工作，取决于动画值在哪个阶段读取、哪些阶段因此失效、过渡期间保留多少界面内容，以及应用提交帧后的显示过程。本文以 Compose BOM 2026.08.00 对应的 Compose 1.12.0 为库版本基线，以 Android 17、API 37 的 `android-17.0.0_r1` 为平台基线。Compose 独立于 Android 平台发布，不能用 API 37 推导 Compose 行为。
 
-普通 Compose 页面仍由宿主应用窗口的硬件加速界面渲染系统（HWUI）生成画面。状态计算，以及部分组合（Composition）、布局（Layout）和绘制（Draw）工作发生在主线程；`RenderThread` 整理硬件绘制命令，GPU 执行命令，BLAST 负责传递图形缓冲区，`SurfaceFlinger` 与硬件合成器（Hardware Composer，HWC）完成系统合成和送显。完整边界见 [13.8 Jetpack Compose 渲染管线：Composition、Layout 与 RenderNode](../../part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md)。本文只讨论动画额外增加的工作。
+普通 Compose 页面仍由宿主应用窗口的 HWUI 路径生成画面。状态计算，以及部分组合（Composition）、布局（Layout）和绘制（Draw），都发生在主线程；`RenderThread` 整理硬件绘制命令，GPU 执行命令，BLAST 负责传递图形缓冲区，`SurfaceFlinger` 与硬件合成器（Hardware Composer，HWC）完成系统合成和送显。完整边界见 [13.8 Jetpack Compose 渲染管线：Composition、Layout 与 RenderNode](../../part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md)。本文只讨论动画额外增加的工作。
 
 ### 1. 用状态读取阶段判断动画成本
 
-`Animatable.value`、`Transition.animate*` 和 `animate*AsState` 返回的动画值都受 Compose 快照（Snapshot）系统观察。API 名称不会预先决定失效阶段；在哪个阶段读取动画值，值变化时就会请求哪个阶段再次执行。一个值若在多个阶段读取，也会建立多处观察关系。
+`Animatable.value`、`Transition.animate*` 和 `animate*AsState` 返回的动画值都受 Compose 快照（Snapshot）系统观察。用哪个 API 并不决定失效发生在哪个阶段；动画值在哪个阶段被读取，值变化时就请求哪个阶段重新执行。同一个值若在多个阶段读取，也会建立多处观察关系。
 
 | 动画值的读取位置 | 值变化后的主要工作 | 常见写法 | 判断要点 |
 | --- | --- | --- | --- |
@@ -455,11 +455,13 @@ API 选择可以按控制语义划分：
 - 若后端操作或导航只允许一次，按业务状态屏蔽重复输入。
 - 若需要观察进入、退出是否结束，使用 `MutableTransitionState.isIdle` 与 `currentState`。
 
-Compose 1.12.0 已弃用接收 `MutableTransitionState` 的 `updateTransition` 重载，应改用 `rememberTransition(transitionState)`；接收普通目标值的 `updateTransition(targetState)` 仍可使用。`MutableTransitionState` 提供可观察的状态迁移入口，本身不会减少每帧工作。1.12.0 的 `DeferredTransitionState` 与 `mutableTransform` 面向预测性返回等“先手动改变属性、再启动自动过渡”的场景，也不是通用性能开关。
+Compose 1.12.0 已弃用接收 `MutableTransitionState` 的 `updateTransition` 重载，应改用 `rememberTransition(transitionState)`；接收普通目标值的 `updateTransition(targetState)` 仍可使用。`MutableTransitionState` 提供可观察的状态迁移入口，本身不会减少每帧工作。
+
+1.12.0 的 `DeferredTransitionState` 与 `mutableTransform` 面向预测性返回等“先手动改变属性、再启动自动过渡”的场景，也不是通用性能开关。
 
 ### 5. AnimatedVisibility：尺寸变化和退出内容保留
 
-`AnimatedVisibility` 使用自定义 `Layout` 承载界面内容。普通 `AnimatedVisibility(visible=...)` 的测量策略会测量子项，以最大宽高作为容器尺寸，并把子项放在坐标 `(0, 0)`；Row/Column 作用域重载有各自适配的默认过渡。普通重载的默认进入/退出动画包含展开和收缩，因此容器报告给父布局的尺寸会随动画变化；依赖该尺寸的父容器和同级元素也可能反复测量或放置。
+`AnimatedVisibility` 使用自定义 `Layout` 承载界面内容。普通 `AnimatedVisibility(visible=...)` 重载先测量子项，以最大宽高作为容器尺寸，再把子项放在坐标 `(0, 0)`；Row/Column 作用域重载有各自适配的默认过渡。普通重载的默认进入/退出动画包含展开和收缩，因此容器报告给父布局的尺寸会随动画变化；依赖该尺寸的父容器和同级元素也可能反复测量或放置。
 
 不同过渡类型产生的工作不同：
 
@@ -498,7 +500,7 @@ Compose 1.12.0 已弃用接收 `MutableTransitionState` 的 `updateTransition` �
 
 ### 7. produceState、snapshotFlow 与 derivedStateOf
 
-`produceState` 用 `remember { mutableStateOf(initialValue) }` 保存结果，并由 `LaunchedEffect` 启动负责生产状态值的协程。它提供无键、单键和多键重载；这里的键是决定协程何时重启的输入，不能把实现概括为固定的 `LaunchedEffect(Unit)`。键改变时，旧协程会取消并启动新协程；离开组合时也会取消。对回调式数据源，可用 `awaitDispose` 注销回调。
+`produceState` 用 `remember { mutableStateOf(initialValue) }` 保存结果，并由 `LaunchedEffect` 启动一个协程来生产状态值。它提供无键、单键和多键重载；这里的键是决定协程何时重启的输入，不能把实现概括为固定的 `LaunchedEffect(Unit)`。键改变时，旧协程会取消并启动新协程；离开组合时也会取消。对回调式数据源，可用 `awaitDispose` 注销回调。
 
 返回的 `State` 会合并相等值；写入与当前值相等的结果不会触发重组。不同值若按帧更新，下游仍会按其读取阶段失效。`produceState` 适合把外部异步或订阅式数据转成 Compose `State`；外部数据频率高不构成误用，判断依据是界面是否需要每个样本，以及读取位置是否合适。
 
@@ -683,6 +685,10 @@ API 用法、性能工具和测量口径参考：
 
 单个动画稳定后，共享元素过渡需要同时维护起止内容、overlay 绘制和布局坐标。元素匹配失败或重复测量会直接影响连续性。
 
+共享元素过渡会把两个页面中代表同一对象的内容匹配起来，在页面切换时连续改变位置和尺寸。这里关注它对组合、布局、绘制和 GPU 的影响。一般 Compose 性能方法见 [22.3 Compose 性能、Compiler 与 Modifier.Node 诊断](03-compose-compiler-modifier-diagnostics.md)，普通动画成本已由本文前两节建立基线。
+
+为便于对照 API 和源码，本文保留几个常用英文词：`key` 是两端内容的匹配标识；`bounds` 是包含位置与尺寸的矩形边界；`entry` 是某个 `key` 在源端或目标端的一条注册记录；`overlay` 是 `SharedTransitionScope` 根节点内用于置顶绘制的覆盖区域。这些词都指 Compose 作用域内的匹配、布局或绘制概念。
+
 ### 1. 先界定实现层级
 
 > **源码锚点**
@@ -692,11 +698,7 @@ API 用法、性能工具和测量口径参考：
 > - Compose Animation：`1.12.0`
 > - AndroidX 源码快照：`963bf914f78b389bdddef0da7f36bee19d897274`
 >
-> `SharedTransitionLayout` 位于 Compose Animation 的 `commonMain`（Kotlin Multiplatform 的公共源码集），元素匹配、Lookahead 布局、图形层和 overlay 都由 AndroidX 实现。Android Framework 与内核没有名为 SharedTransitionLayout 的专用渲染路径；Android 17 只负责内容进入 HWUI（Android 的硬件加速 UI 渲染器）后的窗口绘制、BufferQueue、SurfaceFlinger 与显示流程。
-
-共享元素过渡会把两个页面中代表同一对象的内容匹配起来，在页面切换时连续改变位置和尺寸。这里关注它对组合、布局、绘制和 GPU 的影响。一般 Compose 性能方法见 [22.3 Compose 性能、Compiler 与 Modifier.Node 诊断](03-compose-compiler-modifier-diagnostics.md)，普通动画成本已由本文前两节建立基线。
-
-为便于对照 API 和源码，本文保留几个常用英文词：`key` 是两端内容的匹配标识；`bounds` 是包含位置与尺寸的矩形边界；`entry` 是某个 `key` 在源端或目标端的一条注册记录；`overlay` 是 `SharedTransitionScope` 根节点内用于置顶绘制的覆盖区域。这些词都指 Compose 作用域内的匹配、布局或绘制概念。
+> `SharedTransitionLayout` 位于 Compose Animation 的 `commonMain`（Kotlin Multiplatform 的公共源码集），元素匹配、Lookahead 布局、图形层和 overlay 都由 AndroidX 实现。Android Framework 与内核没有名为 SharedTransitionLayout 的专用渲染路径；Android 17 只负责内容进入 HWUI 后的窗口绘制、BufferQueue、SurfaceFlinger 与显示流程。
 
 ### 2. API 架构：scope、可见性与 key
 
@@ -886,7 +888,7 @@ Compose 1.12.0 不会在 `SharedBoundsNode.onAttach()` 时立刻分配图形层�
 
 #### 7.3 大面积 alpha 与 overdraw
 
-`sharedBounds()` 默认同时显示进入和退出内容，并用 `fadeIn`/`fadeOut` 过渡。两张全屏图或复杂列表长时间重叠，会产生明显的 fill rate（GPU 单位时间处理像素的能力）和显存带宽压力，也会增加 overdraw（同一像素在一帧内被重复绘制）。
+`sharedBounds()` 默认同时显示进入和退出内容，并用 `fadeIn`/`fadeOut` 过渡。两张全屏图或复杂列表长时间重叠，像素填充（fill rate，GPU 单位时间能处理的像素量）和显存带宽压力都会明显上升，overdraw（同一像素在一帧内被重复绘制）也随之增加。
 
 可以缩小共享容器范围、减少同时变化的背景层、调整进入/退出动画，或把静态不透明背景放在共享区域外。优化依据是覆盖面积和 GPU duration（GPU 完成该帧所需时间），不是共享 `key` 的数量。
 
@@ -913,7 +915,7 @@ Compose 1.12.0 不会在 `SharedBoundsNode.onAttach()` 时立刻分配图形层�
 - 两端图片使用一致的图片内存缓存 `key`；
 - 使用 caller-managed visibility 时，在过渡结束后移除不可见节点。
 
-若点击后立刻替换整个列表树，源 `entry` 可能在目标端获得 `bounds` 前 detach。`AnimatedContent`、Navigation 或官方 `AnimatedVisibility` 示例会让进入和退出内容在过渡窗口内同时存在，适合优先作为可见性容器。
+若点击后立刻替换整个列表树，源 `entry` 可能在目标端获得 `bounds` 前 detach。`AnimatedContent`、Navigation 或官方 `AnimatedVisibility` 示例会让进入和退出内容在过渡窗口内同时存在，应优先选作可见性容器。
 
 预取应准备数据、图片和目标页面不可避免的昂贵资源。提前组合整个详情树会延长对象生命周期，也可能让未展示页面参与状态观察；只有 trace（按时间记录系统与应用事件的性能轨迹）证明首次组合是瓶颈时，再设计受控的 precompose（预先组合）。
 
@@ -929,7 +931,7 @@ Predictive Back（预测性返回）让用户在返回手势完成前预览目�
 - Android 14 设备还要在开发者选项中启用 Predictive Back；
 - 应用运行在 Android 16 及以上且 `targetSdk >= 36` 时，系统预测性返回动画默认启用；迁移期间仍可按官方说明临时选择退出。
 
-Android 17 沿用这套标准机制，没有独立的 SharedTransitionLayout 帧同步平台 API。手势事件、Compose 过渡状态、Choreographer（主线程帧回调调度器）与 HWUI 提交，仍要在 Perfetto 中按同一 FrameTimeline（把计划帧与实际帧关联起来的时间线）检查。
+Android 17 沿用这套标准机制，没有独立的 SharedTransitionLayout 帧同步平台 API。手势事件、Compose 过渡状态、Choreographer 与 HWUI 提交，仍要在 Perfetto 中按同一条 FrameTimeline 检查。
 
 #### 9.1 BackHandler 与 PredictiveBackHandler
 
