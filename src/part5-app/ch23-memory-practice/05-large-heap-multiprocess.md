@@ -104,9 +104,9 @@ consolidated_from:
 
 `android:largeHeap`、多进程和 64 位迁移改变的边界各不相同。`largeHeap` 提高应用进程的 ART 堆增长上限；多进程让组件使用独立的地址空间和运行时，也会重复支付进程级内存成本；64 位迁移扩大可用虚拟地址范围，同时可能增加指针及部分原生数据结构的大小。这三种手段都不会自动降低按比例分摊集（PSS，共享页按参与进程数分摊后的物理内存统计），也不会消除泄漏。
 
-选择方案前应按失败类型定位。Java 堆 OOM（内存不足异常）可参阅 [23.1 Java Heap、GC 与 Compose 内存分配](01-java-heap-gc-compose-allocation.md)；低内存终止进程可参阅 [4.3 系统内存压力与 lmkd](../../part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md)，其中 lmkd 是 Android 根据系统内存压力终止低优先级进程的守护进程。`pthread_create`、`mmap` 或动态链接器报错时，还要检查线程数、映射布局、应用二进制接口（ABI，规定指令集、调用约定和二进制布局）及资源限制。WebView、图形内存或原生内存增长，则要继续定位实际分配者。
+选择方案前应按失败类型定位。Java 堆 OOM（内存不足异常）可参阅 [23.1 Java Heap、GC 与 Compose 内存分配](01-java-heap-gc-compose-allocation.md)；低内存终止进程可参阅 [4.3 系统内存压力与 lmkd](../../part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md)，其中 lmkd 是 Android 根据系统内存压力终止低优先级进程的守护进程。`pthread_create`、`mmap` 或动态链接器报错时，要检查线程数、映射布局、应用二进制接口（ABI，规定指令集、调用约定和二进制布局）及资源限制。WebView、图形内存或原生内存在增长，则要定位实际分配者。
 
-Android 17 在部分设备上启用了按设备总 RAM 制定的应用内存限制，用于约束极端泄漏和异常占用。它适用于所有运行在 Android 17 上的应用，不受 `targetSdkVersion` 影响；设备是否启用、当前限制是多少，都要现场查询。`largeHeap` 和拆分进程不会绕过这套限制，退出识别与诊断方法见“Android 17 应用内存限制”。
+Android 17 在部分设备上启用了按设备总 RAM 制定的应用内存限制，用于约束极端泄漏和异常占用。它适用于所有运行在 Android 17 上的应用，不受 `targetSdkVersion` 影响；设备是否启用、当前限制是多少，都要现场查询。`largeHeap` 和拆分进程不会绕过这套限制。如何识别和归因这类退出，见“Android 17 应用内存限制”。
 
 ## `largeHeap` 的使用场景与代价
 
@@ -118,11 +118,11 @@ Android 17 的 `ActivityThread.handleBindApplication()` 检查 `ApplicationInfo.
 
 适合打开 `largeHeap` 的场景很少，通常要同时满足三个条件：
 
-- 峰值来自短时存在的 Java 对象或大数组，而且对象生命周期、缓存、Bitmap 和流式处理已经优化；主要增长来自原生内存、图形内存或线程栈时，`largeHeap` 无法处理对应分配。
+- 峰值来自短时存在的 Java 对象或大数组，而且对象生命周期、缓存、Bitmap 和流式处理已经优化。若主要增长来自原生内存、图形内存或线程栈，`largeHeap` 无法处理对应分配。
 - 高内存操作具有明确的起止范围，例如大图编辑、离线地图切片、批量导入或复杂文档解析；长期驻留的缓存不应依靠 `largeHeap` 扩容。
 - 应用能按设备状态降低资源规格：在低内存设备、32 位进程、后台或设备过热时，降低分辨率、单批数据量、并发数或缓存上限。
 
-这段函数读取普通和大堆内存等级、当前进程的 `Runtime.maxMemory()`，以及低内存设备标志。它们只能用于制定策略，不能表示此刻仍可成功分配的字节数。
+`readHeapPolicyInputs()` 读取普通和大堆内存等级、当前进程的 `Runtime.maxMemory()`，以及低内存设备标志。这些数值只用于制定策略，不能表示此刻还能成功分配多少字节。
 
 ```kotlin
 data class HeapPolicyInputs(
@@ -161,9 +161,9 @@ fun readHeapPolicyInputs(context: Context): HeapPolicyInputs {
 
 ## 多进程内存隔离与共享
 
-Android 默认让同一应用的组件运行在一个 Linux 进程和主线程中。进程是拥有独立虚拟地址空间的执行容器；组件可用清单中的 `android:process` 指定其他进程。跨进程通信（IPC）常通过 Binder 完成：Binder 把参数序列化到 `Parcel`，再把事务送到目标进程。远程调用进入服务进程后，由系统维护的 Binder 线程池执行，因此服务端方法要能安全处理多个并发调用。进程模型及生命周期见 [1.1 Android 分层架构、进程模型与线程协作](../../part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md)。
+Android 默认让同一应用的组件共用一个 Linux 进程和一个主线程。进程是拥有独立虚拟地址空间的执行容器；组件可用清单中的 `android:process` 指定其他进程。跨进程通信（IPC）常通过 Binder 完成：Binder 把参数序列化到 `Parcel`，再把事务送到目标进程。远程调用进入服务进程后，由系统维护的 Binder 线程池执行，因此服务端方法要能安全处理多个并发调用。进程模型及生命周期见 [1.1 Android 分层架构、进程模型与线程协作](../../part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md)。
 
-多进程可以隔离地址空间、组件生命周期和崩溃影响范围。例如，将图片编辑、插件运行时或边界清楚的批处理服务放入独立进程后，系统回收该进程会同时释放其 Java 堆、原生堆、线程栈、即时编译（JIT）缓存和文件映射。应用不应把主动终止子进程当作常规资源释放接口：Android 会根据活跃组件、进程重要性和系统资源决定进程寿命。任务完成时应停止 `Service`、解除绑定并保存结果，让组件状态如实表示是否仍有工作。
+多进程可以隔离地址空间、组件生命周期和崩溃影响范围。例如，将图片编辑、插件运行时或边界清楚的批处理服务放入独立进程后，系统回收该进程会同时释放其 Java 堆、原生堆、线程栈、即时编译（JIT）缓存和文件映射。应用不应把主动终止子进程当作常规的资源释放手段：Android 会根据活跃组件、进程重要性和系统资源决定进程寿命。任务完成时应停止 `Service`、解除绑定并保存结果，让组件状态如实表示是否仍有工作。
 
 拆成多个进程不会自动减少应用总内存。每个进程都有独立的 ART 运行时、类加载器（`ClassLoader`）、线程、Binder 线程池、原生内存分配器状态和业务缓存。`.so`、`.dex` 与 Android 框架的只读代码页可以共享；被进程修改后的脏页、Java 对象、线程栈和多数原生分配不能共享。PSS 将共享页按参与进程数分摊，私有页全额计入当前进程；RSS 计算较快，却会在每个进程中完整计算共享页，因此不能把多个进程的 RSS 直接相加当作应用物理内存总量。
 
@@ -174,9 +174,9 @@ Android 默认让同一应用的组件运行在一个 Linux 进程和主线程�
 - 跨进程输入输出可以表示为文件路径、统一资源标识符（URI）、文件描述符等资源句柄、任务 ID 或小型结果对象。句柄只引用资源，不携带资源的全部内容。
 - 启动开销可测量：子进程冷启动、`ClassLoader` 初始化，以及该进程中的 `ContentProvider` 初始化都已纳入目标操作的耗时测量。
 
-不适合拆进程的模块包括：高频小调用、强共享内存状态、需要大量 Java 对象跨进程传输、每次都要同步 UI 状态的模块，拆出去后很容易把内存问题换成 Binder 成本、序列化成本和一致性问题。
+不适合拆进程的模块有这几类：高频小调用、强共享内存状态、需要大量 Java 对象跨进程传输、每次都要同步 UI 状态。这些模块拆出去后，很容易把内存问题换成 Binder 成本、序列化成本和一致性问题。
 
-一种常见拆分方式是：主进程只保留任务调度和少量状态，独立进程处理边界明确的任务。服务按任务 ID 读取输入，将产物写入文件或数据库，Binder 只返回状态和结果引用。Binder 事务缓冲区当前为每个进程固定 1 MB，并由该进程所有正在执行的事务共享；即使单次参数不大，并发事务也可能触发 `TransactionTooLargeException`。大数组和 Bitmap 因此不应直接写入 `Parcel`。
+常见的拆分方式是让主进程只保留任务调度和少量状态，独立进程处理边界明确的任务。服务按任务 ID 读取输入，将产物写入文件或数据库，Binder 只返回状态和结果引用。Binder 事务缓冲区当前为每个进程固定 1 MB，并由该进程所有正在执行的事务共享；即使单次参数不大，并发事务也可能触发 `TransactionTooLargeException`。大数组和 Bitmap 因此不应直接写入 `Parcel`。
 
 大数据可以通过 `ContentProvider`、`ParcelFileDescriptor`、文件或 `SharedMemory` 共享内存接口传递句柄，同时规定关闭时机、访问权限和并发读写协议。句柄会减少 `Parcel` 内的数据量，但数据本身仍有内存和 I/O 成本。
 
@@ -237,7 +237,7 @@ Play Help Center 17492799 给出的 Apps 类 Anonymous RSS + Swap P90 阈值如�
 
 Bitmap memory usage 的 P90 阈值只在非前台状态给出：user-perceived services 与 background 为大于 200 MB，cached 为大于 400 MB。前台可以短时占用 Bitmap，但进入后台或缓存状态后仍长时间保留大图，通常说明 `onTrimMemory()`、页面销毁或图片缓存策略没有把可重建资源释放出去。[来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/2026-08-28-Play内存门槛2027-02先对四行-深度调研.md；已验证: raw/02-play-support.html]
 
-预算表之外还要区分三类观察入口：Play Console / Developer Reporting API 看到的是按用户设备聚合的长期 P90 和 RAM 档；`dumpsys meminfo`、Perfetto、堆转储与 `/proc` 采样看到的是当前复现场景；Android 17 `MemoryLimiter` 则是在单台设备上按可见性和 cgroup 限制处理“此刻”的异常占用。三组数字口径不同，不能把 Play 阈值直接写成某台设备的 `am memory-limiter manual` 参数，也不能因为本地 PSS 低于某个表格值就跳过 Play Console 的分桶检查。[来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/2026-08-28-Play内存门槛2027-02先对四行-深度调研.md；已验证: raw/01-googleblog.html、raw/02-play-support.html 与 AOSP android-17.0.0_r1 MemoryLimiter 源码]
+预算表之外还要区分三类观察入口。Play Console / Developer Reporting API 看到的是按用户设备聚合的长期 P90 和 RAM 档；`dumpsys meminfo`、Perfetto、堆转储与 `/proc` 采样看到的是当前复现场景；Android 17 `MemoryLimiter` 则是在单台设备上按可见性和 cgroup 限制处理“此刻”的异常占用。三组数字口径不同，不能把 Play 阈值直接写成某台设备的 `am memory-limiter manual` 参数，也不能因为本地 PSS 低于某个表格值就跳过 Play Console 的分桶检查。[来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/2026-08-28-Play内存门槛2027-02先对四行-深度调研.md；已验证: raw/01-googleblog.html、raw/02-play-support.html 与 AOSP android-17.0.0_r1 MemoryLimiter 源码]
 
 预算值应来自目标设备上的实测峰值，并提前规定超限时允许降低哪些资源规格。表中列出了各进程需要记录的输入、资源释放时机和超限处理，不提供跨设备通用比例。
 
@@ -252,11 +252,11 @@ Bitmap memory usage 的 P90 阈值只在非前台状态给出：user-perceived s
 
 ### 用进程状态信号释放可重建资源
 
-Android 17 的 `onTrimMemory()` 实现应关注 `TRIM_MEMORY_UI_HIDDEN` 与 `TRIM_MEMORY_BACKGROUND`。从 Android 14（API 34）开始，系统不再投递 `TRIM_MEMORY_RUNNING_*`、`TRIM_MEMORY_MODERATE` 和 `TRIM_MEMORY_COMPLETE`；这些常量在 Android 15（API 35）废弃。`TRIM_MEMORY_UI_HIDDEN` 表示进程原先显示的 UI 已不可见，`TRIM_MEMORY_BACKGROUND` 表示进程进入按最近使用顺序维护的后台 LRU 列表。两者描述状态变化，并非连续的系统内存压力等级。低内存设备还要通过 `ActivityManager.isLowRamDevice()` 选择更小的资源规格。
+Android 17 的 `onTrimMemory()` 实现应关注 `TRIM_MEMORY_UI_HIDDEN` 与 `TRIM_MEMORY_BACKGROUND`。前者表示进程原先显示的 UI 已不可见，后者表示进程进入按最近使用顺序维护的后台 LRU 列表；两者描述状态变化，并非连续的系统内存压力等级。其余等级已经不在投递范围内：从 Android 14（API 34）开始，系统不再投递 `TRIM_MEMORY_RUNNING_*`、`TRIM_MEMORY_MODERATE` 和 `TRIM_MEMORY_COMPLETE`，这些常量在 Android 15（API 35）废弃。低内存设备还要通过 `ActivityManager.isLowRamDevice()` 选择更小的资源规格。
 
 `onLowMemory()` 从 API 34 起也不再调用，并于 API 35 废弃；最低支持版本高于 API 14 且已经实现 `onTrimMemory()` 的应用，可以把 `onLowMemory()` 留空。不要依赖这些旧回调处理 Android 17 的资源释放。
 
-这段回调只释放可重建资源。`releaseUiOnlyResources()` 不应删除播放、导航或前台服务仍在使用的数据，`releaseRebuildableCaches()` 也不应关闭活跃任务占用的资源。
+这个回调只释放可重建资源。`releaseUiOnlyResources()` 不应删除播放、导航或前台服务仍在使用的数据，`releaseRebuildableCaches()` 也不应关闭活跃任务占用的资源。
 
 ```kotlin
 override fun onTrimMemory(level: Int) {
@@ -273,7 +273,7 @@ override fun onTrimMemory(level: Int) {
 
 ### 把线程数纳入虚拟地址预算
 
-线程栈会占用虚拟地址；其中已访问的页面还可能计入 RSS/PSS。Android 17 ART 的 `Thread::CreateNativeThread()` 先调用 `FixStackSize()`：默认请求改用运行时默认栈大小，然后加入兼容空间和栈溢出保护区，满足 POSIX 线程库规定的最小栈大小 `PTHREAD_STACK_MIN`，并向上按页对齐。修正后的数值才会传给 `pthread_attr_setstacksize()` 和 `pthread_create()`，所以代码请求的栈大小不等于最终映射大小。
+线程栈会占用虚拟地址；其中已访问的页面还可能计入 RSS/PSS。Android 17 ART 的 `Thread::CreateNativeThread()` 先调用 `FixStackSize()`：先把默认请求换成运行时默认栈大小，再加入兼容空间和栈溢出保护区，满足 POSIX 线程库规定的最小栈大小 `PTHREAD_STACK_MIN`，并向上按页对齐。修正后的数值才会传给 `pthread_attr_setstacksize()` 和 `pthread_create()`，所以代码请求的栈大小不等于最终映射大小。
 
 治理线程内存时应限制线程来源和最大并发：复用有界线程池，关闭不再使用的执行器（executor），并核对每个 SDK 创建的常驻线程。只有在调用深度可控，且递归、JNI、复杂解析与第三方库调用路径都经过压力测试时，才可以自行缩小栈；否则线程创建失败可能转化为 `StackOverflowError` 或原生代码崩溃。
 
@@ -289,17 +289,17 @@ override fun onTrimMemory(level: Int) {
 
 其中 `anon` 是匿名页，`shmem` 是共享内存页，`memory.swap.current` 是该 cgroup 当前使用的交换空间。超过 `memory.high` 会促使内核回收页面并限制分配速度，`memory.swap.max` 则限制该 cgroup 可用的交换空间。`AnonSwap` 是源码为上述组合量使用的名称，与 PSS、RSS 或 Java 堆都不是同一个指标。
 
-Android 17 r1 确认 `AnonSwap` 超限后，先把当前进程的 `memory.high` 和 `memory.swap.max` 恢复为 `max`，解除两项限制。相关剖析功能标志均开启且系统能取得包名时，系统再发送 `TRIGGER_TYPE_ANOMALY` 异常剖析触发器；无论是否成功生成剖析文件，源码都会延迟 30 秒请求终止进程。这 30 秒只为系统剖析器预留处理时间，不是应用可以依赖的保存期限，业务状态仍应在正常流程中持续保存。
+Android 17 r1 确认 `AnonSwap` 超限后，先把当前进程的 `memory.high` 和 `memory.swap.max` 恢复为 `max`。相关剖析功能标志均开启且系统能取得包名时，系统再发送 `TRIGGER_TYPE_ANOMALY` 异常剖析触发器；无论是否成功生成剖析文件，源码都会延迟 30 秒请求终止进程。这 30 秒只为系统剖析器预留处理时间，不是应用可以依赖的保存期限，业务状态仍应在正常流程中持续保存。
 
-退出归因应同时检查：
+退出归因应同时检查三项：
 
-- `ApplicationExitInfo.getReason() == REASON_OTHER`；`ApplicationExitInfo` 是系统保存的历史进程退出记录；
-- `getDescription()` 包含固定标记 `MemoryLimiter:AnonSwap`；
+- `ApplicationExitInfo.getReason() == REASON_OTHER`。`ApplicationExitInfo` 是系统保存的历史进程退出记录。
+- `getDescription()` 包含固定标记 `MemoryLimiter:AnonSwap`。
 - 退出前的进程状态、测试场景、PSS/RSS 采样和系统触发的剖析文件能够对应到同一次事件。
 
-`getPss()` / `getRss()` 可能返回零，也不保证记录的是终止瞬间；`getTraceInputStream()` 也不会固定附带 `MemoryLimiter` 的诊断文件。命中只能证明匿名页、共享内存页与交换空间的组合量超过设备策略，单凭这一条记录无法判定内存泄漏。大图处理、端侧模型推理、WebView 或音视频处理的短时峰值也可能触发限制。
+`getPss()` / `getRss()` 可能返回零，也不保证记录的是终止瞬间；`getTraceInputStream()` 也不保证返回 `MemoryLimiter` 的诊断文件。命中只能证明匿名页、共享内存页与交换空间的组合量超过设备策略，单凭这一条记录无法判定内存泄漏。大图处理、端侧模型推理、WebView 或音视频处理的短时峰值也可能触发限制。
 
-> **版本警告**：`android-17.0.0_r1` 的 `manual` 数字解释为设备总 RAM 的百分比，并要求使用 1–99 的整数。现行 developer.android.com 行为变更页把无后缀整数解释为 MB 并增加 `max`；source.android Memory Limiter 文档还示例了字节值和 `MB` / `GB` 后缀。它们都不同于 r1 shell 帮助中的百分比语法，不能混用。
+> **版本警告**：`manual` 的参数语法在三条文档里不一致。`android-17.0.0_r1` 的帮助文本是 `manual <PID> <PERCENT|none>`，数字解释为设备总 RAM 的百分比，并要求使用 1–99 的整数；现行 developer.android.com 行为变更页是 `manual <pid> <limit>|max|none`，把无后缀整数解释为 MB 并增加 `max`；source.android Memory Limiter 文档还示例了字节值和 `MB` / `GB` 后缀。三者不能混用。
 
 这段脚本只展示“查询状态、施加测试限制、恢复默认限制”的顺序，应在专用测试设备上运行。r1 中传入的数值是根据场景基线选择的故障注入百分比，不是应用发布时的预算：
 
@@ -311,7 +311,7 @@ adb shell am memory-limiter manual "$target_pid" "$test_limit_value"
 adb shell am memory-limiter manual "$target_pid" none
 ```
 
-在 r1 上，`manual` 的帮助文本为 `manual <PID> <PERCENT|none>`；现行 developer.android.com 行为变更页则是 `manual <pid> <limit>|max|none`，并把无后缀整数解释为 MB。source.android Memory Limiter 文档还给出字节值以及 `MB` / `GB` 后缀示例。测试前应查看目标系统构建的命令帮助和限制状态，不能只根据“Android 17”这个版本名推断参数单位。先用 `status` 保存设备是否启用及 `visible` / `not-visible` 配置，每次 `manual` 后再次查询状态，测试结束用 `none` 恢复设备默认限制。`ignore all` 会改变整台设备的限制策略，不能用于掩盖回归测试失败。
+测试前应查看目标系统构建的命令帮助和限制状态，不能只根据“Android 17”这个版本名推断参数单位。先用 `status` 保存设备是否启用及 `visible` / `not-visible` 配置，每次 `manual` 后再次查询状态，测试结束用 `none` 恢复设备默认限制。`ignore all` 会改变整台设备的限制策略，不能用于掩盖回归测试失败。
 
 r1 的 Java 控制逻辑与命令解析见 [`MemoryLimiter.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java) 和 [`ActivityManagerShellCommand.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java)，cgroup 文件访问与 `AnonSwap` 公式见原生层 [`com_android_server_am_MemoryLimiter.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/jni/com_android_server_am_MemoryLimiter.cpp)。
 
