@@ -53,7 +53,7 @@ consolidated_from:
 
 # Compose Snapshot、状态一致性与并发
 
-Snapshot 系统同时服务于 `mutableStateOf`、Snapshot State 集合、Composition 读依赖、Layout/Drawing 观察以及 `snapshotFlow`。它更接近一套进程内的多版本状态协议，而不是一个“状态变化就重组”的回调容器。
+Snapshot 系统同时支撑 `mutableStateOf`、Snapshot State 集合、Composition 读依赖、Layout/Drawing 观察和 `snapshotFlow`。它管的是进程内的一整套多版本状态协议，版本可见性、写入和通知各占一层；用“状态一变就重组”的回调容器去套它，很多机制都对不上。
 
 这套协议需要回答四个问题：
 
@@ -93,7 +93,7 @@ Snapshot 位于 Jetpack Compose Runtime，不属于 Android 平台源码标签�
 
 与 1.11.4 相比，1.12.0 没有改变 Snapshot 的公开事务模型，但修正了几个会影响边界行为的问题：
 
-- 一个状态在某个 Snapshot 中创建、又在另一个并发 Snapshot 中修改，而创建它的 Snapshot 尚未应用时，apply 观察器不再漏掉通知；
+- 状态在创建它的 Snapshot 尚未应用时被另一个并发 Snapshot 修改，apply 观察器不会再漏掉这条通知；
 - 创建 `StateStateRecord` 时使用调用方传入的 Snapshot ID，避免把当前线程的 Snapshot ID 错写进状态记录；
 - Composition 在销毁时清理待处理观察关系，并修正对 `derivedStateOf` 的跟踪，避免前向写入场景长期保留派生状态；
 - 详细跟踪新增 `DisposableEffect` 与 `SideEffect` 生命周期回调切片，已有的 `Compose:applyObservers` 名称仍然存在。
@@ -140,11 +140,11 @@ return candidate
 
 ### 2.3 MutableState 的取值与赋值
 
-`SnapshotMutableStateImpl.value` 的取值方法调用 `next.readable(this)`。读观察器会在选择状态记录前收到这个 StateObject，用于建立“对象 → 观察域”的关系。
+`SnapshotMutableStateImpl.value` 的取值方法走 `next.readable(this)`。在选择状态记录之前，这个 StateObject 会先交给读观察器，用来建立“对象 → 观察域”的对应关系。
 
-赋值方法先用 `SnapshotMutationPolicy.equivalent()` 判断新旧值。值被视为相等时，写入直接结束；值发生变化时，`overwritable` 在 `sync` 中选择可复用状态记录或创建记录，再写入新值并通知写观察器。
+赋值方法先用 `SnapshotMutationPolicy.equivalent()` 判断新旧值。判定相等时写入直接结束；判定不等时，`overwritable` 在 `sync` 内复用或新建一条状态记录，写入新值，再通知写观察器。
 
-这个锁保护 Runtime 的状态记录结构，不会让 `state.value++` 具备复合原子性。该表达式包含一次读取和一次写入，多个生产者仍可能丢更新。
+`sync` 中的锁保护的是 Runtime 的状态记录结构，`state.value++` 并不会因此变成原子的复合操作。这个表达式包含一次读取和一次写入，多个生产者同时执行仍会丢更新。
 
 ### 2.4 Snapshot State 集合
 
@@ -181,7 +181,7 @@ try {
 
 开放的 Snapshot 会固定自己仍可能读取的版本（源码称为 pinning），从而限制状态记录复用。Snapshot 存活越久，频繁变化的状态对象越可能积累较长的状态记录链。
 
-不要依赖垃圾回收（GC）代替 `dispose()`。源码没有可供应用依赖的 `AbandonedSnapshot` GC 类型。MutableSnapshot 被明确结束且尚未 apply 时，内部才会执行 `abandon()` 处理，把属于它的状态记录 ID 标成 `INVALID_SNAPSHOT`，供后续写入复用。
+不要指望垃圾回收（GC）代替 `dispose()`。源码里没有应用可以依赖的 `AbandonedSnapshot` GC 类型；只有在 MutableSnapshot 被明确结束且尚未 apply 时，内部才走 `abandon()`，把属于它的状态记录 ID 标成 `INVALID_SNAPSHOT`，供后续写入复用。
 
 适合的资源管理规则是：
 
@@ -248,7 +248,7 @@ fun counterPolicy(): SnapshotMutationPolicy<Int> =
 
 Runtime 1.12.0 的 `MutableSnapshot.apply()` 源码明确注明：当前算法不保证可串行化（serializable）的 Snapshot，也没有阻止交叉写入（crossing writes）。两个 Snapshot 读取同一组对象、各自修改不同对象时，已修改对象集合没有交集，双方都可能 apply 成功，却破坏跨对象约束。
 
-下面的测试构造写偏差（write skew）：两个事务依据相同旧状态，分别修改不同对象，单独看都合法，合并后却破坏约束。示例中的约束是“至少一名值班者在线”，它用于说明两个 apply 都成功时，业务不变量仍可能失败。
+下面的测试构造一次写偏差（write skew）：两个事务依据同一份旧状态，各自修改不同对象，单独看都合法，合并后却破坏了约束。这里的约束是“至少一名值班者在线”：两个 apply 都成功，业务不变量依然可能失败。
 
 ```kotlin
 val aliceOnCall = mutableStateOf(true)
@@ -289,7 +289,7 @@ try {
 | 子 Snapshot apply 成功 | 已关闭提交阶段 | 看到子 Snapshot 的新值 | 仍看全局旧值 |
 | 父 Snapshot apply 成功 | — | 已提交 | 看到合并后的值 |
 
-子 Snapshot 的读/写观察器会按 Runtime 规则与父 Snapshot 的观察器合并。`Snapshot.registerApplyObserver` 面向全局应用，子 Snapshot apply 不发送这类通知；最外层提交时，通知会携带嵌套层累计的已修改对象。实验性的工具 API `SnapshotObserver.onApplied()` 不同：子 Snapshot apply 后也会回调，但修改此时只对父 Snapshot 可见。
+子 Snapshot 的读/写观察器会按 Runtime 规则与父 Snapshot 的观察器合并。`Snapshot.registerApplyObserver` 面向全局应用：子 Snapshot apply 不会发送这类通知，只有最外层提交时通知才带上嵌套层累计的已修改对象。实验性的工具 API `SnapshotObserver.onApplied()` 则不同，子 Snapshot apply 后也会回调，但此时修改只对父 Snapshot 可见。
 
 父 Snapshot 已 apply 或 dispose 后，仍存活的子 Snapshot 再调用 apply 会失败。父 Snapshot dispose 后，已经创建的只读子 Snapshot 仍可能按 API 契约继续有效，但它自己仍需 dispose。
 
@@ -297,7 +297,7 @@ try {
 
 ## 6. 从 State 写入到 RecomposeScope
 
-Snapshot 只发布“哪些对象发生过变化”。Composition 决定“哪些可重启作用域（restart scope）读过这些对象”，Recomposer 决定“何时处理这些作用域”。可重启作用域对应一段可被 Compose 单独重新执行的组合代码。
+可重启作用域（restart scope）指一段能被 Compose 单独重新执行的组合代码。Snapshot 只发布“哪些对象发生过变化”，Composition 决定“哪些可重启作用域读过这些对象”，Recomposer 决定“何时处理这些作用域”。
 
 ### 6.1 读依赖怎样建立
 
@@ -335,7 +335,7 @@ Composition 执行时，MutableSnapshot 带有读观察器。`Composition.record
 - `onChangedExecutor` 负责派发失效回调；
 - “依赖对象 → 派生状态”索引用于条件失效。
 
-类文档仍明确标注实例不具备通用线程安全性。`observeReads` 发现同一观察嵌套跨线程时会抛错，并指出同一个 AndroidComposeView 的测量、布局和绘制应在同一线程执行。不要把内部原子队列解读成观察器可由多个布局线程共享。
+类文档仍明确标注：实例不具备通用线程安全性。`observeReads` 检测到同一次观察嵌套跨线程时会抛错，并指出同一个 AndroidComposeView 的测量、布局和绘制应在同一线程执行。内部原子队列不能当作观察器可被多个布局线程共享的依据。
 
 ## 7. derivedStateOf：依赖缓存与条件失效
 
@@ -474,7 +474,7 @@ Snapshot 的主体位于 Kotlin 多平台的公共源码集（common source set�
 
 ## 10. Recomposer、ComposeView 与业务并发边界
 
-Recomposer 注册 Snapshot apply 观察器，把发生变化的 StateObject 与已知 Composition 的读取依赖相交，再把结果放入待处理集合。它的 `stateLock` 保护 Composition、失效记录和调度状态，不是一把覆盖所有 State 写入、重组和 `applyChanges()` 的全局互斥锁；Runtime 会在锁内取得一批任务，在锁外执行较重的 Composition 工作。
+Recomposer 注册 Snapshot apply 观察器，把发生变化的 StateObject 与已知 Composition 的读取依赖相交，再把结果放进待处理集合。它的 `stateLock` 只保护 Composition、失效记录和调度状态，并不是一把覆盖所有 State 写入、重组和 `applyChanges()` 的全局互斥锁；Runtime 在锁内取一批任务，再到锁外执行较重的 Composition 工作。
 
 帧时钟只提供调度节奏，不保证“每次写入各重组一次”或“每个显示帧只重组一次”。一个帧回调开始前的多次写入可以合并，同一次帧回调也可能继续处理新到达的失效。标准 Android `WindowRecomposer` 使用窗口 UI 线程的协程调度器和帧时钟；测试、自建 Recomposer 和多平台宿主可以不同，结论必须从重组循环的协程上下文与创建路径确认。
 
