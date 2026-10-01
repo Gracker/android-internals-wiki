@@ -2,11 +2,17 @@
 title: TaskSnapshot 捕获、Overview 缩略图与启动窗口
 chapter: '2.17'
 section: '2.17'
-status: ready-to-publish
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-09-22'
+last_verified: '2026-10-01'
 last_verified_against: AOSP android-17.0.0_r1 + Launcher3 android-17.0.0_r1
 confidence: high
+pipeline_stage: finalized
+task2b_state: verified
+task6_state: verified
+task9_state: verified
+last_review_finalize_at: '2026-10-01'
+last_review_finalize_run_id: 20261001-220534-d4811f3e
 sources:
 - type: official
   path: https://source.android.com/docs/core/perf/task-snapshots
@@ -29,11 +35,11 @@ sources:
 - type: aosp
   path: packages/apps/Launcher3/quickstep/src/com/android/quickstep/
 - type: aosp
-  path: packages/SystemUI/shared/src/com/android/systemui/shared/system/ActivityManagerWrapper.java
+  path: frameworks/base/packages/SystemUI/shared/src/com/android/systemui/shared/system/ActivityManagerWrapper.java
 - type: aosp
-  path: packages/SystemUI/shared/src/com/android/systemui/shared/recents/utilities/PreviewPositionHelper.java
+  path: frameworks/base/packages/SystemUI/shared/src/com/android/systemui/shared/recents/utilities/PreviewPositionHelper.java
 - type: aosp
-  path: packages/SystemUI/shared/src/com/android/systemui/shared/recents/model/ThumbnailData.kt
+  path: frameworks/base/packages/SystemUI/shared/src/com/android/systemui/shared/recents/model/ThumbnailData.kt
 tags:
 - tasksnapshot
 - recents
