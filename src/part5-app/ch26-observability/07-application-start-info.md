@@ -72,9 +72,9 @@ last_rework_run_id: 20260815-203958-gracker-writing-472
 
 启动耗时要结合启动类型、启动原因和前一次进程状态解释。桌面图标触发的冷启动、最近任务恢复、广播拉起和低内存后的状态恢复，即使首帧耗时相同，优化方向也可能完全不同。
 
-Android 15 / API 35 的 `ApplicationStartInfo` 给应用提供系统侧启动记录，包括进程身份、启动原因、冷/温/热类型、启动状态和单调时钟时间戳。冷启动从创建进程开始，温启动会复用部分已保存状态，热启动把仍在运行的应用带回前台。
+Android 15 / API 35 引入 `ApplicationStartInfo`，为应用提供系统侧的启动记录：进程身份、启动原因、冷/温/热类型、启动状态和单调时钟时间戳。冷启动从创建进程开始，温启动会复用部分已保存状态，热启动把仍在运行的应用带回前台。
 
-业务仍需记录首页何时可用、页面路由、异步数据完成和产品场景；Perfetto 与 `ProfilingManager` 继续解释线程、调度、输入输出（I/O）和 Binder 进程间通信等运行现场。
+业务侧仍需记录首页何时可用、页面路由、异步数据完成和产品场景；Perfetto 与 `ProfilingManager` 继续用于还原线程、调度、输入输出（I/O）和 Binder 进程间通信等运行时现场。
 
 源码锚点采用 `android-17.0.0_r1` 的 `ApplicationStartInfo.java`、`ActivityManager.java` 和 `ProfilingTrigger.java`。
 
@@ -88,7 +88,9 @@ Android 15 / API 35 的 `ApplicationStartInfo` 给应用提供系统侧启动记
 | 业务体验记录 | 用户从哪个入口进入，何时看到主内容并可交互 | route（页面路由）、scene（入口场景）、home ready（首页可用）、业务阶段 |
 | 重型诊断附件 | 慢在主线程、I/O、锁、Binder、渲染还是类加载 | Perfetto system trace、stack sampling（定期抽取调用栈） |
 
-`ApplicationStartInfo` 不能单独定位慢代码，也不能替代 TTID / TTFD 的平台指标。TTID（time to initial display）表示从系统收到启动 Intent 到首帧显示的时间；TTFD（time to full display）表示从同一起点到应用达到可用状态并调用 `reportFullyDrawn()` 的时间。`ApplicationStartInfo` 给每条启动样本增加系统归因，并为业务时间戳和诊断附件提供共同的进程、启动类型与时间基准。
+`ApplicationStartInfo` 不能单独定位慢代码，也不能替代 TTID / TTFD 的平台指标。TTID（time to initial display）表示从系统收到启动 Intent 到首帧显示的时间；TTFD（time to full display）表示从同一起点到应用达到可用状态并调用 `reportFullyDrawn()` 的时间。
+
+它给每条启动样本补上系统归因，并为业务时间戳和诊断附件提供共同的进程、启动类型与时间基准。
 
 ## Android 15 的两种读取入口
 
@@ -125,11 +127,11 @@ Android 15 / API 35 的 `ApplicationStartInfo` 给应用提供系统侧启动记
 | `getLaunchMode()` | 启动 Activity 的 launch mode（实例复用模式） | 非 Activity 启动不要过度解释 |
 | `wasForceStopped()` | 是否为应用被 force-stop（强行停止）后的首次进程启动 | 可用于重新注册此前被清理的 alarm（定时任务）、job（调度任务）等 |
 
-公开的 start reason 包括 alarm、backup、boot complete、broadcast、content provider、job、launcher、launcher recents、push、service、start activity 和 other。reason 描述启动诱因，同一个原因可能覆盖多种组件；组件类型要从 Android 16 新增的 `getStartComponent()` 读取。
-
-Android 16 / API 36 增加 `getStartComponent()`，用于区分 Activity、Service、Broadcast、ContentProvider 和 Other。API 36 起应先按 start component 分流，再结合 reason 细分来源；Android 15 没有该字段，只能保留 reason，并接受较低的分类精度。
-
 external service 指应用绑定后以调用方身份运行、但代码由另一个包提供的服务；这类场景下 UID 字段尤其需要分别保存。
+
+公开的 start reason 包括 alarm、backup、boot complete、broadcast、content provider、job、launcher、launcher recents、push、service、start activity 和 other。reason 描述启动诱因，同一个原因可能覆盖多种组件，组件类型无法从 reason 推出。
+
+Android 16 / API 36 增加的 `getStartComponent()` 用于区分 Activity、Service、Broadcast、ContentProvider 和 Other。API 36 起应先按 start component 分流，再结合 reason 细分来源；Android 15 没有该字段，只能保留 reason，并接受较低的分类精度。
 
 ### 冷、温、热启动
 
@@ -156,7 +158,7 @@ Android 15 缺少 start component 时，不要仅凭 reason 把样本永久定�
 
 ## 时间戳协议
 
-`getStartupTimestamps()` 返回非空的 `Map<Integer, Long>`。value 是纳秒单位的单调时钟时间戳；单调时钟只随设备运行向前递增，适合计算时长，不表示从 1970 年开始的 Unix epoch 日历时间。Map 对象非空，但各个 key 仍可能缺失。
+`getStartupTimestamps()` 返回非空的 `Map<Integer, Long>`。Map 中的 value 是纳秒单位的单调时钟时间戳；单调时钟只随设备运行向前递增，适合计算时长，不表示从 1970 年开始的 Unix epoch 日历时间。Map 对象本身非空，但各个 key 仍可能缺失。
 
 系统公开的主要 key 包括：
 
@@ -187,7 +189,7 @@ Android 15 缺少 start component 时，不要仅凭 reason 把样本永久定�
 
 API 35 还提供 `ActivityManager#addStartInfoTimestamp(key, timestampNs)`。开发者 key 的保留范围是 `START_TIMESTAMP_RESERVED_RANGE_DEVELOPER_START` 到 `START_TIMESTAMP_RESERVED_RANGE_DEVELOPER`，即 21 到 30。重复使用同一个 key 会覆盖旧值；在 `reportFullyDrawn()` 之后添加的 timestamp 会被丢弃。
 
-下面的代码演示两件事：安全读取未完成记录，以及在调用 `reportFullyDrawn()` 前写入一个由应用数据协议固定分配的首页 ready 时间戳。
+下面的代码演示两件事：如何安全读取未完成记录，以及如何在调用 `reportFullyDrawn()` 前，通过应用数据协议固定分配的 key 写入首页 ready 时间戳。
 
 ```kotlin
 data class StartEvidence(
@@ -265,7 +267,7 @@ fun markHomeReadyBeforeFullyDrawn(context: Context) {
 
 广告、引导页或登录流程是否纳入产品体验指标的口径调整，应由版本化协议定义。研发回归始终保留原始时长，否则一次产品流程变化可能被误判为系统启动性能改善。
 
-TTID 是系统从收到启动 Intent 到首次显示帧的指标；TTFD 从同一起点到应用报告 fully drawn。业务 `home_ready` 可以早于或晚于其他页面条件，但不能冒充 TTFD。应用应在主内容可见且可用后调用 `reportFullyDrawn()`，并让该语义跨版本稳定。
+业务 `home_ready` 可以早于或晚于其他页面条件，但不能冒充 TTFD。应用应在主内容可见且可用后调用 `reportFullyDrawn()`，并让该语义跨版本稳定。
 
 ## Android 17 冷启动 trigger
 
@@ -320,7 +322,7 @@ system trace 和 stack sampling 可能包含方法名、线程名、调度关系
 
 ## CI 与灰度门禁
 
-CI（持续集成）中的 Macrobenchmark、灰度发布和线上全量监控可以使用同一套指标名称，但数值分布不能混用。Macrobenchmark 是 AndroidX 在设备上重复执行完整应用场景的基准测试工具。
+Macrobenchmark 是 AndroidX 在设备上重复执行完整应用场景的基准测试工具。CI（持续集成）中的 Macrobenchmark、灰度发布和线上全量监控可以使用同一套指标名称，但数值分布不能混用。
 
 | 环境 | 数据 | 比较方式 |
 |---|---|---|
