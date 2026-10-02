@@ -4,8 +4,8 @@ chapter: '24.8'
 section: '24.8'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_verified_against: AOSP android-17.0.0_r1 (Wifi, Connectivity and NetworkStack); Android Developers connectivity and Cronet docs current through 2026-08-15; OkHttp 5.4.0 source and changelog
+last_verified: '2026-10-02'
+last_verified_against: AOSP android-17.0.0_r1 (Wifi, Connectivity and NetworkStack); Android Developers connectivity and Cronet docs current through 2026-10-02; OkHttp 5.5.0 source and changelog
 confidence: high
 sources:
 - type: aosp
@@ -43,7 +43,7 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/src/com/android/server/connectivity/NetworkRanker.java
 - type: upstream
-  path: https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt
 - type: upstream
   path: https://github.com/lysine-dev/okhttp/blob/main/CHANGELOG.md
 - type: blog
@@ -80,6 +80,8 @@ last_review_finalize_at: '2026-08-15T11:11:04+08:00'
 last_review_finalize_run_id: 20260815-111104-gracker-writing-review
 last_draft_polish_at: '2026-08-15T11:11:04+08:00'
 last_draft_polish_run_id: 20260815-111104-gracker-writing
+last_idle_audit_at: '2026-10-02T18:35:34+08:00'
+last_idle_audit_run_id: 20261002-183534-idle-audit-5cc4f4d0
 ---
 
 # Wi-Fi 评分、网络选择与连接切换性能
@@ -184,7 +186,7 @@ Wi-Fi RSSI 下降后，应用不一定马上收到默认网络变化。当前 Wi
 
 OkHttp 的事件序列不能压成“每种事件只留一个时间戳”。重试、重定向和认证会在同一个 `Call` 中产生多组 DNS、连接、请求和响应事件；复用既有连接时没有 DNS 与 `connect` 事件；双工请求的收发事件还可能交错。
 
-这段监听器按 OkHttp 5.4.0 的接口签名编写，并保留原始单调时钟时间线。单调时钟只随设备运行时间前进，不受用户改时间或系统校时影响。`defaultGeneration` 是本文为每次默认网络变化分配的递增序号，只用于关联一次切网期间的事件：
+这段监听器按 OkHttp 5.5.0 的接口签名编写，并保留原始单调时钟时间线。单调时钟只随设备运行时间前进，不受用户改时间或系统校时影响。`defaultGeneration` 是本文为每次默认网络变化分配的递增序号，只用于关联一次切网期间的事件：
 
 ```kotlin
 data class CallMark(
@@ -298,7 +300,7 @@ class TimelineEventListener(
 }
 ```
 
-截至 2026-08-15，OkHttp 最新稳定版本为 5.4.0。示例使用该版本的 `dispatcherQueueStart(call, dispatcher)` 和 `dispatcherQueueEnd(call, dispatcher)` 签名；升级依赖后仍应以对应版本的 `EventListener` 源码为准。
+截至 2026-10-02，OkHttp 最新稳定版本为 5.5.0。示例使用该版本的 `dispatcherQueueStart(call, dispatcher)` 和 `dispatcherQueueEnd(call, dispatcher)` 签名；升级依赖后仍应以对应版本的 `EventListener` 源码为准。
 
 监听器应由 `EventListener.Factory` 为每个 `Call` 单独创建。一次 `Call` 可能因重试或重定向包含多次 HTTP 交换，也就是多轮请求与响应；分析端要按完整事件序列分组，不能把末次 `dnsEnd` 与第一次 `dnsStart` 相减。
 
@@ -574,7 +576,7 @@ AOSP 的 Connectivity 选择逻辑位于 Mainline 模块，也就是一类可独
 
 ### HTTP/3、QUIC 与网络切换
 
-本文的 `EventListener` 示例与正文一致，都以 OkHttp 5.4.0 为锚点。OkHttp 自带传输实现支持 HTTP/1.1 与 HTTP/2，不直接提供 HTTP/3。HTTP/3 运行在 QUIC 传输协议之上；需要它时，应评估 Android `HttpEngine`（平台网络引擎 API）、Cronet（Chromium 网络栈的 Android 库），或官方提供的 Cronet Transport for OkHttp 集成。
+本文的 `EventListener` 示例与正文一致，都以 OkHttp 5.5.0 为锚点。OkHttp 自带传输实现支持 HTTP/1.1 与 HTTP/2，不直接提供 HTTP/3。HTTP/3 运行在 QUIC 传输协议之上；需要它时，应评估 Android `HttpEngine`（平台网络引擎 API）、Cronet（Chromium 网络栈的 Android 库），或官方提供的 Cronet Transport for OkHttp 集成。
 
 QUIC 用连接 ID 标识一条逻辑连接，不把连接身份完全绑定在原来的 IP 地址和端口上，因此具备连接迁移的协议基础。迁移仍不会因使用 HTTP/3 自动发生。`HttpEngine` 和 Cronet 都提供连接迁移选项；只有启用默认网络迁移、请求使用 QUIC 且服务端支持迁移时，活动连接才有机会在网络变化后继续。允许迁往非默认网络还可能使用按量计费的流量。
 
@@ -630,5 +632,5 @@ Wi-Fi 模块负责在候选 AP 与 BSSID 中做无线侧选择，Connectivity �
 - [Android Developers · Network stacks](https://developer.android.com/media/media3/exoplayer/network-stacks)
 - [Android Developers · Use Cronet with other libraries](https://developer.android.com/develop/connectivity/cronet/integration)
 - [OkHttp · Connections](https://lysine.dev/okhttp/features/connections/)
-- [OkHttp 5.4.0 · EventListener.kt](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt)
+- [OkHttp 5.5.0 · EventListener.kt](https://github.com/lysine-dev/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt)
 - [OkHttp · Changelog](https://github.com/lysine-dev/okhttp/blob/main/CHANGELOG.md)
