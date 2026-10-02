@@ -4,8 +4,8 @@ chapter: '1.16'
 section: '1.16'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-09'
-last_verified_against: AOSP android-17.0.0_r1 + ACK android17-6.18-2026-06_r6 + Android Developers
+last_verified: '2026-10-02'
+last_verified_against: AOSP android-17.0.0_r1 + ACK android17-6.18-2026-06_r6 + Android Developers docs checked 2026-10-02, including Developer Verification FAQ updated 2026-09-30
 confidence: high
 sources:
 - type: aosp
@@ -181,6 +181,8 @@ last_body_apply_at: '2026-08-06T11:15:29+08:00'
 last_body_apply_run_id: 20260806-111529-1f9a01ff
 last_review_finalize_at: '2026-08-06T12:07:15+08:00'
 last_review_finalize_run_id: 20260806-120548-9b08ffcd
+last_idle_audit_at: '2026-10-02T10:38:26+08:00'
+last_idle_audit_run_id: 20261002-103534-idle-audit-2ae06b76
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/1.67-android17-packagemanager-architecture-performance.md
@@ -619,7 +621,7 @@ Android Developer Verification（Android 开发者验证，后文简称“开发
 
 - 平台源码：AOSP `android-17.0.0_r1`。
 - 平台接口：Android 17 / API 37；相关公开接口最早标记为 Android 16.1 / API 36.1。
-- 产品政策：Android Developer Verification 官方文档在 2026-07-25 的公开口径。
+- 产品政策：Android Developer Verification 官方指南、FAQ 与上线博客截至 2026-09-30 的公开口径。
 
 政策会继续变化，源码标签不会。工程实现应把两者分开管理。
 
@@ -637,9 +639,9 @@ AOSP 中存在这些类，并不表示任意 AOSP 构建都会自动执行 Googl
 
 `android.content.pm.verify.developer` 下的 `DeveloperVerifierService`、`DeveloperVerificationSession` 和 `DeveloperVerificationStatus` 都标有 `@SystemApi` 与 `@hide`。它们定义平台与受信任 verifier 之间的协议，普通应用无法通过公开 SDK 直接实现或调用。普通安装器只能使用 `PackageInstaller` 公开的结果附加字段、失败原因码和扩展接口。
 
-### 2. 截至 2026-07-25，政策执行到哪里
+### 2. 截至 2026-09-30，政策执行到哪里
 
-#### 2.1 2026 年 9 月只在首批渠道执行
+#### 2.1 2026-09-30 起只在首批渠道执行
 
 从 2026-09-30 起，巴西、印度尼西亚、新加坡和泰国经 Google 认证的 Android 设备开始执行首批验证，但当前公布的范围只覆盖下列参与商店发起的安装：
 
