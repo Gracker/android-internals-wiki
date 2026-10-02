@@ -125,7 +125,7 @@ consolidated_from:
 
 本文核对的源码来自 Android 开放源代码项目（AOSP）的 Android 17 / API 37 / `android-17.0.0_r1` 标签。相关内容集中在 Android 框架和应用接口，不涉及某个 Linux 内核版本特有的机制，所以无需记录内核标签（kernel tag）。`ApplicationExitInfo` 的历史容量有限，字段也可能缺失。它需要与崩溃采集 SDK、ANR 监控和原生代码符号化（把程序地址还原为函数或源码位置）配合使用，单独一条退出记录无法证明某段业务代码就是退出原因。
 
-ApplicationExitInfo 提供历史进程退出原因、状态和部分诊断数据；ProfilingManager 与 ProfilingTrigger 在较新版本提供受控性能采集。能力随 API、flag、系统实现和用户设置变化。
+本章前半部分讲 `ApplicationExitInfo` 这类被动退出记录，以及它和崩溃采集 SDK、ANR 监控、原生符号化的配合方式；后半部分讲 Android 15 之后 `ProfilingManager` 与 `ProfilingTrigger` 提供的主动与触发式采集。两部分能力都随 API、flag、系统实现和用户设置变化。
 
 ## 退出原因、状态、Trace 与访问范围
 
@@ -159,7 +159,7 @@ Android 11 引入 `ActivityManager.getHistoricalProcessExitReasons(packageName, 
 - `maxNum = 0` 表示返回当前仍保留的全部匹配记录，历史范围仍受系统容量限制。
 - 通过 `BIND_EXTERNAL_SERVICE` 绑定的外部服务进程也可能出现在调用包的退出记录中，归因时要保留进程名与 UID 字段。
 
-公开文档只承诺历史信息位于环形缓冲区（ring buffer，容量满后会淘汰旧记录）。AOSP `android-17.0.0_r1` 的默认资源 `config_app_exit_info_history_list_size` 是每包 16 条，但设备厂商可以覆盖这个资源值，它不属于 SDK 合约。Android 17 的 `AppExitInfoContainer` 使用 `ArrayList<ApplicationExitInfo>`，容量超限时删除时间最早的记录；同一 PID 可以保留多次退出。因此，基于旧实现得出的“以 PID 为键，同一 PID 必然覆盖”这一结论不适用于该标签。
+公开文档只承诺历史信息位于环形缓冲区（ring buffer，容量满后会淘汰旧记录）。AOSP `android-17.0.0_r1` 的默认资源 `config_app_exit_info_history_list_size` 是每包 16 条，但设备厂商可以覆盖这个资源值，它不属于 SDK 合约。Android 17 的 `AppExitInfoContainer` 使用 `ArrayList<ApplicationExitInfo>`，容量超限时删除时间最早的记录；同一 PID 可以保留多次退出。因此，“以 PID 为键、同一 PID 必然覆盖”只是旧实现的结论，不适用于该标签。
 
 这段代码只读取轻量元数据，不在调用线程复制 trace。调用应放到应用自己的 I/O 执行器（executor）中；`maxNum = 0` 读取系统当前保留的记录，服务端或本地处理游标（记录已处理位置）负责去重。
 
@@ -200,7 +200,7 @@ fun readExitSummaries(
 }
 ```
 
-`ExitSummary` 是项目自定义的数据传输对象（DTO），只负责在层之间传递退出摘要。`description` 只能用于受控明细，不能参与稳定分组；`processStateSummary` 与 ANR 字段都可能为 `null`。查询会通过 Binder 进行进程间通信，批量返回的对象也会占用内存，所以不能在首帧关键路径同步执行。
+`ExitSummary` 是项目自定义的数据传输对象（DTO），只负责在层之间传递退出摘要。`description` 只能用于受控明细，不能参与稳定分组；`processStateSummary` 与 ANR 字段都可能为 `null`。查询要经 Binder 跨进程调用，批量返回的对象也会占用内存，所以不能在首帧关键路径同步执行。
 
 `reason` 是分类主字段，`status` 的解释取决于 `reason`：进程调用 `exit()` 时，`status` 保存退出码；进程因操作系统信号结束时，`status` 保存信号编号。业务协议应保存 SDK 枚举值与采集设备的 API 级别，不要自行复制 `reason` 的整数常量。
 
@@ -233,7 +233,7 @@ Android 17 / API 37 的 `getAnrInfo()` 还提供 ANR ID、类型、系统等待�
 
 API 37 还增加 `ActivityManager.registerAnrWarningListener()`。它会在应用接近 ANR 超时时尽力回调，执行回调的 executor 不应使用主线程。该回调可能不执行，也可能没有足够时间完成工作，只适合写入已经预分配的轻量摘要或触发受控采集，不能作为 ANR 覆盖率保证。
 
-原生崩溃事件可以把 Crashpad、Breakpad 或自研 SDK 生成的小型转储（minidump）及事件封装（envelope），与 `REASON_CRASH_NATIVE` 对应的 tombstone 作为独立原始来源。服务端用构建 ID、应用二进制接口（ABI）、操作系统信号、故障地址（fault address）、崩溃线程和符号化后的栈顶帧匹配候选。SDK 现场缺失时，tombstone 可以补充证据；tombstone 缺失时也要保留 SDK 事件，不能因为某个附件不存在而删除事故记录。
+原生崩溃事件有两类独立原始来源：Crashpad、Breakpad 或自研 SDK 生成的小型转储（minidump）及事件封装（envelope），以及 `REASON_CRASH_NATIVE` 对应的 tombstone。服务端用构建 ID、应用二进制接口（ABI）、操作系统信号、故障地址（fault address）、崩溃线程和符号化后的栈顶帧匹配候选。SDK 现场缺失时，tombstone 可以补充证据；tombstone 缺失时也要保留 SDK 事件，不能因为某个附件不存在而删除事故记录。
 
 Play Console、Crashlytics 与自研应用性能监控（APM）各有不同的安装来源、采样、去重和用户口径，`ApplicationExitInfo` 则保存系统的近期进程记录。同一次崩溃或 ANR 可能出现在多个来源，统一报表必须先归并事件，并保留来源事件 ID 列表（`source_event_ids`）与归并置信度。
 
@@ -387,7 +387,7 @@ Android 10 到 Android 17 的公开诊断能力可以分成三条路径。本文
 | 应用请求采集 | App 已知问题正在复现，能否请求一次 profile | Android 15 / API 35 | `ProfilingManager#requestProfiling()`，或 AndroidX Profiling | system trace、Java heap dump、heap profile、stack sampling |
 | 系统事件触发采集 | 系统识别到特定事件时，能否保存事件前后的 profile | Android 16 / API 36 | `addProfilingTriggers()`、全局结果监听器 | 后台 trace 快照、Java heap dump、stack sample 等 |
 
-退出追溯记录进程终点。它适合确认由应用无响应（ANR）、原生代码崩溃（native crash）、用户操作或系统资源处置引起的退出，但通常缺少故障前的完整运行时序。应用请求采集针对可以控制的复现时段。系统事件触发采集依赖后台采样和限流，用来捕获难以预测的事件。
+退出追溯记录进程终点。它适合确认由 ANR、原生代码崩溃（native crash）、用户操作或系统资源处置引起的退出，但通常缺少故障前的完整运行时序。应用请求采集针对可以控制的复现时段。系统事件触发采集依赖后台采样和限流，用来捕获难以预测的事件。
 
 一次问题可以关联多条路径。例如，ANR 发生时系统可能生成触发式 system trace；进程随后被杀，下次启动又能读到 `ApplicationExitInfo`。两者应作为独立来源归档，再通过时间、进程和事件语义建立关联，不能因为时间相近就覆盖其中一份。
 
@@ -411,7 +411,7 @@ API 36.1 是 Android 16 的 minor SDK release（次版本 SDK 发布），同一
 
 Android 10 只能依赖 App 自有状态、Crash SDK，以及受控场景下的 bug report 或 Perfetto；Android 11 才加入 `ApplicationExitInfo`。Android 12 开始，native crash 记录可能带 tombstone protobuf；Android 13、14 又补充了 freezer、包状态变化和包更新等 reason。
 
-这些退出字段、trace 类型、低内存能力探测和低版本回退策略已在前半篇完整展开。这里不再复制读取代码和字段解释，只把它们作为版本矩阵中的“被动退出证据”，继续讨论 Android 15 之后的主动与触发式 profiling。
+这些退出字段、trace 类型、低内存能力探测和低版本回退策略已在前半篇完整展开，这里不再重复读取代码和字段解释，只把它们作为版本矩阵中的“被动退出证据”，继续讨论 Android 15 之后的主动与触发式 profiling。
 
 ### Android 15：应用请求 profiling
 
@@ -424,7 +424,7 @@ Android 15 / API 35 引入公开的 `ProfilingManager`。实现位于 Mainline P
 | profiling type | 适用问题 | 主要成本或限制 |
 |---|---|---|
 | Java heap dump | 完整记录某一时刻的 Java 堆对象，用于分析泄漏和堆占用构成 | 可能暂停应用；文件可能含对象字段和业务数据 |
-| heap profile | 对一段时间内的内存分配进行采样，用于定位分配热点和堆增长 | 采样结果有偏差；时段要覆盖问题发生阶段 |
+| heap profile | 对一段时间内的内存分配采样，用于定位分配热点和堆增长 | 采样结果有偏差；时段要覆盖问题发生阶段 |
 | stack sampling | 定期抽取线程调用栈，用较低成本观察 CPU 热点 | 短函数和瞬态热点可能未被采到 |
 | system trace | 记录调度、Binder、应用 trace 等系统时间线，用于分析启动和卡顿 | 缓冲区和时长影响文件大小与覆盖范围 |
 
