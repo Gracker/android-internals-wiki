@@ -132,7 +132,9 @@ consolidated_from:
 
 # Crash 与 ANR 监控体系
 
-崩溃（Crash）上报体系需要在进程退出前尽量保存定位证据，并在后续可用的执行窗口把证据送到分析系统。Java Crash 指未处理的 Java/Kotlin 异常，Native Crash 指 C/C++ 等原生代码触发的致命信号；捕获机制见 20.2、20.3 和 17.9。本节关注本地留存、多进程归集、符号化、告警和发布门禁。符号化是把混淆名或二进制地址还原成可读的函数名、文件名和行号的过程。
+崩溃（Crash）上报体系需要在进程退出前尽量保存定位证据，并在后续可用的执行窗口把证据送到分析系统。Java Crash 指未处理的 Java/Kotlin 异常，Native Crash 指 C/C++ 等原生代码触发的致命信号；捕获机制见 20.2、20.3 和 17.9。
+
+符号化是把混淆名或二进制地址还原成可读的函数名、文件名和行号的过程。本节关注本地留存、多进程归集、符号化、告警和发布门禁。
 
 平台源码上界为 Android 17 / API 37 / `android-17.0.0_r1`。崩溃主路径位于 Android 框架、bionic C 库与 debuggerd 等用户空间组件，不依赖 Android 17 的某项内核专有实现，因此不附加内核源码标签。
 
@@ -163,18 +165,20 @@ flowchart TD
 
 #### 捕获：Java 与 Native 不是同一种执行环境
 
-Java 未捕获异常的公开入口是 `Thread.UncaughtExceptionHandler`，即线程的未捕获异常处理器。在 Android 17 的 [`RuntimeInit.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java) 中，`LoggingHandler` 记录 `FATAL EXCEPTION`，`KillApplicationHandler` 向 ActivityManager（系统活动与进程管理服务）报告崩溃，并在 `finally` 中执行 `Process.killProcess()` 与 `System.exit(10)`。`mCrashing` 状态位用于阻止崩溃处理再次递归进入。
+Java 未捕获异常的公开入口是 `Thread.UncaughtExceptionHandler`，即线程的未捕获异常处理器。在 Android 17 的 [`RuntimeInit.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java) 中，`LoggingHandler` 记录 `FATAL EXCEPTION`，`KillApplicationHandler` 向 ActivityManager（系统活动与进程管理服务）报告崩溃，并在 `finally` 中执行 `Process.killProcess()` 与 `System.exit(10)`。`mCrashing` 状态位用于阻止崩溃处理递归进入。
 
 自定义 Java handler（处理器）应在安装时保存前一个处理器，并在最小记录逻辑结束后调用它。调用应放在 `finally` 中且只发生一次；不调用前一个处理器会改变平台的日志、报告与进程退出语义。处理器运行在发生异常的线程上，因此 Java 路径也不适合等待网络、获取业务锁或遍历大型对象图。
 
-Android 平台的 Native Crash 路径约束更多。debuggerd 是 Android 的原生崩溃诊断机制；Android 17 的 [`debuggerd_handler.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp) 会预先准备备用栈，并以 `SA_RESTART | SA_SIGINFO | SA_ONSTACK | SA_EXPOSE_TAGBITS` 标志注册信号处理。收到致命信号后，它在专门准备的环境中启动辅助进程 `crash_dump`，读取崩溃进程的状态。[`crash_dump.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp) 通过 Linux 进程追踪接口 `ptrace` 读取线程状态，再经负责集中保存记录的 tombstoned 服务写出 tombstone。tombstone 是包含信号、寄存器、线程栈和内存映射等信息的原生崩溃诊断记录。
+Android 平台的 Native Crash 路径约束更多。debuggerd 是 Android 的原生崩溃诊断机制；Android 17 的 [`debuggerd_handler.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp) 会预先准备备用栈，并以 `SA_RESTART | SA_SIGINFO | SA_ONSTACK | SA_EXPOSE_TAGBITS` 标志注册信号处理。
+
+收到致命信号后，它在专门准备的环境中启动辅助进程 `crash_dump`，读取崩溃进程的状态。[`crash_dump.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp) 通过 Linux 进程追踪接口 `ptrace` 读取线程状态，再把结果交给 tombstoned 服务写出 tombstone；tombstoned 负责集中保存这些记录。tombstone 是包含信号、寄存器、线程栈和内存映射等信息的原生崩溃诊断记录。
 
 这条路径需要明确两个边界：
 
-- 信号处理代码在目标进程一侧初始化；debuggerd 守护进程不会进入应用替它注册 `sigaction`，`crash_dump` 与 tombstoned 只参与后续抓取和保存。
+- 信号处理代码在目标进程一侧初始化；debuggerd 守护进程不会替应用注册 `sigaction`，`crash_dump` 与 tombstoned 只参与后续抓取和保存。
 - 平台处理器依赖预分配栈、管道、专用辅助进程和平台权限，普通 Crash SDK 不能照搬。自定义信号处理函数只能使用经过审计的异步信号安全（async-signal-safe）操作和预分配内存；现场不能构造 JSON、申请堆内存、获取普通互斥锁或发起网络请求。
 
-第三方应用通常无权读取 `/data/tombstones`。应用侧一般通过经过验证的 Native Crash SDK 生成 minidump（只保存诊断所需线程、寄存器和选定内存信息的小型转储），或在后续启动时查询记录近期进程退出原因的系统 API `ApplicationExitInfo`。tombstone、bugreport（系统诊断包）、logcat（Android 日志工具）与 `ndk-stack` 主要用于开发和平台诊断；`ndk-stack` 是 NDK（Native Development Kit，Android 原生开发工具包）自带的地址符号化工具。
+第三方应用通常无权读取 `/data/tombstones`。应用侧一般通过经过验证的 Native Crash SDK 生成 minidump（只保存诊断所需线程、寄存器和选定内存信息的小型转储），或在后续启动时查询系统 API `ApplicationExitInfo`，由它返回近期进程退出原因。tombstone、bugreport（系统诊断包）、logcat（Android 日志工具）与 `ndk-stack` 主要用于开发和平台诊断；`ndk-stack` 是 NDK（Native Development Kit，Android 原生开发工具包）自带的地址符号化工具。
 
 #### 最小记录：字段用于关联，不堆积现场信息
 
@@ -312,7 +316,7 @@ Native 样本和符号产物至少要通过以下信息匹配：
 | NDK、编译器和链接参数 | 解释栈展开（unwind）、内联与帧指针（frame pointer）的差异；NDK 是 Android 的 Native 开发工具包 |
 | 未剥离产物或独立符号文件 | 恢复函数名、源码文件和行号 |
 
-对第三方或非默认目录的 Native 库，不能只验证主模块中 Native 构建工具 CMake 的输出。以 Crashlytics 为例，额外库可能需要通过 `unstrippedNativeLibsDir` 指定未剥离库的目录；自建流水线同样应枚举最终 APK 或 AAB 中的每个 `.so` 文件，检查其 Build ID，并确认产物库中存在匹配的符号文件。缺失任一目标 ABI 的符号文件时，都应阻断相应发布产物。
+对第三方库或放在非默认目录的 Native 库，不能只验证主模块里 CMake（Native 构建工具）的输出。以 Crashlytics 为例，额外库可能需要通过 `unstrippedNativeLibsDir` 指定未剥离库的目录；自建流水线同样应枚举最终 APK 或 AAB 中的每个 `.so` 文件，检查其 Build ID，并确认产物库中存在匹配的符号文件。缺失任一目标 ABI 的符号文件时，都应阻断相应发布产物。
 
 #### 问题聚合：符号化成功后再生成签名
 
@@ -456,7 +460,7 @@ sequenceDiagram
 
 图中 early dump 与完整处理分开执行，用于尽早保存目标进程现场，同时避免多个 ANR 同时发生时并发执行成本较高的完整线程转储。
 
-`StackTracesDumpHelper` 对一次完整抓取使用总预算，并乘以 `Build.HW_TIMEOUT_MULTIPLIER`：Android 17 源码中的基础总预算为 20 秒，单个 Native dump（原生线程转储）基础预算为 2 秒，early dump 基础预算为 10 秒。Java 路径调用 `Debug.dumpJavaBacktraceToFileTimeout()` 获取 Java 调用栈；输出失败或过小时再尝试 Native backtrace（原生调用栈）。其 `getExtraPids()` 使用 `ProcessCpuTracker` 从候选 Java 进程中选择最多两个 CPU 活跃进程追加栈，用于发现目标进程是否在等待其他进程。这里的数字是 `android-17.0.0_r1` 的抓取预算，不是 App 判定 ANR 的通用阈值。
+`StackTracesDumpHelper` 对一次完整抓取使用总预算，并乘以 `Build.HW_TIMEOUT_MULTIPLIER`：Android 17 源码中的基础总预算为 20 秒，单个 Native dump（原生线程转储）基础预算为 2 秒，early dump 基础预算为 10 秒。Java 路径调用 `Debug.dumpJavaBacktraceToFileTimeout()` 获取 Java 调用栈；输出失败或过小时再尝试 Native backtrace（原生调用栈）。其 `getExtraPids()` 使用 `ProcessCpuTracker` 从候选 Java 进程中选择最多两个 CPU 最活跃的进程，并追加它们的栈，用于发现目标进程是否在等待其他进程。这里的数字是 `android-17.0.0_r1` 的抓取预算，不是 App 判定 ANR 的通用阈值。
 
 #### SIGQUIT 在平台抓栈中的位置
 
@@ -481,7 +485,7 @@ ANR 指标要分两套口径：内部治理口径和 Google Play Android vitals 
 
 Play 当前把用户感知 ANR 率列为 core vital（会影响应用可发现性的核心质量指标）。官方口径中，只有 `Input dispatching timed out` 计入用户感知 ANR；它不等于应用全部 ANR。公开的不良行为阈值为：全设备维度至少 0.47% 的日活用户遇到用户感知 ANR，单机型维度至少 8%。Google Play 每日使用最近 28 天的平均值评估应用质量；超过阈值可能降低应用在 Google Play 的可发现性，也可能在商品详情中显示警告。
 
-Play 的“用户”按设备和自然日去重：同一账号在两台设备上会计为两个日活用户，同一设备上的多个账号计为一个。Android vitals 又以从 Google Play 安装、通过 Play 认证且选择共享使用情况与诊断信息的设备数据为基础。内部用户 ANR 率可以采用相同的分子和分母定义来比较趋势，但不能宣称与 Play Console 数值逐条一致。
+Play 的“用户”按设备和自然日去重：同一账号在两台设备上会计为两个日活用户，同一设备上的多个账号计为一个。Android vitals 的数据又只来自满足这些条件的设备：从 Google Play 安装、通过 Play 认证，且用户选择共享使用情况与诊断信息。内部用户 ANR 率可以采用相同的分子和分母定义来比较趋势，但不能宣称与 Play Console 数值逐条一致。
 
 内部指标不应照搬“ANR 次数 / 启动次数”。更稳的拆法是：
 
