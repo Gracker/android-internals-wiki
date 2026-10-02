@@ -46,18 +46,18 @@ pipeline_stage: finalized
 
 # BluetoothSocket read() 断开语义与长连接治理
 
-阻塞中的 `BluetoothSocket.read()` 以 EOF、异常或数据返回来表达连接状态，业务层不能把任一结果简单等同于可立即重连。可靠长连接需要把读写线程、关闭顺序、状态机和退避预算放在同一套治理中。
+阻塞中的 `BluetoothSocket.read()` 用 EOF、异常或数据返回三种结果表示连接状态，业务层不能把任一结果简单等同于可立即重连。可靠长连接需要把读写线程、关闭顺序、状态机和退避预算放在同一套治理中。
 
 ## 问题范围与结论边界
 
-`BluetoothSocket` 是 Android 用于蓝牙连接的套接字 API。长连接的一个返回值处理错误，可能同时造成读线程不退出、界面仍显示已连接、旧连接事件覆盖新状态，以及重连反复触发扫描。Android 17 改变了 RFCOMM 输入流结束时的表现，只捕获 `IOException` 的旧代码已经不能覆盖全部退出路径。
+`BluetoothSocket` 是 Android 用于蓝牙连接的套接字 API。长连接里只要有一次返回值处理出错，就可能同时造成读线程不退出、界面仍显示已连接、旧连接事件覆盖新状态，以及重连反复触发扫描。Android 17 改变了 RFCOMM 输入流结束时的表现，只捕获 `IOException` 的旧代码已经不能覆盖全部退出路径。
 
-RFCOMM（Radio Frequency Communication，射频通信）是经典蓝牙中面向连接的字节流传输，常用于串行端口规范（Serial Port Profile，SPP）。EOF（end of file）是输入流已经没有后续数据的结束标记。低功耗蓝牙面向连接信道（LE Credit-based Connection-Oriented Channel，LE CoC）是另一种蓝牙套接字传输类型。本节保留这些协议和 API 名称，便于与日志、源码及官方文档对照。
+RFCOMM（Radio Frequency Communication，射频通信）是经典蓝牙中面向连接的字节流传输，常用于串行端口规范（Serial Port Profile，SPP）。EOF（end of file）是输入流已经没有后续数据的结束标记。低功耗蓝牙面向连接信道（LE Credit-based Connection-Oriented Channel，LE CoC）是另一种蓝牙套接字传输类型。目标 SDK（target SDK）是应用声明采用的 Android 行为级别。本节保留这些协议、API 与版本术语，便于与日志、源码及官方文档对照。
 
 需要回答四个工程问题：
 
-- Android 17 的变化由哪些设备版本、目标 SDK 和套接字类型共同触发。目标 SDK（target SDK）是应用声明采用的 Android 行为级别。
-- `-1` 能证明什么，以及为什么它不能直接命名为远端正常断开。
+- Android 17 的变化由哪些设备版本、目标 SDK 和套接字类型共同触发。
+- `-1` 能证明什么，为什么不能把它直接当成远端正常断开。
 - 阻塞的 `connect()`、`read()` 与 `write()` 应怎样取消和分线程。
 - 状态机怎样区分关闭意图、流结束、传输错误和过期连接事件。
 
@@ -72,7 +72,7 @@ RFCOMM（Radio Frequency Communication，射频通信）是经典蓝牙中面向
 - 输入流来自 RFCOMM `BluetoothSocket`。
 - 套接字被关闭或连接丢失后，`read()` 返回 `-1`。
 
-这个变化让 RFCOMM 与 LE CoC 的结束语义都符合 Java `InputStream` 契约。I/O 是输入与输出（input/output）的缩写；其他 I/O 故障仍可抛出 `IOException`，所以兼容代码必须同时处理正数字节数、`-1` 和异常。
+这个变化让 RFCOMM 与 LE CoC 的结束语义都符合 Java `InputStream` 契约。除流结束外，其他 I/O 故障仍可抛出 `IOException`，所以兼容代码必须同时处理正数字节数、`-1` 和异常。
 
 这段旧写法用来说明迁移缺口：
 
@@ -167,7 +167,7 @@ class BtReadLoop(
 }
 ```
 
-`closeRequested` 是原子布尔值，供关闭线程与读线程安全地共享意图。关闭线程必须先更新它，再调用 `close()`，这样读线程被 `close()` 终止阻塞时才能看见本地意图。EOF 分支在观察到返回值时保存原因，避免稍后的关闭请求改写已经发生的结果。
+`closeRequested` 是原子布尔值，供关闭线程与读线程安全地共享意图。关闭线程必须先更新它，再调用 `close()`，这样读线程的阻塞被 `close()` 终止时才能看见本地意图。EOF 分支在观察到返回值时保存原因，避免稍后的关闭请求改写已经发生的结果。
 
 示例复制有效字节，避免异步消费者继续引用下一次读取会覆盖的数组；高吞吐场景可以改用容量受限的缓冲池，并要求缓冲区归还前只能由一个消费者持有。
 
@@ -222,7 +222,7 @@ adb shell am compat reset 383671392 com.example.app
 - `connect()` 会阻塞到连接成功或失败，没有公开的超时参数。
 - `BluetoothSocket` 是线程安全的，另一个线程调用 `close()` 会立即中止进行中的操作并关闭套接字。
 
-因此，协程取消或中断 Java 线程本身不足以保证 `connect()`、`read()` 退出。取消处理必须调用同一个 `BluetoothSocket.close()`。连接超时由管理本次连接生命周期的任务执行：到达设定的截止时间后关闭当前套接字；下一次重试创建新的 `BluetoothSocket`，不复用已关闭对象。
+因此，取消协程或中断 Java 线程本身不足以保证 `connect()`、`read()` 退出。取消处理必须调用同一个 `BluetoothSocket.close()`。连接超时由管理本次连接生命周期的任务执行：到达设定的截止时间后关闭当前套接字；下一次重试创建新的 `BluetoothSocket`，不复用已关闭对象。
 
 状态机是串行接收事件、按规则转换连接状态的组件。一次连接会话可分成四个执行单元：
 
@@ -244,7 +244,7 @@ RFCOMM 向应用提供字节流。发送方一次 `write()`，接收方可能经
 - 长度字段超过协议上限，按协议错误关闭连接。
 - 校验失败、未知消息类型和重复业务序号有确定处理规则。
 
-写入也应串行。即使 `BluetoothSocket` 被文档描述为线程安全，应用协议仍需要稳定的消息顺序，以及明确规定哪些消息允许重发。多个调用方先进入有界队列，即容量固定的等待队列，再由单一写任务写入；队列已满时由产品策略决定拒绝、合并或关闭连接，避免任务无限积压。
+写入也应串行。即使文档把 `BluetoothSocket` 描述为线程安全，应用协议仍需要稳定的消息顺序，以及明确规定哪些消息允许重发。多个调用方先进入有界队列，即容量固定的等待队列，再由单一写任务写入；队列已满时由产品策略决定拒绝、合并或关闭连接，避免任务无限积压。
 
 `getMaxReceivePacketSize()` 与 `getMaxTransmitPacketSize()` 描述底层传输的包尺寸，可用于优化每次读写大小。它们不定义业务帧长度，也不保证一次读取对应一个底层包。示例中的 `DEFAULT_BUFFER_SIZE` 同样只是内存选择，不是协议常量。
 
@@ -317,7 +317,9 @@ API 34 及以上的 `BluetoothSocketException.getErrorCode()` 提供结构化整
 
 ### 后台连续连接
 
-应用需要在后台持续与外部设备传输数据时，应按场景评估 `connectedDevice` 前台服务或配套设备管理器（Companion Device Manager）。普通后台线程本身不会提高进程被系统保留的优先级。[前台服务类型文档](https://developer.android.com/develop/background-work/services/fgs/service-types#connected-device) 要求 Android 14 及以上在服务上声明 `android:foregroundServiceType="connectedDevice"`，并在清单中声明 `FOREGROUND_SERVICE_CONNECTED_DEVICE` 权限。启动服务时还要满足文档列出的至少一项运行前提；已授予 `BLUETOOTH_CONNECT` 的应用可满足蓝牙连接场景的这一条件。
+应用需要在后台持续与外部设备传输数据时，应按场景评估 `connectedDevice` 前台服务或配套设备管理器（Companion Device Manager）。普通后台线程本身不会提高进程被系统保留的优先级。
+
+[前台服务类型文档](https://developer.android.com/develop/background-work/services/fgs/service-types#connected-device) 要求 Android 14 及以上在服务上声明 `android:foregroundServiceType="connectedDevice"`，并在清单中声明 `FOREGROUND_SERVICE_CONNECTED_DEVICE` 权限。启动服务时还要满足文档列出的至少一项运行前提；已授予 `BLUETOOTH_CONNECT` 的应用可满足蓝牙连接场景的这一条件。
 
 前台服务只影响进程执行条件，不改变 `BluetoothSocket.read()` 的 EOF 语义，也不允许无限扫描和重连。用户主动断开、权限撤销或预算用尽后，应停止连接任务和不再需要的前台服务。若使用配套设备管理器，还要按设备进入或离开通信范围的事件设计恢复流程，不能假设旧套接字会跨进程存活。
 
