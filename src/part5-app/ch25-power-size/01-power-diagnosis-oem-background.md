@@ -415,7 +415,11 @@ flowchart LR
     J --> K["Battery Historian"]
 ```
 
-[`BatteryStatsImpl`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java) 保存事件历史和 UID 统计；采集器把 CPU、无线控制器或能量消费者等数据写入功耗统计；`PowerStatsScheduler` 周期聚合；`MultiStatePowerAttributor` 按设备状态与 UID 状态计算；`BatteryUsageStatsProvider` 生成查询结果；Battery Historian 只读取 bugreport 中已经存在的数据。
+三项职责各有对应的组件：
+
+- 活动记录：[`BatteryStatsImpl`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java) 保存事件历史和 UID 统计；采集器把 CPU、无线控制器或能量消费者等数据写入功耗统计。
+- 功耗聚合：`PowerStatsScheduler` 周期聚合；`MultiStatePowerAttributor` 按设备状态与 UID 状态计算。
+- 结果展示：`BatteryUsageStatsProvider` 生成查询结果；Battery Historian 只读取 bugreport 中已经存在的数据。
 
 #### Android 17 的主路径
 
@@ -459,7 +463,9 @@ Android 17 的标准 [`BatteryConsumer`](https://android.googlesource.com/platfo
 
 Android 17 的 `PowerStatsScheduler.start()` 会安排功耗聚合，并注册下一次调度。它使用 `AlarmManager.ELAPSED_REALTIME` 的非唤醒闹钟，由后台 `Handler`（线程消息处理器）执行聚合；该闹钟本身不会为了统计而唤醒已经休眠的设备。
 
-[`PowerStatsStore`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/PowerStatsStore.java) 接收构造参数 `systemDir`，再创建 `power-stats` 子目录，所以典型路径是 `/data/system/power-stats/`。span（聚合区间）文件名由 19 位补零 ID 和 `.pss` 后缀组成，通过 `Xml.newBinarySerializer()` 写成二进制 XML，并由 `AtomicFile`（原子文件更新封装）更新。
+[`PowerStatsStore`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/PowerStatsStore.java) 接收构造参数 `systemDir`，再创建 `power-stats` 子目录，所以典型路径是 `/data/system/power-stats/`。
+
+span（聚合区间）文件名由 19 位补零 ID 和 `.pss` 后缀组成，通过 `Xml.newBinarySerializer()` 写成二进制 XML，并由 `AtomicFile`（原子文件更新封装）更新。
 
 文件采用二进制 XML，不应按普通文本 XML 或旧资料所说的 Protocol Buffers（Proto）日志读取。该目录属于系统内部实现，普通应用不应直接读取。
 
@@ -522,7 +528,7 @@ Android 17 的 [`IPowerStats.aidl`](https://android.googlesource.com/platform/ha
 
 ## 后台限制、豁免与厂商差异
 
-公共证据链建立后，厂商后台限制需要通过设置、系统日志和跨设备对照确认。应用不能依赖无法公开验证的私有保活策略。
+厂商后台限制无法只靠应用侧证据判断，需要通过设置、系统日志和跨设备对照确认；应用也不能依赖无法公开验证的私有保活策略。
 
 本文以 Android 17（API 37，`android-17.0.0_r1`）为平台基线。排查 OEM（Original Equipment Manufacturer，设备厂商）后台问题时，不从“某厂商会杀应用”的传闻出发，先回答三个有证据可查的问题：
 
@@ -530,7 +536,7 @@ Android 17 的 [`IPowerStats.aidl`](https://android.googlesource.com/platform/ha
 2. Job（由 JobScheduler 调度的后台任务）、Alarm（由 AlarmManager 管理的定时事件）、前台服务、网络或进程生命周期中的哪一层没有按预期推进？
 3. 两台设备的 AOSP 状态相同时，厂商侧又增加了什么设置、服务、冻结或清理动作？
 
-先校正两个容易误导排查的细节。Android 17 的命令是 `cmd activity get-bg-restriction-level`，没有 `background get-restriction-level` 这一层子命令；`AppRestrictionController` 的 XML 位于每用户的 `/data/system_de/<userId>/apprestriction/settings.xml`，不是 `/data/system/apprestriction/settings.xml`。正文中的命令和路径均按源码校正后的形式给出。
+先校正两个容易误导排查的细节。Android 17 的命令是 `cmd activity get-bg-restriction-level`，没有 `background get-restriction-level` 这一层子命令；`AppRestrictionController` 的 XML 位于每用户的 `/data/system_de/<userId>/apprestriction/settings.xml`，不是 `/data/system/apprestriction/settings.xml`。
 
 ### AOSP 后台限制不是一个总开关
 
@@ -604,7 +610,9 @@ Android 17 定义的主要等级如下：
 | 70 | `USER_LAUNCH_ONLY` | 只有用户启动后才能恢复的更严格状态 |
 | 90 | `CUSTOM` | 为定制限制保留的等级 |
 
-这些数值用来对照源码中的 `Math.max()`，诊断报告仍要记录名称、变更时间，以及能够取得的 reason（主原因）、subReason（细分原因）和 source（来源）。表中名称是源码常量名；`get-bg-restriction-level` 使用另一组输出字符串，例如 `FORCE_STOPPED` 输出 `stopped`，`USER_LAUNCH_ONLY` 输出 `user_only`。`FORCE_STOPPED` 是生命周期状态，不能简单归因为耗电超限；`EXEMPTED` 也不是 CPU、网络和前台服务规则的通行证。
+这些数值用来对照源码中的 `Math.max()`，诊断报告仍要记录名称、变更时间，以及能够取得的 reason（主原因）、subReason（细分原因）和 source（来源）。
+
+表中名称是源码常量名；`get-bg-restriction-level` 使用另一组输出字符串，例如 `FORCE_STOPPED` 输出 `stopped`，`USER_LAUNCH_ONLY` 输出 `user_only`。`FORCE_STOPPED` 是生命周期状态，不能简单归因为耗电超限；`EXEMPTED` 也不是 CPU、网络和前台服务规则的通行证。
 
 ### OEM 可以改变哪些 AOSP 输入
 
