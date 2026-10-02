@@ -4,9 +4,9 @@ chapter: '26.6'
 section: '26.6'
 status: finalized
 applicable_versions: Android 5 (API 21) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
-last_verified_against: Current Android Developers ApplicationExitInfo/AnrInfo/ActivityManager docs, AOSP android-17.0.0_r1 ApplicationExitInfo/AppExitInfoTracker/config/tombstone sources, and KOOM upstream retrieved 2026-08-15
+last_verified: '2026-10-02'
+last_source_verified_at: '2026-10-02'
+last_verified_against: Current Android Developers ApplicationExitInfo/AnrInfo/ActivityManager/ProfilingTrigger/Android 17 behavior/features docs and Build.VERSION_CODES_FULL docs, AOSP android-17.0.0_r1 ApplicationExitInfo/AppExitInfoTracker/config/tombstone/Profiling sources, and KOOM upstream retrieved 2026-10-02
 confidence: high
 pipeline_stage: ready-to-publish
 task6_state: reviewed
@@ -111,6 +111,8 @@ last_review_finalize_at: '2026-08-15T20:01:08+08:00'
 last_review_finalize_run_id: 20260815-200108-gracker-writing-469
 last_rework_at: '2026-08-15T20:01:08+08:00'
 last_rework_run_id: 20260815-200108-gracker-writing-469
+last_idle_audit_at: '2026-10-02T14:40:01+08:00'
+last_idle_audit_run_id: 20261002-143534-idle-audit-5265c492
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part5-app/ch26-observability/08-application-exit-info.md
@@ -346,7 +348,7 @@ Android 框架会把退出历史持久化，并在系统服务就绪（system re
 
 无崩溃用户比例（crash-free users）、ANR 率等产品指标需要稳定的用户分母和来源去重，不能只凭退出记录数量生成。报告同时保留用户可感知故障率、内部退出事件率与数据完整性；三者分别描述用户影响、系统记录数量和数据可信程度。
 
-当前在线 API 参考还显示 `REASON_MEMORY_LIMITER` 与 `REASON_ANOMALY`，但两者标注为 API 10000，且不在 Android 17 / API 37 的公开 SDK 与 `android-17.0.0_r1` 源码中。覆盖 API 37 的数据协议不应提前引用这两个预览常量。
+`ApplicationExitInfo` 在线 API 参考已经把 `REASON_MEMORY_LIMITER` 与 `REASON_ANOMALY` 标到 Android 17 minor release 37.2；但这两个常量不在 `android-17.0.0_r1` 源码中。覆盖 `android-17.0.0_r1` / API 37 基线的数据协议不应把它们设为必填枚举；若设备实际返回这些 reason，应保存原始整数、API 级别和 `SDK_INT_FULL`，再按后续版本能力扩展解析。
 
 ### ApplicationExitInfo 与 GWP-ASan / MTE 报告拼接
 
