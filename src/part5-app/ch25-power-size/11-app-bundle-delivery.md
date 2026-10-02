@@ -80,7 +80,7 @@ last_review_finalize_run_id: 20260815-150303-gracker-writing-449
 
 Android App Bundle（AAB）是发布格式，不是 Android 平台可直接安装的包。Google Play 根据 AAB 生成并签名 APK；设备收到的是 base APK（基础包）、configuration APK（设备配置拆分包）、feature APK（功能拆分包），以及可能的 install-time asset split（随安装交付的资源拆分包）。`bundletool` 可以在本地生成同类 APK Set（包含多个 APK 的 `.apks` 归档），用于测量和测试。构建与分发关系可参照 [About Android App Bundles](https://developer.android.com/guide/app-bundle)。
 
-平台安装行为以 Android 17（API 37）为锚点。AAB 拆分与 Play Feature/Asset Delivery 由构建工具、Google Play 服务端和 Play 商店实现，不涉及 kernel（内核）分包逻辑，因此无需用内核代码作为分发依据。
+平台安装行为以 Android 17（API 37）为锚点。AAB 拆分与 Play Feature/Asset Delivery 由构建工具、Google Play 服务端和 Play 商店实现，不涉及 kernel（内核）分包逻辑。
 
 ## AAB 格式与分包机制
 
@@ -120,7 +120,7 @@ bundletool get-size total \
 - 完整安装缺少必需 split 时返回 `INSTALL_FAILED_MISSING_SPLIT`；
 - 通过 [`ApkLiteParseUtils.composePackageLiteFromApks()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/parsing/ApkLiteParseUtils.java) 形成 base、feature、`uses-split`（功能依赖）和 `configForSplit`（配置归属）的统一视图。
 
-验证完成后，不需要重启即可生效的安装会进入 `installNonStaged()` 等后续流程。这些校验表明，split APK 不是可以随意拼凑的文件集合：base、配置 split 和功能 split 必须作为同一个包的一致集合安装。Android 官方还明确说明，缺少必需 split 的侧载安装会在 Android 10 及以上设备或 Google 认证设备失败。
+验证完成后，不需要重启即可生效的安装会进入 `installNonStaged()` 等后续流程。base、配置 split 和功能 split 必须作为同一个包的一致集合安装，不能按单个文件随意拼凑。Android 官方还明确说明，缺少必需 split 的侧载安装会在 Android 10 及以上设备或 Google 认证设备失败。
 
 ## Dynamic Feature Module 实践
 
@@ -221,7 +221,7 @@ manager.startInstall(request)
 
 `startInstall()` 成功回调只返回安装会话 ID，不代表安装完成。监听器要按页面或进程生命周期注销；进程重建后，通过 `installedModules`（已安装模块集合）和安装会话状态恢复，不能只依赖内存变量。`deferredInstall()` 只是后台尽力预取，无法跟踪进度，需要立即使用模块时仍应调用 `startInstall()`。完整状态和用户确认流程见 [Configure on-demand delivery](https://developer.android.com/guide/playcore/feature-delivery/on-demand)。
 
-应用和 feature Activity（界面组件）还要按官方要求启用 SplitCompat（让应用访问新下载 split 代码与资源的兼容库）。可选 feature 不应声明 exported（可被其他应用调用）组件；需要对外入口时，在 base 放代理组件，确认模块已安装后再转发。
+应用和 feature Activity（界面组件）还要启用 SplitCompat（让应用访问新下载 split 代码与资源的兼容库）。可选 feature 不应声明 exported（可被其他应用调用）组件；需要对外入口时，在 base 放代理组件，确认模块已安装后再转发。
 
 刚下载完成的一段时间内，平台可能无法应用 feature 新增的 manifest 组件，也可能无法让通知等系统界面访问 feature 资源。通知图标、系统会拉起的组件和故障页面应放在 base。
 
@@ -239,14 +239,15 @@ Play Asset Delivery（PAD，Play 资源交付）面向 asset（原始素材）�
 | fast-follow | 安装完成后自动下载，不要求先启动应用 | 以归档文件交付并展开到应用内部存储 |
 | on-demand | 应用运行时请求 | 以归档文件交付并展开到应用内部存储 |
 
-Fast-follow 和 on-demand pack 的路径可能跨会话变化，文件也可能被用户或 Play Asset Delivery Library（PAD 访问库）删除。应用每次使用前都要查询 pack 状态和位置，并把展开后的内容视为只读，因为补丁依赖文件完整性。
+Fast-follow 和 on-demand pack 的路径可能跨会话变化，文件也可能被用户或 Play Asset Delivery Library（PAD 访问库）删除。应用每次使用前都要查询 pack 状态和位置，并把展开后的内容视为只读，因为资源补丁依赖文件完整性。
 
 应用更新期间还可能出现新二进制已安装、资源补丁尚未应用完的短暂状态，页面要能显示 `资源更新中`。
 
 首屏必需的最小资源留在 base 或 install-time pack；可在安装后准备的内容用 fast-follow；低频内容用 on-demand。推迟下载不会减少最终磁盘占用，仍要设计空间检查、失败恢复和资源回收。
 
-Texture Compression Format Targeting（纹理压缩格式定向）允许 AAB 携带多种 GPU（图形处理器）纹理格式，由 Play 为设备选择受支持的格式，适合游戏或图形密集应用。普通 UI（用户界面）图片仍应按 25.10 的 WebP、AVIF、VectorDrawable 与网络图片策略处理。PAD 的模式、路径和更新语义以 [Play Asset Delivery](https://developer.android.com/guide/playcore/asset-delivery) 为准。
+Texture Compression Format Targeting（纹理压缩格式定向）允许 AAB 携带多种 GPU（图形处理器）纹理格式，由 Play 为设备选择受支持的格式，适合游戏或图形密集应用。普通 UI（用户界面）图片仍应按 25.10 的 WebP、AVIF、VectorDrawable 与网络图片策略处理。
 
+PAD 的模式、路径和更新语义以 [Play Asset Delivery](https://developer.android.com/guide/playcore/asset-delivery) 为准。
 
 ## 国内分发场景的 AAB 替代方案
 
@@ -259,7 +260,7 @@ Texture Compression Format Targeting（纹理压缩格式定向）允许 AAB 携
 - **受控安装器支持 split 安装会话**：安装器必须一次提交匹配设备的 base 与全部 required splits（必需拆分包），处理签名、版本、失败回滚和升级。
 - **自建非代码资源下载**：适用于模型、地图、皮肤、模板和媒体。资源清单要包含版本、长度、哈希摘要、签名、最低应用版本和可选设备选择条件；先验证签名与哈希，再原子发布到版本目录。
 
-这组命令生成面向连接设备的 APK Set 并安装，用于检查 base、configuration 和 feature APK 的组合。若测试 on-demand feature，应在 `build-apks` 中增加 `--local-testing`。
+生成面向连接设备的 APK Set 并安装到设备，用于检查 base、configuration 和 feature APK 的组合。若测试 on-demand feature，应在 `build-apks` 中增加 `--local-testing`。
 
 ```bash
 bundletool get-device-spec --output=device-spec.json
@@ -288,7 +289,7 @@ AAB、Dynamic Feature 和 PAD 上线后，CI（持续集成）要按设备、mod
 - universal APK：单 APK 渠道的完整下载量；
 - 运行指标：feature/asset 下载耗时、失败码、取消、确认和首次使用等待。
 
-这组命令分别测量同一设备的首次下载和 `camera_editor` module 集合。
+两条命令分别测量同一设备的首次下载和 `camera_editor` module 集合。
 
 ```bash
 bundletool get-size total \
