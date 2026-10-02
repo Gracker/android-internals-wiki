@@ -106,43 +106,21 @@ Wi-Fi 扫描结果
   → App 通过 ConnectivityManager 观察默认网络变化
 ```
 
-Wi-Fi 模块主要回答“连接哪个 Wi-Fi 网络或 BSSID”。Connectivity 模块回答“哪个 `Network` 满足某个 `NetworkRequest`”。`Network` 是 Android 对一条可用网络路径的句柄，`NetworkRequest` 是传输类型与网络能力等条件的集合。默认网络只是系统请求中的一类；VPN 还可能让不同 UID（user identifier，Android 用来区分应用身份的整数）看到不同的应用默认网络。
+Wi-Fi 模块主要回答“连接哪个 Wi-Fi 网络或 BSSID”。Connectivity 模块回答“哪个 `Network` 满足某个 `NetworkRequest`”。`Network` 是 Android 对一条可用网络路径的句柄，`NetworkRequest` 是传输类型与网络能力等条件的集合。默认网络只是系统请求中的一类；VPN 还可能让不同 UID（user identifier，Android 中标识应用身份的整数）看到不同的应用默认网络。
 
-Android 17 的 `WifiNetworkSelector.filterScanResults()` 会排除低于入网 RSSI 阈值、命中 BSSID 阻止列表、被 MBO/OCE 拒绝关联、不满足设备管理策略或使用已弃用安全类型的结果。MBO（Multi Band Operation）与 OCE（Optimized Connectivity Experience）是 Wi-Fi 联盟定义的接入管理和连接优化能力。已连接的当前 BSSID 会在这些普通过滤条件之前保留；当前 BSSID 未出现在一次扫描中时，源码还可能放弃本轮选择，避免不完整的扫描结果触发不必要的切换。
-
-`getCandidatesFromScan()` 调用已注册的 nominator（候选提名器），产生候选，包括已保存网络、应用通过 `WifiNetworkSuggestion` 提交的 Suggestion 网络等，并把当前连接留在候选集合中。`selectNetwork()` 再交给活动的 `CandidateScorer`（候选评分器）选出结果，并应用兼容旧版用户选择的逻辑。Android 17 的预设评分器是 `ThroughputScorer`。
-
-Connectivity 先保留能满足请求能力的网络，再执行 `NetworkRanker.getBestNetworkByPolicy()`。Android 17 的主要规则按源码顺序如下：
-
-| 顺序 | 优先保留的候选 | 说明 |
-| --- | --- | --- |
-| 1 | `POLICY_IS_INVINCIBLE` | 带系统内部“不可替代”标记、不能被普通候选取代的网络 |
-| 2 | 已连接 VPN | 应用默认网络可能是 VPN，物理承载网络位于其下层 |
-| 3 | 用户选择且接受未验证 | 保留用户明确接受的无互联网网络 |
-| 4 | 已验证或允许未验证 | 同时处理蜂窝向“较差 Wi-Fi”让路的策略 |
-| 5 | 未进入退出状态 | 避开即将断开的网络 |
-| 6 | 同传输类型中的 primary | 优先保留该传输类型的主网络，例如双 SIM 中的主数据网络 |
-| 7 | 传输类型偏好 | 源码顺序为以太网、Wi-Fi、蓝牙、蜂窝 |
-| 8 | VCN、未销毁网络、当前满足者 | VCN（Virtual Carrier Network，虚拟运营商网络）供运营商组织底层网络；其余规则处理等价候选并减少无意义切换 |
-
-这张表描述逐轮筛选，不是一条把所有属性相加的公式。Connectivity 把验证状态、VPN 和销毁状态等运行时信息整理成 `FullScore`；网络模块用 `NetworkScore` 携带 `POLICY_TRANSPORT_PRIMARY`、`POLICY_EXITING` 等策略属性。Android 17 的通用排序代码没有实现“所有网络一律未计费优先”，对应位置仍有表示“待实现”的 TODO 注释。`NET_CAPABILITY_NOT_METERED` 能决定带有该能力要求的请求是否得到满足，Wi-Fi 候选评分也会奖励未计费网络，但这两点不能外推成所有默认网络共用的排序公式。
-
-Android 10 到 Android 17 经历了两套 Connectivity 选择机制：
-
-| 版本 | Connectivity 选择机制 | 边界 |
-| --- | --- | --- |
-| Android 10 / 11（API 29–30） | `NetworkAgent` 整数分数，加上验证状态、VPN 等奖励或惩罚 | 同分行为未定义 |
-| Android 12–17（API 31–37） | `NetworkScore` 与 `FullScore` 策略，由 `NetworkRanker` 逐项筛选 | 旧整数只用于日志和兼容观测，不再参与网络间排序 |
-
-Wi-Fi RSSI 下降后，应用不一定马上收到默认网络变化。当前 Wi-Fi 仍可能被判定为足够好；连接新候选并验证公网可达也需要时间；策略结果相同时，`NetworkRanker` 还会保留正在满足请求的网络。
-
-### Wi-Fi 评分使用哪些输入
+### Wi-Fi 模块怎样决定连哪个网络
 
 #### 当前连接是否需要重选
 
-Android 17 的 `WifiNetworkSelector.isNetworkSufficient()` 依次检查连接状态、用户近期选择、OSU、外部评分器给出的可用性、连接分数、OEM 标记、计费属性、历史无互联网状态、IP 配置以及无线质量。OSU（Online Sign-Up）是 Hotspot 2.0 的在线注册流程；OEM paid/private 表示设备厂商或运营商标记的付费网络、专用网络。只有 RSSI 不足且收发流量也不活跃时，无线质量这一项才判为不足。
+Android 17 的 `WifiNetworkSelector.isNetworkSufficient()` 依次检查连接状态、用户近期选择、OSU、外部评分器给出的可用性、连接分数、OEM 标记、计费属性、历史无互联网状态、IP 配置以及无线质量。OSU（Online Sign-Up）是 Hotspot 2.0 的在线注册流程；OEM paid/private 表示设备厂商或运营商标记的付费网络、专用网络。
 
-这段逻辑使用 Wi-Fi 子系统内部状态和可被设备配置覆盖的资源值，普通应用不能只用 RSSI 复现。官方《Wi-Fi 网络选择》页面主要描述 Android 12 行为，并提示后续版本应以对应版本的 AOSP 源码为准。
+只有 RSSI 不足且收发流量也不活跃时，无线质量这一项才判为不足。这段逻辑使用 Wi-Fi 子系统内部状态和设备配置可覆盖的资源值，普通应用不能只用 RSSI 复现。官方《Wi-Fi 网络选择》页面主要描述 Android 12 行为，并提示后续版本应以对应版本的 AOSP 源码为准。
+
+#### 扫描结果怎样过滤、候选怎样提名
+
+Android 17 的 `WifiNetworkSelector.filterScanResults()` 会排除低于入网 RSSI 阈值、命中 BSSID 阻止列表、被 MBO/OCE 拒绝关联、不满足设备管理策略或使用已弃用安全类型的结果。MBO（Multi Band Operation）与 OCE（Optimized Connectivity Experience）是 Wi-Fi 联盟定义的接入管理和连接优化能力。在这些过滤条件生效前，已连接的当前 BSSID 会先保留；当前 BSSID 未出现在一次扫描中时，源码还可能放弃本轮选择，避免不完整的扫描结果触发不必要的切换。
+
+`getCandidatesFromScan()` 调用已注册的 nominator（候选提名器），产生候选，包括已保存网络、应用通过 `WifiNetworkSuggestion` 提交的 Suggestion 网络等，并把当前连接留在候选集合中。`selectNetwork()` 再交给活动的 `CandidateScorer`（候选评分器）选出结果，并应用兼容旧版用户选择的逻辑。Android 17 的预设评分器是 `ThroughputScorer`。
 
 #### 候选如何评分
 
@@ -160,6 +138,34 @@ Android 17 的 `WifiCandidates.Candidate` 和 `ThroughputScorer` 可确认以下
 | 近期用户选择 | 在配置窗口内获得显著奖励 | 保护时间与强度可被设备配置改变 |
 
 `ScoringParams` 和资源覆盖（设备厂商对 AOSP 默认资源值的替换）控制入网阈值、足够 RSSI、吞吐奖励和多个优先级参数。旧资料中的固定阈值只能说明特定版本的 AOSP 默认配置，不能作为跨版本、跨厂商的发布条件。
+
+### ConnectivityService 与 NetworkRanker 怎样排序请求
+
+Connectivity 先保留能满足请求能力的网络，再执行 `NetworkRanker.getBestNetworkByPolicy()`。Android 17 的主要规则按源码顺序如下：
+
+| 顺序 | 优先保留的候选 | 说明 |
+| --- | --- | --- |
+| 1 | `POLICY_IS_INVINCIBLE` | 带系统内部“不可替代”标记、不能被普通候选取代的网络 |
+| 2 | 已连接 VPN | 应用默认网络可能是 VPN，物理承载网络位于其下层 |
+| 3 | 用户选择且接受未验证 | 保留用户明确接受的无互联网网络 |
+| 4 | 已验证或允许未验证 | 同时处理蜂窝向“较差 Wi-Fi”让路的策略 |
+| 5 | 未进入退出状态 | 避开即将断开的网络 |
+| 6 | 同传输类型中的 primary | 优先保留该传输类型的主网络，例如双 SIM 中的主数据网络 |
+| 7 | 传输类型偏好 | 源码顺序为以太网、Wi-Fi、蓝牙、蜂窝 |
+| 8 | VCN、未销毁网络、当前满足者 | VCN（Virtual Carrier Network，虚拟运营商网络）供运营商组织底层网络；其余规则处理等价候选并减少无意义切换 |
+
+这张表描述逐轮筛选，不是一条把所有属性相加的公式。Connectivity 把验证状态、VPN 和销毁状态等运行时信息整理成 `FullScore`；网络模块用 `NetworkScore` 携带 `POLICY_TRANSPORT_PRIMARY`、`POLICY_EXITING` 等策略属性。Android 17 的通用排序代码没有实现“所有网络一律未计费优先”，对应位置仍有表示“待实现”的 TODO 注释。
+
+`NET_CAPABILITY_NOT_METERED` 能决定带有该能力要求的请求是否得到满足，Wi-Fi 候选评分也会奖励未计费网络，但这两点不能外推成所有默认网络共用的排序公式。
+
+Android 10 到 Android 17 经历了两套 Connectivity 选择机制：
+
+| 版本 | Connectivity 选择机制 | 边界 |
+| --- | --- | --- |
+| Android 10 / 11（API 29–30） | `NetworkAgent` 整数分数，加上验证状态、VPN 等奖励或惩罚 | 同分行为未定义 |
+| Android 12–17（API 31–37） | `NetworkScore` 与 `FullScore` 策略，由 `NetworkRanker` 逐项筛选 | 旧整数只用于日志和兼容观测，不再参与网络间排序 |
+
+Wi-Fi RSSI 下降后，应用不一定马上收到默认网络变化。当前 Wi-Fi 仍可能被判定为足够好；连接新候选并验证公网可达也需要时间；策略结果相同时，`NetworkRanker` 还会保留正在满足请求的网络。
 
 ### 怎样度量连接切换
 
@@ -328,7 +334,9 @@ Android 17 的 `NetworkMonitor` 会在目标 `Network` 上执行 DNS 与 HTTP/HT
 
 #### 1. 用 NetworkCallback 维护网络状态记录
 
-`registerDefaultNetworkCallback()` 的当前 API 文档和 Android 17 源码都要求 `ACCESS_NETWORK_STATE`。Android 开发者指南在机制概述中说明，使用 `NetworkCallback` 等方式观察连接状态没有统一的额外权限；同一段也要求按具体方法文档检查权限，不能据此省略 `registerDefaultNetworkCallback()` 所需声明。
+`registerDefaultNetworkCallback()` 的当前 API 文档和 Android 17 源码都要求 `ACCESS_NETWORK_STATE`。
+
+Android 开发者指南在机制概述中说明，使用 `NetworkCallback` 等方式观察连接状态没有统一的额外权限；同一段也要求按具体方法文档检查权限，不能据此省略 `registerDefaultNetworkCallback()` 所需声明。
 
 Android 8.0（API 26）起，新默认网络触发 `onAvailable()` 后，系统会紧接着按序发送 `onCapabilitiesChanged()`、`onLinkPropertiesChanged()` 和 `onBlockedStatusChanged()` 的初始状态。不要在这些回调中同步查询 `getNetworkCapabilities()` 或 `getLinkProperties()`；网络状态可能在收到回调与发起查询之间变化，查询结果会过期或为 `null`。这段追踪器把回调放到调用方提供的 `Handler` 消息队列，并为每次新默认网络分配递增序号：
 
@@ -463,7 +471,9 @@ class DefaultNetworkTracker(
 - WebSocket、流式响应和上传任务保存应用层进度，在一次调用明确失败后按协议重连。
 - 可延后的后台任务使用 WorkManager（持久后台任务调度库）的网络约束，避免常驻监听器自行轮询。
 
-显式使用非默认网络只适合少数场景，把套接字绑定到后台网络还要求 `CHANGE_NETWORK_STATE` 权限。获取目标 `Network` 后，要同时使用 `network.socketFactory` 建立套接字，并用 `network.getAllByName()` 在同一网络上解析域名；否则套接字和 DNS 可能经过不同网络。目标网络丢失后，应取消相关请求；若需要单独清理连接，该绑定客户端应使用专用连接池。大多数应用应继续使用系统默认网络。
+显式使用非默认网络只适合少数场景，把套接字绑定到后台网络还要求 `CHANGE_NETWORK_STATE` 权限。
+
+获取目标 `Network` 后，要同时使用 `network.socketFactory` 建立套接字，并用 `network.getAllByName()` 在同一网络上解析域名；否则套接字和 DNS 可能经过不同网络。目标网络丢失后，应取消相关请求；若需要单独清理连接，该绑定客户端应使用专用连接池。大多数应用应继续使用系统默认网络。
 
 #### 3. 弱网降级按请求类型分层
 
@@ -489,7 +499,7 @@ class DefaultNetworkTracker(
 adb shell dumpsys connectivity > connectivity.txt
 ```
 
-输出用于检查 `NetworkAgent`、网络能力、`LinkProperties`、验证状态和请求满足关系。`LinkProperties` 记录接口、地址、路由、DNS、代理等链路配置。系统默认网络不一定等于受 VPN 策略影响后的某个应用默认网络，判断时要结合目标 UID。
+输出用于检查 `NetworkAgent`、网络能力、`LinkProperties`、验证状态和请求满足关系。`LinkProperties` 记录接口、地址、路由、DNS、代理等链路配置。受 VPN 策略影响时，某个应用的默认网络不一定等于系统默认网络，判断时要结合目标 UID。
 
 检查以下信息：
 
