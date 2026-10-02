@@ -120,7 +120,7 @@ consolidated_from:
 
 # App 可观测性架构与性能数据采集
 
-App 可观测性需要回答四个问题：影响了多少用户、现场留下了哪些证据、可能由哪个模块负责、修复上线后同口径指标是否恢复。新版本的崩溃（Crash）率异常时，应先确认受影响的用户、机型和版本，再关联崩溃堆栈、发布记录与经过控制的用户操作摘要。指标（Metrics）用于观察群体趋势，日志（Logs）用于还原单次事件，追踪（Traces）用于解释耗时路径。三者共享同一套事件模型，把性能、稳定性、资源和业务上下文关联到会话、设备和版本；客户端采集还要控制线程、序列化、存储、网络和隐私开销。全章按数据模型、端侧采集、服务端处理和问题流转四个层面展开。
+App 可观测性需要回答四个问题：影响了多少用户、现场留下了哪些证据、可能由哪个模块负责、修复上线后同口径指标是否恢复。新版本的崩溃（Crash）率异常时，应先确认受影响的用户、机型和版本，再关联崩溃堆栈、发布记录与经过控制的用户操作摘要。指标（Metrics）用于观察群体趋势，日志（Logs）用于还原单次事件，追踪（Traces）用于解释耗时路径。三者共享同一套事件模型，把性能、稳定性、资源和业务上下文关联到会话、设备和版本；客户端采集还要控制线程、序列化、存储、网络和隐私开销。全章先建立信号模型与端云职责，再展开端侧的采样、缓冲、序列化与上传，服务端处理与问题流转随相应环节一并交代。
 
 平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`。可观测性协议大多由应用与服务端共同定义，第三方 SDK（Software Development Kit，软件开发工具包）的字段不属于 Android 平台保证。时间基准和线上系统性能剖析资料（profile）的边界，分别以 Android 17 的 `SystemClock` 与 `ProfilingManager` 实现为准。
 
@@ -136,7 +136,7 @@ App 可观测性需要回答四个问题：影响了多少用户、现场留下�
 | 日志（Logs） | 业务日志、诊断日志、Crash 附加信息、用户反馈时间窗日志 | 这个用户的操作路径、请求参数摘要、错误码、降级原因 | 长期保存全部明细并做高频聚合 |
 | 追踪（Traces） | Perfetto（Android 系统追踪工具）数据、方法耗时片段、网络阶段耗时、会话时间线 | 一次启动、卡顿或网络请求慢在哪个阶段 | 替代日常指标看板，或面向全部用户长期采集 |
 
-Android vitals 侧重指标：在用户允许采集的前提下，Google Play 汇总稳定性、性能、电量和权限等质量数据。当前核心指标包括用户感知崩溃率（user-perceived crash rate）、用户感知 ANR 率（user-perceived ANR rate）和部分唤醒锁使用过量（excessive partial wake locks）。Play 使用最近 28 天的数据评估应用质量，并每天检查 28 天平均值。它可以作为 Play 分发侧的质量基线，但不提供应用自定义业务场景和内部日志；团队仍需补充页面、场景、构建版本与渠道等维度。[Android Vitals 官方说明](https://developer.android.com/topic/performance/vitals)
+Android vitals 侧重指标：在用户允许采集的前提下，Google Play 汇总稳定性、性能、电量和权限等质量数据。当前核心指标包括用户感知崩溃率（user-perceived crash rate）、用户感知 ANR 率（user-perceived ANR rate）和部分唤醒锁使用过量（excessive partial wake locks）。Play 使用最近 28 天的数据评估应用质量，并每天检查 28 天平均值。它可以作为 Play 分发侧的质量基线；团队仍需补充页面、场景、构建版本与渠道等维度。[Android Vitals 官方说明](https://developer.android.com/topic/performance/vitals)
 
 Firebase Performance Monitoring 更接近应用内部性能观测：它可自动采集启动、HTTP/S 请求和按屏幕统计的渲染数据，并允许添加自定义代码追踪（custom code trace）、自定义指标（custom metrics）与筛选属性（attributes）。这里的 trace 是两个时间点之间的任务记录及其指标，不是 Perfetto 文件；attributes 可按国家、设备、应用版本和系统版本筛选数据。[Firebase Performance Monitoring 官方说明](https://firebase.google.com/docs/perf-mon)
 
@@ -329,7 +329,7 @@ Android 官方启动优化文档区分 TTID 和 TTFD：TTID 表示首帧出现�
 
 #### 陷阱 2：用指标替代日志和追踪
 
-团队如果只关注指标看板，看到 Crash 率上升后，既没有日志定位页面、场景和操作摘要，也没有追踪解释耗时路径。
+团队只看指标看板时，能看到 Crash 率上升，却既没有日志去定位页面、场景和操作摘要，也没有追踪去解释耗时路径。
 
 指标可以指出版本回归，日志可以给出支付确认事件的错误分类，追踪可以显示等待发生在哪个 span。三类信号的存储和采样方式不同，但要共享统一的关联信息；OpenTelemetry（开放式可观测性规范与工具体系）也使用 trace 与 span 标识连接日志和追踪，不只依赖相近时间戳。
 
@@ -397,7 +397,7 @@ Android 17 的 [`ProfilingManager.java`](https://android.googlesource.com/platfo
 
 Android 没有一个面向普通 App、涵盖所有性能问题的“统一性能指标 Atom”。StatsD 是 Android 的系统统计收集与聚合服务，atom 是它数据结构定义中字段固定的一类统计事件。App 能用到哪些能力，取决于权限和用途：StatsD 面向系统和特权组件；AndroidX `JankStats` 在 App 进程内提供帧级卡顿数据；网络调用前后的计时插桩、`Debug.MemoryInfo` 与业务埋点补充 App 自身指标；上传与服务端统计由 APM（Application Performance Monitoring，应用性能监控）系统负责。
 
-平台上界为 Android 17 / API 37 / `android-17.0.0_r1`。缓存进程内存整理（Compaction）和暂停缓存进程执行的冻结机制（Freezer）早于 Android 17 已存在；Android 17 新增的 `MemoryLimiter` 还受功能开关（feature flag）、设备能力和厂商（vendor）配置控制。观察到内存曲线变化时，要区分公开 App API 能确认的事实与 Android 核心系统服务进程 system_server 的源码解释。PSS（Proportional Set Size，按共享页面比例分摊后的驻留内存）曲线本身不能证明某项系统策略已经触发。
+平台上界为 Android 17 / API 37 / `android-17.0.0_r1`。缓存进程内存整理（Compaction）和冻结缓存进程执行的 Freezer 机制在 Android 17 之前就已存在；Android 17 新增的 `MemoryLimiter` 还受功能开关（feature flag）、设备能力和厂商（vendor）配置控制。观察到内存曲线变化时，要区分公开 App API 能确认的事实与 Android 核心系统服务进程 system_server 的源码解释。PSS（Proportional Set Size，按共享页面比例分摊后的驻留内存）曲线本身不能证明某项系统策略已经触发。
 
 ---
 
@@ -429,7 +429,11 @@ public byte[] getReports(long configId)
 
 App 侧不能通过 `StatsManager` 写入事件。`android.util.StatsLog.logStart/logStop/logEvent(int)` 是公开的 breadcrumb API；breadcrumb 在这里指用于标记操作起止或单次事件的轻量记录，它只能写入 `APP_BREADCRUMB_REPORTED`。任意 `StatsEvent` 写入路径 `StatsLog.write(StatsEvent)` 属于受限的 `@SystemApi`，系统服务通常使用生成的 `FrameworkStatsLog` / `StatsdStatsLog`。
 
-`setPullAtomCallback()` 注册的是数据提供方，方向是客户端向 statsd 提供自定义 pulled atom 数据；读取 statsd 聚合指标要走其他接口。statsd 需要拉取某个原子事件时，会调用已注册的 `StatsPullAtomCallback.onPullAtom(int atomTag, List<StatsEvent> data)`，其中 atom tag 是原子事件编号；客户端把 `StatsEvent` 加入 `data` 列表并返回 `RESULT_SUCCESS` / `RESULT_SKIP` 等结果，`StatsManager` 内部的 `PullAtomCallbackInternal` 再调用 `resultReceiver.pullFinished()` 把结果交回 statsd。`PullAtomMetadata` 的默认冷却间隔为 1000 ms，超时为 1500 ms，用于限制按需拉取频率，并不形成周期性定时回调。
+`setPullAtomCallback()` 注册的是数据提供方，方向是客户端向 statsd 提供自定义 pulled atom 数据；读取 statsd 聚合指标要走其他接口。
+
+statsd 需要拉取某个原子事件时，会调用已注册的 `StatsPullAtomCallback.onPullAtom(int atomTag, List<StatsEvent> data)`，其中 atom tag 是原子事件编号；客户端把 `StatsEvent` 加入 `data` 列表并返回 `RESULT_SUCCESS` / `RESULT_SKIP` 等结果，`StatsManager` 内部的 `PullAtomCallbackInternal` 再调用 `resultReceiver.pullFinished()` 把结果交回 statsd。
+
+`PullAtomMetadata` 的默认冷却间隔为 1000 ms，超时为 1500 ms，用于限制按需拉取频率，并不形成周期性定时回调。
 
 `addConfig()` 返回 `void`（而非 boolean），用于向 statsd 注册 `StatsdConfig`；该配置描述要收集的原子事件与聚合方式。`getReports(long configId)` 用于读取 statsd 已收集的报告，是特权 App 获取聚合数据的主要接口。`query()` 需要 `READ_RESTRICTED_STATS` 权限，签名为 `query(long configKey, String configPackage, StatsQuery query, Executor executor, OutcomeReceiver<StatsCursor, StatsQueryException> outcomeReceiver)`。
 
@@ -467,13 +471,13 @@ StatsManager.getReports(configId) ← statsd daemon 返回已收集报告
 StatsPullAtomCallback.onPullAtom(int atomTag, List<StatsEvent> data) → statsd 向客户端拉取自定义 pulled atom
 ```
 
-`setPullAtomCallback()` 注册的是数据提供方：只有 statsd 的 config 里包含 pulled atom 时才会回调，由客户端向 `List<StatsEvent>` 填充指标数据。它不是 App 从 statsd 拉取系统聚合指标的通道；要读聚合指标，走 `addConfig` + `getReports`。
+只有 statsd 的 config 里包含 pulled atom 时才会回调，由客户端向 `List<StatsEvent>` 填充指标数据。它不是 App 从 statsd 拉取系统聚合指标的通道，读取聚合指标要走 `addConfig` + `getReports`。
 
 特权系统组件若要提供 pulled atom，只能用 `setPullAtomCallback()` 注册已经定义并获准使用的 atom tag；statsd 调用 `StatsPullAtomCallback.onPullAtom()` 时，提供方把符合数据结构定义（schema）的 `StatsEvent` 加入列表并返回结果码。atom ID、字段顺序、字段类型和可累加字段（additive field）必须来自同一次平台发布的 schema，不能用业务自定义常量代替平台定义。
 
 当前 `atoms.proto`（android-17.0.0_r1）中定义了大量系统健康原子（如 `AppStartOccurred`（ID 48）、`AnrOccurred`、`BatteryLevelChanged` 等），却没有一个覆盖全部性能问题的“统一性能指标 Atom”。App 侧如需收集系统级指标，优先通过 AndroidX API（如 `JankStats`）和 `Debug.MemoryInfo` 等公开接口，而非直接依赖 StatsD。
 
-`AppStartOccurred` 在 Android 17 `atoms.proto` 中的 ID 为 48（`app_start_occurred = 48`），字段包含 `transition_delay_millis`、`starting_window_delay_millis`、`bind_application_delay_millis`、`windows_drawn_delay_millis` 等，没有 `latencyMillis` 字段。
+以 `AppStartOccurred`（`app_start_occurred`）为例，字段包含 `transition_delay_millis`、`starting_window_delay_millis`、`bind_application_delay_millis`、`windows_drawn_delay_millis` 等，没有 `latencyMillis` 字段。
 
 **StatsCompanionService 的职责：**
 `StatsCompanionService` 运行在 system_server 中，是通过 `IStatsd` 接口与 statsd 守护进程交互的辅助服务，主要处理配置管理和数据拉取方注册。它不参与事件写入：`StatsLog` 通过 `libstatssocket` 直接连接 statsd 的本地套接字（socket），不经过 `StatsCompanionService`。它也不是从 `/dev/socket/statsdw` 读取事件流的 JNI（Java Native Interface，Java 原生接口）桥接层。
@@ -662,7 +666,9 @@ if (proc_mem.SmapsOrRollup(&stats)) {
 
 `Debug.getMemoryInfo()` 的 JNI 最终使用 `libmeminfo` 汇总进程内存。`ProcMemInfo::SmapsOrRollup()` 优先读取 `smaps_rollup`，不可用时退回逐 VMA 的 `smaps`；VMA（Virtual Memory Area，虚拟内存区域）是进程地址空间中属性连续的一段映射。平台组件还可以使用 pagemap、kpageflags 与 kpagecount 做成本更高的 VMA 或 working set（近期活跃内存页集合）诊断。这些 Native 类面向平台代码、厂商组件与 APEX（可独立更新的系统组件包格式）模块集成，不是普通 App 的对象跟踪 API。应用侧继续以 `Debug.MemoryInfo`、`ActivityManager.MemoryInfo` 和调试工具为兼容边界。
 
-Android 14 相关源码中的 `libmemevents` 使用 eBPF 环形缓冲区接收 OOM killer 选中的进程、直接内存回收、内核回收线程 kswapd 与厂商低内存终止机制（LMK）等事件，Android 17 仍保留这条系统路径。eBPF 是在内核受控环境中运行观测程序的机制，环形缓冲区用于把事件按固定容量传给读取方。该路径依赖内核 tracepoint（事件观测点）、BPF 能力、受信任的加载器和 SELinux（Android 强制访问控制机制）策略；设备存在该源码不表示普通 App 可以订阅，也不表示每台 Android 14–17 设备暴露相同事件。线上 SDK 只能保存自身公开指标，平台或设备厂商（OEM）组件才可把这类事件与 App 快照放到同一时间线。
+Android 14 相关源码中的 `libmemevents` 使用 eBPF 环形缓冲区接收 OOM killer 选中的进程、直接内存回收、内核回收线程 kswapd 与厂商低内存终止机制（LMK）等事件，Android 17 仍保留这条系统路径。eBPF 是在内核受控环境中运行观测程序的机制，环形缓冲区用于把事件按固定容量传给读取方。
+
+该路径依赖内核 tracepoint（事件观测点）、BPF 能力、受信任的加载器和 SELinux（Android 强制访问控制机制）策略；设备存在该源码不表示普通 App 可以订阅，也不表示每台 Android 14–17 设备暴露相同事件。线上 SDK 只能保存自身公开指标，平台或设备厂商（OEM）组件才可把这类事件与 App 快照放到同一时间线。
 
 内存监控可以按成本分两层：常态使用聚合快照发现 PSS、nativePss、GC 或后台回落异常；命中诊断条件后，再在受控设备或受信系统组件中使用 VMA 扫描、`libmemevents`、Perfetto、heap dump（堆转储）或 Perfetto 的 Native 堆分析器 heapprofd。聚合值用于发现趋势，深度工具用于解释来源，二者不能互相替代。
 
@@ -707,7 +713,7 @@ Firebase Performance Monitoring 会先匹配项目配置的 custom URL pattern�
 
 #### 5.2 HTTP 状态码分组
 
-按 endpoint pattern 统计 DNS 域名解析、连接建立、TLS 加密握手、请求体发送、响应首字节、响应体读取、总耗时和状态码分布。成功率不能统一定义为“非 5xx”：登录接口的 401 可能是预期结果，也可能表示会话刷新故障；下单接口的 409 可能是业务冲突；429 则常常意味着容量或客户端重试策略存在问题。
+每个 endpoint pattern 需要统计 DNS 域名解析、连接建立、TLS 加密握手、请求体发送、响应首字节、响应体读取、总耗时和状态码分布。成功率不能统一定义为“非 5xx”：登录接口的 401 可能是预期结果，也可能表示会话刷新故障；下单接口的 409 可能是业务冲突；429 则常常意味着容量或客户端重试策略存在问题。
 
 每个 endpoint 应维护版本化的成功码规则，并单独统计无 HTTP 状态码的 DNS、连接、TLS、取消和超时错误。Firebase Performance 也允许为 URL pattern 自定义哪些响应码算成功。成功口径属于接口语义，不是 HTTP 大类的固定映射。
 
