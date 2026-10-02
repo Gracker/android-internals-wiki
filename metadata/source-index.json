@@ -5574,6 +5574,24 @@
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://discuss.grapheneos.org/d/42511-grapheneos-has-fixed-the-massive-android-17-qpr1-kernel-performance-regression",
+      "title": "[ClawFeed] GrapheneOS 修复 Android 17 QPR1 内核回归：掉帧、卡死、OOM kill 一并解决",
+      "summary": "Android 17 QPR1（2026-09-15 Pixel 推送）内核驱动出现严重回归：内存压力下进程出现 stutter / lag / stall，watchdog 因 stall 触发 kill；Google 修复流程放慢到 4–6 周，Pixel 11 直接取消了一次补丁，其余 Pixel 仍带回归发版。GrapheneOS 同步驱动后于 2026-10-03 发布当日修复版，patch 落在 kernel_pixel_6.6 commit ed5a9b87d99b，Android 性能对比测试需把 2026-09-15 之后 Pixel 官方 QPR1 视作 baseline 漂移源。",
+      "chapter": "ch04",
+      "processed_at": "2026-10-03T06:20:34.325224+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part3-tools/ch16-methodology/08-google-android-bench-ai-coding-evaluation-methodology.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "oom",
+        "google",
+        "patch",
+        "commit"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
