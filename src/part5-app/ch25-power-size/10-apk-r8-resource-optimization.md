@@ -415,9 +415,11 @@ AGP 9.3 及以上可以单独运行这项检查，不必每次都先生成完整
 ./gradlew :app:analyzeReleaseR8Config
 ```
 
-独立任务的 HTML 报告写到 `app/build/reports/r8/r8-config-analyzer-release.html`；完整 R8 发布构建也会在 `build/outputs/mapping/release/configanalyzer.html` 生成报告。若 AGP 版本还没有独立任务，而项目使用的 R8 已支持 Configuration Analyzer，可用 `dumpkeepradiustodirectory` 输出 keep radius 数据，再通过 Google `android/skills` 仓库 `performance/r8-analyzer` 的 reference 转成 JSON 和分析结果；若工具链连原始数据也不能生成，才退回到包级通配符、整类成员通配符、`!` inversion 等语法启发式检查。[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md；已验证: https://github.com/android/skills/tree/main/performance/r8-analyzer]
+独立任务的 HTML 报告写到 `app/build/reports/r8/r8-config-analyzer-release.html`；完整 R8 发布构建也会在 `build/outputs/mapping/release/configanalyzer.html` 生成报告。
 
-Blast Radius 明细比单纯搜索 `-keep` 更适合排优先级。导出的 `keep_rule_blast_radius_table` 会把规则关联到 `class_blast_radius`、`field_blast_radius` 和 `method_blast_radius`；对象表 `kept_class_info_table`、`kept_field_info_table`、`kept_method_info_table` 又可通过 `kept_by` 回到具体规则、约束、来源文件或 Maven 坐标。第三方 AAR 的 consumer rules 会与应用规则一起进入合并配置，因此“应用自己的 `proguard-rules.pro` 很干净”不能证明 keep 配置健康。[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md；已验证: Android Developers R8 Configuration Analyzer]
+若 AGP 版本还没有独立任务，而项目使用的 R8 已支持 Configuration Analyzer，可用 `dumpkeepradiustodirectory` 输出 keep radius 数据，再通过 Google `android/skills` 仓库 `performance/r8-analyzer` 的 reference 转成 JSON 和分析结果；若工具链连原始数据也不能生成，才退回到包级通配符、整类成员通配符、`!` inversion 等语法启发式检查。[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md；已验证: https://github.com/android/skills/tree/main/performance/r8-analyzer]
+
+Blast Radius 明细比单纯搜索 `-keep` 更适合排优先级。导出的 `keep_rule_blast_radius_table` 会把规则关联到 `class_blast_radius`、`field_blast_radius` 和 `method_blast_radius`；对象表 `kept_class_info_table`、`kept_field_info_table`、`kept_method_info_table` 又可通过 `kept_by` 回到具体规则、约束、来源文件或 Maven 坐标。[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md；已验证: Android Developers R8 Configuration Analyzer]
 
 报告还可以暴露 subsumed rules（被更宽规则覆盖的规则）：例如包级 `-keep class com.example.package.** { *; }` 已覆盖整个包时，单独保留 `com.example.package.User` 的窄规则可能没有额外效果。排查时先确认反射、JNI、序列化或注解扫描需要保护哪些类、字段、方法、名称或注解，再把宽规则改成更窄的协议规则。改完重新生成 Analyzer 报告、合并配置、`seeds.txt`/`usage.txt` 和发布 APK 对比。[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md]
 
@@ -1383,7 +1385,7 @@ Android 平台、NDK、AGP 与 Play 发布政策不能按行互相替代。项�
 | `assets/` | 保留目录层级和文件名的原始素材 | 压缩方式、运行时读取协议、是否可按需交付 |
 | APK/AAB 元数据 | 应用清单（manifest）、Protocol Buffer 编码的资源表、拆分配置和签名 | 上传包、设备 APK Set 与安装字节口径 |
 
-资源 ID 本身是 32 位整数，常用形式可写作 `0xpptteeee`：`pp`、`tt`、`eeee` 分别表示资源包（package）、类型（type）和条目（entry）字段。“资源 ID 很复杂”不会让一个条目突然变大；体积通常来自条目数量、每个条目的配置变体、字符串池、文件内容和表中空洞或编码方式。
+资源 ID 本身是定长的 32 位整数，常用形式可写作 `0xpptteeee`：`pp`、`tt`、`eeee` 分别表示资源包（package）、类型（type）和条目（entry）字段。ID 长度固定，不会因为资源命名而变大；体积通常来自条目数量、每个条目的配置变体、字符串池、文件内容和表中空洞或编码方式。
 
 同一个图片还可能出现三种不同数字：
 
@@ -1504,7 +1506,9 @@ APK_PATH="app/build/outputs/apk/release/app-release.apk"
 "$APKANALYZER" files list "$APK_PATH"
 ```
 
-`aapt2` 位于 SDK Build Tools，`apkanalyzer` 则由 SDK Command-Line Tools 提供，不能把两者拼到同一个目录。这里的 `37.0.0` 与 `latest` 都是路径占位；AGP 9.3 发布说明列出的 Build Tools 最低和默认版本均为 36.0.0，项目应替换成已安装并固定的实际版本。`dump resources` 适合核对资源包、类型、条目和配置，`xmltree` 可确认 APK 中的 XML 已被编译，文件列表用于找大文件与意外目录。大规模 CI 应保存结构化报告，不要依赖面向人工阅读的完整 dump 文本。
+`aapt2` 位于 SDK Build Tools，`apkanalyzer` 则由 SDK Command-Line Tools 提供，不能把两者拼到同一个目录。这里的 `37.0.0` 与 `latest` 都是路径占位；AGP 9.3 发布说明列出的 Build Tools 最低和默认版本均为 36.0.0，项目应替换成已安装并固定的实际版本。
+
+`dump resources` 适合核对资源包、类型、条目和配置，`xmltree` 可确认 APK 中的 XML 已被编译，文件列表用于找大文件与意外目录。大规模 CI 应保存结构化报告，不要依赖面向人工阅读的完整 dump 文本。
 
 下面的命令用于比较两个 APK 的资源与文件差异：
 
