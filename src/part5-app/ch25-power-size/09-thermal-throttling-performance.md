@@ -61,19 +61,6 @@ last_rework_run_id: 20260815-165828-gracker-writing-457
 
 热节流是设备维持安全温度的动态控制结果，不同机型的阈值和降级动作不会完全一致。应用应把热状态与 headroom 当作趋势信号，提前降低可选工作，并用持续性能而非瞬时峰值验收。
 
-## 公开 API 的实际入口
-
-热节流（thermal throttling）是设备为控制温度而限制 CPU、GPU、充电或其他热源的过程。Android SDK 没有公开的 `ThermalManager` Java 类，应用侧入口位于 `android.os.PowerManager`：
-
-- `getCurrentThermalStatus()`、`addThermalStatusListener()`：API 29；
-- `getThermalHeadroom(forecastSeconds)`：API 30；
-- `getThermalHeadroomThresholds()`：API 35；
-- `addThermalHeadroomListener()`：API 36。
-
-Android 17 也没有 `PowerManager.isThermalStatusProtectionEnabled()`、`getThermalMitigations()` 或“热缓解动作（thermal mitigation）列表”公开接口。应用能读取全局热状态和表面温度对应的 thermal headroom，但无法查询系统当前启用了哪组 CPU、GPU、屏幕或充电限制。
-
-下面这三个词会在全章反复出现，先对齐含义：热状态用 0—6 的 severity（限制等级）表示；skin 指机身表面温度传感器或厂商建立的虚拟表面温度模型；thermal headroom（热余量）是接近严重热限制阈值的归一化数值。
-
 ## 热治理的目标
 
 冷机跑分反映短时峰值，长时间游戏、导航、视频通话、直播和端侧推理更依赖稳态吞吐，也就是设备进入热平衡后仍能持续完成多少工作。持续负载通常经历以下过程：
@@ -87,6 +74,19 @@ Android 17 也没有 `PowerManager.isThermalStatusProtectionEnabled()`、`getThe
 应用无法通过 Thermal API 指定频率或限制档位（cooling state，即冷却设备当前采用的限制强度）。应用能调整的是工作量：目标帧率、渲染分辨率、画质、编码规格、相机分析速率、模型档位、并发度、预取与非紧急后台工作。
 
 较好的策略会提前减掉低价值工作，并在设备冷却后分阶段恢复。只在 `SEVERE` 到来时一次性关闭大量能力，通常会出现明显质量跳变；热状态刚回落就全部恢复，又容易在阈值附近反复振荡。
+
+## 公开 API 的实际入口
+
+热节流（thermal throttling）是设备为控制温度而限制 CPU、GPU、充电或其他热源的过程。Android SDK 没有公开的 `ThermalManager` Java 类，应用侧入口位于 `android.os.PowerManager`：
+
+- `getCurrentThermalStatus()`、`addThermalStatusListener()`：API 29；
+- `getThermalHeadroom(forecastSeconds)`：API 30；
+- `getThermalHeadroomThresholds()`：API 35；
+- `addThermalHeadroomListener()`：API 36。
+
+Android 17 也没有 `PowerManager.isThermalStatusProtectionEnabled()`、`getThermalMitigations()` 或“热缓解动作（thermal mitigation）列表”公开接口。应用能读取全局热状态和表面温度对应的 thermal headroom，但无法查询系统当前启用了哪组 CPU、GPU、屏幕或充电限制。
+
+先对齐三个贯穿全章的关键词：热状态用 0—6 的 severity（限制等级）表示；skin 指机身表面温度传感器或厂商建立的虚拟表面温度模型；thermal headroom（热余量）是接近严重热限制阈值的归一化数值。
 
 ## Android 17 系统路径
 
@@ -191,7 +191,9 @@ Android 17 的七档状态如下：
 
 `forecastSeconds` 的允许范围是 0 到 60。预测以近期工作负载趋势保持相近为前提；预测时间越远，越容易受场景切换影响。应用不能把一次预测值当成未来温度承诺。
 
-没有 HAL 预测时，Android 17 的 Framework 回退实现每秒读取表面温度，每个传感器最多保留 30 个样本，至少有三个样本后用线性回归拟合近期变化并外推；连续 10 秒没有查询后停止采样。若 HAL v3 支持 `forecastSkinTemperature()` 且设备只报告一组 SKIN 阈值，服务会改用 HAL 预测。应用不需要识别内部来源，按“短期趋势信号”处理即可。
+没有 HAL 预测时，Android 17 的 Framework 回退实现每秒读取表面温度，每个传感器最多保留 30 个样本，至少有三个样本后用线性回归拟合近期变化并外推；连续 10 秒没有查询后停止采样。
+
+若 HAL v3 支持 `forecastSkinTemperature()` 且设备只报告一组 SKIN 阈值，服务会改用 HAL 预测。应用不需要识别内部来源，按“短期趋势信号”处理即可。
 
 ### 使用厂商提供的阈值映射表
 
@@ -205,7 +207,9 @@ API 35 的 [`getThermalHeadroomThresholds()`](https://developer.android.com/refe
 
 `addThermalHeadroomListener()` 回调包含当前 headroom、预测 headroom、预测秒数和阈值映射表。它在表面温度跨过限制等级阈值，或温度、阈值变化足够明显时触发，不是周期性预测数据流。
 
-Android 17 服务端对相似回调使用 5 秒最小间隔，并以 headroom 差值 0.03、阈值表数值差 0.01 判断显著变化。这些数值是 `android-17.0.0_r1` 的实现常量，不是公开 API 对所有版本的承诺。产品若需要持续提前预测，仍要按保守间隔调用 `getThermalHeadroom()`。官方游戏兼容建议按 10 秒量级轮询，可减少旧设备因调用过快返回 `NaN` 的情况。
+Android 17 服务端对相似回调使用 5 秒最小间隔，并以 headroom 差值 0.03、阈值表数值差 0.01 判断显著变化。这些数值是 `android-17.0.0_r1` 的实现常量，不是公开 API 对所有版本的承诺。
+
+产品若需要持续提前预测，仍要按保守间隔调用 `getThermalHeadroom()`。官方游戏兼容建议按 10 秒量级轮询，可减少旧设备因调用过快返回 `NaN` 的情况。
 
 ## 应用监听器的安全封装
 
@@ -411,7 +415,9 @@ fun requestedTier(signals: ThermalSignals): WorkloadTier {
 }
 ```
 
-这个函数只给出目标档位。生产实现还应维护一个状态机：热压力升高时可以快速减少工作量；恢复则要等 headroom 低于退出阈值并持续一段冷却驻留时间，再逐级增加工作量。退出余量（margin）用于拉开进入与退出阈值，驻留时间用于确认设备已经稳定冷却；两者都应来自产品实验，不能写成平台常量。
+这个函数只给出目标档位。生产实现还应维护一个状态机：热压力升高时可以快速减少工作量；恢复则要等 headroom 低于退出阈值并持续一段冷却驻留时间，再逐级增加工作量。
+
+退出余量（margin）用于拉开进入与退出阈值，驻留时间用于确认设备已经稳定冷却；两者都应来自产品实验，不能写成平台常量。
 
 每个档位应对应一组不可拆分的配置，所有相关模块在同一次状态切换中采用同一档位，避免渲染已经降载而相机或推理仍维持高负载：
 
@@ -443,7 +449,9 @@ fun requestedTier(signals: ThermalSignals): WorkloadTier {
 
 Perfetto 系统跟踪中应把 `ThermalManagerService.status`、热状态与冷却设备事件、`cpu_frequency_limits`、调度器、FrameTimeline（Android 帧时间线）、渲染线程（RenderThread）与 GPU 完成栅栏（fence）放在同一时间窗口，不能用单条异常帧或一次温度读数完成归因。
 
-功耗与热问题的时间尺度也要分开：单帧和输入反馈用短时跟踪，数分钟温升用持续跟踪或周期快照；屏幕熄灭后的唤醒锁（WakeLock）、后台作业（Job）与网络重试则回到 [25.1 功耗诊断与 OEM 后台限制](01-power-diagnosis-oem-background.md) 的 Batterystats（系统电量统计）窗口。三类结果通过同一设备、系统构建版本（build）、场景和时间戳关联；power rail 是设备级供电轨的能量统计，不能直接归因到某个 Java 方法。
+功耗与热问题的时间尺度也要分开：单帧和输入反馈用短时跟踪，数分钟温升用持续跟踪或周期快照；屏幕熄灭后的唤醒锁（WakeLock）、后台作业（Job）与网络重试则回到 [25.1 功耗诊断与 OEM 后台限制](01-power-diagnosis-oem-background.md) 的 Batterystats（系统电量统计）窗口。
+
+三类结果通过同一设备、系统构建版本（build）、场景和时间戳关联；power rail 是设备级供电轨的能量统计，不能直接归因到某个 Java 方法。
 
 ### CPU 受限
 
