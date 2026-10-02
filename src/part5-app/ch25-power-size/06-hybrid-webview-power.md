@@ -74,11 +74,11 @@ last_review_finalize_run_id: 20260815-151252-gracker-writing-450
 
 # Hybrid/WebView 功耗与原生化取舍
 
-Hybrid 页面的能耗来自 WebView 进程、JavaScript、网络、媒体和原生桥接的共同活动，技术栈名称本身不能预测功耗。原生化决策应基于同场景测量，先定位持续 CPU、唤醒和数据传输，再比较改造成本。
+Hybrid 页面的能耗来自 WebView 进程、JavaScript、网络、媒体和原生桥接的共同活动，技术栈名称本身不能预测功耗。原生化决策应基于同场景测量，先定位持续的 CPU 占用、唤醒和数据传输，再比较改造成本。
 
 ## Hybrid 页的功耗构成
 
-Hybrid（混合开发）页面通常由原生应用里的 WebView 承载。同一次用户操作会经过应用进程、提供 WebView 实现的 provider 包、执行网页代码的 Chromium renderer（渲染进程）、JavaScript、页面资源，以及连接网页与原生代码的 JSBridge（JavaScript bridge，JS 桥）。电量百分比只能反映整机变化，无法指出耗电来自页面脚本、容器生命周期、网络请求还是原生代码。
+Hybrid（混合开发）页面通常由原生应用里的 WebView 承载。同一次用户操作会经过应用进程、提供 WebView 实现的 provider 包、执行网页代码的 Chromium renderer（渲染进程）以及 JavaScript。页面资源和连接网页与原生代码的 JSBridge（JavaScript bridge，JS 桥）也在同一条执行路径上。电量百分比只能反映整机变化，无法指出耗电来自页面脚本、容器生命周期、网络请求还是原生代码。
 
 版本基线为 Android 17（API 37）和 `android-17.0.0_r1`，用于比较同一业务在原生页、应用内 WebView 和外部浏览器中的成本。结论分成两类：同机对照实验得到的相对差异，以及能够在线上按页面和 provider 包版本持续验证的指标。
 
@@ -100,7 +100,9 @@ CPU 时间、网络传输、内存压力、页面驻留、后台活动和屏幕�
 
 论文 [arXiv:2308.16734](https://arxiv.org/abs/2308.16734) 对比了 10 个互联网内容平台的 Android 原生应用与 Chrome Web 版本，覆盖新闻、社交媒体、电商、音频流和视频流五类。这里的 Web 版本运行在 Chrome，不是应用内 `WebView`。
 
-实验使用一台 Nokia 6.2（TA-1198）。论文把系统记为 Android (Go edition) 10，但没有提供构建指纹或系统镜像来源，因此这个标签不能代表其他 Android Go 设备。每个脚本运行 3 分钟，每个研究对象重复 25 次，总计 500 次。设备通过 USB 连接并保持充电，能耗由 Batterystats 根据硬件活动和 power profile 估算。作者在每轮之间清理对应原生应用缓存，并清理浏览器标签页和除登录 Cookie 以外的缓存；交互是固定的点击、滚动和输入脚本。
+实验使用一台 Nokia 6.2（TA-1198）。论文把系统记为 Android (Go edition) 10，但没有提供构建指纹或系统镜像来源，因此这个标签不能代表其他 Android Go 设备。
+
+每个脚本运行 3 分钟，每个研究对象重复 25 次，总计 500 次。设备通过 USB 连接并保持充电，能耗由 Batterystats 根据硬件活动和 power profile 估算。作者在每轮之间清理对应原生应用缓存，并清理浏览器标签页和除登录 Cookie 以外的缓存；交互是固定的点击、滚动和输入脚本。
 
 这里的“统计显著”表示在该样本和检验假设下，观察到的差异不太可能只由随机波动造成；“效应量”描述差异幅度。两者都不能保证其他设备、页面和浏览器保持同一差异。在这套实验条件下，论文得到以下结果：
 
@@ -147,7 +149,9 @@ adb bugreport bugreport-hybrid-power.zip
 
 外部浏览器对照组要替换被测包名和启动入口，并记录浏览器主进程与 renderer；不能把 `com.example.app` 的统计当作浏览器结果。
 
-这组数据要与 Perfetto、Android Studio [Power Profiler](https://developer.android.com/studio/profile/power-profiler) 或 Jetpack Macrobenchmark（宏基准测试框架）的 [`PowerMetric`](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics#powermetric) 交叉使用。ODPM（On Device Power Rails Monitor，设备上的电源轨监测）按硬件子系统记录整机能耗，并不按应用分摊。`PowerMetric` 仍是实验性 API，也返回整机而非单应用能耗；当前官方支持 Pixel 6、Pixel 6 Pro 及更新的实体 Pixel 设备。实验要固定其他进程、WebView provider 包版本、温度与屏幕状态。Battery Historian 已不再积极维护，适合读取旧 Batterystats 记录，不应作为新基准平台的中心工具。
+这组数据要与 Perfetto、Android Studio [Power Profiler](https://developer.android.com/studio/profile/power-profiler) 或 Jetpack Macrobenchmark（宏基准测试框架）的 [`PowerMetric`](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics#powermetric) 交叉使用。ODPM（On Device Power Rails Monitor，设备上的电源轨监测）按硬件子系统记录整机能耗，并不按应用分摊。`PowerMetric` 仍是实验性 API，也返回整机而非单应用能耗；当前官方支持 Pixel 6、Pixel 6 Pro 及更新的实体 Pixel 设备。使用整机能耗工具时，还要固定其他进程、温度与屏幕状态。
+
+Battery Historian 已不再积极维护，适合读取旧 Batterystats 记录，不应作为新基准平台的中心工具。
 
 各指标按以下口径记录：
 
@@ -161,7 +165,7 @@ adb bugreport bugreport-hybrid-power.zip
 | 帧耗时 | `FrameTimeline`（系统帧时间线）、`JankStats`（Jetpack 卡顿统计）、APM 帧率 | 判断功耗优化是否损害交互体验 | 论文未能证明 Web 与原生帧时间差异 |
 | 温度 | `BatteryManager`、Perfetto thermal（温度与热状态）轨道、厂商接口 | 排除热降频（系统因温度过高而降低频率）的干扰 | 温度不同，CPU 频点和耗电不可比 |
 
-整机能耗、UID 归因和进程资源用量回答的是不同问题。单个指标只能说明相关现象，判断原因还要结合时间线和对照组。
+整机能耗是整机的总量，UID 归因把这些消耗算到具体应用，进程资源用量进一步拆到具体进程，三者回答的问题不同。单个指标只能说明相关现象，判断原因还要结合时间线和对照组。
 
 ## 原生化与 Web 优化的决策表
 
