@@ -137,7 +137,7 @@ API 37 的官方差异页列出了 `NfcAdapter`、`NfcAdapter.ReaderCallback` �
 | NFC 节电模式查询与设置 | 系统或特权集成 | 设置接口需要 `NFC_SET_CONTROLLER_ALWAYS_ON`；普通应用不能用它控制省电 |
 | `NfcAntennaInfo.isDeviceFoldable()` 废弃 | 展示天线位置的界面 | 不再根据该布尔值推断设备形态 |
 
-表格将标签分发、读卡、支付和特权硬件控制分开。新增方法出现在 API 37 SDK 中，并不表示所有 NFC 设备都支持对应硬件能力；带 `is...Supported()` 的功能仍要先查询。
+表格将标签分发、读卡、支付和特权硬件控制分开。新增方法出现在 API 37 SDK 中，并不表示所有 NFC 设备都支持对应硬件能力；带 `is...Supported()` 的功能仍要先查询。表中的 Observe Mode 让手机先监听终端轮询、暂不进入交易，退出帧与 Reader Mode 注释帧是依赖 NFCC 固件的可选能力，这三项都在第 5 节展开。
 
 官方差异页还列出 `getGestureExchangeAid()`。它需要 `PERFORM_GESTURE_EXCHANGE` 权限，用于 Tap to Share，不是支付 APDU 优化接口。
 
@@ -171,7 +171,9 @@ API 37 的官方差异页列出了 `NfcAdapter`、`NfcAdapter.ReaderCallback` �
 
 Android 17 的 `NfcDispatcher.isMatchAdditionalActivityFilters()` 会检查目标 SDK、应用的 stopped 标志和 Activity 声明。尚未由用户启动过或被强行停止（force-stop）的应用处于 stopped 状态，不会收到 NFC `Intent`；用户手动启动应用后才解除该状态。
 
-`ACTION_TAG_DISCOVERED` 是在前两种分发均未匹配时使用的宽泛后备入口，API 37 已将它废弃。应用应优先匹配具体的 NDEF MIME 类型、URI 或标签技术列表。Android 16 起，含 HTTP/HTTPS 链接的 NFC 标签改走 `ACTION_VIEW`；Android 17 会先显示打开链接通知，用户确认后才触发 `ACTION_VIEW`。需要接收自有域名的应用应配置 Android App Links，不再等待 `ACTION_NDEF_DISCOVERED`。
+`ACTION_TAG_DISCOVERED` 是在前两种分发均未匹配时使用的宽泛后备入口，API 37 已将它废弃。应用应优先匹配具体的 NDEF MIME 类型、URI 或标签技术列表。
+
+Android 16 起，含 HTTP/HTTPS 链接的 NFC 标签改走 `ACTION_VIEW`；Android 17 会先显示打开链接通知，用户确认后才触发 `ACTION_VIEW`。需要接收自有域名的应用应配置 Android App Links，不再等待 `ACTION_NDEF_DISCOVERED`。
 
 ### 3.2 Reader Mode 的标签离场回调
 
@@ -206,7 +208,9 @@ class ReaderActivity : AppCompatActivity(), NfcAdapter.ReaderCallback {
 }
 ```
 
-Reader Mode 只在 Activity 位于前台时启用。API 没有承诺 `ReaderCallback` 在主线程执行，因此回调不应直接更新界面；`TagTechnology.connect()` 和 `transceive()` 等可能阻塞的输入输出（I/O）操作放在应用自己的工作线程，并把界面更新派发到主线程。`Tag` 或 `TagTechnology` 连接也不应保存到 Activity 生命周期之外。
+Reader Mode 只在 Activity 位于前台时启用。API 没有承诺 `ReaderCallback` 在主线程执行，因此回调不应直接更新界面；`TagTechnology.connect()` 和 `transceive()` 等可能阻塞的输入输出（I/O）操作放在应用自己的工作线程，并把界面更新派发到主线程。
+
+`Tag` 或 `TagTechnology` 连接也不应保存到 Activity 生命周期之外。
 
 标签离场、手机移动和射频噪声都可能让 `connect()` 或 `transceive()` 抛出 I/O 异常。`onTagLost()` 用于补充任务取消和界面清理，不能替代每次 I/O 的异常处理。
 
@@ -253,7 +257,7 @@ Reader Mode 只在 Activity 位于前台时启用。API 没有承诺 `ReaderCall
 
 ### 4.2 `processCommandApdu()` 运行在主线程
 
-`Looper` 是 Android 线程的消息循环，`Handler` 负责向该循环投递消息。`HostApduService` 使用绑定应用主线程 `Looper` 的 `Handler` 接收 `MSG_COMMAND_APDU`，随后直接调用 `processCommandApdu()`；官方文档也明确说明该回调运行在主线程。
+`HostApduService.processCommandApdu()` 运行在应用主线程上，官方文档对此有明确说明。实现上，`Looper` 是 Android 线程的消息循环，`Handler` 负责向该循环投递消息；`HostApduService` 用一个绑定主线程 `Looper` 的 `Handler` 接收 `MSG_COMMAND_APDU`，收到后直接调用该回调。
 
 能立即算出的响应可以直接返回。需要异步处理时返回 `null`，工作完成后从任意线程调用非阻塞的 `sendResponseApdu()`。
 
@@ -343,7 +347,9 @@ NFC 终端会循环发送轮询帧（polling frames），寻找附近支持的�
 
 ### 退出帧与注释帧依赖控制器能力
 
-退出帧让 NFCC 固件在特定的自动交易轮询过滤器命中时离开 Observe Mode。`isExitFramesSupported()` 只有在固件支持且控制器报告至少一个可用退出帧时才返回 `true`。`isReaderModeAnnotationSupported()` 也来自设备能力。`NfcProprietaryCaps` 会解析控制器上报的厂商能力数据，其中包括节电模式、自动交易过滤器、退出帧数量和 Reader Mode 注释帧支持。
+退出帧让 NFCC 固件在特定的自动交易轮询过滤器命中时离开 Observe Mode。`isExitFramesSupported()` 只有在固件支持且控制器报告至少一个可用退出帧时才返回 `true`。
+
+`isReaderModeAnnotationSupported()` 也来自设备能力。`NfcProprietaryCaps` 会解析控制器上报的厂商能力数据，其中包括节电模式、自动交易过滤器、退出帧数量和 Reader Mode 注释帧支持。
 
 Reader Mode 注释帧是一段由读卡端 Android 设备放入 NFC-A 轮询序列的字节数据。另一台处于 Observe Mode 的 Android 设备会通过 `HostApduService.processPollingFrames()` 收到一个未知类型帧。POS（Point of Sale，销售点支付终端）没有义务识别这种 Android 扩展；它也不能替代 AID 选择、终端支付内核和支付协议协商。
 
