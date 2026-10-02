@@ -98,7 +98,7 @@ WakeLock（唤醒锁）和 Alarm（系统定时通知）解决两个不同问题
 
 持锁范围过大，会阻止系统进入低功耗状态；唤醒型 Alarm 过密，会增加设备被唤醒的次数；精确 Alarm 若未满足权限条件，调用时会抛出 `SecurityException`。
 
-系统电源状态机见 §5.2 和 §11.3，后台任务分类见 §25.2，WorkManager（Jetpack 的持久后台任务调度库）实践见本文后半部分。这里讨论应用侧的选择、生命周期、权限和诊断。
+系统电源状态机见 §5.2 和 §11.3，后台任务分类见 §25.2，WorkManager 实践见「约束任务、重试与执行窗口」。这里讨论应用侧的选择、生命周期、权限和诊断。
 
 #### Android 17 源码中的调用边界
 
@@ -115,7 +115,7 @@ flowchart LR
     H --> B
 ```
 
-`PowerManagerService` 汇总框架层 WakeLock 并更新电源状态，`AlarmManagerService` 负责 Alarm 的分组、权限、空闲策略和分发。内核的 wakeup source（唤醒源）与 alarmtimer（定时唤醒机制）提供阻止休眠和定时唤醒能力，却不了解 `PendingIntent`（由系统在未来代应用执行操作的凭据）、精确 Alarm 权限或应用业务。系统可以合并多个 Alarm，设备也可能因其他来源已经处于唤醒状态，因此一次 Alarm 触发不一定对应一次内核唤醒。
+`PowerManagerService` 汇总框架层 WakeLock 并更新电源状态，`AlarmManagerService` 负责 Alarm 的分组、权限、空闲策略和分发。内核的 wakeup source（唤醒源）与 alarmtimer（定时唤醒机制）提供阻止休眠和定时唤醒的能力，却不了解 `PendingIntent`（由系统在未来代应用执行操作的凭据）、精确 Alarm 权限或应用业务。系统可以合并多个 Alarm，设备也可能因其他来源已经处于唤醒状态，因此一次 Alarm 触发不一定对应一次内核唤醒。
 
 源码可从三个入口核对：
 
@@ -125,7 +125,7 @@ flowchart LR
 
 ### WakeLock 类型与使用规范
 
-常规应用需要评估的 CPU（中央处理器）锁是 `PARTIAL_WAKE_LOCK`。它允许屏幕关闭，同时让 CPU 保持运行。`SCREEN_DIM_WAKE_LOCK`、`SCREEN_BRIGHT_WAKE_LOCK` 和 `FULL_WAKE_LOCK` 已废弃；页面需要保持亮屏时，使用 `FLAG_KEEP_SCREEN_ON` 或 View 的 `keepScreenOn`。申请 WakeLock 还需要在清单中声明 `android.permission.WAKE_LOCK`。
+常规应用要评估的 CPU（中央处理器）锁是 `PARTIAL_WAKE_LOCK`，它允许屏幕关闭，同时让 CPU 保持运行。`SCREEN_DIM_WAKE_LOCK`、`SCREEN_BRIGHT_WAKE_LOCK` 和 `FULL_WAKE_LOCK` 已废弃；页面需要保持亮屏时，使用 `FLAG_KEEP_SCREEN_ON` 或 View 的 `keepScreenOn`。申请 WakeLock 还需要在清单中声明 `android.permission.WAKE_LOCK`。
 
 手动持锁之前，先检查平台接口是否已经管理唤醒周期。WorkManager 和 JobScheduler（Android 系统任务调度器）会在任务执行期间处理所需的 WakeLock；媒体、位置和部分传感器接口也有自己的电源行为。再叠加一把手动锁，通常只会扩大持锁范围。
 
@@ -196,9 +196,7 @@ WakeLock 异常往往来自所有权不清：异常提前返回、回调没有�
 
 AlarmManager 分发广播时会持有名为 `*alarm*` 的 WakeLock，并将它归因给设置 Alarm 的应用。该锁只覆盖 `BroadcastReceiver.onReceive()`；方法返回后，系统就可以释放锁。接收器中若启动异步工作，应该将输入持久化并交给 WorkManager 或其他合适接口，不能依赖 `*alarm*` 继续保护后续工作。
 
-Android Vitals 当前将一个应用会话中、24 小时内累计达到两小时的非豁免 partial WakeLock 记为过度使用；若最近 28 天超过 5% 的应用会话出现该问题，可能影响应用在 Google Play 的可见性。统计只计算屏幕关闭且应用处于后台或运行 FGS 时持有的锁，并对部分有明确用户价值的系统 API 提供豁免。
-
-这个门槛用于识别严重问题，不应成为应用允许自己消耗的预算。参见 [Excessive partial wake locks](https://developer.android.com/topic/performance/vitals/excessive-wakelock)。
+Android Vitals 的判定门槛和豁免规则决定线上哪些锁会被记为过度使用，具体口径见「WakeLock 与 Alarm 功耗回归守门」。
 
 应用自己的审计记录不要只保存标签：
 
@@ -218,7 +216,7 @@ Android Vitals 当前将一个应用会话中、24 小时内累计达到两小�
 
 AlarmManager 用于跨越应用生命周期的时间通知。应用仍在运行时的界面计时、动画或请求超时，使用 Handler（进程内消息调度器）、协程等进程内工具；允许延后的持久化工作使用 WorkManager。用户指定的闹钟、日历事件和到时提醒，才需要评估 AlarmManager。参见 [Schedule alarms](https://developer.android.com/develop/background-work/services/alarms)。
 
-Doze 指设备空闲时的低功耗模式。选择 API 时，同时判断是否要唤醒设备、允许多大时间偏差，以及是否需要跨进程存活。
+Doze 指设备空闲时的低功耗模式。选择接口时，要同时判断是否要唤醒设备、允许多大时间偏差，以及进程结束后是否仍然触发。
 
 | API | 系统行为 | 适用边界 |
 |-----|----------|----------|
@@ -239,8 +237,6 @@ Doze 指设备空闲时的低功耗模式。选择 API 时，同时判断是否�
 - `RTC` / `RTC_WAKEUP` 使用墙上时钟，也就是用户可见且会受校时、时区和夏令时影响的系统时间，适合按当地时间提醒。用户修改时间、时区或夏令时规则时，应用要重新核对下一次触发。
 - `ELAPSED_REALTIME` / `ELAPSED_REALTIME_WAKEUP` 使用 `SystemClock.elapsedRealtime()` 表示开机后持续递增的单调时间，不受墙上时钟调整影响，适合同一次开机内的延迟。
 - 带 `WAKEUP` 的类型可以唤醒休眠设备；不带 `WAKEUP` 的类型会等设备下次清醒后分发。业务允许等待时，选择不唤醒设备的类型。
-
-设备关机后 Alarm 会被清除。需要跨重启保留的提醒，应先将业务记录持久化，再在 `BOOT_COMPLETED` 后重建。每天按当地时间重复的提醒还要处理时区和夏令时变化，通常按下一次日历时间安排单次 Alarm，比固定毫秒间隔更可靠。
 
 这个示例把允许在目标时间附近到达的提醒安排为窗口 Alarm。提醒标识（ID）写入 `Intent.data`，使 `PendingIntent` 身份稳定且不依赖 `Long.hashCode()`。
 
@@ -283,6 +279,8 @@ fun scheduleReminderWindow(
 
 接收器只做输入校验、状态确认和短小的本地处理。下载、数据库批处理或多轮网络请求需要入队；同一提醒已删除、账号已退出或状态已过期时，应直接结束。
 
+设备关机后 Alarm 会被清除。需要跨重启保留的提醒，应先将业务记录持久化，再在 `BOOT_COMPLETED` 后重建。每天按当地时间重复的提醒还要处理时区和夏令时变化，通常按下一次日历时间安排单次 Alarm，比固定毫秒间隔更可靠。
+
 #### Android 17：允许空闲分发的 Listener Alarm
 
 Android 17 / API 37 新增接受 `OnAlarmListener`（Alarm 回调监听器）与 `Executor`（回调执行器）的 `setExactAndAllowWhileIdle()`。它适合这样的场景：组件仍在运行，但不希望持续持有 WakeLock 等待下一次时机。这个示例按开机后的单调时间安排一次回调。
@@ -311,7 +309,7 @@ fun scheduleProcessLocalIdleAlarm(
 
 `OnAlarmListener` 通过进程内 Binder（Android 进程间通信机制）回调交付。应用进程进入 cached（缓存进程）或 frozen（冻结）状态、监听器对应的 Binder 失效，或者拥有该监听器的组件结束时，系统可以移除 Alarm；进程死亡后仍需交付的提醒应使用 `PendingIntent`。
 
-Android 17 还为 Listener 型允许空闲分发 Alarm 维护独立配额（quota）。AOSP 中的默认值用于解释当前实现，业务不能据此承诺固定心跳间隔。每次回调完成后，再按当前协议状态安排下一次一次性 Alarm，并记录请求时间、实际触发时间和回调完成时间，避免形成无法追踪来源的周期唤醒。
+Android 17 为这类 Listener 型 Alarm 单独维护允许空闲分发的配额（quota）。AOSP 里的默认值只能用于理解当前实现，业务不能据此承诺固定心跳间隔。每次回调完成后，再按当前协议状态安排下一次一次性 Alarm，并记录请求时间、实际触发时间和回调完成时间，避免形成无法追踪来源的周期唤醒。
 
 ### Exact Alarm 权限变化（Android 12+）
 
@@ -395,15 +393,21 @@ fun scheduleExactReminder(
 
 #### Android Vitals 的 excessive 与 stuck 口径
 
-Google Play 的 WakeLock 指标只统计特定状态下的非豁免 partial WakeLock。Excessive（过度使用）指一个应用会话在 24 小时内累计持锁达到两小时；stuck（长时间未释放）指 24 小时内至少出现一次在后台连续持锁一小时。一个未达到 stuck 阈值的高频短锁，累计后仍可能达到 excessive 阈值。内部监控至少同时保存单次最长时长、窗口累计时长、次数和重叠区间。参见 [Stuck partial wake locks](https://developer.android.com/topic/performance/vitals/stuck-wakelock)。
+Google Play 的 WakeLock 指标只统计特定状态下的非豁免 partial WakeLock，也就是屏幕关闭且应用处于后台或运行 FGS 时持有的锁。Excessive（过度使用）指一个应用会话在 24 小时内累计持锁达到两小时，最近 28 天内出现该问题的应用会话超过 5% 时，可能影响应用在 Google Play 的可见性；stuck（长时间未释放）指 24 小时内至少出现一次在后台连续持锁一小时。一个未达到 stuck 阈值的高频短锁，累计后仍可能达到 excessive 阈值。这个门槛用于识别严重问题，不应成为应用允许自己消耗的预算。参见 [Excessive partial wake locks](https://developer.android.com/topic/performance/vitals/excessive-wakelock) 与 [Stuck partial wake locks](https://developer.android.com/topic/performance/vitals/stuck-wakelock)。
+
+内部监控至少同时保存单次最长时长、窗口累计时长、次数和重叠区间。
 
 Vitals 根据创建锁的平台 API 判断豁免，不根据手动标签的名称判断。音频、定位或 JobScheduler 用户发起任务（user-initiated job）的系统锁可能在指标中豁免；业务自行调用 `newWakeLock()`，即使标签写成 Audio 或 Location，也不会自动获得豁免。前台服务同样不是豁免项。
 
-Play Console 给出标签、受影响会话和持续时间分布，端侧还要补充调用现场。手动锁应使用稳定、低基数（标签取值种类少）且不含用户信息的标签，例如 `com.example.sync:message-refresh`；应用日志再关联任务类型、版本、获取和释放时的调用栈哈希、前后台与充电状态。WorkManager 或 JobScheduler 生成的 `*job*` 标签可能随系统和库版本变化。遇到系统标签时，应回查 Worker、Job、约束、重试和停止原因；源码中不一定存在完整的运行时标签。
+Play Console 给出标签、受影响会话和持续时间分布，端侧还要补充调用现场。
 
-本地复现应覆盖屏幕关闭、应用在后台或运行 FGS、设备由电池供电的区间。`dumpsys power` 显示当前持锁者，BatteryStats 和 bugreport 还原累计区间，Perfetto 的电源（power）轨道把 WakeLock、Alarm、Job、屏幕状态与线程工作按时间对齐。Play 指标未计入的耗电也可能不合理；国内渠道和企业分发仍应保留相同的内部发布门禁。
+手动锁应使用稳定、低基数（标签取值种类少）且不含用户信息的标签，例如 `com.example.sync:message-refresh`；应用日志再关联任务类型、版本、获取和释放时的调用栈哈希、前后台与充电状态。
 
-WakeLock 和 Alarm 的回归要覆盖安排、触发、取消和失败恢复。测试周期应包含业务完整的提醒或重试过程，不照抄固定息屏时长。
+WorkManager 或 JobScheduler 生成的 `*job*` 标签可能随系统和库版本变化。遇到这类系统标签时，要回查 Worker、Job、约束、重试和停止原因；源码中不一定存在完整的运行时标签。
+
+本地复现要落在同一组条件下：屏幕关闭、应用在后台或运行 FGS、设备由电池供电。`dumpsys power` 显示当前持锁者，BatteryStats 和 bugreport 还原累计区间，Perfetto 的电源（power）轨道把 WakeLock、Alarm、Job、屏幕状态与线程工作按时间对齐。Play 指标未计入的耗电也可能不合理；国内渠道和企业分发仍应保留相同的内部发布门禁。
+
+WakeLock 和 Alarm 的回归要覆盖安排、触发、取消和失败恢复。测试周期应包含业务完整的提醒或重试过程，不照抄固定息屏时长；场景上还要覆盖用户取消提醒、修改时间或时区、重启设备，以及授予和撤销精确 Alarm 权限。
 
 这些命令用于测试机上观察当前 WakeLock、Alarm 队列和 BatteryStats 历史，并验证 Doze 条件下的到达行为。
 
@@ -420,7 +424,7 @@ adb shell dumpsys deviceidle unforce
 adb shell dumpsys battery reset
 ```
 
-`dumpsys power` 显示此刻仍在持锁的对象，`dumpsys alarm` 显示等待中的 Alarm 及其分组，BatteryStats 历史用于对照测试时间。结束时必须解除强制 Doze 并恢复电池服务。测试还要覆盖用户取消提醒、修改时间或时区、重启设备，以及授予和撤销精确 Alarm 权限。
+`dumpsys power` 显示此刻仍在持锁的对象，`dumpsys alarm` 显示等待中的 Alarm 及其分组，BatteryStats 历史用于对照测试时间。结束时必须解除强制 Doze 并恢复电池服务。
 
 | 守门项 | 检查方式 | 失败处理 |
 |--------|----------|----------|
@@ -436,9 +440,9 @@ adb shell dumpsys battery reset
 
 ### WakeLock 与 Alarm 小结
 
-WakeLock 保护一段已经开始的工作，Alarm 安排未来的时间通知。前者的重点是所有权、超时和释放；后者的重点是时间基准、精度、唤醒类型、回调身份与权限。
+一段工作已经开始，用 WakeLock 保护它；一件工作尚未开始，用 Alarm 安排它的时刻。前者要交代所有权、超时和释放，后者要交代时间基准、精度、唤醒类型、回调身份和权限。
 
-Android 17 的 Listener 版 `setExactAndAllowWhileIdle()` 可以在进程内组件仍存活时替代持续持锁等待，但不能跨越进程死亡。需要持久到达的用户提醒仍使用 `PendingIntent`，并遵守精确 Alarm 权限。诊断时，框架源码解释调度与归因，`android17-6.18-2026-06_r6` 内核源码解释休眠阻止和定时唤醒；两层证据要按时间关联。
+Android 17 的 Listener 版 `setExactAndAllowWhileIdle()` 可以在进程内组件仍存活时替代持续持锁等待，但不能跨越进程死亡。需要持久到达的用户提醒仍使用 `PendingIntent`，并遵守精确 Alarm 权限。诊断时，框架源码解释调度与归因，`android17-6.18-2026-06_r6` 内核源码解释休眠阻止和定时唤醒，两侧证据要放在同一条时间线上对照。
 
 ## 约束任务、重试与执行窗口
 
@@ -478,7 +482,7 @@ dependencies {
 - WorkManager 将 `WorkSpec`（任务配置的内部数据库记录）、依赖关系和状态保存在自己的数据库中，并把符合调度条件的工作交给系统。
 - 在 API 23–37 上，跨进程、跨重启的系统调度由 `JobScheduler` 负责；应用进程已经存活时，`GreedyScheduler`（WorkManager 的进程内机会调度器）还可以就地运行满足条件的工作。
 
-WorkManager 向 `JobScheduler`（Android 系统任务调度器）注册的服务是 `androidx.work.impl.background.systemjob.SystemJobService`。Android 17 的系统侧由 `JobSchedulerService` 和一组约束控制器决定 Job 何时具备运行资格；配额由 `QuotaController` 等组件参与计算。WorkManager 可以把业务意图转换成 Job 约束，却不能绕过 Doze（设备空闲低功耗模式）、App Standby（应用待机）、后台限制和系统负载决策。
+WorkManager 向 `JobScheduler` 注册的服务是 `androidx.work.impl.background.systemjob.SystemJobService`。Android 17 的系统侧由 `JobSchedulerService` 和一组约束控制器决定 Job 何时具备运行资格；配额由 `QuotaController` 等组件参与计算。WorkManager 可以把业务意图转换成 Job 约束，却不能绕过 Doze、App Standby（应用待机）、后台限制和系统负载决策。
 
 #### Worker 类型与线程语义
 
@@ -520,7 +524,7 @@ class ProfileSyncWorker(
 
 #### 一次性任务与周期任务
 
-一次性任务适合在条件满足后执行一次，周期任务适合长期重复检查。周期任务的最小间隔是 15 分钟；这表示最小周期，不保证每 15 分钟准点触发。
+一次性任务适合在条件满足后执行一次，周期任务适合长期重复检查。周期任务的最小间隔是 15 分钟，这只是最小周期，不保证每 15 分钟准点触发。
 
 这段代码注册一个唯一的周期同步任务：
 
@@ -560,8 +564,8 @@ WorkManager.getInstance(context).enqueueUniquePeriodicWork(
 - `setRequiresCharging(true)` 要求系统报告设备正在充电。
 - `setRequiresBatteryNotLow(true)` 要求系统报告电量处于非低电量状态。
 - `setRequiresStorageNotLow(true)` 要求系统报告存储处于非低存储状态。
-- `setRequiresDeviceIdle(true)` 要求平台 Job 的设备空闲约束成立。设备空闲包含的条件多于息屏，也不能解释为只检查 Doze 的某一个状态。
-- API 24 及以上可用 `addContentUriTrigger()` 监听本机 `content:` URI（统一资源标识符）的变化。
+- `setRequiresDeviceIdle(true)` 要求平台 Job 的设备空闲约束成立。设备空闲包含的条件多于息屏，也不等同于只判断 Doze 的某一个状态。
+- API 24 及以上可用 `addContentUriTrigger()` 监听本机 `content:` URI 的变化。
 
 电量和存储的判定阈值是系统实现细节，不属于 WorkManager 公共契约。这些布尔约束无法表达电池健康度低于某值、剩余空间低于某个百分比，或只在 Wi-Fi 6 上运行。
 
@@ -683,10 +687,6 @@ class ExportWorker(
 
 `setForeground()` 应在耗时操作之前调用。前台服务类型只是声明业务类别，不会取消 JobScheduler 的配额检查；Android 16、17 上，长时 Worker 仍使用 JobScheduler，可能耗尽应用的 Job 配额。用户主动发起的大文件下载更适合用户发起的数据传输任务或直接前台服务。
 
-#### 并发由多道门共同限制
-
-自定义 `Configuration.executor` 只能改变 Worker 和部分内部任务使用的线程资源，不能定义系统级并发，也不是任务优先级。可运行数还受约束、依赖、WorkManager 调度器、JobScheduler 配额、进程状态和业务资源限制影响。盲目扩大线程池会增加数据库、网络和 CPU 竞争。
-
 ### 重试、取消与幂等
 
 幂等指同一业务操作重复执行时，不会产生重复扣款、重复写入等额外副作用。
@@ -705,7 +705,7 @@ val upload = OneTimeWorkRequestBuilder<UploadWorker>()
     .build()
 ```
 
-Worker 返回 `Result.retry()` 后才会使用这项配置。`setBackoffCriteria()` 会把输入限制在 `WorkRequest.MIN_BACKOFF_MILLIS` 与 `MAX_BACKOFF_MILLIS` 支持的范围内；业务不应依赖内部 `WorkSpec` 常量。认证失效、参数非法等永久错误应返回 `failure()`，避免无意义地消耗后台配额。
+Worker 返回 `Result.retry()` 后才会使用这项配置。`setBackoffCriteria()` 会把输入限制在 `WorkRequest.MIN_BACKOFF_MILLIS` 与 `MAX_BACKOFF_MILLIS` 支持的范围内；业务应使用这两个公开常量，不要依赖内部的 `WorkSpec` 常量。认证失效、参数非法等永久错误应返回 `failure()`，避免无意义地消耗后台配额。
 
 重试次数没有自动的业务上限。应结合 `runAttemptCount`、HTTP 状态、服务器 `Retry-After` 和业务截止时间决定何时结束。周期工作的某一轮返回 `failure()` 也不会取消整个周期任务，后续周期仍可运行。
 
@@ -839,9 +839,9 @@ adb shell am broadcast \
   -p com.example.app
 ```
 
-诊断广播会在 logcat（Android 系统日志缓冲区）中输出最近完成、正在运行和已调度工作；将包名替换为被测应用。WorkManager 2.10.0 起为交给 JobScheduler 的 Job 增加 Worker trace tag（追踪标签），Android 17 的 `dumpsys jobscheduler` 输出因此更容易关联到具体 Worker，但脚本仍不应依赖未经承诺的输出文本格式。
+诊断广播会在 logcat（Android 系统日志缓冲区）中输出最近完成、正在运行和已调度工作。执行前把命令里的包名替换为被测应用。WorkManager 2.10.0 起为交给 JobScheduler 的 Job 增加 Worker trace tag（追踪标签），Android 17 的 `dumpsys jobscheduler` 输出因此更容易关联到具体 Worker，但脚本仍不应依赖未经承诺的输出文本格式。
 
-Perfetto（Android 系统追踪工具）适合分析 Worker 运行时占用的线程和 CPU 时间，不能单独解释任务为何尚未获得调度。Trace 区段名称属于库实现细节，升级 WorkManager 后可能改变。
+Perfetto 适合分析 Worker 运行时占用的线程和 CPU 时间，不能单独解释任务为何尚未获得调度。Trace 区段名称属于库实现细节，升级 WorkManager 后可能改变。
 
 #### Pending Reasons（待执行原因）与 JobDebugInfo
 
@@ -904,6 +904,10 @@ class App : Application(), Configuration.Provider {
 
 完成移除后，由 `Configuration.Provider` 提供配置并在首次获取 WorkManager 时初始化。只有无法使用 Provider 的特殊启动架构才直接调用 `WorkManager.initialize()`，且整个应用生命周期只能初始化一次。
 
+#### 并发由多道门共同限制
+
+自定义 `Configuration.executor` 只能改变 Worker 和部分内部任务使用的线程资源，不能定义系统级并发，也不是任务优先级。可运行数还受约束、依赖、WorkManager 调度器、JobScheduler 配额、进程状态和业务资源限制影响。盲目扩大线程池会增加数据库、网络和 CPU 竞争。
+
 ### 多进程任务调度
 
 多进程支持解决两个不同问题：
@@ -911,7 +915,7 @@ class App : Application(), Configuration.Provider {
 - `RemoteWorkManager` 把非默认进程中的入队、查询和取消请求转发到指定的 WorkManager 默认进程，减少多进程同时访问内部数据库造成的竞争；
 - `RemoteListenableWorker` / `RemoteCoroutineWorker` 把某个 Worker 的执行委托给指定进程中的 `RemoteWorkerService`。
 
-两者都需要 `androidx.work:work-multiprocess:2.11.2`。普通应用没有内存隔离、原生库隔离或现有多进程架构需求时，不要只为后台任务增加进程；额外进程会增加内存、Binder（Android 进程间通信机制）通信、初始化和状态一致性成本。
+两者都需要 `androidx.work:work-multiprocess:2.11.2`。普通应用没有内存隔离、原生库隔离或现有多进程架构需求时，不要只为后台任务增加进程；额外进程会增加内存、Binder 通信、初始化和状态一致性成本。
 
 #### 指定 WorkManager 默认进程
 
