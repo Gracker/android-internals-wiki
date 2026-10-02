@@ -162,7 +162,7 @@ Android 官方迁移指南把升级验证分成两条可以并行推进的路径
 
 Android vitals 是 Google Play 汇总的外部质量信号。Play 每天用最近 28 天的平均值检查关键指标。
 
-当前面向所有应用的 Core vitals（会影响应用在 Google Play 中曝光度的核心指标）包括用户感知崩溃率、用户感知 ANR 率和过度持有局部唤醒锁；过度耗电只作为表盘应用的 Core vital。发布报告要分别保存自建应用性能监控（APM）与 vitals 的分子、分母、统计窗口和设备范围。内部会话数与 Play 的用户或会话口径不同，不能放在同一个分母中计算。
+当前面向所有应用的 Core vitals（会影响应用在 Google Play 中曝光度的核心指标）包括用户感知崩溃率、用户感知 ANR 率，以及 excessive partial wake lock（过度持有局部唤醒锁）；Wear OS 表盘应用的 Core vital 还包含 excessive battery usage（过度耗电）。发布报告要分别保存自建应用性能监控（APM）与 vitals 的分子、分母、统计窗口和设备范围。内部会话数与 Play 的用户或会话口径不同，不能放在同一个分母中计算。
 
 ### 自动化性能测试集成
 
@@ -274,7 +274,7 @@ Google Play 也允许暂停已全量发布的版本，但内部测试轨道除�
 
 ### App Performance Score 的定位
 
-App Performance Score 适合研发阶段的快速评估。官方页面给出 0～100 分，低分表示改进空间较大；静态分和动态分可以分别使用。Play Console 使用线上数据判断发布质量和商店可见性，App Performance Score 则用于研发评估，两者用途不同。评分规则、评估方式和建议仍可能随着 Preview 迭代。
+App Performance Score 适合研发阶段的快速评估。官方页面给出 0～100 分，低分表示改进空间较大；静态分和动态分可以分别使用。Play Console 使用线上数据判断发布质量和商店可见性，App Performance Score 则用于研发评估，两者用途不同。
 
 它和常见工具的边界可以这样划分：
 
@@ -365,7 +365,7 @@ Android Vitals 反映 Play 用户的线上质量，App Performance Score 反映�
 | 决策用途 | 找改进队列、评估专项收益、设置 CI 预算 | 判断线上坏行为、发版暂停、商店可见性风险 |
 | 盲区 | 覆盖路径有限，设备组合有限 | 有窗口延迟，国内渠道和非 Play 分发覆盖不足 |
 
-[Android Vitals 官方说明](https://developer.android.com/topic/performance/vitals)覆盖稳定性、性能、电池和权限等问题。2026 年面向一般应用的核心指标（core vitals）包括用户感知崩溃率、用户感知 ANR 率，以及 excessive partial wake lock；Wear OS 表盘应用还包含 excessive battery usage（过度耗电）。
+[Android Vitals 官方说明](https://developer.android.com/topic/performance/vitals)覆盖稳定性、性能、电池和权限等问题。
 
 partial wake lock 会让 CPU 在屏幕关闭后继续运行，持续时间过长会造成额外耗电。部分阈值会影响 Google Play 可见性，具体阈值、设备类型和执行日期见 26.8；App Performance Score 不提供这些线上阈值。
 
@@ -393,7 +393,7 @@ App Performance Score 接入门禁时，不能只保存总分。门禁需要保�
 
 动态评分只能指出受测路径偏慢，根因仍要由 trace 验证。Perfetto 或 Android Studio Profiler 可以检查线程运行、Runnable 排队、I/O、Binder、锁等待、GPU、SurfaceFlinger 和资源加载。长 slice（trace 时间线中带起止时间的任务片段）可能包含睡眠或等待，需结合 `thread_state` 判断 CPU 是否持续执行；详见 14.1、16.3 和 26.1。
 
-设备分层也要单独设计。官方建议选择代表用户群体的设备，并提示低端设备能放大问题。只用一台旗舰机测量，会遗漏低速存储、低内存、高温和 OEM 调度差异。弱网属于业务路径的额外测试条件，当前 App Performance Score 动态评分没有把它列为独立类别。
+设备分层也要单独设计。只用一台旗舰机测量，会遗漏低速存储、低内存、高温和 OEM 调度差异。弱网属于业务路径的额外测试条件，当前 App Performance Score 动态评分没有把它列为独立类别。
 
 专项判断需要更细的证据。R8、Baseline Profile、Startup Profile、Compose 版本这些静态项适合快速修正；数据库膨胀、图片解码、页面预加载、SurfaceView 合成、GPU 带宽和后台任务唤醒等问题则要另行测量。分数可以提示调查方向，无法列举全部根因。
 
@@ -403,7 +403,7 @@ App Performance Score 接入门禁时，不能只保存总分。门禁需要保�
 
 普通 Android App 的启动、UI 线程和 FrameTimeline 分析以 Perfetto 或 Android Studio 为主；包含 Vulkan 游戏渲染时，再使用 APA 的专用视图。
 
-推荐路径如下：
+不同评分异常对应的工具与后续动作：
 
 | 评分异常 | 主要工具与观察点 | 后续动作 |
 |---|---|---|
@@ -475,7 +475,7 @@ Android 17 实现见 [`PerformanceHintManager.java`](https://android.googlesourc
 
 Performance Score 可以把静态配置和受测路径汇总为工程检查入口，但必须能展开到具体分项、设备、路径、原始结果和 trace，不能用总分覆盖局部退化或替代线上指标。
 
-门禁不能消除发布风险。它应让剩余风险、数据不确定性、审批责任和停止条件可复核，并把本次事故暴露的场景与设备群加入下一次发布验证。
+门禁不能消除发布风险。它应让剩余风险、数据不确定性、审批责任和停止条件可复核，并把每次事故暴露的场景与设备群加入下一次发布验证。
 
 
 ## 参考资料
