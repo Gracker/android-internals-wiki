@@ -70,7 +70,7 @@ last_draft_polish_run_id: 20260815-112347-gracker-writing
 
 本文所说的 HTTPDNS，是指应用通过 HTTP 或 HTTPS 解析服务取得“域名到 IP 地址”的结果。OkHttp 通过自定义 `Dns` 接入这组地址，解析服务请求本身仍是普通 HTTP/HTTPS 请求。
 
-OkHttp 要在建立连接前把主机名转换成一组 `InetAddress`，也就是 Java 中表示 IP 地址的对象。`Dns.lookup()` 返回之前，请求还没有开始 TCP 连接。如果在这个同步回调中再请求 HTTPDNS，业务请求必须先等解析服务完成这次网络请求，随后才能连接目标服务。
+OkHttp 要在建立连接前把主机名转换成一组 `InetAddress`，也就是 Java 中表示 IP 地址的对象。`Dns.lookup()` 返回之前，请求还没有开始 TCP 连接。如果在这个同步回调里再请求 HTTPDNS，业务请求就要等这次解析网络请求结束，才能开始连接目标服务。
 
 平台基准是 Android 17 / API 37 / `android-17.0.0_r1`，OkHttp 源码基准是 5.4.0 的 `parent-5.4.0` 标签。OkHttp 4.x 的旧实现使用 `StreamAllocation` 等类；5.x 应按 `RealRoutePlanner`、`RouteSelector` 和 `FastFallbackExchangeFinder` 分析路由规划、地址选择与并发连接，不能套用旧调用路径。
 
@@ -144,7 +144,7 @@ class BlockingHttpDns(
 }
 ```
 
-业务请求必须等待内层 HTTPDNS 请求完成。若 `client` 也安装了这个 `Dns`，解析 HTTPDNS 服务域名时会再次进入 `lookup()`，形成递归调用。即使通过固定地址避开递归，共用 `Dispatcher`、连接池和请求并发配额仍会让解析流量与业务流量相互影响。`Dispatcher` 是 OkHttp 管理异步请求并发和排队的调度器。
+业务请求必须等待内层 HTTPDNS 请求完成。若 `client` 也安装了这个 `Dns`，解析 HTTPDNS 服务域名时会再次进入 `lookup()`，形成递归调用。即使通过固定地址避开递归，共用 `Dispatcher`（OkHttp 管理异步请求并发和排队的调度器）、连接池和请求并发配额，仍会让解析流量与业务流量相互影响。
 
 HTTPDNS 服务变慢、TLS 握手失败或响应解析异常，都会延长外层业务请求在建连前的等待。
 
@@ -220,7 +220,7 @@ data class HttpDnsRecord(
 
 `networkHandle` 区分实际出站网络；没有显式绑定网络时，也应记录刷新开始时的默认网络标识。网络句柄只适合关联该网络对象的存活期，不能当作跨设备重启的永久标识。
 
-内存中的刷新与过期判断使用单调时钟，它只随设备运行时间前进，不受用户改时间或系统校时影响。磁盘记录无法跨重启保留 `elapsedRealtime` 的时间基准，加载时要根据服务端 TTL、接收时的墙上时钟和合理性检查重新计算，不能直接复用旧的单调时钟值。墙上时钟是日历时间，可能被用户或系统调整。
+内存中的刷新与过期判断使用单调时钟，它只随设备运行时间前进，不受用户改时间或系统校时影响；墙上时钟则是日历时间，可能被用户或系统调整。磁盘记录无法跨重启保留 `elapsedRealtime` 的时间基准，加载时要根据服务端 TTL、接收时的墙上时钟和合理性检查重新计算，不能直接复用旧的单调时钟值。
 
 这段实现骨架说明 `lookup()` 的职责边界，省略具体存储和地址排序策略：
 
@@ -309,7 +309,7 @@ fun OkHttpClient.onNetwork(network: Network): OkHttpClient {
 
 `Network` 断开后，它的 `SocketFactory` 以及过去或将来创建的套接字都会失效；绑定客户端应随该网络释放。
 
-HTTPDNS 刷新同样要记录实际出站网络。可为刷新任务创建绑定到目标 `Network` 的独立客户端，并在写缓存前确认该网络仍有效。若刷新过程使用默认网络，默认网络已经改变的响应不应写入新网络对应的缓存项。
+HTTPDNS 刷新同样要记录实际出站网络。可为刷新任务创建绑定到目标 `Network` 的独立客户端，并在写缓存前确认该网络仍有效。若刷新过程使用默认网络，而默认网络已经改变，该响应就不应写入新网络对应的缓存项。
 
 ## 网络切换后只使用对应网络的记录
 
