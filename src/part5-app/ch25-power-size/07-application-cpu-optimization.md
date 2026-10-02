@@ -66,7 +66,7 @@ sources:
 
 # 应用层 CPU 优化实战指南
 
-应用 CPU 优化要同时回答谁在运行、为何运行以及运行是否位于用户关键路径。线程池、预加载和周期任务都可能把平均利用率换成更高峰值或更差调度，必须结合调用栈、线程状态和设备约束复测。
+应用 CPU 优化要先弄清楚 CPU 时间花在哪里、为什么花，以及这段开销是否落在用户关键路径上。线程池、预加载和周期任务都可能改善平均利用率，却把峰值推高、让调度变差，所以要结合调用栈、线程状态和设备约束复测。
 
 > 平台源码上限为 `android-17.0.0_r1`，内核口径为 `android17-6.18-2026-06_r6`。普通应用示例只使用 public SDK/NDK；`/proc` 文件可能因设备策略而不可读，相关方案都必须允许采样失败。
 
@@ -106,7 +106,7 @@ Android 17 的 `ThreadPoolExecutor` 来自 libcore 内置的 OpenJDK 并发实�
 
 ### 没有跨应用通用的“核数公式”
 
-`Runtime.availableProcessors()` 返回 JVM 当前可用的逻辑处理器数量。它不是性能核数量，也不是应用可长期占满的核数，也不能据此直接推出合适的 worker 数量。任务内部还可能调用并行库，设备也会受前台状态、温度、功耗策略和其他进程影响。
+`Runtime.availableProcessors()` 返回 JVM 当前可用的逻辑处理器数量。它既不是性能核数量，也不代表应用能长期占满的核数，更无法据此推出合适的 worker 数量。任务内部还可能调用并行库，设备也会受前台状态、温度、功耗策略和其他进程影响。
 
 线程数需要从任务模型出发：
 
@@ -174,7 +174,7 @@ fun newBoundedCpuExecutor(
 
 `CallerRunsPolicy` 会在提交任务的线程里直接调用 `Runnable.run()`。如果提交方恰好是主线程、Binder（Android 跨进程调用机制）线程或持有锁的回调线程，计算或阻塞工作就会转移到那里。只有能证明提交线程允许执行该任务时，才能用它实现反压，也就是让提交速度随执行能力自动放慢。
 
-线程工厂在新线程内部调用 `Process.setThreadPriority()`，因为该 API 默认修改调用线程。它设置的是 Linux nice 值相关的相对优先级，不负责选择大小核，也不改变 cpuset（内核允许线程运行的一组 CPU）。
+线程工厂在新线程内部调用 `Process.setThreadPriority()`，因为该 API 修改的是调用它的线程，所以每条新建的 worker 线程都会带上配置中的优先级。
 
 ### 线程池至少记录哪些数据
 
@@ -187,7 +187,9 @@ fun newBoundedCpuExecutor(
 - P50、P95、P99 等分位数，而不是只有平均值；
 - 对应的版本、设备档位、前后台状态和热状态。
 
-任务类型应是低基数标识，也就是可选值数量长期受控，例如 `image_decode`、`feed_diff`；不要把 URL、文件名或用户 ID 放进指标维度，否则监控存储和查询成本会随取值数量增长。对线程池调参时，一次只改一个主要变量，并同时检查吞吐、尾延迟、温升和界面帧表现。
+任务类型应是低基数标识，也就是可选值数量长期受控，例如 `image_decode`、`feed_diff`；不要把 URL、文件名或用户 ID 放进指标维度，否则监控存储和查询成本会随取值数量增长。
+
+对线程池调参时，一次只改一个主要变量，并同时检查吞吐、尾延迟、温升和界面帧表现。
 
 ## 进程 CPU 采样：把百分比说清楚
 
@@ -234,7 +236,7 @@ fun calculateCpuWindow(
 }
 ```
 
-`equivalentCores = 1.0` 表示采样窗口内累计使用了约一个核的 CPU 时间，这个值称为“等效占用核数”。多线程并行时它可以大于 `1.0`。除以逻辑处理器数量得到的值只能作为当前逻辑容量占比的粗略提示；它没有考虑各核性能差异、频率、温控和调度限制。
+`equivalentCores` 是采样窗口内的“等效占用核数”：1.0 表示窗口内累计使用了约一个核的 CPU 时间，多线程并行时可以大于 1.0。除以逻辑处理器数量得到的值只能作为当前逻辑容量占比的粗略提示；它没有考虑各核性能差异、频率、温控和调度限制。
 
 采样窗口太短会受毫秒精度影响，太长又会掩盖尖峰。窗口长度应由要观察的用户路径决定。监控代码不应内置一个适用于所有设备的“高 CPU 阈值”，告警线应来自场景基线、用户影响和设备分层。
 
@@ -250,7 +252,7 @@ cpu  user nice system idle iowait irq softirq steal guest guest_nice
 
 这里的 `guest` 已包含在 `user` 中，`guest_nice` 已包含在 `nice` 中。计算总时间时如果把十个字段全部相加，就会重复计算虚拟 CPU 时间。常见计算方法只累计 `user` 到 `steal` 的前八项，并明确忙碌时间是否排除 `iowait`（CPU 空闲且系统有未完成 I/O 的累计时间）。
 
-内核文档还特别说明，`iowait` 很难可靠计算，在某些条件下甚至可能下降。它不表示某个特定 CPU 一直在等待 I/O，也不能作为应用预加载的安全信号。细节见 Android 17 内核锚点的 [`Documentation/filesystems/proc.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst)。
+内核文档还说明，`iowait` 很难可靠计算，在某些条件下甚至可能下降。它不表示某个特定 CPU 一直在等待 I/O，也不能作为应用预加载的安全信号。细节见 Android 17 内核锚点的 [`Documentation/filesystems/proc.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst)。
 
 读取 `/proc/self/stat` 时，进程名字段 `comm` 位于括号内且可能包含空格，不能直接对整行 `split(" ")` 后取固定下标。应先识别 `comm` 的结束括号，再解析其后的字段；`utime` 和 `stime` 分别记录用户态与内核态 CPU 时间，是文档中的第 14、15 字段。相关访问也可能因设备策略、SELinux（Linux 的强制访问控制机制）或未来平台限制失败，采样器必须返回“无数据”，而不是让业务崩溃。
 
@@ -412,7 +414,7 @@ class WorkDispatchers(
 
 ### 优先级不等于选核
 
-本文核对的 Android 17 内核版本是 `android17-6.18-2026-06_r6`。公平调度类采用 EEVDF（Earliest Eligible Virtual Deadline First，最早符合条件虚拟截止时间优先）选择下一个可运行线程或进程，但系统还会结合调度组（按进程角色应用资源策略的分组）、cpuset、利用率钳制 uclamp（为调度器提供利用率上下限提示）、功耗和温度策略，决定线程在哪里以及以什么资源水平运行。
+本文核对的 Android 17 内核版本是 `android17-6.18-2026-06_r6`。公平调度类采用 EEVDF（Earliest Eligible Virtual Deadline First，最早符合条件虚拟截止时间优先）选择下一个可运行线程或进程，但系统还会结合调度组（按进程角色应用资源策略的分组）、cpuset（内核允许线程运行的一组 CPU）、利用率钳制 uclamp（为调度器提供利用率上下限提示）、功耗和温度策略，决定线程在哪里运行、以什么资源水平运行。
 
 普通应用调用 `Process.setThreadPriority()` 表达 nice 级别的相对优先级。它不提供以下能力：
 
