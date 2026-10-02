@@ -126,7 +126,12 @@ consolidated_from:
 
 ### 治理范围
 
-后台功耗治理关注应用如何控制不可见阶段的资源消耗。Doze（设备空闲低功耗模式）、App Standby（应用待机）和 Job（由系统调度的后台任务）配额的系统实现见 §5.3；WakeLock（唤醒锁）、Alarm（定时任务）、定位与 FCM（Firebase Cloud Messaging，Firebase 云消息）的横向策略见 §11.2；诊断流程见 §25.1；前台服务（Foreground Service，FGS）超时和 Android 16 Job 配额的专题分析见 §25.2。
+后台功耗治理关注应用如何控制不可见阶段的资源消耗，相邻专题的分工如下：
+
+- Doze（设备空闲低功耗模式）、App Standby（应用待机）和 Job（由系统调度的后台任务）配额的系统实现见 §5.3。
+- WakeLock（唤醒锁）、Alarm（定时任务）、定位与 FCM（Firebase Cloud Messaging，Firebase 云消息）的横向策略见 §11.2。
+- 诊断流程见 §25.1。
+- 前台服务（Foreground Service，FGS）超时和 Android 16 Job 配额的专题分析见 §25.2。
 
 后台工作按四条要求设计：允许延后的工作交给系统调度，同一目的的工作可以合并，业务条件失效后可以取消，运行与停止原因可以观测。系统负责限制 CPU（中央处理器）、网络、Job、Alarm 和位置访问，却不了解某次同步是否仍有业务价值，也不知道某段轨迹何时可以降低采样频率。应用必须自己定义任务有效期、停止条件和资源预算。
 
@@ -573,9 +578,9 @@ fun startUserRequestedSync(context: Context) {
 
 这些例外都有来源和时效。以 FCM 为例，系统可能把高优先级消息下调为普通优先级；应用应在启动前检查 `RemoteMessage.getPriority()`。不要在业务代码里假定“收到推送就一定有 FGS 许可”。
 
-Android 17 的 `ActivityManagerService.mFgsStartTempAllowList` 按应用身份编号（UID）保存到期时间、原因码、原因文本和授权调用方 UID。`ActiveServices` 查询该列表，把命中的原因码用于本次后台启动判断。源码没有“FCM 固定 10 秒”“每小时固定 5 次”的通用 Android 17 规则；持续时间由产生例外的系统组件和 DeviceConfig 决定。
+`FgsTempAllowList` 的作用是临时放行 FGS 启动。Android 17 的 `ActivityManagerService.mFgsStartTempAllowList` 按应用身份编号（UID）保存到期时间、原因码、原因文本和授权调用方 UID。`ActiveServices` 查询该列表，把命中的原因码用于本次后台启动判断。源码没有“FCM 固定 10 秒”“每小时固定 5 次”的通用 Android 17 规则；持续时间由产生例外的系统组件和 DeviceConfig 决定。
 
-`FgsTempAllowList` 的作用是临时放行 FGS 启动。`OomAdjusterImpl` 根据进程是否已经承载 FGS 来调整进程状态，没有因为 UID 进入该列表就直接提升到前台进程档位。授权窗口、进程存活权重和设备休眠模式（Doze）的临时豁免列表也不能互相替代。
+`OomAdjusterImpl` 根据进程是否已经承载 FGS 来调整进程状态，没有因为 UID 进入该列表就直接提升到前台进程档位。授权窗口、进程存活权重和设备休眠模式（Doze）的临时豁免列表也不能互相替代。
 
 #### 4.2 WIU 是另一道门
 
@@ -651,7 +656,7 @@ Job/Worker 收到停止只表示调度器结束本次执行，不会自动终止
 
 #### 6.1 常见内存回收档位
 
-Android 17 的进程状态计算已移到 `services/core/java/com/android/server/am/psc/`。TOP 表示进程当前承载与用户直接交互的前台 Activity。`OomAdjusterImpl` 对 FGS 的关键分支如下：
+Android 17 的进程状态计算已移到 `services/core/java/com/android/server/am/psc/`。TOP 表示进程当前承载与用户直接交互的前台 Activity。`oom_score_adj` 是内核回收候选分数的调整值，数值越小，进程越晚进入回收候选。`OomAdjusterImpl` 对 FGS 的关键分支如下：
 
 | 状态 | `oom_score_adj` 基准值 | 进程状态 |
 |---|---:|---|
@@ -660,7 +665,7 @@ Android 17 的进程状态计算已移到 `services/core/java/com/android/server
 | 刚从 TOP 转为普通 FGS 的短暂保护期 | `PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ = 50` | 依上下文继续计算 |
 | 当前可见或 TOP Activity | 可见 Activity 通常为 100，TOP Activity 为 0 | 由 Activity 可见性决定 |
 
-`oom_score_adj` 是内核回收候选分数的调整值，数值越小，进程越晚进入回收候选。表中是 FGS 分支给出的基准档位，进程绑定关系、可见组件、ContentProvider 依赖、最近前台状态和 OEM 内存策略还会参与最终计算。LMKD（Low Memory Killer Daemon，低内存终止守护进程）会结合这些分值与内存压力选择回收对象，因此 FGS 进程仍可因极端内存压力、崩溃、ANR、用户停止或策略违规而退出。
+表中是 FGS 分支给出的基准档位，进程绑定关系、可见组件、ContentProvider 依赖、最近前台状态和 OEM 内存策略还会参与最终计算。LMKD（Low Memory Killer Daemon，低内存终止守护进程）会结合这些分值与内存压力选择回收对象，因此 FGS 进程仍可因极端内存压力、崩溃、ANR、用户停止或策略违规而退出。
 
 表格的结论是：FGS 会提高进程在内存压力下的存活优先级，但不会把进程变成不可回收对象；short FGS 的基准保护还弱于普通 FGS。
 
@@ -743,7 +748,7 @@ Android 17 对播放、音频焦点和音量修改增加了后台状态检查。
 
 播放应用宜使用 Media3 `MediaSessionService`，并在用户启动播放时创建 `mediaPlayback` FGS。播放完成、永久失焦或不可恢复错误后，结束媒体会话并停止 FGS；后续恢复应由新的用户动作触发。
 
-这组命令用于在 Android 17 测试设备上切换后台音频限制并查看证据：
+这组命令用于在 Android 17 测试设备上切换后台音频限制并查看证据。这里的 hardening 指平台新增的后台音频访问限制：
 
 ```bash
 adb shell cmd audio set-enable-hardening enable
@@ -751,7 +756,7 @@ adb shell dumpsys audio
 adb logcat | grep AudioHardening
 ```
 
-测试结束后可用 `set-enable-hardening disable` 恢复默认测试设置。这里的 hardening 指平台新增的后台音频访问限制。`AudioHardening` 记录中的 `partial` 表示缺少 FGS，`full` 表示存在 FGS 但缺少 WIU 能力。
+测试结束后可用 `set-enable-hardening disable` 恢复默认测试设置。`AudioHardening` 记录中的 `partial` 表示缺少 FGS，`full` 表示存在 FGS 但缺少 WIU 能力。
 
 相关的音频功耗与生命周期设计参见 [25.5 后台音频、AudioTrack 与 Offload 功耗](05-background-audio-audiotrack-offload.md)。
 
@@ -784,7 +789,7 @@ adb shell dumpsys activity processes com.example.app
 adb logcat -v threadtime ActivityManager:I ActivityTaskManager:I '*:S'
 ```
 
-`services` 输出可核对 `isForeground`、通知 ID、FGS 类型、启动时间和 short FGS 状态；`processes` 输出用于对照 `procState` 与 `adj`。`procState` 是组件活跃程度的粗粒度进程状态，`adj` 是内存回收优先级调整值。不同厂商可能追加字段，脚本应优先匹配字段名和事件语义，避免依赖固定行号。
+`procState` 是组件活跃程度的粗粒度进程状态，`adj` 是内存回收优先级调整值。`services` 输出可核对 `isForeground`、通知 ID、FGS 类型、启动时间和 short FGS 状态；`processes` 输出用于对照 `procState` 与 `adj`。不同厂商可能追加字段，脚本应优先匹配字段名和事件语义，避免依赖固定行号。
 
 #### 10.2 压缩限时类型的测试周期
 
