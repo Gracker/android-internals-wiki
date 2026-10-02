@@ -135,6 +135,8 @@ Power Efficiency Mode（能效优先模式）的前提是工作有稳定周期�
 
 依次确认这段工作能否定义周期、周期是否留有余量、线程身份是否稳定。三项中有一项不成立，通常就不应优先选择 Power Efficiency Mode。
 
+游戏帧循环通常先保证帧 deadline，Power Efficiency Mode 只适合已经确认有稳定余量的子线程，例如资源准备、后台 AI、低优先级物理预计算。后台计算更关注吞吐与能耗平衡，适合使用较长目标耗时、固定处理批次和能效提示。
+
 ## ADPF Session 的线程集合与生命周期
 
 `PerformanceHintManager.Session` 是性能提示会话，表示一组共同完成同类工作的 Linux 线程。会话中的线程应长期存活，不适合频繁创建和销毁；创建会话时传入初始目标耗时，每个周期用 `reportActualWorkDuration()` 上报实际耗时。
@@ -199,7 +201,9 @@ class PowerEfficientBatchWorker(
 }
 ```
 
-`PerformanceHintManager.Session` 不是线程安全对象，因此示例把创建、上报与关闭都放在同一个协程调度器中。`finally` 保证失败周期也会上报已经消耗的时间；业务仍需单独记录异常结果。多线程批处理可以登记多个 TID，但要在线程身份稳定后再创建或更新 Session。`Dispatchers.IO` 这类弹性线程池会在不同 TID 之间迁移协程，不适合作为固定线程集合直接登记。协程迁移的具体边界如下。
+`PerformanceHintManager.Session` 不是线程安全对象，因此示例把创建、上报与关闭都放在同一个协程调度器中。`finally` 保证失败周期也会上报已经消耗的时间；业务仍需单独记录异常结果。
+
+多线程批处理可以登记多个 TID，但要在线程身份稳定后再创建或更新 Session。`Dispatchers.IO` 这类弹性线程池会在不同 TID 之间迁移协程，不适合作为固定线程集合直接登记。协程迁移的具体边界如下。
 
 ### 协程迁移与 TID 所有权
 
@@ -225,7 +229,7 @@ Power Efficiency Mode 允许系统利用任务 deadline 前的余量。业务没
 
 Android 15（API 35）新增的 `PowerMonitor` / `PowerMonitorReadings` 让应用读取设备提供的累计能耗。一个 `PowerMonitor` 表示一个功耗监测项，可以是直接测量的电源轨，也可以是系统建模的能耗消费者。两个入口都是异步方法：`getSupportedPowerMonitors(executor, callback)` 返回支持列表，`getPowerMonitorReadings(monitors, executor, outcomeReceiver)` 返回指定监测项的读数。回调执行器可以传 `null`，但此时回调线程由实现选择，应用代码通常应提供自己的执行器。
 
-AOSP `android-17.0.0_r1` 中，`SystemHealthManager.getSupportedPowerMonitors()` 的注释把监测项分成两类：ODPM（On-Device Power Rails Monitor，设备电源轨监测器）的原始电源轨，以及 modeled energy consumer（通过模型估算的子系统能耗消费者）；设备不支持 ODPM 时，公开 API 允许返回空列表。`getPowerMonitorReadings()` 通过 `PowerStatsService` 获取指定监测项的累计读数；监测项不受支持时，`onError()` 返回 `IllegalArgumentException`。
+AOSP `android-17.0.0_r1` 中，`SystemHealthManager.getSupportedPowerMonitors()` 的注释把监测项分成两类：一类是 ODPM（On-Device Power Rails Monitor，设备电源轨监测器）的原始电源轨，另一类是 modeled energy consumer（通过模型估算的子系统能耗消费者）；设备不支持 ODPM 时，公开 API 允许返回空列表。`getPowerMonitorReadings()` 通过 `PowerStatsService` 获取指定监测项的累计读数；监测项不受支持时，`onError()` 返回 `IllegalArgumentException`。
 
 `PowerMonitor` 的类型分两类：
 
@@ -318,7 +322,13 @@ data_sources: {
 
 这份配置只能保证发起采集请求，不能保证设备一定提供电源轨数据。拿到跟踪记录（trace）后，先确认电源轨轨道是否存在，再把 `Trace.beginSection("pe_batch_cycle")` 标记的工作窗口与 CPU 频率、线程状态和热状态对齐。只看电池百分比或单次电流值，无法排除充电状态、屏幕亮度、网络波动和后台任务的影响。
 
-开发阶段还应执行 `adb shell dumpsys performance_hint`，核对 Session 的 PID（Process ID，进程 ID）、UID、TID、目标耗时、`AllowedByProcState`、`ForcePaused`、`PowerEfficient` 和设备能力。Perfetto 中的 `ADPF Session <id> target duration`、`actual duration`、TID 与 mode counter（模式计数轨道）用于确认提示数据已经进入客户端路径，再与调度事件、频率、超时和热状态对齐。statsd 是 Android 的系统统计服务，atom 是其中一种结构化记录类型；ADPF atom 属于系统遥测，不是普通应用的实时查询接口。
+开发阶段还应执行 `adb shell dumpsys performance_hint`，核对 Session 的 PID（Process ID，进程 ID）、UID、TID、目标耗时、`AllowedByProcState`、`ForcePaused`、`PowerEfficient` 和设备能力。Perfetto 中的 `ADPF Session <id> target duration`、`actual duration`、TID 与 mode counter（模式计数轨道）用于确认提示数据已经进入客户端路径，再与调度事件、频率、超时和热状态对齐。
+
+statsd 是 Android 的系统统计服务，atom 是其中一种结构化记录类型；ADPF atom 属于系统遥测，不是普通应用的实时查询接口。
+
+`PowerMonitorReadings` 返回每个监测项的累计 μWs；Perfetto 电源轨提供跟踪时间线；Android Studio Power Profiler 更适合交互式分析应用行为、系统事件和功耗趋势。三者可以互相验证，但采样频率、单位和归因范围不同，不能合并成一个数字。
+
+`PowerMonitorReadings` 和 Perfetto 电源轨可以在同一实验窗口内互相解释，但不是跨设备等价的数据源。在同一设备、工作负载和温度起点下，同时记录两次 `PowerMonitorReadings` 的时间戳与差值、Perfetto 电源轨差值、CPU 频率、热状态和任务计数。普通应用还要把 r1 的 20 秒缓存与随机扰动计入误差。两类曲线只在趋势上同向时，结论只能写成“同一窗口内趋势一致”，不能宣称完成了电源轨级校准。Pixel 或单一厂商设备上的结论也只适用于对应设备组。
 
 ## 实验设计：同时看耗时和单位任务能耗
 
@@ -384,6 +394,8 @@ Power Efficiency Mode 和 Thermal API 处理的是同一类长期负载问题的
 
 这些策略要满足业务 SLA（Service Level Agreement，可量化的服务质量约束）。照片备份、日志压缩、离线索引可以降低频率或暂停；实时通话、导航、录制不能只按能耗目标降级。
 
+热状态进入高档位前主动降低批处理并发，通常比等系统开始 thermal throttling 后再恢复更可控。阈值和收益必须来自具体设备实验，固定温度不具备跨设备意义。
+
 ## 常见误区
 
 ### 误区一：`setPreferPowerEfficiency(true)` 等于省电收益
@@ -402,48 +414,11 @@ Power Efficiency Mode 和 Thermal API 处理的是同一类长期负载问题的
 
 Perfetto 文档说明，电池计数器在 USB 插电时会反映充电电流，实验室功耗测试要隔离充电状态。电源轨计数器位于电池下游，不直接受充放电方向影响，但测试仍要记录 USB、电量、屏幕亮度和温度起点。
 
-## 补充验证边界
-
-### 游戏帧循环与后台计算的策略差异
-
-游戏帧循环通常先保证帧 deadline，Power Efficiency Mode 只适合已经确认有稳定余量的子线程，例如资源准备、后台 AI、低优先级物理预计算。后台计算更关注吞吐与能耗平衡，适合使用较长目标耗时、固定处理批次和能效提示。
-
-### PowerMonitor 与 Android Studio Power Profiler 的数据含义
-
-`PowerMonitorReadings` 返回每个监测项的累计 μWs；Perfetto 电源轨提供跟踪时间线；Android Studio Power Profiler 更适合交互式分析应用行为、系统事件和功耗趋势。三者可以互相验证，但采样频率、单位和归因范围不同，不能合并成一个数字。
-
-### Thermal 阈值需要设备实验
-
-热状态进入高档位前主动降低批处理并发，通常比等系统开始 thermal throttling 后再恢复更可控。阈值和收益必须来自具体设备实验，固定温度不具备跨设备意义。
-
-### PowerMonitorReadings 与 Perfetto 电源轨的同一窗口验证
-
-`PowerMonitorReadings` 和 Perfetto 电源轨可以在同一实验窗口内互相解释，但不是跨设备等价的数据源。在同一设备、工作负载和温度起点下，同时记录两次 `PowerMonitorReadings` 的时间戳与差值、Perfetto 电源轨差值、CPU 频率、热状态和任务计数。普通应用还要把 r1 的 20 秒缓存与随机扰动计入误差。两类曲线只在趋势上同向时，结论只能写成“同一窗口内趋势一致”，不能宣称完成了电源轨级校准。Pixel 或单一厂商设备上的结论也只适用于对应设备组。
-
-
 ## 源码追踪：系统服务与 Power HAL 的协作
 
 前文给出了应用侧接入与验证主线；公开 API 进入系统后的路径决定了提示为何可能被暂停、读数为何会命中缓存，以及不同设备为何不能承诺相同收益。ADPF 的完整效果同时取决于应用上报、系统服务和 Power HAL。AOSP `android-17.0.0_r1` 展示了这条路径的实现边界。
 
 > **版本限定**：源码锚点统一使用 `android-17.0.0_r1`；公开 API 只核对到 Android 17/API 37。后续主开发分支的变更不作为本文结论。
-
-### Power HAL `ML_ACC` Boost
-
-**源码位置**：`hardware/interfaces/power/aidl/android/hardware/power/Boost.aidl`（`android-17.0.0_r1`）
-
-`ML_ACC` 是 Power HAL 为机器学习加速器预留的 boost（短时性能提升请求）类型。`android-17.0.0_r1` 的注释把它和后续几种 boost 一起标记为“Android framework 当前不发送，OEM 可以选择实现”。这段摘录用于确认枚举名与版本边界：
-
-```aidl
-/** 
- * This boost indicates that the device is interacting 
- * with ML accelerator. 
- */
-ML_ACC,
-```
-
-源文件没有给 `ML_ACC` 写显式整数。HAL 与系统代码应引用生成的 `Boost.ML_ACC`，不能从排列位置推导数值。应用公开 API 也不直接发送这个 boost，不能把它写成通用的应用侧 NPU（Neural Processing Unit，神经网络处理器）加速开关。
-
-厂商可以在自己的受控路径中决定是否实现该类型以及如何映射到芯片策略，但 AOSP 枚举本身不承诺 CPU、GPU、NPU 频率或持续时间。
 
 ### HintManagerService：系统层会话调度中心
 
@@ -463,6 +438,24 @@ ML_ACC,
 - Power HAL V5：`createHintSessionWithConfig()`、`SessionTag`、`SessionMode.POWER_EFFICIENCY` 与 `getSessionChannel()` 支持。
 - Power HAL V6：CPU/GPU headroom 查询，以及 `GRAPHICS_PIPELINE`、`AUTO_CPU`、`AUTO_GPU` SessionMode 支持。
 - Power HAL V7：加入 `AUDIO_PERFORMANCE` SessionMode；`android-17.0.0_r1` 的冻结 AIDL 已包含 V7。
+
+### Power HAL `ML_ACC` Boost
+
+**源码位置**：`hardware/interfaces/power/aidl/android/hardware/power/Boost.aidl`（`android-17.0.0_r1`）
+
+`ML_ACC` 是 Power HAL 为机器学习加速器预留的 boost（短时性能提升请求）类型。`android-17.0.0_r1` 的注释把它和后续几种 boost 一起标记为“Android framework 当前不发送，OEM 可以选择实现”。这段摘录用于确认枚举名与版本边界：
+
+```aidl
+/** 
+ * This boost indicates that the device is interacting 
+ * with ML accelerator. 
+ */
+ML_ACC,
+```
+
+源文件没有给 `ML_ACC` 写显式整数。HAL 与系统代码应引用生成的 `Boost.ML_ACC`，不能从排列位置推导数值。应用公开 API 也不直接发送这个 boost，不能把它写成通用的应用侧 NPU（Neural Processing Unit，神经网络处理器）加速开关。
+
+厂商可以在自己的受控路径中决定是否实现该类型以及如何映射到芯片策略，但 AOSP 枚举本身不承诺 CPU、GPU、NPU 频率或持续时间。
 
 ### SessionTag 与 SessionMode：两个不同的 HAL 内部枚举
 
@@ -534,7 +527,9 @@ Android 17 r1 为普通读数和精细读数维护两组 `PowerMonitorState`。�
 
 回调通过 `ConcurrentUtils.DIRECT_EXECUTOR` 执行，再等待 Handler 侧的异步结果，超时上限为 `2_000 ms`。异常、超时或空结果返回 `PULL_SKIP`。`ON_DEVICE_POWER_MEASUREMENT` 只接收 `durationMs == timestampMs` 的样本，表示能量累计区间从开机开始；不能把这个判断缩写成“两个字段为 0”。
 
-`PowerStatsLogger` 使用三个 Handler 消息分别采集直接测量值（meter）、建模值（model）和状态驻留时间（residency），并存入 `/data/system/powerstats/`。日志前缀是 `log.powerstats.meter.0`、`log.powerstats.model.0` 与 `log.powerstats.residency.0`。`PowerStatsDataStorage` 通过 `FileRotator` 每 4 小时轮转并保留 48 小时，不会固定写成六个 `.pb` 文件。`meterCache`、`modelCache`、`residencyCache` 保存的是 HAL 元信息的序列化快照（例如 Channel、EnergyConsumer、PowerEntity 的 proto bytes），用于识别元信息是否变化；元信息改变时，对应旧日志会被删除。这些缓存由 `AtomicFile` 更新，不能把临时文件名当作稳定存储格式。
+`PowerStatsLogger` 使用三个 Handler 消息分别采集直接测量值（meter）、建模值（model）和状态驻留时间（residency），并存入 `/data/system/powerstats/`。日志前缀是 `log.powerstats.meter.0`、`log.powerstats.model.0` 与 `log.powerstats.residency.0`。`PowerStatsDataStorage` 通过 `FileRotator` 每 4 小时轮转并保留 48 小时，不会固定写成六个 `.pb` 文件。
+
+`meterCache`、`modelCache`、`residencyCache` 保存的是 HAL 元信息的序列化快照（例如 Channel、EnergyConsumer、PowerEntity 的 proto bytes），用于识别元信息是否变化；元信息改变时，对应旧日志会被删除。这些缓存由 `AtomicFile` 更新，不能把临时文件名当作稳定存储格式。
 
 写入前，`adjustTimeSinceBootToEpoch()` 使用服务启动时记录的墙钟时间基准，把 HAL 的开机时间戳换算到墙钟时间线，便于事件报告排序。累计能量仍不能跨重启直接相减；HAL 的能量和状态驻留时间都以本次开机为起点。
 
