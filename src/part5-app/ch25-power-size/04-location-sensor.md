@@ -92,17 +92,6 @@ last_review_finalize_run_id: 20260815-143953-gracker-writing-446
 
 `getLastLocation()` 不主动计算新位置，返回值可能为空或已经过时。判断新鲜度时优先比较 `Location.elapsedRealtimeNanos` 与当前 elapsed realtime（设备开机后持续递增的单调时间），避免使用会被用户、网络校时或时区改变的墙上时钟。需要一次较新结果时使用 `getCurrentLocation()` 并传入取消条件，不要为一次查询注册长期回调。
 
-Android 8.0（API 26）起，后台应用的位置计算与交付被限制为每小时少数几次，后台 Geofencing 也按几分钟量级响应。该设备行为不取决于应用的 `targetSdkVersion`（目标 API 级别）。提高请求频率不能消除这层限制，只会让业务契约与平台行为不一致。
-
-权限和前台服务需要按版本分别处理：
-
-- Android 10（API 29）起，目标版本为 29 及以上的应用若要在后台访问位置，必须声明并获得 `ACCESS_BACKGROUND_LOCATION`；访问位置的前台服务还要声明 `foregroundServiceType="location"`。Geofencing 也属于后台位置用例。
-- Android 11（API 30）起，系统权限对话框不再提供始终允许选项；用户需要到设置页授予后台位置。应用应先说明用途，并允许用户拒绝。
-- Android 12（API 31）起，用户可以只授予大致位置（approximate location）。前台被降为粗略位置时，后台位置也只有同等精度；精确度在设置中被降低还会导致应用进程重启。应用应同时请求 coarse（粗略）与 fine（精确）权限，并在只有 `ACCESS_COARSE_LOCATION` 时保持主要流程可用，不能通过经纬度数值猜测授权档位。
-- 在 Android 14（API 34）设备上，目标版本为 34 及以上的应用还要声明 `FOREGROUND_SERVICE_LOCATION`，启动 location 前台服务时满足位置开关与 coarse/fine 运行时权限。位置权限受 while-in-use（使用中，一般要求应用可见或满足对应 FGS 条件）约束；应用已在后台时，除非具备 `ACCESS_BACKGROUND_LOCATION` 或其他系统豁免，不能创建需要位置能力的前台服务。
-
-这些版本规则一直适用于 Android 17（API 37）。Android 17 平台源码锚点用于核对框架权限、请求合并与粗略位置处理；Google Play services 的 FLP 是独立发布的组件，不能用 AOSP 文件替代其公开 API 契约。
-
 ## Fused Location Provider 最佳实践
 
 Fused Location Provider（FLP，融合位置提供器）把 GNSS、Wi-Fi、蜂窝与传感器等来源交给 Google Play services 选择和融合。应用指定优先级、期望间隔、最小回调间隔、最小位移、最大交付延迟、精度档位和持续时间。`LocationRequest` 文档明确说明系统只能尽力满足这些参数：权限、硬件、系统状态与其他客户端请求可能让结果更慢、更快、更粗或更细。
@@ -112,7 +101,7 @@ Fused Location Provider（FLP，融合位置提供器）把 GNSS、Wi-Fi、蜂�
 - 正常路径由页面、导航会话或用户开关调用 `removeLocationUpdates()`。
 - 异常路径由 `setDurationMillis()` 或 `setMaxUpdates()` 限制请求寿命。
 
-这个函数构造用户可见的连续定位请求。间隔、位移和持续时间来自已评审的业务契约，函数只检查参数关系，不替产品选取一组固定数字。
+`buildVisibleTrackingRequest()` 构造用户可见的连续定位请求，间隔、最小回调间隔、最小位移和持续时间都由入参传入；函数体只用 `require` 挡住非法组合，不给业务预设一组固定数字。参数取值取决于已评审的业务契约。
 
 ```kotlin
 fun buildVisibleTrackingRequest(
@@ -140,7 +129,7 @@ fun buildVisibleTrackingRequest(
 
 `GRANULARITY_PERMISSION_LEVEL` 让请求遵守当前授权精度。`minUpdateIntervalMillis` 是允许的最快回调间隔，不能把它理解成固定周期；`durationMillis` 到期后位置服务会移除请求，但业务结束时仍应主动停止。若 balanced accuracy（均衡功耗精度）已满足需求，应把优先级改为 `PRIORITY_BALANCED_POWER_ACCURACY`，避免默认选择高精度。
 
-这段代码把注册与解除注册绑定到同一个回调实例。它假定调用方已检查 coarse/fine 权限，并在可见生命周期开始和结束时分别调用两个函数。
+`startVisibleTracking()` 和 `stopVisibleTracking()` 操作同一个 `locationCallback` 实例，注销时不用重新构造回调。两处都假定调用方已经检查过 coarse/fine 权限，并分别在可见生命周期的开始和结束调用。
 
 ```kotlin
 @SuppressLint("MissingPermission")
@@ -161,7 +150,7 @@ fun stopVisibleTracking() {
 
 业务允许延迟时，`setMaxUpdateDelayMillis()` 可以让设备尝试批量交付。Google Play services 只有在最大延迟至少是请求间隔的两倍时，才把请求视为允许批处理；即使满足该关系，硬件也可以逐点交付。
 
-这个函数构造允许批量交付的低频请求。调用方需要明确最长可接受交付延迟和整个采集会话的寿命。
+`buildBatchedLocationRequest()` 构造允许批量交付的低频请求，优先级取 `PRIORITY_BALANCED_POWER_ACCURACY`，`require` 先校验最大延迟至少是间隔的两倍。调用方要明确最长可接受交付延迟和整个采集会话的寿命。
 
 ```kotlin
 fun buildBatchedLocationRequest(
@@ -194,7 +183,7 @@ Geofencing 适合这类业务：设备到达区域后再通知应用。位置服
 
 半径与响应时间属于产品正确性的一部分。官方建议典型围栏采用 100 到 150 米的最小半径，以容纳常见 Wi-Fi 定位误差；`setNotificationResponsiveness()` 取 5 分钟或更大更有利于功耗。这些是经验建议；室内定位能力、道路速度、误触成本和业务半径不同，不能直接照抄成所有产品通用的常量。Android 8.0 及以上设备在应用处于后台时通常每隔几分钟处理一次围栏事件，低数值也不构成及时送达保证。
 
-这个函数把围栏半径、停留时间、响应时间和过期时间留给业务配置。构建器只验证 API 所需的基本范围。
+`buildDwellGeofence()` 只固定 `DWELL` 这一种 transition，半径、停留时间、响应时间和过期时间都留给业务配置；函数体的 `require` 只检查 API 要求的基本范围。
 
 ```kotlin
 fun buildDwellGeofence(
@@ -225,11 +214,13 @@ fun buildDwellGeofence(
 }
 ```
 
-`DWELL` 表示在围栏内停留，可过滤短暂穿越区域造成的频繁提醒。围栏事件通过 `PendingIntent`（系统稍后代应用执行操作的凭据）交给 `BroadcastReceiver` 时，接收器应核对错误码、transition（进入、离开或停留事件类型）与触发列表，再发布通知或安排有限的后台工作；不要从后台事件直接展示 Activity。功能关闭、账号退出或区域集合改变时，应按 request ID（围栏标识）或原 `PendingIntent` 移除旧围栏。
+`DWELL` 表示在围栏内停留，可过滤短暂穿越区域造成的频繁提醒。围栏事件通过 `PendingIntent`（系统稍后代应用执行操作的凭据）交给 `BroadcastReceiver`；接收器应核对错误码、transition（进入、离开或停留事件类型）与触发列表，再发布通知或安排有限的后台工作。不要从后台事件直接展示 Activity。
+
+功能关闭、账号退出或区域集合改变时，应按 request ID（围栏标识）或原 `PendingIntent` 移除旧围栏。
 
 被动定位使用 `PRIORITY_PASSIVE`。该优先级不会因为当前请求单独计算位置，只接收系统为其他客户端生成的位置；它仍受位置权限、后台访问限制和进程调度影响，也可能收到批量数据。
 
-这个函数构造被动请求。最小回调间隔限制应用处理数据的最高频率，持续时间防止请求长期遗留。
+`buildPassiveLocationRequest()` 把优先级固定为 `PRIORITY_PASSIVE`；最小回调间隔限制应用处理数据的最高频率，持续时间防止请求长期遗留。
 
 ```kotlin
 fun buildPassiveLocationRequest(
@@ -286,7 +277,7 @@ flowchart LR
 - `Sensor.getFifoMaxEventCount()` 为零表示该传感器不使用 FIFO，此时带最大延迟的重载与普通注册没有批处理差异。
 - FIFO 可能由多个传感器共享。某个传感器的最大延迟到期或 FIFO 提前填满时，同一 FIFO 的其他事件也可能提前交付。
 
-这个函数注册一个可批处理的 continuous（连续上报型）或 on-change（数值变化时上报型）传感器。调用方根据业务语义传入采样周期和最大交付延迟，并持有同一个 `SensorEventListener2` 以接收 flush（立即交付缓冲事件）完成通知。
+`registerBatchedSensor()` 注册可批处理的 continuous（连续上报型）或 on-change（数值变化时上报型）传感器，采样周期和最大交付延迟由调用方按业务语义传入。调用方还要持有同一个 `SensorEventListener2`，flush（立即交付缓冲事件）完成通知才会回到它。
 
 ```kotlin
 fun registerBatchedSensor(
@@ -333,7 +324,7 @@ Android 17 的 `SystemSensorManager` 使用 5000 微秒作为 200 Hz 周期边�
 
 ### health 前台服务与 Android 17 权限
 
-在 Android 14（API 34）设备上，目标版本为 34 及以上且需要由前台服务维持的长时间健康或运动传感器采集，必须使用 `foregroundServiceType="health"` 与 `FOREGROUND_SERVICE_HEALTH`，并满足至少一种对应运行时条件。版本差异不能只写成 `BODY_SENSORS`：
+在 Android 14（API 34）设备上，长时间的健康或运动传感器采集如果需要由前台服务维持，且目标版本为 34 及以上，就必须使用 `foregroundServiceType="health"` 与 `FOREGROUND_SERVICE_HEALTH`，并满足至少一种对应运行时条件。版本差异不能只写成 `BODY_SENSORS`：
 
 - Android 15（API 35）及以下的身体传感器使用 `BODY_SENSORS`；API 33 到 API 35 若要从后台启动并读取身体传感器，还需要 `BODY_SENSORS_BACKGROUND`。
 - 在 Android 16（API 36）及以上系统中，目标版本 36 及以上的应用改用 `READ_HEART_RATE`、`READ_SKIN_TEMPERATURE`、`READ_OXYGEN_SATURATION` 等细分权限；后台读取对应健康数据需要 `READ_HEALTH_DATA_IN_BACKGROUND`。
@@ -361,6 +352,17 @@ Android 17 的 `SystemSensorManager` 使用 5000 微秒作为 200 Hz 周期边�
 | Android 11+ | target 30+ 不能在一次请求中同时申请前台与后台定位，后台权限要在功能上下文中分阶段解释 |
 | Android 12+ | 用户可以只授予大致位置；从后台启动 FGS 还受通用限制 |
 | Android 14+ | 目标版本 34 及以上声明 `FOREGROUND_SERVICE_LOCATION`，创建服务时满足粗略或精确位置权限与使用中权限前提 |
+
+Android 8.0（API 26）起，后台应用的位置计算与交付被限制为每小时少数几次，后台 Geofencing 也按几分钟量级响应。该设备行为不取决于应用的 `targetSdkVersion`（目标 API 级别）。提高请求频率不能消除这层限制，只会让业务契约与平台行为不一致。
+
+权限和前台服务需要按版本分别处理：
+
+- Android 10（API 29）起，目标版本为 29 及以上的应用若要在后台访问位置，必须声明并获得 `ACCESS_BACKGROUND_LOCATION`；访问位置的前台服务还要声明 `foregroundServiceType="location"`。Geofencing 也属于后台位置用例。
+- Android 11（API 30）起，系统权限对话框不再提供始终允许选项；用户需要到设置页授予后台位置。应用应先说明用途，并允许用户拒绝。
+- Android 12（API 31）起，用户可以只授予大致位置（approximate location）。前台被降为粗略位置时，后台位置也只有同等精度；精确度在设置中被降低还会导致应用进程重启。应用应同时请求 coarse（粗略）与 fine（精确）权限，并在只有 `ACCESS_COARSE_LOCATION` 时保持主要流程可用，不能通过经纬度数值猜测授权档位。
+- 在 Android 14（API 34）设备上，目标版本为 34 及以上的应用还要声明 `FOREGROUND_SERVICE_LOCATION`，启动 location 前台服务时满足位置开关与 coarse/fine 运行时权限。位置权限受 while-in-use（使用中，一般要求应用可见或满足对应 FGS 条件）约束；应用已在后台时，除非具备 `ACCESS_BACKGROUND_LOCATION` 或其他系统豁免，不能创建需要位置能力的前台服务。
+
+这些版本规则一直适用于 Android 17（API 37）。Android 17 平台源码锚点用于核对框架权限、请求合并与粗略位置处理；Google Play services 的 FLP 是独立发布的组件，不能用 AOSP 文件替代其公开 API 契约。
 
 声明 location FGS 不会自动获得位置权限，也不能绕过后台启动限制。用户持续导航、运动记录或位置共享时，应从可见界面启动服务，展示停止入口，并在 `onDestroy()` 中移除同一个回调；只关心进入或离开区域时使用 Geofencing；页面附近内容在页面会话结束时停止请求。
 
