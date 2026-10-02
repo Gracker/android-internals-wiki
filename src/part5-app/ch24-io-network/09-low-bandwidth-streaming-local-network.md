@@ -111,7 +111,7 @@ consolidated_from:
 
 平台基准是 Android 17 / API 37 / `android-17.0.0_r1`。Android 15 和 Android 16 QPR2 用于说明公开 API 的版本变化；QPR（Quarterly Platform Release）是 Android 的季度平台更新。卫星短信、紧急通信、运营商开通和卫星调制解调器控制不属于普通应用的数据网络适配范围。
 
-低带宽和卫星网络要求应用缩小请求、延长容错窗口并允许离线；流媒体还要根据吞吐预算调整码率。Android 17 本地网络权限影响局域网发现和连接；局域网访问是另一项必须显式处理的网络能力。
+低带宽和卫星网络要求应用缩小请求、延长容错窗口并允许离线；流媒体还要根据吞吐预算调整码率；Android 17 起，局域网发现和连接属于另一项必须显式处理的网络能力，受本地网络权限约束。
 
 ## 低带宽与卫星网络的数据预算
 
@@ -127,7 +127,7 @@ Android 平台分三步向应用公开相关信号：
 
 Android 17 的 [`NetworkCapabilities.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/NetworkCapabilities.java) 定义 `TRANSPORT_SATELLITE = 10` 和 `NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED = 37`。前者在 API 35 / U 扩展 12 公开，后者在 API 36 / U 扩展 16 公开。Android 17 功能页说明，约束卫星网络支持随 Android 16 QPR2 上线；Android 17 延续并记录这项能力。
 
-这两个信号描述不同属性：
+两个信号描述的是不同属性，各自也有例外：
 
 - `hasTransport(TRANSPORT_SATELLITE)` 表示网络使用卫星传输。
 - 缺少 `NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED` 表示网络受带宽约束。
@@ -153,11 +153,11 @@ Android 应用默认不使用约束卫星网络。应用完成数据预算适配
 
 `INTERNET` 用于联网，`ACCESS_NETWORK_STATE` 用于注册网络回调；`android:value` 要替换为应用包名。根据 [`constrained satellite networks` 指南](https://developer.android.com/develop/connectivity/satellite/constrained-networks)，这项声明允许应用在约束卫星网络是唯一网络时使用该网络，也让系统设置页能够识别已经优化的应用。声明不代表设备一定具备卫星功能，也不代表用户已经订阅服务、运营商允许该应用或当前位置有卫星覆盖。
 
-Android 库不能替宿主加入这项元数据。声明代表完整应用已经控制数据量和访问频率；一个网络库无法替宿主的图片、视频、遥测事件和后台任务作出这个承诺。遥测事件是应用为分析运行情况而记录并上传的行为或性能数据。
+遥测事件是应用为分析运行情况而记录并上传的行为或性能数据。Android 库不能替宿主加入这项元数据：声明代表完整应用已经控制数据量和访问频率，一个网络库无法替宿主的图片、视频、遥测事件和后台任务作出这个承诺。
 
 ### 以“最佳匹配网络”驱动应用预算
 
-普通 `registerNetworkCallback()` 会报告所有匹配网络。如果应用把任一网络的能力直接写进全局布尔值，Wi-Fi、蜂窝与卫星并存时，较晚到达的回调会覆盖正在使用的网络所对应的值。官方示例使用 `registerBestMatchingNetworkCallback()`，让一个回调只跟踪满足请求的最佳网络；这个调用用于监听，不会主动请求系统建立新的网络。
+普通 `registerNetworkCallback()` 会报告所有匹配网络。如果应用把任一网络的能力直接写进一个全局布尔值，那么 Wi-Fi、蜂窝与卫星并存时，较晚到达的回调会覆盖先写入的值。官方示例使用 `registerBestMatchingNetworkCallback()`，让一个回调只跟踪满足请求的最佳网络；这个调用用于监听，不会主动请求系统建立新的网络。
 
 这段 Android 17 实现产生一份不可变网络预算快照。快照是发布后不再修改的一组网络状态，读取方不会看到更新到一半的数据。调用方提供已有的 `Handler`，因此监听器不会自行创建难以释放的线程：
 
@@ -306,11 +306,7 @@ class ConstrainedNetworkMonitor(
 
 `start()`、`close()` 和回调共享同一 `Handler` 线程，避免生命周期字段被多个线程同时修改。若调用方拥有 `HandlerThread`，也就是带消息循环的后台线程，应先注销回调，再退出线程。当前 [`ConnectivityManager`](https://developer.android.com/reference/android/net/ConnectivityManager) 文档规定，每个 UID 通过该类 API 提交且尚未释放的网络请求与回调合计最多 100 个；重复注册却不注销会达到上限并触发运行时异常。
 
-这段实现面向 Android 17。兼容旧系统时要同时满足编译 SDK、设备 API 级别与 SDK 扩展版本要求：编译 SDK 决定代码能否引用符号，API 级别和扩展版本决定运行设备是否提供该能力。不支持该能力的平台继续使用默认网络回调和应用实测指标。
-
-官方指南允许在较低版本上直接使用常量数值，但项目若没有跨 QPR 验证环境，不应让这些数值进入业务层。
-
-Android 16 设备注册回调时还要按官方建议处理 `ConnectivityManager` 抛出的异常。
+这段实现面向 Android 17。兼容旧系统时要同时满足编译 SDK、设备 API 级别与 SDK 扩展版本要求：编译 SDK 决定代码能否引用符号，API 级别和扩展版本决定运行设备是否提供该能力。不支持该能力的平台继续使用默认网络回调和应用实测指标；官方指南允许在较低版本上直接使用常量数值，但项目若没有跨 QPR 验证环境，不应让这些数值进入业务层。Android 16 设备注册回调时还要按官方建议处理 `ConnectivityManager` 抛出的异常。
 
 `registerBestMatchingNetworkCallback()` 反映请求的最佳匹配网络。若应用把某个 `Network` 显式绑定到专用客户端，应读取该绑定网络的能力，不能把全局快照套在所有套接字上。VPN 也可能改变应用的实际出站路径，测试中要覆盖 VPN 开关。
 
@@ -410,7 +406,7 @@ FCM HTTP v1 的 Android 配置支持 `bandwidth_constrained_ok`。项目内可�
 
 ### 先减少载荷和网络往返
 
-协议参数只能降低剩余开销，无法抵消过大的业务载荷。低数据模式可以从这些位置减少字节：
+业务载荷过大时，调协议参数只能省下剩余开销。低数据模式可以从这些位置减少字节：
 
 - 列表只取当前界面需要的字段，控制单页记录数；增量游标是服务端返回的同步位置标记，客户端下次携带它，只请求该位置之后的变化；
 - 图片按显示尺寸请求缩略图，禁止自动下载原图；
@@ -421,7 +417,9 @@ FCM HTTP v1 的 Android 配置支持 `bandwidth_constrained_ok`。项目内可�
 
 压缩要同时比较传输字节减少量、设备 CPU 时间、耗电和服务端兼容性。图片、视频和加密数据通常已经压缩，再套一层通用压缩的收益往往有限。压缩算法、缓存策略、离线写入与冲突处理统一见 [24.3 数据缓存与离线优先](03-data-cache-offline-first.md)。
 
-缓存的界面文案要区分：
+### 本地队列要如实显示投递状态
+
+界面文案要区分这几种状态：
 
 - 已保存到本地；
 - 等待网络发送；
@@ -530,19 +528,20 @@ HTTP/1.1、HTTP/2、HTTP/3、gRPC 和 WebSocket 的表现取决于代理、网�
 
 通用低带宽策略确定后，流媒体按播放缓冲和码率控制流量；局域网功能则要在权限未授予时停止发现或提供替代入口。
 
-### 两类 Android 17 新输入
+### Android 17 的两项新网络输入
 
 Android 17 同时增加了流媒体数据计划速率接口和本地网络访问权限。两项改动都涉及网络，但输入和授权对象不同：
 
 - `SubscriptionInfo` 的新接口描述运营商为某个订阅提供的流媒体速率上限，用于视频、音频、直播或实时音视频通信（RTC）的质量预算。
 - `ACCESS_LOCAL_NETWORK` 控制应用能否发现或连接局域网设备，也控制局域网设备能否连接应用进程中的服务器。
-- 登录、信息流（Feed）、配置和图片列表等互联网请求仍按域名解析（DNS）、连接、重试与弱网规则处理。
+
+登录、信息流（Feed）、配置和图片列表等互联网请求不受这两项改动影响，仍按域名解析（DNS）、连接、重试与弱网规则处理。
 
 平台基准为正式发布的 Android 17、API 37 与 Android 开源项目（AOSP）标签 `android-17.0.0_r1`。低带宽与卫星网络见本文前半部分；通用请求预算见 [24.5 移动网络架构、连接生命周期与容灾策略](05-mobile-network-connection-resilience.md)，ECH 与证书透明度见 [24.6 HTTP/2、HTTP/3、gRPC 与 ECH](06-http2-http3-grpc-ech.md)。
 
 ### 按网络路径分类
 
-同一页面可能同时包含媒体分片、诊断事件上报和投屏发现。若只按页面统计网络失败，三种问题会混在一起。ABR 是 Adaptive Bitrate 的缩写，指播放器根据带宽和缓冲状态自动切换码率；mDNS 是组播 DNS，SSDP 是简单服务发现协议，两者常用于局域网设备发现。
+同一页面可能同时包含媒体分片、诊断事件上报和投屏发现。若只按页面统计网络失败，三种问题会混在一起。ABR 是 Adaptive Bitrate 的缩写，指播放器根据带宽和缓冲状态自动切换码率。mDNS 是组播 DNS，SSDP 是简单服务发现协议，两者常用于局域网设备发现。
 
 | 路径 | 典型业务 | Android 17 变化 | 主要失败形态 | 决策入口 |
 | --- | --- | --- | --- | --- |
@@ -639,7 +638,7 @@ Wi-Fi、虚拟专用网络（VPN）、企业专用网络，以及应用主动绑
 
 ### 把运营商上限接入 ABR
 
-自适应码率（ABR）至少有三类输入。Media3 是 AndroidX 的媒体播放库，ExoPlayer 是其中的播放器实现；`BandwidthMeter` 是 Media3 根据近期媒体传输样本估算可用带宽的组件。
+ABR 至少有三类输入。Media3 是 AndroidX 的媒体播放库，ExoPlayer 是其中的播放器实现；`BandwidthMeter` 是 Media3 根据近期媒体传输样本估算可用带宽的组件。
 
 | 输入 | 含义 | 更新时机 | 适合影响 |
 | --- | --- | --- | --- |
@@ -660,7 +659,7 @@ Wi-Fi、虚拟专用网络（VPN）、企业专用网络，以及应用主动绑
 
 点播与直播下行可以约束候选视频轨道，RTC 或直播推流则使用上行接口约束编码目标。信令、小型控制请求和鉴权不属于媒体码率本身，不应因为上行速率未知而阻止建连。
 
-若服务端参与清晰度选择，客户端只需上传离散的预算档位或受控区间。服务端仍要保留兼容的媒体清单和切换能力。HLS 和 DASH 是两种常见的分段流媒体协议，它们用媒体清单列出可选轨道；一次上报不能成为永久删除低质量轨道的依据。
+若服务端参与清晰度选择，客户端只需上传离散的预算档位或受控区间。服务端仍要保留兼容的媒体清单和切换能力。HLS 和 DASH 是两种常见的分段流媒体协议，它们用媒体清单列出可选轨道；不能因为一次上报就永久删除低质量轨道。
 
 ## Android 17 本地网络授权
 
@@ -672,11 +671,19 @@ Wi-Fi、虚拟专用网络（VPN）、企业专用网络，以及应用主动绑
 - IPv6 链路本地地址、直连路由、Thread 等存根网络和多子网。存根网络只连接上级网络，不转发其他网络之间的流量；这里的 Thread 是面向物联网设备的低功耗网状网络协议，不是程序线程。
 - IPv4/IPv6 组播地址以及 IPv4 广播地址。组播把数据发给加入同一组的一批接收者，广播则面向同一广播域内的所有设备。
 
-应用不能只检查 `192.168.x.x` 前缀来判断是否需要权限。mDNS、SSDP、`.local` 名称解析、局域网 HTTP、OkHttp 或 Cronet 访问本地地址、WebView 内的本地请求，以及应用监听端口接受局域网连接，都在影响范围内。WebView 沿用宿主应用的权限状态。
+应用不能只检查 `192.168.x.x` 前缀来判断是否需要权限。以下行为都落在影响范围内：
+
+- mDNS、SSDP、`.local` 名称解析；
+- 局域网 HTTP、OkHttp 或 Cronet 访问本地地址、WebView 内的本地请求；
+- 应用监听端口接受局域网连接。
+
+WebView 沿用宿主应用的权限状态。
 
 系统配置的 DNS 服务器位于本地网络时，发往其 53 端口的域名解析流量属于官方列出的例外。这个例外只保证系统 DNS 可用，不允许应用绕过权限访问其他本地 DNS 服务或端口。
 
 ### Android 16 到 Android 17 的迁移
+
+兼容性变更是系统提供的测试开关，用于在旧目标版本上提前模拟新行为。
 
 | 环境 | 默认行为 | 测试或发布要求 |
 | --- | --- | --- |
@@ -684,14 +691,14 @@ Wi-Fi、虚拟专用网络（VPN）、企业专用网络，以及应用主动绑
 | Android 17，`targetSdk < 37` | 持有 `INTERNET` 的旧应用获得临时隐式授权 | 不要声明或请求 `ACCESS_LOCAL_NETWORK`；这只是迁移兼容 |
 | Android 17，`targetSdk >= 37` | 本地网络默认阻断 | 使用系统设备选择器，或声明并请求 `ACCESS_LOCAL_NETWORK` |
 
-兼容性变更是系统提供的测试开关，用于在旧目标版本上提前模拟新行为。Android 16 测试需要启用变更并重启设备；这两条命令只用于测试包，不能放进应用运行逻辑。
+Android 16 测试需要启用变更并重启设备；这两条命令只用于测试包，不能放进应用运行逻辑。
 
 ```shell
 adb shell am compat enable RESTRICT_LOCAL_NETWORK com.example.app
 adb reboot
 ```
 
-启用后，应用进程中的本地网络套接字会受到限制。Android 16 文档同时指出，`NsdManager` 等由系统服务代替应用执行网络操作的框架 API，不受这次主动测试完整覆盖。系统设备选择器和权限拒绝路径仍要在 Android 17 / API 37 真机上复测。
+启用后，应用进程中的本地网络套接字会受到限制。Android 16 文档同时指出，`NsdManager` 等由系统服务代替应用执行网络操作的框架 API，不在这次主动测试的完整覆盖范围内。系统设备选择器和权限拒绝路径仍要在 Android 17 / API 37 真机上复测。
 
 ### 两条授权路径
 
@@ -703,7 +710,9 @@ adb reboot
 - 基于 DNS 的服务发现（DNS-SD）场景可使用 `DiscoveryRequest.FLAG_SHOW_PICKER`；mDNS 常用来在局域网内承载 DNS-SD 查询。
 - 用户选中的服务会获得按服务授权，不需要应用取得整个局域网的访问权限。
 
-NSD 是 Network Service Discovery 的缩写，即 Android 的网络服务发现 API。Android 17 的 NSD 设备选择器也通过 T SDK Extension 22 提供；这里的 T 指 Android 13，SDK Extension 是系统模块更新带来的 API 版本，让设备在不升级完整 Android 大版本的情况下也可能获得新接口。运行在可接收模块更新的旧平台时，应检查 T 扩展版本；示例只展示 Android 17 直接路径。
+NSD 是 Network Service Discovery 的缩写，即 Android 的网络服务发现 API。Android 17 的 NSD 设备选择器也通过 T SDK Extension 22 提供。
+
+这里的 T 指 Android 13，SDK Extension 是系统模块更新带来的 API 版本，让设备在不升级完整 Android 大版本的情况下也可能获得新接口。运行在可接收模块更新的旧平台时，应检查 T 扩展版本；示例只展示 Android 17 直接路径。
 
 这段代码发起一次系统 NSD 设备选择。页面或控制器要保存回调对象，并在生命周期结束时调用 `unregisterServiceInfoCallback()` 取消注册。
 
