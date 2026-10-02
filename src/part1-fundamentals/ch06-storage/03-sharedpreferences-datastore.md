@@ -1,7 +1,7 @@
 ---
 title: SharedPreferences 与 DataStore：I/O、ANR 与多进程一致性
 chapter: '6.3'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 1.0 (API 1) - Android 17 (API 37)
 last_verified: '2026-10-02'
 last_verified_against: AOSP android-17.0.0_r1 SharedPreferencesImpl.java / QueuedWork.java / ActivityThread.java / BroadcastReceiver.java / SharedPreferences.java / ContextImpl.java; Android Developers SharedPreferences/DataStore docs fetched 2026-10-02; AndroidX DataStore 1.2.1 source/AAR (DataStore.kt / DataStoreImpl.kt / FileStorage.kt / MultiProcessCoordinator.android.kt / MulticastFileObserver.android.kt / SharedCounter.android.kt / SharedPreferencesMigration.android.kt)
@@ -40,9 +40,11 @@ related_chapters:
 - '8.2'
 - '4.4'
 section: '6.3'
-pipeline_stage: reworked
-task6_state: ready-for-review
-task9_state: reworked
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
+last_review_finalize_at: '2026-10-02T12:05:34+08:00'
+last_review_finalize_run_id: 20261002-120534-927fa3fc
 last_rework_at: '2026-10-02T09:46:50+08:00'
 last_rework_run_id: 20261002-093534-rework-864fcd3f
 last_idle_audit_at: '2026-08-04T18:35:51+08:00'
