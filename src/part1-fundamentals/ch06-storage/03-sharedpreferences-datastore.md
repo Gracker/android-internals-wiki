@@ -1,10 +1,10 @@
 ---
 title: SharedPreferences 与 DataStore：I/O、ANR 与多进程一致性
 chapter: '6.3'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 1.0 (API 1) - Android 17 (API 37)
-last_verified: '2026-07-01'
-last_verified_against: AOSP android-17.0.0_r1 SharedPreferencesImpl.java / QueuedWork.java / ActivityThread.java / BroadcastReceiver.java / SharedPreferences.java / ContextImpl.java; AndroidX DataStore core 1.2.1 source/AAR; historical audit notes referenced 1.1.7
+last_verified: '2026-10-02'
+last_verified_against: AOSP android-17.0.0_r1 SharedPreferencesImpl.java / QueuedWork.java / ActivityThread.java / BroadcastReceiver.java / SharedPreferences.java / ContextImpl.java; Android Developers SharedPreferences/DataStore docs fetched 2026-10-02; AndroidX DataStore 1.2.1 source/AAR (DataStore.kt / DataStoreImpl.kt / FileStorage.kt / MultiProcessCoordinator.android.kt / MulticastFileObserver.android.kt / SharedCounter.android.kt / SharedPreferencesMigration.android.kt)
 confidence: medium
 sources:
 - type: blog
@@ -24,7 +24,7 @@ sources:
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/datastore
 - type: androidX
-  path: AndroidX DataStore 1.2.1 DataStoreImpl.kt / FileStorage.kt / MultiProcessCoordinator.android.kt / MulticastFileObserver.android.kt / SharedCounter.android.kt
+  path: AndroidX DataStore 1.2.1 DataStore.kt / DataStoreImpl.kt / FileStorage.kt / MultiProcessCoordinator.android.kt / MulticastFileObserver.android.kt / SharedCounter.android.kt / SharedPreferencesMigration.android.kt
 tags:
 - sharedpreferences
 - datastore
@@ -40,9 +40,11 @@ related_chapters:
 - '8.2'
 - '4.4'
 section: '6.3'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: reworked
+task6_state: ready-for-review
+task9_state: reworked
+last_rework_at: '2026-10-02T09:46:50+08:00'
+last_rework_run_id: 20261002-093534-rework-864fcd3f
 last_idle_audit_at: '2026-08-04T18:35:51+08:00'
 last_idle_audit_run_id: 20260804-183551-idle-audit-29d2feef
 task2b_state: fixed
