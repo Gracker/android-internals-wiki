@@ -5249,6 +5249,61 @@
       "status": "appended",
       "title": "日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源腾讯音乐正式开源 Android 秒级增量构建插件"
     },
+    "source/juejin-android/2026-10-04-76571041-现代架构不需要事件总线进阶篇.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "72b4808871159b59",
+      "last_appended": "2026-10-04T05:25:34.309424+08:00",
+      "last_seen": "2026-10-04T05:25:34.309424+08:00",
+      "mtime": 1791058864.9236646,
+      "score": 13,
+      "sha256": "fd2775bde64ce47709621b4c1e385d172ab236c7d7eec756e0c9bac1a4b3fa34",
+      "size": 18495,
+      "status": "appended",
+      "title": "Android 现代架构不需要事件总线进阶篇前言 如果你还没看过这篇,请先移步看看这篇 Android 现代架构不需要事"
+    },
+    "source/juejin-android/2026-10-04-76626270-AndroidCLI完全指南.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "d9b08ed501988c4a",
+      "last_appended": "2026-10-04T05:25:34.309424+08:00",
+      "last_seen": "2026-10-04T05:25:34.309424+08:00",
+      "mtime": 1791058864.922799,
+      "score": 16,
+      "sha256": "d74cf342c0bba85970c3bef20a5c6212d2e6cf69d4505766031a49942b6a39b9",
+      "size": 13111,
+      "status": "appended",
+      "title": "Android CLI 完全指南最近这两年，开发方式正在发生改变，随着 AI 的快速发展，UI 类型的开发工具反而效率变"
+    },
+    "source/juejin-android/2026-10-04-76655745-LiveData缺陷与Flow迁移.md": {
+      "chapter": "ch04-memory",
+      "entry_id": "19d60deba5093982",
+      "last_appended": "2026-10-04T05:25:34.309424+08:00",
+      "last_seen": "2026-10-04T05:25:34.309424+08:00",
+      "mtime": 1791058864.9232254,
+      "score": 11,
+      "sha256": "7b630954404d8b3edb17bedcd4f37ac494147a2e0e262cb7086936ede67cf4c0",
+      "size": 10257,
+      "status": "appended",
+      "title": "LiveData 的缺陷：为什么我现在越来越少使用 LiveData？ > 我第一次接触 LiveData 的时候，觉得"
+    },
+    "source/juejin-android/2026-10-04-76670971-谷歌位图优化整改建议复盘.md": {
+      "chapter": "ch09-anr",
+      "entry_id": "271b22a725fa7d7a",
+      "last_appended": "2026-10-04T05:25:34.309424+08:00",
+      "last_seen": "2026-10-04T05:25:34.309424+08:00",
+      "mtime": 1791058864.922276,
+      "score": 11,
+      "sha256": "0217c09103d2797b90eef065e0463b4de9a0477f050a2c45ed7938659b67b464",
+      "size": 11255,
+      "status": "appended",
+      "title": "谷歌的一个优化建议，让我重新学了一遍Android里面如何正确处理位图背景 谷歌这位哥哥真的会整幺蛾子，好不容易把cra"
+    },
+    "source/juejin-android/2026-10-04-76756150-DI与对象创建权.md": {
+      "last_seen": "2026-10-04T05:25:34.309424+08:00",
+      "mtime": 1791058864.9240286,
+      "sha256": "7df4f241d01e59ef18c60ee0e99109e34a0ea05b134037a933396c23b36ba362",
+      "size": 12987,
+      "status": "skipped-low-score"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -7286,16 +7341,16 @@
     }
   },
   "last_report": {
-    "appended": 0,
-    "considered": 0,
-    "cutoff": "2026-10-02T05:20:34.258219+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-03.md",
+    "appended": 4,
+    "considered": 5,
+    "cutoff": "2026-10-03T05:20:34.472740+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-04.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2096,
+    "scanned": 2101,
     "skipped": {
       "existing_link": 0,
-      "low_score": 0,
+      "low_score": 1,
       "max_files": 0,
       "old_unseen": 1408,
       "path": 30,
@@ -7303,7 +7358,7 @@
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-10-03T05:25:34.472740+08:00",
+  "last_run_at": "2026-10-04T05:25:34.309424+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
