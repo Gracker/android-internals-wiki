@@ -91,7 +91,7 @@ last_rework_run_id: 20260815-212220-gracker-writing-475
 | 接入层日志 | 请求是否到达入口、入口流量是否下跌、服务端处理耗时、状态码分布 | 客户端 DNS 失败、建连失败、被代理/VPN 拦截的请求可能看不到 | 秒级告警、定位入口集群/CDN/域名异常 |
 | 系统网络状态 | 默认网络、传输类型、VPN、计费网络、互联网验证、受限网络 | App 拿不到无线驱动、基站、运营商内部路由的完整状态 | 解释网络切换、Captive Portal（需要网页认证的受限网络）、代理/VPN 干扰 |
 
-客户端样本解释用户侧经历，接入层日志显示已到达入口的请求，系统状态说明 App 当时可见的默认网络。三者通过 `trace_id`、`request_id` 和 `attempt_id` 关联。DNS、connect 或 TLS 阶段失败的 attempt 不会到达服务器；对账时必须保留这些只在客户端出现的记录，不能因服务端没有同名 ID 就丢弃。
+客户端样本解释用户侧经历，接入层日志显示已到达入口的请求，系统状态说明 App 当时可见的默认网络。三者通过 `trace_id`、`request_id` 和 `attempt_id` 关联（四层请求 ID 的定义见下文「客户端阶段耗时采集」）。DNS、connect 或 TLS 阶段失败的 attempt 不会到达服务器；对账时必须保留这些只在客户端出现的记录，不能因服务端没有同名 ID 就丢弃。
 
 ## 客户端阶段耗时采集
 
@@ -104,9 +104,9 @@ last_rework_run_id: 20260815-212220-gracker-writing-475
 
 这四层 ID 规定了如何把多个事件归到同一次用户操作。同一个 `request_id` 可能出现多次 DNS、connect 或 `connectionAcquired`，也可能复用已有连接而完全没有 DNS、connect 和 TLS 事件。若采集器只为每个阶段保留一个开始时间，后一次路由尝试会覆盖前一次失败，计算出的分段之和也可能和调用总耗时对不上。
 
-截至 2026 年 8 月 15 日，Maven Central 标记的 OkHttp release 为 5.4.0；其 [`EventListener` 5.4.0 源码](https://github.com/square/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 与本文原先核对的 [`EventListener`](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 5.3.0 源码一致。
+截至 2026 年 8 月 15 日，Maven Central 标记的 OkHttp release 为 5.4.0；其 [`EventListener` 5.4.0 源码](https://github.com/square/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 与 [`EventListener` 5.3.0 源码](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 一致。
 
-dispatcher（请求调度器）排队事件，以及 DNS、建连、安全连接、连接获取、请求发送和响应读取事件，都属于同一个 `Call`。connect 系列事件可能因候选路由与 Fast Fallback 重复出现；Fast Fallback 会交错尝试多个地址，以缩短单一路径迟迟无法建连造成的等待。`connectionAcquired` 也可能在一个 `Call` 中出现多次。连接复用时，DNS、connect 和 TLS 事件可能缺席。采集器应保存有序事件和对应的 attempt/exchange，不能假设事件序列固定。
+从 dispatcher（请求调度器）排队，到 DNS、建连、安全连接、连接获取、请求发送和响应读取，这些事件都属于同一个 `Call`。connect 系列事件可能因候选路由与 Fast Fallback 重复出现；Fast Fallback 会交错尝试多个地址，以缩短单一路径迟迟无法建连造成的等待。`connectionAcquired` 也可能在一个 `Call` 中出现多次。连接复用时，DNS、connect 和 TLS 事件可能缺席。采集器应保存有序事件和对应的 attempt/exchange，不能假设事件序列固定。
 
 Cronet 的公开采集入口是 `org.chromium.net.RequestFinishedInfo.Listener`。本文逐方法核验的 API 版本为 `143.7445.0`；[`RequestFinishedInfo.Metrics`](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Metrics) 提供请求开始、DNS、建连、SSL、发送、响应开始和请求结束时间戳，以及套接字复用、TTFB（time to first byte，收到首个响应字节前的时间）、总耗时和可空的传输字节数。没有发生或无法取得的阶段返回 `null`；复用连接时 DNS、connect 和 SSL 均为空。DNS 命中本地缓存但没有复用 socket 时，Cronet 仍可给出 DNS 时间戳，所以“存在 DNS 事件”不能直接等价为“访问了远端 DNS”。
 
@@ -128,6 +128,14 @@ AOSP `android-17.0.0_r1` 没有向 App 提供 `android.net.http.RequestFinishedI
 | 上报状态 | `sample_rate`、`upload_channel`、`upload_delay_ms`、`dropped_reason` | 网络故障时，上报失败本身也是证据 |
 
 这张表和 26.1 的性能指标模型保持一致：事件回调只记录轻量时间戳、枚举和引用，序列化、压缩、写入本地文件与上传交给后台任务。主线程、OkHttp callback（回调函数）或 Cronet listener（监听器）中的磁盘 I/O 会直接干扰被测请求。
+
+## QUIC / HTTP/3 指标口径
+
+QUIC 是一种在 UDP 之上集成加密与多路复用的传输协议，HTTP/3 以它为基础。`connect_ms` 不能固定解释为 TCP 三次握手，`secure_handshake_ms` 也不能固定解释为 TCP 上的 TLS。公共指标需要使用协议中性的字段名，并记录 `negotiated_protocol`。Cronet 的 [`UrlResponseInfo#getNegotiatedProtocol()`](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/UrlResponseInfo) 返回协商协议，也可能为空。
+
+在 Cronet `143.7445.0` 中，QUIC 的 SSL 开始/结束分别等于 connect 开始/结束；使用 0-RTT（在握手确认前发送早期数据）时，connect end 表示握手确认，可能晚于 sending start。HTTP/2 与 QUIC 会在一条连接上承载多个 stream（独立请求流），首个 stream 之后的 `getSocketReused()` 会返回 `true`，DNS、connect 和 SSL 时间随之为空。因此，同一请求中 `sendingStart < connectEnd` 只能按 Cronet 文档解释时间顺序，不能据此生成准确的 `zero_rtt_used=true`。
+
+该版本公开的 `RequestFinishedInfo.Metrics` 没有稳定字段暴露 0-RTT 是否使用、连接迁移次数、路径验证耗时或丢包率。只有选定引擎通过公开且有版本说明的 API 提供这些数据时，才能把它们放入扩展字段，并同时记录 `engine`、`engine_version`、`metric_source` 和字段可用性。不要从套接字重用、阶段先后顺序或异常文本推算协议内部状态。
 
 ## 流量与网络状态维度
 
@@ -197,6 +205,14 @@ PLT（Procedure Linkage Table，过程链接表）保存动态函数的跳转入
 
 尾延迟是少量最慢请求形成的分布尾部，需要结合阶段分布分析。DNS 长尾提示检查解析、调度和网络切换；connect 长尾提示检查候选路由、可达性、CDN 和防火墙；TTFB 同时包含客户端到入口的传输、入口排队与服务端处理，不能单凭这一项归因到服务端；响应体读取阶段（body）长尾还会受响应大小、网络路径吞吐和应用读取速度影响。指标用于缩小检索范围，结论仍需客户端事件、接入层日志和服务端 span 相互验证。
 
+## 规则与时间序列报警边界
+
+网络报警适合组合规则与时间序列模型。规则处理入口请求量突变、5xx 偏离基线、某 endpoint DNS 失败率异常等明确现象；时间序列模型处理流量周期、地域时区、节假日和运营活动带来的自然波动。
+
+算法不能弥补指标缺失。输入没有阶段耗时、协议、样本覆盖率和上报健康度，模型只能发现某个总耗时发生变化。主入口可采用少量可解释规则，高流量 endpoint 和关键场景再使用按星期、时段和发布状态分组的历史基线。低流量接口不适合独立做 P99 异常检测，可使用错误样本聚类、相邻 endpoint 联动和人工复核。
+
+误报和漏报也要计量。每条规则记录触发、确认故障、误报原因、漏报补录和处置动作；模型版本、训练区间、特征可用性与阈值配置需要可追溯。规则变更先影子运行，也就是只计算结果而不通知值班，再根据历史回放和线上反馈决定是否正式告警。
+
 ## 网络故障证据包
 
 一次线上网络故障的证据包要能判定影响范围、模拟触发条件并验证修复。字段按采样策略与数据分级收集，严重故障也不能绕过隐私、权限和保留期限约束。
@@ -213,22 +229,6 @@ PLT（Procedure Linkage Table，过程链接表）保存动态函数的跳转入
 运营商、MCC/MNC、城市、IP、DNS 服务器、代理、SSID（Wi-Fi 网络名）和 BSSID（接入点标识）都可能构成敏感或可识别信息。能由接入层生成的地域、网络分组和 peer 分组优先在服务端生成；端侧只收集诊断所需的最小范围，并保留“未知”，不要用设备 SIM 信息强行推断请求路径归属。
 
 26.3 给出了通用线上问题证据包模板。网络场景再补充请求尝试、阶段可用性、接入层日志索引和遥测上传状态，排障人员就能回答：哪个 endpoint 与协议受影响、客户端在哪个阶段结束、请求是否到达入口、服务端记录如何、样本缺口有多大。
-
-## QUIC / HTTP/3 指标口径
-
-QUIC 是一种在 UDP 之上集成加密与多路复用的传输协议，HTTP/3 以它为基础。`connect_ms` 不能固定解释为 TCP 三次握手，`secure_handshake_ms` 也不能固定解释为 TCP 上的 TLS。公共指标需要使用协议中性的字段名，并记录 `negotiated_protocol`。Cronet 的 [`UrlResponseInfo#getNegotiatedProtocol()`](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/UrlResponseInfo) 返回协商协议，也可能为空。
-
-在 Cronet `143.7445.0` 中，QUIC 的 SSL 开始/结束分别等于 connect 开始/结束；使用 0-RTT（在握手确认前发送早期数据）时，connect end 表示握手确认，可能晚于 sending start。HTTP/2 与 QUIC 会在一条连接上承载多个 stream（独立请求流），首个 stream 之后的 `getSocketReused()` 会返回 `true`，DNS、connect 和 SSL 时间随之为空。因此，同一请求中 `sendingStart < connectEnd` 只能按 Cronet 文档解释时间顺序，不能据此生成准确的 `zero_rtt_used=true`。
-
-该版本公开的 `RequestFinishedInfo.Metrics` 没有稳定字段暴露 0-RTT 是否使用、连接迁移次数、路径验证耗时或丢包率。只有选定引擎通过公开且有版本说明的 API 提供这些数据时，才能把它们放入扩展字段，并同时记录 `engine`、`engine_version`、`metric_source` 和字段可用性。不要从套接字重用、阶段先后顺序或异常文本推算协议内部状态。
-
-## 规则与时间序列报警边界
-
-网络报警适合组合规则与时间序列模型。规则处理入口请求量突变、5xx 偏离基线、某 endpoint DNS 失败率异常等明确现象；时间序列模型处理流量周期、地域时区、节假日和运营活动带来的自然波动。
-
-算法不能弥补指标缺失。输入没有阶段耗时、协议、样本覆盖率和上报健康度，模型只能发现某个总耗时发生变化。主入口可采用少量可解释规则，高流量 endpoint 和关键场景再使用按星期、时段和发布状态分组的历史基线。低流量接口不适合独立做 P99 异常检测，可使用错误样本聚类、相邻 endpoint 联动和人工复核。
-
-误报和漏报也要计量。每条规则记录触发、确认故障、误报原因、漏报补录和处置动作；模型版本、训练区间、特征可用性与阈值配置需要可追溯。规则变更先影子运行，也就是只计算结果而不通知值班，再根据历史回放和线上反馈决定是否正式告警。
 
 ## Wi-Fi 稳定性与系统网络验证
 
