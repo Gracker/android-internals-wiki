@@ -5592,6 +5592,33 @@
         "commit"
       ],
       "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-04-76655745-LiveData缺陷与Flow迁移.md",
+      "title": "[技术文章] LiveData 的缺陷：为什么我现在越来越少使用 LiveData？ > 我第一次接触 LiveData 的时候，觉得",
+      "summary": "> 发布时间: 2026-07-23T23:59:55.000Z > 原文链接: https://juejin.cn/post/7665574563510140979 2026-07-24 1,806 阅读5分钟 > 我第一次接触 LiveData 的时候，觉得它非常惊艳。 > 在那个时代，Android 开发充满了 Callback、生命周期问题、内存泄漏风险。 > L...",
+      "chapter": "ch04",
+      "processed_at": "2026-10-04T06:20:34.168331+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch04-memory/07-memory-compaction-direct-reclaim.md",
+      "route_confidence": 14,
+      "route_terms": [
+        "callback",
+        "juejin-android",
+        "ch04-memory"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-04-76670971-谷歌位图优化整改建议复盘.md",
+      "title": "[技术文章] 谷歌的一个优化建议，让我重新学了一遍Android里面如何正确处理位图背景 谷歌这位哥哥真的会整幺蛾子，好不容易把cra",
+      "summary": "> 发布时间: 2026-07-28T02:18:34.000Z > 原文链接: https://juejin.cn/post/7667097178154319912 2026-07-28 1,880 阅读8分钟 谷歌这位哥哥真的会整幺蛾子，好不容易把crash跟anr数据压下来一点，最近发现又给了我一条技术质量类型的整改建议，大致内容是 真的是一点不让我闲着，天天关心着...",
+      "chapter": "ch09",
+      "processed_at": "2026-10-04T06:20:34.168331+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
