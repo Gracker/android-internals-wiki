@@ -82,17 +82,13 @@ last_rework_run_id: 20260815-223403-gracker-writing-479
 
 平台语义以 Android 17 / API 37 / `android-17.0.0_r1` 为准。
 
-AGP（Android Gradle Plugin）是把 Android 模块接入 Gradle 构建流程的插件。本文的构建入口以 2026 年 8 月稳定版 AGP 9.3.1 的 Instrumentation API 为准；AGP 9.3 系列支持的最高 API 为 37，并要求 Gradle 9.5 和 JDK 17。
+AGP（Android Gradle Plugin）是把 Android 模块接入 Gradle 构建流程的插件。本文的构建入口以 2026 年 8 月稳定版 AGP 9.3.1 的 Instrumentation API（AGP 在构建期为单个 class 注册字节码变换的接口）为准；AGP 9.3 系列支持的最高 API 为 37，并要求 Gradle 9.5 和 JDK 17。
 
 Android 17 没有改变 App 构建期 `.class` 插桩的基本边界。运行时证据仍来自公开 Trace API、Perfetto（系统级跟踪的采集与分析工具）、JankStats、网络库接口和业务指标。
 
 ## 先确定插桩边界
 
-一套可维护的插桩监控方案分为四层。
-
-variant 是由构建类型、产品风味等配置组合出的构建变体。stack frame 是 JVM verifier（字节码验证器）用来核对操作数栈和局部变量类型的校验信息。
-
-APM（Application Performance Monitoring）指应用性能监控。热路径是调用频繁的代码路径，少量额外工作也可能累积成明显开销。
+一套可维护的插桩监控方案分为四层：选择规则、字节码变换、运行时桥接、验证与发布。四层各自负责一段职责，也各有典型的出错方式。
 
 | 层级 | 责任 | 常见错误 |
 |---|---|---|
@@ -100,6 +96,10 @@ APM（Application Performance Monitoring）指应用性能监控。热路径是�
 | 字节码变换 | 保证控制流、操作数栈、局部变量和 frame 合法 | 只处理正常 `return`，异常路径没有清理 |
 | 运行时桥接 | 采样、限流、隐私处理并写入 Trace/APM | 在热路径分配对象、同步 I/O 或递归调用 |
 | 验证与发布 | 校验 class、D8/R8 产物、运行时 trace 和成本 | 只看编译成功，没有检查优化后产物 |
+
+variant 是由构建类型、产品风味等配置组合出的构建变体。stack frame 是 JVM verifier（字节码验证器）用来核对操作数栈和局部变量类型的校验信息。
+
+APM（Application Performance Monitoring）指应用性能监控。热路径是调用频繁的代码路径，少量额外工作也可能累积成明显开销。
 
 “无业务手写埋点”仍会带来侵入：每条注入指令都会改变 class、构建时间和运行路径。是否启用、覆盖哪些方法以及容许多少成本，都应由当前工程的测量结果决定。
 
@@ -115,11 +115,15 @@ Tree API 把类读入 `ClassNode`，并把方法指令保存在 `InsnList`。需
 - 需要查看一个方法的完整指令、异常表和跳转关系时考虑 Tree API。
 - 需要全程序调用图、跨类数据流或统一改写 jar 时，逐 class 的 Instrumentation API 信息不足，应通过 AGP Scoped Artifacts（按当前模块或连同依赖取得整组构建产物的 API）注册独立 task。
 
+### ASM 在构建流程中的位置
+
 ASM 的输入是 JVM class；DEX 在后续阶段产生。Kotlin 编译器、KSP（Kotlin Symbol Processing，在编译期间读取程序符号并生成代码）、Compose Compiler 等前置步骤先生成 class，AGP 插桩随后处理。
 
 D8/R8 再执行 desugar（把较新的 Java 字节码特性转换成旧 Android 版本可执行的形式）、压缩、优化、混淆和 DEX 转换。R8 是 Android 的代码压缩与优化器，D8 则负责把 JVM 字节码转换为 DEX。
 
 ## AGP 9.3.1 的插桩入口
+
+Instrumentation API 是 AGP 为逐 class 注册 ASM visitor 的公开接口。它支持增量处理，也允许 AGP 并行准备不同依赖。visitor 只能看到有限的 classpath（编译当前 class 时可查询的类集合），不能假设所有 class 已完成其他 visitor 的变换。
 
 ### Transform API 已被移除
 
@@ -127,9 +131,7 @@ D8/R8 再执行 desugar（把较新的 Java 字节码特性转换成旧 Android 
 
 - 独立处理每个 class：使用 `variant.instrumentation.transformClassesWith()`。
 - 读取或变换整组 class：使用 `variant.artifacts.forScope()` 和 [`ScopedArtifact.CLASSES`](https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/artifact/ScopedArtifact.CLASSES)。
-- 在编译后生成新 class 且还要读取已编译 class：读取 `ScopedArtifact.POST_COMPILATION_CLASSES`，再把生成目录追加到 `ScopedArtifact.CLASSES`，避免任务同时消费和生成同一个产物形成循环依赖。前一个 API 在 9.3.1 才加入且标有 `@Incubating`，使用它的插件应固定 AGP 版本并保留升级集成测试。
-
-Instrumentation API 是 AGP 为逐 class 注册 ASM visitor 的公开接口。它支持增量处理，也允许 AGP 并行准备不同依赖。visitor 只能看到有限的 classpath（编译当前 class 时可查询的类集合），不能假设所有 class 已完成其他 visitor 的变换。
+- 在编译后生成新 class 且还要读取已编译 class：读取 `ScopedArtifact.POST_COMPILATION_CLASSES`，再把生成目录追加到 `ScopedArtifact.CLASSES`，避免任务同时消费和生成同一个产物形成循环依赖。`POST_COMPILATION_CLASSES` 在 9.3.1 才加入且标有 `@Incubating`，使用它的插件应固定 AGP 版本并保留升级集成测试。
 
 ### 注册 AsmClassVisitorFactory
 
@@ -170,11 +172,11 @@ class TraceInstrumentationPlugin : Plugin<Project> {
 
 这段代码只展示注册关系。工程应把包前缀和启用 variant 暴露为插件扩展，避免把示例值复制到多个模块。
 
+`InstrumentationScope` 决定 visitor 处理哪些 class。应用和测试模块可选择 `PROJECT` 或 `ALL`；Android library 只能对本项目 class 注册 Instrumentation。`ALL` 会处理传递依赖，可能重复修改已插桩库，也会把第三方版本差异纳入兼容范围，因此不宜作为默认值。
+
 `COMPUTE_FRAMES_FOR_INSTRUMENTED_METHODS` 适合给既有方法增加控制流。如果 visitor 只加注解或能够自行维护 frame，`COPY_FRAMES` 的构建成本更低。
 
 `COMPUTE_FRAMES_FOR_ALL_CLASSES` 会触发非增量的全类计算，只有改变继承关系等特殊变换才应考虑。
-
-`InstrumentationScope` 决定 visitor 处理哪些 class。应用和测试模块可选择 `PROJECT` 或 `ALL`；Android library 只能对本项目 class 注册 Instrumentation。`ALL` 会处理传递依赖，可能重复修改已插桩库，也会把第三方版本差异纳入兼容范围，因此不宜作为默认值。
 
 ### Factory 必须支持异步调用
 
@@ -383,11 +385,9 @@ private fun String.takeUtf16Safely(maxCodeUnits: Int): String {
 
 生产 visitor 还要根据注解、方法大小、访问标志和业务规则缩小范围，并为 trace tag（section 名称）截断、UTF-16 代理对和哈希冲突编写测试。UTF-16 代理对是 Java `String` 用两个 16 位单元表示部分 Unicode 字符的编码方式，截断时不能从中间切开。
 
-Android 17 的 [`android.os.Trace`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java)与公开 [Trace API](https://developer.android.com/reference/android/os/Trace)规定：同步 section 必须在同一线程成对并正确嵌套，名称上限为 127 个 UTF-16 code unit。
+Android 17 的 [`android.os.Trace`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java)与公开 [Trace API](https://developer.android.com/reference/android/os/Trace)规定：同步 section 必须在同一线程成对并正确嵌套，名称上限为 127 个 UTF-16 code unit。code unit 是 Java `String` 的一个 16 位编码单元，它与用户看到的字符数并不总是一一对应。
 
-code unit 是 Java `String` 的一个 16 位编码单元，它与用户看到的字符数并不总是一一对应。竖线、换行和空字符会被替换。
-
-示例在构建期生成固定 tag，避免每次调用时拼接字符串。若 tag 包含业务参数、URL、账号或内容摘要，trace 文件也会携带这些信息，因此只应使用低敏感度的稳定标识。
+示例在构建期生成固定 tag，把竖线、换行和空字符替换掉，避免每次调用时拼接字符串。若 tag 包含业务参数、URL、账号或内容摘要，trace 文件也会携带这些信息，因此只应使用低敏感度的稳定标识。
 
 `Trace.isEnabled()` 从 API 29 提供。固定字符串的 `beginSection()` 可以直接调用，因为平台内部会检查 tracing 状态；只有运行时需要构造临时对象或格式化字符串时，才值得先调用 `isEnabled()` 避免无效分配。
 
