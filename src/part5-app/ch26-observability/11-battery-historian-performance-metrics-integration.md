@@ -90,7 +90,7 @@ Android 官方已经标注 Battery Historian [不再积极维护](https://develo
 
 ## 先分清四种数据
 
-功耗分析常见误判来自把“状态”“资源用量”“归因估算”和“硬件能量”当成同一类数据。
+功耗分析常见误判来自把“状态”“资源用量”“归因估算”和“硬件能量”当成同一类数据。先明确三个概念，再对照四类数据。
 
 UID 是 Android 用来归属应用进程和资源用量的用户标识，同一个 UID 可能由多个共享 UID 的包共同使用。
 
@@ -111,11 +111,12 @@ ODPM（On-Device Power Rails Monitor）是部分设备提供的板载电源轨�
 
 ### BatteryStatsService 与 PowerStatsService 各自负责什么
 
-Android 17 仍由两个分工不同的系统服务处理电池统计与硬件功耗数据，这种分工早于 Android 15。
+Android 17 的电池统计与硬件功耗数据仍由两个分工不同的系统服务处理，这一分工在 Android 15 之前就已形成。
 
 - [`BatteryStatsService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java) 维护 `BatteryStatsImpl`，接收系统组件上报的状态与活动数据，触发外部统计同步，并通过 `BatteryUsageStatsProvider` 生成 UID 和功耗组件归因。
 - [`PowerStatsService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java) 访问 `android.hardware.power.stats` HAL。HAL 是系统与厂商硬件实现之间的标准接口；这里可读取 `energy consumer`（HAL 归类的用能组件）、`energy meter`（计量通道）和 `state residency`（硬件处于各功耗状态的累计时长），再把内部接口 `PowerStatsInternal` 发布给系统服务进程 `system_server`，供系统服务之间调用。
-- 两者通过 `PowerStatsInternal` 协作。BatteryStats 还能使用控制器活动、内核时间、网络统计和设备 `power_profile.xml`；该 XML 保存设备厂商提供的功耗估算系数。设备缺少 HAL 电源轨时，系统仍可能给出模型估算。
+- 两者通过 `PowerStatsInternal` 协作。
+- BatteryStats 还能使用控制器活动、内核时间、网络统计和设备 `power_profile.xml`；该 XML 保存设备厂商提供的功耗估算系数。设备缺少 HAL 电源轨时，系统仍可能给出模型估算。
 
 “Streamlined Battery Stats”的 CPU、misc、connectivity 等 `flag` 只是平台迁移期间的实现开关，公开 API 没有与之对应的“三层架构”承诺。设备构建、季度版本和 OEM（设备厂商）可以采用不同开关状态。监控协议应依赖公开输出语义，不能假设某个内部开关始终开启。
 
@@ -128,7 +129,7 @@ Android 17 的 `com.android.server.power.stats` 按 `collector`（采集器）�
 3. `PowerAttributor` 根据设备状态、UID 状态和各组件的 `processor` 计算归因。Android 17 的 [`PowerAttributor`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/PowerAttributor.java) 把估算结果写入 `BatteryUsageStats.Builder`。
 4. [`BatteryUsageStatsProvider`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java) 根据查询窗口组装当前会话、历史会话或累计统计。
 
-CPU 可以说明测量值怎样参与归因。[`CpuPowerStatsProcessor`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/CpuPowerStatsProcessor.java) 先按 `scaling policy`（共享调频策略的一组 CPU）与 `power bracket`（合并相近功耗档位的分组）估算各档活动成本；设备提供 CPU `energy consumer` 时，再用测得的总能量校准或分配估算。
+以 CPU 为例，可以看到测量值怎样进入归因。[`CpuPowerStatsProcessor`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/CpuPowerStatsProcessor.java) 先按 `scaling policy`（共享调频策略的一组 CPU）与 `power bracket`（合并相近功耗档位的分组）估算各档活动成本；设备提供 CPU `energy consumer` 时，再用测得的总能量校准或分配估算。
 
 Wi-Fi 与移动网络也会结合控制器活动、网络字节、进程状态和可用的用能组件。最终数值仍是系统模型下的归因结果，不能写成电源轨到 UID 的无误差测量。
 
@@ -165,7 +166,7 @@ adb shell dumpsys batterystats --disable full-history
 - 充电状态、起止电量、温度、是否进入省电模式和热状态；
 - 屏幕亮度、刷新率、音量、网络制式、信号条件与外设状态；
 - 编译状态、账号同步、系统更新和其他后台活动；
-- 场景开始与结束的单调时间，以及 App 自定义 Trace 标记；单调时间只随设备运行推进，不受手动改时钟影响。
+- 场景开始与结束的单调时间（只随设备运行推进，不受手动改时钟影响），以及 App 自定义 Trace 标记。
 
 bugreport 可能包含账号、网络、日志和设备标识等敏感信息。它适合实验室与用户明确参与的诊断会话，不适合由普通 App 静默采集并上传。
 
@@ -179,11 +180,11 @@ bugreport 可能包含账号、网络、日志和设备标识等敏感信息。�
 
 - 场景产出：完成的请求、帧、音视频时长、处理的数据量或用户任务数；
 - 性能：场景耗时、帧时间、CPU 时间、I/O、网络字节和内存压力；
-- 能量：整机或所选 `PowerMonitor` 的能量增量；`PowerMonitor` 代表一个可读取的硬件计量通道或模型用能组件；
+- 能量：整机或所选 `PowerMonitor`（可读取的硬件计量通道或模型用能组件）的能量增量；
 - 环境：温度、亮度、网络、充电状态、设备与系统版本；
 - 正确性：失败率、画质、音质、数据完整性与功能结果。
 
-报告同时给出每任务能量、耗时分布和失败率。这里的 A/B 实验是在等价条件下交替运行基准实现与候选实现；两组使用同一设备、同一场景与相近初始状态，并保留空闲基线，也就是不执行待测场景时的对照测量。跨设备汇总时按机型与系统版本分层。
+报告同时给出每任务能量、耗时分布和失败率。A/B 实验在等价条件下交替运行基准实现与候选实现：两组使用同一设备、同一场景与相近初始状态，并保留空闲基线，即不执行待测场景时的对照测量。跨设备汇总时按机型与系统版本分层。
 
 ### Power Profiler 与 Macrobenchmark
 
@@ -265,7 +266,7 @@ WakeLock（唤醒锁）用于请求系统暂时保持某类硬件工作。应用
 - `transport`（Wi-Fi、蜂窝网络等承载类型）、`metered`（是否按计量网络处理）、`validated`（系统是否验证可访问互联网）、漫游、VPN 和信号强度分桶；
 - DNS 解析、连接、TLS 握手、首字节和传输耗时；
 - Wi-Fi/移动网络 `PowerMonitor` 是否可用及设备型号；
-- 场景期间的后台流量与 radio 活动；radio 活动指蜂窝基带处于发送、接收或高功耗保持状态的时间。
+- 场景期间的后台流量与 radio 活动（蜂窝基带处于发送、接收或高功耗保持状态的时间）。
 
 优化假设需要逐项验证：
 
@@ -317,7 +318,7 @@ APM 应保存各层数据原本的含义：
 
 平台记录 `source`、`unit`、`scope`、`timebase`、`supported`、`model/device` 和 `collection_version`。其中 `scope` 表明数值覆盖整机、子系统还是本 UID，`timebase` 表明时间戳使用单调时钟还是可被校时的日历时间。`power_monitor_energy_uws`、`battery_energy_remaining_nwh`、`uid_cpu_time_ms` 等字段不能合并到一个含义模糊的 `battery_cost`。
 
-告警使用同设备族、同 App 版本和相近场景的基线，并同时检查覆盖率。只有支持 PowerMonitor 的设备会产生电源轨指标，只有仍活跃并能上报的 App 会进入 APM。由样本进入条件造成的系统性差异叫选择偏差，这两类偏差都要在看板中展示。
+告警使用同设备族、同 App 版本和相近场景的基线，同时检查覆盖率。只有支持 PowerMonitor 的设备会产生电源轨指标，只有仍活跃并能上报的 App 会进入 APM。由样本进入条件造成的系统性差异叫选择偏差，这两类偏差都要在看板中展示。
 
 ## 低功耗模式、电池健康与设备差异
 
@@ -334,13 +335,13 @@ APM 应保存各层数据原本的含义：
 
 ### 电池老化只作为分层变量
 
-循环次数、温度与健康类别可以帮助解释同型号设备的差异，但不能由 Battery Historian 建立可靠的容量衰减或内阻模型；内阻是电池内部对电流表现出的等效电阻。设备使用史、充电策略、环境温度、燃料计算法与换电池记录通常不可得。
+循环次数、温度与健康类别可以帮助解释同型号设备的差异；但内阻（电池内部对电流表现出的等效电阻）与容量衰减都不能由 Battery Historian 建立可靠模型。设备使用史、充电策略、环境温度、燃料计算法与换电池记录通常不可得。
 
 如果业务需要研究老化对性能的影响：
 
 - 明确使用公开字段还是受控实验室测量，并保留 `unsupported`（设备不支持）状态；
 - 在同型号、同系统、同温度区间内比较；
-- 将热节流、剩余电量、充电状态和电源模式作为混杂变量；混杂变量是同时影响分组和结果、可能制造虚假关联的条件；
+- 将热节流、剩余电量、充电状态和电源模式作为混杂变量（同时影响分组和结果、可能制造虚假关联的条件）；
 - 只输出统计关联，不把单次卡顿或耗电归因给电池老化。
 
 ### 跨设备比较以任务为单位
