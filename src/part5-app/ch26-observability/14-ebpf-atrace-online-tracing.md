@@ -141,7 +141,7 @@ WOOTdroid 的正式实验使用两台已 root（取得超级用户权限）的 P
 
 这类能力适合设备厂商（OEM）系统集成、开放额外调试能力的 userdebug 测试机和经过授权的安全实验。普通应用应优先使用应用日志、系统管理的性能分析 API `ProfilingManager`、Android Vitals，以及用户授权生成的 bugreport（系统诊断包）。
 
-线上系统追踪需要在信号价值、权限、开销和隐私之间取舍。eBPF 可在内核侧重建调度或 Binder 事件，Profilo 通过 ATrace 等数据源在端侧组织短窗口 Trace。
+线上系统追踪需要在信号价值、权限、开销和隐私之间取舍。eBPF 可在内核侧重建调度或 Binder 事件；Profilo 这类端侧框架则通过 ATrace（用户态埋点 API 与事件协议）等数据源组织短窗口 Trace。
 
 ## 内核 Hook、Binder 关联与事件预算
 
@@ -172,7 +172,7 @@ WOOTdroid 关注系统调用审计：WDSys 在 eBPF 侧过滤并编码事件，�
 
 Android 平台自身就在使用 eBPF。AOSP 文档说明，系统镜像中的 BPF 对象由 Android BPF loader 在启动阶段加载，所需 map 和 program 会 pin 到 BPF 文件系统；pin 表示给内核对象建立持久路径，使 loader 退出后其他进程仍可按权限访问。Android 17 的 `system/bpf` 源码还显示，平台程序受 loader 描述项和文件权限管理，带 `skip_on_user` 标记的对象会在 `ro.build.type=user` 时跳过。
 
-它属于系统集成机制；普通应用即使把编译后的 `.o` 对象文件放进自身目录，也不会因此获得加载权。
+这种加载能力属于系统集成机制，普通应用即使把编译后的 `.o` 对象文件放进自身目录，也不会因此获得加载权。
 
 WDSys 的论文原型可以拆成五个阶段：
 
@@ -186,7 +186,7 @@ WDSys 的论文原型可以拆成五个阶段：
 
 去除地址标签前，需要结合目标 arm64 内核、TBI/MTE 配置、BPF helper（内核提供给 BPF 程序的受控函数）行为和进程 ABI（应用二进制接口）验证；验证失败时只记录元数据，不读取用户缓冲区。
 
-eBPF 在这里更像内核侧筛选器：尽早排除无关事件，只送出长度有上限的结构化数据。字符串、用户栈和可变长 payload（事件携带的数据内容）都会增加校验、内存读取、传输带宽和隐私成本。代码运行在内核内，也无法消除这些开销。
+eBPF 在这里更像内核侧筛选器：尽早排除无关事件，只送出长度有上限的结构化数据。字符串、用户栈和可变长 payload（事件携带的数据内容）都会增加校验、内存读取、传输带宽和隐私成本。程序在内核内运行，这些开销同样无法消除。
 
 ### Binder 语义重建的关键问题
 
@@ -409,7 +409,7 @@ Profilo 包含多个协作组件。官方[架构文档](https://github.com/faceb
 
 ### Android 17 的 ATrace 写入路径
 
-平台锚点为 AOSP `android-17.0.0_r1`。ATrace 是用户态埋点 API 与事件协议，ftrace 则是 Linux 内核的追踪设施；`trace_marker` 是用户态向 ftrace 提交文本事件的接口文件。
+平台锚点为 AOSP `android-17.0.0_r1`。ATrace 事件最终写入内核 ftrace 的 `trace_marker`；`trace_marker` 是用户态向 ftrace 提交文本事件的接口文件。
 
 初始化代码见 [`libcutils/trace-dev.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libcutils/trace-dev.cpp)。
 
@@ -429,7 +429,7 @@ Android 17 的用户态格式包含以下前缀：
 | `I` / `N` | 进程或指定 track 的 instant event | 忽略 |
 | `C` | counter | 忽略 |
 
-slice 是由开始与结束事件界定的持续区间。异步事件用名称和 cookie 配对，可以跨线程结束；track 是时间线中的独立轨道；instant event 只标记一个时刻；counter 记录随时间变化的数值。cookie 是调用方提供的配对标识，不含浏览器 cookie 的含义。
+异步事件用名称和 cookie 配对，可以跨线程结束；track 是时间线中的独立轨道；instant event 只标记一个时刻；counter 记录随时间变化的数值。cookie 是调用方提供的配对标识，不含浏览器 cookie 的含义。
 
 Java API 见 [`android.os.Trace`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java)。JNI 是 Java/Kotlin 调用 native C/C++ 实现的桥接接口。
 
@@ -478,7 +478,7 @@ Java 生命周期入口见 [`SystraceProvider.java`](https://github.com/facebook
 
 这里还有一项私有 ABI 假设。Android 17 的 `trace-dev.inc` 把 `atrace_enabled_tags` 定义为普通 `uint64_t`，Profilo 却把 `dlsym()` 返回的地址转换为 `std::atomic<uint64_t>*` 后执行 `exchange()` 与 `store()`。
 
-私有 ABI 指源码未向应用承诺稳定的二进制布局和调用约定。符号在源码中仍存在，也不能证明这种类型与对齐假设在所有构建上安全。
+私有 ABI 指源码未向应用承诺稳定的二进制布局和调用约定。符号仍存在于源码中，也不能证明这种类型与对齐假设在所有构建上安全。
 
 命中 API 27+ 的 `__write_chk_hook()` 后，hook 直接返回 `count`，不再调用原始 `__write_chk()`。事件被转写到 Profilo 缓冲区，不会同时进入内核 ftrace 缓冲区。这段伪代码只保留该控制流：
 
@@ -502,7 +502,7 @@ PLT relocation 是动态加载器填入的函数地址槽位。Profilo 修改的
 
 把 tag mask 设为全 1，只会放行当前进程内 framework、ART、HWUI 或 native library 执行到的 ATrace 点。它触达不了承载系统服务的 `system_server`、负责显示合成的 SurfaceFlinger 或窗口管理服务 WindowManager。
 
-它也不会记录 `sched`、Binder、块 I/O 等内核 tracepoint。tracepoint 是内核预先布置的事件观测点。
+它也不会记录 `sched`、Binder、块 I/O 等内核 tracepoint。
 
 Profilo ATrace trace 因而只是一份“当前进程同步 slice 的应用内副本”。systrace 是 Android 早期系统追踪工具和格式的常用称呼；完整的系统时间线还需要跨进程事件与内核调度数据。涉及跨进程因果关系时，应采集 Perfetto system trace。
 
@@ -520,7 +520,7 @@ tid 4178: PUSH decodeThumbnail
 tid 4178: POP
 ```
 
-每个 TID 的 `PUSH` 与 `POP` 独立配对。缓冲区回绕指写指针走完一圈后复用旧槽位；它可能覆盖尚未读取的开始事件。采集恰好从未结束 slice 的中间启动、进程异常退出或调用方漏掉配对调用，也会留下不平衡栈。分析端应把对应区间标为不完整数据，不能补造时长。
+每个 TID 的 `PUSH` 与 `POP` 独立配对。缓冲区回绕指写指针走完一圈后复用旧槽位；它可能覆盖尚未读取的开始事件。如果采集正好从一段未结束 slice 的中间开始、进程异常退出，或调用方漏掉配对调用，栈同样会不平衡。分析端应把对应区间标为不完整数据，不能补造时长。
 
 ### ATrace provider 与 stack provider 不要混为一谈
 
@@ -559,11 +559,11 @@ Profilo 主分支最近一次提交和 release 均为 2023-02-24，早于 Androi
 | Java stack sampling | 上游 ART unwinder 版本表截止 Android 9 | Android 17 不可按上游能力宣称支持 |
 | 维护状态 | 官方仓库已归档 | 移植、安全修复和回归由采用方负责 |
 
-这里涉及的限制机制各不相同。hidden API 通常指 Android 对非 SDK Java 接口的访问限制；SELinux 用安全标签与策略控制进程可以访问的对象；W^X 要求内存页不能同时可写和可执行。
+这里涉及的限制机制各不相同。hidden API 通常指 Android 对非 SDK Java 接口的访问限制；W^X 要求内存页不能同时可写和可执行。
 
 Profilo 的这段 ATrace 代码更直接地依赖 native 私有符号、变量布局和 PLT relocation。
 
-OEM 在这里指基于 Android 生产设备与系统镜像的厂商。现有证据不足以断言 hidden API、SELinux 与 W^X 在所有 Android 17 设备上都会阻断该流程。
+现有证据不足以断言 hidden API、SELinux 与 W^X 在所有 Android 17 设备上都会阻断该流程。
 
 ELF 是 Android native 可执行文件与共享库常用的二进制格式，`.bss` 是其中保存未初始化全局变量的区域。扫描它来猜测私有变量地址可能误识别并修改无关内存，风险很高。hook 失败时应关闭 provider、记录失败阶段，并保持应用主流程可用。
 
