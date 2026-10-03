@@ -5599,16 +5599,29 @@
       "summary": "> 发布时间: 2026-07-23T23:59:55.000Z > 原文链接: https://juejin.cn/post/7665574563510140979 2026-07-24 1,806 阅读5分钟 > 我第一次接触 LiveData 的时候，觉得它非常惊艳。 > 在那个时代，Android 开发充满了 Callback、生命周期问题、内存泄漏风险。 > L...",
       "chapter": "ch04",
       "processed_at": "2026-10-04T06:20:34.168331+08:00",
-      "action": "indexed-only-chapter-freeze",
-      "score": 19,
-      "target_path": "src/part1-fundamentals/ch04-memory/07-memory-compaction-direct-reclaim.md",
+      "action": "quarantined-misroute",
+      "score": 0,
+      "target_path": null,
       "route_confidence": 14,
       "route_terms": [
         "callback",
         "juejin-android",
         "ch04-memory"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "quarantined-misroute-by-apply",
+      "previous_action": "indexed-only-chapter-freeze",
+      "previous_status": null,
+      "previous_route_status": "existing-chapter-routed",
+      "previous_target_path": "src/part1-fundamentals/ch04-memory/07-memory-compaction-direct-reclaim.md",
+      "status": "quarantined",
+      "quarantine_reason": "Body-apply fail-closed: material is about LiveData limitations and migration to Kotlin Flow (lifecycle-aware observation, Flow operators, Data-layer exposure, event handling and coroutine consumption), while target chapter is Android 17/Linux memory compaction and direct reclaim (physical page compaction, page reclaim, ZRAM, PSI/lmkd and CachedAppOptimizer boundaries). It provides no source-backed Android 17 memory-management correction, version boundary, observation path, or mechanism for this chapter. Chapter body and frontmatter left unchanged.",
+      "quarantined_at": "2026-10-04T07:18:58+08:00",
+      "quarantined_run_id": "20261004-071534-b0ac9d55",
+      "body_apply_decision": "quarantined-misroute",
+      "body_apply_decision_at": "2026-10-04T07:18:58+08:00",
+      "body_apply_decision_run_id": "20261004-071534-b0ac9d55",
+      "body_apply_decision_reason": "Body-apply fail-closed: material is about LiveData limitations and migration to Kotlin Flow (lifecycle-aware observation, Flow operators, Data-layer exposure, event handling and coroutine consumption), while target chapter is Android 17/Linux memory compaction and direct reclaim (physical page compaction, page reclaim, ZRAM, PSI/lmkd and CachedAppOptimizer boundaries). It provides no source-backed Android 17 memory-management correction, version boundary, observation path, or mechanism for this chapter. Chapter body and frontmatter left unchanged.",
+      "finding_id": "finding-route-misfire-livedata-flow-memory-compaction-20261004-b0ac9d55"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-04-76670971-谷歌位图优化整改建议复盘.md",
