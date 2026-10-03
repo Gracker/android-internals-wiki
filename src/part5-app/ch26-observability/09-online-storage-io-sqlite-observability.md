@@ -78,13 +78,13 @@ last_idle_audit_run_id: 20260930-143534-idle-audit-f9e10da4
 
 # 线上存储、I/O 与 SQLite 可观测性
 
-存储故障很少只有一个症状。一次“打开页面卡住”可能包含主线程读文件、SQLite 连接等待和目录扫描；一次“数据丢了”可能来自磁盘空间不足、损坏恢复策略或尚未持久化的写入。这里关注如何留下足以区分这些路径的线上证据。文件 I/O（input/output，输入与输出）和 SQLite 的优化方法分别见 24.1、24.2，通用采集预算见 26.1。
+存储故障很少只有一个症状。一次“打开页面卡住”可能包含主线程读文件、SQLite 连接等待和目录扫描；一次“数据丢了”可能来自磁盘空间不足、损坏恢复策略或尚未持久化的写入。本文关注的问题，是留下哪些线上证据，才能把这些路径区分开。文件 I/O（input/output，输入与输出）和 SQLite 的优化方法分别见 24.1、24.2，通用采集预算见 26.1。
 
 平台源码以 `android-17.0.0_r1` 为准，涉及内核 tracepoint（内核预先定义的追踪事件）时以 `android17-6.18-2026-06_r6` 为准。AndroidX SQLite、Room 和 Matrix（腾讯开源的 Android 性能诊断工具集）并不随 API 37 固定版本：应用使用的 driver（承接 SQL 执行与连接管理的数据库驱动）、库版本和 Hook（运行时拦截目标函数调用）实现，必须作为事件字段保存。
 
 ## 观测对象边界
 
-存储指标应先按失败层次分类。单一的 `storage_slow` 只能说明耗时上升，无法判断应检查文件调用、数据库并发还是设备空间。下表中的 wall time 是操作从开始到结束经过的自然时间，CPU time 是线程实际占用处理器的时间，scope 表示计时覆盖的起止边界。
+存储指标应先按失败层次分类。单一的 `storage_slow` 只能说明耗时上升，无法判断应检查文件调用、数据库并发还是设备空间。下表中的 wall time 指操作从开始到结束经过的自然时间，CPU time 指线程实际占用处理器的时间，scope 表示计时覆盖的起止边界。
 
 | 问题 | 建议事件 | 最小字段 | 诊断目的 |
 |---|---|---|---|
@@ -98,9 +98,9 @@ last_idle_audit_run_id: 20260930-143534-idle-audit-f9e10da4
 
 两种时间必须分开记录。wall time 很长而当前线程 CPU time 很短，可能是调度、锁或 I/O 等待；两者都高则更像应用代码中的计算。这个判断只能用于选择下一步证据，不能仅凭两个时长认定内核 I/O 是原因。
 
-事件还要标注观测范围。围绕 DAO（data access object，数据访问对象）方法计时得到的是调用端到端时长，可能包含协程调度和连接等待；在 driver 执行边界计时更接近 SQLite 操作；Native（本地 C/C++ 层）`read()`/`write()` Hook 看到的是系统调用，无法覆盖所有页缓存回写。页缓存是内核用于暂存文件页的内存区域。若字段里只写 `duration`，聚合端会把不同 scope 的数据错误地合并。
+事件还要标注观测范围。围绕 DAO（data access object，数据访问对象）方法计时，得到的是调用端到端时长，可能包含协程调度和连接等待；在 driver 执行边界计时，更接近 SQLite 操作本身；Native（本地 C/C++ 层）`read()`/`write()` Hook 看到的是系统调用，覆盖不到全部页缓存（内核用于暂存文件页的内存区域）回写。若字段里只写 `duration`，聚合端会把不同 scope 的数据错误地合并。
 
-路径、SQL 和文件内容都可能包含用户数据。默认只采集稳定类别、用于聚合同类对象的受控指纹和应用调用点；需要原始证据时，应走 26.3 的受限诊断流程，常规事件仍维持较低的敏感数据采集范围。
+路径、SQL 和文件内容都可能包含用户数据。默认只采集稳定类别、受控指纹（用于聚合同类对象）和应用调用点；需要原始证据时，应走 26.3 的受限诊断流程，常规事件仍维持较低的敏感数据采集范围。
 
 ## I/O 采集路径选择
 
@@ -117,7 +117,7 @@ last_idle_audit_run_id: 20260930-143534-idle-audit-f9e10da4
 
 ### StrictMode 能证明什么
 
-Android 17 的 [`BlockGuardOs`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/luni/src/main/java/libcore/io/BlockGuardOs.java) 在 `open`、`read`、`write`、`fsync`、`stat`、`rename` 等 libcore OS 操作前调用线程策略的 `onReadFromDisk()` 或 `onWriteToDisk()`。因此 StrictMode 擅长回答“这个受监控线程是否触发磁盘操作”，它不测量存储设备完成一次请求的时间。
+Android 17 的 [`BlockGuardOs`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/luni/src/main/java/libcore/io/BlockGuardOs.java) 会在 `open`、`read`、`write`、`fsync`、`stat`、`rename` 等 libcore OS 操作之前，调用当前线程策略的 `onReadFromDisk()` 或 `onWriteToDisk()`。所以 StrictMode 擅长回答的是“这个受监控线程是否触发磁盘操作”，它不测量存储设备完成一次请求的时间。
 
 下面的配置用于 debug 或 dogfood 包，让主线程磁盘访问、未缓冲 I/O 和资源未关闭进入日志。它只是发现入口，生产策略应另行评估。
 
@@ -140,7 +140,7 @@ StrictMode.setVmPolicy(
 )
 ```
 
-`setThreadPolicy()` 作用于调用它的线程；若只在主线程安装，就不能据此声称覆盖全部工作线程。`detectUnbufferedIo()` 从 API 26 提供，`detectLeakedSqlLiteObjects()` 从 API 9 提供。`detectResourceMismatches()` 从 API 23 开始检查资源类型与读取方法是否匹配；它不检查文件句柄泄漏，也没有在 Android 17 新增。
+`setThreadPolicy()` 作用于调用它的线程；若只在主线程安装，就不能据此声称覆盖全部工作线程。`detectUnbufferedIo()` 从 API 26 提供，`detectLeakedSqlLiteObjects()` 从 API 9 提供。`detectResourceMismatches()` 从 API 23 起检查资源类型与读取方法是否匹配；它不检查文件句柄泄漏，Android 17 也没有为它新增行为。
 
 [`CloseGuard.setReporter()`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/dalvik/src/main/java/dalvik/system/CloseGuard.java) 在 Android 17 仍标记为隐藏/System API，即普通应用没有稳定的公开调用契约。通过反射替换 reporter 会同时引入 non-SDK 限制和版本兼容风险；长期监控应优先使用公开的 StrictMode VM policy，并把使用范围限制在测试与受控诊断场景。
 
@@ -170,7 +170,7 @@ Hook 覆盖不完整并不表示数据无用，但事件必须带 `collector` �
 | fd 数量持续增长 | `/proc/self/fd` 数量在稳定场景中持续上升，离开场景后不回落 | 进程、场景、资源类型、StrictMode/CloseGuard 信号 | 网络连接池、动态加载和诊断采集临时占用 |
 | 同步写入放大 | 单次业务提交对应多次 write/fsync，且交互时延同步升高 | 事务、文件协议、WAL（write-ahead logging，预写式日志）状态、调用点 | 明确要求持久性的关键数据 |
 
-不要用 `StatFs.getBlockSizeLong()` 推导 Java buffer 的统一下限。文件系统块大小不等于存储设备页、内核合并粒度或应用最佳 buffer；小 buffer 是否有问题，应由调用次数、总字节数、CPU 开销和目标设备实验共同判断。
+不要用 `StatFs.getBlockSizeLong()` 给 Java buffer 推导一个统一的最小值。文件系统块大小不等于存储设备页、内核合并粒度或应用最佳 buffer；小 buffer 是否有问题，应由调用次数、总字节数、CPU 开销和目标设备实验共同判断。
 
 阈值的制定与维护可以遵循同一流程：在无回归版本采集分布，固定事件 scope 和分母；按设备档与场景建立基线；用对照版本差值和置信区间触发告警；检查样本量、采集覆盖与上报缺口；修复后验证同一分组是否恢复。业务有明确体验预算时，可以增加绝对上限，但要记录预算来源。
 
@@ -178,7 +178,7 @@ Hook 覆盖不完整并不表示数据无用，但事件必须带 `collector` �
 
 ## SQLite 耗时、损坏与查询计划
 
-SQLite 可观测性应区分执行、事务、连接等待、错误和恢复。一个 DAO 方法慢，不代表 SQL 计划一定慢；它也可能消耗在等待 writer（写连接）、调度到数据库线程，或结果映射（把查询行转换为业务对象）上。
+SQLite 可观测性应区分执行、事务、连接等待、错误和恢复。一个 DAO 方法慢，不代表 SQL 计划一定慢；它也可能消耗在等待 writer（写连接）、被调度到数据库线程，或结果映射（把查询行转换为业务对象）上。
 
 | 事件 scope | 起止位置 | 可以解释什么 | 不能直接解释什么 |
 |---|---|---|---|
@@ -328,7 +328,7 @@ SQLiteLint 的 wiki 明确说明其系统 SQLite 路径通过 Hook 向 C 层 `sq
 
 - AndroidX SQLite 2.6.2 为 `BundledSQLiteDriver` 创建的连接启用 extended error codes（扩展错误码），并用 `@FastNative` 降低部分 JNI（Java 与本地代码调用接口）成本。
 - AndroidX SQLite 2.7.1 是当前稳定版；2.7.1 修复 web 和 suspending drivers 在事务中取消协程后可能让数据库和连接无法继续使用的问题。Android App 是否升级仍应根据发布说明、目标平台和回归测试决定，不能只因它更新而替换生产环境 driver。
-- Room 2.8.4 在使用内部没有连接池的 `SQLiteDriver`（例如 `BundledSQLiteDriver`）时，为 Room 连接池增加 prepared statement cache；Room 2.8.5 调整了数据库关闭后的挂起查询和 invalidation tracker（失效追踪器）操作，此时会抛出 `IllegalStateException`。Room 的连接池 cache 与 Android 17 framework connection 自带的 cache 分属两层。
+- Room 2.8.4 在使用内部没有连接池的 `SQLiteDriver`（例如 `BundledSQLiteDriver`）时，为 Room 连接池增加 prepared statement cache；Room 2.8.5 调整了数据库关闭后的挂起查询和 invalidation tracker（失效追踪器）操作，数据库关闭后这类操作会抛出 `IllegalStateException`。Room 的连接池 cache 与 Android 17 framework connection 自带的 cache 分属两层。
 - `RoomDatabase.QueryCallback` 仍会为每条执行的查询触发回调，官方继续提示其运行成本。开启前应按实际查询量测试。
 
 线上事件建议保留 `room_version`、`androidx_sqlite_version`、driver 类型、SQLite 是否随应用打包、journal mode（日志模式）和 schema version（数据库结构版本）。更换系统 `AndroidSQLiteDriver`、`BundledSQLiteDriver` 或其他实现后，性能基线和错误码能力都可能变化，时间序列应标记切换点。
