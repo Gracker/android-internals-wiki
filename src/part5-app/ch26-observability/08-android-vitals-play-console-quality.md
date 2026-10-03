@@ -80,7 +80,7 @@ last_rework_run_id: 20260815-205207-gracker-writing-473
 
 # Android Vitals 与 Play Console 质量指标归因
 
-Android Vitals 是 Google Play 对线上技术质量的外部观测。它统计从 Play 安装应用、允许共享使用情况与诊断数据的用户所经历的稳定性、性能和功耗问题。内部应用性能监控（application performance monitoring，APM）负责定位问题所在的版本、场景和调用路径，帮助团队在只向部分用户逐步发布的灰度阶段暂停异常版本。两套数据的采集范围、分母和时效不同，应分别判断趋势，再按版本、设备和错误类型相互校验，不能直接比较两个百分比的大小。
+Android Vitals 是 Google Play 对线上技术质量的外部观测。它统计的用户都从 Google Play 安装应用、并允许共享使用情况与诊断数据，衡量的是这些用户经历的稳定性、性能和功耗问题。内部应用性能监控（application performance monitoring，APM）负责定位问题所在的版本、场景和调用路径，帮助团队在只向部分用户逐步发布的灰度阶段暂停异常版本。两套数据的采集范围、分母和时效不同，应分别判断趋势，再按版本、设备和错误类型相互校验，不能直接比较两个百分比的大小。
 
 指标口径以 2026 年 8 月 15 日可见的公开文档为准，平台版本上界为 Android 17 / API 37。Vitals 的指标定义、阈值和 Play 可见性策略由 Google Play 服务端制定，不在 `android-17.0.0_r1` 的 Android 开源项目（Android Open Source Project，AOSP）API 契约内。Android 17 源码可用于解释应用无响应（ANR）、低内存终止守护进程（low memory killer daemon，LMKD）、帧时间或唤醒机制，无法据此证明 Play 的服务端阈值。升级平台源码锚点不应连带改写这些阈值；Play 文档变更也不表示 Android 框架同时发生了对应改动。
 
@@ -104,7 +104,7 @@ Play 阈值只是发版暂停规则之一。一个版本可能尚未达到该阈
 
 Google Play 每天检查 core vitals，通常依据最近 28 天的用户加权结果评估质量；遇到突增时可能更早采取措施。整体阈值与机型阈值约束的范围不同：整体越线可能影响所有设备上的可见性，机型越线主要影响对应设备。Android Developers 的 2026 年口径如下。
 
-| Core vital | 整体 bad behavior threshold | 机型 threshold | 统计对象 |
+| Core vital | 整体不良行为阈值 | 机型阈值 | 统计对象 |
 |---|---:|---:|---|
 | User-perceived crash rate | ≥ 1.09% | 手机机型 ≥ 8%；手表机型 ≥ 4% | 28 天窗口内经历至少一次用户可感知崩溃的 DAU |
 | User-perceived ANR rate | ≥ 0.47% | 手机机型 ≥ 8%；手表机型 ≥ 5% | 28 天窗口内经历至少一次用户可感知 ANR 的 DAU |
@@ -119,7 +119,7 @@ Vitals 的 user session（用户会话）按日聚合，与一次 launch（启�
 
 ### Partial wake lock 的当前规则
 
-Partial wake lock（局部唤醒锁）在设备屏幕关闭后仍让 CPU 继续运行，因此持有过久会阻止设备进入低功耗状态。Android Vitals 将所有符合统计条件的 partial wake lock 时长相加：若它们在 24 小时内累计达到 2 小时或以上，这个会话被判为 excessive。统计时只计算应用位于后台或正在运行前台服务时的持有时间；现行文档列出的豁免包括音频、定位和由用户发起的 JobScheduler API 等具有明确用户收益的场景。28 天内 excessive 会话超过 5%，可能影响 Play 可见性。
+Partial wake lock（局部唤醒锁）在设备屏幕关闭后仍让 CPU 继续运行，因此持有过久会阻止设备进入低功耗状态。Android Vitals 将所有符合统计条件的 partial wake lock 时长相加：若它们在 24 小时内累计达到 2 小时或以上，这个会话被判为 excessive。统计时只计算应用处于后台、或正在运行前台服务期间持有锁的时间；现行文档列出的豁免包括音频、定位和由用户发起的 JobScheduler API 等具有明确用户收益的场景。28 天内 excessive 会话超过 5%，可能影响 Play 可见性。
 
 这一政策从 2026 年 3 月 1 日起已进入可见性约束阶段。旧资料中的“3 小时”或“仍处于不影响可见性的 beta”已不适合作为当前结论；诊断时应以 2026-06-10 更新的 [Excessive partial wake locks](https://developer.android.com/topic/performance/vitals/excessive-wakelock) 页面和 [Android Vitals 总览](https://developer.android.com/topic/performance/vitals) 为准。
 
@@ -144,7 +144,9 @@ Wear OS 的 user-perceived crash 有一项单独规则：官方 crash 文档将�
 
 ### 三层证据如何配合
 
-Play 层用于确定影响面：`versionCode`（应用版本号）、`deviceModel`（设备型号）、`apiLevel`（Android API 级别）、`deviceType`（设备形态）、地区、rate 和错误聚类。系统层用于确认退出原因：Android 11 及以上可查询 `ApplicationExitInfo` 的 reason、timestamp、process name 和可用 trace；native crash（原生代码崩溃）还要保留符号化 tombstone（系统崩溃转储）或 minidump（精简崩溃转储）。应用层补充用户路径、页面、实验桶、feature flag（远程功能开关）、网络状态和最近变更。
+- Play 层用于确定影响面：`versionCode`（应用版本号）、`deviceModel`（设备型号）、`apiLevel`（Android API 级别）、`deviceType`（设备形态）、地区、rate 和错误聚类。
+- 系统层用于确认退出原因：Android 11 及以上可查询 `ApplicationExitInfo` 的 reason、timestamp、process name 和可用 trace；native crash（原生代码崩溃）还要保留符号化 tombstone（系统崩溃转储）或 minidump（精简崩溃转储）。
+- 应用层补充用户路径、页面、实验桶、feature flag（远程功能开关）、网络状态和最近变更。
 
 三层数据通常没有可跨系统使用的事件 ID。可按版本、时间桶、设备维度、进程名和 top frame（最靠近故障点的关键栈帧）建立弱关联；“弱”表示它只能筛出候选事件，还要打开少量原始证据验证。两个聚合数字相近不能证明它们来自同一批事件，Play 聚类 ID 也不应写入内部事件主键。
 
@@ -193,7 +195,7 @@ User-perceived LMK 常呈现为界面消失或进度丢失，Java crash handler 
 
 ## Play 指标与发版暂停规则
 
-官方 threshold 表示政策边界，团队还需要更早的内部暂停线。发布动作可分成“已越过官方阈值”“内部确认新版本回归”“证据不足”三类，避免把“接近阈值”写成没有样本和基线依据的固定数字。
+官方阈值表示政策边界，团队还需要更早的内部暂停线。发布动作可分成“已越过官方阈值”“内部确认新版本回归”“证据不足”三类，避免把“接近阈值”写成没有样本和基线依据的固定数字。
 
 | 观察结果 | 需要确认的证据 | 建议动作 |
 |---|---|---|
@@ -255,7 +257,7 @@ Play 与内部系统没有共享的事件标识，因此数据仓库应把 Play 
 
 7 天和 28 天字段是按每日 `distinctUsers` 加权的 rolling rate（滚动比例），服务端已经让用户量较大的日期占更高权重，不应对日值再求一次简单平均。
 
-Play 与内部事件没有通用的精确 `join key`。仓库应提供按版本、时间、设备、地区和错误特征的候选关联，再由 trace 或堆栈确认。`errorReportCount` 记录错误报告数量，crash rate 则用受影响用户数除以用户总数，二者不能用同一条公式合并。
+候选关联仍需 trace 或堆栈确认。`errorReportCount` 记录错误报告数量，crash rate 则用受影响用户数除以用户总数，二者不能用同一条公式合并。
 
 查询规模也需要控制。官方建议应用越大、breakdown 越多，单次时间范围越短，以免读取过多数据而超时。
 
@@ -263,9 +265,9 @@ Play 与内部事件没有通用的精确 `join key`。仓库应提供按版本�
 
 ## 技术质量政策与商店可见性风险
 
-越过 core vital threshold 后，Google Play 可能降低应用或游戏的可见性；机型维度存在 bad behavior 时，Play 可能让对应设备用户更少看到该应用，并可能在商店详情页显示警告。文档使用的是 “may” 或 “likely”，不应改写成每次越线都会立即降权的确定承诺。
+越过 core vital 阈值后，Google Play 可能降低应用或游戏的可见性；机型维度存在 bad behavior 时，Play 可能让对应设备用户更少看到该应用，并可能在商店详情页显示警告。文档使用的是 “may” 或 “likely”，不应改写成每次越线都会立即降权的确定承诺。
 
-Crash 和 ANR 的新出现问题（emerging issues）还有一条独立时效：当问题在设备上持续超过 7 天时，Android Vitals 会将其标记出来，并给开发者最长 21 天处理。这个机制不会改变 28 天 core vital 统计定义，也不能当作继续放量的宽限承诺。
+Crash 和 ANR 的新出现问题（emerging issues）还有一条独立时效：问题在设备上持续超过 7 天，Android Vitals 会将其标记出来，并给开发者最长 21 天处理。这个机制不会改变 28 天 core vital 统计定义，也不能当作继续放量的宽限承诺。
 
 工程侧至少要准备三类能力：
 
