@@ -142,7 +142,7 @@ ART 动态方法追踪可以通过运行时插桩或 JVMTI 事件获得方法级
 
 ### 为什么会需要“事后指定目标”的方法追踪
 
-论文把一类只有 Framework、WebView 或库代码栈、缺少业务入口的线上问题称为 Ghost Bug。Ghost Bug 是论文自定义名称，指“故障现场可见，但更早的触发者已经离开当前调用栈”的诊断困境。Framework 在这里指 Android 系统向应用提供组件、窗口等能力的框架层。
+论文把一类线上问题称为 Ghost Bug：调用栈里只有 Framework、WebView 或库代码，缺少业务入口。Ghost Bug 是论文自定义名称，指“故障现场可见，但更早的触发者已经离开当前调用栈”的诊断困境。Framework 在这里指 Android 系统向应用提供组件、窗口等能力的框架层。
 
 例如，某个监听器较早注册了不合适的 `Context`，稍后由异步消息触发 `Context.getDisplay()` 异常。`Context` 是 Android 组件访问资源和系统服务的环境对象，部分窗口 API 要求它关联正确的 display。崩溃栈只能看到使用这个对象的阶段；要追查对象来自哪里，需要在监听器注册方法被调用时记录调用者。事故前若没有日志或插桩，常规崩溃上报无法补回这段历史。
 
@@ -157,15 +157,15 @@ ART 动态方法追踪可以通过运行时插桩或 JVMTI 事件获得方法级
 | JVMTI / ART TI | 通过原生 agent 接收虚拟机事件并执行调试、分析操作 | Android 仅允许向 `debuggable` 应用附加 agent |
 | XTrace 论文方案 | 线上按配置选择目标方法，并记录精确调用事件 | 私有实现、未开源，依赖 ART 内部 C++ 设施 |
 
-Binder IPC 是 Android 的跨进程调用机制，boot class path 是系统启动时提供给应用的核心 Java 类路径。JVMTI（Java Virtual Machine Tool Interface）是虚拟机工具接口，ART TI 是 Android 对这套能力的实现；agent 则是加载进目标进程、通过接口接收回调的原生库。`debuggable` 表示应用在清单中明确允许调试和插桩，量产发布包通常关闭该标记。
+Binder IPC 是 Android 的跨进程调用机制，boot class path 是系统启动时提供给应用的核心 Java 类路径。JVMTI（Java Virtual Machine Tool Interface）是虚拟机向调试器和性能分析工具提供事件的 Native 工具接口，ART TI 是 Android 运行时（ART）对这套接口的部分实现；agent 则是加载进目标进程、通过 JVMTI 接口接收回调的 Native 共享库。`debuggable` 表示应用在清单中明确允许调试和插桩，量产发布包通常关闭该标记。
 
-Perfetto 支持动态 trace config（追踪配置），也支持 Java/Kotlin 调用栈采样。XTrace 的差异在于按方法签名拦截一次具体调用，并在事件发生时执行自定义动作。这里的 hook 指改变或截获原有执行入口。采样、系统 trace 与精确方法事件应按诊断问题组合使用。
+Perfetto 支持动态 trace config（追踪配置），也支持 Java/Kotlin 调用栈采样。XTrace 的差异在于按方法签名拦截一次具体调用，并在事件发生时执行自定义动作。这种拦截通常称为 hook，指截获或替换内部函数的原有执行入口，属于非公开做法。采样、系统 trace 与精确方法事件应按诊断问题组合使用。
 
 ### Android 17 的 ART Instrumentation 是什么
 
 #### 事件监听器位于 ART 内部
 
-[`runtime/instrumentation.h`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/instrumentation.h) 定义了 `InstrumentationListener`。ART（Android 运行时）负责执行应用代码，DEX 是 Android 保存应用字节码的文件格式；Instrumentation 是 ART 内部向调试器和分析工具分发事件的设施。监听器可以接收方法进入、正常退出、异常展开、字段访问和异常等事件。`ArtMethod` 是 ART 在原生层描述一个已加载方法的对象，`MethodEntered` 会收到当前线程和该对象；正常退出回调还可以接收返回值。
+[`runtime/instrumentation.h`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/instrumentation.h) 定义了 `InstrumentationListener`。ART 负责执行应用代码，Instrumentation 是 ART 内部向调试器和分析工具分发事件的设施。监听器可以接收方法进入、正常退出、异常展开、字段访问和异常等事件。`ArtMethod` 是 ART 在原生层描述一个已加载方法的对象，`MethodEntered` 会收到当前线程和该对象；正常退出回调还可以接收返回值。
 
 下面的源码摘录用于确认 Android 17 仍有三种插桩级别，以及方法进入事件前存在快速检查：
 
@@ -189,7 +189,7 @@ void MethodEnterEvent(Thread* thread, ArtMethod* method) const {
 
 `Instrumentation::AddListener()`、`EnableMethodTracing()`、`UpdateMethodsCode()` 和 `ArtMethod` 都是 ART 原生代码中的 C++ 接口。源码里的 `EXPORT` 控制符号在原生二进制中的可见性；Android SDK/NDK 是否承诺兼容，要以公开 API 文档和对应头文件为准。
 
-普通应用可直接调用 [`android.os.Debug.startMethodTracing()`](https://developer.android.com/reference/android/os/Debug) 等 Java API。`Debug.startMethodTracingDdms()` 带有 `@hide`；`Instrumentation` 与 `ArtMethod` 也属于平台内部实现。ART APEX 是可独立更新 ART 的模块化系统包，ABI 是二进制层的调用约定。动态链接器命名空间限制应用能加载哪些共享库和符号；私有依赖还会受到 APEX 更新、厂商修改、ABI 变化与符号裁剪影响。
+普通应用可直接调用 [`android.os.Debug.startMethodTracing()`](https://developer.android.com/reference/android/os/Debug) 等 Java API。`Debug.startMethodTracingDdms()` 带有 `@hide`；`Instrumentation` 与 `ArtMethod` 也属于平台内部实现。ART APEX 是可独立更新 ART 的模块化系统包，ABI（Application Binary Interface）规定机器码调用约定、数据布局和二进制符号等接口细节。动态链接器命名空间限制应用能加载哪些共享库和符号；私有依赖还会受到 APEX 更新、厂商修改、ABI 变化与符号裁剪影响。
 
 #### Android 17 的方法追踪不再必然全量解释执行
 
@@ -213,7 +213,7 @@ runtime->GetInstrumentation()->EnableMethodTracing(
     /*needs_interpreter=*/false);
 ```
 
-`EnableMethodTracing()` 因而选择 `kInstrumentWithEntryExitHooks`，没有选择 `kInstrumentWithInterpreter`。Android 17 的普通 method tracing 会优先使用方法进入/退出 hook，统一强制解释执行已经不符合这条调用路径。
+`EnableMethodTracing()` 因而选择 `kInstrumentWithEntryExitHooks`，没有选择 `kInstrumentWithInterpreter`。Android 17 的普通 method tracing 会优先使用方法进入/退出 hook，不再把所有方法统一交给解释器执行。
 
 method tracing 仍不适合长期运行在生产环境。Android 17 的普通 tracing 路径会执行这些工作：
 
@@ -228,7 +228,7 @@ JIT（Just-In-Time）会在应用运行时编译热点方法，AOT（Ahead-Of-Ti
 
 论文展示的 ARM64 快速入口名为 `art_quick_instrumentation_entry`。`android-17.0.0_r1` 的 [`quick_entrypoints_arm64.S`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/arch/arm64/quick_entrypoints_arm64.S) 已找不到这个旧名称，源码包含 `art_quick_method_entry_hook`，并通过 `artMethodEntryHook` 进入 C++。`Trace::Start()` 还会根据时钟源选择 fast 或 slow listener：fast 路径要求 JIT 代码无需为读取线程 CPU 时钟进入内核，32 位 Arm 因时间戳条件固定使用 slow 路径。这是 ART 内部分类，不表示 fast 路径没有追踪成本。
 
-这些变化说明 Android 15 的私有符号映射无法直接作为 Android 17 的适配结果。每个目标版本都要重新核对入口协议、寄存器保存、JIT/AOT code header（编译代码头）、线程挂起条件、失败恢复路径和厂商 ART 版本。
+这些变化说明 Android 15 的私有符号映射不能直接套用到 Android 17。每个目标版本都要重新核对入口协议、寄存器保存、JIT/AOT code header（编译代码头）、线程挂起条件、失败恢复路径和厂商 ART 版本。
 
 ### XTrace 论文提出了什么
 
@@ -242,7 +242,7 @@ stub 是负责保存现场、调用追踪逻辑并恢复执行的一小段入口
 
 #### 事件代理
 
-论文将事件代理注册到方法进入事件，再通过 JNI 调用 Java 层 interceptor。JNI（Java Native Interface）连接 C/C++ 与 Java；interceptor 是收到命中事件后执行采集动作的拦截器。配置包含类名、方法名、参数/返回类型签名和动作，例如只在 `addWindowLayoutInfoListener()` 被调用时采集调用栈。
+论文将事件代理注册到方法进入事件，再通过 JNI 调用 Java 层 interceptor。JNI（Java Native Interface）负责 Java/Kotlin 与 Native 代码之间的调用和对象引用；interceptor 是收到命中事件后执行采集动作的拦截器。配置包含类名、方法名、参数/返回类型签名和动作，例如只在 `addWindowLayoutInfoListener()` 被调用时采集调用栈。
 
 这段伪代码只复述论文 Algorithm 1 的职责顺序，无法直接编译，也没有表达线程挂起、JIT 并发和失败恢复：
 
@@ -258,9 +258,9 @@ MethodEntryProxy 只处理配置命中的方法
 
 #### “不侵入”应理解为论文中的相对概念
 
-XTrace 不改写 DEX 方法体，也不覆盖目标机器码开头；后一种做法通常称为 inline hook。它仍会 hook ART 私有函数、定位 `ArtMethod` 并改变方法执行入口。因此，“Non-Invasive”只表示相对其他 hook 路径减少改写范围，公开 Android API、Play Integrity 结果、SELinux 策略和厂商 ROM 兼容性都没有随之获得保证。Play Integrity 用于评估应用和设备环境完整性，SELinux 则执行系统强制访问控制。
+XTrace 不改写 DEX 方法体（DEX 是 Android 保存字节码、类型和方法索引的文件格式），也不覆盖目标机器码开头；后一种做法通常称为 inline hook。它仍会 hook ART 私有函数、定位 `ArtMethod` 并改变方法执行入口。因此，“Non-Invasive”只表示相对其他 hook 路径减少改写范围，公开 Android API、Play Integrity 结果、SELinux 策略和厂商 ROM 兼容性都没有随之获得保证。Play Integrity 用于评估应用和设备环境完整性，SELinux 则执行系统强制访问控制。
 
-论文称其 SDK 无需 root 或系统权限，并把 `UpdateMethodsCode`、`EnableMethodTracing`、`MethodEntered` 称为 “public subset”。这里的 public 表示作者选用的 ART 符号子集；按 Android API 定义，这些 C++ 接口仍是平台内部实现。作者的部署经验与 Android SDK 兼容性合同应分开记录。
+论文称其 SDK 无需 root 或系统权限，并把 `UpdateMethodsCode`、`EnableMethodTracing`、`MethodEntered` 称为 “public subset”。这里的 public 表示作者选用的 ART 符号子集；按 Android API 定义，这些 C++ 接口仍是平台内部实现。作者的部署经验与 Android SDK 的兼容性承诺要分开记录。
 
 ### 论文实验应该怎样读
 
@@ -401,11 +401,11 @@ XTrace 配置命中该注册方法并记录调用栈。论文展示的调用路�
 
 ### JVMTI 的使用边界
 
-JVMTI 是 Java Virtual Machine Tool Interface 的缩写，是虚拟机向调试器和性能分析器提供的 Native 工具接口。Native 在这里指通过 C/C++ 二进制接口运行的代码；profiler 则是采样或记录程序行为、帮助定位性能问题的工具。
+Native 代码在这里指通过 C/C++ 二进制接口运行的代码；profiler 则是采样或记录程序行为、帮助定位性能问题的工具。
 
-ART TI 是 Android 运行时（ART）对 JVMTI 的部分实现。它能观察线程、方法、类、对象分配和 GC，也能设置断点、挂起线程、重定义类。GC 是 garbage collection，即垃圾回收。
+ART TI 能观察线程、方法、类、对象分配和 GC，也能设置断点、挂起线程、重定义类。
 
-本文的 agent 指加载进目标进程、通过 JVMTI 调用和回调工作的 Native 共享库。IDE 是 integrated development environment（集成开发环境），SDK 在这里指集成到应用中的开发与采集组件。接口可以改变程序执行，因此 Android 对普通应用设置了明确边界：
+IDE 是 integrated development environment（集成开发环境），SDK 在这里指集成到应用中的开发与采集组件。接口可以改变程序执行，因此 Android 对普通应用设置了明确边界：
 
 - ART TI 从 Android 8.0 / API 26 开始提供；
 - 公共的 `Debug.attachJvmtiAgent()` 从 Android 9 / API 28 开始提供；
@@ -415,7 +415,7 @@ ART TI 是 Android 运行时（ART）对 JVMTI 的部分实现。它能观察线
 
 源码锚点为 `android-17.0.0_r1`。
 
-Android 官方 [ART TI 说明](https://source.android.com/docs/core/runtime/art-ti) 指出，Android 8 及以上版本由 CTS 检查可调试与不可调试应用的 attach 边界、已实现的 JVMTI API，以及 agent 二进制接口的稳定性。CTS 是 Compatibility Test Suite，即设备实现必须通过的 Android 兼容性测试套件。
+Android 官方 [ART TI 说明](https://source.android.com/docs/core/runtime/art-ti) 指出，Android 8 及以上版本由 CTS 检查可调试与不可调试应用的 attach 边界、已实现的 JVMTI API，以及 agent 二进制接口的稳定性。
 
 AOSP 是 Android Open Source Project，即 Android 开源项目。ART TI 属于 AOSP，设备厂商无需自行重写整套接口。不同 Android 版本仍可能提供不同 capability；capability 是 agent 向当前 JVMTI 环境申请的功能位，例如是否允许生成 GC 事件或给对象设置 tag。
 
@@ -425,7 +425,7 @@ AOSP 是 Android Open Source Project，即 Android 开源项目。ART TI 属于 
 
 agent 文件是 `.so` 共享库，`.so` 是 Android 上常见的 ELF 动态库格式。ELF 是 Executable and Linkable Format，规定可执行文件与共享库的二进制布局。
 
-`jvmtiEnv` 是某个 JVMTI 环境的接口指针，agent 通过它发起调用，ART 再通过已登记的 callback（回调函数）通知事件。JNI 是 Java Native Interface，负责 Java/Kotlin 与 Native 代码之间的调用和对象引用。
+`jvmtiEnv` 是某个 JVMTI 环境的接口指针，agent 通过它发起调用，ART 再通过已登记的 callback（回调函数）通知事件。
 
 adb 是 Android Debug Bridge，用于从开发机向设备发送调试命令。关系图区分了宿主、plugin 和 agent：
 
@@ -448,7 +448,7 @@ adb / Android Studio / debuggable 应用
 
 agent 与应用处于同一地址空间，也就是共享同一个进程内存，没有进程隔离。agent 的越界访问、死锁、ABI 不匹配或回调阻塞都会直接影响目标进程。
 
-ABI 是 Application Binary Interface，规定机器码调用约定、数据布局和二进制符号等接口细节。“标准接口”只约束 JVMTI 调用语义，无法隔离 agent 自身的 Native 缺陷。
+“标准接口”只约束 JVMTI 调用语义，无法隔离 agent 自身的 Native 缺陷。
 
 ### 两种加载时机
 
@@ -593,7 +593,7 @@ extern "C" JNIEXPORT jint JNICALL Agent_OnLoad(
 
 工具还要保存 agent 状态机，并保证停用时没有 callback 与销毁操作并发。状态机是对“未初始化、运行、停用、释放”等合法状态及转换条件的明确记录。原子计数则保证多个线程更新同一计数器时不会产生数据竞争。
 
-[JVMTI 规范](https://docs.oracle.com/en/java/javase/21/docs/specs/jvmti.html) 规定，`GarbageCollectionStart` 与 `GarbageCollectionFinish` 只报告 stop-the-world GC 暂停。stop-the-world 表示相关应用线程暂时停止修改虚拟机状态；这对计数可用于统计暂停对，不能代表并发回收阶段或全部 GC CPU 工作。
+[JVMTI 规范](https://docs.oracle.com/en/java/javase/21/docs/specs/jvmti.html) 规定，`GarbageCollectionStart` 与 `GarbageCollectionFinish` 只报告 stop-the-world GC 暂停。stop-the-world 表示相关应用线程暂时停止修改虚拟机状态；这两项计数可用于统计暂停对，不能代表并发回收阶段或全部 GC CPU 工作。
 
 这两个回调发生在虚拟机仍暂停期间，大多数 JNI 与 JVMTI 调用都不可用。示例只做原子加法；需要解析、分配内存或写文件时，应通知 agent 工作线程稍后处理。
 
@@ -634,13 +634,11 @@ JVMTI 开销无法概括为“一次额外回调”，任意 agent 也不会自�
 
 `kLimited` 同样有成本。breakpoint 是调试器设置的代码暂停位置，ART 需要处理目标方法及活动调用栈；method entry/exit 则会经过 ART Instrumentation 的方法事件路径。
 
-JIT 是 just-in-time compilation，指在应用运行时编译热点代码。stub 是连接编译代码、解释器或运行时服务的一小段入口代码。
-
 入口替换、解释器 stub 与 JIT 的关系见 [1.5 ART 编译、优化与去优化机制](../../part1-fundamentals/ch01-architecture/05-art-compilation-verification-deoptimization.md)。Instrumentation listener 的回调位置与 XTrace 的选择性入口方案见本文前半篇。
 
 ### 类重定义要分清标准入口与 ART 扩展
 
-DEX 是 Android 保存字节码、类型和方法索引的可执行格式。ART TI 的类定义输入是只包含一个类定义的 DEX；桌面 JVM 通常接收 class file。
+ART TI 的类定义输入是只包含一个类定义的 DEX；桌面 JVM 通常接收 class file。
 
 Android 17 的 [`ti_redefine.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/openjdkjvmti/ti_redefine.cc) 为普通 `RedefineClasses()` 和结构性扩展维护了不同模式。
 
@@ -684,7 +682,7 @@ debuggable 是运行中附加 JVMTI agent 的硬边界。即使应用不通过 G
 
 该元素写在 `<application>` 内部；`android:enabled="false"` 会关闭系统服务和 shell 工具的性能采集权限。
 
-Binder 是 Android 的进程间通信机制，ANR 是 Application Not Responding（应用无响应）。profile 指一次性能采样产生的分析文件或采集过程；hook 指截获或替换内部函数调用的非公开做法。
+profile 指一次性能采样产生的分析文件或采集过程。
 
 线上发布场景应按目标选择公共能力：
 
@@ -701,7 +699,7 @@ JVMTI 与 [26.12 编译期字节码插桩与监控自动化](12-bytecode-instrum
 
 ### 一次可复现的 JVMTI 实验
 
-build fingerprint 是系统构建指纹，ABI 是机器码调用与数据布局约定，page size 是虚拟内存管理的基本页大小。三者都可能改变 agent 的兼容性或实验结果。
+build fingerprint 是系统构建指纹，page size 是虚拟内存管理的基本页大小。两者都可能改变 agent 的兼容性或实验结果。
 
 commit 是源码版本标识，NDK 是 Native Development Kit，即 Android 的 C/C++ 工具链。构建 ID 和 `.so` 摘要用于把事件、符号文件与唯一二进制产物对应起来。
 
