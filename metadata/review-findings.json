@@ -3778,6 +3778,26 @@
       "summary": "WorkManager 版本与 minSdk 描述过期",
       "type": "source-mismatch",
       "updated_at": "2026-10-04T18:41:49.044953+08:00"
+    },
+    {
+      "chapter": "26.10",
+      "close_note": "已更新 26.10 正文、frontmatter sources 与 source verification metadata 至 OkHttp 5.5.0 / Cronet 500.1.0。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261004-223534-idle-audit-1bf52e3b",
+      "created_at": "2026-10-04T22:41:20.538604+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261004-223534-idle-audit-1bf52e3b",
+      "details": "Maven metadata 显示 okhttp release 已为 5.5.0；Google Maven cronet-api release 已为 500.1.0，旧正文仍写 5.4.0 与 500.0.1。",
+      "id": "AIW-26.10-stale-network-library-release-metadata",
+      "log_path": "logs/audit/2026-10-04-20261004-223534-idle-audit-1bf52e3b-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "repo1.maven.org okhttp maven-metadata.xml; dl.google.com cronet-api maven-metadata.xml; cronet-api 500.1.0 POM"
+      ],
+      "status": "fixed",
+      "summary": "OkHttp 与 Cronet 依赖版本信息落后于当前 Maven metadata",
+      "type": "stale-source-metadata",
+      "updated_at": "2026-10-04T22:41:20.592585+08:00"
     }
   ],
   "schema_version": 1
