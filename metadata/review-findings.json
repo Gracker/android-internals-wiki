@@ -3758,6 +3758,26 @@
       "summary": "StartupTimingMetric TTFD API 可用性边界误含 API 29",
       "type": "version-boundary",
       "updated_at": "2026-10-04T10:41:12.482661+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/03-background-jobs-hibernation.md",
+      "close_note": "已将 WorkManager 基准更新为 2.12.0，并补充 API 24 minSdk 与 API 23 支持边界。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261004-183534-idle-audit-59c4f3fc",
+      "created_at": "2026-10-04T18:41:48.994934+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261004-183534-idle-audit-59c4f3fc",
+      "details": "正文把当前稳定版写成 18.8.2，并称 minSdk 提升到 23；WorkManager release notes 显示当前稳定版为 2.12.0，minSdk 从 API 23 提升到 API 24。",
+      "id": "AIW-5.3-WORKMANAGER-2.12-MINSDK",
+      "log_path": "logs/audit/2026-10-04-20261004-183534-idle-audit-59c4f3fc-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/jetpack/androidx/releases/work"
+      ],
+      "status": "fixed",
+      "summary": "WorkManager 版本与 minSdk 描述过期",
+      "type": "source-mismatch",
+      "updated_at": "2026-10-04T18:41:49.044953+08:00"
     }
   ],
   "schema_version": 1
