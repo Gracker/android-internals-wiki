@@ -4,9 +4,9 @@ chapter: '26.4'
 section: '26.4'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
-last_verified_against: Current Android Developers Macrobenchmark/ActivityManager/ApplicationExitInfo docs, Firebase A/B Testing docs, and AOSP android-17.0.0_r1 AppExitInfoTracker/config sources retrieved 2026-08-15
+last_verified: '2026-10-04'
+last_source_verified_at: '2026-10-04'
+last_verified_against: Current Android Developers Macrobenchmark/StartupTimingMetric/TraceSectionMetric/PowerMetric/ActivityManager/ApplicationExitInfo docs, Firebase A/B Testing docs, and AOSP android-17.0.0_r1 AppExitInfoTracker/config sources retrieved 2026-10-04
 confidence: high
 sources:
 - type: legacy-reference-preserved
@@ -70,6 +70,8 @@ last_review_finalize_at: '2026-08-15T19:37:06+08:00'
 last_review_finalize_run_id: 20260815-193706-gracker-writing-467
 last_rework_at: '2026-08-15T19:37:06+08:00'
 last_rework_run_id: 20260815-193706-gracker-writing-467
+last_idle_audit_at: '2026-10-04T10:40:33+08:00'
+last_idle_audit_run_id: 20261004-103534-idle-audit-18098fe3
 ---
 
 # A/B Test 与性能回归防护
@@ -152,7 +154,7 @@ Macrobenchmark 适合做实验室基线，但基准设备应是物理设备，�
 
 指标还存在版本和语义边界：
 
-- `StartupTimingMetric.timeToInitialDisplayMs` 测到首帧，对应初始显示时间（TTID）；`timeToFullDisplayMs` 依赖 App 调用 `reportFullyDrawn()`，对应完全显示时间（TTFD），在 Android 10 / API 29 及更早版本可能不可用。未正确上报完全显示信号时，TTFD 门禁本身就没有业务意义。
+- `StartupTimingMetric.timeToInitialDisplayMs` 测到首帧，对应初始显示时间（TTID）；`timeToFullDisplayMs` 依赖 App 调用 `reportFullyDrawn()`，对应完全显示时间（TTFD），在 Android 10 / API 29 之前的版本可能不可用。未正确上报完全显示信号时，TTFD 门禁本身就没有业务意义。
 - `FrameTimingMetric.frameDurationCpuMs` 表示 UI 主线程与 RenderThread 渲染线程生产一帧所用的 CPU 时间；`frameOverrunMs` 还考虑帧截止时间（deadline），但只在 Android 12 / API 31 及以上可用。两者不能用同一阈值互换。
 - `TraceSectionMetric` 仍是实验性 API。当前 AndroidX 1.3.0+ 构造器默认 `targetPackageOnly = true`，只读目标包的 trace section（追踪区段）；默认 `Mode.Sum` 会累计所有匹配实例，不是只取第一个。需要首个实例、平均值、最大值或次数时，应显式选择对应模式，并验证它是否符合测试场景。
 - `PowerMetric` 也是实验性 API，测量系统级功率或能量，不能直接归因于单个 App；官方支持物理 Pixel 6、Pixel 6 Pro 及后续设备，测试时还要减少其他进程干扰。
