@@ -5639,9 +5639,9 @@
       "summary": "Google Play Console 位图优化整改的完整应对：大图下采样、WebP、多密度目录、Glide/Coil 关键配置、RGB_565 省一半内存、服务端裁剪优先、Compose 避免传 Painter（Bitmap.equals 成本高、稳定性差触发多余重组）。提醒问题可能出在第三方 SDK，先查依赖更新。",
       "chapter": "ch04",
       "processed_at": "2026-10-05T06:20:34.133484+08:00",
-      "action": "indexed-only-chapter-freeze",
-      "score": 15,
-      "target_path": "src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
+      "action": "quarantined-misroute",
+      "score": 0,
+      "target_path": null,
       "route_confidence": 16,
       "route_terms": [
         "google",
@@ -5649,7 +5649,20 @@
         "rgb",
         "sdk"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "quarantined-misroute-by-apply",
+      "previous_action": "indexed-only-chapter-freeze",
+      "previous_status": null,
+      "previous_route_status": "existing-chapter-routed",
+      "previous_target_path": "src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
+      "status": "quarantined",
+      "quarantine_reason": "Body-apply fail-closed: material is about Google Play Console bitmap optimization for app resources and image loading (APK/AAB resource size, WebP, density buckets, Glide/Coil, RGB_565, server-side resizing, Compose Painter/Bitmap handling), while target chapter is Android 17 EyeDropper system color picker (Intent contract, privileged screen capture, redaction, per-display overlay, color result semantics, trace). It provides no source-backed Android 17 EyeDropper correction, version boundary, observation path, or mechanism for this chapter. Chapter body and frontmatter left unchanged.",
+      "quarantined_at": "2026-10-05T07:17:38+08:00",
+      "quarantined_run_id": "20261005-071534-5304b222",
+      "body_apply_decision": "quarantined-misroute",
+      "body_apply_decision_at": "2026-10-05T07:17:38+08:00",
+      "body_apply_decision_run_id": "20261005-071534-5304b222",
+      "body_apply_decision_reason": "Body-apply fail-closed: material is about Google Play Console bitmap optimization for app resources and image loading (APK/AAB resource size, WebP, density buckets, Glide/Coil, RGB_565, server-side resizing, Compose Painter/Bitmap handling), while target chapter is Android 17 EyeDropper system color picker (Intent contract, privileged screen capture, redaction, per-display overlay, color result semantics, trace). It provides no source-backed Android 17 EyeDropper correction, version boundary, observation path, or mechanism for this chapter. Chapter body and frontmatter left unchanged.",
+      "finding_id": "finding-route-misfire-bitmap-optimization-eyedropper-20261005-5304b222"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-05-76670971-谷歌的一个优化建议，让我重新学了一遍Android里面如何正确处理位图.md",
