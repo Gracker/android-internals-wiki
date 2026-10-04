@@ -4,9 +4,9 @@ chapter: '26.10'
 section: '26.10'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
-last_verified_against: Android network-state guide updated 2026-08-13; Android 17 android-17.0.0_r1 Connectivity sources; TrafficStats and NetworkCapabilities API references; OkHttp 5.4.0 Maven metadata and EventListener source; Cronet references updated 2026-07-31, API 143.7445.0, and 500.0.1 artifact migration POMs, retrieved 2026-08-15
+last_verified: '2026-10-04'
+last_source_verified_at: '2026-10-04'
+last_verified_against: Android network-state guide updated 2026-10-01; Android 17 android-17.0.0_r1 Connectivity sources; TrafficStats and NetworkCapabilities API references; OkHttp 5.5.0 Maven metadata and EventListener source; Cronet references updated 2026-07-31, API 143.7445.0, and 500.1.0 artifact migration POMs, retrieved 2026-10-04
 confidence: high
 sources:
 - type: legacy-reference-preserved
@@ -42,15 +42,17 @@ sources:
 - type: library-api
   path: https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp/maven-metadata.xml
 - type: library-api
+  path: https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt
+- type: library-api
   path: https://github.com/square/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt
 - type: library-api
-  path: https://github.com/square/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/FastFallbackExchangeFinder.kt
+  path: https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/FastFallbackExchangeFinder.kt
 - type: library-api
   path: https://dl.google.com/dl/android/maven2/org/chromium/net/cronet-api/maven-metadata.xml
 - type: library-api
-  path: https://dl.google.com/dl/android/maven2/org/chromium/net/cronet-api/500.0.1/cronet-api-500.0.1.pom
+  path: https://dl.google.com/dl/android/maven2/org/chromium/net/cronet-api/500.1.0/cronet-api-500.1.0.pom
 - type: library-api
-  path: https://dl.google.com/dl/android/maven2/org/chromium/net/cronet/500.0.1/cronet-500.0.1.pom
+  path: https://dl.google.com/dl/android/maven2/org/chromium/net/cronet/500.1.0/cronet-500.1.0.pom
 tags:
 - observability
 - network
@@ -104,13 +106,13 @@ last_rework_run_id: 20260815-212220-gracker-writing-475
 
 这四层 ID 规定了如何把多个事件归到同一次用户操作。同一个 `request_id` 可能出现多次 DNS、connect 或 `connectionAcquired`，也可能复用已有连接而完全没有 DNS、connect 和 TLS 事件。若采集器只为每个阶段保留一个开始时间，后一次路由尝试会覆盖前一次失败，计算出的分段之和也可能和调用总耗时对不上。
 
-截至 2026 年 8 月 15 日，Maven Central 标记的 OkHttp release 为 5.4.0；其 [`EventListener` 5.4.0 源码](https://github.com/square/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 与 [`EventListener` 5.3.0 源码](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 一致。
+截至 2026 年 10 月 4 日，`com.squareup.okhttp3:okhttp` 的 Maven metadata 标记 release 为 5.5.0；其 [`EventListener` 5.5.0 源码](https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 与 [`EventListener` 5.4.0 源码](https://github.com/square/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 一致。
 
 从 dispatcher（请求调度器）排队，到 DNS、建连、安全连接、连接获取、请求发送和响应读取，这些事件都属于同一个 `Call`。connect 系列事件可能因候选路由与 Fast Fallback 重复出现；Fast Fallback 会交错尝试多个地址，以缩短单一路径迟迟无法建连造成的等待。`connectionAcquired` 也可能在一个 `Call` 中出现多次。连接复用时，DNS、connect 和 TLS 事件可能缺席。采集器应保存有序事件和对应的 attempt/exchange，不能假设事件序列固定。
 
 Cronet 的公开采集入口是 `org.chromium.net.RequestFinishedInfo.Listener`。本文逐方法核验的 API 版本为 `143.7445.0`；[`RequestFinishedInfo.Metrics`](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Metrics) 提供请求开始、DNS、建连、SSL、发送、响应开始和请求结束时间戳，以及套接字复用、TTFB（time to first byte，收到首个响应字节前的时间）、总耗时和可空的传输字节数。没有发生或无法取得的阶段返回 `null`；复用连接时 DNS、connect 和 SSL 均为空。DNS 命中本地缓存但没有复用 socket 时，Cronet 仍可给出 DNS 时间戳，所以“存在 DNS 事件”不能直接等价为“访问了远端 DNS”。
 
-Google Maven 当前把 `cronet-api:500.0.1` 标为 release，但其 [`POM`](https://dl.google.com/dl/android/maven2/org/chromium/net/cronet-api/500.0.1/cronet-api-500.0.1.pom)（Maven 依赖描述文件）明确说明这是已废弃的过渡空工件，只负责引入 `org.chromium.net:cronet:500.0.1`；新项目应直接依赖 `cronet`。因此不能把 `cronet-api` 元数据中的最新版本号直接当作实际引擎版本，也不能据此假定 143.7445.0 的方法语义原样延续。事件应同时记录依赖坐标、API 版本、`provider`（实现提供方）和引擎版本，升级后重新核对可空字段与字节口径。
+Google Maven 目前把 `cronet-api:500.1.0` 标为 release，但其 [`POM`](https://dl.google.com/dl/android/maven2/org/chromium/net/cronet-api/500.1.0/cronet-api-500.1.0.pom)（Maven 依赖描述文件）明确说明这是已废弃的过渡空工件，只负责引入 `org.chromium.net:cronet:500.1.0`；新项目应直接依赖 `cronet`。因此不能把 `cronet-api` 元数据中的最新版本号直接当作实际引擎版本，也不能据此假定 143.7445.0 的方法语义原样延续。事件应同时记录依赖坐标、API 版本、`provider`（实现提供方）和引擎版本，升级后重新核对可空字段与字节口径。
 
 字节字段也要注明来源。`Metrics#getReceivedByteCount()` 是当前请求的传输层接收字节，不包含之前的重定向；`UrlResponseInfo#getReceivedByteCount()` 是从请求开始累计到当前响应的最小接收字节估计，包含重定向但不覆盖所有协议开销。两个字段不能混入同一指标序列。
 
