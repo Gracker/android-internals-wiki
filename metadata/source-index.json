@@ -5632,6 +5632,34 @@
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "[掘金Android] 谷歌的一个优化建议，让我重新学了一遍Android里面如何正确处理位图",
+      "title": "[掘金Android] 谷歌的一个优化建议，让我重新学了一遍Android里面如何正确处理位图",
+      "summary": "Google Play Console 位图优化整改的完整应对：大图下采样、WebP、多密度目录、Glide/Coil 关键配置、RGB_565 省一半内存、服务端裁剪优先、Compose 避免传 Painter（Bitmap.equals 成本高、稳定性差触发多余重组）。提醒问题可能出在第三方 SDK，先查依赖更新。",
+      "chapter": "ch04",
+      "processed_at": "2026-10-05T06:20:34.133484+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "target_path": "src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "google",
+        "play",
+        "rgb",
+        "sdk"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-05-76670971-谷歌的一个优化建议，让我重新学了一遍Android里面如何正确处理位图.md",
+      "title": "[技术文章] 谷歌的一个优化建议，让我重新学了一遍Android里面如何正确处理位图背景 谷歌这位哥哥真的会整幺蛾子，好不容易把cra",
+      "summary": "> 发布时间: 2026-07-28T02:18:34.000Z > 原文链接: https://juejin.cn/post/7667097178154319912 2026-07-28 1,886 阅读8分钟 谷歌这位哥哥真的会整幺蛾子，好不容易把crash跟anr数据压下来一点，最近发现又给了我一条技术质量类型的整改建议，大致内容是 真的是一点不让我闲着，天天关心着...",
+      "chapter": "ch09",
+      "processed_at": "2026-10-05T06:20:34.133484+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
