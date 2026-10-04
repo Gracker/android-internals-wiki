@@ -4,8 +4,8 @@ title: 后台执行、任务调度与 App Hibernation
 chapter: '5.3'
 section: '5.3'
 applicable_versions: Android 6.0 (API 23) - Android 17 (API 37)
-last_verified: '2026-08-19'
-last_verified_against: Android Developers Android 17 bg-audio docs + JobScheduler/IBinder API reference + source.android cached apps freezer docs
+last_verified: '2026-10-04'
+last_verified_against: Android 17 JobDebugInfo/bg-audio docs + WorkManager 2.12.0 release notes + App Hibernation docs + JobScheduler/IBinder API reference + source.android cached apps freezer docs
 confidence: medium
 consolidated_from:
 - src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md
@@ -68,6 +68,8 @@ sources:
   path: https://developer.android.com/reference/android/app/usage/UsageStatsManager
 - type: official
   path: https://developer.android.com/topic/libraries/architecture/workmanager/how-to/define-work
+- type: official
+  path: https://developer.android.com/jetpack/androidx/releases/work
 - type: official
   path: https://developer.android.com/about/versions/16/behavior-changes-all
 - type: official
@@ -803,7 +805,7 @@ WorkManager 适合可延期、异步，而且需要在应用进程或设备重�
 
 #### 当前稳定版中的调度器
 
-Android 17 对应的内容以 WorkManager 2.11.2 为库版本基准，2.11 系列的 `minSdk` 是 23。其主要角色如下：
+本节按 WorkManager 2.12.0 复核；2.12 系列把 `minSdk` 从 API 23 提高到 API 24。其主要角色如下：
 
 | 角色 | 职责 |
 |---|---|
@@ -815,7 +817,7 @@ Android 17 对应的内容以 WorkManager 2.11.2 为库版本基准，2.11 系�
 
 `SystemJobScheduler` 和 `GreedyScheduler` 可以同时存在：前者向系统登记任务，后者在进程已存活且条件满足时减少等待。它们不是启动时只能选择其一的互斥分支。
 
-在 Android 8.0—17 范围内，WorkManager 2.11 使用 `SystemJobScheduler`；`SystemAlarmScheduler` 只用于解释旧版库和 API 22 及以下设备的历史 trace。WorkManager 2.11 已不支持这些低版本设备。系统中的 JobScheduler 记录由 WorkManager 管理，WorkManager 还会自行持久化依赖与重试状态；应用不应依赖其内部 job ID，也不应自行修改相应的系统 job。
+在 Android 8.0—17 范围内，WorkManager 2.12 使用 `SystemJobScheduler`；`SystemAlarmScheduler` 只用于解释旧版库在 API 22 及以下设备上的历史 trace。WorkManager 2.12 已不支持 API 23 及以下设备。系统中的 JobScheduler 记录由 WorkManager 管理，WorkManager 还会自行持久化依赖与重试状态；应用不应依赖其内部 job ID，也不应自行修改相应的系统 job。
 
 WorkManager 2.10 起为系统 job 增加了更易读的跟踪标签（trace tag），因此较新版本的 `dumpsys jobscheduler` 输出更容易关联到具体 Worker。
 
@@ -1034,7 +1036,7 @@ AOSP 提交 [`4a98dd235a708115db41e722776eff3ef9ed09fe`](https://android.googles
 | Android 16 / API 36 | 增加当前全部 pending reasons 与有限历史；运行时 quota 覆盖范围扩大 |
 | Android 17 / API 37 | 增加 `getPendingJobReasonStats()`；ProfilingTrigger 增加冷启动、OOM、excessive CPU kill 触发类型 |
 
-WorkManager 也在独立演进。当前稳定版 18.8.2 已将 `minSdk` 提升到 23，因此阅读旧资料时要同时确认平台版本和 WorkManager 版本。Android 8—17 设备上使用当前稳定版，不会走 API 14—22 的 `SystemAlarmScheduler` 兼容路径。
+WorkManager 也在独立演进。WorkManager 2.12.0 已将 `minSdk` 提升到 API 24；2.11.0 曾先从 API 21 提升到 API 23。阅读旧资料时要同时确认平台版本和 WorkManager 版本。Android 8—17 设备上使用 WorkManager 2.12.0，不会走 API 14—22 的 `SystemAlarmScheduler` 兼容路径；API 23 设备也不在该版本的支持范围内。
 
 ### 常见误区
 
