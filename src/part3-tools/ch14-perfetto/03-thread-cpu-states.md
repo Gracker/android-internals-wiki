@@ -56,7 +56,9 @@ related_chapters:
 
 # 线程 CPU 状态分析
 
-线程状态回答的是“这段墙钟时间（wall-clock time，即现实经过的时间）里，线程是否具备运行条件，是否占着 CPU”。它不会自动回答线程在执行哪个函数、等待哪把锁或哪次 I/O。可靠的分析要把状态区间与 Slice（Trace 时间轴上的事件区间）、调用栈、唤醒者、Binder（Android 的进程间通信机制）、文件系统和设备事件放在同一时间范围内核对。
+线程状态只回答一个问题：在一段墙钟时间（wall-clock time，即现实经过的时间）里，线程是否具备运行条件、是否正占着 CPU。它不会自动回答线程在执行哪个函数、等待哪把锁或哪次 I/O。
+
+要让分析可靠，需要把状态区间与 Slice（Trace 时间轴上的事件区间）、调用栈、唤醒者、Binder（Android 的进程间通信机制）、文件系统和设备事件放到同一时间范围内核对。
 
 本文核对的源码基线是 Android 17 / API 37 / `android-17.0.0_r1` 的 Perfetto 导入逻辑和 `android17-6.18-2026-06_r6` 内核。旧平台也有调度事件，但字段、内核符号和标准库模块可能不同。
 
@@ -103,7 +105,7 @@ if (preempt)
 /* TP_printk() 在 TASK_REPORT_MAX 置位时追加 "+"。 */
 ```
 
-这段逻辑把抢占式切出的线程统一呈现为 `R+`。它没有限定“线程必须在内核态”，也没有在 `R+` 中保存抢占者身份或抢占原因。时间片、调度类、优先级和唤醒抢占等因素还要结合同一 CPU 上随后的 `sched_slice`、线程优先级与调度策略判断。
+这段逻辑把抢占式切出的线程统一呈现为 `R+`。它没有限定“线程必须在内核态”，也没有在 `R+` 中保存抢占者身份或抢占原因。要判断这次抢占由什么引起，还要回到同一 CPU 上随后的 `sched_slice`，并对照线程自身的优先级和调度策略；时间片、调度类和唤醒抢占都可能牵涉其中。
 
 `R` 也不等于“由睡眠刚刚唤醒”。线程在保持可运行状态时离开 CPU，同样可能产生 `R`。只有存在对应 `sched_waking` 和 `waker_utid` 时，才能讨论这次可运行区间的唤醒来源。
 
@@ -158,7 +160,11 @@ data_sources {
 }
 ```
 
-`RING_BUFFER` 表示缓冲区写满后覆盖最早的数据，因此事件突增时可能丢掉 Trace 开头。`sched_switch` 是构建 Running 和切出状态的基础，`sched_waking` 补充唤醒与 Runnable 起点，`sched_blocked_reason` 补充 D 状态的 `io_wait` 和睡眠函数。`compact_sched` 使用紧凑格式记录高频调度事件，减少 Trace 体积。`symbolize_ksyms` 把内核地址解析成函数名；它要求 Perfetto 的特权采集进程 `traced_probes` 具备 root（超级用户）权限，或设备放宽 `kptr_restrict`（内核地址可见性限制）。权限不足时，调度状态仍可用，`blocked_function` 可能为空。
+`RING_BUFFER` 表示缓冲区写满后覆盖最早的数据，因此事件突增时可能丢掉 Trace 开头。
+
+三个调度事件分工不同：`sched_switch` 是构建 Running 和切出状态的基础，`sched_waking` 补充唤醒与 Runnable 起点，`sched_blocked_reason` 补充 D 状态的 `io_wait` 和睡眠函数。
+
+`compact_sched` 使用紧凑格式记录高频调度事件，减少 Trace 体积。`symbolize_ksyms` 把内核地址解析成函数名；它要求 Perfetto 的特权采集进程 `traced_probes` 具备 root（超级用户）权限，或设备放宽 `kptr_restrict`（内核地址可见性限制）。权限不足时，调度状态仍可用，`blocked_function` 可能为空。
 
 设备可能缺少某些 Tracepoint，量产构建也可能限制内核符号。录制后应检查 Trace Processor 自诊断用的 `stats` 表，重点看 `unknown_ftrace_events`、`failed_ftrace_events` 和 ftrace 丢包；如果同时启用了 `linux.perf`，还要看 Perf 采样丢失。空字段只能说明证据缺失，不能直接解释为“没有发生”。
 
@@ -185,13 +191,17 @@ Running 长不等于算法有问题。一次必须完成的后台计算可以合
 
 ### 帧分析不要套固定毫秒阈值
 
-60 Hz 的名义周期约为 16.67 毫秒，120 Hz 约为 8.33 毫秒，但单个 `doFrame` 的 Running 时间不能直接与这两个数字比较。帧还包含 Runnable、同步等待、`RenderThread`、GPU 和 SurfaceFlinger（Android 显示合成服务），调度偏移、刷新率切换与预测也会改变 deadline（截止时刻）。Android 12 及以上应读取 FrameTimeline 的 Expected / Actual Timeline（预期 / 实际帧时间线）和 overrun（实际帧超出预期截止时刻的时间），再回看线程状态。
+60 Hz 的名义周期约为 16.67 毫秒，120 Hz 约为 8.33 毫秒，但单个 `doFrame` 的 Running 时间不能直接与这两个数字比较。帧还包含 Runnable、同步等待、`RenderThread`、GPU 和 SurfaceFlinger（Android 显示合成服务），调度偏移、刷新率切换与预测也会改变 deadline（截止时刻）。
+
+Android 12 及以上应读取 FrameTimeline 的 Expected / Actual Timeline（预期 / 实际帧时间线）和 overrun（实际帧超出预期截止时刻的时间），再回看线程状态。
 
 ### CPU 类型与频率只解释执行环境
 
 CPU 编号与大小核布局由 SoC（System on Chip，系统级芯片）决定，不能把“0—3 是小核、4—7 是大核”写成通用规则。Perfetto 的 `cpu` 表可提供 `cluster_id`、`processor` 和 `capacity`，频率轨道提供该时刻的 kHz。相同频率下，不同微架构和容量的 CPU 吞吐量可能不同；高频也不证明线程负载高，因为 Governor（动态调频策略）、Boost（临时提高性能目标）与热策略都会影响频点。
 
-手工绑核会缩小调度器可选 CPU 集合，还会受 cpuset、在线 CPU 和权限限制。亲和性（affinity）限定线程可以在哪些 CPU 上运行，cpuset 用控制组给一组任务划定可用 CPU，uclamp 则限制调度器看到的任务利用率提示范围。普通应用不应依赖 CPU 编号或固定亲和性。平台侧若要调整这些参数，应使用同场景 Trace 验证延迟、能耗和热稳定性。
+手工绑核会缩小调度器可选 CPU 集合，还会受 cpuset、在线 CPU 和权限限制。亲和性（affinity）限定线程可以在哪些 CPU 上运行，cpuset 用控制组给一组任务划定可用 CPU，uclamp 则限制调度器看到的任务利用率提示范围。
+
+普通应用不应依赖 CPU 编号或固定亲和性。平台侧若要调整这些参数，应使用同场景 Trace 验证延迟、能耗和热稳定性。
 
 ## 14.3.4 Runnable：测量唤醒到运行的等待
 
@@ -255,7 +265,14 @@ LIMIT 20;
 
 ## 14.3.5 Sleeping：找到等待条件和唤醒者
 
-`S` 是可中断睡眠。Looper 调用 `epoll_wait()` 等待文件描述符（进程访问文件、socket 等内核对象所用的编号）上的消息事件、线程等待条件变量或 futex（用户态锁常用的内核等待机制）、同步 Binder 客户端等待回复、定时器等待到期，都可能表现为 `S`。大多数线程长期 Sleeping 是健康的空闲状态。
+`S` 是可中断睡眠。以下等待都可能表现为 `S`：
+
+- Looper 调用 `epoll_wait()`，等待文件描述符（进程访问文件、socket 等内核对象所用的编号）上的消息事件。
+- 线程等待条件变量或 futex（用户态锁常用的内核等待机制）。
+- 同步 Binder 客户端等待回复。
+- 定时器等待到期。
+
+大多数线程长期 Sleeping 是健康的空闲状态。
 
 关键 Slice 内出现长 `S` 时，可按以下证据追查：
 
@@ -296,7 +313,7 @@ __entry->caller = (void *)__get_wchan(tsk);
 __entry->io_wait = tsk->in_iowait;
 ```
 
-`io_wait` 来自任务的 `in_iowait` 记账标志。值为 1 能提高 I/O 等待的可能性，但不包含文件名、设备、请求类型或业务调用方；值为 0 也不能直接命名为“内核锁”。`caller` 来自 `__get_wchan()`，其中 wchan（wait channel）表示内核观察到的睡眠位置，不保证等于最初发起等待的应用函数或锁持有者。
+`io_wait` 来自任务的 `in_iowait` 记账标志。值为 1 时，这次等待更可能是 I/O 等待，但这个字段不含文件名、设备、请求类型或业务调用方；值为 0 也不能直接判定为“内核锁”。`caller` 来自 `__get_wchan()`，其中 wchan（wait channel）表示内核观察到的睡眠位置，不保证等于最初发起等待的应用函数或锁持有者。
 
 Android 17 的 `FtraceParser::ParseSchedBlockedReason()` 把这两个字段写入最近的阻塞 `thread_state` 行。只有采集了该 Tracepoint 才会有 `io_wait`；只有内核符号成功解析时才会有 `blocked_function`。
 
