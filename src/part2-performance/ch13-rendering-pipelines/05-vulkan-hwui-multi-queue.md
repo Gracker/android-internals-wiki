@@ -182,7 +182,7 @@ OpenGL ES 把较多状态验证、资源转换和同步决策放在驱动中；V
 - 把 shader/pipeline 创建从关键帧移到加载或缓存阶段；
 - 用多个 command pool（命令缓冲分配池）并行准备命令；
 - 精确表达执行依赖、内存可见性和 image layout（图像当前用途对应的状态）；
-- 让帧内 GPU 工作和错误更容易通过 Validation Layer/AGI 定位。
+- 让帧内 GPU 工作和错误更容易通过 Validation Layer/AGI（Android GPU Inspector）定位。
 
 这些能力不会自动转化为性能收益。引擎如果频繁创建 pipeline、把提交切得过碎、设置过度保守的 barrier，或者积压太多 in-flight frame（已提交但尚未完成显示的帧），Vulkan 同样会产生较高 CPU 开销、GPU bubble（依赖导致的硬件空闲间隙）和输入延迟。比较 GLES 与 Vulkan 时，应保持内容、分辨率、pacing 和设备温度一致。
 
@@ -202,7 +202,7 @@ Validation Layer 能发现许多 API、同步和对象生命周期误用，但�
 
 #### Vulkan 与承载结构是两个维度
 
-Vulkan 描述 Producer 如何生成内容。它可以绘制到 SurfaceView/GameActivity/NativeActivity 提供的独立 Surface，也可以写入 TextureView 的输入 Surface 或离屏 `AHardwareBuffer`。SurfaceFlinger 是否能看到独立 layer，取决于目标 `ANativeWindow` 连接到哪个 Consumer，不能根据 API 名判断。
+Vulkan 描述 Producer（buffer 生产方）如何生成内容。它可以绘制到 SurfaceView/GameActivity/NativeActivity 提供的独立 Surface，也可以写入 TextureView 的输入 Surface 或离屏 `AHardwareBuffer`（可跨系统组件共享的图形缓冲区）。SurfaceFlinger 是否能看到独立 layer，取决于目标 `ANativeWindow` 连接到哪个 Consumer（buffer 消费方），不能根据 API 名判断。
 
 常见游戏页面会同时包含 Vulkan 主体 Surface、宿主 HWUI、系统栏和弹窗。如果引擎 HUD（抬头显示界面）已经画入同一个 swapchain image，SurfaceFlinger 仍只看到一个主体 buffer layer；画面中存在按钮，无法证明还有额外的 SF layer。
 
@@ -283,7 +283,7 @@ Command Buffer recording 是 host（CPU）工作，只负责记录命令和对�
 
 - 每个 worker 线程使用独立的 `VkCommandPool`；
 - 同一 `VkCommandBuffer` 的 begin/record/end/reset 不得并发；
-- 同一 `VkQueue` 的 host access 需要由应用串行保护；
+- 同一 `VkQueue`（向设备提交命令批次的接口）的 host access 需要由应用串行保护；
 - descriptor pool、query pool 和其他标记为 externally synchronized 的对象也要按规范加锁或分离所有权。
 
 下面的 synchronization2 骨架等待 acquired image，并在渲染完成后 signal present semaphore：
@@ -584,7 +584,7 @@ Graphite 的 `flushAndSubmit()` 使用 Recording、wait/signal backend semaphore
 #### Validation 与工具
 
 - Validation Layers：在开发构建中检查 API、同步和对象生命周期；按 Android 官方 GPU debug layers 流程打包和启用，不使用未经版本核实的全局属性片段。
-- AGI（Android GPU Inspector）：关联 Vulkan API、GPU queue、counter 和 frame capture。
+- AGI：关联 Vulkan API、GPU queue、counter 和 frame capture。
 - RenderDoc：在目标设备和构建支持时，检查单帧资源与 DrawCall。
 - Perfetto：关联线程调度、BufferQueue、SurfaceFlinger、FrameTimeline、fence 和 HWC。
 
@@ -623,7 +623,7 @@ Graphite 的 `flushAndSubmit()` 使用 Recording、wait/signal backend semaphore
 
 原生 Vulkan 由应用显式管理队列，HWUI 多队列由框架在渲染任务之间分配并行度。诊断时要区分应用队列和 HWUI 内部队列。
 
-Android 17 的 HWUI Vulkan 后端会从同一个 graphics queue family 取得两条 `VkQueue`。queue family 是一组具有相同能力标志的 Vulkan 队列，`VkQueue` 则是向设备提交命令批次的接口。queue 0 服务 RenderThread 的窗口绘制，queue 1 服务 `HardwareBitmapUploader` 的 AHardwareBuffer 上传。二者共享同一个逻辑设备 `VkDevice`，并分别绑定一个 Skia `GrDirectContext`；后者是 Skia 管理 GPU 资源与提交工作的上下文。
+Android 17 的 HWUI Vulkan 后端会从同一个 graphics queue family 取得两条 `VkQueue`。queue 0 服务 RenderThread 的窗口绘制，queue 1 服务 `HardwareBitmapUploader` 的 AHardwareBuffer 上传。二者共享同一个逻辑设备 `VkDevice`，并分别绑定一个 Skia `GrDirectContext`；后者是 Skia 管理 GPU 资源与提交工作的上下文。
 
 源码能够证明 HWUI 创建了两条 queue，也能证明 CPU 线程可以分别向它们执行 host submission（主机侧命令提交）。GPU 是否并行执行这些命令则由驱动与硬件决定；GPU 引擎、依赖、内存带宽、频率和调度策略都可能让工作交错或串行。分析时要分别标明接口保证、由源码推导的结论，以及仍需 trace 验证的硬件行为。
 
@@ -663,7 +663,7 @@ flowchart LR
 
 应用进程生产窗口 buffer，SurfaceFlinger 负责 latch（选定本轮合成使用的 buffer）与合成决策，HWC/显示设备完成 present。图中只展开应用进程内的 HWUI Vulkan 双 queue，后半段仍沿用 BufferQueue、SurfaceFlinger 与显示路径。
 
-AHardwareBuffer 是可跨系统组件共享的图形缓冲区。queue 1 负责把 CPU 侧 bitmap 像素复制进新分配的 AHardwareBuffer，窗口帧仍由 queue 0 生成。上传完成的 hardware bitmap 后续可以作为纹理由 queue 0 采样；两条 queue 不会共同 present 同一个 App Window 帧。
+queue 1 负责把 CPU 侧 bitmap 像素复制进新分配的 AHardwareBuffer，窗口帧仍由 queue 0 生成。上传完成的 hardware bitmap 后续可以作为纹理由 queue 0 采样；两条 queue 不会共同 present 同一个 App Window 帧。
 
 ### VulkanManager：共享 device，分别持有 Skia context
 
@@ -838,7 +838,7 @@ GPU 工具把 draw call 归到某帧，只能回答这些 GPU 命令属于哪组
 
 #### dequeue fence：等待旧消费者释放 buffer
 
-`VulkanSurface::dequeueNativeBuffer()` 从 App Window 的 ANativeWindow 取得 buffer 和 dequeue fence。该 fence 表示 Consumer（buffer 消费方）何时结束对这块旧 buffer 的使用；Producer（buffer 生产方）要等它 signal 后才能安全复用并写入。
+`VulkanSurface::dequeueNativeBuffer()` 从 App Window 的 ANativeWindow 取得 buffer 和 dequeue fence。该 fence 表示 Consumer 何时结束对这块旧 buffer 的使用；Producer 要等它 signal 后才能安全复用并写入。
 
 当 fence 尚未 signal 时，`VulkanManager::dequeueNextBuffer()` 会尝试：
 
