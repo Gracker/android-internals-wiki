@@ -2,9 +2,11 @@
 title: Android 17 Kernel 6.18 与 ARM64 安全开销
 section: '18.3'
 chapter: '18.3'
-status: ready-for-review
-task9_state: body-applied
-pipeline_stage: ready-for-review
+status: finalized
+task9_state: reviewed
+pipeline_stage: finalized
+last_review_finalize_at: '2026-10-05T16:09:31+08:00'
+last_review_finalize_run_id: 20261005-160534-36388fd7
 applicable_versions: Android 17 (API 37)
 tags:
   - linux
@@ -67,13 +69,13 @@ sources:
 - type: article
   path: https://juejin.cn/post/7687807835842248710
 task2b_state: body-applied
-task6_state: ready-for-review
+task6_state: reviewed
 last_body_apply_at: '2026-10-05T13:19:07+08:00'
 last_body_apply_run_id: 20261005-131534-60371103
 last_idle_audit_at: '2026-07-27T10:35:11+08:00'
 last_idle_audit_run_id: 20260727-103511-idle-audit-5f410a75
-last_verified: '2026-08-16'
-last_verified_against: Android 17 GKI 6.18 release matrix through android17-6.18-2026-06_r38 + fixed r6 source snapshot (Linux 6.18.21) + android-17.0.0_r1 lmkd/external liburing source
+last_verified: '2026-10-05'
+last_verified_against: Android 17 GKI 6.18 r6 source snapshot (Linux 6.18.21), arm64 Kconfig/gki_defconfig security options, sched_ext/F2FS/dm-verity/GCS/PAC/MTE docs and android-17.0.0_r1 lmkd/external liburing source; AndroidX Security release notes for Security State API boundaries
 confidence: high
 consolidated_from:
 - 与内核主题无关的 ART generational CMC 与 DeliQueue 内容统一归入 18.1
@@ -568,11 +570,11 @@ adb shell simpleperf stat \
 
 #### 8.4 应用侧可见的补丁状态
 
-AndroidX Security State 已在 `androidx.security:security-state:1.1.0` 提供 `SecurityPatchState`，可查询 System、System Modules（Mainline）和 Kernel 的安全补丁状态；`androidx.security:security-state-provider:1.0.0` 提供 `UpdateInfoService`，让 OEM OTA 客户端、Google Play System Update 等更新提供方发布 ASPL（Available Security Patch Level，可用安全补丁级别）。[已验证: AndroidX Security release notes, 2026-10-05][来源: 技术文章/source/juejin-android/2026-09-26-76878078-AndroidX 新增 Security.md]
+AndroidX Security 发布说明显示，`androidx.security:security-state:1.1.0` 提供 `SecurityPatchState`，可查询 System、System Modules（Mainline）和 Kernel 的安全补丁状态；`androidx.security:security-state-provider:1.0.0` 提供 `UpdateInfoService`，让 OEM OTA 客户端、Google Play System Update 等更新提供方发布 ASPL（Available Security Patch Level，可用安全补丁级别）。
 
-这组 API 适合回答设备当前补丁状态、是否存在可安装的安全更新，以及某个 CVE 是否已由厂商补充补丁记录（vendor supplemental patch records）覆盖；`areCvesPatched()` 会把这类补充记录纳入判断。[已验证: AndroidX Security release notes, 2026-10-05][来源: 技术文章/source/juejin-android/2026-09-26-76878078-AndroidX 新增 Security.md]
+这组 API 适合回答设备当前补丁状态、是否存在可安装的安全更新，以及某个 CVE 是否已由厂商补充补丁记录（vendor supplemental patch records）覆盖；`areCvesPatched()` 会把这类补充记录纳入判断。
 
-它不能替代本节前面的 `.config`、启动参数、CPU capability、漏洞状态节点和负载测试。Security State 给出的是软件补丁合规性与可用更新状态，不报告 KPTI、BTI、MTE、GCS 等机制在当前内核路径或进程里的启用细节，也不测量它们的运行成本。[已验证: AndroidX Security release notes, 2026-10-05][来源: 技术文章/source/juejin-android/2026-09-26-76878078-AndroidX 新增 Security.md]
+它不能替代本节前面的 `.config`、启动参数、CPU capability、漏洞状态节点和负载测试。Security State 给出的是软件补丁合规性与可用更新状态，不报告 KPTI、BTI、MTE、GCS 等机制在当前内核路径或进程里的启用细节，也不测量它们的运行成本。
 
 ### 9. 应用与系统性能优化边界
 
