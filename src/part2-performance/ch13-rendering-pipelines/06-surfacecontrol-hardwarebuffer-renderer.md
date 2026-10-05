@@ -182,11 +182,11 @@ consolidated_from:
 
 # SurfaceControl 与 HardwareBufferRenderer
 
-本文以 AOSP `android-17.0.0_r1` 为平台源码基线，以 `android17-6.18-2026-06_r6` 为内核基线。`ASurfaceControl` 从 Android 10（API 29）起向 NDK 开放，适合已经拥有原生渲染器、硬件 buffer pool（缓冲池），或者需要管理跨进程嵌入层级的组件。普通 View 页面通常无须绕过 HWUI 直接使用这组 API。
+本文以 AOSP `android-17.0.0_r1` 为平台源码基线，以 `android17-6.18-2026-06_r6` 为内核基线。`ASurfaceControl` 从 Android 10（API 29）起向 NDK 开放。它适合已经拥有原生渲染器和硬件 buffer pool（缓冲池）的组件，也适合需要自己管理跨进程嵌入层级的组件；普通 View 页面通常无须绕过 HWUI 直接使用这组 API。
 
 理解 SurfaceControl 时，要把 Layer 节点、像素 buffer、transaction（事务）和同步 fence 分开。`ASurfaceControl` 是 Layer 节点的句柄，`AHardwareBuffer` 携带像素，`ASurfaceTransaction` 收集一批准备原子应用的状态变更，fence 则说明 buffer 何时可以读取或复用。这四类对象有各自的生命周期和所有权，不能相互替代。
 
-SurfaceControl NDK API 让应用直接创建和提交 layer transaction，HardwareBufferRenderer 则把渲染结果写入 HardwareBuffer。组合使用时要管理 buffer 生命周期、fence 和 transaction 提交。
+本文前半讲 SurfaceControl 的 Layer 树、transaction 提交和 fence 边界，后半讲 HardwareBufferRenderer（HBR）如何把 RenderNode 场景树画进调用方持有的 HardwareBuffer。两者能接起来用：HBR 产出 buffer，SurfaceControl 把它作为独立 Layer 提交给 SurfaceFlinger 合成；中间的 buffer 所有权、fence 方向和回调生命周期由应用自己维护。
 
 ## Layer 创建与 SurfaceControl Transaction
 
@@ -761,11 +761,13 @@ Perfetto 配置应包含应用 atrace、线程调度、Binder、gfx/view、Surfa
 
 ## HardwareBuffer 渲染与提交
 
-SurfaceControl 管理 layer 状态，HardwareBufferRenderer 负责生成可提交内容。两者之间通过 HardwareBuffer 和同步 fence 交接。
+SurfaceControl 管理 Layer 状态、transaction 提交和 fence 边界，HardwareBufferRenderer 负责把内容画进调用方提供的 `HardwareBuffer`。两者通过一块 buffer 和它两端的 fence 交接。
 
 ### HBR 的问题边界
 
-`Surface.lockCanvas()` 让 CPU 直接绘制到 `Surface`。调用方从 `BufferQueue` 取得可写 buffer，Skia software backend 在 CPU 上完成光栅化（把矢量绘制命令转成像素），`unlockCanvasAndPost()` 再将 buffer 提交回队列。复杂 Path、大尺寸缩放、滤镜或高分辨率离屏内容会消耗较多 CPU 时间，`HardwareBufferRenderer`（HBR）可以处理其中一类需求。
+HBR 把一棵 `RenderNode` 场景树光栅化到**调用方拥有的 `HardwareBuffer`**。调用方自行决定这个 buffer 交给 `SurfaceControl`、其他进程、GPU 还是媒体 consumer，也自行负责同步与复用。这条分界把它和另外两个 Canvas API 区分开：`lockCanvas()` 与 `lockHardwareCanvas()` 都把内容写进 `Surface` 背后的 BufferQueue，输出目标不由调用方决定。
+
+先看基线 `Surface.lockCanvas()`。它让 CPU 直接绘制到 `Surface`：调用方从 `BufferQueue` 取得可写 buffer，Skia software backend 在 CPU 上完成光栅化（把矢量绘制命令转成像素），`unlockCanvasAndPost()` 再把 buffer 提交回队列。复杂 Path、大尺寸缩放、滤镜或高分辨率离屏内容会消耗较多 CPU 时间，HBR 可以处理其中一类需求。
 
 HBR 不能简单理解成 `lockCanvas()` 的硬件加速开关。Android 还提供 `Surface.lockHardwareCanvas()`，它已经使用 HWUI/GPU，输出目标仍是 `Surface`。三者的边界如下：
 
@@ -775,9 +777,9 @@ HBR 不能简单理解成 `lockCanvas()` 的硬件加速开关。Android 还提�
 | `Surface.lockHardwareCanvas()` | HWUI / GPU | `Surface` 背后的 buffer | 仍沿用 Surface / BufferQueue；每帧必须完整覆盖目标 |
 | `HardwareBufferRenderer` | HWUI RenderThread / GPU | 调用方提供的 `HardwareBuffer` | 调用方选择 consumer，并管理 presentation fence、release fence 和 buffer 池 |
 
-HBR 的区别在于，它把一棵 `RenderNode` 场景树光栅化到**调用方拥有的 `HardwareBuffer`**。调用方自行决定这个 buffer 交给 `SurfaceControl`、其他进程、GPU 或媒体 consumer，并负责同步与复用。如果已经有一个正常消费的 `Surface`，需求只是 GPU Canvas，`lockHardwareCanvas()` 或面向 Surface 的 `HardwareRenderer` 通常更合适。
-
 Android 17 的 `Surface.java` 明确规定，`lockHardwareCanvas()` 不保留前一帧内容，调用方每次都要完整覆盖。HBR 在 draw 前**不会自动清空**目标，未被本次绘制覆盖的像素会继续保留；这是局部更新能力，也可能成为残留旧像素的来源。[AOSP: `Surface.lockHardwareCanvas()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Surface.java) [AOSP: `HardwareBufferRenderer`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java)
+
+如果已经有一个正常消费的 `Surface`，需求只是 GPU Canvas，`lockHardwareCanvas()` 或面向 Surface 的 `HardwareRenderer` 通常更合适。
 
 ### Android 17 中的实现边界
 
@@ -1003,7 +1005,7 @@ HBR 的收益取决于原有瓶颈。下表只用于选择候选方案，不能�
 - 结果本来就要作为独立 `HardwareBuffer` 继续消费，避免为了得到独立 buffer 再设计一套读回路径。
 - 业务已有合法、稳定的 `SurfaceControl` layer，需要显式控制 buffer 与原子 transaction。
 
-简单图形、低分辨率静态内容或 GPU 已饱和的场景，HBR 可能没有收益。HBR 使用与普通 UI 共享的 RenderThread/GPU，离屏任务过重时，View 动画和窗口帧也可能受影响。direct `setBuffer()` 只让 buffer 成为独立 Layer 输入，HWC 仍会根据格式、变换、遮挡、带宽和硬件能力选择 `DEVICE` 或 `CLIENT` composition，并不保证分配 overlay plane。
+简单图形、低分辨率静态内容或 GPU 已饱和的场景，HBR 可能没有收益。HBR 使用与普通 UI 共享的 RenderThread/GPU，离屏任务过重时，View 动画和窗口帧也可能受影响。直接调用 `setBuffer()` 只让 buffer 成为独立 Layer 输入，HWC 仍会根据格式、变换、遮挡、带宽和硬件能力选择 `DEVICE` 或 `CLIENT` composition，并不保证分配 overlay plane。
 
 基准测试至少要固定设备与 GPU、Android build、buffer format/size/usage、场景内容、清屏策略、目标帧率、buffer 池大小，以及冷启动或稳态条件。测量时分别记录 CPU recording、RenderThread、GPU、transaction 到 latch 和 release 等待；单个总耗时无法说明回归来自哪个阶段。
 
@@ -1039,7 +1041,7 @@ PDF 页、复杂图形卡片、自定义贴纸或缩略图生成，如果 CPU ra
 
 #### 高帧率直接 layer 提交
 
-HBR 允许应用按自己的节奏生成 buffer，但不会自动接入 `Choreographer`、FrameTimeline 或 display refresh rate 策略。高帧率场景还要自行处理：
+HBR 允许应用按自己的节奏生成 buffer，但不会自动接入 `Choreographer`、FrameTimeline 或显示刷新率策略。高帧率场景还要自行处理：
 
 - 基于 VSync 的生产节奏；
 - `Transaction.setFrameTimeline()` 或系统提供的 frame timeline token；
@@ -1047,7 +1049,7 @@ HBR 允许应用按自己的节奏生成 buffer，但不会自动接入 `Choreog
 - buffer 池背压，防止 producer 无限领先；
 - GPU 预算与 UI 渲染争用。
 
-选择 HBR 本身不会提高刷新率，也不会自动缩短 display pipeline。
+选择 HBR 本身不会提高刷新率，也不会自动缩短显示管线。
 
 ### Perfetto：按阶段找证据
 
