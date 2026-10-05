@@ -633,7 +633,12 @@ Display bound 指游戏 buffer 已 ready，SurfaceFlinger 却错过目标 latch�
 
 ## 小游戏、云游戏、AR 与 XR 的边界
 
-这些场景只能在本地 game loop 与显示阶段复用本节方法，端到端责任边界各不相同：小游戏还要区分 JS/runtime、bridge（脚本运行时与原生宿主之间的调用层）及宿主 `SurfaceView`/`TextureView`；云游戏要把云端排队、渲染、编码和网络遥测关联到本地解码与 present；手机 AR 要统一 Camera、IMU/pose、render target 与 present 的时钟；头显 XR 由 OpenXR runtime/compositor 负责 predicted display（预测显示时间）、reprojection（依据最新姿态修正已渲染画面）与最终显示交接，不保证经过普通 App `queueBuffer()`。
+这些场景只能在本地 game loop 与显示阶段复用本节方法，端到端责任边界各不相同：
+
+- **小游戏**：还要区分 JS/runtime、bridge（脚本运行时与原生宿主之间的调用层）及宿主 `SurfaceView`/`TextureView`。
+- **云游戏**：要把云端排队、渲染、编码和网络遥测关联到本地解码与 present。
+- **手机 AR**：要统一 Camera、IMU/pose、render target 与 present 的时钟。
+- **头显 XR**：由 OpenXR runtime/compositor 负责 predicted display（预测显示时间）、reprojection（依据最新姿态修正已渲染画面）与最终显示交接，不保证经过普通 App `queueBuffer()`。
 
 本节不展开四套独立教程。TextureView 的消费语义见 [13.3 SurfaceView 与 TextureView 渲染管线](03-surfaceview-textureview-pipelines.md)，云游戏本地视频与 sideband 见 [13.11 视频 Overlay、Media3 与专业编解码管线](11-video-overlay-media3-codec-pipeline.md)，XR runtime/compositor 见 [13.13 Android 17 / Android XR 空间 UI 与环境资产渲染性能](13-android-xr-spatial-ui-rendering.md)。进入对应专题前，应先确认最终 buffer Producer、输出 carrier（承载方式）、时钟域和 present 责任方。
 
