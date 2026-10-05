@@ -3,9 +3,11 @@ title: 性能指标体系与线上监控
 chapter: '16.3'
 status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-14'
-last_verified_against: AOSP android-17.0.0_r1；Android common kernel android17-6.18-2026-06_r6；Android Vitals / Macrobenchmark 1.4.1 文档
+last_verified: '2026-10-05'
+last_verified_against: AOSP android-17.0.0_r1；Android common kernel android17-6.18-2026-06_r6；Android Vitals / Google Play Vitals / Macrobenchmark 1.4.1 文档（2026-10-05）
 confidence: high
+last_idle_audit_at: '2026-10-05T22:43:01+08:00'
+last_idle_audit_run_id: 20261005-223534-idle-audit-060f784f
 sources:
 - type: aosp
   tag: android-17.0.0_r1
@@ -32,7 +34,7 @@ sources:
 - type: official
   path: developer.android.com/topic/performance/vitals/launch-time
 - type: official
-  path: developer.android.com/topic/performance/vitals/excessive-wakelock
+  path: https://developer.android.com/google/play/vitals/excessive-wakelock
 - type: official
   path: support.google.com/googleplay/android-developer/answer/9844486
 - type: official
@@ -1017,7 +1019,7 @@ Vitals 的 UI Toolkit 渲染统计不覆盖直接 OpenGL/Vulkan 主画面；游�
 - [Play Console Help：Monitor your app's technical quality](https://support.google.com/googleplay/android-developer/answer/9844486)
 - [Android Developers：Slow rendering](https://developer.android.com/topic/performance/vitals/render)
 - [Android Developers：App startup time](https://developer.android.com/topic/performance/vitals/launch-time)
-- [Android Developers：Excessive partial wake locks](https://developer.android.com/topic/performance/vitals/excessive-wakelock)
+- [Android Developers：Excessive partial wake locks](https://developer.android.com/google/play/vitals/excessive-wakelock)
 - [AndroidX Benchmark：FrameTimingMetric](https://developer.android.com/reference/androidx/benchmark/macro/FrameTimingMetric)
 - [Android API：ApplicationExitInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo)
 - [AOSP android-17.0.0_r1：FrameMetrics.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java)
