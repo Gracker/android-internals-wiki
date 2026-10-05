@@ -53,10 +53,6 @@ related_chapters:
 - '22.3'
 - '2.4'
 - '2.7'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part5-app/ch22-rendering-practice/01-layout-optimization.md

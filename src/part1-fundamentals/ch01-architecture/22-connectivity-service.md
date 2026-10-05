@@ -63,12 +63,7 @@ related_chapters:
 - '12.1'
 - '12.2'
 - '24.10'
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-pipeline_stage: ready-to-publish
 last_review_finalize_at: '2026-08-20T09:26:58+08:00'
-last_review_finalize_run_id: 20260820-091252-c2bdcda8
 last_consolidated_at: '2026-08-11'
 consolidated_from:
 - src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md

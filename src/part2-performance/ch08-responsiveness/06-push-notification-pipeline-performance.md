@@ -52,11 +52,7 @@ related_chapters:
 - '8.2'
 - '25.3'
 - '11.3'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 last_deep_review_at: '2026-08-19T16:43:11+08:00'
-last_deep_review_run_id: 20260819-163522-deep-review-1ce61161
 ---
 
 # 推送通知管线性能：FCM 投递、NMS 入队与 SystemUI 渲染

@@ -3,10 +3,6 @@ title: Android 网络与 TLS 性能优化
 chapter: '12.1'
 section: '12.1'
 status: finalized
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-pipeline_stage: ready-to-publish
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-08-11'
 last_verified_against: AOSP android-17.0.0_r1；Android 17 / API 37；OkHttp 5.3.0；Cronet Play services 18.0.1；HTTP/2、HTTP/3 与 QUIC RFC（2026-07）

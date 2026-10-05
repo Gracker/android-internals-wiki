@@ -111,15 +111,10 @@ sources:
 - type: official
   path: https://perfetto.dev/docs/data-sources/frametimeline
   role: App SurfaceFrame、DisplayFrame 与显示端 jank
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_verified: '2026-07-31'
 last_verified_against: android-17.0.0_r1 (GLSurfaceView.java, GraphicsEnvironment.java, egl_platform_entries.cpp, Surface.cpp, BufferQueueCore.cpp, BufferQueueProducer.cpp, BLASTBufferQueue.cpp, FrontEnd, HWComposer.cpp) / android17-6.18-2026-06_r6 (dma-buf.c, sync_file.c, dma-fence.c)
 confidence: high
 last_idle_audit_at: 2026-07-29
-last_idle_audit_run_id: 20260729-103556-idle-audit-caf6b94a
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch13-rendering-pipelines/08-opengl-es.md

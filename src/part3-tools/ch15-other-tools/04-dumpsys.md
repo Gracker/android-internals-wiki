@@ -2,8 +2,6 @@
 title: dumpsys 系列命令
 chapter: '15.4'
 section: '15.4'
-task2b_state: fixed
-pipeline_stage: ready-to-publish
 applicable_versions: Android 6.0 (API 23) – Android 17 (API 37)
 last_verified: '2026-08-13'
 last_verified_against: AOSP android-17.0.0_r1
@@ -27,8 +25,6 @@ related_chapters:
 - '14.1'
 - '15.1'
 status: finalized
-task6_state: reviewed
-task9_state: reviewed
 ---
 
 # dumpsys 系列命令

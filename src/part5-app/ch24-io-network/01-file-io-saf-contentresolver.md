@@ -76,14 +76,8 @@ related_chapters:
 - '6.4'
 - '9.1'
 - '24.4'
-pipeline_stage: finalized
 last_review_finalize_at: '2026-08-15T09:21:12+08:00'
-last_review_finalize_run_id: 20260815-092112-gracker-writing-review
 last_draft_polish_at: '2026-08-15T09:21:12+08:00'
-last_draft_polish_run_id: 20260815-092112-gracker-writing
-task9_state: reviewed
-task2b_state: fixed
-task6_state: reviewed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part5-app/ch24-io-network/08-io-network-case-studies.md

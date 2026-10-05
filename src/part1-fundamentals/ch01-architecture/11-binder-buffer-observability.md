@@ -18,13 +18,9 @@ related_chapters:
 - '1.15'
 - '1.10'
 - '14.3'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 last_verified: '2026-08-16'
 last_verified_against: AOSP android-17.0.0_r1 / external/perfetto android-17.0.0_r1 / android17-6.18-2026-06_r6
 last_review_finalize_at: '2026-08-16'
-last_review_finalize_run_id: 20260816-140530-1396d202
 confidence: high
 sources:
 - type: aosp

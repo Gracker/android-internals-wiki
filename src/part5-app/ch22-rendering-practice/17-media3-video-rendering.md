@@ -34,15 +34,8 @@ sources:
   path: https://android.googlesource.com/platform/frameworks/av/+/android-17.0.0_r1/media/libstagefright/MediaCodec.cpp
   note: Android 17 MediaCodec、Surface 连接与帧丢弃配置
 last_body_apply_at: '2026-08-27T07:16:40+08:00'
-last_body_apply_run_id: 20260827-071518-6c1f5795
-task2b_state: fixed
-task6_state: verified
-task9_state: reviewed
-pipeline_stage: finalized
 last_draft_polish_at: '2026-08-15T06:12:27+08:00'
-last_draft_polish_run_id: 20260815-061227-gracker-writing
 last_review_finalize_at: '2026-08-27T08:53:35+08:00'
-last_review_finalize_run_id: 20260827-084542-9a6bc8ec
 consolidated_from:
 - src/part5-app/ch22-rendering-practice/30-media3-video-rendering.md
 ---

@@ -4,7 +4,6 @@ chapter: '9.5'
 section: '9.5'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-task9_state: reviewed
 last_verified: '2026-08-29'
 last_verified_against: AOSP android-17.0.0_r1
 confidence: medium
@@ -64,11 +63,7 @@ related_chapters:
 - '9.3'
 - '1.9'
 - '9.4'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task2b_state: fixed
 last_idle_audit_at: '2026-08-29T18:35:04+08:00'
-last_idle_audit_run_id: 20260829-183504-idle-audit-cb8e7f3a
 ---
 
 # Notification 性能与 ANR

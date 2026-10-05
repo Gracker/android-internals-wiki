@@ -9,16 +9,10 @@ tags:
 - io
 - http
 last_draft_polish_at: '2026-08-08T15:36:16+08:00'
-last_draft_polish_run_id: 20260808-153552-draft-polish-43dea43a
 last_rework_at: '2026-07-30T13:35:29+08:00'
-last_rework_run_id: 20260730-133529-rework-43dea43a
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: finalized
 last_verified: '2026-08-15'
 last_verified_against: Android android-17.0.0_r1 / kernel android17-6.18-2026-06_r6 / Android Developers Data Saver, NetworkCapabilities, NetworkStatsManager and WorkManager references 2026-08; verified Android TV Data Saver exception and no Android 18/API 38+ conclusions.
 last_review_finalize_at: '2026-08-08T16:07:26+08:00'
-last_review_finalize_run_id: 20260808-160556-bac29a37
 confidence: high
 sources:
 - type: aosp

@@ -13,16 +13,11 @@ tags:
 related_chapters:
 - '22.3'
 - '22.2'
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: finalized
 last_draft_polish_at: '2026-08-15T01:15:55+08:00'
-last_draft_polish_run_id: 20260815-011555-gracker-writing-review
 last_verified: '2026-08-15'
 last_verified_against: Android android-17.0.0_r1; AndroidX Compose BOM 2026.08.00 / UI Runtime Foundation 1.12.0; Kotlin/Compose compiler plugin 2.4.10; Compose 1.11.4 source artifacts retained as the previous verification baseline; android17-6.18 kernel notes only for device-side mechanisms
 confidence: high
 last_review_finalize_at: '2026-08-15T01:15:55+08:00'
-last_review_finalize_run_id: 20260815-011555-gracker-writing-review
 sources:
 - type: reference
   path: 'Android developer documentation: Views in Compose / Compose in Views / Compose testing interoperability'

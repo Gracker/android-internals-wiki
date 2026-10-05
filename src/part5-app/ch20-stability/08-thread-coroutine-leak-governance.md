@@ -85,13 +85,8 @@ sources:
 - type: aosp
   path: AOSP android-17.0.0_r1 / Android 17 API 37 platform boundary
 last_draft_polish_at: '2026-07-31T19:35:24+08:00'
-last_draft_polish_run_id: 20260731-193524-draft-polish-a7da59d3
 status: finalized
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: finalized
 last_review_finalize_at: '2026-07-31T20:08:09+08:00'
-last_review_finalize_run_id: 20260731-200809-b4d1007d
 last_consolidated_at: '2026-08-24'
 ---
 

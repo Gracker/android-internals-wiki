@@ -38,12 +38,7 @@ related_chapters:
 - '2.3'
 - '2.4'
 - '14.1'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_review_finalize_at: '2026-07-31T08:12:00+08:00'
-last_review_finalize_run_id: 20260731-081158-de425757
 ---
 
 # AOSP 代码阅读

@@ -16,7 +16,6 @@ related_chapters:
 - '17.0'
 - '17.3'
 - '15.7'
-task6_state: reviewed
 sources:
 - type: official
   path: https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler
@@ -41,9 +40,6 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/libc/include/signal.h
 status: finalized
-pipeline_stage: ready-to-publish
-task9_state: reviewed
-task2b_state: fixed
 ---
 
 # 崩溃与 ANR 捕获机制

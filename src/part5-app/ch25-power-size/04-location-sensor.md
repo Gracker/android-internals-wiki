@@ -57,14 +57,8 @@ related_chapters:
 - '25.1'
 - '25.2'
 - '11.2'
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_draft_polish_at: '2026-08-15T14:39:53+08:00'
-last_draft_polish_run_id: 20260815-143953-gracker-writing-446
 last_review_finalize_at: '2026-08-15T14:39:53+08:00'
-last_review_finalize_run_id: 20260815-143953-gracker-writing-446
 ---
 
 # 定位与传感器功耗优化

@@ -5,7 +5,6 @@ chapter: '17.11'
 confidence: high
 last_verified: '2026-08-14'
 last_verified_against: Android 17 WebView and PixelCopy APIs plus July 2026 renderer-termination guidance; current W3C performance specifications; Flutter 3.47.0 stable tag, Android engine source, architecture overview, and current FrameTiming APIs
-pipeline_stage: ready-to-publish
 related_chapters:
 - '17.0'
 - '17.1'
@@ -40,9 +39,6 @@ tags:
 - webview
 - flutter
 - hybrid
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
 title: 混合栈与跨平台 APM (WebView / Flutter)
 ---
 

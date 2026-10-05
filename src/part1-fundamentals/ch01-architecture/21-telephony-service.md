@@ -82,12 +82,7 @@ related_chapters:
 - '1.12'
 - '1.10'
 - '24.9'
-task2b_state: reviewed
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
 last_review_finalize_at: '2026-08-18'
-last_review_finalize_run_id: 20260818-124458-491e1683
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/42-telephonymanager-architecture-performance.md
 ---

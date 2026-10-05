@@ -7,11 +7,7 @@ applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
 last_verified: '2026-08-02'
 last_verified_against: AOSP android-17.0.0_r1；Android 17 / API 37 SDK 文档；Android Developers / source.android.com / Perfetto 文档 2026-07；review-finalize 2026-08-02 逐条核验 ScanUtil.kt / AppScanStats.kt / ScanMetricsReporter.kt / ScanThrottler.kt
 confidence: high
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: finalized
 last_review_finalize_at: '2026-08-02T22:05:39+08:00'
-last_review_finalize_run_id: 20260802-220539-df74ad6c
 tags:
 - bluetooth
 - ble

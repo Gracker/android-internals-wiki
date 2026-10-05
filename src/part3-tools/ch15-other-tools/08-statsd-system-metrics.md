@@ -43,10 +43,6 @@ related_chapters:
 - '15.16'
 - '16.3'
 - '26.1'
-task2b_state: fixed
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 ---
 
 # statsd 与系统级指标采集

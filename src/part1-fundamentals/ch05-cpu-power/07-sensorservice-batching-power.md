@@ -37,10 +37,6 @@ related_chapters:
 - '11.2'
 - '25.4'
 - '15.5'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 ---
 
 # SensorService 与传感器批处理功耗模型

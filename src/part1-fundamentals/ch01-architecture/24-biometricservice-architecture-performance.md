@@ -3,7 +3,6 @@ title: Android 17 BiometricService 架构与性能优化
 chapter: '1.24'
 section: '1.24'
 status: finalized
-pipeline_stage: ready-to-publish
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-08-18'
 last_verified_against: AOSP android-17.0.0_r1

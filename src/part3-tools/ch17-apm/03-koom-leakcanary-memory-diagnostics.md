@@ -44,10 +44,6 @@ sources:
   path: https://square.github.io/leakcanary/recipes/
 - type: official
   path: https://square.github.io/leakcanary/ui-tests/
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part3-tools/ch17-apm/03-koom.md

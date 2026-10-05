@@ -7,9 +7,6 @@ applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-08-13'
 last_verified_against: Perfetto FrameTimeline docs; AOSP android-17.0.0_r1 BufferQueueProducer/Consumer/Core, BLASTBufferQueue, BufferReleaseChannel and BufferStuffing; android-15/16 release comparison for BUFFER_RELEASE_CHANNEL boundary
 confidence: medium
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 sources:
 - type: material
   path: OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-mechanism-detail.md
@@ -52,7 +49,6 @@ related_chapters:
 - '2.8'
 - '7.2'
 - '13.1'
-task2b_state: fixed
 ---
 
 # BufferQueue 阻塞的 Perfetto 识别

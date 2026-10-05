@@ -3,7 +3,6 @@ title: SurfaceFlinger 合成、FrontEnd 与事务队列
 chapter: '2.9'
 section: '2.9'
 status: finalized
-pipeline_stage: ready-to-publish
 applicable_versions: Android 12 (API S) - Android 17 (API 37)
 last_verified: '2026-08-20'
 last_verified_against: AOSP android-17.0.0_r1 frameworks/native SurfaceFlinger/FrontEnd/CompositionEngine/HWComposer, hardware/interfaces Composer3; android17-6.18-2026-06_r6 dma-buf/dma-fence; Android 11-16 tags only for version evolution
@@ -96,9 +95,6 @@ related_chapters:
 - '1.19'
 - '13.5'
 - '14.2'
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md

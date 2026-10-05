@@ -3,10 +3,7 @@ title: Android 17 Kernel 6.18 与 ARM64 安全开销
 section: '18.3'
 chapter: '18.3'
 status: finalized
-task9_state: reviewed
-pipeline_stage: finalized
 last_review_finalize_at: '2026-10-05T16:09:31+08:00'
-last_review_finalize_run_id: 20261005-160534-36388fd7
 applicable_versions: Android 17 (API 37)
 tags:
   - linux
@@ -68,12 +65,8 @@ sources:
   path: https://developer.android.com/jetpack/androidx/releases/security
 - type: article
   path: https://juejin.cn/post/7687807835842248710
-task2b_state: body-applied
-task6_state: reviewed
 last_body_apply_at: '2026-10-05T13:19:07+08:00'
-last_body_apply_run_id: 20261005-131534-60371103
 last_idle_audit_at: '2026-07-27T10:35:11+08:00'
-last_idle_audit_run_id: 20260727-103511-idle-audit-5f410a75
 last_verified: '2026-10-05'
 last_verified_against: Android 17 GKI 6.18 r6 source snapshot (Linux 6.18.21), arm64 Kconfig/gki_defconfig security options, sched_ext/F2FS/dm-verity/GCS/PAC/MTE docs and android-17.0.0_r1 lmkd/external liburing source; AndroidX Security release notes for Security State API boundaries
 confidence: high

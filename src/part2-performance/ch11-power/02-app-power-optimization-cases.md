@@ -2,15 +2,12 @@
 title: App 耗电优化与案例
 chapter: '11.2'
 status: finalized
-pipeline_stage: ready-to-publish
-task6_state: reviewed
 section: '11.2'
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 last_verified: '2026-08-30'
 last_verified_against: AOSP android-17.0.0_r1, android17-6.18-2026-06_r6, Android Developers Android 16 JobScheduler quota / Android 17 background audio / exact alarm / foreground service / WorkManager docs
 confidence: medium-high
 last_idle_audit_at: '2026-08-30T22:50:37+08:00'
-last_idle_audit_run_id: 20260830-224346-idle-audit-4d6023fa
 sources:
 - type: official
   path: https://developer.android.com/topic/performance/power
@@ -86,8 +83,6 @@ related_chapters:
 - '5.2'
 - '5.5'
 - '11.3'
-task2b_state: fixed
-task9_state: reviewed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch11-power/02-app-power-optimization.md

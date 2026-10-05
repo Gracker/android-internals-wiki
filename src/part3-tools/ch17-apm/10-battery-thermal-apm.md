@@ -15,10 +15,6 @@ tags:
 related_chapters:
 - '17.0'
 - '17.7'
-pipeline_stage: ready-to-publish
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
 sources:
 - type: official
   path: https://developer.android.com/reference/android/os/PowerManager

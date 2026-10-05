@@ -18,15 +18,9 @@ confidence: medium-high
 consolidated_from:
 - src/part5-app/ch25-power-size/12-android17-excessive-cpu-kill.md
 - src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 last_draft_polish_at: '2026-08-15T16:16:05+08:00'
-last_draft_polish_run_id: 20260815-161605-gracker-writing-454
 last_review_finalize_at: '2026-08-15T16:16:05+08:00'
-last_review_finalize_run_id: 20260815-161605-gracker-writing-454
 last_rework_at: '2026-08-15T16:16:05+08:00'
-last_rework_run_id: 20260815-161605-gracker-writing-454
 sources:
 - type: aosp
   title: ThreadPoolExecutor / Process / bionic times / procfs source verification

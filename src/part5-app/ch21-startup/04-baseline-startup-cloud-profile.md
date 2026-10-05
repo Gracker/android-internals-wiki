@@ -67,10 +67,6 @@ consolidated_from:
 - src/part5-app/ch21-startup/10-cloud-profile-dm-install-compile.md
 - src/part2-performance/ch08-responsiveness/05-baseline-profiles.md
 - src/part3-tools/ch17-apm/07-jetpack-benchmark-baseline-profiles.md#profile-generation
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 ---
 

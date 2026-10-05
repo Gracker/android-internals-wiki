@@ -7,7 +7,6 @@ last_verified: '2026-10-05'
 last_verified_against: AOSP android-17.0.0_r1；Android common kernel android17-6.18-2026-06_r6；Android Vitals / Google Play Vitals / Macrobenchmark 1.4.1 文档（2026-10-05）
 confidence: high
 last_idle_audit_at: '2026-10-05T22:43:01+08:00'
-last_idle_audit_run_id: 20261005-223534-idle-audit-060f784f
 sources:
 - type: aosp
   tag: android-17.0.0_r1
@@ -96,10 +95,6 @@ tags:
   - anr
   - startup
   - production
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 section: '16.3'
 related_chapters:
 - '7.1'

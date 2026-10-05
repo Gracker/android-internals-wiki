@@ -86,18 +86,10 @@ title: PerformanceHintManager 与 ADPF 能效验证
 chapter: '25.8'
 section: '25.8'
 status: finalized
-pipeline_stage: finalized
-task6_state: verified
-task9_state: verified
-task2b_state: fixed
 last_idle_audit_at: '2026-08-20T01:13:45+08:00'
-last_idle_audit_run_id: 20260820-011345-idle-audit-3ae38f95
 last_rework_at: '2026-08-22T09:37:17+08:00'
-last_rework_run_id: 20260822-093550-rework-3ae38f95
 last_draft_polish_at: '2026-08-15T15:29:10+08:00'
-last_draft_polish_run_id: 20260815-152910-gracker-writing-451
 last_review_finalize_at: '2026-08-25T20:23:39+08:00'
-last_review_finalize_run_id: 20260825-200812-6e763501
 ---
 
 # PerformanceHintManager 与 ADPF 能效验证

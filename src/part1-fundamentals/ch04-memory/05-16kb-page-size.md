@@ -53,14 +53,8 @@ related_chapters:
 - '1.6'
 - '20.13'
 - '25.10'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_review_finalize_at: '2026-08-29T10:14:09+08:00'
-last_review_finalize_run_id: 20260829-100545-37b74950
 last_body_apply_at: '2026-08-29T09:24:10+08:00'
-last_body_apply_run_id: 20260829-091539-d315b92b
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part5-app/ch20-stability/07-16kb-native-library-compatibility.md

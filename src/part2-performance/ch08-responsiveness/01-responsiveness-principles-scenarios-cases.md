@@ -3,7 +3,6 @@ title: 响应速度原理、场景与案例
 chapter: '8.1'
 section: '8.1'
 status: finalized
-pipeline_stage: ready-to-publish
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
   - responsiveness
@@ -91,9 +90,6 @@ related_chapters:
 - '8.3'
 - '3.2'
 - '7.2'
-task6_state: reviewed
-task2b_state: fixed
-task9_state: reviewed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md

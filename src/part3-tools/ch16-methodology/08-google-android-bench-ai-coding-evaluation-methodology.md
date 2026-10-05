@@ -2,20 +2,16 @@
 title: Google Android Bench：AI 编码能力评测方法论
 chapter: '16.8'
 section: '16.8'
-status: ready-for-review
-pipeline_stage: ready-for-review
-task2b_state: body-applied
-task6_state: ready-for-review
-task9_state: body-applied
+status: finalized
 last_body_apply_at: '2026-10-05T15:21:20+08:00'
-last_body_apply_run_id: 20261005-151534-ee723ce2
-applicable_versions: Android 工程任务（平台结论最高 Android 17 / API 37；评测框架版本单独固定）
-last_verified: '2026-08-14'
-last_verified_against: 2026-08-14 Android Bench 官方 methodology（Harbor + mini-swe-agent v2）与 Harbor Hub latest 数据集（2026-07-08）；归档仓库 commit 65a86bf41e45dde517a65d6e65a6dc7cdd2063ea 的指南、技术报告及评分源码
+last_review_finalize_at: '2026-10-05T18:10:00+08:00'
+applicable_versions: Android Bench 2.0 与 Android Bench 1.0/Harbor Hub v1.3；平台结论最高 Android 17 / API 37
+last_verified: '2026-10-05'
+last_verified_against: 2026-10-05 Android Bench 官方 methodology 2.0；Harbor Hub android-bench/android-bench latest rev.5/v1.3.0；归档仓库 commit 65a86bf41e45dde517a65d6e65a6dc7cdd2063ea 的指南、技术报告及评分源码
 confidence: high
 sources:
 - type: official
-  path: https://developer.android.com/bench/methodology
+  path: https://developer.android.com/bench/methodology/2
 - type: official
   path: https://android-developers.googleblog.com/2026/03/elevating-ai-assisted-androi.html
 - type: source
@@ -26,8 +22,6 @@ sources:
   path: https://github.com/android-bench/android-bench/blob/65a86bf41e45dde517a65d6e65a6dc7cdd2063ea/docs/guide.md
 - type: dataset
   path: https://hub.harborframework.com/datasets/android-bench/android-bench/latest
-- type: discussion
-  path: https://discuss.grapheneos.org/d/42511-grapheneos-has-fixed-the-massive-android-17-qpr1-kernel-performance-regression
 tags:
 - android-bench
 - ai-evaluation
@@ -40,185 +34,154 @@ related_chapters:
 
 # Google Android Bench：AI 编码能力评测方法论
 
-Android Bench 的分数取决于任务数据、执行环境、verifier 和统计方法，不能脱离方法版本直接比较。理解一次任务如何构建、运行和判定，是解释 pass@1 以及复现实验结果的前提。
+Android Bench 的分数取决于任务集、运行框架、验证器和统计口径。当前官方方法页已经进入 Android Bench 2.0；Harbor Hub 上公开的 `android-bench/android-bench` 数据集仍是 1.0 系列的 100 任务数据集。读分数之前要先分清这两个口径。
 
 ## Android Bench 测量什么
 
-Android Bench 是面向 Android 工程任务的 benchmark（基准评测集）。Android Developers 在 2026-03-05 发布首版。
+Android Bench 是 Google Android Developers 面向 Android 工程任务的基准评测。它评估模型和编码代理在已有工程环境里完成 Android 任务的能力，而不是评估 AOSP、kernel 或某个 Android 版本的实现质量。
 
-每个任务提供真实工程上下文与问题描述，agent（能读取仓库并调用工具完成任务的模型程序）生成代码修改，verifier（自动验收程序）再通过构建和测试判断 patch（代码差异）是否解决问题。
+当前官方方法页把 Android Bench 2.0 定位为长周期移动工程评测。它关注多天级任务：从视觉稿创建应用、迁移依赖和架构、实现平台能力、把跨平台应用转换为原生 Android。首版 Android Bench 1.0 则更接近 SWE-bench 形式：给定问题描述和仓库起点，让模型生成一个补丁，再由自动化测试判断是否通过。
 
-它比通用代码问答多出几类 Android 约束：
+这两个版本都不是「从空目录做完整产品」的综合考试。它们测的是给定任务、给定环境、给定验证器下的完成情况。代码可读性、安全、功耗、长期维护和缺少可执行验收条件的架构取舍，只有在评测协议显式加入检查时才会进入分数。
 
-- Kotlin/Java 与 Android API、Jetpack API 的版本关系；
-- Gradle、AGP（Android Gradle Plugin）、多模块和依赖配置；
-- Compose、View、Coroutines/Flow、Room、Hilt 与 Navigation；
-- 配置变化、折叠屏、runtime permission（运行时权限）、camera、media、wearable 等平台场景；
-- 20 个任务带有 UI 问题截图，需要模型处理文本与图像等多模态输入。
+## 2.0 和 1.0 不能混用
 
-其中 Compose/View 对应 UI，Coroutines/Flow 处理异步任务与数据流，Room 封装数据库访问，Hilt 提供依赖注入，Navigation 管理页面导航。
+Android Bench 2.0 和 1.0 的任务规模、数据公开状态和评分方法都不同。
 
-测量对象仍然有限：给定 issue（问题单）、已有仓库和自动化验收条件下的 patch 成功率。它不覆盖从空目录创建完整产品、长期维护、发布运营、缺少可执行验收条件的架构取舍，也不自动评价代码可读性、安全性、功耗或性能质量。
+| 口径 | 任务集 | 主要用途 | 评分特征 |
+|---|---|---|---|
+| Android Bench 2.0 官方方法页 | 30 个长周期任务，当前数据集私有 | 比较现代编码代理在复杂 Android 工程任务中的能力 | 同时报告 pass rate 和 completion rate |
+| Harbor Hub `android-bench/android-bench` latest rev.5/v1.3.0 | 100 个公开任务，88 个来自 GitHub PR，12 个专家编写 | 复现 1.0 系列结果、分析公开任务 | 以二值通过/失败和 pass@1 为主 |
+| 归档仓库 commit `65a86bf` | 1.0 系列源码、指南、技术报告和评分枚举 | 查验首版实现细节 | `PatchScore` 为 `0.0` 或 `1.0`，另有诊断状态 |
 
-## 数据集从哪里来
+因此，不能把 2.0 官方方法页里的 30 个长周期任务，和 Harbor Hub 页面上的 100 个公开任务写成同一套「当前组成」。也不能拿 1.0 的 pass@1 排名直接解释 2.0 的 completion rate。
 
-当前官方 methodology 页写明：100 个任务来自 38,989 个 pull request（PR，合并请求）的候选池和人工补充流程。Harbor Hub 进一步列出其中 88 个源自 GitHub PR，12 个由专家编写，用来补足样本不足的领域。
+## 2.0 任务集怎样组成
 
-自动筛选要求仓库包含 Android app 或 library 代码，并至少有 500 个 GitHub stars；stars 在这里是项目流行度与质量的粗略代理。候选 PR 还需要已经合并、修复 issue、带有 unit test（单元测试）或 instrumentation test（在设备或模拟器上运行的测试），且变更位于最近三年。
+Android Bench 2.0 有 30 个任务，分为四类：
 
-自动筛选后还有两轮人工复核：
+| 任务流 | 数量 | 关注点 | 典型规模 |
+|---|---:|---|---|
+| App creation | 9 | 从视觉设计稿创建 Food Vibes 这个内部多屏应用 | 1200～5500 行，20～70 个文件 |
+| Migrations | 13 | 生产应用的库和架构迁移，例如 Retrofit 到 Ktor、RxJava 到 Coroutines、Hilt 到 Koin、Navigation 2 到 Navigation 3 | 200～8200 行，5～294 个文件 |
+| New features | 6 | 在已有代码库里实现平台能力，例如画中画、Wear OS companion sync、桌面小组件、CameraX | 400～2200 行，4～60 个文件 |
+| App conversions | 2 | 将 Flutter 或 React Native 应用转换为 Jetpack Compose 原生 Android 应用 | 完整 UI、导航和持久化 |
 
-1. QA（质量保证）检查 base（修改前版本）与目标 patch 的构建/测试行为、问题描述是否提供足够上下文、变更是否超出描述，并估计人工完成难度。
-2. Android 专家检查任务是否具有足够复杂度和 Android 相关性。
+2.0 的防污染策略也变了。官方方法页列出四类措施：使用没有公开存在的内部代码库，选择上游仓库里不存在的迁移，选择没有原生 Android 对应物的跨平台应用转换，并审计操作轨迹以发现 reward hacking、硬编码输出和外部代码查找。当前 2.0 数据集是私有的，官方仍在评估怎样公开而不造成污染。
 
-某些 Android 领域在 GitHub 样本中不足，维护者会为合适 PR 补测试、补 issue，或重写过于简略的问题描述。这样的任务仍需经过专家复核。因此，这 100 个任务经过了人工筛选与补充，并非从公开 PR 原样随机抽取。
+这个设计提高了任务真实性，但降低了外部可复现性。外部团队引用 2.0 结果时，应把它当作官方排行榜口径；要自己复现实验，仍需要可获取的数据集、运行环境和验证器。
 
-### 当前官方组成
+## 公开 1.0 数据集从哪里来
 
-| 维度 | 当前官方资料公布的数据 |
+Harbor Hub 的 latest 数据集页面列出 100 个任务：88 个来自 GitHub pull request（PR，合并请求），12 个由专家编写，用来补足公开样本不足的领域。任务来源仓库要求至少有 500 个 GitHub stars；归档技术报告说明，这里的 stars 是项目流行度和质量的粗略代理。
+
+公开数据集的组成如下：
+
+| 维度 | Harbor Hub latest 公布的数据 |
 |---|---:|
-| 来自 GitHub PR | 88% |
-| 专家编写任务 | 12% |
+| 来自 GitHub PR | 88 个任务 |
+| 专家编写任务 | 12 个任务 |
 | Kotlin | 71% |
 | Java | 25% |
-| Compose UI 任务 | 41% |
-| View UI 任务 | 59% |
-| benchmark 中 library 项目 | 58% |
-| 带 UI 截图 | 20% |
+| Jetpack Compose UI | 41% |
+| View-based layout | 59% |
+| 应用项目 | 42% |
+| 库项目 | 58% |
+| 带 UI 问题截图 | 20 个任务 |
 | 小于 27 行的变更 | 46% |
-| 27—136 行的变更 | 33% |
-| 大于 136 行的变更 | 21% |
+| 27～136 行的变更 | 33% |
+| 大于 136 行的变更 | 21%，最大 435 行 |
 | patch 中位数 | 32 行 |
-| 最大 patch | 435 行 |
 
-这些比例不是 Android 开发生态的自然分布。官方同时指出，采集到的 GitHub Android 仓库以 app 为主（63%），benchmark 则更偏 library；这项选择增加了模块化与 API 约束，也限制了结论能推广到哪些项目。
+归档 User Guide 对有效任务给出三条基本要求：问题描述清楚，base commit 和 Docker 环境可复现，测试在 base 上失败、在 canonical/oracle patch（维护者已知正确的标准修改）上通过，并且测试不能依赖未同步的 UI timing 等易抖动条件。
 
-## 一个任务怎样执行
+Oracle patch 只能证明任务环境和验收测试能跑通。它不能证明测试覆盖了需求的全部语义，也不能证明模型补丁和 canonical 实现等价。
 
-Android Bench 将 inference（让模型生成修改）与 evaluation（自动验证修改）分开：
+## 2.0 怎样执行和验证
 
-1. inference agent 读取 issue、base commit（任务开始时固定的提交）和仓库内容；
-2. agent 使用工具检查、编辑和测试，输出 patch；
-3. verifier 在固定任务环境应用 patch；
-4. verifier 构建工程并运行任务的 acceptance tests（验收测试）；
-5. 每个任务输出通过/失败以及诊断状态。
+Android Bench 2.0 基于 Harbor 运行。官方方法页列出的关键环境约束包括：每个任务在新的 Docker 容器里执行，使用支持 KVM 的 CPU 运行硬件加速 AVD，最低资源要求为 16 个 CPU、72 GB RAM 和 500 GB 存储；模型必须通过结构化工具调用提交 shell 命令，而不是把命令写在 Markdown 文本块里。
 
-归档仓库的 user guide 要求有效任务满足：
+2.0 不再只看一个简单 shell 编码代理。官方方法页明确写到，评测扩展到 Claude Code、Codex、Antigravity SDK 等现代编码代理。为了处理模型输出的不确定性，2.0 对每个任务执行 5 次独立运行，并对完成的运行求平均。
 
-- 问题描述清楚；
-- base commit 与容器环境可复现；
-- 验收测试在 base 上失败，在 canonical/oracle patch（维护者已知正确的标准修改）上通过；
-- 测试不依赖未同步的 UI timing 等易抖动条件。
+验证器也从「构建 + 测试」扩展为多组件验证：
 
-Oracle Agent 把标准修改交给 verifier，用来验证任务环境和测试能否正常工作；它不能证明测试覆盖了需求的全部语义。模型仍可能找到测试盲区；维护者会审计成功 trajectory（agent 的逐步操作记录），检查是否存在 reward hacking（只迎合评分规则、没有真正解决需求）或描述不足。
+- instrumentation assertions：用 Android instrumentation 测试验证 UI 交互和状态流转；
+- database verification：直接检查 SQLite 和 Room 数据表，确认数据持久化；
+- system boundaries：监控 outbound Intent extras、网络调用和 Wear OS 同步事件；
+- regression suites：同时运行已有回归测试，确认原有能力没有被破坏；
+- visual judgement：用 Gemini 3.5 Flash 比较截图和基准图，并返回 0.0～1.0 的结构化判断；
+- accessibility tree judgement：解析 `dumpsys accessibility` 输出，检查原生组件、触摸目标和文本标签；
+- anti-cheating patch inspection：检查静态图片覆盖、硬编码数据库状态、测试阈值篡改、删除断言、捆绑预编译二进制、包一层旧 API 等投机方式。
 
-## 方法版本不能混用
+这套验证器允许不同实现路径通过，但它仍然是评测协议的一部分。没有写进验证器的质量维度，不会自动进入分数。
 
-Android Bench 发布后已经换过执行框架。这里的 harness 指组织提示、工具调用、环境和验收流程的运行程序：
+## 2.0 分数怎样计算
 
-| 版本 | agent 与执行接口 | 资料状态 |
-|---|---|---|
-| 2026 年 3 月首版 | mini-swe-agent v1；模型以 Markdown code block 输出 shell command，由正则提取执行 | 归档技术报告与首版排行榜 |
-| 当前 methodology | Harbor；mini-swe-agent v2；provider API 的 native tool calling（模型通过结构化接口直接调用工具）；Android-specific system steering（加入 Android 领域要求的系统指令） | 当前官方口径 |
+2.0 报告两个指标：pass rate 和 completion rate。
 
-mini-swe-agent v2 只执行通过工具 API 提交的 bash 调用。若沿用 v1 prompt（提示词），让模型把命令写成 Markdown 文本，命令不会执行。官方因此更新了 system instruction（系统指令）与 Pydantic tool schema（用 Pydantic 描述的工具参数结构）。
+pass rate 是主指标。一次运行只有在功能测试全部通过、视觉结果合规、没有约束违规并拿到满分 `1.0` 时，才算完全通过。
 
-旧 `android-bench/android-bench` 仓库已在 2026-07-08 归档，当前数据集迁移到 Harbor Hub。复现实验时要同时记录：
-
-- dataset 名称、版本或 digest（内容摘要标识）；
-- Harbor/旧 harness commit；
-- mini-swe-agent 版本、system prompt 与 tool schema；
-- model provider（模型服务商）、完整 model ID、endpoint（API 接入地址）与运行日期；
-- temperature/seed（生成随机性与随机种子，provider 支持时）、turn/time/cost budget（轮数、时间与费用上限）；
-- Docker image digest、JDK、Android SDK、AGP、Gradle 与 KVM（Linux 内核虚拟机加速）环境。
-
-只写“使用 Gemini/Claude/GPT”无法复现。模型 backend（实际推理服务）、agent shell（agent 使用的命令执行环境）、prompt、工具调用和预算都会改变得分。
-
-## verifier 到底判定什么
-
-归档 commit 的 `PatchScore` 把分数记为 `0.0` 或 `1.0`，同时用 `Status` 保留更细的诊断：
-
-- `PASSED` 与 `PASSED_FLAKY` 都记 `1.0`；后者表示第一次测试未通过、重试后通过，也就是出现了 flaky result（同样输入下偶发通过或失败）；
-- agent 侧的 `0.0` 包括没有 patch、patch 无法应用、构建失败、测试失败、必需测试未执行和额外验证脚本失败；
-- `INFRA_FAILURE*` 包括环境初始化、模拟器、provider API、输出格式、执行超时和预算耗尽等评测执行问题。
-
-固定 commit 中的准确名称包括 `AGENT_NO_PATCH`、`AGENT_FAILED_TO_APPLY_PATCH`、`AGENT_FAILED_BUILD`、`AGENT_FAILED_TEST`、`AGENT_MISSING_REQUIRED_TEST_RESULTS` 与 `AGENT_FAILED_VALIDATION`。
-
-原实现没有 `NO_PATCH_GENERATED`、`EVAL_ERROR` 或 `SKIPPED` 这三个枚举名；任务选择时跳过某项，也不等于 verifier 产生了 `SKIPPED` 结果。
-
-归档汇总程序按状态分别计数，没有自动定义“可评任务”分母。报告应公开 scheduled（计划运行）、attempted（实际尝试）、evaluable（按协议计入主分数）、passed、infra failure 和 excluded（预先排除）的数量。基础设施错误是否重跑、是否进入主分数，必须在运行前写进协议。
-
-测试通过说明 patch 满足当前 acceptance tests。它没有证明 patch 与 canonical 实现相同，也没有证明不存在性能、安全、可维护性或兼容性问题。对高风险任务可以在 verifier 后增加静态检查、benchmark、人工 review 或隐藏测试，但这些附加层必须写进评测协议。
-
-## pass@1 与重复运行
-
-单个任务的一次正式运行只生成一个候选修改。归档技术报告把一次完整运行的 pass@1 写成：
+completion rate 是 0.0～1.0 的连续分数，用来表达复杂任务的部分完成程度。官方公式是：
 
 \[
-\text{pass@1}=\frac{\text{通过任务数}}{\text{纳入该次运行的任务总数}}
+\text{CompletionRate}=\text{BaseScore}\times\text{Multipliers}
 \]
 
-若协议排除某类基础设施错误，应把所得指标标为调整后口径，同时公布原始全量口径，不能在结果出来后修改分母。
+BaseScore 是四类分数的加权和：functional（运行时状态、数据库持久化和核心逻辑）、regression（已有测试是否仍然通过）、requirements（任务指令、库版本和架构规则是否满足）、visual（界面布局和 accessibility hierarchy 是否匹配）。权重由任务作者按任务设置。
 
-重复运行时，任务 \(i\) 有 \(n_i\) 次按协议纳入统计的运行，其中 \(c_i\) 次通过；整体估计量是各任务 \(c_i/n_i\) 的平均值。模型输出具有随机性，一次 100-task run 不能描述稳定能力。
+Multipliers 是惩罚项。官方表格里，构建失败、作弊违规和在原生 Android 任务里复用 Flutter/Dart/JavaScript 文件都会把分数乘以 `0.0`；在 Jetpack Compose 任务里使用 `findViewById` 这类 legacy API，会把分数乘以 `0.5`。
 
-源码虽把执行超时和预算耗尽列在 `INFRA_FAILURE_AGENT_*` 下，跨配置比较时仍应单列；状态名不能替代预先约定的统计归因。
+这个口径比 1.0 的二值分数更细，但也更依赖验证器设计。报告 2.0 结果时，至少要同时写出 pass rate、completion rate、任务集版本、编码代理、模型服务商、模型 ID、工具调用接口、预算、运行日期和环境。
 
-首版技术报告用任务与运行的 hierarchical bootstrap（分层自助法，即在任务层和同一任务的多次运行层分别有放回重采样）计算 95% confidence interval（CI，置信区间）。报告明确指出，多组模型区间重叠；该规模当时只能检测约 10 个百分点的绝对 pass-rate 差异。
+## 1.0 的 pass@1 和状态枚举
 
-归档报告的方法段写“每模型 10 次”，附录中的实际 `num_runs` 却是 3—10 次，且部分 run 的平均任务数少于 100。引用首版统计时应以模型对应的附录行和原始结果为准，不能假设每个模型都有 10 × 100 个结果。
+归档技术报告把 pass@1 定义为通过任务数除以纳入统计的任务总数。报告方法段写每个模型运行 10 次，并使用 bootstrap 计算置信区间；附录中的实际 `num_runs` 为 3～10 次，部分模型的平均任务数少于 100。引用首版统计时，应以附录中具体模型的行和原始结果为准。
 
-当前官方页计算 cost、token 和 latency 时，以一次完整 100-task suite（整套 100 个任务）的总量为单位，再对同一模型的 5 次 run 取算术平均。复现实验要保存每任务原始结果，不能只保留排行榜平均值。
+归档源码的 `PatchScore` 把单任务得分记为 `0.0` 或 `1.0`，并用 `Status` 保存诊断状态。固定 commit 中的状态包括：
 
-### 成本、token 与时延的偏差
+- `PASSED`、`PASSED_FLAKY`；
+- `AGENT_NO_PATCH`、`AGENT_FAILED_BUILD`、`AGENT_FAILED_TEST`、`AGENT_FAILED_VALIDATION`、`AGENT_FAILED_TO_APPLY_PATCH`、`AGENT_MISSING_REQUIRED_TEST_RESULTS`；
+- `INFRA_FAILURE`、`INFRA_FAILURE_SETUP_ISSUE`、`INFRA_FAILURE_EMULATOR_STARTUP`、`INFRA_FAILURE_EMULATOR_TIMEOUT`、`INFRA_FAILURE_EMULATOR_OFFLINE`；
+- `INFRA_FAILURE_AGENT_*` 系列，用于模型服务、输出格式、执行超时和预算耗尽等问题。
 
-- **Cost（费用）**：使用运行时 provider 定价，跨日期会受价格调整影响；
-- **Token（模型处理的文本计量单位）**：依赖 inference engine/provider 返回值，缓存与共享 prompt 可能没有统一计量；
-- **Latency（时延）**：包含 API 网络传输，受运行地域和 endpoint 负载影响；
-- 失败较早的模型消耗更少，低成本和低时延可能来自没有完成任务。
+这个源码版本没有 `NO_PATCH_GENERATED`、`EVAL_ERROR` 或 `SKIPPED` 这三个评分枚举名。归档仓库的 troubleshooting 文档里出现过 `NO_PATCH_GENERATED` 这样的排障标题，但它不是 `common/models/benchmark.py` 中的 `Status` 枚举。
 
-因此，资源指标只适合在 pass rate 接近的配置间比较。团队还可以补充 cost per solved task（每个已解决任务的平均费用）、成功任务 latency 与失败任务 latency；passed 为 0 时，cost per solved task 没有定义。
+比较模型时，不能只看通过数。报告应公开 scheduled（计划运行）、attempted（实际尝试）、evaluable（按协议计入主分数）、passed、infra failure 和 excluded（预先排除）的数量。基础设施错误是否重跑、是否进入主分数，必须在运行前写进协议。
+
+## 成本、token 和时延怎么读
+
+成本、token 和时延适合在分数接近的配置之间比较，不适合单独排序。
+
+- Cost（费用）使用运行时模型服务商价格，跨日期会受价格调整影响；
+- Token（模型处理的文本计量单位）依赖推理服务返回值，缓存和共享系统指令可能没有统一计量；
+- Latency（时延）包含 API 网络传输，受运行地域和接口负载影响；
+- 提前失败的配置消耗更少，低费用和低时延可能只是因为没有完成任务。
+
+2.0 官方方法页也提醒，汇总所有任务的资源消耗会天然偏向失败更早的模型。团队可以补充 cost per solved task（每个已解决任务的平均费用）、成功任务时延和失败任务时延；通过数为 0 时，cost per solved task 没有定义。
 
 ## 数据污染与测试投机
 
-真实 GitHub PR 让任务贴近工程现场，也带来训练数据污染风险：模型可能在训练阶段见过公开 issue、代码或标准修改，得分因记忆而提高。当前项目采取两项主要措施：
+公开 GitHub PR 让 1.0 任务贴近真实工程，也带来训练数据污染风险：模型可能在训练阶段见过 issue、代码或标准修改。Harbor Hub 页面写明，所有任务文件包含 BIG-BENCH canary string（用于标记评测数据的固定文本），成功操作轨迹会人工审计，检查是否是真修复而不是 reward hacking。
 
-- 在任务文件中加入 BIG-BENCH canary string（用于标记评测数据的固定文本），劝阻训练语料收录；
-- 人工审计成功 trajectory，检查 patch 是否来自有效修复。
+canary 不能证明模型从未见过公开仓库。公开数据集发布后，后续模型也可能针对它优化。报告应区分任务发布日期、模型训练或知识截止时间（服务商公布时）、公开任务与隐藏任务结果。
 
-canary 无法证明模型从未见过公开 issue、PR 或代码。公开 dataset 也使发布后的模型可能针对 benchmark 优化。报告应区分任务发布日期、模型训练/知识 cutoff（训练或知识覆盖的截止时间，provider 公布时）、公开任务与新建任务结果，并维护未公开的 shadow set（只在内部验收时使用的隐藏任务集）。
+2.0 把一部分防污染工作移到任务设计上：私有应用、上游不存在的迁移、无原生版本的应用转换，以及轨迹审计。这降低了记忆答案的空间，但也意味着外部团队无法单靠公开仓库完整复现官方分数。
 
-验收测试同样可能存在盲区。创建任务时应反复验证 base 失败、oracle 通过、失败原因稳定，并检查 agent 是否能修改测试、构建脚本或 verifier 路径。任何防篡改措施都要通过实际文件权限和 patch allowlist（允许修改的路径清单）验证，不能只依赖 prompt 中的“不要修改测试”。
+测试投机仍然要靠协议和文件权限处理。只在提示内容里写「不要修改测试」不够；应通过只读测试目录、patch allowlist（允许修改的路径清单）、验证前恢复测试文件和静态检查来约束。
 
 ## 怎样读公开排行榜
 
-### 排名是一个配置的结果
+公开分数对应的是「模型 + 模型服务接口 + 编码代理 + 系统指令 + 工具 + 预算 + 数据集 + 验证器」这一整套配置。更换 Android Studio 内置能力、Claude Code、Codex、Gemini CLI 或自研上下文系统后，即使底层模型相同，分数也可能变化。
 
-公开分数对应“model + endpoint + agent + prompt + tools + budget + dataset + verifier”这一整套配置。
+小分类不适合过度解读。100 个 1.0 任务再按 Compose、library、bugfix 或代码许可类型分组后，每组样本更少，置信区间会变宽。几分差距不能支持「模型 A 更懂 Compose」一类强结论，除非差异通过预先规定的统计检验，并在新任务上复现。
 
-更换 Android Studio agent、Claude Code、Codex、Gemini CLI 或自研 context system（决定怎样检索、裁剪和提供上下文的系统）后，即使底层模型相同，结果也可能变化。
+首版博客写的是模型完成率约 16%～72%，Gemini 3.1 Pro 位于当时榜首。这个结果只适合作为 2026-03 首版快照。官方 2.0 方法页已经说明，1.0 后来被前沿模型推到约 90% pass rate，局部 GitHub PR 任务出现饱和。
 
-### 小分类不适合过度解读
-
-100 个任务再按 Compose、library、bugfix 或代码许可类型分组后，每组样本更少，置信区间会变宽。几分差距不能支持“模型 A 更懂 Compose”一类强结论，除非差异通过预先规定的统计检验，并在新任务上复现。
-
-### Android 版本不是唯一变量
-
-任务跨 Android、Jetpack、Gradle 与第三方库版本。一个 model 得分高，可能来自 Kotlin/Gradle/tool-use（使用工具）能力，也可能来自 agent 更会搜索和运行测试。
-
-Android Bench 不是 Android 17 compatibility suite（兼容性测试套件），也不验证 AOSP framework 或 kernel 实现。
-
-团队如果在 Android Bench 之外加做设备端性能或稳定性验证，系统镜像也要固定到具体构建。GrapheneOS 在 2026-10-03 记录：2026-09-15 推送给 Pixel 的 Android 17 QPR1 在 Pixel kernel driver tree 中有回归；内存压力下会出现 stuttering、lag 和 freeze，严重时进程会因 stall 被杀。GrapheneOS 当天发布修复，并链接到 `kernel_pixel_6.6` commit `ed5a9b87d99b45618fa55b3d6b53094cbd784b9f`。[来源: https://discuss.grapheneos.org/d/42511-grapheneos-has-fixed-the-massive-android-17-qpr1-kernel-performance-regression]
-
-在 Android Bench 报告里，这类资料只适合作为额外设备测试的版本边界，不能用来解释 verifier pass/fail；Android Bench 的主分数仍由 dataset、harness、agent、prompt、budget 与 acceptance tests 决定。[已验证: 本文“一个任务怎样执行”“方法版本不能混用”两节；来源: https://discuss.grapheneos.org/d/42511-grapheneos-has-fixed-the-massive-android-17-qpr1-kernel-performance-regression]
-
-### 首版结果只作为历史快照
-
-首版博客写的是模型完成率约 16%—72%，Gemini 3.1 Pro 位于当时榜首。模型版本、执行框架和数据集已经变化；引用该结果必须标明 2026-03 首版，不能写成长期选型结论。
+Android Bench 不是 Android 17 compatibility suite（兼容性测试套件），也不验证 AOSP framework 或 kernel 实现。任务跨 Android、Jetpack、Gradle 和第三方库版本；一个模型得分高，可能来自 Kotlin/Gradle 能力，也可能来自编码代理更会搜索、运行测试和保持上下文。
 
 ## 团队怎样建立私有评测
 
-公共 benchmark 用于观察通用能力，采购或工具选型还应增加本团队的隐藏任务集。
+公共基准评测适合观察通用能力，采购或工具选型还应增加团队自己的隐藏任务集。
 
 ### 任务选择
 
@@ -226,14 +189,14 @@ Android Bench 不是 Android 17 compatibility suite（兼容性测试套件）�
 - 覆盖团队的 Compose/View、Gradle、数据、网络、性能和兼容性工作；
 - 保留低频高风险任务，不按 PR 数量机械抽样；
 - 将测试、base commit、oracle patch 和环境镜像一并版本化；
-- 让不参与 agent 运行的人维护隐藏验证。
+- 让不参与模型运行的人维护隐藏验证。
 
 ### 对照实验
 
 每轮只改变一个变量：
 
-- 比较 model 时固定 agent、prompt、tools 和 budget；
-- 比较 agent 时固定 model、endpoint 和 dataset；
+- 比较模型时固定编码代理、系统指令、工具和预算；
+- 比较编码代理时固定模型、接口地址和数据集；
 - 比较成本预算时固定其余配置；
 - 每个配置重复运行，并随机化任务顺序；
 - 基础设施错误按预设规则重跑，重跑次数公开。
@@ -242,27 +205,26 @@ Android Bench 不是 Android 17 compatibility suite（兼容性测试套件）�
 
 | 维度 | 建议输出 |
 |---|---|
-| 正确性 | resolved/evaluable（解决数/按协议可计分数）、95% CI（置信区间）、按任务类别分层 |
-| 稳定性 | 同一任务多次运行的通过比例与分歧任务 |
-| 失败类型 | build、test、no patch、timeout、infra failure |
+| 正确性 | resolved/evaluable（解决数/按协议可计分数）、pass rate、completion rate、95% CI（置信区间） |
+| 稳定性 | 同一任务多次运行的通过比例、completion rate 分布和分歧任务 |
+| 失败类型 | build、test、no patch、timeout、infra failure、cheating |
 | 资源 | 总 cost、cost/solved、token、成功/失败 latency |
 | 工程质量 | 人工 review、改动范围、测试增量、安全与性能风险 |
-| 可复现性 | dataset、image、model、agent、prompt、budget 的精确版本 |
+| 可复现性 | dataset、image、model、编码代理、系统指令、工具接口和预算的精确版本 |
 
 模型选型不能只按总分排序。团队还要考虑数据策略、代码许可、私有仓库访问、可审计性、IDE（集成开发环境）/CI（持续集成）集成、速率限制和供应商稳定性。
 
 ## 与 Android 17 源码版本的关系
 
-这里讨论的是评测框架，不含平台或 kernel（内核）机制结论。涉及 Android API 行为时，最高版本固定为 Android 17 / API 37 / `android-17.0.0_r1`。
+本文讨论的是评测框架，不包含平台或 kernel（内核）机制结论。涉及 Android API 行为时，最高版本固定为 Android 17 / API 37 / `android-17.0.0_r1`。
 
-Android Bench 自身必须按 dataset 和 harness 版本固定，不能用 AOSP 版本 tag 替代。由于不涉及内核机制，也不引用 `android17-6.18-2026-06_r6`。
+Android Bench 自身必须按数据集和运行框架版本固定，不能用 AOSP 版本 tag 替代。由于本文不讨论内核机制，也不引用 `android17-6.18` 源码结论。
 
 ## 参考资料
 
-- [Android Developers：Android Bench methodology](https://developer.android.com/bench/methodology)
+- [Android Developers：Android Bench methodology 2.0](https://developer.android.com/bench/methodology/2)
 - [Android Developers Blog：首版 Android Bench 发布说明（2026-03-05）](https://android-developers.googleblog.com/2026/03/elevating-ai-assisted-androi.html)
 - [Android Bench 归档仓库，commit `65a86bf`](https://github.com/android-bench/android-bench/tree/65a86bf41e45dde517a65d6e65a6dc7cdd2063ea)
 - [归档技术报告](https://github.com/android-bench/android-bench/blob/65a86bf41e45dde517a65d6e65a6dc7cdd2063ea/docs/tech_report.md)
 - [归档 User Guide](https://github.com/android-bench/android-bench/blob/65a86bf41e45dde517a65d6e65a6dc7cdd2063ea/docs/guide.md)
 - [Harbor Hub：Android Bench dataset](https://hub.harborframework.com/datasets/android-bench/android-bench/latest)
-- [GrapheneOS forum：Android 17 QPR1 Pixel kernel performance regression](https://discuss.grapheneos.org/d/42511-grapheneos-has-fixed-the-massive-android-17-qpr1-kernel-performance-regression)

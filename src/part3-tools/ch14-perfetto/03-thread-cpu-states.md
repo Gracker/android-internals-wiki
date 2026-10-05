@@ -52,10 +52,6 @@ related_chapters:
 - '14.1'
 - '14.7'
 - '14.9'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 ---
 
 # 线程 CPU 状态分析

@@ -106,12 +106,7 @@ related_chapters:
 - '22.7'
 - '22.2'
 - '22.4'
-pipeline_stage: finalized
-task2b_state: body-applied
-task6_state: reviewed
-task9_state: reviewed
 last_review_finalize_at: '2026-08-31'
-last_review_finalize_run_id: 20260831-140638-1c181bd2
 consolidated_from:
 - src/part5-app/ch22-rendering-practice/20-compose-performance-blind-spots.md
 - src/part5-app/ch22-rendering-practice/22.40-compose-compiler-v2-k2-migration-performance.md
@@ -122,7 +117,6 @@ consolidated_from:
 - src/part2-performance/ch07-smoothness/04-compose-performance.md
 last_consolidated_at: '2026-08-24'
 last_body_apply_at: '2026-08-31T11:18:58+08:00'
-last_body_apply_run_id: 20260831-111514-3a3704c0
 ---
 
 # Compose 性能、Compiler 与 Modifier.Node 诊断

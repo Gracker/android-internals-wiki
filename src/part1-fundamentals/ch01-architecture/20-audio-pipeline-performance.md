@@ -55,12 +55,7 @@ related_chapters:
 - '5.1'
 - '5.2'
 - '18.1'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_idle_audit_at: '2026-09-13T14:35:20+08:00'
-last_idle_audit_run_id: 20260913-143520-idle-audit-7eb48a57
 ---
 
 # 音频链路（Audio Pipeline）延迟与性能

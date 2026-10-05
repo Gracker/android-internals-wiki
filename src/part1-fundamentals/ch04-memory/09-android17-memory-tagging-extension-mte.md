@@ -18,11 +18,7 @@ related_chapters:
 - '4.4'
 - '15.3'
 - '23.3'
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
 last_deep_review_at: '2026-08-21T16:35:04+08:00'
-last_deep_review_run_id: 20260821-163504-deep-review-4c57381a
 sources:
 - type: blog
   path: Cubox/四年之后，重新审视 MTE：从硬件架构到工程落地-2025-12-18.md

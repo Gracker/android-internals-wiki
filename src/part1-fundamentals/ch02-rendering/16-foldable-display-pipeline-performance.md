@@ -66,11 +66,6 @@ sources:
 - type: aosp
   path: frameworks/base/core/java/android/window/ITransitionPlayer.aidl
 last_body_apply_at: '2026-09-26T07:15:18+08:00'
-last_body_apply_run_id: 20260926-071518-04b75603
-task2b_state: body-applied
-task6_state: ready-for-review
-task9_state: body-applied
-pipeline_stage: ready-for-review
 ---
 
 # 折叠屏显示切换、窗口连续性与渲染性能

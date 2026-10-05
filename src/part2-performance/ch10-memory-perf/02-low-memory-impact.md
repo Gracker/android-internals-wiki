@@ -54,10 +54,6 @@ related_chapters:
 - '4.6'
 - '10.1'
 - '10.3'
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
-task2b_state: fixed
 ---
 
 # 低内存对系统性能的影响

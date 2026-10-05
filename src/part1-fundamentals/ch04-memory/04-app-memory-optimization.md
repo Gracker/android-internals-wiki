@@ -46,12 +46,7 @@ related_chapters:
 - '4.3'
 - '7.1'
 - '7.2'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task2b_state: fixed
-task9_state: reviewed
 last_deep_review_at: '2026-08-20T20:45:33+08:00'
-last_deep_review_run_id: 20260820-204533-deep-review-74f9bce1
 last_consolidated_at: '2026-08-11'
 consolidated_from:
 - src/part1-fundamentals/ch04-memory/4.35-android17-cpu-cache-locality-pss-accounting.md

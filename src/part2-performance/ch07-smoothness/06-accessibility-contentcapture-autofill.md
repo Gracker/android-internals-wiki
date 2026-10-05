@@ -47,9 +47,6 @@ sources:
   path: frameworks/base/services/autofill/java/com/android/server/autofill/
 - type: official
   path: developer.android.com/identity/autofill/autofill-optimize
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch07-smoothness/13-accessibility-manager-performance.md

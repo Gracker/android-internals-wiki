@@ -80,10 +80,6 @@ related_chapters:
 - '9.2'
 - '1.9'
 - '1.1'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 ---
 
 # ANR 治理策略

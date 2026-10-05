@@ -7,7 +7,6 @@ applicable_versions: Android 11 (API 30) - Android 17 (API 37)
 last_verified: '2026-09-15'
 last_verified_against: AOSP android-17.0.0_r1；Android 17 / API 37 SDK；arXiv 2604.25587v1；wellington-oj/user_energy master_energy_data.csv；Android 官方显示与功耗文档 2026-09
 last_idle_audit_at: '2026-09-15T18:41:59+08:00'
-last_idle_audit_run_id: 20260915-183508-idle-audit-d5bdca7f
 confidence: high
 sources:
 - type: paper
@@ -56,10 +55,6 @@ related_chapters:
 - '11.2'
 - '16.5'
 - '25.1'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 ---
 
 # 用户设置与业务配置对能耗的影响

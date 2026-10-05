@@ -96,12 +96,8 @@ related_chapters:
 - '15.3'
 - '10.2'
 - '10.3'
-task6_state: reviewed
 section: '10.1'
 status: finalized
-pipeline_stage: ready-to-publish
-task2b_state: fixed
-task9_state: reviewed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch10-memory-perf/01-app-memory-analysis.md
@@ -109,9 +105,7 @@ consolidated_from:
 - src/part2-performance/ch10-memory-perf/02-memory-leak-growth.md
 - src/part2-performance/ch10-memory-perf/03-memory-growth.md
 last_body_apply_at: '2026-08-26T19:20:50+08:00'
-last_body_apply_run_id: 20260826-191540-e0aa0648
 last_review_finalize_at: '2026-08-26T20:23:27+08:00'
-last_review_finalize_run_id: 20260826-201101-4eb9807b
 ---
 
 # App 内存分析与案例

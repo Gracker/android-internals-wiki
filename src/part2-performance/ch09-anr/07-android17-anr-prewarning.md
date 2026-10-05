@@ -21,11 +21,7 @@ related_chapters:
 last_verified: '2026-08-22'
 last_verified_against: AOSP android-17.0.0_r1（公开 API、warning producer、source flag 与 ProfilingManager all-trigger 顺序复核）
 confidence: medium
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
 last_deep_review_at: '2026-08-20T13:28:29+08:00'
-last_deep_review_run_id: 20260820-132829-deep-review-73d8fbf6
 sources:
 - type: blog
   path: 技术文章/Android/Android-17系统层面新特性/39-ANR-类型和预警回调.md

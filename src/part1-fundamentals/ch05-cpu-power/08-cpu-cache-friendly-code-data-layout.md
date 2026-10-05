@@ -3,7 +3,6 @@ title: CPU Cache 友好代码与数据布局优化
 chapter: '5.8'
 section: '5.8'
 status: finalized
-pipeline_stage: ready-to-publish
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-08-26'
 last_verified_against: AOSP android-17.0.0_r1, Android common kernel android17-6.18-2026-06_r6, Android Simpleperf and Startup Profile docs, Arm Cortex-A documentation

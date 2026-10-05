@@ -17,16 +17,9 @@ related_chapters:
 last_verified: '2026-09-07'
 last_verified_against: android-17.0.0_r1 / Android 17 (API 37); android17-6.18-2026-06_r6; Android Developers App Startup, Macrobenchmark, Baseline Profiles, Android 17 behavior changes, Google Play SDK Index, and Privacy Sandbox phaseout/API deprecation docs checked 2026-09-07; no Android 18/API 38+ conclusions
 last_draft_polish_at: '2026-08-08T11:35:18+08:00'
-last_draft_polish_run_id: 20260808-113518-draft-polish-76608468
 confidence: medium-high
-task2b_state: body-applied
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: finalized
 last_body_apply_at: '2026-09-07T19:15:39+08:00'
-last_body_apply_run_id: '20260907-191539-e84acff2'
 last_review_finalize_at: '2026-09-07T20:05:47+08:00'
-last_review_finalize_run_id: '20260907-200547-bac7ab59'
 sources:
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java

@@ -22,7 +22,6 @@ confidence: medium-high
 last_verified: '2026-08-19'
 last_verified_against: 'AOSP android-17.0.0_r1 SystemUI/WM Shell/Launcher3 anchors: systemui.aconfig; super_notification_shade.xml / scene_window_root.xml; ShadeViewProviderModule / ShadeWindowLayoutParams / NotificationShadeWindowView; SceneContainerFlag / SceneContainerFrameworkModule / SceneWindowRootViewBinder; NotificationStackScrollLayout / NotificationRowContentBinderImpl / BigPictureIconManager / notification icon binder; StatusBarWindowControllerImpl / NavigationBar / NavigationBarView / DisplayBackGestureHandler / EdgeBackGestureHandler / SysUIConcurrencyModule / DisplayContent; Transitions / StartingWindowController / RecentsView; Android notification, SplashScreen and aconfig official docs checked 2026-08-19.'
 last_rework_at: '2026-08-19T13:51:21+08:00'
-last_rework_run_id: 20260819-135121-rework-68502f5f
 sources:
 - type: aosp
   path: frameworks/base/packages/SystemUI/aconfig/systemui.aconfig
@@ -90,10 +89,6 @@ sources:
   path: https://developer.android.com/develop/ui/views/notifications
 - type: official
   path: https://developer.android.com/develop/ui/views/launch/splash-screen
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 ---
 
 # SystemUI 性能分析

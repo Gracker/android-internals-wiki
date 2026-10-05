@@ -106,10 +106,6 @@ related_chapters:
 - '2.9'
 - '2.14'
 - '13.10'
-task2b_state: fixed
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch13-rendering-pipelines/03-android-view-software.md

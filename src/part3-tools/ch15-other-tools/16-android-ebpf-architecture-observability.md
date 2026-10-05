@@ -126,10 +126,6 @@ related_chapters:
 - '19.3'
 - '26.14'
 - '5.2'
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part3-tools/ch15-other-tools/23-ebpf-performance-analysis.md

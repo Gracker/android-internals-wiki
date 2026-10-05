@@ -52,13 +52,8 @@ sources:
   path: https://developer.android.com/reference/java/lang/Thread
 - type: official-thread-legacy
   path: https://developer.android.com/reference/tools/gradle-api/com/android/build/api/instrumentation/AsmClassVisitorFactory
-pipeline_stage: ready-to-publish
-task6_state: reviewed
 section: '20.7'
-task9_state: reviewed
-task2b_state: fixed
 last_idle_audit_at: '2026-10-01T10:35:34+08:00'
-last_idle_audit_run_id: 20261001-103534-idle-audit-c893a666
 note: 'Consolidated-source availability: source page not present in the current vault as of 2026-08-14; FD content is retained here and thread-specific guidance is covered by chapter 20.19'
 ---
 

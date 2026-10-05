@@ -23,8 +23,6 @@ related_chapters:
 last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1 (Keystore2 / DnsResolver / UWB / Bluetooth / VirtualizationService / libbinder_rs / Soong Rust / android-crates-io / crate_tool); official Android Rust, AIDL backend, and Scudo documentation
 confidence: high
-pipeline_stage: ready-to-publish
-task6_state: reviewed
 sources:
 - type: aosp
   path: https://android.googlesource.com/platform/system/security/+/refs/tags/android-17.0.0_r1/keystore2/

@@ -82,10 +82,6 @@ related_chapters:
 - '22.3'
 - '13.8'
 - '2.1'
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 consolidated_from:
 - src/part5-app/ch22-rendering-practice/11-animated-vector-drawable-performance.md
 - src/part5-app/ch22-rendering-practice/32-compose-infinite-animation-vector-converter-performance.md

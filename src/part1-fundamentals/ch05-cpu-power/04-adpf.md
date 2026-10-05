@@ -39,12 +39,7 @@ sources:
   path: frameworks/base/core/jni/android_os_PerformanceHintManager.cpp
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_idle_audit_at: '2026-08-08T18:35:19+08:00'
-last_idle_audit_run_id: 20260808-183519-idle-audit-87d42442
 ---
 
 # ADPF 自适应性能框架

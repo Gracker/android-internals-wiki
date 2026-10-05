@@ -61,12 +61,7 @@ related_chapters:
 - '8.2'
 - '25.10'
 - '18.1'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_idle_audit_at: '2026-09-11T22:42:48+08:00'
-last_idle_audit_run_id: 20260911-223529-idle-audit-8c9fc93c
 ---
 
 # 应用归档（App Archiving）机制与恢复性能

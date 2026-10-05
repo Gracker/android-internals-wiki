@@ -89,14 +89,8 @@ related_chapters:
 - '7.1'
 - '1.9'
 - '9.1'
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: body-applied
-pipeline_stage: finalized
 last_review_finalize_at: '2026-09-12T12:10:17+08:00'
-last_review_finalize_run_id: '20260912-120507-4559ea76'
 last_body_apply_at: '2026-09-10T09:15:21+08:00'
-last_body_apply_run_id: '20260910-091521-ffbe6333'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/01.26-messagqueue-deliqueue-optimization.md

@@ -36,16 +36,9 @@ tags:
 - overscroller
 - android-performance
 status: finalized
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_idle_audit_at: '2026-08-01T22:35:12+08:00'
-last_idle_audit_run_id: 20260801-223512-idle-audit-66741ef6
 last_rework_at: '2026-08-03T09:42:34+08:00'
-last_rework_run_id: 20260803-094234-rework-66741ef6
 last_review_finalize_at: '2026-08-03T10:05:40+08:00'
-last_review_finalize_run_id: 20260803-100522-554de959
 ---
 
 # 感知流畅性：步幅波动与无掉帧卡顿

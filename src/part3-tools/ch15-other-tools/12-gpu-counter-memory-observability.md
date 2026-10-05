@@ -20,19 +20,12 @@ related_chapters:
 - '10.3'
 - '15.16'
 - '13.9'
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
 last_draft_polish_at: '2026-07-27T19:35:27+08:00'
-last_draft_polish_run_id: 20260727-193527-draft-polish-30f4d38e
 last_review_finalize_at: '2026-07-27T20:13:43+08:00'
-last_review_finalize_run_id: 20260727-201343-4b671d13
 last_rework_at: '2026-07-27T21:36:40+08:00'
-last_rework_run_id: 20260727-213543-rework-30f4d38e
 last_verified: '2026-08-20'
 last_verified_against: AOSP android-17.0.0_r1 external/perfetto 的 9 个固定源码文件（含 GpuCounterSpec reserved tag 4 / deprecated unit 边界）；Writer rendering_pipelines S01/S02/S03/S04/S05/S11/S12/S13
 last_idle_audit_at: '2026-08-20T18:37:07+08:00'
-last_idle_audit_run_id: 20260820-183531-idle-audit-6c1cc491
 confidence: high
 sources:
 - type: aosp

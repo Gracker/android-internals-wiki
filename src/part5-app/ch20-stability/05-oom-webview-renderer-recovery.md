@@ -108,12 +108,7 @@ related_chapters:
 - '13.8'
 - '22.16'
 - '26.2'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_idle_audit_at: '2026-08-21T22:35:02+08:00'
-last_idle_audit_run_id: 20260821-223502-idle-audit-67768f8d
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part5-app/ch20-stability/05-oom-governance.md

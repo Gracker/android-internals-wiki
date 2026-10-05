@@ -99,10 +99,6 @@ related_chapters:
 - '15.7'
 - '20.7'
 - '20.12'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part3-tools/ch15-other-tools/10-third-party-libs-observability.md

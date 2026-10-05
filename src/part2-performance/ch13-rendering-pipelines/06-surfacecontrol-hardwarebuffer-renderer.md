@@ -165,15 +165,10 @@ sources:
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c
   role: presentation/release fence 的 sync_file fd 接口
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_verified: '2026-07-31'
 last_verified_against: android-17.0.0_r1 (surface_control.h, surface_control_jni.h, surface_control.cpp, choreographer.h, SurfaceControl.java, SurfaceComposerClient.cpp, BLASTBufferQueue.cpp, FrontEnd, FrameTimeline.cpp, HWComposer.cpp) / android17-6.18-2026-06_r6 (sync_file.c, dma-fence.c)
 confidence: high
 last_idle_audit_at: '2026-07-29T14:35:28+08:00'
-last_idle_audit_run_id: 20260729-143528-idle-audit-fb6d5268
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch13-rendering-pipelines/10-surface-control-api.md

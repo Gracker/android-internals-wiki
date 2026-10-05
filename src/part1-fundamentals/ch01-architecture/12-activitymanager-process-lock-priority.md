@@ -159,10 +159,6 @@ related_chapters:
 - '8.2'
 - '1.8'
 - '1.10'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/1.68-android17-activitymanager-architecture-performance.md

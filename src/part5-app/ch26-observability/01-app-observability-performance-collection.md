@@ -96,17 +96,10 @@ related_chapters:
 - '26.2'
 - '17.11'
 - '16.1'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 last_idle_audit_at: '2026-06-30'
-task2b_state: fixed
 last_draft_polish_at: '2026-08-15T18:13:45+08:00'
-last_draft_polish_run_id: 20260815-181345-gracker-writing-462
 last_review_finalize_at: '2026-08-15T18:13:45+08:00'
-last_review_finalize_run_id: 20260815-181345-gracker-writing-462
 last_rework_at: '2026-08-15T18:13:45+08:00'
-last_rework_run_id: 20260815-181345-gracker-writing-462
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part5-app/ch26-observability/01-observability-architecture.md

@@ -152,7 +152,6 @@ consolidated_from:
 - src/part5-app/ch22-rendering-practice/34-compose-subcompose-layout-performance.md
 - src/part5-app/ch22-rendering-practice/19-compose-layout-measurement.md
 - src/part5-app/ch22-rendering-practice/20-compose-text-performance.md
-pipeline_stage: finalized
 last_consolidated_at: '2026-08-24'
 ---
 

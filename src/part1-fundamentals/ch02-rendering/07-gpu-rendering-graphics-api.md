@@ -8,7 +8,6 @@ last_verified: '2026-09-20'
 last_verified_against: AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + official Android/Perfetto/APA/AGI GPU documentation + AndroidX WebGPU 1.0.0-alpha05 + Writer rendering_pipelines S01/S02/S05/S08/S13
 confidence: medium-high
 last_idle_audit_at: '2026-09-20T22:39:38+08:00'
-last_idle_audit_run_id: 20260920-223532-idle-audit-3d5d14f8
 sources:
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/
@@ -114,10 +113,6 @@ related_chapters:
 - '15.3'
 - '2.11'
 - '15.11'
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch02-rendering/2.15-android17-gpu-debug-tools.md

@@ -81,10 +81,6 @@ related_chapters:
 - '22.7'
 - '7.3'
 - '13.6'
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 consolidated_from:
 - src/part1-fundamentals/ch02-rendering/18-compose-pausable-composition-guide.md
 - src/part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md

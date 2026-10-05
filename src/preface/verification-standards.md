@@ -12,11 +12,7 @@ sources:
   - type: official
     path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/"
 tags: [introduction, verification, source-code, evidence]
-pipeline_stage: reworked
-task6_state: ready-for-review
-task9_state: reworked
 last_rework_at: "2026-08-05T21:35:21+08:00"
-last_rework_run_id: "20260805-213521-rework-d44d97f6"
 ---
 
 # 内容验证标准说明

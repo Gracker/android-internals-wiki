@@ -12,9 +12,6 @@ tags:
   - trace-processor
   - frame-analysis
   - datagrid
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
 last_verified: '2026-08-13'
 last_verified_against: AOSP android-17.0.0_r1, android17-6.18-2026-06_r6, Perfetto Trace Processor v57.2 standard library and official docs (2026-08-13)
 confidence: medium
@@ -78,7 +75,6 @@ sources:
 - type: research
   path: intake/research-feeds/2026-04-14-07-perfetto-v54-data-explorer-jank-cuj-heap-graph-stats.md
 last_idle_audit_at: 2026-07-31 18:35:16+08:00
-last_idle_audit_run_id: 20260731-183516-idle-audit-68cd3ad3
 related_chapters:
 - '14.3'
 - '15.16'

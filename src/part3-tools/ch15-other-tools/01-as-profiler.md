@@ -4,7 +4,6 @@ chapter: '15.1'
 section: '15.1'
 status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-task9_state: reviewed
 last_verified: '2026-08-13'
 last_verified_against: Android Studio Profiler docs (through 2026-07-28) + Power Profiler docs + Android 17 tracing/API references
 confidence: high
@@ -48,9 +47,6 @@ related_chapters:
 - '14.5'
 - '15.2'
 - '15.5'
-task2b_state: fixed
-pipeline_stage: ready-to-publish
-task6_state: reviewed
 ---
 
 # Android Studio Profiler

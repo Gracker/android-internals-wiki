@@ -94,10 +94,6 @@ sources:
   path: https://developer.android.com/about/versions/17/features
 - type: aosp
   path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part3-tools/ch17-apm/06-dokit.md

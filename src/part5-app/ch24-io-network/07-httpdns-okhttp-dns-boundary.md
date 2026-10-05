@@ -3,7 +3,6 @@ title: HTTPDNS 与 OkHttp Dns 的执行边界
 chapter: '24.7'
 section: '24.7'
 status: finalized
-pipeline_stage: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37) / OkHttp 4.x - 5.x
 tags:
 - network
@@ -57,13 +56,8 @@ related_chapters:
 - '24.5'
 - '24.6'
 - '26.1'
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_review_finalize_at: '2026-08-15T11:23:47+08:00'
-last_review_finalize_run_id: 20260815-112347-gracker-writing-review
 last_draft_polish_at: '2026-08-15T11:23:47+08:00'
-last_draft_polish_run_id: 20260815-112347-gracker-writing
 ---
 
 # HTTPDNS 与 OkHttp Dns 的执行边界

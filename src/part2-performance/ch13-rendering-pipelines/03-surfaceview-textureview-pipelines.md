@@ -106,11 +106,7 @@ related_chapters:
 - '13.4'
 - '13.5'
 - '13.2'
-task2b_state: fixed
 status: finalized
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch13-rendering-pipelines/06-surfaceview.md

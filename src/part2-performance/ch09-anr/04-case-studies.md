@@ -42,12 +42,7 @@ related_chapters:
 - '1.9'
 consolidated_from:
 - src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_idle_audit_at: 2026-08-30T18:41:21+08:00
-last_idle_audit_run_id: 20260830-183540-idle-audit-a030a427
 ---
 
 # ANR 诊断案例集

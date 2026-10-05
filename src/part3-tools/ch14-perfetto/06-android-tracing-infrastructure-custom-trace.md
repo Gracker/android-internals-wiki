@@ -3,8 +3,6 @@ title: Android Tracing 基础设施与自定义 Trace
 chapter: '14.6'
 section: '14.6'
 status: finalized
-pipeline_stage: ready-to-publish
-task6_state: reviewed
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 tags:
   - tracing
@@ -64,7 +62,6 @@ sources:
 last_verified: '2026-10-05'
 last_verified_against: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/Trace.java, frameworks/base/core/jni/android_os_Trace.cpp, frameworks/native/libs/tracing_perfetto/tracing_perfetto.cpp, frameworks/native/cmds/atrace/atrace.cpp, system/core/libcutils/{trace-dev.cpp,trace-dev.inc,include/cutils/trace.h}, external/perfetto/src/traced/probes/ftrace/{ftrace_controller.cc,cpu_reader.cc,tracefs.cc,ftrace_config_muxer.cc}, external/perfetto/perfetto.rc, frameworks/native/libs/binder/Binder.cpp, kernel android17-6.18-2026-06_r6 Documentation/trace/ftrace.rst, drivers/android/binder_trace.h, samples/trace_events/trace-events-sample.h, Android Developers Trace API reference and AndroidX Tracing releases (2026-10-05)
 last_idle_audit_at: '2026-10-05T18:35:33+08:00'
-last_idle_audit_run_id: 20261005-183533-idle-audit-525517fb
 related_chapters:
 - '14.1'
 - '14.7'
@@ -73,8 +70,6 @@ related_chapters:
 - '14.2'
 - '14.12'
 - '15.6'
-task2b_state: fixed
-task9_state: reviewed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part3-tools/ch14-perfetto/08-tracing-infrastructure.md

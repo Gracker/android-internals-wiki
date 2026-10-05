@@ -7,9 +7,6 @@ applicable_versions: Android 12 (API 31) - Android 17 (API 37); Android 11 ÂèØÈÄ
 last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1 Build.java; Android 17 CDD and MPC supplemental (2026-06-24); AndroidX androidx-main; Android Developers Performance class; CTS guidance (2026-07-13)
 confidence: high
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
 sources:
 - type: official
   path: https://developer.android.com/topic/performance/performance-class

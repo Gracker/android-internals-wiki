@@ -62,18 +62,10 @@ related_chapters:
 - '26.1'
 - '26.3'
 - '26.6'
-pipeline_stage: ready-to-publish
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
 last_draft_polish_at: '2026-08-15T21:07:07+08:00'
-last_draft_polish_run_id: 20260815-210707-gracker-writing-474
 last_review_finalize_at: '2026-08-15T21:07:07+08:00'
-last_review_finalize_run_id: 20260815-210707-gracker-writing-474
 last_rework_at: '2026-08-15T21:07:07+08:00'
-last_rework_run_id: 20260815-210707-gracker-writing-474
 last_idle_audit_at: '2026-09-30T14:35:34+08:00'
-last_idle_audit_run_id: 20260930-143534-idle-audit-f9e10da4
 ---
 
 # 线上存储、I/O 与 SQLite 可观测性

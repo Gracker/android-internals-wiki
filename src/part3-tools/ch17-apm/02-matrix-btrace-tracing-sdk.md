@@ -54,10 +54,6 @@ sources:
   path: https://dl.google.com/dl/android/maven2/androidx/tracing/tracing-android/2.0.0/tracing-android-2.0.0-sources.jar
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/benchmark
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part3-tools/ch17-apm/02-tencent-matrix.md

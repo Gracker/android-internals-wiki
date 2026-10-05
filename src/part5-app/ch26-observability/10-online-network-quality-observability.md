@@ -65,16 +65,9 @@ related_chapters:
 - '24.7'
 - '26.1'
 - '26.3'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_draft_polish_at: '2026-08-15T21:22:20+08:00'
-last_draft_polish_run_id: 20260815-212220-gracker-writing-475
 last_review_finalize_at: '2026-08-15T21:22:20+08:00'
-last_review_finalize_run_id: 20260815-212220-gracker-writing-475
 last_rework_at: '2026-08-15T21:22:20+08:00'
-last_rework_run_id: 20260815-212220-gracker-writing-475
 ---
 
 # 线上网络质量监控与接入层对账

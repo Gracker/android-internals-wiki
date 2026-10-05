@@ -49,10 +49,6 @@ sources:
   path: https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/long-running
 - type: official
   path: https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/try-send.html
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 ---
 
 # 千万级 DAU 的 APM 端侧架构

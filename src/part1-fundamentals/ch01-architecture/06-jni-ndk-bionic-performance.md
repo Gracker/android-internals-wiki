@@ -80,7 +80,6 @@ related_chapters:
 - '20.11'
 - '4.5'
 - '20.13'
-pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch08-responsiveness/20-jni-overhead-native-interop-performance.md

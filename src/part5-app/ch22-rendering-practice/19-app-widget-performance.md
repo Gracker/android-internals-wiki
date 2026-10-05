@@ -16,13 +16,7 @@ related_chapters:
 last_verified: '2026-08-31'
 last_verified_against: AOSP android-17.0.0_r1；Jetpack Glance 1.2.0 源码 JAR 与官方文档
 last_body_apply_at: '2026-08-31T07:18:51+08:00'
-last_body_apply_run_id: '20260831-071536-1110b8da'
 last_review_finalize_at: '2026-08-31T08:38:03+08:00'
-last_review_finalize_run_id: '20260831-082743-4251c855'
-task2b_state: body-applied
-task6_state: finalized
-task9_state: finalized
-pipeline_stage: finalized
 confidence: high
 sources:
 - type: aosp

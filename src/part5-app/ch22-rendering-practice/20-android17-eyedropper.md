@@ -84,10 +84,6 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/ui/BaseEyeDropperViewModel.kt
   role: software Bitmap.getPixel 与结果回调
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 ---
 
 # Android 17 EyeDropper：系统取色、截图边界与跨设备同步

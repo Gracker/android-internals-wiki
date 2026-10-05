@@ -46,9 +46,6 @@ related_chapters:
 - '2.3'
 - '13.9'
 - '14.5'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part3-tools/ch14-perfetto/18-frametracer-graphics-frame-event.md

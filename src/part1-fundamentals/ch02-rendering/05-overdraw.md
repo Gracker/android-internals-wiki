@@ -7,13 +7,8 @@ last_verified: 2026-09-28
 last_verified_against: AOSP android-17.0.0_r1 Properties.h/Properties.cpp, SkiaPipeline.cpp, RenderNodeDrawable.cpp, Canvas.java; Perfetto FrameTimeline docs (Android 12+, SurfaceView unsupported notice); androidx.compose.ui:ui:1.11.4 GraphicsLayerModifier.kt/GraphicsLayerScope.kt; kernel android17-6.18-2026-06_r6 dma-buf/dma-fence
 last_source_verified_at: '2026-09-28T18:35:34+08:00'
 confidence: high
-task2b_state: fixed
-task9_state: reviewed
-task6_state: reviewed
-pipeline_stage: ready-to-publish
 status: finalized
 last_idle_audit_at: '2026-09-28T18:35:34+08:00'
-last_idle_audit_run_id: 20260928-183534-idle-audit-e96dfd0a
 sources:
 - type: aosp
   path: frameworks/base/libs/hwui/Properties.h

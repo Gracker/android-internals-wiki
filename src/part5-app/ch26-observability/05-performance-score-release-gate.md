@@ -92,16 +92,9 @@ related_chapters:
 - '16.5'
 - '22.10'
 - '26.8'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_draft_polish_at: '2026-08-15T19:49:16+08:00'
-last_draft_polish_run_id: 20260815-194916-gracker-writing-468
 last_review_finalize_at: '2026-08-15T19:49:16+08:00'
-last_review_finalize_run_id: 20260815-194916-gracker-writing-468
 last_rework_at: '2026-08-15T19:49:16+08:00'
-last_rework_run_id: 20260815-194916-gracker-writing-468
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch05-cpu-power/5.33-android17-performance-score-attribution-sourcecode.md

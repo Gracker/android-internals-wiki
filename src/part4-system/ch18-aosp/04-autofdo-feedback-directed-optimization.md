@@ -52,10 +52,6 @@ related_chapters:
 - '8.3'
 - '18.3'
 - '21.4'
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-pipeline_stage: ready-to-publish
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md
 ---

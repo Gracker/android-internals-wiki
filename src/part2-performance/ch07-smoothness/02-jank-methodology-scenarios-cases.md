@@ -88,13 +88,8 @@ related_chapters:
 - '1.1'
 - '14.2'
 - '4.3'
-task6_state: reviewed
 status: finalized
-pipeline_stage: ready-to-publish
-task9_state: reviewed
-task2b_state: fixed
 last_rework_at: '2026-08-19T09:49:30+08:00'
-last_rework_run_id: 20260819-094608-rework-b29354cb
 last_consolidated_at: '2026-08-24'
 ---
 

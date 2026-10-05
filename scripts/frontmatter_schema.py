@@ -41,26 +41,14 @@ CONTENT_FIELDS = {
 }
 
 ACTIVE_WORKFLOW_FIELDS = {
-    # Current body/review state, read by candidate selection and completion
-    # consistency gates.
-    "pipeline_stage",
-    "task2b_state",
-    "task6_state",
-    "task9_state",
-    # Current enabled lane stamps. Detailed findings, notes, results, log paths,
-    # model names, and reviewer identities live outside article frontmatter.
+    # Recency stamps read by current Hermes lane selectors. Run IDs, OpenClaw
+    # task2b/task6/task9 states, and pipeline_stage belong in logs/manifests.
     "last_body_apply_at",
-    "last_body_apply_run_id",
     "last_review_finalize_at",
-    "last_review_finalize_run_id",
     "last_deep_review_at",
-    "last_deep_review_run_id",
     "last_rework_at",
-    "last_rework_run_id",
     "last_idle_audit_at",
-    "last_idle_audit_run_id",
     "last_draft_polish_at",
-    "last_draft_polish_run_id",
 }
 
 ALLOWED_FIELDS = REQUIRED_FIELDS | CONTENT_FIELDS | ACTIVE_WORKFLOW_FIELDS

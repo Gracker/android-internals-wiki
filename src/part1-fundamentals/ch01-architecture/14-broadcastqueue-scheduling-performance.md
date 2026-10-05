@@ -51,11 +51,7 @@ related_chapters:
 - '1.12'
 - '9.1'
 - '5.3'
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
 last_review_finalize_at: '2026-08-16T23:03:53+08:00'
-last_review_finalize_run_id: 20260816-224852-07ce8fb9
 ---
 
 # Android 17 BroadcastQueue 进程级调度与广播性能边界

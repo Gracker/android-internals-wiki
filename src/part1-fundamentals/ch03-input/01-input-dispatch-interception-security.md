@@ -60,14 +60,8 @@ related_chapters:
 - '3.6'
 - '9.1'
 - '14.6'
-task6_state: reviewed
-pipeline_stage: ready-to-publish
-task9_state: reviewed
 last_deep_review_at: '2026-08-21T12:46:33+08:00'
-last_deep_review_run_id: 20260821-124250-deep-review-d0114de0
-task2b_state: fixed
 last_idle_audit_at: '2026-08-07T14:35:13+08:00'
-last_idle_audit_run_id: 20260807-143513-idle-audit-d0114de0
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md

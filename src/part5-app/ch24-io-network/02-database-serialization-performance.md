@@ -133,14 +133,8 @@ related_chapters:
 - '24.5'
 - '1.9'
 - '21.1'
-pipeline_stage: finalized
 last_review_finalize_at: '2026-08-15T09:33:20+08:00'
-last_review_finalize_run_id: 20260815-093320-gracker-writing-review
 last_draft_polish_at: '2026-08-15T09:33:20+08:00'
-last_draft_polish_run_id: 20260815-093320-gracker-writing
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md

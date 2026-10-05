@@ -4,10 +4,6 @@ chapter: '13.8'
 section: '13.8'
 section_title: Android 17 Jetpack Compose 渲染管线架构
 status: finalized
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-07-31'
 last_verified_against: Compose BOM 2026.06.01 / Runtime、UI、Foundation 1.11.4 at AndroidX commit 854220f44ea8ea80fee824a6c5a045f39bede289 / android-17.0.0_r1 / Writer rendering_pipelines S01、S02、S05 / android17-6.18-2026-06_r6

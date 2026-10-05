@@ -7,7 +7,6 @@ applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-08-25'
 last_verified_against: Android 17 / API 37 / AOSP android-17.0.0_r1
 last_review_finalize_at: '2026-08-25T16:10:03+08:00'
-last_review_finalize_run_id: 20260825-160510-f6037f5c
 confidence: high
 tags:
 - netd

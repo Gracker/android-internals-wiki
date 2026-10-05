@@ -3,7 +3,6 @@ title: Android Camera 平台管线：HAL3、Buffer、ZSL 与显示
 chapter: '13.10'
 section: '13.10'
 status: finalized
-pipeline_stage: ready-to-publish
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 tags:
   - camera
@@ -194,14 +193,10 @@ sources:
   path: https://developer.android.com/jetpack/androidx/releases/camera
 - type: writer
   path: Writer/rendering_pipelines/S11_camera_type.md
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_verified: '2026-08-20'
 last_verified_against: android-17.0.0_r1 (CameraCaptureSession.java, CameraCaptureSessionImpl.java, CameraDeviceImpl.java, OutputConfiguration.java, CaptureRequest.java, CameraCharacteristics.java, ImageFormat.java, Camera3Device.cpp, Camera3Stream.cpp, Camera3OutputStream.cpp, ICameraDeviceSession.aidl, ICameraDeviceCallback.aidl, HalStream.aidl, TextureView.java, DeferredLayerUpdater.cpp, SurfaceFlinger.cpp, HWComposer.cpp) / Android 17 API 37 Camera docs / android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, sync_file.c) + android-17.0.0_r1 + android17-6.18-2026-06_r6
 confidence: high
 last_idle_audit_at: '2026-07-29T18:36:00+08:00'
-last_idle_audit_run_id: 20260729-183600-idle-audit-25e2b504
 consolidated_from:
 - src/part1-fundamentals/ch02-rendering/32-camera-hal3-buffer-management.md
 - src/part1-fundamentals/ch02-rendering/33-camerax-zsl-hal-mapping.md

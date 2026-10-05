@@ -117,12 +117,7 @@ related_chapters:
 - '1.10'
 - '9.1'
 section: '8.2'
-pipeline_stage: ready-to-publish
-task9_state: reviewed
-task2b_state: fixed
-task6_state: reviewed
 last_rework_at: '2026-08-18T21:35:20+08:00'
-last_rework_run_id: 20260818-213520-rework-18314122
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch08-responsiveness/02-app-launch.md

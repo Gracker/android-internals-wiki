@@ -13,17 +13,10 @@ last_verified: '2026-08-15'
 last_source_verified_at: '2026-08-15'
 last_verified_against: Android 17/API 37 official NFC docs updated through 2026-08-03 and AOSP packages/modules/Nfc android-17.0.0_r1 source anchors
 confidence: high
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: reviewed
 last_deep_review_at: '2026-07-27T12:35:27+08:00'
-last_deep_review_run_id: 20260727-123527-deep-review-455b9e9f
 last_rework_at: '2026-08-09T03:14:43+08:00'
-last_rework_run_id: 20260809-031354-rework-bf063b3b
 last_draft_polish_at: '2026-08-15T13:40:51+08:00'
-last_draft_polish_run_id: 20260815-134051-gracker-writing-440
 last_review_finalize_at: '2026-08-15T13:40:51+08:00'
-last_review_finalize_run_id: 20260815-134051-gracker-writing-440
 sources:
 - type: official-docs
   ref: Android 17 / API 37 android.nfc API diff

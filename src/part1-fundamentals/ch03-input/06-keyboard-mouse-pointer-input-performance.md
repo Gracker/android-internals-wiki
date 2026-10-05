@@ -56,8 +56,6 @@ related_chapters:
 - '3.5'
 - '2.14'
 - '22.13'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
 last_consolidated_at: '2026-08-11'
 consolidated_from:
 - src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md

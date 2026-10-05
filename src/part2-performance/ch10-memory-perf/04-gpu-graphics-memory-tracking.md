@@ -3,7 +3,6 @@ title: GPU 与图形内存统计、归因与诊断
 chapter: '10.4'
 section: '10.4'
 status: finalized
-pipeline_stage: ready-to-publish
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-07-31'
 last_verified_against: AOSP android-17.0.0_r1, Android common kernel android17-6.18-2026-06_r6, Perfetto current docs

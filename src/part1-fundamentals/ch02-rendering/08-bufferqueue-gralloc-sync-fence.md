@@ -24,7 +24,6 @@ related_chapters:
 - '1.9'
 last_verified: '2026-09-15'
 last_idle_audit_at: '2026-09-15T10:39:05+08:00'
-last_idle_audit_run_id: 20260915-103508-idle-audit-2a07f2fc
 last_verified_against: AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + Android 4.1/11/12 historical tags + Writer rendering_pipelines S01/S02/S05/S06
 confidence: high
 sources:
@@ -148,10 +147,6 @@ sources:
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/dma_fence.h
 - type: material
   path: S01_baseline_12_anchor_pipeline/source.md
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch02-rendering/32-graphic-buffer-memory-pool.md

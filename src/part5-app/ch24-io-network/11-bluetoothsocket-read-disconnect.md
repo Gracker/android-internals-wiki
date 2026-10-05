@@ -40,7 +40,6 @@ sources:
   path: '[结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]'
 - type: clippings-structure
   path: '[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]'
-pipeline_stage: finalized
 ---
 
 # BluetoothSocket read() 断开语义与长连接治理

@@ -102,10 +102,6 @@ related_chapters:
 - '14.11'
 - '14.12'
 - '14.6'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part3-tools/ch14-perfetto/03-perfetto-view.md

@@ -90,10 +90,6 @@ sources:
 - type: official
   path: https://repo1.maven.org/maven2/com/tencent/bugly_16kb/bugly-pro/maven-metadata.xml
 status: finalized
-task9_state: reviewed
-task2b_state: fixed
-pipeline_stage: ready-to-publish
-task6_state: reviewed
 last_consolidated_at: '2026-08-24'
 ---
 

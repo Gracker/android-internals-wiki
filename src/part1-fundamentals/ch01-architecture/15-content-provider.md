@@ -64,10 +64,6 @@ related_chapters:
 - '1.8'
 - '8.3'
 - '9.1'
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-11'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/1.11-android17-contentprovider-optimization.md

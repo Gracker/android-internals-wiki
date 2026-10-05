@@ -35,9 +35,6 @@ related_chapters:
 - '4.6'
 - '8.2'
 - '17.1'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 consolidated_from:
 - 16.1 Google 官方的性能优化思路中的平台方法、工具选择与设备验证边界
 - src/part4-system/ch18-aosp/01-google-optimization.md

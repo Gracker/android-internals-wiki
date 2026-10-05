@@ -37,11 +37,7 @@ related_chapters:
 - '1.20'
 - '5.7'
 - '11.4'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 last_deep_review_at: '2026-08-22T15:48:00+08:00'
-last_deep_review_run_id: 20260822-154453-deep-review-fc34580b
 ---
 
 # Bluetooth LE Audio 延迟与功耗性能

@@ -8,10 +8,6 @@ last_verified: '2026-10-02'
 last_source_verified_at: '2026-10-02'
 last_verified_against: Current Android Developers ApplicationExitInfo/AnrInfo/ActivityManager/ProfilingTrigger/Android 17 behavior/features docs and Build.VERSION_CODES_FULL docs, AOSP android-17.0.0_r1 ApplicationExitInfo/AppExitInfoTracker/config/tombstone/Profiling sources, and KOOM upstream retrieved 2026-10-02
 confidence: high
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 sources:
 - type: research
   path: 2026-05-08-applicationexitinfo-android11-below-alternatives.md
@@ -105,13 +101,9 @@ related_chapters:
 - '14.1'
 - '16.3'
 last_draft_polish_at: '2026-08-15T20:01:08+08:00'
-last_draft_polish_run_id: 20260815-200108-gracker-writing-469
 last_review_finalize_at: '2026-08-15T20:01:08+08:00'
-last_review_finalize_run_id: 20260815-200108-gracker-writing-469
 last_rework_at: '2026-08-15T20:01:08+08:00'
-last_rework_run_id: 20260815-200108-gracker-writing-469
 last_idle_audit_at: '2026-10-02T14:40:01+08:00'
-last_idle_audit_run_id: 20261002-143534-idle-audit-5265c492
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part5-app/ch26-observability/08-application-exit-info.md

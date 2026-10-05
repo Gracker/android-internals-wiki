@@ -93,11 +93,7 @@ related_chapters:
 - '5.2'
 - '2.7'
 - '19.1'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 status: finalized
-task2b_state: fixed
 ---
 
 # SoC 平台差异

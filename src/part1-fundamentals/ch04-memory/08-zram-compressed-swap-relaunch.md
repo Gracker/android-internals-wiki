@@ -77,15 +77,8 @@ related_chapters:
 - '10.1'
 - '16.2'
 last_deep_review_at: '2026-08-26T12:39:47+08:00'
-last_deep_review_run_id: 20260826-123547-deep-review-ebd88334
-pipeline_stage: finalized
-task2b_state: body-applied
-task6_state: verified
-task9_state: finalized
 last_review_finalize_at: '2026-08-26T16:05:14+08:00'
-last_review_finalize_run_id: 20260826-160514-a9b30f11
 last_body_apply_at: '2026-08-26T09:55:08+08:00'
-last_body_apply_run_id: 20260826-095344-b5ee28a0
 ---
 
 # ZRAM 压缩交换与应用重启延迟

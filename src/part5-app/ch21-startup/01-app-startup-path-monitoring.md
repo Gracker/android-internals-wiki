@@ -73,12 +73,7 @@ related_chapters:
 - '21.2'
 - '26.1'
 - '16.3'
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_idle_audit_at: '2026-09-01T14:41:39+08:00'
-last_idle_audit_run_id: 20260901-143528-idle-audit-653f8d66
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part5-app/ch21-startup/17-startup-insights-api-observability.md

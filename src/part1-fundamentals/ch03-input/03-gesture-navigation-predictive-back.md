@@ -101,7 +101,6 @@ related_chapters:
 - '22.6'
 - '1.19'
 - '8.1'
-pipeline_stage: finalized
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch03-input/03-gesture-navigation.md

@@ -21,28 +21,8 @@ related_chapters:
   - "3.4"
   - "3.5"
   - "3.6"
-pipeline_stage: "ready-for-review"
-task6_state: "pending-verification"
-task9_state: reviewed
-task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: "2026-06-09T10:55:26+08:00"
-task6_result: pass-light-edit
-task9_result: pass-tech-review
-last_task9_at: "2026-07-20T15:05:34+08:00"
-task9_reviewed_by: hermes-aiw-review-finalize-apply
-task9_reviewed_date: "2026-07-20"
-last_task6_at: "2026-07-20T15:05:34+08:00"
-last_task6_review_log: "logs/review/2026-05-09-04-review.md"
-task2b_rework_notes: "2026-06-09 Task2B main:补全缺失子章节 3.7-3.11 列表与阅读建议;修复 last_verified_against 源码版本锚点;合并重复延伸阅读;修复 InputClassifier 后括号无空格;响应 deep-review 2026-05-10-03 P1 反压/背压/优先级/异步回调覆盖缺口。送 Task6 复审。"
-task6_review_notes: "2026-05-09 Task6 04:05:Task2B 修复后写作复审;修正验证锚点路径格式,L1/L2 通过;无新增 L3/L4 回炉项,送 Task9 复审。"
 last_review_finalize_at: "2026-07-20T15:05:34+08:00"
-last_review_finalize_run_id: "20260720-150534-9a0187cb"
-review_finalize_notes: "2026-07-20 Hermes AIW review/finalize: 按 android-17.0.0_r1 与已 finalized 的 ch03 子章节复核总览;收窄 InputFlinger Rust、Predictive Back、DeliQueue 和 MotionPredictor 表述后晋升 finalized。"
-reviewed_by: hermes-aiw-review-finalize-apply
-reviewed_date: "2026-07-20"
 last_consolidated_at: '2026-08-24'
-consolidation_note: 第二轮逐篇审阅后收敛为 6 篇，合并同一责任链中的总览、机制、版本增量、观测与案例，并统一连续编号。
 ---
 
 # 第 3 章：输入系统

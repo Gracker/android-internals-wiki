@@ -7,12 +7,7 @@ applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-10-01'
 last_verified_against: AOSP android-17.0.0_r1 + Launcher3 android-17.0.0_r1
 confidence: high
-pipeline_stage: finalized
-task2b_state: verified
-task6_state: verified
-task9_state: verified
 last_review_finalize_at: '2026-10-01'
-last_review_finalize_run_id: 20261001-220534-d4811f3e
 sources:
 - type: official
   path: https://source.android.com/docs/core/perf/task-snapshots

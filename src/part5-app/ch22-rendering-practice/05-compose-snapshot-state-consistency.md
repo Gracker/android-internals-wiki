@@ -15,13 +15,8 @@ related_chapters:
 last_verified: '2026-08-15'
 last_verified_against: Android 17 / API 37 / android-17.0.0_r1；Compose Runtime 1.12.0 源码（发行范围终点 963bf914f78b389bdddef0da7f36bee19d897274）
 confidence: high
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: finalized
 last_draft_polish_at: '2026-08-04T15:35:46+08:00'
-last_draft_polish_run_id: 20260804-153527-draft-polish-d6cbbdd4
 last_review_finalize_at: '2026-08-04T16:07:50+08:00'
-last_review_finalize_run_id: 20260804-160652-097137f8
 sources:
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/compose-runtime#1.12.0

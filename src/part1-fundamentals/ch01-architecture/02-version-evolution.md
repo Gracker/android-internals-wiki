@@ -3,7 +3,6 @@ title: Android 版本演进中的架构变化
 chapter: '1.2'
 section: '1.2'
 status: finalized
-pipeline_stage: ready-to-publish
 applicable_versions: Android 4.4 (API 19) - Android 17 (API 37)
 confidence: high
 tags:
@@ -85,9 +84,6 @@ related_chapters:
 - '4.5'
 - '5.2'
 - '21.4'
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_idle_audit_at: '2026-07-13'
 last_consolidated_at: '2026-08-11'
 consolidated_from:

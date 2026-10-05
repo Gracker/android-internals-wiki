@@ -130,20 +130,11 @@ sources:
   path: 技术文章/source/juejin-android/2026-08-30-76760926-超好用R8ConfigurationAn.md
 - type: article
   path: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md
-pipeline_stage: finalized
-task2b_state: body-applied
-task6_state: reviewed
-task9_state: reviewed
 last_body_apply_at: '2026-09-04T07:15:57+08:00'
-last_body_apply_run_id: '20260904-071557-f242b756'
 last_draft_polish_at: 2026-08-15 17:19:02+08:00
-last_draft_polish_run_id: 20260815-171902-gracker-writing-458
 last_deep_review_at: 2026-07-31
-last_deep_review_run_id: 20260731-083556-deep-review-977cb49d
 last_review_finalize_at: '2026-09-04T08:10:59+08:00'
-last_review_finalize_run_id: 20260904-080504-969c124d
 last_rework_at: 2026-08-15 17:19:02+08:00
-last_rework_run_id: 20260815-171902-gracker-writing-458
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch12-apk-network/01-apk-size.md

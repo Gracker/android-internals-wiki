@@ -15,13 +15,9 @@ related_chapters:
 last_verified: '2026-09-01'
 last_verified_against: Android 17 / API 37 / AOSP android-17.0.0_r1；Android 17 ProfilingManager trigger 与 MemoryLimiter 官方文档；ProfilingManager、ProfilingTrigger 与 ApplicationExitInfo API 参考；LeakCanary 2.14 与 Shark 文档；KOOM 仓库与 release；Perfetto heapprofd 与 ART HPROF 源码
 last_review_finalize_at: '2026-08-15T06:44:28+08:00'
-last_review_finalize_run_id: 20260815-064428-gracker-writing-review
 last_idle_audit_at: '2026-09-01T22:35:15+08:00'
-last_idle_audit_run_id: 20260901-223515-idle-audit-dc01caa9
 confidence: high
-pipeline_stage: finalized
 last_draft_polish_at: '2026-08-15T06:44:28+08:00'
-last_draft_polish_run_id: 20260815-064428-gracker-writing
 sources:
 - type: aosp
   path: https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/

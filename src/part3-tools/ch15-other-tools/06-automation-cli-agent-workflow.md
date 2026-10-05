@@ -63,10 +63,6 @@ tags:
   - android-cli
   - agent
   - performance-tooling
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
 title: 自动化性能测试与 CLI Agent 工作流
 last_consolidated_at: '2026-08-24'
 consolidated_from:

@@ -24,8 +24,6 @@ related_chapters:
 - '13.12'
 - '22.3'
 - '25.1'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
 sources:
 - type: internal-reference
   path: rendering_pipelines/S01_rendering_types_overview.md

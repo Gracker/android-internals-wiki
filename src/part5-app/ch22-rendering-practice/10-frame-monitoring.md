@@ -59,10 +59,6 @@ related_chapters:
 - '7.1'
 - '17.5'
 - '26.1'
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 consolidated_from:
 - src/part5-app/ch22-rendering-practice/09-rendering-case-studies.md
 - src/part3-tools/ch17-apm/06-jankstats-framemetrics.md

@@ -23,11 +23,7 @@ related_chapters:
 last_verified: '2026-08-20'
 last_verified_against: CameraX 1.6.1 稳定版与 1.7.0-alpha03 版本说明；AOSP android-17.0.0_r1；android17-6.18-2026-06_r6；CameraX 与 Android 官方文档及源码 + android-17.0.0_r1 + android17-6.18-2026-06_r6
 confidence: high
-task6_state: reviewed
-task9_state: deep-reviewed
-pipeline_stage: finalized
 last_deep_review_at: '2026-07-25T12:35:05+08:00'
-last_deep_review_run_id: 20260725-123505-deep-review-fb8f6d26
 sources:
 - type: official-doc
   path: https://developer.android.com/jetpack/androidx/releases/camera
@@ -121,9 +117,7 @@ consolidated_from:
 - src/part1-fundamentals/ch02-rendering/33-camerax-zsl-hal-mapping.md
 - src/part1-fundamentals/ch02-rendering/19-camera-hal3-buffer-camerax-zsl.md
 last_draft_polish_at: '2026-08-15T06:18:26+08:00'
-last_draft_polish_run_id: 20260815-061826-gracker-writing
 last_review_finalize_at: '2026-08-15T06:18:26+08:00'
-last_review_finalize_run_id: 20260815-061826-gracker-writing-review
 ---
 
 # CameraX：UseCase、Camera2 映射与性能

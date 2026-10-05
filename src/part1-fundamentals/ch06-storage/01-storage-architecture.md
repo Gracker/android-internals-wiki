@@ -45,12 +45,7 @@ related_chapters:
 - '6.2'
 - '4.1'
 - '7.2'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_idle_audit_at: '2026-08-26T22:49:33+08:00'
-last_idle_audit_run_id: 20260826-224308-idle-audit-1f93810e
 ---
 
 # Android 存储架构

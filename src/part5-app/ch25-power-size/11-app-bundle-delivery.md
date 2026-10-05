@@ -60,14 +60,8 @@ tags:
 - play-asset-delivery
 related_chapters:
 - '25.10'
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_draft_polish_at: '2026-08-15T15:03:03+08:00'
-last_draft_polish_run_id: 20260815-150303-gracker-writing-449
 last_review_finalize_at: '2026-08-15T15:03:03+08:00'
-last_review_finalize_run_id: 20260815-150303-gracker-writing-449
 ---
 
 # App Bundle 与按需分发

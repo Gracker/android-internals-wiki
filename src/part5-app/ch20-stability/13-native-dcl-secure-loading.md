@@ -40,7 +40,6 @@ related_chapters:
 - '4.5'
 - '20.3'
 - '20.12'
-pipeline_stage: finalized
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part5-app/ch20-stability/07-16kb-native-library-compatibility.md

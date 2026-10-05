@@ -3,7 +3,6 @@ title: Flutter 渲染管线：Engine、Impeller 与 Surface
 chapter: '13.7'
 section: '13.7'
 status: finalized
-pipeline_stage: ready-to-publish
 applicable_versions: Flutter 3.32 stable+（Merged Platform Model 主路径） / Flutter 3.27+（Android API 29+ Impeller 默认） / Flutter 3.44+（HCPP experimental opt-in） / Android 10-17
 tags:
   - flutter
@@ -142,14 +141,10 @@ sources:
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/
 - type: material
   path: rendering_pipelines/S10_flutter_type.md
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_verified_against: Flutter 3.44.7 docs + Flutter commit 8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2 (VsyncWaiterAndroid, VsyncWaiter, Animator, Rasterizer, Android embedding, SurfaceProducer, Impeller, PlatformViewsController/2) / android-17.0.0_r1 (TextureView.java, SurfaceView.java, SurfaceFlinger.cpp) / android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, sync_file.c) + Flutter 3.44.8 unique workflow and 16 KB plugin boundary
 last_verified: '2026-07-31'
 confidence: high
 last_idle_audit_at: '2026-07-29T22:35:32+08:00'
-last_idle_audit_run_id: 20260729-223532-idle-audit-fc0aee5f
 consolidated_from:
 - src/part2-performance/ch13-rendering-pipelines/12-flutter-rendering.md
 - src/part1-fundamentals/ch02-rendering/08-flutter-rendering.md

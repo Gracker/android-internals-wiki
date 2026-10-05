@@ -100,18 +100,12 @@ related_chapters:
 - '21.1'
 - '21.4'
 - '4.2'
-pipeline_stage: ready-to-publish
-task2b_state: body-applied
-task6_state: reviewed
-task9_state: reviewed
 last_review_finalize_at: '2026-09-15T10:14:14+08:00'
-last_review_finalize_run_id: '20260915-100505-7d4537d2'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/36-java-class-loading-performance.md
 - src/part1-fundamentals/ch01-architecture/49-art-boot-image-memory-mapping-startup.md
 last_body_apply_at: '2026-09-15T09:18:26+08:00'
-last_body_apply_run_id: '20260915-091600-2942e850'
 ---
 
 # Java 类加载与 ART Boot Image

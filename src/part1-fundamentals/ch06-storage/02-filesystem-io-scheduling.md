@@ -80,12 +80,7 @@ tags:
 - io-scheduling
 - perfetto
 status: finalized
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_rework_at: '2026-08-19T17:45:17+08:00'
-last_rework_run_id: 20260819-173532-rework-557ad9a6
 related_chapters:
 - '6.1'
 - '6.3'

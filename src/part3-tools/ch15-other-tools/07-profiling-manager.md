@@ -61,10 +61,6 @@ related_chapters:
 - '8.2'
 - '22.10'
 - '17.2'
-pipeline_stage: ready-to-publish
-task9_state: reviewed
-task2b_state: fixed
-task6_state: reviewed
 last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1 (ProfilingManager.java, ProfilingResult.java, ProfilingTrigger.java, ProfilingService.java) + AndroidX Core 1.19.0 Profiling APIs + SDK_INT_FULL / VERSION_CODES_FULL.BAKLAVA_1 for 36.1 + Android Developers ProfilingManager guides (app-driven and trigger-based updated 2026-08-13) + AndroidX Core 1.19.0 / Tracing 2.0.0 metadata and source + AOSP android-17.0.0_r1 packages/modules/Profiling
 confidence: medium
@@ -72,9 +68,7 @@ consolidated_from:
 - src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md
 - src/part3-tools/ch17-apm/08-profiling-manager.md
 last_deep_review_at: '2026-07-30T20:35:18+08:00'
-last_deep_review_run_id: 20260730-203518-deep-review-c1183d58
 last_review_finalize_at: '2026-07-31T12:07:10+08:00'
-last_review_finalize_run_id: 20260731-120710-6c773bef
 ---
 
 # ProfilingManager

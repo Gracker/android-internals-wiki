@@ -17,15 +17,10 @@ related_chapters:
 - '23.6'
 - '25.11'
 last_draft_polish_at: '2026-08-06T23:45:29+08:00'
-last_draft_polish_run_id: 20260806-234529-draft-polish-b425a06d
 last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1; Android common kernel android17-6.18-2026-06_r6; current Android Developers documentation
 last_review_finalize_at: '2026-08-07T12:09:10+08:00'
-last_review_finalize_run_id: 20260807-120726-dea40797
 confidence: high
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: finalized
 sources:
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/health/SystemHealthManager.java

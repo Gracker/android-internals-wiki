@@ -164,12 +164,7 @@ related_chapters:
 - '3.1'
 - '8.2'
 - '8.1'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_review_finalize_at: '2026-08-12'
-last_review_finalize_run_id: 20260812-180536-6f5d26ba
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/28-rendering-display-architecture.md

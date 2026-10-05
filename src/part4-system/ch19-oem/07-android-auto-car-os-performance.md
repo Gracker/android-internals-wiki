@@ -57,13 +57,8 @@ sources:
 - type: aosp
   path: hardware/interfaces/automotive/vehicle/aidl IVehicle.aidl @ android-17.0.0_r1
   url: https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/automotive/vehicle/aidl/android/hardware/automotive/vehicle/IVehicle.aidl
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: finalized
 last_deep_review_at: 2026-07-31
-last_deep_review_run_id: 20260731-163600-deep-review-3622aa5f
 last_review_finalize_at: 2026-08-09 04:17:59+08:00
-last_review_finalize_run_id: 20260809-041759-36cf131f
 ---
 
 # Android Auto 与 Android Automotive OS 性能优化

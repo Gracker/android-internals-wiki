@@ -132,16 +132,9 @@ related_chapters:
 - '1.15'
 - '2.7'
 - '18.1'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task2b_state: fixed
-task9_state: reviewed
 last_body_apply_at: '2026-08-22T17:27:05+08:00'
-last_body_apply_run_id: 20260822-172641-c689fa74
 last_review_finalize_at: '2026-08-25T14:28:10+08:00'
-last_review_finalize_run_id: 20260825-141916-ded13465
 last_deep_review_at: '2026-08-25T08:46:46+08:00'
-last_deep_review_run_id: 20260825-084646-deep-review-f4ad8c61
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/02-boot-process.md

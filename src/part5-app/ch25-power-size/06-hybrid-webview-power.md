@@ -23,9 +23,6 @@ related_chapters:
 - '22.16'
 - '25.1'
 - '25.2'
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: finalized
 sources:
 - type: paper
   path: https://arxiv.org/abs/2308.16734
@@ -65,11 +62,8 @@ sources:
   path: Clippings/Android 性能优化 - 虚拟内存优化（下）：一些“黑科技”优化手段.md
 - type: clipping-structure
   path: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md
-task2b_state: fixed
 last_draft_polish_at: '2026-08-15T15:12:52+08:00'
-last_draft_polish_run_id: 20260815-151252-gracker-writing-450
 last_review_finalize_at: '2026-08-15T15:12:52+08:00'
-last_review_finalize_run_id: 20260815-151252-gracker-writing-450
 ---
 
 # Hybrid/WebView 功耗与原生化取舍

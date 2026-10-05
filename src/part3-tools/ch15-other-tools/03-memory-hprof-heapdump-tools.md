@@ -49,10 +49,6 @@ related_chapters:
 - '10.1'
 - '23.2'
 - '17.3'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part3-tools/ch15-other-tools/05-memory-tools.md

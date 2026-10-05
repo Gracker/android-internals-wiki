@@ -10,7 +10,6 @@ applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags:
 - apm
 - monitoring
-task9_state: reviewed
 confidence: medium
 sources:
 - type: reference
@@ -73,9 +72,6 @@ sources:
   path: https://developer.android.com/build/releases/gradle-plugin-api-updates
 - type: official
   path: https://developer.android.com/reference/android/os/Build.VERSION
-task2b_state: fixed
-task6_state: reviewed
-pipeline_stage: ready-to-publish
 last_verified: '2026-08-14'
 last_verified_against: 六个上游仓库的当前默认分支 HEAD（均仍为文中固定 commit）+ AndroidGodEye 3.4.3 / Collie 1.1.8 / Matrix v2.1.0 releases + AOSP android-17.0.0_r1 + current Android Developers API references
 verification_scope_note: 版本范围覆盖第三方 APM 工具的 Android 兼容性窗口，并非逐个 Android 版本复跑全部模块。AOSP 源码固定验证 android-17.0.0_r1；旧工具的实现结论固定到各自 commit，当前状态另以默认分支 HEAD、README 与 GitHub Release 复核。

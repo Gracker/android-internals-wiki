@@ -71,16 +71,9 @@ related_chapters:
 - '24.5'
 - '24.6'
 - '16.3'
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-pipeline_stage: finalized
 last_review_finalize_at: '2026-08-15T11:11:04+08:00'
-last_review_finalize_run_id: 20260815-111104-gracker-writing-review
 last_draft_polish_at: '2026-08-15T11:11:04+08:00'
-last_draft_polish_run_id: 20260815-111104-gracker-writing
 last_idle_audit_at: '2026-10-02T18:35:34+08:00'
-last_idle_audit_run_id: 20261002-183534-idle-audit-5cc4f4d0
 ---
 
 # Wi-Fi 评分、网络选择与连接切换性能

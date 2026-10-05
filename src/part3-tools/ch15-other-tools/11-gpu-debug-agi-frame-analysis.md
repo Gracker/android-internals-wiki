@@ -3,7 +3,6 @@ title: GPU 调试与 AGI 单帧分析
 chapter: '15.11'
 section: '15.11'
 status: finalized
-pipeline_stage: ready-to-publish
 applicable_versions: Android 11 (API 30) - Android 17 (API 37)（AGI 要求 Android 11+ 受支持设备；APA 在 Android 12+ 体验最佳；Sokatoa 要求 Android 13+）
 tags:
   - gpu
@@ -76,9 +75,6 @@ related_chapters:
 - '15.1'
 - '15.12'
 - '2.3'
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part3-tools/ch15-other-tools/15-gpu-debug-tools.md

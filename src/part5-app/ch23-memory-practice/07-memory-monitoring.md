@@ -7,7 +7,6 @@ applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-08-15'
 last_verified_against: Android 17 / API 37 / AOSP android-17.0.0_r1；Debug、ActivityManager、ApplicationExitInfo、ProfilingManager、Android Vitals LMK 与 Memory Advice 官方文档
 last_review_finalize_at: '2026-08-15T08:12:21+08:00'
-last_review_finalize_run_id: 20260815-081221-gracker-writing-review
 confidence: high
 sources:
 - type: official
@@ -85,12 +84,7 @@ related_chapters:
 - '26.1'
 - '10.1'
 - '17.3'
-pipeline_stage: finalized
 last_draft_polish_at: '2026-08-15T08:12:21+08:00'
-last_draft_polish_run_id: 20260815-081221-gracker-writing
-task9_state: reviewed
-task2b_state: fixed
-task6_state: reviewed
 consolidated_from:
 - src/part5-app/ch23-memory-practice/08-memory-case-studies.md
 - src/part5-app/ch23-memory-practice/10-memory-advice-api.md

@@ -8,7 +8,6 @@ last_verified: '2026-08-29'
 last_source_verified_at: '2026-08-29'
 last_verified_against: Android 17 / API 37 官方 App memory limits、source.android Memory Limiter、Manage memory、ComponentCallbacks2、Binder、WebView 与 Google Play 64 位文档；AOSP android-17.0.0_r1 ActivityThread、ActivityManager、ComponentCallbacks2、TransactionTooLargeException、MemoryLimiter、ActivityManagerShellCommand、ActivityManagerService、ART thread.cc；Google Play 2027-02 技术质量门槛文档（17492799）与 2026-08-26 Android Developers Blog
 last_review_finalize_at: '2026-08-29T08:14:48+08:00'
-last_review_finalize_run_id: 20260829-081448-e296ef2f
 confidence: high
 sources:
 - type: official
@@ -76,16 +75,9 @@ related_chapters:
 - '4.3'
 - '1.1'
 - '4.2'
-pipeline_stage: ready-to-publish
 last_draft_polish_at: '2026-08-15T08:05:42+08:00'
-last_draft_polish_run_id: 20260815-080542-gracker-writing
 last_idle_audit_at: '2026-08-17T18:40:06+08:00'
-last_idle_audit_run_id: 20260817-183500-idle-audit-6907b226
-task9_state: reviewed
-task2b_state: body-applied
-task6_state: reviewed
 last_body_apply_at: '2026-08-29T07:15:20+08:00'
-last_body_apply_run_id: 20260829-071520-61711c2d
 consolidated_from:
 - src/part5-app/ch23-memory-practice/09-android17-app-memory-limits.md
 ---

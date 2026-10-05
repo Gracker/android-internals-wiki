@@ -3,7 +3,6 @@ title: Perfetto Profile 导入与 Flamegraph 分析
 chapter: '14.8'
 section: '14.8'
 status: finalized
-pipeline_stage: ready-to-publish
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)（Simpleperf 导入）；Android 15 (API 35) - Android 17 (API 37)（Perfetto linux.perf 采集；user 构建需 profileable/debuggable，userdebug/eng 权限不同）
 tags:
 - perfetto
@@ -60,9 +59,6 @@ related_chapters:
 - '14.7'
 - '15.2'
 - '15.11'
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 ---
 
 # Perfetto Profile 导入与 Flamegraph 分析

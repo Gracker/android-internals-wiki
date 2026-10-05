@@ -7,8 +7,6 @@ applicable_versions: Android 15 - Android 17（研究原型，非 AOSP 主线）
 last_verified: '2026-08-14'
 last_verified_against: AppFlow arXiv 2603.17259v1; Android Developers startup/ComponentCallbacks2/LMK docs; AOSP android-17.0.0_r1 lmkd/ProcessList/CachedAppOptimizer/UsageStatsManager/ApplicationExitInfo; Android Common Kernel android17-6.18-2026-06_r6 mm/vmscan.c; Linux PSI docs
 confidence: high
-pipeline_stage: ready-to-publish
-task6_state: reviewed
 sources:
 - type: paper
   path: https://arxiv.org/abs/2603.17259

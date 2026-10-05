@@ -7,7 +7,6 @@ applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-08-30'
 last_verified_against: AOSP android-17.0.0_r1
 last_idle_audit_at: '2026-08-30T14:42:08+08:00'
-last_idle_audit_run_id: 20260830-143503-idle-audit-c720f524
 confidence: medium
 tags:
   - rendering
@@ -40,10 +39,6 @@ sources:
   path: https://perfetto.dev/docs/data-sources/frametimeline
 - type: blog
   path: https://androidperformance.com
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-11'
 consolidated_from:
 - src/part1-fundamentals/ch02-rendering/2.32-android-17-frametimeline-数据结构.md

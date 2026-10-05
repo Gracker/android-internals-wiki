@@ -6,9 +6,6 @@ applicable_versions: Android 16 (API 36) - Android 17 (API 37)
 last_verified: '2026-08-15'
 last_verified_against: AOSP android-17.0.0_r1
 confidence: high
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: finalized
 sources:
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp

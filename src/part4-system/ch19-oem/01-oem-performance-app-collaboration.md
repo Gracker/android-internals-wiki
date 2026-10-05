@@ -3,7 +3,6 @@ title: OEM 性能优化与应用协作
 chapter: '19.1'
 section: '19.1'
 status: finalized
-pipeline_stage: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 tags:
   - oem
@@ -129,9 +128,6 @@ related_chapters:
 - '8.2'
 - '11.1'
 - '18.1'
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part4-system/ch19-oem/01-oem-overview.md

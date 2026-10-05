@@ -84,10 +84,6 @@ related_chapters:
 - '1.9'
 - '1.15'
 status: finalized
-pipeline_stage: ready-to-publish
-task9_state: reviewed
-task2b_state: fixed
-task6_state: reviewed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch09-anr/01-anr-design.md

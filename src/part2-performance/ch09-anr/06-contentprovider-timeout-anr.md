@@ -43,13 +43,8 @@ sources:
   path: frameworks/base/core/java/android/os/PerfettoCategories.java
 - type: official
   path: developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 last_rework_at: '2026-09-11T09:35:29+08:00'
-last_rework_run_id: 20260911-093529-rework-b2a40f30
 last_review_finalize_at: '2026-09-11T10:05:34+08:00'
-last_review_finalize_run_id: 20260911-100534-1bac54b6
 ---
 
 # ContentProvider 超时与 ANR 四路径

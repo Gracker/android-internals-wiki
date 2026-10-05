@@ -15,9 +15,7 @@ tags:
   - sync-fence
   - frametimeline
   - arr
-pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
-consolidation_note: 第四轮逐篇审阅后确认当前 17 篇，合并同一责任链中的总览、机制、版本增量、观测与案例；原 2.18 Compose Pausable Composition 应用实践已并入 22.2。
 consolidated_from:
   - "src/part1-fundamentals/ch02-rendering/2.15-android17-gpu-debug-tools.md"
   - "src/part1-fundamentals/ch02-rendering/2.29-Android-17-桌面模式窗口管理性能.md"

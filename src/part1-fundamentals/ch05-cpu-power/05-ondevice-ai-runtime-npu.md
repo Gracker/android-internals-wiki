@@ -3,16 +3,11 @@ title: Android 端侧 AI Runtime 与 NPU 性能边界
 chapter: '5.5'
 section: '5.5'
 status: finalized
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 applicable_versions: Android 8.1 (API 27) - Android 17 (API 37)
 last_verified: '2026-09-28'
 last_verified_against: Android API reference API 37 + Android 17 release notes + AOSP android-17.0.0_r1 + LiteRT NPU/Google Tensor/Qualcomm/MediaTek + ML Kit GenAI/AICore docs
 confidence: medium-low
 last_idle_audit_at: '2026-09-28T14:35:02+08:00'
-last_idle_audit_run_id: 20260928-143502-idle-audit-09a3b1c3
 consolidated_from:
 - src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md
 - src/part1-fundamentals/ch05-cpu-power/5.30-android17-ondevice-intelligence-framework-performance.md

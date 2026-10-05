@@ -91,14 +91,8 @@ related_chapters:
 - '11.2'
 - '15.5'
 - '25.3'
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_draft_polish_at: '2026-08-15T13:59:11+08:00'
-last_draft_polish_run_id: 20260815-135911-gracker-writing-442
 last_review_finalize_at: '2026-08-15T13:59:11+08:00'
-last_review_finalize_run_id: 20260815-135911-gracker-writing-442
 last_consolidated_at: '2026-08-24'
 ---
 

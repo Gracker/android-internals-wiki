@@ -24,19 +24,12 @@ related_chapters:
 - '2.2'
 consolidated_from:
 - src/part2-performance/ch08-responsiveness/09-game-performance.md
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_verified: '2026-10-05'
 last_verified_against: AOSP android-17.0.0_r1 (SurfaceView.java, Surface.java, PerformanceHintManager.java, SystemHealthManager.java, GameManager.java, GameState.java, TextureView.java, HardwareRenderer.java, TextureLayer.java, DeferredLayerUpdater.cpp, DrawFrameTask.cpp, BufferQueueCore.cpp, BufferQueueProducer.cpp, swapchain.cpp, Surface.cpp, SurfaceFlinger.cpp, HWComposer.cpp, Display.cpp, Output.cpp, OutputLayer.cpp, AidlComposerHal.cpp, Mode.aidl) / AGDK Frame Pacing, Frame Rate, ADPF, Game Mode, Game State, SystemHealthManager, OpenXR 1.1 docs / kernel android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, dma-fence.h, sync_file.c)
 confidence: medium
 last_idle_audit_at: '2026-07-27T22:35:52+08:00'
-last_idle_audit_run_id: 20260727-223552-idle-audit-6c95044a
 last_body_apply_at: '2026-08-25T09:24:13+08:00'
-last_body_apply_run_id: 20260825-091525-bb1ff868
 last_review_finalize_at: '2026-10-05T12:09:24+08:00'
-last_review_finalize_run_id: 20261005-120534-6689d47e
 sources:
 - type: internal-reference
   path: rendering_pipelines/S13_game_type.md

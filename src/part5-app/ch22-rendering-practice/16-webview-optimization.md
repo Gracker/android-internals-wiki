@@ -68,12 +68,7 @@ related_chapters:
 - '22.1'
 - '13.9'
 - '26.2'
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_idle_audit_at: '2026-08-19T14:38:36+08:00'
-last_idle_audit_run_id: 20260819-143836-idle-audit-140098bc
 ---
 
 # WebView 性能优化实战

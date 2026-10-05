@@ -25,9 +25,6 @@ related_chapters:
 - '2.3'
 - '22.3'
 - '22.4'
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: reviewed
 sources:
 - type: aosp
   path: AOSP android-17.0.0_r1 frameworks/base/graphics/java/android/graphics/RenderEffect.java
@@ -115,7 +112,6 @@ sources:
 - type: official
   path: https://developer.android.com/topic/performance/baselineprofiles/overview
   note: Baseline Profile / ART AOT 覆盖范围边界
-task2b_state: fixed
 consolidated_from:
 - src/part5-app/ch22-rendering-practice/19-runtimecolorfilter-runtimexfermode-performance.md
 - src/part5-app/ch22-rendering-practice/09-runtime-graphics-effects.md

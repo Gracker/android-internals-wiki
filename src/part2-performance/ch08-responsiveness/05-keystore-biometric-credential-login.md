@@ -68,9 +68,6 @@ related_chapters:
 - '26.6'
 - '26.8'
 - '8.7'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch08-responsiveness/09-keystore-keymint-latency.md

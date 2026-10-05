@@ -3,9 +3,6 @@ status: finalized
 title: 文字渲染性能
 chapter: '2.6'
 section: '2.6'
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-07-25'
 last_verified_against: AOSP android-17.0.0_r1 frameworks/base + frameworks/minikin + external/harfbuzz_ng + external/skia, AndroidX main, Perfetto docs, Writer rendering_pipelines S01 / S02
@@ -66,7 +63,6 @@ related_chapters:
 - '2.4'
 - '22.2'
 - '22.1'
-task2b_state: fixed
 ---
 
 # 文字渲染性能

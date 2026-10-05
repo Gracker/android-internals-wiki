@@ -3,10 +3,6 @@ title: StrictMode 性能检查与开发期诊断
 chapter: '15.9'
 section: '15.9'
 status: finalized
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
 applicable_versions: Android 9 (API 28) - Android 17 (API 37)
 tags:
 - strictmode
@@ -23,7 +19,6 @@ last_verified: '2026-08-16'
 last_verified_against: AOSP android-17.0.0_r1 StrictMode.java/Parcel.java/ActivityThread.java; libcore BlockGuard/CloseGuard; Android Developers StrictMode API reference (API 37 boundary)
 confidence: high
 last_idle_audit_at: '2026-08-16T10:35:02+08:00'
-last_idle_audit_run_id: 20260816-103502-idle-audit-56592085
 sources:
 - type: aosp
   path: frameworks/base/core/java/android/os/StrictMode.java

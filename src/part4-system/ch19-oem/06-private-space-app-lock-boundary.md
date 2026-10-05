@@ -7,11 +7,7 @@ applicable_versions: Android 15 (API 35) - Android 17 (API 37)；文件转移能
 last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1 framework sources; Private space documentation (2026-07-16); Android 16 QPR2 release notes (2026-07-13); Android Enterprise Android 15 FAQ; AndroidX Biometric reference (2026-06-24); AAOS App Lock documentation (2026-06-17)
 confidence: medium-high
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: finalized
 last_review_finalize_at: '2026-08-04T12:08:06+08:00'
-last_review_finalize_run_id: 20260804-120806-549a8bbc
 sources:
 - type: official
   path: https://source.android.com/docs/security/features/private-space

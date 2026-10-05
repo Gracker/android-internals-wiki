@@ -89,10 +89,6 @@ related_chapters:
 - '1.8'
 - '1.12'
 - '9.1'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/01.30-android17-binder-transaction-queue-optimization.md

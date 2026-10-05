@@ -9,7 +9,6 @@ last_source_verified_at: '2026-09-30'
 last_verified_against: Android Developers background audio hardening, Media3 battery/track-selection/offload listener, Android 17 features, AAudio/AudioTrack references, and Android 17 CDD retrieved 2026-09-30；AOSP android-17.0.0_r1 HardeningEnforcer/AudioManagerShellCommand/AudioManager/AudioService/MediaFocusControl/AudioFlinger Tracks.cpp/AAudio.h/AudioTrack.java/LeAudioService/codec_manager
 confidence: medium
 last_idle_audit_at: '2026-09-30T18:35:04+08:00'
-last_idle_audit_run_id: 20260930-183504-idle-audit-8ebf0e86
 sources:
 - type: official
   path: https://developer.android.com/about/versions/17/changes/bg-audio
@@ -82,14 +81,8 @@ related_chapters:
 - '25.2'
 - '26.10'
 - '26.1'
-task9_state: reviewed
-task2b_state: fixed
-task6_state: reviewed
-pipeline_stage: ready-to-publish
 last_draft_polish_at: '2026-08-15T15:46:55+08:00'
-last_draft_polish_run_id: 20260815-154655-gracker-writing-452
 last_review_finalize_at: '2026-08-15T15:46:55+08:00'
-last_review_finalize_run_id: 20260815-154655-gracker-writing-452
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part5-app/ch25-power-size/11-background-audio-hardening-power.md

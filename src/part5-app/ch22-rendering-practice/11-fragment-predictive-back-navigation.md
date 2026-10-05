@@ -129,10 +129,6 @@ related_chapters:
 - '22.6'
 - '22.7'
 - '24.5'
-task9_state: reviewed
-task6_state: reviewed
-task2b_state: fixed
-pipeline_stage: finalized
 last_consolidated_at: '2026-08-24'
 ---
 

@@ -3,7 +3,6 @@ title: ART 编译、验证与去优化机制
 chapter: '1.5'
 section: '1.5'
 status: finalized
-pipeline_stage: ready-to-publish
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
 confidence: high
 tags:
@@ -122,15 +121,9 @@ related_chapters:
 - '18.5'
 - '21.4'
 - '1.8'
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_body_apply_at: '2026-08-07T07:15:26+08:00'
-last_body_apply_run_id: 20260807-071512-04a03874
 last_deep_review_at: '2026-08-07T08:36:48+08:00'
-last_deep_review_run_id: 20260807-083648-deep-review-962ac2dc
 last_review_finalize_at: '2026-08-07T10:08:18+08:00'
-last_review_finalize_run_id: 20260807-100535-f89828e4
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/07-art-compilation.md

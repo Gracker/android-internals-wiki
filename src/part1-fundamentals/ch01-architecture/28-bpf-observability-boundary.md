@@ -43,15 +43,8 @@ related_chapters:
 - '15.11'
 - '15.16'
 last_body_apply_at: '2026-08-06T15:15:49+08:00'
-last_body_apply_run_id: 20260806-151549-82978455
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
 last_review_finalize_at: '2026-08-06T16:08:13+08:00'
-last_review_finalize_run_id: 20260806-160557-24b5c632
 last_idle_audit_at: '2026-09-27T10:43:16+08:00'
-last_idle_audit_run_id: 20260927-103557-idle-audit-2a7a1499
 ---
 
 # Android 17 / ACK 6.18 BPF 可观测性与可编程边界

@@ -27,13 +27,7 @@ sources:
 - type: aosp
   path: system/core/debuggerd/handler/debuggerd_handler.cpp android-17.0.0_r1
 last_body_apply_at: '2026-07-28T07:15:05+08:00'
-last_body_apply_run_id: 20260728-071505-5c898420
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: finalized
 last_review_finalize_at: '2026-07-28T08:18:33+08:00'
-last_review_finalize_run_id: 20260728-081833-99d1a2d7
 ---
 
 # Native Hook 技术选型与实现

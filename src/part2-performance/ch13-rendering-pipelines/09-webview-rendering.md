@@ -124,12 +124,7 @@ sources:
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c
   role: dma-fence 的 sync_file fd 接口
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-pipeline_stage: ready-to-publish
 last_idle_audit_at: '2026-07-27T14:35:45+08:00'
-last_idle_audit_run_id: 20260727-143545-idle-audit-0d80d330
 last_verified: '2026-07-31'
 last_verified_against: android-17.0.0_r1 (WebView.java, WebViewFactory.java, WebViewUpdateServiceImpl2.java, WebChromeClient.java, WebViewClient.java, WebViewFunctor.h, WebViewFunctorManager.cpp, TextureView.java, DeferredLayerUpdater.cpp, SurfaceFlinger.cpp) / Chromium 4e18c703f7cd950c890e14105da8eff42192af6a (architecture, DrawFn, AwContents, BrowserViewRenderer, HardwareRenderer, OverlayProcessorWebView, ImageReaderGLOwner) / AndroidX WebKit 1.16.0 docs / android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, sync_file.c)
 confidence: high

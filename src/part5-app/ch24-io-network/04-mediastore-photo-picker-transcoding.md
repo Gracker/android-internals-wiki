@@ -3,7 +3,6 @@ title: MediaStore、Photo Picker 与媒体转码
 chapter: '24.4'
 section: '24.4'
 status: finalized
-pipeline_stage: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37); queryDeletedFiles API 37.1 / S Extension 23
 last_verified: '2026-08-15'
 last_verified_against: Android and AOSP docs current through 2026-08-15; Android 17 / API 37 docs and android-17.0.0_r1 MediaProvider source; AndroidX Activity 1.11.0 Photo Picker docs; current Google Play All files access policy

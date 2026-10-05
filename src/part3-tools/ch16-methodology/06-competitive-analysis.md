@@ -42,10 +42,6 @@ related_chapters:
 - '14.1'
 - '15.1'
 - '16.3'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 ---
 
 # 竞品分析方法

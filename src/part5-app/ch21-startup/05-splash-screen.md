@@ -35,10 +35,6 @@ related_chapters:
 - '21.1'
 last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1; AndroidX core-splashscreen 1.2.0; Android Developers 2026-06-24
-task9_state: reviewed
-task2b_state: fixed
-task6_state: reviewed
-pipeline_stage: finalized
 ---
 
 # Splash Screen 与感知启动速度

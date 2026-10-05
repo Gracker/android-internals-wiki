@@ -60,10 +60,6 @@ related_chapters:
 - '1.19'
 - '8.2'
 - '18.1'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-11'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/1.48-Android-17-ResourcesManager-Configuration-Activity-Relaunch-判定模型.md

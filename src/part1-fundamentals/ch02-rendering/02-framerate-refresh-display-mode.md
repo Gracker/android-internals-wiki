@@ -201,10 +201,6 @@ related_chapters:
 - '2.8'
 - '2.12'
 - '22.13'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch02-rendering/02-framerate.md

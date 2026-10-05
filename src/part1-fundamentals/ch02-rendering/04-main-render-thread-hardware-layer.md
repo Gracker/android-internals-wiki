@@ -8,7 +8,6 @@ last_verified: '2026-09-13'
 last_verified_against: AOSP android-17.0.0_r1 frameworks/base HWUI/View; frameworks/native BufferQueue/BLAST; Compose UI 1.11.4 graphicsLayer; android17-6.18-2026-06_r6 kernel scheduler; historical tags only for version evolution
 confidence: medium
 last_idle_audit_at: '2026-09-13T18:44:51+08:00'
-last_idle_audit_run_id: 20260913-183548-idle-audit-1244ab57
 sources:
 - type: aosp
   path: platform/frameworks/base/libs/hwui/renderthread/RenderThread.cpp
@@ -108,10 +107,6 @@ related_chapters:
 - '3.1'
 - '7.1'
 - '22.1'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch02-rendering/05-main-render-thread.md

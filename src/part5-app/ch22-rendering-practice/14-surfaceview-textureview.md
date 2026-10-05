@@ -19,13 +19,8 @@ related_chapters:
 last_verified: '2026-08-15'
 last_verified_against: AOSP android-17.0.0_r1；Compose BOM 2026.08.00 / UI 与 Foundation 1.12.0（963bf914f78b389bdddef0da7f36bee19d897274）；android17-6.18-2026-06_r6；CameraX PreviewView 与 Media3 Surface 官方文档
 confidence: high
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: finalized
 last_review_finalize_at: '2026-08-15T05:59:06+08:00'
-last_review_finalize_run_id: 20260815-055906-gracker-writing-review
 last_draft_polish_at: '2026-08-15T05:59:06+08:00'
-last_draft_polish_run_id: 20260815-055906-gracker-writing
 sources:
 - type: source
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java

@@ -20,7 +20,6 @@ last_verified: '2026-08-26'
 last_verified_against: AOSP android-17.0.0_r1
 confidence: medium
 last_idle_audit_at: '2026-08-26T14:35:03+08:00'
-last_idle_audit_run_id: 20260826-143503-idle-audit-0632f239
 sources:
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/inputmethod/InputMethodManagerService.java

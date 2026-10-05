@@ -3,9 +3,6 @@ title: 如何区分系统问题和 App 问题
 chapter: '16.2'
 section: '16.2'
 status: finalized
-pipeline_stage: ready-to-publish
-task2b_state: fixed
-task6_state: reviewed
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1；Android common kernel android17-6.18-2026-06_r6；Perfetto thread_state、FrameTimeline、memory counters 文档
@@ -58,7 +55,6 @@ related_chapters:
 - '14.2'
 - '14.4'
 - '16.1'
-task9_state: reviewed
 ---
 
 # 如何区分系统问题和 App 问题

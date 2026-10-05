@@ -3,7 +3,6 @@ title: ART Heap、GC 与后台维护调度
 chapter: '4.2'
 section: '4.2'
 status: finalized
-pipeline_stage: ready-to-publish
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 tags:
   - memory
@@ -106,9 +105,6 @@ sources:
   path: DeepResearch/2026-06-28-android17-memorylimiter-procstate-polling-statsd.md
 last_verified: '2026-08-21'
 last_verified_against: AOSP android-17.0.0_r1 (主线) / android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 (版本演进对比) + Android Developers Blog (Android 16 QPR2)
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch04-memory/16-art-tlab-object-allocation-performance.md

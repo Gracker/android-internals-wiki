@@ -39,16 +39,9 @@ related_chapters:
 - '8.2'
 - '4.4'
 section: '6.3'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 last_review_finalize_at: '2026-10-02T12:05:34+08:00'
-last_review_finalize_run_id: 20261002-120534-927fa3fc
 last_rework_at: '2026-10-02T09:46:50+08:00'
-last_rework_run_id: 20261002-093534-rework-864fcd3f
 last_idle_audit_at: '2026-08-04T18:35:51+08:00'
-last_idle_audit_run_id: 20260804-183551-idle-audit-29d2feef
-task2b_state: fixed
 last_consolidated_at: '2026-08-11'
 consolidated_from:
 - src/part1-fundamentals/ch06-storage/6.03-Android-17-SharedPreferencesImpl-ANR机制.md

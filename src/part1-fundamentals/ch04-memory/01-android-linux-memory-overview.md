@@ -127,19 +127,13 @@ related_chapters:
 - '4.4'
 - '4.5'
 - '2.9'
-pipeline_stage: finalized
-task6_state: verified
-task9_state: finalized
-task2b_state: body-applied
 last_review_finalize_at: '2026-09-15T12:09:44+08:00'
-last_review_finalize_run_id: 20260915-120519-eb0fd63b
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md
 - src/part1-fundamentals/ch04-memory/01-memory-overview.md
 - src/part1-fundamentals/ch04-memory/02-linux-memory.md
 last_body_apply_at: '2026-09-23T07:15:01+08:00'
-last_body_apply_run_id: '20260923-071501-642a4cca'
 ---
 
 # Android 与 Linux 内存管理全景

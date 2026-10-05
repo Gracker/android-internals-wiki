@@ -3,7 +3,6 @@ title: 移动网络架构、连接与容灾
 chapter: '24.5'
 section: '24.5'
 status: finalized
-pipeline_stage: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
   - okhttp
@@ -114,9 +113,6 @@ sources:
   path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 19.md
 last_verified: '2026-08-15'
 last_verified_against: AOSP android-17.0.0_r1; Android Developers network state, background transfer, UIDT and long-running WorkManager docs; OkHttp 5.4.0 source and changelog; RFC 9110, RFC 6585 and RFC 7233
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 related_chapters:
 - '24.6'
 - '12.1'
@@ -129,9 +125,7 @@ consolidated_from:
 - src/part5-app/ch24-io-network/04-network-architecture.md
 - src/part5-app/ch24-io-network/13-network-performance-baseline.md
 last_review_finalize_at: '2026-08-15T10:05:57+08:00'
-last_review_finalize_run_id: 20260815-100557-gracker-writing-review
 last_draft_polish_at: '2026-08-15T10:05:57+08:00'
-last_draft_polish_run_id: 20260815-100557-gracker-writing
 ---
 
 # 移动网络架构、连接与容灾

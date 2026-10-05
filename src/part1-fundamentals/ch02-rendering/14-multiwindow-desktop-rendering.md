@@ -104,10 +104,6 @@ related_chapters:
 - '3.3'
 - '13.1'
 - '22.12'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch02-rendering/2.29-Android-17-桌面模式窗口管理性能.md

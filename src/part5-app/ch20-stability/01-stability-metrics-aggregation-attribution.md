@@ -84,10 +84,6 @@ related_chapters:
 - '26.2'
 - '17.1'
 status: finalized
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part5-app/ch20-stability/01-stability-overview.md

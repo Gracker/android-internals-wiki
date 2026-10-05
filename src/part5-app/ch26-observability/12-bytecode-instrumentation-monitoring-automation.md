@@ -62,16 +62,9 @@ related_chapters:
 - '17.11'
 - '20.2'
 - '26.1'
-pipeline_stage: ready-to-publish
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
 last_draft_polish_at: '2026-08-15T22:34:03+08:00'
-last_draft_polish_run_id: 20260815-223403-gracker-writing-479
 last_review_finalize_at: '2026-08-15T22:34:03+08:00'
-last_review_finalize_run_id: 20260815-223403-gracker-writing-479
 last_rework_at: '2026-08-15T22:34:03+08:00'
-last_rework_run_id: 20260815-223403-gracker-writing-479
 ---
 
 # 编译期字节码插桩与监控自动化

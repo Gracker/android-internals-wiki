@@ -140,10 +140,6 @@ related_chapters:
 - '1.1'
 - '16.3'
 - '1.17'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task2b_state: fixed
-task9_state: reviewed
 last_consolidated_at: '2026-08-24'
 ---
 

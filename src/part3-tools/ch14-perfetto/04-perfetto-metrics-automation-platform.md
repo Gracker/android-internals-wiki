@@ -55,10 +55,6 @@ tags:
   - sql-guardrail
   - observability
 status: finalized
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
-task2b_state: fixed
 related_chapters:
 - '14.2'
 - '14.7'

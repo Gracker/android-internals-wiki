@@ -60,18 +60,10 @@ related_chapters:
 - '26.5'
 - '26.1'
 - '16.5'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_draft_polish_at: '2026-08-15T19:37:06+08:00'
-last_draft_polish_run_id: 20260815-193706-gracker-writing-467
 last_review_finalize_at: '2026-08-15T19:37:06+08:00'
-last_review_finalize_run_id: 20260815-193706-gracker-writing-467
 last_rework_at: '2026-08-15T19:37:06+08:00'
-last_rework_run_id: 20260815-193706-gracker-writing-467
 last_idle_audit_at: '2026-10-04T10:40:33+08:00'
-last_idle_audit_run_id: 20261004-103534-idle-audit-18098fe3
 ---
 
 # A/B Test 与性能回归防护

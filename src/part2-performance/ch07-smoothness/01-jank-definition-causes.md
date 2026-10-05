@@ -6,13 +6,8 @@ status: finalized
 applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
 last_verified: '2026-08-27'
 last_verified_against: AOSP android-17.0.0_r1 JankInfo/FrameTimeline calculateJankSeverity + Perfetto FrameTimeline + Android Developers Slow rendering/JankStats/ANR docs
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
 confidence: high
 last_idle_audit_at: '2026-08-27T22:35:18+08:00'
-last_idle_audit_run_id: 20260827-223518-idle-audit-1eb45e55
 sources:
 - type: aosp
   path: frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp

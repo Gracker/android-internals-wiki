@@ -7,7 +7,6 @@ applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-08-15'
 last_verified_against: Android 17 / API 37 / AOSP android-17.0.0_r1；Android Bitmap、BitmapFactory.Options、Bitmap.Config 与 ImageDecoder 官方文档
 last_review_finalize_at: '2026-08-15T07:00:43+08:00'
-last_review_finalize_run_id: 20260815-070043-gracker-writing-review
 confidence: high
 sources:
 - type: official
@@ -46,12 +45,7 @@ related_chapters:
 - '23.2'
 - '22.9'
 - '4.2'
-pipeline_stage: finalized
 last_draft_polish_at: '2026-08-15T07:00:43+08:00'
-last_draft_polish_run_id: 20260815-070043-gracker-writing
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 consolidated_from:
 - src/part5-app/ch23-memory-practice/08-memory-case-studies.md
 ---

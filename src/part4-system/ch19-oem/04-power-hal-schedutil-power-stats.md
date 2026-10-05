@@ -7,8 +7,6 @@ applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1 Power framework and frozen Power AIDL v7/PowerStats AIDL v2; Android public APIs current on 2026-08-14; android17-6.18-2026-06_r6 schedutil, sched_ext and vendor driver sources
 confidence: medium
-task6_state: reviewed
-task9_state: reviewed
 sources:
 - type: research
   path: DeepResearch/2026-07-06-android17-soc-vendor-power-hal-schedutil-loop.md
@@ -153,7 +151,6 @@ consolidated_from:
 - 17.21-android17-soc-vendor-power-hal-schedutil-loop.md
 - src/part4-system/ch19-oem/08-power-hal-schedutil-soc-power.md
 - src/part4-system/ch19-oem/09-power-stats-hal-oem-implementation.md
-pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
 ---
 

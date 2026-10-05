@@ -18,18 +18,11 @@ related_chapters:
 - '20.12'
 - '23.3'
 - '26.13'
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-pipeline_stage: finalized
 last_draft_polish_at: '2026-08-03T15:35:11+08:00'
-last_draft_polish_run_id: 20260803-153511-draft-polish-5d4831f5
 last_verified: '2026-08-29'
 last_verified_against: Android 17 public docs (Memory Limiter AOSP fetched 2026-08-28; App memory limits updated 2026-08-13) / android-17.0.0_r1 / android17-6.18-2026-06_r6
 last_review_finalize_at: '2026-08-29T12:35:17+08:00'
-last_review_finalize_run_id: 20260829-123353-430f9b4f
 last_body_apply_at: '2026-08-29T11:19:37+08:00'
-last_body_apply_run_id: 20260829-111612-abc9b52a
 confidence: high
 sources:
 - type: aosp

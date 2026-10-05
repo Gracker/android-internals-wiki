@@ -60,12 +60,7 @@ related_chapters:
 - '1.5'
 - '21.4'
 section: '8.3'
-task9_state: reviewed
-task6_state: reviewed
-pipeline_stage: ready-to-publish
-task2b_state: fixed
 last_idle_audit_at: '2026-08-29'
-last_idle_audit_run_id: 20260829-223538-idle-audit-e3a23e9f
 ---
 
 # 启动优化策略

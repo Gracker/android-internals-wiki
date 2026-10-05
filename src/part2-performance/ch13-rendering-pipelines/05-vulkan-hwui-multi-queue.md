@@ -152,10 +152,6 @@ sources:
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c
   role: RenderThread 与上传线程的 CPU 调度基线；不定义 Vulkan queue 的 GPU 执行顺序
 status: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch13-rendering-pipelines/09-vulkan-native.md

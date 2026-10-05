@@ -7,7 +7,6 @@ applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-08-13'
 last_verified_against: android/skills profilers commit 4328beaf36f00265db107eb316f9add6b8764144; Perfetto official AI skill docs and v57.1-v57.2 release notes checked 2026-08-13; Android 17 Perfetto stdlib docs/source (android.frames.*, android.startup.startups, android.binder, slices.with_context, slices.time_in_state, slices.cpu_time, sched.with_context, linux.cpu.frequency, linux.cpu.utilization.process); Perfetto SQL table docs (slice, thread_state, sched, cpu_freq); Android system tracing docs
 last_rework_at: '2026-08-08T09:36:00+08:00'
-last_rework_run_id: 20260808-093600-rework-39378b94
 confidence: medium-high
 tags:
 - perfetto
@@ -20,10 +19,6 @@ related_chapters:
 - '14.10'
 - '16.5'
 - '26.3'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 sources:
 - type: official
   path: https://github.com/android/skills/tree/4328beaf36f00265db107eb316f9add6b8764144/profilers
@@ -56,7 +51,6 @@ sources:
 - type: material
   path: perfetto-trace-analysis/SKILL.md
 last_review_finalize_at: '2026-08-04T14:07:05+08:00'
-last_review_finalize_run_id: 20260804-140516-9d7a366c
 ---
 
 # Agent 辅助 Perfetto 分析协议

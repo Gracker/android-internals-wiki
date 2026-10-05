@@ -60,10 +60,6 @@ related_chapters:
 - '1.15'
 - '1.1'
 - '5.3'
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part5-app/ch21-startup/03-contentprovider-optimization.md

@@ -22,8 +22,6 @@ related_chapters:
 - '13.5'
 - '13.6'
 - '13.9'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
 last_verified: '2026-08-13'
 last_verified_against: androidx.webgpu 1.0.0-alpha05 / AndroidX c48b772dd76241af6af60bee13d3cad0e4520306 / Dawn 9d41fdf36977cca92361c6ae2769129bbaaafd9b / android-17.0.0_r1 / Writer rendering_pipelines S01、S03、S04 / android17-6.18-2026-06_r6
 confidence: medium

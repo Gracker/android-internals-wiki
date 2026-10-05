@@ -52,10 +52,6 @@ related_chapters:
 - '2.8'
 - '2.2'
 - '18.3'
-task6_state: reviewed
-pipeline_stage: ready-to-publish
-task9_state: reviewed
-task2b_state: fixed
 ---
 
 # Frame Pacing Library 与帧节奏控制

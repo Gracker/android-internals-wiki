@@ -40,10 +40,6 @@ related_chapters:
 - '17.2'
 - '26.1'
 - '26.6'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 ---
 
 # Perfetto SDK 与应用内 Trace 数据源

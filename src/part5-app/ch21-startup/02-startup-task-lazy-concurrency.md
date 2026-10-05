@@ -6,7 +6,6 @@ status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1, current Jetpack App Startup guide and 1.2.0 latest stable sources, alibaba/alpha 04fe7f2 (artifact 1.0.0.1)
-pipeline_stage: finalized
 confidence: medium-high
 sources:
 - type: aosp
@@ -73,9 +72,6 @@ consolidated_from:
 - src/part5-app/ch21-startup/02-startup-framework.md
 - src/part5-app/ch21-startup/06-lazy-initialization.md
 - src/part5-app/ch21-startup/14-thread-pool-concurrency-performance.md
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 ---
 

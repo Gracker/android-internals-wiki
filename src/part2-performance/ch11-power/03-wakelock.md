@@ -55,10 +55,6 @@ sources:
 - type: kernel
   path: kernel/power/suspend.c
 status: finalized
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-pipeline_stage: ready-to-publish
 ---
 
 # WakeLock 机制与功耗分析

@@ -20,8 +20,6 @@ related_chapters:
 - '5.4'
 - '5.5'
 - '11.1'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
 sources:
 - type: paper
   path: https://arxiv.org/abs/2507.02135
@@ -49,10 +47,7 @@ sources:
   path: hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl
 - type: aosp
   path: hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl
-task9_state: reviewed
-task2b_state: fixed
 last_idle_audit_at: '2026-08-22T18:35:18+08:00'
-last_idle_audit_run_id: 20260822-183518-idle-audit-1772199f
 ---
 
 # 移动端 LLM 推理的 DVFS 与能效边界

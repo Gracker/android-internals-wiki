@@ -199,10 +199,6 @@ related_chapters:
 - '2.9'
 - '2.7'
 status: finalized
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch02-rendering/01-rendering-overview.md

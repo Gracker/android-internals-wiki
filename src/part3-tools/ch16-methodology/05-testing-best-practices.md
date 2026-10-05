@@ -54,16 +54,9 @@ related_chapters:
 - '8.3'
 - '14.1'
 - '5.2'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_rework_at: '2026-08-08T13:35:35+08:00'
-last_rework_run_id: 20260808-133535-rework-b52e6e4a
 last_review_finalize_at: '2026-08-04T22:07:14+08:00'
-last_review_finalize_run_id: 20260804-220518-6f1a5c2e
 last_idle_audit_at: '2026-08-06T18:35:19+08:00'
-last_idle_audit_run_id: 20260806-183519-idle-audit-b52e6e4a
 ---
 
 # 性能测试最佳实践

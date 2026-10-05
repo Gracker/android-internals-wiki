@@ -25,10 +25,6 @@ related_chapters:
 - '11.3'
 - '15.1'
 - '16.3'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 ---
 
 # Battery Historian 与功耗分析工具

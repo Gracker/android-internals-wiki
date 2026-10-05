@@ -236,10 +236,6 @@ related_chapters:
 - '7.1'
 - '14.7'
 - '14.11'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part3-tools/ch14-perfetto/01-perfetto-intro.md

@@ -294,17 +294,11 @@ related_chapters:
 - '15.14'
 - '24.4'
 section: '13.11'
-task6_state: reviewed
-task2b_state: fixed
-pipeline_stage: ready-to-publish
-task9_state: reviewed
 last_verified: '2026-10-05'
 last_verified_against: android-17.0.0_r1 media/HWC/APV source anchors (MediaCodec.java, MediaCodecInfo.java, MediaFormat.java, MediaRecorder.java, CCodec.cpp, CCodecBufferChannel.cpp, CCodecConfig.cpp, HWComposer.cpp, Composition.aidl, Capability.aidl, BufferUsage.aidl) / Android 16-17 APV, HWC, Media3, multimedia tunneling and frame-rate official docs / Media3 1.10.1 source tag and release notes / android17-6.18-2026-06_r6 dma-buf, dma-fence, sched, block and thermal anchors
 last_review_finalize_at: '2026-10-05T22:09:47+08:00'
-last_review_finalize_run_id: 20261005-220534-b28c8a5b
 confidence: high
 last_idle_audit_at: '2026-07-25T22:35:51+08:00'
-last_idle_audit_run_id: 20260725-223518-idle-audit-9529cd15
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch08-responsiveness/08-media-pipeline.md

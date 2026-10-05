@@ -3,10 +3,6 @@ title: 手势识别算法与性能优化
 chapter: '3.4'
 section: '3.4'
 status: finalized
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 version_notes: DEFAULT_STRATEGY_BY_AXIS 仅 Android 14+ (API 34+) 可用
 confidence: medium

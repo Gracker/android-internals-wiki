@@ -54,11 +54,8 @@ related_chapters:
 consolidated_from:
 - src/part5-app/ch23-memory-practice/22.09-ondevice-llm-memory-management.md
 - src/part5-app/ch23-memory-practice/23.24-android-17-ai-推理加速与-neuralnetworks-hal-优化.md
-pipeline_stage: finalized
 last_review_finalize_at: '2026-08-15T09:04:59+08:00'
-last_review_finalize_run_id: 20260815-090459-gracker-writing-review
 last_draft_polish_at: '2026-08-15T09:04:59+08:00'
-last_draft_polish_run_id: 20260815-090459-gracker-writing
 ---
 
 # 端侧大模型推理的内存管理

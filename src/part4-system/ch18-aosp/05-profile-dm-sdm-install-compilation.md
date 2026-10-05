@@ -3,12 +3,7 @@ title: Profile、DM 与 Secure Dex Metadata 安装编译
 chapter: '18.5'
 section: '18.5'
 status: finalized
-task9_state: reviewed
-task2b_state: fixed
-task6_state: reviewed
-pipeline_stage: finalized
 last_review_finalize_at: '2026-07-29T18:06:00+08:00'
-last_review_finalize_run_id: 20260729-180555-eb91bcdc
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1 (PackageInstallerSession / PackageManagerShellCommand / DexOptHelper / PrimaryDexopter / Dexopter / DexoptStatus / ReasonMapping / ArtFileManager / ArtManagedInstallFileHelper / DexMetadataHelper / Dex2OatStatsReporter / artd / oat_file / sdc_file / path_utils); Configure ART / ART Service configuration / Baseline Profiles / Startup Profiles

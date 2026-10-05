@@ -7,10 +7,6 @@ applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1; Android Developers crash docs; kotlinx.coroutines 1.11.0 API and exception-handling docs current on 2026-08-14
 confidence: medium-high
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-pipeline_stage: finalized
 sources:
 - type: clippings-structure-ref
   path: Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控：实现自定义 Crash 处理器.md

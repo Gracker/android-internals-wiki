@@ -28,10 +28,6 @@ related_chapters:
 - '22.3'
 - '8.1'
 - '8.2'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 ---
 
 # Kotlin Coroutine、Flow 与线程调度实践

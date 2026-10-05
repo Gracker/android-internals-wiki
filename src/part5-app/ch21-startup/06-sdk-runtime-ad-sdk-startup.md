@@ -52,7 +52,6 @@ related_chapters:
 - '21.2'
 - '25.8'
 - '26.1'
-pipeline_stage: finalized
 last_consolidated_at: '2026-08-11'
 consolidated_from:
 - src/part2-performance/ch12-apk-network/07-privacy-sandbox-performance.md

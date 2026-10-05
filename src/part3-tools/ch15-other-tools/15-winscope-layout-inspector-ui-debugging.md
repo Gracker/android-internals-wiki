@@ -3,9 +3,6 @@ title: Winscope、Layout Inspector 与 UI 状态调试
 chapter: '15.15'
 section: '15.15'
 status: finalized
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-08-14'
 last_verified_against: android-17.0.0_r1 / Android 17 Winscope Perfetto data sources / AOSP Winscope docs updated 2026-06-17

@@ -54,14 +54,8 @@ related_chapters:
 - '8.1'
 - '14.6'
 - '16.3'
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
 last_deep_review_at: '2026-08-21T09:15:41+08:00'
-last_deep_review_run_id: 20260821-090405-deep-review-855a7839
 last_rework_at: '2026-08-12T09:45:30+08:00'
-last_rework_run_id: 20260812-093533-rework-855a7839
-pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-11'
 consolidated_from:
 - src/part1-fundamentals/ch03-input/04-input-latency-prediction.md

@@ -2,10 +2,6 @@
 title: AOSP 源码编译与调试环境
 chapter: '18.2'
 status: finalized
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-pipeline_stage: ready-to-publish
 applicable_versions: Android 11 (API 30) - Android 17 (API 37)
 last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1 + android-latest-release pointing to android17-release + current Android 17 build/Cuttlefish docs + android17-6.18-2026-06_r6

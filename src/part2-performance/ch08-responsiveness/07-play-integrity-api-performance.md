@@ -39,11 +39,7 @@ related_chapters:
 - '8.5'
 - '8.6'
 - '12.1'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 last_idle_audit_at: '2026-08-25T22:35:51+08:00'
-last_idle_audit_run_id: 20260825-223551-idle-audit-7fa603ef
 ---
 
 # Play Integrity API 性能与集成延迟

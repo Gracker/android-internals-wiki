@@ -3,13 +3,10 @@ status: finalized
 title: lmkd、Cached App Freezer 与内存压力治理
 section: '4.3'
 chapter: '4.3'
-task6_state: reviewed
-task9_state: reviewed
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-08-16'
 last_verified_against: AOSP android-17.0.0_r1 ProcessList.java, psc/Constants.java, ActivityThread.java, CachedAppOptimizer.java, MemoryLimiter.java/JNI; system/memory/lmkd lmkd.cpp, include/lmkd.h, reaper.cpp; external/perfetto android.memory.lmk stdlib; Android common kernel android17-6.18-2026-06_r6 PSI and cgroup v2 docs; official lmkd, Android 17 app memory limits, app memory and Perfetto docs
 last_rework_at: '2026-08-16T21:39:17+08:00'
-last_rework_run_id: 20260816-213533-rework-c9119032
 confidence: medium-high
 sources:
 - type: aosp
@@ -114,8 +111,6 @@ related_chapters:
 - '26.6'
 - '4.4'
 - '4.10'
-task2b_state: fixed
-pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch04-memory/15-psi-lowmemdetector-lmkd-architecture.md

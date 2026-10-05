@@ -112,16 +112,9 @@ related_chapters:
 - '9.2'
 - '9.7'
 - '17.11'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_draft_polish_at: '2026-08-15T18:25:21+08:00'
-last_draft_polish_run_id: 20260815-182521-gracker-writing-463
 last_review_finalize_at: '2026-08-15T18:25:21+08:00'
-last_review_finalize_run_id: 20260815-182521-gracker-writing-463
 last_rework_at: '2026-08-15T18:25:21+08:00'
-last_rework_run_id: 20260815-182521-gracker-writing-463
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch09-anr/9.11-enterprise-anr-monitoring-platform-design.md

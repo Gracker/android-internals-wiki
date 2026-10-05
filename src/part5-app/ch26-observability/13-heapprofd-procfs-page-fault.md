@@ -185,16 +185,9 @@ sources:
   path: https://source.android.com/docs/core/architecture/16kb-page-size/getting-page-size
 - type: official
   path: https://source.android.com/docs/core/tests/debug/native-crash
-pipeline_stage: finalized
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
 last_draft_polish_at: '2026-08-15T22:54:40+08:00'
-last_draft_polish_run_id: 20260815-225440-gracker-writing-480
 last_review_finalize_at: '2026-08-15T22:54:40+08:00'
-last_review_finalize_run_id: 20260815-225440-gracker-writing-480
 last_rework_at: '2026-08-15T22:54:40+08:00'
-last_rework_run_id: 20260815-225440-gracker-writing-480
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part5-app/ch26-observability/19-heapprofd-production-deployment-permissions.md

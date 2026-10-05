@@ -26,10 +26,6 @@ related_chapters:
 - '3.2'
 - '14.2'
 - '14.7'
-pipeline_stage: ready-to-publish
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
 ---
 
 # Perfetto 输入延迟 SQL 深度分析

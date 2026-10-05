@@ -127,10 +127,6 @@ consolidated_from:
 - 08-musched-vip-scheduling-practice.md
 - src/part4-system/ch19-oem/04-sched-ext-oem-bpf-scheduler.md
 - src/part4-system/ch19-oem/05-oem-game-mode-input-priority.md
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
 ---
 

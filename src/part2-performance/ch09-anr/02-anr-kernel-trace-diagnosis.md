@@ -7,7 +7,6 @@ applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-09-02'
 last_verified_against: "AOSP android-17.0.0_r1（AnrHelper、ProcessErrorStateRecord、StackTracesDumpHelper、AppExitInfoTracker、ProfilingManager、ProfilingTrigger、PerfettoCategories）；Android Common Kernel android17-6.18-2026-06_r6（sched、binder、block、futex、PSI）；Android Developers ApplicationExitInfo、ProfilingTrigger、ANR vitals docs checked 2026-09-02"
 last_idle_audit_at: '2026-09-02T10:46:17+08:00'
-last_idle_audit_run_id: 20260902-103543-idle-audit-44ab9e51
 confidence: medium
 sources:
 - type: blog
@@ -70,10 +69,6 @@ consolidated_from:
 - src/part2-performance/ch09-anr/13-anr-log-cpu-analysis-methodology.md
 - src/part2-performance/ch09-anr/03-anr-analysis.md
 - src/part2-performance/ch09-anr/07-anr-kernel-trace-joint-diagnosis.md
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
 ---
 

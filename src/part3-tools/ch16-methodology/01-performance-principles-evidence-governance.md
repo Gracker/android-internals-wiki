@@ -128,10 +128,6 @@ consolidated_from:
 - src/part3-tools/ch16-methodology/01-philosophy.md
 - src/part3-tools/ch16-methodology/08-empirical-performance-issues.md
 - src/part3-tools/ch16-methodology/09-performance-governance.md
-pipeline_stage: ready-to-publish
-task9_state: reviewed
-task2b_state: fixed
-task6_state: reviewed
 last_consolidated_at: '2026-08-24'
 ---
 

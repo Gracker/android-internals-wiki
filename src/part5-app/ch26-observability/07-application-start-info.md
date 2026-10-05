@@ -56,16 +56,9 @@ related_chapters:
 - '8.2'
 - '15.7'
 - '26.6'
-pipeline_stage: ready-to-publish
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
 last_draft_polish_at: '2026-08-15T20:39:58+08:00'
-last_draft_polish_run_id: 20260815-203958-gracker-writing-472
 last_review_finalize_at: '2026-08-15T20:39:58+08:00'
-last_review_finalize_run_id: 20260815-203958-gracker-writing-472
 last_rework_at: '2026-08-15T20:39:58+08:00'
-last_rework_run_id: 20260815-203958-gracker-writing-472
 ---
 
 # ApplicationStartInfo 与启动归因上报

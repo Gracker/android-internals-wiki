@@ -6,7 +6,6 @@ section_title: Native Crash 分析与治理
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-08-14'
-pipeline_stage: finalized
 last_verified_against: AOSP android-17.0.0_r1; Android Developers ApplicationExitInfo, GWP-ASan, memory debugging, C++ support, native symbols and 16 KB page-size docs current on 2026-08-14
 confidence: medium-high
 consolidated_from:
@@ -91,9 +90,6 @@ related_chapters:
 - '4.5'
 - '15.2'
 - '15.10'
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 ---
 

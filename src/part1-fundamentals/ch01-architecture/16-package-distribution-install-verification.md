@@ -160,16 +160,9 @@ related_chapters:
 - '18.5'
 - '8.5'
 - '24.1'
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-pipeline_stage: ready-to-publish
 last_body_apply_at: '2026-08-06T11:15:29+08:00'
-last_body_apply_run_id: 20260806-111529-1f9a01ff
 last_review_finalize_at: '2026-08-06T12:07:15+08:00'
-last_review_finalize_run_id: 20260806-120548-9b08ffcd
 last_idle_audit_at: '2026-10-02T10:38:26+08:00'
-last_idle_audit_run_id: 20261002-103534-idle-audit-2ae06b76
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/1.67-android17-packagemanager-architecture-performance.md

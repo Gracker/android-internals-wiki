@@ -41,11 +41,7 @@ related_chapters:
 - '6.2'
 - '6.3'
 - '24.4'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 last_deep_review_at: '2026-08-19T12:48:55+08:00'
-last_deep_review_run_id: 20260819-124855-deep-review-7363eb12
 last_consolidated_at: '2026-08-11'
 consolidated_from:
 - src/part1-fundamentals/ch06-storage/07-fuse-bpf-scoped-storage-io-performance.md

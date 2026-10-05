@@ -102,10 +102,6 @@ sources:
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6
   role: 调度、cpuset、uclamp、cpufreq、dma-buf 与 sync_file 的统一 kernel 锚点
 last_verified: '2026-07-31'
-task9_state: reviewed
-task2b_state: fixed
-task6_state: reviewed
-pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
 ---
 

@@ -3,10 +3,6 @@ title: Linux 调度、EAS 与大小核架构
 chapter: '5.1'
 section: '5.1'
 status: finalized
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 applicable_versions: Android 6.0 (API 23) - Android 17 (API 37, EEVDF 部分需 6.6+ 内核)
 last_verified: '2026-08-19'
 last_verified_against: Linux 6.6 sched-design-CFS + kernel/sched/fair.c/debug.c, bionic pthread.h android-16.0.0_r1, libprocessgroup task_profiles.json android-16.0.0_r1

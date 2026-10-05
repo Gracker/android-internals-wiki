@@ -48,12 +48,7 @@ related_chapters:
 - '7.2'
 - '15.15'
 - '13.10'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_idle_audit_at: '2026-08-28T11:11:00+08:00'
-last_idle_audit_run_id: 20260828-110758-idle-audit-7041be2c
 ---
 
 # HWC Overlay Plane 与合成降级排查

@@ -91,16 +91,9 @@ sources:
 - type: obsidian
   path: DeepResearch/2026-09-08-morning-google-ARTEMIS-真机自然语言自动化-研究材料/04-dump-perf-engineer-cross.md
   note: ARTEMIS 真机自动化与性能/稳定性诊断边界材料
-pipeline_stage: finalized
-task2b_state: body-applied
-task6_state: reviewed
-task9_state: reviewed
 last_review_finalize_at: '2026-09-09T08:10:42+08:00'
-last_review_finalize_run_id: 20260909-080521-b6c72fe3
 last_body_apply_at: '2026-09-09T07:17:27+08:00'
-last_body_apply_run_id: 20260909-071514-64cb95b1
 last_rework_at: '2026-08-25T09:36:49+08:00'
-last_rework_run_id: 20260825-093527-rework-bf95039c
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part5-app/ch26-observability/22-xtrace-art-dynamic-method-tracing.md

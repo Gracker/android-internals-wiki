@@ -59,10 +59,6 @@ tags:
   - arm-spe
   - trbe
   - profiling
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
 related_chapters:
 - '15.16'
 - '5.2'

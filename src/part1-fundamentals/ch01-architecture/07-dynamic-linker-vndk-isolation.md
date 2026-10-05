@@ -22,13 +22,7 @@ last_verified: '2026-08-19'
 last_verified_against: AOSP android-17.0.0_r1
 confidence: high
 last_body_apply_at: '2026-08-06T13:15:32+08:00'
-last_body_apply_run_id: 20260806-131532-f1fcd970
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
 last_review_finalize_at: '2026-08-06T14:07:19+08:00'
-last_review_finalize_run_id: 20260806-140539-50b252ca
 sources:
 - type: aosp
   path: bionic/linker

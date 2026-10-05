@@ -7,7 +7,6 @@ applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-08-21'
 last_verified_against: PerfDog current official site plus client, Service, metric and network docs; SoloPi v1.0.2 release and pinned source; Emmagee V2.5.1 release and pinned source; Android performance docs; AOSP android-17.0.0_r1 PowerStats, Thermal and SurfaceFlinger anchors
 last_rework_at: '2026-08-05T13:35:16+08:00'
-last_rework_run_id: 20260805-133516-rework-bdb326bd
 confidence: medium
 tags:
   - apm
@@ -100,14 +99,8 @@ sources:
   path: https://antutu.com/download.htm
 - type: official
   path: https://developer.android.com/topic/performance/performance-class
-pipeline_stage: ready-to-publish
-task6_state: reviewed
 last_review_finalize_at: '2026-08-05T14:07:37+08:00'
-last_review_finalize_run_id: 20260805-140520-70395a2d
-task9_state: reviewed
-task2b_state: fixed
 last_idle_audit_at: '2026-08-21T18:42:54+08:00'
-last_idle_audit_run_id: 20260821-183524-idle-audit-d188495e
 last_consolidated_at: '2026-08-24'
 ---
 

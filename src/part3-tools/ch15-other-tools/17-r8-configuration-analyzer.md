@@ -7,9 +7,6 @@ applicable_versions: Android 17 (API 37)；AGP 9.3.0+，或旧 AGP 替换为 R8 
 last_verified: '2026-08-14'
 last_verified_against: R8 Configuration Analyzer 文档（2026-08-01）；Choose libraries wisely（2026-08-13）；r8-analyzer skill（2026-08-06）；keep rule 文档（2026-06-29）；android-17.0.0_r1 / android17-6.18-2026-06_r6
 confidence: high
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 sources:
 - type: official
   path: https://developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer

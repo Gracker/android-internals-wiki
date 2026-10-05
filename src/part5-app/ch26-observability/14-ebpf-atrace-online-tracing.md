@@ -111,16 +111,9 @@ related_chapters:
 - '15.7'
 - '20.12'
 - '26.15'
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_draft_polish_at: '2026-08-15T20:16:41+08:00'
-last_draft_polish_run_id: 20260815-201641-gracker-writing-470
 last_review_finalize_at: '2026-08-15T20:16:41+08:00'
-last_review_finalize_run_id: 20260815-201641-gracker-writing-470
 last_rework_at: '2026-08-15T20:16:41+08:00'
-last_rework_run_id: 20260815-201641-gracker-writing-470
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part5-app/ch26-observability/09-ebpf-online-tracing-binder-semantics.md

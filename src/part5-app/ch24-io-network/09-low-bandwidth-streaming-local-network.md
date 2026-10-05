@@ -3,7 +3,6 @@ title: 低带宽、流媒体与本地网络适配
 chapter: '24.9'
 section: '24.9'
 status: finalized
-pipeline_stage: finalized
 applicable_versions: Android 15 (API 35) - Android 17 (API 37); Android 16 QPR2 约束卫星网络能力；低带宽/高时延网络场景
 last_verified: '2026-08-15'
 last_verified_against: Android constrained satellite network guide current through 2026-08-15; Android 17 / API 37 docs and android-17.0.0_r1 source; FCM REST and Firebase Admin docs; current T-Satellite product pages

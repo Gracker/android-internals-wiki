@@ -16,20 +16,7 @@ sources:
     path: "AndroidX Tracing 2.0 架构级深度技术分析 .md"
 tags: ['perfetto', 'tracing', 'overview', 'chapter-intro']
 related_chapters: ["14.1", "14.2", "14.3", "14.4", "14.5", "14.6", "14.7", "14.8", "14.9", "14.10", "14.11", "14.12", "14.13"]
-pipeline_stage: ready-to-publish
-task2b_result: fixed
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
-reviewed_date: "2026-04-23"
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
-task9_result: pass-tech-review
-last_task9_at: "2026-04-28T14:33:59+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-28"
 last_consolidated_at: '2026-08-24'
-consolidation_note: 第二轮逐篇审阅后收敛为 13 篇，合并同一责任链中的总览、机制、版本增量、观测与案例，并统一连续编号。
 ---
 
 # 第 14 章：Perfetto

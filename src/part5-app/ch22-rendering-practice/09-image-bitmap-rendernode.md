@@ -68,10 +68,6 @@ tags:
 related_chapters:
 - '22.1'
 - '23.4'
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md

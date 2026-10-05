@@ -46,15 +46,9 @@ sources:
   path: https://developer.android.com/games/optimize/adpf/gamemode/about-API-and-interventions
 - type: aosp
   path: https://source.android.com/docs/core/power/thermal-mitigation
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
 last_draft_polish_at: 2026-08-15 16:58:28+08:00
-last_draft_polish_run_id: 20260815-165828-gracker-writing-457
 last_review_finalize_at: 2026-08-15 16:58:28+08:00
-last_review_finalize_run_id: 20260815-165828-gracker-writing-457
 last_rework_at: 2026-08-15 16:58:28+08:00
-last_rework_run_id: 20260815-165828-gracker-writing-457
 ---
 
 # 热节流适配与性能退化治理

@@ -17,16 +17,9 @@ related_chapters:
 - '4.3'
 - '23.2'
 - '14.4'
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: body-applied
 last_review_finalize_at: '2026-08-28T12:56:15+08:00'
-last_review_finalize_run_id: 20260828-124650-e321ac61
 last_body_apply_at: '2026-08-26T17:17:35+08:00'
-last_body_apply_run_id: 20260826-171524-cc2d6c7a
 last_deep_review_at: '2026-08-20T16:35:12+08:00'
-last_deep_review_run_id: 20260820-163512-deep-review-90bb83ac
 sources:
 - type: article
   path: Cubox/不懂 内存规整，别说你会 Linux 内存调优-2026-05-13.md

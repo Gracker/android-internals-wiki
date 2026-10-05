@@ -98,14 +98,8 @@ related_chapters:
 - '5.3'
 - '11.2'
 - '8.5'
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_draft_polish_at: '2026-08-15T14:15:48+08:00'
-last_draft_polish_run_id: 20260815-141548-gracker-writing-443
 last_review_finalize_at: '2026-08-15T14:15:48+08:00'
-last_review_finalize_run_id: 20260815-141548-gracker-writing-443
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part5-app/ch25-power-size/13-fgs-timeout-jobscheduler-quota.md

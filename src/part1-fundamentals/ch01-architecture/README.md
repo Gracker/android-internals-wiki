@@ -16,22 +16,7 @@ sources:
     path: "https://developer.android.com/about/versions/16/release-cycle"
 tags: ['architecture', 'overview', 'chapter-intro']
 related_chapters: ["1.1", "1.15", "1.9", "1.10", "1.21", "1.7"]
-pipeline_stage: "ready-to-publish"
-task2b_result: fixed
-task2b_state: fixed
-task6_state: reviewed
-task9_state: "reviewed"
-last_task2b_at: "2026-05-09T09:44:52"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-08"
-task6_result: "pass-light-edit"
-task9_result: "pass-tech-review"
-last_task9_at: "2026-05-14T18:30:00+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-14"
-last_task9_review_log: "logs/deep-review/2026-05-14-18-deep-review.md"
 last_consolidated_at: '2026-08-24'
-consolidation_note: 本轮逐篇审阅确认共 29 篇；合并稿按责任链保留，修正误并主题、标题契约与相邻文章边界，章内目标顺序与全书重编号已落地。
 ---
 
 # 第 1 章：系统架构全景

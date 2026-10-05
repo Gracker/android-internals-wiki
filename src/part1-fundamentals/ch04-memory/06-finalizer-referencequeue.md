@@ -45,11 +45,6 @@ related_chapters:
 - '4.4'
 - '23.2'
 last_idle_audit_at: '2026-08-25T18:35:27+08:00'
-last_idle_audit_run_id: 20260825-183527-idle-audit-55813ccc
-pipeline_stage: ready-to-publish
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
 ---
 
 # ART FinalizerDaemon、Cleaner 与 ReferenceQueue

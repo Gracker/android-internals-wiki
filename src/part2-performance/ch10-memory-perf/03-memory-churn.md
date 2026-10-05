@@ -8,7 +8,6 @@ last_verified: '2026-07-31'
 last_verified_against: AOSP android-17.0.0_r1（ART collector_type.h、runtime.cc、heap.cc、mark_compact.cc、region_space.cc；BinderInternal.java）/ Android Common Kernel android17-6.18-2026-06_r6（fs/userfaultfd.c、mm/mremap.c）/ Perfetto heapprofd 与 ART allocation profiling 文档 / Android Studio Java/Kotlin allocation recording / Compose Runtime 1.12.0-rc01 release notes / Compose strong skipping 与 performance best practices / Kotlin value class 文档
 verified_note: Android 17/API 37 分代 CMC 基线已锚定 android-17.0.0_r1；2026-07-09 deep-tech-review 抽检确认 platform/art 与 frameworks/base 均已有 android-17.0.0_r1 tag，关键 CMC/GcWatcher 符号存在
 confidence: high
-pipeline_stage: ready-to-publish
 sources:
 - type: material
   path: Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md
@@ -55,9 +54,6 @@ related_chapters:
 - '7.1'
 - '10.1'
 - '10.2'
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 ---
 
 # 内存抖动与频繁 GC

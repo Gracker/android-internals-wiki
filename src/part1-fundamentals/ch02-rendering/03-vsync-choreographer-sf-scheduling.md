@@ -153,15 +153,9 @@ related_chapters:
 - '2.2'
 - '13.12'
 - '14.10'
-task6_state: needs-review
 status: verified
-pipeline_stage: verified
-task2b_state: body-applied
-task9_state: needs-review
 last_body_apply_at: '2026-08-31T09:53:10+08:00'
-last_body_apply_run_id: '20260831-095310-cc6c334e'
 last_review_finalize_at: '2026-09-18T10:05:54+08:00'
-last_review_finalize_run_id: '20260918-100554-7f6045ff'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch02-rendering/25-choreographer-buffer-stuffing-recovery.md

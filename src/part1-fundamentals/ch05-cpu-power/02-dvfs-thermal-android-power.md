@@ -62,13 +62,8 @@ related_chapters:
 - '5.1'
 - '5.4'
 - '7.2'
-task2b_state: fixed
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
 last_consolidated_at: '2026-08-24'
 last_idle_audit_at: '2026-08-25T14:46:47+08:00'
-last_idle_audit_run_id: '20260825-143835-idle-audit-d3b85a7c'
 ---
 
 # DVFS、Thermal 与 Android 功耗管理

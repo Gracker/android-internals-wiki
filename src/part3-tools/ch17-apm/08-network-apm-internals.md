@@ -5,7 +5,6 @@ chapter: '17.8'
 confidence: high
 last_verified: '2026-08-14'
 last_verified_against: OkHttp 5.4.0 README, changelog, and EventListener source; AGP API updates and 9.x migration roadmap; Cronet RequestFinishedInfo.Metrics docs updated 2026-07-31 and current Chromium source; AOSP android-17.0.0_r1 and android17-6.18-2026-06_r6 anchors
-pipeline_stage: ready-to-publish
 related_chapters:
 - '17.0'
 - '15.7'
@@ -44,9 +43,6 @@ tags:
 - okhttp
 - asm
 - cronet
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
 title: 网络 APM 底层捕获原理
 ---
 

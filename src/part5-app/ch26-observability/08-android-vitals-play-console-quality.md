@@ -66,16 +66,9 @@ sources:
   path: https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.slowstartrate/query
 - type: official
   path: https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.slowrenderingrate/query
-pipeline_stage: ready-to-publish
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
 last_draft_polish_at: '2026-08-15T20:52:07+08:00'
-last_draft_polish_run_id: 20260815-205207-gracker-writing-473
 last_review_finalize_at: '2026-08-15T20:52:07+08:00'
-last_review_finalize_run_id: 20260815-205207-gracker-writing-473
 last_rework_at: '2026-08-15T20:52:07+08:00'
-last_rework_run_id: 20260815-205207-gracker-writing-473
 ---
 
 # Android Vitals 与 Play Console 质量指标归因

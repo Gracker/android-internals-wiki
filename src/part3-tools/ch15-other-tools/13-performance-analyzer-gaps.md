@@ -16,13 +16,8 @@ tags:
 last_verified: '2026-08-14'
 last_verified_against: APA 首页更新至 2026-08-12；Quickstart、录制、Trace View 与三类分析指南当前版本；android-17.0.0_r1；android17-6.18-2026-06_r6
 confidence: medium
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
 last_deep_review_at: '2026-07-26T20:36:00+08:00'
-last_deep_review_run_id: 20260726-203519-deep-review-009e010e
 last_rework_at: '2026-07-26T21:35:26+08:00'
-last_rework_run_id: 20260726-213526-rework-009e010e
 sources:
 - type: official
   path: https://developer.android.com/android-performance-analyzer

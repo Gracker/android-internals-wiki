@@ -7,7 +7,6 @@ applicable_versions: Android 9 (API 28) - Android 17 (API 37)
 last_verified: '2026-08-13'
 last_verified_against: Android 17 / API 37 / AOSP android-17.0.0_r1 Perfetto sources; current Perfetto CPU frequency docs and PerfettoSQL linux.cpu.frequency/idle reference checked 2026-08-13; Android common kernel android17-6.18-2026-06_r6 CPUFreq/CPUIdle sources; arXiv 2507.02135v1 with explicit Android 13 Pixel/Tensor G2 boundary
 last_rework_at: '2026-08-07T21:35:15+08:00'
-last_rework_run_id: 20260807-213515-rework-952e31cf
 confidence: medium-high
 tags:
 - perfetto
@@ -45,12 +44,7 @@ sources:
   path: Cubox/Perfetto查看CPU 频率部分指导-2026-05-03.md
 - type: obsidian
   path: 论文/Android-2026-05-15-DVFS-LLM-Performance/03-精读.md
-pipeline_stage: ready-to-publish
-task6_state: reviewed
 last_review_finalize_at: '2026-08-08T14:05:39+08:00'
-last_review_finalize_run_id: 20260808-140539-40d25f76
-task9_state: reviewed
-task2b_state: fixed
 ---
 
 # Perfetto CPU 频率与 DVFS 关联分析

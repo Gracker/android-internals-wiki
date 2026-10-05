@@ -64,14 +64,8 @@ sources:
   path: https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/malloc_common_dynamic.cpp
 - type: aosp
   path: https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/private/bionic_globals.h
-pipeline_stage: finalized
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
 last_review_finalize_at: '2026-08-26T08:59:48+08:00'
-last_review_finalize_run_id: 20260826-084533-80d0d7d2
 last_body_apply_at: '2026-08-26T07:15:59+08:00'
-last_body_apply_run_id: 20260826-071559-6e58db7c
 note: 'Consolidated-source availability: source page not present in the current vault as of 2026-08-14; its retained content is consolidated here'
 ---
 

@@ -68,16 +68,9 @@ sources:
   path: https://developer.android.com/topic/performance/vitals/excessive-wakelock
 - type: aosp
   path: https://android.googlesource.com/kernel/common/+/refs/heads/android17-6.18
-pipeline_stage: ready-to-publish
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
 last_draft_polish_at: '2026-08-15T22:11:00+08:00'
-last_draft_polish_run_id: 20260815-221100-gracker-writing-478
 last_review_finalize_at: '2026-08-15T22:11:00+08:00'
-last_review_finalize_run_id: 20260815-221100-gracker-writing-478
 last_rework_at: '2026-08-15T22:11:00+08:00'
-last_rework_run_id: 20260815-221100-gracker-writing-478
 ---
 
 # Battery Historian 与功耗指标集成

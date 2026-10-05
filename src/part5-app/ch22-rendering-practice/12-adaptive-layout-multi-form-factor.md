@@ -19,7 +19,6 @@ related_chapters:
 last_verified: '2026-08-15'
 last_verified_against: AOSP android-17.0.0_r1; Android 16/17 adaptive-layout behavior changes; AndroidX versions and Compose UI / Material 3 Adaptive / WindowManager release notes; Perfetto FrameTimeline docs
 confidence: high
-pipeline_stage: finalized
 sources:
 - type: official
   path: https://developer.android.com/guide/topics/large-screens
