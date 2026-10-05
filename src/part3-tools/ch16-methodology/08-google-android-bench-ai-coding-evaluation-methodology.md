@@ -2,10 +2,13 @@
 title: Google Android Bench：AI 编码能力评测方法论
 chapter: '16.8'
 section: '16.8'
-status: finalized
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+status: ready-for-review
+pipeline_stage: ready-for-review
+task2b_state: body-applied
+task6_state: ready-for-review
+task9_state: body-applied
+last_body_apply_at: '2026-10-05T15:21:20+08:00'
+last_body_apply_run_id: 20261005-151534-ee723ce2
 applicable_versions: Android 工程任务（平台结论最高 Android 17 / API 37；评测框架版本单独固定）
 last_verified: '2026-08-14'
 last_verified_against: 2026-08-14 Android Bench 官方 methodology（Harbor + mini-swe-agent v2）与 Harbor Hub latest 数据集（2026-07-08）；归档仓库 commit 65a86bf41e45dde517a65d6e65a6dc7cdd2063ea 的指南、技术报告及评分源码
@@ -23,6 +26,8 @@ sources:
   path: https://github.com/android-bench/android-bench/blob/65a86bf41e45dde517a65d6e65a6dc7cdd2063ea/docs/guide.md
 - type: dataset
   path: https://hub.harborframework.com/datasets/android-bench/android-bench/latest
+- type: discussion
+  path: https://discuss.grapheneos.org/d/42511-grapheneos-has-fixed-the-massive-android-17-qpr1-kernel-performance-regression
 tags:
 - android-bench
 - ai-evaluation
@@ -203,6 +208,10 @@ canary 无法证明模型从未见过公开 issue、PR 或代码。公开 datase
 
 Android Bench 不是 Android 17 compatibility suite（兼容性测试套件），也不验证 AOSP framework 或 kernel 实现。
 
+团队如果在 Android Bench 之外加做设备端性能或稳定性验证，系统镜像也要固定到具体构建。GrapheneOS 在 2026-10-03 记录：2026-09-15 推送给 Pixel 的 Android 17 QPR1 在 Pixel kernel driver tree 中有回归；内存压力下会出现 stuttering、lag 和 freeze，严重时进程会因 stall 被杀。GrapheneOS 当天发布修复，并链接到 `kernel_pixel_6.6` commit `ed5a9b87d99b45618fa55b3d6b53094cbd784b9f`。[来源: https://discuss.grapheneos.org/d/42511-grapheneos-has-fixed-the-massive-android-17-qpr1-kernel-performance-regression]
+
+在 Android Bench 报告里，这类资料只适合作为额外设备测试的版本边界，不能用来解释 verifier pass/fail；Android Bench 的主分数仍由 dataset、harness、agent、prompt、budget 与 acceptance tests 决定。[已验证: 本文“一个任务怎样执行”“方法版本不能混用”两节；来源: https://discuss.grapheneos.org/d/42511-grapheneos-has-fixed-the-massive-android-17-qpr1-kernel-performance-regression]
+
 ### 首版结果只作为历史快照
 
 首版博客写的是模型完成率约 16%—72%，Gemini 3.1 Pro 位于当时榜首。模型版本、执行框架和数据集已经变化；引用该结果必须标明 2026-03 首版，不能写成长期选型结论。
@@ -256,3 +265,4 @@ Android Bench 自身必须按 dataset 和 harness 版本固定，不能用 AOSP 
 - [归档技术报告](https://github.com/android-bench/android-bench/blob/65a86bf41e45dde517a65d6e65a6dc7cdd2063ea/docs/tech_report.md)
 - [归档 User Guide](https://github.com/android-bench/android-bench/blob/65a86bf41e45dde517a65d6e65a6dc7cdd2063ea/docs/guide.md)
 - [Harbor Hub：Android Bench dataset](https://hub.harborframework.com/datasets/android-bench/android-bench/latest)
+- [GrapheneOS forum：Android 17 QPR1 Pixel kernel performance regression](https://discuss.grapheneos.org/d/42511-grapheneos-has-fixed-the-massive-android-17-qpr1-kernel-performance-regression)
