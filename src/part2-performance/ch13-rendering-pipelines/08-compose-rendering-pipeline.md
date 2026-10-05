@@ -146,7 +146,7 @@ consolidated_from:
 
 Compose 改变了 UI 的声明方式、状态追踪和节点更新，却仍使用 Android 的 App Window 渲染管线。App Window 指应用主窗口及其图形 buffer。对于开启硬件加速且没有额外独立 Surface 的普通 Compose 页面，像素仍依次经过 `ViewRootImpl`、HWUI、RenderThread、BLAST BufferQueue（协调窗口 buffer 与 SurfaceControl transaction 提交的队列机制）、SurfaceFlinger 和 HWC（Hardware Composer，硬件合成器）到达屏幕。
 
-分析 Compose 卡顿时要先分清两层职责。Composition 根据 composable 调用生成和更新 UI 结构，Layout 负责测量与放置，Drawing 负责记录绘制内容；这三阶段属于 Compose。窗口 buffer 的生产、系统合成与 present（提交到显示设备）属于 Android 图形栈。只看 recomposition 次数，无法解释 RenderThread、GPU 或 SurfaceFlinger 导致的慢帧。
+排查 Compose 卡顿，先要分清两层职责。Composition 根据 composable 调用生成和更新 UI 结构，Layout 负责测量与放置，Drawing 负责记录绘制内容，这三阶段属于 Compose；窗口 buffer 的生产、系统合成与 present（提交到显示设备）属于 Android 图形栈。只看 recomposition 次数，无法解释 RenderThread、GPU 或 SurfaceFlinger 导致的慢帧。
 
 ## 复核基线与阅读边界
 
@@ -243,7 +243,7 @@ Compose 1.11.4 的三个入口各有明确职责：
 | `onLayout()` | 调用 `MeasureAndLayoutDelegate.measureAndLayout()`，完成待处理测量/放置并更新根边界 | Layout 不在 `AndroidUiFrameClock` 回调里直接完成 |
 | `dispatchDraw()` | 再执行一次 `measureAndLayout()` 检查，调用 `root.draw()`，更新标记为 dirty、等待重录的 `OwnedLayer` | draw 前仍可完成刚产生的布局请求 |
 
-硬件加速 draw 的调用顺序如下：Android 17 的 `ViewRootImpl.performDraw()` 进入 `ThreadedRenderer.draw()`；`ThreadedRenderer` 先通过 `updateRootDisplayList()` 更新 View 树的 display list，期间调用 `AndroidComposeView.dispatchDraw()`，随后执行 `syncAndDrawFrame()`。
+硬件加速 draw 的调用顺序如下：Android 17 的 `ViewRootImpl.performDraw()` 进入 `ThreadedRenderer.draw()`，后者先通过 `updateRootDisplayList()` 更新 View 树的 display list（期间调用 `AndroidComposeView.dispatchDraw()`），随后执行 `syncAndDrawFrame()`。
 
 UI 线程负责录制 RenderNode display list。RenderThread 接收已录制的渲染节点树及其属性，执行 tree sync（把 UI 线程准备的节点状态同步到渲染线程）、获取 buffer、提交 Skia/GPU 工作并将 buffer 入队。因此，RenderThread 并不负责录制 Compose display list。
 
@@ -297,7 +297,7 @@ Compose 的常规布局协议要求一个 child 在单次 measure pass（一次�
 - 约束、内容或依赖状态在 traversal 中变化时，可能产生新的测量请求；
 - `dispatchDraw()` 仍会处理尚未完成的 measure/layout 请求。
 
-因此，单凭“每个 child 在一次 measure pass 中只测量一次”，无法得出 Compose 一定比 View 更快。应在 Perfetto 中找出具体节点、布局策略和状态变化如何扩大测量范围。
+单凭“每个 child 在一次 measure pass 中只测量一次”这一条，推不出 Compose 一定比 View 更快。差距往往在测量范围被扩大，具体节点、布局策略和状态变化要在 Perfetto 里逐一核对。
 
 ## Drawing、GraphicsLayer 与 RenderNode
 
@@ -305,7 +305,7 @@ Compose 的常规布局协议要求一个 child 在单次 measure pass（一次�
 
 大多数 `Text`、`Row`、`Column` 不会各自持有独立的 Android `RenderNode`。没有 layer 边界时，节点的绘制操作会录入最近的所属 layer；Compose 根节点也有自己的绘制承载范围。
 
-因此，不能把绘制失效概括成只重录某个 `LayoutNode` 的 display list。display list 的复用单位是 `OwnedLayer` / `GraphicsLayer` 等绘制边界；普通 LayoutNode 的 draw 内容变化时，可能要重录包含它的最近所属 layer。
+绘制失效的粒度不能按 `LayoutNode` 来概括。display list 的复用单位是 `OwnedLayer` / `GraphicsLayer` 等绘制边界；普通 LayoutNode 的 draw 内容变化时，可能要重录包含它的最近所属 layer。
 
 ### Android 17 上的 graphicsLayer 主路径
 
@@ -382,7 +382,7 @@ RenderThread trace slice 的长度不能直接当作 GPU 执行时长。GPU 可�
 
 ## Snapshot 与 Recomposer 的并发边界
 
-Snapshot 为状态读写提供版本化视图，并通过 read/write observer 记录谁读取了状态、哪些写入需要触发失效。它没有承诺所有状态操作都无锁，也不会让同一个 composition 自动并行 recomposition。
+失效范围由 read/write observer 记录：谁读取了状态、哪些写入需要触发失效。Snapshot 的版本化视图就建立在这套观察关系上，它没有承诺所有状态操作都无锁，也不会让同一个 composition 自动并行 recomposition。
 
 Android UI 性能分析可以依赖以下边界：
 
@@ -397,11 +397,11 @@ Runtime 内部的锁与字段会随 Compose 版本调整；应用应依赖 compo
 
 ## PausableComposition 与 Lazy 预取
 
-### 它分段处理哪类工作
+### 分段处理哪类工作
 
 `PausableComposition` 可以分段执行尚未投入使用的子 composition。典型场景是 Lazy 容器预先准备可能进入视口的 item：当前空闲时间不足时请求暂停，后续再调用 `resume()` 继续。只有 `isComplete` 为真并完成 `apply()` 后，结果才能加入布局树。
 
-它不用于把当前可见页面的常规 recomposition 任意切成多帧，也不会直接减少 draw、GPU 或 SurfaceFlinger 工作。它只改变预取 composition 在不同帧空闲区间中的执行安排，工作总量仍由内容决定。
+它不用于把当前可见页面的常规 recomposition 任意切成多帧，也不会直接减少 draw、GPU 或 SurfaceFlinger 工作；它改变的是预取 composition 在不同帧空闲区间中的执行安排，工作总量仍由内容决定。
 
 ### API 与暂停语义
 
@@ -549,7 +549,7 @@ Compose 版本可在 Android Developers 的 [Compose BOM 页面](https://develop
 
 ## 总结
 
-Compose 渲染性能可以分三层排查：
+Compose 渲染性能的排查先分成两块职责：Compose 负责内容生成，Android 图形栈负责窗口合成；落到具体动作，再拆成三层：
 
 1. **Compose 层**：Snapshot 失效范围、Recomposition、Layout、Drawing、GraphicsLayer 与 Lazy 预取；
 2. **App Window 层**：ViewRoot traversal、UI display-list recording、RenderThread、Skia/GPU 与 BLAST BufferQueue；
