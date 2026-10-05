@@ -43,6 +43,8 @@ sources:
   path: https://perfetto.dev/docs/reference/traced_probes
 - type: official
   path: https://developer.android.com/reference/android/os/Trace
+- type: official
+  path: https://developer.android.com/jetpack/androidx/releases/tracing
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/samples/trace_events/trace-events-sample.h
 - type: official
@@ -59,8 +61,10 @@ sources:
   path: system/core/libcutils/trace-dev.cpp
 - type: official
   path: developer.android.com/reference/android/os/Trace
-last_verified: '2026-08-13'
-last_verified_against: AOSP android-17.0.0_r1, frameworks/base/core/jni/android_os_Trace.cpp, frameworks/native/libs/tracing_perfetto/tracing_perfetto.cpp, frameworks/native/cmds/atrace/atrace.cpp, system/core/libcutils/{trace-dev.cpp,include/cutils/trace.h}, external/perfetto/src/traced/probes/ftrace/{ftrace_controller.cc,cpu_reader.cc,tracefs.cc,tracefs.h}, external/perfetto/perfetto.rc, external/perfetto/src/profiling/perf/perf_producer.cc, frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.{h,cpp}, Trace Processor v57.2-da1d152cf, perfetto.dev (2026-08-13)
+last_verified: '2026-10-05'
+last_verified_against: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/Trace.java, frameworks/base/core/jni/android_os_Trace.cpp, frameworks/native/libs/tracing_perfetto/tracing_perfetto.cpp, frameworks/native/cmds/atrace/atrace.cpp, system/core/libcutils/{trace-dev.cpp,trace-dev.inc,include/cutils/trace.h}, external/perfetto/src/traced/probes/ftrace/{ftrace_controller.cc,cpu_reader.cc,tracefs.cc,ftrace_config_muxer.cc}, external/perfetto/perfetto.rc, frameworks/native/libs/binder/Binder.cpp, kernel android17-6.18-2026-06_r6 Documentation/trace/ftrace.rst, drivers/android/binder_trace.h, samples/trace_events/trace-events-sample.h, Android Developers Trace API reference and AndroidX Tracing releases (2026-10-05)
+last_idle_audit_at: '2026-10-05T18:35:33+08:00'
+last_idle_audit_run_id: 20261005-183533-idle-audit-525517fb
 related_chapters:
 - '14.1'
 - '14.7'
@@ -548,7 +552,7 @@ API 18 只有同步切片。异步切片、Counter 和 `isEnabled()` 都在 API 
 
 #### 1.2 应用工程优先使用 AndroidX
 
-截至 2026-08-13，AndroidX Tracing 的最新稳定版是 2.0.0。为了复现经典 AndroidX 封装的系统 ATrace 路径，下面的依赖示例明确固定在 1.3.0；它负责低版本兼容，并提供自动配对 begin/end 的 Kotlin 扩展：
+截至 2026-10-05，AndroidX Tracing 的最新稳定版是 2.0.3。为了复现经典 AndroidX 封装的系统 ATrace 路径，下面的依赖示例明确固定在 1.3.0；它负责低版本兼容，并提供自动配对 begin/end 的 Kotlin 扩展：
 
 ```kotlin
 dependencies {
@@ -556,9 +560,9 @@ dependencies {
 }
 ```
 
-1.3.0 这组 API 把事件写入系统 trace。2.0.0 新增了稳定的进程内 Perfetto API，可在进程内缓冲 trace，并支持 flow、metadata（附在事件上的结构化说明）、Coroutine context propagation（协程切换线程时继续携带追踪上下文）和可插拔 sink（接收 trace 数据的输出端）。原有的 `android.os.Trace` 与 `trace {}` API 没有弃用，低频系统 trace 事件仍可继续使用，库代码尤其适合保留这条兼容路径。
+1.3.0 这组 API 把事件写入系统 trace。2.0.0 起，AndroidX Tracing 新增稳定的进程内 Perfetto API，可在进程内缓冲 trace，并支持 flow、metadata（附在事件上的结构化说明）、Coroutine context propagation（协程切换线程时继续携带追踪上下文）和可插拔 sink（接收 trace 数据的输出端）。2.0.3 属于这条稳定线的后续修订。原有的 `android.os.Trace` 与 `trace {}` API 没有弃用，低频系统 trace 事件仍可继续使用，库代码尤其适合保留这条兼容路径。
 
-两套路径的采集方式不同。2.0.0 的进程内 trace 暂时不会自动出现在 Android Studio System Trace 中；如需与系统 trace 合并，应采用 AndroidX/Benchmark 1.5 支持的采集与事后合并流程。升级时还要分别验证初始化时机、缓冲策略、输出格式和线上开销。
+两套路径的采集方式不同。2.0.x 的进程内 trace 暂时不会自动出现在 Android Studio System Trace 中；如需与系统 trace 合并，应采用 AndroidX/Benchmark 1.5 支持的采集与事后合并流程。升级时还要分别验证初始化时机、缓冲策略、输出格式和线上开销。
 
 ### 2. 三类事件分别表达什么
 
