@@ -1,7 +1,7 @@
 ---
 title: 视频 Overlay、Media3 与专业编解码管线
 chapter: '13.11'
-status: ready-to-publish
+status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 tags:
   - hwc
@@ -298,8 +298,10 @@ task6_state: reviewed
 task2b_state: fixed
 pipeline_stage: ready-to-publish
 task9_state: reviewed
-last_verified: '2026-08-20'
-last_verified_against: android-17.0.0_r1 (MediaCodec.java, MediaCodecInfo.java, MediaFormat.java, HardwareBuffer.java, TextureView.java, DeferredLayerUpdater.cpp, CCodec.cpp, CCodecBufferChannel.cpp, ACodec.cpp, BufferQueueProducer.cpp, BufferQueueConsumer.cpp, HWComposer.cpp, Display.cpp, Output.cpp, Layer.cpp, Composition.aidl, Capability.aidl, BufferUsage.aidl) / Android 17 API 37 media and HWC docs / android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, dma-fence.h, sync_file.c)
+last_verified: '2026-10-05'
+last_verified_against: android-17.0.0_r1 media/HWC/APV source anchors (MediaCodec.java, MediaCodecInfo.java, MediaFormat.java, MediaRecorder.java, CCodec.cpp, CCodecBufferChannel.cpp, CCodecConfig.cpp, HWComposer.cpp, Composition.aidl, Capability.aidl, BufferUsage.aidl) / Android 16-17 APV, HWC, Media3, multimedia tunneling and frame-rate official docs / Media3 1.10.1 source tag and release notes / android17-6.18-2026-06_r6 dma-buf, dma-fence, sched, block and thermal anchors
+last_review_finalize_at: '2026-10-05T22:09:47+08:00'
+last_review_finalize_run_id: 20261005-220534-b28c8a5b
 confidence: high
 last_idle_audit_at: '2026-07-25T22:35:51+08:00'
 last_idle_audit_run_id: 20260725-223518-idle-audit-9529cd15
