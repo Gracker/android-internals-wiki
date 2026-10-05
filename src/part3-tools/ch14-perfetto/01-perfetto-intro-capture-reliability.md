@@ -294,7 +294,7 @@ Systrace 是 Android 4.1（2012 年）引入的 tracing 工具。它通过 Linux
 
 **缺少面向批处理的结构化分析接口。** 旧 HTML 查看器适合缩放和点选，复杂聚合通常还要自行解析文本。Trace Processor 把不同 trace 格式转换成统一表结构，同一条 PerfettoSQL 可以在 UI、命令行、Python API 和批处理流程中复用。
 
-Perfetto 的 Producer（提供 data source 并产生事件的一方）先把序列化的 trace packet 写进与 tracing service 共享的临时 buffer，service 再把已提交的 packet 搬到会话的 central buffer。ftrace 还多一层内核 per-CPU buffer，由 `traced_probes` 周期读取。三层任一处都可能丢数据；分析前应查询用于记录解析和采集异常的 `stats` 表，检查其中 `severity = 'data_loss'` 且 `value != 0` 的记录。
+Perfetto 的 Producer（提供 data source 并产生事件的一方）先把序列化的 trace packet 写进与 tracing service 共享的临时 buffer，service 再把已提交的 packet 搬到会话的 central buffer。ftrace 还多一层内核 per-CPU buffer，由 `traced_probes` 周期读取。三层任一处都可能丢数据；分析前应先查 `stats` 表（它记录解析和采集异常），检查其中 `severity = 'data_loss'` 且 `value != 0` 的记录。
 
 下表总结了二者的关键差异：
 
@@ -350,7 +350,7 @@ flowchart LR
 2. **central trace buffers**：`traced` 统一管理的会话 buffer。
 3. **输出文件**：默认在录制结束时一次性写出；只有显式设置 `write_into_file: true` 和 `file_write_period_ms`，才会定期写入磁盘。
 
-默认配置在会话结束时写文件。开启 `write_into_file` 后，service 才会按 `file_write_period_ms` 周期把 central buffer 写入文件。buffer 至少要容纳一个写文件周期内的峰值数据量；`flush_period_ms` 用于要求低频 Producer 提交尚未填满的 shared-memory page（一页写入空间）。前者控制 service 写文件的频率，后者控制 Producer 提交数据的频率。
+这里有两个周期，分别管不同的事。`file_write_period_ms` 控制 service 把 central buffer 写入文件的频率；`flush_period_ms` 要求低频 Producer 提交尚未填满的 shared-memory page（一页写入空间），控制数据进入 service 的频率。buffer 至少要容纳一个写文件周期内的峰值数据量。
 
 `perfetto` CLI 的 simple mode 和 normal mode 都要连接 tracing service。simple mode 只是在 CLI 内部用 flags 生成受限配置，并没有绕过 `traced`。Android 9/10 的非 Pixel 设备若服务未启动，应先按官方方式设置 `persist.traced.enable=1`；Android 11 起，大多数设备默认启动 `traced` / `traced_probes`。更老设备或特殊镜像再评估主机脚本的 sideload 模式、atrace 或厂商工具。
 
@@ -420,7 +420,7 @@ GROUP BY name;
 
 ### 核心概念
 
-使用 Perfetto 前，需要先区分几个核心概念。这些概念贯穿了 Perfetto 的采集、分析和可视化三个阶段。
+使用 Perfetto 前，先区分几个核心概念。
 
 #### TraceConfig：采集配置
 
@@ -589,8 +589,6 @@ Counter 和 Slice 通常要配合分析。若长帧期间 CPU 频率较低，这
 
 Perfetto 最适合回答“多个执行主体在同一个时间窗里各自做了什么”。它不能替代 heap 内容检查、网络抓包、GPU shader profiler 或业务日志，但可以先确定问题处在哪一层，再选择更专用的工具。
 
-常见入口如下：
-
 **流畅性分析。** FrameTimeline、Choreographer、RenderThread、GPU、BufferQueue 和 SurfaceFlinger 分布在多条轨道。采集到相应 data source 后，可以区分 App 未按期产出、GPU 未完成、SurfaceFlinger 未及时 latch（选定本轮要合成的 buffer）或显示末端延迟。缺少 FrameTimeline 或 GPU producer 时，只能对 trace 中已有的区间下结论。
 
 **启动速度分析。** 冷启动会经过进程创建、Application/Provider、Activity 生命周期、Binder 调用、类加载和首帧。`android_startup` 标准库模块或 metric 提供阶段归类，线程 Slice、调度和 Binder 事件用于验证归类是否符合当前应用路径。
@@ -676,15 +674,15 @@ Android 17 的 `traced` / `traced_probes` 仍由 `external/perfetto` 构建为 `
 
 ## 配置、触发与设备侧采集
 
-理解生产者、缓冲区和 consumer 后，抓取配置才能对应到具体信号。配置过宽会放大开销，配置过窄会丢失因果关系。
+理解 Producer、缓冲区和 Consumer 后，抓取配置才能对应到具体信号。配置过宽会放大开销，配置过窄会丢失因果关系。
 
 ### 抓取配置决定分析上限
 
-一份 trace 能回答哪些问题，由时间窗口、data source、目标进程和 buffer 完整性共同决定。data source 是向 trace 写入某类数据的采集组件；buffer 保存它产生的事件。若卡顿发生在采集结束之后，或配置里缺少 FrameTimeline、Binder、调度事件，后续分析无法补回这些证据。
+一份 trace 能回答哪些问题，由时间窗口、data source、目标进程和 buffer 完整性共同决定。若卡顿发生在采集结束之后，或配置里缺少 FrameTimeline、Binder、调度事件，后续分析无法补回这些证据。
 
 抓取前先写下一句待验证的问题。例如：“主线程长帧来自 CPU 执行、Binder 等待，还是长期处于 Runnable 状态却得不到 CPU？”Runnable 表示线程已经可以运行，但仍在调度队列中等待 CPU。这句话会直接决定是否采集 App atrace、Binder tracepoint、`sched_switch`、`sched_wakeup`、线程状态和 FrameTimeline。
 
-抓取完成后还要检查丢包。文件成功生成，只能证明会话结束并拿到了输出，不能证明每个 Producer（产生 trace packet 的组件）和 buffer 都完整写入了数据。
+抓取完成后还要检查丢包。文件成功生成，只能证明会话结束并拿到了输出，不能证明每个 Producer 和 buffer 都完整写入了数据。
 
 ### 复核基线
 
@@ -1608,7 +1606,7 @@ SQL 解析和执行在原生进程完成，结果传输与 DataFrame 物化仍�
 
 ### 1. 先判断 trace 能不能支撑结论
 
-性能分析常从时间线开始，却可能在采集阶段就失去可信度：内核调度事件被覆盖、producer 的共享内存写满后丢包、结束 flush 失败，或 ring buffer（写满后覆盖最早内容的环形缓冲区）已经冲掉问题发生前的数据。producer 是生成 trace 数据的进程，flush 是要求它提交仍暂存在本地缓冲区中的数据。Trace Processor 能打开文件，只说明文件可解析，不能证明事件完整。
+性能分析常从时间线开始，却可能在采集阶段就失去可信度：内核调度事件被覆盖、producer 的共享内存写满后丢包、结束 flush 失败，或 ring buffer（写满后覆盖最早内容的环形缓冲区）已经冲掉问题发生前的数据。这里的 producer 指生成 trace 数据的进程，flush 指要求它提交仍暂存在本地缓冲区中的数据。Trace Processor 能打开文件，只说明文件可解析，不能证明事件完整。
 
 诊断采用一条固定顺序：
 
@@ -1624,7 +1622,7 @@ SQL 解析和执行在原生进程完成，结果传输与 DataFrame 物化仍�
 
 #### 2.1 四个角色
 
-Perfetto 的系统采集路径可分成四个角色。data source 是可被会话启用的一类数据能力，producer 承载 data source 并生成数据；consumer 负责配置、读取或停止会话。
+Perfetto 的系统采集路径可分成四个角色。
 
 | 角色 | Android 上的常见实例 | 职责 |
 | --- | --- | --- |
