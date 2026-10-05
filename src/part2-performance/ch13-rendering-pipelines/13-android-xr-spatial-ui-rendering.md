@@ -124,13 +124,13 @@ sources:
 
 # Android 17 / Android XR 空间 UI 与环境资产渲染性能
 
-空间 UI 的性能预算不只包含传统 2D 布局与绘制，还包括姿态更新、双目显示、3D 资产和运行时合成。应先区分 Android XR 平台、Jetpack XR SDK 与设备运行时各自负责的阶段，再为资源加载和每帧更新建立预算。
+空间 UI 的性能预算在传统 2D 布局与绘制之外，还要加上姿态更新、双目显示、3D 资产和运行时合成。分析前先分清 Android XR 平台、Jetpack XR SDK 与设备运行时各自负责哪一段，再分别给资源加载和每帧更新建立预算。
 
 ## Android XR 渲染需要区分哪些边界
 
-Android XR 覆盖多种运行形态。手机或大屏应用可以作为 compatible panel（兼容 2D 面板）运行；XR differentiated app 可以增加 Subspace、空间面板、3D 模型、环境和感知能力；Unity/OpenXR 应用由引擎向 XR runtime 提交 swapchain image；display glasses 上的 Projected Activity 则运行在 companion host device（负责计算与连接的手机等伴随设备）。
+Android XR 覆盖多种运行形态。手机或大屏应用可以作为 compatible panel（兼容 2D 面板）运行。XR differentiated app 则可以增加 Subspace、空间面板、3D 模型、环境和感知能力。Unity/OpenXR 应用由引擎向 XR runtime 提交 swapchain image。display glasses 上的 Projected Activity 则运行在 companion host device（负责计算与连接的手机等伴随设备）。
 
-这些形态共享 Android 进程、CPU、GPU、内存、I/O 和功耗约束，但显示终点并不相同。普通 2D 内容的应用侧仍能观察 `Choreographer`、HWUI RenderThread 和 Surface buffer；XR runtime 还要负责空间放置、视点与姿态、可能的 reprojection（依据更新后的姿态修正已渲染图像），以及向 XR 显示设备提交。Unity/OpenXR 使用 runtime 管理的 frame loop 和 swapchain，不能直接套用普通 View 的 `doFrame → DrawFrame → queueBuffer`。
+这些形态都跑在 Android 进程里，共享 CPU、GPU、内存、I/O 和功耗约束，但显示终点不一样。普通 2D 内容的应用侧仍能观察 `Choreographer`、HWUI RenderThread 和 Surface buffer；到了 XR runtime，还要负责空间放置、视点与姿态、可能的 reprojection（依据更新后的姿态修正已渲染图像），最后向 XR 显示设备提交。Unity/OpenXR 用的是 runtime 管理的 frame loop 和 swapchain，不能直接套用普通 View 的 `doFrame → DrawFrame → queueBuffer`。
 
 分析时先回答三个问题：
 
@@ -190,7 +190,7 @@ Host Activity/Compose → projected session/transport → glasses display/input
 
 这四条路径可能共享 GPU 和显示资源，也可能由不同 runtime 实现。trace 分析应从本帧的 producer、提交目标 surface/swapchain、姿态责任方和最终 present 责任方开始，不能只按框架名寻找最长 slice。
 
-对 compatible panel 与 `SpatialPanel`，可以复用普通 Android 窗口的证据链，追到 `Choreographer`、HWUI、dequeue/queue、应用 Surface buffer 和 transaction。证据到达 XR scene/runtime 接收边界后，就要停止套用标准手机链路；公开文档没有给出固定的 XR compositor 进程、latch slice 或最终 present fence 名称。
+对 compatible panel 与 `SpatialPanel`，可以复用普通 Android 窗口的证据链，追到 `Choreographer`、HWUI、dequeue/queue、应用 Surface buffer 和 transaction。证据到达 XR scene/runtime 接收边界后，就不要再套用标准手机链路；公开文档没有给出固定的 XR compositor 进程、latch slice 或最终 present fence 名称。
 
 `SpatialExternalSurface`、SceneCore `SurfaceEntity`、视频和 Camera 内容应按独立 producer/Surface 记录。它们可能与 2D panel 共享 GPU、带宽和 runtime 合成预算，但 panel 的 FrameTimeline 不能覆盖独立 Surface 的完整生产节奏。该 Surface 是否对应可见的 SurfaceFlinger Layer，也要通过设备 trace 或 Layer 树确认，不能只凭 API 类名推断。
 
@@ -210,13 +210,19 @@ Jetpack XR SDK 是一组覆盖 UI、scene、感知和 projected device 的库，
 
 `Subspace` 是 Compose for XR 中容纳空间布局的区域，只在 spatialization enabled 时渲染；在 Home Space 或非 XR 设备上，其中内容可能被忽略。`SpatialPanel` 把 2D 内容放进空间布局，`SceneCoreEntity` 把 SceneCore 实体接入 Compose for XR，`SpatialExternalSurface` 则承载媒体或其他 Surface producer。三者的 producer、布局和消费路径不同，不能只按“空间组件”合并统计。
 
-截至 alpha16，`SpatialGltfModel` 的加载与动画 API 仍在调整，动画相关 API 还被标为 experimental。SceneCore beta01 中，`GltfModelEntity.create()` 的 parent 默认值是 `null`。scene graph（用父子关系组织空间实体的场景树）只有挂入可见根节点的实体才会参与对应场景；若要显示模型，应在创建时传入 `session.scene.activitySpace` 等 parent，或随后设置 `entity.parent`。entity 创建成功只能证明对象存在，不能证明资源已经挂入可见 scene graph。
+截至 alpha16，`SpatialGltfModel` 的加载与动画 API 仍在调整，动画相关 API 还被标为 experimental。SceneCore beta01 中，`GltfModelEntity.create()` 的 parent 默认值是 `null`。
 
-`SpatialGltfModelState`、SceneCore `GltfModel` 与 `ImageBasedLightingAsset` 等资源类型提供 `AutoCloseable` 生命周期，表示调用方需要在不再使用时显式 `close()`。离开场景时还要解除 parent、清理强引用；仅仅加载完成或把 entity 从场景中移除，都不能证明底层模型、纹理等资源已经释放。业务代码必须锁定具体依赖版本，诊断文档也应记录 `xr.compose`、`xr.runtime`、`xr.scenecore`、`xr.arcore`、`xr.projected` 与 `xr.glimmer` 的完整版本。
+scene graph（用父子关系组织空间实体的场景树）只有挂入可见根节点的实体才会参与对应场景；若要显示模型，应在创建时传入 `session.scene.activitySpace` 等 parent，或随后设置 `entity.parent`。entity 创建成功只能证明对象存在，不能证明资源已经挂入可见 scene graph。
+
+`SpatialGltfModelState`、SceneCore `GltfModel` 与 `ImageBasedLightingAsset` 等资源类型提供 `AutoCloseable` 生命周期，表示调用方需要在不再使用时显式 `close()`。离开场景时还要解除 parent、清理强引用；仅仅加载完成或把 entity 从场景中移除，都不能证明底层模型、纹理等资源已经释放。
+
+业务代码必须锁定具体依赖版本，诊断记录里也应写明 `xr.compose`、`xr.runtime`、`xr.scenecore`、`xr.arcore`、`xr.projected` 与 `xr.glimmer` 的完整版本。
 
 ## 空间环境资产的成本构成
 
-`SpatialEnvironment` 管理应用的空间环境偏好。按 SceneCore beta01 的当前模型，`SpatialEnvironmentPreference` 接收一个 `ImageBasedLightingAsset` 和一个 glTF geometry。用户直接看到的 skybox texture（包围场景的远景纹理）放在 geometry 资产中，独立 IBL ZIP 用于 lighting、reflection 与 specular（镜面反射高光）计算。每份偏好最多提供一份 lighting asset 和一份 geometry。环境只在 Full Space 可见；passthrough 是相机画面构成的现实世界视图，达到 full opacity 时会完全遮住 geometry。
+`SpatialEnvironment` 管理应用的空间环境偏好。按 SceneCore beta01 的当前模型，`SpatialEnvironmentPreference` 接收一个 `ImageBasedLightingAsset` 和一个 glTF geometry，每份偏好最多提供一份 lighting asset 和一份 geometry。用户直接看到的 skybox texture（包围场景的远景纹理）放在 geometry 资产中，独立 IBL ZIP 用于 lighting、reflection 与 specular（镜面反射高光）计算。
+
+环境只在 Full Space 可见。passthrough 是相机画面构成的现实世界视图，达到 full opacity 时会完全遮住 geometry。
 
 从 Jetpack XR alpha04 起，官方建议把可见环境与 IBL 数据拆开：
 
@@ -234,7 +240,9 @@ Jetpack XR SDK 是一组覆盖 UI、scene、感知和 projected device 的库，
 
 ## 3D 模型与纹理资源的加载预算
 
-Jetpack XR 的内容规范支持 glTF 2.0，作者工具常输出 `.gltf` 或 `.glb`；SceneCore beta01 的 `GltfModel.create()` API 文档同时注明，当前 loader 只支持 binary glTF（`.glb`）。Compose for XR 可使用 `SpatialGltfModel`；SceneCore 路径先通过 `GltfModel.create()` 加载，再用 `GltfModelEntity.create(..., parent = session.scene.activitySpace)` 或后续设置 parent 接入 scene graph。部分 3D 内容只在 Full Space 可见，创建前应检查 `SpatialCapability.SPATIAL_3D_CONTENT`。
+Jetpack XR 的内容规范支持 glTF 2.0，作者工具常输出 `.gltf` 或 `.glb`；SceneCore beta01 的 `GltfModel.create()` API 文档同时注明，当前 loader 只支持 binary glTF（`.glb`）。Compose for XR 可使用 `SpatialGltfModel`；SceneCore 路径先通过 `GltfModel.create()` 加载，再用 `GltfModelEntity.create(..., parent = session.scene.activitySpace)` 或后续设置 parent 接入 scene graph。
+
+部分 3D 内容只在 Full Space 可见，创建前应检查 `SpatialCapability.SPATIAL_3D_CONTENT`。
 
 加载预算可以按四段拆：
 
@@ -269,7 +277,9 @@ XR 需要同时观察四条时间线：
 
 应用完成一帧，不代表用户已经看到与该姿态对应的画面。spacewarp/reprojection 可能基于上一张 App 图像和更新后的运动信息生成中间显示帧，因此显示可以继续刷新，而 App 无须为每个 display refresh 生产全新 render frame。引擎 FPS、App FrameTimeline、runtime synthesized cadence 与 display refresh rate 需要分开记录。
 
-ARCore for Jetpack XR 的 `ArDevice` 提供设备 pose，`RenderViewpoint.left/right/mono` 的 state 提供 viewpoint 的 `pose`、`localPose` 与 `fieldOfView`（视场角）。`pose` 与 `localPose` 是不同参考空间中的位姿表达，应用需要按 API 契约选择。它们为渲染提供输入，却不说明 runtime 何时 latch（锁定并采用）这份 pose，也不提供最终 motion-to-photon（头部运动到对应光子进入眼睛）的延迟。读取频率、坐标空间和使用该 pose 的 render frame 必须在应用侧对齐；没有公开时间戳时，不能声称得到了精确的跨层 pose age。
+ARCore for Jetpack XR 的 `ArDevice` 提供设备 pose，`RenderViewpoint.left/right/mono` 的 state 提供 viewpoint 的 `pose`、`localPose` 与 `fieldOfView`（视场角）。`pose` 与 `localPose` 是不同参考空间中的位姿表达，应用需要按 API 契约选择。
+
+这些数据为渲染提供输入，却不说明 runtime 何时 latch（锁定并采用）这份 pose，也不给出最终 motion-to-photon（头部运动到对应光子进入眼睛）的延迟。读取频率、坐标空间和使用该 pose 的 render frame 必须在应用侧对齐；没有公开时间戳时，不能声称得到了精确的跨层 pose age。
 
 Unity Android XR Extensions 提供三类不同优化：
 
@@ -347,7 +357,7 @@ Projected 场景要同时记录 host 与 glasses 两端：
 | --- | --- |
 | Activity 生命周期、Compose、CPU/GPU、相机/编解码、网络、thermal | display on/off、输入、camera/sensor、连接、显示 cadence、设备功耗 |
 
-host 上按时生成帧，不能证明传输和 glasses present 也按时；眼镜发热也不能直接归因于 host GPU。两端时钟若没有经过同步，应使用可关联的 event id 与往返测量，避免直接拿不同设备的原始 timestamp 相减。
+host 上按时生成帧，不能证明传输和 glasses present 也按时；眼镜发热也不能直接归因于 host GPU。两端时钟若没有同步，应使用可关联的 event id 与往返测量，避免直接拿不同设备的原始 timestamp 相减。
 
 ## 复核清单
 
@@ -366,7 +376,7 @@ host 上按时生成帧，不能证明传输和 glasses present 也按时；眼�
 
 ## 小结
 
-Android XR 不是传统 View 管线末端再增加一个显示设备，而是把 2D panel、空间内容、姿态预测、runtime 合成和头显或眼镜显示组织成多条责任不同的路径。分析前必须先确定内容形态、swapchain 或 Surface 的所有者以及最终 present 的责任方，再分别测量资源准备、应用渲染、runtime cadence、tracking 和设备端显示。只有这些边界明确后，资产预算、spacewarp、帧率与功耗数据才具备可比性。
+Android XR 把 2D panel、空间内容、姿态预测、runtime 合成和头显或眼镜显示组织成多条责任不同的路径，不是在传统 View 管线末端再多挂一个显示设备。分析前先确定内容形态、swapchain 或 Surface 的所有者以及最终 present 的责任方，再分别测量资源准备、应用渲染、runtime cadence、tracking 和设备端显示。只有这些边界明确，资产预算、spacewarp、帧率与功耗数据才具备可比性。
 
 ## 参考资料
 
