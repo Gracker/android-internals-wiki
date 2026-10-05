@@ -117,13 +117,15 @@ last_consolidated_at: '2026-08-24'
 
 ### 为什么需要理解渲染管线
 
-Perfetto 里出现一帧超时，定位工作不应从“最长的 trace slice（追踪时间区间）”开始，而应先回答三个问题：
+Perfetto 里出现一帧超时，先回答三个问题，再去看各段 trace slice（追踪时间区间）有多长。直接盯着最长的那段，容易把原因归到错误的阶段：
 
 1. 谁在生产本帧 buffer（图像缓冲区）？
 2. buffer 写入哪个 `Surface`，是否形成独立 layer（合成图层）？
 3. 本帧在哪里合成，又在哪个时间边界完成 present（帧呈现）？
 
-Producer 指生成并提交 buffer 的组件。标准 App Window 通常由 HWUI 的 RenderThread 生产 buffer；HWUI 是 Android 的硬件加速 UI 渲染器。SurfaceView、Camera、Video、WebView、Flutter、游戏和 React Native 则可能把生产工作交给引擎线程、解码器或硬件模块。BufferQueue 在 Producer 与读取 buffer 的 Consumer 之间传递数据，SurfaceFlinger（SF）组织各个 layer，HWC（Hardware Composer，硬件合成器）选择硬件合成路径，FrameTimeline 则记录预期帧与实际帧的时间。不同出图类型的线程、layer 数量、合成位置与 FrameTimeline 覆盖程度并不相同。
+Producer 指生成并提交 buffer 的组件。标准 App Window 通常由 HWUI 的 RenderThread 生产 buffer；HWUI 是 Android 的硬件加速 UI 渲染器。SurfaceView、Camera、Video、WebView、Flutter、游戏和 React Native 则可能把生产工作交给引擎线程、解码器或硬件模块。BufferQueue 在 Producer 与读取 buffer 的 Consumer 之间传递数据。
+
+SurfaceFlinger（SF）组织各个 layer，HWC（Hardware Composer，硬件合成器）选择硬件合成路径，FrameTimeline 则记录预期帧与实际帧的时间。不同出图类型的线程、layer 数量、合成位置与 FrameTimeline 覆盖程度并不相同。
 
 `queueBuffer` 表示 Producer 把 buffer 交回队列，`latch` 表示 SurfaceFlinger 在本轮采纳该 buffer，`present fence` 是显示管线完成本轮 present 后给出的同步信号。看到其中一个事件，只能证明显示路径走到了对应位置，不能替代其他阶段的证据。本节先明确公共主线，后续章节再解释各出图类型从哪里分开。
 
@@ -215,7 +217,7 @@ Framework 工程师可先读前面的公共主线，再看 [13.6 SurfaceControl 
 
 `vsync-app → doFrame → syncAndDrawFrame → dequeueBuffer → GPU submit → queueBuffer → BLAST transaction → SF snapshot/latch → HWC strategy → 可选 CLIENT composition → present → present feedback`
 
-这是一张跨路径坐标表，不表示所有动作会同步、依次执行，也不要求特殊 Producer 具备完整的 HWUI slice。标准 View 的逐调用链解释由后文维护；这里仅保留比较不同 Producer 所需的公共边界。
+这是一张跨路径坐标表，不表示所有动作会同步、依次执行，也不要求特殊 Producer 具备完整的 HWUI slice。标准 View 的逐调用链解释放在后文；这里只保留比较不同 Producer 所需的公共边界。
 
 | 检查点 | 先回答的问题 | 不能据此断言 |
 | --- | --- | --- |
@@ -462,7 +464,7 @@ DrawFrameTask::run()
         unblockUiThread()
 ```
 
-`syncFrameState()` 在 `CanvasContext::prepareTree()` 之后返回 `info.prepareTextures`。纹理准备成功时 UI thread 可在 draw 前继续；纹理缓存空间不足等情况会让 UI thread 保持等待，直到本轮 draw 或 fence wait 结束。
+上面的骨架里，`canUnblockUiThread` 就是 `syncFrameState()` 在 `CanvasContext::prepareTree()` 之后返回的 `info.prepareTextures`。它为 true 时 UI thread 在 draw 前放行；纹理缓存空间不足等情况会返回 false，UI thread 保持等待，直到本轮 draw 或 fence wait 结束。
 
 #### ④～⑥ RenderThread 生产窗口 buffer
 
@@ -572,7 +574,9 @@ Release 信息携带与当前刷新率相关的 acquired count（Consumer 已取
 
 Android 17 的 `Choreographer`/HWUI 路径包含 buffer stuffing recovery，用于缓解 Producer 提交过快造成的队列堆积。`BBQBufferQueueProducer::waitForBufferRelease()` 记录等待，`ViewRootImpl` / `ThreadedRenderer` 把信号传到 `Choreographer.onWaitForBufferRelease()`；等待超过相应阈值时，后续 `doFrame()` 可以主动延后一帧，使 queued buffer 数下降。
 
-Android 17 r1 的阈值是最近 frame interval（帧间隔）的一半。进入 recovery 后，`DELAY_FRAME` 会请求下一次 VSync 并跳过当前 `doFrame()`；后续 recovery 还可能对 animation frame time 应用一个 frame interval 的负 offset，即从动画帧时间中减去一个 frame interval。`buffer_stuffing_multi_recovery` 控制同一段动画是否允许多次恢复；`buffer_stuffing_recovery_threshold` 启用时，累计主动 delay 的上限为 100 ms。两项都是可变的 aconfig flag（平台配置开关），目标设备的取值必须从配置或 trace 确认。
+Android 17 r1 的阈值是最近 frame interval（帧间隔）的一半。进入 recovery 后，`DELAY_FRAME` 会请求下一次 VSync 并跳过当前 `doFrame()`；后续 recovery 还可能对 animation frame time 应用一个 frame interval 的负 offset，即从动画帧时间中减去一个 frame interval。
+
+`buffer_stuffing_multi_recovery` 控制同一段动画是否允许多次恢复；`buffer_stuffing_recovery_threshold` 启用时，累计主动 delay 的上限为 100 ms。两项都是可变的 aconfig flag（平台配置开关），目标设备的取值必须从配置或 trace 确认。
 
 这项机制用于降低队列过深带来的额外输入到显示延迟，不会提高单位时间内可完成的帧数。Perfetto 中看到 `Buffer stuffing recovery`、`buffer stuffed` 或 `Negative offset` 时，要同时检查 dequeue wait、FrameTimeline `Buffer Stuffing` 和 queue backlog 是否回落。
 
@@ -617,7 +621,7 @@ sequenceDiagram
 
 ### Trace 视角
 
-固定“正常耗时 < 1 ms / 2 ms / 8 ms”不适合跨刷新率、设备和场景复用。分析 Android 17 时，应把每个阶段与本帧的 expected timeline（预期时间线）、线程状态和当前 display budget（该帧可用的显示时间预算）对齐。
+“正常耗时 < 1 ms / 2 ms / 8 ms”这类固定阈值不适合跨刷新率、设备和场景复用。分析 Android 17 时，应把每个阶段与本帧的 expected timeline（预期时间线）、线程状态和当前 display budget（该帧可用的显示时间预算）对齐。
 
 | 阶段 | 主要信号 | 需要回答的问题 |
 |---|---|---|
@@ -663,7 +667,7 @@ sequenceDiagram
 
 ### FrameTimeline 与 Jank 检测
 
-FrameTimeline 从 Android 12 起为标准 App Window 提供 `SurfaceFrame` 和 `DisplayFrame` 的 expected/actual（预期/实际）时间线。Android 17 中，App 通过 FrameTimeline VSync id 选择预期 present timeline；该信息沿 HWUI/BLAST transaction 进入 SurfaceFlinger。
+FrameTimeline 从 Android 12 起为标准 App Window 提供 `SurfaceFrame` 和 `DisplayFrame` 的 expected/actual（预期/实际）时间线。Android 17 中，App 通过 FrameTimeline VSync id 选择预期 present 时间线；该信息沿 HWUI/BLAST transaction 进入 SurfaceFlinger。
 
 需要分清两类 token（跨阶段关联帧记录的标识）：
 
