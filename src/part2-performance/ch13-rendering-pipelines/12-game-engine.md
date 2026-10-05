@@ -2,7 +2,7 @@
 title: Android 17 游戏引擎渲染链路
 chapter: '13.12'
 section: '13.12'
-status: ready-to-publish
+status: finalized
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 tags:
   - unity
@@ -28,13 +28,15 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-last_verified: '2026-08-25'
-last_verified_against: AOSP android-17.0.0_r1 (SurfaceView.java, Surface.java, PerformanceHintManager.java, GameManager.java, GameState.java, TextureView.java, HardwareRenderer.java, TextureLayer.java, DeferredLayerUpdater.cpp, DrawFrameTask.cpp, BufferQueueCore.cpp, BufferQueueProducer.cpp, swapchain.cpp, Surface.cpp, SurfaceFlinger.cpp, HWComposer.cpp, Display.cpp, Output.cpp, OutputLayer.cpp, AidlComposerHal.cpp, Mode.aidl) / AGDK Frame Pacing, Frame Rate, ADPF, Game Mode, Game State, OpenXR 1.1 docs / kernel android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, dma-fence.h, sync_file.c)
+last_verified: '2026-10-05'
+last_verified_against: AOSP android-17.0.0_r1 (SurfaceView.java, Surface.java, PerformanceHintManager.java, SystemHealthManager.java, GameManager.java, GameState.java, TextureView.java, HardwareRenderer.java, TextureLayer.java, DeferredLayerUpdater.cpp, DrawFrameTask.cpp, BufferQueueCore.cpp, BufferQueueProducer.cpp, swapchain.cpp, Surface.cpp, SurfaceFlinger.cpp, HWComposer.cpp, Display.cpp, Output.cpp, OutputLayer.cpp, AidlComposerHal.cpp, Mode.aidl) / AGDK Frame Pacing, Frame Rate, ADPF, Game Mode, Game State, SystemHealthManager, OpenXR 1.1 docs / kernel android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, dma-fence.h, sync_file.c)
 confidence: medium
 last_idle_audit_at: '2026-07-27T22:35:52+08:00'
 last_idle_audit_run_id: 20260727-223552-idle-audit-6c95044a
 last_body_apply_at: '2026-08-25T09:24:13+08:00'
 last_body_apply_run_id: 20260825-091525-bb1ff868
+last_review_finalize_at: '2026-10-05T12:09:24+08:00'
+last_review_finalize_run_id: 20261005-120534-6689d47e
 sources:
 - type: internal-reference
   path: rendering_pipelines/S13_game_type.md
@@ -97,6 +99,9 @@ sources:
   path: https://developer.android.com/reference/android/os/PerformanceHintManager.Session
   role: Hint Session 线程、target、actual work 与能效偏好
 - type: official
+  path: https://developer.android.com/reference/android/os/health/SystemHealthManager
+  role: CPU/GPU headroom API level、NaN、UnsupportedOperationException 与查询边界
+- type: official
   path: https://developer.android.com/games/optimize/adpf/gamemode/gamemode-api
   role: Game Mode 查询、用户选择与 intervention 边界
 - type: official
@@ -126,6 +131,9 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java
   role: Hint Session、WorkDuration 与 power efficiency
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/health/SystemHealthManager.java
+  role: CPU/GPU headroom、NaN 与 unsupported 边界
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/GameManager.java
   role: Game Mode 与 Game State 平台入口
@@ -421,7 +429,7 @@ Android 17 平台的 `swapchain.cpp` 已解析 `VkPresentTimingsInfoEXT` 和 `Vk
 
 ### `Surface.setProducerThrottlingEnabled()`
 
-API 37 新增 `Surface.setProducerThrottlingEnabled(boolean)`。默认开启时，如果 Vulkan/EGL producer 正在 queue 新 buffer、consumer 仍在处理上一帧，系统会对 producer 施加 CPU back-pressure（让生产线程等待下游释放容量）。阻塞可能出现在 `eglSwapBuffers()` 或 Vulkan present 附近。
+API 37 新增 `Surface.setProducerThrottlingEnabled(boolean)`。默认开启时，如果 Vulkan/EGL producer 正在 queue 新 buffer、consumer 仍在处理上一帧，系统会对 producer 施加 CPU back-pressure（让生产线程等待下游释放容量）。阻塞可能出现在 `eglSwapBuffers()` 或 Vulkan present 附近。这个 API 对 asynchronous mode 无效；该模式下 throttling 总是开启。
 
 Android 17 的 API 文档建议 Vulkan 应用关闭这类隐式 throttling，并使用正确的显式同步。关闭后，如果生产速度超过 GPU 或显示消费速度，等待通常会转移到 `vkAcquireNextImageKHR()` / dequeue 一侧。接入现成引擎时，不应绕过引擎直接修改 Surface；应先确认引擎版本已适配该 API，并具备完整的 semaphore、fence、in-flight frame 上限和 frame pacer 设计。
 
@@ -691,7 +699,7 @@ OEM 策略、画质、thermal、frame-rate vote 与引擎上限都可能限制�
 ### 平台
 
 - [`SurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceView.java)、[`Surface.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Surface.java)：BLAST / SurfaceControl、Frame Rate API 与 API 37 producer throttling。
-- [`PerformanceHintManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java)、[`GameManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/GameManager.java)、[`GameState.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/GameState.java)：Hint Session、Game Mode 与 Game State。
+- [`PerformanceHintManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java)、[`SystemHealthManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/health/SystemHealthManager.java)、[`GameManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/GameManager.java)、[`GameState.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/GameState.java)：Hint Session、CPU/GPU headroom、Game Mode 与 Game State。
 - [`TextureView.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/TextureView.java)、[`TextureLayer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/TextureLayer.java)、[`HardwareRenderer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/HardwareRenderer.java)：小游戏 TextureView 的 frame available、宿主 invalidation 与 pending layer update。
 - [`DeferredLayerUpdater.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp)、[`DrawFrameTask.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp)：RenderThread 获取最新 SurfaceTexture buffer。
 - [`swapchain.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp)、[`BufferQueueCore.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueCore.cpp)、[`BufferQueueProducer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp)、[`Surface.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/Surface.cpp)：Vulkan WSI 到 ANativeWindow / BufferQueue、buffer count 校验、present timing 与 producer throttling。
@@ -716,6 +724,7 @@ OEM 策略、画质、thermal、frame-rate vote 与引擎上限都可能限制�
 - [Frame Rate API](https://developer.android.com/media/optimize/performance/frame-rate)
 - [ADPF](https://developer.android.com/games/optimize/adpf)
 - [PerformanceHintManager.Session](https://developer.android.com/reference/android/os/PerformanceHintManager.Session)
+- [SystemHealthManager](https://developer.android.com/reference/android/os/health/SystemHealthManager)
 - [Game Mode API](https://developer.android.com/games/optimize/adpf/gamemode/gamemode-api)
 - [Game State API](https://developer.android.com/games/optimize/adpf/gamemode/gamestate-api)
 - [Performance boost for games](https://source.android.com/docs/core/perf/boost)
