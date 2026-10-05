@@ -128,7 +128,9 @@ sources:
 
 # Android 17 Jetpack WebGPU 渲染与计算管线
 
-Jetpack WebGPU 把 WebGPU 对象模型带到 Kotlin。`GPUInstance` 是入口，`GPUAdapter` 表示选中的后端与设备能力，`GPUDevice` 管理逻辑设备及其资源，`GPUQueue` 接收命令提交；pipeline 保存着色器与固定状态，bind group 组织 shader 可访问的资源，command encoder 则把 render/compute 命令录成 command buffer。
+Jetpack WebGPU 把 WebGPU 对象模型带到 Kotlin。`GPUInstance` 是入口，`GPUAdapter` 表示选中的后端与设备能力，`GPUDevice` 管理逻辑设备及其资源，`GPUQueue` 接收命令提交。
+
+pipeline 保存着色器与固定状态，bind group 组织 shader 可访问的资源，command encoder 则把 render/compute 命令录成 command buffer。
 
 AndroidX 在 AAR 中打包 Dawn 原生实现，再由 Dawn 选择 Vulkan 或 OpenGL ES 后端。
 
@@ -215,7 +217,7 @@ Kotlin 层还提供以下对象包装与适配逻辑：
 
 使用 `createWebGpu()` helper 时，它会先加载原生库。若直接从 `GPU.createInstance()` 组织初始化，调用方要在首次调用 WebGPU API 前执行 `initLibrary()`，或自行调用等价的 `System.loadLibrary("webgpu_c_bundled")`。
 
-直接初始化时，还要处理异步事件的推进。`instance.processEvents()` 相当于显式驱动 Dawn 回调的事件泵；alpha05 helper 先完成 adapter 和 device 创建，随后才启动每 100 ms 调用一次该方法的轮询任务。源码注释说明它服务于后续异步方法，所以这项轮询不负责推进前面的 `requestAdapter()` 和 `requestDevice()`。
+直接初始化时，还要处理异步事件的推进。`instance.processEvents()` 显式驱动 Dawn 回调的事件泵；alpha05 helper 先完成 adapter 和 device 创建，之后才启动事件轮询。源码注释说明它服务于后续异步方法，所以这项轮询不负责推进前面的 `requestAdapter()` 和 `requestDevice()`。
 
 不使用 helper 时，应结合实际调用的异步 API、callback mode 和所绑定的 Dawn 版本安排事件泵；Kotlin `suspend` 只把 callback 包装成挂起调用，本身不会创建常驻事件循环。
 
@@ -262,7 +264,9 @@ feature level 也不是“所有高级能力”的总开关。alpha05 把 subgro
 3. 只把 workload 必需能力写入 `GPUDeviceDescriptor.requiredFeatures` 和 `requiredLimits`；
 4. 处理 `requestDevice()` 失败，选择降级 workload 或其他实现。
 
-例如，使用 subgroup 前既要检查 `FeatureName.Subgroups`，也要读取 adapter info 中的 `subgroupMinSize` / `subgroupMaxSize`。Compatibility 模式也不能概括成“不支持 storage texture”或“不支持 compute”。storage buffer/texture 是着色器可读写的存储资源；alpha05 的 `GPUCompatibilityModeLimits` 只补充 vertex/fragment stage 的四个相关数量上限，具体可用性仍由 adapter feature 和 limit 决定。
+例如，使用 subgroup 前既要检查 `FeatureName.Subgroups`，也要读取 adapter info 中的 `subgroupMinSize` / `subgroupMaxSize`。
+
+Compatibility 模式也不能概括成“不支持 storage texture”或“不支持 compute”。storage buffer/texture 是着色器可读写的存储资源；alpha05 的 `GPUCompatibilityModeLimits` 只补充 vertex/fragment stage 的四个相关数量上限，具体可用性仍由 adapter feature 和 limit 决定。
 
 `GPULimits.maxImmediateSize` 也不能直接改名为“Vulkan push constant 支持”。WebGPU API 的公开语义应按自身 feature/limit 解读，底层后端如何映射寄存器、uniform buffer 或 push constant 属于 Dawn 和驱动实现细节。
 
@@ -302,7 +306,7 @@ WebGPU 绘制结果不会进入宿主 HWUI 的 RenderNode/display list，宿主 
 5. 创建 device 和长期复用的 shader module、pipeline、bind group；
 6. 使用当前宽高调用 `surface.configure()`。
 
-这套顺序适用于手动初始化。`compatibleSurface` 用于要求实现选择能够在目标 surface 上呈现的 adapter。alpha05 的 `createWebGpu(surface)` 虽然先创建 `GPUSurface`，随后却把调用方传入的 `GPURequestAdapterOptions` 原样交给 `requestAdapter()`，不会自动把新建 surface 写入 `compatibleSurface`。若要让目标 surface 参与 adapter 筛选，应分别调用 `initLibrary()`、`createInstance()`、`createSurface()`、`requestAdapter()` 和 `requestDevice()`，再把手动创建的 `GPUSurface` 放进 adapter options。
+这套顺序适用于手动初始化。`compatibleSurface` 用来要求实现选择的 adapter 能在目标 surface 上呈现。alpha05 的 `createWebGpu(surface)` 虽然先创建 `GPUSurface`，随后却把调用方传入的 `GPURequestAdapterOptions` 原样交给 `requestAdapter()`，不会自动把新建 surface 写入 `compatibleSurface`。若要让目标 surface 参与 adapter 筛选，应分别调用 `initLibrary()`、`createInstance()`、`createSurface()`、`requestAdapter()` 和 `requestDevice()`，再把手动创建的 `GPUSurface` 放进 adapter options。
 
 官方最小示例直接使用 `RGBA8Unorm`，便于演示；产品代码不应假设某个 format、present mode 或 alpha mode 在所有 adapter/surface 组合上都可用。
 
