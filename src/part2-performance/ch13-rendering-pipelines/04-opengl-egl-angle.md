@@ -128,13 +128,15 @@ consolidated_from:
 
 # OpenGL ES、EGL 与 ANGLE
 
-OpenGL ES（GLES）定义应用如何向 GPU 描述绘制，EGL 则把 GLES context 与 Android `Surface` 对应的 native window 连接起来。应用发出 draw call 之后，GPU 开始或完成执行、window buffer 进入 BufferQueue、SurfaceFlinger 选中新内容，以及 HWC present，是四个不同的时间边界。
+OpenGL ES（GLES）定义应用如何向 GPU 描述绘制，EGL 则把 GLES context 与 Android `Surface` 对应的 native window 连接起来。应用发出 draw call 之后，GPU 开始或完成执行、window buffer 进入 BufferQueue、SurfaceFlinger 选中新内容，以及 HWC present，是四个不同的时间边界。把其中任何两步合并来看，后面的耗时归因都会出错。
 
-本文的平台基线是 `android-17.0.0_r1`，内核基线是 `android17-6.18-2026-06_r6`。厂商 EGL/GLES 驱动、GPU job scheduler（硬件任务调度器）和 Composer 实现并不由 AOSP 统一提供。分析调用阻塞与硬件完成时刻时，还必须使用目标设备的 trace 补足证据。
+本文的平台基线是 `android-17.0.0_r1`，内核基线是 `android17-6.18-2026-06_r6`。厂商 EGL/GLES 驱动、GPU job scheduler（硬件任务调度器）和 Composer 实现并不由 AOSP 统一提供，分析调用阻塞与硬件完成时刻时，还必须用目标设备的 trace 补足证据。
 
-EGL 负责显示连接、上下文和 Surface，OpenGL ES 提交图形命令；ANGLE 在兼容入口下把 GLES 翻译为 Vulkan。两条路径共享应用 API 的一部分，但驱动、同步和着色器处理不同。
+平台里同时存在两条实现路径：一条是 EGL 负责显示连接、上下文和 Surface，OpenGL ES 直接提交图形命令；另一条是 ANGLE 在兼容入口下把 GLES 翻译为 Vulkan。两者共享应用 API 的一部分，但驱动、同步和着色器处理不同。本文前半部分沿第一条路径展开，从 EGL 上下文和 swap 讲到 BufferQueue 与 fence；后半部分再走 ANGLE 的选路、翻译与同步。
 
 ## EGL 上下文、Swap 与 GLES 提交
+
+这一部分走应用直接调用厂商 GLES 驱动的路径：先看 EGL 对象怎样和 Android Surface 接上，再看一帧从 draw 到 present 跨过哪些进程和缓冲，最后落到 swap、BufferQueue 和 fence 的观测方法。
 
 ### 核心架构
 
@@ -191,7 +193,9 @@ Android 17 的 `GLSurfaceView` 在调用 `setRenderer()` 后启动 `GLThread`。
 - 调用 `EglHelper.swap()`，后者进入 `eglSwapBuffers()`；
 - 处理 `EGL_CONTEXT_LOST`、无效 Surface、pause/resume、detach 和重建。
 
-渲染回调不在应用主线程执行，但生命周期和输入状态仍从主线程传入。SurfaceHolder 创建或销毁、View attach/detach、`onPause()`/`onResume()`、`queueEvent()` 与业务状态同步不当，仍可能导致 GLThread 停止、重建，或者读取旧状态。独立线程只隔离执行队列，并不会隔离 UI 状态、Surface 生命周期或显示资源。
+渲染回调不在应用主线程执行，但生命周期和输入状态仍从主线程传入。SurfaceHolder 创建或销毁、View attach/detach、`onPause()`/`onResume()`、`queueEvent()` 与业务状态同步不当，仍可能导致 GLThread 停止、重建，或者读取旧状态。
+
+独立线程只隔离执行队列，并不会隔离 UI 状态、Surface 生命周期或显示资源。
 
 `EGLContext` 同一时刻只能 `current` 到符合 EGL 规则的线程/surface 组合。多线程资源加载如果使用共享 context，还需要显式同步 GL 资源的可见性；Java 线程的执行先后本身无法保证 GPU 资源已经可用。
 
@@ -377,7 +381,11 @@ common kernel 只能解释通用同步语义。某项 Adreno、Mali、Immortalis
 
 ANGLE 可以让应用继续调用 GLES/EGL，同时把命令翻译到 Vulkan 等 backend。应用可见的提交点仍是 `eglSwapBuffers()`，底层则可能出现 Vulkan command buffer、queue submit、pipeline cache 和 Vulkan 驱动工作。
 
-ANGLE 不会因为某个 Android 版本而在所有应用中强制启用。实际选择会受到设备配置、开发者选项、应用 manifest、graphics driver 包、系统属性和厂商策略影响。Android 15 提供 ANGLE 开发者测试入口。Android 17 新增 manifest 元数据 `com.android.graphics.driver.prefer_angle=true`，用于表达应用对 ANGLE 的偏好；`GraphicsEnvironment#queryAngleChoice()` 仍可能因为平台选择优先级、denylist（禁用名单）、essential-tier、低内存设备、旧 vendor API 或 ANGLE 不可用，而保留或改用 GPU 厂商 GLES 驱动。该元数据只是偏好信号，无法证明当前进程正在使用 ANGLE。
+ANGLE 不会因为某个 Android 版本而在所有应用中强制启用。实际选择会受到设备配置、开发者选项、应用 manifest、graphics driver 包、系统属性和厂商策略影响。
+
+Android 15 提供 ANGLE 开发者测试入口。Android 17 新增 manifest 元数据 `com.android.graphics.driver.prefer_angle=true`，用于表达应用对 ANGLE 的偏好。
+
+`GraphicsEnvironment#queryAngleChoice()` 仍可能因为平台选择优先级、denylist（禁用名单）、essential-tier、低内存设备、旧 vendor API 或 ANGLE 不可用，而保留或改用 GPU 厂商 GLES 驱动。该元数据只是偏好信号，无法证明当前进程正在使用 ANGLE。
 
 #### 怎样确认 backend
 
@@ -491,7 +499,7 @@ Android 17 的 HWC 主链路仍要区分 SF 侧的 `presentOrValidate()`、`vali
 
 GLES 直接驱动路径明确后，ANGLE 可以理解为另一套实现后端。启用条件、特性覆盖和同步转换决定兼容性与性能。
 
-本文以 Android 平台 `android-17.0.0_r1` 和同一 tag 的 AOSP `external/angle` 为源码基线，讨论 Android 上最常见的 OpenGL ES/EGL frontend（接收并解释应用 API 的前端）+ Vulkan backend（生成 Vulkan 工作的后端）。ANGLE 也支持其他平台和 backend，但它们不属于本文的 Android runtime path。
+本文以 Android 平台 `android-17.0.0_r1` 和同一 tag 的 AOSP `external/angle` 为源码基线，讨论 Android 上最常见的组合：OpenGL ES/EGL frontend（接收并解释应用 API 的前端）搭配 Vulkan backend（生成 Vulkan 工作的后端）。ANGLE 也支持其他平台和 backend，但它们不属于本文的 Android runtime path。
 
 从应用接口看，代码仍调用 GLES 和 EGL；向下看驱动接口，ANGLE 会维护 GLES 状态、翻译 shader、记录 Vulkan 命令，并通过 Android Vulkan WSI（Vulkan 与窗口系统的连接层）提交显示。ANGLE 减少的是 GLES frontend 的厂商实现差异，厂商 Vulkan 驱动、GPU 和显示硬件仍然位于执行路径中。
 
@@ -556,7 +564,7 @@ ANGLE frontend 负责 GLES 对象、错误检查和状态机。Vulkan backend �
 
 `ContextVk::drawArrays()` 的普通分支会准备状态并记录 draw，但特殊 primitive 和兼容处理可能改变命令形态。例如，`GL_LINE_LOOP` 分支会生成或复用索引数据，再记录 indexed draw；deferred clear（延后执行的清理）、format conversion、framebuffer fetch emulation 和 render-pass 切换，也可能在 draw 前后插入额外命令。
 
-因此，下面这种写法只适合做概念图：
+下面这种写法只适合做概念图：
 
 ```text
 glDrawArrays()  →  ANGLE 状态同步与兼容处理  →  一组 Vulkan 命令
@@ -765,7 +773,9 @@ contextVk->addGarbage(&waitSemaphore.get());
 | 同步/WSI | acquire、throttle、native-fence 转换 | 较统一的 present 与 fence 实现 |
 | 兼容性 | 更严格暴露应用未定义行为 | 避开部分 vendor GLES 缺陷 |
 
-ANGLE 变快或变慢都不能从架构图直接推出。CPU-bound（主要受 CPU 限制）的 GLES 游戏可能受益于更成熟的 Vulkan 驱动，也可能被高频状态切换和 pipeline churn（大量创建或切换 pipeline）拖慢；GPU-bound 场景可能几乎不受 frontend 成本影响，也可能因为兼容 pass 或格式选择改变 GPU 工作量。
+ANGLE 变快或变慢都不能从架构图直接推出。CPU-bound（主要受 CPU 限制）的 GLES 游戏可能受益于更成熟的 Vulkan 驱动，也可能被高频状态切换和 pipeline churn（大量创建或切换 pipeline）拖慢。
+
+GPU-bound 场景可能几乎不受 frontend 成本影响，也可能因为兼容 pass 或格式选择改变 GPU 工作量。
 
 #### 公平对比的固定项
 
