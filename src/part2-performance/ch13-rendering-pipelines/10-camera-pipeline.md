@@ -262,13 +262,13 @@ flowchart TD
 
 ### 配置阶段决定这组输出能不能成立
 
-App 创建 `CameraCaptureSession` 时提供一组 `OutputConfiguration`。framework 将格式、尺寸、dataspace、usage、dynamic range、stream use case、timestamp base 等输出属性传给 `Camera3Device::configureStreamsLocked()`，再进入 Android 17 AIDL `ICameraDeviceSession.configureStreams()` 或 `configureStreamsV2()`。这里的 stream 是一个具有固定输出属性和 consumer 的逻辑输出通道。
+App 创建 `CameraCaptureSession` 时提供一组 `OutputConfiguration`。framework 将格式、尺寸、dataspace、usage、dynamic range、stream use case、timestamp base 等输出属性传给 `Camera3Device::configureStreamsLocked()`，再进入 Android 17 AIDL `ICameraDeviceSession.configureStreams()` 或 `configureStreamsV2()`。这里的 stream 指一条逻辑输出通道，它有固定的输出属性和确定的 consumer。
 
 HAL 返回每个 stream 的 producer usage、override format 与 `maxBuffers`。判断配置是否成立时要区分三层约束：
 
 1. Camera2 为不同 hardware level 和 capability 定义了 mandatory stream combinations，即符合条件的设备必须支持的输出组合；
 2. “单个格式支持某尺寸”不等于“这组尺寸和格式可以同时开启”；
-3. 即便组合受支持，实际 fps 仍会受 `getOutputMinFrameDuration()`、stall duration、sensor mode、热限制与 vendor pipeline 影响。前者给出连续输出两帧的最短间隔，stall duration 表示某类输出可能额外占用管线、延迟后续请求的时间。
+3. 即便组合受支持，实际 fps 仍受多个因素影响：`getOutputMinFrameDuration()` 给出连续输出两帧的最短间隔；stall duration 表示某类输出可能额外占用管线、延迟后续请求的时间；sensor mode、热限制与 vendor pipeline 也会改变可达帧率。
 
 创建失败、首帧慢或运行中反复黑屏时，先确认 session 是否反复重配。若只检查 `CaptureRequest` 参数，很容易漏掉更早发生的 stream negotiation（输出组合协商）问题。
 
@@ -295,7 +295,7 @@ mTotalBufferCount =
     + camera_stream::max_buffers
 ```
 
-这个值描述该输出 `Surface` 的基础队列容量；预览显示同步或 `PreviewFrameSpacer` 路径还可能在此基础上追加额外缓冲或 framework 缓存。消费方必须保留自己仍在读取或显示的缓冲区，HAL 也必须有空间推进处理流水线（pipeline）。`Camera3Stream::getBuffer()` 还会检查 HAL 已取走的缓冲区数量；达到 `max_buffers` 时，它会等待缓冲区返回，并把等待时间记录到 `wait on max_buffers` 延迟直方图中。
+这两项的来历不同：消费方要留下自己仍在读取或显示的缓冲区（对应 `maxConsumerBuffers`），HAL 也要有缓冲空间推进它的处理流水线（pipeline，对应 `camera_stream::max_buffers`）。算出的值描述该输出 `Surface` 的基础队列容量；预览显示同步或 `PreviewFrameSpacer` 路径还可能在此基础上追加额外缓冲或 framework 缓存。`Camera3Stream::getBuffer()` 还会检查 HAL 已取走的缓冲区数量；达到 `max_buffers` 时，它会等待缓冲区返回，并把等待时间记录到 `wait on max_buffers` 延迟直方图中。
 
 不能直接增大 `maxBuffers` 来掩盖消费方处理缓慢的问题。增加它可能让处理流水线暂时不阻塞，但也会增加该流中可同时驻留的图像内存。这个字段由 HAL 根据流水线需求声明，错误的数值还可能破坏系统框架与 HAL 的流量控制约定。
 
@@ -461,7 +461,7 @@ HAL 已把缓冲区用于某帧时，应随 `processCaptureResult()` 返回。�
 
 ### `maxBuffers` 是 HAL 返回值，不是常量
 
-`camera_stream::max_buffers` 在 `Camera3Stream` 构造时为 0，HAL 在 configure 阶段按 stream 返回上限。outstanding buffer 指已经交给 HAL、尚未归还的 buffer，cached buffer 则已进入缓存账本，可让后续请求复用既有 handle 信息。`Camera3Stream::getBuffer()` 会在 outstanding output buffer 达到 `max_buffers`，或 outstanding 与 cached buffer 达到相应总上限时等待归还；`returnBuffer()` 无论 queue 是否成功都会唤醒等待方。
+`camera_stream::max_buffers` 在 `Camera3Stream` 构造时为 0，HAL 在 configure 阶段按 stream 返回上限。outstanding buffer 指已经交给 HAL、尚未归还的 buffer，cached buffer 则已被系统框架记入缓存，后续请求可以复用它的 handle 信息。`Camera3Stream::getBuffer()` 会在 outstanding output buffer 达到 `max_buffers`，或 outstanding 与 cached buffer 达到相应总上限时等待归还；`returnBuffer()` 无论 queue 是否成功都会唤醒等待方。
 
 input stream 也按 HAL 返回的 `max_buffers` 控制 handout（已交出但尚未收回）的数量。这里的 `maxBuffers` 属于 HAL stream 配置；`ImageReader.maxImages` 则限制应用可同时取得且尚未关闭的 `Image` 数量。二者会相互影响，却不是同一个参数。不能把某台设备或某个 CameraX 版本里的观察值写成 HAL3 通用规则，也不能用固定 buffer 数直接估算所有设备的 ZSL 内存。
 
@@ -587,7 +587,7 @@ imageReader.setOnImageAvailableListener({ reader ->
   → 应用写文件
 ```
 
-这张时序图只用于划分时间段。普通拍照的源帧通常产生于按键之后，因此曝光以及自动对焦、自动曝光、自动白平衡这三项状态的收敛，都可能增加用户感知到的延迟。
+这段流程只用于划分时间段：普通拍照的源帧通常产生于按键之后，曝光以及自动对焦、自动曝光、自动白平衡这三项状态的收敛，都可能增加用户感知到的延迟。
 
 CameraX ZSL 的成功路径是：
 
