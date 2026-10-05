@@ -157,7 +157,7 @@ consolidated_from:
 
 # Flutter 渲染管线：Engine、Impeller 与 Surface
 
-Flutter 在 Android 上既遵循平台的 VSync、Surface 与合成规则，又有 Engine、Dart isolate 和 Impeller 自己的调度边界。定位掉帧时要先确认当前 RenderMode 和外部纹理路径，再把 UI、Raster、平台线程与显示帧对齐。
+Flutter 在 Android 上既遵循平台的 VSync、Surface 与合成规则，又有 Engine、Dart isolate 和 Impeller 自己的调度边界。定位掉帧时要先确认当前 RenderMode 和 external texture 路径，再把 UI、Raster、平台线程与显示帧对齐。
 
 ## 为什么 Flutter 的渲染链需要单独分析
 
@@ -217,7 +217,7 @@ flowchart LR
     SF --> HWC --> Display
 ```
 
-图中最重要的分叉位于 `Android output target`。`FlutterSurfaceView` 生成独立 Surface buffer；`FlutterTextureView` 和 `FlutterImageView` 的内容还要经过宿主 View/HWUI，再进入 App Window。即使 Dart 和 Raster 耗时相同，两类输出路径的显示时延也可能不同。
+输出路径在 `Android output target` 分叉：`FlutterSurfaceView` 生成独立 Surface buffer；`FlutterTextureView` 和 `FlutterImageView` 的内容还要经过宿主 View/HWUI，再进入 App Window。即使 Dart 和 Raster 耗时相同，两类输出路径的显示时延也可能不同。
 
 ### Platform / Dart UI work
 
@@ -341,7 +341,9 @@ API 29+ 的固定源码会取得 `Image.getHardwareBuffer()`，再用 `Bitmap.wr
 
 `TextureRegistry.SurfaceProducer` 在 Flutter 3.22 进入源码，官方迁移文档把 3.24 定为插件可以采用的最低稳定版本。`onSurfaceAvailable()` 与 `handlesCropAndRotation()` 的新契约在 3.27 提供，`onSurfaceCleanup()` 在 3.29 取代旧的 `onSurfaceDestroyed()`。审计插件时，要核对其声明的 Flutter 最低版本和实际实现的回调，不能用当前 API 文档倒推旧插件行为。
 
-`createSurfaceProducer()` 默认采用 `SurfaceLifecycle.manual`。只有请求 `resetInBackground` 且选择 ImageReader backing（底层承载实现）的调用方，才会注册相应的内存压力清理行为。固定源码中的 `SurfaceTextureSurfaceProducer.setCallback()` 是空实现，不能期待它收到与 ImageReader backing 相同的清理和恢复通知。插件还要检查 `handlesCropAndRotation()`：ImageReader backing 返回 `false`，SurfaceTexture backing 返回 `true`。相机画面方向或裁剪错误可能来自插件没有遵守该契约，不能直接归因于 SurfaceFlinger transform。
+`createSurfaceProducer()` 默认采用 `SurfaceLifecycle.manual`。只有请求 `resetInBackground` 且选择 ImageReader backing（底层实现）的调用方，才会注册内存压力下的清理回调。固定源码中的 `SurfaceTextureSurfaceProducer.setCallback()` 是空实现，不能期待它收到与 ImageReader backing 相同的清理和恢复通知。
+
+插件还要检查 `handlesCropAndRotation()`：ImageReader backing 返回 `false`，SurfaceTexture backing 返回 `true`。相机画面方向或裁剪错误可能来自插件没有遵守该契约，不能直接归因于 SurfaceFlinger transform。
 
 在 Perfetto 中分析 external texture 卡顿时，应分别记录 texture id、Producer queue、Flutter frame 和 root buffer。中间 texture 通常只在 Flutter 内部被采样，未必会作为独立可见 layer 出现在 SurfaceFlinger 树中。
 
@@ -399,7 +401,7 @@ TLHC 把 PlatformView 结果转换成 texture，交给 Flutter Raster 采样；�
 
 ### Texture Layer Hybrid Composition（TLHC）
 
-固定源码中的 `configureForTextureLayerComposition()` 会把 PlatformView 放入 `PlatformViewWrapper`，记录它的绘制结果，再交给 Flutter texture target。当前实现根据 API、flag 和设备条件选择 `SurfaceProducer`、ImageReader 或 SurfaceTexture backing；条件不支持时，还可能按创建请求改用 Virtual Display（VD）或 HC fallback。
+固定源码中的 `configureForTextureLayerComposition()` 会把 PlatformView 放入 `PlatformViewWrapper`；wrapper 记录绘制结果后，再交给 Flutter texture target。当前实现根据 API、flag 和设备条件选择 `SurfaceProducer`、ImageReader 或 SurfaceTexture backing；条件不支持时，还可能按创建请求改用 Virtual Display（VD）或 HC fallback。
 
 TLHC 的优点是 Flutter transform、clip 和 opacity 更容易保持一致，Flutter Raster 可以把 PlatformView texture 与其他 Flutter 内容一起合成。代价包括中间 buffer、texture acquire、invalidate、输入坐标映射和无障碍桥接。快速滚动 WebView 可能出现抖动；PlatformView 内含 `SurfaceView` 时，如何转接独立 Surface 像素与 accessibility 也更复杂。
 
