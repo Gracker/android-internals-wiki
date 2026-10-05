@@ -53,17 +53,14 @@ sources:
 - type: official
   path: developer.android.com/topic/performance/vitals/render
 tags:
-- jank
-- smoothness
-- FrameTimeline
-- Choreographer
-- 掉帧
-- 渲染性能
-- android
-- research
-- rendering
-- perfetto
-- performance
+  - jank
+  - smoothness
+  - frametimeline
+  - choreographer
+  - 掉帧
+  - 渲染性能
+  - rendering
+  - perfetto
 related_chapters:
 - '2.1'
 - '2.3'

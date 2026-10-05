@@ -5,20 +5,14 @@ section: '15.12'
 status: finalized
 applicable_versions: Android 17 (API 37)（源码结论以 android-17.0.0_r1 为准；跨版本使用时需重新核对 proto 定义与导入实现）
 tags:
-- gpu
-- profiling
-- perfetto
-- gpu-counter
-- gpu-memory
-- android17
-- GPU
-- GpuService
-- GpuMem
-- eBPF
-- Perfetto
-- statsd
-- memory-tracking
-- observability
+  - gpu
+  - profiling
+  - perfetto
+  - gpu-counter
+  - gpu-memory
+  - gpuservice
+  - gpumem
+  - ebpf
 related_chapters:
 - '2.7'
 - '14.7'

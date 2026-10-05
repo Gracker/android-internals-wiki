@@ -55,17 +55,14 @@ sources:
   path: intake/daily-info/2026-05-21.md
 status: finalized
 tags:
-- android
-- benchmark
-- macrobenchmark
-- microbenchmark
-- ci-cd
-- performance-testing
-- android-cli
-- agent
-- performance-tooling
-- android-studio
-- perfetto
+  - benchmark
+  - macrobenchmark
+  - microbenchmark
+  - ci-cd
+  - performance-testing
+  - android-cli
+  - agent
+  - performance-tooling
 task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed

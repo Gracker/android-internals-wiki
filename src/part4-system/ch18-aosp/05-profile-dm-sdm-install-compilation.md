@@ -67,13 +67,13 @@ sources:
 - type: material
   path: intake/research-feeds/2026-04-07-11-android16-cloud-compilation-baseline-startup-profiles.md
 tags:
-- profile
-- DM
-- SDM
-- cloud-compilation
-- dexopt
-- ART-Service
-- install-performance
+  - profile
+  - dm
+  - sdm
+  - cloud-compilation
+  - dexopt
+  - art-service
+  - install-performance
 related_chapters:
 - '1.5'
 - '1.16'

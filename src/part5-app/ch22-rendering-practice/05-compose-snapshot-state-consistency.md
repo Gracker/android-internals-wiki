@@ -4,11 +4,10 @@ chapter: '22.5'
 status: finalized
 applicable_versions: Android 13 (API 33) - Android 17 (API 37)
 tags:
-- compose
-- snapshot
-- state
-- recomposition
-- performance
+  - compose
+  - snapshot
+  - state
+  - recomposition
 related_chapters:
 - '22.3'
 - '22.4'

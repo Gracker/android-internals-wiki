@@ -6,16 +6,14 @@ status: finalized
 pipeline_stage: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
-- okhttp
-- connection-pool
-- httpdns
-- weak-network
-- dispatcher
-- network
-- cronet
-- http3
-- dns
-- performance
+  - okhttp
+  - connection-pool
+  - httpdns
+  - weak-network
+  - dispatcher
+  - network
+  - cronet
+  - http3
 confidence: high
 sources:
 - type: legacy-reference-preserved

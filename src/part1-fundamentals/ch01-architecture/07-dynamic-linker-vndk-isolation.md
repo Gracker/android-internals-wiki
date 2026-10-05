@@ -5,18 +5,14 @@ section: '1.7'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
-- vndk
-- linker
-- native-library
-- dlopen
-- namespace
-- performance
-- self-contained-hal
-- linker64
-- dynamic-linker
-- ELF
-- RELRO
-- bionic
+  - vndk
+  - linker
+  - native-library
+  - dlopen
+  - namespace
+  - self-contained-hal
+  - linker64
+  - dynamic-linker
 related_chapters:
 - '1.1'
 - '1.6'

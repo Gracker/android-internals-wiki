@@ -66,15 +66,13 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/AudioTrack.java
 tags:
-- power
-- audio
-- foreground-service
-- android-17
-- media-playback
-- aaudio
-- audiotrack
-- offload
-- android17
+  - power
+  - audio
+  - foreground-service
+  - media-playback
+  - aaudio
+  - audiotrack
+  - offload
 related_chapters:
 - '1.20'
 - '5.3'

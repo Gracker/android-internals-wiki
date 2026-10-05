@@ -8,13 +8,12 @@ last_verified: '2026-08-22'
 last_verified_against: AOSP android-17.0.0_r1 + android17-6.18-2026-06_r6 + Android/Perfetto/Google AI Edge docs checked 2026-08-22 + arXiv 2507.02135
 confidence: medium
 tags:
-- android
-- dvfs
-- eas
-- adpf
-- llm
-- on-device-ai
-- power
+  - dvfs
+  - eas
+  - adpf
+  - llm
+  - on-device-ai
+  - power
 related_chapters:
 - '5.1'
 - '5.2'

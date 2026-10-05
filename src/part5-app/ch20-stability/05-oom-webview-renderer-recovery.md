@@ -89,15 +89,14 @@ sources:
 - type: official
   path: https://developer.android.com/reference/androidx/webkit/WebViewCompat
 tags:
-- oom
-- memory
-- thread-limit
-- fd-leak
-- virtual-memory
-- webview
-- stability
-- renderer-process
-- recovery
+  - oom
+  - memory
+  - thread-limit
+  - fd-leak
+  - virtual-memory
+  - webview
+  - stability
+  - renderer-process
 related_chapters:
 - '20.1'
 - '23.2'

@@ -31,11 +31,10 @@ sources:
 - type: official
   path: https://developer.android.com/reference/android/security/keystore/KeyGenParameterSpec.Builder
 tags:
-- stability
-- keystore
-- keymint
-- android17
-- login
+  - stability
+  - keystore
+  - keymint
+  - login
 related_chapters:
 - '21.4'
 - '20.2'

@@ -66,22 +66,14 @@ sources:
 - type: reference
   path: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 tags:
-- stability
-- crash
-- anr
-- oom
-- app-quality
-- metrics
-- crash-rate
-- anr-rate
-- play-vitals
-- slo
-- dashboard
-- crash-aggregation
-- attribution
-- alerting
-- stack-dedup
-- clustering
+  - stability
+  - crash
+  - anr
+  - oom
+  - app-quality
+  - metrics
+  - crash-rate
+  - anr-rate
 related_chapters:
 - '20.2'
 - '20.4'

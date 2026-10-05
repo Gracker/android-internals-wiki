@@ -65,12 +65,11 @@ sources:
 - type: obsidian
   path: DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md
 tags:
-- memory
-- zram
-- swap
-- lmkd
-- relaunch
-- performance
+  - memory
+  - zram
+  - swap
+  - lmkd
+  - relaunch
 related_chapters:
 - '4.1'
 - '4.3'

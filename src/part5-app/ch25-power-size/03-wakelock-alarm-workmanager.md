@@ -57,15 +57,14 @@ sources:
 - type: official
   path: https://developer.android.com/reference/android/app/job/JobScheduler
 tags:
-- wakelock
-- alarm
-- exact-alarm
-- wakelock-leak
-- power
-- android-system
-- performance
-- optimization
-- background-task
+  - wakelock
+  - alarm
+  - exact-alarm
+  - wakelock-leak
+  - power
+  - android-system
+  - optimization
+  - background-task
 related_chapters:
 - '25.2'
 - '11.3'

@@ -97,17 +97,14 @@ sources:
 - type: clippings
   path: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md
 tags:
-- compression
-- caching
-- gzip
-- brotli
-- offline-sync
-- offline-first
-- sync
-- conflict-resolution
-- optimistic-update
-- room
-- workmanager
+  - compression
+  - caching
+  - gzip
+  - brotli
+  - offline-sync
+  - offline-first
+  - sync
+  - conflict-resolution
 related_chapters:
 - '24.5'
 - '12.1'

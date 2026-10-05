@@ -135,23 +135,14 @@ sources:
 - type: aosp
   path: frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
 tags:
-- vsync
-- dispsync
-- choreographer
-- surfaceflinger
-- phase-offset
-- arr
-- rendering
-- vsyncschedule
-- doframe
-- 渲染流水线
-- 帧调度
-- 性能优化
-- FrameMetrics
-- FrameCallback
-- 同步屏障
-- frame-rate
-- scheduler
+  - vsync
+  - dispsync
+  - choreographer
+  - surfaceflinger
+  - phase-offset
+  - arr
+  - rendering
+  - vsyncschedule
 related_chapters:
 - '2.1'
 - '2.4'

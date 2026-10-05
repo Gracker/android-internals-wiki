@@ -55,14 +55,13 @@ sources:
 - type: source
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowManagerService.java
 tags:
-- edge-to-edge
-- windowinsets
-- rendering
-- system-bar
-- transparency
-- predictive-back
-- ime-animation
-- android17
+  - edge-to-edge
+  - windowinsets
+  - rendering
+  - system-bar
+  - transparency
+  - predictive-back
+  - ime-animation
 related_chapters:
 - '2.14'
 - '22.11'

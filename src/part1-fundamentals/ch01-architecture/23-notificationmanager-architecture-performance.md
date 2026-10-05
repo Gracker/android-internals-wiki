@@ -70,13 +70,12 @@ sources:
 - type: official
   path: developer.android.com/develop/background-work/services/fgs/timeout
 tags:
-- notification
-- system-service
-- binder
-- notification-channel
-- ranking
-- systemui
-- performance
+  - notification
+  - system-service
+  - binder
+  - notification-channel
+  - ranking
+  - systemui
 related_chapters:
 - '1.12'
 - '1.10'

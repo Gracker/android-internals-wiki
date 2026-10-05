@@ -7,25 +7,14 @@ pipeline_stage: ready-to-publish
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
 confidence: high
 tags:
-- art
-- dex2oat
-- jit
-- aot
-- baseline-profile
-- startup-profile
-- cloud-profile
-- compiler-filter
-- cold-start
-- dexopt
-- verifier
-- vdex
-- startup
-- deoptimization
-- deopt
-- cha
-- instrumentation
-- jvmti
-- perfetto
+  - art
+  - dex2oat
+  - jit
+  - aot
+  - baseline-profile
+  - startup-profile
+  - cloud-profile
+  - compiler-filter
 sources:
 - type: official
   path: https://source.android.com/docs/core/runtime

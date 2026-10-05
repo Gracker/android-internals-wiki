@@ -5,13 +5,12 @@ section: '22.12'
 status: finalized
 applicable_versions: Android 13 (API 33) - Android 17 (API 37); Jetpack WindowManager / Compose Material 3 adaptive APIs
 tags:
-- adaptive
-- layout
-- desktop
-- foldable
-- large-screen
-- window-size-class
-- performance
+  - adaptive
+  - layout
+  - desktop
+  - foldable
+  - large-screen
+  - window-size-class
 related_chapters:
 - '22.1'
 - '22.3'

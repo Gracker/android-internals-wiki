@@ -9,14 +9,13 @@ last_verified: '2026-08-15'
 last_verified_against: Android constrained satellite network guide current through 2026-08-15; Android 17 / API 37 docs and android-17.0.0_r1 source; FCM REST and Firebase Admin docs; current T-Satellite product pages
 confidence: high
 tags:
-- network
-- satellite
-- low-bandwidth
-- connectivity
-- reliability
-- android17
-- streaming
-- local-network
+  - network
+  - satellite
+  - low-bandwidth
+  - connectivity
+  - reliability
+  - streaming
+  - local-network
 related_chapters:
 - '12.1'
 - '1.21'

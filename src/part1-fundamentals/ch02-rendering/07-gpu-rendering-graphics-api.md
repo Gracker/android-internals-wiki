@@ -97,17 +97,14 @@ sources:
 - type: material
   path: rendering_pipelines/S13_game_type.md
 tags:
-- gpu
-- rendering
-- shader
-- vulkan
-- opengl
-- performance
-- memory
-- fundamentals
-- graphics
-- api
-- evolution
+  - gpu
+  - rendering
+  - shader
+  - vulkan
+  - opengl
+  - memory
+  - fundamentals
+  - graphics
 related_chapters:
 - '2.3'
 - '2.4'

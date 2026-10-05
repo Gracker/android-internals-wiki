@@ -85,19 +85,14 @@ sources:
 - type: aosp
   path: frameworks/base/core/java/android/window/ImeBackCallbackProxy.java
 tags:
-- gesture-navigation
-- input-monitor
-- back-gesture
-- predictive-back
-- edge-swipe
-- systemui
-- windowinsets
-- input
-- animation
-- window-manager
-- gesture
-- system-architecture
-- task-transition
+  - gesture-navigation
+  - input-monitor
+  - back-gesture
+  - predictive-back
+  - edge-swipe
+  - systemui
+  - windowinsets
+  - input
 related_chapters:
 - '3.1'
 - '3.2'

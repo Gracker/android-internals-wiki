@@ -51,15 +51,14 @@ sources:
 - type: aosp
   path: frameworks/base/services/credentials/java/com/android/server/credentials/CredentialManagerService.java
 tags:
-- keystore
-- keymint
-- strongbox
-- biometricprompt
-- startup
-- responsiveness
-- biometric
-- credential-manager
-- passkeys
+  - keystore
+  - keymint
+  - strongbox
+  - biometricprompt
+  - startup
+  - responsiveness
+  - biometric
+  - credential-manager
 related_chapters:
 - '6.1'
 - '8.2'

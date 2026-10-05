@@ -8,18 +8,14 @@ last_verified: '2026-08-15'
 last_verified_against: AOSP android-17.0.0_r1 + Android Developers docs
 confidence: high
 tags:
-- rendereffect
-- runtimeshader
-- agsl
-- hwui
-- gpu
-- compose
-- canvas
-- custom-drawing
-- drawbehind
-- drawwithcontent
-- graphicslayer
-- rendernode
+  - rendereffect
+  - runtimeshader
+  - agsl
+  - hwui
+  - gpu
+  - compose
+  - canvas
+  - custom-drawing
 related_chapters:
 - '2.4'
 - '2.7'

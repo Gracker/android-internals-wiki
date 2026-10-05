@@ -95,27 +95,14 @@ sources:
 - type: official
   path: source.android.com/docs/core/perf/lmkd
 tags:
-- lmkd
-- oom
-- oom_score_adj
-- psi
-- memory-pressure
-- process-priority
-- cached-app-optimizer
-- cached-app-freezer
-- gc
-- oom-adj
-- binder-freezer
-- memory
-- memory-limiter
-- cgroup-v2
-- memcg
-- system-architecture
-- android-17
-- appflow
-- 内存管理
-- 兼容性
-- 冷启动
+  - lmkd
+  - oom
+  - oom-score-adj
+  - psi
+  - memory-pressure
+  - process-priority
+  - cached-app-optimizer
+  - cached-app-freezer
 related_chapters:
 - '4.1'
 - '4.2'

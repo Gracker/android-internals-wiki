@@ -5,9 +5,8 @@ section: '24.12'
 status: finalized
 applicable_versions: Android 15 (API 35) - Android 17 (API 37)
 tags:
-- Android
-- 连接性
-- NFC
+  - 连接性
+  - nfc
 related_chapters:
 - '5.2'
 last_verified: '2026-08-15'

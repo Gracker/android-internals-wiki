@@ -46,20 +46,14 @@ sources:
 - type: official
   path: https://developer.android.com/reference/android/app/UiAutomation
 tags:
-- InputReader
-- InputDispatcher
-- EventHub
-- InputChannel
-- InputTransport
-- ViewRootImpl
-- backpressure
-- stale-event
-- ANR
-- Perfetto
-- android
-- input
-- security
-- accessibility
+  - inputreader
+  - inputdispatcher
+  - eventhub
+  - inputchannel
+  - inputtransport
+  - viewrootimpl
+  - backpressure
+  - stale-event
 related_chapters:
 - '3.2'
 - '3.3'

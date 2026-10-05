@@ -26,13 +26,12 @@ sources:
 - type: androidX
   path: AndroidX DataStore 1.2.1 DataStore.kt / DataStoreImpl.kt / FileStorage.kt / MultiProcessCoordinator.android.kt / MulticastFileObserver.android.kt / SharedCounter.android.kt / SharedPreferencesMigration.android.kt
 tags:
-- sharedpreferences
-- datastore
-- anr
-- io
-- storage
-- performance
-- queuedwork
+  - sharedpreferences
+  - datastore
+  - anr
+  - io
+  - storage
+  - queuedwork
 related_chapters:
 - '6.1'
 - '6.2'

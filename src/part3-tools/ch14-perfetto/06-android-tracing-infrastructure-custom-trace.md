@@ -7,17 +7,14 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 tags:
-- tracing
-- atrace
-- ftrace
-- tracepoint
-- perfetto
-- kernel
-- observability
-- trace
-- systrace
-- debugging
-- custom-trace
+  - tracing
+  - atrace
+  - ftrace
+  - tracepoint
+  - perfetto
+  - kernel
+  - observability
+  - trace
 confidence: medium
 sources:
 - type: reference

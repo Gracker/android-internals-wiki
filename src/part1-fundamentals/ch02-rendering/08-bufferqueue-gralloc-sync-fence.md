@@ -5,27 +5,14 @@ section: '2.8'
 status: finalized
 applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
 tags:
-- BufferQueue
-- BLASTBufferQueue
-- GraphicBuffer
-- Surface
-- 渲染管线
-- Gralloc
-- SurfaceFlinger
-- 三缓冲
-- dma-buf
-- gralloc
-- graphicbuffer
-- zero-copy
-- ion
-- rendering
-- cross-process
-- dma-heap
-- sync-fence
-- fence
-- hwui
-- synchronization
-- timeline
+  - bufferqueue
+  - blastbufferqueue
+  - graphicbuffer
+  - surface
+  - 渲染管线
+  - gralloc
+  - surfaceflinger
+  - 三缓冲
 related_chapters:
 - '2.1'
 - '2.3'

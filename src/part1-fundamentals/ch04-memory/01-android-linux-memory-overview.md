@@ -113,28 +113,14 @@ sources:
 - type: official
   path: https://developer.android.com/reference/android/os/ProfilingTrigger
 tags:
-- android-memory
-- memory-model
-- pss-rss-uss
-- dumpsys-meminfo
-- procfs
-- lmkd
-- zram
-- cgroup
-- hprof
-- kernel
-- memory
-- buddy
-- slab
-- kswapd
-- page-reclaim
-- compaction
-- ION
-- DMA-BUF
-- LRU
-- MGLRU
-- 16K-page
-- pmgd
+  - android-memory
+  - memory-model
+  - pss-rss-uss
+  - dumpsys-meminfo
+  - procfs
+  - lmkd
+  - zram
+  - cgroup
 related_chapters:
 - '4.2'
 - '4.3'

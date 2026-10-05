@@ -99,16 +99,14 @@ sources:
 - type: clippings-structure
   path: '[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]'
 tags:
-- http2
-- http3
-- quic
-- grpc
-- protocol
-- network
-- tls
-- ech
-- android17
-- network-security-config
+  - http2
+  - http3
+  - quic
+  - grpc
+  - protocol
+  - network
+  - tls
+  - ech
 related_chapters:
 - '24.5'
 - '12.1'

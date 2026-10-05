@@ -5,17 +5,14 @@ section: '1.11'
 status: finalized
 applicable_versions: Android 15 (API 35) - Android 17 (API 37)
 tags:
-- binder
-- ipc
-- transaction-buffer
-- performance
-- android17
-- rpc-binder
-- performance-monitoring
-- tracing
-- perfetto
-- aidl
-- recording
+  - binder
+  - ipc
+  - transaction-buffer
+  - rpc-binder
+  - performance-monitoring
+  - tracing
+  - perfetto
+  - aidl
 related_chapters:
 - '1.9'
 - '1.15'

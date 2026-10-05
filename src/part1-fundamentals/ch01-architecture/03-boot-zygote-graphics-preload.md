@@ -115,29 +115,14 @@ sources:
 - type: aosp
   path: frameworks/base/libs/hwui/renderthread/RenderThread.cpp @ android-17.0.0_r1
 tags:
-- boot
-- init
-- zygote
-- SystemServer
-- 启动优化
-- bootstat
-- Perfetto
-- Verified-Boot
-- fork
-- preload
-- copy-on-write
-- usap
-- app-zygote
-- webview-zygote
-- android
-- app-startup
-- hwui
-- renderthread
-- egl
-- vulkan
-- angle
-- gralloc
-- gpu-driver
+  - boot
+  - init
+  - zygote
+  - systemserver
+  - 启动优化
+  - bootstat
+  - perfetto
+  - verified-boot
 related_chapters:
 - '1.1'
 - '1.9'

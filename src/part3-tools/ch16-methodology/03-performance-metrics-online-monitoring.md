@@ -86,17 +86,14 @@ sources:
 - type: aosp
   path: packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java
 tags:
-- android
-- research
-- performance
-- metrics
-- monitoring
-- APM
-- FrameMetrics
-- JankStats
-- ANR
-- startup
-- production
+  - metrics
+  - monitoring
+  - apm
+  - framemetrics
+  - jankstats
+  - anr
+  - startup
+  - production
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed

@@ -49,13 +49,12 @@ sources:
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java @ android-17.0.0_r1
 tags:
-- resources
-- configuration
-- activity-recreation
-- performance
-- resourcesmanager
-- configChanges
-- edge-to-edge
+  - resources
+  - configuration
+  - activity-recreation
+  - resourcesmanager
+  - configchanges
+  - edge-to-edge
 related_chapters:
 - '1.12'
 - '1.19'

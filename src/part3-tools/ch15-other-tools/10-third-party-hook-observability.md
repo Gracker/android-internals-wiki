@@ -85,24 +85,14 @@ sources:
 - type: aosp
   path: art/runtime/art_method.h
 tags:
-- android
-- research
-- apm
-- observability
-- tracing
-- hook
-- plt-hook
-- inline-hook
-- perfetto
-- atrace
-- koom
-- shadowhook
-- xhook
-- matrix
-- selinux
-- wx
-- perf-measurement
-- mainline-modules
+  - apm
+  - observability
+  - tracing
+  - hook
+  - plt-hook
+  - inline-hook
+  - perfetto
+  - atrace
 related_chapters:
 - '16.3'
 - '16.1'

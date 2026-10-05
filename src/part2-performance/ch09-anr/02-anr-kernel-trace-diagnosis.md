@@ -49,18 +49,14 @@ sources:
 - type: research
   path: intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md
 tags:
-- anr
-- traces
-- perfetto
-- analysis
-- cpu-usage
-- processcputracker
-- psi
-- ftrace
-- kernel-trace
-- atrace
-- diagnosis
-- system-events
+  - anr
+  - traces
+  - perfetto
+  - analysis
+  - cpu-usage
+  - processcputracker
+  - psi
+  - ftrace
 related_chapters:
 - '9.1'
 - '9.3'

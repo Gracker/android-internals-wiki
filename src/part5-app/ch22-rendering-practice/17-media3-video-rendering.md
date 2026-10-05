@@ -4,12 +4,11 @@ chapter: '22.17'
 status: finalized
 applicable_versions: Android 11 (API 30) - Android 17 (API 37)
 tags:
-- media3
-- exoplayer
-- videoplayback
-- mediacodec
-- rendering
-- performance
+  - media3
+  - exoplayer
+  - videoplayback
+  - mediacodec
+  - rendering
 related_chapters:
 - '22.14'
 - '13.11'

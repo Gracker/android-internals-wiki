@@ -98,27 +98,14 @@ sources:
 - type: chapter
   path: part3-tools/ch14-perfetto/07-input-latency-sql.md (Perfetto SQL input latency deep dive)
 tags:
-- cold-start
-- warm-start
-- hot-start
-- TTID
-- TTFD
-- launch
-- startup
-- reportFullyDrawn
-- baseline-profiles
-- app-startup
-- contentprovider
-- process-creation
-- Binder
-- Trace
-- 冷启动
-- IPC
-- 性能分析
-- Perfetto
-- oneway
-- freezer
-- threadpool
+  - cold-start
+  - warm-start
+  - hot-start
+  - ttid
+  - ttfd
+  - launch
+  - startup
+  - reportfullydrawn
 related_chapters:
 - '8.1'
 - '1.3'

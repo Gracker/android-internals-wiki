@@ -49,11 +49,10 @@ sources:
 - type: aosp
   path: packages/modules/Profiling/framework/java/android/os/ProfilingResult.java (android-17.0.0_r1)
 tags:
-- android
-- paper
-- profiling
-- apm
-- perfetto
+  - paper
+  - profiling
+  - apm
+  - perfetto
 related_chapters:
 - '21.4'
 - '14.1'

@@ -9,16 +9,14 @@ last_verified: '2026-08-15'
 last_verified_against: Android and AOSP docs current through 2026-08-15; Android 17 / API 37 docs and android-17.0.0_r1 MediaProvider source; AndroidX Activity 1.11.0 Photo Picker docs; current Google Play All files access policy
 confidence: high
 tags:
-- MediaStore
-- MediaProvider
-- scoped-storage
-- media-transcoding
-- thumbnails
-- io-performance
-- photo-picker
-- mediaprovider
-- transcoding
-- storage
+  - mediastore
+  - mediaprovider
+  - scoped-storage
+  - media-transcoding
+  - thumbnails
+  - io-performance
+  - photo-picker
+  - transcoding
 related_chapters:
 - '6.1'
 - '6.3'

@@ -5,22 +5,14 @@ section: '13.6'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
-- SurfaceControl
-- ASurfaceControl
-- ASurfaceTransaction
-- NDK
-- AHardwareBuffer
-- FrameTimeline
-- BLAST
-- SurfaceFlinger
-- SurfaceControlViewHost
-- sync-fence
-- HardwareBufferRenderer
-- 离屏渲染
-- GPU
-- RenderNode
-- HDR
-- 渲染管线
+  - surfacecontrol
+  - asurfacecontrol
+  - asurfacetransaction
+  - ndk
+  - ahardwarebuffer
+  - frametimeline
+  - blast
+  - surfaceflinger
 related_chapters:
 - '2.9'
 - '2.8'

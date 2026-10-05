@@ -5,22 +5,14 @@ section: '1.19'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags:
-- architecture
-- rendering
-- performance
-- window
-- ui
-- system-service
-- WMS
-- WindowManagerService
-- Surface
-- Window
-- StartingWindow
-- Window动画
-- 多窗口
-- SurfaceControl
-- WindowInsets
-- Desktop Windowing
+  - architecture
+  - rendering
+  - window
+  - ui
+  - system-service
+  - wms
+  - windowmanagerservice
+  - surface
 last_verified: '2026-08-12'
 last_verified_against: AOSP android-17.0.0_r1 Choreographer / ViewRootImpl / HWUI RenderThread / BufferQueue / BLASTBufferQueue / SurfaceFlinger FrontEnd / HWComposer / FrameTimeline；Composer3 AIDL；kernel android17-6.18-2026-06_r6 dma-buf / sync_file / dma-fence + AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + Android 17 official windowing/configuration documentation + rendering_pipelines S06
 confidence: high

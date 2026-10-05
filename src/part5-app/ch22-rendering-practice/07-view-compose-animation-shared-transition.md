@@ -67,22 +67,14 @@ sources:
 - type: aosp
   path: android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java
 tags:
-- animation
-- property-animation
-- lottie
-- render-effect
-- transition
-- motionlayout
-- compose
-- animated-visibility
-- animatable
-- strong-skipping
-- performance
-- Compose
-- SharedTransition
-- Animation
-- Performance
-- Rendering
+  - animation
+  - property-animation
+  - lottie
+  - render-effect
+  - transition
+  - motionlayout
+  - compose
+  - animated-visibility
 related_chapters:
 - '22.1'
 - '7.1'

@@ -6,17 +6,14 @@ status: finalized
 pipeline_stage: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 tags:
-- oem
-- performance
-- freezer
-- preloading
-- background-management
-- case-study
-- game-mode
-- adpf
-- startup
-- foldable
-- industry
+  - oem
+  - freezer
+  - preloading
+  - background-management
+  - case-study
+  - game-mode
+  - adpf
+  - startup
 confidence: medium
 sources:
 - type: official

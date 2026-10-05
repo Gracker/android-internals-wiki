@@ -6,28 +6,14 @@ status: finalized
 pipeline_stage: ready-to-publish
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
-- responsiveness
-- TTID
-- TTFD
-- RAIL
-- input-latency
-- perceived-performance
-- page-switch
-- click-response
-- search
-- viewpager2
-- fragment
-- debounce
-- case-study
-- cold-start
-- response-optimization
-- baseline-profile
-- r8-full-mode
-- macrobenchmark
-- auto-fdo
-- 16kb-page
-- dag-scheduler
-- aot-compilation
+  - responsiveness
+  - ttid
+  - ttfd
+  - rail
+  - input-latency
+  - perceived-performance
+  - page-switch
+  - click-response
 confidence: medium
 sources:
 - type: reference

@@ -27,14 +27,13 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker.cpp
 tags:
-- stability
-- native
-- dynamic-code-loading
-- secure-loading
-- elf
-- system-load
-- rollback
-- android17
+  - stability
+  - native
+  - dynamic-code-loading
+  - secure-loading
+  - elf
+  - system-load
+  - rollback
 related_chapters:
 - '1.6'
 - '1.7'

@@ -5,17 +5,14 @@ section: '9.7'
 status: finalized
 applicable_versions: Android 17 (API 37)
 tags:
-- ANR
-- warning
-- callback
-- AnrTypes
-- observability
-- IAnrWarningCallback
-- InputDispatcher
-- pre-ANR
-- Android17
-- TimeoutRecord
-- AnrTimer
+  - anr
+  - warning
+  - callback
+  - anrtypes
+  - observability
+  - ianrwarningcallback
+  - inputdispatcher
+  - pre-anr
 related_chapters:
 - '9.1'
 - '9.2'

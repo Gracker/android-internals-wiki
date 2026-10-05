@@ -43,14 +43,13 @@ sources:
 - type: aosp
   path: frameworks/base/media/java/android/media/AudioTrack.java @ android-17.0.0_r1
 tags:
-- android
-- audio
-- audioflinger
-- aaudio
-- mmap
-- fastmixer
-- latency
-- perfetto
+  - audio
+  - audioflinger
+  - aaudio
+  - mmap
+  - fastmixer
+  - latency
+  - perfetto
 related_chapters:
 - '1.9'
 - '5.1'

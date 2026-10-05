@@ -61,12 +61,11 @@ sources:
 - type: book_structure
   path: Clippings/线上疑难问题该如何排查和跟踪?-Android开发高手课-极客时间 20.md
 tags:
-- wifi
-- connectivity
-- network
-- latency
-- scoring
-- performance
+  - wifi
+  - connectivity
+  - network
+  - latency
+  - scoring
 related_chapters:
 - '12.1'
 - '24.5'

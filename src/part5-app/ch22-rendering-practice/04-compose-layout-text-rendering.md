@@ -4,16 +4,12 @@ chapter: '22.4'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
-- compose
-- layout
-- measurement
-- intrinsic
-- performance
-- Compose
-- 性能优化
-- 文本渲染
-- Android 17
-- 实践
+  - compose
+  - layout
+  - measurement
+  - intrinsic
+  - 文本渲染
+  - 实践
 related_chapters:
 - '22.3'
 - '22.7'

@@ -39,12 +39,12 @@ sources:
 - type: obsidian
   path: OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-app_exit_info_tracker_and_koom_fork_hprof.md
 tags:
-- hprof
-- heap-dump
-- art
-- perfetto
-- java_hprof
-- memory-analysis
+  - hprof
+  - heap-dump
+  - art
+  - perfetto
+  - java-hprof
+  - memory-analysis
 related_chapters:
 - '10.1'
 - '23.2'

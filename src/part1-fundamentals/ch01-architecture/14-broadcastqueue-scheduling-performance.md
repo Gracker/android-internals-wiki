@@ -41,12 +41,12 @@ sources:
 - type: aosp
   path: frameworks/base/core/java/android/os/PerfettoCategories.java
 tags:
-- broadcast
-- broadcastqueue
-- scheduler
-- AMS
-- ANR
-- broadcast-process-queue
+  - broadcast
+  - broadcastqueue
+  - scheduler
+  - ams
+  - anr
+  - broadcast-process-queue
 related_chapters:
 - '1.12'
 - '9.1'

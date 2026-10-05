@@ -92,19 +92,14 @@ sources:
   path: developer.android.com/jetpack/compose/compiler
   availability: preserved from previous_sources during the 2026-08-24 frontmatter migration; not treated as current evidence
 tags:
-- compose
-- recomposition
-- stability
-- derivedStateOf
-- pausable-composition
-- strong-skipping
-- compiler
-- diagnostics
-- perfetto
-- ci
-- modifier-node
-- performance
-- architecture-migration
+  - compose
+  - recomposition
+  - stability
+  - derivedstateof
+  - pausable-composition
+  - strong-skipping
+  - compiler
+  - diagnostics
 related_chapters:
 - '2.3'
 - '22.1'

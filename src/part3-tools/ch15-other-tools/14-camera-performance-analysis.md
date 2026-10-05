@@ -79,21 +79,14 @@ sources:
 - type: writer
   path: Writer/rendering_pipelines/S11_camera_type.md
 tags:
-- camera
-- perfetto
-- buffer-queue
-- preview-stutter
-- hal3
-- buffer
-- bufferqueue
-- memory
-- performance
-- camerax
-- zsl
-- camera2
-- camera-pipe
-- reprocessing
-- android-17
+  - camera
+  - perfetto
+  - buffer-queue
+  - preview-stutter
+  - hal3
+  - buffer
+  - bufferqueue
+  - memory
 related_chapters:
 - '2.8'
 - '14.7'

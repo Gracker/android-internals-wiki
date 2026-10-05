@@ -5,28 +5,14 @@ section: '25.10'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
-- dex
-- r8
-- d8
-- apk-size
-- code-shrinking
-- baseline-profile
-- multidex
-- native
-- so
-- elf
-- strip
-- ndk
-- abi
-- 16kb-page-size
-- 包体积
-- 资源优化
-- 图片压缩
-- ARSC
-- AAPT2
-- apk-analyzer
-- resource-shrink
-- abi-filter
+  - dex
+  - r8
+  - d8
+  - apk-size
+  - code-shrinking
+  - baseline-profile
+  - multidex
+  - native
 related_chapters:
 - '21.4'
 - '1.4'

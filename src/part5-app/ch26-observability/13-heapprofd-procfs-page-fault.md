@@ -5,23 +5,14 @@ section: '26.13'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37); ProfilingManager 路径要求 Android 15 (API 35) 或更新版本
 tags:
-- heapprofd
-- heap-profiling
-- memory
-- production
-- perfetto
-- permissions
-- native-leak
-- proc
-- ProcessCpuTracker
-- CPU
-- monitoring
-- observability
-- /proc/stat
-- page-fault
-- minor-fault
-- major-fault
-- mmap
+  - heapprofd
+  - heap-profiling
+  - memory
+  - production
+  - perfetto
+  - permissions
+  - native-leak
+  - proc
 related_chapters:
 - '4.4'
 - '10.1'

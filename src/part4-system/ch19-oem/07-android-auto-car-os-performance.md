@@ -5,10 +5,9 @@ section: '19.7'
 status: finalized
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 tags:
-- Android Auto
-- Car OS
-- 车载
-- 性能优化
+  - android-auto
+  - car-os
+  - 车载
 related_chapters:
 - '18.6'
 - '19.3'

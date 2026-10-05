@@ -110,18 +110,14 @@ sources:
 - type: kernel
   path: AOSP kernel android17-6.18-2026-06_r6 — kernel/sched
 tags:
-- fragment
-- rendering
-- jank
-- startup
-- androidx
-- predictive-back
-- animation
-- compose
-- Jetpack
-- Compose
-- 性能优化
-- 导航
+  - fragment
+  - rendering
+  - jank
+  - startup
+  - androidx
+  - predictive-back
+  - animation
+  - compose
 related_chapters:
 - '7.2'
 - '8.1'

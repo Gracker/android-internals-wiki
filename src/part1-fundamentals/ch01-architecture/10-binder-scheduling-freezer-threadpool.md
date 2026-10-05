@@ -73,21 +73,14 @@ sources:
 - type: blog
   path: DeepResearch/2026-06-27-android17-binder-async-frozen-batch-pipeline.md
 tags:
-- android
-- binder
-- cached-app
-- freezer
-- cgroup-v2
-- oom-adjuster
-- performance
-- ipc
-- 异步机制
-- 批处理
-- thread-pool
-- starvation
-- ANR
-- IPC
-- system_server
+  - binder
+  - cached-app
+  - freezer
+  - cgroup-v2
+  - oom-adjuster
+  - ipc
+  - 异步机制
+  - 批处理
 related_chapters:
 - '1.1'
 - '1.9'

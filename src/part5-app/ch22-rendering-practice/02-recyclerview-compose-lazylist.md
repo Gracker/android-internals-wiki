@@ -66,19 +66,14 @@ sources:
 - type: research
   path: intake/research-feeds/2026-04-01-12-compose-performance-milestone-2025.md
 tags:
-- recyclerview
-- viewholder
-- diffutil
-- prefetch
-- nested-scroll
-- compose
-- lazylist
-- lazygrid
-- jank
-- recomposition
-- performance
-- scrolling
-- recycling
+  - recyclerview
+  - viewholder
+  - diffutil
+  - prefetch
+  - nested-scroll
+  - compose
+  - lazylist
+  - lazygrid
 related_chapters:
 - '22.1'
 - '2.3'

@@ -95,19 +95,14 @@ sources:
 - type: official
   path: https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/QuicOptions.Builder.html
 tags:
-- network
-- OkHttp
-- HTTP/2
-- HTTP/3
-- QUIC
-- weak-network
-- performance
-- network-security
-- tls
-- ech
-- hpke
-- certificate-transparency
-- cleartext
+  - network
+  - okhttp
+  - http/2
+  - http/3
+  - quic
+  - weak-network
+  - network-security
+  - tls
 related_chapters:
 - '12.2'
 - '1.22'

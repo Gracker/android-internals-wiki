@@ -43,14 +43,13 @@ sources:
 - type: official
   path: https://developer.android.com/guide/topics/large-screens/handle-multi-window-mode
 tags:
-- input
-- keyboard
-- mouse
-- pointer
-- desktop-mode
-- hover
-- drag-drop
-- performance
+  - input
+  - keyboard
+  - mouse
+  - pointer
+  - desktop-mode
+  - hover
+  - drag-drop
 related_chapters:
 - '3.1'
 - '3.2'

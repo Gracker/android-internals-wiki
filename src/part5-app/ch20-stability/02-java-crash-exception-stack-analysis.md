@@ -86,20 +86,14 @@ sources:
 - type: blog
   path: Clippings/Android 应用稳定性剖析与优化 - Java Crash 分析与监控原理.md
 tags:
-- java-crash
-- exception-handling
-- uncaughtexceptionhandler
-- stability
-- safemode
-- hotfix
-- graceful-degradation
-- crash
-- java-stack
-- ThreadList
-- StackVisitor
-- MonitorInfo
-- lock-wait
-- ART
+  - java-crash
+  - exception-handling
+  - uncaughtexceptionhandler
+  - stability
+  - safemode
+  - hotfix
+  - graceful-degradation
+  - crash
 related_chapters:
 - '20.1'
 - '1.5'

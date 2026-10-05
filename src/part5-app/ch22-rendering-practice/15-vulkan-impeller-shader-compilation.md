@@ -91,21 +91,14 @@ sources:
   path: Android 17 android-17.0.0_r1 Surface, BufferQueueProducer, SurfaceFlinger; android17-6.18-2026-06_r6 dma-buf and sync_file
   availability: preserved from previous_sources during the 2026-08-24 frontmatter migration; not treated as current evidence
 tags:
-- Vulkan
-- GPU
-- 异步编译
-- 管线调度
-- PipelineManager
-- AGI
-- Perfetto
-- flutter
-- impeller
-- shader
-- vulkan
-- opengl
-- gpu
-- compilation
-- rendering
+  - vulkan
+  - gpu
+  - 异步编译
+  - 管线调度
+  - pipelinemanager
+  - agi
+  - perfetto
+  - flutter
 related_chapters:
 - '2.7'
 - '2.15'

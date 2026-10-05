@@ -31,17 +31,14 @@ sources:
 - type: official
   path: https://developer.android.com/ndk/guides/debug
 tags:
-- lru-cache
-- cache-pollution
-- memory-optimization
-- bitmap
-- memory-leak
-- onTrimMemory
-- native-memory
-- memory-churn
-- object-pool
-- heapprofd
-- 16kb-page-size
+  - lru-cache
+  - cache-pollution
+  - memory-optimization
+  - bitmap
+  - memory-leak
+  - ontrimmemory
+  - native-memory
+  - memory-churn
 related_chapters:
 - '5.8'
 - '4.1'

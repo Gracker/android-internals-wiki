@@ -90,22 +90,14 @@ sources:
   path: https://developer.android.com/reference/android/window/SurfaceSyncGroup
   role: 公开同步组契约
 tags:
-- software-rendering
-- offscreen-rendering
-- CPU-rasterization
-- Skia
-- Canvas
-- lockCanvas
-- HardwareBufferRenderer
-- SurfaceControl
-- hybrid-composition
-- SurfaceView
-- TextureView
-- SurfaceSyncGroup
-- mixed-rendering
-- parallel-pipeline
-- video-playback
-- HWC
+  - software-rendering
+  - offscreen-rendering
+  - cpu-rasterization
+  - skia
+  - canvas
+  - lockcanvas
+  - hardwarebufferrenderer
+  - surfacecontrol
 related_chapters:
 - '2.1'
 - '2.4'

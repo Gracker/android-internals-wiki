@@ -55,22 +55,14 @@ sources:
 - type: deepresearch
   path: DeepResearch/2026-06-23-android17-ondevice-llm-inference-architecture.md
 tags:
-- android
-- ai
-- npu
-- tflite
-- nnapi
-- aicore
-- android17
-- litert
-- on-device-ai
-- performance
-- GenAI
-- AICore
-- 端侧AI
-- 性能优化
-- NPU
-- IPC
+  - ai
+  - npu
+  - tflite
+  - nnapi
+  - aicore
+  - litert
+  - on-device-ai
+  - genai
 related_chapters:
 - '5.2'
 - '5.4'

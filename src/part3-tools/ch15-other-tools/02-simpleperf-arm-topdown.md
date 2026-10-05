@@ -51,19 +51,14 @@ sources:
 - type: paper
   path: Yasin, A. "A Top-Down Method for Performance Analysis and Counters Architecture", ISPASS 2014
 tags:
-- simpleperf
-- cpu-profiling
-- performance-analysis
-- ndk
-- native-profiling
-- ARM-SPE
-- TRBE
-- profiling
-- microarchitecture
-- AutoFDO
-- arm-topdown
-- perf
-- pmu
+  - simpleperf
+  - cpu-profiling
+  - performance-analysis
+  - ndk
+  - native-profiling
+  - arm-spe
+  - trbe
+  - profiling
 task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed

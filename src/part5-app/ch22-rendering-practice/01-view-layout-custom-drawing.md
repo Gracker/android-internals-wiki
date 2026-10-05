@@ -41,18 +41,14 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java
 tags:
-- layout
-- constraintlayout
-- viewstub
-- inflate
-- hierarchy
-- custom-view
-- ondraw
-- canvas
-- hardware-acceleration
-- invalidate
-- viewrootimpl
-- hwui
+  - layout
+  - constraintlayout
+  - viewstub
+  - inflate
+  - hierarchy
+  - custom-view
+  - ondraw
+  - canvas
 related_chapters:
 - '22.3'
 - '2.4'

@@ -83,19 +83,14 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/IntentSender.java
 tags:
-- background-power
-- doze
-- app-standby
-- bucket
-- workmanager
-- jobscheduler
-- foreground-service
-- location-power
-- fgs-type
-- background-launch
-- power
-- android17
-- bals
+  - background-power
+  - doze
+  - app-standby
+  - bucket
+  - workmanager
+  - jobscheduler
+  - foreground-service
+  - location-power
 related_chapters:
 - '25.1'
 - '25.3'

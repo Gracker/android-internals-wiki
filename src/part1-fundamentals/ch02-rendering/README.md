@@ -7,7 +7,14 @@ applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-08-11"
 last_verified_against: "AOSP android-17.0.0_r1; kernel android17-6.18-2026-06_r6; consolidated ch02 structure 2.1-2.17"
 confidence: high
-tags: [rendering, SurfaceFlinger, BufferQueue, BLAST, sync-fence, FrameTimeline, ARR]
+tags:
+  - rendering
+  - surfaceflinger
+  - bufferqueue
+  - blast
+  - sync-fence
+  - frametimeline
+  - arr
 pipeline_stage: ready-to-publish
 last_consolidated_at: '2026-08-24'
 consolidation_note: 第四轮逐篇审阅后确认当前 17 篇，合并同一责任链中的总览、机制、版本增量、观测与案例；原 2.18 Compose Pausable Composition 应用实践已并入 22.2。

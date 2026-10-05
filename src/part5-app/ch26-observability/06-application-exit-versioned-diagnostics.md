@@ -84,15 +84,14 @@ sources:
 - type: legacy-reference-preserved
   path: packages/modules/Profiling
 tags:
-- applicationexitinfo
-- observability
-- crash
-- anr
-- oom
-- lmk
-- online-diagnostics
-- application-exit-info
-- profiling-manager
+  - applicationexitinfo
+  - observability
+  - crash
+  - anr
+  - oom
+  - lmk
+  - online-diagnostics
+  - application-exit-info
 related_chapters:
 - '15.10'
 - '17.8'

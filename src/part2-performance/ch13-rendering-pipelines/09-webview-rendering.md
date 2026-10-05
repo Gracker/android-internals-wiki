@@ -5,13 +5,13 @@ section: '13.9'
 status: finalized
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)(WebView provider 可独立更新;SurfaceControl 子 Surface 需 Android 12+ 平台支持,并结合 provider / Chromium milestone 判断)
 tags:
-- WebView
-- Chromium
-- GL-Functor
-- SurfaceControl
-- SurfaceTexture
-- X5内核
-- 渲染管线
+  - webview
+  - chromium
+  - gl-functor
+  - surfacecontrol
+  - surfacetexture
+  - X5内核
+  - 渲染管线
 related_chapters:
 - '2.4'
 - '2.9'

@@ -35,12 +35,11 @@ sources:
 - type: official
   path: https://docs.oracle.com/javase/8/docs/api/java/lang/ref/ReferenceQueue.html
 tags:
-- art
-- gc
-- memory
-- finalizer
-- referencequeue
-- performance
+  - art
+  - gc
+  - memory
+  - finalizer
+  - referencequeue
 related_chapters:
 - '4.2'
 - '4.4'

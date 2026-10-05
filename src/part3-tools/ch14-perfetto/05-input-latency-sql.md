@@ -15,12 +15,12 @@ sources:
 - type: research
   path: intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md
 tags:
-- Perfetto
-- SQL
-- input-latency
-- android.input
-- input-events
-- trace-analysis
+  - perfetto
+  - sql
+  - input-latency
+  - android.input
+  - input-events
+  - trace-analysis
 related_chapters:
 - '3.1'
 - '3.2'

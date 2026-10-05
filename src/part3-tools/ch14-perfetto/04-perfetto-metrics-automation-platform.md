@@ -48,14 +48,12 @@ sources:
 - type: internal
   path: src/part5-app/ch26-observability/06-ab-testing-regression.md
 tags:
-- android
-- perfetto
-- research
-- smartperfetto
-- trace-analysis
-- ai-assistant
-- sql-guardrail
-- observability
+  - perfetto
+  - smartperfetto
+  - trace-analysis
+  - ai-assistant
+  - sql-guardrail
+  - observability
 status: finalized
 task6_state: reviewed
 task9_state: reviewed

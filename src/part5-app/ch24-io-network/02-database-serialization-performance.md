@@ -117,16 +117,14 @@ sources:
 - type: clippings
   path: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md
 tags:
-- sqlite
-- room
-- wal
-- database-index
-- query-optimization
-- serialization
-- json
-- protobuf
-- parcelable
-- flatbuffers
+  - sqlite
+  - room
+  - wal
+  - database-index
+  - query-optimization
+  - serialization
+  - json
+  - protobuf
 related_chapters:
 - '24.1'
 - '9.2'

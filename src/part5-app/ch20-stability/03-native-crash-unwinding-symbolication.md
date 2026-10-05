@@ -74,18 +74,14 @@ sources:
 - type: official
   path: https://source.android.com/docs/core/tests/debug/native-crash
 tags:
-- native-crash
-- tombstone
-- signal
-- breakpad
-- symbolication
-- debuggerd
-- native
-- crash
-- stack-unwinding
-- ndk
-- elf
-- cfi
+  - native-crash
+  - tombstone
+  - signal
+  - breakpad
+  - symbolication
+  - debuggerd
+  - native
+  - crash
 related_chapters:
 - '20.1'
 - '20.2'

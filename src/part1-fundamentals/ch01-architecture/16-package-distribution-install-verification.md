@@ -139,27 +139,14 @@ sources:
 - type: official
   path: https://source.android.com/docs/compatibility/17/android-17-cdd#4_application_packaging_compatibility
 tags:
-- pms
-- package-manager
-- package-installer
-- art-service
-- dexopt
-- baseline-profiles
-- incremental-install
-- app-archiving
-- android
-- developer-verification
-- app-signing
-- security
-- staged-install
-- apk-install
-- atomicity
-- performance
-- packageinstaller
-- shortcutservice
-- chooseractivity
-- app-bundle
-- distribution
+  - pms
+  - package-manager
+  - package-installer
+  - art-service
+  - dexopt
+  - baseline-profiles
+  - incremental-install
+  - app-archiving
 related_chapters:
 - '1.3'
 - '1.5'

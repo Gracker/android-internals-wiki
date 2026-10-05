@@ -11,14 +11,14 @@ sources:
 - path: https://source.android.com/docs/core/power/power-stats-hal
   type: official
 tags:
-- Battery Historian
-- bugreport
-- 功耗分析
-- Wakelock
-- 电池
-- Power Profiler
-- ODPM
-- Energy Profiler
+  - battery-historian
+  - bugreport
+  - 功耗分析
+  - wakelock
+  - 电池
+  - power-profiler
+  - odpm
+  - energy-profiler
 related_chapters:
 - '11.1'
 - '11.2'

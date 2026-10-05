@@ -33,17 +33,14 @@ sources:
 - type: reference
   path: JEDEC UFS 4.0 Standard (JESD220E)
 tags:
-- storage
-- ufs
-- emmc
-- partition
-- scoped-storage
-- mediastore
-- fuse
-- fbe
-- dynamic-partition
-- virtual-ab
-- f2fs
+  - storage
+  - ufs
+  - emmc
+  - partition
+  - scoped-storage
+  - mediastore
+  - fuse
+  - fbe
 related_chapters:
 - '6.2'
 - '4.1'

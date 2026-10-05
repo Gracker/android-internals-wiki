@@ -57,18 +57,14 @@ sources:
 - type: aosp
   path: frameworks/base/libs/hwui/jni/ImageDecoder.cpp
 tags:
-- image-loading
-- glide
-- coil
-- bitmap-decode
-- image-cache
-- bitmap
-- image-decoder
-- decode-pipeline
-- hardware-bitmap
-- image-format
-- mmap
-- inbitmap
+  - image-loading
+  - glide
+  - coil
+  - bitmap-decode
+  - image-cache
+  - bitmap
+  - image-decoder
+  - decode-pipeline
 related_chapters:
 - '22.1'
 - '23.4'

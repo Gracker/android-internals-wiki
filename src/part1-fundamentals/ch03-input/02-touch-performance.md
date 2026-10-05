@@ -37,18 +37,14 @@ sources:
 - type: research
   path: intake/research-feeds/2026-04-05-15-motionprediction-low-latency-graphics.md
 tags:
-- touch
-- input-latency
-- HCI
-- InputReader
-- InputDispatcher
-- sampling-rate
-- batching
-- resampling
-- MotionPredictor
-- front-buffer
-- Choreographer
-- responsiveness
+  - touch
+  - input-latency
+  - hci
+  - inputreader
+  - inputdispatcher
+  - sampling-rate
+  - batching
+  - resampling
 related_chapters:
 - '3.1'
 - '2.3'

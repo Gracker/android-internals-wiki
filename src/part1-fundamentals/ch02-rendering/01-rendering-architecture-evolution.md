@@ -184,17 +184,14 @@ sources:
 - type: writer
   path: Writer/rendering_pipelines/images/DIAGRAM_MANIFEST.md
 tags:
-- rendering
-- hwui
-- skia
-- surfaceflinger
-- gpu
-- triple-buffering
-- rendering-pipeline
-- bufferqueue
-- vsync
-- displaylist
-- rendernode
+  - rendering
+  - hwui
+  - skia
+  - surfaceflinger
+  - gpu
+  - triple-buffering
+  - rendering-pipeline
+  - bufferqueue
 related_chapters:
 - '2.2'
 - '2.3'

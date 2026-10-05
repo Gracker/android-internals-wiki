@@ -5,22 +5,14 @@ section: '22.18'
 status: finalized
 applicable_versions: Android 15 (API 35) - Android 17 (API 37)
 tags:
-- CameraX
-- 图像处理
-- 性能优化
-- 相机
-- camera
-- hal3
-- buffer
-- bufferqueue
-- memory
-- performance
-- camerax
-- zsl
-- camera2
-- camera-pipe
-- reprocessing
-- android-17
+  - camerax
+  - 图像处理
+  - 相机
+  - camera
+  - hal3
+  - buffer
+  - bufferqueue
+  - memory
 related_chapters:
 - '15.14'
 - '13.10'

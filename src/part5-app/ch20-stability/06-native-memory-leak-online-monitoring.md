@@ -5,13 +5,13 @@ section: '20.6'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
-- native
-- memory-leak
-- malloc
-- Scudo
-- mallinfo
-- monitoring
-- online
+  - native
+  - memory-leak
+  - malloc
+  - scudo
+  - mallinfo
+  - monitoring
+  - online
 related_chapters:
 - '20.3'
 - '20.11'

@@ -85,17 +85,14 @@ sources:
 - type: aosp
   path: protos/perfetto/trace/track_event/state_descriptor.proto (v57.1 tag)
 tags:
-- android
-- perfetto
-- trace-view
-- frame-timeline
-- binder
-- thread-state
-- cpu-scheduling
-- Perfetto
-- TrackEvent
-- 状态追踪
-- 版本边界
+  - perfetto
+  - trace-view
+  - frame-timeline
+  - binder
+  - thread-state
+  - cpu-scheduling
+  - trackevent
+  - 状态追踪
 related_chapters:
 - '14.1'
 - '2.9'

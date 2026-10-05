@@ -5,16 +5,14 @@ section: '18.7'
 status: ready-to-publish
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
-- rust
-- ffi
-- jni
-- system-services
-- keystore
-- bluetooth
-- dns-resolver
-- bionic
-- scudo
-- monomorphization
+  - rust
+  - ffi
+  - jni
+  - system-services
+  - keystore
+  - bluetooth
+  - dns-resolver
+  - bionic
 related_chapters:
 - '1.9'
 - '1.26'

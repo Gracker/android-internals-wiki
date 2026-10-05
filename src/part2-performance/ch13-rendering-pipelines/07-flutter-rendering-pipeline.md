@@ -6,23 +6,14 @@ status: finalized
 pipeline_stage: ready-to-publish
 applicable_versions: Flutter 3.32 stable+（Merged Platform Model 主路径） / Flutter 3.27+（Android API 29+ Impeller 默认） / Flutter 3.44+（HCPP experimental opt-in） / Android 10-17
 tags:
-- Flutter
-- Impeller
-- Skia
-- FlutterSurfaceView
-- FlutterTextureView
-- FlutterImageView
-- SurfaceProducer
-- PlatformView
-- HCPP
-- FrameTimeline
-- flutter
-- rendering
-- impeller
-- skia
-- cross-platform
-- shader-compilation
-- jank
+  - flutter
+  - impeller
+  - skia
+  - fluttersurfaceview
+  - fluttertextureview
+  - flutterimageview
+  - surfaceproducer
+  - platformview
 related_chapters:
 - '13.3'
 - '13.9'

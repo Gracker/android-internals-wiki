@@ -84,22 +84,14 @@ sources:
   path: 技术文章/source/juejin-android/2026-09-15-76851907-车载多 App 同屏渲染(三) RemoteCompose 序列.md
   role: RemoteCompose 序列化 UI 作为不加载插件代码、不共享图层的边界对照
 tags:
-- classloader
-- class-loading
-- dexpathlist
-- startup
-- verification
-- art
-- ART
-- boot-image
-- boot.art
-- boot.oat
-- 内存映射
-- Zygote
-- 启动优化
-- mmap
-- dex2oat
-- ImageSpace
+  - classloader
+  - class-loading
+  - dexpathlist
+  - startup
+  - verification
+  - art
+  - boot-image
+  - boot.art
 related_chapters:
 - '1.5'
 - '1.16'

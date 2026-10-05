@@ -5,12 +5,12 @@ section: '25.9'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
-- thermal
-- throttling
-- performance-degradation
-- power
-- ThermalManager
-- ThrottlingSeverity
+  - thermal
+  - throttling
+  - performance-degradation
+  - power
+  - thermalmanager
+  - throttlingseverity
 related_chapters:
 - '5.2'
 - '5.4'

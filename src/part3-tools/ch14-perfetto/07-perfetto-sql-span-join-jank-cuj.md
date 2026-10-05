@@ -4,17 +4,14 @@ chapter: '14.7'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
-- tools
-- perfetto
-- sql
-- cookbook
-- span-join
-- trace-processor
-- frame-analysis
-- datagrid
-- jank
-- cuj
-- frametimeline
+  - tools
+  - perfetto
+  - sql
+  - cookbook
+  - span-join
+  - trace-processor
+  - frame-analysis
+  - datagrid
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: ready-to-publish

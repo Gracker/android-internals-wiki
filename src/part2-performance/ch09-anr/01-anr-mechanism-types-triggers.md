@@ -66,19 +66,14 @@ sources:
 - type: blog
   path: intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md
 tags:
-- anr
-- watchdog
-- traces
-- dropbox
-- activitymanagerservice
-- input-dispatcher
-- anrhelper
-- sigquit
-- input-dispatching
-- broadcast
-- service
-- contentprovider
-- timeout
+  - anr
+  - watchdog
+  - traces
+  - dropbox
+  - activitymanagerservice
+  - input-dispatcher
+  - anrhelper
+  - sigquit
 related_chapters:
 - '9.2'
 - '1.1'

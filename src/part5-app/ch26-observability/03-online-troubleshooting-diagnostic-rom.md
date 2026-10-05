@@ -108,21 +108,14 @@ sources:
 - type: android-doc
   path: https://developer.android.com/topic/performance/tracing/profile-types-overview
 tags:
-- troubleshooting
-- remote-logging
-- user-feedback
-- online-trace
-- observability
-- logging
-- diagnostics
-- remote-debugging
-- profiling
-- non-play
-- domestic
-- ROM
-- monitoring
-- OEM
-- channel
+  - troubleshooting
+  - remote-logging
+  - user-feedback
+  - online-trace
+  - observability
+  - logging
+  - diagnostics
+  - remote-debugging
 related_chapters:
 - '26.1'
 - '16.3'

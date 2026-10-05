@@ -7,20 +7,14 @@ task9_state: reviewed
 pipeline_stage: ready-to-publish
 applicable_versions: Android 17 (API 37)
 tags:
-- android
-- linux
-- research
-- kernel-security
-- ARM64
-- KASLR
-- KPTI
-- Spectre
-- PAC
-- BTI
-- MTE
-- GCS
-- CFI
-- performance-overhead
+  - linux
+  - kernel-security
+  - arm64
+  - kaslr
+  - kpti
+  - spectre
+  - pac
+  - bti
 sources:
 - type: blog
   path: https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html

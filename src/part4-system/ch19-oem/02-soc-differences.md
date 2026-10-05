@@ -80,17 +80,14 @@ sources:
 - type: official
   path: https://source.android.com/docs/core/interaction/neural-networks
 tags:
-- qualcomm
-- mediatek
-- samsung
-- exynos
-- tensor
-- adreno
-- mali
-- xclipse
-- soc
-- cpu
-- gpu
+  - qualcomm
+  - mediatek
+  - samsung
+  - exynos
+  - tensor
+  - adreno
+  - mali
+  - xclipse
 related_chapters:
 - '5.1'
 - '5.2'

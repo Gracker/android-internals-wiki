@@ -9,12 +9,11 @@ last_verified: '2026-07-31'
 last_verified_against: Android 17 / API 37 与 android-17.0.0_r1 公共图形栈 / Android XR Developer Preview 4 / XR Compose 1.0.0-alpha16 / XR Runtime、SceneCore、ARCore 1.0.0-beta01 / XR Projected 1.0.0-alpha10 / Compose Glimmer 1.0.0-alpha16 / Unity Android XR Extensions / OpenXR 1.1 / android17-6.18-2026-06_r6
 confidence: high
 tags:
-- android-xr
-- jetpack-xr
-- compose
-- rendering
-- assets
-- performance
+  - android-xr
+  - jetpack-xr
+  - compose
+  - rendering
+  - assets
 related_chapters:
 - '2.1'
 - '2.7'

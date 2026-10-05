@@ -52,15 +52,14 @@ sources:
 - type: material
   path: rendering_pipelines/S02_aosp_standard_type.md
 tags:
-- text
-- rendering
-- minikin
-- skia
-- emoji
-- layout
-- performance
-- textview
-- staticlayout
+  - text
+  - rendering
+  - minikin
+  - skia
+  - emoji
+  - layout
+  - textview
+  - staticlayout
 related_chapters:
 - '2.1'
 - '2.3'

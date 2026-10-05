@@ -65,18 +65,14 @@ sources:
 - type: blog
   path: '[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]'
 tags:
-- native-memory
-- malloc
-- asan
-- hwasan
-- so-memory
-- virtual-memory
-- VSS
-- thread-stack
-- maps-analysis
-- oom-prevention
-- memory-optimization
-- webview-reservation
+  - native-memory
+  - malloc
+  - asan
+  - hwasan
+  - so-memory
+  - virtual-memory
+  - vss
+  - thread-stack
 related_chapters:
 - '23.4'
 - '4.1'

@@ -7,13 +7,12 @@ last_verified: '2026-08-21'
 last_verified_against: AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6; bionic ifuncs.cpp MTE dispatch checked 2026-08-21
 confidence: high
 tags:
-- Android 17
-- MTE
-- Memory Safety
-- ARM
-- Hardware Architecture
-- Scudo
-- Bionic
+  - mte
+  - memory-safety
+  - arm
+  - hardware-architecture
+  - scudo
+  - bionic
 related_chapters:
 - '20.11'
 - '4.4'

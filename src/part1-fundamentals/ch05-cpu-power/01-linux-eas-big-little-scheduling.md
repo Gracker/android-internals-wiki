@@ -83,30 +83,14 @@ sources:
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c
 tags:
-- scheduler
-- CFS
-- vruntime
-- nice
-- sched_setaffinity
-- cpuset
-- Perfetto
-- EAS
-- energy-aware-scheduling
-- PELT
-- energy-model
-- OPP
-- task-placement
-- uclamp
-- schedutil
-- big.LITTLE
-- DynamIQ
-- cpufreq
-- capacity
-- cluster
-- DVFS
-- RTG
-- core-migration
-- HMP
+  - scheduler
+  - cfs
+  - vruntime
+  - nice
+  - sched-setaffinity
+  - cpuset
+  - perfetto
+  - eas
 related_chapters:
 - '2.4'
 - '7.2'

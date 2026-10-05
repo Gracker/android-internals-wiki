@@ -5,15 +5,14 @@ section: '7.6'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
-- accessibility
-- jank
-- layout
-- a11y
-- performance
-- rendering
-- contentcapture
-- autofill
-- ipc
+  - accessibility
+  - jank
+  - layout
+  - a11y
+  - rendering
+  - contentcapture
+  - autofill
+  - ipc
 related_chapters:
 - '7.1'
 - '7.2'

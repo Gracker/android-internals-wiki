@@ -6,28 +6,14 @@ status: finalized
 pipeline_stage: ready-to-publish
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 tags:
-- Camera
-- Camera2
-- HAL3
-- ZSL
-- 多流并发
-- SurfaceView
-- ImageReader
-- 渲染管线
-- camera
-- hal3
-- buffer
-- bufferqueue
-- memory
-- performance
-- camerax
-- zsl
-- camera2
-- camera-pipe
-- reprocessing
-- android-17
-- Buffer
-- CameraX
+  - camera
+  - camera2
+  - hal3
+  - zsl
+  - 多流并发
+  - surfaceview
+  - imagereader
+  - 渲染管线
 related_chapters:
 - '2.8'
 - '15.14'

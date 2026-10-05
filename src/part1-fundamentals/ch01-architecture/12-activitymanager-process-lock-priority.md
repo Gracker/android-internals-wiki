@@ -139,28 +139,14 @@ sources:
 - type: kernel
   path: include/trace/events/oom.h (android17-6.18-2026-06_r6)
 tags:
-- ams
-- activity-manager
-- process-lifecycle
-- anr
-- service-management
-- broadcast
-- content-provider
-- lock-contention
-- system-server
-- process-record
-- dual-lock
-- LOSP
-- LSP
-- OomAdjuster
-- performance
-- oom
-- oom_score_adj
-- process_state_controller
-- process_priority
-- lmkd
-- freezer
-- AMS
+  - ams
+  - activity-manager
+  - process-lifecycle
+  - anr
+  - service-management
+  - broadcast
+  - content-provider
+  - lock-contention
 related_chapters:
 - '1.1'
 - '1.9'

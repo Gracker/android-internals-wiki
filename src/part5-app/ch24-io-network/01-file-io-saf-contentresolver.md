@@ -61,18 +61,14 @@ sources:
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/fuse_bpf_backing.c
 tags:
-- file-io
-- sharedpreferences
-- datastore
-- mmkv
-- strictmode
-- SAF
-- DocumentFile
-- ContentResolver
-- ScopedStorage
-- IO
-- performance
-- file-access
+  - file-io
+  - sharedpreferences
+  - datastore
+  - mmkv
+  - strictmode
+  - saf
+  - documentfile
+  - contentresolver
 related_chapters:
 - '24.2'
 - '6.1'

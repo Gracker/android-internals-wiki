@@ -27,16 +27,14 @@ sources:
 - type: aosp
   path: frameworks/native/libs/binder/ProcessState.cpp
 tags:
-- anr
-- case-study
-- input-dispatching
-- sharedpreferences
-- system-load
-- binder
-- process-freeze
-- deadlock
-- lock-ordering
-- synchronized
+  - anr
+  - case-study
+  - input-dispatching
+  - sharedpreferences
+  - system-load
+  - binder
+  - process-freeze
+  - deadlock
 related_chapters:
 - '9.1'
 - '9.2'

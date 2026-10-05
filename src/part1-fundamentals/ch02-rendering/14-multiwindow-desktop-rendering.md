@@ -87,16 +87,14 @@ sources:
 - type: material
   path: rendering_pipelines/S08_native_graphics_type.md
 tags:
-- multiwindow
-- desktop-mode
-- split-screen
-- freeform
-- foldable
-- surfaceflinger
-- rendering
-- picture-in-picture
-- windowmanager
-- renderthread
+  - multiwindow
+  - desktop-mode
+  - split-screen
+  - freeform
+  - foldable
+  - surfaceflinger
+  - rendering
+  - picture-in-picture
 related_chapters:
 - '2.9'
 - '2.1'

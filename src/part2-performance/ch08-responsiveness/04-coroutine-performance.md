@@ -18,12 +18,11 @@ sources:
 - type: blog
   path: https://kotlinlang.org/docs/coroutines-context-and-dispatchers.html
 tags:
-- coroutine
-- performance
-- dispatcher
-- structured-concurrency
-- flow
-- backpressure
+  - coroutine
+  - dispatcher
+  - structured-concurrency
+  - flow
+  - backpressure
 related_chapters:
 - '1.1'
 - '22.3'

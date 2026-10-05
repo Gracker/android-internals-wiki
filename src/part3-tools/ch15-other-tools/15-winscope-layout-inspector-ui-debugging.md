@@ -64,18 +64,14 @@ sources:
 - type: aosp
   path: frameworks/base/core/java/android/view/TextureView.java
 tags:
-- winscope
-- surfaceflinger
-- windowmanager
-- perfetto
-- tracing
-- rendering
-- input
-- layout-inspector
-- viewdebug
-- android-studio
-- compose
-- view-hierarchy
+  - winscope
+  - surfaceflinger
+  - windowmanager
+  - perfetto
+  - tracing
+  - rendering
+  - input
+  - layout-inspector
 related_chapters:
 - '2.9'
 - '1.19'

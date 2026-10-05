@@ -7,15 +7,14 @@ pipeline_stage: ready-to-publish
 applicable_versions: Android 4.4 (API 19) - Android 17 (API 37)
 confidence: high
 tags:
-- treble
-- mainline
-- apex
-- gki
-- vintf
-- art
-- profile-guided
-- background-restrictions
-- 16k-page
+  - treble
+  - mainline
+  - apex
+  - gki
+  - vintf
+  - art
+  - profile-guided
+  - background-restrictions
 sources:
 - type: official
   path: https://source.android.com/docs/core/architecture/treble

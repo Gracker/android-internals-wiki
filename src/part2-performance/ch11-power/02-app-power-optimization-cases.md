@@ -73,21 +73,14 @@ sources:
 - type: deepresearch
   path: AOSP android-17.0.0_r1 source paths listed in source_repos; Android Developers Android 17 features, JobScheduler API, foreground-service timeout, Doze/App Standby, and background-location documentation; Android common kernel android17-6.18-2026-06_r6; DeepResearch/2026-06-17-battery-saver-location-power-policy-aosp-deep-dive.md; DeepResearch/2026-06-20-job-scheduler-throttling-mechanism.md; DeepResearch/2026-06-18-jobscheduler-source-verification.md; DeepResearch/2026-06-18-radio-power-state-machine-source-analysis.md; DeepResearch/2026-06-18-adaptive-battery-app-standby-coordination.md
 tags:
-- wakelock
-- jobscheduler
-- workmanager
-- doze
-- location
-- alarm
-- power
-- fgs
-- foreground-service
-- fcm
-- alarmmanager
-- geofencing
-- battery-historian
-- camera
-- '[power, battery, energy]'
+  - wakelock
+  - jobscheduler
+  - workmanager
+  - doze
+  - location
+  - alarm
+  - power
+  - fgs
 related_chapters:
 - '11.1'
 - '5.2'

@@ -74,18 +74,14 @@ sources:
   path: 技术文章/source/juejin-android/2026-09-10-76826338-Android17 重写 Message.md
   role: 主线程投递入口和旧队列争锁场景提示
 tags:
-- android
-- looper
-- handler
-- messagequeue
-- deliqueue
-- perfetto
-- lock-contention
-- monitor
-- mutex
-- futex
-- priority-inversion
-- binder
+  - looper
+  - handler
+  - messagequeue
+  - deliqueue
+  - perfetto
+  - lock-contention
+  - monitor
+  - mutex
 related_chapters:
 - '1.1'
 - '2.3'

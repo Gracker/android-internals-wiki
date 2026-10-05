@@ -5,14 +5,14 @@ section: '13.12'
 status: ready-to-publish
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 tags:
-- Unity
-- Unreal
-- Game-Engine
-- Swappy
-- Frame-Pacing
-- Vulkan
-- GLES
-- 渲染链路
+  - unity
+  - unreal
+  - game-engine
+  - swappy
+  - frame-pacing
+  - vulkan
+  - gles
+  - 渲染链路
 related_chapters:
 - '2.3'
 - '2.4'

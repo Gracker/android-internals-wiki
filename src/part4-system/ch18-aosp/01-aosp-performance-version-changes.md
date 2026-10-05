@@ -8,21 +8,14 @@ last_verified: '2026-08-14'
 last_verified_against: AOSP android-17.0.0_r1 + android17-6.18-2026-06_r6 + current Android 17 behavior-change, Mainline, GKI and ART documentation
 confidence: high
 tags:
-- android
-- performance
-- aosp
-- methodology
-- version-changes
-- behavior-changes
-- api-evolution
-- migration
-- performance-api
-- android17
-- api37
-- deliqueue
-- generational-gc
-- profiling-manager
-- cloud-compilation
+  - aosp
+  - methodology
+  - version-changes
+  - behavior-changes
+  - api-evolution
+  - migration
+  - performance-api
+  - api37
 related_chapters:
 - '16.2'
 - '16.3'

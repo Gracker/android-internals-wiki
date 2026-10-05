@@ -30,17 +30,14 @@ sources:
 - type: research
   path: intake/research-feeds/2026-04-10-07-frame-timeline-perfetto-visualization-choreographer-api33.md
 tags:
-- perfetto
-- frametracer
-- graphics
-- buffer-lifecycle
-- surfaceflinger
-- gpu
-- Perfetto
-- FrameTimeline
-- Jank
-- Choreographer
-- 渲染性能分析
+  - perfetto
+  - frametracer
+  - graphics
+  - buffer-lifecycle
+  - surfaceflinger
+  - gpu
+  - frametimeline
+  - jank
 related_chapters:
 - '14.7'
 - '14.10'

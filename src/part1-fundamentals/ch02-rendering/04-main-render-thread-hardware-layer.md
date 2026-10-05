@@ -93,23 +93,14 @@ sources:
 - type: obsidian
   path: Writer/rendering_pipelines/S07_software_offscreen_type.md
 tags:
-- renderthread
-- mainthread
-- displaylist
-- rendernode
-- syncframestate
-- hwui
-- 渲染流水线
-- GPU绘制
-- hardware-layer
-- LAYER_TYPE_HARDWARE
-- LAYER_TYPE_SOFTWARE
-- animation
-- RenderNode
-- compositing-layer
-- buildLayer
-- graphicsLayer
-- GPU-纹理缓存
+  - renderthread
+  - mainthread
+  - displaylist
+  - rendernode
+  - syncframestate
+  - hwui
+  - 渲染流水线
+  - GPU绘制
 related_chapters:
 - '2.3'
 - '2.9'

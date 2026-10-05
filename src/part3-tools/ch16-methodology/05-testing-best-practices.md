@@ -47,9 +47,7 @@ sources:
 - type: source
   path: androidx-main/benchmark/benchmark-junit4/src/main/java/androidx/benchmark/junit4/SideEffectRunListener.kt
 tags:
-- android
-- benchmark
-- research
+  - benchmark
 related_chapters:
 - '15.6'
 - '16.3'

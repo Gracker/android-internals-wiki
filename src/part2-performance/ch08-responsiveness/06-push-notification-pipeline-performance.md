@@ -41,12 +41,12 @@ sources:
 - type: official
   path: https://developer.android.com/develop/ui/views/notifications/live-update
 tags:
-- FCM
-- 通知
-- Notification
-- 推送
-- 延迟
-- NotificationManagerService
+  - fcm
+  - 通知
+  - notification
+  - 推送
+  - 延迟
+  - notificationmanagerservice
 related_chapters:
 - '9.5'
 - '8.2'

@@ -57,19 +57,14 @@ sources:
 - type: clippings-structure-ref
   path: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md
 tags:
-- cold-start
-- warm-start
-- hot-start
-- ttid
-- ttfd
-- startup-trace
-- perfetto
-- startup-monitoring
-- metrics
-- p50
-- p90
-- regression
-- android-vitals
+  - cold-start
+  - warm-start
+  - hot-start
+  - ttid
+  - ttfd
+  - startup-trace
+  - perfetto
+  - startup-monitoring
 related_chapters:
 - '8.2'
 - '8.3'

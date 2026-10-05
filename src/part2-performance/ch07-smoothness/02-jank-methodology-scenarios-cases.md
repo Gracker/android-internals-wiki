@@ -71,29 +71,14 @@ sources:
 - type: official
   path: https://developer.android.com/reference/android/content/ComponentCallbacks2
 tags:
-- jank
-- methodology
-- Perfetto
-- Systrace
-- FrameTimeline
-- FrameMetrics
-- CPU
-- checklist
-- scrolling
-- animation
-- RecyclerView
-- transition
-- case-study
-- smoothness
-- GC
-- layout
-- binder
-- render-thread
-- low-memory
-- perfetto
-- recycler-view
-- bitmap-cache
-- vendor-optimization
+  - jank
+  - methodology
+  - perfetto
+  - systrace
+  - frametimeline
+  - framemetrics
+  - cpu
+  - checklist
 related_chapters:
 - '7.1'
 - '2.3'

@@ -76,14 +76,13 @@ sources:
 - type: aosp-doc
   path: source.android.com/docs/security/features/authentication
 tags:
-- biometric
-- system-service
-- architecture
-- fingerprint
-- face
-- hal
-- tee
-- performance
+  - biometric
+  - system-service
+  - architecture
+  - fingerprint
+  - face
+  - hal
+  - tee
 related_chapters:
 - '1.10'
 - '1.23'

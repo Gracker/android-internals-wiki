@@ -44,12 +44,12 @@ task9_state: reviewed
 last_review_finalize_at: '2026-08-24T10:05:43+08:00'
 last_review_finalize_run_id: 20260824-100543-f48eb0ca
 tags:
-- HDR
-- color-management
-- display-pipeline
-- wide-color-gamut
-- surfaceflinger
-- tone-mapping
+  - hdr
+  - color-management
+  - display-pipeline
+  - wide-color-gamut
+  - surfaceflinger
+  - tone-mapping
 related_chapters:
 - '2.1'
 - '2.9'

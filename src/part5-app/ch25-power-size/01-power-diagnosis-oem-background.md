@@ -77,15 +77,14 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/SystemConfig.java
 tags:
-- power-diagnosis
-- battery-historian
-- power-profiler
-- batterystats
-- oem-doze
-- background-restriction
-- power-optimization
-- vendor-doze
-- chinese-oem
+  - power-diagnosis
+  - battery-historian
+  - power-profiler
+  - batterystats
+  - oem-doze
+  - background-restriction
+  - power-optimization
+  - vendor-doze
 related_chapters:
 - '25.2'
 - '11.1'

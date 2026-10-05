@@ -50,19 +50,14 @@ sources:
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/work
 tags:
-- startup-framework
-- dag
-- app-startup
-- async-init
-- thread-pool
-- task-scheduling
-- lazy-init
-- idlehandler
-- on-demand-loading
-- concurrency
-- cpu-scheduling
-- startup
-- coroutines
+  - startup-framework
+  - dag
+  - app-startup
+  - async-init
+  - thread-pool
+  - task-scheduling
+  - lazy-init
+  - idlehandler
 related_chapters:
 - '21.1'
 - '8.3'

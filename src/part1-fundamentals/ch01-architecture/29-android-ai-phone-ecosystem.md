@@ -6,12 +6,10 @@ status: finalized
 pipeline_stage: ready-to-publish
 applicable_versions: Android 15 (API 35) - Android 17 (API 37); 当前源码锚点 android-17.0.0_r1
 tags:
-- android
-- ai
-- ecosystem
-- hardware
-- llm
-- performance
+  - ai
+  - ecosystem
+  - hardware
+  - llm
 related_chapters:
 - '1.9'
 - '1.3'

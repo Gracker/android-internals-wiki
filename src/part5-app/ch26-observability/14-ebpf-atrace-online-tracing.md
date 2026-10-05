@@ -93,18 +93,14 @@ sources:
 - type: official
   path: https://perfetto.dev/docs/getting-started/atrace
 tags:
-- ebpf
-- binder
-- observability
-- tracing
-- online-diagnosis
-- security-audit
-- Profilo
-- atrace
-- trace-marker
-- PLT-Hook
-- Facebook
-- online-trace
+  - ebpf
+  - binder
+  - observability
+  - tracing
+  - online-diagnosis
+  - security-audit
+  - profilo
+  - atrace
 related_chapters:
 - '1.9'
 - '14.7'

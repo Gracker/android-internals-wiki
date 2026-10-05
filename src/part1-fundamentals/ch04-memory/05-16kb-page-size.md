@@ -43,14 +43,12 @@ sources:
 - type: research
   path: ARM Architecture Reference Manual — TLB 结构与页大小
 tags:
-- android
-- memory
-- page-size
-- tlb
-- compatibility
-- research
-- ndk
-- elf
+  - memory
+  - page-size
+  - tlb
+  - compatibility
+  - ndk
+  - elf
 related_chapters:
 - '1.6'
 - '20.13'

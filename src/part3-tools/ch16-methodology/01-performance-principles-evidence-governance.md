@@ -101,21 +101,14 @@ sources:
 - type: source
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1
 tags:
-- methodology
-- philosophy
-- tools
-- best-practices
-- android
-- research
-- code-review
-- performance-patterns
-- empirical-study
-- governance
-- observability
-- benchmark
-- ci
-- budget
-- release
+  - methodology
+  - philosophy
+  - tools
+  - best-practices
+  - code-review
+  - performance-patterns
+  - empirical-study
+  - governance
 related_chapters:
 - '14.1'
 - '16.2'

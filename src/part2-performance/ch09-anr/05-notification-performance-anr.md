@@ -52,13 +52,12 @@ sources:
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/notification/NotificationManagerService.java
 tags:
-- notification
-- anr
-- notificationmanagerservice
-- remoteviews
-- performance
-- notificationlistenerservice
-- foreground-service
+  - notification
+  - anr
+  - notificationmanagerservice
+  - remoteviews
+  - notificationlistenerservice
+  - foreground-service
 related_chapters:
 - '9.1'
 - '9.2'

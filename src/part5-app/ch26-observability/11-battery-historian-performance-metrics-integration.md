@@ -5,10 +5,10 @@ section: '26.11'
 status: finalized
 applicable_versions: Android 15 (API 35) - Android 17 (API 37)
 tags:
-- Battery Historian
-- 性能监控
-- 电池
-- 指标集成
+  - battery-historian
+  - 性能监控
+  - 电池
+  - 指标集成
 related_chapters:
 - '26.1'
 - '26.8'

@@ -28,13 +28,11 @@ sources:
 - type: androidx
   path: frameworks/support/core/core/src/main/java/androidx/core/widget/NestedScrollView.java
 tags:
-- android
-- performance
-- input
-- gesture
-- velocitytracker
-- gesturedetector
-- nestedscroll
+  - input
+  - gesture
+  - velocitytracker
+  - gesturedetector
+  - nestedscroll
 related_chapters:
 - '3.1'
 - '3.2'

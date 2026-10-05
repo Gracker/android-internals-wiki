@@ -5,19 +5,14 @@ section: '26.15'
 status: finalized
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 tags:
-- ART
-- tracing
-- instrumentation
-- XTrace
-- dynamic-tracing
-- production
-- Ghost-Bug
-- bytedance
-- JVMTI
-- runtime-monitoring
-- dynamic-instrumentation
-- profilo
-- method-tracing
+  - art
+  - tracing
+  - instrumentation
+  - xtrace
+  - dynamic-tracing
+  - production
+  - ghost-bug
+  - bytedance
 related_chapters:
 - '1.5'
 - '14.1'

@@ -6,22 +6,14 @@ status: finalized
 pipeline_stage: ready-to-publish
 applicable_versions: Android 11 (API 30) - Android 17 (API 37)（AGI 要求 Android 11+ 受支持设备；APA 在 Android 12+ 体验最佳；Sokatoa 要求 Android 13+）
 tags:
-- gpu
-- agi
-- renderdoc
-- sokatoa
-- gapid
-- gpu-counter
-- profiling
-- vulkan
-- opengl-es
-- gpu-debug
-- gapii
-- gapidapk
-- vulkan-layer
-- gpu-capture
-- frame-profiler
-- gpu-replay
+  - gpu
+  - agi
+  - renderdoc
+  - sokatoa
+  - gapid
+  - gpu-counter
+  - profiling
+  - vulkan
 confidence: medium
 sources:
 - type: material

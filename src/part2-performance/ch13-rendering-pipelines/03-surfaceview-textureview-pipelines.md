@@ -89,23 +89,14 @@ sources:
   path: https://perfetto.dev/docs/data-sources/frametimeline
   role: 宿主 SurfaceFrame、DisplayFrame 与 jank 字段
 tags:
-- SurfaceView
-- BLAST
-- SurfaceFlinger
-- HWC
-- Direct-Producer
-- 独立Layer
-- Overlay
-- 渲染路径
-- TextureView
-- SurfaceTexture
-- TextureLayer
-- DeferredLayerUpdater
-- HWUI
-- AHardwareBuffer
-- App 侧合成
-- 纹理采样
-- 渲染链路
+  - surfaceview
+  - blast
+  - surfaceflinger
+  - hwc
+  - direct-producer
+  - 独立Layer
+  - overlay
+  - 渲染路径
 related_chapters:
 - '2.1'
 - '2.9'

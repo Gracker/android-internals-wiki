@@ -49,12 +49,11 @@ sources:
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/wm/ActivityStarter.java @ android-17.0.0_r1
 tags:
-- android
-- package-manager
-- app-archiving
-- storage
-- launcher
-- app-startup
+  - package-manager
+  - app-archiving
+  - storage
+  - launcher
+  - app-startup
 related_chapters:
 - '1.16'
 - '4.1'

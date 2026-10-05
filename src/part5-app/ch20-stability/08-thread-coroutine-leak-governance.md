@@ -4,15 +4,14 @@ chapter: '20.8'
 section: '20.8'
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags:
-- thread
-- leak
-- monitoring
-- stability
-- ThreadGroup
-- pthread
-- coroutine
-- structured-concurrency
-- performance
+  - thread
+  - leak
+  - monitoring
+  - stability
+  - threadgroup
+  - pthread
+  - coroutine
+  - structured-concurrency
 related_chapters:
 - '20.1'
 - '20.5'

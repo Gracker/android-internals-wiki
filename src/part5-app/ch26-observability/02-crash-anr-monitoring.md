@@ -94,15 +94,14 @@ sources:
 - type: source
   path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/signal_catcher.cc
 tags:
-- crash-reporting
-- symbolication
-- deobfuscation
-- alerting
-- anr-monitoring
-- sigquit
-- main-thread-monitor
-- play-vitals
-- application-exit-info
+  - crash-reporting
+  - symbolication
+  - deobfuscation
+  - alerting
+  - anr-monitoring
+  - sigquit
+  - main-thread-monitor
+  - play-vitals
 related_chapters:
 - '26.1'
 - '20.2'

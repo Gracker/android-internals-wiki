@@ -125,29 +125,14 @@ sources:
 - type: official
   path: https://developer.android.com/about/versions/15/features#app-archiving
 tags:
-- 后台限制
-- Doze
-- App Standby
-- 前台服务
-- WorkManager
-- JobScheduler
-- AlarmManager
-- 省电
-- 后台启动
-- BAL
-- jobscheduler
-- workmanager
-- background-scheduling
-- power
-- doze
-- battery
-- wakelock
-- app-standby
-- quota
-- app-hibernation
-- background-limits
-- power-management
-- cold-restart
+  - 后台限制
+  - doze
+  - app-standby
+  - 前台服务
+  - workmanager
+  - jobscheduler
+  - alarmmanager
+  - 省电
 related_chapters:
 - '5.2'
 - '11.2'

@@ -7,21 +7,14 @@ applicable_versions: Android 9 (API 28) - Android 17 (API 37)
 last_verified_against: AOSP android-17.0.0_r1 Choreographer / ViewRootImpl / HWUI / BLASTBufferQueue / SurfaceFlinger FrontEnd / HWComposer + Perfetto android-17.0.0_r1
 confidence: high
 tags:
-- rendering-pipeline
-- BLAST
-- SurfaceFlinger
-- HWUI
-- SurfaceView
-- TextureView
-- Vulkan
-- OpenGL ES
-- HardwareBufferRenderer
-- RenderThread
-- DisplayList
-- FrameTimeline
-- Triple-Buffering
-- Non-blocking-Sync
-- Compose
+  - rendering-pipeline
+  - blast
+  - surfaceflinger
+  - hwui
+  - surfaceview
+  - textureview
+  - vulkan
+  - opengl-es
 related_chapters:
 - '2.4'
 - '2.9'

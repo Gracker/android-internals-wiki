@@ -4,10 +4,9 @@ chapter: '23.2'
 status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37); ProfilingManager-specific sections require API 35/37 as noted
 tags:
-- memory-leak
-- performance
-- optimization
-- governance
+  - memory-leak
+  - optimization
+  - governance
 related_chapters:
 - '4.1'
 - '10.1'

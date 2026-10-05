@@ -5,13 +5,12 @@ section: '20.9'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
-- binder
-- ipc
-- exception
-- transaction-too-large
-- dead-object
-- stability
-- performance
+  - binder
+  - ipc
+  - exception
+  - transaction-too-large
+  - dead-object
+  - stability
 related_chapters:
 - '1.9'
 - '1.10'

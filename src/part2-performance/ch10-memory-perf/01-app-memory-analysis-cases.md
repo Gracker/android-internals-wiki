@@ -80,20 +80,14 @@ sources:
 - type: kernel
   path: include/trace/events/vmscan.h@android17-6.18-2026-06_r6
 tags:
-- memory
-- pss
-- rss
-- mat
-- heapprofd
-- memtrack
-- memory-analysis
-- case-study
-- memory-leak
-- native-memory
-- low-memory
-- oom
-- cache
-- gc
+  - memory
+  - pss
+  - rss
+  - mat
+  - heapprofd
+  - memtrack
+  - memory-analysis
+  - case-study
 related_chapters:
 - '4.1'
 - '4.2'

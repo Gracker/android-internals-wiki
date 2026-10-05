@@ -222,29 +222,14 @@ sources:
 - type: aosp
   path: external/perfetto/ (android-17.0.0_r1)
 tags:
-- perfetto
-- systrace
-- tracing
-- trace-processor
-- traced
-- ftrace
-- atrace
-- heapprofd
-- performance-analysis
-- tools
-- trace
-- capture
-- trace_processor
-- sql
-- python
-- cli
-- large-traces
-- Perfetto
-- Data Explorer
-- v54
-- 性能分析
-- 数据可视化
-- Trace Processor
+  - perfetto
+  - systrace
+  - tracing
+  - trace-processor
+  - traced
+  - ftrace
+  - atrace
+  - heapprofd
 related_chapters:
 - '14.2'
 - '2.1'

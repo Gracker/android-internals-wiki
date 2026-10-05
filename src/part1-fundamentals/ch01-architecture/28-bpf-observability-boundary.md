@@ -29,13 +29,12 @@ sources:
 - type: official
   path: https://docs.kernel.org/bpf/btf.html
 tags:
-- bpf
-- ebpf
-- kernel
-- observability
-- gki
-- ack-6.18
-- android17
+  - bpf
+  - ebpf
+  - kernel
+  - observability
+  - gki
+  - ack-6.18
 related_chapters:
 - '1.13'
 - '2.9'

@@ -5,10 +5,9 @@ section: '25.7'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags:
-- CPU优化
-- 应用实践
-- 线程池
-- 性能优化
+  - CPU优化
+  - 应用实践
+  - 线程池
 related_chapters:
 - '5.1'
 - '5.4'

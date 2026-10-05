@@ -63,22 +63,14 @@ sources:
 - type: official
   path: source.android.com/docs/security/test/memory-safety/arm-mte
 tags:
-- android
-- jni
-- ndk
-- art
-- fastnative
-- criticalnative
-- 16kb-page-size
-- simpleperf
-- bionic
-- libc
-- malloc
-- scudo
-- mte
-- 16kb-page
-- pthread
-- arm64
+  - jni
+  - ndk
+  - art
+  - fastnative
+  - criticalnative
+  - 16kb-page-size
+  - simpleperf
+  - bionic
 related_chapters:
 - '1.5'
 - '4.2'

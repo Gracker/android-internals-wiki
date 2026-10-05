@@ -24,12 +24,11 @@ sources:
 - type: clippings-structure
   path: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md
 tags:
-- adaptive-refresh-rate
-- frame-rate
-- jank
-- power
-- android16
-- android17
+  - adaptive-refresh-rate
+  - frame-rate
+  - jank
+  - power
+  - android16
 related_chapters:
 - '2.2'
 - '22.2'

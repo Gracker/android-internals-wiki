@@ -61,11 +61,10 @@ sources:
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/base/dd.c
 tags:
-- aosp
-- boot
-- boot-time
-- perfetto
-- performance
+  - aosp
+  - boot
+  - boot-time
+  - perfetto
 related_chapters:
 - '1.3'
 - '8.2'

@@ -39,20 +39,14 @@ sources:
 - type: official
   path: https://perfetto.dev/docs/data-sources/memory-counters
 tags:
-- low-memory
-- kswapd
-- direct-reclaim
-- lmkd
-- GC
-- memory-pressure
-- PSI
-- ZRAM
-- Perfetto
-- MGLRU
-- cgroup
-- mm-events
-- vmscan
-- oom-score-adj
+  - low-memory
+  - kswapd
+  - direct-reclaim
+  - lmkd
+  - gc
+  - memory-pressure
+  - psi
+  - zram
 related_chapters:
 - '4.1'
 - '4.3'

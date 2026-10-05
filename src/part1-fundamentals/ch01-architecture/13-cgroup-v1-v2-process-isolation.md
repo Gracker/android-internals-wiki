@@ -6,15 +6,14 @@ status: finalized
 pipeline_stage: ready-to-publish
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
-- cgroup
-- cgroup-v2
-- 资源限制
-- 进程隔离
-- CPU
-- 内存
-- 后台限制
-- libprocessgroup
-- task-profiles
+  - cgroup
+  - cgroup-v2
+  - 资源限制
+  - 进程隔离
+  - cpu
+  - 内存
+  - 后台限制
+  - libprocessgroup
 related_chapters:
 - '1.1'
 - '1.10'

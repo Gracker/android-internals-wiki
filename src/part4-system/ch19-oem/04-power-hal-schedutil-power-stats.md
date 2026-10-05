@@ -134,20 +134,14 @@ sources:
   path: AOSP Power stats HAL
   url: https://source.android.com/docs/core/power/power-stats-hal
 tags:
-- SoC
-- power
-- Qualcomm
-- MediaTek
-- Samsung
-- DCVS
-- schedutil
-- PowerHAL
-- 功耗优化
-- Android17
-- PowerStats
-- HAL
-- 功耗
-- OEM
+  - soc
+  - power
+  - qualcomm
+  - mediatek
+  - samsung
+  - dcvs
+  - schedutil
+  - powerhal
 related_chapters:
 - '19.2'
 - '19.3'

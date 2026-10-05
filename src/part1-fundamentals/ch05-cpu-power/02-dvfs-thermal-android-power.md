@@ -50,21 +50,14 @@ sources:
   path: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_抖音功耗优化实践.md
   note: 抖音功耗优化实践
 tags:
-- dvfs
-- cpu-frequency
-- power-management
-- schedutil
-- opp
-- perfetto
-- thermal
-- power
-- adpf
-- cpu
-- wakelock
-- doze
-- battery
-- battery-historian
-- jobscheduler
+  - dvfs
+  - cpu-frequency
+  - power-management
+  - schedutil
+  - opp
+  - perfetto
+  - thermal
+  - power
 related_chapters:
 - '5.1'
 - '5.4'

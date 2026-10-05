@@ -84,19 +84,14 @@ sources:
 - type: official
   path: https://square.github.io/leakcanary/getting_started/
 tags:
-- observability
-- metrics
-- logs
-- traces
-- architecture
-- android
-- performance
-- statsd
-- jankstats
-- memory-monitoring
-- leakcanary
-- apm
-- android-17
+  - observability
+  - metrics
+  - logs
+  - traces
+  - architecture
+  - statsd
+  - jankstats
+  - memory-monitoring
 related_chapters:
 - '26.2'
 - '17.11'

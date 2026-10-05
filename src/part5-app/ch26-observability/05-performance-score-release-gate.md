@@ -76,16 +76,14 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java
 tags:
-- quality-gate
-- release
-- canary
-- rollback
-- app-performance-score
-- android-vitals
-- macrobenchmark
-- baseline-profile
-- performance-governance
-- observability
+  - quality-gate
+  - release
+  - canary
+  - rollback
+  - app-performance-score
+  - android-vitals
+  - macrobenchmark
+  - baseline-profile
 related_chapters:
 - '26.4'
 - '26.1'

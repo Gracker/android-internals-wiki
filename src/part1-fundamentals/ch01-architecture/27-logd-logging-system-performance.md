@@ -30,13 +30,12 @@ sources:
 - type: official
   path: developer.android.com/privacy-and-security/risks/log-info-disclosure
 tags:
-- logd
-- logging
-- performance
-- rust
-- kernel
-- logcat
-- buffer
+  - logd
+  - logging
+  - rust
+  - kernel
+  - logcat
+  - buffer
 related_chapters:
 - '1.9'
 - '1.1'

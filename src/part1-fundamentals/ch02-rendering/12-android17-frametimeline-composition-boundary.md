@@ -10,13 +10,12 @@ last_idle_audit_at: '2026-08-30T14:42:08+08:00'
 last_idle_audit_run_id: 20260830-143503-idle-audit-c720f524
 confidence: medium
 tags:
-- rendering
-- frametimeline
-- gpu-cpu-boundary
-- android17
-- surfaceflinger
-- hwc
-- perfetto
+  - rendering
+  - frametimeline
+  - gpu-cpu-boundary
+  - surfaceflinger
+  - hwc
+  - perfetto
 related_chapters:
 - '2.1'
 - '2.3'

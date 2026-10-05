@@ -185,27 +185,14 @@ sources:
 - type: aosp
   path: frameworks/native/libs/nativewindow/include/android/native_window.h
 tags:
-- framerate
-- refresh-rate
-- frame-time
-- jank
-- frame-pacing
-- LTPO
-- VRR
-- ARR
-- SurfaceFlinger
-- VSync
-- Choreographer
-- Android-17
-- frame-rate
-- setFrameRate
-- rendering
-- display-mode
-- surfaceflinger
-- frame-rate-override
-- android17
-- hwc
-- vrr
+  - framerate
+  - refresh-rate
+  - frame-time
+  - jank
+  - frame-pacing
+  - ltpo
+  - vrr
+  - arr
 related_chapters:
 - '2.1'
 - '2.3'

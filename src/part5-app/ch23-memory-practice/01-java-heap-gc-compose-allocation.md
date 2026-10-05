@@ -99,18 +99,14 @@ sources:
 - type: blog
   path: '[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动？.md]'
 tags:
-- java-heap
-- object-pool
-- gc-friendly
-- collection-optimization
-- memory-churn
-- gc
-- allocation
-- autoboxing
-- compose
-- memory
-- slottable
-- recomposition
+  - java-heap
+  - object-pool
+  - gc-friendly
+  - collection-optimization
+  - memory-churn
+  - gc
+  - allocation
+  - autoboxing
 related_chapters:
 - '23.2'
 - '23.4'

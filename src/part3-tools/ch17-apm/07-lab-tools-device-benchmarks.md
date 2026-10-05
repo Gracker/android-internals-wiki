@@ -10,16 +10,14 @@ last_rework_at: '2026-08-05T13:35:16+08:00'
 last_rework_run_id: 20260805-133516-rework-bdb326bd
 confidence: medium
 tags:
-- apm
-- perfdog
-- testing
-- benchmark
-- tools
-- geekbench
-- 3dmark
-- device-tiering
-- antutu
-- pcmark
+  - apm
+  - perfdog
+  - testing
+  - benchmark
+  - tools
+  - geekbench
+  - 3dmark
+  - device-tiering
 related_chapters:
 - '17.0'
 consolidated_from:

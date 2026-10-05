@@ -5,21 +5,14 @@ section: '13.4'
 status: finalized
 applicable_versions: Android 9 (API 28) - Android 17 (API 37)
 tags:
-- OpenGL-ES
-- EGL
-- GLThread
-- GLSurfaceView
-- eglSwapBuffers
-- ANativeWindow
-- BufferQueue
-- fence
-- ANGLE
-- GLES
-- Vulkan
-- 翻译层
-- SPIR-V
-- 图形驱动
-- 渲染路径
+  - opengl-es
+  - egl
+  - glthread
+  - glsurfaceview
+  - eglswapbuffers
+  - anativewindow
+  - bufferqueue
+  - fence
 related_chapters:
 - '2.1'
 - '2.9'

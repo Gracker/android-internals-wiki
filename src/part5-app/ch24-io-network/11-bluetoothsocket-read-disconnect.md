@@ -8,11 +8,10 @@ last_verified: '2026-08-15'
 last_verified_against: Android 17 stable behavior changes and API reference 2026-08 / Bluetooth transfer-data and foreground-service guides / AOSP android-17.0.0_r1
 confidence: high
 tags:
-- bluetooth
-- io
-- network
-- android17
-- long-connection
+  - bluetooth
+  - io
+  - network
+  - long-connection
 related_chapters:
 - '11.4'
 - '12.1'

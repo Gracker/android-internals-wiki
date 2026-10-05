@@ -4,24 +4,14 @@ chapter: '13.11'
 status: ready-to-publish
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 tags:
-- HWC
-- Hardware-Composer
-- Overlay-Video
-- GPU-Composition
-- DRM
-- Tunnel-Mode
-- 渲染管线
-- media
-- codec2
-- mediacodec
-- tunneled-playback
-- media3
-- abr
-- video-playback
-- apv
-- professional-video
-- android16
-- android17
+  - hwc
+  - hardware-composer
+  - overlay-video
+  - gpu-composition
+  - drm
+  - tunnel-mode
+  - 渲染管线
+  - media
 sources:
 - type: internal-reference
   path: rendering_pipelines/S12_video_overlay_hwc_type.md

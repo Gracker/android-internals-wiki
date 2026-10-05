@@ -12,14 +12,14 @@ sources:
 - type: blog
   path: source.android.com/docs/core/graphics/surfaceflinger-windowmanager
 tags:
-- dumpsys
-- meminfo
-- gfxinfo
-- activity
-- window
-- batterystats
-- SurfaceFlinger
-- debugging
+  - dumpsys
+  - meminfo
+  - gfxinfo
+  - activity
+  - window
+  - batterystats
+  - surfaceflinger
+  - debugging
 related_chapters:
 - '4.1'
 - '4.4'

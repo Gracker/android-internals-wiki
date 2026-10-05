@@ -78,23 +78,14 @@ sources:
 - type: research
   path: DeepResearch/2026-06-08-android-17-sf-transaction-queue-lockless-architecture.md
 tags:
-- surfaceflinger
-- bufferqueue
-- hwc
-- composition
-- layer
-- vsync
-- blastbufferqueue
-- renderengine
-- rendering
-- frontend
-- requestedlayerstate
-- transaction
-- SurfaceFlinger
-- LocklessQueue
-- TransactionHandler
-- MPSC
-- 渲染管线
+  - surfaceflinger
+  - bufferqueue
+  - hwc
+  - composition
+  - layer
+  - vsync
+  - blastbufferqueue
+  - renderengine
 related_chapters:
 - '2.1'
 - '2.3'

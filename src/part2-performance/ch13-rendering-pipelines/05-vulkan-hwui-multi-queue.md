@@ -7,25 +7,14 @@ last_verified: '2026-07-31'
 last_verified_against: AOSP android-17.0.0_r1 swapchain.cpp / VP_ANDROID_17_requirements.json / Surface.cpp / BufferQueueProducer.cpp / SurfaceFlinger FrontEnd / HWComposer.cpp / RenderEngine.h / GraphiteVkRenderEngine.cpp / RenderEngineThreaded.cpp + kernel android17-6.18-2026-06_r6 dma-buf.c / sync_file.c / dma-fence.c
 confidence: high
 tags:
-- Vulkan
-- VkSwapchainKHR
-- Android-WSI
-- ANativeWindow
-- BufferQueue
-- explicit-control
-- AVP
-- Swappy
-- frame-pacing
-- VkQueue
-- Presentation-Mode
-- VK_EXT_present_timing
-- vulkan
-- hwui
-- rendering
-- gpu
-- multi-queue
-- frame-boundary
-- android17
+  - vulkan
+  - vkswapchainkhr
+  - android-wsi
+  - anativewindow
+  - bufferqueue
+  - explicit-control
+  - avp
+  - swappy
 related_chapters:
 - '2.1'
 - '2.9'

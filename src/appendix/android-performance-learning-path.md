@@ -6,7 +6,11 @@ status: draft
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-08-16"
 confidence: medium
-tags: [learning-path, performance, framework, perfetto, apm]
+tags:
+  - learning-path
+  - framework
+  - perfetto
+  - apm
 related_chapters: ["13.0", "14.7", "15.6", "19.0", "21.4"]
 ---
 

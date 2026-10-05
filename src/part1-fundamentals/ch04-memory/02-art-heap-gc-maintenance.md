@@ -6,28 +6,14 @@ status: finalized
 pipeline_stage: ready-to-publish
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 tags:
-- memory
-- lmk
-- gc
-- android
-- research
-- art
-- perfetto
-- ART
-- GC
-- HeapTask
-- TaskProcessor
-- GC抑制
-- 启动性能
-- 内存管理
-- onTrimMemory
-- memory-management
-- android17
-- aosp
-- ComponentCallbacks2
-- CachedAppOptimizer
-- MemoryLimiter
-- cgroup
+  - memory
+  - lmk
+  - gc
+  - art
+  - perfetto
+  - heaptask
+  - taskprocessor
+  - GC抑制
 confidence: medium
 sources:
 - type: reference

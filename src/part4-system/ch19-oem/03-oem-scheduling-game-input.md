@@ -107,18 +107,14 @@ sources:
 - type: research
   path: DeepResearch/2026-05-12-oem-game-mode-input-priority-research.md
 tags:
-- sched-ext
-- bpf
-- oem
-- scheduler
-- MUSCHED
-- VIP
-- Binder
-- game-mode
-- input
-- touch-latency
-- refresh-rate
-- perfetto
+  - sched-ext
+  - bpf
+  - oem
+  - scheduler
+  - musched
+  - vip
+  - binder
+  - game-mode
 related_chapters:
 - '5.1'
 - '5.3'

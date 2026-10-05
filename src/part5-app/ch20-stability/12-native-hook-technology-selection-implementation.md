@@ -5,12 +5,12 @@ section: '20.12'
 status: finalized
 applicable_versions: Android 17 (API 37) - Android 17 (API 37)
 tags:
-- Native Hook
-- Inline Hook
-- GOT/PLT
-- ARM64
-- bionic linker
-- debuggerd
+  - native-hook
+  - inline-hook
+  - got/plt
+  - arm64
+  - bionic-linker
+  - debuggerd
 related_chapters:
 - '20.7'
 - '20.3'

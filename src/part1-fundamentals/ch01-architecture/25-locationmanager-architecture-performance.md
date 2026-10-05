@@ -72,14 +72,13 @@ sources:
 - type: official
   path: developer.android.com/develop/sensors-and-location/location/background
 tags:
-- location
-- gps
-- gnss
-- system-service
-- geofence
-- hal
-- performance
-- power
+  - location
+  - gps
+  - gnss
+  - system-service
+  - geofence
+  - hal
+  - power
 related_chapters:
 - '1.10'
 - '1.21'

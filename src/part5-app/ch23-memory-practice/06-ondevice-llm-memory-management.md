@@ -35,13 +35,13 @@ sources:
 - type: clippings-structure-ref
   path: Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md
 tags:
-- 端侧AI
-- 大模型
-- 内存管理
-- 推理优化
-- MemoryAdvice
-- KVCache
-- 量化
+  - 端侧AI
+  - 大模型
+  - 内存管理
+  - 推理优化
+  - memoryadvice
+  - kvcache
+  - 量化
 related_chapters:
 - '5.6'
 - '5.5'

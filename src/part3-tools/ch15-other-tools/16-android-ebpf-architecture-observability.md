@@ -109,26 +109,14 @@ sources:
 - type: blog
   path: 'intake/daily-info/2026-07-01.md #27-30, #34'
 tags:
-- eBPF
-- BPF
-- observability
-- tracing
-- sched_ext
-- kernel
-- performance
-- bpfloader
-- UprobeStats
-- ebpf
-- rust
-- bpf
-- system-architecture
-- timeInState
-- CPU-cycle
-- DMA-BUF
-- wakelock
-- lock-contention
-- Rust
-- Android17
+  - ebpf
+  - bpf
+  - observability
+  - tracing
+  - sched-ext
+  - kernel
+  - bpfloader
+  - uprobestats
 related_chapters:
 - '15.2'
 - '14.1'
