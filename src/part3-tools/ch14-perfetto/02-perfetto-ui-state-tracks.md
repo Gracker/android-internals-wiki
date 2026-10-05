@@ -321,7 +321,7 @@ Expected Timeline 表示调度器为这一帧安排的预计时间窗。App Actu
 | 黄色 | App 帧发生 jank，但归因在 SurfaceFlinger |
 | 蓝色 | Dropped frame |
 
-颜色用于寻找候选帧，报告应记录 `present_type`、`on_time_finish`、`jank_type`、layer 和 token。`BufferStuffing` 表示应用在旧 buffer 尚未呈现时持续提交新 buffer，导致队列积压并增加延迟。Android 17 `FrameTimeline.cpp` 把它、`SurfaceFlingerStuffing` 等状态与 deadline jank 分开计算，不能把所有非绿色帧合并成“App Deadline Missed”。
+颜色用于寻找候选帧，报告应记录 `present_type`、`on_time_finish`、`jank_type`、layer 和 token。`BufferStuffing` 表示应用在旧 buffer 尚未呈现时持续提交新 buffer，导致队列积压并增加延迟。Android 17 `FrameTimeline.cpp` 把 `BufferStuffing`、`SurfaceFlingerStuffing` 等状态与 deadline jank 分开计算，不能把所有非绿色帧合并成“App Deadline Missed”。
 
 官方文档仍提示 SurfaceView 不在 FrameTimeline 的完整支持范围内。Camera、视频、游戏和跨进程嵌入常有独立 Producer / Surface / layer，宿主窗口的帧 token 不能代替这些路径的逐帧证据。
 
@@ -329,7 +329,7 @@ Expected Timeline 表示调度器为这一帧安排的预计时间窗。App Actu
 
 Android 17 的主循环由 `Scheduler::onFrameSignal()` 组织。`Scheduler.cpp` 在同一帧信号中调用 `compositor.commit()` 处理事务、layer 状态和本帧准备工作；满足合成条件后，再调用 `compositor.composite()` 组织合成。对应实现位于 `SurfaceFlinger::commit()` 和 `SurfaceFlinger::composite()`。显示输出阶段继续进入 CompositionEngine 的 `Output::present()` 与 `presentFrameAndReleaseLayers()`。
 
-版本演进要保留，因为旧 trace 的 Slice 名称不同：
+旧 trace 的 Slice 名称因版本而异，对照下表：
 
 | 平台 | SurfaceFlinger 观察入口 |
 | --- | --- |
@@ -474,7 +474,7 @@ TRACE_STATE("player", "", player_state);  // 清空当前状态，进入 idle
 
 #### 上游 `main` 的 C high-level API
 
-下面的调用展示上游提交 #6464 加入的 C high-level API（用宏封装底层 C ABI 的接口）形态，用于向已经注册的状态轨道写入 `Buffering`。该提交位于 v57.2 之后的 `main` 分支，示例只适用于包含这次变更的 commit（源码提交）或后续明确收录它的版本：
+下面的调用展示上游提交 #6464 加入的 C high-level API（用宏封装底层 C ABI 的接口），用于向已经注册的状态轨道写入 `Buffering`。该提交位于 v57.2 之后的 `main` 分支，示例只适用于包含这次变更的 commit（源码提交）或后续明确收录它的版本：
 
 ```c
 PERFETTO_TE(player, PERFETTO_TE_STATE("Buffering"),
