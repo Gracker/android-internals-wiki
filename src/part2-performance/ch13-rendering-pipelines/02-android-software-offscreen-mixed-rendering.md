@@ -118,7 +118,7 @@ consolidated_from:
 
 # Android 软件、离屏与混合渲染路径
 
-软件渲染回答“谁生成像素”，离屏渲染回答“像素先写到哪里”。这是两个独立维度：CPU 可以直接写可见 `Surface`，GPU 也可以先画进离屏纹理或 `HardwareBuffer`（可在 CPU、GPU 和硬件模块之间共享的图形 buffer）。诊断时要依次确认 Producer、输出位置、Consumer 和最终可见 layer。
+软件渲染回答“谁生成像素”，离屏渲染回答“像素先写到哪里”。这是两个独立维度：CPU 可以直接写可见 `Surface`，GPU 也可以先画进离屏纹理或 `HardwareBuffer`（可在 CPU、GPU 和硬件模块之间共享的图形 buffer）。诊断时要依次确认 Producer（生成 buffer 的组件）、输出位置、Consumer（取得并读取 buffer 的组件）和最终可见 layer。
 
 平台实现以 Android 17 / API 37 的 `android-17.0.0_r1` 为基线；涉及 dma-buf（共享 buffer 的内核机制）、dma-fence（内核同步对象）、sync_file（把 fence 暴露为文件描述符的接口）、调度与内存回收时，内核以 `android17-6.18-2026-06_r6` 为基线。
 
@@ -237,7 +237,7 @@ ViewRootImpl.drawSoftware(...)
 
 software Canvas 的 `drawPath()`、`drawText()`、`drawBitmap()` 等操作由 Skia CPU backend（CPU 绘制后端）栅格化，并写入锁定的像素内存。硬件 Canvas 会先录制宿主窗口 DisplayList，再由 RenderThread 提交 GPU draw；software Canvas 在当前线程直接生成像素。
 
-CPU 栅格化成本由脏区面积、像素格式、混合、clip（裁剪区域）、路径复杂度、文字与图片采样共同决定。“每条命令逐像素串行执行”也过于绝对；Skia 和 vendor 库可以使用 SIMD（单条指令并行处理多个数据）、专用实现或内部任务，但不能据此假设 Android View software Canvas 会自动把一帧均匀分摊到多个 CPU。
+CPU 栅格化成本由脏区面积、像素格式、混合、clip（裁剪区域）、路径复杂度、文字与图片采样共同决定。把 CPU 栅格化说成“每条命令逐像素串行执行”过于绝对；Skia 和 vendor 库可以使用 SIMD（单条指令并行处理多个数据）、专用实现或内部任务。反过来，也不能据此假设 Android View software Canvas 会自动把一帧均匀分摊到多个 CPU。
 
 #### Unlock & Post：把 buffer 交给 Consumer
 
@@ -275,7 +275,7 @@ sequenceDiagram
     SF-->>BQ: release callback / fence
 ```
 
-图中 `queueBuffer()` 返回不表示已经上屏；latch 也不表示 panel（物理显示面板）已完成扫描。CPU buffer 可能被 HWC 直接消费，也可能由 RenderEngine 采样进 client target（GPU 合成后的显示目标），取决于 format（像素格式）、dataspace（颜色空间与范围）、transform（变换）、crop（裁剪）、alpha（透明度）、保护属性、设备能力和本轮其他 layer。
+图中 `queueBuffer()` 返回不表示已经上屏；latch 也不表示 panel（物理显示面板）已完成扫描。CPU buffer 可能被 HWC 直接消费，也可能由 RenderEngine 采样进 client target（GPU 合成后的显示目标）。走哪条路，由 format（像素格式）、dataspace（颜色空间与范围）、transform（变换）、crop（裁剪）、alpha（透明度）、保护属性、设备能力和本轮其他 layer 共同决定。
 
 自定义 Surface Producer 可能连接自己的 BufferQueue/layer，不一定经过图中同一个 App Window BLAST adapter（适配层）；它的生产线程和节奏也要单独确认。
 
@@ -303,7 +303,7 @@ software Canvas 支持 dirty region（需要重画的区域），但分析不能
 
 #### `SurfaceControl.Transaction#setBuffer()` 直接提交
 
-`Transaction#setBuffer()` 可以绕过该 layer 的常规 `dequeueBuffer()` / `queueBuffer()` 循环，但不会绕过 SurfaceFlinger。仍在生产的 buffer 要携带 production/acquire fence，连续复用还要等待 release callback；usage（buffer 的允许用途标志）只表示哪些消费者可以使用它，不保证 HWC 选择 DEVICE composition。完整提交与回收协议由 [13.6 SurfaceControl 与 HardwareBufferRenderer](06-surfacecontrol-hardwarebuffer-renderer.md) 维护。
+`Transaction#setBuffer()` 可以绕过该 layer 的常规 `dequeueBuffer()` / `queueBuffer()` 循环，但不会绕过 SurfaceFlinger。仍在生产的 buffer 要携带 production/acquire fence，连续复用还要等待 release callback。usage（buffer 的允许用途标志）只表示哪些消费者可以使用它，不保证 HWC 选择 DEVICE composition。完整提交与回收协议由 [13.6 SurfaceControl 与 HardwareBufferRenderer](06-surfacecontrol-hardwarebuffer-renderer.md) 维护。
 
 ### 与硬件加速路径的核心差异
 
@@ -474,7 +474,7 @@ CPU `lockCanvas()` 可以直接生成可见 Surface buffer；`LAYER_TYPE_SOFTWAR
 
 离屏结果进入最终窗口后，可能与 HWUI、SurfaceView 或 GPU 内容共同合成。分析时要明确每块内容的生产者和同步信号。
 
-混合渲染页面同时存在两条以上可区分的内容生产路径，并且这些路径共同影响同一个最终画面。普通 View、Compose、`TextureView`、`SurfaceView`、嵌入式 `SurfaceControlViewHost`、视频、Camera、地图或游戏引擎都可能参与。分析时，Producer 指生成 buffer 的组件，Consumer 指取得并读取 buffer 的组件。
+混合渲染页面可能包含普通 View、Compose、`TextureView`、`SurfaceView`、嵌入式 `SurfaceControlViewHost`、视频、Camera、地图或游戏引擎等多种内容路径。
 
 平台实现以 Android 17 / API 37 的 `android-17.0.0_r1` 为基线，内核以 `android17-6.18-2026-06_r6` 为基线。AOSP 能证明公共接口与系统合成行为；目标应用采用哪种 Producer、buffer format（像素格式）和 layer 拓扑，仍要根据当前 trace、layer tree（图层层级树）与业务配置确认。
 
@@ -497,7 +497,7 @@ SurfaceFlinger 通常只看到最终宿主 layer，看不到与该 Texture 输�
 
 ##### 独立 layer 型
 
-`SurfaceView`、应用自管 `SurfaceControl` 或嵌入式 Surface hierarchy（图层层级）保留独立 buffer layer。宿主与独立内容各自提交，SurfaceFlinger/HWC 决定目标 display frame 使用哪块 buffer 和哪组位置、裁剪等几何状态。
+`SurfaceView`、应用自管 `SurfaceControl` 或嵌入式 Surface hierarchy（图层层级）保留独立 buffer layer。宿主与独立内容各自提交，SurfaceFlinger/HWC 决定目标 display frame 使用哪块 buffer，以及哪组位置、裁剪等几何状态。
 
 ##### 组合型
 
@@ -593,7 +593,7 @@ flowchart TD
 
 #### TextureView 由宿主采样
 
-地图或视频 Producer 向 `SurfaceTexture` queue buffer。Android 17 的 `TextureView` 在 frame-available 回调中安排 layer update 和 View invalidation（请求重绘）；宿主硬件 draw 记录 `TextureLayer`。`DrawFrameTask::syncFrameState()` 随后遍历 pending layer，并调用 `DeferredLayerUpdater::apply()`；该方法再通过 `ASurfaceTexture_dequeueBuffer()` 取得当前内容。
+地图或视频 Producer 向 `SurfaceTexture` queue buffer。Android 17 的 `TextureView` 在 frame-available 回调中安排 layer update 和 View invalidation（请求重绘），宿主硬件 draw 记录 `TextureLayer`。进入宿主绘制后，`DrawFrameTask::syncFrameState()` 遍历 pending layer 并调用 `DeferredLayerUpdater::apply()`，由该方法通过 `ASurfaceTexture_dequeueBuffer()` 取得当前内容。
 
 源码注释明确指出，`ASurfaceTexture_dequeueBuffer()` 会丢弃此前尚未消费的帧，只保留最新一帧。外部 Producer 已经 queue buffer，并不能证明宿主本帧采到了它；还要对齐 frame-available、宿主 traversal、`DeferredLayerUpdater` acquire 与 host draw。
 
