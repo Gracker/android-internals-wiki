@@ -315,6 +315,8 @@ consolidated_from:
 
 视频播放从容器和 ABR 选择进入解码器，经 Surface、BufferQueue 和 HWC 显示。是否使用 tunneled playback 或 overlay 会改变 buffer 流向、音视频同步和功耗；专业视频还增加格式、色深和编解码能力约束。
 
+本文分三段：视频 Layer 与 HWC 合成决策、Media3/Codec2 与 tunneled playback、专业视频格式与能力回退；每段末尾给出源码与证据边界，最后汇总常见误区与结论。
+
 ## 视频 Layer、Overlay 与 HWC 决策
 
 ### SurfaceView 只提供 Overlay 候选条件
@@ -481,7 +483,7 @@ HWC 的可用能力由 SoC 显示模块、Composer HAL、显示模式和当前 L
 
 ### Tunneled playback 与 SIDEBAND
 
-Tunneled playback 把逐帧选择和 A/V 同步交给 codec、音频或 tuner 时钟以及设备显示链。sideband handle 是 framework 传给 HWC 的不透明流句柄，由设备侧机制更新内容并维持同步；因此，sideband layer 不一定出现普通 Surface 视频那样密集的 `queueBuffer` 和 latch 事件。本节只界定它与 HWC composition type 的关系：确认 codec capability、sideband 状态、`SIDEBAND` composition 和设备时钟后，才能把缺少逐帧图形事件判断为正常路径。Codec2 配置、Media3 ABR、音视频同步和完整排障由本文后文统一展开。
+Tunneled playback 把逐帧选择和 A/V 同步交给 codec、音频或 tuner 时钟以及设备显示链。sideband handle 是 framework 传给 HWC 的不透明流句柄，由设备侧机制更新内容并维持同步；因此，sideband layer 不一定出现普通 Surface 视频那样密集的 `queueBuffer` 和 latch 事件。本节只界定它与 HWC composition type 的关系：只有在确认 codec capability、sideband 状态、`SIDEBAND` composition 和设备时钟之后，缺少逐帧图形事件才属于正常路径。Codec2 配置、Media3 ABR、音视频同步和完整排障由本文后文统一展开。
 
 ### DRM、Secure Video 与 Overlay
 
@@ -639,9 +641,7 @@ AIDL Composer3 改变的是 framework 与 Composer HAL 之间的接口形式，�
 
 ## Media3、Codec2 与 Tunneled Playback
 
-HWC 只处理到达显示端的 layer，播放前半段还包括 ABR、缓冲、解码和音视频时钟。每个队列都可能形成独立反压。
-
-视频播放卡顿可能来自下载、码率选择、解码、Surface 消费、合成、显示或音频时钟。如果把这些阶段统称为“播放器卡”，很容易在错误层级调整参数。分析时固定三组核查基线：
+HWC 只处理到达显示端的 layer，播放前半段还包括 ABR、缓冲、解码和音视频时钟，每个队列都可能形成独立反压。因此视频卡顿可能来自下载、码率选择、解码、Surface 消费、合成、显示或音频时钟；如果把这些阶段统称为“播放器卡”，很容易在错误层级调整参数。分析时固定三组核查基线：
 
 - Android 平台：Android 17 / API 37 / `android-17.0.0_r1`。
 - kernel：`android17-6.18-2026-06_r6`。
@@ -681,6 +681,20 @@ Media3 负责解析 manifest（媒体清单）、下载 segment（媒体分片�
 
 这张表只能确定调查入口。例如，用户看到画面卡住而声音继续，可能是 decoder 输出晚，也可能是普通 Surface 队列 backpressure、HWC 切换合成策略或 tunnel 侧视频同步异常，需要沿同一帧的时间关系继续取证。
 
+### 三种视频承载路径不能混为一谈
+
+普通 SurfaceView、TextureView 和 tunneled playback 都能显示视频。视频 layer 的合成职责由 HWC 逐帧决定，判定维度已在“视频 Layer、Overlay 与 HWC 决策”中展开；本节只看 decoded frame 的 consumer 与同步责任。
+
+| 路径 | decoded frame 的去向 | SurfaceFlinger/HWC 看到什么 | 主要取舍 |
+| --- | --- | --- | --- |
+| 普通 SurfaceView | codec → Surface/BufferQueue | 独立视频 layer；HWC 每轮决定 DEVICE 或 CLIENT 等 composition | 适合长视频、高分辨率和 protected 内容；overlay 只是候选结果 |
+| TextureView | codec → SurfaceTexture → App HWUI → App Window | 视频已采样进宿主窗口，通常没有独立视频 layer | 支持 View 变换、裁剪和动画；增加宿主 GPU 采样与窗口提交 |
+| Tunneled playback | codec/HAL → sideband stream | sideband layer；HWC 按 A/V 同步取得视频帧 | 减少 framework 常规 decoded-buffer 周转，适合部分 TV/机顶盒；调试证据和图形效果受限 |
+
+TextureView 的外部视频 buffer 先由应用 HWUI 作为纹理消费，再画入宿主窗口；宿主主线程、RenderThread 或 GPU 迟到都会影响视频可见时间。
+
+Tunnel 仍要通过 SurfaceFlinger 管理的 layer 进入显示链。Android 官方文档与 Android 17 源码给出的边界是：codec 返回 sideband handle（引用设备侧视频流的不透明句柄），native window 把 handle 交给 SurfaceFlinger，SurfaceFlinger 将该 layer 配置为 sideband，HWC 再按音频时钟或 tuner 时钟取得并显示视频帧。普通 decoded graphic buffer 不再按常规逐帧 `queueBuffer()` 形式交给应用/framework 图形路径。
+
 ### Android 17 同时保留 Codec2 与 OMX 路径
 
 Android 10 已把可更新的软件 Codec2 组件纳入 Media Codecs APEX（可独立更新的系统模块），并支持 vendor C2 service；Android 11 起 Codec2 协议支持 tunneled playback。Android 17 的 `frameworks/av` 仍同时包含 `CCodec` 和 `ACodec`，平台并未统一只走 Codec2。
@@ -718,20 +732,6 @@ Android 11 / API 30 起，应用可在 codec 声明 `FEATURE_LowLatency` 后设�
 HDR、Dolby Vision、secure、high-frame-rate、low-latency 与 tunnel 要按实际组合查询和测试。显示支持、decoder profile、extractor metadata、secure Surface、HWC plane 和 tone mapping 任一环节都可能改变结果。Android 17 还增加 Eclipsa video 的平台播放与采集能力；这只说明 framework 能传递相应动态元数据，不能保证所有 SoC、显示或 codec 组合都采用硬件低成本路径。
 
 完整音频输出、AAudio/MMAP 与回调预算由 [1.20 音频链路（Audio Pipeline）延迟与性能](../../part1-fundamentals/ch01-architecture/20-audio-pipeline-performance.md) 承载；Camera 到 encoder 的 Surface 管线见 [13.10 Android Camera 平台管线：HAL3、Buffer、ZSL 与显示](10-camera-pipeline.md)；Media3 的 Surface 生命周期、prewarming、effects、HDR/DRM、首帧与播放器侧观测见 [22.17 Media3 视频播放：解码、帧时序与渲染](../../part5-app/ch22-rendering-practice/17-media3-video-rendering.md)。本节只保留播放控制面、Codec2/OMX、tunnel 与 ABR 的共同边界。
-
-### 三种视频承载路径不能混为一谈
-
-普通 SurfaceView、TextureView 和 tunneled playback 都能显示视频，但 decoded frame 的 consumer 与同步责任不同。
-
-| 路径 | decoded frame 的去向 | SurfaceFlinger/HWC 看到什么 | 主要取舍 |
-| --- | --- | --- | --- |
-| 普通 SurfaceView | codec → Surface/BufferQueue | 独立视频 layer；HWC 每轮决定 DEVICE 或 CLIENT 等 composition | 适合长视频、高分辨率和 protected 内容；overlay 只是候选结果 |
-| TextureView | codec → SurfaceTexture → App HWUI → App Window | 视频已采样进宿主窗口，通常没有独立视频 layer | 支持 View 变换、裁剪和动画；增加宿主 GPU 采样与窗口提交 |
-| Tunneled playback | codec/HAL → sideband stream | sideband layer；HWC 按 A/V 同步取得视频帧 | 减少 framework 常规 decoded-buffer 周转，适合部分 TV/机顶盒；调试证据和图形效果受限 |
-
-普通 SurfaceView 有独立 layer，但 HWC 是否采用硬件 overlay 仍要逐帧协商。格式、缩放、旋转、alpha、HDR/SDR 混合、protected usage、plane 数量和带宽都可能改变选择。TextureView 的外部视频 buffer 先由应用 HWUI 作为纹理消费，再画入宿主窗口；宿主主线程、RenderThread 或 GPU 迟到都会影响视频可见时间。
-
-Tunnel 仍要通过 SurfaceFlinger 管理的 layer 进入显示链。Android 官方文档与 Android 17 源码给出的边界是：codec 返回 sideband handle（引用设备侧视频流的不透明句柄），native window 把 handle 交给 SurfaceFlinger，SurfaceFlinger 将该 layer 配置为 sideband，HWC 再按音频时钟或 tuner 时钟取得并显示视频帧。普通 decoded graphic buffer 不再按常规逐帧 `queueBuffer()` 形式交给应用/framework 图形路径。
 
 ### Tunneled playback 的 Android 17 源码路径
 
@@ -1000,7 +1000,7 @@ APV（Advanced Professional Video）面向高质量录制、剪辑和后期素�
 | AOSP 参考实现 | `frameworks/av` 有 C2 APV 软编码器、软解码器和 MP4 writer | 产品是否启用组件、组件对外公布的规格 |
 | 设备产品能力 | `MediaCodecList` 可查询 vendor 和 platform codec | 硬件加速、Camera 输入组合、4K/8K、持续码率、温控和稳定性 |
 
-这里的 profile 表示编码工具集与像素格式约束，level 表示分辨率、采样率等复杂度上限；muxing 是把编码轨道及其元数据封装进 MP4。设备能解码 APV，也无法保证 APV layer 会由 HWC 使用独立硬件 plane 直接 scanout，这正是 hardware overlay。普通 Surface 输出仍由 SurfaceFlinger 与 HWC 逐帧选择合成方式。
+这里的 profile 表示编码工具集与像素格式约束，level 表示分辨率、采样率等复杂度上限；muxing 是把编码轨道及其元数据封装进 MP4。设备能解码 APV，并不保证 APV layer 会由 HWC 用独立硬件 plane 直接 scanout；能否使用 hardware overlay，要看 SurfaceFlinger 与 HWC 的逐帧合成选择，普通 Surface 输出仍是同一套机制。
 
 ### Android 16 到 Android 17 的公开接口
 
