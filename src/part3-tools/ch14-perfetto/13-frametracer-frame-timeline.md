@@ -248,17 +248,7 @@ NULL 表示该 phase 在当前 trace 中没有闭合或没有生成，不能用 
 
 FrameTimeline 从 Android 12 起提供 expected/actual SurfaceFrame 与 DisplayFrame。Android 17 的 `ActualSurfaceFrameStart` 包含多组判断字段：`present_type` 表示早到、准时或晚到，`on_time_finish` 表示 App 是否按时完成，`gpu_composition` 表示是否使用 GPU 合成，`jank_type` 与 `jank_severity_type` 描述卡顿类型和严重程度，`prediction_type` 描述预测是否仍有效，`is_buffer` 区分 buffer 帧与动画状态。`present_delay_millis`、`vsync_resynced_jitter_millis` 和 `jank_severity_score` 则提供延迟、VSync 重新同步抖动与评分。SQL 视图会把 jank bitmask（用不同二进制位同时表示多个原因的整数）转换成可读分类。
 
-Android 17 的 proto 相比 `android-16.0.0_r1` 增加了以下五个枚举值：
-
-| 值 | Android 17 名称 | 诊断含义 |
-| ---: | --- | --- |
-| 2048 | `JANK_NON_ANIMATING` | 当前内容不按动画帧节奏分类；它位于源码的 non-jank 集合，不能按普通卡顿原因计数 |
-| 4096 | `JANK_APP_RESYNCED_JITTER` | App 侧重新同步相关抖动 |
-| 8192 | `JANK_DISPLAY_NOT_ON` | Display 未处于 on 状态 |
-| 16384 | `JANK_DISPLAY_MODE_CHANGE_IN_PROGRESS` | 显示模式切换进行中 |
-| 32768 | `JANK_DISPLAY_POWER_MODE_CHANGE_IN_PROGRESS` | 显示电源模式切换进行中 |
-
-这些值是 bitmask，所以一帧可以同时带有多个原因。Android 17 还增加了 `jank_type_experimental`、`present_type_experimental` 与 `jank_debug_metadata`；proto 明确要求 experimental 字段不得用于正式 jank 判定。上述新增版本来自 Android 16 与 Android 17 固定 tag 的 proto 对比，不能因为某个字段存在于当前文件，就推断更早版本也支持它。
+Android 17 的 proto 相比 `android-16.0.0_r1` 增加了五个 jank 枚举值，取值和诊断含义见下文「Android 17 新增的分类」。Android 17 还增加了 `jank_type_experimental`、`present_type_experimental` 与 `jank_debug_metadata`；proto 明确要求 experimental 字段不得用于正式 jank 判定。上述新增项来自 Android 16 与 Android 17 固定 tag 的 proto 对比，不能因为某个字段存在于当前文件，就推断更早版本也支持它。
 
 #### `gpu_composition` 与 `FALLBACK_COMPOSITION`
 
@@ -361,13 +351,13 @@ FrameTracer 提供的是一组参考时间点和 importer 生成的阶段，不�
 
 FrameTimeline 使用一组可关联的帧 ID 记录调度预测、应用出帧、SurfaceFlinger 合成和显示提交，适合回答三个问题：哪一帧偏离了预测，偏差发生在应用侧还是显示合成侧，下一步应查看哪条线程或 buffer 路径。
 
-本文核对的平台源码版本是 Android 17 / API 37 / `android-17.0.0_r1`。FrameTimeline trace 数据源从 Android 12 / API 31 起可用；标题中的 API 33 指 `Choreographer.VsyncCallback`、`FrameData` 与 `FrameTimeline` 公共 API 的引入版本。涉及 DMA-BUF（跨驱动共享的 buffer）、`sync_file`（把 fence 暴露为文件描述符的内核接口）或 `dma-fence`（内核中的同步对象）时，对应的内核版本是 `android17-6.18-2026-06_r6`。SQL 已按 Perfetto v57.2 的内置表验证。
+本节沿用本章开头的核对基线：平台源码 Android 17 / API 37 / `android-17.0.0_r1`，SQL 查询环境 Perfetto v57.2，涉及 DMA-BUF、`sync_file` 或 `dma-fence` 时内核版本 `android17-6.18-2026-06_r6`。FrameTimeline trace 数据源从 Android 12 / API 31 起可用；标题中的 API 33 指 `Choreographer.VsyncCallback`、`FrameData` 与 `FrameTimeline` 公共 API 的引入版本。
 
 FrameTimeline 的内部对象与分类流程见 §2.12，buffer 阶段事件见本文前文，CUJ 聚合见 §14.7。这里集中处理 Expected/Actual 语义、API 33 回调、采集配置和可执行 SQL。
 
 ### 两类帧
 
-FrameTimeline 同时记录应用的 SurfaceFrame 和 SurfaceFlinger（下文简称 SF）的 DisplayFrame。SurfaceFrame 表示某个 layer 提交的一帧，DisplayFrame 表示 SF 把一个或多个 SurfaceFrame 合成后送去显示的一帧：
+FrameTimeline 同时记录应用的 SurfaceFrame 和 SurfaceFlinger 的 DisplayFrame。两类帧的 token 组合不同：
 
 | 对象 | `surface_frame_token` | `display_frame_token` | 代表什么 |
 | --- | ---: | ---: | --- |
@@ -435,7 +425,7 @@ Perfetto UI 用颜色表示状态，以及原因归在当前进程还是其他�
 
 Android 17 `SurfaceFrame::isSelfJanky()` 将 `AppDeadlineMissed`、`AppResyncedJitter` 和 `Unknown` 视为应用自身 jank。SF scheduling、SF CPU/GPU deadline、Display HAL 和 Prediction Error 会形成系统侧原因。黄色只说明 FrameTimeline 把当前帧归到系统侧；复杂 layer、GPU 负载或 composition 变化仍可能由应用行为触发，排障时还要检查 flow（跨 track 的事件关联线）、layer 和系统负载。
 
-`jank_type` 是 bitmask（用不同二进制位同时表示多个原因的整数）转换成的字符串，一帧可以同时带多个原因。Perfetto v57.2 还提供 `jank_tag`，把结果归并为 `Self Jank`、`Other Jank`、`Buffer Stuffing`、`SurfaceFlinger Stuffing`、`Dropped Frame`、`Non-perceivable Jank` 等预计算类别。做统计时应优先使用这个分类，避免靠字符串包含关系自行分组。
+`jank_type` 是把 bitmask 转换成的字符串，一帧可以同时带多个原因。Perfetto v57.2 还提供 `jank_tag`，把结果归并为 `Self Jank`、`Other Jank`、`Buffer Stuffing`、`SurfaceFlinger Stuffing`、`Dropped Frame`、`Non-perceivable Jank` 等预计算类别。做统计时应优先使用这个分类，避免靠字符串包含关系自行分组。
 
 Android 17 的 Actual SurfaceFrame protobuf 记录还包含 `present_delay_millis`（present 延迟）、`vsync_resynced_jitter_millis`（VSync 重同步抖动）、`jank_severity_type` 与 `jank_severity_score`；DisplayFrame 没有 VSync 重同步抖动字段。Perfetto v57.2 在内置表中把 severity score 命名为 `jank_score`。这些值可以描述偏差幅度和严重程度，但不能脱离 `jank_type`、present 状态与采集版本，另行定义一套 jank 判定。protobuf 中带 `experimental` 的 jank、present 与 debug 字段明确标注为调试数据，不应进入正式 jank 指标。
 
