@@ -2,11 +2,12 @@
 title: Android 系统启动耗时优化与 bootanalyze
 chapter: '18.6'
 section: '18.6'
-status: ready-to-publish
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-14'
+last_verified: '2026-10-06'
 last_verified_against: AOSP android-17.0.0_r1 (bootanalyze / bootio / init / bootstat / ZygoteInit / SystemServer / ActivityManagerService / DexOptHelper / ArtManagerLocal); Android Common Kernel android17-6.18-2026-06_r6; current source.android.com boot guidance; current Android Developers 16 KB page-size guidance
 confidence: high
+last_review_finalize_at: '2026-10-06T10:05:34+08:00'
 sources:
 - type: official
   path: https://source.android.com/docs/core/perf/boot-times
