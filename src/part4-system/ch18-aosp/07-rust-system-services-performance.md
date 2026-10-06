@@ -2,7 +2,7 @@
 title: Android 17 平台 Rust 性能边界：Binder、CXX 与 Soong
 chapter: '18.7'
 section: '18.7'
-status: ready-to-publish
+status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
   - rust
@@ -20,7 +20,7 @@ related_chapters:
 - '3.6'
 - '15.2'
 - '20.10'
-last_verified: '2026-08-14'
+last_verified: '2026-10-06'
 last_verified_against: AOSP android-17.0.0_r1 (Keystore2 / DnsResolver / UWB / Bluetooth / VirtualizationService / libbinder_rs / Soong Rust / android-crates-io / crate_tool); official Android Rust, AIDL backend, and Scudo documentation
 confidence: high
 sources:
