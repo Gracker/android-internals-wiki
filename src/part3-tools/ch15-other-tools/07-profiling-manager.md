@@ -92,7 +92,7 @@ ProfilingManager 补足量产设备上“问题发生时没有开启分析工具
 
 heap profile 默认采样 native allocation（C/C++ 等原生堆分配）。开启 `setTrackJavaAllocations(true)` 后改为采样 Java allocation（Java/Kotlin 对象分配），同一请求只覆盖其中一类。
 
-四个 builder 都继承 `setTag()` 和 `setCancellationSignal()`。`tag` 只有前 20 个字母、数字和连字符会转换为小写并进入输出文件名，因此它适合短场景标识，不适合承载完整工单信息。持续一段时间的采集可由 `CancellationSignal` 提前停止；同时配置时长和取消信号时，先到达的条件结束采集。Java heap dump 是某一时刻的快照，没有 `durationMs` 参数。
+四个 builder 都继承 `setTag()` 和 `setCancellationSignal()`。`tag` 用于标识单次采集，适合短场景码，不适合承载完整工单信息。持续一段时间的采集可由 `CancellationSignal` 提前停止；同时配置时长和取消信号时，先到达的条件结束采集。Java heap dump 是某一时刻的快照，没有 `durationMs` 参数。
 
 ## API 层与版本判断
 
@@ -171,13 +171,11 @@ Profiling.requestProfiling(context, request, executor, result -> {
 
 成功时只能通过 `ProfilingResult.getResultFilePath()` 获取文件位置。不要硬编码 `files/profiling` 等目录，也不需要申请外部存储权限。应用读取、上传完成后删除、重试和留存超时都应围绕返回路径实现。
 
-Android 17 源码会在注册全局 listener 时顺带清理已经交付且超过五天的旧文件。这只是 `ProfilingManager` 当前实现中的后备清理，不是应用可依赖的留存协议；Profiling Mainline 模块和 OEM（设备厂商）配置都可能改变行为。上传成功后主动删除文件，磁盘不足时再按年龄淘汰，才能控制应用自己的空间预算。
-
 `ProfilingResult` 提供 `errorCode`、`errorMessage`、`resultFilePath`、`tag` 和 `triggerType`，没有 `profilingType` getter。显式请求的采集类型应在提交请求时写入应用记录；trigger 结果则按 trigger 与产物规则映射。不要从文件扩展名反推全部类型，因为多个 profile 都可能使用 Perfetto trace 容器。
 
 system trace 会移除其他应用和进程的信息，因而 PerfettoSQL（Perfetto 的 SQL 查询接口）可查询的数据范围比本地完整 trace 小。脱敏不覆盖应用自己的线程名、trace slice、Surface 名和业务 `tag`。heap dump 还可能包含对象字段与字符串，heap profile 和 stack sampling 会暴露类名、方法名及调用路径。上传前应按数据类型执行授权、加密、访问控制、保留期限和删除策略。
 
-`tag` 不应包含手机号、订单号、账号、地理位置或明文会话标识。可使用不含用户含义的场景码，再由服务端受控映射到内部工单。
+`tag` 不应包含手机号、订单号、账号、Token、URL 查询参数、地理位置或明文会话标识。可使用不含用户含义的场景码，再由服务端受控映射到内部工单。
 
 ### 结果文件生命周期
 
@@ -212,9 +210,9 @@ metadata 至少包含：
 - 页面、前后台状态、实验分组、触发原因
 - `result_file_path`、文件大小、内容摘要（用于校验完整性）、上传状态和清理时间
 
-`android-17.0.0_r1` 中，`ProfilingManager` 会借用应用提供的 executor，尝试删除已交付超过 5 天的旧文件；这项清理至多每天触发一次，但触发依赖相关 API 调用。服务侧也有结果重投与过期处理。这些是实现细节，调用时机和系统配置都可能变化。应用仍需维护自己的容量上限、保留期和上传成功即删除策略。
+`android-17.0.0_r1` 中，`ProfilingManager` 会借用应用提供的 executor，尝试删除已交付超过 5 天的旧文件；这项清理至多每天触发一次，但触发依赖相关 API 调用，服务侧也有结果重投与过期处理。它只是当前实现中的后备清理，调用时机、系统配置、Profiling Mainline 模块或 OEM（设备厂商）配置都可能改变，不能当作应用可依赖的留存协议。应用仍需自己维护容量上限和保留期，并在上传成功后立即删除、磁盘不足时按年龄淘汰，这样才能控制自己的空间预算。
 
-平台会先把 `tag` 转成小写并过滤到字母、数字和连字符，再截取前 20 个有效字符写进文件名。`tag` 只能放短场景码或随机诊断任务 ID，不能放手机号、账号、Token、URL 查询参数等用户数据。
+平台会把 `tag` 转成小写、过滤到字母、数字和连字符，再截取前 20 个有效字符写进文件名，因此它只适合短场景码或随机诊断任务 ID。
 
 ### Java Heap Dump 的敏感数据风险
 
