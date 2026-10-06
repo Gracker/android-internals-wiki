@@ -5682,6 +5682,77 @@
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7692485970524373026",
+      "title": "[掘金Android] Meta 分享怎么用 AI 迁移 Compose 项目不烧心",
+      "summary": "Meta 公开 Instagram Direct 迁移 Jetpack Compose 数据：UI 代码量减 50%，Agent 执行时间降 35%，人机往返减 32%，Token 成本降 33%。核心做法是改代码结构而非叠 rules：文件风险分翻倍时 Agent 在 View 代码效率降 30%、Compose 只降 9%；并用 RecyclerView/LazyColumn 双跑抽象支撑 200+ 消息组件渐进迁移与 A/B。",
+      "chapter": "ch16",
+      "processed_at": "2026-10-07T06:20:34.200209+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7691030977347207231",
+      "title": "[掘金Android] Android 原生的 Compose A2UI 也来了，你还抱着 XML 养老吗？",
+      "summary": "A2UI 在 AndroidX 落地，官方以 Compose Renderer 支持 Agent 结构化 UI 渲染为原生组件。Component Catalog 作为正式合同限定 Agent 可用组件与函数，Payload 进 UI 树前做 Schema Validation；Jetpacker 示例用 ADK ParallelAgent 并行处理行程，用户在多个动态 A2UI 间并行决策，SSE 回写后 Agent 继续。现状是 Agent Runtime 与 A2UI 间仍有业务 Adapter。",
+      "chapter": "ch02",
+      "processed_at": "2026-10-07T06:20:34.200209+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7691126299994472488",
+      "title": "[掘金Android] Android 系统启动机制（九）：system_server 已经运行，为什么还不能说 Android 启动完成？",
+      "summary": "基于 Android 16 QPR2 r4 源码拆解开机完成的七层观察面：system_server 进程存在、service check、sys.boot_completed、开机动画退出、Launcher 显示、BOOT_COMPLETED 各自证明不同里程碑。phase 600 仅代表第三方进程可启动，动画退出由 WMS performEnableScreen 决定，boot_progress_enable_screen 只是 AMS 发起启屏。runtime restart 后证据可能跨 Framework generation。",
+      "chapter": "ch08",
+      "processed_at": "2026-10-07T06:20:34.200209+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "target_path": "src/part1-fundamentals/ch02-rendering/17-tasksnapshot-recents-rendering.md",
+      "route_confidence": 25,
+      "route_terms": [
+        "system",
+        "server",
+        "service",
+        "launcher",
+        "wms",
+        "enable",
+        "screen"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-07-76910309-Android 原生的 Compose .md",
+      "title": "[技术文章] Android 原生的 Compose A2UI 也来了，你还抱着 XML 养老吗？Andorid Compose 的",
+      "summary": "> 发布时间: 2026-09-30T07:30:39.000Z > 原文链接: https://juejin.cn/post/7691030977347207231 2026-09-30 722 阅读4分钟 Andorid Compose 的 A2UI 终于正式落地 AndroidX 了，这个我们在 Flutter 已经聊过很多次了，这次还是官方第一次通过 Compos...",
+      "chapter": "ch16",
+      "processed_at": "2026-10-07T06:20:34.200209+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-07-76911262-Android 系统启动机制（九）：sy.md",
+      "title": "[技术文章] Android 系统启动机制（九）：system_server 已经运行，为什么还不能说 Android 启动完成？",
+      "summary": "> 发布时间: 2026-09-30T11:02:00.000Z > 原文链接: https://juejin.cn/post/7691126299994472488 2026-09-30 139 阅读13分钟 Android 16 系统源码与运行机制 开机诊断中，下面几条证据经常被当成同一件事： system_server 进程存在； activity 服务能查到； s...",
+      "chapter": "ch08",
+      "processed_at": "2026-10-07T06:20:34.200209+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part5-app/ch20-stability/14-sdk-performance-governance.md",
+      "route_confidence": 22,
+      "route_terms": [
+        "system",
+        "server",
+        "t11",
+        "activity",
+        "juejin-android",
+        "aosp"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
