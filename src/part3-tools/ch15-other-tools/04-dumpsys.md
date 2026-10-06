@@ -33,7 +33,7 @@ status: finalized
 
 ## 为什么需要 dumpsys
 
-`dumpsys` 读取某个 Binder 服务在采集时刻愿意公开的内部状态。Binder 是 Android 的进程间调用机制，ServiceManager 是系统服务注册表；`dumpsys` 会找到目标服务并调用它的 dump 接口，不会直接扫描服务进程的内存。
+`dumpsys` 读取某个 Binder 服务在采集时刻对外公开的内部状态。Binder 是 Android 的进程间调用机制，ServiceManager 是系统服务注册表；`dumpsys` 会找到目标服务并调用它的 dump 接口，不会直接扫描服务进程的内存。
 
 它适合回答“当前焦点在哪个窗口”“进程现在处于哪个 OOM 调整级别”“最近保留了哪些 HWUI 帧”等问题。Perfetto、Winscope 和 bugreport 负责补足时间顺序；一份文本快照无法证明事件先后。
 
@@ -63,7 +63,7 @@ adb shell dumpsys --priority CRITICAL
 
 ## dumpsys activity：Activity 栈、进程与 ANR 信息
 
-`activity` 服务横跨 ActivityTaskManager（负责 Activity 与 Task 生命周期和层级）、进程管理、Service 与退出记录。ANR 是 Application Not Responding，表示应用在规定时间内没有响应系统请求。一次排障应只请求相关子项，避免在庞大的默认输出中丢失现场。
+`activity` 服务覆盖 ActivityTaskManager、进程管理、Service 和退出记录几个方向，其中 ActivityTaskManager 负责 Activity 与 Task 的生命周期和层级。ANR 是 Application Not Responding，表示应用在规定时间内没有响应系统请求。一次排障应只请求相关子项，避免在庞大的默认输出中丢失现场。
 
 下面的命令分别采集任务栈、进程 OOM 状态和退出历史。
 
@@ -219,7 +219,7 @@ Android 17 的 [`FrameInfo.h`](https://android.googlesource.com/platform/framewo
 
 ## dumpsys cpuinfo：CPU 占用快速排查
 
-`cpuinfo` 输出 ActivityManager 后台维护的 `ProcessCpuTracker` 采样结果。它展示最近两个采样点之间的增量，调用命令的时刻不一定触发一段新的测量窗口，因此“瞬时 CPU”这个叫法会高估它的时间精度。
+`cpuinfo` 输出 ActivityManager 后台维护的 `ProcessCpuTracker` 采样结果。它展示最近两个采样点之间的增量，调用命令的时刻不一定触发一段新的测量窗口，因此把它当作“瞬时 CPU”会高估它的时间精度。
 
 下面的命令用于取得最近窗口，并在确定目标 PID 后切换到连续线程观察。
 
