@@ -154,7 +154,7 @@ Matrix 是腾讯微信团队开源的插件式性能监控框架。APM（Applica
 
 #### 整体架构
 
-各模块使用的观测手段并不相同。Trace Canary 依赖编译期字节码改写和运行时主线程观测；Resource Canary 使用弱引用、GC 检查和 HPROF 堆快照；IO Canary 进入 Native I/O 路径并改写 `CloseGuard` 的报告回调。Hook 指在运行时拦截函数调用或系统行为，不能用“全部通过 Hook”概括 Matrix。上游 README 列出的主要 Android 能力包括：
+各模块使用的观测手段并不相同。Trace Canary 依赖编译期字节码改写和运行时主线程观测；Resource Canary 使用弱引用、GC 检查和 HPROF（Android Java 堆快照的文件格式）；IO Canary 进入 Native I/O 路径并改写 `CloseGuard` 的报告回调。Hook 指在运行时拦截函数调用或系统行为，不能用“全部通过 Hook”概括 Matrix。上游 README 列出的主要 Android 能力包括：
 
 - **APK Checker**：检查包体、资源、Native 库和构建产物
 - **Trace Canary**：卡顿、ANR（Application Not Responding，应用无响应）、启动耗时、帧率监控
@@ -184,11 +184,11 @@ Trace Canary 关注卡顿、慢方法、启动、帧率和 ANR 线索。理解�
 
 #### Resource Canary：内存泄漏与冗余 Bitmap
 
-Resource Canary 的公开主路径从 `Application.ActivityLifecycleCallbacks.onActivityDestroyed()` 接收已销毁 Activity，为对象建立 `WeakReference`（不阻止对象被回收的弱引用），放入待检查队列，并在后台线程按配置重试 GC（垃圾回收）与存活检查。对象跨过多轮检查仍可达时，模块再按 `DumpMode` 进入“不 dump”“自动 dump”“手动 dump”“fork dump / analyze”等处理器。fork 表示创建子进程，dump 表示导出堆快照。
+Resource Canary 的公开主路径从 `Application.ActivityLifecycleCallbacks.onActivityDestroyed()` 接收已销毁 Activity，为对象建立 `WeakReference`（不阻止对象被回收的弱引用），放入待检查队列，并在后台线程按配置重试 GC（垃圾回收）与存活检查。对象跨过多轮检查仍可达时，模块再按 `DumpMode` 交给对应的处理器，例如“不 dump”“自动 dump”“手动 dump”“fork dump / analyze”。fork 表示创建子进程，dump 表示导出堆快照。
 
 弱引用仍存活只说明对象尚未回收；低内存压力、调试器、GC 未执行和生命周期时序都会影响判断，因此需要重试与去重。
 
-HPROF 是 Android Java 堆快照的文件格式，其处理方式取决于配置。上游同时包含 `HprofBufferShrinker`、客户端分析、fork dump / analyze 和仅报告对象信息等路径，不能把它固定描述成“客户端裁剪、服务端解析”。接入方应明确选择哪个处理器、原始或裁剪 HPROF 保存多久、是否允许上传、如何加密，以及分析进程允许使用多少 CPU、磁盘和 PSS（按共享页比例计算的物理内存占用）。
+HPROF 的处理方式取决于配置。上游同时包含 `HprofBufferShrinker`、客户端分析、fork dump / analyze 和仅报告对象信息等路径，不能把它固定描述成“客户端裁剪、服务端解析”。接入方应明确选择哪个处理器、原始或裁剪 HPROF 保存多久、是否允许上传、如何加密，以及分析进程允许使用多少 CPU、磁盘和 PSS（按共享页比例计算的物理内存占用）。
 
 上游 README 还列出重复 Bitmap 检测：分析 heap 中存活 Bitmap 的像素缓冲区，找出内容重复的对象。它能提示同一图片被重复 decode（解码）或分散保存在多份缓存中，但相同像素不等于对象可以直接合并；密度、色彩空间、可变性、硬件 Bitmap 和生命周期仍要逐项确认。
 
@@ -222,7 +222,7 @@ KOOM 的 Java 模块会周期性观察 Java heap（Java 对象堆）、线程数
 
 子进程可生成 strip HPROF（去掉部分冗余内容的堆快照），并由基于 Shark 的分析器在设备侧计算泄漏对象和引用链；Shark 是 LeakCanary 使用的堆分析库。需要交给 Android Studio 或 MAT（Memory Analyzer Tool）时，上游还提供 refill 工具恢复所需记录。
 
-Dump、裁剪和分析仍可能运行数分钟并占用一条 CPU 及较多内存，README 因此建议远程开关和采样。系统剩余内存偏低、内存压力已经较高时启动分析，可能放大 OOM 风险；触发器要同时检查前后台、剩余磁盘、充电状态、温度和进程重要性。
+Dump、裁剪和分析仍可能运行数分钟并占用一个 CPU 核及较多内存，README 因此建议远程开关和采样。系统剩余内存偏低、内存压力已经较高时启动分析，可能放大 OOM 风险；触发器要同时检查前后台、剩余磁盘、充电状态、温度和进程重要性。
 
 Java 模块的触发、兼容范围和资源提示见 [`koom-java-leak/README.md`](https://github.com/KwaiAppTeam/KOOM/blob/master/koom-java-leak/README.md)。该模块声明支持 Android 5.0 / API 21 及以上和四种常见 ABI；这项声明不自动覆盖 Android 17 上的所有 OEM ART 修改，仍需真机验证 fork、dump、解析与恢复路径。
 
@@ -402,12 +402,6 @@ Rhea 后续以 `btrace` 开源。旧文章常把 Rhea 1.0、2.0 和“Rhea 3.0�
 
 当前原理与限制见 [btrace README](https://github.com/bytedance/btrace/blob/master/README.MD) 和 [btrace 3.0 Introduction](https://github.com/bytedance/btrace/blob/master/INTRODUCTION.MD)；早期方法插桩路线可对照[抖音 Rhea 文章](https://mp.weixin.qq.com/s/vkBeZ6hmVn_RaXS5Xv_L2g)阅读。
 
-### Hook 能力的选型边界
-
-Matrix、KOOM、btrace 等工具会使用 PLT Hook、Inline Hook、ART/JVMTI 或构建期字节码改写。Inline Hook 直接改写目标函数开头的机器指令；JVMTI 是 Java 虚拟机的调试与监控接口。“使用了 Hook”不足以证明兼容性。
-
-选型时至少记录目标符号、拦截位置、ABI、装载时机、链式调用规则、失败降级、4 KB / 16 KB page size、BTI/PAC、CFI（控制流完整性）/unwind 和目标 ROM。这里先固定 Hook 的选型前提；下文再进入具体实现、回调安全与验证矩阵，避免选型与实现各维护一套原理说明。
-
 ### 工具选型指南
 
 选型从“要保留什么证据”开始，再看采集方式和维护成本。
@@ -437,7 +431,7 @@ Matrix、KOOM、btrace 等工具会使用 PLT Hook、Inline Hook、ART/JVMTI 或
 
 ### 从信号到平台：统一可观测性数据定义
 
-三方 SDK 之外，还应先复用平台与 Jetpack 已有信号：
+三方 SDK 之外，应优先复用平台与 Jetpack 已有信号：
 
 | 信号 | 适合回答的问题 | 主要边界 |
 |---|---|---|
@@ -455,6 +449,11 @@ Session ID 表示一段使用期，Trace ID 表示一次操作或请求树，两
 
 采样预算按数据类型分开：crash/ANR 事件可保持高覆盖，frame 与网络 span 采用稳定规则采样，大型 profile/snapshot 只在异常、系统触发或远程诊断窗口内获取。接入前后都要在低端设备上比较启动、帧、内存、功耗、磁盘和网络开销；远程开关必须能按模块紧急关闭。
 
+### Hook 能力的选型边界
+
+Matrix、KOOM、btrace 等工具会使用 PLT Hook、Inline Hook、ART/JVMTI 或构建期字节码改写。Inline Hook 直接改写目标函数开头的机器指令；JVMTI 是 Java 虚拟机的调试与监控接口。“使用了 Hook”不足以证明兼容性。
+
+选型时至少记录目标符号、拦截位置、ABI、装载时机、链式调用规则、失败降级、4 KB / 16 KB page size、BTI/PAC、CFI（控制流完整性）/unwind 和目标 ROM。这里先固定 Hook 的选型前提；下文再进入具体实现、回调安全与验证矩阵，避免选型与实现各维护一套原理说明。
 
 ## 插桩与 Native Hook 的实现约束
 
@@ -680,7 +679,9 @@ linker namespace（动态链接器命名空间）限制普通 `dlopen()` / `dlsy
 
 #### 16 KB page size
 
-Android 15 起，AOSP 支持基础 page size（内存页大小）为 16 KB 的设备。要在这类设备上原生兼容，APK 中每个 native 依赖都要具备 16 KB ELF `LOAD` segment 对齐；未压缩 `.so` 还要满足 16 KB ZIP 对齐。16 KB backcompat mode（向后兼容模式）可让部分未对齐应用运行，但官方仍要求应用完成对齐以获得可靠性。通过 Google Play 发布且目标 SDK 为 Android 15（API 35）及以上的应用，官方页面要求从 2027 年 2 月 1 日起，更新包支持 64 位设备上的 16 KB page size；Hook SDK 随包携带的 `.so` 也要按同一规则检查。Android 17 新增属性值 `bionic.linker.16kb.app_compat.enabled=fatal`，可关闭该兜底并让不兼容二进制立即终止，适合测试。
+Android 15 起，AOSP 支持基础 page size（内存页大小）为 16 KB 的设备。要在这类设备上原生兼容，APK 中每个 native 依赖都要具备 16 KB ELF `LOAD` segment 对齐；未压缩 `.so` 还要满足 16 KB ZIP 对齐。16 KB backcompat mode（向后兼容模式）可让部分未对齐应用运行，但官方仍要求应用完成对齐以获得可靠性。
+
+通过 Google Play 发布且目标 SDK 为 Android 15（API 35）及以上的应用，官方页面要求从 2027 年 2 月 1 日起，更新包支持 64 位设备上的 16 KB page size；Hook SDK 随包携带的 `.so` 也要按同一规则检查。Android 17 新增属性值 `bionic.linker.16kb.app_compat.enabled=fatal`，可关闭该兜底并让不兼容二进制立即终止，适合测试。
 
 Hook 框架要处理两类问题：
 
