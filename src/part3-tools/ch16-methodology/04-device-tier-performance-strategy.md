@@ -42,7 +42,7 @@ sources:
 
 ## 先拆成三类信息
 
-这里的“能力画像”是一组各自有明确含义的设备信号，也可视为能力向量；它不是给设备贴一个笼统标签。一套可维护的性能策略至少包含三层：
+这里的“能力画像”是一组各自有明确含义的设备信号，也可视为能力向量；它不是给设备贴一个笼统标签。low-RAM 是系统声明的内存受限标记，ABI（应用二进制接口）决定设备与应用可使用的指令集等约定，“会话期”指用户当前这次前台使用过程。一套可维护的性能策略至少包含三层：
 
 | 层次 | 典型内容 | 生命周期 | 用途 |
 | --- | --- | --- | --- |
@@ -50,7 +50,7 @@ sources:
 | 工作负载策略 | 图片缓存预算、预取条数、视频规格、特效复杂度 | 随应用版本和远端策略版本变化 | 把能力映射到某个业务场景 |
 | 会话期压力 | 温控状态、省电模式、内存压力、丢帧率、启动耗时 | 运行期间变化 | 临时收缩或恢复工作量 |
 
-low-RAM 是系统声明的内存受限标记，ABI 是应用二进制接口，决定设备与应用可使用的指令集等约定。这里的“会话期”指用户当前这次前台使用过程。这三层不能共用一个分数：`isLowRamDevice()` 适合影响缓存和预加载，Media Performance Class 适合辅助选择媒体体验；热节流，也就是系统因温度升高而限制性能，以及省电模式只描述此刻的运行条件。一次发热也不应把设备永久记成“低端机”。
+这三层不能共用一个分数。`isLowRamDevice()` 适合影响缓存和预加载，Media Performance Class 适合辅助选择媒体体验；热节流（系统因温度升高而限制性能）和省电模式只描述此刻的运行条件。一次发热也不应把设备永久记成“低端机”。
 
 策略名称也应描述约束，例如 `memory_constrained`、`media_enhanced`、`render_reduced`。`low`、`middle`、`high` 看似省事，几个月后很难解释每一档究竟约束了 CPU、内存还是媒体能力。策略数量宜少，但“三档”并非平台规则；一项业务只有两个有效配置时，保留两个配置更容易验证。
 
@@ -58,7 +58,9 @@ low-RAM 是系统声明的内存受限标记，ABI 是应用二进制接口，�
 
 ### Media Performance Class
 
-Media Performance Class（MPC，媒体性能等级）由各 Android 版本的 CDD（Compatibility Definition Document，兼容性定义文档）规定。`Build.VERSION.MEDIA_PERFORMANCE_CLASS` 从 API 31 开始公开；Android 17 源码从只读设备属性取得该值，返回 `0` 表示设备或当前系统构建没有声明等级。当前官方文档列出的已定义等级是 30、31、33、34、35，不存在 MPC 32。该值在一次开机期间不变，厂商 OTA（系统更新）可能提高它；平台版本升级却不保证等级同步提高。
+Media Performance Class（MPC，媒体性能等级）由各 Android 版本的 CDD（Compatibility Definition Document，兼容性定义文档）规定。`Build.VERSION.MEDIA_PERFORMANCE_CLASS` 从 API 31 开始公开；Android 17 源码从只读设备属性取得该值，返回 `0` 表示设备或当前系统构建没有声明等级。
+
+当前官方文档列出的已定义等级是 30、31、33、34、35，不存在 MPC 32。该值在一次开机期间不变，厂商 OTA（系统更新）可能提高它；平台版本升级却不保证等级同步提高。
 
 Media Performance Class 覆盖媒体、相机、显示、编解码和部分通用要求，适合回答“能否提供某种媒体体验”。它没有承诺所有 App 工作负载的 CPU 或 GPU 吞吐，因此不能直接充当整机跑分。官方建议用 Jetpack Core Performance 统一读取设备声明，并可通过 Google Play services 补充数据；只需要平台声明时，`Build.VERSION.MEDIA_PERFORMANCE_CLASS` 已能提供对应值。
 
@@ -77,7 +79,9 @@ Media Performance Class 覆盖媒体、相机、显示、编解码和部分通�
 
 ### CPU、SoC、GPU 与屏幕
 
-`Runtime.availableProcessors()` 返回调用当时 Java 虚拟机可用的处理器数量，Java API 明确允许该值在同一进程生命周期内变化。它既不保证列出完整 SoC（片上系统）拓扑，也没有表达大小核性能、调度容量或当前频率；并发策略若依赖该值，应在非关键路径偶尔重读，不能把一次结果当成永久硬件核心数。`Build.SOC_MANUFACTURER` 和 `Build.SOC_MODEL` 从 API 31 提供，可以帮助按机型定位异常；型号取值很多，还存在厂商命名差异，不适合单独映射为分档。
+`Runtime.availableProcessors()` 返回调用当时 Java 虚拟机可用的处理器数量，Java API 明确允许该值在同一进程生命周期内变化。它既不保证列出完整 SoC（片上系统）拓扑，也没有表达大小核性能、调度容量或当前频率；并发策略若依赖该值，应在非关键路径偶尔重读，不能把一次结果当成永久硬件核心数。
+
+`Build.SOC_MANUFACTURER` 和 `Build.SOC_MODEL` 从 API 31 提供，可以帮助按机型定位异常；型号取值很多，还存在厂商命名差异，不适合单独映射为分档。
 
 Vulkan 版本、扩展和编解码器能力适合做功能门控，即只在所需接口存在时开放对应功能。支持某个 Vulkan 特性只能证明接口可用，无法证明着色器吞吐足以承受某个场景。实验室可以用固定 workload（工作负载，也就是统一的输入与操作流程）测量 GPU、CPU 和存储，线上冷启动阶段不应运行微基准：它会延长启动、增加发热，并产生受后台负载影响很大的样本。
 
@@ -192,7 +196,9 @@ fun resolvePolicy(
 
 ## 会话期压力单独处理
 
-Android 10 起，`PowerManager.getCurrentThermalStatus()` 可读取当前热状态，`isPowerSaveMode()` 可读取省电模式。Android 11 / API 30 增加 `getThermalHeadroom(forecastSeconds)`，参数表示向未来预测 0～60 秒；返回值 `1.0` 对应预计达到 `THERMAL_STATUS_SEVERE` 的阈值，设备不支持时会返回 `NaN`（Not a Number，用作当前没有有效数值的标记）。该接口跟踪皮肤温度等慢变化传感器，约一秒以内重复调用没有收益，调用明显过快也可能得到 `NaN`。
+Android 10 起，`PowerManager.getCurrentThermalStatus()` 可读取当前热状态，`isPowerSaveMode()` 可读取省电模式。Android 11 / API 30 增加 `getThermalHeadroom(forecastSeconds)`，参数表示向未来预测 0～60 秒；返回值 `1.0` 对应预计达到 `THERMAL_STATUS_SEVERE` 的阈值，设备不支持时会返回 `NaN`（Not a Number，用作当前没有有效数值的标记）。
+
+该接口跟踪皮肤温度等慢变化传感器，约一秒以内重复调用没有收益，调用明显过快也可能得到 `NaN`。
 
 Android 16 / API 36 的 `android.os.health.SystemHealthManager` 增加 CPU、GPU headroom API。这里的 headroom 指系统估算的可用性能余量，它与 thermal headroom 的刻度方向不同：CPU/GPU headroom 越接近 0，可追加的容量越少；thermal headroom 接近或超过 1.0，则越接近或已经进入严重热节流。Android 17 源码显示：
 
@@ -253,7 +259,9 @@ class RenderQualityController(
 
 降级阈值高于恢复阈值，且两次切换至少间隔 30 秒，因此短时抖动不会反复改变画质。示例里的丢帧比例和时间窗口需要按场景校准；恢复时也宜逐级增加工作量，避免一次恢复全部特效后再次触发降级。
 
-内存压力可结合 `onTrimMemory()`、`MemoryInfo.lowMemory` 和业务缓存命中率处理。API 34 起，应用不再收到 `TRIM_MEMORY_RUNNING_*`、`TRIM_MEMORY_MODERATE` 和 `TRIM_MEMORY_COMPLETE` 等旧级别，不能依赖它们构造完整的实时压力阶梯；仍应处理可收到的回调，并用“大于等于某级”判断，避免枚举值变化。网络质量属于另一条动态轴，应依据计量网络、Data Saver（系统的数据节省模式）、请求时延和吞吐选择图片或预取策略，不能由设备等级代替。
+内存压力可结合 `onTrimMemory()`、`MemoryInfo.lowMemory` 和业务缓存命中率处理。API 34 起，应用不再收到 `TRIM_MEMORY_RUNNING_*`、`TRIM_MEMORY_MODERATE` 和 `TRIM_MEMORY_COMPLETE` 等旧级别，不能依赖它们构造完整的实时压力阶梯；仍应处理可收到的回调，并用“大于等于某级”判断，避免枚举值变化。
+
+网络质量属于另一条动态轴，应依据计量网络、Data Saver（系统的数据节省模式）、请求时延和吞吐选择图片或预取策略，不能由设备等级代替。
 
 ## 各类策略如何收缩
 
@@ -344,7 +352,7 @@ class RenderQualityController(
 
 ## 小结
 
-设备分级不是给整机打一个高、中、低总分，而是把稳定能力、具体工作负载和会话期压力分开建模。策略只依赖公开且可解释的信号，用本地安全默认值保证离线可用，再通过按能力群随机的实验验证主指标和护栏；温控、内存或帧压力只触发临时收缩，不能永久改变设备身份。
+设备分级的做法是把稳定能力、具体工作负载和会话期压力分开建模，不给整机打高、中、低总分。策略只依赖公开且可解释的信号，用本地安全默认值保证离线可用，再通过按能力群随机的实验验证主指标和护栏；温控、内存或帧压力只触发临时收缩，不能永久改变设备身份。
 
 ## 源码与文档
 
