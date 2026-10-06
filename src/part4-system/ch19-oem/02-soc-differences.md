@@ -118,14 +118,14 @@ SoC（System on Chip，片上系统）把 CPU、GPU、内存控制器和专用�
 
 在当前核对范围内，四家厂商公开的新一代移动平台可以这样描述：
 
+下表出现的 L3 是三级缓存，SLC（System Level Cache）是多个处理单元可共享的系统级缓存。GAA（Gate-All-Around）指全环绕栅极晶体管结构；VPS（Visual Perception System）是视觉感知系统，DVNR（Deep learning Video Noise Reduction）是深度学习视频降噪。
+
 | 平台 | 官方公开的 CPU / GPU | 专用计算单元 | 分析边界 |
 | --- | --- | --- | --- |
 | Snapdragon 8 Elite Gen 5 | 第三代 Oryon CPU，最高 4.74 GHz；Adreno GPU | Hexagon NPU、三路 20-bit Spectra ISP | Qualcomm 另有 4.6 GHz 和七核版本；产品页的 API 列表不等于每台整机的驱动能力 |
 | Dimensity 9500 | 1× C1-Ultra、3× C1-Premium、4× C1-Pro；Mali-G1 Ultra MC12（12 核配置） | NPU 990、Imagiq 1190 ISP | 官方还公开 16 MB L3、10 MB SLC 和 `LPDDR5X 10667`；整机频率表与内存配置由 OEM 决定 |
 | Exynos 2600 | 1× C1-Ultra、3× 性能调优 C1-Pro、6× 能效调优 C1-Pro；Xclipse 960 | NPU、带 VPS / DVNR 的 ISP | Samsung 将其描述为 2 nm GAA、Armv9.3 平台；不要从 Xclipse 940 的 RDNA 3 资料推导 Xclipse 960 的未公开代际 |
 | Tensor G5 | Google 官方材料公开 TSMC 3 nm，但未在该材料中列出完整 CPU 拓扑和 GPU 型号 | 新一代 TPU（张量处理器）、定制 ISP | 官方的 CPU 与 TPU 提升比例都是相对 Tensor G4 的代际数据，不能横向换算成其他厂商的性能 |
-
-表中的 L3 是三级缓存，SLC（System Level Cache）是多个处理单元可共享的系统级缓存。GAA（Gate-All-Around）指全环绕栅极晶体管结构；VPS（Visual Perception System）是视觉感知系统，DVNR（Deep learning Video Noise Reduction）是深度学习视频降噪。
 
 这张表用于定位架构家族，不用于给平台排次序。即使两台设备使用同一 SoC，内存容量、散热空间和软件版本也可能让持续性能出现明显差异。
 
@@ -160,9 +160,15 @@ adb shell uname -a
 
 ### Android 17 的公平调度与 EAS
 
-`android17-6.18-2026-06_r6` 的公平调度类使用 EEVDF（Earliest Eligible Virtual Deadline First）。它根据运行资格和虚拟截止时间，从公平调度类中选择任务。EAS（Energy Aware Scheduling，能效感知调度）则借助 Energy Model（能耗模型），在异构 CPU 之间评估唤醒任务应放到哪个核心。两套机制处理的决策层次不同。
+`android17-6.18-2026-06_r6` 的公平调度类使用 EEVDF（Earliest Eligible Virtual Deadline First）。它根据运行资格和虚拟截止时间，从公平调度类中选择任务。
 
-在这条 Android common 分支中，`select_task_rq_fair()` 会先执行 Android vendor hook（厂商钩子，即内核预留的扩展回调点）。若 hook 给出非负 CPU，函数直接采用该目标。在唤醒选核分支中，若 hook 没有接管，而且 root domain（根调度域）未进入 `overutilized` 状态，代码才调用 `find_energy_efficient_cpu()`。这里的根调度域是共享一套负载均衡状态的 CPU 范围，`overutilized` 表示该范围的整体利用率已经超过 EAS 的适用条件。下面的摘录只保留 hook 返回和 EAS 判断相关的控制流：
+EAS（Energy Aware Scheduling，能效感知调度）则借助 Energy Model（能耗模型），在异构 CPU 之间评估唤醒任务应放到哪个核心。两套机制处理的决策层次不同。
+
+这里的根调度域（root domain）是共享一套负载均衡状态的 CPU 范围，`overutilized` 表示该范围的整体利用率已经超过 EAS 的适用条件。
+
+在这条 Android common 分支中，`select_task_rq_fair()` 会先执行 Android vendor hook（厂商钩子，即内核预留的扩展回调点）。若 hook 给出非负 CPU，函数直接采用该目标。在唤醒选核分支中，若 hook 没有接管，而且根调度域未进入 `overutilized` 状态，代码才调用 `find_energy_efficient_cpu()`。
+
+下面的摘录只保留 hook 返回和 EAS 判断相关的控制流：
 
 ```c
 trace_android_rvh_select_task_rq_fair(p, prev_cpu, sd_flag,
@@ -180,7 +186,7 @@ if (!is_rd_overutilized(this_rq()->rd)) {
 
 EAS 的 `compute_energy()` 会调用 `em_cpu_energy()`，估算候选 performance domain（性能域，即共享一组性能状态的 CPU 集合）的活动能耗。Energy Model 不直接记录任务迁移造成的私有 L1/L2 缓存局部性损失，因此不能把“EAS 选中了某个 CPU”解释为“内核已经精确计算了缓存迁移成本”。
 
-`schedutil` 依据调度器利用率请求频率，但 cpufreq 驱动、OPP 表、调频间隔限制、温控约束、uclamp 和 Power HAL 都会改变结果。OPP（Operating Performance Point，工作频点）是一组配套的频率与电压；uclamp（utilization clamp，利用率钳制）用于限制调度器采用的利用率范围。一次频率抬升可能来自负载，也可能来自性能提示、任务分组或厂商服务。把调用链、调度信息与频率轨迹对齐后，才有条件判断来源。
+OPP（Operating Performance Point，工作频点）是一组配套的频率与电压；uclamp（utilization clamp，利用率钳制）用于限制调度器采用的利用率范围。`schedutil` 依据调度器利用率请求频率，但 cpufreq 驱动、OPP 表、调频间隔限制、温控约束、uclamp 和 Power HAL 都会改变结果。一次频率抬升可能来自负载，也可能来自性能提示、任务分组或厂商服务。把调用链、调度信息与频率轨迹对齐后，才有条件判断来源。
 
 Android 17 的 6.18 分支也含有 `sched_ext`，它是允许用 BPF 程序定义调度策略的 Linux 可扩展调度框架。设备需要启用 `CONFIG_SCHED_CLASS_EXT`，再加载相应的 BPF 调度器，任务才会受这个扩展调度类影响。源码中存在 `kernel/sched/ext.c`，不能证明量产设备已经启用某个 OEM BPF 调度器。
 
@@ -255,7 +261,9 @@ Android GPU Inspector（AGI）文档列出 Qualcomm Adreno、Arm Mali 和 Imagin
 
 ### Perfetto GPU 数据依赖数据生产端
 
-Perfetto 定义了 `gpu.counters`、`gpu.renderstages`、`vulkan.memory_tracker`、`gpu.log` 等数据源，也能通过 ftrace（Linux 内核跟踪机制）采集部分 GPU 频率与内存事件。producer（数据生产端）是向 Perfetto 跟踪服务注册并写入数据的组件，它可能把硬件后缀写进数据源名称，例如 `gpu.renderstages.mali`。下面的配置用于请求渲染阶段，以及内核提供的 GPU 频率和分配量事件：
+Perfetto 定义了 `gpu.counters`、`gpu.renderstages`、`vulkan.memory_tracker`、`gpu.log` 等数据源，也能通过 ftrace（Linux 内核跟踪机制）采集部分 GPU 频率与内存事件。
+
+producer（数据生产端）是向 Perfetto 跟踪服务注册并写入数据的组件，它可能把硬件后缀写进数据源名称，例如 `gpu.renderstages.mali`。下面的配置用于请求渲染阶段，以及内核提供的 GPU 频率和分配量事件：
 
 ```proto
 data_sources {
@@ -308,7 +316,9 @@ ISP 通常缺少跨厂商通用的 Perfetto 计数器。可用证据包括相机
 
 ## LPDDR5 / LPDDR5X：标称速率不是有效带宽
 
-一款 SoC “支持 LPDDR5X”，只说明内存控制器的能力范围。OEM 仍会选择颗粒、容量、速率、总线组织和固件策略。Snapdragon 8 Elite Gen 5 产品简报写的是 “LP-DDR5x, up to 5300 MHz”，Dimensity 9500 页面只写 `LPDDR5X 10667`，没有注明单位。资料没有说明采用时钟频率、每引脚数据率还是内存速率等级时，不能把 5300 和 10667 当成同单位数字直接比较。
+一款 SoC “支持 LPDDR5X”，只说明内存控制器的能力范围。OEM 仍会选择颗粒、容量、速率、总线组织和固件策略。
+
+Snapdragon 8 Elite Gen 5 产品简报写的是 “LP-DDR5x, up to 5300 MHz”，Dimensity 9500 页面只写 `LPDDR5X 10667`，没有注明单位。资料没有说明采用时钟频率、每引脚数据率还是内存速率等级时，不能把 5300 和 10667 当成同单位数字直接比较。
 
 当厂商给出可核验的总传输率与总数据位宽时，理论峰值可按下式估算：
 
@@ -316,9 +326,11 @@ ISP 通常缺少跨厂商通用的 Perfetto 计数器。可用证据包括相机
 
 若资料只写内存通道（channel）数量，却不写每个通道的数据位宽，公式仍缺参数。MT/s 表示每秒百万次传输，Gb/s 表示每秒十亿比特；两者还要与时钟频率区分，双倍数据率不能重复乘二。
 
-应用拿到的是有效带宽和访问延迟。内存控制器调度、DRAM 时序、SLC / LLC 命中、压缩、NoC、内存互连、CPU / GPU / ISP 并发与温控都会拉开理论值和测量值。LLC（Last Level Cache）是末级缓存；NoC（Network on Chip）是连接芯片内部模块的片上网络。顺序读写微基准（microbenchmark）也不能代表游戏纹理采样或相机流水线。
+应用拿到的是有效带宽和访问延迟。LLC（Last Level Cache）是末级缓存；NoC（Network on Chip）是连接芯片内部模块的片上网络。内存控制器调度、DRAM 时序、SLC / LLC 命中、压缩、NoC、内存互连、CPU / GPU / ISP 并发与温控都会拉开理论值和测量值。顺序读写微基准（microbenchmark）也不能代表游戏纹理采样或相机流水线。
 
-Perfetto 没有所有 Android 设备都提供的通用 “DRAM bandwidth” 轨道。设备若公开内存互连、devfreq（内核设备调频框架）、PMU 或厂商内存计数器，可以在时间轴上对齐；没有计数器时，可用固定负载做受控扰动，例如保持 GPU 场景不变，逐档增加 CPU 内存流量并记录帧时间、频率和功耗。相关性只能支持提出假设，因果判断还需要可重复的负载变化。
+Perfetto 没有所有 Android 设备都提供的通用 “DRAM bandwidth” 轨道。设备若公开内存互连、devfreq（内核设备调频框架）、PMU 或厂商内存计数器，可以在时间轴上对齐。
+
+没有计数器时，可用固定负载做受控扰动，例如保持 GPU 场景不变，逐档增加 CPU 内存流量并记录帧时间、频率和功耗。相关性只能支持提出假设，因果判断还需要可重复的负载变化。
 
 ## 工具选择与数据缺口
 
@@ -386,7 +398,7 @@ CPU 与 GPU 同时变慢只是线索。可靠判断需要 DRAM 或内存互连�
 
 ## 小结
 
-跨 SoC 分析的核心不是给芯片品牌排序，而是把微架构、设备拓扑、驱动能力、整机约束和运行证据放进同一套实验口径。只有在工作负载、环境和数据生产端可比时，CPU、GPU、加速器与内存差异才具有可复查的解释力。
+跨 SoC 分析要把微架构、设备拓扑、驱动能力、整机约束和运行证据放进同一套实验口径，而不是停在芯片品牌排序上。只有在工作负载、环境和数据生产端可比时，CPU、GPU、加速器与内存差异才具有可复查的解释力。
 
 ## 与相关章节的边界
 
