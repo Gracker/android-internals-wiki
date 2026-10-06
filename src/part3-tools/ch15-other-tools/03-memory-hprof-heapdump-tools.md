@@ -57,7 +57,7 @@ consolidated_from:
 
 # 内存分析、HPROF 与 Heap Dump 工具
 
-内存工具按问题域选择：Heap Dump 观察 Java 对象和引用，heapprofd 采样 Native 分配，smaps 与 meminfo 描述映射和系统统计。HPROF 与 Perfetto java_hprof 使用相关数据，但采集和分析路径不同。
+内存工具按问题域选择：Heap Dump 观察 Java 对象和引用，heapprofd 采样 Native 分配，smaps 与 meminfo 描述映射和系统统计。HPROF 与 Perfetto java_hprof 都面向 Java 堆，但采集和分析路径不同。
 
 ## 按 Java、Native、图形与映射选择工具
 
@@ -114,7 +114,7 @@ dependencies {
 }
 ```
 
-依赖合入 AndroidManifest 的自动安装组件会在主进程安装默认观察器，无需在 `Application` 手工初始化。AndroidX Startup 属于另一种可选安装依赖，不能根据上面的基础依赖推定正在使用它。构建产物仍应通过依赖分析确认 release 变体不含 LeakCanary。
+依赖合入的自动安装组件会在主进程安装默认观察器，无需在 `Application` 手工初始化。AndroidX Startup 属于另一种可选安装依赖，基础依赖并不能说明项目正在使用它。构建产物仍应通过依赖分析确认 release 变体不含 LeakCanary。
 
 #### 从弱引用到泄漏引用链
 
@@ -293,7 +293,7 @@ Android Studio Heap Dump 会为部分框架类型提供 Native Size 和 Bitmap �
 
 heapprofd 从 Android 10 起作为 Perfetto 数据源提供。native 模式会拦截 `malloc/free`、`new/delete` 等分配器调用，对分配按字节概率采样，并把寄存器、栈和分配/释放记录送给独立的 heapprofd 进程展开与聚合。
 
-采样间隔为 `n` 字节时，可把模型理解为每个字节约有 `1/n` 的概率命中，工具再用统计权重估算总体。Android 17 的 `HeapprofdConfig` 要求显式提供非零间隔；同版本 `tools/heap_profile` 代为写入的默认值是 4096 字节。间隔设为 1 表示记录每次分配，记录量与被测进程扰动也随之增加。
+采样间隔为 `n` 字节时，可理解为每个字节约有 `1/n` 的概率命中，工具再用统计权重估算总体。Android 17 的 `HeapprofdConfig` 要求显式提供非零间隔；同版本 `tools/heap_profile` 代为写入的默认值是 4096 字节。间隔设为 1 表示记录每次分配，记录量与被测进程扰动也随之增加。
 
 heapprofd 统计的是分配器请求与释放。分配器 arena（为批量管理内存而申请的内存区）、页粒度、碎片、zRAM 和 mmap 区域会让 heapprofd 的存活分配字节、`malloc_info()` 与 Native Heap RSS 出现差异。三者不应强行对齐。
 
