@@ -55,13 +55,13 @@ last_review_finalize_at: '2026-08-04T14:07:05+08:00'
 
 # Agent 辅助 Perfetto 分析协议
 
-这里的 Agent 指能够读取 trace、调用 `trace_processor` 并执行 SQL 的工具型 AI。本文所称“协议”是一套可重复执行的调查流程和记录格式，不涉及网络报文。目标是让 trace 调查可复查：人工查看 Perfetto UI 很快，但结论容易散落在截图、口头判断和临时 SQL 里；换一份 trace 或换一名分析者后，很难重放同一条推理路径。流程吸收了 `android/skills/profilers` 固定提交中的约束，以及 Perfetto 官方 Agent skill（供 Agent 读取的说明文件、脚本与工具包装）的主机侧能力边界：输入完整、SQL 经执行验证、证据与假设分开、报告注明版本和采集缺口。
+这里的 Agent 指能够读取 trace、调用 `trace_processor` 并执行 SQL 的工具型 AI。本文所称“协议”是一套可重复执行的调查流程和记录格式，不涉及网络报文。目标是让 trace 调查可复查：人工查看 Perfetto UI 很快，但结论容易散落在截图、口头判断和临时 SQL 里；换一份 trace 或换一名分析者后，很难重放同一条推理路径。流程吸收了 `android/skills/profilers` 固定提交中的约束，以及 Perfetto 官方 Agent skill 的主机侧能力边界（该 skill 由供 Agent 读取的说明文件、脚本与工具包装组成）：输入完整、SQL 经执行验证、证据与假设分开、报告注明版本和采集缺口。
 
 在 14.1 节 Trace 抓取、14.7 节 Perfetto SQL 常用模板、14.10 节 BufferQueue 阻塞案例的基础上，这里聚焦 Agent 调查流程：怎样提问、怎样取证、怎样避免过早下结论。
 
 本文以 Android 17 / API 37、`android-17.0.0_r1` 为平台源码版本；该标签在 `platform/external/perfetto` 对应提交 `ece66975738007dd0978b911d8a2077e49b8f31e`。涉及调度和内核等待时，以 `android17-6.18-2026-06_r6` 为内核版本。主机侧 SQL 在 Perfetto v57.2、提交 `da1d152cff27890903d158fe96751de3aab883cc` 的 Trace Processor 上验证，并覆盖 Android 17 标签中的标准库。Perfetto v57.1 引入官方 Agent skill，v57.2 修复 Trace Processor 解析带内嵌 proto descriptor（trace 自带的 Protocol Buffers 字段定义）的部分 trace 时出现的兼容问题。
 
-Android 17 标签是 2026 年 4 月的固定源码快照，包含 Perfetto v54.0 之后的提交，不能写成“Android 17 等于 Perfetto v54”。主机上的新 Trace Processor 读取旧设备 trace 时，只能解析 trace 已经采到的数据；它可以改变表结构、标准库和分析能力，不能补出设备当时未记录的 FrameTimeline、ftrace、调用栈或厂商事件。
+Android 17 标签是 2026 年 4 月的固定源码快照，包含 Perfetto v54.0 之后的提交，不能写成“Android 17 等于 Perfetto v54”。主机上的新 Trace Processor 读取旧设备 trace 时，只能解析 trace 已经采到的数据；它可以提供不同的表结构、标准库和分析能力，不能补出设备当时未记录的 FrameTimeline、ftrace、调用栈或厂商事件。
 
 每次调查要分别记录这些版本：
 
@@ -108,7 +108,7 @@ trace 可能包含进程名、线程名、URL、日志、文件路径和业务�
 
 ## Scratchpad：事实和假设分开
 
-固定提交中的 `perfetto-trace-analysis` 要求在 trace 同目录创建 scratchpad，文件名由 trace 文件名追加 `_analysis.md` 得到。团队流程还要服从权限和数据处理规则：trace 目录只读或由外部系统管理时，把 scratchpad 放入获准的工作目录，并记录 trace 散列值与权限受控存储中的文件标识。scratchpad 不写“可能是”“看起来像”这类判断，只记录已经验证的事实。
+固定提交中的 `perfetto-trace-analysis` 要求在 trace 同目录创建 scratchpad，文件名取 trace 文件名加 `_analysis.md` 后缀。团队流程还要服从权限和数据处理规则：trace 目录只读或由外部系统管理时，把 scratchpad 放入获准的工作目录，并记录 trace 散列值与权限受控存储中的文件标识。scratchpad 不写“可能是”“看起来像”这类判断，只记录已经验证的事实。
 
 scratchpad 分成三张表：
 
@@ -256,7 +256,7 @@ ORDER BY state_dur_ms DESC;
 | Memory | LMK、swap 上升、kswapd 活跃、图形内存异常 | 已采集的内存计数器、LMK、PSI、dmabuf / dma_heap、堆图 | 查进程 RSS、swap、GPU buffer、Bitmap 与持有路径 | 只看 Java heap，漏掉 native 或图形内存 |
 | Power | 屏灭耗电、无法 suspend、modem 或蓝牙电源轨高 | 可用的电源轨、suspend、唤醒源、网络与厂商功耗轨道 | 查唤醒源、UID 流量、蓝牙 / modem / thermal 事件 | 把缺失电源轨或归因字段解释成零功耗 |
 
-这张表用于避免没有边界地扫描所有数据。Agent 应根据用户问题和已验证事实选择方向：启动慢通常从启动窗口、主线程状态、I/O 与 Binder 开始；滑动掉帧从 FrameTimeline、UI / RenderThread、SurfaceFlinger 与 CPU 开始；屏灭耗电从 suspend、唤醒源、电源轨与网络归因开始。某个轨道未被采集时，结论应降级为“该证据不可见”，不能写成“该异常不存在”。
+这张表用来收窄扫描范围，避免无边界地扫描全部数据。Agent 应根据用户问题和已验证事实选择方向：启动慢通常从启动窗口、主线程状态、I/O 与 Binder 开始；滑动掉帧从 FrameTimeline、UI / RenderThread、SurfaceFlinger 与 CPU 开始；屏灭耗电从 suspend、唤醒源、电源轨与网络归因开始。某个轨道未被采集时，结论应降级为“该证据不可见”，不能写成“该异常不存在”。
 
 ## Wall time 与 CPU time 必须分离
 
@@ -270,13 +270,20 @@ ORDER BY state_dur_ms DESC;
 4. 按占比最大的状态选择后续方向：CPU、调度、Binder / 锁、I/O。
 5. 找到阻塞方后，回到全局视角检查同一用户可感知窗口中的竞争事件。
 
-`Running` 表示线程正在 CPU 上执行，后续要看子 slice、采样栈、cpufreq 状态和 CPU 拓扑；`Runnable` 表示线程可运行但尚未被调度，后续要看同 CPU 竞争、IRQ、实时线程和 idle 情况；`Sleeping` 可能对应等事件、锁、Binder 回复或 futex；`Uninterruptible Sleep` 需要结合 `io_wait`、`blocked_function`、内核线程与 block 事件判断。Android 17 的 `slices.time_in_state` 会输出 `io_wait` 和 `blocked_function`，但后两项依赖 `sched/sched_blocked_reason`；`blocked_function` 还受 userdebug 构建与符号可用性限制。
+四个状态分别对应不同的后续方向：
+
+- `Running`：线程正在 CPU 上执行，后续看子 slice、采样栈、cpufreq 状态和 CPU 拓扑。
+- `Runnable`：线程可运行但尚未被调度，后续看同 CPU 竞争、IRQ、实时线程和 idle 情况。
+- `Sleeping`：可能对应等事件、锁、Binder 回复或 futex。
+- `Uninterruptible Sleep`：需要结合 `io_wait`、`blocked_function`、内核线程与 block 事件判断。
+
+Android 17 的 `slices.time_in_state` 会输出 `io_wait` 和 `blocked_function`，但后两项依赖 `sched/sched_blocked_reason`；`blocked_function` 还受 userdebug 构建与符号可用性限制。
 
 函数名出现在 slice 上，只说明线程处于该标记范围；它不能单独证明 CPU 正在执行该函数。报告要分别给出经过时间、CPU 运行时间或调度状态分布，再用 Binder flow、锁事件、调用栈或内核证据定位等待方。
 
 ## 从局部异常到全局复核
 
-复杂 trace 里可能同时存在 App 主线程等待、系统服务慢 Binder、SurfaceFlinger 合成异常和后台 I/O。发现一个异常只证明它存在；归因还需要证明它与用户可感知窗口重合，并能沿依赖关系解释决定总耗时的 critical path（关键路径）。
+复杂 trace 里可能同时存在 App 主线程等待、系统服务慢 Binder、SurfaceFlinger 合成异常和后台 I/O。发现一个异常只证明它存在；归因还需要证明它与用户可感知窗口重合，并沿依赖关系找到决定总耗时的关键路径（critical path）。
 
 全局复核至少包括四步：
 
@@ -339,7 +346,7 @@ FROM candidate
 ORDER BY overlap_dur DESC, depth, id;
 ```
 
-`slice_dur_ms` 是完整时长，`overlap_ms` 是 slice 落入窗口的部分。排行按相交时长进行；同一线程上嵌套的父子项仍可能覆盖同一段时间，不能把它们相加成总耗时。结果中出现 `system_server`、SurfaceFlinger 或其他进程的长 slice 时，还要用 flow、调度或帧 token 证明关联，进程名本身不是依赖证据。内核线程不一定拥有 `thread_track` slice，D-state 与调度复核还需要独立查询 `thread_state`、`sched` 和 ftrace 事件。
+`slice_dur_ms` 是完整时长，`overlap_ms` 是 slice 落入窗口的部分。排行按相交时长排序；同一线程上嵌套的父子项仍可能覆盖同一段时间，不能把它们相加成总耗时。结果中出现 `system_server`、SurfaceFlinger 或其他进程的长 slice 时，还要用 flow、调度或帧 token 证明关联，进程名本身不是依赖证据。内核线程不一定拥有 `thread_track` slice，D-state 与调度复核还需要独立查询 `thread_state`、`sched` 和 ftrace 事件。
 
 调查可以在下列条件全部满足后停止：
 
@@ -371,7 +378,7 @@ Agent 的最终报告是一份可重放的工程调查记录。结构可以固�
 
 ## Trace 采集规划器
 
-采集规划是协议的前置步骤。用户给出问题类型与复现条件后，Agent 要输出可审阅的 `TraceConfig`（数据源和缓冲区等采集参数）、atrace 类别、触发方式、缓冲区规划、采集窗口、预计开销和敏感数据风险。缓冲区大小与采集时长不能写成所有设备通用的常量；它们要根据问题持续时间、事件速率、可接受开销和是否允许触发采集决定，并在短时试采后检查丢包、缓冲区覆盖与 trace 截断。
+采集规划是协议的前置步骤。用户给出问题类型与复现条件后，Agent 要输出可审阅的 `TraceConfig`（数据源和缓冲区等采集参数）、atrace 类别、触发方式、缓冲区规划、采集窗口、预计开销和敏感数据风险。缓冲区大小与采集时长不能写成所有设备通用的常量；它们取决于问题持续时间、事件速率、可接受开销以及是否允许触发采集，并在短时试采后检查丢包、缓冲区覆盖与 trace 截断。
 
 | 问题类型 | 必要数据 | 建议补充 | 缺失风险 |
 |---|---|---|---|
