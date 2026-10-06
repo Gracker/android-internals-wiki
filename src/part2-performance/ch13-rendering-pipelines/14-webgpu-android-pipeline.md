@@ -22,7 +22,7 @@ related_chapters:
 - '13.5'
 - '13.6'
 - '13.9'
-last_verified: '2026-08-13'
+last_verified: '2026-10-06'
 last_verified_against: androidx.webgpu 1.0.0-alpha05 / AndroidX c48b772dd76241af6af60bee13d3cad0e4520306 / Dawn 9d41fdf36977cca92361c6ae2769129bbaaafd9b / android-17.0.0_r1 / Writer rendering_pipelines S01、S03、S04 / android17-6.18-2026-06_r6
 confidence: medium
 sources:
@@ -59,6 +59,9 @@ sources:
 - type: androidx
   path: https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUAdapter.kt
   role: adapter feature、limit、info 与 requestDevice API
+- type: androidx
+  path: https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUDeviceDescriptor.kt
+  role: device-lost/uncaptured-error callback 与 Executor 边界
 - type: androidx
   path: https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPULimits.kt
   role: render/compute limit 与 Compatibility 扩展字段
@@ -377,7 +380,7 @@ WebGPU compute 使用同一组 instance、adapter、device、queue、buffer、te
 
 ### Device lost 与结果正确性
 
-`GPUDeviceDescriptor` 要求调用方提供 device-lost 和 uncaptured-error callback 及各自的 `Executor`。device lost 表示当前逻辑设备已经失效，由它创建的 queue、pipeline 和资源也不能继续用于有效提交。恢复代码应能重新请求 adapter/device、重建资源，并从 CPU、磁盘或网络上的可恢复数据重新填充必要状态。
+`GPUDeviceDescriptor` 的构造函数要求传入 device-lost 与 uncaptured-error 的 `Executor`，callback 参数本身允许为 null；工程代码仍应提供这两类回调。device lost 表示当前逻辑设备已经失效，由它创建的 queue、pipeline 和资源也不能继续用于有效提交。恢复代码应能重新请求 adapter/device、重建资源，并从 CPU、磁盘或网络上的可恢复数据重新填充必要状态。
 
 不能声称“低内存设备更频繁 device lost”，也不能把 device lost 全部归因于内存。驱动 reset、GPU hang、后端错误、显式 destroy 以及进程生命周期都可能影响结果。诊断时记录 reason、message、backend、设备构建和前后 trace。
 
@@ -565,7 +568,7 @@ Jetpack WebGPU 的价值是用统一对象模型组织渲染与计算，同时�
 
 - [Jetpack WebGPU release notes](https://developer.android.com/jetpack/androidx/releases/webgpu)：确认最新 artifact、alpha 状态、发布日期和版本变化。
 - [WebGPU for Android overview](https://developer.android.com/develop/ui/views/graphics/webgpu) 与 [Getting started](https://developer.android.com/develop/ui/views/graphics/webgpu/getting-started)：确认 API 24、Vulkan 1.1+ 首选、Compatibility 请求、Compose Surface 和基础渲染流程。
-- AndroidX alpha05 快照中的 [`Functions.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/Functions.kt)、[`GPURequestAdapterOptions.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPURequestAdapterOptions.kt)、[`GPUInstance.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUInstance.kt) 与 [`GPURequestCallback.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPURequestCallback.kt)：核对 native 入口、adapter 选项、Executor 与 suspend wrapper。
+- AndroidX alpha05 快照中的 [`Functions.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/Functions.kt)、[`GPURequestAdapterOptions.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPURequestAdapterOptions.kt)、[`GPUInstance.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUInstance.kt)、[`GPUDeviceDescriptor.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUDeviceDescriptor.kt) 与 [`GPURequestCallback.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPURequestCallback.kt)：核对 native 入口、adapter 选项、device descriptor、Executor 与 suspend wrapper。
 - AndroidX alpha05 快照中的 [`GPUSurface.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUSurface.kt)、[`GPUSurfaceConfiguration.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUSurfaceConfiguration.kt) 与 [`SurfaceGetCurrentTextureStatus.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/SurfaceGetCurrentTextureStatus.kt)：核对 configure、acquire status 与 present。
 - AndroidX alpha05 快照中的 [`helper/WebGpu.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/helper/WebGpu.kt) 与 [`helper/Util.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/helper/Util.kt)：核对 native library 名称、Surface 转换、100 ms event poller 和 helper close 边界。
 - [`AndroidExternalSurface.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/compose/foundation/foundation/src/androidMain/kotlin/androidx/compose/foundation/AndroidExternalSurface.android.kt)：核对 SurfaceView/TextureView 承载、独立 layer、主线程生命周期回调与跨线程渲染约束。
