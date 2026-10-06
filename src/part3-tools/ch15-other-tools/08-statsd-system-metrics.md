@@ -53,7 +53,9 @@ Android 平台的系统级指标并不只来自 Perfetto Trace。平台会把 AN
 
 ## statsd 适合回答什么问题
 
-statsd 是 Android 平台侧的指标守护进程。AOSP 文档把 Statsd 模块定义为两部分：后台运行的 native（C++）服务 statsd，以及运行在 `system_server`（Android 核心 Java 进程）中的 Java 服务 `StatsCompanionService`。该模块以 APEX（可独立更新的系统组件容器）形式发布，模块名为 `com.android.os.statsd`，Android 11 及以上设备可用；Android 12 起，StatsD 相关源码从 `frameworks/base/cmds/StatsD`、`frameworks/base/apex/StatsD` 和 `system/core/libstats` 迁移到 `packages/modules/StatsD`。
+statsd 是 Android 平台侧的指标守护进程。AOSP 文档把 Statsd 模块定义为两部分：后台运行的 native（C++）服务 statsd，以及运行在 `system_server`（Android 核心 Java 进程）中的 Java 服务 `StatsCompanionService`。
+
+该模块以 APEX（可独立更新的系统组件容器）形式发布，模块名为 `com.android.os.statsd`，Android 11 及以上设备可用；Android 12 起，StatsD 相关源码从 `frameworks/base/cmds/StatsD`、`frameworks/base/apex/StatsD` 和 `system/core/libstats` 迁移到 `packages/modules/StatsD`。
 
 statsd 把系统事件和状态样本按配置聚合成 metric 报告，不录制逐线程、逐调度事件的完整时序。Perfetto 回答“这段时间内线程和内核事件按什么顺序发生”，statsd 回答“某类事件是否发生、发生多少次、按 UID、包名或状态切分后的分布如何”。UID 是 Android 用来标识应用身份的数字，同一应用的多个进程通常共享 UID。
 
@@ -68,13 +70,21 @@ statsd 把系统事件和状态样本按配置聚合成 metric 报告，不录�
 | `atoms.proto` | `frameworks/proto_logging/stats/atoms.proto` | 用 Protocol Buffers schema 定义 atom ID、字段和 pushed / pulled 分类 | 字段含义、版本差异、模块归属 |
 | `statsd_config.proto` | `packages/modules/StatsD/statsd/src/statsd_config.proto` | 定义 metric、matcher（匹配规则）、predicate（条件区间）、alert 等配置 | 采集什么、按什么条件聚合、何时上报 |
 
+组件分工之外，配置和查询经 `system_server`，事件写入走专用 socket，重启恢复由 `StatsCompanionService` 通知客户端重新注册。
+
 配置、report、query 这条 Java API 路径不直接经过 `StatsCompanionService`：`StatsManager` 调用 `system_server` 中的 `StatsManagerService`，后者按入口检查 `DUMP` + `PACKAGE_USAGE_STATS`、`REGISTER_STATS_PULL_ATOM` 或 `READ_RESTRICTED_STATS` 等特权权限，再通过 `IStatsd` 的 Binder（Android 跨进程调用机制）接口与 native statsd 通信。
 
-statsd 重启后，`StatsCompanionService.statsdReady()` 会调用 `StatsManagerService.statsdReady(IStatsd)`。`sayHiToStatsd()` 随后向新进程重新注册五类客户端入口：pull callback、data-fetch operation、active-config-changed operation、broadcast subscriber、restricted-metrics-changed operation；这些 operation 和 subscriber 通过 `PendingIntent` 通知客户端。源码先在锁保护下复制注册列表，再释放锁执行 Binder 调用，避免跨进程调用长时间占锁。`registerAllPullers()` 完成后还调用 `allPullersFromBootRegistered()`；puller 是向 statsd 提供 pulled atom 的数据源回调。这里没有缓存或重放 `StatsdConfig` 内容，不能把“客户端注册恢复”写成“配置由 StatsManagerService 持久化”。
+statsd 重启后，`StatsCompanionService.statsdReady()` 会调用 `StatsManagerService.statsdReady(IStatsd)`。`sayHiToStatsd()` 随后向新进程重新注册五类客户端入口：pull callback、data-fetch operation、active-config-changed operation、broadcast subscriber、restricted-metrics-changed operation；这些 operation 和 subscriber 通过 `PendingIntent` 通知客户端。
 
-pushed atom 的实际写入路径也不经过 `StatsCompanionService`。生成的 `StatsLog` API 最终进入 socket 写入库 `libstatssocket`；Android 17 的 `statsd_writer.cpp` 创建 non-blocking Unix datagram socket（不会等待缓冲区腾空的 Unix 数据报套接字），连接 `/dev/socket/statsdw`，再用 `writev()` 一次写入多个内存片段。statsd 过载时，发送端可能收到 `EAGAIN`（暂时无法写入）；源码明确说明写入可能丢失但不会阻塞，并维护 drop 计数供后续上报。
+注册时源码先在锁保护下复制注册列表，再释放锁执行 Binder 调用，避免跨进程调用长时间占锁。`registerAllPullers()` 完成后还调用 `allPullersFromBootRegistered()`；puller 是向 statsd 提供 pulled atom 的数据源回调。重启恢复的只是客户端注册，`StatsdConfig` 内容不会在 `StatsManagerService` 中缓存或重放。
 
-Android 17 的 native `main.cpp` 新增 API 37 门槛的 io_uring listener 分支。`io_uring` 是 Linux 的异步 I/O 接口；feature flag（运行时功能开关）开启且 `IOUringSocketHandler::IsIouringSupported()` 检测通过时，statsd 使用 `StatsSocketListenerIoUring` 监听 socket，其余情况使用 `StatsSocketListener`。两条路径都先把事件放入上限为 50000 条的 `LogEventQueue`，待 `StatsService::Startup()` 后消费。对应的 Android 17 common kernel tag `android17-6.18-2026-06_r6` 包含 `io_uring/` 实现，但设备是否走该分支仍由平台 flag、运行时检测和产品配置共同决定。
+pushed atom 的实际写入路径也不经过 `StatsCompanionService`。生成的 `StatsLog` API 最终进入 socket 写入库 `libstatssocket`；Android 17 的 `statsd_writer.cpp` 创建 non-blocking Unix datagram socket（不会等待缓冲区腾空的 Unix 数据报套接字），连接 `/dev/socket/statsdw`，再用 `writev()` 一次写入多个内存片段。
+
+statsd 过载时，发送端可能收到 `EAGAIN`（暂时无法写入）；源码明确说明写入可能丢失但不会阻塞，并维护 drop 计数供后续上报。
+
+Android 17 的 native `main.cpp` 新增 API 37 门槛的 io_uring listener 分支。`io_uring` 是 Linux 的异步 I/O 接口；feature flag（运行时功能开关）开启且 `IOUringSocketHandler::IsIouringSupported()` 检测通过时，statsd 使用 `StatsSocketListenerIoUring` 监听 socket，其余情况使用 `StatsSocketListener`。
+
+两条路径都先把事件放入上限为 50000 条的 `LogEventQueue`，待 `StatsService::Startup()` 后消费。对应的 Android 17 common kernel tag `android17-6.18-2026-06_r6` 包含 `io_uring/` 实现，但设备是否走该分支仍由平台 flag、运行时检测和产品配置共同决定。
 
 AOSP 的 `atoms.proto` 说明 `Atom` 定义 raw stats log events，也就是尚未聚合的原始统计事件；`stats-log-api-gen` 在构建期生成日志常量和方法。顶层 `Atom` 消息用作 schema 容器，不直接编入系统；statsd 按 `atoms.proto` 与 `stats_log.proto` 的格式生成 protobuf 数据。
 
@@ -103,11 +113,21 @@ metric 配置定义在 `statsd_config.proto`。这一层不关心“系统怎么
 
 `StatsdConfig` 把这些对象组合在同一个 protobuf 配置里：`event_metric`、`count_metric`、`value_metric`、`gauge_metric`、`duration_metric`、`kll_metric`、`atom_matcher`、`predicate`、`alert`、`subscription` 等字段都在这个 proto 中定义。
 
-排障时要把 atom 和 metric 分开看。atom 描述原始事件或状态样本，metric 描述筛选、切分和聚合规则。同一个 atom 可以被多个 metric 以不同维度聚合。报告缺少条目时，应依次检查 `allowed_log_source`（允许写入该配置的来源）、matcher/predicate、metric activation（控制 metric 何时启用）、当前未结束的 bucket 是否被包含、报告是否已被导出并清除、pull 是否超时，以及 socket 或队列是否发生丢失。
+排障时要把 atom 和 metric 分开看。atom 描述原始事件或状态样本，metric 描述筛选、切分和聚合规则。同一个 atom 可以被多个 metric 以不同维度聚合。
+
+报告缺少条目时，按顺序检查：
+
+- `allowed_log_source`（允许写入该配置的来源）是否匹配
+- matcher / predicate 是否命中
+- metric activation（控制 metric 何时启用）是否生效
+- 当前未结束的 bucket 是否被包含
+- 报告是否已被导出并清除
+- pull 是否超时
+- socket 或队列是否发生丢失
 
 ## 性能排障中的常见 atom 入口
 
-statsd 在性能排障里最有价值的地方，是提供跨版本相对稳定的系统事件索引。它适合做“线索表”，再把线索交给 Perfetto、logcat、dumpsys 或问题专项工具验证。
+statsd 在性能排障里主要充当跨版本相对稳定的系统事件索引，适合做“线索表”，再把线索交给 Perfetto、logcat、dumpsys 或问题专项工具验证。
 
 | 场景 | 常见 atom / 字段入口 | 能回答的问题 | 不能替代的证据 |
 | --- | --- | --- | --- |
