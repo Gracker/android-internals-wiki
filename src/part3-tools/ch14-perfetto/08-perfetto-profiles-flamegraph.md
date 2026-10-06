@@ -63,11 +63,11 @@ related_chapters:
 
 # Perfetto Profile 导入与 Flamegraph 分析
 
-平台源码基线为 Android 17 / API 37 / `android-17.0.0_r1`。Perfetto v53、v54 带来的格式支持属于主机分析端能力，不能直接换算成设备 API 等级；设备侧 `linux.perf` 采集则有 Android 版本、系统构建类型和应用可分析性要求。读这类资料时，要把“文件能否被新版 Perfetto 打开”和“设备能否录到调用栈”分成两项检查。
+平台源码基线是 Android 17 / API 37 / `android-17.0.0_r1`。Perfetto v53、v54 带来的格式支持属于主机分析端能力，不能直接换算成设备 API 等级；设备侧 `linux.perf` 采集另有 Android 版本、系统构建类型和应用可分析性的要求。这两条线彼此独立，检查时要把“文件能否被新版 Perfetto 打开”和“设备能否录到调用栈”分开看。
 
 ## Profile 与 system trace 的数据边界
 
-系统跟踪记录调度、线程状态、Binder（Android 进程间通信）、FrameTimeline（系统记录的帧期望与实际时间线）、GC（垃圾回收）和计数器等带时间位置的事件。CPU 采样分析则在周期性采样中断到来时记录当前调用栈，用来判断某段 CPU 执行更集中在哪些路径。两者可以出现在同一个 Perfetto 文件里，也可以是彼此独立的文件；只有同一次 `linux.perf` 与其他数据源联合录制时，调用栈采样才能直接与帧、调度和 Binder 共用时间轴。
+系统跟踪记录的是带时间位置的事件：调度、线程状态、Binder（Android 进程间通信）、FrameTimeline（系统记录的帧期望与实际时间线）、GC（垃圾回收）和计数器都属于这一类。CPU 采样走的是另一条路，它在周期性采样中断到来时记下当时的调用栈，用来判断一段 CPU 执行更集中在哪些路径。两类数据可以放进同一个 Perfetto 文件，也可以各自独立成文件。只有把 `linux.perf` 与其他数据源放在同一次录制里，调用栈采样才能与帧、调度、Binder 共用一条时间轴。
 
 | 输入 | Android 17 Trace Processor 中的主要数据形态 | 保留的信息 | 不能单独证明的内容 |
 |---|---|---|---|
@@ -81,30 +81,30 @@ related_chapters:
 
 protobuf 是 Protocol Buffers 的二进制消息格式。Android 17 的 pprof 导入器按 pprof 中的指标类型和单位建立聚合表；Simpleperf（Android 的 CPU 分析工具）导入器把样本写入 `cpu_profile_stack_sample`；`linux.perf` 样本则进入 `perf_sample`。这三个入口不能混用同一套 SQL 表名。以 `__intrinsic_` 开头的是 Perfetto 内部表名，适合核对当前实现，不应当作跨版本稳定接口。[Android 17 pprof 导入器](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/importers/pprof/pprof_trace_reader.cc)、[Android 17 Simpleperf protobuf 导入器](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/importers/simpleperf_proto/simpleperf_proto_parser.cc)
 
-Flamegraph 是一种调用栈聚合图：纵向是调用深度，横向宽度是当前所选指标的累计值，不是时间轴长度。本文保留英文名，便于与 Perfetto UI 和其他分析工具中的名称对应。
+Flamegraph 是一种调用栈聚合图：纵向表示调用深度，横向宽度表示当前所选指标的累计值，并不代表时间轴的时长。它的英文名与 Perfetto UI 及多数分析工具一致，本文沿用。
 
-诊断交互卡顿时，FrameTimeline、`slice` 和 `thread_state` 负责界定异常区间，区间内的 `perf_sample` 用于判断正在消耗 CPU 的调用路径。分析持续高 CPU 时，聚合 profile 可以快速找到热点，但仍需调度数据确认目标线程得到多少 CPU、是否被其他线程抢占。全局火焰图不能代替帧级因果链。
+诊断交互卡顿时，先用 FrameTimeline、`slice` 和 `thread_state` 圈定异常区间，再看区间内的 `perf_sample`，判断这段时间的 CPU 消耗落在哪些调用路径上。追持续高 CPU 则是另一种手法：聚合 profile 能快速指出热点，但目标线程分到多少 CPU、有没有被别的线程抢占，还得靠调度数据确认。全局火焰图替代不了帧级的因果链。
 
 ## pprof：只有聚合值，没有逐样本时间轴
 
-Perfetto v53 加入 pprof 导入和专用 UI 页面。Android 17 的解析代码支持原始 protobuf 和 gzip 压缩输入，并把每种 `sample_type`（指标类型）的名称与单位保留下来。CPU 时间、分配字节数、对象数可能同时出现在一个 pprof 文件中，火焰图宽度取决于当前选择的指标，不能默认解释为 CPU 时间。
+Perfetto v53 加入了 pprof 导入和专用 UI 页面。Android 17 的解析代码同时支持原始 protobuf 和 gzip 压缩输入，并保留每种 `sample_type`（指标类型）的名称与单位。一个 pprof 文件里可能同时存在 CPU 时间、分配字节数和对象数，火焰图宽度取决于当前选中的指标，不能一律当作 CPU 时间。
 
-pprof 的 `location_id` 顺序以叶节点开头，导入器会把它转换为 Perfetto 使用的根到叶调用树。导入后的样本是聚合项，未被展开成带原始时间戳的 `perf_sample`。即使 pprof 元数据包含采集周期，也无法仅凭该文件把一条调用栈准确放回某个 `Choreographer#doFrame`。
+pprof 里 `location_id` 的顺序以叶节点开头，导入器会把它翻转成 Perfetto 使用的根到叶调用树。导入后的样本是聚合项，不会展开成带原始时间戳的 `perf_sample`。即使 pprof 元数据里带了采集周期，也无法只靠这个文件把某条调用栈准确放回某个 `Choreographer#doFrame`。
 
-导入检查可按以下顺序进行：
+导入之后，可以按这个顺序检查：
 
 - 在 pprof 专用页面确认当前指标及单位，例如 `cpu/nanoseconds` 或 `alloc_space/bytes`。
 - 对比 self 与 cumulative。self 表示直接落在当前叶节点的聚合量，cumulative 表示当前节点及其整个子树的聚合量。
 - 检查映射名、函数名和源码位置。映射名用于指出代码来自哪个二进制文件或共享库；只有地址或宽泛库名时，符号证据仍不完整。
 - 需要解释卡顿时，另行抓取包含 FrameTimeline 和调度数据的原生 trace；两次独立录制只能做场景级对照，不能宣称时间点一一对应。
 
-Perfetto v54 的 `traceconv profile` 增加输出类型自动检测，它处理的是从 Perfetto trace 导出 profile 的流程；打开 pprof 文件不需要先执行该命令。[Perfetto v53/v54 变更记录](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/CHANGELOG)
+Perfetto v54 的 `traceconv profile` 增加了输出类型自动检测。它负责的是从 Perfetto trace 导出 profile，跟打开 pprof 文件是两回事，后者不需要先执行这条命令。[Perfetto v53/v54 变更记录](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/CHANGELOG)
 
 ## Simpleperf protobuf：保留样本时间，不导入调度记录
 
 Simpleperf 路径适合 Android 10—17 上的应用 CPU 分析。主机脚本先录制二进制采样文件 `perf.data`，再由 `report-sample` 输出 Perfetto 可识别的 protobuf。Android 17 源码中的格式头为 `SIMPLEPERF`，版本号为 1。
 
-下面的命令用系统设置应用展示完整数据流。`100 Hz` 表示目标采样频率约为每秒 100 次，是为了控制分析开销而给出的录制选择，不是所有设备都应固定采用的阈值。
+这条命令用系统设置应用走一遍完整数据流。`100 Hz` 表示目标采样频率约为每秒 100 次，这是为控制分析开销给出的录制选择，不是所有设备都该固定的阈值。
 
 ```bash
 python system/extras/simpleperf/scripts/app_profiler.py \
@@ -124,7 +124,7 @@ simpleperf report-sample \
 
 Simpleperf protobuf 中的样本带时间戳和线程标识。Android 17 导入器会把 Simpleperf 的叶到根调用链反转成 Perfetto 的根到叶顺序，再写入 `cpu_profile_stack_sample`。同一格式中的上下文切换记录，也就是 CPU 从一个线程切换到另一个线程的记录，当前会被忽略。因此，打开 `simpleperf.trace` 后看到样本时间位置，不代表文件同时具备线程 Running、Runnable 或休眠证据。
 
-下面的查询用于检查 Simpleperf 导入后的进程、线程和采样覆盖范围。
+这条查询检查 Simpleperf 导入后的进程、线程和采样覆盖范围。
 
 ```sql
 SELECT
@@ -148,9 +148,9 @@ ORDER BY sample_count DESC;
 
 Perfetto 官方命令行采集文档把 Android 设备下限标为 Android 15。量产 `user` 构建要求目标应用在清单中声明 `profileable`（允许性能分析）或 `debuggable`；用于调试的 `userdebug`、`eng` 构建权限条件不同。这里的版本约束属于设备侧采集能力，与主机 Trace Processor 能导入哪些文件格式是两条独立版本线。
 
-`linux.perf` 使用 Linux `perf_event_open` ABI（应用二进制接口，即用户空间与内核约定的数据布局和调用规则）。Android 17 的 Perfetto 采集端为样本请求 TID（线程 ID）、时间和计数值；启用用户态展开后，再请求用户寄存器与栈内存，以便从机器状态还原调用栈；启用内核帧后，请求内核调用链。对应的内核 ABI 标志定义在 `PERF_SAMPLE_TID`、`PERF_SAMPLE_TIME`、`PERF_SAMPLE_CALLCHAIN`、`PERF_SAMPLE_REGS_USER` 和 `PERF_SAMPLE_STACK_USER` 中。[Android 17 Perfetto perf 事件配置](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/perf/event_config.cc)、[android17-6.18-2026-06_r6 perf 事件 ABI](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/include/uapi/linux/perf_event.h)
+`linux.perf` 走 Linux 的 `perf_event_open` ABI（应用二进制接口，用户空间与内核约定的数据布局和调用规则）。Android 17 的 Perfetto 采集端向内核请求每个样本的 TID（线程 ID）、时间和计数值；启用用户态展开后，再请求用户寄存器与栈内存，以便从机器状态还原调用栈；启用内核帧后，请求内核调用链。对应的内核 ABI 标志定义在 `PERF_SAMPLE_TID`、`PERF_SAMPLE_TIME`、`PERF_SAMPLE_CALLCHAIN`、`PERF_SAMPLE_REGS_USER` 和 `PERF_SAMPLE_STACK_USER` 中。[Android 17 Perfetto perf 事件配置](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/perf/event_config.cc)、[android17-6.18-2026-06_r6 perf 事件 ABI](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/include/uapi/linux/perf_event.h)
 
-下面的配置以 `100 Hz` 周期采样系统设置应用，并同时录制调度、进程快照和 FrameTimeline。Perfetto 文档建议非原生调用栈低于每 CPU 200 Hz；合适频率仍要结合设备核数、展开错误和被测负载评估。
+这段配置以 `100 Hz` 周期采样系统设置应用，同时录制调度、进程快照和 FrameTimeline。Perfetto 文档建议非原生调用栈不超过每 CPU 200 Hz；具体用多少还要看设备核数、展开错误和被测负载。
 
 ```protobuf
 duration_ms: 10000
@@ -206,7 +206,7 @@ data_sources {
 
 这份配置生成的 `perf_sample`、`sched`、进程信息和 FrameTimeline 共用一条 Trace 时间轴。录制开销也是证据的一部分：高频采样、多核设备、Java / JIT（Just-In-Time，运行时即时编译）代码展开和内核帧都会增加采集端工作量，复现时应记录频率、构建类型、设备型号和是否启用内核帧。[Android 17 CPU profiling 文档](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/docs/getting-started/cpu-profiling.md)
 
-下面的查询分别检查每个线程的覆盖范围和 perf 导入告警；`stats` 是 Trace Processor 汇总采集与解析自诊断项的表。
+下面两条查询分别看每个线程的覆盖范围和 perf 导入告警。`stats` 是 Trace Processor 汇总采集与解析自诊断项的表。
 
 ```sql
 SELECT
@@ -249,7 +249,9 @@ CPU 火焰图的横向宽度表示当前指标的聚合值。对周期性 `linux
 
 一个调度函数可能 cumulative 很宽而 self 很窄，说明大量热点经过它进入不同子路径；一个叶函数 self 很宽，才表示采样经常中断在该函数内部。采样频率、采样时刻是否偶然与周期性工作对齐、线程运行份额和展开质量都会影响排名；这种排名是统计证据，不是精确计时。
 
-Perfetto v53 还支持把调用栈附到 TrackEvent 的 Slice 或 instant event（瞬时事件）。点选单个事件时，详情面板展示该事件的栈；区域选择会把区间内事件附带的栈聚合成火焰图。默认每个栈计数一次；若事件带有 `callstack_weight` 或选中了其他数值参数，当前 UI 也能按该权重聚合，结论必须写明所选 measure（度量项）。按某个权重或参数聚合时，只统计实际带有该值的事件，不会把无权重事件按 1 混入。TrackEvent 调用栈表达“事件记录时附带的调用关系”，`perf_sample` 表达“采样中断时 CPU 上的调用关系”。两者可以交叉验证，不能视为同一种采样来源。
+Perfetto v53 还支持把调用栈附到 TrackEvent 的 Slice 或 instant event（瞬时事件）上。点选单个事件，详情面板会给出这个事件的栈；划选一段区间，区间内事件附带的栈会被聚合成火焰图。默认每个栈计一次；如果事件带了 `callstack_weight` 或你选了其他数值参数，当前 UI 也能按该权重聚合。按权重聚合时只统计带了该值的事件，无权重的事件不会被当成 1 混进去，写结论时要注明用的是哪个 measure（度量项）。
+
+这里要和 CPU 采样区分开：TrackEvent 调用栈表达的是“事件记录时附带的调用关系”，`perf_sample` 表达的是“采样中断时 CPU 上的调用关系”。两者可以互相印证，但不是同一种采样来源。
 
 选区分析要同时限定：
 
@@ -260,11 +262,23 @@ Perfetto v53 还支持把调用栈附到 TrackEvent 的 Slice 或 instant event�
 
 ## 符号、内联函数与 R8 还原
 
-可读的函数名依赖采集产物与构建产物匹配。Native 栈需要正确的 ELF（二进制文件格式）、Build ID（标识具体二进制构建的散列值）和展开信息；Java / Kotlin 混淆栈需要同一 APK 构建生成的 `mapping.txt`。路径中存在一个同名 `.so` 共享库还不够，Build ID 不匹配时不能用于证明线上地址对应某个函数。
+函数名能不能读，取决于采集产物与构建产物是否对得上。Native 栈需要正确的 ELF（二进制文件格式）、Build ID（标识具体二进制构建的散列值）和展开信息；Java / Kotlin 的混淆栈需要同一 APK 构建生成的 `mapping.txt`。路径里能找到同名 `.so` 并不够，Build ID 对不上时，它不能用来证明线上地址对应某个函数。
 
 编译器内联会把函数体展开到调用点，让一个机器码地址对应多层源码调用关系。Perfetto v53 的 UI 能标出 inline frame（内联调用帧），分析时应保留这些层级：外层调用者解释业务入口，内联函数解释执行的源码位置。缺少 DWARF 调试信息中的内联记录时，“火焰图没有某个函数名”不能推出该函数未执行。
 
-对已经录好的原生 Perfetto trace，可分别生成符号包和 R8 去混淆包，再利用 protobuf trace 的可拼接性得到 UI 可直接打开的文件。执行前由构建流水线把该 APK 对应的 `mapping.txt` 绝对路径写入 `R8_MAPPING_FILE`。下面的命令沿用 Android 构建输出目录，并将系统设置包与它的 R8 映射绑定。
+`traceconv bundle` 是目前推荐的交付方式：它把 trace、符号和去混淆信息打包成 TAR 归档，Perfetto UI 与 `trace_processor_shell` 都能直接打开，不需要手工解包和拼接。Android 17 固定源码中的 bundle 命令只提供 `--symbol-paths`、`--no-auto-symbol-paths` 和 `--verbose` 等选项，没有 `--proguard-map`，Java / Kotlin 映射这时通过 `PERFETTO_PROGUARD_MAP` 环境变量传入。构建流水线要保证 `R8_MAPPING_FILE` 指向被测 APK 的同一次构建，变量格式固定为 `包名=映射文件`，多个包用冒号分隔。下面的命令沿用 Android 构建输出目录，把系统设置包与它的 R8 映射绑定后打包。
+
+```bash
+PERFETTO_PROGUARD_MAP="com.android.settings=$R8_MAPPING_FILE" \
+traceconv bundle \
+  --symbol-paths "$ANDROID_PRODUCT_OUT/symbols" \
+  raw-trace.perfetto-trace \
+  settings-profile.tar
+```
+
+输出是 TAR，其中包含 `trace.perfetto`，收集成功时还会带上 `symbols.pb`、`deobfuscation.pb`；这种 Trace archive（追踪归档）无需手工解包。当前 v57.2 的 `traceconv bundle` 已支持可重复传入的 `--proguard-map`。[Android 17 `traceconv bundle` CLI](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/traceconv/main.cc)、[Android 17 bundle 内容生成](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/traceconv/trace_to_bundle.cc)
+
+另一条路径是手工生成符号包和 R8 去混淆包，再利用 protobuf trace 可拼接的特性拼出 UI 可直接打开的文件，主要用于兼容旧脚本，或必须输出原生 protobuf trace 的流水线：
 
 ```bash
 PERFETTO_BINARY_PATH="$ANDROID_PRODUCT_OUT/symbols" \
@@ -277,25 +291,13 @@ cat raw-trace.perfetto-trace symbols.pb deobfuscation.pb \
   > enriched-trace.perfetto-trace
 ```
 
-构建流水线必须保证 `R8_MAPPING_FILE` 来自被测 APK 的同一次构建；环境变量的格式固定为 `包名=映射文件`，多个包用冒号分隔。生成的 `symbols.pb` 和 `deobfuscation.pb` 是额外 TracePacket（Perfetto Trace 的数据包）流，拼接后才能得到可直接打开的 enriched trace。[Android 17 符号化与去混淆文档](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/docs/data-sources/native-heap-profiler.md)
-
-`traceconv bundle` 是另一种交付方式。Android 17 固定源码中的命令只提供 `--symbol-paths`、`--no-auto-symbol-paths` 和 `--verbose` 等 bundle 选项，没有 `--proguard-map`。下面的命令展示该版本如何生成 TAR 归档；Java / Kotlin 映射仍通过 `PERFETTO_PROGUARD_MAP` 传入。
-
-```bash
-PERFETTO_PROGUARD_MAP="com.android.settings=$R8_MAPPING_FILE" \
-traceconv bundle \
-  --symbol-paths "$ANDROID_PRODUCT_OUT/symbols" \
-  raw-trace.perfetto-trace \
-  settings-profile.tar
-```
-
-输出文件是 TAR，其中包含 `trace.perfetto`，并在收集成功时包含 `symbols.pb`、`deobfuscation.pb`。当前 v57.2 的 Perfetto UI 与 `trace_processor_shell` 可以直接打开这种 Trace archive（追踪归档），无需手工解包；当前 `traceconv bundle` 也已经支持可重复传入的 `--proguard-map`，并成为官方推荐流程。上一段手工生成并拼接数据包的方式主要用于兼容旧脚本或必须输出原生 protobuf Trace 的流水线。[Android 17 `traceconv bundle` CLI](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/traceconv/main.cc)、[Android 17 bundle 内容生成](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/traceconv/trace_to_bundle.cc)
+`symbols.pb` 和 `deobfuscation.pb` 是额外的 TracePacket（Perfetto Trace 的数据包）流，要和原始 trace 拼在一起才是可直接打开的 enriched trace。[Android 17 符号化与去混淆文档](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/docs/data-sources/native-heap-profiler.md)
 
 ## SQL 与 DataGrid：从探索走向可复现查询
 
 Perfetto v54 的 DataGrid 增加了 pivot（按维度分组汇总）、glob（通配匹配）、contains（包含）、not-contains（不包含）等筛选方式和 distinct value picker（去重值选择器）。它适合快速发现线程、映射或函数分布；需要复查、批量运行和代码评审的结论应固化成 SQL，并记录 Trace Processor 版本。
 
-`linux.perf.samples` 标准库把 `perf_sample` 的调用栈整理成树。下面的查询按累计样本数查看整份 Trace 的热点。v57.2 另有 `stacks.cpu_profiling` 模块，可统一查询 Linux perf、Simpleperf、Firefox / Gecko 等带时间戳的 CPU profile；pprof 没有逐样本时间维度，仍走独立的聚合表与页面。
+`linux.perf.samples` 标准库把 `perf_sample` 的调用栈整理成树。这条查询按累计样本数查看整份 Trace 的热点。v57.2 另有 `stacks.cpu_profiling` 模块，能统一查询 Linux perf、Simpleperf、Firefox / Gecko 等带时间戳的 CPU profile；pprof 没有逐样本时间维度，仍走独立的聚合表与页面。
 
 ```sql
 INCLUDE PERFETTO MODULE linux.perf.samples;
@@ -314,7 +316,7 @@ LIMIT 50;
 
 `self_count` 是以该调用帧为叶节点的样本数，`cumulative_count` 是该帧出现在调用树任意层级的样本数。这里的调用帧指调用栈中的一层函数记录，不是 UI 渲染帧。该表汇总全部 `perf_sample`；需要进程或时间过滤时，应先筛选原始样本并使用 UI 选区，不能把整份 Trace 的排名直接归因于某个短暂渲染帧。
 
-同一份 trace 含有 FrameTimeline 与 `linux.perf` 时，可以按异常帧的 UI 线程和时间区间统计样本。下面的查询给出每帧命中的调用栈样本数量。
+同一份 trace 含有 FrameTimeline 与 `linux.perf` 时，可以按异常帧的 UI 线程和时间区间统计样本。这条查询给出每帧命中的调用栈样本数量。
 
 ```sql
 INCLUDE PERFETTO MODULE android.frames.timeline;
