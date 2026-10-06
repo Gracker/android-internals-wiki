@@ -84,9 +84,11 @@ Jetpack Benchmark 把场景、编译状态、重复次数和产物格式写进�
 
 ### Macrobenchmark 与 Microbenchmark：两种层次，两种用途
 
-两套库的区别集中在进程边界和测量对象：
+Macrobenchmark 与 Microbenchmark 面向的层级不同：前者测量完整用户场景，后者测量可独立调用的代码片段。
 
 APK 是 Android 应用或测试程序的安装包。AOT（Ahead-of-Time）在运行前将字节码编译为机器码，JIT（Just-in-Time）则在运行期间编译热点代码。
+
+两套库的区别集中在进程边界和测量对象：
 
 | 维度 | Macrobenchmark | Microbenchmark |
 |---|---|---|
@@ -98,7 +100,7 @@ APK 是 Android 应用或测试程序的安装包。AOT（Ahead-of-Time）在运
 
 #### Macrobenchmark：端到端的用户体验测量
 
-Macrobenchmark 从目标应用外部启动 Activity、注入手势并采集系统 Trace，适合测量启动、滚动和动画等完整交互。测试代码必须放在独立的 `com.android.test` 模块中。目标 APK 应使用接近 release 的非 debuggable 构建，并保留 R8 代码压缩和优化。Manifest 中的 `<profileable>` 让 shell 可以对非 debuggable 应用进行低干扰 Trace 采集。
+Macrobenchmark 从目标应用外部启动 Activity、注入手势并采集系统 Trace，适合测量启动、滚动和动画等完整交互。测试代码必须放在独立的 `com.android.test` 模块中。目标 APK 应使用接近 release 的非 debuggable 构建，并保留 R8（Android 构建中的代码压缩与优化工具）的压缩和优化。Manifest 中的 `<profileable>` 让 shell 可以对非 debuggable 应用进行低干扰 Trace 采集。
 
 入口是 `MacrobenchmarkRule.measureRepeated()`。`setupBlock` 把应用放到一致的初始状态，`measureBlock` 定义计入测量的操作。iteration 是同一次测试启动中的一次重复测量；一次 `measureRepeated()` 会执行多个 iteration，并为每个测量 iteration 保存一份系统 Trace。
 
@@ -155,7 +157,7 @@ class JsonBenchmark {
 
 #### 测量启动时间
 
-Baseline Profile 是应用交给 ART 的预编译方法与类列表。这段测试测量 Baseline Profile 可用时的冷启动，代码主体省略了 import：
+Baseline Profile 是应用交给 ART（Android Runtime）的预编译方法与类列表。这段测试测量 Baseline Profile 可用时的冷启动，代码主体省略了 import：
 
 ```kotlin
 // 省略 import；替换为被测应用的真实包名。
@@ -543,7 +545,7 @@ Android CLI 负责把项目、SDK、设备、APK、UI 状态和 IDE 查询接到
 Android CLI 是独立发布、运行在开发机或 CI 机器上的主机工具。它不属于 `android-17.0.0_r1` framework，也没有名为“Android CLI”的 API 37 SDK 接口。一次实验需要同时记录三组版本信息：
 
 - Android CLI 版本：决定命令、参数、默认模板和 skill 安装行为；
-- 设备 build fingerprint（构建的唯一标识字符串）与 Android 17 / API 37 平台版本：决定 framework、ART（Android Runtime）、SurfaceFlinger 合成器和 Perfetto 事件；
+- 设备 build fingerprint（构建的唯一标识字符串）与 Android 17 / API 37 平台版本：决定 framework、ART、SurfaceFlinger 合成器和 Perfetto 事件；
 - 设备实际 kernel 与 vendor driver（厂商驱动）版本：决定 scheduler tracepoint（调度器事件记录点）、CPU/GPU 能力和设备特有数据。`android17-6.18-2026-06_r6` 只能作为 Android common kernel 的源码参照，真机可能包含厂商修改。
 
 例如，APA 或 Perfetto 读取的录制配置，对应 Android 17 源码中的 `external/perfetto/protos/perfetto/config/trace_config.proto`。调度分析会使用 `include/trace/events/sched.h` 中的 `sched_switch`、`sched_wakeup` 等事件；分析真机 trace 时，还要以该设备内核实际提供的事件为准。CLI 可以启动 App、保存画面或触发测试，但不会改变这些事件的含义。
@@ -613,7 +615,9 @@ Journeys 用自然语言描述用户在 App 中要完成的路径。agent 会把
 - 性能采集窗口：明确从哪个动作前开始 trace、在哪个 UI 标记出现后停止，也就是界定纳入统计的时间范围。
 - 失败处理：页面未出现、登录失效、网络超时、权限弹窗干扰时如何退出并保存截图。
 
-Journey 适合准备登录态、导航到目标页面、确认异常是否出现，并记录失败画面。自然语言理解、视觉识别、坐标选择和 agent 模型都会带来执行差异，因此不适合控制 benchmark 的计时区间。测量窗口内的启动、滚动和动画应交给 Macrobenchmark 与 UI Automator；UI Automator 是 Android 的跨 App 界面自动化框架。指标应来自 Macrobenchmark、Perfetto Trace、APA 或线上 APM（Application Performance Monitoring，应用性能监控）。冷启动耗时、帧时间分布、CPU 调度、GPU counter、GC（garbage collection，垃圾回收）暂停和 Binder（Android 进程间通信机制）等待时间，都不能从 Journey 的成功或失败直接推导。
+Journey 适合准备登录态、导航到目标页面、确认异常是否出现，并记录失败画面。自然语言理解、视觉识别、坐标选择和 agent 模型都会带来执行差异，因此不适合控制 benchmark 的计时区间。测量窗口内的启动、滚动和动画应交给 Macrobenchmark 与 UI Automator；UI Automator 是 Android 的跨 App 界面自动化框架。
+
+指标应来自 Macrobenchmark、Perfetto Trace、APA 或线上 APM（Application Performance Monitoring，应用性能监控）。冷启动耗时、帧时间分布、CPU 调度、GPU counter、GC（garbage collection，垃圾回收）暂停和 Binder（Android 进程间通信机制）等待时间，都不能从 Journey 的成功或失败直接推导。
 
 官方 Journey 页面没有发布固定的 `android journey ...` 子命令格式，因此本文不编造这类命令。文件格式、运行步骤和 CI 接入方式应以当前 Android CLI、Journeys skill 及项目实际生成的文件为准。报告还要记录 CLI、agent、模型、skill 版本或内容快照，避免直接比较不同执行环境得出的结果。
 
@@ -637,7 +641,7 @@ Journey 适合准备登录态、导航到目标页面、确认异常是否出现
 
 ### Android skills 与性能专项能力
 
-Android skills 是供 AI 工具和 agent 使用的指令包。每个 skill 通常以 `SKILL.md` 说明适用任务和执行步骤，还可以附带脚本、模板与参考资料。官方文档列出的能力包括 XML 到 Compose 迁移、AGP 9 升级、Navigation 3、edge-to-edge UI（内容延伸到系统栏区域）和 R8 配置检查。R8 是 Android 构建中的代码压缩与优化工具。skill 为 agent 提供特定 Android 任务的操作方法，其输出仍需验证。
+Android skills 是供 AI 工具和 agent 使用的指令包。每个 skill 通常以 `SKILL.md` 说明适用任务和执行步骤，还可以附带脚本、模板与参考资料。官方文档列出的能力包括 XML 到 Compose 迁移、AGP 9 升级、Navigation 3、edge-to-edge UI（内容延伸到系统栏区域）和 R8 配置检查。skill 为 agent 提供特定 Android 任务的操作方法，其输出仍需验证。
 
 `android init` 是最短的初始化入口，用来安装基础 `android-cli` skill。Android CLI 还提供 `skills list/find/add/remove` 管理能力：
 
