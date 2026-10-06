@@ -153,7 +153,7 @@ void InitSystemProducer() {
 }
 ```
 
-`enable_system_consumer = false` 配合“代码中不显式调用 `NewTrace(kSystemBackend)`”时，linker（链接器）可以从最终二进制中移除未使用的 system consumer IPC（进程间通信）代码。这个字段只帮助构建工具删除未使用代码，不负责授权；应用代码仍不得创建 system consumer，也不调用 `ReadTraceBlocking()`。外部 consumer 决定何时选择 `track_event`。
+同时设置 `enable_system_consumer = false` 且代码中不显式调用 `NewTrace(kSystemBackend)` 时，linker（链接器）可以把未使用的 system consumer IPC（进程间通信）代码从最终二进制中移除。这个字段只帮助构建工具删除未使用代码，不负责授权；应用代码仍不得创建 system consumer，也不调用 `ReadTraceBlocking()`。外部 consumer 决定何时选择 `track_event`。
 
 adb 或受控实验环境的外部 TraceConfig 要显式请求 `track_event`，并在 `TrackEventConfig` 中启用目标 category。需要调度证据时，再加入 `linux.ftrace` 的 `sched_switch`、`sched_waking`；duration 与 buffer 按复现窗口和实测写入速率设置。配置由具备 consumer socket 权限的 shell 或系统组件提交，应用 producer 不负责创建输出文件。
 
@@ -163,7 +163,9 @@ adb 或受控实验环境的外部 TraceConfig 要显式请求 `track_event`，�
 
 ## 4. custom data source：schema 与 importer 要成对设计
 
-custom data source 继承 `perfetto::DataSource<T>`。每个活动 trace session 会创建独立实例；多个并发 session 可能让 `Trace()` lambda（传给 `Trace()` 的匿名回调）执行多次。没有活动实例时 lambda 不执行，所以计算成本高的参数应放在 lambda 内。访问实例状态时要调用 `GetDataSourceLocked()` 取得带锁句柄，避免 session 停止与业务线程写入同时发生时访问已销毁的实例。
+custom data source 继承 `perfetto::DataSource<T>`。每个活动 trace session 会创建独立实例；存在多个并发 session 时，同一个 `Trace()` lambda（传给 `Trace()` 的匿名回调）可能被执行多次。没有活动实例时 lambda 不执行，所以计算成本高的参数应放在 lambda 内。
+
+访问实例状态时要调用 `GetDataSourceLocked()` 取得带锁句柄，避免 session 停止与业务线程写入同时发生时访问已销毁的实例。
 
 自定义数据源的四个边界如下：
 
@@ -174,7 +176,9 @@ custom data source 继承 `perfetto::DataSource<T>`。每个活动 trace session
 | `Trace(lambda)` | 按活动实例写 packet | 没有活动实例时 lambda 不执行；并发 session 可执行多次 |
 | `OnStop(const StopArgs&)` | 停止采样并写收尾 packet | 不应长时间阻塞 Perfetto 回调线程 |
 
-`OnStop()` 中存在异步清理时，要调用 `StopArgs::HandleStopAsynchronously()` 取得 acknowledgement closure，也就是用于确认“停止操作已经完成”的回调。清理线程写完末尾 packet 后，还要在最后一次 `Trace()` lambda 中显式调用 `TraceContext::Flush()`，再执行该回调。这个过程必须在 consumer 配置的 stop timeout（停止等待上限）内完成；超时后服务会强制停止，之后写出的末尾数据不会进入 trace。数据源名称宜使用团队控制域名的反向域名形式，减少与其他 producer 的命名冲突。
+`OnStop()` 中存在异步清理时，要调用 `StopArgs::HandleStopAsynchronously()` 取得 acknowledgement closure，也就是用于确认“停止操作已经完成”的回调。清理线程写完末尾 packet 后，还要在最后一次 `Trace()` lambda 中显式调用 `TraceContext::Flush()`，再执行该回调。这个过程必须在 consumer 配置的 stop timeout（停止等待上限）内完成；超时后服务会强制停止，之后写出的末尾数据不会进入 trace。
+
+数据源名称宜使用团队控制域名的反向域名形式，减少与其他 producer 的命名冲突。
 
 强类型 packet 需要扩展 TracePacket schema。原版 amalgamated SDK 不会为项目私有消息生成 setter，完整实现至少包含四处同步修改：
 
@@ -201,7 +205,11 @@ StartStartupTracing(const perfetto::TraceConfig& config) {
 }
 ```
 
-未覆盖 `timeout_ms` 时，Android 17 SDK 使用源码默认值 10 秒。`SetupStartupTracingOpts` 还提供 `on_setup`、`on_adopted` 和 `on_aborted` 回调，生产实现应记录临时数据是否被 system session 接管，或等待是否中止。startup tracing 不支持 in-process backend。in-process 场景应在目标初始化工作前创建普通 session，并等待 `StartBlocking()` 完成。system 场景还要求外部 consumer 在超时内提交可匹配配置；只调用 `SetupStartupTracingBlocking()` 不会生成可读取的系统 trace 文件。
+`timeout_ms` 用来覆盖这个默认超时。`SetupStartupTracingOpts` 还提供 `on_setup`、`on_adopted` 和 `on_aborted` 回调，生产实现应记录临时数据是否被 system session 接管，或等待是否中止。
+
+startup tracing 不支持 in-process backend。in-process 场景应在目标初始化工作前创建普通 session，并等待 `StartBlocking()` 完成。
+
+system 场景还要求外部 consumer 在超时内提交可匹配配置；只调用 `SetupStartupTracingBlocking()` 不会生成可读取的系统 trace 文件。
 
 Perfetto trigger 是向已配置 session 发送“条件已满足”信号的机制，本身不负责创建 session。下面是 Android 17 头文件公开的触发接口：
 
@@ -229,7 +237,9 @@ static void ActivateTriggers(
 
 Perfetto tracing protocol 的 socket、共享内存和 protobuf 协议维持双向兼容，新 client（SDK 端）可以连接旧 service，旧端会忽略不认识的字段。协议兼容不代表旧 service 支持所有新特性；依赖新 IPC 方法、capability（服务声明的能力）或 data source 字段时，仍要在运行时检查该能力是否存在。
 
-公开 C++ `TrackEvent` 与 custom data source 属于官方 API，发布形态是静态库。公开 API 不保证跨动态库的 C++ ABI 稳定；应用不能从一个 linker unit 导出 Perfetto C++ 类型，再交给另一个 linker unit 使用。`include/perfetto/ext/` 是内部接口，不应在应用中依赖。Android 17 源码文档和当前官方稳定性文档都把 `include/perfetto/public` 下的 C API/ABI 标为未稳定。纯 C 或 Rust FFI（Foreign Function Interface，跨语言调用接口）项目采用它时要锁定 revision，并在每次升级时回归验证编译、运行和 trace 解析。
+公开 C++ `TrackEvent` 与 custom data source 属于官方 API，发布形态是静态库。公开 API 不保证跨动态库的 C++ ABI 稳定。`include/perfetto/ext/` 是内部接口，不应在应用中依赖。
+
+Android 17 源码文档和当前官方稳定性文档都把 `include/perfetto/public` 下的 C API/ABI 标为未稳定。纯 C 或 Rust FFI（Foreign Function Interface，跨语言调用接口）项目采用它时要锁定 revision，并在每次升级时回归验证编译、运行和 trace 解析。
 
 APK 体积不能用一个固定数字描述。`stripped release` 指已移除调试符号的发布产物，LTO 是链接时优化，RTTI 是 C++ 运行时类型信息。至少要分别测量：
 
