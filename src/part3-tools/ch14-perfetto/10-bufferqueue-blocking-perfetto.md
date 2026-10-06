@@ -70,7 +70,7 @@ BufferQueue 的 slot 与 fence 细节见 2.8；标准窗口、SurfaceView、Text
 
 ## 从 FrameTimeline 找到目标 Surface
 
-Android 12 起，FrameTimeline 在 App 和 SurfaceFlinger 两侧提供 Expected / Actual Timeline：Expected 表示系统期望的帧时序，Actual 表示实际执行时序。App `Actual Timeline` slice 从 `Choreographer#doFrame` 或 `AChoreographer_vsyncCallback` 开始，结束点取 GPU 完成与提交到 SurfaceFlinger 两者中较晚的时刻。Perfetto 对 `Buffer Stuffing` 的定义是：App 在前一帧尚未 present 时继续提交新帧，BufferQueue 中待显示的 buffer 逐渐积压。
+Android 12 起，FrameTimeline 在 App 和 SurfaceFlinger 两侧提供 Expected / Actual Timeline：Expected 表示系统期望的帧时序，Actual 表示实际执行时序。App `Actual Timeline` slice 从 `Choreographer#doFrame` 或 `AChoreographer_vsyncCallback` 开始，结束点取 GPU 完成与提交到 SurfaceFlinger 两者中较晚的时刻。
 
 排查时先读取四组字段：
 
@@ -83,7 +83,9 @@ Android 12 起，FrameTimeline 在 App 和 SurfaceFlinger 两侧提供 Expected 
 
 `upid` 是 Trace Processor 在该 trace 中分配的唯一进程 ID，token 是 FrameTimeline 给帧分配的关联 ID。先按 `jank_type` 找候选帧，再用 `upid`、`layer_name` 和两个 token 追 App SurfaceFrame 与 DisplayFrame。同名 layer 可能来自不同实例或生命周期，能够取得 layer id、track id、BufferQueue 名或 frame number 时要一并记录。
 
-FrameTimeline 文档明确标注 SurfaceView 尚未完整支持。SurfaceView 主体内容应优先使用独立 child layer、对应 Producer、BufferQueue frame number、acquire/release fence 和 SurfaceFlinger present 复原；不能因为缺少 App Actual Timeline slice 就判定它没有更新。TextureView 的 App FrameTimeline 主要描述宿主窗口，外部 SurfaceTexture 输入帧仍要另行关联。UI 颜色会随版本与主题调整，报告中应保存 `jank_type` 原始字符串。
+FrameTimeline 文档明确标注 SurfaceView 尚未完整支持。SurfaceView 主体内容应优先使用独立 child layer、对应 Producer、BufferQueue frame number、acquire/release fence 和 SurfaceFlinger present 复原；不能因为缺少 App Actual Timeline slice 就判定它没有更新。
+
+TextureView 的 App FrameTimeline 主要描述宿主窗口，外部 SurfaceTexture 输入帧仍要另行关联。UI 颜色会随版本与主题调整，报告中应保存 `jank_type` 原始字符串。
 
 ## `dequeueBuffer` 为什么会等
 
@@ -92,10 +94,10 @@ FrameTimeline 文档明确标注 SurfaceView 尚未完整支持。SurfaceView �
 1. 找不到可复用的 free buffer 或 free slot；
 2. 快速断开重连等场景造成 `mQueue.size() > getMaxBufferCountLocked()`。
 
-阻塞模式下，Producer 进入虚函数 `waitForBufferRelease()`。Android 17 有两种实现：
+阻塞模式下，Producer 调用虚函数 `waitForBufferRelease()`。Android 17 有两种实现：
 
 - 通用 `BufferQueueProducer` 仍在条件变量 `mDequeueCondition` 上执行 `wait()` 或带超时的 `wait_for()`；条件变量用于让线程睡眠，直到释放方发出状态可能已变化的通知；
-- App Window 使用的 `BBQBufferQueueProducer` 覆盖了该函数，通过 `BufferReleaseReader::readBlocking()` 在 `BufferReleaseChannel` 上等待。这个通道是 SurfaceFlinger 到 App 的 Unix domain socket（同一设备上进程间通信所用的本地套接字），消息携带 `ReleaseCallbackId`、release fence 和当前 `maxAcquiredBufferCount`；`eventfd` 是内核事件通知文件描述符，用于因其他释放原因中断阻塞读取并重新检查 slot。
+- App Window 使用的 `BBQBufferQueueProducer` 覆盖了该函数，通过 `BufferReleaseReader::readBlocking()` 在 `BufferReleaseChannel` 上等待。这个通道是 SurfaceFlinger 到 App 的 Unix domain socket（同一设备上进程间通信所用的本地套接字），消息携带 `ReleaseCallbackId`、release fence 和当前 `maxAcquiredBufferCount`；`eventfd` 是内核提供的事件通知文件描述符，出现其他释放原因时用它中断阻塞读取，让等待方重新检查 slot。
 
 非阻塞或 async 模式满足源码条件时返回 `WOULD_BLOCK`。Producer 已经 dequeue 到上限时返回 `INVALID_OPERATION`，这和等待空闲 slot 是不同分支。Android 17 的 BLAST 覆盖函数带有 `ATRACE_CALL()`，因此外层 `dequeueBuffer` 内可能出现嵌套的 `waitForBufferRelease` slice；通用队列未必有这条内层 slice。
 
