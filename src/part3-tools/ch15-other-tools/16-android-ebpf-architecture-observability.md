@@ -188,16 +188,9 @@ flowchart LR
 
 #### bpfloader 在 Android 17 中做了什么
 
-`platform/system/bpf` 的 Android 17 实现以 Rust 入口加载平台 libbpf 对象。libbpf 是 Linux 的 BPF 用户态加载库；Android 这里通过 Rust 绑定 `libbpf_rs` 使用它。`load_libbpf_progs()` 遍历内置文件描述，逐个打开对象、复用或创建 map、加载程序，并按元数据设置 pin 路径、所有者和权限。对象还可以声明内核版本范围、构建类型限制以及是否自动附加。
+`platform/system/bpf` 的 Android 17 实现以 Rust 入口加载平台 libbpf 对象。libbpf 是 Linux 的 BPF 用户态加载库；Android 这里通过 Rust 绑定 `libbpf_rs` 使用它。`load_libbpf_progs()` 遍历内置文件描述，逐个打开对象、复用或创建 map、加载程序，并按元数据设置 pin 路径、所有者和权限；对象还可以声明内核版本范围、构建类型限制以及是否自动附加。Rust 路径执行完成后，入口会创建 vendor pin 目录并调用 `vendorBpfLoader()`，这个函数来自旧 C++ loader，负责 legacy（为兼容旧接入方式保留的）vendor BPF 对象。
 
-Rust 路径执行完成后，入口会创建 vendor pin 目录并调用 `vendorBpfLoader()`。这个函数来自旧 C++ loader。Android 17 的实现边界如下：
-
-- 平台内置的 libbpf 对象由 Rust 路径处理；
-- 旧 C++ 代码仍负责 legacy（为兼容旧接入方式保留的）vendor BPF 对象；
-- 两条路径都属于启动期的特权加载流程；
-- `/sys/fs/bpf` 下的名称由对象前缀和元数据决定，不能假定所有版本都使用同一种扁平命名格式。
-
-所以，把一个 `.o` 文件 push 到设备后通常还不能加载。系统侧还要准备构建规则、SELinux 规则、loader 清单、map 权限和兼容性声明。
+两条路径都属于启动期的特权加载流程，`/sys/fs/bpf` 下的名称由对象前缀和元数据决定，不能假定所有版本都使用同一种扁平命名格式。进程边界、对象清单和权限规则的完整展开放在后文《bpfloader、对象组织与权限》。把一个 `.o` 文件 push 到设备后通常还不能加载，系统侧还要准备构建规则、SELinux 规则、loader 清单、map 权限和兼容性声明。
 
 #### Android 17 已内置的几类程序
 
@@ -327,7 +320,7 @@ UprobeStats 面向平台控制的系统诊断，不向第三方应用提供任�
 
 线程为何晚被调度、一次 runnable（已经可以运行、正在等待 CPU）状态持续了多久，则应采集 Perfetto 的 `sched_switch`、`sched_waking`、`sched_wakeup` 等 ftrace 事件。时间线保留事件顺序和线程状态，更适合定位抢占、CPU 饱和、优先级与 affinity 问题。affinity 是限制线程可在哪些 CPU 上运行的亲和性掩码。
 
-不要把 `/proc/stat` 描述成固定 10 ms 精度。它导出的计数单位与内核配置和字段语义有关，采样间隔由读者的轮询策略决定；它的问题主要是全局累计值难以还原短时线程调度因果。
+不要把 `/proc/stat` 描述成固定 10 ms 精度。它导出的计数单位与内核配置和字段语义有关，采样间隔由采集方的轮询策略决定；这个接口的主要问题是全局累计值难以还原短时线程调度因果。
 
 #### 系统调用频率与耗时
 
@@ -547,19 +540,17 @@ tracepoint 通常比函数符号稳定，但不属于 Android SDK API。自研�
 
 ## bpfloader、对象组织与权限
 
-观测场景决定需要哪些内核事件，平台架构决定程序怎样加载、固定到 bpffs 并向用户空间开放 map。
-
-观测点与权限层明确后，下文转向系统启动：Android 17 在什么时机装载平台、Mainline 和 vendor BPF 对象，谁负责把已加载的 program 附加到 tracepoint，用户空间又怎样读取 map。
+观测场景决定需要哪些内核事件，平台架构决定程序怎样加载、固定到 bpffs 并向用户空间开放 map。权限层只回答了谁能看到数据，attach 点只回答了 `ctx` 怎么读，剩下的是装载与固定这条链路：Android 17 在什么时机装载平台、Mainline 和 vendor BPF 对象，谁把已加载的 program 附加到 tracepoint，用户空间又怎样读取 map。
 
 Mainline 是可独立于完整系统更新的 Android 模块，vendor 则指设备厂商随产品镜像交付的部分。
 
-BPF program 是送入内核执行的字节码，map 是 program 与用户空间共享数据的内核对象。理解下面的启动链时，先把三个动作分开：
+理解下面的启动链时，先把三个动作分开：
 
 - **load**：通过 `bpf(2)` 系统调用在内核中创建 program 和 map，期间会经过 verifier（验证器）。`(2)` 表示 Linux 手册的系统调用章节。
 - **pin**：把内核对象固定到 bpffs 路径。bpffs 是 BPF 虚拟文件系统；pin 会保留对象引用，使加载进程退出后，其他进程仍能按路径取得 fd（file descriptor，文件描述符）。
 - **attach**：把 program 连接到 tracepoint、raw tracepoint、iterator 等触发点。tracepoint 是内核预先定义的事件，raw tracepoint 暴露更原始的参数，iterator 则让 BPF 程序遍历特定内核对象。program 已出现在 `/sys/fs/bpf`，仍不能证明它正在接收事件。
 
-Android 17 的平台源码锚点是 `android-17.0.0_r1`，Android common kernel 的 tracepoint 以 `android17-6.18-2026-06_r6` 为准。common kernel 是 Android 使用的公共内核代码线；GKI（Generic Kernel Image）是 Android 的通用内核镜像方案，具体设备仍可能带不同基线和 vendor 改动。
+Android 17 的平台源码锚点是 `android-17.0.0_r1`，Android common kernel 的 tracepoint 以 `android17-6.18-2026-06_r6` 为准。GKI（Generic Kernel Image）方案下，具体设备仍可能带不同内核基线和 vendor 改动。
 
 ### Android 17 的完整启动链
 
@@ -864,16 +855,16 @@ adb shell ls /sys/kernel/tracing/events/power/cpu_frequency
 
 ## Android 17 程序、事件与消费端
 
-加载框架明确后，新程序应按 hook、输出 map、消费者和版本条件核对，不能只根据对象文件名推断可用指标。
-
-加载框架明确后，再对 Android 17 的新程序做实体核对。相较 `android-16.0.0_r4`，Android 17 的首个发布 tag `android-17.0.0_r1` 新增了下面四组程序。这里沿着“构建产物 → 启动加载 → attach（连接到内核触发点）→ 输出 → 用户态消费”逐项核对：
+加载框架明确后，再对 Android 17 的新程序做实体核对。相较 `android-16.0.0_r4`，Android 17 的首个发布 tag `android-17.0.0_r1` 新增了下面四组程序。每一项都要按 hook 点、输出 map、消费端和版本条件走完“构建产物 → 启动加载 → attach（连接到内核触发点）→ 输出 → 用户态消费”这条路径，不能只根据对象文件名推断可用指标：
 
 - `cyclePerUid.bpf`：x86_64 平台的 per-UID（按 Linux UID 汇总）CPU cycle（处理器周期）统计。
 - `dmabufIter.bpf`：DMA-BUF（设备间共享缓冲区）全局快照迭代器。
 - `kernelWakelockDuration.bpf`：至少一个 kernel wakelock（内核唤醒锁）处于 active 状态时的累计时长。
 - `bpfLockContention.bpf`：指定内核锁的 contention（竞争等待）时延聚合。
 
-四个对象都由 Soong（Android 构建系统）的 `libbpf_prog` 模块构建为 `.bpf` 文件，但源码层面的内核依赖并不相同：`cyclePerUid`、`dmabufIter` 和 `bpfLockContention` 使用 BTF（BPF Type Format，内核类型信息）；`kernelWakelockDuration` 直接读取 raw tracepoint（原始跟踪点）参数，不依赖 `vmlinux` 类型。对象被编进 system image（系统镜像），不等于启动时已经加载；`bpfloader` 还会检查 CPU 架构、内核版本、配置 flag（开关）以及对应 hook（触发点）能否附加。
+四个对象都由 Soong（Android 构建系统）的 `libbpf_prog` 模块构建为 `.bpf` 文件，但源码层面的内核依赖并不相同：`cyclePerUid`、`dmabufIter` 和 `bpfLockContention` 使用 BTF（BPF Type Format，内核类型信息）；`kernelWakelockDuration` 直接读取 raw tracepoint（原始跟踪点）参数，不依赖 `vmlinux` 类型。
+
+对象被编进 system image（系统镜像），不等于启动时已经加载；`bpfloader` 还会检查 CPU 架构、内核版本、配置 flag（开关）以及对应 hook（触发点）能否附加。
 
 ### 程序矩阵（matrix）
 
@@ -888,7 +879,7 @@ adb shell ls /sys/kernel/tracing/events/power/cpu_frequency
 
 ### Android 17 的加载和固定路径
 
-Android 17 的 Rust `bpfloader` 先执行 `load_libbpf_progs()`，再进入 legacy loader（旧的 C++ vendor 加载器）。bpffs 是挂载在 `/sys/fs/bpf` 的 BPF 虚拟文件系统；pin 会用文件系统路径保留内核对象引用。program 是送入内核执行的 BPF 代码，map 是 program 与用户态共享的内核键值存储。对这四组程序，libbpf（Linux BPF 用户态加载库）路径负责：
+Android 17 的 Rust `bpfloader` 先执行 `load_libbpf_progs()`，再进入 legacy loader（旧的 C++ vendor 加载器）。这四组程序都走这条 libbpf 路径：
 
 1. 根据 flag 和架构组装待加载文件列表。
 2. 打开 `.bpf` 对象，并按内核版本关闭不适用的 map 或 program。
@@ -896,7 +887,7 @@ Android 17 的 Rust `bpfloader` 先执行 `load_libbpf_progs()`，再进入 lega
 4. 对 `auto_attach` program 建立 BPF link，并把 link 固定到 `/sys/fs/bpf/<prefix>/prog_<object>_<program>`。BPF link 是记录“程序已附加到哪个触发点”的内核对象。
 5. 对不自动 attach 的 program，只固定 program，交给用户态消费者决定 attach 生命周期。
 
-`userdebug` 和 `eng` 是面向调试或工程开发的系统构建类型，root 表示取得超级用户权限。在这类设备上，下面的命令用于检查加载结果；它只读取 bpffs，不会改写 map：
+在 userdebug、eng 或 root 调试设备上，下面的命令用于检查加载结果；它只读取 bpffs，不会改写 map：
 
 ```bash
 adb shell su root sh -c '
