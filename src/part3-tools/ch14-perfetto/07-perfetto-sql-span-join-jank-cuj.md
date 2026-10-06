@@ -91,7 +91,9 @@ consolidated_from:
 
 # Perfetto SQL、SPAN_JOIN 与 Jank CUJ
 
-Perfetto UI 适合寻找可疑时间段，SQL 适合回答能复查的定量问题：某一帧错过了多少时间预算，主线程在分析窗口内运行了多久，Binder（Android 的进程间通信机制）客户端时间由哪些调度状态组成，一次 GC（垃圾回收）从开始到结束的实际耗时中有多少时间在等待 CPU。下文把这种实际经过的时间称为“墙上时间”，其中既有线程运行时间，也有等待时间。查询结果只说明 Trace 中已经采集到的事件。缺少 FrameTimeline（系统记录的帧期望与实际时间线）、调度、Binder 或 ART（Android Runtime）事件时，空表不能证明系统没有发生对应行为。
+Perfetto UI 适合寻找可疑时间段，SQL 适合回答能复查的定量问题：某一帧错过了多少时间预算，主线程在分析窗口内运行了多久，Binder（Android 的进程间通信机制）客户端时间由哪些调度状态组成，一次 GC（垃圾回收）从开始到结束的实际耗时中有多少时间在等待 CPU。下文把这种实际经过的时间称为“墙上时间”，其中既有线程运行时间，也有等待时间。
+
+查询结果只说明 Trace 中已经采集到的事件。缺少 FrameTimeline（系统记录的帧期望与实际时间线）、调度、Binder 或 ART（Android Runtime）事件时，空表不能证明系统没有发生对应行为。
 
 平台源码基线为 Android 17 / API 37 / `android-17.0.0_r1`，内核基线为 `android17-6.18-2026-06_r6`。示例优先查询 Android 17 Perfetto SQL 标准库，再在需要理解原始数据时使用 `slice`（时间轴区间事件）、`sched`、`thread_state` 和 `counter` 等基础表。查询已按 Android 17 源码中的表结构复核，主机侧验证版本固定为 Trace Processor v57.2；换用其他版本时仍要重新检查模块、列和查询结果。
 
@@ -101,7 +103,9 @@ Perfetto SQL 先用表和视图筛出问题窗口，再通过时间跨度关联�
 
 ### 查询前先固定分析口径
 
-PerfettoSQL 是基于 SQLite 扩展的 SQL 方言，增加了 `INCLUDE PERFETTO MODULE`、`CREATE PERFETTO TABLE`、`SPAN_JOIN` 等追踪分析能力；其中 `SPAN_JOIN` 用于计算两组时间区间的交集。标准库模块会创建已经整理好的表、视图和函数。以 Binder 为例，`android.binder` 已经通过 flow（连接相关区间的事件关系）配对客户端事务与服务端回复，也会区分同步调用和 `oneway` 单向异步调用。直接用 `slice.name GLOB '*binder*'` 做通配匹配，无法获得同等语义。
+PerfettoSQL 是基于 SQLite 扩展的 SQL 方言，增加了 `INCLUDE PERFETTO MODULE`、`CREATE PERFETTO TABLE`、`SPAN_JOIN` 等追踪分析能力；其中 `SPAN_JOIN` 用于计算两组时间区间的交集。
+
+标准库模块会创建已经整理好的表、视图和函数。以 Binder 为例，`android.binder` 已经通过 flow（连接相关区间的事件关系）配对客户端事务与服务端回复，也会区分同步调用和 `oneway` 单向异步调用。直接用 `slice.name GLOB '*binder*'` 做通配匹配，无法获得同等语义。
 
 标准库属于 Trace Processor，而非设备系统镜像中的固定数据库。设备运行 Android 17，不代表任意年代的 Trace Processor 都有相同模块和列。团队查询应固定 Trace Processor 版本；升级二进制时，要重新执行语法测试与基准 Trace 回归。
 
@@ -488,7 +492,9 @@ LIMIT 30;
 
 Android 17 的 `android.binder` 模块同时整理同步事务和 `oneway` 异步事务。同步事务中，`client_dur` 覆盖客户端发起调用到收到回复的墙上时间，`server_dur` 覆盖服务端处理与回复区间。异步事务没有同步等待关系，客户端发送与服务端接收可能相隔较远；统计时必须按 `is_sync` 分组。
 
-`interface`、`method_name` 与 `aidl_name` 依赖 AIDL（Android Interface Definition Language）或 HIDL（HAL Interface Definition Language，用于硬件抽象层接口）追踪 `slice`。字段为空时，事务配对仍可能有效，只是 Trace 缺乏接口名。`client_monotonic_dur` 和 `server_monotonic_dur` 使用剔除全机休眠时间的单调时钟口径；分析用户感知延迟时仍要保留墙上时间对照。
+`interface`、`method_name` 与 `aidl_name` 依赖 AIDL（Android Interface Definition Language）或 HIDL（HAL Interface Definition Language，用于硬件抽象层接口）追踪 `slice`。字段为空时，事务配对仍可能有效，只是 Trace 缺乏接口名。
+
+`client_monotonic_dur` 和 `server_monotonic_dur` 使用剔除全机休眠时间的单调时钟口径；分析用户感知延迟时仍要保留墙上时间对照。
 
 按接口、方法和同步类型统计目标进程发起的 Binder 事务，可以找出高频接口和少量最慢的调用，同时保留样本量。
 
@@ -615,7 +621,9 @@ ORDER BY counter.ts;
 
 #### 平台启动事件优先于手工拼 `slice`
 
-手工用 `bindApplication` 到第一个 `doFrame` 推导冷启动，容易漏掉 `system_server`（承载 Android 核心系统服务的进程）发起阶段、`RenderThread` 渲染线程、可见帧以及热启动分支。`android.startup.startups` 会按 Trace 中记录的 SDK 版本与事件格式选择解析路径，输出 `android_startups` 和 `android_startup_processes`。`android.startup.time_to_display` 继续关联首帧与 `reportFullyDrawn()`，提供 TTID（Time To Initial Display，首次显示耗时）与 TTFD（Time To Full Display，完全显示耗时）。
+手工用 `bindApplication` 到第一个 `doFrame` 推导冷启动，容易漏掉 `system_server`（承载 Android 核心系统服务的进程）发起阶段、`RenderThread` 渲染线程、可见帧以及热启动分支。
+
+`android.startup.startups` 会按 Trace 中记录的 SDK 版本与事件格式选择解析路径，输出 `android_startups` 和 `android_startup_processes`。`android.startup.time_to_display` 继续关联首帧与 `reportFullyDrawn()`，提供 TTID（Time To Initial Display，首次显示耗时）与 TTFD（Time To Full Display，完全显示耗时）。
 
 列出目标包的启动区间与显示时间，可以保留平台识别的 `cold`、`warm`、`hot` 分类。这三类对应进程和 Activity 是否已经存在的不同启动路径，不能只按耗时长短命名；查询同时区分启动区间、首次显示与完全显示。
 
@@ -716,7 +724,9 @@ ORDER BY startup.startup_id, summed_client_ms DESC;
 
 #### ANR 没有统一的 5 秒窗口
 
-输入分发超时常见默认值为 5 秒，Broadcast、Service、JobService、前台服务和 `system_server` 看门狗使用不同规则；这里的看门狗是检测系统线程长时间无响应的超时机制。OEM（设备厂商）与前后台状态还可能改写超时。Android 17 的 `android.anrs` 模块会从 `system_server` 的 ErrorId、Subject 与计时事件中解析 `anr_type`、`anr_dur_ms` 和 `default_anr_dur_ms`；源码也明确标注默认值仅对应 AOSP（Android Open Source Project）/ Pixel 的常见配置。
+输入分发超时常见默认值为 5 秒，Broadcast、Service、JobService、前台服务和 `system_server` 看门狗使用不同规则；这里的看门狗是检测系统线程长时间无响应的超时机制。OEM（设备厂商）与前后台状态还可能改写超时。
+
+Android 17 的 `android.anrs` 模块会从 `system_server` 的 ErrorId、Subject 与计时事件中解析 `anr_type`、`anr_dur_ms` 和 `default_anr_dur_ms`；源码也明确标注默认值仅对应 AOSP（Android Open Source Project）/ Pixel 的常见配置。
 
 查询 Trace 中的 ANR，可以检查解析出的类型、主题和时长。这个入口比按日志文字模糊搜索更可靠。
 
@@ -1134,7 +1144,9 @@ ORDER BY ts;
 - 文件系统事件携带的 inode（文件系统对象编号）、设备或操作类型与块设备请求相符；
 - 停止目标操作或切换到对照场景后，线程等待和设备压力同步变化。
 
-`SharedPreferences.commit()` 会同步等待结果；`apply()` 虽先更新内存并安排磁盘写入，但 Android 用来管理延后任务的 `QueuedWork` 仍可能在组件停止时等待后台任务。SQLite 事务、`fsync`（要求把文件修改同步到持久存储）、首次资源页故障和系统回写也要按各自事件验证。全量 `raw_syscalls/sys_enter` / `sys_exit` 事件率很高，只应在短窗口、足够大的缓冲区和明确复现场景下启用。
+`SharedPreferences.commit()` 会同步等待结果；`apply()` 虽先更新内存并安排磁盘写入，但 Android 用来管理延后任务的 `QueuedWork` 仍可能在组件停止时等待后台任务。SQLite 事务、`fsync`（要求把文件修改同步到持久存储）、首次资源页故障和系统回写也要按各自事件验证。
+
+全量 `raw_syscalls/sys_enter` / `sys_exit` 事件率很高，只应在短窗口、足够大的缓冲区和明确复现场景下启用。
 
 ### 功耗：联合频率、空闲、Suspend 与唤醒锁
 
@@ -1220,7 +1232,9 @@ ORDER BY cpu;
 
 ### 跨进程证据使用稳定身份
 
-启动、Binder 和显示都跨进程。启动使用 `startup_id` 与 `android_startup_processes.upid`；Binder 使用 `binder_txn_id` / `binder_reply_id`；帧使用 `surface_frame_token`、`display_frame_token` 与 flow 关系；调度使用 `utid` / `upid`。PID、TID、进程名和线程名只用于筛选与展示，不能承担唯一身份。
+启动、Binder 和显示都跨进程。启动使用 `startup_id` 与 `android_startup_processes.upid`；Binder 使用 `binder_txn_id` / `binder_reply_id`；帧使用 `surface_frame_token`、`display_frame_token` 与 flow 关系；调度使用 `utid` / `upid`。
+
+PID、TID、进程名和线程名只用于筛选与展示，不能承担唯一身份。
 
 跨进程区间应来自同一录制会话。合并不同设备或不同会话的 Trace 时，必须有可验证的时钟快照和同步事件；时钟快照记录同一已知时刻在不同时间基准下的数值，用于建立换算关系。仅按文件起点平移，不能支撑毫秒级因果判断。
 
@@ -1366,7 +1380,9 @@ Android 17 的实现会按分区和 `ts` 推进两侧游标；游标是逐行读
 
 ### 用窗口函数把计数器点变成时间段
 
-计数器在 `ts` 处记录“数值从此刻开始变为 `value`”。所谓前向有效区间，是把这个值视为从当前 `ts` 持续到下一条记录，即 `[当前 ts, 下一条 ts)`；同一轨道的末条记录延续到明确的窗口末端。窗口函数 `LEAD()` 读取排序后的下一行，必须按 `track_id` 分组计算，否则一个 CPU 的频率点会被另一个 CPU 的采样时刻截断。
+计数器在 `ts` 处记录“数值从此刻开始变为 `value`”。所谓前向有效区间，是把这个值视为从当前 `ts` 持续到下一条记录，即 `[当前 ts, 下一条 ts)`；同一轨道的末条记录延续到明确的窗口末端。
+
+窗口函数 `LEAD()` 读取排序后的下一行，必须按 `track_id` 分组计算，否则一个 CPU 的频率点会被另一个 CPU 的采样时刻截断。
 
 手工把 `cpufreq` 计数器转成前向区间，并通过 `cpu` 表取得跨机器 Trace 也唯一的 `ucpu`，可以核对标准库的输入语义。
 
@@ -1852,7 +1868,9 @@ trace_processor_shell \
 
 自定义 SQL 提供灵活性，标准库统一常见 CUJ 语义。DataGrid 可用于检查中间结果，但最终结论仍要保留 SQL 和 Trace 位置。
 
-本文以 Android 17 / API 37 / `android-17.0.0_r1` 及该源码标签中的 Perfetto 为分析基准。CUJ 是 Critical User Journey，指系统重点监控的一段用户交互；Jank 指帧未按期完成所表现出的卡顿。上游 Perfetto v54.0 只作为版本演进参照：它引入了 DataGrid 改进、Jank CUJ 相关线程、基于计数器的加权卡顿、`heap_graph_stats` 和两种采样格式导入能力。Android 17 的 Perfetto 已包含 v54 之后的改动，不能用“Android 17 等于 v54.0”概括。
+本文以 Android 17 / API 37 / `android-17.0.0_r1` 及该源码标签中的 Perfetto 为分析基准。CUJ 是 Critical User Journey，指系统重点监控的一段用户交互；Jank 指帧未按期完成所表现出的卡顿。
+
+上游 Perfetto v54.0 只作为版本演进参照：它引入了 DataGrid 改进、Jank CUJ 相关线程、基于计数器的加权卡顿、`heap_graph_stats` 和两种采样格式导入能力。Android 17 的 Perfetto 已包含 v54 之后的改动，不能用“Android 17 等于 v54.0”概括。
 
 分析时要区分三层：
 
@@ -1866,7 +1884,9 @@ trace_processor_shell \
 
 Perfetto v54.0 的变更日志明确记录了 DataGrid 的三类改进：可配置透视表、`glob`（通配符匹配）/ `contains` / `not-contains` 过滤器、过滤器的 distinct value picker（非重复值选择器）。同期的 snap-to-boundaries（吸附到边界）属于时间范围选择功能，与 DataGrid 过滤无关。[Perfetto v54.0 变更日志](https://github.com/google/perfetto/blob/v54.0/CHANGELOG)
 
-v54.0 标签中已经存在节点式查询插件，插件标识为 `dev.perfetto.ExplorePage`。Android 17 固定标签把对应插件命名为 `dev.perfetto.DataExplorer`，并包含图编辑、导入导出、固定链接和仪表盘等实现。两个版本的 `QueryExecutionService` 都把节点图转成 `PerfettoSqlStructuredQuery`，通过 Trace Processor 的 `summarizer` 同步、查询和物化；这里的“物化”是把查询结果暂存成可再次读取的表，DataGrid 随后通过 `SQLDataSource` 读取它。[v54.0 ExplorePage 源码](https://github.com/google/perfetto/tree/v54.0/ui/src/plugins/dev.perfetto.ExplorePage) [Android 17 DataExplorer 源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/ui/src/plugins/dev.perfetto.DataExplorer/)
+v54.0 标签中已经存在节点式查询插件，插件标识为 `dev.perfetto.ExplorePage`。Android 17 固定标签把对应插件命名为 `dev.perfetto.DataExplorer`，并包含图编辑、导入导出、固定链接和仪表盘等实现。
+
+两个版本的 `QueryExecutionService` 都把节点图转成 `PerfettoSqlStructuredQuery`，通过 Trace Processor 的 `summarizer` 同步、查询和物化；这里的“物化”是把查询结果暂存成可再次读取的表，DataGrid 随后通过 `SQLDataSource` 读取它。[v54.0 ExplorePage 源码](https://github.com/google/perfetto/tree/v54.0/ui/src/plugins/dev.perfetto.ExplorePage) [Android 17 DataExplorer 源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/ui/src/plugins/dev.perfetto.DataExplorer/)
 
 截至 Perfetto v57.2，Data Explorer 仍以节点图组织筛选、聚合、连接和时间区间相交，并用 data grid 展示结果。当前标准库继续公开 `android.cujs.base`、`android_jank_cuj` 和 `android_jank_cuj_render_thread`，同时增加了 CUJ summary 及 jank/latency 组合表。下面的 SQL 固定面向 Android 17；使用新版 Trace Processor 时，应先查配套 schema，不能把新字段直接搬进旧环境。
 
@@ -1926,7 +1946,9 @@ ORDER BY c.ts;
 
 `cuj_id` 是 trace 内的 CUJ 编号，`upid` 和 `utid` 分别是 Trace Processor 在该 trace 中分配的唯一进程与线程 ID，`track_id` 标识承载事件的轨道。它们与操作系统原始的 PID、TID 不属于同一标识域。
 
-`android.cujs.threads` 的公共入口包括 `android_jank_cuj_app_thread(thread_name)` 和 `android_jank_cuj_render_thread`。GPU completion（GPU 完成相关线程）、HWC release（Hardware Composer 释放栅栏相关线程）、SurfaceFlinger main、SurfaceFlinger GPU completion 与 RenderEngine（SurfaceFlinger 的渲染引擎）等表由 `android/android_jank_cuj.sql` 的指标初始化过程继续创建。需要长期维护的脚本不要直接依赖 `_android_sf_process`、`_android_sf_thread()` 这类下划线开头的内部对象；它们没有公共兼容承诺。
+`android.cujs.threads` 的公共入口包括 `android_jank_cuj_app_thread(thread_name)` 和 `android_jank_cuj_render_thread`。GPU completion（GPU 完成相关线程）、HWC release（Hardware Composer 释放栅栏相关线程）、SurfaceFlinger main、SurfaceFlinger GPU completion 与 RenderEngine（SurfaceFlinger 的渲染引擎）等表由 `android/android_jank_cuj.sql` 的指标初始化过程继续创建。
+
+需要长期维护的脚本不要直接依赖 `_android_sf_process`、`_android_sf_thread()` 这类下划线开头的内部对象；它们没有公共兼容承诺。
 
 ### 基于计数器的加权卡顿
 
@@ -1963,7 +1985,9 @@ ORDER BY
 LIMIT 20;
 ```
 
-`weighted_missed_app_frames` 与 `weighted_missed_sf_frames` 在表中是速率：原始整数计数器除以 `1000` 后按 jank/s 解释。乘以 `anim_duration_ms / 1000` 才得到该次 CUJ 的加权总量。两个 `*_total` 是查询别名，不是表字段。[Android 17 计数器指标](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/metrics/sql/android/jank/internal/counters.sql) [Android 17 指标输出](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/metrics/sql/android/android_jank_cuj.sql)
+`weighted_missed_app_frames` 与 `weighted_missed_sf_frames` 在表中是速率：原始整数计数器除以 `1000` 后按 jank/s 解释。乘以 `anim_duration_ms / 1000` 才得到该次 CUJ 的加权总量。
+
+两个 `*_total` 是查询别名，不是表字段。[Android 17 计数器指标](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/metrics/sql/android/jank/internal/counters.sql) [Android 17 指标输出](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/metrics/sql/android/android_jank_cuj.sql)
 
 加权总量适合排序严重程度，不提供根因。一次高分可能来自一个很重的超时，也可能来自连续多帧延迟。还要展开 FrameTimeline、相关线程和调用栈。
 
@@ -2006,7 +2030,9 @@ LIMIT 50;
 
 Android 17 指标在 expected timeline 缺失时，会用 `16.6 ms` 作为 `dur_expected` 的兼容回退。这个值来自指标源码，不能据此声称设备当时运行在 60 Hz。报告中遇到该回退，应把 expected timeline 缺失列为采集限制。
 
-FrameTimeline 的 `on_time_finish` 也不能单独充当全部 jank 判据。Buffer Stuffing（buffer queue 中积压了过多帧）可能在 App 按期完成时仍被标为 jank；Prediction Error 表示 FrameTimeline 的时序预测出现偏差，语义也与普通超时不同。优先使用 `jank_type`、`jank_score`、expected/actual 时间线和标准库聚合结果。[Android 17 FrameTimeline 文档](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/docs/data-sources/frametimeline.md) [Android 17 jank type 分类](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/frames/jank_type.sql)
+FrameTimeline 的 `on_time_finish` 也不能单独充当全部 jank 判据。Buffer Stuffing（buffer queue 中积压了过多帧）可能在 App 按期完成时仍被标为 jank；Prediction Error 表示 FrameTimeline 的时序预测出现偏差，语义也与普通超时不同。
+
+优先使用 `jank_type`、`jank_score`、expected/actual 时间线和标准库聚合结果。[Android 17 FrameTimeline 文档](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/docs/data-sources/frametimeline.md) [Android 17 jank type 分类](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/frames/jank_type.sql)
 
 ### 用 thread_state 判断时间花在哪里
 
@@ -2155,7 +2181,9 @@ JOIN process AS p USING (upid)
 ORDER BY h.graph_sample_ts;
 ```
 
-模块为 OOM adj、RSS/swap 与 DMA-BUF 查找覆盖 heap dump 时刻的区间；没有覆盖时，允许选择 dump 之后 `500 ms` 内最近的数据点。各字段可能为 `NULL`，也不构成同一时刻的原子快照。trace 没有 ART heap graph 时，表自然为空。[Android 17 heap graph stats](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/memory/heap_graph/heap_graph_stats.sql)
+模块为 OOM adj、RSS/swap 与 DMA-BUF 查找覆盖 heap dump 时刻的区间；没有覆盖时，允许选择 dump 之后 `500 ms` 内最近的数据点。
+
+各字段可能为 `NULL`，也不构成同一时刻的原子快照。trace 没有 ART heap graph 时，表自然为空。[Android 17 heap graph stats](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/memory/heap_graph/heap_graph_stats.sql)
 
 Java heap 稳定而 DMA-BUF RSS 上涨时，应继续检查图形 buffer、解码、Surface 生命周期和跨进程持有；单凭这个变化还不能指出泄漏对象。Java heap 与 DMA-BUF 同时上涨时，也要分别验证对象可达路径和图形资源所有权。
 
