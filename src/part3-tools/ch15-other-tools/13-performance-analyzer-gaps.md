@@ -85,9 +85,11 @@ consolidated_from:
 
 性能调查既要复现目标路径，也要测量路径执行时的行为。Android Performance Analyzer（APA）用系统 trace 观察线程、帧和资源；GAPS 通过静态路径重建与动态执行验证目标方法是否可达。两者解决不同问题：触达目标方法只是测量的前提，不能证明它就是性能瓶颈。
 
-APA 是 Google 面向 Android App 与游戏提供的性能分析工具。官方提供独立桌面应用；2026 年 5 月的发布文还说明，其 System Trace viewer 已进入 Android Studio Panda 4 Canary 及后续版本。这里的 APA 操作流程以独立版 System Profiler 为准。
+APA 是 Google 面向 Android App 与游戏提供的性能分析工具，官方以独立桌面应用分发；2026 年 5 月的发布文还说明，其 System Trace viewer 已进入 Android Studio Panda 4 Canary 及后续版本。这里的 APA 操作流程以独立版 System Profiler 为准。
 
-官方在 2026 年 5 月 19 日以 open beta 发布 System Profiler。截至 2026 年 8 月 13 日，8 月 12 日更新的 APA 下载页已不再标注 Beta；旧 AGI 页面仍保留“public beta”字样，不能用这条滞后的交叉链接判断当前发布状态。当前 APA 文档仍以 System Profiler 为主：录制 system trace（系统追踪）、在 Project（组织多份 trace 的项目容器）中管理数据、查看 CPU/GPU/内存/功耗与 SurfaceFlinger（Android 系统合成器）事件、运行 PerfettoSQL，并为 Vulkan 工作负载补充调试数据。Vulkan render pass（渲染阶段及其附件处理范围）名称和截图属于 trace 增强信息，不能当成逐 draw（逐次绘制调用）的单帧 capture/replay（捕获与回放）。
+System Profiler 在 2026 年 5 月 19 日以 open beta 发布。截至 2026 年 8 月 13 日，8 月 12 日更新的 APA 下载页已不再标注 Beta；旧 AGI 页面仍保留“public beta”字样，判断当前发布状态时不要采信这条滞后的交叉链接。
+
+当前 APA 文档仍以 System Profiler 为主：录制 system trace（系统追踪）、在 Project（组织多份 trace 的项目容器）中管理数据、查看 CPU/GPU/内存/功耗与 SurfaceFlinger（Android 系统合成器）事件、运行 PerfettoSQL，并为 Vulkan 工作负载补充调试数据。
 
 设备侧平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核侧固定到 `android17-6.18-2026-06_r6`。APA 的发布周期独立于 Android 平台；它支持 Android 12 及以上的受支持设备，不能写成“Android 17 新增的 framework API”。
 
@@ -130,7 +132,7 @@ APA 首页提供 Windows、macOS 和 Linux 安装包。Quickstart 给出的主�
 - Vulkan App 或游戏若要采集 Vulkan-specific data（Vulkan 专属数据），建议设置 `debuggable=true`，以便 APA 注入或启用对应的 Vulkan 调试能力；
 - 纯 C/C++ 或 native game loop（原生游戏循环）受 ART debug 状态的影响较小，但编译优化、符号、引擎配置和资源包仍要固定。
 
-一个同时包含大量 Java/Kotlin 代码和 Vulkan 渲染的 App 很难用单次录制兼顾两种目标。建议保留两种实验：
+如果一个 App 同时包含大量 Java/Kotlin 代码和 Vulkan 渲染，很难用单次录制兼顾两种目标。建议保留两种实验：
 
 1. 接近发布配置（release-like）、不可调试（non-debuggable）的构建，用来测启动、UI、调度和整体帧表现；
 2. 原生代码优化保持一致、但 `debuggable=true` 的 Vulkan 诊断构建，用来采集 API timing（CPU 侧 API 调用耗时）、render pass name 或 screenshot（捕获画面）。
@@ -158,7 +160,7 @@ launch mode 决定 APA 是否负责启动 App，trigger 决定录制何时开始
 - Launch app and record：APA 启动目标 App；
 - Record a running app：对已经运行的进程录制，Application 相关选项不可用，start trigger 只能选择 Manual。
 
-启动触发器包括 Manual、On Startup、On Startup with Delay；结束触发器包括 Manual 和 Duration。启动问题应使用 On Startup，并确认录制开始覆盖进程创建和首帧。稳态（启动和预热影响已经消退）滑动或游戏场景，可以先准备数据、账号和页面，再用 Manual 进入目标窗口。
+启动触发器包括 Manual、On Startup、On Startup with Delay；结束触发器包括 Manual 和 Duration。启动问题应使用 On Startup，并确认录制开始覆盖进程创建和首帧。滑动或游戏这类稳态场景（启动和预热影响已经消退）可以先准备数据、账号和页面，再用 Manual 进入目标窗口。
 
 #### 4.2 默认配置与自定义 `TraceConfig`
 
@@ -176,11 +178,11 @@ Use custom trace configuration 会把界面当前设置自动展开成 Perfetto 
 
 ### 5. Vulkan Layers：能力与扰动
 
-APA 可在录制时注入 Vulkan layers，也就是加载能拦截 Vulkan API 调用并写入额外调试数据的模块。当前文档列出三类选项。
+APA 可在录制时注入 Vulkan layers，也就是加载能拦截 Vulkan API 调用并写入额外调试数据的模块。当前文档列出三类选项。这些 layer 产出的是 trace 增强信息：render pass（渲染阶段及其附件处理范围）名称和截图能帮助辨认阶段与画面，但不能当成逐 draw（逐次绘制调用）的单帧 capture/replay（捕获与回放）。
 
 #### 5.1 CPU Timing
 
-CPU Timing 把 Vulkan API 调用耗时显示为调用线程上的 slice（带开始时间和持续时间的事件）。`vkCmdDraw` 一类高频函数会被有意排除，因为逐次追踪会造成明显开销并扭曲结果。该轨道适合找 API 提交侧的长调用，不能代表 GPU 执行时间。
+CPU Timing 把 Vulkan API 调用耗时显示为调用线程上的 slice（带开始时间和持续时间的事件）。APA 有意排除 `vkCmdDraw` 一类高频函数，因为逐次追踪会造成明显开销并扭曲结果。该轨道适合找 API 提交侧的长调用，不能代表 GPU 执行时间。
 
 #### 5.2 Render Pass Debug Names
 
@@ -300,7 +302,7 @@ Android 17 的调度 tracepoint 来自固定内核锚点 `android17-6.18-2026-06
 
 Winscope 用于查看 WindowManager 与 SurfaceFlinger 状态；Macrobenchmark 是 Jetpack 的可重复性能基准框架；CI（Continuous Integration）是持续集成流水线；`ProfilingManager` 是面向真实用户设备采集脱敏 profile 的 Android API；statsd 是 Android 系统统计守护进程。它们解决的问题不同，APA 主要承担本地 system trace 的交互分析。
 
-2026 年 5 月发布文把 APA System Profiler 称为 open beta，当前 APA 下载页已移除这一标记；AGI 页面中的“public beta”属于尚未同步的旧文案。官方仍推荐 APA 做 system profiling，但没有宣布 AGI Frame Profiler、Android Studio Profiler、Perfetto CLI 或 Trace Processor 停止使用。
+官方仍推荐 APA 做 system profiling，但没有宣布 AGI Frame Profiler、Android Studio Profiler、Perfetto CLI 或 Trace Processor 停止使用。
 
 ### 10. Android 17 平台边界
 
@@ -343,7 +345,7 @@ APA 安装包不属于 `android-17.0.0_r1` framework 源码。平台 tag 中找�
 | 静态路径重建 | 至少生成一条包含目标方法的路径 | 路径在当前账号、权限和 UI 状态下一定可执行 |
 | 动态目标触达 | AndroLog 日志插桩或 Frida 动态 Hook 观察到目标方法调用 | 该方法造成卡顿、ANR（应用无响应）、耗电或安全影响 |
 
-论文使用 AndroTest 自动交互基准中的 56 个开源应用，每个应用固定随机选择 50 个目标方法，并让各工具使用同一组目标。只有 34.39% 的目标位于 `Activity`（Android 界面组件）中，多数目标无法通过浅层页面遍历直接命中。
+论文使用 AndroTest 自动交互基准中的 56 个开源应用，每个应用随机选取 50 个目标方法，并让各工具针对同一组目标运行。只有 34.39% 的目标位于 `Activity`（Android 界面组件）中，多数目标无法通过浅层页面遍历直接命中。
 
 v3 报告的结果如下：
 
