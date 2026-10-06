@@ -83,7 +83,7 @@ consolidated_from:
 
 # GPU 调试与 AGI 单帧分析
 
-GPU 调试工具分为 API 调用捕获、单帧重放、计数器分析和系统时间线。AGI Frame Profiler 通过 gapii Spy 捕获图形调用并重建帧，适合定位资源和命令问题，但需要控制捕获开销和兼容性。
+GPU 调试工具分为 API 调用捕获、单帧重放、计数器分析和系统时间线。AGI Frame Profiler 通过 GraphicsSpy 捕获图形调用并重建帧，适合定位资源和命令问题，但需要控制捕获开销和兼容性。
 
 ## API 捕获、计数器与系统 Trace 选型
 
@@ -186,7 +186,7 @@ data_sources {
 
 GPU frequency 反映 DVFS（Dynamic Voltage and Frequency Scaling，动态电压频率调节）的当前频点。高频可能来自持续负载、响应性策略或固定性能模式；低频可能来自轻载、温控、功耗限制或 governor（频率调节策略）选择。单看频率无法判断 GPU 是否占满。
 
-“GPU utilization”“shader core active”“ALU busy”“external memory read”这类 counter 的分母、采样窗口和包含的等待状态由厂商定义。分析时应：
+这类 counter（“GPU utilization”“shader core active”“ALU busy”“external memory read”）的分母、采样窗口和包含的等待状态由厂商定义。分析时应：
 
 1. 找到目标帧对应的 GPU stage；
 2. 读取同一时间窗内的 counter；
@@ -223,7 +223,7 @@ APA 与 Perfetto 的区别主要在入口和分析体验：
 - Perfetto CLI 与 Trace Processor 适合固定配置、批量采集、SQL 回归和自动化；
 - 两者都受目标设备 GPU producer 与驱动数据限制。
 
-AGI quickstart 当前仍把 APA 列为 system profiling 的推荐工具。AGI System Profiler 仍可使用，尤其是团队已有 AGI 设备验证和 counter 流程时。2026 年 5 月的 APA 公告把逐帧 capture/replay（捕获与回放）列为后续能力；2026 年 8 月的 APA 首页虽然新增 Vulkan debug marker 展示，却仍没有发布逐 draw 的 Frame Profiler 文档。因此不能把 trace 中的 render pass 名称，当成 AGI Frame Profiler 那类单帧命令与资源捕获。
+AGI quickstart 当前仍把 APA 列为 system profiling 的推荐工具。AGI System Profiler 仍可使用，尤其是团队已有 AGI 设备验证和 counter 流程时。2026 年 5 月的 APA 公告把逐帧 capture/replay（捕获与回放）列为后续能力；2026 年 8 月的 APA 首页新增了 Vulkan debug marker 展示，但仍没有发布逐 draw 的 Frame Profiler 文档。因此不能把 trace 中的 render pass 名称，当成 AGI Frame Profiler 那类单帧命令与资源捕获。
 
 ### Android GPU Inspector（AGI）
 
@@ -286,7 +286,7 @@ Sokatoa 由 Samsung Austin Research Center 发起，并与 Google、LunarG 协�
 | Samsung Xclipse | Sokatoa，配合 APA/Perfetto 与 Samsung 扩展 | 多帧 Vulkan、Xclipse performance view、系统时间线 | 扩展与设备支持仍在演进，报告要记录版本 |
 | Imagination PowerVR | AGI、Sokatoa 与 Imagination 工具 | PowerVR counter、系统与帧分析 | counter 名称和可用性依设备 producer |
 
-Arm Streamline 能在未 root 的受支持 Android 设备上采集 CPU、GPU、内存、调度和硬件 counter。Frame Advisor 面向问题帧的 API 与几何分析；RenderDoc for Arm GPUs 偏重图形调试；Mali Offline Compiler 不运行 App，而是估算 shader 在不同 Arm GPU 上的指令、寄存器和周期成本。三者用途不同，报告不能只写“Arm profiler”后混用结论。
+Arm Streamline 能在未 root 的受支持 Android 设备上采集 CPU、GPU、内存、调度和硬件 counter。Frame Advisor 面向问题帧的 API 与几何分析；RenderDoc for Arm GPUs 偏重图形调试；Mali Offline Compiler 不运行 App，而是估算 shader 在不同 Arm GPU 上的指令、寄存器和周期成本。这些工具用途不同，报告里不能只写“Arm profiler”就把它们的结论混用。
 
 厂商 counter 应保留原名称、单位、采样方式、GPU 型号、driver 和文档版本。把 Adreno 的 busy、Mali 的 shader core active 与 Xclipse 的相似名称放进一张跨机型排行榜，数值很容易失去可比性。
 
@@ -294,7 +294,7 @@ Arm Streamline 能在未 root 的受支持 Android 设备上采集 CPU、GPU、�
 
 `<profileable>` 从 API 29 引入，是 `<application>` 的子元素；`android:enabled` 属性在 API 30 加入。设置 `android:shell="true"` 后，本地 shell profiling 工具可以分析 release 构建，同时只能访问平台允许的有限数据。与 debuggable 构建相比，这种方式对运行时序的扰动通常更小。debuggable 允许调试器和图形 layer 注入；root 则表示设备取得系统超级用户权限，三者不是同一种授权。
 
-它不保证 `gpu.counters`、`gpu.renderstages` 或厂商内核事件出现。GPU 数据源由系统 producer、驱动、设备配置和调用权限决定。一个 profileable 包得到空 GPU 轨道时，排查方向应包含 data-source descriptor 与厂商支持。
+`profileable` 不保证 `gpu.counters`、`gpu.renderstages` 或厂商内核事件出现。GPU 数据源由系统 producer、驱动、设备配置和调用权限决定。一个 profileable 包得到空 GPU 轨道时，排查方向应包含 data-source descriptor 与厂商支持。
 
 帧捕获通常需要把 Vulkan layer 加载进目标进程，或替换 graphics backend：
 
@@ -489,7 +489,7 @@ AGI 为不同 ABI 准备独立 package，例如：
 
 `DeviceInfoService` 与 `PackageInfoService` 是前台 `IntentService`（启动时显示通知、按 Intent 处理任务的服务），用于设备探测和 package 枚举。抓帧数据不经过一个名为 `com.google.android.gapid` 的 AIDL（Android Interface Definition Language，Android 跨进程接口定义）capture service。gapii 在目标进程内监听 local abstract socket，开发机通过 adb forward（把主机端口转发到设备 socket）连接。
 
-源码也没有支持“AI 压缩算法、GPU 数据加密存储、动态采样率或 GPU 访问审计日志”这些描述。安全边界应回到 Android 的 debuggable 状态、Vulkan layer 注入条件、adb 授权、layer package 与目标 package 选择。
+“AI 压缩算法、GPU 数据加密存储、动态采样率或 GPU 访问审计日志”这些描述，源码里也没有支持。安全边界应回到 Android 的 debuggable 状态、Vulkan layer 注入条件、adb 授权、layer package 与目标 package 选择。
 
 ### 一帧捕获从连接到结束发生了什么
 
@@ -510,7 +510,7 @@ AGI 开发文档把 Vulkan Frame Profile 的主要步骤写得很具体：
 
 #### 多线程捕获不等于确定性的时序重放
 
-`.gfxtrace` 可以包含多个线程的 API 调用，ProtoPack object group（带父子关系的消息组）也可能交错。捕获器会记录调用和内存快照，但无法保证未显式同步的 race（并发竞态）都能稳定复现。Vulkan 应用在抓帧前应通过 validation layer（检查 API 使用是否合法的校验层），资源生命周期、host memory（CPU 可访问内存）修改和 queue 同步要符合 API 约束。
+`.gfxtrace` 可以包含多个线程的 API 调用，ProtoPack object group（带父子关系的消息组）也可能交错。捕获器会记录调用和内存快照，但无法保证未显式同步的 race（并发竞态）都能稳定复现。Vulkan 应用在抓帧前应通过 validation layer（验证层），资源生命周期、host memory（CPU 可访问内存）修改和 queue 同步要符合 API 约束。
 
 ### `.gfxtrace` 的内容与边界
 
