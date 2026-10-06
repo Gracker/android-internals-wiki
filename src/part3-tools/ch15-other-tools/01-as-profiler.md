@@ -57,11 +57,18 @@ Android Studio Profiler 适合从应用视角快速关联 CPU、内存、网络�
 
 本节的平台行为以 Android 17 / API 37 / `android-17.0.0_r1` 为边界，Android Studio 的任务名称和入口截至 2026 年 8 月 13 日核对。IDE 与系统平台分别演进：升级 Android Studio 不会改变旧 trace 中已经采到的数据；升级设备系统后，IDE 也未必立即支持新增的数据源。文中保留 Tasks 面板里的英文任务名，方便读者直接在 IDE 中搜索。
 
-滑动卡顿、启动慢、内存增长和耗电异常都只是现象。诊断时要回答更具体的问题：线程当时在执行还是等待，CPU 时间集中在哪条调用路径，对象为何仍被引用，功耗峰值与哪段设备活动同时发生。Android Studio Profiler（性能分析器）把这些采集任务放进 IDE，并在同一界面提供时间轴、调用栈和源码跳转。这里的 trace 指按时间记录的一组性能事件，后文沿用这个原名。
+滑动卡顿、启动慢、内存增长和耗电异常都只是现象。诊断时要回答更具体的问题：线程当时在执行还是等待，CPU 时间集中在哪条调用路径，对象为何仍被引用，功耗峰值与哪段设备活动同时发生。Android Studio Profiler（性能分析器）把这些采集任务放进 IDE，并在同一界面提供时间轴、调用栈和源码跳转。本文所说的 trace，指按时间顺序记录的一组性能事件。
 
-Profiler 背后有多种采集机制。System Trace 使用平台 tracing 数据；Callstack Sample 会记录 Java/Kotlin、JNI、虚拟机和内核栈帧，其中 JNI（Java Native Interface）是 Java/Kotlin 与 C/C++ 代码之间的调用桥梁，原生代码采样由 Simpleperf 支持；Record Java/Kotlin Methods 依赖运行时插桩，也就是在方法进入和退出位置加入时间戳；内存任务则使用堆转储、分配事件或原生内存分配采样。每种任务回答的问题不同，分析时不能混用它们的读数。
+Profiler 的采集任务由几套不同的机制支撑，每种回答的问题不同，分析时不能混用它们的读数：
 
-Profiler 的 IDE 视图围绕所选 App 展开，System Trace 本身仍可包含系统调度、CPU 核心、部分系统进程、渲染和 power rail 数据。power rail 是给某类硬件供电的电源轨，设备可按轨报告功耗。需要跨进程浏览、用 Trace Processor 执行 SQL 查询、关联多条时间线或检查自定义数据源时，可把支持导出的 system trace 交给 Perfetto UI。Trace Processor 是把 trace 数据映射成表并提供 SQL 查询的分析引擎。两套界面可以读取同一份记录，展示范围和查询能力有所差异。
+- System Trace 读取平台 tracing 数据；
+- Callstack Sample 记录 Java/Kotlin、JNI、虚拟机和内核栈帧，其中 JNI（Java Native Interface）是 Java/Kotlin 与 C/C++ 代码之间的调用桥梁，原生代码采样由 Simpleperf 支持；
+- Record Java/Kotlin Methods 依赖运行时插桩，在方法进入和退出位置写入时间戳；
+- 内存任务使用堆转储、分配事件或原生内存分配采样。
+
+Profiler 的 IDE 视图围绕所选 App 展开，System Trace 本身仍可包含系统调度、CPU 核心、部分系统进程、渲染和 power rail 数据。power rail 是给某类硬件供电的电源轨，设备可按轨报告功耗。
+
+需要跨进程浏览、用 Trace Processor 执行 SQL 查询、关联多条时间线或检查自定义数据源时，可把支持导出的 system trace 交给 Perfetto UI。Trace Processor 是把 trace 数据映射成表并提供 SQL 查询的分析引擎。两套界面可以读取同一份记录，展示范围和查询能力有所差异。
 
 ## 当前界面与任务入口
 
@@ -104,7 +111,7 @@ Java/Kotlin 方法记录通过运行时插桩，在每次方法进入和退出�
 
 因此，方法记录显示的绝对耗时，也就是某次调用在时间轴上的具体毫秒数，只适合在同一录制条件下辅助排序。若要判断优化是否缩短了用户可见时延，应回到无插桩的基准测试或低扰动 System Trace。社区案例中的固定放大倍数依赖设备、代码形态和录制配置，不能当成工具保证。
 
-录制前应把操作缩成一个可复现片段，并限制录制窗口。Android 7.1 及以下设备的采集量受配置中的 File size limit 约束；Android 8.0（API 26）及以上会忽略该上限。后者仍不适合长时间录制：短采样间隔或密集方法调用会快速生成大文件，随后显著增加传输和解析时间。
+录制前应把操作缩成一个可复现片段，并限制录制窗口。Android 7.1 及以下设备的采集量受配置中的 File size limit 约束；Android 8.0（API 26）及以上会忽略该上限。忽略上限不等于可以长时间录制：短采样间隔或密集方法调用会快速生成大文件，随后显著增加传输和解析时间。
 
 ### Callstack Sample（调用栈采样）
 
@@ -114,7 +121,7 @@ Java/Kotlin 方法记录通过运行时插桩，在每次方法进入和退出�
 
 Callstack Sample 适合找 CPU 热点。若主线程大部分时间在等待 Binder（Android 进程间通信机制）、锁或 I/O（输入输出），CPU 样本较少不能证明路径很快；System Trace 的线程状态和唤醒链更适合解释等待时间。分析 Java/Kotlin 程序时，栈中还会出现 JNI、ART（Android Runtime）、`/apex/`、`/system/` 和 `[kernel.kallsyms]` 帧。隐藏这些帧只改变展示，不改变采集结果。
 
-Android Studio 对 App 的原生代码采样使用 Simpleperf，它是 Android 平台的原生性能采样工具。因此，可以把 Simpleperf 称为原生栈采样后端；这不表示所有 Java/Kotlin 栈帧都经由同一条原生代码专用路径生成。
+Android Studio 对 App 的原生代码采样使用 Simpleperf，它是 Android 平台的原生性能采样工具，可以看作 App 原生栈采样的后端。不过，Java/Kotlin 栈帧并不都经由这条原生代码路径生成。
 
 ### 三种模式怎么选
 
@@ -140,7 +147,7 @@ Memory Profiler 将 Java、Native、Graphics、Stack、Code 和无法细分的�
 
 排查时应固定设备和构建，重复同一段用户路径，并在每轮回到等价界面状态。关注对象数、分类内存、GC 事件和多轮操作后的稳定区间。若 Java 对象数或某类实例在多轮 GC 后仍单调增长，再抓 heap dump 检查引用链。进程 RSS 没有立即下降，也不等价于 Java 对象仍存活；堆内空闲空间可能保留给后续分配。
 
-Java/Kotlin allocation 任务默认使用 Full，记录全部分配；也可以切换为 Sampled，按固定间隔抽样。Android 7.1 及以下最多保存最近 65,535 条分配记录；Android 8.0 及以上没有这项实践限制。这个版本差异与 LeakCanary 无关。LeakCanary 的 Android Studio 专用任务从 Android Studio Panda 开始提供，不能写成 Android 8.0 平台新增能力。
+Java/Kotlin allocation 任务默认使用 Full，记录全部分配；也可以切换为 Sampled，按固定间隔抽样。Android 7.1 及以下最多保存最近 65,535 条分配记录；Android 8.0 及以上没有这项上限，这属于平台行为，与 LeakCanary 无关。LeakCanary 的 Android Studio 专用任务从 Android Studio Panda 开始提供，不能写成 Android 8.0 平台新增能力。
 
 ### Heap Dump（堆快照）
 
