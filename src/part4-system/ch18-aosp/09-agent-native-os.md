@@ -2,10 +2,10 @@
 title: AOHP 研究原型：将 Android 改造为 Agent 原生 OS
 chapter: '18.9'
 section: '18.9'
-status: ready-to-publish
+status: finalized
 applicable_versions: Android 16 (API 36) - Android 17 (API 37)
-last_verified: '2026-08-14'
-last_verified_against: arXiv 2606.23449v1; AOHP aohp b8ab9e98, platform_frameworks_base a2d4a80b, platform_system_core d1fc184b; AOSP android-17.0.0_r1 and API 37 docs
+last_verified: '2026-10-06'
+last_verified_against: arXiv 2606.23449v1; AOHP aohp b8ab9e98, platform_frameworks_base a2d4a80b, platform_system_core d1fc184b; AOSP android-17.0.0_r1 AppFunctions/OnDeviceIntelligence/SystemServer sources and API 37 docs
 confidence: medium
 consolidated_from:
 - src/part1-fundamentals/ch05-cpu-power/5.21-cross-app-agent-system-primitive.md
@@ -39,12 +39,20 @@ sources:
   path: https://github.com/aohp-os/aohp/blob/b8ab9e98a2bd51f7fbd01a95d3b45dca078c5884/skills/aohp-sandbox/SKILL.md
 - type: source
   path: https://github.com/aohp-os/platform_system_core/blob/d1fc184b0a138a5a1b1da70512516cd2406980d9/aohp-containerd/container_manager.cpp
+- type: source
+  path: https://github.com/aohp-os/platform_system_core/blob/d1fc184b0a138a5a1b1da70512516cd2406980d9/aohp-containerd/aohp-containerd.rc
 - type: official
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/AppFunctionManager.java
 - type: official
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/AppFunctionManagerConfiguration.java
+- type: official
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/appfunctions/java/com/android/server/appfunctions/AppFunctionManagerService.java
 - type: official
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/appfunctions/java/com/android/server/appfunctions/AppFunctionManagerServiceImpl.java
+- type: official
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/appfunctions/java/com/android/server/appfunctions/ServiceConfigImpl.java
+- type: official
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/java/com/android/server/SystemServer.java
 - type: official
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/NeuralNetworks/framework/module/java/android/app/ondeviceintelligence/OnDeviceIntelligenceManager.java
 - type: official
@@ -649,12 +657,16 @@ permission 校验调用资格，AppOp 记录或限制具体操作，role 表示�
 - [AOHP framework fork：`AohpUiTreeSanitizer`](https://github.com/aohp-os/platform_frameworks_base/blob/a2d4a80ba16211ac73eee4baf6e73d6c7ba669fe/services/core/java/com/android/server/aohp/AohpUiTreeSanitizer.java)
 - [AOHP sandbox skill：chroot 与共享 network namespace](https://github.com/aohp-os/aohp/blob/b8ab9e98a2bd51f7fbd01a95d3b45dca078c5884/skills/aohp-sandbox/SKILL.md)
 - [AOHP container daemon：mount namespace、cgroup 与 `chroot()`](https://github.com/aohp-os/platform_system_core/blob/d1fc184b0a138a5a1b1da70512516cd2406980d9/aohp-containerd/container_manager.cpp)
+- [AOHP container daemon init 配置：root、capability 与 socket](https://github.com/aohp-os/platform_system_core/blob/d1fc184b0a138a5a1b1da70512516cd2406980d9/aohp-containerd/aohp-containerd.rc)
 
 ### Android 17 一手资料
 
 - [Android 17 `AppFunctionManager`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/AppFunctionManager.java)
+- [Android 17 `AppFunctionManagerConfiguration`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/AppFunctionManagerConfiguration.java)
 - [Android 17 `AppFunctionManagerService`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/appfunctions/java/com/android/server/appfunctions/AppFunctionManagerService.java)
+- [Android 17 `AppFunctionManagerServiceImpl`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/appfunctions/java/com/android/server/appfunctions/AppFunctionManagerServiceImpl.java)
 - [Android 17 `ServiceConfigImpl`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/appfunctions/java/com/android/server/appfunctions/ServiceConfigImpl.java)
+- [Android 17 `SystemServer`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/java/com/android/server/SystemServer.java)
 - [Android 17 `OnDeviceIntelligenceManager`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/NeuralNetworks/framework/module/java/android/app/ondeviceintelligence/OnDeviceIntelligenceManager.java)
 - [AppFunctions 概览](https://developer.android.com/ai/appfunctions)
 - [平台 `AppFunctionManager` API](https://developer.android.com/reference/android/app/appfunctions/AppFunctionManager)
