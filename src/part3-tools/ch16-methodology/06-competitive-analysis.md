@@ -46,7 +46,7 @@ related_chapters:
 
 # 竞品分析方法
 
-竞品对比只有在场景、设备状态、版本和指标口径一致时才有解释力。目标不是得出笼统排名，而是找出差异发生在哪个用户阶段，并用可重复实验判断哪些设计可迁移。
+竞品对比只有在场景、设备状态、版本和指标口径一致时才有解释力。它的目标是找出差异发生在哪个用户阶段，并用可重复实验判断哪些设计可迁移，而不是给出一份笼统排名。
 
 ## 为什么要认真做竞品性能分析
 
@@ -102,7 +102,9 @@ related_chapters:
 - 最大轮数，或置信区间达到目标宽度时停止；
 - 查看结果前已经确定的主指标。
 
-A/B 在同一设备、相近时间内成对执行。报告给出每轮原始值、配对差值、差值中位数、P90/P99（90%/99% 的样本不高于该值）和置信区间。置信区间描述在既定统计方法下，真实差异的合理范围。平均值、标准差仍可保留，但不能用“均值相差两倍标准差”代替显著性检验。若数据存在长尾，可以使用配对 bootstrap（对 A/B 配对差值重复重采样）估计区间，或使用预先选定、不要求正态分布的非参数检验，并同时报告效应量，也就是差异本身有多大。
+A/B 在同一设备、相近时间内成对执行。报告给出每轮原始值、配对差值、差值中位数、P90/P99（90%/99% 的样本不高于该值）和置信区间。置信区间描述在既定统计方法下，真实差异的合理范围。
+
+平均值、标准差仍可保留，但不能用“均值相差两倍标准差”代替显著性检验。若数据存在长尾，可以使用配对 bootstrap（对 A/B 配对差值重复重采样）估计区间，或使用预先选定、不要求正态分布的非参数检验，并同时报告效应量，也就是差异本身有多大。
 
 ## 竞品启动速度对比
 
@@ -212,7 +214,9 @@ Trace 时长应覆盖完整操作路径，没有通用的“至少 10 秒”。�
 
 ### FrameMetrics 能做什么
 
-`FrameMetrics` 从 API 24 提供 `Window` 帧的分阶段耗时，适合接入**自己控制的应用**。它无法注入未授权的竞品进程，所以不能作为任意竞品的线上采集方案。即使双方都接入了同类 APM（Application Performance Monitoring，应用性能监控）系统，也要确认采样率、过滤规则、窗口范围和用户分群一致。
+`FrameMetrics` 从 API 24 提供 `Window` 帧的分阶段耗时，适合接入**自己控制的应用**。它无法注入未授权的竞品进程，所以不能作为任意竞品的线上采集方案。
+
+即使双方都接入了同类 APM（Application Performance Monitoring，应用性能监控）系统，也要确认采样率、过滤规则、窗口范围和用户分群一致。
 
 下面的监听器用于自有应用记录总时长、deadline 和首绘标记。`DEADLINE` 从 API 31 才可用，因此示例显式保留旧系统的缺失值：
 
@@ -317,7 +321,9 @@ SoC（System on Chip，系统级芯片）、GPU 驱动、内存、存储、厂�
 6. **统一计算**：从原始文件生成帧集合、分位数、配对差值和区间，分析代码与原始数据一起版本化。
 7. **报告门禁**：缺版本、样本不足、状态不一致或 Trace 丢失时标记无效，不生成胜负结论。
 
-Macrobenchmark 很适合自有应用的启动、滚动和动画基准，并自动输出 JSON 与 Perfetto Trace。官方要求目标包为 profileable，也就是在 manifest 中允许 shell 读取详细 Trace；无法修改的竞品往往不满足这一条件。此时使用外部 UI Automator/adb 驱动和 shell Perfetto 采集，同时接受可观测性较低的限制。`FrameMetrics` 也只能部署到可修改的应用。
+Macrobenchmark 很适合自有应用的启动、滚动和动画基准，并自动输出 JSON 与 Perfetto Trace。官方要求目标包为 profileable，也就是在 manifest 中允许 shell 读取详细 Trace；无法修改的竞品往往不满足这一条件。此时使用外部 UI Automator/adb 驱动和 shell Perfetto 采集，同时接受可观测性较低的限制。
+
+`FrameMetrics` 也只能部署到可修改的应用。
 
 `dumpsys gfxinfo` 若作为兼容路径，流水线应按 Android API 版本选择解析器，并用固定样本验证字段。遇到未知格式时直接失败，不能静默填 0。
 
@@ -338,7 +344,9 @@ adb bugreport bugreport.zip
 
 重置会影响全设备统计，需在专用测试机执行。bugreport 可能包含账号、网络与系统日志，归档前按团队安全规范处理。
 
-AndroidX Macrobenchmark 的实验性 `PowerMetric` 可以读取 CPU、DISPLAY、GPU、MEMORY、NETWORK 等类别，但它测量**全系统**功耗/能量。官方截至 2026-08-14 仍把高精度采集限制在 Pixel 6、Pixel 6 Pro 及后续实体设备。它适合在支持设备上做受控场景比较，不能解释为竞品进程独占的能量。Android 17 平台的 Power Stats 入口可从 [`PowerStatsService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java) 继续追到设备 HAL（Hardware Abstraction Layer，硬件抽象层）；具体可用 channel（能量测量通道）和 consumer（逻辑耗能单元）由硬件实现决定。
+AndroidX Macrobenchmark 的实验性 `PowerMetric` 可以读取 CPU、DISPLAY、GPU、MEMORY、NETWORK 等类别，但它测量**全系统**功耗/能量。官方截至 2026-08-14 仍把高精度采集限制在 Pixel 6、Pixel 6 Pro 及后续实体设备。它适合在支持设备上做受控场景比较，不能解释为竞品进程独占的能量。
+
+Android 17 平台的 Power Stats 入口可从 [`PowerStatsService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java) 继续追到设备 HAL（Hardware Abstraction Layer，硬件抽象层）；具体可用 channel（能量测量通道）和 consumer（逻辑耗能单元）由硬件实现决定。
 
 ### 硬件测量方案
 
