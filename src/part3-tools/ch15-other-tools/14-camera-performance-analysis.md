@@ -108,7 +108,7 @@ Camera 性能问题通常横跨 App、Framework、HAL（Hardware Abstraction Lay
 
 ## 基线、设备边界与四类问题
 
-平台源码核验基线是 Android 17 / API 37 / `android-17.0.0_r1`，内核侧固定为 `android17-6.18-2026-06_r6`。Camera provider（向 framework 枚举并打开相机设备的 HAL 服务）、sensor driver（传感器驱动）、ISP（Image Signal Processor，图像信号处理器）固件、算法库和 vendor tracepoint（厂商自定义追踪点）由设备厂商提供。AOSP 能确定 framework 与 HAL 的公共接口边界，不能代替目标设备上的实测证据。
+平台源码核验基线是 Android 17 / API 37 / `android-17.0.0_r1`，内核侧固定为 `android17-6.18-2026-06_r6`。Camera provider（向 framework 枚举并打开相机设备的 HAL 服务）、sensor driver（传感器驱动）、ISP（Image Signal Processor，图像信号处理器）固件、算法库和 vendor tracepoint（厂商自定义追踪点）由设备厂商提供。AOSP 能界定 framework 与 HAL 的公共接口边界，但不能代替目标设备上的实测证据。
 
 一次 Camera session（从配置一组输出到关闭的会话）可能同时包含 preview（预览）、record（录像）、analysis（图像分析）和 still capture（静态拍照）。它们可由同一组 capture request（捕获请求）驱动，但各有自己的 stream（输出流）、buffer pool（缓冲池）、consumer（消费方）和归还节奏。预览稳定不能证明录像或分析流稳定；某路 consumer 过慢，也可能通过共享的 ISP 处理阶段、有限 buffer 或内存带宽影响其他输出。
 
@@ -119,7 +119,7 @@ Camera 性能问题通常横跨 App、Framework、HAL（Hardware Abstraction Lay
 | 录像丢帧 | camera record stream → encoder input → 编码输出 → muxer（封装器）/storage | codec（编解码器）、码率、热限制和 I/O |
 | 内存压力 | stream buffer、HAL cache、中间图、metadata（捕获元数据）与业务队列 | dma-buf（Linux 设备间共享缓冲框架）、native heap、Java 可达对象和 vendor pool |
 
-没有适用于所有设备的“帧间隔超过 40 ms 即 Camera 故障”或“标准差超过 5 ms 即用户可见”阈值。目标 fps、显示刷新率、曝光时间、timestamp base（时间戳所在的时钟域）和产品交互预算共同决定 deadline（最晚完成时间）。30 fps 只给出约 33.33 ms 的名义周期；某个间隔偏长后，还要判断下一帧是否补回、显示端是否重复上一帧，以及问题发生在哪路 output（输出）。
+不存在一条适用于所有设备的阈值，比如“帧间隔超过 40 ms 即 Camera 故障”或“标准差超过 5 ms 即用户可见”。目标 fps、显示刷新率、曝光时间、timestamp base（时间戳所在的时钟域）和产品交互预算共同决定 deadline（最晚完成时间）。30 fps 只给出约 33.33 ms 的名义周期；某个间隔偏长后，还要判断下一帧是否补回、显示端是否重复上一帧，以及问题发生在哪路 output（输出）。
 
 拍照也不能只记录一个总数。按下快门到 shutter、shutter 到图像可读、图像可读到编码或保存完成，分别对应控制、sensor/ISP、consumer 和 I/O。Night（夜景多帧）、HDR（High Dynamic Range，高动态范围）、Ultra HDR（带 gain map 的 HDR 静态图）、RAW14（14 bit 紧凑 RAW）与 ZSL 的处理边界各不相同，固定的“普通拍照耗时范围”很快会失去意义。
 
@@ -160,7 +160,9 @@ flowchart TD
 
 ### `cameraserver` 与 Camera3 stream
 
-Camera2/CameraX 的调用经 Binder（Android 跨进程通信机制）进入 `cameraserver`。Android 17 的 `Camera3Device` 维护 request、in-flight（已提交但尚未完成）状态与 stream；`RequestThread` 准备 buffer 和 metadata，再调用 HAL session 的 `processCaptureRequest` 路径。Android 13 起，Camera HAL 接口开发转向 AIDL（Android Interface Definition Language），framework 仍支持 HIDL（HAL Interface Definition Language）实现；Android 13 及之后新增的 Camera HAL 特性只通过 AIDL 提供，升级设备要使用这些特性也需迁移。线程名和 transport（AIDL/HIDL 传输路径）要从目标设备确认。
+Camera2/CameraX 的调用经 Binder（Android 跨进程通信机制）进入 `cameraserver`。Android 17 的 `Camera3Device` 维护 request、in-flight（已提交但尚未完成）状态与 stream；`RequestThread` 准备 buffer 和 metadata，再调用 HAL session 的 `processCaptureRequest` 路径。
+
+从 Android 13 起，Camera HAL 接口开发转向 AIDL（Android Interface Definition Language），framework 仍支持 HIDL（HAL Interface Definition Language）实现。Android 13 及之后新增的 Camera HAL 特性只通过 AIDL 提供；升级设备要使用这些特性，也需要迁移。线程名和 transport（AIDL/HIDL 传输路径）要从目标设备确认。
 
 每个 output 会映射到 Camera3 stream。`Camera3OutputStream` 负责把 HAL 返回的有效 buffer 送回对应的 `ANativeWindow` consumer；`ANativeWindow` 是 native 层向 BufferQueue 生产缓冲的接口。该路径还保留 HAL release fence。preview、record、analysis 和 still stream 的消费速度可以不同，不能用某一路 callback 代替另一条路径的完成时间。
 
@@ -178,14 +180,14 @@ display present fence 描述一轮显示帧何时完成 present（提交给显�
 
 ### HAL buffer management 不是固定三缓冲
 
-Camera HAL3 buffer management（HAL 缓冲管理）从 Android 10 起允许 request 先进入 HAL，HAL 接近写入阶段时再通过 `requestStreamBuffers()` 向 framework 申请 output buffer。正常完成的 buffer 仍随 `processCaptureResult()` 返回；HAL 额外预取且未绑定到已提交 request 的 buffer，才通过 `returnStreamBuffers()` 归还。
+Camera HAL3 buffer management（HAL 缓冲管理）从 Android 10 起允许 request 先进入 HAL，HAL 在即将写入时才通过 `requestStreamBuffers()` 向 framework 申请 output buffer。正常完成的 buffer 仍随 `processCaptureResult()` 返回；HAL 额外预取且未绑定到已提交 request 的 buffer，才通过 `returnStreamBuffers()` 归还。
 
 `HalStream.maxBuffers` 由 HAL 在 stream 配置结果中逐流给出，表示 HAL 对该流同时持有且尚未归还的 buffer 上限，它不是 Camera 通用常量。Android 17 的 `SESSION_CONFIGURABLE` 模式还允许按 session 决定是否使用 HAL buffer management，所以要查看本次 session 配置结果。诊断时区分：
 
 - framework-managed 模式下，RequestThread 可能在提交 HAL 前等待 stream buffer；
 - HAL-managed 模式下，HAL 的 `requestStreamBuffers()` 可能因首次分配、请求数量、consumer 持有或 buffer limit 变慢；
 - `ImageReader.maxImages` 是 App 同时 acquire（取得）且尚未 close 的图像上限，不等于 HAL 的 `maxBuffers`；
-- vendor HAL 和算法可以维护额外 pool，不能只乘一个固定 buffer 数估算内存。
+- vendor HAL 和算法还可能维护额外的 pool，不能只用一个固定的 buffer 数相乘来估算内存。
 
 ### SurfaceView、TextureView 与自研预览
 
@@ -261,7 +263,7 @@ data_sources {
 duration_ms: 30000
 ```
 
-该配置能覆盖 AOSP camera ATrace（用户空间追踪标记）、线程调度、Binder 与 SurfaceFlinger frame 数据。它不会自动暴露 ISP、SOF/EOF（Start/End of Frame，帧起始/结束时刻）、IOMMU（设备 I/O 内存管理单元）、内存带宽或 vendor pipeline node（厂商处理节点）；这些信息要由设备专用的 Perfetto producer（追踪数据源）或厂商 tracepoint 补充。长时间高帧率场景还要按事件量调整 buffer，防止 ring buffer（环形缓冲区）覆盖问题复现时段。
+该配置能覆盖 AOSP camera ATrace（用户空间追踪标记）、线程调度、Binder 与 SurfaceFlinger frame 数据。它不会自动暴露 ISP、SOF/EOF（Start/End of Frame，帧起始/结束时刻）、IOMMU（设备 I/O 内存管理单元）、内存带宽或 vendor pipeline node（厂商处理节点）；这些信息要由设备专用的 Perfetto producer（追踪数据源）或厂商 tracepoint 补充。长时间高帧率场景还要按事件量调整 buffer，防止 ring buffer（环形缓冲区）覆盖掉问题复现的时段。
 
 ### 关键 Track 和 Slice
 
@@ -279,11 +281,11 @@ Android 17 AOSP 中值得搜索的线索包括：
 | `Stream N: first full buffer` | 某 stream 配置后首次把有效 output buffer 送往 consumer 的时间点 | SF latch 与 display present |
 | `PreviewSpacer-<streamId>` | 固定帧率预览可能使用的显示节奏线程 | 所有设备的稳定 ABI |
 
-`frame capture` 在 `sendRequestsBatch()` 前开始，在 framework 判断该 request 的 result metadata、shutter 与全部 buffer 条件都满足后结束。它适合观察 request-to-result（请求提交到结果闭合）分布，不代表预览画面已经显示。`Stream N: first full buffer` 由一个很短的 `ATRACE_NAME` 产生，时间戳有价值，slice 时长没有阶段耗时含义。
+`frame capture` 从 `sendRequestsBatch()` 之前开始，直到 framework 确认该 request 的 result metadata、shutter 与全部 buffer 都已就绪才结束。它适合观察 request-to-result（请求提交到结果闭合）分布，不代表预览画面已经显示。`Stream N: first full buffer` 由一个很短的 `ATRACE_NAME` 产生，时间戳有价值，slice 时长没有阶段耗时含义。
 
 CamX/CHI（高通 Camera 软件栈中常见的实现名）、MtkCam 及 P1/P2（联发科管线中常见的阶段名）、ISP、JPEG 等 vendor 名称只能作为目标设备线索。它们不是 Android 公共 ABI（Application Binary Interface，二进制接口）；先把 frame number、sensor timestamp、request id、stream id、buffer id 与 AOSP slice 对齐，再解释 vendor node。
 
-SurfaceFlinger 的 `BufferTX - <layer>` counter 表示 server 收到 pending buffer update（待处理缓冲更新）的变化，不能单独证明该 buffer 已 latch 或 present。SurfaceView preview 还可能缺少标准 App Window 那样完整的 App FrameTimeline（应用帧时序数据）；独立 layer 必须继续追 BufferQueue、fence、composition type 和 display present。
+SurfaceFlinger 的 `BufferTX - <layer>` counter 表示 server 收到 pending buffer update（待处理缓冲更新）的变化，不能单独证明该 buffer 已 latch 或 present。SurfaceView preview 的 App FrameTimeline（应用帧时序数据）通常不像标准 App Window 那样完整；独立 layer 必须继续追 BufferQueue、fence、composition type 和 display present。
 
 ### SQL：先发现 Track，再算指标
 
