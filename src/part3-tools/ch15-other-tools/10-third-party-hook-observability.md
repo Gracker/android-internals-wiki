@@ -4,9 +4,10 @@ chapter: '15.10'
 section: '15.10'
 status: finalized
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
-last_verified: '2026-08-14'
-last_verified_against: AOSP android-17.0.0_r1 + AndroidX metrics / Android Vitals docs + GitHub upstream releases and READMEs + btrace 3.1.0 + Measure Android 0.19.0 / server 0.12.1 + ByteHook 1.1.2 / ShadowHook 2.0.1
+last_verified: '2026-10-06'
+last_verified_against: AOSP android-17.0.0_r1 + AndroidX metrics / Android Vitals docs + Android page-size docs + GitHub upstream releases and READMEs + btrace 3.1.0 + Measure Android 0.19.0 / server 0.12.1 + ByteHook 1.1.2 / ShadowHook 2.0.1
 confidence: medium
+last_idle_audit_at: '2026-10-06T14:35:34+08:00'
 sources:
 - type: blog
   path: https://mp.weixin.qq.com/s/vkBeZ6hmVn_RaXS5Xv_L2g (抖音 Rhea)
@@ -679,7 +680,7 @@ linker namespace（动态链接器命名空间）限制普通 `dlopen()` / `dlsy
 
 #### 16 KB page size
 
-Android 15 起，AOSP 支持基础 page size（内存页大小）为 16 KB 的设备。要在这类设备上原生兼容，APK 中每个 native 依赖都要具备 16 KB ELF `LOAD` segment 对齐；未压缩 `.so` 还要满足 16 KB ZIP 对齐。16 KB backcompat mode（向后兼容模式）可让部分未对齐应用运行，但官方仍要求应用完成对齐以获得可靠性。Android 17 新增属性值 `bionic.linker.16kb.app_compat.enabled=fatal`，可关闭该兜底并让不兼容二进制立即终止，适合测试。
+Android 15 起，AOSP 支持基础 page size（内存页大小）为 16 KB 的设备。要在这类设备上原生兼容，APK 中每个 native 依赖都要具备 16 KB ELF `LOAD` segment 对齐；未压缩 `.so` 还要满足 16 KB ZIP 对齐。16 KB backcompat mode（向后兼容模式）可让部分未对齐应用运行，但官方仍要求应用完成对齐以获得可靠性。通过 Google Play 发布且目标 SDK 为 Android 15（API 35）及以上的应用，官方页面要求从 2027 年 2 月 1 日起，更新包支持 64 位设备上的 16 KB page size；Hook SDK 随包携带的 `.so` 也要按同一规则检查。Android 17 新增属性值 `bionic.linker.16kb.app_compat.enabled=fatal`，可关闭该兜底并让不兼容二进制立即终止，适合测试。
 
 Hook 框架要处理两类问题：
 
