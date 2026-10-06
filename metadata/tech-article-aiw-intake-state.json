@@ -5359,6 +5359,116 @@
       "status": "appended",
       "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
     },
+    "source/juejin-android/2026-10-07-76907444-Android 状态保持：进程被杀、旋屏.md": {
+      "chapter": "ch12-apk-network",
+      "entry_id": "3f59f23585b748c9",
+      "last_appended": "2026-10-07T05:25:34.096852+08:00",
+      "last_seen": "2026-10-07T05:25:34.096852+08:00",
+      "mtime": 1791318162.1254787,
+      "score": 10,
+      "sha256": "a985f71404231dc8e64f6e2bf80133724d7adbd50e78b7dc87da4fee06539b9f",
+      "size": 22446,
+      "status": "appended",
+      "title": "Android 状态保持：进程被杀、旋屏与后台任务的存活术你写下的 Activity、Fragment、定时器、下载任务"
+    },
+    "source/juejin-android/2026-10-07-76910309-Android 原生的 Compose .md": {
+      "chapter": "待分类",
+      "entry_id": "85b4353375238694",
+      "last_appended": "2026-10-07T05:25:34.096852+08:00",
+      "last_seen": "2026-10-07T05:25:34.096852+08:00",
+      "mtime": 1791318162.122608,
+      "score": 11,
+      "sha256": "3cf339d6f0d2c2cc490e22e9b434424ebdf132da2824b99587a066ec4c65bcb0",
+      "size": 7394,
+      "status": "appended",
+      "title": "Android 原生的 Compose A2UI 也来了，你还抱着 XML 养老吗？Andorid Compose 的"
+    },
+    "source/juejin-android/2026-10-07-76911262-Android 系统启动机制（九）：sy.md": {
+      "chapter": "ch08-responsiveness",
+      "entry_id": "59fb7bcaeaadf110",
+      "last_appended": "2026-10-07T05:25:34.096852+08:00",
+      "last_seen": "2026-10-07T05:25:34.096852+08:00",
+      "mtime": 1791318162.123974,
+      "score": 27,
+      "sha256": "8694ef0edfb4571767b053aecbc0ccd530e31b01fe0cc3abab037d76677f1925",
+      "size": 21820,
+      "status": "appended",
+      "title": "Android 系统启动机制（九）：system_server 已经运行，为什么还不能说 Android 启动完成？"
+    },
+    "source/juejin-android/2026-10-07-76911499-Android 上的 AI 对话链路：流.md": {
+      "chapter": "ch08-responsiveness",
+      "entry_id": "310558a2278421e4",
+      "last_appended": "2026-10-07T05:25:34.096852+08:00",
+      "last_seen": "2026-10-07T05:25:34.096852+08:00",
+      "mtime": 1791318162.1222227,
+      "score": 11,
+      "sha256": "2afe4ccb06d518cf66696a496be48797c49643c11e03a3d6d3244b8b6aefcc76",
+      "size": 37572,
+      "status": "appended",
+      "title": "Android 上的 AI 对话链路：流式响应、SSE 解析与三级降级做一个会\"聊天\"的 Android 端，最容易让人"
+    },
+    "source/juejin-android/2026-10-07-76911511-Android 架构边界：组件化、双形态.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "c852c30a160b9b53",
+      "last_appended": "2026-10-07T05:25:34.096852+08:00",
+      "last_seen": "2026-10-07T05:25:34.096852+08:00",
+      "mtime": 1791318162.1251447,
+      "score": 18,
+      "sha256": "6a1b6cb1e26f52f4d9c691269aaa40373abe1608b9847c356805bbb134110eca",
+      "size": 51194,
+      "status": "appended",
+      "title": "Android 架构边界：组件化、双形态、进程隔离与可插拔一个库在本地跑得好好的，一旦被别的 App 当插件加载，就开始"
+    },
+    "source/juejin-android/2026-10-07-76912074-Shopify 回应为什么从 RN 回到.md": {
+      "chapter": "待分类",
+      "entry_id": "5b27712b0c31d7ab",
+      "last_appended": "2026-10-07T05:25:34.096852+08:00",
+      "last_seen": "2026-10-07T05:25:34.096852+08:00",
+      "mtime": 1791318162.1191204,
+      "score": 14,
+      "sha256": "ac88b4f80b481985063501ab6e7315b072c92166bdf62b64b6dca4d18325298e",
+      "size": 8212,
+      "status": "appended",
+      "title": "Shopify 回应为什么从 RN 回到原生，为什么不用 KMP ？Shopify 的人最近正式回应了「从 RN 回到原"
+    },
+    "source/juejin-android/2026-10-07-76918721-KMP 又改了编译流程， Separat.md": {
+      "last_seen": "2026-10-07T05:25:34.096852+08:00",
+      "mtime": 1791318162.1246138,
+      "sha256": "2e041cfd82594d00f84a2e7f76fe64fc7b12247a9bf4c0d1d7bf86e51c5d55af",
+      "size": 8650,
+      "status": "skipped-low-score"
+    },
+    "source/juejin-android/2026-10-07-76923366-我怎么给手机 GUI Agent 做双通.md": {
+      "chapter": "待分类",
+      "entry_id": "6b9f794969e8ad47",
+      "last_appended": "2026-10-07T05:25:34.096852+08:00",
+      "last_seen": "2026-10-07T05:25:34.096852+08:00",
+      "mtime": 1791318162.1210032,
+      "score": 17,
+      "sha256": "fc39ca0fedf3b172115ce8f5d09cabce98bb9492a2d529f93fed536147c665b4",
+      "size": 19272,
+      "status": "appended",
+      "title": "我怎么给手机 GUI Agent 做双通道感知：无障碍树为主，投屏像素兜底手机端做 GUI Agent 没有官方接口，只"
+    },
+    "source/juejin-android/2026-10-07-76923791-Android CLI 支持 AI Ag.md": {
+      "chapter": "待分类",
+      "entry_id": "35bf61f15aeb16f6",
+      "last_appended": "2026-10-07T05:25:34.096852+08:00",
+      "last_seen": "2026-10-07T05:25:34.096852+08:00",
+      "mtime": 1791318162.1231415,
+      "score": 11,
+      "sha256": "171fd089db4dcba1a23caed9901576a17f86156531521ce321c55da3b0d1eee7",
+      "size": 4273,
+      "status": "appended",
+      "title": "Android CLI 支持 AI Agent 通过 Device Streaming 调试云真机最近 Android"
+    },
+    "source/juejin-android/2026-10-07-76924859-Meta 分享怎么用 AI 迁移 Com.md": {
+      "last_seen": "2026-10-07T05:25:34.096852+08:00",
+      "mtime": 1791318162.1201916,
+      "sha256": "21c83a7cec8d665bceed6c66156d55ad55a823beade3c7b8d21710eb0d64d57a",
+      "size": 6409,
+      "status": "skipped-low-score"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -7396,16 +7506,16 @@
     }
   },
   "last_report": {
-    "appended": 0,
-    "considered": 0,
-    "cutoff": "2026-10-05T05:20:34.183466+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-06.md",
+    "appended": 8,
+    "considered": 10,
+    "cutoff": "2026-10-06T05:20:34.274250+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-07.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2106,
+    "scanned": 2116,
     "skipped": {
       "existing_link": 0,
-      "low_score": 0,
+      "low_score": 2,
       "max_files": 0,
       "old_unseen": 1408,
       "path": 30,
@@ -7413,7 +7523,7 @@
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-10-06T05:25:34.274250+08:00",
+  "last_run_at": "2026-10-07T05:25:34.096852+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

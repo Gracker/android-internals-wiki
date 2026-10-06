@@ -1,5 +1,5 @@
 {
-  "last_check": "2026-10-05T02:00:34.324803+08:00",
+  "last_check": "2026-10-07T02:00:33.904419+08:00",
   "check_id": "freshness-2026-07-17-02-00",
   "cron_id": "220c1be3-a8db-4dfe-982e-5e275cef4b54",
   "summary": {
@@ -132,42 +132,11 @@
     "part4-system/ch16-aosp/04-android17-kernel612-performance.md",
     "part4-system/ch16-aosp/09-android17-sdm-install-performance.md"
   ],
-  "last_run_at": "2026-10-05T02:00:34.324803+08:00",
+  "last_run_at": "2026-10-07T02:00:33.904419+08:00",
   "scanned": 80,
   "risks": [],
   "queued": 0,
   "runs": [
-    {
-      "last_run_at": "2026-07-31T02:00:01.244131+08:00",
-      "scanned": 80,
-      "risks": [
-        {
-          "path": "src/8.1-android17-task-scheduler-optimization.md",
-          "severity": "high",
-          "reason": "contains Android 18/API38+ out-of-scope mention",
-          "action": "标注超出 AIW 范围或移除正文结论"
-        },
-        {
-          "path": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
-          "severity": "high",
-          "reason": "contains Android 18/API38+ out-of-scope mention",
-          "action": "标注超出 AIW 范围或移除正文结论"
-        },
-        {
-          "path": "src/part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md",
-          "severity": "high",
-          "reason": "contains Android 18/API38+ out-of-scope mention",
-          "action": "标注超出 AIW 范围或移除正文结论"
-        },
-        {
-          "path": "src/part1-fundamentals/ch01-architecture/1.66-android17-windowmanager-architecture-performance.md",
-          "severity": "high",
-          "reason": "contains Android 18/API38+ out-of-scope mention",
-          "action": "标注超出 AIW 范围或移除正文结论"
-        }
-      ],
-      "queued": 4
-    },
     {
       "last_run_at": "2026-08-03T02:05:34.805798+08:00",
       "scanned": 80,
@@ -674,6 +643,16 @@
       "scanned": 80,
       "cursor_start": 108,
       "cursor_next": 188,
+      "risks": [],
+      "findings_added": 0,
+      "legacy_queue_migrated": 0,
+      "queued": 0
+    },
+    {
+      "last_run_at": "2026-10-07T02:00:33.904419+08:00",
+      "scanned": 80,
+      "cursor_start": 188,
+      "cursor_next": 268,
       "risks": [],
       "findings_added": 0,
       "legacy_queue_migrated": 0,
