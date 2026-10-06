@@ -77,7 +77,7 @@ Simpleperf 是 Android 平台的原生 CPU 性能分析工具。它通过 Linux 
 
 平台源码锚定 `android-17.0.0_r1`，内核源码锚定 `android17-6.18-2026-06_r6`。下文用“A17”简称这份 Android 17 平台源码。较早版本只用于说明兼容边界，不能用 A17 的默认值反推旧设备行为。
 
-simpleperf 提供 Android 上的采样、硬件计数器和调用图；微架构分析继续把事件映射到前端、后端、错误推测和退休槽位。Topdown 结论必须建立在设备 PMU 支持和可复现负载上。
+Simpleperf 提供 Android 上的采样、硬件计数器和调用图。在此之上，微架构分析把这些事件归入四类槽位：前端（Frontend Bound）、后端（Backend Bound）、错误推测（Bad Speculation）和退休（Retiring）。Topdown 结论必须建立在设备 PMU 支持和可复现负载上。
 
 ## 采样、调用图与硬件事件基础
 
@@ -99,8 +99,8 @@ flowchart LR
 
 这套模型带来三个阅读报告时必须遵守的约束：
 
-- `record` 产生离散样本，不会记录每次函数调用。占比接近只表示所选事件的权重接近，无法证明调用次数接近。
-- `cpu-cycles`、`instructions`、`task-clock` 衡量的量不同。报告里的 `Overhead` 是某条目占所选事件总权重的比例，不能一律解释为墙钟时间，也就是现实中经过的时间。
+- `record` 产生离散样本，不会记录每次函数调用。两个条目占比接近，只说明它们占所选事件的权重接近，不能证明调用次数接近。
+- `cpu-cycles`、`instructions`、`task-clock` 衡量的量不同。报告里的 `Overhead` 是某条目占所选事件总权重的比例，不等于墙钟时间；墙钟时间指现实中经过的时间，两者不能混用。
 - 函数地址要配上 build ID 匹配的符号文件才能还原名称。build ID 是写在 ELF 二进制中的构建标识；采样完整而符号缺失时，报告仍会出现大量 `[unknown]`。
 
 内核实现入口可从 [`kernel/events/core.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/events/core.c) 和 [`include/uapi/linux/perf_event.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/uapi/linux/perf_event.h) 查看。产品内核配置、SELinux 强制访问控制策略、PMU 型号和厂商限制都会影响可用事件，源码标签不能替代目标设备探测。
@@ -506,7 +506,9 @@ data_sources {
 }
 ```
 
-`SW_CPU_CLOCK` 是触发采样的软件 CPU 时钟，`PERF_CLOCK_BOOTTIME` 让样本时间戳采用包含休眠时间的系统启动时钟，便于与 Android system trace 对齐。`callstack_sampling` 未显式配置 `kernel_frames`，所以示例只保留默认的 DWARF 用户态栈；`linux.ftrace` 补充切换与唤醒事件，`linux.process_stats` 补充进程元数据。字段定义可在 Android 17 的 [`perf_event_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/perf_event_config.proto) 和 [`perf_events.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/common/perf_events.proto) 中核对。函数热点和源码归属优先使用 Simpleperf；需要把调用栈与调度、Binder、频率、帧时间放在同一时间轴时，使用 Perfetto `linux.perf` 加 ftrace。
+`SW_CPU_CLOCK` 是触发采样的软件 CPU 时钟，`PERF_CLOCK_BOOTTIME` 让样本时间戳采用包含休眠时间的系统启动时钟，便于与 Android system trace 对齐。`callstack_sampling` 未显式配置 `kernel_frames`，所以示例只保留默认的 DWARF 用户态栈；`linux.ftrace` 补充切换与唤醒事件，`linux.process_stats` 补充进程元数据。字段定义可在 Android 17 的 [`perf_event_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/perf_event_config.proto) 和 [`perf_events.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/common/perf_events.proto) 中核对。
+
+函数热点和源码归属优先使用 Simpleperf；需要把调用栈与调度、Binder、频率、帧时间放在同一时间轴时，使用 Perfetto `linux.perf` 加 ftrace。
 
 ### Android 17 源码实现要点
 
@@ -577,19 +579,6 @@ Simpleperf 记录的是设备当时执行出来的数据。温控降频、任务
 
 前文讲解了 Simpleperf 的常规 PMU（Performance Monitoring Unit，处理器性能监控单元）采样。Android 17 在这套基础上加入 SPE（Statistical Profiling Extension，统计分析扩展）的采集与解码，并改进后台采集、应用进程跟踪和 ETM profile（性能数据）转换。这里的“微架构”指缓存、地址转换和分支预测等处理器内部行为。讨论范围限于已经进入 `android-17.0.0_r1` 的实现；设备能否使用这些能力，仍由 SoC（System on Chip，片上系统）、内核配置和权限共同决定。
 
-Android 16 与 Android 17 的差异需要分开看：
-
-| 能力 | Android 16 | Android 17 |
-|---|---|---|
-| Arm SPE | Simpleperf 尚无 `SPERecorder` / `SPEDecoder` | 新增 SPE 发现、采集和 `report` 解码 |
-| CoreSight TRBE | `ETMRecorder` 已能识别 ETR 与 TRBE，发现 TRBE 时已把 sink 选择交给内核 | 列出多个 ETR 名称、记录 TRBE 支持的 CPU，并按 CPU 判断通用事件是否实际使用 TRBE |
-| `record --background` | 无此选项 | 新增单次 `fork()` 的后台模式 |
-| `--app` | `record`、`stat` 已支持 | `stat --monitor-new-thread` 可继续发现同一包名的新进程 |
-| devfreq / `pmu_lib` | `--use-devfreq-counters` 已能临时切换并恢复 `mem_latency` governor | 保留原流程，并在未找到该 governor 时增加 `pmu_lib` 后备路径与恢复动作 |
-| 内核模块 ETM AutoFDO | 已识别模块 DSO，但 branch-list 未保存运行时模块信息，`.ko` 也缺少可供转换器使用的 program header | 保存模块内存范围与首个符号，并从 `.text` section 建立 AutoFDO 偏移映射 |
-
-DSO（Dynamic Shared Object）在 Simpleperf 中是被分析二进制的对象抽象，范围也包括内核与内核模块。branch-list 是序列化保存已解码分支路径的中间文件；ELF program header 描述运行时装载段，`.text` section 则保存机器指令。AutoFDO 是一种基于实际执行数据的反馈优化格式，编译器可用其中的指令范围和分支计数调整代码布局。生成 profile 只准备了优化输入，不代表编译产物一定会变快。
-
 ### 先分清 PMU、SPE 和 ETM
 
 三种机制都可以由 Simpleperf 驱动，但它们回答的问题不同。
@@ -603,6 +592,19 @@ DSO（Dynamic Shared Object）在 Simpleperf 中是被分析二进制的对象�
 SPE packet 是硬件写出的一条采样记录；TLB（Translation Lookaside Buffer）是缓存虚拟地址到物理地址转换结果的结构；AUX 则是 Linux perf 为大体积硬件 trace 准备的辅助缓冲区。SPE 从 Armv8.2-A 起成为可选扩展，运行在 AArch64，也就是 64 位 Arm 执行状态中，不以 Armv9 为前提。
 
 ETM（Embedded Trace Macrocell）和 ETE（Embedded Trace Extension）是 CoreSight 中的指令控制流 trace 源。CoreSight 是 Arm 的片上硬件跟踪框架；sink 指接收并保存 trace 的终点。TRBE（Trace Buffer Extension）是每 CPU 的内存 sink，ETR（Embedded Trace Router）则可把 trace 写入系统内存。二者都不负责生成 SPE 微架构样本。
+
+Android 16 与 Android 17 的差异需要分开看：
+
+| 能力 | Android 16 | Android 17 |
+|---|---|---|
+| Arm SPE | Simpleperf 尚无 `SPERecorder` / `SPEDecoder` | 新增 SPE 发现、采集和 `report` 解码 |
+| CoreSight TRBE | `ETMRecorder` 已能识别 ETR 与 TRBE，发现 TRBE 时已把 sink 选择交给内核 | 列出多个 ETR 名称、记录 TRBE 支持的 CPU，并按 CPU 判断通用事件是否实际使用 TRBE |
+| `record --background` | 无此选项 | 新增单次 `fork()` 的后台模式 |
+| `--app` | `record`、`stat` 已支持 | `stat --monitor-new-thread` 可继续发现同一包名的新进程 |
+| devfreq / `pmu_lib` | `--use-devfreq-counters` 已能临时切换并恢复 `mem_latency` governor | 保留原流程，并在未找到该 governor 时增加 `pmu_lib` 后备路径与恢复动作 |
+| 内核模块 ETM AutoFDO | 已识别模块 DSO，但 branch-list 未保存运行时模块信息，`.ko` 也缺少可供转换器使用的 program header | 保存模块内存范围与首个符号，并从 `.text` section 建立 AutoFDO 偏移映射 |
+
+DSO（Dynamic Shared Object）在 Simpleperf 中是被分析二进制的对象抽象，范围也包括内核与内核模块。branch-list 是序列化保存已解码分支路径的中间文件；ELF program header 描述运行时装载段，`.text` section 则保存机器指令。AutoFDO 是一种基于实际执行数据的反馈优化格式，编译器可用其中的指令范围和分支计数调整代码布局。生成 profile 只准备了优化输入，不代表编译产物一定会变快。
 
 ### Android 17 的 SPE 采集链路
 
@@ -857,7 +859,7 @@ simpleperf inject \
 
 ## ARM Topdown 分类与反证
 
-硬件事件采集完成后，Topdown 将 pipeline slot 分类。事件可用性、复用比例和 SoC 定义必须随结果一起记录。
+硬件事件采集完成后，Topdown 把 pipeline slot（一个周期内的执行机会）归入前端、后端、错误推测和退休四类，用来判断瓶颈落在哪一层。事件可用性、复用比例和 SoC 定义必须随结果一起记录。
 
 ### Topdown 能回答什么
 
