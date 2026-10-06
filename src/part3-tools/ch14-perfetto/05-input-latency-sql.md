@@ -30,7 +30,7 @@ related_chapters:
 
 # Perfetto 输入延迟 SQL 深度分析
 
-输入延迟 SQL 的关键不是拼出一张大表，而是先选定事件身份、时间窗口和终点语义。只有把 InputDispatcher 队列、应用消费与 FrameTimeline 的 token 关系对齐，计算出的 input-to-display 延迟才可复查。
+用 Perfetto SQL 分析输入延迟，先要把三件事定下来：用哪个 ID 作为这次输入的身份、统计落在哪段时间窗口、延迟算到哪个终点。InputDispatcher 侧的分发、应用侧的消费和帧呈现是三段不同的数据，只有对齐到同一个事件上，算出来的端到端延迟才可复查。
 
 ## 分析边界与源码基线
 
@@ -79,7 +79,9 @@ FROM android_input_events;
 
 `android_motion_events`、`android_key_events` 与 `android_input_event_dispatch` 来自 `android.input.inputevent`。Android 17 的配置协议明确限制该数据源只能用于 `userdebug` 或 `eng` 调试构建，不能在普通 `user` 量产构建上启用。它记录 `InputDispatcher` 处理的原始事件字段和窗口分发决策，适合回答事件来源、动作、设备、窗口及隐私规则是否生效等问题。
 
-两条链路不能当作同一张表拆分后的结果。原始视图使用数值型 `event_id`；生命周期表的 `input_event_id` 来自 ATrace 名称，通常是带 `0x` 等表示方式的十六进制文本。标准库没有公开、稳定的桥接视图。原始事件与窗口分发可以用同为数值型的 `event_id` 关联，跨到 `android_input_events` 时应回到同一事件的时间线和源码格式核验；直接用 `CAST` 转换类型后做等值连接，可能把格式差异或 ID 碰撞误当成同一事件。
+两条链路不能当作同一张表拆分后的结果。原始视图使用数值型 `event_id`；生命周期表的 `input_event_id` 来自 ATrace 名称，通常是带 `0x` 等表示方式的十六进制文本。标准库没有公开、稳定的桥接视图。
+
+原始事件与窗口分发可以用同为数值型的 `event_id` 关联，但要跨到 `android_input_events`，就应回到同一事件的时间线和源码格式核验；直接用 `CAST` 转换类型后做等值连接，可能把格式差异或 ID 碰撞误当成同一事件。
 
 这条查询展示原始动作事件、内核事件时间和窗口分发的一对多关系：
 
@@ -104,13 +106,13 @@ ORDER BY event.ts, dispatch.window_id
 LIMIT 200;
 ```
 
-`EXTRACT_ARG` 从 `arg_set_id` 对应的键值参数集中读取 `kernel_time`。同一事件可能投递给前台窗口、监视窗口或其他目标，因此结果出现多行并非重复数据。解析器会把协议消息中单调时钟域的 `event_time_nanos` 转为 Trace 时间域；单调时钟只持续向前，不受墙上时间校准影响。转换后的值以 `kernel_time` 写入 `args`，原始表的 `ts` 则是系统处理该 Trace 数据包的时间。
+解析器会把协议消息中单调时钟域的 `event_time_nanos` 转为 Trace 时间域；单调时钟只持续向前，不受墙上时间校准影响。转换后的值以 `kernel_time` 写入 `args`，`EXTRACT_ARG` 从 `arg_set_id` 对应的键值参数集中读出它。原始表的 `ts` 则是系统处理该 Trace 数据包的时间。同一事件可能投递给前台窗口、监视窗口或其他目标，因此结果出现多行并非重复数据。
 
 ## 公共表结构与延迟公式
 
 ### `android_input_events`
 
-每一行表示一个已经匹配到完整消息往返的输入投递。Android 17 的公开字段可以按用途分成四组：
+每一行表示一个已经匹配到完整消息往返的输入投递。Android 17 的公开字段可以按用途分组：
 
 | 分组 | 字段 | 含义 |
 |---|---|---|
@@ -257,7 +259,7 @@ ORDER BY event_to_present_ms DESC
 LIMIT 100;
 ```
 
-这里的 `event_time` 是输入事件携带并由 `InputReader` 的 ATrace 输出的事件时间，不是原始 evdev（Linux 输入设备事件接口）上的 Tracepoint（内核预定义事件记录点）。它比 `dispatch_ts` 更靠近设备事件，但仍不能描述成触摸控制器中断时间。FrameTimeline 的呈现时间是 SurfaceFlinger 帧区间的结束，不代表屏幕像素实际发光的物理时刻。
+这里的 `event_time` 由 `InputReader` 的 ATrace 输出，取自输入事件自身携带的时间，不是原始 evdev（Linux 输入设备事件接口）上的 Tracepoint（内核预定义事件记录点）。它比 `dispatch_ts` 更靠近设备事件，但仍不能描述成触摸控制器中断时间。FrameTimeline 的呈现时间是 SurfaceFlinger 帧区间的结束，不代表屏幕像素实际发光的物理时刻。
 
 ### 输入与 `doFrame` 的关联规则
 
@@ -269,7 +271,9 @@ LIMIT 100;
 - 被丢弃的应用帧可能使 `frame_id` 指向后续未丢弃帧；
 - 一个帧可合并多个 MOVE 事件，输入行与帧不是一一关系。
 
-Android 17 的 `_input_read_time` 只匹配 motion 事件的 `UnwantedInteractionBlocker::notifyMotion*` Slice，按键事件可以有完整往返时间，却没有 `read_time`、`event_time` 或呈现延迟。以下划线开头表示标准库内部对象，外部查询不应依赖它。该版本选择未丢弃帧的内部标量查询（预期返回单个值的子查询）也没有显式增加 `upid` 条件；多应用同时绘制时，应把 `frame_id` 当作候选锚点，并用目标进程再次校验。
+Android 17 的 `_input_read_time` 只匹配 motion 事件的 `UnwantedInteractionBlocker::notifyMotion*` Slice。按键事件可以有完整往返时间，却没有 `read_time`、`event_time` 或呈现延迟。以下划线开头表示标准库内部对象，外部查询不应依赖它。
+
+该版本选择未丢弃帧的内部标量查询（预期返回单个值的子查询）也没有显式增加 `upid` 条件。多应用同时绘制时，应把 `frame_id` 当作候选锚点，并用目标进程再次校验。
 
 下面的查询把输入结果连接到 `android_frames`，同时保留关联质量：
 
@@ -716,7 +720,9 @@ data_sources {
 }
 ```
 
-`RING_BUFFER` 表示缓冲区写满后覆盖最早的数据。修改 `atrace_apps` 和采集时长后即可用于目标场景；`input` 类别提供 InputDispatcher 与队列计数器，应用侧 Slice 需要目标应用进入 ATrace 采集范围，FrameTimeline 用于 `frame_id` 和 `end_to_end_latency_dur`。缓冲区大小要按设备事件量和场景时长实测，不能把示例值视为固定配置。
+`RING_BUFFER` 表示缓冲区写满后覆盖最早的数据。修改 `atrace_apps` 和采集时长后即可用于目标场景。
+
+`input` 类别提供 InputDispatcher 与队列计数器；应用侧 Slice 需要目标应用进入 ATrace 采集范围；FrameTimeline 用于 `frame_id` 和 `end_to_end_latency_dur`。缓冲区大小要按设备事件量和场景时长实测，不能把示例值视为固定配置。
 
 ### 原始输入与窗口分发
 
@@ -740,7 +746,9 @@ data_sources {
 
 没有匹配条件的规则会匹配所有事件；规则按声明顺序处理，首个匹配项决定记录等级。`TRACE_LEVEL_REDACTED` 是脱敏记录等级，会省略指针坐标、按键码和硬件扫描码。事件没有匹配任何规则时，默认使用 `TRACE_LEVEL_NONE`，即不记录。
 
-`TRACE_MODE_TRACE_ALL` 会绕过隐私措施并记录系统处理的全部输入，只适合本地受控设备和测试，禁止用于线上采集。包名规则检查一次事件的所有目标：`match_any_packages` 在任一目标包命中列表时成立，`match_all_packages` 要求所有目标包都位于列表中。同一事件常被发送给前台应用、监视窗口等多个目标，因此两种规则的覆盖面可能与直觉不同。坐标、按键、IME（Input Method Editor，输入法）连接状态和安全窗口均属于敏感信息。
+`TRACE_MODE_TRACE_ALL` 会绕过隐私措施并记录系统处理的全部输入，只适合本地受控设备和测试，禁止用于线上采集。
+
+包名规则检查一次事件的所有目标：`match_any_packages` 在任一目标包命中列表时成立，`match_all_packages` 要求所有目标包都位于列表中。同一事件常被发送给前台应用、监视窗口等多个目标，因此两种规则的覆盖面可能与直觉不同。坐标、按键、IME（Input Method Editor，输入法）连接状态和安全窗口均属于敏感信息。
 
 原始事件数据源不会替代常规配置中的 ATrace 和 FrameTimeline。只打开它可以得到三张原始视图，却不保证 `android_input_events` 的消息往返与帧关联完整。
 
@@ -807,7 +815,9 @@ summary.to_csv("input-latency-summary.csv", index=False)
 print(summary.to_string(index=False))
 ```
 
-`pd.concat()` 把每份 Trace 的 DataFrame（带列名的内存表格）纵向合并。修改查询参数行中的目标进程后，脚本会显式用文件路径标识每份结果，避免依赖地址解析器自动添加列的具体命名。`event_count`、帧匹配率和推测关联率必须与延迟分位数一起看；覆盖率变化意味着两组统计来自不同完整程度的样本，分位数可能失去可比性。每份 Trace 的解析结果都会常驻内存，输入规模较大时需要分批处理。
+`pd.concat()` 把每份 Trace 的 DataFrame（带列名的内存表格）纵向合并。修改查询参数行中的目标进程后，脚本会显式用文件路径标识每份结果，避免依赖地址解析器自动添加列的具体命名。
+
+`event_count`、帧匹配率和推测关联率必须与延迟分位数一起看；覆盖率变化意味着两组统计来自不同完整程度的样本，分位数可能失去可比性。每份 Trace 的解析结果都会常驻内存，输入规模较大时需要分批处理。
 
 ## 版本边界与核对清单
 
