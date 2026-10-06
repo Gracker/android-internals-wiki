@@ -34,7 +34,7 @@ sources:
 
 # StrictMode 性能检查与开发期诊断
 
-StrictMode 是一组运行时检查规则。代码经过 Android framework 或 libcore（Android 核心 Java 库）预埋的检查点时，detector（检测项）会识别磁盘读写、网络访问、显式 GC（garbage collection，垃圾回收）、资源未关闭和若干安全问题，penalty（处理方式）再决定记录、回调或终止进程。它适合在开发、自动化测试和平台集成阶段暴露可疑行为。
+StrictMode 是一组运行时检查规则。Android framework 或 libcore（Android 核心 Java 库）预埋了检查点；代码途经时，detector（检测项）会识别磁盘读写、网络访问、显式 GC（garbage collection，垃圾回收）、资源未关闭和若干安全问题，penalty（处理方式）再决定记录、回调或终止进程。它适合在开发、自动化测试和平台集成阶段暴露可疑行为。
 
 StrictMode 提供的是 violation（规则违规）信号，不是完整性能采样。它不会拦住每一个系统调用，也不会自动判断某段业务代码是否超过 16 ms。需要精确耗时、CPU 调度、Binder（Android 跨进程调用）等待或块 I/O（存储设备读写）证据时，应继续使用 Perfetto。
 
@@ -51,7 +51,7 @@ StrictMode 提供的是 violation（规则违规）信号，不是完整性能�
 
 `VmPolicy` 由 `StrictMode.setVmPolicy()` 安装到进程级静态状态，进程内各线程触发对应检查点时都受它约束。
 
-每次 `setThreadPolicy()` 或 `setVmPolicy()` 都会替换现有策略。Builder 是通过连续调用配置方法来组装策略的对象；启用了 detector 却没有显式配置 penalty 时，`build()` 会自动补上 `penaltyLog()`。
+每次 `setThreadPolicy()` 或 `setVmPolicy()` 都会替换现有策略。Builder 通过连续调用配置方法来组装策略；启用了 detector 却没有显式配置 penalty 时，`build()` 会自动补上 `penaltyLog()`。
 
 ## 一份可解释的 API 34+ Debug 配置
 
@@ -100,7 +100,7 @@ Android 会为应用的每个进程创建 `Application` 实例，因此同一个
 
 ### 磁盘读写
 
-`detectDiskReads()` 和 `detectDiskWrites()` 通过当前线程的 `BlockGuard.Policy` 接收 `onReadFromDisk()`、`onWriteToDisk()` 回调。`BlockGuard` 是 libcore 提供的线程操作检查接口；参与接入的文件系统与 Android framework 代码会在 I/O 前触发这些检查点。
+`BlockGuard` 是 libcore 提供的线程操作检查接口，已接入检查点的文件系统与 Android framework 代码会在 I/O 前触发这些检查点。`detectDiskReads()` 和 `detectDiskWrites()` 就通过当前线程的 `BlockGuard.Policy` 接收 `onReadFromDisk()`、`onWriteToDisk()` 回调。
 
 边界需要写清楚：
 
@@ -109,7 +109,7 @@ Android 会为应用的每个进程创建 `Application` 实例，因此同一个
 - 主线程通过 `Future.get()` 等待后台 I/O 时，磁盘检查点发生在工作线程，主线程不会因此自动得到 `DiskReadViolation`；
 - 第三方库若在后台线程读写，而后台线程没有安装策略，主线程策略看不到那次操作。
 
-`SharedPreferences` 是典型例子。`SharedPreferencesImpl` 可以在后台加载 XML，主线程 getter 随后等待加载完成。磁盘 syscall 不在主线程时，主线程 StrictMode 可能没有 `DiskReadViolation`，界面仍会因等待而卡住。遇到这种现象要看 Perfetto 中的线程状态和工作线程 I/O。
+主线程等待后台 I/O 的典型例子是 `SharedPreferences`：`SharedPreferencesImpl` 可以在后台加载 XML，主线程 getter 随后等待加载完成。磁盘 syscall 不在主线程时，主线程 StrictMode 可能没有 `DiskReadViolation`，界面仍会因等待而卡住。遇到这种现象要看 Perfetto 中的线程状态和工作线程 I/O。
 
 `commit()` 允许调用线程同步完成持久化，可能触发主线程磁盘写；`apply()` 把持久化工作排入后台，仍要避免在紧邻路径等待它完成。
 
@@ -135,7 +135,7 @@ decodeStartupConfig();
 ### 资源不匹配、未缓冲 I/O 与显式 GC
 
 - `detectResourceMismatches()`：例如用 `TypedArray.getInt()` 读取 String 类型资源，转换可成功但会报告类型不匹配；
-- `detectUnbufferedIo()`：由参与的 I/O 实现调用 `BlockGuard.onUnbufferedIO()`，用于发现逐字节等没有缓冲批处理的访问；
+- `detectUnbufferedIo()`：由已接入检查点的 I/O 实现调用 `BlockGuard.onUnbufferedIO()`，用于发现逐字节等没有缓冲批处理的访问；
 - `detectExplicitGc()`：由显式 `Runtime.gc()` / `System.gc()` 检查点报告。Android 17 的 `detectAll()` 是否自动包含它还受 compat change 控制，显式调用 Builder 方法更稳定。
 
 这些 detector 不会覆盖分配抖动、系统触发 GC、GPU 工作或普通 CPU 密集计算。
@@ -179,7 +179,7 @@ Android 17 的 `VmPolicy.Builder` 还包含：
 | `detectBlockedBackgroundActivityLaunch()` | 应用发起的后台 Activity 或 PendingIntent 启动被系统阻止 | API 36；`@FlaggedApi(FLAG_BAL_STRICT_MODE_RO)`，设备 flag 与客户端策略都要满足 |
 | `detectImplicitUriPermissionGrant()` | Intent 未携带显式 grant flag，系统仍向应用授予 URI 访问权限 | API 37；受 security flag 与 compat change 控制 |
 
-在 Android 17 基线内，这个 detector 可复核的作用是暴露“未显式携带授权 flag 却获得 URI 权限”的路径。若团队把它用于跨版本迁移排查，应在目标平台上重新核对当期兼容变更、feature flag 和官方 API 文档。
+在 Android 17 基线内，`detectImplicitUriPermissionGrant()` 可复核的作用是暴露“未显式携带授权 flag 却获得 URI 权限”的路径。若团队把它用于跨版本迁移排查，应在目标平台上重新核对当期兼容变更、feature flag 和官方 API 文档。
 
 `detectAll()` 会根据 target SDK 和设备开关决定是否加入这些检测。面向多版本设备的测试若依赖某个明确 violation，应显式启用并先判断 API/flag 可用性。
 
@@ -230,7 +230,9 @@ StrictMode.setThreadPolicy(
 1. libcore `BlockGuard` 的 Java policy；
 2. Binder native 层保存的 StrictMode policy mask。
 
-发起同步 Binder 调用时，mask 可以随事务到达服务端 Binder 线程。服务端触发 ThreadPolicy 违规后，`PENALTY_GATHER` 把 `ViolationInfo` 放进 `gatheredViolations` ThreadLocal（每条线程独立的存储槽）。`Parcel.writeNoException()` 最多把前三条违规写入 reply Parcel（返回给调用方的序列化数据容器）；调用方的 `Parcel.readException()` 再进入 `readAndHandleBinderCallViolations()`，补上本地调用栈并交给调用方当前策略处理。
+发起同步 Binder 调用时，mask 可以随事务到达服务端 Binder 线程。服务端触发 ThreadPolicy 违规后，`PENALTY_GATHER` 把 `ViolationInfo` 放进 `gatheredViolations` ThreadLocal（每条线程独立的存储槽）。
+
+违规沿返回路径回传：`Parcel.writeNoException()` 最多把前三条违规写入 reply Parcel（返回给调用方的序列化数据容器）；调用方的 `Parcel.readException()` 再进入 `readAndHandleBinderCallViolations()`，补上本地调用栈并交给调用方当前策略处理。
 
 所以应用堆栈中可能看到发生在 `system_server` 或其他 Binder 服务里的磁盘违规。它有助于定位同步 IPC（inter-process communication，进程间通信）间接执行的 I/O，也会让“应用源码里没有读文件却报 DiskReadViolation”看起来反常。
 
@@ -293,9 +295,9 @@ Gradle JVM 的 `-D` 属性不会自动出现在设备端应用进程。若需让
 
 ## 与协程、Compose 和多进程配合
 
-### 协程使用当前执行线程的策略
+### 协程与 Compose 使用执行线程的策略
 
-StrictMode 不把 coroutine（协程）当作独立的策略单位。`Dispatchers.Main` 上的协程使用主线程策略；切到 `Dispatchers.IO` 后使用线程池中实际执行它的 OS 线程策略。把 I/O 移到 `Dispatchers.IO` 能离开主线程，但主线程 StrictMode 不能证明后台任务没有造成任务排队、锁竞争，或切回主线程时等待。
+StrictMode 不把协程当作独立的策略单位。`Dispatchers.Main` 上的协程使用主线程策略；切到 `Dispatchers.IO` 后使用线程池中实际执行它的 OS 线程策略。把 I/O 移到 `Dispatchers.IO` 能离开主线程，但主线程 StrictMode 不能证明后台任务没有造成任务排队、锁竞争，或切回主线程时等待。
 
 Compose 的 composition（界面组合阶段）、`LaunchedEffect` 和事件回调只要运行在主线程并经过检查点，就与 View 代码一样受 ThreadPolicy 约束。`AndroidView` 中的 `onMeasure()`、`onLayout()` 或回调也没有特殊例外。
 
