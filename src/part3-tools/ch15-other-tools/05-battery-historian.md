@@ -29,7 +29,7 @@ related_chapters:
 
 # Battery Historian 与功耗分析工具
 
-功耗分析面对的是几种不同证据：系统事件有没有发生、某个 UID 被归因了多少电量、某条硬件电源轨累计了多少能量，以及整机从电源端取走了多少能量。UID 是 Android 为应用沙箱分配的 Linux 用户标识；电源轨（power rail）是给某类硬件供电的电气通路。这些证据的单位、时间范围和分配系统消耗的归因规则不同，不能放进同一列直接比较。
+功耗分析要处理几种不同的证据：系统事件有没有发生、某个 UID 被归因了多少电量、某条硬件电源轨累计了多少能量，以及整机从电源端取走了多少能量。UID 是 Android 为应用沙箱分配的 Linux 用户标识；电源轨（power rail）是给某类硬件供电的电气通路。这些证据的单位、时间范围，以及分配系统消耗的归因规则各不相同，不能放进同一列直接比较。
 
 平台基线是 Android 17 / API 37 / `android-17.0.0_r1`。Battery Historian 仍能读取 bugreport（`adb bugreport` 打包的系统诊断报告），但 Google 已说明该工具不再积极维护。新问题应优先考虑 System Trace、Perfetto `android.power`、Android Studio Power Profiler 或 Macrobenchmark `PowerMetric`。
 
@@ -177,7 +177,7 @@ CPU running 只能说明设备没有完全休眠。要定位 CPU 时间花在何
 
 ### 网络、定位和传感器
 
-无线功耗受信号、网络制式、批处理和其他进程影响。Historian 用来圈定活动窗口，请求日志用来解释业务行为，Perfetto 或 power rail 用来观察系统级能量变化。定位和传感器还要核对精度、批处理延迟、前后台状态与停止时机。
+无线功耗受信号、网络制式、批处理和其他进程影响。Historian 圈定活动窗口，请求日志解释业务行为，Perfetto 或 power rail 观察系统级能量变化。定位和传感器还要核对精度、批处理延迟、前后台状态与停止时机。
 
 ## Perfetto：把 rail 与线程放进同一时间轴
 
@@ -358,11 +358,11 @@ low  = max(previousEnergyUws, currentEnergyUws - 10_000_000)
 high = currentEnergyUws
 ```
 
-`10_000_000 uWs` 等于 10 J。Beta 分布是取值限定在一个区间内的概率分布；这里的参数 `alpha=50` 会让样本更靠近 high。同一调用 UID 在一次 refresh（缓存刷新）周期内复用同一样本。
+`10_000_000 uWs` 等于 10 J。Beta 分布是一种概率分布，取值范围限定在一个区间内；这里的参数 `alpha=50` 会让样本更靠近 high。同一调用 UID 在一次 refresh（缓存刷新）周期内复用同一样本。
 
 这个算法既不是对称的 ±10%，也不能描述成固定 10 mWs 误差。源码在选择普通或 fine 缓存后都会经过该随机化步骤；fine 权限只提高读数新鲜度，不会返回“完全无噪声”的值。
 
-这项设计意味着 PowerMonitor 不适合作为毫秒级实时控制信号。它适合对比受控窗口内的累计能量；频繁轮询、过短的相邻样本差分和跨设备固定阈值，都会放大缓存、随机化和硬件差异的影响。
+PowerMonitor 因此不适合作为毫秒级实时控制信号。它适合对比受控窗口内的累计能量；频繁轮询、过短的相邻样本差分和跨设备固定阈值，都会放大缓存、随机化和硬件差异的影响。
 
 ## `BatteryUsageStats` 是平台归因接口
 
@@ -476,7 +476,7 @@ Android 17 的返回循环对两种缓存都调用有界随机化函数。fine �
 
 ### “Power Profiler 在不支持 ODPM 的设备上会自动给出等价估算”
 
-设备可能只提供 battery capacity、charge 或 current；缺少 rail 时没有等价的高精度子系统能量。界面是否展示旧估算项还取决于 Studio 与设备版本，测试程序应显式检查能力。
+设备可能只提供 battery capacity、charge 或 current；缺少 rail 时没有等价的高精度子系统能量。界面是否展示旧估算项还取决于 Studio 与设备版本，测试程序应显式检查设备能力。
 
 ## 源码与官方文档
 
