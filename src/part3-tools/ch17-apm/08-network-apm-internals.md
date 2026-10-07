@@ -458,9 +458,9 @@ private class NetworkMetricEventListener(
 }
 ```
 
-这份实现把 DNS、route 和 exchange 分开保存，并在每个 `requestHeadersStart` 新建 exchange。`requestFailed` 或 `responseFailed` 后发生恢复时，下一轮不会覆盖前一轮。`connectEnd` 与 `connectFailed` 依靠 address、port 和 proxy 找回 route；`secureConnectStart` 没有地址参数，若未来版本并发 TLS route，监听器只能保留原始时间线并标记配对歧义，不能凭“最近一个 attempt”伪造确定关系。`cancelObservedBeforeTerminal` 只是终止快照生成前是否见过取消事件；晚于 `callEnd` 的 cancel 不应把已经成功的 call 改判为失败。
+这份实现把 DNS、route 和 exchange 分开保存，并在每个 `requestHeadersStart` 新建 exchange。`requestFailed` 或 `responseFailed` 后发生恢复时，下一轮不会覆盖前一轮。`connectEnd` 与 `connectFailed` 依靠 address、port 和 proxy 找回 route；`secureConnectStart` 没有地址参数，若未来版本并发 TLS route，监听器只能保留原始时间线并标记配对歧义，不能凭“最近一个 attempt”伪造确定关系。`cancelObservedBeforeTerminal` 只表示终止快照生成前是否见过取消事件；晚于 `callEnd` 的 cancel 不应把已经成功的 call 改判为失败。
 
-状态修改使用 per-call 私有锁，只保护几次字段读写，锁内没有 I/O、日志和用户回调。OkHttp 要求所有事件回调快速返回、不得抛异常、不得修改参数或再次调用客户端。`NetworkDimensions` 的四个方法必须有明确时间上限、尽量少分配对象、没有外部副作用且不抛异常：host 使用 allowlist（只允许预先批准的值）或分段归一化，address 使用进程内秘密密钥计算的单向摘要或合规 IP 前缀，proxy 只返回类型与脱敏 endpoint key（端点标识）。采集器自身异常应被隔离。
+状态修改使用 per-call 私有锁，只保护几次字段读写，锁内没有 I/O、日志和用户回调。OkHttp 要求所有事件回调快速返回、不得抛异常、不得修改参数或再次调用客户端。`NetworkDimensions` 的四个方法要有明确的时间上限，尽量少分配对象，不含外部副作用，也不抛异常：host 使用 allowlist（只允许预先批准的值）或分段归一化，address 使用进程内秘密密钥计算的单向摘要或合规 IP 前缀，proxy 只返回类型与脱敏 endpoint key（端点标识）。采集器自身异常应被隔离。
 
 注册必须使用 `eventListenerFactory(...)`：
 
@@ -505,7 +505,7 @@ val client = OkHttpClient.Builder()
 
 ### 3.2 OkHttp 阶段差值
 
-TTFB（Time to First Byte，首字节时间）用于描述请求开始后多久观察到响应的第一个字节。下表的 Exchange TTFB 从该 exchange 开始写 request header 时计时，因此它与从整个 call 开始计时的产品指标可能不同。
+TTFB（Time to First Byte，首字节时间）用于描述请求开始后多久观察到响应的第一个字节。下表的 Exchange TTFB 以该 exchange 开始写 request header 的时刻为起点，因此可能与以整个 call 为起点的产品指标不同。
 
 | 指标 | 算法 | 正确解释 |
 | --- | --- | --- |
@@ -522,7 +522,7 @@ TTFB（Time to First Byte，首字节时间）用于描述请求开始后多久�
 
 `connectEnd` 在 HTTPS 下发生于 `secureConnectEnd` 之后，因此 `connectStart → connectEnd` 不能标成 TCP 握手并再与 TLS 相加。直连 HTTPS 可把 `connectStart → secureConnectStart` 作为 TCP 近似；经过 HTTP proxy 时，这段还会混入 CONNECT 隧道协商，即代理先为客户端和 HTTPS 目标建立字节通道，只能叫 pre-TLS transport。
 
-`sendEnd` 有 body 时取 `requestBodyEnd`，无 body 时取 `requestHeadersEnd`。这个差值要满足三个条件：
+`sendEnd` 有 body 时取 `requestBodyEnd`，无 body 时取 `requestHeadersEnd`。post-send wait estimate 要满足三个条件：
 
 - OkHttp 版本不低于 4.3。
 - `responseHeadersStart >= sendEnd`。
@@ -559,7 +559,7 @@ TTFB（Time to First Byte，首字节时间）用于描述请求开始后多久�
 - 多次 `requestHeadersStart` 表示多个 wire exchange，原因还要结合 retry/follow-up 决定和中间状态码。
 - `requestFailed` 与 `responseFailed` 都可能被恢复，不能马上把 call 标成失败。
 
-同一域名的 IPv6 与 IPv4 地址可能被依次尝试；fast fallback 还可能让连接尝试重叠。route 配对应使用 address、port、proxy 和事件参数，不能靠数组末项。已有 API 无法确定唯一配对时，上传原始顺序、`pairing_confidence = low`（配对可信度低）和有限字段即可。
+同一域名的 IPv6 与 IPv4 地址可能被依次尝试；fast fallback 还可能让连接尝试重叠。route 配对要使用 address、port、proxy 和事件参数，不能靠数组末项。已有 API 无法确定唯一配对时，上传原始顺序、`pairing_confidence = low`（配对可信度低）和有限字段即可。
 
 看板至少分开展示：
 
@@ -739,7 +739,7 @@ eBPF（extended Berkeley Packet Filter）允许受验证的小程序在内核事
 
 ## 8. 开销控制与自监控
 
-EventListener 回调位于请求关键路径。采集器应有自己的性能预算，即每次回调允许占用的时间、内存和流量上限；超过上限时还要能自动减少或关闭采集：
+EventListener 回调位于请求关键路径。采集器应有自己的性能预算，即每次回调允许占用的时间、内存和流量上限；超过上限时还要能自动减少采集量或关闭采集：
 
 - 回调只读取时间、枚举和计数，写入固定大小结构或有界 ring buffer（写满后按既定策略处理的环形缓冲区）。
 - `System.nanoTime()` 只用于同一进程内计算时长，不能持久化后与 wall clock（表示日期时间的系统时钟）比较。
@@ -768,7 +768,7 @@ QUIC 基于 UDP，传输握手与 TLS 1.3 紧密结合，并支持连接复用�
 | `migration_count` | 通常为 0 | 由 QUIC 栈提供；没有证据时为空 |
 | `retransmission_source` | 内核 TCP | QUIC 库；内核 UDP 无法给出同等语义 |
 
-0-RTT 下请求发送可能早于握手确认，各阶段不再严格按一个阶段结束后另一个阶段才开始的顺序发生。`connectEnd - connectStart` 仍可作为库定义的 transport 区间，但不能强行放在 sending 之前。跨 HTTP/2 与 HTTP/3 比较时，优先看 call/exchange TTFB、成功率和吞吐，再按 transport 分组查看连接指标。
+0-RTT 下请求发送可能早于握手确认，各阶段不再严格按“前一个结束、下一个才开始”的顺序发生。`connectEnd - connectStart` 仍可作为库定义的 transport 区间，但不能强行放在 sending 之前。跨 HTTP/2 与 HTTP/3 比较时，优先看 call/exchange TTFB、成功率和吞吐，再按 transport 分组查看连接指标。
 
 ## 10. 一套可维护的接入顺序
 
