@@ -130,7 +130,7 @@ AppOps 是系统对敏感操作做运行时记录与限制的机制，URI grant 
 3. **安全信息流**：在 agent 看到数据前把敏感明文替换为不透明引用，并在输入、输出和敏感动作处执行策略。
 
 “OS 级”在这里有明确含义：AOHP 修改 `frameworks/base`、`system/core`、SELinux policy、Launcher3 和 system app。
-普通 APK 安装几项公开 API 无法复制同等权限。
+普通 APK 只靠几个公开 API 无法复制同等权限。
 
 ## 2. 从论文架构到代码路径
 
@@ -163,7 +163,7 @@ task schema 规定任务输入，service graph 描述服务发现与组合，pre
 
 能力描述需要输入/输出 schema、前置条件、副作用和策略标签。
 搜索商品可以并行执行，付款和外发敏感文件则要经过确认。
-这个划分有助于把“会读取数据”和“会改变外部状态”分开。
+这样区分有助于把“会读取数据”和“会改变外部状态”分开。
 
 AOHP 允许 legacy 应用通过 GUI 或结构化 UI 参与。
 legacy 在这里指没有为 AOHP 或 AppFunctions 专门改造的既有应用。
@@ -354,12 +354,12 @@ taint 在这里表示附在数据上的来源与敏感级别标记，也称 prov
 
 `AohpUiTreeSanitizer` 会在 UI 字段替换为 vault token 时注册该元数据，security bridge 再在输入、tap、skill output、file share 等选定边界执行检查。
 
-这与 TaintDroid 的运行时数据传播粒度不同。
+TaintDroid 是 2010 年 OSDI 论文中的 Android 研究原型，修改 Dalvik 和系统路径实现多粒度动态 taint tracking。
+AOHP 当前的传播粒度与它不同。
 当前 AOHP 类没有在 Java/ART 指令、native 内存、Binder payload、文件内容和任意字符串变换中自动传播标签。
 把它写成“每一次 LLM 请求、每一个工具输入输出都自动携带 taint”会超过源码证据。
 
-TaintDroid 是 2010 年 OSDI 论文中的 Android 研究原型，修改 Dalvik 和系统路径实现多粒度动态 taint tracking。
-它没有成为 Android 标准安全组件，因此“后来被 Google 从 AOSP 移除”的说法不符合其演进历史。
+TaintDroid 没有成为 Android 标准安全组件，因此“后来被 Google 从 AOSP 移除”的说法不符合其演进历史。
 AOHP 论文引用的是这一研究方向。
 
 ### 4.4 策略检查与已知缺口
@@ -540,7 +540,7 @@ API 边界应以 SDK stubs（SDK 暴露的 API 签名）、`@AddedIn` 文档和 
 `AccessibilityService` 面向辅助功能，依据可访问性树观察和操作 UI；
 `VoiceInteractionService` 是每个用户选择的 assistant 角色入口；AppFunctions 则由目标应用主动发布结构化能力。
 
-三者的 `BIND_*` 权限约束服务实现者，不是调用方在 manifest 中声明后即可获得的通行证。
+三者的 `BIND_*` 权限约束的是服务实现者，不是调用方在 manifest 中声明后就能获得的通行证。
 产品应优先采用目标应用明确发布的 function。
 只有业务确属辅助功能或系统 assistant 时，才使用相应服务角色，并把用户授权、可见提示与撤销路径纳入设计。
 
