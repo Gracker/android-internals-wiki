@@ -3,7 +3,7 @@ title: Vulkan 原生管线与 HWUI 多队列
 chapter: '13.5'
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 section: '13.5'
-last_verified: '2026-07-31'
+last_verified: '2026-10-07'
 last_verified_against: AOSP android-17.0.0_r1 swapchain.cpp / VP_ANDROID_17_requirements.json / Surface.cpp / BufferQueueProducer.cpp / SurfaceFlinger FrontEnd / HWComposer.cpp / RenderEngine.h / GraphiteVkRenderEngine.cpp / RenderEngineThreaded.cpp + kernel android17-6.18-2026-06_r6 dma-buf.c / sync_file.c / dma-fence.c
 confidence: high
 tags:
@@ -151,7 +151,8 @@ sources:
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c
   role: RenderThread 与上传线程的 CPU 调度基线；不定义 Vulkan queue 的 GPU 执行顺序
-status: ready-to-publish
+status: finalized
+last_review_finalize_at: '2026-10-07'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch13-rendering-pipelines/09-vulkan-native.md
