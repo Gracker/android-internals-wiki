@@ -139,7 +139,7 @@ last_consolidated_at: '2026-08-24'
 
 ### 道、术、器的分工
 
-性能工程面对的对象，是一个在特定设备、系统版本、构建产物和运行环境中执行的完整系统。一次卡顿可能同时包含主线程排队、Binder 等待、RenderThread 提交、GPU 执行和 SurfaceFlinger 合成；一次启动变慢也可能来自编译状态、磁盘缓存、进程状态或业务初始化。Binder 负责 Android 跨进程调用，RenderThread 提交应用的绘制命令，GPU 执行图形任务，SurfaceFlinger 负责系统级图层合成。只盯住某个函数耗时，很容易把症状当成原因。
+性能工程面对的对象，是一个在特定设备、系统版本、构建产物和运行环境中执行的完整系统。Binder 负责 Android 跨进程调用，RenderThread 提交应用的绘制命令，GPU 执行图形任务，SurfaceFlinger 负责系统级图层合成。一次卡顿可能同时包含主线程排队、Binder 等待、RenderThread 提交、GPU 执行和 SurfaceFlinger 合成；一次启动变慢也可能来自编译状态、磁盘缓存、进程状态或业务初始化。只盯住某个函数耗时，很容易把症状当成原因。
 
 「道、术、器」分别承担三类工作：
 
@@ -837,11 +837,11 @@ Stack Overflow、GitHub issue 与 commit 的主导类别都是 Memory Consumptio
 
 #### 1. 预算：先固定测量契约
 
-性能预算不能只写“启动 2 秒以内”。至少包含：
-
-TTID（Time To Initial Display）是首个画面显示时间，TTFD（Time To Full Display）是应用报告内容完整可用的时间。warm start 指应用进程仍在、Activity 可能需要重新创建的启动；frame overrun 表示一帧超过显示截止时间的幅度；RSS 是进程当前驻留在内存中的页面总量。
+性能预算不能只写“启动 2 秒以内”。先约定几个字段会用到的术语：TTID（Time To Initial Display）是首个画面显示时间，TTFD（Time To Full Display）是应用报告内容完整可用的时间。warm start 指应用进程仍在、Activity 可能需要重新创建的启动；frame overrun 表示一帧超过显示截止时间的幅度；RSS 是进程当前驻留在内存中的页面总量。
 
 Baseline Profile 是随应用或库发布的类与方法规则，用来指导 ART 对关键代码做 Ahead-of-Time（AOT，提前）编译。
+
+预算至少包含以下字段：
 
 | 字段 | 示例含义 |
 |---|---|
@@ -898,9 +898,7 @@ Benchmark 是带噪测量，这里的噪声指同一条件下重复运行仍会�
 
 PR（Pull Request，合入请求）可以运行 dry run（只验证脚本、安装和导航，不用单次结果判断性能）。性能数值适合在稳定真机池的 nightly（夜间定时任务）、合入队列或发布流水线评估。官方强烈不建议用模拟器结果代表用户性能；模拟器可用于 CUJ 脚本冒烟和 Baseline Profile 规则生成。
 
-不要在 CI 中全局压制 Macrobenchmark 的配置错误。target app 为 `debuggable`、Android 10/11 上未设为 `profileable`、设备为 emulator（模拟器）或低电量时，库会报告可能损害测量的错误。
-
-`debuggable` 允许调试，会显著改变运行性能；`profileable` 允许性能工具读取详细 trace 而无须启用调试。单项抑制需要记录原因和到期时间。
+`debuggable` 允许调试，会显著改变运行性能；`profileable` 允许性能工具读取详细 trace 而无须启用调试。不要在 CI 中全局压制 Macrobenchmark 的配置错误。target app 为 `debuggable`、Android 10/11 上未设为 `profileable`、设备为 emulator（模拟器）或低电量时，库会报告可能损害测量的错误。单项抑制需要记录原因和到期时间。
 
 #### 4. 灰度观测：验证设备分布
 
