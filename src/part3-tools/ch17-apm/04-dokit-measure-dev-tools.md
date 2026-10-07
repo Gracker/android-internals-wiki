@@ -102,15 +102,15 @@ consolidated_from:
 
 # DoKit 调试工具与 Measure APM 平台
 
-DoKit 提供应用内调试面板和多类检查插件，适合 Debug / QA 现场复现；Measure 是覆盖端侧采集、会话时间线、查询告警与自托管服务的生产 APM 平台。两者都能提供性能线索，但接入阶段、数据责任和发布边界完全不同。本文分别核对它们的采集能力、工程代价与适用范围，避免把调试工具带入 Release，也避免把完整 APM 平台误解成局部计时库。
+DoKit 提供应用内调试面板和多类检查插件，适合 Debug / QA 现场复现；Measure 是覆盖端侧采集、会话时间线、查询告警与自托管服务的生产 APM 平台。两者都能提供性能线索，但接入阶段、数据责任和发布边界完全不同。本文分别核对两者的采集能力、工程代价与适用范围，避免把调试工具带进 Release，也不把完整 APM 平台当成局部计时库。
 
 ## 应用内调试面板与性能插件
 
 ### DoKit 的位置：研发现场，不是生产观测平台
 
-DoraemonKit（DoKit）把网络查看、弱网模拟、Mock（用预设数据替换响应）、文件与数据库浏览、日志、性能浮窗、UI 检查和业务自定义入口放进同一个 Android 调试包。测试人员可以直接在设备上改变测试条件，开发人员也能在相同场景中查看请求与进程状态。这类现场调试是它最擅长的用途。
+DoraemonKit（DoKit）把网络查看、弱网模拟、Mock（用预设数据替换响应）、文件与数据库浏览、日志、性能浮窗、UI 检查和业务自定义入口放进同一个 Android 调试包。测试人员可以直接在设备上改变测试条件，开发人员也能在相同场景中查看请求与进程状态。这类现场调试正是它擅长的场景。
 
-这些工具也会改变被测环境。浮窗会增加绘制工作，性能面板会定时采样，网络模块会插入 interceptor（请求拦截器），部分功能还依赖编译期字节码插桩（构建时改写 class）或 hidden API（应用 SDK 未公开的接口）。DoKit 适合回答“哪个页面、哪个操作或哪个网络条件值得继续调查”，浮窗读数不足以支持版本级性能结论，也不适合承担生产 APM（Application Performance Monitoring，应用性能监控）的采集任务。
+这些工具也会改变被测环境。浮窗会增加绘制工作，性能面板会定时采样，网络模块会插入 interceptor（请求拦截器），部分功能还依赖编译期字节码插桩（构建时改写 class）或 hidden API（应用 SDK 未公开的接口）。DoKit 适合回答“哪个页面、哪个操作或哪个网络条件值得继续调查”，浮窗读数不足以支持版本级性能结论，也不适合用来做生产 APM（Application Performance Monitoring，应用性能监控）的采集。
 
 本文以 Android 17 / API 37 / `android-17.0.0_r1` 做平台源码核对。DoKit 没有面向 API 37 的官方兼容承诺，因此这里的“可用”只表示源码上没有发现确定性阻断；团队仍要用自己的 AGP（Android Gradle Plugin）、完整依赖、目标设备和最终安装包验证。
 
@@ -125,7 +125,7 @@ DoraemonKit（DoKit）把网络查看、弱网模拟、Mock（用预设数据替
 | GitHub Releases | 最新可见的 `3.1.7` 发布于 2025-06-20，但标题明确是 `iOS: 3.1.7` | 不能把跨平台仓库的 iOS release 当成 Android Maven 新版 |
 | GitHub `master` | 审阅提交为 `626827cddb2feb2f3aee87a52a064b4e5ca2bed4`；`Android/config.gradle` 写的是未公开发布的 `3.7.14.9-kotlin-13` | `master` 可用于理解后续代码，不能替代 3.7.11 发布物的行为 |
 
-3.7.11 的 POM（Maven 依赖描述文件）仍依赖 Kotlin 1.4.32、OkHttp 3.14.7 和较早的 AndroidX 组件。Gradle 成功下载依赖，只能说明 Maven 坐标可解析；这无法证明旧依赖与当前工程的 Kotlin、R8（代码压缩与优化工具）、AndroidX 或 targetSdk 37 组合可用。
+3.7.11 的 POM（Maven 依赖描述文件）仍依赖 Kotlin 1.4.32、OkHttp 3.14.7 和较早的 AndroidX 组件。Gradle 成功下载依赖，只能说明 Maven 坐标可解析；这无法证明这些旧依赖能和当前工程的 Kotlin、R8（代码压缩与优化工具）、AndroidX 或 targetSdk 37 一起正常工作。
 
 审阅第三方调试 SDK 时，应固定以下四样材料：
 
@@ -149,13 +149,13 @@ DoraemonKit（DoKit）把网络查看、弱网模拟、Mock（用预设数据替
 | UI 层级、取色、边界 | 客户端开发、UI QA | 检查控件信息和布局问题 | 替代可访问性、截图或渲染基准测试 |
 | 卡顿、启动、函数耗时 | 开发、性能专项 | 找到值得录制 trace（事件时间线）的路径 | 给出可跨设备比较的性能结果 |
 
-这张表的读法很简单：DoKit 提供线索和测试条件，专项工具提供可复核证据。
+DoKit 提供线索和测试条件，可复核的证据则由专项工具产出。
 
 ### 接入由运行时 AAR 和编译插件两部分组成
 
 `dokitx` 是运行时工具箱，`dokitx-plugin` 负责构建期字节码改写。3.7.11 的插件在 `DoKitPlugin.kt` 中取得旧版 `AppExtension` / `LibraryExtension`，随后调用 `registerTransform()`。AGP 8.0 已移除 Transform API；官方替代接口在 AGP 7.2 时已经齐备。使用 AGP 8+ 的项目不能直接加载这套旧插件实现。
 
-插件还有一个容易漏掉的构建变体问题。它只检查本次命令中的顶层 Gradle task 名是否包含 `release` / `Release`。执行 `assembleRelease` 时通常会跳过插件，执行会聚合多个变体的 `assemble` 时却可能判断为非 Release，继而注册 Transform。因此，不能把正式包隔离完全交给这段 task 名判断。
+插件还有一个容易漏掉的构建变体问题。它只检查本次命令中的顶层 Gradle task 名是否包含 `release` / `Release`。`assembleRelease` 通常会跳过插件；而 `assemble` 会聚合多个变体，这时可能被判断为非 Release，进而注册 Transform。因此，不能把正式包隔离完全交给这段 task 名判断。
 
 可以按能力拆开决策：
 
@@ -197,7 +197,7 @@ class NoopDevToolRegistry : DevToolRegistry {
 
 Debug 实现可以把“切换接口环境”“清理指定缓存”“打开当前页面状态”“导出诊断日志”注册为自定义 kit；Release 注入 `NoopDevToolRegistry`。这样可以保留共享业务代码，同时把 DoKit 类型限制在调试模块内。
 
-初始化时应主动关闭默认使用统计。下面的调用只放进允许 DoKit 的 source set（例如仅参与 Debug 编译的 `src/debug`）中，`customKits` 接收项目自己的 `AbstractKit` 列表：
+初始化时应主动关闭默认的使用统计。下面的调用只放进允许 DoKit 的 source set（例如仅参与 Debug 编译的 `src/debug`）中，`customKits` 接收项目自己的 `AbstractKit` 列表：
 
 ```kotlin
 DoKit.Builder(this)
@@ -217,14 +217,14 @@ DoKit.Builder(this)
 
 这里有两个计数问题：
 
-- 统计任务也在主线程。主线程堵塞时，“一秒窗口”可能延后执行，但代码没有按真实经过时间归一化。
+- 统计任务也在主线程。主线程阻塞时，“一秒窗口”可能延后执行，但代码没有按真实经过时间归一化。
 - 内置“健康体检”的保存路径还会把帧率上限压到 60。90 Hz、120 Hz 设备上的高刷新率信息会丢失。
 
 因此，浮窗 FPS 能提示“这次滑动明显异常”，但不能说明慢帧发生在应用、RenderThread（渲染线程）还是系统合成阶段，也不能替代 FrameTimeline（帧各阶段时间线）或 JankStats（关联 App 状态与慢帧的库）。
 
 #### CPU
 
-Android 8.0 及以上，DoKit 每 500 ms 执行一次 `top -n 1`，查找当前 PID（进程 ID）所在行，再把 `%CPU` 除以 `availableProcessors()`；更早系统读取 `/proc/stat` 与 `/proc/<pid>/stat`。
+Android 8.0 及以上，DoKit 每 500 ms 执行一次 `top -n 1`，查找当前 PID（进程 ID）所在行，再把 `%CPU` 除以 `availableProcessors()`；更早的系统则读取 `/proc/stat` 与 `/proc/<pid>/stat`。
 
 `top` 的输出格式不属于 Android SDK 兼容契约，执行命令本身也有开销。除以核数后的百分比与 Profiler、Perfetto 或其他监控库未必采用同一算法。它适合发现“某一步骤 CPU 持续升高”，几次浮窗读数不足以支持版本对比。
 
@@ -299,7 +299,7 @@ AAR 还声明了未导出的 `FileProvider`，authority（ContentProvider 的唯
 
 ### DoKit 的“断网”仍会发送真实请求
 
-3.7.11 的 `DokitWeakNetworkInterceptor` 是 OkHttp network interceptor，运行在实际网络交换附近。几个模式要按源码执行顺序理解：
+3.7.11 的 `DokitWeakNetworkInterceptor` 是 OkHttp 的 network interceptor，执行位置贴近真实的网络收发。几个模式要按源码的执行顺序理解：
 
 | 模式 | 代码做了什么 | 能测试什么 | 不能测试什么 |
 |---|---|---|---|
@@ -439,15 +439,17 @@ DoKit 的优势是把调试入口和测试条件带到设备现场。它可以�
 
 ## Measure APM 的端侧采集与平台边界
 
-DoKit 负责研发现场的调试入口，Measure 则在 Release 中持续采集崩溃、ANR、启动、网络、资源和业务 span，并把事件送入可查询的平台。后者同样需要控制采样与测量扰动，但还要承担数据治理、服务端运维、告警和恢复责任。
+DoKit 负责研发现场的调试入口，Measure 则在 Release 中持续采集崩溃、ANR、启动、网络、资源和业务 span，并把事件送入可查询的平台。后者同样需要控制采样与测量扰动，但还要负责数据治理、服务端运维、告警和恢复。
 
 ### 产品定位与版本边界
 
-Measure 是一套面向移动端的 APM（Application Performance Monitoring，应用性能监控）与问题诊断平台。项目提供 Android、iOS、Flutter、React Native SDK；官网还提供 KMP（Kotlin Multiplatform）薄封装，让共享 Kotlin 代码调用 Android、iOS 原生 SDK。它把 Crash（未捕获崩溃）、ANR（Application Not Responding，应用无响应）、启动、HTTP、CPU、内存、点击、页面导航、业务 span（一段有起止时间的操作）和 bug report（用户主动提交的问题报告）组织到同一套 session（一次连续使用会话）模型里。
+Measure 是一套面向移动端的 APM（Application Performance Monitoring，应用性能监控）与问题诊断平台。项目提供 Android、iOS、Flutter、React Native SDK；官网还提供 KMP（Kotlin Multiplatform）薄封装，让共享 Kotlin 代码调用 Android、iOS 原生 SDK。它把 Crash（未捕获崩溃）、ANR（Application Not Responding，应用无响应）、启动、HTTP、CPU、内存、点击、页面导航、业务 span（一段有起止时间的操作）和 bug report（用户主动提交的问题报告）放进同一套 session（一次连续使用会话）模型里。
 
 Matrix、KOOM 更偏向在设备内完成专项采集与诊断；Measure 还提供事件入库、检索、聚合、告警、附件保存和团队协作。它们解决的问题有交集，部署层次与运维范围不同，可以同时使用。
 
-截至 2026-08-14，Maven Central 上最新稳定 Android SDK 仍为 `0.19.0`，Gradle Plugin Portal 上最新插件仍为 `0.13.0`；最新 self-host（自托管）版本为 `v0.12.1`。稳定版行为以 `android-v0.19.0` 标签提交 `0ab6595d5671dbbcb326fef908dee351ed8ca1c4` 为准。当前主分支已到北京时间 2026-08-13 的 `7501820c8e6f8bfc8a512061e1d2504b465e0466`，SDK 与插件版本仍分别是 `0.20.0-SNAPSHOT`、`0.14.0-SNAPSHOT`；`SNAPSHOT` 表示开发中的未发布版本。上一轮使用的北京时间 2026-07-25 快照 `8a189ea1e9728105773c1c81fb6cc8797e6b2d15` 保留在参考资料中，便于复现差异。平台核对边界为 Android 17 / API 37 / `android-17.0.0_r1`。
+截至 2026-08-14，Maven Central 上最新稳定 Android SDK 仍为 `0.19.0`，Gradle Plugin Portal 上最新插件仍为 `0.13.0`；最新 self-host（自托管）版本为 `v0.12.1`。稳定版行为以 `android-v0.19.0` 标签提交 `0ab6595d5671dbbcb326fef908dee351ed8ca1c4` 为准。
+
+当前主分支已到北京时间 2026-08-13 的 `7501820c8e6f8bfc8a512061e1d2504b465e0466`，SDK 与插件版本仍分别是 `0.20.0-SNAPSHOT`、`0.14.0-SNAPSHOT`；`SNAPSHOT` 表示开发中的未发布版本。上一轮使用的北京时间 2026-07-25 快照 `8a189ea1e9728105773c1c81fb6cc8797e6b2d15` 保留在参考资料中，便于复现差异。平台核对边界为 Android 17 / API 37 / `android-17.0.0_r1`。
 
 评估前要记住三条边界：
 
@@ -605,7 +607,7 @@ Android 17 为 `ProfilingTrigger` 新增了九种类型。与性能和内存最�
 - 看板里出现 `profile` 不能笼统写成“已经支持 Android 17 OOM 自动 heap dump”。
 - 产品后续升级到 `compileSdk 37` 并注册新 trigger 后，还要补充 profile 类型、附件容量、WorkManager 上传、采样和隐私验收。
 
-`ProfileCollector` 能识别 `.hprof` 和 `.heapprofd` 文件，只说明上传模型为这些格式留了入口。当前注册列表没有 OOM trigger，不能据此宣传 Android 17 自动 heap dump。这个边界也说明了源码锚点的价值：只看“支持 Android”或“支持 profiling”无法判断 API 37 能力是否已经进入 SDK。
+`ProfileCollector` 能识别 `.hprof` 和 `.heapprofd` 文件，只说明上传模型为这些格式留了入口。当前注册列表没有 OOM trigger，不能据此宣传 Android 17 自动 heap dump。这个边界也是核对源码的用处：只看“支持 Android”或“支持 profiling”，无法判断 API 37 能力是否已经进入 SDK。
 
 ### 接入还包括平台侧工作
 
@@ -832,7 +834,7 @@ Measure 把远端采集配置称为 Adaptive Capture：可以在 Dashboard 修�
 | 平台成本 | 已测每千 session 数据量、附件占比、查询延迟和恢复时间 |
 | Android 17 | 既有能力在 API 37 真机通过；未把 API 37 新 profiling trigger 误报为现有能力 |
 
-只有当“采到数据”转化为“更快找到根因，并且团队愿意持续投入数据治理和平台维护”时，试点才算通过。
+判断试点是否通过，要看“采到数据”能不能转化为“更快找到根因”，以及团队是否愿意持续投入数据治理和平台维护。
 
 ## 参考资料
 
