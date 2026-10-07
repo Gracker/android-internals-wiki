@@ -61,7 +61,7 @@ last_idle_audit_at: '2026-08-06T18:35:19+08:00'
 
 # 性能测试最佳实践
 
-性能测试测量的是受设备、温度、后台负载和数据状态影响的分布，而不是一个永远稳定的数字。先写清场景、环境、采样和判定合同，才能让回归门禁区分真实劣化与测量噪声。
+性能测试测量的是一个分布，它受设备、温度、后台负载和数据状态影响，而不是一个永远稳定的数字。先写清场景、环境、采样和测试合同，回归门禁才能区分真实劣化与测量噪声。
 
 ## 性能测试测量的是分布
 
@@ -71,7 +71,7 @@ last_idle_audit_at: '2026-08-06T18:35:19+08:00'
 - 设备状态：硬件、系统镜像、电量、温度、显示、网络和后台活动；
 - 统计协议：预热、编译状态、迭代、排除规则、聚合与回归判定。
 
-工具会降低测量成本，不会自动补齐测试合同。Macrobenchmark（跨进程测量完整用户流程的 Jetpack 基准测试库）生成的数字若缺少设备状态和工作负载断言，仍可能测到错误页面、空列表或已经失败的启动。
+工具会降低测量成本，不会自动补齐测试合同。如果 Macrobenchmark（跨进程测量完整用户流程的 Jetpack 基准测试库）生成的数字缺少设备状态和工作负载断言，它仍可能测到错误页面、空列表或已经失败的启动。
 
 ## 先写测试合同
 
@@ -89,7 +89,7 @@ last_idle_audit_at: '2026-08-06T18:35:19+08:00'
 | 判定 | 产品 SLO（Service Level Objective，服务质量目标）、允许回归、噪声下限和排除规则 |
 | 证据 | 原始 JSON、每轮 trace（系统时间线记录）、日志和构建产物摘要 |
 
-测试块末尾应断言目标状态已经出现，例如列表加载完成、目标控件可见、视频开始播放。否则，应用崩溃后快速返回错误页也可能得到一组“更快”的结果。
+测试块末尾应断言目标状态已经出现，例如列表加载完成、目标控件可见、视频开始播放。否则，应用崩溃后只快速返回一个错误页，也可能得到一组“更快”的结果。
 
 ## 测试环境标准化
 
@@ -105,7 +105,7 @@ CI（Continuous Integration，持续集成）回归闸门需要专用物理设�
 - 电池健康、存储介质状态和实验室散热方式；
 - 测试账号、区域、语言、字体缩放和无障碍设置。
 
-用户设备分层从线上机型、SoC（System on Chip，系统级芯片）、RAM 和 Android 版本分布中选择，用于周期性兼容验证。PR（Pull Request，代码合并请求）级细微回归尽量在同一台参考设备上比较基线与候选版本；不同设备的结果不直接做百分比差值。
+用户设备分层依据线上机型、SoC（System on Chip，系统级芯片）、RAM 和 Android 版本的分布选取样本，用于周期性兼容验证。PR（Pull Request，代码合并请求）级细微回归尽量在同一台参考设备上比较基线与候选版本；不同设备的结果不直接做百分比差值。
 
 系统镜像使用量产配置的 user 构建，或经过验证、保留调试能力的 userdebug 构建。面向平台开发的 eng 构建、debuggable 目标包、代码覆盖率和 method tracing（逐方法记录调用轨迹）都会改变执行路径。Macrobenchmark 目标应用应接近 release：`debuggable=false`；启用 `profileable`，让 shell 工具在不打开调试模式时采集性能数据；使用与发布一致的 R8 代码优化和资源压缩配置；包含用于安装 Baseline Profile（随安装包提供的热点方法和类规则清单）的 ProfileInstaller。
 
@@ -227,13 +227,13 @@ Android 17 中，`PackageManagerShellCommand` 只保留 ART Service 命令的兼
 
 Android 官方 CI 文档提供 Microbenchmark（在目标进程内测量小段代码的 Jetpack 基准测试库）Gradle plugin 的 `lockClocks`/`unlockClocks`，要求 rooted（已取得 root 权限）设备。官方也明确说明锁频仅在 Microbenchmark 场景需要。
 
-Macrobenchmark 测量完整应用路径，DVFS（Dynamic Voltage and Frequency Scaling，动态电压频率调节）、调度和 thermal 响应本来就是用户设备行为的一部分。直接写死 CPU0 的 sysfs governor（内核频率策略）或频率既不跨 SoC，也可能改变线程迁移、GPU、内存和功耗行为。需要分析硬件上限时，应使用设备专用、可恢复的实验配置，并把结果标为实验室上限，不与用户代表性基线混用。
+Macrobenchmark 测量完整应用路径，DVFS（Dynamic Voltage and Frequency Scaling，动态电压频率调节）、调度和 thermal 响应本来就是用户设备行为的一部分。直接写死 CPU0 的 sysfs governor（内核频率策略）或频率，既无法跨 SoC 复用，也可能改变线程迁移、GPU、内存和功耗行为。需要分析硬件上限时，应使用设备专用、可恢复的实验配置，并把结果标为实验室上限，不与用户代表性基线混用。
 
 ### Microbenchmark 与 Macrobenchmark 的自动稳定化不同
 
 Microbenchmark 使用 `AndroidBenchmarkRunner`；这个 runner（插桩测试运行器）及其 `IsolationActivity`、亮度控制和设备能力相关逻辑，只服务于 Microbenchmark 的稳定化。Macrobenchmark 由独立测试进程驱动目标应用，官方 CI 文档要求使用常规 `AndroidJUnitRunner`。
 
-因此，Macrobenchmark 不会仅因创建了 `MacrobenchmarkRule` 就完成温度、网络、目标数据和所有后台任务的标准化。SideEffectRunListener、专用设备、状态准备和数据质量检查仍需显式配置。
+因此，创建 `MacrobenchmarkRule` 并不代表温度、网络、目标数据和所有后台任务已经完成标准化。SideEffectRunListener、专用设备、状态准备和数据质量检查仍需显式配置。
 
 ## 数据采样策略
 
@@ -339,7 +339,7 @@ Macrobenchmark 的 `StartupMode` 控制启动前的进程/Activity 状态：
 - `WARM`：保留进程，重新创建或启动 Activity；
 - `HOT`：保留进程和 Activity，恢复到前台。
 
-测试仍需控制数据、账号、缓存和入口 Intent（启动请求）。`setupBlock` 在每轮测量前运行；冷启动模式会在 setup 与 measure 之间终止进程，因此不能把必须留在目标进程内存中的准备工作放到 setup 后依赖。
+测试仍需控制数据、账号、缓存和入口 Intent（启动请求）。`setupBlock` 在每轮测量前运行；冷启动模式会在 setup 与 measure 之间终止进程。因此，如果某项准备工作必须保留在目标进程内存里，就不能放到 setup 之后再依赖。
 
 ## 排除规则与异常值
 
@@ -384,7 +384,7 @@ Macrobenchmark 的 `StartupMode` 控制启动前的进程/Activity 状态：
 4. 置信区间或重复 job 支持同一方向；
 5. 变化达到团队预先定义的工程意义。
 
-样本量不足时，结果可标为 inconclusive（证据不足），并自动增加独立运行或转人工复核。p-value（假设检验中的概率指标）不能代替效应量；统计显著但工程幅度极小的变化，不一定需要阻断发布。
+样本量不足时，结果可标为 inconclusive（证据不足）；此时应自动增加独立运行，或转人工复核。p-value（假设检验中的概率指标）不能代替效应量；统计显著但工程幅度极小的变化，不一定需要阻断发布。
 
 ### 趋势与单次闸门并用
 
