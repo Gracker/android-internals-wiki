@@ -90,7 +90,7 @@ related_chapters:
 
 ### 固定起点与终点
 
-归因前先确定用户旅程和问题窗口。滑动卡顿可从目标 vsync（垂直同步信号）或输入事件开始，到对应帧 present（真正显示到屏幕）结束；启动可从进程创建或 launch Intent（启动请求）开始，到 TTID（首帧显示）/TTFD（应用报告内容已完整显示）；ANR（应用无响应）要记录组件类型、timeout（超时计时）起点和主线程状态。
+归因前先确定用户旅程（CUJ）和问题窗口。滑动卡顿可从目标 vsync（垂直同步信号）或输入事件开始，到对应帧 present（真正显示到屏幕）结束。启动过程可从进程创建或 launch Intent（启动请求）开始，到 TTID（首帧显示）/TTFD（应用报告内容已完整显示）结束。ANR（应用无响应）则要记录组件类型、timeout（超时计时）起点和主线程状态。
 
 不要先看整份 Trace 的 CPU 排行。问题窗口可能只有几十毫秒，整段录制中的后台下载或编译会稀释局部竞争。Perfetto UI 选择、SQL 查询和截图应使用同一时间范围。
 
@@ -120,7 +120,7 @@ Perfetto UI 的颜色会随版本和主题改变，报告应记录 state 值和�
 
 1. 唤醒是否晚。定时器、Binder 回复或生产者本身晚到，会让线程更晚进入 Runnable。
 2. 唤醒后是否存在可用 CPU。还要考虑 affinity、cpuset、online CPU（当前在线的核心）、异构 CPU capacity，以及 RT/DL（实时/截止时间调度类）任务，不能只看整机平均利用率。
-3. 谁在目标 CPU 或可选 CPU 上运行。区分本进程后台线程、其他 App、system_server、内核线程和 IRQ。
+3. 谁在目标 CPU 或可选 CPU 上运行。区分本进程后台线程、其他 App、system_server、内核线程和 IRQ（硬件中断）。
 4. 频率、uclamp 与 thermal 是否限制执行速度。频率低影响 Running 阶段；调度等待与执行变慢应分开统计。
 5. 相同条件下是否存在回归。单次延迟可能是正常竞争，版本对比才能支持“策略回归”。
 
@@ -135,7 +135,7 @@ CPU 全核有任务运行，说明算力供给紧张，但还不能确定谁制�
 - 满载持续多久，是否覆盖问题窗口？
 - 目标线程可以运行在哪些 CPU？
 - 竞争者属于哪个进程和调度类别？
-- IRQ（硬件中断）、softirq（延后处理的中断工作）或内核线程占比是否异常？
+- IRQ、softirq（延后处理的中断工作）或内核线程占比是否异常？
 - 目标线程获得 CPU 后，Running 时间是否也超过预算？
 
 若满载主力是 App 自己的线程池，App 是主要工作量所有者。若竞争来自另一个 App，系统侧可评估后台限制，目标 App 仍可评估关键路径余量。两侧改动可以同时成立。
@@ -173,14 +173,14 @@ wakeup arrow 说明哪个线程执行了唤醒动作，不等于它制造了此�
 - 目标 App 正在使用 swap（换出内存）；
 - 主线程的 `D` 状态来自页换入；
 - lmkd 已经或即将杀进程；
-- ART GC 由系统内存压力触发；
+- ART（Android Runtime，Android 运行时）GC（垃圾回收）由系统内存压力触发；
 - 增加物理内存是唯一修复。
 
 继续检查 PSI memory `some`/`full`（至少部分/所有非空闲任务因内存压力停顿）、direct reclaim、major fault（需要从存储读取页面的缺页）、zRAM（位于内存中的压缩交换设备）、进程 RSS（驻留物理内存）/swap、lmkd kill 事件与 `oom_score_adj`。Perfetto 是否包含进程内存计数器，取决于采集配置和设备权限。
 
 ### GC 要按 App heap 证据分析
 
-GC（垃圾回收）频率主要与分配速率、heap（堆）容量、对象存活和 ART（Android Runtime，Android 运行时）策略相关。系统内存压力可能改变进程生存和回收背景，但“kswapd 活跃，所以 App 频繁 GC”缺少中间证据。应核对 GC slice、分配速率、Java heap、native heap（C/C++ 等原生代码的堆内存）和对象保留关系。
+GC 频率主要与分配速率、heap（堆）容量、对象存活和 ART 策略相关。系统内存压力可能改变进程生存和回收背景，但“kswapd 活跃，所以 App 频繁 GC”缺少中间证据。应核对 GC slice、分配速率、Java heap、native heap（C/C++ 等原生代码的堆内存）和对象保留关系。
 
 若 App 的 RSS 或 heap 持续增长，它可能是系统压力的贡献者；若 App 内存稳定而 PSI 与其他进程 RSS 同时上升，系统侧资源管理更值得调查。lmkd 的候选选择还受 `oom_score_adj`、策略与 vendor 配置影响，不能把一次 kill 简化成“内存最大的进程被杀”。
 
