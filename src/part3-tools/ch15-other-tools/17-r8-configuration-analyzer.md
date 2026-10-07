@@ -53,15 +53,17 @@ related_chapters:
 
 # R8 Configuration Analyzer 与 keep 规则体积归因
 
-R8 体积问题常由多条 keep 规则叠加造成，只看最终 APK 无法回答是哪条配置保留了哪些符号。Configuration Analyzer 的作用是建立规则到保留结果的因果链，再按功能正确性和体积收益逐条收窄。
+R8 体积问题常由多条 keep 规则叠加造成，只看最终 APK，回答不了是哪条配置留下了哪些符号。Configuration Analyzer 把每条规则和它保留的类、字段、方法对上，方便按功能正确性和体积收益逐条收窄。
 
 ## 为什么需要单独看 R8 Configuration Analyzer
 
-[APK（Android 应用安装包）体积排查](../../part5-app/ch25-power-size/10-apk-r8-resource-optimization.md)通常先用 APK Analyzer 看 `classes.dex`、`resources.arsc`、`res/`、`lib/` 哪一块在增长，再判断该调整 R8、资源、图片还是 native（C/C++ 本地代码）库。R8 是 Android 构建中的代码缩减与优化器，DEX 是 Android 运行时执行的字节码格式。APK Analyzer 能回答“结果变大在哪里”，却不能指出“哪条 keep 规则让 R8 放弃了哪些处理”。
+[APK（Android 应用安装包）体积排查](../../part5-app/ch25-power-size/10-apk-r8-resource-optimization.md)通常先用 APK Analyzer 看 `classes.dex`（DEX，Android 运行时执行的字节码格式）、`resources.arsc`、`res/`、`lib/` 哪一块在增长，再判断该调整 R8、资源、图片还是 native（C/C++ 本地代码）库。它能回答“结果变大在哪里”。
 
-R8 Configuration Analyzer 补的是后一半。keep 规则用于声明哪些类或成员必须保留，以及能否删除、改写或重命名。Analyzer 把最终合并后的配置映射到类、字段和方法，给出 shrinking（删除不可达代码）、optimization（内联、类合并等代码改写）、obfuscation（缩短名称）三类分数，并列出影响最大的规则和被其它规则覆盖的规则。它比只读 `proguard-rules.pro` 更可靠，因为最终配置还包括 AGP（Android Gradle Plugin，Android 构建插件）默认规则、App 自定义规则、AAR（Android Library 的发布包）携带的 consumer rules（交给使用方 App 的规则），以及部分工具生成的规则。
+哪条 keep 规则让 R8 放弃了哪些处理，APK Analyzer 看不出来。R8 是 Android 构建中的代码缩减与优化器，keep 规则用于声明哪些类或成员必须保留，以及能否删除、改写或重命名。Configuration Analyzer 回答的就是这个问题：它把最终合并后的配置映射到类、字段和方法，给出 shrinking（删除不可达代码）、optimization（内联、类合并等代码改写）、obfuscation（缩短名称）三类分数，并列出影响最大的规则和被其它规则覆盖的规则。
 
-Analyzer 的 score（分数）与 rule impact（规则影响范围）统计哪些类、字段、方法仍允许被处理；它们不会计算单条规则对应多少 DEX 字节，也不会预测启动耗时变化。独立分析任务不生成 APK 或 AAB（Android App Bundle，供应用商店生成设备 APK 的发布包）。体积归因仍要把报告与同一次完整构建的 APK Analyzer 结果、mapping（混淆映射）和 benchmark（基准测试）配对。
+只读 `proguard-rules.pro` 不够，因为最终生效的配置不止这一份：AGP（Android Gradle Plugin，Android 构建插件）默认规则、App 自定义规则、AAR（Android Library 的发布包）携带的 consumer rules（交给使用方 App 的规则），以及部分工具生成的规则都会合并进来。只看自己写的那份规则文件，不知道这些来源各自留下了什么。
+
+Analyzer 的 score（分数）与 rule impact（规则影响范围）统计的是哪些类、字段、方法仍允许被处理，它们算不出单条规则对应多少 DEX 字节，也不预测启动耗时变化。跑分析的独立任务（standalone task）不生成 APK 或 AAB（Android App Bundle，供应用商店生成设备 APK 的发布包）；要归因体积，仍得把报告与同一次完整构建的 APK Analyzer 结果、mapping（混淆映射）和 benchmark（基准测试）配对。
 
 ## Android 17 与构建工具版本边界
 
@@ -76,15 +78,15 @@ Android 17 / API 37 在这里有两个作用：
 
 ## 三条报告生成路径
 
-官方给出两种准入方式：使用 AGP 9.3.0 及以上，或把旧 AGP 内置的 R8 替换为 9.3.7-dev 及以上。Configuration Analyzer 最早随 AGP 9.3.0-alpha05 预览，当前文档按 AGP 9.3.0 正式版本描述。系统属性只负责请求报告，不会升级 R8；旧 AGP 仍要按 R8 官方说明替换内置版本。
+拿到报告有三条路径：AGP 9.3.0 及以上的独立任务、完整 release 构建的自动报告，以及旧 AGP 配合替换版 R8 的系统属性。三条路径的前提相同，官方只给出两种准入方式：用 AGP 9.3.0 及以上，或把旧 AGP 内置的 R8 替换为 9.3.7-dev 及以上。Configuration Analyzer 最早随 AGP 9.3.0-alpha05 预览，当前文档按 AGP 9.3.0 正式版本描述。
 
-AGP 9.3.0 及以上提供独立任务，适合本地迭代 keep rule：
+AGP 9.3.0 及以上提供一个独立任务，适合本地迭代 keep 规则：
 
 ```bash
 ./gradlew :app:analyzeReleaseR8Config
 ```
 
-这个任务跳过 APK/AAB 生成，供人查看的报告写入 `app/build/reports/r8/r8-config-analyzer-release.html`。最新官方 `r8-analyzer` skill 还会读取同目录的 `r8-config-analyzer-release.pb`，把 Protocol Buffers（protobuf，二进制结构化数据）转换成 JSON 后做定量汇总。两种输出都只能比较规则影响，不能同时提供最终包体或运行时验证。
+这个任务跳过 APK/AAB 生成，供人查看的报告写入 `app/build/reports/r8/r8-config-analyzer-release.html`。最新官方 `r8-analyzer` skill 还会读取同目录的 `r8-config-analyzer-release.pb`，把 Protocol Buffers（protobuf，二进制结构化数据）转换成 JSON 后做定量汇总。HTML 和这份 JSON 都只反映规则影响，拿不到最终包体，也做不了运行时验证。
 
 完整 release 构建会自动生成报告：
 
@@ -94,7 +96,7 @@ AGP 9.3.0 及以上提供独立任务，适合本地迭代 keep rule：
 
 默认路径是 `app/build/outputs/mapping/release/configanalyzer.html`；模块名和 variant 改变时，路径中的 `app`、`release` 也随之改变。若确有需要，可以用 `android.experimental.r8.enableR8ConfigurationAnalyzer=false` 关闭完整构建的自动报告。
 
-AGP 9.2 及更早版本在替换到 R8 9.3.7-dev 或更新版后，使用下面的系统属性生成 HTML：
+AGP 9.2 及更早版本把内置 R8 替换为 9.3.7-dev 或更新版后，用下面的系统属性生成 HTML。系统属性只负责请求报告，不会升级 R8，替换步骤仍要按 R8 官方说明做：
 
 ```bash
 mkdir -p /tmp/r8analysis
@@ -103,11 +105,11 @@ mkdir -p /tmp/r8analysis
   -Dcom.android.tools.r8.dumpkeepradiushtmltodirectory=/tmp/r8analysis
 ```
 
-`dumpkeepradiushtmltodirectory` 是 R8 系统属性，不是 AGP 9.3 standalone task（独立任务）的别名。CI（Continuous Integration，持续集成）使用前应固定替换版 R8 的下载来源和校验值，避免 `-dev` 制品在版本字符串不变时被换成另一次构建。
+`dumpkeepradiushtmltodirectory` 是 R8 系统属性，不是 AGP 9.3 那个独立任务的别名。CI（Continuous Integration，持续集成）使用前应固定替换版 R8 的下载来源和校验值，避免 `-dev` 制品在版本字符串不变时被换成另一次构建。
 
 ### AGP 9.3 的 optimization DSL
 
-AGP 9.3 及以上用 `optimization.enable` 同时开启代码和资源优化，App keep rules 放在 `src/<variant>/keepRules/` source set（按构建变体组织的源码目录）下，文件名以 `.keep` 结尾。下面的 Kotlin DSL（构建配置语法）用于 release variant：
+AGP 9.3 及以上改了优化开关和 App keep 规则的存放位置：用 `optimization.enable` 同时开启代码和资源优化，App keep 规则放在 `src/<variant>/keepRules/` source set（按构建变体组织的源码目录）下，文件名以 `.keep` 结尾。下面的 Kotlin DSL（构建配置语法）用于 release variant：
 
 ```kotlin
 android {
@@ -127,6 +129,8 @@ android {
 
 报告首页的三类分数衡量“仍允许 R8 处理的类、字段和方法占比”，不能当作已经获得的字节或性能收益，也不能跨 R8 版本直接比较绝对值。
 
+表格里的 full mode 指 R8 full mode（完整模式）：AGP 8.0 起默认启用的优化模式，它允许 R8 做更积极的全程序分析与代码改写。
+
 | 指标 | 它衡量什么 | 分数下降时先看哪里 |
 | --- | --- | --- |
 | Shrinking score | 类、字段、方法中仍允许被删除的比例 | 包级 keep、`-dontshrink`、过宽的 `-keep class ** { *; }` |
@@ -135,9 +139,9 @@ android {
 
 这三个分数要结合规则列表读。shrinking score 下降，原因可能是 App 新增了一条宽规则，也可能是第三方 SDK 更新后扩大了 consumer rules 的匹配范围。报告里的 source（来源）字段可区分 App 规则、library consumer rules 和 AGP 默认规则：App 规则能直接改；库规则应优先通过升级 SDK 或反馈库作者处理；AGP 默认规则只做识别，不应改动。
 
-Keep rule 是加法配置：多条规则的限制会叠加，App 再添加一条窄规则无法抵消 AAR 已经带入的宽规则。必须临时验证潜在收益时，AGP 8.4 及以上可通过 `optimization.keepRules.ignoreFrom("group:artifact")` 过滤指定 Maven 坐标的依赖规则，再由 App 补回确有运行时需要的部分；AGP 7.3～8.3 的旧接口名是 `ignoreExternalDependencies()`。过滤会改变库作者声明的运行时契约（反射、JNI 等路径依赖的名称、成员和元数据约束），只适合隔离实验和有完整回归覆盖的受控构建。
+多条 keep 规则的限制会叠加：App 再添加一条窄规则，抵消不了 AAR 已经带入的宽规则。必须临时验证潜在收益时，AGP 8.4 及以上可通过 `optimization.keepRules.ignoreFrom("group:artifact")` 过滤指定 Maven 坐标的依赖规则，再由 App 补回确有运行时需要的部分；AGP 7.3～8.3 的旧接口名是 `ignoreExternalDependencies()`。过滤会改变库作者声明的运行时契约（反射、JNI 等路径依赖的名称、成员和元数据约束），只适合隔离实验和有完整回归覆盖的受控构建。
 
-`impactful rules`（高影响规则）按每条 keep 规则涉及的类、字段和方法数量聚合，适合排查优先级。先看影响范围最大的规则，再确认它是否对应真实的反射、JNI 或动态加载入口。
+`impactful rules`（高影响规则）按每条 keep 规则涉及的类、字段和方法数量聚合，用来排优先级。先看影响范围最大的规则，再确认它是否对应真实的反射、JNI 或动态加载入口。
 
 `subsumed rules` 指匹配范围已被另一条规则包含的规则。典型例子是同一个包里同时存在下面两条声明：
 
@@ -160,9 +164,7 @@ unused、identical 和 subsumed 都只描述当前 variant 的配置关系，不
 
 ## keep 规则的代价分级
 
-keep 规则的风险不只体现在“删不删”。同一条规则可能同时影响四件事：是否允许删除、是否允许重命名、是否允许优化、是否保留 class file attribute。规则越宽，R8 能处理的空间越小。
-
-下表中的 R8 full mode（完整模式）是 AGP 8.0 起默认启用的优化模式；它允许 R8 做更积极的全程序分析与代码改写。
+评估一条 keep 规则的代价，不能只看“删不删”。同一条规则可能同时影响四件事：是否允许删除、是否允许重命名、是否允许优化、是否保留 class file attribute。规则越宽，R8 能处理的空间越小。
 
 | 规则影响 | 常见触发方式 | 典型后果 | 修正方向 |
 | --- | --- | --- | --- |
@@ -205,7 +207,7 @@ keep 规则的风险不只体现在“删不删”。同一条规则可能同时
 5. **ServiceLoader 和可选依赖**：Java `ServiceLoader` 会按 `META-INF/services/` 中记录的实现类名加载 provider（服务实现）；这类路径要保留 provider 类和所需构造函数。如果运行时代码直接传递 `Class` 对象，通常不需要保留原始类名。
 6. **注解和泛型签名**：R8 full mode 下，attribute 是否保留与被 keep 的类、字段、方法有关。只写 `-keepattributes` 可能不够，必须确认读取 attribute 的对象也被规则匹配。
 
-排查时同步查看 `build/outputs/mapping/<variant>/configuration.txt`、`mapping.txt`、`seeds.txt`、`usage.txt`。`configuration.txt` 是最终合并配置；`seeds.txt` 列出被规则阻止删除的元素；`usage.txt` 列出被删除的元素；`mapping.txt` 记录改名前后的对应关系。四个文件和 Analyzer 报告来自同一次构建时，才能判断“规则变窄后是否真的产生收益”。
+排查时同步查看 `build/outputs/mapping/<variant>/` 下的四个文件：`configuration.txt` 是最终合并配置，`mapping.txt` 记录改名前后的对应关系，`seeds.txt` 列出被规则阻止删除的元素，`usage.txt` 列出被删除的元素。只有四个文件和 Analyzer 报告来自同一次构建，才能判断规则收窄之后包体有没有变小。
 
 ## 与 R8 full mode 迁移的配合
 
@@ -237,9 +239,9 @@ CI 里至少归档这些产物：
 | `usage.txt` | `build/outputs/mapping/<variant>/usage.txt` | 查看被删除的类、字段、方法 |
 | APK / AAB size diff | CI artifact（持续集成归档制品） | 对照 DEX、resources、native 体积变化 |
 
-standalone analyzer task 不生成 APK、AAB、mapping、seeds 或 usage；表中的编译产物来自完整 R8 build，并且必须和被比较的 APK/AAB 属于同一次构建。mapping 会被后续构建覆盖，发布时应按制品校验值归档。
+独立任务不生成 APK、AAB、mapping、seeds 或 usage；表中的编译产物来自完整 R8 build，并且必须和被比较的 APK/AAB 属于同一次构建。mapping 会被后续构建覆盖，发布时应按制品校验值归档。
 
-标准开发者工作流把 HTML 作为供人阅读的报告。最新官方 `r8-analyzer` skill 还会读取 protobuf：AGP 9.3 路径使用 standalone task 生成的 `.pb`，旧 AGP + R8 9.2.7-dev 路径使用 `dumpkeepradiustodirectory`，随后转换成 JSON。该流程服务于 skill 的分析脚本，官方没有把其中的 protobuf/JSON schema（字段结构契约）承诺为稳定的外部 CI API。团队若复用这些数据，应固定 R8 与 skill 版本，为转换和解析脚本加契约测试，格式变化时停止门禁并转人工检查。
+标准开发者工作流把 HTML 作为供人阅读的报告。最新官方 `r8-analyzer` skill 还会读取 protobuf：AGP 9.3 路径使用独立任务生成的 `.pb`，旧 AGP + R8 9.2.7-dev 路径使用 `dumpkeepradiustodirectory`，随后转换成 JSON。该流程服务于 skill 的分析脚本，官方没有把其中的 protobuf/JSON schema（字段结构契约）承诺为稳定的外部 CI API。团队若复用这些数据，应固定 R8 与 skill 版本，为转换和解析脚本加契约测试，格式变化时停止门禁并转人工检查。
 
 门禁规则建议按“变宽”定义，避免把低分本身当作失败。可执行的评审条件包括：
 
@@ -249,7 +251,7 @@ standalone analyzer task 不生成 APK、AAB、mapping、seeds 或 usage；表�
 - DEX 体积增长和 Analyzer 分数下降同时出现，且增长集中在同一个业务包或 SDK 包。
 - 新版 SDK 带入 consumer rules 后，subsumed rules 数量明显增加。
 
-官方 `r8-analyzer` skill 在 2026-08-06 版本中明确分成三条路径：AGP 9.3.0 及以上运行 standalone task；旧 AGP 搭配 R8 9.3.7-dev 及以上生成定量数据；更旧 R8 只做启发式规则审查。skill 适合生成报告摘要和候选清单，但不会修改 keep rule。规则背后是运行时契约，最终仍要由工程师确认反射、JNI、序列化和插件化路径是否被覆盖。
+官方 `r8-analyzer` skill 在 2026-08-06 版本中明确分成三条路径：AGP 9.3.0 及以上运行独立任务；旧 AGP 搭配 R8 9.3.7-dev 及以上生成定量数据；更旧 R8 只做启发式规则审查。skill 适合生成报告摘要和候选清单，但不会修改 keep 规则。规则背后是运行时契约，最终仍要由工程师确认反射、JNI、序列化和插件化路径是否被覆盖。
 
 ## 与 APK Analyzer / apkanalyzer 的边界
 
