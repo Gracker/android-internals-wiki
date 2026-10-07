@@ -91,7 +91,9 @@ schema 是事件字段、类型和兼容规则的约定；GC（Garbage Collectio
 
 `kotlinx.coroutines` 的 `Channel.trySend()` 是非挂起发送：它尝试立即把元素放入 Channel，不等待可用容量，也不会抛出“队列已满”异常。默认 `BufferOverflow.SUSPEND` 策略表示普通 `send()` 在有界 buffer 满时会等待；`trySend()` 在相同场景或 Channel 已关闭时直接返回失败。这个契约适合普通 APM 事件入口。
 
-“立即返回 API”与“lock-free 实现”是两件事。lock-free 表示系统整体总有线程能够前进，wait-free 还要求每个操作在有限步骤内完成；Channel 文档没有承诺这两种进度保证，也没有承诺固定纳秒上限。若项目选择自研 MPSC（Multi-Producer, Single-Consumer，多生产者单消费者）RingBuffer（首尾相接、循环复用槽位的缓冲区），还要用每个 slot 的 sequence（代次序号）证明发布顺序，并处理槽位值循环后被误认成旧状态的 ABA 问题。实现需要通过并发测试、长时间 soak test（持续压力测试）和线性化检查，不能把一个循环数组直接命名为无锁队列。
+“立即返回 API”与“lock-free 实现”是两件事。lock-free 表示系统整体总有线程能够前进，wait-free 还要求每个操作在有限步骤内完成。Channel 文档没有承诺这两种进度保证，也没有承诺固定纳秒上限。
+
+若项目选择自研 MPSC（Multi-Producer, Single-Consumer，多生产者单消费者）RingBuffer（首尾相接、循环复用槽位的缓冲区），还要用每个 slot 的 sequence（代次序号）证明发布顺序，并处理槽位值循环后被误认成旧状态的 ABA 问题。实现需要通过并发测试、长时间 soak test（持续压力测试）和线性化检查，不能把一个循环数组直接命名为无锁队列。
 
 下面的示例只展示准入语义。事件使用预先分配的 `sceneId`，避免在入口处理 URL、路由名和动态标签。
 
@@ -149,7 +151,9 @@ class ApmIngress(
 
 失败计数也处于 hot path（调用频繁、对耗时敏感的路径）。计数器应预先创建、使用固定枚举索引，不能在失败时拼 key、创建 Map entry 或打印日志。若 queue 已关闭，说明 SDK 生命周期或 worker 出错；这个状态要与“容量已满”分开统计。
 
-Channel 被取消时，buffer 中尚未消费的 event 也会丢失。若使用 `onUndeliveredElement` 补计数，回调可能在触发取消或丢弃的调用上下文中同步执行，必须保持无阻塞且不抛异常。`trySend()` 因容量已满或 Channel 已关闭而失败时，元素从未进入 Channel，官方契约明确不会调用这个回调，所以失败分支仍要自行计数。event 中也不要携带必须靠该回调释放的复杂资源。
+Channel 被取消时，buffer 中尚未消费的 event 也会丢失。若使用 `onUndeliveredElement` 补计数，回调可能在触发取消或丢弃的调用上下文中同步执行，必须保持无阻塞且不抛异常。
+
+`trySend()` 因容量已满或 Channel 已关闭而失败时，元素从未进入 Channel，官方契约明确不会调用这个回调，所以失败分支仍要自行计数。event 中也不要携带必须靠该回调释放的复杂资源。
 
 ### 2.2 优先级不能只靠一个 FIFO
 
@@ -184,7 +188,9 @@ Android App 可以声明多个进程，WebView、远程 service 或业务组件�
 files/apm/spool/<process-name-hash>/<process-instance-id>/
 ```
 
-上传协调者应固定在主进程或专用诊断进程，扫描其他进程的 sealed 文件；其他进程只负责 seal 和发送轻量 IPC（Inter-Process Communication，进程间通信）通知，通知丢失时由下次扫描补上。需要从多个进程安全地提交 WorkManager 请求时，显式接入 `androidx.work.multiprocess.RemoteWorkManager`，不要在每个进程各自初始化一套未验证的调度器。多个进程也不能向同一个 mmap active file 写入；Java/Kotlin 进程内锁无法保护另一个进程，文件锁仍不能替代 record commit protocol（记录何时算完整提交的协议）。Mars xLog 的接入文档同样要求多进程使用独立日志文件。
+上传协调者应固定在主进程或专用诊断进程，扫描其他进程的 sealed 文件；其他进程只负责 seal 和发送轻量 IPC（Inter-Process Communication，进程间通信）通知，通知丢失时由下次扫描补上。需要从多个进程安全地提交 WorkManager 请求时，显式接入 `androidx.work.multiprocess.RemoteWorkManager`，不要在每个进程各自初始化一套未验证的调度器。
+
+多个进程也不能向同一个 mmap active file 写入。Java/Kotlin 进程内锁无法保护另一个进程，文件锁仍不能替代 record commit protocol（记录何时算完整提交的协议）。Mars xLog 的接入文档同样要求多进程使用独立日志文件。
 
 ### 3.1 crash handler 不能负责“清空整个队列”
 
@@ -199,7 +205,9 @@ Java 未捕获异常、native signal、OOM（Out of Memory，内存耗尽）和�
 
 ### 3.2 下次启动补系统退出原因
 
-API 30 起可以通过 `ActivityManager.getHistoricalProcessExitReasons()` 读取 `ApplicationExitInfo`。它能补充 reason、status、importance、timestamp，以及某些 ANR/native crash 的 trace stream（系统保存的诊断数据流）。RSS 是进程当时驻留在物理内存中的页面总量，PSS 会按共享比例分摊共享页面；两者都是系统最近一次采样，不是死亡瞬间精确值。trace 也可能因系统循环缓冲被后续记录覆盖而返回 `null`。
+API 30 起可以通过 `ActivityManager.getHistoricalProcessExitReasons()` 读取 `ApplicationExitInfo`。它能补充 reason、status、importance、timestamp，以及某些 ANR/native crash 的 trace stream（系统保存的诊断数据流）。
+
+RSS 是进程当时驻留在物理内存中的页面总量，PSS 会按共享比例分摊共享页面；两者都是系统最近一次采样，不是死亡瞬间精确值。trace 也可能因系统循环缓冲被后续记录覆盖而返回 `null`。
 
 SDK 要把系统退出记录与本地 `process_instance_id`、wall clock（可对应日历日期的系统时间）窗口和上次已提交 breadcrumb 关联，并对已消费的 exit record 做幂等标记，也就是重复扫描不会再次上报同一条记录。它是重启后的补充证据，不能替代进程内 crash handler。
 
@@ -207,7 +215,9 @@ SDK 要把系统退出记录与本地 `process_instance_id`、wall clock（可�
 
 ### 4.1 页修改仍可能触发缺页、回写和存储错误
 
-`mmap`（memory-mapped file）把文件页面映射到进程虚拟地址空间，代码可以像访问内存一样读写它。已经驻留内存的热页可减少逐条 `write()` syscall（进入内核执行系统调用）的次数，但首次访问仍可能触发 page fault（缺页处理）。修改后的 dirty page（脏页）也要由内核写回存储。Android 17 对应的 Linux 6.18 仍通过 file cache（文件页缓存）和 writeback（异步回写）路径管理这些页面；存储拥塞、内存回收和显式同步都可能产生延迟。
+`mmap`（memory-mapped file）把文件页面映射到进程虚拟地址空间，代码可以像访问内存一样读写它。
+
+已经驻留内存的热页可减少逐条 `write()` syscall（进入内核执行系统调用）的次数，但首次访问仍可能触发 page fault（缺页处理）。修改后的 dirty page（脏页）也要由内核写回存储。Android 17 对应的 Linux 6.18 仍通过 file cache（文件页缓存）和 writeback（异步回写）路径管理这些页面；存储拥塞、内存回收和显式同步都可能产生延迟。
 
 Java `MappedByteBuffer.force()` 会把 read/write mapping 的修改强制写到本地存储设备。它提供明确的 durability boundary（调用成功前已经提交到本地设备的持久化边界），也可能执行同步 I/O，所以只能在 spool worker 上按批调用。`FileChannel.force()` 不保证替代 mapped buffer 自己的 `force()`。
 
@@ -233,13 +243,17 @@ record:
   length, type, flags, sequence, elapsed_ns, payload, checksum
 ```
 
-`magic` 是识别文件格式的固定值，`generation` 是 superblock 的更新代次，`committed_offset` 指向最后一个确认提交的位置，checksum 用于检查内容是否损坏。单写者先写完整 record 与 checksum，再更新下一代 superblock。A/B 两份 superblock 通过 generation 和 checksum 选择较新的有效副本。启动扫描只接受长度合法、类型已知、payload（事件载荷）未越界且 checksum 正确的 record；遇到尾部半条记录就停在前一个有效 offset。CRC（Cyclic Redundancy Check，循环冗余校验）可发现随机损坏，却不能证明数据来自可信写入方；需要这类身份与防篡改保证时使用 AEAD。
+`magic` 是识别文件格式的固定值，`generation` 是 superblock 的更新代次，`committed_offset` 指向最后一个确认提交的位置，checksum 用于检查内容是否损坏。
+
+单写者先写完整 record 与 checksum，再更新下一代 superblock；A/B 两份 superblock 通过 generation 和 checksum 选择较新的有效副本。启动扫描只接受长度合法、类型已知、payload（事件载荷）未越界且 checksum 正确的 record，遇到尾部半条记录就停在前一个有效 offset。CRC（Cyclic Redundancy Check，循环冗余校验）可发现随机损坏，却不能证明数据来自可信写入方；需要这类身份与防篡改保证时使用 AEAD。
 
 不要把 4 字节游标更新想成跨 crash 的 transaction（要么全部成功、要么全部撤销的事务）。文件系统、设备写入粒度和回写顺序都可能影响结果，恢复器必须能接受“数据写了但游标没写”“游标较新但尾部校验失败”等组合。
 
 ### 4.3 预分配、磁盘满与 `SIGBUS`
 
-`ftruncate()` 可以把文件的逻辑长度扩到指定值，但文件系统可能只创建 sparse region（尚未分配所有物理块的稀疏区），因此每个映射页未必都有 backing block。后续写 `MAP_SHARED`（修改会回到文件的共享映射）页面时若空间耗尽，native 进程可能收到 `SIGBUS`，即访问映射对象失败的总线错误信号。Mars 的 `mmap_util.cc` 会把新映射文件写零以实际分配 backing store，README 也警告错误的 cache path 或文件准备可能导致 `SIGBUS`；Logan 的 C 实现同样先检查并填充固定长度文件，映射失败则退回普通内存 buffer。
+`ftruncate()` 可以把文件的逻辑长度扩到指定值，但文件系统可能只创建 sparse region（尚未分配所有物理块的稀疏区），因此每个映射页未必都有 backing block。后续写 `MAP_SHARED`（修改会回到文件的共享映射）页面时若空间耗尽，native 进程可能收到 `SIGBUS`，即访问映射对象失败的总线错误信号。
+
+Mars 的 `mmap_util.cc` 会把新映射文件写零以实际分配 backing store，Mars README 也警告错误的 cache path 或文件准备可能导致 `SIGBUS`；Logan 的 C 实现同样先检查并填充固定长度文件，映射失败则退回普通内存 buffer。
 
 生产实现需要：
 
@@ -250,13 +264,15 @@ record:
 - 清理器只删除 sealed/expired 文件，不碰当前 active generation（正在写入的文件代次）；
 - 轮转前关闭旧 writer，再把分片标记为 sealed。
 
-纯 Java 还要注意 mapping 生命周期：关闭创建 mapping 的 `FileChannel` 不会让 `MappedByteBuffer` 立即失效，公开 API 也没有可依赖的同步 unmap（立即解除映射）操作。可控方案是长期复用一块很小的 active journal（按提交顺序追加的日志区），在 worker 上把已提交 block 复制成普通 sealed 文件后再复用 journal；若采用每分片 mapping，则限制同时存在的 mapping 数量，并在所有引用释放前禁止复用或截断底层文件。
+纯 Java 还要注意 mapping 生命周期：关闭创建 mapping 的 `FileChannel` 不会让 `MappedByteBuffer` 立即失效，公开 API 也没有可依赖的同步 unmap（立即解除映射）操作。
+
+可控方案是长期复用一块很小的 active journal（按提交顺序追加的日志区），在 worker 上把已提交 block 复制成普通 sealed 文件后再复用 journal；若采用每分片 mapping，则限制同时存在的 mapping 数量，并在所有引用释放前禁止复用或截断底层文件。
 
 `mmap` 是一种缓冲与访问方式，本身不提供 crash-safe（进程异常终止后仍可判定并恢复有效记录）的日志格式。Mars、Logan 的源码适合学习预分配、fallback（主路径失败后的受限备用方案）和恢复思路，不能只复制一个 `mmap()` 调用。
 
 ## 5. 编码与文件 envelope：协议选择要靠真实 payload
 
-APM event 通常字段稳定、数值多、批量频繁。payload 指事件真正携带的数据。二进制协议常能减少字段名重复和临时字符串，但“二进制一定更快”不是通用结论。
+APM event 通常字段稳定、数值多、批量频繁。payload 指事件本身携带的数据。二进制协议常能减少字段名重复和临时字符串，但“二进制一定更快”不是通用结论。
 
 | 方案 | 适用位置 | 优点 | 需要付出的成本 |
 | --- | --- | --- | --- |
@@ -265,7 +281,9 @@ APM event 通常字段稳定、数值多、批量频繁。payload 指事件真�
 | FlatBuffers | 读取路径很热、希望直接访问 buffer | 不必 unpack 到第二份对象图 | builder 与随机访问模式不同，buffer 生命周期和 schema 约束更强 |
 | 自定义定长记录 | 极少数超高频固定事件 | 可精确控制 slot 与文件格式 | 兼容、工具、安全审计全部自建 |
 
-runtime 在这里指随 App 一起运行的协议支持库。Protobuf Lite 适合资源受限设备，但 schema 仍要执行规则：线上 field number 不改、不复用，删除字段后标记 `reserved`，enum 要保留 unknown value（新值未被旧客户端识别）的处理，批次大小设上限。Lite runtime 缺少 full runtime 的 descriptor/reflection（运行时读取消息结构并按字段动态访问）能力，服务端工具不能假设端侧携带完整描述信息。
+runtime 在这里指随 App 一起运行的协议支持库。Protobuf Lite 适合资源受限设备，但 schema 仍要执行规则：线上 field number 不改、不复用，删除字段后标记 `reserved`，enum 要保留 unknown value（新值未被旧客户端识别）的处理，批次大小设上限。
+
+Lite runtime 缺少 full runtime 的 descriptor/reflection（运行时读取消息结构并按字段动态访问）能力，服务端工具不能假设端侧携带完整描述信息。
 
 FlatBuffers 的“直接访问”指读取时无需先 unpack（展开）成第二份对象表示，不代表序列化写入零成本，也不代表每种遍历都比 Protobuf 快。APM 多数场景是“写一次、服务端读一次”，是否值得引入要由写入成本、APK 体积、服务端生态和 schema 维护共同决定。
 
@@ -334,9 +352,13 @@ Java heap dump 可能包含 token、会话、地址、订单和密钥材料。�
 
 cohort 是符合某组版本、设备或实验条件的目标设备集合。规范化 payload 表示字段顺序和字节编码都有唯一结果，才能稳定验签。`key_id` 指明验证签名所用的公钥版本；server kill switch 是服务端紧急停用开关，hard limit 则是写在客户端、远端配置无权放宽的成本上限。
 
-TLS 保护网络传输，应用层数字签名继续保护配置经过 CDN、代理或存储后的完整性。端侧内置公钥并支持 key rotation（逐步切换到新公钥）；还要拒绝 generation 倒退造成的 rollback（回滚攻击）。验签、schema、generation、TTL、cohort、consent（用户授权）、capability（平台能力）和预算全部通过后，指令才能持久化为 `VERIFIED`。未知字段可能改变安全含义时采用 fail-closed，也就是拒绝执行，等待客户端理解该字段。
+TLS 保护网络传输，应用层数字签名继续保护配置经过 CDN、代理或存储后的完整性。端侧内置公钥并支持 key rotation（逐步切换到新公钥），还要拒绝 generation 倒退造成的 rollback（回滚攻击）。
 
-wall clock（可对应日历日期的系统时间）可能被用户修改。客户端在获取配置时同时记录 server time、wall time 和 `elapsedRealtime`（设备开机后单调递增的时间），本次进程内用单调时钟计算剩余 TTL；跨重启仍以签名的 `expires_at` 和保守的最大存活期双重限制。服务端 kill switch 依赖网络，不能替代端侧 hard limit。
+验签、schema、generation、TTL、cohort、consent（用户授权）、capability（平台能力）和预算全部通过后，指令才能持久化为 `VERIFIED`。未知字段可能改变安全含义时采用 fail-closed，也就是拒绝执行，等待客户端理解该字段。
+
+wall clock（可对应日历日期的系统时间）可能被用户修改。客户端在获取配置时同时记录 server time、wall time 和 `elapsedRealtime`（设备开机后单调递增的时间），本次进程内用单调时钟计算剩余 TTL；跨重启仍以签名的 `expires_at` 和保守的最大存活期双重限制。
+
+服务端 kill switch 依赖网络，不能替代端侧 hard limit。
 
 “特定 UserID”不应把原始账号写进配置和 APM 文件。服务端应生成短期、App scoped（只能在当前 App 范围使用）的 opaque cohort token（不携带可读账号信息的目标令牌），或在获得相应授权的支持流程中使用一次性 case ID。指令回执只带 command/case ID、结果码和预算消耗。
 
@@ -349,7 +371,9 @@ RECEIVED -> VERIFIED -> ARMED -> RUNNING -> SEALED -> UPLOAD_PENDING
                  \-> REJECTED / EXPIRED / BUDGET_EXHAUSTED
 ```
 
-进入 `RUNNING` 前持久化触发次数与预算预留，防止进程在写计数前被杀而反复执行。启动恢复时清理半成品，归还能够安全归还的预算，并产生一条固定大小的 command result。crash loop 是 App 启动后很快再次崩溃并反复重启的循环；重取证请求不能在这个循环中每次启动都执行。
+进入 `RUNNING` 前持久化触发次数与预算预留，防止进程在写计数前被杀而反复执行。启动恢复时清理半成品，归还能够安全归还的预算，并产生一条固定大小的 command result。
+
+crash loop 是 App 启动后很快再次崩溃并反复重启的循环，重取证请求不能在这个循环中每次启动都执行。
 
 ## 7. 网络投递：进程内快路径与持久调度分开
 
@@ -358,7 +382,9 @@ APM 上传分两层：
 1. App 仍在前台且已有合适网络时，上传器可以直接发送 sealed 小批次；这是一条 opportunistic fast path，即只在现有进程和网络条件合适时使用的进程内快路径；
 2. 需要跨进程退出、重启或系统调度继续的任务交给 WorkManager。
 
-WorkManager 是持久、可延迟后台任务的推荐 API：它会持久化工作状态，进程退出或设备重启后仍可由系统重新调度。它支持网络、电量、充电和存储约束，但不承诺精确执行时刻。普通 worker 通常有约 10 分钟执行窗口；大 trace/Hprof 应切块和续传，不要依赖一个无限期 worker。long-running worker 是借助 foreground service（带用户可见通知的前台服务）继续运行的长任务。Android 16 起，这类 worker 也会消耗 JobScheduler quota（系统分配给 App 后台 job 的运行额度），Android 17 架构不能把 APM 上传伪装成用户可见前台工作来绕过限制。
+WorkManager 是持久、可延迟后台任务的推荐 API：它会持久化工作状态，进程退出或设备重启后仍可由系统重新调度。它支持网络、电量、充电和存储约束，但不承诺精确执行时刻。普通 worker 通常有约 10 分钟执行窗口；大 trace/Hprof 应切块和续传，不要依赖一个无限期 worker。
+
+long-running worker 是借助 foreground service（带用户可见通知的前台服务）继续运行的长任务。Android 16 起，这类 worker 也会消耗 JobScheduler quota（系统分配给 App 后台 job 的运行额度），Android 17 架构不能把 APM 上传伪装成用户可见前台工作来绕过限制。
 
 推荐为上传使用 unique work：同一个唯一名称只保留一条受策略控制的工作链，避免多个 worker 重复上传同一批数据。输入只放 batch ID（批次唯一标识），不把大 payload（实际事件或附件字节）塞入容量有限的 WorkManager Data。worker 从 spool 索引取得文件，执行以下幂等流程：
 
@@ -381,7 +407,9 @@ select SEALED
 - schema/4xx 永久错误：隔离批次并上报摘要，不无限重试；
 - 文件 hash 不一致：停止上传，进入 `CORRUPT`，不要删掉唯一证据。
 
-大规模设备不能用固定“每 15 分钟整点上传”，否则会让大量客户端同时请求。每台设备应在允许窗口内选择一个随机偏移，并在一段配置周期内保持稳定，避免进程重启后又回到整点。服务端返回的动态窗口也要带 jitter（随机抖动）。Crash/ANR 先传小摘要，再在 unmetered（非按流量计费网络）、battery-not-low（电量不低）和 storage-not-low（可用存储不低）等约束满足后传大附件。
+大规模设备不能用固定“每 15 分钟整点上传”，否则会让大量客户端同时请求。每台设备应在允许窗口内选择一个随机偏移，并在一段配置周期内保持稳定，避免进程重启后又回到整点。服务端返回的动态窗口也要带 jitter（随机抖动）。
+
+Crash/ANR 先传小摘要，再在 unmetered（非按流量计费网络）、battery-not-low（电量不低）和 storage-not-low（可用存储不低）等约束满足后传大附件。
 
 压缩、加密和网络在 worker 中执行。已压缩的 Perfetto/归档文件先检测格式，避免重复压缩浪费 CPU。传输使用 TLS；本地敏感文件若做应用层加密，密钥由 Android Keystore 管理并支持轮换。Keystore 让密钥材料不必以普通文件形式交给 App，具体是否由安全硬件保护取决于设备和密钥配置；服务端按 `key_id` 选择对应密钥解密。
 
@@ -401,7 +429,9 @@ select SEALED
 | 模块故障 | writer/codec 连续捕获可恢复异常 | 禁用该模块，切到最小 breadcrumb 路径 |
 | 上次异常退出 | `ApplicationExitInfo` 显示 OOM/资源异常且 SDK 队列或内存峰值异常 | 下次启动使用更低本地配置，不自动执行重指令 |
 
-Android 14 / API 34 起不会再向 App 发送 `TRIM_MEMORY_RUNNING_MODERATE/LOW/CRITICAL`，这些常量又在 API 35 标记 deprecated。Android 17 上不能只靠旧 low-memory callback。SDK 应以自己的已知字节预算、Runtime heap headroom、固定窗口内的队列最大占用、文件配额和系统可用空间为主；`TRIM_MEMORY_UI_HIDDEN` 等仍有效的 callback 只作为附加信号。
+Android 14 / API 34 起不会再向 App 发送 `TRIM_MEMORY_RUNNING_MODERATE/LOW/CRITICAL`，这些常量又在 API 35 标记 deprecated。Android 17 上不能只靠旧 low-memory callback。
+
+SDK 应以自己的已知字节预算、Runtime heap headroom、固定窗口内的队列最大占用、文件配额和系统可用空间为主；`TRIM_MEMORY_UI_HIDDEN` 等仍有效的 callback 只作为附加信号。
 
 Runtime heap headroom 指 Java heap 当前占用距离运行时上限还剩多少空间；队列峰值则是固定测量窗口内出现过的最大占用。两者都来自 SDK 可观测数据，不能等同于系统仍可提供的全部内存。
 
@@ -432,11 +462,15 @@ Runtime heap headroom 指 Java heap 当前占用距离运行时上限还剩多�
 | `repair/corrupt/expired_count` | 启动修复、损坏批次和过期批次的状态计数 | 用户无故障 |
 | `command_budget_used` | 每个 command 的 CPU/bytes/count | 未获授权的用户画像 |
 
-公开 API 没有低开销且精确的“某个 Java SDK 分配字节数”。可以按已知 event/buffer 大小估算，或在内部/profileable build 中用 allocation profiler（对象分配分析器）校准。profileable build 是清单允许性能分析工具附加、但不等同于 debuggable 的构建；ART 是 Android 的 Java/Kotlin 运行时。进程级 ART 统计包含宿主 App 和其他库，不能直接算作 APM 自身开销。估算字段要标记 `estimated` 和版本。
+公开 API 没有低开销且精确的“某个 Java SDK 分配字节数”。可以按已知 event/buffer 大小估算，或在内部/profileable build 中用 allocation profiler（对象分配分析器）校准。估算字段要标记 `estimated` 和版本。
+
+profileable build 是清单允许性能分析工具附加、但不等同于 debuggable 的构建；ART 是 Android 的 Java/Kotlin 运行时。进程级 ART 统计包含宿主 App 和其他库，不能直接算作 APM 自身开销。
 
 自监控计数器走独立的固定结构，不能把每次 drop 再投递成一条普通 event，否则 queue 满会递归放大。每个窗口只生成一份摘要；摘要也发送失败时覆盖旧摘要并保留累计计数。
 
-发布策略从 0.01%/内部设备开始，按 Android 版本、RAM 档位（设备物理内存分组）、ABI（应用二进制接口，如 `arm64-v8a`）、厂商和 App 进程分别统计成本分布。入口耗时、ANR/crash、OOM、耗电、流量、storage repair（存储启动修复）都稳定，且目标样本中成功产出有效数据的比例没有下降后，才扩大发布比例。
+发布策略从 0.01%/内部设备开始，按 Android 版本、RAM 档位（设备物理内存分组）、ABI（应用二进制接口，如 `arm64-v8a`）、厂商和 App 进程分别统计成本分布。
+
+入口耗时、ANR/crash、OOM、耗电、流量、storage repair（存储启动修复）都稳定，且目标样本中成功产出有效数据的比例没有下降后，才扩大发布比例。
 
 ## 10. App 私有存储、备份与隐私
 
@@ -454,7 +488,7 @@ Scoped storage（分区存储）主要限制 shared/external storage，也就是
 
 FileProvider 通过 `content://` URI（统一资源标识符）临时分享 App 私有文件；SAF（Storage Access Framework，存储访问框架）让用户通过系统选择器决定导出位置。两者都应只授予本次操作需要的读写权限，并在使用结束后撤销或让权限自然失效。
 
-`cacheDir` 可能在上传前被系统删除，所以不能把它描述成 crash 摘要的可靠位置。`noBackupFilesDir` 只表示不进入 Auto Backup（Android 的应用数据自动备份），不代表不会因卸载、清数据、文件系统故障而丢失。内部存储隔离也不能替代服务端访问控制和敏感文件的应用层加密。
+`cacheDir` 可能在上传前被系统删除，所以它不是存放 crash 摘要的可靠位置。`noBackupFilesDir` 只表示不进入 Auto Backup（Android 的应用数据自动备份），不代表不会因卸载、清数据、文件系统故障而丢失。内部存储隔离也不能替代服务端访问控制和敏感文件的应用层加密。
 
 采集层执行数据最小化：
 
