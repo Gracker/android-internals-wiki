@@ -5709,9 +5709,13 @@
       "summary": "基于 Android 16 QPR2 r4 源码拆解开机完成的七层观察面：system_server 进程存在、service check、sys.boot_completed、开机动画退出、Launcher 显示、BOOT_COMPLETED 各自证明不同里程碑。phase 600 仅代表第三方进程可启动，动画退出由 WMS performEnableScreen 决定，boot_progress_enable_screen 只是 AMS 发起启屏。runtime restart 后证据可能跨 Framework generation。",
       "chapter": "ch08",
       "processed_at": "2026-10-07T06:20:34.200209+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "quarantined-route-mismatch",
+      "status": "quarantined",
+      "previous_action": "indexed-only-chapter-freeze",
+      "previous_route_status": "existing-chapter-routed",
       "score": 17,
-      "target_path": "src/part1-fundamentals/ch02-rendering/17-tasksnapshot-recents-rendering.md",
+      "target_path": null,
+      "previous_target_path": "src/part1-fundamentals/ch02-rendering/17-tasksnapshot-recents-rendering.md",
       "route_confidence": 25,
       "route_terms": [
         "system",
@@ -5722,7 +5726,10 @@
         "enable",
         "screen"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "quarantined-route-mismatch",
+      "quarantined_at": "2026-10-07T09:17:06+08:00",
+      "quarantine_run_id": "20261007-091535-35ef4cef",
+      "quarantine_reason": "材料主题是 Android 启动完成语义、Boot Phase、bootanimation 与 BOOT_COMPLETED；候选目标章节是 TaskSnapshot / Overview / snapshot starting window。两者不属于同一机制，未写入正文。"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-07-76910309-Android 原生的 Compose .md",
