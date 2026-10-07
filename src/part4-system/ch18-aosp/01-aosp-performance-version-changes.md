@@ -287,7 +287,7 @@ Android Go 可以代表一类低资源配置，不能代表所有低性能或特
 
 ### 为什么版本号必须进入性能结论
 
-同一个 APK 在两个系统版本上可能走入不同的调度、进程管理和运行时路径。`targetSdkVersion` 表示 App 声明适配到的 API 级别，又会单独开启一部分兼容性变更。因此，“Android 17 上发生”还不足以描述问题；性能记录至少要包含设备系统版本、`targetSdkVersion`、Mainline（可独立更新的系统模块）版本和内核版本。
+同一个 APK 在两个系统版本上可能进入不同的调度、进程管理和运行时路径。`targetSdkVersion` 表示 App 声明适配到的 API 级别，又会单独开启一部分兼容性变更。因此，“Android 17 上发生”还不足以描述问题；性能记录至少要包含设备系统版本、`targetSdkVersion`、Mainline（可独立更新的系统模块）版本和内核版本。
 
 平台上限为 Android 17 / API 37 / `android-17.0.0_r1`。Android 17 对应的新 GKI（Generic Kernel Image，通用内核镜像）分支是 6.18，内核核验锚点为 `android17-6.18-2026-06_r6`。官方兼容矩阵还列出多条较早内核分支；其中 `android13-5.10` 与 `android12-5.10` 从 Android 17 QPR1（Quarterly Platform Release 1，该 Android 版本的第 1 次季度平台更新）起不再受支持。看到 Android 17 不能反推设备必然运行 6.18，仍要读取实际内核版本。
 
@@ -442,23 +442,17 @@ target 36 的 App 运行在 Android 16 及以上时，系统默认启用 back-to
 
 #### target 37 的无锁 MessageQueue
 
-运行在 Android 17 且 target 37 的 App 使用新的 lock-free（无锁）`MessageQueue` 实现。lock-free 表示并发竞争时系统整体仍有线程能够前进，不代表每次操作都有固定耗时；官方目标是减少锁竞争和漏帧。公开 API 语义保持兼容，依赖反射读取私有字段或方法的代码会暴露问题。
+运行在 Android 17 且 target 37 的 App 使用新的 lock-free（无锁）`MessageQueue` 实现。lock-free 指消息入队不再依赖一把全局锁：并发竞争时系统整体仍有线程能前进，但不代表每次操作耗时固定。官方目标是减少锁竞争和漏帧。公开 API 语义保持兼容，依赖反射读取私有字段或方法的代码会暴露问题。
 
-兼容层仍保留 `mMessages` 字段，但新实现下该字段始终为 `null`，它不能反映队列是否为空。测试依赖需要升级：
-
-- Espresso 使用 3.7.0 或以上版本。
-- Robolectric 使用 4.17 或以上版本，并从 `@LooperMode(LEGACY)` 迁移到 `@LooperMode(PAUSED)`。
-- 自研空闲判断改用公开同步机制或 Android 16 引入的 `TestLooperManager` 能力。
-
-可在 debuggable（允许调试器附加的）构建上用兼容性开关提前测试 `USE_NEW_MESSAGEQUEUE`。测试范围要覆盖 Handler 密集场景、IdleHandler（消息队列空闲时的回调）、同步屏障（暂时只放行异步消息的队列标记）、测试框架空闲判断和依赖反射的 SDK。
-
-Android 17 对 target 37 App 还禁止通过反射或 JNI（Java Native Interface，Java/Kotlin 与原生代码的调用接口）修改 `static final` 字段。性能测试框架若依赖这种方式替换时钟、常量或单例，需要同步清理。
+兼容层仍保留 `mMessages` 字段，但新实现下该字段始终为 `null`，它不能反映队列是否为空。Espresso、Robolectric 和自研空闲判断等测试依赖需要升级，具体版本基线在后文「兼容性风险与测试方式」给出。可在 debuggable（允许调试器附加的）构建上用兼容性开关 `USE_NEW_MESSAGEQUEUE` 提前测试，测试范围要覆盖 Handler 密集场景、IdleHandler（消息队列空闲时的回调）、同步屏障（暂时只放行异步消息的队列标记）、测试框架空闲判断和依赖反射的 SDK。
 
 #### ART 分代 Concurrent Mark-Compact
 
 Android 17 发布的 ART Concurrent Mark-Compact（并发标记压缩，简称 CMC）支持分代 GC。年轻代对象通常存活时间短，平台可以用更频繁、成本较低的 young collection（只覆盖年轻代的回收）处理这部分对象，再按条件执行 full collection（覆盖更大范围堆的回收）。
 
-这项变化不能和 `userfaultfd` 混为同一开关。`userfaultfd` 是让用户空间参与处理缺页事件的 Linux 接口，CMC 使用它的演进早于 Android 17；Android 17 新增的是按对象代际选择回收范围的策略。分析时应区分 young/full collection、暂停阶段、并发标记时间、年轻对象进入老年代的晋升量，以及回收后仍驻留内存的集合。
+这项变化不能和 `userfaultfd` 混为同一开关。`userfaultfd` 是让用户空间参与处理缺页事件的 Linux 接口，CMC 使用它的演进早于 Android 17；Android 17 新增的是按对象代际选择回收范围的策略。
+
+分析分代 CMC 时，要区分 young/full collection、暂停阶段、并发标记时间、年轻对象进入老年代的晋升量，以及回收后仍驻留内存的集合。
 
 这项 ART 改进还可以通过 Google Play system update 下发到 Android 12 及以上设备，因此“系统不是 Android 17”也不能证明它不存在。实验要同时记录 OS 版本、ART Mainline 模块版本和实际功能状态。
 
@@ -466,15 +460,7 @@ Android 17 发布的 ART Concurrent Mark-Compact（并发标记压缩，简称 C
 
 #### API 37 的 ProfilingTrigger
 
-Android 17 扩充系统触发式 Profiling：
-
-| 触发类型 | 系统事件 | 产物或行为 |
-| --- | --- | --- |
-| `TRIGGER_TYPE_OOM` | App 抛出 OOM（Out of Memory，内存耗尽） | Java heap dump |
-| `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | 因 CPU 过度使用被终止 | 运行中 system trace 的快照 |
-| `TRIGGER_TYPE_COLD_START` | `START_TYPE_COLD` 冷启动 | 新 system trace 与 stack sampling |
-| `TRIGGER_TYPE_ANOMALY` | 平台识别到 App 的异常行为 | 产物和结果 tag 由异常类型决定 |
-| `TRIGGER_TYPE_APP_COMPAT` | 平台识别到未来版本将不再支持的 App 异常行为 | 产物随异常变化，结果 tag 提供兼容性信息 |
+Android 17 扩充系统触发式 Profiling，新增的 `ProfilingTrigger` 覆盖冷启动、OOM（Out of Memory，内存耗尽）、异常 CPU 占用、平台识别的异常行为和未来版本兼容问题，各触发类型对应的产物在后文「ProfilingManager」一节列出。
 
 冷启动采集持续到 App 调用 `Activity.reportFullyDrawn()`，默认上限为 5 秒，并使用 discard buffer：缓冲区写满后丢弃新事件，从而保留较早的启动轨迹。未调用 `reportFullyDrawn()` 会失去业务就绪边界，只能依赖超时停止。
 
@@ -482,9 +468,7 @@ OOM 触发要求自定义 `Thread.UncaughtExceptionHandler` 调用默认异常�
 
 #### App 内存限制
 
-Android 17 对所有 App 引入按设备总 RAM 设定的保守内存限制，但并非每台设备都会实施。命中限制后，`ApplicationExitInfo` 的 reason 为 `REASON_OTHER`，description 包含 `MemoryLimiter:AnonSwap`；AnonSwap 指匿名内存及其交换空间口径。只按 reason 聚合会把它和其他 `REASON_OTHER` 混在一起。
-
-平台提供 `am memory-limiter status`、`manual` 和 `ignore` 子命令，用于查看状态、给指定 PID（进程号）施加测试限制或按 UID（App 的系统用户标识）忽略限制；不实施内存限制的设备上，这些命令不会产生对应效果。线上诊断可以结合 `TRIGGER_TYPE_ANOMALY` 获取命中内存限制时的 heap dump，但仍要考虑采样和速率限制。
+Android 17 对所有 App 引入按设备总 RAM 设定的保守内存限制，但并非每台设备都会实施。命中限制后，`ApplicationExitInfo` 的 reason 为 `REASON_OTHER`，description 包含 `MemoryLimiter:AnonSwap`（AnonSwap 指匿名内存及其交换空间口径）。只按 reason 聚合会把它和其他 `REASON_OTHER` 混在一起；查看状态、复现限制和抓取 heap dump 的具体命令见后文「运行在 Android 17 时还要检查的项目」。
 
 #### Android 17 的 NPU 与 NNAPI 边界
 
@@ -638,9 +622,9 @@ Treiber-style StackNode 链
 Looper 选择可交付消息
 ```
 
-后台 producer 通过 CAS（compare-and-set，比较并交换）把消息压入 Treiber stack；它是一种用 CAS 更新栈顶的无锁链栈。Looper 端批量取走节点，再按投递时间和序号选择消息。Looper 线程给自己的队列投递时有直接写入有序集合的快速路径。同步屏障是队列中的特殊标记，可让异步消息越过暂时被拦住的普通消息，因此仍会影响两类消息的选择。
+后台 producer 通过 CAS（compare-and-set，比较并交换）把消息压入 Treiber stack；它是一种用 CAS 更新栈顶的无锁链栈。Looper 端把栈中的一批节点转移（drain）到有序集合，再按投递时间和序号选择消息。Looper 线程给自己的队列投递时有直接写入有序集合的快速路径。同步屏障是队列中的特殊标记，可让异步消息越过暂时被拦住的普通消息，因此仍会影响两类消息的选择。
 
-#### 博客模型怎样对应到固定 r1 标签源码
+#### 博客概念模型与 r1 源码组织的差异
 
 Android Developers Blog 用 “Treiber stack + single-threaded min-heap” 解释算法，并讨论 tombstone（逻辑删除标记）、把退出状态编码进原生层引用计数的方案，以及无分支比较器。这个概念模型有助于理解并发写入和有序读取的分工。
 
@@ -659,7 +643,7 @@ Android Developers Blog 用 “Treiber stack + single-threaded min-heap” 解�
 
 #### drain 发生在什么位置
 
-Looper 进入并发实现的 `nextMessage()` 后，会把栈状态切到 active，取得旧栈顶并调用 `drainStack(oldTop)`。这里的 drain 指把并发栈中的一批节点转移到有序集合。随后 Looper 从普通、异步两个集合取最早项，结合同步屏障和当前时间决定交付、等待或再次循环。
+Looper 进入并发实现的 `nextMessage()` 后，会把栈状态切到 active，取得旧栈顶并调用 `drainStack(oldTop)`。随后 Looper 从普通、异步两个集合取最早项，结合同步屏障和当前时间决定交付、等待或再次循环。
 
 drain 是批量转移点，也是理解 trace 的边界。producer 的 CAS 完成只代表消息已发布到并发栈；消息按 `when` 进入可交付顺序，需要 Looper 完成 drain。高频 producer 仍可能增加 Looper 的整理工作，所以 lock contention 下降不等于队列积压消失。
 
@@ -673,7 +657,7 @@ drain 是批量转移点，也是理解 trace 的边界。producer 的 CAS 完�
 
 为维持二进制兼容，Android 17 仍保留 `mMessages` 字段；并发实现启用时该字段恒为 `null`。字段存在不能说明旧链表仍在工作。
 
-官方给出的测试库基线是 Espresso 3.7.0 及以上、Robolectric 4.17 及以上。Robolectric 测试还要从 `@LooperMode(LEGACY)` 迁到 `@LooperMode(PAUSED)`。
+官方给出的测试库基线是 Espresso 3.7.0 及以上、Robolectric 4.17 及以上。Robolectric 测试还要从 `@LooperMode(LEGACY)` 迁到 `@LooperMode(PAUSED)`；自研空闲判断改用公开同步机制，或使用 Android 16 引入的 `TestLooperManager` 能力。
 
 以下命令用于在可调试应用上做同包 A/B。
 
@@ -820,7 +804,7 @@ WorkManager 场景还要建立 `WorkSpec` 与系统 job ID 的映射；`WorkSpec
 Android 17 上运行且 target SDK 37 及以上的应用，不能再修改 `static final` 字段：
 
 - Java reflection 写入会抛出 `IllegalAccessException`。
-- JNI `SetStatic<Type>Field()` 写入会导致应用崩溃。
+- JNI（Java Native Interface，Java/Kotlin 与原生代码的调用接口）`SetStatic<Type>Field()` 写入会导致应用崩溃。
 
 影响面常在测试注入、旧序列化框架、热修复和 native 测试工具。`setAccessible(true)` 不能绕过该限制。将可变测试值放进构造参数、接口、配置对象或专用的测试替换点；常量继续保持常量。发布前同时扫描 Java/Kotlin 反射与 JNI，因为两条失败路径不同。
 
@@ -921,7 +905,7 @@ Android 17 还能把 16KB backcompat（兼容模式）设为 `fatal`，让不兼
 
 Android 17 在部分设备上按总 RAM 对应用施加保守的内存上限，面向所有应用。受影响进程的 `ApplicationExitInfo.getReason()` 为 `REASON_OTHER`，description 包含 `MemoryLimiter:AnonSwap` 及附加信息。`TRIGGER_TYPE_ANOMALY` 可在触发限制时请求 heap dump，但交付仍受 trigger 规则约束。
 
-`adb shell am memory-limiter status` 用于查看当前设备是否启用及可见/不可见进程上限。`ignore` 与 `manual` 子命令适合复现测试，不能写成生产规避方式。该退出原因和 LMKD（low-memory killer daemon，系统低内存杀进程服务）的低内存 kill 应分开统计。
+`adb shell am memory-limiter status` 用于查看当前设备是否启用及可见/不可见进程上限。`ignore` 与 `manual` 子命令分别用于按 UID（App 的系统用户标识）忽略限制、给指定 PID（进程号）施加测试限制，适合复现测试，不能写成生产规避方式。该退出原因和 LMKD（low-memory killer daemon，系统低内存杀进程服务）的低内存 kill 应分开统计。
 
 #### 后台音频
 
