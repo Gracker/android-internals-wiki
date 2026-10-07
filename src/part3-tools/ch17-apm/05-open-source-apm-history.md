@@ -72,8 +72,9 @@ sources:
   path: https://developer.android.com/build/releases/gradle-plugin-api-updates
 - type: official
   path: https://developer.android.com/reference/android/os/Build.VERSION
-last_verified: '2026-08-14'
-last_verified_against: 六个上游仓库的当前默认分支 HEAD（均仍为文中固定 commit）+ AndroidGodEye 3.4.3 / Collie 1.1.8 / Matrix v2.1.0 releases + AOSP android-17.0.0_r1 + current Android Developers API references
+last_verified: '2026-10-07'
+last_verified_against: 六个上游仓库的当前默认分支 HEAD（均仍为文中固定 commit）+ AndroidGodEye 3.4.3 / Collie 1.1.8 / Matrix v2.1.0 releases + AOSP android-17.0.0_r1 ActivityManager / ApplicationExitInfo / ProfilingTrigger / Build.VERSION + current Android Developers Build.VERSION / AGP API references
+last_idle_audit_at: '2026-10-07T22:35:34+08:00'
 verification_scope_note: 版本范围覆盖第三方 APM 工具的 Android 兼容性窗口，并非逐个 Android 版本复跑全部模块。AOSP 源码固定验证 android-17.0.0_r1；旧工具的实现结论固定到各自 commit，当前状态另以默认分支 HEAD、README 与 GitHub Release 复核。
 ---
 
@@ -92,7 +93,7 @@ APM（Application Performance Monitoring，应用性能监控）用于持续采�
 - **构建兼容性**：Gradle 插件是否使用已经删除的 Transform API，或 AGP（Android Gradle Plugin，Android 构建插件）的内部类。
 - **维护证据**：最近发布、固定 commit、`compileSdk`、`targetSdk` 与依赖仓库能否支撑当前工程。`compileSdk` 决定编译时可见的最高 Android API，`targetSdk` 声明应用按哪个 Android 版本的行为规则适配，`minSdk` 则规定最低安装版本。
 
-以下分析将源码固定在对应 commit。截至 2026-08-14，本节核对的六个项目所用固定 commit 仍是各自默认分支 HEAD。固定日期和构建版本用于界定结论适用的代码，不用于给项目排资历：
+以下分析将源码固定在对应 commit。截至 2026-10-07，本节核对的六个项目所用固定 commit 仍是各自默认分支 HEAD。固定日期和构建版本用于界定结论适用的代码，不用于给项目排资历：
 
 | 项目 | 源码基线 | 发布与构建基线 | 可以得出的结论 |
 |---|---|---|---|
@@ -297,7 +298,7 @@ Android 17 的细节需要分开记：
 - `OOM` 触发器对应 `OutOfMemoryError`（Java 堆内存不足异常），返回 Java heap dump；应用自定义 `UncaughtExceptionHandler` 必须继续调用系统默认 handler，否则系统触发器不能完成这条路径。
 - `KILL_EXCESSIVE_CPU_USAGE` 返回正在运行的 system trace 快照。
 - `ANOMALY` 与 `APP_COMPAT` 的产物随异常类型变化，不能在客户端固定按 Perfetto 文件解析。
-- `ActivityManager.registerAnrWarningListener()` 在接近 ANR 超时前尽力回调，执行回调的 executor（任务执行器）不应使用主线程。`AnrWarningResult.anrId` 可与后续 `ApplicationExitInfo.getAnrInfo().getAnrId()` 关联，从“预警”追到“已发生的 ANR”。
+- `ActivityManager.registerAnrWarningListener()` 在接近 ANR 超时前尽力回调，执行回调的 executor（任务执行器）不应使用主线程。`AnrWarningResult.getAnrId()` 可与后续 `ApplicationExitInfo.getAnrInfo().getAnrId()` 关联，从“预警”追到“已发生的 ANR”。
 
 Android 从 36.1 开始允许 minor SDK（次版本 SDK）增加 API。`Build.VERSION.SDK_INT` 只记录大版本；需要区分 36 与 36.1 时，应比较 `Build.VERSION.SDK_INT_FULL` 与 `Build.VERSION_CODES_FULL`。这些新 API 给轻量 APM 增加了更可靠的系统信号，但没有取消低版本方案。`minSdk 26` 的应用仍要同时维护 API 26-29、30-34、35、36、36.1 和 37 的分层路径。
 
