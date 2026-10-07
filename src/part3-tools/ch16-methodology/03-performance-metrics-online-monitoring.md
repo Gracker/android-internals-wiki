@@ -153,7 +153,9 @@ consolidated_from:
 | 门禁指标 | 判断候选版本是否允许发布 | 固定 CUJ 的 Macrobenchmark 分布、内存峰值、功耗区间 |
 | 诊断指标 | 解释为何回退 | thread state、frame overrun、Binder latency、RSS/heap、energy consumer |
 
-用户结果指标中的 TTFD 表示主要内容完整显示所需时间，click-to-display 表示从点击到画面可见的端到端延迟。健康指标里的 user-perceived 只统计用户大概率能感知到的故障；ANR（Application Not Responding，应用无响应）、slow startup 和 excessive wake lock 分别表示无响应、启动过慢与局部唤醒锁使用过量。门禁指标中的 Macrobenchmark 是 Jetpack 在真实设备上跨进程测量完整用户流程的基准测试。诊断指标则保留 thread state（线程运行或等待状态）、frame overrun（帧超出时限的时间）、Binder latency（跨进程调用延迟）、RSS/heap（进程驻留内存/堆内存）和 energy consumer（逻辑耗能单元）等归因线索。
+用户结果指标中的 TTFD 表示主要内容完整显示所需时间，click-to-display 表示从点击到画面可见的端到端延迟。健康指标里的 user-perceived 只统计用户大概率能感知到的故障；ANR（Application Not Responding，应用无响应）、slow startup 和 excessive wake lock 分别表示无响应、启动过慢与局部唤醒锁使用过量。
+
+门禁指标中的 Macrobenchmark 是 Jetpack 在真实设备上跨进程测量完整用户流程的基准测试。诊断指标则保留 thread state（线程运行或等待状态）、frame overrun（帧超出时限的时间）、Binder latency（跨进程调用延迟）、RSS/heap（进程驻留内存/堆内存）和 energy consumer（逻辑耗能单元）等归因线索。
 
 同一数值可以承担不同职责，但合同通常不同。Play 的 bad-behavior threshold（平台定义的不良行为阈值）是一条外部健康线；App 团队仍需制定更严格、与自身用户场景相匹配的发布目标。
 
@@ -223,7 +225,9 @@ jank rate 的分子必须定义。它可以是 `frameOverrunMs > 0` 的帧数、
 
 #### TTID
 
-TTID（Time to Initial Display，首次画面显示时间）是从系统收到启动请求到 App 第一帧显示的时间。Cold 启动从头创建进程和 Activity；Warm 启动只执行 Cold 启动的一部分，可能复用进程并重建 Activity，也可能借助 saved instance state（已保存的界面状态）重建进程和 Activity；Hot 启动把仍驻留内存的 Activity 带回前台，内存回收后也可能重建少量对象。因此，TTID 不能一律写成“进程创建到首帧”。
+TTID（Time to Initial Display，首次画面显示时间）是从系统收到启动请求到 App 第一帧显示的时间。
+
+Cold 启动从头创建进程和 Activity；Warm 启动只执行 Cold 启动的一部分，可能复用进程并重建 Activity，也可能借助 saved instance state（已保存的界面状态）重建进程和 Activity；Hot 启动把仍驻留内存的 Activity 带回前台，内存回收后也可能重建少量对象。因此，TTID 不能一律写成“进程创建到首帧”。
 
 Android Framework 自动报告 TTID。Play 当前使用 TTID 判断 slow startup，并按启动类型区分：
 
@@ -345,7 +349,9 @@ GC 次数本身也不是性能缺陷。需要结合暂停时间、分配速率�
 
 当 Δenergy 使用 uWs、Δtime 使用秒时，结果单位是微瓦（uW）；若时间差使用毫秒，则 `average power (uW) = Δenergy (uWs) × 1000 / Δtime (ms)`。
 
-Android 17 Power Stats 的 AIDL（Android Interface Definition Language，Android 接口定义语言）中，`EnergyMeasurement` 记录 `durationMs` 时段内累积的 `energyUWs`，并带有 `timestampMs`；`EnergyConsumerResult` 记录从开机起累计的 `energyUWs`，另有 `timestampMs` 与可选的 UID attribution（按 UID 归因），没有 `durationMs`。时间戳来自 `CLOCK_BOOTTIME`，能量单位为 microwatt-seconds（uWs，微瓦秒）。对 `EnergyConsumerResult` 这类累计 counter，要先取同一 ID 的差值，再按时间换算功率；counter reset（重置）、wrap（数值回绕）、缺失与设备不支持都要显式处理。
+Android 17 Power Stats 的 AIDL（Android Interface Definition Language，Android 接口定义语言）中，`EnergyMeasurement` 记录 `durationMs` 时段内累积的 `energyUWs`，并带有 `timestampMs`；`EnergyConsumerResult` 记录从开机起累计的 `energyUWs`，另有 `timestampMs` 与可选的 UID attribution（按 UID 归因），没有 `durationMs`。时间戳来自 `CLOCK_BOOTTIME`，能量单位为 microwatt-seconds（uWs，微瓦秒）。
+
+对 `EnergyConsumerResult` 这类累计 counter，要先取同一 ID 的差值，再按时间换算功率；counter reset（重置）、wrap（数值回绕）、缺失与设备不支持都要显式处理。
 
 #### Active/Idle power
 
@@ -435,7 +441,7 @@ Android Vitals 由系统采集，App 无需为此集成自有监控 SDK；数据
 
 自定义指标应尽量落到用户可见终点，同时保留网络、解析、业务、UI、present 等诊断阶段。用户结果与内部阶段分开命名。
 
-### 常见误区
+### 指标定义常见误区
 
 #### FPS 高就代表流畅
 
@@ -488,7 +494,9 @@ Perfetto（Android 系统时间线分析工具）、Macrobenchmark（跨进程�
 | 证据层 | 异常前后的栈、trace、breadcrumb（按时间保留的近期关键事件）和资源状态 | 本地环形缓冲区、`ProfilingManager`、Perfetto SDK、受控实验 |
 | 分析层 | 分位数、比率、分群、回归检测和样本回查 | Android Vitals、第三方 APM（Application Performance Monitoring，应用性能监控）、自建数据系统 |
 
-信号层应保持低开销，证据层按预算触发，分析层负责分母、采样校正和数据完整性。本地环形缓冲区只保留固定容量的最新记录，写满后覆盖最旧内容，适合保存异常前的有限上下文。将三层分开后，客户端可以独立调整采样，服务端也能识别每条记录来自系统判定、库的启发式判定（根据可用信号推断），还是业务规则。
+信号层应保持低开销，证据层按预算触发，分析层负责分母、采样校正和数据完整性。本地环形缓冲区只保留固定容量的最新记录，写满后覆盖最旧内容，适合保存异常前的有限上下文。
+
+将三层分开后，客户端可以独立调整采样，服务端也能识别每条记录来自系统判定、库的启发式判定（根据可用信号推断），还是业务规则。
 
 #### 事件协议要先于 SDK 接入
 
@@ -622,11 +630,13 @@ JankStats 的 `isJank` 属于库的启发式分类，FrameMetrics 的 duration �
 
 FrameMetrics、JankStats 以及 Android Vitals 的慢帧/冻结帧统计面向使用 View/Canvas UI Toolkit 的窗口。直接使用 OpenGL、Vulkan、Unity 或 Unreal 的主画面不在该套 Vitals 渲染统计范围内。
 
-Google Play 为游戏提供 Slow Sessions（慢会话）。它从 SurfaceFlinger 所见的 App surface（应用提交图形内容的渲染目标）估算相邻呈现帧率，覆盖 OpenGL、Vulkan 与 Android UI Toolkit，并且当前只面向游戏。Play 会在游戏运行满一分钟后开始监控；当前 20 FPS 口径下，一次 session 中超过 25% 的帧呈现间隔达到 50 ms 或更长，就属于 slow session，另有 34 ms/30 FPS 口径。应用若同时包含普通 View 页面和游戏 surface，应分别定义两套指标与分母，不能把 View 帧时长和游戏 session FPS 合在同一张趋势图里。
+Google Play 为游戏提供 Slow Sessions（慢会话）。它从 SurfaceFlinger 所见的 App surface（应用提交图形内容的渲染目标）估算相邻呈现帧率，覆盖 OpenGL、Vulkan 与 Android UI Toolkit，并且当前只面向游戏。Play 会在游戏运行满一分钟后开始监控；当前 20 FPS 口径下，一次 session 中超过 25% 的帧呈现间隔达到 50 ms 或更长，就属于 slow session，另有 34 ms/30 FPS 口径。
+
+应用若同时包含普通 View 页面和游戏 surface，应分别定义两套指标与分母，不能把 View 帧时长和游戏 session FPS 合在同一张趋势图里。
 
 ### 启动监控：TTID、TTFD 与业务可用时间
 
-TTID（Time to Initial Display）表示首次画面显示时间；TTFD（Time to Full Display）表示完整画面显示时间。启动指标先要定义区间：
+启动指标先要定义区间（TTID 与 TTFD 的定义见前文“响应速度指标”）：
 
 | 指标 | 起点 | 终点 | 回答的问题 |
 |---|---|---|---|
@@ -636,7 +646,7 @@ TTID（Time to Initial Display）表示首次画面显示时间；TTFD（Time to
 
 系统 SplashScreen（启动画面）先于 App 首帧出现；TTID 仍以 App 首帧为终点。该帧可能是 App 自有过渡页或内容不完整的页面。TTFD 依赖 App 在合适时机调用 `reportFullyDrawn()`；业务可用时间则由产品语义决定，平台无法自动推断。三者可以同时采集，字段名与终点语义必须分开。
 
-冷、温、热启动也应保存系统返回的分类。Cold 从头创建进程；Warm 只执行 Cold 的一部分，可能复用进程并重建 Activity，也可能借助 saved instance state（已保存的界面状态）重建；Hot 通常把仍驻留内存的 Activity 带回前台。三类启动不能放进同一个分布比较。
+冷、温、热启动也应保存系统返回的分类（cold/warm/hot 的定义见前文“响应速度指标 > TTID”）。三类启动不能放进同一个分布比较。
 
 #### API 35+：ApplicationStartInfo 是系统启动记录
 
@@ -869,7 +879,9 @@ Android 16（API 36）加入 `ProfilingTrigger`，App 可以登记关注的系�
 
 `COLD_START` 触发会持续到 `reportFullyDrawn()`，未调用时默认在 5 秒后停止；它使用 discard buffer（写满后丢弃新事件的缓冲区），因此优先保留启动早期的 Trace。`ANR` 触发表示系统已识别 ANR，但不保证进程随后被终止。
 
-Android 17 源码位于 `packages/modules/Profiling`。该能力由可通过 Google Play 系统更新独立演进的 Mainline Profiling 模块提供：主动 `requestProfiling()` 从 API 35 可用，trigger 注册从 API 36 可用；部分后续方法属于 Android 16 的 minor SDK version（次版本 SDK 号）36.1，例如 `requestRunningSystemTrace()` 和 `addAllProfilingTriggers()`；更多 trigger 类型在 API 37 加入。接入时应同时检查 API level，以及可同时表达主版本和次版本的 `SDK_INT_FULL`，并处理运行时能力差异与错误结果，不能只按 `SDK_INT` 推断所有 trigger 都可用。`addAllProfilingTriggers()` 也要受服务端采样与本地预算约束。
+Android 17 源码位于 `packages/modules/Profiling`。该能力由可通过 Google Play 系统更新独立演进的 Mainline Profiling 模块提供：主动 `requestProfiling()` 从 API 35 可用，trigger 注册从 API 36 可用；部分后续方法属于 Android 16 的 minor SDK version（次版本 SDK 号）36.1，例如 `requestRunningSystemTrace()` 和 `addAllProfilingTriggers()`；更多 trigger 类型在 API 37 加入。
+
+接入时应同时检查 API level，以及可同时表达主版本和次版本的 `SDK_INT_FULL`，并处理运行时能力差异与错误结果，不能只按 `SDK_INT` 推断所有 trigger 都可用。`addAllProfilingTriggers()` 也要受服务端采样与本地预算约束。
 
 线上使用还需设定：
 
