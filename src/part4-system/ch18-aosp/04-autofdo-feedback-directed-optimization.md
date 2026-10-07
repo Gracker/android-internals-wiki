@@ -116,13 +116,11 @@ Soong 的 `build/soong/cc/afdo.go` 负责处理 C/C++ 目标的 AFDO 属性、Pr
 afdo: true,
 ```
 
-Android 17 的固定源码标签（tag）中，可以直接看到以下模块开启了 `afdo: true`：
+Android 17 的固定源码标签（tag）中，以下模块开启了 `afdo: true`：
 
 - `frameworks/base/libs/hwui/Android.bp` 的 `libhwui`；
 - `art/libartbase/Android.bp` 的 `libartbase`；
-- `art/runtime/Android.bp` 的 `libart`；
-
-开启了 `afdo: true`。
+- `art/runtime/Android.bp` 的 `libart`。
 
 这只能证明目标具备 AFDO 构建接入，不能证明任意本地构建都拿到了有效 Profile。是否实际使用，还取决于 Profile 配置、目标处理器架构（arch）、构建变体和产物日志。验证时，应在详细构建日志（verbose build log）中查找 `-fprofile-sample-use=`，再核对该参数指向的 Profile。
 
@@ -152,7 +150,7 @@ ACK `android17-6.18-2026-06_r6` 中有三条直接证据：
 clang_autofdo_profile = ":gki/aarch64/afdo/kernel.afdo"
 ```
 
-当前源码标签已经把内核 AutoFDO 接入 GKI 构建。说明文档指出，当前 Profile 针对 AArch64 内核 6.18.21 采集，并会在对应滚动分支持续更新。固定标签只冻结某一版 Profile，分支上的最新提交仍会变化；复现实验必须记录使用的源码标签、Profile 文件内容或具体分支提交。
+当前源码标签已经把内核 AutoFDO 接入 GKI 构建。README 指出，当前 Profile 针对 AArch64 内核 6.18.21 采集，并会在对应滚动分支持续更新。固定标签只冻结某一版 Profile，分支上的最新提交仍会变化；复现实验必须记录使用的源码标签、Profile 文件内容或具体分支提交。
 
 ### Android 17 README 中的性能数据
 
