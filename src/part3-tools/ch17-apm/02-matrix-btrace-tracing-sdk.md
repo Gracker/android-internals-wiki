@@ -105,7 +105,7 @@ Gradle 会为 Android 目标选择对应版本的 `tracing-android` variant（�
 
 ### 哪些位置值得手动标记
 
-判断时应看“这个区间能否缩小性能问题的排查范围”，函数的重要程度并非主要依据。通常值得长期保留的点包括：
+判断时应看这个区间能否缩小性能问题的排查范围，函数的重要程度并非主要依据。通常值得长期保留的点包括：
 
 - 启动：配置读取、依赖初始化、首屏数据准备、首个可交互状态。
 - 列表：diff（新旧列表的差量）计算、分页合并、批量 bind（把数据绑定到列表项）、预取和图片解码。
@@ -360,7 +360,11 @@ Perfetto 会把 `Video#decodeFrame` 放在执行 `DecodeFrame()` 的 native 线�
 | Macrobenchmark 1.4.1 / 1.5.0-rc01 | 在测试侧启动、交互并采集 trace；1.5 预发布线可合并进程内 trace | `TraceSectionMetric` 是实验 API；默认只看目标包；1.5.0-rc01 尚未成为稳定版 |
 | Perfetto UI / Trace Processor | 人工或 SQL 联读系统与应用证据 | 工具负责展示和查询，不替应用补业务语义 |
 
-AndroidX 2.0.0 的新 `Tracer` API 与经典 `Trace.beginSection()` 是两条用途不同的接口面。经典 API 仍写系统 trace，也没有被弃用。新路径由 `TraceDriver` 持有 `Tracer` 并管理一次 tracing 生命周期，`TraceSink` 决定事件如何序列化和输出；`tracing-wire` 提供 Perfetto 格式实现。category 用于按类别筛选事件，metadata 给事件附加键值信息，instant event 表示没有持续时间的瞬时点。新 API 还支持 counter、Perfetto flow 和 `traceCoroutine()`。Android Studio System Trace 目前不会直接采集这条进程内路径，Benchmark 1.5.0-rc01 的 `PerfettoCapture` / `PerfettoTraceRule` 可以采集并在事后合并目标包的进程内 trace。即使 2.0.0 已稳定，接入新路径时仍要设计采集启动方式、文件生命周期、丢事件策略、体积与工具兼容性。
+AndroidX 2.0.0 的新 `Tracer` API 与经典 `Trace.beginSection()` 是两条用途不同的接口面。经典 API 仍写系统 trace，也没有被弃用。
+
+新路径由 `TraceDriver` 持有 `Tracer` 并管理一次 tracing 生命周期，`TraceSink` 决定事件如何序列化和输出；`tracing-wire` 提供 Perfetto 格式实现。category 用于按类别筛选事件，metadata 给事件附加键值信息，instant event 表示没有持续时间的瞬时点。新 API 还支持 counter、Perfetto flow 和 `traceCoroutine()`。
+
+Android Studio System Trace 目前不会直接采集这条进程内路径，Benchmark 1.5.0-rc01 的 `PerfettoCapture` / `PerfettoTraceRule` 可以采集并在事后合并目标包的进程内 trace。即使 2.0.0 已稳定，接入新路径时仍要设计采集启动方式、文件生命周期、丢事件策略、体积与工具兼容性。
 
 Benchmark 稳定版 1.4.1 的 `TraceSectionMetric(sectionName)` 仍是实验 API，默认使用 `Mode.Sum`，输出全部匹配 section 的总时长与次数；只有显式选择 `Mode.First` 才取第一条。这里的 mode 是把多条同名 section 汇成指标的方式。它默认只读取目标包。用于基准指标的 section 要把生命周期和 mode 写清楚，并用生成的 trace 复核所选区间。
 
@@ -599,7 +603,9 @@ btrace 样本给出某个 Hook 点附近的 Java 栈；系统轨道给出线程�
 
 一段 30 ms 的“方法 slice”不一定表示 CPU 执行了 30 ms。线程可能只运行 4 ms，其余时间在 `Runnable`、sleep、Binder 或 I/O 中。修复记录应分别写明 wall duration（现实经过时长）、on-CPU duration（真正占用 CPU 的时长）、线程状态和阻塞证据。
 
-`sched` 数据来自目标设备的 ftrace 能力，btrace 不自带内核探针。GKI（Generic Kernel Image）是 Android 通用内核架构；知识库当前的 Android 17 common kernel 源码锚点是 [`android17-6.18-2026-06_r39`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39)，此前核验使用的 [`android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6) 继续保留，便于复现旧基线。量产设备仍可能使用厂商分支和不同内核配置；轨道缺失时，应先检查目标设备支持的 category 与 trace 配置。
+`sched` 数据来自目标设备的 ftrace 能力，btrace 不自带内核探针。GKI（Generic Kernel Image）是 Android 通用内核架构；知识库当前的 Android 17 common kernel 源码锚点是 [`android17-6.18-2026-06_r39`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39)，此前核验使用的 [`android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6) 继续保留，便于复现旧基线。
+
+量产设备仍可能使用厂商分支和不同内核配置；轨道缺失时，应先检查目标设备支持的 category 与 trace 配置。
 
 ### 冷启动案例
 
@@ -797,7 +803,7 @@ public final class MatrixInstaller {
 
 ### Trace Canary：插桩记录与 Looper 窗口如何配合
 
-构建期的 `MethodCollector` 为选中的方法分配整数 ID，并写出 `methodMapping.txt`；修改后的字节码在方法进入和退出处分别调用 `AppMethodBeat.i(id)` 与 `AppMethodBeat.o(id)`。运行时的 `AppMethodBeat` 用 ring buffer（容量固定、写到末尾后回到开头的环形缓冲区）记录 ID、进出标志和相对时间。主线程 Looper 每次 dispatch 的开始与结束，则界定了一条消息的分析窗口。
+构建期的 `MethodCollector` 为选中的方法分配整数 ID，并写出 `methodMapping.txt`；修改后的字节码在方法进入和退出处分别调用 `AppMethodBeat.i(id)` 与 `AppMethodBeat.o(id)`。运行时的 `AppMethodBeat` 用 ring buffer 记录 ID、进出标志和相对时间。主线程 Looper 每次 dispatch 的开始与结束，则界定了一条消息的分析窗口。
 
 下面的时序图说明构建产物和运行时报告之间的依赖：
 
@@ -940,7 +946,7 @@ IO 事件可以复用同一外层协议，在 payload 中只放经过筛选的�
 
 ### 从 Matrix 样本转向系统证据
 
-Matrix 给出应用侧的方法、场景和文件路径，Perfetto 给出同一时间窗内的系统执行状态。Perfetto 中的 slice 是时间线上的一个有起止时间的任务区间。联合诊断时，不能只找一个时间相近的 slice，还要检验互相竞争的解释。wall time 指现实经过时间，包含运行和等待；CPU time 只累计线程真正占用 CPU 的时间：
+Matrix 给出应用侧的方法、场景和文件路径，Perfetto 给出同一时间窗内的系统执行状态。联合诊断时，不能只找一个时间相近的 slice，还要检验互相竞争的解释。wall time 指现实经过时间，包含运行和等待；CPU time 只累计线程真正占用 CPU 的时间：
 
 - 慢方法的 wall time 很长，但 CPU time 很短：检查锁、Binder、I/O 和调度等待。
 - wall time 与 CPU time 都长：查看 CPU 频点、核心分配、同机并发负载和方法内部工作量。
