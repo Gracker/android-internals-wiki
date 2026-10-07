@@ -91,6 +91,8 @@ Android 17 GKI 6.18 改变调度、内存、BPF 和驱动基础，ARM64 安全�
 
 ## GKI 6.18 调度、内存与观测变化
 
+GKI（Generic Kernel Image，通用内核镜像）把通用内核与板级 vendor modules 分开；vendor modules 是设备厂商提供的内核模块。KMI（Kernel Module Interface，内核模块接口）约束两者之间的二进制接口。
+
 ### 为什么要把平台和内核分开
 
 本文有意固定两个核验锚点：
@@ -101,8 +103,6 @@ Android 17 GKI 6.18 改变调度、内存、BPF 和驱动基础，ARM64 安全�
 截至 2026-08-14，官方 `android17-6.18-2026-06` 发布序列已经列到 r38。本文保留 r6，是因为后文的 AutoFDO profile、基准数据和源码判断都绑定这个快照；它不是“当前最新 tag”的代称。验证 r6 之后的构建时，应重新比较目标 tag，不能直接沿用这里的源码存在性结论。
 
 `android15-6.6` 与 `android16-6.12` 只用于解释 EEVDF、sched_ext 和 AutoFDO 的演进，不作为 r6 实现结论。平台行为也不能从内核分支名推导：Android 17 的 generational CMC 与 lock-free `MessageQueue` 位于 ART 和 `frameworks/base`，它们不属于 Linux 6.18 的调度或存储改动。
-
-GKI（Generic Kernel Image，通用内核镜像）把通用内核与板级 vendor modules 分开；vendor modules 是设备厂商提供的内核模块。KMI（Kernel Module Interface，内核模块接口）约束两者之间的二进制接口。
 
 设备采用 `android17-6.18-2026-06_r6` release build，还需要相容的 vendor modules、产品配置和启动参数。源码 tag 中存在某个功能，无法单独证明设备已经启用它。
 
@@ -138,10 +138,6 @@ EEVDF 是 Earliest Eligible Virtual Deadline First，即“从符合条件的任
 
 sched_ext 在 Linux 6.12 进入上游 mainline，允许一组 BPF 程序实现调度策略。BPF 是在内核受控环境中运行的可验证程序，`struct_ops` 让这些程序提供一组内核回调。
 
-Android 17 GKI 开启 `CONFIG_SCHED_CLASS_EXT=y`，但文档明确规定：**BPF scheduler 加载并运行后，sched_ext 才会使用**。只看到配置项或 `kernel/sched/ext.c`，不能声称设备已经由自定义调度器接管。
-
-#### sched_ext 源码结构与设备厂商采用边界
-
 6.18 的核心实现和文档分布如下：
 
 - `kernel/sched/ext.c` 负责 scheduler class、BPF 可调用的内核函数（kfunc）、启停与错误回退；
@@ -157,7 +153,7 @@ BPF scheduler 通过 `struct sched_ext_ops` 提供 `select_cpu()`、`enqueue()`�
 
 sched_ext 的安全回退是运行边界的一部分。BPF scheduler 退出、runnable task stall、内部错误或 `SysRq-S` 紧急按键序列都会让任务回到 fair class；`sched_ext_dump` tracepoint（内核追踪事件点）可读取诊断 dump。
 
-下面的命令用于确认设备是否加载过 BPF scheduler。量产设备可能因权限或裁剪而无法读取这些节点。
+Android 17 GKI 开启 `CONFIG_SCHED_CLASS_EXT=y`，但文档明确规定：**BPF scheduler 加载并运行后，sched_ext 才会使用**。只看到配置项或 `kernel/sched/ext.c`，不能声称设备已经由自定义调度器接管。下面的命令用于确认设备是否加载过 BPF scheduler，量产设备可能因权限或裁剪而无法读取这些节点。
 
 ```bash
 adb shell 'cat /sys/kernel/sched_ext/state 2>/dev/null'
@@ -316,9 +312,7 @@ Kconfig 是 Linux 内核描述配置选项、依赖关系和默认值的系统�
 2. **硬件与固件条件**：CPU 实现架构特性，或固件提供内核所需的漏洞缓解调用。
 3. **运行时条件**：内核没有通过启动参数关闭功能；用户态机制还需要二进制或进程显式启用。
 
-Android 17 GKI（Generic Kernel Image，通用内核镜像）的基准配置 `gki_defconfig` 明确设置了 `CONFIG_RANDOMIZE_BASE=y`、`CONFIG_SHADOW_CALL_STACK=y` 和 `CONFIG_CFI=y`。
-
-同一配置关闭了 `CONFIG_RANDOMIZE_MODULE_REGION_FULL`。
+Android 17 GKI 的基准配置 `gki_defconfig` 明确设置了 `CONFIG_RANDOMIZE_BASE=y`、`CONFIG_SHADOW_CALL_STACK=y` 和 `CONFIG_CFI=y`，同时关闭了 `CONFIG_RANDOMIZE_MODULE_REGION_FULL`。
 
 PAC、BTI、MTE 与 GCS 在 `arch/arm64/Kconfig` 中是 `default y`，仍受工具链、硬件和运行时条件约束。
 
