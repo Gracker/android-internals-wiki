@@ -184,7 +184,9 @@ m surfaceflinger
 
 ## 用 Cuttlefish 验证 Framework
 
-Cuttlefish 是 AOSP 的标准虚拟设备，适合验证纯 AOSP Framework 行为、CTS、系统服务和自定义测试。CTS 是 Compatibility Test Suite，即兼容性测试套件。它与真机的主要差异集中在 HAL 以及依赖具体硬件的部分；HAL 是 Hardware Abstraction Layer，即硬件抽象层。GPU 合成、热控制、SoC 调度、相机和功耗结论仍需真机；SoC 指 System on a Chip，即片上系统。
+Cuttlefish 是 AOSP 的标准虚拟设备，适合验证纯 AOSP Framework 行为、CTS、系统服务和自定义测试。CTS 是 Compatibility Test Suite，即兼容性测试套件。
+
+它与真机的主要差异集中在 HAL 以及依赖具体硬件的部分；HAL 是 Hardware Abstraction Layer，即硬件抽象层。GPU 合成、热控制、SoC 调度、相机和功耗结论仍需真机；SoC 指 System on a Chip，即片上系统。
 
 ### 主机与产物必须匹配
 
@@ -208,7 +210,9 @@ ARM64 Linux 主机可以运行匹配架构的 Cuttlefish 预编译镜像。这�
 ./bin/adb devices
 ```
 
-当前官方示例使用 `HOME=$PWD ./bin/launch_cvd --daemon`，只为这一条命令临时指定运行目录；不要在用户 shell 中永久改写 `HOME`。具体版本仍以同 build 的启动说明为准。Cuttlefish 会向 ADB 注册设备，通常不需要手工连接 `0.0.0.0:6520`。`0.0.0.0` 是监听地址语义，也不适合作为客户端目标。多实例环境的 TCP 端口会随实例号变化。
+当前官方示例使用 `HOME=$PWD ./bin/launch_cvd --daemon`，只为这一条命令临时指定运行目录；不要在用户 shell 中永久改写 `HOME`。具体版本仍以同 build 的启动说明为准。
+
+Cuttlefish 会向 ADB 注册设备，通常不需要手工连接 `0.0.0.0:6520`。`0.0.0.0` 是监听地址语义，也不适合作为客户端目标。多实例环境的 TCP 端口会随实例号变化。
 
 默认启动会开启 WebRTC（浏览器实时音视频与控制协议）界面，浏览器访问 `https://localhost:8443`。跨主机访问还要配置防火墙、TLS 加密连接，以及 WebRTC 使用的 TCP/UDP 端口，不能把本地开发端口直接暴露到不可信网络。
 
@@ -257,7 +261,9 @@ atest FrameworksServicesTests
 
 ### System properties
 
-系统属性是供系统范围共享配置的键值项，受命名、类型、稳定性、分区边界、`property_contexts` 和 SELinux 规则控制。`property_contexts` 把属性名映射到安全上下文与数据类型；SELinux 是 Android 的强制访问控制机制。shell 不能任意创建可写的 `persist.debug.*` 属性。`persist` 只应在确有跨重启需求且系统属性是合适载体时使用。
+系统属性是供系统范围共享配置的键值项，受命名、类型、稳定性、分区边界、`property_contexts` 和 SELinux 规则控制。`property_contexts` 把属性名映射到安全上下文与数据类型；SELinux 是 Android 的强制访问控制机制。
+
+可写的 `persist.debug.*` 属性不能由 shell 任意创建。`persist` 只应在确有跨重启需求且系统属性是合适载体时使用。
 
 Android 17 平台新增属性时，流程包括：
 
@@ -285,7 +291,7 @@ adb shell dumpsys SurfaceFlinger
 
 ## adb root、remount 与 OverlayFS
 
-`adb root` 和 `adb remount` 面向 `userdebug`、`eng` 或明确支持调试的构建。量产 `user` 构建通常不提供同等能力。首次 remount 可能需要关闭 verity 并重启：
+`adb root` 和 `adb remount` 面向 `userdebug`、`eng` 或明确支持调试的构建。量产 `user` 构建通常不提供同等能力。关闭 dm-verity（块级文件系统完整性校验）会降低设备保护，只能用于隔离的开发设备；首次 remount 可能需要关闭 verity 并重启：
 
 ```bash
 adb root
@@ -296,7 +302,7 @@ adb root
 adb remount
 ```
 
-关闭 dm-verity（块级文件系统完整性校验）会降低设备保护，只能用于隔离的开发设备。动态分区和只读文件系统通常通过 OverlayFS 覆盖：只读下层保持不变，修改写入可写上层。重刷、清理 overlay 或切换镜像会使这些修改消失。
+动态分区和只读文件系统通常通过 OverlayFS 覆盖：只读下层保持不变，修改写入可写上层。重刷、清理 overlay 或切换镜像会使这些修改消失。
 
 单文件 push 的风险高于分区同步：类路径中可能还有 dexpreopt（构建期 DEX 预编译）产物、架构变体、映射表或关联 APEX。稳妥做法是确认 Soong 安装路径，使用对应分区的 `adb sync`，再执行满足该组件激活条件的重启。
 
@@ -331,7 +337,9 @@ Android 13 起的现代 Android Common Kernel 使用 Bazel/Kleaf。`build.sh` �
 tools/bazel run //common:kernel_aarch64_dist
 ```
 
-该命令运行 Kleaf 的标准 distribution target，生成一组可分发内核产物。复现 r6 时还要确认 common 仓库精确 tag、manifest revision、Kleaf 配置和输出摘要。单个 GKI Image 不包含设备 vendor modules、DTBO、`vendor_boot` 分区、签名和 KMI 兼容性处理；vendor modules 是厂商内核模块，DTBO 是设备树覆盖镜像，KMI 是 Kernel Module Interface，即内核模块接口。
+该命令运行 Kleaf 的标准 distribution target，生成一组可分发内核产物。复现 r6 时还要确认 common 仓库精确 tag、manifest revision、Kleaf 配置和输出摘要。
+
+单个 GKI Image 不包含设备 vendor modules、DTBO、`vendor_boot` 分区、签名和 KMI 兼容性处理；vendor modules 是厂商内核模块，DTBO 是设备树覆盖镜像，KMI 是 Kernel Module Interface，即内核模块接口。
 
 Cuttlefish 可以通过 `cvd create` 指定 kernel 与 initramfs（启动早期使用的内存文件系统）产物，适合验证 Android Common Kernel 与平台的组合。物理设备还需要厂商模块和设备启动链；把 GKI Image 单独刷入任意 Pixel 并不构成完整方案。
 
