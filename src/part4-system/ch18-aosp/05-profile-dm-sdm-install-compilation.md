@@ -106,14 +106,14 @@ SDM 只覆盖 base APK 与 split APK 内随应用打包的 **primary dex**。运
 安装会话写盘、APK 与 SDM 签名校验、包扫描、原生库处理、`fsync`、SELinux 检查以及首次启动的其余工作仍会发生。
 `fsync` 会要求系统把文件数据及相关元数据同步到稳定存储。AOSP 没有承诺固定的安装或启动提升百分比。
 
-AOSP `android-17.0.0_r1` 是以下结论的平台源码锚点。云端如何选择设备配置并生成 SDM 不属于 AOSP 开源设备端实现，讨论范围只包括系统能够验证的接收、决策和加载行为。
+本章的结论以 AOSP `android-17.0.0_r1` 为平台源码锚点。云端如何选择设备配置并生成 SDM 不属于 AOSP 开源设备端实现，讨论范围只包括系统能够验证的接收、决策和加载行为。
 
 ## 1. 先分清 Profile、DM、SDM 与 SDC
 
 ### 1.1 三类 Profile 解决不同问题
 
-Profile 是 ART 或构建工具用来选择热点代码的输入，SDM 可以直接携带指定 ISA 的 AOT 代码。profile-guided AOT 指只预编译 Profile 命中的方法和类。
-compiler filter 是 ART 的编译策略名，例如 `verify` 只验证 DEX，`speed-profile` 会按 Profile 选择代码进行 AOT。把 Profile 与 SDM 都叫“云端编译”，会混淆生成方、交付方式和验证方法。
+Profile 是 ART 或构建工具用来选择热点代码的输入，profile-guided AOT 指只预编译 Profile 命中的方法和类。compiler filter 是 ART 的编译策略名，例如 `verify` 只验证 DEX，`speed-profile` 会按 Profile 选择代码做 AOT。
+SDM 直接携带指定 ISA 的 AOT 代码，属于已编译产物；Profile 则只是编译输入。把两者都叫“云端编译”，会混淆生成方、交付方式和验证方法。
 
 | 类型 | 生产者与位置 | 主要作用 | 开发者控制度 |
 | --- | --- | --- | --- |
@@ -140,13 +140,13 @@ Startup Profile 的源规则通常是 `startup-prof.txt`；[现行验证文档](
 ART Service 的 `DexMetadataHelper.getType()` 检查 ZIP 中的 `primary.prof` 与 `primary.vdex`，并把结果分成 `PROFILE`、`VDEX`、`PROFILE_AND_VDEX`、`NONE` 或 `ERROR`。
 VDEX 保存 DEX 验证信息及相关数据。`config.pb` 可以附带配置；缺少它时，ART Service 使用默认配置。
 
-这两个有效负载用途不同：
+这两部分内容的用途不同：
 
 - `primary.prof` 列出适合 `speed-profile` 的方法和类，可作为本机 dexopt 输入。
 - `primary.vdex` 保存验证相关数据。SDM 路径打开 AOT 代码时，运行时会从配套 DM 读取它。
 
 平台层的 `android.content.pm.dex.DexMetadataHelper.validateDexMetadataFile()` 在 r1 中通过 `StrictJarFile` 打开归档，确认文件结构可读。
-尽管这个方法的 JavaDoc 仍提到 manifest，r1 的方法体没有读取 `manifest.json`。该 tag 的实现中也没有 `pm.dexopt.dm.require_manifest` 与 `pm.dexopt.dm.require_fsverity` 属性，`pm install` 没有受支持的 `--dm` 参数。
+尽管这个方法的 JavaDoc 仍提到 manifest，r1 的方法体没有读取 `manifest.json`，其中也没有 `pm.dexopt.dm.require_manifest` 与 `pm.dexopt.dm.require_fsverity` 属性；`pm install` 没有受支持的 `--dm` 参数。
 不能用这三项判断 Android 17 的 DM 状态。
 
 AOSP 的 [Configure ART](https://source.android.com/docs/core/runtime/configure) 文档描述了常见的 Pixel 策略：Play 分发的 DM 可携带 cloud profile，ART 对其中列出的方法做 AOT 编译；没有 DM 时，该策略可能在安装期不做 AOT。
@@ -163,7 +163,7 @@ SDM 的文件名多一段指令集名称。`artd/path_utils.cc` 的构造规则�
 
 同一个 APK 若要覆盖两种 ISA，需要两个不同的 SDM。安装器不能拿 `arm64` 产物供 `arm` 进程使用。
 
-SDM 使用 APK Signature Scheme v3，也就是 APK v3 签名协议来校验身份。`ArtManagedInstallFileHelper.validateSdmFile()` 会处理以下条件：
+SDM 通过 APK Signature Scheme v3（APK v3 签名协议）校验身份。`ArtManagedInstallFileHelper.validateSdmFile()` 会处理以下条件：
 
 - 文件名没有受支持的 ISA 后缀；
 - 找不到同基名 APK；
@@ -244,7 +244,7 @@ DM Profile 处理和 SDM 调度的入口位于 ART Service，具体受保护操�
 4. 现有产物满足目标时，结果为无需本机 dexopt。
 5. 产物缺失、过期或 compiler filter 不满足要求时，`artd.dexopt()` 启动 `dex2oat`。
 
-SDM 因而属于 OatFileAssistant 可选择的产物位置。OatFileAssistant 是 ART 用来查找并判断编译产物是否可用的运行时组件。
+OatFileAssistant 是 ART 用来查找并判断编译产物是否可用的运行时组件，SDM 因而也是它可选择的产物位置之一。
 AIDL 接口用 `SDM_DALVIK_CACHE` 与 `SDM_NEXT_TO_DEX` 表示 SDM 产物位于共享缓存或应用旁目录。SDM 没有单独取代 dexopt 调度器，调度器仍要判断这份云端产物能否满足当前目标。
 
 若本机编译已执行，`PrimaryDexopter` 会尽早删除对应 SDM 与 SDC，释放空间。相关源码条件可缩写为：
@@ -285,7 +285,7 @@ ret->vdex_ = VdexFile::OpenFromDm(dm_filename, error_msg);
 ODEX 来自 SDM，VDEX 来自同 APK 的 DM。缺少可用 DM/VDEX 时，仅有 SDM 也无法组成这条运行时加载路径。运行时还需要 APK 自身校验 dex checksum 与依赖关系。
 
 `OatFile::OpenFromSdm()` 带有名为 `Open sdm file <path>` 的 `ScopedTrace`。
-抓取应用启动 trace 时，这个 slice（trace 中带起止时间的区间事件）比“`oat` 目录里有没有 `.odex`”更能说明 SDM 被运行时打开。
+抓取应用启动 trace 时，看这个 slice（trace 中带起止时间的区间事件）是否出现，比检查“`oat` 目录里有没有 `.odex`”更能说明 SDM 被运行时打开。
 
 ### 3.2 兼容性判断仍然完整
 
@@ -398,7 +398,7 @@ adb shell getprop pm.dexopt.install
 adb shell logcat -s artd PackageManager DexMetadataHelper
 ```
 
-`pm art dump` 会列出 dex container、ABI、compiler filter、compilation reason 与 location。location 若指向 SDM 内的 `primary.odex`，证据强于 reason 字符串。
+`pm art dump` 会列出 dex container、ABI、compiler filter、compilation reason 与 location。location 若指向 SDM 内的 `primary.odex`，证据比 reason 字符串更强。
 `DexoptStatus` 同时说明 location 只是供人阅读的调试信息，没有稳定格式。`getprop` 反映产品当前安装 filter，不能用来推断某次安装已完成的具体决策。
 
 生产版设备通常不允许 shell 枚举 `/data/app` 内部目录。文件级核对只适用于 root、userdebug/eng 或测试基础设施已经授予访问权的环境；普通设备应依赖 `pm art dump`、日志和 trace。
