@@ -94,11 +94,12 @@ related_chapters:
 
 first-stage init 先完成早期挂载与 SELinux 切换所需工作，随后执行 second-stage init，由后者加载属性、解析更多 rc 并启动服务。UART 是启动早期常用的串口日志通道。
 
+AMS 是 ActivityManagerService，负责进程与 Android 用户生命周期等系统事务；property 是 Android 的系统键值属性。文中的“用户 profile”指工作资料等 Android 用户配置，不是 ART 的性能 Profile。
+
 Android 17 的 `ActivityManagerService.finishBooting()` 会设置 `sys.boot_completed`，随后继续处理用户级 boot complete、用户 profile 启动和广播。这个 property 是稳定的平台边界，但它不等于“桌面已显示”，也不等于“触摸已有响应”。
 
-这里的 AMS 是 ActivityManagerService，负责进程与 Android 用户生命周期等系统事务；property 是 Android 的系统键值属性。文中的“用户 profile”指工作资料等 Android 用户配置，不是 ART 的性能 Profile。
-
 init 会用 `ro.boottime.<service-name>` 记录 service 第一次启动的 `CLOCK_BOOTTIME` 时间，所以主 Zygote 对应 `ro.boottime.zygote`。`CLOCK_BOOTTIME` 从内核启动起单调计时，并包含系统休眠时间。
+
 `ro.boottime.event.<event-name>` 记录相应 event 的第一条 Action 命令开始执行的时间。Action 是 init 中一组 `on <trigger>` 条件及其 command；这个属性只有在功能开关 `com.android.init.flags.enable_init_event_timestamp` 开启时才生成。分析工具必须允许 event property 缺失，不能把缺值解释为 Zygote 没有启动。
 
 实验报告应把起点和终点写进指标名。例如：
@@ -142,11 +143,7 @@ Android 17 的 `DexOptHelper.performPackageDexOptUpgradeIfNeeded()` 只在 first
 
 ## bootanalyze：它读什么，输出什么
 
-Android 17 的工具位于：
-
-`system/extras/boottime_tools/bootanalyze/`
-
-目录中的角色如下：
+Android 17 的工具位于 `system/extras/boottime_tools/bootanalyze/`，目录中的角色如下：
 
 | 文件 | 作用 |
 |---|---|
@@ -226,7 +223,7 @@ bootanalyze 给出阶段，Perfetto 负责解释阶段内部的并发和等待�
 - `binder_driver` 和主要 framework atrace category；
 - block I/O、ext4、page fault；
 - `init`、Zygote、SystemServer 的 atrace slice；
-- 目标 HAL、SurfaceFlinger、SystemUI 和 Launcher 的自定义 slice。
+- 目标 HAL（framework 访问硬件实现的抽象接口）、SurfaceFlinger、SystemUI 和 Launcher 的自定义 slice。
 
 启动采集要在重启前安装 trace 配置，并确认 trace session 已经开始。普通的“设备起来后再执行 `perfetto`”会漏掉 kernel、first-stage init、APEX bootstrap 和 Zygote 前半段。
 采集配置、buffer 大小和 data source（事件来源）也要作为实验元数据保存，因为丢事件和 trace 开销都会改变结论。
@@ -236,8 +233,8 @@ producer 是向 Perfetto 写入事件的一端；这块内存只服务于 system
 
 ## `init` 的串行队列与进程并发
 
-`init` 的 Action 队列按 rc 文件解析顺序入队。service 定义可由 init 启动和监管的进程。队列中的 Action 依次执行，每个 Action 内的 command 也依次执行。
-Android 17 `init.cpp` 主循环每次调用一次 `ActionManager::ExecuteOneCommand()`，然后回到事件循环处理 property、子进程和控制消息。
+`init` 的 Action 队列按 rc 文件解析顺序入队，队列中的 Action 依次执行，每个 Action 内的 command 也依次执行。
+Android 17 `init.cpp` 主循环每次调用一次 `ActionManager::ExecuteOneCommand()`，然后回到事件循环处理 property、子进程和控制消息。service 定义可由 init 启动和监管的进程。
 
 这不表示启动期间只能运行一个进程：
 
@@ -273,7 +270,7 @@ Android 17 `do_class_start()` 遍历 `ServiceList`，对属于目标 class 的 s
 - 单个 service 启动失败会记日志，遍历仍会继续。
 - class 只提供分组，不表达 service 之间的依赖图。
 
-把 service 移到更早 class 前，应核对分区挂载、SELinux domain（安全策略中的进程域）、设备节点、APEX 激活、Binder service 和 HAL 依赖。HAL 是 framework 访问硬件实现的抽象接口。仅凭“没有显式 wait”不能证明 service 可以提前启动。
+把 service 移到更早 class 前，应核对分区挂载、SELinux domain（安全策略中的进程域）、设备节点、APEX 激活、Binder service 和 HAL 依赖。仅凭“没有显式 wait”不能证明 service 可以提前启动。
 
 ### event trigger 与 property trigger
 
