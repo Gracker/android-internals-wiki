@@ -18,11 +18,17 @@ last_verified: '2026-09-07'
 last_verified_against: android-17.0.0_r1 / Android 17 (API 37); android17-6.18-2026-06_r6; Android Developers App Startup, Macrobenchmark, Baseline Profiles, Android 17 behavior changes, Google Play SDK Index, and Privacy Sandbox phaseout/API deprecation docs checked 2026-09-07; no Android 18/API 38+ conclusions
 last_draft_polish_at: '2026-08-08T11:35:18+08:00'
 confidence: medium-high
-last_body_apply_at: '2026-09-07T19:15:39+08:00'
+last_body_apply_at: '2026-10-07T07:15:34+08:00'
 last_review_finalize_at: '2026-09-07T20:05:47+08:00'
 sources:
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/SystemService.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/UserController.java
 - type: aosp
   path: https://android.googlesource.com/platform/packages/modules/AdServices/+/refs/tags/android-17.0.0_r1/sdksandbox/service/java/com/android/server/sdksandbox/SdkSandboxManagerService.java
 - type: kernel
@@ -56,6 +62,9 @@ sources:
 - type: article
   path: 技术文章/source/juejin-android/2026-09-07-76816756-架构测试为何需要双视图.md
   role: Kotlin/Gradle 双视图架构测试与 SDK 适配层边界
+- type: article
+  path: 技术文章/source/juejin-android/2026-10-07-76911262-Android 系统启动机制（九）：sy.md
+  role: system_server、Boot Phase 与 BOOT_COMPLETED 语义边界
 ---
 
 # 第三方 SDK 性能影响评估与治理实战
@@ -252,6 +261,14 @@ class SdkStartupBenchmark {
 | 需要持久保证的后台任务 | 按任务契约选择系统调度 API，不靠常驻线程 |
 
 把同步调用包进协程不代表它就安全。如果代码仍在 Main dispatcher 运行，主线程成本没有变化；即使换到后台线程，也可能带来 CPU、I/O 竞争或生命周期泄漏。
+
+### 4.5 `BOOT_COMPLETED` 只能说明用户级入口被触发
+
+有些 SDK 会同时放 Provider、App Startup 和 `BOOT_COMPLETED` Receiver。评估这类 SDK 时，不要把 `system_server` 进程存在、`sys.boot_completed=1` 和应用 Receiver 执行混成一个启动点。Android 17 的 `SystemService` 契约里，phase 600 表示系统服务可以启动或绑定第三方应用；`ActivityManagerService.finishBooting()` 后续进入 phase 1000、设置 `sys.boot_completed` / `dev.bootcomplete`，再调用 `UserController.onBootComplete(...)` 发送用户级 `ACTION_BOOT_COMPLETED`。`sys.boot_completed=1` 早于用户广播处理完成，不能证明某个 SDK 的 Receiver 已经执行或执行成功。[已验证: AOSP Android 17 `SystemService.java`, `ActivityManagerService.java`, `UserController.java`; 来源: 技术文章/source/juejin-android/2026-10-07-76911262-Android 系统启动机制（九）：sy.md]
+
+SDK 评估要把三类入口分开记录：进程创建时的 Provider / App Startup、业务首用时的显式初始化、开机后由 `LOCKED_BOOT_COMPLETED` 或 `BOOT_COMPLETED` 触发的后台工作。第三类还要按用户、Direct Boot 状态、stopped package 状态和广播结果回调核对；只看到全局属性或旧 `system_server` 日志，不能归因到当前 Framework generation 或当前应用进程。[来源: 技术文章/source/juejin-android/2026-10-07-76911262-Android 系统启动机制（九）：sy.md]
+
+观察 BOOT_COMPLETED 型 SDK 时，至少要记录 Receiver 被调起的用户 ID、进程 PID、触发时间、任务 ID 和后续 Job/Work/网络请求；若设备发生 runtime restart，还要确认 phase、property 和广播证据来自同一个 `system_server` 实例。否则很容易把“系统全局里程碑到了”误写成“SDK 已经完成初始化”。[来源: 技术文章/source/juejin-android/2026-10-07-76911262-Android 系统启动机制（九）：sy.md]
 
 ## 5. 内存：同进程没有可靠的“每 SDK PSS”
 
@@ -607,6 +624,9 @@ SDK 治理的输出应当是一组能被重复执行的实验、制品差异和�
 ## 参考资料
 
 - [AOSP Android 17 `ActivityThread`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+- [AOSP Android 17 `SystemService` boot phase constants](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/SystemService.java)
+- [AOSP Android 17 `ActivityManagerService.finishBooting()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)
+- [AOSP Android 17 `UserController` boot-completed broadcast](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/UserController.java)
 - [AOSP Android 17 `SdkSandboxManagerService`](https://android.googlesource.com/platform/packages/modules/AdServices/+/refs/tags/android-17.0.0_r1/sdksandbox/service/java/com/android/server/sdksandbox/SdkSandboxManagerService.java)
 - [Android Common Kernel `android17-6.18-2026-06_r6` proc 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst)
 - [Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup)
@@ -625,3 +645,4 @@ SDK 治理的输出应当是一组能被重复执行的实验、制品差异和�
 - [Google Play SDK Index](https://developer.android.com/distribute/sdk-index)
 - [Google Play SDK Index](https://support.google.com/googleplay/android-developer/answer/13326895?hl=zh-Hans)
 - [架构测试为何需要双视图](https://juejin.cn/post/7681675659220287514)
+- [Android 系统启动机制（九）：system_server 已经运行，为什么还不能说 Android 启动完成？](https://juejin.cn/post/7691126299994472488)
