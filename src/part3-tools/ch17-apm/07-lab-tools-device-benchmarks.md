@@ -145,7 +145,7 @@ USB 模式便于保持连接和采集多数指标，但连接线会给设备充�
 
 PerfDog 能显示的字段取决于平台、设备、SoC（System on Chip，集成 CPU、GPU 等模块的系统级芯片）、驱动、测试模式、客户端版本和账号权限。开始测试前，应先查看当前设备的可用指标列表；字段为空时，不要用 `0` 代替“未采集”。
 
-下表保留 PerfDog 的字段名。Surface 指 App 提交图形缓冲区的显示目标；GPU Counter 是 GPU 暴露的硬件计数器。PSS（Proportional Set Size）是按共享比例分摊后的进程物理内存，Swap 是换出到交换区的内存，VSS 是进程占用的虚拟地址空间。TTID（Time to Initial Display）和 TTFD（Time to Full Display）分别表示首次画面与完整画面的显示时间。
+下表沿用 PerfDog 的字段名。Surface 指 App 提交图形缓冲区的显示目标；GPU Counter 是 GPU 暴露的硬件计数器。PSS（Proportional Set Size）是按共享比例分摊后的进程物理内存，Swap 是换出到交换区的内存，VSS 是进程占用的虚拟地址空间。TTID（Time to Initial Display）和 TTFD（Time to Full Display）分别表示首次画面与完整画面的显示时间。
 
 | 指标组 | Android 常见字段 | 解释时必须保留的条件 |
 |---|---|---|
@@ -238,7 +238,7 @@ P95/P99 若由导出数据离线计算，应在报告中写明脚本版本和空
 
 PerfDog 的 Android Battery Power 是整机口径，不是目标 App 的独占功耗。屏幕、基带（蜂窝通信模块）、Wi-Fi、后台进程和系统服务都包含在内。对比时应固定亮度、音量、网络、账号数据和后台状态，并使用 Wi-Fi 连接后拔掉 USB。
 
-`FPower` 在 PerfDog 数据处理中的口径是 `Power / FPS`，界面单位仍为 mW。它用于在相近场景和帧率下做归一化比较，也就是按同一尺度比较功耗；不能把它当作物理单位为焦耳的“单帧能量”。当 FPS 接近 0、场景静止或两组帧率差距很大时，这个比值也会失去解释力。
+`FPower` 在 PerfDog 数据处理中的口径是 `Power / FPS`，界面单位仍为 mW。它用于在相近场景和帧率下做归一化比较，也就是按同一尺度比较功耗；不能把它当作物理单位为焦耳的“单帧能量”。FPS 接近 0、场景静止或两组帧率差距很大时，这个比值也会失去解释力。
 
 判断热降频时，推荐寻找同一时间轴上的证据组合：
 
@@ -432,7 +432,9 @@ Android 没有向普通工具保证一套跨厂商一致的 GPU 利用率、频�
 
 ### SoloPi：复现工具，不能当作指标的权威来源
 
-SoloPi 的开源部分提供录制回放、设备侧操作、悬浮窗采样和视觉响应分析，适合 QA 固定复现路径；一机多控（用一套操作同步控制多台设备）的实现并未完整开源。截至 2026 年 8 月 21 日，GitHub 最新发布为 `v1.0.2`（2026 年 8 月 19 日），对应 `master` 提交 `c83276286183f43d99f35cd52a6e2432bd11c7af`；发布说明只声明悬浮窗授权流程修复。当前源码基线声明 `appVersionName=1.0.2`，仍使用 AGP（Android Gradle Plugin）4.0.2、compile/targetSdk 29 和 NDK 21.1.6352462（native 开发工具链）。它可以作为较新的 APK 基线重新验收，但不能替代 Android 17 / targetSdk 37 下的权限、存储、前台服务、录屏和 16 KB 兼容检查。
+SoloPi 的开源部分提供录制回放、设备侧操作、悬浮窗采样和视觉响应分析，适合 QA 固定复现路径；一机多控（用一套操作同步控制多台设备）的实现并未完整开源。
+
+截至 2026 年 8 月 21 日，GitHub 最新发布为 `v1.0.2`（2026 年 8 月 19 日），对应 `master` 提交 `c83276286183f43d99f35cd52a6e2432bd11c7af`；发布说明只声明悬浮窗授权流程修复。当前源码基线声明 `appVersionName=1.0.2`，仍使用 AGP（Android Gradle Plugin）4.0.2、compile/targetSdk 29 和 NDK 21.1.6352462（native 开发工具链）。它可以作为较新的 APK 基线重新验收，但不能替代 Android 17 / targetSdk 37 下的权限、存储、前台服务、录屏和 16 KB 兼容检查。
 
 讨论兼容时要分开两个问题：当前 target 29 APK 能否在某台 API 37 设备运行，以及源码升级到 targetSdk 37 后能否满足现代规则。前者只证明一组 APK、系统镜像与厂商策略共同可用，不能替代后者的构建、权限、前台服务、存储和 16 KB 验收。
 
@@ -463,7 +465,7 @@ SoloPi 会通过反射调用非 SDK（未公开）接口 `AccessibilityNodeInfo.
 | 视觉响应 | MediaProjection 录屏 + 图像差异 | 点击到画面稳定，不是系统 TTID/TTFD |
 | 电流/功率 | BatteryManager 与历史 sysfs（`/sys` 下的内核设备接口）路径 | 设备级数据，单位、符号和传感器需实测 |
 
-每个结果同时记录 `verified`（已核验）、`degraded`（降级）、`unavailable`（不可用）或 `unknown`（未知）。字段有值不代表语义正确，脚本跑完也不能掩盖其中一项失效。视觉响应可以作为用户体验补充；系统启动由 Macrobenchmark 的 TTID/TTFD 与 `reportFullyDrawn()` 单列。
+每个结果都要标注 `verified`（已核验）、`degraded`（降级）、`unavailable`（不可用）或 `unknown`（未知）中的一种。字段有值不代表语义正确，脚本跑完也不能掩盖其中一项失效。视觉响应可以作为用户体验的补充；系统启动由 Macrobenchmark 的 TTID/TTFD 与 `reportFullyDrawn()` 单列。
 
 录制回放的性能价值来自路径一致性。固定数据、账号、刷新率和动画，使用状态等待替代固定 sleep（无条件暂停）；正式轮次前先跑正确性，通过后再启用 PerfDog、Macrobenchmark 或 Perfetto。回放失败率与性能结果分开统计，避免把等待控件超时当成 App 变慢。
 
@@ -564,7 +566,7 @@ Geekbench 6 的公开内部文档说明，CPU 总分由 integer（整数）和 f
 | Photo Library / Photo Editor | 图片编解码、SQLite、图像处理及部分 ML | 相册扫描、缩略图生成或编辑可能受 CPU、内存和指令集影响 | 复用业务图片格式、分辨率和模型做 Macrobenchmark 或业务基准 |
 | Clang、Text Processing、Asset Compression | 编译、正则、SQLite、纹理及几何资产压缩 | 文本处理、开发工具或图形资源处理流程可能有相近计算特征 | 对业务库直接基准；不要把 Text Processing 等同于 JSON 解析 |
 
-“单核分数影响 JSON 解析”这句话过于确定。Geekbench 6 没有以你的 JSON 库、序列化模型和数据规模运行；它只能给出通用单线程容量线索。JSON、protobuf（二进制序列化格式）、XML inflate（从布局 XML 创建 View）、Compose measure/layout（测量与布局）和 `RecyclerView` bind（把数据绑定到列表项）仍要分别测量。I/O 等待、锁竞争或 Binder 往返占比高时，单核分数的解释力会更弱。
+“单核分数影响 JSON 解析”这个判断过于确定。Geekbench 6 没有以你的 JSON 库、序列化模型和数据规模运行；它只能给出通用单线程容量线索。JSON、protobuf（二进制序列化格式）、XML inflate（从布局 XML 创建 View）、Compose measure/layout（测量与布局）和 `RecyclerView` bind（把数据绑定到列表项）仍要分别测量。I/O 等待、锁竞争或 Binder 往返占比高时，单核分数的解释力会更弱。
 
 ARM 设备还可能按运行时能力使用 AES、SHA、FP16、Dot Product、I8MM 等加密、半精度浮点、点积或整数矩阵指令。两个设备的分差有时来自特定指令路径，而业务实现未必走同一条路径。跨 SoC（System on Chip，系统级芯片）解释子项时，要核对 App 使用的库、ABI（Application Binary Interface，应用二进制接口，例如 `arm64-v8a`）、编译选项和硬件加速路径。
 
@@ -598,7 +600,7 @@ Geekbench 6 的 GPU Benchmark 通过 Vulkan 或 OpenCL 运行计算工作负载�
 
 #### Stability 需要和帧率共同解释
 
-Wild Life 的普通 Benchmark 用于观察短时间高性能；Stress Test 连续运行二十轮，每轮称为一个 loop，用于观察性能和温度随时间的变化。UL 面向 PC Stress Test 结果页公开的 Frame Rate Stability 定义是最低循环平均帧率除以最高循环平均帧率，再乘以 100%；Android Wild Life 官方说明更强调二十轮曲线。移动端报告应保存应用显示的 stability 和整条曲线，不要把 PC 页面给出的 97% pass 条件照搬成 App 的产品门槛。
+Wild Life 的普通 Benchmark 用于观察短时间高性能；Stress Test 连续运行二十轮，每轮称为一个 loop，用于观察性能和温度随时间的变化。UL 在 PC 版 Stress Test 结果页给出了 Frame Rate Stability 的定义：最低循环平均帧率除以最高循环平均帧率，再乘以 100%。Android Wild Life 的官方说明则更强调二十轮曲线。移动端报告应保存应用显示的 stability 和整条曲线，不要把 PC 页面给出的 97% pass 条件照搬成 App 的产品门槛。
 
 这个比例有两个容易忽略的边界：
 
@@ -642,7 +644,7 @@ AndroBench 可公开核对的协议源于 2011 年：顺序读文件 32 MB、写
 
 - CPDT（Cross Platform Disk Test）可以配置文件大小、4 KiB random、write buffering（写入缓冲）与 in-memory caching（内存缓存），并导出时序；仍需固定源码版本，并先验证该版本能否在 API 37 上正确运行。
 - PCMark Storage 2.0 提供内部、外部与 SQLite 的组合 workload，但输出仍是工作负载分数，不代表 UFS（Universal Flash Storage，移动设备常用的闪存接口）设备本身的原始吞吐。
-- 最有预测力的方案是在目标 App 实际目录中复用相同文件格式、SQLite schema、事务、同步语义和线程模型。
+- 最能预测真实表现的方案，是在目标 App 实际目录中复用相同文件格式、SQLite schema、事务、同步语义和线程模型。
 
 #### 四类指标与必要参数
 
@@ -655,7 +657,7 @@ IOPS（Input/Output Operations Per Second）表示每秒完成的 I/O 次数，l
 | 随机读 IOPS/latency | block、范围、QD、线程、分布 | 小块读取与索引背景 | 目录扫描和反序列化 CPU |
 | 随机写 IOPS/latency | 上述参数 + 同步频率和预分配 | 数据库日志与元数据更新风险 | 业务事务设计是否合理 |
 
-IOPS 不带 block size 和 QD 没有工程意义。吞吐越高越好，但较差结果位于数值低的一侧，多轮报告应看 median（中位数）与 P10（第 10 百分位）；latency 越低越好，单次操作可看 p50、p95 和 p99。MAD（median absolute deviation，中位数绝对偏差）描述样本相对中位数的离散程度。只有五轮时，分位数还不稳定，宜报告 median、min/max 与 MAD。
+IOPS 不带 block size 和 QD 没有工程意义。吞吐越高越好，较差的结果落在数值偏低的一侧，多轮报告应看 median（中位数）与 P10（第 10 百分位）；latency 越低越好，单次操作可看 p50、p95 和 p99。MAD（median absolute deviation，中位数绝对偏差）描述样本相对中位数的离散程度。只有五轮时，分位数还不稳定，宜报告 median、min/max 与 MAD。
 
 #### 路径、缓存与持久化语义
 
@@ -668,7 +670,9 @@ IOPS 不带 block size 和 QD 没有工程意义。吞吐越高越好，但较�
 | SD / USB | 卷、文件系统、读卡器和授权 | 不只代表卡片本身 |
 | RAM | 内存复制或内存文件 | 不进入闪存排名 |
 
-普通 buffered write 返回时，数据可能只进入 page cache。`fsync`、`fdatasync` 等调用要求内核在返回前将相关数据写到存储设备，`fsync` 还会处理恢复文件所需的元数据；测试协议没有同步步骤时，不能宣称写入已经安全持久化。cold read（缓存中没有目标数据）、warm read（缓存中已有数据）和 reboot 后首次读取是三组不同实验；量产 user build（面向普通用户的系统构建）不应为跑分操作 `drop_caches`（主动清空内核缓存）。剩余空间、文件系统 GC（回收无效存储块）、discard（通知存储设备哪些块可回收）、加密、温度、后台媒体扫描和系统更新都要记录。
+普通 buffered write 返回时，数据可能只进入 page cache。`fsync`、`fdatasync` 等调用要求内核在返回前将相关数据写到存储设备，`fsync` 还会处理恢复文件所需的元数据；测试协议没有同步步骤时，不能宣称写入已经安全持久化。
+
+cold read（缓存中没有目标数据）、warm read（缓存中已有数据）和 reboot 后首次读取是三组不同实验；量产 user build（面向普通用户的系统构建）不应为跑分操作 `drop_caches`（主动清空内核缓存）。剩余空间、文件系统 GC（回收无效存储块）、discard（通知存储设备哪些块可回收）、加密、温度、后台媒体扫描和系统更新都要记录。
 
 SQLite 分数也使用工具自己的表、索引、journal（事务日志）和 transaction。业务验证要检查批量写是否放在同一 transaction，并记录 WAL、`synchronous`（写入持久化强度）、checkpoint（把 WAL 内容合并回主数据库）、N+1 查询（一次主查询后又逐行追加查询）、索引和 `EXPLAIN QUERY PLAN`（查看 SQLite 查询计划）。测试应使用真实数据记录 p50/p95 latency 与 rows scanned（实际扫描的行数）。
 
@@ -703,7 +707,7 @@ Qualcomm 2012 年官方资料把 Vellamo 描述为包含 HTML5 与 Metal 等章�
 
 ### Performance Class 只能做能力下限标签
 
-Android 的 Media Performance Class（MPC，媒体性能等级）从 Android 12 体系引入。它用 CDD（Compatibility Definition Document，Android 兼容性定义文档）规定能力要求，并由 CTS（Compatibility Test Suite，兼容性测试套件）验证。Android 17 / API 37 的 AOSP（Android Open Source Project）`Build.VERSION.MEDIA_PERFORMANCE_CLASS` 仍从设备属性读取声明值，未声明时返回 0。Jetpack Core Performance 是读取设备性能等级的 Jetpack 库，可以从系统 build 信息或 Google Play services（Google Play 服务组件）查询兼容等级。
+Android 的 Media Performance Class（MPC，媒体性能等级）自 Android 12 引入。它用 CDD（Compatibility Definition Document，Android 兼容性定义文档）规定能力要求，并由 CTS（Compatibility Test Suite，兼容性测试套件）验证。Android 17 / API 37 的 AOSP（Android Open Source Project）`Build.VERSION.MEDIA_PERFORMANCE_CLASS` 仍从设备属性读取声明值，未声明时返回 0。Jetpack Core Performance 是读取设备性能等级的 Jetpack 库，可以从系统 build 信息或 Google Play services（Google Play 服务组件）查询兼容等级。
 
 截至 2026 年 8 月 14 日，Android 官方公开定义的等级是 30、31、33、34、35，其中没有 MPC 32；0 表示未定义。Performance Class 可向前兼容：设备升级到 Android 17 后，仍可能报告它原先满足的 33、34 或 35。不要自行创造“MPC 37”，也不要把 Android 版本号当作设备必然报告的等级。
 
@@ -717,7 +721,7 @@ Android 的 Media Performance Class（MPC，媒体性能等级）从 Android 12 
 
 ### 可复现测试规范
 
-下面是一套适合团队设备实验室的起始规范。次数和温度窗口不是 Android 或 Benchmark 厂商规定，可在试运行后按方差调整。
+下面是一套适合团队设备实验室的起始规范。次数和温度窗口不是 Android 或 Benchmark 厂商规定，可在试运行后按实测方差调整。
 
 #### 记录设备身份
 
