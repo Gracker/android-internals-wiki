@@ -47,13 +47,13 @@ last_review_finalize_at: '2026-07-31T08:12:00+08:00'
 
 ## 阅读源码前，固定三个坐标
 
-AOSP（Android Open Source Project，Android 开源项目）源码阅读服务于一个可验证的问题：某段运行时行为由哪一版代码产生，控制条件是什么，证据能否解释设备上的现象。开始搜索前，记录三个坐标：
+AOSP（Android Open Source Project，Android 开源项目）源码阅读要回答一个可验证的问题：某段运行时行为由哪一版代码产生，控制条件是什么，证据能否解释设备上的现象。开始搜索前，记录三个坐标：
 
 1. **平台版本**：默认使用 `android-17.0.0_r1`，对应 Android 17 / API 37。
 2. **Git 项目**：例如 `platform/frameworks/base` 或 `platform/frameworks/native`。
 3. **项目内路径**：例如 `core/java/android/view/Choreographer.java`。
 
-AOSP checkout（源码检出目录）由 Repo 管理的多个 Git 项目组成。Repo 是协调这些仓库的工具，manifest（清单）记录项目、路径和 revision（分支、tag 或 commit）。`frameworks/base` 是一个项目路径，`art` 是另一个项目路径；顶层目录与 Git 项目也不总是一一对应。只写“我看了 AOSP 最新代码”无法复核，因为 `main`、`android-latest-release`、发布 tag（标签）和厂商分支可能已经分开。
+AOSP checkout（源码检出目录）由 Repo 管理的多个 Git 项目组成。Repo 是协调这些仓库的工具，manifest（清单）记录项目、路径和 revision（分支、tag 或 commit）。`frameworks/base` 与 `art` 是两个并列的 Git 项目；顶层目录与 Git 项目也不总是一一对应。只写“我看了 AOSP 最新代码”无法复核，因为 `main`、`android-latest-release`、发布 tag（标签）和厂商分支可能已经分开。
 
 阅读时再保留一份运行现场：
 
@@ -130,7 +130,7 @@ file:services/surfaceflinger symbol:composite
 - `services/inputflinger/`：输入读取与分发；
 - `cmds/atrace/`：atrace 命令及类别配置。
 
-SurfaceFlinger 的实现已经分布在 `SurfaceFlinger.cpp`、`CompositionEngine/`、`DisplayHardware/`、`Scheduler/` 等子目录。只在单个文件里寻找整条合成流程会漏掉输出策略、HWC（Hardware Composer，硬件合成器）与 RenderEngine（SurfaceFlinger 的 GPU 合成组件）边界。
+SurfaceFlinger 的实现已经分布在 `SurfaceFlinger.cpp`、`CompositionEngine/`、`DisplayHardware/`、`Scheduler/` 等子目录。只在单个文件里找整条合成流程，会漏掉输出策略，也看不清 HWC（Hardware Composer，硬件合成器）与 RenderEngine（SurfaceFlinger 的 GPU 合成组件）之间的边界。
 
 ### `system/core`：init、日志与系统基础组件
 
@@ -397,7 +397,7 @@ Android 17 的主合成链可按下面的源码关系阅读：
 
 Client composition 指 RenderEngine 使用 GPU 完成的客户端合成；device composition 则交给 HWC/HAL 与显示硬件。`getDeviceCompositionChanges()` 不保证每帧都单独执行 `validate()`：没有 client composition 且满足提交时序条件时，它会先尝试 `presentOrValidate()`。如果该调用已经完成 present，后续 `presentAndGetReleaseFences()` 会刷新待执行命令并使用已保存的 fences。
 
-`Output::present()` 还可能采用 composition prediction（沿用上一帧策略，同时验证本帧 HWC 结果）、异步 prepare（并行进行 HWC 协商与可能的 GPU 合成准备）或 present offload（把本帧提交临时交给 worker 线程）。一次 trace 中采用哪条分支，要看 output state（输出状态）、composition type、HWC 结果、Fence 与相关 slice。
+`Output::present()` 还可能采用 composition prediction（沿用上一帧策略，同时验证本帧 HWC 结果）、异步 prepare（并行开展 HWC 协商与可能的 GPU 合成准备）或 present offload（把本帧提交临时交给 worker 线程）。一次 trace 中采用哪条分支，要看 output state（输出状态）、composition type、HWC 结果、Fence 与相关 slice。
 
 旧资料常出现 `onMessageRefresh()`、`composeSurfaces()`、`Layer::onDraw()` 或直接的 `validateDisplay()` / `presentDisplay()`。这些名字适合对应版本；Android 17 阅读应从当前封装层（wrapper）和 CompositionEngine 结构出发。HWC wrapper 内部仍会调用 Composer HAL，但 Framework 侧入口已经有明确封装。
 
