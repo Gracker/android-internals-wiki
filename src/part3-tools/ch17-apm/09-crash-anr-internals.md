@@ -44,9 +44,9 @@ status: finalized
 
 # 崩溃与 ANR 捕获机制
 
-稳定性 APM（Application Performance Monitoring，这里指应用性能与稳定性监控）面对的不止一种“崩溃”。Java 未捕获异常、Native（C/C++ 等本地代码）同步致命信号、系统判定的 ANR（Application Not Responding，应用无响应）、lmkd（low memory killer daemon，Android 用户态低内存终止服务）杀进程和资源耗尽，发生时的线程状态、权限与剩余执行时间都不同。采集器应先回答“当前还能安全做什么”，再决定采哪些数据。
+稳定性 APM（Application Performance Monitoring，这里指应用性能与稳定性监控）面对的不止一种“崩溃”：Java 未捕获异常、Native（C/C++ 等本地代码）同步致命信号、系统判定的 ANR（Application Not Responding，应用无响应）、lmkd（low memory killer daemon，Android 用户态低内存终止服务）杀进程和资源耗尽。这些现场发生时的线程状态、权限与剩余执行时间都不同。采集器应先回答“当前还能安全做什么”，再决定采哪些数据。
 
-以下内容以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码基线，涉及内核资源边界时以 `android17-6.18-2026-06_r6` 为基线。Android 8—10 的兼容路径会保留，但不会把厂商权限、root 能力或旧时代可读文件写成普通应用的通用能力。
+以下内容以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码基线，涉及内核资源边界时以 `android17-6.18-2026-06_r6` 为基线。Android 8—10 的兼容路径会保留，但不会把厂商权限、root 能力或旧系统上可读的文件写成普通应用的通用能力。
 
 ## 1. 四类现场，四种证据强度
 
@@ -57,7 +57,9 @@ status: finalized
 | ANR | system_server 判定、ART `SignalCatcher`、`ApplicationExitInfo` | 进程可能仍存活，也可能稍后被杀 | 系统 ANR trace、触发类型、同一时间窗的 Perfetto/ProfilingTrigger |
 | 资源耗尽与 LMK | 周期资源采样、lmkd、退出历史 | 临界点可能无法执行用户代码 | 预采样趋势、系统 reason、RSS/PSS、FD/线程/VMA 使用量 |
 
-breadcrumb 是应用预先记录的轻量事件轨迹。Native 现场里，`siginfo_t` 保存信号原因和 fault address（出错地址），`ucontext_t` 保存寄存器等 CPU 上下文；tombstone 是 Android 系统生成的 Native 崩溃报告，minidump 是便于跨平台处理的紧凑转储文件，ELF build id 用来唯一匹配二进制与符号。资源指标中，RSS 是实际驻留在内存中的页，PSS 按共享比例分摊内存，FD 是 file descriptor（文件描述符），VMA 是 virtual memory area（虚拟内存区域）。Perfetto 是 Android 系统跟踪工具，`ProfilingTrigger` 是由系统事件触发性能采集的公开 API。
+breadcrumb 是应用预先记录的轻量事件轨迹。Native 现场里，`siginfo_t` 保存信号原因和 fault address（出错地址），`ucontext_t` 保存寄存器等 CPU 上下文；tombstone 是 Android 系统生成的 Native 崩溃报告，minidump 是便于跨平台处理的紧凑转储文件，ELF build id 用来唯一匹配二进制与符号。
+
+资源指标中，RSS 是实际驻留在内存中的页，PSS 按共享比例分摊内存，FD 是 file descriptor（文件描述符），VMA 是 virtual memory area（虚拟内存区域）。Perfetto 是 Android 系统跟踪工具，`ProfilingTrigger` 是由系统事件触发性能采集的公开 API。
 
 “主线程卡了 5 秒”只是应用端 watchdog（定时检查线程是否响应的监视器）事件，不能直接视为系统 ANR；`SIGKILL` 也不能直接视为 LMK。稳定性样本要保存 `evidence_source`（证据来自哪里）与 `confidence`（结论可信度），防止服务端把应用推测写成系统结论。
 
@@ -122,13 +124,13 @@ class ChainedCrashHandler private constructor(
 }
 ```
 
-这段代理保留系统默认 handler，并用 CAS（compare-and-set，原子比较并设置）阻止采集器重复进入。`previous` 自身若返回，代码才执行防御性终止；正常 Android 路径会在系统 handler 中结束进程。实际安装还要拒绝 `previous === handler` 一类循环，并在集成测试中验证 Java exception、Java heap OOM、后台线程崩溃和多个 SDK 安装顺序。
+这段代理保留系统默认 handler，并用 CAS（compare-and-set，原子比较并设置）阻止采集器重复进入。`previous` 自身若返回，代码才执行防御性终止；正常 Android 路径会在系统 handler 中结束进程。实际安装还要防止 `previous === handler` 这类循环，并在集成测试中验证 Java exception、Java heap OOM、后台线程崩溃和多个 SDK 安装顺序。
 
 ### 2.2 崩溃当下只写轻量记录（envelope）
 
 这里的 envelope 是一条字段受限、字节数有上限的崩溃记录。Java handler 的限制少于 Native signal handler，但仍不能假设堆和锁可用。`Throwable.printStackTrace()`、JSON 序列化、数据库事务和压缩都会分配对象；遇到 OOM 或运行时已经损坏时，它们可能再次失败。
 
-推荐把采集拆为两段：
+推荐的采集分工如下：
 
 - 正常运行期维护固定容量的 breadcrumb ring buffer（环形缓冲区，满后覆盖最旧记录），并周期写入版本、进程、前后台、资源使用量等已脱敏快照。
 - crash handler 只写 magic（识别文件格式的固定标记）、schema version、时间、线程 id、异常类型和预存 breadcrumb 的序号；栈序列化要限制深度、cause（异常原因链）数量和总字节数。
@@ -141,7 +143,9 @@ class ChainedCrashHandler private constructor(
 
 ### 3.1 debuggerd、tombstone 与 Crashpad
 
-signal（信号）是操作系统通知进程发生事件的机制；同步致命信号由当前线程执行的指令直接触发，常见类型包括 `SIGSEGV`、`SIGABRT`、`SIGBUS`、`SIGILL`、`SIGFPE` 和 `SIGTRAP`。Bionic（Android 的 C 标准库）与 debuggerd（Native 崩溃诊断服务）组成的系统处理路径，会采集寄存器、线程、maps（进程内存映射）、backtrace（调用栈）和 abort message（主动终止说明）等信息，再由 `tombstoned` 服务保存 tombstone。普通应用不能直接读取 `/data/tombstones`；Android 12 / API 31 起，可在 `ApplicationExitInfo.REASON_CRASH_NATIVE` 的 `getTraceInputStream()` 中取得对应的 tombstone protobuf。protobuf 是 Protocol Buffers 二进制编码，这份记录也可能在读取前被系统环形存储中的新记录覆盖。
+signal（信号）是操作系统通知进程发生事件的机制；同步致命信号由当前线程执行的指令直接触发，常见类型包括 `SIGSEGV`、`SIGABRT`、`SIGBUS`、`SIGILL`、`SIGFPE` 和 `SIGTRAP`。Bionic（Android 的 C 标准库）和 debuggerd（Native 崩溃诊断服务）构成系统的处理路径，负责采集寄存器、线程、maps（进程内存映射）、backtrace（调用栈）和 abort message（主动终止说明）等信息，再由 `tombstoned` 服务保存 tombstone。
+
+普通应用不能直接读取 `/data/tombstones`；Android 12 / API 31 起，可在 `ApplicationExitInfo.REASON_CRASH_NATIVE` 的 `getTraceInputStream()` 中取得对应的 tombstone protobuf。protobuf 是 Protocol Buffers 二进制编码，这份记录也可能在读取前被系统环形存储中的新记录覆盖。
 
 Breakpad 常由进程内 handler 生成 minidump。Crashpad 的 Linux/Android 设计把客户端与独立 handler 进程分开：客户端预先注册，崩溃时只把异常上下文的位置通知 handler，后者读取目标进程并写 dump。out-of-process（进程外）设计可以少依赖已经损坏的堆和锁，但 handler 进程的启动、注册、权限与生命周期仍要在正常运行期准备好。
 
@@ -301,7 +305,7 @@ private fun InputStream.readAtMost(limit: Int): ByteArray {
 
 这段代码仍会分配内存，并执行 Binder 调用和文件 I/O（输入/输出），只能放在冷启动后的后台任务中运行。生产实现要限制总记录数、单条 trace 大小、单次任务时长和本地磁盘占用；解析失败时保存 schema/version 与少量摘要，不反复上传同一条损坏记录。
 
-## 5. 资源耗尽：OOM 只是结果名的一部分
+## 5. 资源耗尽：OOM 不只有 Java heap 一种
 
 ### 5.1 Java heap、Native RSS、FD、线程和 VMA
 
@@ -413,7 +417,7 @@ Native 冲突更难靠安装顺序解决：
 
 ## 8. GWP-ASan：Android 17 默认走 Recoverable 抽样
 
-GWP-ASan 是 Native 堆内存错误抽样检测器。它随机挑选少量 allocation（内存分配），放入由 guard page（禁止访问的保护页）隔开的区域，从而捕获 heap use-after-free（对象释放后仍被访问，简称 UAF）和 heap-buffer-overflow（读写越过堆缓冲区边界）。它不要求重编译第三方 Native 库，CPU 开销设计得很低；启用时，每个受影响进程当前约占用 70 KiB 固定内存。它用于在线上取得真实错误现场，不提供内存安全防护。
+GWP-ASan 是 Native 堆内存错误抽样检测器。它随机挑选少量 allocation（内存分配），放入由 guard page（禁止访问的保护页）隔开的区域，从而捕获 heap use-after-free（对象释放后仍被访问，简称 UAF）和 heap-buffer-overflow（读写越过堆缓冲区边界）。启用后，每个受影响进程当前约占用 70 KiB 固定内存，CPU 开销也设计得很低，而且不需要重编译第三方 Native 库。GWP-ASan 用于在线上取得真实错误现场，不提供内存安全防护。
 
 公开配置应使用 manifest：
 
@@ -440,7 +444,7 @@ Android 17 源码中的默认内部参数是：
 
 ## 9. Android 17 ProfilingTrigger 提供补充证据
 
-`ProfilingManager` 从 API 35 提供 app-driven profiling，即由应用请求 system trace、Java heap dump、heap profile 或 stack sample 等性能文件。`ProfilingTrigger` 从 API 36 支持预先注册系统事件，由系统在事件发生时采集。36.1 指 Android 16 QPR2 的 minor SDK release（次版本 SDK，编译包为 Android SDK Platform 36.1），不是 SDK Extensions 的版本号。与稳定性相关的主要能力如下：
+`ProfilingManager` 从 API 35 起提供 app-driven profiling，即由应用请求 system trace、Java heap dump、heap profile 或 stack sample 等性能文件。`ProfilingTrigger` 从 API 36 起支持预先注册系统事件，由系统在事件发生时采集。36.1 指 Android 16 QPR2 的 minor SDK release（次版本 SDK，编译包为 Android SDK Platform 36.1），不是 SDK Extensions 的版本号。与稳定性相关的主要能力如下：
 
 | 版本 | trigger | 返回文件与边界 |
 | --- | --- | --- |
