@@ -44,9 +44,11 @@ title: 混合栈与跨平台 APM (WebView / Flutter)
 
 # 混合栈与跨平台 APM (WebView / Flutter)
 
-混合栈指同一 App 页面或业务流程同时经过 Android Native、WebView 与 Flutter。它的 APM（Application Performance Monitoring，应用性能监控）要保留三套运行时各自的事件含义。Android 宿主知道 Activity、Window、主线程、网络和 native crash（C/C++ 等原生层崩溃）；WebView 掌握网页导航、绘制与 JavaScript 事件；Flutter engine 能区分 Dart framework build、raster（把图层转换成最终像素）和异常。三边事件可以关联到同一条会话时间线，但若压成一个“首屏耗时”，诊断信息就会消失。
+混合栈指同一 App 页面或业务流程同时经过 Android Native、WebView 与 Flutter。它的 APM（Application Performance Monitoring，应用性能监控）要保留三套运行时各自的事件含义。
 
-Android 平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点。WebView provider 是实际提供 WebView 内核、可独立于系统更新的软件包，因此还要记录它的 Chromium 版本。Flutter 以 2026-08-14 已发布的 3.47.0 stable tag 为当前锚点；具体 App 行为仍由 APK 携带的 engine revision（引擎源码版本）决定。只记录 Android 版本，无法区分后两个版本轴。
+Android 宿主知道 Activity、Window、主线程、网络和 native crash（C/C++ 等原生层崩溃）；WebView 掌握网页导航、绘制与 JavaScript 事件；Flutter engine 能区分 Dart framework build、raster（把图层转换成最终像素）和异常。三边事件可以关联到同一条会话时间线，但若压成一个“首屏耗时”，诊断信息就会消失。
+
+Android 平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点。WebView provider 是实际提供 WebView 内核、可独立于系统更新的软件包，因此还要记录它的 Chromium 版本。Flutter 以 2026-08-14 已发布的 3.47.0 stable tag 为当前锚点；具体 App 行为仍由 APK 携带的 engine revision（引擎源码版本）决定。只记录 Android 版本，无法区分 WebView provider 与 Flutter engine 这两个版本轴。
 
 ## 1. WebView 加载：用事件时间线计算端到端耗时
 
@@ -62,17 +64,19 @@ Native 负责创建一次 `session_id`，每次 main-frame（顶层页面，不�
 | 内容出现 | Window 首帧、visual-state callback | FCP、LCP candidate | 页面开始绘制和主要内容候选 |
 | 业务可用 | Bridge ready、首个可用交互 | 业务 `app_ready` | 产品定义的可操作状态 |
 
-Navigation Timing 是浏览器记录顶层文档导航、网络和文档事件时刻的标准性能条目。DOM（Document Object Model）是浏览器用节点树表示的当前文档结构。`onPageFinished()` 只表示 main frame 加载完成，官方 API 明确说明它不保证下一帧已经包含当时的 DOM。FCP（First Contentful Paint）记录首个文本、图片等内容开始绘制的时刻；LCP（Largest Contentful Paint）跟踪加载期间最大的内容元素候选。业务 `app_ready` 则由产品定义，用来表示数据、路由和关键交互已经可用。三者回答的问题不同。
+Navigation Timing 是浏览器记录顶层文档导航、网络和文档事件时刻的标准性能条目。DOM（Document Object Model）是浏览器用节点树表示的当前文档结构。`onPageFinished()` 只表示 main frame 加载完成，官方 API 明确说明它不保证下一帧已经包含当时的 DOM。
+
+FCP（First Contentful Paint）记录首个文本、图片等内容开始绘制的时刻；LCP（Largest Contentful Paint）跟踪加载期间最大的内容元素候选。业务 `app_ready` 则由产品定义，用来表示数据、路由和关键交互已经可用。文档生命周期、内容绘制和业务可用是三类不同的问题，要分开回答。
 
 TTI（Time to Interactive）试图估计页面何时进入可稳定交互状态，但浏览器没有对应的 Performance Entry（标准化的性能记录对象）。Lighthouse 10 已移除 TTI，因为它对偶发网络请求和 Long Task（长时间占用网页主线程的任务）过于敏感。线上 WebView 应采用明确的业务 `app_ready`，并按 provider 支持情况补充 LCP、Long Tasks 或 INP（Interaction to Next Paint，衡量用户交互到下一次绘制的响应延迟）；不能从 `loadEventEnd` 推导一个名为 TTI 的值。
 
-SPA（Single Page Application，单页应用）的 same-document navigation（不创建新文档的页面内导航）不会自动产生新的 Navigation Timing，也不会重置 LCP。本文用 H5 指 WebView 中运行的网页业务；它的路由层需要发出独立的 `route_id`、route start 和 route ready。一次 document load 的 LCP 不能重复算到后续每个 soft navigation（不重新加载顶层文档的软导航）上。
+SPA（Single Page Application，单页应用）的 same-document navigation（不创建新文档的页面内导航）不会自动产生新的 Navigation Timing，也不会重置 LCP。H5 指 WebView 中运行的网页业务，它的路由层需要发出独立的 `route_id`、route start 和 route ready。一次 document load 的 LCP 不能重复算到后续每个 soft navigation（不重新加载顶层文档的软导航）上。
 
 ### 1.2 `performance.now()` 与 `elapsedRealtime` 需要校准
 
 Web 指标的 `startTime` 和 `performance.now()` 都相对于当前页面的 `performance.timeOrigin`，也就是该文档高精度时间轴的起点。Native 事件通常使用 `SystemClock.elapsedRealtime()`。把 Native 发起 `evaluateJavascript()` 的时刻直接配给脚本中的 `performance.now()`，会忽略 UI 排队、renderer（执行网页代码并绘制内容的渲染进程）调度和回传延迟。
 
-可操作的校准方法是做多次往返采样：
+校准方法是多次往返采样：
 
 1. Native 在调用 `evaluateJavascript("performance.now()")` 前记录 `t0`。
 2. 回调到达 Native 时记录 `t1`，解析 JS 返回的 `jsNow`。
@@ -123,7 +127,7 @@ fun sampleWebClock(
 
 ### 1.3 PerformanceObserver 上报要兼容 provider 差异
 
-`PerformanceObserver` 是浏览器异步提供性能条目的接口。下面的脚本假设 Native 已通过 Web message listener 注入 `AndroidApm`，并配置 origin allowlist：origin 是 scheme、host 与 port 组成的网页来源，allowlist 只允许列出的来源获得该对象。注入上下文仅包含短期 session、navigation 和低基数 route key，也就是取值种类有限、便于分组的页面标识。脚本不读取原始 URL。
+`PerformanceObserver` 是浏览器异步提供性能条目的接口。这段脚本假设 Native 已通过 Web message listener 注入 `AndroidApm`，并配置 origin allowlist：origin 是 scheme、host 与 port 组成的网页来源，allowlist 只允许列出的来源获得该对象。注入上下文仅包含短期 session、navigation 和低基数 route key，也就是取值种类有限、便于分组的页面标识。脚本不读取原始 URL。
 
 ```javascript
 (() => {
@@ -231,7 +235,7 @@ LCP observer 给出的是候选序列。上面的实现会在首次 pointer/keyb
 
 Android 8 / API 26 起，PixelCopy 可以把 Window 指定 Rect 中已经合成的像素异步复制到 Bitmap。源区域会缩放到目标 Bitmap，因此没有必要创建 WebView 原尺寸位图。Window 必须已经取得 backing surface（承载待显示像素的底层缓冲区），官方建议至少等一次 draw；WebView 还要处于 attached（已加入窗口视图树）、可见且尺寸有效的状态。
 
-下面的 Kotlin 示例把结果分成 `Classified` 和 `Inconclusive`。PixelCopy error、空区域或尚未 attach 都不能被记成“非白屏”。
+这段 Kotlin 示例把结果分成 `Classified` 和 `Inconclusive`。PixelCopy error、空区域或尚未 attach 都不能被记成“非白屏”。
 
 ```kotlin
 sealed interface PixelSample {
@@ -326,7 +330,7 @@ fun sampleWebViewPixels(
 
 ### 2.2 从“疑似”到“确认”
 
-建议采用状态机，也就是只允许白屏判定在预先定义的状态和转换条件之间推进：
+白屏判定建议用状态机管理，只在预先定义的状态和转换条件之间推进：
 
 - `loading`：main-frame 导航已开始；
 - `visual_committed`：旧内容已经退出，等待下一次 draw；
@@ -351,7 +355,7 @@ WebView 在 Android 8 及以上可能把网页代码执行与绘制放在独立�
 - 该 WebView 已不可用，必须移出视图树、销毁并清除 Activity、Fragment、adapter 和缓存中的引用；
 - 完成旧实例清理并决定后续界面后返回 `true`，表示 App 已处理这次退出。返回 `false` 会让 renderer crash 导致 App crash，或让系统结束 App。
 
-下面的客户端只展示退出处理的关键顺序。`onDeadWebView` 需要由容器清除自己持有的强引用，并决定显示错误页还是创建新 WebView。
+客户端只展示退出处理的关键顺序。`onDeadWebView` 需要由容器清除自己持有的强引用，并决定显示错误页还是创建新 WebView。
 
 ```kotlin
 class ApmWebViewClient(
@@ -410,7 +414,7 @@ API 26—28 没有平台 `WebViewRenderProcessClient`；provider 不支持兼容
 - 长任务会延迟 heartbeat，但它也可能是业务允许的计算；
 - 网络失败、页面跳转和容器销毁都可能让心跳消失。
 
-因此样本要明确写 `signal_strength=direct|state|suspected` 和 `signal_source`：三档依次表示直接回调、状态变化信号和间接怀疑。只有 `onRenderProcessGone()` 能把 renderer 退出写成直接事件；超时推断不能冒充 crash。
+样本因此要明确写 `signal_strength=direct|state|suspected` 和 `signal_source`：三档依次表示直接回调、状态变化信号和间接怀疑。只有 `onRenderProcessGone()` 能把 renderer 退出写成直接事件；超时推断不能冒充 crash。
 
 ## 4. JSBridge：先保证来源可信，再测排队和序列化
 
