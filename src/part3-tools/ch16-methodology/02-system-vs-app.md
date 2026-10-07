@@ -4,8 +4,8 @@ chapter: '16.2'
 section: '16.2'
 status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-14'
-last_verified_against: AOSP android-17.0.0_r1；Android common kernel android17-6.18-2026-06_r6；Perfetto thread_state、FrameTimeline、memory counters 文档
+last_verified: '2026-10-07'
+last_verified_against: AOSP android-17.0.0_r1；Android common kernel android17-6.18-2026-06_r6；Perfetto thread_state、FrameTimeline、memory counters 文档（含 FrameTimeline Android 12+ 适用范围）
 confidence: high
 sources:
 - type: aosp
@@ -188,7 +188,7 @@ GC 频率主要与分配速率、heap（堆）容量、对象存活和 ART 策�
 
 ### App 主线程
 
-`Choreographer#doFrame`（帧回调）与 `performTraversals`（View 测量、布局和绘制遍历）或 Compose 对应阶段长时间 Running，且调用栈落在 App 逻辑，是 App 关键路径工作量的直接证据。仍需用 FrameTimeline（预期与实际帧时间线）的 deadline 判断这一帧是否真的晚到；固定的 16.67 ms 或 8.33 ms 不能覆盖可变刷新率和平台预测。
+`Choreographer#doFrame`（帧回调）与 `performTraversals`（View 测量、布局和绘制遍历）或 Compose 对应阶段长时间 Running，且调用栈落在 App 逻辑，是 App 关键路径工作量的直接证据。Android 12（API 31）及以上可以用 FrameTimeline（预期与实际帧时间线）的 deadline 判断这一帧是否真的晚到；固定的 16.67 ms 或 8.33 ms 不能覆盖可变刷新率和平台预测。Android 8–11 的 trace 需要退回到 Choreographer、SurfaceFlinger、fence 和 CPU/GPU 轨道组合判断。Perfetto 文档说明 SurfaceView 目前不在 FrameTimeline 支持范围内，涉及 SurfaceView 时要用 Layer、buffer/fence 和 SurfaceFlinger 轨道补证。
 
 特定操作稳定触发同一 App slice，也能加强 App 归因。操作相关性本身不充分：点击可能触发同步 Binder、存储、shader（GPU 着色程序）编译或系统窗口变化，仍需沿时间线继续追踪。
 
