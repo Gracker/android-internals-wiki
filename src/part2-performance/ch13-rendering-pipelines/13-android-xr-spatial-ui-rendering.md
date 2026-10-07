@@ -3,10 +3,11 @@ title: Android 17 / Android XR 空间 UI 与环境资产渲染性能
 chapter: '13.13'
 section: '13.13'
 section_title: Android 17 / Android XR 空间 UI 与环境资产渲染性能
-status: ready-to-publish
+status: finalized
 applicable_versions: Android XR / Jetpack XR SDK Developer Preview 4；Android 17 (API 37)
 last_verified: '2026-07-31'
 last_verified_against: Android 17 / API 37 与 android-17.0.0_r1 公共图形栈 / Android XR Developer Preview 4 / XR Compose 1.0.0-alpha16 / XR Runtime、SceneCore、ARCore 1.0.0-beta01 / XR Projected 1.0.0-alpha10 / Compose Glimmer 1.0.0-alpha16 / Unity Android XR Extensions / OpenXR 1.1 / android17-6.18-2026-06_r6
+last_review_finalize_at: '2026-10-07'
 confidence: high
 tags:
   - android-xr
