@@ -52,7 +52,7 @@ consolidated_from:
 
 # KOOM 与 LeakCanary 内存诊断
 
-LeakCanary 通过对象可达性和 Heap Dump 定位开发期 Java 泄漏，KOOM 面向线上或大规模设备补充低内存开销的泄漏、OOM 和线程监控。两者的触发、上传和隐私边界不同。
+LeakCanary 通过对象可达性和 Heap Dump 定位开发期 Java 泄漏；KOOM 面向线上或大规模设备，用较低的内存开销补充泄漏、OOM 和线程监控。两者的触发、上传和隐私边界不同。
 
 ## 对象监视、Heap Dump 与引用链
 
@@ -66,7 +66,7 @@ LeakCanary 用于回答一个具体问题：某个 Java/Kotlin 对象的生命�
 |---|---|---|
 | LeakCanary | 已知生命周期对象为何没有回收；哪条强引用路径保留了它 | native 内存为何上涨、线上发生率、整机内存压力 |
 | Android Studio Memory Profiler | 分配记录、heap dump、对象图和本地交互分析 | 线上分布和自动生命周期判定 |
-| Perfetto | PSS/RSS（共享内存按比例计入/全部计入的驻留内存）、GC、调度、FrameTimeline（帧生命周期轨道）和 heap profiling（堆分配记录）等时间线 | 某个已销毁 Fragment 被哪条 Java 引用长期保留 |
+| Perfetto | PSS/RSS（驻留内存；共享页在 PSS 中按比例计入、在 RSS 中全部计入）、GC、调度、FrameTimeline（帧生命周期轨道）和 heap profiling（堆分配记录）等时间线 | 某个已销毁 Fragment 被哪条 Java 引用长期保留 |
 | KOOM / APM | KOOM（线上内存监控框架）和 APM 记录的版本、机型、页面分布与受控样本；APM 指应用性能监控（Application Performance Monitoring） | 本地代码修改是否已经切断指定引用链 |
 
 截至 2026-08-14，版本选择要分稳定线和预览线：
@@ -93,11 +93,11 @@ dependencies {
 “对象被保留”“触发 heap dump”“确认泄漏”是三个阶段，不能合成一句“5 秒后发现泄漏”。这里的 heap dump 是某一时刻的堆对象与引用关系快照。
 
 1. 生命周期 watcher 在预期终点调用 `expectWeaklyReachable()`。`ObjectWatcher` 创建带唯一 key 的 `KeyedWeakReference`（可凭 key 在 heap 中找回目标的弱引用），并把它关联到 `ReferenceQueue`（弱引用目标可回收后进入的队列）。这个弱引用本身不会延长目标对象的生命周期。
-2. 2.14 的默认 `retainedDelayMillis` 是 5 秒。延迟任务执行时，`ObjectWatcher` 先从 `ReferenceQueue` 移除已经 weakly reachable（只剩弱引用、可由 GC 回收）的对象；仍在 `watchedObjects` map 中的对象被标记为 retained（超过观察窗口仍未变为 weakly reachable），并通知 LeakCanary。
+2. 2.14 的默认 `retainedDelayMillis` 是 5 秒。延迟任务执行时，`ObjectWatcher` 先从 `ReferenceQueue` 移除已经 weakly reachable（只剩弱引用、可由 GC 回收）的对象；仍在 `watchedObjects` map 中的对象被标记为 retained，即超过观察窗口仍未变为 weakly reachable，并通知 LeakCanary。
 3. retained 只是候选状态，还不是 heap 分析结论。`HeapDumpTrigger` 在后台线程检查 retained 数量，显式执行一次 `Runtime.gc()`，等待弱引用入队，再运行 finalization（对象终结处理），随后重新计数。
 4. 应用可见时，默认要达到 5 个 retained object 才 dump；应用不可见后，会等待一个 `retainedDelayMillis`，随后 1 个 retained object 也足以触发。用户点通知还可以主动请求 dump。
 5. dump 前会再检查开关、调试器状态、最近一次 dump 等条件。默认 `AndroidDebugHeapDumper` 调用公开的 `Debug.dumpHprofData()` 写出 `.hprof`；Hprof 是 JVM/ART heap dump 的文件格式。
-6. Shark 在 heap 中找到带 key 的弱引用对象，计算从 GC Root 到目标对象的最佳强引用路径。`ObjectInspector` 判断路径上对象是否应当泄漏，`ReferenceMatcher` 匹配已知系统或依赖引用模式。分析器还会估算 retained size（移除该对象后可能释放的内存），并根据尚未排除的 suspect reference（可疑引用）计算 signature；signature 是同类引用路径的稳定标识，用于归并报告。
+6. Shark 在 heap 中找到带 key 的弱引用对象，计算从 GC Root 到目标对象的最佳强引用路径。`ObjectInspector` 判断路径上对象是否应当泄漏，`ReferenceMatcher` 匹配已知系统或依赖引用模式。Shark 还会估算 retained size（移除该对象后可能释放的内存），再用尚未排除的 suspect reference（可疑引用）算出 signature；signature 是同类引用路径的稳定标识，用于归并报告。
 
 这段顺序有两个诊断含义：
 
@@ -119,7 +119,7 @@ dependencies {
 
 “默认观察 View”不能简写成“所有 detached View 都会被扫一遍”。Fragment view 来自 Fragment 生命周期；root view 来自 Curtains（LeakCanary 使用的 Window root 监听库）对 WindowManager root 的监听；普通子 View 没有统一生命周期，业务仍要在明确终点自行观察。
 
-Service 也是高版本验证重点。2.14 的 `ServiceWatcher` 会反射 `ActivityThread.mH`、`mServices`、`Handler.mCallback` 和 `ActivityManager.IActivityManagerSingleton`，并识别 `STOP_SERVICE = 116`。Android 17 `android-17.0.0_r1` 中这些名字和停止流程仍存在，但它们都属于未承诺兼容性的 framework 内部实现。OEM（设备厂商）修改、hidden API（应用 SDK 未公开的接口）限制或后续平台改动都可能让 watcher 安装失败；测试包启动后要检查 Logcat 是否出现 `Could not watch destroyed services`，关键 Service 可在 `onDestroy()` 末尾再做业务侧观察。
+Service 也是高版本验证重点。2.14 的 `ServiceWatcher` 会反射 `ActivityThread.mH`、`mServices`、`Handler.mCallback` 和 `ActivityManager.IActivityManagerSingleton`，并识别 `STOP_SERVICE = 116`。这些名字和停止流程在 Android 17 `android-17.0.0_r1` 中仍然存在，但它们都是 framework 内部实现，不承诺兼容性。OEM（设备厂商）修改、hidden API（应用 SDK 未公开的接口）限制或后续平台改动都可能让 watcher 安装失败；测试包启动后要检查 Logcat 是否出现 `Could not watch destroyed services`，关键 Service 可在 `onDestroy()` 末尾再做业务侧观察。
 
 ### 自定义观察要放在明确的终点
 
@@ -163,7 +163,7 @@ Leak trace 是 GC Root 到 retained object 的强引用路径，不是线程调�
 - `├─` / `╰→` 是路径上的对象；`↓` 是指向下一对象的字段、数组元素或 Java local（Java 局部变量）。
 - `Leaking: NO / YES / UNKNOWN` 来自 Shark 的对象状态推断，分别表示该对象有证据表明不应泄漏、应当泄漏，或暂时无法判断。
 - `~~~` 标出尚未被排除的 suspect reference。它表示“应继续查的引用”，不等于工具已经定位到一行错误代码。
-- `retainedHeapByteSize` 估算移除该泄漏后可回收的字节数，还可计入部分与 Java 对象关联的 native 大小，例如 Android Bitmap。它不能覆盖通用 native heap；共享对象图和运行时状态也会限制数值的解释范围。
+- `retainedHeapByteSize` 估算移除该泄漏后可回收的字节数，其中还会计入与 Java 对象关联的部分 native 大小，例如 Android Bitmap。它不覆盖通用的 native heap；共享对象图和运行时状态也会限制数值的解释范围。
 - signature 由 suspect reference 组合计算，用来把同一原因的多个实例归为一组。
 
 下面是一条经过压缩、但保留 LeakCanary 文本结构的 Fragment view 泄漏：
@@ -328,7 +328,7 @@ LeakCanary 使用 `ReferenceMatcher` 识别已知第三方或 Android Framework 
 Library Leak 按影响处理：
 
 - 记录 signature、系统版本、厂商、依赖版本、发生场景和 retained size。
-- 查系统或依赖项目的 issue 与修复版本，让相同场景分别运行升级、降级或最小规避方案，比较结果。
+- 查系统或依赖项目的 issue 与修复版本，针对同一场景分别验证升级、降级或最小规避方案，再比较结果。
 - 高流量页面或大 retained size 即使来自系统，也要评估生命周期顺序、功能降级或隔离进程。
 - 发生比例低且无法规避的问题可以暂缓，但 matcher 要有 issue、owner、适用版本和删除条件。
 
@@ -478,7 +478,7 @@ CI 可以按执行成本分三层；这里的“失败条件”是发现符合�
 
 ### 先看 Android 17 结论
 
-KOOM 是快手开源的内存专项工具，分为 Java heap（ART 管理的 Java/Kotlin 对象堆）、native heap（C/C++ 等本地代码申请的堆）和 thread（线程资源生命周期）三条诊断路径。它适合处理已经由 OOM（Out of Memory，内存耗尽）、PSS/RSS 或线程数趋势确认的内存问题。PSS 是按比例分摊共享页后的进程内存，RSS 是进程当前驻留的物理内存。若启动慢、网络慢或列表卡顿没有明确的内存证据，不应先接 KOOM。
+KOOM 是快手开源的内存专项工具，分为 Java heap（ART 管理的 Java/Kotlin 对象堆）、native heap（C/C++ 等本地代码申请的堆）和 thread（线程资源生命周期）三条诊断路径。PSS 是按比例分摊共享页后的进程内存，RSS 是进程当前驻留的物理内存。KOOM 适合处理已经由 OOM（Out of Memory，内存耗尽）、PSS/RSS 或线程数趋势确认的内存问题。若启动慢、网络慢或列表卡顿没有明确的内存证据，不应先接 KOOM。
 
 截至 2026-08-14，[Maven Central 元数据](https://repo.maven.apache.org/maven2/com/kuaishou/koom/koom-java-leak/maven-metadata.xml)中的最新正式版本仍是 `2.2.2`，最后更新时间为 2024-04-16。KOOM `master` 的 `VERSION_NAME` 已写为 `2.2.3`，该值尚未发布到 Maven Central。当前 `master` 顶部提交（HEAD）仍是 2026-01-12 的 [`df3b8c33f63ab1f23e814c19792314efb653deaf`](https://github.com/KwaiAppTeam/KOOM/commit/df3b8c33f63ab1f23e814c19792314efb653deaf)，构建配置使用 compileSdk 34、targetSdk 30、AGP（Android Gradle Plugin）7.1.0。compileSdk 决定编译时可见的 API，targetSdk 决定系统采用哪组兼容行为；这些配置和上游工程构建成功都不能证明 Android 17 运行兼容。
 
@@ -501,7 +501,7 @@ KOOM 是快手开源的内存专项工具，分为 Java heap（ART 管理的 Jav
 | `koom-native-leak` | 被 Hook 的 app `.so` 中尚未释放的 native 分配块 | Hook 分配/释放函数，将活跃分配与 `libmemunreachable` 结果求交集，产出大小、线程、相对地址和 so 名 | API 24+、arm64；依赖私有系统库与文本格式；API 37 未获上游保证 |
 | `koom-thread-leak` | 已退出、却没有 `detach` 或 `join` 的 joinable pthread | Hook `pthread_create`、`pthread_detach`、`pthread_join`、`pthread_exit`，延迟上报创建栈和生命周期时间 | 源码限定 API 28～34、arm64；不能识别仍然活着的 `WAITING` 线程或无界线程池 |
 
-joinable pthread 是需要由其他线程调用 `pthread_join` 回收资源的 POSIX 线程；调用 `pthread_detach` 后，系统会在线程退出时自动回收。普通内存指标回答“进程用了多少”，KOOM 尝试回答“什么对象、分配或线程生命周期值得怀疑”。Android Studio Profiler 和 Perfetto 适合观察时间线、内存分区与复现过程；LeakCanary 专注可复现的 Java/Kotlin 对象保留。四类工具的证明范围不同，不能互相替换。
+joinable pthread 是 POSIX 线程，必须由另一个线程调用 `pthread_join` 才能回收资源；调用 `pthread_detach` 后，系统会在它退出时自动回收。普通内存指标回答“进程用了多少”，KOOM 尝试回答“什么对象、分配或线程生命周期值得怀疑”。Android Studio Profiler 和 Perfetto 适合观察时间线、内存分区与复现过程；LeakCanary 专注可复现的 Java/Kotlin 对象保留。四类工具的证明范围不同，不能互相替换。
 
 ### Java heap：触发器比 fork dump 更容易被误读
 
@@ -517,15 +517,15 @@ joinable pthread 是需要由其他线程调用 `pthread_join` 回收资源的 P
 | `FastHugeMemoryOOMTracker` | heap 使用率超过 90%，或一次轮询间隔内增长超过 350000 KB | 立即触发 |
 | `PhysicalMemoryOOMTracker` | 设备可用内存比例低于 5% 等区间 | 不会；当前实现只写日志，`return true` 已被注释 |
 
-这里没有“连续 GC（garbage collection，垃圾回收）后仍存活”的独立触发器，也没有 PSS/RSS 阈值直接触发 dump。PSS、RSS、VSS 会进入运行信息和报告；VSS（Virtual Set Size）表示进程虚拟地址空间总量。报告包含某个字段，不能证明该字段参与了触发判断。
+这里没有“连续 GC（garbage collection，垃圾回收）后仍存活”的独立触发器，也没有 PSS/RSS 阈值直接触发 dump。PSS、RSS 和 VSS 会进入运行信息和报告，其中 VSS（Virtual Set Size）表示进程虚拟地址空间总量。报告里出现某个字段，不能证明它参与了触发判断。
 
 进程进入后台时，应用生命周期的 `ON_STOP` 事件会停掉轮询；回到前台后才恢复。执行分析的 Android Service 也会等待进程回到前台。每个进程生命周期最多自动 dump 一次；非 debug 构建还配置了“每版本 5 次、首个 15 天内”的分析额度。源码在次数已经 `> 5` 时才拒绝，计数恰好为 5 时仍可能再分析一次。接入方若要求严格上限，需要修正这个边界。命中期限或次数限制后，监控循环会结束，本次不会生成 Hprof。
 
-这些默认值是上游策略，不是适合所有应用的通用安全值。业务接入至少还要加上远程开关、按设备能力分组、随机采样、交互状态、剩余磁盘、电量和两次采集之间的冷却时间。对一个 128 MB heap 的进程，90% 与对一个 512 MB heap 的进程含义不同；单看比例也区分不了有意保留的图片缓存和失控增长。
+这些默认值是上游策略，不是适合所有应用的通用安全值。业务接入至少还要加上远程开关、按设备能力分组、随机采样、交互状态、剩余磁盘、电量和两次采集之间的冷却时间。同样是 90%，在 128 MB heap 的进程和 512 MB heap 的进程里含义不同；单看比例也区分不了有意保留的图片缓存和失控增长。
 
 #### fork dump 降低主进程停顿，没有消除资源风险
 
-KOOM fast dump 的基本顺序是暂停 ART、调用 `fork()`、恢复父进程，再让子进程写 Hprof。`fork()` 创建的子进程先与父进程共享内存页；copy-on-write（写时复制）表示某一方修改页面时才复制该页，因此不会在创建子进程的瞬间复制整块堆。不过，父子进程随后修改的页面仍会增加物理内存，子进程也会消耗 CPU、文件 I/O 和磁盘。在可用内存已经很低时，诊断动作本身可能失败或加快进程退出。
+KOOM fast dump 的基本顺序是暂停 ART、调用 `fork()`、恢复父进程，再让子进程写 Hprof。`fork()` 创建的子进程先与父进程共享内存页；copy-on-write（写时复制）只在某一方修改页面时复制该页，因此创建子进程的瞬间不会复制整块堆。不过，父子进程随后修改的页面仍会增加物理内存，子进程也会消耗 CPU、文件 I/O 和磁盘。在可用内存已经很低时，诊断动作本身可能失败或加快进程退出。
 
 这一实现不属于公开 Android SDK。`koom-fast-dump` 会按 mangled name（编译器编码后的 C++ 符号名）从 `libart.so` 解析 `art::ScopedSuspendAll`、`art::gc::ScopedGCCriticalSection`、ART 锁和 `art::hprof::DumpHeap` 等私有符号。Android 17 的源码锚点是 [`platform/art@android-17.0.0_r1`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1)。平台源码中存在相似实现，只能说明源码里有这些能力，无法给应用提供稳定 ABI 承诺。上游把公共版本门停在 API 36，也说明 API 37 需要逐符号验证。
 
@@ -546,7 +546,7 @@ KOOM fast dump 的基本顺序是暂停 ART、调用 `fork()`、恢复父进程�
 
 ### Native leak：候选来自两份数据的交集
 
-Native 模块先用 xhook 改写目标 `.so` 的 PLT（Procedure Linkage Table，共享库调用外部函数时使用的跳转表），拦截 `malloc`、`realloc`、`calloc`、`memalign`、`posix_memalign` 和 `free`，维护仍未释放的分配记录。检查时，它再加载 `libmemunreachable.so`（Android 平台内部的 native 不可达内存分析库），解析私有的 `GetUnreachableMemoryString(bool, size_t)` 符号，并从人类可读文本中提取不可达地址。只有同时出现在“KOOM 活跃分配”和“系统不可达结果”中的内存块，才进入候选报告。
+Native 模块先用 xhook 改写目标 `.so` 的 PLT（Procedure Linkage Table，共享库调用外部函数时使用的跳转表），拦截 `malloc`、`realloc`、`calloc`、`memalign`、`posix_memalign` 和 `free`，维护仍未释放的分配记录。检查时，它再加载 `libmemunreachable.so`（Android 平台内部的 native 不可达内存分析库），解析私有的 `GetUnreachableMemoryString(bool, size_t)` 符号，再从这段文本输出里提取不可达地址。只有同时出现在“KOOM 活跃分配”和“系统不可达结果”中的内存块，才进入候选报告。
 
 这套做法带来四个边界：
 
