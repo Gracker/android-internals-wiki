@@ -77,7 +77,7 @@ Jetpack Benchmark 用于回答一个受约束的问题：同一场景、同一�
 4. 数字发生变化时，打开随迭代生成的 Perfetto trace（系统执行时间线）解释原因。
 5. 修复上线后，再由线上指标确认真实用户分布是否改善。
 
-线上 P95 与实验室 median（中位数）的样本来源、设备分布和负载都不同，不能直接相减。P95 表示 95% 的观测值不超过该数值。可以比较两者指向的阶段以及变化方向，数值门槛必须各自维护。
+线上看 P95（95% 的观测值不超过该数值），实验室看 median（中位数），两者的样本来源、设备分布和负载都不同，不能直接相减。可以比较两者指向的阶段和变化方向，数值门槛必须各自维护。
 
 ### 2026 年版本与平台锚点
 
@@ -125,7 +125,7 @@ full AOT 让实验更稳定，却不保证结果代表用户设备的常态编�
 
 #### 循环里只保留被测工作
 
-下面的例子测量固定 100 条数据的 JSON 解析。fixture 是可重复使用的固定测试数据，seed 是生成它的固定随机种子。fixture 在 `@Before` 中准备；循环内只有解析和防止消除的消费操作；结果校验放到循环外。
+下面的例子测量固定 100 条数据的 JSON 解析。fixture 是可重复使用的固定测试数据，seed 是生成它的固定随机种子；fixture 在 `@Before` 中准备，循环内只保留解析和防止结果被消除的消费操作，结果校验放到循环外。
 
 ```kotlin
 import androidx.benchmark.BlackHole
@@ -162,7 +162,7 @@ class FeedParserBenchmark {
 }
 ```
 
-被测对象是 `parser.parse(payload)`；准备数据固定为 seed 42；循环由 Benchmark 管理；指标是执行时间与库采集的分配信息；准备阶段会校验条目数，解析异常则直接让测试失败。`BlackHole.consume()` 防止编译器或 R8 把未使用的结果连同计算一起删除。该结果只能说明这一固定输入下的局部解析成本。
+被测对象是 `parser.parse(payload)`；准备数据固定为 seed 42；循环由 Benchmark 管理；指标是执行时间和库采集到的分配信息；准备阶段会校验条目数，解析异常则直接让测试失败。`BlackHole.consume()` 防止编译器或 R8 把未使用的结果连同计算一起删除。该结果只能说明这一固定输入下的局部解析成本。
 
 可变状态要在每轮恢复，但恢复成本不应混进算法时间。下面的片段演示对原数组做副本，再只测排序。
 
@@ -427,7 +427,7 @@ class StartupBenchmark {
 }
 ```
 
-被测对象是从 launch intent（启动 Activity 的意图）到首帧和 `reportFullyDrawn()` 的启动过程；每轮由 `StartupMode.COLD` 杀进程，应用数据不自动清除；指标是 TTID（Time to Initial Display，首帧显示时间）与可用时的 TTFD（Time to Full Display，完整内容显示时间）；找不到 ready sentinel、没有启动事件或超时都会让测试失败。10 次适合观察 median 和逐次 trace，不足以稳定估计 P95，若 CI 要使用 P95，需要增加样本并从 JSON 的 `runs` 计算。
+被测对象是启动过程，从 launch intent（启动 Activity 的意图）一路到首帧和 `reportFullyDrawn()`；每轮由 `StartupMode.COLD` 杀进程，应用数据不自动清除；指标是 TTID（Time to Initial Display，首帧显示时间）与可用时的 TTFD（Time to Full Display，完整内容显示时间）；找不到 ready sentinel、没有启动事件或超时都会让测试失败。10 次适合观察 median 和逐次 trace，不足以稳定估计 P95，若 CI 要使用 P95，需要增加样本并从 JSON 的 `runs` 计算。
 
 `startActivityAndWait()` 只保证启动 Activity 并等待平台可观察的启动完成。额外的 `home_ready` 检查用于防止下一轮在异步数据仍加载时开始；TTFD 是否正确仍取决于应用报告 fully drawn 的时机。
 
@@ -505,8 +505,8 @@ class FeedScrollBenchmark {
 
 它输出：
 
-- `timeToInitialDisplayMs`：系统收到 launch intent 到目标 Activity 第一帧完成。
-- `timeToFullDisplayMs`：到应用 `reportFullyDrawn()` 所在或之后第一帧完成；API 29 前可能不可用。
+- `timeToInitialDisplayMs`：从系统收到 launch intent 到目标 Activity 第一帧完成的时间。
+- `timeToFullDisplayMs`：到应用 `reportFullyDrawn()` 所在或之后第一帧完成的时间；API 29 前可能不可用。
 
 TTID 低只说明用户较快看到第一帧。若首屏仍是骨架屏或不可交互，业务目标要看 TTFD，并审计 `reportFullyDrawn()` 是否过早、过晚或从未调用。
 
@@ -514,7 +514,7 @@ TTID 低只说明用户较快看到第一帧。若首屏仍是骨架屏或不可
 
 它输出每帧样本并在多次迭代后形成分位数：
 
-- `frameDurationCpuMs`：UI thread 与负责提交绘制命令的 RenderThread 产出一帧的 CPU duration；API 31 前无法计入 `Choreographer#doFrame` 开始前的时间。
+- `frameDurationCpuMs`：UI thread 和 RenderThread 产出一帧所用的 CPU duration（RenderThread 负责提交绘制命令）；API 31 前无法计入 `Choreographer#doFrame` 开始前的时间。
 - `frameOverrunMs`：API 31+ 相对帧 deadline（系统给这一帧分配的时间预算）的超期或余量；正值表示超过 deadline，负值表示仍有余量。
 - `frameCount`：测量窗口内产出的帧数，用来解释“删掉无效帧后分位数上升”之类的样本变化。
 
@@ -657,7 +657,7 @@ class BaselineProfileGenerator {
 
 生成后的 profile 需要随关键用户旅程、R8 映射（压缩后名称与原始名称的对应关系）、启动依赖和大版本调整重新生成。文件存在只说明产物被创建，`Partial(Require)`、`ArtMetric` 与启动/滚动指标才能证明它在当前 APK 和设备上发挥作用。
 
-应用侧 producer/consumer 配置、`baseline.prof`/`baseline.profm` 位置、ProfileInstaller/Verifier 状态、Cloud Profile 与 DM 边界见 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](../../part5-app/ch21-startup/04-baseline-startup-cloud-profile.md)。这里不再复制第二套生成教程。
+应用侧 producer/consumer 配置、`baseline.prof`/`baseline.profm` 位置、ProfileInstaller/Verifier 状态、Cloud Profile 与 DM 边界见 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](../../part5-app/ch21-startup/04-baseline-startup-cloud-profile.md)。
 
 ### 源码核验记录
 
