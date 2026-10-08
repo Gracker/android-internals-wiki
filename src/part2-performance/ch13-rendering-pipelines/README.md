@@ -1,9 +1,8 @@
 # 第 13 章：渲染管线专题
 
-Android 渲染没有一条适用于所有场景的固定流水线。分析前，先确认由谁生产 buffer（Producer）、数据写入哪个 Surface、layer（合成图层）如何组织，以及合成发生在应用内部、SurfaceFlinger 的 GPU 路径还是 HWC 硬件路径，再进入对应专项。框架名、控件名或某个很长的 trace slice（追踪时间区间），都不能代替对实际对象和调用路径的确认。
+Android 渲染没有一条适用于所有场景的固定流水线。分析前，先把这几件事确认下来：buffer 由谁生产（Producer）、数据写入哪个 Surface、layer（合成图层）如何组织，以及合成发生在应用内部、走 SurfaceFlinger 的 GPU 路径还是 HWC 硬件路径，然后再进入对应专项。框架名、控件名或一段很长的 trace slice（追踪时间区间），都不能代替对实际对象和调用路径的确认。
 
 ## 内容索引
-
 
 - [13.1 Android View 渲染管线与分析方法](01-android-view-pipeline-analysis.md)
 - [13.2 Android 软件、离屏与混合渲染路径](02-android-software-offscreen-mixed-rendering.md)
