@@ -134,7 +134,7 @@ last_consolidated_at: '2026-08-24'
 
 sched_ext 允许厂商在受控接口上实现调度策略，游戏模式和输入优先级则把场景信号传给调度、频率和显示系统。收益取决于任务识别、CPU 预算和温度约束。
 
-sched_ext、MUSCHED 和 Binder 依赖传播影响关键线程获得 CPU 的机会；Game Mode、InputDispatcher 和刷新率分别涉及场景策略、输入路由与呈现时序。判断“游戏更跟手”时，要沿触控到显示的路径分段取证，避免把线程调度提速写成输入路由优先级变化。
+sched_ext、MUSCHED 和 Binder 的优先级传播，都会影响关键线程拿到 CPU 的机会；Game Mode、InputDispatcher 和刷新率则分别对应场景策略、输入路由和呈现时序。判断“游戏更跟手”时，要沿触控到显示的路径分段取证，避免把线程调度提速写成输入路由优先级变化。
 
 ## sched_ext 接口、策略与回退
 
@@ -154,7 +154,7 @@ Android 17 的 arm64 GKI（Generic Kernel Image，通用内核镜像）配置含
 
 ### sched_ext 在 Android CPU 调度栈中的位置
 
-应用创建的 Java 线程、native 线程（通常承载 C/C++ 代码）和 Binder 线程进入内核后，都以 `task_struct`（Linux 的任务数据结构）表示。线程池、协程调度器和 WorkManager 决定工作怎样映射到线程；sched_ext 处理已经处于可运行状态（runnable，即工作已就绪但可能仍在等待 CPU）的普通任务怎样选 CPU、排队和获得运行机会。两者处在不同层级。
+应用创建的 Java 线程、native 线程（通常承载 C/C++ 代码）和 Binder 线程进入内核后，都以 `task_struct`（Linux 的任务数据结构）表示。线程池、协程调度器和 WorkManager 决定工作怎样映射到线程；到了内核这一层，可运行状态（runnable，即工作已就绪但可能仍在等待 CPU）的普通任务选哪颗 CPU、在队列里排第几、什么时候拿到运行时间，则由 sched_ext 决定。两者处在不同层级。
 
 Android 上还要同时观察以下机制：
 
@@ -346,7 +346,7 @@ GitHub 上的 `Wuzikh1/sched_ext` 仓库包含 `hmbird_sched_proc_main.c`，代�
 
 高通、联发科或某个手机品牌的名称也不能替代设备证据。量产状态要按内核 tag、固件版本和具体型号记录。
 
-### 它怎样影响前台交互
+### sched_ext 怎样影响前台交互
 
 sched_ext 对体验的影响沿着四条路径传播。
 
@@ -459,7 +459,7 @@ ORDER BY adjacent_cpu_changes DESC;
 
 ### 与 cpuset、affinity 和 uclamp 一起分析
 
-cpuset 和 CPU 亲和性决定任务允许在哪些 CPU 上运行。BPF `select_cpu()` 的返回值超出 allowed mask（允许 CPU 掩码）时会被内核忽略。若任务被限制在小核，单独调整 DSQ 顺序无法把它送到不允许的大核。
+cpuset 和 CPU 亲和性决定任务允许在哪些 CPU 上运行。BPF `select_cpu()` 的返回值超出 allowed mask 时会被内核忽略。若任务被限制在小核，单独调整 DSQ 顺序无法把它送到不允许的大核。
 
 uclamp 影响 `effective_cpu_util()` 计算和容量请求。full 模式中的 SCX 性能目标值也会经过这条约束路径。观察到频率被压住时，应检查 `uclamp.max`、温控造成的容量折减、CPUFreq 策略与设备驱动，不能把责任直接归给 BPF 调度器。
 
@@ -508,9 +508,9 @@ MUSCHED 先选空闲且允许运行的 CPU；找不到时，选择没有 RT/VIP 
 
 负载均衡同时包含两种方向：空闲 CPU 从其他 CPU 的运行队列（runqueue）拉取任务（pull）；周期性调度时钟（tick）发现当前 CPU 正在运行 RT 任务、另有 VIP 已等待超过 4 ms 时，把 VIP 推向其他 CPU（push）。4 ms 是论文样机与 120 Hz 场景下的调优点，不是 sched_ext 常量。
 
-论文的实验室环境是荣耀 Magic7、Snapdragon 8 Elite、MagicOS 9、Android 15 和 Linux 6.6。10 个应用各测试 100 次，报告冷启动平均时间降低 14.8%、标准差降低 24.25%，VIP 任务的睡眠时间和可运行等待时间分别降低 71.8% 与 52.6%，与画中画（PiP）视频通话并发时的前台场景响应延迟降低 9.8%～22.8%。这些数字只覆盖论文条件。
+论文的实验室环境是荣耀 Magic7、Snapdragon 8 Elite、MagicOS 9、Android 15 和 Linux 6.6。10 个应用各测试 100 次：冷启动平均时间降低 14.8%，标准差降低 24.25%；VIP 任务的睡眠时间和可运行等待时间分别降低 71.8% 与 52.6%；与画中画（PiP）视频通话并发时，前台场景响应延迟降低 9.8%～22.8%。这些数字只覆盖论文条件。
 
-论文还报告了自 2024 年 1 月起覆盖超过 2,000 万台设备的量产统计。按每千小时用户使用时间计算，动画、滑动和启动异常次数分别从 27.2 降到 20.4、10.5 降到 6.8、94.5 降到 65.5。论文未公开设备分层、实验分桶和置信区间，这些数据只能视为产品证据，不能当作通用基准。论文没有“触控到显示最高降低 31%”或“消除 92% 掉帧”的结论。
+论文还报告了自 2024 年 1 月起覆盖超过 2,000 万台设备的量产统计。按每千小时用户使用时间计算，动画、滑动和启动异常次数分别从 27.2、10.5、94.5 降到 20.4、6.8 和 65.5。论文未公开设备分层、实验分桶和置信区间，这些数据只能视为产品证据，不能当作通用基准。论文没有“触控到显示最高降低 31%”或“消除 92% 掉帧”的结论。
 
 #### 量产成本与 Android 17 迁移
 
@@ -586,7 +586,7 @@ flowchart LR
 
 ### AOSP Game Mode 提供了什么
 
-Game Mode API 和相关干预机制可用于部分 Android 12 设备，并从 Android 13 起面向运行该版本及以上的设备提供。官方文档要求游戏每次从暂停状态恢复时重新调用 `GameManager#getGameMode()`，因为用户可能在暂停期间切换 Standard、Performance 或 Battery 模式。游戏可据此调整画质、目标帧率和资源使用。
+Game Mode API 和相关干预机制在部分 Android 12 设备上可用；从 Android 13 起，该能力面向运行 Android 13 及以上的设备提供。官方文档要求游戏每次从暂停状态恢复时重新调用 `GameManager#getGameMode()`，因为用户可能在暂停期间切换 Standard、Performance 或 Battery 模式。游戏可据此调整画质、目标帧率和资源使用。
 
 游戏模式干预（Game Mode interventions）是设备厂商为未自行适配的游戏设置的系统侧优化，可包含帧率上限（FPS throttling）和分辨率缩放。游戏声明支持某个 Game Mode 后，需要自行完成对应优化；平台会清除此前针对该模式施加的厂商干预，避免两套策略冲突。这类干预没有定义输入事件的调度顺序。
 
@@ -594,7 +594,7 @@ Game Mode API 和相关干预机制可用于部分 Android 12 设备，并从 An
 
 Android 13 引入 `GAME_LOADING` 电源模式。游戏通过 Game State（游戏向系统上报的运行状态）报告 `isLoading`，`GameManagerService` 只在 Performance 模式下通知 Power HAL，并通过超时限制加载加速的持续时间。
 
-Android 14 引入 `GAME` 电源模式。Android 17 的 `GameManagerService` 观察处于 TOP 进程状态的 UID：当这些 UID 全部属于游戏时开启 `Mode.GAME`；出现非游戏 TOP UID，或前台集合变空时关闭。分屏中同时存在非游戏前台应用，也会使该模式关闭。Power HAL 可以据此调整 CPU、GPU、调度或温控策略，具体动作由设备实现。
+Android 14 引入 `GAME` 电源模式。Android 17 的 `GameManagerService` 观察处于 TOP 进程状态的 UID：这些 UID 全部属于游戏时开启 `Mode.GAME`；一旦出现非游戏 TOP UID，或前台集合变空，就关闭。分屏中同时存在非游戏前台应用，也会使该模式关闭。Power HAL 可以据此调整 CPU、GPU、调度或温控策略，具体动作由设备实现。
 
 下面的 Android 17 代码节选显示：只有 Performance 模式会把 `isLoading` 传给 PowerManager。
 
