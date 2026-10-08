@@ -5,7 +5,7 @@ section: '4.1'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-09-23'
-last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / ComponentCallbacks2.java / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs (retrieved 2026-09-15; current docs diverge from r1 source on Memory Limiter config path/manual units) / Android Developers ProfilingManager+ProfilingTrigger docs (API 35/36/37) / source-index material juejin-android 2026-09-11 Memory Limiter article / source-index material juejin-android 2026-09-15 low-memory APK list case / source-index material juejin-android 2026-09-23 Android 17 MemoryLimiter kill R8+onTrimMemory+ProfilingManager article
+last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / ComponentCallbacks2.java / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs (retrieved 2026-09-15; current docs diverge from r1 source on Memory Limiter config path/manual units) / Android Developers ProfilingManager+ProfilingTrigger docs (API 35/36/37) / source-index material juejin-android 2026-09-11 Memory Limiter article / source-index material juejin-android 2026-09-15 low-memory APK list case / source-index material juejin-android 2026-09-23 Android 17 MemoryLimiter kill R8+onTrimMemory+ProfilingManager article / source-index material juejin-android 2026-10-09 Memory Limiter exemption article
 confidence: medium-high
 sources:
 - type: official
@@ -108,6 +108,9 @@ sources:
 - type: reference
   path: 技术文章/source/juejin-android/2026-09-23-76471867-Android17内存超限杀App排查.md
   role: Android 17 MemoryLimiter 杀进程现场的应用侧应答：release 包 R8 minify+shrinkResources+fullMode 配置、`onTrimMemory()` 主动让出可重建缓存、`ProfilingManager` OOM/anomaly 触发式 heap dump 接入
+- type: reference
+  path: 技术文章/source/juejin-android/2026-10-09-76535333-解读Android17全新内存限制有没有豁免后门.md
+  role: Android 17 MemoryLimiter 监控应用 UID 范围、状态档位、调试命令与运行时 status 输出的二次材料
 - type: official
   path: https://developer.android.com/reference/android/os/ProfilingManager
 - type: official
@@ -133,7 +136,7 @@ consolidated_from:
 - src/part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md
 - src/part1-fundamentals/ch04-memory/01-memory-overview.md
 - src/part1-fundamentals/ch04-memory/02-linux-memory.md
-last_body_apply_at: '2026-09-23T07:15:01+08:00'
+last_body_apply_at: '2026-10-09T07:15:34+08:00'
 ---
 
 # Android 与 Linux 内存管理全景
@@ -412,6 +415,8 @@ Android 通过 `libprocessgroup` 与任务配置文件（task profile）管理�
 
 Android 17 引入面向单应用的 MemoryLimiter 行为变化。它由 `system_server` 中的 Java 服务和 JNI 组件组成，用每进程 cgroup v2 监控应用进程，约束的是进程外部的 cgroup 边界，与 `Runtime.maxMemory()` 或 Dalvik/ART 堆大小的调整无关。Java 堆之外的原生匿名映射、WebView/Bitmap 背后占用和图形相关缓存，只要最终表现为受统计的匿名页、共享内存或 Swap 增长，也可能把进程推近限制。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android 17 Memory Limiter 官方文档；AOSP android-17.0.0_r1 `MemoryLimiter.java` 与 JNI]
 
+`android-17.0.0_r1` 的 `ProcessMemInfo.updateIsReady()` 还把监控范围限定在应用 UID 空间：PID 和 UID 有效，且 UID 不小于 `Process.FIRST_APPLICATION_UID`（10000）时，进程对象才可能进入 MemoryLimiter 配置路径；如果包名命中豁免列表，源码会把它排除。低于该范围的系统 UID 不按普通应用限制处理；系统或厂商进程的内存边界要另看 PMGD、task profile 或厂商私有机制。 [来源: 技术文章/source/juejin-android/2026-10-09-76535333-解读Android17全新内存限制有没有豁免后门.md] [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java` `ProcessMemInfo.updateIsReady()`；`Process.java` `FIRST_APPLICATION_UID`]
+
 在 `android-17.0.0_r1` 源码锚点下，默认配置文件路径为 `/vendor/etc/memory-limiter-config.xml`；该文件并非必需，没有配置文件或没有匹配当前 RAM 的 limit set 时功能会关闭。
 
 当前线上官方文档描述的标准配置路径是 `/system/etc/memory-limiter-config.xml`；这是当前文档的口径，不应覆盖固定源码标签下的 r1 结论。因此，不能把“Android 17 应用都有固定内存上限”当作通用结论，阈值也必须以目标设备镜像和运行时 `am memory-limiter status` 为准。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android Memory Limiter 官方文档；AOSP android-17.0.0_r1 `MemoryLimiter.java` `CONFIG_PATH` 与 `isMemoryLimiterSupported()`]
@@ -438,6 +443,8 @@ adb shell am memory-limiter manual 12345 none
 `ignore` 在 r1 接受用户 ID（UID）、`none` 或 `all`；`manual` 在 r1 的 shell 解析中接受进程 ID（PID）和一个整数（或 `none`），源码随后把整数按 MiB 转换为限制值，而帮助文本仍写成 `PERCENT|none`。
 
 公开二手材料可能把命令写成 `<limit>|max|none`，当前官方文档也给出不同单位写法；使用前应以目标构建源码、`am help` 和实测为准，不能把 `max` 写成 r1 通用接口。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android Memory Limiter 官方文档；AOSP android-17.0.0_r1 `ActivityManagerShellCommand.java` 与 `MemoryLimiter.java`]
+
+`status` 输出是运行时核对入口，不是示例数字的背书。排查时先看 `enabled`、`monitoring`、`ignored`，再看 `visibleMem`、`visibleSwap`、`notVisibleMem`、`notVisibleSwap` 这些当前生效值，以及事件和进程计数；公开示例里的 14 GiB / 8192 MiB / 4096 MiB 只说明 XML 配置格式，不能外推成 Android 17 固定阈值。 [来源: 技术文章/source/juejin-android/2026-10-09-76535333-解读Android17全新内存限制有没有豁免后门.md] [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java` `dump()`]
 
 MemoryLimiter 与 lmkd 的决策依据也不同。MemoryLimiter 约束单个受监控进程的匿名页、共享内存与交换空间；lmkd 在系统压力下结合进程重要性等信息选择终止目标。复盘进程消失时，应先读取 `ApplicationExitInfo`、系统日志和 PSI，再确定是哪条路径。 [已验证: AOSP android-17.0.0_r1 MemoryLimiter 源码；本章“MemAvailable 与 PSI 描述不同维度”段落]
 
@@ -657,6 +664,7 @@ ZRAM 是匿名页回收策略的一部分。风险来自持续换入换出、回
 - [Android Memory Limiter（当前官方说明，配置路径以目标源码标签和设备镜像为准）](https://source.android.com/docs/core/perf/memory-limiter)
 - [Android PMGD（Process Memory Guardian Daemon）](https://source.android.com/docs/core/perf/pmgd)
 - [解读 Android 17 全新内存限制，有没有“豁免”后门？](../../../../技术文章/source/juejin-android/2026-09-11-76535333-解读%20Android%2017%20全新内存限制，有没有.md)
+- [解读 Android 17 全新内存限制，有没有“豁免”后门？（2026-10-09 抓取）](../../../../技术文章/source/juejin-android/2026-10-09-76535333-解读Android17全新内存限制有没有豁免后门.md)
 - [Android 应用内存管理](https://developer.android.com/topic/performance/memory)
 - [Android 图形内存管理](https://developer.android.com/topic/performance/graphics/manage-memory)
 - [支持 16 KiB 页大小](https://developer.android.com/guide/practices/page-sizes)
