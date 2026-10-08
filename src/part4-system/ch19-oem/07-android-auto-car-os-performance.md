@@ -69,6 +69,8 @@ Android Auto 和 Android Automotive OS（AAOS）都能在车载屏幕上提供�
 
 ## 两种平台，三种 UI 责任
 
+车载界面（UI）由三处不同责任共同生成，看性能问题前先分清它们：模板应用的界面模型（Template）在客户端进程构建，布局与控件由 host 绘制；地图 Surface 由应用提交图形帧；允许停驻使用的 Activity 采用常规 Android 渲染路径。两个平台把这三处责任放在不同设备上，延迟来源也随之不同。
+
 ### Android Auto：应用与 host 在手机，体验投向车端
 
 Android Auto 平台运行在手机上，并把体验投射到兼容车机。Car App Library 是用于构建车载模板应用的 Jetpack 库；它所说的 host（宿主）由手机上的 Android Auto 实现，负责发现应用、管理生命周期，并把应用返回的 `Template` 数据转换成符合驾驶限制的界面。车机是显示、输入和音频端点。
@@ -103,7 +105,7 @@ flowchart LR
     end
 ```
 
-模板应用的模型构建发生在客户端进程，布局和控件绘制发生在 host。地图 Surface 与停驻 Activity 由应用提交图形内容。UI 指用户界面；定位卡顿时，应先确定问题属于模板模型、host 绘制、投射传输，还是应用自己的 Surface。
+定位卡顿时，先确定问题属于模板模型、host 绘制、投射传输，还是应用自己的 Surface。上面的图把两种平台的责任落点并排放到了一起：Android Auto 的模板模型与 host 绘制分处手机与车机，AAOS 则都落在车机内。
 
 ## Android 17 不是唯一版本轴
 
@@ -228,7 +230,7 @@ Android Auto 的投射传输由手机上的 Android Auto 与车机接收端管�
 - 大文件下载服从网络计费、存储余量和 AAOS power policy；
 - 离线状态也返回一个合法模板，`onGetTemplate()` 不等待网络。
 
-AAOS power policy（电源策略）可以按车辆状态关闭网络、显示、音频或定位等组件。Android Auto 和 AAOS 的账号状态同步宜以服务端版本号或只增不减的修订号（revision）为准。播放、收藏、路线目的地等命令应设计成幂等操作，即同一请求重复执行也不会产生额外副作用。不能把一条永久存活的手机到车机 socket（网络连接）当作业务状态的唯一来源。
+Android Auto 和 AAOS 的账号状态同步宜以服务端版本号或只增不减的修订号（revision）为准；播放、收藏、路线目的地等命令应设计成幂等操作，即同一请求重复执行也不会产生额外副作用；不能把一条永久存活的手机到车机 socket（网络连接）当作业务状态的唯一来源。AAOS power policy（电源策略）可以按车辆状态关闭网络、显示、音频或定位等组件。
 
 ## AAOS 资源与电源边界
 
@@ -262,7 +264,7 @@ AAOS 的 `CarPowerManagementService`（CPMS）与 VHAL 协调启动（On）、�
 
 ## VHAL、车辆属性与 ADAS
 
-Android 17 的 VHAL 接口使用 AIDL（Android Interface Definition Language，用于定义跨进程接口）文件 `IVehicle.aidl`。VHAL 把车速、挡位、空调等车辆属性转换成 Android 侧的统一接口。应用通过 CarService 的 `CarPropertyManager` 读取这些属性，并接受相应的权限检查；普通应用不能绕过 CarService 直接向车内总线发送消息。
+Android 17 的 VHAL 接口由 AIDL（Android Interface Definition Language，用于定义跨进程接口）定义，接口文件是 `IVehicle.aidl`。VHAL 把车速、挡位、空调等车辆属性转换成 Android 侧的统一接口。应用通过 CarService 的 `CarPropertyManager` 读取这些属性，并接受相应的权限检查；普通应用不能绕过 CarService 直接向车内总线发送消息。
 
 在 `android-17.0.0_r1` 中，旧的 `registerCallback()` 已弃用。设备开放相应功能开关时，新代码宜使用 `subscribePropertyEvents()`；需要兼容旧系统或未开放该接口的产品时，仍要保留旧订阅路径。连续属性的采样率是请求值，VHAL 不保证按精确频率回调。新接口默认启用可变更新率（variable update rate），数值没有变化时可以省略重复回调；只有业务需要固定频率样本时才关闭它。
 
