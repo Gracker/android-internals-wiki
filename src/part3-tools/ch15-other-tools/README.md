@@ -1,11 +1,10 @@
 # 第 15 章：其他分析工具
 
-Perfetto 适合把调度、进程、渲染和应用事件放到同一条时间轴上。本章补充需要专门采集方式或其他证据形态的工具：CPU sampling（周期采集调用栈，估算 CPU 时间集中在哪些函数）、Heap Dump（某一时刻的堆对象快照）、布局层级检查、GPU capture（记录单帧命令、资源和管线状态）、构建产物分析，以及 production telemetry（线上长期汇总的指标和事件）。
+Perfetto 擅长把调度、进程、渲染和应用事件放在同一条时间轴上。本章介绍另一类工具，它们要么需要专门的采集方式，要么给出其他证据形态：CPU sampling（周期性采样调用栈）、Heap Dump（某一时刻的堆对象快照）、布局层级检查、GPU capture（记录单帧的命令、资源和管线状态）、构建产物分析，以及 production telemetry（线上长期汇总的指标和事件）。
 
-工具选择取决于问题和所需证据。CPU sample 提供统计调用栈，Heap Dump 提供对象关系，命令行快照提供某一时刻的系统状态，GPU capture 提供单帧细节，线上 telemetry 则用于观察较长时间和大量设备上的趋势。它们回答的问题不同，结论也不能直接互换。
+选哪个工具，取决于要回答的问题和所需的证据：判断 CPU 时间花在哪些函数上，看 CPU sample 的统计调用栈；追对象之间的引用关系，看 Heap Dump；固定某一时刻的系统状态，看命令行快照；定位单帧的绘制细节，看 GPU capture；观察较长时间、大量设备上的趋势，看线上 telemetry。这些工具回答的问题不同，结论不能直接互换。
 
 ## 内容索引
-
 
 - [15.1 Android Studio Profiler](01-as-profiler.md)
 - [15.2 Simpleperf 与 ARM Topdown 微架构分析](02-simpleperf-arm-topdown.md)
