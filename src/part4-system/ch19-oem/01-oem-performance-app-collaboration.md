@@ -168,7 +168,7 @@ OEM 优化通常覆盖启动、流畅性、内存、功耗和温控。五类目�
 
 #### 启动：先分清进程状态
 
-一次 Activity 启动可能落在热启动、温启动或冷启动。系统若保留了进程，或者提前完成了 `dexopt`（DEX 编译优化）、文件页预取，甚至从 USAP 池取得预先创建的进程，trace 形态都会变化。USAP（Unspecialized App Process，未专门化应用进程）是 Zygote 预先通过 `fork()` 复制、等待后续绑定应用身份的进程。分析时要分别记录：
+一次 Activity 启动可能落在热启动、温启动或冷启动。系统若保留了进程，或者提前完成了 `dexopt`（DEX 编译优化）、文件页预取，甚至从 USAP 池取得预先创建的进程，trace 形态都会变化。USAP 是未专门化应用进程（Unspecialized App Process），由 Zygote 预先通过 `fork()` 复制，等待后续绑定应用身份。分析时要分别记录：
 
 - 目标进程在点击前是否存在；
 - Zygote 或 USAP 是否参与进程创建；
@@ -197,7 +197,9 @@ TTID 是首次画面显示耗时，TTFD 是完整内容显示耗时。只用一�
 
 #### 功耗与温控：短时加速不能替代稳态测试
 
-Android 17 内核参照中的 EAS（Energy Aware Scheduling，能效感知调度）会在 `kernel/sched/fair.c` 通过 `find_energy_efficient_cpu()` 比较候选 CPU，并由 `compute_energy()` 使用 Energy Model（能耗模型）估算能耗。`schedutil` 是根据调度器利用率选择 CPU 频率的 governor（调频策略）。这里的 capacity 表示 CPU 的相对算力，uclamp 限制任务的利用率请求，cpuset 限定任务可运行的 CPU 集合。设备拓扑、这些参数和驱动响应都会改变结果；旧资料中的 `sched_energy_cost` 不是这套内核的通用调参入口。
+Android 17 内核参照中的 EAS（Energy Aware Scheduling，能效感知调度）会在 `kernel/sched/fair.c` 通过 `find_energy_efficient_cpu()` 比较候选 CPU，并由 `compute_energy()` 使用 Energy Model（能耗模型）估算能耗。`schedutil` 是根据调度器利用率选择 CPU 频率的 governor（调频策略）。
+
+capacity 表示 CPU 的相对算力，uclamp 限制任务的利用率请求，cpuset 限定任务可运行的 CPU 集合。设备拓扑、这些参数和驱动响应都会改变结果；旧资料中的 `sched_energy_cost` 不是这套内核的通用调参入口。
 
 这些机制只能在当前功率和温度边界内工作。Android Thermal HAL 报告的 severity（温控严重等级）会影响系统服务、任务调度和冷却动作。测试游戏或相机时，需同时给出冷机阶段、升温过程和稳态窗口。只截取开局几十秒，测到的是短时提频与调度加速，无法说明持续性能。
 
@@ -235,7 +237,7 @@ Framework 层主要指 `system_server` 中的 Java 系统服务。AMS/ATMS 负�
 
 #### Frozen Process 指什么
 
-Android 文档里的 frozen process（冻结进程）通常指仍有 Linux 进程和内存状态、但线程暂停执行的 cached 进程。它没有 CPU 时间，仍可能持有内存、文件描述符和部分内核资源。内存压力到来时，`lmkd` 仍可终止它。
+Android 文档里的 frozen process（冻结进程）通常指 cached 进程。这类进程仍有 Linux 进程和内存状态，但线程已经暂停执行。它没有 CPU 时间，仍可能持有内存、文件描述符和部分内核资源。内存压力到来时，`lmkd` 仍可终止它。
 
 Android 14 及以后，当一个应用的全部进程进入 frozen 状态，系统还会终止其活动 TCP socket（套接字连接）。冻结不能作为后台网络保活手段。
 
@@ -330,7 +332,7 @@ Zygote 在系统启动时读取 `/system/etc/preloaded-classes`，并预加载 F
 
 #### USAP Pool 只提前创建进程
 
-USAP 池保存从主 Zygote 或次 Zygote 预先 `fork()`、尚未专门化为某个应用的进程。启动请求满足条件时，`ZygoteProcess` 连接 USAP socket，把 UID/GID（用户和组身份）、SELinux 标签、数据目录和运行参数交给池成员；池成员通过 `Zygote.specializeAppProcess()` 绑定应用身份和运行环境。
+USAP 池保存的是尚未专门化为某个应用的进程，它们由主 Zygote 或次 Zygote 预先 `fork()` 得到。启动请求满足条件时，`ZygoteProcess` 连接 USAP socket，把 UID/GID（用户和组身份）、SELinux 标签、数据目录和运行参数交给池成员；池成员通过 `Zygote.specializeAppProcess()` 绑定应用身份和运行环境。
 
 下面的 r1 判断代码说明 USAP 需要同时满足支持、启用、策略和命令参数四项条件。
 
@@ -345,7 +347,7 @@ private boolean shouldAttemptUsapLaunch(
 }
 ```
 
-主/次 Zygote 支持 USAP，为特定应用或场景创建的 child Zygote（子 Zygote）不支持。策略只把 latency-sensitive（延迟敏感）、非 system process 的合格请求送入 USAP；需要 wrapper 进程、启动 child Zygote、预加载包等参数会退回普通 Zygote 路径。`ZygoteConfig.USAP_POOL_ENABLED_DEFAULT` 在 Android 17 r1 中仍为 `false`，池容量基线为最少 1、最多 3。产品可以通过 `runtime_native` DeviceConfig 命名空间或 `dalvik.vm.*` 系统属性覆盖。
+主/次 Zygote 支持 USAP，为特定应用或场景创建的 child Zygote（子 Zygote）不支持。策略只把延迟敏感（latency-sensitive）且非 system process 的合格请求送入 USAP；需要 wrapper 进程、启动 child Zygote、预加载包等参数会退回普通 Zygote 路径。`ZygoteConfig.USAP_POOL_ENABLED_DEFAULT` 在 Android 17 r1 中仍为 `false`，池容量基线为最少 1、最多 3。产品可以通过 `runtime_native` DeviceConfig 命名空间或 `dalvik.vm.*` 系统属性覆盖。
 
 可以读取以下属性，区分“源码支持”和“当前系统版本已经启用”。
 
@@ -457,7 +459,7 @@ adb shell dumpsys package com.example.app
 
 版本演进可以保留历史语境，排查当前设备时仍要回到 Android 17 的源码和目标系统版本。旧版属性名、私有 sysfs 节点和早期厂商方案不能直接套用到 API 37。
 
-### 第一部分的核查入口
+### 源码与官方文档核查入口
 
 #### Android 17 / API 37 源码
 
@@ -488,7 +490,7 @@ adb shell dumpsys package com.example.app
 - [Thermal mitigation](https://source.android.com/docs/core/power/thermal-mitigation)
 - [Power and performance management](https://source.android.com/docs/core/power/performance)
 
-### 常见误区
+### 常见误区：进程、调度与后台
 
 #### “进程还在，所以应用可以继续工作”
 
@@ -518,7 +520,7 @@ freezer 的直接作用是停止执行。匿名页是否被压缩、换出或回
 
 行业案例记录的是特定应用、设备、版本和实验条件下的结果。它适合解释团队如何缩小问题、如何选择指标，也容易被误读成跨设备规律。
 
-阅读一份案例时，可以把内容拆成四列：
+阅读一份案例时，可以把内容拆成四层：
 
 | 层次 | 要回答的问题 | 常见证据 |
 | --- | --- | --- |
@@ -637,7 +639,7 @@ fun sampleThermalBudget(powerManager: PowerManager): ThermalSample? {
 
 `PerformanceHintManager` 从 API 31 提供。应用用一组属于本进程的工作线程创建 `Session`（提示会话，下文简称 HintSession），给出周期性工作的目标时长（target duration），并在每个周期调用 `reportActualWorkDuration()` 上报实际时长。目标变化时调用 `updateTargetWorkDuration()`；API 34 起，线程集合变化时可以调用 `setThreads()`。
 
-HintSession 传递的是工作目标，不承诺使用某个 CPU 核、固定频率或执行特定调频动作。Android 17 的 Android framework（系统框架）通过 native 接口（C/C++ 层接口）把会话交给设备实现，Power HAL（电源硬件抽象层）与厂商策略决定如何响应。`createHintSession()` 可能返回 `null`，会话结束时还要调用 `close()`。
+HintSession 传递的是工作目标，不承诺使用某个 CPU 核、固定频率或执行特定调频动作。Android 17 的系统框架（Android framework）通过 native 接口（C/C++ 层接口）把会话交给设备实现，Power HAL（电源硬件抽象层）与厂商策略决定如何响应。`createHintSession()` 可能返回 `null`，会话结束时还要调用 `close()`。
 
 以 60 Hz 游戏为例，目标值可以从一个周期的预算出发，但不能机械地写成整帧 `16.67 ms`。若会话只覆盖模拟线程（simulation）或渲染提交线程（render-submit），目标时长和实际时长都应描述这组线程负责的周期工作；GPU 完成时间、UI 线程和其他进程的耗时不能合并到同一项 CPU 工作时长里。
 
@@ -786,7 +788,7 @@ Jetpack WindowManager 提供 `FoldingFeature`（折叠区域及其姿态信息�
 - §13 解释 Perfetto；案例应附采集配置、原始 trace 和统计脚本。
 - 本篇前半部分与 §19.2 解释 OEM 与 SoC 差异；这里把差异限制在具体设备证据中。
 
-### 常见误区
+### 常见误区：工具、窗口与案例
 
 #### 把厂商模式名称当成内核机制
 
