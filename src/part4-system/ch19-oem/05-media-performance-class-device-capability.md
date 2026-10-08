@@ -52,7 +52,7 @@ related_chapters:
 
 # Media Performance Class 与设备能力分级
 
-Media Performance Class（MPC，媒体性能等级）是 Android 兼容性规范定义的一组设备能力下限。它用一个整数关联编解码器（codec）、相机、音频、显示、内存、存储和图形要求，应用可以在运行时读取该值，选择初始体验档位。
+Media Performance Class（MPC，媒体性能等级）是 Android 兼容性定义文档（CDD）规定的一组设备能力下限。它把编解码器（codec）、相机、音频、显示、内存、存储和图形等方面的要求归纳成一个整数；应用在运行时读到该值，据此选择初始体验档位。
 
 MPC 不是通用跑分，也不能替代单项能力查询。设备即使声明了高等级，也可能因温度、后台负载或厂商策略而出现性能波动。值为 0 的设备也可能支持某项高规格功能，只是当前读取路径没有可用的 MPC 声明。
 
@@ -60,7 +60,7 @@ MPC 不是通用跑分，也不能替代单项能力查询。设备即使声明�
 
 ## Android 17 新增了四个等级
 
-Android 17 兼容性定义文档（CDD）的 2.2.7 节新增 MPC 1、10、20、37，并把各项测量阈值放入独立的补充文档（supplemental document）。Android 17 明确使用的等级集合如下：
+Android 17 的 CDD 2.2.7 节新增 MPC 1、10、20、37，并把各项测量阈值放入独立的补充文档（supplemental document）。Android 17 明确使用的等级集合如下：
 
 | 原始值 | 定位 | 版本来源 |
 |---:|---|---|
@@ -75,7 +75,7 @@ Android 17 兼容性定义文档（CDD）的 2.2.7 节新增 MPC 1、10、20、3
 | `35` | Android 15 的 MPC 35 | CDD 15 |
 | `37` | Android 17 的最高等级 | CDD 17 |
 
-MPC 32 和 36 没有定义。新等级 1、10、20 为低于 MPC 30 的设备提供了可验证的能力下限，避免它们只能返回 0。MPC 37 则提高了内存、存储 I/O、音频，以及部分媒体和相机要求。
+MPC 32 和 36 没有定义。新等级 1、10、20 为低于 MPC 30 的设备提供了可验证的能力下限，让这些设备不再只能返回 0。MPC 37 则提高了内存、存储 I/O、音频，以及部分媒体和相机要求。
 
 表中的“基础、入门、中间”只是本文为方便阅读使用的档位说明，不是 CDD 的正式等级名称。
 
@@ -122,16 +122,16 @@ CDD 17 新增的 1、10、20 不是 Android SDK 版本号。平台读取代码�
 
 ## Jetpack Core Performance 在 Android 17 的兼容性问题
 
-Android 官方建议通过 Jetpack Core Performance 的 `DevicePerformance` 读取 MPC。`PlayServicesDevicePerformance` 先从本地 DataStore 持久化存储中读取 Google Play services 的上次结果，与平台默认读取器的值取较大者；同时异步请求新结果并写回 DataStore。
+Android 官方建议通过 Jetpack Core Performance 的 `DevicePerformance` 读取 MPC。`PlayServicesDevicePerformance` 先从本地 DataStore 读出 Google Play services 上次写入的结果，与平台默认读取器的值取较大者；同时异步请求新结果并写回 DataStore。
 
 这个实现有两个容易忽略的细节：
 
-1. `mediaPerformanceClass` 使用延迟初始化值（lazy）：第一次访问时才计算，之后在该对象中缓存。若第一次访问发生在异步 Play services 更新完成前，这个对象会继续使用旧的本地结果；官方因此建议在 `Application.onCreate()` 中只创建一次对象，新结果通常供后续进程使用。
+1. `mediaPerformanceClass` 采用延迟初始化（lazy）：第一次访问时才计算，之后在该对象中缓存。若第一次访问发生在异步 Play services 更新完成前，这个对象会继续使用旧的本地结果；官方因此建议在 `Application.onCreate()` 中只创建一次对象，新结果通常供后续进程使用。
 2. 截至 2026 年 8 月 14 日的 `androidx-main`，`DefaultDevicePerformance.isPerformanceClassValid()` 仍要求值至少为 `Build.VERSION_CODES.R`，即 30。它会把 `Build.VERSION.MEDIA_PERFORMANCE_CLASS` 返回的 1、10、20 视为无效并退回 0。
 
 第二点是 CDD 17 新等级与当前 Jetpack 默认读取路径之间的兼容问题。若 Play services 已把 1、10、20 写入 DataStore，`PlayServicesDevicePerformance` 会直接对该持久化结果取 `max`，低等级仍能保留；只依赖平台构建属性的默认读取路径则会丢失这些值。
 
-接入前应对项目实际使用的 Jetpack 版本做一次单元测试。在 API 31 及以上，业务若要完整识别 CDD 17 等级，可以同时保留平台原始值，并明确它与 `DevicePerformance` 结果的取值优先级。
+接入前应针对项目实际使用的 Jetpack 版本写一个单元测试。在 API 31 及以上，业务若要完整识别 CDD 17 等级，可以同时保留平台原始值，并明确它与 `DevicePerformance` 结果的取值优先级。
 
 下面的 Kotlin 代码展示一种显式识别 Android 17 已定义等级的转换方法。
 
@@ -322,7 +322,7 @@ Android 17 新增不对应 API 级别的数值后，保留原始 MPC 更有助�
 
 不要只上报产品分组。原始值可以暴露三类问题：旧客户端没有识别新等级、Jetpack 的备用读取结果与平台构建属性不一致，以及设备 OTA 后声明发生变化。
 
-小范围发布结果应按 MPC、运行时能力、设备厂商和 SoC 交叉观察，同时避免直接上报机型等取值数量过多的字段。Google Maps 的公开案例按 MPC 切分“界面元素可见所需秒数”，发现各组延迟都有小幅增加，而没有 MPC 的设备增幅最大，因此只向报告 MPC 的设备发布新的透明图层效果。这个案例说明 MPC 适合作为实验分组信号，不能推导出所有 MPC 0 设备都慢。
+小范围发布结果应按 MPC、运行时能力、设备厂商和 SoC 交叉观察，同时避免直接上报机型这类取值过多的字段。Google Maps 的公开案例按 MPC 切分“界面元素可见所需秒数”，发现各组延迟都有小幅增加，而没有 MPC 的设备增幅最大，因此只向报告 MPC 的设备发布新的透明图层效果。在这个案例里，MPC 只用作实验分组信号，不能据此推断所有 MPC 0 设备都慢。
 
 ## 设备厂商认证与测试证据
 
