@@ -81,7 +81,7 @@ Private Space、工作资料、厂商应用锁和应用自身认证属于不同�
 | 设备厂商（OEM）手持设备应用锁 | 厂商选定的 App 或入口 | 可能在启动、最近任务、通知或设置页前插入认证 | 没有跨厂商公开 API |
 | Android Automotive App Lock | 车载次用户中的敏感 App | 由平台签名的特权 App 管理锁定清单和认证入口 | 仅适用于 Android Automotive OS（AAOS）集成，不是手持设备 SDK |
 
-Android 17 / API 37 的手持设备 AOSP 没有通用的逐应用锁公开 API。`android-17.0.0_r1` 的 `PackageManager`、`LauncherApps`、通知和设备管理公开接口中也没有 `AppLockManager` 一类能力。Android 16 引入的 [Advanced Protection Mode](https://developer.android.com/privacy-and-security/advanced-protection-mode) 是一个整机安全总开关，用于同时启用多项防护限制；它不负责给某个 App 增加启动口令。
+在 Android 17 / API 37 上，手持设备 AOSP 没有通用的逐应用锁公开 API；`android-17.0.0_r1` 的 `PackageManager`、`LauncherApps`、通知和设备管理等公开接口里都找不到 `AppLockManager` 一类能力。Android 16 引入的 [Advanced Protection Mode](https://developer.android.com/privacy-and-security/advanced-protection-mode) 是一个整机安全总开关，用于同时启用多项防护限制；它不负责给某个 App 增加启动口令。
 
 Android Automotive 的 App Lock 容易造成名称误读。它从 Android 14 起以“非捆绑应用”提供，也就是可以独立于 AAOS 核心平台开发和维护；部署时仍须使用厂商平台密钥签名，作为特权应用放入系统镜像。它只服务于车载次用户，并且与资料用户的锁定状态相互独立。手持设备应用不能据此声称 Android 17 提供了通用 App Lock。
 
@@ -114,9 +114,9 @@ Private Space 的主要状态如下：
 
 ## 普通 App 所处的边界
 
-普通业务 App 只应处理“自己当前运行在哪个 Android 用户中”。它无法通过公开且跨设备可靠的方式列出主用户的 Private Space，也不应把品牌、`userId` 范围或进程 UID 当作识别依据。
+普通业务 App 只应处理“自己当前运行在哪个 Android 用户中”。它没有公开、跨设备可靠的途径列出主用户的 Private Space，也不应把品牌、`userId` 范围或进程 UID 当作识别依据。
 
-一个包在 Private Space 内运行时，它看到的是自己的 `Context`（当前 App 实例的运行环境对象）、文件目录、权限和账号状态。开发者需要保证这些常规路径成立：
+一个包在 Private Space 内运行时，它看到的是自己的 `Context`（当前 App 实例的运行环境对象）、文件目录、权限和账号状态。业务代码要保证下面这些路径一直成立：
 
 - 进程冷启动（系统中没有旧进程，需要重新创建）后，可以从持久化数据恢复页面。
 - deep link（直接打开 App 内特定页面的链接）、通知、分享和文件选择都经过同一套入口参数与权限校验。
@@ -129,12 +129,12 @@ Private Space 的主要状态如下：
 
 ## 桌面（Launcher）与系统组件如何接入
 
-默认 Launcher 的职责不同。Android 17 源码为隐藏资料访问设置了两条权限路径：
+默认 Launcher 就不同，它能拿到隐藏资料用户的句柄。Android 17 源码为这类访问设置了两条权限路径：
 
 1. 在清单中声明 normal 保护级别的 `android.permission.ACCESS_HIDDEN_PROFILES`，同时持有默认桌面角色 `RoleManager.ROLE_HOME`。normal 表示安装时授予、不弹运行时授权框；它本身仍不足以访问 Private Space。
 2. 系统应用持有 signature/privileged 保护级别的 `ACCESS_HIDDEN_PROFILES_FULL`，无需 HOME 角色。这类权限只会授予平台同签名应用，或系统镜像中经过特权权限配置的应用。
 
-只声明 normal 权限并不能让普通 App 列出 Private Space。`LauncherApps#getProfiles()` 的 Android 17 源码明确写出了 HOME 角色条件；当调用进程本身位于 managed profile（工作资料）或 private profile 时，该方法也只返回当前资料用户。
+只声明 normal 权限并不能让普通 App 列出 Private Space。`LauncherApps#getProfiles()` 在 Android 17 源码里明确要求 HOME 角色；当调用进程本身位于 managed profile（工作资料）或 private profile 时，该方法也只返回当前资料用户。
 
 Launcher 可以用下列 API 读取资料用户类型、运行状态和入口配置：
 
@@ -241,7 +241,7 @@ Android 16 QPR2 增加了从主空间向 Private Space 移动或复制文件的�
 
 ## 设备厂商应用锁的兼容策略
 
-手持设备的厂商应用锁可能在 Activity 启动、任务切换、通知展示或厂商安全中心等位置要求认证，也可能只覆盖其中几项。它未必创建独立资料用户；锁定时是否终止进程、暂停后台任务或隐藏通知，都由设备固件，也就是厂商提供的系统软件版本决定。
+手持设备的厂商应用锁可能在 Activity 启动、任务切换、通知展示或厂商安全中心等位置要求认证，也可能只覆盖其中几项。它未必创建独立资料用户；锁定时是否终止进程、暂停后台任务或隐藏通知，都由厂商提供的系统软件版本（设备固件）决定。
 
 Android 17 没有供普通 App 查询“厂商应用锁是否锁了我”的统一 API，也没有统一认证结果码。厂商名只能用于整理测试结果，不能单独决定代码走哪个分支。同一品牌在不同地区的固件、Launcher 版本或安全组件版本上，都可能采用不同策略。
 
@@ -257,11 +257,11 @@ Android 17 没有供普通 App 查询“厂商应用锁是否锁了我”的统�
 
 `ProcessLifecycleOwner` 用于观察整个 App 进入前台或后台，`savedInstanceState` 保存 Activity 被系统重建时需要的少量界面状态。两者只能描述 App 自己的生命周期，不能证明外部厂商应用锁处于什么状态。
 
-系统认证页属于 App 进程外的 UI。测试脚本若只等待某个 Activity 出现，很容易把用户尚未认证判断成启动超时。自动化用例应把“出现厂商认证页”“用户取消”“认证成功后继续启动”分成不同结果。
+系统认证页属于 App 进程外的 UI。测试脚本如果只等待某个 Activity 出现，很容易把“用户还没完成认证”误判成启动超时。自动化用例应把“出现厂商认证页”“用户取消”“认证成功后继续启动”分成不同结果。
 
 ## 观测与隐私
 
-Private Space 的存在本身带有隐私含义。普通 App 的线上日志不应尝试推导或上传 `user_serial_number`、`userId`、私密空间应用列表。即使先对 `userId` 做哈希，结果仍可能成为跨会话不变的标识，不能自动消除隐私风险。
+Private Space 的存在本身带有隐私含义。普通 App 的线上日志不应尝试推断或上传 `user_serial_number`、`userId`、私密空间应用列表。即使先对 `userId` 做哈希，结果仍可能成为跨会话不变的标识，不能自动消除隐私风险。
 
 业务侧可以记录的字段包括：
 
