@@ -56,7 +56,7 @@ related_chapters:
 
 # AppFlow 研究原型：GB 级应用冷启动内存联合调度
 
-GB 级应用冷启动会同时竞争文件页、匿名页、CPU 与进程生存空间，单点预读可能把延迟转移成更强的内存压力。AppFlow 的价值和边界需要从论文证据出发，分别审视预加载、回收和杀进程策略如何协同。
+GB 级应用冷启动会同时竞争文件页、匿名页、CPU 与进程生存空间，单点预读可能把延迟转移成更强的内存压力。要判断 AppFlow 的价值和边界，需要回到论文证据，看它的文件预加载、内存回收和进程终止各自解决什么，又在哪些条件下互相抵消。
 
 ## 证据边界
 
@@ -86,12 +86,13 @@ TTFD 依赖应用在正确时机主动上报，系统无法自动判断业务是
 | 内存分配与回收 | 新分配触发 `kswapd`、direct reclaim、内存规整或 swap | PSI、`pgscan_*`、`allocstall`、zRAM、workingset refault |
 
 `kswapd` 是内核后台回收线程；direct reclaim 表示发起内存分配的线程同步参与回收，应用可能直接等待。
+PSI（Pressure Stall Information，压力停顿信息）报告任务因资源不足而停顿的情况。
 内存规整（compaction）尝试得到连续物理页，不等同于 zRAM 的数据压缩；swap 会把匿名页移出 DRAM，Android 常把它们压入 zRAM。
 线程处于 D 状态时正在不可中断睡眠，常见原因是等待块设备或内核 I/O。
 `pgscan_*` 统计回收器扫描的页面数，`allocstall` 统计内存分配因同步回收而停顿的次数；workingset refault 表示工作集页面逐出后很快又被访问，常用来识别缓存抖动。
 
 多任务会让三段成本互相影响。预读会占用 page cache；内存回收可能在使用前逐出刚读入的页；匿名页换出会与预读竞争存储带宽。
-`lmkd` 终止后台应用后，用户返回时还要重新创建进程并加载文件。只分析 `Application.onCreate()` 会漏掉这些系统等待。
+低内存终止守护进程 `lmkd` 终止后台应用后，用户返回时还要重新创建进程并加载文件。只分析 `Application.onCreate()` 会漏掉这些系统等待。
 
 论文用 `T_cold = T_I/O + T_cpu + T_alloc` 表示问题，并把系统可调部分放在 I/O 与分配等待上。
 这是分析模型，三段在设备上可能并行或互相阻塞，不能直接把 trace 中的 wall time（端到端经过时间）按公式相加。
@@ -107,8 +108,7 @@ AppFlow 的设计来自论文样本中的四组测量。引用这些数据时，
 | 小文件数量多、体积小 | 图 5 汇总为数量约 4.7 倍、内存占比 2.2%；TikTok 个例为 1,002 个、数量 7.47 倍、23MB、约 4% | 小文件适合在有限预算内提前读 |
 | 预读和回收会互相抵消 | 低内存下，预读页被回收后启动 I/O 延迟增至 6.4 倍 | 只加 prefetch（预读）可能增加压力与重复读取 |
 
-论文正文在汇总值与 TikTok 个例之间使用了不同数字。Figure 5 的汇总值是 4.7 倍和 2.2%；TikTok 个例是 7.47 倍、23MB、约 4%。
-工程文档应注明数字来自图表汇总还是单个应用，不能交叉拼接后再当成所有应用共有的常数。
+论文正文在汇总值和 TikTok 个例之间用了两组不同的数字。工程文档引用时应注明数字来自 Figure 5 的图表汇总，还是来自 TikTok 这一个应用，不能把两组拼在一起当成所有应用共有的常数。
 
 论文还引用既有研究中的“30 分钟内再次访问 92.5%”，并报告 Android 基线终止了其中 62% 的高概率应用。
 前一项不是 AppFlow 自己的 100 天数据，后一项依赖论文的 workload（应用组合与切换序列）和判定方式。产品预测器需要用自身用户群、场景和隐私约束重新训练与验证。
@@ -172,9 +172,8 @@ file-backed 页扫描完成后，原型进入 anonymous rebalance，重新提高
 `android17-6.18-2026-06_r6/mm/vmscan.c` 没有 AppFlow 的预加载文件清单或启动窗口。
 classic LRU（传统的近似最近使用链表）路径中的 `get_scan_count()` 会综合 swap 能力、swappiness（匿名页与文件页的相对回收权重）、reclaim priority 和 file LRU 大小。
 它还会参考 refault 成本与 cache-trim 状态，最终选择 `SCAN_FILE`、`SCAN_ANON`、`SCAN_EQUAL` 或比例扫描。
-启用 MGLRU（Multi-Generational LRU，按访问代际管理页面）时，则进入另一套老化和逐出路径。
-
 其中，reclaim priority 表示当前回收轮次的扫描强度，file LRU 大小表示文件页链表规模；cache-trim 状态表示系统有足够的非活跃文件缓存可优先回收。
+启用 MGLRU（Multi-Generational LRU，按访问代际管理页面）时，则进入另一套老化和逐出路径。
 
 论文对其 Android 15 基线“文件页与匿名页交替回收”的概括，不能直接套到 Android 17 kernel 6.18。
 Android 17 已经会按运行状态调整扫描比例，但内核仍不知道“某个文件页将在本次应用启动中使用”。AppFlow 增加的正是这种短时启动上下文。
@@ -200,8 +199,8 @@ memcg（memory cgroup）的记账归属、isolated process（使用隔离 UID �
 
 ## Android 17 r1 的 LMKD 基线
 
-Android 17 r1 使用 userspace `lmkd`，也就是在用户空间运行的低内存终止守护进程。
-源码同时保留三类路径：以 PSI（Pressure Stall Information，压力停顿信息）检测内存压力的新策略；
+Android 17 r1 的 `lmkd` 是一个用户空间守护进程。
+源码同时保留三类路径：以 PSI 检测内存压力的新策略；
 依据 `minfree` 阈值的 legacy（兼容旧设备）策略；以及检测旧版内核 LMK 接口的兼容分支。
 它们都属于同一个守护进程；AOSP 没有名为“LMKD v2”的正式组件或第二个守护进程。
 
@@ -348,7 +347,7 @@ cold 表示应用进程不存在；hot 表示进程和 Activity 都仍在内存�
 3. Preloader 加 Adaptive Memory Reclaimer；
 4. 三个组件全部开启。
 
-AppFlow 论文的 ablation（逐个关闭组件的消融实验）显示，只开 SFP 时启动变快，但 cold relaunch 数增加 30%。可以理解为预读带来的内存压力抵消了一部分收益。
+AppFlow 论文的 ablation（逐个关闭组件的消融实验）显示，只开 Selective File Preloader 时启动变快，但 cold relaunch 数增加 30%。可以理解为预读带来的内存压力抵消了一部分收益。
 按组件分组后，才能区分“读取时间提前”“页面保留更久”和“后台进程选择变化”各自造成的影响。
 
 ## 论文实验结果该怎样阅读
