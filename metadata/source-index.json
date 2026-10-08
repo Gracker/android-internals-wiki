@@ -5793,7 +5793,9 @@
       "summary": "> 发布时间: 2026-06-21T11:07:06.000Z > 原文链接: https://juejin.cn/post/7653533398468542473 2026-06-21 1,831 阅读6分钟 App 需要适配和做的基本在 Android 17 内存管理将严格管控，App 要注意适配都已经聊过了，这次 Android 17 正式版发布也就说明这个能力正...",
       "chapter": "ch04",
       "processed_at": "2026-10-09T06:20:34.053276+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
+      "status": "body-applied",
+      "previous_action": "indexed-only-chapter-freeze",
       "score": 19,
       "target_path": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
       "route_confidence": 21,
@@ -5804,7 +5806,9 @@
         "android17",
         "ch04-memory"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "applied_at": "2026-10-09T07:15:34+08:00",
+      "applied_run_id": "20261009-071534-9f9e7da7"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-09-76670971-谷歌优化建议重新学Android位图处理.md",
