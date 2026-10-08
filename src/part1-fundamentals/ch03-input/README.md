@@ -33,11 +33,11 @@ last_consolidated_at: '2026-08-24'
 
 - 系统平台：Android 17（API 37），源码标签为 `android-17.0.0_r1`；
 - 内核：`android17-6.18-2026-06_r6`；
-- Android 10—17 的演进用于解释输入分类、系统手势、Predictive Back（预测性返回）、Rust 过滤器和动态刷新率；当前对象与调用名以 Android 17 的固定源码标签为准。
+- 输入分类、系统手势、Predictive Back（预测性返回）、Rust 过滤器和动态刷新率在 Android 10—17 的演进中说明；当前对象与调用名以 Android 17 的固定源码标签为准。
 
 ## 1. 从输入设备到应用窗口
 
-Android 17 的主要分发路径如下；`evdev` 是 Linux 内核向用户空间暴露输入事件的设备接口，后续对象均位于 Android 系统或应用侧：
+`evdev` 是 Linux 内核向用户空间暴露输入事件的设备接口。Android 17 的主要分发路径如下，除 `evdev` 外的对象都位于 Android 系统或应用侧：
 
 `evdev → EventHub → InputReader → InputListener 各处理阶段 → InputDispatcher → InputChannel 与 InputTransport → InputEventReceiver → ViewRootImpl`
 
@@ -102,13 +102,13 @@ Android 17 的 C++ `InputFilter` 通过 AIDL 和 FFI（外部函数接口）调�
 
 Predictive Back 跨越输入策略、应用返回回调、WindowManager 转场、SystemUI 动画和 SurfaceControl。手势开始、返回回调、动画事务与显示呈现是彼此独立的事件。
 
-`OnBackInvokedDispatcher` 的回调优先级、系统动画目标与旧 `onBackPressed()` 兼容路径，需要结合目标 SDK、manifest 中的显式启用配置和平台版本核对。动画卡顿不能只检查 `InputDispatcher`。
+核对 `OnBackInvokedDispatcher` 的回调优先级、系统动画目标与旧 `onBackPressed()` 兼容路径时，要结合目标 SDK、manifest 中的显式启用配置和平台版本。动画卡顿不能只检查 `InputDispatcher`。
 
 ### 3.5 ARR 与输入延迟
 
 Adaptive Refresh Rate（自适应刷新率，ARR）位于显示时序和刷新率策略侧，不会替换 `InputReader` 或 `InputDispatcher`。ARR 会改变相邻 VSYNC 之间的间隔，因此端到端测量不能固定假设每帧都是 16.67 ms 或 8.33 ms。
 
-分析高刷新率设备上的触控问题时，要同时记录输入采样节奏、应用帧调度、实际 VSYNC 周期、活动显示模式和呈现时间。提高刷新率也无法修复焦点错误、应用主线程阻塞或连接背压；背压是指下游处理不及时，导致队列逐渐占满并反向阻塞上游。
+分析高刷新率设备上的触控问题时，要同时记录输入采样节奏、应用帧调度、实际 VSYNC 周期、活动显示模式和呈现时间。背压是指下游处理不及时，导致队列逐渐占满并反向阻塞上游。提高刷新率也无法修复焦点错误、应用主线程阻塞或连接背压。
 
 ## 4. 内容索引
 
