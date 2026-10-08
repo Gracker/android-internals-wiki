@@ -5786,6 +5786,45 @@
       "route_status": "existing-chapter-routed",
       "applied_at": "2026-10-08T07:16:42+08:00",
       "applied_run_id": "20261008-071534-f6d85e2a"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-09-76535333-解读Android17全新内存限制有没有豁免后门.md",
+      "title": "[技术文章] 解读 Android 17 全新内存限制，有没有“豁免”后门？App 需要适配和做的基本在 Android 17 内存管",
+      "summary": "> 发布时间: 2026-06-21T11:07:06.000Z > 原文链接: https://juejin.cn/post/7653533398468542473 2026-06-21 1,831 阅读6分钟 App 需要适配和做的基本在 Android 17 内存管理将严格管控，App 要注意适配都已经聊过了，这次 Android 17 正式版发布也就说明这个能力正...",
+      "chapter": "ch04",
+      "processed_at": "2026-10-09T06:20:34.053276+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "route_confidence": 21,
+      "route_terms": [
+        "app",
+        "内存管",
+        "juejin-android",
+        "android17",
+        "ch04-memory"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-09-76670971-谷歌优化建议重新学Android位图处理.md",
+      "title": "[技术文章] 谷歌的一个优化建议，让我重新学了一遍Android里面如何正确处理位图背景 谷歌这位哥哥真的会整幺蛾子，好不容易把cra",
+      "summary": "> 发布时间: 2026-07-28T02:18:34.000Z > 原文链接: https://juejin.cn/post/7667097178154319912 2026-07-28 1,951 阅读8分钟 谷歌这位哥哥真的会整幺蛾子，好不容易把crash跟anr数据压下来一点，最近发现又给了我一条技术质量类型的整改建议，大致内容是 真的是一点不让我闲着，天天关心着...",
+      "chapter": "ch09",
+      "processed_at": "2026-10-09T06:20:34.053276+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-09-76809960-腾讯音乐Android秒编方案Jugg开源.md",
+      "title": "[技术文章] 日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源腾讯音乐正式开源 Android 秒级增量构建插件",
+      "summary": "> 发布时间: 2026-09-03T12:51:33.000Z > 原文链接: https://juejin.cn/post/7680996030843125796 2026-09-03 1,920 阅读29分钟 Android 编译优化 > 本文首发自公众号：腾讯音乐技术团队 > 5 年研发和内部使用，累积 80 万次生产工程编译验证，让大型 Android 工程日常...",
+      "chapter": "ch16",
+      "processed_at": "2026-10-09T06:20:34.053276+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
