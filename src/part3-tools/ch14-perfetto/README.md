@@ -21,7 +21,7 @@ last_consolidated_at: '2026-08-24'
 
 # 第 14 章：Perfetto
 
-Perfetto 把 Android 各层性能事件放到同一条时间轴上。渲染、输入、启动、ANR、调度、锁、Binder、I/O、内存和功耗由不同 data source 产生；data source 是向 trace 写入特定类型数据的组件。Trace Processor 把 trace 导入成可关联的 SQL 表，Perfetto UI 再把结果显示为 track（同类事件所在的时间轨道）和 slice（带起止时间的区间）。本章的目标是采集足以回答问题的数据、读懂各条 track 的语义，并把观察转成可复核的 SQL 查询和源码结论。
+Perfetto 把 Android 各层性能事件放到同一条时间轴上；这些事件的采集记录就是 trace。渲染、输入、启动、ANR、调度、锁、Binder、I/O、内存和功耗由不同 data source 产生，data source 是向 trace 写入特定类型数据的组件。Trace Processor 把 trace 导入成可关联的 SQL 表，Perfetto UI 再把结果显示为 track（同类事件所在的时间轨道）和 slice（带起止时间的区间）。本章的目标是采集足以回答问题的数据、读懂各条 track 的语义，并把观察转成可复核的 SQL 查询和源码结论。
 
 ## 版本口径
 
@@ -36,7 +36,6 @@ Perfetto 把 Android 各层性能事件放到同一条时间轴上。渲染、�
 设备采集端与宿主机分析端可以独立升级。新 UI 通常能读取旧 trace，却无法让旧设备提供当时没有采集的数据源。查询得到空表时，应检查采集配置、设备权限、trace 是否丢包，以及当前分析器的 schema（可查询表与字段定义）；只升级浏览器页面无法补回缺失数据。
 
 ## 章节目录
-
 
 - [14.1 Perfetto 入门、Trace 抓取与可靠性](01-perfetto-intro-capture-reliability.md)
 - [14.2 Perfetto UI、状态轨道与版本边界](02-perfetto-ui-state-tracks.md)
@@ -74,11 +73,11 @@ Perfetto 把 Android 各层性能事件放到同一条时间轴上。渲染、�
 
 ### CPU profile 与内存
 
-按 14.8 → 14.1 → 14.7 阅读。pprof 主要表达按调用栈聚合的采样结果，Simpleperf protobuf 还能保存单个样本的时间戳，Perfetto `linux.perf` 可以把 CPU profile 与 system trace 采在同一时间轴上。内存分析要区分 heap profile（分配调用栈采样）、heap graph（对象引用图）、process counter（进程内存计数器）与 DMA-BUF（跨设备共享的 buffer）。
+按 14.8 → 14.1 → 14.7 阅读。pprof 记录的主要是按调用栈聚合的采样结果，Simpleperf protobuf 还能保存单个样本的时间戳，Perfetto `linux.perf` 可以把 CPU profile 与 system trace 采在同一时间轴上。内存分析要区分 heap profile（分配调用栈采样）、heap graph（对象引用图）、process counter（进程内存计数器）与 DMA-BUF（跨设备共享的 buffer）。
 
 ### 应用埋点与工具集成
 
-按 14.6 → 14.12 阅读。`android.os.Trace`、AndroidX Tracing 和 Perfetto SDK 的写入路径、文件格式与采集 session 依赖不同。选型前应先确认需要的是系统时间轴、独立的进程内 trace，还是由应用定义事件格式的自定义 data source。
+按 14.6 → 14.12 阅读。`android.os.Trace`、AndroidX Tracing 和 Perfetto SDK 三者在写入路径、文件格式和采集 session 依赖上各不相同。选型前应先确认需要的是系统时间轴、独立的进程内 trace，还是由应用定义事件格式的自定义 data source。
 
 ### 自动化与代理分析
 
