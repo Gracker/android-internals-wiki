@@ -1,11 +1,10 @@
 # 第 12 章：网络性能
 
-本章关注请求从应用代码进入 Android 网络栈后的端到端成本：请求排队、DNS（Domain Name System，域名系统）解析、连接复用、传输协议、TLS（Transport Layer Security，传输层安全）握手，以及 `netd`（Android 网络管理守护进程）和每个网络各自的 DNS 状态。系统如何选择网络，以及 `NetworkCallback` 回调的语义，另见 1.22。
+本章讲一次请求从应用代码进入 Android 网络栈之后的端到端成本，按处理阶段看依次是请求排队、DNS（Domain Name System，域名系统）解析、连接复用、传输协议和 TLS（Transport Layer Security，传输层安全）握手。`netd`（Android 网络管理守护进程）和每个网络各自的 DNS 状态是另一类观察对象。系统的网络选择和 `NetworkCallback` 回调的语义另见 1.22。
 
 排查时先按阶段分析一次请求，再根据证据进入 TLS 或 DNS 专项。Wi-Fi 图标、系统网络验证、DNS 可用性和目标服务可达性分别代表不同状态，不能合并成一个“网络正常”或“网络异常”的结论。
 
 ## 章节地图
-
 
 - [12.1 Android 网络与 TLS 性能优化](01-android-network-tls-performance.md)
 - [12.2 netd 与 DnsResolver：DNS 解析性能和故障诊断](02-netd-dnsresolver-network-diagnostics.md)
