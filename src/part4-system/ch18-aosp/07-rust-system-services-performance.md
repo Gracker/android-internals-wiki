@@ -95,7 +95,7 @@ AOSP `android-17.0.0_r1` 给出以下工程边界：
   不能把整个 resolver 标成 Rust 服务。
 - UWB 包含 Rust UCI（UWB Command Interface）core、packet 与 HAL adapter（硬件抽象层适配器）。Bluetooth 在 `system/rust` 下提供 `libbluetooth_rs`，
   并通过 CXX bridge（由 `cxx` 生成的 Rust/C++ 桥接层）接入现有 C++ 代码。它们都采用渐进式替换。
-- 设备端 Rust 全局启用 `panic=abort`、整数溢出检查、强栈保护与 unwind table；ThinLTO（链接期的轻量级全程序优化）默认开启。这些配置比通用 Rust 项目的经验数字更适合解释 Android 17。
+- 设备端 Rust 全局启用 `panic=abort`、整数溢出检查、强栈保护与 unwind table；ThinLTO（链接期的轻量级全程序优化）默认开启。解释 Android 17 的表现时，这些构建配置比通用 Rust 项目的经验数字更合适。
 - 未自定义全局 allocator（内存分配器）的 Rust 标准库代码，通常经 libc `malloc/free` 进入设备配置的 native allocator。
   常规 Android 设备使用 Scudo，低内存产品仍可能采用其他实现；改用 Rust 不会消除分配器的安全成本。
 
@@ -109,8 +109,7 @@ AOSP `android-17.0.0_r1` 给出以下工程边界：
 Android 12 开始在 AOSP 平台构建中正式支持 Rust，并同时引入 Rust AIDL backend。
 Google 在 2021 年发布 Rust 支持时提到，内存不安全问题长期约占 Android 高严重性安全漏洞的 70%；这是当时漏洞结构的历史数据，不能直接当作 Android 17 的现状统计。
 
-迁移策略侧重新增 native 代码，以及能够独立替换的组件。大规模逐行重写成熟 C/C++ 模块会增加功能回归、兼容性和验证成本，AOSP 因而长期保留混合语言结构。
-FFI、Binder 与生成代码都是这种演进方式的组成部分。
+迁移策略侧重于新增 native 代码，以及能够独立替换的组件。大规模逐行重写成熟 C/C++ 模块会增加功能回归、兼容性和验证成本，AOSP 因而长期保留混合语言结构；FFI、Binder 与生成代码都是这种演进方式的组成部分。
 
 Rust 的安全保证也包含运行时工作。所有权、生命周期与大部分借用规则在编译期检查；数组边界、整数溢出以及某些状态约束可能在运行期检查。
 Android 17 Soong 对设备端 Rust 显式开启 `-C overflow-checks=on`，所以“安全检查全部在编译期完成”的说法与 r1 构建配置不符。
@@ -142,7 +141,7 @@ binder::add_service(KS2_SERVICE_NAME, ks_service.as_binder())?;
 
 代码省略了源码中的错误包装，只保留服务创建和注册结构。
 Java framework 侧使用 AIDL proxy（客户端代理）发出一笔 Binder transaction，服务端由 Rust AIDL stub（服务端分发代码）接收。
-`libbinder_rs` 构建在 `libbinder_ndk` 上，内部会经过 Rust/C ABI，但不会增加第二笔 Binder IPC，也不要求业务层先进入 C++ stub。
+`libbinder_rs` 构建在 `libbinder_ndk` 上，内部会跨越 Rust/C ABI 边界，但不会增加第二笔 Binder IPC，也不要求业务层先进入 C++ stub。
 
 Keystore 操作常见的耗时来源包括 Binder 排队、数据库事务、SELinux 权限检查、KeyMint HAL、TEE（可信执行环境）/StrongBox 和远程密钥供应。
 只测一个空 FFI 函数的纳秒值，无法解释生成密钥或签名请求的端到端时延。
@@ -177,7 +176,7 @@ Rust backend 的价值，是让服务端保留 Rust 类型和所有权模型，�
 - 生成桥接代码可能做分支、长度校验、分配或析构；
 - 回调频率过高会放大每次固定成本。
 
-Soong `compiler.go` 对 `lto` 属性的注释明确写着：它控制最终 Rust 链接的 LTO，不影响 cross-language LTO（跨语言链接期优化）。
+无法内联这条风险与 LTO 配置直接相关。Soong `compiler.go` 对 `lto` 属性的注释明确写着：它控制最终 Rust 链接的 LTO，不影响 cross-language LTO（跨语言链接期优化）。
 因此 r1 默认 ThinLTO 能优化 Rust crate 依赖图，却不能据此宣称 Rust/C++ 边界会被跨语言内联。
 
 数据是否复制取决于接口形态。下面的 CXX bridge 例子用借用 slice 传递指针和长度：
@@ -222,7 +221,7 @@ JNI 成本应拆成：
 大 payload 可以评估 direct `ByteBuffer`（Java 与 native 共享的直接缓冲区）、共享内存、文件描述符或批量接口。
 纯 JNI 接口要限制对象生存期、单次延迟和取消粒度；数据还要继续跨 Binder 传输时，才需要额外考虑 Binder transaction 大小上限。
 
-Keystore2 不是“Rust JNI 服务”的例子。它的公开系统服务入口是 Binder。把所有 Java→Rust 交互都画成 JNI，会把 IPC 成本和语言转换成本混为一项。
+Keystore2 不是“Rust JNI 服务”的例子。它的公开系统服务入口是 Binder。把所有 Java→Rust 交互都归为 JNI，会把 IPC 成本和语言转换成本混为一项。
 
 ## 3. panic、错误与资源所有权
 
@@ -351,7 +350,7 @@ r1 的几个全局编译选项可从 `build/soong/rust/config/global.go` 直接�
 | `aidl_interface` 的 Rust backend | 生成 Rust AIDL crate，供 `rustlibs` 引用 |
 
 `rust_ffi_static` 并不直接产出通用 Rust `staticlib`。
-r1 的 `library.go` 实际把它注册到 `RustLibraryRlibFactory`，注释也写明该 rlib 会留到最终 C/C++ 静态链接步骤处理。这是 Soong 的实现约定。
+r1 的 `library.go` 把它注册到 `RustLibraryRlibFactory`，注释也写明该 rlib 会留到最终 C/C++ 静态链接步骤处理。这是 Soong 的实现约定。
 
 `rust_dylib` 不是 r1 注册的 Soong 模块类型。需要强制使用 Rust dylib variant 时可使用 `rust_library_dylib`；一般 Rust 依赖优先写入 `rustlibs`，由构建系统选择兼容的 linkage（静态或动态链接方式）。
 
@@ -384,7 +383,7 @@ Android 17 的 crates.io 导入集中在 `external/rust/android-crates-io` 仓�
 - Rust 服务的 CPU 时间花在 bridge、锁、allocator、Binder 或业务代码中的哪一项？
 - static Rust std 与 dynamic linkage 对文件体积、PSS 和启动 relocation 有什么影响？
 
-“Rust 服务快不快”缺少可操作边界。先固定业务语义、输入、线程数、CPU affinity（把线程限制到指定 CPU）、编译配置和设备温度，再决定工具。
+“Rust 服务快不快”这样的问题没有可测的边界，先固定业务语义、输入、线程数、CPU affinity（把线程限制到指定 CPU）、编译配置和设备温度，再决定工具。
 
 ### 6.2 同进程 FFI microbenchmark
 
