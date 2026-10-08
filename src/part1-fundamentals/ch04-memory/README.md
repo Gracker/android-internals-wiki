@@ -2,7 +2,7 @@
 
 Android 内存问题不只表现为内存不足（Out of Memory，OOM）。垃圾回收（GC）暂停、缺页异常（page fault）、分配线程直接回收内存（direct reclaim）、zram 压缩交换 I/O、进程冻结与解冻、图形缓冲区占用，以及内存压力下的进程回收，都可能造成启动变慢、交互卡顿、后台重建或整机抖动。
 
-复核锚点如下：
+本章锚点如下：
 
 - 平台版本：Android 17 / API 37 / `android-17.0.0_r1`；
 - 内核版本：`android17-6.18-2026-06_r6`；
@@ -52,7 +52,7 @@ RSS（Resident Set Size，驻留集大小）统计驻留页面；PSS（Proportio
 | USS/Private | 只归入该进程的私有页面 | 终止进程后较可能直接释放多少用户空间页面 | 不覆盖共享对象的系统总成本 |
 | SwapPss | 交换空间中共享页的比例分摊 | 进程对换出量的贡献 | 受内核、`smaps` 与设备实现影响 |
 
-PSS 与 CPU 缓存局部性属于不同层级。缓存行（cache line）是 CPU 缓存传输和一致性维护的单位；内存页（page）是虚拟内存映射与记账的单位；ART 卡表（card table）则帮助 GC 记录跨区域引用，形成后续扫描使用的记忆集（remembered set）。三者即使数值或现象接近，也不能互相替代。
+缓存行、内存页和 ART 卡表分属不同层级。即使数值或现象接近，也不能互相替代。缓存行（cache line）是 CPU 缓存传输和一致性维护的单位；内存页（page）是虚拟内存映射与记账的单位；ART 卡表（card table）帮助 GC 记录跨区域引用，形成后续扫描使用的记忆集（remembered set）。
 
 ## 4. 内容索引
 
@@ -95,4 +95,4 @@ PSS 与 CPU 缓存局部性属于不同层级。缓存行（cache line）是 CPU
 - [kernel `zram_drv.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/block/zram/zram_drv.c)：zram 块设备与统计；
 - [kernel `psi.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/psi.c)：压力停顿时间记账。
 
-这些源码用于固定公共机制。内存性能结论还要结合目标设备的内核配置、系统属性（sysprop）、lmkd 配置、zram 参数、控制组（cgroup）层级、GPU/内存分配器实现与运行时采样。
+以上源码固定的是公共机制。内存性能结论还要结合目标设备的内核配置、系统属性（sysprop）、lmkd 配置、zram 参数、控制组（cgroup）层级、GPU/内存分配器实现与运行时采样。
