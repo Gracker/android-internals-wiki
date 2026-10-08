@@ -5,6 +5,7 @@ chapter: '8.4'
 section: '8.4'
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-08-09'
+last_body_apply_at: '2026-10-08T07:16:42+08:00'
 last_verified_against: kotlinx.coroutines 1.11.0 / Android 17 android-17.0.0_r1 / kernel android17-6.18-2026-06_r6
 confidence: medium-high
 consolidated_from:
@@ -78,6 +79,10 @@ CPU 任务数量超过并行度后，新增任务排队属于预期行为。把�
 #### IO：默认限制与弹性视图
 
 `Dispatchers.IO` 默认允许并行执行的阻塞任务数，是 64 与处理器数量二者中的较大值，可以通过 `kotlinx.coroutines.io.parallelism` 调整。这个数限制默认 IO 视图中同时执行的阻塞任务，不表示进程最多只能存在这么多协程或线程。
+
+`Dispatchers.IO` 更容易出现更多 worker，有两层原因。默认 IO 并行度较大；1.11.0 中，`DefaultScheduler.dispatch()` 默认用 `NonBlockingContext`，`Dispatchers.IO` 则通过 `UnlimitedIoScheduler` 把 `Runnable` 以 `BlockingContext` 交给同一个 `CoroutineScheduler`。`TaskContext` 只是一个 blocking / non-blocking 标记，不会分析 `Runnable` 里面是否真的在等 I/O。同一段代码放到 Default 或 IO，调度器看到的是不同任务类型。[来源: 2026-10-08-76933517-CoroutineScheduler 设计解析上为什么 Dispatchers IO.md；已验证: kotlinx.coroutines 1.11.0 `Dispatcher.kt`、`Tasks.kt`、`CoroutineScheduler.kt`]
+
+调度器处理 blocking task 时，会先增加 blocking 计数；worker 执行 blocking task 前会进入 `BLOCKING` 状态并释放 CPU permit，随后 `signalCpuWork()` 可以唤醒或创建 worker 来保留 CPU 任务并行度。`tryCreateWorker()` 估算 `created - blocking` 后，如果可处理 CPU work 的 worker 少于 `corePoolSize`，且尚未达到 `maxPoolSize`，才会创建新 worker。这解释了 IO 场景 worker 数可能超过 Default 并行度的原因。排查时不要只数线程，还要同时看 IO 并行度、各个 `limitedParallelism` 视图、blocking 调用数量，以及 worker 是否真的处在 Sleep / I/O wait。[来源: 2026-10-08-76933517-CoroutineScheduler 设计解析上为什么 Dispatchers IO.md；已验证: kotlinx.coroutines 1.11.0 `CoroutineScheduler.kt`]
 
 `Dispatchers.IO.limitedParallelism(n)` 创建的是弹性视图：每个视图不受默认 IO 并行度上限约束，但仍共享底层线程和资源。如果同时创建并行度为 100 和 60 的两个视图，峰值阻塞并行度可能叠加。它适合表达两个外部系统各自的并发预算，但团队必须同时计算进程总并发量。
 
@@ -465,6 +470,7 @@ ADPF（Android Dynamic Performance Framework）session 绑定一组长期存在�
 - [kotlinx.coroutines 1.11.0 API 总览](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/)
 - [kotlinx-coroutines-android 1.11.0 HandlerDispatcher 源码](https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/ui/kotlinx-coroutines-android/src/HandlerDispatcher.kt)
 - [kotlinx.coroutines 1.11.0 CoroutineScheduler 源码](https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/kotlinx-coroutines-core/jvm/src/scheduling/CoroutineScheduler.kt)
+- [CoroutineScheduler 设计解析（上）—— 为什么 Dispatchers.IO 会创建更多线程？](https://juejin.cn/post/7693351700207747072)
 - [CoroutineDispatcher 公开契约](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-dispatcher/)
 - [Dispatchers.IO 的并行度、弹性与共享线程说明](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html)
 - [Dispatchers.Unconfined 的恢复线程与事件循环](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-unconfined.html)
