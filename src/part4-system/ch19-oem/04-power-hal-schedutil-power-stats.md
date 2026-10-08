@@ -206,7 +206,7 @@ private boolean setPowerModeInternal(int mode, boolean enabled) {
 }
 ```
 
-本地 C++ 层（native）依次经过 `PowerManagerService` 的 JNI 边界、`PowerHalController`、`PowerHalLoader` 和 `AidlHalWrapper`。JNI 连接 Java 与本地代码，封装层（wrapper）会缓存 Mode/Boost 支持查询；连接失效后，后续调用会尝试重连。Android 17 仍保留 HIDL（旧版 HAL 接口定义）封装层来兼容旧实现。量产机要读取运行时连接，不能只用平台版本推断进程间通信接口。
+调用从 `PowerManagerService` 经 JNI 边界进入本地 C++ 层（native），再依次经过 `PowerHalController`、`PowerHalLoader` 和 `AidlHalWrapper`。JNI 连接 Java 与本地代码；封装层（wrapper）会缓存 Mode/Boost 支持查询，连接失效后由后续调用尝试重连。Android 17 仍保留 HIDL（旧版 HAL 接口定义）封装层来兼容旧实现。量产机要读取运行时连接，不能只用平台版本推断进程间通信接口。
 
 普通应用的 `PerformanceHintManager` 请求会进入 `HintManagerService`。系统端校验 UID（应用身份）、TGID（进程 ID）、TID（线程 ID）、进程状态和会话生命周期，再交给 `IPowerHintSession`。Android 17 的 AIDL v7 支持 `createHintSessionWithConfig()`；v5 起还可通过可选 FMQ Channel 减少高频报告的 Binder 往返。FMQ 不可用时仍走 Binder 会话路径。
 
@@ -230,7 +230,9 @@ flowchart TD
 
 ### Android 17 内核中的频率决策
 
-在内核标签 `android17-6.18-2026-06_r6` 中，`schedutil` 这项基于调度器负载的 CPU 调频策略，已通过 `sugov_get_util()` 接入 `sched_ext` 的 CPU 性能目标。`sched_ext`，简称 SCX，允许用 BPF 程序定义调度策略；BPF 程序在受约束的内核执行环境中运行。CFS/fair class 指 Linux 普通任务使用的公平调度类。下面的节选展示 CFS 与 SCX 同时参与时的计算入口。
+`schedutil` 是基于调度器负载的 CPU 调频策略。在内核标签 `android17-6.18-2026-06_r6` 中，它已通过 `sugov_get_util()` 接入 `sched_ext` 的 CPU 性能目标。`sched_ext` 简称 SCX，允许用 BPF 程序定义调度策略，这些 BPF 程序在受约束的内核执行环境中运行。CFS/fair class 指 Linux 普通任务使用的公平调度类。
+
+下面的节选展示 CFS 与 SCX 同时参与时的计算入口。
 
 ```c
 unsigned long min, max, util = scx_cpuperf_target(sg_cpu->cpu);
@@ -239,7 +241,7 @@ if (!scx_switched_all())
     util += cpu_util_cfs_boost(sg_cpu->cpu);
 ```
 
-SCX BPF 调度器通过 `scx_bpf_cpuperf_set(cpu, perf)` 写入相对于该 CPU 最大性能的线性目标，范围为 `[0, SCX_CPUPERF_ONE]`，并触发 `cpufreq_update_util()`。这个目标是归一化性能值，不是 kHz 或 OPP 序号；OPP（Operating Performance Point，运行性能点）是一组可用的频率与电压配置。CPU 分组、cpufreq policy（共用一次调频决策的 CPU 组）、OPP、驱动、频率上下限和温控约束仍会改变最终结果。SCX 启用时先把每个 CPU 的 target 初始化为 `SCX_CPUPERF_ONE`，运行后再由 BPF 策略更新。
+SCX BPF 调度器通过 `scx_bpf_cpuperf_set(cpu, perf)` 写入相对于该 CPU 最大性能的线性目标，范围为 `[0, SCX_CPUPERF_ONE]`，并触发 `cpufreq_update_util()`。SCX 启用时先把每个 CPU 的 target 初始化为 `SCX_CPUPERF_ONE`，运行后再由 BPF 策略更新。这个目标是归一化性能值，不是 kHz 或 OPP 序号；OPP（Operating Performance Point，运行性能点）是一组可用的频率与电压配置。CPU 分组、cpufreq policy（共用一次调频决策的 CPU 组）、驱动、频率上下限和温控约束仍会改变最终结果。
 
 三种运行状态应分开解释：
 
@@ -249,7 +251,7 @@ SCX BPF 调度器通过 `scx_bpf_cpuperf_set(cpu, perf)` 写入相对于该 CPU 
 | partial switch（部分接管） | BPF 目标 | 加入 | SCX target 与普通调度类利用率之和，再应用约束 |
 | full switch（全部接管） | BPF 目标 | 不加入 | SCX target，再应用 iowait、uclamp 等约束 |
 
-iowait boost 会在任务等待 I/O 后唤醒时临时抬高利用率，uclamp（utilization clamp）则给任务或任务组设置利用率上下限。因此，把 fair class 描述为只在 SCX 缺失时启用的备用路径，会漏掉 partial switch。
+iowait boost 会在任务等待 I/O 后唤醒时临时抬高利用率，uclamp（utilization clamp）则给任务或任务组设置利用率上下限。在 partial switch 下，fair-class 利用率仍会加入，所以 fair class 不是只在 SCX 缺失时才启用的备用路径。
 
 频率更新节奏没有跨设备固定为 10 ms。`sugov_should_update_freq()` 会检查 policy 是否可以更新以及频率上下限是否变化，普通更新还受 `freq_update_delay_ns` 的速率限制，初值来自 `cpufreq_policy_transition_delay_us(policy)`。`get_next_freq()` 经 `map_util_freq()` 或厂商钩子给出原始频率，再由 `cpufreq_driver_resolve_freq()` 解析成驱动支持的档位。支持 fast switch（快速切换）时会直接更新，否则由工作线程延后执行。共用一个 policy 的多个 CPU 会取处理后的最大利用率；给某个 CPU 写入 target，不代表硬件只改变这个 CPU 的频率。
 
@@ -304,7 +306,7 @@ Xclipse GPU 的 DVFS、固件和产品策略要以相应设备的公开驱动、
 
 #### 品牌不是实验变量
 
-同一厂商的两个 SoC 可能使用不同 CPU 微架构、GPU、制程、DVFS 控制器和调度配置；同一 SoC 放入两种机身后，也会受散热结构、屏幕与固件参数影响。跨设备实验中，“Qualcomm 对 MediaTek”这类标签信息过少。记录表至少应包含：
+同一厂商的两个 SoC 可能使用不同 CPU 微架构、GPU、制程、DVFS 控制器和调度配置；同一 SoC 放入两种机身后，也会受散热结构、屏幕与固件参数影响。跨设备实验中，用“Qualcomm 对 MediaTek”这样的品牌标签分组，信息量太少。记录表至少应包含：
 
 - 手机型号、SoC、RAM 和软件构建指纹（build fingerprint，用于标识一版系统构建的字符串）；
 - Android 版本、内核版本及调频策略；
@@ -347,7 +349,7 @@ ADPF（Android Dynamic Performance Framework，Android 动态性能框架）提�
 
 #### 正确解释 thermal headroom
 
-`PowerManager.getThermalHeadroom(forecastSeconds)` 返回非负的归一化热压力指标，参数范围为 0 到 60 秒。虽然 API 名称中有 headroom（热余量），返回值越高表示越接近严重温控阈值。`1.0` 表示到达 `THERMAL_STATUS_SEVERE` 阈值，返回值可以超过 `1.0`；`0.0` 不对应某个固定温度或温控状态。该值没有摄氏度单位。
+`PowerManager.getThermalHeadroom(forecastSeconds)` 的 `forecastSeconds` 参数取 0 到 60 秒，返回值为非负的归一化热压力指标。虽然 API 名称中有 headroom（热余量），返回值越高表示越接近严重温控阈值。`1.0` 表示到达 `THERMAL_STATUS_SEVERE` 阈值，返回值可以超过 `1.0`；`0.0` 不对应某个固定温度或温控状态。该值没有摄氏度单位。
 
 接口可能返回 `NaN`（Not a Number，表示当前没有有效数值），包括设备不支持、采样尚未稳定或调用过快等情况。AOSP 文档指出慢变化传感器约一秒更新一次，更高频轮询没有收益。应用可以把 headroom 与 `getCurrentThermalStatus()` 一起用于降低画质、减小批量任务或延后预取。
 
@@ -545,7 +547,7 @@ AOSP 默认实现位于 `hardware/interfaces/power/stats/aidl/default/`。`main.
 
 `PowerStatsHALWrapper` 优先连接稳定 AIDL v2；连接不到时会尝试旧版 HIDL 1.0。HIDL（HAL Interface Definition Language）1.0 能提供 rail 与状态驻留，Framework 的兼容封装会把 EnergyConsumer 信息和结果返回为空数组。设备有 PowerStats 服务，不代表三组数据都可用。
 
-下面列出主要类名，便于在源码中定位。箭头表示组件关系；含有存储、PowerMonitor 和 `dumpsys` 的那一行列出不同使用入口，它们不会按文字顺序互相调用。
+下面列出主要类名，便于在源码中定位；箭头表示组件关系。图中含有存储、PowerMonitor 和 `dumpsys` 的那一行是并列的三种使用入口，它们不按文字顺序互相调用。
 
 ```text
 vendor PowerStats HAL
