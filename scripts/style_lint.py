@@ -78,7 +78,7 @@ def recently_touched(days):
     if days <= 0:
         return set()
     out = subprocess.run(
-        ["git", "log", f"--since={days} days ago", "--grep=aiw-chinese-", "--name-only", "--format="],
+        ["git", "log", f"--since={days} days ago", "--grep=aiw-chinese-rewrite", "--name-only", "--format="],
         capture_output=True, text=True,
     ).stdout
     return {l.strip() for l in out.splitlines() if l.strip()}
