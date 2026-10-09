@@ -5608,6 +5608,42 @@
       "status": "appended",
       "title": "日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源腾讯音乐正式开源 Android 秒级增量构建插件"
     },
+    "source/juejin-android/2026-10-10-76756264-三星安卓系统BUG排查记录：云闪付、铁路.md": {
+      "chapter": "待分类",
+      "entry_id": "f3f287b6b0fc7706",
+      "last_appended": "2026-10-10T05:25:34.187745+08:00",
+      "last_seen": "2026-10-10T05:25:34.187745+08:00",
+      "mtime": 1791577090.4962215,
+      "score": 24,
+      "sha256": "df7c6352d36bd149fadb1e346faced6d016285e39671f43aed31f59ed1197925",
+      "size": 33470,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
+    "source/juejin-android/2026-10-10-76809960-日常修改，3秒生效：腾讯音乐 Andro.md": {
+      "chapter": "待分类",
+      "entry_id": "0811ec1a5bea42f0",
+      "last_appended": "2026-10-10T05:25:34.187745+08:00",
+      "last_seen": "2026-10-10T05:25:34.187745+08:00",
+      "mtime": 1791577090.4952302,
+      "score": 19,
+      "sha256": "f55e486b4cf7c07b1a064b54a89516f8af4b520a92ab3956e275384a37e59d94",
+      "size": 33822,
+      "status": "appended",
+      "title": "日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源腾讯音乐正式开源 Android 秒级增量构建插件"
+    },
+    "source/juejin-android/2026-10-10-76940645-Android 以后可能不会再有横竖屏适.md": {
+      "chapter": "待分类",
+      "entry_id": "6d9ee51f14866f19",
+      "last_appended": "2026-10-10T05:25:34.187745+08:00",
+      "last_seen": "2026-10-10T05:25:34.187745+08:00",
+      "mtime": 1791577090.4944363,
+      "score": 15,
+      "sha256": "aea54dce547609fcef1261f9a0dda9956df40c01b5b7c72769a69cfa82eb33c7",
+      "size": 15508,
+      "status": "appended",
+      "title": "Android 以后可能不会再有横竖屏适配了各位 Android 爱好者们，大家好。 多年来，几乎所有的 Android"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -7685,24 +7721,24 @@
     }
   },
   "last_report": {
-    "appended": 10,
-    "considered": 15,
-    "cutoff": "2026-10-08T05:20:34.147816+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-09.md",
+    "appended": 3,
+    "considered": 3,
+    "cutoff": "2026-10-09T05:20:33.876123+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-10.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2134,
+    "scanned": 2137,
     "skipped": {
       "existing_link": 0,
-      "low_score": 5,
+      "low_score": 0,
       "max_files": 0,
       "old_unseen": 1408,
       "path": 31,
-      "unchanged": 680
+      "unchanged": 695
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-10-09T05:25:33.876123+08:00",
+  "last_run_at": "2026-10-10T05:25:34.187745+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
