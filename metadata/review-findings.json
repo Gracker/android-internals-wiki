@@ -3878,6 +3878,25 @@
       "summary": "AnrWarningResult accessor was written as a field instead of getAnrId()",
       "type": "technical-accuracy",
       "updated_at": "2026-10-07T22:40:28.890722+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/14-webgpu-android-pipeline.md",
+      "created_at": "2026-10-09T12:09:17.941194+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261009-120533-74507b75",
+      "details": "Review found official release notes now list androidx.webgpu:webgpu:1.0.0-alpha06 dated 2026-10-07. Release notes state minSdk increased from API 24 to API 26 and list HardwareBuffer, sync fence, Dawn toggles, HDR/color space, builder migration, and helper single-thread execution changes. The alpha06 AAR manifest was checked with minSdkVersion=26 and dawn_build_metadata.json points to Dawn 4b959fbe989d529e1eee839c48cda465cc1195fe. The chapter was patched to remove the alpha05-latest claim, scope API24 wording to alpha05, and downgrade to ready-for-review. Full alpha06 AAR/source JAR/Dawn rebaseline is still needed before publication.",
+      "id": "AIW-13.14-20261009-P2-alpha06-rebaseline",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/jetpack/androidx/releases/webgpu",
+        "https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha06/webgpu-1.0.0-alpha06.aar",
+        "https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha06/webgpu-1.0.0-alpha06-sources.jar"
+      ],
+      "status": "open",
+      "summary": "Jetpack WebGPU alpha06 is current; this chapter is still pinned to alpha05 and needs alpha06 source rebaseline before publication",
+      "type": "version-boundary",
+      "updated_at": "2026-10-09T12:09:17.941194+08:00"
     }
   ],
   "schema_version": 1
