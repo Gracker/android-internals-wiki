@@ -3,8 +3,8 @@ title: Android 17 Jetpack WebGPU 渲染与计算管线
 chapter: '13.14'
 section: '13.14'
 section_title: Android 17 Jetpack WebGPU 渲染与计算管线
-status: ready-to-publish
-applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
+status: ready-for-review
+applicable_versions: Android 7.0 (API 24) - Android 17 (API 37) for androidx.webgpu 1.0.0-alpha05; current 1.0.0-alpha06 requires Android 8.0 (API 26)
 tags:
 - webgpu
 - gpu
@@ -22,9 +22,9 @@ related_chapters:
 - '13.5'
 - '13.6'
 - '13.9'
-last_verified: '2026-10-06'
-last_verified_against: androidx.webgpu 1.0.0-alpha05 / AndroidX c48b772dd76241af6af60bee13d3cad0e4520306 / Dawn 9d41fdf36977cca92361c6ae2769129bbaaafd9b / android-17.0.0_r1 / Writer rendering_pipelines S01、S03、S04 / android17-6.18-2026-06_r6
-confidence: medium
+last_verified: '2026-10-09'
+last_verified_against: androidx.webgpu 1.0.0-alpha06 release notes + AAR manifest / alpha05 source baseline AndroidX c48b772dd76241af6af60bee13d3cad0e4520306 / Dawn 9d41fdf36977cca92361c6ae2769129bbaaafd9b / android-17.0.0_r1 / Writer rendering_pipelines S01、S03、S04 / android17-6.18-2026-06_r6
+confidence: medium-low
 sources:
 - type: internal-reference
   path: rendering_pipelines/S01_rendering_types_overview.md
@@ -37,13 +37,19 @@ sources:
   role: TextureView 嵌入宿主窗口、变换能力与中间纹理成本
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/webgpu
-  role: 1.0.0-alpha05 最新公开版本、发布日期、alpha 状态与 API 变化
+  role: 1.0.0-alpha06/alpha05 版本、发布日期、minSdk 与 API 变化
+- type: artifact
+  path: https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha06/webgpu-1.0.0-alpha06.aar
+  role: alpha06 AAR manifest minSdkVersion=26 与 dawn_build_metadata.json（Dawn 4b959fbe989d529e1eee839c48cda465cc1195fe）
+- type: artifact
+  path: https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha06/webgpu-1.0.0-alpha06-sources.jar
+  role: alpha06 helper/WebGpu.kt 的单线程 dispatcher、16 ms event loop 与 close 边界抽查
 - type: official
   path: https://developer.android.com/develop/ui/views/graphics/webgpu
   role: Jetpack WebGPU 的用途、对象模型与 Android 定位
 - type: official
   path: https://developer.android.com/develop/ui/views/graphics/webgpu/getting-started
-  role: minSdk 24、Vulkan 1.1+ 首选、Compatibility 与 AndroidExternalSurface 示例
+  role: 入门页仍写 API 24、Vulkan 1.1+ 首选、Compatibility 与 AndroidExternalSurface 示例；版本选择需同时核对 release notes / AAR manifest
 - type: artifact
   path: https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha05/webgpu-1.0.0-alpha05.aar
   role: alpha05 ABI 二进制、minSdk 与 dawn_build_metadata.json
@@ -141,18 +147,24 @@ AndroidX 在 AAR 中打包 Dawn 原生实现，再由 Dawn 选择 Vulkan 或 Ope
 - WebView 网页中的 WebGPU 由 Chromium/WebView 运行时提供，不复用 Jetpack WebGPU 的 instance、device 或 native handle（原生对象引用）；
 - Android 平台仍负责 `Surface`、`ANativeWindow`、BufferQueue、SurfaceFlinger、HWC（Hardware Composer，硬件显示合成器）和内核同步，也不会把普通 HWUI 内容自动转换成 WebGPU 内容。
 
-复核时，官方 release notes 的最新公开版本仍是 `androidx.webgpu:webgpu:1.0.0-alpha05`，发布于 2026-04-22，最低系统版本为 Android 7.0 / API 24。它仍处于 alpha 阶段，适合技术评估、原型和能够承担 API 变更成本的产品。选型时除 Android 版本外，还要检查 adapter、feature（可选能力）、limit（数值上限）、surface capability 与目标设备实测结果。
+截至 2026-10-09，官方 release notes 的最新公开版本已经是 `androidx.webgpu:webgpu:1.0.0-alpha06`，发布于 2026-10-07。alpha06 把最低系统版本从 API 24 提高到 API 26，并新增 HardwareBuffer 导入、sync fence、Dawn toggles、HDR/color space 等扩展；helper 也改为单线程 dispatcher 与 16 ms event loop。
+
+本文后续代码级链路仍锁定 `1.0.0-alpha05`、AndroidX `c48b772dd76241af6af60bee13d3cad0e4520306` 与 Dawn `9d41fdf36977cca92361c6ae2769129bbaaafd9b`，适合阅读 alpha05 行为和 Android 显示链路边界。若项目采用 alpha06，需要重新核对对应 AAR、source JAR 与 Dawn SHA。
+
+WebGPU 仍处于 alpha 阶段，适合技术评估、原型和能够承担 API 变更成本的产品。选型时除 Android 版本外，还要检查 adapter、feature（可选能力）、limit（数值上限）、surface capability 与目标设备实测结果。
 
 ## 复核基线
 
 | 层级 | 基线 | 负责内容 |
 | --- | --- | --- |
-| Jetpack WebGPU | `1.0.0-alpha05` | Kotlin API、JNI handle 包装、helper、随包发布的 Dawn |
+| Jetpack WebGPU | 固定源码基线：`1.0.0-alpha05`（当前 release notes 已到 `1.0.0-alpha06`） | Kotlin API、JNI handle 包装、helper、随包发布的 Dawn |
 | Dawn | `9d41fdf36977cca92361c6ae2769129bbaaafd9b` | WebGPU 验证、资源与命令管理、后端选择、shader 翻译 |
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | `Surface`、`ANativeWindow`、BufferQueue、SurfaceFlinger、HWC |
 | Android 内核 | `android17-6.18-2026-06_r6` | CPU 调度、用于共享 buffer 的 dma-buf、表示同步完成状态的 dma-fence 与 sync_file；厂商 GPU/display 调度由具体驱动实现 |
 
 alpha05 的 AAR 在 `assets/dawn_build_metadata.json` 中记录上述 Dawn SHA。下载到的 AAR SHA-256 为 `f977680085599a1cdfd4f8c5b0289d1fda905e33bcf4f5238042849bee74d1c0`，包含四个 ABI（Application Binary Interface，应用二进制接口）的 `libwebgpu_c_bundled.so`：解压后 arm64-v8a 约 5.8 MiB、armeabi-v7a 约 3.7 MiB、x86 约 6.5 MiB、x86_64 约 6.3 MiB。安装体积应按应用实际包含的 ABI、压缩方式和 App Bundle 拆分结果计算，不能把四个解压尺寸相加后当作单台设备的安装增量。
+
+alpha06 的 AAR SHA-256 为 `10aa7861c4c45796d58040fd2a94b55eae0ab1328daf46c01bf01701a269a02a`；其 `AndroidManifest.xml` 写明 `minSdkVersion="26"`，`assets/dawn_build_metadata.json` 写明 Dawn SHA 为 `4b959fbe989d529e1eee839c48cda465cc1195fe`。因此，API 24 结论只适用于本文的 alpha05 固定基线，不能外推到 alpha06 当前 artifact。
 
 Maven 的 alpha05 source JAR 与 AndroidX 提交 `c48b772dd76241af6af60bee13d3cad0e4520306` 中的 `Functions.kt`、`GPURequestAdapterOptions.kt`、`helper/WebGpu.kt` 逐文件一致，因此本文用该提交固定 Kotlin 层行为，不以持续变化的 `androidx-main` 分支代替发布版本。
 
@@ -566,12 +578,13 @@ Jetpack WebGPU 的价值是用统一对象模型组织渲染与计算，同时�
 
 ## 源码与文档入口
 
-- [Jetpack WebGPU release notes](https://developer.android.com/jetpack/androidx/releases/webgpu)：确认最新 artifact、alpha 状态、发布日期和版本变化。
-- [WebGPU for Android overview](https://developer.android.com/develop/ui/views/graphics/webgpu) 与 [Getting started](https://developer.android.com/develop/ui/views/graphics/webgpu/getting-started)：确认 API 24、Vulkan 1.1+ 首选、Compatibility 请求、Compose Surface 和基础渲染流程。
+- [Jetpack WebGPU release notes](https://developer.android.com/jetpack/androidx/releases/webgpu)：确认 alpha06 已发布、当前 artifact、alpha 状态、发布日期、minSdk 与 API 变化。
+- [WebGPU for Android overview](https://developer.android.com/develop/ui/views/graphics/webgpu) 与 [Getting started](https://developer.android.com/develop/ui/views/graphics/webgpu/getting-started)：确认 WebGPU for Android 定位、Vulkan 1.1+ 首选、Compatibility 请求、Compose Surface 和基础渲染流程；入门页的 API 24 说明需与 alpha06 release notes / AAR manifest 一起核对。
 - AndroidX alpha05 快照中的 [`Functions.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/Functions.kt)、[`GPURequestAdapterOptions.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPURequestAdapterOptions.kt)、[`GPUInstance.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUInstance.kt)、[`GPUDeviceDescriptor.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUDeviceDescriptor.kt) 与 [`GPURequestCallback.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPURequestCallback.kt)：核对 native 入口、adapter 选项、device descriptor、Executor 与 suspend wrapper。
 - AndroidX alpha05 快照中的 [`GPUSurface.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUSurface.kt)、[`GPUSurfaceConfiguration.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUSurfaceConfiguration.kt) 与 [`SurfaceGetCurrentTextureStatus.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/SurfaceGetCurrentTextureStatus.kt)：核对 configure、acquire status 与 present。
 - AndroidX alpha05 快照中的 [`helper/WebGpu.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/helper/WebGpu.kt) 与 [`helper/Util.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/helper/Util.kt)：核对 native library 名称、Surface 转换、100 ms event poller 和 helper close 边界。
 - [`AndroidExternalSurface.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/compose/foundation/foundation/src/androidMain/kotlin/androidx/compose/foundation/AndroidExternalSurface.android.kt)：核对 SurfaceView/TextureView 承载、独立 layer、主线程生命周期回调与跨线程渲染约束。
+- [alpha06 AAR](https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha06/webgpu-1.0.0-alpha06.aar) 与 [alpha06 source JAR](https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha06/webgpu-1.0.0-alpha06-sources.jar)：核对当前 artifact 的 `minSdkVersion=26`、`dawn_build_metadata.json` 中的 Dawn SHA，以及 helper 的单线程 dispatcher / 16 ms event loop 变化。
 - [alpha05 AAR](https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha05/webgpu-1.0.0-alpha05.aar)、[source JAR](https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha05/webgpu-1.0.0-alpha05-sources.jar) 与 [对应 Dawn commit](https://dawn.googlesource.com/dawn/+/9d41fdf36977cca92361c6ae2769129bbaaafd9b/)：核对 minSdk、ABI 二进制、Kotlin 源码、`dawn_build_metadata.json` 和固定原生实现。
 - Dawn 固定提交中的 [`Surface.cpp`](https://dawn.googlesource.com/dawn/+/9d41fdf36977cca92361c6ae2769129bbaaafd9b/src/dawn/native/Surface.cpp)、[`SwapChainVk.cpp`](https://dawn.googlesource.com/dawn/+/9d41fdf36977cca92361c6ae2769129bbaaafd9b/src/dawn/native/vulkan/SwapChainVk.cpp) 与 [`SwapChainEGL.cpp`](https://dawn.googlesource.com/dawn/+/9d41fdf36977cca92361c6ae2769129bbaaafd9b/src/dawn/native/opengl/SwapChainEGL.cpp)：核对 ANativeWindow、VkAndroidSurfaceKHR 与 EGL window surface 两条 WSI 路径。
 - [W3C WebGPU Specification](https://www.w3.org/TR/webgpu/) 与 [WGSL Specification](https://www.w3.org/TR/WGSL/)：核对 API 与 shader 语言的标准语义。
