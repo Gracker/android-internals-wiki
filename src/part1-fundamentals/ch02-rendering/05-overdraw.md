@@ -72,40 +72,42 @@ related_chapters:
 
 # 过度绘制
 
-过度绘制只描述同一像素在一帧内被重复覆盖的程度，不能单独证明页面已经成为 GPU 瓶颈。有效优化需要把颜色提示与 Surface 拓扑、离屏渲染、带宽和实际帧时间一起验证，避免为了降低颜色层级破坏正确性。
+开发者选项里打开“调试 GPU 过度绘制”，屏幕铺满蓝绿粉红，团队往往接着争论红色区域是不是要全部处理掉。这一篇我们先把过度绘制本身讲清楚：它度量的是同一像素在一帧内被重复覆盖的程度，能带我们找到需要检查的位置；页面是否真的卡在 GPU 上，还要把颜色提示与 Surface 拓扑、离屏渲染、带宽和实际帧时间放在一起验证，避免为了降低颜色层级破坏正确性。
+
+> 源码基线：AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
 
 ## 过度绘制的边界
 
-过度绘制（overdraw）指同一目标像素在一帧的绘制过程中被多次覆盖。常见例子是 Window 背景、根布局背景和列表项背景依次画在同一片不透明区域，最终只有最上层颜色可见。
+过度绘制（overdraw）指同一目标像素在一帧的绘制过程中被多次覆盖。最常见的例子是 Window 背景、根布局背景和列表项背景依次画在同一片不透明区域上，最终只有最上层的颜色可见。
 
-本文所说的“逻辑绘制次数”来自 HWUI（Android 的 View 硬件加速渲染管线）对 View/Compose 绘制命令的重放。它不等于 GPU 实际执行的片元数，也不包含 SurfaceFlinger 对多个窗口 Layer 的全部合成工作。同一块像素上的重复绘制在三个层次上各有口径，先分清它们，后面的颜色和性能数据才不会混用：
+本文所说的“逻辑绘制次数”，来自 HWUI 对 View/Compose 绘制命令的重放。它给出的是应用提交的命令视角：GPU 实际执行的片元数、SurfaceFlinger 对多个窗口 Layer 的合成工作，都不在这份统计里。同一块像素上的重复绘制在三个层次上各有各的统计范围，我们先把它们分清，后面的颜色和性能数据才不会混用：
 
-1. **应用提交的逻辑绘制**：HWUI 重放显示列表时，多条绘制命令覆盖同一像素。这是“调试 GPU 过度绘制”主要观察的对象。
-2. **GPU 执行的片元、采样与混合**：片元是光栅化后等待着色、混合并写入目标像素的候选结果。驱动可以裁剪、合批（把可一起提交的绘制命令组合起来）或剔除部分工作，移动 GPU 还可能在 tile memory（处理一个画面分块时使用的片上存储）中完成中间结果。逻辑上多画一次，不等于外部内存一定多写一整次。
-3. **SurfaceFlinger 的多 Layer 合成**：App Window、`SurfaceView`、系统栏、弹窗等可以是不同的 SurfaceFlinger Layer。它们可能由 HWC 的硬件 plane（显示控制器可独立处理的图层通道）合成，也可能由 RenderEngine 先合成到 client target（交给 HWC 的 GPU 合成结果），属于显示合成阶段。
+1. **应用提交的逻辑绘制**：HWUI 重放显示列表时，多条绘制命令覆盖同一像素。“调试 GPU 过度绘制”主要观察的就是这一层。
+2. **GPU 执行的片元、采样与混合**：片元是光栅化后等待着色、混合并写入目标像素的候选结果。驱动可以裁剪、合批或剔除部分工作——合批指把可以一起提交的绘制命令组合起来；移动 GPU 还可能把一个画面分块的中间结果放进 tile memory 这类片上存储。所以逻辑上多画一次，外部内存未必多写一整次。
+3. **SurfaceFlinger 的多 Layer 合成**：App Window、`SurfaceView`、系统栏、弹窗等可以是不同的 SurfaceFlinger Layer。它们可能由 HWC 的硬件 plane 直接合成——plane 指显示控制器可独立处理的图层通道；也可能由 RenderEngine 先合成到 client target，也就是交给 HWC 的 GPU 合成结果。这属于显示合成阶段。
 
-彩色区域只能定位需要检查的位置，不能单独证明 GPU 已超出帧预算，也不能代表整屏所有 Layer 的最终合成成本。
+所以彩色区域的作用是定位：它告诉我们哪里值得停下来检查。GPU 是否已超出帧预算、整屏所有 Layer 的最终合成成本有多少，要靠后面的帧时间与合成数据来回答。
 
-## Android 17 怎样生成过度绘制颜色
+## 过度绘制颜色是怎样生成的
 
-Android 17 / API 37 的源码锚点是 `android-17.0.0_r1`。HWUI 通过 `debug.hwui.overdraw` 属性控制调试功能：
+这套调试功能由 HWUI 的 `debug.hwui.overdraw` 属性控制，涉及的源码集中在三处：
 
 - [`Properties.h`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/Properties.h) 定义属性名、调试状态和颜色集；
 - [`Properties.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/Properties.cpp) 在当前实现中识别 `show` 和 `show_deuteranomaly`；
 - [`SkiaPipeline.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaPipeline.cpp) 负责计数重放和着色。
 
-开启调试后，`SkiaPipeline::renderFrame()` 先完成正常帧绘制，再调用 `renderOverdraw()`。后者会创建一个与目标表面等大的 A8 离屏表面；A8 是每个像素只保存 8 位 alpha（透明度通道）的格式。`SkOverdrawCanvas` 会在该表面上再重放一次 HWUI 绘制内容，以 alpha 值累计“这个像素会被画几次”，随后通过颜色过滤器把计数映射成覆盖色。
+开启调试后，`SkiaPipeline::renderFrame()` 先完成正常帧绘制，再调用 `renderOverdraw()`。后者会创建一个与目标表面等大的 A8 离屏表面；A8 是每个像素只保存 8 位 alpha（透明度通道）的格式。`SkOverdrawCanvas` 会在该表面上把 HWUI 绘制内容再重放一遍，用 alpha 值累计“这个像素会被画几次”，再通过颜色过滤器把计数映射成覆盖色。
 
-这段实现给出两条边界：
+从这段实现我们能读出两件事：
 
 - 颜色来自 **HWUI 绘制命令的诊断性重放**，不是 GPU 驱动返回的硬件计数器；
-- 调试模式本身多了一张全尺寸 A8 表面、一次重放和一次着色合成，不能在开启它时测量页面的正常 GPU 时长。
+- 调试模式本身会多出一张全尺寸 A8 表面、一次重放和一次着色合成，所以要测页面的正常 GPU 时长，得先把它关掉。
 
-诊断重放还有一个 Hardware Layer 边界。Android 17 的 `RenderNodeDrawable` 遇到已有 layer surface 的 RenderNode 时，会通过 `drawImageRect()` 合成 layer snapshot，不会在最终窗口的 overdraw pass（过度绘制诊断的这次重放）中逐条展开该 layer 内部的 DisplayList。源码还保留了刚重绘 layer 的透明矩形调试分支，但不能据此把最终叠加色解释成 layer 内部所有 draw op（绘制操作）的逐像素计数。看到 layer build/update 或离屏 pass 时，还要结合 [2.4 MainThread、RenderThread 与 Hardware Layer](04-main-render-thread-hardware-layer.md) 的 RenderThread、GPU 和内存证据。
+诊断重放还有一个 Hardware Layer 的盲区。`RenderNodeDrawable` 遇到已有 layer surface 的 RenderNode 时，会通过 `drawImageRect()` 合成 layer snapshot，最终窗口的 overdraw pass（过度绘制诊断的这次重放）也就不会逐条展开该 layer 内部的 DisplayList。源码还保留了刚重绘 layer 的透明矩形调试分支；最终叠加色不能读成 layer 内部所有 draw op（绘制操作）的逐像素计数。看到 layer build/update 或离屏 pass 时，还要结合 [2.4 MainThread、RenderThread 与 Hardware Layer](04-main-render-thread-hardware-layer.md) 的 RenderThread、GPU 和内存证据。
 
 ### 颜色应该怎样读
 
-Android 17 默认颜色数组的前两个位置是透明色，之后依次是蓝、绿、粉红和红。按“相对基线多画了几次”解读更准确：
+默认颜色数组的前两个位置是透明色，之后依次是蓝、绿、粉红和红。我们按“相对基线多画了几次”来读这张表：
 
 | 屏幕叠加色 | 本帧逻辑绘制次数 | 相对一次基线绘制 |
 | --- | ---: | ---: |
@@ -115,17 +117,17 @@ Android 17 默认颜色数组的前两个位置是透明色，之后依次是蓝
 | 粉红色 | 4 次 | 额外 3 次 |
 | 红色 | 5 次及以上 | 额外 4 次以上 |
 
-`show_deuteranomaly` 会换用一套面向绿色弱（deuteranomaly）的配色，计数含义不变。实际显示还会受底图颜色和显示设备影响，排查时应关注区域与操作的对应关系，不要用肉眼比较色深来估计时间。
+`show_deuteranomaly` 会换用一套面向绿色弱（deuteranomaly）的配色，计数含义不变。实际显示还会受底图颜色和显示设备影响，排查时我们关注区域与操作的对应关系，肉眼色深估不出耗时。
 
 红色也不等于“前四次全是无用功”。文字绘制在背景上、半透明遮罩与底图混合、阴影覆盖边缘，都可能是视觉结果所必需的。优化对象是没有视觉贡献或可以减少面积的绘制。
 
 ## 性能成本：fill rate、带宽和离屏 pass
 
-fill rate 指 GPU 在单位时间内生成并写出像素或片元结果的能力；render pass 是围绕一个渲染目标组织的一组 GPU 绘制。过度绘制可能影响两者，但逻辑覆盖次数不能直接换算成耗时。
+fill rate 指 GPU 在单位时间内生成并写出像素或片元结果的能力；render pass 是围绕一个渲染目标组织的一组 GPU 绘制。过度绘制可能同时影响这两者，但逻辑覆盖次数不能直接换算成耗时。
 
-### 不要用“层数 × 屏幕像素”代替 GPU 成本
+### 逻辑层数与 GPU 实际成本
 
-过度绘制可能增加以下工作：
+过度绘制可能增加的工作包括：
 
 - 片元着色、纹理采样和颜色写入；
 - 半透明内容的读取与混合；
@@ -135,17 +137,19 @@ fill rate 指 GPU 在单位时间内生成并写出像素或片元结果的能�
 
 多数移动 GPU 使用 tile-based（分块渲染）架构。驱动和 GPU 可以在片上存储中处理一个 tile，并对裁剪、不透明覆盖和不可见区域做优化，因此三次逻辑覆盖不保证产生三倍外部内存写入。半透明混合、纹理采样、复杂 shader（在 GPU 上执行的着色程序）和额外 render pass 仍可能消耗计算与带宽。具体代价由 GPU 架构、驱动、绘制顺序、格式、分辨率和内容共同决定。
 
-工程判断应落到可测量的关联上：
+我们做工程判断时，落到可测量的关联上：
 
 > 这片重复绘制是否与目标设备上的 GPU 完成时间、帧截止时间或功耗变化同时出现？
 
-如果页面始终有足够余量，蓝色或绿色区域未必需要立刻修改。如果大面积热区随滚动或动画出现，并且同一操作发生 `AppDeadlineMissed`（应用帧错过预期截止时间）、GPU 完成变晚或频率抬升，就应继续定位。
+如果页面始终有足够余量，蓝色或绿色区域未必需要立刻修改。如果大面积热区随滚动或动画出现，并且同一操作发生 `AppDeadlineMissed`（应用帧错过预期截止时间）、GPU 完成变晚或频率抬升，我们就继续往下定位。
 
-### 透明内容不等于无效内容
+### 半透明内容的成本
 
-半透明内容需要读取底层结果并做混合，这通常是设计所需。完全透明的绘制有时会被上层框架、Skia、驱动或 GPU 跳过，但不能依靠“alpha 为 0”保证零成本。业务层确认内容不可见时，可直接跳过相应绘制；需要透明效果时，应限制作用面积并测量结果。
+半透明内容需要读取底层结果并做混合，这通常是设计所需。完全透明的绘制有时会被上层框架、Skia、驱动或 GPU 跳过，但“alpha 为 0”并不保证零成本。业务层确认内容不可见时，可直接跳过相应绘制；需要透明效果时，应限制作用面积并测量结果。
 
 ## 工具各自回答什么问题
+
+颜色叠加只能告诉我们“哪里可疑”。这一节按“能回答什么问题”把常用工具排一遍，排查时按问题挑工具。
 
 ### Debug GPU Overdraw：找空间位置
 
@@ -166,13 +170,13 @@ fill rate 指 GPU 在单位时间内生成并写出像素或片元结果的能�
 - `SurfaceView`、其他窗口与系统 UI 的跨 Layer 合成总成本；
 - HWC 使用了 DEVICE composition 还是 CLIENT composition。
 
-正确用法是先开启叠加定位区域，记录场景，然后关闭叠加，再采集性能数据。
+正确的顺序是先开启叠加定位区域、记录场景，然后关闭叠加，再采集性能数据。
 
 ### Layout Inspector：找绘制对象
 
-布局检查器（Layout Inspector）用来查看 View、Composable（Compose UI 中声明界面的函数节点）与尺寸、背景和层级之间的对应关系。层级深并不自动产生像素过度绘制：没有背景且不执行绘制的 `ViewGroup` 会增加测量、布局或遍历成本，却不会仅因存在就覆盖像素。
+Layout Inspector 用来查看 View、Composable（Compose UI 中声明界面的函数节点）与尺寸、背景和层级之间的对应关系。层级深不会自动带来像素过度绘制：一个没有背景、也不执行绘制的 `ViewGroup`，增加的是测量、布局或遍历成本，像素上它什么都没画。
 
-看到热区以后，应检查该区域内哪些对象会画：
+定位到热区以后，我们逐个检查这块区域里会画东西的对象：
 
 - `windowBackground`、根布局和容器背景；
 - `foreground`、selector、分割线和装饰；
@@ -182,15 +186,17 @@ fill rate 指 GPU 在单位时间内生成并写出像素或片元结果的能�
 
 ### Profile GPU Rendering：看 HWUI 阶段压力
 
-“GPU 呈现模式分析”（Profile GPU Rendering）柱状图展示 HWUI 一帧若干阶段的耗时代理；这里的代理值用于提示阶段压力，不是每条 GPU 命令的精确执行时长。`Draw`、`Issue Commands`（向图形 API 提交命令）等区段各有含义，不能把任何一个长柱直接解释成“过度绘制”。
+“GPU 呈现模式分析”（Profile GPU Rendering）柱状图展示 HWUI 一帧若干阶段的耗时代理，代理值用来提示阶段压力，每条 GPU 命令的精确执行时长要靠别的工具。`Draw`、`Issue Commands`（向图形 API 提交命令）等区段各有含义，任何一根长柱都不能直接读成“过度绘制”。
 
 它适合快速观察某次操作前后页面是否长期接近帧预算。若柱状图变长，还要结合线程 Trace 和 GPU 证据区分显示列表记录、RenderThread 工作、命令提交、GPU 执行或资源上传。
 
-### Perfetto / FrameTimeline：找迟到的帧和责任边界
+### Perfetto / FrameTimeline：找迟到的帧
 
-从 Android 12 起，FrameTimeline 可以把 App 的 `SurfaceFrame`（应用向某个 Surface 提交的一帧）与最终 `DisplayFrame`（显示系统合成并呈现的一帧）对应起来。`Expected Timeline` 是系统预测的时间目标，`Actual Timeline` 记录实际结果；后者晚于前者只说明帧迟到，不能单凭这一条认定 GPU 是原因。App 帧完成时间会综合 buffer post（应用提交窗口 buffer）与 GPU 完成，SurfaceFlinger 也可能单独迟到。
+从 Android 12 起，FrameTimeline 可以把 App 的 `SurfaceFrame`（应用向某个 Surface 提交的一帧）与最终 `DisplayFrame` 对应起来；`DisplayFrame` 是显示系统合成并呈现的一帧。`Expected Timeline` 是系统预测的时间目标，`Actual Timeline` 记录实际结果。
 
-Perfetto 文档同时注明，FrameTimeline 目前不支持 `SurfaceView`。页面里有 `SurfaceView` 时，应把它当作独立 Layer 继续看 buffer、fence 和 SurfaceFlinger 合成，而不要指望宿主窗口的一条 FrameTimeline 覆盖它的完整节拍。
+我们看到 `Actual Timeline` 晚于 `Expected Timeline`，先记下“这帧迟到了”；GPU 是不是原因，还要靠后面的证据确认。App 帧完成时间会综合 buffer post（应用提交窗口 buffer）与 GPU 完成，SurfaceFlinger 也可能单独迟到。
+
+Perfetto 文档同时注明，FrameTimeline 目前不支持 `SurfaceView`。页面里有 `SurfaceView` 时，把它当作独立 Layer，继续看它自己的 buffer、fence 和 SurfaceFlinger 合成；宿主窗口的一条 FrameTimeline 覆盖不了它的完整节拍。
 
 建议按下面顺序检查：
 
@@ -200,17 +206,17 @@ Perfetto 文档同时注明，FrameTimeline 目前不支持 `SurfaceView`。页�
 4. 若设备提供可靠的 GPU completion（GPU 工作完成时间）、GPU slices、频率或 counter（硬件性能计数器），再判断 GPU 是否构成关键路径。
 5. 对照对应 `DisplayFrame`、SurfaceFlinger 和 composition type（CLIENT、DEVICE 等合成方式），确认问题位于 App Window 内部，还是多 Layer 合成阶段。
 
-“UI 线程不忙，Actual Timeline 迟到”仍不足以证明过度绘制。可能原因还包括 acquire fence（保护 buffer 读取时机的同步对象）迟迟未完成、RenderThread CPU 工作、shader 编译、纹理上传、GPU 竞争和 SurfaceFlinger 合成。
+所以“UI 线程不忙，Actual Timeline 迟到”仍不足以证明过度绘制：可能的原因还包括 acquire fence（保护 buffer 读取时机的同步对象）迟迟未完成、RenderThread CPU 工作、shader 编译、纹理上传、GPU 竞争和 SurfaceFlinger 合成。
 
 ### AGI：深入一帧的 GPU 工作
 
-Android GPU Inspector（AGI）的 Frame Profiler 可分析受支持应用的一帧，查看 Vulkan API 调用、render pass、draw call（一次绘制提交）、framebuffer（渲染目标及其附件）、shader、纹理和 GPU 性能数据。它适合回答“哪一批命令覆盖了这块区域”“是否多了一次离屏 pass”“某个 shader 或纹理采样是否昂贵”。
+Android GPU Inspector（AGI）的 Frame Profiler 可分析受支持应用的一帧。它能查看 Vulkan API 调用、render pass、draw call（一次绘制提交）、framebuffer、shader、纹理和 GPU 性能数据，回答“哪一批命令覆盖了这块区域”“是否多了一次离屏 pass”“某个 shader 或纹理采样是否昂贵”这类问题。
 
-AGI 的 API、设备、驱动和可调试应用都有支持边界，抓帧也会引入插桩开销。它用于分析命令和相对差异，不应把 capture（抓帧采集）期间的时间当作用户正常运行时延。
+AGI 对 API、设备、驱动和可调试应用的支持各有范围，抓帧也会引入插桩开销。它用于分析命令和相对差异，capture（抓帧采集）期间的时间不能当作用户正常运行的时延。
 
-### GPU counter：只做同设备、同场景的 A/B 证据
+### GPU counter 的可比条件
 
-A/B 指保持其他条件一致，只比较修改前后的两组结果。Perfetto 或 AGI 能看到哪些 counter，取决于设备和驱动。counter 可能统计片元、采样、tile、周期、render target（渲染目标）写入或 GPU busy（GPU 处于工作状态的时间比例），定义并不统一。
+A/B 指保持其他条件一致，只比较修改前后的两组结果。Perfetto 或 AGI 能看到哪些 counter，取决于设备和驱动。counter 可能统计片元、采样、tile、周期或 render target（渲染目标）写入。GPU busy（GPU 处于工作状态的时间比例）也在其列，各家定义并不统一。
 
 这种公式不能作为通用 overdraw 倍率：
 
@@ -222,23 +228,23 @@ counter / (屏幕宽度 × 屏幕高度)
 
 ## 页面的 Surface 拓扑
 
-过度绘制颜色主要覆盖 HWUI App Window 的诊断重放。页面还有独立 Surface 时，要分别分析。
+过度绘制颜色覆盖的主要是 HWUI App Window 的诊断重放。页面里还有独立 Surface 时，我们要把每一块分开分析。
 
 ### SurfaceView
 
 `SurfaceView` 的内容通常进入独立的 child Surface，也就是挂在宿主窗口之下、拥有自己 buffer 提交路径的 Surface。宿主 App Window 负责普通 View、控件和遮罩，SurfaceFlinger 再把两者放进同一个 Layer 树。视频、相机或游戏画面是否走 HWC 的 DEVICE composition，要由每帧的格式、缩放、旋转、alpha、protected（受保护内容）属性、可用 plane 和带宽共同决定。
 
-宿主窗口的颜色叠加不能代表 `SurfaceView` 内容内部的重复绘制，也不能显示 SurfaceFlinger/HWC 的最终合成策略。应检查对应 Layer、buffer、fence 和 composition type。
+宿主窗口的颜色叠加只反映宿主自己的诊断重放；`SurfaceView` 内部的重复绘制、SurfaceFlinger/HWC 的最终合成策略，我们要看的是对应 Layer、buffer、fence 和 composition type。
 
 ### TextureView
 
 `TextureView` 的外部 Producer 先把 buffer 送到 `SurfaceTexture`（把 BufferQueue 内容暴露为可采样纹理的对象），宿主 RenderThread 再将它采样进 App Window buffer。SurfaceFlinger 通常只看到宿主窗口。因此，覆盖在 `TextureView` 上的普通 View 会参与宿主 HWUI 的绘制关系，视频或相机画面还多了一次纹理采样。
 
-`TextureView` 便于使用 View 的变换、clip、alpha 和动画，但不能因此断言一定更慢。应比较实际视觉需求、Surface 拓扑和目标设备数据。
+`TextureView` 便于使用 View 的变换、clip、alpha 和动画；“TextureView 一定更慢”这类断言，要靠实际视觉需求、Surface 拓扑和目标设备数据来检验。
 
 ### 多窗口与系统合成
 
-弹窗、输入法、系统栏、画中画和分屏会改变可见 Layer 集合。SurfaceFlinger 的 CompositionEngine 可能生成 client target，HWC 也可能把 Layer 分配到硬件平面。App 内部 overdraw 下降后，如果 DisplayFrame 仍迟到，就要继续检查 SurfaceFlinger 与 HWC，不能只看宿主 App 的颜色。
+弹窗、输入法、系统栏、画中画和分屏会改变可见 Layer 集合。SurfaceFlinger 的 CompositionEngine 可能生成 client target，HWC 也可能把 Layer 分配到硬件平面。App 内部 overdraw 下降后，如果 DisplayFrame 仍迟到，我们就继续查 SurfaceFlinger 与 HWC——宿主 App 的颜色叠加只是起点。
 
 ## 常见来源与安全的修改方式
 
@@ -253,7 +259,7 @@ counter / (屏幕宽度 × 屏幕高度)
 - SplashScreen / starting window 的背景和品牌图是否已正确配置；
 - 透明窗口相关主题属性是否会改变合成、安全或性能行为。
 
-满足这些条件后，可以让背景只在一个正确的层绘制。不要把下面的透明设置当作所有 Activity 的固定模板：
+这些条件都满足后，可以让背景只在正确的一层绘制。下面这段透明设置不是所有 Activity 的固定模板：
 
 ```xml
 <style name="Theme.Example" parent="...">
@@ -282,7 +288,7 @@ counter / (屏幕宽度 × 屏幕高度)
 
 ### 3. 不必要的全屏绘制
 
-自定义 View 常见的低效写法是每帧清空整块区域，却只更新一小部分；或者先绘制完整底图，随后用不透明面板覆盖大半区域。应先从业务数据和可见区域减少 draw call，再考虑 Canvas 裁剪。
+自定义 View 常见的低效写法是每帧清空整块区域，却只更新一小部分；或者先绘制完整底图，随后用不透明面板覆盖大半区域。我们先从业务数据和可见区域减少 draw call，再考虑 Canvas 裁剪。
 
 对列表、图表或大画布，可以：
 
@@ -296,13 +302,13 @@ counter / (屏幕宽度 × 屏幕高度)
 
 半透明遮罩必须与底图混合，不能简单删除。优化方向是缩小矩形、减少渲染轮次、避免在不可见页面继续绘制，并确认动画期间是否需要整屏更新。
 
-阴影和模糊可能扩大有效绘制边界，还可能触发离屏处理。裁剪过紧会切掉视觉效果，裁剪过大又失去收益。裁剪边界应包含 blur radius（模糊半径）、shadow offset（阴影偏移）、stroke（描边宽度）和动画变换后的范围。
+阴影和模糊可能扩大有效绘制边界，还可能触发离屏处理。裁剪过紧会切掉视觉效果，裁剪过大又失去收益。裁剪边界应包含 blur radius、shadow offset、stroke 和动画变换后的范围。
 
-### 5. 层级很深，但没有重复绘制
+### 5. 深层级与过度绘制的关系
 
 布局扁平化可以减少测量、布局、遍历和对象数量，却不保证颜色叠加变轻。判断某个父节点能否删除时，要同时检查 layout 行为、padding、clip、touch、accessibility（无障碍信息与操作）、transition 和背景。
 
-`ViewStub` 的主要收益是延后 inflate（从布局资源创建 View 对象）、节省初始对象和遍历成本。普通 `GONE` View 本来就不参与绘制，因此 `ViewStub` 不是通用的 overdraw 修复；只有它阻止了原本会出现的可见重叠内容时，像素覆盖才会改变。
+`ViewStub` 的主要收益是延后 inflate（从布局资源创建 View 对象）、节省初始对象和遍历成本。普通 `GONE` View 本来就不参与绘制，所以 `ViewStub` 解决的是另一件事：只有当它阻止了原本会出现的可见重叠内容时，像素覆盖才会改变。
 
 ## 自定义 View：减少提交，再限制裁剪范围
 
@@ -352,23 +358,23 @@ protected void onDraw(Canvas canvas) {
 
 `save()` 和 `restoreToCount()` 把 clip 的作用范围限制在两次调用之间，防止裁剪状态影响后面的 `drawOverlay()`。`clipRect()` 只限制之后的绘制，不会自动减少数据遍历；如果 `drawVisibleContent()` 仍为所有对象构建 Path、文本布局和资源，CPU 开销依然存在。
 
-复杂 clip 自身也有成本。Android 硬件加速文档记录了早期 API 的支持边界；在 Android 17 上功能已成熟，仍应通过目标设备测量。能用矩形 viewport 和业务可见性判断解决时，通常不需要更复杂的 Path 裁剪。
+复杂 clip 自身也有成本。Android 硬件加速文档记录了早期 API 的支持范围；在 Android 17 上功能已成熟，仍应通过目标设备测量。能用矩形 viewport 和业务可见性判断解决时，通常不需要更复杂的 Path 裁剪。
 
 ## Jetpack Compose 中的过度绘制
 
-Compose 与 View 最终都可能进入 HWUI App Window，因此像素覆盖的基本判断相同。需要把 recomposition（状态变化后重新执行相关 Composable）、绘制命令和离屏合成分开看。
+Compose 与 View 最终都可能进入 HWUI App Window，像素覆盖的基本判断因此是相同的；我们要把 recomposition（状态变化后重新执行相关 Composable）、绘制命令和离屏合成分开看。
 
 以下 `graphicsLayer` 结论固定到 `androidx.compose.ui:ui:1.11.4` 的 `GraphicsLayerModifier.kt` 与 `GraphicsLayerScope.kt`，并与 Android Developers 文档交叉核对。应用若使用其他 Compose UI 版本，应按实际依赖重新确认；Android 17 平台版本不会替应用固定 Compose 实现。
 
 ### 多层背景仍会多画
 
-多个 `Modifier.background()`、`Surface` 或 `Canvas` 覆盖同一区域时，不能假设 Compose 会自动合并父子背景。若外层已经提供不透明底色，内层只在需要的范围画自身视觉。
+多个 `Modifier.background()`、`Surface` 或 `Canvas` 覆盖同一区域时，别指望 Compose 自动合并父子背景；若外层已经提供不透明底色，内层就只在需要的范围画自身视觉。
 
-`drawWithCache` 可以缓存绘制准备阶段创建的对象，减少 CPU 工作；它不会自动减少最终提交的像素。`derivedStateOf` 用于从其他状态派生一个只有结果变化时才通知读取方的 State，可能影响重组频率，但它也不是 overdraw 开关。
+`drawWithCache` 可以缓存绘制准备阶段创建的对象，减少 CPU 工作，但不会自动减少最终提交的像素。`derivedStateOf` 用于从其他状态派生一个只有结果变化时才通知读取方的 State，可能影响重组频率，但它同样不是 overdraw 开关。
 
 ### graphicsLayer 的合成策略
 
-官方 graphics modifiers 文档给出的边界如下：
+官方 graphics modifiers 文档给出这几条：
 
 - 默认 `CompositingStrategy.Auto` 下，alpha 小于 1 或使用 `RenderEffect` 等场景可能创建离屏 buffer；
 - overscroll（滚动越过边界时的视觉反馈）会使用离屏 buffer，不受指定合成策略影响；
@@ -394,7 +400,7 @@ Modifier.graphicsLayer {
 4. 关闭颜色叠加后，用 Perfetto 确认 UI、RenderThread 和 GPU 的责任。
 5. 有离屏 pass 或复杂 shader 疑问时，再用 AGI 检查受支持的一帧。
 
-重组次数下降而颜色没有变化，说明 CPU 侧工作减少了；颜色下降而帧时间没有变化，说明被删掉的绘制尚未处在当前瓶颈上。两种修改都可能有价值，但证据和结论要分开记录。
+重组次数下降而颜色不变，减少的是 CPU 侧工作；颜色下降而帧时间不变，说明被删掉的绘制尚未处在当前瓶颈上。两类修改都可能有价值，证据和结论要分开记录。
 
 ## 一次可复现的验证流程
 
@@ -408,15 +414,15 @@ Modifier.graphicsLayer {
 6. 再次开启叠加验证逻辑覆盖是否下降，然后关闭叠加，用同样条件重采性能数据。
 7. 比较帧截止时间、GPU 活跃时间、功耗或厂商 counter；保留没有改善的结果，避免把颜色变化写成性能结论。
 
-如果问题涉及多个 Surface，还要列出每个 Producer、Consumer、SurfaceFlinger Layer、buffer 和 fence。宿主 App Window 的一次 FrameTimeline 无法代表视频、相机或游戏 Surface 的完整节拍。
+如果问题涉及多个 Surface，还要列出每个 Producer、Consumer、SurfaceFlinger Layer、buffer 和 fence。宿主 App Window 的一次 FrameTimeline，代表不了视频、相机或游戏 Surface 的完整节拍。
 
 ## Kernel 与厂商驱动边界
 
-kernel 源码锚点统一为 `android17-6.18-2026-06_r6`。通用内核能提供调度、dma-buf、dma-fence/`sync_file` 等基础机制：dma-buf 用于在设备与进程间共享缓冲内存，dma-fence 描述异步任务的完成依赖，`sync_file` 则把 fence 封装成可跨进程传递的文件描述符。这些机制可以帮助观察 GPU job（提交给 GPU 的一组工作）、buffer 与显示依赖何时完成。
+kernel 源码基线统一为 `android17-6.18-2026-06_r6`。通用内核能提供调度、dma-buf、dma-fence/`sync_file` 等基础机制：dma-buf 用于在设备与进程间共享缓冲内存，dma-fence 描述异步任务的完成依赖，`sync_file` 则把 fence 封装成可跨进程传递的文件描述符。这些机制可以帮助我们观察 GPU job（提交给 GPU 的一组工作）、buffer 与显示依赖何时完成。
 
-片元剔除、tile 策略、颜色压缩、counter 定义和大量 GPU 调度细节位于硬件与厂商驱动。通用 kernel tag 不能说明某次逻辑 overdraw 执行了多少片元，也不能给出跨 GPU 通用的填充率模型。
+片元剔除、tile 策略、颜色压缩、counter 定义和大量 GPU 调度细节位于硬件与厂商驱动；通用 kernel tag 既说明不了某次逻辑 overdraw 执行了多少片元，也给不出跨 GPU 通用的填充率模型。
 
-一次长 fence wait（等待 fence 完成）只说明消费者在等待生产者。要判断是否由过度绘制引起，还要找到 fence 的创建者、GPU 提交、频率、工作量和同场景 A/B 结果。不能从 dma-fence 时长直接反推 overdraw 次数。
+一次长 fence wait（等待 fence 完成）只说明消费者在等待生产者。要判断是否由过度绘制引起，还要找到 fence 的创建者、GPU 提交、频率、工作量和同场景 A/B 结果；dma-fence 时长反推不出 overdraw 次数。
 
 ## 版本演进
 
