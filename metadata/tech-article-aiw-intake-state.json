@@ -5644,6 +5644,78 @@
       "status": "appended",
       "title": "Android 以后可能不会再有横竖屏适配了各位 Android 爱好者们，大家好。 多年来，几乎所有的 Android"
     },
+    "source/juejin-android/2026-10-11-76941316-模块化JetpackCompose架构.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "4ff6e62c8ab66440",
+      "last_appended": "2026-10-11T05:25:33.738638+08:00",
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791663781.0777497,
+      "score": 9,
+      "sha256": "16f17147d6e97ad8243d147e9bbc260b692756201348c4996b4d7309364c7105",
+      "size": 19305,
+      "status": "appended",
+      "title": "模块化Jetpack Compose架构用构建规则强制执行模块边界：每个功能双模块、应用独占实现、路由私有、依赖全定义、"
+    },
+    "source/juejin-android/2026-10-11-76944856-Kotlin新特性抢先看伴生扩展与伴生块.md": {
+      "chapter": "待分类",
+      "entry_id": "680ab6fcf6a83544",
+      "last_appended": "2026-10-11T05:25:33.738638+08:00",
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791663781.0774338,
+      "score": 8,
+      "sha256": "5b08aa08acf802b3972e4103585b9c27ec49cd65ab91bba360ef97f81befdf35",
+      "size": 23419,
+      "status": "appended",
+      "title": "Kotlin 新特性抢先看：伴生扩展与伴生块没有 Companion 的类也能写伴生扩展了？再少写一个 object，新"
+    },
+    "source/juejin-android/2026-10-11-76945065-端侧推理排查实录为什么我的手机跑LLM比.md": {
+      "chapter": "待分类",
+      "entry_id": "35621320db179811",
+      "last_appended": "2026-10-11T05:25:33.738638+08:00",
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791663781.0754108,
+      "score": 18,
+      "sha256": "815f55a452f2c20d8839a8b1402f24a997fb91d0c7044e286ea1cfc22257feab",
+      "size": 8471,
+      "status": "appended",
+      "title": "端侧推理排查实录：为什么我的手机跑 LLM 比别人慢 80 倍我在 Pixel 4（骁龙 855，2019 年）上跑 Q"
+    },
+    "source/juejin-android/2026-10-11-76945643-Android-system_server奔溃问题排查一次syste.md": {
+      "chapter": "待分类",
+      "entry_id": "a94938528e109d43",
+      "last_appended": "2026-10-11T05:25:33.738638+08:00",
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791663781.074648,
+      "score": 17,
+      "sha256": "0f2b0eedec12409ebec638af4e5859d83130f2b2ebf21e156390242b253e7697",
+      "size": 31066,
+      "status": "appended",
+      "title": "Android-system_server奔溃问题排查一次 system_server 崩溃循环排查实录：从 tombs"
+    },
+    "source/juejin-android/2026-10-11-76946323-MasterGoClaudeCode生成Android布局完整实.md": {
+      "chapter": "待分类",
+      "entry_id": "3f1a735c9c3f9ece",
+      "last_appended": "2026-10-11T05:25:33.738638+08:00",
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791663781.076838,
+      "score": 9,
+      "sha256": "e5c215b874749a90598ee1e363837848efcf44c484f0e25e54edd5005904980a",
+      "size": 22624,
+      "status": "appended",
+      "title": "MasterGo + Claude Code 生成 Android 布局：完整实践指南MasterGo + Claude"
+    },
+    "source/juejin-android/2026-10-11-76948663-我开源了一个AndroidiOS加固工具顺便聊聊加.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "f0aafd4e44d25660",
+      "last_appended": "2026-10-11T05:25:33.738638+08:00",
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791663781.0759225,
+      "score": 7,
+      "sha256": "56d5e5c680666dbd175a8920a01d7f0b2ca88588dfee345b064b402a4949723f",
+      "size": 5048,
+      "status": "appended",
+      "title": "我开源了一个 Android/iOS 加固工具，顺便聊聊加固到底能防住什么市面上的 APK 加固方案大多是黑盒：付费、上"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -5913,6 +5985,204 @@
       "size": 7279,
       "status": "appended",
       "title": "Claude Haiku 5.5"
+    },
+    "source/rss-snapshot/2026-10-11-20-Minutes-of-Political-Debate-Brought-to-You-by.md": {
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659663.1613064,
+      "sha256": "da63f6d816be59fe70eab634c8f4f2bc020b9925c9e2f0fb7cd495adef832717",
+      "size": 2002,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-11-A-new-feature-for-my-blog-built-using-my-voice.md": {
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659657.2982972,
+      "sha256": "9ba4ca133fa938cfbfe1c5050eaf92cc0c351cd5a3a59e3f0d6095b42107a89b",
+      "size": 9140,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-11-An-Ion-Storm-Part-1-The-Ascent-to-Gamer-Paradise.md": {
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659647.955506,
+      "sha256": "54779dd9f0c01b3d893d0486b2c6ce05f0e5a4be422e7a08b279763f1fa42436",
+      "size": 46281,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-11-Apple-Is-Slow-Rolling-iOS-27-Adoption-So-Far.md": {
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659673.843611,
+      "sha256": "17849b761356d5961b0d71b86aed45a50b0b991d981454ca64862847307a4b75",
+      "size": 4113,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-11-Concert-Review-London-Voices-Video-Games-Go-Chor.md": {
+      "chapter": "待分类",
+      "entry_id": "46f87ab0d8002d6f",
+      "last_appended": "2026-10-11T05:25:33.738638+08:00",
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659660.424133,
+      "score": 8,
+      "sha256": "cc13c358693a570efd24f7a8c523a3ad5fa4a7bbc84c390588d17b98c97bd21c",
+      "size": 4267,
+      "status": "appended",
+      "title": "Concert Review: London Voices"
+    },
+    "source/rss-snapshot/2026-10-11-Deno-is-joining-Cloudflare.md": {
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659633.7181137,
+      "sha256": "b1947d2b5b420c8523fcebd3dd8fd86db0bf2e8d34d5d3000b271bfbe526b05a",
+      "size": 2800,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-11-FBI-Arrests-Executive-at-Ransomware-Negotiation-.md": {
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659629.5204923,
+      "sha256": "39ca2fd93ef590448bd22098bcea9a7a26a2db20b0a8ef7fed6fa11a4c02ee4e",
+      "size": 6782,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-11-Fun-with-low-rank-vocab-matrices-and-a-bonus-tes.md": {
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659651.6124935,
+      "sha256": "9b57fa0c777e62271de0540d75b5aa1c61981abd5d9ab3dc01d6e08d341f2e08",
+      "size": 76878,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-11-Getting-off-the-Modernization-Treadmill.md": {
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659679.6479783,
+      "sha256": "e31f4e344c366c4d42faa902aba905c4ced01146a1b5c2bcd1c1efd080a6f09c",
+      "size": 4652,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-11-Inside-a-1980s-filter-chip-that-uses-switched-ca.md": {
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659603.4753506,
+      "sha256": "80fa83f6b6ae22752aa21f22eab34baf36316f5098b752e841f298f35d60c4cc",
+      "size": 3509,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-11-Joz-Announces-Welcome-Home-Keynote-Coming-Tuesda.md": {
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659677.0425143,
+      "sha256": "0aa0aedd4518028a58a0d31fb2df636a47a6222c60178d242ba5cd9f9a3c9fa2",
+      "size": 4975,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-11-Let-s-Check-In-on-Trump-s-Blog.md": {
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659668.9604535,
+      "sha256": "707420ffecacdc50bc1c3ecb6dca5819e74c04ecb7ab31129cb210862ababfee",
+      "size": 384,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-11-Lobbying.md": {
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659649.998589,
+      "sha256": "f1a9be92bca3c01d2167a8b28363850e38fbdb5ff5c0fc3c063bbe3122982ae8",
+      "size": 1501,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-11-Name-Shame.md": {
+      "chapter": "待分类",
+      "entry_id": "e527f0d2de116a8a",
+      "last_appended": "2026-10-11T05:25:33.738638+08:00",
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659646.379745,
+      "score": 11,
+      "sha256": "c474269fe3129a77c0fc647cdacacc8dacca5b7346f6e67624c32d93f77f8198",
+      "size": 17589,
+      "status": "appended",
+      "title": "Nominative Antideterminism: The Irony Of An Off"
+    },
+    "source/rss-snapshot/2026-10-11-Pluralistic-Thwarted-09-Oct-2026.md": {
+      "chapter": "ch05-cpu-power",
+      "entry_id": "b709759826cfa805",
+      "last_appended": "2026-10-11T05:25:33.738638+08:00",
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659642.772387,
+      "score": 7,
+      "sha256": "bda7716d67db422e07ee154399760184abfbba47be389aa87a6c5f818e2d1d3c",
+      "size": 32779,
+      "status": "appended",
+      "title": "Pluralistic: Thwarted (09 Oct 2026) – Pluralistic: Daily links from Cory Doctorow"
+    },
+    "source/rss-snapshot/2026-10-11-Premium-The-Hater-s-Guide-To-Junk.md": {
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659653.9372895,
+      "sha256": "beabc3acf42404c752b2317b3f172c0e760b333e0d7e5f763098874a00ad1421",
+      "size": 8221,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-11-Proof-of-Human.md": {
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659609.4538352,
+      "sha256": "4b85b91bb6f2c725b61458be20c2e045dc9a09da8cf553fca2a789e9cbad6d49",
+      "size": 1336,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-11-Quoting-Carson-Gross.md": {
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659670.6378767,
+      "sha256": "9011146bf154d7f5f52020d2af095f7ce997bded923afd7cfed3ad9c62a6ada1",
+      "size": 707,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-11-Quoting-Matthew-Green.md": {
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659655.6284807,
+      "sha256": "1f65affe1731a2e99f1f533d624258dde920ef3e3c9084de57398e5a1945849e",
+      "size": 1088,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-11-Quoting-The-New-York-Times.md": {
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659626.5840178,
+      "sha256": "3067eca594985fd2e591d3e9cb5d2af4b4fa97c663b3894161dcd8100cdbdae7",
+      "size": 852,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-11-Radxa-s-Q8B-has-2x-the-performance-and-expansion.md": {
+      "chapter": "待分类",
+      "entry_id": "4def650aebfc9348",
+      "last_appended": "2026-10-11T05:25:33.738638+08:00",
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659638.9160404,
+      "score": 9,
+      "sha256": "5b678def394da39c495b89fb9ece70225844a1b2d9cc36325bd3d13964da0b5d",
+      "size": 9557,
+      "status": "appended",
+      "title": "Radxa's Q8B has 2x the performance and expansion of the Pi 5"
+    },
+    "source/rss-snapshot/2026-10-11-Reading-List-10-10-26.md": {
+      "chapter": "待分类",
+      "entry_id": "a41e6478f3b48fbf",
+      "last_appended": "2026-10-11T05:25:33.738638+08:00",
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659613.6608744,
+      "score": 7,
+      "sha256": "d142fea65b295580d021d397fdbc20395b19b45fa4054238744632178c0c2448",
+      "size": 6930,
+      "status": "appended",
+      "title": "Reading List 10/10/26"
+    },
+    "source/rss-snapshot/2026-10-11-Software-s-centaur-age-may-last-decades.md": {
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659632.0530114,
+      "sha256": "b66adefdbad1a94e3e2ab087b27d2b648ec67b812005fd34e400df255a4a7574",
+      "size": 8661,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-11-Some-quick-thoughts-on-Unit-Testing-ActivityPub.md": {
+      "chapter": "待分类",
+      "entry_id": "f5dd5a7da1c82373",
+      "last_appended": "2026-10-11T05:25:33.738638+08:00",
+      "last_seen": "2026-10-11T05:25:33.738638+08:00",
+      "mtime": 1791659619.7456543,
+      "score": 8,
+      "sha256": "81eb42e57763999f1ca2e8adbb24dfaf63320decf4856ba68026a6d696ce8e23",
+      "size": 5908,
+      "status": "appended",
+      "title": "Some quick thoughts on Unit Testing ActivityPub"
     },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
@@ -7721,24 +7991,24 @@
     }
   },
   "last_report": {
-    "appended": 3,
-    "considered": 3,
-    "cutoff": "2026-10-09T05:20:33.876123+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-10.md",
+    "appended": 12,
+    "considered": 36,
+    "cutoff": "2026-10-10T05:20:34.187745+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-11.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2137,
+    "scanned": 2173,
     "skipped": {
       "existing_link": 0,
-      "low_score": 0,
-      "max_files": 0,
+      "low_score": 18,
+      "max_files": 6,
       "old_unseen": 1408,
       "path": 31,
-      "unchanged": 695
+      "unchanged": 698
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-10-10T05:25:34.187745+08:00",
+  "last_run_at": "2026-10-11T05:25:33.738638+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
