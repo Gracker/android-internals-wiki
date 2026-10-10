@@ -89,9 +89,11 @@ GPU 调试工具分为 API 调用捕获、单帧重放、计数器分析和系�
 
 ### 分析对象是一条显示时间线
 
-本文以 Android 17 / API 37 / `android-17.0.0_r1` 作为平台源码基线，以 `android17-6.18-2026-06_r6` 作为 Android common kernel 的源码参照。商业设备可能包含更新或厂商修改，报告仍要记录设备实际 build、kernel 和 GPU driver。GPU producer（向 Perfetto 注册数据源并写入 GPU 数据的组件）、用户态驱动和内核 GPU 驱动大多由厂商提供；两台设备即使都是 API 37，可采集的数据源、counter（硬件计数器）和驱动事件也可能不同。
+> 源码基线：AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`（Android 17 / API 37）。商业设备可能包含更新或厂商修改，报告仍要记录设备实际 build、kernel 和 GPU driver。
 
-一次 draw API（提交绘制命令的图形接口）返回，只说明 CPU 已执行到某个提交点。GPU 可能仍在队列中工作，承载图像内容的 buffer 也可能继续等待 SurfaceFlinger latch、HWC 合成或 display present。判断 GPU 瓶颈时，要把以下节点放进同一帧：
+我们先明确数据从哪里来。GPU producer 是向 Perfetto 注册数据源并写入 GPU 数据的组件，它和用户态驱动、内核 GPU 驱动大多由厂商提供；两台设备即使都是 API 37，能采集的数据源、counter 和驱动事件也可能不同。
+
+一次 draw API 返回，只说明 CPU 执行到了某个提交点：GPU 可能仍在队列中工作，承载图像内容的 buffer 可能还在等 SurfaceFlinger latch、HWC 合成或 display present。所以我们判断 GPU 瓶颈时，要把下面这些节点放进同一帧：
 
 1. 应用何时开始逻辑与录制命令；
 2. CPU 何时 submit（提交）GPU 工作；
@@ -100,9 +102,9 @@ GPU 调试工具分为 API 调用捕获、单帧重放、计数器分析和系�
 5. SurfaceFlinger 何时 latch，是否进入 RenderEngine client composition；
 6. HWC 和显示端何时 present。
 
-这些词对应不同时间点：BufferQueue 是图像 buffer 的生产者—消费者队列；acquire fence 是“消费者现在可以安全读取该 buffer”的异步完成信号；latch 是 SurfaceFlinger 选中本帧 buffer；HWC（Hardware Composer）是显示硬件合成层；present 是把合成结果交给显示端。RenderEngine client composition 则表示 SurfaceFlinger 使用 GPU 完成合成。
+这几个词对应的是时间线上不同的点：BufferQueue 是图像 buffer 的生产者—消费者队列；acquire fence 是“消费者现在可以安全读取该 buffer”的异步完成信号；latch 是 SurfaceFlinger 选中本帧 buffer；present 是把合成结果交给显示端。RenderEngine client composition 表示 SurfaceFlinger 用 GPU 完成合成。
 
-显示路径需要按这些节点分层观察。标准 HWUI（Android UI 硬件加速渲染库）窗口通常从主线程和 `RenderThread` 开始；SurfaceView、游戏、Camera、视频和自有 Vulkan render loop（持续录制并提交帧的渲染循环）应先找实际承载画面的 Surface 与 producer 线程。只看宿主 Activity 的 FrameTimeline，可能漏掉独立 Surface 的画面。
+显示路径要按这些节点分层观察。标准 HWUI 窗口通常从主线程和 `RenderThread` 开始；SurfaceView、游戏、Camera、视频和自建的 Vulkan render loop，则要先找到实际承载画面的 Surface 与 producer 线程。只看宿主 Activity 的 FrameTimeline，可能漏掉独立 Surface 上的画面。
 
 ### 工具按证据深度分层
 
@@ -114,9 +116,9 @@ GPU 调试工具分为 API 调用捕获、单帧重放、计数器分析和系�
 | 多帧捕获 | 间歇性 pipeline/state 变化、连续帧资源与 shader 差异 | Sokatoa | 面向 Vulkan，要求 Android 13+，注入 layer 需要 debuggable APK 或 root |
 | 微架构分析 | ALU、纹理、tile、cache、带宽、occupancy 受限在哪里 | Arm Streamline、Snapdragon Profiler、厂商工具 | 结论只能绑定对应 GPU 架构与 counter 文档 |
 
-表中的 render stage 是 GPU 工作的一个执行阶段；render pass 定义一组 attachment（渲染输入/输出图像）及其处理过程；pipeline 是着色器与固定功能状态的组合；shader 是运行在 GPU 上的程序。ALU 是算术逻辑单元，tile 是分块渲染中的小块区域，cache 是片上缓存，occupancy 表示执行资源被并行工作占用的程度，具体计算方式仍由厂商定义。
+表中几个词需要先对一下含义：render stage 是 GPU 工作的一个执行阶段；render pass 定义一组 attachment 及其处理过程；pipeline 是着色器与固定功能状态的组合；shader 是运行在 GPU 上的程序。ALU 是算术逻辑单元，tile 是分块渲染中的小块区域，occupancy 表示执行资源被并行工作占用的程度，具体怎么算仍由厂商定义。
 
-可以先用系统 Trace 找到异常时间窗，再通过单变量实验缩小资源类型，最后用帧捕获或厂商 counter 解释原因。跳过系统时间线直接抓一帧，既可能抓到正常帧，也可能把 SurfaceFlinger 或 BufferQueue 的等待误判为应用 shader 开销。
+我们通常先用系统 Trace 找到异常时间窗，再做单变量实验缩小资源类型，最后用帧捕获或厂商 counter 解释原因。要是跳过系统时间线直接抓一帧，既可能抓到正常帧，也可能把 SurfaceFlinger 或 BufferQueue 的等待误判成应用的 shader 开销。
 
 ### Perfetto：Android 17 的 GPU 数据源
 
@@ -159,11 +161,11 @@ data_sources {
 }
 ```
 
-这段配置只说明要请求哪些数据，不能保证每台设备都会返回结果。内核 tracepoint（内核事件记录点）、GPU producer、数据源名称、应用 Graphics API、权限或驱动支持不满足时，都可能产生空轨道。`low_overhead` 会把 render stages 合并为一个 workload stage，以更少细节换取更低 GPU 扰动；只有短窗口确实需要分开观察 load/store stage 时才关闭它。
+这段配置只说明要请求哪些数据；内核 tracepoint、GPU producer、数据源名称、应用 Graphics API、权限或驱动支持只要有一项缺位，轨道就可能为空。`low_overhead` 会把 render stages 合并成一个 workload stage，用更少的细节换更低的 GPU 扰动；只有短窗口需要分开观察 load/store stage 时才关掉它。
 
 #### `gpu.counters` 的正确配置
 
-Android 17 的 `GpuCounterConfig` 包含 `counter_period_ns`、`counter_ids`、`instrumented_sampling` 和 `fix_gpu_clock`。常规周期采样只需要前两个字段。`counter_ids` 是 repeated（可重复）字段，在 TextProto（Protocol Buffers 的文本格式）中要逐项重复书写。`instrumented_sampling` 会在 GPU command buffer 中插入采样，`fix_gpu_clock` 会请求固定 GPU 频率；两者都会改变采集方式或运行条件，不应默认用于正常基线。
+`GpuCounterConfig` 包含 `counter_period_ns`、`counter_ids`、`instrumented_sampling` 和 `fix_gpu_clock`。常规周期采样只需要前两个字段。`counter_ids` 是 repeated 字段，在 TextProto 里要逐项重复书写；`instrumented_sampling` 会在 GPU command buffer 中插入采样，`fix_gpu_clock` 会请求固定 GPU 频率，两者都会改变采集方式或运行条件，基线采集默认都不开。
 
 下面的 counter ID 只用于展示配置结构，必须替换为目标设备 descriptor 中公布的 ID。
 
@@ -180,11 +182,11 @@ data_sources {
 }
 ```
 
-`android-17.0.0_r1` 的 `GpuCounterEvent` 支持两类 descriptor。Android OEM producer 按 CDD/CTS（Android 兼容性定义与兼容性测试套件）要求，使用全局 counter ID 的 `GpuCounterDescriptor`；sequence-scoped（只在一条可信数据序列内有效）的 `InternedGpuCounterDescriptor` 面向多 producer、多 GPU 等复杂用途。两种模式处理的是 descriptor 传输和 ID 作用范围，并未统一各家 counter 的名称、单位或计算方法。
+`android-17.0.0_r1` 的 `GpuCounterEvent` 支持两类 descriptor。Android OEM producer 按 CDD/CTS 要求使用全局 counter ID 的 `GpuCounterDescriptor`；`InternedGpuCounterDescriptor` 的 ID 只在一条数据序列内有效，面向多 producer、多 GPU 这类复杂用途。两种模式处理的只是 descriptor 传输和 ID 作用范围，各家 counter 的名称、单位和计算方法仍由厂商自己定义。
 
 #### 频率、利用率和带宽怎么读
 
-GPU frequency 反映 DVFS（Dynamic Voltage and Frequency Scaling，动态电压频率调节）的当前频点。高频可能来自持续负载、响应性策略或固定性能模式；低频可能来自轻载、温控、功耗限制或 governor（频率调节策略）选择。单看频率无法判断 GPU 是否占满。
+GPU frequency 反映 DVFS 当前的频点。高频可能来自持续负载、响应性策略或固定性能模式；低频可能来自轻载、温控、功耗限制或 governor 的选择。单看频率判断不出 GPU 是否占满。
 
 这类 counter（“GPU utilization”“shader core active”“ALU busy”“external memory read”）的分母、采样窗口和包含的等待状态由厂商定义。分析时应：
 
@@ -194,11 +196,11 @@ GPU frequency 反映 DVFS（Dynamic Voltage and Frequency Scaling，动态电压
 4. 每轮只改变分辨率、pass、shader、纹理或 draw 组织中的一个变量；
 5. 用该 GPU 的 counter 文档解释变化。
 
-没有通用的“ALU 超过 80%”或“单帧超过多少 draw”阈值。draw 数量增加可能拖慢 CPU 侧的驱动提交，也可能让 GPU 工作量上升；要结合调用栈、GPU stage 和硬件 counter 区分这两种情况。
+“ALU 超过 80%”“单帧超过多少 draw”这类通用阈值并不存在。draw 数量增加既可能拖慢 CPU 侧的驱动提交，也可能推高 GPU 工作量；我们结合调用栈、GPU stage 和硬件 counter 来区分这两种情况。
 
 ### 从 Trace 判断瓶颈方向
 
-下表中的 deadline 是一帧必须完成的时间点；backpressure（背压）表示下游队列已满，反过来阻塞上游；frame pacing 是安排帧生成与提交节奏；completion fence 在 GPU 工作完成后发出信号；release fence 通知 producer 何时可以重新使用 buffer；present fence 则标记一帧完成显示的时间。
+用下表之前，先把几个 fence 相关的词对齐：deadline 是一帧必须完成的时间点；backpressure 表示下游队列已满，反过来阻塞上游；frame pacing 是安排帧生成与提交节奏；completion fence 在 GPU 工作完成后发出信号；release fence 通知 producer 何时可以重新使用 buffer；present fence 标记一帧完成显示的时间。
 
 | 观察到的证据 | 候选方向 | 下一步 |
 |---|---|---|
@@ -209,25 +211,25 @@ GPU frequency 反映 DVFS（Dynamic Voltage and Frequency Scaling，动态电压
 | GPU track 空白 | 数据源或设备支持缺失，也可能没有覆盖该 API | 查 descriptor、trace config、驱动与权限 |
 | GPU frequency 高，frame 正常 | 当前 DVFS 状态 | 不单独作为性能缺陷 |
 
-FrameTimeline 的 `GPU Composition` 只说明 SurfaceFlinger 是否使用 GPU/client composition，不说明应用内容是否由 GPU 生成。游戏 Surface 可以由应用 GPU 渲染，随后由 HWC 直接扫描输出；此时应用仍可能 GPU bound（GPU 工作决定帧耗时），而 DisplayFrame（SurfaceFlinger 把多个 layer 合成后的屏幕帧）没有 client composition 标记。
+FrameTimeline 的 `GPU Composition` 只说明 SurfaceFlinger 是否用了 GPU/client composition，说明不了应用内容是否由 GPU 生成。游戏 Surface 可以由应用 GPU 渲染，随后由 HWC 直接扫描输出；这时应用仍然可能 GPU bound，而 DisplayFrame 上没有 client composition 标记。
 
-Perfetto 官方文档仍说明 SurfaceView 不受标准 FrameTimeline 支持。遇到游戏、Camera、视频或独立 native Surface，应结合 layer name（SurfaceFlinger 图层名）、buffer frame number、`android.surfaceflinger.frame`、acquire/release fence、HWC 和 display present 还原显示路径。
+Perfetto 官方文档也说明 SurfaceView 不受标准 FrameTimeline 支持。遇到游戏、Camera、视频或独立 native Surface，我们要结合 layer name、buffer frame number、`android.surfaceflinger.frame`、acquire/release fence、HWC 和 display present 把显示路径还原出来。
 
 ### Android Performance Analyzer（APA）
 
 截至 2026 年 8 月 13 日，APA 下载页已不再标注 Beta。APA 以 Perfetto 为系统追踪基础，覆盖 CPU、GPU、内存和功耗，并支持自定义 TraceConfig。官方说明 Android 12+ 设备能提供较好的 system-wide（应用与系统进程同一时间线）性能分析、GPU counter 和 render stage 体验。
 
-APA 与 Perfetto 的区别主要在入口和分析体验：
+APA 和 Perfetto 的差别主要在入口和分析体验：
 
 - APA 提供独立桌面应用、项目管理、截图、轨道整理、标注和 GPU counter 浏览；当前首页还展示了 Vulkan render pass debug marker 和多 trace A/B 对比；
 - Perfetto CLI 与 Trace Processor 适合固定配置、批量采集、SQL 回归和自动化；
 - 两者都受目标设备 GPU producer 与驱动数据限制。
 
-AGI quickstart 当前仍把 APA 列为 system profiling 的推荐工具。AGI System Profiler 仍可使用，尤其是团队已有 AGI 设备验证和 counter 流程时。2026 年 5 月的 APA 公告把逐帧 capture/replay（捕获与回放）列为后续能力；2026 年 8 月的 APA 首页新增了 Vulkan debug marker 展示，但仍没有发布逐 draw 的 Frame Profiler 文档。因此不能把 trace 中的 render pass 名称，当成 AGI Frame Profiler 那类单帧命令与资源捕获。
+AGI quickstart 目前仍把 APA 列为 system profiling 的推荐工具；AGI System Profiler 也还能用，团队已有 AGI 设备验证和 counter 流程时尤其方便。2026 年 5 月的 APA 公告把逐帧 capture/replay 列为后续能力，2026 年 8 月的 APA 首页新增了 Vulkan debug marker 展示，但逐 draw 的 Frame Profiler 文档还没有发布。所以 trace 里的 render pass 名称，还不能当成 AGI Frame Profiler 那类单帧命令与资源捕获。
 
 ### Android GPU Inspector（AGI）
 
-AGI 运行在 Android 11+ 的受支持真机上，并在首次连接以及 Android 或 GPU driver 变化后执行兼容性验证。官方列出的 System Profiler GPU 包括 Qualcomm Adreno、Arm Mali 和 Imagination PowerVR。设备验证失败或 counter 缺失，只能说明当前设备、系统与驱动组合没有通过 AGI 要求。
+AGI 运行在 Android 11+ 的受支持真机上，首次连接以及 Android 或 GPU driver 变化后都会重新做兼容性验证。官方列出的 System Profiler GPU 包括 Qualcomm Adreno、Arm Mali 和 Imagination PowerVR。设备验证失败或 counter 缺失，只说明当前设备、系统与驱动的组合没通过 AGI 的要求。
 
 AGI 有两种主要模式：
 
@@ -236,11 +238,11 @@ AGI 有两种主要模式：
 | System Profiler | CPU/GPU/内存/电池、GPU counter、系统时间线 | 找到长时间运行中的异常窗口 |
 | Frame Profiler | Vulkan API call、framebuffer、mesh draw、内存、pipeline、state、shader、texture | 检查单帧命令与资源 |
 
-AGI quickstart 要求目标应用设置 `android:debuggable="true"`。原生 Vulkan 应用还要启用 validation layer（检查 Vulkan API 使用是否合法的验证层），先修复已有 validation error，再采集 profile。AGI 会管理自身的捕获流程；手工配置全局 Vulkan layer 时，应严格使用当前 AGI 文档给出的包名、ABI（Application Binary Interface，应用二进制接口）和清理命令，避免把验证层与捕获层写进同一项配置。
+AGI quickstart 要求目标应用设置 `android:debuggable="true"`。原生 Vulkan 应用还要启用 validation layer 来检查 Vulkan API 用法是否合法，先修完已有的 validation error 再采集 profile。AGI 会管理自身的捕获流程；如果手工配置全局 Vulkan layer，要严格按当前 AGI 文档给出的包名、ABI 和清理命令来，避免把验证层与捕获层写进同一项配置。
 
 #### OpenGL ES on ANGLE
 
-AGI Frame Profiler 的类型选择是 `Vulkan` 或 `OpenGL on ANGLE`。ANGLE 会把 OpenGL ES（GLES）命令翻译为 Vulkan。GLES 应用经这条路径捕获后，看到的是翻译生成的 Vulkan command、pipeline 和 shader；backend 指实际执行图形命令的后端实现。若问题只在设备原生 GLES driver 出现，这份 capture 已改变 backend，必须同时保留原生路径的 Perfetto、日志和厂商数据。
+AGI Frame Profiler 的类型选择是 `Vulkan` 或 `OpenGL on ANGLE`，后者由 ANGLE 把 GLES 命令翻译成 Vulkan。GLES 应用经这条路径捕获后，我们看到的是翻译生成的 Vulkan command、pipeline 和 shader，而 backend 已经换成了另一个实现。若问题只在设备原生 GLES driver 上出现，这份 capture 已改变 backend，必须同时保留原生路径的 Perfetto、日志和厂商数据。
 
 Android 15+ 提供按包测试 ANGLE 的入口。Android 17 又允许 game 在 manifest 中表达“优先使用 ANGLE”的请求：
 
@@ -252,21 +254,21 @@ Android 15+ 提供按包测试 ANGLE 的入口。Android 17 又允许 game 在 m
 </application>
 ```
 
-这项 metadata 是请求信号，不保证系统选择 ANGLE。设备配置、graphics driver 包、应用兼容性和厂商策略仍会参与选择。即使系统是 Android 17，也不能据此认定所有 GLES 应用默认运行在 ANGLE 上。
+这项 metadata 只是请求信号，最终是否选择 ANGLE 由设备配置、graphics driver 包、应用兼容性和厂商策略共同决定；即使系统是 Android 17，也不能仅凭系统版本就认定所有 GLES 应用默认运行在 ANGLE 上。
 
-对照 native GLES 与 ANGLE 时，可用官方测试命令设置 `angle_gl_driver_selection_pkgs` 和 `angle_gl_driver_selection_values=angle`，重启目标进程后再检查 EGL vendor/renderer、进程加载的 library、Graphics Driver 日志和 `gpu.angle` trace event。这两个 global setting 在重启后仍会保留，测试结束必须删除，避免影响后续基线。
+对照 native GLES 与 ANGLE 时，我们用官方测试命令设置 `angle_gl_driver_selection_pkgs` 和 `angle_gl_driver_selection_values=angle`，重启目标进程后检查 EGL vendor/renderer、进程加载的 library、Graphics Driver 日志和 `gpu.angle` trace event。这两个 global setting 重启后仍会保留，测试结束必须删除，免得影响后续基线。
 
 ### RenderDoc：图形状态与资源调试
 
-RenderDoc 可以检查帧内 API event、pipeline state、texture、buffer、framebuffer 和 shader，适合定位渲染错误、资源绑定错误与状态配置问题。framebuffer 是一帧渲染使用的颜色、深度等图像集合，pipeline state 是该 draw 生效的管线配置。通用 RenderDoc capture 不一定包含目标移动 GPU 的全部微架构 counter，API replay 的耗时也不能直接视为正常运行时帧耗时。
+RenderDoc 可以检查帧内 API event、pipeline state、texture、buffer、framebuffer 和 shader，适合定位渲染错误、资源绑定错误与状态配置问题。framebuffer 是一帧渲染使用的颜色、深度等图像集合，pipeline state 是该 draw 生效的管线配置。通用 RenderDoc capture 未必包含目标移动 GPU 的全部微架构 counter，API replay 的耗时也不能直接当作正常运行时的帧耗时。
 
-Android 捕获通常要求 debuggable 应用、ADB 连接和受支持的 Vulkan driver。具体 API 与 extension（图形 API 扩展）能力要以所用 RenderDoc 版本为准。Arm Performance Studio 提供 RenderDoc for Arm GPUs，补充部分 Arm/Android 特性、设备兼容处理、Vulkan ray tracing 与 ray query 调试；这些能力不代表 upstream RenderDoc（主项目版本）的每个发行版都具备相同支持。
+Android 捕获通常要求 debuggable 应用、ADB 连接和受支持的 Vulkan driver，具体 API 与 extension 能力以所用 RenderDoc 版本为准。Arm Performance Studio 提供 RenderDoc for Arm GPUs，补充部分 Arm/Android 特性、设备兼容处理、Vulkan ray tracing 与 ray query 调试；这些能力来自 Arm 的发行版，upstream RenderDoc 的每个版本未必都有。
 
-如果要判断性能开销来自哪里，可先用 AGI 或厂商 profiler 找到慢 render pass，再用 RenderDoc 检查该 pass 的 attachment、pipeline、descriptor（资源绑定描述）、texture 和 shader。若要调查画面错误，可以从错误帧逐个 event 检查 framebuffer 变化。
+要判断性能开销来自哪里，可以先用 AGI 或厂商 profiler 找到慢 render pass，再用 RenderDoc 检查该 pass 的 attachment、pipeline、descriptor、texture 和 shader。要调查画面错误，就从错误帧逐个 event 检查 framebuffer 的变化。
 
 ### Sokatoa：Vulkan 多帧视角
 
-Sokatoa 由 Samsung Austin Research Center 发起，并与 Google、LunarG 协作。项目面向 Android Vulkan 应用，提供 system 与 frame 两种视角的多帧捕获、Vulkan API/pipeline/shader 分析和设备端 replay（在设备上重放已捕获工作）。
+Sokatoa 由 Samsung Austin Research Center 发起，并与 Google、LunarG 协作，面向 Android Vulkan 应用提供 system 与 frame 两种视角的多帧捕获、Vulkan API/pipeline/shader 分析和设备端 replay。
 
 项目当前文档给出的边界是：
 
@@ -275,7 +277,7 @@ Sokatoa 由 Samsung Austin Research Center 发起，并与 Google、LunarG 协�
 - performance view 支持 Xclipse、Mali、Adreno 和 PowerVR；
 - 当前可免费下载，README 表示计划在 2026 年底开放源码。
 
-多帧捕获适合调查间歇性 pipeline 创建、状态变化、资源生命周期和异常帧前后的差异。capture replay 仍受 API feature、extension、格式、driver 和 GPU 能力约束；记录了 Vulkan API，并不代表捕获结果能在任意 GPU 上等价回放。
+多帧捕获适合调查间歇性 pipeline 创建、状态变化、资源生命周期和异常帧前后的差异。capture replay 仍受 API feature、extension、格式、driver 和 GPU 能力约束：即便记录的是标准 Vulkan API，捕获结果也未必能在任意 GPU 上等价回放。
 
 ### 厂商工具的边界
 
@@ -286,15 +288,15 @@ Sokatoa 由 Samsung Austin Research Center 发起，并与 Google、LunarG 协�
 | Samsung Xclipse | Sokatoa，配合 APA/Perfetto 与 Samsung 扩展 | 多帧 Vulkan、Xclipse performance view、系统时间线 | 扩展与设备支持仍在演进，报告要记录版本 |
 | Imagination PowerVR | AGI、Sokatoa 与 Imagination 工具 | PowerVR counter、系统与帧分析 | counter 名称和可用性依设备 producer |
 
-Arm Streamline 能在未 root 的受支持 Android 设备上采集 CPU、GPU、内存、调度和硬件 counter。Frame Advisor 面向问题帧的 API 与几何分析；RenderDoc for Arm GPUs 偏重图形调试；Mali Offline Compiler 不运行 App，而是估算 shader 在不同 Arm GPU 上的指令、寄存器和周期成本。这些工具用途不同，报告里不能只写“Arm profiler”就把它们的结论混用。
+Arm Streamline 能在未 root 的受支持 Android 设备上采集 CPU、GPU、内存、调度和硬件 counter；Frame Advisor 面向问题帧的 API 与几何分析；RenderDoc for Arm GPUs 偏重图形调试；Mali Offline Compiler 不运行 App，而是估算 shader 在不同 Arm GPU 上的指令、寄存器和周期成本。这四个工具用途各不相同，报告里我们要写出具体用的哪一个，别把它们混在“Arm profiler”一个名字下。
 
-厂商 counter 应保留原名称、单位、采样方式、GPU 型号、driver 和文档版本。把 Adreno 的 busy、Mali 的 shader core active 与 Xclipse 的相似名称放进一张跨机型排行榜，数值很容易失去可比性。
+厂商 counter 要保留原名称、单位、采样方式、GPU 型号、driver 和文档版本。Adreno 的 busy、Mali 的 shader core active 与 Xclipse 的相似名称一旦放进同一张跨机型排行榜，数值就很容易失去可比性。
 
 ### `profileable`、`debuggable` 与 root
 
-`<profileable>` 从 API 29 引入，是 `<application>` 的子元素；`android:enabled` 属性在 API 30 加入。设置 `android:shell="true"` 后，本地 shell profiling 工具可以分析 release 构建，同时只能访问平台允许的有限数据。与 debuggable 构建相比，这种方式对运行时序的扰动通常更小。debuggable 允许调试器和图形 layer 注入；root 则表示设备取得系统超级用户权限，三者不是同一种授权。
+`<profileable>` 从 API 29 引入，是 `<application>` 的子元素，`android:enabled` 属性在 API 30 加入。设置 `android:shell="true"` 后，本地 shell profiling 工具可以分析 release 构建，只是能访问的数据限于平台允许的范围；和 debuggable 构建相比，这种方式的时序扰动通常更小。debuggable 允许调试器和图形 layer 注入，root 则表示设备取得系统超级用户权限：这是三种不同的授权，别混用。
 
-`profileable` 不保证 `gpu.counters`、`gpu.renderstages` 或厂商内核事件出现。GPU 数据源由系统 producer、驱动、设备配置和调用权限决定。一个 profileable 包得到空 GPU 轨道时，排查方向应包含 data-source descriptor 与厂商支持。
+`profileable` 并不保证 `gpu.counters`、`gpu.renderstages` 或厂商内核事件出现：GPU 数据源由系统 producer、驱动、设备配置和调用权限决定。一个 profileable 包得到空 GPU 轨道时，排查方向要包含 data-source descriptor 与厂商支持。
 
 帧捕获通常需要把 Vulkan layer 加载进目标进程，或替换 graphics backend：
 
@@ -303,31 +305,31 @@ Arm Streamline 能在未 root 的受支持 Android 设备上采集 CPU、GPU、�
 - Sokatoa 要求 debuggable APK 或 rooted device；
 - 厂商工具各有设备、包类型和权限条件。
 
-debuggable 会改变运行时优化与安全检查，捕获 layer 还会记录命令、资源和内存。应使用 profileable/release 包采集低扰动基线，再用 debuggable 包做短窗口详细诊断；两类结果不能直接比较绝对帧时间。
+debuggable 会改变运行时优化与安全检查，捕获 layer 还会记录命令、资源和内存。我们的做法是用 profileable/release 包采集低扰动基线，再用 debuggable 包做短窗口详细诊断；两类结果的绝对帧时间要分开解读。
 
 ### 不设固定阈值，改做对照实验
 
 #### 怀疑 fragment、overdraw 或带宽
 
-fragment 是光栅化后进入片元着色阶段的候选像素；overdraw 指同一屏幕位置被重复绘制。在同一设备上降低渲染分辨率或停用一个全屏 pass，如果 GPU stage 与外部内存相关 counter 同步下降，再检查 overdraw、blend（颜色混合）、render-target format（渲染目标格式）、attachment load/store、texture sampling（纹理采样）和 SurfaceFlinger client composition。
+fragment 是光栅化后进入片元着色阶段的候选像素，overdraw 指同一屏幕位置被重复绘制。我们在同一设备上降低渲染分辨率或停用一个全屏 pass：如果 GPU stage 与外部内存相关 counter 同步下降，接着再检查 overdraw、blend、render-target format、attachment load/store、texture sampling 和 SurfaceFlinger client composition。
 
-Android View 的开发者选项 overdraw overlay 适合查找 UI 重复覆盖，游戏和 native renderer 则应使用帧 capture 与厂商 counter。Tile-based GPU 会把画面分块，并在片上 tile memory 中处理部分中间结果；因此“画了 N 次”不能直接换算成 N 倍外部内存带宽。
+Android View 的开发者选项 overdraw overlay 适合查找 UI 重复覆盖；游戏和 native renderer 则用帧 capture 与厂商 counter。Tile-based GPU 会把画面分块，并在片上 tile memory 中处理部分中间结果，所以“画了 N 次”换算不出 N 倍外部内存带宽。
 
 #### 怀疑 shader ALU 或纹理
 
-固定画面、分辨率与 pipeline state，只替换一个 shader 变体或关闭一个纹理采样分支。结合 shader duration、instruction、occupancy、texture/cache 与 external memory counter 判断变化。某个 counter 很高只能描述该架构上的活动状态，仍需通过 A/B 对照实验，也就是每次只改变一个变量，确认改动与结果之间的关系。
+先固定画面、分辨率与 pipeline state，再只替换一个 shader 变体或关闭一个纹理采样分支，结合 shader duration、instruction、occupancy、texture/cache 与 external memory counter 判断变化。某个 counter 很高，只能描述该架构上的活动状态；改动和结果的关系仍要靠 A/B 对照实验确认，也就是每次只改一个变量。
 
 #### 怀疑 draw call 或 driver CPU 开销
 
-检查 render/RHI 线程调用栈、`vkQueueSubmit()` 前的命令录制、pipeline/descriptor churn 和 driver ioctl。RHI（Render Hardware Interface）是引擎对图形 API 的抽象层；churn 指 pipeline 或 descriptor 被频繁创建、切换；ioctl 是用户态通过系统调用向内核驱动发送控制请求。合批后若 CPU submit 提前而 GPU stage 基本不变，收益来自 CPU 或驱动开销下降；若 GPU stage 也缩短，才能说明 GPU 工作组织同时改善。
+检查 render/RHI 线程调用栈、`vkQueueSubmit()` 前的命令录制、pipeline/descriptor churn 和 driver ioctl。RHI 是引擎对图形 API 的抽象层，churn 指 pipeline 或 descriptor 被频繁创建、切换，ioctl 则是用户态通过系统调用向内核驱动发送控制请求。合批之后我们看两条线：CPU submit 提前而 GPU stage 基本不变，收益来自 CPU 或驱动开销下降；GPU stage 也跟着缩短，才说明 GPU 工作组织同时得到了改善。
 
 #### 怀疑 queue-stuffing
 
-持续尽快 present 可能塞满 BufferQueue，这就是 queue stuffing。随后 render thread 会在 acquire、dequeue、swap 或 present 路径等待。此时 CPU 与 GPU 时间线都可能出现空白，但输入仍排在较早的 in-flight frame（已提交、尚未显示的帧）中。应检查队列深度、release fence、present 间隔、输入采样点和 frame pacing，不能把等待函数本身解释为 shader 变慢。
+持续尽快 present 可能塞满 BufferQueue，这就是 queue stuffing。随后 render thread 会在 acquire、dequeue、swap 或 present 路径等待，CPU 与 GPU 时间线都可能出现空白，但输入仍排在较早的 in-flight frame 里。这时要检查队列深度、release fence、present 间隔、输入采样点和 frame pacing；等待函数本身说明不了 shader 变慢。
 
 #### 怀疑热限制
 
-把 thermal status（温控状态）、thermal headroom（距离进一步触发温控限制的余量）、CPU/GPU frequency、帧时间、画质和持续运行时间放进同一份记录。固定性能模式适合隔离 DVFS 变量，却不能代表用户环境。优化验证应从相近初始温度开始重复多轮，并比较温度和频率趋于稳定后的阶段。
+把 thermal status、thermal headroom、CPU/GPU frequency、帧时间、画质和持续运行时间放进同一份记录。固定性能模式适合隔离 DVFS 变量，却代表不了用户环境；优化验证要从相近初始温度开始重复多轮，比较温度和频率都稳定后的阶段。
 
 ### 捕获扰动与报告要求
 
@@ -340,7 +342,7 @@ system trace、counter sampling、frame capture 和 replay 都会扰动被测程
 - 捕获是否注入 layer、替换 backend 或启用 validation；
 - 原始 Trace/capture，以及每次 A/B 对照只改变的变量。
 
-帧 capture 用来检查命令、状态与资源，不应作为产品帧率基准。性能数字应来自未注入 capture layer 的低扰动运行，再用帧 capture 解释慢帧结构。
+帧 capture 用来检查命令、状态与资源，产品帧率基准要从别的运行里来：性能数字取自未注入 capture layer 的低扰动运行，帧 capture 负责解释慢帧的结构。
 
 ### 执行清单
 
@@ -371,14 +373,14 @@ system trace、counter sampling、frame capture 和 replay 都会扰动被测程
 
 ### 版本边界：分别确定 Android 平台与 AGI 工具版本
 
-Android GPU Inspector（AGI）不是 `android-17.0.0_r1` 平台源码中的系统组件。该 `tag`（固定版本标签）的 AOSP `manifest`（源码项目清单）中，没有 `external/android-gui`、`gapii` 或 `gapis` 这些 `project`（仓库项目）条目。AGI 在独立的 [`google/agi`](https://github.com/google/agi) 仓库和发布渠道中维护。因此，“Android 17 上使用 AGI”包含两条要分别核验的版本基线：
+AGI 并非 `android-17.0.0_r1` 平台源码里的系统组件——该 `tag` 的 AOSP `manifest` 里找不到 `external/android-gui`、`gapii` 或 `gapis` 这些 `project` 条目，AGI 在独立的 [`google/agi`](https://github.com/google/agi) 仓库和发布渠道中维护。所以“Android 17 上使用 AGI”包含两条要分别核验的版本基线：
 
 - 设备侧 Vulkan layer 发现、加载和安全条件，以 AOSP `android-17.0.0_r1` 为准；
 - gapii、gapis、gapir、gapidapk 与 `.gfxtrace` 的工具实现，以明确的 AGI release（发布版本）或 commit（提交快照）为准。
 
-截至 2026 年 8 月 13 日，GitHub Releases 仍将 AGI `v3.3.3` 标为 Latest。该 release tag 指向 commit `5f97b4fd99a9459320b782203ce2de5351a1e661`，发布资产的日期为 2025 年 1 月 20 日。工具内部实现以这个固定提交为准，当前支持流程以更新至 2026 年 5 月 19 日的 Android Developers 文档为准。AGI 安装包版本和 Android OS 版本互相独立，复现实验时应同时记录二者。
+截至 2026 年 8 月 13 日，GitHub Releases 仍将 AGI `v3.3.3` 标为 Latest，该 release tag 指向 commit `5f97b4fd99a9459320b782203ce2de5351a1e661`，发布资产日期为 2025 年 1 月 20 日。工具内部实现以这个固定提交为准，当前支持流程以更新至 2026 年 5 月 19 日的 Android Developers 文档为准。AGI 安装包版本和 Android OS 版本互相独立，复现实验时我们把二者都记下来。
 
-当前官方 quickstart 要求受支持设备运行 Android 11 或更高版本，配套的 supported devices 页面明确排除 Android Emulator。历史 AGI release 对 Android 10 的兼容记录不能代替当前工具验证；Android 17 设备也要通过 AGI 的 device validation（设备兼容性校验），支持状态由 OS、GPU 和 driver（GPU 驱动）共同决定。
+当前官方 quickstart 要求受支持设备运行 Android 11 或更高版本，配套的 supported devices 页面明确排除 Android Emulator。历史上 AGI release 对 Android 10 的兼容记录代替不了当前工具验证；Android 17 设备同样要过 AGI 的 device validation，支持状态由 OS、GPU 和 driver 共同决定。
 
 ### System Profile 与 Frame Profile 解决不同问题
 
@@ -389,9 +391,9 @@ AGI 提供 System Profile 与 Frame Profile，两者的数据来源和分析尺�
 | System Profile | Perfetto，以及系统和厂商 producer（向 trace 写入事件的数据源） | CPU 调度、GPU queue（命令队列）、频率、counter（硬件计数器）、内存和功耗等时间线 | 某段卡顿期间 CPU、GPU 与系统服务怎样互相影响 |
 | Frame Profile | GraphicsSpy Vulkan layer、gapii、gapis、gapir | 一帧附近的 API 调用、资源、pipeline state（渲染管线状态）、framebuffer（帧缓冲）与 render pass（渲染通道）性能 | 某个 draw、shader、纹理或 render pass 为什么昂贵或结果异常 |
 
-gapii 属于 Frame Profile 的 API 拦截链路，不是低开销的持续系统监控器。它要进入目标进程、记录 API 参数和 memory observation（API 调用可能读写的内存快照），还可能序列化捕获开始时的完整 Vulkan 状态，开销远高于常规 Perfetto trace。长时趋势、调度关系和整机 GPU counter 应优先使用 System Profile。要检查命令级状态与资源时，再使用 Frame Profile。
+gapii 是 Frame Profile 的 API 拦截链路，而非低开销的持续系统监控器：它要进入目标进程、记录 API 参数和 memory observation，还可能序列化捕获开始时的完整 Vulkan 状态，开销远高于常规 Perfetto trace。所以长时趋势、调度关系和整机 GPU counter 优先用 System Profile；要看命令级状态与资源时再上 Frame Profile。
 
-Android Developers 当前还建议新的系统分析优先评估 Android Performance Analyzer（APA）。这不改变 Frame Profile 的用途，也不能把 APA 描述成只分析 Java/Kotlin 的工具。
+Android Developers 当前还建议新的系统分析优先评估 Android Performance Analyzer（APA）；Frame Profile 的用途因此并没有变，APA 也不是只分析 Java/Kotlin 的工具。
 
 先明确四个容易混淆的缩写：
 
@@ -430,13 +432,13 @@ flowchart LR
   Driver -->|"framebuffer、计数与查询结果"| GAPIS
 ```
 
-图中的 GraphicsSpy 与 `libgapii.so` 都加载在目标 App 进程内；GAPIC 和 GAPIS 位于开发机；GAPIR 在 Android 设备上执行重放。主机负责解析并生成 replay payload（重放指令及其资源引用），不会用开发机 GPU 代替目标设备驱动重放。
+图中 GraphicsSpy 与 `libgapii.so` 都加载在目标 App 进程内，GAPIC 和 GAPIS 位于开发机，GAPIR 在 Android 设备上执行重放。主机负责解析并生成 replay payload，不会用开发机 GPU 代替目标设备驱动做重放。
 
 ### Android 17 怎样把 GraphicsSpy 放进目标进程
 
 #### Android 设备使用 global settings，不依赖 `VK_LAYER_PATH`
 
-桌面 Vulkan loader（负责发现、加载并连接 layer 与驱动）常通过环境变量 `VK_LAYER_PATH` 搜索 layer，Android 的应用注入路径不同。AGI `gapii/client/adb.go` 会先安装与目标 ABI（应用二进制接口，这里对应进程的 CPU 架构）匹配的 gapid APK。随后，`core/os/android/layers.go` 写入四个 global settings（Settings Provider 保存的全局配置项）：
+桌面 Vulkan loader 常通过环境变量 `VK_LAYER_PATH` 搜索 layer，Android 走的是另一条路：AGI `gapii/client/adb.go` 先安装与目标 ABI 匹配的 gapid APK，再由 `core/os/android/layers.go` 写入四个 global settings：
 
 ```shell
 adb shell settings put global enable_gpu_debug_layers 1
@@ -445,7 +447,7 @@ adb shell settings put global gpu_debug_layer_app com.google.android.gapid.arm64
 adb shell settings put global gpu_debug_layers GraphicsSpy
 ```
 
-这些键分别开启调试 layer（插在 Vulkan API 与驱动之间的可选拦截层）、限定目标 package（应用包名）、指定提供 layer 的 APK、选择 layer 名。AGI 会在正常清理路径删除设置；若采集进程异常退出，应手动检查并清除，避免后续启动继续加载 layer。
+这四个键分别负责：开启调试 layer、限定目标 package、指定提供 layer 的 APK、选择 layer 名。AGI 在正常清理路径会删除这些设置；若采集进程异常退出，我们要手动检查并清除，避免后续启动继续加载 layer。
 
 AOSP Android 17 的 `frameworks/native/vulkan/libvulkan/layers_extensions.cpp` 列出了可使用调试 layer 的条件：
 
@@ -453,11 +455,11 @@ AOSP Android 17 的 `frameworks/native/vulkan/libvulkan/layers_extensions.cpp` �
 - 或系统为可 root 的 userdebug（可调试系统构建变体）构建；
 - 或 targetSdk 不低于 30 的 App 在 manifest 中声明 `com.android.graphics.injectLayers.enable=true`。
 
-AGI 官方支持流程仍要求目标 App 设置 `android:debuggable="true"`。平台允许的其他入口不代表 AGI 对任意生产 App 提供受支持的抓帧能力。
+AGI 官方支持流程仍要求目标 App 设置 `android:debuggable="true"`；平台允许的其他入口，并不意味着 AGI 会为任意生产 App 提供受支持的抓帧能力。
 
 #### GraphicsSpy 是 wrapper，拦截实现位于 libgapii
 
-AGI 源码中的 `GraphicsSpyLayer.json` 描述 layer 名 `GraphicsSpy` 及其函数映射，供使用 JSON manifest（JSON 格式的 layer 描述文件）的 loader 环境识别。Android 的 gapid APK 同时打包 `libVkLayer_GraphicsSpy.so` 与 `libgapii.so`。AOSP loader 从 layer APK 的 native library path（原生库搜索路径）发现前者，并按 layer 名解析 `GraphicsSpyGetInstanceProcAddr` / `GraphicsSpyGetDeviceProcAddr`。这个 wrapper（薄封装层）随后以 `dlopen()` 动态加载同目录的 `libgapii.so`，把 Vulkan 函数地址查询转交给 `gapid_vkGetInstanceProcAddr` 与 `gapid_vkGetDeviceProcAddr`。
+AGI 源码中的 `GraphicsSpyLayer.json` 描述 layer 名 `GraphicsSpy` 及其函数映射，供按 JSON manifest 识别 layer 的 loader 环境使用。Android 的 gapid APK 同时打包 `libVkLayer_GraphicsSpy.so` 与 `libgapii.so`：AOSP loader 从 layer APK 的 native library path 发现前者，按 layer 名解析 `GraphicsSpyGetInstanceProcAddr` / `GraphicsSpyGetDeviceProcAddr`；这个 wrapper 再以 `dlopen()` 动态加载同目录的 `libgapii.so`，把 Vulkan 函数地址查询转交给 `gapid_vkGetInstanceProcAddr` 与 `gapid_vkGetDeviceProcAddr`。
 
 这条路径解释了两个常见现象：
 
@@ -466,9 +468,9 @@ AGI 源码中的 `GraphicsSpyLayer.json` 描述 layer 名 `GraphicsSpy` 及其�
 
 #### `debug.agi.procname` 只选择进程名
 
-layer 设置以 package 为单位。某些游戏会在包内启动独立的渲染进程，AGI 用私有系统属性 `debug.agi.procname` 指定要捕获的进程名。`Spy::Spy()` 会读取当前进程名并与该属性比较；属性为空时接受任意进程，名称不匹配时创建 `NullWriter`（丢弃输出的空 writer），不会与主机建立抓帧连接。
+layer 设置以 package 为单位，而某些游戏会在包内启动独立的渲染进程，所以 AGI 用私有系统属性 `debug.agi.procname` 指定要捕获的进程名。`Spy::Spy()` 读出当前进程名与该属性比较：属性为空时接受任意进程；名称不匹配时创建 `NullWriter` 直接丢弃输出，不与主机建立抓帧连接。
 
-它不是同时接受 PID、package 和进程名的通用平台接口。package 由 `gpu_debug_app` 选择，进程由 `debug.agi.procname` 进一步过滤，PID（进程 ID）只用于 AGI 在启动后确认进程已经出现。
+这个属性也并非同时接受 PID、package 和进程名的通用平台接口：package 由 `gpu_debug_app` 选择，进程由 `debug.agi.procname` 进一步过滤，PID 只用于 AGI 在启动后确认进程已经出现。
 
 ### gapidapk 不是持续采集 GPU 数据的 AIDL 服务
 
@@ -487,9 +489,9 @@ AGI 为不同 ABI 准备独立 package，例如：
 | `PackageInfoService` | 枚举可捕获 package、activity、ABI 等信息 |
 | `VkSampleActivity` | AGI 自带的 Vulkan 验证样例 |
 
-`DeviceInfoService` 与 `PackageInfoService` 是前台 `IntentService`（启动时显示通知、按 Intent 处理任务的服务），用于设备探测和 package 枚举。抓帧数据不经过一个名为 `com.google.android.gapid` 的 AIDL（Android Interface Definition Language，Android 跨进程接口定义）capture service。gapii 在目标进程内监听 local abstract socket，开发机通过 adb forward（把主机端口转发到设备 socket）连接。
+`DeviceInfoService` 与 `PackageInfoService` 是前台 `IntentService`，分别做设备探测和 package 枚举。抓帧数据并不经过名为 `com.google.android.gapid` 的 AIDL capture service：gapii 在目标进程内监听 local abstract socket，开发机用 adb forward 连上来。
 
-“AI 压缩算法、GPU 数据加密存储、动态采样率或 GPU 访问审计日志”这些描述，源码里也没有支持。安全边界应回到 Android 的 debuggable 状态、Vulkan layer 注入条件、adb 授权、layer package 与目标 package 选择。
+至于“AI 压缩算法、GPU 数据加密存储、动态采样率或 GPU 访问审计日志”这类描述，源码里找不到任何支持。安全边界还是要回到 Android 的 debuggable 状态、Vulkan layer 注入条件、adb 授权、layer package 与目标 package 选择上。
 
 ### 一帧捕获从连接到结束发生了什么
 
@@ -502,19 +504,19 @@ AGI 开发文档把 Vulkan Frame Profile 的主要步骤写得很具体：
 5. gapii 等当前 frame 结束，在捕获边界序列化 Vulkan 初始状态与 GPU buffer，随后记录目标 frame 的 API 调用和相关 memory observation。
 6. frame 结束时 gapii 发送 end message，GAPIS 停止写入 `.gfxtrace`。
 
-官方 UI 还提供 Beginning、Manual、Time 与 Frame 等启动方式。它们分别从启动后的第一帧、手动点击、指定秒数后或指定帧号开始捕获，只决定何时进入捕获窗口，不会把 Frame Profile 变成常驻 GPU telemetry（持续遥测）服务。
+官方 UI 还提供 Beginning、Manual、Time 与 Frame 等启动方式，分别从启动后的第一帧、手动点击、指定秒数后或指定帧号开始捕获。它们只决定何时进入捕获窗口，Frame Profile 也不会因此变成常驻 GPU telemetry 服务。
 
 #### buffering（内存缓冲）选项的取舍
 
-默认 buffering 会先在目标进程内暂存数据，再批量写出。`Disable Buffering` 让数据更及时地离开目标进程，适合排查采集期间崩溃，因为崩溃前已经序列化的数据更有机会保留下来；代价是更高的运行期开销。普通抓帧保留 buffering，遇到“抓帧导致 App 崩溃且文件为空”时再用该选项缩小问题范围。
+默认 buffering 会先在目标进程内暂存数据再批量写出。`Disable Buffering` 让数据更及时地离开目标进程，崩溃前已经序列化的数据更有机会保留下来，适合排查采集期间崩溃，代价是更高的运行期开销。所以普通抓帧保留 buffering，遇到“抓帧导致 App 崩溃且文件为空”时再用该选项缩小问题范围。
 
 #### 多线程捕获不等于确定性的时序重放
 
-`.gfxtrace` 可以包含多个线程的 API 调用，ProtoPack object group（带父子关系的消息组）也可能交错。捕获器会记录调用和内存快照，但无法保证未显式同步的 race（并发竞态）都能稳定复现。Vulkan 应用在抓帧前应通过 validation layer（验证层），资源生命周期、host memory（CPU 可访问内存）修改和 queue 同步要符合 API 约束。
+`.gfxtrace` 里可以有多线程的 API 调用，ProtoPack object group 也可能交错。捕获器会记录调用和内存快照，但未显式同步的 race 未必都能稳定复现。所以 Vulkan 应用在抓帧前应先过一遍 validation layer，资源生命周期、host memory 修改和 queue 同步都要符合 API 约束。
 
 ### `.gfxtrace` 的内容与边界
 
-正确扩展名是 `.gfxtrace`。AGI `v3.3.3` 使用自定义 ProtoPack v2 容器封装 protobuf（Protocol Buffers）message；整个文件并不是单个 protobuf message。
+正确扩展名是 `.gfxtrace`。AGI `v3.3.3` 用自定义 ProtoPack v2 容器封装 protobuf message，整个文件并非单个 protobuf message。
 
 ProtoPack 头部 magic 为：
 
@@ -522,7 +524,7 @@ ProtoPack 头部 magic 为：
 ProtoPack\r\n2.0\n\0
 ```
 
-后续是变长 chunk（记录块）。chunk 可以是类型定义，也可以是带 parent 回指关系的对象实例；类型定义会先于对应对象出现，因此读取端可以从文件内取得 protobuf 类型描述。这个结构不自动保证随机访问、差分编码、压缩块或损坏恢复；没有源码证据时不应添加这些属性。
+后面是变长 chunk，可以是类型定义，也可以是带 parent 回指关系的对象实例；类型定义会先于对应对象出现，读取端因此可以从文件内取得 protobuf 类型描述。这个结构并不自动提供随机访问、差分编码、压缩块或损坏恢复，没有源码证据时不应当给文件加上这些属性。
 
 一份 Vulkan `.gfxtrace` 通常包含：
 
@@ -533,19 +535,19 @@ ProtoPack\r\n2.0\n\0
 - buffer、texture 等资源 bytes；
 - 捕获期间产生的 trace message。
 
-AGI 自带的 CLI（命令行工具）`gapit` 可以把 ProtoPack 内容展开检查。下面的命令用于判断文件是否至少能被当前版本解析：
+AGI 自带的命令行工具 `gapit` 可以把 ProtoPack 内容展开检查。下面的命令用来判断文件至少能不能被当前版本解析：
 
 ```shell
 gapit unpack -verbose capture.gfxtrace
 ```
 
-输出会按 ProtoPack 对象树列出 header、global state、resource、observation 和 command group。它适合验证文件结构，不提供 GPU 时间线或 render pass 成本结论。
+输出按 ProtoPack 对象树列出 header、global state、resource、observation 和 command group，适合验证文件结构；GPU 时间线或 render pass 成本结论要另想办法。
 
 #### 捕获文件不具备跨设备可移植性承诺
 
-Android Developers 的 Vulkan 工具页确实写有“trace 不可跨设备移植”的警告，但该警告位于 GFXReconstruct 小节，不能直接当成 AGI `.gfxtrace` 的产品说明。
+Android Developers 的 Vulkan 工具页写有“trace 不可跨设备移植”的警告，但它位于 GFXReconstruct 小节，直接搬到 AGI `.gfxtrace` 上并不成立。
 
-AGI `v3.3.3` 的开发文档给出了与本节直接相关的边界：主机可以演算 API state，draw 对 render target（渲染目标图像）的真实像素影响仍要在设备上重放，结果取决于重放设备及其 driver。因此，对 `.gfxtrace` 应采用“不要假设能跨 OS、芯片组或驱动版本稳定重放”的保守结论。分享问题时应同时保存：
+AGI `v3.3.3` 的开发文档给出了与本节直接相关的边界：主机可以演算 API state，但 draw 对 render target 的真实像素影响仍要在设备上重放，结果取决于重放设备及其 driver。所以对 `.gfxtrace`，我们采用保守结论：不要假设它能跨 OS、芯片组或驱动版本稳定重放。分享问题时同时保存：
 
 - AGI 版本与 `.gfxtrace`；
 - Android build fingerprint（标识一次系统构建的字符串）、API level；
@@ -557,9 +559,9 @@ AGI `v3.3.3` 的开发文档给出了与本节直接相关的边界：主机可�
 
 #### GAPIS：解析、状态演算与 replay 生成
 
-GAPIS 运行在开发机。它把 `.gfxtrace` 解析为 `GraphicsCapture`，其中包含 header、initial state、command 列表和 memory observation。GAPIS 可用生成的 `mutate`（按命令更新 API 状态）逻辑在 CPU 上演算某条命令后的 Vulkan API state；查看“此时绑定了哪个 pipeline、有哪些 image”不一定要启动 GPU replay。
+GAPIS 运行在开发机，把 `.gfxtrace` 解析为 `GraphicsCapture`，其中包含 header、initial state、command 列表和 memory observation。它可用生成的 `mutate` 逻辑在 CPU 上演算某条命令后的 Vulkan API state；我们想看“此时绑定了哪个 pipeline、有哪些 image”时，不一定要启动 GPU replay。
 
-draw call 对 framebuffer 的像素影响无法只靠状态演算得到。需要图像、指定 draw 后的 render target 或 GPU 性能数据时，GAPIS 会：
+draw call 对 framebuffer 的像素影响，光靠状态演算是得不到的。需要图像、指定 draw 后的 render target 或 GPU 性能数据时，GAPIS 会：
 
 1. 选取并变换要执行的命令，例如只保留目标 draw 之前所需的命令；
 2. 为重建初始状态生成必要命令；
@@ -568,15 +570,15 @@ draw call 对 framebuffer 的像素影响无法只靠状态演算得到。需要
 
 #### GAPIR：在目标设备 driver 上执行
 
-GAPIR 是面向图形 replay 的栈式虚拟机，操作数主要从栈中取得。Android 上的 `ReplayerActivity` 加载 `libgapir.so`，GAPIR 按 opcode 调用 Vulkan driver，并把 framebuffer、查询或 profiling 结果返回 GAPIS。
+GAPIR 是面向图形 replay 的栈式虚拟机，操作数主要从栈中取得。Android 上 `ReplayerActivity` 加载 `libgapir.so`，GAPIR 按 opcode 调用 Vulkan driver，再把 framebuffer、查询或 profiling 结果返回给 GAPIS。
 
-资源不会全部预先塞进 replay payload。GAPIR 按需向 GAPIS 请求 resource，并在设备端维护 cache（资源缓存）；这会减少重复 replay 时经 adb 传输同一纹理和 buffer 的次数，也避免一次占满设备内存。
+资源也不会全部预先塞进 replay payload：GAPIR 按需向 GAPIS 请求 resource，并在设备端维护 cache，既减少重复 replay 时经 adb 传输同一纹理和 buffer 的次数，也避免一次占满设备内存。
 
 #### `replay2` 与 GFXReconstruct 不属于已验证主链路
 
-AGI `v3.3.3` 的 `replay2/` 目录包含 handle remapper（句柄映射器）、memory remapper（内存地址映射器）、replay context（重放上下文）等基础模块，公开源码没有把它描述为 Frame Profiler 的完整执行引擎。AGI 的 `DEVDOC.md` 仍把生产链路写成 GAPIS 生成 opcode、GAPIR 执行。
+AGI `v3.3.3` 的 `replay2/` 目录里有 handle remapper、memory remapper、replay context 等基础模块，但公开源码没把它描述成 Frame Profiler 的完整执行引擎；AGI 的 `DEVDOC.md` 仍把生产链路写成 GAPIS 生成 opcode、GAPIR 执行。
 
-GFXReconstruct 是另一个开源 capture/replay 项目。AGI 当前公开文档和上述源码没有把它列为 `.gfxtrace` 的采集器，也没有“GFXReconstruct 生成命令流、replay2 在主机端执行”的链路证据。排查代码时不要把三个项目的名词混在一起。
+GFXReconstruct 则是另一个开源 capture/replay 项目。AGI 当前公开文档和上述源码都没把它列为 `.gfxtrace` 的采集器，也找不到“GFXReconstruct 生成命令流、replay2 在主机端执行”的链路证据。我们排查代码时，别把三个项目的名词混在一起。
 
 ### OpenGL ES 通过 ANGLE 进入 Frame Profile
 
@@ -585,9 +587,9 @@ AGI 官方 Frame Profile 入口区分：
 - Vulkan：直接捕获应用的 Vulkan 调用；
 - OpenGL on ANGLE：使用 AGI 提供的 custom ANGLE（把 OpenGL ES 调用翻译到另一图形后端的兼容层），先把调用转换成 Vulkan，再捕获转换后的 Vulkan 命令。
 
-所以，OpenGL on ANGLE 的 trace 描述的是 ANGLE 生成的 Vulkan workload（实际提交的图形工作序列）。它适合观察转换后的 render pass、pipeline、resource 与 GPU 成本，但不能当作原始 GLES driver 调用序列。ANGLE 自身的 API 转换、shader translation（着色器转译）和状态管理开销也进入被测路径。
+所以 OpenGL on ANGLE 的 trace，描述的是 ANGLE 生成的 Vulkan workload：它适合观察转换后的 render pass、pipeline、resource 与 GPU 成本，当成原始 GLES driver 调用序列就错了。ANGLE 自身的 API 转换、shader translation 和状态管理开销，同样进入被测路径。
 
-当前 AGI 源码文档写明工具主线只支持 Vulkan；这与官方 UI 的 OpenGL on ANGLE 说明一致。没有证据支持“gapii 直接替换全部 GLES 2.0/3.x 函数”或“ANGLE D3D11 on Vulkan”这类 Android 描述。Android 上的 ANGLE 后端是 Vulkan 方向，D3D11 属于其他平台语境。
+当前 AGI 源码文档写明工具主线只支持 Vulkan，这与官方 UI 的 OpenGL on ANGLE 说明一致。“gapii 直接替换全部 GLES 2.0/3.x 函数”“ANGLE D3D11 on Vulkan”这类 Android 描述都没有证据支持：Android 上的 ANGLE 后端是 Vulkan 方向，D3D11 属于其他平台语境。
 
 ### Frame Profiler 能展示什么，不能由什么推导
 
@@ -608,7 +610,7 @@ Frame Profile 可以记录应用的 `vkQueuePresentKHR()`，但这条 API 调用
 
 `producer completion fence`（GPU 完成该 buffer 的同步信号）→ `BufferQueue`（向消费者传递 buffer）→ `SurfaceFlinger latch`（本轮合成选中该 buffer）→ `HWC / RenderEngine composition`（硬件合成或 GPU 图层合成）→ `display present`
 
-其中，HWC 是 Hardware Composer（硬件合成器），RenderEngine 是 SurfaceFlinger 的 GPU 合成引擎。`.gfxtrace` 的命令和资源足以重放应用 GPU 工作，不包含一次真实显示周期里的全部 SurfaceFlinger layer、HWC plane（硬件显示平面）分配和 present fence（本轮 display present 完成后的同步信号）。
+这里的 HWC 即 Hardware Composer，RenderEngine 是 SurfaceFlinger 的 GPU 合成引擎。`.gfxtrace` 的命令和资源足以重放应用 GPU 工作，但并不包含一次真实显示周期里的全部 SurfaceFlinger layer、HWC plane 分配和 present fence。
 
 这几类证据在一次完整诊断中的位置如下：
 
@@ -622,12 +624,12 @@ Frame Profile 可以记录应用的 `vkQueuePresentKHR()`，但这条 API 调用
 
 显示路径还有两个使用限制：
 
-- 游戏可能已有多帧处于 in-flight（已提交但尚未完成显示）状态。抓到的 API frame 很重，不能据此断言它就是用户看到的那一帧；需要用 frame id、present id、buffer、latch 与 present 建立关系。
+- 游戏可能已有多帧处于 in-flight 状态。抓到的 API frame 很重，也未必就是用户看到的那一帧；要用 frame id、present id、buffer、latch 与 present 建立对应关系。
 - SurfaceFlinger 把目标 layer 改为 CLIENT composition 时，RenderEngine 会在应用 GPU 工作之外增加 client target 工作；client target 是 RenderEngine 把多个 layer 合成后交给 HWC 的中间 buffer。单看应用 `.gfxtrace` 会漏掉这段系统 GPU 成本。
 
-更稳妥的工作流是先用 System Profile、Perfetto 或 APA 锁定异常 display frame 和目标应用 Surface。确认瓶颈落在应用 GPU 区间后，再抓取相同场景的 Frame Profile。修改 shader、render pass 或资源后，回到系统时间线验证 producer fence、latch 与 present 是否一起改善。OpenGL on ANGLE 还要保留“转换后的 Vulkan workload 与原 GLES driver 路径不同”这一实验变量。
+更稳妥的顺序是：先用 System Profile、Perfetto 或 APA 锁定异常 display frame 和目标应用 Surface，确认瓶颈落在应用 GPU 区间后，再抓相同场景的 Frame Profile；改完 shader、render pass 或资源，回到系统时间线验证 producer fence、latch 与 present 是否一起改善。OpenGL on ANGLE 还要保留“转换后的 Vulkan workload 与原 GLES driver 路径不同”这个实验变量。
 
-Frame Profile 能提供单帧内部证据，不会自动给出跨设备通用阈值，公开资料中也没有可核验的 Android 17“机器学习性能预测、AI 异常检测或云端趋势分析”能力；`Sokatoa` 在上述 AGI 与 AOSP 来源中也没有对应组件或扩展定义。遇到这类描述时，必须要求独立产品文档、版本和可复现实验。
+Frame Profile 能提供单帧内部证据，跨设备通用阈值则要靠我们自己通过对照实验建立；公开资料中还没有可核验的 Android 17“机器学习性能预测、AI 异常检测或云端趋势分析”能力，`Sokatoa` 在上述 AGI 与 AOSP 来源中也没有对应组件或扩展定义。遇到这类描述时，我们必须要求独立产品文档、版本和可复现实验。
 
 ### 常见失败怎样定位
 
@@ -645,7 +647,7 @@ Frame Profile 能提供单帧内部证据，不会自动给出跨设备通用阈
 
 #### 能连接但抓帧为空
 
-检查选择的 API 模式。原生 Vulkan 应使用 Vulkan；GLES 应使用 OpenGL on ANGLE。还要确认触发窗口内确有 present/frame boundary（一帧结束标记），目标进程没有在 Start 前退出。
+先检查选择的 API 模式：原生 Vulkan 用 Vulkan，GLES 用 OpenGL on ANGLE。再确认触发窗口内确有 present/frame boundary，且目标进程没有在 Start 前退出。
 
 #### replay 与原画面不同或崩溃
 
@@ -687,7 +689,7 @@ adb shell setprop debug.agi.procname ""
 
 - [AGI `v3.3.3` release](https://github.com/google/agi/releases/tag/v3.3.3)
 
-仓库同时存在名为 `v3.3.3` 的 branch（可继续前进的分支指针）和 tag（发布标签），且两者当前指向不同提交。下面的源码链接固定到 release tag 对应的完整 commit，避免短引用被解析到同名 branch：
+仓库里同时存在名为 `v3.3.3` 的 branch 和 tag，两者当前指向不同提交。下面的源码链接固定到 release tag 对应的完整 commit，避免短引用被解析到同名 branch：
 
 - [AGI 开发文档：Life of a gfxtrace](https://github.com/google/agi/blob/5f97b4fd99a9459320b782203ce2de5351a1e661/DEVDOC.md)
 - [Android 抓帧启动与 `debug.agi.procname`](https://github.com/google/agi/blob/5f97b4fd99a9459320b782203ce2de5351a1e661/gapii/client/adb.go)
@@ -714,27 +716,27 @@ adb shell setprop debug.agi.procname ""
 
 ## 常见误区
 
-### RenderThread 很短，所以 GPU 很慢
+### RenderThread 短与 GPU 瓶颈的关系
 
-RenderThread 可能只负责异步提交。只有 GPU stage、completion fence、FrameTimeline 和单变量实验共同指向 GPU，才能判断这一帧受 GPU 工作限制。
+RenderThread 可能只负责异步提交。要判断这一帧受 GPU 工作限制，得让 GPU stage、completion fence、FrameTimeline 和单变量实验共同指向 GPU 才行。
 
-### GPU utilization 高，所以 shader 复杂
+### GPU utilization 与 shader 复杂度
 
 GPU busy 可能来自 fragment、纹理、带宽、compute、copy、driver queue 或 SurfaceFlinger client composition。需要结合不同 stage 和对应 counter 继续区分。
 
-### `gpu.counters` 是 Android 17 统一指标
+### `gpu.counters` 统一了什么
 
 Android 17 统一了 Perfetto 的传输结构和 Android OEM descriptor 要求，没有统一每家 GPU 的微架构指标。
 
-### Android 17 默认把所有 GLES 转成 ANGLE
+### Android 17 与 ANGLE 的选择关系
 
 Android 17 提供 manifest 请求信号，ANGLE 选择仍受设备与系统策略控制。AGI 的 OpenGL on ANGLE capture 只能说明本次捕获使用了 ANGLE。
 
-### `profileable` 足以使用所有帧工具
+### `profileable` 的适用范围
 
 AGI、RenderDoc、Sokatoa 等帧捕获会注入 graphics layer，通常要求 debuggable 或 root。`profileable` 主要服务低扰动 profiling。
 
-### GPU 时间短，所以显示没有问题
+### GPU 时间与显示路径的关系
 
 GPU 工作完成后还有 acquire fence、SurfaceFlinger latch、composition、HWC 与 present。判断用户何时真正看到画面，必须追踪到显示端。
 
@@ -746,9 +748,9 @@ GPU 工作完成后还有 acquire fence、SurfaceFlinger latch、composition、H
 - Android 注入使用 `enable_gpu_debug_layers` 等 global settings；`VK_LAYER_PATH` 是桌面 loader 语境。
 - gapii 在目标 App 进程捕获 Vulkan 调用，gapid APK 的前台 service 只负责设备和 package 信息。
 - `.gfxtrace` 是 ProtoPack 封装的 protobuf object stream，包含初始状态、命令、资源和内存观察。
-- GAPIS 在主机解析和生成 replay opcode，GAPIR 在 Android 设备 driver 上执行；`.gfxtrace` 的 replay 结果依赖设备与 driver，不能预设它能跨 OS、GPU 和 driver 稳定复现。
+- GAPIS 在主机解析和生成 replay opcode，GAPIR 在 Android 设备 driver 上执行；`.gfxtrace` 的 replay 结果依赖设备与 driver，跨 OS、GPU 和 driver 的稳定复现要另行验证。
 - OpenGL ES Frame Profile 经 custom ANGLE 转成 Vulkan，分析结果对应转换后的 workload。
-- Frame Profile 停在应用图形 API 与 replay 范围内，不能替代 producer fence、SurfaceFlinger latch、HWC composition 与 display present 的运行时证据。
+- Frame Profile 停在应用图形 API 与 replay 范围内，producer fence、SurfaceFlinger latch、HWC composition 与 display present 的运行时证据仍需另外采集。
 - 公开主链路没有 GFXReconstruct、完整 replay2 引擎、Sokatoa 或 Android 17 AI 诊断功能的证据。
 
 
