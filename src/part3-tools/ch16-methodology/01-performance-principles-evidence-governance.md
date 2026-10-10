@@ -100,6 +100,8 @@ sources:
   path: https://perfetto.dev/docs/instrumentation/track-events
 - type: source
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1
+- type: article
+  path: https://juejin.cn/post/7694564397684359208
 tags:
   - methodology
   - philosophy
@@ -129,6 +131,7 @@ consolidated_from:
 - src/part3-tools/ch16-methodology/08-empirical-performance-issues.md
 - src/part3-tools/ch16-methodology/09-performance-governance.md
 last_consolidated_at: '2026-08-24'
+last_body_apply_at: '2026-10-11T07:16:50+08:00'
 ---
 
 # Android 性能优化原则、实证与治理
@@ -984,6 +987,10 @@ PR 模板可以要求作者填写：
 
 只说“trace 里 system_server 很忙”是完成不了转交的。要沿 Binder flow（跨进程调用的因果连线）、线程状态、锁、I/O 或调度证据指出可调查的入口。涉及内核的判断固定到 `android17-6.18-2026-06_r6`；厂商设备按对应源码复核。
 
+如果转交对象是 native 崩溃或 system_server 崩溃循环，证据包还要把 tombstone 与 logcat 对齐。一个公开案例中，排查者先用 tombstone 头部确认 `system_server`、Binder 线程、`SIGSEGV`、`fault addr 0x0` 和较短 uptime，再用 backtrace、寄存器与 `memory near` 的 ASCII 片段定位到 KeyEvent 打印时的空指针，随后按设备版本回到 AOSP `frameworks/native` 源码验证 `getLabelByKeyCode()` 返回 `nullptr` 的路径。tombstone 栈没有直接给出调用方；排查者改用 logcat 的 `Fatal signal` 时间、崩溃前几毫秒的 `CAR.INPUT` 日志、8 次触发与 8 次崩溃的对应关系，以及 OK 键走不同分支的对照组来确认。[来源: https://juejin.cn/post/7694564397684359208]
+
+这类材料不能直接外推成 Android 17 结论；它适合转成工单要求：保存 tombstone、完整 logcat、触发输入、源码 tag、符号文件、对照组和修复验证用例。性能事故里也一样，只有把“谁触发、在哪个线程等待或崩溃、哪段源码解释这个现象、修复后用什么条件复测”写清楚，转交才有可执行入口。[来源: https://juejin.cn/post/7694564397684359208]
+
 #### 工单状态与验收责任
 
 性能工单可以使用 `detected（已发现） → triaged（已分诊） → investigating（调查中） → fixing（修复中） → validating（验收中） → resolved（已解决）`。
@@ -1151,3 +1158,4 @@ PR 模板可以要求作者填写：
 - [Android 官方：Create Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile)
 - [Android 官方：Startup Profiles](https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations)
 - [AOSP `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1)
+- [掘金：Android system_server 崩溃问题排查](https://juejin.cn/post/7694564397684359208)
