@@ -5839,6 +5839,54 @@
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7694564397684359208",
+      "title": "[掘金Android]",
+      "summary": "翻译 ProAndroidDev 文章：README 架构规则不具强制力，六条模块化规则落地为构建期检查——只有 app 依赖 -impl（约定插件配置期抛异常）、internal 收敛实现、路由私有、Koin 编译器插件校验依赖定义、密封类型处理失败、CI 源码检查注册完整性，附可复制构建脚本。",
+      "chapter": "ch16",
+      "processed_at": "2026-10-11T06:20:33.911975+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part3-tools/ch16-methodology/01-performance-principles-evidence-governance.md",
+      "route_confidence": 24,
+      "route_terms": [
+        "readme",
+        "app",
+        "impl",
+        "internal",
+        "server",
+        "system"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-11-76941316-模块化JetpackCompose架构.md",
+      "title": "[技术文章] 模块化Jetpack Compose架构用构建规则强制执行模块边界：每个功能双模块、应用独占实现、路由私有、依赖全定义、",
+      "summary": "> 发布时间: 2026-10-08T12:34:28.000Z > 原文链接: https://juejin.cn/post/7694131662615543835 2026-10-08 257 阅读13分钟 > 本文译自「Modular Jetpack Compose: Don’t Leave Your Architecture to Code Review」，原文链...",
+      "chapter": "ch16",
+      "processed_at": "2026-10-11T06:20:33.911975+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "t12",
+        "architecture",
+        "juejin-android",
+        "ch01-architecture"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-11-76945065-端侧推理排查实录为什么我的手机跑LLM比.md",
+      "title": "[技术文章] 端侧推理排查实录：为什么我的手机跑 LLM 比别人慢 80 倍我在 Pixel 4（骁龙 855，2019 年）上跑 Q",
+      "summary": "> 发布时间: 2026-10-09T11:15:30.000Z > 原文链接: https://juejin.cn/post/7694506513244241935 2026-10-09 79 阅读6分钟 > 标签：端侧推理 / llama.cpp / Android / 性能优化 我在 Pixel 4（骁龙 855，2019 年）上跑 Qwen2.5-1.5B-Ins...",
+      "chapter": "ch16",
+      "processed_at": "2026-10-11T06:20:33.911975+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
