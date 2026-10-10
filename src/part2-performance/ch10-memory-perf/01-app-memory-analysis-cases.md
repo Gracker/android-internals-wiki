@@ -110,15 +110,21 @@ last_review_finalize_at: '2026-08-26T20:23:27+08:00'
 
 # App 内存分析与案例
 
-一条内存曲线只能说明某个统计口径发生了变化。Java heap（ART 管理的 Java/Kotlin 对象堆）、native allocator（C/C++ 默认内存分配器）、RSS、PSS、SwapPss、DMA-BUF（设备间共享缓冲区）和 GPU private memory（GPU 私有分配）观察的对象各不相同，数值又常来自不同采样时刻，直接相加都可能失真。
+一条内存曲线只能说明某个统计数字发生了变化。Java heap、native allocator、RSS、PSS、SwapPss、DMA-BUF（设备间共享缓冲区）和 GPU private memory（GPU 私有分配）观察的对象各不相同，数值又常来自不同采样时刻，直接相加都可能失真。
 
-本文按 Android 17 / API 37 的 `android-17.0.0_r1` 核对平台行为，涉及 PSI（Pressure Stall Information，压力停顿信息）的内核实现以 `android17-6.18-2026-06_r6` 为准。前半部分给出分析顺序：先确定指标，再定位内存域，随后用对应工具寻找 owner（内存持有者或归属方）和生命周期；后半部分用四个公开案例走同一条路径。
+> 源码基线：AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`（Android 17 / API 37）。涉及 PSI（Pressure Stall Information，压力停顿信息）的内核实现以该内核标签为准。
+
+本文前半部分给出分析顺序：先确定指标，再定位内存域，随后用对应工具寻找 owner 和生命周期；后半部分用四个公开案例走同一条路径。
 
 ## 内存域、基线与增长分类
+
+拿到一条上涨的内存曲线，我们要做的第一件事是确定它属于哪种内存，然后采集可比的快照，再按域选择工具。本节按这个顺序展开：指标含义、快照方法、Java/Kotlin heap、native heap、图形内存、基线与系统压力。
 
 ### 1. 先确定问题属于哪种内存
 
 #### 1.1 常用指标的含义
+
+先看每个指标到底在统计什么。下表列出常用指标的数据来源、它们各自回答的问题，以及最容易踩的坑：
 
 | 指标 | 主要来源 | 回答的问题 | 容易误用的地方 |
 |---|---|---|---|
@@ -133,13 +139,13 @@ last_review_finalize_at: '2026-08-26T20:23:27+08:00'
 
 PSS 适合比较包含共享映射的进程内存占用，RSS 适合低成本观察驻留变化。两者都受共享库、文件页、ZRAM（内存压缩交换设备）、进程状态和采样时刻影响。
 
-`ActivityManager.getMemoryClass()` 与 `getLargeMemoryClass()` 返回 MB，描述 Dalvik/ART heap 的近似预算。PSS 以 kB 报告，并包含 Java heap 之外的原生分配、代码页、线程栈、图形内存和系统共享页分摊。二者没有可直接计算的“PSS 使用率”。
+`ActivityManager.getMemoryClass()` 与 `getLargeMemoryClass()` 返回 MB，描述 Dalvik/ART heap 的近似预算。PSS 以 kB 报告，并包含 Java heap 之外的原生分配、代码页、线程栈、图形内存和系统共享页分摊。二者之间没有可直接计算的“PSS 使用率”。
 
-#### 1.2 Android 17 的 `Debug.MemoryInfo`
+#### 1.2 `Debug.MemoryInfo` 的字段与边界
 
-`Debug.MemoryInfo` 将统计分成 dalvik（ART 托管堆）、native（原生分配）和 other（其他映射），并提供 Java Heap、Native Heap、Code、Stack、Graphics、Private Other、System、Total PSS 与 Total Swap 摘要。公开字段和摘要值以 kB 为单位。
+`Debug.MemoryInfo` 将统计分成 dalvik、native 和 other 三个域，分别对应 ART 托管堆、原生分配和其他映射，并提供 Java Heap、Native Heap、Code、Stack、Graphics、Private Other、System、Total PSS 与 Total Swap 摘要。公开字段和摘要值以 kB 为单位。
 
-有几个边界要注意：
+使用这些字段时，有几条边界需要记住：
 
 - `getTotalPss()` 包含 swapped-out PSS，即按比例分摊的已换出页面；
 - `getTotalUss()` 由各域 Private Clean 与 Private Dirty 相加；
@@ -154,7 +160,7 @@ PSS 适合比较包含共享映射的进程内存占用，RSS 适合低成本观
 
 ### 2. 建立第一份内存快照
 
-记录同一实验阶段的进程摘要、内存页大小和进程状态，可以用下面几条命令：
+指标确定后，我们要采集同一实验阶段的进程摘要、内存页大小和进程状态，可以用下面几条命令：
 
 ```bash
 adb shell dumpsys meminfo -d com.example.app
@@ -163,7 +169,7 @@ adb shell 'pid=$(pidof com.example.app); grep -E "VmRSS|RssAnon|RssFile|RssShmem
 adb shell dumpsys SurfaceFlinger --list
 ```
 
-`dumpsys meminfo` 的详细列会随平台和厂商实现变化，报告中应保存原始输出。`/proc/<pid>/status` 的 `VmRSS` 是低成本估计；Android 17 `libmeminfo` 的源码里注明它不如 smaps（逐映射内存统计）精确。SurfaceFlinger layer（图层）列表只用于核对可见图形对象，不能单独给出每个图层的 GPU 内存。
+`dumpsys meminfo` 的详细列会随平台和厂商实现变化，报告中应保存原始输出。`/proc/<pid>/status` 的 `VmRSS` 是低成本估计，`libmeminfo` 源码注明它不如 smaps（逐映射内存统计）精确。SurfaceFlinger layer 列表只用于核对可见图形对象，要拿每个图层的 GPU 内存，还需要后续的图形工具。
 
 应用内要拿一次本进程快照，可以用公开的 `ActivityManager` API：
 
@@ -199,42 +205,44 @@ fun captureAppMemory(
 }
 ```
 
-字段名带 kB 与 byte 后缀，避免混算。系统会限制 `getProcessMemoryInfo()` 的采样频率，不能把它放进每帧回调、紧循环或高频定时器；它适合在实验步骤边界调用，或由低频诊断任务触发。
+字段名带 kB 与 byte 后缀，避免混算。注意 `getProcessMemoryInfo()` 的采样频率受系统限制，每帧回调、紧循环和高频定时器里都不要调用；它适合在实验步骤边界调用，或由低频诊断任务触发。
 
 ### 3. Java/Kotlin heap：用引用关系证明泄漏
 
-Heap dump 是某一时刻 Java/Kotlin 堆中可达对象图的快照。它能回答对象由谁引用、哪个对象支配一片子图，却不能解释 native `mmap`（原生内存映射）、GPU allocation（GPU 分配）或系统为何杀进程。
+如果增长落在 Java/Kotlin heap，我们要找的是引用关系。Heap dump 是某一时刻 Java/Kotlin 堆中可达对象图的快照，它能回答对象由谁引用、哪个对象支配一片子图；native `mmap`、GPU allocation 或系统为何杀进程，就要换工具了。
 
 #### 3.1 三个必须分清的概念
 
 - **Shallow Size**：对象自身在 managed heap（由 ART 管理的堆）中占用的字节，不含被引用对象；
 - **Retained Size**：对象不可达后，预计可随它一起回收的受支配对象总量；
-- **GC Root path**：对象通向 GC Root 的引用路径；GC Root 是垃圾回收器判定对象仍可达的起点，例如活跃线程、JNI global reference（JNI 全局引用）、类对象、系统类或活跃栈。
+- **GC Root path**：对象通向 GC Root 的引用路径；GC Root 是垃圾回收器判定对象仍可达的起点，例如活跃线程、JNI global reference、类对象、系统类或活跃栈。
 
-对象头、对齐、压缩引用和 ART 实现会改变 shallow size。不要用“两个 `int` 字段固定占多少字节”推导跨设备结论。
+对象头、对齐、压缩引用和 ART 实现都会改变 shallow size，所以不要用“两个 `int` 字段固定占多少字节”推导跨设备结论。
 
 #### 3.2 可复现的泄漏检查
+
+一次可复现的检查按下面七步走：
 
 1. 固定初始页面和进程状态；
 2. 执行同一生命周期动作多轮，例如进入页面、返回、旋转或替换 Fragment View；
 3. 等待异步任务和已知动画结束；
 4. 采集 heap dump；
-5. 查找应已销毁的 Activity、Fragment View、Compose state（Compose 状态对象）、listener、callback 或 cache entry（缓存条目）；
+5. 查找应已销毁的 Activity、Fragment View、Compose state、listener、callback 或 cache entry；
 6. 沿 GC Root path 找到生命周期更长的持有者；
-7. 修复后重复同一脚本，并比较实例数和 retained graph（保留关系图）。
+7. 修复后重复同一脚本，并比较实例数和 retained graph。
 
-单个 Activity 仍存活不一定是泄漏，系统、输入法、动画和异步消息可能短期持有引用。证据应包含“对象已经越过预期生命周期”和“引用链在稳定状态仍存在”。
+dump 里单个 Activity 仍存活未必是泄漏：系统、输入法、动画和异步消息都可能短期持有引用。真正的证据要同时包含“对象已经越过预期生命周期”和“引用链在稳定状态仍存在”。
 
-Android 8.0 / API 26 及以上，Bitmap pixel data（像素数据）位于 native heap。Java heap 中的 `Bitmap` 对象仍是追踪归属关系的入口，Android Studio heap dump 也可能在 Native Size 列显示关联的原生内存。只看 Java shallow size 会低估图片成本。
+Android 8.0 / API 26 及以上，Bitmap pixel data 位于 native heap。Java heap 中的 `Bitmap` 对象仍是追踪归属关系的入口，Android Studio heap dump 也可能在 Native Size 列显示关联的原生内存。只看 Java shallow size 会低估图片成本。
 
 来源：[Android Studio Heap Dump 指南](https://developer.android.com/studio/profile/capture-heap-dump)
 
-#### 3.3 分配 churn 与 retained leak 分开
+#### 3.3 分配 churn 与 retained leak
 
-对象创建速度很高、GC 后能回落，属于 allocation churn（大量短命对象造成的频繁分配）；对象沿异常引用链长期存活，属于 retained leak（对象保留型泄漏）。两者都可能让曲线升高，但定位工具不同：
+曲线升高可能来自两种不同的机制，我们要先分开它们：对象创建速度很高、GC 后能回落，属于 allocation churn；对象沿异常引用链长期存活，属于 retained leak。两者的定位工具不同：
 
-- churn：记录 Java/Kotlin allocation callstack（分配调用栈）、GC 和帧时间；
-- leak：使用 heap dump、dominator tree（支配树）与 GC root；
+- churn：记录 Java/Kotlin allocation callstack、GC 和帧时间；
+- leak：使用 heap dump、dominator tree 与 GC root；
 - 大数组或 Bitmap：同时核对 native size 和图片缓存策略；
 - JNI global reference：结合 ART heap 与 native 调用栈检查持有者。
 
@@ -242,7 +250,7 @@ Android 8.0 / API 26 及以上，Bitmap pixel data（像素数据）位于 nativ
 
 #### 4.1 heapprofd 用于分配调用栈
 
-heapprofd 在 Android 10 及以上跟踪 `malloc/free`、`new/delete` 分配，并用抽样记录降低目标进程开销。user build（日常发布版本的系统镜像）只能分析声明为 `profileable` 或 `debuggable` 的 App。
+heapprofd 在 Android 10 及以上跟踪 `malloc/free`、`new/delete` 分配，并用抽样记录降低目标进程开销。user build 只能分析声明为 `profileable` 或 `debuggable` 的 App。
 
 下面的命令使用 Perfetto 仓库中的推荐脚本，按进程名启动 native heap profiling：
 
@@ -250,7 +258,7 @@ heapprofd 在 Android 10 及以上跟踪 `malloc/free`、`new/delete` 分配，�
 tools/heap_profile android -n com.example.app
 ```
 
-以进程名启动时，已经运行的匹配进程和后续启动的匹配进程都可进入采样；需要启动期证据时，应先启动 profiler（分析器），再启动 App。多进程应用还要分别确认 `com.example.app:worker` 等进程名。结束采集后，在 Perfetto UI 中打开生成目录里的 `raw-trace` 原始轨迹文件。
+以进程名启动时，已经运行的匹配进程和后续启动的匹配进程都可进入采样；需要启动期证据时，应先启动 profiler，再启动 App。多进程应用还要分别确认 `com.example.app:worker` 等进程名。结束采集后，在 Perfetto UI 中打开生成目录里的 `raw-trace` 原始轨迹文件。
 
 四个常用视图回答不同问题：
 
@@ -261,13 +269,13 @@ tools/heap_profile android -n com.example.app
 | Total malloc size | 窗口内全部分配的估算字节数，包含已经 `free` 的分配 |
 | Total malloc count | 窗口内全部估算分配次数，包含已经 `free` 的分配 |
 
-heapprofd 不能回溯采集开始前的历史分配，也默认看不到绕过默认分配器的直接 `mmap`、graphics buffer（图形缓冲区）和 GPU private allocation。采样间隔、buffer overrun（采集缓冲区溢出）、符号文件与进程启动方式都会影响结果。
+heapprofd 只覆盖采集窗口内的分配，窗口开始前的历史拿不到，也默认看不到绕过默认分配器的直接 `mmap`、graphics buffer 和 GPU private allocation。采样间隔、buffer overrun、符号文件与进程启动方式都会影响结果。
 
 来源：[Perfetto Native Heap Profiler](https://perfetto.dev/docs/data-sources/native-heap-profiler)
 
-#### 4.2 heapprofd、allocator 与 resident memory 不能做简单减法
+#### 4.2 三类数字不能做简单减法
 
-三类数字的范围逐步扩大：
+把 heapprofd、allocator 统计和 resident memory 放在一起看，范围是逐步扩大的：
 
 ```text
 heapprofd
@@ -280,18 +288,18 @@ Native Heap RSS / PSS
   已驻留页面，并受 page size、碎片、共享、swap 与采样时刻影响
 ```
 
-`Native Heap RSS - heapprofd unreleased bytes` 不能直接命名为“碎片”。差值还可能来自未采样分配、启动前分配、allocator cache（分配器缓存）、对齐、页内空洞、直接 `mmap`、统计分类差异、ZRAM 和两个工具没有同时采样。
+所以 `Native Heap RSS - heapprofd unreleased bytes` 这个差值，直接说成“碎片”并不成立。它还可能来自未采样分配、启动前分配、allocator cache、对齐、页内空洞、直接 `mmap`、统计分类差异、ZRAM 和两个工具没有同时采样。
 
 #### 4.3 malloc debug 只用于受控调试构建
 
-普通 App 开发者应通过 debuggable APK 的 `wrap.sh` 启用 malloc debug。下面的脚本记录 native allocation backtrace（原生分配调用栈）：
+普通 App 开发者应通过 debuggable APK 的 `wrap.sh` 启用 malloc debug。下面的脚本记录 native allocation backtrace：
 
 ```sh
 #!/system/bin/sh
 LIBC_DEBUG_MALLOC_OPTIONS=backtrace logwrapper "$@"
 ```
 
-`wrap.sh` 仅适用于 API 27 及以上的 debuggable App，会改变进程启动与分配开销。它不能放进生产包。`libc.debug.malloc.program` 接受可执行文件名，不能填写 Java package（包名）；平台 root/userdebug 场景若要针对 App，使用官方文档给出的 `wrap.<package>` 属性或随 APK 打包的 `wrap.sh`。
+`wrap.sh` 仅适用于 API 27 及以上的 debuggable App，会改变进程启动与分配开销，生产包里没有它的位置。`libc.debug.malloc.program` 接受可执行文件名，填 Java package 无效；平台 root/userdebug 场景若要针对 App，使用官方文档给出的 `wrap.<package>` 属性或随 APK 打包的 `wrap.sh`。
 
 来源：[NDK wrap.sh 指南](https://developer.android.com/ndk/guides/wrap-script)
 
@@ -304,25 +312,25 @@ LIBC_DEBUG_MALLOC_OPTIONS=backtrace logwrapper "$@"
 | GWP-ASan | 抽样发现 heap use-after-free / overflow（堆越界） | Android 11+ 支持；Android 14+ 默认采用 Recoverable（可恢复）模式策略 |
 | Malloc debug | guard（保护区）、backtrace、fill（填充值）等分配器调试 | debuggable App 或 root/userdebug |
 
-ASan 仍可用于旧设备，但当前 NDK 指南已将它列为停止主动支持的方案；能使用 HWASan 时优先 HWASan。Sanitizer（内存错误检测器）会显著改变运行时间和内存开销，其测试数据不能作为普通 release 构建的基线。
+ASan 仍可用于旧设备，但当前 NDK 指南已将它列为停止主动支持的方案，能使用 HWASan 时优先 HWASan。Sanitizer（内存错误检测器）会显著改变运行时间和内存开销，其测试数据与普通 release 构建的基线要分开对待。
 
 来源：[NDK 内存错误调试与缓解](https://developer.android.com/ndk/guides/memory-debug)
 
 ### 5. Graphics、DMA-BUF 与 Bitmap
 
-Android 17 的 AIDL `IMemtrack` 用来报告 smaps 无法完整追踪的设备相关内存。这里的 memtrack 是厂商 HAL 提供的设备内存记账接口，接口契约明确区分：
+增长落在图形内存时，归属分析要换一套接口。AIDL `IMemtrack` 用来报告 smaps 难以完整追踪的设备相关内存。这里的 memtrack 是厂商 HAL 提供的设备内存记账接口，接口契约明确区分：
 
 - `GRAPHICS + FLAG_SMAPS_UNACCOUNTED`：CPU/GPU 映射的 DMA-BUF PSS，并去除两组映射的重叠；
 - `GL + FLAG_SMAPS_UNACCOUNTED`：指定 PID 的 GPU 私有分配；
 - `pid = 0, type = GL`：系统级 GPU private memory；
 - `OTHER + FLAG_SMAPS_UNACCOUNTED`：其他未进入 smaps 的设备内存。
 
-HAL 必须避免不同 memtrack type（记账类别）重复记账，但设备是否支持某项查询、驱动能否准确归属到 PID，仍由产品实现决定。因此：
+HAL 必须避免不同 memtrack type 重复记账，但设备是否支持某项查询、驱动能否准确归属到 PID，仍由产品实现决定。由此可以推出几条实用的判断规则：
 
 - `dumpsys meminfo` 的 Graphics 为 0 不证明没有 GPU 内存；
-- Graphics 上升不能只从 Java heap dump 找 owner；
+- Graphics 上升时，光靠 Java heap dump 找 owner 是不够的；
 - SurfaceView、TextureView、ImageReader、MediaCodec、Camera 和 Vulkan 可能拥有不同的 buffer/layer 生命周期；
-- Java `Bitmap` 引用释放后，还要等待图片库、GPU cache（GPU 缓存）和 renderer（渲染器）分别完成各自的释放流程。
+- Java `Bitmap` 引用释放后，还要等待图片库、GPU cache 和 renderer 分别完成各自的释放流程。
 
 源码核对：[`IMemtrack.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/memtrack/aidl/android/hardware/memtrack/IMemtrack.aidl)
 
@@ -330,7 +338,7 @@ GPU 专项工具与 layer/buffer 追踪见 10.4 节；本节只把 Graphics 从 
 
 ### 6. 建立可比较的基线
 
-内存基线至少绑定以下维度：
+内存数字只有在可比的条件下才有意义。一份基线至少绑定以下维度：
 
 | 维度 | 需要记录的值 |
 |---|---|
@@ -350,7 +358,7 @@ GPU 专项工具与 layer/buffer 追踪见 10.4 节；本节只把 Graphics 从 
 5. 进入后台；
 6. 进程重新回到前台。
 
-判断时看分布和形态：
+采样齐了，判断时看分布和形态：
 
 - 每轮结束后的 retained set（回收后仍保留的对象集合）持续增长：分析持有者与引用链；
 - Java used 上下波动但稳定回落：更接近正常 GC 或 churn；
@@ -363,7 +371,7 @@ GPU 专项工具与 layer/buffer 追踪见 10.4 节；本节只把 Graphics 从 
 
 #### 6.1 4 KB 与 16 KB page size 分组
 
-Android 15 起，设备可以使用 16 KB page size（内存页大小）。页大小会影响 ELF（二进制文件格式）对齐、`mmap`、allocator page span（分配器跨越的页面范围）和驻留内存的计量单位。同一 APK 在 4 KB 与 16 KB 设备上的 PSS/RSS 基线可能不同。
+Android 15 起，设备可以使用 16 KB page size（内存页大小）。页大小会影响 ELF 对齐、`mmap`、allocator page span 和驻留内存的计量单位。同一 APK 在 4 KB 与 16 KB 设备上的 PSS/RSS 基线可能不同。
 
 基线处理规则：
 
@@ -379,7 +387,7 @@ Android 15 起，设备可以使用 16 KB page size（内存页大小）。页�
 
 #### 6.2 用回落条件区分缓存、积压与泄漏
 
-持续增长实验要比普通峰值测试多两个采样点：执行业务释放动作后的状态，以及主动收缩可重建资源后的状态。随后用同一输入再跑一轮，观察波峰、波谷和增长斜率是否重复。只在峰值抓一次 `dumpsys meminfo`，无法区分工作集扩大、缓存保留和生命周期错误。
+持续增长实验要比普通峰值测试多两个采样点：执行业务释放动作后的状态，以及主动收缩可重建资源后的状态。随后用同一输入再跑一轮，观察波峰、波谷和增长斜率是否重复。只在峰值抓一次 `dumpsys meminfo`，区分不了工作集扩大、缓存保留和生命周期错误。
 
 | 增长来源 | 释放或收缩动作 | 仍需补充的证据 |
 | --- | --- | --- |
@@ -394,25 +402,25 @@ Android 15 起，设备可以使用 16 KB page size（内存页大小）。页�
 
 缓存需要一份可执行协议，而不是“内存高时清一点”的约定。至少记录五项：
 
-- 任何输入下都不能超过的 hard limit（硬上限）；
-- 页面不可见或进入后台后的 shrink target（收缩目标）；
+- 任何输入下的 hard limit；
+- 页面不可见或进入后台后的 shrink target；
 - 统一计量单位；
 - 负责创建和裁剪的 owner；
-- size/hit/miss/eviction/rebuild cost（大小、命中、未命中、淘汰和重建成本）。
+- size/hit/miss/eviction/rebuild cost。
 
 `ActivityManager.getMemoryClass()` 只描述 ART 堆的近似上限，不能直接拿来当整个进程的缓存预算。
 
-`LruCache.sizeOf()` 决定预算单位，`maxSize` 必须使用相同单位。条目离开 `LruCache` 后，Adapter、View、任务或其他集合仍可能保存引用；缓存计数下降不等于对象已经回收。`entryRemoved()` 也不是通用的 Bitmap `recycle()` 开关，只有所有权协议能证明没有其他使用者时，才可在淘汰回调中主动销毁资源。
+`LruCache.sizeOf()` 决定预算单位，`maxSize` 必须使用相同单位。条目离开 `LruCache` 后，Adapter、View、任务或其他集合仍可能保存引用，缓存计数下降时对象未必已经回收。`entryRemoved()` 也不是通用的 Bitmap `recycle()` 开关：只有所有权协议能证明没有其他使用者时，才可在淘汰回调中主动销毁资源。
 
 长时间运行的音乐、导航、IM、RTC 等场景还要把运行时长纳入基线。环形缓冲区、历史数据、图片、地图瓦片、字幕和模型缓存分别设上限；音视频会话中的 Codec、Surface、Image 和原生 session 由同一个持有者成对关闭。每轮业务结束后比较 live set，而不是只看进程是否仍能运行。
 
 ### 7. 系统内存压力与 LMKD
 
-Android 17 `lmkd` 可通过 PSI（Pressure Stall Information，压力停顿信息）事件感知 memory stall（内存压力造成的任务停顿），据此决定是否回收进程。判断依据还包括 watermark（可用内存水位）、swap、workingset refault/thrashing（工作集页面频繁换入引起的抖动）、reclaim（页面回收）状态和产品属性。候选进程按 `oom_score_adj` 的保护级别扫描；只有配置或压力级别要求比较进程大小时，才从同一 adj 档选择内存占用较高的进程。
+有些增长不在 App 自己手里，而是系统在内存压力下回收进程。`lmkd` 可通过 PSI 事件感知 memory stall（内存压力造成的任务停顿），据此决定是否回收进程。判断依据还包括 watermark、swap、workingset refault/thrashing（工作集页面频繁换入引起的抖动）、reclaim 状态和产品属性。候选进程按 `oom_score_adj` 的保护级别扫描；只有配置或压力级别要求比较进程大小时，才从同一 adj 档选择内存占用较高的进程。
 
-所以：
+由此可以推出几条判断规则：
 
-- App PSS 高不等于下一次一定被杀；
+- App PSS 高，下一次未必被杀；
 - 前台/可感知进程与 cached 进程的保护级别不同；
 - victim（被选中回收的进程）不只由 PSS 决定；
 - LMKD kill、kernel OOM、crash、ANR 和用户 force-stop 是不同退出原因；
@@ -425,15 +433,15 @@ Android 17 `lmkd` 可通过 PSI（Pressure Stall Information，压力停顿信�
 
 #### 7.1 libpsi 只负责 PSI 事件通道
 
-Android 17 的 `libpsi` 位于 `system/memory/lmkd/libpsi`。头文件把资源限定为 `PSI_MEMORY`、`PSI_IO`、`PSI_CPU`，并暴露 `PSI_SOME` / `PSI_FULL`、`psi_stats` 以及 monitor/parse 函数；库本身没有 victim 选择、`oom_score_adj` 扫描或 kill policy（查杀策略）。`lmkd` 调用 `init_psi_monitor(..., psi_window_size_ms * US_PER_MS)` 时没有显式传 `resource`，因此使用头文件默认值 `PSI_MEMORY`。[已验证: system/memory/lmkd/libpsi/include/psi/psi.h@android-17.0.0_r1#25][已验证: system/memory/lmkd/lmkd.cpp@android-17.0.0_r1#3435][来源: https://juejin.cn/post/7677254638325727242]
+`libpsi` 位于 `system/memory/lmkd/libpsi`。头文件把资源限定为 `PSI_MEMORY`、`PSI_IO`、`PSI_CPU`，并暴露 `PSI_SOME` / `PSI_FULL`、`psi_stats` 以及 monitor/parse 函数；库本身没有 victim 选择、`oom_score_adj` 扫描或 kill policy。`lmkd` 调用 `init_psi_monitor(..., psi_window_size_ms * US_PER_MS)` 时没有显式传 `resource`，因此使用头文件默认值 `PSI_MEMORY`。[已验证: system/memory/lmkd/libpsi/include/psi/psi.h@android-17.0.0_r1#25][已验证: system/memory/lmkd/lmkd.cpp@android-17.0.0_r1#3435][来源: https://juejin.cn/post/7677254638325727242]
 
-`init_psi_monitor()` 会先校验资源类型，再以 `O_WRONLY | O_CLOEXEC` 打开 `/proc/pressure/<resource>`，写入 `"some|full threshold_us window_us"`，成功后直接返回这个 fd。内核写入路径把 trigger（触发器）绑定到该打开文件；同一个 fd 再写第二个 trigger 会以 `-EBUSY` 拒绝。因此这个 fd 是“何时有压力”的事件通道，不是读取 `avg10/avg60/avg300/total` 的统计通道。[已验证: system/memory/lmkd/libpsi/psi.cpp@android-17.0.0_r1#36][已验证: kernel/sched/psi.c@android17-6.18-2026-06_r6#1569][来源: https://juejin.cn/post/7677254638325727242]
+`init_psi_monitor()` 会先校验资源类型，再以 `O_WRONLY | O_CLOEXEC` 打开 `/proc/pressure/<resource>`，写入 `"some|full threshold_us window_us"`，成功后直接返回这个 fd。内核写入路径把 trigger 绑定到该打开文件；同一个 fd 再写第二个 trigger 会以 `-EBUSY` 拒绝。因此这个 fd 是“何时有压力”的事件通道，不是读取 `avg10/avg60/avg300/total` 的统计通道。[已验证: system/memory/lmkd/libpsi/psi.cpp@android-17.0.0_r1#36][已验证: kernel/sched/psi.c@android17-6.18-2026-06_r6#1569][来源: https://juejin.cn/post/7677254638325727242]
 
 `register_psi_monitor()` 只用 `EPOLLPRI` 挂入 epoll，并把调用方传入的 `void* data` 放进 `epev.data.ptr`。内核 `psi_trigger_poll()` 在 trigger 的 `event` 标志从 1 被 `cmpxchg` 消费时返回 `EPOLLPRI`；按普通可读事件 `EPOLLIN` 监听会漏掉 PSI trigger 唤醒。[已验证: system/memory/lmkd/libpsi/psi.cpp@android-17.0.0_r1#86][已验证: kernel/sched/psi.c@android17-6.18-2026-06_r6#1489][来源: https://juejin.cn/post/7677254638325727242]
 
-统计读取走另一组 fd：`psi_parse_mem()`、`psi_parse_io()`、`psi_parse_cpu()` 使用 `reread_file()` 读取 `/proc/pressure/*` 文本，`parse_psi_line()` 解析 `some/full avg10=... total=...`，其中 CPU 只解析 `some` 行。排查 `lmkd` 时应把 trigger 唤醒、统计快照和后续 kill decision（查杀决策）分开看。[已验证: system/memory/lmkd/lmkd.cpp@android-17.0.0_r1#2093][已验证: system/memory/lmkd/libpsi/psi.cpp@android-17.0.0_r1#109][来源: https://juejin.cn/post/7677254638325727242]
+统计读取走另一组 fd：`psi_parse_mem()`、`psi_parse_io()`、`psi_parse_cpu()` 使用 `reread_file()` 读取 `/proc/pressure/*` 文本，`parse_psi_line()` 解析 `some/full avg10=... total=...`，其中 CPU 只解析 `some` 行。排查 `lmkd` 时，我们把 trigger 唤醒、统计快照和后续 kill decision 分开看。[已验证: system/memory/lmkd/lmkd.cpp@android-17.0.0_r1#2093][已验证: system/memory/lmkd/libpsi/psi.cpp@android-17.0.0_r1#109][来源: https://juejin.cn/post/7677254638325727242]
 
-内核侧参数边界也要按目标内核核对：Android common kernel `android17-6.18-2026-06_r6` 拒绝 `window_us == 0` 或超过 10s，拒绝 `threshold_us == 0` 或 threshold 大于 window；未特权写入还要求 window 是 2s 的倍数。`lmkd` 的默认 PSI 窗口为 1000 ms，并在 PSI 事件后按 10/100 ms 间隔轮询一个窗口，因为同一 trigger 在内核中至多每个窗口通知一次。不要把其他内核分支或博客中的窗口下限直接写成 Android 17 通用结论。[已验证: kernel/sched/psi.c@android17-6.18-2026-06_r6#1336][已验证: kernel/sched/psi.c@android17-6.18-2026-06_r6#509][已验证: system/memory/lmkd/lmkd.cpp@android-17.0.0_r1#118][来源: https://juejin.cn/post/7677254638325727242]
+内核侧参数边界也要按目标内核核对：common kernel `android17-6.18-2026-06_r6` 拒绝 `window_us == 0` 或超过 10s，拒绝 `threshold_us == 0` 或 threshold 大于 window；未特权写入还要求 window 是 2s 的倍数。`lmkd` 的默认 PSI 窗口为 1000 ms，并在 PSI 事件后按 10/100 ms 间隔轮询一个窗口，因为同一 trigger 在内核中至多每个窗口通知一次。其他内核分支或博客中的窗口下限，不要直接写成 Android 17 通用结论。[已验证: kernel/sched/psi.c@android17-6.18-2026-06_r6#1336][已验证: kernel/sched/psi.c@android17-6.18-2026-06_r6#509][已验证: system/memory/lmkd/lmkd.cpp@android-17.0.0_r1#118][来源: https://juejin.cn/post/7677254638325727242]
 
 #### 7.2 用 `ApplicationExitInfo` 补齐进程退出上下文
 
@@ -456,9 +464,9 @@ for (record in exitRecords) {
 }
 ```
 
-`getPss()` 与 `getRss()` 是系统上一次采样值，单位 kB；进程在采样前退出时可能为 0，该值也不代表退出瞬间的内存。应结合 `reason`（退出原因）、`subreason`（细分原因）、importance（进程重要性）、描述、trace 和自定义 state summary（状态摘要）判断。
+`getPss()` 与 `getRss()` 是系统上一次采样值，单位 kB；进程在采样前退出时可能为 0，该值与退出瞬间的内存是两回事。要判断退出原因，应结合 `reason`（退出原因）、`subreason`、importance、描述、trace 和自定义 state summary。
 
-应用还可以在低频业务状态切换时写入最多 128 bytes（字节）的非敏感摘要：
+应用还可以在低频业务状态切换时写入最多 128 bytes 的非敏感摘要：
 
 ```kotlin
 val state = "screen=checkout;phase=confirm"
@@ -466,13 +474,13 @@ val state = "screen=checkout;phase=confirm"
 activityManager.setProcessStateSummary(state)
 ```
 
-系统可能限制该 API 的调用频率，过度调用会抛出 `RuntimeException`。摘要用于退出分析，不用于恢复 UI，也不能包含账号、订单、位置等敏感信息。
+该 API 的调用频率可能受系统限制，过度调用会抛出 `RuntimeException`。摘要只用于退出分析，恢复 UI 用不上；账号、订单、位置等敏感信息不要写入。
 
 源码核对：[`ApplicationExitInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java#912)
 
 ### 8. 线上监控只采集低风险证据
 
-线上内存监控不应远程触发 heap dump、malloc debug 或 sanitizer。适合收集的内容包括：
+线上内存监控要避开远程触发的 heap dump、malloc debug 或 sanitizer。适合收集的内容包括：
 
 - 进程、页面/场景枚举和前后台状态；
 - Java used/max；
@@ -490,18 +498,20 @@ activityManager.setProcessStateSummary(state)
 - 进程下次启动时读取历史退出记录；
 - 实验组与基线组使用相同采样策略。
 
-采样本身会排队、读取 procfs（`/proc` 进程信息文件系统）或调用 Binder。周期由设备开销实验确定，不使用通用的“30—60 秒”。`getProcessMemoryInfo()` 的系统缓存也使更短周期未必产生新数据。
+采样本身会排队、读取 procfs（`/proc` 进程信息文件系统）或调用 Binder，所以周期由设备开销实验确定，不使用通用的“30—60 秒”。`getProcessMemoryInfo()` 的系统缓存也使更短周期未必产生新数据。
 
 隐私与稳定性要求：
 
-- 不上传 heap 内容、对象字符串、文件路径、图片或业务 payload（载荷数据）；
+- 不上传 heap 内容、对象字符串、文件路径、图片或业务 payload；
 - state summary 使用枚举或短 ID，不写用户标识；
 - 采样失败返回 unknown，不循环重试；
 - 单位写进字段名；
 - 多进程分别记录 PID、进程名和角色；
-- OOM 前末次样本只当上下文，不能当作死亡瞬间的证据。
+- OOM 前末次样本只当上下文，死亡瞬间的证据要从别处找。
 
 ### 9. 按现象选工具
+
+把前几节的内容汇总成一张表：在 trace 或监控里看到某类现象时，下一步该用什么工具、需要证明什么。
 
 | 现象 | 下一步工具 | 需要证明的事 |
 |---|---|---|
@@ -520,7 +530,7 @@ activityManager.setProcessStateSummary(state)
 - [ ] PSS 没有与 `memoryClass` 或 `largeMemoryClass` 计算比例。
 - [ ] Java heap、native allocator、resident pages 和 Graphics 分开。
 - [ ] Heap dump 结论包含预期生命周期与 GC root。
-- [ ] heapprofd 结论注明采样窗口、interval（采样间隔）、符号和未覆盖的 `mmap`/graphics。
+- [ ] heapprofd 结论注明采样窗口、interval、符号和未覆盖的 `mmap`/graphics。
 - [ ] Native RSS 与 heapprofd 的差值没有直接写成碎片。
 - [ ] malloc debug 只用于 debuggable/root 受控环境。
 - [ ] Bitmap 在 API 26+ 的 pixel data 按 native 归属关系分析。
@@ -549,7 +559,7 @@ activityManager.setProcessStateSummary(state)
 
 #### 现象与数据边界
 
-历史文章对比了低内存与正常内存下的冷启动 trace。低内存样本的 Running（实际在 CPU 上执行）时间为 682 ms，正常样本为 624 ms；两者的 CPU 执行时间接近。差距集中在主线程不可中断睡眠：低内存样本的 `Uninterruptible Sleep | WakeKill - Block I/O`（块设备 I/O 唤醒前的不可中断等待）与普通 Uninterruptible Sleep 合计约 750 ms，正常样本约 130 ms。正常样本从启动到首帧约 1.22 s。
+先看现象。历史文章对比了低内存与正常内存下的冷启动 trace。低内存样本的 Running（实际在 CPU 上执行）时间为 682 ms，正常样本为 624 ms，两者 CPU 执行时间接近；差距集中在主线程不可中断睡眠：低内存样本的 `Uninterruptible Sleep | WakeKill - Block I/O`（块设备 I/O 唤醒前的不可中断等待）与普通 Uninterruptible Sleep 合计约 750 ms，正常样本约 130 ms。正常样本从启动到首帧约 1.22 s。
 
 这些数字只描述该次 trace。单看总启动耗时，很容易把问题归到主线程代码；线程状态给出了另一条线索：额外时间主要用于等待内核和存储路径。
 
@@ -559,10 +569,10 @@ activityManager.setProcessStateSummary(state)
 
 1. 在 Perfetto 中圈出启动区间，比较主线程 Running、Runnable（可运行但在等待 CPU）、Sleeping 与 D 状态。
 2. 展开 D 状态对应的内核调用栈，确认是否等待文件页、块设备或文件系统锁。
-3. 在同一时间窗检查 `kswapd0`、内存回收 tracepoint（跟踪点）、`meminfo`、`vmstat`、swap/ZRAM 和 PSI。
+3. 在同一时间窗检查 `kswapd0`、内存回收 tracepoint、`meminfo`、`vmstat`、swap/ZRAM 和 PSI。
 4. 检查 `lmkd` 与 ActivityManager 事件，确认同一进程是否在短时间内反复被终止，又被业务或系统重新启动。
 
-`mm/vmscan.c` 中的回收路径解释了 `kswapd` 与直接回收的执行位置，`include/trace/events/vmscan.h` 提供回收 tracepoint 定义。Android 17 的 `lmkd.cpp` 使用 PSI 监视器感知 stall（资源停顿），并结合进程重要性和内存状态选择要终止的进程。两部分要放在同一时间轴上观察：回收持续繁忙、前台线程进入 D 状态和终止进程记录同时出现，才足以支持“系统内存压力拖慢前台”的判断。
+`mm/vmscan.c` 中的回收路径解释了 `kswapd` 与直接回收的执行位置，`include/trace/events/vmscan.h` 提供回收 tracepoint 定义。`lmkd.cpp` 使用 PSI 监视器感知 stall，并结合进程重要性和内存状态选择要终止的进程。两部分要放在同一时间轴上观察：回收持续繁忙、前台线程进入 D 状态和终止进程记录同时出现，才足以支持“系统内存压力拖慢前台”的判断。
 
 #### 根因判断
 
@@ -576,7 +586,7 @@ activityManager.setProcessStateSummary(state)
 
 #### 修复与验证
 
-原文给出了调高 `extra_free_kbytes`（额外预留空闲内存）等历史建议。它们不能直接迁移到 Android 17 产品：内核回收参数、ZRAM、存储延迟、PSI 阈值和 `lmkd` 策略互相影响，单项调大也可能带来更多后台回收或更高的进程重启率。
+原文给出了调高 `extra_free_kbytes`（额外预留空闲内存）等历史建议。照搬到当前产品并不合适：内核回收参数、ZRAM、存储延迟、PSI 阈值和 `lmkd` 策略互相影响，单项调大也可能带来更多后台回收或更高的进程重启率。
 
 系统侧修复应以同场景 A/B 为准：
 
@@ -584,15 +594,15 @@ activityManager.setProcessStateSummary(state)
 - 核对 `lmkd` 每次选择的进程、释放量及后续重启，减少没有实际回收收益的终止—重启循环。
 - 分设备内存档位校准回收、ZRAM 与杀进程策略，并用前台帧时间、启动耗时和后台存活率共同验收。
 
-App 侧可在 `TRIM_MEMORY_UI_HIDDEN` 或 `TRIM_MEMORY_BACKGROUND` 到来时释放可重建缓存。Android 14（API 34）起，`TRIM_MEMORY_RUNNING_*`、`MODERATE`、`COMPLETE` 不再投递；Android 15（API 35）又将相关常量标为 deprecated。App 无法依靠旧 trim level 推断实时系统压力，也不应在每次回调中同步执行大规模清理。
+App 侧可在 `TRIM_MEMORY_UI_HIDDEN` 或 `TRIM_MEMORY_BACKGROUND` 到来时释放可重建缓存。Android 14（API 34）起，`TRIM_MEMORY_RUNNING_*`、`MODERATE`、`COMPLETE` 不再投递；Android 15（API 35）又将相关常量标为 deprecated。旧 trim level 推断不出实时系统压力；每次回调里同步执行大规模清理，同样要避免。
 
-原文没有给出参数调整后的量化结果。复用这个案例时，可引用 trace 前后的 750 ms 与 130 ms，不能补写不存在的修复收益。
+原文没有给出参数调整后的量化结果。复用这个案例时，可引用 trace 前后的 750 ms 与 130 ms；修复收益原文没有，复用时也不补写。
 
 ### 案例二：用线上 Hprof 找到 Java OOM 的持有者
 
 #### 现象
 
-Java OOM 常落在 Bitmap 分配、字符串构造或数组扩容等位置。该位置只表示本次分配失败，无法回答“此前的堆被谁长期占用”。字节跳动 Client Infra 的公开案例采用线上 Hprof（Java 堆快照格式），把分析对象从崩溃点转向对象持有关系。
+Java OOM 常落在 Bitmap 分配、字符串构造或数组扩容等位置。该位置只表示本次分配失败，回答不了“此前的堆被谁长期占用”。字节跳动 Client Infra 的公开案例采用线上 Hprof（Java 堆快照格式），把分析对象从崩溃点转向对象持有关系。
 
 #### 采集与分析
 
@@ -600,23 +610,23 @@ Java OOM 常落在 Bitmap 分配、字符串构造或数组扩容等位置。该
 
 - 客户端可在 OOM 或可配置的内存高水位采集 Hprof，使用子进程减轻 dump（导出堆快照）对交互线程的影响。
 - Tailor（该方案的 Hprof 裁剪工具）在 native 层移除字符串内容、Bitmap 像素等分析无需保留的数据。原文公布的头条样本平均文件大小从 355 MB 降至 44 MB。
-- 服务端重建引用图和支配树，计算 Shallow Size（对象自身大小）、Retained Size（对象不可达后可一并回收的估算大小）与 GC Root 路径，再按泄漏类、持有业务代码或大对象类聚合。
+- 服务端重建引用图和支配树，计算 Shallow Size、Retained Size 与 GC Root 路径，再按泄漏类、持有业务代码或大对象类聚合。
 - 混淆后的类名和引用路径经 Retrace（根据映射文件恢复原始符号）还原，问题才能分派给代码所有者。
 
-线上 Hprof 可能包含账号、文本和业务对象。采集前要有用户授权与合规评审，上传链路需要加密、限流、访问审计和过期删除。裁掉字符串内容并不能自动覆盖所有敏感字段。
+线上 Hprof 可能包含账号、文本和业务对象。采集前要有用户授权与合规评审，上传链路需要加密、限流、访问审计和过期删除。裁掉字符串内容后，仍可能有漏网的敏感字段。
 
 #### 根因证据
 
-原文展示的按类聚合样本中，`ArticleCell` 有 364 个实例，总 Retained Size 为 51.29 MB，其中 280 个由 `MainActivity` 持有。该数据把排查点从 OOM 栈移到 `MainActivity` 的引用所有权。
+原文展示的按类聚合样本中，`ArticleCell` 有 364 个实例，总 Retained Size 为 51.29 MB，其中 280 个由 `MainActivity` 持有。这组数字把排查点从 OOM 栈移到 `MainActivity` 的引用所有权。
 
 修复动作要服从引用语义：
 
 - 页面退出后仍被任务、监听器或容器持有时，取消任务、解除注册并清理页面所有者。
 - 数量符合业务需求但 Retained Size 过大时，减少单对象负载或限制集合容量。
-- 缓存需要保留时，明确容量、失效条件与低内存行为；`WeakHashMap` 只弱持有 key，无法代替缓存策略。
+- 缓存需要保留时，明确容量、失效条件与低内存行为；`WeakHashMap` 只弱持有 key，代替不了缓存策略。
 - Android 8.0（API 26）起 Bitmap 像素位于 native heap。生命周期正常的 Bitmap 通常交给 GC 与 `NativeAllocationRegistry`（Java 对象关联原生分配的运行时登记机制）管理；不要把批量调用 `Bitmap.recycle()` 写成通用修复。显式提前回收还可能让仍在绘制的调用方访问已释放像素。
 
-修复后应重放同一场景并再次 dump，验证实例数量、GC Root 路径与 Retained Size 同时下降。只看 Java heap 的峰值下降，无法区分引用修复、采样时机变化和 GC 调度差异。
+修复后应重放同一场景并再次 dump，验证实例数量、GC Root 路径与 Retained Size 同时下降。只看 Java heap 的峰值下降，分不清引用修复、采样时机变化和 GC 调度差异。
 
 #### 原文结果与 Android 17 增量
 
@@ -625,9 +635,9 @@ Java OOM 常落在 Bitmap 分配、字符串构造或数组扩容等位置。该
 - Helo 在一个双月内处理了 80% 以上的 Java OOM 问题，次日留存增长 2% 以上。
 - 美篇在一个双月内 Java OOM 降低 80%，用户卡顿率也下降 80%。
 
-这些是来源文章中的平台客户数据，不能推导出任意 App 接入 Hprof 后会获得同等收益。文章没有披露完整实验设计，也没有把收益分摊到某个缓存改动。
+这些是来源文章中的平台客户数据，推导不出任意 App 接入 Hprof 后的同等收益。文章没有披露完整实验设计，也没有把收益分摊到某个缓存改动。
 
-Android 17（API 37）的 `ProfilingTrigger.TRIGGER_TYPE_OOM` 可在 OOM 时请求 Java heap dump。App 安装自定义 `UncaughtExceptionHandler` 后，仍须调用默认 handler，否则 OOM trigger（触发器）不会生效。`TRIGGER_TYPE_ANOMALY` 可由系统异常检测触发相应 artifact（诊断文件）。两类触发均受系统限流，结果也可能为空；它们只补充采集入口，引用图、隐私处理、聚合和修复验证仍由诊断系统完成。
+`ProfilingTrigger.TRIGGER_TYPE_OOM` 可在 OOM 时请求 Java heap dump。App 安装自定义 `UncaughtExceptionHandler` 后，仍须调用默认 handler，否则 OOM trigger 不会生效。`TRIGGER_TYPE_ANOMALY` 可由系统异常检测触发相应 artifact（诊断文件）。两类触发均受系统限流，结果也可能为空；它们只补充采集入口，引用图、隐私处理、聚合和修复验证仍由诊断系统完成。
 
 ### 案例三：PowerVR buffer pool 长期保留 `renderD128` 映射
 
@@ -635,21 +645,21 @@ Android 17（API 37）的 `ProfilingTrigger.TRIGGER_TYPE_OOM` 可在 OOM 时请�
 
 原案例集中在华为 Android 10、联发科芯片、PowerVR GPU 与 32 位 `armeabi-v7a` 进程，少量样本覆盖 Android 8.1、9、11 和 12。OOM 发生时，GPU render node（渲染设备节点）`/dev/dri/renderD128` 的映射接近 1 GB，32 位进程的虚拟地址空间被大量占用。
 
-团队在华为畅享 10e（Android 10）做了对照实验：新增 10 个普通背景 View 时映射无明显变化；给新增 View 设置 `alpha=0.5` 后，每个 View 对应的 `renderD128` 映射约增加 25 MB。这是特定设备、驱动和复现工程的数据，不能外推到其他 GPU。
+团队在华为畅享 10e（Android 10）做了对照实验：新增 10 个普通背景 View 时映射无明显变化；给新增 View 设置 `alpha=0.5` 后，每个 View 对应的 `renderD128` 映射约增加 25 MB。这是特定设备、驱动和复现工程的数据，外推到其他 GPU 缺乏依据。
 
 #### 从缺失的 Hook 记录找到映射入口
 
-常见 `mmap`、`mmap64`、`mremap`、`__mmap2` Hook（运行时拦截）没有记录到这批映射，`ioctl` 记录也无法解释增长。继续反汇编 vendor（厂商）库后，团队发现 `libsrv_um.so` 直接调用 `syscall`，系统调用号对应 32 位 ARM 的 `mmap2`。
+常见 `mmap`、`mmap64`、`mremap`、`__mmap2` Hook（运行时拦截）没有记录到这批映射，`ioctl` 记录也无法解释增长。继续反汇编 vendor 库后，团队发现 `libsrv_um.so` 直接调用 `syscall`，系统调用号对应 32 位 ARM 的 `mmap2`。
 
 随后只拦截 `libsrv_um.so` 与 `gralloc.mt6765.so` 对 `syscall` 的调用，映射记录出现。这个证据修正了“映射完全发生在内核驱动内部”的早期猜测：PowerVR 用户态库绕过了 libc 的 `mmap` 符号，直接进入系统调用。
 
-调用栈继续指向 `libIMGegl.so` 的 `KEGLGetPoolBuffers`。一次增长会连续调用五次 `PVRSRVAcquireCPUMapping`，五类 buffer 合计约 25 MB，与 View 实验的增量吻合。绘制结束时，`KEGLReleasePoolBuffers` 只把 buffer 标为空闲，没有对应调用 `PVRSRVReleaseCPUMapping`。这些映射可在 EGL surface（EGL 绘制表面）或 `CanvasContext` 销毁路径释放，因此文章将其定性为 buffer pool 长期保留；它和永久泄漏不同，后者不存在任何释放路径。
+调用栈继续指向 `libIMGegl.so` 的 `KEGLGetPoolBuffers`。一次增长会连续调用五次 `PVRSRVAcquireCPUMapping`，五类 buffer 合计约 25 MB，与 View 实验的增量吻合。绘制结束时，`KEGLReleasePoolBuffers` 只把 buffer 标为空闲，没有对应调用 `PVRSRVReleaseCPUMapping`。这些映射可在 EGL surface 或 `CanvasContext` 销毁路径释放，因此文章将其定性为 buffer pool 长期保留；它和永久泄漏不同，后者不存在任何释放路径。
 
 #### 根因与历史修复
 
 反汇编显示 pool 为每类 buffer 设置 `buffer_limits`。测试设备原值为 50，映射峰值约 1.25～1.3 GB；调为 20 时峰值约 530 MB，调为 10 时约 269 MB。团队针对已识别的 vendor 版本修改该阈值。来源文章公布的受影响机型实验中，OOM 崩溃率下降近 50%，观察期间未再因 `renderD128` 问题阻断版本发布。
 
-这是针对非公开 vendor 实现的历史干预，不能作为通用 App 方案。其他厂商、驱动版本或进程位数可能使用完全不同的 pool 数据结构；错误 Hook 私有函数也可能破坏正在使用的 GPU 资源。
+这是针对非公开 vendor 实现的历史干预，不宜当作通用 App 方案。其他厂商、驱动版本或进程位数可能使用完全不同的 pool 数据结构；错误 Hook 私有函数也可能破坏正在使用的 GPU 资源。
 
 产品侧更稳妥的处理顺序是：
 
@@ -661,9 +671,9 @@ Android 17（API 37）的 `ProfilingTrigger.TRIGGER_TYPE_OOM` 可在 OOM 时请�
 
 #### Android 17 源码边界
 
-Android 17 HWUI 的 `RenderProperties::promotedToLayer()` 会在 alpha 位于 `(0, 1)` 且节点报告 overlapping rendering（内容存在重叠绘制）时把节点提升为独立 layer（图层）；`RenderNode::pushLayerUpdate()` 负责创建或更新对应图层。该源码能解释 alpha 组合为何可能进入额外的图层路径，不能证明 Android 10 的 PowerVR pool 行为仍存在于 Android 17。
+HWUI 的 `RenderProperties::promotedToLayer()` 会在 alpha 位于 `(0, 1)` 且节点报告 overlapping rendering（内容存在重叠绘制）时把节点提升为独立 layer；`RenderNode::pushLayerUpdate()` 负责创建或更新对应图层。该源码能解释 alpha 组合为何可能进入额外的图层路径，证明不了 Android 10 的 PowerVR pool 行为仍存在于 Android 17。
 
-`hasOverlappingRendering()` 返回 `false` 只适合内容没有重叠混合的自定义 View。错误返回可能改变视觉结果。`LAYER_TYPE_NONE` 也不能关闭 alpha 引起的自动图层提升。渲染优化应以 Frame Timeline（帧时间线）、GPU 内存和画面对比共同验收。
+`hasOverlappingRendering()` 返回 `false` 只适合内容没有重叠混合的自定义 View。错误返回可能改变视觉结果。`LAYER_TYPE_NONE` 同样关不掉 alpha 引起的自动图层提升。渲染优化应以 Frame Timeline、GPU 内存和画面对比共同验收。
 
 ### 案例四：保留 MemoryThrashing 的差分思路与平台边界
 
@@ -676,9 +686,9 @@ MemoryThrashing 原文来自抖音直播 iOS 团队。实现通过 Objective-C R
 - **驻留堆积**：原文样本在两个采样周期之间新增 234,024 个对象，样本末仍有 238,800 个 `LivexxxBigDataRead` 实例，占用 10.9 MB。
 - **临时对象洪峰**：开播特效识别人脸后频繁创建轮廓模型；小于 5 秒的采样周期内，临时对象增量峰值约 60,000，累计分配超过百万次。
 
-第二类对象可能很快释放，却会增加 CPU 与 allocator（内存分配器）压力；第一类需要继续查询引用关系，区分业务保留、缓存超限和泄漏。对象数量差分只能告诉工程师“哪类对象增长”，不能独立回答“谁在持有”。
+第二类对象可能很快释放，却会增加 CPU 与 allocator 压力；第一类需要继续查询引用关系，区分业务保留、缓存超限和泄漏。对象数量差分只能告诉工程师“哪类对象增长”，要回答“谁在持有”，还需要引用关系数据。
 
-原文明确列出限制：只覆盖 Objective-C 对象、不能分析多个内存区域、没有完整引用图，Hook 还会影响方法缓存。文章发布时工具已部署到测试环境，线上部署仍在规划中，因此没有可引用的线上 OOM 降幅或定位耗时改善数据。
+原文明确列出限制：只覆盖 Objective-C 对象、分析不了多个内存区域、没有完整引用图，Hook 还会影响方法缓存。文章发布时工具已部署到测试环境，线上部署仍在规划中，因此没有可引用的线上 OOM 降幅或定位耗时改善数据。
 
 #### Android 上如何复用
 
@@ -688,12 +698,12 @@ Android 侧可保留“连续样本差分 + 异常时加深采集”的设计，
 | --- | --- | --- |
 | Java/Kotlin 对象 | heap 使用量、GC 次数与停顿、受控场景的对象分配样本 | Java heap dump、实例数差分、GC Root 路径 |
 | Native malloc | RSS/PSS 分类、`anon:libc_malloc`、分配速率 | heapprofd 调用栈与分配生命周期 |
-| 图形缓冲区 | DMA-BUF（设备间共享缓冲区）、GPU 驱动映射、Surface 数量 | `dmabuf_dump`、smaps、Perfetto graphics 轨道、厂商工具 |
+| 图形缓冲区 | DMA-BUF、GPU 驱动映射、Surface 数量 | `dmabuf_dump`、smaps、Perfetto graphics 轨道、厂商工具 |
 | 文件映射与线程栈 | maps 分类、线程数、地址空间余量 | smaps、线程创建栈、映射调用栈 |
 
-业务探针（埋入业务流程的轻量采样代码）只采集总 PSS 时，Java 临时对象、native buffer 与 GPU 映射会混在一条曲线上。更可靠的报警条件由“场景 + 内存域 + 增长速率 + 回落情况”组成，阈值应来自设备档位和同场景分位数，不能采用来源不明的时间与容量数值。
+业务探针（埋入业务流程的轻量采样代码）只采集总 PSS 时，Java 临时对象、native buffer 与 GPU 映射会混在一条曲线上。更可靠的报警条件由“场景 + 内存域 + 增长速率 + 回落情况”组成，阈值应来自设备档位和同场景分位数；来源不明的时间与容量数值，一律不用。
 
-Android 15（API 35）提供 app-driven（由 App 主动请求的）`ProfilingManager.requestProfiling()`。Android 16（API 36）加入触发器注册。Android 17（API 37）增加 OOM、anomaly（异常）和 cold-start（冷启动）等 trigger。OOM trigger 发生在 OOM 时，用于申请 Java heap dump，无法替代 OOM 前的突增探针。采集结果受限流和系统策略约束，线上设计仍要处理“触发后没有 artifact（诊断文件）”的情况。
+Android 15（API 35）提供 app-driven（由 App 主动请求的）`ProfilingManager.requestProfiling()`。Android 16（API 36）加入触发器注册。Android 17（API 37）增加 OOM、anomaly 和 cold-start 等 trigger。OOM trigger 发生在 OOM 时，用于申请 Java heap dump，替代不了 OOM 前的突增探针。采集结果受限流和系统策略约束，线上设计仍要处理“触发后没有 artifact”的情况。
 
 当差分指出某一类实例异常增长时，再采集 heap dump 或 allocation profile；当增长落在 native 或 graphics 域时，切换到 heapprofd、smaps 或图形工具。这样可以保留 MemoryThrashing 的低成本发现能力，同时避免把 iOS Runtime 实现误写成 Android 方案。
 
@@ -743,7 +753,6 @@ Java 引用泄漏、短命对象洪峰、malloc 堆积、GPU pool、文件映射
 - **10.4 GPU 与图形内存统计、归因与诊断**：DMA-BUF、GPU 映射与图形缓冲区。
 - **4.3 Low Memory Killer**：Android 17 userspace `lmkd` 路径。
 - **7.2 典型场景分析**：从线程状态和关键路径解释卡顿。
-
 
 ## 参考资料
 
