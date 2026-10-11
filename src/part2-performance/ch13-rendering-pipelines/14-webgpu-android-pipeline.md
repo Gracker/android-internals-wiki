@@ -3,7 +3,7 @@ title: Android 17 Jetpack WebGPU 渲染与计算管线
 chapter: '13.14'
 section: '13.14'
 section_title: Android 17 Jetpack WebGPU 渲染与计算管线
-status: ready-for-review
+status: finalized
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37) for androidx.webgpu 1.0.0-alpha05; current 1.0.0-alpha06 requires Android 8.0 (API 26)
 tags:
 - webgpu
@@ -22,9 +22,9 @@ related_chapters:
 - '13.5'
 - '13.6'
 - '13.9'
-last_verified: '2026-10-09'
-last_verified_against: androidx.webgpu 1.0.0-alpha06 release notes + AAR manifest / alpha05 source baseline AndroidX c48b772dd76241af6af60bee13d3cad0e4520306 / Dawn 9d41fdf36977cca92361c6ae2769129bbaaafd9b / android-17.0.0_r1 / Writer rendering_pipelines S01、S03、S04 / android17-6.18-2026-06_r6
-confidence: medium-low
+last_verified: '2026-10-11'
+last_verified_against: androidx.webgpu 1.0.0-alpha06 release notes fetched 2026-10-11 + AAR manifest / alpha05 source baseline AndroidX c48b772dd76241af6af60bee13d3cad0e4520306 / Dawn 9d41fdf36977cca92361c6ae2769129bbaaafd9b / android-17.0.0_r1 / Writer rendering_pipelines S01、S03、S04 / android17-6.18-2026-06_r6
+confidence: medium
 sources:
 - type: internal-reference
   path: rendering_pipelines/S01_rendering_types_overview.md
@@ -147,7 +147,7 @@ AndroidX 在 AAR 中打包 Dawn 原生实现，再由 Dawn 选择 Vulkan 或 Ope
 - WebView 网页中的 WebGPU 由 Chromium/WebView 运行时提供，不复用 Jetpack WebGPU 的 instance、device 或 native handle（原生对象引用）；
 - Android 平台仍负责 `Surface`、`ANativeWindow`、BufferQueue、SurfaceFlinger、HWC（Hardware Composer，硬件显示合成器）和内核同步，也不会把普通 HWUI 内容自动转换成 WebGPU 内容。
 
-截至 2026-10-09，官方 release notes 的最新公开版本已经是 `androidx.webgpu:webgpu:1.0.0-alpha06`，发布于 2026-10-07。alpha06 把最低系统版本从 API 24 提高到 API 26，并新增 HardwareBuffer 导入、sync fence、Dawn toggles、HDR/color space 等扩展；helper 也改为单线程 dispatcher 与 16 ms event loop。
+截至 2026-10-11，官方 release notes 的最新公开版本已经是 `androidx.webgpu:webgpu:1.0.0-alpha06`，发布于 2026-10-07。alpha06 把最低系统版本从 API 24 提高到 API 26，并新增 HardwareBuffer 导入、sync fence、Dawn toggles、HDR/color space 等扩展；helper 也改为单线程 dispatcher 与 16 ms event loop。
 
 本文后续代码级链路仍锁定 `1.0.0-alpha05`、AndroidX `c48b772dd76241af6af60bee13d3cad0e4520306` 与 Dawn `9d41fdf36977cca92361c6ae2769129bbaaafd9b`，适合阅读 alpha05 行为和 Android 显示链路边界。若项目采用 alpha06，需要重新核对对应 AAR、source JAR 与 Dawn SHA。
 
