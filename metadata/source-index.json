@@ -5869,9 +5869,11 @@
       "summary": "> 发布时间: 2026-10-08T12:34:28.000Z > 原文链接: https://juejin.cn/post/7694131662615543835 2026-10-08 257 阅读13分钟 > 本文译自「Modular Jetpack Compose: Don’t Leave Your Architecture to Code Review」，原文链...",
       "chapter": "ch16",
       "processed_at": "2026-10-11T06:20:33.911975+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "quarantined-misroute",
+      "status": "quarantined",
       "score": 19,
-      "target_path": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
+      "target_path": null,
+      "previous_target_path": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
       "route_confidence": 16,
       "route_terms": [
         "t12",
@@ -5879,7 +5881,10 @@
         "juejin-android",
         "ch01-architecture"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "quarantined-misroute-by-apply",
+      "quarantined_at": "2026-10-11T09:16:28+08:00",
+      "quarantined_run_id": "20261011-091535-b3ff82ff",
+      "quarantine_reason": "Body-apply fail-closed: material is about modular Jetpack Compose application architecture (Gradle module boundaries, -api/-impl split, private routes, Koin definitions, sealed failures and CI registration checks), while target chapter is MessageQueue / DeliQueue / Java monitor / futex / Binder lock contention. It provides no source-backed Android 17 MessageQueue correction, version boundary, observation path, or lock-contention mechanism for this chapter. Chapter body and frontmatter left unchanged."
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-11-76945065-端侧推理排查实录为什么我的手机跑LLM比.md",
