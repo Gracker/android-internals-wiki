@@ -213,17 +213,17 @@ Continuous 模式下，`GLThread` 默认不会由 `Choreographer#doFrame()` 逐�
 
 ```mermaid
 sequenceDiagram
-    participant Loop as "GLThread / app render loop"
+    participant GLThreadLoop as "GLThread / app render loop"
     participant EGL as "EGL + vendor driver"
     participant BQ as "ANativeWindow / BufferQueue"
     participant GPU as "GPU queue"
     participant SF as "SurfaceFlinger"
     participant HWC as "Composer / Display"
 
-    Loop->>Loop: "sample input / update / onDrawFrame"
-    Loop->>EGL: "GLES draw calls"
+    GLThreadLoop->>GLThreadLoop: "sample input / update / onDrawFrame"
+    GLThreadLoop->>EGL: "GLES draw calls"
     EGL->>GPU: "submit command work"
-    Loop->>EGL: "eglSwapBuffers"
+    GLThreadLoop->>EGL: "eglSwapBuffers"
     EGL->>BQ: "queue current buffer + producer fence"
     BQ->>SF: "buffer update + acquire fence"
     SF->>SF: "transaction readiness / select new or old buffer"
