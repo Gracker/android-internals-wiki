@@ -6120,6 +6120,16 @@
         "observed_at": "2026-10-24T07:17:17+08:00",
         "storage_note": "路由 finding 保存在本条允许修改的 source-index 记录内并复用既有稳定 ID；metadata/review-findings.json 不在本次允许路径中，未写入该文件。"
       }
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-28-76809960-日常修改，3秒生效：腾讯音乐 Andro.md",
+      "title": "[技术文章] 日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源腾讯音乐正式开源 Android 秒级增量构建插件",
+      "summary": "> 发布时间: 2026-09-03T12:51:33.000Z > 原文链接: https://juejin.cn/post/7680996030843125796 2026-09-03 2,598 阅读29分钟 Android 编译优化 > 本文首发自公众号：腾讯音乐技术团队 > 5 年研发和内部使用，累积 80 万次生产工程编译验证，让大型 Android 工程日常...",
+      "chapter": "ch16",
+      "processed_at": "2026-10-28T06:20:20.251905+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
