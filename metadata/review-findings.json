@@ -10499,6 +10499,106 @@
       "summary": "实时更新标题条件遗漏样式例外",
       "type": "applicability-boundary",
       "updated_at": "2026-10-27T18:41:32.937282+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/13-cgroup-v1-v2-process-isolation.md",
+      "close_note": "已依据 Android 17 固定版本源码改正正文；元数据、目录链接、本文 diff 与中文新增行检查通过。全仓 diff 错误仅来自隔离脏章节，未修改。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261027-223520-idle-audit-5a65b0da",
+      "created_at": "2026-10-27T22:42:36.157293+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261027-223520-idle-audit-5a65b0da",
+      "details": "android-17.0.0_r1 TaskProfiles::Load() 只为 version()==1 的 JoinCgroup 创建 action，指向 v2 时记录警告并忽略。修正 3.2、4.2 和 6.4，明确仅改 cgroups.json 不足以保留 cpu/top-app 迁移，并保留 Android 12 writepid 弃用边界。",
+      "id": "AIW-1.13-JOINCGROUP-V2-IGNORED",
+      "log_path": "logs/audit/2026-10-27-20261027-223520-idle-audit-5a65b0da-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libprocessgroup/task_profiles.cpp#1002"
+      ],
+      "status": "fixed",
+      "summary": "JoinCgroup 的 v1 限制缺失，CPU 迁往 v2 的说明会误导配置",
+      "type": "version-applicability",
+      "updated_at": "2026-10-27T22:42:48.196198+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/13-cgroup-v1-v2-process-isolation.md",
+      "close_note": "已依据 Android 17 固定版本源码改正正文；元数据、目录链接、本文 diff 与中文新增行检查通过。全仓 diff 错误仅来自隔离脏章节，未修改。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261027-223520-idle-audit-5a65b0da",
+      "created_at": "2026-10-27T22:42:36.213759+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261027-223520-idle-audit-5a65b0da",
+      "details": "task_profiles.json 为 MemStats 声明 File=memory.stat；ProfileAttribute::file_name() 在没有 FileV2 时使用 File。固定内核 mm/memcontrol-v1.c 的 mem_cgroup_legacy_files 仍注册 stat。修正 7.1 的兼容语义，补充 v1 文档陈旧提示以及 soft_limit_in_bytes 弃用和 PREEMPT_RT 可用性边界。",
+      "id": "AIW-1.13-MEMSTATS-V1-COMPAT",
+      "log_path": "logs/audit/2026-10-27-20261027-223520-idle-audit-5a65b0da-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/mm/memcontrol-v1.c#2040"
+      ],
+      "status": "fixed",
+      "summary": "MemStats 被错误归入 v2 专用接口",
+      "type": "source-mismatch",
+      "updated_at": "2026-10-27T22:42:48.253822+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/13-cgroup-v1-v2-process-isolation.md",
+      "close_note": "已依据 Android 17 固定版本源码改正正文；元数据、目录链接、本文 diff 与中文新增行检查通过。全仓 diff 错误仅来自隔离脏章节，未修改。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261027-223520-idle-audit-5a65b0da",
+      "created_at": "2026-10-27T22:42:36.270852+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261027-223520-idle-audit-5a65b0da",
+      "details": "AOSP SCHED_SP_COMPUTE 聚合配置包含 ProcessCapacityHigh；该 profile 会加入 cpuset/foreground。将 3.3 的判断限定为 top-app 配置，并要求其他组展开实际 aggregate profile。",
+      "id": "AIW-1.13-SCHED-COMPUTE-CPUSET",
+      "log_path": "logs/audit/2026-10-27-20261027-223520-idle-audit-5a65b0da-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libprocessgroup/profiles/task_profiles.json"
+      ],
+      "status": "fixed",
+      "summary": "将 scheduling-group 入口概括为不会修改 cpuset，遗漏 COMPUTE 配置",
+      "type": "overgeneralization",
+      "updated_at": "2026-10-27T22:42:48.311238+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/13-cgroup-v1-v2-process-isolation.md",
+      "close_note": "已依据 Android 17 固定版本源码改正正文；元数据、目录链接、本文 diff 与中文新增行检查通过。全仓 diff 错误仅来自隔离脏章节，未修改。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261027-223520-idle-audit-5a65b0da",
+      "created_at": "2026-10-27T22:42:36.328169+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261027-223520-idle-audit-5a65b0da",
+      "details": "固定内核 cgroup-v2.rst 明确根 cgroup 豁免 no-internal-process；cpu.idle=1 时 cpu.weight 读为 0；cpu.max 仅限制公平调度类。修正 2.3 和 6.4，避免误判根节点配置及实时线程的带宽限制。",
+      "id": "AIW-1.13-KERNEL-INTERFACE-SCOPE",
+      "log_path": "logs/audit/2026-10-27-20261027-223520-idle-audit-5a65b0da-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst"
+      ],
+      "status": "fixed",
+      "summary": "cgroup v2 根节点和 CPU 控制接口的适用边界不完整",
+      "type": "missing-boundary",
+      "updated_at": "2026-10-27T22:42:48.368524+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/13-cgroup-v1-v2-process-isolation.md",
+      "close_note": "已依据 Android 17 固定版本源码改正正文；元数据、目录链接、本文 diff 与中文新增行检查通过。全仓 diff 错误仅来自隔离脏章节，未修改。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261027-223520-idle-audit-5a65b0da",
+      "created_at": "2026-10-27T22:42:36.386308+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261027-223520-idle-audit-5a65b0da",
+      "details": "第 3.1 节与源码均包含 vendor 覆盖，第 10 节实际核对清单却漏掉 vendor。补齐 system→首发 API-level→vendor 的顺序，以及 task profile 最后加载的 system_ext。",
+      "id": "AIW-1.13-OEM-VENDOR-CHECKLIST",
+      "log_path": "logs/audit/2026-10-27-20261027-223520-idle-audit-5a65b0da-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libprocessgroup/task_profiles.cpp#914"
+      ],
+      "status": "fixed",
+      "summary": "OEM 配置核对步骤漏掉 vendor 覆盖文件",
+      "type": "diagnostic-gap",
+      "updated_at": "2026-10-27T22:42:48.424232+08:00"
     }
   ],
   "schema_version": 1
