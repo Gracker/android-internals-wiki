@@ -6560,6 +6560,54 @@
       "status": "appended",
       "title": "Android 以后可能不会再有横竖屏适配了"
     },
+    "source/juejin-android/2026-10-28-76466747-彦火APP-Flutter包体分析.md": {
+      "chapter": "待分类",
+      "entry_id": "2c6fbcf9e868e948",
+      "last_appended": "2026-10-28T05:25:20.280932+08:00",
+      "last_seen": "2026-10-28T05:25:20.280932+08:00",
+      "mtime": 1793132472.4493568,
+      "score": 13,
+      "sha256": "5b11a30de87af0fc707cdfad320a20e9814d22402df94598013aa1a4f4c1026a",
+      "size": 16789,
+      "status": "appended",
+      "title": "彦火APP-Flutter包体分析拆了胡彦斌「彦火」APK：它确实是 Flutter App，为什么体积还能这么小？ 最"
+    },
+    "source/juejin-android/2026-10-28-76623252-玩Android×AI Coding：从.md": {
+      "chapter": "待分类",
+      "entry_id": "f022f72cc5442fcd",
+      "last_appended": "2026-10-28T05:25:20.280932+08:00",
+      "last_seen": "2026-10-28T05:25:20.280932+08:00",
+      "mtime": 1793132472.4496565,
+      "score": 9,
+      "sha256": "6ab87eb46b92ab079e20246e53a4957f852992161cef64f73482cabec6990812",
+      "size": 30007,
+      "status": "appended",
+      "title": "玩Android×AI Coding：从产品到代码，完整跑通一套 AI 软件研发工作流从产品、UX、视觉设计到工程搭建与"
+    },
+    "source/juejin-android/2026-10-28-76756264-三星安卓系统BUG排查记录：云闪付、铁路.md": {
+      "chapter": "待分类",
+      "entry_id": "85233874eeacb4bb",
+      "last_appended": "2026-10-28T05:25:20.280932+08:00",
+      "last_seen": "2026-10-28T05:25:20.280932+08:00",
+      "mtime": 1793132472.4490755,
+      "score": 24,
+      "sha256": "00c3f3ac38f4581e2323fd115285b2a0b8387311d82ed59070579f6637f9ceb3",
+      "size": 33470,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
+    "source/juejin-android/2026-10-28-76809960-日常修改，3秒生效：腾讯音乐 Andro.md": {
+      "chapter": "待分类",
+      "entry_id": "7b5f39135637bc7d",
+      "last_appended": "2026-10-28T05:25:20.280932+08:00",
+      "last_seen": "2026-10-28T05:25:20.280932+08:00",
+      "mtime": 1793132472.4487233,
+      "score": 19,
+      "sha256": "093d65226c033ed2c7b62b4a704ce92457a7358a0395336d3b05b5bb3a773fae",
+      "size": 33822,
+      "status": "appended",
+      "title": "日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源腾讯音乐正式开源 Android 秒级增量构建插件"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -8945,13 +8993,13 @@
     }
   },
   "last_report": {
-    "appended": 0,
-    "considered": 0,
-    "cutoff": "2026-10-26T05:20:20.418512+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-27.md",
+    "appended": 4,
+    "considered": 4,
+    "cutoff": "2026-10-27T05:20:20.386015+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-28.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2260,
+    "scanned": 2264,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
@@ -8962,7 +9010,7 @@
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-10-27T05:25:20.386015+08:00",
+  "last_run_at": "2026-10-28T05:25:20.280932+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
